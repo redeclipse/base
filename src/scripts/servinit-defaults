@@ -1,0 +1,34 @@
+#!/bin/bash
+#
+# This script updates the default values of the sv_* variables in
+# data/examples/servexec.cfg
+#
+# It reads all sv_* variables in data/examples/servexec.cfg, extracts their
+# default value by executing them in a Red Eclipse server, then feeds this
+# value back to the corresponding variable in data/examples/servexec.cfg
+
+DIR="$(cd "$(dirname "$0")" && pwd)"
+
+get_values ()
+{
+    sed -n 's%\/\/\ \(sv_[a-z]*\)\ .*\ //\ .*%\1;%p' "$1" \
+        | tr '\n' ' ' \
+        | xargs -0 -I '{}' timeout 2 "$DIR"/../../redeclipse_server.sh -g -x''{}'' 2>/dev/null \
+        | grep sv_ \
+        | grep -v "sv_serverdesc" | grep -v "sv_servermotd"
+}
+
+put_values ()
+{
+    IFS=$'\n'
+    for i in $(get_values "$1")
+    do
+        echo "$i" | grep unknown || :
+        VAR=$(echo $i | sed 's%.* \([^ ]*\) = .*%\1%')
+        VAL=$(echo $i | sed 's%.*=\ \(.*\)%\1%')
+        sed 's%//\ '"$VAR"'\ [^/]*\(.*\)%//\ '"$VAR"'\ '"$VAL"'\ \1%' -i "$1"
+    done
+}
+
+# Main
+put_values "$1"

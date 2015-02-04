@@ -1,0 +1,9 @@
+#!/bin/bash
+
+MANWIDTH=80 man --no-justification --no-hyphenation "$1" \
+    | col -b > "$2"
+cat <<EOF >> "$2"
+
+This text file was automatically generated from cube2font.1
+Please do not edit it manually.
+EOF

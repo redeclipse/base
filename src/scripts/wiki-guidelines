@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# Title
+echo "== Guidelines for Connecting to the Red Eclipse Master Server ==" \
+    > "$2"
+
+# Indented headers to wiki-style headers
+awk 'BEGIN{ ORS="\n\n"; RS=""; FS="\n" } \
+    /^    / { print "===",substr($$0,5),"==="; next };1' \
+    "$1" >> "$2"
+
+# * Delete old title
+# * Fix list syntax
+# * Fix license link
+# * Fix wrapping
+sed -e '2d' \
+    -e 's,^\ \ -\ ,**\ ,' \
+    -e 's,License <\([^>]*\)>,License:\n\n\1,' \
+    -ne 'H;$x;$s/^\n//;$s/\n   */ /g;$p' \
+    -i "$2"
+
+cat <<EOF >> "$2"
+
+This text was automatically generated from guidelines.txt
+Please edit only that file and regenerate this wiki text via:
+ make guidelines-wiki
+EOF

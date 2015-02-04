@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<application>
+  <id type="desktop">redeclipse.desktop</id>
+  <metadata_license>CC-BY-SA-3.0+</metadata_license>
+  <project_license>ZLIB and CC-BY-SA-3.0+</project_license>
+  <description>
+    <p>
+      Red Eclipse is a fun-filled new take on the casual first person arena
+      shooter with a general theme of agility in a variety of environments.
+    </p>
+    <p>
+      Red Eclipse features parkour, impulse boosts, dashing, other tricks,
+      and favourite game modes with an array of mutators and variables.
+      A builtin editor lets you create your own maps cooperatively online.
+    </p>
+  </description>
+  <url type="homepage">http://redeclipse.net/</url>
+  <screenshots>
+    <screenshot type="default">http://redeclipse.net/bits/images/003.jpg</screenshot>
+    <screenshot>http://redeclipse.net/bits/images/006.jpg</screenshot>
+    <screenshot>http://redeclipse.net/bits/images/007.jpg</screenshot>
+  </screenshots>
+  <updatecontact>http://redeclipse.net/forum/</updatecontact>
+</application>

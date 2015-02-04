@@ -1,0 +1,179 @@
+#!/usr/bin/gawk -f
+
+BEGIN {
+    FS = "\t"
+
+    print "This page was automatically generated from the source of Red Eclipse, please do not edit it manually."
+    print ""
+    print "{| border=\"1\" class=\"wikitable sortable\""
+    print "! Name&nbsp;&&nbsp;Parameters"
+    print "! class=\"unsortable\"|Description"
+    print "! Type"
+    print "! class=\"unsortable\"|Default&nbsp;Value"
+    print "! class=\"unsortable\"|Range"
+    print "! identifier flags"
+}
+
+{
+    if (/^\/\//)
+        next
+
+    switch ($2) {
+    case 0:
+        type = "variable"
+        break
+    case 1:
+        type = "float variable"
+        break
+    case 2:
+        type = "string variable"
+        break
+    case 3:
+        type = "command"
+        break
+    case 4:
+        type = "alias"
+        break
+    case 5:
+        type = "local"
+        break
+    default:
+        type = "BUG"
+        break
+    }
+
+    for (i = 0; i < 14; i++) {
+        switch (and($3, lshift(1, i))) {
+        case 1:
+            flags[len++] = "IDF_PERSIST"
+            break
+        case 2:
+            flags[len++] = "IDF_READONLY"
+            break
+        case 4:
+            flags[len++] = "IDF_REWRITE"
+            break
+        case 8:
+            flags[len++] = "IDF_WORLD"
+            break
+        case 16:
+            flags[len++] = "IDF_COMPLETE"
+            break
+        case 32:
+            flags[len++] = "IDF_TEXTURE"
+            break
+        case 64:
+            flags[len++] = "IDF_CLIENT"
+            break
+        case 128:
+            flags[len++] = "IDF_SERVER"
+            break
+        case 256:
+            flags[len++] = "IDF_HEX"
+            break
+        case 512:
+            flags[len++] = "IDF_ADMIN"
+            break
+        case 1024:
+            flags[len++] = "IDF_UNKNOWN"
+            break
+        case 2048:
+            flags[len++] = "IDF_ARGS"
+            break
+        case 4096:
+            flags[len++] = "IDF_PRELOAD"
+            break
+        case 8192:
+            flags[len++] = "IDF_GAMEPRELOAD"
+            break
+        default:
+            break
+        }
+    }
+
+    if (type == "command")
+        value = $4
+
+    switch ($5) {
+    case 0:
+        type = ("NULL " type)
+        break
+    case 1:
+        type = ("integer " type)
+        break
+    case 2:
+        type = ("float " type)
+        break
+    case 3:
+        type = ("string " type)
+        break
+    case 4:
+        type = ("any " type)
+        break
+    case 5:
+        type = ("code " type)
+        break
+    case 6:
+        type = ("macro " type)
+        break
+    case 7:
+        type = ("ident " type)
+        break
+    default:
+        break
+    }
+
+    if (length($6)) {
+        value = $6
+        sub(/^\"/, "", value)
+        sub(/\"$/, "", value)
+    } else {
+        value = "n/a"
+    }
+
+    if (length($7) && length($8))
+        range = ($7 ".." $8)
+    else
+        range = "n/a"
+
+    if (length($9) > 2) {
+        desc = $9
+        sub(/^\"/, "", desc)
+        sub(/\"$/, "", desc)
+        desc = gensub(/([^^])\^f./, "\\1", "g", desc)
+        desc = gensub(/([^^])\^n/, "\\1 ", "g", desc)
+        desc = gensub(/([^^])\^"/, "\\1\"", "g", desc)
+        desc = gensub(/\^(.)/, "\\1", "g", desc)
+    } else {
+        desc = "#undocumented#"
+    }
+
+    if (length($10) > 2) {
+        usage = $10
+        sub(/^\"/, "", usage)
+        sub(/\"$/, "", usage)
+    } else {
+        usage = "<#undocumented#>"
+    }
+
+    print "|-"
+    print ("| <b><nowiki>" $1 "</nowiki></b> <i><nowiki>" usage "</nowiki></i>")
+    print ("| <nowiki>" desc "</nowiki>")
+    print ("| <nowiki>" type "</nowiki>")
+    print ("| <nowiki>" value "</nowiki>")
+    print ("| <nowiki>" range "</nowiki>")
+    printf "| <nowiki>"
+    for (i = 0; i < len; i++) {
+        if (i == 0)
+            printf flags[i]
+        else
+            printf (" " flags[i])
+    }
+    print "</nowiki>"
+
+    len = 0
+}
+
+END {
+    print "|}"
+}

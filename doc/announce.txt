@@ -1,0 +1,13 @@
+Red Eclipse, a fun-filled new take on the casual first person arena shooter, makes an impressive return with the release of version 1.5, codenamed "Aurora Edition". The solid dedication of the Red Eclipse team and its thriving community has led to several new ideas to enrich gameplay; 
+
+* New weapon: electrocute your foes and reduce their agility with the all-purpose zapper.
+* New models: accessorize with new vanity items and test a more refined and colorful arsenal of weaponry.
+* Freestyle: explore different areas of maps and reach new heights with the freestyle mutator; experience the thrill unlimited impulse can offer.
+* Race mode: test your parkour experience on a variety of new courses in the revamped Race mode including new mutators; finish more laps than opponents or race against the clock.
+* New deathmatch maps: with more levels to explore than ever before, discover unfamiliar terrain as well as some remixed and improved favorites.
+* Further improved menus, GUIs, variables and gameplay options: navigate quickly and take control of all aspects of gameplay or get help from the community when needed.
+* Improved weapon balance, team balance, bugs fixed, and much more.
+
+With an ever-growing player base and a devotion to the open source community it was born from, Red Eclipse is both the casual arena shooter enthusiasts will love and the fun dynamic environment for the avid indie gamer. As a constantly evolving project with contributions from all across the globe, any community member could potentially become an imperative part of that growth. The Red Eclipse team wishes to thank all its supporters, old and new, for their contributions that keep this venture alive in 2015.
+
+As always, you can download Red Eclipse from http://redeclipse.net/

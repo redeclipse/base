@@ -1,0 +1,32 @@
+#!/bin/bash
+#
+# "$1" is doc/readme.txt
+# "$2" is output file
+
+cat <<EOF >> "$2"
+This page was automatically generated from the source of Red Eclipse, please do not edit it manually.
+
+== Red Eclipse Team ==
+
+=== Team Lead ===
+
+{| border="1" cellpadding="10" cellspacing="0"
+EOF
+
+# convert to UTF-8 and grab everything from dev tag and onward
+iconv -f ISO-8859-1 -t UTF8 "$1" | sed -n '/== Developers ==/,$p;/^$/d' >> "$2"
+
+# join lines starting with two or more spaces
+sed -ne 'H;$x;$s%^\n%%;$s%\n   *% %g;$p' -i "$2"
+
+# delete developers tag
+sed '/== Developers ==/d' -i "$2"
+
+# table end and start developers table after eihrul
+sed 's%.*Eihrul.*%&\n|}\n\n== Developers ==\n\n{| border="1" cellpadding="10" cellspacing="0"%' -i "$2"
+
+# table end at contributors tag
+sed 's%.*== Contributors ==.*%|}\n\n&%' -i "$2"
+
+# tablification of devs
+sed 's%^\* \([^-]*\) - \([^-]*\) - \(.*\)%| \1\n| \2\n| \3\n|-%' -i "$2"

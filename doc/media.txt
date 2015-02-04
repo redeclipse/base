@@ -1,0 +1,77 @@
+The following is a summary list of Red Eclipse in the media and on the
+internet; it is not intended to be a comprehensive guide. If you are
+looking to collect bits and pieces for use in your own media, it is
+appreciated if you focus on what makes Red Eclipse unique, rather than
+using any comparisons to other games.
+
+Regards,
+Quinton "quin" Reeves
+Lead Developer, Red Eclipse
+http://redeclipse.net/
+
+
+= Press and Blogs =
+
+[2013-08-07] TuxArena | Red Eclipse Review – Free Shooter Game in Futuristic Environments
+"The good things about Red Eclipse are its unique features and game style. Since it’s actively developed and pretty complete, Red Eclipse has a lot of potential."
+> http://www.tuxarena.com/2013/10/red-eclipse-review-free-shooter-game-in-futuristic-environments/
+
+[2013-02-14] LAN Party Mania | Red Eclipse
+"Red Eclipse is a free competitive shooter similar to Quake and Unreal Tournament... but on crack."
+> http://lanpartymania.com/?p=464
+
+[2012-10-22] GameSpot Users: TheNineRings | Red Eclipse and Assault Cube. Oh yeah, and me too.
+"What makes this FPS distinctive is that you are extremely mobile. Dodges, double jumping, wall running, midair and ground based dashes, a diving kick [..] and jetpacks."
+> http://au.gamespot.com/users/TheNineRings/show_blog_entry.php?topic_id=m-100-25996813
+
+[2012-09-09] eGamer | Indie Review: Red Eclipse
+"Red Eclipse is a blast to play, it's awesome fun, and it's free. It's one of the best indie games of the year."
+> http://egamer.co.za/2012/09/indie-review-red-eclipse/
+
+[2012-08-20] Super Budget Brothers Podcast | Red Eclipse
+> http://superbudgetbrothers.com/2012/08/20/red-eclipse/
+> http://superbudgetbrothers.files.wordpress.com/2012/08/episode-034-red-eclipse.mp3
+
+[2012-03-03] MakeUseOf | Red Eclipse – A Pulse-Pounding First Person Shooter Game
+"Will Red Eclipse become my new number one shooter? Quite possibly." --Danny Stieben
+> http://www.makeuseof.com/tag/red-eclipse-pulsepounding-person-shooter-game/
+
+[2012-01-24] IndieGameReviewer.com | Review: Red Eclipse - An Open Source Fast-Paced Classic Shooter
+"The gameplay is nothing short of stupendous, allowing the player to run on walls, double jump and turn jumps into flying kicks that usually translate into instant kills."
+> http://www.indiegamereviewer.com/red-eclipse-an-open-source-fast-paced-classic-shooter/
+
+[2011-03-18] Joystiq | Free, open source FPS 'Red Eclipse' hits version 1.0
+"Red Eclipse is a full-featured, Quake 3 Arena-style first person shooter with, as you can see in the trailer after the break, some nice touches, including a wallrunning system, lots of bright colors exploding around and what looks like pretty good ragdoll physics."
+> http://www.joystiq.com/2011/03/18/free-open-source-fps-red-eclipse-hits-version-1-0/
+
+[Date Unknown] About.com Open Source | 5 Open Source First-Person Shooter Video Games (Page 3)
+"Red Eclipse is a fairly textbook FPS -- weapons, enemies, fight! -- but its parkour-style physics allow players to perform unusual acrobatics and its mode/mutator system offers an unusually wide range of gameplay."
+> http://opensource.about.com/od/desktopapps/ss/5-Open-Source-First-Person-Shooter-Video-Games_3.htm
+
+
+= Honourable Re-mentions =
+
+Usually, this just means all they did was give a decent re-mention, usually release announcements.
+
+[2013-03-26] WEB UPD8 | Open Source FPS Game 'Red Eclipse' 1.4 Brings Graphical and Gameplay Enhancements
+"Red Eclipse is very fun to play with your friends or with the growing online community"
+> http://www.webupd8.org/2013/03/open-source-fps-game-red-eclipse-14.html
+
+[2013-01-10] Free Gamer | Red Eclipse, STK feature in Microsoft Promo
+> http://freegamer.blogspot.com.au/2013/01/red-eclipse-stk-feature-in-micrsoft.html
+
+Others
+
+> http://www.ubuntuvibes.com/2011/07/first-person-shooter-red-eclipse.html
+> http://www.phoronix.com/scan.php?page=news_item&px=OTcyOQ
+> http://www.phoronix.com/scan.php?page=news_item&px=MTAzODM
+> http://www.thegametalk.net/2012/10/open-source-games-red-eclipse.html
+
+
+= Misc Stuff =
+
+SourceForge.net Reviews
+> http://sourceforge.net/projects/redeclipse/reviews/
+
+Desura Reviews
+> http://www.desura.com/games/red-eclipse/reviews

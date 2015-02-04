@@ -1,0 +1,6 @@
+#include "winresrc.h"
+#define IDI_ICON1 1
+
+CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "dpiaware.manifest"
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+IDI_ICON1 ICON "redeclipse.ico"

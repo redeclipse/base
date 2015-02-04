@@ -1,0 +1,216 @@
+.TH @CAPPNAME@-SERVER 6 2012-09-11 "Red Eclipse 1.3" "Red Eclipse Manual"
+
+
+.SH NAME
+
+@APPNAME@-server \- script to launch the server for the Red Eclipse FPS game
+
+
+.SH SYNOPSIS
+
+.SY @APPNAME@-server
+'\"Filesystem options
+.OP \-h\fRhomedir
+.OP \-p\fRpackagedir
+.OP \-o\fRsauerdir
+.OP \-g\fRlogfile
+
+'\"Server configuration options
+.OP \-ss\fR{0..3}
+.OP \-sk\fRjoinpass
+.OP \-sP\fRadminpass
+.OP \-sl\fRdefaultmap
+.OP \-x\fR\(dqcommand(s)\(dq
+
+'\"Server connection options
+.OP \-si\fRserverip
+.OP \-sp\fRserverport
+.OP \-sm\fRservermaster
+.OP \-sa\fRservermasterport
+.OP \-su\fRserveruprate
+
+'\"Master server options
+.OP \-ms\fR{0|1}
+.OP \-mi\fRmasterip
+.OP \-mp\fRmasterport
+
+'\"general options
+.OP \-\-help
+.OP \-v\fR{0..4}
+
+
+.SH DESCRIPTION
+
+Red Eclipse is a single-player and multi-player first-person ego-shooter, built as a total conversion of Cube Engine 2, which lends itself toward a balanced gameplay, with a general theme of agility in a variety of environments.
+.PP
+.B @APPNAME@-server
+is a script which executes the
+.BR @APPNAME@-server
+binary from the
+.I @LIBEXECDIR@/@APPNAME@
+directory.
+.PP
+The recommended way to change the settings of the server is to create and edit the file servinit.cfg in your home directory. Examples are available in
+.IR @DOCDIR@/@APPNAME@/examples/
+
+
+.SH OPTIONS
+
+.SS Filesystem options
+
+.TP
+.BI \-h homedir
+Sets your home directory to
+.IR homedir .
+This is where servinit.cfg is read from, it defaults to
+.IR $HOME/.@APPNAME@/ .
+.TP
+
+.TP
+.BI \-p packagedir
+Includes the data files found in
+.IR packagedir .
+Can be used for adding additional maps that may be distributed to clients. By default @APPNAME@-server only includes data files in the working directory
+.I @DATADIR@/@APPNAME@/data
+and in the subdirecory
+.I temp
+of the home directory.
+
+.TP
+.BI \-o sauerdir
+Sets the path to your Sauerbraten directory. If the Red Eclipse server can find your Sauerbraten directory, it will be able to load and distribute maps from it.
+
+.TP
+.BI \-g logfile
+Output log to
+.IR logfile .
+Path is set relative to
+.IR homedir
+unless a leading \'\fB/\fR' is used, uses stdout if
+.B -g
+is given without a parameter. Defaults to stdout.
+
+.SS Server configuration options
+
+.TP
+.BR \-ss {0..3}
+Sets server type. 0 for local only, 1 for private, 2 for public, 3 for dedicated. Defaults to 1.
+
+.TP
+.BI \-sk joinpass
+Sets the join password to
+.IR joinpass .
+Users must know the password before they can connect.
+
+.TP
+.BI \-sP adminpass
+Sets the admin password to
+.IR adminpass .
+
+.TP
+.BI \-sc maxclients
+Sets the maximum number of clients to
+.IR maxclients .
+
+.TP
+.BI \-sl defaultmap
+Sets default map to
+.IR defaultmap .
+
+.TP
+.BI \-x "\(dqcommand 1; command 2; ...\(dq"
+.
+Executes a list of commands once the Red Eclipse server has started up.
+
+.SS Server connection options
+
+.TP
+.BI \-si serverip
+Binds the server to the host address
+.IR serverip .
+Only needed for machines with more than one interface.
+
+.TP
+.BI \-sp serverport
+sets the server port to
+.IR serverport .
+
+.TP
+.BI \-sm servermaster
+Uses
+.I servermaster
+as the master server, defaults to play.redeclipse.net.
+
+.TP
+.BI \-sa servermasterport
+Contacts the master server using port
+.IR servermasterport ,
+defaults to 28800.
+
+.TP
+.BI \-su serveruprate
+Caps upstream rate to
+.IR serveruprate .
+Once the cap is hit it will likely cause major connection glitching and disconnects. Use
+.I maxclients
+for bandwitch limiting instead.
+
+.SS Master server options
+
+.TP
+.BR \-ms {0|1}
+Enables the server to act as a master server, defaults to 0.
+
+.TP
+.BR \-mi masterip
+Binds the master server to the host address
+.IR masterip .
+Only needed for machines with more than one interface, defaults to
+.IR localhost .
+
+.TP
+.BR \-mp masterport
+Binds the master server to the host port
+.IR masterport ,
+defaults to 28800.
+
+.SS General options
+
+.TP
+.B \-\-help
+Display this manpage
+
+.TP
+.BR \-v {0..4}
+Sets verbosity. This affects how much information is printed to the console. 0 is the least verbose, 4 is the most verbose.
+
+
+.SH EXAMPLES
+
+.B @APPNAME@-server -p$HOME/mod/data -ss0 -slbath -sPpass
+.RS 4
+Loads data from an additional directory, sets the server type to local (LAN), sets the default map to "bath" and sets the admin password to "pass"
+.RE
+
+.B @APPNAME@-server -h$HOME/@APPNAME@-server_configs/
+.RS 4
+Reads and writes the configuration files to the specified directory instead of
+.IR $HOME/.@APPNAME@/ .
+.RE
+
+
+.SH AUTHORS
+
+Red Eclipse's main developers are Quinton "quin" Reeves and Lee "eihrul" Salzman
+.PP
+This manual page was written by Martin Erik Werner <martinerikwerner@gmail.com>
+
+
+.SH HISTORY
+
+Red Eclipse was forked as a continuation of the game Bloodfrontier, which in turn was based on the Cube2 engine and the Sauerbraten game. Red Eclipse and Sauerbraten are now developed in parallel.
+
+
+.SH "SEE ALSO"
+
+.BR @APPNAME@ (6)

@@ -1,0 +1,20 @@
+#!/bin/bash
+#
+# This script updates the comments of the sv_* variables in servexec.cfg
+#
+# It reads all sv_* variables in servexec.cfg and adds their comment, if
+# present in usage.cfg, to servexec.cfg, replacing the current one.
+#
+# Usage: update-servexec-comments /path/usage.cfg /path/servexec.cfg
+
+IFS=$'\n'
+for i in $(grep "// sv_" "$2")
+do
+    VAR=$(echo $i | sed -n -e 's%//\ sv_\([a-z0-9]*\) .*%\1%p' -e '/^$/d')
+    USAGE_DEF=$(grep "^setdesc \"$VAR\"" "$1")
+    DESC="$(format_desc "$USAGE_DEF")"
+    if [ -n "$DESC" ]
+    then
+        sed 's%^\(//\ sv_'"$VAR"' .*// \).*$%\1'"$DESC"'%' -i "$2"
+    fi
+done

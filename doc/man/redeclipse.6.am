@@ -1,0 +1,241 @@
+.TH @CAPPNAME@ 6 2012-09-11 "Red Eclipse 1.3" "Red Eclipse Manual"
+
+
+.SH NAME
+
+@APPNAME@ \- script to launch the Red Eclipse FPS game client
+
+
+.SH SYNOPSIS
+
+.SY @APPNAME@
+'\" Filesystem options
+.OP \-h\fRhomedir
+.OP \-p\fRpackagedir
+.OP \-o\fRsauerdir
+.OP \-g\fRlogfile
+
+'\" Video options
+.OP \-df\fR{0|1}
+.OP \-dw\fRwidth
+.OP \-dh\fRheight
+.OP \-du\fR{agf123}
+.OP \-dv\fR{0|1}
+.OP \-da\fRsamples
+.OP \-dc\fRdepth
+.OP \-dd\fRdepth
+.OP \-ds\fRbits
+
+'\" General options
+.OP \-x\fR'command(s)'
+.OP \-v\fR{0..4}
+.OP \-\-help
+
+'\" Server options
+.OP \-ss\fR{0..3}
+.OP \-sm\fRservermaster
+.OP \-sa\fRservermasterport
+
+
+.SH DESCRIPTION
+
+Red Eclipse is a single-player and multi-player first-person ego-shooter, built as a total conversion of Cube Engine 2, which lends itself toward a balanced gameplay, with a general theme of agility in a variety of environments.
+.PP
+.B @APPNAME@
+is a script which executes the
+.BR @APPNAME@
+binary from the
+.I @LIBEXECDIR@/@APPNAME@
+directory.
+.PP
+The recommended way to change the settings of the client are to edit the
+.I config.cfg
+and
+.I init.cfg
+files in the home directory.
+.PP
+The @APPNAME@ client starts a local loopback server upon launch which it uses to connect to for singleplayer, hence many of the server options are accepted by the @APPNAME@ binary as well (see
+.BR @APPNAME@-server (6)).
+To edit the specific settings related to the loopback server, use the
+.I localexec.cfg
+and
+.I localinit.cfg
+files in the home directory.
+
+
+.SH CAVEATS
+
+Many of these options will, if used, be permanently saved in the init.cfg file.
+
+
+.SH OPTIONS
+
+.SS Filesystem options
+
+.TP
+.BI \-h homedir
+Sets your home directory to
+.IR homedir .
+Red Eclipse will look for files in this directory in addition the normal installation directory. All user files will be written to the home directory. Defaults to
+.IR $HOME/.@APPNAME@/ .
+
+.TP
+.BI \-p packagedir
+Includes the data files found in
+.IR packagedir .
+Can be used for adding additional mods. Packages will be loaded in the order specified. By default @APPNAME@ only includes data files in its working directory
+.IR @DATADIR@/@APPNAME@/data/ ,
+and in the
+.I temp
+subdirectory of the home directory.
+
+.TP
+.BI \-o sauerdir
+Sets the path to your Sauerbraten directory. If Red Eclipse can find your Sauerbraten directory, you can load and play Sauerbraten maps from withing Red Eclipse.
+
+.TP
+.BI \-g logfile
+Output log to
+.IR logfile .
+Path is set relative to
+.IR homedir
+unless a leading \'\fB/\fR' is used, uses stdout if
+.B -g
+is given without a parameter. Defaults to
+.IR log.txt .
+
+.SS Video options
+
+.TP
+.BR \-df {0|1}
+Turns fullscreen mode on or off. 0 to disable, 1 to enable. Defaults to 1.
+.IP
+This configuration is stored in init.cfg
+
+.TP
+.BI \-dw width
+Sets screen width to
+.IR width .
+If height not specified, also sets height to 3/4 of width. min is 320.
+.IP
+This configuration is stored in init.cfg
+
+.TP
+.BI \-dh height
+Sets screen height to
+.IR height .
+If width not specified, also sets width to 4/3 of height. min is 320.
+.IP
+This configuration is stored in init.cfg
+
+.TP
+.BR \-du {agf123}
+Set shader and glsl options. \'\fBa\fR' enables shadows and forces glsl off, \'\fBg\fR' enables shadows and forces glsl on, \'\fBf\fR' or no parameters disables shadows, 1-3 sets shader quality. Multiple options can be combined.
+.IP
+This configuration is stored in init.cfg
+
+.TP
+.BR \-dv {0|1}
+Turns vertical sync on or off. 0 to disable, 1 to enable. Defaults to 0.
+.IP
+This configuration is stored in init.cfg
+
+.TP
+.BI \-da samples
+Sets full-scene anti-aliasing (FSAA) to
+.I samples
+samples.
+.IP
+This configuration is stored in init.cfg
+
+.TP
+.BI \-dc depth
+Sets colour depth (bits per pixel) to
+.IR depth .
+.IP
+This configuration is stored in init.cfg
+
+.TP
+.BI \-ds bits
+Sets stencil buffer bits to
+.IR bits .
+.IP
+This configuration is stored in init.cfg
+
+.TP
+.BI \-dd depth
+Sets z-buffer depth to
+.IR depth .
+.IP
+This configuration is stored in init.cfg
+
+.SS General options
+
+.TP
+.B \-x\fR'\fIcommand1\fR; \fIcommand2\fR; \fI...\fR'
+.
+Executes a list of commands once Red Eclipse has started up.
+
+.TP
+.BR \-v {0..4}
+Sets verbosity. This affects how much information is printed to the console. 0 is the least verbose, 4 is the most verbose, defaults to 0.
+.IP
+This configuration is stored in init.cfg
+
+.TP
+.B \-\-help
+Display this manpage
+
+.SS Server options
+
+.TP
+.BI \-ss {0..3}
+Sets the server type of the local server. 0 for local only, 1 for private, 2 for public, 3 for dedicated. Defaults to 1. If set as dedicated (3) @APPNAME@ will act similarly to @APPNAME@-server and not start the GUI.
+
+.TP
+.BI \-sm servermaster
+Connects to
+.I servermaster
+to get the list of available servers, defaults to play.redeclipse.net.
+
+.TP
+.BI \-sa servermasterport
+Contacts the master server using port
+.IR servermasterport ,
+defaults to 28800.
+
+
+.SH EXAMPLES
+
+.B @APPNAME@ -p$HOME/mod/data
+.RS 4
+Load data from an additional directory.
+.RE
+
+.B @APPNAME@ -h$HOME/@APPNAME@_configs/
+.RS 4
+Reads and writes the configuration files to the specified directory instead of
+.IR $HOME/.@APPNAME@/ .
+.RE
+
+.B @APPNAME@ -x'mode 7; trialweapon 0; map hinder'
+.RS 4
+Sets game mode to time trial, trialmode weapon to empty hands, and starts a game on the map "hinder".
+.RE
+
+
+.SH AUTHORS
+
+Red Eclipse's main developers are Quinton "quin" Reeves and Lee "eihrul" Salzman
+.PP
+This manual page was written by Martin Erik Werner <martinerikwerner@gmail.com>
+
+
+.SH HISTORY
+
+Red Eclipse was forked as a continuation of the game Bloodfrontier, which in turn was based on the Cube2 engine and the Sauerbraten game. Red Eclipse and Sauerbraten are now developed in parallel.
+
+
+.SH "SEE ALSO"
+
+.BR @APPNAME@-server (6).
