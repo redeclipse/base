@@ -19,5 +19,4 @@ out
 *.patch
 *.out
 .gitattributes
-data/
 home/
