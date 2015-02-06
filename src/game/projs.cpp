@@ -609,10 +609,10 @@ namespace projs
                     }
                     default: break;
                 }
-                if(ricochet)
+                if(ricochet && !proj.limited && !WK(proj.flags))
                 {
                     int mag = int(proj.vel.magnitude()), vol = int(ceilf(clamp(mag*2, 10, 255)*proj.curscale));
-                    if(vol) playsound(WSND2(proj.weap, WS(proj.flags), S_W_BOUNCE), proj.o, NULL, 0, vol);
+                    if(vol > 0) playsound(WSND2(proj.weap, WS(proj.flags), S_W_BOUNCE), proj.o, NULL, 0, vol);
                 }
                 break;
             }
@@ -1340,7 +1340,7 @@ namespace projs
             {
                 updatetaper(proj, proj.distance);
                 float trans = fadeweap(proj)*WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags));
-                if(!WK(proj.flags) && !proj.limited)// && proj.weap != W_MELEE)
+                if(!proj.limited && !WK(proj.flags))// && proj.weap != W_MELEE)
                 {
                     int vol = int(ceilf(255*proj.curscale));
                     if(W2(proj.weap, cooktime, WS(proj.flags))) switch(W2(proj.weap, cooked, WS(proj.flags)))
@@ -1706,10 +1706,10 @@ namespace projs
                     }
                     default: break;
                 }
-                if(!proj.limited && vol > 0)
+                if(vol > 0 && !proj.limited && !WK(proj.flags))
                 {
                     int slot = WX(WK(proj.flags), proj.weap, explode, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize) > 0 ? S_W_EXPLODE : S_W_DESTROY;
-                    if(vol) playsound(WSND2(proj.weap, WS(proj.flags), slot), proj.o, NULL, 0, vol);
+                    playsound(WSND2(proj.weap, WS(proj.flags), slot), proj.o, NULL, 0, vol);
                 }
                 if(proj.owner)
                 {
