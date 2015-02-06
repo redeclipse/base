@@ -6,7 +6,7 @@ APPSERVER=$(APPNAME)_server
 CXXFLAGS= -O3 -fomit-frame-pointer -ffast-math
 override CXXFLAGS+= -Wall -fsigned-char -fno-exceptions -fno-rtti
 
-PLATFORM= $(shell uname -s)
+PLATFORM= $(shell gcc -dumpmachine)
 PLATFORM_SUFFIX=_native
 PLATFORM_BIN=
 BIN_SUFFIX=
@@ -18,8 +18,8 @@ INSTDIR=../bin
 endif
 
 TOOLSET_PREFIX=
-ifneq (,$(findstring CROSS,$(PLATFORM)))
-ifneq (,$(findstring 64,$(PLATFORM)))
+ifneq (,$(findstring cross,$(PLATFORM)))
+ifneq (,$(findstring x86_64,$(PLATFORM)))
 TOOLSET_PREFIX=x86_64-w64-mingw32-
 else
 TOOLSET_PREFIX=i686-w64-mingw32-
@@ -45,13 +45,13 @@ MV=mv
 CP=cp
 MKDIR=mkdir -p
 
-ifneq (,$(findstring MINGW,$(PLATFORM)))
+ifneq (,$(findstring mingw,$(PLATFORM)))
 BIN_SUFFIX=.exe
 PLATFORM_SUFFIX=
 WINDRES=windres
 WINDRES_TEMP:=$(WINDRES)
 override WINDRES=$(TOOLSET_PREFIX)$(WINDRES_TEMP)
-ifneq (,$(findstring 64,$(PLATFORM)))
+ifneq (,$(findstring x86_64,$(PLATFORM)))
 WINLIB=lib/amd64
 WINBIN=../bin/amd64
 INSTDIR=../bin/amd64
@@ -71,10 +71,10 @@ else
 CLIENT_INCLUDES= $(INCLUDES) -I/usr/X11R6/include `sdl-config --cflags`
 CLIENT_LIBS= -Lenet -lenet -L/usr/X11R6/lib -lX11 `sdl-config --libs` -lSDL_image -lSDL_mixer -lz -lGL
 endif
-ifeq ($(PLATFORM),Linux)
+ifneq (,$(findstring linux,$(PLATFORM)))
 CLIENT_LIBS+= -lrt
 else
-ifneq (,$(findstring GNU,$(PLATFORM)))
+ifneq (,$(findstring gnu,$(PLATFORM)))
 CLIENT_LIBS+= -lrt
 endif
 endif
@@ -139,7 +139,7 @@ CLIENT_OBJS= \
 
 CLIENT_PCH= shared/cube.h.gch engine/engine.h.gch
 
-ifneq (,$(findstring MINGW,$(PLATFORM)))
+ifneq (,$(findstring mingw,$(PLATFORM)))
 SERVER_INCLUDES= -DSTANDALONE $(INCLUDES) -Iinclude
 SERVER_LIBS= -mwindows $(STD_LIBS) -L$(WINBIN) -L$(WINLIB) -lzlib1 -lenet -lws2_32 -lwinmm
 else
@@ -215,7 +215,7 @@ install-client: $(INSTDIR)/$(APPCLIENT)$(PLATFORM_SUFFIX)$(BIN_SUFFIX)
 
 install-server: $(INSTDIR)/$(APPSERVER)$(PLATFORM_SUFFIX)$(BIN_SUFFIX)
 
-ifeq (,$(findstring MINGW,$(PLATFORM)))
+ifeq (,$(findstring mingw,$(PLATFORM)))
 shared/cube2font.o: shared/cube2font.c
 	$(CXX) $(CXXFLAGS) -c -o $@ $< `freetype-config --cflags`
 
