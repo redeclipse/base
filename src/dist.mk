@@ -1,6 +1,6 @@
 appname=$(APPNAME)
-appnamefull=$(shell sed -n 's/versionname *"\([^"]*\)"/\1/p' ../data/config/version.cfg)
-appversion=$(shell sed -n 's/versionstring *"\([^"]*\)"/\1/p' ../data/config/version.cfg)
+appnamefull=$(shell sed -n 's/versionname *"\([^"]*\)"/\1/p' ../config/version.cfg)
+appversion=$(shell sed -n 's/versionstring *"\([^"]*\)"/\1/p' ../config/version.cfg)
 
 dirname=$(appname)-$(appversion)
 dirname-osx=$(appname).app
@@ -267,7 +267,7 @@ dist-clean: dist-mostlyclean
 
 cube2font-txt: ../doc/cube2font.txt
 
-../doc/examples/servinit.cfg: ../data/config/usage.cfg install-server
+../doc/examples/servinit.cfg: ../config/usage.cfg install-server
 	scripts/servinit-defaults $@
 	scripts/servinit-comments $< $@
 

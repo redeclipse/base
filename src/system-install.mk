@@ -1,5 +1,5 @@
 appname=$(APPNAME)
-appnamefull=$(shell sed -n 's/versionname *"\([^"]*\)"/\1/p' ../data/config/version.cfg)
+appnamefull=$(shell sed -n 's/versionname *"\([^"]*\)"/\1/p' ../config/version.cfg)
 appsrcname=$(APPNAME)
 cappname=$(shell echo $(appname) | tr '[:lower:]' '[:upper:]')# Captial appname
 appclient=$(APPCLIENT)
@@ -89,7 +89,7 @@ system-install-server: server
 	g,@APPNAME@,\
 	s,@APPNAME@,$(appname),g\n\
 	w\n" | ed -s $(gamesbindir)/$(appname)-server
-	install -m644 ../data/config/version.cfg \
+	install -m644 ../config/version.cfg \
 		$(datadir)/$(appname)/version.cfg
 	ln -s $(patsubst $(DESTDIR)%,%,$(datadir))/$(appname)/version.cfg \
 		$(libexecdir)/$(appname)/version.cfg
