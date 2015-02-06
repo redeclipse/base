@@ -19,7 +19,7 @@ endif
 
 TOOLSET_PREFIX=
 ifneq (,$(findstring cross,$(PLATFORM)))
-ifneq (,$(findstring x86_64,$(PLATFORM)))
+ifneq (,$(findstring 64,$(PLATFORM)))
 TOOLSET_PREFIX=x86_64-w64-mingw32-
 else
 TOOLSET_PREFIX=i686-w64-mingw32-
@@ -51,7 +51,7 @@ PLATFORM_SUFFIX=
 WINDRES=windres
 WINDRES_TEMP:=$(WINDRES)
 override WINDRES=$(TOOLSET_PREFIX)$(WINDRES_TEMP)
-ifneq (,$(findstring x86_64,$(PLATFORM)))
+ifneq (,$(findstring 64,$(PLATFORM)))
 WINLIB=lib/amd64
 WINBIN=../bin/amd64
 INSTDIR=../bin/amd64
