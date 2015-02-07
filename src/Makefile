@@ -7,14 +7,16 @@ CXXFLAGS= -O3 -fomit-frame-pointer -ffast-math
 override CXXFLAGS+= -Wall -fsigned-char -fno-exceptions -fno-rtti
 
 PLATFORM= $(shell gcc -dumpmachine)
-PLATFORM_SUFFIX=_native
 PLATFORM_BIN=
+PLATFORM_SUFFIX=
 BIN_SUFFIX=
 
 ifneq (,$(PLATFORM_BIN))
 INSTDIR=../bin/$(PLATFORM_BIN)
+PLATFORM_SUFFIX=
 else
 INSTDIR=../bin
+PLATFORM_SUFFIX=_native
 endif
 
 TOOLSET_PREFIX=
@@ -26,6 +28,7 @@ TOOLSET_PREFIX=i686-w64-mingw32-
 endif
 CXX=g++
 endif
+
 CXX_TEMP:=$(CXX)
 override CXX=$(TOOLSET_PREFIX)$(CXX_TEMP)
 
@@ -55,13 +58,11 @@ ifneq (,$(findstring 64,$(PLATFORM)))
 WINLIB=lib/amd64
 WINBIN=../bin/amd64
 INSTDIR=../bin/amd64
-override CXX+= -m64
 override WINDRES+= -F pe-x86-64
 else
 WINLIB=lib/x86
 WINBIN=../bin/x86
 INSTDIR=../bin/x86
-override CXX+= -m32
 override WINDRES+= -F pe-i386
 endif
 STD_LIBS= -static-libgcc -static-libstdc++
@@ -164,13 +165,16 @@ all:
 
 default: all
 
+clean-enet:
+	$(MAKE) -C enet clean
+
 clean-client:
 	@rm -fv $(CLIENT_PCH) $(CLIENT_OBJS) $(APPCLIENT)$(BIN_SUFFIX)
 
 clean-server:
 	@rm -fv $(SERVER_OBJS) $(APPSERVER)$(BIN_SUFFIX)
 
-clean: clean-client clean-server
+clean: clean-enet clean-client clean-server
 
 %.h.gch: %.h
 	$(CXX) $(CXXFLAGS) -x c++-header -o $(subst .h.gch,.tmp.h.gch,$@) $(subst .h.gch,.h,$@)

@@ -1,0 +1,14 @@
+language: cpp
+compiler: gcc
+notifications:
+    webhooks: http://n.tkte.ch/h/1241/m7wj02PQv7q_0tBBfUYlzTIS
+git:
+    submodules: false
+before_install:
+    - sudo apt-get update
+install:
+    - sudo apt-get -fy install build-essential libsdl1.2-dev libsdl-mixer1.2-dev libsdl-image1.2-dev binutils-mingw-w64 gcc-mingw-w64 g++-mingw-w64
+script:
+    - make PLATFORM=linux64 PLATFORM_BIN=amd64 -C src clean install
+    - make PLATFORM=crossmingw32 PLATFORM_BIN=x86 -C src clean install
+    - make PLATFORM=crossmingw64 PLATFORM_BIN=amd64 -C src clean install
