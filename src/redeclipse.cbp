@@ -21,9 +21,10 @@
 				<Option projectLibDirsRelation="1" />
 				<Compiler>
 					<Add option="-fomit-frame-pointer" />
-					<Add option="-ffast-math" />
 					<Add option="-O3" />
 					<Add option="-Wall" />
+					<Add option="-std=c++11" />
+					<Add option="-ffast-math" />
 					<Add option="-m32" />
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
@@ -112,6 +113,7 @@
 				<Option projectLibDirsRelation="1" />
 				<Compiler>
 					<Add option="-Wall" />
+					<Add option="-std=c++11" />
 					<Add option="-pg" />
 					<Add option="-m32" />
 					<Add option="-mwindows" />
@@ -124,6 +126,7 @@
 					<Add directory="include" />
 				</Compiler>
 				<Linker>
+					<Add option="-pg" />
 					<Add option="-pg -lgmon" />
 					<Add option="-m32" />
 					<Add option="-mwindows" />
@@ -156,9 +159,10 @@
 				<Option projectLibDirsRelation="1" />
 				<Compiler>
 					<Add option="-fomit-frame-pointer" />
-					<Add option="-ffast-math" />
 					<Add option="-O3" />
 					<Add option="-Wall" />
+					<Add option="-std=c++11" />
+					<Add option="-ffast-math" />
 					<Add option="-m32" />
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
@@ -200,6 +204,7 @@
 				<Option projectLibDirsRelation="1" />
 				<Compiler>
 					<Add option="-Wall" />
+					<Add option="-std=c++11" />
 					<Add option="-g" />
 					<Add option="-m32" />
 					<Add option="-mwindows" />
@@ -240,9 +245,10 @@
 				<Option projectLibDirsRelation="1" />
 				<Compiler>
 					<Add option="-fomit-frame-pointer" />
-					<Add option="-ffast-math" />
 					<Add option="-O3" />
 					<Add option="-Wall" />
+					<Add option="-std=c++11" />
+					<Add option="-ffast-math" />
 					<Add option="-m64" />
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
@@ -288,6 +294,7 @@
 				<Option projectLibDirsRelation="1" />
 				<Compiler>
 					<Add option="-Wall" />
+					<Add option="-std=c++11" />
 					<Add option="-g" />
 					<Add option="-m64" />
 					<Add option="-mwindows" />
@@ -331,6 +338,7 @@
 				<Option projectLibDirsRelation="1" />
 				<Compiler>
 					<Add option="-Wall" />
+					<Add option="-std=c++11" />
 					<Add option="-pg" />
 					<Add option="-m64" />
 					<Add option="-mwindows" />
@@ -343,6 +351,7 @@
 					<Add directory="include" />
 				</Compiler>
 				<Linker>
+					<Add option="-pg" />
 					<Add option="-pg -lgmon" />
 					<Add option="-m64" />
 					<Add option="-mwindows" />
@@ -375,9 +384,10 @@
 				<Option projectLibDirsRelation="1" />
 				<Compiler>
 					<Add option="-fomit-frame-pointer" />
-					<Add option="-ffast-math" />
 					<Add option="-O3" />
 					<Add option="-Wall" />
+					<Add option="-std=c++0x" />
+					<Add option="-ffast-math" />
 					<Add option="-m64" />
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
@@ -419,6 +429,7 @@
 				<Option projectLibDirsRelation="1" />
 				<Compiler>
 					<Add option="-Wall" />
+					<Add option="-std=c++0x" />
 					<Add option="-g" />
 					<Add option="-m64" />
 					<Add option="-mwindows" />
@@ -459,9 +470,10 @@
 				<Option projectLibDirsRelation="1" />
 				<Compiler>
 					<Add option="-fomit-frame-pointer" />
-					<Add option="-ffast-math" />
 					<Add option="-O3" />
 					<Add option="-Wall" />
+					<Add option="-std=c++11" />
+					<Add option="-ffast-math" />
 					<Add option="-fsigned-char" />
 					<Add option="-fno-exceptions" />
 					<Add option="-fno-rtti" />
@@ -501,9 +513,10 @@
 				<Option projectLibDirsRelation="1" />
 				<Compiler>
 					<Add option="-fomit-frame-pointer" />
-					<Add option="-ffast-math" />
 					<Add option="-O3" />
 					<Add option="-Wall" />
+					<Add option="-std=c++11" />
+					<Add option="-ffast-math" />
 					<Add option="-fsigned-char" />
 					<Add option="-fno-exceptions" />
 					<Add option="-mwindows" />
