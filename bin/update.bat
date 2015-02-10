@@ -20,7 +20,7 @@ if NOT EXIST bin\tools\unzip.exe (
 )
 if NOT EXIST cache mkdir cache
 if EXIST cache\version.txt del /f /q cache\version.txt
-if EXIST cache\current.txt set /p REDECLIPSE_VERSION=< cache\current.txt
+if EXIST cache\%REDECLIPSE_BRANCH%.txt set /p REDECLIPSE_VERSION=< cache\%REDECLIPSE_BRANCH%.txt
 if "%REDECLIPSE_VERSION%" == "" set REDECLIPSE_VERSION=0
 set REDECLIPSE_VERSION=%REDECLIPSE_VERSION:~0,12%
 echo.
@@ -52,7 +52,7 @@ if NOT EXIST cache\windows.zip (
 )
 bin\tools\unzip.exe -o cache/windows.zip
 echo.
-echo %REDECLIPSE_RETURN% > cache\current.txt
+echo %REDECLIPSE_RETURN% > cache\%REDECLIPSE_BRANCH%.txt
 :good
 echo Everything is up to date!
 :after
