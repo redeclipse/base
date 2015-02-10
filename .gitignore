@@ -30,3 +30,5 @@ home/
 src/redeclipse.layout
 src/redeclipse.depend
 src/redeclipse.res
+cache/*
+version.txt
