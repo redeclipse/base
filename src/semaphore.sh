@@ -9,7 +9,7 @@ case $1 in
     build)
         sudo apt-get update
         sudo apt-get -fy install build-essential zlib1g-dev libsdl-mixer1.2-dev libsdl-image1.2-dev
-        make PLATFORM=linux64 PLATFORM_BIN=amd64 INSTDIR=linux/bin/amd64 CFLAGS=-m64 CXXFLAGS=-m64 LDFLAGS=-m64 -C src clean install || exit 1
+        make PLATFORM=linux64 PLATFORM_BIN=amd64 INSTDIR=${HOME}/build/${BRANCH_NAME}/linux/bin/amd64 CFLAGS=-m64 CXXFLAGS=-m64 LDFLAGS=-m64 -C src clean install || exit 1
         if [ "${BRANCH_NAME}" = "master" ]; then
             sudo apt-get -fy install binutils-mingw-w64 g++-mingw-w64
             make PLATFORM=crossmingw64 PLATFORM_BIN=amd64 INSTDIR=${HOME}/build/${BRANCH_NAME}/windows/bin/amd64 CFLAGS=-m64 CXXFLAGS=-m64 LDFLAGS=-m64 -C src clean install || exit 1
