@@ -13,7 +13,9 @@ BIN_SUFFIX=
 
 ifneq (,$(PLATFORM_BIN))
 INSTDIR=../bin/$(PLATFORM_BIN)
-PLATFORM_SUFFIX=
+ifneq (,$(findstring linux,$(PLATFORM)))
+PLATFORM_SUFFIX=_linux
+endif
 else
 INSTDIR=../bin
 PLATFORM_SUFFIX=_native
