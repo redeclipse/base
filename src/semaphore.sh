@@ -1,14 +1,19 @@
 #/bin/sh
+
+CURRENT_COMMIT=`git rev-parse HEAD`
 if [ "${BRANCH_NAME}" = "master" ]; then
-    DEPLOY_COMMIT=`curl http://redeclipse.net/files/devel/commit.txt`
+    DEPLOY_COMMIT=`curl --fail --silent http://redeclipse.net/files/devel/commit.txt`
     if [ -n "${DEPLOY_COMMIT}" ]; then
         DEPLOY_SRCFILES=`git diff --name-only HEAD ${DEPLOY_COMMIT} -- src`
         if [ -z "${DEPLOY_SRCFILES}" ]; then
             echo "No source files modified, skipping..."
             exit 0
+        else
+            echo "Source files modified, proceeding with build..."
         fi
     fi
 fi
+
 case $1 in
     setup)
         mkdir -pv ${SEMAPHORE_CACHE_DIR}/apt/archives/partial
@@ -42,7 +47,7 @@ case $1 in
             tar -jcvf ../linux.tar.bz2 .
             popd
             date +%Y%m%d%H%M%S > version.txt
-            git rev-parse HEAD > commit.txt
+            echo "${CURRENT_COMMIT}" > commit.txt
             scp -BC -i ${HOME}/.ssh/public_rsa -o StrictHostKeyChecking=no windows.zip qreeves@icculus.org:/webspace/redeclipse.net/files/devel/windows.zip
             scp -BC -i ${HOME}/.ssh/public_rsa -o StrictHostKeyChecking=no linux.tar.bz2 qreeves@icculus.org:/webspace/redeclipse.net/files/devel/linux.tar.bz2
             scp -BC -i ${HOME}/.ssh/public_rsa -o StrictHostKeyChecking=no version.txt qreeves@icculus.org:/webspace/redeclipse.net/files/devel/version.txt

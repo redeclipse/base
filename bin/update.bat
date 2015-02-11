@@ -11,8 +11,7 @@ if "%REDECLIPSE_BRANCH%" == "" (
     if EXIST .git set REDECLIPSE_BRANCH=devel
 )
 if "%REDECLIPSE_BRANCH%" == "stable" (
-    set REDECLIPSE_STABLE=< bin\version.txt
-    set REDECLIPSE_STABLE=%REDECLIPSE_STABLE:~0,5%
+    set /p REDECLIPSE_STABLE=< bin\version.txt
     set REDECLIPSE_UPDATE=%REDECLIPSE_BRANCH%/%REDECLIPSE_STABLE%
 ) else (
     set REDECLIPSE_UPDATE=%REDECLIPSE_BRANCH%
@@ -29,15 +28,14 @@ if NOT EXIST bin\tools\unzip.exe (
     goto after
 )
 if NOT EXIST "%REDECLIPSE_TMP%" mkdir "%REDECLIPSE_TMP%"
-echo Querying version from: %REDECLIPSE_TMP%\version.txt
-if EXIST "%REDECLIPSE_TMP%\version.txt" del /f /q "%REDECLIPSE_TMP%\version.txt"
+echo Querying version from: %REDECLIPSE_TMP%\branch.txt
 if EXIST "%REDECLIPSE_TMP%\branch.txt" set /p REDECLIPSE_VERSION=< "%REDECLIPSE_TMP%\branch.txt"
 if "%REDECLIPSE_VERSION%" == "" set REDECLIPSE_VERSION=0
-set REDECLIPSE_VERSION=%REDECLIPSE_VERSION:~0,12%
 echo.
 echo Current version: %REDECLIPSE_BRANCH% %REDECLIPSE_VERSION%
 echo Fetching version information from: %REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/version.txt
 echo.
+if EXIST "%REDECLIPSE_TMP%\version.txt" del /f /q "%REDECLIPSE_TMP%\version.txt"
 bin\tools\wget.exe --tries=3 --user-agent="redeclipse-%REDECLIPSE_UPDATE%" --output-document="%REDECLIPSE_TMP%/version.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/version.txt" > nul 2>&1
 if NOT EXIST "%REDECLIPSE_TMP%\version.txt" (
     echo Failed to retrieve version update information. Trying to run anyway...
@@ -45,16 +43,16 @@ if NOT EXIST "%REDECLIPSE_TMP%\version.txt" (
     goto after
 )
 set /p REDECLIPSE_RETURN=< "%REDECLIPSE_TMP%\version.txt"
-set REDECLIPSE_RETURN=%REDECLIPSE_RETURN:~0,12%
 if "%REDECLIPSE_RETURN%" == "" (
     echo Failed to retrieve version update information. Trying to run anyway..
     echo.
     goto after
 )
-if "%REDECLIPSE_RETURN%" LEQ "%REDECLIPSE_VERSION%" goto good
+if %REDECLIPSE_RETURN% LEQ %REDECLIPSE_VERSION% goto good
 echo Updated version: %REDECLIPSE_BRANCH% %REDECLIPSE_RETURN%
 echo Downloading update from: %REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/windows.zip
 echo.
+if EXIST "%REDECLIPSE_TMP%\windows.zip" del /f /q "%REDECLIPSE_TMP%\windows.zip"
 bin\tools\wget.exe --tries=3 --user-agent="redeclipse-%REDECLIPSE_UPDATE%" --output-document="%REDECLIPSE_TMP%/windows.zip" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/windows.zip"
 if NOT EXIST "%REDECLIPSE_TMP%\windows.zip" (
     echo Failed to retrieve version update package. Trying to run anyway...
@@ -75,6 +73,7 @@ if NOT EXIST bin\tools\elevate.exe (
     goto after
 )
 bin\tools\elevate.exe -wait "%REDECLIPSE_PATH%\bin\tools\unzip.exe" -o """%REDECLIPSE_TMP%\windows.zip""" -d """%REDECLIPSE_PATH%"""
+echo %REDECLIPSE_RETURN% > "%REDECLIPSE_TMP%\branch.txt"
 goto good
 :unpack
 echo.
