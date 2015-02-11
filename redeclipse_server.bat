@@ -2,6 +2,7 @@
 setlocal ENABLEEXTENSIONS
 if "%REDECLIPSE_PATH%" == "" set REDECLIPSE_PATH=%~dp0
 pushd %REDECLIPSE_PATH%
+set REDECLIPSE_PATH=%CD%
 
 if "%REDECLIPSE_OPTIONS%" == "" set REDECLIPSE_OPTIONS=
 if "%REDECLIPSE_ARCH%" == "" (
@@ -12,12 +13,12 @@ if "%REDECLIPSE_BRANCH%" == "" (
     set REDECLIPSE_BRANCH=stable
     if EXIST .git set REDECLIPSE_BRANCH=devel
 )
-if NOT "%REDECLIPSE_BRANCH%" == "stable" if "%REDECLIPSE_HOME%" == "" set REDECLIPSE_HOME=home
 if NOT "%REDECLIPSE_BRANCH%" == "source" if NOT "%REDECLIPSE_NOUPDATE%" == "1" (
     echo.
     echo Checking for updates. To disable: set REDECLIPSE_NOUPDATE=1
     call bin\update.bat
 )
+if NOT "%REDECLIPSE_BRANCH%" == "stable" if "%REDECLIPSE_HOME%" == "" set REDECLIPSE_HOME=home
 if NOT "%REDECLIPSE_HOME%" == "" set REDECLIPSE_OPTIONS=-h%REDECLIPSE_HOME% %REDECLIPSE_OPTIONS%
 :runit
 if EXIST bin\%REDECLIPSE_ARCH%\redeclipse_server.exe (
