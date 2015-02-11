@@ -4,7 +4,7 @@ if "%REDECLIPSE_PATH%" == "" set REDECLIPSE_PATH=%~dp0\..
 pushd %REDECLIPSE_PATH%
 set REDECLIPSE_PATH=%CD%
 
-if "%REDECLIPSE_CACHE%" == "" set REDECLIPSE_CACHE=%LOCALAPPDATA%\Red Eclipse
+if "%REDECLIPSE_CACHE%" == "" set REDECLIPSE_CACHE=cache
 if "%REDECLIPSE_SOURCE%" == "" set REDECLIPSE_SOURCE=http://redeclipse.net/files
 if "%REDECLIPSE_BRANCH%" == "" (
     set REDECLIPSE_BRANCH=stable
