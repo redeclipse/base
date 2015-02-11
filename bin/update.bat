@@ -11,7 +11,7 @@ if "%REDECLIPSE_BRANCH%" == "" (
     if EXIST .git set REDECLIPSE_BRANCH=devel
 )
 if "%REDECLIPSE_BRANCH%" == "stable" (
-    set REDECLIPSE_STABLE=< config\version.txt
+    set REDECLIPSE_STABLE=< bin\version.txt
     set REDECLIPSE_STABLE=%REDECLIPSE_STABLE:~0,5%
     set REDECLIPSE_UPDATE=%REDECLIPSE_BRANCH%/%REDECLIPSE_STABLE%
 ) else (
@@ -38,7 +38,7 @@ echo.
 echo Current version: %REDECLIPSE_BRANCH% %REDECLIPSE_VERSION%
 echo Fetching version information from: %REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/version.txt
 echo.
-bin\tools\wget.exe --tries=3 --output-document="%REDECLIPSE_TMP%/version.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/version.txt" > nul 2>&1
+bin\tools\wget.exe --tries=3 --user-agent="redeclipse-%REDECLIPSE_UPDATE%" --output-document="%REDECLIPSE_TMP%/version.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/version.txt" > nul 2>&1
 if NOT EXIST "%REDECLIPSE_TMP%\version.txt" (
     echo Failed to retrieve version update information. Trying to run anyway...
     echo.
@@ -55,7 +55,7 @@ if "%REDECLIPSE_RETURN%" LEQ "%REDECLIPSE_VERSION%" goto good
 echo Updated version: %REDECLIPSE_BRANCH% %REDECLIPSE_RETURN%
 echo Downloading update from: %REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/windows.zip
 echo.
-bin\tools\wget.exe --tries=3 --output-document="%REDECLIPSE_TMP%/windows.zip" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/windows.zip"
+bin\tools\wget.exe --tries=3 --user-agent="redeclipse-%REDECLIPSE_UPDATE%" --output-document="%REDECLIPSE_TMP%/windows.zip" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/windows.zip"
 if NOT EXIST "%REDECLIPSE_TMP%\windows.zip" (
     echo Failed to retrieve version update package. Trying to run anyway...
     echo.
