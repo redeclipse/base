@@ -3130,8 +3130,7 @@ namespace server
         ident *id = idents.access(cmdname);
         if(id && id->flags&IDF_SERVER)
         {
-            const char *name = &id->name[3], *val = NULL, *oldval = NULL;
-            bool needfreeoldval = false;
+            const char *name = &id->name[3], *val = NULL;
             int locked = max(id->flags&IDF_ADMIN ? PRIV_ADMINISTRATOR : 0, G(varslock));
             #ifndef STANDALONE
             if(servertype < 3 && (!strcmp(id->name, "sv_gamespeed") || !strcmp(id->name, "sv_gamepaused"))) locked = PRIV_ADMINISTRATOR;
@@ -3188,7 +3187,6 @@ namespace server
                         return;
                     }
                     checkvar(id, arg);
-                    oldval = intstr(id);
                     *id->storage.i = ret;
                     id->changed();
                     val = intstr(id);
@@ -3219,7 +3217,6 @@ namespace server
                         return;
                     }
                     checkvar(id, arg);
-                    oldval = floatstr(*id->storage.f);
                     *id->storage.f = ret;
                     id->changed();
                     val = floatstr(*id->storage.f);
@@ -3244,8 +3241,6 @@ namespace server
                         return;
                     }
                     checkvar(id, arg);
-                    oldval = newstring(*id->storage.s);
-                    needfreeoldval = true;
                     delete[] *id->storage.s;
                     *id->storage.s = newstring(arg);
                     id->changed();
@@ -3257,16 +3252,7 @@ namespace server
             if(val)
             {
                 sendf(-1, 1, "ri2sis", N_COMMAND, ci->clientnum, name, strlen(val), val);
-                if(oldval)
-                {
-                  relayf(3, "\fy%s set %s to %s (was: %s)", colourname(ci), name, val, oldval);
-                  if(needfreeoldval)
-                    delete[] oldval;
-                }
-                else
-                {
-                  relayf(3, "\fy%s set %s to %s", colourname(ci), name, val);
-                }
+                relayf(3, "\fy%s set %s to %s", colourname(ci), name, val);
             }
         }
         else srvmsgf(ci->clientnum, "\frunknown command: %s", cmd);
