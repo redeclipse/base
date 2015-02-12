@@ -4,7 +4,19 @@ if "%REDECLIPSE_PATH%" == "" set REDECLIPSE_PATH=%~dp0\..
 pushd %REDECLIPSE_PATH%
 set REDECLIPSE_PATH=%CD%
 
-if "%REDECLIPSE_CACHE%" == "" set REDECLIPSE_CACHE=%LOCALAPPDATA%\Red Eclipse
+if EXIST "%HOMEDRIVE%%HOMEPATH%\Documents\" (
+	set REDECLIPSE_CACHE=%HOMEDRIVE%%HOMEPATH%\Documents\My Games\Red Eclipse\cache
+	echo Documents found. Caching data to My Games\Red Eclipse\cache
+
+) else if EXIST "%HOMEDRIVE%%HOMEPATH%\My Documents\" (
+	set REDECLIPSE_CACHE=%HOMEDRIVE%%HOMEPATH%\My Documents\My Games\Red Eclipse\cache
+	echo Documents not found, but My Documents found.
+) else (
+	echo My Documents and Documents not found. Attempting to cache to Red Eclipse folder.
+	set REDECLIPSE_CACHE=cache
+)
+
+if "%REDECLIPSE_CACHE%" == "" set REDECLIPSE_CACHE=cache
 if "%REDECLIPSE_SOURCE%" == "" set REDECLIPSE_SOURCE=http://redeclipse.net/files
 if "%REDECLIPSE_BRANCH%" == "" (
     set REDECLIPSE_BRANCH=stable
@@ -68,9 +80,9 @@ for /f "USEBACKQ tokens=2 delims=:" %%F IN (`cacls "%REDECLIPSE_PATH%" ^| find "
 echo Administrator permissions are required to deploy the files.
 echo.
 if NOT EXIST bin\tools\elevate.exe (
-    echo Unable to find elevate.exe, are you sure it is in bin/tools? Trying to run anyway...
+    echo Unable to find elevate.exe, are you sure it is in bin/tools? Attempting deployment anyway...
     echo.
-    goto after
+    goto unpack
 )
 bin\tools\elevate.exe -wait "%REDECLIPSE_PATH%\bin\tools\unzip.exe" -o """%REDECLIPSE_TMP%\windows.zip""" -d """%REDECLIPSE_PATH%"""
 echo %REDECLIPSE_RETURN% > "%REDECLIPSE_TMP%\branch.txt"
@@ -82,5 +94,7 @@ echo %REDECLIPSE_RETURN% > "%REDECLIPSE_TMP%\branch.txt"
 :good
 echo Everything is up to date!
 :after
+echo.
+echo Update process finished.
 popd
 endlocal
