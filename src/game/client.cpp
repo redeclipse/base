@@ -1119,7 +1119,7 @@ namespace client
             {
               if(oldval)
               {
-                conoutft(CON_EVENT, "\fy%s set \fs\fc%s\fS to \fs\fc%s\fS (was: \fc%s)", d ? game::colourname(d) : (connected(false) ? "the server" : "you"), cmd, val, oldval);
+                conoutft(CON_EVENT, "\fy%s set \fs\fc%s\fS to \fs\fc%s\fS (was: \fs\fc%s\fS)", d ? game::colourname(d) : (connected(false) ? "the server" : "you"), cmd, val, oldval);
                 if(needfreeoldval)
                   delete[] oldval;
               }
