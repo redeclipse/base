@@ -1,10 +1,10 @@
 @ECHO OFF
 setlocal ENABLEEXTENSIONS
-if "%REDECLIPSE_PATH%" == "" set REDECLIPSE_PATH=%~dp0\..
+if NOT DEFINED REDECLIPSE_PATH set REDECLIPSE_PATH=%~dp0\..
 pushd %REDECLIPSE_PATH%
 set REDECLIPSE_PATH=%CD%
 
-if "%REDECLIPSE_CACHE%" == "" (
+if NOT DEFINED REDECLIPSE_CACHE (
     if NOT "%REDECLIPSE_HOME%" == "" (
         set REDECLIPSE_CACHE=%REDECLIPSE_HOME%\cache
     ) else if EXIST "%HOMEDRIVE%%HOMEPATH%\Documents\" (
@@ -17,8 +17,8 @@ if "%REDECLIPSE_CACHE%" == "" (
     )
 )
 echo Cache: %REDECLIPSE_CACHE%
-if "%REDECLIPSE_SOURCE%" == "" set REDECLIPSE_SOURCE=http://redeclipse.net/files
-if "%REDECLIPSE_BRANCH%" == "" (
+if NOT DEFINED REDECLIPSE_SOURCE set REDECLIPSE_SOURCE=http://redeclipse.net/files
+if NOT DEFINED REDECLIPSE_BRANCH (
     set REDECLIPSE_BRANCH=stable
     if EXIST .git set REDECLIPSE_BRANCH=devel
 )
