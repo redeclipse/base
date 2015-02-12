@@ -13,18 +13,23 @@ if "%REDECLIPSE_BRANCH%" == "" (
     set REDECLIPSE_BRANCH=stable
     if EXIST .git set REDECLIPSE_BRANCH=devel
 )
+if NOT "%REDECLIPSE_BRANCH%" == "stable" if "%REDECLIPSE_HOME%" == "" set REDECLIPSE_HOME=home
 if NOT "%REDECLIPSE_BRANCH%" == "source" if NOT "%REDECLIPSE_NOUPDATE%" == "1" (
     echo.
     echo Checking for updates. To disable: set REDECLIPSE_NOUPDATE=1
     call bin\update.bat
 )
-if NOT "%REDECLIPSE_BRANCH%" == "stable" if "%REDECLIPSE_HOME%" == "" set REDECLIPSE_HOME=home
 if NOT "%REDECLIPSE_HOME%" == "" set REDECLIPSE_OPTIONS=-h%REDECLIPSE_HOME% %REDECLIPSE_OPTIONS%
 :runit
 if EXIST bin\%REDECLIPSE_ARCH%\redeclipse_server.exe (
     start bin\%REDECLIPSE_ARCH%\redeclipse_server.exe %REDECLIPSE_OPTIONS% %*
     goto end
 ) else (
+    if NOT "%REDECLIPSE_TRYUPDATE%" == "1" (
+        set REDECLIPSE_TRYUPDATE=1
+        call bin\update.bat
+        goto runit
+    )
     if NOT "%REDECLIPSE_ARCH%" == "x86" (
         set REDECLIPSE_ARCH=x86
         goto runit
