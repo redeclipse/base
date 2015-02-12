@@ -1,7 +1,9 @@
 #/bin/sh
 
 # check
+git submodule init
 CURRENT_COMMIT=`git rev-parse HEAD`
+DATA_COMMIT=`git submodule status data | cut -d" " -f2`
 if [ "${BRANCH_NAME}" = "master" ]; then
     DEPLOY_COMMIT=`curl --fail --silent http://redeclipse.net/files/devel/commit.txt`
     if [ -n "${DEPLOY_COMMIT}" ]; then
@@ -11,6 +13,7 @@ if [ "${BRANCH_NAME}" = "master" ]; then
             exit 0
         else
             echo "Source files modified, proceeding with build..."
+            echo ""
         fi
     fi
 fi
@@ -49,9 +52,11 @@ if [ "${BRANCH_NAME}" = "master" ]; then
     popd
     date +%Y%m%d%H%M%S > version.txt
     echo "${CURRENT_COMMIT}" > commit.txt
+    echo "${DATA_COMMIT}" > data.txt
     scp -BC -i ${HOME}/.ssh/public_rsa -o StrictHostKeyChecking=no windows.zip qreeves@icculus.org:/webspace/redeclipse.net/files/devel/windows.zip
     scp -BC -i ${HOME}/.ssh/public_rsa -o StrictHostKeyChecking=no linux.tar.bz2 qreeves@icculus.org:/webspace/redeclipse.net/files/devel/linux.tar.bz2
     scp -BC -i ${HOME}/.ssh/public_rsa -o StrictHostKeyChecking=no version.txt qreeves@icculus.org:/webspace/redeclipse.net/files/devel/version.txt
     scp -BC -i ${HOME}/.ssh/public_rsa -o StrictHostKeyChecking=no commit.txt qreeves@icculus.org:/webspace/redeclipse.net/files/devel/commit.txt
+    scp -BC -i ${HOME}/.ssh/public_rsa -o StrictHostKeyChecking=no commit.txt qreeves@icculus.org:/webspace/redeclipse.net/files/devel/data.txt
     popd
 fi
