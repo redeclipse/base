@@ -25,7 +25,11 @@ if EXIST bin\%REDECLIPSE_ARCH%\redeclipse.exe (
     start bin\%REDECLIPSE_ARCH%\redeclipse.exe %REDECLIPSE_OPTIONS% %*
     goto end
 ) else (
-    if NOT "%REDECLIPSE_TRYUPDATE%" == "1" (
+    if "%REDECLIPSE_BRANCH%" == "source" (
+        mingw32-make -C src client install-client && goto runit
+        set REDECLIPSE_BRANCH=devel
+    )
+    if NOT "%REDECLIPSE_NOUPDATE%" == "1" if NOT "%REDECLIPSE_TRYUPDATE%" == "1" (
         set REDECLIPSE_TRYUPDATE=1
         call bin\update.bat
         goto runit
