@@ -18,6 +18,7 @@ if NOT "%REDECLIPSE_BRANCH%" == "stable" if NOT DEFINED REDECLIPSE_HOME set REDE
 if NOT "%REDECLIPSE_BRANCH%" == "source" if NOT "%REDECLIPSE_NOUPDATE%" == "1" (
     echo.
     echo Checking for updates. To disable: set REDECLIPSE_NOUPDATE=1
+    echo.
     call bin\update.bat
 )
 if DEFINED REDECLIPSE_HOME set REDECLIPSE_OPTIONS=-h"%REDECLIPSE_HOME%" %REDECLIPSE_OPTIONS%

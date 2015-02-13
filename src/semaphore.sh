@@ -3,8 +3,8 @@
 # check
 BASE_COMMIT=`git rev-parse HEAD`
 
-git submodule init data
-git submodule update data
+git submodule init data || exit 1
+git submodule update data || exit 1
 pushd data
 DATA_COMMIT=`git rev-parse HEAD`
 popd
@@ -54,17 +54,13 @@ if [ "${BRANCH_NAME}" = "master" ]; then
     sudo ${CMD_APT} -fy autoremove
     sudo ${CMD_APT} -fy install build-essential multiarch-support g++-multilib zlib1g-dev:i386 libsdl1.2-dev:i386 libsdl-mixer1.2-dev:i386 libsdl-image1.2-dev:i386 libpng-dev:i386
     make PLATFORM=linux32 PLATFORM_BIN=x86 INSTDIR=${HOME}/build/${BRANCH_NAME}/linux/bin/x86 CFLAGS=-m32 CXXFLAGS=-m32 LDFLAGS=-m32 -C src clean install || exit 1
-fi
-
-#deploy
-if [ "${BRANCH_NAME}" = "master" ] && [ -n "${DEPLOY_COMMIT}" ]; then
-    pushd ${HOME}/build/${BRANCH_NAME} || exit 1
+    pushd ${HOME}/build/${BRANCH_NAME}
     rm -fv version.txt windows.zip linux.tar.bz2
-    pushd windows || exit 1
-    zip -r ../windows.zip .
+    pushd windows
+    zip -r ../windows.zip . || exit 1
     popd
-    pushd linux || exit 1
-    tar -jcvf ../linux.tar.bz2 .
+    pushd linux
+    tar -jcvf ../linux.tar.bz2 . || exit 1
     popd
     date +%Y%m%d%H%M%S > version.txt
     echo "${BASE_COMMIT}" > base.txt
