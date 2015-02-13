@@ -1,9 +1,14 @@
 #/bin/sh
 
 # check
-git submodule init
 CURRENT_COMMIT=`git rev-parse HEAD`
-pushd data && DATA_COMMIT=`git rev-parse HEAD` && popd
+
+git submodule init data
+git submodule update data
+pushd data
+DATA_COMMIT=`git rev-parse HEAD`
+popd
+
 if [ "${BRANCH_NAME}" = "master" ]; then
     DEPLOY_COMMIT=`curl --fail --silent http://redeclipse.net/files/devel/commit.txt`
     if [ -n "${DEPLOY_COMMIT}" ]; then
@@ -52,7 +57,7 @@ if [ "${BRANCH_NAME}" = "master" ]; then
 fi
 
 #deploy
-if [ "${BRANCH_NAME}" = "master" ]; then
+if [ "${BRANCH_NAME}" = "master" ] && [ -n "${DEPLOY_COMMIT}" ]; then
     pushd ${HOME}/build/${BRANCH_NAME} || exit 1
     rm -fv version.txt windows.zip linux.tar.bz2
     pushd windows || exit 1
