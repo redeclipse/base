@@ -1,6 +1,7 @@
 @ECHO OFF
 setlocal ENABLEEXTENSIONS
 if NOT DEFINED REDECLIPSE_PATH set REDECLIPSE_PATH=%~dp0
+if NOT DEFINED REDECLIPSE_BINARY set REDECLIPSE_BINARY=redeclipse
 pushd %REDECLIPSE_PATH%
 set REDECLIPSE_PATH=%CD%
 
@@ -19,14 +20,14 @@ if NOT "%REDECLIPSE_BRANCH%" == "source" if NOT "%REDECLIPSE_NOUPDATE%" == "1" (
     echo Checking for updates. To disable: set REDECLIPSE_NOUPDATE=1
     call bin\update.bat
 )
-if NOT "%REDECLIPSE_HOME%" == "" set REDECLIPSE_OPTIONS=-h%REDECLIPSE_HOME% %REDECLIPSE_OPTIONS%
+if DEFINED REDECLIPSE_HOME set REDECLIPSE_OPTIONS=-h"%REDECLIPSE_HOME%" %REDECLIPSE_OPTIONS%
 :runit
-if EXIST bin\%REDECLIPSE_ARCH%\redeclipse.exe (
-    start bin\%REDECLIPSE_ARCH%\redeclipse.exe %REDECLIPSE_OPTIONS% %*
+if EXIST bin\%REDECLIPSE_ARCH%\%REDECLIPSE_BINARY%.exe (
+    start bin\%REDECLIPSE_ARCH%\%REDECLIPSE_BINARY%.exe %REDECLIPSE_OPTIONS% %*
     goto end
 ) else (
     if "%REDECLIPSE_BRANCH%" == "source" (
-        mingw32-make -C src client install-client && goto runit
+        mingw32-make -C src all install && goto runit
         set REDECLIPSE_BRANCH=devel
     )
     if NOT "%REDECLIPSE_NOUPDATE%" == "1" if NOT "%REDECLIPSE_TRYUPDATE%" == "1" (
