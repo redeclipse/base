@@ -3,16 +3,21 @@
 # check
 git submodule init
 CURRENT_COMMIT=`git rev-parse HEAD`
-DATA_COMMIT=`git submodule status data | cut -d" " -f2`
+pushd data && DATA_COMMIT=`git rev-parse HEAD` && popd
 if [ "${BRANCH_NAME}" = "master" ]; then
     DEPLOY_COMMIT=`curl --fail --silent http://redeclipse.net/files/devel/commit.txt`
     if [ -n "${DEPLOY_COMMIT}" ]; then
         DEPLOY_SRCFILES=`git diff --name-only HEAD ${DEPLOY_COMMIT} -- src`
         if [ -z "${DEPLOY_SRCFILES}" ]; then
             echo "No source files modified, skipping..."
+            if [ "${CURRENT_COMMIT}" != "${DEPLOY_COMMIT}" ]; then
+                echo "Module 'base' commit updated, syncing that: ${CURRENT_COMMIT} -> ${DEPLOY_COMMIT}"
+                echo "${CURRENT_COMMIT}" > commit.txt
+                scp -BC -i ${HOME}/.ssh/public_rsa -o StrictHostKeyChecking=no commit.txt qreeves@icculus.org:/webspace/redeclipse.net/files/devel/commit.txt
+            fi
             DEPLOY_DATA=`curl --fail --silent http://redeclipse.net/files/devel/data.txt`
             if [ "${DATA_COMMIT}" != "${DEPLOY_DATA}" ]; then
-                echo "Data commit updated, syncing just that [${DEPLOY_DATA} -> ${DATA_COMMIT}]"
+                echo "Module 'data' commit updated, syncing that: ${DEPLOY_DATA} -> ${DATA_COMMIT}"
                 echo "${DATA_COMMIT}" > data.txt
                 scp -BC -i ${HOME}/.ssh/public_rsa -o StrictHostKeyChecking=no data.txt qreeves@icculus.org:/webspace/redeclipse.net/files/devel/data.txt
             fi
