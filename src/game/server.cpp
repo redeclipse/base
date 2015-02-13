@@ -3259,14 +3259,10 @@ namespace server
                 sendf(-1, 1, "ri2sis", N_COMMAND, ci->clientnum, name, strlen(val), val);
                 if(oldval)
                 {
-                  relayf(3, "\fy%s set %s to %s (was: %s)", colourname(ci), name, val, oldval);
-                  if(needfreeoldval)
-                    delete[] oldval;
+                    relayf(3, "\fy%s set %s to %s (was: %s)", colourname(ci), name, val, oldval);
+                    if(needfreeoldval) delete[] oldval;
                 }
-                else
-                {
-                  relayf(3, "\fy%s set %s to %s", colourname(ci), name, val);
-                }
+                else relayf(3, "\fy%s set %s to %s", colourname(ci), name, val);
             }
         }
         else srvmsgf(ci->clientnum, "\frunknown command: %s", cmd);
