@@ -116,7 +116,7 @@ void ircsend(ircnet *n, const char *msg, ...)
     }
 }
 
-void converttext(char *dst, const char *src)
+void cube2irc(char *dst, const char *src)
 {
     int colorpos = 0; char colorstack[10];
     memset(colorstack, 'u', sizeof(colorstack)); //indicate user color
@@ -140,19 +140,78 @@ void converttext(char *dst, const char *src)
             int oldcolor = colorstack[colorpos]; colorstack[colorpos] = c;
             switch(c)
             {
-                case 'g': case '0': case 'G': *dst++ = '\f'; *dst++ = '0'; *dst++ = '3'; break; // green
-                case 'b': case '1': case 'B': *dst++ = '\f'; *dst++ = '1'; *dst++ = '2'; break; // blue
-                case 'y': case '2': case 'Y': *dst++ = '\f'; *dst++ = '0'; *dst++ = '3'; break; // yellow
-                case 'r': case '3': case 'R': *dst++ = '\f'; *dst++ = '0'; *dst++ = '4'; break; // red
-                case 'a': case '4': *dst++ = '\f'; *dst++ = '1'; *dst++ = '4'; break; // grey
-                case 'm': case '5': case 'M': *dst++ = '\f'; *dst++ = '1'; *dst++ = '3'; break; // magenta
-                case 'o': case '6': case 'O': *dst++ = '\f'; *dst++ = '0'; *dst++ = '7'; break; // orange
-                case 'c': case '9': case 'C': *dst++ = '\f'; *dst++ = '1'; *dst++ = '0'; break; // cyan
-                case 'v': *dst++ = '\f'; *dst++ = '0'; *dst++ = '6'; break; // violet
-                case 'p': *dst++ = '\f'; *dst++ = '0'; *dst++ = '6'; break; // purple
+                case 'B': *dst++ = '\f'; *dst++ = '0'; *dst++ = '2'; break; // dark blue
+                case 'G': *dst++ = '\f'; *dst++ = '0'; *dst++ = '3'; break; // dark green
+                case 'r': case '3': *dst++ = '\f'; *dst++ = '0'; *dst++ = '4'; break; // red
                 case 'n': *dst++ = '\f'; *dst++ = '0'; *dst++ = '5'; break; // brown
-                case 'u': case 'w': case '7': case 'k': case '8': case 'd': case 'A': *dst++ = '\f'; *dst++ = '0'; *dst++ = '1'; break; // dark grey
+                case 'p': case 'v': *dst++ = '\f'; *dst++ = '0'; *dst++ = '6'; break; // purple
+                case 'o': case '6': case 'O': *dst++ = '\f'; *dst++ = '0'; *dst++ = '7'; break; // orange
+                case 'y': case '2': case 'Y': *dst++ = '\f'; *dst++ = '0'; *dst++ = '8'; break; // yellow
+                case 'g': case '0': *dst++ = '\f'; *dst++ = '0'; *dst++ = '9'; break; // green
+                case 'C': *dst++ = '\f'; *dst++ = '1'; *dst++ = '0'; break; // dark cyan
+                case 'c': case '9': *dst++ = '\f'; *dst++ = '1'; *dst++ = '1'; break; // cyan
+                case 'b': case '1': *dst++ = '\f'; *dst++ = '1'; *dst++ = '2'; break; // blue
+                case 'm': case '5': case 'M': *dst++ = '\f'; *dst++ = '1'; *dst++ = '3'; break; // magenta
+                case 'k': case '8': case 'd': case 'A': *dst++ = '\f'; *dst++ = '1'; *dst++ = '4'; break; // dark grey
+                case 'a': case '4': *dst++ = '\f'; *dst++ = '1'; *dst++ = '5'; break; // grey
+                case 'u': case 'w': case '7': *dst++ = '\f'; break; // no color
                 default: colorstack[colorpos] = oldcolor; break;
+            }
+            continue;
+        }
+        if(iscubeprint(c) || iscubespace(c)) *dst++ = c;
+    }
+    *dst = '\0';
+}
+
+void irc2cube(char *dst, const char *src)
+{
+    for(int c = *src; c; c = *++src)
+    {
+        if(c == '\f')
+        {
+            c = *++src;
+            switch(c)
+            {
+                case '0':
+                    c = *++src;
+                    switch(c)
+                    {
+                        case '0': *dst++ = '\f'; *dst++ = 'w'; break; // white
+                        case '1': *dst++ = '\f'; *dst++ = 'A'; break; // dark grey (black too hard to see)
+                        case '2': *dst++ = '\f'; *dst++ = 'B'; break; // dark blue
+                        case '3': *dst++ = '\f'; *dst++ = 'G'; break; // dark green
+                        case '4': *dst++ = '\f'; *dst++ = 'r'; break; // red
+                        case '5': *dst++ = '\f'; *dst++ = 'n'; break; // brown
+                        case '6': *dst++ = '\f'; *dst++ = 'p'; break; // purple
+                        case '7': *dst++ = '\f'; *dst++ = 'o'; break; // orange
+                        case '8': *dst++ = '\f'; *dst++ = 'y'; break; // yellow
+                        case '9': *dst++ = '\f'; *dst++ = 'g'; break; // green
+                        default: *dst++ = '\f'; *dst++ = 'w'; c = *--src; break;
+                    }
+                    break;
+                case '1':
+                    c = *++src;
+                    switch(c)
+                    {
+                        case '0': *dst++ = '\f'; *dst++ = 'C'; break; // dark cyan
+                        case '1': *dst++ = '\f'; *dst++ = 'c'; break; // cyan
+                        case '2': *dst++ = '\f'; *dst++ = 'b'; break; // blue
+                        case '3': *dst++ = '\f'; *dst++ = 'm'; break; // magenta
+                        case '4': *dst++ = '\f'; *dst++ = 'A'; break; // dark grey
+                        case '5': *dst++ = '\f'; *dst++ = 'a'; break; // grey
+                        default: *dst++ = '\f'; *dst++ = 'A'; c = *--src; break;
+                    }
+                    break;
+                case '2': *dst++ = '\f'; *dst++ = 'B'; break; // dark blue
+                case '3': *dst++ = '\f'; *dst++ = 'G'; break; // dark green
+                case '4': *dst++ = '\f'; *dst++ = 'r'; break; // red
+                case '5': *dst++ = '\f'; *dst++ = 'n'; break; // brown
+                case '6': *dst++ = '\f'; *dst++ = 'p'; break; // purple
+                case '7': *dst++ = '\f'; *dst++ = 'o'; break; // orange
+                case '8': *dst++ = '\f'; *dst++ = 'y'; break; // yellow
+                case '9': *dst++ = '\f'; *dst++ = 'g'; break; // green
+                default: *dst++ = '\f'; *dst++ = 'w'; c = *--src; break;
             }
             continue;
         }
@@ -168,7 +227,7 @@ void ircoutf(int relay, const char *msg, ...)
     switch(ircfilter)
     {
         case 2: filtertext(str, src); break;
-        case 1: converttext(str, src); break;
+        case 1: cube2irc(str, src); break;
         case 0: default: copystring(str, src); break;
     }
     loopv(ircnets) if(ircnets[i]->sock != ENET_SOCKET_NULL && ircnets[i]->type == IRCT_RELAY && ircnets[i]->state == IRC_ONLINE)
@@ -416,7 +475,11 @@ void ircprocess(ircnet *n, char *user[3], int g, int numargs, char *w[])
                     if(ismsg)
                     {
                         if(!strcasecmp(q, "ACTION"))
-                            ircprintf(n, 1, g ? w[g+1] : NULL, "\fv* %s %s", user[0], r);
+                        {
+                            string str = "";
+                            irc2cube(str, r);
+                            ircprintf(n, 1, g ? w[g+1] : NULL, "\fv* %s %s", user[0], str);
+                        }
                         else
                         {
                             ircprintf(n, 4, g ? w[g+1] : NULL, "\fr%s requests: %s %s", user[0], q, r);
@@ -433,13 +496,22 @@ void ircprocess(ircnet *n, char *user[3], int g, int numargs, char *w[])
             }
             else if(ismsg)
             {
+                string str = "";
                 if(n->type == IRCT_RELAY && g && strcasecmp(w[g+1], n->nick) && !strncasecmp(w[g+2], n->nick, strlen(n->nick)))
                 {
                     const char *p = &w[g+2][strlen(n->nick)];
                     while(p && (*p == ':' || *p == ';' || *p == ',' || *p == '.' || *p == ' ' || *p == '\t')) p++;
-                    if(p && *p) ircprintf(n, 0, w[g+1], "\fa<\fw%s\fa>\fw %s", user[0], p);
+                    if(p && *p)
+                    {
+                        irc2cube(str, p);
+                        ircprintf(n, 0, w[g+1], "\fa<\fw%s\fa>\fw %s", user[0], str);
+                    }
                 }
-                else ircprintf(n, 1, g ? w[g+1] : NULL, "\fa<\fw%s\fa>\fw %s", user[0], w[g+2]);
+                else
+                {
+                    irc2cube(str, w[g+2]);
+                    ircprintf(n, 1, g ? w[g+1] : NULL, "\fa<\fw%s\fa>\fw %s", user[0], str);
+                }
             }
             else ircprintf(n, 2, g ? w[g+1] : NULL, "\fo-%s- %s", user[0], w[g+2]);
         }
