@@ -57,6 +57,6 @@ if [ "${BRANCH_NAME}" = "master" ]; then
     scp -BC -i ${HOME}/.ssh/public_rsa -o StrictHostKeyChecking=no linux.tar.bz2 qreeves@icculus.org:/webspace/redeclipse.net/files/devel/linux.tar.bz2
     scp -BC -i ${HOME}/.ssh/public_rsa -o StrictHostKeyChecking=no version.txt qreeves@icculus.org:/webspace/redeclipse.net/files/devel/version.txt
     scp -BC -i ${HOME}/.ssh/public_rsa -o StrictHostKeyChecking=no commit.txt qreeves@icculus.org:/webspace/redeclipse.net/files/devel/commit.txt
-    scp -BC -i ${HOME}/.ssh/public_rsa -o StrictHostKeyChecking=no commit.txt qreeves@icculus.org:/webspace/redeclipse.net/files/devel/data.txt
+    scp -BC -i ${HOME}/.ssh/public_rsa -o StrictHostKeyChecking=no data.txt qreeves@icculus.org:/webspace/redeclipse.net/files/devel/data.txt
     popd
 fi
