@@ -10,6 +10,12 @@ if [ "${BRANCH_NAME}" = "master" ]; then
         DEPLOY_SRCFILES=`git diff --name-only HEAD ${DEPLOY_COMMIT} -- src`
         if [ -z "${DEPLOY_SRCFILES}" ]; then
             echo "No source files modified, skipping..."
+            DEPLOY_DATA=`curl --fail --silent http://redeclipse.net/files/devel/data.txt`
+            if [ "${DATA_COMMIT}" != "${DEPLOY_DATA}" ]; then
+                echo "Data commit updated, syncing just that [${DEPLOY_DATA} -> ${DATA_COMMIT}]"
+                echo "${DATA_COMMIT}" > data.txt
+                scp -BC -i ${HOME}/.ssh/public_rsa -o StrictHostKeyChecking=no data.txt qreeves@icculus.org:/webspace/redeclipse.net/files/devel/data.txt
+            fi
             exit 0
         else
             echo "Source files modified, proceeding with build..."
