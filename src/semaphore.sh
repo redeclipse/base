@@ -1,7 +1,7 @@
 #/bin/sh
 
 # check
-CURRENT_COMMIT=`git rev-parse HEAD`
+BASE_COMMIT=`git rev-parse HEAD`
 
 git submodule init data
 git submodule update data
@@ -10,15 +10,15 @@ DATA_COMMIT=`git rev-parse HEAD`
 popd
 
 if [ "${BRANCH_NAME}" = "master" ]; then
-    DEPLOY_COMMIT=`curl --fail --silent http://redeclipse.net/files/devel/commit.txt`
+    DEPLOY_COMMIT=`curl --fail --silent http://redeclipse.net/files/devel/base.txt`
     if [ -n "${DEPLOY_COMMIT}" ]; then
         DEPLOY_SRCFILES=`git diff --name-only HEAD ${DEPLOY_COMMIT} -- src`
         if [ -z "${DEPLOY_SRCFILES}" ]; then
             echo "No source files modified, skipping..."
-            if [ "${CURRENT_COMMIT}" != "${DEPLOY_COMMIT}" ]; then
-                echo "Module 'base' commit updated, syncing that: ${CURRENT_COMMIT} -> ${DEPLOY_COMMIT}"
-                echo "${CURRENT_COMMIT}" > commit.txt
-                scp -BC -i ${HOME}/.ssh/public_rsa -o StrictHostKeyChecking=no commit.txt qreeves@icculus.org:/webspace/redeclipse.net/files/devel/commit.txt
+            if [ "${BASE_COMMIT}" != "${DEPLOY_COMMIT}" ]; then
+                echo "Module 'base' commit updated, syncing that: ${BASE_COMMIT} -> ${DEPLOY_COMMIT}"
+                echo "${BASE_COMMIT}" > base.txt
+                scp -BC -i ${HOME}/.ssh/public_rsa -o StrictHostKeyChecking=no base.txt qreeves@icculus.org:/webspace/redeclipse.net/files/devel/base.txt
             fi
             DEPLOY_DATA=`curl --fail --silent http://redeclipse.net/files/devel/data.txt`
             if [ "${DATA_COMMIT}" != "${DEPLOY_DATA}" ]; then
@@ -67,12 +67,12 @@ if [ "${BRANCH_NAME}" = "master" ] && [ -n "${DEPLOY_COMMIT}" ]; then
     tar -jcvf ../linux.tar.bz2 .
     popd
     date +%Y%m%d%H%M%S > version.txt
-    echo "${CURRENT_COMMIT}" > commit.txt
+    echo "${BASE_COMMIT}" > base.txt
     echo "${DATA_COMMIT}" > data.txt
     scp -BC -i ${HOME}/.ssh/public_rsa -o StrictHostKeyChecking=no windows.zip qreeves@icculus.org:/webspace/redeclipse.net/files/devel/windows.zip
     scp -BC -i ${HOME}/.ssh/public_rsa -o StrictHostKeyChecking=no linux.tar.bz2 qreeves@icculus.org:/webspace/redeclipse.net/files/devel/linux.tar.bz2
     scp -BC -i ${HOME}/.ssh/public_rsa -o StrictHostKeyChecking=no version.txt qreeves@icculus.org:/webspace/redeclipse.net/files/devel/version.txt
-    scp -BC -i ${HOME}/.ssh/public_rsa -o StrictHostKeyChecking=no commit.txt qreeves@icculus.org:/webspace/redeclipse.net/files/devel/commit.txt
+    scp -BC -i ${HOME}/.ssh/public_rsa -o StrictHostKeyChecking=no base.txt qreeves@icculus.org:/webspace/redeclipse.net/files/devel/base.txt
     scp -BC -i ${HOME}/.ssh/public_rsa -o StrictHostKeyChecking=no data.txt qreeves@icculus.org:/webspace/redeclipse.net/files/devel/data.txt
     popd
 fi

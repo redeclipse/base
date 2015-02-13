@@ -45,8 +45,8 @@ if NOT EXIST bin\tools\unzip.exe (
     goto bail
 )
 if NOT EXIST "%REDECLIPSE_TMP%" mkdir "%REDECLIPSE_TMP%"
-echo Querying version from: %REDECLIPSE_TMP%\branch.txt
-if EXIST "%REDECLIPSE_TMP%\branch.txt" set /p REDECLIPSE_VERSION=< "%REDECLIPSE_TMP%\branch.txt"
+echo Querying version from: %REDECLIPSE_TMP%\current.txt
+if EXIST "%REDECLIPSE_TMP%\current.txt" set /p REDECLIPSE_VERSION=< "%REDECLIPSE_TMP%\current.txt"
 if "%REDECLIPSE_VERSION%" == "" set REDECLIPSE_VERSION=0
 set REDECLIPSE_VERSION=%REDECLIPSE_VERSION:~0,14%
 echo.
@@ -80,7 +80,11 @@ if NOT EXIST "%REDECLIPSE_TMP%\windows.zip" (
     goto bail
 )
 echo Deploying to: %REDECLIPSE_PATH%
-echo "%REDECLIPSE_PATH%\bin\tools\unzip.exe" -o "%REDECLIPSE_TMP%\windows.zip" -d "%REDECLIPSE_PATH%" ^|^| exit /b 1 > "%REDECLIPSE_TMP%\install.bat"
+echo.
+echo @ECHO OFF > "%REDECLIPSE_TMP%\install.bat"
+echo setlocal ENABLEEXTENSIONS >> "%REDECLIPSE_TMP%\install.bat"
+echo "%REDECLIPSE_PATH%\bin\tools\unzip.exe" -o "%REDECLIPSE_TMP%\windows.zip" -d "%REDECLIPSE_PATH%" ^|^| exit /b 1 >> "%REDECLIPSE_TMP%\install.bat"
+echo endlocal >> "%REDECLIPSE_TMP%\install.bat"
 copy /y nul test.tmp > nul 2>&1 && (
     del /f /q test.tmp
     goto unpack
@@ -105,8 +109,15 @@ call "%REDECLIPSE_TMP%\install.bat" || (
 )
 echo.
 :branch
-echo %REDECLIPSE_REMOTE% > "%REDECLIPSE_TMP%\branch.txt"
+echo %REDECLIPSE_REMOTE% > "%REDECLIPSE_TMP%\current.txt"
 :good
+if "%REDECLIPSE_BRANCH%" == "stable" (
+    set /p REDECLIPSE_NEWSTABLE=< bin\version.txt
+    if NOT "%REDECLIPSE_STABLE%" == "%REDECLIPSE_NEWSTABLE%" (
+        call bin\update.bat
+        goto bail
+    )
+)
 echo Everything is up to date!
 :bail
 popd
