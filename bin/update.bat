@@ -3,7 +3,7 @@ setlocal ENABLEEXTENSIONS
 if NOT DEFINED REDECLIPSE_PATH set REDECLIPSE_PATH=%~dp0\..
 pushd %REDECLIPSE_PATH%
 set REDECLIPSE_PATH=%CD%
-
+:setup
 if NOT DEFINED REDECLIPSE_CACHE (
     if NOT "%REDECLIPSE_HOME%" == "" (
         set REDECLIPSE_CACHE=%REDECLIPSE_HOME%\cache
@@ -50,7 +50,8 @@ if NOT EXIST bin\tools\unzip.exe (
 if NOT EXIST "%REDECLIPSE_TMP%" mkdir "%REDECLIPSE_TMP%"
 echo @ECHO OFF > "%REDECLIPSE_TMP%\install.bat"
 echo setlocal ENABLEEXTENSIONS >> "%REDECLIPSE_TMP%\install.bat"
-if NOT "%REDECLIPSE_BRANCH%" == "stable" goto enddata
+if NOT "%REDECLIPSE_BRANCH%" == "stable" goto binary
+:base
 echo Querying base version from: %REDECLIPSE_TMP%\base.ini
 if EXIST "%REDECLIPSE_TMP%\base.ini" set /p REDECLIPSE_BASE=< "%REDECLIPSE_TMP%\base.ini"
 if "%REDECLIPSE_BASE%" == "" set REDECLIPSE_BASE=0
@@ -64,17 +65,17 @@ bin\tools\wget.exe --tries=3 --user-agent="redeclipse-%REDECLIPSE_UPDATE%" --out
 if NOT EXIST "%REDECLIPSE_TMP%\base.txt" (
     echo Failed to retrieve base update information. Trying to run anyway...
     echo.
-    goto endbase
+    goto data
 )
 set /p REDECLIPSE_RBASE=< "%REDECLIPSE_TMP%\base.txt"
 if "%REDECLIPSE_RBASE%" == "" (
     echo Failed to retrieve base update information. Trying to run anyway..
     echo.
-    goto endbase
+    goto data
 )
 set REDECLIPSE_RBASE=%REDECLIPSE_RBASE:~0,40%
 echo Remote base: %REDECLIPSE_BRANCH% %REDECLIPSE_RBASE%
-if "%REDECLIPSE_RBASE%" == "%REDECLIPSE_BASE%" goto endbase
+if "%REDECLIPSE_RBASE%" == "%REDECLIPSE_BASE%" goto data
 echo Downloading base update from: %REDECLIPSE_GITHUB%/base/archive/%REDECLIPSE_RBASE%.zip
 echo.
 if EXIST "%REDECLIPSE_TMP%\base.zip" del /f /q "%REDECLIPSE_TMP%\base.zip"
@@ -83,11 +84,11 @@ echo.
 if NOT EXIST "%REDECLIPSE_TMP%\base.zip" (
     echo Failed to retrieve base update package. Trying to run anyway...
     echo.
-    goto endbase
+    goto data
 )
 echo "%REDECLIPSE_PATH%\bin\tools\unzip.exe" -o "%REDECLIPSE_TMP%\base.zip" -d "%REDECLIPSE_PATH%" ^|^| exit /b 1 >> "%REDECLIPSE_TMP%\install.bat"
 set REDECLIPSE_TRYUPDATE=1
-:endbase
+:data
 echo Querying data version from: %REDECLIPSE_TMP%\data.ini
 if EXIST "%REDECLIPSE_TMP%\data.ini" set /p REDECLIPSE_DATA=< "%REDECLIPSE_TMP%\data.ini"
 if "%REDECLIPSE_DATA%" == "" set REDECLIPSE_DATA=0
@@ -101,17 +102,17 @@ bin\tools\wget.exe --tries=3 --user-agent="redeclipse-%REDECLIPSE_UPDATE%" --out
 if NOT EXIST "%REDECLIPSE_TMP%\data.txt" (
     echo Failed to retrieve data update information. Trying to run anyway...
     echo.
-    goto enddata
+    goto binary
 )
 set /p REDECLIPSE_RDATA=< "%REDECLIPSE_TMP%\data.txt"
 if "%REDECLIPSE_RDATA%" == "" (
     echo Failed to retrieve data update information. Trying to run anyway..
     echo.
-    goto enddata
+    goto binary
 )
 set REDECLIPSE_RDATA=%REDECLIPSE_RDATA:~0,40%
 echo Remote data: %REDECLIPSE_BRANCH% %REDECLIPSE_RDATA%
-if "%REDECLIPSE_RDATA%" == "%REDECLIPSE_DATA%" goto enddata
+if "%REDECLIPSE_RDATA%" == "%REDECLIPSE_DATA%" goto binary
 echo Downloading data update from: %REDECLIPSE_GITHUB%/data/archive/%REDECLIPSE_RDATA%.zip
 echo.
 if EXIST "%REDECLIPSE_TMP%\data.zip" del /f /q "%REDECLIPSE_TMP%\data.zip"
@@ -120,11 +121,11 @@ echo.
 if NOT EXIST "%REDECLIPSE_TMP%\data.zip" (
     echo Failed to retrieve data update package. Trying to run anyway...
     echo.
-    goto enddata
+    goto binary
 )
 echo "%REDECLIPSE_PATH%\bin\tools\unzip.exe" -o "%REDECLIPSE_TMP%\data.zip" -d "%REDECLIPSE_PATH%\data" ^|^| exit /b 1 >> "%REDECLIPSE_TMP%\install.bat"
 set REDECLIPSE_TRYUPDATE=1
-:enddata
+:binary
 echo Querying binary version from: %REDECLIPSE_TMP%\version.ini
 if EXIST "%REDECLIPSE_TMP%\version.ini" set /p REDECLIPSE_VERSION=< "%REDECLIPSE_TMP%\version.ini"
 if "%REDECLIPSE_VERSION%" == "" set REDECLIPSE_VERSION=0
@@ -138,13 +139,13 @@ bin\tools\wget.exe --tries=3 --user-agent="redeclipse-%REDECLIPSE_UPDATE%" --out
 if NOT EXIST "%REDECLIPSE_TMP%\version.txt" (
     echo Failed to retrieve version update information. Trying to run anyway...
     echo.
-    goto bail
+    goto deploy
 )
 set /p REDECLIPSE_RVERSION=< "%REDECLIPSE_TMP%\version.txt"
 if "%REDECLIPSE_RVERSION%" == "" (
     echo Failed to retrieve version update information. Trying to run anyway..
     echo.
-    goto bail
+    goto deploy
 )
 set REDECLIPSE_RVERSION=%REDECLIPSE_RVERSION:~0,14%
 echo Remote version: %REDECLIPSE_BRANCH% %REDECLIPSE_RVERSION%
@@ -157,11 +158,13 @@ echo.
 if NOT EXIST "%REDECLIPSE_TMP%\windows.zip" (
     echo Failed to retrieve binary update package. Trying to run anyway...
     echo.
-    goto bail
+    goto deploy
 )
 echo "%REDECLIPSE_PATH%\bin\tools\unzip.exe" -o "%REDECLIPSE_TMP%\windows.zip" -d "%REDECLIPSE_PATH%" ^|^| exit /b 1 >> "%REDECLIPSE_TMP%\install.bat"
-echo Deploying: "%REDECLIPSE_TMP%\install.bat"
+:deploy
 echo endlocal >> "%REDECLIPSE_TMP%\install.bat"
+echo Deploying: "%REDECLIPSE_TMP%\install.bat"
+set REDECLIPSE_INSTALL=call
 copy /y nul test.tmp > nul 2>&1 && (
     del /f /q test.tmp
     goto unpack
@@ -172,20 +175,16 @@ if NOT EXIST bin\tools\elevate.exe (
     echo.
     goto unpack
 )
-bin\tools\elevate.exe -wait "%REDECLIPSE_TMP%\install.bat" || (
-    echo There was an error deploying the files. Trying to run anyway...
-    echo.
-    goto bail
-)
-goto branch
+set REDECLIPSE_INSTALL=bin\tools\elevate.exe -wait
 :unpack
-call "%REDECLIPSE_TMP%\install.bat" || (
+%REDECLIPSE_INSTALL% "%REDECLIPSE_TMP%\install.bat" || (
     echo There was an error deploying the files. Trying to run anyway...
     echo.
     goto bail
 )
 echo.
-:branch
+echo %REDECLIPSE_RBASE% > "%REDECLIPSE_TMP%\base.ini"
+echo %REDECLIPSE_RDATA% > "%REDECLIPSE_TMP%\data.ini"
 echo %REDECLIPSE_RVERSION% > "%REDECLIPSE_TMP%\version.ini"
 :good
 if "%REDECLIPSE_BRANCH%" == "stable" (
