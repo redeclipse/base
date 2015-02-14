@@ -97,7 +97,6 @@ if NOT EXIST "%REDECLIPSE_TEMP%\base.patch" (
     goto baseblob
 )
 echo "%REDECLIPSE_PATH%\bin\tools\git-apply.exe" --stat --apply --verbose "%REDECLIPSE_TEMP%\base.patch" --directory="%REDECLIPSE_PATH%" ^&^& ^(echo %REDECLIPSE_RBASE% ^> "%REDECLIPSE_TEMP%\base.ini"^) ^|^| set REDECLIPSE_ERROR=1 >> "%REDECLIPSE_TEMP%\install.bat"
-set REDECLIPSE_TRYUPDATE=1
 goto data
 :baseblob
 if NOT "%REDECLIPSE_OBASE%" == "%REDECLIPSE_RBASE%" if EXIST "%REDECLIPSE_TEMP%\base.zip" del /f /q "%REDECLIPSE_TEMP%\base.zip"
@@ -112,7 +111,6 @@ echo    xcopy /e /c /i /f /h /y "%REDECLIPSE_TEMP%\base-%REDECLIPSE_RBASE%\*" "%
 echo    rmdir /s /q "%REDECLIPSE_TEMP%\base-%REDECLIPSE_RBASE%" >> "%REDECLIPSE_TEMP%\install.bat"
 echo    echo %REDECLIPSE_RBASE% ^> "%REDECLIPSE_TEMP%\base.ini" >> "%REDECLIPSE_TEMP%\install.bat"
 echo ^) ^|^| set REDECLIPSE_ERROR=1 >> "%REDECLIPSE_TEMP%\install.bat"
-set REDECLIPSE_TRYUPDATE=1
 :data
 echo.
 if EXIST "%REDECLIPSE_PATH%\data\readme.txt" goto dataver
@@ -160,7 +158,6 @@ if NOT EXIST "%REDECLIPSE_TEMP%\data.patch" (
     goto datablob
 )
 echo "%REDECLIPSE_PATH%\bin\tools\git-apply.exe" --stat --apply --verbose "%REDECLIPSE_TEMP%\data.patch" --directory="%REDECLIPSE_PATH%\data" ^&^& ^(echo %REDECLIPSE_RDATA% ^> "%REDECLIPSE_TEMP%\data.ini"^) ^|^| set REDECLIPSE_ERROR=1 >> "%REDECLIPSE_TEMP%\install.bat"
-set REDECLIPSE_TRYUPDATE=1
 goto binary
 :datablob
 echo Downloading data update from: %REDECLIPSE_GITHUB%/data/archive/%REDECLIPSE_RDATA%.zip
@@ -175,7 +172,6 @@ echo    xcopy /e /c /i /f /h /y "%REDECLIPSE_TEMP%\data-%REDECLIPSE_RDATA%\*" "%
 echo    rmdir /s /q "%REDECLIPSE_TEMP%\data-%REDECLIPSE_RDATA%" >> "%REDECLIPSE_TEMP%\install.bat"
 echo    echo %REDECLIPSE_RDATA% ^> "%REDECLIPSE_TEMP%\data.ini" >> "%REDECLIPSE_TEMP%\install.bat"
 echo ^) ^|^| set REDECLIPSE_ERROR=1 >> "%REDECLIPSE_TEMP%\install.bat"
-set REDECLIPSE_TRYUPDATE=1
 :binary
 echo.
 if EXIST "%REDECLIPSE_TEMP%\version.ini" set /p REDECLIPSE_VERSION=< "%REDECLIPSE_TEMP%\version.ini"
@@ -195,7 +191,7 @@ if "%REDECLIPSE_RVERSION%" == "" (
 )
 set REDECLIPSE_RVERSION=%REDECLIPSE_RVERSION:~0,14%
 echo Remote version: %REDECLIPSE_RVERSION%
-if NOT "%REDECLIPSE_TRYUPDATE%" == "1" if "%REDECLIPSE_RVERSION%" == "%REDECLIPSE_VERSION%" goto good
+if NOT "%REDECLIPSE_TRYUPDATE%" == "1" if "%REDECLIPSE_RVERSION%" == "%REDECLIPSE_VERSION%" goto deploy
 echo Downloading binary update from: %REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/windows.zip
 if EXIST "%REDECLIPSE_TEMP%\windows.zip" del /f /q "%REDECLIPSE_TEMP%\windows.zip"
 bin\tools\wget.exe --continue --no-check-certificate --user-agent="redeclipse-%REDECLIPSE_UPDATE%" --output-document="%REDECLIPSE_TEMP%/windows.zip" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/windows.zip"
