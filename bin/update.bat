@@ -96,7 +96,7 @@ if NOT EXIST "%REDECLIPSE_TEMP%\base.patch" (
     echo Failed to retrieve base update package. Downloading full zip instead...
     goto baseblob
 )
-echo "%REDECLIPSE_PATH%\bin\tools\git-apply.exe" --apply --verbose "%REDECLIPSE_TEMP%\base.patch" --directory="%REDECLIPSE_PATH%" ^&^& ^(echo %REDECLIPSE_RBASE% ^> "%REDECLIPSE_TEMP%\base.ini"^) ^|^| set REDECLIPSE_ERROR=1 >> "%REDECLIPSE_TEMP%\install.bat"
+echo "%REDECLIPSE_PATH%\bin\tools\git-apply.exe" --stat --apply --verbose "%REDECLIPSE_TEMP%\base.patch" --directory="%REDECLIPSE_PATH%" ^&^& ^(echo %REDECLIPSE_RBASE% ^> "%REDECLIPSE_TEMP%\base.ini"^) ^|^| set REDECLIPSE_ERROR=1 >> "%REDECLIPSE_TEMP%\install.bat"
 set REDECLIPSE_TRYUPDATE=1
 goto data
 :baseblob
@@ -159,7 +159,7 @@ if NOT EXIST "%REDECLIPSE_TEMP%\data.patch" (
     echo Failed to retrieve data update package. Downloading full zip instead...
     goto datablob
 )
-echo "%REDECLIPSE_PATH%\bin\tools\git-apply.exe" --apply --verbose "%REDECLIPSE_TEMP%\data.patch" --directory="%REDECLIPSE_PATH%\data" ^&^& ^(echo %REDECLIPSE_RDATA% ^> "%REDECLIPSE_TEMP%\data.ini"^) ^|^| set REDECLIPSE_ERROR=1 >> "%REDECLIPSE_TEMP%\install.bat"
+echo "%REDECLIPSE_PATH%\bin\tools\git-apply.exe" --stat --apply --verbose "%REDECLIPSE_TEMP%\data.patch" --directory="%REDECLIPSE_PATH%\data" ^&^& ^(echo %REDECLIPSE_RDATA% ^> "%REDECLIPSE_TEMP%\data.ini"^) ^|^| set REDECLIPSE_ERROR=1 >> "%REDECLIPSE_TEMP%\install.bat"
 set REDECLIPSE_TRYUPDATE=1
 goto binary
 :datablob
