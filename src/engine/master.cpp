@@ -1,3 +1,11 @@
+#ifdef WIN32
+#define FD_SETSIZE 4096
+#else
+#include <sys/types.h>
+#undef __FD_SETSIZE
+#define __FD_SETSIZE 4096
+#endif
+
 #include "engine.h"
 #include <enet/time.h>
 
