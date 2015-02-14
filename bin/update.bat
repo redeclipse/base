@@ -167,7 +167,7 @@ if NOT EXIST "%REDECLIPSE_TMP%\data.patch" (
     echo.
     goto datazip
 )
-echo "%REDECLIPSE_PATH%\bin\tools\git-apply.exe" --apply --verbose "%REDECLIPSE_TMP%\data.patch" --directory="%REDECLIPSE_PATH%" ^&^& ^(echo %REDECLIPSE_RDATA% ^> "%REDECLIPSE_TMP%\data.ini"^) ^|^| set REDECLIPSE_ERROR=1  >> "%REDECLIPSE_TMP%\install.bat"
+echo "%REDECLIPSE_PATH%\bin\tools\git-apply.exe" --apply --verbose "%REDECLIPSE_TMP%\data.patch" --directory="%REDECLIPSE_PATH%\data" ^&^& ^(echo %REDECLIPSE_RDATA% ^> "%REDECLIPSE_TMP%\data.ini"^) ^|^| set REDECLIPSE_ERROR=1  >> "%REDECLIPSE_TMP%\install.bat"
 set REDECLIPSE_TRYUPDATE=1
 goto binary
 :datazip
@@ -218,7 +218,7 @@ if NOT EXIST "%REDECLIPSE_TMP%\windows.zip" (
     echo.
     goto deploy
 )
-echo "%REDECLIPSE_PATH%\bin\tools\unzip.exe" -o "%REDECLIPSE_TMP%\windows.zip" -d "%REDECLIPSE_PATH%" ^&^& ^(echo %REDECLIPSE_RVERSION% ^> "%REDECLIPSE_TMP%\version.ini"^) ^|^| set REDECLIPSE_ERROR=1 >> "%REDECLIPSE_TMP%\install.bat"
+echo "%REDECLIPSE_PATH%\bin\tools\unzip.exe" -o "%REDECLIPSE_TMP%\windows.zip" -d "%REDECLIPSE_PATH%\data" ^&^& ^(echo %REDECLIPSE_RVERSION% ^> "%REDECLIPSE_TMP%\version.ini"^) ^|^| set REDECLIPSE_ERROR=1 >> "%REDECLIPSE_TMP%\install.bat"
 :deploy
 echo endlocal >> "%REDECLIPSE_TMP%\install.bat"
 echo if "^%REDECLIPSE_VERSION^%" == "1" exit /b 1 >> "%REDECLIPSE_TMP%\install.bat"
