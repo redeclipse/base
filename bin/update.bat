@@ -5,7 +5,7 @@ pushd %REDECLIPSE_PATH%
 set REDECLIPSE_PATH=%CD%
 :setup
 if DEFINED REDECLIPSE_CACHE goto start
-for /f "tokens=3 delims= " %%G in ('reg query "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders" /v "Personal"') do (set USERMYDOCS=%%G)
+for /f "tokens=3* delims= " %%G in ('reg query "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders" /v "Personal"') do (set USERMYDOCS=%%G)
 if EXIST "%USERMYDOCS%" (
     set REDECLIPSE_CACHE=%USERMYDOCS%\My Games\Red Eclipse\cache
 
