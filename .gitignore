@@ -27,6 +27,7 @@ out
 *.out
 .gitattributes
 home/
+cache/
 src/redeclipse.layout
 src/redeclipse.depend
 src/redeclipse.res

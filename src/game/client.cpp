@@ -1064,6 +1064,8 @@ namespace client
 
     void parsecommand(gameent *d, const char *cmd, const char *arg)
     {
+        const char *oldval = NULL;
+        bool needfreeoldval = false;
         ident *id = idents.access(cmd);
         if(id && id->flags&IDF_CLIENT)
         {
@@ -1086,6 +1088,7 @@ namespace client
                 case ID_VAR:
                 {
                     int ret = parseint(arg);
+                    oldval = intstr(id);
                     *id->storage.i = ret;
                     id->changed();
                     val = intstr(id);
@@ -1094,6 +1097,7 @@ namespace client
                 case ID_FVAR:
                 {
                     float ret = parsefloat(arg);
+                    oldval = floatstr(*id->storage.f);
                     *id->storage.f = ret;
                     id->changed();
                     val = floatstr(*id->storage.f);
@@ -1101,6 +1105,8 @@ namespace client
                 }
                 case ID_SVAR:
                 {
+                    oldval = newstring(*id->storage.s);
+                    needfreeoldval = true;
                     delete[] *id->storage.s;
                     *id->storage.s = newstring(arg);
                     id->changed();
@@ -1110,7 +1116,14 @@ namespace client
                 default: return;
             }
             if((d || showservervariables) && val)
-                conoutft(CON_EVENT, "\fy%s set \fs\fc%s\fS to \fs\fc%s\fS", d ? game::colourname(d) : (connected(false) ? "the server" : "you"), cmd, val);
+            {
+                if(oldval)
+                {
+                    conoutft(CON_EVENT, "\fy%s set \fs\fc%s\fS to \fs\fc%s\fS (was: \fs\fc%s\fS)", d ? game::colourname(d) : (connected(false) ? "the server" : "you"), cmd, val, oldval);
+                    if(needfreeoldval) delete[] oldval;
+                }
+                else conoutft(CON_EVENT, "\fy%s set \fs\fc%s\fS to \fs\fc%s\fS", d ? game::colourname(d) : (connected(false) ? "the server" : "you"), cmd, val);
+            }
         }
         else if(verbose) conoutft(CON_EVENT, "\fr%s sent unknown command: \fc%s", d ? game::colourname(d) : "the server", cmd);
     }
