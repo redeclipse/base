@@ -28,8 +28,12 @@ void vecfromyawpitch(float yaw, float pitch, int move, int strafe, vec &m)
 
 void vectoyawpitch(const vec &v, float &yaw, float &pitch)
 {
-    yaw = -atan2(v.x, v.y)/RAD;
-    pitch = asin(v.z/v.magnitude())/RAD;
+    if(v.iszero()) yaw = pitch = 0;
+    else
+    {
+        yaw = -atan2(v.x, v.y)/RAD;
+        pitch = asin(v.z/v.magnitude())/RAD;
+    }
 }
 
 static inline float det2x2(float a, float b, float c, float d) { return a*d - b*c; }
