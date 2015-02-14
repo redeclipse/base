@@ -4,18 +4,17 @@ if NOT DEFINED REDECLIPSE_PATH set REDECLIPSE_PATH=%~dp0\..
 pushd %REDECLIPSE_PATH%
 set REDECLIPSE_PATH=%CD%
 :setup
-if NOT DEFINED REDECLIPSE_CACHE (
-    if EXIST "%HOMEDRIVE%%HOMEPATH%\Documents\" (
-        set REDECLIPSE_CACHE=%HOMEDRIVE%%HOMEPATH%\Documents\My Games\Red Eclipse\cache
+if DEFINED REDECLIPSE_CACHE goto start
+for /f "tokens=3 delims= " %%G in ('reg query "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders" /v "Personal"') do (set USERMYDOCS=%%G)
+if EXIST "%USERMYDOCS%" (
+    set REDECLIPSE_CACHE=%USERMYDOCS%\My Games\Red Eclipse\cache
 
-    ) else if EXIST "%HOMEDRIVE%%HOMEPATH%\My Documents\" (
-        set REDECLIPSE_CACHE=%HOMEDRIVE%%HOMEPATH%\My Documents\My Games\Red Eclipse\cache
-    ) else if NOT "%REDECLIPSE_HOME%" == "" (
-        set REDECLIPSE_CACHE=%REDECLIPSE_HOME%\cache
-    ) else (
-        set REDECLIPSE_CACHE=cache
-    )
+) else if EXIST "%REDECLIPSE_HOME%" (
+    set REDECLIPSE_CACHE=%REDECLIPSE_HOME%\cache
+) else (
+    set REDECLIPSE_CACHE=cache
 )
+:start
 echo Folder: %REDECLIPSE_PATH%
 echo Cached: %REDECLIPSE_CACHE%
 if NOT DEFINED REDECLIPSE_SOURCE set REDECLIPSE_SOURCE=http://redeclipse.net/files
@@ -38,7 +37,7 @@ set REDECLIPSE_BINVER=%REDECLIPSE_BINVER:~0,5%
 set REDECLIPSE_UPDATE=%REDECLIPSE_BRANCH%/%REDECLIPSE_BINVER%
 set REDECLIPSE_TEMP=%REDECLIPSE_CACHE%\%REDECLIPSE_BRANCH%\%REDECLIPSE_BINVER%
 goto branch
-:unstable
+:notstable
 set REDECLIPSE_UPDATE=%REDECLIPSE_BRANCH%
 set REDECLIPSE_TEMP=%REDECLIPSE_CACHE%\%REDECLIPSE_BRANCH%
 :branch
