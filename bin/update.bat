@@ -83,7 +83,7 @@ if "%REDECLIPSE_RBASE%" == "" (
 set REDECLIPSE_RBASE=%REDECLIPSE_RBASE:~0,40%
 echo Remote base: %REDECLIPSE_RBASE%
 if "%REDECLIPSE_RBASE%" == "%REDECLIPSE_BASE%" goto data
-if "%REDECLIPSE_BASE%" == "0" goto baseblob
+if "%REDECLIPSE_BASE%" == "none" goto baseblob
 :basepatch
 if NOT EXIST bin\tools\git-apply.exe (
     echo Unable to find git-apply.exe, are you sure it is in bin/tools? Downloading full zip instead...
@@ -146,7 +146,7 @@ if "%REDECLIPSE_RDATA%" == "" (
 set REDECLIPSE_RDATA=%REDECLIPSE_RDATA:~0,40%
 echo Remote data: %REDECLIPSE_RDATA%
 if "%REDECLIPSE_RDATA%" == "%REDECLIPSE_DATA%" goto binary
-if "%REDECLIPSE_DATA%" == "0" goto datablob
+if "%REDECLIPSE_DATA%" == "none" goto datablob
 :datapatch
 if NOT EXIST bin\tools\git-apply.exe (
     echo Unable to find git-apply.exe, are you sure it is in bin/tools? Downloading full zip instead...
