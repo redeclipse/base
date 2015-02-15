@@ -109,9 +109,9 @@ if NOT EXIST "%REDECLIPSE_TEMP%\base.patch" (
     goto baseblob
 )
 echo %REDECLIPSE_GITAPPLY% "%REDECLIPSE_TEMP%\base.patch" --directory="%REDECLIPSE_PATH%" ^&^& ^(>> "%REDECLIPSE_TEMP%\install.bat"
-echo     echo %REDECLIPSE_RBASE%^> "%REDECLIPSE_TEMP%\base.ini">> "%REDECLIPSE_TEMP%\install.bat"
+echo     (echo %REDECLIPSE_RBASE%)^> "%REDECLIPSE_TEMP%\base.ini">> "%REDECLIPSE_TEMP%\install.bat"
 echo ^) ^|^| ^(>> "%REDECLIPSE_TEMP%\install.bat"
-echo     echo 0^> "%REDECLIPSE_TEMP%\base.ini">> "%REDECLIPSE_TEMP%\install.bat"
+echo     (echo 0)^> "%REDECLIPSE_TEMP%\base.ini">> "%REDECLIPSE_TEMP%\install.bat"
 echo     set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
 echo ^)>> "%REDECLIPSE_TEMP%\install.bat"
 set REDECLIPSE_DEPLOY=true
@@ -127,7 +127,7 @@ if NOT EXIST "%REDECLIPSE_TEMP%\base.zip" (
 echo %REDECLIPSE_UNZIP% -o "%REDECLIPSE_TEMP%\base.zip" -d "%REDECLIPSE_TEMP%" ^&^& ^(>> "%REDECLIPSE_TEMP%\install.bat"
 echo    xcopy /e /c /i /f /h /y "%REDECLIPSE_TEMP%\base-%REDECLIPSE_RBASE%\*" "%REDECLIPSE_PATH%">> "%REDECLIPSE_TEMP%\install.bat"
 echo    rmdir /s /q "%REDECLIPSE_TEMP%\base-%REDECLIPSE_RBASE%">> "%REDECLIPSE_TEMP%\install.bat"
-echo    echo %REDECLIPSE_RBASE%^> "%REDECLIPSE_TEMP%\base.ini">> "%REDECLIPSE_TEMP%\install.bat"
+echo    (echo %REDECLIPSE_RBASE%)^> "%REDECLIPSE_TEMP%\base.ini">> "%REDECLIPSE_TEMP%\install.bat"
 echo ^) ^|^| set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
 set REDECLIPSE_DEPLOY=true
 :data
@@ -173,9 +173,9 @@ if NOT EXIST "%REDECLIPSE_TEMP%\data.patch" (
     goto datablob
 )
 echo %REDECLIPSE_GITAPPLY% "%REDECLIPSE_TEMP%\data.patch" --directory="%REDECLIPSE_PATH%" ^&^& ^(>> "%REDECLIPSE_TEMP%\install.bat"
-echo     echo %REDECLIPSE_RDATA%^> "%REDECLIPSE_TEMP%\data.ini">> "%REDECLIPSE_TEMP%\install.bat"
+echo     (echo %REDECLIPSE_RDATA%)^> "%REDECLIPSE_TEMP%\data.ini">> "%REDECLIPSE_TEMP%\install.bat"
 echo ^) ^|^| ^(>> "%REDECLIPSE_TEMP%\install.bat"
-echo     echo 0^> "%REDECLIPSE_TEMP%\data.ini">> "%REDECLIPSE_TEMP%\install.bat"
+echo     (echo 0)^> "%REDECLIPSE_TEMP%\data.ini">> "%REDECLIPSE_TEMP%\install.bat"
 echo     set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
 echo ^)>> "%REDECLIPSE_TEMP%\install.bat"
 set REDECLIPSE_DEPLOY=true
@@ -191,7 +191,7 @@ if NOT EXIST "%REDECLIPSE_TEMP%\data.zip" (
 echo %REDECLIPSE_UNZIP% -o "%REDECLIPSE_TEMP%\data.zip" -d "%REDECLIPSE_TEMP%" ^&^& ^(>> "%REDECLIPSE_TEMP%\install.bat"
 echo    xcopy /e /c /i /f /h /y "%REDECLIPSE_TEMP%\data-%REDECLIPSE_RDATA%\*" "%REDECLIPSE_PATH%\data">> "%REDECLIPSE_TEMP%\install.bat"
 echo    rmdir /s /q "%REDECLIPSE_TEMP%\data-%REDECLIPSE_RDATA%">> "%REDECLIPSE_TEMP%\install.bat"
-echo    echo %REDECLIPSE_RDATA%^> "%REDECLIPSE_TEMP%\data.ini">> "%REDECLIPSE_TEMP%\install.bat"
+echo    (echo %REDECLIPSE_RDATA%)^> "%REDECLIPSE_TEMP%\data.ini">> "%REDECLIPSE_TEMP%\install.bat"
 echo ^) ^|^| set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
 set REDECLIPSE_DEPLOY=true
 :binary
@@ -222,7 +222,7 @@ if NOT EXIST "%REDECLIPSE_TEMP%\windows.zip" (
     goto deploy
 )
 echo %REDECLIPSE_UNZIP% -o "%REDECLIPSE_TEMP%\windows.zip" -d "%REDECLIPSE_PATH%" ^&^& ^(>> "%REDECLIPSE_TEMP%\install.bat"
-echo     echo %REDECLIPSE_RVERSION%^> "%REDECLIPSE_TEMP%\version.ini">> "%REDECLIPSE_TEMP%\install.bat"
+echo     (echo %REDECLIPSE_RVERSION%)^> "%REDECLIPSE_TEMP%\version.ini">> "%REDECLIPSE_TEMP%\install.bat"
 echo ^) ^|^| set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
 set REDECLIPSE_DEPLOY=true
 :deploy
