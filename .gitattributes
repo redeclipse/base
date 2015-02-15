@@ -1,0 +1,10 @@
+*.c     text=auto
+*.h     text=auto
+*.cpp   text=auto
+*.txt   text=auto
+*.cfg   text=auto
+*.bat   text=crlf
+*.sh    text=lf
+*.png   binary
+*.jpg   binary
+*.dll   binary
