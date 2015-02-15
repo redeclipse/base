@@ -96,6 +96,7 @@ if NOT EXIST "%REDECLIPSE_TEMP%\base.patch" (
     goto baseblob
 )
 echo "%REDECLIPSE_PATH%\bin\tools\git-apply.exe" --stat --apply --verbose "%REDECLIPSE_TEMP%\base.patch" --directory="%REDECLIPSE_PATH%" ^&^& ^(echo %REDECLIPSE_RBASE% ^> "%REDECLIPSE_TEMP%\base.ini"^) ^|^| set REDECLIPSE_ERROR=1 >> "%REDECLIPSE_TEMP%\install.bat"
+set REDECLIPSE_DEPLOY=true
 goto data
 :baseblob
 if NOT "%REDECLIPSE_OBASE%" == "%REDECLIPSE_RBASE%" if EXIST "%REDECLIPSE_TEMP%\base.zip" del /f /q "%REDECLIPSE_TEMP%\base.zip"
@@ -110,6 +111,7 @@ echo    xcopy /e /c /i /f /h /y "%REDECLIPSE_TEMP%\base-%REDECLIPSE_RBASE%\*" "%
 echo    rmdir /s /q "%REDECLIPSE_TEMP%\base-%REDECLIPSE_RBASE%" >> "%REDECLIPSE_TEMP%\install.bat"
 echo    echo %REDECLIPSE_RBASE% ^> "%REDECLIPSE_TEMP%\base.ini" >> "%REDECLIPSE_TEMP%\install.bat"
 echo ^) ^|^| set REDECLIPSE_ERROR=1 >> "%REDECLIPSE_TEMP%\install.bat"
+set REDECLIPSE_DEPLOY=true
 :data
 echo.
 if EXIST "%REDECLIPSE_PATH%\data\readme.txt" goto dataver
@@ -157,6 +159,7 @@ if NOT EXIST "%REDECLIPSE_TEMP%\data.patch" (
     goto datablob
 )
 echo "%REDECLIPSE_PATH%\bin\tools\git-apply.exe" --stat --apply --verbose "%REDECLIPSE_TEMP%\data.patch" --directory="%REDECLIPSE_PATH%\data" ^&^& ^(echo %REDECLIPSE_RDATA% ^> "%REDECLIPSE_TEMP%\data.ini"^) ^|^| set REDECLIPSE_ERROR=1 >> "%REDECLIPSE_TEMP%\install.bat"
+set REDECLIPSE_DEPLOY=true
 goto binary
 :datablob
 echo Downloading data update from: %REDECLIPSE_GITHUB%/data/archive/%REDECLIPSE_RDATA%.zip
@@ -171,6 +174,7 @@ echo    xcopy /e /c /i /f /h /y "%REDECLIPSE_TEMP%\data-%REDECLIPSE_RDATA%\*" "%
 echo    rmdir /s /q "%REDECLIPSE_TEMP%\data-%REDECLIPSE_RDATA%" >> "%REDECLIPSE_TEMP%\install.bat"
 echo    echo %REDECLIPSE_RDATA% ^> "%REDECLIPSE_TEMP%\data.ini" >> "%REDECLIPSE_TEMP%\install.bat"
 echo ^) ^|^| set REDECLIPSE_ERROR=1 >> "%REDECLIPSE_TEMP%\install.bat"
+set REDECLIPSE_DEPLOY=true
 :binary
 echo.
 if EXIST "%REDECLIPSE_TEMP%\version.ini" set /p REDECLIPSE_VERSION=< "%REDECLIPSE_TEMP%\version.ini"
@@ -199,7 +203,9 @@ if NOT EXIST "%REDECLIPSE_TEMP%\windows.zip" (
     goto deploy
 )
 echo "%REDECLIPSE_PATH%\bin\tools\unzip.exe" -o "%REDECLIPSE_TEMP%\windows.zip" -d "%REDECLIPSE_PATH%" ^&^& ^(echo %REDECLIPSE_RVERSION% ^> "%REDECLIPSE_TEMP%\version.ini"^) ^|^| set REDECLIPSE_ERROR=1 >> "%REDECLIPSE_TEMP%\install.bat"
+set REDECLIPSE_DEPLOY=true
 :deploy
+if NOT "%REDECLIPSE_DEPLOY%" == "true" goto yay
 echo endlocal >> "%REDECLIPSE_TEMP%\install.bat"
 echo if "%%REDECLIPSE_ERROR%%" == "1" exit /b 1 >> "%REDECLIPSE_TEMP%\install.bat"
 echo Deploying: "%REDECLIPSE_TEMP%\install.bat"
