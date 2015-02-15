@@ -1,3 +1,4 @@
+*       text=auto
 *.c     text=auto
 *.h     text=auto
 *.cpp   text=auto
@@ -7,4 +8,9 @@
 *.sh    text=lf
 *.png   binary
 *.jpg   binary
+*.ico   binary
+*.icns  binary
 *.dll   binary
+*.lib   binary
+*.nib   binary
+*.a     binary
