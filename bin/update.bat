@@ -3,7 +3,6 @@ setlocal ENABLEEXTENSIONS
 if NOT DEFINED REDECLIPSE_PATH set REDECLIPSE_PATH=%~dp0\..
 pushd %REDECLIPSE_PATH%
 set REDECLIPSE_PATH=%CD%
-set REDECLIPSE_RETURN=0
 :setup
 if DEFINED REDECLIPSE_CACHE goto start
 for /f "tokens=3* delims= " %%G in ('reg query "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders" /v "Personal"') do (set USERMYDOCS=%%G)
@@ -27,12 +26,16 @@ if NOT DEFINED REDECLIPSE_BRANCH (
 if NOT "%REDECLIPSE_BRANCH%" == "stable" goto notstable
 if NOT EXIST "%REDECLIPSE_PATH%\bin\version.txt" (
     echo Unable to find %REDECLIPSE_PATH%\bin\version.txt
-    goto bail
+    popd
+    endlocal
+    exit /b 0
 )
 set /p REDECLIPSE_BINVER=< "%REDECLIPSE_PATH%\bin\version.txt"
 if "%REDECLIPSE_BINVER%" == "" (
     echo Cannot determine current stable binary version!
-    goto bail
+    popd
+    endlocal
+    exit /b 0
 )
 set REDECLIPSE_BINVER=%REDECLIPSE_BINVER:~0,5%
 set REDECLIPSE_UPDATE=%REDECLIPSE_BRANCH%/%REDECLIPSE_BINVER%
@@ -45,17 +48,23 @@ set REDECLIPSE_TEMP=%REDECLIPSE_CACHE%\%REDECLIPSE_BRANCH%
 echo Branch: %REDECLIPSE_BRANCH%
 if NOT EXIST "%REDECLIPSE_PATH%\bin\tools\wget.exe" (
     echo Unable to find wget.exe, are you sure it is in tools?
-    goto bail
+    popd
+    endlocal
+    exit /b 0
 )
 set REDECLIPSE_WGET="%REDECLIPSE_PATH%\bin\tools\wget.exe" --continue --no-check-certificate --user-agent="redeclipse-%REDECLIPSE_UPDATE%"
 if NOT EXIST "%REDECLIPSE_PATH%\bin\tools\unzip.exe" (
     echo Unable to find unzip.exe, are you sure it is in tools?
-    goto bail
+    popd
+    endlocal
+    exit /b 0
 )
 set REDECLIPSE_UNZIP="%REDECLIPSE_PATH%\bin\tools\unzip.exe"
 if NOT EXIST "%REDECLIPSE_PATH%\bin\tools\git-apply.exe" (
     echo Unable to find git-apply.exe, are you sure it is in tools?
-    goto bail
+    popd
+    endlocal
+    exit /b 0
 )
 set REDECLIPSE_GITAPPLY="%REDECLIPSE_PATH%\bin\tools\git-apply.exe" --ignore-space-change --ignore-whitespace --verbose --stat --apply
 if NOT EXIST "%REDECLIPSE_TEMP%" mkdir "%REDECLIPSE_TEMP%"
@@ -215,7 +224,13 @@ if NOT EXIST "%REDECLIPSE_TEMP%\windows.zip" (
 echo %REDECLIPSE_UNZIP% -o "%REDECLIPSE_TEMP%\windows.zip" -d "%REDECLIPSE_PATH%" ^&^& ^(echo %REDECLIPSE_RVERSION% ^> "%REDECLIPSE_TEMP%\version.ini"^) ^|^| set REDECLIPSE_ERROR=1 >> "%REDECLIPSE_TEMP%\install.bat"
 set REDECLIPSE_DEPLOY=true
 :deploy
-if NOT "%REDECLIPSE_DEPLOY%" == "true" goto yay
+if NOT "%REDECLIPSE_DEPLOY%" == "true" (
+    echo.
+    echo Everything is already up to date!
+    popd
+    endlocal
+    exit /b 0
+)
 echo endlocal >> "%REDECLIPSE_TEMP%\install.bat"
 echo if "%%REDECLIPSE_ERROR%%" == "1" exit /b 1 >> "%REDECLIPSE_TEMP%\install.bat"
 echo Deploying: "%REDECLIPSE_TEMP%\install.bat"
@@ -231,20 +246,16 @@ if NOT EXIST "%REDECLIPSE_PATH%\bin\tools\elevate.exe" (
 )
 set REDECLIPSE_INSTALL="%REDECLIPSE_PATH%\bin\tools\elevate.exe" -wait
 :unpack
-%REDECLIPSE_INSTALL% "%REDECLIPSE_TEMP%\install.bat" || (
+%REDECLIPSE_INSTALL% "%REDECLIPSE_TEMP%\install.bat" && (
+    echo.
+    echo Updated successfully!
+    popd
+    endlocal
+    exit /b 0
+) || (
+    echo.
     echo There was an error deploying the files.
-    set REDECLIPSE_RETURN=1
-    goto bail
+    popd
+    endlocal
+    exit /b 1
 )
-:good
-if NOT "%REDECLIPSE_BRANCH%" == "stable" goto yay
-set /p REDECLIPSE_BINNEW=< "%REDECLIPSE_PATH%\bin\version.txt"
-if NOT "%REDECLIPSE_BINVER%" == "%REDECLIPSE_BINNEW%" goto start
-:yay
-echo.
-echo Everything is up to date!
-:bail
-echo.
-popd
-endlocal
-if "%REDECLIPSE_RETURN%" == "1" exit /b 1

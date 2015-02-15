@@ -27,7 +27,11 @@ goto update
 if "%REDECLIPSE_RETRY%" == "1" goto runit
 set REDECLIPSE_RETRY=1
 :update
+set /p REDECLIPSE_BINVER=< "%REDECLIPSE_PATH%\bin\version.txt"
 call bin\update.bat || goto retry
+if NOT "%REDECLIPSE_BRANCH%" == "stable" goto runit
+set /p REDECLIPSE_BINNEW=< "%REDECLIPSE_PATH%\bin\version.txt"
+if NOT "%REDECLIPSE_BINVER%" == "%REDECLIPSE_BINNEW%" goto update
 :runit
 if EXIST bin\%REDECLIPSE_ARCH%\%REDECLIPSE_BINARY%.exe (
     start bin\%REDECLIPSE_ARCH%\%REDECLIPSE_BINARY%.exe %REDECLIPSE_OPTIONS% %*
