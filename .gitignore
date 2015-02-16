@@ -3,7 +3,8 @@
 *.exe
 redeclipse_client_*
 redeclipse_server_*
-bin/redeclipse.app/Contents/MacOS/redeclipse
+bin/*.txt
+bin/redeclipse.app/Contents/MacOS/redeclipse_*
 src/.objs/
 *.o
 *.so

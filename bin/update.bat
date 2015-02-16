@@ -22,6 +22,13 @@ if NOT DEFINED REDECLIPSE_GITHUB set REDECLIPSE_GITHUB=https://github.com/red-ec
 if NOT DEFINED REDECLIPSE_BRANCH (
     set REDECLIPSE_BRANCH=stable
     if EXIST .git set REDECLIPSE_BRANCH=devel
+    if EXIST "%REDECLIPSE_PATH%\bin\branch.txt" set /p REDECLIPSE_BRANCH=< "%REDECLIPSE_PATH%\bin\branch.txt"
+)
+if NOT "%REDECLIPSE_BRANCH%" == "stable" if NOT "%REDECLIPSE_BRANCH%" == "devel" (
+    echo Unsupported update branch: "%REDECLIPSE_BRANCH%"
+    popd
+    endlocal
+    exit /b 0
 )
 if NOT "%REDECLIPSE_BRANCH%" == "stable" goto notstable
 if NOT EXIST "%REDECLIPSE_PATH%\bin\version.txt" (
@@ -37,7 +44,7 @@ if "%REDECLIPSE_BINVER%" == "" (
     endlocal
     exit /b 0
 )
-set REDECLIPSE_BINVER=%REDECLIPSE_BINVER:~0,5%
+rem set REDECLIPSE_BINVER=%REDECLIPSE_BINVER:~0,5%
 set REDECLIPSE_UPDATE=%REDECLIPSE_BRANCH%/%REDECLIPSE_BINVER%
 set REDECLIPSE_TEMP=%REDECLIPSE_CACHE%\%REDECLIPSE_BRANCH%\%REDECLIPSE_BINVER%
 goto branch
@@ -74,15 +81,15 @@ echo set REDECLIPSE_ERROR=false>> "%REDECLIPSE_TEMP%\install.bat"
 if NOT "%REDECLIPSE_BRANCH%" == "stable" goto binary
 :base
 echo.
-if EXIST "%REDECLIPSE_TEMP%\base.ini" set /p REDECLIPSE_BASE=< "%REDECLIPSE_TEMP%\base.ini"
+if EXIST "%REDECLIPSE_PATH%\bin\base.txt" set /p REDECLIPSE_BASE=< "%REDECLIPSE_PATH%\bin\base.txt"
 if "%REDECLIPSE_BASE%" == "" set REDECLIPSE_BASE=none
-set REDECLIPSE_BASE=%REDECLIPSE_BASE:~0,40%
+rem set REDECLIPSE_BASE=%REDECLIPSE_BASE:~0,40%
 echo Current base: %REDECLIPSE_BASE%
 set REDECLIPSE_OBASE=none
 if NOT EXIST "%REDECLIPSE_TEMP%\base.txt" goto baseget
 set /p REDECLIPSE_OBASE=< "%REDECLIPSE_TEMP%\base.txt"
 if "%REDECLIPSE_OBASE%" == "" set REDECLIPSE_OBASE=none
-set REDECLIPSE_OBASE=%REDECLIPSE_OBASE:~0,40%
+rem set REDECLIPSE_OBASE=%REDECLIPSE_OBASE:~0,40%
 echo Cached base : %REDECLIPSE_OBASE%
 del /f /q "%REDECLIPSE_TEMP%\base.txt"
 :baseget
@@ -96,7 +103,7 @@ if "%REDECLIPSE_RBASE%" == "" (
     echo Failed to retrieve base update information.
     goto data
 )
-set REDECLIPSE_RBASE=%REDECLIPSE_RBASE:~0,40%
+rem set REDECLIPSE_RBASE=%REDECLIPSE_RBASE:~0,40%
 echo Remote base : %REDECLIPSE_RBASE%
 if "%REDECLIPSE_RBASE%" == "%REDECLIPSE_BASE%" goto data
 if "%REDECLIPSE_BASE%" == "none" goto baseblob
@@ -109,9 +116,9 @@ if NOT EXIST "%REDECLIPSE_TEMP%\base.patch" (
     goto baseblob
 )
 echo %REDECLIPSE_GITAPPLY% "%REDECLIPSE_TEMP%\base.patch" --directory="%REDECLIPSE_PATH%" ^&^& ^(>> "%REDECLIPSE_TEMP%\install.bat"
-echo     (echo %REDECLIPSE_RBASE%)^> "%REDECLIPSE_TEMP%\base.ini">> "%REDECLIPSE_TEMP%\install.bat"
+echo     (echo %REDECLIPSE_RBASE%)^> "%REDECLIPSE_PATH%\bin\base.txt">> "%REDECLIPSE_TEMP%\install.bat"
 echo ^) ^|^| ^(>> "%REDECLIPSE_TEMP%\install.bat"
-echo     (echo 0)^> "%REDECLIPSE_TEMP%\base.ini">> "%REDECLIPSE_TEMP%\install.bat"
+echo     (echo 0)^> "%REDECLIPSE_PATH%\bin\base.txt">> "%REDECLIPSE_TEMP%\install.bat"
 echo     set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
 echo ^)>> "%REDECLIPSE_TEMP%\install.bat"
 set REDECLIPSE_DEPLOY=true
@@ -127,7 +134,7 @@ if NOT EXIST "%REDECLIPSE_TEMP%\base.zip" (
 echo %REDECLIPSE_UNZIP% -o "%REDECLIPSE_TEMP%\base.zip" -d "%REDECLIPSE_TEMP%" ^&^& ^(>> "%REDECLIPSE_TEMP%\install.bat"
 echo    xcopy /e /c /i /f /h /y "%REDECLIPSE_TEMP%\base-%REDECLIPSE_RBASE%\*" "%REDECLIPSE_PATH%">> "%REDECLIPSE_TEMP%\install.bat"
 echo    rmdir /s /q "%REDECLIPSE_TEMP%\base-%REDECLIPSE_RBASE%">> "%REDECLIPSE_TEMP%\install.bat"
-echo    (echo %REDECLIPSE_RBASE%)^> "%REDECLIPSE_TEMP%\base.ini">> "%REDECLIPSE_TEMP%\install.bat"
+echo    (echo %REDECLIPSE_RBASE%)^> "%REDECLIPSE_PATH%\bin\base.txt">> "%REDECLIPSE_TEMP%\install.bat"
 echo ^) ^|^| set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
 set REDECLIPSE_DEPLOY=true
 :data
@@ -138,15 +145,15 @@ set REDECLIPSE_DATA=none
 echo mkdir "%REDECLIPSE_PATH%\data">> "%REDECLIPSE_TEMP%\install.bat"
 goto dataget
 :dataver
-if EXIST "%REDECLIPSE_TEMP%\data.ini" set /p REDECLIPSE_DATA=< "%REDECLIPSE_TEMP%\data.ini"
+if EXIST "%REDECLIPSE_PATH%\bin\data.txt" set /p REDECLIPSE_DATA=< "%REDECLIPSE_PATH%\bin\data.txt"
 if "%REDECLIPSE_DATA%" == "" set REDECLIPSE_DATA=none
-set REDECLIPSE_DATA=%REDECLIPSE_DATA:~0,40%
+rem set REDECLIPSE_DATA=%REDECLIPSE_DATA:~0,40%
 echo Current data: %REDECLIPSE_DATA%
 set REDECLIPSE_ODATA=none
 if NOT EXIST "%REDECLIPSE_TEMP%\data.txt" goto dataget
 set /p REDECLIPSE_ODATA=< "%REDECLIPSE_TEMP%\data.txt"
 if "%REDECLIPSE_ODATA%" == "" set REDECLIPSE_ODATA=none
-set REDECLIPSE_ODATA=%REDECLIPSE_ODATA:~0,40%
+rem set REDECLIPSE_ODATA=%REDECLIPSE_ODATA:~0,40%
 echo Cached data : %REDECLIPSE_ODATA%
 del /f /q "%REDECLIPSE_TEMP%\data.txt"
 :dataget
@@ -160,7 +167,7 @@ if "%REDECLIPSE_RDATA%" == "" (
     echo Failed to retrieve data update information.
     goto binary
 )
-set REDECLIPSE_RDATA=%REDECLIPSE_RDATA:~0,40%
+rem set REDECLIPSE_RDATA=%REDECLIPSE_RDATA:~0,40%
 echo Remote data : %REDECLIPSE_RDATA%
 if "%REDECLIPSE_RDATA%" == "%REDECLIPSE_DATA%" goto binary
 if "%REDECLIPSE_DATA%" == "none" goto datablob
@@ -173,9 +180,9 @@ if NOT EXIST "%REDECLIPSE_TEMP%\data.patch" (
     goto datablob
 )
 echo %REDECLIPSE_GITAPPLY% "%REDECLIPSE_TEMP%\data.patch" --directory="%REDECLIPSE_PATH%" ^&^& ^(>> "%REDECLIPSE_TEMP%\install.bat"
-echo     (echo %REDECLIPSE_RDATA%)^> "%REDECLIPSE_TEMP%\data.ini">> "%REDECLIPSE_TEMP%\install.bat"
+echo     (echo %REDECLIPSE_RDATA%)^> "%REDECLIPSE_PATH%\bin\data.txt">> "%REDECLIPSE_TEMP%\install.bat"
 echo ^) ^|^| ^(>> "%REDECLIPSE_TEMP%\install.bat"
-echo     (echo 0)^> "%REDECLIPSE_TEMP%\data.ini">> "%REDECLIPSE_TEMP%\install.bat"
+echo     (echo 0)^> "%REDECLIPSE_PATH%\bin\data.txt">> "%REDECLIPSE_TEMP%\install.bat"
 echo     set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
 echo ^)>> "%REDECLIPSE_TEMP%\install.bat"
 set REDECLIPSE_DEPLOY=true
@@ -191,27 +198,27 @@ if NOT EXIST "%REDECLIPSE_TEMP%\data.zip" (
 echo %REDECLIPSE_UNZIP% -o "%REDECLIPSE_TEMP%\data.zip" -d "%REDECLIPSE_TEMP%" ^&^& ^(>> "%REDECLIPSE_TEMP%\install.bat"
 echo    xcopy /e /c /i /f /h /y "%REDECLIPSE_TEMP%\data-%REDECLIPSE_RDATA%\*" "%REDECLIPSE_PATH%\data">> "%REDECLIPSE_TEMP%\install.bat"
 echo    rmdir /s /q "%REDECLIPSE_TEMP%\data-%REDECLIPSE_RDATA%">> "%REDECLIPSE_TEMP%\install.bat"
-echo    (echo %REDECLIPSE_RDATA%)^> "%REDECLIPSE_TEMP%\data.ini">> "%REDECLIPSE_TEMP%\install.bat"
+echo    (echo %REDECLIPSE_RDATA%)^> "%REDECLIPSE_PATH%\bin\data.txt">> "%REDECLIPSE_TEMP%\install.bat"
 echo ^) ^|^| set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
 set REDECLIPSE_DEPLOY=true
 :binary
 echo.
-if EXIST "%REDECLIPSE_TEMP%\version.ini" set /p REDECLIPSE_VERSION=< "%REDECLIPSE_TEMP%\version.ini"
+if EXIST "%REDECLIPSE_PATH%\bin\binaries.txt" set /p REDECLIPSE_VERSION=< "%REDECLIPSE_PATH%\bin\binaries.txt"
 if "%REDECLIPSE_VERSION%" == "" set REDECLIPSE_VERSION=none
-set REDECLIPSE_VERSION=%REDECLIPSE_VERSION:~0,14%
+rem set REDECLIPSE_VERSION=%REDECLIPSE_VERSION:~0,14%
 echo Current version: %REDECLIPSE_VERSION%
 :binaryget
-%REDECLIPSE_WGET% --output-document="%REDECLIPSE_TEMP%/version.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/version.txt"> nul 2>&1
-if NOT EXIST "%REDECLIPSE_TEMP%\version.txt" (
+%REDECLIPSE_WGET% --output-document="%REDECLIPSE_TEMP%/binaries.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/binaries.txt"> nul 2>&1
+if NOT EXIST "%REDECLIPSE_TEMP%\binaries.txt" (
     echo Failed to retrieve version update information.
     goto deploy
 )
-set /p REDECLIPSE_RVERSION=< "%REDECLIPSE_TEMP%\version.txt"
+set /p REDECLIPSE_RVERSION=< "%REDECLIPSE_TEMP%\binaries.txt"
 if "%REDECLIPSE_RVERSION%" == "" (
     echo Failed to retrieve version update information.
     goto deploy
 )
-set REDECLIPSE_RVERSION=%REDECLIPSE_RVERSION:~0,14%
+rem set REDECLIPSE_RVERSION=%REDECLIPSE_RVERSION:~0,14%
 echo Remote version : %REDECLIPSE_RVERSION%
 if NOT "%REDECLIPSE_TRYUPDATE%" == "1" if "%REDECLIPSE_RVERSION%" == "%REDECLIPSE_VERSION%" goto deploy
 echo Downloading binary update from: %REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/windows.zip
@@ -222,7 +229,7 @@ if NOT EXIST "%REDECLIPSE_TEMP%\windows.zip" (
     goto deploy
 )
 echo %REDECLIPSE_UNZIP% -o "%REDECLIPSE_TEMP%\windows.zip" -d "%REDECLIPSE_PATH%" ^&^& ^(>> "%REDECLIPSE_TEMP%\install.bat"
-echo     (echo %REDECLIPSE_RVERSION%)^> "%REDECLIPSE_TEMP%\version.ini">> "%REDECLIPSE_TEMP%\install.bat"
+echo     (echo %REDECLIPSE_RVERSION%)^> "%REDECLIPSE_PATH%\bin\binaries.txt">> "%REDECLIPSE_TEMP%\install.bat"
 echo ^) ^|^| set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
 set REDECLIPSE_DEPLOY=true
 :deploy
@@ -251,6 +258,7 @@ set REDECLIPSE_INSTALL="%REDECLIPSE_PATH%\bin\tools\elevate.exe" -wait
 %REDECLIPSE_INSTALL% "%REDECLIPSE_TEMP%\install.bat" && (
     echo.
     echo Updated successfully!
+    (echo %REDECLIPSE_BRANCH%)> "%REDECLIPSE_PATH%\bin\branch.txt"
     popd
     endlocal
     exit /b 0
