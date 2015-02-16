@@ -80,7 +80,7 @@ if NOT DEFINED REDECLIPSE_PATH (
     echo [C] base: %REDECLIPSE_BASE_CACHED%
     del /f /q "%REDECLIPSE_TEMP%\base.txt"
 :baseget
-    %REDECLIPSE_WGET% --output-document="%REDECLIPSE_TEMP%/base.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/base.txt"> nul 2>&1
+    %REDECLIPSE_WGET% --output-document="%REDECLIPSE_TEMP%\base.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/base.txt"> nul 2>&1
     if NOT EXIST "%REDECLIPSE_TEMP%\base.txt" (
         echo Failed to retrieve base update information.
         goto data
@@ -97,7 +97,7 @@ if NOT DEFINED REDECLIPSE_PATH (
     if EXIST "%REDECLIPSE_TEMP%\base.patch" del /f /q "%REDECLIPSE_TEMP%\base.patch"
     echo [D] base: %REDECLIPSE_GITHUB%/base/compare/%REDECLIPSE_BASE%...%REDECLIPSE_BASE_REMOTE%.patch
     echo.
-    %REDECLIPSE_WGET% --output-document="%REDECLIPSE_TEMP%/base.patch" "%REDECLIPSE_GITHUB%/base/compare/%REDECLIPSE_BASE%...%REDECLIPSE_BASE_REMOTE%.patch"
+    %REDECLIPSE_WGET% --output-document="%REDECLIPSE_TEMP%\base.patch" "%REDECLIPSE_GITHUB%/base/compare/%REDECLIPSE_BASE%...%REDECLIPSE_BASE_REMOTE%.patch"
     if NOT EXIST "%REDECLIPSE_TEMP%\base.patch" (
         echo Failed to retrieve base update package. Downloading full zip instead.
         goto baseblob
@@ -117,7 +117,7 @@ if NOT DEFINED REDECLIPSE_PATH (
     )
     echo [D] base: %REDECLIPSE_GITHUB%/base/zipball/%REDECLIPSE_BASE_REMOTE%
     echo.
-    %REDECLIPSE_WGET% --output-document="%REDECLIPSE_TEMP%/base.zip" "%REDECLIPSE_GITHUB%/base/zipball/%REDECLIPSE_BASE_REMOTE%"
+    %REDECLIPSE_WGET% --output-document="%REDECLIPSE_TEMP%\base.zip" "%REDECLIPSE_GITHUB%/base/zipball/%REDECLIPSE_BASE_REMOTE%"
     if NOT EXIST "%REDECLIPSE_TEMP%\base.zip" (
         echo Failed to retrieve base update package.
         goto data
@@ -147,7 +147,7 @@ if NOT DEFINED REDECLIPSE_PATH (
     echo [C] data: %REDECLIPSE_DATA_CACHED%
     del /f /q "%REDECLIPSE_TEMP%\data.txt"
 :dataget
-    %REDECLIPSE_WGET% --output-document="%REDECLIPSE_TEMP%/data.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/data.txt"> nul 2>&1
+    %REDECLIPSE_WGET% --output-document="%REDECLIPSE_TEMP%\data.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/data.txt"> nul 2>&1
     if NOT EXIST "%REDECLIPSE_TEMP%\data.txt" (
         echo Failed to retrieve data update information.
         goto bins
@@ -164,7 +164,7 @@ if NOT DEFINED REDECLIPSE_PATH (
     if EXIST "%REDECLIPSE_TEMP%\data.patch" del /f /q "%REDECLIPSE_TEMP%\data.patch"
     echo [D] data: %REDECLIPSE_GITHUB%/data/compare/%REDECLIPSE_DATA%...%REDECLIPSE_DATA_REMOTE%.patch
     echo.
-    %REDECLIPSE_WGET% --output-document="%REDECLIPSE_TEMP%/data.patch" "%REDECLIPSE_GITHUB%/data/compare/%REDECLIPSE_DATA%...%REDECLIPSE_DATA_REMOTE%.patch"
+    %REDECLIPSE_WGET% --output-document="%REDECLIPSE_TEMP%\data.patch" "%REDECLIPSE_GITHUB%/data/compare/%REDECLIPSE_DATA%...%REDECLIPSE_DATA_REMOTE%.patch"
     if NOT EXIST "%REDECLIPSE_TEMP%\data.patch" (
         echo Failed to retrieve data update package. Downloading full zip instead.
         goto datablob
@@ -184,7 +184,7 @@ if NOT DEFINED REDECLIPSE_PATH (
     )
     echo [D] data: %REDECLIPSE_GITHUB%/data/zipball/%REDECLIPSE_DATA_REMOTE%
     echo.
-    %REDECLIPSE_WGET% --output-document="%REDECLIPSE_TEMP%/data.zip" "%REDECLIPSE_GITHUB%/data/zipball/%REDECLIPSE_DATA_REMOTE%"
+    %REDECLIPSE_WGET% --output-document="%REDECLIPSE_TEMP%\data.zip" "%REDECLIPSE_GITHUB%/data/zipball/%REDECLIPSE_DATA_REMOTE%"
     if NOT EXIST "%REDECLIPSE_TEMP%\data.zip" (
         echo Failed to retrieve data update package.
         goto bins
@@ -207,7 +207,7 @@ if NOT DEFINED REDECLIPSE_PATH (
     if "%REDECLIPSE_BINS_CACHED%" == "" set REDECLIPSE_BINS_CACHED=none
     echo [C] bins: %REDECLIPSE_BINS_CACHED%
 :binsget
-    %REDECLIPSE_WGET% --output-document="%REDECLIPSE_TEMP%/bins.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/bins.txt"> nul 2>&1
+    %REDECLIPSE_WGET% --output-document="%REDECLIPSE_TEMP%\bins.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/bins.txt"> nul 2>&1
     if NOT EXIST "%REDECLIPSE_TEMP%\bins.txt" (
         echo Failed to retrieve bins update information.
         goto deploy
@@ -228,7 +228,7 @@ if NOT DEFINED REDECLIPSE_PATH (
     )
     echo [D] bins: %REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/windows.zip
     echo.
-    %REDECLIPSE_WGET% --output-document="%REDECLIPSE_TEMP%/windows.zip" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/windows.zip"
+    %REDECLIPSE_WGET% --output-document="%REDECLIPSE_TEMP%\windows.zip" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/windows.zip"
     if NOT EXIST "%REDECLIPSE_TEMP%\windows.zip" (
         echo Failed to retrieve bins update package.
         goto deploy
