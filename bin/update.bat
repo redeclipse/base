@@ -15,8 +15,6 @@ if EXIST "%USERMYDOCS%" (
     set REDECLIPSE_CACHE=cache
 )
 :start
-echo Folder: %REDECLIPSE_PATH%
-echo Cached: %REDECLIPSE_CACHE%
 if NOT DEFINED REDECLIPSE_SOURCE set REDECLIPSE_SOURCE=http://redeclipse.net/files
 if NOT DEFINED REDECLIPSE_GITHUB set REDECLIPSE_GITHUB=https://github.com/red-eclipse
 if NOT DEFINED REDECLIPSE_BRANCH (
@@ -53,6 +51,8 @@ set REDECLIPSE_UPDATE=%REDECLIPSE_BRANCH%
 set REDECLIPSE_TEMP=%REDECLIPSE_CACHE%\%REDECLIPSE_BRANCH%
 :branch
 echo Branch: %REDECLIPSE_BRANCH%
+echo Folder: %REDECLIPSE_PATH%
+echo Cached: %REDECLIPSE_CACHE%
 if NOT EXIST "%REDECLIPSE_PATH%\bin\tools\wget.exe" (
     echo Unable to find wget.exe, are you sure it is in tools?
     popd
@@ -84,13 +84,13 @@ echo.
 if EXIST "%REDECLIPSE_PATH%\bin\base.txt" set /p REDECLIPSE_BASE=< "%REDECLIPSE_PATH%\bin\base.txt"
 if "%REDECLIPSE_BASE%" == "" set REDECLIPSE_BASE=none
 rem set REDECLIPSE_BASE=%REDECLIPSE_BASE:~0,40%
-echo Current base: %REDECLIPSE_BASE%
+echo [I] base: %REDECLIPSE_BASE%
 set REDECLIPSE_OBASE=none
 if NOT EXIST "%REDECLIPSE_TEMP%\base.txt" goto baseget
 set /p REDECLIPSE_OBASE=< "%REDECLIPSE_TEMP%\base.txt"
 if "%REDECLIPSE_OBASE%" == "" set REDECLIPSE_OBASE=none
 rem set REDECLIPSE_OBASE=%REDECLIPSE_OBASE:~0,40%
-echo Cached base : %REDECLIPSE_OBASE%
+echo [C] base: %REDECLIPSE_OBASE%
 del /f /q "%REDECLIPSE_TEMP%\base.txt"
 :baseget
 %REDECLIPSE_WGET% --output-document="%REDECLIPSE_TEMP%/base.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/base.txt"> nul 2>&1
@@ -104,12 +104,12 @@ if "%REDECLIPSE_RBASE%" == "" (
     goto data
 )
 rem set REDECLIPSE_RBASE=%REDECLIPSE_RBASE:~0,40%
-echo Remote base : %REDECLIPSE_RBASE%
+echo [R] base: %REDECLIPSE_RBASE%
 if "%REDECLIPSE_RBASE%" == "%REDECLIPSE_BASE%" goto data
 if "%REDECLIPSE_BASE%" == "none" goto baseblob
 :basepatch
 if NOT "%REDECLIPSE_OBASE%" == "%REDECLIPSE_RBASE%" if EXIST "%REDECLIPSE_TEMP%\base.patch" del /f /q "%REDECLIPSE_TEMP%\base.patch"
-echo Downloading base update from: %REDECLIPSE_GITHUB%/base/compare/%REDECLIPSE_BASE%...%REDECLIPSE_RBASE%.patch
+echo [D] base: %REDECLIPSE_GITHUB%/base/compare/%REDECLIPSE_BASE%...%REDECLIPSE_RBASE%.patch
 %REDECLIPSE_WGET% --output-document="%REDECLIPSE_TEMP%/base.patch" "%REDECLIPSE_GITHUB%/base/compare/%REDECLIPSE_BASE%...%REDECLIPSE_RBASE%.patch"
 if NOT EXIST "%REDECLIPSE_TEMP%\base.patch" (
     echo Failed to retrieve base update package. Downloading full zip instead.
@@ -125,7 +125,7 @@ set REDECLIPSE_DEPLOY=true
 goto data
 :baseblob
 if NOT "%REDECLIPSE_OBASE%" == "%REDECLIPSE_RBASE%" if EXIST "%REDECLIPSE_TEMP%\base.zip" del /f /q "%REDECLIPSE_TEMP%\base.zip"
-echo Downloading base update from: %REDECLIPSE_GITHUB%/base/zipball/%REDECLIPSE_RBASE%
+echo [D] base: %REDECLIPSE_GITHUB%/base/zipball/%REDECLIPSE_RBASE%
 %REDECLIPSE_WGET% --output-document="%REDECLIPSE_TEMP%/base.zip" "%REDECLIPSE_GITHUB%/base/zipball/%REDECLIPSE_RBASE%"
 if NOT EXIST "%REDECLIPSE_TEMP%\base.zip" (
     echo Failed to retrieve base update package.
@@ -148,13 +148,13 @@ goto dataget
 if EXIST "%REDECLIPSE_PATH%\bin\data.txt" set /p REDECLIPSE_DATA=< "%REDECLIPSE_PATH%\bin\data.txt"
 if "%REDECLIPSE_DATA%" == "" set REDECLIPSE_DATA=none
 rem set REDECLIPSE_DATA=%REDECLIPSE_DATA:~0,40%
-echo Current data: %REDECLIPSE_DATA%
+echo [I] data: %REDECLIPSE_DATA%
 set REDECLIPSE_ODATA=none
 if NOT EXIST "%REDECLIPSE_TEMP%\data.txt" goto dataget
 set /p REDECLIPSE_ODATA=< "%REDECLIPSE_TEMP%\data.txt"
 if "%REDECLIPSE_ODATA%" == "" set REDECLIPSE_ODATA=none
 rem set REDECLIPSE_ODATA=%REDECLIPSE_ODATA:~0,40%
-echo Cached data : %REDECLIPSE_ODATA%
+echo [C] data: %REDECLIPSE_ODATA%
 del /f /q "%REDECLIPSE_TEMP%\data.txt"
 :dataget
 %REDECLIPSE_WGET% --output-document="%REDECLIPSE_TEMP%/data.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/data.txt"> nul 2>&1
@@ -168,12 +168,12 @@ if "%REDECLIPSE_RDATA%" == "" (
     goto binary
 )
 rem set REDECLIPSE_RDATA=%REDECLIPSE_RDATA:~0,40%
-echo Remote data : %REDECLIPSE_RDATA%
+echo [R] data: %REDECLIPSE_RDATA%
 if "%REDECLIPSE_RDATA%" == "%REDECLIPSE_DATA%" goto binary
 if "%REDECLIPSE_DATA%" == "none" goto datablob
 :datapatch
 if NOT "%REDECLIPSE_ODATA%" == "%REDECLIPSE_RDATA%" if EXIST "%REDECLIPSE_TEMP%\data.patch" del /f /q "%REDECLIPSE_TEMP%\data.patch"
-echo Downloading data update from: %REDECLIPSE_GITHUB%/data/compare/%REDECLIPSE_DATA%...%REDECLIPSE_RDATA%.patch
+echo [D] data: %REDECLIPSE_GITHUB%/data/compare/%REDECLIPSE_DATA%...%REDECLIPSE_RDATA%.patch
 %REDECLIPSE_WGET% --output-document="%REDECLIPSE_TEMP%/data.patch" "%REDECLIPSE_GITHUB%/data/compare/%REDECLIPSE_DATA%...%REDECLIPSE_RDATA%.patch"
 if NOT EXIST "%REDECLIPSE_TEMP%\data.patch" (
     echo Failed to retrieve data update package. Downloading full zip instead.
@@ -188,7 +188,7 @@ echo ^)>> "%REDECLIPSE_TEMP%\install.bat"
 set REDECLIPSE_DEPLOY=true
 goto binary
 :datablob
-echo Downloading data update from: %REDECLIPSE_GITHUB%/data/zipball/%REDECLIPSE_RDATA%
+echo [D] data: %REDECLIPSE_GITHUB%/data/zipball/%REDECLIPSE_RDATA%
 if NOT "%REDECLIPSE_ODATA%" == "%REDECLIPSE_RDATA%" if EXIST "%REDECLIPSE_TEMP%\data.zip" del /f /q "%REDECLIPSE_TEMP%\data.zip"
 %REDECLIPSE_WGET% --output-document="%REDECLIPSE_TEMP%/data.zip" "%REDECLIPSE_GITHUB%/data/zipball/%REDECLIPSE_RDATA%"
 if NOT EXIST "%REDECLIPSE_TEMP%\data.zip" (
@@ -203,25 +203,25 @@ echo ^) ^|^| set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
 set REDECLIPSE_DEPLOY=true
 :binary
 echo.
-if EXIST "%REDECLIPSE_PATH%\bin\binaries.txt" set /p REDECLIPSE_VERSION=< "%REDECLIPSE_PATH%\bin\binaries.txt"
-if "%REDECLIPSE_VERSION%" == "" set REDECLIPSE_VERSION=none
-rem set REDECLIPSE_VERSION=%REDECLIPSE_VERSION:~0,14%
-echo Current version: %REDECLIPSE_VERSION%
+if EXIST "%REDECLIPSE_PATH%\bin\binaries.txt" set /p REDECLIPSE_BINARIES=< "%REDECLIPSE_PATH%\bin\binaries.txt"
+if "%REDECLIPSE_BINARIES%" == "" set REDECLIPSE_BINARIES=none
+rem set REDECLIPSE_BINARIES=%REDECLIPSE_BINARIES:~0,14%
+echo [I] binaries: %REDECLIPSE_BINARIES%
 :binaryget
 %REDECLIPSE_WGET% --output-document="%REDECLIPSE_TEMP%/binaries.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/binaries.txt"> nul 2>&1
 if NOT EXIST "%REDECLIPSE_TEMP%\binaries.txt" (
-    echo Failed to retrieve version update information.
+    echo Failed to retrieve binaries update information.
     goto deploy
 )
-set /p REDECLIPSE_RVERSION=< "%REDECLIPSE_TEMP%\binaries.txt"
-if "%REDECLIPSE_RVERSION%" == "" (
-    echo Failed to retrieve version update information.
+set /p REDECLIPSE_RBINARIES=< "%REDECLIPSE_TEMP%\binaries.txt"
+if "%REDECLIPSE_RBINARIES%" == "" (
+    echo Failed to retrieve binaries update information.
     goto deploy
 )
-rem set REDECLIPSE_RVERSION=%REDECLIPSE_RVERSION:~0,14%
-echo Remote version : %REDECLIPSE_RVERSION%
-if NOT "%REDECLIPSE_TRYUPDATE%" == "1" if "%REDECLIPSE_RVERSION%" == "%REDECLIPSE_VERSION%" goto deploy
-echo Downloading binary update from: %REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/windows.zip
+rem set REDECLIPSE_RBINARIES=%REDECLIPSE_RBINARIES:~0,14%
+echo [R] binaries: %REDECLIPSE_RBINARIES%
+if NOT "%REDECLIPSE_TRYUPDATE%" == "1" if "%REDECLIPSE_RBINARIES%" == "%REDECLIPSE_BINARIES%" goto deploy
+echo [D] binaries: %REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/windows.zip
 if EXIST "%REDECLIPSE_TEMP%\windows.zip" del /f /q "%REDECLIPSE_TEMP%\windows.zip"
 %REDECLIPSE_WGET% --output-document="%REDECLIPSE_TEMP%/windows.zip" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/windows.zip"
 if NOT EXIST "%REDECLIPSE_TEMP%\windows.zip" (
@@ -229,7 +229,7 @@ if NOT EXIST "%REDECLIPSE_TEMP%\windows.zip" (
     goto deploy
 )
 echo %REDECLIPSE_UNZIP% -o "%REDECLIPSE_TEMP%\windows.zip" -d "%REDECLIPSE_PATH%" ^&^& ^(>> "%REDECLIPSE_TEMP%\install.bat"
-echo     (echo %REDECLIPSE_RVERSION%)^> "%REDECLIPSE_PATH%\bin\binaries.txt">> "%REDECLIPSE_TEMP%\install.bat"
+echo     (echo %REDECLIPSE_RBINARIES%)^> "%REDECLIPSE_PATH%\bin\binaries.txt">> "%REDECLIPSE_TEMP%\install.bat"
 echo ^) ^|^| set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
 set REDECLIPSE_DEPLOY=true
 :deploy
