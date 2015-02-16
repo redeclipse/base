@@ -2,8 +2,8 @@
 *.c     text
 *.h     text
 *.cpp   text
-*.txt   text eol=crlf
-*.cfg   text eol=crlf
+*.txt   text
+*.cfg   text
 *.bat   text eol=crlf
 *.sh    text eol=lf
 *.png   binary
