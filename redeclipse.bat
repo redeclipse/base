@@ -1,10 +1,12 @@
 @ECHO OFF
-setlocal ENABLEEXTENSIONS
+setlocal enableextensions enabledelayedexpansion
 if NOT DEFINED REDECLIPSE_PATH set REDECLIPSE_PATH=%~dp0
 if NOT DEFINED REDECLIPSE_BINARY set REDECLIPSE_BINARY=redeclipse
 pushd %REDECLIPSE_PATH%
 set REDECLIPSE_PATH=%CD%
 popd
+set REDECLIPSE_BATCH=%REDECLIPSE_PATH%\%0
+for %%F in (%REDECLIPSE_BATCH%) do set REDECLIPSE_FILETIME=%%~tF
 if NOT DEFINED REDECLIPSE_OPTIONS set REDECLIPSE_OPTIONS=
 if NOT DEFINED REDECLIPSE_ARCH (
     set REDECLIPSE_ARCH=x86
@@ -33,7 +35,22 @@ if "%REDECLIPSE_RETRY%" == "1" goto runit
 set REDECLIPSE_RETRY=1
 :update
 set /p REDECLIPSE_BINVER=< "%REDECLIPSE_PATH%\bin\version.txt"
-call "%REDECLIPSE_PATH%\bin\update.bat" || goto retry
+call "%REDECLIPSE_PATH%\bin\update.bat" && (
+    for %%G in (%REDECLIPSE_BATCH%) do set REDECLIPSE_FILENOW=%%~tG
+    if NOT "!REDECLIPSE_FILENOW!" == "!REDECLIPSE_FILETIME!" (
+        echo The batch file has been modified, you should re-run it.
+        pause
+        exit /b 0
+    )
+) || (
+    for %%G in (%REDECLIPSE_BATCH%) do set REDECLIPSE_FILENOW=%%~tG
+    if NOT "!REDECLIPSE_FILENOW!" == "!REDECLIPSE_FILETIME!" (
+        echo The batch file has been modified, you should re-run it.
+        pause
+        exit /b 0
+    )
+    goto retry
+)
 if NOT "%REDECLIPSE_BRANCH%" == "stable" goto runit
 set /p REDECLIPSE_BINNEW=< "%REDECLIPSE_PATH%\bin\version.txt"
 if NOT "%REDECLIPSE_BINVER%" == "%REDECLIPSE_BINNEW%" goto update
