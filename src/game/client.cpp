@@ -1029,51 +1029,68 @@ namespace client
         messages.put(buf, p.length());
     }
 
-    void saytext(gameent *d, int flags, char *text)
+    void saytext(gameent *f, gameent *t, int flags, char *text)
     {
-        bigstring msg;
+        bigstring msg, line;
         filterbigstring(msg, text, true, colourchat ? false : true, true, true);
         if(*filterwords) filterword(msg, filterwords);
-        defformatstring(m)("%s", game::colourname(d));
-        if(flags&SAY_TEAM)
+
+        defformatstring(name)("%s", game::colourname(f));
+        if(flags&SAY_WHISPER)
         {
-            defformatstring(t)(" (to team %s)", game::colourteam(d->team));
-            concatbigstring(m, t);
+            if(!t) return;
+            defformatstring(sw)(" (\fs\fcwhispers to %s\fS)", t->clientnum == game::player1->clientnum ? "you" : game::colourname(t));
+            concatstring(name, sw);
         }
-        bigstring s;
-        if(flags&SAY_ACTION) formatbigstring(s)("\fv* %s %s", m, msg);
-        else formatbigstring(s)("\fw<%s> %s", m, msg);
+        else if(flags&SAY_TEAM)
+        {
+            defformatstring(st)(" (to team %s)", game::colourteam(f->team));
+            concatstring(name, st);
+        }
+        if(flags&SAY_ACTION) formatbigstring(line)("\fv* %s %s", name, msg);
+        else formatbigstring(line)("\fw<%s> %s", name, msg);
 
         int snd = S_CHAT;
         ident *wid = idents.access(flags&SAY_ACTION ? "on_action" : "on_text");
         if(wid && wid->type == ID_ALIAS && wid->getstr()[0])
         {
             defformatbigstring(act)("%s %d %d %s %s %s",
-                flags&SAY_ACTION ? "on_action" : "on_text", d->clientnum, flags&SAY_TEAM ? 1 : 0,
-                escapestring(game::colourname(d)), escapestring(text), escapestring(s));
+                flags&SAY_ACTION ? "on_action" : "on_text", f->clientnum, flags&SAY_TEAM ? 1 : 0,
+                escapestring(game::colourname(f)), escapestring(text), escapestring(line));
             int ret = execute(act);
             if(ret > 0) snd = ret;
         }
-        conoutft(CON_CHAT, "%s", s);
-        if(snd >= 0 && !issound(d->cschan)) playsound(snd, d->o, d, snd != S_CHAT ? 0 : SND_DIRECT, -1, -1, -1, &d->cschan);
-        ai::scanchat(d, flags, text);
+        conoutft(CON_CHAT, "%s", line);
+        if(snd >= 0 && !issound(f->cschan)) playsound(snd, f->o, f, snd != S_CHAT ? 0 : SND_DIRECT, -1, -1, -1, &f->cschan);
+        ai::scanchat(f, flags, text);
     }
 
-    void toserver(int flags, char *text)
+    void toserver(int flags, const char *text, const char *target)
     {
         if(!waiting(false) && !client::demoplayback)
         {
             bigstring output;
             copybigstring(output, text, messagelength);
-            if(flags&SAY_TEAM && !m_team(game::gamemode, game::mutators))
-                flags &= ~SAY_TEAM;
-            addmsg(N_TEXT, "ri2s", game::player1->clientnum, flags, output);
+            if(flags&SAY_WHISPER)
+            {
+                gameent *e = game::getclient(parseplayer(target));
+                if(e && e->clientnum != game::player1->clientnum && e->actortype == A_PLAYER)
+                    addmsg(N_TEXT, "ri3s", game::player1->clientnum, e->clientnum, flags, output);
+            }
+            else
+            {
+                if(flags&SAY_TEAM && !m_team(game::gamemode, game::mutators))
+                    flags &= ~SAY_TEAM;
+                addmsg(N_TEXT, "ri3s", game::player1->clientnum, -1, flags, output);
+            }
         }
     }
     ICOMMAND(0, say, "C", (char *s), toserver(SAY_NONE, s));
     ICOMMAND(0, me, "C", (char *s), toserver(SAY_ACTION, s));
     ICOMMAND(0, sayteam, "C", (char *s), toserver(SAY_TEAM, s));
     ICOMMAND(0, meteam, "C", (char *s), toserver(SAY_ACTION|SAY_TEAM, s));
+    ICOMMAND(0, whisper, "ss", (char *t, char *s), toserver(SAY_WHISPER, s, t));
+    ICOMMAND(0, mewhisper, "ss", (char *t, char *s), toserver(SAY_ACTION|SAY_WHISPER, s, t));
 
     void parsecommand(gameent *d, const char *cmd, const char *arg)
     {
@@ -1899,12 +1916,12 @@ namespace client
 
                 case N_TEXT:
                 {
-                    int tcn = getint(p);
-                    gameent *t = game::getclient(tcn);
-                    int flags = getint(p);
+                    int fcn = getint(p), tcn = getint(p), flags = getint(p);
                     getstring(text, p);
-                    if(!t || isignored(t->clientnum) || isignored(t->ownernum)) break;
-                    saytext(t, flags, text);
+                    gameent *fcp = game::getclient(fcn);
+                    gameent *tcp = game::getclient(tcn);
+                    if(!fcp || isignored(fcp->clientnum) || isignored(fcp->ownernum)) break;
+                    saytext(fcp, tcp, flags, text);
                     break;
                 }
 
