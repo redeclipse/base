@@ -4,7 +4,7 @@ if NOT DEFINED REDECLIPSE_PATH set REDECLIPSE_PATH=%~dp0
 if NOT DEFINED REDECLIPSE_BINARY set REDECLIPSE_BINARY=redeclipse
 pushd %REDECLIPSE_PATH%
 set REDECLIPSE_PATH=%CD%
-
+popd
 if NOT DEFINED REDECLIPSE_OPTIONS set REDECLIPSE_OPTIONS=
 if NOT DEFINED REDECLIPSE_ARCH (
     set REDECLIPSE_ARCH=x86
@@ -13,12 +13,17 @@ if NOT DEFINED REDECLIPSE_ARCH (
 if NOT DEFINED REDECLIPSE_BRANCH (
     set REDECLIPSE_BRANCH=stable
     if EXIST .git set REDECLIPSE_BRANCH=devel
+    if EXIST "%REDECLIPSE_PATH%\bin\branch.txt" set /p REDECLIPSE_BRANCH=< "%REDECLIPSE_PATH%\bin\branch.txt"
+)
+if NOT "%REDECLIPSE_BRANCH%" == "stable" if NOT "%REDECLIPSE_BRANCH%" == "devel" if NOT "%REDECLIPSE_BRANCH%" == "source" if NOT "%REDECLIPSE_BRANCH%" == "inplace" (
+    set REDECLIPSE_BRANCH=inplace
 )
 if NOT "%REDECLIPSE_BRANCH%" == "stable" if NOT DEFINED REDECLIPSE_HOME set REDECLIPSE_HOME=home
 if DEFINED REDECLIPSE_HOME set REDECLIPSE_OPTIONS=-h"%REDECLIPSE_HOME%" %REDECLIPSE_OPTIONS%
 if "%REDECLIPSE_BRANCH%" == "source" goto runit
+if "%REDECLIPSE_BRANCH%" == "inplace" goto runit
 echo.
-echo Checking for updates. To disable: set REDECLIPSE_BRANCH=source
+echo Checking for updates. To disable: set REDECLIPSE_BRANCH=inplace
 echo.
 :begin
 set REDECLIPSE_RETRY=0
@@ -28,20 +33,22 @@ if "%REDECLIPSE_RETRY%" == "1" goto runit
 set REDECLIPSE_RETRY=1
 :update
 set /p REDECLIPSE_BINVER=< "%REDECLIPSE_PATH%\bin\version.txt"
-call bin\update.bat || goto retry
+call "%REDECLIPSE_PATH%\bin\update.bat" || goto retry
 if NOT "%REDECLIPSE_BRANCH%" == "stable" goto runit
 set /p REDECLIPSE_BINNEW=< "%REDECLIPSE_PATH%\bin\version.txt"
 if NOT "%REDECLIPSE_BINVER%" == "%REDECLIPSE_BINNEW%" goto update
 :runit
-if EXIST bin\%REDECLIPSE_ARCH%\%REDECLIPSE_BINARY%.exe (
-    start bin\%REDECLIPSE_ARCH%\%REDECLIPSE_BINARY%.exe %REDECLIPSE_OPTIONS% %*
+if EXIST "%REDECLIPSE_PATH%\bin\%REDECLIPSE_ARCH%\%REDECLIPSE_BINARY%.exe" (
+    pushd "%REDECLIPSE_PATH%" || goto error
+    start bin\%REDECLIPSE_ARCH%\%REDECLIPSE_BINARY%.exe %REDECLIPSE_OPTIONS% %* || goto error
+    popd
     goto end
 ) else (
     if "%REDECLIPSE_BRANCH%" == "source" (
         mingw32-make -C src all install && goto runit
         set REDECLIPSE_BRANCH=devel
     )
-    if NOT "%REDECLIPSE_TRYUPDATE%" == "1" (
+    if NOT "%REDECLIPSE_BRANCH%" == "inplace" if NOT "%REDECLIPSE_TRYUPDATE%" == "1" (
         set REDECLIPSE_TRYUPDATE=1
         goto begin
     )
@@ -49,11 +56,9 @@ if EXIST bin\%REDECLIPSE_ARCH%\%REDECLIPSE_BINARY%.exe (
         set REDECLIPSE_ARCH=x86
         goto runit
     )
-    echo Unable to find the Red Eclipse client.
+    echo Unable to find a working binary.
 )
 :error
 echo There was an error running Red Eclipse.
 pause
 :end
-popd
-endlocal
