@@ -20,7 +20,7 @@ for %%a in ("%REDECLIPSE_BATCH%") do set REDECLIPSE_FILETIME=%%~ta
     )
     if NOT "%REDECLIPSE_BRANCH%" == "stable" if NOT DEFINED REDECLIPSE_HOME set REDECLIPSE_HOME=home
     if DEFINED REDECLIPSE_HOME set REDECLIPSE_OPTIONS=-h"%REDECLIPSE_HOME%" %REDECLIPSE_OPTIONS%
-:update
+:check
     if NOT "%REDECLIPSE_BRANCH%" == "stable" if NOT "%REDECLIPSE_BRANCH%" == "devel" goto runit
     echo.
     echo Checking for updates. To disable: set REDECLIPSE_BRANCH=inplace
@@ -36,19 +36,19 @@ for %%a in ("%REDECLIPSE_BATCH%") do set REDECLIPSE_FILETIME=%%~ta
     call "%REDECLIPSE_PATH%\bin\update.bat" && (
         for %%a in ("%REDECLIPSE_BATCH%") do set REDECLIPSE_FILENOW=%%~ta
         if NOT "!REDECLIPSE_FILENOW!" == "!REDECLIPSE_FILETIME!" (
-            echo The batch file has been modified, you should re-run it.
-            pause
+            call "%REDECLIPSE_BATCH%"
             exit /b 0
         )
+        goto success
     ) || (
         for %%a in ("%REDECLIPSE_BATCH%") do set REDECLIPSE_FILENOW=%%~ta
         if NOT "!REDECLIPSE_FILENOW!" == "!REDECLIPSE_FILETIME!" (
-            echo The batch file has been modified, you should re-run it.
-            pause
+            call "%REDECLIPSE_BATCH%"
             exit /b 0
         )
         goto retry
     )
+:success
     if NOT "%REDECLIPSE_BRANCH%" == "stable" goto runit
     set /p REDECLIPSE_BINNEW=< "%REDECLIPSE_PATH%\bin\version.txt"
     if NOT "%REDECLIPSE_BINVER%" == "%REDECLIPSE_BINNEW%" goto update
