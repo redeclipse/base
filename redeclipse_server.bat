@@ -1,6 +1,9 @@
 @ECHO OFF
-setlocal ENABLEEXTENSIONS
-if NOT DEFINED REDECLIPSE_PATH set REDECLIPSE_PATH=%~dp0
-if NOT DEFINED REDECLIPSE_BINARY set REDECLIPSE_BINARY=redeclipse_server
-call redeclipse.bat
-endlocal
+setlocal enableextensions enabledelayedexpansion
+if DEFINED REDECLIPSE_PATH goto init
+pushd %~dp0
+set REDECLIPSE_PATH=%CD%
+popd
+:init
+set REDECLIPSE_BINARY=redeclipse_server
+call "%REDECLIPSE_PATH%\redeclipse.bat"
