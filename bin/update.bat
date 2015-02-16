@@ -35,7 +35,7 @@ if NOT DEFINED REDECLIPSE_PATH (
     )
     set /p REDECLIPSE_BINVER=< "%REDECLIPSE_PATH%\bin\version.txt"
     if "%REDECLIPSE_BINVER%" == "" (
-        echo Cannot determine current stable binaries version!
+        echo Cannot determine current stable binaries version^!
         exit /b 0
     )
     set REDECLIPSE_UPDATE=%REDECLIPSE_BRANCH%/%REDECLIPSE_BINVER%
@@ -247,7 +247,7 @@ if NOT DEFINED REDECLIPSE_PATH (
 :deploy
     echo.
     if NOT "%REDECLIPSE_DEPLOY%" == "true" (
-        echo Everything is already up to date!
+        echo Everything is already up to date^!
         exit /b 0
     )
     echo if "%%REDECLIPSE_ERROR%%" == "true" (exit /b 1)>> "%REDECLIPSE_TEMP%\install.bat"
@@ -266,7 +266,7 @@ if NOT DEFINED REDECLIPSE_PATH (
 :unpack
     %REDECLIPSE_INSTALL% "%REDECLIPSE_TEMP%\install.bat" && (
         echo.
-        echo Updated successfully!
+        echo Updated successfully^!
         (echo %REDECLIPSE_BRANCH%)> "%REDECLIPSE_PATH%\bin\branch.txt"
         exit /b 0
     ) || (
