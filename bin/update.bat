@@ -173,7 +173,7 @@ if NOT DEFINED REDECLIPSE_PATH (
         goto datablob
     )
 :datapatchdeploy
-    echo %REDECLIPSE_GITAPPLY% "%REDECLIPSE_TEMP%\data.patch" --directory="%REDECLIPSE_PATH%" ^&^& ^(>> "%REDECLIPSE_TEMP%\install.bat"
+    echo %REDECLIPSE_GITAPPLY% "%REDECLIPSE_TEMP%\data.patch" --directory="%REDECLIPSE_PATH%\data" ^&^& ^(>> "%REDECLIPSE_TEMP%\install.bat"
     echo     (echo %REDECLIPSE_DATA_REMOTE%)^> "%REDECLIPSE_PATH%\bin\data.txt">> "%REDECLIPSE_TEMP%\install.bat"
     echo ^) ^|^| ^(>> "%REDECLIPSE_TEMP%\install.bat"
     echo     (echo none)^> "%REDECLIPSE_PATH%\bin\data.txt">> "%REDECLIPSE_TEMP%\install.bat"
@@ -182,11 +182,12 @@ if NOT DEFINED REDECLIPSE_PATH (
     set REDECLIPSE_DEPLOY=true
     goto binaries
 :datablob
-    if "%REDECLIPSE_DATA_CACHED%" == "%REDECLIPSE_DATA_REMOTE%" (
-        echo [F] data: Using cached file "%REDECLIPSE_TEMP%\data.zip"
-        goto datazipdeploy
+    if EXIST "%REDECLIPSE_TEMP%\data.zip" (
+        if "%REDECLIPSE_DATA_CACHED%" == "%REDECLIPSE_DATA_REMOTE%" (
+            echo [F] data: Using cached file "%REDECLIPSE_TEMP%\data.zip"
+            goto datablobdeploy
+        ) else del /f /q "%REDECLIPSE_TEMP%\data.zip"
     )
-    if EXIST "%REDECLIPSE_TEMP%\data.zip" del /f /q "%REDECLIPSE_TEMP%\data.zip"
     echo [D] data: %REDECLIPSE_GITHUB%/data/zipball/%REDECLIPSE_DATA_REMOTE%
     echo.
     %REDECLIPSE_WGET% --output-document="%REDECLIPSE_TEMP%/data.zip" "%REDECLIPSE_GITHUB%/data/zipball/%REDECLIPSE_DATA_REMOTE%"
