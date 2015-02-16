@@ -5,9 +5,9 @@ pushd %~dp0
 set REDECLIPSE_PATH=%CD%
 popd
 :init
-if NOT DEFINED REDECLIPSE_BINARY set REDECLIPSE_BINARY=redeclipse
-set REDECLIPSE_BATCH=%REDECLIPSE_PATH%\%0
-for %%a in ("%REDECLIPSE_BATCH%") do set REDECLIPSE_FILETIME=%%~ta
+    if NOT DEFINED REDECLIPSE_BINARY set REDECLIPSE_BINARY=redeclipse
+    set REDECLIPSE_BATCH=%REDECLIPSE_PATH%\%0
+    for %%a in ("%REDECLIPSE_BATCH%") do set REDECLIPSE_FILETIME=%%~ta
 :setup
     if NOT DEFINED REDECLIPSE_OPTIONS set REDECLIPSE_OPTIONS=
     if NOT DEFINED REDECLIPSE_ARCH (
@@ -59,7 +59,10 @@ for %%a in ("%REDECLIPSE_BATCH%") do set REDECLIPSE_FILETIME=%%~ta
 :runit
     if EXIST "%REDECLIPSE_PATH%\bin\%REDECLIPSE_ARCH%\%REDECLIPSE_BINARY%.exe" (
         pushd "%REDECLIPSE_PATH%" || goto error
-        start bin\%REDECLIPSE_ARCH%\%REDECLIPSE_BINARY%.exe %REDECLIPSE_OPTIONS% %* || goto error
+        start bin\%REDECLIPSE_ARCH%\%REDECLIPSE_BINARY%.exe %REDECLIPSE_OPTIONS% %* || (
+            popd
+            goto error
+        )
         popd
         exit /b 0
     ) else (
