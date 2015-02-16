@@ -213,8 +213,8 @@ echo     (echo %REDECLIPSE_RBINARIES%)^> "%REDECLIPSE_PATH%\bin\binaries.txt">> 
 echo ^) ^|^| set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
 set REDECLIPSE_DEPLOY=true
 :deploy
+echo.
 if NOT "%REDECLIPSE_DEPLOY%" == "true" (
-    echo.
     echo Everything is already up to date!
     exit /b 0
 )
