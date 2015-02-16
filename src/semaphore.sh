@@ -62,7 +62,7 @@ if [ "${BRANCH_NAME}" = "master" ]; then
     pushd linux
     tar -jcvf ../linux.tar.bz2 . || exit 1
     popd
-    date "${BASE_COMMIT}" > bins.txt
+    echo "${BASE_COMMIT}" > bins.txt
     echo "${BASE_COMMIT}" > base.txt
     echo "${DATA_COMMIT}" > data.txt
     scp -BC -i ${HOME}/.ssh/public_rsa -o StrictHostKeyChecking=no windows.zip qreeves@icculus.org:/webspace/redeclipse.net/files/devel/windows.zip
