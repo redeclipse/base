@@ -51,7 +51,6 @@ The project is Free and Open Source meaning that you can both use it for free, a
 * Derek "Favorito" Ponicki - Maps, Textures, Design/Testing
 * Derek "JoJo" Stegall - Maps, Models, Textures, HUD, Sound FX, Design/Testing
 * Eddie "skedz4u" Webb
-* Gaming Tilt
 * Henrik "ahven" Pihl
 * Jacinta "cinta" Hall - Design/Testing, Support, and making babies.
 * Jeff "Architect" Cope - Design/Testing
@@ -74,12 +73,11 @@ The project is Free and Open Source meaning that you can both use it for free, a
 * Mikhail "Agustis" Kashin
 * Nick "Fatal_Glory" Watts
 * Petri Lukkarinen
-* Ricky Thomson "unixfreak" - Maps
+* Ricky "unixfreak" Thomson - Maps
 * Riidom Li - Models
 * Rob "Lloir" Shannon
 * Robert "Homicidal" Crane
 * Robert Winkler
-* "TheLastProject" - Design, Testing and Support
 * Ryan "icculus" Gordon / icculus.org - Master server and website hosting
 * Rémi "LuckystrikeRx" Clouet d'Orval - Maps, Textures, Models, Weapons, Design/Testing, Website
 * Slawek "VibrantWave" Blauciak - Ambient Sounds
@@ -89,21 +87,23 @@ The project is Free and Open Source meaning that you can both use it for free, a
 * Vadim Peretokin
 * Viktor "Unnamed" Hahn - Maps, Models, and other improvements
 * Wayne Bennett
-* Zachery "SkiingPenguins" Slocum - Skyboxes
+* Zachery "skiingpenguins" Slocum - Skyboxes
+* "Gaming Tilt"
 * "4rson" - Maps and Support
+* "bonifarz"
 * "Boognish" - Maps
 * "CD Xbow"
 * "D.a.M.i.E.n" - Maps and Textures
 * "FaTony"
+* "fbt"
 * "FearFighter"
 * "Fleeky" - Models
-* "littlebabyjesus"
-* "John_III" - Maps and Models
-* "Korsi" - Maps
-* "Raiden" - Maps
-* "RaZgRiZ" - Textures and Cubescript maintenance
-* "bonifarz"
-* "fbt"
 * "fluxord" - Crosshairs
 * "Furor"
+* "John_III" - Maps and Models
+* "Korsi" - Maps
+* "littlebabyjesus"
+* "Raiden" - Maps
+* "RaZgRiZ" - Textures and Cubescript maintenance
+* "TheLastProject" - Design, Testing and Support
 * "w00p|dazza"
