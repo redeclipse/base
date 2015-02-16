@@ -1,11 +1,11 @@
 *       text=auto
-*.c     text=auto
-*.h     text=auto
-*.cpp   text=auto
-*.txt   text=auto
-*.cfg   text=auto
-*.bat   text=crlf
-*.sh    text=lf
+*.c     text
+*.h     text
+*.cpp   text
+*.txt   text
+*.cfg   text
+*.bat   text eol=crlf
+*.sh    text eol=lf
 *.png   binary
 *.jpg   binary
 *.ico   binary
