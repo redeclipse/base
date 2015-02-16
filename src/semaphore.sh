@@ -62,12 +62,12 @@ if [ "${BRANCH_NAME}" = "master" ]; then
     pushd linux
     tar -jcvf ../linux.tar.bz2 . || exit 1
     popd
-    date +%Y%m%d%H%M%S > binaries.txt
+    date "${BASE_COMMIT}" > bins.txt
     echo "${BASE_COMMIT}" > base.txt
     echo "${DATA_COMMIT}" > data.txt
     scp -BC -i ${HOME}/.ssh/public_rsa -o StrictHostKeyChecking=no windows.zip qreeves@icculus.org:/webspace/redeclipse.net/files/devel/windows.zip
     scp -BC -i ${HOME}/.ssh/public_rsa -o StrictHostKeyChecking=no linux.tar.bz2 qreeves@icculus.org:/webspace/redeclipse.net/files/devel/linux.tar.bz2
-    scp -BC -i ${HOME}/.ssh/public_rsa -o StrictHostKeyChecking=no binaries.txt qreeves@icculus.org:/webspace/redeclipse.net/files/devel/binaries.txt
+    scp -BC -i ${HOME}/.ssh/public_rsa -o StrictHostKeyChecking=no bins.txt qreeves@icculus.org:/webspace/redeclipse.net/files/devel/bins.txt
     scp -BC -i ${HOME}/.ssh/public_rsa -o StrictHostKeyChecking=no base.txt qreeves@icculus.org:/webspace/redeclipse.net/files/devel/base.txt
     scp -BC -i ${HOME}/.ssh/public_rsa -o StrictHostKeyChecking=no data.txt qreeves@icculus.org:/webspace/redeclipse.net/files/devel/data.txt
     popd

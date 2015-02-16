@@ -35,7 +35,7 @@ if NOT DEFINED REDECLIPSE_PATH (
     )
     set /p REDECLIPSE_BINVER=< "%REDECLIPSE_PATH%\bin\version.txt"
     if "%REDECLIPSE_BINVER%" == "" (
-        echo Cannot determine current stable binaries version^!
+        echo Cannot determine current stable bins version^!
         exit /b 0
     )
     set REDECLIPSE_UPDATE=%REDECLIPSE_BRANCH%/%REDECLIPSE_BINVER%
@@ -67,7 +67,7 @@ if NOT DEFINED REDECLIPSE_PATH (
     echo @ECHO OFF> "%REDECLIPSE_TEMP%\install.bat"
     echo setlocal ENABLEEXTENSIONS>> "%REDECLIPSE_TEMP%\install.bat"
     echo set REDECLIPSE_ERROR=false>> "%REDECLIPSE_TEMP%\install.bat"
-    if NOT "%REDECLIPSE_BRANCH%" == "stable" goto binaries
+    if NOT "%REDECLIPSE_BRANCH%" == "stable" goto bins
 :base
     echo.
     if EXIST "%REDECLIPSE_PATH%\bin\base.txt" set /p REDECLIPSE_BASE=< "%REDECLIPSE_PATH%\bin\base.txt"
@@ -150,15 +150,15 @@ if NOT DEFINED REDECLIPSE_PATH (
     %REDECLIPSE_WGET% --output-document="%REDECLIPSE_TEMP%/data.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/data.txt"> nul 2>&1
     if NOT EXIST "%REDECLIPSE_TEMP%\data.txt" (
         echo Failed to retrieve data update information.
-        goto binaries
+        goto bins
     )
     set /p REDECLIPSE_DATA_REMOTE=< "%REDECLIPSE_TEMP%\data.txt"
     if "%REDECLIPSE_DATA_REMOTE%" == "" (
         echo Failed to retrieve data update information.
-        goto binaries
+        goto bins
     )
     echo [R] data: %REDECLIPSE_DATA_REMOTE%
-    if "%REDECLIPSE_DATA_REMOTE%" == "%REDECLIPSE_DATA%" goto binaries
+    if "%REDECLIPSE_DATA_REMOTE%" == "%REDECLIPSE_DATA%" goto bins
     if "%REDECLIPSE_DATA%" == "none" goto datablob
 :datapatch
     if EXIST "%REDECLIPSE_TEMP%\data.patch" del /f /q "%REDECLIPSE_TEMP%\data.patch"
@@ -174,7 +174,7 @@ if NOT DEFINED REDECLIPSE_PATH (
     echo     (echo %REDECLIPSE_DATA_REMOTE%)^> "%REDECLIPSE_PATH%\bin\data.txt">> "%REDECLIPSE_TEMP%\install.bat"
     echo ^) ^|^| set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
     set REDECLIPSE_DEPLOY=true
-    goto binaries
+    goto bins
 :datablob
     if EXIST "%REDECLIPSE_TEMP%\data.zip" (
         if "%REDECLIPSE_DATA_CACHED%" == "%REDECLIPSE_DATA_REMOTE%" (
@@ -187,7 +187,7 @@ if NOT DEFINED REDECLIPSE_PATH (
     %REDECLIPSE_WGET% --output-document="%REDECLIPSE_TEMP%/data.zip" "%REDECLIPSE_GITHUB%/data/zipball/%REDECLIPSE_DATA_REMOTE%"
     if NOT EXIST "%REDECLIPSE_TEMP%\data.zip" (
         echo Failed to retrieve data update package.
-        goto binaries
+        goto bins
     )
 :datablobdeploy
     echo %REDECLIPSE_UNZIP% -o "%REDECLIPSE_TEMP%\data.zip" -d "%REDECLIPSE_TEMP%" ^&^& ^(>> "%REDECLIPSE_TEMP%\install.bat"
@@ -196,46 +196,46 @@ if NOT DEFINED REDECLIPSE_PATH (
     echo    (echo %REDECLIPSE_DATA_REMOTE%)^> "%REDECLIPSE_PATH%\bin\data.txt">> "%REDECLIPSE_TEMP%\install.bat"
     echo ^) ^|^| set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
     set REDECLIPSE_DEPLOY=true
-:binaries
+:bins
     echo.
-    if EXIST "%REDECLIPSE_PATH%\bin\binaries.txt" set /p REDECLIPSE_BINARIES=< "%REDECLIPSE_PATH%\bin\binaries.txt"
-    if "%REDECLIPSE_BINARIES%" == "" set REDECLIPSE_BINARIES=none
-    echo [I] binaries: %REDECLIPSE_BINARIES%
-    set REDECLIPSE_BINARIES_CACHED=none
-    if NOT EXIST "%REDECLIPSE_TEMP%\binaries.txt" goto binariesget
-    set /p REDECLIPSE_BINARIES_CACHED=< "%REDECLIPSE_TEMP%\binaries.txt"
-    if "%REDECLIPSE_BINARIES_CACHED%" == "" set REDECLIPSE_BINARIES_CACHED=none
-    echo [C] binaries: %REDECLIPSE_BINARIES_CACHED%
-:binariesget
-    %REDECLIPSE_WGET% --output-document="%REDECLIPSE_TEMP%/binaries.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/binaries.txt"> nul 2>&1
-    if NOT EXIST "%REDECLIPSE_TEMP%\binaries.txt" (
-        echo Failed to retrieve binaries update information.
+    if EXIST "%REDECLIPSE_PATH%\bin\bins.txt" set /p REDECLIPSE_BINS=< "%REDECLIPSE_PATH%\bin\bins.txt"
+    if "%REDECLIPSE_BINS%" == "" set REDECLIPSE_BINS=none
+    echo [I] bins: %REDECLIPSE_BINS%
+    set REDECLIPSE_BINS_CACHED=none
+    if NOT EXIST "%REDECLIPSE_TEMP%\bins.txt" goto binsget
+    set /p REDECLIPSE_BINS_CACHED=< "%REDECLIPSE_TEMP%\bins.txt"
+    if "%REDECLIPSE_BINS_CACHED%" == "" set REDECLIPSE_BINS_CACHED=none
+    echo [C] bins: %REDECLIPSE_BINS_CACHED%
+:binsget
+    %REDECLIPSE_WGET% --output-document="%REDECLIPSE_TEMP%/bins.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/bins.txt"> nul 2>&1
+    if NOT EXIST "%REDECLIPSE_TEMP%\bins.txt" (
+        echo Failed to retrieve bins update information.
         goto deploy
     )
-    set /p REDECLIPSE_BINARIES_REMOTE=< "%REDECLIPSE_TEMP%\binaries.txt"
-    if "%REDECLIPSE_BINARIES_REMOTE%" == "" (
-        echo Failed to retrieve binaries update information.
+    set /p REDECLIPSE_BINS_REMOTE=< "%REDECLIPSE_TEMP%\bins.txt"
+    if "%REDECLIPSE_BINS_REMOTE%" == "" (
+        echo Failed to retrieve bins update information.
         goto deploy
     )
-    echo [R] binaries: %REDECLIPSE_BINARIES_REMOTE%
-    if NOT "%REDECLIPSE_TRYUPDATE%" == "true" if "%REDECLIPSE_BINARIES_REMOTE%" == "%REDECLIPSE_BINARIES%" goto deploy
-:binariesblob
+    echo [R] bins: %REDECLIPSE_BINS_REMOTE%
+    if NOT "%REDECLIPSE_TRYUPDATE%" == "true" if "%REDECLIPSE_BINS_REMOTE%" == "%REDECLIPSE_BINS%" goto deploy
+:binsblob
     if EXIST "%REDECLIPSE_TEMP%\windows.zip" (
-        if "%REDECLIPSE_BINARIES_CACHED%" == "%REDECLIPSE_BINARIES_REMOTE%" (
-            echo [F] binaries: Using cached file "%REDECLIPSE_TEMP%\windows.zip"
-            goto binariesdeploy
+        if "%REDECLIPSE_BINS_CACHED%" == "%REDECLIPSE_BINS_REMOTE%" (
+            echo [F] bins: Using cached file "%REDECLIPSE_TEMP%\windows.zip"
+            goto binsdeploy
         ) else del /f /q "%REDECLIPSE_TEMP%\windows.zip"
     )
-    echo [D] binaries: %REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/windows.zip
+    echo [D] bins: %REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/windows.zip
     echo.
     %REDECLIPSE_WGET% --output-document="%REDECLIPSE_TEMP%/windows.zip" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/windows.zip"
     if NOT EXIST "%REDECLIPSE_TEMP%\windows.zip" (
-        echo Failed to retrieve binaries update package.
+        echo Failed to retrieve bins update package.
         goto deploy
     )
-:binariesdeploy
+:binsdeploy
     echo %REDECLIPSE_UNZIP% -o "%REDECLIPSE_TEMP%\windows.zip" -d "%REDECLIPSE_PATH%" ^&^& ^(>> "%REDECLIPSE_TEMP%\install.bat"
-    echo     (echo %REDECLIPSE_BINARIES_REMOTE%)^> "%REDECLIPSE_PATH%\bin\binaries.txt">> "%REDECLIPSE_TEMP%\install.bat"
+    echo     (echo %REDECLIPSE_BINS_REMOTE%)^> "%REDECLIPSE_PATH%\bin\bins.txt">> "%REDECLIPSE_TEMP%\install.bat"
     echo ^) ^|^| set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
     set REDECLIPSE_DEPLOY=true
 :deploy
