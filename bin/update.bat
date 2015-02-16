@@ -103,12 +103,9 @@ if NOT DEFINED REDECLIPSE_PATH (
         goto baseblob
     )
 :basepatchdeploy
-    echo %REDECLIPSE_GITAPPLY% "%REDECLIPSE_TEMP%\base.patch" --directory="%REDECLIPSE_PATH%" ^&^& ^(>> "%REDECLIPSE_TEMP%\install.bat"
+    echo %REDECLIPSE_GITAPPLY% --directory="%REDECLIPSE_PATH%" "%REDECLIPSE_TEMP%\base.patch" ^&^& ^(>> "%REDECLIPSE_TEMP%\install.bat"
     echo     (echo %REDECLIPSE_BASE_REMOTE%)^> "%REDECLIPSE_PATH%\bin\base.txt">> "%REDECLIPSE_TEMP%\install.bat"
-    echo ^) ^|^| ^(>> "%REDECLIPSE_TEMP%\install.bat"
-    echo     (echo none)^> "%REDECLIPSE_PATH%\bin\base.txt">> "%REDECLIPSE_TEMP%\install.bat"
-    echo     set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
-    echo ^)>> "%REDECLIPSE_TEMP%\install.bat"
+    echo ^) ^|^| set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
     set REDECLIPSE_DEPLOY=true
     goto data
 :baseblob
@@ -173,12 +170,9 @@ if NOT DEFINED REDECLIPSE_PATH (
         goto datablob
     )
 :datapatchdeploy
-    echo %REDECLIPSE_GITAPPLY% "%REDECLIPSE_TEMP%\data.patch" --directory="%REDECLIPSE_PATH%\data" ^&^& ^(>> "%REDECLIPSE_TEMP%\install.bat"
+    echo %REDECLIPSE_GITAPPLY% --directory="%REDECLIPSE_PATH%\data" "%REDECLIPSE_TEMP%\data.patch" ^&^& ^(>> "%REDECLIPSE_TEMP%\install.bat"
     echo     (echo %REDECLIPSE_DATA_REMOTE%)^> "%REDECLIPSE_PATH%\bin\data.txt">> "%REDECLIPSE_TEMP%\install.bat"
-    echo ^) ^|^| ^(>> "%REDECLIPSE_TEMP%\install.bat"
-    echo     (echo none)^> "%REDECLIPSE_PATH%\bin\data.txt">> "%REDECLIPSE_TEMP%\install.bat"
-    echo     set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
-    echo ^)>> "%REDECLIPSE_TEMP%\install.bat"
+    echo ^) ^|^| set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
     set REDECLIPSE_DEPLOY=true
     goto binaries
 :datablob
