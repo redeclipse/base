@@ -1,10 +1,10 @@
 @ECHO OFF
 setlocal enableextensions enabledelayedexpansion
-if NOT DEFINED REDECLIPSE_PATH (
-    pushd %~dp0
-    set REDECLIPSE_PATH=!CD!
-    popd
-)
+if DEFINED REDECLIPSE_PATH goto init
+pushd %~dp0
+set REDECLIPSE_PATH=%CD%
+popd
+:init
 if NOT DEFINED REDECLIPSE_BINARY set REDECLIPSE_BINARY=redeclipse
 set REDECLIPSE_BATCH=%REDECLIPSE_PATH%\%0
 for %%a in ("%REDECLIPSE_BATCH%") do set REDECLIPSE_FILETIME=%%~ta
@@ -61,7 +61,7 @@ for %%a in ("%REDECLIPSE_BATCH%") do set REDECLIPSE_FILETIME=%%~ta
         pushd "%REDECLIPSE_PATH%" || goto error
         start bin\%REDECLIPSE_ARCH%\%REDECLIPSE_BINARY%.exe %REDECLIPSE_OPTIONS% %* || goto error
         popd
-        exit /b 1
+        exit /b 0
     ) else (
         if "%REDECLIPSE_BRANCH%" == "source" (
             mingw32-make -C src all install && goto runit
