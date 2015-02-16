@@ -106,7 +106,7 @@ if NOT DEFINED REDECLIPSE_PATH (
     echo %REDECLIPSE_GITAPPLY% "%REDECLIPSE_TEMP%\base.patch" --directory="%REDECLIPSE_PATH%" ^&^& ^(>> "%REDECLIPSE_TEMP%\install.bat"
     echo     (echo %REDECLIPSE_BASE_REMOTE%)^> "%REDECLIPSE_PATH%\bin\base.txt">> "%REDECLIPSE_TEMP%\install.bat"
     echo ^) ^|^| ^(>> "%REDECLIPSE_TEMP%\install.bat"
-    echo     (echo 0)^> "%REDECLIPSE_PATH%\bin\base.txt">> "%REDECLIPSE_TEMP%\install.bat"
+    echo     (echo none)^> "%REDECLIPSE_PATH%\bin\base.txt">> "%REDECLIPSE_TEMP%\install.bat"
     echo     set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
     echo ^)>> "%REDECLIPSE_TEMP%\install.bat"
     set REDECLIPSE_DEPLOY=true
@@ -176,7 +176,7 @@ if NOT DEFINED REDECLIPSE_PATH (
     echo %REDECLIPSE_GITAPPLY% "%REDECLIPSE_TEMP%\data.patch" --directory="%REDECLIPSE_PATH%" ^&^& ^(>> "%REDECLIPSE_TEMP%\install.bat"
     echo     (echo %REDECLIPSE_DATA_REMOTE%)^> "%REDECLIPSE_PATH%\bin\data.txt">> "%REDECLIPSE_TEMP%\install.bat"
     echo ^) ^|^| ^(>> "%REDECLIPSE_TEMP%\install.bat"
-    echo     (echo 0)^> "%REDECLIPSE_PATH%\bin\data.txt">> "%REDECLIPSE_TEMP%\install.bat"
+    echo     (echo none)^> "%REDECLIPSE_PATH%\bin\data.txt">> "%REDECLIPSE_TEMP%\install.bat"
     echo     set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
     echo ^)>> "%REDECLIPSE_TEMP%\install.bat"
     set REDECLIPSE_DEPLOY=true
@@ -223,7 +223,7 @@ if NOT DEFINED REDECLIPSE_PATH (
         goto deploy
     )
     echo [R] binaries: %REDECLIPSE_BINARIES_REMOTE%
-    if NOT "%REDECLIPSE_TRYUPDATE%" == "1" if "%REDECLIPSE_BINARIES_REMOTE%" == "%REDECLIPSE_BINARIES%" goto deploy
+    if NOT "%REDECLIPSE_TRYUPDATE%" == "true" if "%REDECLIPSE_BINARIES_REMOTE%" == "%REDECLIPSE_BINARIES%" goto deploy
 :binariesblob
     if EXIST "%REDECLIPSE_TEMP%\windows.zip" (
         if "%REDECLIPSE_BINARIES_CACHED%" == "%REDECLIPSE_BINARIES_REMOTE%" (

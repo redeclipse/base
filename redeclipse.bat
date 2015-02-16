@@ -1,6 +1,10 @@
 @ECHO OFF
 setlocal enableextensions enabledelayedexpansion
-if NOT DEFINED REDECLIPSE_PATH set REDECLIPSE_PATH=%~dp0
+if NOT DEFINED REDECLIPSE_PATH (
+    pushd %~dp0
+    set REDECLIPSE_PATH=!CD!
+    popd
+)
 if NOT DEFINED REDECLIPSE_BINARY set REDECLIPSE_BINARY=redeclipse
 set REDECLIPSE_BATCH=%REDECLIPSE_PATH%\%0
 for %%a in ("%REDECLIPSE_BATCH%") do set REDECLIPSE_FILETIME=%%~ta
@@ -63,8 +67,8 @@ for %%a in ("%REDECLIPSE_BATCH%") do set REDECLIPSE_FILETIME=%%~ta
             mingw32-make -C src all install && goto runit
             set REDECLIPSE_BRANCH=devel
         )
-        if NOT "%REDECLIPSE_BRANCH%" == "inplace" if NOT "%REDECLIPSE_TRYUPDATE%" == "1" (
-            set REDECLIPSE_TRYUPDATE=1
+        if NOT "%REDECLIPSE_BRANCH%" == "inplace" if NOT "%REDECLIPSE_TRYUPDATE%" == "true" (
+            set REDECLIPSE_TRYUPDATE=true
             goto begin
         )
         if NOT "%REDECLIPSE_ARCH%" == "x86" (
