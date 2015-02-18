@@ -1,6 +1,4 @@
 #!/bin/sh
-if [ "$_" != "$0" ]; then REDECLIPSE_EXITU="return"; else REDECLIPSE_EXITU="exit"; fi
-
 redeclipse_update_path() {
     if [ -z "${REDECLIPSE_PATH+isset}" ]; then REDECLIPSE_PATH="$(cd "$(dirname "$0")" && cd .. && pwd)"; fi
 }
@@ -462,7 +460,7 @@ redeclipse_update_init
 redeclipse_update_setup
 
 if [ $? -ne 0 ]; then
-    ${REDECLIPSE_EXITU} 1
+    return 1
 else
-    ${REDECLIPSE_EXITU} 0
+    return 0
 fi

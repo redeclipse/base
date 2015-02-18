@@ -1,6 +1,4 @@
 #!/bin/sh
-if [ "$_" != "$0" ]; then REDECLIPSE_EXITR="return"; else REDECLIPSE_EXITR="exit"; fi
-
 redeclipse_path() {
     if [ -z "${REDECLIPSE_PATH+isset}" ]; then REDECLIPSE_PATH="$(cd "$(dirname "$0")" && pwd)"; fi
 }
@@ -163,7 +161,7 @@ redeclipse_setup
 if [ $? -ne 0 ]; then
     echo ""
     echo "There was an error running Red Eclipse."
-    ${REDECLIPSE_EXITR} 1
+    exit 1
 else
-    ${REDECLIPSE_EXITR} 0
+    exit 0
 fi
