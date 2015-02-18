@@ -1,7 +1,7 @@
 @ECHO OFF
 setlocal enableextensions enabledelayedexpansion
 if DEFINED REDECLIPSE_PATH goto init
-pushd %~dp0
+pushd "%~dp0"
 set REDECLIPSE_PATH=%CD%
 popd
 :init
@@ -35,19 +35,20 @@ popd
 :retry
     if "%REDECLIPSE_RETRY%" == "true" goto runit
     set REDECLIPSE_RETRY=true
+    echo Retrying...
 :update
     set /p REDECLIPSE_BINVER=< "%REDECLIPSE_PATH%\bin\version.txt"
     call "%REDECLIPSE_PATH%\bin\update.bat" && (
         for %%a in ("%REDECLIPSE_BATCH%") do set REDECLIPSE_FILENOW=%%~ta
         if NOT "!REDECLIPSE_FILENOW!" == "!REDECLIPSE_FILETIME!" (
-            call "%REDECLIPSE_BATCH%"
+            call "%REDECLIPSE_BATCH%" :success
             exit /b 0
         )
         goto success
     ) || (
         for %%a in ("%REDECLIPSE_BATCH%") do set REDECLIPSE_FILENOW=%%~ta
         if NOT "!REDECLIPSE_FILENOW!" == "!REDECLIPSE_FILETIME!" (
-            call "%REDECLIPSE_BATCH%"
+            call "%REDECLIPSE_BATCH%" :retry
             exit /b 0
         )
         goto retry

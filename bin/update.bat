@@ -1,7 +1,7 @@
 @ECHO OFF
 setlocal enableextensions enabledelayedexpansion
 if DEFINED REDECLIPSE_PATH goto setup
-pushd %~dp0\..
+pushd "%~dp0\.."
 set REDECLIPSE_PATH=%CD%
 popd
 :setup
@@ -44,7 +44,7 @@ popd
     set REDECLIPSE_UPDATE=%REDECLIPSE_BRANCH%
     set REDECLIPSE_TEMP=%REDECLIPSE_CACHE%\%REDECLIPSE_BRANCH%
 :branch
-    echo Branch: %REDECLIPSE_BRANCH%
+    echo Branch: %REDECLIPSE_UPDATE%
     echo Folder: %REDECLIPSE_PATH%
     echo Cached: %REDECLIPSE_CACHE%
     if NOT EXIST "%REDECLIPSE_PATH%\bin\tools\wget.exe" (
