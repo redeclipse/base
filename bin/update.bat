@@ -48,11 +48,11 @@ setlocal enableextensions enabledelayedexpansion
     echo Branch: %REDECLIPSE_UPDATE%
     echo Folder: %REDECLIPSE_PATH%
     echo Cached: %REDECLIPSE_TEMP%
-    if NOT EXIST "%REDECLIPSE_PATH%\bin\tools\wget.exe" (
-        echo Unable to find wget.exe, are you sure it is in tools?
+    if NOT EXIST "%REDECLIPSE_PATH%\bin\tools\curl.exe" (
+        echo Unable to find curl.exe, are you sure it is in tools?
         exit /b 0
     )
-    set REDECLIPSE_WGET="%REDECLIPSE_PATH%\bin\tools\wget.exe" --continue --no-check-certificate --user-agent="redeclipse-%REDECLIPSE_UPDATE%"
+    set REDECLIPSE_CURL="%REDECLIPSE_PATH%\bin\tools\curl.exe" --insecure --user-agent "redeclipse-%REDECLIPSE_UPDATE%"
     if NOT EXIST "%REDECLIPSE_PATH%\bin\tools\unzip.exe" (
         echo Unable to find unzip.exe, are you sure it is in tools?
         exit /b 0
@@ -80,7 +80,7 @@ setlocal enableextensions enabledelayedexpansion
     echo [C] base: %REDECLIPSE_BASE_CACHED%
     del /f /q "%REDECLIPSE_TEMP%\base.txt"
 :baseget
-    %REDECLIPSE_WGET% --output-document="%REDECLIPSE_TEMP%\base.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/base.txt"> nul 2>&1
+    %REDECLIPSE_CURL% --silent --output "%REDECLIPSE_TEMP%\base.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/base.txt"
     if NOT EXIST "%REDECLIPSE_TEMP%\base.txt" (
         echo Failed to retrieve base update information.
         goto data
@@ -98,7 +98,7 @@ setlocal enableextensions enabledelayedexpansion
     if EXIST "%REDECLIPSE_TEMP%\base.zip" del /f /q "%REDECLIPSE_TEMP%\base.zip"
     echo [D] base: %REDECLIPSE_GITHUB%/base/compare/%REDECLIPSE_BASE%...%REDECLIPSE_BASE_REMOTE%.patch
     echo.
-    %REDECLIPSE_WGET% --output-document="%REDECLIPSE_TEMP%\base.patch" "%REDECLIPSE_GITHUB%/base/compare/%REDECLIPSE_BASE%...%REDECLIPSE_BASE_REMOTE%.patch"
+    %REDECLIPSE_CURL% --output "%REDECLIPSE_TEMP%\base.patch" "%REDECLIPSE_GITHUB%/base/compare/%REDECLIPSE_BASE%...%REDECLIPSE_BASE_REMOTE%.patch"
     if NOT EXIST "%REDECLIPSE_TEMP%\base.patch" (
         echo Failed to retrieve base update package. Downloading full zip instead.
         goto baseblob
@@ -122,7 +122,7 @@ setlocal enableextensions enabledelayedexpansion
     )
     echo [D] base: %REDECLIPSE_GITHUB%/base/zipball/%REDECLIPSE_BASE_REMOTE%
     echo.
-    %REDECLIPSE_WGET% --output-document="%REDECLIPSE_TEMP%\base.zip" "%REDECLIPSE_GITHUB%/base/zipball/%REDECLIPSE_BASE_REMOTE%"
+    %REDECLIPSE_CURL% --output "%REDECLIPSE_TEMP%\base.zip" "%REDECLIPSE_GITHUB%/base/zipball/%REDECLIPSE_BASE_REMOTE%"
     if NOT EXIST "%REDECLIPSE_TEMP%\base.zip" (
         echo Failed to retrieve base update package.
         goto data
@@ -155,7 +155,7 @@ setlocal enableextensions enabledelayedexpansion
     echo [C] data: %REDECLIPSE_DATA_CACHED%
     del /f /q "%REDECLIPSE_TEMP%\data.txt"
 :dataget
-    %REDECLIPSE_WGET% --output-document="%REDECLIPSE_TEMP%\data.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/data.txt"> nul 2>&1
+    %REDECLIPSE_CURL% --silent --output "%REDECLIPSE_TEMP%\data.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/data.txt"
     if NOT EXIST "%REDECLIPSE_TEMP%\data.txt" (
         echo Failed to retrieve data update information.
         goto bins
@@ -173,7 +173,7 @@ setlocal enableextensions enabledelayedexpansion
     if EXIST "%REDECLIPSE_TEMP%\data.zip" del /f /q "%REDECLIPSE_TEMP%\data.zip"
     echo [D] data: %REDECLIPSE_GITHUB%/data/compare/%REDECLIPSE_DATA%...%REDECLIPSE_DATA_REMOTE%.patch
     echo.
-    %REDECLIPSE_WGET% --output-document="%REDECLIPSE_TEMP%\data.patch" "%REDECLIPSE_GITHUB%/data/compare/%REDECLIPSE_DATA%...%REDECLIPSE_DATA_REMOTE%.patch"
+    %REDECLIPSE_CURL% --output "%REDECLIPSE_TEMP%\data.patch" "%REDECLIPSE_GITHUB%/data/compare/%REDECLIPSE_DATA%...%REDECLIPSE_DATA_REMOTE%.patch"
     if NOT EXIST "%REDECLIPSE_TEMP%\data.patch" (
         echo Failed to retrieve data update package. Downloading full zip instead.
         goto datablob
@@ -197,7 +197,7 @@ setlocal enableextensions enabledelayedexpansion
     )
     echo [D] data: %REDECLIPSE_GITHUB%/data/zipball/%REDECLIPSE_DATA_REMOTE%
     echo.
-    %REDECLIPSE_WGET% --output-document="%REDECLIPSE_TEMP%\data.zip" "%REDECLIPSE_GITHUB%/data/zipball/%REDECLIPSE_DATA_REMOTE%"
+    %REDECLIPSE_CURL% --output "%REDECLIPSE_TEMP%\data.zip" "%REDECLIPSE_GITHUB%/data/zipball/%REDECLIPSE_DATA_REMOTE%"
     if NOT EXIST "%REDECLIPSE_TEMP%\data.zip" (
         echo Failed to retrieve data update package.
         goto bins
@@ -223,7 +223,7 @@ setlocal enableextensions enabledelayedexpansion
     if "%REDECLIPSE_BINS_CACHED%" == "" set REDECLIPSE_BINS_CACHED=none
     echo [C] bins: %REDECLIPSE_BINS_CACHED%
 :binsget
-    %REDECLIPSE_WGET% --output-document="%REDECLIPSE_TEMP%\bins.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/bins.txt"> nul 2>&1
+    %REDECLIPSE_CURL% --silent --output "%REDECLIPSE_TEMP%\bins.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/bins.txt"
     if NOT EXIST "%REDECLIPSE_TEMP%\bins.txt" (
         echo Failed to retrieve bins update information.
         goto deploy
@@ -244,7 +244,7 @@ setlocal enableextensions enabledelayedexpansion
     )
     echo [D] bins: %REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/windows.zip
     echo.
-    %REDECLIPSE_WGET% --output-document="%REDECLIPSE_TEMP%\windows.zip" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/windows.zip"
+    %REDECLIPSE_CURL% --output "%REDECLIPSE_TEMP%\windows.zip" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/windows.zip"
     if NOT EXIST "%REDECLIPSE_TEMP%\windows.zip" (
         echo Failed to retrieve bins update package.
         goto deploy

@@ -128,10 +128,10 @@ function redeclipse_success {
 function redeclipse_runit {
     if [ -a "${REDECLIPSE_PATH}/bin/${REDECLIPSE_ARCH}/${REDECLIPSE_BINARY}${REDECLIPSE_SUFFIX}" ]; then
         pushd "${REDECLIPSE_PATH}" 2>&1 > /dev/null || return 1
-        #exec "bin/${REDECLIPSE_ARCH}/${REDECLIPSE_BINARY}${REDECLIPSE_SUFFIX}" ${REDECLIPSE_OPTIONS} "$@" || (
-        #    popd 2>&1 > /dev/null
-        #    return 1
-        #)
+        exec "bin/${REDECLIPSE_ARCH}/${REDECLIPSE_BINARY}${REDECLIPSE_SUFFIX}" ${REDECLIPSE_OPTIONS} "$@" || (
+            popd 2>&1 > /dev/null
+            return 1
+        )
         popd 2>&1 > /dev/null
         return 0
     else
@@ -157,6 +157,7 @@ function redeclipse_runit {
 redeclipse_path
 redeclipse_init 
 redeclipse_setup
+
 if [ $? -ne 0 ]; then
     echo ""
     echo "There was an error running Red Eclipse."

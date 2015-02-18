@@ -11,7 +11,7 @@ function redeclipse_update_init {
     fi
 }
 
-function redeclipse_update_start {
+function redeclipse_update_setup {
     if [ -z "${REDECLIPSE_SOURCE+isset}" ]; then REDECLIPSE_SOURCE="http://redeclipse.net/files"; fi
     if [ -z "${REDECLIPSE_GITHUB+isset}" ]; then REDECLIPSE_GITHUB="https://github.com/red-eclipse"; fi
     if [ -z "${REDECLIPSE_BRANCH+isset}" ]; then
@@ -27,7 +27,7 @@ function redeclipse_update_start {
         REDECLIPSE_UPDATE="${REDECLIPSE_BRANCH}"
         REDECLIPSE_TEMP="${REDECLIPSE_CACHE}/${REDECLIPSE_BRANCH}"
     else
-        if [ ! -a "${REDECLIPSE_PATH}/bin/version.txt" ]; then
+        if ! [ -a "${REDECLIPSE_PATH}/bin/version.txt" ]; then
             echo "Unable to find ${REDECLIPSE_PATH}/bin/version.txt"
             return 1
         fi
@@ -57,11 +57,11 @@ function redeclipse_update_branch {
     echo "Branch: ${REDECLIPSE_UPDATE}"
     echo "Folder: ${REDECLIPSE_PATH}"
     echo "Cached: ${REDECLIPSE_TEMP}"
-    if [ -z `which wget` ]; then
-        echo "Unable to find wget, are you sure you have it installed?"
+    if [ -z `which curl` ]; then
+        echo "Unable to find curl, are you sure you have it installed?"
         return 1
     fi
-    REDECLIPSE_WGET="wget --continue --no-check-certificate --user-agent=\"redeclipse-${REDECLIPSE_UPDATE}\""
+    REDECLIPSE_CURL="curl --insecure --user-agent \"redeclipse-${REDECLIPSE_UPDATE}\""
     if [ "${REDECLIPSE_TARGET}" = "windows" ]; then
         if [ -z `which unzip` ]; then
             echo "Unable to find unzip, are you sure you have it installed?"
@@ -79,7 +79,7 @@ function redeclipse_update_branch {
         return 1
     fi
     REDECLIPSE_GITAPPLY="git apply --ignore-space-change --ignore-whitespace --verbose --stat --apply"
-    if [ ! -d "${REDECLIPSE_TEMP}" ]; then mkdir -p "${REDECLIPSE_TEMP}"; fi
+    if ! [ -d "${REDECLIPSE_TEMP}" ]; then mkdir -p "${REDECLIPSE_TEMP}"; fi
     echo "#"'!'"/bin/sh" > "${REDECLIPSE_TEMP}/install.sh"
     echo "REDECLIPSE_ERROR=\"false\"" >> "${REDECLIPSE_TEMP}/install.sh"
     if [ "${REDECLIPSE_BRANCH}" != "stable" ]; then
@@ -96,7 +96,7 @@ function redeclipse_update_base {
     if [ -z "${REDECLIPSE_BASE}" ]; then REDECLIPSE_BASE="none"; fi
     echo "[I] base: ${REDECLIPSE_BASE}"
     REDECLIPSE_BASE_CACHED="none"
-    if [ ! -a "${REDECLIPSE_TEMP}/base.txt" ]; then
+    if ! [ -a "${REDECLIPSE_TEMP}/base.txt" ]; then
         redeclipse_update_baseget
         return $?
     fi
@@ -109,15 +109,15 @@ function redeclipse_update_base {
 }
 
 function redeclipse_update_baseget {
-    ${REDECLIPSE_WGET} --output-document="${REDECLIPSE_TEMP}/base.txt" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/base.txt" > /dev/null 2>&1
-    if [ ! -a "${REDECLIPSE_TEMP}/base.txt" ]; then
+    ${REDECLIPSE_CURL} --silent --output "${REDECLIPSE_TEMP}/base.txt" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/base.txt"
+    if ! [ -a "${REDECLIPSE_TEMP}/base.txt" ]; then
         echo "Failed to retrieve base update information."
         redeclipse_update_data
         return $?
     fi
     REDECLIPSE_BASE_REMOTE=`cat "${REDECLIPSE_TEMP}/base.txt"`
     if [ -z "${REDECLIPSE_BASE_REMOTE}" ]; then
-        echo "Failed to retrieve base update information."
+        echo "Failed to read base update information."
         redeclipse_update_data
         return $?
     fi
@@ -139,8 +139,8 @@ function redeclipse_update_basepatch {
     if [ -a "${REDECLIPSE_TEMP}/base.zip" ]; then rm -f "${REDECLIPSE_TEMP}/base.zip"; fi
     echo "[D] base: ${REDECLIPSE_GITHUB}/base/compare/${REDECLIPSE_BASE}...${REDECLIPSE_BASE_REMOTE}.patch"
     echo ""
-    ${REDECLIPSE_WGET} --output-document="${REDECLIPSE_TEMP}/base.patch" "${REDECLIPSE_GITHUB}/base/compare/${REDECLIPSE_BASE}...${REDECLIPSE_BASE_REMOTE}.patch"
-    if [ ! -a "${REDECLIPSE_TEMP}/base.patch" ]; then
+    ${REDECLIPSE_CURL} --output "${REDECLIPSE_TEMP}/base.patch" "${REDECLIPSE_GITHUB}/base/compare/${REDECLIPSE_BASE}...${REDECLIPSE_BASE_REMOTE}.patch"
+    if ! [ -a "${REDECLIPSE_TEMP}/base.patch" ]; then
         echo "Failed to retrieve base update package. Downloading full zip instead."
         redeclipse_update_baseblob
         return $?
@@ -175,8 +175,8 @@ function redeclipse_update_baseblob {
     fi
     echo "[D] base: ${REDECLIPSE_GITHUB}/base/${REDECLIPSE_BLOB}/${REDECLIPSE_BASE_REMOTE}"
     echo ""
-    ${REDECLIPSE_WGET} --output-document="${REDECLIPSE_TEMP}/base.zip" "${REDECLIPSE_GITHUB}/base/${REDECLIPSE_BLOB}/${REDECLIPSE_BASE_REMOTE}"
-    if [ ! -a "${REDECLIPSE_TEMP}/base.zip" ]; then
+    ${REDECLIPSE_CURL} --output "${REDECLIPSE_TEMP}/base.zip" "${REDECLIPSE_GITHUB}/base/${REDECLIPSE_BLOB}/${REDECLIPSE_BASE_REMOTE}"
+    if ! [ -a "${REDECLIPSE_TEMP}/base.zip" ]; then
         echo "Failed to retrieve base update package."
         redeclipse_update_data
         return $?
@@ -223,7 +223,7 @@ function redeclipse_update_dataver {
     if [ -z "${REDECLIPSE_DATA}" ]; then REDECLIPSE_DATA="none"; fi
     echo "[I] data: ${REDECLIPSE_DATA}"
     REDECLIPSE_DATA_CACHED="none"
-    if [ ! -a "${REDECLIPSE_TEMP}/data.txt" ]; then
+    if ! [ -a "${REDECLIPSE_TEMP}/data.txt" ]; then
         redeclipse_update_dataget
         return $?
     fi
@@ -236,15 +236,15 @@ function redeclipse_update_dataver {
 }
 
 function redeclipse_update_dataget {
-    ${REDECLIPSE_WGET} --output-document="${REDECLIPSE_TEMP}/data.txt" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/data.txt" > /dev/null 2>&1
-    if [ ! -a "${REDECLIPSE_TEMP}/data.txt" ]; then
+    ${REDECLIPSE_CURL} --silent --output "${REDECLIPSE_TEMP}/data.txt" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/data.txt"
+    if ! [ -a "${REDECLIPSE_TEMP}/data.txt" ]; then
         echo "Failed to retrieve data update information."
         redeclipse_update_bins
         return $?
     fi
     REDECLIPSE_DATA_REMOTE=`cat "${REDECLIPSE_TEMP}/data.txt"`
     if [ -z "${REDECLIPSE_DATA_REMOTE}" ]; then
-        echo "Failed to retrieve data update information."
+        echo "Failed to read data update information."
         redeclipse_update_bins
         return $?
     fi
@@ -266,8 +266,8 @@ function redeclipse_update_datapatch {
     if [ -a "${REDECLIPSE_TEMP}/data.zip" ]; then rm -f "${REDECLIPSE_TEMP}/data.zip"; fi
     echo "[D] data: ${REDECLIPSE_GITHUB}/data/compare/${REDECLIPSE_DATA}...${REDECLIPSE_DATA_REMOTE}.patch"
     echo ""
-    ${REDECLIPSE_WGET} --output-document="${REDECLIPSE_TEMP}/data.patch" "${REDECLIPSE_GITHUB}/data/compare/${REDECLIPSE_DATA}...${REDECLIPSE_DATA_REMOTE}.patch"
-    if [ ! -a "${REDECLIPSE_TEMP}/data.patch" ]; then
+    ${REDECLIPSE_CURL} --output "${REDECLIPSE_TEMP}/data.patch" "${REDECLIPSE_GITHUB}/data/compare/${REDECLIPSE_DATA}...${REDECLIPSE_DATA_REMOTE}.patch"
+    if ! [ -a "${REDECLIPSE_TEMP}/data.patch" ]; then
         echo "Failed to retrieve data update package. Downloading full zip instead."
         redeclipse_update_datablob
         return $?
@@ -302,8 +302,8 @@ function redeclipse_update_datablob {
     fi
     echo "[D] data: ${REDECLIPSE_GITHUB}/data/${REDECLIPSE_BLOB}/${REDECLIPSE_DATA_REMOTE}"
     echo ""
-    ${REDECLIPSE_WGET} --output-document="${REDECLIPSE_TEMP}/data.zip" "${REDECLIPSE_GITHUB}/data/${REDECLIPSE_BLOB}/${REDECLIPSE_DATA_REMOTE}"
-    if [ ! -a "${REDECLIPSE_TEMP}/data.zip" ]; then
+    ${REDECLIPSE_CURL} --output "${REDECLIPSE_TEMP}/data.zip" "${REDECLIPSE_GITHUB}/data/${REDECLIPSE_BLOB}/${REDECLIPSE_DATA_REMOTE}"
+    if ! [ -a "${REDECLIPSE_TEMP}/data.zip" ]; then
         echo "Failed to retrieve data update package."
         redeclipse_update_bins
         return $?
@@ -337,7 +337,7 @@ function redeclipse_update_bins {
     if [ -z "${REDECLIPSE_BINS}" ]; then REDECLIPSE_BINS="none"; fi
     echo "[I] bins: ${REDECLIPSE_BINS}"
     REDECLIPSE_BINS_CACHED="none"
-    if [ ! -a "${REDECLIPSE_TEMP}/bins.txt" ]; then
+    if ! [ -a "${REDECLIPSE_TEMP}/bins.txt" ]; then
         redeclipse_update_binsget
         return $?
     fi
@@ -347,15 +347,15 @@ function redeclipse_update_bins {
 }
 
 function redeclipse_update_binsget {
-    ${REDECLIPSE_WGET} --output-document="${REDECLIPSE_TEMP}/bins.txt" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/bins.txt" > /dev/null 2>&1
-    if [ ! -a "${REDECLIPSE_TEMP}/bins.txt" ]; then
+    ${REDECLIPSE_CURL} --silent --output "${REDECLIPSE_TEMP}/bins.txt" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/bins.txt"
+    if ! [ -a "${REDECLIPSE_TEMP}/bins.txt" ]; then
         echo "Failed to retrieve bins update information."
         redeclipse_update_deploy
         return $?
     fi
     REDECLIPSE_BINS_REMOTE=`cat "${REDECLIPSE_TEMP}/bins.txt"`
     if [ -z "${REDECLIPSE_BINS_REMOTE}" ]; then
-        echo "Failed to retrieve bins update information."
+        echo "Failed to read bins update information."
         redeclipse_update_deploy
         return $?
     fi
@@ -378,8 +378,8 @@ function redeclipse_update_binsblob {
     fi
     echo "[D] bins: ${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/${REDECLIPSE_ARCHIVE}"
     echo ""
-    ${REDECLIPSE_WGET} --output-document="${REDECLIPSE_TEMP}/${REDECLIPSE_ARCHIVE}" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/${REDECLIPSE_ARCHIVE}"
-    if [ ! -a "${REDECLIPSE_TEMP}/${REDECLIPSE_ARCHIVE}" ]; then
+    ${REDECLIPSE_CURL} --output "${REDECLIPSE_TEMP}/${REDECLIPSE_ARCHIVE}" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/${REDECLIPSE_ARCHIVE}"
+    if ! [ -a "${REDECLIPSE_TEMP}/${REDECLIPSE_ARCHIVE}" ]; then
         echo "Failed to retrieve bins update package."
         redeclipse_update_deploy
         return $?
@@ -428,18 +428,20 @@ function redeclipse_update_unpack {
         echo ""
         echo "Updated successfully."
         echo "${REDECLIPSE_BRANCH}" > "${REDECLIPSE_PATH}/bin/branch.txt"
-        ${REDECLIPSE_EXITU} 0
+        return 0
     ) || (
         echo ""
         echo "There was an error deploying the files."
-        ${REDECLIPSE_EXITU} 1
+        return 1
     )
 }
 
 redeclipse_update_path
 redeclipse_update_init
+redeclipse_update_setup
+
 if [ $? -ne 0 ]; then
-    ${REDECLIPSE_EXITR} 1
+    ${REDECLIPSE_EXITU} 1
 else
-    ${REDECLIPSE_EXITR} 0
+    ${REDECLIPSE_EXITU} 0
 fi
