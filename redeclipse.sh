@@ -1,11 +1,11 @@
 #!/bin/sh
 if [ "$_" != "$0" ]; then REDECLIPSE_EXITR="return"; else REDECLIPSE_EXITR="exit"; fi
 
-function redeclipse_path {
+redeclipse_path() {
     if [ -z "${REDECLIPSE_PATH+isset}" ]; then REDECLIPSE_PATH="$(cd "$(dirname "$0")" && pwd)"; fi
 }
 
-function redeclipse_init {
+redeclipse_init() {
     if [ -z "${REDECLIPSE_BINARY+isset}" ]; then REDECLIPSE_BINARY="redeclipse"; fi
     REDECLIPSE_SCRIPT="$0"
     REDECLIPSE_SUFFIX=""
@@ -13,7 +13,7 @@ function redeclipse_init {
     REDECLIPSE_MAKE="make"
 }
 
-function redeclipse_setup {
+redeclipse_setup() {
     if [ -z "${REDECLIPSE_TARGET+isset}" ]; then 
         REDECLIPSE_SYSTEM="$(uname -s)"
         REDECLIPSE_MACHINE="$(uname -m)"
@@ -71,7 +71,7 @@ function redeclipse_setup {
     return $?
 }
 
-function redeclipse_check {
+redeclipse_check() {
     if [ "${REDECLIPSE_BRANCH}" = "stable" ] || [ "${REDECLIPSE_BRANCH}" = "devel" ]; then
         echo ""
         echo "Checking for updates to \"${REDECLIPSE_BRANCH}\". To disable set: REDECLIPSE_BRANCH=\"inplace\""
@@ -83,13 +83,13 @@ function redeclipse_check {
     return $?
 }
 
-function redeclipse_begin {
+redeclipse_begin() {
     REDECLIPSE_RETRY="false"
     redeclipse_update
     return $?
 }
 
-function redeclipse_retry {
+redeclipse_retry() {
     if [ "${REDECLIPSE_RETRY}" != "true" ]; then
         REDECLIPSE_RETRY="true"
         echo "Retrying..."
@@ -100,8 +100,9 @@ function redeclipse_retry {
     return $?
 }
 
-function redeclipse_update {
+redeclipse_update() {
     REDECLIPSE_BINVER=`cat "${REDECLIPSE_PATH}/bin/version.txt"`
+    chmod +x "${REDECLIPSE_PATH}/bin/update.sh"
     source "${REDECLIPSE_PATH}/bin/update.sh"
     if [ $? -eq 0 ]; then
         redeclipse_success
@@ -113,7 +114,7 @@ function redeclipse_update {
     return 0
 }
 
-function redeclipse_success {
+redeclipse_success() {
     if [ "${REDECLIPSE_BRANCH}" = "stable" ]; then
         REDECLIPSE_BINNEW=`cat "${REDECLIPSE_PATH}/bin/version.txt"`
         if [ "${REDECLIPSE_BINVER}" != "${REDECLIPSE_BINNEW}" ]; then
@@ -125,7 +126,7 @@ function redeclipse_success {
     return $?
 }
 
-function redeclipse_runit {
+redeclipse_runit() {
     if [ -a "${REDECLIPSE_PATH}/bin/${REDECLIPSE_ARCH}/${REDECLIPSE_BINARY}${REDECLIPSE_SUFFIX}" ]; then
         pushd "${REDECLIPSE_PATH}" 2>&1 > /dev/null || return 1
         exec "bin/${REDECLIPSE_ARCH}/${REDECLIPSE_BINARY}${REDECLIPSE_SUFFIX}" ${REDECLIPSE_OPTIONS} "$@" || (

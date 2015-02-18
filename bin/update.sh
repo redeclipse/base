@@ -1,11 +1,11 @@
 #!/bin/sh
 if [ "$_" != "$0" ]; then REDECLIPSE_EXITU="return"; else REDECLIPSE_EXITU="exit"; fi
 
-function redeclipse_update_path {
+redeclipse_update_path() {
     if [ -z "${REDECLIPSE_PATH+isset}" ]; then REDECLIPSE_PATH="$(cd "$(dirname "$0")" && pwd)"; fi
 }
 
-function redeclipse_update_init {
+redeclipse_update_init() {
     if [ -z "${REDECLIPSE_CACHE+isset}" ]; then
         if [ "${REDECLIPSE_TARGET}" = "windows" ]; then
             REDECLIPSE_WINDOCS=`reg query "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders" //v "Personal" | tr -d '\r' | tr -d '\n' | sed -e 's/.*\(.\):\\\/\/\1\//g;s/\\\/\//g'`
@@ -19,7 +19,7 @@ function redeclipse_update_init {
     return 0
 }
 
-function redeclipse_update_setup {
+redeclipse_update_setup() {
     if [ -z "${REDECLIPSE_SOURCE+isset}" ]; then REDECLIPSE_SOURCE="http://redeclipse.net/files"; fi
     if [ -z "${REDECLIPSE_GITHUB+isset}" ]; then REDECLIPSE_GITHUB="https://github.com/red-eclipse"; fi
     if [ -z "${REDECLIPSE_BRANCH+isset}" ]; then
@@ -61,7 +61,7 @@ function redeclipse_update_setup {
     return $?
 }
 
-function redeclipse_update_branch {
+redeclipse_update_branch() {
     echo "Branch: ${REDECLIPSE_UPDATE}"
     echo "Folder: ${REDECLIPSE_PATH}"
     echo "Cached: ${REDECLIPSE_TEMP}"
@@ -98,7 +98,7 @@ function redeclipse_update_branch {
     return $?
 }
 
-function redeclipse_update_base {
+redeclipse_update_base() {
     echo ""
     if [ -a "${REDECLIPSE_PATH}/bin/base.txt" ]; then REDECLIPSE_BASE=`cat "${REDECLIPSE_PATH}/bin/base.txt"`; fi
     if [ -z "${REDECLIPSE_BASE}" ]; then REDECLIPSE_BASE="none"; fi
@@ -116,7 +116,7 @@ function redeclipse_update_base {
     return $?
 }
 
-function redeclipse_update_baseget {
+redeclipse_update_baseget() {
     ${REDECLIPSE_CURL} --silent --output "${REDECLIPSE_TEMP}/base.txt" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/base.txt"
     if ! [ -a "${REDECLIPSE_TEMP}/base.txt" ]; then
         echo "Failed to retrieve base update information."
@@ -142,7 +142,7 @@ function redeclipse_update_baseget {
     return $?
 }
 
-function redeclipse_update_basepatch {
+redeclipse_update_basepatch() {
     if [ -a "${REDECLIPSE_TEMP}/base.patch" ]; then rm -f "${REDECLIPSE_TEMP}/base.patch"; fi
     if [ -a "${REDECLIPSE_TEMP}/base.zip" ]; then rm -f "${REDECLIPSE_TEMP}/base.zip"; fi
     echo "[D] base: ${REDECLIPSE_GITHUB}/base/compare/${REDECLIPSE_BASE}...${REDECLIPSE_BASE_REMOTE}.patch"
@@ -157,7 +157,7 @@ function redeclipse_update_basepatch {
     return $?
 }
 
-function redeclipse_update_basepatchdeploy {
+redeclipse_update_basepatchdeploy() {
     return 0
     echo "${REDECLIPSE_GITAPPLY} --directory=\"${REDECLIPSE_PATH}\" \"${REDECLIPSE_TEMP}/base.patch\" && (" >> "${REDECLIPSE_TEMP}/install.sh"
     echo "    echo \"${REDECLIPSE_BASE_REMOTE}\" > \"${REDECLIPSE_PATH}/bin/base.txt\"" >> "${REDECLIPSE_TEMP}/install.sh"
@@ -171,7 +171,7 @@ function redeclipse_update_basepatchdeploy {
     return $?
 }
 
-function redeclipse_update_baseblob {
+redeclipse_update_baseblob() {
     if [ -a "${REDECLIPSE_TEMP}/base.zip" ]; then
         if [ "${REDECLIPSE_BASE_CACHED}" = "${REDECLIPSE_BASE_REMOTE}" ]; then
             echo "[F] base: Using cached file \"${REDECLIPSE_TEMP}/base.zip\""
@@ -193,7 +193,7 @@ function redeclipse_update_baseblob {
     return $?
 }
 
-function redeclipse_update_baseblobdeploy {
+redeclipse_update_baseblobdeploy() {
     return 0
     if [ "${REDECLIPSE_BLOB}" = "zipball" ]; then
         echo "${REDECLIPSE_UNZIP} -o \"${REDECLIPSE_TEMP}/base.zip\" -d \"${REDECLIPSE_TEMP}\" && (" >> "${REDECLIPSE_TEMP}/install.sh"
@@ -212,7 +212,7 @@ function redeclipse_update_baseblobdeploy {
     return $?
 }
 
-function redeclipse_update_data {
+redeclipse_update_data() {
     echo ""
     if  [ -a "${REDECLIPSE_PATH}/data/readme.txt" ]; then 
         redeclipse_update_dataver
@@ -225,7 +225,7 @@ function redeclipse_update_data {
     return $?
 }
 
-function redeclipse_update_dataver {
+redeclipse_update_dataver() {
     echo ""
     if [ -a "${REDECLIPSE_PATH}/bin/data.txt" ]; then REDECLIPSE_DATA=`cat "${REDECLIPSE_PATH}/bin/data.txt"`; fi
     if [ -z "${REDECLIPSE_DATA}" ]; then REDECLIPSE_DATA="none"; fi
@@ -243,7 +243,7 @@ function redeclipse_update_dataver {
     return $?
 }
 
-function redeclipse_update_dataget {
+redeclipse_update_dataget() {
     ${REDECLIPSE_CURL} --silent --output "${REDECLIPSE_TEMP}/data.txt" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/data.txt"
     if ! [ -a "${REDECLIPSE_TEMP}/data.txt" ]; then
         echo "Failed to retrieve data update information."
@@ -269,7 +269,7 @@ function redeclipse_update_dataget {
     return $?
 }
 
-function redeclipse_update_datapatch {
+redeclipse_update_datapatch() {
     if [ -a "${REDECLIPSE_TEMP}/data.patch" ]; then rm -f "${REDECLIPSE_TEMP}/data.patch"; fi
     if [ -a "${REDECLIPSE_TEMP}/data.zip" ]; then rm -f "${REDECLIPSE_TEMP}/data.zip"; fi
     echo "[D] data: ${REDECLIPSE_GITHUB}/data/compare/${REDECLIPSE_DATA}...${REDECLIPSE_DATA_REMOTE}.patch"
@@ -284,7 +284,7 @@ function redeclipse_update_datapatch {
     return $?
 }
 
-function redeclipse_update_datapatchdeploy {
+redeclipse_update_datapatchdeploy() {
     return 0
     echo "${REDECLIPSE_GITAPPLY} --directory=\"${REDECLIPSE_PATH}/data\" \"${REDECLIPSE_TEMP}/data.patch\" && (" >> "${REDECLIPSE_TEMP}/install.sh"
     echo "    echo \"${REDECLIPSE_DATA_REMOTE}\" > \"${REDECLIPSE_PATH}/bin/data.txt\"" >> "${REDECLIPSE_TEMP}/install.sh"
@@ -298,7 +298,7 @@ function redeclipse_update_datapatchdeploy {
     return $?
 }
 
-function redeclipse_update_datablob {
+redeclipse_update_datablob() {
     if [ -a "${REDECLIPSE_TEMP}/data.zip" ]; then
         if [ "${REDECLIPSE_DATA_CACHED}" = "${REDECLIPSE_DATA_REMOTE}" ]; then
             echo "[F] data: Using cached file \"${REDECLIPSE_TEMP}/data.zip\""
@@ -320,7 +320,7 @@ function redeclipse_update_datablob {
     return $?
 }
 
-function redeclipse_update_datablobdeploy {
+redeclipse_update_datablobdeploy() {
     return 0
     if [ "${REDECLIPSE_BLOB}" = "zipball" ]; then
         echo "${REDECLIPSE_UNZIP} -o \"${REDECLIPSE_TEMP}/data.zip\" -d \"${REDECLIPSE_TEMP}\" && (" >> "${REDECLIPSE_TEMP}/install.sh"
@@ -339,7 +339,7 @@ function redeclipse_update_datablobdeploy {
     return $?
 }
 
-function redeclipse_update_bins {
+redeclipse_update_bins() {
     echo ""
     if [ -a "${REDECLIPSE_PATH}/bin/bins.txt" ]; then REDECLIPSE_BINS=`cat "${REDECLIPSE_PATH}/bin/bins.txt"`; fi
     if [ -z "${REDECLIPSE_BINS}" ]; then REDECLIPSE_BINS="none"; fi
@@ -356,7 +356,7 @@ function redeclipse_update_bins {
     return $?
 }
 
-function redeclipse_update_binsget {
+redeclipse_update_binsget() {
     ${REDECLIPSE_CURL} --silent --output "${REDECLIPSE_TEMP}/bins.txt" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/bins.txt"
     if ! [ -a "${REDECLIPSE_TEMP}/bins.txt" ]; then
         echo "Failed to retrieve bins update information."
@@ -378,7 +378,7 @@ function redeclipse_update_binsget {
     return $?
 }
 
-function redeclipse_update_binsblob {
+redeclipse_update_binsblob() {
     if [ -a "${REDECLIPSE_TEMP}/${REDECLIPSE_ARCHIVE}" ]; then
         if [ "${REDECLIPSE_BINS_CACHED}" = "${REDECLIPSE_BINS_REMOTE}" ]; then
             echo "[F] bins: Using cached file \"${REDECLIPSE_TEMP}/${REDECLIPSE_ARCHIVE}\""
@@ -400,7 +400,7 @@ function redeclipse_update_binsblob {
     return $?
 }
 
-function redeclipse_update_binsdeploy {
+redeclipse_update_binsdeploy() {
     if [ "${REDECLIPSE_BLOB}" = "zipball" ]; then
         echo "${REDECLIPSE_UNZIP} -o \"${REDECLIPSE_TEMP}/${REDECLIPSE_ARCHIVE}\" -d \"${REDECLIPSE_PATH}\" && (" >> "${REDECLIPSE_TEMP}/install.sh"
     else
@@ -416,7 +416,7 @@ function redeclipse_update_binsdeploy {
     return $?
 }
 
-function redeclipse_update_deploy {
+redeclipse_update_deploy() {
     echo ""
     if [ "${REDECLIPSE_DEPLOY}" != "true" ]; then
         echo "Everything is already up to date."
@@ -424,6 +424,7 @@ function redeclipse_update_deploy {
     fi
     echo "if [ \"\${REDECLIPSE_ERROR}\" = \"true\" ]; then return 1; else return 0; fi" >> "${REDECLIPSE_TEMP}/install.sh"
     echo "Deploying: \"${REDECLIPSE_TEMP}/install.sh\""
+    chmod ugo+x "${REDECLIPSE_TEMP}/install.sh"
     REDECLIPSE_INSTALL="exec"
     touch test.tmp && (
         rm -f test.tmp
@@ -439,7 +440,7 @@ function redeclipse_update_deploy {
     REDECLIPSE_INSTALL="sudo"
 }
 
-function redeclipse_update_unpack {
+redeclipse_update_unpack() {
     ${REDECLIPSE_INSTALL} "${REDECLIPSE_TEMP}/install.sh" && (
         echo ""
         echo "Updated successfully."
