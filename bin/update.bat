@@ -51,7 +51,7 @@ setlocal enableextensions enabledelayedexpansion
         echo Unable to find curl.exe, are you sure it is in tools?
         exit /b 0
     )
-    set REDECLIPSE_CURL="%REDECLIPSE_PATH%\bin\tools\curl.exe" --location --insecure --user-agent "redeclipse-%REDECLIPSE_UPDATE%"
+    set REDECLIPSE_CURL="%REDECLIPSE_PATH%\bin\tools\curl.exe" --location --insecure --fail --user-agent "redeclipse-%REDECLIPSE_UPDATE%"
     if NOT EXIST "%REDECLIPSE_PATH%\bin\tools\unzip.exe" (
         echo Unable to find unzip.exe, are you sure it is in tools?
         exit /b 0

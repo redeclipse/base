@@ -69,7 +69,7 @@ redeclipse_update_branch() {
         echo "Unable to find curl, are you sure you have it installed?"
         return 1
     fi
-    REDECLIPSE_CURL="curl --location --insecure --user-agent \"redeclipse-${REDECLIPSE_UPDATE}\""
+    REDECLIPSE_CURL="curl --location --insecure --fail --user-agent \"redeclipse-${REDECLIPSE_UPDATE}\""
     if [ "${REDECLIPSE_TARGET}" = "windows" ]; then
         if [ -z `which unzip` ]; then
             echo "Unable to find unzip, are you sure you have it installed?"
