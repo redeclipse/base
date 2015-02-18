@@ -66,7 +66,7 @@ function redeclipse_begin {
 function redeclipse_retry {
     if [ "${REDECLIPSE_RETRY}" != "true" ]; then
         set REDECLIPSE_RETRY=true
-        echo Retrying...
+        echo "Retrying..."
         redeclipse_update
         return 0
     fi
@@ -113,14 +113,13 @@ function redeclipse_runit {
             redeclipse_runit
             return 0
         fi
-        echo Unable to find a working binary.
+        echo "Unable to find a working binary."
     fi
     redeclipse_error
 }
 
 function redeclipse_error {
-    echo There was an error running Red Eclipse.
-    pause
+    echo "There was an error running Red Eclipse."
     exit 1
 }
 
