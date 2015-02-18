@@ -165,7 +165,7 @@ redeclipse_update_basepatchdeploy() {
     echo "    echo \"none\" > \"${REDECLIPSE_PATH}/bin/base.txt\"" >> "${REDECLIPSE_TEMP}/install.sh"
     echo "    rm -f \"${REDECLIPSE_TEMP}/base.txt\"" >> "${REDECLIPSE_TEMP}/install.sh"
     echo "    REDECLIPSE_ERROR=\"true\"" >> "${REDECLIPSE_TEMP}/install.sh"
-    echo ")"
+    echo ")" >> "${REDECLIPSE_TEMP}/install.sh"
     REDECLIPSE_DEPLOY="true"
     redeclipse_update_data
     return $?
@@ -206,7 +206,7 @@ redeclipse_update_baseblobdeploy() {
     echo ") || (" >> "${REDECLIPSE_TEMP}/install.sh"
     echo "    rm -f \"${REDECLIPSE_TEMP}/base.txt\"" >> "${REDECLIPSE_TEMP}/install.sh"
     echo "    REDECLIPSE_ERROR=\"true\"" >> "${REDECLIPSE_TEMP}/install.sh"
-    echo ")"
+    echo ")" >> "${REDECLIPSE_TEMP}/install.sh"
     REDECLIPSE_DEPLOY="true"
     redeclipse_update_data
     return $?
@@ -292,7 +292,7 @@ redeclipse_update_datapatchdeploy() {
     echo "    echo \"none\" > \"${REDECLIPSE_PATH}/bin/data.txt\"" >> "${REDECLIPSE_TEMP}/install.sh"
     echo "    rm -f \"${REDECLIPSE_TEMP}/data.txt\"" >> "${REDECLIPSE_TEMP}/install.sh"
     echo "    REDECLIPSE_ERROR=\"true\"" >> "${REDECLIPSE_TEMP}/install.sh"
-    echo ")"
+    echo ")" >> "${REDECLIPSE_TEMP}/install.sh"
     REDECLIPSE_DEPLOY="true"
     redeclipse_update_bins
     return $?
@@ -333,7 +333,7 @@ redeclipse_update_datablobdeploy() {
     echo ") || (" >> "${REDECLIPSE_TEMP}/install.sh"
     echo "    rm -f \"${REDECLIPSE_TEMP}/data.txt\"" >> "${REDECLIPSE_TEMP}/install.sh"
     echo "    REDECLIPSE_ERROR=\"true\"" >> "${REDECLIPSE_TEMP}/install.sh"
-    echo ")"
+    echo ")" >> "${REDECLIPSE_TEMP}/install.sh"
     REDECLIPSE_DEPLOY="true"
     redeclipse_update_bins
     return $?
@@ -410,7 +410,7 @@ redeclipse_update_binsdeploy() {
     echo ") || (" >> "${REDECLIPSE_TEMP}/install.sh"
     echo "    rm -f \"${REDECLIPSE_TEMP}/bins.txt\"" >> "${REDECLIPSE_TEMP}/install.sh"
     echo "    REDECLIPSE_ERROR=\"true\"" >> "${REDECLIPSE_TEMP}/install.sh"
-    echo ")"
+    echo ")" >> "${REDECLIPSE_TEMP}/install.sh"
     REDECLIPSE_DEPLOY="true"
     redeclipse_update_deploy
     return $?
