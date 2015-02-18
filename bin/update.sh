@@ -51,10 +51,12 @@ redeclipse_update_setup() {
         windows)
             REDECLIPSE_BLOB="zipball"
             REDECLIPSE_ARCHIVE="windows.zip"
+            REDECLIPSE_ARCHEXT="zip"
             ;;
         *)
             REDECLIPSE_BLOB="tarball"
-            REDECLIPSE_ARCHIVE="linux.tar.bz2"
+            REDECLIPSE_ARCHIVE="linux.tar.gz"
+            REDECLIPSE_ARCHEXT="tar.gz"
             ;;
     esac
     redeclipse_update_branch
@@ -70,7 +72,7 @@ redeclipse_update_branch() {
         return 1
     fi
     REDECLIPSE_CURL="curl --location --insecure --fail --user-agent \"redeclipse-${REDECLIPSE_UPDATE}\""
-    if [ "${REDECLIPSE_TARGET}" = "windows" ]; then
+    if [ "${REDECLIPSE_BLOB}" = "zipball" ]; then
         if [ -z `which unzip` ]; then
             echo "Unable to find unzip, are you sure you have it installed?"
             return 1
@@ -81,7 +83,7 @@ redeclipse_update_branch() {
         echo "Unable to find tar, are you sure you have it installed?"
         return 1
     fi
-    REDECLIPSE_TAR="tar --bzip2 --extract --verbose --overwrite"
+    REDECLIPSE_TAR="tar --gzip --extract --verbose --overwrite"
     if [ -z `which git` ]; then
         echo "Unable to find git, are you sure you have it installed?"
         return 1
@@ -144,7 +146,7 @@ redeclipse_update_baseget() {
 
 redeclipse_update_basepatch() {
     if [ -e "${REDECLIPSE_TEMP}/base.patch" ]; then rm -f "${REDECLIPSE_TEMP}/base.patch"; fi
-    if [ -e "${REDECLIPSE_TEMP}/base.zip" ]; then rm -f "${REDECLIPSE_TEMP}/base.zip"; fi
+    if [ -e "${REDECLIPSE_TEMP}/base.${REDECLIPSE_ARCHEXT}" ]; then rm -f "${REDECLIPSE_TEMP}/base.${REDECLIPSE_ARCHEXT}"; fi
     echo "[D] base: ${REDECLIPSE_GITHUB}/base/compare/${REDECLIPSE_BASE}...${REDECLIPSE_BASE_REMOTE}.patch"
     echo ""
     ${REDECLIPSE_CURL} --output "${REDECLIPSE_TEMP}/base.patch" "${REDECLIPSE_GITHUB}/base/compare/${REDECLIPSE_BASE}...${REDECLIPSE_BASE_REMOTE}.patch"
@@ -172,19 +174,19 @@ redeclipse_update_basepatchdeploy() {
 }
 
 redeclipse_update_baseblob() {
-    if [ -e "${REDECLIPSE_TEMP}/base.zip" ]; then
+    if [ -e "${REDECLIPSE_TEMP}/base.${REDECLIPSE_ARCHEXT}" ]; then
         if [ "${REDECLIPSE_BASE_CACHED}" = "${REDECLIPSE_BASE_REMOTE}" ]; then
-            echo "[F] base: Using cached file \"${REDECLIPSE_TEMP}/base.zip\""
+            echo "[F] base: Using cached file \"${REDECLIPSE_TEMP}/base.${REDECLIPSE_ARCHEXT}\""
             redeclipse_update_baseblobdeploy
             return $?
         else
-            rm -f "${REDECLIPSE_TEMP}/base.zip"
+            rm -f "${REDECLIPSE_TEMP}/base.${REDECLIPSE_ARCHEXT}"
         fi
     fi
     echo "[D] base: ${REDECLIPSE_GITHUB}/base/${REDECLIPSE_BLOB}/${REDECLIPSE_BASE_REMOTE}"
     echo ""
-    ${REDECLIPSE_CURL} --output "${REDECLIPSE_TEMP}/base.zip" "${REDECLIPSE_GITHUB}/base/${REDECLIPSE_BLOB}/${REDECLIPSE_BASE_REMOTE}"
-    if ! [ -e "${REDECLIPSE_TEMP}/base.zip" ]; then
+    ${REDECLIPSE_CURL} --output "${REDECLIPSE_TEMP}/base.${REDECLIPSE_ARCHEXT}" "${REDECLIPSE_GITHUB}/base/${REDECLIPSE_BLOB}/${REDECLIPSE_BASE_REMOTE}"
+    if ! [ -e "${REDECLIPSE_TEMP}/base.${REDECLIPSE_ARCHEXT}" ]; then
         echo "Failed to retrieve base update package."
         redeclipse_update_data
         return $?
@@ -196,9 +198,9 @@ redeclipse_update_baseblob() {
 redeclipse_update_baseblobdeploy() {
     return 0
     if [ "${REDECLIPSE_BLOB}" = "zipball" ]; then
-        echo "${REDECLIPSE_UNZIP} -o \"${REDECLIPSE_TEMP}/base.zip\" -d \"${REDECLIPSE_TEMP}\" && (" >> "${REDECLIPSE_TEMP}/install.sh"
+        echo "${REDECLIPSE_UNZIP} -o \"${REDECLIPSE_TEMP}/base.${REDECLIPSE_ARCHEXT}\" -d \"${REDECLIPSE_TEMP}\" && (" >> "${REDECLIPSE_TEMP}/install.sh"
     else
-        echo "${REDECLIPSE_TAR} --file=\"${REDECLIPSE_TEMP}/base.zip\" --directory=\"${REDECLIPSE_TEMP}\" && (" >> "${REDECLIPSE_TEMP}/install.sh"
+        echo "${REDECLIPSE_TAR} --file=\"${REDECLIPSE_TEMP}/base.${REDECLIPSE_ARCHEXT}\" --directory=\"${REDECLIPSE_TEMP}\" && (" >> "${REDECLIPSE_TEMP}/install.sh"
     fi
     echo "   copy --recursive --force --verbose \"${REDECLIPSE_TEMP}/red-eclipse-base-${REDECLIPSE_BASE_REMOTE:0:7}/*\" \"${REDECLIPSE_PATH}\"" >> "${REDECLIPSE_TEMP}/install.sh"
     echo "   rm -rf \"${REDECLIPSE_TEMP}/red-eclipse-base-${REDECLIPSE_BASE_REMOTE:0:7}\"" >> "${REDECLIPSE_TEMP}/install.sh"
@@ -271,7 +273,7 @@ redeclipse_update_dataget() {
 
 redeclipse_update_datapatch() {
     if [ -e "${REDECLIPSE_TEMP}/data.patch" ]; then rm -f "${REDECLIPSE_TEMP}/data.patch"; fi
-    if [ -e "${REDECLIPSE_TEMP}/data.zip" ]; then rm -f "${REDECLIPSE_TEMP}/data.zip"; fi
+    if [ -e "${REDECLIPSE_TEMP}/data.${REDECLIPSE_ARCHEXT}" ]; then rm -f "${REDECLIPSE_TEMP}/data.${REDECLIPSE_ARCHEXT}"; fi
     echo "[D] data: ${REDECLIPSE_GITHUB}/data/compare/${REDECLIPSE_DATA}...${REDECLIPSE_DATA_REMOTE}.patch"
     echo ""
     ${REDECLIPSE_CURL} --output "${REDECLIPSE_TEMP}/data.patch" "${REDECLIPSE_GITHUB}/data/compare/${REDECLIPSE_DATA}...${REDECLIPSE_DATA_REMOTE}.patch"
@@ -299,19 +301,19 @@ redeclipse_update_datapatchdeploy() {
 }
 
 redeclipse_update_datablob() {
-    if [ -e "${REDECLIPSE_TEMP}/data.zip" ]; then
+    if [ -e "${REDECLIPSE_TEMP}/data.${REDECLIPSE_ARCHEXT}" ]; then
         if [ "${REDECLIPSE_DATA_CACHED}" = "${REDECLIPSE_DATA_REMOTE}" ]; then
-            echo "[F] data: Using cached file \"${REDECLIPSE_TEMP}/data.zip\""
+            echo "[F] data: Using cached file \"${REDECLIPSE_TEMP}/data.${REDECLIPSE_ARCHEXT}\""
             redeclipse_update_datablobdeploy
             return $?
         else
-            rm -f "${REDECLIPSE_TEMP}/data.zip"
+            rm -f "${REDECLIPSE_TEMP}/data.${REDECLIPSE_ARCHEXT}"
         fi
     fi
     echo "[D] data: ${REDECLIPSE_GITHUB}/data/${REDECLIPSE_BLOB}/${REDECLIPSE_DATA_REMOTE}"
     echo ""
-    ${REDECLIPSE_CURL} --output "${REDECLIPSE_TEMP}/data.zip" "${REDECLIPSE_GITHUB}/data/${REDECLIPSE_BLOB}/${REDECLIPSE_DATA_REMOTE}"
-    if ! [ -e "${REDECLIPSE_TEMP}/data.zip" ]; then
+    ${REDECLIPSE_CURL} --output "${REDECLIPSE_TEMP}/data.${REDECLIPSE_ARCHEXT}" "${REDECLIPSE_GITHUB}/data/${REDECLIPSE_BLOB}/${REDECLIPSE_DATA_REMOTE}"
+    if ! [ -e "${REDECLIPSE_TEMP}/data.${REDECLIPSE_ARCHEXT}" ]; then
         echo "Failed to retrieve data update package."
         redeclipse_update_bins
         return $?
@@ -323,9 +325,9 @@ redeclipse_update_datablob() {
 redeclipse_update_datablobdeploy() {
     return 0
     if [ "${REDECLIPSE_BLOB}" = "zipball" ]; then
-        echo "${REDECLIPSE_UNZIP} -o \"${REDECLIPSE_TEMP}/data.zip\" -d \"${REDECLIPSE_TEMP}\" && (" >> "${REDECLIPSE_TEMP}/install.sh"
+        echo "${REDECLIPSE_UNZIP} -o \"${REDECLIPSE_TEMP}/data.${REDECLIPSE_ARCHEXT}\" -d \"${REDECLIPSE_TEMP}\" && (" >> "${REDECLIPSE_TEMP}/install.sh"
     else
-        echo "${REDECLIPSE_TAR} --file=\"${REDECLIPSE_TEMP}/data.zip\" --directory=\"${REDECLIPSE_TEMP}\" && (" >> "${REDECLIPSE_TEMP}/install.sh"
+        echo "${REDECLIPSE_TAR} --file=\"${REDECLIPSE_TEMP}/data.${REDECLIPSE_ARCHEXT}\" --directory=\"${REDECLIPSE_TEMP}\" && (" >> "${REDECLIPSE_TEMP}/install.sh"
     fi
     echo "   copy --recursive --force --verbose \"${REDECLIPSE_TEMP}/red-eclipse-data-${REDECLIPSE_DATA_REMOTE:0:7}/*\" \"${REDECLIPSE_PATH}/data\"" >> "${REDECLIPSE_TEMP}/install.sh"
     echo "   rm -rf \"${REDECLIPSE_TEMP}/red-eclipse-data-${REDECLIPSE_DATA_REMOTE:0:7}\"" >> "${REDECLIPSE_TEMP}/install.sh"
@@ -401,7 +403,7 @@ redeclipse_update_binsblob() {
 }
 
 redeclipse_update_binsdeploy() {
-    if [ "${REDECLIPSE_BLOB}" = "zipball" ]; then
+    if [ "${REDECLIPSE_TARGET}" = "windows" ]; then
         echo "${REDECLIPSE_UNZIP} -o \"${REDECLIPSE_TEMP}/${REDECLIPSE_ARCHIVE}\" -d \"${REDECLIPSE_PATH}\" && (" >> "${REDECLIPSE_TEMP}/install.sh"
     else
         echo "${REDECLIPSE_TAR} --file=\"${REDECLIPSE_TEMP}/${REDECLIPSE_ARCHIVE}\" --directory=\"${REDECLIPSE_PATH}\" && (" >> "${REDECLIPSE_TEMP}/install.sh"
@@ -422,7 +424,7 @@ redeclipse_update_deploy() {
         echo "Everything is already up to date."
         return 0
     fi
-    echo "if [ \"\${REDECLIPSE_ERROR}\" = \"true\" ]; then return 1; else return 0; fi" >> "${REDECLIPSE_TEMP}/install.sh"
+    echo "if [ \"\${REDECLIPSE_ERROR}\" = \"true\" ]; then exit 1; else exit 0; fi" >> "${REDECLIPSE_TEMP}/install.sh"
     echo "Deploying: \"${REDECLIPSE_TEMP}/install.sh\""
     chmod ugo+x "${REDECLIPSE_TEMP}/install.sh"
     REDECLIPSE_INSTALL="exec"
@@ -430,14 +432,16 @@ redeclipse_update_deploy() {
         rm -f test.tmp
         redeclipse_update_unpack
         return $?
+    ) || (
+        echo "Administrator permissions are required to deploy the files."
+        if [ -z `which sudo` ]; then
+            echo "Unable to find sudo, are you sure it is installed?"
+            redeclipse_update_unpack
+            return $?
+        fi
+        REDECLIPSE_INSTALL="sudo exec"
     )
-    echo "Administrator permissions are required to deploy the files."
-    if [ -z `which sudo` ]; then
-        echo "Unable to find sudo, are you sure it is installed?"
-        redeclipse_update_unpack
-        return $?
-    fi
-    REDECLIPSE_INSTALL="sudo"
+    return $?
 }
 
 redeclipse_update_unpack() {
