@@ -51,17 +51,17 @@ if [ "${BRANCH_NAME}" = "master" ]; then
     sudo ${CMD_APT} -fy install build-essential multiarch-support g++-multilib zlib1g-dev:i386 libsdl1.2-dev:i386 libsdl-mixer1.2-dev:i386 libsdl-image1.2-dev:i386 libpng-dev:i386
     make PLATFORM=linux32 PLATFORM_BIN=x86 INSTDIR=${HOME}/build/${BRANCH_NAME}/linux/bin/x86 CFLAGS=-m32 CXXFLAGS=-m32 LDFLAGS=-m32 -C src clean install || exit 1
     cd ${HOME}/build/${BRANCH_NAME} || exit 1
-    rm -fv windows.zip linux.tar.bz2 || exit 1
+    rm -fv windows.zip linux.tar.gz || exit 1
     cd windows || exit 1
     zip -r ../windows.zip . || exit 1
     cd ../linux || exit 1
-    tar -zcvf ../linux.tar.bz2 . || exit 1
+    tar -zcvf ../linux.tar.gz . || exit 1
     cd .. || exit 1
     echo "${BASE_COMMIT}" > bins.txt
     echo "${BASE_COMMIT}" > base.txt
     echo "${DATA_COMMIT}" > data.txt
     scp -BC -i ${HOME}/.ssh/public_rsa -o StrictHostKeyChecking=no windows.zip qreeves@icculus.org:/webspace/redeclipse.net/files/devel/windows.zip
-    scp -BC -i ${HOME}/.ssh/public_rsa -o StrictHostKeyChecking=no linux.tar.bz2 qreeves@icculus.org:/webspace/redeclipse.net/files/devel/linux.tar.bz2
+    scp -BC -i ${HOME}/.ssh/public_rsa -o StrictHostKeyChecking=no linux.tar.gz qreeves@icculus.org:/webspace/redeclipse.net/files/devel/linux.tar.gz
     scp -BC -i ${HOME}/.ssh/public_rsa -o StrictHostKeyChecking=no bins.txt qreeves@icculus.org:/webspace/redeclipse.net/files/devel/bins.txt
     scp -BC -i ${HOME}/.ssh/public_rsa -o StrictHostKeyChecking=no base.txt qreeves@icculus.org:/webspace/redeclipse.net/files/devel/base.txt
     scp -BC -i ${HOME}/.ssh/public_rsa -o StrictHostKeyChecking=no data.txt qreeves@icculus.org:/webspace/redeclipse.net/files/devel/data.txt
