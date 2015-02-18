@@ -10,6 +10,7 @@ setlocal enableextensions enabledelayedexpansion
     set REDECLIPSE_SCRIPT=%REDECLIPSE_PATH%\%0
     for %%a in ("%REDECLIPSE_SCRIPT%") do set REDECLIPSE_SCRIPT_TIME=%%~ta
     set REDECLIPSE_SUFFIX=.exe
+    set REDECLIPSE_MAKE=mingw32-make
 :setup
     if NOT DEFINED REDECLIPSE_OPTIONS set REDECLIPSE_OPTIONS=
     if NOT DEFINED REDECLIPSE_ARCH (
@@ -70,7 +71,7 @@ setlocal enableextensions enabledelayedexpansion
         exit /b 0
     ) else (
         if "%REDECLIPSE_BRANCH%" == "source" (
-            mingw32-make -C src all install && goto runit
+            %REDECLIPSE_MAKE% -C src all install && goto runit
             set REDECLIPSE_BRANCH=devel
         )
         if NOT "%REDECLIPSE_BRANCH%" == "inplace" if NOT "%REDECLIPSE_TRYUPDATE%" == "true" (
