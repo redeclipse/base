@@ -1,5 +1,6 @@
 #!/bin/sh
 if [ "${REDECLIPSE_SOURCED}" = "true" ]; then REDECLIPSE_EXITR="return"; else REDECLIPSE_EXITR="exit"; fi
+REDECLIPSE_SCRIPT="$0"
 
 redeclipse_path() {
     if [ -z "${REDECLIPSE_PATH+isset}" ]; then REDECLIPSE_PATH="$(cd "$(dirname "$0")" && pwd)"; fi
@@ -7,7 +8,6 @@ redeclipse_path() {
 
 redeclipse_init() {
     if [ -z "${REDECLIPSE_BINARY+isset}" ]; then REDECLIPSE_BINARY="redeclipse"; fi
-    REDECLIPSE_SCRIPT="$0"
     REDECLIPSE_SUFFIX=""
     REDECLIPSE_OPTIONS=""
     REDECLIPSE_MAKE="make"

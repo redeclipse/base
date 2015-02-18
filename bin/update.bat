@@ -5,6 +5,9 @@ setlocal enableextensions enabledelayedexpansion
     pushd "%~dp0\.."
     set REDECLIPSE_PATH=%CD%
     popd
+    set REDECLIPSE_UPDATER=%REDECLIPSE_PATH%\%0
+    if NOT DEFINED REDECLIPSE_SOURCE set REDECLIPSE_SOURCE=http://redeclipse.net/files
+    if NOT DEFINED REDECLIPSE_GITHUB set REDECLIPSE_GITHUB=https://github.com/red-eclipse
 :init
     if DEFINED REDECLIPSE_CACHE goto setup
     for /f "tokens=3* delims= " %%a in ('reg query "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders" /v "Personal"') do set REDECLIPSE_WINDOCS=%%a
@@ -16,8 +19,6 @@ setlocal enableextensions enabledelayedexpansion
         set REDECLIPSE_CACHE=cache
     )
 :setup
-    if NOT DEFINED REDECLIPSE_SOURCE set REDECLIPSE_SOURCE=http://redeclipse.net/files
-    if NOT DEFINED REDECLIPSE_GITHUB set REDECLIPSE_GITHUB=https://github.com/red-eclipse
     if NOT DEFINED REDECLIPSE_BRANCH (
         set REDECLIPSE_BRANCH=stable
         if EXIST .git set REDECLIPSE_BRANCH=devel

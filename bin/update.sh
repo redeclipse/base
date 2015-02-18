@@ -1,8 +1,11 @@
 #!/bin/sh
 if [ "${REDECLIPSE_SOURCED}" = "true" ]; then REDECLIPSE_EXITU="return"; else REDECLIPSE_EXITU="exit"; fi
+REDECLIPSE_SCRIPT="$0"
 
 redeclipse_update_path() {
     if [ -z "${REDECLIPSE_PATH+isset}" ]; then REDECLIPSE_PATH="$(cd "$(dirname "$0")" && cd .. && pwd)"; fi
+    if [ -z "${REDECLIPSE_SOURCE+isset}" ]; then REDECLIPSE_SOURCE="http://redeclipse.net/files"; fi
+    if [ -z "${REDECLIPSE_GITHUB+isset}" ]; then REDECLIPSE_GITHUB="https://github.com/red-eclipse"; fi
 }
 
 redeclipse_update_init() {
@@ -20,8 +23,26 @@ redeclipse_update_init() {
 }
 
 redeclipse_update_setup() {
-    if [ -z "${REDECLIPSE_SOURCE+isset}" ]; then REDECLIPSE_SOURCE="http://redeclipse.net/files"; fi
-    if [ -z "${REDECLIPSE_GITHUB+isset}" ]; then REDECLIPSE_GITHUB="https://github.com/red-eclipse"; fi
+    if [ -z "${REDECLIPSE_TARGET+isset}" ]; then
+        REDECLIPSE_SYSTEM="$(uname -s)"
+        REDECLIPSE_MACHINE="$(uname -m)"
+        case "${REDECLIPSE_SYSTEM}" in
+            Linux)
+                REDECLIPSE_TARGET="linux"
+                ;;
+            FreeBSD)
+                REDECLIPSE_TARGET="bsd"
+                REDECLIPSE_BRANCH="source" # we don't have binaries for BSD yet sorry
+                ;;
+            MINGW*)
+                REDECLIPSE_TARGET="windows"
+                ;;
+            *)
+                echo "Unsupported system: ${REDECLIPSE_SYSTEM}"
+                return 1
+                ;;
+        esac
+    fi
     if [ -z "${REDECLIPSE_BRANCH+isset}" ]; then
        REDECLIPSE_BRANCH="stable"
         if [ -d ".git" ]; then REDECLIPSE_BRANCH="devel"; fi
