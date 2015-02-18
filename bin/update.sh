@@ -181,7 +181,6 @@ redeclipse_update_basepatch() {
 }
 
 redeclipse_update_basepatchdeploy() {
-    return 0
     echo "${REDECLIPSE_GITAPPLY} --directory=\"${REDECLIPSE_PATH}\" \"${REDECLIPSE_TEMP}/base.patch\" && (" >> "${REDECLIPSE_TEMP}/install.sh"
     echo "    echo \"${REDECLIPSE_BASE_REMOTE}\" > \"${REDECLIPSE_PATH}/bin/base.txt\"" >> "${REDECLIPSE_TEMP}/install.sh"
     echo ") || (" >> "${REDECLIPSE_TEMP}/install.sh"
@@ -217,7 +216,6 @@ redeclipse_update_baseblob() {
 }
 
 redeclipse_update_baseblobdeploy() {
-    return 0
     if [ "${REDECLIPSE_BLOB}" = "zipball" ]; then
         echo "${REDECLIPSE_UNZIP} -o \"${REDECLIPSE_TEMP}/base.${REDECLIPSE_ARCHEXT}\" -d \"${REDECLIPSE_TEMP}\" && (" >> "${REDECLIPSE_TEMP}/install.sh"
     else
@@ -308,7 +306,6 @@ redeclipse_update_datapatch() {
 }
 
 redeclipse_update_datapatchdeploy() {
-    return 0
     echo "${REDECLIPSE_GITAPPLY} --directory=\"${REDECLIPSE_PATH}/data\" \"${REDECLIPSE_TEMP}/data.patch\" && (" >> "${REDECLIPSE_TEMP}/install.sh"
     echo "    echo \"${REDECLIPSE_DATA_REMOTE}\" > \"${REDECLIPSE_PATH}/bin/data.txt\"" >> "${REDECLIPSE_TEMP}/install.sh"
     echo ") || (" >> "${REDECLIPSE_TEMP}/install.sh"
@@ -344,7 +341,6 @@ redeclipse_update_datablob() {
 }
 
 redeclipse_update_datablobdeploy() {
-    return 0
     if [ "${REDECLIPSE_BLOB}" = "zipball" ]; then
         echo "${REDECLIPSE_UNZIP} -o \"${REDECLIPSE_TEMP}/data.${REDECLIPSE_ARCHEXT}\" -d \"${REDECLIPSE_TEMP}\" && (" >> "${REDECLIPSE_TEMP}/install.sh"
     else
