@@ -107,6 +107,7 @@ popd
     echo     ^(echo %REDECLIPSE_BASE_REMOTE%^)^> "%REDECLIPSE_PATH%\bin\base.txt">> "%REDECLIPSE_TEMP%\install.bat"
     echo ^) ^|^| ^(>> "%REDECLIPSE_TEMP%\install.bat"
     echo     ^(echo none^)^> "%REDECLIPSE_PATH%\bin\base.txt">> "%REDECLIPSE_TEMP%\install.bat"
+    echo     del /f /q "%REDECLIPSE_TEMP%\base.txt">> "%REDECLIPSE_TEMP%\install.bat"
     echo     set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
     echo ^)
     set REDECLIPSE_DEPLOY=true
@@ -130,7 +131,10 @@ popd
     echo    xcopy /e /c /i /f /h /y "%REDECLIPSE_TEMP%\red-eclipse-base-%REDECLIPSE_BASE_REMOTE:~0,7%\*" "%REDECLIPSE_PATH%">> "%REDECLIPSE_TEMP%\install.bat"
     echo    rmdir /s /q "%REDECLIPSE_TEMP%\red-eclipse-base-%REDECLIPSE_BASE_REMOTE:~0,7%">> "%REDECLIPSE_TEMP%\install.bat"
     echo    ^(echo %REDECLIPSE_BASE_REMOTE%^)^> "%REDECLIPSE_PATH%\bin\base.txt">> "%REDECLIPSE_TEMP%\install.bat"
-    echo ^) ^|^| set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
+    echo ^) ^|^| ^(>> "%REDECLIPSE_TEMP%\install.bat"
+    echo     del /f /q "%REDECLIPSE_TEMP%\base.txt">> "%REDECLIPSE_TEMP%\install.bat"
+    echo     set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
+    echo ^)
     set REDECLIPSE_DEPLOY=true
 :data
     echo.
@@ -178,6 +182,7 @@ popd
     echo     ^(echo %REDECLIPSE_DATA_REMOTE%^)^> "%REDECLIPSE_PATH%\bin\data.txt">> "%REDECLIPSE_TEMP%\install.bat"
     echo ^) ^|^| ^(>> "%REDECLIPSE_TEMP%\install.bat"
     echo     ^(echo none^)^> "%REDECLIPSE_PATH%\bin\data.txt">> "%REDECLIPSE_TEMP%\install.bat"
+    echo     del /f /q "%REDECLIPSE_TEMP%\data.txt">> "%REDECLIPSE_TEMP%\install.bat"
     echo     set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
     echo ^)
     set REDECLIPSE_DEPLOY=true
@@ -201,7 +206,10 @@ popd
     echo    xcopy /e /c /i /f /h /y "%REDECLIPSE_TEMP%\red-eclipse-data-%REDECLIPSE_DATA_REMOTE:~0,7%\*" "%REDECLIPSE_PATH%\data">> "%REDECLIPSE_TEMP%\install.bat"
     echo    rmdir /s /q "%REDECLIPSE_TEMP%\red-eclipse-data-%REDECLIPSE_DATA_REMOTE:~0,7%">> "%REDECLIPSE_TEMP%\install.bat"
     echo    ^(echo %REDECLIPSE_DATA_REMOTE%^)^> "%REDECLIPSE_PATH%\bin\data.txt">> "%REDECLIPSE_TEMP%\install.bat"
-    echo ^) ^|^| set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
+    echo ^) ^|^| ^(>> "%REDECLIPSE_TEMP%\install.bat"
+    echo     del /f /q "%REDECLIPSE_TEMP%\data.txt">> "%REDECLIPSE_TEMP%\install.bat"
+    echo     set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
+    echo ^)
     set REDECLIPSE_DEPLOY=true
 :bins
     echo.
@@ -243,7 +251,10 @@ popd
 :binsdeploy
     echo %REDECLIPSE_UNZIP% -o "%REDECLIPSE_TEMP%\windows.zip" -d "%REDECLIPSE_PATH%" ^&^& ^(>> "%REDECLIPSE_TEMP%\install.bat"
     echo     ^(echo %REDECLIPSE_BINS_REMOTE%^)^> "%REDECLIPSE_PATH%\bin\bins.txt">> "%REDECLIPSE_TEMP%\install.bat"
-    echo ^) ^|^| set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
+    echo ^) ^|^| ^(>> "%REDECLIPSE_TEMP%\install.bat"
+    echo     del /f /q "%REDECLIPSE_TEMP%\bins.txt">> "%REDECLIPSE_TEMP%\install.bat"
+    echo     set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
+    echo ^)
     set REDECLIPSE_DEPLOY=true
 :deploy
     echo.
