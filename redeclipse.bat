@@ -1,13 +1,15 @@
 @ECHO OFF
 setlocal enableextensions enabledelayedexpansion
-if DEFINED REDECLIPSE_PATH goto init
-pushd "%~dp0"
-set REDECLIPSE_PATH=%CD%
-popd
+:path
+    if DEFINED REDECLIPSE_PATH goto init
+    pushd "%~dp0"
+    set REDECLIPSE_PATH=%CD%
+    popd
 :init
     if NOT DEFINED REDECLIPSE_BINARY set REDECLIPSE_BINARY=redeclipse
-    set REDECLIPSE_BATCH=%REDECLIPSE_PATH%\%0
-    for %%a in ("%REDECLIPSE_BATCH%") do set REDECLIPSE_FILETIME=%%~ta
+    set REDECLIPSE_SCRIPT=%REDECLIPSE_PATH%\%0
+    for %%a in ("%REDECLIPSE_SCRIPT%") do set REDECLIPSE_SCRIPT_TIME=%%~ta
+    set REDECLIPSE_SUFFIX=.exe
 :setup
     if NOT DEFINED REDECLIPSE_OPTIONS set REDECLIPSE_OPTIONS=
     if NOT DEFINED REDECLIPSE_ARCH (
@@ -22,7 +24,7 @@ popd
     if NOT "%REDECLIPSE_BRANCH%" == "stable" if NOT "%REDECLIPSE_BRANCH%" == "devel" if NOT "%REDECLIPSE_BRANCH%" == "source" if NOT "%REDECLIPSE_BRANCH%" == "inplace" (
         set REDECLIPSE_BRANCH=inplace
     )
-    if NOT "%REDECLIPSE_BRANCH%" == "stable" if NOT DEFINED REDECLIPSE_HOME set REDECLIPSE_HOME=home
+    if NOT DEFINED REDECLIPSE_HOME if NOT "%REDECLIPSE_BRANCH%" == "stable" if NOT "%REDECLIPSE_BRANCH%" == "inplace" set REDECLIPSE_HOME=home
     if DEFINED REDECLIPSE_HOME set REDECLIPSE_OPTIONS=-h"%REDECLIPSE_HOME%" %REDECLIPSE_OPTIONS%
 :check
     if NOT "%REDECLIPSE_BRANCH%" == "stable" if NOT "%REDECLIPSE_BRANCH%" == "devel" goto runit
@@ -39,16 +41,16 @@ popd
 :update
     set /p REDECLIPSE_BINVER=< "%REDECLIPSE_PATH%\bin\version.txt"
     call "%REDECLIPSE_PATH%\bin\update.bat" && (
-        for %%a in ("%REDECLIPSE_BATCH%") do set REDECLIPSE_FILENOW=%%~ta
-        if NOT "!REDECLIPSE_FILENOW!" == "!REDECLIPSE_FILETIME!" (
-            call "%REDECLIPSE_BATCH%" :success
+        for %%a in ("%REDECLIPSE_SCRIPT%") do set REDECLIPSE_SCRIPT_NOW=%%~ta
+        if NOT "!REDECLIPSE_SCRIPT_NOW!" == "!REDECLIPSE_SCRIPT_TIME!" (
+            call "%REDECLIPSE_SCRIPT%" :success
             exit /b 0
         )
         goto success
     ) || (
-        for %%a in ("%REDECLIPSE_BATCH%") do set REDECLIPSE_FILENOW=%%~ta
-        if NOT "!REDECLIPSE_FILENOW!" == "!REDECLIPSE_FILETIME!" (
-            call "%REDECLIPSE_BATCH%" :retry
+        for %%a in ("%REDECLIPSE_SCRIPT%") do set REDECLIPSE_SCRIPT_NOW=%%~ta
+        if NOT "!REDECLIPSE_SCRIPT_NOW!" == "!REDECLIPSE_SCRIPT_TIME!" (
+            call "%REDECLIPSE_SCRIPT%" :retry
             exit /b 0
         )
         goto retry
@@ -58,9 +60,9 @@ popd
     set /p REDECLIPSE_BINNEW=< "%REDECLIPSE_PATH%\bin\version.txt"
     if NOT "%REDECLIPSE_BINVER%" == "%REDECLIPSE_BINNEW%" goto update
 :runit
-    if EXIST "%REDECLIPSE_PATH%\bin\%REDECLIPSE_ARCH%\%REDECLIPSE_BINARY%.exe" (
+    if EXIST "%REDECLIPSE_PATH%\bin\%REDECLIPSE_ARCH%\%REDECLIPSE_BINARY%%REDECLIPSE_SUFFIX%" (
         pushd "%REDECLIPSE_PATH%" || goto error
-        start bin\%REDECLIPSE_ARCH%\%REDECLIPSE_BINARY%.exe %REDECLIPSE_OPTIONS% %* || (
+        start bin\%REDECLIPSE_ARCH%\%REDECLIPSE_BINARY%%REDECLIPSE_SUFFIX% %REDECLIPSE_OPTIONS% %* || (
             popd
             goto error
         )
@@ -84,3 +86,5 @@ popd
 :error
     echo There was an error running Red Eclipse.
     pause
+    exit /b 1
+

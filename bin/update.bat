@@ -1,10 +1,11 @@
 @ECHO OFF
 setlocal enableextensions enabledelayedexpansion
-if DEFINED REDECLIPSE_PATH goto setup
-pushd "%~dp0\.."
-set REDECLIPSE_PATH=%CD%
-popd
-:setup
+:path
+    if DEFINED REDECLIPSE_PATH goto init
+    pushd "%~dp0\.."
+    set REDECLIPSE_PATH=%CD%
+    popd
+:init
     if DEFINED REDECLIPSE_CACHE goto start
     for /f "tokens=3* delims= " %%a in ('reg query "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders" /v "Personal"') do set USERMYDOCS=%%a
     if EXIST "%USERMYDOCS%" (
