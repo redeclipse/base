@@ -51,7 +51,7 @@ setlocal enableextensions enabledelayedexpansion
         echo Unable to find curl.exe, are you sure it is in tools?
         exit /b 0
     )
-    set REDECLIPSE_CURL="%REDECLIPSE_PATH%\bin\tools\curl.exe" --insecure --user-agent "redeclipse-%REDECLIPSE_UPDATE%"
+    set REDECLIPSE_CURL="%REDECLIPSE_PATH%\bin\tools\curl.exe" --location --insecure --user-agent "redeclipse-%REDECLIPSE_UPDATE%"
     if NOT EXIST "%REDECLIPSE_PATH%\bin\tools\unzip.exe" (
         echo Unable to find unzip.exe, are you sure it is in tools?
         exit /b 0
@@ -271,18 +271,18 @@ setlocal enableextensions enabledelayedexpansion
     )
     echo Administrator permissions are required to deploy the files.
     if NOT EXIST "%REDECLIPSE_PATH%\bin\tools\elevate.exe" (
-        echo Unable to find elevate.exe, are you sure it is in bin/tools?
+        echo Unable to find elevate.exe, are you sure it is in tools?
         goto unpack
     )
     set REDECLIPSE_INSTALL="%REDECLIPSE_PATH%\bin\tools\elevate.exe" -wait
 :unpack
-    %REDECLIPSE_INSTALL% "%REDECLIPSE_TEMP%\install.bat" && (
-        echo.
-        echo Updated successfully.
-        (echo %REDECLIPSE_BRANCH%)> "%REDECLIPSE_PATH%\bin\branch.txt"
-        exit /b 0
-    ) || (
-        echo.
-        echo There was an error deploying the files.
-        exit /b 1
-    )
+%REDECLIPSE_INSTALL% "%REDECLIPSE_TEMP%\install.bat" && (
+    echo.
+    echo Updated successfully.
+    (echo %REDECLIPSE_BRANCH%)> "%REDECLIPSE_PATH%\bin\branch.txt"
+    exit /b 0
+) || (
+    echo.
+    echo There was an error deploying the files.
+    exit /b 1
+)

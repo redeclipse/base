@@ -49,14 +49,14 @@ setlocal enableextensions enabledelayedexpansion
     call "%REDECLIPSE_PATH%\bin\update.bat" && (
         for %%a in ("%REDECLIPSE_SCRIPT%") do set REDECLIPSE_SCRIPT_NOW=%%~ta
         if NOT "!REDECLIPSE_SCRIPT_NOW!" == "!REDECLIPSE_SCRIPT_TIME!" (
-            call "%REDECLIPSE_SCRIPT%" :success
+            call :success "%REDECLIPSE_SCRIPT%"
             exit /b 0
         )
         goto success
     ) || (
         for %%a in ("%REDECLIPSE_SCRIPT%") do set REDECLIPSE_SCRIPT_NOW=%%~ta
         if NOT "!REDECLIPSE_SCRIPT_NOW!" == "!REDECLIPSE_SCRIPT_TIME!" (
-            call "%REDECLIPSE_SCRIPT%" :retry
+            call :retry "%REDECLIPSE_SCRIPT%"
             exit /b 0
         )
         goto retry
