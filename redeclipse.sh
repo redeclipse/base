@@ -130,7 +130,7 @@ redeclipse_runit() {
     if [ -e "${REDECLIPSE_PATH}/bin/${REDECLIPSE_ARCH}/${REDECLIPSE_BINARY}${REDECLIPSE_SUFFIX}" ]; then
         REDECLIPSE_PWD=`pwd`
         cd "${REDECLIPSE_PATH}" || return 1
-        exec "bin/${REDECLIPSE_ARCH}/${REDECLIPSE_BINARY}${REDECLIPSE_SUFFIX}" ${REDECLIPSE_OPTIONS} "$@" || (
+        exec "${REDECLIPSE_PATH}/bin/${REDECLIPSE_ARCH}/${REDECLIPSE_BINARY}${REDECLIPSE_SUFFIX}" ${REDECLIPSE_OPTIONS} "$@" || (
             cd "${REDECLIPSE_PWD}"
             return 1
         )

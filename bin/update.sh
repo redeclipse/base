@@ -2,7 +2,7 @@
 if [ "$_" != "$0" ]; then REDECLIPSE_EXITU="return"; else REDECLIPSE_EXITU="exit"; fi
 
 redeclipse_update_path() {
-    if [ -z "${REDECLIPSE_PATH+isset}" ]; then REDECLIPSE_PATH="$(cd "$(dirname "$0")" && pwd)"; fi
+    if [ -z "${REDECLIPSE_PATH+isset}" ]; then REDECLIPSE_PATH="$(cd "$(dirname "$0")" && cd .. && pwd)"; fi
 }
 
 redeclipse_update_init() {
