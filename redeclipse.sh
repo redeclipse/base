@@ -4,6 +4,7 @@ if [ -z "${REDECLIPSE_PATH+isset}" ]; then REDECLIPSE_PATH="$(cd "$(dirname "$0"
 if [ -z "${REDECLIPSE_BINARY+isset}" ]; then REDECLIPSE_BINARY="redeclipse"; fi
 REDECLIPSE_SCRIPT="$0"
 REDECLIPSE_SUFFIX=""
+REDECLIPSE_OPTIONS=""
 
 function redeclipse_setup {
     REDECLIPSE_SYSTEM="$(uname -s)"
@@ -50,7 +51,7 @@ function redeclipse_setup {
 function redeclipse_check {
     if [ "${REDECLIPSE_BRANCH}" == "stable" ] || [ "${REDECLIPSE_BRANCH}" == "devel" ]; then
         echo ""
-        echo "This is where we would check for updates." #Checking for updates. To disable set: REDECLIPSE_BRANCH=inplace
+        echo "This is where we would check for updates." #Checking for updates. To disable set: REDECLIPSE_BRANCH=\"inplace\"
         echo ""
         #redeclipse_begin
         #return 0
@@ -65,7 +66,7 @@ function redeclipse_begin {
 
 function redeclipse_retry {
     if [ "${REDECLIPSE_RETRY}" != "true" ]; then
-        set REDECLIPSE_RETRY=true
+        REDECLIPSE_RETRY="true"
         echo "Retrying..."
         redeclipse_update
         return 0
@@ -101,15 +102,15 @@ function redeclipse_runit {
     else
         if [ "${REDECLIPSE_BRANCH}" == "source" ]; then
             make -C src all install && ( redeclipse_runit; return 0 )
-            set REDECLIPSE_BRANCH=devel
+            REDECLIPSE_BRANCH="devel"
         fi
         if [ "${REDECLIPSE_BRANCH}" != "inplace" ] && [ "${REDECLIPSE_TRYUPDATE}" != "true" ]; then
-            REDECLIPSE_TRYUPDATE=true
+            REDECLIPSE_TRYUPDATE="true"
             redeclipse_begin
             return 0
         fi
         if [ "${REDECLIPSE_ARCH}" != "x86" ]; then
-            set REDECLIPSE_ARCH=x86
+            REDECLIPSE_ARCH="x86"
             redeclipse_runit
             return 0
         fi
