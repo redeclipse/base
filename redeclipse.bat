@@ -10,12 +10,17 @@ setlocal enableextensions enabledelayedexpansion
     set REDECLIPSE_SCRIPT=%REDECLIPSE_PATH%\%0
     for %%a in ("%REDECLIPSE_SCRIPT%") do set REDECLIPSE_SCRIPT_TIME=%%~ta
     set REDECLIPSE_SUFFIX=.exe
+    if NOT DEFINED REDECLIPSE_OPTIONS set REDECLIPSE_OPTIONS=
     set REDECLIPSE_MAKE=mingw32-make
 :setup
-    if NOT DEFINED REDECLIPSE_OPTIONS set REDECLIPSE_OPTIONS=
     if NOT DEFINED REDECLIPSE_ARCH (
         set REDECLIPSE_ARCH=x86
-        if /i "%PROCESSOR_ARCHITECTURE%" == "amd64" (set REDECLIPSE_ARCH=amd64) else if /i "%PROCESSOR_ARCHITEW6432%" == "amd64" (set REDECLIPSE_ARCH=amd64)
+        if DEFINED PROCESSOR_ARCHITEW6432 (
+            set REDECLIPSE_MACHINE=%PROCESSOR_ARCHITEW6432%
+        ) else (
+            set REDECLIPSE_MACHINE=%PROCESSOR_ARCHITECTURE%
+        )
+        if /i "%REDECLIPSE_MACHINE%" == "amd64" set REDECLIPSE_ARCH=amd64
     )
     if NOT DEFINED REDECLIPSE_BRANCH (
         set REDECLIPSE_BRANCH=stable
@@ -30,7 +35,7 @@ setlocal enableextensions enabledelayedexpansion
 :check
     if NOT "%REDECLIPSE_BRANCH%" == "stable" if NOT "%REDECLIPSE_BRANCH%" == "devel" goto runit
     echo.
-    echo Checking for updates. To disable: set REDECLIPSE_BRANCH=inplace
+    echo Checking for updates to "%REDECLIPSE_BRANCH%". To disable: set REDECLIPSE_BRANCH=inplace
     echo.
 :begin
     set REDECLIPSE_RETRY=false
@@ -88,4 +93,3 @@ setlocal enableextensions enabledelayedexpansion
     echo There was an error running Red Eclipse.
     pause
     exit /b 1
-

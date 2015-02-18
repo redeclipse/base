@@ -6,7 +6,7 @@ setlocal enableextensions enabledelayedexpansion
     set REDECLIPSE_PATH=%CD%
     popd
 :init
-    if DEFINED REDECLIPSE_CACHE goto start
+    if DEFINED REDECLIPSE_CACHE goto setup
     for /f "tokens=3* delims= " %%a in ('reg query "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders" /v "Personal"') do set USERMYDOCS=%%a
     if EXIST "%USERMYDOCS%" (
         set REDECLIPSE_CACHE=%USERMYDOCS%\My Games\Red Eclipse\cache
@@ -16,7 +16,7 @@ setlocal enableextensions enabledelayedexpansion
     ) else (
         set REDECLIPSE_CACHE=cache
     )
-:start
+:setup
     if NOT DEFINED REDECLIPSE_SOURCE set REDECLIPSE_SOURCE=http://redeclipse.net/files
     if NOT DEFINED REDECLIPSE_GITHUB set REDECLIPSE_GITHUB=https://github.com/red-eclipse
     if NOT DEFINED REDECLIPSE_BRANCH (
@@ -47,7 +47,7 @@ setlocal enableextensions enabledelayedexpansion
 :branch
     echo Branch: %REDECLIPSE_UPDATE%
     echo Folder: %REDECLIPSE_PATH%
-    echo Cached: %REDECLIPSE_CACHE%
+    echo Cached: %REDECLIPSE_TEMP%
     if NOT EXIST "%REDECLIPSE_PATH%\bin\tools\wget.exe" (
         echo Unable to find wget.exe, are you sure it is in tools?
         exit /b 0
@@ -57,7 +57,7 @@ setlocal enableextensions enabledelayedexpansion
         echo Unable to find unzip.exe, are you sure it is in tools?
         exit /b 0
     )
-    set REDECLIPSE_UNZIP="%REDECLIPSE_PATH%\bin\tools\unzip.exe"
+    set REDECLIPSE_UNZIP="%REDECLIPSE_PATH%\bin\tools\unzip.exe" -o
     if NOT EXIST "%REDECLIPSE_PATH%\bin\tools\git-apply.exe" (
         echo Unable to find git-apply.exe, are you sure it is in tools?
         exit /b 0
@@ -128,7 +128,7 @@ setlocal enableextensions enabledelayedexpansion
         goto data
     )
 :baseblobdeploy
-    echo %REDECLIPSE_UNZIP% -o "%REDECLIPSE_TEMP%\base.zip" -d "%REDECLIPSE_TEMP%" ^&^& ^(>> "%REDECLIPSE_TEMP%\install.bat"
+    echo %REDECLIPSE_UNZIP% "%REDECLIPSE_TEMP%\base.zip" -d "%REDECLIPSE_TEMP%" ^&^& ^(>> "%REDECLIPSE_TEMP%\install.bat"
     echo    xcopy /e /c /i /f /h /y "%REDECLIPSE_TEMP%\red-eclipse-base-%REDECLIPSE_BASE_REMOTE:~0,7%\*" "%REDECLIPSE_PATH%">> "%REDECLIPSE_TEMP%\install.bat"
     echo    rmdir /s /q "%REDECLIPSE_TEMP%\red-eclipse-base-%REDECLIPSE_BASE_REMOTE:~0,7%">> "%REDECLIPSE_TEMP%\install.bat"
     echo    ^(echo %REDECLIPSE_BASE_REMOTE%^)^> "%REDECLIPSE_PATH%\bin\base.txt">> "%REDECLIPSE_TEMP%\install.bat"
@@ -203,7 +203,7 @@ setlocal enableextensions enabledelayedexpansion
         goto bins
     )
 :datablobdeploy
-    echo %REDECLIPSE_UNZIP% -o "%REDECLIPSE_TEMP%\data.zip" -d "%REDECLIPSE_TEMP%" ^&^& ^(>> "%REDECLIPSE_TEMP%\install.bat"
+    echo %REDECLIPSE_UNZIP% "%REDECLIPSE_TEMP%\data.zip" -d "%REDECLIPSE_TEMP%" ^&^& ^(>> "%REDECLIPSE_TEMP%\install.bat"
     echo    xcopy /e /c /i /f /h /y "%REDECLIPSE_TEMP%\red-eclipse-data-%REDECLIPSE_DATA_REMOTE:~0,7%\*" "%REDECLIPSE_PATH%\data">> "%REDECLIPSE_TEMP%\install.bat"
     echo    rmdir /s /q "%REDECLIPSE_TEMP%\red-eclipse-data-%REDECLIPSE_DATA_REMOTE:~0,7%">> "%REDECLIPSE_TEMP%\install.bat"
     echo    ^(echo %REDECLIPSE_DATA_REMOTE%^)^> "%REDECLIPSE_PATH%\bin\data.txt">> "%REDECLIPSE_TEMP%\install.bat"
@@ -250,7 +250,7 @@ setlocal enableextensions enabledelayedexpansion
         goto deploy
     )
 :binsdeploy
-    echo %REDECLIPSE_UNZIP% -o "%REDECLIPSE_TEMP%\windows.zip" -d "%REDECLIPSE_PATH%" ^&^& ^(>> "%REDECLIPSE_TEMP%\install.bat"
+    echo %REDECLIPSE_UNZIP% "%REDECLIPSE_TEMP%\windows.zip" -d "%REDECLIPSE_PATH%" ^&^& ^(>> "%REDECLIPSE_TEMP%\install.bat"
     echo     ^(echo %REDECLIPSE_BINS_REMOTE%^)^> "%REDECLIPSE_PATH%\bin\bins.txt">> "%REDECLIPSE_TEMP%\install.bat"
     echo ^) ^|^| ^(>> "%REDECLIPSE_TEMP%\install.bat"
     echo     del /f /q "%REDECLIPSE_TEMP%\bins.txt">> "%REDECLIPSE_TEMP%\install.bat"
