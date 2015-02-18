@@ -100,7 +100,7 @@ function redeclipse_runit {
         return 0
     else
         if [ "${REDECLIPSE_BRANCH}" == "source" ]; then
-            mingw32-make -C src all install && ( redeclipse_runit; return 0 )
+            make -C src all install && ( redeclipse_runit; return 0 )
             set REDECLIPSE_BRANCH=devel
         fi
         if [ "${REDECLIPSE_BRANCH}" != "inplace" ] && [ "${REDECLIPSE_TRYUPDATE}" != "true" ]; then
