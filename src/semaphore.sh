@@ -54,7 +54,7 @@ if [ "${BRANCH_NAME}" = "master" ]; then
     rm -fv windows.zip linux.tar.bz2 || exit 1
     cd windows || exit 1
     zip -r ../windows.zip . || exit 1
-    cd ..\linux || exit 1
+    cd ../linux || exit 1
     tar -jcvf ../linux.tar.bz2 . || exit 1
     cd .. || exit 1
     echo "${BASE_COMMIT}" > bins.txt
