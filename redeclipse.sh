@@ -59,8 +59,8 @@ redeclipse_setup() {
     fi
     if [ -z "${REDECLIPSE_BRANCH+isset}" ]; then
         REDECLIPSE_BRANCH="stable"
-        if [ -a ".git" ]; then REDECLIPSE_BRANCH="devel"; fi
-        if [ -a "${REDECLIPSE_PATH}/bin/branch.txt" ]; then REDECLIPSE_BRANCH=`cat "${REDECLIPSE_PATH}/bin/branch.txt"`; fi
+        if [ -e ".git" ]; then REDECLIPSE_BRANCH="devel"; fi
+        if [ -e "${REDECLIPSE_PATH}/bin/branch.txt" ]; then REDECLIPSE_BRANCH=`cat "${REDECLIPSE_PATH}/bin/branch.txt"`; fi
     fi
     if [ "${REDECLIPSE_BRANCH}" != "stable" ] && [ "${REDECLIPSE_BRANCH}" != "devel" ] && [ "${REDECLIPSE_BRANCH}" != "source" ] && [ "${REDECLIPSE_BRANCH}" != "inplace" ]; then
         REDECLIPSE_BRANCH="inplace"
@@ -103,7 +103,7 @@ redeclipse_retry() {
 redeclipse_update() {
     REDECLIPSE_BINVER=`cat "${REDECLIPSE_PATH}/bin/version.txt"`
     chmod +x "${REDECLIPSE_PATH}/bin/update.sh"
-    source "${REDECLIPSE_PATH}/bin/update.sh"
+    . "${REDECLIPSE_PATH}/bin/update.sh"
     if [ $? -eq 0 ]; then
         redeclipse_success
         return $?
@@ -127,13 +127,14 @@ redeclipse_success() {
 }
 
 redeclipse_runit() {
-    if [ -a "${REDECLIPSE_PATH}/bin/${REDECLIPSE_ARCH}/${REDECLIPSE_BINARY}${REDECLIPSE_SUFFIX}" ]; then
-        pushd "${REDECLIPSE_PATH}" 2>&1 > /dev/null || return 1
+    if [ -e "${REDECLIPSE_PATH}/bin/${REDECLIPSE_ARCH}/${REDECLIPSE_BINARY}${REDECLIPSE_SUFFIX}" ]; then
+        REDECLIPSE_PWD=`pwd`
+        cd "${REDECLIPSE_PATH}" || return 1
         exec "bin/${REDECLIPSE_ARCH}/${REDECLIPSE_BINARY}${REDECLIPSE_SUFFIX}" ${REDECLIPSE_OPTIONS} "$@" || (
-            popd 2>&1 > /dev/null
+            cd "${REDECLIPSE_PWD}"
             return 1
         )
-        popd 2>&1 > /dev/null
+        cd "${REDECLIPSE_PWD}"
         return 0
     else
         if [ "${REDECLIPSE_BRANCH}" = "source" ]; then

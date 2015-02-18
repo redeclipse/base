@@ -25,7 +25,7 @@ redeclipse_update_setup() {
     if [ -z "${REDECLIPSE_BRANCH+isset}" ]; then
        REDECLIPSE_BRANCH="stable"
         if [ -d ".git" ]; then REDECLIPSE_BRANCH="devel"; fi
-        if [ -a "${REDECLIPSE_PATH}/bin/branch.txt" ]; then REDECLIPSE_BRANCH=`cat "${REDECLIPSE_PATH}/bin/branch.txt"`; fi
+        if [ -e "${REDECLIPSE_PATH}/bin/branch.txt" ]; then REDECLIPSE_BRANCH=`cat "${REDECLIPSE_PATH}/bin/branch.txt"`; fi
     fi
     if [ "${REDECLIPSE_BRANCH}" != "stable" ] && [ "${REDECLIPSE_BRANCH}" != "devel" ]; then
         echo "Unsupported update branch: \"${REDECLIPSE_BRANCH}\""
@@ -35,7 +35,7 @@ redeclipse_update_setup() {
         REDECLIPSE_UPDATE="${REDECLIPSE_BRANCH}"
         REDECLIPSE_TEMP="${REDECLIPSE_CACHE}/${REDECLIPSE_BRANCH}"
     else
-        if ! [ -a "${REDECLIPSE_PATH}/bin/version.txt" ]; then
+        if ! [ -e "${REDECLIPSE_PATH}/bin/version.txt" ]; then
             echo "Unable to find ${REDECLIPSE_PATH}/bin/version.txt"
             return 1
         fi
@@ -100,11 +100,11 @@ redeclipse_update_branch() {
 
 redeclipse_update_base() {
     echo ""
-    if [ -a "${REDECLIPSE_PATH}/bin/base.txt" ]; then REDECLIPSE_BASE=`cat "${REDECLIPSE_PATH}/bin/base.txt"`; fi
+    if [ -e "${REDECLIPSE_PATH}/bin/base.txt" ]; then REDECLIPSE_BASE=`cat "${REDECLIPSE_PATH}/bin/base.txt"`; fi
     if [ -z "${REDECLIPSE_BASE}" ]; then REDECLIPSE_BASE="none"; fi
     echo "[I] base: ${REDECLIPSE_BASE}"
     REDECLIPSE_BASE_CACHED="none"
-    if ! [ -a "${REDECLIPSE_TEMP}/base.txt" ]; then
+    if ! [ -e "${REDECLIPSE_TEMP}/base.txt" ]; then
         redeclipse_update_baseget
         return $?
     fi
@@ -118,7 +118,7 @@ redeclipse_update_base() {
 
 redeclipse_update_baseget() {
     ${REDECLIPSE_CURL} --silent --output "${REDECLIPSE_TEMP}/base.txt" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/base.txt"
-    if ! [ -a "${REDECLIPSE_TEMP}/base.txt" ]; then
+    if ! [ -e "${REDECLIPSE_TEMP}/base.txt" ]; then
         echo "Failed to retrieve base update information."
         redeclipse_update_data
         return $?
@@ -143,12 +143,12 @@ redeclipse_update_baseget() {
 }
 
 redeclipse_update_basepatch() {
-    if [ -a "${REDECLIPSE_TEMP}/base.patch" ]; then rm -f "${REDECLIPSE_TEMP}/base.patch"; fi
-    if [ -a "${REDECLIPSE_TEMP}/base.zip" ]; then rm -f "${REDECLIPSE_TEMP}/base.zip"; fi
+    if [ -e "${REDECLIPSE_TEMP}/base.patch" ]; then rm -f "${REDECLIPSE_TEMP}/base.patch"; fi
+    if [ -e "${REDECLIPSE_TEMP}/base.zip" ]; then rm -f "${REDECLIPSE_TEMP}/base.zip"; fi
     echo "[D] base: ${REDECLIPSE_GITHUB}/base/compare/${REDECLIPSE_BASE}...${REDECLIPSE_BASE_REMOTE}.patch"
     echo ""
     ${REDECLIPSE_CURL} --output "${REDECLIPSE_TEMP}/base.patch" "${REDECLIPSE_GITHUB}/base/compare/${REDECLIPSE_BASE}...${REDECLIPSE_BASE_REMOTE}.patch"
-    if ! [ -a "${REDECLIPSE_TEMP}/base.patch" ]; then
+    if ! [ -e "${REDECLIPSE_TEMP}/base.patch" ]; then
         echo "Failed to retrieve base update package. Downloading full zip instead."
         redeclipse_update_baseblob
         return $?
@@ -172,7 +172,7 @@ redeclipse_update_basepatchdeploy() {
 }
 
 redeclipse_update_baseblob() {
-    if [ -a "${REDECLIPSE_TEMP}/base.zip" ]; then
+    if [ -e "${REDECLIPSE_TEMP}/base.zip" ]; then
         if [ "${REDECLIPSE_BASE_CACHED}" = "${REDECLIPSE_BASE_REMOTE}" ]; then
             echo "[F] base: Using cached file \"${REDECLIPSE_TEMP}/base.zip\""
             redeclipse_update_baseblobdeploy
@@ -184,7 +184,7 @@ redeclipse_update_baseblob() {
     echo "[D] base: ${REDECLIPSE_GITHUB}/base/${REDECLIPSE_BLOB}/${REDECLIPSE_BASE_REMOTE}"
     echo ""
     ${REDECLIPSE_CURL} --output "${REDECLIPSE_TEMP}/base.zip" "${REDECLIPSE_GITHUB}/base/${REDECLIPSE_BLOB}/${REDECLIPSE_BASE_REMOTE}"
-    if ! [ -a "${REDECLIPSE_TEMP}/base.zip" ]; then
+    if ! [ -e "${REDECLIPSE_TEMP}/base.zip" ]; then
         echo "Failed to retrieve base update package."
         redeclipse_update_data
         return $?
@@ -214,7 +214,7 @@ redeclipse_update_baseblobdeploy() {
 
 redeclipse_update_data() {
     echo ""
-    if  [ -a "${REDECLIPSE_PATH}/data/readme.txt" ]; then 
+    if  [ -e "${REDECLIPSE_PATH}/data/readme.txt" ]; then 
         redeclipse_update_dataver
         return $?
     fi
@@ -227,11 +227,11 @@ redeclipse_update_data() {
 
 redeclipse_update_dataver() {
     echo ""
-    if [ -a "${REDECLIPSE_PATH}/bin/data.txt" ]; then REDECLIPSE_DATA=`cat "${REDECLIPSE_PATH}/bin/data.txt"`; fi
+    if [ -e "${REDECLIPSE_PATH}/bin/data.txt" ]; then REDECLIPSE_DATA=`cat "${REDECLIPSE_PATH}/bin/data.txt"`; fi
     if [ -z "${REDECLIPSE_DATA}" ]; then REDECLIPSE_DATA="none"; fi
     echo "[I] data: ${REDECLIPSE_DATA}"
     REDECLIPSE_DATA_CACHED="none"
-    if ! [ -a "${REDECLIPSE_TEMP}/data.txt" ]; then
+    if ! [ -e "${REDECLIPSE_TEMP}/data.txt" ]; then
         redeclipse_update_dataget
         return $?
     fi
@@ -245,7 +245,7 @@ redeclipse_update_dataver() {
 
 redeclipse_update_dataget() {
     ${REDECLIPSE_CURL} --silent --output "${REDECLIPSE_TEMP}/data.txt" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/data.txt"
-    if ! [ -a "${REDECLIPSE_TEMP}/data.txt" ]; then
+    if ! [ -e "${REDECLIPSE_TEMP}/data.txt" ]; then
         echo "Failed to retrieve data update information."
         redeclipse_update_bins
         return $?
@@ -270,12 +270,12 @@ redeclipse_update_dataget() {
 }
 
 redeclipse_update_datapatch() {
-    if [ -a "${REDECLIPSE_TEMP}/data.patch" ]; then rm -f "${REDECLIPSE_TEMP}/data.patch"; fi
-    if [ -a "${REDECLIPSE_TEMP}/data.zip" ]; then rm -f "${REDECLIPSE_TEMP}/data.zip"; fi
+    if [ -e "${REDECLIPSE_TEMP}/data.patch" ]; then rm -f "${REDECLIPSE_TEMP}/data.patch"; fi
+    if [ -e "${REDECLIPSE_TEMP}/data.zip" ]; then rm -f "${REDECLIPSE_TEMP}/data.zip"; fi
     echo "[D] data: ${REDECLIPSE_GITHUB}/data/compare/${REDECLIPSE_DATA}...${REDECLIPSE_DATA_REMOTE}.patch"
     echo ""
     ${REDECLIPSE_CURL} --output "${REDECLIPSE_TEMP}/data.patch" "${REDECLIPSE_GITHUB}/data/compare/${REDECLIPSE_DATA}...${REDECLIPSE_DATA_REMOTE}.patch"
-    if ! [ -a "${REDECLIPSE_TEMP}/data.patch" ]; then
+    if ! [ -e "${REDECLIPSE_TEMP}/data.patch" ]; then
         echo "Failed to retrieve data update package. Downloading full zip instead."
         redeclipse_update_datablob
         return $?
@@ -299,7 +299,7 @@ redeclipse_update_datapatchdeploy() {
 }
 
 redeclipse_update_datablob() {
-    if [ -a "${REDECLIPSE_TEMP}/data.zip" ]; then
+    if [ -e "${REDECLIPSE_TEMP}/data.zip" ]; then
         if [ "${REDECLIPSE_DATA_CACHED}" = "${REDECLIPSE_DATA_REMOTE}" ]; then
             echo "[F] data: Using cached file \"${REDECLIPSE_TEMP}/data.zip\""
             redeclipse_update_datablobdeploy
@@ -311,7 +311,7 @@ redeclipse_update_datablob() {
     echo "[D] data: ${REDECLIPSE_GITHUB}/data/${REDECLIPSE_BLOB}/${REDECLIPSE_DATA_REMOTE}"
     echo ""
     ${REDECLIPSE_CURL} --output "${REDECLIPSE_TEMP}/data.zip" "${REDECLIPSE_GITHUB}/data/${REDECLIPSE_BLOB}/${REDECLIPSE_DATA_REMOTE}"
-    if ! [ -a "${REDECLIPSE_TEMP}/data.zip" ]; then
+    if ! [ -e "${REDECLIPSE_TEMP}/data.zip" ]; then
         echo "Failed to retrieve data update package."
         redeclipse_update_bins
         return $?
@@ -341,11 +341,11 @@ redeclipse_update_datablobdeploy() {
 
 redeclipse_update_bins() {
     echo ""
-    if [ -a "${REDECLIPSE_PATH}/bin/bins.txt" ]; then REDECLIPSE_BINS=`cat "${REDECLIPSE_PATH}/bin/bins.txt"`; fi
+    if [ -e "${REDECLIPSE_PATH}/bin/bins.txt" ]; then REDECLIPSE_BINS=`cat "${REDECLIPSE_PATH}/bin/bins.txt"`; fi
     if [ -z "${REDECLIPSE_BINS}" ]; then REDECLIPSE_BINS="none"; fi
     echo "[I] bins: ${REDECLIPSE_BINS}"
     REDECLIPSE_BINS_CACHED="none"
-    if ! [ -a "${REDECLIPSE_TEMP}/bins.txt" ]; then
+    if ! [ -e "${REDECLIPSE_TEMP}/bins.txt" ]; then
         redeclipse_update_binsget
         return $?
     fi
@@ -358,7 +358,7 @@ redeclipse_update_bins() {
 
 redeclipse_update_binsget() {
     ${REDECLIPSE_CURL} --silent --output "${REDECLIPSE_TEMP}/bins.txt" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/bins.txt"
-    if ! [ -a "${REDECLIPSE_TEMP}/bins.txt" ]; then
+    if ! [ -e "${REDECLIPSE_TEMP}/bins.txt" ]; then
         echo "Failed to retrieve bins update information."
         redeclipse_update_deploy
         return $?
@@ -379,7 +379,7 @@ redeclipse_update_binsget() {
 }
 
 redeclipse_update_binsblob() {
-    if [ -a "${REDECLIPSE_TEMP}/${REDECLIPSE_ARCHIVE}" ]; then
+    if [ -e "${REDECLIPSE_TEMP}/${REDECLIPSE_ARCHIVE}" ]; then
         if [ "${REDECLIPSE_BINS_CACHED}" = "${REDECLIPSE_BINS_REMOTE}" ]; then
             echo "[F] bins: Using cached file \"${REDECLIPSE_TEMP}/${REDECLIPSE_ARCHIVE}\""
             redeclipse_update_binsdeploy
@@ -391,7 +391,7 @@ redeclipse_update_binsblob() {
     echo "[D] bins: ${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/${REDECLIPSE_ARCHIVE}"
     echo ""
     ${REDECLIPSE_CURL} --output "${REDECLIPSE_TEMP}/${REDECLIPSE_ARCHIVE}" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/${REDECLIPSE_ARCHIVE}"
-    if ! [ -a "${REDECLIPSE_TEMP}/${REDECLIPSE_ARCHIVE}" ]; then
+    if ! [ -e "${REDECLIPSE_TEMP}/${REDECLIPSE_ARCHIVE}" ]; then
         echo "Failed to retrieve bins update package."
         redeclipse_update_deploy
         return $?
