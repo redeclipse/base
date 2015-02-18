@@ -1,5 +1,5 @@
 #!/bin/sh
-if [ $BEING_SOURCED = 1 ]; then REDECLIPSE_EXITU="return"; else REDECLIPSE_EXITU="exit"; fi
+if [ "${REDECLIPSE_SOURCED}" = "true" ]; then REDECLIPSE_EXITU="return"; else REDECLIPSE_EXITU="exit"; fi
 
 redeclipse_update_path() {
     if [ -z "${REDECLIPSE_PATH+isset}" ]; then REDECLIPSE_PATH="$(cd "$(dirname "$0")" && cd .. && pwd)"; fi

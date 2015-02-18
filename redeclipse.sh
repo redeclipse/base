@@ -1,5 +1,5 @@
 #!/bin/sh
-if [ $BEING_SOURCED = 1 ]; then REDECLIPSE_EXITR="return"; else REDECLIPSE_EXITR="exit"; fi
+if [ "${REDECLIPSE_SOURCED}" = "true" ]; then REDECLIPSE_EXITR="return"; else REDECLIPSE_EXITR="exit"; fi
 
 redeclipse_path() {
     if [ -z "${REDECLIPSE_PATH+isset}" ]; then REDECLIPSE_PATH="$(cd "$(dirname "$0")" && pwd)"; fi
@@ -103,7 +103,7 @@ redeclipse_retry() {
 redeclipse_update() {
     REDECLIPSE_BINVER=`cat "${REDECLIPSE_PATH}/bin/version.txt"`
     chmod +x "${REDECLIPSE_PATH}/bin/update.sh"
-    BEING_SOURCED=1
+    REDECLIPSE_SOURCED="true"
     . "${REDECLIPSE_PATH}/bin/update.sh"
     if [ $? -eq 0 ]; then
         redeclipse_success
