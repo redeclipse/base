@@ -7,8 +7,16 @@ function redeclipse_update_path {
 
 function redeclipse_update_init {
     if [ -z "${REDECLIPSE_CACHE+isset}" ]; then
+        if [ "${REDECLIPSE_TARGET}" = "windows" ]; then
+            REDECLIPSE_WINDOCS=`reg query "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders" //v "Personal" | tr -d '\r' | tr -d '\n' | sed -e 's/.*\(.\):\\\/\/\1\//g;s/\\\/\//g'`
+            if [ -d "${REDECLIPSE_WINDOCS}" ]; then
+                REDECLIPSE_CACHE="${REDECLIPSE_WINDOCS}/My Games/Red Eclipse/cache"
+                return 0
+            fi
+        fi
         REDECLIPSE_CACHE="${HOME}/.redeclipse/cache"
     fi
+    return 0
 }
 
 function redeclipse_update_setup {
@@ -344,6 +352,8 @@ function redeclipse_update_bins {
     REDECLIPSE_BINS_CACHED=`cat "${REDECLIPSE_TEMP}/bins.txt"`
     if [ -z "${REDECLIPSE_BINS_CACHED}" ]; then REDECLIPSE_BINS_CACHED="none"; fi
     echo "[C] bins: ${REDECLIPSE_BINS_CACHED}"
+    redeclipse_update_binsget
+    return $?
 }
 
 function redeclipse_update_binsget {
@@ -364,6 +374,8 @@ function redeclipse_update_binsget {
         redeclipse_update_deploy
         return $?
     fi
+    redeclipse_update_binsblob
+    return $?
 }
 
 function redeclipse_update_binsblob {
@@ -384,6 +396,8 @@ function redeclipse_update_binsblob {
         redeclipse_update_deploy
         return $?
     fi
+    redeclipse_update_binsdeploy
+    return $?
 }
 
 function redeclipse_update_binsdeploy {
@@ -398,6 +412,8 @@ function redeclipse_update_binsdeploy {
     echo "    REDECLIPSE_ERROR=\"true\"" >> "${REDECLIPSE_TEMP}/install.sh"
     echo ")"
     REDECLIPSE_DEPLOY="true"
+    redeclipse_update_deploy
+    return $?
 }
 
 function redeclipse_update_deploy {

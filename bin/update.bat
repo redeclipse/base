@@ -7,10 +7,9 @@ setlocal enableextensions enabledelayedexpansion
     popd
 :init
     if DEFINED REDECLIPSE_CACHE goto setup
-    for /f "tokens=3* delims= " %%a in ('reg query "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders" /v "Personal"') do set USERMYDOCS=%%a
-    if EXIST "%USERMYDOCS%" (
-        set REDECLIPSE_CACHE=%USERMYDOCS%\My Games\Red Eclipse\cache
-
+    for /f "tokens=3* delims= " %%a in ('reg query "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders" /v "Personal"') do set REDECLIPSE_WINDOCS=%%a
+    if EXIST "%REDECLIPSE_WINDOCS%" (
+        set REDECLIPSE_CACHE=%REDECLIPSE_WINDOCS%\My Games\Red Eclipse\cache
     ) else if EXIST "%REDECLIPSE_HOME%" (
         set REDECLIPSE_CACHE=%REDECLIPSE_HOME%\cache
     ) else (
@@ -110,7 +109,7 @@ setlocal enableextensions enabledelayedexpansion
     echo     ^(echo none^)^> "%REDECLIPSE_PATH%\bin\base.txt">> "%REDECLIPSE_TEMP%\install.bat"
     echo     del /f /q "%REDECLIPSE_TEMP%\base.txt">> "%REDECLIPSE_TEMP%\install.bat"
     echo     set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
-    echo ^)
+    echo ^)>> "%REDECLIPSE_TEMP%\install.bat"
     set REDECLIPSE_DEPLOY=true
     goto data
 :baseblob
@@ -185,7 +184,7 @@ setlocal enableextensions enabledelayedexpansion
     echo     ^(echo none^)^> "%REDECLIPSE_PATH%\bin\data.txt">> "%REDECLIPSE_TEMP%\install.bat"
     echo     del /f /q "%REDECLIPSE_TEMP%\data.txt">> "%REDECLIPSE_TEMP%\install.bat"
     echo     set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
-    echo ^)
+    echo ^)>> "%REDECLIPSE_TEMP%\install.bat"
     set REDECLIPSE_DEPLOY=true
     goto bins
 :datablob
