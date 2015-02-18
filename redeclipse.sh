@@ -1,4 +1,6 @@
 #!/bin/sh
+if [ $BEING_SOURCED = 1 ]; then REDECLIPSE_EXITR="return"; else REDECLIPSE_EXITR="exit"; fi
+
 redeclipse_path() {
     if [ -z "${REDECLIPSE_PATH+isset}" ]; then REDECLIPSE_PATH="$(cd "$(dirname "$0")" && pwd)"; fi
 }
@@ -12,7 +14,7 @@ redeclipse_init() {
 }
 
 redeclipse_setup() {
-    if [ -z "${REDECLIPSE_TARGET+isset}" ]; then 
+    if [ -z "${REDECLIPSE_TARGET+isset}" ]; then
         REDECLIPSE_SYSTEM="$(uname -s)"
         REDECLIPSE_MACHINE="$(uname -m)"
         case "${REDECLIPSE_SYSTEM}" in
@@ -101,6 +103,7 @@ redeclipse_retry() {
 redeclipse_update() {
     REDECLIPSE_BINVER=`cat "${REDECLIPSE_PATH}/bin/version.txt"`
     chmod +x "${REDECLIPSE_PATH}/bin/update.sh"
+    BEING_SOURCED=1
     . "${REDECLIPSE_PATH}/bin/update.sh"
     if [ $? -eq 0 ]; then
         redeclipse_success
@@ -155,13 +158,13 @@ redeclipse_runit() {
 }
 
 redeclipse_path
-redeclipse_init 
+redeclipse_init
 redeclipse_setup
 
 if [ $? -ne 0 ]; then
     echo ""
     echo "There was an error running Red Eclipse."
-    exit 1
+    ${REDECLIPSE_EXITR} 1
 else
-    exit 0
+    ${REDECLIPSE_EXITR} 0
 fi

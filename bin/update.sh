@@ -1,4 +1,6 @@
 #!/bin/sh
+if [ $BEING_SOURCED = 1 ]; then REDECLIPSE_EXITU="return"; else REDECLIPSE_EXITU="exit"; fi
+
 redeclipse_update_path() {
     if [ -z "${REDECLIPSE_PATH+isset}" ]; then REDECLIPSE_PATH="$(cd "$(dirname "$0")" && cd .. && pwd)"; fi
 }
@@ -200,8 +202,8 @@ redeclipse_update_baseblobdeploy() {
     else
         echo "${REDECLIPSE_TAR} --file=\"${REDECLIPSE_TEMP}/base.${REDECLIPSE_ARCHEXT}\" --directory=\"${REDECLIPSE_TEMP}\" && (" >> "${REDECLIPSE_TEMP}/install.sh"
     fi
-    echo "   copy --recursive --force --verbose \"${REDECLIPSE_TEMP}/red-eclipse-base-${REDECLIPSE_BASE_REMOTE:0:7}/*\" \"${REDECLIPSE_PATH}\"" >> "${REDECLIPSE_TEMP}/install.sh"
-    echo "   rm -rf \"${REDECLIPSE_TEMP}/red-eclipse-base-${REDECLIPSE_BASE_REMOTE:0:7}\"" >> "${REDECLIPSE_TEMP}/install.sh"
+    echo "   copy --recursive --force --verbose \"${REDECLIPSE_TEMP}/red-eclipse-base-$(echo "$REDECLIPSE_DATA_REMOTE" | cut -b 1-7)/*\" \"${REDECLIPSE_PATH}\"" >> "${REDECLIPSE_TEMP}/install.sh"
+    echo "   rm -rf \"${REDECLIPSE_TEMP}/red-eclipse-base-$(echo "$REDECLIPSE_DATA_REMOTE" | cut -b 1-7)\"" >> "${REDECLIPSE_TEMP}/install.sh"
     echo "   echo \"${REDECLIPSE_BASE_REMOTE}\" > \"${REDECLIPSE_PATH}/bin/base.txt\"" >> "${REDECLIPSE_TEMP}/install.sh"
     echo ") || (" >> "${REDECLIPSE_TEMP}/install.sh"
     echo "    rm -f \"${REDECLIPSE_TEMP}/base.txt\"" >> "${REDECLIPSE_TEMP}/install.sh"
@@ -214,7 +216,7 @@ redeclipse_update_baseblobdeploy() {
 
 redeclipse_update_data() {
     echo ""
-    if  [ -e "${REDECLIPSE_PATH}/data/readme.txt" ]; then 
+    if  [ -e "${REDECLIPSE_PATH}/data/readme.txt" ]; then
         redeclipse_update_dataver
         return $?
     fi
@@ -327,8 +329,8 @@ redeclipse_update_datablobdeploy() {
     else
         echo "${REDECLIPSE_TAR} --file=\"${REDECLIPSE_TEMP}/data.${REDECLIPSE_ARCHEXT}\" --directory=\"${REDECLIPSE_TEMP}\" && (" >> "${REDECLIPSE_TEMP}/install.sh"
     fi
-    echo "   copy --recursive --force --verbose \"${REDECLIPSE_TEMP}/red-eclipse-data-${REDECLIPSE_DATA_REMOTE:0:7}/*\" \"${REDECLIPSE_PATH}/data\"" >> "${REDECLIPSE_TEMP}/install.sh"
-    echo "   rm -rf \"${REDECLIPSE_TEMP}/red-eclipse-data-${REDECLIPSE_DATA_REMOTE:0:7}\"" >> "${REDECLIPSE_TEMP}/install.sh"
+    echo "   copy --recursive --force --verbose \"${REDECLIPSE_TEMP}/red-eclipse-data-$(echo "$REDECLIPSE_DATA_REMOTE" | cut -b 1-7)/*\" \"${REDECLIPSE_PATH}/data\"" >> "${REDECLIPSE_TEMP}/install.sh"
+    echo "   rm -rf \"${REDECLIPSE_TEMP}/red-eclipse-data-$(echo "$REDECLIPSE_DATA_REMOTE" | cut -b 1-7)\"" >> "${REDECLIPSE_TEMP}/install.sh"
     echo "   echo \"${REDECLIPSE_DATA_REMOTE}\" > \"${REDECLIPSE_PATH}/bin/data.txt\"" >> "${REDECLIPSE_TEMP}/install.sh"
     echo ") || (" >> "${REDECLIPSE_TEMP}/install.sh"
     echo "    rm -f \"${REDECLIPSE_TEMP}/data.txt\"" >> "${REDECLIPSE_TEMP}/install.sh"
@@ -460,7 +462,7 @@ redeclipse_update_init
 redeclipse_update_setup
 
 if [ $? -ne 0 ]; then
-    return 1
+    ${REDECLIPSE_EXITU} 1
 else
-    return 0
+    ${REDECLIPSE_EXITU} 0
 fi

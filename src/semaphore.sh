@@ -1,4 +1,4 @@
-#/bin/sh
+#!/bin/sh
 ORIGPWD=`pwd`
 # check
 if [ "${BRANCH_NAME}" = "master" ]; then
