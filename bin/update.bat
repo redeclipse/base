@@ -134,7 +134,7 @@ setlocal enableextensions enabledelayedexpansion
     echo ^) ^|^| ^(>> "%REDECLIPSE_TEMP%\install.bat"
     echo     del /f /q "%REDECLIPSE_TEMP%\base.txt">> "%REDECLIPSE_TEMP%\install.bat"
     echo     set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
-    echo ^)
+    echo ^)>> "%REDECLIPSE_TEMP%\install.bat"
     set REDECLIPSE_DEPLOY=true
 :data
     echo.
@@ -209,7 +209,7 @@ setlocal enableextensions enabledelayedexpansion
     echo ^) ^|^| ^(>> "%REDECLIPSE_TEMP%\install.bat"
     echo     del /f /q "%REDECLIPSE_TEMP%\data.txt">> "%REDECLIPSE_TEMP%\install.bat"
     echo     set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
-    echo ^)
+    echo ^)>> "%REDECLIPSE_TEMP%\install.bat"
     set REDECLIPSE_DEPLOY=true
 :bins
     echo.
@@ -254,7 +254,7 @@ setlocal enableextensions enabledelayedexpansion
     echo ^) ^|^| ^(>> "%REDECLIPSE_TEMP%\install.bat"
     echo     del /f /q "%REDECLIPSE_TEMP%\bins.txt">> "%REDECLIPSE_TEMP%\install.bat"
     echo     set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
-    echo ^)
+    echo ^)>> "%REDECLIPSE_TEMP%\install.bat"
     set REDECLIPSE_DEPLOY=true
 :deploy
     echo.
