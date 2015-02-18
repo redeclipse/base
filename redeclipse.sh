@@ -48,7 +48,7 @@ function redeclipse_setup {
 }
 
 function redeclipse_check {
-    if [ "${REDECLIPSE_BRANCH}" != "stable" ] || [ "${REDECLIPSE_BRANCH}" == "devel" ]; then
+    if [ "${REDECLIPSE_BRANCH}" == "stable" ] || [ "${REDECLIPSE_BRANCH}" == "devel" ]; then
         echo ""
         echo "This is where we would check for updates." #Checking for updates. To disable set: REDECLIPSE_BRANCH=inplace
         echo ""
