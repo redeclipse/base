@@ -1,5 +1,5 @@
 #!/bin/sh
-if [ "${REDECLIPSE_SOURCED}" = "true" ]; then REDECLIPSE_EXITR="return"; else REDECLIPSE_EXITR="exit"; fi
+if [ "${REDECLIPSE_CALLED}" = "true" ]; then REDECLIPSE_EXITR="return"; else REDECLIPSE_EXITR="exit"; fi
 REDECLIPSE_SCRIPT="$0"
 
 redeclipse_path() {
@@ -103,7 +103,7 @@ redeclipse_retry() {
 redeclipse_update() {
     REDECLIPSE_BINVER=`cat "${REDECLIPSE_PATH}/bin/version.txt"`
     chmod +x "${REDECLIPSE_PATH}/bin/update.sh"
-    REDECLIPSE_SOURCED="true"
+    REDECLIPSE_CALLED="true"
     . "${REDECLIPSE_PATH}/bin/update.sh"
     if [ $? -eq 0 ]; then
         redeclipse_success

@@ -5,10 +5,9 @@ setlocal enableextensions enabledelayedexpansion
     pushd "%~dp0\.."
     set REDECLIPSE_PATH=%CD%
     popd
-    set REDECLIPSE_UPDATER=%REDECLIPSE_PATH%\%0
+:init
     if NOT DEFINED REDECLIPSE_SOURCE set REDECLIPSE_SOURCE=http://redeclipse.net/files
     if NOT DEFINED REDECLIPSE_GITHUB set REDECLIPSE_GITHUB=https://github.com/red-eclipse
-:init
     if DEFINED REDECLIPSE_CACHE goto setup
     for /f "tokens=3* delims= " %%a in ('reg query "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders" /v "Personal"') do set REDECLIPSE_WINDOCS=%%a
     if EXIST "%REDECLIPSE_WINDOCS%" (
@@ -87,7 +86,7 @@ setlocal enableextensions enabledelayedexpansion
     )
     set /p REDECLIPSE_BASE_REMOTE=< "%REDECLIPSE_TEMP%\base.txt"
     if "%REDECLIPSE_BASE_REMOTE%" == "" (
-        echo Failed to retrieve base update information.
+        echo Failed to read base update information.
         goto data
     )
     echo [R] base: %REDECLIPSE_BASE_REMOTE%
@@ -162,7 +161,7 @@ setlocal enableextensions enabledelayedexpansion
     )
     set /p REDECLIPSE_DATA_REMOTE=< "%REDECLIPSE_TEMP%\data.txt"
     if "%REDECLIPSE_DATA_REMOTE%" == "" (
-        echo Failed to retrieve data update information.
+        echo Failed to read data update information.
         goto bins
     )
     echo [R] data: %REDECLIPSE_DATA_REMOTE%
@@ -230,7 +229,7 @@ setlocal enableextensions enabledelayedexpansion
     )
     set /p REDECLIPSE_BINS_REMOTE=< "%REDECLIPSE_TEMP%\bins.txt"
     if "%REDECLIPSE_BINS_REMOTE%" == "" (
-        echo Failed to retrieve bins update information.
+        echo Failed to read bins update information.
         goto deploy
     )
     echo [R] bins: %REDECLIPSE_BINS_REMOTE%
