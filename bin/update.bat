@@ -221,6 +221,7 @@ setlocal enableextensions enabledelayedexpansion
     set /p REDECLIPSE_BINS_CACHED=< "%REDECLIPSE_TEMP%\bins.txt"
     if "%REDECLIPSE_BINS_CACHED%" == "" set REDECLIPSE_BINS_CACHED=none
     echo [C] bins: %REDECLIPSE_BINS_CACHED%
+    del /f /q "%REDECLIPSE_TEMP%\bins.txt"
 :binsget
     %REDECLIPSE_CURL% --silent --output "%REDECLIPSE_TEMP%\bins.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/bins.txt"
     if NOT EXIST "%REDECLIPSE_TEMP%\bins.txt" (

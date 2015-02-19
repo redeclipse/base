@@ -371,6 +371,7 @@ redeclipse_update_bins() {
     REDECLIPSE_BINS_CACHED=`cat "${REDECLIPSE_TEMP}/bins.txt"`
     if [ -z "${REDECLIPSE_BINS_CACHED}" ]; then REDECLIPSE_BINS_CACHED="none"; fi
     echo "[C] bins: ${REDECLIPSE_BINS_CACHED}"
+    rm -f "${REDECLIPSE_TEMP}/bins.txt"
     redeclipse_update_binsget
     return $?
 }
