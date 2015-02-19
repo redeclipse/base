@@ -1804,7 +1804,6 @@ namespace game
             }
         }
         specreset(d, true);
-        client::unignore(d->clientnum);
         waiting.removeobj(d);
         client::clearvotes(d);
         projs::remove(d);

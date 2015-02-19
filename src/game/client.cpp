@@ -845,24 +845,38 @@ namespace client
     ICOMMAND(0, clearlimits, "", (), addmsg(N_CLRCONTROL, "ri", ipinfo::LIMIT));
     ICOMMAND(0, clearexcepts, "", (), addmsg(N_CLRCONTROL, "ri", ipinfo::EXCEPT));
 
-    vector<int> ignores;
+    vector<char *> ignores;
     void ignore(int cn)
     {
         gameent *d = game::getclient(cn);
         if(!d || d == game::player1) return;
-        conoutft(CON_EVENT, "\fyignoring: \fc%s", d->name);
-        if(ignores.find(cn) < 0) ignores.add(cn);
+        if(ignores.find(d->hostip) < 0)
+        {
+            conoutft(CON_EVENT, "\fyignoring: \fs%s\fS (\fs\fc%s\fS)", game::colourname(d), d->hostip);
+            ignores.add(d->hostip);
+        }
+        else
+            conoutft(CON_EVENT, "\fralready ignoring: \fs%s\fS (\fs\fc%s\fS)", game::colourname(d), d->hostip);
     }
 
     void unignore(int cn)
     {
-        if(ignores.find(cn) < 0) return;
         gameent *d = game::getclient(cn);
-        if(d) conoutft(CON_EVENT, "\fystopped ignoring: \fc%s", d->name);
-        ignores.removeobj(cn);
+        if(!d) return;
+        if(ignores.find(d->hostip) >= 0)
+        {
+            conoutft(CON_EVENT, "\fystopped ignoring: \fs%s\fS (\fs\fc%s\fS)", game::colourname(d), d->hostip);
+            ignores.removeobj(d->hostip);
+        }
+        else
+            conoutft(CON_EVENT, "\fryou are not ignoring: \fs%s\fS (\fs\fc%s\fS)", game::colourname(d), d->hostip);
     }
 
-    bool isignored(int cn) { return ignores.find(cn) >= 0; }
+    bool isignored(int cn)
+    {
+        gameent *d = game::getclient(cn);
+        return ignores.find(d->hostip) >= 0;
+    }
 
     ICOMMAND(0, ignore, "s", (char *arg), ignore(parseplayer(arg)));
     ICOMMAND(0, unignore, "s", (char *arg), unignore(parseplayer(arg)));
@@ -941,7 +955,6 @@ namespace client
         if(editmode) toggleedit();
         gettingmap = needsmap = remote = isready = sendgameinfo = sendplayerinfo = false;
         sessionid = sessionver = lastplayerinfo = 0;
-        ignores.shrink(0);
         messages.shrink(0);
         mapvotes.shrink(0);
         messagereliable = false;
