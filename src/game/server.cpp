@@ -2941,7 +2941,7 @@ namespace server
         {
             clientinfo *ci = clients[i];
             if(ci->state.actortype > A_PLAYER || ci->clientmap[0] || ci->mapcrc >= 0 || (req < 0 && ci->warned)) continue;
-            srvmsgf(req, "\fy%s is using a modified map", colourname(ci));
+            srvmsgf(req, "\fy%s is using a modified map (\fs\fc0x%X\fS)", colourname(ci), ci->mapcrc);
             if(req < 0) ci->warned = true;
         }
         if(crcs.empty() || crcs.length() < 2) return;
@@ -2952,7 +2952,7 @@ namespace server
             {
                 clientinfo *ci = clients[j];
                 if(ci->state.actortype > A_PLAYER || !ci->clientmap[0] || ci->mapcrc != info.crc || (req < 0 && ci->warned)) continue;
-                srvmsgf(req, "\fy%s is using a modified map", colourname(ci));
+                srvmsgf(req, "\fy%s is using a modified map (\fs\fc0x%X\fS)", colourname(ci), ci->mapcrc);
                 if(req < 0) ci->warned = true;
             }
         }
