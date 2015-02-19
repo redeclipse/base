@@ -121,12 +121,15 @@ static vector<menu *> menustack;
 static vector<delayedupdate> updatelater;
 static bool shouldclearmenu = true, clearlater = false;
 
-void popgui()
+bool popgui(bool skip = true)
 {
-    menu *m = menustack.pop();
+    menu *m = menustack.last();
+    if(skip && m->keep && *m->keep) return false;
+    menustack.pop();
     m->passes = 0;
     if(m->keep) *m->keep = false;
     m->clear();
+    return true;
 }
 
 void removegui(menu *m)
@@ -157,7 +160,7 @@ void pushgui(menu *m, int pos = -1, int tab = 0, bool *keep = NULL)
     }
 }
 
-void restoregui(int pos, int tab = 0)
+void restoregui(int pos, int tab = 0, bool *keep = NULL)
 {
     int clear = menustack.length()-pos-1;
     loopi(clear) popgui();
@@ -168,6 +171,7 @@ void restoregui(int pos, int tab = 0)
         m->menustart = totalmillis;
         if(tab > 0) m->menutab = tab;
         m->world = (identflags&IDF_WORLD)!=0;
+        m->keep = keep;
     }
 }
 
@@ -176,31 +180,32 @@ void showgui(const char *name, int tab, bool *keep)
     menu *m = menus.access(name);
     if(!m) return;
     int pos = menustack.find(m);
-    if(pos<0) pushgui(m, -1, tab);
-    else if(pos < menustack.length()-1) restoregui(pos, tab);
+    if(pos<0) pushgui(m, -1, tab, keep);
+    else if(pos < menustack.length()-1) restoregui(pos, tab, keep);
     else
     {
         m->world = (identflags&IDF_WORLD)!=0;
         m->menutab = tab;
+        m->keep = keep;
         return;
     }
     playsound(S_GUIPRESS, camera1->o, camera1, SND_FORCED);
 }
 
 extern bool closetexgui();
-int cleargui(int n)
+int cleargui(int n, bool skip)
 {
     if(closetexgui()) n--;
     int clear = menustack.length();
     if(n>0) clear = min(clear, n);
-    loopi(clear) popgui();
+    loopi(clear) if(!popgui(skip)) break;
     if(!menustack.empty()) restoregui(menustack.length()-1);
     return clear;
 }
 
 void cleargui_(int *n)
 {
-    intret(cleargui(*n));
+    intret(cleargui(*n, false));
 }
 
 void guishowtitle(int *n)

@@ -643,7 +643,7 @@ extern void progressmenu();
 extern void mainmenu();
 extern void texturemenu();
 extern bool menuactive();
-extern int cleargui(int n = 0);
+extern int cleargui(int n = 0, bool skip = true);
 
 #define uipad(parent,count,body) { (parent).space(count); body; (parent).space(count); }
 #define uifont(parent,font,body) { (parent).pushfont(font); body; (parent).popfont(); }
