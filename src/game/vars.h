@@ -193,6 +193,7 @@ GVAR(0, balanceduke, 0, 1, 1); // enable in duel/survivor
 
 GFVAR(0, maxhealth, 0, 1.5f, FVAR_MAX);
 GFVAR(0, maxhealthvampire, 0, 3.0f, FVAR_MAX);
+GFVAR(0, vampirescale, 0, 1.0f, FVAR_MAX);
 
 GFVAR(0, maxresizescale, 1, 2, FVAR_MAX);
 GFVAR(0, minresizescale, FVAR_NONZERO, 0.5f, 1);

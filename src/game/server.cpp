@@ -580,10 +580,10 @@ namespace server
         {
             if(v != m && (!m_team(gamemode, mutators) || v->team != m->team) && v->state.state == CS_ALIVE && hurt > 0)
             {
-                int rgn = v->state.health, heal = v->state.health+hurt;
+                int real = int(ceilf(hurt*G(vampirescale))), heal = v->state.health+real;
                 if(v->state.actortype < A_ENEMY) heal = min(heal, m_maxhealth(gamemode, mutators, v->state.model));
-                int eff = heal-rgn;
-                if(eff)
+                int eff = heal-v->state.health;
+                if(eff > 0)
                 {
                     v->state.health = heal;
                     v->state.lastregen = gamemillis;
