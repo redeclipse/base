@@ -171,7 +171,7 @@ void restoregui(int pos, int tab = 0)
     }
 }
 
-void showgui(const char *name, int tab, int *keep)
+void showgui(const char *name, int tab, bool *keep)
 {
     menu *m = menus.access(name);
     if(!m) return;
