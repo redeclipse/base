@@ -139,7 +139,7 @@ struct bindlist
 
 // menus
 extern void newgui(char *name, char *contents, char *initscript = NULL);
-extern void showgui(const char *name, int tab = 0);
+extern void showgui(const char *name, int tab = 0, bool *keep = NULL);
 
 // main
 struct igame;

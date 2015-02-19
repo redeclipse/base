@@ -15,9 +15,9 @@ struct menu : guicb
     char *name, *header;
     uint *contents, *initscript;
     int passes, menutab, menustart;
-    bool world, useinput, usetitle, usebgfx, builtin;
+    bool world, useinput, usetitle, usebgfx, builtin, *keep;
 
-    menu() : name(NULL), header(NULL), contents(NULL), initscript(NULL), passes(0), menutab(0), menustart(0), world(false), useinput(true), usetitle(true), usebgfx(true), builtin(false) {}
+    menu() : name(NULL), header(NULL), contents(NULL), initscript(NULL), passes(0), menutab(0), menustart(0), world(false), useinput(true), usetitle(true), usebgfx(true), builtin(false), keep(NULL) {}
 
     void gui(guient &g, bool firstpass)
     {
@@ -125,21 +125,23 @@ void popgui()
 {
     menu *m = menustack.pop();
     m->passes = 0;
+    if(m->keep) *m->keep = false;
     m->clear();
 }
 
 void removegui(menu *m)
 {
-    loopv(menustack) if(menustack[i]==m)
+    loopv(menustack) if(menustack[i] == m)
     {
         menustack.remove(i);
         m->passes = 0;
+        if(m->keep) *m->keep = false;
         m->clear();
         return;
     }
 }
 
-void pushgui(menu *m, int pos = -1, int tab = 0)
+void pushgui(menu *m, int pos = -1, int tab = 0, bool *keep = NULL)
 {
     if(menustack.empty()) resetcursor();
     if(pos < 0) menustack.add(m);
@@ -151,6 +153,7 @@ void pushgui(menu *m, int pos = -1, int tab = 0)
         if(tab > 0) m->menutab = tab;
         m->usetitle = tab >= 0 ? true : false;
         m->world = (identflags&IDF_WORLD)!=0;
+        m->keep = keep;
     }
 }
 
@@ -168,7 +171,7 @@ void restoregui(int pos, int tab = 0)
     }
 }
 
-void showgui(const char *name, int tab)
+void showgui(const char *name, int tab, int *keep)
 {
     menu *m = menus.access(name);
     if(!m) return;

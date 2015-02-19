@@ -302,19 +302,15 @@ namespace game
     VAR(IDF_PERSIST, headlessmodels, 0, 1, 1);
     FVAR(IDF_PERSIST, twitchspeed, 0, 8, FVAR_MAX);
 
+    bool wantsloadoutmenu = false;
+    VAR(IDF_PERSIST, showloadoutmenu, 0, 0, 1); // show the loadout menu at the start of a map
+
     bool needname(gameent *d)
     {
         if(!d || *d->name) return false; // || client::waiting()) return false;
         return true;
     }
     ICOMMAND(0, needname, "b", (int *cn), intret(needname(*cn >= 0 ? getclient(*cn) : player1) ? 1 : 0));
-
-    bool needloadout(gameent *d)
-    {
-        if(!d || !m_loadout(gamemode, mutators) || client::waiting()) return false;
-        return player1->state == CS_WAITING && player1->loadweap.empty();
-    }
-    ICOMMAND(0, needloadout, "b", (int *cn), intret(needloadout(*cn >= 0 ? getclient(*cn) : player1) ? 1 : 0));
 
     ICOMMAND(0, gamemode, "", (), intret(gamemode));
     ICOMMAND(0, mutators, "", (), intret(mutators));
@@ -795,6 +791,7 @@ namespace game
 
     void respawn(gameent *d)
     {
+        if(d == game::player1 && (maptime <= 0 || needname(d) || wantsloadoutmenu)) return; // prevent spawning
         if(d->state == CS_DEAD && d->respawned < 0 && (!d->lastdeath || lastmillis-d->lastdeath >= 500))
         {
             client::addmsg(N_TRYSPAWN, "ri", d->clientnum);
@@ -1855,6 +1852,7 @@ namespace game
         resetcamera();
         if(!empty) client::sendgameinfo = client::sendcrcinfo = true;
         copystring(clientmap, reqname ? reqname : (name ? name : ""));
+        if(showloadoutmenu) wantsloadoutmenu = true;
     }
 
     gameent *intersectclosest(vec &from, vec &to, gameent *at)
@@ -2753,7 +2751,11 @@ namespace game
             otherplayers();
             checkannounce();
             flushdamagemerges();
-            if(!menuactive() && needname(player1)) showgui("profile", 1);
+            if(!menuactive())
+            {
+                if(needname(player1)) showgui("profile", 1);
+                else if(wantsloadoutmenu) showgui("profile", 2, &wantsloadoutmenu);
+            }
         }
         else if(!menuactive()) showgui(needname(player1) ? "profile" : "main", 1);
         gets2c();

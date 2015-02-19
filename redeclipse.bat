@@ -1,11 +1,11 @@
 @ECHO OFF
 setlocal enableextensions enabledelayedexpansion
 :path
+    set REDECLIPSE_SCRIPT=%REDECLIPSE_PATH%\%0
     if DEFINED REDECLIPSE_PATH goto init
     pushd "%~dp0"
     set REDECLIPSE_PATH=%CD%
     popd
-    set REDECLIPSE_SCRIPT=%REDECLIPSE_PATH%\%0
 :init
     if NOT DEFINED REDECLIPSE_BINARY set REDECLIPSE_BINARY=redeclipse
     for %%a in ("%REDECLIPSE_SCRIPT%") do set REDECLIPSE_SCRIPT_TIME=%%~ta
@@ -13,15 +13,15 @@ setlocal enableextensions enabledelayedexpansion
     if NOT DEFINED REDECLIPSE_OPTIONS set REDECLIPSE_OPTIONS=
     set REDECLIPSE_MAKE=mingw32-make
 :setup
-    if NOT DEFINED REDECLIPSE_ARCH (
-        set REDECLIPSE_ARCH=x86
-        if DEFINED PROCESSOR_ARCHITEW6432 (
-            set REDECLIPSE_MACHINE=%PROCESSOR_ARCHITEW6432%
-        ) else (
-            set REDECLIPSE_MACHINE=%PROCESSOR_ARCHITECTURE%
-        )
-        if /i "%REDECLIPSE_MACHINE%" == "amd64" set REDECLIPSE_ARCH=amd64
+    if DEFINED REDECLIPSE_ARCH goto branch
+    set REDECLIPSE_ARCH=x86
+    if DEFINED PROCESSOR_ARCHITEW6432 (
+        set REDECLIPSE_MACHINE=%PROCESSOR_ARCHITEW6432%
+    ) else (
+        set REDECLIPSE_MACHINE=%PROCESSOR_ARCHITECTURE%
     )
+    if /i "%REDECLIPSE_MACHINE%" == "amd64" set REDECLIPSE_ARCH=amd64
+:branch
     if NOT DEFINED REDECLIPSE_BRANCH (
         set REDECLIPSE_BRANCH=stable
         if EXIST .git set REDECLIPSE_BRANCH=devel
