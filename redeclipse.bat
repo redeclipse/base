@@ -1,16 +1,15 @@
 @ECHO OFF
 setlocal enableextensions enabledelayedexpansion
 :path
-    set REDECLIPSE_SCRIPT=%REDECLIPSE_PATH%\%0
     if DEFINED REDECLIPSE_PATH goto init
     pushd "%~dp0"
     set REDECLIPSE_PATH=%CD%
     popd
 :init
-    if NOT DEFINED REDECLIPSE_BINARY set REDECLIPSE_BINARY=redeclipse
+    set REDECLIPSE_SCRIPT=%REDECLIPSE_PATH%\%0
     for %%a in ("%REDECLIPSE_SCRIPT%") do set REDECLIPSE_SCRIPT_TIME=%%~ta
+    if NOT DEFINED REDECLIPSE_BINARY set REDECLIPSE_BINARY=redeclipse
     set REDECLIPSE_SUFFIX=.exe
-    if NOT DEFINED REDECLIPSE_OPTIONS set REDECLIPSE_OPTIONS=
     set REDECLIPSE_MAKE=mingw32-make
 :setup
     if DEFINED REDECLIPSE_ARCH goto branch
