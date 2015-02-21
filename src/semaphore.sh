@@ -93,7 +93,7 @@ semabuild_deploy() {
     echo "${SEMABUILD_DATA}" > "${SEMABUILD_DIR}/data.txt"
     # deploy
     cd "${HOME}/build" || return 1
-    ${SEMABUILD_SCP} -r "${BRANCH_NAME}" ${SEMABUILD_TARGET}/${BRANCH_NAME} || return 1
+    ${SEMABUILD_SCP} -r "${BRANCH_NAME}" ${SEMABUILD_TARGET} || return 1
     return 0
 }
 
