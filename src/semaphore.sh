@@ -7,6 +7,19 @@ SEMABUILD_SOURCE="http://redeclipse.net/files"
 SEMABUILD_BUILD="${HOME}/build"
 SEMABUILD_DIR="${SEMABUILD_BUILD}/${BRANCH_NAME}"
 
+semabuild_setup() {
+    echo "Setting up ${BRANCH_NAME}..."
+    rm -rfv "${SEMABUILD_BUILD}" || return 1
+    mkdir -pv "${SEMABUILD_DIR}" || return 1
+    mkdir -pv "${SEMAPHORE_CACHE_DIR}/apt/archives/partial" || return 1
+    sudo cp -ruv "/var/cache/apt" "${SEMAPHORE_CACHE_DIR}/apt" || return 1
+    sudo rm -rfv "/var/cache/apt" || return 1
+    sudo ln -sv "${SEMAPHORE_CACHE_DIR}/apt" "/var/cache/apt" || return 1
+    sudo dpkg --add-architecture i386 || return 1
+    sudo ${SEMABUILD_APT} update || return 1
+    return 0
+}
+
 semabuild_parse() {
     echo "Parsing ${BRANCH_NAME}..."
     SEMABUILD_BASE=`git rev-parse HEAD` || return 1
@@ -21,19 +34,6 @@ semabuild_parse() {
         SEMABUILD_SRC_CHANGES=`git diff --name-only HEAD ${SEMABUILD_BUILD_LAST} -- src` || return 1
         if [ -z "${SEMABUILD_SRC_CHANGES}" ]; then SEMABUILD_DEPLOY="sync"; fi
     fi
-    return 0
-}
-
-semabuild_setup() {
-    echo "Setting up ${BRANCH_NAME}..."
-    rm -rfv "${SEMABUILD_BUILD}" || return 1
-    mkdir -pv "${SEMABUILD_DIR}" || return 1
-    mkdir -pv "${SEMAPHORE_CACHE_DIR}/apt/archives/partial" || return 1
-    sudo cp -ruv "/var/cache/apt" "${SEMAPHORE_CACHE_DIR}/apt" || return 1
-    sudo rm -rfv "/var/cache/apt" || return 1
-    sudo ln -sv "${SEMAPHORE_CACHE_DIR}/apt" "/var/cache/apt" || return 1
-    sudo dpkg --add-architecture i386 || return 1
-    sudo ${SEMABUILD_APT} update || return 1
     return 0
 }
 
@@ -86,44 +86,24 @@ semabuild_deploy() {
     return 0
 }
 
+semabuild_setup
+if [ $? -ne 0 ]; then
+    echo "Failed to setup ${BRANCH_NAME}!"
+    exit 1
+fi
 semabuild_parse
 if [ $? -ne 0 ]; then
-<<<<<<< HEAD
     echo "Failed to parse ${BRANCH_NAME}!"
     exit 1
 fi
 if [ "${SEMABUILD_DEPLOY}" = "sync" ]; then
     echo "Syncing ${BRANCH_NAME} as no source files have changed."
     semabuild_sync
-=======
-    echo "Branch {BRANCH_NAME} is not a supported Semaphore build!"
-else
-    semabuild_parse
-    if [ $? -ne 0 ]; then
-        echo "Failed to parse ${BRANCH_NAME}!"
-        exit 1
-    fi
-    if [ "${SEMABUILD_DEPLOY}" = "sync" ]; then
-        echo "Syncing ${BRANCH_NAME} as no source files have changed."
-        semabuild_sync
-        if [ $? -ne 0 ]; then
-            echo "Failed to sync ${BRANCH_NAME}!"
-            exit 1
-        fi
-        exit 0
-    fi
-    semabuild_setup
->>>>>>> branch 'master' of https://github.com/red-eclipse/base.git
     if [ $? -ne 0 ]; then
         echo "Failed to sync ${BRANCH_NAME}!"
         exit 1
     fi
     exit 0
-fi
-semabuild_setup
-if [ $? -ne 0 ]; then
-    echo "Failed to setup ${BRANCH_NAME}!"
-    exit 1
 fi
 semabuild_build
 if [ $? -ne 0 ]; then
