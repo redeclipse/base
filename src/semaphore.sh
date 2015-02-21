@@ -101,23 +101,19 @@ semabuild_check
 if [ $? -ne 0 ]; then
     echo "Branch {BRANCH_NAME} is not a supported Semaphore build!"
 else
-    if [ "${SEMABUILD_DEPLOY}" = "normal" ]; then
-        semabuild_parse
+    semabuild_parse
+    if [ $? -ne 0 ]; then
+        echo "Failed to parse ${BRANCH_NAME}!"
+        exit 1
+    fi
+    if [ "${SEMABUILD_DEPLOY}" = "sync" ]; then
+        echo "Syncing ${BRANCH_NAME} as no source files have changed."
+        semabuild_sync
         if [ $? -ne 0 ]; then
-            echo "Failed to parse ${BRANCH_NAME}!"
+            echo "Failed to sync ${BRANCH_NAME}!"
             exit 1
         fi
-        if [ "${SEMABUILD_DEPLOY}" = "sync" ]; then
-            echo "Syncing ${BRANCH_NAME} as no source files have changed."
-            semabuild_sync
-            if [ $? -ne 0 ]; then
-                echo "Failed to sync ${BRANCH_NAME}!"
-                exit 1
-            fi
-            exit 0
-        fi
-    else
-        echo "Skipping parsing step for ${BRANCH_NAME}."
+        exit 0
     fi
     semabuild_setup
     if [ $? -ne 0 ]; then
