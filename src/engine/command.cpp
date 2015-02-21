@@ -3283,26 +3283,26 @@ ICOMMAND(0, struni, "si", (char *s, int *i), intret(*i > 0 ? (memchr(s, 0, *i) ?
 ICOMMAND(0, unistr, "i", (int *i), { char *s = newstring(1); s[0] = uni2cube(*i); s[1] = '\0'; stringret(s); });
 
 // some dirty hacks to get around macro expansion issues
-int rigstr(const char *s, const char *n)
+int rigstr(char *s, char *n)
 {
     char *v = strstr(s, n);
     return v ? v-s : -1;
 }
 ICOMMAND(0, strstr, "ss", (char *a, char *b), intret(rigstr(a, b)));
 
-int rigcasecmp(const char *s, const char *n)
+int rigcasecmp(char *s, char *n)
 {
     return strcasecmp(s, n);
 }
 ICOMMAND(0, strcasecmp, "ss", (char *a, char *b), intret(rigcasecmp(a,b)==0));
 
-int rigncmp(const char *s, const char *n, int len)
+int rigncmp(char *s, char *n, int len)
 {
     return strncmp(s, n, len);
 }
 ICOMMAND(0, strncmp, "ssi", (char *a, char *b, int *n), intret(rigncmp(a,b,*n)==0));
 
-int rigncasecmp(const char *s, const char *n, int len)
+int rigncasecmp(char *s, char *n, int len)
 {
     return strncasecmp(s, n, len);
 }
