@@ -9,19 +9,6 @@ SEMABUILD_DIR="${SEMABUILD_BUILD}/${BRANCH_NAME}"
 
 semabuild_setup() {
     echo "Setting up ${BRANCH_NAME}..."
-    rm -rfv "${SEMABUILD_BUILD}" || return 1
-    mkdir -pv "${SEMABUILD_DIR}" || return 1
-    mkdir -pv "${SEMAPHORE_CACHE_DIR}/apt/archives/partial" || return 1
-    sudo cp -ruv "/var/cache/apt" "${SEMAPHORE_CACHE_DIR}/apt" || return 1
-    sudo rm -rfv "/var/cache/apt" || return 1
-    sudo ln -sv "${SEMAPHORE_CACHE_DIR}/apt" "/var/cache/apt" || return 1
-    sudo dpkg --add-architecture i386 || return 1
-    sudo ${SEMABUILD_APT} update || return 1
-    return 0
-}
-
-semabuild_parse() {
-    echo "Parsing ${BRANCH_NAME}..."
     SEMABUILD_BASE=`git rev-parse HEAD` || return 1
     git submodule init data || return 1
     git submodule update data || return 1
@@ -34,11 +21,19 @@ semabuild_parse() {
         SEMABUILD_SRC_CHANGES=`git diff --name-only HEAD ${SEMABUILD_BUILD_LAST} -- src` || return 1
         if [ -z "${SEMABUILD_SRC_CHANGES}" ]; then SEMABUILD_DEPLOY="sync"; fi
     fi
+    rm -rfv "${SEMABUILD_BUILD}" || return 1
+    mkdir -pv "${SEMABUILD_DIR}" || return 1
     return 0
 }
 
 semabuild_build() {
     echo "Building ${BRANCH_NAME}..."
+    mkdir -pv "${SEMAPHORE_CACHE_DIR}/apt/archives/partial" || return 1
+    sudo cp -ruv "/var/cache/apt" "${SEMAPHORE_CACHE_DIR}/apt" || return 1
+    sudo rm -rfv "/var/cache/apt" || return 1
+    sudo ln -sv "${SEMAPHORE_CACHE_DIR}/apt" "/var/cache/apt" || return 1
+    sudo dpkg --add-architecture i386 || return 1
+    sudo ${SEMABUILD_APT} update || return 1
     sudo ${SEMABUILD_APT} -fy install build-essential zlib1g-dev libsdl-mixer1.2-dev libsdl-image1.2-dev || return 1
     make PLATFORM=linux64 PLATFORM_BIN=amd64 INSTDIR=${SEMABUILD_DIR}/linux/bin/amd64 CFLAGS=-m64 CXXFLAGS=-m64 LDFLAGS=-m64 -C src clean install || return 1
     sudo ${SEMABUILD_APT} -fy install binutils-mingw-w64 g++-mingw-w64 || return 1
@@ -89,11 +84,6 @@ semabuild_deploy() {
 semabuild_setup
 if [ $? -ne 0 ]; then
     echo "Failed to setup ${BRANCH_NAME}!"
-    exit 1
-fi
-semabuild_parse
-if [ $? -ne 0 ]; then
-    echo "Failed to parse ${BRANCH_NAME}!"
     exit 1
 fi
 if [ "${SEMABUILD_DEPLOY}" = "sync" ]; then
