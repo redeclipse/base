@@ -26,13 +26,13 @@ basis.
 
 (See RE Mark Policy for definitions of "substantially (un)modified")
 
-* The gameplay of the server must not grant an unfavorable advantage or disservice to any
-  party.
+* The gameplay of the server must not grant an unfavorable advantage or
+  disservice to any party.
   - "Humans vs Zombies" is fine, as long as it rotates roles in a fair manner.
   - Giving one player double the health of other players permanently is not
     permitted.
-  - Game variables may not be set in such a way that makes it impossible to avoid
-    harming yourself or teammates (i.e. no suicide weapons).
+  - Game variables may not be set in such a way that makes it impossible to
+    avoid harming yourself or teammates (i.e. no suicide weapons).
 
 * If the gameplay of the server is modified substantially this must be
   indicated clearly, preferably through the use of "servermotd".
