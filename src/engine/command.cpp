@@ -3274,17 +3274,39 @@ ICOMMAND(0, <s, "ss", (char *a, char *b), intret(strcmp(a,b)<0));
 ICOMMAND(0, >s, "ss", (char *a, char *b), intret(strcmp(a,b)>0));
 ICOMMAND(0, <=s, "ss", (char *a, char *b), intret(strcmp(a,b)<=0));
 ICOMMAND(0, >=s, "ss", (char *a, char *b), intret(strcmp(a,b)>=0));
-ICOMMAND(0, strcasecmp, "ss", (char *a, char *b), intret(strcasecmp(a,b)==0));
-ICOMMAND(0, strncmp, "ssi", (char *a, char *b, int *n), intret(strncmp(a,b,*n)==0));
-ICOMMAND(0, strncasecmp, "ssi", (char *a, char *b, int *n), intret(strncasecmp(a,b,*n)==0));
 ICOMMAND(0, echo, "C", (char *s), conoutft(CON_MESG, "%s", s));
 ICOMMAND(0, error, "C", (char *s), conoutft(CON_DEBUG, "\fr%s", s));
-ICOMMAND(0, strstr, "ss", (char *a, char *b), { char *s = strstr(a, b); intret(s ? s-a : -1); });
 ICOMMAND(0, strlen, "s", (char *s), intret(strlen(s)));
 ICOMMAND(0, strcode, "si", (char *s, int *i), intret(*i > 0 ? (memchr(s, 0, *i) ? 0 : uchar(s[*i])) : uchar(s[0])));
 ICOMMAND(0, codestr, "i", (int *i), { char *s = newstring(1); s[0] = char(*i); s[1] = '\0'; stringret(s); });
 ICOMMAND(0, struni, "si", (char *s, int *i), intret(*i > 0 ? (memchr(s, 0, *i) ? 0 : cube2uni(s[*i])) : cube2uni(s[0])));
 ICOMMAND(0, unistr, "i", (int *i), { char *s = newstring(1); s[0] = uni2cube(*i); s[1] = '\0'; stringret(s); });
+
+// some dirty hacks to get around macro expansion issues
+int rigstr(const char *s, const char *n)
+{
+    char *v = strstr(s, n);
+    return v ? v-s : -1;
+}
+ICOMMAND(0, strstr, "ss", (char *a, char *b), intret(rigstr(a, b)));
+
+int rigcasecmp(const char *s, const char *n)
+{
+    return strcasecmp(s, n);
+}
+ICOMMAND(0, strcasecmp, "ss", (char *a, char *b), intret(rigcasecmp(a,b)==0));
+
+int rigncmp(const char *s, const char *n, int len)
+{
+    return strncmp(s, n, len);
+}
+ICOMMAND(0, strncmp, "ssi", (char *a, char *b, int *n), intret(rigncmp(a,b,*n)==0));
+
+int rigncasecmp(const char *s, const char *n, int len)
+{
+    return strncasecmp(s, n, len);
+}
+ICOMMAND(0, strncasecmp, "ssi", (char *a, char *b, int *n), intret(rigncasecmp(a,b,*n)==0));
 
 #define STRMAPCOMMAND(name, map) \
     ICOMMAND(0, name, "s", (char *s), \
