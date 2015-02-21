@@ -23,16 +23,17 @@ setlocal enableextensions enabledelayedexpansion
 :branch
     if NOT DEFINED REDECLIPSE_BRANCH (
         set REDECLIPSE_BRANCH=stable
-        if EXIST .git set REDECLIPSE_BRANCH=devel
+        if EXIST .git set REDECLIPSE_BRANCH=master
         if EXIST "%REDECLIPSE_PATH%\bin\branch.txt" set /p REDECLIPSE_BRANCH=< "%REDECLIPSE_PATH%\bin\branch.txt"
     )
-    if NOT "%REDECLIPSE_BRANCH%" == "stable" if NOT "%REDECLIPSE_BRANCH%" == "devel" if NOT "%REDECLIPSE_BRANCH%" == "source" if NOT "%REDECLIPSE_BRANCH%" == "inplace" (
+    if "%REDECLIPSE_BRANCH%" == "devel" set REDECLIPSE_BRANCH=master
+    if NOT "%REDECLIPSE_BRANCH%" == "stable" if NOT "%REDECLIPSE_BRANCH%" == "master" if NOT "%REDECLIPSE_BRANCH%" == "source" if NOT "%REDECLIPSE_BRANCH%" == "inplace" (
         set REDECLIPSE_BRANCH=inplace
     )
     if NOT DEFINED REDECLIPSE_HOME if NOT "%REDECLIPSE_BRANCH%" == "stable" if NOT "%REDECLIPSE_BRANCH%" == "inplace" set REDECLIPSE_HOME=home
     if DEFINED REDECLIPSE_HOME set REDECLIPSE_OPTIONS=-h"%REDECLIPSE_HOME%" %REDECLIPSE_OPTIONS%
 :check
-    if NOT "%REDECLIPSE_BRANCH%" == "stable" if NOT "%REDECLIPSE_BRANCH%" == "devel" goto runit
+    if NOT "%REDECLIPSE_BRANCH%" == "stable" if NOT "%REDECLIPSE_BRANCH%" == "master" goto runit
     echo.
     echo Checking for updates to "%REDECLIPSE_BRANCH%". To disable: set REDECLIPSE_BRANCH=inplace
     echo.
@@ -76,7 +77,7 @@ setlocal enableextensions enabledelayedexpansion
     ) else (
         if "%REDECLIPSE_BRANCH%" == "source" (
             %REDECLIPSE_MAKE% -C src all install && goto runit
-            set REDECLIPSE_BRANCH=devel
+            set REDECLIPSE_BRANCH=master
         )
         if NOT "%REDECLIPSE_BRANCH%" == "inplace" if NOT "%REDECLIPSE_TRYUPDATE%" == "true" (
             set REDECLIPSE_TRYUPDATE=true

@@ -1,70 +1,143 @@
 #!/bin/sh
-ORIGPWD=`pwd`
-# check
-if [ "${BRANCH_NAME}" = "master" ]; then
-    BASE_COMMIT=`git rev-parse HEAD`
-    git submodule init data || exit 1
-    git submodule update data || exit 1
-    cd data || exit 1
-    DATA_COMMIT=`git rev-parse HEAD`
-    cd "${ORIGPWD}" || exit 1
-    DEPLOY_COMMIT=`curl --fail --silent http://redeclipse.net/files/devel/base.txt`
-    if [ -n "${DEPLOY_COMMIT}" ]; then
-        DEPLOY_SRCFILES=`git diff --name-only HEAD ${DEPLOY_COMMIT} -- src`
-        if [ -z "${DEPLOY_SRCFILES}" ]; then
-            echo "No source files modified, skipping..."
-            if [ -n "${BASE_COMMIT}" ] && [ "${BASE_COMMIT}" != "${DEPLOY_COMMIT}" ]; then
-                echo "Module 'base' commit updated, syncing that: ${BASE_COMMIT} -> ${DEPLOY_COMMIT}"
-                echo "${BASE_COMMIT}" > base.txt
-                scp -BC -i ${HOME}/.ssh/public_rsa -o StrictHostKeyChecking=no base.txt qreeves@icculus.org:/webspace/redeclipse.net/files/devel/base.txt
-            fi
-            DEPLOY_DATA=`curl --fail --silent http://redeclipse.net/files/devel/data.txt`
-            if [ -n "${DATA_COMMIT}" ] && [ -n "${DEPLOY_DATA}" ] && [ "${DATA_COMMIT}" != "${DEPLOY_DATA}" ]; then
-                echo "Module 'data' commit updated, syncing that: ${DEPLOY_DATA} -> ${DATA_COMMIT}"
-                echo "${DATA_COMMIT}" > data.txt
-                scp -BC -i ${HOME}/.ssh/public_rsa -o StrictHostKeyChecking=no data.txt qreeves@icculus.org:/webspace/redeclipse.net/files/devel/data.txt
+SEMABUILD_PWD=`pwd`
+SEMABUILD_SCP='scp -BCv -i "${HOME}/.ssh/public_rsa" -o StrictHostKeyChecking=no'
+SEMABUILD_TARGET='qreeves@icculus.org:/webspace/redeclipse.net/files'
+SEMABUILD_APT='DEBIAN_FRONTEND=noninteractive apt-get'
+SEMABUILD_SOURCE="http://redeclipse.net/files"
+SEMABUILD_DIR="${HOME}/build/${BRANCH_NAME}"
+
+semabuild_check() {
+    echo "Checking ${BRANCH_NAME}..."
+    case "${BRANCH_NAME}" in
+        master)
+            SEMABUILD_DEPLOY="normal"
+            return 0
+            ;;
+        pull-request-*)
+            SEMABUILD_DEPLOY="minimal"
+            return 0
+            ;;
+    esac
+    return 1
+}
+
+semabuild_parse() {
+    echo "Parsing ${BRANCH_NAME}..."
+    SEMABUILD_BASE=`git rev-parse HEAD`
+    git submodule init data || return 1
+    git submodule update data || return 1
+    cd data || return 1
+    SEMABUILD_DATA=`git rev-parse HEAD`
+    cd "${SEMABUILD_PWD}" || return 1
+    SEMABUILD_BUILD_LAST=`curl --fail --silent "${SEMABUILD_SOURCE}/${BRANCH_NAME}/base.txt"`
+    if [ -n "${SEMABUILD_BUILD_LAST}" ]; then
+        SEMABUILD_SRC_CHANGES=`git diff --name-only HEAD ${SEMABUILD_BUILD_LAST} -- src`
+        if [ -z "${SEMABUILD_SRC_CHANGES}" ]; then SEMABUILD_DEPLOY="sync"; fi
+    fi
+    return 0
+}
+
+semabuild_setup() {
+    echo "Setting up ${BRANCH_NAME}..."
+    mkdir -pv ${SEMAPHORE_CACHE_DIR}/apt/archives/partial || return 1
+    sudo cp -ruv /var/cache/apt ${SEMAPHORE_CACHE_DIR}/apt || return 1
+    sudo rm -rfv /var/cache/apt || return 1
+    sudo ln -sv ${SEMAPHORE_CACHE_DIR}/apt /var/cache/apt || return 1
+    sudo dpkg --add-architecture i386 || return 1
+    sudo ${SEMABUILD_APT} update || return 1
+    return 0
+}
+
+semabuild_build() {
+    echo "Building ${BRANCH_NAME}..."
+    sudo ${SEMABUILD_APT} -fy install build-essential zlib1g-dev libsdl-mixer1.2-dev libsdl-image1.2-dev
+    make PLATFORM=linux64 PLATFORM_BIN=amd64 INSTDIR=${SEMABUILD_DIR}/linux/bin/amd64 CFLAGS=-m64 CXXFLAGS=-m64 LDFLAGS=-m64 -C src clean install || return 1
+    sudo ${SEMABUILD_APT} -fy install binutils-mingw-w64 g++-mingw-w64
+    make PLATFORM=crossmingw64 PLATFORM_BIN=amd64 INSTDIR=${SEMABUILD_DIR}/windows/bin/amd64 CFLAGS=-m64 CXXFLAGS=-m64 LDFLAGS=-m64 -C src clean install || return 1
+    make PLATFORM=crossmingw32 PLATFORM_BIN=x86 INSTDIR=${SEMABUILD_DIR}/windows/bin/x86 CFLAGS=-m32 CXXFLAGS=-m32 LDFLAGS=-m32 -C src clean install || return 1
+    sudo ${SEMABUILD_APT} -fy remove zlib1g-dev libsdl1.2-dev libsdl-mixer1.2-dev libsdl-image1.2-dev libpng-dev
+    sudo ${SEMABUILD_APT} -fy autoremove
+    sudo ${SEMABUILD_APT} -fy install build-essential multiarch-support g++-multilib zlib1g-dev:i386 libsdl1.2-dev:i386 libsdl-mixer1.2-dev:i386 libsdl-image1.2-dev:i386 libpng-dev:i386
+    make PLATFORM=linux32 PLATFORM_BIN=x86 INSTDIR=${SEMABUILD_DIR}/linux/bin/x86 CFLAGS=-m32 CXXFLAGS=-m32 LDFLAGS=-m32 -C src clean install || return 1
+    return 0
+}
+
+semabuild_sync() {
+    if [ -n "${SEMABUILD_BASE}" ] && [ "${SEMABUILD_BASE}" != "${SEMABUILD_BUILD_LAST}" ]; then
+        echo "Module 'base' commit updated, syncing that: ${SEMABUILD_BASE} -> ${SEMABUILD_BUILD_LAST}"
+        echo "${SEMABUILD_BASE}" > base.txt
+        ${SEMABUILD_SCP} "${SEMABUILD_DIR}/base.txt" ${SEMABUILD_TARGET}/${BRANCH_NAME}/base.txt || return 1
+    fi
+    SEMABUILD_DATA_LAST=`curl --fail --silent "${SEMABUILD_SOURCE}/${BRANCH_NAME}/data.txt"`
+    if [ -n "${SEMABUILD_DATA}" ] && [ -n "${SEMABUILD_DATA_LAST}" ] && [ "${SEMABUILD_DATA}" != "${SEMABUILD_DATA_LAST}" ]; then
+        echo "Module 'data' commit updated, syncing that: ${SEMABUILD_DATA_LAST} -> ${SEMABUILD_DATA}"
+        echo "${SEMABUILD_DATA}" > data.txt
+        ${SEMABUILD_SCP} "${SEMABUILD_DIR}/data.txt" ${SEMABUILD_TARGET}/${BRANCH_NAME}/data.txt || return 1
+    fi
+    return 0
+}
+
+semabuild_deploy() {
+    rm -fv "${SEMABUILD_DIR}/windows.zip" "${SEMABUILD_DIR}/linux.tar.gz" || return 1
+    # windows
+    cd "${SEMABUILD_DIR}/windows" || return 1
+    zip -r "${SEMABUILD_DIR}/windows.zip" . || return 1
+    # linux
+    cd "${SEMABUILD_DIR}/linux" || return 1
+    tar -zcvf "${SEMABUILD_DIR}/linux.tar.gz" . || return 1
+    # env
+    cd "${SEMABUILD_DIR}" || return 1
+    rm -rfv "${SEMABUILD_DIR}/windows" "${SEMABUILD_DIR}/linux" || return 1
+    echo "${SEMABUILD_BASE}" > "${SEMABUILD_DIR}/bins.txt"
+    echo "${SEMABUILD_BASE}" > "${SEMABUILD_DIR}/base.txt"
+    echo "${SEMABUILD_DATA}" > "${SEMABUILD_DIR}/data.txt"
+    # deploy
+    cd "${HOME}/build" || return 1
+    ${SEMABUILD_SCP} -r "${BRANCH_NAME}" ${SEMABUILD_TARGET}/${BRANCH_NAME} || return 1
+    return 0
+}
+
+semabuild_check
+if [ $? -ne 0 ]; then
+    echo "Branch {BRANCH_NAME} is not a supported Semaphore build!"
+else
+    if [ "${SEMABUILD_DEPLOY}" = "normal" ]; then
+        semabuild_parse
+        if [ $? -ne 0 ]; then
+            echo "Failed to parse ${BRANCH_NAME}!"
+            exit 1
+        fi
+        if [ "${SEMABUILD_DEPLOY}" = "sync" ]; then
+            echo "Syncing ${BRANCH_NAME} as no source files have changed."
+            semabuild_sync
+            if [ $? -ne 0 ]; then
+                echo "Failed to sync ${BRANCH_NAME}!"
+                exit 1
             fi
             exit 0
-        else
-            echo "Source files modified, proceeding with build..."
-            echo ""
         fi
+    else
+        echo "Skipping parsing step for ${BRANCH_NAME}."
     fi
-fi
-#setup
-CMD_APT="DEBIAN_FRONTEND=noninteractive apt-get"
-mkdir -pv ${SEMAPHORE_CACHE_DIR}/apt/archives/partial
-sudo cp -ruv /var/cache/apt ${SEMAPHORE_CACHE_DIR}/apt
-sudo rm -rfv /var/cache/apt
-sudo ln -sv ${SEMAPHORE_CACHE_DIR}/apt /var/cache/apt
-sudo dpkg --add-architecture i386
-sudo ${CMD_APT} update
-#build
-sudo ${CMD_APT} -fy install build-essential zlib1g-dev libsdl-mixer1.2-dev libsdl-image1.2-dev
-make PLATFORM=linux64 PLATFORM_BIN=amd64 INSTDIR=${HOME}/build/${BRANCH_NAME}/linux/bin/amd64 CFLAGS=-m64 CXXFLAGS=-m64 LDFLAGS=-m64 -C src clean install || exit 1
-if [ "${BRANCH_NAME}" = "master" ]; then
-    sudo ${CMD_APT} -fy install binutils-mingw-w64 g++-mingw-w64
-    make PLATFORM=crossmingw64 PLATFORM_BIN=amd64 INSTDIR=${HOME}/build/${BRANCH_NAME}/windows/bin/amd64 CFLAGS=-m64 CXXFLAGS=-m64 LDFLAGS=-m64 -C src clean install || exit 1
-    make PLATFORM=crossmingw32 PLATFORM_BIN=x86 INSTDIR=${HOME}/build/${BRANCH_NAME}/windows/bin/x86 CFLAGS=-m32 CXXFLAGS=-m32 LDFLAGS=-m32 -C src clean install || exit 1
-    sudo ${CMD_APT} -fy remove zlib1g-dev libsdl1.2-dev libsdl-mixer1.2-dev libsdl-image1.2-dev libpng-dev
-    sudo ${CMD_APT} -fy autoremove
-    sudo ${CMD_APT} -fy install build-essential multiarch-support g++-multilib zlib1g-dev:i386 libsdl1.2-dev:i386 libsdl-mixer1.2-dev:i386 libsdl-image1.2-dev:i386 libpng-dev:i386
-    make PLATFORM=linux32 PLATFORM_BIN=x86 INSTDIR=${HOME}/build/${BRANCH_NAME}/linux/bin/x86 CFLAGS=-m32 CXXFLAGS=-m32 LDFLAGS=-m32 -C src clean install || exit 1
-    cd ${HOME}/build/${BRANCH_NAME} || exit 1
-    rm -fv windows.zip linux.tar.gz || exit 1
-    cd windows || exit 1
-    zip -r ../windows.zip . || exit 1
-    cd ../linux || exit 1
-    tar -zcvf ../linux.tar.gz . || exit 1
-    cd .. || exit 1
-    echo "${BASE_COMMIT}" > bins.txt
-    echo "${BASE_COMMIT}" > base.txt
-    echo "${DATA_COMMIT}" > data.txt
-    scp -BC -i ${HOME}/.ssh/public_rsa -o StrictHostKeyChecking=no windows.zip qreeves@icculus.org:/webspace/redeclipse.net/files/devel/windows.zip
-    scp -BC -i ${HOME}/.ssh/public_rsa -o StrictHostKeyChecking=no linux.tar.gz qreeves@icculus.org:/webspace/redeclipse.net/files/devel/linux.tar.gz
-    scp -BC -i ${HOME}/.ssh/public_rsa -o StrictHostKeyChecking=no bins.txt qreeves@icculus.org:/webspace/redeclipse.net/files/devel/bins.txt
-    scp -BC -i ${HOME}/.ssh/public_rsa -o StrictHostKeyChecking=no base.txt qreeves@icculus.org:/webspace/redeclipse.net/files/devel/base.txt
-    scp -BC -i ${HOME}/.ssh/public_rsa -o StrictHostKeyChecking=no data.txt qreeves@icculus.org:/webspace/redeclipse.net/files/devel/data.txt
-    cd "${ORIGPWD}" || exit 1
+    semabuild_setup
+    if [ $? -ne 0 ]; then
+        echo "Failed to setup ${BRANCH_NAME}!"
+        exit 1
+    fi
+    semabuild_build
+    if [ $? -ne 0 ]; then
+        echo "Failed to build ${BRANCH_NAME}!"
+        exit 1
+    fi
+    if [ "${SEMABUILD_DEPLOY}" = "normal" ] || [ "${SEMABUILD_DEPLOY}" = "minimal" ]; then
+        semabuild_deploy
+        cd "${SEMABUILD_PWD}"
+        if [ $? -ne 0 ]; then
+            echo "Failed to deploy ${BRANCH_NAME}!"
+            exit 1
+        fi
+    else
+        echo "Skipping deployment step for ${BRANCH_NAME}."
+    fi
 fi
 exit 0

@@ -20,10 +20,11 @@ setlocal enableextensions enabledelayedexpansion
 :setup
     if NOT DEFINED REDECLIPSE_BRANCH (
         set REDECLIPSE_BRANCH=stable
-        if EXIST .git set REDECLIPSE_BRANCH=devel
+        if EXIST .git set REDECLIPSE_BRANCH=master
         if EXIST "%REDECLIPSE_PATH%\bin\branch.txt" set /p REDECLIPSE_BRANCH=< "%REDECLIPSE_PATH%\bin\branch.txt"
     )
-    if NOT "%REDECLIPSE_BRANCH%" == "stable" if NOT "%REDECLIPSE_BRANCH%" == "devel" (
+    if "%REDECLIPSE_BRANCH%" == "devel" set REDECLIPSE_BRANCH=master
+    if NOT "%REDECLIPSE_BRANCH%" == "stable" if NOT "%REDECLIPSE_BRANCH%" == "master" (
         echo Unsupported update branch: "%REDECLIPSE_BRANCH%"
         exit /b 0
     )
