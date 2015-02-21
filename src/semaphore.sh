@@ -15,9 +15,9 @@ semabuild_setup() {
     cd "${SEMABUILD_PWD}/data" || return 1
     SEMABUILD_DATA=`git rev-parse HEAD` || return 1
     cd "${SEMABUILD_PWD}" || return 1
-    SEMABUILD_BUILD_LAST=`curl --fail --silent "${SEMABUILD_SOURCE}/${BRANCH_NAME}/base.txt"` || return 1
+    SEMABUILD_BUILD_LAST=`curl --fail --silent "${SEMABUILD_SOURCE}/${BRANCH_NAME}/base.txt"`
     if [ -n "${SEMABUILD_BUILD_LAST}" ]; then
-        SEMABUILD_DATA_LAST=`curl --fail --silent "${SEMABUILD_SOURCE}/${BRANCH_NAME}/data.txt"` || return 1
+        SEMABUILD_DATA_LAST=`curl --fail --silent "${SEMABUILD_SOURCE}/${BRANCH_NAME}/data.txt"`
         SEMABUILD_SRC_CHANGES=`git diff --name-only HEAD ${SEMABUILD_BUILD_LAST} -- src` || return 1
         if [ -z "${SEMABUILD_SRC_CHANGES}" ]; then SEMABUILD_DEPLOY="sync"; fi
     fi
