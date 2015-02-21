@@ -51,7 +51,7 @@ semabuild_build() {
     return 0
 }
 
-semabuild_sync() 
+semabuild_sync() {
     if [ -n "${SEMABUILD_BASE}" ] && [ -n "${SEMABUILD_BASE_LAST}" ] && [ "${SEMABUILD_BASE}" != "${SEMABUILD_BUILD_LAST}" ]; then
         echo "Module 'base' commit updated, syncing that: ${SEMABUILD_BASE} -> ${SEMABUILD_BUILD_LAST}"
         echo "${SEMABUILD_BASE}" > "${SEMABUILD_DIR}/base.txt"
