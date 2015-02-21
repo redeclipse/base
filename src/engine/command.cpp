@@ -2731,7 +2731,7 @@ void substr(char *s, int *start, int *count, int *numargs)
     int len = strlen(s), offset = clamp(*start, 0, len);
     commandret->setstr(newstring(&s[offset], *numargs >= 3 ? clamp(*count, 0, len - offset) : len - offset));
 }
-COMMAND(0, substr, "siiN");
+COMMAND(0, substring, "siiN");
 
 void sublist(const char *s, int *skip, int *count, int *numargs)
 {
@@ -3267,7 +3267,7 @@ CASECOMMAND(casef, "f", float, args[0].getfloat(), args[i].type == VAL_NULL || a
 CASECOMMAND(cases, "s", const char *, args[0].getstr(), args[i].type == VAL_NULL || !strcmp(args[i].getstr(), val));
 
 ICOMMAND(0, rnd, "ii", (int *a, int *b), intret(*a - *b > 0 ? rnd(*a - *b) + *b : *b));
-ICOMMAND(0, strcmp, "ss", (char *a, char *b), intret(strcmp(a,b)==0));
+ICOMMAND(0, stringcmp, "ss", (char *a, char *b), intret(strcmp(a,b)==0));
 ICOMMAND(0, =s, "ss", (char *a, char *b), intret(strcmp(a,b)==0));
 ICOMMAND(0, !=s, "ss", (char *a, char *b), intret(strcmp(a,b)!=0));
 ICOMMAND(0, <s, "ss", (char *a, char *b), intret(strcmp(a,b)<0));
@@ -3276,11 +3276,11 @@ ICOMMAND(0, <=s, "ss", (char *a, char *b), intret(strcmp(a,b)<=0));
 ICOMMAND(0, >=s, "ss", (char *a, char *b), intret(strcmp(a,b)>=0));
 ICOMMAND(0, echo, "C", (char *s), conoutft(CON_MESG, "%s", s));
 ICOMMAND(0, error, "C", (char *s), conoutft(CON_DEBUG, "\fr%s", s));
-ICOMMAND(0, strlen, "s", (char *s), intret(strlen(s)));
-ICOMMAND(0, strcode, "si", (char *s, int *i), intret(*i > 0 ? (memchr(s, 0, *i) ? 0 : uchar(s[*i])) : uchar(s[0])));
-ICOMMAND(0, codestr, "i", (int *i), { char *s = newstring(1); s[0] = char(*i); s[1] = '\0'; stringret(s); });
-ICOMMAND(0, struni, "si", (char *s, int *i), intret(*i > 0 ? (memchr(s, 0, *i) ? 0 : cube2uni(s[*i])) : cube2uni(s[0])));
-ICOMMAND(0, unistr, "i", (int *i), { char *s = newstring(1); s[0] = uni2cube(*i); s[1] = '\0'; stringret(s); });
+ICOMMAND(0, stringlen, "s", (char *s), intret(strlen(s)));
+ICOMMAND(0, stringcode, "si", (char *s, int *i), intret(*i > 0 ? (memchr(s, 0, *i) ? 0 : uchar(s[*i])) : uchar(s[0])));
+ICOMMAND(0, codestring, "i", (int *i), { char *s = newstring(1); s[0] = char(*i); s[1] = '\0'; stringret(s); });
+ICOMMAND(0, stringuni, "si", (char *s, int *i), intret(*i > 0 ? (memchr(s, 0, *i) ? 0 : cube2uni(s[*i])) : cube2uni(s[0])));
+ICOMMAND(0, unistring, "i", (int *i), { char *s = newstring(1); s[0] = uni2cube(*i); s[1] = '\0'; stringret(s); });
 
 // some dirty hacks to get around macro expansion issues
 int rigstr(char *s, char *n)
@@ -3288,25 +3288,25 @@ int rigstr(char *s, char *n)
     char *v = strstr(s, n);
     return v ? v-s : -1;
 }
-ICOMMAND(0, strstr, "ss", (char *a, char *b), intret(rigstr(a, b)));
+ICOMMAND(0, stringstr, "ss", (char *a, char *b), intret(rigstr(a, b)));
 
 int rigcasecmp(char *s, char *n)
 {
     return strcasecmp(s, n);
 }
-ICOMMAND(0, strcasecmp, "ss", (char *a, char *b), intret(rigcasecmp(a,b)==0));
+ICOMMAND(0, stringcasecmp, "ss", (char *a, char *b), intret(rigcasecmp(a,b)==0));
 
 int rigncmp(char *s, char *n, int len)
 {
     return strncmp(s, n, len);
 }
-ICOMMAND(0, strncmp, "ssi", (char *a, char *b, int *n), intret(rigncmp(a,b,*n)==0));
+ICOMMAND(0, stringncmp, "ssi", (char *a, char *b, int *n), intret(rigncmp(a,b,*n)==0));
 
 int rigncasecmp(char *s, char *n, int len)
 {
     return strncasecmp(s, n, len);
 }
-ICOMMAND(0, strncasecmp, "ssi", (char *a, char *b, int *n), intret(rigncasecmp(a,b,*n)==0));
+ICOMMAND(0, stringncasecmp, "ssi", (char *a, char *b, int *n), intret(rigncasecmp(a,b,*n)==0));
 
 #define STRMAPCOMMAND(name, map) \
     ICOMMAND(0, name, "s", (char *s), \
@@ -3352,7 +3352,7 @@ char *rigcasestr(const char *s, const char *n)
     return ret;
 }
 
-ICOMMAND(0, strcasestr, "ss", (char *a, char *b), { char *s = rigcasestr(a, b); intret(s ? s-a : -1); });
+ICOMMAND(0, stringcasestr, "ss", (char *a, char *b), { char *s = rigcasestr(a, b); intret(s ? s-a : -1); });
 
 char *strreplace(const char *s, const char *oldval, const char *newval)
 {
@@ -3378,7 +3378,7 @@ char *strreplace(const char *s, const char *oldval, const char *newval)
     }
 }
 
-ICOMMAND(0, strreplace, "sss", (char *s, char *o, char *n), commandret->setstr(strreplace(s, o, n)));
+ICOMMAND(0, stringreplace, "sss", (char *s, char *o, char *n), commandret->setstr(strreplace(s, o, n)));
 
 void strsplice(const char *s, const char *vals, int *skip, int *count)
 {
@@ -3392,7 +3392,7 @@ void strsplice(const char *s, const char *vals, int *skip, int *count)
     p[slen - len + vlen] = '\0';
     commandret->setstr(p);
 }
-COMMAND(0, strsplice, "ssii");
+COMMAND(0, stringsplice, "ssii");
 
 struct sleepcmd
 {
