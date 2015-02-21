@@ -2726,7 +2726,7 @@ void at(tagval *args, int numargs)
 }
 COMMAND(0, at, "si1V");
 
-void substr(char *s, int *start, int *count, int *numargs)
+void substring(char *s, int *start, int *count, int *numargs)
 {
     int len = strlen(s), offset = clamp(*start, 0, len);
     commandret->setstr(newstring(&s[offset], *numargs >= 3 ? clamp(*count, 0, len - offset) : len - offset));
@@ -3380,7 +3380,7 @@ char *strreplace(const char *s, const char *oldval, const char *newval)
 
 ICOMMAND(0, stringreplace, "sss", (char *s, char *o, char *n), commandret->setstr(strreplace(s, o, n)));
 
-void strsplice(const char *s, const char *vals, int *skip, int *count)
+void stringsplice(const char *s, const char *vals, int *skip, int *count)
 {
     int slen = strlen(s), vlen = strlen(vals),
         offset = clamp(*skip, 0, slen),
