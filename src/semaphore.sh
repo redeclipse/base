@@ -1,6 +1,6 @@
 #!/bin/sh
 SEMABUILD_PWD=`pwd`
-SEMABUILD_SCP='scp -BCv -i "${HOME}/.ssh/public_rsa" -o StrictHostKeyChecking=no'
+SEMABUILD_SCP='scp -BC -i "${HOME}/.ssh/public_rsa" -o StrictHostKeyChecking=no'
 SEMABUILD_TARGET='qreeves@icculus.org:/webspace/redeclipse.net/files'
 SEMABUILD_APT='DEBIAN_FRONTEND=noninteractive apt-get'
 SEMABUILD_SOURCE="http://redeclipse.net/files"
