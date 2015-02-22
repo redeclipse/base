@@ -19,7 +19,13 @@ semabuild_setup() {
     if [ -n "${SEMABUILD_BUILD_LAST}" ]; then
         SEMABUILD_DATA_LAST=`curl --fail --silent "${SEMABUILD_SOURCE}/${BRANCH_NAME}/data.txt"`
         SEMABUILD_SRC_CHANGES=`git diff --name-only HEAD ${SEMABUILD_BUILD_LAST} -- src` || return 1
-        if [ -z "${SEMABUILD_SRC_CHANGES}" ]; then SEMABUILD_DEPLOY="sync"; fi
+        if [ -z "${SEMABUILD_SRC_CHANGES}" ]; then
+            echo "No source files have been modified"
+            SEMABUILD_DEPLOY="sync"
+        else
+            echo "Source files modified:"
+            echo "${SEMABUILD_SRC_CHANGES}"
+        fi
     fi
     rm -rfv "${SEMABUILD_BUILD}" || return 1
     mkdir -pv "${SEMABUILD_DIR}" || return 1
@@ -47,6 +53,7 @@ semabuild_build() {
 }
 
 semabuild_sync() {
+    echo "Syncing ${BRANCH_NAME} as no source files have changed."
     if [ -n "${SEMABUILD_BASE}" ] && [ -n "${SEMABUILD_BASE_LAST}" ] && [ "${SEMABUILD_BASE}" != "${SEMABUILD_BUILD_LAST}" ]; then
         echo "Module 'base' commit updated, syncing that: ${SEMABUILD_BASE} -> ${SEMABUILD_BUILD_LAST}"
         echo "${SEMABUILD_BASE}" > "${SEMABUILD_DIR}/base.txt"
@@ -87,7 +94,6 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 if [ "${SEMABUILD_DEPLOY}" = "sync" ]; then
-    echo "Syncing ${BRANCH_NAME} as no source files have changed."
     semabuild_sync
     if [ $? -ne 0 ]; then
         echo "Failed to sync ${BRANCH_NAME}!"
