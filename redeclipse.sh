@@ -102,30 +102,17 @@ redeclipse_retry() {
 }
 
 redeclipse_update() {
-    REDECLIPSE_BINVER=`cat "${REDECLIPSE_PATH}/bin/version.txt"`
     chmod +x "${REDECLIPSE_PATH}/bin/update.sh"
     REDECLIPSE_CALLED="true"
     . "${REDECLIPSE_PATH}/bin/update.sh"
     if [ $? -eq 0 ]; then
-        redeclipse_success
+        redeclipse_runit
         return $?
     else
         redeclipse_retry
         return $?
     fi
     return 0
-}
-
-redeclipse_success() {
-    if [ "${REDECLIPSE_BRANCH}" = "stable" ]; then
-        REDECLIPSE_BINNEW=`cat "${REDECLIPSE_PATH}/bin/version.txt"`
-        if [ "${REDECLIPSE_BINVER}" != "${REDECLIPSE_BINNEW}" ]; then
-            redeclipse_update
-            return $?
-        fi
-    fi
-    redeclipse_runit
-    return $?
 }
 
 redeclipse_runit() {

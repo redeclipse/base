@@ -28,20 +28,6 @@ setlocal enableextensions enabledelayedexpansion
         echo Unsupported update branch: "%REDECLIPSE_BRANCH%"
         exit /b 0
     )
-    if NOT "%REDECLIPSE_BRANCH%" == "stable" goto notstable
-    if NOT EXIST "%REDECLIPSE_PATH%\bin\version.txt" (
-        echo Unable to find %REDECLIPSE_PATH%\bin\version.txt
-        exit /b 0
-    )
-    set /p REDECLIPSE_BINVER=< "%REDECLIPSE_PATH%\bin\version.txt"
-    if "%REDECLIPSE_BINVER%" == "" (
-        echo Cannot determine current stable bins version.
-        exit /b 0
-    )
-    set REDECLIPSE_UPDATE=%REDECLIPSE_BRANCH%/%REDECLIPSE_BINVER%
-    set REDECLIPSE_TEMP=%REDECLIPSE_CACHE%\%REDECLIPSE_BRANCH%\%REDECLIPSE_BINVER%
-    goto branch
-:notstable
     set REDECLIPSE_UPDATE=%REDECLIPSE_BRANCH%
     set REDECLIPSE_TEMP=%REDECLIPSE_CACHE%\%REDECLIPSE_BRANCH%
 :branch

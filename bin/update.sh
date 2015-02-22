@@ -53,32 +53,22 @@ redeclipse_update_setup() {
         echo "Unsupported update branch: \"${REDECLIPSE_BRANCH}\""
         return 1
     fi
-    if [ "${REDECLIPSE_BRANCH}" != "stable" ]; then
-        REDECLIPSE_UPDATE="${REDECLIPSE_BRANCH}"
-        REDECLIPSE_TEMP="${REDECLIPSE_CACHE}/${REDECLIPSE_BRANCH}"
-    else
-        if ! [ -e "${REDECLIPSE_PATH}/bin/version.txt" ]; then
-            echo "Unable to find ${REDECLIPSE_PATH}/bin/version.txt"
-            return 1
-        fi
-        REDECLIPSE_BINVER=`cat "${REDECLIPSE_PATH}/bin/version.txt"`
-        if [ -z "${REDECLIPSE_BINVER}" ]; then
-            echo "Cannot determine current stable bins version."
-            return 1
-        fi
-        REDECLIPSE_UPDATE="${REDECLIPSE_BRANCH}/${REDECLIPSE_BINVER}"
-        REDECLIPSE_TEMP="${REDECLIPSE_CACHE}/${REDECLIPSE_BRANCH}/${REDECLIPSE_BINVER}"
-    fi
+    REDECLIPSE_UPDATE="${REDECLIPSE_BRANCH}"
+    REDECLIPSE_TEMP="${REDECLIPSE_CACHE}/${REDECLIPSE_BRANCH}"
     case "${REDECLIPSE_TARGET}" in
         windows)
             REDECLIPSE_BLOB="zipball"
             REDECLIPSE_ARCHIVE="windows.zip"
             REDECLIPSE_ARCHEXT="zip"
             ;;
-        *)
+        linux)
             REDECLIPSE_BLOB="tarball"
             REDECLIPSE_ARCHIVE="linux.tar.gz"
             REDECLIPSE_ARCHEXT="tar.gz"
+            ;;
+        *)
+            echo "Unsupported update target: ${REDECLIPSE_SYSTEM}"
+            return 1
             ;;
     esac
     redeclipse_update_branch

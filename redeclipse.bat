@@ -45,14 +45,13 @@ setlocal enableextensions enabledelayedexpansion
     set REDECLIPSE_RETRY=true
     echo Retrying...
 :update
-    set /p REDECLIPSE_BINVER=< "%REDECLIPSE_PATH%\bin\version.txt"
     call "%REDECLIPSE_PATH%\bin\update.bat" && (
         for %%a in ("%REDECLIPSE_SCRIPT%") do set REDECLIPSE_SCRIPT_NOW=%%~ta
         if NOT "!REDECLIPSE_SCRIPT_NOW!" == "!REDECLIPSE_SCRIPT_TIME!" (
-            call :success "%REDECLIPSE_SCRIPT%"
+            call :runit "%REDECLIPSE_SCRIPT%"
             exit /b 0
         )
-        goto success
+        goto runit
     ) || (
         for %%a in ("%REDECLIPSE_SCRIPT%") do set REDECLIPSE_SCRIPT_NOW=%%~ta
         if NOT "!REDECLIPSE_SCRIPT_NOW!" == "!REDECLIPSE_SCRIPT_TIME!" (
@@ -61,10 +60,6 @@ setlocal enableextensions enabledelayedexpansion
         )
         goto retry
     )
-:success
-    if NOT "%REDECLIPSE_BRANCH%" == "stable" goto runit
-    set /p REDECLIPSE_BINNEW=< "%REDECLIPSE_PATH%\bin\version.txt"
-    if NOT "%REDECLIPSE_BINVER%" == "%REDECLIPSE_BINNEW%" goto update
 :runit
     if EXIST "%REDECLIPSE_PATH%\bin\%REDECLIPSE_ARCH%\%REDECLIPSE_BINARY%%REDECLIPSE_SUFFIX%" (
         pushd "%REDECLIPSE_PATH%" || goto error
