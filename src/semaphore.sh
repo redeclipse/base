@@ -37,13 +37,16 @@ semabuild_setup() {
         echo "Unable to determine a proper ancestor hash!"
         return 1
     fi
-    SEMABUILD_SRC_CHANGES=`git diff --name-only HEAD ${SEMABUILD_SRC_HASH} -- src` || return 1
-    if [ -z "${SEMABUILD_SRC_CHANGES}" ]; then
-        echo "No source files have been modified"
-        SEMABUILD_DEPLOY="sync"
-    else
-        echo "Source files modified:"
-        echo "${SEMABUILD_SRC_CHANGES}"
+    SEMABUILD_BINS_LAST=`curl --fail --silent "${SEMABUILD_SOURCE}/${BRANCH_NAME}/bins.txt"`
+    if [ -n "${SEMABUILD_BINS_LAST}" ]; then
+        SEMABUILD_SRC_CHANGES=`git diff --name-only HEAD ${SEMABUILD_SRC_HASH} -- src` || return 1
+        if [ -z "${SEMABUILD_SRC_CHANGES}" ]; then
+            echo "No source files have been modified"
+            SEMABUILD_DEPLOY="sync"
+        else
+            echo "Source files modified:"
+            echo "${SEMABUILD_SRC_CHANGES}"
+        fi
     fi
     return 0
 }
@@ -75,7 +78,7 @@ semabuild_sync() {
         echo "${SEMABUILD_BASE}" > "${SEMABUILD_DIR}/base.txt"
     fi
     if [ -n "${SEMABUILD_DATA}" ] && [ "${SEMABUILD_DATA}" != "${SEMABUILD_DATA_LAST}" ]; then
-        echo "Module 'data' commit updated, syncing that: ${SEMABUILD_DATA_LAST} -> ${SEMABUILD_DATA}"
+        echo "Module 'data' commit updated, syncing that: ${SEMABUILD_DATA} -> ${SEMABUILD_DATA_LAST}"
         echo "${SEMABUILD_DATA}" > "${SEMABUILD_DIR}/data.txt"
     fi
     if [ "${BRANCH_NAME}" != "master" ]; then
@@ -116,7 +119,7 @@ semabuild_deploy() {
 semabuild_send() {
     echo "Sending ${BRANCH_NAME}..."
     cd "${SEMABUILD_BUILD}" || return 1
-    if [ -a "${BRANCH_NAME}" ]; then
+    if [ -e "${BRANCH_NAME}" ]; then
         ${SEMABUILD_SCP} -r "${BRANCH_NAME}" "${SEMABUILD_TARGET}" || return 1
     else
         echo "Failed to send ${BRANCH_NAME} as the folder doesn't exist!"
