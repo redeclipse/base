@@ -611,7 +611,7 @@ namespace projs
                 }
                 if(ricochet && !proj.limited && !WK(proj.flags))
                 {
-                    int mag = int(proj.vel.magnitude()), vol = int(ceilf(clamp(mag*2, 10, 255)*proj.curscale));
+                    int vol = clamp(int(proj.vel.magnitude()*proj.curscale)*2, 0, 255);
                     if(vol > 0) playsound(WSND2(proj.weap, WS(proj.flags), S_W_BOUNCE), proj.o, NULL, 0, vol);
                 }
                 break;
@@ -622,22 +622,25 @@ namespace projs
                 if(game::nogore || game::bloodscale > 0)
                 {
                     adddecal(DECAL_BLOOD, proj.o, proj.norm, proj.radius*clamp(proj.vel.magnitude()/2, 1.f, 4.f), bvec(125, 255, 255));
-                    int mag = int(proj.vel.magnitude()), vol = int(ceilf(clamp(mag*2, 10, 255)*proj.curscale));
-                    if(vol) playsound(S_SPLOSH, proj.o, NULL, 0, vol);
+                    int vol = clamp(int(proj.vel.magnitude()*proj.curscale)*2, 0, 255);
+                    if(vol > 0) playsound(S_SPLOSH, proj.o, NULL, 0, vol);
                     break;
                 } // otherwise fall through
             }
             case PRJ_DEBRIS: case PRJ_VANITY:
             {
-                int mag = int(proj.vel.magnitude()), vol = int(ceilf(clamp(mag*2, 10, 255)*proj.curscale));
-                if(proj.projtype == PRJ_VANITY) vol /= 2;
-                if(vol) playsound(S_DEBRIS, proj.o, NULL, 0, vol);
+                int vol = clamp(int(proj.vel.magnitude()*proj.curscale)*2, 0, 255);
+                if(vol > 0)
+                {
+                    if(proj.projtype == PRJ_VANITY) vol /= 2;
+                    playsound(S_DEBRIS, proj.o, NULL, 0, vol);
+                }
                 break;
             }
             case PRJ_EJECT: case PRJ_AFFINITY:
             {
-                int mag = int(proj.vel.magnitude()), vol = int(ceilf(clamp(mag*3, proj.projtype == PRJ_AFFINITY ? 60 : 10, 255)*proj.curscale));
-                if(vol) playsound(proj.projtype == PRJ_EJECT ? int(S_SHELL) : int(S_BOUNCE), proj.o, NULL, 0, vol);
+                int vol = clamp(int(proj.vel.magnitude()*proj.curscale)*3, proj.projtype == PRJ_AFFINITY ? 32 : 0, 255);
+                if(vol > 0) playsound(proj.projtype == PRJ_EJECT ? int(S_SHELL) : int(S_BOUNCE), proj.o, NULL, 0, vol);
                 break;
             }
             default: break;
@@ -1152,7 +1155,7 @@ namespace projs
 
         if(weaptype[weap].sound >= 0 && (weap != W_MELEE || !(WS(flags))))
         {
-            int slot = WSNDF(weap, WS(flags)), vol = int(ceilf(255*skew));
+            int slot = WSNDF(weap, WS(flags)), vol = clamp(int(ceilf(255*skew)), 0, 255);
             if(slot >= 0 && vol > 0)
             {
                 if(weap == W_FLAMER && !(WS(flags)))
@@ -1342,14 +1345,14 @@ namespace projs
                 float trans = fadeweap(proj)*WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags));
                 if(!proj.limited && !WK(proj.flags))// && proj.weap != W_MELEE)
                 {
-                    int vol = int(ceilf(255*proj.curscale));
+                    int vol = clamp(int(ceilf(255*proj.curscale)), 0, 255);
                     if(W2(proj.weap, cooktime, WS(proj.flags))) switch(W2(proj.weap, cooked, WS(proj.flags)))
                     {
-                        case 4: case 5: vol = 10+int(245*(1.f-proj.lifespan)*proj.lifesize*proj.curscale); break; // longer
-                        case 1: case 2: case 3: default: vol = 10+int(245*proj.lifespan*proj.lifesize*proj.curscale); break; // shorter
+                        case 4: case 5: vol = clamp(10+int(245*(1.f-proj.lifespan)*proj.lifesize*proj.curscale), 0, 255); break; // longer
+                        case 1: case 2: case 3: default: vol = clamp(10+int(245*proj.lifespan*proj.lifesize*proj.curscale), 0, 255); break; // shorter
                     }
                     if(issound(proj.schan)) sounds[proj.schan].vol = vol;
-                    else if(vol) playsound(WSND2(proj.weap, WS(proj.flags), S_W_TRANSIT), proj.o, &proj, SND_LOOP, vol, -1, -1, &proj.schan);
+                    else if(vol > 0) playsound(WSND2(proj.weap, WS(proj.flags), S_W_TRANSIT), proj.o, &proj, SND_LOOP, vol, -1, -1, &proj.schan);
                 }
                 int type = WF(WK(proj.flags), proj.weap, parttype, WS(proj.flags));
                 switch(type)
@@ -1594,12 +1597,12 @@ namespace projs
             {
                 updatetargets(proj, 2);
                 if(proj.projcollide&COLLIDE_PROJ) collideprojs.removeobj(&proj);
-                int vol = int(255*proj.curscale), type = WF(WK(proj.flags), proj.weap, parttype, WS(proj.flags)), len = W2(proj.weap, partfade, WS(proj.flags));
+                int vol = clamp(int(255*proj.curscale), 0, 255), type = WF(WK(proj.flags), proj.weap, parttype, WS(proj.flags)), len = W2(proj.weap, partfade, WS(proj.flags));
                 if(!proj.limited) switch(type)
                 {
                     case W_PISTOL:
                     {
-                        vol = int(vol*(1.f-proj.lifespan));
+                        vol = clamp(int(vol*(1.f-proj.lifespan)), 0, 255);
                         part_create(PART_SMOKE_LERP, len*2, proj.o, 0x999999, WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*proj.curscale, 0.5f*WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)), -20);
                         float expl = WX(WK(proj.flags), proj.weap, explode, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize);
                         if(expl > 0)
@@ -1645,7 +1648,7 @@ namespace projs
                     }
                     case W_SHOTGUN: case W_SMG:
                     {
-                        vol = int(vol*(1.f-proj.lifespan));
+                        vol = clamp(int(vol*(1.f-proj.lifespan)), 0, 255);
                         part_splash(PART_SPARK, type == W_SHOTGUN ? 5 : 3, len*2, proj.o, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*proj.curscale*0.5f, WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)), 1, 0, 16, 15);
                         float expl = WX(WK(proj.flags), proj.weap, explode, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize);
                         if(expl > 0)
@@ -1772,18 +1775,18 @@ namespace projs
         {
             if(chk&1 && !proj.limited && !WK(proj.flags))// && proj.weap != W_MELEE)
             {
-                int vol = int(ceilf(48*proj.curscale)), snd = S_EXTINGUISH;
+                int vol = clamp(int(ceilf(48*proj.curscale)), 0, 255), snd = S_EXTINGUISH;
                 float size = max(proj.radius, 1.f);
                 if(proj.projtype == PRJ_SHOT && isweap(proj.weap))
                 {
                     snd = WSND2(proj.weap, WS(proj.flags), S_W_EXTINGUISH);
-                    vol = 10+int(245*proj.lifespan*proj.lifesize*proj.curscale);
+                    vol = clamp(10+int(245*proj.lifespan*proj.lifesize*proj.curscale), 0, 255);
                     float expl = WX(WK(proj.flags), proj.weap, explode, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize);
                     if(expl > 0) size *= expl*1.5f;
                     else size *= 2.5f;
                 }
                 else size *= 2.5f;
-                if(vol) playsound(snd, proj.o, NULL, 0, vol);
+                if(vol > 0) playsound(snd, proj.o, NULL, 0, vol);
                 part_create(PART_SMOKE, 500, proj.o, 0xAAAAAA, max(size, 1.5f), 1, -10);
                 proj.limited = true;
                 if(proj.projtype == PRJ_DEBRIS) proj.light.material[0] = bvec(255, 255, 255);
