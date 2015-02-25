@@ -1124,7 +1124,7 @@ void queryreflections()
     glFlush();
 }
 
-VAR(IDF_PERSIST, maxreflect, 1, 1, 8);
+VAR(IDF_PERSIST, maxreflect, 1, 2, 8);
 
 int refracting = 0, refractfog = 0;
 bvec refractcolor(0, 0, 0);
