@@ -69,7 +69,7 @@ redeclipse_setup() {
         REDECLIPSE_BRANCH="inplace"
     fi
     if [ -z "${REDECLIPSE_HOME+isset}" ] && [ "${REDECLIPSE_BRANCH}" != "stable" ] && [ "${REDECLIPSE_BRANCH}" != "inplace" ]; then REDECLIPSE_HOME="home"; fi
-    if [ -n "${REDECLIPSE_HOME+isset}" ]; then REDECLIPSE_OPTIONS='"-h${REDECLIPSE_HOME}" ${REDECLIPSE_OPTIONS}'; fi
+    if [ -n "${REDECLIPSE_HOME+isset}" ]; then REDECLIPSE_OPTIONS="-h${REDECLIPSE_HOME} ${REDECLIPSE_OPTIONS}"; fi
     redeclipse_check
     return $?
 }

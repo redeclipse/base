@@ -7,8 +7,6 @@ CXXFLAGS= -O3 -fomit-frame-pointer -ffast-math
 override CXXFLAGS+= -Wall -fsigned-char -fno-exceptions -fno-rtti
 
 PLATFORM= $(shell gcc -dumpmachine)
-PLATFORM_BIN=
-BIN_SUFFIX=
 
 ifeq (,$(PLATFORM_BIN))
 ifneq (,$(findstring arm,$(PLATFORM)))
@@ -60,6 +58,7 @@ CP=cp
 MKDIR=mkdir -p
 
 ifneq (,$(findstring mingw,$(PLATFORM)))
+APPMODIFIER=_windows
 BIN_SUFFIX=.exe
 WINDRES=windres
 WINDRES_TEMP:=$(WINDRES)
@@ -74,11 +73,14 @@ STD_LIBS= -static-libgcc -static-libstdc++
 CLIENT_INCLUDES= $(INCLUDES) -Iinclude
 CLIENT_LIBS= -mwindows $(STD_LIBS) -L$(INSTDIR) -L$(WINLIB) -lSDL -lSDL_image -lSDL_mixer -lzlib1 -lopengl32 -lenet -lws2_32 -lwinmm
 else
+APPMODIFIER=
 ifneq (,$(findstring linux,$(PLATFORM)))
 BIN_SUFFIX=_linux
 else
 ifneq (,$(findstring bsd,$(PLATFORM)))
 BIN_SUFFIX=_bsd
+else
+BIN_SUFFIX=_native
 endif
 endif
 CLIENT_INCLUDES= $(INCLUDES) -I/usr/X11R6/include `sdl-config --cflags`
@@ -202,25 +204,25 @@ $(filter game/%,$(CLIENT_OBJS)): $(filter game/%,$(CLIENT_PCH))
 
 $(SERVER_OBJS): CXXFLAGS += $(SERVER_INCLUDES)
 
-$(APPCLIENT).exe: $(CLIENT_OBJS)
+$(APPCLIENT)_windows$(BIN_SUFFIX): $(CLIENT_OBJS)
 	$(WINDRES) -i $(APPNAME).rc -J rc -o $(APPNAME).res -O coff
 	$(CXX) $(CXXFLAGS) -o $@ $(APPNAME).res $(CLIENT_OBJS) $(CLIENT_LIBS)
 
-$(APPSERVER).exe: $(SERVER_OBJS)
+$(APPSERVER)_windows$(BIN_SUFFIX): $(SERVER_OBJS)
 	$(WINDRES) -i $(APPNAME).rc -J rc -o $(APPNAME).res -O coff
 	$(CXX) $(CXXFLAGS) -o $@ $(APPNAME).res $(SERVER_OBJS) $(SERVER_LIBS)
 
-$(APPCLIENT): $(LIBENET) $(CLIENT_OBJS)
+$(APPCLIENT)$(BIN_SUFFIX): $(LIBENET) $(CLIENT_OBJS)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(CLIENT_OBJS) $(CLIENT_LIBS)
 
-$(APPSERVER): $(LIBENET) $(SERVER_OBJS)
+$(APPSERVER)$(BIN_SUFFIX): $(LIBENET) $(SERVER_OBJS)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(SERVER_OBJS) $(SERVER_LIBS)
 
-client: $(APPCLIENT)$(BIN_SUFFIX)
+client: $(APPCLIENT)$(APPMODIFIER)$(BIN_SUFFIX)
 
-server: $(APPSERVER)$(BIN_SUFFIX)
+server: $(APPSERVER)$(APPMODIFIER)$(BIN_SUFFIX)
 
-$(INSTDIR)/%$(BIN_SUFFIX): %$(BIN_SUFFIX)
+$(INSTDIR)/%$(BIN_SUFFIX): %$(APPMODIFIER)$(BIN_SUFFIX)
 	$(MKDIR) $(INSTDIR)
 	$(CP) $< $@
 ifneq (,$(STRIP))
