@@ -9,7 +9,6 @@ redeclipse_path() {
 redeclipse_init() {
     if [ -z "${REDECLIPSE_BINARY+isset}" ]; then REDECLIPSE_BINARY="redeclipse"; fi
     REDECLIPSE_SUFFIX=""
-    REDECLIPSE_OPTIONS=""
     REDECLIPSE_MAKE="make"
 }
 
