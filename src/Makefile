@@ -15,11 +15,7 @@ else
 ifneq (,$(findstring 64,$(PLATFORM)))
 PLATFORM_BIN=amd64
 else
-ifneq (,$(findstring 86,$(PLATFORM)))
 PLATFORM_BIN=x86
-else
-PLATFORM_BIN=native
-endif
 endif
 endif
 endif
