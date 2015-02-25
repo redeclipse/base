@@ -26,7 +26,9 @@ endif
 endif
 endif
 
+ifeq (,$(INSTDIR))
 INSTDIR=../bin/$(PLATFORM_BIN)
+endif
 
 TOOLSET_PREFIX=
 ifneq (,$(findstring cross,$(PLATFORM)))
