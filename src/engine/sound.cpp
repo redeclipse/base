@@ -483,7 +483,6 @@ void updatesounds()
 int playsound(int n, const vec &pos, physent *d, int flags, int vol, int maxrad, int minrad, int *hook, int ends, int *oldhook)
 {
     if(nosound || !mastervol || !soundvol || ((flags&SND_MAP || n >= S_GAMESPECIFIC) && client::waiting(true)) || (!d && !insideworld(pos))) return -1;
-
     vector<soundslot> &soundset = flags&SND_MAP ? mapsounds : gamesounds;
 
     if(soundset.inrange(n))
@@ -498,7 +497,7 @@ int playsound(int n, const vec &pos, physent *d, int flags, int vol, int maxrad,
             oldhook = NULL;
 
         vec o = d ? game::camerapos(d) : pos;
-        int cvol = 0, cpan = 0, v = clamp(vol, flags&SND_CLAMPED ? 64 : 0, 255),
+        int cvol = 0, cpan = 0, v = clamp(vol >= 0 ? vol : 255, flags&SND_CLAMPED ? 64 : 0, 255),
             x = maxrad > 0 ? maxrad : (flags&SND_CLAMPED ? getworldsize() : (slot->maxrad > 0 ? slot->maxrad : soundmaxrad)),
             y = minrad >= 0 ? minrad : (flags&SND_CLAMPED ? 32 : (slot->minrad >= 0 ? slot->minrad : soundminrad)),
             mat = lookupmaterial(o);
