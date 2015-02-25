@@ -358,9 +358,9 @@ void checkpings()
         si->attr.shrink(0);
         loopj(numattr) si->attr.add(getint(p));
         getstring(text, p);
-        filtertext(si->map, text, false);
+        filterstring(si->map, text, false);
         getstring(text, p);
-        filtertext(si->sdesc, text);
+        filterstring(si->sdesc, text);
         si->players.deletearrays();
         si->handles.deletearrays();
         loopi(si->numplayers)

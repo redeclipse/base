@@ -234,11 +234,11 @@ static const char *debugline(const char *p, const char *fmt)
         if(!end) end = line + strlen(line);
         if(p >= line && p <= end)
         {
-            static string buf;
+            static bigstring buf;
             char color[] = { '\0', '\0', '\0' };
             if(fmt[0] == '\f') { memcpy(color, fmt, 2); fmt += strlen(color); }
-            if(sourcefile) formatstring(buf)("%s%s:%d: %s", color, sourcefile, num, fmt);
-            else formatstring(buf)("%s%d: %s", color, num, fmt);
+            if(sourcefile) formatbigstring(buf)("%s%s:%d: %s", color, sourcefile, num, fmt);
+            else formatbigstring(buf)("%s%d: %s", color, num, fmt);
             return buf;
         }
         if(!*end) break;
@@ -280,7 +280,7 @@ static void debugcode(const char *fmt, ...)
 {
     if(nodebug) return;
 
-    defvformatstring(msg, fmt, fmt);
+    defvformatbigstring(msg, fmt, fmt);
     conoutft(CON_MESG, "%s", msg);
 
     debugalias();
@@ -292,7 +292,7 @@ static void debugcodeline(const char *p, const char *fmt, ...)
 {
     if(nodebug) return;
 
-    defvformatstring(msg, fmt, debugline(p, fmt));
+    defvformatbigstring(msg, fmt, debugline(p, fmt));
     conoutft(CON_MESG, "%s", msg);
 
     debugalias();
@@ -2748,7 +2748,7 @@ ICOMMAND(0, stripcolors, "s", (char *s),
 {
     size_t len = strlen(s);
     char *d = newstring(len);
-    filtertext(d, s, false, true, true, false, len);
+    filterstring(d, s, false, true, true, false, len);
     stringret(d);
 });
 

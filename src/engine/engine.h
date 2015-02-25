@@ -492,7 +492,7 @@ extern const char *getkeyname(int code);
 extern int findkeycode(char *key);
 
 extern int uimillis, commandmillis,  commandpos, commandcolour, completeoffset, completesize;
-extern string commandbuf;
+extern bigstring commandbuf;
 extern char *commandaction, *commandicon;
 extern bool fullconsole;
 // main

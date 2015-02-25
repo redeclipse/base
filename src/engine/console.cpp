@@ -5,16 +5,14 @@
 reversequeue<cline, MAXCONLINES> conlines;
 
 int commandmillis = -1;
-string commandbuf;
+bigstring commandbuf;
 char *commandaction = NULL, *commandicon = NULL;
 enum { CF_COMPLETE = 1<<0, CF_EXECUTE = 1<<1, CF_MESSAGE = 1<<2 };
 int commandflags = 0, commandpos = -1, commandcolour = 0;
 
-#define CONSTRLEN 512
-
 void conline(int type, const char *sf, int n)
 {
-    char *buf = conlines.length() >= MAXCONLINES ? conlines.remove().cref : newstring("", CONSTRLEN-1);
+    char *buf = conlines.length() >= MAXCONLINES ? conlines.remove().cref : newstring("", BIGSTRLEN-1);
     cline &cl = conlines.add();
     cl.type = type;
     cl.cref = buf;
@@ -23,19 +21,19 @@ void conline(int type, const char *sf, int n)
 
     if(n)
     {
-        copystring(cl.cref, "  ", CONSTRLEN);
-        concatstring(cl.cref, sf, CONSTRLEN);
+        copybigstring(cl.cref, "  ");
+        concatbigstring(cl.cref, sf);
         loopj(2)
         {
             int off = n+j;
             if(conlines.inrange(off))
             {
-                if(j) concatstring(conlines[off].cref, "\fs", CONSTRLEN);
-                else prependstring(conlines[off].cref, "\fS", CONSTRLEN);
+                if(j) concatbigstring(conlines[off].cref, "\fs");
+                else prependbigstring(conlines[off].cref, "\fS");
             }
         }
     }
-    else copystring(cl.cref, sf, CONSTRLEN);
+    else copybigstring(cl.cref, sf);
 }
 
 // keymap is defined externally in keymap.cfg
@@ -281,7 +279,7 @@ void inputcommand(char *init, char *action = NULL, char *icon = NULL, int colour
     commandmillis = init ? totalmillis : -totalmillis;
     SDL_EnableUNICODE(commandmillis > 0 ? 1 : 0);
     keyrepeat(commandmillis > 0);
-    copystring(commandbuf, init ? init : "");
+    copybigstring(commandbuf, init ? init : "");
     DELETEA(commandaction);
     DELETEA(commandicon);
     commandpos = -1;
@@ -388,7 +386,7 @@ struct hline
 
     void restore()
     {
-        copystring(commandbuf, buf);
+        copybigstring(commandbuf, buf);
         if(commandpos >= (int)strlen(commandbuf)) commandpos = -1;
         DELETEA(commandaction);
         DELETEA(commandicon);
@@ -772,7 +770,7 @@ static hashtable<fileskey, filesval *> completefiles;
 static hashtable<char *, filesval *> completions;
 
 int completeoffset = -1, completesize = 0;
-string lastcomplete;
+bigstring lastcomplete;
 
 void resetcomplete() { completesize = 0; }
 
@@ -834,8 +832,8 @@ void complete(char *s, const char *cmdprefix)
         int cmdlen = strlen(cmdprefix);
         if(strncmp(s, cmdprefix, cmdlen))
         {
-            defformatstring(cmd)("%s%s", cmdprefix, start);
-            copystring(s, cmd);
+            defformatbigstring(cmd)("%s%s", cmdprefix, start);
+            copybigstring(s, cmd);
         }
         start = &s[cmdlen];
     }
@@ -864,18 +862,18 @@ void complete(char *s, const char *cmdprefix)
         char *end = strchr(start, ' ');
         if(end)
         {
-            string command;
-            copystring(command, start, min(size_t(end-start+1), sizeof(command)));
+            bigstring command;
+            copybigstring(command, start, min(size_t(end-start+1), sizeof(command)));
             filesval **hasfiles = completions.access(command);
             if(hasfiles) f = *hasfiles;
         }
     }
     const char *nextcomplete = NULL;
-    string prefix;
+    bigstring prefix;
     if(f) // complete using filenames
     {
         int commandsize = strchr(start, ' ')+1-start;
-        copystring(prefix, s, min(size_t(commandsize+1+(start-s)), sizeof(prefix)));
+        copybigstring(prefix, s, min(size_t(commandsize+1+(start-s)), sizeof(prefix)));
         f->update();
         loopv(f->files)
         {
@@ -886,7 +884,7 @@ void complete(char *s, const char *cmdprefix)
     }
     else // complete using command names
     {
-        copystring(prefix, s, min(size_t(1+(start-s)), sizeof(prefix)));
+        copybigstring(prefix, s, min(size_t(1+(start-s)), sizeof(prefix)));
         enumerate(idents, ident, id,
             if((variable ? id.type == ID_VAR || id.type == ID_SVAR || id.type == ID_FVAR || id.type == ID_ALIAS: id.flags&IDF_COMPLETE) && strncmp(id.name, start, completesize)==0 &&
                strcmp(id.name, lastcomplete) > 0 && (!nextcomplete || strcmp(id.name, nextcomplete) < 0))
@@ -895,8 +893,8 @@ void complete(char *s, const char *cmdprefix)
     }
     if(nextcomplete)
     {
-        formatstring(s)("%s%s", prefix, nextcomplete);
-        copystring(lastcomplete, nextcomplete);
+        formatbigstring(s)("%s%s", prefix, nextcomplete);
+        copybigstring(lastcomplete, nextcomplete);
     }
     else
     {

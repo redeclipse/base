@@ -179,7 +179,7 @@ COMMAND(0, tabify, "si");
 
 int draw_textf(const char *fstr, int left, int top, ...)
 {
-    defvformatstring(str, top, fstr);
+    defvformatbigstring(str, top, fstr);
     return draw_text(str, left, top);
 }
 
@@ -339,8 +339,8 @@ static float icon_width(const char *name, float scale)
         { \
             if(s && end > start) \
             { \
-                string value; \
-                copystring(value, start, min(size_t(end - start + 1), sizeof(value))); \
+                bigstring value; \
+                copybigstring(value, start, min(size_t(end - start + 1), sizeof(value))); \
                 TEXTICON(value); \
             } \
             h += end-start; \
@@ -356,8 +356,8 @@ static float icon_width(const char *name, float scale)
         { \
             if(s && end > start) \
             { \
-                string value; \
-                copystring(value, start, min(size_t(end - start + 1), sizeof(value))); \
+                bigstring value; \
+                copybigstring(value, start, min(size_t(end - start + 1), sizeof(value))); \
                 TEXTKEY(value); \
             } \
             h += end-start; \
@@ -649,7 +649,7 @@ void reloadfonts()
 
 int draw_textx(const char *fstr, int left, int top, int r, int g, int b, int a, int flags, int cursor, int maxwidth, ...)
 {
-    defvformatstring(str, maxwidth, fstr);
+    defvformatbigstring(str, maxwidth, fstr);
 
     int width = 0, height = 0;
     text_bounds(str, width, height, maxwidth, flags);

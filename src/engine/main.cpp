@@ -106,7 +106,7 @@ void fatal(const char *s, ...)    // failure exit
 {
     if(++errors <= 2) // print up to one extra recursive error
     {
-        defvformatstring(msg, s, s);
+        defvformatbigstring(msg, s, s);
         if(logfile) logoutf("%s", msg);
         #ifndef WIN32
         fprintf(stderr, "%s\n", msg);
@@ -682,14 +682,14 @@ void stackdumper(unsigned int type, EXCEPTION_POINTERS *ep)
     if(!ep) fatal("unknown type");
     EXCEPTION_RECORD *er = ep->ExceptionRecord;
     CONTEXT *context = ep->ContextRecord;
-    string out, t;
-    formatstring(out)("%s Win32 Exception: 0x%x [0x%x]\n\n", versionname, er->ExceptionCode, er->ExceptionCode==EXCEPTION_ACCESS_VIOLATION ? er->ExceptionInformation[1] : -1);
+    bigstring out, t;
+    formatbigstring(out)("%s Win32 Exception: 0x%x [0x%x]\n\n", versionname, er->ExceptionCode, er->ExceptionCode==EXCEPTION_ACCESS_VIOLATION ? er->ExceptionInformation[1] : -1);
     SymInitialize(GetCurrentProcess(), NULL, TRUE);
 #ifdef _AMD64_
     STACKFRAME64 sf = {{context->Rip, 0, AddrModeFlat}, {}, {context->Rbp, 0, AddrModeFlat}, {context->Rsp, 0, AddrModeFlat}, 0};
     while(::StackWalk64(IMAGE_FILE_MACHINE_AMD64, GetCurrentProcess(), GetCurrentThread(), &sf, context, NULL, ::SymFunctionTableAccess, ::SymGetModuleBase, NULL))
     {
-        union { IMAGEHLP_SYMBOL64 sym; char symext[sizeof(IMAGEHLP_SYMBOL64) + sizeof(string)]; };
+        union { IMAGEHLP_SYMBOL64 sym; char symext[sizeof(IMAGEHLP_SYMBOL64) + sizeof(bigstring)]; };
         sym.SizeOfStruct = sizeof(sym);
         sym.MaxNameLength = sizeof(symext) - sizeof(sym);
         IMAGEHLP_LINE64 line;
@@ -701,7 +701,7 @@ void stackdumper(unsigned int type, EXCEPTION_POINTERS *ep)
     STACKFRAME sf = {{context->Eip, 0, AddrModeFlat}, {}, {context->Ebp, 0, AddrModeFlat}, {context->Esp, 0, AddrModeFlat}, 0};
     while(::StackWalk(IMAGE_FILE_MACHINE_I386, GetCurrentProcess(), GetCurrentThread(), &sf, context, NULL, ::SymFunctionTableAccess, ::SymGetModuleBase, NULL))
     {
-        union { IMAGEHLP_SYMBOL sym; char symext[sizeof(IMAGEHLP_SYMBOL) + sizeof(string)]; };
+        union { IMAGEHLP_SYMBOL sym; char symext[sizeof(IMAGEHLP_SYMBOL) + sizeof(bigstring)]; };
         sym.SizeOfStruct = sizeof(sym);
         sym.MaxNameLength = sizeof(symext) - sizeof(sym);
         IMAGEHLP_LINE line;
@@ -711,8 +711,8 @@ void stackdumper(unsigned int type, EXCEPTION_POINTERS *ep)
 #endif
         {
             char *del = strrchr(line.FileName, '\\');
-            formatstring(t)("%s - %s [%d]\n", sym.Name, del ? del + 1 : line.FileName, line.LineNumber);
-            concatstring(out, t);
+            formatbigstring(t)("%s - %s [%d]\n", sym.Name, del ? del + 1 : line.FileName, line.LineNumber);
+            concatbigstring(out, t);
         }
     }
     fatal(out);

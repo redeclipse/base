@@ -1678,15 +1678,15 @@ namespace ai
 
     void botsay(gameent *d, int flags, const char *fmt, ...)
     {
-        defvformatstring(msg, fmt, fmt);
+        defvformatbigstring(msg, fmt, fmt);
         client::addmsg(N_TEXT, "ri2s", d->clientnum, flags, msg);
     }
 
     void scanchat(gameent *d, int flags, const char *text)
     {
         if((!m_edit(game::gamemode) && !m_team(game::gamemode, game::mutators)) || flags&SAY_ACTION || d->actortype != A_PLAYER) return;
-        string msg;
-        filtertext(msg, text, true, true, true, true);
+        bigstring msg;
+        filterbigstring(msg, text, true, true, true, true);
         const int MAXWORDS = 8;
         int numargs = MAXWORDS, reply = flags&SAY_TEAM ? SAY_TEAM : SAY_NONE;
         char *w[MAXWORDS];

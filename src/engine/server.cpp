@@ -190,9 +190,9 @@ void logoutf(const char *fmt, ...)
 
 void console(int type, const char *s, ...)
 {
-    defvformatstring(sf, s, s);
-    string osf;
-    filtertext(osf, sf);
+    defvformatbigstring(sf, s, s);
+    bigstring osf;
+    filterbigstring(osf, sf);
     if(*logtimeformat) logoutf("%s %s", gettime(currenttime, logtimeformat), osf);
     else logoutf("%s", osf);
 #ifndef STANDALONE
@@ -202,14 +202,14 @@ void console(int type, const char *s, ...)
 
 void conoutft(int type, const char *s, ...)
 {
-    defvformatstring(sf, s, s);
+    defvformatbigstring(sf, s, s);
     console(type, "%s", sf);
     ircoutf(5, "%s", sf);
 }
 
 void conoutf(const char *s, ...)
 {
-    defvformatstring(sf, s, s);
+    defvformatbigstring(sf, s, s);
     conoutft(0, "%s", sf);
 }
 
@@ -217,7 +217,7 @@ VAR(0, verbose, 0, 0, 6);
 
 static void writelog(FILE *file, const char *buf)
 {
-    static uchar ubuf[512];
+    static uchar ubuf[LOGSTRLEN];
     size_t len = strlen(buf), carry = 0;
     while(carry < len)
     {
@@ -281,12 +281,12 @@ bool filterword(char *src, const char *list)
 ICOMMAND(0, filterword, "ss", (char *s, char *t),
 {
     char *d = newstring(s);
-    filtertext(d, d, t);
+    filterstring(d, d, t);
     stringret(d);
 });
 
 
-bool filtertext(char *dst, const char *src, bool newline, bool colour, bool whitespace, bool wsstrip, size_t len)
+bool filterstring(char *dst, const char *src, bool newline, bool colour, bool whitespace, bool wsstrip, size_t len)
 {
     bool filtered = false;
     size_t n = 0;
@@ -324,11 +324,15 @@ bool filtertext(char *dst, const char *src, bool newline, bool colour, bool whit
     dst[n < len ? n : len-1] = 0;
     return filtered;
 }
-
+bool filterbigstring(char *dst, const char *src, bool newline, bool colour, bool whitespace, bool wsstrip, size_t len)
+{
+    return filterstring(dst, src, newline, colour, whitespace, wsstrip, len);
+}
 ICOMMAND(0, filter, "siiiiN", (char *s, int *a, int *b, int *c, int *d, int *numargs),
 {
-    char *d = newstring(s);
-    filtertext(d, s, *numargs >= 2 ? *a>0 : true, *numargs >= 3 ? *b>0 : true, *numargs >= 4 ? *c>0 : true, *numargs >= 5 ? *d>0 : false);
+    size_t len = strlen(s);
+    char *d = newstring(len);
+    filterstring(d, s, *numargs >= 2 ? *a>0 : true, *numargs >= 3 ? *b>0 : true, *numargs >= 4 ? *c>0 : true, *numargs >= 5 ? *d>0 : false, len);
     stringret(d);
 });
 
@@ -1673,7 +1677,7 @@ void fatal(const char *s, ...)    // failure exit
 {
     if(++errors <= 2) // print up to one extra recursive error
     {
-        defvformatstring(msg, s, s);
+        defvformatbigstring(msg, s, s);
         if(logfile) logoutf("%s", msg);
 #ifndef WIN32
         fprintf(stderr, "Exiting: %s\n", msg);

@@ -40,7 +40,7 @@ GVAR(IDF_ADMIN, excepttimeout, 0, 3600000, VAR_MAX); // temporary allows last th
 
 GVAR(IDF_ADMIN, connectlock, 0, PRIV_NONE, PRIV_CREATOR);
 GVAR(IDF_ADMIN, messagelock, 0, PRIV_NONE, PRIV_CREATOR);
-GVAR(IDF_ADMIN, messagelength, 32, 128, MAXSTRLEN-1);
+GVAR(IDF_ADMIN, messagelength, 32, 128, BIGSTRLEN-1);
 GSVAR(IDF_ADMIN, censorwords, "");
 
 GVAR(IDF_ADMIN, setinfolock, 0, PRIV_NONE, PRIV_CREATOR);

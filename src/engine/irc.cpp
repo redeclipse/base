@@ -16,8 +16,8 @@ ircnet *ircfind(const char *name)
 
 void ircprintf(ircnet *n, int relay, const char *target, const char *msg, ...)
 {
-    defvformatstring(str, msg, msg);
-    string s;
+    defvformatbigstring(str, msg, msg);
+    string s = "";
     if(target && *target && strcasecmp(target, n->nick))
     {
         ircchan *c = ircfindchan(n, target);
@@ -226,7 +226,7 @@ void ircoutf(int relay, const char *msg, ...)
     string str = "";
     switch(ircfilter)
     {
-        case 2: filtertext(str, src); break;
+        case 2: filterstring(str, src); break;
         case 1: cube2irc(str, src); break;
         case 0: default: copystring(str, src); break;
     }

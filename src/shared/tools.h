@@ -133,7 +133,16 @@ static inline T clamp(T a, T b, T c)
 #define MAXSTRLEN 512 // must be at least 512 bytes to comply with rfc1459
 typedef char string[MAXSTRLEN];
 
-inline void vformatstring(char *d, const char *fmt, va_list v, int len = MAXSTRLEN) { _vsnprintf(d, len, fmt, v); d[len-1] = 0; }
+#define BIGSTRLEN 4096
+typedef char bigstring[BIGSTRLEN];
+
+inline void vformatstring(char *d, const char *fmt, va_list v, int len = MAXSTRLEN)
+{
+    _vsnprintf(d, len, fmt, v);
+    d[len-1] = 0;
+}
+inline void vformatbigstring(char *d, const char *fmt, va_list v, int len = BIGSTRLEN) { vformatstring(d, fmt, v, len); }
+
 inline char *copystring(char *d, const char *s, size_t len = MAXSTRLEN)
 {
     size_t slen = min(strlen(s)+1, len);
@@ -141,7 +150,15 @@ inline char *copystring(char *d, const char *s, size_t len = MAXSTRLEN)
     d[slen-1] = 0;
     return d;
 }
-inline char *concatstring(char *d, const char *s, size_t len = MAXSTRLEN) { size_t used = strlen(d); return used < len ? copystring(d+used, s, len-used) : d; }
+inline char *copybigstring(char *d, const char *s, size_t len = BIGSTRLEN) { return copystring(d, s, len); }
+
+inline char *concatstring(char *d, const char *s, size_t len = MAXSTRLEN)
+{
+    size_t used = strlen(d);
+    return used < len ? copystring(d+used, s, len-used) : d;
+}
+inline char *concatbigstring(char *d, const char *s, size_t len = BIGSTRLEN) { return concatstring(d, s, len); }
+
 inline char *prependstring(char *d, const char *s, size_t len = MAXSTRLEN)
 {
     size_t slen = min(strlen(s), len);
@@ -150,6 +167,7 @@ inline char *prependstring(char *d, const char *s, size_t len = MAXSTRLEN)
     d[len-1] = 0;
     return d;
 }
+inline char *prependbigstring(char *d, const char *s, size_t len = BIGSTRLEN) { return prependstring(d, s, len); }
 
 struct stringformatter
 {
@@ -174,6 +192,30 @@ struct stringformatter
 #define formatstring(d) stringformatter((char *)d)
 #define defformatstring(d) string d; formatstring(d)
 #define defvformatstring(d,last,fmt) string d; { va_list ap; va_start(ap, last); vformatstring(d, fmt, ap); va_end(ap); }
+
+struct bigstringformatter
+{
+    char *buf;
+    bigstringformatter(char *buf): buf((char *)buf) {}
+    void operator()(const char *fmt, ...) PRINTFARGS(2, 3)
+    {
+        va_list v;
+        va_start(v, fmt);
+        vformatbigstring(buf, fmt, v);
+        va_end(v);
+    }
+    void operator()(int len, const char *fmt, ...) PRINTFARGS(3, 4)
+    {
+        va_list v;
+        va_start(v, fmt);
+        vformatbigstring(buf, fmt, v, len+1);
+        va_end(v);
+    }
+};
+
+#define formatbigstring(d) bigstringformatter((char *)d)
+#define defformatbigstring(d) bigstring d; formatbigstring(d)
+#define defvformatbigstring(d,last,fmt) bigstring d; { va_list ap; va_start(ap, last); vformatbigstring(d, fmt, ap); va_end(ap); }
 
 template<size_t N> inline bool matchstring(const char *s, size_t len, const char (&d)[N])
 {

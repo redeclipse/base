@@ -2040,37 +2040,37 @@ namespace server
 
     void relayf(int r, const char *s, ...)
     {
-        defvformatstring(str, s, s);
+        defvformatbigstring(str, s, s);
         ircoutf(r, "%s", str);
 #ifdef STANDALONE
-        string ft;
-        filtertext(ft, str);
+        bigstring ft;
+        filterbigstring(ft, str);
         logoutf("%s", ft);
 #endif
     }
 
     void ancmsgft(int cn, int snd, int conlevel, const char *s, ...)
     {
-        defvformatstring(str, s, s);
+        defvformatbigstring(str, s, s);
         if(cn < 0 || allowbroadcast(cn)) sendf(cn, 1, "ri3s", N_ANNOUNCE, snd, conlevel, str);
     }
 
     void srvmsgft(int cn, int conlevel, const char *s, ...)
     {
-        defvformatstring(str, s, s);
+        defvformatbigstring(str, s, s);
         if(cn < 0 || allowbroadcast(cn)) sendf(cn, 1, "ri2s", N_SERVMSG, conlevel, str);
     }
 
     void srvmsgftforce(int cn, int conlevel, const char *s, ...)
     {
-        defvformatstring(str, s, s);
+        defvformatbigstring(str, s, s);
         if(cn < 0 || allowbroadcast(cn)) sendf(cn, 1, "ri2s", N_SERVMSG, conlevel, str);
         if(cn >= 0 && !allowbroadcast(cn)) sendf(cn, 1, "ri2s", N_SERVMSG, conlevel, str);
     }
 
     void srvmsgf(int cn, const char *s, ...)
     {
-        defvformatstring(str, s, s);
+        defvformatbigstring(str, s, s);
         if(cn < 0 || allowbroadcast(cn))
         {
             int conlevel = CON_MESG;
@@ -2086,14 +2086,14 @@ namespace server
 
     void srvoutf(int r, const char *s, ...)
     {
-        defvformatstring(str, s, s);
+        defvformatbigstring(str, s, s);
         srvmsgf(r >= 0 ? -1 : -2, "%s", str);
         relayf(abs(r), "%s", str);
     }
 
     void srvoutforce(clientinfo *ci, int r, const char *s, ...)
     {
-        defvformatstring(str, s, s);
+        defvformatbigstring(str, s, s);
         srvmsgf(r >= 0 ? -1 : -2, "%s", str);
         if(!allowbroadcast(ci->clientnum))
             sendf(ci->clientnum, 1, "ri2s", N_SERVMSG, r >= 0 ? int(CON_MESG) : int(CON_EVENT), str);
@@ -4977,7 +4977,7 @@ namespace server
                     {
                         getstring(text, p);
                         string namestr = "";
-                        filtertext(namestr, text, true, true, true, true, MAXNAMELEN);
+                        filterstring(namestr, text, true, true, true, true, MAXNAMELEN);
                         if(!*namestr) copystring(namestr, "unnamed");
                         copystring(ci->name, namestr, MAXNAMELEN+1);
                         ci->state.colour = max(getint(p), 0);
@@ -4995,7 +4995,7 @@ namespace server
                         string password = "", authname = "";
                         getstring(password, p);
                         getstring(text, p);
-                        filtertext(authname, text, true, true, true, true, 100);
+                        filterstring(authname, text, true, true, true, true, 100);
 
                         ci->state.version.get(p);
 
@@ -5610,8 +5610,8 @@ namespace server
                         }
                         cp->state.chatmillis.add(totalmillis ? totalmillis : 1);
                     }
-                    string output;
-                    copystring(output, text, G(messagelength));
+                    bigstring output;
+                    copybigstring(output, text, G(messagelength));
                     if(*(G(censorwords))) filterword(output, G(censorwords));
                     if(flags&SAY_TEAM && !m_team(gamemode, mutators)) flags &= ~SAY_TEAM;
                     sendf(-1, -1, "ri3s", N_TEXT, cp->clientnum, flags, output); // sent to negative chan for recordpacket
@@ -5625,7 +5625,7 @@ namespace server
                     if(flags&SAY_TEAM)
                     {
                         defformatstring(t)(" (to team %s)", colourteam(cp->team));
-                        concatstring(m, t);
+                        concatbigstring(m, t);
                     }
                     if(flags&SAY_ACTION) relayf(0, "\fv* %s %s", m, output);
                     else relayf(0, "\fw<%s> %s", m, output);
@@ -5670,7 +5670,7 @@ namespace server
                     defformatstring(oldname)("%s", colourname(ci));
                     getstring(text, p);
                     string namestr = "";
-                    filtertext(namestr, text, true, true, true, true, MAXNAMELEN);
+                    filterstring(namestr, text, true, true, true, true, MAXNAMELEN);
                     if(!*namestr) copystring(namestr, "unnamed");
                     if(strcmp(ci->name, namestr))
                     {
@@ -5736,7 +5736,7 @@ namespace server
                 case N_MAPVOTE:
                 {
                     getstring(text, p);
-                    filtertext(text, text);
+                    filterstring(text, text);
                     const char *s = text;
                     if(!strncasecmp(s, "maps/", 5) || !strncasecmp(s, "maps\\", 5)) s += 5;
                     int reqmode = getint(p), reqmuts = getint(p);
@@ -6313,7 +6313,7 @@ namespace server
                 {
                     getstring(text, p);
                     string authname = "";
-                    filtertext(authname, text, true, true, true, true, 100);
+                    filterstring(authname, text, true, true, true, true, 100);
                     auth::tryauth(ci, authname);
                     break;
                 }

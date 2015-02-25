@@ -26,7 +26,7 @@
 
 void hashpassword(int cn, int sessionid, const char *pwd, char *result, int maxlen)
 {
-    char buf[2*sizeof(string)];
+    char buf[2*MAXSTRLEN];
     formatstring(buf)("%d %d ", cn, sessionid);
     concatstring(buf, pwd, sizeof(buf));
     if(!hashstring(buf, result, maxlen)) *result = '\0';
@@ -35,7 +35,7 @@ void hashpassword(int cn, int sessionid, const char *pwd, char *result, int maxl
 bool checkpassword(clientinfo *ci, const char *wanted, const char *given)
 {
     string hash;
-    hashpassword(ci->clientnum, ci->sessionid, wanted, hash, sizeof(string));
+    hashpassword(ci->clientnum, ci->sessionid, wanted, hash, MAXSTRLEN);
     return !strcmp(hash, given);
 }
 

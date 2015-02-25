@@ -426,7 +426,7 @@ namespace client
         if(name && *name)
         {
             string namestr;
-            filtertext(namestr, name, true, true, true, true, MAXNAMELEN);
+            filterstring(namestr, name, true, true, true, true, MAXNAMELEN);
             if(*namestr && strcmp(game::player1->name, namestr))
             {
                 game::player1->setname(namestr);
@@ -1031,24 +1031,24 @@ namespace client
 
     void saytext(gameent *d, int flags, char *text)
     {
-        string msg;
-        filtertext(msg, text, true, colourchat ? false : true, true, true);
+        bigstring msg;
+        filterbigstring(msg, text, true, colourchat ? false : true, true, true);
         if(*filterwords) filterword(msg, filterwords);
         defformatstring(m)("%s", game::colourname(d));
         if(flags&SAY_TEAM)
         {
             defformatstring(t)(" (to team %s)", game::colourteam(d->team));
-            concatstring(m, t);
+            concatbigstring(m, t);
         }
-        string s;
-        if(flags&SAY_ACTION) formatstring(s)("\fv* %s %s", m, msg);
-        else formatstring(s)("\fw<%s> %s", m, msg);
+        bigstring s;
+        if(flags&SAY_ACTION) formatbigstring(s)("\fv* %s %s", m, msg);
+        else formatbigstring(s)("\fw<%s> %s", m, msg);
 
         int snd = S_CHAT;
         ident *wid = idents.access(flags&SAY_ACTION ? "on_action" : "on_text");
         if(wid && wid->type == ID_ALIAS && wid->getstr()[0])
         {
-            defformatstring(act)("%s %d %d %s %s %s",
+            defformatbigstring(act)("%s %d %d %s %s %s",
                 flags&SAY_ACTION ? "on_action" : "on_text", d->clientnum, flags&SAY_TEAM ? 1 : 0,
                 escapestring(game::colourname(d)), escapestring(text), escapestring(s));
             int ret = execute(act);
@@ -1063,8 +1063,8 @@ namespace client
     {
         if(!waiting(false) && !client::demoplayback)
         {
-            string output;
-            copystring(output, text, messagelength);
+            bigstring output;
+            copybigstring(output, text, messagelength);
             if(flags&SAY_TEAM && !m_team(game::gamemode, game::mutators))
                 flags &= ~SAY_TEAM;
             addmsg(N_TEXT, "ri2s", game::player1->clientnum, flags, output);
@@ -1973,7 +1973,7 @@ namespace client
                     loopk(lw) lweaps.add(getint(p));
                     if(!d) break;
                     string namestr = "";
-                    filtertext(namestr, text, true, true, true, true, MAXNAMELEN);
+                    filterstring(namestr, text, true, true, true, true, MAXNAMELEN);
                     if(!*namestr) copystring(namestr, "unnamed");
                     if(strcmp(d->name, namestr))
                     {
@@ -2006,7 +2006,7 @@ namespace client
                     int colour = getint(p), model = getint(p), team = clamp(getint(p), int(T_NEUTRAL), int(T_ENEMY)), priv = getint(p);
                     getstring(text, p);
                     string namestr = "";
-                    filtertext(namestr, text, true, true, true, true, MAXNAMELEN);
+                    filterstring(namestr, text, true, true, true, true, MAXNAMELEN);
                     if(!*namestr) copystring(namestr, "unnamed");
                     string vanity = "";
                     getstring(vanity, p);
@@ -2641,7 +2641,7 @@ namespace client
                     int vn = getint(p);
                     gameent *v = game::getclient(vn);
                     getstring(text, p);
-                    filtertext(text, text);
+                    filterstring(text, text);
                     int reqmode = getint(p), reqmuts = getint(p);
                     if(!v) break;
                     vote(v, text, reqmode, reqmuts);
