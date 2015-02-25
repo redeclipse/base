@@ -23,9 +23,9 @@ redeclipse_setup() {
                 REDECLIPSE_TARGET="linux"
                 ;;
             FreeBSD)
-                REDECLIPSE_SUFFIX="_freebsd"
+                REDECLIPSE_SUFFIX="_bsd"
                 REDECLIPSE_TARGET="bsd"
-                REDECLIPSE_BRANCH="source" # we don't have binaries for BSD yet sorry
+                REDECLIPSE_BRANCH="source" # we don't have binaries for bsd yet sorry
                 ;;
             MINGW*)
                 REDECLIPSE_SUFFIX=".exe"
@@ -51,9 +51,11 @@ redeclipse_setup() {
             x86_64|[Aa][Mm][Dd]64)
                 REDECLIPSE_ARCH="amd64"
                 ;;
+            arm|armv*)
+                REDECLIPSE_ARCH="arm"
+                ;;
             *)
-                echo "Unsupported architecture: ${REDECLIPSE_MACHINE}"
-                return 1
+                REDECLIPSE_ARCH="native"
                 ;;
         esac
     fi
@@ -135,8 +137,12 @@ redeclipse_runit() {
             redeclipse_begin
             return $?
         fi
-        if [ "${REDECLIPSE_ARCH}" != "x86" ]; then
+        if [ "${REDECLIPSE_ARCH}" = "amd64" ]; then
             REDECLIPSE_ARCH="x86"
+            redeclipse_runit
+            return $?
+        elif [ "${REDECLIPSE_ARCH}" = "x86" ]; then
+            REDECLIPSE_ARCH="native"
             redeclipse_runit
             return $?
         fi

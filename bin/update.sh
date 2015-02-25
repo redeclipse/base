@@ -32,7 +32,7 @@ redeclipse_update_setup() {
                 ;;
             FreeBSD)
                 REDECLIPSE_TARGET="bsd"
-                REDECLIPSE_BRANCH="source" # we don't have binaries for BSD yet sorry
+                REDECLIPSE_BRANCH="source" # we don't have binaries for bsd yet sorry
                 ;;
             MINGW*)
                 REDECLIPSE_TARGET="windows"

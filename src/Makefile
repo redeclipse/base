@@ -8,18 +8,25 @@ override CXXFLAGS+= -Wall -fsigned-char -fno-exceptions -fno-rtti
 
 PLATFORM= $(shell gcc -dumpmachine)
 PLATFORM_BIN=
-PLATFORM_SUFFIX=
 BIN_SUFFIX=
 
-ifneq (,$(PLATFORM_BIN))
-INSTDIR=../bin/$(PLATFORM_BIN)
-ifneq (,$(findstring linux,$(PLATFORM)))
-PLATFORM_SUFFIX=_linux
-endif
+ifeq (,$(PLATFORM_BIN))
+ifneq (,$(findstring arm,$(PLATFORM)))
+PLATFORM_BIN=arm
 else
-INSTDIR=../bin
-PLATFORM_SUFFIX=_native
+ifneq (,$(findstring 64,$(PLATFORM)))
+PLATFORM_BIN=amd64
+else
+ifneq (,$(findstring 86,$(PLATFORM)))
+PLATFORM_BIN=x86
+else
+PLATFORM_BIN=native
 endif
+endif
+endif
+endif
+
+INSTDIR=../bin/$(PLATFORM_BIN)
 
 TOOLSET_PREFIX=
 ifneq (,$(findstring cross,$(PLATFORM)))
@@ -52,25 +59,26 @@ MKDIR=mkdir -p
 
 ifneq (,$(findstring mingw,$(PLATFORM)))
 BIN_SUFFIX=.exe
-PLATFORM_SUFFIX=
 WINDRES=windres
 WINDRES_TEMP:=$(WINDRES)
+WINLIB=lib/$(PLATFORM_BIN)
 override WINDRES=$(TOOLSET_PREFIX)$(WINDRES_TEMP)
 ifneq (,$(findstring 64,$(PLATFORM)))
-WINLIB=lib/amd64
-WINBIN=../bin/amd64
-INSTDIR=../bin/amd64
 override WINDRES+= -F pe-x86-64
 else
-WINLIB=lib/x86
-WINBIN=../bin/x86
-INSTDIR=../bin/x86
 override WINDRES+= -F pe-i386
 endif
 STD_LIBS= -static-libgcc -static-libstdc++
 CLIENT_INCLUDES= $(INCLUDES) -Iinclude
-CLIENT_LIBS= -mwindows $(STD_LIBS) -L$(WINBIN) -L$(WINLIB) -lSDL -lSDL_image -lSDL_mixer -lzlib1 -lopengl32 -lenet -lws2_32 -lwinmm
+CLIENT_LIBS= -mwindows $(STD_LIBS) -L$(INSTDIR) -L$(WINLIB) -lSDL -lSDL_image -lSDL_mixer -lzlib1 -lopengl32 -lenet -lws2_32 -lwinmm
 else
+ifneq (,$(findstring linux,$(PLATFORM)))
+BIN_SUFFIX=_linux
+else
+ifneq (,$(findstring bsd,$(PLATFORM)))
+BIN_SUFFIX=_bsd
+endif
+endif
 CLIENT_INCLUDES= $(INCLUDES) -I/usr/X11R6/include `sdl-config --cflags`
 CLIENT_LIBS= -Lenet -lenet -L/usr/X11R6/lib -lX11 `sdl-config --libs` -lSDL_image -lSDL_mixer -lz -lGL
 endif
@@ -144,7 +152,7 @@ CLIENT_PCH= shared/cube.h.gch engine/engine.h.gch
 
 ifneq (,$(findstring mingw,$(PLATFORM)))
 SERVER_INCLUDES= -DSTANDALONE $(INCLUDES) -Iinclude
-SERVER_LIBS= -mwindows $(STD_LIBS) -L$(WINBIN) -L$(WINLIB) -lzlib1 -lenet -lws2_32 -lwinmm
+SERVER_LIBS= -mwindows $(STD_LIBS) -L$(INSTDIR) -L$(WINLIB) -lzlib1 -lenet -lws2_32 -lwinmm
 else
 SERVER_INCLUDES= -DSTANDALONE $(INCLUDES)
 SERVER_LIBS= -Lenet -lenet -lz
@@ -210,16 +218,16 @@ client: $(APPCLIENT)$(BIN_SUFFIX)
 
 server: $(APPSERVER)$(BIN_SUFFIX)
 
-$(INSTDIR)/%$(PLATFORM_SUFFIX)$(BIN_SUFFIX): %$(BIN_SUFFIX)
+$(INSTDIR)/%$(BIN_SUFFIX): %$(BIN_SUFFIX)
 	$(MKDIR) $(INSTDIR)
 	$(CP) $< $@
 ifneq (,$(STRIP))
 	$(STRIP) $@
 endif
 
-install-client: $(INSTDIR)/$(APPCLIENT)$(PLATFORM_SUFFIX)$(BIN_SUFFIX)
+install-client: $(INSTDIR)/$(APPCLIENT)$(BIN_SUFFIX)
 
-install-server: $(INSTDIR)/$(APPSERVER)$(PLATFORM_SUFFIX)$(BIN_SUFFIX)
+install-server: $(INSTDIR)/$(APPSERVER)$(BIN_SUFFIX)
 
 ifeq (,$(findstring mingw,$(PLATFORM)))
 shared/cube2font.o: shared/cube2font.c
