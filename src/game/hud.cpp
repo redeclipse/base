@@ -28,6 +28,7 @@ namespace hud
     VAR(IDF_PERSIST, showconsole, 0, 2, 2);
     VAR(IDF_PERSIST, shownotices, 0, 3, 4);
     VAR(IDF_PERSIST, showevents, 0, 3, 7);
+    VAR(IDF_PERSIST, showloadingaspect, 0, 2, 3);
     VAR(IDF_PERSIST, showloadingmapbg, 0, 1, 1);
     VAR(IDF_PERSIST, showloadinggpu, 0, 1, 1);
     VAR(IDF_PERSIST, showloadingversion, 0, 1, 1);
@@ -3085,16 +3086,26 @@ namespace hud
         glColor4f(1, 1, 1, 1);
 
         Texture *t = NULL;
+        int mapbg = 0;
         if(showloadingmapbg && *mapname && strcmp(mapname, "maps/untitled"))
         {
             defformatstring(tex)("<blur:2>%s", mapname);
             t = textureload(tex, 3, true, false);
+            mapbg = showloadingmapbg;
         }
-        if(!t || t == notexture) t = textureload(backgroundtex, 3);
+        if(!t || t == notexture)
+        {
+            t = textureload(backgroundtex, 3);
+            mapbg = 0;
+        }
         glBindTexture(GL_TEXTURE_2D, t->id);
-        //float ts = (w>h ? h/float(w) : w/float(h))*0.5f, tx = w>h ? 0.f : ts, ty = w>h ? ts : 0.f, tw = w>h ? 1.f : 1-ts, th = w>h ? 1-ts : 1.f;
-        //drawquad(0, 0, w, h, tx, ty, tw, th);
-        drawtexture(0, 0, w, h);
+        float offsetx = 0, offsety = 0;
+        if(showloadingaspect&(1<<mapbg))
+        {
+            if(w > h) offsety = ((w-h)/float(w))*0.5f;
+            else if(h > w) offsetx = ((h-w)/float(h))*0.5f;
+        }
+        drawquad(0, 0, w, h, offsetx, offsety, 1-offsetx, 1-offsety);
 
         drawspecborder(w, h, BORDER_BG, top, bottom);
 
