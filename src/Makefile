@@ -59,6 +59,7 @@ BIN_SUFFIX=.exe
 WINDRES=windres
 WINDRES_TEMP:=$(WINDRES)
 WINLIB=lib/$(PLATFORM_BIN)
+WINDLL=bin/$(PLATFORM_BIN)
 override WINDRES=$(TOOLSET_PREFIX)$(WINDRES_TEMP)
 ifneq (,$(findstring 64,$(PLATFORM)))
 override WINDRES+= -F pe-x86-64
@@ -67,7 +68,7 @@ override WINDRES+= -F pe-i386
 endif
 STD_LIBS= -static-libgcc -static-libstdc++
 CLIENT_INCLUDES= $(INCLUDES) -Iinclude
-CLIENT_LIBS= -mwindows $(STD_LIBS) -L$(INSTDIR) -L$(WINLIB) -lSDL -lSDL_image -lSDL_mixer -lzlib1 -lopengl32 -lenet -lws2_32 -lwinmm
+CLIENT_LIBS= -mwindows $(STD_LIBS) -L$(WINDLL) -L$(WINLIB) -lSDL -lSDL_image -lSDL_mixer -lzlib1 -lopengl32 -lenet -lws2_32 -lwinmm
 else
 APPMODIFIER=
 ifneq (,$(findstring linux,$(PLATFORM)))
@@ -152,7 +153,7 @@ CLIENT_PCH= shared/cube.h.gch engine/engine.h.gch
 
 ifneq (,$(findstring mingw,$(PLATFORM)))
 SERVER_INCLUDES= -DSTANDALONE $(INCLUDES) -Iinclude
-SERVER_LIBS= -mwindows $(STD_LIBS) -L$(INSTDIR) -L$(WINLIB) -lzlib1 -lenet -lws2_32 -lwinmm
+SERVER_LIBS= -mwindows $(STD_LIBS) -L$(WINDLL) -L$(WINLIB) -lzlib1 -lenet -lws2_32 -lwinmm
 else
 SERVER_INCLUDES= -DSTANDALONE $(INCLUDES)
 SERVER_LIBS= -Lenet -lenet -lz
