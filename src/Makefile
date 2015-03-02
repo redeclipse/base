@@ -37,7 +37,7 @@ endif
 CXX_TEMP:=$(CXX)
 override CXX=$(TOOLSET_PREFIX)$(CXX_TEMP)
 
-INCLUDES= -Ishared -Iengine -Igame -Ienet/include
+INCLUDES= -I. -Ishared -Iengine -Igame -Ienet/include
 
 
 STRIP=
