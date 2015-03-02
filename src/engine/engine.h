@@ -1,6 +1,7 @@
 #ifndef __ENGINE_H__
 #define __ENGINE_H__
 
+#include "version.h"
 #include "cube.h"
 
 #define LAN_PORT 28799
@@ -11,8 +12,8 @@ extern int versioning, versionmajor, versionminor, versionpatch, versionplatform
 extern char *versionstring, *versionname, *versionuname, *versionrelease, *versionurl, *versionmaster, *versionplatname, *versionplatlongname;
 extern uint versioncrc;
 #define CUR_VER_MAKE(a,b,c) (((a)<<16) | ((b)<<8) | (c))
-#define CUR_VER CUR_VER_MAKE(versionmajor, versionminor, versionpatch)
-#define CUR_VERSION (versionmajor*100)+(versionminor*10)+versionpatch
+#define CUR_VER CUR_VER_MAKE(VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH)
+#define CUR_VERSION (VERSION_MAJOR*100)+(VERSION_MINOR*10)+VERSION_PATCH
 
 #ifdef WIN32
 #define CUR_PLATFORM 0

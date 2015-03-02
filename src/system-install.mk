@@ -1,5 +1,5 @@
 appname=$(APPNAME)
-appnamefull=$(shell sed -n 's/versionname *"\([^"]*\)"/\1/p' ../config/version.cfg)
+appnamefull=$(shell sed -n 's/#define VERSION_NAME *"\([^"]*\)"/\1/p' version.h)
 appsrcname=$(APPNAME)
 cappname=$(shell echo $(appname) | tr '[:lower:]' '[:upper:]')# Captial appname
 appclient=$(APPCLIENT)

@@ -3,9 +3,9 @@
 
 #include "engine.h"
 
-#define GAMEID "fps"
-#define GAMEVERSION 226
-#define DEMO_MAGIC "RED_ECLIPSE_DEMO"
+#define VERSION_GAMEID "fps"
+#define VERSION_GAME 226
+#define VERSION_DEMOMAGIC "RED_ECLIPSE_DEMO"
 
 #define MAXAI 256
 #define MAXPLAYERS (MAXCLIENTS + MAXAI*2)

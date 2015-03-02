@@ -1,6 +1,6 @@
 appname=$(APPNAME)
-appnamefull=$(shell sed -n 's/versionname *"\([^"]*\)"/\1/p' ../config/version.cfg)
-appversion=$(shell sed -n 's/versionstring *"\([^"]*\)"/\1/p' ../config/version.cfg)
+appnamefull=$(shell sed -n 's/#define VERSION_NAME *"\([^"]*\)"/\1/p' version.h)
+appversion=$(shell sed -n 's/#define VERSION_STRING *"\([^"]*\)"/\1/p' version.h)
 
 dirname=$(appname)-$(appversion)
 dirname-osx=$(appname).app

@@ -180,13 +180,13 @@ namespace client
         demoinfo &d = demoinfos.add();
         copystring(d.file, name);
         string msg = "";
-        if(f->read(&d.hdr, sizeof(demoheader))!=sizeof(demoheader) || memcmp(d.hdr.magic, DEMO_MAGIC, sizeof(d.hdr.magic)))
+        if(f->read(&d.hdr, sizeof(demoheader))!=sizeof(demoheader) || memcmp(d.hdr.magic, VERSION_DEMOMAGIC, sizeof(d.hdr.magic)))
             formatstring(msg)("\frsorry, \fs\fc%s\fS is not a demo file", name);
         else
         {
             lilswap(&d.hdr.gamever, 4);
-            if(d.hdr.gamever!=GAMEVERSION)
-                formatstring(msg)("\frdemo \fs\fc%s\fS requires \fs\fc%s\fS version of %s", name, d.hdr.gamever<GAMEVERSION ? "an older" : "a newer", versionname);
+            if(d.hdr.gamever!=VERSION_GAME)
+                formatstring(msg)("\frdemo \fs\fc%s\fS requires \fs\fc%s\fS version of %s", name, d.hdr.gamever<VERSION_GAME ? "an older" : "a newer", VERSION_NAME);
         }
         delete f;
         if(msg[0])
@@ -1823,9 +1823,9 @@ namespace client
                     getstring(game::player1->hostname, p);
                     getstring(game::player1->hostip, p);
                     sessionid = getint(p);
-                    if(sessionver != GAMEVERSION)
+                    if(sessionver != VERSION_GAME)
                     {
-                        conoutft(CON_EVENT, "\frerror: this server is running an incompatible protocol (%d v %d)", sessionver, GAMEVERSION);
+                        conoutft(CON_EVENT, "\frerror: this server is running an incompatible protocol (%d v %d)", sessionver, VERSION_GAME);
                         disconnect();
                         return;
                     }
@@ -2897,7 +2897,7 @@ namespace client
         if(a->address.host == ENET_HOST_ANY || a->ping >= serverinfo::WAITING || a->attr.empty()) ac = -1;
         else
         {
-            ac = a->attr[0] == GAMEVERSION ? 0x7FFF : clamp(a->attr[0], 0, 0x7FFF-1);
+            ac = a->attr[0] == VERSION_GAME ? 0x7FFF : clamp(a->attr[0], 0, 0x7FFF-1);
             ac <<= 16;
             if(a->address.host == masteraddress.host) ac |= 0xFFFF;
             else ac |= clamp(1 + a->priority, 1, 0xFFFF-1);
@@ -2905,7 +2905,7 @@ namespace client
         if(b->address.host == ENET_HOST_ANY || b->ping >= serverinfo::WAITING || b->attr.empty()) bc = -1;
         else
         {
-            bc = b->attr[0] == GAMEVERSION ? 0x7FFF : clamp(b->attr[0], 0, 0x7FFF-1);
+            bc = b->attr[0] == VERSION_GAME ? 0x7FFF : clamp(b->attr[0], 0, 0x7FFF-1);
             bc <<= 16;
             if(b->address.host == masteraddress.host) bc |= 0xFFFF;
             else bc |= clamp(1 + b->priority, 1, 0xFFFF-1);

@@ -14,14 +14,14 @@ const char *platnames[MAX_PLATFORMS] = {
 
 VAR(0, version, 1, 0, -1);
 VAR(0, versioning, 1, 0, -1);
-VAR(0, versionmajor, 0, 0, VAR_MAX);
-VAR(0, versionminor, 0, 0, VAR_MAX);
-VAR(0, versionpatch, 0, 0, VAR_MAX);
-SVAR(0, versionstring, "0.0");
-SVAR(0, versionname, "");
-SVAR(0, versionuname, "");
-SVAR(0, versionrelease, "");
-SVAR(0, versionurl, "");
+VAR(IDF_READONLY, versionmajor, 1, VERSION_MAJOR, -1);
+VAR(IDF_READONLY, versionminor, 1, VERSION_MINOR, -1);
+VAR(IDF_READONLY, versionpatch, 1, VERSION_PATCH, -1);
+SVAR(IDF_READONLY, versionstring, VERSION_STRING);
+SVAR(IDF_READONLY, versionname, VERSION_NAME);
+SVAR(IDF_READONLY, versionuname, VERSION_UNAME);
+SVAR(IDF_READONLY, versionrelease, VERSION_RELEASE);
+SVAR(IDF_READONLY, versionurl, VERSION_URL);
 SVAR(IDF_READONLY, versionplatname, plat_name(CUR_PLATFORM));
 SVAR(IDF_READONLY, versionplatlongname, plat_longname(CUR_PLATFORM));
 VAR(IDF_READONLY, versionplatform, 0, CUR_PLATFORM, VAR_MAX);
@@ -1198,7 +1198,7 @@ static void setupwindow(const char *title)
     atexit(cleanupwindow);
 
     if(!setupsystemtray(WM_APP)) fatal("failed adding to system tray");
-    conoutf("identity: v%s-%s%d %s (%s) [0x%x]", versionstring, versionplatname, versionarch, versionisserver ? "server" : "client", versionrelease, versioncrc);
+    conoutf("identity: v%s-%s%d %s (%s) [0x%x]", VERSION_STRING, versionplatname, versionarch, versionisserver ? "server" : "client", VERSION_RELEASE, versioncrc);
 }
 
 static char *parsecommandline(const char *src, vector<char *> &args)
@@ -1268,7 +1268,7 @@ void logoutfv(const char *fmt, va_list args)
 void serverloop()
 {
 #ifdef WIN32
-    defformatstring(cap)("%s server", versionname);
+    defformatstring(cap)("%s server", VERSION_NAME);
     setupwindow(cap);
     SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
 #endif
@@ -1398,7 +1398,7 @@ void setupserver()
 
 void initgame()
 {
-    conoutf("identity: v%s-%s%d %s (%s) [0x%x]", versionstring, versionplatname, versionarch, versionisserver ? "server" : "client", versionrelease, versioncrc);
+    conoutf("identity: v%s-%s%d %s (%s) [0x%x]", VERSION_STRING, versionplatname, versionarch, versionisserver ? "server" : "client", VERSION_RELEASE, versioncrc);
     server::start();
     loopv(gameargs)
     {
@@ -1548,7 +1548,7 @@ void setlocations(bool wanthome)
     { // standalone solution to this is: pebkac
         if(!i || chdir("..") < 0) fatal("could not find config directory");
     }
-    if(!execfile("config/version.cfg", false, EXEC_VERSION|EXEC_BUILTIN) || !*versionuname || !*versionname || !*versionstring || (!versionmajor && !versionminor && !versionpatch))
+    if(!execfile("config/version.cfg", false, EXEC_VERSION|EXEC_BUILTIN) || !*VERSION_UNAME || !*VERSION_NAME || !*VERSION_STRING || (!VERSION_MAJOR && !VERSION_MINOR && !VERSION_PATCH))
         fatal("cannot determine game version, please ensure 'config/version.cfg' properly loaded");
     // pseudo directory with game content
     const char *dir = getenv("GAME_DATA");
@@ -1565,7 +1565,7 @@ void setlocations(bool wanthome)
         string dir = "";
         if(SHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, 0, dir) == S_OK)
         {
-            defformatstring(s)("%s\\My Games\\%s", dir, versionname);
+            defformatstring(s)("%s\\My Games\\%s", dir, VERSION_NAME);
             sethomedir(s);
         }
 #elif defined(__APPLE__)
@@ -1573,14 +1573,14 @@ void setlocations(bool wanthome)
         const char *dir = mac_personaldir(); // typically  /Users/<name>/Application Support/
         if(dir && *dir)
         {
-            defformatstring(s)("%s/%s", dir, versionuname);
+            defformatstring(s)("%s/%s", dir, VERSION_UNAME);
             sethomedir(s);
         }
 #else
         const char *dir = getenv("HOME");
         if(dir && *dir)
         {
-            defformatstring(s)("%s/.%s", dir, versionuname);
+            defformatstring(s)("%s/.%s", dir, VERSION_UNAME);
             sethomedir(s);
         }
 #endif
@@ -1690,7 +1690,7 @@ void fatal(const char *s, ...)    // failure exit
 #endif
             enet_deinitialize();
 #ifdef WIN32
-            defformatstring(cap)("%s: Error", versionname);
+            defformatstring(cap)("%s: Error", VERSION_NAME);
             MessageBox(NULL, msg, cap, MB_OK|MB_SYSTEMMODAL);
 #endif
         }

@@ -1,6 +1,34 @@
 #include "winresrc.h"
+#include "version.h"
 #define IDI_ICON1 1
 
 CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "dpiaware.manifest"
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 IDI_ICON1 ICON "redeclipse.ico"
+
+VS_VERSION_INFO VERSIONINFO
+    FILEVERSION    VERSION_MAJOR,VERSION_MINOR,VERSION_PATCH,0
+    PRODUCTVERSION VERSION_MAJOR,VERSION_MINOR,VERSION_PATCH,0
+{
+    BLOCK "StringFileInfo"
+    {
+        BLOCK "040904b0"
+        {
+            VALUE "CompanyName",        VERSION_NAME " Team\0"
+            VALUE "FileDescription",    "\0"
+            VALUE "FileVersion",        VERSION_STRING "\0"
+            VALUE "LegalCopyright",     "(C) " VERSION_COPY " " VERSION_NAME " Team\0"
+#ifdef STANDALONE
+            VALUE "OriginalFilename",   VERSION_UNAME "_server.exe\0"
+#else
+            VALUE "OriginalFilename",   VERSION_UNAME ".exe\0"
+#endif
+            VALUE "ProductName",        VERSION_NAME "\0"
+            VALUE "ProductVersion",     VERSION_STRING "\0"
+        }
+    }
+    BLOCK "VarFileInfo"
+    {
+        VALUE "Translation", 0x409, 1200
+    }
+}

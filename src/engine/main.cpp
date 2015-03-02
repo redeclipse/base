@@ -42,7 +42,7 @@ void setcaption(const char *text, const char *text2)
     {
         copystring(prevtext, text);
         copystring(prevtext2, text2);
-        defformatstring(caption)("%s v%s-%s%d (%s)%s%s%s%s", versionname, versionstring, versionplatname, versionarch, versionrelease, text[0] ? ": " : "", text, text2[0] ? " - " : "", text2);
+        defformatstring(caption)("%s v%s-%s%d (%s)%s%s%s%s", VERSION_NAME, VERSION_STRING, versionplatname, versionarch, VERSION_RELEASE, text[0] ? ": " : "", text, text2[0] ? " - " : "", text2);
         SDL_WM_SetCaption(caption, NULL);
     }
 }
@@ -120,7 +120,7 @@ void fatal(const char *s, ...)    // failure exit
                 cleargamma();
             }
             #ifdef WIN32
-            defformatstring(cap)("%s: Error", versionname);
+            defformatstring(cap)("%s: Error", VERSION_NAME);
             MessageBox(NULL, msg, cap, MB_OK|MB_SYSTEMMODAL);
             #endif
             SDL_Quit();
@@ -683,7 +683,7 @@ void stackdumper(unsigned int type, EXCEPTION_POINTERS *ep)
     EXCEPTION_RECORD *er = ep->ExceptionRecord;
     CONTEXT *context = ep->ContextRecord;
     bigstring out, t;
-    formatbigstring(out)("%s Win32 Exception: 0x%x [0x%x]\n\n", versionname, er->ExceptionCode, er->ExceptionCode==EXCEPTION_ACCESS_VIOLATION ? er->ExceptionInformation[1] : -1);
+    formatbigstring(out)("%s Win32 Exception: 0x%x [0x%x]\n\n", VERSION_NAME, er->ExceptionCode, er->ExceptionCode==EXCEPTION_ACCESS_VIOLATION ? er->ExceptionInformation[1] : -1);
     SymInitialize(GetCurrentProcess(), NULL, TRUE);
 #ifdef _AMD64_
     STACKFRAME64 sf = {{context->Rip, 0, AddrModeFlat}, {}, {context->Rbp, 0, AddrModeFlat}, {context->Rsp, 0, AddrModeFlat}, 0};

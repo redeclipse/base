@@ -3148,8 +3148,8 @@ namespace hud
         }
         y = h-bottom-FONTH/2;
         if(showloadinggpu) y -= draw_textx("%s (%s v%s)", w-FONTH, y, 255, 255, 255, 255, TEXT_RIGHT_UP, -1, -1, gfxrenderer, gfxvendor, gfxversion);
-        if(showloadingversion) y -= draw_textx("%s v%s-%s%d (%s)", w-FONTH, y, 255, 255, 255, 255, TEXT_RIGHT_UP, -1, -1, versionname, versionstring, versionplatname, versionarch, versionrelease);
-        if(showloadingurl && *versionurl) y -= draw_textx("%s", w-FONTH, y, 255, 255, 255, 255, TEXT_RIGHT_UP, -1, -1, versionurl);
+        if(showloadingversion) y -= draw_textx("%s v%s-%s%d (%s)", w-FONTH, y, 255, 255, 255, 255, TEXT_RIGHT_UP, -1, -1, VERSION_NAME, VERSION_STRING, versionplatname, versionarch, VERSION_RELEASE);
+        if(showloadingurl && *VERSION_URL) y -= draw_textx("%s", w-FONTH, y, 255, 255, 255, 255, TEXT_RIGHT_UP, -1, -1, VERSION_URL);
         popfont();
     }
 

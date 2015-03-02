@@ -1244,7 +1244,7 @@ namespace entities
 
     bool maylink(int type, int ver)
     {
-        if(enttype[type].links && enttype[type].links <= (ver ? ver : GAMEVERSION))
+        if(enttype[type].links && enttype[type].links <= (ver ? ver : VERSION_GAME))
                 return true;
         return false;
     }
@@ -1908,7 +1908,7 @@ namespace entities
             else if(e.attrs.length() > num) e.attrs.setsize(num);
         }
         if(mtype == MAP_OCTA || (mtype == MAP_MAPZ && gver <= 49)) importentities(mtype, mver, gver);
-        if(mtype == MAP_OCTA || (mtype == MAP_MAPZ && gver < GAMEVERSION)) updateoldentities(mtype, mver, gver);
+        if(mtype == MAP_OCTA || (mtype == MAP_MAPZ && gver < VERSION_GAME)) updateoldentities(mtype, mver, gver);
         loopv(ents)
         {
             progress(i/float(ents.length()), "fixing entities...");

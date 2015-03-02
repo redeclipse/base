@@ -1156,7 +1156,7 @@ namespace server
         return false;
     }
 
-    const char *gameid() { return GAMEID; }
+    const char *gameid() { return VERSION_GAMEID; }
     ICOMMAND(0, gameid, "", (), result(gameid()));
 
     int getver(int n)
@@ -1164,7 +1164,7 @@ namespace server
         switch(n)
         {
             case 0: return CUR_VERSION;
-            case 1: return GAMEVERSION;
+            case 1: return VERSION_GAME;
             case 2: case 3: return version[n%2];
             case 4: return CUR_ARCH;
             default: break;
@@ -2159,13 +2159,13 @@ namespace server
         defformatstring(file)(strstr(smapname, "maps/")==smapname || strstr(smapname, "maps\\")==smapname ? "%s.dmo" : "demos/%s.dmo", smapname);
         demoplayback = opengzfile(file, "rb");
         if(!demoplayback) formatstring(msg)("\frcould not read demo \fs\fc%s\fS", file);
-        else if(demoplayback->read(&hdr, sizeof(demoheader))!=sizeof(demoheader) || memcmp(hdr.magic, DEMO_MAGIC, sizeof(hdr.magic)))
+        else if(demoplayback->read(&hdr, sizeof(demoheader))!=sizeof(demoheader) || memcmp(hdr.magic, VERSION_DEMOMAGIC, sizeof(hdr.magic)))
             formatstring(msg)("\frsorry, \fs\fc%s\fS is not a demo file", file);
         else
         {
             lilswap(&hdr.gamever, 4);
-            if(hdr.gamever!=GAMEVERSION)
-                formatstring(msg)("\frdemo \fs\fc%s\fS requires %s version of %s", file, hdr.gamever<GAMEVERSION ? "an older" : "a newer", versionname);
+            if(hdr.gamever!=VERSION_GAME)
+                formatstring(msg)("\frdemo \fs\fc%s\fS requires %s version of %s", file, hdr.gamever<VERSION_GAME ? "an older" : "a newer", VERSION_NAME);
         }
         if(msg[0])
         {
@@ -2282,8 +2282,8 @@ namespace server
         demorecord = f;
 
         demoheader hdr;
-        memcpy(hdr.magic, DEMO_MAGIC, sizeof(hdr.magic));
-        hdr.gamever = GAMEVERSION;
+        memcpy(hdr.magic, VERSION_DEMOMAGIC, sizeof(hdr.magic));
+        hdr.gamever = VERSION_GAME;
         hdr.gamemode = gamemode;
         hdr.mutators = mutators;
         hdr.starttime = clocktime;
@@ -3296,7 +3296,7 @@ namespace server
 
     void sendservinit(clientinfo *ci)
     {
-        sendf(ci->clientnum, 1, "ri3ssi", N_SERVERINIT, ci->clientnum, GAMEVERSION, gethostname(ci->clientnum), gethostip(ci->clientnum), ci->sessionid);
+        sendf(ci->clientnum, 1, "ri3ssi", N_SERVERINIT, ci->clientnum, VERSION_GAME, gethostname(ci->clientnum), gethostip(ci->clientnum), ci->sessionid);
     }
 
     bool restorescore(clientinfo *ci)
@@ -4621,7 +4621,7 @@ namespace server
         }
         putint(p, queryplayers.length());
         putint(p, 15); // number of attrs following
-        putint(p, GAMEVERSION); // 1
+        putint(p, VERSION_GAME); // 1
         putint(p, gamemode); // 2
         putint(p, mutators); // 3
         putint(p, timeremaining); // 4
@@ -4629,9 +4629,9 @@ namespace server
         putint(p, serverpass[0] || G(connectlock) ? MM_PASSWORD : (m_local(gamemode) ? MM_PRIVATE : mastermode)); // 6
         putint(p, numgamevars); // 7
         putint(p, numgamemods); // 8
-        putint(p, versionmajor); // 9
-        putint(p, versionminor); // 10
-        putint(p, versionpatch); // 11
+        putint(p, VERSION_MAJOR); // 9
+        putint(p, VERSION_MINOR); // 10
+        putint(p, VERSION_PATCH); // 11
         putint(p, versionplatform); // 12
         putint(p, versionarch); // 13
         putint(p, gamestate); // 14

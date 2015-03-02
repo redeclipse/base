@@ -200,7 +200,7 @@ namespace auth
     int allowconnect(clientinfo *ci, const char *authname = "", const char *pwd = "")
     {
         if(ci->local) { tryident(ci, authname, pwd); return DISC_NONE; }
-        if(ci->state.version.game != GAMEVERSION) return DISC_INCOMPATIBLE;
+        if(ci->state.version.game != VERSION_GAME) return DISC_INCOMPATIBLE;
         if(m_local(gamemode)) return DISC_PRIVATE;
         if(tryident(ci, authname, pwd)) return DISC_NONE;
         // above here are short circuits
