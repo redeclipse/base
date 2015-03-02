@@ -22,6 +22,8 @@ SVAR(IDF_READONLY, versionname, VERSION_NAME);
 SVAR(IDF_READONLY, versionuname, VERSION_UNAME);
 SVAR(IDF_READONLY, versionrelease, VERSION_RELEASE);
 SVAR(IDF_READONLY, versionurl, VERSION_URL);
+SVAR(IDF_READONLY, versioncopy, VERSION_COPY);
+SVAR(IDF_READONLY, versiondesc, VERSION_DESC);
 SVAR(IDF_READONLY, versionplatname, plat_name(CUR_PLATFORM));
 SVAR(IDF_READONLY, versionplatlongname, plat_longname(CUR_PLATFORM));
 VAR(IDF_READONLY, versionplatform, 0, CUR_PLATFORM, VAR_MAX);

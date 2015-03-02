@@ -15,7 +15,7 @@ VS_VERSION_INFO VERSIONINFO
         BLOCK "040904b0"
         {
             VALUE "CompanyName",        VERSION_NAME " Team\0"
-            VALUE "FileDescription",    "\0"
+            VALUE "FileDescription",    VERSION_DESC "\0"
             VALUE "FileVersion",        VERSION_STRING "\0"
             VALUE "LegalCopyright",     "(C) " VERSION_COPY " " VERSION_NAME " Team\0"
 #ifdef STANDALONE
