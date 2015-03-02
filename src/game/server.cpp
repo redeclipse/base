@@ -1676,7 +1676,7 @@ namespace server
 
     bool hasitem(int i)
     {
-        if(m_race(gamemode) || !sents.inrange(i) || sents[i].type != WEAPON) return false;
+        if(m_race(gamemode) || m_basic(gamemode, mutators) || !sents.inrange(i) || sents[i].type != WEAPON) return false;
         int sweap = m_weapon(gamemode, mutators), attr = w_attr(gamemode, mutators, sents[i].type, sents[i].attrs[0], sweap);
         if(!isweap(attr) || !w_item(attr, sweap) || !m_check(W(attr, modes), W(attr, muts), gamemode, mutators) || W(attr, disabled)) return false;
         if((sents[i].attrs[4] && sents[i].attrs[4] != triggerid) || !m_check(sents[i].attrs[2], sents[i].attrs[3], gamemode, mutators)) return false;

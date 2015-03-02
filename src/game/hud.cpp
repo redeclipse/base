@@ -568,8 +568,9 @@ namespace hud
     TVAR(IDF_PERSIST, modeonslaughttex, "<grey>textures/modes/onslaught", 3);
     TVAR(IDF_PERSIST, modefreestyletex, "<grey>textures/modes/freestyle", 3);
     TVAR(IDF_PERSIST, modevampiretex, "<grey>textures/modes/vampire", 3);
-    TVAR(IDF_PERSIST, modehardtex, "<grey>textures/modes/hard", 3);
     TVAR(IDF_PERSIST, moderesizetex, "<grey>textures/modes/resize", 3);
+    TVAR(IDF_PERSIST, modehardtex, "<grey>textures/modes/hard", 3);
+    TVAR(IDF_PERSIST, modebasictex, "<grey>textures/modes/basic", 3);
 
     #define ADDMODEICON(g,m) \
     { \
@@ -638,8 +639,9 @@ namespace hud
         if(m_onslaught(g, m) && (implied || !(gametype[g].implied&(1<<G_M_ONSLAUGHT)))) ADDMODE(modeonslaughttex)
         if(m_freestyle(g, m) && (implied || !(gametype[g].implied&(1<<G_M_FREESTYLE)))) ADDMODE(modefreestyletex)
         if(m_vampire(g, m) && (implied || !(gametype[g].implied&(1<<G_M_VAMPIRE)))) ADDMODE(modevampiretex)
-        if(m_hard(g, m) && (implied || !(gametype[g].implied&(1<<G_M_HARD)))) ADDMODE(modehardtex)
         if(m_resize(g, m) && (implied || !(gametype[g].implied&(1<<G_M_RESIZE)))) ADDMODE(moderesizetex)
+        if(m_hard(g, m) && (implied || !(gametype[g].implied&(1<<G_M_HARD)))) ADDMODE(modehardtex)
+        if(m_basic(g, m) && (implied || !(gametype[g].implied&(1<<G_M_BASIC)))) ADDMODE(modebasictex)
         if(!before) ADDMODEICON(g, m)
         #undef ADDMODE
     }
@@ -2798,8 +2800,9 @@ namespace hud
             if(over && m_onslaught(game::gamemode, game::mutators) && !(gametype[game::gamemode].implied&(1<<G_M_ONSLAUGHT))) ADDMODE(modeonslaughttex)
             if(((alive && inventorygameinfo&2) || over) && m_freestyle(game::gamemode, game::mutators)) ADDMODE(modefreestyletex)
             if(((alive && inventorygameinfo&2) || over) && m_vampire(game::gamemode, game::mutators)) ADDMODE(modevampiretex)
-            if(((alive && inventorygameinfo&2) || over) && m_hard(game::gamemode, game::mutators)) ADDMODE(modehardtex)
             if((alive && inventorygameinfo&4) && m_resize(game::gamemode, game::mutators) && !(gametype[game::gamemode].implied&(1<<G_M_RESIZE))) ADDMODE(moderesizetex)
+            if(((alive && inventorygameinfo&2) || over) && m_hard(game::gamemode, game::mutators)) ADDMODE(modehardtex)
+            if(((alive && inventorygameinfo&2) || over) && m_basic(game::gamemode, game::mutators)) ADDMODE(modebasictex)
             #undef ADDMODE
         }
         return sy;
