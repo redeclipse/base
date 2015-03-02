@@ -1920,6 +1920,18 @@
 			<Option target="redeclipse_server-amd64" />
 			<Option target="redeclipse_server-amd64-dbg" />
 		</Unit>
+		<Unit filename="version.h">
+			<Option target="redeclipse-x86" />
+			<Option target="redeclipse-x86-dbg" />
+			<Option target="redeclipse-x86-prof" />
+			<Option target="redeclipse_server-x86" />
+			<Option target="redeclipse_server-x86-dbg" />
+			<Option target="redeclipse-amd64" />
+			<Option target="redeclipse-amd64-dbg" />
+			<Option target="redeclipse-amd64-prof" />
+			<Option target="redeclipse_server-amd64" />
+			<Option target="redeclipse_server-amd64-dbg" />
+		</Unit>
 		<Extensions>
 			<code_completion />
 			<envvars />
