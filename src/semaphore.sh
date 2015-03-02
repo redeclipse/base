@@ -15,10 +15,11 @@ semabuild_setup() {
     if [ "${BRANCH_NAME}" != "master" ]; then
         SEMABUILD_BASE_ANCESTOR=`git merge-base origin/master ${SEMABUILD_BASE}` || return 1
     fi
-    git submodule init data || return 1
-    git submodule update data || return 1
+    git submodule init || return 1
+    git submodule update || return 1
     cd "${SEMABUILD_PWD}/data" || return 1
     SEMABUILD_DATA=`git rev-parse HEAD` || return 1
+    #SEMABUILD_DATA=`git submodule status -- data | sed -e 's/^.\(.*\) .*/\1/'`
     if [ "${BRANCH_NAME}" != "master" ]; then
         SEMABUILD_DATA_ANCESTOR=`git merge-base origin/master ${SEMABUILD_DATA}` || return 1
     fi
@@ -106,11 +107,15 @@ semabuild_deploy() {
     cd "${SEMABUILD_PWD}" || return 1
     # sha
     rm -rfv "${SEMABUILD_DIR}/windows" "${SEMABUILD_DIR}/linux" || return 1
+    echo "Module 'base' commit, syncing: ${SEMABUILD_BASE}"
     echo "${SEMABUILD_BASE}" > "${SEMABUILD_DIR}/bins.txt"
     echo "${SEMABUILD_BASE}" > "${SEMABUILD_DIR}/base.txt"
+    echo "Module 'data' commit, syncing: ${SEMABUILD_DATA}"
     echo "${SEMABUILD_DATA}" > "${SEMABUILD_DIR}/data.txt"
     if [ "${BRANCH_NAME}" != "master" ]; then
+        echo "Module 'base' ancestor, syncing: ${SEMABUILD_BASE_ANCESTOR}"
         echo "${SEMABUILD_BASE_ANCESTOR}" > "${SEMABUILD_DIR}/base.ancestor.txt"
+        echo "Module 'data' ancestor, syncing: ${SEMABUILD_DATA_ANCESTOR}"
         echo "${SEMABUILD_DATA_ANCESTOR}" > "${SEMABUILD_DIR}/data.ancestor.txt"
     fi
     return 0
