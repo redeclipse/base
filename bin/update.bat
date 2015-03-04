@@ -53,7 +53,7 @@ setlocal enableextensions enabledelayedexpansion
     echo @ECHO OFF> "%REDECLIPSE_TEMP%\install.bat"
     echo setlocal ENABLEEXTENSIONS>> "%REDECLIPSE_TEMP%\install.bat"
     echo set REDECLIPSE_ERROR=false>> "%REDECLIPSE_TEMP%\install.bat"
-    if NOT "%REDECLIPSE_BRANCH%" == "stable" goto bins
+    if NOT "%REDECLIPSE_BRANCH%" == "stable" if NOT "%REDECLIPSE_BRANCH%" == "master" goto bins
 :modules
     %REDECLIPSE_CURL% --silent --output "%REDECLIPSE_TEMP%\modules.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/modules.txt"
     if NOT EXIST "%REDECLIPSE_TEMP%\modules.txt" (

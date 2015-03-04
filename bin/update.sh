@@ -103,7 +103,7 @@ redeclipse_update_branch() {
     if ! [ -d "${REDECLIPSE_TEMP}" ]; then mkdir -p "${REDECLIPSE_TEMP}"; fi
     echo "#"'!'"/bin/sh" > "${REDECLIPSE_TEMP}/install.sh"
     echo "REDECLIPSE_ERROR=\"false\"" >> "${REDECLIPSE_TEMP}/install.sh"
-    if [ "${REDECLIPSE_BRANCH}" != "stable" ]; then
+    if [ "${REDECLIPSE_BRANCH}" != "stable" ] && [ "${REDECLIPSE_BRANCH}" != "master" ]; then
         redeclipse_update_bins
         return $?
     fi
