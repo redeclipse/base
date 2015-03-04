@@ -64,7 +64,7 @@ setlocal enableextensions enabledelayedexpansion
     for %%a in (%REDECLIPSE_MODULE_LIST%) do (
         set REDEECLIPSE_MODULE_RUN=%%a
         if NOT "!REDEECLIPSE_MODULE_RUN!" == "" (
-            call :module "%REDECLIPSE_UPDATER%" && (set REDECLIPSE_DEPLOY=true) || (echo There was an error updating module !REDEECLIPSE_MODULE_RUN!, continuing..)
+            call :module "%REDECLIPSE_UPDATER%" && (set REDECLIPSE_DEPLOY=true) || (echo !REDEECLIPSE_MODULE_RUN!: There was an error updating the module, continuing..)
         )
     )
     goto bins
@@ -73,42 +73,42 @@ setlocal enableextensions enabledelayedexpansion
     if "%REDEECLIPSE_MODULE_RUN%" == "" exit /b 1
     if "%REDEECLIPSE_MODULE_RUN%" == "base" (set REDEECLIPSE_MODULE_DIR=) else (set REDEECLIPSE_MODULE_DIR=\%REDEECLIPSE_MODULE_RUN%)
     if EXIST "%REDECLIPSE_PATH%%REDEECLIPSE_MODULE_DIR%\readme.txt" goto modulever
-    echo Unable to find ".%REDEECLIPSE_MODULE_DIR%\readme.txt". Will start from scratch.
+    echo %REDEECLIPSE_MODULE_RUN%: Unable to find ".%REDEECLIPSE_MODULE_DIR%\readme.txt". Will start from scratch.
     set REDECLIPSE_MODULE_INSTALLED=none
     echo mkdir "%REDECLIPSE_PATH%%REDEECLIPSE_MODULE_DIR%">> "%REDECLIPSE_TEMP%\install.bat"
     goto moduleget
 :modulever
     if EXIST "%REDECLIPSE_PATH%%REDEECLIPSE_MODULE_DIR%\version.txt" set /p REDECLIPSE_MODULE_INSTALLED=< "%REDECLIPSE_PATH%%REDEECLIPSE_MODULE_DIR%\version.txt"
     if "%REDECLIPSE_MODULE_INSTALLED%" == "" set REDECLIPSE_MODULE_INSTALLED=none
-    echo [I] %REDEECLIPSE_MODULE_RUN%: %REDECLIPSE_MODULE_INSTALLED%
+    echo %REDEECLIPSE_MODULE_RUN%: %REDECLIPSE_MODULE_INSTALLED% is installed.
     set REDECLIPSE_MODULE_CACHED=none
     if NOT EXIST "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.txt" goto moduleget
     set /p REDECLIPSE_MODULE_CACHED=< "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.txt"
     if "%REDECLIPSE_MODULE_CACHED%" == "" set REDECLIPSE_MODULE_CACHED=none
-    echo [C] %REDEECLIPSE_MODULE_RUN%: %REDECLIPSE_MODULE_CACHED%
+    echo %REDEECLIPSE_MODULE_RUN%: %REDECLIPSE_MODULE_CACHED% is in the cache.
     del /f /q "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.txt"
 :moduleget
     %REDECLIPSE_CURL% --silent --output "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/%REDEECLIPSE_MODULE_RUN%.txt"
     if NOT EXIST "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.txt" (
-        echo Failed to retrieve %REDEECLIPSE_MODULE_RUN% update information.
+        echo %REDEECLIPSE_MODULE_RUN%: Failed to retrieve update information.
         exit /b 1
     )
     set /p REDECLIPSE_MODULE_REMOTE=< "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.txt"
     if "%REDECLIPSE_MODULE_REMOTE%" == "" (
-        echo Failed to read %REDEECLIPSE_MODULE_RUN% update information.
+        echo %REDEECLIPSE_MODULE_RUN%: Failed to read update information.
         exit /b 1
     )
-    echo [R] %REDEECLIPSE_MODULE_RUN%: %REDECLIPSE_MODULE_REMOTE%
+    echo %REDEECLIPSE_MODULE_RUN%: %REDECLIPSE_MODULE_REMOTE% is the current version.
     if "%REDECLIPSE_MODULE_REMOTE%" == "%REDECLIPSE_MODULE_INSTALLED%" exit /b 0
     if "%REDECLIPSE_MODULE_INSTALLED%" == "none" goto moduleblob
 :modulepatch
     if EXIST "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.patch" del /f /q "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.patch"
     if EXIST "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.zip" del /f /q "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.zip"
-    echo [D] %REDEECLIPSE_MODULE_RUN%: %REDECLIPSE_GITHUB%/%REDEECLIPSE_MODULE_RUN%/compare/%REDECLIPSE_MODULE_INSTALLED%...%REDECLIPSE_MODULE_REMOTE%.patch
+    echo %REDEECLIPSE_MODULE_RUN%: %REDECLIPSE_GITHUB%/%REDEECLIPSE_MODULE_RUN%/compare/%REDECLIPSE_MODULE_INSTALLED%...%REDECLIPSE_MODULE_REMOTE%.patch
     echo.
     %REDECLIPSE_CURL% --output "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.patch" "%REDECLIPSE_GITHUB%/%REDEECLIPSE_MODULE_RUN%/compare/%REDECLIPSE_MODULE_INSTALLED%...%REDECLIPSE_MODULE_REMOTE%.patch"
     if NOT EXIST "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.patch" (
-        echo Failed to retrieve %REDEECLIPSE_MODULE_RUN% update package. Downloading full zip instead.
+        echo %REDEECLIPSE_MODULE_RUN%: Failed to retrieve update package. Downloading full zip instead.
         goto moduleblob
     )
 :modulepatchdeploy
@@ -123,15 +123,15 @@ setlocal enableextensions enabledelayedexpansion
 :moduleblob
     if EXIST "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.zip" (
         if "%REDECLIPSE_MODULE_CACHED%" == "%REDECLIPSE_MODULE_REMOTE%" (
-            echo [F] %REDEECLIPSE_MODULE_RUN%: Using cached file "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.zip"
+            echo %REDEECLIPSE_MODULE_RUN%: Using cached file "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.zip"
             goto moduleblobdeploy
         ) else del /f /q "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.zip"
     )
-    echo [D] %REDEECLIPSE_MODULE_RUN%: %REDECLIPSE_GITHUB%/%REDEECLIPSE_MODULE_RUN%/zipball/%REDECLIPSE_MODULE_REMOTE%
+    echo %REDEECLIPSE_MODULE_RUN%: %REDECLIPSE_GITHUB%/%REDEECLIPSE_MODULE_RUN%/zipball/%REDECLIPSE_MODULE_REMOTE%
     echo.
     %REDECLIPSE_CURL% --output "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.zip" "%REDECLIPSE_GITHUB%/%REDEECLIPSE_MODULE_RUN%/zipball/%REDECLIPSE_MODULE_REMOTE%"
     if NOT EXIST "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.zip" (
-        echo Failed to retrieve %REDEECLIPSE_MODULE_RUN% update package.
+        echo %REDEECLIPSE_MODULE_RUN%: Failed to retrieve update package.
         exit /b 1
     )
 :moduleblobdeploy
@@ -148,38 +148,38 @@ setlocal enableextensions enabledelayedexpansion
     echo.
     if EXIST "%REDECLIPSE_PATH%\bin\version.txt" set /p REDECLIPSE_BINS=< "%REDECLIPSE_PATH%\bin\version.txt"
     if "%REDECLIPSE_BINS%" == "" set REDECLIPSE_BINS=none
-    echo [I] bins: %REDECLIPSE_BINS%
+    echo bins: %REDECLIPSE_BINS% is installed.
     set REDECLIPSE_BINS_CACHED=none
     if NOT EXIST "%REDECLIPSE_TEMP%\bins.txt" goto binsget
     set /p REDECLIPSE_BINS_CACHED=< "%REDECLIPSE_TEMP%\bins.txt"
     if "%REDECLIPSE_BINS_CACHED%" == "" set REDECLIPSE_BINS_CACHED=none
-    echo [C] bins: %REDECLIPSE_BINS_CACHED%
+    echo bins: %REDECLIPSE_BINS_CACHED% is in the cache.
     del /f /q "%REDECLIPSE_TEMP%\bins.txt"
 :binsget
     %REDECLIPSE_CURL% --silent --output "%REDECLIPSE_TEMP%\bins.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/bins.txt"
     if NOT EXIST "%REDECLIPSE_TEMP%\bins.txt" (
-        echo Failed to retrieve bins update information.
+        echo bins: Failed to retrieve update information.
         goto deploy
     )
     set /p REDECLIPSE_BINS_REMOTE=< "%REDECLIPSE_TEMP%\bins.txt"
     if "%REDECLIPSE_BINS_REMOTE%" == "" (
-        echo Failed to read bins update information.
+        echo bins: Failed to read update information.
         goto deploy
     )
-    echo [R] bins: %REDECLIPSE_BINS_REMOTE%
+    echo bins: %REDECLIPSE_BINS_REMOTE% is the current version.
     if NOT "%REDECLIPSE_TRYUPDATE%" == "true" if "%REDECLIPSE_BINS_REMOTE%" == "%REDECLIPSE_BINS%" goto deploy
 :binsblob
     if EXIST "%REDECLIPSE_TEMP%\windows.zip" (
         if "%REDECLIPSE_BINS_CACHED%" == "%REDECLIPSE_BINS_REMOTE%" (
-            echo [F] bins: Using cached file "%REDECLIPSE_TEMP%\windows.zip"
+            echo bins: Using cached file "%REDECLIPSE_TEMP%\windows.zip"
             goto binsdeploy
         ) else del /f /q "%REDECLIPSE_TEMP%\windows.zip"
     )
-    echo [D] bins: %REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/windows.zip
+    echo bins: %REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/windows.zip
     echo.
     %REDECLIPSE_CURL% --output "%REDECLIPSE_TEMP%\windows.zip" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/windows.zip"
     if NOT EXIST "%REDECLIPSE_TEMP%\windows.zip" (
-        echo Failed to retrieve bins update package.
+        echo bins: Failed to retrieve update package.
         goto deploy
     )
 :binsdeploy
