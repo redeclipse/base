@@ -6,6 +6,7 @@ setlocal enableextensions enabledelayedexpansion
     set REDECLIPSE_PATH=%CD%
     popd
 :init
+    if NOT DEFINED REDECLIPSE_UPDATER set REDECLIPSE_UPDATER=%~dp0\%0
     if NOT DEFINED REDECLIPSE_SOURCE set REDECLIPSE_SOURCE=http://redeclipse.net/files
     if NOT DEFINED REDECLIPSE_GITHUB set REDECLIPSE_GITHUB=https://github.com/red-eclipse
     if DEFINED REDECLIPSE_CACHE goto setup
@@ -21,7 +22,7 @@ setlocal enableextensions enabledelayedexpansion
     if NOT DEFINED REDECLIPSE_BRANCH (
         set REDECLIPSE_BRANCH=stable
         if EXIST .git set REDECLIPSE_BRANCH=master
-        if EXIST "%REDECLIPSE_PATH%\bin\branch.txt" set /p REDECLIPSE_BRANCH=< "%REDECLIPSE_PATH%\bin\branch.txt"
+        if EXIST "%REDECLIPSE_PATH%\branch.txt" set /p REDECLIPSE_BRANCH=< "%REDECLIPSE_PATH%\branch.txt"
     )
     if "%REDECLIPSE_BRANCH%" == "devel" set REDECLIPSE_BRANCH=master
     if NOT "%REDECLIPSE_BRANCH%" == "stable" if NOT "%REDECLIPSE_BRANCH%" == "master" (
@@ -54,153 +55,102 @@ setlocal enableextensions enabledelayedexpansion
     echo setlocal ENABLEEXTENSIONS>> "%REDECLIPSE_TEMP%\install.bat"
     echo set REDECLIPSE_ERROR=false>> "%REDECLIPSE_TEMP%\install.bat"
     if NOT "%REDECLIPSE_BRANCH%" == "stable" goto bins
-:base
-    echo.
-    if EXIST "%REDECLIPSE_PATH%\bin\base.txt" set /p REDECLIPSE_BASE=< "%REDECLIPSE_PATH%\bin\base.txt"
-    if "%REDECLIPSE_BASE%" == "" set REDECLIPSE_BASE=none
-    echo [I] base: %REDECLIPSE_BASE%
-    set REDECLIPSE_BASE_CACHED=none
-    if NOT EXIST "%REDECLIPSE_TEMP%\base.txt" goto baseget
-    set /p REDECLIPSE_BASE_CACHED=< "%REDECLIPSE_TEMP%\base.txt"
-    if "%REDECLIPSE_BASE_CACHED%" == "" set REDECLIPSE_BASE_CACHED=none
-    echo [C] base: %REDECLIPSE_BASE_CACHED%
-    del /f /q "%REDECLIPSE_TEMP%\base.txt"
-:baseget
-    %REDECLIPSE_CURL% --silent --output "%REDECLIPSE_TEMP%\base.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/base.txt"
-    if NOT EXIST "%REDECLIPSE_TEMP%\base.txt" (
-        echo Failed to retrieve base update information.
-        goto data
-    )
-    set /p REDECLIPSE_BASE_REMOTE=< "%REDECLIPSE_TEMP%\base.txt"
-    if "%REDECLIPSE_BASE_REMOTE%" == "" (
-        echo Failed to read base update information.
-        goto data
-    )
-    echo [R] base: %REDECLIPSE_BASE_REMOTE%
-    if "%REDECLIPSE_BASE_REMOTE%" == "%REDECLIPSE_BASE%" goto data
-    if "%REDECLIPSE_BASE%" == "none" goto baseblob
-:basepatch
-    if EXIST "%REDECLIPSE_TEMP%\base.patch" del /f /q "%REDECLIPSE_TEMP%\base.patch"
-    if EXIST "%REDECLIPSE_TEMP%\base.zip" del /f /q "%REDECLIPSE_TEMP%\base.zip"
-    echo [D] base: %REDECLIPSE_GITHUB%/base/compare/%REDECLIPSE_BASE%...%REDECLIPSE_BASE_REMOTE%.patch
-    echo.
-    %REDECLIPSE_CURL% --output "%REDECLIPSE_TEMP%\base.patch" "%REDECLIPSE_GITHUB%/base/compare/%REDECLIPSE_BASE%...%REDECLIPSE_BASE_REMOTE%.patch"
-    if NOT EXIST "%REDECLIPSE_TEMP%\base.patch" (
-        echo Failed to retrieve base update package. Downloading full zip instead.
-        goto baseblob
-    )
-:basepatchdeploy
-    echo %REDECLIPSE_GITAPPLY% --directory="%REDECLIPSE_PATH%" "%REDECLIPSE_TEMP%\base.patch" ^&^& ^(>> "%REDECLIPSE_TEMP%\install.bat"
-    echo     ^(echo %REDECLIPSE_BASE_REMOTE%^)^> "%REDECLIPSE_PATH%\bin\base.txt">> "%REDECLIPSE_TEMP%\install.bat"
-    echo ^) ^|^| ^(>> "%REDECLIPSE_TEMP%\install.bat"
-    echo     ^(echo none^)^> "%REDECLIPSE_PATH%\bin\base.txt">> "%REDECLIPSE_TEMP%\install.bat"
-    echo     del /f /q "%REDECLIPSE_TEMP%\base.txt">> "%REDECLIPSE_TEMP%\install.bat"
-    echo     set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
-    echo ^)>> "%REDECLIPSE_TEMP%\install.bat"
-    set REDECLIPSE_DEPLOY=true
-    goto data
-:baseblob
-    if EXIST "%REDECLIPSE_TEMP%\base.zip" (
-        if "%REDECLIPSE_BASE_CACHED%" == "%REDECLIPSE_BASE_REMOTE%" (
-            echo [F] base: Using cached file "%REDECLIPSE_TEMP%\base.zip"
-            goto baseblobdeploy
-        ) else del /f /q "%REDECLIPSE_TEMP%\base.zip"
-    )
-    echo [D] base: %REDECLIPSE_GITHUB%/base/zipball/%REDECLIPSE_BASE_REMOTE%
-    echo.
-    %REDECLIPSE_CURL% --output "%REDECLIPSE_TEMP%\base.zip" "%REDECLIPSE_GITHUB%/base/zipball/%REDECLIPSE_BASE_REMOTE%"
-    if NOT EXIST "%REDECLIPSE_TEMP%\base.zip" (
-        echo Failed to retrieve base update package.
-        goto data
-    )
-:baseblobdeploy
-    echo %REDECLIPSE_UNZIP% "%REDECLIPSE_TEMP%\base.zip" -d "%REDECLIPSE_TEMP%" ^&^& ^(>> "%REDECLIPSE_TEMP%\install.bat"
-    echo    xcopy /e /c /i /f /h /y "%REDECLIPSE_TEMP%\red-eclipse-base-%REDECLIPSE_BASE_REMOTE:~0,7%\*" "%REDECLIPSE_PATH%">> "%REDECLIPSE_TEMP%\install.bat"
-    echo    rmdir /s /q "%REDECLIPSE_TEMP%\red-eclipse-base-%REDECLIPSE_BASE_REMOTE:~0,7%">> "%REDECLIPSE_TEMP%\install.bat"
-    echo    ^(echo %REDECLIPSE_BASE_REMOTE%^)^> "%REDECLIPSE_PATH%\bin\base.txt">> "%REDECLIPSE_TEMP%\install.bat"
-    echo ^) ^|^| ^(>> "%REDECLIPSE_TEMP%\install.bat"
-    echo     del /f /q "%REDECLIPSE_TEMP%\base.txt">> "%REDECLIPSE_TEMP%\install.bat"
-    echo     set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
-    echo ^)>> "%REDECLIPSE_TEMP%\install.bat"
-    set REDECLIPSE_DEPLOY=true
-:data
-    echo.
-    if EXIST "%REDECLIPSE_PATH%\data\readme.txt" goto dataver
-    echo Unable to find "data\readme.txt". Will start from scratch.
-    set REDECLIPSE_DATA=none
-    echo mkdir "%REDECLIPSE_PATH%\data">> "%REDECLIPSE_TEMP%\install.bat"
-    goto dataget
-:dataver
-    if EXIST "%REDECLIPSE_PATH%\bin\data.txt" set /p REDECLIPSE_DATA=< "%REDECLIPSE_PATH%\bin\data.txt"
-    if "%REDECLIPSE_DATA%" == "" set REDECLIPSE_DATA=none
-    echo [I] data: %REDECLIPSE_DATA%
-    set REDECLIPSE_DATA_CACHED=none
-    if NOT EXIST "%REDECLIPSE_TEMP%\data.txt" goto dataget
-    set /p REDECLIPSE_DATA_CACHED=< "%REDECLIPSE_TEMP%\data.txt"
-    if "%REDECLIPSE_DATA_CACHED%" == "" set REDECLIPSE_DATA_CACHED=none
-    echo [C] data: %REDECLIPSE_DATA_CACHED%
-    del /f /q "%REDECLIPSE_TEMP%\data.txt"
-:dataget
-    %REDECLIPSE_CURL% --silent --output "%REDECLIPSE_TEMP%\data.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/data.txt"
-    if NOT EXIST "%REDECLIPSE_TEMP%\data.txt" (
-        echo Failed to retrieve data update information.
+:modules
+    %REDECLIPSE_CURL% --silent --output "%REDECLIPSE_TEMP%\modules.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/modules.txt"
+    if NOT EXIST "%REDECLIPSE_TEMP%\modules.txt" (
+        echo Failed to retrieve modules update information.
         goto bins
     )
-    set /p REDECLIPSE_DATA_REMOTE=< "%REDECLIPSE_TEMP%\data.txt"
-    if "%REDECLIPSE_DATA_REMOTE%" == "" (
-        echo Failed to read data update information.
+    set /p REDECLIPSE_MODULE_LIST=< "%REDECLIPSE_TEMP%\modules.txt"
+    if "%REDECLIPSE_MODULE_LIST%" == "" (
+        echo Failed to get module list, continuing..
         goto bins
     )
-    echo [R] data: %REDECLIPSE_DATA_REMOTE%
-    if "%REDECLIPSE_DATA_REMOTE%" == "%REDECLIPSE_DATA%" goto bins
-    if "%REDECLIPSE_DATA%" == "none" goto datablob
-:datapatch
-    if EXIST "%REDECLIPSE_TEMP%\data.patch" del /f /q "%REDECLIPSE_TEMP%\data.patch"
-    if EXIST "%REDECLIPSE_TEMP%\data.zip" del /f /q "%REDECLIPSE_TEMP%\data.zip"
-    echo [D] data: %REDECLIPSE_GITHUB%/data/compare/%REDECLIPSE_DATA%...%REDECLIPSE_DATA_REMOTE%.patch
-    echo.
-    %REDECLIPSE_CURL% --output "%REDECLIPSE_TEMP%\data.patch" "%REDECLIPSE_GITHUB%/data/compare/%REDECLIPSE_DATA%...%REDECLIPSE_DATA_REMOTE%.patch"
-    if NOT EXIST "%REDECLIPSE_TEMP%\data.patch" (
-        echo Failed to retrieve data update package. Downloading full zip instead.
-        goto datablob
+    for /f %%a in %REDECLIPSE_MODULE_LIST% do (
+        set REDEECLIPSE_MODULE_RUN=%%a
+        if NOT "!REDEECLIPSE_MODULE_RUN!" == "" (
+            call :module "%REDECLIPSE_UPDATER%" && (set REDECLIPSE_DEPLOY=true) || (echo There was an error updating module !REDEECLIPSE_MODULE_RUN!, continuing..)
+        )
     )
-:datapatchdeploy
-    echo %REDECLIPSE_GITAPPLY% --directory="%REDECLIPSE_PATH%\data" "%REDECLIPSE_TEMP%\data.patch" ^&^& ^(>> "%REDECLIPSE_TEMP%\install.bat"
-    echo     ^(echo %REDECLIPSE_DATA_REMOTE%^)^> "%REDECLIPSE_PATH%\bin\data.txt">> "%REDECLIPSE_TEMP%\install.bat"
+:module
+    echo.
+    if "%REDEECLIPSE_MODULE_RUN%" == "" exit /b 1
+    if "%REDEECLIPSE_MODULE_RUN%" == "base" (set REDEECLIPSE_MODULE_DIR=) else (set REDEECLIPSE_MODULE_DIR=\%REDEECLIPSE_MODULE_RUN%)
+    if EXIST "%REDECLIPSE_PATH%%REDEECLIPSE_MODULE_DIR%\readme.txt" goto modulever
+    echo Unable to find ".%REDEECLIPSE_MODULE_DIR%\readme.txt". Will start from scratch.
+    set REDECLIPSE_MODULE_INSTALLED=none
+    echo mkdir "%REDECLIPSE_PATH%%REDEECLIPSE_MODULE_DIR%">> "%REDECLIPSE_TEMP%\install.bat"
+    goto moduleget
+:modulever
+    if EXIST "%REDECLIPSE_PATH%%REDEECLIPSE_MODULE_DIR%\version.txt" set /p REDECLIPSE_MODULE_INSTALLED=< "%REDECLIPSE_PATH%%REDEECLIPSE_MODULE_DIR%\version.txt"
+    if "%REDECLIPSE_MODULE_INSTALLED%" == "" set REDECLIPSE_MODULE_INSTALLED=none
+    echo [I] %REDEECLIPSE_MODULE_RUN%: %REDECLIPSE_MODULE_INSTALLED%
+    set REDECLIPSE_MODULE_CACHED=none
+    if NOT EXIST "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.txt" goto moduleget
+    set /p REDECLIPSE_MODULE_CACHED=< "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.txt"
+    if "%REDECLIPSE_MODULE_CACHED%" == "" set REDECLIPSE_MODULE_CACHED=none
+    echo [C] %REDEECLIPSE_MODULE_RUN%: %REDECLIPSE_MODULE_CACHED%
+    del /f /q "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.txt"
+:moduleget
+    %REDECLIPSE_CURL% --silent --output "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/%REDEECLIPSE_MODULE_RUN%.txt"
+    if NOT EXIST "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.txt" (
+        echo Failed to retrieve %REDEECLIPSE_MODULE_RUN% update information.
+        exit /b 1
+    )
+    set /p REDECLIPSE_MODULE_REMOTE=< "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.txt"
+    if "%REDECLIPSE_MODULE_REMOTE%" == "" (
+        echo Failed to read %REDEECLIPSE_MODULE_RUN% update information.
+        exit /b 1
+    )
+    echo [R] %REDEECLIPSE_MODULE_RUN%: %REDECLIPSE_MODULE_REMOTE%
+    if "%REDECLIPSE_MODULE_REMOTE%" == "%REDECLIPSE_MODULE_INSTALLED%" exit /b 0
+    if "%REDECLIPSE_MODULE_INSTALLED%" == "none" goto moduleblob
+:modulepatch
+    if EXIST "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.patch" del /f /q "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.patch"
+    if EXIST "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.zip" del /f /q "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.zip"
+    echo [D] %REDEECLIPSE_MODULE_RUN%: %REDECLIPSE_GITHUB%/%REDEECLIPSE_MODULE_RUN%/compare/%REDECLIPSE_MODULE_INSTALLED%...%REDECLIPSE_MODULE_REMOTE%.patch
+    echo.
+    %REDECLIPSE_CURL% --output "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.patch" "%REDECLIPSE_GITHUB%/%REDEECLIPSE_MODULE_RUN%/compare/%REDECLIPSE_MODULE_INSTALLED%...%REDECLIPSE_MODULE_REMOTE%.patch"
+    if NOT EXIST "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.patch" (
+        echo Failed to retrieve %REDEECLIPSE_MODULE_RUN% update package. Downloading full zip instead.
+        goto moduleblob
+    )
+:modulepatchdeploy
+    echo %REDECLIPSE_GITAPPLY% --directory="%REDECLIPSE_PATH%%REDEECLIPSE_MODULE_DIR%" "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.patch" ^&^& ^(>> "%REDECLIPSE_TEMP%\install.bat"
+    echo     ^(echo %REDECLIPSE_MODULE_REMOTE%^)^> "%REDECLIPSE_PATH%%REDEECLIPSE_MODULE_DIR%\version.txt">> "%REDECLIPSE_TEMP%\install.bat"
     echo ^) ^|^| ^(>> "%REDECLIPSE_TEMP%\install.bat"
-    echo     ^(echo none^)^> "%REDECLIPSE_PATH%\bin\data.txt">> "%REDECLIPSE_TEMP%\install.bat"
-    echo     del /f /q "%REDECLIPSE_TEMP%\data.txt">> "%REDECLIPSE_TEMP%\install.bat"
+    echo     ^(echo none^)^> "%REDECLIPSE_PATH%%REDEECLIPSE_MODULE_DIR%\version.txt">> "%REDECLIPSE_TEMP%\install.bat"
+    echo     del /f /q "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.txt">> "%REDECLIPSE_TEMP%\install.bat"
     echo     set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
     echo ^)>> "%REDECLIPSE_TEMP%\install.bat"
-    set REDECLIPSE_DEPLOY=true
-    goto bins
-:datablob
-    if EXIST "%REDECLIPSE_TEMP%\data.zip" (
-        if "%REDECLIPSE_DATA_CACHED%" == "%REDECLIPSE_DATA_REMOTE%" (
-            echo [F] data: Using cached file "%REDECLIPSE_TEMP%\data.zip"
-            goto datablobdeploy
-        ) else del /f /q "%REDECLIPSE_TEMP%\data.zip"
+    exit /b 0
+:moduleblob
+    if EXIST "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.zip" (
+        if "%REDECLIPSE_MODULE_CACHED%" == "%REDECLIPSE_MODULE_REMOTE%" (
+            echo [F] %REDEECLIPSE_MODULE_RUN%: Using cached file "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.zip"
+            goto moduleblobdeploy
+        ) else del /f /q "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.zip"
     )
-    echo [D] data: %REDECLIPSE_GITHUB%/data/zipball/%REDECLIPSE_DATA_REMOTE%
+    echo [D] %REDEECLIPSE_MODULE_RUN%: %REDECLIPSE_GITHUB%/%REDEECLIPSE_MODULE_RUN%/zipball/%REDECLIPSE_MODULE_REMOTE%
     echo.
-    %REDECLIPSE_CURL% --output "%REDECLIPSE_TEMP%\data.zip" "%REDECLIPSE_GITHUB%/data/zipball/%REDECLIPSE_DATA_REMOTE%"
-    if NOT EXIST "%REDECLIPSE_TEMP%\data.zip" (
-        echo Failed to retrieve data update package.
-        goto bins
+    %REDECLIPSE_CURL% --output "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.zip" "%REDECLIPSE_GITHUB%/%REDEECLIPSE_MODULE_RUN%/zipball/%REDECLIPSE_MODULE_REMOTE%"
+    if NOT EXIST "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.zip" (
+        echo Failed to retrieve %REDEECLIPSE_MODULE_RUN% update package.
+        exit /b 1
     )
-:datablobdeploy
-    echo %REDECLIPSE_UNZIP% "%REDECLIPSE_TEMP%\data.zip" -d "%REDECLIPSE_TEMP%" ^&^& ^(>> "%REDECLIPSE_TEMP%\install.bat"
-    echo    xcopy /e /c /i /f /h /y "%REDECLIPSE_TEMP%\red-eclipse-data-%REDECLIPSE_DATA_REMOTE:~0,7%\*" "%REDECLIPSE_PATH%\data">> "%REDECLIPSE_TEMP%\install.bat"
-    echo    rmdir /s /q "%REDECLIPSE_TEMP%\red-eclipse-data-%REDECLIPSE_DATA_REMOTE:~0,7%">> "%REDECLIPSE_TEMP%\install.bat"
-    echo    ^(echo %REDECLIPSE_DATA_REMOTE%^)^> "%REDECLIPSE_PATH%\bin\data.txt">> "%REDECLIPSE_TEMP%\install.bat"
+:moduleblobdeploy
+    echo %REDECLIPSE_UNZIP% "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.zip" -d "%REDECLIPSE_TEMP%" ^&^& ^(>> "%REDECLIPSE_TEMP%\install.bat"
+    echo    xcopy /e /c /i /f /h /y "%REDECLIPSE_TEMP%\red-eclipse-%REDEECLIPSE_MODULE_RUN%-%REDECLIPSE_MODULE_REMOTE:~0,7%\*" "%REDECLIPSE_PATH%%REDEECLIPSE_MODULE_DIR%">> "%REDECLIPSE_TEMP%\install.bat"
+    echo    rmdir /s /q "%REDECLIPSE_TEMP%\red-eclipse-%REDEECLIPSE_MODULE_RUN%-%REDECLIPSE_MODULE_REMOTE:~0,7%">> "%REDECLIPSE_TEMP%\install.bat"
+    echo    ^(echo %REDECLIPSE_MODULE_REMOTE%^)^> "%REDECLIPSE_PATH%%REDEECLIPSE_MODULE_DIR%\version.txt">> "%REDECLIPSE_TEMP%\install.bat"
     echo ^) ^|^| ^(>> "%REDECLIPSE_TEMP%\install.bat"
-    echo     del /f /q "%REDECLIPSE_TEMP%\data.txt">> "%REDECLIPSE_TEMP%\install.bat"
+    echo     del /f /q "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.txt">> "%REDECLIPSE_TEMP%\install.bat"
     echo     set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
     echo ^)>> "%REDECLIPSE_TEMP%\install.bat"
-    set REDECLIPSE_DEPLOY=true
+    exit /b 0
 :bins
     echo.
-    if EXIST "%REDECLIPSE_PATH%\bin\bins.txt" set /p REDECLIPSE_BINS=< "%REDECLIPSE_PATH%\bin\bins.txt"
+    if EXIST "%REDECLIPSE_PATH%\bin\version.txt" set /p REDECLIPSE_BINS=< "%REDECLIPSE_PATH%\bin\version.txt"
     if "%REDECLIPSE_BINS%" == "" set REDECLIPSE_BINS=none
     echo [I] bins: %REDECLIPSE_BINS%
     set REDECLIPSE_BINS_CACHED=none
@@ -238,7 +188,7 @@ setlocal enableextensions enabledelayedexpansion
     )
 :binsdeploy
     echo %REDECLIPSE_UNZIP% "%REDECLIPSE_TEMP%\windows.zip" -d "%REDECLIPSE_PATH%" ^&^& ^(>> "%REDECLIPSE_TEMP%\install.bat"
-    echo     ^(echo %REDECLIPSE_BINS_REMOTE%^)^> "%REDECLIPSE_PATH%\bin\bins.txt">> "%REDECLIPSE_TEMP%\install.bat"
+    echo     ^(echo %REDECLIPSE_BINS_REMOTE%^)^> "%REDECLIPSE_PATH%\bin\version.txt">> "%REDECLIPSE_TEMP%\install.bat"
     echo ^) ^|^| ^(>> "%REDECLIPSE_TEMP%\install.bat"
     echo     del /f /q "%REDECLIPSE_TEMP%\bins.txt">> "%REDECLIPSE_TEMP%\install.bat"
     echo     set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
@@ -267,7 +217,7 @@ setlocal enableextensions enabledelayedexpansion
 %REDECLIPSE_INSTALL% "%REDECLIPSE_TEMP%\install.bat" && (
     echo.
     echo Updated successfully.
-    (echo %REDECLIPSE_BRANCH%)> "%REDECLIPSE_PATH%\bin\branch.txt"
+    (echo %REDECLIPSE_BRANCH%)> "%REDECLIPSE_PATH%\branch.txt"
     exit /b 0
 ) || (
     echo.

@@ -3,8 +3,6 @@
 *.exe
 redeclipse_client_*
 redeclipse_server_*
-bin/*.txt
-bin/redeclipse.app/Contents/MacOS/redeclipse_*
 src/.objs/
 *.o
 *.so
@@ -26,9 +24,11 @@ out
 *.diff
 *.patch
 *.out
-.gitattributes
 home/
 cache/
 src/redeclipse.layout
 src/redeclipse.depend
 src/redeclipse.res
+branch.txt
+version.txt
+*/version.txt

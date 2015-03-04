@@ -74,6 +74,7 @@ semabuild_build() {
 
 semabuild_sync() {
     echo "Syncing ${BRANCH_NAME} as no source files have changed."
+    echo "base data" > "${SEMABUILD_DIR}/modules.txt"
     if [ -n "${SEMABUILD_BASE}" ] && [ "${SEMABUILD_BASE}" != "${SEMABUILD_BASE_LAST}" ]; then
         echo "Module 'base' commit updated, syncing that: ${SEMABUILD_BASE} -> ${SEMABUILD_BASE_LAST}"
         echo "${SEMABUILD_BASE}" > "${SEMABUILD_DIR}/base.txt"
@@ -107,6 +108,7 @@ semabuild_deploy() {
     cd "${SEMABUILD_PWD}" || return 1
     # sha
     rm -rfv "${SEMABUILD_DIR}/windows" "${SEMABUILD_DIR}/linux" || return 1
+    echo "base data" > "${SEMABUILD_DIR}/modules.txt"
     echo "Module 'base' commit, syncing: ${SEMABUILD_BASE}"
     echo "${SEMABUILD_BASE}" > "${SEMABUILD_DIR}/bins.txt"
     echo "${SEMABUILD_BASE}" > "${SEMABUILD_DIR}/base.txt"

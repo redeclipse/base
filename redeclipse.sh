@@ -61,7 +61,7 @@ redeclipse_setup() {
     if [ -z "${REDECLIPSE_BRANCH+isset}" ]; then
         REDECLIPSE_BRANCH="stable"
         if [ -e ".git" ]; then REDECLIPSE_BRANCH="master"; fi
-        if [ -e "${REDECLIPSE_PATH}/bin/branch.txt" ]; then REDECLIPSE_BRANCH=`cat "${REDECLIPSE_PATH}/bin/branch.txt"`; fi
+        if [ -e "${REDECLIPSE_PATH}/branch.txt" ]; then REDECLIPSE_BRANCH=`cat "${REDECLIPSE_PATH}/branch.txt"`; fi
     fi
     if [ "${REDECLIPSE_BRANCH}" = "devel" ]; then REDECLIPSE_BRANCH="master"; fi
     if [ "${REDECLIPSE_BRANCH}" != "stable" ] && [ "${REDECLIPSE_BRANCH}" != "master" ] && [ "${REDECLIPSE_BRANCH}" != "source" ] && [ "${REDECLIPSE_BRANCH}" != "inplace" ]; then

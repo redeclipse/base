@@ -6,7 +6,7 @@ setlocal enableextensions enabledelayedexpansion
     set REDECLIPSE_PATH=%CD%
     popd
 :init
-    set REDECLIPSE_SCRIPT=%REDECLIPSE_PATH%\%0
+    set REDECLIPSE_SCRIPT=%~dp0\%0
     for %%a in ("%REDECLIPSE_SCRIPT%") do set REDECLIPSE_SCRIPT_TIME=%%~ta
     if NOT DEFINED REDECLIPSE_BINARY set REDECLIPSE_BINARY=redeclipse
     set REDECLIPSE_SUFFIX=.exe
@@ -24,7 +24,7 @@ setlocal enableextensions enabledelayedexpansion
     if NOT DEFINED REDECLIPSE_BRANCH (
         set REDECLIPSE_BRANCH=stable
         if EXIST .git set REDECLIPSE_BRANCH=master
-        if EXIST "%REDECLIPSE_PATH%\bin\branch.txt" set /p REDECLIPSE_BRANCH=< "%REDECLIPSE_PATH%\bin\branch.txt"
+        if EXIST "%REDECLIPSE_PATH%\branch.txt" set /p REDECLIPSE_BRANCH=< "%REDECLIPSE_PATH%\branch.txt"
     )
     if "%REDECLIPSE_BRANCH%" == "devel" set REDECLIPSE_BRANCH=master
     if NOT "%REDECLIPSE_BRANCH%" == "stable" if NOT "%REDECLIPSE_BRANCH%" == "master" if NOT "%REDECLIPSE_BRANCH%" == "source" if NOT "%REDECLIPSE_BRANCH%" == "inplace" (
