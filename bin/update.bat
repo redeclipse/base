@@ -61,12 +61,13 @@ setlocal enableextensions enabledelayedexpansion
         echo Failed to get module list, continuing..
         goto bins
     )
-    for /f %%a in %REDECLIPSE_MODULE_LIST% do (
+    for %%a in (%REDECLIPSE_MODULE_LIST%) do (
         set REDEECLIPSE_MODULE_RUN=%%a
         if NOT "!REDEECLIPSE_MODULE_RUN!" == "" (
             call :module "%REDECLIPSE_UPDATER%" && (set REDECLIPSE_DEPLOY=true) || (echo There was an error updating module !REDEECLIPSE_MODULE_RUN!, continuing..)
         )
     )
+    goto bins
 :module
     echo.
     if "%REDEECLIPSE_MODULE_RUN%" == "" exit /b 1
