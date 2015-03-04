@@ -48,10 +48,6 @@ redeclipse_update_setup() {
         if [ -e ".git" ]; then REDECLIPSE_BRANCH="devel"; fi
         if [ -e "${REDECLIPSE_PATH}/branch.txt" ]; then REDECLIPSE_BRANCH=`cat "${REDECLIPSE_PATH}/branch.txt"`; fi
     fi
-    if [ "${REDECLIPSE_BRANCH}" != "stable" ] && [ "${REDECLIPSE_BRANCH}" != "master" ] && [ "${REDECLIPSE_BRANCH}" != "devel" ]; then
-        echo "Unsupported update branch: \"${REDECLIPSE_BRANCH}\""
-        return 1
-    fi
     REDECLIPSE_UPDATE="${REDECLIPSE_BRANCH}"
     REDECLIPSE_TEMP="${REDECLIPSE_CACHE}/${REDECLIPSE_BRANCH}"
     case "${REDECLIPSE_TARGET}" in
@@ -103,7 +99,7 @@ redeclipse_update_branch() {
     if ! [ -d "${REDECLIPSE_TEMP}" ]; then mkdir -p "${REDECLIPSE_TEMP}"; fi
     echo "#"'!'"/bin/sh" > "${REDECLIPSE_TEMP}/install.sh"
     echo "REDECLIPSE_ERROR=\"false\"" >> "${REDECLIPSE_TEMP}/install.sh"
-    if [ "${REDECLIPSE_BRANCH}" != "stable" ] && [ "${REDECLIPSE_BRANCH}" != "master" ]; then
+    if [ "${REDECLIPSE_BRANCH}" = "devel" ]; then
         redeclipse_update_bins
         return $?
     fi

@@ -26,13 +26,11 @@ setlocal enableextensions enabledelayedexpansion
         if EXIST .git set REDECLIPSE_BRANCH=devel
         if EXIST "%REDECLIPSE_PATH%\branch.txt" set /p REDECLIPSE_BRANCH=< "%REDECLIPSE_PATH%\branch.txt"
     )
-    if NOT "%REDECLIPSE_BRANCH%" == "stable" if NOT "%REDECLIPSE_BRANCH%" == "master" if NOT "%REDECLIPSE_BRANCH%" == "devel" if NOT "%REDECLIPSE_BRANCH%" == "source" if NOT "%REDECLIPSE_BRANCH%" == "inplace" (
-        set REDECLIPSE_BRANCH=inplace
-    )
     if NOT DEFINED REDECLIPSE_HOME if NOT "%REDECLIPSE_BRANCH%" == "stable" if NOT "%REDECLIPSE_BRANCH%" == "inplace" set REDECLIPSE_HOME=home
     if DEFINED REDECLIPSE_HOME set REDECLIPSE_OPTIONS="-h%REDECLIPSE_HOME%" %REDECLIPSE_OPTIONS%
 :check
-    if NOT "%REDECLIPSE_BRANCH%" == "stable" if NOT "%REDECLIPSE_BRANCH%" == "master" goto runit
+    if "%REDECLIPSE_BRANCH%" == "source" goto runit
+    if "%REDECLIPSE_BRANCH%" == "inplace" goto runit
     echo.
     echo Checking for updates to "%REDECLIPSE_BRANCH%". To disable: set REDECLIPSE_BRANCH=inplace
     echo.

@@ -24,10 +24,6 @@ setlocal enableextensions enabledelayedexpansion
         if EXIST .git set REDECLIPSE_BRANCH=devel
         if EXIST "%REDECLIPSE_PATH%\branch.txt" set /p REDECLIPSE_BRANCH=< "%REDECLIPSE_PATH%\branch.txt"
     )
-    if NOT "%REDECLIPSE_BRANCH%" == "stable" if NOT "%REDECLIPSE_BRANCH%" == "master" if NOT "%REDECLIPSE_BRANCH%" == "devel" (
-        echo Unsupported update branch: "%REDECLIPSE_BRANCH%"
-        exit /b 0
-    )
     set REDECLIPSE_UPDATE=%REDECLIPSE_BRANCH%
     set REDECLIPSE_TEMP=%REDECLIPSE_CACHE%\%REDECLIPSE_BRANCH%
 :branch
@@ -53,7 +49,7 @@ setlocal enableextensions enabledelayedexpansion
     echo @ECHO OFF> "%REDECLIPSE_TEMP%\install.bat"
     echo setlocal ENABLEEXTENSIONS>> "%REDECLIPSE_TEMP%\install.bat"
     echo set REDECLIPSE_ERROR=false>> "%REDECLIPSE_TEMP%\install.bat"
-    if NOT "%REDECLIPSE_BRANCH%" == "stable" if NOT "%REDECLIPSE_BRANCH%" == "master" goto bins
+    if "%REDECLIPSE_BRANCH%" == "devel" goto bins
 :modules
     %REDECLIPSE_CURL% --silent --output "%REDECLIPSE_TEMP%\modules.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/modules.txt"
     if NOT EXIST "%REDECLIPSE_TEMP%\modules.txt" (
