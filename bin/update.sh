@@ -100,18 +100,18 @@ redeclipse_update_branch() {
     echo "#"'!'"/bin/sh" > "${REDECLIPSE_TEMP}/install.sh"
     echo "REDECLIPSE_ERROR=\"false\"" >> "${REDECLIPSE_TEMP}/install.sh"
     if [ "${REDECLIPSE_BRANCH}" = "devel" ]; then
-        redeclipse_update_bins
+        redeclipse_update_bins_run
         return $?
     fi
-    redeclipse_update_modules
+    redeclipse_update_module
     return $?
 }
 
-redeclipse_update_modules() {
+redeclipse_update_module() {
     ${REDECLIPSE_CURL} --silent --output "${REDECLIPSE_TEMP}/modules.txt" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/modules.txt"
     if ! [ -e "${REDECLIPSE_TEMP}/modules.txt" ]; then
         echo "Failed to retrieve modules update information."
-        redeclipse_update_bins
+        redeclipse_update_bins_run
         return $?
     fi
     REDECLIPSE_MODULE_LIST=`cat "${REDECLIPSE_TEMP}/modules.txt"`
@@ -121,18 +121,18 @@ redeclipse_update_modules() {
         for a in ${REDECLIPSE_MODULE_LIST}; do
             REDEECLIPSE_MODULE_RUN="${a}"
             if [ -n "${REDEECLIPSE_MODULE_RUN}" ]; then
-                redeclipse_update_module
+                redeclipse_update_module_run
                 if [ $? -ne 0 ]; then
                     echo "${REDEECLIPSE_MODULE_RUN}: There was an error updating the module, continuing.."
                 fi
             fi
         done
     fi
-    redeclipse_update_bins
+    redeclipse_update_bins_run
     return $?
 }
 
-redeclipse_update_module() {
+redeclipse_update_module_run() {
     echo ""
     if [ "${REDEECLIPSE_MODULE_RUN}" = "base" ]; then
         REDEECLIPSE_MODULE_DIR=""
@@ -140,35 +140,35 @@ redeclipse_update_module() {
         REDEECLIPSE_MODULE_DIR="/${REDEECLIPSE_MODULE_RUN}"
     fi
     if  [ -e "${REDECLIPSE_PATH}${REDEECLIPSE_MODULE_DIR}/readme.txt" ]; then
-        redeclipse_update_modulever
+        redeclipse_update_module_ver
         return $?
     fi
     echo "${REDEECLIPSE_MODULE_RUN}: Unable to find \".${REDEECLIPSE_MODULE_DIR}/readme.txt\". Will start from scratch."
     REDECLIPSE_MODULE_INSTALLED="none"
     echo "mkdir -p \"${REDECLIPSE_PATH}${REDEECLIPSE_MODULE_DIR}\"" >> "${REDECLIPSE_TEMP}/install.sh"
-    redeclipse_update_moduleget
+    redeclipse_update_module_get
     return $?
 }
 
-redeclipse_update_modulever() {
+redeclipse_update_module_ver() {
     echo ""
     if [ -e "${REDECLIPSE_PATH}${REDEECLIPSE_MODULE_DIR}/version.txt" ]; then REDECLIPSE_MODULE_INSTALLED=`cat "${REDECLIPSE_PATH}${REDEECLIPSE_MODULE_DIR}/version.txt"`; fi
     if [ -z "${REDECLIPSE_MODULE_INSTALLED}" ]; then REDECLIPSE_MODULE_INSTALLED="none"; fi
     echo "${REDEECLIPSE_MODULE_RUN}: ${REDECLIPSE_MODULE_INSTALLED} is installed."
     REDECLIPSE_MODULE_CACHED="none"
     if ! [ -e "${REDECLIPSE_TEMP}/${REDEECLIPSE_MODULE_RUN}.txt" ]; then
-        redeclipse_update_moduleget
+        redeclipse_update_module_get
         return $?
     fi
     REDECLIPSE_MODULE_CACHED=`cat "${REDECLIPSE_TEMP}/${REDEECLIPSE_MODULE_RUN}.txt"`
     if [ -z "${REDECLIPSE_MODULE_CACHED}" ]; then REDECLIPSE_MODULE_CACHED="none"; fi
     echo "${REDEECLIPSE_MODULE_RUN}: ${REDECLIPSE_MODULE_CACHED} is in the cache."
     rm -f "${REDECLIPSE_TEMP}/${REDEECLIPSE_MODULE_RUN}.txt"
-    redeclipse_update_moduleget
+    redeclipse_update_module_get
     return $?
 }
 
-redeclipse_update_moduleget() {
+redeclipse_update_module_get() {
     ${REDECLIPSE_CURL} --silent --output "${REDECLIPSE_TEMP}/${REDEECLIPSE_MODULE_RUN}.txt" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/${REDEECLIPSE_MODULE_RUN}.txt"
     if ! [ -e "${REDECLIPSE_TEMP}/${REDEECLIPSE_MODULE_RUN}.txt" ]; then
         echo "${REDEECLIPSE_MODULE_RUN}: Failed to retrieve update information."
@@ -185,14 +185,14 @@ redeclipse_update_moduleget() {
         return $?
     fi
     if [ "${REDECLIPSE_MODULE_INSTALLED}" = "none" ]; then
-        redeclipse_update_moduleblob
+        redeclipse_update_module_blob
         return $?
     fi
-    redeclipse_update_modulepatch
+    redeclipse_update_module_patch
     return $?
 }
 
-redeclipse_update_modulepatch() {
+redeclipse_update_module_patch() {
     if [ -e "${REDECLIPSE_TEMP}/${REDEECLIPSE_MODULE_RUN}.patch" ]; then rm -f "${REDECLIPSE_TEMP}/${REDEECLIPSE_MODULE_RUN}.patch"; fi
     if [ -e "${REDECLIPSE_TEMP}/${REDEECLIPSE_MODULE_RUN}.${REDECLIPSE_ARCHEXT}" ]; then rm -f "${REDECLIPSE_TEMP}/${REDEECLIPSE_MODULE_RUN}.${REDECLIPSE_ARCHEXT}"; fi
     echo "${REDEECLIPSE_MODULE_RUN}: ${REDECLIPSE_GITHUB}/${REDEECLIPSE_MODULE_RUN}/compare/${REDECLIPSE_MODULE_INSTALLED}...${REDECLIPSE_MODULE_REMOTE}.patch"
@@ -200,14 +200,14 @@ redeclipse_update_modulepatch() {
     ${REDECLIPSE_CURL} --output "${REDECLIPSE_TEMP}/${REDEECLIPSE_MODULE_RUN}.patch" "${REDECLIPSE_GITHUB}/${REDEECLIPSE_MODULE_RUN}/compare/${REDECLIPSE_MODULE_INSTALLED}...${REDECLIPSE_MODULE_REMOTE}.patch"
     if ! [ -e "${REDECLIPSE_TEMP}/${REDEECLIPSE_MODULE_RUN}.patch" ]; then
         echo "${REDEECLIPSE_MODULE_RUN}: Failed to retrieve update package. Downloading full zip instead."
-        redeclipse_update_moduleblob
+        redeclipse_update_module_blob
         return $?
     fi
-    redeclipse_update_modulepatchdeploy
+    redeclipse_update_module_patch_deploy
     return $?
 }
 
-redeclipse_update_modulepatchdeploy() {
+redeclipse_update_module_patch_deploy() {
     echo "echo \"${REDEECLIPSE_MODULE_RUN}: applying patches.\"" >> "${REDECLIPSE_TEMP}/install.sh"
     echo "${REDECLIPSE_GITAPPLY} --directory=\"${REDECLIPSE_PATH}${REDEECLIPSE_MODULE_DIR}\" \"${REDECLIPSE_TEMP}/${REDEECLIPSE_MODULE_RUN}.patch\" && (" >> "${REDECLIPSE_TEMP}/install.sh"
     echo "    echo \"${REDECLIPSE_MODULE_REMOTE}\" > \"${REDECLIPSE_PATH}${REDEECLIPSE_MODULE_DIR}/version.txt\"" >> "${REDECLIPSE_TEMP}/install.sh"
@@ -219,11 +219,11 @@ redeclipse_update_modulepatchdeploy() {
     return $?
 }
 
-redeclipse_update_moduleblob() {
+redeclipse_update_module_blob() {
     if [ -e "${REDECLIPSE_TEMP}/${REDEECLIPSE_MODULE_RUN}.${REDECLIPSE_ARCHEXT}" ]; then
         if [ "${REDECLIPSE_MODULE_CACHED}" = "${REDECLIPSE_MODULE_REMOTE}" ]; then
             echo "${REDEECLIPSE_MODULE_RUN}: Using cached file \"${REDECLIPSE_TEMP}/${REDEECLIPSE_MODULE_RUN}.${REDECLIPSE_ARCHEXT}\""
-            redeclipse_update_moduleblobdeploy
+            redeclipse_update_module_blob_deploy
             return $?
         else
             rm -f "${REDECLIPSE_TEMP}/${REDEECLIPSE_MODULE_RUN}.${REDECLIPSE_ARCHEXT}"
@@ -236,11 +236,11 @@ redeclipse_update_moduleblob() {
         echo "${REDEECLIPSE_MODULE_RUN}: Failed to retrieve update package."
         return $?
     fi
-    redeclipse_update_moduleblobdeploy
+    redeclipse_update_module_blob_deploy
     return $?
 }
 
-redeclipse_update_moduleblobdeploy() {
+redeclipse_update_module_blob_deploy() {
     echo "echo \"${REDEECLIPSE_MODULE_RUN}: deploying blob.\"" >> "${REDECLIPSE_TEMP}/install.sh"
     if [ "${REDECLIPSE_BLOB}" = "zipball" ]; then
         echo "${REDECLIPSE_UNZIP} -o \"${REDECLIPSE_TEMP}/${REDEECLIPSE_MODULE_RUN}.${REDECLIPSE_ARCHEXT}\" -d \"${REDECLIPSE_TEMP}\" && (" >> "${REDECLIPSE_TEMP}/install.sh"
@@ -257,25 +257,25 @@ redeclipse_update_moduleblobdeploy() {
     return $?
 }
 
-redeclipse_update_bins() {
+redeclipse_update_bins_run() {
     echo ""
     if [ -e "${REDECLIPSE_PATH}/bin/version.txt" ]; then REDECLIPSE_BINS=`cat "${REDECLIPSE_PATH}/bin/version.txt"`; fi
     if [ -z "${REDECLIPSE_BINS}" ]; then REDECLIPSE_BINS="none"; fi
     echo "bins: ${REDECLIPSE_BINS} is installed."
     REDECLIPSE_BINS_CACHED="none"
     if ! [ -e "${REDECLIPSE_TEMP}/bins.txt" ]; then
-        redeclipse_update_binsget
+        redeclipse_update_bins_get
         return $?
     fi
     REDECLIPSE_BINS_CACHED=`cat "${REDECLIPSE_TEMP}/bins.txt"`
     if [ -z "${REDECLIPSE_BINS_CACHED}" ]; then REDECLIPSE_BINS_CACHED="none"; fi
     echo "bins: ${REDECLIPSE_BINS_CACHED} is in the cache."
     rm -f "${REDECLIPSE_TEMP}/bins.txt"
-    redeclipse_update_binsget
+    redeclipse_update_bins_get
     return $?
 }
 
-redeclipse_update_binsget() {
+redeclipse_update_bins_get() {
     ${REDECLIPSE_CURL} --silent --output "${REDECLIPSE_TEMP}/bins.txt" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/bins.txt"
     if ! [ -e "${REDECLIPSE_TEMP}/bins.txt" ]; then
         echo "bins: Failed to retrieve update information."
@@ -294,15 +294,15 @@ redeclipse_update_binsget() {
         redeclipse_update_deploy
         return $?
     fi
-    redeclipse_update_binsblob
+    redeclipse_update_bins_blob
     return $?
 }
 
-redeclipse_update_binsblob() {
+redeclipse_update_bins_blob() {
     if [ -e "${REDECLIPSE_TEMP}/${REDECLIPSE_ARCHIVE}" ]; then
         if [ "${REDECLIPSE_BINS_CACHED}" = "${REDECLIPSE_BINS_REMOTE}" ]; then
             echo "bins: Using cached file \"${REDECLIPSE_TEMP}/${REDECLIPSE_ARCHIVE}\""
-            redeclipse_update_binsdeploy
+            redeclipse_update_bins_deploy
             return $?
         else
             rm -f "${REDECLIPSE_TEMP}/${REDECLIPSE_ARCHIVE}"
@@ -316,11 +316,11 @@ redeclipse_update_binsblob() {
         redeclipse_update_deploy
         return $?
     fi
-    redeclipse_update_binsdeploy
+    redeclipse_update_bins_deploy
     return $?
 }
 
-redeclipse_update_binsdeploy() {
+redeclipse_update_bins_deploy() {
     echo "echo \"bins: deploying blob.\"" >> "${REDECLIPSE_TEMP}/install.sh"
     if [ "${REDECLIPSE_TARGET}" = "windows" ]; then
         echo "${REDECLIPSE_UNZIP} -o \"${REDECLIPSE_TEMP}/${REDECLIPSE_ARCHIVE}\" -d \"${REDECLIPSE_PATH}\" && (" >> "${REDECLIPSE_TEMP}/install.sh"
