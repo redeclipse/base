@@ -181,6 +181,7 @@ redeclipse_update_moduleget() {
     fi
     echo "${REDEECLIPSE_MODULE_RUN}: ${REDECLIPSE_MODULE_REMOTE} is the current version."
     if [ "${REDECLIPSE_MODULE_REMOTE}" = "${REDECLIPSE_MODULE_INSTALLED}" ]; then
+        echo "echo \"${REDEECLIPSE_MODULE_RUN}: already up to date.\"" >> "${REDECLIPSE_TEMP}/install.sh"
         return $?
     fi
     if [ "${REDECLIPSE_MODULE_INSTALLED}" = "none" ]; then
@@ -207,6 +208,7 @@ redeclipse_update_modulepatch() {
 }
 
 redeclipse_update_modulepatchdeploy() {
+    echo "echo \"${REDEECLIPSE_MODULE_RUN}: applying patches.\"" >> "${REDECLIPSE_TEMP}/install.sh"
     echo "${REDECLIPSE_GITAPPLY} --directory=\"${REDECLIPSE_PATH}${REDEECLIPSE_MODULE_DIR}\" \"${REDECLIPSE_TEMP}/${REDEECLIPSE_MODULE_RUN}.patch\" && (" >> "${REDECLIPSE_TEMP}/install.sh"
     echo "    echo \"${REDECLIPSE_MODULE_REMOTE}\" > \"${REDECLIPSE_PATH}${REDEECLIPSE_MODULE_DIR}/version.txt\"" >> "${REDECLIPSE_TEMP}/install.sh"
     echo ") || (" >> "${REDECLIPSE_TEMP}/install.sh"
@@ -214,7 +216,6 @@ redeclipse_update_modulepatchdeploy() {
     echo "    rm -f \"${REDECLIPSE_TEMP}/${REDEECLIPSE_MODULE_RUN}.txt\"" >> "${REDECLIPSE_TEMP}/install.sh"
     echo "    REDECLIPSE_ERROR=\"true\"" >> "${REDECLIPSE_TEMP}/install.sh"
     echo ")" >> "${REDECLIPSE_TEMP}/install.sh"
-    REDECLIPSE_DEPLOY="true"
     return $?
 }
 
@@ -240,6 +241,7 @@ redeclipse_update_moduleblob() {
 }
 
 redeclipse_update_moduleblobdeploy() {
+    echo "echo \"${REDEECLIPSE_MODULE_RUN}: deploying blob.\"" >> "${REDECLIPSE_TEMP}/install.sh"
     if [ "${REDECLIPSE_BLOB}" = "zipball" ]; then
         echo "${REDECLIPSE_UNZIP} -o \"${REDECLIPSE_TEMP}/${REDEECLIPSE_MODULE_RUN}.${REDECLIPSE_ARCHEXT}\" -d \"${REDECLIPSE_TEMP}\" && (" >> "${REDECLIPSE_TEMP}/install.sh"
     else
@@ -252,7 +254,6 @@ redeclipse_update_moduleblobdeploy() {
     echo "    rm -f \"${REDECLIPSE_TEMP}/${REDEECLIPSE_MODULE_RUN}.txt\"" >> "${REDECLIPSE_TEMP}/install.sh"
     echo "    REDECLIPSE_ERROR=\"true\"" >> "${REDECLIPSE_TEMP}/install.sh"
     echo ")" >> "${REDECLIPSE_TEMP}/install.sh"
-    REDECLIPSE_DEPLOY="true"
     return $?
 }
 
@@ -289,6 +290,7 @@ redeclipse_update_binsget() {
     fi
     echo "bins: ${REDECLIPSE_BINS_REMOTE} is the current version."
     if [ "${REDECLIPSE_TRYUPDATE}" != "true" ] && [ "${REDECLIPSE_BINS_REMOTE}" = "${REDECLIPSE_BINS}" ]; then
+        echo "echo \"bins: already up to date.\"" >> "${REDECLIPSE_TEMP}/install.sh"
         redeclipse_update_deploy
         return $?
     fi
@@ -319,6 +321,7 @@ redeclipse_update_binsblob() {
 }
 
 redeclipse_update_binsdeploy() {
+    echo "echo \"bins: deploying blob.\"" >> "${REDECLIPSE_TEMP}/install.sh"
     if [ "${REDECLIPSE_TARGET}" = "windows" ]; then
         echo "${REDECLIPSE_UNZIP} -o \"${REDECLIPSE_TEMP}/${REDECLIPSE_ARCHIVE}\" -d \"${REDECLIPSE_PATH}\" && (" >> "${REDECLIPSE_TEMP}/install.sh"
     else
@@ -329,17 +332,12 @@ redeclipse_update_binsdeploy() {
     echo "    rm -f \"${REDECLIPSE_TEMP}/bins.txt\"" >> "${REDECLIPSE_TEMP}/install.sh"
     echo "    REDECLIPSE_ERROR=\"true\"" >> "${REDECLIPSE_TEMP}/install.sh"
     echo ")" >> "${REDECLIPSE_TEMP}/install.sh"
-    REDECLIPSE_DEPLOY="true"
     redeclipse_update_deploy
     return $?
 }
 
 redeclipse_update_deploy() {
     echo ""
-    if [ "${REDECLIPSE_DEPLOY}" != "true" ]; then
-        echo "Everything is already up to date."
-        return 0
-    fi
     echo "if [ \"\${REDECLIPSE_ERROR}\" = \"true\" ]; then exit 1; else exit 0; fi" >> "${REDECLIPSE_TEMP}/install.sh"
     echo "Deploying: \"${REDECLIPSE_TEMP}/install.sh\""
     chmod ugo+x "${REDECLIPSE_TEMP}/install.sh"
@@ -363,12 +361,12 @@ redeclipse_update_deploy() {
 redeclipse_update_unpack() {
     ${REDECLIPSE_INSTALL} "${REDECLIPSE_TEMP}/install.sh" && (
         echo ""
-        echo "Updated successfully."
         echo "${REDECLIPSE_BRANCH}" > "${REDECLIPSE_PATH}/branch.txt"
         return 0
     ) || (
         echo ""
         echo "There was an error deploying the files."
+        echo ""
         return 1
     )
 }

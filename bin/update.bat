@@ -64,7 +64,7 @@ setlocal enableextensions enabledelayedexpansion
     for %%a in (%REDECLIPSE_MODULE_LIST%) do (
         set REDEECLIPSE_MODULE_RUN=%%a
         if NOT "!REDEECLIPSE_MODULE_RUN!" == "" (
-            call :module "%REDECLIPSE_UPDATER%" && (set REDECLIPSE_DEPLOY=true) || (echo !REDEECLIPSE_MODULE_RUN!: There was an error updating the module, continuing..)
+            call :module "%REDECLIPSE_UPDATER%" || (echo !REDEECLIPSE_MODULE_RUN!: There was an error updating the module, continuing..)
         )
     )
     goto bins
@@ -99,7 +99,10 @@ setlocal enableextensions enabledelayedexpansion
         exit /b 1
     )
     echo %REDEECLIPSE_MODULE_RUN%: %REDECLIPSE_MODULE_REMOTE% is the current version.
-    if "%REDECLIPSE_MODULE_REMOTE%" == "%REDECLIPSE_MODULE_INSTALLED%" exit /b 0
+    if "%REDECLIPSE_MODULE_REMOTE%" == "%REDECLIPSE_MODULE_INSTALLED%" (
+        echo echo %REDEECLIPSE_MODULE_RUN%: already up to date.>> "%REDECLIPSE_TEMP%\install.bat"
+        exit /b 0
+    )
     if "%REDECLIPSE_MODULE_INSTALLED%" == "none" goto moduleblob
 :modulepatch
     if EXIST "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.patch" del /f /q "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.patch"
@@ -112,6 +115,7 @@ setlocal enableextensions enabledelayedexpansion
         goto moduleblob
     )
 :modulepatchdeploy
+    echo echo %REDEECLIPSE_MODULE_RUN%: applying patches.>> "%REDECLIPSE_TEMP%\install.bat"
     echo %REDECLIPSE_GITAPPLY% --directory="%REDECLIPSE_PATH%%REDEECLIPSE_MODULE_DIR%" "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.patch" ^&^& ^(>> "%REDECLIPSE_TEMP%\install.bat"
     echo     ^(echo %REDECLIPSE_MODULE_REMOTE%^)^> "%REDECLIPSE_PATH%%REDEECLIPSE_MODULE_DIR%\version.txt">> "%REDECLIPSE_TEMP%\install.bat"
     echo ^) ^|^| ^(>> "%REDECLIPSE_TEMP%\install.bat"
@@ -135,6 +139,7 @@ setlocal enableextensions enabledelayedexpansion
         exit /b 1
     )
 :moduleblobdeploy
+    echo echo %REDEECLIPSE_MODULE_RUN%: deploying blob.>> "%REDECLIPSE_TEMP%\install.bat"
     echo %REDECLIPSE_UNZIP% "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.zip" -d "%REDECLIPSE_TEMP%" ^&^& ^(>> "%REDECLIPSE_TEMP%\install.bat"
     echo    xcopy /e /c /i /f /h /y "%REDECLIPSE_TEMP%\red-eclipse-%REDEECLIPSE_MODULE_RUN%-%REDECLIPSE_MODULE_REMOTE:~0,7%\*" "%REDECLIPSE_PATH%%REDEECLIPSE_MODULE_DIR%">> "%REDECLIPSE_TEMP%\install.bat"
     echo    rmdir /s /q "%REDECLIPSE_TEMP%\red-eclipse-%REDEECLIPSE_MODULE_RUN%-%REDECLIPSE_MODULE_REMOTE:~0,7%">> "%REDECLIPSE_TEMP%\install.bat"
@@ -167,7 +172,10 @@ setlocal enableextensions enabledelayedexpansion
         goto deploy
     )
     echo bins: %REDECLIPSE_BINS_REMOTE% is the current version.
-    if NOT "%REDECLIPSE_TRYUPDATE%" == "true" if "%REDECLIPSE_BINS_REMOTE%" == "%REDECLIPSE_BINS%" goto deploy
+    if NOT "%REDECLIPSE_TRYUPDATE%" == "true" if "%REDECLIPSE_BINS_REMOTE%" == "%REDECLIPSE_BINS%" (
+        echo echo bins: already up to date.>> "%REDECLIPSE_TEMP%\install.bat"
+        goto deploy
+    )
 :binsblob
     if EXIST "%REDECLIPSE_TEMP%\windows.zip" (
         if "%REDECLIPSE_BINS_CACHED%" == "%REDECLIPSE_BINS_REMOTE%" (
@@ -183,19 +191,15 @@ setlocal enableextensions enabledelayedexpansion
         goto deploy
     )
 :binsdeploy
+    echo echo bins: deploying blob.>> "%REDECLIPSE_TEMP%\install.bat"
     echo %REDECLIPSE_UNZIP% "%REDECLIPSE_TEMP%\windows.zip" -d "%REDECLIPSE_PATH%" ^&^& ^(>> "%REDECLIPSE_TEMP%\install.bat"
     echo     ^(echo %REDECLIPSE_BINS_REMOTE%^)^> "%REDECLIPSE_PATH%\bin\version.txt">> "%REDECLIPSE_TEMP%\install.bat"
     echo ^) ^|^| ^(>> "%REDECLIPSE_TEMP%\install.bat"
     echo     del /f /q "%REDECLIPSE_TEMP%\bins.txt">> "%REDECLIPSE_TEMP%\install.bat"
     echo     set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
     echo ^)>> "%REDECLIPSE_TEMP%\install.bat"
-    set REDECLIPSE_DEPLOY=true
 :deploy
     echo.
-    if NOT "%REDECLIPSE_DEPLOY%" == "true" (
-        echo Everything is already up to date.
-        exit /b 0
-    )
     echo if "%%REDECLIPSE_ERROR%%" == "true" (exit /b 1)>> "%REDECLIPSE_TEMP%\install.bat"
     echo Deploying: "%REDECLIPSE_TEMP%\install.bat"
     set REDECLIPSE_INSTALL=call
@@ -212,11 +216,11 @@ setlocal enableextensions enabledelayedexpansion
 :unpack
 %REDECLIPSE_INSTALL% "%REDECLIPSE_TEMP%\install.bat" && (
     echo.
-    echo Updated successfully.
     (echo %REDECLIPSE_BRANCH%)> "%REDECLIPSE_PATH%\branch.txt"
     exit /b 0
 ) || (
     echo.
     echo There was an error deploying the files.
+    echo.
     exit /b 1
 )
