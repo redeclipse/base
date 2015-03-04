@@ -58,10 +58,15 @@ redeclipse_setup() {
                 ;;
         esac
     fi
+    if [ -e "${REDECLIPSE_PATH}/branch.txt" ]; then REDECLIPSE_BRANCH_CURRENT=`cat "${REDECLIPSE_PATH}/branch.txt"`; fi
     if [ -z "${REDECLIPSE_BRANCH+isset}" ]; then
-        REDECLIPSE_BRANCH="stable"
-        if [ -e ".git" ]; then REDECLIPSE_BRANCH="devel"; fi
-        if [ -e "${REDECLIPSE_PATH}/branch.txt" ]; then REDECLIPSE_BRANCH=`cat "${REDECLIPSE_PATH}/branch.txt"`; fi
+        if [ -n "${REDECLIPSE_BRANCH_CURRENT+isset}" ]; then
+            REDECLIPSE_BRANCH="${REDECLIPSE_BRANCH_CURRENT}"
+        elif [ -e ".git" ]; then
+            REDECLIPSE_BRANCH="devel"
+        else
+            REDECLIPSE_BRANCH="stable"
+        fi
     fi
     if [ -z "${REDECLIPSE_HOME+isset}" ] && [ "${REDECLIPSE_BRANCH}" != "stable" ] && [ "${REDECLIPSE_BRANCH}" != "inplace" ]; then REDECLIPSE_HOME="home"; fi
     if [ -n "${REDECLIPSE_HOME+isset}" ]; then REDECLIPSE_OPTIONS="-h${REDECLIPSE_HOME} ${REDECLIPSE_OPTIONS}"; fi

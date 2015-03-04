@@ -43,10 +43,15 @@ redeclipse_update_setup() {
                 ;;
         esac
     fi
+    if [ -e "${REDECLIPSE_PATH}/branch.txt" ]; then REDECLIPSE_BRANCH_CURRENT=`cat "${REDECLIPSE_PATH}/branch.txt"`; fi
     if [ -z "${REDECLIPSE_BRANCH+isset}" ]; then
-        REDECLIPSE_BRANCH="stable"
-        if [ -e ".git" ]; then REDECLIPSE_BRANCH="devel"; fi
-        if [ -e "${REDECLIPSE_PATH}/branch.txt" ]; then REDECLIPSE_BRANCH=`cat "${REDECLIPSE_PATH}/branch.txt"`; fi
+        if [ -n "${REDECLIPSE_BRANCH_CURRENT+isset}" ]; then
+            REDECLIPSE_BRANCH="${REDECLIPSE_BRANCH_CURRENT}"
+        elif [ -e ".git" ]; then
+            REDECLIPSE_BRANCH="devel"
+        else
+            REDECLIPSE_BRANCH="stable"
+        fi
     fi
     REDECLIPSE_UPDATE="${REDECLIPSE_BRANCH}"
     REDECLIPSE_TEMP="${REDECLIPSE_CACHE}/${REDECLIPSE_BRANCH}"

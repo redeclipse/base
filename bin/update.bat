@@ -19,10 +19,15 @@ setlocal enableextensions enabledelayedexpansion
         set REDECLIPSE_CACHE=cache
     )
 :redeclipse_update_setup
+    if EXIST "%REDECLIPSE_PATH%\branch.txt" set /p REDECLIPSE_BRANCH_CURRENT=< "%REDECLIPSE_PATH%\branch.txt"
     if NOT DEFINED REDECLIPSE_BRANCH (
-        set REDECLIPSE_BRANCH=stable
-        if EXIST .git set REDECLIPSE_BRANCH=devel
-        if EXIST "%REDECLIPSE_PATH%\branch.txt" set /p REDECLIPSE_BRANCH=< "%REDECLIPSE_PATH%\branch.txt"
+        if DEFINED REDECLIPSE_BRANCH_CURRENT (
+            set REDECLIPSE_BRANCH=%REDECLIPSE_BRANCH_CURRENT%
+        ) else if EXIST .git (
+            set REDECLIPSE_BRANCH=devel
+        ) else (
+            set REDECLIPSE_BRANCH=stable
+        )
     )
     set REDECLIPSE_UPDATE=%REDECLIPSE_BRANCH%
     set REDECLIPSE_TEMP=%REDECLIPSE_CACHE%\%REDECLIPSE_BRANCH%
@@ -200,7 +205,7 @@ setlocal enableextensions enabledelayedexpansion
 :redeclipse_update_deploy
     echo.
     echo if "%%REDECLIPSE_ERROR%%" == "true" (exit /b 1)>> "%REDECLIPSE_TEMP%\install.bat"
-    echo Deploy: %REDECLIPSE_TEMP%\install.bat
+    echo deploy: %REDECLIPSE_TEMP%\install.bat
     echo.
     set REDECLIPSE_INSTALL=call
     copy /y nul test.tmp> nul 2>&1 && (
