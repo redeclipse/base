@@ -71,9 +71,9 @@ redeclipse_update_setup() {
 }
 
 redeclipse_update_branch() {
-    echo "Branch: ${REDECLIPSE_UPDATE}"
-    echo "Folder: ${REDECLIPSE_PATH}"
-    echo "Cached: ${REDECLIPSE_TEMP}"
+    echo "branch: ${REDECLIPSE_UPDATE}"
+    echo "folder: ${REDECLIPSE_PATH}"
+    echo "cached: ${REDECLIPSE_TEMP}"
     if [ -z `which curl` ]; then
         echo "Unable to find curl, are you sure you have it installed?"
         return 1
@@ -339,7 +339,8 @@ redeclipse_update_bins_deploy() {
 redeclipse_update_deploy() {
     echo ""
     echo "if [ \"\${REDECLIPSE_ERROR}\" = \"true\" ]; then exit 1; else exit 0; fi" >> "${REDECLIPSE_TEMP}/install.sh"
-    echo "Deploying: \"${REDECLIPSE_TEMP}/install.sh\""
+    echo "deploy: \"${REDECLIPSE_TEMP}/install.sh\""
+    echo ""
     chmod ugo+x "${REDECLIPSE_TEMP}/install.sh"
     REDECLIPSE_INSTALL="exec"
     touch test.tmp && (

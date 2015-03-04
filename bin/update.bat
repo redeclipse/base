@@ -27,9 +27,9 @@ setlocal enableextensions enabledelayedexpansion
     set REDECLIPSE_UPDATE=%REDECLIPSE_BRANCH%
     set REDECLIPSE_TEMP=%REDECLIPSE_CACHE%\%REDECLIPSE_BRANCH%
 :redeclipse_update_branch
-    echo Branch: %REDECLIPSE_UPDATE%
-    echo Folder: %REDECLIPSE_PATH%
-    echo Cached: %REDECLIPSE_TEMP%
+    echo branch: %REDECLIPSE_UPDATE%
+    echo folder: %REDECLIPSE_PATH%
+    echo cached: %REDECLIPSE_TEMP%
     if NOT EXIST "%REDECLIPSE_PATH%\bin\tools\curl.exe" (
         echo Unable to find curl.exe, are you sure it is in tools?
         exit /b 0
@@ -200,7 +200,8 @@ setlocal enableextensions enabledelayedexpansion
 :redeclipse_update_deploy
     echo.
     echo if "%%REDECLIPSE_ERROR%%" == "true" (exit /b 1)>> "%REDECLIPSE_TEMP%\install.bat"
-    echo Deploying: "%REDECLIPSE_TEMP%\install.bat"
+    echo Deploy: %REDECLIPSE_TEMP%\install.bat
+    echo.
     set REDECLIPSE_INSTALL=call
     copy /y nul test.tmp> nul 2>&1 && (
         del /f /q test.tmp
