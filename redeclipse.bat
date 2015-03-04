@@ -23,11 +23,10 @@ setlocal enableextensions enabledelayedexpansion
 :branch
     if NOT DEFINED REDECLIPSE_BRANCH (
         set REDECLIPSE_BRANCH=stable
-        if EXIST .git set REDECLIPSE_BRANCH=master
+        if EXIST .git set REDECLIPSE_BRANCH=devel
         if EXIST "%REDECLIPSE_PATH%\branch.txt" set /p REDECLIPSE_BRANCH=< "%REDECLIPSE_PATH%\branch.txt"
     )
-    if "%REDECLIPSE_BRANCH%" == "devel" set REDECLIPSE_BRANCH=master
-    if NOT "%REDECLIPSE_BRANCH%" == "stable" if NOT "%REDECLIPSE_BRANCH%" == "master" if NOT "%REDECLIPSE_BRANCH%" == "source" if NOT "%REDECLIPSE_BRANCH%" == "inplace" (
+    if NOT "%REDECLIPSE_BRANCH%" == "stable" if NOT "%REDECLIPSE_BRANCH%" == "master" if NOT "%REDECLIPSE_BRANCH%" == "devel" if NOT "%REDECLIPSE_BRANCH%" == "source" if NOT "%REDECLIPSE_BRANCH%" == "inplace" (
         set REDECLIPSE_BRANCH=inplace
     )
     if NOT DEFINED REDECLIPSE_HOME if NOT "%REDECLIPSE_BRANCH%" == "stable" if NOT "%REDECLIPSE_BRANCH%" == "inplace" set REDECLIPSE_HOME=home

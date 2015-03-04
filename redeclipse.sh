@@ -60,11 +60,10 @@ redeclipse_setup() {
     fi
     if [ -z "${REDECLIPSE_BRANCH+isset}" ]; then
         REDECLIPSE_BRANCH="stable"
-        if [ -e ".git" ]; then REDECLIPSE_BRANCH="master"; fi
+        if [ -e ".git" ]; then REDECLIPSE_BRANCH="devel"; fi
         if [ -e "${REDECLIPSE_PATH}/branch.txt" ]; then REDECLIPSE_BRANCH=`cat "${REDECLIPSE_PATH}/branch.txt"`; fi
     fi
-    if [ "${REDECLIPSE_BRANCH}" = "devel" ]; then REDECLIPSE_BRANCH="master"; fi
-    if [ "${REDECLIPSE_BRANCH}" != "stable" ] && [ "${REDECLIPSE_BRANCH}" != "master" ] && [ "${REDECLIPSE_BRANCH}" != "source" ] && [ "${REDECLIPSE_BRANCH}" != "inplace" ]; then
+    if [ "${REDECLIPSE_BRANCH}" != "stable" ] && [ "${REDECLIPSE_BRANCH}" != "master" ] && [ "${REDECLIPSE_BRANCH}" != "devel" ] && [ "${REDECLIPSE_BRANCH}" != "source" ] && [ "${REDECLIPSE_BRANCH}" != "inplace" ]; then
         REDECLIPSE_BRANCH="inplace"
     fi
     if [ -z "${REDECLIPSE_HOME+isset}" ] && [ "${REDECLIPSE_BRANCH}" != "stable" ] && [ "${REDECLIPSE_BRANCH}" != "inplace" ]; then REDECLIPSE_HOME="home"; fi
@@ -74,7 +73,7 @@ redeclipse_setup() {
 }
 
 redeclipse_check() {
-    if [ "${REDECLIPSE_BRANCH}" = "stable" ] || [ "${REDECLIPSE_BRANCH}" = "master" ]; then
+    if [ "${REDECLIPSE_BRANCH}" = "stable" ] || [ "${REDECLIPSE_BRANCH}" = "master" ] || [ "${REDECLIPSE_BRANCH}" = "devel" ]; then
         echo ""
         echo "Checking for updates to \"${REDECLIPSE_BRANCH}\". To disable set: REDECLIPSE_BRANCH=\"inplace\""
         echo ""
@@ -129,7 +128,7 @@ redeclipse_runit() {
     else
         if [ "${REDECLIPSE_BRANCH}" = "source" ]; then
             ${REDECLIPSE_MAKE} -C src all install && ( redeclipse_runit; return $? )
-            REDECLIPSE_BRANCH="master"
+            REDECLIPSE_BRANCH="devel"
         fi
         if [ "${REDECLIPSE_BRANCH}" != "inplace" ] && [ "${REDECLIPSE_TRYUPDATE}" != "true" ]; then
             REDECLIPSE_TRYUPDATE="true"
