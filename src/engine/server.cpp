@@ -12,8 +12,9 @@ const char *platnames[MAX_PLATFORMS] = {
     "windows", "macosx", "linux/bsd"
 };
 
-VAR(0, version, 1, 0, -1);
 VAR(0, versioning, 1, 0, -1);
+
+VAR(IDF_READONLY, version, 1, CUR_VERSION, -1);
 VAR(IDF_READONLY, versionmajor, 1, VERSION_MAJOR, -1);
 VAR(IDF_READONLY, versionminor, 1, VERSION_MINOR, -1);
 VAR(IDF_READONLY, versionpatch, 1, VERSION_PATCH, -1);
@@ -1550,8 +1551,7 @@ void setlocations(bool wanthome)
     { // standalone solution to this is: pebkac
         if(!i || chdir("..") < 0) fatal("could not find config directory");
     }
-    if(!execfile("config/version.cfg", false, EXEC_VERSION|EXEC_BUILTIN) || !*VERSION_UNAME || !*VERSION_NAME || !*VERSION_STRING || (!VERSION_MAJOR && !VERSION_MINOR && !VERSION_PATCH))
-        fatal("cannot determine game version, please ensure 'config/version.cfg' properly loaded");
+    if(!execfile("config/version.cfg", false, EXEC_VERSION|EXEC_BUILTIN)) fatal("cannot exec 'config/version.cfg'");
     // pseudo directory with game content
     const char *dir = getenv("GAME_DATA");
     if(dir && *dir) addpackagedir(dir);
