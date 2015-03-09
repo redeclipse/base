@@ -1,21 +1,15 @@
 ;--------------------------------
-; Version Information
+; Installer version information
   VIAddVersionKey "ProductName" "Red Eclipse Installer"
   VIAddVersionKey "FileDescription" "Red Eclipse Installer"
   VIAddVersionKey "CompanyName" "Red Eclipse Team"
-
   VIAddVersionKey "LegalCopyright" "2015 Red Eclipse Team"
-
-  VIAddVersionKey "ProductVersion" "1.5"
-  VIProductVersion "1.5.0.0"
-  
-  VIFileVersion "1.0.0.0"
-  VIAddVersionKey "FileVersion" "1.0.0.0"
+  VIAddVersionKey "FileVersion" "1.0.0.0" 
 ; Name and file
   Name "Red Eclipse"
   OutFile "redeclipse_1.5_win.exe"
   VIAddVersionKey "OriginalFilename" "redeclipse_1.5_win.exe"
-
+  VIProductVersion "1.5.0.0"
 ;--------------------------------
 ; General
   ;Include Modern UI
@@ -23,7 +17,7 @@
   
   ;SetCompressorDictSize 64
   SetDatablockOptimize on
-  SetCompressor lzma /SOLID
+  SetCompressor /SOLID lzma 
   
   SetDateSave off ; Installed files will show the date they were installed instead of when they were created in git
 
