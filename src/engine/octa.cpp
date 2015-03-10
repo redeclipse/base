@@ -1115,7 +1115,7 @@ int visibletris(const cube &c, int orient, int x, int y, int z, int size, ushort
     int convex = (e3 = v[0]).sub(v[3]).dot(n);
     if(!convex)
     {
-        if(ivec().cross(e3, e2).iszero()) { if(n.iszero()) return 0; vis = 1; touching = 0xF&~(1<<3); }
+        if(ivec().cross(e3, e2).iszero() || v[1] == v[3]) { if(n.iszero()) return 0; vis = 1; touching = 0xF&~(1<<3); }
         else if(n.iszero()) { vis = 2; touching = 0xF&~(1<<1); }
     }
 
