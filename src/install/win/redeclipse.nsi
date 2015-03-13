@@ -1,4 +1,4 @@
-;--------------------------------
+﻿;--------------------------------
 ; Installer version information
   VIAddVersionKey "ProductName" "Red Eclipse Installer"
   VIAddVersionKey "FileDescription" "Red Eclipse Installer"
@@ -12,6 +12,9 @@
   VIProductVersion "1.5.0.0"
 ;--------------------------------
 ; General
+  ;Properly display all languages (Installer will not work on Windows 95, 98 or ME!)
+  Unicode true
+  
   ;Include Modern UI
   !include "MUI2.nsh"
   
@@ -44,6 +47,9 @@
 
   ; Warn if aborting installer
   !define MUI_ABORTWARNING
+  
+  ;Show all languages, despite user's codepage
+  !define MUI_LANGDLL_ALLLANGUAGES
 
   ; All pages
   !define MUI_HEADERIMAGE
@@ -55,18 +61,17 @@
   ; Finish Page
    !define MUI_WELCOMEFINISHPAGE_BITMAP "finish.bmp"
 	; Auth application link
-;	!define MUI_FINISHPAGE_LINK "Click here to apply for an optional player account."
+;	!define MUI_FINISHPAGE_LINK "$(DESC_AuthLinkLabel)"
 ;     !define MUI_FINISHPAGE_LINK_LOCATION "http://redeclipse.net/apply"
    ; Run game after install checkbox
   !define MUI_FINISHPAGE_RUN "$INSTDIR\redeclipse.bat"
-  !define MUI_FINISHPAGE_RUN_TEXT "Run Red Eclipse"
+  !define MUI_FINISHPAGE_RUN_TEXT "$(DESC_RunCheckLabel)"
 
   !define MUI_COMPONENTSPAGE_SMALLDESC
   !insertmacro MUI_PAGE_COMPONENTS
   !insertmacro MUI_PAGE_DIRECTORY
   !insertmacro MUI_PAGE_INSTFILES
     !define MUI_FINISHPAGE_NOAUTOCLOSE ; Allow user to review install log before continuing to Finish page.
-
   !insertmacro MUI_PAGE_FINISH
 
   !insertmacro MUI_UNPAGE_CONFIRM
@@ -81,8 +86,7 @@
 
 ;--------------------------------
 ;Installer Sections
-
-Section "Red Eclipse (required)" GameFiles
+Section "$(DESC_GameFiles_Title)" GameFiles
 
   SectionIn RO
   
@@ -115,7 +119,7 @@ Section "Red Eclipse (required)" GameFiles
 
 SectionEnd
 
-Section "Start Menu Shortcuts" StartMenu
+Section "$(DESC_StartMenu_Title)" StartMenu
 
   CreateDirectory "$SMPROGRAMS\Red Eclipse"
   
@@ -126,10 +130,10 @@ Section "Start Menu Shortcuts" StartMenu
   CreateShortCut "$SMPROGRAMS\Red Eclipse\Uninstall Red Eclipse.lnk"   "$INSTDIR\uninstall.exe"   "" "$INSTDIR\uninstall.exe" 0
   
 SectionEnd
- 
+
 ;--------------------------------
 ;Uninstaller Section
-Section "Uninstall"
+Section "Uninstall" Uninstall
   
   DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Red Eclipse"
   DeleteRegKey HKLM "Software\Red Eclipse"
@@ -141,12 +145,12 @@ SectionEnd
 
 ;--------------------------------
 ; Languages
- 
-  !insertmacro MUI_LANGUAGE "English"
-  LangString DESC_GameFiles ${LANG_ENGLISH} "The Red Eclipse game files. Required to play the game."
-  LangString DESC_StartMenu ${LANG_ENGLISH} "Add shortcuts to your Start Menu"
+  !insertmacro MUI_RESERVEFILE_LANGDLL
+  !include "lang.nsh" ; Include the custom string translation file
 
-  !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
-    !insertmacro MUI_DESCRIPTION_TEXT ${GameFiles} $(DESC_GameFiles)
-    !insertmacro MUI_DESCRIPTION_TEXT ${StartMenu} $(DESC_StartMenu)
-  !insertmacro MUI_FUNCTION_DESCRIPTION_END
+   Function .onInit ; Ask for language first thing on run. This function MUST be defined AFTER language file is parsed.
+    !insertmacro MUI_LANGDLL_DISPLAY
+  FunctionEnd
+  Function un.onInit
+    !insertmacro MUI_LANGDLL_DISPLAY
+  FunctionEnd
