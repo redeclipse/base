@@ -6,7 +6,7 @@ setlocal enableextensions enabledelayedexpansion
     set REDECLIPSE_PATH=%CD%
     popd
 :redeclipse_init
-    set REDECLIPSE_SCRIPT=%~dp0\%0
+    set REDECLIPSE_SCRIPT=%~dp0\%~0
     for %%a in ("%REDECLIPSE_SCRIPT%") do set REDECLIPSE_SCRIPT_TIME=%%~ta
     if NOT DEFINED REDECLIPSE_BINARY set REDECLIPSE_BINARY=redeclipse
     set REDECLIPSE_SUFFIX=.exe
