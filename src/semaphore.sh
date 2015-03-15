@@ -54,10 +54,6 @@ semabuild_setup() {
 
 semabuild_build() {
     echo "Building ${BRANCH_NAME}..."
-    mkdir -pv "${SEMAPHORE_CACHE_DIR}/apt/archives/partial" || return 1
-    sudo cp -ruv "/var/cache/apt" "${SEMAPHORE_CACHE_DIR}/apt" || return 1
-    sudo rm -rfv "/var/cache/apt" || return 1
-    sudo ln -sv "${SEMAPHORE_CACHE_DIR}/apt" "/var/cache/apt" || return 1
     sudo dpkg --add-architecture i386 || return 1
     sudo ${SEMABUILD_APT} update || return 1
     sudo ${SEMABUILD_APT} -fy install build-essential zlib1g-dev libsdl-mixer1.2-dev libsdl-image1.2-dev || return 1
