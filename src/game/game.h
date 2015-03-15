@@ -338,7 +338,7 @@ static inline void adjustscaled(T &n, int s)
 }
 
 #define MAXNAMELEN 24
-enum { SAY_NONE = 0, SAY_ACTION = 1<<0, SAY_TEAM = 1<<1, SAY_NUM = 2 };
+enum { SAY_NONE = 0, SAY_ACTION = 1<<0, SAY_TEAM = 1<<1, SAY_WHISPER = 1<<2, SAY_NUM = 3 };
 
 enum {
     PRIV_NONE = 0, PRIV_PLAYER, PRIV_SUPPORTER, PRIV_MODERATOR, PRIV_OPERATOR, PRIV_ADMINISTRATOR, PRIV_DEVELOPER, PRIV_CREATOR, PRIV_MAX,
@@ -1537,7 +1537,7 @@ namespace client
     extern void unignore(int cn);
     extern bool isignored(int cn);
     extern void addmsg(int type, const char *fmt = NULL, ...);
-    extern void saytext(gameent *d, int flags, char *text);
+    extern void saytext(gameent *f, gameent *t, int flags, char *text);
     extern void c2sinfo(bool force = false);
     extern bool haspriv(gameent *d, int priv = PRIV_NONE);
 }

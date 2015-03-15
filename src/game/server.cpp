@@ -5574,28 +5574,29 @@ namespace server
 
                 case N_TEXT:
                 {
-                    int lcn = getint(p), flags = getint(p);
+                    int fcn = getint(p), tcn = getint(p), flags = getint(p);
                     getstring(text, p);
-                    clientinfo *cp = (clientinfo *)getinfo(lcn);
-                    if(!hasclient(cp, ci)) break;
-                    if(!haspriv(cp, G(messagelock), "send messages on this server")) break;
-                    uint ip = getclientip(cp->clientnum);
-                    if(ip && checkipinfo(control, ipinfo::MUTE, ip) && !checkipinfo(control, ipinfo::EXCEPT, ip) && !haspriv(cp, G(mutelock), "send messages while muted")) break;
+                    clientinfo *fcp = (clientinfo *)getinfo(fcn);
+                    clientinfo *tcp = (clientinfo *)getinfo(tcn);
+                    if(!hasclient(fcp, ci)) break;
+                    if(!haspriv(fcp, G(messagelock), "send messages on this server")) break;
+                    uint ip = getclientip(fcp->clientnum);
+                    if(ip && checkipinfo(control, ipinfo::MUTE, ip) && !checkipinfo(control, ipinfo::EXCEPT, ip) && !haspriv(fcp, G(mutelock), "send messages while muted")) break;
                     if(G(floodlock))
                     {
                         int numlines = 0;
-                        loopvrev(cp->state.chatmillis)
+                        loopvrev(fcp->state.chatmillis)
                         {
-                            if(totalmillis-cp->state.chatmillis[i] <= G(floodtime)) numlines++;
-                            else cp->state.chatmillis.remove(i);
+                            if(totalmillis-fcp->state.chatmillis[i] <= G(floodtime)) numlines++;
+                            else fcp->state.chatmillis.remove(i);
                         }
                         if(numlines >= G(floodlines))
                         {
-                            if((!cp->state.warnings[WARN_CHAT][1] || totalmillis-cp->state.warnings[WARN_CHAT][1] >= 1000) && !haspriv(cp, G(floodlock), "send too many messages consecutively"))
+                            if((!fcp->state.warnings[WARN_CHAT][1] || totalmillis-fcp->state.warnings[WARN_CHAT][1] >= 1000) && !haspriv(fcp, G(floodlock), "send too many messages consecutively"))
                             {
-                                cp->state.warnings[WARN_CHAT][0]++;
-                                cp->state.warnings[WARN_CHAT][1] = totalmillis ? totalmillis : 1;
-                                if(ip && G(floodmute) && cp->state.warnings[WARN_CHAT][0] >= G(floodmute) && !checkipinfo(control, ipinfo::EXCEPT, ip) && !haspriv(cp, G(mutelock)))
+                                fcp->state.warnings[WARN_CHAT][0]++;
+                                fcp->state.warnings[WARN_CHAT][1] = totalmillis ? totalmillis : 1;
+                                if(ip && G(floodmute) && fcp->state.warnings[WARN_CHAT][0] >= G(floodmute) && !checkipinfo(control, ipinfo::EXCEPT, ip) && !haspriv(fcp, G(mutelock)))
                                 {
                                     ipinfo &c = control.add();
                                     c.ip = ip;
@@ -5603,32 +5604,42 @@ namespace server
                                     c.type = ipinfo::MUTE;
                                     c.time = totalmillis ? totalmillis : 1;
                                     c.reason = newstring("exceeded the number of allowed flood warnings");
-                                    srvoutf(-3, "\fs\fcmute\fS added on %s: %s", colourname(cp), c.reason);
+                                    srvoutf(-3, "\fs\fcmute\fS added on %s: %s", colourname(fcp), c.reason);
                                 }
                             }
                             break;
                         }
-                        cp->state.chatmillis.add(totalmillis ? totalmillis : 1);
+                        fcp->state.chatmillis.add(totalmillis ? totalmillis : 1);
                     }
                     bigstring output;
                     copybigstring(output, text, G(messagelength));
                     if(*(G(censorwords))) filterword(output, G(censorwords));
                     if(flags&SAY_TEAM && !m_team(gamemode, mutators)) flags &= ~SAY_TEAM;
-                    sendf(-1, -1, "ri3s", N_TEXT, cp->clientnum, flags, output); // sent to negative chan for recordpacket
-                    loopv(clients)
+                    sendf(-1, -1, "ri4s", N_TEXT, fcp->clientnum, tcp ? tcp->clientnum : -1, flags, output); // sent to negative chan for recordpacket
+                    if(flags&SAY_WHISPER && tcp)
                     {
-                        clientinfo *t = clients[i];
-                        if(!allowbroadcast(t->clientnum) || (flags&SAY_TEAM && cp->team != t->team)) continue;
-                        sendf(t->clientnum, 1, "ri3s", N_TEXT, cp->clientnum, flags, output);
+                        if(allowbroadcast(tcp->clientnum))
+                            sendf(tcp->clientnum, 1, "ri4s", N_TEXT, fcp->clientnum, tcp->clientnum, flags, output);
+                        if(allowbroadcast(fcp->clientnum))
+                            sendf(fcp->clientnum, 1, "ri4s", N_TEXT, fcp->clientnum, tcp->clientnum, flags, output);
                     }
-                    defformatstring(m)("%s", colourname(cp));
-                    if(flags&SAY_TEAM)
+                    else
                     {
-                        defformatstring(t)(" (to team %s)", colourteam(cp->team));
-                        concatbigstring(m, t);
+                        loopv(clients)
+                        {
+                            clientinfo *t = clients[i];
+                            if(!allowbroadcast(t->clientnum) || (flags&SAY_TEAM && fcp->team != t->team)) continue;
+                            sendf(t->clientnum, 1, "ri4s", N_TEXT, fcp->clientnum, tcp ? tcp->clientnum : -1, flags, output);
+                        }
+                        defformatstring(m)("%s", colourname(fcp));
+                        if(flags&SAY_TEAM)
+                        {
+                            defformatstring(t)(" (to team %s)", colourteam(fcp->team));
+                            concatstring(m, t);
+                        }
+                        if(flags&SAY_ACTION) relayf(0, "\fv* %s %s", m, output);
+                        else relayf(0, "\fw<%s> %s", m, output);
                     }
-                    if(flags&SAY_ACTION) relayf(0, "\fv* %s %s", m, output);
-                    else relayf(0, "\fw<%s> %s", m, output);
                     break;
                 }
 
