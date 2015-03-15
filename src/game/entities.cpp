@@ -1139,7 +1139,7 @@ namespace entities
                         {
                             int flags = SND_MAP;
                             loopk(SND_LAST) if(f.attrs[4]&(1<<k)) flags |= 1<<k;
-                            playsound(f.attrs[0], both ? f.o : e.o, NULL, flags, f.attrs[3], f.attrs[1], f.attrs[2], &f.schan);
+                            playsound(f.attrs[0], both ? f.o : e.o, NULL, flags, f.attrs[3] ? f.attrs[3] : -1, f.attrs[1] || f.attrs[2] ? f.attrs[1] : -1, f.attrs[2] ? f.attrs[2] : -1, &f.schan);
                         }
                         break;
                     }
@@ -2186,7 +2186,7 @@ namespace entities
             {
                 int flags = SND_MAP|SND_LOOP; // ambient sounds loop
                 loopk(SND_LAST)  if(e.attrs[4]&(1<<k)) flags |= 1<<k;
-                playsound(e.attrs[0], e.o, NULL, flags, e.attrs[3], e.attrs[1], e.attrs[2], &e.schan);
+                playsound(e.attrs[0], e.o, NULL, flags, e.attrs[3] ? e.attrs[3], e.attrs[1] || e.attrs[2] ? e.attrs[1] : -1, e.attrs[2] ? e.attrs[2] : -1, &e.schan);
             }
         }
         if((m_edit(game::gamemode) || m_race(game::gamemode)) && routeid >= 0 && droproute)
