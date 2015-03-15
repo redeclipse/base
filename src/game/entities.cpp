@@ -2186,7 +2186,7 @@ namespace entities
             {
                 int flags = SND_MAP|SND_LOOP; // ambient sounds loop
                 loopk(SND_LAST)  if(e.attrs[4]&(1<<k)) flags |= 1<<k;
-                playsound(e.attrs[0], e.o, NULL, flags, e.attrs[3] ? e.attrs[3], e.attrs[1] || e.attrs[2] ? e.attrs[1] : -1, e.attrs[2] ? e.attrs[2] : -1, &e.schan);
+                playsound(e.attrs[0], e.o, NULL, flags, e.attrs[3] ? e.attrs[3] : 255, e.attrs[1] || e.attrs[2] ? e.attrs[1] : -1, e.attrs[2] ? e.attrs[2] : -1, &e.schan);
             }
         }
         if((m_edit(game::gamemode) || m_race(game::gamemode)) && routeid >= 0 && droproute)
