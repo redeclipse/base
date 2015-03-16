@@ -1475,7 +1475,7 @@ namespace physics
         return false;
     }
 
-    VAR(IDF_PERSIST, smoothmove, 0, 90, 200);
+    VAR(IDF_PERSIST, smoothmove, 0, 100, 200);
     VAR(IDF_PERSIST, smoothdist, 0, 64, 1024);
 
     void predictplayer(gameent *d, bool domove, int res = 0, bool local = false)

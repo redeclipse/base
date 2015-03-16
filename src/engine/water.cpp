@@ -6,7 +6,7 @@ VARF(IDF_PERSIST, waterenvmap, 0, 1, 1, { cleanreflections(); preloadwatershader
 VARF(IDF_PERSIST, waterfallrefract, 0, 0, 1, { cleanreflections(); preloadwatershaders(); });
 
 VAR(IDF_WORLD, watersubdiv, 0, 3, 3);
-VAR(IDF_WORLD, waterlod, 0, 1, 3);
+VAR(IDF_WORLD, waterlod, 0, 3, 3);
 
 static int wx1, wy1, wx2, wy2, wsize;
 static float whscale, whoffset;
@@ -502,7 +502,7 @@ void renderwaterff()
                         glBindTexture(GL_TEXTURE_2D, ref.tex);
                         setprojtexmatrix(ref);
                     }
-                    else 
+                    else
                     {
                         glBindTexture(GL_TEXTURE_CUBE_MAP_ARB, lookupenvmap(lookupmaterialslot(ref.material)));
                     }
@@ -970,7 +970,7 @@ void addreflection(materialsurface &m)
         if(!oldest || oldest->age<0) return;
         ref = oldest;
     }
-    if(ref->height!=height || ref->material!=mat) 
+    if(ref->height!=height || ref->material!=mat)
     {
         ref->material = mat;
         ref->height = height;
@@ -1001,7 +1001,7 @@ static void drawmaterialquery(const materialsurface &m, float offset, float bord
 #define GENFACEORIENT(orient, v0, v1, v2, v3) \
         case orient: v0 v1 v2 v3 break;
 #define GENFACEVERT(orient, vert, mx,my,mz, sx,sy,sz) \
-            varray::attrib<float>(mx sx, my sy, mz sz); 
+            varray::attrib<float>(mx sx, my sy, mz sz);
         GENFACEVERTS(x, x, y, y, z, z, - border, + csize, - border, + rsize, + offset, - offset)
 #undef GENFACEORIENT
 #undef GENFACEVERT
@@ -1278,7 +1278,7 @@ void drawreflections()
         Reflection &ref = reflections[++n%MAXREFLECTIONS];
         if(ref.height<0 || ref.age || ref.matsurfs.empty()) continue;
         if(hasOQ && oqfrags && oqwater && ref.query && ref.query->owner==&ref)
-        { 
+        {
             if(!ref.prevquery || ref.prevquery->owner!=&ref || checkquery(ref.prevquery))
             {
                 if(checkquery(ref.query)) continue;
@@ -1315,7 +1315,7 @@ void drawreflections()
             maskreflection(ref, offset, true);
             if(scissor && nvidia_scissor_bug) glEnable(GL_SCISSOR_TEST);
             savevfcP();
-            setvfcP(ref.height+offset, clipmin, clipmax); 
+            setvfcP(ref.height+offset, clipmin, clipmax);
             drawreflection(ref.height+offset, false);
             restorevfcP();
             if(scissor) glDisable(GL_SCISSOR_TEST);

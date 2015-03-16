@@ -533,7 +533,7 @@ VARF(IDF_PERSIST, texcompress, 0, 1<<10, 1<<12, initwarning("texture quality", I
 VARF(IDF_PERSIST, texcompressquality, -1, -1, 1, setuptexcompress());
 VARF(IDF_PERSIST, trilinear, 0, 1, 1, initwarning("texture filtering", INIT_LOAD));
 VARF(IDF_PERSIST, bilinear, 0, 1, 1, initwarning("texture filtering", INIT_LOAD));
-VARF(IDF_PERSIST, aniso, 0, 0, 16, initwarning("texture filtering", INIT_LOAD));
+VARF(IDF_PERSIST, aniso, 0, 16, 16, initwarning("texture filtering", INIT_LOAD));
 
 extern int usetexcompress;
 

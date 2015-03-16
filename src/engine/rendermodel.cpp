@@ -1,7 +1,7 @@
 #include "engine.h"
 
 VAR(0, oqdynent, 0, 1, 1);
-VAR(0, animationinterpolationtime, 0, 150, 1000);
+VAR(0, animationinterpolationtime, 0, 200, 1000);
 
 model *loadingmodel = NULL;
 
