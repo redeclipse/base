@@ -24,12 +24,12 @@ VAR(IDF_PERSIST, guiscaletime, 0, 250, VAR_MAX);
 VAR(IDF_PERSIST, guitooltipwidth, -1, 768, VAR_MAX);
 VAR(IDF_PERSIST, guistatuswidth, -1, 2048, VAR_MAX);
 
-VAR(IDF_PERSIST, guiskinned, 0, 2, 3); // 0 = no backgrounds, 1 = drawn backgrounds, 2 = skinned backgrounds, 3 = skinned with overlay border
+VAR(IDF_PERSIST, guiskinned, 0, 3, 3); // 0 = no backgrounds, 1 = drawn backgrounds, 2 = skinned backgrounds, 3 = skinned with overlay border
 VARF(IDF_PERSIST, guiskinsize, 0, 0, VAR_MAX, if(guiskinsize) { int off = guiskinsize%4; if(off) guiskinsize += guiskinsize-off; }); // 0 = texture size, otherwise = size in pixels for skin scaling
 
 VAR(IDF_PERSIST|IDF_HEX, guibgcolour, -1, 0x000000, 0xFFFFFF);
 FVAR(IDF_PERSIST, guibgblend, 0, 0.7f, 1);
-VAR(IDF_PERSIST|IDF_HEX, guibordercolour, -1, 0x808080, 0xFFFFFF);
+VAR(IDF_PERSIST|IDF_HEX, guibordercolour, -1, 0x000000, 0xFFFFFF);
 FVAR(IDF_PERSIST, guiborderblend, 0, 1.f, 1);
 
 VAR(IDF_PERSIST|IDF_HEX, guihovercolour, -1, 0xF0A0A0, 0xFFFFFF);
