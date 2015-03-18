@@ -64,7 +64,6 @@
   !define MUI_COMPONENTSPAGE_SMALLDESC
   !insertmacro MUI_PAGE_COMPONENTS
   !insertmacro MUI_PAGE_DIRECTORY
-  !insertmacro MUI_PAGE_LICENSE "..\..\..\doc\license.txt"
   !insertmacro MUI_PAGE_INSTFILES
     !define MUI_FINISHPAGE_NOAUTOCLOSE ; Allow user to review install log before continuing to Finish page.
 
