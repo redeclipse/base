@@ -15,76 +15,12 @@ tarname-osx=$(appname)_$(appversion)_osx.tar
 torrent-trackers-url="udp://tracker.openbittorrent.com:80,udp://tracker.publicbt.com:80,udp://tracker.ccc.de:80,udp://tracker.istole.it:80"
 torrent-webseed-baseurl="http://downloads.sourceforge.net/redeclipse"
 
-FILES= \
-	readme.txt \
-	$(APPCLIENT).bat \
-	$(APPCLIENT).sh \
-	$(APPSERVER).bat \
-	$(APPSERVER).sh
-
-SRC_DIRS= \
-	src/enet \
-	src/engine \
-	src/game \
-	src/include \
-	src/lib \
-	src/scripts \
-	src/shared
-
-SRC_FILES= \
-	$(shell cd ../ && find $(SRC_DIRS) -not -iname *.lo -not -iname *.gch -not -iname *.o || echo "") \
-	src/Makefile \
-	src/dist.mk \
-	src/dpiaware.manifest \
-	src/system-install.mk \
-	src/$(APPNAME).* \
-	src/wiki.mk \
-	src/install/nix/$(APPNAME)* \
-	src/install/win/*
-
-SRC_XCODE= \
-	src/xcode/*.h \
-	src/xcode/*.m \
-	src/xcode/*.mm \
-	src/xcode/*.lproj \
-	src/xcode/$(APPNAME)* \
-
 OSX_APP=
 ifeq ($(APPNAME),redeclipse)
 OSX_APP=bin/$(APPNAME).app
 endif
 
-BIN_FILES= \
-	bin/amd64/*.txt \
-	bin/amd64/*.dll \
-	bin/amd64/$(APPCLIENT)* \
-	bin/amd64/$(APPSERVER)* \
-	bin/x86/*.txt \
-	bin/x86/*.dll \
-	bin/x86/$(APPCLIENT)* \
-	bin/x86/$(APPSERVER)* \
-	$(OSX_APP)
-
-DOC_FILES= \
-	doc/all-licenses.txt \
-	doc/cc-by-sa.txt \
-	doc/changelog.txt \
-	doc/cube2font.txt \
-	doc/examples \
-	doc/guidelines.txt \
-	doc/irc.txt \
-	doc/license.txt \
-	doc/man/cube2font* \
-	doc/man/$(APPNAME)* \
-	doc/trademark.txt
-
-DISTFILES= \
-	$(FILES) \
-	$(BIN_FILES) \
-	data \
-	$(DOC_FILES) \
-	$(SRC_FILES) \
-	$(SRC_XCODE)
+DISTFILES=$(shell cd ../ && find . -not -iname *.lo -not -iname *.gch -not -iname *.o || echo "")
 
 ../$(dirname):
 	rm -rf $@
@@ -94,17 +30,12 @@ DISTFILES= \
 		-cf - $(DISTFILES:%=../%) | (mkdir $@/; cd $@/ ; tar -xpf -)
 	$(MAKE) -C $@/src clean
 	$(MAKE) -C $@/src/enet clean
-	rm -f $@/data/misc/largeandincharge.png
 
 distdir: ../$(dirname)
 
 ../$(tarname): ../$(dirname)
 	tar \
-		--exclude='$</bin/*.app*' \
 		--exclude='$</bin/*/*.exe' \
-		--exclude='$</bin/*/*.dll' \
-		--exclude='$</bin/*/*.txt' \
-		--exclude='$</*.bat' \
 		-cf $@ $<
 
 dist-tar: ../$(tarname)
@@ -133,10 +64,8 @@ dist-tar-osx: ../$(tarname-osx)
 
 ../$(dirname-win): ../$(dirname)
 	cp -r $< $@
-	rm -rf $@/bin/*.app/
 	rm -rf $@/bin/*/*linux*
-	rm -rf $@/bin/*/*freebsd*
-	rm -f $@/*.sh
+	rm -rf $@/bin/*/*bsd*
 
 distdir-win: ../$(dirname-win)
 
@@ -272,3 +201,15 @@ cube2font-txt: ../doc/cube2font.txt
 	scripts/servinit-comments $< $@
 
 update-servinit: ../doc/examples/servinit.cfg
+
+dist-copy:
+    echo "stable" > ../branch.txt
+    curl --location --insecure --fail http://redeclipse.net/files/stable/base.txt --output ../version.txt
+    curl --location --insecure --fail http://redeclipse.net/files/stable/bins.txt --output ../bin/version.txt
+    curl --location --insecure --fail http://redeclipse.net/files/stable/data.txt --output ../data/version.txt
+    curl --location --insecure --fail http://redeclipse.net/files/stable/linux.tar.gz --output linux.tar.gz
+    tar -xvf linux.tar.gz ../
+    rm -f linux.tar.gz
+    curl --location --insecure --fail http://redeclipse.net/files/stable/windows.zip --output windows.zip
+    unzip -o windows.zip -d ../
+    rm -f windows.zip
