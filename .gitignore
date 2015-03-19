@@ -1,8 +1,9 @@
 *.dbg
 *.bin
 *.exe
-redeclipse_client_*
-redeclipse_server_*
+src/redeclipse_*
+bin/x86/redeclipse_*
+bin/amd64/redeclipse_*
 src/.objs/
 *.o
 *.so
