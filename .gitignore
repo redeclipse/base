@@ -4,6 +4,7 @@
 src/redeclipse_*
 bin/x86/redeclipse_*
 bin/amd64/redeclipse_*
+bin/redeclipse_*
 src/.objs/
 *.o
 *.so
