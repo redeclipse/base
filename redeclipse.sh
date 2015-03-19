@@ -75,7 +75,13 @@ redeclipse_setup() {
 }
 
 redeclipse_check() {
-    if [ "${REDECLIPSE_BRANCH}" != "source" ] && [ "${REDECLIPSE_BRANCH}" != "inplace" ]; then
+    if [ "${REDECLIPSE_BRANCH}" = "source" ]; then
+        echo ""
+        echo "Rebuilding \"${REDECLIPSE_BRANCH}\". To disable set: REDECLIPSE_BRANCH=\"inplace\""
+        echo ""
+        ${REDECLIPSE_MAKE} -C src all install
+        return $?
+    elif [ "${REDECLIPSE_BRANCH}" != "inplace" ]; then
         echo ""
         echo "Checking for updates to \"${REDECLIPSE_BRANCH}\". To disable set: REDECLIPSE_BRANCH=\"inplace\""
         echo ""

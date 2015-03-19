@@ -34,7 +34,10 @@ setlocal enableextensions enabledelayedexpansion
     if NOT DEFINED REDECLIPSE_HOME if NOT "%REDECLIPSE_BRANCH%" == "stable" if NOT "%REDECLIPSE_BRANCH%" == "inplace" set REDECLIPSE_HOME=home
     if DEFINED REDECLIPSE_HOME set REDECLIPSE_OPTIONS="-h%REDECLIPSE_HOME%" %REDECLIPSE_OPTIONS%
 :redeclipse_check
-    if "%REDECLIPSE_BRANCH%" == "source" goto redeclipse_runit
+    if NOT "%REDECLIPSE_BRANCH%" == "source" goto redeclipse_notsource
+    %REDECLIPSE_MAKE% -C src all install
+    goto redeclipse_runit
+:redeclipse_notsource
     if "%REDECLIPSE_BRANCH%" == "inplace" goto redeclipse_runit
     echo.
     echo Checking for updates to "%REDECLIPSE_BRANCH%". To disable: set REDECLIPSE_BRANCH=inplace
@@ -74,7 +77,7 @@ setlocal enableextensions enabledelayedexpansion
     ) else (
         if "%REDECLIPSE_BRANCH%" == "source" (
             %REDECLIPSE_MAKE% -C src all install && goto redeclipse_runit
-            set REDECLIPSE_BRANCH=master
+            set REDECLIPSE_BRANCH=devel
         )
         if NOT "%REDECLIPSE_BRANCH%" == "inplace" if NOT "%REDECLIPSE_TRYUPDATE%" == "true" (
             set REDECLIPSE_TRYUPDATE=true
