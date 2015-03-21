@@ -30,6 +30,16 @@ DISTFILES=$(shell cd ../ && find . -not -iname *.lo -not -iname *.gch -not -inam
 		-cf - $(DISTFILES:%=../%) | (mkdir $@/; cd $@/ ; tar -xpf -)
 	$(MAKE) -C $@/src clean
 	$(MAKE) -C $@/src/enet clean
+	echo "stable" > $@/branch.txt
+	curl --location --insecure --fail http://redeclipse.net/files/stable/base.txt --output $@/version.txt
+	curl --location --insecure --fail http://redeclipse.net/files/stable/bins.txt --output $@/bin/version.txt
+	curl --location --insecure --fail http://redeclipse.net/files/stable/data.txt --output $@/data/version.txt
+	curl --location --insecure --fail http://redeclipse.net/files/stable/linux.tar.gz --output linux.tar.gz
+	tar -xvf linux.tar.gz $@/
+	rm -f linux.tar.gz
+	curl --location --insecure --fail http://redeclipse.net/files/stable/windows.zip --output windows.zip
+	unzip -o windows.zip -d $@/
+	rm -f windows.zip
 
 distdir: ../$(dirname)
 
@@ -201,15 +211,3 @@ cube2font-txt: ../doc/cube2font.txt
 	scripts/servinit-comments $< $@
 
 update-servinit: ../doc/examples/servinit.cfg
-
-dist-copy:
-	echo "stable" > ../branch.txt
-	curl --location --insecure --fail http://redeclipse.net/files/stable/base.txt --output ../version.txt
-	curl --location --insecure --fail http://redeclipse.net/files/stable/bins.txt --output ../bin/version.txt
-	curl --location --insecure --fail http://redeclipse.net/files/stable/data.txt --output ../data/version.txt
-	curl --location --insecure --fail http://redeclipse.net/files/stable/linux.tar.gz --output linux.tar.gz
-	tar -xvf linux.tar.gz ../
-	rm -f linux.tar.gz
-	curl --location --insecure --fail http://redeclipse.net/files/stable/windows.zip --output windows.zip
-	unzip -o windows.zip -d ../
-	rm -f windows.zip
