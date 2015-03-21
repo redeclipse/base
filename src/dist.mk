@@ -35,10 +35,10 @@ DISTFILES=$(shell cd ../ && find . -not -iname *.lo -not -iname *.gch -not -inam
 	curl --location --insecure --fail http://redeclipse.net/files/stable/bins.txt --output $@/bin/version.txt
 	curl --location --insecure --fail http://redeclipse.net/files/stable/data.txt --output $@/data/version.txt
 	curl --location --insecure --fail http://redeclipse.net/files/stable/linux.tar.gz --output linux.tar.gz
-	tar -xvf linux.tar.gz $@/
+	tar --gzip --extract --verbose --overwrite --file=linux.tar.gz --directory=$@
 	rm -f linux.tar.gz
 	curl --location --insecure --fail http://redeclipse.net/files/stable/windows.zip --output windows.zip
-	unzip -o windows.zip -d $@/
+	unzip -o windows.zip -d $@
 	rm -f windows.zip
 
 distdir: ../$(dirname)
