@@ -125,7 +125,7 @@ extern float textscale;
 extern font *curfont;
 
 // texture
-extern int hwtexsize, hwcubetexsize, hwmaxaniso, maxtexsize, aniso, envmapradius;
+extern int hwtexsize, hwcubetexsize, hwmaxanisotropy, maxtexsize, anisotropy, envmapradius;
 
 extern Texture *textureload(const char *name, int clamp = 0, bool mipit = true, bool msg = true);
 extern int texalign(void *data, int w, int bpp);

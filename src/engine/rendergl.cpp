@@ -683,7 +683,7 @@ void gl_checkextensions()
     {
        GLint val;
        glGetIntegerv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &val);
-       hwmaxaniso = val;
+       hwmaxanisotropy = val;
        hasAF = true;
        if(dbgexts) conoutf("\frUsing GL_EXT_texture_filter_anisotropic extension.");
     }

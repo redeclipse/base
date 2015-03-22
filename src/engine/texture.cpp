@@ -526,14 +526,14 @@ void texagrad(ImageData &s, float x2, float y2, float x1, float y1)
 
 VAR(0, hwtexsize, 1, 0, 0);
 VAR(0, hwcubetexsize, 1, 0, 0);
-VAR(0, hwmaxaniso, 1, 0, 0);
+VAR(0, hwmaxanisotropy, 1, 0, 0);
 VARF(IDF_PERSIST, maxtexsize, 0, 0, 1<<12, initwarning("texture quality", INIT_LOAD));
 VARF(IDF_PERSIST, texreduce, 0, 0, 12, initwarning("texture quality", INIT_LOAD));
 VARF(IDF_PERSIST, texcompress, 0, 1<<10, 1<<12, initwarning("texture quality", INIT_LOAD));
 VARF(IDF_PERSIST, texcompressquality, -1, -1, 1, setuptexcompress());
 VARF(IDF_PERSIST, trilinear, 0, 1, 1, initwarning("texture filtering", INIT_LOAD));
 VARF(IDF_PERSIST, bilinear, 0, 1, 1, initwarning("texture filtering", INIT_LOAD));
-VARF(IDF_PERSIST, aniso, 0, 16, 16, initwarning("texture filtering", INIT_LOAD));
+VARF(IDF_PERSIST, anisotropy, 0, 0, 16, initwarning("texture filtering", INIT_LOAD));
 
 extern int usetexcompress;
 
@@ -711,7 +711,7 @@ void setuptexparameters(int tnum, void *pixels, int clamp, int filter, GLenum fo
     glBindTexture(target, tnum);
     glTexParameteri(target, GL_TEXTURE_WRAP_S, clamp&1 ? GL_CLAMP_TO_EDGE : GL_REPEAT);
     if(target!=GL_TEXTURE_1D) glTexParameteri(target, GL_TEXTURE_WRAP_T, clamp&2 ? GL_CLAMP_TO_EDGE : GL_REPEAT);
-    if(target==GL_TEXTURE_2D && hasAF && min(aniso, hwmaxaniso) > 0 && filter > 1) glTexParameteri(target, GL_TEXTURE_MAX_ANISOTROPY_EXT, min(aniso, hwmaxaniso));
+    if(target==GL_TEXTURE_2D && hasAF && min(anisotropy, hwmaxanisotropy) > 0 && filter > 1) glTexParameteri(target, GL_TEXTURE_MAX_ANISOTROPY_EXT, min(anisotropy, hwmaxanisotropy));
     glTexParameteri(target, GL_TEXTURE_MAG_FILTER, filter && bilinear ? GL_LINEAR : GL_NEAREST);
     glTexParameteri(target, GL_TEXTURE_MIN_FILTER,
         filter > 1 ?
