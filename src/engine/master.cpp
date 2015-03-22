@@ -110,7 +110,7 @@ void addauth(char *name, char *flags, char *pubkey, char *email)
     if(filterstring(authname, name, true, true, true, true, 100)) name = authname;
     if(authusers.access(name))
     {
-        conoutf("auth handle \"%s\" already exists, skipping (%s)", name, email);
+        conoutf("auth handle '%s' already exists, skipping (%s)", name, email);
         return;
     }
     name = newstring(name);
@@ -157,10 +157,10 @@ void reqauth(masterclient &c, uint id, char *name, char *hostname)
     if(!u)
     {
         masteroutf(c, "failauth %u\n", id);
-        conoutf("failed \"%s\" (%u) from %s on server %s (NOTFOUND)\n", name, id, host, ip);
+        conoutf("failed '%s' (%u) from %s on server %s (NOTFOUND)\n", name, id, host, ip);
         return;
     }
-    conoutf("attempting \"%s\" (%u) from %s on server %s\n", name, id, host, ip);
+    conoutf("attempting '%s' (%u) from %s on server %s\n", name, id, host, ip);
 
     authreq &a = c.authreqs.add();
     a.user = u;
@@ -185,12 +185,12 @@ void confauth(masterclient &c, uint id, const char *val)
         if(checkchallenge(val, c.authreqs[i].answer))
         {
             masteroutf(c, "succauth %u \"%s\" \"%s\"\n", id, c.authreqs[i].user->name, c.authreqs[i].user->flags);
-            conoutf("succeeded \"%s\" [%s] (%u) from %s on server %s\n", c.authreqs[i].user->name, c.authreqs[i].user->flags, id, c.authreqs[i].hostname, ip);
+            conoutf("succeeded '%s' [%s] (%u) from %s on server %s\n", c.authreqs[i].user->name, c.authreqs[i].user->flags, id, c.authreqs[i].hostname, ip);
         }
         else
         {
             masteroutf(c, "failauth %u\n", id);
-            conoutf("failed \"%s\" (%u) from %s on server %s (BADKEY)\n", c.authreqs[i].user->name, id, c.authreqs[i].hostname, ip);
+            conoutf("failed '%s' (%u) from %s on server %s (BADKEY)\n", c.authreqs[i].user->name, id, c.authreqs[i].hostname, ip);
         }
         freechallenge(c.authreqs[i].answer);
         c.authreqs.remove(i--);
@@ -299,7 +299,7 @@ bool checkmasterclientinput(masterclient &c)
         bool found = false, server = !strcmp(w[0], "server");
         if((server || !strcmp(w[0], "quick")) && !c.ishttp)
         {
-            c.port = MASTER_PORT;
+            c.port = SERVER_PORT;
             c.lastactivity = totalmillis ? totalmillis : 1;
             if(!server)
             {
@@ -309,12 +309,12 @@ bool checkmasterclientinput(masterclient &c)
             }
             else
             {
+                if(w[1] && *w[1]) c.port = clamp(atoi(w[1]), 1, VAR_MAX);
                 ENetAddress address = { ENET_HOST_ANY, enet_uint16(c.port) };
-                if(w[1]) c.port = clamp(atoi(w[1]), 1, VAR_MAX);
-                if(w[2] && strcmp(w[2], "*") && (enet_address_set_host(&address, w[2]) < 0 || address.host != c.address.host))
+                if(w[2] && *w[2] && strcmp(w[2], "*") && (enet_address_set_host(&address, w[2]) < 0 || address.host != c.address.host))
                 {
                     c.listserver = c.shouldping = false;
-                    masteroutf(c, "echo \"serverip \"%s\" does not match origin \"%s\", server will not be listed\n", w[2], c.name);
+                    masteroutf(c, "echo \"server IP '%s' does not match origin '%s', server will not be listed\n", w[2], c.name);
                 }
                 else
                 {
@@ -366,7 +366,7 @@ bool checkmasterclientinput(masterclient &c)
             if(!strcmp(w[0], "reqauth")) { reqauth(c, uint(atoi(w[1])), w[2], w[3]); found = true; }
             if(!strcmp(w[0], "confauth")) { confauth(c, uint(atoi(w[1])), w[2]); found = true; }
         }
-        if(w[0] && !found)
+        if(w[0] && *w[0] && !found)
         {
             masteroutf(c, "error \"unknown command %s\"\n", w[0]);
             conoutf("master peer %s (client) sent unknown command: %s",  c.name, w[0]);
@@ -503,4 +503,3 @@ void reloadmaster()
 {
     clearauth();
 }
-
