@@ -1,5 +1,6 @@
 #!/bin/sh
 if [ "${REDECLIPSE_CALLED}" = "true" ]; then REDECLIPSE_EXITU="return"; else REDECLIPSE_EXITU="exit"; fi
+if [ "${REDECLIPSE_DEPLOY}" != "true" ]; then REDECLIPSE_DEPLOY="false"; fi
 REDECLIPSE_SCRIPT="$0"
 
 redeclipse_update_path() {
@@ -221,6 +222,7 @@ redeclipse_update_module_patch_deploy() {
     echo "    rm -f \"${REDECLIPSE_TEMP}/${REDEECLIPSE_MODULE_RUN}.txt\"" >> "${REDECLIPSE_TEMP}/install.sh"
     echo "    REDECLIPSE_ERROR=\"true\"" >> "${REDECLIPSE_TEMP}/install.sh"
     echo ")" >> "${REDECLIPSE_TEMP}/install.sh"
+    REDECLIPSE_DEPLOY="true"
     return $?
 }
 
@@ -259,6 +261,7 @@ redeclipse_update_module_blob_deploy() {
     echo "    rm -f \"${REDECLIPSE_TEMP}/${REDEECLIPSE_MODULE_RUN}.txt\"" >> "${REDECLIPSE_TEMP}/install.sh"
     echo "    REDECLIPSE_ERROR=\"true\"" >> "${REDECLIPSE_TEMP}/install.sh"
     echo ")" >> "${REDECLIPSE_TEMP}/install.sh"
+    REDECLIPSE_DEPLOY="true"
     return $?
 }
 
@@ -337,11 +340,13 @@ redeclipse_update_bins_deploy() {
     echo "    rm -f \"${REDECLIPSE_TEMP}/bins.txt\"" >> "${REDECLIPSE_TEMP}/install.sh"
     echo "    REDECLIPSE_ERROR=\"true\"" >> "${REDECLIPSE_TEMP}/install.sh"
     echo ")" >> "${REDECLIPSE_TEMP}/install.sh"
+    REDECLIPSE_DEPLOY="true"
     redeclipse_update_deploy
     return $?
 }
 
 redeclipse_update_deploy() {
+    if [ "${REDECLIPSE_DEPLOY}" != "true" ]; then return 0; fi
     echo ""
     echo "if [ \"\${REDECLIPSE_ERROR}\" = \"true\" ]; then exit 1; else exit 0; fi" >> "${REDECLIPSE_TEMP}/install.sh"
     echo "deploy: \"${REDECLIPSE_TEMP}/install.sh\""

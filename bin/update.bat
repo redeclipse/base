@@ -6,6 +6,7 @@ setlocal enableextensions enabledelayedexpansion
     set REDECLIPSE_PATH=%CD%
     popd
 :redeclipse_update_init
+    if NOT "%REDECLIPSE_DEPLOY%" == "true" set REDECLIPSE_DEPLOY=false
     if NOT DEFINED REDECLIPSE_UPDATER set REDECLIPSE_UPDATER=%~dp0\%~0
     if NOT DEFINED REDECLIPSE_SOURCE set REDECLIPSE_SOURCE=http://redeclipse.net/files
     if NOT DEFINED REDECLIPSE_GITHUB set REDECLIPSE_GITHUB=https://github.com/red-eclipse
@@ -127,6 +128,7 @@ setlocal enableextensions enabledelayedexpansion
     echo     del /f /q "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.txt">> "%REDECLIPSE_TEMP%\install.bat"
     echo     set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
     echo ^)>> "%REDECLIPSE_TEMP%\install.bat"
+    set REDECLIPSE_DEPLOY=true
     exit /b 0
 :redeclipse_update_module_blob
     if EXIST "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.zip" (
@@ -152,6 +154,7 @@ setlocal enableextensions enabledelayedexpansion
     echo     del /f /q "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.txt">> "%REDECLIPSE_TEMP%\install.bat"
     echo     set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
     echo ^)>> "%REDECLIPSE_TEMP%\install.bat"
+    set REDECLIPSE_DEPLOY=true
     exit /b 0
 :redeclipse_update_bins_run
     echo.
@@ -202,7 +205,9 @@ setlocal enableextensions enabledelayedexpansion
     echo     del /f /q "%REDECLIPSE_TEMP%\bins.txt">> "%REDECLIPSE_TEMP%\install.bat"
     echo     set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
     echo ^)>> "%REDECLIPSE_TEMP%\install.bat"
+    set REDECLIPSE_DEPLOY=true
 :redeclipse_update_deploy
+    if NOT "%REDECLIPSE_DEPLOY%" == "true" exit /b 0
     echo.
     echo if "%%REDECLIPSE_ERROR%%" == "true" (exit /b 1)>> "%REDECLIPSE_TEMP%\install.bat"
     echo deploy: %REDECLIPSE_TEMP%\install.bat
