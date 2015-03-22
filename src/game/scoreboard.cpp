@@ -389,7 +389,7 @@ namespace hud
                                             }
                                             if(m_loadout(game::gamemode, game::mutators))
                                             {
-                                                SEARCHBINDCACHE(loadkey)("showgui loadout", 0);
+                                                SEARCHBINDCACHE(loadkey)("showgui profile 2", 0);
                                                 uicenterlist(g, g.textf("Press %s to \fs%s\fS loadout", 0xFFFFFF, NULL, 0, -1, loadkey, game::player1->loadweap.empty() ? "\fzoyselect" : "change"));
                                             }
                                             if(m_fight(game::gamemode) && m_team(game::gamemode, game::mutators))
