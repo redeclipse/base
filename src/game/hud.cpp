@@ -1428,7 +1428,7 @@ namespace hud
                         }
                         if(m_loadout(game::gamemode, game::mutators))
                         {
-                            SEARCHBINDCACHE(loadkey)("showgui loadout", 0);
+                            SEARCHBINDCACHE(loadkey)("showgui profile 2", 0);
                             pushfont("little");
                             ty += draw_textx("Press %s to \fs%s\fS loadout", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, tw, loadkey, target->loadweap.empty() ? "\fzoyselect" : "change");
                             popfont();
