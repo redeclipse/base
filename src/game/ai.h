@@ -335,5 +335,5 @@ namespace ai
     extern void render();
     extern void preload();
 
-    extern void scanchat(gameent *d, int flags, const char *text);
+    extern void scanchat(gameent *d, gameent *t, int flags, const char *text);
 };

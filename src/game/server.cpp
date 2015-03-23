@@ -5613,6 +5613,7 @@ namespace server
                     }
                     bigstring output;
                     copybigstring(output, text, G(messagelength));
+                    filterstring(text, text, true, true, true, true, G(messagelength));
                     if(*(G(censorwords))) filterword(output, G(censorwords));
                     if(flags&SAY_TEAM && !m_team(gamemode, mutators)) flags &= ~SAY_TEAM;
                     sendf(-1, -1, "ri4s", N_TEXT, fcp->clientnum, tcp ? tcp->clientnum : -1, flags, output); // sent to negative chan for recordpacket
@@ -5625,11 +5626,32 @@ namespace server
                     }
                     else
                     {
+                        static vector<int> sentto;
+                        sentto.setsize(0);
                         loopv(clients)
                         {
                             clientinfo *t = clients[i];
-                            if(!allowbroadcast(t->clientnum) || (flags&SAY_TEAM && fcp->team != t->team)) continue;
-                            sendf(t->clientnum, 1, "ri4s", N_TEXT, fcp->clientnum, tcp ? tcp->clientnum : -1, flags, output);
+                            if(flags&SAY_TEAM && fcp->team != t->team) continue;
+                            int scn = t->clientnum;
+                            if(!allowbroadcast(t->clientnum) && t->state.ownernum >= 0)
+                            {
+                                if(strncmp(text, "bots", 4))
+                                {
+                                    size_t len = strlen(t->name);
+                                    if(!len || strncasecmp(text, t->name, len)) continue;
+                                    switch(text[len])
+                                    {
+                                        case 0: break;
+                                        case ':': case ',': case ';': len++; break;
+                                        default: continue;
+                                    }
+                                    if(text[len] != 0) continue;
+                                }
+                                scn = t->state.ownernum;
+                            }
+                            if(sentto.find(scn) >= 0) continue;
+                            sendf(scn, 1, "ri4s", N_TEXT, fcp->clientnum, tcp ? tcp->clientnum : -1, flags, output);
+                            sentto.add(scn);
                         }
                         defformatstring(m)("%s", colourname(fcp));
                         if(flags&SAY_TEAM)

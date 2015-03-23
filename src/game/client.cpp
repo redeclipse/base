@@ -1039,7 +1039,7 @@ namespace client
         if(flags&SAY_WHISPER)
         {
             if(!t) return;
-            defformatstring(sw)(" (\fs\fcwhispers to %s\fS)", t->clientnum == game::player1->clientnum ? "you" : game::colourname(t));
+            defformatstring(sw)(" (\fs\fcwhispers to %s\fS)", t == game::player1 ? "you" : game::colourname(t));
             concatstring(name, sw);
         }
         else if(flags&SAY_TEAM)
@@ -1060,9 +1060,12 @@ namespace client
             int ret = execute(act);
             if(ret > 0) snd = ret;
         }
-        conoutft(CON_CHAT, "%s", line);
-        if(snd >= 0 && !issound(f->cschan)) playsound(snd, f->o, f, snd != S_CHAT ? 0 : SND_DIRECT, -1, -1, -1, &f->cschan);
-        ai::scanchat(f, flags, text);
+        if((!(flags&SAY_TEAM) || f->team == game::player1->team) && (!(flags&SAY_WHISPER) || f == game::player1 || t == game::player1))
+        {
+            conoutft(CON_CHAT, "%s", line);
+            if(snd >= 0 && !issound(f->cschan)) playsound(snd, f->o, f, snd != S_CHAT ? 0 : SND_DIRECT, -1, -1, -1, &f->cschan);
+        }
+        ai::scanchat(f, t, flags, text);
     }
 
     void toserver(int flags, const char *text, const char *target)
@@ -1074,7 +1077,7 @@ namespace client
             if(flags&SAY_WHISPER)
             {
                 gameent *e = game::getclient(parseplayer(target));
-                if(e && e->clientnum != game::player1->clientnum && e->actortype == A_PLAYER)
+                if(e && e->clientnum != game::player1->clientnum)
                     addmsg(N_TEXT, "ri3s", game::player1->clientnum, e->clientnum, flags, output);
             }
             else
