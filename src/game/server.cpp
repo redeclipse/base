@@ -5620,7 +5620,7 @@ namespace server
                     if(flags&SAY_WHISPER && tcp)
                     {
                         int scn = allowbroadcast(tcp->clientnum) ? tcp->clientnum : tcp->state.ownernum;
-                        if(scn >= 0) sendf(scn, 1, "ri4s", N_TEXT, fcp->clientnum, tcp->clientnum, flags, output);
+                        if(allowbroadcast(scn)) sendf(scn, 1, "ri4s", N_TEXT, fcp->clientnum, tcp->clientnum, flags, output);
                         if(allowbroadcast(fcp->clientnum) && scn != fcp->clientnum)
                             sendf(fcp->clientnum, 1, "ri4s", N_TEXT, fcp->clientnum, tcp->clientnum, flags, output);
                     }
@@ -5633,7 +5633,7 @@ namespace server
                             clientinfo *t = clients[i];
                             if(flags&SAY_TEAM && fcp->team != t->team) continue;
                             int scn = t->clientnum;
-                            if(!allowbroadcast(t->clientnum) && t->state.ownernum >= 0)
+                            if(!allowbroadcast(scn) && t->state.ownernum >= 0)
                             {
                                 if(strncmp(text, "bots", 4))
                                 {
@@ -5649,7 +5649,7 @@ namespace server
                                 }
                                 scn = t->state.ownernum;
                             }
-                            if(sentto.find(scn) >= 0) continue;
+                            if(!allowbroadcast(scn) || sentto.find(scn) >= 0) continue;
                             sendf(scn, 1, "ri4s", N_TEXT, fcp->clientnum, tcp ? tcp->clientnum : -1, flags, output);
                             sentto.add(scn);
                         }
