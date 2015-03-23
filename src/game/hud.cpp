@@ -1255,7 +1255,7 @@ namespace hud
                     else c2 = c;
                     drawpointertex(getpointer(POINTER_HIT, game::focus->weapselect), cx-cs/2, cy-cs/2, cs, c2.r, c2.g, c2.b, crosshairblend*hudblend);
                 }
-                if(crosshairdistance) draw_textx("\fa%.2f\fwm", w/3, h/2, 255, 255, 255, int(hudblend*255), TEXT_CENTERED, -1, -1, game::focus->o.dist(worldpos)/8.f);
+                if(crosshairdistance && (game::focus->state == CS_ALIVE || game::focus->state == CS_EDITING)) draw_textx("\fa%.1f\fwm", cx+160, cy+80, 255, 255, 255, int(hudblend*255), TEXT_RIGHT_JUSTIFY, -1, -1, game::focus->o.dist(worldpos)/8.f);
             }
         }
         else drawpointertex(getpointer(index, game::focus->weapselect), cx, cy, cs, c.r, c.g, c.b, fade*hudblend);
