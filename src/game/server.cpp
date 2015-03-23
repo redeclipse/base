@@ -5619,9 +5619,9 @@ namespace server
                     sendf(-1, -1, "ri4s", N_TEXT, fcp->clientnum, tcp ? tcp->clientnum : -1, flags, output); // sent to negative chan for recordpacket
                     if(flags&SAY_WHISPER && tcp)
                     {
-                        if(allowbroadcast(tcp->clientnum))
-                            sendf(tcp->clientnum, 1, "ri4s", N_TEXT, fcp->clientnum, tcp->clientnum, flags, output);
-                        if(allowbroadcast(fcp->clientnum))
+                        int scn = allowbroadcast(tcp->clientnum) ? tcp->clientnum : tcp->state.ownernum;
+                        if(scn >= 0) sendf(scn, 1, "ri4s", N_TEXT, fcp->clientnum, tcp->clientnum, flags, output);
+                        if(allowbroadcast(fcp->clientnum) && scn != fcp->clientnum)
                             sendf(fcp->clientnum, 1, "ri4s", N_TEXT, fcp->clientnum, tcp->clientnum, flags, output);
                     }
                     else
