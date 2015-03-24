@@ -335,7 +335,7 @@ void pasteconsole()
     size_t cblen = 0;
     uchar *cb = (uchar *)mac_pasteconsole(&cblen);
     if(!cb) return;
-    size_t commandlen = strlen(commandbuf);
+    size_t commandlen = strlen(commandbuf),
            decoded = decodeutf8((uchar *)&commandbuf[commandlen], sizeof(commandbuf)-1-commandlen, cb, cblen);
     commandbuf[commandlen + decoded] = '\0';
     free(cb);
@@ -961,6 +961,11 @@ void writecompletions(stream *f)
         else f->printf("    complete %s %s %s\n", escapeid(k), escapestring(v->dir), escapestring(v->ext ? v->ext : "*"));
     }
 }
+
+#ifdef __APPLE__
+extern bool mac_capslock();
+extern bool mac_numlock();
+#endif
 
 bool capslockon = false, numlockon = false;
 #if !defined(WIN32) && !defined(__APPLE__)

@@ -469,7 +469,7 @@ struct verinfo
     template <class T>
     void get(T &p)
     {
-        string text = "";
+        string text;
         major = getint(p);
         minor = getint(p);
         patch = getint(p);
