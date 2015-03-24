@@ -108,7 +108,8 @@ void ircsend(ircnet *n, const char *msg, ...)
         loopi(numu) switch(ubuf[i])
         {
             case '\v': ubuf[i] = '\x01'; break;
-            case '\f': ubuf[i] = '\x03'; break;
+            case '\f': ubuf[i] = '\x03'; break; // color code
+            case '\r': ubuf[i] = '\x0F'; break; // end color formatting
         }
         buf.data = ubuf;
         buf.dataLength = numu;
@@ -154,7 +155,7 @@ void cube2irc(char *dst, const char *src)
                 case 'm': case '5': case 'M': *dst++ = '\f'; *dst++ = '1'; *dst++ = '3'; break; // magenta
                 case 'k': case '8': case 'd': case 'A': *dst++ = '\f'; *dst++ = '1'; *dst++ = '4'; break; // dark grey
                 case 'a': case '4': *dst++ = '\f'; *dst++ = '1'; *dst++ = '5'; break; // grey
-                case 'u': case 'w': case '7': *dst++ = '\f'; break; // no color
+                case 'u': case 'w': case '7': *dst++ = '\r'; break; // no color
                 default: colorstack[colorpos] = oldcolor; break;
             }
             continue;
