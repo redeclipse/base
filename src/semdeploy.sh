@@ -1,7 +1,7 @@
 #!/bin/sh
 SEMABUILD_PWD=`pwd`
 SEMABUILD_SCP='scp -BC -o StrictHostKeyChecking=no'
-SEMABUILD_TARGET='qreeves@icculus.org:/webspace/redeclipse.net/files/releases'
+SEMABUILD_TARGET='qreeves@icculus.org:/webspace/redeclipse.net/files'
 SEMABUILD_APT='DEBIAN_FRONTEND=noninteractive apt-get'
 
 sudo ${SEMABUILD_APT} update || exit 1
