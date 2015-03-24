@@ -10,6 +10,7 @@ pushd src || exit 1
 make dist || exit 1
 popd
 mkdir releases || exit 1
-mv -vf redeclipse_*.*_*.tar.bz2 releases/
-mv -vf redeclipse_*.*_*.exe releases/
-${SEMABUILD_SCP} -r "releases" "${SEMABUILD_TARGET}" || return 1
+mv -vf redeclipse_*.*_*.tar.bz2 releases/ || exit 1
+mv -vf redeclipse_*.*_*.exe releases/ || exit 1
+${SEMABUILD_SCP} -r "releases" "${SEMABUILD_TARGET}" || exit 1
+exit 0
