@@ -205,6 +205,8 @@ namespace hud
 
     VAR(IDF_PERSIST, showcrosshair, 0, 2, 2); // 0 = off, 1 = on, 2 = blend depending on current accuracy level
     VAR(IDF_PERSIST, crosshairdistance, 0, 0, 1); // 0 = off, 1 = shows distance to crosshair target
+    VAR(IDF_PERSIST, crosshairdistancex, VAR_MIN, 160, VAR_MAX); // offset from the crosshair
+    VAR(IDF_PERSIST, crosshairdistancey, VAR_MIN, 80, VAR_MAX); // offset from the crosshair
     VAR(IDF_PERSIST, crosshairweapons, 0, 0, 3); // 0 = off, &1 = crosshair-specific weapons, &2 = also appy colour
     FVAR(IDF_PERSIST, crosshairsize, 0, 0.04f, 1000);
     VAR(IDF_PERSIST, crosshairhitspeed, 0, 500, VAR_MAX);
@@ -1255,7 +1257,7 @@ namespace hud
                     else c2 = c;
                     drawpointertex(getpointer(POINTER_HIT, game::focus->weapselect), cx-cs/2, cy-cs/2, cs, c2.r, c2.g, c2.b, crosshairblend*hudblend);
                 }
-                if(crosshairdistance) draw_textx("\fa%.2f\fwm", w/3, h/2, 255, 255, 255, int(hudblend*255), TEXT_CENTERED, -1, -1, game::focus->o.dist(worldpos)/8.f);
+                if(crosshairdistance && (game::focus->state == CS_ALIVE || game::focus->state == CS_EDITING)) draw_textx("\fa%.1f\fwm", cx+crosshairdistancex, cy+crosshairdistancey, 255, 255, 255, int(hudblend*255), TEXT_RIGHT_JUSTIFY, -1, -1, game::focus->o.dist(worldpos)/8.f);
             }
         }
         else drawpointertex(getpointer(index, game::focus->weapselect), cx, cy, cs, c.r, c.g, c.b, fade*hudblend);
