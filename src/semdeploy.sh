@@ -5,7 +5,7 @@ SEMABUILD_TARGET='qreeves@icculus.org:/webspace/redeclipse.net/files'
 SEMABUILD_APT='DEBIAN_FRONTEND=noninteractive apt-get'
 
 sudo ${SEMABUILD_APT} update || exit 1
-sudo ${SEMABUILD_APT} install build-essential nsis nsis-common || exit 1
+sudo ${SEMABUILD_APT} -fy install build-essential nsis nsis-common || exit 1
 pushd src || exit 1
 make dist || exit 1
 popd
