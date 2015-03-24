@@ -339,6 +339,7 @@
 		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
 			isa = PBXGroup;
 			children = (
+				2AB901D01AC1B8E900A5F378 /* version.h */,
 				D16A83350F130E9500EABB1F /* game */,
 				B90ADCEE09B344D800A5B00B /* enet */,
 				B9AC7A830D06DB44005506F8 /* engine */,
