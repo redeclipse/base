@@ -5,8 +5,8 @@ VARF(IDF_PERSIST, waterrefract, 0, 1, 1, { cleanreflections(); preloadwatershade
 VARF(IDF_PERSIST, waterenvmap, 0, 1, 1, { cleanreflections(); preloadwatershaders(); });
 VARF(IDF_PERSIST, waterfallrefract, 0, 0, 1, { cleanreflections(); preloadwatershaders(); });
 
-VAR(IDF_WORLD, watersubdiv, 0, 3, 3);
-VAR(IDF_WORLD, waterlod, 0, 3, 3);
+VAR(IDF_WORLD, watersubdiv, 0, 2, 3);
+VAR(IDF_WORLD, waterlod, 0, 2, 3);
 
 static int wx1, wy1, wx2, wy2, wsize;
 static float whscale, whoffset;
