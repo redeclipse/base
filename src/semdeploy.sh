@@ -5,7 +5,7 @@ SEMABUILD_TARGET='qreeves@icculus.org:/webspace/redeclipse.net/files'
 SEMABUILD_APT='DEBIAN_FRONTEND=noninteractive apt-get'
 
 sudo ${SEMABUILD_APT} update || exit 1
-sudo ${SEMABUILD_APT} -fy install build-essential nsis nsis-common || exit 1
+sudo ${SEMABUILD_APT} -fy install build-essential unzip zip nsis nsis-common mktorrent || exit 1
 
 mkdir -p "${HOME}/deploy/data" || exit 1
 ( git archive stable | tar -x -C "${HOME}/deploy" ) || exit 1
@@ -14,7 +14,7 @@ pushd "${SEMABUILD_PWD}/data" || exit 1
 popd || exit 1
 
 pushd "${HOME}/deploy/src" || exit 1
-make dist || exit 1
+make dist-clean dist-bz2 dist-bz2-combined dist-win dist-torrents || exit 1
 popd || exit 1
 
 pushd "${HOME}/deploy" || exit 1

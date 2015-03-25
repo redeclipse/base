@@ -11,7 +11,7 @@ tarname=$(appname)_$(appversion)_nix.tar
 tarname-combined=$(appname)_$(appversion)_combined.tar
 
 torrent-trackers-url="udp://tracker.openbittorrent.com:80,udp://tracker.publicbt.com:80,udp://tracker.ccc.de:80,udp://tracker.istole.it:80"
-torrent-webseed-baseurl="http://downloads.sourceforge.net/redeclipse"
+torrent-webseed-baseurl="http://redeclipse.net/files/releases"
 
 OSX_APP=
 ifeq ($(APPNAME),redeclipse)
