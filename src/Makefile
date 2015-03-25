@@ -6,7 +6,7 @@ APPSERVER=$(APPNAME)_server
 CXXFLAGS?= -O3 -fomit-frame-pointer -ffast-math
 override CXXFLAGS+= -Wall -fsigned-char -fno-exceptions -fno-rtti
 
-PLATFORM= $(shell gcc -dumpmachine)
+PLATFORM= $(shell $(CC) -dumpmachine)
 
 ifeq (,$(PLATFORM_BIN))
 ifneq (,$(findstring arm,$(PLATFORM)))
