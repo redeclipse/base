@@ -724,12 +724,7 @@ struct clientstate
         weapload[attr] = ammo[attr]-prev;
         entid[attr] = id;
     }
-
-    bool zooming()
-    {
-        return isweap(weapselect) && weapstate[weapselect] == W_S_ZOOM;
-    }
-
+    
     void resetresidual(int n = -1)
     {
         if(n >= 0 && n < WR_MAX) lastres[n] = lastrestime[n] = 0;
@@ -1009,6 +1004,11 @@ struct gameent : dynent, clientstate
         }
         radius = max(xradius, yradius);
         aboveeye = curscale;
+    }
+    
+    bool zooming()
+    {
+        return isweap(weapselect) && (weapstate[weapselect] == W_S_ZOOM || (action[AC_SECONDARY] && W2(weapselect, cooked, true)&W_C_ZOOM && G(zoomoldstyle) && weapstate[weapselect] != W_S_RELOAD));
     }
 
     void setscale(float scale, int millis, bool reset)
