@@ -8,7 +8,7 @@ dirname-win=$(dirname)-win
 exename=$(appname)_$(appversion)_win.exe
 
 tarname=$(appname)_$(appversion)_nix.tar
-tarname-all=$(appname)_$(appversion)_all.tar
+tarname-combined=$(appname)_$(appversion)_combined.tar
 
 torrent-trackers-url="udp://tracker.openbittorrent.com:80,udp://tracker.publicbt.com:80,udp://tracker.ccc.de:80,udp://tracker.istole.it:80"
 torrent-webseed-baseurl="http://downloads.sourceforge.net/redeclipse"
@@ -47,10 +47,10 @@ distdir: ../$(dirname)
 
 dist-tar: ../$(tarname)
 
-../$(tarname-all): ../$(dirname)
+../$(tarname-combined): ../$(dirname)
 	tar -cf $@ $<
 
-dist-tar-all: ../$(tarname-all)
+dist-tar-combined: ../$(tarname-combined)
 
 ../$(dirname-win): ../$(dirname)
 	cp -r $< $@
@@ -76,22 +76,22 @@ dist-nix: ../$(tarname).bz2
 
 dist-xz: ../$(tarname).xz
 
-../$(tarname-all).gz: ../$(tarname-all)
+../$(tarname-combined).gz: ../$(tarname-combined)
 	gzip -c < $< > $@
 
-dist-gz-all: ../$(tarname-all).gz
+dist-gz-combined: ../$(tarname-combined).gz
 
-../$(tarname-all).bz2: ../$(tarname-all)
+../$(tarname-combined).bz2: ../$(tarname-combined)
 	bzip2 -c < $< > $@
 
-dist-bz2-all: ../$(tarname-all).bz2
+dist-bz2-combined: ../$(tarname-combined).bz2
 
-dist-all: ../$(tarname-all).bz2
+dist-combined: ../$(tarname-combined).bz2
 
-../$(tarname-all).xz: ../$(tarname-all)
+../$(tarname-combined).xz: ../$(tarname-combined)
 	xz -c < $< > $@
 
-dist-xz-all: ../$(tarname-all).xz
+dist-xz-combined: ../$(tarname-combined).xz
 
 ../$(exename): ../$(dirname-win)
 	makensis $</src/install/win/$(APPNAME).nsi
@@ -99,7 +99,7 @@ dist-xz-all: ../$(tarname-all).xz
 
 dist-win: ../$(exename)
 
-dist: dist-clean dist-bz2 dist-bz2-all dist-win
+dist: dist-clean dist-bz2 dist-bz2-combined dist-win
 
 ../$(tarname).bz2.torrent: ../$(tarname).bz2
 	rm -f $@
@@ -113,31 +113,31 @@ dist: dist-clean dist-bz2 dist-bz2-all dist-win
 
 dist-torrent: ../$(tarname).bz2.torrent
 
-../$(tarname-all).bz2.torrent: ../$(tarname-all).bz2
+../$(tarname-combined).bz2.torrent: ../$(tarname-combined).bz2
 	rm -f $@
 	cd ../ &&\
 		mktorrent \
 		-a $(torrent-trackers-url) \
-		-w $(torrent-webseed-baseurl)/$(tarname-all).bz2 \
-		-n $(tarname-all).bz2 \
-		-c "$(appnamefull) $(appversion) for All Platforms" \
-		$(tarname-all).bz2
+		-w $(torrent-webseed-baseurl)/$(tarname-combined).bz2 \
+		-n $(tarname-combined).bz2 \
+		-c "$(appnamefull) $(appversion) Combined Platforms" \
+		$(tarname-combined).bz2
 
-dist-torrent-all: ../$(tarname-all).bz2.torrent
+dist-torrent-combined: ../$(tarname-combined).bz2.torrent
 
 dist-torrent-win: ../$(exename).torrent
 
-dist-torrents: dist-torrent dist-torrent-all dist-torrent-win
+dist-torrents: dist-torrent dist-torrent-combined dist-torrent-win
 
 dist-mostlyclean:
 	rm -rf ../$(dirname)
 	rm -rf ../$(dirname-win)
 	rm -f ../$(tarname)
-	rm -f ../$(tarname-all)
+	rm -f ../$(tarname-combined)
 
 dist-clean: dist-mostlyclean
 	rm -f ../$(tarname)*
-	rm -f ../$(tarname-all)*
+	rm -f ../$(tarname-combined)*
 	rm -f ../$(exename)*
 
 ../doc/cube2font.txt: ../doc/man/cube2font.1
