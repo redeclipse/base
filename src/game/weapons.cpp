@@ -237,7 +237,7 @@ namespace weapons
             else offset = d->weapload[weap];
         }
         float scale = 1;
-        bool zooming = (pressed && secondary && W2(weap, cooked, true)&W_C_ZOOM) || d->weapstate[weap] == W_S_ZOOM, wassecond = secondary;
+        bool zooming = (pressed && secondary && W2(weap, cooked, true)&W_C_ZOOM) || d->weapstate[weap] == W_S_ZOOM || (d->action[AC_SECONDARY] && W2(weap, cooked, true)&W_C_ZOOM && G(zoomstyle) == W_Z_STAY && d->weapstate[weap] != W_S_RELOAD), wassecond = secondary;
         if(zooming)
         {
             if(!pressed)
