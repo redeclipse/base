@@ -25,6 +25,11 @@ enum {
     W_S_EXCLUDE = (1<<W_S_IDLE)|(1<<W_S_POWER)|(1<<W_S_ZOOM)
 };
 
+enum {
+  W_Z_LEAVE = 0, W_Z_STAY,
+  W_Z_MAX = W_Z_STAY,
+};
+
 enum
 {
     S_W_PRIMARY = 0, S_W_SECONDARY,

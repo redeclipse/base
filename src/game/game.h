@@ -1008,7 +1008,7 @@ struct gameent : dynent, clientstate
     
     bool zooming()
     {
-        return isweap(weapselect) && (weapstate[weapselect] == W_S_ZOOM || (action[AC_SECONDARY] && W2(weapselect, cooked, true)&W_C_ZOOM && G(zoomoldstyle) && weapstate[weapselect] != W_S_RELOAD));
+        return isweap(weapselect) && (weapstate[weapselect] == W_S_ZOOM || (action[AC_SECONDARY] && W2(weapselect, cooked, true)&W_C_ZOOM && G(zoomstyle) == W_Z_STAY && weapstate[weapselect] != W_S_RELOAD));
     }
 
     void setscale(float scale, int millis, bool reset)

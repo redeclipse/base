@@ -100,7 +100,7 @@ namespace ai
     {
         if(e && !(W2(d->weapselect, cooked, true)&W_C_ZOOM) && canshoot(d, e, true))
         {
-            if(d->weapstate[d->weapselect] == W_S_POWER || d->weapstate[d->weapselect] == W_S_ZOOM || (d->action[AC_SECONDARY] && W2(d->weapselect, cooked, true)&W_C_ZOOM && G(zoomoldstyle) && d->weapstate[d->weapselect] != W_S_RELOAD))
+            if(d->weapstate[d->weapselect] == W_S_POWER || d->weapstate[d->weapselect] == W_S_ZOOM || (d->action[AC_SECONDARY] && W2(d->weapselect, cooked, true)&W_C_ZOOM && G(zoomstyle) == W_Z_STAY && d->weapstate[d->weapselect] != W_S_RELOAD))
             {
                 if(d->action[AC_SECONDARY] && (!d->action[AC_PRIMARY] || d->actiontime[AC_SECONDARY] > d->actiontime[AC_PRIMARY]))
                     return true;
