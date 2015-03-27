@@ -7,4 +7,4 @@
 #define VERSION_RELEASE "Aurora Edition"
 #define VERSION_URL "http://redeclipse.net/"
 #define VERSION_COPY "2010-2015"
-#define VERSION_DESC "Red Eclipse"
+#define VERSION_DESC "A fun-filled new take on the casual first-person arena shooter."
