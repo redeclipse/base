@@ -2,8 +2,8 @@ appname=$(APPNAME)
 appnamefull=$(shell sed -n 's/.define VERSION_NAME *"\([^"]*\)"/\1/p' version.h)
 appsrcname=$(APPNAME)
 cappname=$(shell echo $(appname) | tr '[:lower:]' '[:upper:]')# Captial appname
-appclient=$(APPCLIENT)
-appserver=$(APPSERVER)
+appclient=$(APPCLIENT)$(APPMODIFIER)$(BIN_SUFFIX)
+appserver=$(APPSERVER)$(APPMODIFIER)$(BIN_SUFFIX)
 
 prefix=/usr/local
 games=
