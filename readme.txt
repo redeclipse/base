@@ -68,7 +68,7 @@ The project is Free and Open Source meaning that you can both use it for free, a
 * Mark "xtort-" Doodeman
 * Martin "arand" Werner - Documentation, Legal Drafting, Cross-Dist Support, Open Source Checks, and much more.
 * Matt "greaserpirate" Kalt - Maps
-* Maxim "acerspyro" Therrien - UI elements
+* Maxim "acerspyro" Therrien - UI elements, Models, Support
 * Mike "mikeplus64" Ledger - Maps, Models, Weapons, Textures, HUD, Design/Testing
 * Mikhail "Agustis" Kashin
 * Nick "Fatal_Glory" Watts

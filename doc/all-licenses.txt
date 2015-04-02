@@ -1,4 +1,4 @@
-Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+﻿Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 
 Files: bin/* src/include/* src/lib/* src/enet/* src/site/* src/xcode/*
 Copyright: Omitted
@@ -215,6 +215,10 @@ License: CC-BY-SA-3.0-AU
 
 Files: data/models/john/*
 Copyright: John_III
+License: CC-BY-SA-3.0
+
+Files: data/models/acerspyro/*
+Copyright: Maxim "acerspyro" Therrien
 License: CC-BY-SA-3.0
 
 Files: data/mayhem/*
