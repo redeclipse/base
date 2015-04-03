@@ -2899,7 +2899,7 @@ namespace hud
             case 1:
             {
                 int cm = cr+top;
-                if(!m_hard(game::gamemode, game::mutators) && radartype() == 3 && !hasinput(true) && (game::focus->state == CS_EDITING ? showeditradar >= 1 : chkcond(showradar, !game::tvmode() || (game::focus != game::player1 && radartype() == 3))))
+                if((!radardisabled || !m_hard(game::gamemode, game::mutators)) && radartype() == 3 && !hasinput(true) && (game::focus->state == CS_EDITING ? showeditradar >= 1 : chkcond(showradar, !game::tvmode() || (game::focus != game::player1 && radartype() == 3))))
                     cm += int(max(w, h)/2*radarcorner*2);
                 if(inventorydate)
                     cm += drawitemtextx(cx[i], cm, 0, TEXT_RIGHT_JUSTIFY, inventorydateskew, "super", fade*inventorydateblend, "%s", gettime(currenttime, inventorydateformat));
@@ -3202,7 +3202,7 @@ namespace hud
                     }
                 }
             }
-            if(!m_hard(game::gamemode, game::mutators) && !hasinput(true) && (game::focus->state == CS_EDITING ? showeditradar >= 1 : chkcond(showradar, !game::tvmode() || (game::focus != game::player1 && radartype() == 3))))
+            if((!radardisabled || !m_hard(game::gamemode, game::mutators)) && !hasinput(true) && (game::focus->state == CS_EDITING ? showeditradar >= 1 : chkcond(showradar, !game::tvmode() || (game::focus != game::player1 && radartype() == 3))))
                 drawradar(w, h, fade);
         }
         drawspecborder(w, h, !gs_playing(game::gamestate) || game::player1->state == CS_SPECTATOR ? BORDER_SPEC : (game::player1->state == CS_WAITING ? BORDER_WAIT : (game::player1->state == CS_WAITING ? BORDER_EDIT : BORDER_PLAY)), top, bottom);
