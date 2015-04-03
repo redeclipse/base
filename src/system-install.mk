@@ -55,6 +55,7 @@ icons: $(ICONS)
 system-install-client: client
 	$(MKDIR) $(libexecdir)/$(appname)
 	$(MKDIR) $(gamesbindir)
+	$(MKDIR) $(datadir)/$(appname)
 	install -m755 $(appclient) $(libexecdir)/$(appname)/$(appname)
 	install -m755 install/nix/$(appsrcname).am \
 		$(gamesbindir)/$(appname)
@@ -89,14 +90,17 @@ system-install-server: server
 	g,@APPNAME@,\
 	s,@APPNAME@,$(appname),g\n\
 	w\n" | ed -s $(gamesbindir)/$(appname)-server
-	install -m644 ../config/version.cfg \
-		$(datadir)/$(appname)/version.cfg
-	ln -s $(patsubst $(DESTDIR)%,%,$(datadir))/$(appname)/version.cfg \
-		$(libexecdir)/$(appname)/version.cfg
+
+system-install-common:
+	$(MKDIR) $(libexecdir)/$(appname)
+	$(MKDIR) $(datadir)/$(appname)
+	cp -r ../config $(datadir)/$(appname)/config
+	ln -s $(patsubst $(DESTDIR)%,%,$(datadir))/$(appname)/config \
+		$(libexecdir)/$(appname)/config
 
 system-install-data:
+	$(MKDIR) $(datadir)/$(appname)
 	cp -r ../data $(datadir)/$(appname)/data
-	rm -f $(datadir)/$(appname)/data/misc/largeandincharge.png
 
 system-install-docs: $(MANPAGES)
 	$(MKDIR) $(mandir)/man6
@@ -154,12 +158,15 @@ system-install-cube2font-docs: ../doc/man/cube2font.1
 	gzip -9 -n -c < ../doc/man/cube2font.1 \
 		> $(mandir)/man1/cube2font.1.gz
 
-system-install: system-install-client system-install-server system-install-data system-install-docs system-install-menus
+system-install: system-install-client system-install-server system-install-common system-install-data system-install-docs system-install-menus
+
+system-uninstall-common:
+	rm -rf $(datadir)/$(appname)/config
+	@rm -fv $(libexecdir)/$(appname)/config
 
 system-uninstall-client:
 	@rm -fv $(libexecdir)/$(appname)/$(appname)
 	@rm -fv $(libexecdir)/$(appname)/data
-	@rm -fv	$(libexecdir)/$(appname)/version.cfg
 	@rm -fv $(gamesbindir)/$(appname)
 
 system-uninstall-server:
@@ -168,7 +175,6 @@ system-uninstall-server:
 
 system-uninstall-data:
 	rm -rf $(datadir)/$(appname)/data
-	rm -fv $(datadir)/$(appname)/version.cfg
 
 system-uninstall-docs:
 	@rm -rfv $(docdir)/$(appname)/examples
@@ -185,7 +191,7 @@ system-uninstall-menus:
 	@rm -fv $(icondir)/128x128/apps/$(appname).png
 	@rm -fv $(pixmapdir)/$(appname).xpm
 
-system-uninstall: system-uninstall-client system-uninstall-server system-uninstall-data system-uninstall-docs system-uninstall-menus
+system-uninstall: system-uninstall-client system-uninstall-server system-uninstall-common system-uninstall-data system-uninstall-docs system-uninstall-menus
 	-@rmdir -v $(libexecdir)/$(appname)
 	-@rmdir -v $(datadir)/$(appname)
 	-@rmdir -v $(docdir)/$(appname)
