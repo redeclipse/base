@@ -17,6 +17,7 @@ mandir=$(DESTDIR)$(prefix)/share/man
 menudir=$(DESTDIR)$(prefix)/share/applications
 icondir=$(DESTDIR)$(prefix)/share/icons/hicolor
 pixmapdir=$(DESTDIR)$(prefix)/share/pixmaps
+appdatadir=$(DESTDIR)$(prefix)/share/appdata
 
 ICONS= \
 	install/nix/$(appsrcname)_x16.png \
@@ -124,6 +125,7 @@ system-install-docs: $(MANPAGES)
 
 system-install-menus: icons
 	$(MKDIR) $(menudir)
+	$(MKDIR) $(appdatadir)
 	$(MKDIR) $(icondir)/16x16/apps
 	$(MKDIR) $(icondir)/32x32/apps
 	$(MKDIR) $(icondir)/48x48/apps
@@ -136,6 +138,12 @@ system-install-menus: icons
 		-e 's,@APPNAME@,$(appname),g' \
 		install/nix/$(appsrcname).desktop.am > \
 		$(menudir)/$(appname).desktop
+	sed -e 's,@LIBEXECDIR@,$(patsubst $(DESTDIR)%,%,$(libexecdir)),g' \
+		-e 's,@DATADIR@,$(patsubst $(DESTDIR)%,%,$(datadir)),g' \
+		-e 's,@DOCDIR@,$(patsubst $(DESTDIR)%,%,$(docdir)),g' \
+		-e 's,@APPNAME@,$(appname),g' \
+		install/nix/$(appsrcname).appdata.xml.am > \
+		$(appdatadir)/$(appname).appdata.xml
 	install -m644 install/nix/$(appsrcname)_x16.png \
 		$(icondir)/16x16/apps/$(appname).png
 	install -m644 install/nix/$(appsrcname)_x32.png \
@@ -184,6 +192,7 @@ system-uninstall-docs:
 
 system-uninstall-menus:
 	@rm -fv $(menudir)/$(appname).desktop
+	@rm -fv $(appdatadir)/$(appname).appdata.xml
 	@rm -fv $(icondir)/16x16/apps/$(appname).png
 	@rm -fv $(icondir)/32x32/apps/$(appname).png
 	@rm -fv $(icondir)/48x48/apps/$(appname).png
