@@ -6,27 +6,30 @@
   <description>
     <p>
       Red Eclipse is a fun-filled new take on the casual first person arena
-      shooter with a general theme of agility in a variety of environments.
+      shooter, built as a total conversion of Cube Engine 2, which lends itself
+      toward a balanced gameplay, with a general theme of agility in a variety
+      of environments.
     </p>
-    <p>
-      Red Eclipse features parkour, impulse boosts, dashing, other tricks,
-      and favourite game modes with an array of mutators and variables.
-      A builtin editor lets you create your own maps cooperatively online.
-    </p>
+    <ul>
+      <li>Cross-platform multiplayer</li>
+      <li>Features parkour, impulse boosts, dashing, and other tricks</li>
+      <li>Favourite gamemodes with an array of mutators and variables</li>
+      <li>Builtin editor lets you create your own maps cooperatively online</li>
+    </ul>
   </description>
   <url type="homepage">http://redeclipse.net/</url>
   <screenshots>
     <screenshot type="default">
-      <image>http://redeclipse.net/bits/images/003.jpg</image>
-      <caption><!-- Describe this screenshot in less than ~10 words --></caption>
+      <image>http://redeclipse.net/bits/images/053.jpg</image>
+      <caption>Posing with fire on the map venus</caption>
     </screenshot>
     <screenshot>
-      <image>http://redeclipse.net/bits/images/006.jpg</image>
-      <caption><!-- Describe this screenshot in less than ~10 words --></caption>
+      <image>http://redeclipse.net/bits/images/045.jpg</image>
+      <caption>Mine fireworks on the map vault</caption>
     </screenshot>
     <screenshot>
-      <image>http://redeclipse.net/bits/images/007.jpg</image>
-      <caption><!-- Describe this screenshot in less than ~10 words --></caption>
+      <image>http://redeclipse.net/bits/images/019.jpg</image>
+      <caption>Overlooking friendly fire on the map cutec</caption>
     </screenshot>
   </screenshots>
   <updatecontact>http://redeclipse.net/forum/</updatecontact>
