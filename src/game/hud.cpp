@@ -5,7 +5,7 @@ namespace hud
     int damageresidue = 0, hudwidth = 0, hudheight = 0, lastteam = 0, laststats = 0, prevstats[NUMSTATS] = {0}, curstats[NUMSTATS] = {0};
 
     #include "compass.h"
-    vector<int> teamkills;m
+    vector<int> teamkills;
 
     struct damageloc
     {
