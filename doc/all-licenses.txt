@@ -38,6 +38,10 @@ Files: doc/man/cube2font.1 doc/man/redeclipse.6.am
 Copyright: 2011-2012, Martin Erik "arand" Werner <martinerikwerner@gmail.com>
 License: ZLib
 
+Files: config/*
+Copyright: 2009-2015, Red Eclipse Team
+License: Zlib
+
 Files: data/maps/biolytic* data/maps/darkness* data/maps/mist* data/maps/nova*
        data/maps/panic* data/maps/oneiroi* data/maps/processing*
        data/maps/tranquility* data/maps/vault*
