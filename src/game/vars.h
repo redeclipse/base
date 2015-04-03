@@ -185,6 +185,9 @@ GVAR(0, protectbreak, 0, 1, 1); // 0 = off, 1 = protection is broken when player
 GVAR(0, duelaffinity, 0, 1, 2); // 0 = off, 1 = on enter can respawn next iter, 2 = on enter can respawn immediately
 GVAR(0, duelbotcheck, 0, 1, 1); // 0 = off, 1 = skip bots when checking respawns
 
+GVAR(0, radardisabled, 0, 0, 1); // forces the radar to be off
+GVAR(0, radardistlimit, 0, 0, VAR_MAX); // forces the radar to this distance max, 0 = off
+
 GVAR(0, balancemaps, -1, -1, 3); // determined if map team balancing is used: -1 = map default, 0 = off, 1 = ctf/dnc/bb, 2 = with team spawns, 3 = forced
 GVAR(0, balancereset, 0, 2, 2); // reset players when balancing them, 0 = off, 1 = only when necessary, 2 = always
 GVAR(0, balancedelay, 0, 10000, 30000); // before mapbalance forces
