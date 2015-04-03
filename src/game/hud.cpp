@@ -1839,6 +1839,7 @@ namespace hud
             case 3: dist = radarcornerdist ? radarcornerdist : getworldsize(); break;
             case 2: case 1: case 0: case -1: default: dist = radardist ? radardist : getworldsize(); break;
         }
+        if(radardistlimit) dist = min(radardistlimit, dist);
         return dist;
     }
 
