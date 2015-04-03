@@ -1,4 +1,4 @@
-﻿Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 
 Files: bin/* src/include/* src/lib/* src/enet/* src/site/* src/xcode/*
 Copyright: Omitted
