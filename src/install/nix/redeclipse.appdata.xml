@@ -1,11 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop">
   <id>@APPNAME@.desktop</id>
-
-  <!--FIXME: convert to an SPDX ID-->
   <metadata_license>CC-BY-SA-3.0+</metadata_license>
-
-  <!--FIXME: convert to an SPDX ID-->
   <project_license>ZLIB and CC-BY-SA-3.0+</project_license>
   <description>
     <p>
@@ -34,16 +30,8 @@
     </screenshot>
   </screenshots>
   <updatecontact>http://redeclipse.net/forum/</updatecontact>
-
-  <!--FIXME: You can use a project or developer name if there's no company-->
-  <developer_name><!-- Company Name --></developer_name>
-
-  <!--FIXME: where to report bugs for the application-->
-  <url type="bugtracker"><!-- http://www.homepage.com/where-to-report_bug.html --></url>
-
-  <!--FIXME: where to donate to the application-->
-  <url type="donation"><!-- http://www.homepage.com/donation.html --></url>
-
-  <!--FIXME: where to report bugs for the application-->
-  <url type="help"><!-- http://www.homepage.com/docs/ --></url>
+  <developer_name>Red Eclipse Team</developer_name>
+  <url type="bugtracker">https://github.com/red-eclipse/base/issues</url>
+  <url type="donation">http://redeclipse.net/donate</url>
+  <url type="help">http://redeclipse.net/faq</url>
 </component>
