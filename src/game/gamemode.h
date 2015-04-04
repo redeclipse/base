@@ -285,13 +285,13 @@ extern mutstypes mutstype[];
 { \
     mapshrink(m_multi(b, c) && (m_capture(b) || (m_bomber(b) && !m_gsp1(b, c))), a, G(multimaps), false) \
     mapshrink(m_duel(b, c), a, G(duelmaps), false) \
-    if(d > 0 && e >= 2 && m_fight(b) && !m_duel(b, c)) \
+    if((d) > 0 && (e) >= 2 && m_fight(b) && !m_duel(b, c)) \
     { \
-        mapshrink(G(smallmapmax) && d <= G(smallmapmax), a, G(smallmaps), false) \
-        else mapshrink(G(mediummapmax) && d <= G(mediummapmax), a, G(mediummaps), false) \
-        else mapshrink(G(mediummapmax) && d > G(mediummapmax), a, G(largemaps), false) \
+        mapshrink(G(smallmapmax) && (d) <= G(smallmapmax), a, G(smallmaps), false) \
+        else mapshrink(G(mediummapmax) && (d) <= G(mediummapmax), a, G(mediummaps), false) \
+        else mapshrink(G(mediummapmax) && (d) > G(mediummapmax), a, G(largemaps), false) \
     } \
-    mapshrink(!f, a, G(previousmaps), true) \
+    mapshrink(!(f), a, G(previousmaps), true) \
 }
 #define maplist(a,b,c,d,e,f) \
 { \
@@ -302,7 +302,7 @@ extern mutstypes mutstype[];
     else if(m_fight(b)) a = newstring(G(mainmaps)); \
     else a = newstring(G(allowmaps)); \
     if(e) mapcull(a, b, c, d, e, f) \
-    else mapshrink(!f, a, G(previousmaps), true) \
+    else mapshrink(!(f), a, G(previousmaps), true) \
 }
 #ifdef GAMESERVER
 SVAR(0, gamestatename, "waiting voting intermission playing overtime");
