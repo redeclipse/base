@@ -70,8 +70,6 @@ system-install-client: client
 	g,@APPNAME@,\
 	s,@APPNAME@,$(appname),g\n\
 	w\n" | ed -s $(gamesbindir)/$(appname)
-	ln -s $(patsubst $(DESTDIR)%,%,$(datadir))/$(appname)/data \
-		$(libexecdir)/$(appname)/data
 
 system-install-server: server
 	$(MKDIR) $(libexecdir)/$(appname)
@@ -101,7 +99,10 @@ system-install-common:
 
 system-install-data:
 	$(MKDIR) $(datadir)/$(appname)
+	$(MKDIR) $(libexecdir)/$(appname)
 	cp -r ../data $(datadir)/$(appname)/data
+	ln -s $(patsubst $(DESTDIR)%,%,$(datadir))/$(appname)/data \
+		$(libexecdir)/$(appname)/data
 
 system-install-docs: $(MANPAGES)
 	$(MKDIR) $(mandir)/man6
@@ -122,6 +123,8 @@ system-install-docs: $(MANPAGES)
 		gzip -9 -n -c > $(mandir)/man6/$(appname)-server.6.gz
 	cp -r ../doc/examples $(docdir)/$(appname)/examples
 	cp ../doc/guidelines.txt $(docdir)/$(appname)/guidelines.txt
+	ln -s $(patsubst $(DESTDIR)%,%,$(docdir))/$(appname) \
+		$(libexecdir)/$(appname)/doc
 
 system-install-menus: icons
 	$(MKDIR) $(menudir)
