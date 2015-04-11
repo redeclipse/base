@@ -640,7 +640,7 @@ COMMAND(0, resetsound, "");
 
 #include <unistd.h>
 
-#ifdef _POSIX_SHARED_MEMORY_OBJECTS
+#if _POSIX_SHARED_MEMORY_OBJECTS > 0
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
@@ -650,7 +650,7 @@ COMMAND(0, resetsound, "");
 
 #endif
 
-#if defined(WIN32) || defined(_POSIX_SHARED_MEMORY_OBJECTS)
+#if defined(WIN32) || _POSIX_SHARED_MEMORY_OBJECTS > 0
 struct MumbleInfo
 {
     int version, timestamp;
@@ -663,7 +663,7 @@ struct MumbleInfo
 static HANDLE mumblelink = NULL;
 static MumbleInfo *mumbleinfo = NULL;
 #define VALID_MUMBLELINK (mumblelink && mumbleinfo)
-#elif defined(_POSIX_SHARED_MEMORY_OBJECTS)
+#elif _POSIX_SHARED_MEMORY_OBJECTS > 0
 static int mumblelink = -1;
 static MumbleInfo *mumbleinfo = (MumbleInfo *)-1;
 #define VALID_MUMBLELINK (mumblelink >= 0 && mumbleinfo != (MumbleInfo *)-1)
@@ -688,7 +688,7 @@ void initmumble()
             mumbleinfo = (MumbleInfo *)MapViewOfFile(mumblelink, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(MumbleInfo));
             if(mumbleinfo) wcsncpy(mumbleinfo->name, (const wchar_t *)VERSION_UNAME, 256);
         }
-    #elif defined(_POSIX_SHARED_MEMORY_OBJECTS)
+    #elif _POSIX_SHARED_MEMORY_OBJECTS > 0
         defformatstring(shmname)("/MumbleLink.%d", getuid());
         mumblelink = shm_open(shmname, O_RDWR, 0);
         if(mumblelink >= 0)
@@ -699,7 +699,7 @@ void initmumble()
     #endif
     if(!VALID_MUMBLELINK) closemumble();
 #else
-    conoutf(CON_ERROR, "Mumble positional audio is not available on this platform.");
+    conoutft(CON_MESG, "Mumble positional audio is not available on this platform.");
 #endif
 }
 
@@ -708,7 +708,7 @@ void closemumble()
 #ifdef WIN32
     if(mumbleinfo) { UnmapViewOfFile(mumbleinfo); mumbleinfo = NULL; }
     if(mumblelink) { CloseHandle(mumblelink); mumblelink = NULL; }
-#elif defined(_POSIX_SHARED_MEMORY_OBJECTS)
+#elif _POSIX_SHARED_MEMORY_OBJECTS > 0
     if(mumbleinfo != (MumbleInfo *)-1) { munmap(mumbleinfo, sizeof(MumbleInfo)); mumbleinfo = (MumbleInfo *)-1; }
     if(mumblelink >= 0) { close(mumblelink); mumblelink = -1; }
 #endif
