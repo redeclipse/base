@@ -11,7 +11,6 @@
 		2AB901D11AC1B8E900A5F378 /* version.h in Headers */ = {isa = PBXBuildFile; fileRef = 2AB901D01AC1B8E900A5F378 /* version.h */; };
 		3E06CDDB14A30E1300F89530 /* compass.h in Headers */ = {isa = PBXBuildFile; fileRef = 3E06CDD614A30E1300F89530 /* compass.h */; };
 		3E06CDDC14A30E1300F89530 /* gamemode.h in Headers */ = {isa = PBXBuildFile; fileRef = 3E06CDD714A30E1300F89530 /* gamemode.h */; };
-		3E06CDDD14A30E1300F89530 /* team.h in Headers */ = {isa = PBXBuildFile; fileRef = 3E06CDD814A30E1300F89530 /* team.h */; };
 		3E06CDDE14A30E1300F89530 /* waypoint.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3E06CDD914A30E1300F89530 /* waypoint.cpp */; };
 		3E2522471255C29D003F3F5E /* scoreboard.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3E2522461255C29D003F3F5E /* scoreboard.cpp */; };
 		3E469E9811E05C2B00873F83 /* bomber.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3E469E9511E05C2B00873F83 /* bomber.cpp */; };
@@ -129,6 +128,14 @@
 		D1D88AB80F350EDE000680E4 /* irc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D1D88AB60F350EDE000680E4 /* irc.cpp */; };
 		D1D88AB90F350EDE000680E4 /* irc.h in Headers */ = {isa = PBXBuildFile; fileRef = D1D88AB70F350EDE000680E4 /* irc.h */; };
 		D1E605B90E2416150045244E /* redeclipse.icns in Resources */ = {isa = PBXBuildFile; fileRef = B97E99CE085F4B3E002F9BC6 /* redeclipse.icns */; };
+		FD05F1471ADD1BBA0046F323 /* player.h in Headers */ = {isa = PBXBuildFile; fileRef = FD05F1431ADD1BBA0046F323 /* player.h */; };
+		FD05F1481ADD1BBA0046F323 /* playerdef.h in Headers */ = {isa = PBXBuildFile; fileRef = FD05F1441ADD1BBA0046F323 /* playerdef.h */; };
+		FD05F1491ADD1BBA0046F323 /* teamdef.h in Headers */ = {isa = PBXBuildFile; fileRef = FD05F1451ADD1BBA0046F323 /* teamdef.h */; };
+		FD05F14A1ADD1BBA0046F323 /* weapons.h in Headers */ = {isa = PBXBuildFile; fileRef = FD05F1461ADD1BBA0046F323 /* weapons.h */; };
+		FD05F14F1ADD1BD70046F323 /* glexts.h in Headers */ = {isa = PBXBuildFile; fileRef = FD05F14B1ADD1BD70046F323 /* glexts.h */; };
+		FD05F1501ADD1BD70046F323 /* iqm.h in Headers */ = {isa = PBXBuildFile; fileRef = FD05F14C1ADD1BD70046F323 /* iqm.h */; };
+		FD05F1511ADD1BD70046F323 /* smd.h in Headers */ = {isa = PBXBuildFile; fileRef = FD05F14D1ADD1BD70046F323 /* smd.h */; };
+		FD05F1521ADD1BD70046F323 /* varray.h in Headers */ = {isa = PBXBuildFile; fileRef = FD05F14E1ADD1BD70046F323 /* varray.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -139,7 +146,6 @@
 		2AB901D01AC1B8E900A5F378 /* version.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = version.h; path = ../version.h; sourceTree = "<group>"; };
 		3E06CDD614A30E1300F89530 /* compass.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = compass.h; sourceTree = "<group>"; };
 		3E06CDD714A30E1300F89530 /* gamemode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = gamemode.h; sourceTree = "<group>"; };
-		3E06CDD814A30E1300F89530 /* team.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = team.h; sourceTree = "<group>"; };
 		3E06CDD914A30E1300F89530 /* waypoint.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = waypoint.cpp; sourceTree = "<group>"; };
 		3E06CDDA14A30E1300F89530 /* weapdef.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = weapdef.h; sourceTree = "<group>"; };
 		3E2522461255C29D003F3F5E /* scoreboard.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = scoreboard.cpp; sourceTree = "<group>"; };
@@ -264,6 +270,14 @@
 		D1DB53E50D70F1C3003AE25C /* English */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = English; path = English.lproj/Localizable.strings; sourceTree = "<group>"; };
 		F5A47A9D01A0482F01D3D55B /* SDLMain.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = SDLMain.h; sourceTree = SOURCE_ROOT; };
 		F5A47A9E01A0483001D3D55B /* SDLMain.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; path = SDLMain.m; sourceTree = SOURCE_ROOT; };
+		FD05F1431ADD1BBA0046F323 /* player.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = player.h; sourceTree = "<group>"; };
+		FD05F1441ADD1BBA0046F323 /* playerdef.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = playerdef.h; sourceTree = "<group>"; };
+		FD05F1451ADD1BBA0046F323 /* teamdef.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = teamdef.h; sourceTree = "<group>"; };
+		FD05F1461ADD1BBA0046F323 /* weapons.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = weapons.h; sourceTree = "<group>"; };
+		FD05F14B1ADD1BD70046F323 /* glexts.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = glexts.h; sourceTree = "<group>"; };
+		FD05F14C1ADD1BD70046F323 /* iqm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = iqm.h; sourceTree = "<group>"; };
+		FD05F14D1ADD1BD70046F323 /* smd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = smd.h; sourceTree = "<group>"; };
+		FD05F14E1ADD1BD70046F323 /* varray.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = varray.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -339,11 +353,11 @@
 		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
 			isa = PBXGroup;
 			children = (
-				2AB901D01AC1B8E900A5F378 /* version.h */,
 				D16A83350F130E9500EABB1F /* game */,
 				B90ADCEE09B344D800A5B00B /* enet */,
 				B9AC7A830D06DB44005506F8 /* engine */,
 				B9AC7AC10D06DB44005506F8 /* shared */,
+				2AB901D01AC1B8E900A5F378 /* version.h */,
 			);
 			name = "Other Sources";
 			sourceTree = "<group>";
@@ -387,6 +401,10 @@
 		B9AC7A830D06DB44005506F8 /* engine */ = {
 			isa = PBXGroup;
 			children = (
+				FD05F14B1ADD1BD70046F323 /* glexts.h */,
+				FD05F14C1ADD1BD70046F323 /* iqm.h */,
+				FD05F14D1ADD1BD70046F323 /* smd.h */,
+				FD05F14E1ADD1BD70046F323 /* varray.h */,
 				D11B5A6810CBB500003F0098 /* movie.cpp */,
 				D11B5A6910CBB500003F0098 /* mpr.h */,
 				D1D88AB60F350EDE000680E4 /* irc.cpp */,
@@ -478,9 +496,12 @@
 		D16A83350F130E9500EABB1F /* game */ = {
 			isa = PBXGroup;
 			children = (
+				FD05F1431ADD1BBA0046F323 /* player.h */,
+				FD05F1441ADD1BBA0046F323 /* playerdef.h */,
+				FD05F1451ADD1BBA0046F323 /* teamdef.h */,
+				FD05F1461ADD1BBA0046F323 /* weapons.h */,
 				3E06CDD614A30E1300F89530 /* compass.h */,
 				3E06CDD714A30E1300F89530 /* gamemode.h */,
-				3E06CDD814A30E1300F89530 /* team.h */,
 				3E06CDD914A30E1300F89530 /* waypoint.cpp */,
 				3E06CDDA14A30E1300F89530 /* weapdef.h */,
 				3E2522461255C29D003F3F5E /* scoreboard.cpp */,
@@ -527,8 +548,10 @@
 				B9AC7ADC0D06DB44005506F8 /* md2.h in Headers */,
 				B9AC7ADD0D06DB44005506F8 /* md3.h in Headers */,
 				B9AC7ADF0D06DB44005506F8 /* model.h in Headers */,
+				FD05F1511ADD1BD70046F323 /* smd.h in Headers */,
 				B9AC7AE20D06DB44005506F8 /* octa.h in Headers */,
 				B9AC7AF20D06DB44005506F8 /* texture.h in Headers */,
+				FD05F1491ADD1BBA0046F323 /* teamdef.h in Headers */,
 				B9AC7AF30D06DB44005506F8 /* vertmodel.h in Headers */,
 				B9AC7AF60D06DB44005506F8 /* world.h in Headers */,
 				B9AC7B0A0D06DB44005506F8 /* command.h in Headers */,
@@ -538,10 +561,14 @@
 				B9AC7B0F0D06DB44005506F8 /* iengine.h in Headers */,
 				B9AC7B100D06DB44005506F8 /* igame.h in Headers */,
 				B9AC7B160D06DB44005506F8 /* tools.h in Headers */,
+				FD05F1481ADD1BBA0046F323 /* playerdef.h in Headers */,
+				FD05F1521ADD1BD70046F323 /* varray.h in Headers */,
+				FD05F14A1ADD1BBA0046F323 /* weapons.h in Headers */,
 				B91D401F0D525FD3004EF78A /* animmodel.h in Headers */,
 				B91D40230D525FE9004EF78A /* md5.h in Headers */,
 				B91D40250D52600A004EF78A /* skelmodel.h in Headers */,
 				D116C0AB0D9F7DB500E8B945 /* rendertarget.h in Headers */,
+				FD05F14F1ADD1BD70046F323 /* glexts.h in Headers */,
 				D18B8FC10DB0AF8200171439 /* explosion.h in Headers */,
 				D18B8FC20DB0AF8200171439 /* lensflare.h in Headers */,
 				D18B8FC30DB0AF8200171439 /* lightning.h in Headers */,
@@ -549,10 +576,12 @@
 				D16C16930E04812500A522EB /* textedit.h in Headers */,
 				D1776F1F0E485DC5004CC402 /* depthfx.h in Headers */,
 				D1776F230E485DC5004CC402 /* sound.h in Headers */,
+				FD05F1501ADD1BD70046F323 /* iqm.h in Headers */,
 				D16A834B0F130E9500EABB1F /* capture.h in Headers */,
 				D16A834F0F130E9500EABB1F /* game.h in Headers */,
 				D16A83560F130E9500EABB1F /* defend.h in Headers */,
 				D16A83570F130E9500EABB1F /* vars.h in Headers */,
+				FD05F1471ADD1BBA0046F323 /* player.h in Headers */,
 				D16A83760F130EBC00EABB1F /* scale.h in Headers */,
 				D1D88A8B0F350DFE000680E4 /* auth.h in Headers */,
 				2AB901D11AC1B8E900A5F378 /* version.h in Headers */,
@@ -568,7 +597,6 @@
 				3E469E9A11E05C2B00873F83 /* bombermode.h in Headers */,
 				3E06CDDB14A30E1300F89530 /* compass.h in Headers */,
 				3E06CDDC14A30E1300F89530 /* gamemode.h in Headers */,
-				3E06CDDD14A30E1300F89530 /* team.h in Headers */,
 				2AB901CF1AC1B72400A5F378 /* weapdef.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -748,12 +776,6 @@
 				GCC_OPTIMIZATION_LEVEL = 3;
 				GCC_VERSION = 4.0;
 				INSTALL_PATH = "";
-				MACOSX_DEPLOYMENT_TARGET_i386 = 10.6;
-				MACOSX_DEPLOYMENT_TARGET_ppc = 10.6;
-				PREBINDING = NO;
-				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.6.sdk";
-				SDKROOT_i386 = /Developer/SDKs/MacOSX10.6.sdk;
-				SDKROOT_ppc = /Developer/SDKs/MacOSX10.6.sdk;
 				SKIP_INSTALL = NO;
 				STRIP_INSTALLED_PRODUCT = YES;
 			};
@@ -762,20 +784,22 @@
 		3E184180123861470098590C /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				COMBINE_HIDPI_IMAGES = YES;
 				DEPLOYMENT_LOCATION = YES;
 				DEPLOYMENT_POSTPROCESSING = YES;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
-				GCC_PREPROCESSOR_DEFINITIONS = "FPS=1";
+				GCC_PREPROCESSOR_DEFINITIONS = "";
 				GCC_VERSION = "";
 				HEADER_SEARCH_PATHS = (
+					../include,
 					../enet/include,
-					../include/,
 					/usr/X11R6/include/,
 					"$(inherited)",
 				);
 				INFOPLIST_FILE = "redeclipse-Info.plist";
+				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				OTHER_CPLUSPLUSFLAGS = "-fomit-frame-pointer";
 				OTHER_LDFLAGS = "-lz";
 				PRODUCT_NAME = redeclipse;
@@ -787,18 +811,20 @@
 		B94198C709207E810029DAD1 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				COMBINE_HIDPI_IMAGES = YES;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
-				GCC_PREPROCESSOR_DEFINITIONS = "FPS=1";
+				GCC_PREPROCESSOR_DEFINITIONS = "";
 				GCC_VERSION = "";
 				HEADER_SEARCH_PATHS = (
+					../include,
 					../enet/include,
-					../include/,
 					/usr/X11R6/include/,
 					"$(inherited)",
 				);
 				INFOPLIST_FILE = "redeclipse-Info.plist";
+				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				OTHER_LDFLAGS = "-lz";
 				PRODUCT_NAME = redeclipse;
 				SDKROOT = macosx;
@@ -808,20 +834,22 @@
 		B94198C809207E810029DAD1 /* Compatibility */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				COMBINE_HIDPI_IMAGES = YES;
 				DEPLOYMENT_LOCATION = YES;
 				DEPLOYMENT_POSTPROCESSING = YES;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
-				GCC_PREPROCESSOR_DEFINITIONS = "FPS=1";
+				GCC_PREPROCESSOR_DEFINITIONS = "";
 				GCC_VERSION = "";
 				HEADER_SEARCH_PATHS = (
+					../include,
 					../enet/include,
-					../include/,
 					/usr/X11R6/include/,
 					"$(inherited)",
 				);
 				INFOPLIST_FILE = "redeclipse-Info.plist";
+				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				OTHER_CPLUSPLUSFLAGS = "-fomit-frame-pointer";
 				OTHER_LDFLAGS = "-lz";
 				PRODUCT_NAME = redeclipse;

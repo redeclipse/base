@@ -8,14 +8,18 @@
 	<string>redeclipse</string>
 	<key>CFBundleIconFile</key>
 	<string>redeclipse</string>
+	<key>CFBundleIdentifier</key>
+	<string></string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.5.1</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
-	<key>CFBundleVersion</key>
-	<string>1.3</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.action-games</string>
 	<key>LSUIElement</key>
 	<string>1</string>
 	<key>NSMainNibFile</key>
