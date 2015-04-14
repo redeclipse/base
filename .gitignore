@@ -5,6 +5,7 @@ src/redeclipse_*
 bin/x86/redeclipse_*
 bin/amd64/redeclipse_*
 bin/redeclipse_*
+bin/redeclipse.app/Contents/MacOS/redeclipse
 src/.objs/
 *.o
 *.so
@@ -34,3 +35,7 @@ src/redeclipse.res
 branch.txt
 version.txt
 */version.txt
+src/xcode/build/*
+src/xcode/redeclipse.xcodeproj/project.pbxproj
+src/xcode/redeclipse.xcodeproj/project.xcworkspace
+src/xcode/redeclipse.xcodeproj/xcuserdata

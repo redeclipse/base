@@ -1543,9 +1543,9 @@ void setlocations(bool wanthome)
 {
 #if defined(__APPLE__)
     extern const char *mac_resourcedir();
-    const char *dir = mac_resourcedir(); // ./blah.app/Contents/Resources
-    if(dir && *dir && !chdir(dir))
-        conoutf("attempting to use resources in: %s", dir);
+    const char *macdir = mac_resourcedir(); // ./blah.app/Contents/Resources
+    if(macdir && *macdir && !chdir(macdir))
+        conoutf("attempting to use resources in: %s", macdir);
 #endif
     loopirev(3) if(!fileexists(findfile("config/version.cfg", "r"), "r"))
     { // standalone solution to this is: pebkac
