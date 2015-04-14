@@ -1,6 +1,3 @@
-#include <QtCore>
-#include <QtGui>
-#include <QtMac>
 #import <Foundation/Foundation.h>
 #import <Cocoa/Cocoa.h>
 #include <CoreFoundation/CoreFoundation.h>
@@ -12,7 +9,8 @@
 typedef char string[MAXSTRLEN];
 inline char *copystring(char *d, const char *s, size_t len = MAXSTRLEN)
 {
-    size_t slen = min(strlen(s)+1, len);
+    size_t slen = strlen(s)+1;
+    if (slen > len) slen = len;
     memcpy(d, s, slen);
     d[slen-1] = 0;
     return d;

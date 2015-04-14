@@ -3,16 +3,16 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 42;
+	objectVersion = 46;
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2AB901CF1AC1B72400A5F378 /* weapdef.h in Headers */ = {isa = PBXBuildFile; fileRef = 3E06CDDA14A30E1300F89530 /* weapdef.h */; };
+		2AB901D11AC1B8E900A5F378 /* version.h in Headers */ = {isa = PBXBuildFile; fileRef = 2AB901D01AC1B8E900A5F378 /* version.h */; };
 		3E06CDDB14A30E1300F89530 /* compass.h in Headers */ = {isa = PBXBuildFile; fileRef = 3E06CDD614A30E1300F89530 /* compass.h */; };
 		3E06CDDC14A30E1300F89530 /* gamemode.h in Headers */ = {isa = PBXBuildFile; fileRef = 3E06CDD714A30E1300F89530 /* gamemode.h */; };
 		3E06CDDD14A30E1300F89530 /* team.h in Headers */ = {isa = PBXBuildFile; fileRef = 3E06CDD814A30E1300F89530 /* team.h */; };
 		3E06CDDE14A30E1300F89530 /* waypoint.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3E06CDD914A30E1300F89530 /* waypoint.cpp */; };
-		3E06CDDF14A30E1300F89530 /* weapons.h in Headers */ = {isa = PBXBuildFile; fileRef = 3E06CDDA14A30E1300F89530 /* weapons.h */; };
-		3E06CDDF14A30E1300F89530 /* weapdef.h in Headers */ = {isa = PBXBuildFile; fileRef = 3E06CDDA14A30E1300F89530 /* weapdef.h */; };
 		3E2522471255C29D003F3F5E /* scoreboard.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3E2522461255C29D003F3F5E /* scoreboard.cpp */; };
 		3E469E9811E05C2B00873F83 /* bomber.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3E469E9511E05C2B00873F83 /* bomber.cpp */; };
 		3E469E9911E05C2B00873F83 /* bomber.h in Headers */ = {isa = PBXBuildFile; fileRef = 3E469E9611E05C2B00873F83 /* bomber.h */; };
@@ -136,11 +136,11 @@
 		1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
 		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
+		2AB901D01AC1B8E900A5F378 /* version.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = version.h; path = ../version.h; sourceTree = "<group>"; };
 		3E06CDD614A30E1300F89530 /* compass.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = compass.h; sourceTree = "<group>"; };
 		3E06CDD714A30E1300F89530 /* gamemode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = gamemode.h; sourceTree = "<group>"; };
 		3E06CDD814A30E1300F89530 /* team.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = team.h; sourceTree = "<group>"; };
 		3E06CDD914A30E1300F89530 /* waypoint.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = waypoint.cpp; sourceTree = "<group>"; };
-		3E06CDDA14A30E1300F89530 /* weapons.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = weapons.h; sourceTree = "<group>"; };
 		3E06CDDA14A30E1300F89530 /* weapdef.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = weapdef.h; sourceTree = "<group>"; };
 		3E2522461255C29D003F3F5E /* scoreboard.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = scoreboard.cpp; sourceTree = "<group>"; };
 		3E469E9511E05C2B00873F83 /* bomber.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = bomber.cpp; sourceTree = "<group>"; };
@@ -339,6 +339,7 @@
 		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
 			isa = PBXGroup;
 			children = (
+				2AB901D01AC1B8E900A5F378 /* version.h */,
 				D16A83350F130E9500EABB1F /* game */,
 				B90ADCEE09B344D800A5B00B /* enet */,
 				B9AC7A830D06DB44005506F8 /* engine */,
@@ -481,7 +482,6 @@
 				3E06CDD714A30E1300F89530 /* gamemode.h */,
 				3E06CDD814A30E1300F89530 /* team.h */,
 				3E06CDD914A30E1300F89530 /* waypoint.cpp */,
-				3E06CDDA14A30E1300F89530 /* weapons.h */,
 				3E06CDDA14A30E1300F89530 /* weapdef.h */,
 				3E2522461255C29D003F3F5E /* scoreboard.cpp */,
 				3E469E9711E05C2B00873F83 /* bombermode.h */,
@@ -555,6 +555,7 @@
 				D16A83570F130E9500EABB1F /* vars.h in Headers */,
 				D16A83760F130EBC00EABB1F /* scale.h in Headers */,
 				D1D88A8B0F350DFE000680E4 /* auth.h in Headers */,
+				2AB901D11AC1B8E900A5F378 /* version.h in Headers */,
 				D1D88A8D0F350E31000680E4 /* ragdoll.h in Headers */,
 				D1D88AB90F350EDE000680E4 /* irc.h in Headers */,
 				D1CEB40A0F548C0B004FD11F /* aiman.h in Headers */,
@@ -568,8 +569,7 @@
 				3E06CDDB14A30E1300F89530 /* compass.h in Headers */,
 				3E06CDDC14A30E1300F89530 /* gamemode.h in Headers */,
 				3E06CDDD14A30E1300F89530 /* team.h in Headers */,
-				3E06CDDF14A30E1300F89530 /* weapons.h in Headers */,
-				3E06CDDF14A30E1300F89530 /* weapdef.h in Headers */,
+				2AB901CF1AC1B72400A5F378 /* weapdef.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -602,10 +602,15 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = NO;
+				LastUpgradeCheck = 0620;
 			};
 			buildConfigurationList = B960CF35085F3CC7004FB142 /* Build configuration list for PBXProject "redeclipse" */;
-			compatibilityVersion = "Xcode 2.4";
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
 			hasScannedForEncodings = 1;
+			knownRegions = (
+				en,
+			);
 			mainGroup = 29B97314FDCFA39411CA2CEA /* redeclipse */;
 			projectDirPath = "";
 			projectRoot = ../..;
@@ -733,12 +738,9 @@
 		3E18417F123861470098590C /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT_PRE_XCODE_3_1)";
-				ARCHS_STANDARD_32_64_BIT_PRE_XCODE_3_1 = "x86_64 i386 ppc";
 				COPY_PHASE_STRIP = YES;
 				DEPLOYMENT_POSTPROCESSING = YES;
 				FRAMEWORK_SEARCH_PATHS = (
-					../../bin/redeclipse.app/Contents/Frameworks,
 					"$(USER_LIBRARY_DIR)/Frameworks",
 					"$(LOCAL_LIBRARY_DIR)/Frameworks",
 				);
@@ -760,22 +762,24 @@
 		3E184180123861470098590C /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
 				DEPLOYMENT_LOCATION = YES;
 				DEPLOYMENT_POSTPROCESSING = YES;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					"FPS=1",
-				);	
+				GCC_PREPROCESSOR_DEFINITIONS = "FPS=1";
+				GCC_VERSION = "";
 				HEADER_SEARCH_PATHS = (
 					../enet/include,
 					../include/,
+					/usr/X11R6/include/,
+					"$(inherited)",
 				);
 				INFOPLIST_FILE = "redeclipse-Info.plist";
-				INSTALL_PATH = "";
 				OTHER_CPLUSPLUSFLAGS = "-fomit-frame-pointer";
 				OTHER_LDFLAGS = "-lz";
 				PRODUCT_NAME = redeclipse;
+				SDKROOT = macosx;
 				SKIP_INSTALL = NO;
 			};
 			name = Release;
@@ -783,48 +787,53 @@
 		B94198C709207E810029DAD1 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					"FPS=1",
-				);	
+				GCC_PREPROCESSOR_DEFINITIONS = "FPS=1";
+				GCC_VERSION = "";
 				HEADER_SEARCH_PATHS = (
 					../enet/include,
 					../include/,
+					/usr/X11R6/include/,
+					"$(inherited)",
 				);
 				INFOPLIST_FILE = "redeclipse-Info.plist";
 				OTHER_LDFLAGS = "-lz";
 				PRODUCT_NAME = redeclipse;
+				SDKROOT = macosx;
 			};
 			name = Debug;
 		};
 		B94198C809207E810029DAD1 /* Compatibility */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
 				DEPLOYMENT_LOCATION = YES;
 				DEPLOYMENT_POSTPROCESSING = YES;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					"FPS=1",
-				);	
+				GCC_PREPROCESSOR_DEFINITIONS = "FPS=1";
+				GCC_VERSION = "";
 				HEADER_SEARCH_PATHS = (
 					../enet/include,
 					../include/,
+					/usr/X11R6/include/,
+					"$(inherited)",
 				);
 				INFOPLIST_FILE = "redeclipse-Info.plist";
-				INSTALL_PATH = "";
 				OTHER_CPLUSPLUSFLAGS = "-fomit-frame-pointer";
 				OTHER_LDFLAGS = "-lz";
 				PRODUCT_NAME = redeclipse;
+				SDKROOT = macosx;
 				SKIP_INSTALL = NO;
+				VALID_ARCHS = "i386 x86_64";
 			};
 			name = Compatibility;
 		};
 		B960CF36085F3CC7004FB142 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(NATIVE_ARCH)";
 				COPY_PHASE_STRIP = NO;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(USER_LIBRARY_DIR)/Frameworks",
@@ -834,8 +843,9 @@
 				GCC_VERSION = 4.0;
 				MACOSX_DEPLOYMENT_TARGET_i386 = 10.4;
 				MACOSX_DEPLOYMENT_TARGET_ppc = 10.3;
+				ONLY_ACTIVE_ARCH = YES;
 				PREBINDING = NO;
-				SDKROOT = /Developer/SDKs/MacOSX10.4u.sdk;
+				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.4u.sdk";
 				SDKROOT_i386 = /Developer/SDKs/MacOSX10.4u.sdk;
 				SDKROOT_ppc = /Developer/SDKs/MacOSX10.4u.sdk;
 				STRIP_INSTALLED_PRODUCT = NO;
@@ -845,12 +855,9 @@
 		B960CF37085F3CC7004FB142 /* Compatibility */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_BIT_PRE_XCODE_3_1)";
-				ARCHS_STANDARD_32_BIT_PRE_XCODE_3_1 = "ppc i386";
 				COPY_PHASE_STRIP = YES;
 				DEPLOYMENT_POSTPROCESSING = YES;
 				FRAMEWORK_SEARCH_PATHS = (
-					../../bin/redeclipse.app/Contents/Frameworks,
 					"$(USER_LIBRARY_DIR)/Frameworks",
 					"$(LOCAL_LIBRARY_DIR)/Frameworks",
 				);
@@ -862,7 +869,7 @@
 				MACOSX_DEPLOYMENT_TARGET_ppc = 10.3;
 				OTHER_LDFLAGS = "-no_compact_linkedit";
 				PREBINDING = NO;
-				SDKROOT = /Developer/SDKs/MacOSX10.4u.sdk;
+				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.4u.sdk";
 				SDKROOT_i386 = /Developer/SDKs/MacOSX10.4u.sdk;
 				SDKROOT_ppc = /Developer/SDKs/MacOSX10.4u.sdk;
 				SKIP_INSTALL = NO;
