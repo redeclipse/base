@@ -1,0 +1,4 @@
+#!/bin/sh
+SDL_SINGLEDISPLAY=1
+SDL_ENABLEAPPEVENTS=1
+exec "${0}_universal" "$@"
