@@ -242,8 +242,8 @@ WPFVARK(0, damagewhiplash, FVAR_MIN, FVAR_MAX,
     0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.75f,      0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f
 );
 WPVARM(0, delayattack, 1, VAR_MAX,
-    500,        130,        500,        800,        90,         100,        275,        80,        850,        1000,       1000,       1500,
-    1000,       200,        800,        1200,       400,        1250,       2000,       1000,      850,        1000,       1000,       1500
+    500,        130,        500,        800,        90,         100,        275,        80,         850,        1000,       1000,       1500,
+    1000,       200,        800,        1200,       400,        1250,       2000,       1000,       850,        1000,       1000,       1500
 );
 WPVAR(0, delayreload, 0, VAR_MAX,
     50,         1000,       50,         850,        1250,       1850,       1750,       1500,       1500,       800,        1400,       2200
@@ -659,7 +659,7 @@ WPFVARK(0, speedmax, 0, FVAR_MAX,
     0.0f,       0.0f,       0.0f,       0.0f,        0.0f,      0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f
 );
 WPFVARM(0, spread, 0, FVAR_MAX,
-    1.0f,       1.0f,       1.0f,       12.0f,      2.5f,       7.5f,       2.0f,       2.0f,       1.5f,       1.0f,       1.0f,       1.0f,
+    1.0f,       1.0f,       1.0f,       12.0f,      2.5f,       7.5f,       2.0f,       2.0f,       1.0f,       1.0f,       1.0f,       1.0f,
     1.0f,       2.0f,       1.0f,       2.0f,       2.0f,       1.0f,       1.0f,       3.0f,       0.25f,      1.0f,       1.0f,       1.0f
 );
 WPFVARM(0, spreadmax, 0, FVAR_MAX,
@@ -759,7 +759,7 @@ WPFVARK(0, weight, FVAR_MIN, FVAR_MAX,
 
 #define WRS(a,b,c,d)         ((a)*(m_sweaps(c, d) ? G(b##limited) : G(b##scale)))
 #define WX(k,a,b,c,d,e,f)    (!m_insta(d, e) || (a) != W_RIFLE ? WRS(WF(k, a, b, c)*f, radial, d, e) : 0)
-#define WSP(a,b,c,d,e,f)     (!m_insta(c, d) || (a) != W_RIFLE ? clamp(max(W2(a, spread, b), f*0.5f)*(e), W2(a, spreadmin, b), W2(a, spreadmax, b) > 0 ? W2(a, spreadmax, b) : FVAR_MAX) : 0.f)
+#define WSP(a,b,c,d,e)       (!m_insta(c, d) || (a) != W_RIFLE ? clamp(W2(a, spread, b)*(e), W2(a, spreadmin, b), W2(a, spreadmax, b) > 0 ? W2(a, spreadmax, b) : FVAR_MAX) : 0.f)
 #define WSND(a,b)            (weaptype[a].sound+(b))
 #define WSNDF(a,b)           (weaptype[a].sound+((b) ? S_W_SECONDARY : S_W_PRIMARY))
 #define WSND2(a,b,c)         (weaptype[a].sound+((b) ? (c)+1 : (c)))

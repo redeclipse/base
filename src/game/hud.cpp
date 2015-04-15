@@ -1236,7 +1236,11 @@ namespace hud
                 float skew = clamp((lastmillis-game::focus->lastregen)/float(regentime/2), 0.f, 2.f);
                 cs += int(cs*(skew > 1.f ? 1.f-skew : skew)*crosshairthrob);
             }
-            if(showcrosshair >= 2) fade /= weapons::accmod(game::focus, physics::secondaryweap(game::focus, true))*crosshairaccamt;
+            if(showcrosshair >= 2)
+            {
+                float accskew = weapons::accmod(game::focus, physics::secondaryweap(game::focus, true))*crosshairaccamt;
+                if(accskew > 0) fade /= accskew;
+            }
         }
         int cx = int(hudwidth*cursorx), cy = int(hudheight*cursory);
         if(index != POINTER_GUI)

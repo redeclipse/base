@@ -449,7 +449,7 @@ GFVAR(0, impulseregeninair, 0, 0.75f, FVAR_MAX); // impulse regen in-air modifie
 GFVAR(0, impulseregenslide, 0, 0, FVAR_MAX); // impulse regen sliding modifier
 GVAR(0, impulseregendelay, 0, 350, VAR_MAX); // delay before impulse regens
 
-GFVAR(0, spreadstill, 0, 0.f, FVAR_MAX);
+GFVAR(0, spreadstill, 0, 0.25f, FVAR_MAX);
 GFVAR(0, spreadmoving, 0, 1.f, FVAR_MAX);
 GFVAR(0, spreadrunning, 0, 1.f, FVAR_MAX);
 GFVAR(0, spreadinair, 0, 1.f, FVAR_MAX);

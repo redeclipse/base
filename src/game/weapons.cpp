@@ -200,25 +200,13 @@ namespace weapons
         }
     }
 
-    float accmod(gameent *d, bool zooming, int *x)
+    float accmod(gameent *d, bool zooming)
     {
-        float r = 1;
-        if(spreadinair > 0 && d->airmillis && !d->onladder)
-        {
-            if(x) (*x)++;
-            r += spreadinair;
-        }
-        bool running = d->running(moveslow) || d->sliding();
-        if((running && spreadrunning > 0 ? spreadrunning : spreadmoving) > 0 && (d->move || d->strafe || running))
-        {
-            if(x) (*x)++;
-            r += running ? spreadrunning : spreadmoving;
-        }
-        else if(spreadstill > 0 && !d->crouching() && !zooming)
-        {
-            if(x) (*x)++;
-            r += spreadstill;
-        }
+        float r = 0;
+        if(spreadinair > 0 && d->airmillis && !d->onladder) r += spreadinair;
+        bool running = d->running(moveslow) || d->sliding(), moving = d->move || d->strafe;
+        if(running ? (spreadrunning > 0) : (moving && spreadmoving > 0)) r += running ? spreadrunning : spreadmoving;
+        else if(!d->crouching() && !zooming && spreadstill > 0) r += spreadstill;
         return r;
     }
 
@@ -304,9 +292,8 @@ namespace weapons
         {
             from = d->muzzlepos(weap, secondary);
             to = targ;
-            int x = 0;
-            float m = accmod(d, W2(d->weapselect, cooked, true)&W_C_ZOOM && secondary, &x);
-            float spread = WSP(weap, secondary, game::gamemode, game::mutators, m, x);
+            float m = accmod(d, W2(d->weapselect, cooked, true)&W_C_ZOOM && secondary);
+            float spread = WSP(weap, secondary, game::gamemode, game::mutators, m);
             loopi(rays)
             {
                 vec dest;
