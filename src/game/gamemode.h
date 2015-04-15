@@ -243,7 +243,7 @@ extern mutstypes mutstype[];
 #define m_gsp(a,b)          (m_gsp1(a,b) || m_gsp2(a,b) || m_gsp3(a,b))
 
 #define m_team(a,b)         (m_multi(a, b) || !m_ffa(a, b))
-#define m_sweaps(a,b)       (m_race(a) || m_insta(a, b) || m_medieval(a, b) || m_kaboom(a, b))
+#define m_sweaps(a,b)       ((m_race(a) && !m_gsp3(a, b)) || m_insta(a, b) || m_medieval(a, b) || m_kaboom(a, b))
 #define m_loadout(a,b)      (!m_classic(a, b) && !m_sweaps(a, b))
 #define m_duke(a,b)         (m_duel(a, b) || m_survivor(a, b))
 #define m_regen(a,b)        (!m_hard(a,b) && (G(duelregen) || !m_duke(a, b)) && !m_insta(a, b))
