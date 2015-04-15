@@ -976,11 +976,7 @@ namespace physics
             d->airmillis = 0;
             if(!d->floormillis) d->floormillis = lastmillis ? lastmillis : 1;
         }
-        if(!d->turnside)
-        {
-            if(d->onladder && !m.iszero()) m.add(vec(0, 0, m.z >= 0 ? 1 : -1)).normalize();
-            else if(PHYS(gravity) == 0 && m.iszero()) m = vec(0, 0, 1);
-        }
+        if(!d->turnside && d->onladder && !m.iszero()) m.add(vec(0, 0, m.z >= 0 ? 1 : -1)).normalize();
     }
 
     float coastscale(const vec &o)
