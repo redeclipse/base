@@ -654,7 +654,7 @@ namespace projs
         {
             int millis = lastmillis-proj.spawntime;
             if(millis < WF(WK(proj.flags), proj.weap, fadetime, WS(proj.flags)))
-                trans *= 1.f-(millis/float(WF(WK(proj.flags), proj.weap, fadetime, WS(proj.flags))));
+                trans *= millis/float(WF(WK(proj.flags), proj.weap, fadetime, WS(proj.flags)));
             if(!proj.escaped && proj.owner == game::focus && WF(WK(proj.flags), proj.weap, fadeat, WS(proj.flags)) > 0)
                 trans *= camera1->o.distrange(proj.o, WF(WK(proj.flags), proj.weap, fadeat, WS(proj.flags)), WF(WK(proj.flags), proj.weap, fadecut, WS(proj.flags)));
         }
