@@ -136,7 +136,7 @@ dist-combined: ../$(tarname-combined).bz2
 dist-xz-combined: ../$(tarname-combined).xz
 
 ../$(exename): ../$(dirname-win)
-	makensis $</src/install/win/$(exename)
+	makensis $</src/install/win/$(appname).nsi
 	$(MV) $</src/install/win/$(exename) ../
 
 dist-win: ../$(exename)
