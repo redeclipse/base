@@ -3,11 +3,13 @@ appnamefull=$(shell sed -n 's/.define VERSION_NAME *"\([^"]*\)"/\1/p' version.h)
 appversion=$(shell sed -n 's/.define VERSION_STRING *"\([^"]*\)"/\1/p' version.h)
 
 dirname=$(appname)-$(appversion)
+dirname-osx=$(appname).app
 dirname-win=$(dirname)-win
 
 exename=$(appname)_$(appversion)_win.exe
 
 tarname=$(appname)_$(appversion)_nix.tar
+tarname-osx=$(appname)_$(appversion)_osx.tar
 tarname-combined=$(appname)_$(appversion)_combined.tar
 
 torrent-trackers-url="udp://tracker.openbittorrent.com:80,udp://tracker.publicbt.com:80,udp://tracker.ccc.de:80,udp://tracker.istole.it:80"
@@ -47,6 +49,24 @@ distdir: ../$(dirname)
 
 dist-tar: ../$(tarname)
 
+../$(tarname-osx): ../$(dirname)
+	tar -cf $@ -C $</bin $(dirname-osx)
+	mkdir tmpdir-osx
+	mkdir tmpdir-osx/$(dirname-osx)
+	mkdir tmpdir-osx/$(dirname-osx)/Contents
+	mkdir tmpdir-osx/$(dirname-osx)/Contents/Resources
+	# Use links with tar dereference to change directory paths
+	ln -s ../../$</data/ tmpdir-osx/$(dirname-osx)/config
+	ln -s ../../$</data/ tmpdir-osx/$(dirname-osx)/data
+	ln -s ../../$</doc/ tmpdir-osx/$(dirname-osx)/doc
+	ln -s ../../$</src/ tmpdir-osx/$(dirname-osx)/src
+	ln -s ../../$</readme.txt tmpdir-osx/$(dirname-osx)/readme.txt
+	tar \
+		-hrf $@ -C tmpdir-osx $(dirname-osx)
+	rm -rf tmpdir-osx/
+
+dist-tar-osx: ../$(tarname-osx)
+
 ../$(tarname-combined): ../$(dirname)
 	tar -cf $@ $<
 
@@ -76,6 +96,23 @@ dist-nix: ../$(tarname).bz2
 
 dist-xz: ../$(tarname).xz
 
+../$(tarname-osx).gz: ../$(tarname-osx)
+	gzip -c < $< > $@
+
+dist-gz-osx: ../$(tarname-osx).gz
+
+../$(tarname-osx).bz2: ../$(tarname-osx)
+	bzip2 -c < $< > $@
+
+dist-bz2-osx: ../$(tarname-osx).bz2
+
+dist-osx: ../$(tarname-osx).bz2
+
+../$(tarname-osx).xz: ../$(tarname-osx)
+	xz -c < $< > $@
+
+dist-xz-osx: ../$(tarname-osx).xz
+
 ../$(tarname-combined).gz: ../$(tarname-combined)
 	gzip -c < $< > $@
 
@@ -99,7 +136,7 @@ dist-xz-combined: ../$(tarname-combined).xz
 
 dist-win: ../$(exename)
 
-dist: dist-clean dist-bz2 dist-bz2-combined dist-win
+dist: dist-clean dist-bz2 dist-win dist-bz2-combined
 
 ../$(tarname).bz2.torrent: ../$(tarname).bz2
 	rm -f $@
@@ -112,6 +149,18 @@ dist: dist-clean dist-bz2 dist-bz2-combined dist-win
 		$(tarname).bz2
 
 dist-torrent: ../$(tarname).bz2.torrent
+
+../$(tarname-osx).bz2.torrent: ../$(tarname-osx).bz2
+	rm -f $@
+	cd ../ &&\
+		mktorrent \
+		-a $(torrent-trackers-url) \
+		-w $(torrent-webseed-baseurl)/$(tarname-osx).bz2 \
+		-n $(tarname-osx).bz2 \
+		-c "$(appnamefull) $(appversion) for OSX" \
+		$(tarname-osx).bz2
+
+dist-torrent-osx: ../$(tarname-osx).bz2.torrent
 
 ../$(tarname-combined).bz2.torrent: ../$(tarname-combined).bz2
 	rm -f $@
@@ -133,10 +182,12 @@ dist-mostlyclean:
 	rm -rf ../$(dirname)
 	rm -rf ../$(dirname-win)
 	rm -f ../$(tarname)
+	rm -f ../$(tarname-osx)
 	rm -f ../$(tarname-combined)
 
 dist-clean: dist-mostlyclean
 	rm -f ../$(tarname)*
+	rm -f ../$(tarname-osx)*
 	rm -f ../$(tarname-combined)*
 	rm -f ../$(exename)*
 
