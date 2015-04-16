@@ -36,6 +36,9 @@ DISTFILES=$(shell cd ../ && find . -not -iname *.lo -not -iname *.gch -not -inam
 	curl --location --insecure --fail http://redeclipse.net/files/stable/linux.tar.gz --output linux.tar.gz
 	tar --gzip --extract --verbose --overwrite --file=linux.tar.gz --directory=$@
 	rm -f linux.tar.gz
+	curl --location --insecure --fail http://redeclipse.net/files/stable/macosx.tar.gz --output macosx.tar.gz
+	tar --gzip --extract --verbose --overwrite --file=macosx.tar.gz --directory=$@
+	rm -f macosx.tar.gz
 	curl --location --insecure --fail http://redeclipse.net/files/stable/windows.zip --output windows.zip
 	unzip -o windows.zip -d $@
 	rm -f windows.zip
@@ -55,6 +58,8 @@ dist-tar: ../$(tarname)
 	mkdir tmpdir-osx/$(dirname-osx)
 	mkdir tmpdir-osx/$(dirname-osx)/Contents
 	mkdir tmpdir-osx/$(dirname-osx)/Contents/Resources
+	mkdir tmpdir-osx/$(dirname-osx)/Contents/MacOS
+	cp ../../$</bin/redeclipse.app/Contents/MacOS/* tmpdir-osx/$(dirname-osx)/Contents/MacOS
 	# Use links with tar dereference to change directory paths
 	ln -s ../../$</data/ tmpdir-osx/$(dirname-osx)/config
 	ln -s ../../$</data/ tmpdir-osx/$(dirname-osx)/data
