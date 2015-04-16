@@ -48,6 +48,7 @@ distdir: ../$(dirname)
 ../$(tarname): ../$(dirname)
 	tar \
 		--exclude='$</bin/*/*.exe' \
+		--exclude='$</bin/redeclipse.app/Contents/MacOS/redeclipse_universal' \
 		-cf $@ $<
 
 dist-tar: ../$(tarname)
@@ -56,10 +57,7 @@ dist-tar: ../$(tarname)
 	tar -cf $@ -C $</bin $(dirname-osx)
 	mkdir tmpdir-osx
 	mkdir tmpdir-osx/$(dirname-osx)
-	mkdir tmpdir-osx/$(dirname-osx)/Contents
-	mkdir tmpdir-osx/$(dirname-osx)/Contents/Resources
-	mkdir tmpdir-osx/$(dirname-osx)/Contents/MacOS
-	cp ../../$</bin/redeclipse.app/Contents/MacOS/* tmpdir-osx/$(dirname-osx)/Contents/MacOS
+	cp -R ../../$</bin/$(dirname-osx) tmpdir-osx/$(dirname-osx)
 	# Use links with tar dereference to change directory paths
 	ln -s ../../$</data/ tmpdir-osx/$(dirname-osx)/config
 	ln -s ../../$</data/ tmpdir-osx/$(dirname-osx)/data
@@ -78,9 +76,10 @@ dist-tar-osx: ../$(tarname-osx)
 dist-tar-combined: ../$(tarname-combined)
 
 ../$(dirname-win): ../$(dirname)
-	cp -r $< $@
+	cp -R $< $@
 	rm -rf $@/bin/*/*linux*
 	rm -rf $@/bin/*/*bsd*
+	rm -rf $@/bin/redeclipse.app/Contents/MacOS/redeclipse_universal
 
 distdir-win: ../$(dirname-win)
 
