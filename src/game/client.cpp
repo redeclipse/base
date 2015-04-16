@@ -970,7 +970,7 @@ namespace client
         game::waiting.setsize(0);
         hud::cleanup();
         emptymap(0, true, NULL, true);
-        smartmusic(true, false);
+        smartmusic(true);
         enumerate(idents, ident, id, {
             if(id.flags&IDF_CLIENT) switch(id.type)
             {

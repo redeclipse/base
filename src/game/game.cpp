@@ -1727,7 +1727,7 @@ namespace game
         {
             player1->stopmoving(true);
             if(gamestate == G_S_INTERMISSION) hud::showscores(true, true);
-            smartmusic(true, false);
+            smartmusic(true);
         }
         if(gamestate == G_S_VOTING && oldstate != G_S_VOTING)
         {
@@ -1827,7 +1827,7 @@ namespace game
 
     void resetmap(bool empty) // called just before a map load
     {
-        if(!empty) smartmusic(true, false);
+        if(!empty) smartmusic(true);
     }
 
     void startmap(const char *name, const char *reqname, bool empty)    // called just after a map load
@@ -2710,7 +2710,7 @@ namespace game
             }
             else if(!nosound && mastervol && musicvol && type && !playingmusic())
             {
-                if(type == 6) smartmusic(true, false);
+                if(type == 6) smartmusic(true);
                 else
                 {
                     defformatstring(musicfile)("%s", mapmusic);

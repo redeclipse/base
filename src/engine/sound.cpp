@@ -61,7 +61,7 @@ FVAR(IDF_PERSIST, soundenvvol, 0, 1, FVAR_MAX);
 FVAR(IDF_PERSIST, soundenvscale, 0, 1, FVAR_MAX);
 VAR(IDF_PERSIST, soundcull, 0, 1, 1);
 
-VARF(IDF_PERSIST, musicvol, 0, 64, 255, changedvol = true);
+VARF(IDF_PERSIST, musicvol, 0, 64, 255, changedvol = true; if(!music && musicvol > 0) smartmusic(true));
 VAR(IDF_PERSIST, musicfadein, 0, 1000, VAR_MAX);
 VAR(IDF_PERSIST, musicfadeout, 0, 2500, VAR_MAX);
 SVAR(0, titlemusic, "sounds/theme");
@@ -270,7 +270,7 @@ bool playingmusic(bool check)
     return false;
 }
 
-void smartmusic(bool cond, bool autooff)
+void smartmusic(bool cond)
 {
     if(nosound || !mastervol || !musicvol || (!cond && Mix_PlayingMusic()) || !*titlemusic) return;
     if(!playingmusic() || (cond && strcmp(musicfile, titlemusic))) playmusic(titlemusic);
@@ -280,7 +280,7 @@ void smartmusic(bool cond, bool autooff)
         changedvol = true;
     }
 }
-ICOMMAND(0, smartmusic, "ii", (int *a, int *b), smartmusic(*a, *b));
+ICOMMAND(0, smartmusic, "i", (int *a), smartmusic(*a));
 
 int findsound(const char *name, int vol, vector<soundslot> &soundset)
 {
