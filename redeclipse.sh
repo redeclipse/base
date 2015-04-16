@@ -21,6 +21,12 @@ redeclipse_setup() {
                 REDECLIPSE_SUFFIX="_linux"
                 REDECLIPSE_TARGET="linux"
                 ;;
+            Darwin)
+		REDECLIPSE_SUFFIX="_universal"
+		REDECLIPSE_TARGET="macosx"
+                REDECLIPSE_BRANCH="inplace"
+                REDECLIPSE_ARCH="redeclipse.app/Contents/MacOS"
+		;;
             FreeBSD)
                 REDECLIPSE_SUFFIX="_bsd"
                 REDECLIPSE_TARGET="bsd"
@@ -42,7 +48,7 @@ redeclipse_setup() {
                 ;;
         esac
     fi
-    if [ -z "${REDECLIPSE_ARCH+isset}" ]; then
+    if [ -z "${REDECLIPSE_ARCH+isset}" ] && [ "${REDECLIPSE_TARGET}" != "macosx" ]; then
         case "${REDECLIPSE_MACHINE}" in
             i486|i586|i686|x86)
                 REDECLIPSE_ARCH="x86"
