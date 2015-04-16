@@ -136,12 +136,12 @@ dist-combined: ../$(tarname-combined).bz2
 dist-xz-combined: ../$(tarname-combined).xz
 
 ../$(exename): ../$(dirname-win)
-	makensis $</src/install/win/$(execname)
+	makensis $</src/install/win/$(exename)
 	$(MV) $</src/install/win/$(exename) ../
 
 dist-win: ../$(exename)
 
-dist: dist-clean dist-bz2 dist-win dist-bz2-combined
+dist: dist-clean dist-bz2 dist-bz2-combined dist-win dist-osx
 
 ../$(tarname).bz2.torrent: ../$(tarname).bz2
 	rm -f $@
