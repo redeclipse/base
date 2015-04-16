@@ -4,12 +4,12 @@
   VIAddVersionKey "FileDescription" "Red Eclipse Installer"
   VIAddVersionKey "CompanyName" "Red Eclipse Team"
   VIAddVersionKey "LegalCopyright" "2015 Red Eclipse Team"
-  VIAddVersionKey "FileVersion" "1.0.0.0" 
+  VIAddVersionKey "FileVersion" "1.0.0.0"
 ; Name and file
   Name "Red Eclipse"
-  OutFile "redeclipse_1.5_win.exe"
-  VIAddVersionKey "OriginalFilename" "redeclipse_1.5_win.exe"
-  VIProductVersion "1.5.0.0"
+  OutFile "redeclipse_1.5.1_win.exe"
+  VIAddVersionKey "OriginalFilename" "redeclipse_1.5.1_win.exe"
+  VIProductVersion "1.5.1.0"
 ;--------------------------------
 ; General
   ;Include Modern UI
