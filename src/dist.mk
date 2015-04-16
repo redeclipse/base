@@ -150,10 +150,12 @@ dist: dist-clean dist-bz2 dist-win dist-bz2-combined
 		-a $(torrent-trackers-url) \
 		-w $(torrent-webseed-baseurl)/$(tarname).bz2 \
 		-n $(tarname).bz2 \
-		-c "Red Eclipse $(appversion) for Linux and BSD" \
+		-c "Red Eclipse $(appversion) for GNU/Linux" \
 		$(tarname).bz2
 
-dist-torrent: ../$(tarname).bz2.torrent
+dist-torrent-nix: ../$(tarname).bz2.torrent
+
+dist-torrent-bz2: ../$(tarname).bz2.torrent
 
 ../$(tarname-osx).bz2.torrent: ../$(tarname-osx).bz2
 	rm -f $@
@@ -162,7 +164,7 @@ dist-torrent: ../$(tarname).bz2.torrent
 		-a $(torrent-trackers-url) \
 		-w $(torrent-webseed-baseurl)/$(tarname-osx).bz2 \
 		-n $(tarname-osx).bz2 \
-		-c "$(appnamefull) $(appversion) for OSX" \
+		-c "$(appnamefull) $(appversion) for Mac OSX" \
 		$(tarname-osx).bz2
 
 dist-torrent-osx: ../$(tarname-osx).bz2.torrent
@@ -181,7 +183,7 @@ dist-torrent-combined: ../$(tarname-combined).bz2.torrent
 
 dist-torrent-win: ../$(exename).torrent
 
-dist-torrents: dist-torrent dist-torrent-combined dist-torrent-win
+dist-torrents: dist-torrent-bz2 dist-torrent-combined dist-torrent-win dist-torrent-osx
 
 dist-mostlyclean:
 	rm -rf ../$(dirname)
