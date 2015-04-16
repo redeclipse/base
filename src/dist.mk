@@ -57,15 +57,13 @@ dist-tar: ../$(tarname)
 	tar -cf $@ -C $</bin $(dirname-osx)
 	mkdir tmpdir-osx
 	mkdir tmpdir-osx/$(dirname-osx)
-	cp -R ../../$</bin/$(dirname-osx) tmpdir-osx/$(dirname-osx)
 	# Use links with tar dereference to change directory paths
 	ln -s ../../$</data/ tmpdir-osx/$(dirname-osx)/config
 	ln -s ../../$</data/ tmpdir-osx/$(dirname-osx)/data
 	ln -s ../../$</doc/ tmpdir-osx/$(dirname-osx)/doc
 	ln -s ../../$</src/ tmpdir-osx/$(dirname-osx)/src
 	ln -s ../../$</readme.txt tmpdir-osx/$(dirname-osx)/readme.txt
-	tar \
-		-hrf $@ -C tmpdir-osx $(dirname-osx)
+	tar -hrf $@ -C tmpdir-osx $(dirname-osx)
 	rm -rf tmpdir-osx/
 
 dist-tar-osx: ../$(tarname-osx)
