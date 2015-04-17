@@ -1547,7 +1547,7 @@ void setlocations(bool wanthome)
     const char *macdir = mac_resourcedir(); // ./blah.app
     if(macdir && *macdir)
     {
-        defformatstring(s)("%s/Contents/Files", macdir, VERSION_NAME);
+        defformatstring(s)("%s/Contents/Files", macdir);
         if(!chdir(s))
         {
             conoutf("attempting to use resources in: %s", s);
