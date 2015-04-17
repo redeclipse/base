@@ -178,6 +178,16 @@ dist-torrent-osx: ../$(tarname-osx).bz2.torrent
 
 dist-torrent-combined: ../$(tarname-combined).bz2.torrent
 
+../$(exename).torrent: ../$(exename)
+	rm -f $@
+	cd ../ &&\
+		mktorrent \
+		-a $(torrent-trackers-url) \
+		-w $(torrent-webseed-baseurl)/$(exename) \
+		-n $(exename) \
+		-c "$(appnamefull) $(appversion) for Windows" \
+		$(exename)
+
 dist-torrent-win: ../$(exename).torrent
 
 dist-torrents: dist-torrent-bz2 dist-torrent-combined dist-torrent-win dist-torrent-osx
