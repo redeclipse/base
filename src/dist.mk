@@ -59,12 +59,14 @@ dist-tar: ../$(tarname)
 	mkdir tmpdir-osx
 	mkdir tmpdir-osx/$(dirname-osx)
 	mkdir tmpdir-osx/$(dirname-osx)/Contents
+	mkdir tmpdir-osx/$(dirname-osx)/Contents/Files
 	# Use links with tar dereference to change directory paths
-	ln -s ../../$< tmpdir-osx/$(dirname-osx)/Contents/Files
-	tar \
-		--exclude='bin/*/$(appname)*' \
-		--exclude='bin/$(dirname-osx)' \
-		-hrf $@ -C tmpdir-osx $(dirname-osx)
+	ln -s ../../$</config tmpdir-osx/$(dirname-osx)/Contents/Files/config
+	ln -s ../../$</data tmpdir-osx/$(dirname-osx)/Contents/Files/data
+	ln -s ../../$</doc tmpdir-osx/$(dirname-osx)/Contents/Files/doc
+	ln -s ../../$</src tmpdir-osx/$(dirname-osx)/Contents/Files/src
+	ln -s ../../$</readme.txt tmpdir-osx/$(dirname-osx)/Contents/Files/readme.txt
+	tar -hrf $@ -C tmpdir-osx $(dirname-osx)
 	rm -rf tmpdir-osx/
 
 dist-tar-osx: ../$(tarname-osx)
