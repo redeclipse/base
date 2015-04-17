@@ -1,6 +1,7 @@
 appname=$(APPNAME)
 appnamefull=$(shell sed -n 's/.define VERSION_NAME *"\([^"]*\)"/\1/p' version.h)
 appversion=$(shell sed -n 's/.define VERSION_STRING *"\([^"]*\)"/\1/p' version.h)
+appfiles="http://redeclipse.net/files/stable"
 
 dirname=$(appname)-$(appversion)
 dirname-osx=$(appname).app
@@ -30,16 +31,16 @@ DISTFILES=$(shell cd ../ && find . -not -iname *.lo -not -iname *.gch -not -inam
 	$(MAKE) -C $@/src clean
 	$(MAKE) -C $@/src/enet clean
 	echo "stable" > $@/branch.txt
-	curl --location --insecure --fail http://redeclipse.net/files/stable/base.txt --output $@/version.txt
-	curl --location --insecure --fail http://redeclipse.net/files/stable/bins.txt --output $@/bin/version.txt
-	curl --location --insecure --fail http://redeclipse.net/files/stable/data.txt --output $@/data/version.txt
-	curl --location --insecure --fail http://redeclipse.net/files/stable/linux.tar.gz --output linux.tar.gz
+	curl --location --insecure --fail $(appfiles)/base.txt --output $@/version.txt
+	curl --location --insecure --fail $(appfiles)/bins.txt --output $@/bin/version.txt
+	curl --location --insecure --fail $(appfiles)/data.txt --output $@/data/version.txt
+	curl --location --insecure --fail $(appfiles)/linux.tar.gz --output linux.tar.gz
 	tar --gzip --extract --verbose --overwrite --file=linux.tar.gz --directory=$@
 	rm -f linux.tar.gz
-	curl --location --insecure --fail http://redeclipse.net/files/stable/macosx.tar.gz --output macosx.tar.gz
+	curl --location --insecure --fail $(appfiles)/macosx.tar.gz --output macosx.tar.gz
 	tar --gzip --extract --verbose --overwrite --file=macosx.tar.gz --directory=$@
 	rm -f macosx.tar.gz
-	curl --location --insecure --fail http://redeclipse.net/files/stable/windows.zip --output windows.zip
+	curl --location --insecure --fail $(appfiles)/windows.zip --output windows.zip
 	unzip -o windows.zip -d $@
 	rm -f windows.zip
 
@@ -47,8 +48,8 @@ distdir: ../$(dirname)
 
 ../$(tarname): ../$(dirname)
 	tar \
-		--exclude='$</bin/*/*.exe' \
-		--exclude='$</bin/redeclipse.app/Contents/MacOS/redeclipse_universal' \
+		--exclude='$</bin/*/$(appname)*' \
+		--exclude='$</bin/$(dirname-osx)/Contents/MacOS/$(appname)_universal' \
 		-cf $@ $<
 
 dist-tar: ../$(tarname)
@@ -57,13 +58,13 @@ dist-tar: ../$(tarname)
 	tar -cf $@ -C $</bin $(dirname-osx)
 	mkdir tmpdir-osx
 	mkdir tmpdir-osx/$(dirname-osx)
+	mkdir tmpdir-osx/$(dirname-osx)/Contents
 	# Use links with tar dereference to change directory paths
-	ln -s ../../$</data/ tmpdir-osx/$(dirname-osx)/config
-	ln -s ../../$</data/ tmpdir-osx/$(dirname-osx)/data
-	ln -s ../../$</doc/ tmpdir-osx/$(dirname-osx)/doc
-	ln -s ../../$</src/ tmpdir-osx/$(dirname-osx)/src
-	ln -s ../../$</readme.txt tmpdir-osx/$(dirname-osx)/readme.txt
-	tar -hrf $@ -C tmpdir-osx $(dirname-osx)
+	ln -s ../../$< tmpdir-osx/$(dirname-osx)/Contents/Files
+	tar \
+		--exclude='bin/*/$(appname)*' \
+		--exclude='bin/$(dirname-osx)' \
+		-hrf $@ -C tmpdir-osx $(dirname-osx)
 	rm -rf tmpdir-osx/
 
 dist-tar-osx: ../$(tarname-osx)
@@ -75,9 +76,9 @@ dist-tar-combined: ../$(tarname-combined)
 
 ../$(dirname-win): ../$(dirname)
 	cp -R $< $@
-	rm -rf $@/bin/*/*linux*
-	rm -rf $@/bin/*/*bsd*
-	rm -rf $@/bin/redeclipse.app/Contents/MacOS/redeclipse_universal
+	rm -rf $@/bin/*/$(appname)*linux*
+	rm -rf $@/bin/*/$(appname)*bsd*
+	rm -rf $@/bin/$(dirname-osx)/Contents/MacOS/$(appname)_universal
 
 distdir-win: ../$(dirname-win)
 
