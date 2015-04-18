@@ -1,7 +1,7 @@
 appname=$(APPNAME)
 appnamefull=$(shell sed -n 's/.define VERSION_NAME *"\([^"]*\)"/\1/p' version.h)
 appversion=$(shell sed -n 's/.define VERSION_STRING *"\([^"]*\)"/\1/p' version.h)
-appfiles="http://redeclipse.net/files/stable"
+appfiles=http://redeclipse.net/files/stable
 
 dirname=$(appname)-$(appversion)
 dirname-osx=$(appname).app
@@ -25,11 +25,10 @@ DISTFILES=$(shell cd ../ && find . -not -iname *.lo -not -iname *.gch -not -inam
 
 ../$(dirname):
 	rm -rf $@
-	# exclude VCS and transform relative to src/ dir
-	$(MAKE) -C $@/src clean
-	$(MAKE) -C $@/src/enet clean
 	tar --exclude=.git --exclude=$(dirname) \
 		-cf - $(DISTFILES:%=../%) | (mkdir $@/; cd $@/ ; tar -xpf -)
+	$(MAKE) -C $@/src clean
+	$(MAKE) -C $@/src/enet clean
 	echo "stable" > $@/branch.txt
 	curl --location --insecure --fail $(appfiles)/base.txt --output $@/version.txt
 	curl --location --insecure --fail $(appfiles)/bins.txt --output $@/bin/version.txt
@@ -61,11 +60,11 @@ dist-tar: ../$(tarname)
 	mkdir tmpdir-osx/$(dirname-osx)/Contents
 	mkdir tmpdir-osx/$(dirname-osx)/Contents/Resources
 	# Use links with tar dereference to change directory paths
-	ln -s $</config/ tmpdir-osx/$(dirname-osx)/Contents/Resources/config
-	ln -s $</data/ tmpdir-osx/$(dirname-osx)/Contents/Resources/data
-	ln -s $</doc/ tmpdir-osx/$(dirname-osx)/Contents/Resources/doc
-	ln -s $</src/ tmpdir-osx/$(dirname-osx)/Contents/Resources/src
-	ln -s $</readme.txt tmpdir-osx/$(dirname-osx)/Contents/Resources/readme.txt
+	ln -s ../../../../$</config/ tmpdir-osx/$(dirname-osx)/Contents/Resources/config
+	ln -s ../../../../$</data/ tmpdir-osx/$(dirname-osx)/Contents/Resources/data
+	ln -s ../../../../$</doc/ tmpdir-osx/$(dirname-osx)/Contents/Resources/doc
+	ln -s ../../../../$</src/ tmpdir-osx/$(dirname-osx)/Contents/Resources/src
+	ln -s ../../../../$</readme.txt tmpdir-osx/$(dirname-osx)/Contents/Resources/readme.txt
 	tar -hrf $@ -C tmpdir-osx $(dirname-osx)
 	rm -rf tmpdir-osx/
 
@@ -196,6 +195,7 @@ dist-torrent-win: ../$(exename).torrent
 dist-torrents: dist-torrent-bz2 dist-torrent-combined dist-torrent-win dist-torrent-osx
 
 dist-mostlyclean:
+	rm -rf tmpdir-osx
 	rm -rf ../$(dirname)
 	rm -rf ../$(dirname-win)
 	rm -f ../$(tarname)
