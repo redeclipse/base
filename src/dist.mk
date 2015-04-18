@@ -26,10 +26,10 @@ DISTFILES=$(shell cd ../ && find . -not -iname *.lo -not -iname *.gch -not -inam
 ../$(dirname):
 	rm -rf $@
 	# exclude VCS and transform relative to src/ dir
-	tar --exclude=.git --exclude=$(dirname) \
-		-cf - $(DISTFILES:%=../%) | (mkdir $@/; cd $@/ ; tar -xpf -)
 	$(MAKE) -C $@/src clean
 	$(MAKE) -C $@/src/enet clean
+	tar --exclude=.git --exclude=$(dirname) \
+		-cf - $(DISTFILES:%=../%) | (mkdir $@/; cd $@/ ; tar -xpf -)
 	echo "stable" > $@/branch.txt
 	curl --location --insecure --fail $(appfiles)/base.txt --output $@/version.txt
 	curl --location --insecure --fail $(appfiles)/bins.txt --output $@/bin/version.txt
@@ -59,13 +59,13 @@ dist-tar: ../$(tarname)
 	mkdir tmpdir-osx
 	mkdir tmpdir-osx/$(dirname-osx)
 	mkdir tmpdir-osx/$(dirname-osx)/Contents
-	mkdir tmpdir-osx/$(dirname-osx)/Contents/Files
+	mkdir tmpdir-osx/$(dirname-osx)/Contents/Resources
 	# Use links with tar dereference to change directory paths
-	ln -s $</config/ tmpdir-osx/$(dirname-osx)/Contents/Files/config
-	ln -s $</data/ tmpdir-osx/$(dirname-osx)/Contents/Files/data
-	ln -s $</doc/ tmpdir-osx/$(dirname-osx)/Contents/Files/doc
-	ln -s $</src/ tmpdir-osx/$(dirname-osx)/Contents/Files/src
-	ln -s $</readme.txt tmpdir-osx/$(dirname-osx)/Contents/Files/readme.txt
+	ln -s $</config/ tmpdir-osx/$(dirname-osx)/Contents/Resources/config
+	ln -s $</data/ tmpdir-osx/$(dirname-osx)/Contents/Resources/data
+	ln -s $</doc/ tmpdir-osx/$(dirname-osx)/Contents/Resources/doc
+	ln -s $</src/ tmpdir-osx/$(dirname-osx)/Contents/Resources/src
+	ln -s $</readme.txt tmpdir-osx/$(dirname-osx)/Contents/Resources/readme.txt
 	tar -hrf $@ -C tmpdir-osx $(dirname-osx)
 	rm -rf tmpdir-osx/
 
