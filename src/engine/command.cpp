@@ -1536,7 +1536,14 @@ static void compilestatements(vector<uint> &code, const char *&p, int rettype, i
 #endif
                     case 'C': comtype = CODE_COMC; if(more) while(numargs < MAXARGS && (more = compilearg(code, p, VAL_ANY))) numargs++; numargs = 1; goto endfmt;
                     case 'V': comtype = CODE_COMV; if(more) while(numargs < MAXARGS && (more = compilearg(code, p, VAL_ANY))) numargs++; numargs = 2; goto endfmt;
-                    case '1': case '2': case '3': case '4': if(more) { fmt -= *fmt-'0'+1; rep = true; } break;
+                    case '1': case '2': case '3': case '4':
+                        if(more && numargs < MAXARGS)
+                        {
+                            int numrep = *fmt-'0'+1;
+                            fmt -= numrep;
+                            rep = true;
+                        }
+                        else for(; numargs > MAXARGS; numargs--) code.add(CODE_POP);
                     }
                 endfmt:
                     code.add(comtype|(rettype < VAL_ANY ? rettype<<CODE_RET : 0)|(id->index<<8));
