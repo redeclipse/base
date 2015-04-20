@@ -1002,8 +1002,7 @@ struct animmodel : model
     {
         if(!loaded) return;
 
-        yaw += spinyaw*lastmillis/1000.0f;
-        roll += spinroll*lastmillis/1000.0f;
+        float syaw = spinyaw*lastmillis/1000.0f, sroll = spinroll*lastmillis/1000.0f;
         pitch += offsetpitch + spinpitch*lastmillis/1000.0f;
 
         vec axis(0, -1, 0), forward(1, 0, 0);
@@ -1019,6 +1018,8 @@ struct animmodel : model
             matrixstack[0].transformnormal(vec(forward), forward);
             if(offsetyaw) matrixstack[0].rotate_around_z(offsetyaw*RAD);
             if(offsetroll) matrixstack[0].rotate_around_x(-offsetroll*RAD);
+            if(syaw) matrixstack[0].rotate_around_z(syaw*RAD);
+            if(sroll) matrixstack[0].rotate_around_x(-sroll*RAD);
         }
         else
         {
