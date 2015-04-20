@@ -44,7 +44,7 @@ GVAR(IDF_ADMIN, messagelength, 32, 128, BIGSTRLEN-1);
 GSVAR(IDF_ADMIN, censorwords, "");
 
 GVAR(IDF_ADMIN, setinfolock, 0, PRIV_NONE, PRIV_CREATOR);
-GVAR(IDF_ADMIN, setinfowait, 0, 10000, VAR_MAX);
+GVAR(IDF_ADMIN, setinfowait, 0, 1000, VAR_MAX);
 
 GVAR(IDF_ADMIN, demolock, 0, PRIV_OPERATOR, PRIV_CREATOR);
 GVAR(IDF_ADMIN, democount, 1, 10, VAR_MAX);
