@@ -14,15 +14,15 @@ namespace projs
     };
     vector<toolent> teleports, pushers;
 
-    VAR(IDF_PERSIST, shadowdebris, 0, 1, 1);
+    VAR(IDF_PERSIST, shadowdebris, 0, 0, 1);
     VAR(IDF_PERSIST, shadowgibs, 0, 1, 1);
-    VAR(IDF_PERSIST, shadoweject, 0, 1, 1);
+    VAR(IDF_PERSIST, shadoweject, 0, 0, 1);
     VAR(IDF_PERSIST, shadowents, 0, 1, 1);
     VAR(IDF_PERSIST, shadowvanity, 0, 1, 1);
 
     VAR(IDF_PERSIST, maxprojectiles, 1, 128, VAR_MAX);
 
-    VAR(IDF_PERSIST, ejectfade, 0, 3000, VAR_MAX);
+    VAR(IDF_PERSIST, ejectfade, 0, 2500, VAR_MAX);
     VAR(IDF_PERSIST, ejectspin, 0, 1, 1);
     VAR(IDF_PERSIST, ejecthint, 0, 1, 1);
 
@@ -46,7 +46,7 @@ namespace projs
     FVAR(IDF_PERSIST, ejectweight, -10000, 180, 10000);
 
     VAR(IDF_PERSIST, projtrails, 0, 1, 1);
-    VAR(IDF_PERSIST, projtraildelay, 2, 20, VAR_MAX);
+    VAR(IDF_PERSIST, projtraildelay, 2, 50, VAR_MAX);
     VAR(IDF_PERSIST, projtraillength, 1, 250, VAR_MAX);
     VAR(IDF_PERSIST, projhints, 0, 1, 6);
     VAR(IDF_PERSIST, projfirehint, 0, 1, 1);

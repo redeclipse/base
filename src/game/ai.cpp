@@ -268,7 +268,7 @@ namespace ai
         }
         else // fixed rate logic done out-of-sequence at 1 frame per second for each ai
         {
-            if(totalmillis-updatemillis >= 250) avoid();
+            if(totalmillis-updatemillis >= 500) avoid();
             if(!iteration && totalmillis-itermillis >= 1000)
             {
                 iteration = 1;
@@ -914,7 +914,7 @@ namespace ai
     {
         if(d->ai->route.empty() || !d->ai->route.inrange(n)) return false;
         int len = d->ai->route.length();
-        if(len <= 2 || (d->ai->lastcheck && lastmillis-d->ai->lastcheck <= 100)) return false;
+        if(len <= 2 || (d->ai->lastcheck && lastmillis-d->ai->lastcheck <= 250)) return false;
         int w = iswaypoint(d->lastnode) ? d->lastnode : d->ai->route[n], c = min(len, NUMPREVNODES);
         if(c >= 3) loopj(c) // check ahead to see if we need to go around something
         {
@@ -1327,7 +1327,7 @@ namespace ai
         if(d->blocked || (d->inmaterial&MATF_CLIP) == MAT_AICLIP)
         {
             d->ai->blocktime += lastmillis-d->ai->lastrun;
-            if(d->ai->blocktime > (d->ai->blockseq+1)*500)
+            if(d->ai->blocktime > (d->ai->blockseq+1)*1000)
             {
                 d->ai->blockseq++;
                 switch(d->ai->blockseq)
@@ -1357,7 +1357,7 @@ namespace ai
         if(iswaypoint(d->ai->targnode) && (d->ai->targnode == d->ai->targlast || d->ai->hasprevnode(d->ai->targnode)))
         {
             d->ai->targtime += lastmillis-d->ai->lastrun;
-            if(d->ai->targtime > (d->ai->targseq+1)*500)
+            if(d->ai->targtime > (d->ai->targseq+1)*1000)
             {
                 d->ai->targseq++;
                 switch(d->ai->targseq)
