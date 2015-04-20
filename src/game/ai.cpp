@@ -268,8 +268,8 @@ namespace ai
         }
         else // fixed rate logic done out-of-sequence at 1 frame per second for each ai
         {
-            if(totalmillis-updatemillis > 100) avoid();
-            if(!iteration && totalmillis-itermillis > 1000)
+            if(totalmillis-updatemillis >= 250) avoid();
+            if(!iteration && totalmillis-itermillis >= 1000)
             {
                 iteration = 1;
                 itermillis = totalmillis;

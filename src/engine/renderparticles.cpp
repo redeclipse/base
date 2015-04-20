@@ -5,7 +5,7 @@
 
 Shader *particleshader = NULL, *particlenotextureshader = NULL;
 
-VARF(IDF_PERSIST, maxparticles, 10, 2048, 40000, particleinit());
+VARF(IDF_PERSIST, maxparticles, 10, 1024, 40000, particleinit());
 VARF(IDF_PERSIST, fewparticles, 10, 64, 40000, particleinit());
 VAR(IDF_PERSIST, maxparticledistance, 256, 1024, VAR_MAX);
 VAR(IDF_PERSIST, maxparticletrail, 256, 1024, VAR_MAX);
