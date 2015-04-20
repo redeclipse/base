@@ -1069,8 +1069,8 @@ struct gui : guient
                 switch(style)
                 {
                     case 1:
-                        if(ishorizontal()) ph = py+((h-size)*percent);
-                        else pw = px+((w-size)*percent);
+                        if(ishorizontal()) ph = (h-size/4)*percent;
+                        else pw = (w-size/4)*percent;
                         break;
                     case 0: default:
                         if(ishorizontal()) py += (h-size)*percent;
