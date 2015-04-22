@@ -93,9 +93,16 @@ system-install-server: server
 system-install-common:
 	$(MKDIR) $(libexecdir)/$(appname)
 	$(MKDIR) $(datadir)/$(appname)
+	$(MKDIR) $(datadir)/$(appname)/doc
+	$(MKDIR) $(docdir)/$(appname)
 	cp -r ../config $(datadir)/$(appname)/config
 	ln -s $(patsubst $(DESTDIR)%,%,$(datadir))/$(appname)/config \
 		$(libexecdir)/$(appname)/config
+	install -m644 ../doc/guidelines.txt $(datadir)/$(appname)/doc
+	ln -s $(patsubst $(DESTDIR)%,%,$(datadir))/$(appname)/doc \
+		$(libexecdir)/$(appname)/doc
+	ln -s $(patsubst $(DESTDIR)%,%,$(datadir))/$(appname)/doc/guidelines.txt \
+		$(docdir)/$(appname)/guidelines.txt
 
 system-install-data:
 	$(MKDIR) $(datadir)/$(appname)
@@ -122,9 +129,6 @@ system-install-docs: $(MANPAGES)
 		../doc/man/$(appsrcname)-server.6.am | \
 		gzip -9 -n -c > $(mandir)/man6/$(appname)-server.6.gz
 	cp -r ../doc/examples $(docdir)/$(appname)/examples
-	cp ../doc/guidelines.txt $(docdir)/$(appname)/guidelines.txt
-	ln -s $(patsubst $(DESTDIR)%,%,$(docdir))/$(appname) \
-		$(libexecdir)/$(appname)/doc
 
 system-install-menus: icons
 	$(MKDIR) $(menudir)
@@ -174,6 +178,9 @@ system-install: system-install-client system-install-server system-install-commo
 system-uninstall-common:
 	rm -rf $(datadir)/$(appname)/config
 	@rm -fv $(libexecdir)/$(appname)/config
+	rm -rf $(datadir)/$(appname)/doc
+	@rm -fv $(libexecdir)/$(appname)/doc
+	@rm -fv $(docdir)/$(appname)/guidelines.txt
 
 system-uninstall-client:
 	@rm -fv $(libexecdir)/$(appname)/$(appname)
@@ -189,7 +196,6 @@ system-uninstall-data:
 
 system-uninstall-docs:
 	@rm -rfv $(docdir)/$(appname)/examples
-	@rm -fv $(docdir)/$(appname)/guidelines.txt
 	@rm -fv $(mandir)/man6/$(appname).6.gz
 	@rm -fv $(mandir)/man6/$(appname)-server.6.gz
 
