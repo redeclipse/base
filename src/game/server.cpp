@@ -2239,6 +2239,16 @@ namespace server
         demotmp->seek(0, SEEK_SET);
         demotmp->read(d.data, len);
         DELETEP(demotmp);
+        if(G(demoautosave))
+        {
+            string dafilepath;
+            if(*filetimeformat) formatstring(dafilepath)("demos/sv_%s.dmo", gettime(d.ctime, filetimeformat));
+            else formatstring(dafilepath)("demos/sv_%u.dmo", uint(d.ctime));
+            stream *dafile=openrawfile(dafilepath, "w");
+            dafile->write(d.data, d.len);
+            dafile->close();
+            DELETEP(dafile);
+        }
     }
 
     void enddemorecord(bool full)
