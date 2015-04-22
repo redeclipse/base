@@ -1173,7 +1173,7 @@ namespace server
     }
     ICOMMAND(0, getversion, "i", (int *a), intret(getver(*a)));
 
-    const char *gamename(int mode, int muts, int compact, int limit)
+    const char *gamename(int mode, int muts, int compact, int limit, const char *separator)
     {
         if(!m_game(mode)) mode = G_DEATHMATCH;
         if(gametype[mode].implied) muts |= gametype[mode].implied;
@@ -1202,7 +1202,7 @@ namespace server
                     }
                 }
             }
-            defformatstring(mname)("%s%s%s", *gname ? gname : "", *gname ? " " : "", k < 3 ? gametype[mode].name : gametype[mode].sname);
+            defformatstring(mname)("%s%s%s", *gname ? gname : "", *gname ? separator : "", k < 3 ? gametype[mode].name : gametype[mode].sname);
             if(k < 3 && limit > 0 && int(strlen(mname)) >= limit)
             {
                 gname[0] = 0;
@@ -2242,8 +2242,8 @@ namespace server
         if(G(demoautosave))
         {
             string dafilepath;
-            if(*filetimeformat) formatstring(dafilepath)("demos/sv_%s.dmo", gettime(d.ctime, filetimeformat));
-            else formatstring(dafilepath)("demos/sv_%u.dmo", uint(d.ctime));
+            if(*filetimeformat) formatstring(dafilepath)("demos/sv_%s_%s-%s.dmo", gettime(d.ctime, filetimeformat), gamename(gamemode, mutators, 1, 32, "_"), smapname);
+            else formatstring(dafilepath)("demos/sv_%u_%s-%s.dmo", uint(d.ctime), gamename(gamemode, mutators, 1, 32, "_"), smapname);
             stream *dafile=openrawfile(dafilepath, "w");
             dafile->write(d.data, d.len);
             dafile->close();
