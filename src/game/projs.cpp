@@ -24,7 +24,7 @@ namespace projs
 
     VAR(IDF_PERSIST, ejectfade, 0, 2500, VAR_MAX);
     VAR(IDF_PERSIST, ejectspin, 0, 1, 1);
-    VAR(IDF_PERSIST, ejecthint, 0, 1, 1);
+    VAR(IDF_PERSIST, ejecthint, 0, 0, 1);
 
     FVAR(IDF_PERSIST, gibselasticity, -10000, 0.35f, 10000);
     FVAR(IDF_PERSIST, gibsrelativity, -10000, 0.95f, 10000);
@@ -48,8 +48,8 @@ namespace projs
     VAR(IDF_PERSIST, projtrails, 0, 1, 1);
     VAR(IDF_PERSIST, projtraildelay, 2, 50, VAR_MAX);
     VAR(IDF_PERSIST, projtraillength, 1, 250, VAR_MAX);
-    VAR(IDF_PERSIST, projhints, 0, 1, 6);
-    VAR(IDF_PERSIST, projfirehint, 0, 1, 1);
+    VAR(IDF_PERSIST, projhints, 0, 0, 6);
+    VAR(IDF_PERSIST, projfirehint, 0, 0, 1);
     FVAR(IDF_PERSIST, projhintblend, 0, 0.75f, 1);
     FVAR(IDF_PERSIST, projhintsize, 0, 1.45f, FVAR_MAX);
     FVAR(IDF_PERSIST, projfirehintsize, 0, 1.85f, FVAR_MAX);
@@ -672,6 +672,7 @@ namespace projs
 
     bool spherecheck(projent &proj, bool rev = false)
     {
+        if(!insideworld(proj.o)) return false;
         vec dir = vec(proj.vel).normalize();
         if(collide(&proj, dir, 0, false))
         {
@@ -679,7 +680,7 @@ namespace projs
             if(!proj.lastgood.iszero())
             {
                 proj.o = proj.lastgood;
-                if(insideworld(proj.o) && !collide(&proj, dir, 0, false))
+                if(!collide(&proj, dir, 0, false))
                 {
                     if(rev)
                     {
@@ -694,10 +695,10 @@ namespace projs
             float yaw, pitch;
             vectoyawpitch(dir, yaw, pitch);
             if((yaw += 180) >= 360) yaw -= 360;
-            loopi(10) loopj(8) loopk(8)
+            loopi(2) loopj(8) loopk(8)
             {
                 proj.o.add(vec((int(yaw+k*45)%360)*RAD, j*45*RAD).mul(proj.radius*i));
-                if(insideworld(proj.o) && !collide(&proj, dir, 0, false))
+                if(!collide(&proj, dir, 0, false))
                 {
                     if(rev)
                     {
@@ -1361,10 +1362,10 @@ namespace projs
                     case W_SWORD:
                     {
                         part_flare(proj.from, proj.to, 1, PART_LIGHTNING_FLARE, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*proj.curscale, trans);
-                        if(lastmillis-proj.lasteffect >= 25 && proj.effectpos.dist(proj.to) >= 0.5f)
+                        if(lastmillis-proj.lasteffect >= projtraildelay && proj.effectpos.dist(proj.to) >= 0.5f)
                         {
                             part_flare(proj.from, proj.to, 250, PART_LIGHTNING_FLARE, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*proj.curscale, 0.75f*trans);
-                            proj.lasteffect = lastmillis - (lastmillis%25);
+                            proj.lasteffect = lastmillis - (lastmillis%projtraildelay);
                             proj.effectpos = proj.to;
                         }
                         break;
@@ -1391,10 +1392,10 @@ namespace projs
                             size = clamp(WF(WK(proj.flags), proj.weap, partlen, WS(proj.flags))*(1.f-proj.lifespan)*proj.curscale, WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*proj.curscale, min(WF(WK(proj.flags), proj.weap, partlen, WS(proj.flags)), proj.o.dist(proj.from)));
                         if(proj.lastbounce) size = min(size, max(proj.movement, WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*proj.curscale));
                         if(projfirehint) part_create(PART_HINT_SOFT, 1, proj.o, projhint(proj.owner, 0x120228), size*projfirehintsize, blend*projhintblend);
-                        if(projtrails && lastmillis-proj.lasteffect >= projtraildelay*2)
+                        if(projtrails && lastmillis-proj.lasteffect >= projtraildelay)
                         {
                             part_create(PART_FIREBALL_SOFT, max(int(projtraillength*0.5f*max(1.f-proj.lifespan, 0.1f)), 1), proj.o, FWCOL(H, partcol, proj), size, blend, -5);
-                            proj.lasteffect = lastmillis - (lastmillis%(projtraildelay*2));
+                            proj.lasteffect = lastmillis - (lastmillis%projtraildelay);
                         }
                         else part_create(PART_FIREBALL_SOFT, 1, proj.o, FWCOL(H, partcol, proj), size, blend);
                         if(WS(proj.flags)) part_create(PART_FIREBALL_SOFT, 1, proj.o, FWCOL(H, partcol, proj), size*0.5f, blend);
@@ -1574,14 +1575,14 @@ namespace projs
             case PRJ_AFFINITY:
             {
                 bool moving = proj.movement >= 1;
-                if(moving && lastmillis-proj.lasteffect >= 25)
+                if(moving && lastmillis-proj.lasteffect >= 50)
                 {
                     vec o(proj.o);
                     float size = max(proj.xradius, proj.yradius);
                     if(m_capture(game::gamemode)) o.z -= proj.zradius;
                     else size = max(proj.zradius, size);
                     part_create(PART_SMOKE, 150, o, 0xFFFFFF, size, 0.5f, -10);
-                    proj.lasteffect = lastmillis - (lastmillis%100);
+                    proj.lasteffect = lastmillis - (lastmillis%50);
                 }
             }
             default: break;

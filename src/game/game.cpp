@@ -967,7 +967,7 @@ namespace game
 
     void impulseeffect(gameent *d, int effect)
     {
-        int num = int((effect ? 5 : 20)*impulsescale);
+        int num = int((effect ? 3 : 10)*impulsescale);
         switch(effect)
         {
             case 0: playsound(S_IMPULSE, d->o, d); // fail through
@@ -1350,9 +1350,9 @@ namespace game
                 {
                     vec p = d->headpos(-d->height/4);
                     if(!nogore && bloodscale > 0)
-                        part_splash(PART_BLOOD, int(clamp(damage/2, 2, 10)*bloodscale)*(bleeding ? 2 : 1), bloodfade, p, 0x229999, (rnd(bloodsize/2)+(bloodsize/2))/10.f, 1, 100, DECAL_BLOOD, int(d->radius), 10);
+                        part_splash(PART_BLOOD, int(clamp(damage/20, 1, 5)*bloodscale)*(bleeding ? 2 : 1), bloodfade, p, 0x229999, (rnd(bloodsize/2)+(bloodsize/2))/10.f, 1, 100, DECAL_BLOOD, int(d->radius), 10);
                     if(nogore != 2 && (bloodscale <= 0 || bloodsparks))
-                        part_splash(PART_PLASMA, int(clamp(damage/2, 2, 10))*(bleeding ? 2: 1), bloodfade, p, 0x882222, 1, 0.5f, 50, DECAL_STAIN, int(d->radius));
+                        part_splash(PART_PLASMA, int(clamp(damage/20, 1, 5))*(bleeding ? 2: 1), bloodfade, p, 0x882222, 1, 0.5f, 50, DECAL_STAIN, int(d->radius));
                 }
                 if(d != v)
                 {
@@ -1704,7 +1704,7 @@ namespace game
 
         if(actor[d->actortype].living && nogore != 2 && gibscale > 0 && !(flags&HIT_LOST))
         {
-            int gib = clamp(max(damage, 10)/10, 1, 20), amt = int((rnd(gib)+gib)*gibscale);
+            int gib = clamp(max(damage, 10)/20, 1, 10), amt = int((rnd(gib)+gib)*gibscale);
             if(d->obliterated) amt *= 2;
             loopi(amt) projs::create(pos, pos, true, d, nogore ? PRJ_DEBRIS : PRJ_GIBS, rnd(gibfade)+gibfade, 0, rnd(500)+1, rnd(50)+10);
         }
@@ -3448,20 +3448,20 @@ namespace game
         {
             vec origin = d->center(), col = rescolour(d, PULSE_SHOCK), rad = vec(d->xradius, d->yradius, d->height/(d->state == CS_ALIVE ? 2 : 3)).mul(blend);
             int millis = lastmillis-d->lastres[WR_SHOCK], colour = (int(col.x*255)<<16)|(int(col.y*255)<<8)|(int(col.z*255));
-            float pc = shocktime-millis < shockdelay ? (shocktime-millis)/float(shockdelay) : 0.5f+(float(millis%shockdelay)/float(shockdelay*4)), fade = (d != focus ? 0.5f : 0.f)+(pc*0.5f);
-            loopi(10+rnd(10))
+            float fade = blend*(d != focus ? 1.f : 0.5f);
+            loopi(3+rnd(10))
             {
-                float q = 0.75f;
+                float q = 1.f;
                 vec from = vec(origin).add(vec(rnd(201)-100, rnd(201)-100, rnd(201)-100).div(100.f).normalize().mul(rad).mul(rnd(200)/100.f)), to = from;
-                loopj(1+rnd(10))
+                loopj(1+rnd(3))
                 {
                     to = vec(from).add(vec(rnd(201)-100, rnd(201)-100, rnd(201)-100).div(100.f).normalize().mul(rad).mul(rnd(200)/100.f*q));
-                    part_flare(from, to, 1, PART_LIGHTNING_FLARE, colour, q, fade*blend*q);
+                    part_flare(from, to, 1, PART_LIGHTNING_FLARE, colour, q, fade*q);
                     from = to;
                     q = q*0.75f;
                 }
             }
-            if(rendernormally && d->ragdoll && twitchspeed > 0) twitchragdoll(d, twitchspeed*pc*blend*rnd(100)/80.f);
+            if(rendernormally && d->ragdoll && twitchspeed > 0) twitchragdoll(d, twitchspeed*blend*rnd(100)/80.f);
         }
     }
 

@@ -914,7 +914,7 @@ namespace ai
     {
         if(d->ai->route.empty() || !d->ai->route.inrange(n)) return false;
         int len = d->ai->route.length();
-        if(len <= 2 || (d->ai->lastcheck && lastmillis-d->ai->lastcheck <= 250)) return false;
+        if(len <= 2 || (d->ai->lastcheck && lastmillis-d->ai->lastcheck <= 500)) return false;
         int w = iswaypoint(d->lastnode) ? d->lastnode : d->ai->route[n], c = min(len, NUMPREVNODES);
         if(c >= 3) loopj(c) // check ahead to see if we need to go around something
         {
