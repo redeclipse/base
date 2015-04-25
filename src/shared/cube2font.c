@@ -275,7 +275,7 @@ void writetexs(const char *name, struct fontchar *chars, int numchars, int numte
         for(i = 0; i < numchars; i++)
         {
             struct fontchar *c = &chars[i];
-            int x, y;
+            uint x, y;
             if(c->tex != tex) continue;
             texchars++;
             dst = &pixels[2*((c->y + c->offy - c->color->top)*tw + c->x + c->color->left - c->offx)];
