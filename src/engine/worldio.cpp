@@ -50,7 +50,7 @@ void setnames(const char *fname, int type)
     maptype = type >= 0 || type <= MAP_MAX-1 ? type : MAP_MAPZ;
 
     string fn, mn, mf;
-    if(fname != NULL) formatstring(fn)("%s", fname);
+    if(fname != NULL && *fname) formatstring(fn)("%s", fname);
     else formatstring(fn)("%s/untitled", mapdirs[maptype].name);
 
     if(strpbrk(fn, "/\\")) copystring(mn, fn);
