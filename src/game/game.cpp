@@ -3451,7 +3451,7 @@ namespace game
             float fade = blend*(d != focus ? 1.f : 0.5f);
             loopi(3+rnd(10))
             {
-                float q = 1.f;
+                float q = 0.75f;
                 vec from = vec(origin).add(vec(rnd(201)-100, rnd(201)-100, rnd(201)-100).div(100.f).normalize().mul(rad).mul(rnd(200)/100.f)), to = from;
                 loopj(1+rnd(3))
                 {
