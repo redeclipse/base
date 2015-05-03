@@ -2,7 +2,7 @@
 namespace ai
 {
     avoidset obstacles, wpavoid;
-    int updatemillis = 0, iteration = 0, itermillis = 0;
+    int avoidmillis = 0, iteration = -1, itermillis = 0, itercount = 0;
     vec aitarget(0, 0, 0);
 
     VAR(0, aidebug, 0, 0, 7);
@@ -268,21 +268,32 @@ namespace ai
         }
         else // fixed rate logic done out-of-sequence at 1 frame per second for each ai
         {
-            if(totalmillis-updatemillis >= 500) avoid();
-            if(!iteration && totalmillis-itermillis >= 1000)
+            if(totalmillis-avoidmillis >= 500)
             {
-                iteration = 1;
-                itermillis = totalmillis;
+                avoid();
+                avoidmillis = totalmillis;
+            }
+            if(iteration < 0 && totalmillis-itermillis >= 1000)
+            {
                 if(multiplayer(false)) aipassive = 0;
-                updatemillis = totalmillis;
+                iteration = itercount = 0;
+                loopv(game::players) if(game::players[i] && game::players[i]->ai) itercount++;
+                itermillis = totalmillis;
             }
-            int c = 0;
-            loopv(game::players) if(game::players[i] && game::players[i]->ai)
+            if(itercount > 0)
             {
-                checkinfo(game::players[i]);
-                think(game::players[i], ++c == iteration ? true : false);
+                int x = 999/itercount, y = totalmillis-itermillis, c = 0;
+                loopv(game::players) if(game::players[i] && game::players[i]->ai)
+                {
+                    bool iterate = c == iteration && y >= c*x;
+                    checkinfo(game::players[i]);
+                    think(game::players[i], iterate);
+                    if(iterate && ++iteration > itercount) iteration = -1;
+                    c++;
+                }
+                if(!c) iteration = -1;
             }
-            if(c && ++iteration > c) iteration = 0;
+            else iteration = -1;
         }
     }
 
