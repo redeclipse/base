@@ -355,7 +355,7 @@ namespace auth
         else
         {
             conoutf("updating master server");
-            requestmasterf("server %d %s\n", serverport, *serverip ? serverip : "*");
+            requestmasterf("server %d %s %d\n", serverport, *serverip ? serverip : "*", version);
         }
     }
 

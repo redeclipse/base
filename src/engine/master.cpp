@@ -17,6 +17,7 @@
 
 VAR(0, masterserver, 0, 0, 1);
 VAR(0, masterport, 1, MASTER_PORT, VAR_MAX);
+VAR(0, masterminver, 0, 0, CUR_VERSION);
 SVAR(0, masterip, "");
 SVAR(0, masterscriptclient, "");
 SVAR(0, masterscriptserver, "");
@@ -46,12 +47,12 @@ struct masterclient
     string name;
     char input[4096];
     vector<char> output;
-    int inputpos, outputpos, port, numpings, lastcontrol;
+    int inputpos, outputpos, port, numpings, lastcontrol, version;
     enet_uint32 lastping, lastpong, lastactivity;
     vector<authreq> authreqs;
     bool isserver, isquick, ishttp, listserver, shouldping, shouldpurge;
 
-    masterclient() : inputpos(0), outputpos(0), port(MASTER_PORT), numpings(0), lastcontrol(-1), lastping(0), lastpong(0), lastactivity(0), isserver(false), isquick(false), ishttp(false), listserver(false), shouldping(false), shouldpurge(false) {}
+    masterclient() : inputpos(0), outputpos(0), port(MASTER_PORT), numpings(0), lastcontrol(-1), version(0), lastping(0), lastpong(0), lastactivity(0), isserver(false), isquick(false), ishttp(false), listserver(false), shouldping(false), shouldpurge(false) {}
 };
 
 static vector<masterclient *> masterclients;
@@ -310,11 +311,17 @@ bool checkmasterclientinput(masterclient &c)
             else
             {
                 if(w[1] && *w[1]) c.port = clamp(atoi(w[1]), 1, VAR_MAX);
+		c.version = w[3] && *w[3] ? atoi(w[3]) : (w[2] && *w[2] ? 150 : 0);
                 ENetAddress address = { ENET_HOST_ANY, enet_uint16(c.port) };
                 if(w[2] && *w[2] && strcmp(w[2], "*") && (enet_address_set_host(&address, w[2]) < 0 || address.host != c.address.host))
                 {
                     c.listserver = c.shouldping = false;
                     masteroutf(c, "echo \"server IP '%s' does not match origin '%s', server will not be listed\n", w[2], c.name);
+                }
+                else if(masterminver && c.version < masterminver)
+                {
+                    c.listserver = c.shouldping = false;
+                    masteroutf(c, "echo \"server version '%d' is no longer supported (need: %d), please update at %s\n", w[2], c.version, masterminver, versionurl);
                 }
                 else
                 {
