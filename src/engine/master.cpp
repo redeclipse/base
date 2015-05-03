@@ -321,7 +321,7 @@ bool checkmasterclientinput(masterclient &c)
                 else if(masterminver && c.version < masterminver)
                 {
                     c.listserver = c.shouldping = false;
-                    masteroutf(c, "echo \"server version '%d' is no longer supported (need: %d), please update at %s\n", w[2], c.version, masterminver, versionurl);
+                    masteroutf(c, "echo \"server version '%d' is no longer supported (need: %d), please update at %s\n", c.version, masterminver, versionurl);
                 }
                 else
                 {
