@@ -1,6 +1,7 @@
 #!/bin/sh
 if [ "${REDECLIPSE_CALLED}" = "true" ]; then REDECLIPSE_EXITR="return"; else REDECLIPSE_EXITR="exit"; fi
 REDECLIPSE_SCRIPT="$0"
+REDECLIPSE_ARGS=$@
 
 redeclipse_path() {
     if [ -z "${REDECLIPSE_PATH+isset}" ]; then REDECLIPSE_PATH="$(cd "$(dirname "$0")" && pwd)"; fi
@@ -133,7 +134,7 @@ redeclipse_runit() {
     if [ -e "${REDECLIPSE_PATH}/bin/${REDECLIPSE_ARCH}/${REDECLIPSE_BINARY}${REDECLIPSE_SUFFIX}" ]; then
         REDECLIPSE_PWD=`pwd`
         cd "${REDECLIPSE_PATH}" || return 1
-        exec "${REDECLIPSE_PATH}/bin/${REDECLIPSE_ARCH}/${REDECLIPSE_BINARY}${REDECLIPSE_SUFFIX}" ${REDECLIPSE_OPTIONS} "$@" || (
+        exec "${REDECLIPSE_PATH}/bin/${REDECLIPSE_ARCH}/${REDECLIPSE_BINARY}${REDECLIPSE_SUFFIX}" ${REDECLIPSE_OPTIONS} ${REDECLIPSE_ARGS} || (
             cd "${REDECLIPSE_PWD}"
             return 1
         )
