@@ -383,7 +383,7 @@ namespace hud
     FVAR(IDF_PERSIST, clipoffset, 0, 0.04f, 1000);
     FVAR(IDF_PERSIST, clipminscale, 0, 0.3f, 1000);
     FVAR(IDF_PERSIST, clipmaxscale, 0, 1, 1000);
-    FVAR(IDF_PERSIST, clipblend, 0, 0.25f, 1);
+    FVAR(IDF_PERSIST, clipblend, 0, 0.75f, 1);
     FVAR(IDF_PERSIST, clipcolour, 0, 1, 1);
     VAR(IDF_PERSIST, cliplength, 0, 0, VAR_MAX);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, meleecliptex, "<grey>textures/weapons/clips/melee", 3);
