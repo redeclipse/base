@@ -208,7 +208,7 @@ namespace hud
     VAR(IDF_PERSIST, crosshairdistancex, VAR_MIN, 160, VAR_MAX); // offset from the crosshair
     VAR(IDF_PERSIST, crosshairdistancey, VAR_MIN, 80, VAR_MAX); // offset from the crosshair
     VAR(IDF_PERSIST, crosshairweapons, 0, 0, 3); // 0 = off, &1 = crosshair-specific weapons, &2 = also appy colour
-    FVAR(IDF_PERSIST, crosshairsize, 0, 0.08f, 1000);
+    FVAR(IDF_PERSIST, crosshairsize, 0, 0.06f, 1000);
     VAR(IDF_PERSIST, crosshairhitspeed, 0, 500, VAR_MAX);
     FVAR(IDF_PERSIST, crosshairblend, 0, 0.75, 1);
     FVAR(IDF_PERSIST, crosshairaccamt, 0, 0.75f, 1);
