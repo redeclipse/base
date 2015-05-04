@@ -208,9 +208,9 @@ namespace hud
     VAR(IDF_PERSIST, crosshairdistancex, VAR_MIN, 160, VAR_MAX); // offset from the crosshair
     VAR(IDF_PERSIST, crosshairdistancey, VAR_MIN, 80, VAR_MAX); // offset from the crosshair
     VAR(IDF_PERSIST, crosshairweapons, 0, 0, 3); // 0 = off, &1 = crosshair-specific weapons, &2 = also appy colour
-    FVAR(IDF_PERSIST, crosshairsize, 0, 0.04f, 1000);
+    FVAR(IDF_PERSIST, crosshairsize, 0, 0.08f, 1000);
     VAR(IDF_PERSIST, crosshairhitspeed, 0, 500, VAR_MAX);
-    FVAR(IDF_PERSIST, crosshairblend, 0, 1, 1);
+    FVAR(IDF_PERSIST, crosshairblend, 0, 0.75, 1);
     FVAR(IDF_PERSIST, crosshairaccamt, 0, 0.75f, 1);
     VAR(IDF_PERSIST, crosshairflash, 0, 1, 1);
     FVAR(IDF_PERSIST, crosshairthrob, 1e-4f, 0.1f, 1000);
@@ -255,7 +255,7 @@ namespace hud
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, zoomtex, "textures/hud/zoom", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, zoomcrosshairtex, "crosshairs/cross-01", 3);
     FVAR(IDF_PERSIST, zoomcrosshairsize, 0, 0.04f, 1000);
-    FVAR(IDF_PERSIST, zoomcrosshairblend, 0, 1, 1000);
+    FVAR(IDF_PERSIST, zoomcrosshairblend, 0, 0.75, 1000);
 
     VAR(IDF_PERSIST, showcirclebar, 0, 0, 1);
     VAR(IDF_PERSIST, circlebartype, 0, 7, 7); // 0 = off, &1 = health, &2 = impulse, &4 = ammo
@@ -377,13 +377,13 @@ namespace hud
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, zappertex, "<grey>textures/weapons/zapper", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, rifletex, "<grey>textures/weapons/rifle", 3);
 
-    VAR(IDF_PERSIST, showclips, 0, 2, 2);
+    VAR(IDF_PERSIST, showclips, 0, 0, 2);
     VAR(IDF_PERSIST, clipanims, 0, 2, 2);
     FVAR(IDF_PERSIST, clipsize, 0, 0.035f, 1000);
     FVAR(IDF_PERSIST, clipoffset, 0, 0.04f, 1000);
     FVAR(IDF_PERSIST, clipminscale, 0, 0.3f, 1000);
     FVAR(IDF_PERSIST, clipmaxscale, 0, 1, 1000);
-    FVAR(IDF_PERSIST, clipblend, 0, 0.75f, 1);
+    FVAR(IDF_PERSIST, clipblend, 0, 0.25f, 1);
     FVAR(IDF_PERSIST, clipcolour, 0, 1, 1);
     VAR(IDF_PERSIST, cliplength, 0, 0, VAR_MAX);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, meleecliptex, "<grey>textures/weapons/clips/melee", 3);
@@ -464,8 +464,8 @@ namespace hud
     FVAR(IDF_PERSIST, radartexblend, 0, 1, 1);
     FVAR(IDF_PERSIST, radartexbright, 0, 0.65f, 1);
     FVAR(IDF_PERSIST, radarcornerbright, 0, 0.8f, 1);
-    VAR(IDF_PERSIST, radardist, 0, 512, VAR_MAX); // 0 = use world size
-    VAR(IDF_PERSIST, radarcornerdist, 0, 512, VAR_MAX); // 0 = use world size
+    VAR(IDF_PERSIST, radardist, 0, 750, VAR_MAX); // 0 = use world size
+    VAR(IDF_PERSIST, radarcornerdist, 0, 750, VAR_MAX); // 0 = use world size
     VAR(IDF_PERSIST, radaritems, 0, 2, 2);
     VAR(IDF_PERSIST, radaritemspawn, 0, 1, 1);
     VAR(IDF_PERSIST, radaritemtime, 0, 5000, VAR_MAX);
@@ -473,7 +473,7 @@ namespace hud
 
     VAR(IDF_PERSIST, radarplayers, 0, 2, 2);
     VAR(IDF_PERSIST, radarplayerfilter, 0, 0, 3); // 0 = off, 1 = non-team, 2 = team, 3 = only in duel/survivor/edit
-    VAR(IDF_PERSIST, radarplayernames, 0, 0, 2);
+    VAR(IDF_PERSIST, radarplayernames, 0, 2, 2);
     VAR(IDF_PERSIST, radarplayereffects, 0, 1, 1);
     VAR(IDF_PERSIST, radarplayerdominated, 0, 1, 1); // 0 = off, 1 = always track dominating players
     VAR(IDF_PERSIST, radarplayerduke, 0, 1, 1); // 0 = off, 1 = track when your side has one player left
