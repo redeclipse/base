@@ -8,7 +8,7 @@
 #define MASTER_PORT 28800
 #define SERVER_PORT 28801
 
-extern int versioning, versionmajor, versionminor, versionpatch, versionplatform, versionarch, versionisserver;
+extern int version, versioning, versionmajor, versionminor, versionpatch, versionplatform, versionarch, versionisserver;
 extern char *versionstring, *versionname, *versionuname, *versionrelease, *versionurl, *versionmaster, *versionplatname, *versionplatlongname;
 extern uint versioncrc;
 #define CUR_VER_MAKE(a,b,c) (((a)<<16) | ((b)<<8) | (c))

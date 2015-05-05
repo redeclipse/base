@@ -769,8 +769,8 @@ namespace server
     SVAR(0, serverpass, "");
     SVAR(0, adminpass, "");
 
-    int version[2] = {0};
-    ICOMMAND(0, setversion, "ii", (int *a, int *b), version[0] = *a; version[1] = *b);
+    int sversion[2] = {0};
+    ICOMMAND(0, setsversion, "ii", (int *a, int *b), sversion[0] = *a; sversion[1] = *b);
 
     int mastermask()
     {
@@ -1165,7 +1165,7 @@ namespace server
         {
             case 0: return CUR_VERSION;
             case 1: return VERSION_GAME;
-            case 2: case 3: return version[n%2];
+            case 2: case 3: return sversion[n%2];
             case 4: return CUR_ARCH;
             default: break;
         }
