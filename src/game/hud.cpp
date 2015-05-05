@@ -210,7 +210,7 @@ namespace hud
     VAR(IDF_PERSIST, crosshairweapons, 0, 0, 3); // 0 = off, &1 = crosshair-specific weapons, &2 = also appy colour
     FVAR(IDF_PERSIST, crosshairsize, 0, 0.06f, 1000);
     VAR(IDF_PERSIST, crosshairhitspeed, 0, 500, VAR_MAX);
-    FVAR(IDF_PERSIST, crosshairblend, 0, 0.75, 1);
+    FVAR(IDF_PERSIST, crosshairblend, 0, 0.75f, 1);
     FVAR(IDF_PERSIST, crosshairaccamt, 0, 0.75f, 1);
     VAR(IDF_PERSIST, crosshairflash, 0, 1, 1);
     FVAR(IDF_PERSIST, crosshairthrob, 1e-4f, 0.1f, 1000);
@@ -255,7 +255,7 @@ namespace hud
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, zoomtex, "textures/hud/zoom", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, zoomcrosshairtex, "crosshairs/cross-01", 3);
     FVAR(IDF_PERSIST, zoomcrosshairsize, 0, 0.04f, 1000);
-    FVAR(IDF_PERSIST, zoomcrosshairblend, 0, 0.75, 1000);
+    FVAR(IDF_PERSIST, zoomcrosshairblend, 0, 0.75f, 1000);
 
     VAR(IDF_PERSIST, showcirclebar, 0, 0, 1);
     VAR(IDF_PERSIST, circlebartype, 0, 7, 7); // 0 = off, &1 = health, &2 = impulse, &4 = ammo
