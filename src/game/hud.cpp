@@ -199,8 +199,8 @@ namespace hud
     FVAR(IDF_PERSIST, burnblend, 0, 1, 1);
 
     VAR(IDF_PERSIST, showindicator, 0, 3, 4);
-    FVAR(IDF_PERSIST, indicatorsize, 0, 0.025f, 1000);
-    FVAR(IDF_PERSIST, indicatorblend, 0, 0.75f, 1);
+    FVAR(IDF_PERSIST, indicatorsize, 0, 0.03f, 1000);
+    FVAR(IDF_PERSIST, indicatorblend, 0, 0.5f, 1);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, indicatortex, "<grey>textures/hud/indicator", 3);
 
     VAR(IDF_PERSIST, showcrosshair, 0, 2, 2); // 0 = off, 1 = on, 2 = blend depending on current accuracy level
@@ -377,13 +377,13 @@ namespace hud
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, zappertex, "<grey>textures/weapons/zapper", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, rifletex, "<grey>textures/weapons/rifle", 3);
 
-    VAR(IDF_PERSIST, showclips, 0, 0, 2);
+    VAR(IDF_PERSIST, showclips, 0, 2, 2);
     VAR(IDF_PERSIST, clipanims, 0, 2, 2);
     FVAR(IDF_PERSIST, clipsize, 0, 0.035f, 1000);
     FVAR(IDF_PERSIST, clipoffset, 0, 0.04f, 1000);
     FVAR(IDF_PERSIST, clipminscale, 0, 0.3f, 1000);
     FVAR(IDF_PERSIST, clipmaxscale, 0, 1, 1000);
-    FVAR(IDF_PERSIST, clipblend, 0, 0.75f, 1);
+    FVAR(IDF_PERSIST, clipblend, 0, 0.5f, 1);
     FVAR(IDF_PERSIST, clipcolour, 0, 1, 1);
     VAR(IDF_PERSIST, cliplength, 0, 0, VAR_MAX);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, meleecliptex, "<grey>textures/weapons/clips/melee", 3);
@@ -443,7 +443,7 @@ namespace hud
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, playerbliptex, "<grey>textures/hud/blip", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, hurttex, "<grey>textures/hud/hurt", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, hinttex, "<grey>textures/hint", 3);
-    FVAR(IDF_PERSIST, radarblend, 0, 1, 1);
+    FVAR(IDF_PERSIST, radarblend, 0, 0.85f, 1);
     FVAR(IDF_PERSIST, radarplayerblend, 0, 1, 1);
     FVAR(IDF_PERSIST, radarplayerhintblend, 0, 0.65f, 1);
     FVAR(IDF_PERSIST, radarplayersize, 0, 0.35f, 1000);
@@ -455,8 +455,8 @@ namespace hud
     FVAR(IDF_PERSIST, radaraffinitysize, 0, 1, 1000);
     FVAR(IDF_PERSIST, radaritemblend, 0, 1, 1);
     FVAR(IDF_PERSIST, radaritemsize, 0, 0.75f, 1000);
-    FVAR(IDF_PERSIST, radarsize, 0, 0.045f, 1000);
-    FVAR(IDF_PERSIST, radaroffset, 0, 0.065f, 1000);
+    FVAR(IDF_PERSIST, radarsize, 0, 0.05f, 1000);
+    FVAR(IDF_PERSIST, radaroffset, 0, 0.08f, 1000);
     FVAR(IDF_PERSIST, radarcorner, 0, 0.15f, 1000);
     FVAR(IDF_PERSIST, radarcornersize, 0, 0.04f, 1000);
     FVAR(IDF_PERSIST, radarcorneroffset, 0, 0.045f, 1);
@@ -487,7 +487,7 @@ namespace hud
     VAR(IDF_PERSIST, radardamagetime, 1, 250, VAR_MAX);
     VAR(IDF_PERSIST, radardamagefade, 1, 3500, VAR_MAX);
     FVAR(IDF_PERSIST, radardamagesize, 0, 20, 1000);
-    FVAR(IDF_PERSIST, radardamageblend, 0, 1, 1);
+    FVAR(IDF_PERSIST, radardamageblend, 0, 0.85f, 1);
     VAR(IDF_PERSIST, radardamagemin, 1, 10, VAR_MAX);
     VAR(IDF_PERSIST, radardamagemax, 1, 100, VAR_MAX);
 
