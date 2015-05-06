@@ -770,7 +770,7 @@ namespace server
     SVAR(0, adminpass, "");
 
     int sversion[2] = {0};
-    ICOMMAND(0, setsversion, "ii", (int *a, int *b), sversion[0] = *a; sversion[1] = *b);
+    ICOMMAND(0, setversion, "ii", (int *a, int *b), sversion[0] = *a; sversion[1] = *b);
 
     int mastermask()
     {
