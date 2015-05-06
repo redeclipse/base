@@ -3236,6 +3236,18 @@ ICOMMAND(0, precf, "fi", (float *a, int *b),
     result(retval);
 });
 
+#define LISTAVGCOMMAND(name, type) \
+    ICOMMAND(0, name, "V", (tagval *args, int numargs), \
+    { \
+        type val = 0; \
+        loopi(numargs) val += args[i].get##type(); \
+        if(numargs > 0) val /= type(numargs); \
+        type##ret(val); \
+    });
+
+LISTAVGCOMMAND(listavg, int);
+LISTAVGCOMMAND(listavgf, float);
+
 ICOMMAND(0, cond, "ee2V", (tagval *args, int numargs),
 {
     for(int i = 0; i < numargs; i += 2)
@@ -3325,8 +3337,8 @@ ICOMMAND(0, stringncasecmp, "ssi", (char *a, char *b, int *n), intret(rigncasecm
         stringret(m); \
     })
 
-STRMAPCOMMAND(strlower, cubelower);
-STRMAPCOMMAND(strupper, cubeupper);
+STRMAPCOMMAND(stringlower, cubelower);
+STRMAPCOMMAND(stringupper, cubeupper);
 
 char *rigcasestr(const char *s, const char *n)
 {

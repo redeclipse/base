@@ -797,7 +797,7 @@ namespace client
     }
     ICOMMAND(0, getclientnum, "s", (char *name), intret(name[0] ? parseplayer(name) : game::player1->clientnum));
 
-    void listclients(bool local)
+    void listclients(bool local, int noai)
     {
         vector<char> buf;
         string cn;
@@ -808,7 +808,7 @@ namespace client
             buf.put(cn, strlen(cn));
             numclients++;
         }
-        loopv(game::players) if(game::players[i])
+        loopv(game::players) if(game::players[i] && (!noai || game::players[i]->actortype > (noai >= 2 ? A_PLAYER : A_BOT)))
         {
             formatstring(cn)("%d", game::players[i]->clientnum);
             if(numclients++) buf.add(' ');
@@ -817,7 +817,7 @@ namespace client
         buf.add('\0');
         result(buf.getbuf());
     }
-    ICOMMAND(0, listclients, "i", (int *local), listclients(*local!=0));
+    ICOMMAND(0, listclients, "ii", (int *local, int *noai), listclients(*local!=0, *noai));
 
     void getlastclientnum()
     {
