@@ -101,7 +101,7 @@ redeclipse_update_branch() {
         echo "Unable to find git, are you sure you have it installed?"
         return 1
     fi
-    REDECLIPSE_GITAPPLY="git apply --ignore-space-change --ignore-whitespace --verbose --stat --apply"
+    REDECLIPSE_GITAPPLY="git apply --whitespace=fix --inaccurate-eof --verbose --stat --apply --reject -C1"
     if ! [ -d "${REDECLIPSE_TEMP}" ]; then mkdir -p "${REDECLIPSE_TEMP}"; fi
     echo "#"'!'"/bin/sh" > "${REDECLIPSE_TEMP}/install.sh"
     echo "REDECLIPSE_ERROR=\"false\"" >> "${REDECLIPSE_TEMP}/install.sh"
