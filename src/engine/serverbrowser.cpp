@@ -220,9 +220,9 @@ bool sortedservers = true;
 ENetSocket pingsock = ENET_SOCKET_NULL;
 int lastinfo = 0;
 
-static serverinfo *newserver(const char *name, int port = SERVER_PORT, int priority = 0, const char *desc = NULL, uint ip = ENET_HOST_ANY)
+static serverinfo *newserver(const char *name, int hidden, int port = SERVER_PORT, int priority = 0, const char *desc = NULL, uint ip = ENET_HOST_ANY)
 {
-    serverinfo *si = new serverinfo(ip, port, priority);
+    serverinfo *si = new serverinfo(ip, port, hidden, priority);
 
     if(name) copystring(si->name, name);
     else if(ip==ENET_HOST_ANY || enet_address_get_host_ip(&si->address, si->name, sizeof(si->name)) < 0)
@@ -237,14 +237,6 @@ static serverinfo *newserver(const char *name, int port = SERVER_PORT, int prior
 
     return si;
 }
-
-void addserver(const char *name, int port, int priority, const char *desc)
-{
-    loopv(servers) if(!strcmp(servers[i]->name, name) && servers[i]->port == port) return;
-    if(newserver(name, port, priority, desc) && verbose >= 2)
-        conoutf("added server %s (%d) [%s]", name, port, desc);
-}
-ICOMMAND(0, addserver, "siis", (char *n, int *p, int *r, char *d), addserver(n, *p > 0 ? *p : SERVER_PORT, *r >= 0 ? *r : 0, d));
 
 VAR(0, searchlan, 0, 0, 1);
 VAR(IDF_PERSIST, maxservpings, 0, 10, 1000);
@@ -347,7 +339,7 @@ void checkpings()
         if(len <= 0) return;
         serverinfo *si = NULL;
         loopv(servers) if(addr.host == servers[i]->address.host && addr.port == servers[i]->address.port) { si = servers[i]; break; }
-        if(!si && searchlan) si = newserver(NULL, addr.port-1, 1, NULL, addr.host);
+        if(!si && searchlan) si = newserver(NULL, 1, addr.port-1, 1, NULL, addr.host);
         if(!si) continue;
         ucharbuf p(ping, len);
         int millis = getint(p), rtt = clamp(totalmillis - millis, 0, min(serverdecay*1000, totalmillis));
@@ -504,6 +496,17 @@ void updateservers()
 }
 COMMAND(0, updateservers, "");
 
+VARF(IDF_PERSIST, listhidden, 0, 0, 1, updatefrommaster());
+
+void addserver(const char *name, int port, int hidden, int priority, const char *desc)
+{
+    if(hidden && !listhidden) return;
+    loopv(servers) if(!strcmp(servers[i]->name, name) && servers[i]->port == port) return;
+    if(newserver(name, hidden, port, priority, desc) && verbose >= 2)
+        conoutf("added server %s (%d) [%s]", name, port, desc);
+}
+ICOMMAND(0, addserver, "siiis", (char *n, int *p, int *a, int *r, char *d), addserver(n, *p > 0 ? *p : SERVER_PORT, *a, *r >= 0 ? *r : 0, d));
+
 void writeservercfg()
 {
     if(servers.empty()) return;
@@ -513,7 +516,7 @@ void writeservercfg()
     loopv(servers)
     {
         serverinfo *s = servers[i];
-        f->printf("addserver %s %d %d %s\n", escapeid(s->name), s->port, s->priority, escapeid(s->sdesc[0] ? s->sdesc : s->name));
+        f->printf("addserver %s %d %d %d %s\n", escapeid(s->name), s->port, s->hidden, s->priority, escapeid(s->sdesc[0] ? s->sdesc : s->name));
     }
     delete f;
 }
