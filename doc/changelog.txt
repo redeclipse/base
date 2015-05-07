@@ -1,7 +1,7 @@
 The development version changelog is an ongoing work and should be reasonably
 complete covering changes made up to revision:
 
-6554 (05/30/2014)
+2015-05-07 05:44 UTC
 
 If you update the changelog with changes made beyond this point, and consider
 it to resonably cover all previous changes, please update the above revision
@@ -31,6 +31,20 @@ number.
 
 
 = Red Eclipse Development version =
+Weapons:
+ * Increased rifleexplode1 from 4 to 8
+ * Increased plasmaexplode1 from 6 to 8, plasmapartsize from 6 to 8
+ * Increased zapperstun1 from 100 to 250
+
+Core & Install:
+ * Improved particle performance
+ * Improved AI performance
+
+= Red Eclipse 1.5.1 =
+Core & Install:
+ * Package fixes for Windows, Linux and OS X
+
+= Red Eclipse 1.5 =
 Gameplay:
  * Ragdolls now twitch when they're under the influence of shock residual
  * Show player distance when fragged
