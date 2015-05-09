@@ -451,14 +451,14 @@ struct serverinfo
     string name;
     string map;
     string sdesc;
-    int numplayers, lastping, lastinfo, nextping, ping, resolved, port, priority;
+    int numplayers, lastping, lastinfo, nextping, ping, resolved, port, priority, hidden;
     int pings[MAXPINGS];
     vector<int> attr;
     vector<char *> players, handles;
     ENetAddress address;
 
-    serverinfo(uint ip, int port, int priority = 0)
-     : numplayers(0), resolved(ip==ENET_HOST_ANY ? UNRESOLVED : RESOLVED), port(port), priority(priority)
+    serverinfo(uint ip, int port, int hidden, int priority = 0)
+     : numplayers(0), resolved(ip==ENET_HOST_ANY ? UNRESOLVED : RESOLVED), port(port), priority(priority), hidden(hidden)
     {
         name[0] = map[0] = sdesc[0] = '\0';
         address.host = ip;

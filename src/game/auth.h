@@ -23,6 +23,8 @@
 // Team, each modification must be approved and will be done on a case-by-case
 // basis.
 
+VAR(IDF_ADMIN, hidden, 0, 0, 1);
+
 
 void hashpassword(int cn, int sessionid, const char *pwd, char *result, int maxlen)
 {
@@ -355,7 +357,7 @@ namespace auth
         else
         {
             conoutf("updating master server");
-            requestmasterf("server %d %s %d\n", serverport, *serverip ? serverip : "*", CUR_VERSION);
+            requestmasterf("server %d %s %d %d\n", serverport, *serverip ? serverip : "*", CUR_VERSION, hidden);
         }
     }
 

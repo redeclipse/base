@@ -50,7 +50,7 @@ struct masterclient
     int inputpos, outputpos, port, numpings, lastcontrol, version;
     enet_uint32 lastping, lastpong, lastactivity;
     vector<authreq> authreqs;
-    bool isserver, isquick, ishttp, listserver, shouldping, shouldpurge;
+    bool isserver, isquick, ishttp, listserver, shouldping, shouldpurge, hidden;
 
     masterclient() : inputpos(0), outputpos(0), port(MASTER_PORT), numpings(0), lastcontrol(-1), version(0), lastping(0), lastpong(0), lastactivity(0), isserver(false), isquick(false), ishttp(false), listserver(false), shouldping(false), shouldpurge(false) {}
 };
@@ -312,6 +312,8 @@ bool checkmasterclientinput(masterclient &c)
             {
                 if(w[1] && *w[1]) c.port = clamp(atoi(w[1]), 1, VAR_MAX);
 		c.version = w[3] && *w[3] ? atoi(w[3]) : (w[2] && *w[2] ? 150 : 0);
+                c.hidden = false;
+                if(w[4] && *w[4]) c.hidden = atoi(w[4]);
                 ENetAddress address = { ENET_HOST_ANY, enet_uint16(c.port) };
                 if(w[2] && *w[2] && strcmp(w[2], "*") && (enet_address_set_host(&address, w[2]) < 0 || address.host != c.address.host))
                 {
@@ -333,13 +335,13 @@ bool checkmasterclientinput(masterclient &c)
                     if(c.isserver)
                     {
                         masteroutf(c, "echo \"server updated (port %d), sending ping request (on port %d)\"\n", c.port, c.port+1);
-                        conoutf("master peer %s updated server info (%d)",  c.name, c.port);
+                        conoutf("master peer %s updated server info (%d) (%s)",  c.name, c.port, c.hidden ? "hidden" : "visible");
                     }
                     else
                     {
                         if(*masterscriptserver) masteroutf(c, "%s\n", masterscriptserver);
                         masteroutf(c, "echo \"server registered (port %d), sending ping request (on port %d)\"\n", c.port, c.port+1);
-                        conoutf("master peer %s registered as a server (%d)", c.name, c.port);
+                        conoutf("master peer %s registered as a server (%d) (%s)", c.name, c.port, c.hidden ? "hidden" : "visible");
                     }
                     c.isserver = true;
                 }
@@ -361,7 +363,7 @@ bool checkmasterclientinput(masterclient &c)
             {
                 masterclient &s = *masterclients[j];
                 if(!s.listserver) continue;
-                masteroutf(c, "addserver %s %d\n", s.name, s.port);
+                masteroutf(c, "addserver %s %d %d\n", s.name, s.port, s.hidden);
                 servs++;
             }
             conoutf("master peer %s was sent %d server(s)", c.name, servs);
