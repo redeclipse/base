@@ -1342,7 +1342,7 @@ namespace hud
         if(noticestone) skewcolour(tr, tg, tb, noticestone);
 
         pushfont("emphasis");
-        if(lastmillis-game::maptime <= noticetitle)
+        if(!gs_playing(game::gamestate) || lastmillis-game::maptime <= noticetitle)
         {
             ty += draw_textx("%s", tx, ty, 255, 255, 255, tf, TEXT_CENTERED, -1, tw, *maptitle ? maptitle : mapname);
             pushfont("reduced");
