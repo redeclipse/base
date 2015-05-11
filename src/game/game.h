@@ -758,7 +758,7 @@ struct clientstate
     void spawnstate(int gamemode, int mutators, int sweap, int heal)
     {
         weapreset(true);
-        health = heal > 0 ? heal : (actortype >= A_ENEMY ? actor[actortype].health : m_health(gamemode, mutators, model));
+        health = heal > 0 ? heal : (actortype >= A_ENEMY ? (m_insta(gamemode, mutators) ? 1 : actor[actortype].health) : m_health(gamemode, mutators, model));
         int s = sweap;
         if(!isweap(s))
         {
