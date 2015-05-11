@@ -23,6 +23,8 @@ CHECK_FUNC() {
     if [ $? -eq 0 ]; then printf " $2"; rm check_func; fi
 }
 
+CHECK_FUNC getaddrinfo -DHAS_GETADDRINFO
+CHECK_FUNC getnameinfo -DHAS_GETNAMEINFO
 CHECK_FUNC gethostbyaddr_r -DHAS_GETHOSTBYADDR_R
 CHECK_FUNC gethostbyname_r -DHAS_GETHOSTBYNAME_R
 CHECK_FUNC poll -DHAS_POLL
