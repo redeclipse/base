@@ -317,7 +317,7 @@ namespace aiman
     {
         if(m_onslaught(gamemode, mutators))
         {
-            loopvj(sents) if(sents[j].type == ACTOR && sents[j].attrs[0] >= 0 && sents[j].attrs[0] < A_TOTAL && gamemillis >= sents[j].millis && (sents[j].attrs[5] == triggerid || !sents[j].attrs[5]) && m_check(sents[j].attrs[3], sents[j].attrs[4], gamemode, mutators))
+            loopvj(sents) if(sents[j].type == ACTOR && sents[j].attrs[0] >= 0 && sents[j].attrs[0] < A_TOTAL && gamemillis >= sents[j].millis && (sents[j].attrs[5] == triggerid || !sents[j].attrs[5]) && m_check(sents[j].attrs[3], sents[j].attrs[4], gamemode, mutators) && (sents[j].attrs[0] != A_TURRET || !m_insta(gamemode, mutators)))
             {
                 int count = 0, numenemies = 0;
                 loopvrev(clients) if(clients[i]->state.actortype >= A_ENEMY)
