@@ -50,7 +50,7 @@ setlocal enableextensions enabledelayedexpansion
         echo Unable to find git-apply.exe, are you sure it is in tools?
         exit /b 0
     )
-    set REDECLIPSE_GITAPPLY="%REDECLIPSE_PATH%\bin\tools\git-apply.exe" --whitespace=fix --inaccurate-eof --verbose --stat --apply --reject
+    set REDECLIPSE_GITAPPLY="%REDECLIPSE_PATH%\bin\tools\git-apply.exe" --whitespace=fix --inaccurate-eof --verbose --stat --apply -C1
     if NOT EXIST "%REDECLIPSE_TEMP%" mkdir "%REDECLIPSE_TEMP%"
     echo @ECHO OFF> "%REDECLIPSE_TEMP%\install.bat"
     echo setlocal enableextensions>> "%REDECLIPSE_TEMP%\install.bat"
