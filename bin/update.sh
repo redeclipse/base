@@ -104,7 +104,11 @@ redeclipse_update_branch() {
         echo "Unable to find tar, are you sure you have it installed?"
         return 1
     fi
-    REDECLIPSE_TAR="tar --gzip --extract --verbose --overwrite"
+    if [ "${REDECLIPSE_TARGET}" = "linux" ]; then
+        REDECLIPSE_TAR="tar --gzip --extract --verbose --overwrite"
+    else
+        REDECLIPSE_TAR="tar -x -v"
+    fi
     if [ -z `which git` ]; then
         echo "Unable to find git, are you sure you have it installed?"
         return 1
@@ -259,8 +263,10 @@ redeclipse_update_module_blob_deploy() {
     echo "echo \"${REDEECLIPSE_MODULE_RUN}: deploying blob.\"" >> "${REDECLIPSE_TEMP}/install.sh"
     if [ "${REDECLIPSE_BLOB}" = "zipball" ]; then
         echo "${REDECLIPSE_UNZIP} -o \"${REDECLIPSE_TEMP}/${REDEECLIPSE_MODULE_RUN}.${REDECLIPSE_ARCHEXT}\" -d \"${REDECLIPSE_TEMP}\" && (" >> "${REDECLIPSE_TEMP}/install.sh"
-    else
+    elif [ "${REDECLIPSE_TARGET}" = "linux" ]; then
         echo "${REDECLIPSE_TAR} --file=\"${REDECLIPSE_TEMP}/${REDEECLIPSE_MODULE_RUN}.${REDECLIPSE_ARCHEXT}\" --directory=\"${REDECLIPSE_TEMP}\" && (" >> "${REDECLIPSE_TEMP}/install.sh"
+    else
+        echo "${REDECLIPSE_TAR} -f \"${REDECLIPSE_TEMP}/${REDEECLIPSE_MODULE_RUN}.${REDECLIPSE_ARCHEXT}\" -C \"${REDECLIPSE_TEMP}\" && (" >> "${REDECLIPSE_TEMP}/install.sh"
     fi
     echo "   cp --recursive --force --verbose \"${REDECLIPSE_TEMP}/red-eclipse-${REDEECLIPSE_MODULE_RUN}-$(echo "$REDECLIPSE_MODULE_REMOTE" | cut -b 1-7)/*\" \"${REDECLIPSE_PATH}${REDEECLIPSE_MODULE_DIR}\"" >> "${REDECLIPSE_TEMP}/install.sh"
     echo "   rm -rf \"${REDECLIPSE_TEMP}/red-eclipse-${REDEECLIPSE_MODULE_RUN}-$(echo "$REDECLIPSE_MODULE_REMOTE" | cut -b 1-7)\"" >> "${REDECLIPSE_TEMP}/install.sh"
@@ -340,8 +346,10 @@ redeclipse_update_bins_deploy() {
     echo "echo \"bins: deploying blob.\"" >> "${REDECLIPSE_TEMP}/install.sh"
     if [ "${REDECLIPSE_TARGET}" = "windows" ]; then
         echo "${REDECLIPSE_UNZIP} -o \"${REDECLIPSE_TEMP}/${REDECLIPSE_ARCHIVE}\" -d \"${REDECLIPSE_PATH}\" && (" >> "${REDECLIPSE_TEMP}/install.sh"
-    else
+    elif [ "${REDECLIPSE_TARGET}" = "linux" ]; then
         echo "${REDECLIPSE_TAR} --file=\"${REDECLIPSE_TEMP}/${REDECLIPSE_ARCHIVE}\" --directory=\"${REDECLIPSE_PATH}\" && (" >> "${REDECLIPSE_TEMP}/install.sh"
+    else
+        echo "${REDECLIPSE_TAR} -f \"${REDECLIPSE_TEMP}/${REDECLIPSE_ARCHIVE}\" -C \"${REDECLIPSE_PATH}\" && (" >> "${REDECLIPSE_TEMP}/install.sh"
     fi
     echo "    echo \"${REDECLIPSE_BINS_REMOTE}\" > \"${REDECLIPSE_PATH}/bin/version.txt\"" >> "${REDECLIPSE_TEMP}/install.sh"
     echo ") || (" >> "${REDECLIPSE_TEMP}/install.sh"

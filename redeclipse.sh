@@ -93,7 +93,7 @@ redeclipse_check() {
             echo ""
             REDECLIPSE_BRANCH="devel"
         fi
-    fo
+    fi
     if [ "${REDECLIPSE_BRANCH}" != "inplace" ] && [ "${REDECLIPSE_BRANCH}" != "source" ]; then
         echo ""
         echo "Checking for updates to \"${REDECLIPSE_BRANCH}\". To disable set: REDECLIPSE_BRANCH=\"inplace\""
