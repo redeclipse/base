@@ -31,6 +31,9 @@ redeclipse_update_setup() {
             Linux)
                 REDECLIPSE_TARGET="linux"
                 ;;
+            Darwin)
+                REDECLIPSE_TARGET="macosx"
+                ;;
             FreeBSD)
                 REDECLIPSE_TARGET="bsd"
                 REDECLIPSE_BRANCH="source" # we don't have binaries for bsd yet sorry
@@ -65,6 +68,11 @@ redeclipse_update_setup() {
         linux)
             REDECLIPSE_BLOB="tarball"
             REDECLIPSE_ARCHIVE="linux.tar.gz"
+            REDECLIPSE_ARCHEXT="tar.gz"
+            ;;
+        macosx)
+            REDECLIPSE_BLOB="tarball"
+            REDECLIPSE_ARCHIVE="macosx.tar.gz"
             REDECLIPSE_ARCHEXT="tar.gz"
             ;;
         *)

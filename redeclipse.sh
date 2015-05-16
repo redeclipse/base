@@ -10,7 +10,7 @@ redeclipse_path() {
 redeclipse_init() {
     if [ -z "${REDECLIPSE_BINARY+isset}" ]; then REDECLIPSE_BINARY="redeclipse"; fi
     REDECLIPSE_SUFFIX=""
-    REDECLIPSE_MAKE="make"
+    REDECLIPSE_MAKE="make -C src install"
 }
 
 redeclipse_setup() {
@@ -25,8 +25,8 @@ redeclipse_setup() {
             Darwin)
 		REDECLIPSE_SUFFIX="_universal"
 		REDECLIPSE_TARGET="macosx"
-                REDECLIPSE_BRANCH="inplace"
                 REDECLIPSE_ARCH="redeclipse.app/Contents/MacOS"
+                REDECLIPSE_MAKE="./src/osxbuild.sh all install"
 		;;
             FreeBSD)
                 REDECLIPSE_SUFFIX="_bsd"
@@ -84,11 +84,17 @@ redeclipse_setup() {
 redeclipse_check() {
     if [ "${REDECLIPSE_BRANCH}" = "source" ]; then
         echo ""
-        echo "Rebuilding \"${REDECLIPSE_BRANCH}\". To disable set: REDECLIPSE_BRANCH=\"inplace\""
-        echo ""
-        ${REDECLIPSE_MAKE} -C src all install
-        return $?
-    elif [ "${REDECLIPSE_BRANCH}" != "inplace" ]; then
+        if [ -n "${REDECLIPSE_MAKE}" ]; then
+            echo "Rebuilding \"${REDECLIPSE_BRANCH}\". To disable set: REDECLIPSE_BRANCH=\"inplace\""
+            echo ""
+            ${REDECLIPSE_MAKE}
+        else
+            echo "Unable to build \"${REDECLIPSE_BRANCH}\". Using: REDECLIPSE_BRANCH=\"devel\""
+            echo ""
+            REDECLIPSE_BRANCH="devel"
+        fi
+    fo
+    if [ "${REDECLIPSE_BRANCH}" != "inplace" ] && [ "${REDECLIPSE_BRANCH}" != "source" ]; then
         echo ""
         echo "Checking for updates to \"${REDECLIPSE_BRANCH}\". To disable set: REDECLIPSE_BRANCH=\"inplace\""
         echo ""
@@ -142,7 +148,9 @@ redeclipse_runit() {
         return 0
     else
         if [ "${REDECLIPSE_BRANCH}" = "source" ]; then
-            ${REDECLIPSE_MAKE} -C src all install && ( redeclipse_runit; return $? )
+            if [ -n "${REDECLIPSE_MAKE}" ]; then
+                ${REDECLIPSE_MAKE} && ( redeclipse_runit; return $? )
+            fi
             REDECLIPSE_BRANCH="devel"
         fi
         if [ "${REDECLIPSE_BRANCH}" != "inplace" ] && [ "${REDECLIPSE_TRYUPDATE}" != "true" ]; then
