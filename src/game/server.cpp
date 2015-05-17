@@ -3803,6 +3803,7 @@ namespace server
                             c.ip = ip;
                             c.mask = 0xFFFFFFFF;
                             c.type = ipinfo::BAN;
+                            c.flag = ipinfo::INTERNAL;
                             c.time = totalmillis ? totalmillis : 1;
                             c.reason = newstring("team killing is not permitted");
                             srvoutf(-3, "\fs\fcbanned\fS %s (%s/%s): %s", colourname(v), gethostname(v->clientnum), gethostip(v->clientnum), c.reason);
@@ -4471,7 +4472,7 @@ namespace server
             }
             else disconnect_client(ci->clientnum, DISC_TIMEOUT);
         }
-        if(G(bantimeout)) loopvrev(control) if(control[i].flag == ipinfo::TEMPORARY)
+        loopvrev(control) if(control[i].flag <= ipinfo::INTERNAL)
         {
             int timeout = 0;
             switch(control[i].type)
@@ -5602,6 +5603,7 @@ namespace server
                                     c.ip = ip;
                                     c.mask = 0xFFFFFFFF;
                                     c.type = ipinfo::MUTE;
+                                    c.flag = ipinfo::INTERNAL;
                                     c.time = totalmillis ? totalmillis : 1;
                                     c.reason = newstring("exceeded the number of allowed flood warnings");
                                     srvoutf(-3, "\fs\fcmute\fS added on %s: %s", colourname(fcp), c.reason);
