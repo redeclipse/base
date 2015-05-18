@@ -172,6 +172,8 @@ SERVER_OBJS= \
 
 LIBENET= enet/libenet.a
 
+GENKEY_OBJS= engine/genkey.o shared/crypto-standalone.o
+
 all:
 
 default: all
@@ -184,8 +186,11 @@ clean-client:
 
 clean-server:
 	@rm -fv $(SERVER_OBJS) $(APPSERVER)$(BIN_SUFFIX)
+	
+clean-genkey:
+	@rm -fv $(GENKEY_OBJS) genkey$(BIN_SUFFIX)
 
-clean: clean-enet clean-client clean-server
+clean: clean-enet clean-client clean-server clean-genkey
 
 %.h.gch: %.h
 	$(CXX) $(CXXFLAGS) -x c++-header -o $(subst .h.gch,.tmp.h.gch,$@) $(subst .h.gch,.h,$@)
@@ -219,6 +224,11 @@ client: $(APPCLIENT)$(APPMODIFIER)$(BIN_SUFFIX)
 
 server: $(APPSERVER)$(APPMODIFIER)$(BIN_SUFFIX)
 
+genkey$(BIN_SUFFIX): $(GENKEY_OBJS)
+	$(CXX) $(CXXFLAGS) -o genkey$(BIN_SUFFIX) $(GENKEY_OBJS)
+engine/genkey.o:
+	$(CXX) $(CXXFLAGS) $(SERVER_INCLUDES) -c -o engine/genkey.o engine/genkey.cpp
+
 $(INSTDIR)/%$(BIN_SUFFIX): %$(APPMODIFIER)$(BIN_SUFFIX)
 	$(MKDIR) $(INSTDIR)
 	$(CP) $< $@
@@ -229,6 +239,8 @@ endif
 install-client: $(INSTDIR)/$(APPCLIENT)$(BIN_SUFFIX)
 
 install-server: $(INSTDIR)/$(APPSERVER)$(BIN_SUFFIX)
+
+install-genkey: $(INSTDIR)/genkey$(BIN_SUFFIX)
 
 ifeq (,$(findstring mingw,$(PLATFORM)))
 shared/cube2font.o: shared/cube2font.c

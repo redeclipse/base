@@ -5,6 +5,10 @@ src/redeclipse_*
 bin/x86/redeclipse_*
 bin/amd64/redeclipse_*
 bin/redeclipse_*
+src/genkey_*
+bin/x86/genkey_*
+bin/amd64/genkey_*
+bin/genkey_*
 bin/redeclipse.app/Contents/MacOS/redeclipse_universal
 src/.objs/
 *.o
