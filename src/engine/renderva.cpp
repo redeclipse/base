@@ -1470,6 +1470,10 @@ static void changecolor(renderstate &cur, int pass, Slot &slot, VSlot &vslot, co
     memcpy(cur.color, colorscale.v, sizeof(colorscale));
 }
 
+vec lightmapcolor(0, 0, 0);
+VARF(IDF_HEX, lightmapcolour, 0, 0, 0xFFFFFF, lightmapcolor = vec::hexcolor(lightmapcolour));
+FVAR(0, lightmapintensity, 0, 1, 10);
+
 static void changeslottmus(renderstate &cur, int pass, Slot &slot, VSlot &vslot)
 {
     if(pass==RENDERPASS_LIGHTMAP || pass==RENDERPASS_COLOR || pass==RENDERPASS_ENVMAP || pass==RENDERPASS_DYNLIGHT)
@@ -1480,6 +1484,11 @@ static void changeslottmus(renderstate &cur, int pass, Slot &slot, VSlot &vslot)
     }
 
     vec colorscale = vslot.getcolorscale();
+    if(pass==RENDERPASS_LIGHTMAP || pass==RENDERPASS_COLOR)
+    {
+        if(lightmapcolor != vec(0, 0, 0)) colorscale = lightmapcolor;
+        if(lightmapintensity != 1.f) colorscale.mul(lightmapintensity);
+    }
     if(renderpath==R_FIXEDFUNCTION)
     {
         if(pass==RENDERPASS_LIGHTMAP || pass==RENDERPASS_COLOR)
