@@ -568,7 +568,7 @@ struct editor
     void draw(int x, int y, int color, bool hit, const char *prompt = NULL)
     {
         int h = 0, maxwidth = linewrap ? pixelwidth : -1;
-        if(lines.empty() || !lines[0].text[0])
+        if(lines.empty())
         {
             if(!hit && prompt && *prompt)
             {
