@@ -68,90 +68,90 @@ setlocal enableextensions enabledelayedexpansion
         goto redeclipse_update_bins_run
     )
     for %%a in (%REDECLIPSE_MODULE_LIST%) do (
-        set REDEECLIPSE_MODULE_RUN=%%a
-        if NOT "!REDEECLIPSE_MODULE_RUN!" == "" (
-            call :redeclipse_update_module_run "%REDECLIPSE_UPDATER%" || (echo !REDEECLIPSE_MODULE_RUN!: There was an error updating the module, continuing..)
+        set REDECLIPSE_MODULE_RUN=%%a
+        if NOT "!REDECLIPSE_MODULE_RUN!" == "" (
+            call :redeclipse_update_module_run "%REDECLIPSE_UPDATER%" || (echo !REDECLIPSE_MODULE_RUN!: There was an error updating the module, continuing..)
         )
     )
     goto redeclipse_update_bins_run
 :redeclipse_update_module_run
     echo.
-    if "%REDEECLIPSE_MODULE_RUN%" == "base" (set REDEECLIPSE_MODULE_DIR=) else (set REDEECLIPSE_MODULE_DIR=\%REDEECLIPSE_MODULE_RUN%)
-    if EXIST "%REDECLIPSE_PATH%%REDEECLIPSE_MODULE_DIR%\readme.txt" goto redeclipse_update_module_ver
-    echo %REDEECLIPSE_MODULE_RUN%: Unable to find ".%REDEECLIPSE_MODULE_DIR%\readme.txt". Will start from scratch.
+    if "%REDECLIPSE_MODULE_RUN%" == "base" (set REDECLIPSE_MODULE_DIR=) else (set REDECLIPSE_MODULE_DIR=\%REDECLIPSE_MODULE_RUN%)
+    if EXIST "%REDECLIPSE_PATH%%REDECLIPSE_MODULE_DIR%\readme.txt" goto redeclipse_update_module_ver
+    echo %REDECLIPSE_MODULE_RUN%: Unable to find ".%REDECLIPSE_MODULE_DIR%\readme.txt". Will start from scratch.
     set REDECLIPSE_MODULE_INSTALLED=none
-    echo mkdir "%REDECLIPSE_PATH%%REDEECLIPSE_MODULE_DIR%">> "%REDECLIPSE_TEMP%\install.bat"
+    echo mkdir "%REDECLIPSE_PATH%%REDECLIPSE_MODULE_DIR%">> "%REDECLIPSE_TEMP%\install.bat"
     goto redeclipse_update_module_get
 :redeclipse_update_module_ver
-    if EXIST "%REDECLIPSE_PATH%%REDEECLIPSE_MODULE_DIR%\version.txt" set /p REDECLIPSE_MODULE_INSTALLED=< "%REDECLIPSE_PATH%%REDEECLIPSE_MODULE_DIR%\version.txt"
+    if EXIST "%REDECLIPSE_PATH%%REDECLIPSE_MODULE_DIR%\version.txt" set /p REDECLIPSE_MODULE_INSTALLED=< "%REDECLIPSE_PATH%%REDECLIPSE_MODULE_DIR%\version.txt"
     if "%REDECLIPSE_MODULE_INSTALLED%" == "" set REDECLIPSE_MODULE_INSTALLED=none
-    echo %REDEECLIPSE_MODULE_RUN%: %REDECLIPSE_MODULE_INSTALLED% is installed.
+    echo %REDECLIPSE_MODULE_RUN%: %REDECLIPSE_MODULE_INSTALLED% is installed.
     set REDECLIPSE_MODULE_CACHED=none
-    if NOT EXIST "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.txt" goto redeclipse_update_module_get
-    set /p REDECLIPSE_MODULE_CACHED=< "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.txt"
+    if NOT EXIST "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.txt" goto redeclipse_update_module_get
+    set /p REDECLIPSE_MODULE_CACHED=< "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.txt"
     if "%REDECLIPSE_MODULE_CACHED%" == "" set REDECLIPSE_MODULE_CACHED=none
-    echo %REDEECLIPSE_MODULE_RUN%: %REDECLIPSE_MODULE_CACHED% is in the cache.
-    del /f /q "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.txt"
+    echo %REDECLIPSE_MODULE_RUN%: %REDECLIPSE_MODULE_CACHED% is in the cache.
+    del /f /q "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.txt"
 :redeclipse_update_module_get
-    %REDECLIPSE_CURL% --silent --output "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/%REDEECLIPSE_MODULE_RUN%.txt"
-    if NOT EXIST "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.txt" (
-        echo %REDEECLIPSE_MODULE_RUN%: Failed to retrieve update information.
+    %REDECLIPSE_CURL% --silent --output "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/%REDECLIPSE_MODULE_RUN%.txt"
+    if NOT EXIST "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.txt" (
+        echo %REDECLIPSE_MODULE_RUN%: Failed to retrieve update information.
         exit /b 1
     )
-    set /p REDECLIPSE_MODULE_REMOTE=< "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.txt"
+    set /p REDECLIPSE_MODULE_REMOTE=< "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.txt"
     if "%REDECLIPSE_MODULE_REMOTE%" == "" (
-        echo %REDEECLIPSE_MODULE_RUN%: Failed to read update information.
+        echo %REDECLIPSE_MODULE_RUN%: Failed to read update information.
         exit /b 1
     )
-    echo %REDEECLIPSE_MODULE_RUN%: %REDECLIPSE_MODULE_REMOTE% is the current version.
+    echo %REDECLIPSE_MODULE_RUN%: %REDECLIPSE_MODULE_REMOTE% is the current version.
     if "%REDECLIPSE_MODULE_REMOTE%" == "%REDECLIPSE_MODULE_INSTALLED%" (
-        echo echo %REDEECLIPSE_MODULE_RUN%: already up to date.>> "%REDECLIPSE_TEMP%\install.bat"
+        echo echo %REDECLIPSE_MODULE_RUN%: already up to date.>> "%REDECLIPSE_TEMP%\install.bat"
         exit /b 0
     )
     if "%REDECLIPSE_MODULE_INSTALLED%" == "none" goto redeclipse_update_module_blob
 :redeclipse_update_module_patch
-    if EXIST "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.patch" del /f /q "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.patch"
-    if EXIST "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.zip" del /f /q "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.zip"
-    echo %REDEECLIPSE_MODULE_RUN%: %REDECLIPSE_GITHUB%/%REDEECLIPSE_MODULE_RUN%/compare/%REDECLIPSE_MODULE_INSTALLED%...%REDECLIPSE_MODULE_REMOTE%.patch
+    if EXIST "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.patch" del /f /q "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.patch"
+    if EXIST "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.zip" del /f /q "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.zip"
+    echo %REDECLIPSE_MODULE_RUN%: %REDECLIPSE_GITHUB%/%REDECLIPSE_MODULE_RUN%/compare/%REDECLIPSE_MODULE_INSTALLED%...%REDECLIPSE_MODULE_REMOTE%.patch
     echo.
-    %REDECLIPSE_CURL% --output "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.patch" "%REDECLIPSE_GITHUB%/%REDEECLIPSE_MODULE_RUN%/compare/%REDECLIPSE_MODULE_INSTALLED%...%REDECLIPSE_MODULE_REMOTE%.patch"
-    if NOT EXIST "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.patch" (
-        echo %REDEECLIPSE_MODULE_RUN%: Failed to retrieve update package. Downloading full zip instead.
+    %REDECLIPSE_CURL% --output "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.patch" "%REDECLIPSE_GITHUB%/%REDECLIPSE_MODULE_RUN%/compare/%REDECLIPSE_MODULE_INSTALLED%...%REDECLIPSE_MODULE_REMOTE%.patch"
+    if NOT EXIST "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.patch" (
+        echo %REDECLIPSE_MODULE_RUN%: Failed to retrieve update package. Downloading full zip instead.
         goto redeclipse_update_module_blob
     )
 :redeclipse_update_module_patch_deploy
-    echo echo %REDEECLIPSE_MODULE_RUN%: applying patches.>> "%REDECLIPSE_TEMP%\install.bat"
-    echo %REDECLIPSE_GITAPPLY% --directory="%REDECLIPSE_PATH%%REDEECLIPSE_MODULE_DIR%" "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.patch" ^&^& ^(>> "%REDECLIPSE_TEMP%\install.bat"
-    echo     ^(echo %REDECLIPSE_MODULE_REMOTE%^)^> "%REDECLIPSE_PATH%%REDEECLIPSE_MODULE_DIR%\version.txt">> "%REDECLIPSE_TEMP%\install.bat"
+    echo echo %REDECLIPSE_MODULE_RUN%: applying patches.>> "%REDECLIPSE_TEMP%\install.bat"
+    echo %REDECLIPSE_GITAPPLY% --directory="%REDECLIPSE_PATH%%REDECLIPSE_MODULE_DIR%" "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.patch" ^&^& ^(>> "%REDECLIPSE_TEMP%\install.bat"
+    echo     ^(echo %REDECLIPSE_MODULE_REMOTE%^)^> "%REDECLIPSE_PATH%%REDECLIPSE_MODULE_DIR%\version.txt">> "%REDECLIPSE_TEMP%\install.bat"
     echo ^) ^|^| ^(>> "%REDECLIPSE_TEMP%\install.bat"
-    echo     ^(echo none^)^> "%REDECLIPSE_PATH%%REDEECLIPSE_MODULE_DIR%\version.txt">> "%REDECLIPSE_TEMP%\install.bat"
-    echo     del /f /q "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.txt">> "%REDECLIPSE_TEMP%\install.bat"
+    echo     ^(echo none^)^> "%REDECLIPSE_PATH%%REDECLIPSE_MODULE_DIR%\version.txt">> "%REDECLIPSE_TEMP%\install.bat"
+    echo     del /f /q "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.txt">> "%REDECLIPSE_TEMP%\install.bat"
     echo     set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
     echo ^)>> "%REDECLIPSE_TEMP%\install.bat"
     set REDECLIPSE_DEPLOY=true
     exit /b 0
 :redeclipse_update_module_blob
-    if EXIST "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.zip" (
+    if EXIST "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.zip" (
         if "%REDECLIPSE_MODULE_CACHED%" == "%REDECLIPSE_MODULE_REMOTE%" (
-            echo %REDEECLIPSE_MODULE_RUN%: Using cached file "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.zip"
+            echo %REDECLIPSE_MODULE_RUN%: Using cached file "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.zip"
             goto redeclipse_update_module_blob_deploy
-        ) else del /f /q "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.zip"
+        ) else del /f /q "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.zip"
     )
-    echo %REDEECLIPSE_MODULE_RUN%: %REDECLIPSE_GITHUB%/%REDEECLIPSE_MODULE_RUN%/zipball/%REDECLIPSE_MODULE_REMOTE%
+    echo %REDECLIPSE_MODULE_RUN%: %REDECLIPSE_GITHUB%/%REDECLIPSE_MODULE_RUN%/zipball/%REDECLIPSE_MODULE_REMOTE%
     echo.
-    %REDECLIPSE_CURL% --output "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.zip" "%REDECLIPSE_GITHUB%/%REDEECLIPSE_MODULE_RUN%/zipball/%REDECLIPSE_MODULE_REMOTE%"
-    if NOT EXIST "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.zip" (
-        echo %REDEECLIPSE_MODULE_RUN%: Failed to retrieve update package.
+    %REDECLIPSE_CURL% --output "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.zip" "%REDECLIPSE_GITHUB%/%REDECLIPSE_MODULE_RUN%/zipball/%REDECLIPSE_MODULE_REMOTE%"
+    if NOT EXIST "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.zip" (
+        echo %REDECLIPSE_MODULE_RUN%: Failed to retrieve update package.
         exit /b 1
     )
 :redeclipse_update_module_blob_deploy
-    echo echo %REDEECLIPSE_MODULE_RUN%: deploying blob.>> "%REDECLIPSE_TEMP%\install.bat"
-    echo %REDECLIPSE_UNZIP% "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.zip" -d "%REDECLIPSE_TEMP%" ^&^& ^(>> "%REDECLIPSE_TEMP%\install.bat"
-    echo    xcopy /e /c /i /f /h /y "%REDECLIPSE_TEMP%\red-eclipse-%REDEECLIPSE_MODULE_RUN%-%REDECLIPSE_MODULE_REMOTE:~0,7%\*" "%REDECLIPSE_PATH%%REDEECLIPSE_MODULE_DIR%">> "%REDECLIPSE_TEMP%\install.bat"
-    echo    rmdir /s /q "%REDECLIPSE_TEMP%\red-eclipse-%REDEECLIPSE_MODULE_RUN%-%REDECLIPSE_MODULE_REMOTE:~0,7%">> "%REDECLIPSE_TEMP%\install.bat"
-    echo    ^(echo %REDECLIPSE_MODULE_REMOTE%^)^> "%REDECLIPSE_PATH%%REDEECLIPSE_MODULE_DIR%\version.txt">> "%REDECLIPSE_TEMP%\install.bat"
+    echo echo %REDECLIPSE_MODULE_RUN%: deploying blob.>> "%REDECLIPSE_TEMP%\install.bat"
+    echo %REDECLIPSE_UNZIP% "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.zip" -d "%REDECLIPSE_TEMP%" ^&^& ^(>> "%REDECLIPSE_TEMP%\install.bat"
+    echo    xcopy /e /c /i /f /h /y "%REDECLIPSE_TEMP%\red-eclipse-%REDECLIPSE_MODULE_RUN%-%REDECLIPSE_MODULE_REMOTE:~0,7%\*" "%REDECLIPSE_PATH%%REDECLIPSE_MODULE_DIR%">> "%REDECLIPSE_TEMP%\install.bat"
+    echo    rmdir /s /q "%REDECLIPSE_TEMP%\red-eclipse-%REDECLIPSE_MODULE_RUN%-%REDECLIPSE_MODULE_REMOTE:~0,7%">> "%REDECLIPSE_TEMP%\install.bat"
+    echo    ^(echo %REDECLIPSE_MODULE_REMOTE%^)^> "%REDECLIPSE_PATH%%REDECLIPSE_MODULE_DIR%\version.txt">> "%REDECLIPSE_TEMP%\install.bat"
     echo ^) ^|^| ^(>> "%REDECLIPSE_TEMP%\install.bat"
-    echo     del /f /q "%REDECLIPSE_TEMP%\%REDEECLIPSE_MODULE_RUN%.txt">> "%REDECLIPSE_TEMP%\install.bat"
+    echo     del /f /q "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.txt">> "%REDECLIPSE_TEMP%\install.bat"
     echo     set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
     echo ^)>> "%REDECLIPSE_TEMP%\install.bat"
     set REDECLIPSE_DEPLOY=true
