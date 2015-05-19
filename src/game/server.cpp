@@ -25,6 +25,7 @@
 
 #define GAMESERVER 1
 #include "game.h"
+#include "errno.h"
 
 namespace server
 {
@@ -2241,13 +2242,43 @@ namespace server
         DELETEP(demotmp);
         if(G(demoautoserversave))
         {
-            string dafilepath;
-            if(*filetimeformat) formatstring(dafilepath)("demos/sv_%s_%s-%s.dmo", gettime(d.ctime, filetimeformat), gamename(gamemode, mutators, 1, 32, "_"), smapname);
-            else formatstring(dafilepath)("demos/sv_%u_%s-%s.dmo", uint(d.ctime), gamename(gamemode, mutators, 1, 32, "_"), smapname);
+            defformatstring(dafilepath)("demos/sv %s %s-%s.dmo", gettime(d.ctime, "%Y-%m-%dT%H:%M:%S"), gamename(gamemode, mutators, 1, 32, "_"), smapname);
             stream *dafile=openrawfile(dafilepath, "w");
             dafile->write(d.data, d.len);
             dafile->close();
             DELETEP(dafile);
+        }
+        if(G(demoserverkeeptime))
+        {
+            vector<char *> files;
+            defformatstring(dir)("%sdemos", gethomedir());
+            listdir(dir, false, "dmo", files);
+            loopv(files)
+            {
+                const char *p = files[i];
+                const int MAXWORDS = 8;
+                char *w[MAXWORDS];
+                int num = MAXWORDS;
+                loopk(MAXWORDS)
+                {
+                    w[k] = (char *)"";
+                    if(k > num) continue;
+                    char *s = parsetext(p);
+                    if(s) w[k] = s;
+                    else num = k;
+                }
+                if(!strcmp(w[0], "sv") && *w[1])
+                {
+                    struct tm tm;
+                    strptime(w[1], "%Y-%m-%dT%H:%M:%S", &tm);
+                    if((clocktime - mktime(&tm)) > (G(demoserverkeeptime) * 60 * 60))
+                    {
+                        defformatstring(fullfile)("%s/%s.dmo", dir, files[i]);
+                        if(!unlink(fullfile)) conoutf("deleted old demo %s", files[i]);
+                    }
+                }
+                loopk(num) DELETEA(w[k]);
+            }
         }
     }
 
