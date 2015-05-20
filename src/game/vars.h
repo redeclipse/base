@@ -52,7 +52,7 @@ GVAR(IDF_ADMIN, demomaxsize, 1, 16, VAR_MAX);
 GVAR(IDF_ADMIN, demoautorec, 0, 1, 1); // 0 = off, 1 = automatically record demos each match
 GVAR(IDF_ADMIN, demokeep, 0, 0, 1); // 0 = off, 1 = keep demos that don't run to end of match
 GVAR(IDF_ADMIN, demoautoserversave, 0, 0, 1);
-GVAR(IDF_ADMIN, demoserverkeeptime, 0, 0, VAR_MAX); //Hours
+GVAR(IDF_ADMIN, demoserverkeeptime, 0, 0, VAR_MAX);
 
 GVAR(IDF_ADMIN, speclock, 0, PRIV_MODERATOR, PRIV_CREATOR);
 GVAR(IDF_ADMIN, teamlock, 0, PRIV_MODERATOR, PRIV_CREATOR);

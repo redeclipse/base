@@ -2226,6 +2226,48 @@ namespace server
         loopi(n) delete[] demos[i].data;
         demos.remove(0, n);
     }
+    
+    struct demoinfo
+    {
+        demoheader hdr;
+        string file;
+    };
+    vector<demoinfo> demoinfos;
+    vector<char *> faildemos;
+
+    int scandemo(const char *name)
+    {
+        if(!name || !*name) return -1;
+        loopv(demoinfos) if(!strcmp(demoinfos[i].file, name)) return i;
+        loopv(faildemos) if(!strcmp(faildemos[i], name)) return -1;
+        stream *f = opengzfile(name, "rb");
+        if(!f)
+        {
+            faildemos.add(newstring(name));
+            return -1;
+        }
+        int num = demoinfos.length();
+        demoinfo &d = demoinfos.add();
+        copystring(d.file, name);
+        string msg = "";
+        if(f->read(&d.hdr, sizeof(demoheader))!=sizeof(demoheader) || memcmp(d.hdr.magic, VERSION_DEMOMAGIC, sizeof(d.hdr.magic)))
+            formatstring(msg)("\fs\fc%s\fS is not a demo file", name);
+        else
+        {
+            lilswap(&d.hdr.gamever, 4);
+            if(d.hdr.gamever!=VERSION_GAME)
+                formatstring(msg)("\frdemo \fs\fc%s\fS requires \fs\fc%s\fS version of %s", name, d.hdr.gamever<VERSION_GAME ? "an older" : "a newer", VERSION_NAME);
+        }
+        delete f;
+        if(msg[0])
+        {
+            conoutf("%s", msg);
+            demoinfos.pop();
+            faildemos.add(newstring(name));
+            return -1;
+        }
+        return num;
+    }
 
     void adddemo()
     {
@@ -2242,7 +2284,9 @@ namespace server
         DELETEP(demotmp);
         if(G(demoautoserversave))
         {
-            defformatstring(dafilepath)("demos/sv %s %s-%s.dmo", gettime(d.ctime, "%Y-%m-%dT%H:%M:%S"), gamename(gamemode, mutators, 1, 32, "_"), smapname);
+            string dafilepath = "";
+            if(*filetimeformat) formatstring(dafilepath)("demos/sv_%s_%s-%s.dmo", gettime(d.ctime, filetimeformat), gamename(gamemode, mutators, 1, 32, "_"), smapname);
+            else formatstring(dafilepath)("demos/sv_%u_%s-%s.dmo", uint(d.ctime), gamename(gamemode, mutators, 1, 32, "_"), smapname);
             stream *dafile=openrawfile(dafilepath, "w");
             dafile->write(d.data, d.len);
             dafile->close();
@@ -2251,33 +2295,19 @@ namespace server
         if(G(demoserverkeeptime))
         {
             vector<char *> files;
-            defformatstring(dir)("%sdemos", gethomedir());
-            listdir(dir, false, "dmo", files);
+            listfiles("demos", "dmo", files);
             loopv(files)
             {
-                const char *p = files[i];
-                const int MAXWORDS = 8;
-                char *w[MAXWORDS];
-                int num = MAXWORDS;
-                loopk(MAXWORDS)
+                defformatstring(dirfile)("demos/%s.dmo", files[i]);
+                int d = scandemo(dirfile);
+                if(d > -1)
                 {
-                    w[k] = (char *)"";
-                    if(k > num) continue;
-                    char *s = parsetext(p);
-                    if(s) w[k] = s;
-                    else num = k;
-                }
-                if(!strcmp(w[0], "sv") && *w[1])
-                {
-                    struct tm tm;
-                    strptime(w[1], "%Y-%m-%dT%H:%M:%S", &tm);
-                    if((clocktime - mktime(&tm)) > (G(demoserverkeeptime) * 60 * 60))
+                    if((clocktime - demoinfos[d].hdr.starttime) > (G(demoserverkeeptime) * 60 * 60))
                     {
-                        defformatstring(fullfile)("%s/%s.dmo", dir, files[i]);
+                        defformatstring(fullfile)("%s%s", gethomedir(), dirfile);
                         if(!unlink(fullfile)) conoutf("deleted old demo %s", files[i]);
                     }
                 }
-                loopk(num) DELETEA(w[k]);
             }
         }
     }
