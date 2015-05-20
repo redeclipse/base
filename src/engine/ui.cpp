@@ -1241,7 +1241,7 @@ struct gui : guient
                 gui::pushfont("little");
                 int width = 0, height = 0, tw = min(statuswidth ? statuswidth : (guistatuswidth ? guistatuswidth : -1), int(screen->w*(1/uiscale.y)));
                 text_bounds(statusstr, width, height, tw, TEXT_CENTERED|TEXT_NO_INDENT);
-                int w = width+FONTW*2, h = FONTH/2+height, x1 = -w/2, y1 = guispacesize*3/2, x2 = x1+w, y2 = y1+h;
+                int w = width+FONTW*2, h = FONTH/2+height, x1 = -w/2, y1 = guispacesize, x2 = x1+w, y2 = y1+h;
                 if(hasbgfx) skin(x1, y1, x2, y2, guibgcolour, guibgblend, guibordercolour, guiborderblend);
                 draw_text(statusstr, x1+FONTW, y1+FONTH/4, 255, 255, 255, 255, TEXT_CENTERED|TEXT_NO_INDENT, -1, tw);
                 gui::popfont();
