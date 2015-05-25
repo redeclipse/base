@@ -1,11 +1,10 @@
 The development version changelog is an ongoing work and should be reasonably
-complete covering changes made up to revision:
+complete covering changes made up to:
 
-2015-05-07 05:44 UTC
+2015-05-25
 
-If you update the changelog with changes made beyond this point, and consider
-it to resonably cover all previous changes, please update the above revision
-number.
+If you update the changelog with changes made beyond this point, please update
+the above revision date.
 
 * Only add items which you think are interesting to others, ignore those which
   you think might not be
@@ -32,9 +31,42 @@ number.
 
 = Red Eclipse Development version =
 Weapons:
- * Increased rifleexplode1 from 4 to 8
- * Increased plasmaexplode1 from 6 to 8, plasmapartsize from 6 to 8
- * Increased zapperstun1 from 100 to 250
+ * Increased rifleexplode1, rifleflakexplode1 & rifleflakexplode2 from 4 to 8
+ * Increased plasmadamage1 & plasmaflakdamage1 from 16 to 18
+ * Increased plasmaexplode1 & plasmaflakexplode1 from 6 to 8
+ * Increased plasmapartsize1 from 6 to 8
+ * Increased plasmafadetime1 from 0 to 40
+ * Increased flamerdamage1 & flamerflakdamage1 from 4 to 6
+ * Increased flamerfadetime1 from 0 to 40
+ * Increased zapperexplode1 from 0 to 8
+ * Increased zapperstuntime1 & zapperstuntime2 from 100 to 250
+ * Increased zapperspeed1 from 3000 to 15000 & zapperspeed2 from 3000 to 100000
+ * Increased zapperspread2 from 2 to 3
+ * Increased zapperammoadd & zapperammomax from 30 to 50
+ * Increased zapperammosub2 from 5 to 6
+ * Decreased zapperdamage1 & zapperflakdamage1 from 10 to 6
+ * Increased zapperdamage2 & zapperflakdamage2 from 10 to 12
+ * Decreased zapperdelayattack1 from 135 to 80
+ * Increased zapperdelayattack2 from 700 to 1200
+ * Removed shock residual from zapper primary attack
+ * Increased riflestuntime1 from 75 to 100 & riflestuntime2 from 200 to 250
+ * Increased zoomtime from 250 to 350 & Decreased zappercooktime2 from 500 to 350
+ * Increased rifledelayattack2 from 850 to 1000
+ * Decreased smgdelayattack2 from 600 to 400
+ * Increased smgexplode1 from 0 to 4
+
+User Interface:
+ * Increased crosshairsixe from 0.4 to 0.6
+ * Decreased crosshairblend & zoomcrosshairblend from 1 to 0.75
+ * Increased indicatorsize from 0.25 to 0.3
+ * Decreased indicatorblend from 0.75 to 0.5
+ * Decreased clipblend from 0.75 to 0.5
+ * Decreased radarblend from 1 to 0.85
+ * Increased radardist & radarcornerdist from 512 to 750
+ * Increased radarsize from 0.045 to 0.5
+ * Increased radaroffset from 0.065 to 0.8
+ * Decreased radardamageblend from 1 to 0.85
+ * Changed radarplayernames from 0 to 2
 
 Core & Install:
  * Improved particle performance
