@@ -36,6 +36,7 @@ Weapons:
  * Increased plasmaexplode1 & plasmaflakexplode1 from 6 to 8
  * Increased plasmapartsize1 from 6 to 8
  * Increased plasmafadetime1 from 0 to 40
+ * Increased plasmaaiskew1 & plasmaaiskew2 from 4 to 5
  * Increased flamerdamage1 & flamerflakdamage1 from 4 to 6
  * Increased flamerfadetime1 from 0 to 40
  * Increased zapperaidist1 & zapperaidist2 from 256 to 512
@@ -49,12 +50,15 @@ Weapons:
  * Increased zapperdamage2 & zapperflakdamage2 from 10 to 12
  * Decreased zapperdelayattack1 from 135 to 80
  * Increased zapperdelayattack2 from 700 to 1200
+ * Increased zapperaiskew1 & zapperaiskew2 from 2 to 3
  * Removed shock residual from zapper primary attack
  * Increased riflestuntime1 from 75 to 100 & riflestuntime2 from 200 to 250
- * Increased zoomtime from 250 to 350 & Decreased zappercooktime2 from 500 to 350
+ * Increased zoomtime from 250 to 350 & Decreased riflecooktime2 from 500 to 350
  * Increased rifledelayattack2 from 850 to 1000
  * Decreased smgdelayattack2 from 600 to 400
- * Increased smgexplode1 & smgflakexplode1 from 0 to 4, smgexplode2 & smgflakexplode2 from 0 to 5
+ * Increased smgdamage1 & smgflakdamage1 from 12 to 16
+ * Increased smgdamage2 from 12 to 16, smgflakdamage2 from 6 to 8
+ * Increased smgaiskew1 & smgaiskew2 from 4 to 5
 
 User Interface:
  * Increased crosshairsize from 0.4 to 0.6
