@@ -57,7 +57,7 @@ Weapons:
  * Increased rifledelayattack2 from 850 to 1000
  * Decreased smgdelayattack2 from 600 to 400
  * Increased smgdamage1 & smgflakdamage1 from 12 to 16
- * Increased smgdamage2 from 12 to 16, smgflakdamage2 from 6 to 8
+ * Increased smgdamage2 from 12 to 16, Decreased smgflakdamage2 from 6 to 4
  * Increased smgaiskew1 & smgaiskew2 from 4 to 5
 
 User Interface:
