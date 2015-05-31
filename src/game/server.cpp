@@ -4547,7 +4547,7 @@ namespace server
     }
 
     int lastquerysort = 0;
-    static int querysort(const clientinfo *a, const clientinfo *b)
+    int querysort(const clientinfo *a, const clientinfo *b)
     {
         if(a->state.points > b->state.points) return -1;
         if(a->state.points < b->state.points) return 1;
