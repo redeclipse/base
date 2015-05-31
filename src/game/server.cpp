@@ -4547,11 +4547,11 @@ namespace server
     }
 
     int lastquerysort = 0;
-    int querysort(const clientinfo *a, const clientinfo *b)
+    bool querysort(const clientinfo *a, const clientinfo *b)
     {
-        if(a->state.points > b->state.points) return -1;
-        if(a->state.points < b->state.points) return 1;
-        return strcmp(a->name, b->name);
+        if(a->state.points > b->state.points) return true;
+        if(a->state.points < b->state.points) return false;
+        return strcmp(a->name, b->name) < 0;
     }
     vector<clientinfo *> queryplayers;
     
