@@ -4546,6 +4546,15 @@ namespace server
         auth::update();
     }
 
+    int lastquerysort = 0;
+    static int querysort(const clientinfo *a, const clientinfo *b)
+    {
+        if(a->state.points > b->state.points) return -1;
+        if(a->state.points < b->state.points) return 1;
+        return strcmp(a->name, b->name);
+    }
+    vector<clientinfo *> queryplayers;
+    
     int clientconnect(int n, uint ip, bool local)
     {
         clientinfo *ci = (clientinfo *)getinfo(n);
@@ -4595,20 +4604,12 @@ namespace server
                 relayf(2, "\fo%s (%s) has left the game (%s, %d %s)", colourname(ci), gethostname(n), reason >= 0 ? disc_reasons[reason] : "normal", amt, amt != 1 ? "players" : "player");
             }
             clients.removeobj(ci);
+            queryplayers.removeobj(ci);
         }
         else connects.removeobj(ci);
         if(complete) cleanup();
         else shouldcheckvotes = true;
     }
-
-    int lastquerysort = 0;
-    static int querysort(const clientinfo *a, const clientinfo *b)
-    {
-        if(a->state.points > b->state.points) return -1;
-        if(a->state.points < b->state.points) return 1;
-        return strcmp(a->name, b->name);
-    }
-    vector<clientinfo *> queryplayers;
 
     void queryreply(ucharbuf &req, ucharbuf &p)
     {
