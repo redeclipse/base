@@ -17,18 +17,17 @@ semabuild_setup() {
     fi
     git submodule init || return 1
     git submodule update || return 1
-    cd "${SEMABUILD_PWD}/data" || return 1
-    SEMABUILD_DATA=`git rev-parse HEAD` || return 1
-    #SEMABUILD_DATA=`git submodule status -- data | sed -e 's/^.\(.*\) .*/\1/'`
-    if [ "${BRANCH_NAME}" != "master" ]; then
-        SEMABUILD_DATA_ANCESTOR=`git merge-base origin/master ${SEMABUILD_DATA}` || return 1
-    fi
-    cd "${SEMABUILD_PWD}" || return 1
+    #cd "${SEMABUILD_PWD}/data" || return 1
+    #SEMABUILD_DATA=`git rev-parse HEAD` || return 1
+    #if [ "${BRANCH_NAME}" != "master" ]; then
+    #    SEMABUILD_DATA_ANCESTOR=`git merge-base origin/master ${SEMABUILD_DATA}` || return 1
+    #fi
+    #cd "${SEMABUILD_PWD}" || return 1
     SEMABUILD_BASE_LAST=`curl --fail --silent "${SEMABUILD_SOURCE}/${BRANCH_NAME}/base.txt"`
-    SEMABUILD_DATA_LAST=`curl --fail --silent "${SEMABUILD_SOURCE}/${BRANCH_NAME}/data.txt"`
+    #SEMABUILD_DATA_LAST=`curl --fail --silent "${SEMABUILD_SOURCE}/${BRANCH_NAME}/data.txt"`
     if [ "${BRANCH_NAME}" != "master" ]; then
         SEMABUILD_BASE_ANCESTOR_LAST=`curl --fail --silent "${SEMABUILD_SOURCE}/${BRANCH_NAME}/base.ancestor.txt"`
-        SEMABUILD_DATA_ANCESTOR_LAST=`curl --fail --silent "${SEMABUILD_SOURCE}/${BRANCH_NAME}/data.ancestor.txt"`
+    #    SEMABUILD_DATA_ANCESTOR_LAST=`curl --fail --silent "${SEMABUILD_SOURCE}/${BRANCH_NAME}/data.ancestor.txt"`
     fi
     if [ -n "${SEMABUILD_BASE_LAST}" ]; then
         SEMABUILD_SRC_HASH="${SEMABUILD_BASE_LAST}"
@@ -70,24 +69,24 @@ semabuild_build() {
 
 semabuild_sync() {
     echo "Syncing ${BRANCH_NAME} as no source files have changed."
-    echo "base data" > "${SEMABUILD_DIR}/modules.txt"
+    echo "base" > "${SEMABUILD_DIR}/modules.txt"
     if [ -n "${SEMABUILD_BASE}" ] && [ "${SEMABUILD_BASE}" != "${SEMABUILD_BASE_LAST}" ]; then
         echo "Module 'base' commit updated, syncing that: ${SEMABUILD_BASE} -> ${SEMABUILD_BASE_LAST}"
         echo "${SEMABUILD_BASE}" > "${SEMABUILD_DIR}/base.txt"
     fi
-    if [ -n "${SEMABUILD_DATA}" ] && [ "${SEMABUILD_DATA}" != "${SEMABUILD_DATA_LAST}" ]; then
-        echo "Module 'data' commit updated, syncing that: ${SEMABUILD_DATA} -> ${SEMABUILD_DATA_LAST}"
-        echo "${SEMABUILD_DATA}" > "${SEMABUILD_DIR}/data.txt"
-    fi
+    #if [ -n "${SEMABUILD_DATA}" ] && [ "${SEMABUILD_DATA}" != "${SEMABUILD_DATA_LAST}" ]; then
+    #    echo "Module 'data' commit updated, syncing that: ${SEMABUILD_DATA} -> ${SEMABUILD_DATA_LAST}"
+    #    echo "${SEMABUILD_DATA}" > "${SEMABUILD_DIR}/data.txt"
+    #fi
     if [ "${BRANCH_NAME}" != "master" ]; then
         if [ -n "${SEMABUILD_BASE_ANCESTOR}" ] && [ "${SEMABUILD_BASE_ANCESTOR}" != "${SEMABUILD_BASE_ANCESTOR_LAST}" ]; then
             echo "Module 'base' ancestor updated, syncing that: ${SEMABUILD_BASE_ANCESTOR} -> ${SEMABUILD_BASE_ANCESTOR_LAST}"
             echo "${SEMABUILD_BASE_ANCESTOR}" > "${SEMABUILD_DIR}/base.ancestor.txt"
         fi
-        if [ -n "${SEMABUILD_DATA_ANCESTOR}" ] && [ "${SEMABUILD_DATA_ANCESTOR}" != "${SEMABUILD_DATA_ANCESTOR_LAST}" ]; then
-            echo "Module 'data' ancestor updated, syncing that: ${SEMABUILD_DATA_ANCESTOR} -> ${SEMABUILD_DATA_ANCESTOR_LAST}"
-            echo "${SEMABUILD_DATA_ANCESTOR}" > "${SEMABUILD_DIR}/data.ancestor.txt"
-        fi
+    #    if [ -n "${SEMABUILD_DATA_ANCESTOR}" ] && [ "${SEMABUILD_DATA_ANCESTOR}" != "${SEMABUILD_DATA_ANCESTOR_LAST}" ]; then
+    #        echo "Module 'data' ancestor updated, syncing that: ${SEMABUILD_DATA_ANCESTOR} -> ${SEMABUILD_DATA_ANCESTOR_LAST}"
+    #        echo "${SEMABUILD_DATA_ANCESTOR}" > "${SEMABUILD_DIR}/data.ancestor.txt"
+    #    fi
     fi
     return 0
 }
@@ -104,17 +103,17 @@ semabuild_deploy() {
     cd "${SEMABUILD_PWD}" || return 1
     # sha
     rm -rfv "${SEMABUILD_DIR}/windows" "${SEMABUILD_DIR}/linux" || return 1
-    echo "base data" > "${SEMABUILD_DIR}/modules.txt"
+    echo "base" > "${SEMABUILD_DIR}/modules.txt"
     echo "Module 'base' commit, syncing: ${SEMABUILD_BASE}"
     echo "${SEMABUILD_BASE}" > "${SEMABUILD_DIR}/bins.txt"
     echo "${SEMABUILD_BASE}" > "${SEMABUILD_DIR}/base.txt"
-    echo "Module 'data' commit, syncing: ${SEMABUILD_DATA}"
-    echo "${SEMABUILD_DATA}" > "${SEMABUILD_DIR}/data.txt"
+    #echo "Module 'data' commit, syncing: ${SEMABUILD_DATA}"
+    #echo "${SEMABUILD_DATA}" > "${SEMABUILD_DIR}/data.txt"
     if [ "${BRANCH_NAME}" != "master" ]; then
         echo "Module 'base' ancestor, syncing: ${SEMABUILD_BASE_ANCESTOR}"
         echo "${SEMABUILD_BASE_ANCESTOR}" > "${SEMABUILD_DIR}/base.ancestor.txt"
-        echo "Module 'data' ancestor, syncing: ${SEMABUILD_DATA_ANCESTOR}"
-        echo "${SEMABUILD_DATA_ANCESTOR}" > "${SEMABUILD_DIR}/data.ancestor.txt"
+    #    echo "Module 'data' ancestor, syncing: ${SEMABUILD_DATA_ANCESTOR}"
+    #    echo "${SEMABUILD_DATA_ANCESTOR}" > "${SEMABUILD_DIR}/data.ancestor.txt"
     fi
     return 0
 }

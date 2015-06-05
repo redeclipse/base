@@ -222,7 +222,7 @@ namespace auth
     void authfailed(clientinfo *ci)
     {
         if(!ci) return;
-        ci->authreq = ci->authname[0] = 0;
+        ci->authreq = ci->authname[0] = ci->handle[0] = 0;
         srvmsgftforce(ci->clientnum, CON_EVENT, "\foidentity verification failed, please check your credentials");
         if(ci->connectauth)
         {
@@ -274,7 +274,7 @@ namespace auth
             }
         }
         if(n > PRIV_NONE) setprivilege(ci, 1, n|(local ? PRIV_LOCAL : 0), true);
-        else ci->authname[0] = 0;
+        else ci->authname[0] = ci->handle[0] = 0;
         if(ci->connectauth)
         {
             ci->connectauth = false;

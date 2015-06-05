@@ -4460,7 +4460,7 @@ namespace server
             if(ci->connectauth)
             { // auth might have stalled
                 ci->connectauth = false;
-                ci->authreq = ci->authname[0] = 0;
+                ci->authreq = ci->authname[0] = ci->handle[0] = 0;
                 srvmsgftforce(ci->clientnum, CON_EVENT, "\founable to verify, authority request timed out");
                 int disc = auth::allowconnect(ci);
                 if(disc) disconnect_client(ci->clientnum, disc);
