@@ -2296,7 +2296,7 @@ namespace server
         {
             vector<char *> files;
             listfiles("demos", "dmo", files);
-            loopvrev(files)
+            loopvrev(files) if(!strncmp(files[i], "sv_", 3))
             {
                 defformatstring(dirfile)("demos/%s.dmo", files[i]);
                 int q = scandemo(dirfile);
@@ -2305,7 +2305,7 @@ namespace server
                     const char *fullfile = findfile(dirfile, "r");
                     if(fullfile && *fullfile && !unlink(fullfile))
                     {
-                        conoutf("deleted old demo %s", files[i]);
+                        conoutf("deleted old demo: %s", files[i]);
                         demoinfos.remove(q);
                     }
                 }
