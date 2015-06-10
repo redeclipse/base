@@ -474,7 +474,7 @@ namespace hud
                             b; \
                         } \
                     }
-                    uifont(g, ngroup > 1 ? "little" : "reduced", {
+                    uifont(g, "reduced", {
                         float namepad = 0;
                         float handlepad = 0;
                         float ippad = 0;
