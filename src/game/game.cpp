@@ -270,7 +270,8 @@ namespace game
     FVAR(IDF_PERSIST, playerlightmix, 0, 0.5f, 100);
     FVAR(IDF_PERSIST, playertonemix, 0, 0.25f, 1);
     FVAR(IDF_PERSIST, playerblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, playerghost, 0, 0.5f, 1);
+    FVAR(IDF_PERSIST, playereditblend, 0, 0.5f, 1);
+    FVAR(IDF_PERSIST, playerghostblend, 0, 0.5f, 1);
 
     VAR(IDF_PERSIST, playerhint, 0, 3, 3);
     VAR(IDF_PERSIST, playerhinthurt, 0, 1, 1);
@@ -1020,7 +1021,7 @@ namespace game
     float opacity(gameent *d, bool third)
     {
         float total = d == focus ? (third ? (d != player1 ? followblend : thirdpersonblend) : firstpersonblend) : playerblend;
-        if(physics::isghost(d, focus)) total *= playerghost;
+        if(physics::isghost(d, focus)) total *= playerghostblend;
         if(deathfade && (d->state == CS_DEAD || d->state == CS_WAITING)) total *= spawnfade(d);
         else if(d->state == CS_ALIVE)
         {
@@ -1034,6 +1035,7 @@ namespace game
                 total *= zooming ? 1.f-pc : pc;
             }
         }
+        else if(d->state == CS_EDITING) total *= playereditblend;
         return total;
     }
 
