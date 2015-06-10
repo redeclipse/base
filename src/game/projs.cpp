@@ -695,9 +695,10 @@ namespace projs
             float yaw, pitch;
             vectoyawpitch(dir, yaw, pitch);
             if((yaw += 180) >= 360) yaw -= 360;
-            loopi(2) loopj(8) loopk(8)
+            static const int sphereyawchecks[8] = { 180, 135, 225, 90, 270, 45, 315 }, spherepitchchecks[5] = { 0, 45, -45, 89, -89 };
+            loopi(2) loopj(5) loopk(8)
             {
-                proj.o.add(vec((int(yaw+k*45)%360)*RAD, j*45*RAD).mul(proj.radius*i));
+                proj.o.add(vec((int(yaw+sphereyawchecks[k])%360)*RAD, spherepitchchecks[j]*RAD).mul(proj.radius*(i+1)*2));
                 if(!collide(&proj, dir, 0, false))
                 {
                     if(rev)
