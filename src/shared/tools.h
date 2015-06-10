@@ -1421,6 +1421,7 @@ extern const char *parentdir(const char *directory);
 extern bool fileexists(const char *path, const char *mode);
 extern bool createdir(const char *path);
 extern void sethomedir(const char *dir);
+extern const char *gethomedir();
 extern void appendhomedir(const char *dir);
 extern void addpackagedir(const char *dir, int flags = 0);
 extern int maskpackagedirs(int flags);

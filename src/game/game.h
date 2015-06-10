@@ -841,7 +841,7 @@ namespace server
     extern void stopdemo();
     extern void hashpassword(int cn, int sessionid, const char *pwd, char *result, int maxlen = MAXSTRLEN);
     extern bool servcmd(int nargs, const char *cmd, const char *arg);
-    extern const char *gamename(int mode, int muts, int compact = 0, int limit = 0);
+    extern const char *gamename(int mode, int muts, int compact = 0, int limit = 0, const char *separator = " ");
     extern const char *privname(int priv = PRIV_NONE, int actortype = A_PLAYER);
     extern const char *privnamex(int priv = PRIV_NONE, int actortype = A_PLAYER, bool local = false);
 #ifdef GAMESERVER
