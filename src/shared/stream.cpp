@@ -247,7 +247,9 @@ char *makefile(const char *s, const char *e, int revision, int start, bool store
         const char *q = t+1;
         if(isnumeric(*q)) d = min(atoi(q), 1);
     }
-    string f, m; copystring(f, o); copystring(m, o);
+    string f, m;
+    copystring(f, o);
+    copystring(m, o);
 
     for(bool tryrev = false;; skip = false)
     {
@@ -285,7 +287,8 @@ void backup(const char *fname, const char *ext, int revision, int start, bool st
             formatstring(tname)("%s%s.bak%s", store ? "backups/" : "", fname, ext);
             bname = findfile(tname, "w");
         }
-        remove(bname); rename(aname, bname);
+        remove(bname);
+        rename(aname, bname);
     }
 }
 
@@ -465,15 +468,18 @@ const char *findfile(const char *filename, const char *mode)
             return s;
         }
     }
-    copystring(s, filename); path(s); // our own packages take priority
+    copystring(s, filename);
+    path(s); // our own packages take priority
     if(mode[0]=='w' || mode[0]=='a' || fileexists(s, mode)) return s;
     loopvrev(packagedirs) if((packagedirs[i].flags & packagedirmask) == packagedirs[i].flags)
     {
-        formatstring(s)("%s%s", packagedirs[i].name, filename); path(s);
+        formatstring(s)("%s%s", packagedirs[i].name, filename);
+        path(s);
         if(fileexists(s, mode)) return s;
     }
     if(mode[0]=='e') return NULL;
-    copystring(s, filename); path(s);
+    copystring(s, filename);
+    path(s);
     return s;
 }
 

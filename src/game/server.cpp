@@ -2287,7 +2287,7 @@ namespace server
             string dafilepath = "";
             if(*filetimeformat) formatstring(dafilepath)("demos/sv_%s_%s-%s.dmo", gettime(d.ctime, filetimeformat), gamename(gamemode, mutators, 1, 32, "_"), smapname);
             else formatstring(dafilepath)("demos/sv_%u_%s-%s.dmo", uint(d.ctime), gamename(gamemode, mutators, 1, 32, "_"), smapname);
-            stream *dafile=openrawfile(dafilepath, "w");
+            stream *dafile = openrawfile(dafilepath, "w");
             dafile->write(d.data, d.len);
             dafile->close();
             DELETEP(dafile);
@@ -2296,16 +2296,17 @@ namespace server
         {
             vector<char *> files;
             listfiles("demos", "dmo", files);
-            loopv(files)
+            loopvrev(files)
             {
                 defformatstring(dirfile)("demos/%s.dmo", files[i]);
-                int d = scandemo(dirfile);
-                if(d > -1)
+                int q = scandemo(dirfile);
+                if(q >= 0 && (clocktime-demoinfos[q].hdr.starttime) >= G(demoserverkeeptime))
                 {
-                    if((clocktime - demoinfos[d].hdr.starttime) > (G(demoserverkeeptime) * 60 * 60))
+                    const char *fullfile = findfile(dirfile, "r");
+                    if(fullfile && *fullfile && !unlink(fullfile))
                     {
-                        defformatstring(fullfile)("%s%s", gethomedir(), dirfile);
-                        if(!unlink(fullfile)) conoutf("deleted old demo %s", files[i]);
+                        conoutf("deleted old demo %s", files[i]);
+                        demoinfos.remove(q);
                     }
                 }
             }
