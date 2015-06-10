@@ -422,6 +422,11 @@ void sethomedir(const char *dir)
     fixdir(copystring(homedir, dir));
 }
 
+const char *gethomedir()
+{
+    return &homedir[0];
+}
+
 int maskpackagedirs(int flags)
 {
     int oldmask = packagedirmask;
