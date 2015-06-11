@@ -13,7 +13,7 @@ tarname=$(appname)_$(appversion)_nix.tar
 tarname-osx=$(appname)_$(appversion)_osx.tar
 tarname-combined=$(appname)_$(appversion)_combined.tar
 
-torrent-trackers-url="udp://tracker.openbittorrent.com:80,udp://tracker.publicbt.com:80,udp://tracker.ccc.de:80,udp://tracker.istole.it:80"
+torrent-trackers-url="udp://tracker.openbittorrent.com:80,udp://tracker.publicbt.com:80,udp://open.demonii.com:1337,udp://tracker.coppersurfer.tk:6969,udp://tracker.leechers-paradise.org:6969"
 torrent-webseed-baseurl="http://redeclipse.net/files/releases"
 
 OSX_APP=
