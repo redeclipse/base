@@ -692,14 +692,8 @@ bool connectedmaster() { return mastersock != ENET_SOCKET_NULL; }
 
 bool requestmaster(const char *req)
 {
-    // RE master server need an init message
-    //if(mastersock == ENET_SOCKET_NULL)
-    //{
-    //    mastersock = connectmaster();
-        if(mastersock == ENET_SOCKET_NULL) return false;
-    //}
+    if(mastersock == ENET_SOCKET_NULL) return false;
     if(masterout.length() >= 4096) return false;
-
     masterout.put(req, strlen(req));
     return true;
 }

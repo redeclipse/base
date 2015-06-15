@@ -244,15 +244,17 @@ void clientkeepalive()
 
 }
 
+VAR(IDF_PERSIST, connecttimeout, 0, 5000, VAR_MAX);
+VAR(IDF_PERSIST, connectattempts, 0, 3, VAR_MAX);
+
 void gets2c()           // get updates from the server
 {
     ENetEvent event;
     if(!clienthost) return;
-    if(connpeer && totalmillis/3000 > connmillis/3000)
+    if(connpeer && totalmillis >= connmillis+connecttimeout)
     {
         connmillis = totalmillis;
-        ++connattempts;
-        if(connattempts > 3)
+        if(++connattempts > connectattempts)
         {
             conoutft(CON_MESG, "\frcould not connect to server");
             connectfail();
@@ -260,8 +262,7 @@ void gets2c()           // get updates from the server
         }
         else conoutft(CON_MESG, "\faconnection attempt %d", connattempts);
     }
-    while(clienthost && enet_host_service(clienthost, &event, 0)>0)
-    switch(event.type)
+    while(clienthost && enet_host_service(clienthost, &event, 0) > 0) switch(event.type)
     {
         case ENET_EVENT_TYPE_CONNECT:
             disconnect(1);
@@ -280,8 +281,8 @@ void gets2c()           // get updates from the server
             break;
 
         case ENET_EVENT_TYPE_DISCONNECT:
-            if(event.data>=DISC_NUM) event.data = DISC_NONE;
-            if(event.peer==connpeer)
+            if(event.data >= DISC_NUM) event.data = DISC_NONE;
+            if(event.peer == connpeer)
             {
                 conoutft(CON_MESG, "\frcould not connect to server");
                 connectfail();

@@ -1853,7 +1853,7 @@ namespace game
         resetcamera();
         if(!empty) client::sendgameinfo = client::sendcrcinfo = true;
         copystring(clientmap, reqname ? reqname : (name ? name : ""));
-        if(showloadoutmenu) wantsloadoutmenu = true;
+        if(showloadoutmenu && m_loadout(gamemode, mutators)) wantsloadoutmenu = true;
     }
 
     gameent *intersectclosest(vec &from, vec &to, gameent *at)
