@@ -244,14 +244,14 @@ void clientkeepalive()
 
 }
 
-VAR(IDF_PERSIST, connecttimeout, 0, 5000, VAR_MAX);
+VAR(IDF_PERSIST, connectretry, 0, 5000, VAR_MAX);
 VAR(IDF_PERSIST, connectattempts, 0, 3, VAR_MAX);
 
 void gets2c()           // get updates from the server
 {
     ENetEvent event;
     if(!clienthost) return;
-    if(connpeer && totalmillis >= connmillis+connecttimeout)
+    if(connpeer && totalmillis >= connmillis+connectretry)
     {
         connmillis = totalmillis;
         if(++connattempts > connectattempts)
