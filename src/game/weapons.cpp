@@ -11,7 +11,7 @@ namespace weapons
     VAR(IDF_PERSIST, skipmine, 0, 0, 10); // skip mine; 0 = never, 1 = if numweaps > 1 (+2), 4 = if carry > 0 (+2), 7 = if carry > 0 and is offset (+2), 10 = always
 
     int lastweapselect = 0;
-    VAR(IDF_PERSIST, weapselectdelay, 0, 250, VAR_MAX);
+    VAR(IDF_PERSIST, weapselectdelay, 0, 100, VAR_MAX);
     VARF(IDF_PERSIST, weapselectslot, 0, 1, 1, changedkeys = lastmillis); // 0 = by id, 1 = by slot
 
     int slot(gameent *d, int n, bool back)
