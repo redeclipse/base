@@ -46,14 +46,14 @@ namespace ai
     {
         if(weaptype[weap].melee) return 0.f;
         if(WX(false, weap, explode, alt, game::gamemode, game::mutators, 1.f) > 0) return WX(false, weap, explode, alt, game::gamemode, game::mutators, 1.f);
-        return CLOSEDIST;
+        return 1.f;
     }
 
     float weapmaxdist(int weap, bool alt)
     {
         if(weaptype[weap].melee) return CLOSEDIST;
         if(W2(weap, aidist, alt) > 0) return W2(weap, aidist, alt);
-        return getworldsize();
+        return SIGHTMAX;
     }
 
     bool weaprange(gameent *d, int weap, bool alt, float dist)
@@ -286,9 +286,9 @@ namespace ai
                 loopv(game::players) if(game::players[i] && game::players[i]->ai)
                 {
                     bool iterate = c == iteration && y >= c*x;
-                    checkinfo(game::players[i]);
+                    if(iterate) checkinfo(game::players[i]);
                     think(game::players[i], iterate);
-                    if(iterate && ++iteration > itercount) iteration = -1;
+                    if(iterate && ++iteration >= itercount) iteration = -1;
                     c++;
                 }
                 if(!c) iteration = -1;
@@ -341,7 +341,6 @@ namespace ai
         static vector<int> candidates;
         candidates.setsize(0);
         findwaypointswithin(pos, guard, wander, candidates);
-
         while(!candidates.empty())
         {
             int w = rnd(candidates.length()), n = candidates.removeunordered(w);
@@ -379,8 +378,7 @@ namespace ai
     {
         if(actor[d->actortype].canmove)
         {
-            vec feet = d->feetpos();
-            float dist = feet.squaredist(pos);
+            float dist = d->feetpos().squaredist(pos);
             if(walk == 2 || b.override || (walk && dist <= guard*guard) || !makeroute(d, b, pos))
             { // run away and back to keep ourselves busy
                 if(!b.override && wander > 0 && randomnode(d, b, pos, guard, wander))
@@ -392,15 +390,15 @@ namespace ai
                 {
                     b.override = false;
                     if(!retry) return patrol(d, b, pos, guard, wander, walk, true);
-                    if(wander > 0) return false;
                 }
                 if(wander <= 0)
                 {
                     b.acttype = AI_A_IDLE;
                     return true;
                 }
+                b.override = false;
+                return false;
             }
-            if(!b.override && dist > guard*guard) b.acttype = AI_A_HASTE;
         }
         b.override = false;
         return true;
@@ -1016,9 +1014,9 @@ namespace ai
         }
         if(jumper && d->action[AC_JUMP])
         {
-            int seed = (111-d->skill)*(b.acttype == AI_A_LOCKON || b.acttype == AI_A_HASTE ? 2 : (d->onladder || d->inliquid || b.acttype == AI_A_PROTECT ? 4 : 8));
+            int seed = (111-d->skill)*(b.acttype == AI_A_LOCKON ? 2 : 10);
             d->ai->jumpseed = lastmillis+seed+rnd(seed);
-            seed *= b.acttype == AI_A_IDLE ? 500 : 100;
+            seed *= 500;
             d->ai->jumprand = lastmillis+seed+rnd(seed);
         }
         if(!sequenced && !d->onladder && airtime)

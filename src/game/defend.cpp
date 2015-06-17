@@ -389,8 +389,8 @@ namespace defend
         {
             defendstate::flag &f = st.flags[b.target];
             bool regen = d->actortype != A_BOT || !m_regen(game::gamemode, game::mutators) || d->health >= m_health(game::gamemode, game::mutators, d->model);
-            int walk = f.enemy && f.enemy != d->team ? 1 : 0;
-            if(regen && (!f.enemy && d->team == f.owner))
+            int walk = regen && f.owner == d->team && !f.enemy ? 1 : 0;
+            if(walk)
             {
                 static vector<int> targets; // build a list of others who are interested in this
                 targets.setsize(0);
@@ -416,9 +416,8 @@ namespace defend
                     }
                     else walk = 2;
                 }
-                else walk = 1;
             }
-            return ai::defense(d, b, f.o, enttype[AFFINITY].radius, enttype[AFFINITY].radius*walk*8, m_gsp2(game::gamemode, game::mutators) ? 0 : walk);
+            return ai::defense(d, b, f.o, enttype[AFFINITY].radius, enttype[AFFINITY].radius*(walk+1), m_gsp2(game::gamemode, game::mutators) ? 0 : walk);
         }
         return false;
     }
