@@ -1068,7 +1068,7 @@ namespace projs
             vec rel = vec(proj.vel).add(dir).add(proj.inertia.mul(proj.relativity));
             proj.vel = vec(rel).add(vec(dir).mul(physics::movevelocity(&proj)));
         }
-        if(proj.projtype != PRJ_SHOT) spherecheck(proj);
+        if(proj.projtype != PRJ_SHOT) spherecheck(proj, proj.projcollide&BOUNCE_GEOM);
         proj.resetinterp();
     }
 
