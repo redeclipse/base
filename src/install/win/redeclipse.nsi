@@ -14,11 +14,11 @@
 ; General
   ;Include Modern UI
   !include "MUI2.nsh"
-  
+
+  SetCompressor lzma
   SetCompressorDictSize 96
   SetDatablockOptimize on
-  SetCompressor lzma 
-  
+
   SetDateSave off ; Installed files will show the date they were installed instead of when they were created in git
 
   ;Default installation folder
