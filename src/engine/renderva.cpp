@@ -537,7 +537,7 @@ void rendermapmodels()
 
 static inline bool bbinsideva(const ivec &bo, const ivec &br, vtxarray *va)
 {
-    return bo.x >= va->bbmin.x && bo.y >= va->bbmin.y && va->o.z >= va->bbmin.z &&
+    return bo.x >= va->bbmin.x && bo.y >= va->bbmin.y && bo.z >= va->bbmin.z &&
         br.x <= va->bbmax.x && br.y <= va->bbmax.y && br.z <= va->bbmax.z;
 }
 
