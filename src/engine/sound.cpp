@@ -47,7 +47,7 @@ stream *musicstream = NULL;
 char *musicfile = NULL, *musicdonecmd = NULL;
 int musictime = -1, musicdonetime = -1;
 
-VARF(IDF_PERSIST, mastervol, 0, 255, 255, changedvol = true);
+VARF(IDF_PERSIST, mastervol, 0, 255, 255, changedvol = true; if(!music && musicvol > 0 && mastervol > 0) smartmusic(true));
 VAR(IDF_PERSIST, soundvol, 0, 255, 255);
 VARF(0, soundmono, 0, 0, 1, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
 VARF(0, soundmixchans, 16, 32, 1024, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
