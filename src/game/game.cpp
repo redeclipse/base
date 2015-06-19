@@ -3449,7 +3449,7 @@ namespace game
         if(shocktime && d->shocking(lastmillis, shocktime))
         {
             vec origin = d->center(), col = rescolour(d, PULSE_SHOCK), rad = vec(d->xradius, d->yradius, d->height/(d->state == CS_ALIVE ? 2 : 3)).mul(blend);
-            int millis = lastmillis-d->lastres[WR_SHOCK], colour = (int(col.x*255)<<16)|(int(col.y*255)<<8)|(int(col.z*255));
+            int colour = (int(col.x*255)<<16)|(int(col.y*255)<<8)|(int(col.z*255));
             float fade = blend*(d != focus ? 1.f : 0.5f);
             loopi(3+rnd(10))
             {
