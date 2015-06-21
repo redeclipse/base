@@ -532,11 +532,10 @@ namespace hud
                             int colour = k < numgroups && sg.team >= 0 && m_fight(game::gamemode) && m_team(game::gamemode, game::mutators) ? TEAM(sg.team, colour) : TEAM(T_NEUTRAL, colour);
                             vec c = vec::hexcolor(colour);
                             int bgcolor = vec(c).mul(k == numgroups ? 0.45f : 0.65f).tohexcolor();
-                            int bgc1a = vec(c).mul(k == numgroups ? 0.1f : 0.25f).tohexcolor();
-                            int bgc1b = vec(c).mul(k == numgroups ? 0.05f : 0.125f).tohexcolor();
-                            int bgc2a = vec(c).mul(k == numgroups ? 0.25f : 0.45f).tohexcolor();
-                            int bgc2b = vec(c).mul(k == numgroups ? 0.125f : 0.225f).tohexcolor();
-                            #define ownerbgc (scoredarken && (o->state == CS_DEAD || o->state == CS_WAITING) ? (i%2 ? bgc2b : bgc1b) : (i%2 ? bgc2a : bgc1a))
+                            int bgc1 = vec(c).mul(k == numgroups ? 0.1f : 0.25f).tohexcolor();
+                            int bgc2 = vec(c).mul(k == numgroups ? 0.05f : 0.125f).tohexcolor();
+                            #define ownerfgc (scoredarken && (o->state == CS_DEAD || o->state == CS_WAITING) ? 0x7F7F7F : 0xFFFFFF)
+                            #define ownerbgc (i%2 ? bgc2 : bgc1)
                             #define ownerbgch (scorehilight && o == game::player1 ? scorehilight : (ownerbgc))
                             #define ownerbg if((scorehilight && o == game::player1) || scorebgrows >= 2) g.background(ownerbgc, scorebgblend, ownerbgch, scorebgblend, scorehilight && o == game::player1);
                             uicenterlist(g, {
@@ -545,7 +544,7 @@ namespace hud
                                 g.pushlist();
                                 g.space(0.25f);
                                 uilist(g, uifont(g, "default", {
-                                    if(scorebgrows) g.background(bgc2a, scorebgblend, bgc2a, scorebgblend);
+                                    if(scorebgrows) g.background(bgc2, scorebgblend, bgc2, scorebgblend);
                                     g.space(0.15f);
                                     if(k == numgroups)
                                     {
@@ -584,7 +583,7 @@ namespace hud
                                     });
                                     loopscoregroup(uilist(g, {
                                         ownerbg;
-                                        uicenter(g, uipad(g, 0.25f, uicenterlist(g, g.textf("%s", 0xFFFFFF, NULL, 0, -1, game::colourname(o, NULL, false, true, scorebgrows >= 2 || (scorehilight && o == game::player1) ? 0 : 3)))));
+                                        uicenter(g, uipad(g, 0.25f, uicenterlist(g, g.textf("%s", ownerfgc, NULL, 0, -1, game::colourname(o, NULL, false, true, scorebgrows >= 2 || (scorehilight && o == game::player1) ? 0 : 3)))));
                                     }));
                                 });
 
@@ -596,7 +595,7 @@ namespace hud
                                         });
                                         loopscoregroup(uilist(g, {
                                             ownerbg;
-                                            uicenter(g, uipad(g, 0.5f, g.textf("%d", 0xFFFFFF, NULL, 0, -1, o->points)));
+                                            uicenter(g, uipad(g, 0.5f, g.textf("%d", ownerfgc, NULL, 0, -1, o->points)));
                                         }));
                                     });
                                 }
@@ -611,7 +610,7 @@ namespace hud
                                             });
                                             loopscoregroup(uilist(g, {
                                                 ownerbg;
-                                                uicenter(g, uipad(g, 0.5f, g.textf("%s", 0xFFFFFF, NULL, 0, -1, o->cptime ? timestr(o->cptime, scoreracestyle) : "\fadnf")));
+                                                uicenter(g, uipad(g, 0.5f, g.textf("%s", ownerfgc, NULL, 0, -1, o->cptime ? timestr(o->cptime, scoreracestyle) : "\fadnf")));
                                             }));
                                         });
                                     }
@@ -625,7 +624,7 @@ namespace hud
                                         });
                                         loopscoregroup(uilist(g, {
                                             ownerbg;
-                                            uicenter(g, uipad(g, 0.5f, g.textf("%d", 0xFFFFFF, NULL, 0, -1, o->frags)));
+                                            uicenter(g, uipad(g, 0.5f, g.textf("%d", ownerfgc, NULL, 0, -1, o->frags)));
                                         }));
                                     });
                                 }
@@ -638,7 +637,7 @@ namespace hud
                                         });
                                         loopscoregroup(uilist(g, {
                                             ownerbg;
-                                            uicenter(g, uipad(g, 0.5f, g.textf("%d", 0xFFFFFF, NULL, 0, -1, o->deaths)));
+                                            uicenter(g, uipad(g, 0.5f, g.textf("%d", ownerfgc, NULL, 0, -1, o->deaths)));
                                         }));
                                     });
                                 }
@@ -652,7 +651,7 @@ namespace hud
                                         loopscoregroup(uilist(g, {
                                             ownerbg;
                                             float ratio = o->frags >= o->deaths ? (o->frags/float(max(o->deaths, 1))) : -(o->deaths/float(max(o->frags, 1)));
-                                            uicenter(g, uipad(g, 0.5f, g.textf("%.1f\fs\fa:\fS%.1f", 0xFFFFFF, NULL, 0, -1, ratio >= 0 ? ratio : 1.f, ratio >= 0 ? 1.f : -ratio)));
+                                            uicenter(g, uipad(g, 0.5f, g.textf("%.1f\fs\fa:\fS%.1f", ownerfgc, NULL, 0, -1, ratio >= 0 ? ratio : 1.f, ratio >= 0 ? 1.f : -ratio)));
                                         }));
                                     });
                                 }
@@ -665,7 +664,7 @@ namespace hud
                                         });
                                         loopscoregroup(uilist(g, {
                                             ownerbg;
-                                            uicenter(g, uipad(g, 0.5f, g.textf("%d", 0xFFFFFF, NULL, 0, -1, o->plag)));
+                                            uicenter(g, uipad(g, 0.5f, g.textf("%d", ownerfgc, NULL, 0, -1, o->plag)));
                                         }));
                                     });
                                 }
@@ -678,7 +677,7 @@ namespace hud
                                         });
                                         loopscoregroup(uilist(g, {
                                             ownerbg;
-                                            uicenter(g, uipad(g, 0.5f, g.textf("%d", 0xFFFFFF, NULL, 0, -1, o->ping)));
+                                            uicenter(g, uipad(g, 0.5f, g.textf("%d", ownerfgc, NULL, 0, -1, o->ping)));
                                         }));
                                     });
                                 }
@@ -691,7 +690,7 @@ namespace hud
                                         });
                                         loopscoregroup(uilist(g, {
                                             ownerbg;
-                                            uicenter(g, uipad(g, 0.5f, g.textf("%d", 0xFFFFFF, NULL, 0, -1, o->clientnum)));
+                                            uicenter(g, uipad(g, 0.5f, g.textf("%d", ownerfgc, NULL, 0, -1, o->clientnum)));
                                         }));
                                     });
                                 }
@@ -705,7 +704,7 @@ namespace hud
                                         loopscoregroup(uilist(g, {
                                             ownerbg;
                                             uicenter(g, uipad(g, 0.5f, {
-                                                if(o->actortype > A_PLAYER) g.textf("%d", 0xFFFFFF, NULL, 0, -1, o->skill);
+                                                if(o->actortype > A_PLAYER) g.textf("%d", ownerfgc, NULL, 0, -1, o->skill);
                                                 else { g.space(1); g.strut(1); }
                                             }));
                                         }));
@@ -719,7 +718,7 @@ namespace hud
                                         });
                                         loopscoregroup(uilist(g, {
                                             ownerbg;
-                                            uicenter(g, uipad(g, 0.5f, g.textf("%s", 0xFFFFFF, NULL, 0, -1, o->handle[0] ? o->handle : "-")));
+                                            uicenter(g, uipad(g, 0.5f, g.textf("%s", ownerfgc, NULL, 0, -1, o->handle[0] ? o->handle : "-")));
                                         }));
                                     });
                                 }
@@ -731,7 +730,7 @@ namespace hud
                                         });
                                         loopscoregroup(uilist(g, {
                                             ownerbg;
-                                            uicenter(g, uipad(g, 0.5f, g.textf("%s", 0xFFFFFF, NULL, 0, -1, scorehost(o, false))));
+                                            uicenter(g, uipad(g, 0.5f, g.textf("%s", ownerfgc, NULL, 0, -1, scorehost(o, false))));
                                         }));
                                     });
                                 }
@@ -743,7 +742,7 @@ namespace hud
                                         });
                                         loopscoregroup(uilist(g, {
                                             ownerbg;
-                                            uicenter(g, uipad(g, 0.5f, g.textf("%s", 0xFFFFFF, NULL, 0, -1, scorehost(o, true))));
+                                            uicenter(g, uipad(g, 0.5f, g.textf("%s", ownerfgc, NULL, 0, -1, scorehost(o, true))));
                                         }));
                                     });
                                 }
@@ -755,7 +754,7 @@ namespace hud
                                         });
                                         loopscoregroup(uilist(g, {
                                             ownerbg;
-                                            uicenter(g, uipad(g, 0.5f, g.textf("%s", 0xFFFFFF, NULL, 0, -1, scoreversion(o))));
+                                            uicenter(g, uipad(g, 0.5f, g.textf("%s", ownerfgc, NULL, 0, -1, scoreversion(o))));
                                         }));
                                     });
                                 }
