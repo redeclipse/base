@@ -473,7 +473,7 @@ namespace hud
 
     VAR(IDF_PERSIST, radarplayers, 0, 2, 2);
     VAR(IDF_PERSIST, radarplayerfilter, 0, 0, 3); // 0 = off, 1 = non-team, 2 = team, 3 = only in duel/survivor/edit
-    VAR(IDF_PERSIST, radarplayernames, 0, 2, 2);
+    VAR(IDF_PERSIST, radarplayernames, 0, 0, 2);
     VAR(IDF_PERSIST, radarplayereffects, 0, 1, 1);
     VAR(IDF_PERSIST, radarplayerdominated, 0, 1, 1); // 0 = off, 1 = always track dominating players
     VAR(IDF_PERSIST, radarplayerduke, 0, 1, 1); // 0 = off, 1 = track when your side has one player left
