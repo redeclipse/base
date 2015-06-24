@@ -80,6 +80,7 @@ The project is Free and Open Source meaning that you can both use it for free, a
 * Robert Winkler
 * Ryan "icculus" Gordon / icculus.org - Master server and website hosting
 * Rémi "LuckystrikeRx" Clouet d'Orval - Maps, Textures, Models, Weapons, Design/Testing, Website
+* Scott Baker
 * Sergey "swooboo" Altshuller
 * Slawek "VibrantWave" Blauciak - Ambient Sounds
 * Stefan Norman and Peter McInerney - Game server and domain name hosting
