@@ -988,7 +988,7 @@ struct gameent : dynent, clientstate
     static bool is(int t) { return t == ENT_PLAYER || t == ENT_AI; }
     static bool is(physent *d) { return d->type == ENT_PLAYER || d->type == ENT_AI; }
 
-    void setparams(bool reset)
+    void setparams()
     {
         int type = clamp(actortype, 0, int(A_MAX-1));
         if(type >= A_ENEMY)
@@ -1018,9 +1018,9 @@ struct gameent : dynent, clientstate
             if(state == CS_ALIVE && millis > 0)
                 curscale = scale > curscale ? min(curscale+millis/2000.f, scale) : max(curscale-millis/2000.f, scale);
             else curscale = scale;
-            setparams(reset);
+            setparams();
         }
-        else if(reset) setparams(reset);
+        else if(reset) setparams();
     }
 
     int getprojid()
