@@ -1,15 +1,16 @@
 ;--------------------------------
+; Name and file
+  Name "Red Eclipse"
+  VIProductVersion "1.5.2.0"
+  OutFile "redeclipse_1.5.2_win.exe"
+  VIAddVersionKey "OriginalFilename" $OutFile
+;--------------------------------
 ; Installer version information
   VIAddVersionKey "ProductName" "Red Eclipse Installer"
   VIAddVersionKey "FileDescription" "Red Eclipse Installer"
   VIAddVersionKey "CompanyName" "Red Eclipse Team"
   VIAddVersionKey "LegalCopyright" "2015 Red Eclipse Team"
   VIAddVersionKey "FileVersion" "1.0.0.0"
-; Name and file
-  Name "Red Eclipse"
-  OutFile "redeclipse_1.5.2_win.exe"
-  VIAddVersionKey "OriginalFilename" "redeclipse_1.5.2_win.exe"
-  VIProductVersion "1.5.2.0"
 ;--------------------------------
 ; General
   ;Include Modern UI
@@ -88,7 +89,7 @@ Section "Red Eclipse (required)" GameFiles
   
   SetOutPath $INSTDIR
   
-  File /r /x "readme.md" /x ".git" /x ".gitattributes" /x ".gitignore" /x ".gitmodules" /x "redeclipse*win*.exe" "..\..\..\*.*" 
+  File /r /x "redeclipse.app" /x "readme.md" /x ".git" /x ".gitattributes" /x ".gitignore" /x ".gitmodules" /x "redeclipse*win*.exe" "..\..\..\*.*"
   
   WriteRegStr HKLM "SOFTWARE\Red Eclipse" "Install_Dir" "$INSTDIR"
   
