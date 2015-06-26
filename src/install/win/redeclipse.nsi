@@ -2,6 +2,7 @@
 ; Name and file
   Name "Red Eclipse"
   VIProductVersion "1.5.2.0"
+  !define MajorMinorVer "1.5.x"
   OutFile "redeclipse_1.5.2_win.exe"
   VIAddVersionKey "OriginalFilename" $OutFile
 ;--------------------------------
@@ -94,7 +95,7 @@ Section "Red Eclipse (required)" GameFiles
   WriteRegStr HKLM "SOFTWARE\Red Eclipse" "Install_Dir" "$INSTDIR"
   
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Red Eclipse" "DisplayName" "Red Eclipse"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Red Eclipse" "DisplayVersion" "1.5.x"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Red Eclipse" "DisplayVersion" ${MajorMinorVer}
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Red Eclipse" "DisplayIcon" "$INSTDIR\src\redeclipse.ico"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Red Eclipse" "Publisher" "Red Eclipse Team"
 
