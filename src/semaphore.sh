@@ -63,7 +63,7 @@ semabuild_build() {
     #sudo ${SEMABUILD_APT} -fy remove zlib1g-dev libsdl1.2-dev libsdl-mixer1.2-dev libsdl-image1.2-dev libpng12-dev || return 1
     #sudo ${SEMABUILD_APT} -fy autoremove || return 1
     sudo ${SEMABUILD_APT} -fy install multiarch-support g++-multilib gcc-multilib || return 1
-    sudo ${SEMABUILD_APT} -fy install zlib1g-dev:i386 libsdl1.2-dev:i386 libsdl-mixer1.2-dev:i386 libsdl-image1.2-dev:i386 libpng12-dev:i386 || return 1
+    sudo ${SEMABUILD_APT} -fy install zlib1g-dev:i386 libsdl1.2-dev:i386 libsdl-mixer1.2-dev:i386 libsdl-image1.2-dev:i386 libpng12-dev:i386 libglu-dev:i386 || return 1
     make PLATFORM=linux32 PLATFORM_BIN=x86 INSTDIR=${SEMABUILD_DIR}/linux/bin/x86 CFLAGS=-m32 CXXFLAGS=-m32 LDFLAGS=-m32 -C src clean install || return 1
     return 0
 }
