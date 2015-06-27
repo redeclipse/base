@@ -54,14 +54,14 @@ semabuild_setup() {
 semabuild_build() {
     echo "Building ${BRANCH_NAME}..."
     sudo dpkg --add-architecture i386 || return 1
+    sudo ${SEMABUILD_APT} autoclean || return 1
+    sudo ${SEMABUILD_APT} clean || return 1
+    sudo ${SEMABUILD_APT} autoremove || return 1
     sudo ${SEMABUILD_APT} update || return 1
-    sudo ${SEMABUILD_APT} -fy install build-essential zlib1g-dev libsdl-mixer1.2-dev libsdl-image1.2-dev || return 1
-    make PLATFORM=linux64 PLATFORM_BIN=amd64 INSTDIR=${SEMABUILD_DIR}/linux/bin/amd64 CFLAGS=-m64 CXXFLAGS=-m64 LDFLAGS=-m64 -C src clean install || return 1
-    sudo ${SEMABUILD_APT} -fy install binutils-mingw-w64 g++-mingw-w64 || return 1
+    sudo ${SEMABUILD_APT} -fy install build-essential zlib1g-dev libsdl-mixer1.2-dev libsdl-image1.2-dev binutils-mingw-w64 g++-mingw-w64 || return 1
     make PLATFORM=crossmingw64 PLATFORM_BIN=amd64 INSTDIR=${SEMABUILD_DIR}/windows/bin/amd64 CFLAGS=-m64 CXXFLAGS=-m64 LDFLAGS=-m64 -C src clean install || return 1
     make PLATFORM=crossmingw32 PLATFORM_BIN=x86 INSTDIR=${SEMABUILD_DIR}/windows/bin/x86 CFLAGS=-m32 CXXFLAGS=-m32 LDFLAGS=-m32 -C src clean install || return 1
-    #sudo ${SEMABUILD_APT} -fy remove zlib1g-dev libsdl1.2-dev libsdl-mixer1.2-dev libsdl-image1.2-dev libpng12-dev || return 1
-    #sudo ${SEMABUILD_APT} -fy autoremove || return 1
+    make PLATFORM=linux64 PLATFORM_BIN=amd64 INSTDIR=${SEMABUILD_DIR}/linux/bin/amd64 CFLAGS=-m64 CXXFLAGS=-m64 LDFLAGS=-m64 -C src clean install || return 1
     sudo ${SEMABUILD_APT} -fy install multiarch-support g++-multilib gcc-multilib || return 1
     sudo ${SEMABUILD_APT} -fy install zlib1g-dev:i386 libsdl1.2-dev:i386 libsdl-mixer1.2-dev:i386 libsdl-image1.2-dev:i386 libpng12-dev:i386 libglu1-mesa-dev:i386 libgl1-mesa-dev:i386 || return 1
     make PLATFORM=linux32 PLATFORM_BIN=x86 INSTDIR=${SEMABUILD_DIR}/linux/bin/x86 CFLAGS=-m32 CXXFLAGS=-m32 LDFLAGS=-m32 -C src clean install || return 1
