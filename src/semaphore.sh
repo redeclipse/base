@@ -2,7 +2,7 @@
 SEMABUILD_PWD=`pwd`
 SEMABUILD_SCP='scp -BC -o StrictHostKeyChecking=no'
 SEMABUILD_TARGET='qreeves@icculus.org:/webspace/redeclipse.net/files'
-SEMABUILD_APT='DEBIAN_FRONTEND=noninteractive apt-get'
+SEMABUILD_APT='DEBIAN_FRONTEND=noninteractive apt-get -o Dpkg::Options::="--force-overwrite"'
 SEMABUILD_SOURCE="http://redeclipse.net/files"
 SEMABUILD_BUILD="${HOME}/build"
 SEMABUILD_DIR="${SEMABUILD_BUILD}/${BRANCH_NAME}"
@@ -54,7 +54,6 @@ semabuild_setup() {
 semabuild_build() {
     echo "Building ${BRANCH_NAME}..."
     sudo dpkg --add-architecture i386 || return 1
-    sudo sudo dpkg -i --force-overwrite /usr/bin/libmikmod-config || return 1
     sudo ${SEMABUILD_APT} update || return 1
     sudo ${SEMABUILD_APT} -fy install build-essential zlib1g-dev libsdl-mixer1.2-dev libsdl-image1.2-dev || return 1
     make PLATFORM=linux64 PLATFORM_BIN=amd64 INSTDIR=${SEMABUILD_DIR}/linux/bin/amd64 CFLAGS=-m64 CXXFLAGS=-m64 LDFLAGS=-m64 -C src clean install || return 1
