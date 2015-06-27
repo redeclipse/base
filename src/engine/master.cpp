@@ -13,7 +13,6 @@
 #define CLIENT_TIME (60*1000)
 #define SERVER_TIME (35*60*1000)
 #define AUTH_TIME (30*1000)
-#define DUP_LIMIT 16
 
 VAR(0, masterserver, 0, 0, 1);
 VAR(0, masterport, 1, MASTER_PORT, VAR_MAX);
@@ -22,6 +21,7 @@ SVAR(0, masterip, "");
 SVAR(0, masterscriptclient, "");
 SVAR(0, masterscriptserver, "");
 
+VAR(0, masterduplimit, 0, 2, VAR_MAX);
 VAR(0, masterpingdelay, 1000, 3000, VAR_MAX);
 VAR(0, masterpingtries, 1, 5, VAR_MAX);
 
@@ -446,7 +446,7 @@ void checkmaster()
                 dups++;
                 if(oldest<0 || ENET_TIME_LESS(masterclients[i]->lastactivity, masterclients[oldest]->lastactivity)) oldest = i;
             }
-            if(dups >= DUP_LIMIT) purgemasterclient(oldest);
+            if(masterduplimit && dups >= masterduplimit) purgemasterclient(oldest);
             masterclient *c = new masterclient;
             c->address = address;
             c->socket = masterclientsocket;
