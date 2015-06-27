@@ -103,17 +103,17 @@ struct hitmsg { int flags, proj, target, dist; ivec dir, vel; };
 #include "weapdef.h"
 
 WPSVAR(0, longname,
-    "melee kick",
+    "melee attack",
     "sidearm pistol",
-    "razor sword",
+    "energy sword",
     "semi-auto shotgun",
     "submachine gun",
     "flamethrower",
     "plasma cannon",
     "stun zapper",
     "pulse rifle",
-    "blast grenade",
-    "proximity mine",
+    "thermite grenade",
+    "shock mine",
     "rocket launcher"
 );
 WPSVAR(0, name,
