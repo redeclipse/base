@@ -1,18 +1,21 @@
-;--------------------------------
-; Installer version information
+; --------------------------------
+; Name and file
+  Name "Red Eclipse"
+  VIProductVersion "1.5.2.0"
+  !define MajorMinorVer "1.5.x"
+  OutFile "redeclipse_1.5.2_win.exe"
+  VIAddVersionKey "OriginalFilename" $OutFile
+; --------------------------------
+; Installer information
   VIAddVersionKey "ProductName" "Red Eclipse Installer"
   VIAddVersionKey "FileDescription" "Red Eclipse Installer"
   VIAddVersionKey "CompanyName" "Red Eclipse Team"
   VIAddVersionKey "LegalCopyright" "2015 Red Eclipse Team"
   VIAddVersionKey "FileVersion" "1.0.0.0"
-; Name and file
-  Name "Red Eclipse"
-  OutFile "redeclipse_1.5.2_win.exe"
-  VIAddVersionKey "OriginalFilename" "redeclipse_1.5.2_win.exe"
-  VIProductVersion "1.5.2.0"
-;--------------------------------
+  BrandingText "Red Eclipse Team" ; Change the branding from NSIS version to Red Eclipse Team
+; --------------------------------
 ; General
-  ;Include Modern UI
+  ; Include Modern UI
   !include "MUI2.nsh"
 
   SetCompressor lzma
@@ -21,17 +24,11 @@
 
   SetDateSave off ; Installed files will show the date they were installed instead of when they were created in git
 
-  ;Default installation folder
-  InstallDir "$PROGRAMFILES\Red Eclipse"
+  InstallDir "$PROGRAMFILES\Red Eclipse" ; Default installation folder
+  InstallDirRegKey HKLM "Software\Red Eclipse" "Install_Dir" ; Get installation folder from registry if available
 
-  ;Get installation folder from registry if available
-  InstallDirRegKey HKLM "Software\Red Eclipse" "Install_Dir"
-
-  ;Request the most privileges user can get
+  ; Request the most privileges user can get
   RequestExecutionLevel highest
-
-  ;Change the branding from NSIS version to Red Eclipse Team
-  BrandingText "Red Eclipse Team"
 
   !define MUI_ICON "..\..\redeclipse.ico" ; Use RE icon for installer.
   !define MUI_UNICON "${NSISDIR}\Contrib\Graphics\Icons\modern-uninstall.ico" ; Don't use RE icon so uninstaller isn't mistaken for game.
@@ -39,27 +36,22 @@
   UninstallIcon "..\..\redeclipse.ico"
 
   AutoCloseWindow false ; Do not close the Finish page automatically
-
   !define MUI_FINISHPAGE_NOREBOOTSUPPORT ; Do not need to reboot to install Red Eclipse
-
-  ; Warn if aborting installer
-  !define MUI_ABORTWARNING
+  !define MUI_ABORTWARNING ; Warn if aborting installer
 
   ; All pages
   !define MUI_HEADERIMAGE
   !define MUI_HEADERIMAGE_BITMAP "header.bmp"
-
-;--------------------------------
-;Pages
-
+; --------------------------------
+; Pages
   ; Finish Page
-   !define MUI_WELCOMEFINISHPAGE_BITMAP "finish.bmp"
-	; Auth application link
-;	!define MUI_FINISHPAGE_LINK "Click here to apply for an optional player account."
+    !define MUI_WELCOMEFINISHPAGE_BITMAP "finish.bmp"
+    ; Auth application link
+; 	!define MUI_FINISHPAGE_LINK "Click here to apply for an optional player account."
 ;     !define MUI_FINISHPAGE_LINK_LOCATION "http://redeclipse.net/apply"
    ; Run game after install checkbox
-  !define MUI_FINISHPAGE_RUN "$INSTDIR\redeclipse.bat"
-  !define MUI_FINISHPAGE_RUN_TEXT "Run Red Eclipse"
+    !define MUI_FINISHPAGE_RUN "$INSTDIR\redeclipse.bat"
+    !define MUI_FINISHPAGE_RUN_TEXT "Run Red Eclipse"
 
   !define MUI_COMPONENTSPAGE_SMALLDESC
   !insertmacro MUI_PAGE_COMPONENTS
@@ -73,27 +65,24 @@
   !insertmacro MUI_UNPAGE_INSTFILES
     !define MUI_UNFINISHPAGE_NOAUTOCLOSE ; Allow user to review UNinstall log before continuing to Finish page.
   !insertmacro MUI_UNPAGE_FINISH
-  
-;--------------------------------
-;Compute Estimated Size for Add/Remove Programs
+; --------------------------------
+; Compute Estimated Size for Add/Remove Programs
   !define ARP "Software\Microsoft\Windows\CurrentVersion\Uninstall\Red Eclipse"
   !include "FileFunc.nsh"
-
-;--------------------------------
-;Installer Sections
-
+; --------------------------------
+; Installer Sections
 Section "Red Eclipse (required)" GameFiles
 
   SectionIn RO
   
   SetOutPath $INSTDIR
   
-  File /r /x "readme.md" /x ".git" /x ".gitattributes" /x ".gitignore" /x ".gitmodules" /x "redeclipse*win*.exe" "..\..\..\*.*" 
+  File /r /x "redeclipse.app" /x "readme.md" /x ".git" /x ".gitattributes" /x ".gitignore" /x ".gitmodules" /x "redeclipse*win*.exe" "..\..\..\*.*"
   
   WriteRegStr HKLM "SOFTWARE\Red Eclipse" "Install_Dir" "$INSTDIR"
   
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Red Eclipse" "DisplayName" "Red Eclipse"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Red Eclipse" "DisplayVersion" "1.5.x"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Red Eclipse" "DisplayVersion" ${MajorMinorVer}
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Red Eclipse" "DisplayIcon" "$INSTDIR\src\redeclipse.ico"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Red Eclipse" "Publisher" "Red Eclipse Team"
 
@@ -121,14 +110,13 @@ Section "Start Menu Shortcuts" StartMenu
   
   SetOutPath "$INSTDIR"
   
-  CreateShortCut "$INSTDIR\Red Eclipse.lnk"                "$INSTDIR\redeclipse.bat" "" "$INSTDIR\src\redeclipse.ico" 0 SW_SHOWMINIMIZED
+  CreateShortCut "$INSTDIR\Red Eclipse.lnk" "$INSTDIR\redeclipse.bat" "" "$INSTDIR\src\redeclipse.ico" 0 SW_SHOWMINIMIZED
   CreateShortCut "$SMPROGRAMS\Red Eclipse\Red Eclipse.lnk" "$INSTDIR\redeclipse.bat" "" "$INSTDIR\src\redeclipse.ico" 0 SW_SHOWMINIMIZED
-  CreateShortCut "$SMPROGRAMS\Red Eclipse\Uninstall Red Eclipse.lnk"   "$INSTDIR\uninstall.exe"   "" "$INSTDIR\uninstall.exe" 0
+  CreateShortCut "$SMPROGRAMS\Red Eclipse\Uninstall Red Eclipse.lnk" "$INSTDIR\uninstall.exe" "" "$INSTDIR\uninstall.exe" 0
   
 SectionEnd
- 
-;--------------------------------
-;Uninstaller Section
+; --------------------------------
+; Uninstaller Section
 Section "Uninstall"
   
   DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Red Eclipse"
@@ -138,10 +126,8 @@ Section "Uninstall"
   RMDir /r "$INSTDIR"
 
 SectionEnd
-
-;--------------------------------
+; --------------------------------
 ; Languages
- 
   !insertmacro MUI_LANGUAGE "English"
   LangString DESC_GameFiles ${LANG_ENGLISH} "The Red Eclipse game files. Required to play the game."
   LangString DESC_StartMenu ${LANG_ENGLISH} "Add shortcuts to your Start Menu"
