@@ -54,6 +54,7 @@ semabuild_setup() {
 semabuild_build() {
     echo "Building ${BRANCH_NAME}..."
     sudo dpkg --add-architecture i386 || return 1
+    sudo sudo dpkg -i --force-overwrite /usr/bin/libmikmod-config || return 1
     sudo ${SEMABUILD_APT} update || return 1
     sudo ${SEMABUILD_APT} -fy install build-essential zlib1g-dev libsdl-mixer1.2-dev libsdl-image1.2-dev || return 1
     make PLATFORM=linux64 PLATFORM_BIN=amd64 INSTDIR=${SEMABUILD_DIR}/linux/bin/amd64 CFLAGS=-m64 CXXFLAGS=-m64 LDFLAGS=-m64 -C src clean install || return 1
