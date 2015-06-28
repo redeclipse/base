@@ -103,7 +103,7 @@ struct hitmsg { int flags, proj, target, dist; ivec dir, vel; };
 
 #include "weapdef.h"
 
-WPSVAR(0, name,
+WPSVAR(0, name, // keep this incase longname is too long
     "melee",
     "pistol",
     "sword",
@@ -118,7 +118,7 @@ WPSVAR(0, name,
     "rocket"
 );
 
-WPSVAR(0, longname,
+WPSVAR(0, longname, // shown for weapon pickups and loadout menu
     "melee attack",
     "sidearm pistol",
     "energy sword",
