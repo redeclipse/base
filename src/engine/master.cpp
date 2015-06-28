@@ -22,7 +22,6 @@ SVAR(0, masterscriptclient, "");
 SVAR(0, masterscriptserver, "");
 
 VAR(0, masterduplimit, 0, 3, VAR_MAX);
-VAR(0, masterduptrust, 0, 6, VAR_MAX);
 VAR(0, masterpingdelay, 1000, 3000, VAR_MAX);
 VAR(0, masterpingtries, 1, 5, VAR_MAX);
 
@@ -433,22 +432,27 @@ void checkmaster()
 
     if(ENET_SOCKETSET_CHECK(readset, pingsocket)) checkmasterpongs();
 
-    if(ENET_SOCKETSET_CHECK(readset, mastersocket))
+    if(ENET_SOCKETSET_CHECK(readset, mastersocket)) for(;;)
     {
         ENetAddress address;
         ENetSocket masterclientsocket = enet_socket_accept(mastersocket, &address);
         if(masterclients.length() >= MASTER_LIMIT || (checkipinfo(control, ipinfo::BAN, address.host) && !checkipinfo(control, ipinfo::EXCEPT, address.host) && !checkipinfo(control, ipinfo::TRUST, address.host)))
-            enet_socket_destroy(masterclientsocket);
-        else if(masterclientsocket!=ENET_SOCKET_NULL)
         {
-            int dups = 0, oldest = -1;
-            loopv(masterclients) if(masterclients[i]->address.host == address.host)
+            enet_socket_destroy(masterclientsocket);
+            break;
+        }
+        if(masterduplimit && !checkipinfo(control, ipinfo::TRUST, address.host))
+        {
+            int dups = 0;
+            loopv(masterclients) if(masterclients[i]->address.host == address.host) dups++;
+            if(dups >= masterduplimit && !checkipinfo(control, ipinfo::TRUST, address.host))
             {
-                dups++;
-                if(oldest<0 || ENET_TIME_LESS(masterclients[i]->lastactivity, masterclients[oldest]->lastactivity)) oldest = i;
+                enet_socket_destroy(masterclientsocket);
+                break;
             }
-            int limit = checkipinfo(control, ipinfo::TRUST, address.host) ? masterduptrust : masterduplimit;
-            if(limit && dups >= limit) purgemasterclient(oldest);
+        }
+        if(masterclientsocket != ENET_SOCKET_NULL)
+        {
             masterclient *c = new masterclient;
             c->address = address;
             c->socket = masterclientsocket;
@@ -457,6 +461,7 @@ void checkmaster()
             if(enet_address_get_host_ip(&c->address, c->name, sizeof(c->name)) < 0) copystring(c->name, "unknown");
             if(verbose) conoutf("master peer %s connected", c->name);
         }
+	break;
     }
 
     loopv(masterclients)
