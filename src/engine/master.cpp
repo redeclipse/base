@@ -350,7 +350,7 @@ bool checkmasterclientinput(masterclient &c)
         {
             masteroutf(c, "setversion %d %d\n", server::getver(0), server::getver(1));
             if(*masterscriptclient) masteroutf(c, "%s\n", masterscriptclient);
-            conoutf("master peer %s was sent the version",  c.name);
+            if(verbose) conoutf("master peer %s was sent the version",  c.name);
             found = true;
         }
         if(!strcmp(w[0], "list") || !strcmp(w[0], "update"))
