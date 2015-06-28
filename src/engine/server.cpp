@@ -122,8 +122,9 @@ ICOMMAND(0, addallow, "ss", (char *name, char *reason), addipinfo(control, ipinf
 ICOMMAND(0, addban, "ss", (char *name, char *reason), addipinfo(control, ipinfo::BAN, name, reason));
 ICOMMAND(0, addmute, "ss", (char *name, char *reason), addipinfo(control, ipinfo::MUTE, name, reason));
 ICOMMAND(0, addlimit, "ss", (char *name, char *reason), addipinfo(control, ipinfo::LIMIT, name, reason));
+ICOMMAND(0, addtrust, "ss", (char *name, char *reason), addipinfo(control, ipinfo::TRUST, name, reason));
 
-const char *ipinfotypes[ipinfo::MAXTYPES] = { "allow", "ban", "mute", "limit" };
+const char *ipinfotypes[ipinfo::MAXTYPES] = { "allow", "ban", "mute", "limit", "trust" };
 char *printipinfo(const ipinfo &info, char *buf)
 {
     static string ipinfobuf = ""; char *str = buf ? buf : (char *)&ipinfobuf;

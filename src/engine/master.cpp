@@ -22,6 +22,7 @@ SVAR(0, masterscriptclient, "");
 SVAR(0, masterscriptserver, "");
 
 VAR(0, masterduplimit, 0, 2, VAR_MAX);
+VAR(0, masterduptrust, 0, 5, VAR_MAX);
 VAR(0, masterpingdelay, 1000, 3000, VAR_MAX);
 VAR(0, masterpingtries, 1, 5, VAR_MAX);
 
@@ -436,7 +437,7 @@ void checkmaster()
     {
         ENetAddress address;
         ENetSocket masterclientsocket = enet_socket_accept(mastersocket, &address);
-        if(masterclients.length() >= MASTER_LIMIT || (checkipinfo(control, ipinfo::BAN, address.host) && !checkipinfo(control, ipinfo::EXCEPT, address.host)))
+        if(masterclients.length() >= MASTER_LIMIT || (checkipinfo(control, ipinfo::BAN, address.host) && !checkipinfo(control, ipinfo::EXCEPT, address.host) && !checkipinfo(control, ipinfo::TRUST, address.host)))
             enet_socket_destroy(masterclientsocket);
         else if(masterclientsocket!=ENET_SOCKET_NULL)
         {
@@ -446,7 +447,8 @@ void checkmaster()
                 dups++;
                 if(oldest<0 || ENET_TIME_LESS(masterclients[i]->lastactivity, masterclients[oldest]->lastactivity)) oldest = i;
             }
-            if(masterduplimit && dups >= masterduplimit) purgemasterclient(oldest);
+            int limit = checkipinfo(control, ipinfo::TRUST, address.host) ? masterduptrust : masterduplimit;
+            if(limit && dups >= limit) purgemasterclient(oldest);
             masterclient *c = new masterclient;
             c->address = address;
             c->socket = masterclientsocket;
@@ -493,7 +495,7 @@ void checkmaster()
             else { purgemasterclient(i--); continue; }
         }
         /* if(c.output.length() > OUTPUT_LIMIT) { purgemasterclient(i--); continue; } */
-        if(ENET_TIME_DIFFERENCE(totalmillis, c.lastactivity) >= (c.isserver ? SERVER_TIME : CLIENT_TIME) || (checkipinfo(control, ipinfo::BAN, c.address.host) && !checkipinfo(control, ipinfo::EXCEPT, c.address.host)))
+        if(ENET_TIME_DIFFERENCE(totalmillis, c.lastactivity) >= (c.isserver ? SERVER_TIME : CLIENT_TIME) || (checkipinfo(control, ipinfo::BAN, c.address.host) && !checkipinfo(control, ipinfo::EXCEPT, c.address.host) && !checkipinfo(control, ipinfo::TRUST, c.address.host)))
         {
             purgemasterclient(i--);
             continue;

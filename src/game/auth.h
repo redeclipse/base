@@ -328,7 +328,7 @@ namespace auth
             if(servcmd(2, w[1], w[2])) conoutf("master server variable synced: %s", w[1]);
             versioning = oldversion;
         }
-        else loopj(ipinfo::MAXTYPES) if(!strcmp(w[0], ipinfotypes[j]))
+        else loopj(ipinfo::SYNCTYPES) if(!strcmp(w[0], ipinfotypes[j]))
         {
             ipinfo &c = control.add();
             c.ip = uint(atoi(w[1]));

@@ -55,7 +55,7 @@ enum { PACKAGEDIR_OCTA = 1<<0 };
 extern const char * const disc_reasons[];
 struct ipinfo
 {
-    enum { ALLOW = 0, BAN, MUTE, LIMIT, EXCEPT, MAXTYPES };
+    enum { ALLOW = 0, BAN, MUTE, LIMIT, EXCEPT, SYNCTYPES, TRUST = SYNCTYPES, MAXTYPES };
     enum { TEMPORARY = 0, INTERNAL, LOCAL, GLOBAL };
     enet_uint32 ip, mask;
     int type, flag, time, version;
