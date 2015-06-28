@@ -204,7 +204,7 @@ void purgemasterclient(int n)
 {
     masterclient &c = *masterclients[n];
     enet_socket_destroy(c.socket);
-    if(verbose) conoutf("master peer %s disconnected", c.name);
+    if(verbose || c.isserver) conoutf("master peer %s disconnected", c.name);
     delete masterclients[n];
     masterclients.remove(n);
 }
@@ -473,10 +473,10 @@ void checkmaster()
             buf.data = (void *)&c.output[c.outputpos];
             buf.dataLength = c.output.length()-c.outputpos;
             int res = enet_socket_send(c.socket, NULL, &buf, 1);
-            if(res>=0)
+            if(res >= 0)
             {
                 c.outputpos += res;
-                if(c.outputpos>=c.output.length())
+                if(c.outputpos >= c.output.length())
                 {
                     c.output.setsize(0);
                     c.outputpos = 0;
@@ -491,7 +491,7 @@ void checkmaster()
             buf.data = &c.input[c.inputpos];
             buf.dataLength = sizeof(c.input) - c.inputpos;
             int res = enet_socket_receive(c.socket, NULL, &buf, 1);
-            if(res>0)
+            if(res > 0)
             {
                 c.inputpos += res;
                 c.input[min(c.inputpos, (int)sizeof(c.input)-1)] = '\0';
