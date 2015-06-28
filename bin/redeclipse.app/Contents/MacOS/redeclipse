@@ -1,4 +1,16 @@
 #!/bin/sh
+. ~/.bash_profile
 SDL_SINGLEDISPLAY=1
 SDL_ENABLEAPPEVENTS=1
-exec "${0}_universal" "$@"
+REDECLIPSE_APPDIR=$(dirname "$0")
+if [ -e "${REDECLIPSE_APPDIR}/../Resources/redeclipse.sh" ]; then
+    pushd "${REDECLIPSE_APPDIR}/../Resources"
+    exec "redeclipse.sh" "$@"
+    popd
+elif [ -e "${REDECLIPSE_APPDIR}/../../../../redeclipse.sh" ]; then
+    pushd "${REDECLIPSE_APPDIR}/../../../.."
+    exec "redeclipse.sh" "$@"
+    popd
+elif [ -e "${0}_universal" ]; then
+    exec "${0}_universal" "$@"
+fi

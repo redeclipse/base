@@ -46,11 +46,6 @@ setlocal enableextensions enabledelayedexpansion
         exit /b 0
     )
     set REDECLIPSE_UNZIP="%REDECLIPSE_PATH%\bin\tools\unzip.exe" -o
-    if NOT EXIST "%REDECLIPSE_PATH%\bin\tools\git-apply.exe" (
-        echo Unable to find git-apply.exe, are you sure it is in tools?
-        exit /b 0
-    )
-    set REDECLIPSE_GITAPPLY="%REDECLIPSE_PATH%\bin\tools\git-apply.exe" --whitespace=fix --inaccurate-eof --verbose --stat --apply -C1
     if NOT EXIST "%REDECLIPSE_TEMP%" mkdir "%REDECLIPSE_TEMP%"
     echo @ECHO OFF> "%REDECLIPSE_TEMP%\install.bat"
     echo setlocal enableextensions>> "%REDECLIPSE_TEMP%\install.bat"
@@ -108,28 +103,6 @@ setlocal enableextensions enabledelayedexpansion
         echo echo %REDECLIPSE_MODULE_RUN%: already up to date.>> "%REDECLIPSE_TEMP%\install.bat"
         exit /b 0
     )
-    if "%REDECLIPSE_MODULE_INSTALLED%" == "none" goto redeclipse_update_module_blob
-:redeclipse_update_module_patch
-    if EXIST "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.patch" del /f /q "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.patch"
-    if EXIST "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.zip" del /f /q "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.zip"
-    echo %REDECLIPSE_MODULE_RUN%: %REDECLIPSE_GITHUB%/%REDECLIPSE_MODULE_RUN%/compare/%REDECLIPSE_MODULE_INSTALLED%...%REDECLIPSE_MODULE_REMOTE%.patch
-    echo.
-    %REDECLIPSE_CURL% --output "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.patch" "%REDECLIPSE_GITHUB%/%REDECLIPSE_MODULE_RUN%/compare/%REDECLIPSE_MODULE_INSTALLED%...%REDECLIPSE_MODULE_REMOTE%.patch"
-    if NOT EXIST "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.patch" (
-        echo %REDECLIPSE_MODULE_RUN%: Failed to retrieve update package. Downloading full zip instead.
-        goto redeclipse_update_module_blob
-    )
-:redeclipse_update_module_patch_deploy
-    echo echo %REDECLIPSE_MODULE_RUN%: applying patches.>> "%REDECLIPSE_TEMP%\install.bat"
-    echo %REDECLIPSE_GITAPPLY% --directory="%REDECLIPSE_PATH%%REDECLIPSE_MODULE_DIR%" "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.patch" ^&^& ^(>> "%REDECLIPSE_TEMP%\install.bat"
-    echo     ^(echo %REDECLIPSE_MODULE_REMOTE%^)^> "%REDECLIPSE_PATH%%REDECLIPSE_MODULE_DIR%\version.txt">> "%REDECLIPSE_TEMP%\install.bat"
-    echo ^) ^|^| ^(>> "%REDECLIPSE_TEMP%\install.bat"
-    echo     ^(echo none^)^> "%REDECLIPSE_PATH%%REDECLIPSE_MODULE_DIR%\version.txt">> "%REDECLIPSE_TEMP%\install.bat"
-    echo     del /f /q "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.txt">> "%REDECLIPSE_TEMP%\install.bat"
-    echo     set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
-    echo ^)>> "%REDECLIPSE_TEMP%\install.bat"
-    set REDECLIPSE_DEPLOY=true
-    exit /b 0
 :redeclipse_update_module_blob
     if EXIST "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.zip" (
         if "%REDECLIPSE_MODULE_CACHED%" == "%REDECLIPSE_MODULE_REMOTE%" (

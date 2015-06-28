@@ -58,13 +58,8 @@ dist-tar: ../$(tarname)
 	mkdir tmpdir-osx
 	mkdir tmpdir-osx/$(dirname-osx)
 	mkdir tmpdir-osx/$(dirname-osx)/Contents
-	mkdir tmpdir-osx/$(dirname-osx)/Contents/Resources
 	# Use links with tar dereference to change directory paths
-	ln -s ../../../../$</config/ tmpdir-osx/$(dirname-osx)/Contents/Resources/config
-	ln -s ../../../../$</data/ tmpdir-osx/$(dirname-osx)/Contents/Resources/data
-	ln -s ../../../../$</doc/ tmpdir-osx/$(dirname-osx)/Contents/Resources/doc
-	ln -s ../../../../$</src/ tmpdir-osx/$(dirname-osx)/Contents/Resources/src
-	ln -s ../../../../$</readme.txt tmpdir-osx/$(dirname-osx)/Contents/Resources/readme.txt
+	ln -s ../../../../$</ tmpdir-osx/$(dirname-osx)/Contents/Resources
 	tar -hrf $@ -C tmpdir-osx $(dirname-osx)
 	rm -rf tmpdir-osx/
 

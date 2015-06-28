@@ -105,11 +105,6 @@ redeclipse_update_branch() {
         return 1
     fi
     REDECLIPSE_TAR="tar -xv"
-    if [ -z `which git` ]; then
-        echo "Unable to find git, are you sure you have it installed?"
-        return 1
-    fi
-    REDECLIPSE_GITAPPLY="git apply --whitespace=fix --inaccurate-eof --verbose --stat --apply -C1"
     if ! [ -d "${REDECLIPSE_TEMP}" ]; then mkdir -p "${REDECLIPSE_TEMP}"; fi
     echo "#"'!'"/bin/sh" > "${REDECLIPSE_TEMP}/install.sh"
     echo "REDECLIPSE_ERROR=\"false\"" >> "${REDECLIPSE_TEMP}/install.sh"
@@ -198,39 +193,7 @@ redeclipse_update_module_get() {
         echo "echo \"${REDECLIPSE_MODULE_RUN}: already up to date.\"" >> "${REDECLIPSE_TEMP}/install.sh"
         return $?
     fi
-    if [ "${REDECLIPSE_MODULE_INSTALLED}" = "none" ]; then
-        redeclipse_update_module_blob
-        return $?
-    fi
-    redeclipse_update_module_patch
-    return $?
-}
-
-redeclipse_update_module_patch() {
-    if [ -e "${REDECLIPSE_TEMP}/${REDECLIPSE_MODULE_RUN}.patch" ]; then rm -f "${REDECLIPSE_TEMP}/${REDECLIPSE_MODULE_RUN}.patch"; fi
-    if [ -e "${REDECLIPSE_TEMP}/${REDECLIPSE_MODULE_RUN}.${REDECLIPSE_ARCHEXT}" ]; then rm -f "${REDECLIPSE_TEMP}/${REDECLIPSE_MODULE_RUN}.${REDECLIPSE_ARCHEXT}"; fi
-    echo "${REDECLIPSE_MODULE_RUN}: ${REDECLIPSE_GITHUB}/${REDECLIPSE_MODULE_RUN}/compare/${REDECLIPSE_MODULE_INSTALLED}...${REDECLIPSE_MODULE_REMOTE}.patch"
-    echo ""
-    ${REDECLIPSE_CURL} --output "${REDECLIPSE_TEMP}/${REDECLIPSE_MODULE_RUN}.patch" "${REDECLIPSE_GITHUB}/${REDECLIPSE_MODULE_RUN}/compare/${REDECLIPSE_MODULE_INSTALLED}...${REDECLIPSE_MODULE_REMOTE}.patch"
-    if ! [ -e "${REDECLIPSE_TEMP}/${REDECLIPSE_MODULE_RUN}.patch" ]; then
-        echo "${REDECLIPSE_MODULE_RUN}: Failed to retrieve update package. Downloading full zip instead."
-        redeclipse_update_module_blob
-        return $?
-    fi
-    redeclipse_update_module_patch_deploy
-    return $?
-}
-
-redeclipse_update_module_patch_deploy() {
-    echo "echo \"${REDECLIPSE_MODULE_RUN}: applying patches.\"" >> "${REDECLIPSE_TEMP}/install.sh"
-    echo "${REDECLIPSE_GITAPPLY} --directory=\"${REDECLIPSE_PATH}${REDECLIPSE_MODULE_DIR}\" \"${REDECLIPSE_TEMP}/${REDECLIPSE_MODULE_RUN}.patch\" && (" >> "${REDECLIPSE_TEMP}/install.sh"
-    echo "    echo \"${REDECLIPSE_MODULE_REMOTE}\" > \"${REDECLIPSE_PATH}${REDECLIPSE_MODULE_DIR}/version.txt\"" >> "${REDECLIPSE_TEMP}/install.sh"
-    echo ") || (" >> "${REDECLIPSE_TEMP}/install.sh"
-    echo "    echo \"none\" > \"${REDECLIPSE_PATH}${REDECLIPSE_MODULE_DIR}/version.txt\"" >> "${REDECLIPSE_TEMP}/install.sh"
-    echo "    rm -f \"${REDECLIPSE_TEMP}/${REDECLIPSE_MODULE_RUN}.txt\"" >> "${REDECLIPSE_TEMP}/install.sh"
-    echo "    REDECLIPSE_ERROR=\"true\"" >> "${REDECLIPSE_TEMP}/install.sh"
-    echo ")" >> "${REDECLIPSE_TEMP}/install.sh"
-    REDECLIPSE_DEPLOY="true"
+    redeclipse_update_module_blob
     return $?
 }
 
