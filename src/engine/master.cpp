@@ -21,8 +21,8 @@ SVAR(0, masterip, "");
 SVAR(0, masterscriptclient, "");
 SVAR(0, masterscriptserver, "");
 
-VAR(0, masterduplimit, 0, 2, VAR_MAX);
-VAR(0, masterduptrust, 0, 5, VAR_MAX);
+VAR(0, masterduplimit, 0, 3, VAR_MAX);
+VAR(0, masterduptrust, 0, 6, VAR_MAX);
 VAR(0, masterpingdelay, 1000, 3000, VAR_MAX);
 VAR(0, masterpingtries, 1, 5, VAR_MAX);
 
