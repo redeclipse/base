@@ -301,7 +301,7 @@ namespace physics
             {
                 gameent *e = (gameent *)pl;
                 vel *= movespeed/100.f*(1.f-clamp(e->stunned(lastmillis), 0.f, 1.f));
-                if((d->physstate >= PHYS_SLOPE || d->onladder) && !e->sliding() && e->crouching()) vel *= movecrawl;
+                if((d->physstate >= PHYS_SLOPE || d->onladder) && !e->sliding(true) && e->crouching()) vel *= movecrawl;
                 else if(isweap(e->weapselect) && e->weapstate[e->weapselect] == W_S_ZOOM) vel *= movecrawl;
                 if(e->move >= 0) vel *= e->strafe ? movestrafe : movestraight;
                 if(e->running()) vel *= moverun;

@@ -429,7 +429,7 @@ GFVAR(0, impulseparkournorm, 0, 0.5f, FVAR_MAX); // minimum parkour surface z no
 GVAR(0, impulseallowed, 0, IM_A_ALL, IM_A_ALL); // impulse actions allowed; bit: 0 = off, 1 = dash, 2 = boost, 4 = parkour
 GVAR(0, impulsestyle, 0, 1, 3); // impulse style; 0 = off, 1 = touch and count, 2 = count only, 3 = freestyle
 GVAR(0, impulsecount, 0, 6, VAR_MAX); // number of impulse actions per air transit
-GVAR(0, impulseslip, 0, 250, VAR_MAX); // time before floor friction kicks back in
+GVAR(0, impulseslip, 0, 500, VAR_MAX); // time before floor friction kicks back in
 GVAR(0, impulseslide, 0, 1000, VAR_MAX); // time before powerslides end
 GVAR(0, impulsejumpdelay, 0, 100, VAR_MAX); // minimum time after jump for boost
 GVAR(0, impulseboostdelay, 0, 250, VAR_MAX); // minimum time between boosts
