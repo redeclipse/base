@@ -245,7 +245,7 @@ int nextcontrolversion()
     {
         controlversion = 0;
         loopv(masterclients) masterclients[i]->lastcontrol = -1;
-        loopv(control) if(control[i].flag == ipinfo::LOCAL) control[i].version = controlversion;
+        loopv(control) if(control[i].type < ipinfo::SYNCTYPES && control[i].flag == ipinfo::LOCAL) control[i].version = controlversion;
     }
     return controlversion;
 }
@@ -328,7 +328,7 @@ bool checkmasterclientinput(masterclient &c)
                     c.shouldping = true;
                     c.numpings = 0;
                     c.lastcontrol = controlversion;
-                    loopv(control) if(control[i].flag == ipinfo::LOCAL)
+                    loopv(control) if(control[i].type < ipinfo::SYNCTYPES && control[i].flag == ipinfo::LOCAL)
                         masteroutf(c, "%s %u %u \"%s\"\n", ipinfotypes[control[i].type], control[i].ip, control[i].mask, control[i].reason);
                     if(c.isserver)
                     {
@@ -420,7 +420,7 @@ void checkmaster()
         }
         if(c.isserver && c.lastcontrol < controlversion)
         {
-            loopv(control) if(control[i].flag == ipinfo::LOCAL && control[i].version > c.lastcontrol)
+            loopv(control) if(control[i].type < ipinfo::SYNCTYPES && control[i].flag == ipinfo::LOCAL && control[i].version > c.lastcontrol)
                 masteroutf(c, "%s %u %u %s\n", ipinfotypes[control[i].type], control[i].ip, control[i].mask, control[i].reason);
             c.lastcontrol = controlversion;
         }
@@ -428,7 +428,7 @@ void checkmaster()
         else ENET_SOCKETSET_ADD(readset, c.socket);
         maxsock = max(maxsock, c.socket);
     }
-    if(enet_socketset_select(maxsock, &readset, &writeset, 0)<=0) return;
+    if(enet_socketset_select(maxsock, &readset, &writeset, 0) <= 0) return;
 
     if(ENET_SOCKETSET_CHECK(readset, pingsocket)) checkmasterpongs();
 
@@ -445,7 +445,7 @@ void checkmaster()
         {
             int dups = 0;
             loopv(masterclients) if(masterclients[i]->address.host == address.host) dups++;
-            if(dups >= masterduplimit && !checkipinfo(control, ipinfo::TRUST, address.host))
+            if(dups >= masterduplimit)
             {
                 enet_socket_destroy(masterclientsocket);
                 break;
