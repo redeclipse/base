@@ -16,9 +16,10 @@ enum {
 };
 enum {
     W_N_STADD = 1<<0, W_N_GRADD = 1<<1, W_N_STIMM = 1<<2, W_N_GRIMM = 1<<3, W_N_SLIDE = 1<<4,
-    W_N_ADD = W_N_STADD|W_N_GRADD|W_N_SLIDE, W_N_IMM = W_N_STIMM|W_N_GRIMM|W_N_SLIDE,
-    W_N_ST = W_N_STADD|W_N_STIMM|W_N_SLIDE, W_N_GR = W_N_GRADD|W_N_GRIMM|W_N_SLIDE,
-    W_N_ALL = W_N_STADD|W_N_GRADD|W_N_STIMM|W_N_GRIMM|W_N_SLIDE,
+    W_N_ADD = W_N_STADD|W_N_GRADD, W_N_IMM = W_N_STIMM|W_N_GRIMM,
+    W_N_ST = W_N_STADD|W_N_STIMM, W_N_GR = W_N_GRADD|W_N_GRIMM,
+    W_N_AI = W_N_STADD|W_N_GRADD|W_N_STIMM|W_N_GRIMM,
+    W_N_ALL = W_N_STADD|W_N_GRADD|W_N_STIMM|W_N_GRIMM|W_N_SLIDE
 };
 enum {
     W_S_IDLE = 0, W_S_PRIMARY, W_S_SECONDARY, W_S_RELOAD, W_S_SWITCH, W_S_USE, W_S_POWER, W_S_ZOOM, W_S_WAIT, W_S_MAX,
@@ -689,10 +690,10 @@ WPFVARM(0, spreadz, 0, FVAR_MAX,
     1.0f,       2.0f,       1.0f,       4.0f,       2.0f,       4.0f,       1.0f,       1.0f,       0.0f,       0.0f,       0.0f,       0.0f
 );
 WPVARK(0, stun, 0, W_N_ALL,
-    W_N_ADD,    W_N_ADD,    W_N_ALL,    W_N_ADD,    W_N_ADD,    W_N_ADD,    W_N_ADD,    W_N_ADD,    W_N_ADD,    W_N_ADD,    W_N_ADD,    W_N_ADD,
-    W_N_ADD,    W_N_ADD,    W_N_ALL,    W_N_ADD,    W_N_ADD,    W_N_ALL,    W_N_ADD,    W_N_ADD,    W_N_ADD,    W_N_ADD,    W_N_ADD,    W_N_ADD,
-    W_N_ADD,    W_N_ADD,    W_N_ALL,    W_N_ADD,    W_N_ADD,    W_N_ADD,    W_N_ALL,    W_N_ADD,    W_N_ADD,    W_N_ADD,    W_N_ADD,    W_N_ADD,
-    W_N_ADD,    W_N_ADD,    W_N_ALL,    W_N_ADD,    W_N_ADD,    W_N_ALL,    W_N_ALL,    W_N_ALL,    W_N_ADD,    W_N_ADD,    W_N_ADD,    W_N_ADD
+    W_N_ADD,    W_N_ADD,    W_N_AI,     W_N_ADD,    W_N_ADD,    W_N_ADD,    W_N_ADD,    W_N_ADD,    W_N_ADD,    W_N_ADD,    W_N_ADD,    W_N_ADD,
+    W_N_ADD,    W_N_ADD,    W_N_AI,     W_N_ADD,    W_N_ADD,    W_N_ALL,    W_N_ADD,    W_N_ADD,    W_N_ADD,    W_N_ADD,    W_N_ADD,    W_N_ADD,
+    W_N_ADD,    W_N_ADD,    W_N_AI,     W_N_ADD,    W_N_ADD,    W_N_ADD,    W_N_AI,     W_N_ADD,    W_N_ADD,    W_N_ADD,    W_N_ADD,    W_N_ADD,
+    W_N_ADD,    W_N_ADD,    W_N_AI,     W_N_ADD,    W_N_ADD,    W_N_ALL,    W_N_AI,     W_N_AI,     W_N_ADD,    W_N_ADD,    W_N_ADD,    W_N_ADD
 );
 WPFVARK(0, stunfall, 0, FVAR_MAX,
     0.0f,       0.0f,       0.1f,       0.0f,       0.0f,       0.0f,       0.1f,       0.01f,      0.1f,       0.0f,       8.0f,       0.2f,
