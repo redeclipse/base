@@ -110,9 +110,9 @@ WPSVAR(0, longname,
     "semi-auto shotgun",
     "submachine gun",
     "flame thrower",
-    "plasma cannon",
+    "plasma caster",
     "stun zapper",
-    "pulse rifle",
+    "laser rifle",
     "thermite grenade",
     "shock mine",
     "rocket launcher"
@@ -622,7 +622,7 @@ WPFVARK(0, radius, FVAR_NONZERO, FVAR_MAX,
     1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f
 );
 WPVARM(0, rays, 0, MAXPARAMS,
-    1,          1,          1,          22,         1,          1,          1,          1,          1,          1,          1,          1,
+    1,          1,          1,          20,         1,          1,          1,          1,          1,          1,          1,          1,
     1,          1,          1,          1,          1,          1,          1,          5,          1,          1,          1,          1
 );
 WPFVARK(0, reflectivity, 0, FVAR_MAX,
@@ -732,7 +732,7 @@ WPFVARK(0, taperout, 0, FVAR_MAX,
     0.0f,       0.0f,       0.0f,       0.01f,      0.01f,      0.01f,      0.5f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f
 );
 WPVARM(0, time, 1, VAR_MAX,
-    100,        2000,       350,        220,        510,        200,        350,        80,         5000,       3000,       60000,      5000,
+    100,        2000,       350,        200,        510,        200,        350,        80,         5000,       3000,       60000,      5000,
     350,        1000,       500,        700,        1000,       100,        3500,       80,         5000,       3000,       30000,      5000
 );
 WPVARM(0, timedelay, 0, VAR_MAX,
