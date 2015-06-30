@@ -133,9 +133,9 @@ namespace game
     FVAR(IDF_PERSIST, followdist, FVAR_NONZERO, 10, FVAR_MAX);
     FVAR(IDF_PERSIST, followside, FVAR_MIN, 8, FVAR_MAX);
 
-    VAR(IDF_PERSIST, followtvspeed, 1, 500, VAR_MAX);
-    VAR(IDF_PERSIST, followtvyawspeed, 1, 500, VAR_MAX);
-    VAR(IDF_PERSIST, followtvpitchspeed, 1, 500, VAR_MAX);
+    VAR(IDF_PERSIST, followtvspeed, 1, 350, VAR_MAX);
+    VAR(IDF_PERSIST, followtvyawspeed, 1, 350, VAR_MAX);
+    VAR(IDF_PERSIST, followtvpitchspeed, 1, 350, VAR_MAX);
     FVAR(IDF_PERSIST, followtvrotate, FVAR_MIN, 45, FVAR_MAX); // rotate style, < 0 = absolute angle, 0 = scaled, > 0 = scaled with max angle
     FVAR(IDF_PERSIST, followtvyawscale, FVAR_MIN, 1, 1000);
     FVAR(IDF_PERSIST, followtvpitchscale, FVAR_MIN, 1, 1000);
@@ -145,9 +145,9 @@ namespace game
     VAR(IDF_PERSIST, spectvtime, 1000, 10000, VAR_MAX);
     VAR(IDF_PERSIST, spectvmintime, 1000, 3000, VAR_MAX);
     VAR(IDF_PERSIST, spectvmaxtime, 0, 15000, VAR_MAX);
-    VAR(IDF_PERSIST, spectvspeed, 1, 500, VAR_MAX);
-    VAR(IDF_PERSIST, spectvyawspeed, 1, 500, VAR_MAX);
-    VAR(IDF_PERSIST, spectvpitchspeed, 1, 500, VAR_MAX);
+    VAR(IDF_PERSIST, spectvspeed, 1, 350, VAR_MAX);
+    VAR(IDF_PERSIST, spectvyawspeed, 1, 350, VAR_MAX);
+    VAR(IDF_PERSIST, spectvpitchspeed, 1, 350, VAR_MAX);
     FVAR(IDF_PERSIST, spectvrotate, FVAR_MIN, 0, FVAR_MAX); // rotate style, < 0 = absolute angle, 0 = scaled, > 0 = scaled with max angle
     FVAR(IDF_PERSIST, spectvyawscale, FVAR_MIN, 1, 1000);
     FVAR(IDF_PERSIST, spectvpitchscale, FVAR_MIN, 1, 1000);
@@ -160,9 +160,9 @@ namespace game
     VAR(IDF_PERSIST, spectvintermtime, 1000, 10000, VAR_MAX);
     VAR(IDF_PERSIST, spectvintermmintime, 1000, 6000, VAR_MAX);
     VAR(IDF_PERSIST, spectvintermmaxtime, 0, 20000, VAR_MAX);
-    VAR(IDF_PERSIST, spectvintermspeed, 1, 500, VAR_MAX);
-    VAR(IDF_PERSIST, spectvintermyawspeed, 1, 500, VAR_MAX);
-    VAR(IDF_PERSIST, spectvintermpitchspeed, 1, 500, VAR_MAX);
+    VAR(IDF_PERSIST, spectvintermspeed, 1, 350, VAR_MAX);
+    VAR(IDF_PERSIST, spectvintermyawspeed, 1, 350, VAR_MAX);
+    VAR(IDF_PERSIST, spectvintermpitchspeed, 1, 350, VAR_MAX);
     FVAR(IDF_PERSIST, spectvintermrotate, FVAR_MIN, 0, FVAR_MAX); // rotate style, < 0 = absolute angle, 0 = scaled, > 0 = scaled with max angle
     FVAR(IDF_PERSIST, spectvintermyawscale, FVAR_MIN, 1, 1000);
     FVAR(IDF_PERSIST, spectvintermpitchscale, FVAR_MIN, 1, 1000);
@@ -174,8 +174,8 @@ namespace game
     VAR(IDF_PERSIST, spectvfollowtime, 1000, 10000, VAR_MAX);
     VAR(IDF_PERSIST, spectvfollowmintime, 1000, 1000, VAR_MAX);
     VAR(IDF_PERSIST, spectvfollowmaxtime, 0, 20000, VAR_MAX);
-    VAR(IDF_PERSIST, spectvfollowspeed, 1, 500, VAR_MAX);
-    VAR(IDF_PERSIST, spectvfollowyawspeed, 1, 500, VAR_MAX);
+    VAR(IDF_PERSIST, spectvfollowspeed, 1, 250, VAR_MAX);
+    VAR(IDF_PERSIST, spectvfollowyawspeed, 1, 250, VAR_MAX);
     VAR(IDF_PERSIST, spectvfollowpitchspeed, 1, 350, VAR_MAX);
     FVAR(IDF_PERSIST, spectvfollowrotate, FVAR_MIN, 45, FVAR_MAX); // rotate style, < 0 = absolute angle, 0 = scaled, > 0 = scaled with max angle
     FVAR(IDF_PERSIST, spectvfollowyawscale, FVAR_MIN, 1, 1000);
@@ -183,8 +183,10 @@ namespace game
     FVAR(IDF_PERSIST, spectvfollowyawthresh, 0, 0, 360);
     FVAR(IDF_PERSIST, spectvfollowpitchthresh, 0, 0, 180);
 
-    FVAR(IDF_PERSIST, spectvmindist, 0, 0, FVAR_MAX);
-    FVAR(IDF_PERSIST, spectvmaxdist, 0, 128, FVAR_MAX);
+    FVAR(IDF_PERSIST, spectvmindist, 0, 32, FVAR_MAX);
+    FVAR(IDF_PERSIST, spectvmaxdist, 0, 256, FVAR_MAX);
+    FVAR(IDF_PERSIST, spectvfollowmindist, 0, 8, FVAR_MAX);
+    FVAR(IDF_PERSIST, spectvfollowmaxdist, 0, 128, FVAR_MAX);
 
     VAR(IDF_PERSIST, deathcamstyle, 0, 2, 2); // 0 = no follow, 1 = follow attacker, 2 = follow self
     VAR(IDF_PERSIST, deathcamspeed, 0, 500, VAR_MAX);
@@ -2362,7 +2364,8 @@ namespace game
         c->reset();
         if(!force && c->player && !allowspec(c->player, spectvdead, spectvfollowing)) return false;
         bool aim = !c->player || spectvaiming(c->player);
-        float yaw = c->player ? c->player->yaw : camera1->yaw, pitch = c->player ? c->player->pitch : camera1->pitch;
+        float yaw = c->player ? c->player->yaw : camera1->yaw, pitch = c->player ? c->player->pitch : camera1->pitch,
+              mindist = c->player ? spectvfollowmindist : spectvmindist, maxdist = min(c->player ? spectvfollowmaxdist : spectvmaxdist, foglevel);
         fixrange(yaw, pitch);
         vec from = c->pos(amt), dir(0, 0, 0), trg;
         loopj(c->player ? 3 : 2)
@@ -2387,8 +2390,8 @@ namespace game
                     vectoyawpitch(vec(cam->o).sub(from).normalize(), yaw, pitch);
                     fixrange(yaw, pitch);
                 }
-                float dist = from.dist(cam->o), fogdist = min(spectvmaxdist, foglevel);
-                if(dist >= spectvmindist && getsight(from, yaw, pitch, cam->o, trg, fogdist, curfov, fovy))
+                float dist = from.dist(cam->o);
+                if(dist >= mindist && getsight(from, yaw, pitch, cam->o, trg, maxdist, curfov, fovy))
                 {
                     c->inview[cam->type]++;
                     dir.add(cam->o);
