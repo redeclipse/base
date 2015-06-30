@@ -28,7 +28,7 @@
   InstallDirRegKey HKLM "Software\Red Eclipse" "Install_Dir" ; Get installation folder from registry if available
 
   ; Request the most privileges user can get
-  RequestExecutionLevel highest
+  RequestExecutionLevel admin
 
   !define MUI_ICON "..\..\redeclipse.ico" ; Use RE icon for installer.
   !define MUI_UNICON "${NSISDIR}\Contrib\Graphics\Icons\modern-uninstall.ico" ; Don't use RE icon so uninstaller isn't mistaken for game.
