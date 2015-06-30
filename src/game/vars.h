@@ -67,6 +67,7 @@ GVAR(IDF_ADMIN, editlock, 0, PRIV_OPERATOR, PRIV_CREATOR);
 GVAR(IDF_ADMIN, spawnlock, 0, PRIV_MODERATOR, PRIV_CREATOR); // if locked, require this to spawn
 GVAR(IDF_ADMIN, spawneditlock, 0, PRIV_MODERATOR, PRIV_CREATOR); // if locked in editmode, require this to spawn
 GVAR(IDF_ADMIN, masterlock, 0, PRIV_MODERATOR, PRIV_CREATOR);
+GVAR(IDF_ADMIN, crclock, 0, PRIV_MAX, PRIV_MAX);
 
 GVAR(IDF_ADMIN, overflowlock, 0, PRIV_MODERATOR, PRIV_CREATOR); // normal message queue override
 GVAR(IDF_ADMIN, overflowsize, 0, 255, VAR_MAX); // kick if queued messages >= this
