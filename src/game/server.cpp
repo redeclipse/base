@@ -333,8 +333,9 @@ namespace server
         servstate state;
         string name, handle, mapvote, authname, clientmap;
         int clientnum, connectmillis, sessionid, overflow, ping, team, lastteam, lastplayerinfo,
-            modevote, mutsvote, lastvote, privilege, gameoffset, lastevent, wslen, mapcrc, swapteam;
+            modevote, mutsvote, lastvote, privilege, gameoffset, lastevent, wslen, swapteam;
         bool connected, ready, local, timesync, online, wantsmap, failedmap, connectauth, kicked;
+        uint mapcrc;
         vector<gameevent *> events;
         vector<uchar> position, messages;
         uchar *wsdata;
@@ -5255,11 +5256,7 @@ namespace server
                     copystring(ci->clientmap, text);
                     ci->mapcrc = text[0] ? crc : 0;
                     if(crc && !mapcrc) getmap();
-                    if(crclocked(ci))
-                    {
-                        getmap(ci);
-                        return false;
-                    }
+                    if(crclocked(ci)) getmap(ci);
                     else if(!ci->ready)
                     {
                         ci->ready = true;
