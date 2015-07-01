@@ -103,7 +103,7 @@ struct hitmsg { int flags, proj, target, dist; ivec dir, vel; };
 
 #include "weapdef.h"
 
-WPSVAR(0, longname,
+WPSVAR(0, longname, // shown for weapon pickups and loadout menu
     "melee attack",
     "sidearm pistol",
     "energy sword",
@@ -117,9 +117,39 @@ WPSVAR(0, longname,
     "shock mine",
     "rocket launcher"
 );
-WPSVAR(0, name,
+
+WPSVARM(0, desc,
+    "Punch 'em up!",
+    "Long-range, low-damage bullets with a high rate of fire.",
+    "Horizontal slice, low-damage, can be swung at short intervals.",
+    "Fires a lot of pellets. Causes mass destruction at short range, useless at long range.",
+    "Rapid-fire bullets that bounce off walls.",
+    "Short-ranged flamethrower, barbecue your foes.",
+    "Fires plasma balls at a high rate with high damage, but low accuracy.",
+    "Instantly electrocutes your enemies, slowing them down drastically.",
+    "Fires a non-charged laser.",
+    "A simple explosion device, can be cooked to control detonation delay.",
+    "Explodes and discharges electricity when someone comes too close.",
+    "A fast, highly explosive rocket with a large shockwave.",
+    // begin secondary
+    "Kicks or slides.",
+    "Slower rate of fire than the primary attack, but does more damage.",
+    "Vertical slice, swung at slower intervals than the horizontal slice, powerful when used correctly.",
+    "Long-range slug, high damage, disintegrates into shavings.",
+    "Long-range projectiles that sticks to walls before exploding into fragments.",
+    "Versatile air blast to extinguish teammates or blast players off their feet.",
+    "A charged, quickly-expanding ball of plasma that quickly sucks players in, causing great damage.",
+    "A large electric discharge, can overload the victim's armor with electricity, slowing them down drastically.",
+    "Charged laser with adjustable zoom.",
+    "A simple explosion device that sticks to whatever it hits.",
+    "Emits a laser, which when tripped causes a massive electric discharge, overloading the victim's armor, stunning them.",
+    "A slower highly-explosive guided rocket."
+);
+
+WPSVAR(0, name, // keep this incase longname is too long
     "melee",    "pistol",   "sword",    "shotgun",  "smg",      "flamer",   "plasma",   "zapper",   "rifle",    "grenade",  "mine",     "rocket"
 );
+
 WPFVARM(0, aidist, 0, FVAR_MAX,
     16.0f,      512.0f,     48.0f,      64.0f,      512.0f,     64.0f,      512.0f,     512.f,      768.0f,     384.0f,     128.0f,     1024.0f,
     16.0f,      256.0f,     48.0f,      128.0f,     128.0f,     64.0f,      64.0f,      512.f,      2048.0f,    256.0f,     128.0f,     512.0f
