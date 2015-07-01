@@ -2226,7 +2226,7 @@ namespace server
         loopi(n) delete[] demos[i].data;
         demos.remove(0, n);
     }
-    
+
     struct demoinfo
     {
         demoheader hdr;
@@ -2813,6 +2813,16 @@ namespace server
         setteam(ci, T_NEUTRAL, TT_INFOSM);
     }
 
+    bool crclocked(clientinfo *ci, bool msg = false)
+    {
+        if(m_play(gamemode) && G(crclock) && ci->state.actortype == A_PLAYER && mapcrc && ci->mapcrc != mapcrc && !haspriv(ci, G(crclock)))
+        {
+            srvmsgft(ci->clientnum, CON_EVENT, "\fyyou are \fs\fcCRC locked\fs, please wait for the map to download");
+            return true;
+        }
+        return false;
+    }
+
     bool spectate(clientinfo *ci, bool val, bool quarantine = false)
     {
         if(ci->state.state != CS_SPECTATOR && val)
@@ -2856,16 +2866,6 @@ namespace server
 
     enum { ALST_TRY = 0, ALST_SPAWN, ALST_SPEC, ALST_EDIT, ALST_WALK, ALST_MAX };
 
-    bool crclocked(clientinfo *ci, bool msg = false)
-    {
-        if(m_play(gamemode) && G(crclock) && ci->state.actortype == A_PLAYER && mapcrc && ci->mapcrc != mapcrc && !haspriv(ci, G(crclock)))
-        {
-            srvmsgft(ci->clientnum, CON_EVENT, "\fyyou are \fs\fcCRC locked\fs, please wait for the map to download");
-            return true;
-        }
-        return false;
-    }
-    
     struct mapcrcs
     {
         uint id;
@@ -2911,7 +2911,6 @@ namespace server
             {
                 clientinfo *cs = clients[i];
                 if(cs->state.actortype > A_PLAYER || !cs->name[0] || !cs->online || cs->wantsmap || !cs->mapcrc || !cs->ready) continue;
-                int n = -1;
                 loopvj(crcs)
                 {
                     if(crcs[j].id == cs->mapcrc) crcs[j].clients.add(cs);
@@ -4627,7 +4626,7 @@ namespace server
         return strcmp(a->name, b->name) < 0;
     }
     vector<clientinfo *> queryplayers;
-    
+
     int clientconnect(int n, uint ip, bool local)
     {
         clientinfo *ci = (clientinfo *)getinfo(n);
