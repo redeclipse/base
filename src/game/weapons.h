@@ -118,23 +118,8 @@ WPSVAR(0, longname, // shown for weapon pickups and loadout menu
     "rocket launcher"
 );
 
-WPSVAR(0, name, // keep this incase longname is too long
-    "melee",
-    "pistol",
-    "sword",
-    "shotgun",
-    "gun",
-    "flamer",
-    "plasma",
-    "zapper",
-    "rifle",
-    "grenade",
-    "mine",
-    "rocket"
-);
-
 WPSVARM(0, desc,
-    "",
+    "Punch 'em up!",
     "Long-range, low-damage bullets with a high rate of fire.",
     "Horizontal slice, low-damage, can be swung at short intervals.",
     "Fires a lot of pellets. Causes mass destruction at short range, useless at long range.",
@@ -159,6 +144,10 @@ WPSVARM(0, desc,
     "A simple explosion device that sticks to whatever it hits.",
     "Emits a laser, which when tripped causes a massive electric discharge, overloading the victim's armor, stunning them.",
     "A slower highly-explosive guided rocket."
+);
+
+WPSVAR(0, name, // keep this incase longname is too long
+    "melee",    "pistol",   "sword",    "shotgun",  "smg",      "flamer",   "plasma",   "zapper",   "rifle",    "grenade",  "mine",     "rocket"
 );
 
 WPFVARM(0, aidist, 0, FVAR_MAX,
