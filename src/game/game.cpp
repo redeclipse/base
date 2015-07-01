@@ -1855,7 +1855,8 @@ namespace game
         loopi(numdyns) if((d = (gameent *)iterdynents(i)) && gameent::is(d)) d->mapchange(lastmillis, gamemode, mutators);
         entities::spawnplayer(player1); // prevent the player from being in the middle of nowhere
         resetcamera();
-        if(!empty) client::sendgameinfo = client::sendcrcinfo = true;
+        client::sendcrcinfo = true;
+        if(!empty) client::sendgameinfo = true;
         copystring(clientmap, reqname ? reqname : (name ? name : ""));
         if(showloadoutmenu && m_loadout(gamemode, mutators)) wantsloadoutmenu = true;
     }

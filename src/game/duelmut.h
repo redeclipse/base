@@ -14,9 +14,9 @@ struct duelservmode : servmode
         respawns.shrink(0);
     }
 
-    void doreset()
+    void doreset(bool start)
     {
-        dueltime = G(duelcooloff);
+        dueltime = start ? 1 : G(duelcooloff);
         duelcheck = dueldeath = -1;
     }
 
@@ -25,7 +25,7 @@ struct duelservmode : servmode
         waitforhumans = true;
         shrink();
         duelqueue.shrink(0);
-        doreset();
+        doreset(true);
         duelround = duelwins = 0;
         duelwinner = -1;
     }
@@ -186,7 +186,7 @@ struct duelservmode : servmode
 
     void clear()
     {
-        doreset();
+        doreset(false);
         bool reset = false;
         if(m_duel(gamemode, mutators) && G(duelcycle)&(m_team(gamemode, mutators) ? 2 : 1) && duelwinner >= 0 && duelwins > 0)
         {
@@ -410,7 +410,7 @@ struct duelservmode : servmode
 
     void balance(int oldbalance)
     {
-        doreset();
+        doreset(true);
     }
 } duelmutator;
 #endif

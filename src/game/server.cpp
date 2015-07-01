@@ -334,7 +334,7 @@ namespace server
         string name, handle, mapvote, authname, clientmap;
         int clientnum, connectmillis, sessionid, overflow, ping, team, lastteam, lastplayerinfo,
             modevote, mutsvote, lastvote, privilege, gameoffset, lastevent, wslen, swapteam;
-        bool connected, ready, local, timesync, online, wantsmap, failedmap, connectauth, kicked;
+        bool connected, ready, local, timesync, online, wantsmap, connectauth, kicked;
         uint mapcrc;
         vector<gameevent *> events;
         vector<uchar> position, messages;
@@ -359,7 +359,7 @@ namespace server
             state.reset(change);
             events.deletecontents();
             overflow = 0;
-            ready = timesync = wantsmap = failedmap = false;
+            ready = timesync = wantsmap = false;
             lastevent = gameoffset = lastvote = 0;
             if(!change) lastteam = T_NEUTRAL;
             team = swapteam = T_NEUTRAL;
@@ -378,7 +378,7 @@ namespace server
             ping = lastplayerinfo = 0;
             name[0] = handle[0] = 0;
             privilege = PRIV_NONE;
-            connected = ready = local = online = wantsmap = failedmap = connectauth = kicked = false;
+            connected = ready = local = online = wantsmap = connectauth = kicked = false;
             authreq = 0;
             position.setsize(0);
             messages.setsize(0);
@@ -2813,28 +2813,81 @@ namespace server
         setteam(ci, T_NEUTRAL, TT_INFOSM);
     }
 
+    bool spectate(clientinfo *ci, bool val, bool quarantine = false)
+    {
+        if(ci->state.state != CS_SPECTATOR && val)
+        {
+            if(ci->state.state == CS_ALIVE)
+            {
+                suicideevent ev;
+                ev.flags = HIT_SPEC;
+                ev.process(ci);
+            }
+            if(smode) smode->leavegame(ci);
+            mutate(smuts, mut->leavegame(ci));
+            sendf(-1, 1, "ri3", N_SPECTATOR, ci->clientnum, quarantine ? 2 : 1);
+            ci->state.state = CS_SPECTATOR;
+            ci->state.quarantine = quarantine;
+            ci->state.updatetimeplayed(false);
+            setteam(ci, T_NEUTRAL, TT_INFO);
+            if(ci->ready) aiman::poke();
+        }
+        else if(ci->state.state == CS_SPECTATOR && !val)
+        {
+            if(crclocked(ci, true)) return false;
+            int nospawn = 0;
+            if(smode && !smode->canspawn(ci, true)) { nospawn++; }
+            mutate(smuts, if(!mut->canspawn(ci, true)) { nospawn++; });
+            ci->state.state = CS_DEAD;
+            if(nospawn)
+            {
+                spectate(ci, true);
+                return false;
+            }
+            ci->state.lasttimeplayed = totalmillis;
+            ci->state.quarantine = false;
+            waiting(ci, DROP_RESET);
+            if(smode) smode->entergame(ci);
+            mutate(smuts, mut->entergame(ci));
+            if(ci->ready) aiman::poke();
+        }
+        return true;
+    }
+
     enum { ALST_TRY = 0, ALST_SPAWN, ALST_SPEC, ALST_EDIT, ALST_WALK, ALST_MAX };
 
-    bool crclocked(clientinfo *ci)
+    bool crclocked(clientinfo *ci, bool msg = false)
     {
-        if(m_play(gamemode) && G(crclock) && ci->state.actortype == A_PLAYER && (!mapcrc || ci->mapcrc != mapcrc) && !haspriv(ci, G(crclock)))
+        if(m_play(gamemode) && G(crclock) && ci->state.actortype == A_PLAYER && mapcrc && ci->mapcrc != mapcrc && !haspriv(ci, G(crclock)))
+        {
+            srvmsgft(ci->clientnum, CON_EVENT, "\fyyou are \fs\fcCRC locked\fs, please wait for the map to download");
             return true;
+        }
         return false;
     }
+    
+    struct mapcrcs
+    {
+        uint id;
+        vector<clientinfo *> clients;
+        mapcrcs() {}
+        mapcrcs(uint n, clientinfo *m) { id = n; clients.add(m); }
+        ~mapcrcs() { clients.setsize(0); }
+    };
 
     void getmap(clientinfo *ci = NULL)
     {
+        if(gamestate == G_S_INTERMISSION) return; // pointless
         if(ci)
         {
             if(mapsending == ci->clientnum) mapsending = -1;
-            else if(!ci->wantsmap) return;
             ci->wantsmap = true;
             if(mapsending >= 0)
             {
-                srvmsgft(ci->clientnum, CON_EVENT, "map is being uploaded, please be patient..");
+                srvmsgft(ci->clientnum, CON_EVENT, "map is being uploaded, please wait..");
                 return;
             }
-            if(mapdata[0] && mapdata[1])
+            if(mapdata[0] && mapdata[1] && mapdata[2])
             {
                 srvmsgft(ci->clientnum, CON_EVENT, "sending map, please wait..");
                 loopk(SENDMAP_MAX) if(mapdata[k]) sendfile(ci->clientnum, 2, mapdata[k], "ri2", N_SENDMAPFILE, k);
@@ -2843,29 +2896,58 @@ namespace server
                 return;
             }
         }
-        else if(mapsending >= 0 || (mapdata[0] && mapdata[1])) return;
+        else if(mapsending >= 0 || (mapdata[0] && mapdata[1] && mapdata[2])) return;
         clientinfo *best = NULL;
-        loopv(clients)
+        if(!mapcrc)
+        {
+            if(gamestate == G_S_WAITING) loopv(clients)
+            {
+                clientinfo *cs = clients[i];
+                if(cs->state.actortype > A_PLAYER || !cs->name[0] || !cs->online) continue;
+                if(!cs->wantsmap && !cs->mapcrc && !cs->ready) return; // wait until everyone is collated
+            }
+            vector<mapcrcs> crcs;
+            loopv(clients)
+            {
+                clientinfo *cs = clients[i];
+                if(cs->state.actortype > A_PLAYER || !cs->name[0] || !cs->online || cs->wantsmap || !cs->mapcrc || !cs->ready) continue;
+                int n = -1;
+                loopvj(crcs)
+                {
+                    if(crcs[j].id == cs->mapcrc) crcs[j].clients.add(cs);
+                    else crcs.add(mapcrcs(cs->mapcrc, cs));
+                }
+            }
+            int n = -1;
+            loopv(crcs) if(n < 0 || crcs[n].clients.length() < crcs[i].clients.length()) n = i;
+            if(n > 0) loopv(crcs[n].clients)
+            {
+                clientinfo *cs = crcs[n].clients[i];
+                cs->state.updatetimeplayed();
+                if(!best || cs->state.timeplayed > best->state.timeplayed) best = cs;
+            }
+        }
+        if(!best) loopv(clients)
         {
             clientinfo *cs = clients[i];
-            if(cs->state.actortype > A_PLAYER || !cs->name[0] || !cs->online || cs->wantsmap || !cs->mapcrc) continue;
+            if(cs->state.actortype > A_PLAYER || !cs->name[0] || !cs->online || cs->wantsmap || !cs->mapcrc || !cs->ready) continue;
             cs->state.updatetimeplayed();
             if(!best || cs->state.timeplayed > best->state.timeplayed) best = cs;
         }
         if(best)
         {
-            loopk(SENDMAP_MAX) if(mapdata[k]) DELETEP(mapdata[k]);
             if(ci) srvmsgft(ci->clientnum, CON_EVENT, "map is being requested, please wait..");
             sendf(best->clientnum, 1, "ri", N_GETMAP);
             mapsending = best->clientnum;
             mapcrc = best->mapcrc;
+            if(m_play(gamemode) && G(crclock)) loopv(clients)
+            {
+                clientinfo *cs = clients[i];
+                if(!crclocked(cs)) continue;
+                cs->wantsmap = true;
+                spectate(cs, true);
+            }
             return;
-        }
-        loopv(clients)
-        {
-            clientinfo *cs = clients[i];
-            if(cs->state.actortype > A_PLAYER || !cs->name[0] || !cs->online) continue;
-            if(!cs->wantsmap) return;
         }
         sendf(-1, 1, "ri", N_FAILMAP);
     }
@@ -2884,11 +2966,7 @@ namespace server
                         return false;
                 if(ci->state.state == CS_ALIVE || ci->state.state == CS_WAITING) return false;
                 if(ci->state.lastdeath && gamemillis-ci->state.lastdeath <= DEATHMILLIS) return false;
-                if(crclocked(ci))
-                {
-                    getmap(ci);
-                    return false;
-                }
+                if(crclocked(ci, true)) return false;
                 break;
             }
             case ALST_SPAWN: // spawn
@@ -2896,11 +2974,7 @@ namespace server
                 if(ci->state.quarantine) return false;
                 if(ci->state.state != CS_DEAD && ci->state.state != CS_WAITING) return false;
                 if(ci->state.lastdeath && gamemillis-ci->state.lastdeath <= DEATHMILLIS) return false;
-                if(crclocked(ci))
-                {
-                    getmap(ci);
-                    return false;
-                }
+                if(crclocked(ci, true)) return false;
                 break;
             }
             case ALST_SPEC: return ci->state.actortype == A_PLAYER; // spec
@@ -3463,13 +3537,16 @@ namespace server
         if(!ci) putint(p, 0);
         else if(!ci->online && m_edit(gamemode) && numclients(ci->clientnum))
         {
-            if(mapsending < 0) loopi(SENDMAP_MAX) if(mapdata[i]) DELETEP(mapdata[i]);
+            if(mapsending < 0)
+            {
+                mapcrc = 0;
+                loopi(SENDMAP_MAX) if(mapdata[i]) DELETEP(mapdata[i]);
+            }
             getmap(ci);
             putint(p, 1); // already in progress
         }
         else
         {
-            ci->wantsmap = false;
             if(ci->online) putint(p, 2); // we got a temp map eh?
             else putint(p, ci->local ? -1 : 0);
         }
@@ -4358,51 +4435,6 @@ namespace server
         }
     }
 
-    bool spectate(clientinfo *ci, bool val, bool quarantine = false)
-    {
-        if(ci->state.state != CS_SPECTATOR && val)
-        {
-            if(ci->state.state == CS_ALIVE)
-            {
-                suicideevent ev;
-                ev.flags = HIT_SPEC;
-                ev.process(ci);
-            }
-            if(smode) smode->leavegame(ci);
-            mutate(smuts, mut->leavegame(ci));
-            sendf(-1, 1, "ri3", N_SPECTATOR, ci->clientnum, quarantine ? 2 : 1);
-            ci->state.state = CS_SPECTATOR;
-            ci->state.quarantine = quarantine;
-            ci->state.updatetimeplayed(false);
-            setteam(ci, T_NEUTRAL, TT_INFO);
-            if(ci->ready) aiman::poke();
-        }
-        else if(ci->state.state == CS_SPECTATOR && !val)
-        {
-            int nospawn = 0;
-            if(smode && !smode->canspawn(ci, true)) { nospawn++; }
-            mutate(smuts, if(!mut->canspawn(ci, true)) { nospawn++; });
-            ci->state.state = CS_DEAD;
-            if(nospawn)
-            {
-                spectate(ci, true);
-                return false;
-            }
-            if(crclocked(ci))
-            {
-                getmap(ci);
-                return false;
-            }
-            ci->state.lasttimeplayed = totalmillis;
-            ci->state.quarantine = false;
-            waiting(ci, DROP_RESET);
-            if(smode) smode->entergame(ci);
-            mutate(smuts, mut->entergame(ci));
-            if(ci->ready) aiman::poke();
-        }
-        return true;
-    }
-
     void checkclients()
     {
         loopv(clients) if(clients[i]->name[0] && clients[i]->online)
@@ -4563,6 +4595,7 @@ namespace server
                 if(m_team(gamemode, mutators)) doteambalance(true);
                 if(m_fight(gamemode) && !m_bomber(gamemode) && !m_duke(gamemode, mutators)) // they do their own "fight"
                     sendf(-1, 1, "ri3s", N_ANNOUNCE, S_V_FIGHT, CON_INFO, "match start, fight!");
+                getmap(); // processes if it needs to
             }
         }
         if(numclients())
@@ -4738,7 +4771,7 @@ namespace server
             return false;
         }
         mapdata[n]->write(data, len);
-        return n == SENDMAP_PNG;
+        return n == SENDMAP_MIN;
     }
 
     static struct msgfilter
@@ -5007,8 +5040,8 @@ namespace server
         clientinfo *ci = sender>=0 ? (clientinfo *)getinfo(sender) : NULL;
         if(ci && !ci->connected)
         {
-            if(chan==0) return;
-            else if(chan!=1)
+            if(chan == 0) return;
+            else if(chan != 1)
             {
                 conoutf("\fy[msg error] from: %d, chan: %d while connecting", sender, chan);
                 disconnect_client(sender, DISC_MSGERR);
@@ -5078,13 +5111,19 @@ namespace server
             }
             return;
         }
-        else if(chan==2)
+        else if(chan == 2)
         {
             if(receivefile(sender, p.buf, p.maxlen))
             {
                 mapcrc = mapdata[0]->getcrc();
                 mapsending = -1;
-                sendf(-1, 1, "ri", N_SENDMAP);
+                loopv(clients)
+                {
+                    clientinfo *cs = clients[i];
+                    if(cs->state.actortype > A_PLAYER || !cs->wantsmap) continue;
+                    getmap(cs);
+                }
+                //sendf(-1, 1, "ri", N_SENDMAP);
             }
             return;
         }
@@ -5255,13 +5294,11 @@ namespace server
                     if(!ci) break;
                     copystring(ci->clientmap, text);
                     ci->mapcrc = text[0] ? crc : 0;
-                    if(crc && !mapcrc) getmap();
-                    if(crclocked(ci)) getmap(ci);
-                    else if(!ci->ready)
-                    {
-                        ci->ready = true;
-                        aiman::poke();
-                    }
+                    ci->ready = true;
+                    ci->wantsmap = false;
+                    if(!mapcrc && ci->mapcrc) getmap();
+                    if(mapcrc && ci->mapcrc != mapcrc) getmap(ci);
+                    if(!ci->wantsmap) aiman::poke();
                     break;
                 }
 

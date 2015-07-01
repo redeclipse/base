@@ -11,7 +11,7 @@ namespace aiman
         loopv(clients)
         {
             clientinfo *ci = clients[i];
-            if(ci->clientnum < 0 || ci->state.actortype > A_PLAYER || !ci->ready || ci == exclude) continue;
+            if(ci->state.actortype > A_PLAYER || !ci->online || !ci->ready || ci->wantsmap || ci == exclude) continue;
             if(!least || ci->bots.length() < least->bots.length()) least = ci;
         }
         return least;
