@@ -2855,7 +2855,7 @@ namespace server
         if(best)
         {
             loopk(SENDMAP_MAX) if(mapdata[k]) DELETEP(mapdata[k]);
-            srvmsgft(ci->clientnum, CON_EVENT, "map is being requested, please wait..");
+            if(ci) srvmsgft(ci->clientnum, CON_EVENT, "map is being requested, please wait..");
             sendf(best->clientnum, 1, "ri", N_GETMAP);
             mapsending = best->clientnum;
             mapcrc = best->mapcrc;
