@@ -576,12 +576,13 @@ struct editor
         }
         if(!hastext)
         {
-            if(!hit && prompt && *prompt)
+            if(hit || (prompt && prompt[0]))
             {
                 int width = 0, height = 0;
-                text_bounds(prompt, width, height, maxwidth, TEXT_NO_INDENT);
+                const char *str = hit || !prompt || !prompt[0] ? " " : prompt;
+                text_bounds(str, width, height, maxwidth, TEXT_NO_INDENT);
                 if(h+height <= pixelheight)
-                    draw_text(prompt, x, y+h, color>>16, (color>>8)&0xFF, color&0xFF, 0xFF, TEXT_NO_INDENT, -1, maxwidth);
+                    draw_textx("%s", x, y+h, color>>16, (color>>8)&0xFF, color&0xFF, 0xFF, TEXT_NO_INDENT, hit ? 0 : -1, maxwidth, str);
             }
             return;
         }
