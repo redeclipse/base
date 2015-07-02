@@ -2804,6 +2804,18 @@ namespace server
 
     #include "auth.h"
 
+    enum { ALST_TRY = 0, ALST_SPAWN, ALST_SPEC, ALST_EDIT, ALST_WALK, ALST_MAX };
+    
+    bool crclocked(clientinfo *ci, bool msg = false)
+    {
+        if(m_play(gamemode) && G(crclock) && ci->state.actortype == A_PLAYER && mapcrc && ci->mapcrc != mapcrc && !haspriv(ci, G(crclock)))
+        {
+            srvmsgft(ci->clientnum, CON_EVENT, "\fyyou are \fs\fcCRC locked\fs, please wait for the map to download");
+            return true;
+        }
+        return false;
+    }
+    
     void spectator(clientinfo *ci, bool quarantine = false, int sender = -1)
     {
         if(!ci || ci->state.actortype > A_PLAYER) return;
@@ -2854,18 +2866,6 @@ namespace server
         return true;
     }
 
-    enum { ALST_TRY = 0, ALST_SPAWN, ALST_SPEC, ALST_EDIT, ALST_WALK, ALST_MAX };
-
-    bool crclocked(clientinfo *ci, bool msg = false)
-    {
-        if(m_play(gamemode) && G(crclock) && ci->state.actortype == A_PLAYER && mapcrc && ci->mapcrc != mapcrc && !haspriv(ci, G(crclock)))
-        {
-            srvmsgft(ci->clientnum, CON_EVENT, "\fyyou are \fs\fcCRC locked\fs, please wait for the map to download");
-            return true;
-        }
-        return false;
-    }
-    
     struct mapcrcs
     {
         uint id;
@@ -2880,7 +2880,11 @@ namespace server
         if(gamestate == G_S_INTERMISSION) return; // pointless
         if(ci)
         {
-            if(mapsending == ci->clientnum) mapsending = -1;
+            if(mapsending == ci->clientnum)
+            {
+                mapsending = -1;
+                mapcrc = 0;
+            }
             ci->wantsmap = true;
             if(mapsending >= 0)
             {
@@ -3004,8 +3008,9 @@ namespace server
     void changemap(const char *name, int mode, int muts)
     {
         hasgameinfo = shouldcheckvotes = firstblood = false;
-        mapsending = -1;
         stopdemo();
+        mapsending = -1;
+        mapcrc = 0;
         changemode(gamemode = mode, mutators = muts);
         curbalance = nextbalance = lastteambalance = nextteambalance = gamemillis = 0;
         gamestate = m_fight(gamemode) ? G_S_WAITING : G_S_PLAYING;
@@ -3022,7 +3027,6 @@ namespace server
         mutate(smuts, mut->reset());
         aiman::clearai();
         aiman::poke();
-        mapcrc = 0;
         const char *reqmap = name && *name ? name : pickmap(NULL, gamemode, mutators);
 #ifdef STANDALONE // interferes with savemap on clients, in which case we can just use the auto-request
         loopi(SENDMAP_MAX)
@@ -4685,6 +4689,7 @@ namespace server
         if(n == mapsending)
         {
             mapsending = -1;
+            mapcrc = 0;
             getmap();
         }
     }
@@ -5115,8 +5120,8 @@ namespace server
         {
             if(receivefile(sender, p.buf, p.maxlen))
             {
-                mapcrc = mapdata[0]->getcrc();
                 mapsending = -1;
+                mapcrc = mapdata[0]->getcrc();
                 loopv(clients)
                 {
                     clientinfo *cs = clients[i];
@@ -5297,7 +5302,7 @@ namespace server
                     ci->ready = true;
                     ci->wantsmap = false;
                     if(!mapcrc && ci->mapcrc) getmap();
-                    if(mapcrc && ci->mapcrc != mapcrc) getmap(ci);
+                    else if(mapcrc && ci->mapcrc != mapcrc) getmap(ci);
                     if(!ci->wantsmap) aiman::poke();
                     break;
                 }
