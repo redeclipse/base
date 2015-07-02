@@ -2915,12 +2915,14 @@ namespace server
             {
                 clientinfo *cs = clients[i];
                 if(cs->state.actortype > A_PLAYER || !cs->name[0] || !cs->online || cs->wantsmap || !cs->mapcrc || !cs->ready) continue;
-                int n = -1;
-                loopvj(crcs)
+                bool found = false;
+                loopvj(crcs) if(crcs[j].id == cs->mapcrc)
                 {
-                    if(crcs[j].id == cs->mapcrc) crcs[j].clients.add(cs);
-                    else crcs.add(mapcrcs(cs->mapcrc, cs));
+                    crcs[j].clients.add(cs);
+                    found = true;
+                    break;
                 }
+                if(!found) crcs.add(mapcrcs(cs->mapcrc, cs));
             }
             int n = -1;
             loopv(crcs) if(n < 0 || crcs[n].clients.length() < crcs[i].clients.length()) n = i;
