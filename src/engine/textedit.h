@@ -449,6 +449,7 @@ struct editor
         switch(code)
         {
             case SDLK_UP:
+                mark(false); 
                 if(linewrap)
                 {
                     int x, y;
@@ -459,6 +460,7 @@ struct editor
                 cy--;
                 break;
             case SDLK_DOWN:
+                mark(false); 
                 if(linewrap)
                 {
                     int x, y, width, height;
@@ -471,27 +473,35 @@ struct editor
                 cy++;
                 break;
             case -4:
+                mark(false);
                 cy--;
                 break;
             case -5:
+                mark(false);
                 cy++;
                 break;
             case SDLK_PAGEUP:
+                mark(false);
                 cy-=pixelheight/FONTH;
                 break;
             case SDLK_PAGEDOWN:
+                mark(false);
                 cy+=pixelheight/FONTH;
                 break;
             case SDLK_HOME:
+                mark(false);
                 cx = 0;
                 break;
             case SDLK_END:
+                mark(false);
                 cx = INT_MAX;
                 break;
             case SDLK_LEFT:
+                mark(false);
                 cx--;
                 break;
             case SDLK_RIGHT:
+                mark(false);
                 cx++;
                 break;
             case SDLK_DELETE:
