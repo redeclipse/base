@@ -483,10 +483,10 @@ struct editor
                 cy+=pixelheight/FONTH;
                 break;
             case SDLK_HOME:
-                cx = cy = 0;
+                cx = 0;
                 break;
             case SDLK_END:
-                cx = cy = INT_MAX;
+                cx = INT_MAX;
                 break;
             case SDLK_LEFT:
                 cx--;
