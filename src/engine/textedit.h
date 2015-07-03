@@ -397,8 +397,7 @@ struct editor
         else
         {
             int len = current.len;
-            if(maxx >= 0 && len > maxx-1) len = maxx-1;
-            if(cx <= len) current.insert(&ch, cx++, 1);
+            if(maxx < 0 || len <= maxx-1) current.insert(&ch, cx++, 1);
         }
     }
 
