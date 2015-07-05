@@ -5320,7 +5320,7 @@ namespace server
                     if(!allowstate(cp, ALST_TRY, m_edit(gamemode) ? G(spawneditlock) : G(spawnlock)))
                     {
                         if(G(serverdebug)) srvmsgf(cp->clientnum, "sync error: unable to spawn %s - %d [%d, %d]", colourname(cp), cp->state.state, cp->state.lastdeath, gamemillis);
-                        spectator(cp);
+                        //spectator(cp);
                         break;
                     }
                     int nospawn = 0;
@@ -5355,7 +5355,7 @@ namespace server
                     if(!allowstate(cp, ALST_SPAWN))
                     {
                         if(G(serverdebug)) srvmsgf(cp->clientnum, "sync error: unable to spawn %s - %d [%d, %d]", colourname(cp), cp->state.state, cp->state.lastdeath, gamemillis);
-                        spectator(cp);
+                        //spectator(cp);
                         break;
                     }
                     cp->state.lastrespawn = -1;
