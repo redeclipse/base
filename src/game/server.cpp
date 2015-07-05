@@ -397,6 +397,11 @@ namespace server
             }
             return gameoffset+id;
         }
+        
+        bool isready()
+        {
+            return ready && mapcrc && !wantsmap;
+        }
     };
 
     namespace aiman {
@@ -2688,7 +2693,7 @@ namespace server
                 if(smode) smode->entergame(ci);
                 mutate(smuts, mut->entergame(ci));
             }
-            if(ci->state.actortype == A_PLAYER && ci->ready) aiman::poke();
+            if(ci->state.actortype == A_PLAYER && ci->isready()) aiman::poke();
         }
         if(flags&TT_INFO) sendf(-1, 1, "ri3", N_SETTEAM, ci->clientnum, ci->team);
     }
@@ -2810,7 +2815,7 @@ namespace server
     {
         if(m_play(gamemode) && G(crclock) && ci->state.actortype == A_PLAYER && mapcrc && ci->mapcrc != mapcrc && !haspriv(ci, G(crclock)))
         {
-            srvmsgft(ci->clientnum, CON_EVENT, "\fyyou are \fs\fcCRC locked\fs, please wait for the map to download");
+            if(msg) srvmsgft(ci->clientnum, CON_EVENT, "\fyyou are \fs\fccrc locked\fs, please wait for the map to download..");
             return true;
         }
         return false;
@@ -2842,7 +2847,7 @@ namespace server
             ci->state.quarantine = quarantine;
             ci->state.updatetimeplayed(false);
             setteam(ci, T_NEUTRAL, TT_INFO);
-            if(ci->ready) aiman::poke();
+            if(ci->isready()) aiman::poke();
         }
         else if(ci->state.state == CS_SPECTATOR && !val)
         {
@@ -2861,7 +2866,7 @@ namespace server
             waiting(ci, DROP_RESET);
             if(smode) smode->entergame(ci);
             mutate(smuts, mut->entergame(ci));
-            if(ci->ready) aiman::poke();
+            if(ci->isready()) aiman::poke();
         }
         return true;
     }
@@ -2874,47 +2879,60 @@ namespace server
         mapcrcs(uint n, clientinfo *m) { id = n; clients.add(m); }
         ~mapcrcs() { clients.setsize(0); }
     };
+    
+    void resetmapdata()
+    {
+        mapcrc = 0;
+        mapsending = -1;
+        loopi(SENDMAP_MAX) if(mapdata[i]) DELETEP(mapdata[i]);
+    }
+    
+    bool hasmapdata()
+    {
+        if(!mapcrc) return false;
+        loopi(SENDMAP_HAS) if(!mapdata[i]) return false;
+    }
 
     void getmap(clientinfo *ci = NULL)
     {
         if(gamestate == G_S_INTERMISSION) return; // pointless
         if(ci)
         {
-            if(mapsending == ci->clientnum)
-            {
-                mapsending = -1;
-                mapcrc = 0;
-            }
+            if(mapsending == ci->clientnum) resetmapdata();
             ci->wantsmap = true;
-            if(mapsending >= 0)
+            if(hasmapdata())
             {
-                srvmsgft(ci->clientnum, CON_EVENT, "map is being uploaded, please wait..");
-                return;
-            }
-            if(mapdata[0] && mapdata[1] && mapdata[2])
-            {
-                srvmsgft(ci->clientnum, CON_EVENT, "sending map, please wait..");
-                loopk(SENDMAP_MAX) if(mapdata[k]) sendfile(ci->clientnum, 2, mapdata[k], "ri2", N_SENDMAPFILE, k);
+                srvmsgft(ci->clientnum, CON_EVENT, "\fysending map, please wait..");
+                loopi(SENDMAP_MAX) if(mapdata[i]) sendfile(ci->clientnum, 2, mapdata[i], "ri2", N_SENDMAPFILE, i);
                 sendwelcome(ci);
                 ci->needclipboard = totalmillis ? totalmillis : 1;
                 return;
             }
+            if(mapsending >= 0)
+            {
+                srvmsgft(ci->clientnum, CON_EVENT, "\fymap is being uploaded, please wait..");
+                return;
+            }
         }
-        else if(mapsending >= 0 || (mapdata[0] && mapdata[1] && mapdata[2])) return;
+        else if(hasmapdata()) return;
         clientinfo *best = NULL;
-        if(!mapcrc)
+        if(!m_edit(gamemode))
         {
             if(gamestate == G_S_WAITING) loopv(clients)
             {
                 clientinfo *cs = clients[i];
                 if(cs->state.actortype > A_PLAYER || !cs->name[0] || !cs->online) continue;
-                if(!cs->wantsmap && !cs->mapcrc && !cs->ready) return; // wait until everyone is collated
+                if(cs->wantsmap || !cs->mapcrc)
+                {
+                    if(ci) srvmsgft(ci->clientnum, CON_EVENT, "\fyyou need the map, waiting for everyone to be ready..");
+                    return; // wait until everyone is collated
+                }
             }
             vector<mapcrcs> crcs;
             loopv(clients)
             {
                 clientinfo *cs = clients[i];
-                if(cs->state.actortype > A_PLAYER || !cs->name[0] || !cs->online || cs->wantsmap || !cs->mapcrc || !cs->ready) continue;
+                if(cs->state.actortype > A_PLAYER || !cs->name[0] || !cs->online || cs->wantsmap || !cs->mapcrc) continue;
                 bool found = false;
                 loopvj(crcs) if(crcs[j].id == cs->mapcrc)
                 {
@@ -2936,25 +2954,27 @@ namespace server
         if(!best) loopv(clients)
         {
             clientinfo *cs = clients[i];
-            if(cs->state.actortype > A_PLAYER || !cs->name[0] || !cs->online || cs->wantsmap || !cs->mapcrc || !cs->ready) continue;
+            if(cs->state.actortype > A_PLAYER || !cs->name[0] || !cs->online || cs->wantsmap || !cs->mapcrc) continue;
             cs->state.updatetimeplayed();
             if(!best || cs->state.timeplayed > best->state.timeplayed) best = cs;
         }
         if(best)
         {
-            if(ci) srvmsgft(ci->clientnum, CON_EVENT, "map is being requested, please wait..");
+            srvmsgft(-1, CON_EVENT, "\fymap is being requested from %s..", colourname(best));
             sendf(best->clientnum, 1, "ri", N_GETMAP);
             mapsending = best->clientnum;
             mapcrc = best->mapcrc;
             if(m_play(gamemode) && G(crclock)) loopv(clients)
             {
                 clientinfo *cs = clients[i];
-                if(!crclocked(cs)) continue;
+                if(cs->state.actortype > A_PLAYER || !cs->name[0] || !cs->online || !cs->ready || !crclocked(cs, true)) continue;
+                cs->mapcrc = 0;
                 cs->wantsmap = true;
                 spectate(cs, true);
             }
             return;
         }
+        if(ci) srvmsgft(ci->clientnum, CON_EVENT, "\fysorry, unable to get a valid map..");
         sendf(-1, 1, "ri", N_FAILMAP);
     }
 
@@ -3011,8 +3031,7 @@ namespace server
     {
         hasgameinfo = shouldcheckvotes = firstblood = false;
         stopdemo();
-        mapsending = -1;
-        mapcrc = 0;
+        resetmapdata();
         changemode(gamemode = mode, mutators = muts);
         curbalance = nextbalance = lastteambalance = nextteambalance = gamemillis = 0;
         gamestate = m_fight(gamemode) ? G_S_WAITING : G_S_PLAYING;
@@ -3033,12 +3052,11 @@ namespace server
 #ifdef STANDALONE // interferes with savemap on clients, in which case we can just use the auto-request
         loopi(SENDMAP_MAX)
         {
-            if(mapdata[i]) DELETEP(mapdata[i]);
             defformatstring(reqfile)(strstr(reqmap, "maps/")==reqmap || strstr(reqmap, "maps\\")==reqmap ? "%s" : "maps/%s", reqmap);
             defformatstring(reqfext)("%s.%s", reqfile, sendmaptypes[i]);
             if(!(mapdata[i] = openfile(reqfext, "rb")) && i <= SENDMAP_MIN)
             {
-                loopk(SENDMAP_MAX) if(mapdata[k]) DELETEP(mapdata[k]);
+                resetmapdata();
                 break;
             }
         }
@@ -3543,11 +3561,7 @@ namespace server
         if(!ci) putint(p, 0);
         else if(!ci->online && m_edit(gamemode) && numclients(ci->clientnum))
         {
-            if(mapsending < 0)
-            {
-                mapcrc = 0;
-                loopi(SENDMAP_MAX) if(mapdata[i]) DELETEP(mapdata[i]);
-            }
+            if(mapsending < 0) resetmapdata();
             getmap(ci);
             putint(p, 1); // already in progress
         }
@@ -4590,7 +4604,7 @@ namespace server
             else
             {
                 int numwait = 0;
-                loopv(clients) if(!clients[i]->ready || (G(waitforplayers) == 2 && clients[i]->state.state == CS_SPECTATOR)) numwait++;
+                loopv(clients) if(!clients[i]->isready() || (G(waitforplayers) == 2 && clients[i]->state.state == CS_SPECTATOR)) numwait++;
                 if(!numwait) ready = true;
             }
             if(ready)
@@ -4601,7 +4615,7 @@ namespace server
                 if(m_team(gamemode, mutators)) doteambalance(true);
                 if(m_fight(gamemode) && !m_bomber(gamemode) && !m_duke(gamemode, mutators)) // they do their own "fight"
                     sendf(-1, 1, "ri3s", N_ANNOUNCE, S_V_FIGHT, CON_INFO, "match start, fight!");
-                getmap(); // processes if it needs to
+                if(!m_edit(gamemode)) getmap(); // processes if it needs to
             }
         }
         if(numclients())
@@ -4690,9 +4704,12 @@ namespace server
         else shouldcheckvotes = true;
         if(n == mapsending)
         {
-            mapsending = -1;
-            mapcrc = 0;
-            getmap();
+            if(hasmapdata()) mapsending = -1;
+            else
+            {
+                resetmapdata();
+                getmap();
+            }
         }
     }
 
@@ -4757,15 +4774,12 @@ namespace server
             srvmsgf(sender, "bad map file type %d");
             return false;
         }
-        if(mapdata[n])
+        if(ci->clientnum != mapsending)
         {
-            if(ci->clientnum != mapsending)
-            {
-                srvmsgf(sender, "sorry, the map isn't needed from you");
-                return false;
-            }
-            DELETEP(mapdata[n]);
+            srvmsgf(sender, "sorry, the map isn't needed from you");
+            return false;
         }
+        if(mapdata[n]) DELETEP(mapdata[n]);
         if(!len)
         {
             srvmsgf(sender, "you sent a zero length packet for map data");
@@ -4778,6 +4792,7 @@ namespace server
             return false;
         }
         mapdata[n]->write(data, len);
+        if(n == SENDMAP_ALL) mapsending = -1;
         return n == SENDMAP_MIN;
     }
 
@@ -5122,13 +5137,12 @@ namespace server
         {
             if(receivefile(sender, p.buf, p.maxlen))
             {
-                mapsending = -1;
                 mapcrc = mapdata[0]->getcrc();
-                loopv(clients)
+                if(hasmapdata()) loopv(clients)
                 {
                     clientinfo *cs = clients[i];
-                    if(cs->state.actortype > A_PLAYER || !cs->wantsmap) continue;
-                    getmap(cs);
+                    if(cs->state.actortype > A_PLAYER || !cs->online || !cs->name[0] || !cs->ready) continue;
+                    if(cs->wantsmap || crclocked(cs, true)) getmap(cs);
                 }
                 //sendf(-1, 1, "ri", N_SENDMAP);
             }
@@ -5302,10 +5316,13 @@ namespace server
                     copystring(ci->clientmap, text);
                     ci->mapcrc = text[0] ? crc : 0;
                     ci->ready = true;
-                    ci->wantsmap = false;
-                    if(!mapcrc && ci->mapcrc) getmap();
-                    else if(mapcrc && ci->mapcrc != mapcrc) getmap(ci);
-                    if(!ci->wantsmap) aiman::poke();
+                    if(!m_edit(gamemode))
+                    {
+                        ci->wantsmap = false;
+                        if(!mapcrc && ci->mapcrc) getmap();
+                        else if(mapcrc && ci->mapcrc != mapcrc) getmap(ci);
+                    }
+                    if(ci->isready()) aiman::poke();
                     break;
                 }
 
@@ -6334,6 +6351,8 @@ namespace server
 
                 case N_GETMAP:
                 {
+                    ci->ready = true;
+                    ci->mapcrc = 0;
                     getmap(ci);
                     break;
                 }
