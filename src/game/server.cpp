@@ -2891,6 +2891,7 @@ namespace server
     {
         if(!mapcrc) return false;
         loopi(SENDMAP_HAS) if(!mapdata[i]) return false;
+        return true;
     }
 
     void getmap(clientinfo *ci = NULL)
