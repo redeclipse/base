@@ -38,15 +38,15 @@ GVAR(IDF_ADMIN, mutetimeout, 0, 3600000, VAR_MAX); // temporary mutes last this 
 GVAR(IDF_ADMIN, limittimeout, 0, 3600000, VAR_MAX); // temporary limits last this long
 GVAR(IDF_ADMIN, excepttimeout, 0, 3600000, VAR_MAX); // temporary allows last this long
 
-GVAR(IDF_ADMIN, connectlock, 0, PRIV_NONE, PRIV_CREATOR);
-GVAR(IDF_ADMIN, messagelock, 0, PRIV_NONE, PRIV_CREATOR);
+GVAR(IDF_ADMIN, connectlock, 0, PRIV_NONE, PRIV_MAX);
+GVAR(IDF_ADMIN, messagelock, 0, PRIV_NONE, PRIV_MAX);
 GVAR(IDF_ADMIN, messagelength, 32, 128, BIGSTRLEN-1);
 GSVAR(IDF_ADMIN, censorwords, "");
 
-GVAR(IDF_ADMIN, setinfolock, 0, PRIV_NONE, PRIV_CREATOR);
+GVAR(IDF_ADMIN, setinfolock, 0, PRIV_NONE, PRIV_MAX);
 GVAR(IDF_ADMIN, setinfowait, 0, 1000, VAR_MAX);
 
-GVAR(IDF_ADMIN, demolock, 0, PRIV_OPERATOR, PRIV_CREATOR);
+GVAR(IDF_ADMIN, demolock, 0, PRIV_OPERATOR, PRIV_MAX);
 GVAR(IDF_ADMIN, democount, 1, 10, VAR_MAX);
 GVAR(IDF_ADMIN, demomaxsize, 1, 16, VAR_MAX);
 GVAR(IDF_ADMIN, demoautorec, 0, 1, 1); // 0 = off, 1 = automatically record demos each match
@@ -54,30 +54,30 @@ GVAR(IDF_ADMIN, demokeep, 0, 0, 1); // 0 = off, 1 = keep demos that don't run to
 GVAR(IDF_ADMIN, demoautoserversave, 0, 0, 1);
 GVAR(IDF_ADMIN, demoserverkeeptime, 0, 86400, VAR_MAX);
 
-GVAR(IDF_ADMIN, speclock, 0, PRIV_MODERATOR, PRIV_CREATOR);
-GVAR(IDF_ADMIN, teamlock, 0, PRIV_MODERATOR, PRIV_CREATOR);
-GVAR(IDF_ADMIN, kicklock, 0, PRIV_MODERATOR, PRIV_CREATOR);
-GVAR(IDF_ADMIN, allowlock, 0, PRIV_OPERATOR, PRIV_CREATOR);
-GVAR(IDF_ADMIN, banlock, 0, PRIV_OPERATOR, PRIV_CREATOR);
-GVAR(IDF_ADMIN, mutelock, 0, PRIV_MODERATOR, PRIV_CREATOR);
-GVAR(IDF_ADMIN, limitlock, 0, PRIV_MODERATOR, PRIV_CREATOR);
-GVAR(IDF_ADMIN, exceptlock, 0, PRIV_MODERATOR, PRIV_CREATOR);
-GVAR(IDF_ADMIN, vetolock, 0, PRIV_OPERATOR, PRIV_CREATOR);
-GVAR(IDF_ADMIN, editlock, 0, PRIV_OPERATOR, PRIV_CREATOR);
-GVAR(IDF_ADMIN, spawnlock, 0, PRIV_MODERATOR, PRIV_CREATOR); // if locked, require this to spawn
-GVAR(IDF_ADMIN, spawneditlock, 0, PRIV_MODERATOR, PRIV_CREATOR); // if locked in editmode, require this to spawn
-GVAR(IDF_ADMIN, masterlock, 0, PRIV_MODERATOR, PRIV_CREATOR);
-GVAR(IDF_ADMIN, crclock, 0, PRIV_MAX, PRIV_MAX);
+GVAR(IDF_ADMIN, speclock, 0, PRIV_MODERATOR, PRIV_MAX);
+GVAR(IDF_ADMIN, teamlock, 0, PRIV_MODERATOR, PRIV_MAX);
+GVAR(IDF_ADMIN, kicklock, 0, PRIV_MODERATOR, PRIV_MAX);
+GVAR(IDF_ADMIN, allowlock, 0, PRIV_OPERATOR, PRIV_MAX);
+GVAR(IDF_ADMIN, banlock, 0, PRIV_OPERATOR, PRIV_MAX);
+GVAR(IDF_ADMIN, mutelock, 0, PRIV_MODERATOR, PRIV_MAX);
+GVAR(IDF_ADMIN, limitlock, 0, PRIV_MODERATOR, PRIV_MAX);
+GVAR(IDF_ADMIN, exceptlock, 0, PRIV_MODERATOR, PRIV_MAX);
+GVAR(IDF_ADMIN, vetolock, 0, PRIV_OPERATOR, PRIV_MAX);
+GVAR(IDF_ADMIN, editlock, 0, PRIV_OPERATOR, PRIV_MAX);
+GVAR(IDF_ADMIN, spawnlock, 0, PRIV_MODERATOR, PRIV_MAX); // if locked, require this to spawn
+GVAR(IDF_ADMIN, spawneditlock, 0, PRIV_MODERATOR, PRIV_MAX); // if locked in editmode, require this to spawn
+GVAR(IDF_ADMIN, masterlock, 0, PRIV_MODERATOR, PRIV_MAX);
+GVAR(IDF_ADMIN, crclock, 0, 0, PRIV_MAX);
 
-GVAR(IDF_ADMIN, overflowlock, 0, PRIV_MODERATOR, PRIV_CREATOR); // normal message queue override
+GVAR(IDF_ADMIN, overflowlock, 0, PRIV_MODERATOR, PRIV_MAX); // normal message queue override
 GVAR(IDF_ADMIN, overflowsize, 0, 255, VAR_MAX); // kick if queued messages >= this
 
-GVAR(IDF_ADMIN, floodlock, 0, PRIV_OPERATOR, PRIV_CREATOR);
+GVAR(IDF_ADMIN, floodlock, 0, PRIV_OPERATOR, PRIV_MAX);
 GVAR(IDF_ADMIN, floodmute, 0, 3, VAR_MAX); // automatically mute player when warned this many times
 GVAR(IDF_ADMIN, floodtime, 250, 10000, VAR_MAX); // time span to check for floody messages
 GVAR(IDF_ADMIN, floodlines, 1, 5, VAR_MAX); // number of lines in aforementioned span before too many
 
-GVAR(IDF_ADMIN, teamkilllock, 0, PRIV_OPERATOR, PRIV_CREATOR);
+GVAR(IDF_ADMIN, teamkilllock, 0, PRIV_OPERATOR, PRIV_MAX);
 GVAR(IDF_ADMIN, teamkillwarn, 1, 3, VAR_MAX); // automatically warn player every this many team kills
 GVAR(IDF_ADMIN, teamkillkick, 0, 3, VAR_MAX); // automatically kick player at this many warnings
 GVAR(IDF_ADMIN, teamkillban, 0, 4, VAR_MAX); // automatically ban player at this many warnings
@@ -96,7 +96,7 @@ GVAR(IDF_ADMIN, resetvarsonend, 0, 1, 2); // reset variables on end (1: just whe
 GVAR(IDF_ADMIN, resetmmonend, 0, 2, 2); // reset mastermode on end (1: just when empty, 2: when matches end)
 
 GVARF(0, gamespeed, 1, 100, 10000, timescale = sv_gamespeed, timescale = gamespeed);
-GVAR(IDF_ADMIN, gamespeedlock, 0, PRIV_ADMINISTRATOR, PRIV_CREATOR);
+GVAR(IDF_ADMIN, gamespeedlock, 0, PRIV_ADMINISTRATOR, PRIV_MAX);
 GVARF(IDF_ADMIN, gamepaused, 0, 0, 1, paused = sv_gamepaused, paused = gamepaused);
 
 GSVAR(IDF_ADMIN, defaultmap, "");
@@ -120,14 +120,14 @@ GSVAR(IDF_ADMIN, smallmaps, "untitled");
 GSVAR(IDF_ADMIN, mediummaps, "untitled");
 GSVAR(IDF_ADMIN, largemaps, "untitled");
 
-GVAR(IDF_ADMIN, modelock, 0, PRIV_OPERATOR, PRIV_CREATOR);
+GVAR(IDF_ADMIN, modelock, 0, PRIV_OPERATOR, PRIV_MAX);
 GVAR(IDF_ADMIN, modelocktype, 0, 2, 2); // 0 = off, 1 = only lock level can change modes, 2 = lock level can set limited modes
 GVAR(IDF_ADMIN, modelockfilter, 0, G_LIMIT, G_ALL);
 GVAR(IDF_ADMIN, mutslockfilter, 0, G_M_FILTER, G_M_ALL);
 GVAR(IDF_ADMIN, mutslockforce, 0, 0, G_M_ALL);
 
 GVAR(IDF_ADMIN, mapsfilter, 0, 1, 2); // 0 = off, 1 = filter based on mutators, 2 = also filter based on players
-GVAR(IDF_ADMIN, mapslock, 0, PRIV_OPERATOR, PRIV_CREATOR);
+GVAR(IDF_ADMIN, mapslock, 0, PRIV_OPERATOR, PRIV_MAX);
 GVAR(IDF_ADMIN, mapslocktype, 0, 2, 2); // 0 = off, 1 = allow maps, 2 = rotation maps
 
 GSVAR(IDF_READONLY, previousmaps, "");
@@ -141,8 +141,8 @@ GVAR(IDF_ADMIN, rotatemutsfilter, 0, G_M_ROTATE, G_M_ALL); // mutators not in th
 GVAR(IDF_ADMIN, rotatemapsfilter, 0, 2, 2); // 0 = off, 1 = filter based on mutators, 2 = also filter based on players
 GVAR(IDF_ADMIN, rotatecycle, 0, 10, VAR_MAX); // 0 = off, else = minutes between forced re-cycles
 
-GVAR(IDF_ADMIN, varslock, 0, PRIV_OPERATOR, PRIV_CREATOR);
-GVAR(IDF_ADMIN, votelock, 0, PRIV_OPERATOR, PRIV_CREATOR);
+GVAR(IDF_ADMIN, varslock, 0, PRIV_OPERATOR, PRIV_MAX);
+GVAR(IDF_ADMIN, votelock, 0, PRIV_OPERATOR, PRIV_MAX);
 GVAR(IDF_ADMIN, votelocktype, 0, 2, 2); // 0 = off, 1 = lock level only, 2 = lock level can select previousmaps
 GVAR(IDF_ADMIN, votewait, 0, 2500, VAR_MAX);
 GVAR(IDF_ADMIN, votestyle, 0, 2, 2); // 0 = votes don't pass mid-match, 1 = passes if votethreshold is met, 2 = passes if unanimous
@@ -267,7 +267,7 @@ GVAR(0, teambalanceamt, 2, 2, VAR_MAX); // max-min offset before reassignments o
 GVAR(0, teambalancewait, 10000, 60000, VAR_MAX); // how long before can happen again
 GVAR(0, teambalancedelay, 2000, 15000, VAR_MAX); // how long before reassignments start
 GVAR(0, teambalanceswap, 0, 1, 1); // allow swap requests if unable to change team
-GVAR(0, teambalancelock, 0, PRIV_PLAYER, PRIV_CREATOR); // level at which one can override swap and automatically reassign a lower player
+GVAR(0, teambalancelock, 0, PRIV_PLAYER, PRIV_MAX); // level at which one can override swap and automatically reassign a lower player
 GVAR(0, teambalancestyle, 0, 4, 4); // when moving players, sort by: 0 = top of list, 1 = lowest time played, 2 = lowest points, 3 = lowest frags, 4 = lowest skill
 
 GVAR(0, racegauntletwinner, 0, 1, 1); // declare the winner when the final team exceeds best score

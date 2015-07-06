@@ -3300,16 +3300,16 @@ namespace server
         {
             const char *name = &id->name[3], *val = NULL, *oldval = NULL;
             bool needfreeoldval = false;
-            int locked = max(id->flags&IDF_ADMIN ? PRIV_ADMINISTRATOR : 0, G(varslock));
+            int locked = max(max(id->flags&IDF_ADMIN ? PRIV_ADMINISTRATOR : 0, G(varslock)), PRIV_CREATOR);
             #ifndef STANDALONE
             if(servertype < 3 && (!strcmp(id->name, "sv_gamespeed") || !strcmp(id->name, "sv_gamepaused"))) locked = PRIV_ADMINISTRATOR;
             #endif
-            if(!strcmp(id->name, "sv_gamespeed") && G(gamespeedlock) > locked) locked = G(gamespeedlock);
+            if(!strcmp(id->name, "sv_gamespeed") && G(gamespeedlock) > locked) locked = max(G(gamespeedlock), PRIV_CREATOR);
             else if(id->type == ID_VAR)
             {
                 int len = strlen(id->name);
                 if(len > 4 && !strcmp(&id->name[len-4], "lock"))
-                    locked = max(max(*id->storage.i, parseint(arg)), locked);
+                    locked = max(max(max(*id->storage.i, parseint(arg)), locked), PRIV_CREATOR);
             }
             switch(id->type)
             {
@@ -4615,7 +4615,7 @@ namespace server
                 if(m_team(gamemode, mutators)) doteambalance(true);
                 if(m_fight(gamemode) && !m_bomber(gamemode) && !m_duke(gamemode, mutators)) // they do their own "fight"
                     sendf(-1, 1, "ri3s", N_ANNOUNCE, S_V_FIGHT, CON_INFO, "match start, fight!");
-                if(!m_edit(gamemode)) getmap(); // processes if it needs to
+                if(m_play(gamemode)) getmap(); // processes if it needs to
             }
         }
         if(numclients())
@@ -5316,9 +5316,9 @@ namespace server
                     copystring(ci->clientmap, text);
                     ci->mapcrc = text[0] ? crc : 0;
                     ci->ready = true;
-                    if(!m_edit(gamemode))
+                    ci->wantsmap = false;
+                    if(m_play(gamemode) && G(crclock))
                     {
-                        ci->wantsmap = false;
                         if(!mapcrc && ci->mapcrc) getmap();
                         else if(mapcrc && ci->mapcrc != mapcrc) getmap(ci);
                     }
