@@ -3300,16 +3300,16 @@ namespace server
         {
             const char *name = &id->name[3], *val = NULL, *oldval = NULL;
             bool needfreeoldval = false;
-            int locked = max(max(id->flags&IDF_ADMIN ? PRIV_ADMINISTRATOR : 0, G(varslock)), PRIV_CREATOR);
+            int locked = max(max(id->flags&IDF_ADMIN ? int(PRIV_ADMINISTRATOR) : 0, G(varslock)), int(PRIV_CREATOR));
             #ifndef STANDALONE
             if(servertype < 3 && (!strcmp(id->name, "sv_gamespeed") || !strcmp(id->name, "sv_gamepaused"))) locked = PRIV_ADMINISTRATOR;
             #endif
-            if(!strcmp(id->name, "sv_gamespeed") && G(gamespeedlock) > locked) locked = max(G(gamespeedlock), PRIV_CREATOR);
+            if(!strcmp(id->name, "sv_gamespeed") && G(gamespeedlock) > locked) locked = max(G(gamespeedlock), int(PRIV_CREATOR));
             else if(id->type == ID_VAR)
             {
                 int len = strlen(id->name);
                 if(len > 4 && !strcmp(&id->name[len-4], "lock"))
-                    locked = max(max(max(*id->storage.i, parseint(arg)), locked), PRIV_CREATOR);
+                    locked = max(max(max(*id->storage.i, parseint(arg)), locked), int(PRIV_CREATOR));
             }
             switch(id->type)
             {
