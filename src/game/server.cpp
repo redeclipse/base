@@ -997,7 +997,7 @@ namespace server
 
     void shutdown()
     {
-        srvmsgft(-1, CON_EVENT, "\fyserver shutdown in progress..");
+        srvoutf(-3, "\fyserver shutdown in progress..");
         aiman::clearai();
         loopv(clients) if(getinfo(i)) disconnect_client(i, DISC_SHUTDOWN);
     }
@@ -2811,11 +2811,13 @@ namespace server
 
     enum { ALST_TRY = 0, ALST_SPAWN, ALST_SPEC, ALST_EDIT, ALST_WALK, ALST_MAX };
     
+    extern void getmap(clientinfo *ci = NULL);
+
     bool crclocked(clientinfo *ci, bool msg = false)
     {
         if(m_play(gamemode) && G(crclock) && ci->state.actortype == A_PLAYER && (mapcrc ? ci->mapcrc != mapcrc : !ci->mapcrc) && !haspriv(ci, G(crclock)))
         {
-            if(msg) srvmsgft(ci->clientnum, CON_EVENT, "\fyyou are \fs\fccrc locked\fS, please wait for the map to download..");
+            if(msg) srvmsgft(ci->clientnum, CON_EVENT, "\fyyou are \fs\fccrc locked\fS, you need the correct map version..");
             return true;
         }
         return false;
@@ -2851,7 +2853,11 @@ namespace server
         }
         else if(ci->state.state == CS_SPECTATOR && !val)
         {
-            if(crclocked(ci, true)) return false;
+            if(crclocked(ci, true))
+            {
+                getmap(ci);
+                return false;
+            }
             int nospawn = 0;
             if(smode && !smode->canspawn(ci, true)) { nospawn++; }
             mutate(smuts, if(!mut->canspawn(ci, true)) { nospawn++; });
@@ -2894,7 +2900,7 @@ namespace server
         return true;
     }
 
-    void getmap(clientinfo *ci = NULL)
+    void getmap(clientinfo *ci)
     {
         if(gamestate == G_S_INTERMISSION) return; // pointless
         if(ci)
@@ -2954,7 +2960,7 @@ namespace server
         {
             mapsending = best->clientnum;
             mapcrc = best->mapcrc;
-            srvmsgft(-1, CON_EVENT, "\fymap crc \fs\fc0x%.6x\fS is being requested from %s..", mapcrc, colourname(best));
+            srvoutf(4, "\fymap crc \fs\fc0x%.6x\fS is being requested from %s..", mapcrc, colourname(best));
             sendf(best->clientnum, 1, "ri", N_GETMAP);
             loopv(clients)
             {
@@ -2987,7 +2993,11 @@ namespace server
                         return false;
                 if(ci->state.state == CS_ALIVE || ci->state.state == CS_WAITING) return false;
                 if(ci->state.lastdeath && gamemillis-ci->state.lastdeath <= DEATHMILLIS) return false;
-                if(crclocked(ci, true)) return false;
+                if(crclocked(ci, true))
+                {
+                    getmap(ci);
+                    return false;
+                }
                 break;
             }
             case ALST_SPAWN: // spawn
@@ -2995,7 +3005,11 @@ namespace server
                 if(ci->state.quarantine) return false;
                 if(ci->state.state != CS_DEAD && ci->state.state != CS_WAITING) return false;
                 if(ci->state.lastdeath && gamemillis-ci->state.lastdeath <= DEATHMILLIS) return false;
-                if(crclocked(ci, true)) return false;
+                if(crclocked(ci, true))
+                {
+                    getmap(ci);
+                    return false;
+                }
                 break;
             }
             case ALST_SPEC: return ci->state.actortype == A_PLAYER; // spec
@@ -3065,15 +3079,15 @@ namespace server
                 }
                 mapdata[i] = openfile(reqfile, "rb");
             }
-            if(hasmapdata()) srvmsgft(-1, CON_EVENT, "\fyserver map crc is: \fs\fc0x%.6x\fS", mapcrc);
+            if(hasmapdata()) srvoutf(4, "\fythe server map crc is: \fs\fc0x%.6x\fS", mapcrc);
             else
             {
                 resetmapdata();
-                srvmsgft(-1, CON_EVENT, "\fyserver was unable to load the map");
+                srvoutf(4, "\fythe server was unable to load the map");
             }
 
         }
-        else srvmsgft(-1, CON_EVENT, "\fyserver was unable to load the map");
+        else srvoutf(4, "\fythe server was unable to load the map");
         copystring(smapname, reqmap);
 
         // server modes
@@ -5068,7 +5082,7 @@ namespace server
         }
         else relayf(2, "\fg%s (%s) has joined the game [%d.%d.%d-%s%d] (%d %s)", colourname(ci), gethostname(ci->clientnum), ci->state.version.major, ci->state.version.minor, ci->state.version.patch, plat_name(ci->state.version.platform), ci->state.version.arch, amt, amt != 1 ? "players" : "player");
 
-        if(hasmapdata()) srvmsgft(ci->clientnum, CON_EVENT, "\fyserver map crc is: \fs\fc0x%.6x\fS", mapcrc);
+        if(hasmapdata()) srvmsgft(ci->clientnum, CON_INFO, "\fyserver map crc is: \fs\fc0x%.6x\fS", mapcrc);
 
         if(m_demo(gamemode)) setupdemoplayback();
         else if(m_edit(gamemode))
@@ -5340,7 +5354,7 @@ namespace server
                     ci->mapcrc = text[0] ? crc : 0;
                     ci->ready = true;
                     ci->wantsmap = false;
-                    srvmsgft(-1, CON_EVENT, "\fy%s has map crc: \fs\fc0x%.6x\fS", colourname(ci), ci->mapcrc);
+                    srvoutf(4, "\fy%s has map crc: \fs\fc0x%.6x\fS", colourname(ci), ci->mapcrc);
                     if(crclocked(ci, true)) getmap(ci);
                     else getmap();
                     if(ci->isready()) aiman::poke();
@@ -5854,7 +5868,7 @@ namespace server
                         if(ci->swapteam)
                         {
                             if(m_swapteam(gamemode, mutators))
-                                srvmsgft(-1, CON_EVENT, "\fy%s no longer wishes to swap to team %s", colourname(ci), colourteam(ci->swapteam));
+                                srvoutf(4, "\fy%s no longer wishes to swap to team %s", colourname(ci), colourteam(ci->swapteam));
                             ci->swapteam = T_NEUTRAL;
                         }
                         break;
@@ -6373,7 +6387,7 @@ namespace server
                 case N_GETMAP:
                 {
                     ci->ready = true;
-                    srvmsgft(-1, CON_EVENT, "\fy%s is requesting the map..", colourname(ci));
+                    srvoutf(4, "\fy%s is requesting the map..", colourname(ci));
                     getmap(ci);
                     break;
                 }
