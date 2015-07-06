@@ -397,8 +397,7 @@ struct editor
         else
         {
             int len = current.len;
-            if(maxx >= 0 && len > maxx-1) len = maxx-1;
-            if(cx <= len) current.insert(&ch, cx++, 1);
+            if(maxx < 0 || len <= maxx-1) current.insert(&ch, cx++, 1);
         }
     }
 
@@ -450,6 +449,7 @@ struct editor
         switch(code)
         {
             case SDLK_UP:
+                mark(false); 
                 if(linewrap)
                 {
                     int x, y;
@@ -460,6 +460,7 @@ struct editor
                 cy--;
                 break;
             case SDLK_DOWN:
+                mark(false); 
                 if(linewrap)
                 {
                     int x, y, width, height;
@@ -472,27 +473,35 @@ struct editor
                 cy++;
                 break;
             case -4:
+                mark(false);
                 cy--;
                 break;
             case -5:
+                mark(false);
                 cy++;
                 break;
             case SDLK_PAGEUP:
+                mark(false);
                 cy-=pixelheight/FONTH;
                 break;
             case SDLK_PAGEDOWN:
+                mark(false);
                 cy+=pixelheight/FONTH;
                 break;
             case SDLK_HOME:
-                cx = cy = 0;
+                mark(false);
+                cx = 0;
                 break;
             case SDLK_END:
-                cx = cy = INT_MAX;
+                mark(false);
+                cx = INT_MAX;
                 break;
             case SDLK_LEFT:
+                mark(false);
                 cx--;
                 break;
             case SDLK_RIGHT:
+                mark(false);
                 cx++;
                 break;
             case SDLK_DELETE:
