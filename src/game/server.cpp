@@ -2902,7 +2902,7 @@ namespace server
 
     void getmap(clientinfo *ci, bool force)
     {
-        if(gamestate == G_S_INTERMISSION) return; // pointless
+        if(gamestate == G_S_INTERMISSION || gamestate == G_S_VOTING) return; // pointless
         if(ci)
         {
             if(mapsending == ci->clientnum) resetmapdata();
