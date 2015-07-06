@@ -2485,7 +2485,7 @@ namespace server
             srvmsgft(ci->clientnum, CON_EVENT, "\fraccess denied, you must be a local client to start a %s game", gametype[reqmode].name);
             return;
         }
-        bool hasvote = false, hasveto = (mastermode >= MM_VETO && haspriv(ci, G(vetolock))) || !numclients(ci->clientnum);
+        bool hasvote = false, hasveto = (mastermode == MM_VETO && haspriv(ci, G(vetolock))) || !numclients(ci->clientnum);
         if(!hasveto)
         {
             if(ci->lastvote && totalmillis-ci->lastvote <= G(votewait)) return;
