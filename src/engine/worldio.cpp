@@ -1737,6 +1737,8 @@ bool load_world(const char *mname, bool temp)       // still supports all map fo
 
             progress(0, "initialising config...");
             mapcrc = f->getcrc();
+            delete f;
+
             identflags |= IDF_WORLD;
             defformatstring(cfgname)("%s.cfg", mapname);
             if(maptype == MAP_OCTA)
@@ -1749,8 +1751,6 @@ bool load_world(const char *mname, bool temp)       // still supports all map fo
 
             progress(0, "preloading models...");
             preloadusedmapmodels(true);
-
-            delete f;
             conoutf("loaded %s (\fs%s\fS by \fs%s\fS) v.%d:%d(r%d) [%.1fs]", mapname, *maptitle ? maptitle : "Untitled", *mapauthor ? mapauthor : "Unknown", hdr.version, hdr.gamever, hdr.revision, (SDL_GetTicks()-loadingstart)/1000.0f);
 
             progress(0, "checking world...");

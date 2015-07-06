@@ -152,7 +152,7 @@ GFVAR(IDF_ADMIN, votethreshold, 0, 0.5f, 1); // auto-pass votes when this many a
 GVAR(IDF_ADMIN, smallmapmax, 0, 6, VAR_MAX); // maximum number of players for a small map
 GVAR(IDF_ADMIN, mediummapmax, 0, 12, VAR_MAX); // maximum number of players for a medium map
 
-GVAR(IDF_ADMIN, waitforplayers, 0, 2, 2); // wait this long for players, 0 = off, 1 = load the map, 2 = join the game
+GVAR(IDF_ADMIN, waitforplayers, 0, 1, 2); // wait this long for players, 0 = off, 1 = load the map, 2 = join the game
 GVAR(IDF_ADMIN, waitforplayertime, 1000, 30000, VAR_MAX); // wait this long for players to be ready
 
 namespace server
