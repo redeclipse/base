@@ -2811,7 +2811,7 @@ namespace server
 
     enum { ALST_TRY = 0, ALST_SPAWN, ALST_SPEC, ALST_EDIT, ALST_WALK, ALST_MAX };
     
-    extern void getmap(clientinfo *ci = NULL);
+    extern void getmap(clientinfo *ci = NULL, bool force = false);
 
     bool crclocked(clientinfo *ci, bool msg = false)
     {
@@ -2900,7 +2900,7 @@ namespace server
         return true;
     }
 
-    void getmap(clientinfo *ci)
+    void getmap(clientinfo *ci, bool force)
     {
         if(gamestate == G_S_INTERMISSION) return; // pointless
         if(ci)
@@ -2922,7 +2922,7 @@ namespace server
                 return;
             }
         }
-        if(gamestate == G_S_WAITING || mapsending >= 0 || hasmapdata() || numclients() <= 1) return;
+        if((!force && gamestate == G_S_WAITING) || mapsending >= 0 || hasmapdata() || numclients() <= 1) return;
         clientinfo *best = NULL;
         if(!m_edit(gamemode))
         {
@@ -4635,14 +4635,19 @@ namespace server
                 }
                 if(!numwait) ready = true;
             }
-            if(ready)
+            if(ready && !hasmapdata())
             {
-                getmap();
-                if(mapsending >= 0 && !hasmapdata())
+                if(mapsending < 0)
                 {
-                    ready = false;
-                    gamewait += 60000; // so players don't scratch their heads, really needs a G_S_GETMAP
+                    getmap(NULL, true);
+                    if(mapsending >= 0)
+                    {
+                        ready = false;
+                        gamewait += totalmillis+G(waitforplayergetmap); // so players don't scratch their heads, really needs a G_S_GETMAP
+                    }
+                    // otherwise it breaks out by setting G_S_PLAYING
                 }
+                else ready = false;
             }
             if(ready)
             {
