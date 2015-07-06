@@ -3058,8 +3058,9 @@ namespace server
         aiman::clearai();
         aiman::poke();
         const char *reqmap = name && *name ? name : pickmap(NULL, gamemode, mutators);
+	if((!name || *name) && reqmap && *reqmap) srvoutf(-3, "server chooses: \fs\fy%s\fS on \fs\fo%s\fS", gamename(gamemode, mutators), reqmap);
 #ifdef STANDALONE // interferes with savemap on clients, in which case we can just use the auto-request
-        if(reqmap && *reqmap && true)
+        if(reqmap && *reqmap)
 #else
         if(reqmap && *reqmap && servertype >= 3)
 #endif
@@ -3079,15 +3080,13 @@ namespace server
                 }
                 mapdata[i] = openfile(reqfile, "rb");
             }
-            if(hasmapdata()) srvoutf(4, "\fythe server map crc is: \fs\fc0x%.6x\fS", mapcrc);
+            if(hasmapdata()) srvoutf(4, "\fythe server map crc for \fs\fc%s\fS is: \fs\fc0x%.6x\fS", reqmap, mapcrc);
             else
             {
                 resetmapdata();
-                srvoutf(4, "\fythe server was unable to load the map");
+                srvoutf(4, "\fythe server was unable to load \fs\fc%s\fS", reqmap);
             }
-
         }
-        else srvoutf(4, "\fythe server was unable to load the map");
         copystring(smapname, reqmap);
 
         // server modes
@@ -5087,7 +5086,7 @@ namespace server
         }
         else relayf(2, "\fg%s (%s) has joined the game [%d.%d.%d-%s%d] (%d %s)", colourname(ci), gethostname(ci->clientnum), ci->state.version.major, ci->state.version.minor, ci->state.version.patch, plat_name(ci->state.version.platform), ci->state.version.arch, amt, amt != 1 ? "players" : "player");
 
-        if(hasmapdata()) srvmsgft(ci->clientnum, CON_INFO, "\fyserver map crc is: \fs\fc0x%.6x\fS", mapcrc);
+        if(hasmapdata()) srvmsgft(ci->clientnum, CON_INFO, "\fythe server map crc for \fs\fc%s\fS is: \fs\fc0x%.6x\fS", smapname, mapcrc);
 
         if(m_demo(gamemode)) setupdemoplayback();
         else if(m_edit(gamemode))
