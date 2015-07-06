@@ -3058,7 +3058,7 @@ namespace server
         aiman::clearai();
         aiman::poke();
         const char *reqmap = name && *name ? name : pickmap(NULL, gamemode, mutators);
-	if((!name || *name) && reqmap && *reqmap) srvoutf(-3, "server chooses: \fs\fy%s\fS on \fs\fo%s\fS", gamename(gamemode, mutators), reqmap);
+        if((!name || *name) && reqmap && *reqmap) srvoutf(-3, "server chooses: \fs\fy%s\fS on \fs\fo%s\fS", gamename(gamemode, mutators), reqmap); // milestone v1.6.0
 #ifdef STANDALONE // interferes with savemap on clients, in which case we can just use the auto-request
         if(reqmap && *reqmap)
 #else
@@ -4642,7 +4642,7 @@ namespace server
                     if(mapsending >= 0)
                     {
                         ready = false;
-                        gamewait += totalmillis+G(waitforplayergetmap); // so players don't scratch their heads, really needs a G_S_GETMAP
+                        gamewait += totalmillis+G(waitforplayergetmap); // milestone v1.6.0 - so players don't scratch their heads, really needs a G_S_GETMAP
                     }
                     // otherwise it breaks out by setting G_S_PLAYING
                 }
@@ -4832,7 +4832,7 @@ namespace server
             return false;
         }
         mapdata[n]->write(data, len);
-        if(n == SENDMAP_ALL) mapsending = -1;
+        if(n == SENDMAP_ALL) mapsending = -1; // milestone v1.6.0
         return n == SENDMAP_MIN;
     }
 
@@ -5185,7 +5185,7 @@ namespace server
                     if(cs->state.actortype > A_PLAYER || !cs->online || !cs->name[0] || !cs->ready) continue;
                     if(cs->wantsmap || crclocked(cs, true)) getmap(cs);
                 }
-                //sendf(-1, 1, "ri", N_SENDMAP);
+                // milestone v1.6.0 - sendf(-1, 1, "ri", N_SENDMAP);
             }
             return;
         }
@@ -5358,7 +5358,7 @@ namespace server
                     ci->mapcrc = text[0] ? crc : 0;
                     ci->ready = true;
                     ci->wantsmap = false;
-                    srvoutf(4, "\fy%s has map crc: \fs\fc0x%.6x\fS", colourname(ci), ci->mapcrc);
+                    srvoutf(4, "\fy%s has map crc: \fs\fc0x%.6x\fS", colourname(ci), ci->mapcrc); // milestone v1.6.0
                     if(crclocked(ci, true)) getmap(ci);
                     else getmap();
                     if(ci->isready()) aiman::poke();
@@ -6392,7 +6392,7 @@ namespace server
                 {
                     ci->ready = true;
                     srvoutf(4, "\fy%s is requesting the map..", colourname(ci));
-                    getmap(ci);
+                    getmap(ci); // milestone v1.6.0
                     break;
                 }
 

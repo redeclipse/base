@@ -43,7 +43,7 @@ extern void settexture(const char *name, int clamp = 0);
 
 // world
 extern bool emptymap(int factor, bool force = false, char *mname = NULL, bool nocfg = false);
-extern bool enlargemap(bool force);
+extern bool enlargemap(bool split = false, bool force = false);
 extern int findentity(int type, int index, vector<int> &attr);
 extern void mpeditent(int i, const vec &o, int type, attrvector &attr, bool local = true);
 extern int getworldsize();

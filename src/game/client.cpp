@@ -2834,7 +2834,7 @@ namespace client
                 {
                     int size = getint(p);
                     if(size>=0) emptymap(size, true);
-                    else enlargemap(true);
+                    else enlargemap(false, true);
                     mapvotes.shrink(0);
                     needsmap = false;
                     if(d && d!=game::player1)

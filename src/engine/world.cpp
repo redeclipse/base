@@ -1028,7 +1028,7 @@ bool emptymap(int scale, bool force, char *mname, bool nocfg)   // main empty wo
     return true;
 }
 
-bool enlargemap(bool force)
+bool enlargemap(bool split, bool force)
 {
     if(!force && !editmode)
     {
@@ -1036,14 +1036,23 @@ bool enlargemap(bool force)
         return false;
     }
     if(hdr.worldsize >= 1<<16) return false;
-
+    if(split && multiplayer()) split = false; // milestone v1.6.0
     while(outsideents.length()) removeentity(outsideents.pop());
 
     worldscale++;
     hdr.worldsize *= 2;
     cube *c = newcubes(F_EMPTY);
     c[0].children = worldroot;
-    loopi(3) solidfaces(c[i+1]);
+    loopi(3)
+    {
+        if(split)
+        {
+            cube *n = newcubes(F_EMPTY);
+            loopk(4) solidfaces(n[k]);
+            c[i+1].children = n;
+        }
+        else solidfaces(c[i+1]);
+    }
     worldroot = c;
 
     if(hdr.worldsize > 0x1000) splitocta(worldroot, hdr.worldsize>>1);
@@ -1097,7 +1106,7 @@ void shrinkmap()
 }
 
 ICOMMAND(0, newmap, "is", (int *i, char *n), if(emptymap(*i, false, n)) game::newmap(::max(*i, 0)));
-ICOMMAND(0, mapenlarge, "", (), if(enlargemap(false)) game::newmap(-1));
+ICOMMAND(0, mapenlarge, "i", (int *n), if(enlargemap(*n!=0, false)) game::newmap(-1));
 COMMAND(0, shrinkmap, "");
 ICOMMAND(0, mapsize, "", (void),
 {
