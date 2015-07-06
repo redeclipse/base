@@ -2813,9 +2813,9 @@ namespace server
     
     bool crclocked(clientinfo *ci, bool msg = false)
     {
-        if(m_play(gamemode) && G(crclock) && ci->state.actortype == A_PLAYER && mapcrc && ci->mapcrc != mapcrc && !haspriv(ci, G(crclock)))
+        if(m_play(gamemode) && G(crclock) && ci->state.actortype == A_PLAYER && (mapcrc ? ci->mapcrc != mapcrc : !ci->mapcrc) && !haspriv(ci, G(crclock)))
         {
-            if(msg) srvmsgft(ci->clientnum, CON_EVENT, "\fyyou are \fs\fccrc locked\fs, please wait for the map to download..");
+            if(msg) srvmsgft(ci->clientnum, CON_EVENT, "\fyyou are \fs\fccrc locked\fS, please wait for the map to download..");
             return true;
         }
         return false;
@@ -2900,6 +2900,7 @@ namespace server
         if(ci)
         {
             if(mapsending == ci->clientnum) resetmapdata();
+            ci->mapcrc = 0;
             ci->wantsmap = true;
             if(hasmapdata())
             {
@@ -2915,7 +2916,7 @@ namespace server
                 return;
             }
         }
-        else if(hasmapdata()) return;
+        else if(mapsending >= 0 || hasmapdata()) return;
         clientinfo *best = NULL;
         if(!m_edit(gamemode))
         {
@@ -2933,7 +2934,7 @@ namespace server
             loopv(clients)
             {
                 clientinfo *cs = clients[i];
-                if(cs->state.actortype > A_PLAYER || !cs->name[0] || !cs->online || cs->wantsmap || !cs->mapcrc) continue;
+                if(cs->state.actortype > A_PLAYER || !cs->name[0] || !cs->online || cs->wantsmap || !cs->mapcrc || !cs->ready) continue;
                 bool found = false;
                 loopvj(crcs) if(crcs[j].id == cs->mapcrc)
                 {
@@ -2955,7 +2956,7 @@ namespace server
         if(!best) loopv(clients)
         {
             clientinfo *cs = clients[i];
-            if(cs->state.actortype > A_PLAYER || !cs->name[0] || !cs->online || cs->wantsmap || !cs->mapcrc) continue;
+            if(cs->state.actortype > A_PLAYER || !cs->name[0] || !cs->online || cs->wantsmap || !cs->mapcrc || !cs->ready) continue;
             cs->state.updatetimeplayed();
             if(!best || cs->state.timeplayed > best->state.timeplayed) best = cs;
         }
@@ -2965,13 +2966,16 @@ namespace server
             sendf(best->clientnum, 1, "ri", N_GETMAP);
             mapsending = best->clientnum;
             mapcrc = best->mapcrc;
-            if(m_play(gamemode) && G(crclock)) loopv(clients)
+            loopv(clients)
             {
                 clientinfo *cs = clients[i];
-                if(cs->state.actortype > A_PLAYER || !cs->name[0] || !cs->online || !cs->ready || !crclocked(cs, true)) continue;
-                cs->mapcrc = 0;
-                cs->wantsmap = true;
-                spectate(cs, true);
+                if(cs->state.actortype > A_PLAYER || !cs->name[0] || !cs->online || !cs->ready) continue;
+                if(cs->wantsmap || crclocked(cs, true))
+                {
+                    cs->mapcrc = 0;
+                    cs->wantsmap = true;
+                    spectate(cs, true);
+                }
             }
             return;
         }
@@ -3301,16 +3305,16 @@ namespace server
         {
             const char *name = &id->name[3], *val = NULL, *oldval = NULL;
             bool needfreeoldval = false;
-            int locked = max(max(id->flags&IDF_ADMIN ? int(PRIV_ADMINISTRATOR) : 0, G(varslock)), int(PRIV_CREATOR));
+            int locked = min(max(id->flags&IDF_ADMIN ? int(PRIV_ADMINISTRATOR) : 0, G(varslock)), int(PRIV_CREATOR));
             #ifndef STANDALONE
             if(servertype < 3 && (!strcmp(id->name, "sv_gamespeed") || !strcmp(id->name, "sv_gamepaused"))) locked = PRIV_ADMINISTRATOR;
             #endif
-            if(!strcmp(id->name, "sv_gamespeed") && G(gamespeedlock) > locked) locked = max(G(gamespeedlock), int(PRIV_CREATOR));
+            if(!strcmp(id->name, "sv_gamespeed") && G(gamespeedlock) > locked) locked = min(G(gamespeedlock), int(PRIV_CREATOR));
             else if(id->type == ID_VAR)
             {
                 int len = strlen(id->name);
                 if(len > 4 && !strcmp(&id->name[len-4], "lock"))
-                    locked = max(max(max(*id->storage.i, parseint(arg)), locked), int(PRIV_CREATOR));
+                    locked = min(max(max(*id->storage.i, parseint(arg)), locked), int(PRIV_CREATOR));
             }
             switch(id->type)
             {
@@ -4600,12 +4604,16 @@ namespace server
 
         if(gamestate == G_S_WAITING)
         {
-            bool ready = false;
-            if(!needswait() || gamewait <= totalmillis) ready = true;
-            else
+            bool ready = needswait() || gamewait <= totalmillis;
+            if(!ready)
             {
                 int numwait = 0;
-                loopv(clients) if(!clients[i]->isready() || (G(waitforplayers) == 2 && clients[i]->state.state == CS_SPECTATOR)) numwait++;
+                loopv(clients)
+                {
+                    clientinfo *cs = clients[i];
+                    if(cs->state.actortype > A_PLAYER || !cs->online || !cs->name[0]) continue;
+                    if(!clients[i]->isready() || (G(waitforplayers) == 2 && clients[i]->state.state == CS_SPECTATOR)) numwait++;
+                }
                 if(!numwait) ready = true;
             }
             if(ready)
@@ -4616,7 +4624,7 @@ namespace server
                 if(m_team(gamemode, mutators)) doteambalance(true);
                 if(m_fight(gamemode) && !m_bomber(gamemode) && !m_duke(gamemode, mutators)) // they do their own "fight"
                     sendf(-1, 1, "ri3s", N_ANNOUNCE, S_V_FIGHT, CON_INFO, "match start, fight!");
-                if(m_play(gamemode)) getmap(); // processes if it needs to
+                getmap();
             }
         }
         if(numclients())
@@ -4780,12 +4788,12 @@ namespace server
             srvmsgf(sender, "sorry, the map isn't needed from you");
             return false;
         }
-        if(mapdata[n]) DELETEP(mapdata[n]);
         if(!len)
         {
             srvmsgf(sender, "you sent a zero length packet for map data");
             return false;
         }
+        if(mapdata[n]) DELETEP(mapdata[n]);
         mapdata[n] = opentempfile(tempmapfile[n], "w+b");
         if(!mapdata[n])
         {
@@ -5318,11 +5326,8 @@ namespace server
                     ci->mapcrc = text[0] ? crc : 0;
                     ci->ready = true;
                     ci->wantsmap = false;
-                    if(m_play(gamemode) && G(crclock))
-                    {
-                        if(!mapcrc && ci->mapcrc) getmap();
-                        else if(mapcrc && ci->mapcrc != mapcrc) getmap(ci);
-                    }
+                    if(crclocked(ci, true)) getmap(ci);
+                    else getmap();
                     if(ci->isready()) aiman::poke();
                     break;
                 }
