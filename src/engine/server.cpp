@@ -295,7 +295,7 @@ bool filterstring(char *dst, const char *src, bool newline, bool colour, bool wh
 {
     bool filtered = false;
     size_t n = 0;
-    for(int c = uchar(*src); c && n < len; c = uchar(*++src))
+    for(int c = uchar(*src); c && n < len+1; c = uchar(*++src))
     {
         if(newline && (c=='\n' || c=='\r')) c = ' ';
         if(c=='\f')
@@ -326,7 +326,7 @@ bool filterstring(char *dst, const char *src, bool newline, bool colour, bool wh
         else filtered = true;
     }
     if(whitespace && wsstrip && n) while(iscubespace(dst[n-1])) dst[--n] = 0;
-    dst[n < len ? n : len-1] = 0;
+    dst[n] = 0;
     return filtered;
 }
 bool filterbigstring(char *dst, const char *src, bool newline, bool colour, bool whitespace, bool wsstrip, size_t len)
