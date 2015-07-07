@@ -2,6 +2,7 @@
 // runs dedicated or as client coroutine
 
 #include "engine.h"
+#include <signal.h>
 #ifdef WIN32
 #include <shlobj.h>
 #endif
@@ -1714,7 +1715,6 @@ void shutdownsignal(int signum)
 
 
 #ifdef STANDALONE
-#include <signal.h>
 volatile int errors = 0;
 void fatal(const char *s, ...)    // failure exit
 {
