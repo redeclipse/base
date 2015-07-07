@@ -334,7 +334,7 @@ namespace server
         string name, handle, mapvote, authname, clientmap;
         int clientnum, connectmillis, sessionid, overflow, ping, team, lastteam, lastplayerinfo,
             modevote, mutsvote, lastvote, privilege, gameoffset, lastevent, wslen, swapteam;
-        bool connected, ready, local, timesync, online, wantsmap, connectauth, kicked;
+        bool connected, ready, local, timesync, online, wantsmap, gettinmap, connectauth, kicked;
         uint mapcrc;
         vector<gameevent *> events;
         vector<uchar> position, messages;
@@ -359,7 +359,7 @@ namespace server
             state.reset(change);
             events.deletecontents();
             overflow = 0;
-            ready = timesync = wantsmap = false;
+            ready = timesync = wantsmap = gettingmap = false;
             lastevent = gameoffset = lastvote = 0;
             if(!change) lastteam = T_NEUTRAL;
             team = swapteam = T_NEUTRAL;
@@ -378,7 +378,7 @@ namespace server
             ping = lastplayerinfo = 0;
             name[0] = handle[0] = 0;
             privilege = PRIV_NONE;
-            connected = ready = local = online = wantsmap = connectauth = kicked = false;
+            connected = ready = local = online = wantsmap = gettingmap = connectauth = kicked = false;
             authreq = 0;
             position.setsize(0);
             messages.setsize(0);
@@ -2910,6 +2910,8 @@ namespace server
             ci->wantsmap = true;
             if(hasmapdata())
             {
+                if(ci->gettingmap) return;
+                ci->gettingmap = true;
                 srvmsgft(ci->clientnum, CON_EVENT, "\fysending map, please wait..");
                 loopi(SENDMAP_MAX) if(mapdata[i]) sendfile(ci->clientnum, 2, mapdata[i], "ri2", N_SENDMAPFILE, i);
                 sendwelcome(ci);
@@ -5352,8 +5354,8 @@ namespace server
                     copystring(ci->clientmap, text);
                     ci->mapcrc = text[0] ? crc : 0;
                     ci->ready = true;
-                    ci->wantsmap = false;
-                    srvoutf(4, "\fy%s has map crc: \fs\fc0x%.6x\fS", colourname(ci), ci->mapcrc); // milestone v1.6.0
+                    ci->wantsmap = ci->gettingmap = false;
+                    srvoutf(4, "\fy%s has map crc: \fs\fc0x%.6x\fS (server: \fs\fc0x%.6x)", colourname(ci), ci->mapcrc, mapcrc); // milestone v1.6.0
                     if(crclocked(ci, true)) getmap(ci);
                     else getmap();
                     if(ci->isready()) aiman::poke();
