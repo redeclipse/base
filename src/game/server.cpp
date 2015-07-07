@@ -334,7 +334,7 @@ namespace server
         string name, handle, mapvote, authname, clientmap;
         int clientnum, connectmillis, sessionid, overflow, ping, team, lastteam, lastplayerinfo,
             modevote, mutsvote, lastvote, privilege, gameoffset, lastevent, wslen, swapteam;
-        bool connected, ready, local, timesync, online, wantsmap, gettinmap, connectauth, kicked;
+        bool connected, ready, local, timesync, online, wantsmap, gettingmap, connectauth, kicked;
         uint mapcrc;
         vector<gameevent *> events;
         vector<uchar> position, messages;
