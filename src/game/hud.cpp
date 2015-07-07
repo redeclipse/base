@@ -678,13 +678,13 @@ namespace hud
 
     bool hastkwarn(gameent *d)
     {
-        if(!m_fight(game::gamemode)) return false;
+        if(!m_play(game::gamemode)) return false;
         return teamkillwarn && m_team(game::gamemode, game::mutators) && numteamkills() >= teamkillwarn;
     }
 
     bool hasteaminfo(gameent *d)
     {
-        if(!m_fight(game::gamemode) || game::focus->state != CS_ALIVE) return false;
+        if(!m_play(game::gamemode) || game::focus->state != CS_ALIVE) return false;
         if(!lastteam) lastteam = totalmillis;
         return teamnotices >= 1 && totalmillis-lastteam <= teamnoticedelay;
     }
@@ -1380,11 +1380,11 @@ namespace hud
             {
                 int delay = target->respawnwait(lastmillis, m_delay(game::gamemode, game::mutators, target->team));
                 SEARCHBINDCACHE(attackkey)("primary", 0);
-                if(delay || m_duke(game::gamemode, game::mutators) || (m_fight(game::gamemode) && maxalive > 0))
+                if(delay || m_duke(game::gamemode, game::mutators) || (m_play(game::gamemode) && maxalive > 0))
                 {
                     if(game::gamestate == G_S_WAITING || m_duke(game::gamemode, game::mutators)) ty += draw_textx("Queued for new round", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, tw);
                     else if(delay) ty += draw_textx("%s: Down for \fs\fy%s\fS", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, tw, target == game::player1 && target->state == CS_WAITING ? "Please Wait" : "Fragged", timestr(delay));
-                    else if(target == game::player1 && target->state == CS_WAITING && m_fight(game::gamemode) && maxalive > 0 && maxalivequeue)
+                    else if(target == game::player1 && target->state == CS_WAITING && m_play(game::gamemode) && maxalive > 0 && maxalivequeue)
                     {
                         int n = game::numwaiting(), x = max(int(G(maxalive)*G(maxplayers)), max(int(client::otherclients(true, true)*G(maxalivethreshold)), G(maxaliveminimum)));
                         if(m_team(game::gamemode, game::mutators))
@@ -1439,7 +1439,7 @@ namespace hud
                             ty += draw_textx("Press %s to \fs%s\fS loadout", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, tw, loadkey, target->loadweap.empty() ? "\fzoyselect" : "change");
                             popfont();
                         }
-                        if(m_fight(game::gamemode) && m_team(game::gamemode, game::mutators))
+                        if(m_play(game::gamemode) && m_team(game::gamemode, game::mutators))
                         {
                             SEARCHBINDCACHE(teamkey)("showgui team", 0);
                             pushfont("little");
@@ -1547,7 +1547,7 @@ namespace hud
                 if(!client::demoplayback)
                 {
                     ty += draw_textx("Press %s to join the game", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, tw, speconkey);
-                    if(m_fight(game::gamemode) && m_team(game::gamemode, game::mutators) && shownotices >= 2)
+                    if(m_play(game::gamemode) && m_team(game::gamemode, game::mutators) && shownotices >= 2)
                     {
                         SEARCHBINDCACHE(teamkey)("showgui team", 0);
                         ty += draw_textx("Press %s to join a team", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, tw, teamkey);
@@ -2958,7 +2958,7 @@ namespace hud
                     }
                 }
                 if(texpaneltimer) break;
-                if(m_fight(game::gamemode))
+                if(m_play(game::gamemode))
                 {
                     int count = game::player1->state == CS_SPECTATOR ? inventoryscorespec : inventoryscore;
                     if(count && ((cc = drawscore(cx[i], cm, csr, (h-edge*2)/2, fade, count)) > 0)) cm += cc+cr;

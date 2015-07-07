@@ -488,7 +488,7 @@ namespace client
 
     int teamname(const char *team)
     {
-        if(m_fight(game::gamemode) && m_team(game::gamemode, game::mutators))
+        if(m_play(game::gamemode) && m_team(game::gamemode, game::mutators))
         {
             if(team[0])
             {
@@ -511,7 +511,7 @@ namespace client
     {
         if(team[0])
         {
-            if(m_fight(game::gamemode) && m_team(game::gamemode, game::mutators))
+            if(m_play(game::gamemode) && m_team(game::gamemode, game::mutators))
             {
                 int t = teamname(team);
                 if(isteam(game::gamemode, game::mutators, t, T_FIRST)) addmsg(N_SWITCHTEAM, "ri", t);
@@ -884,7 +884,7 @@ namespace client
 
     void setteam(const char *arg1, const char *arg2)
     {
-        if(m_fight(game::gamemode) && m_team(game::gamemode, game::mutators))
+        if(m_play(game::gamemode) && m_team(game::gamemode, game::mutators))
         {
             int i = parseplayer(arg1);
             if(i>=0)
@@ -1182,7 +1182,7 @@ namespace client
 
     void changemapserv(char *name, int gamemode, int mutators, bool temp)
     {
-        game::gamestate = m_fight(gamemode) ? G_S_WAITING : G_S_PLAYING;
+        game::gamestate = m_play(gamemode) ? G_S_WAITING : G_S_PLAYING;
         game::gamemode = gamemode;
         game::mutators = mutators;
         modecheck(game::gamemode, game::mutators);

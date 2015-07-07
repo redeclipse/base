@@ -449,7 +449,7 @@ namespace server
     bool canplay(bool chk = true)
     {
         if(!demoplayback && !m_demo(gamemode))
-            if(!chk || (m_fight(gamemode) && !hasgameinfo) || !gs_playing(gamestate)) return false;
+            if(!chk || (m_play(gamemode) && !hasgameinfo) || !gs_playing(gamestate)) return false;
         return true;
     }
 
@@ -609,7 +609,7 @@ namespace server
 
         bool spawnqueue(bool all = false, bool needinfo = true)
         {
-            return m_fight(gamemode) && !m_race(gamemode) && !m_duke(gamemode, mutators) && G(maxalive) > 0 && (!needinfo || canplay()) && (!all || G(maxalivequeue)) && numclients() > 1;
+            return m_play(gamemode) && !m_race(gamemode) && !m_duke(gamemode, mutators) && G(maxalive) > 0 && (!needinfo || canplay()) && (!all || G(maxalivequeue)) && numclients() > 1;
         }
 
         void queue(clientinfo *ci, bool msg = true, bool wait = true, bool top = false)
@@ -670,7 +670,7 @@ namespace server
 
         bool canspawn(clientinfo *ci, bool tryspawn = false)
         {
-            if(ci->state.actortype >= A_ENEMY || !m_fight(gamemode)) return true;
+            if(ci->state.actortype >= A_ENEMY || !m_play(gamemode)) return true;
             else if(tryspawn)
             {
                 if(m_loadout(gamemode, mutators) && !chkloadweap(ci)) return false;
@@ -1282,7 +1282,7 @@ namespace server
             {
                 int num = 0;
                 loopi(G_MAX) if(G(rotatemodefilter)&(1<<i)) num++;
-                if(!num) mode = rnd(G_RAND)+G_FIGHT;
+                if(!num) mode = rnd(G_RAND)+G_PLAY;
                 else
                 {
                     int r = rnd(num), n = 0;
@@ -1292,7 +1292,7 @@ namespace server
                         else { mode = i; break; }
                     }
                 }
-                if(!mode || !(G(rotatemodefilter)&(1<<mode))) mode = rnd(G_RAND)+G_FIGHT;
+                if(!mode || !(G(rotatemodefilter)&(1<<mode))) mode = rnd(G_RAND)+G_PLAY;
             }
         }
         if(muts < 0)
@@ -1525,7 +1525,7 @@ namespace server
 
     void checklimits()
     {
-        if(!m_fight(gamemode)) return;
+        if(!m_play(gamemode)) return;
         bool wasinovertime = gamestate == G_S_OVERTIME;
         int limit = wasinovertime ? G(overtimelimit) : G(timelimit), numt = numteams(gamemode, mutators);
         bool newlimit = limit != oldtimelimit, newtimer = gamemillis-curtime>0 && gamemillis/1000!=(gamemillis-curtime)/1000,
@@ -1729,7 +1729,7 @@ namespace server
                     default: break;
                 }
             }
-            else if(m_fight(gamemode) && enttype[sents[i].type].usetype == EU_ITEM && hasitem(i))
+            else if(m_play(gamemode) && enttype[sents[i].type].usetype == EU_ITEM && hasitem(i))
             {
                 sents[i].millis = gamemillis+G(itemspawndelay);
                 switch(G(itemspawnstyle) == 3 ? rnd(2)+1 : G(itemspawnstyle))
@@ -1859,7 +1859,7 @@ namespace server
                 teamspawns = true;
                 numt = 2;
             }
-            if(m_fight(gamemode) && teamspawns)
+            if(m_play(gamemode) && teamspawns)
             {
                 loopk(3)
                 {
@@ -1933,7 +1933,7 @@ namespace server
             {
                 if(!cplayers) cplayers = totalspawns ? totalspawns : 1;
                 int np = G(numplayers) ? G(numplayers) : cplayers, mp = G(maxplayers) ? G(maxplayers) : np*3;
-                if(m_fight(gamemode) && m_team(gamemode, mutators))
+                if(m_play(gamemode) && m_team(gamemode, mutators))
                 {
                     int offt = np%numt, offq = mp%numt;
                     if(offt) np += numt-offt;
@@ -1965,7 +1965,7 @@ namespace server
                         team = spawns[T_ALPHA].iteration <= spawns[T_OMEGA].iteration ? T_ALPHA : T_OMEGA;
                     if(!rotate) rotate = 2;
                 }
-                else if(m_fight(gamemode) && m_team(gamemode, mutators) && (!m_race(gamemode) || m_gsp3(gamemode, mutators)) && !spawns[ci->team].ents.empty()) team = ci->team;
+                else if(m_play(gamemode) && m_team(gamemode, mutators) && (!m_race(gamemode) || m_gsp3(gamemode, mutators)) && !spawns[ci->team].ents.empty()) team = ci->team;
                 else switch(rotate)
                 {
                     case 2:
@@ -2730,7 +2730,7 @@ namespace server
     int chooseteam(clientinfo *ci, int suggest, bool wantbal)
     {
         if(ci->state.actortype >= A_ENEMY) return T_ENEMY;
-        else if(m_fight(gamemode) && m_team(gamemode, mutators) && ci->state.state != CS_SPECTATOR && ci->state.state != CS_EDITING)
+        else if(m_play(gamemode) && m_team(gamemode, mutators) && ci->state.state != CS_SPECTATOR && ci->state.state != CS_EDITING)
         {
             bool human = ci->state.actortype == A_PLAYER;
             int team = -1, bal = human && !wantbal && (G(teambalance) != 6 || !gs_playing(gamestate)) ? G(teambalance) : 1;
@@ -3031,11 +3031,6 @@ namespace server
     #include "duelmut.h"
     #include "aiman.h"
 
-    bool needswait()
-    {
-        return m_fight(gamemode) && G(waitforplayers) && numclients() > 1;
-    }
-
     void changemap(const char *name, int mode, int muts)
     {
         hasgameinfo = shouldcheckvotes = firstblood = false;
@@ -3043,11 +3038,11 @@ namespace server
         resetmapdata();
         changemode(gamemode = mode, mutators = muts);
         curbalance = nextbalance = lastteambalance = nextteambalance = gamemillis = 0;
-        gamestate = m_fight(gamemode) ? G_S_WAITING : G_S_PLAYING;
-        oldtimelimit = m_fight(gamemode) && G(timelimit) ? G(timelimit) : -1;
-        timeremaining = m_fight(gamemode) && G(timelimit) ? G(timelimit)*60 : -1;
-        gamelimit = m_fight(gamemode) && G(timelimit) ? timeremaining*1000 : 0;
-        gamewait = m_fight(gamemode) ? totalmillis+G(waitforplayertime) : 0;
+        gamestate = m_play(gamemode) ? G_S_WAITING : G_S_PLAYING;
+        oldtimelimit = m_play(gamemode) && G(timelimit) ? G(timelimit) : -1;
+        timeremaining = m_play(gamemode) && G(timelimit) ? G(timelimit)*60 : -1;
+        gamelimit = m_play(gamemode) && G(timelimit) ? timeremaining*1000 : 0;
+        gamewait = m_play(gamemode) && G(waitforplayers) ? totalmillis+G(waitforplayertime) : 0;
         sents.shrink(0);
         scores.shrink(0);
         loopv(savedscores) savedscores[i].mapchange();
@@ -3109,7 +3104,7 @@ namespace server
             spectator(clients[i]);
         }
 
-        if(!demoplayback && m_fight(gamemode) && numclients())
+        if(!demoplayback && m_play(gamemode) && numclients())
         {
             vector<char> buf;
             buf.put(smapname, strlen(smapname));
@@ -3630,7 +3625,7 @@ namespace server
             }
         });
 
-        if(!ci || (m_fight(gamemode) && numclients()))
+        if(!ci || (m_play(gamemode) && numclients()))
         {
             putint(p, N_TICK);
             putint(p, gamestate);
@@ -3852,7 +3847,7 @@ namespace server
                     style |= FRAG_HEADSHOT;
                     pointvalue += G(headshotpoints);
                 }
-                if(m_fight(gamemode) && m->state.actortype < A_ENEMY)
+                if(m_play(gamemode) && m->state.actortype < A_ENEMY)
                 {
                     int logs = 0;
                     v->state.spree++;
@@ -4622,15 +4617,15 @@ namespace server
 
         if(gamestate == G_S_WAITING)
         {
-            bool ready = needswait() || gamewait <= totalmillis;
+            bool ready = !m_play(gamemode) || !G(waitforplayers) || gamewait <= totalmillis;
             if(!ready)
             {
                 int numwait = 0;
                 loopv(clients)
                 {
                     clientinfo *cs = clients[i];
-                    if(cs->state.actortype > A_PLAYER || !cs->online || !cs->name[0]) continue;
-                    if(!clients[i]->ready || (G(waitforplayers) == 2 && clients[i]->state.state == CS_SPECTATOR)) numwait++;
+                    if(cs->state.actortype > A_PLAYER) continue;
+                    if(!cs->ready || (G(waitforplayers) == 2 && cs->state.state == CS_SPECTATOR)) numwait++;
                 }
                 if(!numwait) ready = true;
             }
@@ -4642,7 +4637,7 @@ namespace server
                     if(mapsending >= 0)
                     {
                         ready = false;
-                        gamewait += totalmillis+G(waitforplayergetmap); // milestone v1.6.0 - so players don't scratch their heads, really needs a G_S_GETMAP
+                        gamewait = totalmillis+G(waitforplayergetmap); // milestone v1.6.0 - so players don't scratch their heads, really needs a G_S_GETMAP
                     }
                     // otherwise it breaks out by setting G_S_PLAYING
                 }
@@ -4654,7 +4649,7 @@ namespace server
                 gamestate = G_S_PLAYING;
                 sendf(-1, 1, "ri3", N_TICK, G_S_PLAYING, timeremaining);
                 if(m_team(gamemode, mutators)) doteambalance(true);
-                if(m_fight(gamemode) && !m_bomber(gamemode) && !m_duke(gamemode, mutators)) // they do their own "fight"
+                if(m_play(gamemode) && !m_bomber(gamemode) && !m_duke(gamemode, mutators)) // they do their own "fight"
                     sendf(-1, 1, "ri3s", N_ANNOUNCE, S_V_FIGHT, CON_INFO, "match start, fight!");
             }
         }

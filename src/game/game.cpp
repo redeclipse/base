@@ -1452,7 +1452,7 @@ namespace game
         d->headless = (style&FRAG_HEADSHOT)!=0;
         bool burning = burn(d, weap, flags), bleeding = bleed(d, weap, flags), shocking = shock(d, weap, flags),
              isfocus = d == focus || v == focus, isme = d == player1 || v == player1,
-             allowanc = obitannounce && (obitannounce >= 2 || isfocus) && (m_fight(gamemode) || isme) && v->actortype < A_ENEMY;
+             allowanc = obitannounce && (obitannounce >= 2 || isfocus) && (m_play(gamemode) || isme) && v->actortype < A_ENEMY;
         int anc = d == focus && allowanc ? S_V_FRAGGED : -1, dth = d->actortype >= A_ENEMY || d->obliterated ? S_SPLOSH : S_DEATH,
             curmat = material&MATF_VOLUME;
         if(d != player1) d->resetinterp();
@@ -1504,7 +1504,7 @@ namespace game
                 v->addicon(eventicon::HEADSHOT, lastmillis, eventiconfade, 0);
                 if(!override && allowanc) anc = S_V_HEADSHOT;
             }
-            if(!m_fight(gamemode) || v->actortype >= A_ENEMY)
+            if(!m_play(gamemode) || v->actortype >= A_ENEMY)
             {
                 concatstring(d->obit, v->actortype >= A_ENEMY ? " a " : " ");
                 concatstring(d->obit, colourname(v));
@@ -1839,7 +1839,7 @@ namespace game
     void startmap(const char *name, const char *reqname, bool empty)    // called just after a map load
     {
         ai::startmap(name, reqname, empty);
-        gamestate = m_fight(gamemode) ? G_S_WAITING : G_S_PLAYING;
+        gamestate = m_play(gamemode) ? G_S_WAITING : G_S_PLAYING;
         maptime = 0;
         removedamagemergeall();
         removeannounceall();
@@ -3164,7 +3164,7 @@ namespace game
                 trans = 1e-16f; // we need tag_muzzle/tag_waist
             else return; // screw it, don't render them
         }
-        int team = m_fight(gamemode) && m_team(gamemode, mutators) ? d->team : T_NEUTRAL,
+        int team = m_play(gamemode) && m_team(gamemode, mutators) ? d->team : T_NEUTRAL,
             weap = d->weapselect, lastaction = 0, animflags = ANIM_IDLE|ANIM_LOOP, weapflags = animflags, weapaction = 0, animdelay = 0;
         bool secondary = false, showweap = third != 2 && isweap(weap) && actor[d->actortype].useweap;
         float weapscale = 1.f;

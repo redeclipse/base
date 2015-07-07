@@ -137,7 +137,7 @@ namespace hud
                 if(o != game::player1 || !client::demoplayback) spectators.players.add(o);
                 continue;
             }
-            int team = m_fight(game::gamemode) && m_team(game::gamemode, game::mutators) ? o->team : T_NEUTRAL;
+            int team = m_play(game::gamemode) && m_team(game::gamemode, game::mutators) ? o->team : T_NEUTRAL;
             bool found = false;
             loopj(numgroups)
             {
@@ -182,7 +182,7 @@ namespace hud
             if(!scoreson && on) menustart = guicb::starttime();
             scoresoff = !onauto;
             scoreson = on;
-            if(m_play(game::gamemode) && m_fight(game::gamemode) && interm)
+            if(m_play(game::gamemode) && m_play(game::gamemode) && interm)
             {
                 int numgroups = groupplayers();
                 if(!numgroups) return;
@@ -359,12 +359,12 @@ namespace hud
                                     SEARCHBINDCACHE(attackkey)("primary", 0);
                                     int sdelay = m_delay(game::gamemode, game::mutators, game::player1->team);
                                     int delay = game::player1->respawnwait(lastmillis, sdelay);
-                                    if(delay || m_duke(game::gamemode, game::mutators) || (m_fight(game::gamemode) && maxalive > 0))
+                                    if(delay || m_duke(game::gamemode, game::mutators) || (m_play(game::gamemode) && maxalive > 0))
                                     {
                                         uicenterlist(g, uifont(g, "default", {
                                             if(game::gamestate == G_S_WAITING || m_duke(game::gamemode, game::mutators)) g.text("Queued for new round", 0xFFFFFF);
                                             else if(delay) g.textf("%s: Down for \fs\fy%s\fS", 0xFFFFFF, NULL, 0, -1, game::player1->state == CS_WAITING ? "Please Wait" : "Fragged", timestr(delay));
-                                            else if(game::player1->state == CS_WAITING && m_fight(game::gamemode) && maxalive > 0 && maxalivequeue)
+                                            else if(game::player1->state == CS_WAITING && m_play(game::gamemode) && maxalive > 0 && maxalivequeue)
                                             {
                                                 int n = game::numwaiting();
                                                 if(n) g.textf("Waiting for \fs\fy%d\fS %s", 0xFFFFFF, NULL, 0, -1, n, n != 1 ? "players" : "player");
@@ -392,7 +392,7 @@ namespace hud
                                                 SEARCHBINDCACHE(loadkey)("showgui profile 2", 0);
                                                 uicenterlist(g, g.textf("Press %s to \fs%s\fS loadout", 0xFFFFFF, NULL, 0, -1, loadkey, game::player1->loadweap.empty() ? "\fzoyselect" : "change"));
                                             }
-                                            if(m_fight(game::gamemode) && m_team(game::gamemode, game::mutators))
+                                            if(m_play(game::gamemode) && m_team(game::gamemode, game::mutators))
                                             {
                                                 SEARCHBINDCACHE(teamkey)("showgui team", 0);
                                                 uicenterlist(g, g.textf("Press %s to change teams", 0xFFFFFF, NULL, 0, -1, teamkey));
@@ -529,7 +529,7 @@ namespace hud
                         {
                             scoregroup &sg = k == numgroups ? spectators : *groups[k];
                             if(k) g.space(0.5f);
-                            int colour = k < numgroups && sg.team >= 0 && m_fight(game::gamemode) && m_team(game::gamemode, game::mutators) ? TEAM(sg.team, colour) : TEAM(T_NEUTRAL, colour);
+                            int colour = k < numgroups && sg.team >= 0 && m_play(game::gamemode) && m_team(game::gamemode, game::mutators) ? TEAM(sg.team, colour) : TEAM(T_NEUTRAL, colour);
                             vec c = vec::hexcolor(colour);
                             int bgcolor = vec(c).mul(k == numgroups ? 0.45f : 0.65f).tohexcolor();
                             int bgc1 = vec(c).mul(k == numgroups ? 0.1f : 0.25f).tohexcolor();
@@ -849,7 +849,7 @@ namespace hud
             {
                 if(sy > m) break;
                 scoregroup &sg = *groups[k];
-                if(m_fight(game::gamemode) && m_team(game::gamemode, game::mutators))
+                if(m_play(game::gamemode) && m_team(game::gamemode, game::mutators))
                 {
                     realpos++;
                     if(!pos || (m_laptime(game::gamemode, game::mutators) ? ((!sg.total && groups[lastpos]->total) || sg.total > groups[lastpos]->total) : sg.total < groups[lastpos]->total))

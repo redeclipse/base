@@ -561,7 +561,7 @@ namespace ai
                 if(m_team(game::gamemode, game::mutators) && !m_duke(game::gamemode, game::mutators))
                     assist(d, b, interests, false, false);
             }
-            if(m_fight(game::gamemode))
+            if(m_play(game::gamemode))
             {
                 if(m_capture(game::gamemode)) capture::aifind(d, b, interests);
                 else if(m_defend(game::gamemode)) defend::aifind(d, b, interests);
@@ -585,7 +585,7 @@ namespace ai
             int q = interests.length()-1;
             loopi(interests.length()-1) if(interests[i].score < interests[q].score) q = i;
             interest n = interests.removeunordered(q);
-            if(d->actortype == A_BOT && m_fight(game::gamemode) && m_team(game::gamemode, game::mutators))
+            if(d->actortype == A_BOT && m_play(game::gamemode) && m_team(game::gamemode, game::mutators))
             {
                 int members = 0;
                 static vector<int> targets; targets.setsize(0);
@@ -649,7 +649,7 @@ namespace ai
 
     void itemspawned(int ent, int spawned)
     {
-        if(!passive() && m_fight(game::gamemode) && entities::ents.inrange(ent) && entities::ents[ent]->type == WEAPON && spawned > 0)
+        if(!passive() && m_play(game::gamemode) && entities::ents.inrange(ent) && entities::ents[ent]->type == WEAPON && spawned > 0)
         {
             int sweap = m_weapon(game::gamemode, game::mutators), attr = w_attr(game::gamemode, game::mutators, entities::ents[ent]->type, entities::ents[ent]->attrs[0], sweap);
             loopv(game::players) if(game::players[i] && game::players[i]->ai && game::players[i]->actortype == A_BOT && game::players[i]->state == CS_ALIVE && iswaypoint(game::players[i]->lastnode))

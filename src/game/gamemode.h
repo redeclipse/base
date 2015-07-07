@@ -1,7 +1,7 @@
 enum
 {
     G_DEMO = 0, G_EDITMODE, G_DEATHMATCH, G_CAPTURE, G_DEFEND, G_BOMBER, G_RACE, G_MAX,
-    G_START = G_EDITMODE, G_PLAY = G_DEATHMATCH, G_FIGHT = G_DEATHMATCH,
+    G_START = G_EDITMODE, G_PLAY = G_DEATHMATCH,
     G_RAND = G_BOMBER-G_DEATHMATCH+1, G_COUNT = G_MAX-G_PLAY,
     G_NEVER = (1<<G_DEMO)|(1<<G_EDITMODE),
     G_LIMIT = (1<<G_DEATHMATCH)|(1<<G_CAPTURE)|(1<<G_DEFEND)|(1<<G_BOMBER),
@@ -219,7 +219,6 @@ extern mutstypes mutstype[];
 
 #define m_play(a)           (a >= G_PLAY)
 #define m_affinity(a)       (m_capture(a) || m_defend(a) || m_bomber(a))
-#define m_fight(a)          (a >= G_FIGHT)
 
 #define m_multi(a,b)        ((b&(1<<G_M_MULTI)) || (gametype[a].implied&(1<<G_M_MULTI)))
 #define m_ffa(a,b)          ((b&(1<<G_M_FFA)) || (gametype[a].implied&(1<<G_M_FFA)))
@@ -248,7 +247,7 @@ extern mutstypes mutstype[];
 #define m_duke(a,b)         (m_duel(a, b) || m_survivor(a, b))
 #define m_regen(a,b)        (!m_hard(a,b) && (G(duelregen) || !m_duke(a, b)) && !m_insta(a, b))
 #define m_ghost(a,b)        (m_race(a) && !m_gsp3(a, b))
-#define m_bots(a)           (m_fight(a) && !m_race(a))
+#define m_bots(a)           (m_play(a) && !m_race(a))
 #define m_botbal(a,b)       (m_duel(a, b) ? G(botbalanceduel) : (m_survivor(a, b) ? G(botbalancesurvivor) : G(botbalance)))
 #define m_nopoints(a,b)     (m_duke(a, b) || (m_bomber(a) && m_gsp1(a, b)) || m_race(a))
 #define m_laptime(a,b)      (m_race(a) && m_gsp1(a, b))
@@ -260,10 +259,10 @@ extern mutstypes mutstype[];
 #define m_protect(a,b)      (m_duke(a,b) ? G(duelprotect) : (m_insta(a, b) ? G(instaprotect) : G(spawnprotect)))
 #define m_health(a,b,c)     (m_insta(a,b) ? 1 : PLAYER(c, health))
 #define m_maxhealth(a,b,c)  (int(m_health(a, b, c)*(m_vampire(a,b) ? G(maxhealthvampire) : G(maxhealth))))
-#define m_swapteam(a,b)     (m_team(a, b) && (!m_race(a) || m_gsp3(a, b)) && m_fight(a) && (G(teambalanceduel) || !m_duel(a, b)) && !m_coop(gamemode, mutators) && G(teambalance) >= 3 && G(teambalanceswap))
-#define m_balteam(a,b,c)    (m_team(a, b) && (!m_race(a) || m_gsp3(a, b)) && m_fight(a) && (G(teambalanceduel) || !m_duel(a, b)) && !m_coop(gamemode, mutators) && G(teambalance) >= c)
+#define m_swapteam(a,b)     (m_team(a, b) && (!m_race(a) || m_gsp3(a, b)) && m_play(a) && (G(teambalanceduel) || !m_duel(a, b)) && !m_coop(gamemode, mutators) && G(teambalance) >= 3 && G(teambalanceswap))
+#define m_balteam(a,b,c)    (m_team(a, b) && (!m_race(a) || m_gsp3(a, b)) && m_play(a) && (G(teambalanceduel) || !m_duel(a, b)) && !m_coop(gamemode, mutators) && G(teambalance) >= c)
 #define m_forcebal(a,b)     ((m_bomber(a) && m_gsp3(a, b)) || (m_race(a) && m_gsp3(a, b)))
-#define m_balance(a,b,c)    (m_team(a, b) && (!m_race(a) || m_gsp3(a, b)) && m_fight(a) && (m_forcebal(a, b) || ((G(balanceduke) || !m_duke(a, b)) && ((G(balancemaps) >= 0 ? G(balancemaps) : G(mapbalance)) >= (m_affinity(a) ? 1 : (c ? 2 : 3))))))
+#define m_balance(a,b,c)    (m_team(a, b) && (!m_race(a) || m_gsp3(a, b)) && m_play(a) && (m_forcebal(a, b) || ((G(balanceduke) || !m_duke(a, b)) && ((G(balancemaps) >= 0 ? G(balancemaps) : G(mapbalance)) >= (m_affinity(a) ? 1 : (c ? 2 : 3))))))
 #define m_balreset(a,b)     (G(balancereset) && (G(balancereset) == 2 || m_capture(a) || m_bomber(a) || m_race(a) || m_duke(a, b)))
 
 #define w_carry(w1,w2)      (isweap(w1) && w1 != W_MELEE && (!isweap(w2) || (w1 != w2 && (w2 != W_GRENADE || w1 != W_MINE))) && (w1 == W_ROCKET || (w1 >= W_OFFSET && w1 < W_ITEM)))
@@ -285,7 +284,7 @@ extern mutstypes mutstype[];
 { \
     mapshrink(m_multi(b, c) && (m_capture(b) || (m_bomber(b) && !m_gsp1(b, c))), a, G(multimaps), false) \
     mapshrink(m_duel(b, c), a, G(duelmaps), false) \
-    if((d) > 0 && (e) >= 2 && m_fight(b) && !m_duel(b, c)) \
+    if((d) > 0 && (e) >= 2 && m_play(b) && !m_duel(b, c)) \
     { \
         mapshrink(G(smallmapmax) && (d) <= G(smallmapmax), a, G(smallmaps), false) \
         else mapshrink(G(mediummapmax) && (d) <= G(mediummapmax), a, G(mediummaps), false) \
@@ -299,7 +298,7 @@ extern mutstypes mutstype[];
     else if(m_defend(b)) a = newstring(m_gsp2(b, c) ? G(kingmaps) : G(defendmaps)); \
     else if(m_bomber(b)) a = newstring(m_gsp1(b, c) ? G(holdmaps) : G(bombermaps)); \
     else if(m_race(b)) a = newstring(G(racemaps)); \
-    else if(m_fight(b)) a = newstring(G(mainmaps)); \
+    else if(m_play(b)) a = newstring(G(mainmaps)); \
     else a = newstring(G(allowmaps)); \
     if(e) mapcull(a, b, c, d, e, f) \
     else mapshrink(!(f), a, G(previousmaps), true) \
@@ -323,7 +322,6 @@ VAR(0, modeidxbomber, 1, G_BOMBER, -1);
 VAR(0, modeidxrace, 1, G_RACE, -1);
 VAR(0, modeidxstart, 1, G_START, -1);
 VAR(0, modeidxplay, 1, G_PLAY, -1);
-VAR(0, modeidxfight, 1, G_FIGHT, -1);
 VAR(0, modeidxrand, 1, G_RAND, -1);
 VAR(0, modeidxnever, 1, G_NEVER, -1);
 VAR(0, modeidxlimit, 1, G_LIMIT, -1);

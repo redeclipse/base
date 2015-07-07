@@ -1194,7 +1194,7 @@ namespace entities
                 switch(k)
                 {
                     case 0:
-                        if(m_fight(game::gamemode) && m_team(game::gamemode, game::mutators))
+                        if(m_play(game::gamemode) && m_team(game::gamemode, game::mutators))
                             loopi(lastent(PLAYERSTART)) if(ents[i]->type == PLAYERSTART && ents[i]->attrs[0] == d->team && m_check(ents[i]->attrs[3], ents[i]->attrs[4], game::gamemode, game::mutators))
                                 spawns.add(i);
                         break;
