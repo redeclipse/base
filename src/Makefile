@@ -109,6 +109,7 @@ CLIENT_OBJS= \
 	engine/irc.o	\
 	engine/lightmap.o \
 	engine/main.o \
+	engine/master.o \
 	engine/material.o \
 	engine/menus.o \
 	engine/movie.o \
@@ -354,6 +355,12 @@ engine/main.o: shared/geom.h shared/ents.h shared/iengine.h shared/igame.h
 engine/main.o: engine/irc.h engine/sound.h engine/world.h engine/glexts.h
 engine/main.o: engine/octa.h engine/lightmap.h engine/bih.h engine/texture.h
 engine/main.o: engine/model.h engine/varray.h
+engine/mastero: engine/engine.h version.h shared/cube.h shared/tools.h
+engine/mastero: shared/command.h shared/geom.h shared/ents.h
+engine/mastero: shared/iengine.h shared/igame.h engine/irc.h engine/sound.h
+engine/mastero: engine/world.h engine/glexts.h engine/octa.h
+engine/mastero: engine/lightmap.h engine/bih.h engine/texture.h
+engine/mastero: engine/model.h engine/varray.h
 engine/material.o: engine/engine.h version.h shared/cube.h shared/tools.h
 engine/material.o: shared/command.h shared/geom.h shared/ents.h
 engine/material.o: shared/iengine.h shared/igame.h engine/irc.h

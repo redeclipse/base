@@ -136,6 +136,7 @@
 		FD05F1501ADD1BD70046F323 /* iqm.h in Headers */ = {isa = PBXBuildFile; fileRef = FD05F14C1ADD1BD70046F323 /* iqm.h */; };
 		FD05F1511ADD1BD70046F323 /* smd.h in Headers */ = {isa = PBXBuildFile; fileRef = FD05F14D1ADD1BD70046F323 /* smd.h */; };
 		FD05F1521ADD1BD70046F323 /* varray.h in Headers */ = {isa = PBXBuildFile; fileRef = FD05F14E1ADD1BD70046F323 /* varray.h */; };
+		FD6BC4A61B4BE57C0010977F /* master.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FD6BC4A51B4BE57C0010977F /* master.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -278,6 +279,7 @@
 		FD05F14C1ADD1BD70046F323 /* iqm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = iqm.h; sourceTree = "<group>"; };
 		FD05F14D1ADD1BD70046F323 /* smd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = smd.h; sourceTree = "<group>"; };
 		FD05F14E1ADD1BD70046F323 /* varray.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = varray.h; sourceTree = "<group>"; };
+		FD6BC4A51B4BE57C0010977F /* master.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = master.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -425,6 +427,7 @@
 				B9AC7A8E0D06DB44005506F8 /* lightmap.h */,
 				D18B8FC00DB0AF8200171439 /* lightning.h */,
 				B9AC7A8F0D06DB44005506F8 /* main.cpp */,
+				FD6BC4A51B4BE57C0010977F /* master.cpp */,
 				B9AC7A900D06DB44005506F8 /* material.cpp */,
 				B9AC7A910D06DB44005506F8 /* md2.h */,
 				B9AC7A920D06DB44005506F8 /* md3.h */,
@@ -723,6 +726,7 @@
 				D16A83770F130EBC00EABB1F /* ui.cpp in Sources */,
 				D1D88AB80F350EDE000680E4 /* irc.cpp in Sources */,
 				D11B5A6610CBB4D8003F0098 /* game.cpp in Sources */,
+				FD6BC4A61B4BE57C0010977F /* master.cpp in Sources */,
 				D11B5A6A10CBB500003F0098 /* movie.cpp in Sources */,
 				D11B5A8210CBB637003F0098 /* crypto.cpp in Sources */,
 				D11B5A8310CBB637003F0098 /* stream.cpp in Sources */,
