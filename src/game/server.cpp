@@ -1367,7 +1367,7 @@ namespace server
         return 0;
     }
     
-    bool sendtick()
+    void sendtick()
     {
         sendf(-1, 1, "ri3", N_TICK, gamestate, timeleft());
     }
