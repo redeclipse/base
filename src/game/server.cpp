@@ -1357,6 +1357,21 @@ namespace server
         return false;
     }
 
+    int timeleft()
+    {
+        switch(gamestate)
+        {
+            case G_S_PLAYING: case G_S_OVERTIME: return timeremaining;
+            default: return max(gamewaittime-totalmillis, 0)/1000;
+        }
+        return 0;
+    }
+    
+    bool sendtick()
+    {
+        sendf(-1, 1, "ri3", N_TICK, gamestate, timeleft());
+    }
+    
     bool checkvotes(bool force = false);
     void startintermission(bool req = false)
     {
@@ -1375,7 +1390,7 @@ namespace server
             {
                 gamestate = G_S_VOTING;
                 gamewaittime = totalmillis+G(votelimit);
-                sendf(-1, 1, "ri3", N_TICK, G_S_VOTING, G(votelimit)/1000);
+                sendtick();
             }
             else checkvotes(true);
         }
@@ -1383,18 +1398,8 @@ namespace server
         {
             gamestate = G_S_INTERMISSION;
             gamewaittime = totalmillis+G(intermlimit);
-            sendf(-1, 1, "ri3", N_TICK, G_S_INTERMISSION, G(intermlimit)/1000);
+            sendtick();
         }
-    }
-
-    int timeleft()
-    {
-        switch(gamestate)
-        {
-            case G_S_PLAYING: case G_S_OVERTIME: return timeremaining;
-            default: return max(gamewaittime-totalmillis, 0)/1000;
-        }
-        return 0;
     }
 
     bool wantsovertime()
@@ -1576,8 +1581,8 @@ namespace server
                 }
                 if(gs_playing(gamestate) && timeremaining != 0)
                 {
-                    sendf(-1, 1, "ri3", N_TICK, gamestate, timeremaining);
                     if(wantsoneminute && timeremaining == 60) ancmsgft(-1, S_V_ONEMINUTE, CON_EVENT, "\fzygone minute remains");
+                    sendtick();
                 }
             }
         }
@@ -3138,7 +3143,7 @@ namespace server
 
         if(numclients())
         {
-            sendf(-1, 1, "ri3", N_TICK, gamestate, timeleft());
+            sendtick();
             if(m_demo(gamemode)) setupdemoplayback();
             else if(demonextmatch) setupdemorecord();
         }
@@ -4636,6 +4641,7 @@ namespace server
                         {
                             gamewaittime = totalmillis+G(waitforplayertime);
                             gamewaitstate = 3;
+                            sendtick();
                             break;
                         }
                         if(numnotready && gamewaittime > totalmillis) break;
@@ -4647,10 +4653,12 @@ namespace server
                                 srvoutf(-3, "\fyplease wait while the server downloads the map..");
                                 gamewaittime = totalmillis+G(waitforplayermaps);
                                 gamewaitstate = 1;
+                                sendtick();
                                 break;
                             }
                             gamewaittime = totalmillis+G(waitforplayertime);
                             gamewaitstate = 3;
+                            sendtick();
                             break;
                         }
                         gamewaitstate = 1;
@@ -4663,17 +4671,20 @@ namespace server
                             srvoutf(-3, "\fyplease wait while players download the map..");
                             gamewaittime = totalmillis+G(waitforplayermaps);
                             gamewaitstate = 2;
+                            sendtick();
                             break;
                         }
                         gamewaittime = totalmillis+G(waitforplayertime);
                         gamewaitstate = 3;
+                        sendtick();
                         break;
                     }
-                    case 2:
+                    case 2: // waiting for players
                     {
                         if(numgetmap && gamewaittime > totalmillis && hasmapdata()) break;
                         gamewaittime = totalmillis+G(waitforplayertime);
                         gamewaitstate = 3;
+                        sendtick();
                         break;
                     }
                     case 3:
@@ -4685,10 +4696,10 @@ namespace server
                     {
                         gamewaittime = gamewaitstate = 0;
                         gamestate = G_S_PLAYING;
-                        sendf(-1, 1, "ri3", N_TICK, G_S_PLAYING, timeremaining);
                         if(m_team(gamemode, mutators)) doteambalance(true);
                         if(m_play(gamemode) && !m_bomber(gamemode) && !m_duke(gamemode, mutators)) // they do their own "fight"
                             sendf(-1, 1, "ri3s", N_ANNOUNCE, S_V_FIGHT, CON_INFO, "match start, fight!");
+                        sendtick();
                         break;
                     }
                 }
@@ -5397,9 +5408,8 @@ namespace server
                     ci->mapcrc = text[0] ? crc : 0;
                     ci->ready = true;
                     ci->wantsmap = ci->gettingmap = false;
-                    srvoutf(4, "\fy%s has map crc: \fs\fc0x%.6x\fS (server: \fs\fc0x%.6x)", colourname(ci), ci->mapcrc, mapcrc); // milestone v1.6.0
-                    if(crclocked(ci, true)) getmap(ci);
-                    else getmap();
+                    srvoutf(4, "\fy%s has map crc: \fs\fc0x%.6x\fS (server: \fs\fc0x%.6x\fS)", colourname(ci), ci->mapcrc, mapcrc); // milestone v1.6.0
+                    getmap(crclocked(ci, true) ? ci : NULL);
                     if(ci->isready()) aiman::poke();
                     break;
                 }
@@ -6430,6 +6440,7 @@ namespace server
                 case N_GETMAP:
                 {
                     ci->ready = true;
+                    if(m_edit(gamemode) && !hasmapdata() && numclients() <= 1) break; // first guy
                     srvoutf(4, "\fy%s is requesting the map..", colourname(ci));
                     getmap(ci); // milestone v1.6.0
                     break;

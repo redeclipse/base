@@ -152,9 +152,9 @@ GFVAR(IDF_ADMIN, votethreshold, 0, 0.5f, 1); // auto-pass votes when this many a
 GVAR(IDF_ADMIN, smallmapmax, 0, 6, VAR_MAX); // maximum number of players for a small map
 GVAR(IDF_ADMIN, mediummapmax, 0, 12, VAR_MAX); // maximum number of players for a medium map
 
-GVAR(IDF_ADMIN, waitforplayers, 0, 1, 2); // wait for players: 0 = off, 1 = to load the map, 2 = to exit spectator
-GVAR(IDF_ADMIN, waitforplayermin, 0, 5000, VAR_MAX); // wait at least this long for players to meet waitforplayers criteria
-GVAR(IDF_ADMIN, waitforplayertime, 0, 30000, VAR_MAX); // wait at most this long for players to meet waitforplayers criteria
+GVAR(IDF_ADMIN, waitforplayers, 0, 2, 2); // wait for players: 0 = off, 1 = to load the map, 2 = to exit spectator
+GVAR(IDF_ADMIN, waitforplayermin, 0, 3000, VAR_MAX); // wait at least this long for players to meet waitforplayers criteria
+GVAR(IDF_ADMIN, waitforplayertime, 0, 10000, VAR_MAX); // wait at most this long for players to meet waitforplayers criteria
 GVAR(IDF_ADMIN, waitforplayerload, 0, 20000, VAR_MAX); // wait this long for players to load the map to schedule map requests
 GVAR(IDF_ADMIN, waitforplayermaps, 0, 30000, VAR_MAX); // wait this long for sendmap and getmap requests
 
