@@ -419,7 +419,7 @@ namespace server
 
     string smapname;
     int gamestate = G_S_WAITING, gamemode = G_EDITMODE, mutators = 0, gamemillis = 0, gamelimit = 0, mastermode = MM_OPEN;
-    int timeremaining = -1, oldtimelimit = -1, gamewait = 0, lastteambalance = 0, nextteambalance = 0, lastrotatecycle = 0, mapsending = -1;
+    int timeremaining = -1, oldtimelimit = -1, gamewaittime = 0, gamewaitstate = 0, gamewaitstart = 0, lastteambalance = 0, nextteambalance = 0, lastrotatecycle = 0, mapsending = -1;
     bool hasgameinfo = false, updatecontrols = false, shouldcheckvotes = false, firstblood = false;
     enet_uint32 lastsend = 0;
     stream *mapdata[SENDMAP_MAX] = { NULL };
@@ -1374,7 +1374,7 @@ namespace server
             if(gamestate != G_S_VOTING && G(votelimit))
             {
                 gamestate = G_S_VOTING;
-                gamewait = totalmillis+G(votelimit);
+                gamewaittime = totalmillis+G(votelimit);
                 sendf(-1, 1, "ri3", N_TICK, G_S_VOTING, G(votelimit)/1000);
             }
             else checkvotes(true);
@@ -1382,7 +1382,7 @@ namespace server
         else
         {
             gamestate = G_S_INTERMISSION;
-            gamewait = totalmillis+G(intermlimit);
+            gamewaittime = totalmillis+G(intermlimit);
             sendf(-1, 1, "ri3", N_TICK, G_S_INTERMISSION, G(intermlimit)/1000);
         }
     }
@@ -1392,7 +1392,7 @@ namespace server
         switch(gamestate)
         {
             case G_S_PLAYING: case G_S_OVERTIME: return timeremaining;
-            default: return max(gamewait-totalmillis, 0)/1000;
+            default: return max(gamewaittime-totalmillis, 0)/1000;
         }
         return 0;
     }
@@ -2910,9 +2910,13 @@ namespace server
             ci->wantsmap = true;
             if(hasmapdata())
             {
-                if(ci->gettingmap) return;
+                if(ci->gettingmap)
+                {
+                    srvmsgft(ci->clientnum, CON_EVENT, "\fyalready in the process of sending you the map..");
+                    return;
+                }
                 ci->gettingmap = true;
-                srvmsgft(ci->clientnum, CON_EVENT, "\fysending map, please wait..");
+                srvmsgft(ci->clientnum, CON_EVENT, "\fysending you the map, please wait..");
                 loopi(SENDMAP_MAX) if(mapdata[i]) sendfile(ci->clientnum, 2, mapdata[i], "ri2", N_SENDMAPFILE, i);
                 sendwelcome(ci);
                 ci->needclipboard = totalmillis ? totalmillis : 1;
@@ -2920,7 +2924,7 @@ namespace server
             }
             if(mapsending >= 0)
             {
-                srvmsgft(ci->clientnum, CON_EVENT, "\fymap is being uploaded, please wait..");
+                srvmsgft(ci->clientnum, CON_EVENT, "\fythe map is being uploaded, please wait..");
                 return;
             }
         }
@@ -2962,7 +2966,7 @@ namespace server
         {
             mapsending = best->clientnum;
             mapcrc = best->mapcrc;
-            srvoutf(4, "\fymap crc \fs\fc0x%.6x\fS is being requested from %s..", mapcrc, colourname(best));
+            srvoutf(4, "\fythe map crc \fs\fc0x%.6x\fS is being requested from %s..", mapcrc, colourname(best));
             sendf(best->clientnum, 1, "ri", N_GETMAP);
             loopv(clients)
             {
@@ -3039,12 +3043,12 @@ namespace server
         stopdemo();
         resetmapdata();
         changemode(gamemode = mode, mutators = muts);
-        curbalance = nextbalance = lastteambalance = nextteambalance = gamemillis = 0;
+        curbalance = nextbalance = lastteambalance = nextteambalance = gamemillis = gamewaitstate = gamewaitstart = 0;
         gamestate = m_play(gamemode) ? G_S_WAITING : G_S_PLAYING;
+        gamewaittime = m_play(gamemode) ? totalmillis+G(waitforplayerload) : 0;
         oldtimelimit = m_play(gamemode) && G(timelimit) ? G(timelimit) : -1;
         timeremaining = m_play(gamemode) && G(timelimit) ? G(timelimit)*60 : -1;
         gamelimit = m_play(gamemode) && G(timelimit) ? timeremaining*1000 : 0;
-        gamewait = m_play(gamemode) && G(waitforplayers) ? totalmillis+G(waitforplayertime) : 0;
         sents.shrink(0);
         scores.shrink(0);
         loopv(savedscores) savedscores[i].mapchange();
@@ -3055,7 +3059,6 @@ namespace server
         aiman::clearai();
         aiman::poke();
         const char *reqmap = name && *name ? name : pickmap(NULL, gamemode, mutators);
-        if((!name || *name) && reqmap && *reqmap) srvoutf(-3, "server chooses: \fs\fy%s\fS on \fs\fo%s\fS", gamename(gamemode, mutators), reqmap); // milestone v1.6.0
 #ifdef STANDALONE // interferes with savemap on clients, in which case we can just use the auto-request
         if(reqmap && *reqmap)
 #else
@@ -3077,12 +3080,7 @@ namespace server
                 }
                 mapdata[i] = openfile(reqfile, "rb");
             }
-            if(hasmapdata()) srvoutf(4, "\fythe server map crc for \fs\fc%s\fS is: \fs\fc0x%.6x\fS", reqmap, mapcrc);
-            else
-            {
-                resetmapdata();
-                srvoutf(4, "\fythe server was unable to load \fs\fc%s\fS", reqmap);
-            }
+            if(!hasmapdata()) resetmapdata();
         }
         copystring(smapname, reqmap);
 
@@ -4616,47 +4614,85 @@ namespace server
             }
             updatecontrols = false;
         }
-
-        if(gamestate == G_S_WAITING)
+        if(numclients())
         {
-            bool ready = !m_play(gamemode) || !G(waitforplayers) || gamewait <= totalmillis;
-            if(!ready)
+            if(gamestate == G_S_WAITING)
             {
-                int numwait = 0;
+                if(!gamewaitstart) gamewaitstart = totalmillis;
+                int numwait = 0, numgetmap = 0, numnotready = 0;
                 loopv(clients)
                 {
                     clientinfo *cs = clients[i];
                     if(cs->state.actortype > A_PLAYER) continue;
                     if(!cs->ready || (G(waitforplayers) == 2 && cs->state.state == CS_SPECTATOR)) numwait++;
+                    if(cs->wantsmap || cs->gettingmap) numgetmap++;
+                    if(!cs->ready) numnotready++;
                 }
-                if(!numwait) ready = true;
-            }
-            if(ready && !hasmapdata())
-            {
-                if(mapsending < 0)
+                switch(gamewaitstate)
                 {
-                    getmap(NULL, true);
-                    if(mapsending >= 0)
+                    case 0: // start check
                     {
-                        ready = false;
-                        gamewait = totalmillis+G(waitforplayergetmap); // milestone v1.6.0 - so players don't scratch their heads, really needs a G_S_GETMAP
+                        if(!G(waitforplayermaps))
+                        {
+                            gamewaittime = totalmillis+G(waitforplayertime);
+                            gamewaitstate = 3;
+                            break;
+                        }
+                        if(numnotready && gamewaittime > totalmillis) break;
+                        if(!hasmapdata())
+                        {
+                            if(mapsending < 0) getmap(NULL, true);
+                            if(mapsending >= 0)
+                            {
+                                srvoutf(-3, "\fyplease wait while the server downloads the map..");
+                                gamewaittime = totalmillis+G(waitforplayermaps);
+                                gamewaitstate = 1;
+                                break;
+                            }
+                            gamewaittime = totalmillis+G(waitforplayertime);
+                            gamewaitstate = 3;
+                            break;
+                        }
+                        gamewaitstate = 1;
                     }
-                    // otherwise it breaks out by setting G_S_PLAYING
+                    case 1: // waiting for server
+                    {
+                        if(mapsending >= 0 && gamewaittime > totalmillis && !hasmapdata()) break;
+                        if(numgetmap && hasmapdata())
+                        {
+                            srvoutf(-3, "\fyplease wait while players download the map..");
+                            gamewaittime = totalmillis+G(waitforplayermaps);
+                            gamewaitstate = 2;
+                            break;
+                        }
+                        gamewaittime = totalmillis+G(waitforplayertime);
+                        gamewaitstate = 3;
+                        break;
+                    }
+                    case 2:
+                    {
+                        if(numgetmap && gamewaittime > totalmillis && hasmapdata()) break;
+                        gamewaittime = totalmillis+G(waitforplayertime);
+                        gamewaitstate = 3;
+                        break;
+                    }
+                    case 3:
+                    {
+                        if(numwait && gamewaittime > totalmillis) break;
+                        if(totalmillis-gamewaitstart < G(waitforplayermin)) break;
+                    }
+                    default:
+                    {
+                        gamewaittime = gamewaitstate = 0;
+                        gamestate = G_S_PLAYING;
+                        sendf(-1, 1, "ri3", N_TICK, G_S_PLAYING, timeremaining);
+                        if(m_team(gamemode, mutators)) doteambalance(true);
+                        if(m_play(gamemode) && !m_bomber(gamemode) && !m_duke(gamemode, mutators)) // they do their own "fight"
+                            sendf(-1, 1, "ri3s", N_ANNOUNCE, S_V_FIGHT, CON_INFO, "match start, fight!");
+                        break;
+                    }
                 }
-                else ready = false;
             }
-            if(ready)
-            {
-                gamewait = 0;
-                gamestate = G_S_PLAYING;
-                sendf(-1, 1, "ri3", N_TICK, G_S_PLAYING, timeremaining);
-                if(m_team(gamemode, mutators)) doteambalance(true);
-                if(m_play(gamemode) && !m_bomber(gamemode) && !m_duke(gamemode, mutators)) // they do their own "fight"
-                    sendf(-1, 1, "ri3s", N_ANNOUNCE, S_V_FIGHT, CON_INFO, "match start, fight!");
-            }
-        }
-        if(numclients())
-        {
             if(canplay(!paused)) gamemillis += curtime;
             if(m_demo(gamemode)) readdemo();
             else if(canplay(!paused))
@@ -4668,7 +4704,7 @@ namespace server
                 if(smode) smode->update();
                 mutate(smuts, mut->update());
             }
-            if(gs_intermission(gamestate) && gamewait <= totalmillis) startintermission(true); // wait then call for next map
+            if(gs_intermission(gamestate) && gamewaittime <= totalmillis) startintermission(true); // wait then call for next map
             if(shouldcheckvotes) checkvotes();
         }
         else if(G(rotatecycle) && clocktime-lastrotatecycle >= G(rotatecycle)*60) cleanup();
