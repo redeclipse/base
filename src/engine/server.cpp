@@ -1443,7 +1443,6 @@ bool serveroption(char *opt)
                 case 'a': setvar("servermasterport", atoi(opt+3)); return true;
             }
         }
-#ifdef STANDALONE
         case 'm':
         {
             switch(opt[2])
@@ -1455,7 +1454,6 @@ bool serveroption(char *opt)
             }
             return false;
         }
-#endif
         default: return false;
     }
     return false;
