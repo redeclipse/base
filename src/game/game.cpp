@@ -2361,9 +2361,9 @@ namespace game
 
     bool camupdate(cament *c, float amt, bool renew = false, bool force = false)
     {
+        if(c->player && !allowspec(c->player, spectvdead, spectvfollowing)) return false;
         float foglevel = float(fog*2/3);
         c->reset();
-        if(!force && c->player && !allowspec(c->player, spectvdead, spectvfollowing)) return false;
         bool aim = !c->player || spectvaiming(c->player);
         float yaw = c->player ? c->player->yaw : camera1->yaw, pitch = c->player ? c->player->pitch : camera1->pitch,
               mindist = c->player ? spectvfollowmindist : spectvmindist, maxdist = min(c->player ? spectvfollowmaxdist : spectvmaxdist, foglevel);
