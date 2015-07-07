@@ -1277,9 +1277,7 @@ void serverloop()
         //lastmillis = totalmillis = (int)enet_time_get();
         //curtime = lastmillis-_lastmillis;
         updatetimer(false);
-#ifdef STANDALONE
         checkmaster();
-#endif
         serverslice(5);
         ircslice();
 #ifdef WIN32
@@ -1384,9 +1382,7 @@ void setupserver()
 {
     server::changemap(load && *load ? load : NULL);
     if(!servertype) return;
-#ifdef STANDALONE
     setupmaster();
-#endif
     conoutf("loading server (%s:%d)..", *serverip ? serverip : "*", serverport);
     if(setupserversockets() && verbose) conoutf("game server started");
 #ifndef STANDALONE
@@ -1645,11 +1641,12 @@ void rehash(bool reload)
         writecfg();
     }
     reloadserver();
-#ifdef STANDALONE
     reloadmaster();
+#ifdef STANDALONE
     execfile("servinit.cfg", false, EXEC_VERSION);
 #else
-    execfile("localinit.cfg", false, EXEC_VERSION);
+    if(servertype >= 3) execfile("servinit.cfg", false, EXEC_VERSION);
+    else execfile("localinit.cfg", false, EXEC_VERSION);
     initing = INIT_DEFAULTS;
     execfile("config/defaults.cfg");
     initing = INIT_LOAD;
@@ -1733,9 +1730,7 @@ void fatal(const char *s, ...)    // failure exit
         if(errors <= 1) // avoid recursion
         {
             cleanupserver();
-#ifdef STANDALONE
             cleanupmaster();
-#endif
             enet_deinitialize();
 #ifdef WIN32
             defformatstring(cap)("%s: Error", VERSION_NAME);

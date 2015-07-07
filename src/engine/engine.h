@@ -34,7 +34,6 @@ extern const char *platnames[MAX_PLATFORMS], *platlongnames[MAX_PLATFORMS];
 #define plat_name(a) (sup_platform(a) ? platnames[a] : "unk")
 #define plat_longname(a) (sup_platform(a) ? platlongnames[a] : "unknown")
 
-#ifdef STANDALONE
 extern void setupmaster();
 extern void checkmaster();
 extern void cleanupmaster();
@@ -42,7 +41,6 @@ extern void reloadmaster();
 extern int masterserver, masterport;
 extern char *masterip;
 extern int nextcontrolversion();
-#endif
 
 extern void setcrc(const char *bin);
 
