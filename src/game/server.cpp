@@ -4707,6 +4707,12 @@ namespace server
             if(gs_intermission(gamestate) && gamewaittime <= totalmillis) startintermission(true); // wait then call for next map
             if(shouldcheckvotes) checkvotes();
         }
+        else if(shutdownwait)
+        {
+            srvoutf(4, "server empty, shutting down as scheduled");
+            exit(EXIT_SUCCESS);
+            return;
+        }
         else if(G(rotatecycle) && clocktime-lastrotatecycle >= G(rotatecycle)*60) cleanup();
         aiman::checkai();
         auth::update();

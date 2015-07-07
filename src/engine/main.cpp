@@ -129,40 +129,7 @@ void fatal(const char *s, ...)    // failure exit
     exit(EXIT_FAILURE);
 }
 
-volatile bool fatalsig = false;
-void fatalsignal(int signum)
-{
-    if(!fatalsig)
-    {
-        fatalsig = true;
-        const char *str = "";
-        switch(signum)
-        {
-            case SIGINT: str = "Interrupt signal %d (Exiting)"; break;
-            case SIGILL: str = "Fatal signal %d (Illegal Instruction)"; break;
-            case SIGABRT: str = "Fatal signal %d (Aborted)"; break;
-            case SIGFPE: str = "Fatal signal %d (Floating-point Exception)"; break;
-            case SIGSEGV: str = "Fatal signal %d (Segmentation Violation)"; break;
-            case SIGTERM: str = "Fatal signal %d (Terminated)"; break;
-#if !defined(WIN32) && !defined(__APPLE__)
-            case SIGQUIT: str = "Fatal signal %d (Quit)"; break;
-            case SIGKILL: str = "Fatal signal %d (Killed)"; break;
-            case SIGPIPE: str = "Fatal signal %d (Broken Pipe)"; break;
-            case SIGALRM: str = "Fatal signal %d (Alarm)"; break;
-#endif
-            default: str = "Error: Fatal signal %d (Unknown Error)"; break;
-        }
-        fatal(str, signum);
-    }
-}
-
-void reloadsignal(int signum)
-{
-    rehash(true);
-}
-
 int initing = NOT_INITING;
-
 bool initwarning(const char *desc, int level, int type, bool force)
 {
     if(initing < level)
@@ -982,7 +949,7 @@ int main(int argc, char **argv)
     signal(SIGABRT, fatalsignal);
     signal(SIGFPE, fatalsignal);
     signal(SIGSEGV, fatalsignal);
-    signal(SIGTERM, fatalsignal);
+    signal(SIGTERM, shutdownsignal);
 #if !defined(WIN32) && !defined(__APPLE__)
     signal(SIGHUP, reloadsignal);
     signal(SIGQUIT, fatalsignal);

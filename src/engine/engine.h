@@ -74,6 +74,10 @@ extern char *printipinfo(const ipinfo &info, char *buf = NULL);
 extern ipinfo *checkipinfo(vector<ipinfo> &info, int type, enet_uint32 ip);
 extern void writecfg();
 extern void rehash(bool reload = true);
+extern void fatalsignal(int signum);
+extern void reloadsignal(int signum);
+extern bool shutdownwait;
+extern void shutdownsignal(int signum);
 
 #ifndef STANDALONE
 #include "world.h"

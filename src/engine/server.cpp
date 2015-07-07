@@ -1675,6 +1675,49 @@ void setcrc(const char *bin)
     delete[] buf;
 }
 
+volatile bool fatalsig = false;
+void fatalsignal(int signum)
+{
+    if(!fatalsig)
+    {
+        fatalsig = true;
+        const char *str = "";
+        switch(signum)
+        {
+            case SIGINT: str = "Exit signal %d (Interrupt)"; break;
+            case SIGILL: str = "Fatal signal %d (Illegal Instruction)"; break;
+            case SIGABRT: str = "Fatal signal %d (Aborted)"; break;
+            case SIGFPE: str = "Fatal signal %d (Floating-point Exception)"; break;
+            case SIGSEGV: str = "Fatal signal %d (Segmentation Violation)"; break;
+            case SIGTERM: str = "Exit signal %d (Terminated)"; break;
+#if !defined(WIN32) && !defined(__APPLE__)
+            case SIGQUIT: str = "Exit signal %d (Quit)"; break;
+            case SIGKILL: str = "Fatal signal %d (Killed)"; break;
+            case SIGPIPE: str = "Fatal signal %d (Broken Pipe)"; break;
+            case SIGALRM: str = "Fatal signal %d (Alarm)"; break;
+#endif
+            default: str = "Error: Fatal signal %d (Unknown Error)"; break;
+        }
+        fatal(str, signum);
+    }
+}
+
+void reloadsignal(int signum)
+{
+    rehash(true);
+}
+
+bool shutdownwait = false;
+void shutdownsignal(int signum)
+{
+#ifndef STANDALONE
+    if(servertype < 3) fatalsignal(signum);
+#endif
+    conoutf("shutdown signal received, waiting for server to empty");
+    shutdownwait = true;
+}
+
+
 #ifdef STANDALONE
 #include <signal.h>
 volatile int errors = 0;
@@ -1701,21 +1744,6 @@ void fatal(const char *s, ...)    // failure exit
         }
     }
     exit(EXIT_FAILURE);
-}
-
-volatile bool fatalsig = false;
-void fatalsignal(int signum)
-{
-    if(!fatalsig)
-    {
-        fatalsig = true;
-        fatal("Received fatal signal %d", signum);
-    }
-}
-
-void reloadsignal(int signum)
-{
-    rehash(true);
 }
 
 int main(int argc, char **argv)
@@ -1746,7 +1774,7 @@ int main(int argc, char **argv)
     signal(SIGABRT, fatalsignal);
     signal(SIGFPE, fatalsignal);
     signal(SIGSEGV, fatalsignal);
-    signal(SIGTERM, fatalsignal);
+    signal(SIGTERM, shutdownsignal);
     signal(SIGINT, fatalsignal);
 #if !defined(WIN32) && !defined(__APPLE__)
     signal(SIGHUP, reloadsignal);
