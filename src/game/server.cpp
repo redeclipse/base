@@ -2816,7 +2816,7 @@ namespace server
 
     enum { ALST_TRY = 0, ALST_SPAWN, ALST_SPEC, ALST_EDIT, ALST_WALK, ALST_MAX };
     
-    extern void getmap(clientinfo *ci = NULL, bool force = false);
+    extern bool getmap(clientinfo *ci = NULL, bool force = false);
 
     bool crclocked(clientinfo *ci, bool msg = false)
     {
@@ -2905,9 +2905,9 @@ namespace server
         return true;
     }
 
-    void getmap(clientinfo *ci, bool force)
+    bool getmap(clientinfo *ci, bool force)
     {
-        if(gamestate == G_S_INTERMISSION || gamestate == G_S_VOTING) return; // pointless
+        if(gamestate == G_S_INTERMISSION || gamestate == G_S_VOTING || (m_edit(gamemode) && numclients() <= 1)) return false; // pointless
         if(ci)
         {
             if(mapsending == ci->clientnum) resetmapdata();
@@ -2918,22 +2918,22 @@ namespace server
                 if(ci->gettingmap)
                 {
                     srvmsgft(ci->clientnum, CON_EVENT, "\fyalready in the process of sending you the map..");
-                    return;
+                    return true;
                 }
                 ci->gettingmap = true;
                 srvmsgft(ci->clientnum, CON_EVENT, "\fysending you the map, please wait..");
                 loopi(SENDMAP_MAX) if(mapdata[i]) sendfile(ci->clientnum, 2, mapdata[i], "ri2", N_SENDMAPFILE, i);
                 sendwelcome(ci);
                 ci->needclipboard = totalmillis ? totalmillis : 1;
-                return;
+                return true;
             }
             if(mapsending >= 0)
             {
                 srvmsgft(ci->clientnum, CON_EVENT, "\fythe map is being uploaded, please wait..");
-                return;
+                return true;
             }
         }
-        if((!force && gamestate == G_S_WAITING) || mapsending >= 0 || hasmapdata() || numclients() <= 1) return;
+        if((!force && gamestate == G_S_WAITING) || mapsending >= 0 || hasmapdata() || numclients() <= 1) return false;
         clientinfo *best = NULL;
         if(!m_edit(gamemode))
         {
@@ -2984,10 +2984,11 @@ namespace server
                     spectate(cs, true);
                 }
             }
-            return;
+            return true;
         }
         if(ci) srvmsgft(ci->clientnum, CON_EVENT, "\fysorry, unable to get a valid map..");
         sendf(-1, 1, "ri", N_FAILMAP);
+        return false;
     }
 
     bool allowstate(clientinfo *ci, int n, int lock = -1)
@@ -3582,7 +3583,7 @@ namespace server
         putint(p, N_MAPCHANGE);
         sendstring(smapname, p);
         if(!ci) putint(p, 0);
-        else if(!ci->online && m_edit(gamemode) && numclients(ci->clientnum))
+        else if(!ci->online && m_edit(gamemode) && numclients(ci->clientnum) >= 2)
         {
             if(mapsending < 0) resetmapdata();
             getmap(ci);
@@ -5407,7 +5408,7 @@ namespace server
                     ci->mapcrc = text[0] ? crc : 0;
                     ci->ready = true;
                     ci->wantsmap = ci->gettingmap = false;
-                    srvoutf(4, "\fy%s has map crc: \fs\fc0x%.6x\fS (server: \fs\fc0x%.6x\fS)", colourname(ci), ci->mapcrc, mapcrc); // milestone v1.6.0
+                    if(!m_edit(gamemode)) srvoutf(4, "\fy%s has map crc: \fs\fc0x%.6x\fS (server: \fs\fc0x%.6x\fS)", colourname(ci), ci->mapcrc, mapcrc); // milestone v1.6.0
                     getmap(crclocked(ci, true) ? ci : NULL);
                     if(ci->isready()) aiman::poke();
                     break;
@@ -6439,9 +6440,7 @@ namespace server
                 case N_GETMAP:
                 {
                     ci->ready = true;
-                    if(m_edit(gamemode) && !hasmapdata() && numclients() <= 1) break; // first guy
-                    srvoutf(4, "\fy%s is requesting the map..", colourname(ci));
-                    getmap(ci); // milestone v1.6.0
+                    if(!getmap(ci) && numclients() <= 1) sendf(ci->clientnum, 1, "ri", N_FAILMAP);  // milestone v1.6.0
                     break;
                 }
 

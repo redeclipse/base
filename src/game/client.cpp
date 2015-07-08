@@ -2825,7 +2825,7 @@ namespace client
 
                 case N_FAILMAP:
                 {
-                    if(needsmap) conoutft(CON_EVENT, "\fyunable to load map, nobody else has a copy of it..");
+                    if(needsmap && (!m_edit(game::gamemode) || otherclients())) conoutft(CON_EVENT, "\fyunable to load map, nobody else has a copy of it..");
                     needsmap = gettingmap = false;
                     break;
                 }
