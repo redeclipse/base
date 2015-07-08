@@ -222,7 +222,7 @@ struct bomberservmode : bomberstate, servmode
                 loopv(flags) sendf(-1, 1, "ri3", N_RESETAFFIN, i, 0);
                 srvmsgf(-1, "\fs\fzoythis map is not playable in:\fS %s", gamename(gamemode, mutators));
             }
-            else ancmsgft(-1, m_duke(gamemode, mutators) ? S_V_BOMBDUEL : S_V_BOMBSTART, CON_INFO, "\fathe \fs\fzwvbomb\fS has been spawned");
+            else ancmsgft(-1, m_duke(gamemode, mutators) ? S_V_BOMBDUEL : S_V_BOMBSTART, CON_SELF, "\fathe \fs\fzwvbomb\fS has been spawned");
             bombertime = 0;
         }
         int t = (gamemillis/G(bomberholdinterval))-((gamemillis-(curtime+scoresec))/G(bomberholdinterval));

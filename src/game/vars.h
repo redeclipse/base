@@ -185,11 +185,10 @@ GVAR(0, racedelay, 0, 1000, VAR_MAX); // .. in time race matches
 GVAR(0, racedelayex, 0, 3000, VAR_MAX); // .. for defenders in gauntlet time race matches
 GVAR(0, bomberdelay, 0, 3000, VAR_MAX); // delay before spawning in bomber
 GVAR(0, spawnprotect, 0, 3000, VAR_MAX); // delay before damage can be dealt to spawning player
-GVAR(0, duelprotect, 0, 5000, VAR_MAX); // .. in duel/survivor matches
+GVAR(0, duelprotect, 0, 3000, VAR_MAX); // .. in duel/survivor matches
+GVAR(0, survivorprotect, 0, 5000, VAR_MAX); // .. in duel/survivor matches
 GVAR(0, instaprotect, 0, 3000, VAR_MAX); // .. in instagib matches
 GVAR(0, protectbreak, 0, 1, 1); // 0 = off, 1 = protection is broken when player starts firing
-GVAR(0, duelaffinity, 0, 1, 2); // 0 = off, 1 = on enter can respawn next iter, 2 = on enter can respawn immediately
-GVAR(0, duelbotcheck, 0, 1, 1); // 0 = off, 1 = skip bots when checking respawns
 
 GVAR(0, radardisabled, 0, 0, 1); // forces the radar to be off
 GVAR(0, radardistlimit, 0, 0, VAR_MAX); // forces the radar to this distance max, 0 = off
@@ -248,13 +247,26 @@ GVAR(0, overtimeallow, 0, 1, 1); // if scores are equal, go into overtime
 GVAR(0, overtimelimit, 0, 5, VAR_MAX); // maximum time overtime may last, 0 = forever
 GVAR(0, intermlimit, 0, 15000, VAR_MAX); // .. before vote menu comes up
 GVAR(0, votelimit, 0, 45000, VAR_MAX); // .. before vote passes by default
+
 GVAR(0, duelreset, 0, 1, 1); // reset winner in duel
 GVAR(0, duelclear, 0, 1, 1); // clear items in duel
 GVAR(0, duelregen, 0, 0, 1); // allow regen in duel
 GVAR(0, dueldelay, 500, 1000, VAR_MAX); // round continues for this length after winning
-GVAR(0, duelcooloff, 0, 5000, VAR_MAX); // cool off period before duel goes to next round
+GVAR(0, duelcooloff, 0, 3000, VAR_MAX); // cool off period before duel goes to next round
 GVAR(0, duelcycle, 0, 2, 3); // determines if players are force-cycled after a certain number of wins (bit: 0 = off, 1 = non-team games, 2 = team games)
 GVAR(0, duelcycles, 0, 2, VAR_MAX); // maximum wins in a row before force-cycling (0 = num team/total players)
+GVAR(0, duelaffinity, 0, 1, 2); // 0 = off, 1 = on enter can respawn next iter, 2 = on enter can respawn immediately
+GVAR(0, duelbotcheck, 0, 1, 1); // 0 = off, 1 = skip bots when checking respawns
+GVAR(0, duelovertime, 0, 1, 1); // 0 = off, 1 = ffa: only spawn leaders in overtime
+
+GVAR(0, survivorreset, 0, 1, 1); // reset winners in survivor
+GVAR(0, survivorclear, 0, 1, 1); // clear items in survivor
+GVAR(0, survivorregen, 0, 0, 1); // allow regen in survivor
+GVAR(0, survivordelay, 500, 1000, VAR_MAX); // round continues for this length after winning
+GVAR(0, survivorcooloff, 0, 3000, VAR_MAX); // cool off period before survivor goes to next round
+GVAR(0, survivoraffinity, 0, 1, 2); // 0 = off, 1 = on enter can respawn next iter, 2 = on enter can respawn immediately
+GVAR(0, survivorbotcheck, 0, 1, 1); // 0 = off, 1 = skip bots when checking respawns
+GVAR(0, survivorovertime, 0, 1, 1); // 0 = off, 1 = ffa: only spawn leaders in overtime
 
 GVAR(0, pointlimit, 0, 0, VAR_MAX); // finish when score is this or more
 GVAR(0, teampersist, 0, 1, 2); // 0 = off, 1 = only attempt, 2 = forced
@@ -368,7 +380,7 @@ GVAR(0, bomberregenextra, 0, 2, VAR_MAX); // add this to regen when buffed
 GVAR(IDF_ADMIN, airefreshdelay, 0, 1000, VAR_MAX);
 GVAR(0, botbalance, -1, -1, VAR_MAX); // -1 = always use numplayers, 0 = don't balance, 1 or more = fill only with this many
 GVAR(0, botbalanceduel, -1, 2, VAR_MAX); // -1 = always use numplayers, 0 = don't balance, 1 or more = fill only with this many
-GVAR(0, botbalancesurvivor, -1, 4, VAR_MAX); // -1 = always use numplayers, 0 = don't balance, 1 or more = fill only with this many
+GVAR(0, botbalancesurvivor, -1, 2, VAR_MAX); // -1 = always use numplayers, 0 = don't balance, 1 or more = fill only with this many
 GVAR(0, botskillmin, 1, 60, 101);
 GVAR(0, botskillmax, 1, 75, 101);
 GFVAR(0, botskillfrags, 0, 1, 100);

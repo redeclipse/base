@@ -4661,14 +4661,13 @@ namespace server
                             sendtick();
                             break;
                         }
-                        gamewaitstate = 1;
                     }
                     case 1: // waiting for server
                     {
-                        if(mapsending >= 0 && gamewaittime > totalmillis && !hasmapdata()) break;
+                        if(!hasmapdata() && mapsending >= 0 && gamewaittime > totalmillis) break;
                         if(numgetmap && hasmapdata())
                         {
-                            srvoutf(-3, "\fyplease wait while players download the map..");
+                            srvoutf(-3, "\fyplease wait for \fs\fc%d\fS %s to download the map..", numgetmap, numgetmap != 1 ? "players" : "player");
                             gamewaittime = totalmillis+G(waitforplayermaps);
                             gamewaitstate = 2;
                             sendtick();
@@ -4698,7 +4697,7 @@ namespace server
                         gamestate = G_S_PLAYING;
                         if(m_team(gamemode, mutators)) doteambalance(true);
                         if(m_play(gamemode) && !m_bomber(gamemode) && !m_duke(gamemode, mutators)) // they do their own "fight"
-                            sendf(-1, 1, "ri3s", N_ANNOUNCE, S_V_FIGHT, CON_INFO, "match start, fight!");
+                            sendf(-1, 1, "ri3s", N_ANNOUNCE, S_V_FIGHT, CON_SELF, "match start, fight!");
                         sendtick();
                         break;
                     }
@@ -5136,7 +5135,7 @@ namespace server
         }
         else relayf(2, "\fg%s (%s) has joined the game [%d.%d.%d-%s%d] (%d %s)", colourname(ci), gethostname(ci->clientnum), ci->state.version.major, ci->state.version.minor, ci->state.version.patch, plat_name(ci->state.version.platform), ci->state.version.arch, amt, amt != 1 ? "players" : "player");
 
-        if(hasmapdata()) srvmsgft(ci->clientnum, CON_INFO, "\fythe server map crc for \fs\fc%s\fS is: \fs\fc0x%.6x\fS", smapname, mapcrc);
+        if(hasmapdata()) srvmsgft(ci->clientnum, CON_SELF, "\fythe server map crc for \fs\fc%s\fS is: \fs\fc0x%.6x\fS", smapname, mapcrc);
 
         if(m_demo(gamemode)) setupdemoplayback();
         else if(m_edit(gamemode))
