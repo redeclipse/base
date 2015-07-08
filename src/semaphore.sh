@@ -12,41 +12,23 @@ semabuild_setup() {
     rm -rfv "${SEMABUILD_BUILD}" || return 1
     mkdir -pv "${SEMABUILD_DIR}" || return 1
     SEMABUILD_BASE=`git rev-parse HEAD` || return 1
-    if [ "${BRANCH_NAME}" != "master" ]; then
-        SEMABUILD_BASE_ANCESTOR=`git merge-base origin/master ${SEMABUILD_BASE}` || return 1
-    fi
     git submodule init || return 1
     git submodule update || return 1
-    #cd "${SEMABUILD_PWD}/data" || return 1
-    #SEMABUILD_DATA=`git rev-parse HEAD` || return 1
-    #if [ "${BRANCH_NAME}" != "master" ]; then
-    #    SEMABUILD_DATA_ANCESTOR=`git merge-base origin/master ${SEMABUILD_DATA}` || return 1
-    #fi
-    #cd "${SEMABUILD_PWD}" || return 1
-    SEMABUILD_BASE_LAST=`curl --fail --silent "${SEMABUILD_SOURCE}/${BRANCH_NAME}/base.txt"`
-    #SEMABUILD_DATA_LAST=`curl --fail --silent "${SEMABUILD_SOURCE}/${BRANCH_NAME}/data.txt"`
-    if [ "${BRANCH_NAME}" != "master" ]; then
-        SEMABUILD_BASE_ANCESTOR_LAST=`curl --fail --silent "${SEMABUILD_SOURCE}/${BRANCH_NAME}/base.ancestor.txt"`
-    #    SEMABUILD_DATA_ANCESTOR_LAST=`curl --fail --silent "${SEMABUILD_SOURCE}/${BRANCH_NAME}/data.ancestor.txt"`
-    fi
-    if [ -n "${SEMABUILD_BASE_LAST}" ]; then
-        SEMABUILD_SRC_HASH="${SEMABUILD_BASE_LAST}"
-    elif [ -n "${SEMABUILD_BASE_ANCESTOR}" ]; then
-        SEMABUILD_SRC_HASH="${SEMABUILD_BASE_ANCESTOR}"
-    else
-        echo "Unable to determine a proper ancestor hash!"
+    #pushd "${SEMABUILD_PWD}/data" || return 1
+    #SEMABUILD_DATA=`git rev-parse HEAD` || (popd; return 1)
+    #popd
+    SEMABUILD_BINS_LAST=`curl --fail --silent "${SEMABUILD_SOURCE}/${BRANCH_NAME}/bins.txt"`
+    if [ -z "${SEMABUILD_BINS_LAST}" ]; then
+        echo "Unable to determine previous hash for comparison!"
         return 1
     fi
-    SEMABUILD_BINS_LAST=`curl --fail --silent "${SEMABUILD_SOURCE}/${BRANCH_NAME}/bins.txt"`
-    if [ -n "${SEMABUILD_BINS_LAST}" ]; then
-        SEMABUILD_SRC_CHANGES=`git diff --name-only HEAD ${SEMABUILD_SRC_HASH} -- src` || return 1
-        if [ -z "${SEMABUILD_SRC_CHANGES}" ]; then
-            echo "No source files have been modified"
-            SEMABUILD_DEPLOY="sync"
-        else
-            echo "Source files modified:"
-            echo "${SEMABUILD_SRC_CHANGES}"
-        fi
+    SEMABUILD_SRC_CHANGES=`git diff --name-only HEAD ${SEMABUILD_BINS_LAST} -- src` || return 1
+    if [ -z "${SEMABUILD_SRC_CHANGES}" ]; then
+        echo "No source files have been modified"
+        SEMABUILD_DEPLOY="sync"
+    else
+        echo "Source files modified:"
+        echo "${SEMABUILD_SRC_CHANGES}"
     fi
     return 0
 }
@@ -76,56 +58,44 @@ semabuild_sync() {
     #    echo "Module 'data' commit updated, syncing that: ${SEMABUILD_DATA} -> ${SEMABUILD_DATA_LAST}"
     #    echo "${SEMABUILD_DATA}" > "${SEMABUILD_DIR}/data.txt"
     #fi
-    if [ "${BRANCH_NAME}" != "master" ]; then
-        if [ -n "${SEMABUILD_BASE_ANCESTOR}" ] && [ "${SEMABUILD_BASE_ANCESTOR}" != "${SEMABUILD_BASE_ANCESTOR_LAST}" ]; then
-            echo "Module 'base' ancestor updated, syncing that: ${SEMABUILD_BASE_ANCESTOR} -> ${SEMABUILD_BASE_ANCESTOR_LAST}"
-            echo "${SEMABUILD_BASE_ANCESTOR}" > "${SEMABUILD_DIR}/base.ancestor.txt"
-        fi
-    #    if [ -n "${SEMABUILD_DATA_ANCESTOR}" ] && [ "${SEMABUILD_DATA_ANCESTOR}" != "${SEMABUILD_DATA_ANCESTOR_LAST}" ]; then
-    #        echo "Module 'data' ancestor updated, syncing that: ${SEMABUILD_DATA_ANCESTOR} -> ${SEMABUILD_DATA_ANCESTOR_LAST}"
-    #        echo "${SEMABUILD_DATA_ANCESTOR}" > "${SEMABUILD_DIR}/data.ancestor.txt"
-    #    fi
-    fi
     return 0
 }
 
 semabuild_deploy() {
     echo "Deploying ${BRANCH_NAME}..."
     # windows
-    cd "${SEMABUILD_DIR}/windows" || return 1
-    zip -r "${SEMABUILD_DIR}/windows.zip" . || return 1
+    pushd "${SEMABUILD_DIR}/windows" || return 1
+    zip -r "${SEMABUILD_DIR}/windows.zip" . || (popd; return 1)
+    popd
     # linux
-    cd "${SEMABUILD_DIR}/linux" || return 1
-    tar -zcvf "${SEMABUILD_DIR}/linux.tar.gz" . || return 1
+    pushd "${SEMABUILD_DIR}/linux" || return 1
+    tar -zcvf "${SEMABUILD_DIR}/linux.tar.gz" . || (popd; return 1)
+    popd
     # env
-    cd "${SEMABUILD_PWD}" || return 1
-    # sha
     rm -rfv "${SEMABUILD_DIR}/windows" "${SEMABUILD_DIR}/linux" || return 1
+    # sha
+    pushd "${SEMABUILD_PWD}" || return 1
     echo "base" > "${SEMABUILD_DIR}/modules.txt"
     echo "Module 'base' commit, syncing: ${SEMABUILD_BASE}"
     echo "${SEMABUILD_BASE}" > "${SEMABUILD_DIR}/bins.txt"
     echo "${SEMABUILD_BASE}" > "${SEMABUILD_DIR}/base.txt"
     #echo "Module 'data' commit, syncing: ${SEMABUILD_DATA}"
     #echo "${SEMABUILD_DATA}" > "${SEMABUILD_DIR}/data.txt"
-    if [ "${BRANCH_NAME}" != "master" ]; then
-        echo "Module 'base' ancestor, syncing: ${SEMABUILD_BASE_ANCESTOR}"
-        echo "${SEMABUILD_BASE_ANCESTOR}" > "${SEMABUILD_DIR}/base.ancestor.txt"
-    #    echo "Module 'data' ancestor, syncing: ${SEMABUILD_DATA_ANCESTOR}"
-    #    echo "${SEMABUILD_DATA_ANCESTOR}" > "${SEMABUILD_DIR}/data.ancestor.txt"
-    fi
+    popd
     return 0
 }
 
 semabuild_send() {
     echo "Sending ${BRANCH_NAME}..."
-    cd "${SEMABUILD_BUILD}" || return 1
+    pushd "${SEMABUILD_BUILD}" || return 1
     if [ -e "${BRANCH_NAME}" ]; then
-        ${SEMABUILD_SCP} -r "${BRANCH_NAME}" "${SEMABUILD_TARGET}" || return 1
+        ${SEMABUILD_SCP} -r "${BRANCH_NAME}" "${SEMABUILD_TARGET}" || (popd; return 1)
     else
         echo "Failed to send ${BRANCH_NAME} as the folder doesn't exist!"
+        popd
         return 1
     fi
-    cd "${SEMABUILD_PWD}" || return 1
+    popd
     return 0
 }
 
@@ -142,7 +112,6 @@ if [ "${SEMABUILD_DEPLOY}" = "sync" ]; then
     fi
     semabuild_send
     if [ $? -ne 0 ]; then
-        cd "${SEMABUILD_PWD}"
         echo "Failed to deploy ${BRANCH_NAME}!"
         exit 1
     fi
@@ -154,13 +123,11 @@ else
     fi
     semabuild_deploy
     if [ $? -ne 0 ]; then
-        cd "${SEMABUILD_PWD}"
         echo "Failed to deploy ${BRANCH_NAME}!"
         exit 1
     fi
     semabuild_send
     if [ $? -ne 0 ]; then
-        cd "${SEMABUILD_PWD}"
         echo "Failed to deploy ${BRANCH_NAME}!"
         exit 1
     fi
