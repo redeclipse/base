@@ -1,3 +1,4 @@
 [submodule "data"]
-	path = data
-	url = https://github.com/red-eclipse/data.git
+  path = data
+  url = https://github.com/red-eclipse/data.git
+  branch = stable
