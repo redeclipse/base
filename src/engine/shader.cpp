@@ -193,57 +193,6 @@ static void linkglslprogram(Shader &s, bool msg = true)
     }
 }
 
-bool checkglslsupport()
-{
-    const GLchar *vsstr =
-        "void main(void) {\n"
-        "    gl_Position = ftransform();\n"
-        "}\n";
-#if 0
-    /* check if GLSL profile supports loops
-     */
-    const GLchar *psstr =
-        "uniform int N;\n"
-        "uniform vec4 delta;\n"
-        "void main(void) {\n"
-        "   vec4 test = vec4(0.0, 0.0, 0.0, 0.0);\n"
-        "   for(int i = 0; i < N; i++)  test += delta;\n"
-        "   gl_FragColor = test;\n"
-        "}\n";
-#else
-    const GLchar *psstr =
-        "void main(void) {\n"
-        "   gl_FragColor = vec4(0.0);\n"
-        "}\n";
-#endif
-    GLuint vsobj = glCreateShader_(GL_VERTEX_SHADER), psobj = glCreateShader_(GL_FRAGMENT_SHADER);
-    GLuint program = glCreateProgram_();
-    GLint success = 0;
-    if(vsobj && psobj && program)
-    {
-        glShaderSource_(vsobj, 1, &vsstr, NULL);
-        glCompileShader_(vsobj);
-        glGetShaderiv_(vsobj, GL_COMPILE_STATUS, &success);
-        if(success)
-        {
-            glShaderSource_(psobj, 1, &psstr, NULL);
-            glCompileShader_(psobj);
-            glGetShaderiv_(psobj, GL_COMPILE_STATUS, &success);
-            if(success)
-            {
-                glAttachShader_(program, vsobj);
-                glAttachShader_(program, psobj);
-                glLinkProgram_(program);
-                glGetProgramiv_(program, GL_LINK_STATUS, &success);
-            }
-        }
-    }
-    if(vsobj) glDeleteShader_(vsobj);
-    if(psobj) glDeleteShader_(psobj);
-    if(program) glDeleteProgram_(program);
-    return success!=0;
-}
-
 #define ALLOCEXTPARAM 0xFF
 #define UNUSEDEXTPARAM 0xFE
 
