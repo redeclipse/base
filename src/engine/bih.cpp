@@ -19,8 +19,10 @@ bool BIH::triintersect(tri &t, const vec &o, const vec &ray, float maxdist, floa
     if(!(mode&RAY_SHADOW) && &t >= noclip) return false;
     if(t.tex && (mode&RAY_ALPHAPOLY)==RAY_ALPHAPOLY && (t.tex->alphamask || (lightmapping <= 1 && (loadalphamask(t.tex), t.tex->alphamask))))
     {
-        int si = clamp(int(t.tex->xs * (t.tc[0] + u*(t.tc[2] - t.tc[0]) + v*(t.tc[4] - t.tc[0]))), 0, t.tex->xs-1),
-            ti = clamp(int(t.tex->ys * (t.tc[1] + u*(t.tc[3] - t.tc[1]) + v*(t.tc[5] - t.tc[1]))), 0, t.tex->ys-1);
+        vec2 e1 = vec2(t.tc[1]).sub(t.tc[0]), e2 = vec2(t.tc[2]).sub(t.tc[0]),
+             tc = vec2(t.tc[0]).add(e1.mul(u)).add(e2.mul(v));
+        int si = clamp(int(t.tex->xs * tc.x), 0, t.tex->xs-1),
+            ti = clamp(int(t.tex->ys * tc.y), 0, t.tex->ys-1);
         if(!(t.tex->alphamask[ti*((t.tex->xs+7)/8) + si/8] & (1<<(si%8)))) return false;
     }
     if(!(mode&RAY_SHADOW))

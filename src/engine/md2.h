@@ -105,8 +105,7 @@ struct md2 : vertmodel, vertloader<md2>
                         idx = &tchash[tckey];
                         *idx = tcverts.length();
                         tcvert &tc = tcverts.add();
-                        tc.u = u.f;
-                        tc.v = v.f;
+                        tc.tc = vec2(u.f, v.f);
                         vindexes.add((ushort)vindex);
                     }
                     idxs.add(*idx);

@@ -10,8 +10,8 @@ VAR(0, testtags, 0, 0, 1);
 
 struct skelmodel : animmodel
 {
-    struct vert { vec pos, norm; float u, v; int blend, interpindex; };
-    struct vvert { vec pos; float u, v; vec norm; };
+    struct vert { vec pos, norm; vec2 tc; int blend, interpindex; };
+    struct vvert { vec pos; vec2 tc; vec norm; };
     struct vvertw : vvert { uchar weights[4]; uchar bones[4]; };
     struct vvertbump : vvert { vec tangent; float bitangent; };
     struct vvertbumpw : vvertw { vec tangent; float bitangent; };
@@ -236,39 +236,34 @@ struct skelmodel : animmodel
                 t.a = m.transform(av.pos);
                 t.b = m.transform(bv.pos);
                 t.c = m.transform(cv.pos);
-                t.tc[0] = av.u;
-                t.tc[1] = av.v;
-                t.tc[2] = bv.u;
-                t.tc[3] = bv.v;
-                t.tc[4] = cv.u;
-                t.tc[5] = cv.v;
+                t.tc[0] = av.tc;
+                t.tc[1] = bv.tc;
+                t.tc[2] = cv.tc;
             }
         }
 
         static inline bool comparevert(vvert &w, int j, vert &v)
         {
-            return v.u==w.u && v.v==w.v && v.pos==w.pos && v.norm==w.norm;
+            return v.tc==w.tc && v.pos==w.pos && v.norm==w.norm;
         }
 
         inline bool comparevert(vvertbump &w, int j, vert &v)
         {
-            return v.u==w.u && v.v==w.v && v.pos==w.pos && v.norm==w.norm && (!bumpverts || (bumpverts[j].tangent==w.tangent && bumpverts[j].bitangent==w.bitangent));
+            return v.tc==w.tc && v.pos==w.pos && v.norm==w.norm && (!bumpverts || (bumpverts[j].tangent==w.tangent && bumpverts[j].bitangent==w.bitangent));
         }
 
         static inline void assignvert(vvert &vv, int j, vert &v, blendcombo &c)
         {
             vv.pos = v.pos;
             vv.norm = v.norm;
-            vv.u = v.u;
-            vv.v = v.v;
+            vv.tc = v.tc;
         }
 
         inline void assignvert(vvertbump &vv, int j, vert &v, blendcombo &c)
         {
             vv.pos = v.pos;
             vv.norm = v.norm;
-            vv.u = v.u;
-            vv.v = v.v;
+            vv.tc = v.tc;
             if(bumpverts)
             {
                 vv.tangent = bumpverts[j].tangent;
@@ -285,8 +280,7 @@ struct skelmodel : animmodel
         {
             vv.pos = v.pos;
             vv.norm = v.norm;
-            vv.u = v.u;
-            vv.v = v.v;
+            vv.tc = v.tc;
             c.serialize(vv);
         }
 
@@ -294,8 +288,7 @@ struct skelmodel : animmodel
         {
             vv.pos = v.pos;
             vv.norm = v.norm;
-            vv.u = v.u;
-            vv.v = v.v;
+            vv.tc = v.tc;
             if(bumpverts)
             {
                 vv.tangent = bumpverts[j].tangent;
@@ -373,11 +366,10 @@ struct skelmodel : animmodel
 
         void filltc(uchar *vdata, size_t stride)
         {
-            vdata = (uchar *)&((vvert *)&vdata[voffset*stride])->u;
+            vdata = (uchar *)((vvert *)&vdata[voffset*stride])->tc.v;
             loopi(numverts)
             {
-                ((float *)vdata)[0] = verts[i].u;
-                ((float *)vdata)[1] = verts[i].v;
+                *(vec2 *)vdata = verts[i].tc;
                 vdata += stride;
             }
         }
@@ -1492,7 +1484,7 @@ struct skelmodel : animmodel
                 }
                 if(lastnbuf!=lastvbuf)
                 {
-                    glNormalPointer(GL_FLOAT, vertsize, &vverts->norm);
+                    glNormalPointer(GL_FLOAT, vertsize, vverts->norm.v);
                     lastnbuf = lastvbuf;
                 }
 
@@ -1503,7 +1495,7 @@ struct skelmodel : animmodel
                 }
                 if(lasttcbuf!=lastvbuf)
                 {
-                    glTexCoordPointer(2, GL_FLOAT, vertsize, &vverts->u);
+                    glTexCoordPointer(2, GL_FLOAT, vertsize, vverts->tc.v);
                     lasttcbuf = lastvbuf;
                 }
             }

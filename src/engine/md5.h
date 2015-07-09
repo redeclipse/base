@@ -15,7 +15,7 @@ struct md5weight
 
 struct md5vert
 {
-    float u, v;
+    vec2 tc;
     ushort start, count;
 };
 
@@ -70,8 +70,7 @@ struct md5 : skelmodel, skelloader<md5>
                 }
                 vert &vv = verts[i];
                 vv.pos = pos;
-                vv.u = v.u;
-                vv.v = v.v;
+                vv.tc = v.tc;
 
                 blendcombo c;
                 int sorted = 0;
@@ -134,7 +133,7 @@ struct md5 : skelmodel, skelloader<md5>
                     numweights = max(numweights, 0);
                     if(numweights) weightinfo = new md5weight[numweights];
                 }
-                else if(sscanf(buf, " vert %d ( %f %f ) %hu %hu", &index, &v.u, &v.v, &v.start, &v.count)==5)
+                else if(sscanf(buf, " vert %d ( %f %f ) %hu %hu", &index, &v.tc.x, &v.tc.y, &v.start, &v.count)==5)
                 {
                     if(index>=0 && index<numverts) vertinfo[index] = v;
                 }

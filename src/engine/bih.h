@@ -12,7 +12,7 @@ struct BIH
 {
     struct tri : triangle
     {
-        float tc[6];
+        vec2 tc[3];
         Texture *tex;
     };
 

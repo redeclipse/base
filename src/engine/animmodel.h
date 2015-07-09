@@ -363,11 +363,11 @@ struct animmodel : model
                 const vec &e0 = verts[t.vert[0]].pos;
                 vec e1 = vec(verts[t.vert[1]].pos).sub(e0), e2 = vec(verts[t.vert[2]].pos).sub(e0);
 
-                const TC &tc0 = tcverts[t.vert[0]],
-                         &tc1 = tcverts[t.vert[1]],
-                         &tc2 = tcverts[t.vert[2]];
-                float u1 = tc1.u - tc0.u, v1 = tc1.v - tc0.v,
-                      u2 = tc2.u - tc0.u, v2 = tc2.v - tc0.v;
+                const vec2 &tc0 = tcverts[t.vert[0]].tc,
+                           &tc1 = tcverts[t.vert[1]].tc,
+                           &tc2 = tcverts[t.vert[2]].tc;
+                float u1 = tc1.x - tc0.x, v1 = tc1.y - tc0.y,
+                      u2 = tc2.x - tc0.x, v2 = tc2.y - tc0.y;
                 vec u(e2), v(e2);
                 u.mul(v1).sub(vec(e1).mul(v2));
                 v.mul(u1).sub(vec(e1).mul(u2));

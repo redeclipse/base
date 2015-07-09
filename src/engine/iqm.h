@@ -199,11 +199,10 @@ struct iqm : skelmodel, skelloader<iqm>
                     mpos += 3;
                     if(mtc)
                     {
-                        v.u = mtc[0];
-                        v.v = mtc[1];
+                        v.tc = vec2(mtc[0], mtc[1]);
                         mtc += 2;
                     }
-                    else v.u = v.v = 0;
+                    else v.tc = vec2(0, 0);
                     if(mnorm)
                     {
                         v.norm = vec(mnorm[0], -mnorm[1], mnorm[2]);
