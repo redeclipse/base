@@ -852,12 +852,12 @@ struct renderstate
     GLuint textures[8];
     Slot *slot, *texgenslot;
     VSlot *vslot, *texgenvslot;
-    float texgenscrollS, texgenscrollT;
+    vec2 texgenscroll;
     int texgendim;
     int visibledynlights;
     uint dynlightmask;
 
-    renderstate() : colormask(true), depthmask(true), blending(false), alphaing(0), vbuf(0), colorscale(1, 1, 1), alphascale(0), slot(NULL), texgenslot(NULL), vslot(NULL), texgenvslot(NULL), texgenscrollS(0), texgenscrollT(0), texgendim(-1), visibledynlights(0), dynlightmask(0)
+    renderstate() : colormask(true), depthmask(true), blending(false), alphaing(0), vbuf(0), colorscale(1, 1, 1), alphascale(0), slot(NULL), texgenslot(NULL), vslot(NULL), texgenvslot(NULL), texgenscroll(0, 0), texgendim(-1), visibledynlights(0), dynlightmask(0)
     {
         loopk(4) color[k] = 1;
         loopk(8) textures[k] = 0;
@@ -1167,19 +1167,17 @@ static void changetexgen(renderstate &cur, int dim, Slot &slot, VSlot &vslot)
         if(!cur.texgenvslot || slot.sts.empty() ||
             (curtex->xs != tex->xs || curtex->ys != tex->ys ||
              cur.texgenvslot->rotation != vslot.rotation || cur.texgenvslot->scale != vslot.scale ||
-             cur.texgenvslot->xoffset != vslot.xoffset || cur.texgenvslot->yoffset != vslot.yoffset ||
-             cur.texgenvslot->scrollS != vslot.scrollS || cur.texgenvslot->scrollT != vslot.scrollT))
+             cur.texgenvslot->offset != vslot.offset || cur.texgenvslot->scroll != vslot.scroll))
         {
             float xs = vslot.rotation>=2 && vslot.rotation<=4 ? -tex->xs : tex->xs,
-                  ys = (vslot.rotation>=1 && vslot.rotation<=2) || vslot.rotation==5 ? -tex->ys : tex->ys,
-                  scrollS = vslot.scrollS, scrollT = vslot.scrollT;
-            if((vslot.rotation&5)==1) swap(scrollS, scrollT);
-            scrollS *= lastmillis*tex->xs/xs;
-            scrollT *= lastmillis*tex->ys/ys;
-            if(cur.texgenscrollS != scrollS || cur.texgenscrollT != scrollT)
+                  ys = (vslot.rotation>=1 && vslot.rotation<=2) || vslot.rotation==5 ? -tex->ys : tex->ys;
+            vec2 scroll(vslot.scroll);
+            if((vslot.rotation&5)==1) swap(scroll.x, scroll.y);
+            scroll.x *= lastmillis*tex->xs/xs;
+            scroll.y *= lastmillis*tex->ys/ys;
+            if(cur.texgenscroll != scroll)
             {
-                cur.texgenscrollS = scrollS;
-                cur.texgenscrollT = scrollT;
+                cur.texgenscroll = scroll;
                 cur.texgendim = -1;
             }
         }
@@ -1188,7 +1186,7 @@ static void changetexgen(renderstate &cur, int dim, Slot &slot, VSlot &vslot)
     }
 
     if(cur.texgendim == dim) return;
-    setenvparamf("texgenscroll", SHPARAM_VERTEX, 0, cur.texgenscrollS, cur.texgenscrollT);
+    setenvparamf("texgenscroll", SHPARAM_VERTEX, 0, cur.texgenscroll.x, cur.texgenscroll.y);
     cur.texgendim = dim;
 }
 

@@ -609,13 +609,13 @@ void savevslot(stream *f, VSlot &vs, int prev)
     if(vs.changed & (1<<VSLOT_ROTATION)) f->putlil<int>(vs.rotation);
     if(vs.changed & (1<<VSLOT_OFFSET))
     {
-        f->putlil<int>(vs.xoffset);
-        f->putlil<int>(vs.yoffset);
+        f->putlil<int>(vs.offset.x);
+        f->putlil<int>(vs.offset.y);
     }
     if(vs.changed & (1<<VSLOT_SCROLL))
     {
-        f->putlil<float>(vs.scrollS);
-        f->putlil<float>(vs.scrollT);
+        f->putlil<float>(vs.scroll.x);
+        f->putlil<float>(vs.scroll.y);
     }
     if(vs.changed & (1<<VSLOT_LAYER)) f->putlil<int>(vs.layer);
     if(vs.changed & (1<<VSLOT_ALPHA))
@@ -692,13 +692,13 @@ void loadvslot(stream *f, VSlot &vs, int changed)
     if(vs.changed & (1<<VSLOT_ROTATION)) vs.rotation = f->getlil<int>();
     if(vs.changed & (1<<VSLOT_OFFSET))
     {
-        vs.xoffset = f->getlil<int>();
-        vs.yoffset = f->getlil<int>();
+        vs.offset.x = f->getlil<int>();
+        vs.offset.y = f->getlil<int>();
     }
     if(vs.changed & (1<<VSLOT_SCROLL))
     {
-        vs.scrollS = f->getlil<float>();
-        vs.scrollT = f->getlil<float>();
+        vs.scroll.x = f->getlil<float>();
+        vs.scroll.y = f->getlil<float>();
     }
     if(vs.changed & (1<<VSLOT_LAYER)) vs.layer = f->getlil<int>();
     if(vs.changed & (1<<VSLOT_ALPHA))
@@ -769,15 +769,15 @@ void saveslotconfig(stream *h, Slot &s, int index)
         if(!j)
         {
             h->printf(" %d %d %d %f",
-                s.variants->rotation, s.variants->xoffset, s.variants->yoffset, s.variants->scale);
+                s.variants->rotation, s.variants->offset.x, s.variants->offset.y, s.variants->scale);
             if(index >= 0) h->printf(" // %d", index);
         }
         h->printf("\n");
     }
     if(index >= 0)
     {
-        if(s.variants->scrollS != 0.f || s.variants->scrollT != 0.f)
-            h->printf("texscroll %f %f\n", s.variants->scrollS * 1000.0f, s.variants->scrollT * 1000.0f);
+        if(!s.variants->scroll.iszero())
+            h->printf("texscroll %f %f\n", s.variants->scroll.x * 1000.0f, s.variants->scroll.y * 1000.0f);
         if(s.variants->layer != 0)
         {
             if(s.layermaskname) h->printf("texlayer %d %s %d %f\n", s.variants->layer, escapestring(s.layermaskname), s.layermaskmode, s.layermaskscale);
@@ -1791,7 +1791,7 @@ void writeobj(char *name)
     vector<vec2> texcoords;
     hashtable<vec, int> shareverts(1<<16);
     hashtable<vec2, int> sharetc(1<<16);
-    hashtable<int, vector<ivec> > mtls(1<<8);
+    hashtable<int, vector<ivec2> > mtls(1<<8);
     vector<int> usedmtl;
     vec bbmin(1e16f, 1e16f, 1e16f), bbmax(-1e16f, -1e16f, -1e16f);
     loopv(valist)
@@ -1805,14 +1805,14 @@ void writeobj(char *name)
         {
             elementset &es = va.eslist[j];
             if(usedmtl.find(es.texture) < 0) usedmtl.add(es.texture);
-            vector<ivec> &keys = mtls[es.texture];
+            vector<ivec2> &keys = mtls[es.texture];
             loopk(es.length[1])
             {
                 int n = idx[k] - va.voffset;
                 const vertex &v = vdata[n];
                 const vec &pos = v.pos;
                 const vec2 &tc = v.tc;
-                ivec &key = keys.add();
+                ivec2 &key = keys.add();
                 key.x = shareverts.access(pos, verts.length());
                 if(key.x == verts.length())
                 {
@@ -1852,7 +1852,7 @@ void writeobj(char *name)
     usedmtl.sort();
     loopv(usedmtl)
     {
-        vector<ivec> &keys = mtls[usedmtl[i]];
+        vector<ivec2> &keys = mtls[usedmtl[i]];
         f->printf("g slot%d\n", usedmtl[i]);
         f->printf("usemtl slot%d\n\n", usedmtl[i]);
         for(int i = 0; i < keys.length(); i += 3)

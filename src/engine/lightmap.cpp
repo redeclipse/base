@@ -679,8 +679,8 @@ static inline void generatealpha(lightmapworker *w, float tolerance, const vec &
         static const int sdim[] = { 1, 0, 0 }, tdim[] = { 2, 2, 1 };
         int dim = dimension(w->orient);
         float k = 8.0f/w->vslot->scale,
-              s = (pos[sdim[dim]] * k - w->vslot->xoffset) / w->slot->layermaskscale,
-              t = (pos[tdim[dim]] * (dim <= 1 ? -k : k) - w->vslot->yoffset) / w->slot->layermaskscale;
+              s = (pos[sdim[dim]] * k - w->vslot->offset.x) / w->slot->layermaskscale,
+              t = (pos[tdim[dim]] * (dim <= 1 ? -k : k) - w->vslot->offset.y) / w->slot->layermaskscale;
         if((w->rotate&5)==1) swap(s, t);
         if(w->rotate>=2 && w->rotate<=4) s = -s;
         if((w->rotate>=1 && w->rotate<=2) || w->rotate==5) t = -t;

@@ -771,8 +771,8 @@ static inline void calctexgen(VSlot &vslot, int dim, vec4 &sgen, vec4 &tgen)
           xs = vslot.rotation>=2 && vslot.rotation<=4 ? -tex->xs : tex->xs,
           ys = (vslot.rotation>=1 && vslot.rotation<=2) || vslot.rotation==5 ? -tex->ys : tex->ys,
           sk = k/xs, tk = k/ys,
-          soff = -((vslot.rotation&5)==1 ? vslot.yoffset : vslot.xoffset)/xs,
-          toff = -((vslot.rotation&5)==1 ? vslot.xoffset : vslot.yoffset)/ys;
+          soff = -((vslot.rotation&5)==1 ? vslot.offset.y : vslot.offset.x)/xs,
+          toff = -((vslot.rotation&5)==1 ? vslot.offset.x : vslot.offset.y)/ys;
     static const int si[] = { 1, 0, 0 }, ti[] = { 2, 2, 1 };
     int sdim = si[dim], tdim = ti[dim];
     sgen = vec4(0, 0, 0, soff);
@@ -861,7 +861,7 @@ void addcubeverts(VSlot &vslot, int orient, int size, vec *pos, int convex, usho
 
     if(lmid >= LMID_RESERVED) lmid = lm ? lm->tex : LMID_AMBIENT;
 
-    sortkey key(texture, lmid, vslot.scrollS || vslot.scrollT ? dim : 3, layer == LAYER_BLEND ? LAYER_BLEND : LAYER_TOP, envmap, alpha ? (vslot.alphaback ? ALPHA_BACK : (vslot.alphafront ? ALPHA_FRONT : NO_ALPHA)) : NO_ALPHA);
+    sortkey key(texture, lmid, !vslot.scroll.iszero() ? dim : 3, layer == LAYER_BLEND ? LAYER_BLEND : LAYER_TOP, envmap, alpha ? (vslot.alphaback ? ALPHA_BACK : (vslot.alphafront ? ALPHA_FRONT : NO_ALPHA)) : NO_ALPHA);
     addtris(key, orient, verts, index, numverts, convex, shadowmask, tj);
 
     if(grassy)

@@ -396,8 +396,9 @@ struct VSlot
     vector<ShaderParam> params;
     bool linked;
     float scale;
-    int rotation, xoffset, yoffset;
-    float scrollS, scrollT;
+    int rotation;
+    ivec2 offset;
+    vec2 scroll;
     int layer;
     int palette, palindex;
     float alphafront, alphaback;
@@ -421,8 +422,9 @@ struct VSlot
         params.shrink(0);
         linked = false;
         scale = 1;
-        rotation = xoffset = yoffset = 0;
-        scrollS = scrollT = 0;
+        rotation = 0;
+        offset = ivec2(0, 0);
+        scroll = vec2(0, 0);
         layer = palette = palindex = 0;
         alphafront = DEFAULT_ALPHA_FRONT;
         alphaback = DEFAULT_ALPHA_BACK;
