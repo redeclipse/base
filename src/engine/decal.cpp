@@ -3,8 +3,8 @@
 struct decalvert
 {
     vec pos;
-    float u, v;
     bvec4 color;
+    vec2 tc;
 };
 
 struct decalinfo
@@ -249,9 +249,9 @@ struct decalrenderer
 
         glBindTexture(GL_TEXTURE_2D, tex->id);
 
-        glVertexPointer(3, GL_FLOAT, sizeof(decalvert), &verts->pos);
-        glTexCoordPointer(2, GL_FLOAT, sizeof(decalvert), &verts->u);
-        glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(decalvert), &verts->color);
+        glVertexPointer(3, GL_FLOAT, sizeof(decalvert), verts->pos.v);
+        glTexCoordPointer(2, GL_FLOAT, sizeof(decalvert), verts->tc.v);
+        glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(decalvert), verts->color.v);
 
         int count = endvert < startvert ? maxverts - startvert : endvert - startvert;
         glDrawArrays(GL_TRIANGLES, startvert, count);
@@ -453,8 +453,8 @@ struct decalrenderer
             float tsz = flags&DF_RND4 ? 0.5f : 1.0f, scale = tsz*0.5f/decalradius,
                   tu = decalu + tsz*0.5f - ptc*scale, tv = decalv + tsz*0.5f - pbc*scale;
             pt.mul(scale); pb.mul(scale);
-            decalvert dv1 = { v2[0], pt.dot(v2[0]) + tu, pb.dot(v2[0]) + tv, decalcolor },
-                      dv2 = { v2[1], pt.dot(v2[1]) + tu, pb.dot(v2[1]) + tv, decalcolor };
+            decalvert dv1 = { v2[0], decalcolor, vec2(pt.dot(v2[0]) + tu, pb.dot(v2[0]) + tv) },
+                      dv2 = { v2[1], decalcolor, vec2(pt.dot(v2[1]) + tu, pb.dot(v2[1]) + tv) };
             int totalverts = 3*(numv-2);
             if(totalverts > maxverts-3) return;
             while(availverts < totalverts)
@@ -467,8 +467,7 @@ struct decalrenderer
                 verts[endvert++] = dv1;
                 verts[endvert++] = dv2;
                 dv2.pos = v2[k+2];
-                dv2.u = pt.dot(v2[k+2]) + tu;
-                dv2.v = pb.dot(v2[k+2]) + tv;
+                dv2.tc = vec2(pt.dot(v2[k+2]) + tu, pb.dot(v2[k+2]) + tv);
                 verts[endvert++] = dv2;
                 if(endvert>=maxverts) endvert = 0;
             }

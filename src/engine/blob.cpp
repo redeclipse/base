@@ -21,9 +21,8 @@ struct blobinfo
 struct blobvert
 {
     vec pos;
-    float u, v;
-    bvec color;
-    uchar alpha;
+    bvec4 color;
+    vec2 tc;
 };
 
 struct blobrenderer
@@ -226,12 +225,13 @@ struct blobrenderer
     {
         blobvert &v = verts[endvert];
         v.pos = pos;
-        v.u = (pos.x - blobmin.x) / (blobmax.x - blobmin.x);
-        v.v = (pos.y - blobmin.y) / (blobmax.y - blobmin.y);
-        v.color = bvec(255, 255, 255);
-        if(pos.z < blobmin.z + blobfadelow) v.alpha = uchar(blobalphalow * (pos.z - blobmin.z));
-        else if(pos.z > blobmax.z - blobfadehigh) v.alpha = uchar(blobalphahigh * (blobmax.z - pos.z));
-        else v.alpha = blobalpha;
+        v.tc = vec2((pos.x - blobmin.x) / (blobmax.x - blobmin.x),
+                    (pos.y - blobmin.y) / (blobmax.y - blobmin.y));
+        uchar alpha;
+        if(pos.z < blobmin.z + blobfadelow) alpha = uchar(blobalphalow * (pos.z - blobmin.z));
+        else if(pos.z > blobmax.z - blobfadehigh) alpha = uchar(blobalphahigh * (blobmax.z - pos.z));
+        else alpha = blobalpha;
+        v.color = bvec4(255, 255, 255, alpha);
         return endvert++;
     }
 
@@ -506,9 +506,9 @@ struct blobrenderer
             if(b->endvert - b->startvert >= 3) for(blobvert *v = &verts[b->startvert], *end = &verts[b->endvert]; v < end; v++)
             {
                 float z = v->pos.z;
-                if(z < minz + blobfadelow) v->alpha = uchar(scalelow * (z - minz));
-                else if(z > maxz - blobfadehigh) v->alpha = uchar(scalehigh * (maxz - z));
-                else v->alpha = alpha;
+                if(z < minz + blobfadelow) v->color.a = uchar(scalelow * (z - minz));
+                else if(z > maxz - blobfadehigh) v->color.a = uchar(scalehigh * (maxz - z));
+                else v->color.a = alpha;
             }
             int offset = b - &blobs[0] + 1;
             if(offset >= maxblobs) offset = 0;
@@ -527,9 +527,9 @@ struct blobrenderer
 
                 setuprenderstate();
             }
-            glVertexPointer(3, GL_FLOAT, sizeof(blobvert), &verts->pos);
-            glTexCoordPointer(2, GL_FLOAT, sizeof(blobvert), &verts->u);
-            glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(blobvert), &verts->color);
+            glVertexPointer(3, GL_FLOAT, sizeof(blobvert), verts->pos.v);
+            glTexCoordPointer(2, GL_FLOAT, sizeof(blobvert), verts->tc.v);
+            glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(blobvert), verts->color.v);
             if(!lastrender || lastrender->tex != tex) glBindTexture(GL_TEXTURE_2D, tex->id);
             lastrender = this;
         }

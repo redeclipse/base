@@ -98,10 +98,10 @@ extern void previewblends(const ivec &bo, const ivec &bs);
 struct lerpvert
 {
     vec normal;
-    float u, v;
+    vec2 tc;
 
-    bool operator==(const lerpvert &l) const { return u == l.u && v == l.v; }
-    bool operator!=(const lerpvert &l) const { return u != l.u || v != l.v; }
+    bool operator==(const lerpvert &l) const { return tc == l.tc;; }
+    bool operator!=(const lerpvert &l) const { return tc != l.tc; }
 };
 
 struct lerpbounds

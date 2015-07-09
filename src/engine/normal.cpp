@@ -257,8 +257,7 @@ void calclerpverts(const vec2 *c, const vec *n, lerpvert *lv, int &numv)
             if(j == numv-1 && c[j] == c[0] && n[j] == n[0]) continue;
         }
         lv[i].normal = n[j];
-        lv[i].u = c[j].x;
-        lv[i].v = c[j].y;
+        lv[i].tc = c[j];
         i++;
     }
     numv = i;
@@ -266,7 +265,7 @@ void calclerpverts(const vec2 *c, const vec *n, lerpvert *lv, int &numv)
 
 void setlerpstep(float v, lerpbounds &bounds)
 {
-    if(bounds.min->v + 1 > bounds.max->v)
+    if(bounds.min->tc.y + 1 > bounds.max->tc.y)
     {
         bounds.nstep = vec(0, 0, 0);
         bounds.normal = bounds.min->normal;
@@ -276,20 +275,20 @@ void setlerpstep(float v, lerpbounds &bounds)
             bounds.normal.normalize();
         }
         bounds.ustep = 0;
-        bounds.u = bounds.min->u;
+        bounds.u = bounds.min->tc.x;
         return;
     }
 
     bounds.nstep = bounds.max->normal;
     bounds.nstep.sub(bounds.min->normal);
-    bounds.nstep.div(bounds.max->v-bounds.min->v);
+    bounds.nstep.div(bounds.max->tc.y-bounds.min->tc.y);
 
     bounds.normal = bounds.nstep;
-    bounds.normal.mul(v - bounds.min->v);
+    bounds.normal.mul(v - bounds.min->tc.y);
     bounds.normal.add(bounds.min->normal);
 
-    bounds.ustep = (bounds.max->u-bounds.min->u) / (bounds.max->v-bounds.min->v);
-    bounds.u = bounds.ustep * (v-bounds.min->v) + bounds.min->u;
+    bounds.ustep = (bounds.max->tc.x-bounds.min->tc.x) / (bounds.max->tc.y-bounds.min->tc.y);
+    bounds.u = bounds.ustep * (v-bounds.min->tc.y) + bounds.min->tc.x;
 }
 
 void initlerpbounds(float u, float v, const lerpvert *lv, int numv, lerpbounds &start, lerpbounds &end)
@@ -297,15 +296,15 @@ void initlerpbounds(float u, float v, const lerpvert *lv, int numv, lerpbounds &
     const lerpvert *first = &lv[0], *second = NULL;
     loopi(numv-1)
     {
-        if(lv[i+1].v < first->v) { second = first; first = &lv[i+1]; }
-        else if(!second || lv[i+1].v < second->v) second = &lv[i+1];
+        if(lv[i+1].tc.y < first->tc.y) { second = first; first = &lv[i+1]; }
+        else if(!second || lv[i+1].tc.y < second->tc.y) second = &lv[i+1];
     }
 
-    if(int(first->v) < int(second->v)) { start.min = end.min = first; }
-    else if(first->u > second->u) { start.min = second; end.min = first; }
+    if(int(first->tc.y) < int(second->tc.y)) { start.min = end.min = first; }
+    else if(first->tc.x > second->tc.x) { start.min = second; end.min = first; }
     else { start.min = first; end.min = second; }
 
-    if((lv[1].u - lv->u)*(lv[2].v - lv->v) > (lv[1].v - lv->v)*(lv[2].u - lv->u))
+    if((lv[1].tc.x - lv->tc.x)*(lv[2].tc.y - lv->tc.y) > (lv[1].tc.y - lv->tc.y)*(lv[2].tc.x - lv->tc.x))
     { 
         start.winding = end.winding = 1;
         start.max = (start.min == lv ? &lv[numv-1] : start.min-1);
@@ -324,24 +323,24 @@ void initlerpbounds(float u, float v, const lerpvert *lv, int numv, lerpbounds &
 
 void updatelerpbounds(float v, const lerpvert *lv, int numv, lerpbounds &start, lerpbounds &end)
 {
-    if(v >= start.max->v)
+    if(v >= start.max->tc.y)
     {
         const lerpvert *next = start.winding > 0 ?
                 (start.max == lv ? &lv[numv-1] : start.max-1) :
                 (start.max == &lv[numv-1] ? lv : start.max+1);
-        if(next->v > start.max->v)
+        if(next->tc.y > start.max->tc.y)
         {
             start.min = start.max;
             start.max = next;
             setlerpstep(v, start);
         }
     }
-    if(v >= end.max->v)
+    if(v >= end.max->tc.y)
     {
         const lerpvert *next = end.winding > 0 ?
                 (end.max == &lv[numv-1] ? lv : end.max+1) :
                 (end.max == lv ? &lv[numv-1] : end.max-1);
-        if(next->v > end.max->v)
+        if(next->tc.y > end.max->tc.y)
         {
             end.min = end.max;
             end.max = next;
