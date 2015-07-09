@@ -87,12 +87,12 @@ void genvbo(int type, void *buf, int len, vtxarray **vas, int numva)
     }
 }
 
-bool readva(vtxarray *va, ushort *&edata, uchar *&vdata)
+bool readva(vtxarray *va, ushort *&edata, vertex *&vdata)
 {
     if(!va->vbuf || !va->ebuf) return false;
 
     edata = new ushort[3*va->tris];
-    vdata = new uchar[va->verts*VTXSIZE];
+    vdata = new vertex[va->verts];
 
     if(hasVBO)
     {
@@ -101,14 +101,14 @@ bool readva(vtxarray *va, ushort *&edata, uchar *&vdata)
         glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
 
         glBindBuffer_(GL_ARRAY_BUFFER_ARB, va->vbuf);
-        glGetBufferSubData_(GL_ARRAY_BUFFER_ARB, va->voffset*VTXSIZE, va->verts*VTXSIZE, vdata);
+        glGetBufferSubData_(GL_ARRAY_BUFFER_ARB, va->voffset*sizeof(vertex), va->verts*sizeof(vertex), vdata);
         glBindBuffer_(GL_ARRAY_BUFFER_ARB, 0);
         return true;
     }
     else
     {
         memcpy(edata, va->edata, 3*va->tris*sizeof(ushort));
-        memcpy(vdata, (uchar *)va->vdata + va->voffset*VTXSIZE, va->verts*VTXSIZE);
+        memcpy(vdata, &va->vdata[va->voffset], va->verts*sizeof(vertex));
         return true;
     }
 }
@@ -403,14 +403,11 @@ struct vacollect : verthash
             if(x.dim > y.dim) return false;
             return false;
         }
-        if(renderpath!=R_FIXEDFUNCTION)
-        {
-            VSlot &xs = lookupvslot(x.tex, false), &ys = lookupvslot(y.tex, false);
-            if(xs.slot->shader < ys.slot->shader) return true;
-            if(xs.slot->shader > ys.slot->shader) return false;
-            if(xs.slot->params.length() < ys.slot->params.length()) return true;
-            if(xs.slot->params.length() > ys.slot->params.length()) return false;
-        }
+        VSlot &xs = lookupvslot(x.tex, false), &ys = lookupvslot(y.tex, false);
+        if(xs.slot->shader < ys.slot->shader) return true;
+        if(xs.slot->shader > ys.slot->shader) return false;
+        if(xs.slot->params.length() < ys.slot->params.length()) return true;
+        if(xs.slot->params.length() > ys.slot->params.length()) return false;
         if(x.tex < y.tex) return true;
         else return false;
     }
@@ -425,14 +422,10 @@ struct vacollect : verthash
             f++; \
         } \
     } while(0)
-#define GENVERTSPOSNORMUV(type, ptr, body) GENVERTS(type, ptr, { f->pos = v.pos; f->norm = v.norm; f->norm.flip(); f->u = v.u; f->v = v.v; body; })
 
     void genverts(void *buf)
     {
-        if(renderpath==R_FIXEDFUNCTION)
-            GENVERTSPOSNORMUV(vertexff, buf, { f->lmu = v.lmu/float(SHRT_MAX); f->lmv = v.lmv/float(SHRT_MAX); });
-        else
-            GENVERTS(vertex, buf, { *f = v; f->norm.flip(); });
+        GENVERTS(vertex, buf, { *f = v; f->norm.flip(); });
     }
 
     void setupdata(vtxarray *va)
@@ -452,7 +445,7 @@ struct vacollect : verthash
                 flushvbo();
 
             va->voffset = vbosize[VBO_VBUF];
-            uchar *vdata = addvbo(va, VBO_VBUF, va->verts, VTXSIZE);
+            uchar *vdata = addvbo(va, VBO_VBUF, va->verts, sizeof(vertex));
             genverts(vdata);
             va->minvert += va->voffset;
             va->maxvert += va->voffset;
@@ -536,7 +529,7 @@ struct vacollect : verthash
         {
             Slot &slot = *lookupvslot(va->eslist[i].texture, false).slot;
             loopvj(slot.sts) va->texmask |= 1<<slot.sts[j].type;
-            if(slot.shader->type&SHADER_ENVMAP && (renderpath!=R_FIXEDFUNCTION || (slot.ffenv && hasCM && maxtmus >= 2))) va->texmask |= 1<<TEX_ENVMAP;
+            if(slot.shader->type&SHADER_ENVMAP) va->texmask |= 1<<TEX_ENVMAP;
         }
 
         if(grasstris.length())
@@ -829,7 +822,7 @@ void addcubeverts(VSlot &vslot, int orient, int size, vec *pos, int convex, usho
 
     LightMap *lm = NULL;
     LightMapTexture *lmtex = NULL;
-    if(!nolights && lightmaps.inrange(lmid-LMID_RESERVED))
+    if(lightmaps.inrange(lmid-LMID_RESERVED))
     {
         lm = &lightmaps[lmid-LMID_RESERVED];
         if((lm->type&LM_TYPE)==LM_DIFFUSE ||
@@ -856,7 +849,7 @@ void addcubeverts(VSlot &vslot, int orient, int size, vec *pos, int convex, usho
             v.lmv = short(ceil((lm->offsety + vinfo[k].v*(float(LM_PACKH)/float(USHRT_MAX+1)) + 0.5f) * float(SHRT_MAX)/lmtex->h));
         }
         else v.lmu = v.lmv = 0;
-        if(renderpath!=R_FIXEDFUNCTION && vinfo && vinfo[k].norm)
+        if(vinfo && vinfo[k].norm)
         {
             vec n = decodenormal(vinfo[k].norm), t = orientation_tangent[vslot.rotation][dim];
             t.project(n).normalize();

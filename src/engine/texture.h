@@ -1,7 +1,3 @@
-extern int renderpath;
-
-enum { R_FIXEDFUNCTION = 0, R_ASMSHADER, R_GLSLANG, R_ASMGLSLANG };
-
 enum { SHPARAM_LOOKUP = 0, SHPARAM_VERTEX, SHPARAM_PIXEL, SHPARAM_UNIFORM };
 
 #define RESERVEDSHADERPARAMS 16
@@ -55,7 +51,6 @@ enum
     SHADER_DEFAULT    = 0,
     SHADER_NORMALSLMS = 1<<0,
     SHADER_ENVMAP     = 1<<1,
-    SHADER_GLSLANG    = 1<<2,
     SHADER_OPTION     = 1<<3,
 
     SHADER_INVALID    = 1<<8,
@@ -91,12 +86,11 @@ struct Shader
 
     char *name, *vsstr, *psstr, *defer;
     int type;
-    GLuint vs, ps;
     GLuint program, vsobj, psobj;
     vector<LocalShaderParamState> defaultparams;
     Shader *detailshader, *variantshader, *altshader, *fastshader[MAXSHADERDETAIL];
     vector<Shader *> variants[MAXVARIANTROWS];
-    bool standard, forced, used, native;
+    bool standard, forced, used;
     Shader *reusevs, *reuseps;
     int numextparams;
     LocalShaderParamState *extparams;
@@ -104,7 +98,7 @@ struct Shader
     vector<UniformLoc> uniformlocs;
     vector<AttribLoc> attriblocs;
 
-    Shader() : name(NULL), vsstr(NULL), psstr(NULL), defer(NULL), type(SHADER_DEFAULT), vs(0), ps(0), program(0), vsobj(0), psobj(0), detailshader(NULL), variantshader(NULL), altshader(NULL), standard(false), forced(false), used(false), native(true), reusevs(NULL), reuseps(NULL), numextparams(0), extparams(NULL), extvertparams(NULL), extpixparams(NULL)
+    Shader() : name(NULL), vsstr(NULL), psstr(NULL), defer(NULL), type(SHADER_DEFAULT), program(0), vsobj(0), psobj(0), detailshader(NULL), variantshader(NULL), altshader(NULL), standard(false), forced(false), used(false), reusevs(NULL), reuseps(NULL), numextparams(0), extparams(NULL), extvertparams(NULL), extpixparams(NULL)
     {
         loopi(MAXSHADERDETAIL) fastshader[i] = this;
     }
@@ -150,21 +144,21 @@ struct Shader
 
     void setvariant(int col, int row, Shader *fallbackshader)
     {
-        if(isnull() || !detailshader || renderpath==R_FIXEDFUNCTION) return;
+        if(isnull() || !detailshader) return;
         setvariant_(col, row, fallbackshader);
         lastshader->flushenvparams();
     }
 
     void setvariant(int col, int row)
     {
-        if(isnull() || !detailshader || renderpath==R_FIXEDFUNCTION) return;
+        if(isnull() || !detailshader) return;
         setvariant_(col, row, detailshader);
         lastshader->flushenvparams();
     }
 
     void setvariant(int col, int row, Slot &slot, VSlot &vslot, Shader *fallbackshader)
     {
-        if(isnull() || !detailshader || renderpath==R_FIXEDFUNCTION) return;
+        if(isnull() || !detailshader) return;
         setvariant_(col, row, fallbackshader);
         lastshader->flushenvparams(&slot);
         lastshader->setslotparams(slot, vslot);
@@ -172,7 +166,7 @@ struct Shader
 
     void setvariant(int col, int row, Slot &slot, VSlot &vslot)
     {
-        if(isnull() || !detailshader || renderpath==R_FIXEDFUNCTION) return;
+        if(isnull() || !detailshader) return;
         setvariant_(col, row, detailshader);
         lastshader->flushenvparams(&slot);
         lastshader->setslotparams(slot, vslot);
@@ -185,14 +179,14 @@ struct Shader
 
     void set()
     {
-        if(isnull() || !detailshader || renderpath==R_FIXEDFUNCTION) return;
+        if(isnull() || !detailshader) return;
         set_();
         lastshader->flushenvparams();
     }
 
     void set(Slot &slot, VSlot &vslot)
     {
-        if(isnull() || !detailshader || renderpath==R_FIXEDFUNCTION) return;
+        if(isnull() || !detailshader) return;
         set_();
         lastshader->flushenvparams(&slot);
         lastshader->setslotparams(slot, vslot);
@@ -498,7 +492,6 @@ struct Slot
     int layermaskmode;
     float layermaskscale;
     ImageData *layermask;
-    bool ffenv;
 
     Slot(int index = -1) : index(index), variants(NULL), texgrass(NULL), layermaskname(NULL), layermask(NULL) { reset(); }
 
@@ -519,7 +512,6 @@ struct Slot
         layermaskmode = 0;
         layermaskscale = 1;
         if(layermask) DELETEP(layermask);
-        ffenv = false;
     }
 
     void cleanup()
@@ -604,8 +596,8 @@ struct cubemapside
 
 extern cubemapside cubemapsides[6];
 extern Texture *notexture, *blanktexture;
-extern Shader *defaultshader, *rectshader, *cubemapshader, *notextureshader, *nocolorshader, *nocolorglslshader, *foggedshader, *foggednotextureshader, *stdworldshader, *lineshader, *foggedlineshader;
-extern int reservevpparams, maxvpenvparams, maxvplocalparams, maxfpenvparams, maxfplocalparams, maxvsuniforms, maxfsuniforms;
+extern Shader *defaultshader, *rectshader, *cubemapshader, *notextureshader, *nocolorshader, *foggedshader, *foggednotextureshader, *stdworldshader;
+extern int reservevpparams, maxvsuniforms, maxfsuniforms;
 
 extern Shader *lookupshaderbyname(const char *name);
 extern Shader *useshaderbyname(const char *name);
@@ -636,14 +628,6 @@ extern void mergevslot(VSlot &dst, const VSlot &src, const VSlot &delta);
 extern vector<Slot *> slots;
 extern vector<VSlot *> vslots;
 extern MSlot materialslots[(MATF_VOLUME|MATF_INDEX)+1];
-
-extern int maxtmus, nolights, nowater, nomasks;
-
-extern void inittmus();
-extern void resettmu(int n);
-extern void scaletmu(int n, int rgbscale, int alphascale = 0);
-extern void colortmu(int n, float r = 0, float g = 0, float b = 0, float a = 0);
-extern void setuptmu(int n, const char *rgbfunc = NULL, const char *alphafunc = NULL);
 
 #define MAXDYNLIGHTS 5
 #define DYNLIGHTBITS 6

@@ -604,7 +604,7 @@ void renderbatchedmodel(model *m, batchedmodel &b)
     if(shadowmapping)
     {
         anim |= ANIM_NOSKIN;
-        if(renderpath!=R_FIXEDFUNCTION) setenvparamf("shadowintensity", SHPARAM_VERTEX, 1, b.transparent);
+        setenvparamf("shadowintensity", SHPARAM_VERTEX, 1, b.transparent);
     }
     else
     {
@@ -764,8 +764,6 @@ void rendermodelquery(model *m, dynent *d, const vec &center, float radius)
     glDepthMask(GL_TRUE);
 }
 
-extern int oqfrags;
-
 void renderradius(const vec &o, float radius)
 {
     glColor3f(0.5f, 0.5f, 0.5f);
@@ -871,7 +869,7 @@ void rendermodel(entitylight *light, const char *mdl, int anim, const vec &o, fl
     else if(showboundingbox && !shadowmapping && !reflecting && !refracting)
     {
         glPushMatrix();
-        lineshader->set();
+        notextureshader->set();
         glDisable(GL_TEXTURE_2D);
         glDisable(GL_CULL_FACE);
         glEnable(GL_BLEND);
@@ -1006,7 +1004,7 @@ void rendermodel(entitylight *light, const char *mdl, int anim, const vec &o, fl
     if(shadowmapping)
     {
         anim |= ANIM_NOSKIN;
-        if(renderpath!=R_FIXEDFUNCTION) setenvparamf("shadowintensity", SHPARAM_VERTEX, 1, trans);
+        setenvparamf("shadowintensity", SHPARAM_VERTEX, 1, trans);
     }
     else
     {
@@ -1084,7 +1082,7 @@ void loadskin(const char *dir, const char *altdir, Texture *&skin, Texture *&mas
 
     #define tryload(tex, prefix, cmd, path) loopi(4) { if((tex = textureload(makerelpath(i < 3 ? dirs[i] : "", path, prefix, cmd), 0, true, false)) != notexture) break; }
     tryload(skin, NULL, NULL, "skin");
-    tryload(masks, "<stub>", NULL, "masks");
+    tryload(masks, NULL, NULL, "masks");
 }
 
 void setbbfrommodel(dynent *d, const char *mdl, float size)

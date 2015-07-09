@@ -221,7 +221,7 @@ struct gui : guient
                 }
                 if(skinborder && colour2 >= 0)
                 {
-                    lineshader->set();
+                    notextureshader->set();
                     glDisable(GL_TEXTURE_2D);
                     glColor4f((colour2>>16)/255.f, ((colour2>>8)&0xFF)/255.f, (colour2&0xFF)/255.f, blend2);
                     glBegin(GL_LINE_LOOP);
@@ -820,7 +820,7 @@ struct gui : guient
     {
         if(!visible()) return;
         glDisable(GL_TEXTURE_2D);
-        lineshader->set();
+        notextureshader->set();
         glColor4ub(color>>16, (color>>8)&0xFF, color&0xFF, 0x80);
         int w = xsize, h = ysize;
         if(inheritw>0)
@@ -1110,7 +1110,7 @@ struct gui : guient
             }
             if(colour2 >= 0)
             {
-                lineshader->set();
+                notextureshader->set();
                 glDisable(GL_TEXTURE_2D);
                 glColor4f((colour2>>16)/255.f, ((colour2>>8)&0xFF)/255.f, (colour2&0xFF)/255.f, guiborderblend);
                 glBegin(GL_LINE_LOOP);

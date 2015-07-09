@@ -344,7 +344,7 @@ extern void allchanged(bool load = false);
 extern void clearvas(cube *c);
 extern vtxarray *newva(int x, int y, int z, int size);
 extern void destroyva(vtxarray *va, bool reparent = true);
-extern bool readva(vtxarray *va, ushort *&edata, uchar *&vdata);
+extern bool readva(vtxarray *va, ushort *&edata, vertex *&vdata);
 extern void updatevabb(vtxarray *va, bool force = false);
 extern void updatevabbs(bool force = false);
 
@@ -370,6 +370,8 @@ extern bool checkquery(occludequery *query, bool nowait = false);
 extern void resetqueries();
 extern int getnumqueries();
 extern void drawbb(const ivec &bo, const ivec &br, const vec &camera = camera1->o);
+
+extern int oqfrags;
 
 #define startquery(query) { glBeginQuery_(GL_SAMPLES_PASSED_ARB, ((occludequery *)(query))->id); }
 #define endquery(query) \

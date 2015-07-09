@@ -435,7 +435,7 @@ void rendereditcursor()
 
     // cursors
 
-    lineshader->set();
+    notextureshader->set();
 
     renderentselection(player->o, ray, entmoving!=0);
 

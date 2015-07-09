@@ -798,7 +798,6 @@ void saveslotconfig(stream *h, Slot &s, int index)
             if(s.grassscale > 0) h->printf("texgrassscale %d\n", s.grassscale);
             if(s.grassheight > 0) h->printf("texgrassheight %d\n", s.grassheight);
         }
-        if(s.ffenv) h->printf("texffenv 1\n");
     }
     h->printf("\n");
 }
@@ -1799,9 +1798,8 @@ void writeobj(char *name)
     {
         vtxarray &va = *valist[i];
         ushort *edata = NULL;
-        uchar *vdata = NULL;
+        vertex *vdata = NULL;
         if(!readva(&va, edata, vdata)) continue;
-        int vtxsize = VTXSIZE;
         ushort *idx = edata;
         loopj(va.texs)
         {
@@ -1811,9 +1809,9 @@ void writeobj(char *name)
             loopk(es.length[1])
             {
                 int n = idx[k] - va.voffset;
-                const vec &pos = renderpath==R_FIXEDFUNCTION ? ((const vertexff *)&vdata[n*vtxsize])->pos : ((const vertex *)&vdata[n*vtxsize])->pos;
-                vec2 tc(renderpath==R_FIXEDFUNCTION ? ((const vertexff *)&vdata[n*vtxsize])->u : ((const vertex *)&vdata[n*vtxsize])->u,
-                        renderpath==R_FIXEDFUNCTION ? ((const vertexff *)&vdata[n*vtxsize])->v : ((const vertex *)&vdata[n*vtxsize])->v);
+                const vertex &v = vdata[n];
+                const vec &pos = v.pos;
+                vec2 tc(v.u, v.v);
                 ivec &key = keys.add();
                 key.x = shareverts.access(pos, verts.length());
                 if(key.x == verts.length())

@@ -82,8 +82,6 @@ struct rendertarget
         glBindFramebuffer_(GL_FRAMEBUFFER_EXT, 0);
     }
 
-    virtual bool shadowcompare() const { return false; }
-
     void setup(int w, int h)
     {
         if(hasFBO)
@@ -116,21 +114,6 @@ struct rendertarget
         }
         while(!colorfmt && colorfmts[++find]);
         if(!colorfmt) colorfmt = colorfmts[find];
-
-        if(attach == GL_DEPTH_ATTACHMENT_EXT && shadowcompare())
-        {
-            if(hasDT && hasSH)
-            {
-                glTexParameteri(target, GL_TEXTURE_COMPARE_MODE_ARB, GL_COMPARE_R_TO_TEXTURE_ARB);
-                glTexParameteri(target, GL_TEXTURE_COMPARE_FUNC_ARB, GL_GEQUAL);
-                glTexParameteri(target, GL_DEPTH_TEXTURE_MODE_ARB, GL_LUMINANCE);
-            }
-            else
-            {
-                glTexParameteri(target, GL_TEXTURE_COMPARE_SGIX, GL_TRUE);
-                glTexParameteri(target, GL_TEXTURE_COMPARE_OPERATOR_SGIX, GL_TEXTURE_GEQUAL_R_SGIX);
-            }
-        }
 
         if(hasFBO && attach != GL_DEPTH_ATTACHMENT_EXT && depthtest())
         {

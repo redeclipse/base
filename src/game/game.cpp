@@ -3005,7 +3005,7 @@ namespace game
             e->light.effect = vec::hexcolor(getcolour(d, playerlighttone)).mul(playerlightmix);
             e->light.material[0] = bvec(getcolour(d, playerovertone));
             e->light.material[1] = bvec(getcolour(d, playerundertone));
-            if(renderpath != R_FIXEDFUNCTION && isweap(d->weapselect) && (W2(d->weapselect, ammosub, false) || W2(d->weapselect, ammosub, true)) && W(d->weapselect, ammomax) > 1)
+            if(isweap(d->weapselect) && (W2(d->weapselect, ammosub, false) || W2(d->weapselect, ammosub, true)) && W(d->weapselect, ammomax) > 1)
             {
                 int ammo = d->ammo[d->weapselect], maxammo = W(d->weapselect, ammomax);
                 float scale = 1;

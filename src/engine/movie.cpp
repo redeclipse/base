@@ -999,7 +999,7 @@ namespace recorder
 
     void readbuffer(videobuffer &m, uint nextframe)
     {
-        bool accelyuv = movieaccelyuv && renderpath!=R_FIXEDFUNCTION && !(m.w%8),
+        bool accelyuv = movieaccelyuv && !(m.w%8),
                         usefbo = movieaccel && hasFBO && hasTR && file->videow <= (uint)screen->w && file->videoh <= (uint)screen->h && (accelyuv || file->videow < (uint)screen->w || file->videoh < (uint)screen->h);
         uint w = screen->w, h = screen->h;
         if(usefbo) { w = file->videow; h = file->videoh; }
@@ -1049,7 +1049,7 @@ namespace recorder
                 glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, 0, 0, screen->w, screen->h);
             }
 
-            if(tw > m.w || th > m.h || (!accelyuv && renderpath != R_FIXEDFUNCTION && tw >= m.w && th >= m.h))
+            if(tw > m.w || th > m.h || (!accelyuv && tw >= m.w && th >= m.h))
             {
                 glBindFramebuffer_(GL_FRAMEBUFFER_EXT, scalefb);
                 glViewport(0, 0, tw, th);
@@ -1065,7 +1065,7 @@ namespace recorder
                     glFramebufferTexture2D_(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_ARB, scaletex[1], 0);
                     glBindTexture(GL_TEXTURE_RECTANGLE_ARB, scaletex[0]);
                     uint dw = max(tw/2, m.w), dh = max(th/2, m.h);
-                    if(dw == m.w && dh == m.h && !accelyuv && renderpath != R_FIXEDFUNCTION) { SETSHADER(movieyuv); m.format = aviwriter::VID_YUV; }
+                    if(dw == m.w && dh == m.h && !accelyuv) { SETSHADER(movieyuv); m.format = aviwriter::VID_YUV; }
                     else SETSHADER(moviergb);
                     drawquad(tw, th, 0, 0, dw, dh);
                     tw = dw;

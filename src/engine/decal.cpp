@@ -99,11 +99,7 @@ struct decalrenderer
     void fadedecal(decalinfo &d, uchar alpha)
     {
         bvec rgb;
-        if(flags&DF_OVERBRIGHT)
-        {
-            if(renderpath!=R_FIXEDFUNCTION || hasTE) rgb = bvec(128, 128, 128);
-            else rgb = bvec(alpha, alpha, alpha);
-        }
+        if(flags&DF_OVERBRIGHT) rgb = bvec(128, 128, 128);
         else
         {
             rgb = d.color;
@@ -233,22 +229,13 @@ struct decalrenderer
         {
             glGetFloatv(GL_FOG_COLOR, oldfogc);
             static float zerofog[4] = { 0, 0, 0, 1 }, grayfog[4] = { 0.5f, 0.5f, 0.5f, 1 };
-            glFogfv(GL_FOG_COLOR, flags&DF_OVERBRIGHT && (renderpath!=R_FIXEDFUNCTION || hasTE) ? grayfog : zerofog);
+            glFogfv(GL_FOG_COLOR, flags&DF_OVERBRIGHT ? grayfog : zerofog);
         }
 
         if(flags&DF_OVERBRIGHT)
         {
-            if(renderpath!=R_FIXEDFUNCTION)
-            {
-                glBlendFunc(GL_DST_COLOR, GL_SRC_COLOR);
-                SETSHADER(overbrightdecal);
-            }
-            else if(hasTE)
-            {
-                glBlendFunc(GL_DST_COLOR, GL_SRC_COLOR);
-                setuptmu(0, "T , C @ Ca");
-            }
-            else glBlendFunc(GL_DST_COLOR, GL_ONE_MINUS_SRC_ALPHA);
+            glBlendFunc(GL_DST_COLOR, GL_SRC_COLOR);
+            SETSHADER(overbrightdecal);
         }
         else
         {
@@ -256,11 +243,7 @@ struct decalrenderer
             else if(flags&DF_ADD) glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_COLOR);
             else glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-            if(flags&DF_SATURATE)
-            {
-                if(renderpath!=R_FIXEDFUNCTION) SETSHADER(saturatedecal);
-                else if(hasTE) setuptmu(0, "C * T x 2");
-            }
+            if(flags&DF_SATURATE) SETSHADER(saturatedecal);
             else foggedshader->set();
         }
 
@@ -280,7 +263,6 @@ struct decalrenderer
         xtravertsva += count;
 
         if(flags&(DF_ADD|DF_INVMOD|DF_OVERBRIGHT)) glFogfv(GL_FOG_COLOR, oldfogc);
-        if(flags&(DF_OVERBRIGHT|DF_SATURATE) && renderpath==R_FIXEDFUNCTION && hasTE) resettmu(0);
 
         extern int intel_vertexarray_bug;
         if(intel_vertexarray_bug) glFlush();
@@ -580,7 +562,7 @@ decalrenderer decals[] =
     decalrenderer("<grey>particles/scorch", DF_ROTATE, 500, 1000, 10000),
     decalrenderer("<grey>particles/scorch", DF_ROTATE, 500, 1000, 2000),
     decalrenderer("<grey>particles/blood", DF_RND4|DF_ROTATE|DF_INVMOD, 0, 1000, 10000),
-    decalrenderer("<grey><decal>particles/bullet", DF_OVERBRIGHT, 0, 1000, 10000),
+    decalrenderer("<grey>particles/bullet", DF_OVERBRIGHT, 0, 1000, 10000),
     decalrenderer("<grey>particles/energy", DF_ROTATE|DF_ADD|DF_SATURATE, 150, 500, 3000),
     decalrenderer("<grey>particles/stain", DF_SATURATE, 100, 900, 1000)
 };

@@ -1,6 +1,5 @@
 #include "engine.h"
 
-VAR(IDF_PERSIST, ffdynlights, 0, min(5, DYNLIGHTMASK), DYNLIGHTMASK);
 VAR(IDF_PERSIST, maxdynlights, 0, min(3, MAXDYNLIGHTS), MAXDYNLIGHTS);
 VAR(IDF_PERSIST, dynlightdist, 128, 1024, 10000);
 
@@ -54,7 +53,7 @@ vector<dynlight *> closedynlights;
 
 void adddynlight(const vec &o, float radius, const vec &color, int fade, int peak, int flags, float initradius, const vec &initcolor)
 {
-    if(renderpath==R_FIXEDFUNCTION ? !ffdynlights || maxtmus<3 : !maxdynlights) return;
+    if(!maxdynlights) return;
     if(o.dist(camera1->o) > dynlightdist || radius <= 0) return;
 
     int insert = 0, expire = fade + peak + lastmillis;
@@ -96,7 +95,7 @@ void updatedynlights()
 int finddynlights()
 {
     closedynlights.setsize(0);
-    if(renderpath==R_FIXEDFUNCTION ? !ffdynlights || maxtmus<3 : !maxdynlights) return 0;
+    if(!maxdynlights) return 0;
     physent e;
     e.type = ENT_CAMERA;
     loopvj(dynlights)
@@ -120,8 +119,6 @@ int finddynlights()
         closedynlights.insert(insert, &d);
         if(closedynlights.length() >= DYNLIGHTMASK) break;
     }
-    if(renderpath==R_FIXEDFUNCTION && closedynlights.length() > ffdynlights)
-        closedynlights.setsize(ffdynlights);
     return closedynlights.length();
 }
 

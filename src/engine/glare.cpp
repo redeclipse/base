@@ -33,7 +33,7 @@ bool glaring = false;
 
 void drawglaretex()
 {
-    if(!glare || renderpath==R_FIXEDFUNCTION) return;
+    if(!glare) return;
 
     glaretex.render(1<<glaresize, 1<<glaresize, blurglare, blurglaresigma/100.0f);
 }
@@ -43,7 +43,7 @@ FVAR(IDF_PERSIST, glarescale, 0, 1, 8);
 void addglare()
 {
     extern int viewtype;
-    if(!glare || viewtype || renderpath==R_FIXEDFUNCTION) return;
+    if(!glare || viewtype) return;
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE);

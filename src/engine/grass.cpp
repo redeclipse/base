@@ -234,7 +234,7 @@ static void gengrassquads(vtxarray *va)
         if(!s.grasstex)
         {
             if(!s.texgrass) continue;
-            s.grasstex = textureload(makerelpath(NULL, s.texgrass, NULL, "<ffskip><premul>"), 2);
+            s.grasstex = textureload(makerelpath(NULL, s.texgrass, NULL, "<premul>"), 2);
         }
 
         grassgroup *group = NULL;
@@ -287,7 +287,7 @@ void rendergrass()
 
     glDisable(GL_CULL_FACE);
     glEnable(GL_BLEND);
-    glBlendFunc(renderpath==R_FIXEDFUNCTION ? GL_SRC_ALPHA : GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
     glDepthMask(GL_FALSE);
 
     SETSHADER(grass);
@@ -301,17 +301,13 @@ void rendergrass()
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
     glTexCoordPointer(2, GL_FLOAT, sizeof(grassvert), &grassverts[0].u);
 
-    if(renderpath!=R_FIXEDFUNCTION || maxtmus>=2)
-    {
-        glActiveTexture_(GL_TEXTURE1_ARB);
-        glClientActiveTexture_(GL_TEXTURE1_ARB);
-        glEnable(GL_TEXTURE_2D);
-        glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-        glTexCoordPointer(2, GL_FLOAT, sizeof(grassvert), &grassverts[0].lmu);
-        if(renderpath==R_FIXEDFUNCTION) setuptmu(1, "P * T x 2");
-        glClientActiveTexture_(GL_TEXTURE0_ARB);
-        glActiveTexture_(GL_TEXTURE0_ARB);
-    }
+    glActiveTexture_(GL_TEXTURE1_ARB);
+    glClientActiveTexture_(GL_TEXTURE1_ARB);
+    glEnable(GL_TEXTURE_2D);
+    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    glTexCoordPointer(2, GL_FLOAT, sizeof(grassvert), &grassverts[0].lmu);
+    glClientActiveTexture_(GL_TEXTURE0_ARB);
+    glActiveTexture_(GL_TEXTURE0_ARB);
 
     int texid = -1, lmtexid = -1;
     loopv(grassgroups)
@@ -331,12 +327,9 @@ void rendergrass()
         }
         if(lmtexid != g.lmtex)
         {
-            if(renderpath!=R_FIXEDFUNCTION || maxtmus>=2)
-            {
-                glActiveTexture_(GL_TEXTURE1_ARB);
-                glBindTexture(GL_TEXTURE_2D, g.lmtex);
-                glActiveTexture_(GL_TEXTURE0_ARB);
-            }
+            glActiveTexture_(GL_TEXTURE1_ARB);
+            glBindTexture(GL_TEXTURE_2D, g.lmtex);
+            glActiveTexture_(GL_TEXTURE0_ARB);
             lmtexid = g.lmtex;
         }
 
@@ -348,16 +341,12 @@ void rendergrass()
     glDisableClientState(GL_COLOR_ARRAY);
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 
-    if(renderpath!=R_FIXEDFUNCTION || maxtmus>=2)
-    {
-        glActiveTexture_(GL_TEXTURE1_ARB);
-        glClientActiveTexture_(GL_TEXTURE1_ARB);
-        if(renderpath==R_FIXEDFUNCTION) resettmu(1);
-        glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-        glDisable(GL_TEXTURE_2D);
-        glClientActiveTexture_(GL_TEXTURE0_ARB);
-        glActiveTexture_(GL_TEXTURE0_ARB);
-    }
+    glActiveTexture_(GL_TEXTURE1_ARB);
+    glClientActiveTexture_(GL_TEXTURE1_ARB);
+    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+    glDisable(GL_TEXTURE_2D);
+    glClientActiveTexture_(GL_TEXTURE0_ARB);
+    glActiveTexture_(GL_TEXTURE0_ARB);
 
     glDisable(GL_BLEND);
     glDepthMask(GL_TRUE);
