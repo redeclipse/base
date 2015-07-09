@@ -813,7 +813,7 @@ namespace ai
     void delselwaypoints()
     {
         if(noedit(true)) return;
-        vec o = sel.o.tovec().sub(0.1f), s = sel.s.tovec().mul(sel.grid).add(o).add(0.1f);
+        vec o = vec(sel.o).sub(0.1f), s = vec(sel.s).mul(sel.grid).add(o).add(0.1f);
         int cleared = 0;
         for(int i = 1; i < waypoints.length(); i++)
         {
@@ -837,7 +837,7 @@ namespace ai
     void moveselwaypoints(vec &offset)
     {
         if(noedit(true)) return;
-        vec o = sel.o.tovec().sub(0.1f), s = sel.s.tovec().mul(sel.grid).add(o).add(0.1f);
+        vec o = vec(sel.o).sub(0.1f), s = vec(sel.s).mul(sel.grid).add(o).add(0.1f);
         int moved = 0;
         for(int i = 1; i < waypoints.length(); i++)
         {

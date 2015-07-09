@@ -1667,8 +1667,8 @@ void drawminimap()
         loopk(2) bbmax[k] = min(bbmax[k], clipmax[k]);
     }
 
-    minimapradius = bbmax.tovec().sub(bbmin.tovec()).mul(0.5f);
-    minimapcenter = bbmin.tovec().add(minimapradius);
+    minimapradius = vec(bbmax).sub(vec(bbmin)).mul(0.5f);
+    minimapcenter = vec(bbmin).add(minimapradius);
     minimapradius.x = minimapradius.y = max(minimapradius.x, minimapradius.y);
     minimapscale = vec((0.5f - 1.0f/size)/minimapradius.x, (0.5f - 1.0f/size)/minimapradius.y, 1.0f);
 

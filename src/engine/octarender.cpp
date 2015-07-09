@@ -167,11 +167,8 @@ struct verthash
         for(int i = table[h]; i>=0; i = chain[i])
         {
             const vertex &c = verts[i];
-            if(c.pos==v.pos && c.u==v.u && c.v==v.v && c.norm==v.norm && c.tangent==v.tangent)
-            {
-                 if(!v.lmu && !v.lmv) return i;
-                 if(c.lmu==v.lmu && c.lmv==v.lmv) return i;
-            }
+            if(c.pos==v.pos && c.tc==v.tc && c.norm==v.norm && c.tangent==v.tangent && (v.lm.iszero() || c.lm==v.lm))
+                return i;
         }
         if(verts.length() >= USHRT_MAX) return -1;
         verts.add(v);
@@ -179,14 +176,12 @@ struct verthash
         return table[h] = verts.length()-1;
     }
 
-    int addvert(const vec &pos, float u = 0, float v = 0, short lmu = 0, short lmv = 0, const bvec &norm = bvec(128, 128, 128), const bvec4 &tangent = bvec4(128, 128, 128, 128))
+    int addvert(const vec &pos, const vec2 &tc = vec2(0, 0), const svec2 &lm = svec2(0, 0), const bvec &norm = bvec(128, 128, 128), const bvec4 &tangent = bvec4(128, 128, 128, 128))
     {
         vertex vtx;
         vtx.pos = pos;
-        vtx.u = u;
-        vtx.v = v;
-        vtx.lmu = lmu;
-        vtx.lmv = lmv;
+        vtx.tc = tc; 
+        vtx.lm = lm;
         vtx.norm = norm;
         vtx.tangent = tangent;
         return addvert(vtx);
@@ -331,21 +326,16 @@ struct vacollect : verthash
             sortval &t = indices[k];
             if(t.unlit<=0) continue;
             LightMapTexture &lm = lightmaptexs[t.unlit];
-            short u = short(ceil((lm.unlitx + 0.5f) * SHRT_MAX/lm.w)),
-                  v = short(ceil((lm.unlity + 0.5f) * SHRT_MAX/lm.h));
+            svec2 lmtc(short(ceil((lm.unlitx + 0.5f) * SHRT_MAX/lm.w)),
+                       short(ceil((lm.unlity + 0.5f) * SHRT_MAX/lm.h)));
             loopl(2) loopvj(t.tris[l])
             {
                 vertex &vtx = verts[t.tris[l][j]];
-                if(!vtx.lmu && !vtx.lmv)
-                {
-                    vtx.lmu = u;
-                    vtx.lmv = v;
-                }
-                else if(vtx.lmu != u || vtx.lmv != v)
+                if(vtx.lm.iszero()) vtx.lm = lmtc;
+                else if(vtx.lm != lmtc)
                 {
                     vertex vtx2 = vtx;
-                    vtx2.lmu = u;
-                    vtx2.lmv = v;
+                    vtx2.lm = lmtc;
                     t.tris[l][j] = addvert(vtx2);
                 }
             }
@@ -670,7 +660,7 @@ void addtris(const sortkey &key, int orient, vertex *verts, int *index, int numv
                 int origin = int(min(v1.pos[axis], v2.pos[axis])*8)&~0x7FFF,
                     offset1 = (int(v1.pos[axis]*8) - origin) / d[axis],
                     offset2 = (int(v2.pos[axis]*8) - origin) / d[axis];
-                vec o = vec(v1.pos).sub(d.tovec().mul(offset1/8.0f));
+                vec o = vec(v1.pos).sub(vec(d).mul(offset1/8.0f));
                 float doffset = 1.0f / (offset2 - offset1);
 
                 if(i1 < 0) for(;;)
@@ -685,11 +675,10 @@ void addtris(const sortkey &key, int orient, vertex *verts, int *index, int numv
                     if(t.edge != cedge) break;
                     float offset = (t.offset - offset1) * doffset;
                     vertex vt;
-                    vt.pos = d.tovec().mul(t.offset/8.0f).add(o);
-                    vt.u = v1.u + (v2.u-v1.u)*offset;
-                    vt.v = v1.v + (v2.v-v1.v)*offset;
-                    vt.lmu = short(v1.lmu + (v2.lmu-v1.lmu)*offset),
-                    vt.lmv = short(v1.lmv + (v2.lmv-v1.lmv)*offset);
+                    vt.pos = vec(d).mul(t.offset/8.0f).add(o);
+                    vt.tc.lerp(v1.tc, v2.tc, offset);
+                    vt.lm.x = short(v1.lm.x + (v2.lm.x-v1.lm.x)*offset),
+                    vt.lm.y = short(v1.lm.y + (v2.lm.y-v1.lm.y)*offset);
                     vt.norm.lerp(v1.norm, v2.norm, offset);
                     vt.tangent.lerp(v1.tangent, v2.tangent, offset);
                     int i2 = vc.addvert(vt);
@@ -756,12 +745,12 @@ void addgrasstri(int face, vertex *verts, int numv, ushort texture, ushort lmid)
     by.z = by.x*g.v[1][px] - by.y*g.v[1][py] - 1;
     by.sub(bx);
 
-    float tc1u = verts[i1].lmu/float(SHRT_MAX),
-          tc1v = verts[i1].lmv/float(SHRT_MAX),
-          tc2u = (verts[i2].lmu - verts[i1].lmu)/float(SHRT_MAX),
-          tc2v = (verts[i2].lmv - verts[i1].lmv)/float(SHRT_MAX),
-          tc3u = (verts[i3].lmu - verts[i1].lmu)/float(SHRT_MAX),
-          tc3v = (verts[i3].lmv - verts[i1].lmv)/float(SHRT_MAX);
+    float tc1u = verts[i1].lm.x/float(SHRT_MAX),
+          tc1v = verts[i1].lm.y/float(SHRT_MAX),
+          tc2u = (verts[i2].lm.x - verts[i1].lm.x)/float(SHRT_MAX),
+          tc2v = (verts[i2].lm.y - verts[i1].lm.y)/float(SHRT_MAX),
+          tc3u = (verts[i3].lm.x - verts[i1].lm.x)/float(SHRT_MAX),
+          tc3v = (verts[i3].lm.y - verts[i1].lm.y)/float(SHRT_MAX);
 
     g.tcu = vec4(0, 0, 0, tc1u - (bx.z*tc2u + by.z*tc3u));
     g.tcu[px] = bx.x*tc2u + by.x*tc3u;
@@ -841,14 +830,13 @@ void addcubeverts(VSlot &vslot, int orient, int size, vec *pos, int convex, usho
     {
         vertex &v = verts[k];
         v.pos = pos[k];
-        v.u = sgen.dot(v.pos);
-        v.v = tgen.dot(v.pos);
+        v.tc = vec2(sgen.dot(v.pos), tgen.dot(v.pos));
         if(lmtex)
         {
-            v.lmu = short(ceil((lm->offsetx + vinfo[k].u*(float(LM_PACKW)/float(USHRT_MAX+1)) + 0.5f) * float(SHRT_MAX)/lmtex->w));
-            v.lmv = short(ceil((lm->offsety + vinfo[k].v*(float(LM_PACKH)/float(USHRT_MAX+1)) + 0.5f) * float(SHRT_MAX)/lmtex->h));
+            v.lm = svec2(short(ceil((lm->offsetx + vinfo[k].u*(float(LM_PACKW)/float(USHRT_MAX+1)) + 0.5f) * float(SHRT_MAX)/lmtex->w)),
+                         short(ceil((lm->offsety + vinfo[k].v*(float(LM_PACKH)/float(USHRT_MAX+1)) + 0.5f) * float(SHRT_MAX)/lmtex->h)));
         }
-        else v.lmu = v.lmv = 0;
+        else v.lm = svec2(0, 0);
         if(vinfo && vinfo[k].norm)
         {
             vec n = decodenormal(vinfo[k].norm), t = orientation_tangent[vslot.rotation][dim];
@@ -1060,8 +1048,8 @@ void gencubeverts(cube &c, int x, int y, int z, int size, int csi)
         if(numverts)
         {
             verts = c.ext->verts() + c.ext->surfaces[i].verts;
-            vec vo = ivec(x, y, z).mask(~0xFFF).tovec();
-            loopj(numverts) pos[j] = verts[j].getxyz().tovec().mul(1.0f/8).add(vo);
+            vec vo(ivec(x, y, z).mask(~0xFFF));
+            loopj(numverts) pos[j] = vec(verts[j].getxyz()).mul(1.0f/8).add(vo);
             if(!flataxisface(c, i)) convex = faceconvexity(verts, numverts, size);
         }
         else
@@ -1071,10 +1059,10 @@ void gencubeverts(cube &c, int x, int y, int z, int size, int csi)
             if(!flataxisface(c, i)) convex = faceconvexity(v);
             int order = vis&4 || convex < 0 ? 1 : 0;
             vec vo(x, y, z);
-            pos[numverts++] = v[order].tovec().mul(size/8.0f).add(vo);
-            if(vis&1) pos[numverts++] = v[order+1].tovec().mul(size/8.0f).add(vo);
-            pos[numverts++] = v[order+2].tovec().mul(size/8.0f).add(vo);
-            if(vis&2) pos[numverts++] = v[(order+3)&3].tovec().mul(size/8.0f).add(vo);
+            pos[numverts++] = vec(v[order]).mul(size/8.0f).add(vo);
+            if(vis&1) pos[numverts++] = vec(v[order+1]).mul(size/8.0f).add(vo);
+            pos[numverts++] = vec(v[order+2]).mul(size/8.0f).add(vo);
+            if(vis&2) pos[numverts++] = vec(v[(order+3)&3]).mul(size/8.0f).add(vo);
         }
 
         VSlot &vslot = lookupvslot(c.texture[i], true),
@@ -1411,7 +1399,7 @@ void addmergedverts(int level, const ivec &o)
 {
     vector<mergedface> &mfl = vamerges[level];
     if(mfl.empty()) return;
-    vec vo = ivec(o).mask(~0xFFF).tovec();
+    vec vo(ivec(o).mask(~0xFFF));
     vec pos[MAXFACEVERTS];
     loopv(mfl)
     {

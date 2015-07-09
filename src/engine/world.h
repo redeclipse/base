@@ -134,5 +134,5 @@ enum
 
 #define TEX_SCALE 8.0f
 
-struct vertex { vec pos; bvec4 norm; float u, v; short lmu, lmv; bvec4 tangent; };
+struct vertex { vec pos; bvec4 norm; vec2 tc; svec2 lm; bvec4 tangent; };
 

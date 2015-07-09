@@ -1021,9 +1021,9 @@ static void changevbuf(renderstate &cur, int pass, vtxarray *va)
 
     if(pass==RENDERPASS_LIGHTMAP)
     {
-        glTexCoordPointer(2, GL_FLOAT, sizeof(vertex), &va->vdata[0].u);
+        glTexCoordPointer(2, GL_FLOAT, sizeof(vertex), va->vdata[0].tc.v);
         glClientActiveTexture_(GL_TEXTURE1_ARB);
-        glTexCoordPointer(2, GL_SHORT, sizeof(vertex), &va->vdata[0].lmu);
+        glTexCoordPointer(2, GL_SHORT, sizeof(vertex), va->vdata[0].lm.v);
         glClientActiveTexture_(GL_TEXTURE0_ARB);
         glNormalPointer(GL_BYTE, sizeof(vertex), va->vdata[0].norm.v);
         glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(vertex), va->vdata[0].tangent.v);

@@ -112,20 +112,6 @@ struct shaftplane
     uchar rnear, cnear, rfar, cfar;
 };
 
-struct usvec
-{
-    union
-    {
-        struct { ushort x, y, z; };
-        ushort v[3];
-    };
-
-    ushort &operator[](int i) { return v[i]; }
-    ushort operator[](int i) const { return v[i]; }
-
-    ivec toivec() const { return ivec(x, y, z); }
-};
-
 struct shaftbb
 {
     union
@@ -438,7 +424,7 @@ struct pvsworker
         {
             pvsnode *children = &pvsnodes[p.children];
             int csize = size>>1;
-            ivec dmin = ivec(co).add(csize>>1).sub(viewcellbb.min.toivec().add(viewcellbb.max.toivec()).shr(1)), dmax = ivec(dmin).add(csize);
+            ivec dmin = ivec(co).add(csize>>1).sub(ivec(viewcellbb.min).add(ivec(viewcellbb.max)).shr(1)), dmax = ivec(dmin).add(csize);
             dmin.mul(dmin);
             dmax.mul(dmax);
             ivec diff = ivec(dmax).sub(dmin);
@@ -473,7 +459,7 @@ struct pvsworker
         bvec edges = p.children ? bvec(0x80, 0x80, 0x80) : p.edges;
         if(edges.x==0xFF) return;
         shaftbb geom(co, size, edges);
-        ivec diff = geom.max.toivec().sub(viewcellbb.min.toivec()).abs();
+        ivec diff = ivec(geom.max).sub(ivec(viewcellbb.min)).abs();
         cullorder order[3] = { cullorder(0, diff.x), cullorder(1, diff.y), cullorder(2, diff.z) };
         if(order[1].dist > order[0].dist) swap(order[0], order[1]);
         if(order[2].dist > order[1].dist) swap(order[1], order[2]);

@@ -302,8 +302,7 @@ bool isshadowmapreceiver(vtxarray *va)
           x1, y1, x2, y2;
     if(xyrad<0 || zrad<0) return false;
 
-    vec center(va->shadowmapmin.tovec());
-    center.add(va->shadowmapmax.tovec()).mul(0.5f);
+    vec center = vec(va->shadowmapmin).add(vec(va->shadowmapmax)).mul(0.5f);
     calcshadowmapbb(center, xyrad, zrad, x1, y1, x2, y2);
 
     return shadowmaptex.checkblurtiles(x1, y1, x2, y2, 2);

@@ -90,7 +90,7 @@ ICOMMAND(0, moving, "b", (int *n),
 {
     if(*n >= 0)
     {
-        if(!*n || (moving<=1 && !pointinsel(sel, cur.tovec().add(1)))) moving = 0;
+        if(!*n || (moving<=1 && !pointinsel(sel, vec(cur).add(1)))) moving = 0;
         else if(!moving) moving = 1;
     }
     intret(moving);
@@ -143,7 +143,7 @@ bool noedit(bool view)
     if(!editmode) { conoutf("\froperation only allowed in edit mode"); return true; }
     if(view || haveselent()) return false;
     float r = 1.0f;
-    vec o = sel.o.tovec(), s = sel.s.tovec();
+    vec o(sel.o), s(sel.s);
     s.mul(float(sel.grid) / 2.0f);
     o.add(s);
     r = float(max(s.x, max(s.y, s.z)));
@@ -301,12 +301,12 @@ void rendereditcursor()
     if(moving)
     {
         static vec dest, handle;
-        if(editmoveplane(sel.o.tovec(), camdir, od, sel.o[D[od]]+odc*sel.grid*sel.s[D[od]], handle, dest, moving==1))
+        if(editmoveplane(vec(sel.o), camdir, od, sel.o[D[od]]+odc*sel.grid*sel.s[D[od]], handle, dest, moving==1))
         {
             if(moving==1)
             {
                 dest.add(handle);
-                handle = ivec(handle).mask(~(sel.grid-1)).tovec();
+                handle = vec(ivec(handle).mask(~(sel.grid-1)));
                 dest.sub(handle);
                 moving = 2;
             }
@@ -332,7 +332,7 @@ void rendereditcursor()
                                             | (passthroughcube==1 ? RAY_PASS : 0), gridsize, entorient, ent);
 
         if((havesel || dragging) && !passthroughsel && !hmapedit)     // now try selecting the selection
-            if(rayboxintersect(sel.o.tovec(), vec(sel.s.tovec()).mul(sel.grid), player->o, ray, sdist, orient))
+            if(rayboxintersect(vec(sel.o), vec(sel.s).mul(sel.grid), player->o, ray, sdist, orient))
             {   // and choose the nearest of the two
                 if(sdist < wdist)
                 {
@@ -367,7 +367,7 @@ void rendereditcursor()
             if(gridlookup && !dragging && !moving && !havesel && hmapedit!=1) gridsize = lusize;
             int mag = gridsize && lusize ? lusize / gridsize : 0;
             normalizelookupcube(int(w.x), int(w.y), int(w.z));
-            if(sdist == 0 || sdist > wdist) rayboxintersect(lu.tovec(), vec(gridsize), player->o, ray, t=0, orient); // just getting orient
+            if(sdist == 0 || sdist > wdist) rayboxintersect(vec(lu), vec(gridsize), player->o, ray, t=0, orient); // just getting orient
             cur = lu;
             cor = vec(w).mul(2).div(gridsize);
             od = dimension(orient);
@@ -460,10 +460,10 @@ void rendereditcursor()
         if(showcursorgrid)
         {
             glColor3ub(ishmap ? 0 : 30, 30, ishmap ? 0 : 30);
-            planargrid(lu.tovec(), vec(1, 1, 1), gridsize);
+            planargrid(vec(lu), vec(1, 1, 1), gridsize);
         }
         glColor3ub(ishmap ? 0 : 255, 255, ishmap ? 0 : 255);
-        boxs(orient, lu.tovec(), vec(lusize));
+        boxs(orient, vec(lu), vec(lusize));
     }
 
     // selections
@@ -471,9 +471,9 @@ void rendereditcursor()
     {
         d = dimension(sel.orient);
         glColor3ub(120, 120, 120);  // grid
-        boxsgrid(sel.orient, sel.o.tovec(), sel.s.tovec(), sel.grid);
+        boxsgrid(sel.orient, vec(sel.o), vec(sel.s), sel.grid);
         glColor3ub(255, 0, 0);  // 0 reference
-        boxs3D(sel.o.tovec().sub(0.5f*min(gridsize*0.25f, 2.0f)), vec(min(gridsize*0.25f, 2.0f)), 1);
+        boxs3D(vec(sel.o).sub(0.5f*min(gridsize*0.25f, 2.0f)), vec(min(gridsize*0.25f, 2.0f)), 1);
         glColor3ub(120, 120, 120);// 2D selection box
         vec co(sel.o.v), cs(sel.s.v);
         co[R[d]] += 0.5f*(sel.cx*gridsize);
@@ -484,18 +484,18 @@ void rendereditcursor()
         boxs(sel.orient, co, cs);
         if(hmapedit==1) glColor3ub(0, 120, 0); // 3D selection box
         else glColor3ub(0, 0, 120);
-        boxs3D(sel.o.tovec(), sel.s.tovec(), sel.grid);
+        boxs3D(vec(sel.o), vec(sel.s), sel.grid);
         if(showselgrid)
         {
             glColor3ub(30, 30, 30);
-            planargrid(sel.o.tovec(), sel.s.tovec(), sel.grid);
+            planargrid(vec(sel.o), vec(sel.s), sel.grid);
         }
     }
 
     if(showpastegrid && localedit && localedit->copy)
     {
         glColor3ub(0, 192, 192);
-        boxs3D(havesel ? sel.o.tovec() : lu.tovec(), localedit->copy->s.tovec(), havesel ? sel.grid : gridsize);
+        boxs3D(havesel ? vec(sel.o) : vec(lu), vec(localedit->copy->s), havesel ? sel.grid : gridsize);
     }
 
     disablepolygonoffset(GL_POLYGON_OFFSET_LINE);

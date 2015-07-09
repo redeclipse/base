@@ -424,7 +424,7 @@ void setupmaterials(int start, int len)
                 else
                 {
                     int dim = dimension(m.orient);
-                    vec center(m.o.tovec());
+                    vec center(m.o);
                     center[R[dim]] += m.rsize/2;
                     center[C[dim]] += m.csize/2;
                     m.envmap = closestenvmap(center);

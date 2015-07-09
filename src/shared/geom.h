@@ -55,6 +55,8 @@ static inline uint hthash(const vec2 &k)
     return v + (v>>12);
 }
 
+struct ivec;
+
 struct vec
 {
     union
@@ -72,6 +74,7 @@ struct vec
     explicit vec(float *v) : x(v[0]), y(v[1]), z(v[2]) {}
     explicit vec(const vec2 &v, float z = 0) : x(v.x), y(v.y), z(z) {}
     explicit vec(const vec4 &v);
+    explicit vec(const ivec &v);
 
     vec(float yaw, float pitch) : x(-sinf(yaw)*cosf(pitch)), y(cosf(yaw)*cosf(pitch)), z(sinf(pitch)) { if(!iszero()) normalize(); }
 
@@ -1025,6 +1028,11 @@ const int R[3]  = {1, 2, 0}; // row
 const int C[3]  = {2, 0, 1}; // col
 const int D[3]  = {0, 1, 2}; // depth
 
+struct ivec4;
+struct ivec2;
+struct usvec;
+struct svec;
+
 struct ivec
 {
     union
@@ -1036,12 +1044,6 @@ struct ivec
 
     ivec() {}
     ivec(const vec &v) : x(int(v.x)), y(int(v.y)), z(int(v.z)) {}
-    explicit ivec(int i)
-    {
-        x = ((i&1)>>0);
-        y = ((i&2)>>1);
-        z = ((i&4)>>2);
-    }
     ivec(int a, int b, int c) : x(a), y(b), z(c) {}
     ivec(int d, int row, int col, int depth)
     {
@@ -1055,8 +1057,10 @@ struct ivec
         y = cy+((i&2)>>1)*size;
         z = cz+((i&4)>>2)*size;
     }
-    vec tovec() const { return vec(x, y, z); }
-    int toint() const { return (x>0?1:0) + (y>0?2:0) + (z>0?4:0); }
+    explicit ivec(const ivec4 &v);
+    explicit ivec(const ivec2 &v, int z = 0);
+    explicit ivec(const usvec &v);
+    explicit ivec(const svec &v);
 
     int &operator[](int i)       { return v[i]; }
     int  operator[](int i) const { return v[i]; }
@@ -1088,6 +1092,8 @@ struct ivec
     static ivec fromcolor(int color) { return ivec(int((color>>16)&0xFF), int((color>>8)&0xFF), int(color&0xFF)); }
 };
 
+inline vec::vec(const ivec &v) : x(v.x), y(v.y), z(v.z) {}
+
 static inline bool htcmp(const ivec &x, const ivec &y)
 {
     return x == y;
@@ -1096,6 +1102,89 @@ static inline bool htcmp(const ivec &x, const ivec &y)
 static inline uint hthash(const ivec &k)
 {
     return k.x^k.y^k.z;
+}
+
+struct ivec2
+{
+    union
+    {
+        struct { int x, y; };
+        int v[2];
+    };
+
+    ivec2() {}
+    ivec2(int x, int y) : x(x), y(y) {}
+    explicit ivec2(const vec2 &v) : x(int(v.x)), y(int(v.y)) {}
+    explicit ivec2(const ivec &v) : x(v.x), y(v.y) {}
+
+    int &operator[](int i)       { return v[i]; }
+    int  operator[](int i) const { return v[i]; }
+
+    bool operator==(const ivec2 &o) const { return x == o.x && y == o.y; }
+    bool operator!=(const ivec2 &o) const { return x != o.x || y != o.y; }
+
+    bool iszero() const { return x==0 && y==0; }
+    ivec2 &shl(int n) { x<<= n; y<<= n; return *this; }
+    ivec2 &shr(int n) { x>>= n; y>>= n; return *this; }
+    ivec2 &mul(int n) { x *= n; y *= n; return *this; }
+    ivec2 &div(int n) { x /= n; y /= n; return *this; }
+    ivec2 &add(int n) { x += n; y += n; return *this; }
+    ivec2 &sub(int n) { x -= n; y -= n; return *this; }
+    ivec2 &mul(const ivec2 &v) { x *= v.x; y *= v.y; return *this; }
+    ivec2 &div(const ivec2 &v) { x /= v.x; y /= v.y; return *this; }
+    ivec2 &add(const ivec2 &v) { x += v.x; y += v.y; return *this; }
+    ivec2 &sub(const ivec2 &v) { x -= v.x; y -= v.y; return *this; }
+    ivec2 &mask(int n) { x &= n; y &= n; return *this; }
+    ivec2 &neg() { x = -x; y = -y; return *this; }
+    ivec2 &min(const ivec2 &o) { x = ::min(x, o.x); y = ::min(y, o.y); return *this; }
+    ivec2 &max(const ivec2 &o) { x = ::max(x, o.x); y = ::max(y, o.y); return *this; }
+    ivec2 &min(int n) { x = ::min(x, n); y = ::min(y, n); return *this; }
+    ivec2 &max(int n) { x = ::max(x, n); y = ::max(y, n); return *this; }
+    ivec2 &abs() { x = ::abs(x); y = ::abs(y); return *this; }
+    int dot(const ivec2 &o) const { return x*o.x + y*o.y; } 
+    int cross(const ivec2 &o) const { return x*o.y - y*o.x; }
+};
+
+inline ivec::ivec(const ivec2 &v, int z) : x(v.x), y(v.y), z(z) {}
+
+static inline bool htcmp(const ivec2 &x, const ivec2 &y)
+{
+    return x == y;
+}
+
+static inline uint hthash(const ivec2 &k)
+{
+    return k.x^k.y;
+}
+
+struct ivec4
+{
+    union
+    {
+        struct { int x, y, z, w; };
+        struct { int r, g, b, a; };
+        int v[4];
+    };
+
+    ivec4() {}
+    explicit ivec4(const ivec &p, int w = 0) : x(p.x), y(p.y), z(p.z), w(w) {}
+    ivec4(int x, int y, int z, int w) : x(x), y(y), z(z), w(w) {}
+    explicit ivec4(const vec4 &v) : x(int(v.x)), y(int(v.y)), z(int(v.z)), w(int(v.w)) {}
+
+    bool operator==(const ivec4 &o) const { return x == o.x && y == o.y && z == o.z && w == o.w; }
+    bool operator!=(const ivec4 &o) const { return x != o.x || y != o.y || z != o.z || w != o.w; }
+};
+
+inline ivec::ivec(const ivec4 &v) : x(v.x), y(v.y), z(v.z) {}
+
+static inline bool htcmp(const ivec4 &x, const ivec4 &y)
+{
+    return x == y;
+}
+
+static inline uint hthash(const ivec4 &k)
+{
+    return k.x^k.y^k.z^k.w;
 }
 
 struct bvec4;
@@ -1138,7 +1227,7 @@ struct bvec
     bvec &abs() { return *this; }
     bvec &clamp(int l, int h) { x = ::clamp(int(x), l, h); y = ::clamp(int(y), l, h); z = ::clamp(int(z), l, h); return *this; }
 
-    vec tovec() const { return vec(x*(2.0f/255.0f)-1.0f, y*(2.0f/255.0f)-1.0f, z*(2.0f/255.0f)-1.0f); }
+    vec tonormal() const { return vec(x*(2.0f/255.0f)-1.0f, y*(2.0f/255.0f)-1.0f, z*(2.0f/255.0f)-1.0f); }
 
     bvec &normalize()
     {
@@ -1193,7 +1282,7 @@ struct bvec4
 
     bool iszero() const { return mask==0; }
 
-    vec tovec() const { return vec(x*(2.0f/255.0f)-1.0f, y*(2.0f/255.0f)-1.0f, z*(2.0f/255.0f)-1.0f); }
+    vec tonormal() const { return vec(x*(2.0f/255.0f)-1.0f, y*(2.0f/255.0f)-1.0f, z*(2.0f/255.0f)-1.0f); }
 
     void lerp(const bvec4 &a, const bvec4 &b, float t)
     {
@@ -1211,10 +1300,73 @@ struct bvec4
         w = a.w;
     }
 
+    bvec4 &lighten(int intensity)
+    {
+        x = uchar(x*(255-intensity)/255 + intensity);
+        y = uchar(y*(255-intensity)/255 + intensity);
+        z = uchar(z*(255-intensity)/255 + intensity);
+        return *this;
+    }
+
     void flip() { mask ^= 0x80808080; }
+
+    bvec4 &alpha(uchar n) { a = n; return *this; }
+    static bvec4 fromcolor(uchar color) { return bvec4(uchar((color>>16)&0xFF), uchar((color>>8)&0xFF), uchar(color&0xFF), 255); }
 };
 
 inline bvec::bvec(const bvec4 &v) : x(v.x), y(v.y), z(v.z) {}
+
+struct usvec
+{
+    union
+    {
+        struct { ushort x, y, z; };
+        ushort v[3];
+    };
+
+    ushort &operator[](int i) { return v[i]; }
+    ushort operator[](int i) const { return v[i]; }
+};
+
+inline ivec::ivec(const usvec &v) : x(v.x), y(v.y), z(v.z) {}
+
+struct svec
+{
+    union
+    {
+        struct { short x, y, z; };
+        short v[3];
+    };
+
+    svec() {}
+    svec(short x, short y, short z) : x(x), y(y), z(z) {}
+    svec(const ivec &v) : x(v.x), y(v.y), z(v.z) {}
+
+    short &operator[](int i) { return v[i]; }
+    short operator[](int i) const { return v[i]; }
+};
+
+inline ivec::ivec(const svec &v) : x(v.x), y(v.y), z(v.z) {}
+
+struct svec2
+{   
+    union
+    {
+        struct { short x, y; };
+        short v[2];
+    };
+
+    svec2() {}
+    svec2(short x, short y) : x(x), y(y) {}
+
+    short &operator[](int i) { return v[i]; }
+    short operator[](int i) const { return v[i]; }
+
+    bool operator==(const svec2 &o) const { return x == o.x && y == o.y; }
+    bool operator!=(const svec2 &o) const { return x != o.x || y != o.y; }
+
+    bool iszero() const { return x==0 && y==0; }
+};
 
 struct glmatrixf
 {
@@ -1540,50 +1692,3 @@ static inline int mod360(int angle)
 
 static inline const vec2 &sincosmod360(int angle) { return sincos360[mod360(angle)]; }
 
-struct cvec
-{
-    union
-    {
-        struct { int x, y, z, w; };
-        struct { int r, g, b, a; };
-        int v[4];
-    };
-
-    cvec() {}
-    cvec(const vec &v) : x(int(v.x)), y(int(v.y)), z(int(v.z)), w(255) {}
-    cvec(const vec4 &v) : x(int(v.x)), y(int(v.y)), z(int(v.z)), w(int(v.w)) {}
-
-    cvec(int a, int b, int c) : x(a), y(b), z(c), w(255) {}
-    cvec(int a, int b, int c, int d) : x(a), y(b), z(c) {}
-
-    vec4 tovec4() const { return vec4(x, y, z, w); }
-    int toint() const { return (x>0?1:0) + (y>0?2:0) + (z>0?4:0); }
-
-    int &operator[](int i)       { return v[i]; }
-    int  operator[](int i) const { return v[i]; }
-
-    bool operator==(const cvec &v) const { return x==v.x && y==v.y && z==v.z && w==v.w; }
-    bool operator!=(const cvec &v) const { return x!=v.x || y!=v.y || z!=v.z || w!=v.w; }
-    bool iszero() const { return x==0 && y==0 && z==0 && w==0; }
-    cvec &alpha(int n) { a = n; return *this; }
-    cvec &shl(int n) { x<<= n; y<<= n; z<<= n; w<<= n; return *this; }
-    cvec &shr(int n) { x>>= n; y>>= n; z>>= n; w>>= n; return *this; }
-    cvec &mul(int n) { x *= n; y *= n; z *= n; w *= n; return *this; }
-    cvec &div(int n) { x /= n; y /= n; z /= n; w /= n; return *this; }
-    cvec &add(int n) { x += n; y += n; z += n; w += n; return *this; }
-    cvec &sub(int n) { x -= n; y -= n; z -= n; w -= n; return *this; }
-    cvec &mul(const cvec &v) { x *= v.x; y *= v.y; z *= v.z; w *= v.w; return *this; }
-    cvec &div(const cvec &v) { x /= v.x; y /= v.y; z /= v.z; w /= v.w; return *this; }
-    cvec &add(const cvec &v) { x += v.x; y += v.y; z += v.z; w += v.w; return *this; }
-    cvec &sub(const cvec &v) { x -= v.x; y -= v.y; z -= v.z; w -= v.w; return *this; }
-    cvec &mask(int n) { x &= n; y &= n; z &= n; w &= n; return *this; }
-    cvec &neg() { return mul(-1); }
-    cvec &min(const cvec &o) { x = ::min(x, o.x); y = ::min(y, o.y); z = ::min(z, o.z); w = ::min(w, o.w); return *this; }
-    cvec &max(const cvec &o) { x = ::max(x, o.x); y = ::max(y, o.y); z = ::max(z, o.z); w = ::max(w, o.w); return *this; }
-    cvec &min(int n) { x = ::min(x, n); y = ::min(y, n); z = ::min(z, n); w = ::min(w, n); return *this; }
-    cvec &max(int n) { x = ::max(x, n); y = ::max(y, n); z = ::max(z, n); w = ::max(w, n); return *this; }
-    cvec &abs() { x = ::abs(x); y = ::abs(y); z = ::abs(z); w = ::abs(w); return *this; }
-    static cvec from24c(int color) { return cvec(int((color>>16)&0xFF), int((color>>8)&0xFF), int(color&0xFF), 255); }
-    static cvec from32c(int color) { return cvec(int((color>>24)&0xFF), int((color>>16)&0xFF), int((color>>8)&0xFF), int(color&0xFF)); }
-    static cvec from24ca(int color, int alpha) { return cvec(int((color>>16)&0xFF), int((color>>8)&0xFF), int(color&0xFF), alpha); }
-};

@@ -210,10 +210,10 @@ static float draw_char(Texture *&tex, int c, float x, float y, float scale)
     return scale*info.advance;
 }
 
-#define TVECA(ci, ca) (cvec::from24c(ci).mul(255-textminintensity).div(255).add(textminintensity).min(255).alpha(ca))
-#define TVECX(cr, cg, cb, ca) (cvec(cr, cg, cb).mul(255-textminintensity).div(255).add(textminintensity).min(255).alpha(ca))
+#define TVECA(ci, ca) (bvec4::fromcolor(ci).lighten(textminintensity).alpha(ca))
+#define TVECX(cr, cg, cb, ca) (bvec4(cr, cg, cb, 255).lighten(textminintensity).alpha(ca))
 
-static void text_color(char c, cvec *stack, int size, int &sp, cvec &color, int r, int g, int b, int a)
+static void text_color(char c, bvec4 *stack, int size, int &sp, bvec4 &color, int r, int g, int b, int a)
 {
     int alpha = stack[sp].a;
     switch(c)
@@ -256,7 +256,7 @@ static void text_color(char c, cvec *stack, int size, int &sp, cvec &color, int 
         default: color = stack[sp]; break; // everything else
     }
     xtraverts += varray::end();
-    glColor4ub((uchar)color.r, (uchar)color.g, (uchar)color.b, (uchar)color.a);
+    glColor4ub(color.r, color.g, color.b, color.a);
 }
 
 static const char *gettexvar(const char *var)
@@ -496,7 +496,7 @@ void text_boundsf(const char *str, float &width, float &height, int maxwidth, in
     #undef TEXTWORD
 }
 
-int draw_key(Texture *&tex, const char *str, float sx, float sy, float sc, cvec &cl, int flags)
+int draw_key(Texture *&tex, const char *str, float sx, float sy, float sc, bvec4 &cl, int flags)
 {
     float swidth = text_widthf(str, flags), ss = 0, sp = 0;
     if(textkeybg)
@@ -547,7 +547,7 @@ int draw_key(Texture *&tex, const char *str, float sx, float sy, float sc, cvec 
             color = TVECA(ret, alpha); \
             colorstack[colorpos] = color; \
             xtraverts += varray::end(); \
-            glColor4ub((uchar)color.r, (uchar)color.g, (uchar)color.b, (char)color.a); \
+            glColor4ub(color.r, color.g, color.b, color.a); \
         }
     #define TEXTICON(ret) x += draw_icon(tex, ret, left+x, top+y, scale);
     #define TEXTKEY(ret) x += draw_key(tex, ret, left+x, top+y, scale, color, flags);
@@ -556,14 +556,14 @@ int draw_key(Texture *&tex, const char *str, float sx, float sy, float sc, cvec 
     bool usecolor = true;
     int fade = textkeyfgblend*cl.a, r = (textkeyfgcolour>>16)&0xFF, g = (textkeyfgcolour>>8)&0xFF, b = textkeyfgcolour&0xFF,
         colorpos = 1, ly = 0, left = sx + sp, top = sy, cursor = -1, maxwidth = -1;
-    cvec colorstack[16], color = TVECX(r, g, b, fade);
+    bvec4 colorstack[16], color = TVECX(r, g, b, fade);
     loopi(16) colorstack[i] = color;
-    glColor4ub((uchar)color.r, (uchar)color.g, (uchar)color.b, (uchar)color.a);
+    glColor4ub(color.r, color.g, color.b, color.a);
     TEXTSKELETON
     TEXTEND(cursor)
     xtraverts += varray::end();
 
-    glColor4ub((uchar)cl.r, (uchar)cl.g, (uchar)cl.b, (uchar)cl.a);
+    glColor4ub(cl.r, cl.g, cl.b, cl.a);
 
     #undef TEXTINDEX
     #undef TEXTWHITE
@@ -598,7 +598,7 @@ int draw_text(const char *str, int rleft, int rtop, int r, int g, int b, int a, 
             color = TVECA(ret, alpha); \
             colorstack[colorpos] = color; \
             xtraverts += varray::end(); \
-            glColor4ub((uchar)color.r, (uchar)color.g, (uchar)color.b, (char)color.a); \
+            glColor4ub(color.r, color.g, color.b, color.a); \
         }
     #define TEXTICON(ret) x += draw_icon(tex, ret, left+x, top+y, scale);
     #define TEXTKEY(ret) x += draw_key(tex, ret, left+x, top+y, scale, color, flags);
@@ -616,9 +616,9 @@ int draw_text(const char *str, int rleft, int rtop, int r, int g, int b, int a, 
     if(fade < 0) { usecolor = false; fade = -a; }
     int colorpos = 1, ly = 0, left = rleft, top = rtop;
     float cx = -FONTW, cy = 0;
-    cvec colorstack[16], color = TVECX(r, g, b, fade);
+    bvec4 colorstack[16], color = TVECX(r, g, b, fade);
     loopi(16) colorstack[i] = color;
-    glColor4ub((uchar)color.r, (uchar)color.g, (uchar)color.b, (uchar)color.a);
+    glColor4ub(color.r, color.g, color.b, color.a);
     TEXTSKELETON
     TEXTEND(cursor)
     xtraverts += varray::end();

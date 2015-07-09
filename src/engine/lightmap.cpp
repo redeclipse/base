@@ -1518,8 +1518,8 @@ static lightmapinfo *setupsurfaces(lightmapworker *w, lightmaptask &task)
             if(usefaces&2) curlitverts[numverts++].set(v[(order+3)&3].mul(size).add(vo));
         }
 
-        vec pos[MAXFACEVERTS], n[MAXFACEVERTS], po = ivec(co).mask(~0xFFF).tovec();
-        loopj(numverts) pos[j] = curlitverts[j].getxyz().tovec().mul(1.0f/8).add(po);
+        vec pos[MAXFACEVERTS], n[MAXFACEVERTS], po(ivec(co).mask(~0xFFF));
+        loopj(numverts) pos[j] = vec(curlitverts[j].getxyz()).mul(1.0f/8).add(po);
 
         plane planes[2];
         int numplanes = 0;
@@ -1851,8 +1851,8 @@ static bool previewblends(lightmapworker *w, cube &c, const ivec &co, int size)
         curlitverts[numverts++].set(v[order+2].mul(size).add(vo));
         if(usefaces&2) curlitverts[numverts++].set(v[(order+3)&3].mul(size).add(vo));
 
-        vec pos[4], n[4], po = ivec(co).mask(~0xFFF).tovec();
-        loopj(numverts) pos[j] = curlitverts[j].getxyz().tovec().mul(1.0f/8).add(po);
+        vec pos[4], n[4], po(ivec(co).mask(~0xFFF));
+        loopj(numverts) pos[j] = vec(curlitverts[j].getxyz()).mul(1.0f/8).add(po);
 
         plane planes[2];
         int numplanes = 0;

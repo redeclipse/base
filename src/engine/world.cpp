@@ -650,7 +650,7 @@ bool dropentity(extentity &e, int drop = -1)
             cx = (sel.cx ? 1 : -1) * sel.grid / 2;
             cy = (sel.cy ? 1 : -1) * sel.grid / 2;
         }
-        e.o = sel.o.tovec();
+        e.o = vec(sel.o);
         int d = dimension(sel.orient), dc = dimcoord(sel.orient);
         e.o[R[d]] += sel.grid / 2 + cx;
         e.o[C[d]] += sel.grid / 2 + cy;
@@ -750,7 +750,7 @@ void entcopy()
     entcopygrid = sel.grid;
     entcopybuf.shrink(0);
     loopv(entgroup)
-        entfocus(entgroup[i], entcopybuf.add(e).o.sub(sel.o.tovec()));
+        entfocus(entgroup[i], entcopybuf.add(e).o.sub(vec(sel.o)));
 }
 
 void entpaste()
@@ -763,7 +763,7 @@ void entpaste()
     {
         entity &c = entcopybuf[i];
         vec o(c.o);
-        o.mul(m).add(sel.o.tovec());
+        o.mul(m).add(vec(sel.o));
         int idx;
         extentity *e = newentity(true, o, ET_EMPTY, c.attrs, idx, false);
         if(!e) continue;
@@ -1096,7 +1096,7 @@ void shrinkmap()
 
     ivec offset(octant, 0, 0, 0, hdr.worldsize);
     vector<extentity *> &ents = entities::getents();
-    loopv(ents) ents[i]->o.sub(offset.tovec());
+    loopv(ents) ents[i]->o.sub(vec(offset));
 
     shrinkblendmap(octant);
 

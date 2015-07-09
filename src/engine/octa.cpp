@@ -590,7 +590,7 @@ static void genvertp(cube &c, ivec &p1, ivec &p2, ivec &p3, plane &pl, bool soli
     v2[dim] = solid ? coord*8 : edgeval(c, p2, dim, coord);
     v3[dim] = solid ? coord*8 : edgeval(c, p3, dim, coord);
 
-    pl.toplane(v1.tovec(), v2.tovec(), v3.tovec());
+    pl.toplane(vec(v1), vec(v2), vec(v3));
 }
 
 static bool threeplaneintersect(plane &pl1, plane &pl2, plane &pl3, vec &dest)
@@ -1203,7 +1203,7 @@ void calcvert(const cube &c, int x, int y, int z, int size, ivec &v, int i, bool
 
 void calcvert(const cube &c, int x, int y, int z, int size, vec &v, int i, bool solid)
 {
-    if(solid) v = cubecoords[i].tovec(); else gencubevert(c, i, v);
+    if(solid) v = vec(cubecoords[i]); else gencubevert(c, i, v);
     v.mul(size/8.0f).add(vec(x, y, z));
 }
 
