@@ -31,9 +31,8 @@ const char *partnames[] = { "part", "tape", "trail", "text", "explosion", "light
 struct partvert
 {
     vec pos;
-    float u, v;
-    bvec color;
-    uchar alpha;
+    bvec4 color;
+    vec2 tc;
 };
 
 #define COLLIDERADIUS 8.0f
@@ -646,10 +645,10 @@ struct varenderer : partrenderer
                 float u1 = u1c, u2 = u2c, v1 = v1c, v2 = v2c; \
                 if(p->flags&0x01) swap(u1, u2); \
                 if(p->flags&0x02) swap(v1, v2); \
-                vs[0].u = u1; vs[0].v = v1; \
-                vs[1].u = u2; vs[1].v = v1; \
-                vs[2].u = u2; vs[2].v = v2; \
-                vs[3].u = u1; vs[3].v = v2; \
+                vs[0].tc = vec2(u1, v1); \
+                vs[1].tc = vec2(u2, v1); \
+                vs[2].tc = vec2(u2, v2); \
+                vs[3].tc = vec2(u1, v2); \
             }
             if(type&PT_RND4)
             {
@@ -661,15 +660,15 @@ struct varenderer : partrenderer
 
             #define SETCOLOR(r, g, b, a) \
             do { \
-                uchar col[4] = { uchar(r), uchar(g), uchar(b), uchar(a) }; \
-                loopi(4) memcpy(vs[i].color.v, col, sizeof(col)); \
+                bvec4 col(r, g, b, a); \
+                loopi(4) vs[i].color = col; \
             } while(0)
             #define SETMODCOLOR SETCOLOR((p->color[0]*blend)>>8, (p->color[1]*blend)>>8, (p->color[2]*blend)>>8, uchar(p->blend*255))
             if(type&PT_MOD) SETMODCOLOR;
             else SETCOLOR(p->color[0], p->color[1], p->color[2], uchar(p->blend*blend));
         }
         else if(type&PT_MOD) SETMODCOLOR;
-        else loopi(4) vs[i].alpha = uchar(p->blend*blend);
+        else loopi(4) vs[i].color.a = uchar(p->blend*blend);
 
         if(type&PT_ROT) genrotpos<T>(p->o, p->d, size, ts, p->grav, vs, (p->flags>>2)&0x1F);
         else genpos<T>(p->o, p->d, size, ts, p->grav, vs);
@@ -703,9 +702,9 @@ struct varenderer : partrenderer
     {
         preload();
         if(tex) glBindTexture(GL_TEXTURE_2D, tex->id);
-        glVertexPointer(3, GL_FLOAT, sizeof(partvert), &verts->pos);
-        glTexCoordPointer(2, GL_FLOAT, sizeof(partvert), &verts->u);
-        glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(partvert), &verts->color);
+        glVertexPointer(3, GL_FLOAT, sizeof(partvert), verts->pos.v);
+        glTexCoordPointer(2, GL_FLOAT, sizeof(partvert), verts->tc.v);
+        glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(partvert), verts->color.v);
         glDrawArrays(GL_QUADS, 0, numparts*4);
     }
 };
