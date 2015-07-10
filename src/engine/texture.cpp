@@ -2241,10 +2241,8 @@ void forcecubemapload(GLuint tex)
     glLoadIdentity();
 
     cubemapshader->set();
-    GLenum tex2d = glIsEnabled(GL_TEXTURE_2D), depthtest = glIsEnabled(GL_DEPTH_TEST), blend = glIsEnabled(GL_BLEND);
-    if(tex2d) glDisable(GL_TEXTURE_2D);
+    GLenum depthtest = glIsEnabled(GL_DEPTH_TEST), blend = glIsEnabled(GL_BLEND);
     if(depthtest) glDisable(GL_DEPTH_TEST);
-    glEnable(GL_TEXTURE_CUBE_MAP);
     glBindTexture(GL_TEXTURE_CUBE_MAP, tex);
     if(!blend) glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -2257,9 +2255,7 @@ void forcecubemapload(GLuint tex)
     }
     glEnd();
     if(!blend) glDisable(GL_BLEND);
-    glDisable(GL_TEXTURE_CUBE_MAP);
     if(depthtest) glEnable(GL_DEPTH_TEST);
-    if(tex2d) glEnable(GL_TEXTURE_2D);
 
     glMatrixMode(GL_PROJECTION);
     glPopMatrix();

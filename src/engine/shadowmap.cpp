@@ -188,7 +188,6 @@ static struct shadowmaptexture : rendertarget
         shadowmapmatrix.projective(-1, 1-shadowmapbias/float(shadowmapdist));
 
         glColor3f(0, 0, 0);
-        glDisable(GL_TEXTURE_2D);
 
         setenvparamf("shadowmapbias", SHPARAM_VERTEX, 0, -shadowmapbias/float(shadowmapdist), 1 - (shadowmapbias + (smoothshadowmappeel ? 0 : shadowmappeelbias))/float(shadowmapdist));
 
@@ -199,8 +198,6 @@ static struct shadowmaptexture : rendertarget
         renderavatar(false);
         shadowmapping = false;
         shadowmapmaxz = min(shadowmapmaxz, shadowfocus.z);
-
-        glEnable(GL_TEXTURE_2D);
 
         if(shadowmapcasters && smdepthpeel)
         {

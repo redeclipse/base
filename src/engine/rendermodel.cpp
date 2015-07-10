@@ -870,7 +870,6 @@ void rendermodel(entitylight *light, const char *mdl, int anim, const vec &o, fl
     {
         glPushMatrix();
         notextureshader->set();
-        glDisable(GL_TEXTURE_2D);
         glDisable(GL_CULL_FACE);
         glEnable(GL_BLEND);
         glBlendFunc(GL_ONE, GL_ONE);
@@ -906,7 +905,6 @@ void rendermodel(entitylight *light, const char *mdl, int anim, const vec &o, fl
         }
 
         defaultshader->set();
-        glEnable(GL_TEXTURE_2D);
         glEnable(GL_CULL_FACE);
         glDisable(GL_BLEND);
         glPopMatrix();

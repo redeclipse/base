@@ -758,14 +758,12 @@ struct lineprimitiverenderer : listrenderer<lineprimitive>
 
     void startrender()
     {
-        glDisable(GL_TEXTURE_2D);
         glDisable(GL_CULL_FACE);
         particlenotextureshader->set();
     }
 
     void endrender()
     {
-        glEnable(GL_TEXTURE_2D);
         glEnable(GL_CULL_FACE);
         particleshader->set();
     }
@@ -811,14 +809,12 @@ struct trisprimitiverenderer : listrenderer<trisprimitive>
 
     void startrender()
     {
-        glDisable(GL_TEXTURE_2D);
         glDisable(GL_CULL_FACE);
         particlenotextureshader->set();
     }
 
     void endrender()
     {
-        glEnable(GL_TEXTURE_2D);
         glEnable(GL_CULL_FACE);
         particleshader->set();
     }
@@ -873,14 +869,12 @@ struct loopprimitiverenderer : listrenderer<loopprimitive>
 
     void startrender()
     {
-        glDisable(GL_TEXTURE_2D);
         glDisable(GL_CULL_FACE);
         particlenotextureshader->set();
     }
 
     void endrender()
     {
-        glEnable(GL_TEXTURE_2D);
         glEnable(GL_CULL_FACE);
         particleshader->set();
     }
@@ -944,14 +938,12 @@ struct coneprimitiverenderer : listrenderer<coneprimitive>
 
     void startrender()
     {
-        glDisable(GL_TEXTURE_2D);
         glDisable(GL_CULL_FACE);
         particlenotextureshader->set();
     }
 
     void endrender()
     {
-        glEnable(GL_TEXTURE_2D);
         glEnable(GL_CULL_FACE);
         particleshader->set();
     }

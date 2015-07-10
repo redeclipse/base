@@ -180,7 +180,6 @@ struct animmodel : model
             {
                 if(enablealphatest) { glDisable(GL_ALPHA_TEST); enablealphatest = false; }
                 if(enablealphablend) { glDisable(GL_BLEND); enablealphablend = false; }
-                if(enableenvmap) disableenvmap();
                 if(shadowmapping) SETMODELSHADER(b, shadowmapcaster);
                 else /*if(as->cur.anim&ANIM_SHADOW)*/ SETMODELSHADER(b, notexturemodel); // this shader also gets used with color mask disabled
                 return;
@@ -245,19 +244,14 @@ struct animmodel : model
             if(envmaptmu>=0 && envmapmax>0)
             {
                 GLuint emtex = envmap ? envmap->id : closestenvmaptex;
-                if(!enableenvmap || lastenvmaptex!=emtex)
+                if(lastenvmaptex!=emtex)
                 {
                     glActiveTexture_(GL_TEXTURE0+envmaptmu);
                     activetmu = envmaptmu;
-                    if(!enableenvmap)
-                    {
-                        glEnable(GL_TEXTURE_CUBE_MAP);
-                        enableenvmap = true;
-                    }
-                    if(lastenvmaptex!=emtex) { glBindTexture(GL_TEXTURE_CUBE_MAP, emtex); lastenvmaptex = emtex; }
+                    glBindTexture(GL_TEXTURE_CUBE_MAP, emtex);
+                    lastenvmaptex = emtex;
                 }
             }
-            else if(enableenvmap) { disableenvmap(); activetmu = 0; }
             if(activetmu != 0) glActiveTexture_(GL_TEXTURE0);
         }
     };
@@ -1180,7 +1174,7 @@ struct animmodel : model
         center.add(radius);
     }
 
-    static bool enabletc, enablealphatest, enablealphablend, enableenvmap, enablecullface, enablenormals, enabletangents, enablebones, enabledepthoffset;
+    static bool enabletc, enablealphatest, enablealphablend, enablecullface, enablenormals, enabletangents, enablebones, enabledepthoffset;
     static vec lightdir, lightcolor;
     static const bvec *lightmaterial;
     static float transparent, lastalphatest, sizescale;
@@ -1192,7 +1186,7 @@ struct animmodel : model
 
     void startrender()
     {
-        enabletc = enablealphatest = enablealphablend = enableenvmap = enablenormals = enabletangents = enablebones = enabledepthoffset = false;
+        enabletc = enablealphatest = enablealphablend = enablenormals = enabletangents = enablebones = enabledepthoffset = false;
         enablecullface = true;
         lastalphatest = -1;
         lastvbuf = lasttcbuf = lastxbuf = lastnbuf = lastbbuf = NULL;
@@ -1240,27 +1234,18 @@ struct animmodel : model
         lastebuf = 0;
     }
 
-    static void disableenvmap()
-    {
-        glActiveTexture_(GL_TEXTURE0+envmaptmu);
-        glDisable(GL_TEXTURE_CUBE_MAP);
-        glActiveTexture_(GL_TEXTURE0);
-        enableenvmap = false;
-    }
-
     void endrender()
     {
         if(lastvbuf || lastebuf) disablevbo();
         if(enablealphatest) glDisable(GL_ALPHA_TEST);
         if(enablealphablend) glDisable(GL_BLEND);
-        if(enableenvmap) disableenvmap();
         if(!enablecullface) glEnable(GL_CULL_FACE);
         if(enabledepthoffset) disablepolygonoffset(GL_POLYGON_OFFSET_FILL);
     }
 };
 
 bool animmodel::enabletc = false, animmodel::enablealphatest = false, animmodel::enablealphablend = false,
-     animmodel::enableenvmap = false, animmodel::enablecullface = true,
+     animmodel::enablecullface = true,
      animmodel::enablenormals = false, animmodel::enabletangents = false, animmodel::enablebones = false, animmodel::enabledepthoffset = false;
 vec animmodel::lightdir(0, 0, 1), animmodel::lightcolor(1, 1, 1);
 const bvec *animmodel::lightmaterial = NULL;

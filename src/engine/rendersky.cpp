@@ -383,11 +383,9 @@ bool drawskylimits(bool explicitonly)
 {
     nocolorshader->set();
 
-    glDisable(GL_TEXTURE_2D);
     glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
     bool rendered = rendersky(explicitonly);
     glColorMask(COLORMASK, GL_TRUE);
-    glEnable(GL_TEXTURE_2D);
 
     return rendered;
 }
@@ -396,7 +394,6 @@ void drawskyoutline()
 {
     notextureshader->set();
 
-    glDisable(GL_TEXTURE_2D);
     glDepthMask(GL_FALSE);
     extern int wireframe;
     if(!wireframe)
@@ -412,7 +409,6 @@ void drawskyoutline()
         disablepolygonoffset(GL_POLYGON_OFFSET_LINE);
     }
     glDepthMask(GL_TRUE);
-    glEnable(GL_TEXTURE_2D);
 
     if(!glaring) defaultshader->set();
 }
@@ -424,7 +420,6 @@ VAR(IDF_WORLD, fogdomeclouds, 0, 1, 1);
 static void drawfogdome(int farplane)
 {
     notextureshader->set();
-    glDisable(GL_TEXTURE_2D);
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -441,7 +436,6 @@ static void drawfogdome(int farplane)
     glPopMatrix();
 
     glDisable(GL_BLEND);
-    glEnable(GL_TEXTURE_2D);
 }
 
 static int yawskyfaces(int faces, int yaw = 0, float spin = 0)
@@ -517,7 +511,6 @@ void drawskybox(int farplane, bool limited)
 
     if((!glaring || skybgglare) && blendsky)
     {
-        glDisable(GL_TEXTURE_2D);
         notextureshader->set();
 
         glPushMatrix();
@@ -529,8 +522,6 @@ void drawskybox(int farplane, bool limited)
         glColor3f((skybgcolour>>16)/255.0f, ((skybgcolour>>8)&255)/255.0f, (skybgcolour&255)/255.0f);
         draw_envbox_bg(farplane/2, skyclip, topclip, yawskyfaces(renderedskyfaces, yawsky, spinsky));
         glPopMatrix();
-
-        glEnable(GL_TEXTURE_2D);
     }
 
     if(glaring) SETSHADER(skyboxglare);

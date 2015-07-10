@@ -303,7 +303,6 @@ void rendergrass()
 
     glActiveTexture_(GL_TEXTURE1);
     glClientActiveTexture_(GL_TEXTURE1);
-    glEnable(GL_TEXTURE_2D);
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
     glTexCoordPointer(2, GL_FLOAT, sizeof(grassvert), grassverts[0].lm.v);
     glClientActiveTexture_(GL_TEXTURE0);
@@ -344,7 +343,6 @@ void rendergrass()
     glActiveTexture_(GL_TEXTURE1);
     glClientActiveTexture_(GL_TEXTURE1);
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-    glDisable(GL_TEXTURE_2D);
     glClientActiveTexture_(GL_TEXTURE0);
     glActiveTexture_(GL_TEXTURE0);
 

@@ -316,17 +316,10 @@ void renderwater()
 
     glDisable(GL_CULL_FACE);
 
-    glActiveTexture_(GL_TEXTURE1);
-    glEnable(GL_TEXTURE_2D);
-    glActiveTexture_(GL_TEXTURE2);
-    glEnable(GL_TEXTURE_2D);
-
     if(!glaring && !minimapping)
     {
         if(waterrefract)
         {
-            glActiveTexture_(GL_TEXTURE3);
-            glEnable(GL_TEXTURE_2D);
             if(waterfade && hasFBO)
             {
                 glEnable(GL_BLEND);
@@ -339,13 +332,6 @@ void renderwater()
             glEnable(GL_BLEND);
             glBlendFunc(GL_ONE, GL_SRC_ALPHA);
         }
-    }
-    glActiveTexture_(GL_TEXTURE0);
-
-    if(!glaring && waterenvmap && !waterreflect && !minimapping)
-    {
-        glDisable(GL_TEXTURE_2D);
-        glEnable(GL_TEXTURE_CUBE_MAP);
     }
 
     setenvparamf("camera", SHPARAM_VERTEX, 0, camera1->o.x, camera1->o.y, camera1->o.z);
@@ -493,8 +479,6 @@ void renderwater()
         }
         if(waterrefract)
         {
-            glActiveTexture_(GL_TEXTURE3);
-            glDisable(GL_TEXTURE_2D);
             if(hasFBO && waterfade) glDisable(GL_BLEND);
         }
         else
@@ -502,19 +486,6 @@ void renderwater()
             glDepthMask(GL_TRUE);
             glDisable(GL_BLEND);
         }
-    }
-
-    loopi(2)
-    {
-        glActiveTexture_(GL_TEXTURE1+i);
-        glDisable(GL_TEXTURE_2D);
-    }
-    glActiveTexture_(GL_TEXTURE0);
-
-    if(!glaring && waterenvmap && !waterreflect && !minimapping)
-    {
-        glDisable(GL_TEXTURE_CUBE_MAP);
-        glEnable(GL_TEXTURE_2D);
     }
 
     glEnable(GL_CULL_FACE);
@@ -862,7 +833,6 @@ void maskreflection(Reflection &ref, float offset, bool reflect, bool clear = fa
     glClearDepth(1);
     glDepthRange(1, 1);
     glDepthFunc(GL_ALWAYS);
-    glDisable(GL_TEXTURE_2D);
     glDisable(GL_CULL_FACE);
     if(clear)
     {
@@ -892,7 +862,6 @@ void maskreflection(Reflection &ref, float offset, bool reflect, bool clear = fa
     if(!clear) glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
     defaultshader->set();
     glEnable(GL_CULL_FACE);
-    glEnable(GL_TEXTURE_2D);
     glDepthFunc(GL_LESS);
     glDepthRange(0, 1);
 }

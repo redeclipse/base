@@ -595,6 +595,9 @@ void cleanupgl()
 
     extern void clearminimap();
     clearminimap();
+
+    extern void cleanupviews();
+    cleanupviews();
 }
 
 #define VARRAY_INTERNAL
@@ -1018,9 +1021,6 @@ void addmotionblur()
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    glDisable(GL_TEXTURE_2D);
-    glEnable(GL_TEXTURE_RECTANGLE_ARB);
-
     rectshader->set();
 
     glColor4f(1, 1, 1, lastmotion ? pow(amount, max(float(totalmillis-lastmotion)/motionblurmillis, 1.0f)) : 0);
@@ -1030,9 +1030,6 @@ void addmotionblur()
     glTexCoord2f(      0, motionh); glVertex2f(-1,  1);
     glTexCoord2f(motionw, motionh); glVertex2f( 1,  1);
     glEnd();
-
-    glDisable(GL_TEXTURE_RECTANGLE_ARB);
-    glEnable(GL_TEXTURE_2D);
 
     glDisable(GL_BLEND);
 
@@ -1087,7 +1084,6 @@ static void blendfogoverlay(int fogmat, float blend, float *overlay)
 void drawfogoverlay(int fogmat, float fogblend, int abovemat)
 {
     notextureshader->set();
-    glDisable(GL_TEXTURE_2D);
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_ZERO, GL_SRC_COLOR);
@@ -1118,7 +1114,6 @@ void drawfogoverlay(int fogmat, float fogblend, int abovemat)
     glMatrixMode(GL_MODELVIEW);
     glPopMatrix();
 
-    glEnable(GL_TEXTURE_2D);
     defaultshader->set();
 }
 
@@ -1380,7 +1375,6 @@ void drawcubemap(int size, int level, const vec &o, float yaw, float pitch, bool
     glEnable(GL_FOG);
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
-    glEnable(GL_TEXTURE_2D);
 
     xtravertsva = xtraverts = glde = gbatches = 0;
 
@@ -1431,8 +1425,6 @@ void drawcubemap(int size, int level, const vec &o, float yaw, float pitch, bool
     glDisable(GL_DEPTH_TEST);
 
     if(level > 1) addglare();
-
-    glDisable(GL_TEXTURE_2D);
 
     camera1 = oldcamera;
     envmapping = false;
@@ -1620,7 +1612,6 @@ void drawminimap()
     glDisable(GL_FOG);
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
-    glEnable(GL_TEXTURE_2D);
 
     glFrontFace(GL_CCW);
 
@@ -1647,7 +1638,6 @@ void drawminimap()
 
     glFrontFace(GL_CW);
 
-    glDisable(GL_TEXTURE_2D);
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
     glDisable(GL_FOG);
@@ -1816,8 +1806,6 @@ struct framebuffercopy
         float tx = 0, ty = 0, tw = float(screen->w)/w, th = float(screen->h)/h;
         if(target == GL_TEXTURE_RECTANGLE_ARB)
         {
-            glDisable(GL_TEXTURE_2D);
-            glEnable(GL_TEXTURE_RECTANGLE_ARB);
             rectshader->set();
             tx *= w;
             ty *= h;
@@ -1832,11 +1820,7 @@ struct framebuffercopy
         glTexCoord2f(tx+tw, ty+th); glVertex2f(sx+sw, sy+sh);
         glEnd();
         if(target == GL_TEXTURE_RECTANGLE_ARB)
-        {
-            glEnable(GL_TEXTURE_2D);
-            glDisable(GL_TEXTURE_RECTANGLE_ARB);
             defaultshader->set();
-        }
     }
 };
 
@@ -1846,7 +1830,12 @@ enum { VP_LEFT, VP_RIGHT, VP_MAX, VP_CAMERA = VP_MAX };
 
 framebuffercopy views[VP_MAX];
 
-VARF(IDF_PERSIST, viewtype, VW_NORMAL, VW_NORMAL, VW_MAX, loopi(VP_MAX) views[i].cleanup());
+void cleanupviews()
+{
+    loopi(VP_MAX) views[i].cleanup();
+}
+
+VARF(IDF_PERSIST, viewtype, VW_NORMAL, VW_NORMAL, VW_MAX, cleanupviews());
 FVAR(IDF_PERSIST, stereoblend, 0, 0.5f, 1);
 FVAR(IDF_PERSIST, stereodist, 0, 0.5f, 10000);
 FVAR(IDF_PERSIST, stereoplane, 1e-3f, 40.f, 1000);
@@ -1952,14 +1941,11 @@ void drawnoviewtype(int targtype)
     glClearColor(0.f, 0.f, 0.f, 1);
     if(clearview(viewtype, targtype)) glClear(GL_COLOR_BUFFER_BIT);
 
-    glEnable(GL_TEXTURE_2D);
     defaultshader->set();
 
     hud::update(screen->w, screen->h);
     hud::drawhud(true);
     hud::drawlast();
-
-    glDisable(GL_TEXTURE_2D);
 
     if(targtype == VP_LEFT || targtype == VP_RIGHT)
     {
@@ -1995,7 +1981,6 @@ void drawnoview()
     glLoadIdentity();
     glOrtho(0, 1, 0, 1, -1, 1);
     glDisable(GL_BLEND);
-    glEnable(GL_TEXTURE_2D);
     defaultshader->set();
     glColor3f(1.f, 1.f, 1.f);
     switch(viewtype)
@@ -2034,7 +2019,6 @@ void drawnoview()
             break;
         }
     }
-    glDisable(GL_TEXTURE_2D);
 }
 
 void drawviewtype(int targtype)
@@ -2067,7 +2051,6 @@ void drawviewtype(int targtype)
     glEnable(GL_FOG);
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
-    glEnable(GL_TEXTURE_2D);
 
     xtravertsva = xtraverts = glde = gbatches = 0;
 
@@ -2142,7 +2125,6 @@ void drawviewtype(int targtype)
     if(isliquid(fogmat&MATF_VOLUME)) drawfogoverlay(fogmat, fogblend, abovemat);
     renderpostfx();
 
-    glDisable(GL_TEXTURE_2D);
     notextureshader->set();
     if(editmode && !pixeling)
     {
@@ -2189,12 +2171,10 @@ void drawviewtype(int targtype)
             viewdepthfxtex();
         }
 
-        glEnable(GL_TEXTURE_2D);
         defaultshader->set();
         hud::drawhud();
         rendertexturepanel(w, h);
         hud::drawlast();
-        glDisable(GL_TEXTURE_2D);
     }
 
     renderedgame = false;
@@ -2266,7 +2246,6 @@ void gl_drawframe(int w, int h)
         glLoadIdentity();
         glOrtho(0, 1, 0, 1, -1, 1);
         glDisable(GL_BLEND);
-        glEnable(GL_TEXTURE_2D);
         defaultshader->set();
         glColor3f(1.f, 1.f, 1.f);
         switch(viewtype)
@@ -2305,22 +2284,15 @@ void gl_drawframe(int w, int h)
                 break;
             }
         }
-        glDisable(GL_TEXTURE_2D);
     }
 }
 
 void usetexturing(bool on)
 {
     if(on)
-    {
         defaultshader->set();
-        glEnable(GL_TEXTURE_2D);
-    }
     else
-    {
         notextureshader->set();
-        glDisable(GL_TEXTURE_2D);
-    }
 }
 
 FVAR(IDF_PERSIST, polycolour, 0, 1, 1);

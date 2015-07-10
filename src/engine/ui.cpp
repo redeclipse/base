@@ -207,7 +207,6 @@ struct gui : guient
                 if(colour1 >= 0)
                 {
                     notextureshader->set();
-                    glDisable(GL_TEXTURE_2D);
                     glColor4f((colour1>>16)/255.f, ((colour1>>8)&0xFF)/255.f, (colour1&0xFF)/255.f, blend1);
                     glBegin(GL_TRIANGLE_STRIP);
                     glVertex2f(x1, y1);
@@ -217,12 +216,10 @@ struct gui : guient
                     xtraverts += 4;
                     glEnd();
                     defaultshader->set();
-                    glEnable(GL_TEXTURE_2D);
                 }
                 if(skinborder && colour2 >= 0)
                 {
                     notextureshader->set();
-                    glDisable(GL_TEXTURE_2D);
                     glColor4f((colour2>>16)/255.f, ((colour2>>8)&0xFF)/255.f, (colour2&0xFF)/255.f, blend2);
                     glBegin(GL_LINE_LOOP);
                     glVertex2f(x1, y1);
@@ -232,7 +229,6 @@ struct gui : guient
                     xtraverts += 4;
                     glEnd();
                     defaultshader->set();
-                    glEnable(GL_TEXTURE_2D);
                 }
                 break;
             }
@@ -791,7 +787,6 @@ struct gui : guient
     void fill(int color, int inheritw, int inherith)
     {
         if(!visible()) return;
-        glDisable(GL_TEXTURE_2D);
         notextureshader->set();
         glColor4ub(color>>16, (color>>8)&0xFF, color&0xFF, 0x80);
         int w = xsize, h = ysize;
@@ -812,14 +807,12 @@ struct gui : guient
             h = p.springs > 0 && !((curdepth-parentdepth)&1) ? lists[p.parent].h : p.h;
         }
         rect_(curx, cury, w, h, false);
-        glEnable(GL_TEXTURE_2D);
         defaultshader->set();
     }
 
     void outline(int color, int inheritw, int inherith, int offsetx, int offsety)
     {
         if(!visible()) return;
-        glDisable(GL_TEXTURE_2D);
         notextureshader->set();
         glColor4ub(color>>16, (color>>8)&0xFF, color&0xFF, 0x80);
         int w = xsize, h = ysize;
@@ -840,7 +833,6 @@ struct gui : guient
             h = p.springs > 0 && !((curdepth-parentdepth)&1) ? lists[p.parent].h : p.h;
         }
         rect_(curx+offsetx, cury+offsety, w-offsetx*2, h-offsety*2, true);
-        glEnable(GL_TEXTURE_2D);
         defaultshader->set();
     }
 
@@ -1096,7 +1088,6 @@ struct gui : guient
             if(colour1 >= 0)
             {
                 notextureshader->set();
-                glDisable(GL_TEXTURE_2D);
                 glColor4f((colour1>>16)/255.f, ((colour1>>8)&0xFF)/255.f, (colour1&0xFF)/255.f, guibgblend);
                 glBegin(GL_TRIANGLE_STRIP);
                 glVertex2f(x1, y1);
@@ -1106,12 +1097,10 @@ struct gui : guient
                 xtraverts += 4;
                 glEnd();
                 defaultshader->set();
-                glEnable(GL_TEXTURE_2D);
             }
             if(colour2 >= 0)
             {
                 notextureshader->set();
-                glDisable(GL_TEXTURE_2D);
                 glColor4f((colour2>>16)/255.f, ((colour2>>8)&0xFF)/255.f, (colour2&0xFF)/255.f, guiborderblend);
                 glBegin(GL_LINE_LOOP);
                 glVertex2f(x1, y1);
@@ -1121,7 +1110,6 @@ struct gui : guient
                 xtraverts += 4;
                 glEnd();
                 defaultshader->set();
-                glEnable(GL_TEXTURE_2D);
             }
         }
         layout(ishorizontal() ? space : 0, ishorizontal() ? 0 : space);

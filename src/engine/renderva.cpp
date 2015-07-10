@@ -591,7 +591,6 @@ void renderoutline()
 {
     notextureshader->set();
 
-    glDisable(GL_TEXTURE_2D);
     glEnableClientState(GL_VERTEX_ARRAY);
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -637,7 +636,6 @@ void renderoutline()
     glBindBuffer_(GL_ARRAY_BUFFER, 0);
     glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, 0);
     glDisableClientState(GL_VERTEX_ARRAY);
-    glEnable(GL_TEXTURE_2D);
 
     defaultshader->set();
 }
@@ -655,7 +653,6 @@ void renderblendbrush(GLuint tex, float x, float y, float w, float h)
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
-    glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, tex);
     glColor4ub((blendbrushcolor>>16)&0xFF, (blendbrushcolor>>8)&0xFF, blendbrushcolor&0xFF, 0x40);
 
@@ -682,7 +679,6 @@ void renderblendbrush(GLuint tex, float x, float y, float w, float h)
         prev = va;
     }
 
-    glDisable(GL_TEXTURE_2D);
     glDisable(GL_BLEND);
 
     glDepthFunc(GL_LESS);
@@ -698,7 +694,6 @@ void rendershadowmapreceivers()
 {
     SETSHADER(shadowmapreceiver);
 
-    glDisable(GL_TEXTURE_2D);
     glEnableClientState(GL_VERTEX_ARRAY);
 
     glCullFace(GL_FRONT);
@@ -742,7 +737,6 @@ void rendershadowmapreceivers()
     glBindBuffer_(GL_ARRAY_BUFFER, 0);
     glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, 0);
     glDisableClientState(GL_VERTEX_ARRAY);
-    glEnable(GL_TEXTURE_2D);
 }
 
 void renderdepthobstacles(const vec &bbmin, const vec &bbmax, float scale, float *ranges, int numranges)
@@ -772,7 +766,6 @@ void renderdepthobstacles(const vec &bbmin, const vec &bbmax, float scale, float
     setlocalparamfv("depthscale", SHPARAM_VERTEX, 0, scales);
     setlocalparamfv("depthoffsets", SHPARAM_VERTEX, 1, offsets);
 
-    glDisable(GL_TEXTURE_2D);
     glEnableClientState(GL_VERTEX_ARRAY);
 
     vtxarray *prev = NULL;
@@ -804,7 +797,6 @@ void renderdepthobstacles(const vec &bbmin, const vec &bbmax, float scale, float
     glBindBuffer_(GL_ARRAY_BUFFER, 0);
     glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, 0);
     glDisableClientState(GL_VERTEX_ARRAY);
-    glEnable(GL_TEXTURE_2D);
 
     defaultshader->set();
 }
@@ -1289,8 +1281,6 @@ void renderfoggedvas(renderstate &cur, bool doquery = false)
     if(fading) fogshader->setvariant(0, 2);
     else fogshader->set();
 
-    glDisable(GL_TEXTURE_2D);
-
     glColor3ubv(fogging ? refractcolor.v : fogcolor.v);
 
     loopv(foggedvas)
@@ -1303,8 +1293,6 @@ void renderfoggedvas(renderstate &cur, bool doquery = false)
         vtris += va->tris;
         if(doquery) endvaquery(va, );
     }
-
-    glEnable(GL_TEXTURE_2D);
 
     foggedvas.setsize(0);
 }
@@ -1411,9 +1399,9 @@ void setupcaustics(int tmu, float blend, GLfloat *color = NULL)
     loopi(2)
     {
         glActiveTexture_(GL_TEXTURE0+tmu+i);
-        glEnable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, caustictex[(tex+i)%NUMCAUSTICS]->id);
     }
+    glActiveTexture_(GL_TEXTURE0);
     SETSHADER(caustic);
     setlocalparamfv("texgenS", SHPARAM_VERTEX, 0, s);
     setlocalparamfv("texgenT", SHPARAM_VERTEX, 1, t);
@@ -1426,8 +1414,6 @@ void setupTMUs(renderstate &cur, float causticspass, bool fogpass)
     invalidateenvparams(SHPARAM_VERTEX, 10, RESERVEDSHADERPARAMS + MAXSHADERPARAMS - 10);
     glEnableClientState(GL_NORMAL_ARRAY);
     glEnableClientState(GL_COLOR_ARRAY);
-    loopi(8-2) { glActiveTexture_(GL_TEXTURE2+i); glEnable(GL_TEXTURE_2D); }
-    glActiveTexture_(GL_TEXTURE0);
     setenvparamf("colorparams", SHPARAM_PIXEL, 6, 2, 2, 2, 1);
     setenvparamf("camera", SHPARAM_VERTEX, 4, camera1->o.x, camera1->o.y, camera1->o.z, 1);
     setenvparamf("ambient", SHPARAM_PIXEL, 5, ambientcolor.x/255.0f, ambientcolor.y/255.0f, ambientcolor.z/255.0f);
@@ -1438,7 +1424,6 @@ void setupTMUs(renderstate &cur, float causticspass, bool fogpass)
     glActiveTexture_(GL_TEXTURE1);
     glClientActiveTexture_(GL_TEXTURE1);
 
-    glEnable(GL_TEXTURE_2D);
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
     glMatrixMode(GL_TEXTURE);
     glLoadIdentity();
@@ -1446,7 +1431,6 @@ void setupTMUs(renderstate &cur, float causticspass, bool fogpass)
 
     glActiveTexture_(GL_TEXTURE0);
     glClientActiveTexture_(GL_TEXTURE0);
-    glEnable(GL_TEXTURE_2D);
 
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
     glMatrixMode(GL_TEXTURE);
@@ -1459,7 +1443,6 @@ void cleanupTMUs(renderstate &cur, float causticspass, bool fogpass)
     glActiveTexture_(GL_TEXTURE1);
     glClientActiveTexture_(GL_TEXTURE1);
 
-    glDisable(GL_TEXTURE_2D);
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);
     glMatrixMode(GL_TEXTURE);
     glLoadIdentity();
@@ -1467,7 +1450,6 @@ void cleanupTMUs(renderstate &cur, float causticspass, bool fogpass)
 
     glActiveTexture_(GL_TEXTURE0);
     glClientActiveTexture_(GL_TEXTURE0);
-    glDisable(GL_TEXTURE_2D);
 
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);
     glMatrixMode(GL_TEXTURE);
@@ -1476,11 +1458,6 @@ void cleanupTMUs(renderstate &cur, float causticspass, bool fogpass)
 
     glDisableClientState(GL_NORMAL_ARRAY);
     glDisableClientState(GL_COLOR_ARRAY);
-    loopi(8-2) { glActiveTexture_(GL_TEXTURE2+i); glDisable(GL_TEXTURE_2D); }
-
-    glActiveTexture_(GL_TEXTURE0);
-    glClientActiveTexture_(GL_TEXTURE0);
-    glEnable(GL_TEXTURE_2D);
 }
 
 #define FIRSTVA (reflecting ? reflectedva : visibleva)
@@ -1691,9 +1668,6 @@ void rendergeom(float causticspass, bool fogpass)
         if(fading) glColorMask(COLORMASK, GL_FALSE);
         rendergeommultipass(cur, RENDERPASS_CAUSTICS, fogpass);
         if(fading) glColorMask(COLORMASK, GL_TRUE);
-        glActiveTexture_(GL_TEXTURE1);
-        glDisable(GL_TEXTURE_2D);
-        glActiveTexture_(GL_TEXTURE0);
 
         glFogfv(GL_FOG_COLOR, cur.fogcolor);
         glDisable(GL_BLEND);
