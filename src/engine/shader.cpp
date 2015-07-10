@@ -1242,17 +1242,6 @@ void linkvslotshader(VSlot &s, bool load)
     {
         ShaderParam *cparam = findshaderparam(s, "glowcolor");
         s.glowcolor = cparam;
-        //if(cparam) loopk(3) s.glowcolor[k] = clamp(cparam->val[k], 0.0f, 1.0f);
-        ShaderParam *pulseparam = findshaderparam(s, "pulseglowcolor"),
-                    *speedparam = findshaderparam(s, "pulseglowspeed");
-        s.pulseglowcolor = pulseparam;
-        //if(pulseparam) loopk(3) s.pulseglowcolor[k] = clamp(pulseparam->val[k], 0.0f, 1.0f);
-        if(speedparam) s.pulseglowspeed = speedparam->val[0]/1000.0f;
-    }
-    if(sh->type&SHADER_ENVMAP)
-    {
-        ShaderParam *envparam = findshaderparam(s, "envscale");
-        if(envparam) loopk(3) s.envscale[k] = clamp(envparam->val[k], 0.0f, 1.0f);
     }
 }
 

@@ -403,13 +403,10 @@ struct VSlot
     int palette, palindex;
     float alphafront, alphaback;
     vec colorscale;
-    float pulseglowspeed;
-    ShaderParam *glowcolor, *pulseglowcolor;
-    vec envscale;
-    int skipped;
+    ShaderParam *glowcolor;
     float coastscale;
 
-    VSlot(Slot *slot = NULL, int index = -1) : slot(slot), next(NULL), index(index), changed(0), skipped(0)
+    VSlot(Slot *slot = NULL, int index = -1) : slot(slot), next(NULL), index(index), changed(0)
     {
         reset();
         if(slot) addvariant(slot);
@@ -429,9 +426,7 @@ struct VSlot
         alphafront = DEFAULT_ALPHA_FRONT;
         alphaback = DEFAULT_ALPHA_BACK;
         colorscale = vec(1, 1, 1);
-        pulseglowspeed = 0;
-        glowcolor = pulseglowcolor = NULL;
-        envscale = vec(0, 0, 0);
+        glowcolor = NULL;
         coastscale = 1;
     }
 
@@ -448,23 +443,11 @@ struct VSlot
         if(palette || palindex) return game::getpalette(palette, palindex);
         return vec(1, 1, 1);
     }
-    vec getpulseglowcolor() const
-    {
-        if(pulseglowcolor)
-        {
-            vec c(pulseglowcolor->val);
-            if(pulseglowcolor->palette || pulseglowcolor->palindex) c.mul(game::getpalette(pulseglowcolor->palette, pulseglowcolor->palindex));
-            else if(palette || palindex) c.mul(game::getpalette(palette, palindex));
-            return c.clamp(0.0f, 1.0f);
-        }
-        //if(palette || palindex) return vec(1, 1, 1).sub(game::getpalette(palette, palindex));
-        return vec(0, 0, 0);
-    }
 
     void cleanup()
     {
         linked = false;
-        glowcolor = pulseglowcolor = NULL;
+        glowcolor = NULL;
     }
 };
 
