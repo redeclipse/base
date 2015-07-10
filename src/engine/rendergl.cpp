@@ -132,7 +132,6 @@ void *getprocaddress(const char *name)
 VAR(IDF_PERSIST, ati_skybox_bug, 0, 0, 1);
 VAR(0, ati_minmax_bug, 0, 0, 1);
 VAR(0, ati_cubemap_bug, 0, 0, 1);
-VAR(0, ati_ubo_bug, 0, 0, 1);
 VAR(0, intel_immediate_bug, 0, 0, 1);
 VAR(0, intel_vertexarray_bug, 0, 0, 1);
 VAR(0, sdl_backingstore_bug, -1, 0, 1);
@@ -421,7 +420,6 @@ void gl_checkextensions()
 
         useubo = 1;
         hasUBO = true;
-        if(ati) ati_ubo_bug = 1;
         if(dbgexts) conoutf("\frUsing GL_ARB_uniform_buffer_object extension.");
     }
 
