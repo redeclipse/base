@@ -129,24 +129,6 @@ static void bindglsluniform(Shader &s, UniformLoc &u)
             if(dbgubo) conoutf("UBO: %s:%s:%d, offset: %d, size: %d, stride: %d", u.name, u.blockname, u.binding, offsetval, sizeval, strideval);
         }
     }
-    else if(hasBUE)
-    {
-        GLint size = glGetUniformBufferSize_(s.program, u.loc), stride = 0;
-        if(size <= 0) return;
-        if(u.stride > 0)
-        {
-            defformatstring(elem1name)("%s[1]", u.name);
-            GLint elem1loc = glGetUniformLocation_(s.program, elem1name);
-            if(elem1loc == -1) return;
-            GLintptr elem0off = glGetUniformOffset_(s.program, u.loc),
-                     elem1off = glGetUniformOffset_(s.program, elem1loc);
-            stride = elem1off - elem0off;
-            if(stride > u.stride) return;
-        }
-        u.offset = 0;
-        u.size = size;
-        if(dbgubo) conoutf("BUE: %s:%s:%d, offset: %d, size: %d, stride: %d", u.name, u.blockname, u.binding, 0, size, stride);
-    }
 }
 
 static void linkglslprogram(Shader &s, bool msg = true)
