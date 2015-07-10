@@ -1709,7 +1709,7 @@ void shutdownsignal(int signum)
 #ifndef STANDALONE
     if(servertype < 3) fatalsignal(signum);
 #endif
-    conoutf("shutdown signal received, waiting for server to empty");
+    server::srvoutf(-3, "\fyshutdown signal received, waiting for server to empty");
     shutdownwait = true;
 }
 
