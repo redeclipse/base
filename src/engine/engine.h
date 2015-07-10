@@ -373,13 +373,8 @@ extern void drawbb(const ivec &bo, const ivec &br, const vec &camera = camera1->
 
 extern int oqfrags;
 
-#define startquery(query) { glBeginQuery_(GL_SAMPLES_PASSED_ARB, ((occludequery *)(query))->id); }
-#define endquery(query) \
-    { \
-        glEndQuery_(GL_SAMPLES_PASSED_ARB); \
-        extern int ati_oq_bug; \
-        if(ati_oq_bug) glFlush(); \
-    }
+#define startquery(query) do { glBeginQuery_(GL_SAMPLES_PASSED_ARB, ((occludequery *)(query))->id); } while(0)
+#define endquery(query) do { glEndQuery_(GL_SAMPLES_PASSED_ARB); } while(0)
 
 // dynlight
 

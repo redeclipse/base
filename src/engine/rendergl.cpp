@@ -151,7 +151,6 @@ void *getprocaddress(const char *name)
 }
 
 VAR(IDF_PERSIST, ati_skybox_bug, 0, 0, 1);
-VAR(0, ati_oq_bug, 0, 0, 1);
 VAR(0, ati_minmax_bug, 0, 0, 1);
 VAR(0, ati_cubemap_bug, 0, 0, 1);
 VAR(0, ati_ubo_bug, 0, 0, 1);
@@ -351,30 +350,15 @@ void gl_checkextensions()
 
     if(hasext(gfxexts, "GL_ARB_occlusion_query"))
     {
-        GLint bits;
         glGetQueryiv_ = (PFNGLGETQUERYIVARBPROC)getprocaddress("glGetQueryivARB");
-        glGetQueryiv_(GL_SAMPLES_PASSED_ARB, GL_QUERY_COUNTER_BITS_ARB, &bits);
-        if(bits)
-        {
-            glGenQueries_ =        (PFNGLGENQUERIESARBPROC)       getprocaddress("glGenQueriesARB");
-            glDeleteQueries_ =     (PFNGLDELETEQUERIESARBPROC)    getprocaddress("glDeleteQueriesARB");
-            glBeginQuery_ =        (PFNGLBEGINQUERYARBPROC)       getprocaddress("glBeginQueryARB");
-            glEndQuery_ =          (PFNGLENDQUERYARBPROC)         getprocaddress("glEndQueryARB");
-            glGetQueryObjectiv_ =  (PFNGLGETQUERYOBJECTIVARBPROC) getprocaddress("glGetQueryObjectivARB");
-            glGetQueryObjectuiv_ = (PFNGLGETQUERYOBJECTUIVARBPROC)getprocaddress("glGetQueryObjectuivARB");
-            hasOQ = true;
-            if(dbgexts) conoutf("\frUsing GL_ARB_occlusion_query extension.");
-#if defined(__APPLE__) && SDL_BYTEORDER == SDL_BIG_ENDIAN
-            if(ati && (osversion<0x0A0500)) ati_oq_bug = 1;
-#endif
-            //if(ati_oq_bug) conoutf("\frWARNING: Using ATI occlusion query bug workaround. (use \"/ati_oq_bug 0\" to disable if unnecessary)");
-        }
-    }
-    if(!hasOQ)
-    {
-        conoutf("\frWARNING: No occlusion query support! (large maps may be SLOW)");
-        setvar("vacubesize", 64, false, true);
-        setvar("waterreflect", 0, false, true);
+        glGenQueries_ =        (PFNGLGENQUERIESARBPROC)       getprocaddress("glGenQueriesARB");
+        glDeleteQueries_ =     (PFNGLDELETEQUERIESARBPROC)    getprocaddress("glDeleteQueriesARB");
+        glBeginQuery_ =        (PFNGLBEGINQUERYARBPROC)       getprocaddress("glBeginQueryARB");
+        glEndQuery_ =          (PFNGLENDQUERYARBPROC)         getprocaddress("glEndQueryARB");
+        glGetQueryObjectiv_ =  (PFNGLGETQUERYOBJECTIVARBPROC) getprocaddress("glGetQueryObjectivARB");
+        glGetQueryObjectuiv_ = (PFNGLGETQUERYOBJECTUIVARBPROC)getprocaddress("glGetQueryObjectuivARB");
+        hasOQ = true;
+        if(dbgexts) conoutf("\frUsing GL_ARB_occlusion_query extension.");
     }
 
     if(glversion >= 200)
@@ -458,8 +442,6 @@ void gl_checkextensions()
         }
 
         reservevpparams = 20;
-
-        if(!hasOQ) waterrefract = 0;
     }
 
     if(hasext(gfxexts, "GL_ARB_map_buffer_range"))
@@ -613,18 +595,15 @@ void gl_checkextensions()
         // on DX10 or above class cards (i.e. GF8 or RadeonHD) enable expensive features
         setvar("grass", 1, false, true);
         setvar("motionblur", 1, false, true);
-        if(hasOQ)
+        setvar("waterfallrefract", 1, false, true);
+        setvar("glare", 1, false, true);
+        setvar("maxdynlights", MAXDYNLIGHTS, false, true);
+        if(hasTR)
         {
-            setvar("waterfallrefract", 1, false, true);
-            setvar("glare", 1, false, true);
-            setvar("maxdynlights", MAXDYNLIGHTS, false, true);
-            if(hasTR)
-            {
-                setvar("depthfxsize", 10, false, true);
-                setvar("depthfxrect", 1, false, true);
-                setvar("depthfxfilter", 0, false, true);
-                setvar("blurdepthfx", 0, false, true);
-            }
+            setvar("depthfxsize", 10, false, true);
+            setvar("depthfxrect", 1, false, true);
+            setvar("depthfxfilter", 0, false, true);
+            setvar("blurdepthfx", 0, false, true);
         }
     }
 }

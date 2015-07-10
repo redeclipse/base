@@ -488,7 +488,7 @@ void rendermapmodels()
     findvisiblemms(ents);
 
     static int skipoq = 0;
-    bool doquery = hasOQ && oqfrags && oqmm;
+    bool doquery = oqfrags && oqmm;
 
     startmodelbatches();
     for(octaentities *oe = visiblemms; oe; oe = oe->next) if(oe->distance>=0)
@@ -1518,7 +1518,7 @@ void rendergeom(float causticspass, bool fogpass)
     if(causticspass && !causticscale) causticspass = 0;
 
     bool mainpass = !reflecting && !refracting && !envmapping && !glaring,
-         doOQ = hasOQ && oqfrags && oqgeom && mainpass,
+         doOQ = oqfrags && oqgeom && mainpass,
          doZP = doOQ && zpass,
          doSM = shadowmap && !envmapping && !glaring;
     renderstate cur;
