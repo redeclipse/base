@@ -77,6 +77,33 @@ extern PFNGLCOMPRESSEDTEXSUBIMAGE2DARBPROC glCompressedTexSubImage2D_;
 extern PFNGLCOMPRESSEDTEXSUBIMAGE1DARBPROC glCompressedTexSubImage1D_;
 extern PFNGLGETCOMPRESSEDTEXIMAGEARBPROC   glGetCompressedTexImage_;
 
+// GL_ARB_texture_rg
+#ifndef GL_ARB_texture_rg
+#define GL_ARB_texture_rg 1
+#define GL_RG                             0x8227
+#define GL_RG_INTEGER                     0x8228
+#define GL_R8                             0x8229
+#define GL_R16                            0x822A
+#define GL_RG8                            0x822B
+#define GL_RG16                           0x822C
+#define GL_R16F                           0x822D
+#define GL_R32F                           0x822E
+#define GL_RG16F                          0x822F
+#define GL_RG32F                          0x8230
+#define GL_R8I                            0x8231
+#define GL_R8UI                           0x8232
+#define GL_R16I                           0x8233
+#define GL_R16UI                          0x8234
+#define GL_R32I                           0x8235
+#define GL_R32UI                          0x8236
+#define GL_RG8I                           0x8237
+#define GL_RG8UI                          0x8238
+#define GL_RG16I                          0x8239
+#define GL_RG16UI                         0x823A
+#define GL_RG32I                          0x823B
+#define GL_RG32UI                         0x823C
+#endif
+
 // GL_ARB_map_buffer_range
 #ifndef GL_ARB_map_buffer_range
 #define GL_MAP_READ_BIT                   0x0001
@@ -249,23 +276,4 @@ extern PFNGLGETACTIVEUNIFORMBLOCKIVPROC glGetActiveUniformBlockiv_;
 extern PFNGLUNIFORMBLOCKBINDINGPROC     glUniformBlockBinding_;
 extern PFNGLBINDBUFFERBASEPROC          glBindBufferBase_;
 extern PFNGLBINDBUFFERRANGEPROC         glBindBufferRange_;
-
-#ifndef GL_EXT_bindable_uniform
-#define GL_EXT_bindable_uniform 1
-#define GL_MAX_VERTEX_BINDABLE_UNIFORMS_EXT 0x8DE2
-#define GL_MAX_FRAGMENT_BINDABLE_UNIFORMS_EXT 0x8DE3
-#define GL_MAX_GEOMETRY_BINDABLE_UNIFORMS_EXT 0x8DE4
-#define GL_MAX_BINDABLE_UNIFORM_SIZE_EXT  0x8DED
-#define GL_UNIFORM_BUFFER_EXT             0x8DEE
-#define GL_UNIFORM_BUFFER_BINDING_EXT     0x8DEF
-
-typedef void (APIENTRYP PFNGLUNIFORMBUFFEREXTPROC) (GLuint program, GLint location, GLuint buffer);
-typedef GLint (APIENTRYP PFNGLGETUNIFORMBUFFERSIZEEXTPROC) (GLuint program, GLint location);
-typedef GLintptr (APIENTRYP PFNGLGETUNIFORMOFFSETEXTPROC) (GLuint program, GLint location);
-#endif
-
-// GL_EXT_bindable_uniform
-extern PFNGLUNIFORMBUFFEREXTPROC        glUniformBuffer_;
-extern PFNGLGETUNIFORMBUFFERSIZEEXTPROC glGetUniformBufferSize_;
-extern PFNGLGETUNIFORMOFFSETEXTPROC     glGetUniformOffset_;
 
