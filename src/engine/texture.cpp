@@ -508,7 +508,7 @@ extern int usetexcompress;
 
 void setuptexcompress()
 {
-    if(!hasTC || !usetexcompress) return;
+    if(!usetexcompress) return;
 
     GLenum hint = GL_DONT_CARE;
     switch(texcompressquality)
@@ -521,7 +521,7 @@ void setuptexcompress()
 
 GLenum compressedformat(GLenum format, int w, int h, int force = 0)
 {
-    if(hasTC && usetexcompress && texcompress && force >= 0 && (force || max(w, h) >= texcompress)) switch(format)
+    if(usetexcompress && texcompress && force >= 0 && (force || max(w, h) >= texcompress)) switch(format)
     {
         case GL_RGB5:
         case GL_RGB8:
@@ -553,7 +553,7 @@ void resizetexture(int w, int h, bool mipmap, bool canreduce, GLenum target, int
 {
     int hwlimit = target==GL_TEXTURE_CUBE_MAP_ARB ? hwcubetexsize : hwtexsize,
         sizelimit = mipmap && maxtexsize ? min(maxtexsize, hwlimit) : hwlimit;
-    if(compress > 0 && (!hasTC || !usetexcompress))
+    if(compress > 0 && !usetexcompress)
     {
         w = max(w/compress, 1);
         h = max(h/compress, 1);
