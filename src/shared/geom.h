@@ -1311,7 +1311,7 @@ struct bvec4
     void flip() { mask ^= 0x80808080; }
 
     bvec4 &alpha(uchar n) { a = n; return *this; }
-    static bvec4 fromcolor(uchar color) { return bvec4(uchar((color>>16)&0xFF), uchar((color>>8)&0xFF), uchar(color&0xFF), 255); }
+    static bvec4 fromcolor(int color) { return bvec4(uchar((color>>16)&0xFF), uchar((color>>8)&0xFF), uchar(color&0xFF), 255); }
 };
 
 inline bvec::bvec(const bvec4 &v) : x(v.x), y(v.y), z(v.z) {}
