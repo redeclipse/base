@@ -141,7 +141,8 @@ struct ragdolldata
     float radius, ztop, zbottom, timestep, scale;
     vert *verts;
     matrix3x3 *tris;
-    matrix3x4 *animjoints, *reljoints;
+    matrix3x4 *animjoints;
+    dualquat *reljoints;
 
     ragdolldata(ragdollskel *skel, float scale = 1)
         : skel(skel),
@@ -156,7 +157,7 @@ struct ragdolldata
           verts(new vert[skel->verts.length()]),
           tris(new matrix3x3[skel->tris.length()]),
           animjoints(!skel->animjoints || skel->joints.empty() ? NULL : new matrix3x4[skel->joints.length()]),
-          reljoints(skel->reljoints.empty() ? NULL : new matrix3x4[skel->reljoints.length()])
+          reljoints(skel->reljoints.empty() ? NULL : new dualquat[skel->reljoints.length()])
     {
     }
 

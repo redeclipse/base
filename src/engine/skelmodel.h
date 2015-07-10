@@ -992,20 +992,20 @@ struct skelmodel : animmodel
             {
                 const ragdollskel::joint &j = ragdoll->joints[i];
                 const boneinfo &b = bones[j.bone];
-                const dualquat &p = bdata[b.interpindex];
+                const dualquat &q = bdata[b.interpindex];
                 loopk(3) if(j.vert[k] >= 0)
                 {
                     ragdollskel::vert &v = ragdoll->verts[j.vert[k]];
                     ragdolldata::vert &dv = d.verts[j.vert[k]];
-                    dv.pos.add(p.transform(v.pos).mul(v.weight));
+                    dv.pos.add(q.transform(v.pos).mul(v.weight));
                 }
             }
             if(ragdoll->animjoints) loopv(ragdoll->joints)
             {
                 const ragdollskel::joint &j = ragdoll->joints[i];
                 const boneinfo &b = bones[j.bone];
-                const dualquat &p = bdata[b.interpindex];
-                d.calcanimjoint(i, p);
+                const dualquat &q = bdata[b.interpindex];
+                d.calcanimjoint(i, matrix3x4(q));
             }
             loopv(ragdoll->verts)
             {
@@ -1017,9 +1017,7 @@ struct skelmodel : animmodel
                 const ragdollskel::reljoint &r = ragdoll->reljoints[i];
                 const ragdollskel::joint &j = ragdoll->joints[r.parent];
                 const boneinfo &br = bones[r.bone], &bj = bones[j.bone];
-                dualquat q = bdata[bj.interpindex];
-                q.invert().mul(bdata[br.interpindex]);
-                d.reljoints[i] = matrix3x4(q);
+                d.reljoints[i].mul(dualquat(bdata[bj.interpindex]).invert(), bdata[br.interpindex]);
             }
         }
 
@@ -1044,7 +1042,7 @@ struct skelmodel : animmodel
                 const ragdollskel::reljoint &r = ragdoll->reljoints[i];
                 const ragdollskel::joint &j = ragdoll->joints[r.parent];
                 const boneinfo &br = bones[r.bone], &bj = bones[j.bone];
-                sc.bdata[br.interpindex].mul(sc.bdata[bj.interpindex], dualquat(d.reljoints[i]));
+                sc.bdata[br.interpindex].mul(sc.bdata[bj.interpindex], d.reljoints[i]);
             }
             loopv(antipodes) sc.bdata[antipodes[i].child].fixantipodal(sc.bdata[antipodes[i].parent]);
         }
