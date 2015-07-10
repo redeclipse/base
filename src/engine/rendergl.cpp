@@ -2,7 +2,7 @@
 
 #include "engine.h"
 
-bool hasVBO = false, hasDRE = false, hasMDA = false, hasOQ = false, hasTR = false, hasFBO = false, hasDS = false, hasTF = false, hasBE = false, hasBC = false, hasCM = false, hasNP2 = false, hasTC = false, hasS3TC = false, hasFXT1 = false, hasMT = false, hasD3 = false, hasAF = false, hasGLSL = false, hasGM = false, hasNVFB = false, hasSGIDT = false, hasDT = false, hasPBO = false, hasFBB = false, hasUBO = false, hasBUE = false, hasMBR = false, hasFC = false;
+bool hasVBO = false, hasDRE = false, hasMDA = false, hasOQ = false, hasTR = false, hasFBO = false, hasDS = false, hasTF = false, hasBE = false, hasBC = false, hasCM = false, hasNP2 = false, hasTC = false, hasS3TC = false, hasFXT1 = false, hasMT = false, hasAF = false, hasGLSL = false, hasNVFB = false, hasDT = false, hasPBO = false, hasFBB = false, hasUBO = false, hasBUE = false, hasMBR = false;
 int hasstencil = 0;
 
 VAR(IDF_READONLY, glversion, 1, 0, 0);
@@ -542,21 +542,10 @@ void gl_checkextensions()
        if(dbgexts) conoutf("\frUsing GL_EXT_texture_filter_anisotropic extension.");
     }
 
-    if(hasext(gfxexts, "GL_SGIS_generate_mipmap"))
-    {
-        hasGM = true;
-        if(dbgexts) conoutf("\frUsing GL_SGIS_generate_mipmap extension.");
-    }
-
     if(hasext(gfxexts, "GL_ARB_depth_texture"))
     {
-        hasSGIDT = hasDT = true;
+        hasDT = true;
         if(dbgexts) conoutf("\frUsing GL_ARB_depth_texture extension.");
-    }
-    else if(hasext(gfxexts, "GL_SGIX_depth_texture"))
-    {
-        hasSGIDT = true;
-        if(dbgexts) conoutf("\frUsing GL_SGIX_depth_texture extension.");
     }
 
     if(hasext(gfxexts, "GL_EXT_gpu_shader4"))
