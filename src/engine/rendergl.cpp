@@ -138,7 +138,6 @@ VAR(IDF_PERSIST, ati_skybox_bug, 0, 0, 1);
 VAR(0, ati_minmax_bug, 0, 0, 1);
 VAR(0, ati_cubemap_bug, 0, 0, 1);
 VAR(0, ati_ubo_bug, 0, 0, 1);
-VAR(0, nvidia_scissor_bug, 0, 0, 1);
 VAR(0, intel_immediate_bug, 0, 0, 1);
 VAR(0, intel_vertexarray_bug, 0, 0, 1);
 VAR(0, sdl_backingstore_bug, -1, 0, 1);
@@ -392,7 +391,6 @@ void gl_checkextensions()
         rtsharefb = 0; // work-around for strange driver stalls involving when using many FBOs
         if(!hasext(gfxexts, "GL_EXT_gpu_shader4")) setvar("filltjoints", 0, false, true); // DX9 or less NV cards seem to not cause many sparklies
 
-        if(hasFBO && !hasTF) nvidia_scissor_bug = 1; // 5200 bug, clearing with scissor on an FBO messes up on reflections, may affect lesser cards too
         if(hasTF && (!strstr(gfxrenderer, "GeForce") || !checkseries(gfxrenderer, 6000, 6600)))
             setvar("fpdepthfx", 1, false, true); // FP filtering causes software fallback on 6200?
     }
