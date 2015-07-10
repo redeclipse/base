@@ -193,7 +193,7 @@ static inline bool pvsoccluded(const ivec &bborigin, int size)
 }
 
 // rendergl
-extern bool hasVBO, hasDRE, hasMDA, hasOQ, hasTR, hasFBO, hasDS, hasTF, hasTRG, hasBE, hasBC, hasCM, hasNP2, hasTC, hasS3TC, hasFXT1, hasMT, hasAF, hasGLSL, hasNVFB, hasDT, hasPBO, hasFBB, hasUBO, hasMBR;
+extern bool hasTR, hasFBO, hasDS, hasTF, hasTRG, hasS3TC, hasFXT1, hasAF, hasNVFB, hasFBB, hasUBO, hasMBR;
 extern int hasstencil;
 extern int glversion, glslversion;
 extern char *gfxvendor, *gfxexts, *gfxrenderer, *gfxversion;
@@ -373,8 +373,8 @@ extern void drawbb(const ivec &bo, const ivec &br, const vec &camera = camera1->
 
 extern int oqfrags;
 
-#define startquery(query) do { glBeginQuery_(GL_SAMPLES_PASSED_ARB, ((occludequery *)(query))->id); } while(0)
-#define endquery(query) do { glEndQuery_(GL_SAMPLES_PASSED_ARB); } while(0)
+#define startquery(query) do { glBeginQuery_(GL_SAMPLES_PASSED, ((occludequery *)(query))->id); } while(0)
+#define endquery(query) do { glEndQuery_(GL_SAMPLES_PASSED); } while(0)
 
 // dynlight
 

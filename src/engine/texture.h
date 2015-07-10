@@ -15,11 +15,11 @@ struct LocalShaderParamState : ShaderParam
     float curval[4];
     GLenum format;
 
-    LocalShaderParamState() : format(GL_FLOAT_VEC4_ARB)
+    LocalShaderParamState() : format(GL_FLOAT_VEC4)
     {
         memset(curval, -1, sizeof(curval));
     }
-    LocalShaderParamState(const ShaderParam &p) : ShaderParam(p), format(GL_FLOAT_VEC4_ARB)
+    LocalShaderParamState(const ShaderParam &p) : ShaderParam(p), format(GL_FLOAT_VEC4)
     {
         memset(curval, -1, sizeof(curval));
     }

@@ -306,7 +306,7 @@ bool checkquery(occludequery *query, bool nowait)
             glGetQueryObjectiv_(query->id, GL_QUERY_RESULT_AVAILABLE, &avail);
             if(!avail) return false;
         }
-        glGetQueryObjectuiv_(query->id, GL_QUERY_RESULT_ARB, &fragments);
+        glGetQueryObjectuiv_(query->id, GL_QUERY_RESULT, &fragments);
         query->fragments = fragments;
     }
     return fragments < uint(oqfrags);
@@ -609,8 +609,8 @@ void renderoutline()
 
         if(!prev || va->vbuf != prev->vbuf)
         {
-            glBindBuffer_(GL_ARRAY_BUFFER_ARB, va->vbuf);
-            glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER_ARB, va->ebuf);
+            glBindBuffer_(GL_ARRAY_BUFFER, va->vbuf);
+            glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, va->ebuf);
             glVertexPointer(3, GL_FLOAT, sizeof(vertex), va->vdata[0].pos.v);
         }
 
@@ -634,8 +634,8 @@ void renderoutline()
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-    glBindBuffer_(GL_ARRAY_BUFFER_ARB, 0);
-    glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
+    glBindBuffer_(GL_ARRAY_BUFFER, 0);
+    glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, 0);
     glDisableClientState(GL_VERTEX_ARRAY);
     glEnable(GL_TEXTURE_2D);
 
@@ -671,8 +671,8 @@ void renderblendbrush(GLuint tex, float x, float y, float w, float h)
 
         if(!prev || va->vbuf != prev->vbuf)
         {
-            glBindBuffer_(GL_ARRAY_BUFFER_ARB, va->vbuf);
-            glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER_ARB, va->ebuf);
+            glBindBuffer_(GL_ARRAY_BUFFER, va->vbuf);
+            glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, va->ebuf);
             glVertexPointer(3, GL_FLOAT, sizeof(vertex), va->vdata[0].pos.v);
         }
 
@@ -687,8 +687,8 @@ void renderblendbrush(GLuint tex, float x, float y, float w, float h)
 
     glDepthFunc(GL_LESS);
 
-    glBindBuffer_(GL_ARRAY_BUFFER_ARB, 0);
-    glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
+    glBindBuffer_(GL_ARRAY_BUFFER, 0);
+    glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, 0);
     glDisableClientState(GL_VERTEX_ARRAY);
 
     notextureshader->set();
@@ -709,7 +709,7 @@ void rendershadowmapreceivers()
     if(!ati_minmax_bug) glColorMask(GL_FALSE, GL_FALSE, GL_TRUE, GL_FALSE);
 
     glEnable(GL_BLEND);
-    glBlendEquation_(GL_MAX_EXT);
+    glBlendEquation_(GL_MAX);
     glBlendFunc(GL_ONE, GL_ONE);
 
     vtxarray *prev = NULL;
@@ -719,8 +719,8 @@ void rendershadowmapreceivers()
 
         if(!prev || va->vbuf != prev->vbuf)
         {
-            glBindBuffer_(GL_ARRAY_BUFFER_ARB, va->vbuf);
-            glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER_ARB, va->ebuf);
+            glBindBuffer_(GL_ARRAY_BUFFER, va->vbuf);
+            glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, va->ebuf);
             glVertexPointer(3, GL_FLOAT, sizeof(vertex), va->vdata[0].pos.v);
         }
 
@@ -731,7 +731,7 @@ void rendershadowmapreceivers()
     }
 
     glDisable(GL_BLEND);
-    glBlendEquation_(GL_FUNC_ADD_EXT);
+    glBlendEquation_(GL_FUNC_ADD);
 
     glCullFace(GL_BACK);
     glDepthMask(GL_TRUE);
@@ -739,8 +739,8 @@ void rendershadowmapreceivers()
 
     if(!ati_minmax_bug) glColorMask(COLORMASK, GL_TRUE);
 
-    glBindBuffer_(GL_ARRAY_BUFFER_ARB, 0);
-    glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
+    glBindBuffer_(GL_ARRAY_BUFFER, 0);
+    glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, 0);
     glDisableClientState(GL_VERTEX_ARRAY);
     glEnable(GL_TEXTURE_2D);
 }
@@ -785,8 +785,8 @@ void renderdepthobstacles(const vec &bbmin, const vec &bbmax, float scale, float
 
         if(!prev || va->vbuf != prev->vbuf)
         {
-            glBindBuffer_(GL_ARRAY_BUFFER_ARB, va->vbuf);
-            glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER_ARB, va->ebuf);
+            glBindBuffer_(GL_ARRAY_BUFFER, va->vbuf);
+            glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, va->ebuf);
             glVertexPointer(3, GL_FLOAT, sizeof(vertex), va->vdata[0].pos.v);
         }
 
@@ -801,8 +801,8 @@ void renderdepthobstacles(const vec &bbmin, const vec &bbmax, float scale, float
         prev = va;
     }
 
-    glBindBuffer_(GL_ARRAY_BUFFER_ARB, 0);
-    glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
+    glBindBuffer_(GL_ARRAY_BUFFER, 0);
+    glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, 0);
     glDisableClientState(GL_VERTEX_ARRAY);
     glEnable(GL_TEXTURE_2D);
 
@@ -983,8 +983,8 @@ static void mergetexs(renderstate &cur, vtxarray *va, elementset *texs = NULL, i
 
 static void changevbuf(renderstate &cur, int pass, vtxarray *va)
 {
-    glBindBuffer_(GL_ARRAY_BUFFER_ARB, va->vbuf);
-    glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER_ARB, va->ebuf);
+    glBindBuffer_(GL_ARRAY_BUFFER, va->vbuf);
+    glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, va->ebuf);
     cur.vbuf = va->vbuf;
 
     glVertexPointer(3, GL_FLOAT, sizeof(vertex), va->vdata[0].pos.v);
@@ -992,9 +992,9 @@ static void changevbuf(renderstate &cur, int pass, vtxarray *va)
     if(pass==RENDERPASS_LIGHTMAP)
     {
         glTexCoordPointer(2, GL_FLOAT, sizeof(vertex), va->vdata[0].tc.v);
-        glClientActiveTexture_(GL_TEXTURE1_ARB);
+        glClientActiveTexture_(GL_TEXTURE1);
         glTexCoordPointer(2, GL_SHORT, sizeof(vertex), va->vdata[0].lm.v);
-        glClientActiveTexture_(GL_TEXTURE0_ARB);
+        glClientActiveTexture_(GL_TEXTURE0);
         glNormalPointer(GL_BYTE, sizeof(vertex), va->vdata[0].norm.v);
         glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(vertex), va->vdata[0].tangent.v);
     }
@@ -1007,7 +1007,7 @@ static void changebatchtmus(renderstate &cur, int pass, geombatch &b)
     int lmid = brightengeom && (b.es.lmid < LMID_RESERVED || (fullbright && editmode)) ? LMID_BRIGHT : b.es.lmid;
     if(cur.textures[1]!=lightmaptexs[lmid].id)
     {
-        glActiveTexture_(GL_TEXTURE1_ARB);
+        glActiveTexture_(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, cur.textures[1] = lightmaptexs[lmid].id);
         changed = true;
     }
@@ -1016,7 +1016,7 @@ static void changebatchtmus(renderstate &cur, int pass, geombatch &b)
     {
         if(cur.textures[tmu]!=lightmaptexs[lmid+1].id)
         {
-            glActiveTexture_(GL_TEXTURE0_ARB+tmu);
+            glActiveTexture_(GL_TEXTURE0+tmu);
             glBindTexture(GL_TEXTURE_2D, cur.textures[tmu] = lightmaptexs[lmid+1].id);
             changed = true;
         }
@@ -1027,12 +1027,12 @@ static void changebatchtmus(renderstate &cur, int pass, geombatch &b)
         GLuint emtex = lookupenvmap(b.es.envmap);
         if(cur.textures[tmu]!=emtex)
         {
-            glActiveTexture_(GL_TEXTURE0_ARB+tmu);
-            glBindTexture(GL_TEXTURE_CUBE_MAP_ARB, cur.textures[tmu] = emtex);
+            glActiveTexture_(GL_TEXTURE0+tmu);
+            glBindTexture(GL_TEXTURE_CUBE_MAP, cur.textures[tmu] = emtex);
             changed = true;
         }
     }
-    if(changed) glActiveTexture_(GL_TEXTURE0_ARB);
+    if(changed) glActiveTexture_(GL_TEXTURE0);
 
     if(cur.dynlightmask != b.va->dynlightmask)
     {
@@ -1086,21 +1086,21 @@ static void changeslottmus(renderstate &cur, int pass, Slot &slot, VSlot &vslot)
         {
             if(envmaptmu>=0 && t.t && cur.textures[envmaptmu]!=t.t->id)
             {
-                glActiveTexture_(GL_TEXTURE0_ARB+envmaptmu);
-                glBindTexture(GL_TEXTURE_CUBE_MAP_ARB, cur.textures[envmaptmu] = t.t->id);
+                glActiveTexture_(GL_TEXTURE0+envmaptmu);
+                glBindTexture(GL_TEXTURE_CUBE_MAP, cur.textures[envmaptmu] = t.t->id);
             }
         }
         else
         {
             if(cur.textures[tmu]!=t.t->id)
             {
-                glActiveTexture_(GL_TEXTURE0_ARB+tmu);
+                glActiveTexture_(GL_TEXTURE0+tmu);
                 glBindTexture(GL_TEXTURE_2D, cur.textures[tmu] = t.t->id);
             }
             if(++tmu >= 8) break;
         }
     }
-    glActiveTexture_(GL_TEXTURE0_ARB);
+    glActiveTexture_(GL_TEXTURE0);
 
     cur.slot = &slot;
     cur.vslot = &vslot;
@@ -1410,7 +1410,7 @@ void setupcaustics(int tmu, float blend, GLfloat *color = NULL)
     else glColor4f(1, 1, 1, frac);
     loopi(2)
     {
-        glActiveTexture_(GL_TEXTURE0_ARB+tmu+i);
+        glActiveTexture_(GL_TEXTURE0+tmu+i);
         glEnable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, caustictex[(tex+i)%NUMCAUSTICS]->id);
     }
@@ -1426,8 +1426,8 @@ void setupTMUs(renderstate &cur, float causticspass, bool fogpass)
     invalidateenvparams(SHPARAM_VERTEX, 10, RESERVEDSHADERPARAMS + MAXSHADERPARAMS - 10);
     glEnableClientState(GL_NORMAL_ARRAY);
     glEnableClientState(GL_COLOR_ARRAY);
-    loopi(8-2) { glActiveTexture_(GL_TEXTURE2_ARB+i); glEnable(GL_TEXTURE_2D); }
-    glActiveTexture_(GL_TEXTURE0_ARB);
+    loopi(8-2) { glActiveTexture_(GL_TEXTURE2+i); glEnable(GL_TEXTURE_2D); }
+    glActiveTexture_(GL_TEXTURE0);
     setenvparamf("colorparams", SHPARAM_PIXEL, 6, 2, 2, 2, 1);
     setenvparamf("camera", SHPARAM_VERTEX, 4, camera1->o.x, camera1->o.y, camera1->o.z, 1);
     setenvparamf("ambient", SHPARAM_PIXEL, 5, ambientcolor.x/255.0f, ambientcolor.y/255.0f, ambientcolor.z/255.0f);
@@ -1435,8 +1435,8 @@ void setupTMUs(renderstate &cur, float causticspass, bool fogpass)
 
     glColor4fv(cur.color);
 
-    glActiveTexture_(GL_TEXTURE1_ARB);
-    glClientActiveTexture_(GL_TEXTURE1_ARB);
+    glActiveTexture_(GL_TEXTURE1);
+    glClientActiveTexture_(GL_TEXTURE1);
 
     glEnable(GL_TEXTURE_2D);
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -1444,8 +1444,8 @@ void setupTMUs(renderstate &cur, float causticspass, bool fogpass)
     glLoadIdentity();
     glMatrixMode(GL_MODELVIEW);
 
-    glActiveTexture_(GL_TEXTURE0_ARB);
-    glClientActiveTexture_(GL_TEXTURE0_ARB);
+    glActiveTexture_(GL_TEXTURE0);
+    glClientActiveTexture_(GL_TEXTURE0);
     glEnable(GL_TEXTURE_2D);
 
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -1456,8 +1456,8 @@ void setupTMUs(renderstate &cur, float causticspass, bool fogpass)
 
 void cleanupTMUs(renderstate &cur, float causticspass, bool fogpass)
 {
-    glActiveTexture_(GL_TEXTURE1_ARB);
-    glClientActiveTexture_(GL_TEXTURE1_ARB);
+    glActiveTexture_(GL_TEXTURE1);
+    glClientActiveTexture_(GL_TEXTURE1);
 
     glDisable(GL_TEXTURE_2D);
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -1465,8 +1465,8 @@ void cleanupTMUs(renderstate &cur, float causticspass, bool fogpass)
     glLoadIdentity();
     glMatrixMode(GL_MODELVIEW);
 
-    glActiveTexture_(GL_TEXTURE0_ARB);
-    glClientActiveTexture_(GL_TEXTURE0_ARB);
+    glActiveTexture_(GL_TEXTURE0);
+    glClientActiveTexture_(GL_TEXTURE0);
     glDisable(GL_TEXTURE_2D);
 
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -1476,10 +1476,10 @@ void cleanupTMUs(renderstate &cur, float causticspass, bool fogpass)
 
     glDisableClientState(GL_NORMAL_ARRAY);
     glDisableClientState(GL_COLOR_ARRAY);
-    loopi(8-2) { glActiveTexture_(GL_TEXTURE2_ARB+i); glDisable(GL_TEXTURE_2D); }
+    loopi(8-2) { glActiveTexture_(GL_TEXTURE2+i); glDisable(GL_TEXTURE_2D); }
 
-    glActiveTexture_(GL_TEXTURE0_ARB);
-    glClientActiveTexture_(GL_TEXTURE0_ARB);
+    glActiveTexture_(GL_TEXTURE0);
+    glClientActiveTexture_(GL_TEXTURE0);
     glEnable(GL_TEXTURE_2D);
 }
 
@@ -1595,8 +1595,8 @@ void rendergeom(float causticspass, bool fogpass)
         if(shadowmap && hasFBO && mainpass)
         {
 			glDisableClientState(GL_VERTEX_ARRAY);
-            glBindBuffer_(GL_ARRAY_BUFFER_ARB, 0);
-            glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
+            glBindBuffer_(GL_ARRAY_BUFFER, 0);
+            glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, 0);
             rendershadowmap();
             glEnableClientState(GL_VERTEX_ARRAY);
         }
@@ -1691,9 +1691,9 @@ void rendergeom(float causticspass, bool fogpass)
         if(fading) glColorMask(COLORMASK, GL_FALSE);
         rendergeommultipass(cur, RENDERPASS_CAUSTICS, fogpass);
         if(fading) glColorMask(COLORMASK, GL_TRUE);
-        glActiveTexture_(GL_TEXTURE1_ARB);
+        glActiveTexture_(GL_TEXTURE1);
         glDisable(GL_TEXTURE_2D);
-        glActiveTexture_(GL_TEXTURE0_ARB);
+        glActiveTexture_(GL_TEXTURE0);
 
         glFogfv(GL_FOG_COLOR, cur.fogcolor);
         glDisable(GL_BLEND);
@@ -1702,8 +1702,8 @@ void rendergeom(float causticspass, bool fogpass)
 
     if(multipassing) glDepthFunc(GL_LESS);
 
-    glBindBuffer_(GL_ARRAY_BUFFER_ARB, 0);
-    glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
+    glBindBuffer_(GL_ARRAY_BUFFER, 0);
+    glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, 0);
     glDisableClientState(GL_VERTEX_ARRAY);
 }
 
@@ -1780,8 +1780,8 @@ void renderalphageom(bool fogpass)
 
     glColorMask(COLORMASK, fading ? GL_FALSE : GL_TRUE);
 
-    glBindBuffer_(GL_ARRAY_BUFFER_ARB, 0);
-    glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
+    glBindBuffer_(GL_ARRAY_BUFFER, 0);
+    glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, 0);
     glDisableClientState(GL_VERTEX_ARRAY);
 }
 
@@ -1833,8 +1833,8 @@ void renderskyva(vtxarray *va, bool explicitonly = false)
     if(!prevskyva || va->vbuf != prevskyva->vbuf)
     {
         if(!prevskyva) glEnableClientState(GL_VERTEX_ARRAY);
-        glBindBuffer_(GL_ARRAY_BUFFER_ARB, va->vbuf);
-        glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER_ARB, va->skybuf);
+        glBindBuffer_(GL_ARRAY_BUFFER, va->vbuf);
+        glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, va->skybuf);
         glVertexPointer(3, GL_FLOAT, sizeof(vertex), va->vdata[0].pos.v);
     }
 
@@ -1897,8 +1897,8 @@ bool rendersky(bool explicitonly)
     if(prevskyva)
     {
         glDisableClientState(GL_VERTEX_ARRAY);
-        glBindBuffer_(GL_ARRAY_BUFFER_ARB, 0);
-        glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
+        glBindBuffer_(GL_ARRAY_BUFFER, 0);
+        glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, 0);
     }
 
     return renderedsky+renderedexplicitsky > 0;

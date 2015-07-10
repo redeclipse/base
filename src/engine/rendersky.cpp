@@ -319,13 +319,13 @@ namespace fogdome
         }
     
         if(!vbuf) glGenBuffers_(1, &vbuf);
-        glBindBuffer_(GL_ARRAY_BUFFER_ARB, vbuf);
-        glBufferData_(GL_ARRAY_BUFFER_ARB, numverts*sizeof(vert), verts, GL_STATIC_DRAW_ARB);
+        glBindBuffer_(GL_ARRAY_BUFFER, vbuf);
+        glBufferData_(GL_ARRAY_BUFFER, numverts*sizeof(vert), verts, GL_STATIC_DRAW);
         DELETEA(verts);
     
         if(!ebuf) glGenBuffers_(1, &ebuf);
-        glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER_ARB, ebuf);
-        glBufferData_(GL_ELEMENT_ARRAY_BUFFER_ARB, (numindices + capindices)*sizeof(GLushort), indices, GL_STATIC_DRAW_ARB);
+        glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, ebuf);
+        glBufferData_(GL_ELEMENT_ARRAY_BUFFER, (numindices + capindices)*sizeof(GLushort), indices, GL_STATIC_DRAW);
         DELETEA(indices);
     }
     
@@ -350,8 +350,8 @@ namespace fogdome
             clipz = fogdomeclip;
         }
     
-        glBindBuffer_(GL_ARRAY_BUFFER_ARB, vbuf);
-        glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER_ARB, ebuf);
+        glBindBuffer_(GL_ARRAY_BUFFER, vbuf);
+        glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, ebuf);
     
         glEnableClientState(GL_VERTEX_ARRAY);
         glEnableClientState(GL_COLOR_ARRAY);
@@ -365,8 +365,8 @@ namespace fogdome
         glDisableClientState(GL_VERTEX_ARRAY);
         glDisableClientState(GL_COLOR_ARRAY);
     
-        glBindBuffer_(GL_ARRAY_BUFFER_ARB, 0);
-        glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
+        glBindBuffer_(GL_ARRAY_BUFFER, 0);
+        glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, 0);
     }
 }
 

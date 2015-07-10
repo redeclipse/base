@@ -21,7 +21,6 @@ static bool dirtyenvparams = false, standardshader = false, forceshaders = true;
 static uint paramversion = 0;
 
 VAR(0, reservevpparams, 1, 16, 0);
-VAR(0, maxtexcoords, 1, 0, 0);
 VAR(0, maxvsuniforms, 1, 0, 0);
 VAR(0, maxfsuniforms, 1, 0, 0);
 VAR(0, maxvaryings, 1, 0, 0);
@@ -665,8 +664,6 @@ Shader *newshader(int type, const char *name, const char *vs, const char *ps, Sh
 void setupshaders()
 {
     GLint val;
-    glGetIntegerv(GL_MAX_TEXTURE_COORDS_ARB, &val);
-    maxtexcoords = val;
     glGetIntegerv(GL_MAX_VERTEX_UNIFORM_COMPONENTS, &val);
     maxvsuniforms = val/4;
     glGetIntegerv(GL_MAX_FRAGMENT_UNIFORM_COMPONENTS, &val);
@@ -1448,11 +1445,11 @@ void renderpostfx()
                 tw = max(screen->w>>postfxtexs[binds[j]].scale, 1);
                 th = max(screen->h>>postfxtexs[binds[j]].scale, 1);
             }
-            else glActiveTexture_(GL_TEXTURE0_ARB + tmu);
+            else glActiveTexture_(GL_TEXTURE0 + tmu);
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, postfxtexs[binds[j]].id);
             ++tmu;
         }
-        if(tmu) glActiveTexture_(GL_TEXTURE0_ARB);
+        if(tmu) glActiveTexture_(GL_TEXTURE0);
         glBegin(GL_TRIANGLE_STRIP);
         glTexCoord2f(0,  0);  glVertex2f(-1, -1);
         glTexCoord2f(tw, 0);  glVertex2f( 1, -1);

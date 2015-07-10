@@ -316,16 +316,16 @@ void renderwater()
 
     glDisable(GL_CULL_FACE);
 
-    glActiveTexture_(GL_TEXTURE1_ARB);
+    glActiveTexture_(GL_TEXTURE1);
     glEnable(GL_TEXTURE_2D);
-    glActiveTexture_(GL_TEXTURE2_ARB);
+    glActiveTexture_(GL_TEXTURE2);
     glEnable(GL_TEXTURE_2D);
 
     if(!glaring && !minimapping)
     {
         if(waterrefract)
         {
-            glActiveTexture_(GL_TEXTURE3_ARB);
+            glActiveTexture_(GL_TEXTURE3);
             glEnable(GL_TEXTURE_2D);
             if(waterfade && hasFBO)
             {
@@ -340,12 +340,12 @@ void renderwater()
             glBlendFunc(GL_ONE, GL_SRC_ALPHA);
         }
     }
-    glActiveTexture_(GL_TEXTURE0_ARB);
+    glActiveTexture_(GL_TEXTURE0);
 
     if(!glaring && waterenvmap && !waterreflect && !minimapping)
     {
         glDisable(GL_TEXTURE_2D);
-        glEnable(GL_TEXTURE_CUBE_MAP_ARB);
+        glEnable(GL_TEXTURE_CUBE_MAP);
     }
 
     setenvparamf("camera", SHPARAM_VERTEX, 0, camera1->o.x, camera1->o.y, camera1->o.z);
@@ -425,7 +425,7 @@ void renderwater()
 
             if(waterrefract)
             {
-                glActiveTexture_(GL_TEXTURE3_ARB);
+                glActiveTexture_(GL_TEXTURE3);
                 glBindTexture(GL_TEXTURE_2D, ref.refracttex);
                 if(waterfade)
                 {
@@ -436,14 +436,14 @@ void renderwater()
         }
 
         MSlot &mslot = lookupmaterialslot(ref.material);
-        glActiveTexture_(GL_TEXTURE1_ARB);
+        glActiveTexture_(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, mslot.sts.inrange(2) ? mslot.sts[2].t->id : notexture->id);
-        glActiveTexture_(GL_TEXTURE2_ARB);
+        glActiveTexture_(GL_TEXTURE2);
         glBindTexture(GL_TEXTURE_2D, mslot.sts.inrange(3) ? mslot.sts[3].t->id : notexture->id);
-        glActiveTexture_(GL_TEXTURE0_ARB);
+        glActiveTexture_(GL_TEXTURE0);
         if(!glaring && waterenvmap && !waterreflect && !minimapping)
         {
-            glBindTexture(GL_TEXTURE_CUBE_MAP_ARB, lookupenvmap(mslot));
+            glBindTexture(GL_TEXTURE_CUBE_MAP, lookupenvmap(mslot));
         }
 
         glColor3ubv(getwatercol(ref.material).v);
@@ -493,7 +493,7 @@ void renderwater()
         }
         if(waterrefract)
         {
-            glActiveTexture_(GL_TEXTURE3_ARB);
+            glActiveTexture_(GL_TEXTURE3);
             glDisable(GL_TEXTURE_2D);
             if(hasFBO && waterfade) glDisable(GL_BLEND);
         }
@@ -506,14 +506,14 @@ void renderwater()
 
     loopi(2)
     {
-        glActiveTexture_(GL_TEXTURE1_ARB+i);
+        glActiveTexture_(GL_TEXTURE1+i);
         glDisable(GL_TEXTURE_2D);
     }
-    glActiveTexture_(GL_TEXTURE0_ARB);
+    glActiveTexture_(GL_TEXTURE0);
 
     if(!glaring && waterenvmap && !waterreflect && !minimapping)
     {
-        glDisable(GL_TEXTURE_CUBE_MAP_ARB);
+        glDisable(GL_TEXTURE_CUBE_MAP);
         glEnable(GL_TEXTURE_2D);
     }
 

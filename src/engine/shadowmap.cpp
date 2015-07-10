@@ -339,16 +339,16 @@ void pushshadowmap()
 {
     if(!shadowmap || !shadowmaptex.rendertex) return;
 
-    glActiveTexture_(GL_TEXTURE7_ARB);
+    glActiveTexture_(GL_TEXTURE7);
     glBindTexture(GL_TEXTURE_2D, shadowmaptex.rendertex);
 
-    glActiveTexture_(GL_TEXTURE2_ARB);
+    glActiveTexture_(GL_TEXTURE2);
     glMatrixMode(GL_TEXTURE);
     glLoadMatrixf(shadowmapmatrix.v);
     glMatrixMode(GL_MODELVIEW);
 
-    glActiveTexture_(GL_TEXTURE0_ARB);
-    glClientActiveTexture_(GL_TEXTURE0_ARB);
+    glActiveTexture_(GL_TEXTURE0);
+    glClientActiveTexture_(GL_TEXTURE0);
 
     float r, g, b;
     if(!shadowmapambient)

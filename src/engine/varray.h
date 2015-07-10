@@ -148,10 +148,10 @@ namespace varray
                 glTexCoordPointer(a.size, a.format, vertexsize, buf);
                 break;
             case ATTRIB_TEXCOORD1:
-                glClientActiveTexture_(GL_TEXTURE1_ARB);
+                glClientActiveTexture_(GL_TEXTURE1);
                 if(!(enabled&a.type)) glEnableClientState(GL_TEXTURE_COORD_ARRAY);
                 glTexCoordPointer(a.size, a.format, vertexsize, buf);
-                glClientActiveTexture_(GL_TEXTURE0_ARB);
+                glClientActiveTexture_(GL_TEXTURE0);
                 break;
         }
         enabled |= a.type;
@@ -174,9 +174,9 @@ namespace varray
                 glDisableClientState(GL_TEXTURE_COORD_ARRAY);
                 break;
             case ATTRIB_TEXCOORD1:
-                glClientActiveTexture_(GL_TEXTURE1_ARB);
+                glClientActiveTexture_(GL_TEXTURE1);
                 glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-                glClientActiveTexture_(GL_TEXTURE0_ARB);
+                glClientActiveTexture_(GL_TEXTURE0);
                 break;
         }
         enabled &= ~a.type;
@@ -227,9 +227,9 @@ namespace varray
         if(enabled&ATTRIB_TEXCOORD0) glDisableClientState(GL_TEXTURE_COORD_ARRAY);
         if(enabled&ATTRIB_TEXCOORD1)
         {
-            glClientActiveTexture_(GL_TEXTURE1_ARB);
+            glClientActiveTexture_(GL_TEXTURE1);
             glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-            glClientActiveTexture_(GL_TEXTURE0_ARB);
+            glClientActiveTexture_(GL_TEXTURE0);
         }
         enabled = 0;
     }

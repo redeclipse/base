@@ -780,21 +780,21 @@ void rendermaterials()
                                 float scale = 8.0f/(dudv->ys*mslot->scale);
                                 setlocalparamf("dudvoffset", SHPARAM_PIXEL, 1, 0, scale*16*lastmillis/1000.0f);
 
-                                glActiveTexture_(GL_TEXTURE1_ARB);
+                                glActiveTexture_(GL_TEXTURE1);
                                 glBindTexture(GL_TEXTURE_2D, mslot->sts.inrange(4) ? mslot->sts[4].t->id : notexture->id);
-                                glActiveTexture_(GL_TEXTURE2_ARB);
+                                glActiveTexture_(GL_TEXTURE2);
                                 glBindTexture(GL_TEXTURE_2D, mslot->sts.inrange(5) ? mslot->sts[5].t->id : notexture->id);
                                 if(waterfallenv)
                                 {
-                                    glActiveTexture_(GL_TEXTURE3_ARB);
-                                    glBindTexture(GL_TEXTURE_CUBE_MAP_ARB, lookupenvmap(*mslot));
+                                    glActiveTexture_(GL_TEXTURE3);
+                                    glBindTexture(GL_TEXTURE_CUBE_MAP, lookupenvmap(*mslot));
                                 }
                                 if(waterfallrefract && (!reflecting || !refracting) && usedwaterfall < 0)
                                 {
                                     extern void setupwaterfallrefract(GLenum tmu1, GLenum tmu2);
-                                    setupwaterfallrefract(GL_TEXTURE4_ARB, GL_TEXTURE0_ARB);
+                                    setupwaterfallrefract(GL_TEXTURE4, GL_TEXTURE0);
                                 }
-                                else glActiveTexture_(GL_TEXTURE0_ARB);
+                                else glActiveTexture_(GL_TEXTURE0);
 
                                 usedwaterfall = m.material;
                             }
@@ -852,19 +852,19 @@ void rendermaterials()
                     break;
 
                 case MAT_GLASS:
-                    if((m.envmap==EMID_NONE || !glassenv || (envmapped==m.envmap && textured==GL_TEXTURE_CUBE_MAP_ARB)) && lastmat==m.material) break;
+                    if((m.envmap==EMID_NONE || !glassenv || (envmapped==m.envmap && textured==GL_TEXTURE_CUBE_MAP)) && lastmat==m.material) break;
                     xtraverts += varray::end();
                     if(m.envmap!=EMID_NONE && glassenv)
                     {
-                        if(textured!=GL_TEXTURE_CUBE_MAP_ARB)
+                        if(textured!=GL_TEXTURE_CUBE_MAP)
                         {
                             if(textured) glDisable(textured);
-                            glEnable(GL_TEXTURE_CUBE_MAP_ARB);
-                            textured = GL_TEXTURE_CUBE_MAP_ARB;
+                            glEnable(GL_TEXTURE_CUBE_MAP);
+                            textured = GL_TEXTURE_CUBE_MAP;
                         }
                         if(envmapped!=m.envmap)
                         {
-                            glBindTexture(GL_TEXTURE_CUBE_MAP_ARB, lookupenvmap(m.envmap));
+                            glBindTexture(GL_TEXTURE_CUBE_MAP, lookupenvmap(m.envmap));
                             if(!usedcamera)
                             {
                                 setenvparamf("camera", SHPARAM_VERTEX, 0, camera1->o.x, camera1->o.y, camera1->o.z);

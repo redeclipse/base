@@ -42,9 +42,9 @@ void genvbo(int type, void *buf, int len, vtxarray **vas, int numva)
 {
     GLuint vbo;
     glGenBuffers_(1, &vbo);
-    GLenum target = type==VBO_VBUF ? GL_ARRAY_BUFFER_ARB : GL_ELEMENT_ARRAY_BUFFER_ARB;
+    GLenum target = type==VBO_VBUF ? GL_ARRAY_BUFFER : GL_ELEMENT_ARRAY_BUFFER;
     glBindBuffer_(target, vbo);
-    glBufferData_(target, len, buf, GL_STATIC_DRAW_ARB);
+    glBufferData_(target, len, buf, GL_STATIC_DRAW);
     glBindBuffer_(target, 0);
 
     vboinfo &vbi = vbos[vbo];
@@ -77,13 +77,13 @@ bool readva(vtxarray *va, ushort *&edata, vertex *&vdata)
     edata = new ushort[3*va->tris];
     vdata = new vertex[va->verts];
 
-    glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER_ARB, va->ebuf);
-    glGetBufferSubData_(GL_ELEMENT_ARRAY_BUFFER_ARB, (size_t)va->edata, 3*va->tris*sizeof(ushort), edata);
-    glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
+    glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, va->ebuf);
+    glGetBufferSubData_(GL_ELEMENT_ARRAY_BUFFER, (size_t)va->edata, 3*va->tris*sizeof(ushort), edata);
+    glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-    glBindBuffer_(GL_ARRAY_BUFFER_ARB, va->vbuf);
-    glGetBufferSubData_(GL_ARRAY_BUFFER_ARB, va->voffset*sizeof(vertex), va->verts*sizeof(vertex), vdata);
-    glBindBuffer_(GL_ARRAY_BUFFER_ARB, 0);
+    glBindBuffer_(GL_ARRAY_BUFFER, va->vbuf);
+    glGetBufferSubData_(GL_ARRAY_BUFFER, va->voffset*sizeof(vertex), va->verts*sizeof(vertex), vdata);
+    glBindBuffer_(GL_ARRAY_BUFFER, 0);
     return true;
 }
 

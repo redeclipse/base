@@ -1306,14 +1306,14 @@ struct skelmodel : animmodel
                     loopv(blendcombos) blendcombos[i].interpindex = -1;
                 }
 
-                glBindBuffer_(GL_ARRAY_BUFFER_ARB, vc.vbuf);
+                glBindBuffer_(GL_ARRAY_BUFFER, vc.vbuf);
                 #define GENVBO(type, args) \
                     do \
                     { \
                         vertsize = sizeof(type); \
                         vector<type> vverts; \
                         loopv(meshes) vlen += ((skelmesh *)meshes[i])->genvbo args; \
-                        glBufferData_(GL_ARRAY_BUFFER_ARB, vverts.length()*sizeof(type), vverts.getbuf(), GL_STATIC_DRAW_ARB); \
+                        glBufferData_(GL_ARRAY_BUFFER, vverts.length()*sizeof(type), vverts.getbuf(), GL_STATIC_DRAW); \
                     } while(0)
                 #define GENVBOANIM(type) GENVBO(type, (idxs, vlen, vverts))
                 #define GENVBOSTAT(type) GENVBO(type, (idxs, vlen, vverts, htdata, htlen))
@@ -1334,13 +1334,13 @@ struct skelmodel : animmodel
                     else GENVBOSTAT(vvert);
                     delete[] htdata;
                 }
-                glBindBuffer_(GL_ARRAY_BUFFER_ARB, 0);
+                glBindBuffer_(GL_ARRAY_BUFFER, 0);
             }
 
             glGenBuffers_(1, &ebuf);
-            glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER_ARB, ebuf);
-            glBufferData_(GL_ELEMENT_ARRAY_BUFFER_ARB, idxs.length()*sizeof(ushort), idxs.getbuf(), GL_STATIC_DRAW_ARB);
-            glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
+            glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, ebuf);
+            glBufferData_(GL_ELEMENT_ARRAY_BUFFER, idxs.length()*sizeof(ushort), idxs.getbuf(), GL_STATIC_DRAW);
+            glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, 0);
             #undef GENVBO
             #undef GENVBOANIM
             #undef GENVBOSTAT
@@ -1352,12 +1352,12 @@ struct skelmodel : animmodel
             vvert *vverts = 0;
             if(lastebuf!=ebuf)
             {
-                glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER_ARB, ebuf);
+                glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, ebuf);
                 lastebuf = ebuf;
             }
             if(lastvbuf != (void *)(size_t)vc.vbuf)
             {
-                glBindBuffer_(GL_ARRAY_BUFFER_ARB, vc.vbuf);
+                glBindBuffer_(GL_ARRAY_BUFFER, vc.vbuf);
                 if(!lastvbuf) glEnableClientState(GL_VERTEX_ARRAY);
                 glVertexPointer(3, GL_FLOAT, vertsize, &vverts->pos);
                 lastvbuf = (void *)(size_t)vc.vbuf;
@@ -1589,8 +1589,8 @@ struct skelmodel : animmodel
                         skelmesh &m = *(skelmesh *)meshes[i];
                         m.interpverts(sc.bdata, bc ? bc->bdata : NULL, tangents, vdata + m.voffset*vertsize, p->skins[i]);
                     }
-                    glBindBuffer_(GL_ARRAY_BUFFER_ARB, vc.vbuf);
-                    glBufferData_(GL_ARRAY_BUFFER_ARB, vlen*vertsize, vdata, GL_STREAM_DRAW_ARB);
+                    glBindBuffer_(GL_ARRAY_BUFFER, vc.vbuf);
+                    glBufferData_(GL_ARRAY_BUFFER, vlen*vertsize, vdata, GL_STREAM_DRAW);
                 }
 
                 bindvbo(as, vc, &sc, bc);

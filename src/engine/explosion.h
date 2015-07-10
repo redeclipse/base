@@ -53,13 +53,13 @@ namespace sphere
         }
 
         if(!vbuf) glGenBuffers_(1, &vbuf);
-        glBindBuffer_(GL_ARRAY_BUFFER_ARB, vbuf);
-        glBufferData_(GL_ARRAY_BUFFER_ARB, numverts*sizeof(vert), verts, GL_STATIC_DRAW_ARB);
+        glBindBuffer_(GL_ARRAY_BUFFER, vbuf);
+        glBufferData_(GL_ARRAY_BUFFER, numverts*sizeof(vert), verts, GL_STATIC_DRAW);
         DELETEA(verts);
 
         if(!ebuf) glGenBuffers_(1, &ebuf);
-        glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER_ARB, ebuf);
-        glBufferData_(GL_ELEMENT_ARRAY_BUFFER_ARB, numindices*sizeof(GLushort), indices, GL_STATIC_DRAW_ARB);
+        glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, ebuf);
+        glBufferData_(GL_ELEMENT_ARRAY_BUFFER, numindices*sizeof(GLushort), indices, GL_STATIC_DRAW);
         DELETEA(indices);
     }
 
@@ -67,8 +67,8 @@ namespace sphere
     {
         if(!vbuf) init(12, 6);
 
-        glBindBuffer_(GL_ARRAY_BUFFER_ARB, vbuf);
-        glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER_ARB, ebuf);
+        glBindBuffer_(GL_ARRAY_BUFFER, vbuf);
+        glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, ebuf);
 
         glEnableClientState(GL_VERTEX_ARRAY);
         glEnableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -88,8 +88,8 @@ namespace sphere
         glDisableClientState(GL_VERTEX_ARRAY);
         glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 
-        glBindBuffer_(GL_ARRAY_BUFFER_ARB, 0);
-        glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
+        glBindBuffer_(GL_ARRAY_BUFFER, 0);
+        glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, 0);
     }
 
     void cleanup()

@@ -301,13 +301,13 @@ void rendergrass()
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
     glTexCoordPointer(2, GL_FLOAT, sizeof(grassvert), grassverts[0].tc.v);
 
-    glActiveTexture_(GL_TEXTURE1_ARB);
-    glClientActiveTexture_(GL_TEXTURE1_ARB);
+    glActiveTexture_(GL_TEXTURE1);
+    glClientActiveTexture_(GL_TEXTURE1);
     glEnable(GL_TEXTURE_2D);
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
     glTexCoordPointer(2, GL_FLOAT, sizeof(grassvert), grassverts[0].lm.v);
-    glClientActiveTexture_(GL_TEXTURE0_ARB);
-    glActiveTexture_(GL_TEXTURE0_ARB);
+    glClientActiveTexture_(GL_TEXTURE0);
+    glActiveTexture_(GL_TEXTURE0);
 
     int texid = -1, lmtexid = -1;
     loopv(grassgroups)
@@ -327,9 +327,9 @@ void rendergrass()
         }
         if(lmtexid != g.lmtex)
         {
-            glActiveTexture_(GL_TEXTURE1_ARB);
+            glActiveTexture_(GL_TEXTURE1);
             glBindTexture(GL_TEXTURE_2D, g.lmtex);
-            glActiveTexture_(GL_TEXTURE0_ARB);
+            glActiveTexture_(GL_TEXTURE0);
             lmtexid = g.lmtex;
         }
 
@@ -341,12 +341,12 @@ void rendergrass()
     glDisableClientState(GL_COLOR_ARRAY);
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 
-    glActiveTexture_(GL_TEXTURE1_ARB);
-    glClientActiveTexture_(GL_TEXTURE1_ARB);
+    glActiveTexture_(GL_TEXTURE1);
+    glClientActiveTexture_(GL_TEXTURE1);
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);
     glDisable(GL_TEXTURE_2D);
-    glClientActiveTexture_(GL_TEXTURE0_ARB);
-    glActiveTexture_(GL_TEXTURE0_ARB);
+    glClientActiveTexture_(GL_TEXTURE0);
+    glActiveTexture_(GL_TEXTURE0);
 
     glDisable(GL_BLEND);
     glDepthMask(GL_TRUE);

@@ -196,7 +196,7 @@ struct animmodel : model
             }
             if(bumpmapped() && normalmap!=lastnormalmap)
             {
-                glActiveTexture_(GL_TEXTURE3_ARB);
+                glActiveTexture_(GL_TEXTURE3);
                 activetmu = 3;
                 glBindTexture(GL_TEXTURE_2D, normalmap->id);
                 lastnormalmap = normalmap;
@@ -237,7 +237,7 @@ struct animmodel : model
             }
             if(masks!=lastmasks && masks!=notexture)
             {
-                glActiveTexture_(GL_TEXTURE1_ARB);
+                glActiveTexture_(GL_TEXTURE1);
                 activetmu = 1;
                 glBindTexture(GL_TEXTURE_2D, masks->id);
                 lastmasks = masks;
@@ -247,18 +247,18 @@ struct animmodel : model
                 GLuint emtex = envmap ? envmap->id : closestenvmaptex;
                 if(!enableenvmap || lastenvmaptex!=emtex)
                 {
-                    glActiveTexture_(GL_TEXTURE0_ARB+envmaptmu);
+                    glActiveTexture_(GL_TEXTURE0+envmaptmu);
                     activetmu = envmaptmu;
                     if(!enableenvmap)
                     {
-                        glEnable(GL_TEXTURE_CUBE_MAP_ARB);
+                        glEnable(GL_TEXTURE_CUBE_MAP);
                         enableenvmap = true;
                     }
-                    if(lastenvmaptex!=emtex) { glBindTexture(GL_TEXTURE_CUBE_MAP_ARB, emtex); lastenvmaptex = emtex; }
+                    if(lastenvmaptex!=emtex) { glBindTexture(GL_TEXTURE_CUBE_MAP, emtex); lastenvmaptex = emtex; }
                 }
             }
             else if(enableenvmap) { disableenvmap(); activetmu = 0; }
-            if(activetmu != 0) glActiveTexture_(GL_TEXTURE0_ARB);
+            if(activetmu != 0) glActiveTexture_(GL_TEXTURE0);
         }
     };
 
@@ -1229,8 +1229,8 @@ struct animmodel : model
 
     static void disablevbo()
     {
-        glBindBuffer_(GL_ARRAY_BUFFER_ARB, 0);
-        glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
+        glBindBuffer_(GL_ARRAY_BUFFER, 0);
+        glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, 0);
         glDisableClientState(GL_VERTEX_ARRAY);
         if(enabletc) disabletc();
         if(enablenormals) disablenormals();
@@ -1242,9 +1242,9 @@ struct animmodel : model
 
     static void disableenvmap()
     {
-        glActiveTexture_(GL_TEXTURE0_ARB+envmaptmu);
-        glDisable(GL_TEXTURE_CUBE_MAP_ARB);
-        glActiveTexture_(GL_TEXTURE0_ARB);
+        glActiveTexture_(GL_TEXTURE0+envmaptmu);
+        glDisable(GL_TEXTURE_CUBE_MAP);
+        glActiveTexture_(GL_TEXTURE0);
         enableenvmap = false;
     }
 

@@ -147,9 +147,9 @@ bool binddepthfxtex()
 {
     if(!reflecting && !refracting && depthfx && depthfxtex.rendertex && numdepthfxranges>0)
     {
-        glActiveTexture_(GL_TEXTURE2_ARB);
+        glActiveTexture_(GL_TEXTURE2);
         glBindTexture(depthfxtex.target, depthfxtex.rendertex);
-        glActiveTexture_(GL_TEXTURE0_ARB);
+        glActiveTexture_(GL_TEXTURE0);
 
         if(depthfxtex.target==GL_TEXTURE_RECTANGLE_ARB)
             setenvparamf("depthfxview", SHPARAM_VERTEX, 6, 0.5f*depthfxtex.vieww, 0.5f*depthfxtex.viewh);

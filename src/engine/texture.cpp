@@ -516,7 +516,7 @@ void setuptexcompress()
         case 1: hint = GL_NICEST; break;
         case 0: hint = GL_FASTEST; break;
     }
-    glHint(GL_TEXTURE_COMPRESSION_HINT_ARB, hint);
+    glHint(GL_TEXTURE_COMPRESSION_HINT, hint);
 }
 
 GLenum compressedformat(GLenum format, int w, int h, int force = 0)
@@ -526,9 +526,9 @@ GLenum compressedformat(GLenum format, int w, int h, int force = 0)
         case GL_RGB5:
         case GL_RGB8:
         case GL_LUMINANCE:
-        case GL_RGB: return usetexcompress > 1 ? GL_COMPRESSED_RGB_S3TC_DXT1_EXT : GL_COMPRESSED_RGB_ARB;
+        case GL_RGB: return usetexcompress > 1 ? GL_COMPRESSED_RGB_S3TC_DXT1_EXT : GL_COMPRESSED_RGB;
         case GL_LUMINANCE_ALPHA:
-        case GL_RGBA: return usetexcompress > 1 ? GL_COMPRESSED_RGBA_S3TC_DXT5_EXT : GL_COMPRESSED_RGBA_ARB;
+        case GL_RGBA: return usetexcompress > 1 ? GL_COMPRESSED_RGBA_S3TC_DXT5_EXT : GL_COMPRESSED_RGBA;
     }
     return format;
 }
@@ -550,7 +550,7 @@ VARF(IDF_PERSIST, usenp2, 0, 0, 1, initwarning("texture quality", INIT_LOAD));
 
 void resizetexture(int w, int h, bool mipmap, bool canreduce, GLenum target, int compress, int &tw, int &th)
 {
-    int hwlimit = target==GL_TEXTURE_CUBE_MAP_ARB ? hwcubetexsize : hwtexsize,
+    int hwlimit = target==GL_TEXTURE_CUBE_MAP ? hwcubetexsize : hwtexsize,
         sizelimit = mipmap && maxtexsize ? min(maxtexsize, hwlimit) : hwlimit;
     if(compress > 0 && !usetexcompress)
     {
@@ -623,7 +623,7 @@ void uploadtexture(GLenum target, GLenum internal, int tw, int th, GLenum format
 
 void uploadcompressedtexture(GLenum target, GLenum subtarget, GLenum format, int w, int h, uchar *data, int align, int blocksize, int levels, bool mipmap)
 {
-    int hwlimit = target==GL_TEXTURE_CUBE_MAP_ARB ? hwcubetexsize : hwtexsize,
+    int hwlimit = target==GL_TEXTURE_CUBE_MAP ? hwcubetexsize : hwtexsize,
         sizelimit = levels > 1 && maxtexsize ? min(maxtexsize, hwlimit) : hwlimit;
     int level = 0;
     loopi(levels)
@@ -647,13 +647,13 @@ GLenum textarget(GLenum subtarget)
 {
     switch(subtarget)
     {
-        case GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB:
-        case GL_TEXTURE_CUBE_MAP_NEGATIVE_X_ARB:
-        case GL_TEXTURE_CUBE_MAP_POSITIVE_Y_ARB:
-        case GL_TEXTURE_CUBE_MAP_NEGATIVE_Y_ARB:
-        case GL_TEXTURE_CUBE_MAP_POSITIVE_Z_ARB:
-        case GL_TEXTURE_CUBE_MAP_NEGATIVE_Z_ARB:
-            return GL_TEXTURE_CUBE_MAP_ARB;
+        case GL_TEXTURE_CUBE_MAP_POSITIVE_X:
+        case GL_TEXTURE_CUBE_MAP_NEGATIVE_X:
+        case GL_TEXTURE_CUBE_MAP_POSITIVE_Y:
+        case GL_TEXTURE_CUBE_MAP_NEGATIVE_Y:
+        case GL_TEXTURE_CUBE_MAP_POSITIVE_Z:
+        case GL_TEXTURE_CUBE_MAP_NEGATIVE_Z:
+            return GL_TEXTURE_CUBE_MAP;
     }
     return subtarget;
 }
@@ -662,10 +662,10 @@ GLenum uncompressedformat(GLenum format)
 {
     switch(format)
     {
-        case GL_COMPRESSED_RGB_ARB:
+        case GL_COMPRESSED_RGB:
         case GL_COMPRESSED_RGB_S3TC_DXT1_EXT:
             return GL_RGB;
-        case GL_COMPRESSED_RGBA_ARB:
+        case GL_COMPRESSED_RGBA:
         case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
         case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
         case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
@@ -694,6 +694,18 @@ void createtexture(int tnum, int w, int h, void *pixels, int clamp, int filter, 
     GLenum target = textarget(subtarget), type = GL_UNSIGNED_BYTE;
     switch(component)
     {
+        case GL_R16F:
+        case GL_R32F:
+            if(!format) format = GL_RED;
+            type = GL_FLOAT;
+            break;
+
+        case GL_RG16F:
+        case GL_RG32F:
+            if(!format) format = GL_RG;
+            type = GL_FLOAT;
+            break;
+
         case GL_FLOAT_RG16_NV:
         case GL_FLOAT_R32_NV:
         case GL_RGB16F_ARB:
@@ -717,14 +729,14 @@ void createtexture(int tnum, int w, int h, void *pixels, int clamp, int filter, 
         case GL_RGB5:
         case GL_RGB8:
         case GL_RGB16:
-        case GL_COMPRESSED_RGB_ARB:
+        case GL_COMPRESSED_RGB:
         case GL_COMPRESSED_RGB_S3TC_DXT1_EXT:
             if(!format) format = GL_RGB;
             break;
 
         case GL_RGBA8:
         case GL_RGBA16:
-        case GL_COMPRESSED_RGBA_ARB:
+        case GL_COMPRESSED_RGBA:
         case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
         case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
         case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
@@ -2232,8 +2244,8 @@ void forcecubemapload(GLuint tex)
     GLenum tex2d = glIsEnabled(GL_TEXTURE_2D), depthtest = glIsEnabled(GL_DEPTH_TEST), blend = glIsEnabled(GL_BLEND);
     if(tex2d) glDisable(GL_TEXTURE_2D);
     if(depthtest) glDisable(GL_DEPTH_TEST);
-    glEnable(GL_TEXTURE_CUBE_MAP_ARB);
-    glBindTexture(GL_TEXTURE_CUBE_MAP_ARB, tex);
+    glEnable(GL_TEXTURE_CUBE_MAP);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, tex);
     if(!blend) glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glBegin(GL_POINTS);
@@ -2245,7 +2257,7 @@ void forcecubemapload(GLuint tex)
     }
     glEnd();
     if(!blend) glDisable(GL_BLEND);
-    glDisable(GL_TEXTURE_CUBE_MAP_ARB);
+    glDisable(GL_TEXTURE_CUBE_MAP);
     if(depthtest) glEnable(GL_DEPTH_TEST);
     if(tex2d) glEnable(GL_TEXTURE_2D);
 
@@ -2257,12 +2269,12 @@ void forcecubemapload(GLuint tex)
 
 cubemapside cubemapsides[6] =
 {
-    { GL_TEXTURE_CUBE_MAP_NEGATIVE_X_ARB, "lf", true,  true,  true  },
-    { GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB, "rt", false, false, true  },
-    { GL_TEXTURE_CUBE_MAP_NEGATIVE_Y_ARB, "ft", true,  false, false },
-    { GL_TEXTURE_CUBE_MAP_POSITIVE_Y_ARB, "bk", false, true,  false },
-    { GL_TEXTURE_CUBE_MAP_NEGATIVE_Z_ARB, "dn", false, false, true  },
-    { GL_TEXTURE_CUBE_MAP_POSITIVE_Z_ARB, "up", false, false, true  },
+    { GL_TEXTURE_CUBE_MAP_NEGATIVE_X, "lf", true,  true,  true  },
+    { GL_TEXTURE_CUBE_MAP_POSITIVE_X, "rt", false, false, true  },
+    { GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, "ft", true,  false, false },
+    { GL_TEXTURE_CUBE_MAP_POSITIVE_Y, "bk", false, true,  false },
+    { GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, "dn", false, false, true  },
+    { GL_TEXTURE_CUBE_MAP_POSITIVE_Z, "up", false, false, true  },
 };
 
 VARF(IDF_PERSIST, envmapsize, 4, 7, 10, setupmaterials());
@@ -2334,7 +2346,7 @@ Texture *cubemaploadwildcard(Texture *t, const char *name, bool mipit, bool msg,
     t->clamp = 3;
     t->xs = t->ys = tsize;
     t->w = t->h = min(1<<envmapsize, tsize);
-    resizetexture(t->w, t->h, mipit, false, GL_TEXTURE_CUBE_MAP_ARB, compress, t->w, t->h);
+    resizetexture(t->w, t->h, mipit, false, GL_TEXTURE_CUBE_MAP, compress, t->w, t->h);
     GLenum component = format;
     if(!surface[0].compressed)
     {
@@ -2430,17 +2442,17 @@ GLuint genenvmap(const vec &o, int envmapsize, int blur)
         const cubemapside &side = cubemapsides[i];
         switch(side.target)
         {
-            case GL_TEXTURE_CUBE_MAP_NEGATIVE_X_ARB: // lf
+            case GL_TEXTURE_CUBE_MAP_NEGATIVE_X: // lf
                 yaw = 90; pitch = 0; break;
-            case GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB: // rt
+            case GL_TEXTURE_CUBE_MAP_POSITIVE_X: // rt
                 yaw = 270; pitch = 0; break;
-            case GL_TEXTURE_CUBE_MAP_NEGATIVE_Y_ARB: // ft
+            case GL_TEXTURE_CUBE_MAP_NEGATIVE_Y: // ft
                 yaw = 180; pitch = 0; break;
-            case GL_TEXTURE_CUBE_MAP_POSITIVE_Y_ARB: // bk
+            case GL_TEXTURE_CUBE_MAP_POSITIVE_Y: // bk
                 yaw = 0; pitch = 0; break;
-            case GL_TEXTURE_CUBE_MAP_NEGATIVE_Z_ARB: // dn
+            case GL_TEXTURE_CUBE_MAP_NEGATIVE_Z: // dn
                 yaw = 270; pitch = -90; break;
-            case GL_TEXTURE_CUBE_MAP_POSITIVE_Z_ARB: // up
+            case GL_TEXTURE_CUBE_MAP_POSITIVE_Z: // up
                 yaw = 270; pitch = 90; break;
         }
         glFrontFace((side.flipx==side.flipy)!=side.swapxy ? GL_CW : GL_CCW);
@@ -2878,7 +2890,7 @@ void gendds(char *infile, char *outfile)
 {
     if(!hasS3TC || usetexcompress <= 1) { conoutf("\frOpenGL driver does not support S3TC texture compression"); return; }
 
-    glHint(GL_TEXTURE_COMPRESSION_HINT_ARB, GL_NICEST);
+    glHint(GL_TEXTURE_COMPRESSION_HINT, GL_NICEST);
 
     defformatstring(cfile)("<compress>%s", infile);
     extern void reloadtex(char *name);
@@ -2889,7 +2901,7 @@ void gendds(char *infile, char *outfile)
 
     glBindTexture(GL_TEXTURE_2D, t->frames[0]);
     GLint compressed = 0, format = 0, width = 0, height = 0;
-    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_COMPRESSED_ARB, &compressed);
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_COMPRESSED, &compressed);
     glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &format);
     glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width);
     glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &height);
@@ -2924,7 +2936,7 @@ void gendds(char *infile, char *outfile)
     for(int lw = width, lh = height, level = 0;;)
     {
         GLint size = 0;
-        glGetTexLevelParameteriv(GL_TEXTURE_2D, level++, GL_TEXTURE_COMPRESSED_IMAGE_SIZE_ARB, &size);
+        glGetTexLevelParameteriv(GL_TEXTURE_2D, level++, GL_TEXTURE_COMPRESSED_IMAGE_SIZE, &size);
         csize += size;
         if(max(lw, lh) <= 1) break;
         if(lw > 1) lw /= 2;
@@ -2947,7 +2959,7 @@ void gendds(char *infile, char *outfile)
     for(int lw = width, lh = height;;)
     {
         GLint size;
-        glGetTexLevelParameteriv(GL_TEXTURE_2D, d.dwMipMapCount, GL_TEXTURE_COMPRESSED_IMAGE_SIZE_ARB, &size);
+        glGetTexLevelParameteriv(GL_TEXTURE_2D, d.dwMipMapCount, GL_TEXTURE_COMPRESSED_IMAGE_SIZE, &size);
         glGetCompressedTexImage_(GL_TEXTURE_2D, d.dwMipMapCount++, dst);
         dst += size;
         if(max(lw, lh) <= 1) break;
