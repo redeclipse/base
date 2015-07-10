@@ -298,15 +298,15 @@ void preloadwatershaders(bool force)
 
     useshaderbyname("waterglare");
 
-    if(waterenvmap && !waterreflect && hasCM)
+    if(waterenvmap && !waterreflect)
         useshaderbyname(waterrefract ? (waterfade && hasFBO ? "waterenvfade" : "waterenvrefract") : "waterenv");
     else useshaderbyname(waterrefract ? (waterfade && hasFBO ? "waterfade" : "waterrefract") : (waterreflect ? "waterreflect" : "water"));
 
     useshaderbyname(waterrefract ? (waterfade && hasFBO ? "underwaterfade" : "underwaterrefract") : "underwater");
 
     extern int waterfallenv;
-    if(waterfallenv && hasCM) useshaderbyname("waterfallenv");
-    if(waterfallrefract) useshaderbyname(waterfallenv && hasCM ? "waterfallenvrefract" : "waterfallrefract");
+    if(waterfallenv) useshaderbyname("waterfallenv");
+    if(waterfallrefract) useshaderbyname(waterfallenv ? "waterfallenvrefract" : "waterfallrefract");
 }
 
 void renderwater()
@@ -342,7 +342,7 @@ void renderwater()
     }
     glActiveTexture_(GL_TEXTURE0_ARB);
 
-    if(!glaring && waterenvmap && !waterreflect && hasCM && !minimapping)
+    if(!glaring && waterenvmap && !waterreflect && !minimapping)
     {
         glDisable(GL_TEXTURE_2D);
         glEnable(GL_TEXTURE_CUBE_MAP_ARB);
@@ -361,7 +361,7 @@ void renderwater()
     Shader *aboveshader = NULL;
     if(glaring) SETWATERSHADER(above, waterglare);
     else if(minimapping) aboveshader = notextureshader;
-    else if(waterenvmap && !waterreflect && hasCM)
+    else if(waterenvmap && !waterreflect)
     {
         if(waterrefract)
         {
@@ -419,7 +419,7 @@ void renderwater()
         {
             if(waterreflect || waterrefract)
             {
-                if(waterreflect || !waterenvmap || !hasCM) glBindTexture(GL_TEXTURE_2D, waterreflect ? ref.tex : ref.refracttex);
+                if(waterreflect || !waterenvmap) glBindTexture(GL_TEXTURE_2D, waterreflect ? ref.tex : ref.refracttex);
                 setprojtexmatrix(ref);
             }
 
@@ -441,7 +441,7 @@ void renderwater()
         glActiveTexture_(GL_TEXTURE2_ARB);
         glBindTexture(GL_TEXTURE_2D, mslot.sts.inrange(3) ? mslot.sts[3].t->id : notexture->id);
         glActiveTexture_(GL_TEXTURE0_ARB);
-        if(!glaring && waterenvmap && !waterreflect && hasCM && !minimapping)
+        if(!glaring && waterenvmap && !waterreflect && !minimapping)
         {
             glBindTexture(GL_TEXTURE_CUBE_MAP_ARB, lookupenvmap(mslot));
         }
@@ -472,7 +472,7 @@ void renderwater()
             {
                 if(varray::data.length()) varray::end();
                 float depth = !wfog ? 1.0f : min(0.75f*m.depth/wfog, 0.95f);
-                depth = max(depth, !below && (waterreflect || (waterenvmap && hasCM)) ? 0.3f : 0.6f);
+                depth = max(depth, !below && (waterreflect || waterenvmap) ? 0.3f : 0.6f);
                 setlocalparamf("depth", SHPARAM_PIXEL, 5, depth, 1.0f-depth);
                 lastdepth = m.depth;
             }
@@ -511,7 +511,7 @@ void renderwater()
     }
     glActiveTexture_(GL_TEXTURE0_ARB);
 
-    if(!glaring && waterenvmap && !waterreflect && hasCM && !minimapping)
+    if(!glaring && waterenvmap && !waterreflect && !minimapping)
     {
         glDisable(GL_TEXTURE_CUBE_MAP_ARB);
         glEnable(GL_TEXTURE_2D);

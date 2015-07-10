@@ -420,15 +420,11 @@ void setupmaterials(int start, int len)
             }
             else if(matvol==MAT_GLASS)
             {
-                if(!hasCM) m.envmap = EMID_NONE;
-                else
-                {
-                    int dim = dimension(m.orient);
-                    vec center(m.o);
-                    center[R[dim]] += m.rsize/2;
-                    center[C[dim]] += m.csize/2;
-                    m.envmap = closestenvmap(center);
-                }
+                int dim = dimension(m.orient);
+                vec center(m.o);
+                center[R[dim]] += m.rsize/2;
+                center[C[dim]] += m.csize/2;
+                m.envmap = closestenvmap(center);
             }
             if(matvol) hasmat |= 1<<m.material;
             m.skip = 0;
@@ -721,7 +717,7 @@ void rendermaterials()
                         if(!wfcol[0] && !wfcol[1] && !wfcol[2]) memcpy(wfcol, wcol, 3);
                         int wfog = getwaterfog(m.material);
 
-                        if(!wfog && (!hasCM || !waterfallenv))
+                        if(!wfog && !waterfallenv)
                         {
                             glColor3ubv(wfcol);
                             foggednotextureshader->set();
@@ -735,7 +731,7 @@ void rendermaterials()
                             }
                             break;
                         }
-                        else if((!waterfallrefract || reflecting || refracting) && (!hasCM || !waterfallenv))
+                        else if((!waterfallrefract || reflecting || refracting) && !waterfallenv)
                         {
                             glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_COLOR);
                             glColor3ubv(wfcol);
@@ -757,7 +753,7 @@ void rendermaterials()
 
                             if(waterfallrefract && wfog && !reflecting && !refracting)
                             {
-                                if(hasCM && waterfallenv) SETSHADER(waterfallenvrefract);
+                                if(waterfallenv) SETSHADER(waterfallenvrefract);
                                 else SETSHADER(waterfallrefract);
                                 if(blended) { glDisable(GL_BLEND); blended = false; }
                                 if(!depth) { glDepthMask(GL_TRUE); depth = true; }
@@ -788,7 +784,7 @@ void rendermaterials()
                                 glBindTexture(GL_TEXTURE_2D, mslot->sts.inrange(4) ? mslot->sts[4].t->id : notexture->id);
                                 glActiveTexture_(GL_TEXTURE2_ARB);
                                 glBindTexture(GL_TEXTURE_2D, mslot->sts.inrange(5) ? mslot->sts[5].t->id : notexture->id);
-                                if(hasCM && waterfallenv)
+                                if(waterfallenv)
                                 {
                                     glActiveTexture_(GL_TEXTURE3_ARB);
                                     glBindTexture(GL_TEXTURE_CUBE_MAP_ARB, lookupenvmap(*mslot));
@@ -916,7 +912,7 @@ void rendermaterials()
         switch(matvol)
         {
             case MAT_WATER:
-                renderwaterfall(m, 0.1f, hasCM && waterfallenv ? &normals[m.orient] : NULL);
+                renderwaterfall(m, 0.1f, waterfallenv ? &normals[m.orient] : NULL);
                 break;
 
             case MAT_LAVA:

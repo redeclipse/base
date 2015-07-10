@@ -78,7 +78,7 @@ struct animmodel : model
 
         skin() : owner(0), tex(notexture), masks(notexture), envmap(NULL), normalmap(NULL), shader(NULL), spec(1.0f), ambient(0.3f), glow(3.0f), glowdelta(0), glowpulse(0), specglare(1), glowglare(1), fullbright(0), envmapmin(0), envmapmax(0), scrollu(0), scrollv(0), alphatest(0.9f), alphablend(true), cullface(true), material(0), material2(0) {}
 
-        bool envmapped() { return hasCM && envmapmax>0 && envmapmodels; }
+        bool envmapped() { return envmapmax>0 && envmapmodels; }
         bool bumpmapped() { return normalmap && bumpmodels; }
         bool tangents() { return bumpmapped(); }
 

@@ -1110,8 +1110,7 @@ void shader(int *type, char *name, char *vs, char *ps)
 {
     if(lookupshaderbyname(name)) return;
 
-    if((!hasCM && strstr(ps, "textureCube")) ||
-       (!hasTR && strstr(ps, "texture2DRect")))
+    if(!hasTR && strstr(ps, "texture2DRect"))
     {
         curparams.shrink(0);
         return;
