@@ -696,8 +696,6 @@ void renderblendbrush(GLuint tex, float x, float y, float w, float h)
 
 void rendershadowmapreceivers()
 {
-    if(!hasBE) return;
-
     SETSHADER(shadowmapreceiver);
 
     glDisable(GL_TEXTURE_2D);
