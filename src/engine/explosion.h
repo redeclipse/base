@@ -1,142 +1,103 @@
-static struct spherevert
+namespace sphere
 {
-    vec pos;
-    float s, t;
-} *sphereverts = NULL;
-static GLushort *sphereindices = NULL;
-static int spherenumverts = 0, spherenumindices = 0;
-static GLuint spherevbuf = 0, sphereebuf = 0;
-
-static void initsphere(int slices, int stacks)
-{
-    DELETEA(sphereverts);
-    spherenumverts = (stacks+1)*(slices+1);
-    sphereverts = new spherevert[spherenumverts];
-    float ds = 1.0f/slices, dt = 1.0f/stacks, t = 1.0f;
-    loopi(stacks+1)
+    struct vert
     {
-        float rho = M_PI*(1-t), s = 0.0f, sinrho = i && i < stacks ? sin(rho) : 0, cosrho = !i ? 1 : (i < stacks ? cos(rho) : -1);
-        loopj(slices+1)
-        {
-            float theta = j==slices ? 0 : 2*M_PI*s;
-            spherevert &v = sphereverts[i*(slices+1) + j];
-            v.pos = vec(-sin(theta)*sinrho, cos(theta)*sinrho, cosrho);
-            v.s = s;
-            v.t = t;
-            s += ds;
-        }
-        t -= dt;
-    }
+        vec pos;
+        float s, t;
+    } *verts = NULL;
+    GLushort *indices = NULL;
+    int numverts = 0, numindices = 0;
+    GLuint vbuf = 0, ebuf = 0;
 
-    DELETEA(sphereindices);
-    spherenumindices = (stacks-1)*slices*3*2;
-    sphereindices = new ushort[spherenumindices];
-    GLushort *curindex = sphereindices;
-    loopi(stacks)
+    void init(int slices, int stacks)
     {
-        loopk(slices)
+        numverts = (stacks+1)*(slices+1);
+        verts = new vert[numverts];
+        float ds = 1.0f/slices, dt = 1.0f/stacks, t = 1.0f;
+        loopi(stacks+1)
         {
-            int j = i%2 ? slices-k-1 : k;
-            if(i)
+            float rho = M_PI*(1-t), s = 0.0f, sinrho = i && i < stacks ? sin(rho) : 0, cosrho = !i ? 1 : (i < stacks ? cos(rho) : -1);
+            loopj(slices+1)
             {
-                *curindex++ = i*(slices+1)+j;
-                *curindex++ = (i+1)*(slices+1)+j;
-                *curindex++ = i*(slices+1)+j+1;
+                float theta = j==slices ? 0 : 2*M_PI*s;
+                vert &v = verts[i*(slices+1) + j];
+                v.pos = vec(-sin(theta)*sinrho, cos(theta)*sinrho, cosrho);
+                v.s = s;
+                v.t = t;
+                s += ds;
             }
-            if(i+1 < stacks)
+            t -= dt;
+        }
+
+        numindices = (stacks-1)*slices*3*2;
+        indices = new ushort[numindices];
+        GLushort *curindex = indices;
+        loopi(stacks)
+        {
+            loopk(slices)
             {
-                *curindex++ = i*(slices+1)+j+1;
-                *curindex++ = (i+1)*(slices+1)+j;
-                *curindex++ = (i+1)*(slices+1)+j+1;
+                int j = i%2 ? slices-k-1 : k;
+                if(i)
+                {
+                    *curindex++ = i*(slices+1)+j;
+                    *curindex++ = (i+1)*(slices+1)+j;
+                    *curindex++ = i*(slices+1)+j+1;
+                }
+                if(i+1 < stacks)
+                {
+                    *curindex++ = i*(slices+1)+j+1;
+                    *curindex++ = (i+1)*(slices+1)+j;
+                    *curindex++ = (i+1)*(slices+1)+j+1;
+                }
             }
         }
+
+        if(!vbuf) glGenBuffers_(1, &vbuf);
+        glBindBuffer_(GL_ARRAY_BUFFER_ARB, vbuf);
+        glBufferData_(GL_ARRAY_BUFFER_ARB, numverts*sizeof(vert), verts, GL_STATIC_DRAW_ARB);
+        DELETEA(verts);
+
+        if(!ebuf) glGenBuffers_(1, &ebuf);
+        glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER_ARB, ebuf);
+        glBufferData_(GL_ELEMENT_ARRAY_BUFFER_ARB, numindices*sizeof(GLushort), indices, GL_STATIC_DRAW_ARB);
+        DELETEA(indices);
     }
 
-    if(hasVBO)
+    void enable()
     {
-        if(!spherevbuf) glGenBuffers_(1, &spherevbuf);
-        glBindBuffer_(GL_ARRAY_BUFFER_ARB, spherevbuf);
-        glBufferData_(GL_ARRAY_BUFFER_ARB, spherenumverts*sizeof(spherevert), sphereverts, GL_STATIC_DRAW_ARB);
-        DELETEA(sphereverts);
+        if(!vbuf) init(12, 6);
 
-        if(!sphereebuf) glGenBuffers_(1, &sphereebuf);
-        glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER_ARB, sphereebuf);
-        glBufferData_(GL_ELEMENT_ARRAY_BUFFER_ARB, spherenumindices*sizeof(GLushort), sphereindices, GL_STATIC_DRAW_ARB);
-        DELETEA(sphereindices);
-    }
-}
+        glBindBuffer_(GL_ARRAY_BUFFER_ARB, vbuf);
+        glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER_ARB, ebuf);
 
-static void setupexplosion()
-{
-    if(glaring) SETSHADER(explosionglare);
-    else if(!reflecting && !refracting && depthfx && depthfxtex.rendertex && numdepthfxranges>0)
-    {
-        if(depthfxtex.target==GL_TEXTURE_RECTANGLE_ARB)
-        {
-            if(!depthfxtex.highprecision()) SETSHADER(explosionsoft8rect);
-            else SETSHADER(explosionsoftrect);
-        }
-        else
-        {
-            if(!depthfxtex.highprecision()) SETSHADER(explosionsoft8);
-            else SETSHADER(explosionsoft);
-        }
-    }
-    else SETSHADER(explosion);
-
-    if(!sphereverts && !spherevbuf) initsphere(12, 6);
-
-    if(hasVBO)
-    {
-       glBindBuffer_(GL_ARRAY_BUFFER_ARB, spherevbuf);
-       glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER_ARB, sphereebuf);
+        glEnableClientState(GL_VERTEX_ARRAY);
+        glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+        glVertexPointer(3, GL_FLOAT, sizeof(vert), &verts->pos);
+        glTexCoordPointer(2, GL_FLOAT, sizeof(vert), &verts->s);
     }
 
-    glEnableClientState(GL_VERTEX_ARRAY);
-    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-    glVertexPointer(3, GL_FLOAT, sizeof(spherevert), &sphereverts->pos);
-    glTexCoordPointer(2, GL_FLOAT, sizeof(spherevert), &sphereverts->s);
-}
-
-static void drawexpverts(int numverts, int numindices, GLushort *indices)
-{
-    if(hasDRE) glDrawRangeElements_(GL_TRIANGLES, 0, numverts-1, numindices, GL_UNSIGNED_SHORT, indices);
-    else glDrawElements(GL_TRIANGLES, numindices, GL_UNSIGNED_SHORT, indices);
-    xtraverts += numindices;
-    glde++;
-}
-
-static void drawexplosion(bool inside, uchar r, uchar g, uchar b, uchar a)
-{
-    int passes = !reflecting && !refracting && inside ? 2 : 1;
-    if(inside) glScalef(1, 1, -1);
-    loopi(passes)
+    void draw()
     {
-        glColor4ub(r, g, b, i ? a/2 : a);
-        if(i) glDepthFunc(GL_GEQUAL);
-        drawexpverts(spherenumverts, spherenumindices, sphereindices);
-        if(i) glDepthFunc(GL_LESS);
+        if(hasDRE) glDrawRangeElements_(GL_TRIANGLES, 0, numverts-1, numindices, GL_UNSIGNED_SHORT, indices);
+        else glDrawElements(GL_TRIANGLES, numindices, GL_UNSIGNED_SHORT, indices);
+        xtraverts += numindices;
+        glde++;
     }
-}
 
-static void cleanupexplosion()
-{
-    glDisableClientState(GL_VERTEX_ARRAY);
-    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-
-    if(hasVBO)
+    void disable()
     {
+        glDisableClientState(GL_VERTEX_ARRAY);
+        glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+
         glBindBuffer_(GL_ARRAY_BUFFER_ARB, 0);
         glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
     }
-}
 
-static void deleteexplosions()
-{
-    if(spherevbuf) { glDeleteBuffers_(1, &spherevbuf); spherevbuf = 0; }
-    if(sphereebuf) { glDeleteBuffers_(1, &sphereebuf); sphereebuf = 0; }
-    DELETEA(sphereverts);
-    DELETEA(sphereindices);
+    void cleanup()
+    {
+        if(vbuf) { glDeleteBuffers_(1, &vbuf); vbuf = 0; }
+        if(ebuf) { glDeleteBuffers_(1, &ebuf); ebuf = 0; }
+    }
 }
 
 static const float WOBBLE = 1.25f;
@@ -149,18 +110,34 @@ struct explosionrenderer : sharedlistrenderer
 
     void startrender()
     {
-        setupexplosion();
+        if(glaring) SETSHADER(explosionglare);
+        else if(!reflecting && !refracting && depthfx && depthfxtex.rendertex && numdepthfxranges>0)
+        {
+            if(depthfxtex.target==GL_TEXTURE_RECTANGLE_ARB)
+            {
+                if(!depthfxtex.highprecision()) SETSHADER(explosionsoft8rect);
+                else SETSHADER(explosionsoftrect);
+            }
+            else
+            {
+                if(!depthfxtex.highprecision()) SETSHADER(explosionsoft8);
+                else SETSHADER(explosionsoft);
+            }
+        }
+        else SETSHADER(explosion);
+
+        sphere::enable();
     }
 
     void endrender()
     {
-        cleanupexplosion();
+        sphere::disable();
         particleshader->set();
     }
 
     void cleanup()
     {
-        deleteexplosions();
+        sphere::cleanup();
     }
 
     int finddepthfxranges(void **owners, float *ranges, int numranges, int maxranges, vec &bbmin, vec &bbmax)
@@ -260,7 +237,16 @@ struct explosionrenderer : sharedlistrenderer
 
         glRotatef(lastmillis/7.0f, -rotdir.x, rotdir.y, -rotdir.z);
         glScalef(-psize, psize, -psize);
-        drawexplosion(inside, color[0], color[1], color[2], pblend);
+
+        int passes = !reflecting && !refracting && inside ? 2 : 1;
+        if(inside) glScalef(1, 1, -1);
+        loopi(passes)
+        {
+            glColor4ub(color[0], color[1], color[2], i ? pblend/2 : pblend);
+            if(i) glDepthFunc(GL_GEQUAL);
+            sphere::draw();
+            if(i) glDepthFunc(GL_LESS);
+        }
 
         glPopMatrix();
     }
