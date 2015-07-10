@@ -149,15 +149,6 @@ VAR(0, rtscissor, 0, 1, 1);
 VAR(0, blurtile, 0, 1, 1);
 VAR(0, rtsharefb, 0, 1, 1);
 
-static bool checkseries(const char *s, int low, int high)
-{
-    while(*s && !isdigit(*s)) ++s;
-    if(!*s) return false;
-    int n = 0;
-    while(isdigit(*s)) n = n*10 + (*s++ - '0');
-    return n >= low && n < high;
-}
-
 VAR(0, dbgexts, 0, 0, 1);
 
 bool hasext(const char *exts, const char *ext)
@@ -391,8 +382,7 @@ void gl_checkextensions()
         rtsharefb = 0; // work-around for strange driver stalls involving when using many FBOs
         if(!hasext(gfxexts, "GL_EXT_gpu_shader4")) setvar("filltjoints", 0, false, true); // DX9 or less NV cards seem to not cause many sparklies
 
-        if(hasTF && (!strstr(gfxrenderer, "GeForce") || !checkseries(gfxrenderer, 6000, 6600)))
-            setvar("fpdepthfx", 1, false, true); // FP filtering causes software fallback on 6200?
+        if(hasTF) setvar("fpdepthfx", 1, false, true);
     }
     else
     {
