@@ -135,11 +135,10 @@ struct skelmodel : animmodel
 
     struct vbocacheentry : animcacheentry
     {
-        uchar *vdata;
         GLuint vbuf;
         int owner;
 
-        vbocacheentry() : vdata(NULL), vbuf(0), owner(-1) {}
+        vbocacheentry() : vbuf(0), owner(-1) {}
     };
 
     struct skelcacheentry : animcacheentry
@@ -451,12 +450,12 @@ struct skelmodel : animmodel
                         {
                             if(((skelmeshgroup *)group)->vertsize==sizeof(vvertbumpw))
                             {
-                                vvertbumpw *vverts = hasVBO ? 0 : (vvertbumpw *)vc.vdata;
+                                vvertbumpw *vverts = 0;
                                 glVertexAttribPointer_(1, 4, GL_FLOAT, GL_FALSE, ((skelmeshgroup *)group)->vertsize, &vverts->tangent.x);
                             }
                             else
                             {
-                                vvertbump *vverts = hasVBO ? 0 : (vvertbump *)vc.vdata;
+                                vvertbump *vverts = 0;
                                 glVertexAttribPointer_(1, 4, GL_FLOAT, GL_FALSE, ((skelmeshgroup *)group)->vertsize, &vverts->tangent.x);
                             }
                         }
@@ -1298,7 +1297,6 @@ struct skelmodel : animmodel
             }
             loopi(MAXVBOCACHE)
             {
-                DELETEA(vbocache[i].vdata);
                 if(vbocache[i].vbuf) glDeleteBuffers_(1, &vbocache[i].vbuf);
             }
             DELETEA(vdata);
@@ -1337,28 +1335,21 @@ struct skelmodel : animmodel
 
         void genvbo(bool tangents, vbocacheentry &vc)
         {
-            if(hasVBO)
-            {
-                if(!vc.vbuf) glGenBuffers_(1, &vc.vbuf);
-                if(ebuf) return;
-            }
-            else if(edata)
-            {
-                #define ALLOCVDATA(vdata) \
-                    do \
+            if(!vc.vbuf) glGenBuffers_(1, &vc.vbuf);
+            if(ebuf) return;
+
+            #define ALLOCVDATA(vdata) \
+                do \
+                { \
+                    DELETEA(vdata); \
+                    vdata = new uchar[vlen*vertsize]; \
+                    loopv(meshes) \
                     { \
-                        DELETEA(vdata); \
-                        vdata = new uchar[vlen*vertsize]; \
-                        loopv(meshes) \
-                        { \
-                            skelmesh &m = *(skelmesh *)meshes[i]; \
-                            m.filltc(vdata, vertsize); \
-                            if(tangents) m.fillbump(vdata, vertsize); \
-                        } \
-                    } while(0)
-                if(!vc.vdata) ALLOCVDATA(vc.vdata);
-                return;
-            }
+                        skelmesh &m = *(skelmesh *)meshes[i]; \
+                        m.filltc(vdata, vertsize); \
+                        if(tangents) m.fillbump(vdata, vertsize); \
+                    } \
+                } while(0)
 
             vector<ushort> idxs;
 
@@ -1377,8 +1368,7 @@ struct skelmodel : animmodel
                 vertsize = tangents ? sizeof(vvertbump) : sizeof(vvert);
                 loopv(meshes) vlen += ((skelmesh *)meshes[i])->genvbo(idxs, vlen);
                 DELETEA(vdata);
-                if(hasVBO) ALLOCVDATA(vdata);
-                else ALLOCVDATA(vc.vdata);
+                ALLOCVDATA(vdata);
             }
             else
             {
@@ -1399,20 +1389,14 @@ struct skelmodel : animmodel
                     loopv(blendcombos) blendcombos[i].interpindex = -1;
                 }
 
-                if(hasVBO) glBindBuffer_(GL_ARRAY_BUFFER_ARB, vc.vbuf);
+                glBindBuffer_(GL_ARRAY_BUFFER_ARB, vc.vbuf);
                 #define GENVBO(type, args) \
                     do \
                     { \
                         vertsize = sizeof(type); \
                         vector<type> vverts; \
                         loopv(meshes) vlen += ((skelmesh *)meshes[i])->genvbo args; \
-                        if(hasVBO) glBufferData_(GL_ARRAY_BUFFER_ARB, vverts.length()*sizeof(type), vverts.getbuf(), GL_STATIC_DRAW_ARB); \
-                        else \
-                        { \
-                            DELETEA(vc.vdata); \
-                            vc.vdata = new uchar[vverts.length()*sizeof(type)]; \
-                            memcpy(vc.vdata, vverts.getbuf(), vverts.length()*sizeof(type)); \
-                        } \
+                        glBufferData_(GL_ARRAY_BUFFER_ARB, vverts.length()*sizeof(type), vverts.getbuf(), GL_STATIC_DRAW_ARB); \
                     } while(0)
                 #define GENVBOANIM(type) GENVBO(type, (idxs, vlen, vverts))
                 #define GENVBOSTAT(type) GENVBO(type, (idxs, vlen, vverts, htdata, htlen))
@@ -1433,21 +1417,13 @@ struct skelmodel : animmodel
                     else GENVBOSTAT(vvert);
                     delete[] htdata;
                 }
-                if(hasVBO) glBindBuffer_(GL_ARRAY_BUFFER_ARB, 0);
+                glBindBuffer_(GL_ARRAY_BUFFER_ARB, 0);
             }
 
-            if(hasVBO)
-            {
-                glGenBuffers_(1, &ebuf);
-                glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER_ARB, ebuf);
-                glBufferData_(GL_ELEMENT_ARRAY_BUFFER_ARB, idxs.length()*sizeof(ushort), idxs.getbuf(), GL_STATIC_DRAW_ARB);
-                glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
-            }
-            else
-            {
-                edata = new ushort[idxs.length()];
-                memcpy(edata, idxs.getbuf(), idxs.length()*sizeof(ushort));
-            }
+            glGenBuffers_(1, &ebuf);
+            glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER_ARB, ebuf);
+            glBufferData_(GL_ELEMENT_ARRAY_BUFFER_ARB, idxs.length()*sizeof(ushort), idxs.getbuf(), GL_STATIC_DRAW_ARB);
+            glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
             #undef GENVBO
             #undef GENVBOANIM
             #undef GENVBOSTAT
@@ -1456,18 +1432,18 @@ struct skelmodel : animmodel
 
         void bindvbo(const animstate *as, vbocacheentry &vc, skelcacheentry *sc = NULL, blendcacheentry *bc = NULL)
         {
-            vvert *vverts = hasVBO ? 0 : (vvert *)vc.vdata;
-            if(hasVBO && lastebuf!=ebuf)
+            vvert *vverts = 0;
+            if(lastebuf!=ebuf)
             {
                 glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER_ARB, ebuf);
                 lastebuf = ebuf;
             }
-            if(lastvbuf != (hasVBO ? (void *)(size_t)vc.vbuf : vc.vdata))
+            if(lastvbuf != (void *)(size_t)vc.vbuf)
             {
-                if(hasVBO) glBindBuffer_(GL_ARRAY_BUFFER_ARB, vc.vbuf);
+                glBindBuffer_(GL_ARRAY_BUFFER_ARB, vc.vbuf);
                 if(!lastvbuf) glEnableClientState(GL_VERTEX_ARRAY);
                 glVertexPointer(3, GL_FLOAT, vertsize, &vverts->pos);
-                lastvbuf = hasVBO ? (void *)(size_t)vc.vbuf : vc.vdata;
+                lastvbuf = (void *)(size_t)vc.vbuf;
             }
             if(as->cur.anim&ANIM_NOSKIN)
             {
@@ -1612,11 +1588,9 @@ struct skelmodel : animmodel
             {
                 vbocacheentry &c = vbocache[i];
                 if(c.vbuf) { glDeleteBuffers_(1, &c.vbuf); c.vbuf = 0; }
-                DELETEA(c.vdata);
                 c.owner = -1;
             }
-            if(hasVBO) { if(ebuf) { glDeleteBuffers_(1, &ebuf); ebuf = 0; } }
-            else DELETEA(vdata);
+            if(ebuf) { glDeleteBuffers_(1, &ebuf); ebuf = 0; }
             if(skel) skel->cleanup(false);
         }
 
@@ -1641,7 +1615,7 @@ struct skelmodel : animmodel
 
         vbocacheentry &checkvbocache(skelcacheentry &sc, int owner)
         {
-            SEARCHCACHE(MAXVBOCACHE, vbocacheentry, vbocache, (hasVBO ? !c.vbuf : !c.vdata) || );
+            SEARCHCACHE(MAXVBOCACHE, vbocacheentry, vbocache, !c.vbuf || );
         }
 
         blendcacheentry &checkblendcache(skelcacheentry &sc, int owner)
@@ -1657,7 +1631,7 @@ struct skelmodel : animmodel
             if(skel->shouldcleanup()) skel->cleanup();
             else if(tangents!=vtangents) cleanup();
             skel->preload();
-            if(hasVBO ? !vbocache->vbuf : !vbocache->vdata) genvbo(tangents, *vbocache);
+            if(!vbocache->vbuf) genvbo(tangents, *vbocache);
         }
 
         void render(const animstate *as, float pitch, const vec &axis, const vec &forward, dynent *d, part *p, modelattach *attached)
@@ -1671,7 +1645,7 @@ struct skelmodel : animmodel
             {
                 if(!(as->cur.anim&ANIM_NORENDER))
                 {
-                    if(hasVBO ? !vbocache->vbuf : !vbocache->vdata) genvbo(tangents, *vbocache);
+                    if(!vbocache->vbuf) genvbo(tangents, *vbocache);
                     bindvbo(as, *vbocache);
                     loopv(meshes)
                     {
@@ -1690,7 +1664,7 @@ struct skelmodel : animmodel
                 int owner = &sc-&skel->skelcache[0];
                 vbocacheentry &vc = skel->usegpuskel ? *vbocache : checkvbocache(sc, owner);
                 vc.millis = lastmillis;
-                if(hasVBO ? !vc.vbuf : !vc.vdata) genvbo(tangents, vc);
+                if(!vc.vbuf) genvbo(tangents, vc);
                 blendcacheentry *bc = NULL;
                 if(vblends)
                 {
@@ -1711,14 +1685,11 @@ struct skelmodel : animmodel
                     loopv(meshes)
                     {
                         skelmesh &m = *(skelmesh *)meshes[i];
-                        if(skel->usematskel) m.interpverts(sc.mdata, bc ? bc->mdata : NULL, tangents, (hasVBO ? vdata : vc.vdata) + m.voffset*vertsize, p->skins[i]);
-                        else m.interpverts(sc.bdata, bc ? bc->bdata : NULL, tangents, (hasVBO ? vdata : vc.vdata) + m.voffset*vertsize, p->skins[i]);
+                        if(skel->usematskel) m.interpverts(sc.mdata, bc ? bc->mdata : NULL, tangents, vdata + m.voffset*vertsize, p->skins[i]);
+                        else m.interpverts(sc.bdata, bc ? bc->bdata : NULL, tangents, vdata + m.voffset*vertsize, p->skins[i]);
                     }
-                    if(hasVBO)
-                    {
-                        glBindBuffer_(GL_ARRAY_BUFFER_ARB, vc.vbuf);
-                        glBufferData_(GL_ARRAY_BUFFER_ARB, vlen*vertsize, vdata, GL_STREAM_DRAW_ARB);
-                    }
+                    glBindBuffer_(GL_ARRAY_BUFFER_ARB, vc.vbuf);
+                    glBufferData_(GL_ARRAY_BUFFER_ARB, vlen*vertsize, vdata, GL_STREAM_DRAW_ARB);
                 }
 
                 bindvbo(as, vc, &sc, bc);

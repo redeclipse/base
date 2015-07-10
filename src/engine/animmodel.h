@@ -1229,11 +1229,8 @@ struct animmodel : model
 
     static void disablevbo()
     {
-        if(hasVBO)
-        {
-            glBindBuffer_(GL_ARRAY_BUFFER_ARB, 0);
-            glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
-        }
+        glBindBuffer_(GL_ARRAY_BUFFER_ARB, 0);
+        glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
         glDisableClientState(GL_VERTEX_ARRAY);
         if(enabletc) disabletc();
         if(enablenormals) disablenormals();
