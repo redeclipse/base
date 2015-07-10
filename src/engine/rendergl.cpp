@@ -210,7 +210,7 @@ void gl_checkextensions()
     if(sscanf(gfxversion, " %u.%u", &glmajorversion, &glminorversion) != 2) glversion = 100;
     else glversion = glmajorversion*100 + glminorversion*10;
 
-    if(glversion < 200) fatal("OpenGL 2.0 or greater is required!");
+    if(glversion < 210) fatal("OpenGL 2.1 or greater is required!");
 
     //extern int shaderprecision;
     // default to low precision shaders on certain cards, can be overridden with -f3
