@@ -5,7 +5,6 @@
 struct vboinfo
 {
     int uses;
-    uchar *data;
 };
 
 hashtable<GLuint, vboinfo> vbos;
@@ -34,8 +33,7 @@ void destroyvbo(GLuint vbo)
     vbi.uses--;
     if(!vbi.uses)
     {
-        if(hasVBO) glDeleteBuffers_(1, &vbo);
-        else if(vbi.data) delete[] vbi.data;
+        glDeleteBuffers_(1, &vbo);
         vbos.remove(vbo);
     }
 }
@@ -43,26 +41,14 @@ void destroyvbo(GLuint vbo)
 void genvbo(int type, void *buf, int len, vtxarray **vas, int numva)
 {
     GLuint vbo;
-    uchar *data = NULL;
-    if(hasVBO)
-    {
-        glGenBuffers_(1, &vbo);
-        GLenum target = type==VBO_VBUF ? GL_ARRAY_BUFFER_ARB : GL_ELEMENT_ARRAY_BUFFER_ARB;
-        glBindBuffer_(target, vbo);
-        glBufferData_(target, len, buf, GL_STATIC_DRAW_ARB);
-        glBindBuffer_(target, 0);
-    }
-    else
-    {
-        static GLuint nextvbo = 0;
-        if(!nextvbo) nextvbo++; // just in case it ever wraps around
-        vbo = nextvbo++;
-        data = new uchar[len];
-        memcpy(data, buf, len);
-    }
+    glGenBuffers_(1, &vbo);
+    GLenum target = type==VBO_VBUF ? GL_ARRAY_BUFFER_ARB : GL_ELEMENT_ARRAY_BUFFER_ARB;
+    glBindBuffer_(target, vbo);
+    glBufferData_(target, len, buf, GL_STATIC_DRAW_ARB);
+    glBindBuffer_(target, 0);
+
     vboinfo &vbi = vbos[vbo];
     vbi.uses = numva;
-    vbi.data = data;
 
     if(printvbo) conoutf("vbo %d: type %d, size %d, %d uses", vbo, type, len, numva);
 
@@ -73,15 +59,12 @@ void genvbo(int type, void *buf, int len, vtxarray **vas, int numva)
         {
             case VBO_VBUF:
                 va->vbuf = vbo;
-                if(!hasVBO) va->vdata = (vertex *)(data + (size_t)va->vdata);
                 break;
             case VBO_EBUF:
                 va->ebuf = vbo;
-                if(!hasVBO) va->edata = (ushort *)(data + (size_t)va->edata);
                 break;
             case VBO_SKYBUF:
                 va->skybuf = vbo;
-                if(!hasVBO) va->skydata = (ushort *)(data + (size_t)va->skydata);
                 break;
         }
     }
@@ -94,23 +77,14 @@ bool readva(vtxarray *va, ushort *&edata, vertex *&vdata)
     edata = new ushort[3*va->tris];
     vdata = new vertex[va->verts];
 
-    if(hasVBO)
-    {
-        glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER_ARB, va->ebuf);
-        glGetBufferSubData_(GL_ELEMENT_ARRAY_BUFFER_ARB, (size_t)va->edata, 3*va->tris*sizeof(ushort), edata);
-        glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
+    glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER_ARB, va->ebuf);
+    glGetBufferSubData_(GL_ELEMENT_ARRAY_BUFFER_ARB, (size_t)va->edata, 3*va->tris*sizeof(ushort), edata);
+    glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
 
-        glBindBuffer_(GL_ARRAY_BUFFER_ARB, va->vbuf);
-        glGetBufferSubData_(GL_ARRAY_BUFFER_ARB, va->voffset*sizeof(vertex), va->verts*sizeof(vertex), vdata);
-        glBindBuffer_(GL_ARRAY_BUFFER_ARB, 0);
-        return true;
-    }
-    else
-    {
-        memcpy(edata, va->edata, 3*va->tris*sizeof(ushort));
-        memcpy(vdata, &va->vdata[va->voffset], va->verts*sizeof(vertex));
-        return true;
-    }
+    glBindBuffer_(GL_ARRAY_BUFFER_ARB, va->vbuf);
+    glGetBufferSubData_(GL_ARRAY_BUFFER_ARB, va->voffset*sizeof(vertex), va->verts*sizeof(vertex), vdata);
+    glBindBuffer_(GL_ARRAY_BUFFER_ARB, 0);
+    return true;
 }
 
 void flushvbo(int type = -1)
