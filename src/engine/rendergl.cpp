@@ -2,7 +2,7 @@
 
 #include "engine.h"
 
-bool hasVBO = false, hasDRE = false, hasOQ = false, hasTR = false, hasFBO = false, hasDS = false, hasTF = false, hasBE = false, hasBC = false, hasCM = false, hasNP2 = false, hasTC = false, hasS3TC = false, hasFXT1 = false, hasTE = false, hasMT = false, hasD3 = false, hasAF = false, hasVP2 = false, hasVP3 = false, hasPP = false, hasMDA = false, hasTE3 = false, hasTE4 = false, hasVP = false, hasFP = false, hasGLSL = false, hasGM = false, hasNVFB = false, hasSGIDT = false, hasSGISH = false, hasDT = false, hasSH = false, hasNVPCF = false, hasRN = false, hasPBO = false, hasFBB = false, hasUBO = false, hasBUE = false, hasMBR = false, hasFC = false, hasTEX = false;
+bool hasVBO = false, hasDRE = false, hasMDA = false, hasOQ = false, hasTR = false, hasFBO = false, hasDS = false, hasTF = false, hasBE = false, hasBC = false, hasCM = false, hasNP2 = false, hasTC = false, hasS3TC = false, hasFXT1 = false, hasMT = false, hasD3 = false, hasAF = false, hasGLSL = false, hasGM = false, hasNVFB = false, hasSGIDT = false, hasDT = false, hasPBO = false, hasFBB = false, hasUBO = false, hasBUE = false, hasMBR = false, hasFC = false;
 int hasstencil = 0;
 
 VAR(IDF_READONLY, glversion, 1, 0, 0);
@@ -24,19 +24,6 @@ PFNGLCLIENTACTIVETEXTUREARBPROC glClientActiveTexture_ = NULL;
 PFNGLMULTITEXCOORD2FARBPROC  glMultiTexCoord2f_  = NULL;
 PFNGLMULTITEXCOORD3FARBPROC  glMultiTexCoord3f_  = NULL;
 PFNGLMULTITEXCOORD4FARBPROC  glMultiTexCoord4f_     = NULL;
-
-// GL_ARB_vertex_program, GL_ARB_fragment_program
-PFNGLGENPROGRAMSARBPROC              glGenProgramsARB_            = NULL;
-PFNGLDELETEPROGRAMSARBPROC           glDeleteProgramsARB_         = NULL;
-PFNGLBINDPROGRAMARBPROC              glBindProgramARB_            = NULL;
-PFNGLPROGRAMSTRINGARBPROC            glProgramStringARB_          = NULL;
-PFNGLGETPROGRAMIVARBPROC             glGetProgramivARB_           = NULL;
-PFNGLPROGRAMENVPARAMETER4FARBPROC    glProgramEnvParameter4fARB_  = NULL;
-PFNGLPROGRAMENVPARAMETER4FVARBPROC   glProgramEnvParameter4fvARB_ = NULL;
-
-// GL_EXT_gpu_program_parameters
-PFNGLPROGRAMENVPARAMETERS4FVEXTPROC   glProgramEnvParameters4fv_   = NULL;
-PFNGLPROGRAMLOCALPARAMETERS4FVEXTPROC glProgramLocalParameters4fv_ = NULL;
 
 // GL_ARB_occlusion_query
 PFNGLGENQUERIESARBPROC      glGenQueries_       = NULL;
@@ -138,9 +125,6 @@ PFNGLUNIFORMBUFFEREXTPROC        glUniformBuffer_        = NULL;
 PFNGLGETUNIFORMBUFFERSIZEEXTPROC glGetUniformBufferSize_ = NULL;
 PFNGLGETUNIFORMOFFSETEXTPROC     glGetUniformOffset_     = NULL;
 
-// GL_EXT_fog_coord
-PFNGLFOGCOORDPOINTEREXTPROC glFogCoordPointer_ = NULL;
-
 // GL_ARB_map_buffer_range
 PFNGLMAPBUFFERRANGEPROC         glMapBufferRange_         = NULL;
 PFNGLFLUSHMAPPEDBUFFERRANGEPROC glFlushMappedBufferRange_ = NULL;
@@ -237,17 +221,6 @@ void gl_checkextensions()
     glGetIntegerv(GL_MAX_TEXTURE_SIZE, &val);
     hwtexsize = val;
 
-    if(hasext(gfxexts, "GL_EXT_texture_env_combine") || hasext(gfxexts, "GL_ARB_texture_env_combine"))
-    {
-        hasTE = true;
-        if(hasext(gfxexts, "GL_ARB_texture_env_crossbar")) hasTEX = true;
-        if(hasext(gfxexts, "GL_ATI_texture_env_combine3")) hasTE3 = true;
-        if(hasext(gfxexts, "GL_NV_texture_env_combine4")) hasTE4 = true;
-        if(hasext(gfxexts, "GL_EXT_texture_env_dot3") || hasext(gfxexts, "GL_ARB_texture_env_dot3")) hasD3 = true;
-        if(dbgexts) conoutf("\frUsing GL_ARB_texture_env_combine extension.");
-    }
-    else conoutf("\frWARNING: No texture_env_combine extension! (your video card is WAY too old)");
-
     if(hasext(gfxexts, "GL_ARB_multitexture"))
     {
         glActiveTexture_       = (PFNGLACTIVETEXTUREARBPROC)      getprocaddress("glActiveTextureARB");
@@ -305,10 +278,6 @@ void gl_checkextensions()
         if(dbgexts) conoutf("\frUsing GL_EXT_multi_draw_arrays extension.");
     }
 
-#ifdef __APPLE__
-    // floating point FBOs not fully supported until 10.5
-    if(osversion>=0x0A0500)
-#endif
     if(hasext(gfxexts, "GL_ARB_texture_float") || hasext(gfxexts, "GL_ATI_texture_float"))
     {
         hasTF = true;

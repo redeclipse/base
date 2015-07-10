@@ -77,9 +77,6 @@ extern PFNGLCOMPRESSEDTEXSUBIMAGE2DARBPROC glCompressedTexSubImage2D_;
 extern PFNGLCOMPRESSEDTEXSUBIMAGE1DARBPROC glCompressedTexSubImage1D_;
 extern PFNGLGETCOMPRESSEDTEXIMAGEARBPROC   glGetCompressedTexImage_;
 
-// GL_EXT_fog_coord
-extern PFNGLFOGCOORDPOINTEREXTPROC glFogCoordPointer_;
-
 // GL_ARB_map_buffer_range
 #ifndef GL_ARB_map_buffer_range
 #define GL_MAP_READ_BIT                   0x0001
@@ -93,25 +90,6 @@ typedef void (APIENTRYP PFNGLFLUSHMAPPEDBUFFERRANGEPROC) (GLenum target, GLintpt
 #endif
 extern PFNGLMAPBUFFERRANGEPROC         glMapBufferRange_;
 extern PFNGLFLUSHMAPPEDBUFFERRANGEPROC glFlushMappedBufferRange_;
-
-// GL_ARB_vertex_program, GL_ARB_fragment_program
-extern PFNGLGENPROGRAMSARBPROC              glGenProgramsARB_;
-extern PFNGLDELETEPROGRAMSARBPROC           glDeleteProgramsARB_;
-extern PFNGLBINDPROGRAMARBPROC              glBindProgramARB_;
-extern PFNGLPROGRAMSTRINGARBPROC            glProgramStringARB_;
-extern PFNGLGETPROGRAMIVARBPROC             glGetProgramivARB_;
-extern PFNGLPROGRAMENVPARAMETER4FARBPROC    glProgramEnvParameter4fARB_;
-extern PFNGLPROGRAMENVPARAMETER4FVARBPROC   glProgramEnvParameter4fvARB_;
-
-// GL_EXT_gpu_program_parameters
-#ifndef GL_EXT_gpu_program_parameters
-#define GL_EXT_gpu_program_parameters 1
-typedef void (APIENTRYP PFNGLPROGRAMENVPARAMETERS4FVEXTPROC) (GLenum target, GLuint index, GLsizei count, const GLfloat *params);
-typedef void (APIENTRYP PFNGLPROGRAMLOCALPARAMETERS4FVEXTPROC) (GLenum target, GLuint index, GLsizei count, const GLfloat *params);
-#endif
-
-extern PFNGLPROGRAMENVPARAMETERS4FVEXTPROC   glProgramEnvParameters4fv_;
-extern PFNGLPROGRAMLOCALPARAMETERS4FVEXTPROC glProgramLocalParameters4fv_;
 
 #ifndef GL_VERSION_2_1
 #define GL_VERSION_2_1 1
