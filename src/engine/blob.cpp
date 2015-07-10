@@ -550,8 +550,7 @@ struct blobrenderer
         {
             if(b->endvert - b->startvert >= 3)
             {
-                if(hasDRE) glDrawRangeElements_(GL_TRIANGLES, b->startvert, b->endvert-1, b->endindex - b->startindex, GL_UNSIGNED_SHORT, &indexes[b->startindex]);
-                else glDrawElements(GL_TRIANGLES, b->endindex - b->startindex, GL_UNSIGNED_SHORT, &indexes[b->startindex]);
+                glDrawRangeElements_(GL_TRIANGLES, b->startvert, b->endvert-1, b->endindex - b->startindex, GL_UNSIGNED_SHORT, &indexes[b->startindex]);
                 xtravertsva += b->endvert - b->startvert;
             }
             int offset = b - &blobs[0] + 1;

@@ -4,8 +4,7 @@
 
 static inline void drawtris(GLsizei numindices, const GLvoid *indices, ushort minvert, ushort maxvert)
 {
-    if(hasDRE) glDrawRangeElements_(GL_TRIANGLES, minvert, maxvert, numindices, GL_UNSIGNED_SHORT, indices);
-    else glDrawElements(GL_TRIANGLES, numindices, GL_UNSIGNED_SHORT, indices);
+    glDrawRangeElements_(GL_TRIANGLES, minvert, maxvert, numindices, GL_UNSIGNED_SHORT, indices);
     glde++;
 }
 

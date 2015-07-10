@@ -78,8 +78,7 @@ namespace sphere
 
     void draw()
     {
-        if(hasDRE) glDrawRangeElements_(GL_TRIANGLES, 0, numverts-1, numindices, GL_UNSIGNED_SHORT, indices);
-        else glDrawElements(GL_TRIANGLES, numindices, GL_UNSIGNED_SHORT, indices);
+        glDrawRangeElements_(GL_TRIANGLES, 0, numverts-1, numindices, GL_UNSIGNED_SHORT, indices);
         xtraverts += numindices;
         glde++;
     }

@@ -236,8 +236,7 @@ struct vertmodel : animmodel
                 else if(enabletangents) disabletangents();
             }
 
-            if(hasDRE) glDrawRangeElements_(GL_TRIANGLES, minvert, maxvert, elen, GL_UNSIGNED_SHORT, &((vertmeshgroup *)group)->edata[eoffset]);
-            else glDrawElements(GL_TRIANGLES, elen, GL_UNSIGNED_SHORT, &((vertmeshgroup *)group)->edata[eoffset]);
+            glDrawRangeElements_(GL_TRIANGLES, minvert, maxvert, elen, GL_UNSIGNED_SHORT, &((vertmeshgroup *)group)->edata[eoffset]);
             glde++;
             xtravertsva += numverts;
         }

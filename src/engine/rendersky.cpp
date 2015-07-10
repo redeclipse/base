@@ -358,8 +358,7 @@ namespace fogdome
         glVertexPointer(3, GL_FLOAT, sizeof(vert), &verts->pos);
         glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(vert), &verts->color);
     
-        if(hasDRE) glDrawRangeElements_(GL_TRIANGLES, 0, numverts-1, numindices + fogdomecap*capindices, GL_UNSIGNED_SHORT, indices);
-        else glDrawElements(GL_TRIANGLES, numindices + fogdomecap*capindices, GL_UNSIGNED_SHORT, indices);
+        glDrawRangeElements_(GL_TRIANGLES, 0, numverts-1, numindices + fogdomecap*capindices, GL_UNSIGNED_SHORT, indices);
         xtraverts += numverts;
         glde++;
     
