@@ -1500,6 +1500,8 @@ void rendergeom(float causticspass, bool fogpass)
         if(doSM) pushshadowmap();
     }
 
+    finddynlights();
+
     resetbatches();
 
     glEnableClientState(GL_VERTEX_ARRAY);
