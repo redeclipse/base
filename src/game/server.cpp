@@ -5970,6 +5970,7 @@ namespace server
 
                 case N_GAMEINFO:
                 {
+                    bool skip = hasgameinfo || crclocked(ci);
                     int n;
                     while((n = getint(p)) != -1)
                     {
@@ -5977,7 +5978,7 @@ namespace server
                         getstring(text, p);
                         defformatstring(cmdname)("sv_%s", text);
                         ident *id = idents.access(cmdname);
-                        if(id && id->flags&IDF_SERVER && id->flags&IDF_WORLD && n == id->type)
+                        if(!skip && id && id->flags&IDF_SERVER && id->flags&IDF_WORLD && n == id->type)
                         {
                             switch(id->type)
                             {
@@ -6020,7 +6021,7 @@ namespace server
                     {
                         int type = getint(p), numattr = getint(p);
                         if(p.overread() || type < 0 || type >= MAXENTTYPES || n < 0 || n >= MAXENTS) break;
-                        if(!hasgameinfo && enttype[type].syncs)
+                        if(!skip && enttype[type].syncs)
                         {
                             while(sents.length() <= n) sents.add();
                             sents[n].reset();
@@ -6062,7 +6063,7 @@ namespace server
                             }
                         }
                     }
-                    if(!hasgameinfo) setupgameinfo();
+                    if(!skip) setupgameinfo();
                     break;
                 }
 
