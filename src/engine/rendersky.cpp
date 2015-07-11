@@ -230,8 +230,8 @@ namespace fogdome
     GLushort *indices = NULL;
     int numverts = 0, numindices = 0, capindices = 0;
     GLuint vbuf = 0, ebuf = 0;
-    bvec color(0, 0, 0);
-    float minalpha = 0, maxalpha = 0, capsize = -1, clipz = 1;
+    bvec lastcolor(0, 0, 0);
+    float lastminalpha = 0, lastmaxalpha = 0, lastcapsize = -1, lastclipz = 1;
     
     void subdivide(int depth, int face);
     
@@ -340,14 +340,14 @@ namespace fogdome
     {
         float capsize = fogdomecap && fogdomeheight < 1 ? (1 + fogdomeheight) / (1 - fogdomeheight) : -1;
         bvec color = fogdomecolour ? fogdomecolor : fogcolor;
-        if(!numverts || color != color || minalpha != fogdomemin || maxalpha != fogdomemax || capsize != capsize || clipz != fogdomeclip)
+        if(!numverts || lastcolor != color || lastminalpha != fogdomemin || lastmaxalpha != fogdomemax || lastcapsize != capsize || lastclipz != fogdomeclip)
         {
             init(color, min(fogdomemin, fogdomemax), fogdomemax, capsize, fogdomeclip);
-            color = color;
-            minalpha = fogdomemin;
-            maxalpha = fogdomemax;
-            capsize = capsize;
-            clipz = fogdomeclip;
+            lastcolor = color;
+            lastminalpha = fogdomemin;
+            lastmaxalpha = fogdomemax;
+            lastcapsize = capsize;
+            lastclipz = fogdomeclip;
         }
     
         glBindBuffer_(GL_ARRAY_BUFFER, vbuf);
