@@ -483,7 +483,7 @@ GVAR(0, zoomtime, 1, 350, VAR_MAX);
 GFVAR(0, radialscale, 0, 1, FVAR_MAX);
 GFVAR(0, radiallimited, 0, 0.75f, FVAR_MAX);
 GFVAR(0, damagescale, 0, 1, FVAR_MAX);
-GVAR(0, weaponswitchdelay, 0, 500, VAR_MAX);
+GVAR(0, weaponswitchdelay, 0, 400, VAR_MAX);
 
 GFVAR(0, pushscale, 0, 1, FVAR_MAX);
 GFVAR(0, pushlimited, 0, 0.75f, FVAR_MAX);
