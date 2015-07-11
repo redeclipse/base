@@ -21,7 +21,7 @@
 #define glDrawRangeElements_ glDrawRangeElements
 #else
 extern PFNGLACTIVETEXTUREPROC       glActiveTexture_;
-extern PFNGNCLIENTACTIVETEXTUREPROC glClientActiveTexture_;
+extern PFNGLCLIENTACTIVETEXTUREPROC glClientActiveTexture_;
 
 extern PFNGLBLENDEQUATIONPROC glBlendEquation_;
 extern PFNGLBLENDCOLORPROC    glBlendColor_;
