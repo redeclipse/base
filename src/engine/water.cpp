@@ -445,9 +445,9 @@ void renderwater()
             if(light!=lastlight)
             {
                 if(varray::data.length()) varray::end();
-                const vec &lightpos = light ? light->o : vec(hdr.worldsize/2, hdr.worldsize/2, hdr.worldsize);
+                vec lightpos = light ? light->o : vec(hdr.worldsize/2, hdr.worldsize/2, hdr.worldsize);
                 float lightrad = light && light->type == ET_LIGHT && light->attrs[0] ? light->attrs[0] : hdr.worldsize*8.0f;
-                const vec &lightcol = (light ? (light->type == ET_LIGHT ? vec(light->attrs[1], light->attrs[2], light->attrs[3]) : vec(light->attrs[2], light->attrs[3], light->attrs[4])) : vec(amb)).div(255.0f).mul(wspec/100.0f);
+                vec lightcol = (light ? (light->type == ET_LIGHT ? vec(light->attrs[1], light->attrs[2], light->attrs[3]) : vec(light->attrs[2], light->attrs[3], light->attrs[4])) : vec(amb)).div(255.0f).mul(wspec/100.0f);
                 LOCALPARAM(lightpos, lightpos);
                 LOCALPARAM(lightcolor, lightcol);
                 LOCALPARAMF(lightradius, lightrad);
