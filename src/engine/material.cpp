@@ -638,7 +638,7 @@ void rendermaterials()
     MSlot *mslot = NULL;
     uchar wcol[4] = { 255, 255, 255, 192 }, wfcol[4] = { 255, 255, 255, 192 };
     int lastorient = -1, lastmat = -1, usedwaterfall = -1;
-    bool depth = true, blended = false, usedcamera = false;
+    bool depth = true, blended = false;
     ushort envmapped = EMID_NONE;
     static const vec normals[6] =
     {
@@ -649,6 +649,8 @@ void rendermaterials()
         vec(0, 0, -1),
         vec(0, 0,  1)
     };
+
+    GLOBALPARAM(camera, camera1->o);
 
     static const float zerofog[4] = { 0, 0, 0, 1 };
     float oldfogc[4];
@@ -738,12 +740,6 @@ void rendermaterials()
                             glColor3ubv(wfcol);
                             fogtype = 1;
 
-                            if(!usedcamera)
-                            {
-                                setenvparamf("camera", SHPARAM_VERTEX, 0, camera1->o.x, camera1->o.y, camera1->o.z);
-                                usedcamera = true;
-                            }
-
                             if(waterfallrefract && wfog && !reflecting && !refracting)
                             {
                                 if(waterfallenv) SETSHADER(waterfallenvrefract);
@@ -771,7 +767,7 @@ void rendermaterials()
                             {
                                 Texture *dudv = mslot->sts.inrange(5) ? mslot->sts[5].t : notexture;
                                 float scale = 8.0f/(dudv->ys*mslot->scale);
-                                setlocalparamf("dudvoffset", SHPARAM_PIXEL, 1, 0, scale*16*lastmillis/1000.0f);
+                                LOCALPARAMF(dudvoffset, 0, scale*16*lastmillis/1000.0f);
 
                                 glActiveTexture_(GL_TEXTURE1);
                                 glBindTexture(GL_TEXTURE_2D, mslot->sts.inrange(4) ? mslot->sts[4].t->id : notexture->id);
@@ -838,11 +834,6 @@ void rendermaterials()
                     if(m.envmap!=EMID_NONE && glassenv && envmapped!=m.envmap)
                     {
                         glBindTexture(GL_TEXTURE_CUBE_MAP, lookupenvmap(m.envmap));
-                        if(!usedcamera)
-                        {
-                            setenvparamf("camera", SHPARAM_VERTEX, 0, camera1->o.x, camera1->o.y, camera1->o.z);
-                            usedcamera = true;
-                        }
                         envmapped = m.envmap;
                     }
                     if(lastmat!=m.material)

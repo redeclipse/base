@@ -260,7 +260,7 @@ COMMAND(0, mdlextendbb, "fff");
 void mdlname()
 {
     checkmdl;
-    result(loadingmodel->name());
+    result(loadingmodel->name);
 }
 
 COMMAND(0, mdlname, "");
@@ -379,12 +379,12 @@ ICOMMAND(0, mapmodelindex, "s", (char *a), {
 
 // model registry
 
-hashtable<const char *, model *> mdllookup;
+hashnameset<model *> models;
 vector<const char *> preloadmodels;
 
 void preloadmodel(const char *name)
 {
-    if(!name || !name[0] || mdllookup.access(name)) return;
+    if(!name || !name[0] || models.access(name)) return;
     preloadmodels.add(newstring(name));
 }
 
@@ -442,7 +442,7 @@ model *loadmodel(const char *name, int i, bool msg)
         if(mmi.m) return mmi.m;
         name = mmi.name;
     }
-    model **mm = mdllookup.access(name);
+    model **mm = models.access(name);
     model *m;
     if(mm) m = *mm;
     else
@@ -463,7 +463,7 @@ model *loadmodel(const char *name, int i, bool msg)
         }
         loadingmodel = NULL;
         if(!m) return NULL;
-        mdllookup.access(m->name(), m);
+        models.access(m->name, m);
         m->preloadshaders();
     }
     if(mapmodels.inrange(i) && !mapmodels[i].m) mapmodels[i].m = m;
@@ -473,25 +473,25 @@ model *loadmodel(const char *name, int i, bool msg)
 void preloadmodelshaders()
 {
     if(initing) return;
-    enumerate(mdllookup, model *, m, m->preloadshaders());
+    enumerate(models, model *, m, m->preloadshaders());
 }
 
 void clear_mdls()
 {
-    enumerate(mdllookup, model *, m, delete m);
+    enumerate(models, model *, m, delete m);
 }
 
 void cleanupmodels()
 {
-    enumerate(mdllookup, model *, m, m->cleanup());
+    enumerate(models, model *, m, m->cleanup());
 }
 
 void clearmodel(char *name)
 {
-    model **m = mdllookup.access(name);
+    model **m = models.access(name);
     if(!m) { conoutf("\frmodel %s is not loaded", name); return; }
     loopv(mapmodels) if(mapmodels[i].m==*m) mapmodels[i].m = NULL;
-    mdllookup.remove(name);
+    models.remove(name);
     (*m)->cleanup();
     delete *m;
     conoutf("\fgcleared model %s", name);
@@ -604,7 +604,7 @@ void renderbatchedmodel(model *m, batchedmodel &b)
     if(shadowmapping)
     {
         anim |= ANIM_NOSKIN;
-        setenvparamf("shadowintensity", SHPARAM_VERTEX, 1, b.transparent);
+        GLOBALPARAMF(shadowintensity, b.transparent);
     }
     else
     {
@@ -1002,7 +1002,7 @@ void rendermodel(entitylight *light, const char *mdl, int anim, const vec &o, fl
     if(shadowmapping)
     {
         anim |= ANIM_NOSKIN;
-        setenvparamf("shadowintensity", SHPARAM_VERTEX, 1, trans);
+        GLOBALPARAMF(shadowintensity, trans);
     }
     else
     {

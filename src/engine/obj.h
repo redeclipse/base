@@ -172,8 +172,8 @@ struct obj : vertmodel, vertloader<obj>
         parts.add(&mdl);
         mdl.model = this;
         mdl.index = 0;
-        const char *pname = parentdir(loadname);
-        defformatstring(name1)("models/%s/tris.obj", loadname);
+        const char *pname = parentdir(name);
+        defformatstring(name1)("models/%s/tris.obj", name);
         mdl.meshes = sharemeshes(path(name1), 2.0);
         if(!mdl.meshes)
         {
@@ -182,7 +182,7 @@ struct obj : vertmodel, vertloader<obj>
             if(!mdl.meshes) return false;
         }
         Texture *tex, *masks;
-        loadskin(loadname, pname, tex, masks);
+        loadskin(name, pname, tex, masks);
         mdl.initskins(tex, masks);
         if(tex==notexture) conoutf("\frcould not load model skin for %s", name1);
         return true;
@@ -190,9 +190,8 @@ struct obj : vertmodel, vertloader<obj>
 
     bool load()
     {
-        if(loaded) return true;
-        formatstring(dir)("models/%s", loadname);
-        defformatstring(cfgname)("models/%s/obj.cfg", loadname);
+        formatstring(dir)("models/%s", name);
+        defformatstring(cfgname)("models/%s/obj.cfg", name);
 
         loading = this;
         if(execfile(cfgname, false) && parts.length()) // configured obj, will call the obj* commands below
@@ -205,11 +204,9 @@ struct obj : vertmodel, vertloader<obj>
             loading = NULL;
             if(!loaddefaultparts()) return false;
         }
-        scale /= 4;
         translate.y = -translate.y;
-        parts[0]->translate = translate;
-        loopv(parts) parts[i]->meshes->shared++;
-        return loaded = true;
+        loaded();
+        return true;
     }
 };
 

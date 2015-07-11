@@ -404,24 +404,23 @@ struct md5 : skelmodel, skelloader<md5>
         mdl.index = 0;
         mdl.pitchscale = mdl.pitchoffset = mdl.pitchmin = mdl.pitchmax = 0;
         adjustments.setsize(0);
-        const char *fname = loadname + strlen(loadname);
-        do --fname; while(fname >= loadname && *fname!='/' && *fname!='\\');
+        const char *fname = name + strlen(name);
+        do --fname; while(fname >= name && *fname!='/' && *fname!='\\');
         fname++;
-        defformatstring(meshname)("models/%s/%s.md5mesh", loadname, fname);
+        defformatstring(meshname)("models/%s/%s.md5mesh", name, fname);
         mdl.meshes = sharemeshes(path(meshname), NULL, 2.0);
         if(!mdl.meshes) return false;
         mdl.initanimparts();
         mdl.initskins();
-        defformatstring(animname)("models/%s/%s.md5anim", loadname, fname);
+        defformatstring(animname)("models/%s/%s.md5anim", name, fname);
         ((md5meshgroup *)mdl.meshes)->loadanim(path(animname));
         return true;
     }
 
     bool load()
     {
-        if(loaded) return true;
-        formatstring(dir)("models/%s", loadname);
-        defformatstring(cfgname)("models/%s/md5.cfg", loadname);
+        formatstring(dir)("models/%s", name);
+        defformatstring(cfgname)("models/%s/md5.cfg", name);
 
         loading = this;
         if(execfile(cfgname, false) && parts.length()) // configured md5, will call the md5* commands below
@@ -438,15 +437,8 @@ struct md5 : skelmodel, skelloader<md5>
             }
             loading = NULL;
         }
-        scale /= 4;
-        parts[0]->translate = translate;
-        loopv(parts)
-        {
-            skelpart *p = (skelpart *)parts[i];
-            p->endanimparts();
-            p->meshes->shared++;
-        }
-        return loaded = true;
+        loaded();
+        return true;
     }
 };
 

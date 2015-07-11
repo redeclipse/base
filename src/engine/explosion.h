@@ -225,13 +225,13 @@ struct explosionrenderer : sharedlistrenderer
         s.rotate(-lastmillis/7.0f*RAD, rotdir);
         t.rotate(-lastmillis/7.0f*RAD, rotdir);
 
-        setlocalparamf("texgenS", SHPARAM_VERTEX, 2, s.x, s.y, s.z);
-        setlocalparamf("texgenT", SHPARAM_VERTEX, 3, t.x, t.y, t.z);
+        LOCALPARAM(texgenS, s);
+        LOCALPARAM(texgenT, t);
 
         vec center = vec(p->o).mul(0.015f);
-        setlocalparamf("center", SHPARAM_VERTEX, 0, center.x, center.y, center.z);
-        setlocalparamf("animstate", SHPARAM_VERTEX, 1, fsize, psize, pmax, float(lastmillis));
-        setlocalparamf("blendparams", SHPARAM_PIXEL, 2, inside ? 0.5f : 4, inside ? 0.25f : 0);
+        LOCALPARAM(center, center);
+        LOCALPARAMF(millis, lastmillis/1000.0f);
+        LOCALPARAMF(blendparams, inside ? 0.5f : 4, inside ? 0.25f : 0);
         binddepthfxparams(depthfxblend, inside ? pblend/512.f : 0, 2*(size + pmax)*WOBBLE >= depthfxblend, p);
 
         glRotatef(lastmillis/7.0f, -rotdir.x, rotdir.y, -rotdir.z);

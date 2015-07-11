@@ -52,7 +52,7 @@ void addglare()
 
     glBindTexture(GL_TEXTURE_2D, glaretex.rendertex);
 
-    setlocalparamf("glarescale", SHPARAM_PIXEL, 0, glarescale, glarescale, glarescale);
+    LOCALPARAMF(glarescale, glarescale);
 
     glBegin(GL_TRIANGLE_STRIP);
     glTexCoord2f(0, 0); glVertex3f(-1, -1, 0);

@@ -1162,8 +1162,8 @@ void renderparticles(bool mainpass)
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-            if(glaring) setenvparamf("colorscale", SHPARAM_VERTEX, 4, particleglare, particleglare, particleglare, 1);
-            else setenvparamf("colorscale", SHPARAM_VERTEX, 4, 1, 1, 1, 1);
+            if(glaring) GLOBALPARAMF(colorscale, particleglare, particleglare, particleglare, 1);
+            else GLOBALPARAMF(colorscale, 1, 1, 1, 1);
 
             particleshader->set();
             glGetFloatv(GL_FOG_COLOR, oldfogc);

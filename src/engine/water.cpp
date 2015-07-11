@@ -334,8 +334,8 @@ void renderwater()
         }
     }
 
-    setenvparamf("camera", SHPARAM_VERTEX, 0, camera1->o.x, camera1->o.y, camera1->o.z);
-    setenvparamf("millis", SHPARAM_VERTEX, 1, lastmillis/1000.0f, lastmillis/1000.0f, lastmillis/1000.0f);
+    GLOBALPARAM(camera, camera1->o);
+    GLOBALPARAMF(millis, lastmillis/1000.0f);
 
     #define SETWATERSHADER(which, name) \
     do { \
@@ -416,7 +416,7 @@ void renderwater()
                 if(waterfade)
                 {
                     float fadeheight = ref.height+offset+(below ? -2 : 2);
-                    setlocalparamf("waterheight", SHPARAM_VERTEX, 7, fadeheight, fadeheight, fadeheight);
+                    LOCALPARAMF(waterheight, fadeheight);
                 }
             }
         }
@@ -448,9 +448,9 @@ void renderwater()
                 const vec &lightpos = light ? light->o : vec(hdr.worldsize/2, hdr.worldsize/2, hdr.worldsize);
                 float lightrad = light && light->type == ET_LIGHT && light->attrs[0] ? light->attrs[0] : hdr.worldsize*8.0f;
                 const vec &lightcol = (light ? (light->type == ET_LIGHT ? vec(light->attrs[1], light->attrs[2], light->attrs[3]) : vec(light->attrs[2], light->attrs[3], light->attrs[4])) : vec(amb)).div(255.0f).mul(wspec/100.0f);
-                setlocalparamf("lightpos", SHPARAM_VERTEX, 2, lightpos.x, lightpos.y, lightpos.z);
-                setlocalparamf("lightcolor", SHPARAM_PIXEL, 3, lightcol.x, lightcol.y, lightcol.z);
-                setlocalparamf("lightradius", SHPARAM_PIXEL, 4, lightrad, lightrad, lightrad);
+                LOCALPARAM(lightpos, lightpos);
+                LOCALPARAM(lightcolor, lightcol);
+                LOCALPARAMF(lightradius, lightrad);
                 lastlight = light;
             }
 
@@ -459,7 +459,7 @@ void renderwater()
                 if(varray::data.length()) varray::end();
                 float depth = !wfog ? 1.0f : min(0.75f*m.depth/wfog, 0.95f);
                 depth = max(depth, !below && (waterreflect || waterenvmap) ? 0.3f : 0.6f);
-                setlocalparamf("depth", SHPARAM_PIXEL, 5, depth, 1.0f-depth);
+                LOCALPARAMF(depth, depth, 1.0f-depth);
                 lastdepth = m.depth;
             }
 

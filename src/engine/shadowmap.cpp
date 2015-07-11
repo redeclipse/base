@@ -189,7 +189,7 @@ static struct shadowmaptexture : rendertarget
 
         glColor3f(0, 0, 0);
 
-        setenvparamf("shadowmapbias", SHPARAM_VERTEX, 0, -shadowmapbias/float(shadowmapdist), 1 - (shadowmapbias + (smoothshadowmappeel ? 0 : shadowmappeelbias))/float(shadowmapdist));
+        GLOBALPARAMF(shadowmapbias, -shadowmapbias/float(shadowmapdist), 1 - (shadowmapbias + (smoothshadowmappeel ? 0 : shadowmappeelbias))/float(shadowmapdist));
 
         shadowmapcasters = 0;
         shadowmapmaxz = shadowfocus.z - shadowmapdist;
@@ -364,7 +364,7 @@ void pushshadowmap()
         }
     }
     else { r = shadowmapambientcolor[0]; g = shadowmapambientcolor[1]; b = shadowmapambientcolor[2]; }
-    setenvparamf("shadowmapambient", SHPARAM_PIXEL, 7, r/255.0f, g/255.0f, b/255.0f);
+    GLOBALPARAMF(shadowmapambient, r/255.0f, g/255.0f, b/255.0f);
 }
 
 void popshadowmap()

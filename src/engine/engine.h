@@ -161,7 +161,7 @@ extern int compactvslots(bool cull = false);
 
 // shader
 
-extern int useshaders, shaderprecision;
+extern int shaderprecision;
 
 // shadowmap
 

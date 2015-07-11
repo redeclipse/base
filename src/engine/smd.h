@@ -422,10 +422,10 @@ struct smd : skelmodel, skelloader<smd>
         mdl.index = 0;
         mdl.pitchscale = mdl.pitchoffset = mdl.pitchmin = mdl.pitchmax = 0;
         adjustments.setsize(0);
-        const char *fname = loadname + strlen(loadname);
-        do --fname; while(fname >= loadname && *fname!='/' && *fname!='\\');
+        const char *fname = name + strlen(name);
+        do --fname; while(fname >= name && *fname!='/' && *fname!='\\');
         fname++;
-        defformatstring(meshname)("models/%s/%s.smd", loadname, fname);
+        defformatstring(meshname)("models/%s/%s.smd", name, fname);
         mdl.meshes = sharemeshes(path(meshname), NULL);
         if(!mdl.meshes) return false;
         mdl.initanimparts();
@@ -435,9 +435,8 @@ struct smd : skelmodel, skelloader<smd>
 
     bool load()
     {
-        if(loaded) return true;
-        formatstring(dir)("models/%s", loadname);
-        defformatstring(cfgname)("models/%s/smd.cfg", loadname);
+        formatstring(dir)("models/%s", name);
+        defformatstring(cfgname)("models/%s/smd.cfg", name);
 
         loading = this;
         if(execfile(cfgname, false) && parts.length()) // configured smd, will call the smd* commands below
@@ -454,15 +453,8 @@ struct smd : skelmodel, skelloader<smd>
             }
             loading = NULL;
         }
-        scale /= 4;
-        parts[0]->translate = translate;
-        loopv(parts) 
-        {
-            skelpart *p = (skelpart *)parts[i];
-            p->endanimparts();
-            p->meshes->shared++;
-        }
-        return loaded = true;
+        loaded();
+        return true;
     }
 };
 

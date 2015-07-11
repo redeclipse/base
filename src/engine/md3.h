@@ -177,12 +177,12 @@ struct md3 : vertmodel, vertloader<md3>
 
     bool loaddefaultparts()
     {
-        const char *pname = parentdir(loadname);
+        const char *pname = parentdir(name);
         part &mdl = *new part;
         parts.add(&mdl);
         mdl.model = this;
         mdl.index = 0;
-        defformatstring(name1)("models/%s/tris.md3", loadname);
+        defformatstring(name1)("models/%s/tris.md3", name);
         mdl.meshes = sharemeshes(path(name1));
         if(!mdl.meshes)
         {
@@ -191,7 +191,7 @@ struct md3 : vertmodel, vertloader<md3>
             if(!mdl.meshes) return false;
         }
         Texture *tex, *masks;
-        loadskin(loadname, pname, tex, masks);
+        loadskin(name, pname, tex, masks);
         mdl.initskins(tex, masks);
         if(tex==notexture) conoutf("\frcould not load model skin for %s", name1);
         return true;
@@ -199,9 +199,8 @@ struct md3 : vertmodel, vertloader<md3>
 
     bool load()
     {
-        if(loaded) return true;
-        formatstring(dir)("models/%s", loadname);
-        defformatstring(cfgname)("models/%s/md3.cfg", loadname);
+        formatstring(dir)("models/%s", name);
+        defformatstring(cfgname)("models/%s/md3.cfg", name);
 
         loading = this;
         if(execfile(cfgname, false) && parts.length()) // configured md3, will call the md3* commands below
@@ -214,11 +213,9 @@ struct md3 : vertmodel, vertloader<md3>
             loading = NULL;
             if(!loaddefaultparts()) return false;
         }
-        scale /= 4;
         translate.y = -translate.y;
-        parts[0]->translate = translate;
-        loopv(parts) parts[i]->meshes->shared++;
-        return loaded = true;
+        loaded();
+        return true;
     }
 };
 

@@ -169,10 +169,8 @@ void writeinitcfg()
     f->printf("stencilbits %d\n", stencilbits);
     f->printf("fsaa %d\n", fsaa);
     f->printf("vsync %d\n", vsync);
-    extern int useshaders, shaderprecision, forceglsl;
-    f->printf("shaders %d\n", useshaders);
+    extern int shaderprecision;
     f->printf("shaderprecision %d\n", shaderprecision);
-    f->printf("forceglsl %d\n", forceglsl);
     extern int soundmono, soundmixchans, soundbuflen, soundfreq;
     f->printf("soundmono %d\n", soundmono);
     f->printf("soundmixchans %d\n", soundmixchans);
@@ -869,17 +867,14 @@ int main(int argc, char **argv)
                     case 's': stencilbits = atoi(&argv[i][3]); break;
                     case 'u':
                     {
-                        extern int useshaders, shaderprecision, forceglsl;
-                        int sh = -1, prec = shaderprecision;
+                        extern int shaderprecision;
+                        int prec = shaderprecision;
                         for(int j = 3; argv[i][j]; j++) switch(argv[i][j])
                         {
-                            case 'a': case 'A': forceglsl = 0; sh = 1; break;
-                            case 'g': case 'G': forceglsl = 1; sh = 1; break;
-                            case 'f': case 'F': case '0': sh = 0; break;
-                            case '1': case '2': case '3': if(sh < 0) sh = 1; prec = argv[i][j] - '1'; break;
+                            case '0': prec = 0; break;
+                            case '1': case '2': case '3': prec = argv[i][j] - '1'; break;
                             default: break;
                         }
-                        useshaders = sh > 0 ? 1 : 0;
                         shaderprecision = prec;
                         break;
                     }

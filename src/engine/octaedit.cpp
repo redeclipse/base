@@ -1889,8 +1889,7 @@ void vshaderparam(const char *name, float *x, float *y, float *z, float *w, int 
     ds.changed = 1<<VSLOT_SHPARAM;
     if(name[0])
     {
-        ShaderParam p = { getshaderparamname(name), SHPARAM_LOOKUP, -1, -1, *palette, *palindex, {*x, *y, *z, *w} };
-        ds.params.add(p);
+        ds.params.add(SlotShaderParam(getshaderparamname(name), *palette, *palindex, *x, *y, *z, *w));
     }
     mpeditvslot(ds, allfaces, sel, true);
 }
