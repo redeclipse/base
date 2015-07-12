@@ -2393,7 +2393,7 @@ namespace projs
                     fadeproj(proj, trans, size);
                     if(proj.projtype == PRJ_VANITY && proj.owner)
                     {
-                        loopi(3) proj.light.material[i] = proj.owner->light.material[i];
+                        loopi(2) proj.light.material[i] = proj.owner->light.material[i];
                         proj.light.effect = proj.owner->light.effect;
                     }
                     break;

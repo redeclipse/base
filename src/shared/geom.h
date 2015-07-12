@@ -1273,7 +1273,7 @@ struct bvec
     bvec() {}
     bvec(uchar x, uchar y, uchar z) : x(x), y(y), z(z) {}
     bvec(const vec &v) : x(uchar((v.x+1)*(255.0f/2.0f))), y(uchar((v.y+1)*(255.0f/2.0f))), z(uchar((v.z+1)*(255.0f/2.0f))) {}
-    explicit bvec(int color) : x((color>>16)&0xFF), y((color>>8)&0xFF), z(color&0xFF) {}
+    explicit bvec(int color) : x(uchar((color>>16)&0xFF)), y(uchar((color>>8)&0xFF)), z(uchar(color&0xFF)) {}
     explicit bvec(const bvec4 &v);
 
     uchar &operator[](int i)       { return v[i]; }

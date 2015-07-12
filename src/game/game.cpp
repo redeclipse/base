@@ -2911,7 +2911,7 @@ namespace game
                 anims.add(i);
     }
 
-    void renderclient(gameent *d, int third, float trans, float size, int team, modelattach *attachments, bool secondary, int animflags, int animdelay, int lastaction, bool early)
+    void renderclient(gameent *d, int third, float trans, float size, modelattach *attachments, bool secondary, int animflags, int animdelay, int lastaction, bool early)
     {
         int idx = third == 1 && d->headless && !nogore && headlessmodels ? 3 : third;
         const char *mdl = playertypes[forceplayermodel >= 0 ? forceplayermodel : 0][idx];
@@ -3202,8 +3202,7 @@ namespace game
                 trans = 1e-16f; // we need tag_muzzle/tag_waist
             else return; // screw it, don't render them
         }
-        int team = m_play(gamemode) && m_team(gamemode, mutators) ? d->team : T_NEUTRAL,
-            weap = d->weapselect, lastaction = 0, animflags = ANIM_IDLE|ANIM_LOOP, weapflags = animflags, weapaction = 0, animdelay = 0;
+        int weap = d->weapselect, lastaction = 0, animflags = ANIM_IDLE|ANIM_LOOP, weapflags = animflags, weapaction = 0, animdelay = 0;
         bool secondary = false, showweap = third != 2 && isweap(weap) && actor[d->actortype].useweap;
         float weapscale = 1.f;
         if(d->state == CS_DEAD || d->state == CS_WAITING)
@@ -3355,7 +3354,7 @@ namespace game
                 a[ai++] = modelattach("tag_rtoe", &d->toe[1]);
             }
         }
-        renderclient(d, third, trans, size, team, a[0].tag ? a : NULL, secondary, animflags, animdelay, lastaction, early);
+        renderclient(d, third, trans, size, a[0].tag ? a : NULL, secondary, animflags, animdelay, lastaction, early);
     }
 
     void rendercheck(gameent *d, bool third = false)
