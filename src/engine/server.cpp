@@ -198,7 +198,7 @@ void console(int type, const char *s, ...)
 {
     defvformatbigstring(sf, s, s);
     bigstring osf;
-    filterbigstring(osf, sf);
+    filterstring(osf, sf);
     if(*logtimeformat) logoutf("%s %s", gettime(logtimelocal ? currenttime : clocktime, logtimeformat), osf);
     else logoutf("%s", osf);
 #ifndef STANDALONE
@@ -329,10 +329,6 @@ bool filterstring(char *dst, const char *src, bool newline, bool colour, bool wh
     if(whitespace && wsstrip && n) while(iscubespace(dst[n-1])) dst[--n] = 0;
     dst[n <= len ? n : len] = 0;
     return filtered;
-}
-bool filterbigstring(char *dst, const char *src, bool newline, bool colour, bool whitespace, bool wsstrip, size_t len)
-{
-    return filterstring(dst, src, newline, colour, whitespace, wsstrip, len);
 }
 ICOMMAND(0, filter, "siiiiN", (char *s, int *a, int *b, int *c, int *d, int *numargs),
 {

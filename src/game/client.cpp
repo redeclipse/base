@@ -1032,7 +1032,7 @@ namespace client
     void saytext(gameent *f, gameent *t, int flags, char *text)
     {
         bigstring msg, line;
-        filterbigstring(msg, text, true, colourchat ? false : true, true, true);
+        filterstring(msg, text, true, colourchat ? false : true, true, true);
         if(*filterwords) filterword(msg, filterwords);
 
         defformatstring(name, "%s", game::colourname(f));

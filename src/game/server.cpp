@@ -2055,7 +2055,7 @@ namespace server
         ircoutf(r, "%s", str);
 #ifdef STANDALONE
         bigstring ft;
-        filterbigstring(ft, str);
+        filterstring(ft, str);
         logoutf("%s", ft);
 #endif
     }
