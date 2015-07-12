@@ -856,20 +856,14 @@ void complete(char *s, const char *cmdprefix)
     if(completesize)
     {
         char *end = strchr(start, ' ');
-        if(end)
-        {
-            bigstring command;
-            copystring(command, start, min(size_t(end-start+1), sizeof(command)));
-            filesval **hasfiles = completions.access(command);
-            if(hasfiles) f = *hasfiles;
-        }
+        if(end) f = completions.find(stringslice(start, end), NULL);
     }
     const char *nextcomplete = NULL;
-    bigstring prefix;
+    int prefixlen = start-s;
     if(f) // complete using filenames
     {
         int commandsize = strchr(start, ' ')+1-start;
-        copystring(prefix, s, min(size_t(commandsize+1+(start-s)), sizeof(prefix)));
+        prefixlen += commandsize;
         f->update();
         loopv(f->files)
         {
@@ -880,7 +874,6 @@ void complete(char *s, const char *cmdprefix)
     }
     else // complete using command names
     {
-        copystring(prefix, s, min(size_t(1+(start-s)), sizeof(prefix)));
         enumerate(idents, ident, id,
             if((variable ? id.type == ID_VAR || id.type == ID_SVAR || id.type == ID_FVAR || id.type == ID_ALIAS: id.flags&IDF_COMPLETE) && strncmp(id.name, start, completesize)==0 &&
                strcmp(id.name, lastcomplete) > 0 && (!nextcomplete || strcmp(id.name, nextcomplete) < 0))
@@ -889,7 +882,7 @@ void complete(char *s, const char *cmdprefix)
     }
     if(nextcomplete)
     {
-        nformatstring(s, BIGSTRLEN, "%s%s", prefix, nextcomplete);
+        copystring(&s[prefixlen], nextcomplete, BIGSTRLEN-prefixlen);
         copystring(lastcomplete, nextcomplete, BIGSTRLEN);
     }
     else
