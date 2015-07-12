@@ -230,11 +230,9 @@ namespace capture
         loopv(st.flags) // flags/bases
         {
             capturestate::flag &f = st.flags[i];
-            cament *c = cameras.add(new cament);
+            cament *c = cameras.add(new cament(cameras.length(), cament::AFFINITY, i));
             c->o = f.pos(true);
             c->o.z += enttype[AFFINITY].radius*2/3;
-            c->type = cament::AFFINITY;
-            c->id = i;
             c->player = f.owner;
         }
     }

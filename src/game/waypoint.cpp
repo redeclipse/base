@@ -729,6 +729,7 @@ namespace ai
         conoutf("loaded %d waypoints from %s", numwp, wptname);
 
         if(!cleanwaypoints()) clearwpcache();
+        game::specreset();
         return true;
     }
     ICOMMAND(0, loadwaypoints, "s", (char *mname), if(!(identflags&IDF_WORLD)) getwaypoints(true, mname));
@@ -790,7 +791,8 @@ namespace ai
 
     bool getwaypoints(bool force, const char *mname, bool check)
     {
-        if(check && (client::demoplayback || loadedwaypoints[0])) return false;
+        //if(check && (client::demoplayback || loadedwaypoints[0])) return false;
+        if(check && loadedwaypoints[0]) return false;
         return loadwaypoints(force, mname) || importwaypoints();
     }
 

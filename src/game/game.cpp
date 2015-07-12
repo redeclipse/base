@@ -3,7 +3,7 @@
 namespace game
 {
     int nextmode = G_EDITMODE, nextmuts = 0, gamestate = G_S_WAITING, gamemode = G_EDITMODE, mutators = 0, maptime = 0, timeremaining = 0, lasttimeremain = 0,
-        lastcamera = 0, lasttvcam = 0, lasttvchg = 0, lastzoom = 0, spectvfollowing = -1;
+        lastcamera = 0, lasttvcam = 0, lasttvchg = 0, lastzoom = 0, spectvfollowing = -1, starttvcamdyn = -1, lastcamcn = -1;
     bool prevzoom = false, zooming = false, inputmouse = false, inputview = false, inputmode = false;
     float swayfade = 0, swayspeed = 0, swaydist = 0, bobfade = 0, bobdist = 0;
     vec swaydir(0, 0, 0), swaypush(0, 0, 0);
@@ -185,6 +185,7 @@ namespace game
 
     FVAR(IDF_PERSIST, spectvmindist, 0, 32, FVAR_MAX);
     FVAR(IDF_PERSIST, spectvmaxdist, 0, 256, FVAR_MAX);
+    FVAR(IDF_PERSIST, spectvmovedist, 0, 64, FVAR_MAX);
     FVAR(IDF_PERSIST, spectvfollowmindist, 0, 8, FVAR_MAX);
     FVAR(IDF_PERSIST, spectvfollowmaxdist, 0, 128, FVAR_MAX);
 
@@ -660,6 +661,17 @@ namespace game
         focus = player1;
         resetcamera();
     }
+    
+    int startcam()
+    {
+        if(!cameras.length()) return 0;
+        if(starttvcamdyn < 0)
+        {
+            loopvrev(cameras) if(cameras[i]->type <= cament::WAYPOINT) { starttvcamdyn = i+1; break; }
+            if(!cameras.inrange(starttvcamdyn)) starttvcamdyn = 0;
+        }
+        return starttvcamdyn;
+    }
 
     void specreset(gameent *d, bool clear)
     {
@@ -667,31 +679,35 @@ namespace game
         {
             if(clear)
             {
-                loopvrev(cameras) if(cameras[i]->player == d)
+                for(int i = cameras.length()-1; i >= startcam(); i--)
                 {
-                    if(cameras[i]->type == cament::PLAYER)
+                    cament *c = cameras[i];
+                    if(c->player == d)
                     {
-                        cament *p = cameras[i];
-                        cameras.remove(i);
-                        if(p) delete p;
-                        if(!i) lastcamera = lasttvcam = lasttvchg = 0;
+                        if(c->type == cament::PLAYER)
+                        {
+                            cameras.remove(i);
+                            delete c;
+                            for(int j = i+1; j < cameras.length(); j++) cameras[j]->cn--;
+                            if(i == lastcamcn) lastcamcn = -1;
+                            lastcamera = lasttvcam = lasttvchg = 0;
+                        }
+                        else c->player = NULL;
                     }
-                    else cameras[i]->player = NULL;
                 }
                 if(d == focus) resetfollow();
             }
             else if(maptime > 0 && gameent::is(d) && d->actortype < A_ENEMY)
             {
-                cament *c = cameras.add(new cament);
+                cament *c = cameras.add(new cament(cameras.length(), cament::PLAYER, d->clientnum));
                 c->o = d->headpos();
-                c->type = cament::PLAYER;
-                c->id = d->clientnum;
                 c->player = d;
             }
         }
         else
         {
             cameras.deletecontents();
+            starttvcamdyn = lastcamcn = -1;
             lastcamera = lasttvcam = lasttvchg = 0;
             resetfollow();
         }
@@ -1841,6 +1857,7 @@ namespace game
         ai::startmap(name, reqname, empty);
         gamestate = m_play(gamemode) ? G_S_WAITING : G_S_PLAYING;
         maptime = 0;
+        specreset();
         removedamagemergeall();
         removeannounceall();
         projs::reset();
@@ -2327,11 +2344,15 @@ namespace game
         bool rejigger = false;
         if(cam->player && cam->type != cament::PLAYER)
         {
-            loopv(cameras) if(cameras[i]->type == cament::PLAYER && cameras[i]->player == cam->player)
+            for(int i = startcam(); i < cameras.length(); i++)
             {
-                cam = cameras[i];
-                rejigger = true;
-                break;
+                cament *c = cameras[i];
+                if(c->type == cament::PLAYER && c->player == cam->player)
+                {
+                    cam = c;
+                    rejigger = true;
+                    break;
+                }
             }
             if(!rejigger) cam->player = NULL;
         }
@@ -2369,22 +2390,26 @@ namespace game
               mindist = c->player ? spectvfollowmindist : spectvmindist, maxdist = min(c->player ? spectvfollowmaxdist : spectvmaxdist, foglevel);
         fixrange(yaw, pitch);
         vec from = c->pos(amt), dir(0, 0, 0), trg;
+        int count = 0;
         loopj(c->player ? 3 : 2)
         {
-            int count = 0;
-            loopv(cameras) if(c != cameras[i])
+            for(int i = startcam(); i < cameras.length(); i++)
             {
                 cament *cam = cameras[i];
+                if(cam == c) continue;
                 switch(cam->type)
                 {
-                    case cament::ENTITY: continue;
-                    case cament::AFFINITY: if(cam->player == c->player) continue;
+                    case cament::AFFINITY:
+                    {
+                        if(cam->player && (cam->player == c->player || !allowspec(cam->player, spectvdead, spectvfollowing))) continue;
+                        break;
+                    }
                     case cament::PLAYER:
                     {
                         if(!cam->player || c->player == cam->player || !allowspec(cam->player, spectvdead, spectvfollowing)) continue;
                         break;
                     }
-                    default: break;
+                    default: continue;
                 }
                 if(aim && j == (c->player ? 2 : 1) && !count)
                 {
@@ -2438,48 +2463,52 @@ namespace game
             loopv(entities::ents)
             {
                 gameentity &e = *(gameentity *)entities::ents[i];
-                if(e.type != PLAYERSTART && e.type != LIGHT && e.type < MAPSOUND) continue;
-                cament *c = cameras.add(new cament);
+                cament *c = cameras.add(new cament(cameras.length(), cament::ENTITY, i));
                 c->o = e.o;
-                c->o.z += max(enttype[e.type].radius, 2);
-                c->type = cament::ENTITY;
-                c->id = i;
+                c->o.z += (e.type == PLAYERSTART ? playerdims[0][2] : enttype[e.type].radius)+2;
             }
+            ai::getwaypoints();
+            loopv(ai::waypoints)
+            {
+                ai::waypoint &w = ai::waypoints[i];
+                cament *c = cameras.add(new cament(cameras.length(), cament::WAYPOINT, i));
+                c->o = w.o;
+                c->o.z += playerdims[0][2]+2;
+            }
+            starttvcamdyn = cameras.length();
             loopv(players) if(players[i])
             {
                 gameent *d = players[i];
                 if(d->actortype >= A_ENEMY) continue;
-                cament *c = cameras.add(new cament);
+                cament *c = cameras.add(new cament(cameras.length(), cament::PLAYER, d->clientnum));
                 c->o = d->headpos();
-                c->type = cament::PLAYER;
-                c->id = d->clientnum;
                 c->player = d;
             }
-            cament *c = cameras.add(new cament);
+            cament *c = cameras.add(new cament(cameras.length(), cament::PLAYER, player1->clientnum));
             c->o = player1->headpos();
-            c->type = cament::PLAYER;
-            c->id = player1->clientnum;
             c->player = player1;
             if(m_capture(gamemode)) capture::checkcams(cameras);
             else if(m_defend(gamemode)) defend::checkcams(cameras);
             else if(m_bomber(gamemode)) bomber::checkcams(cameras);
         }
         if(cameras.empty()) return false;
-        cament *cam = cameras[0];
+        if(!cameras.inrange(lastcamcn)) lastcamcn = rnd(cameras.length());
+        cament *cam = cameras[lastcamcn];
         bool forced = !tvmode(false, false), renew = !lastcamera, found = spectvfollowing < 0;
         float amt = 0;
-        loopv(cameras)
+        for(int i = startcam(); i < cameras.length(); i++)
         {
-            if(cameras[i]->type == cament::PLAYER && (cameras[i]->player || ((cameras[i]->player = getclient(cameras[i]->id)) != NULL)))
+            cament *c = cameras[i];
+            if(c->type == cament::PLAYER && (c->player || ((c->player = getclient(c->id)) != NULL)))
             {
-                if(!found && cameras[i]->id == spectvfollowing && cameras[i]->player->state != CS_SPECTATOR) found = true;
-                cameras[i]->o = cameras[i]->player->headpos();
-                if(forced && cameras[i]->player == focus) cam = cameras[i];
+                if(!found && c->id == spectvfollowing && c->player->state != CS_SPECTATOR) found = true;
+                c->o = c->player->headpos();
+                if(forced && c->player == focus) cam = c;
             }
-            else if(cameras[i]->type != cament::PLAYER && cameras[i]->player) cameras[i]->player = NULL;
-            if(m_capture(gamemode)) capture::updatecam(cameras[i]);
-            else if(m_defend(gamemode)) defend::updatecam(cameras[i]);
-            else if(m_bomber(gamemode)) bomber::updatecam(cameras[i]);
+            else if(c->type != cament::PLAYER && c->player) c->player = NULL;
+            if(m_capture(gamemode)) capture::updatecam(c);
+            else if(m_defend(gamemode)) defend::updatecam(c);
+            else if(m_bomber(gamemode)) bomber::updatecam(c);
         }
         if(!found) spectvfollow = spectvfollowing = -1;
         camrefresh(cam);
@@ -2495,7 +2524,7 @@ namespace game
         }
         else loopk(spectvfollowing >= 0 ? 2 : 1)
         {
-            int lasttype = cam->type, lastid = cam->id, millis = lasttvchg ? lastmillis-lasttvchg : 0;
+            int lastcn = cam->cn, millis = lasttvchg ? lastmillis-lasttvchg : 0;
             if(millis) amt = float(millis)/float(stvf(maxtime));
             bool updated = camupdate(cam, amt, renew), override = !lasttvchg || millis >= stvf(mintime),
                  reset = (stvf(maxtime) && millis >= stvf(maxtime)) || !lasttvcam || lastmillis-lasttvcam >= stvf(time);
@@ -2506,45 +2535,54 @@ namespace game
             }
             if(reset || (!updated && override))
             {
-                cam->ignore = true;
-                loopv(cameras) if((cameras[i]->player && (cameras[i]->player == cam->player || ((cameras[i]->player->state == CS_DEAD || cameras[i]->player->state == CS_WAITING) && !cameras[i]->player->lastdeath))) || !camupdate(cameras[i], 0, true))
+                loopv(cameras) if(cameras[i]->ignore) cameras[i]->ignore = false;
+                cam->ignore = true; // so we don't use the last one we just used
+                loopv(cameras)
                 {
-                    cameras[i]->reset();
-                    cameras[i]->ignore = true;
+                    cament *c = cameras[i];
+                    if(!camupdate(c, 0, true))
+                    {
+                        c->reset(); // this camera sucks then
+                        c->ignore = true;
+                    }
                 }
                 reset = true;
             }
             if(reset)
             {
-                cameras.sort(cament::compare);
-                loopv(cameras) if(cameras[i]->ignore) cameras[i]->ignore = false;
-                cam = cameras[0];
+                vector<cament *> scams;
+                scams.reserve(cameras.length());
+                scams.put(cameras.getbuf(), cameras.length());
+                scams.sort(cament::compare);
+                lastcamcn = scams[0]->cn;
+                cam = cameras[lastcamcn];
                 lasttvcam = lastmillis;
             }
             camrefresh(cam, reset);
-            if(!lasttvchg || cam->type != lasttype || cam->id != lastid)
+            if(!lasttvchg || cam->cn != lastcn)
             {
                 amt = 0;
                 lasttvchg = lastmillis;
                 renew = true;
                 cam->moveto = NULL;
                 cam->resetlast();
-                if(cam->type == cament::ENTITY)
+                if(cam->type == cament::ENTITY || cam->type == cament::WAYPOINT)
                 {
                     vector<cament *> mcams;
                     mcams.reserve(cameras.length());
                     mcams.put(cameras.getbuf(), cameras.length());
+                    mcams.sort(cament::compare);
                     while(mcams.length())
                     {
                         cament *mcam = mcams.removeunordered(rnd(mcams.length()));
-                        if(mcam->type == cament::ENTITY)
+                        if(mcam->type == cament::ENTITY || mcam->type == cament::WAYPOINT)
                         {
                             vec ray = vec(mcam->o).sub(cam->o);
                             float mag = ray.magnitude();
                             ray.mul(1.0f/mag);
-                            if(raycube(cam->o, ray, mag, RAY_CLIPMAT|RAY_POLY) >= mag)
+                            if(raycube(cam->o, ray, mag, RAY_CLIPMAT|RAY_POLY) >= max(mag, spectvmovedist))
                             {
-                                cam->moveto = mcam;
+                                cam->moveto = cameras[mcam->cn];
                                 break;
                             }
                         }

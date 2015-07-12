@@ -1485,16 +1485,21 @@ struct projent : dynent
 
 struct cament
 {
-    enum { ENTITY = 0, PLAYER, AFFINITY, MAX };
+    enum { ENTITY = 0, WAYPOINT, PLAYER, AFFINITY, MAX };
 
-    int type, id, inview[MAX], lastyawtime, lastpitchtime;
+    int cn, type, id, inview[MAX], lastyawtime, lastpitchtime;
     vec o, dir;
     float dist, lastyaw, lastpitch;
     gameent *player;
     bool ignore;
     cament *moveto;
 
-    cament() : type(-1), id(-1), player(NULL), ignore(false), moveto(NULL)
+    cament(int p, int t) : cn(p), type(t), id(-1), player(NULL), ignore(false), moveto(NULL)
+    {
+        reset();
+        resetlast();
+    }
+    cament(int p, int t, int n) : cn(p), type(t), id(n), player(NULL), ignore(false), moveto(NULL)
     {
         reset();
         resetlast();

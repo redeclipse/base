@@ -596,6 +596,7 @@ template <class T> struct vector
 
     T &pop() { return buf[--ulen]; }
     T &last() { return buf[ulen-1]; }
+    T &first() { return buf[0]; }
     void drop() { ulen--; buf[ulen].~T(); }
     bool empty() const { return ulen==0; }
 
@@ -934,6 +935,7 @@ template <class T> struct smallvector
     bool inrange(int i) const { return i>=0 && i<len; }
 
     T &last() { return buf[len-1]; }
+    T &first() { return buf[0]; }
     bool empty() const { return len==0; }
     int length() const { return len; }
     T &operator[](int i) { ASSERT(i>=0 && i<len); return buf[i]; }

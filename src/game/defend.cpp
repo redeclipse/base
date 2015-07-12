@@ -31,11 +31,9 @@ namespace defend
         loopv(st.flags) // flags/bases
         {
             defendstate::flag &f = st.flags[i];
-            cament *c = cameras.add(new cament);
+            cament *c = cameras.add(new cament(cameras.length(), cament::AFFINITY, i));
             c->o = f.o;
             c->o.z += enttype[AFFINITY].radius*2/3;
-            c->type = cament::AFFINITY;
-            c->id = i;
         }
     }
 
