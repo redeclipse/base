@@ -333,7 +333,7 @@ namespace bomber
                 int pcolour = effect.tohexcolor();
                 part_explosion(above, enttype[AFFINITY].radius/4*trans, PART_SHOCKBALL, 1, pcolour, 1.f, trans*blend*0.25f);
                 above.z += enttype[AFFINITY].radius/4*trans;
-                defformatstring(info)("<super>%s base", TEAM(f.team, name));
+                defformatstring(info, "<super>%s base", TEAM(f.team, name));
                 part_textcopy(above, info, PART_TEXT, 1, TEAM(f.team, colour), 2, trans*blend);
                 above.z += 2.5f;
                 part_icon(above, textureload(hud::teamtexname(f.team), 3), 2, trans*blend, 0, 0, 1, TEAM(f.team, colour));
@@ -457,7 +457,7 @@ namespace bomber
         {
             if(effect&1)
             {
-                defformatstring(text)("<super>\fzZe%s", str);
+                defformatstring(text, "<super>\fzZe%s", str);
                 part_textcopy(vec(from).add(vec(0, 0, enttype[AFFINITY].radius)), text, PART_TEXT, game::eventiconfade, TEAM(team, colour), 3, 1, -10);
             }
             if(game::dynlighteffects) adddynlight(vec(from).add(vec(0, 0, enttype[AFFINITY].radius)), enttype[AFFINITY].radius*2, vec::hexcolor(TEAM(team, colour)).mul(2.f), 500, 250);
@@ -466,7 +466,7 @@ namespace bomber
         {
             if(effect&2)
             {
-                defformatstring(text)("<super>\fzZe%s", str);
+                defformatstring(text, "<super>\fzZe%s", str);
                 part_textcopy(vec(to).add(vec(0, 0, enttype[AFFINITY].radius)), text, PART_TEXT, game::eventiconfade, TEAM(team, colour), 3, 1, -10);
             }
             if(game::dynlighteffects) adddynlight(vec(to).add(vec(0, 0, enttype[AFFINITY].radius)), enttype[AFFINITY].radius*2, vec::hexcolor(TEAM(team, colour)).mul(2.f), 500, 250);
@@ -512,13 +512,13 @@ namespace bomber
         string extra; extra[0] = 0;
         if(m_gsp2(game::gamemode, game::mutators) && showbomberdists >= (d != game::player1 ? 2 : 1))
         {
-            if(f.droptime) formatstring(extra)(" from \fs\fy%.2f\fom\fS", f.droppos.dist(g.spawnloc)/8.f);
+            if(f.droptime) formatstring(extra, " from \fs\fy%.2f\fom\fS", f.droppos.dist(g.spawnloc)/8.f);
             else copystring(extra, " with a \fs\fytouchdown\fS");
         }
         affinityeffect(goal, d->team, g.spawnloc, f.spawnloc, 3, "DESTROYED");
         destroyaffinity(g.spawnloc);
         hud::teamscore(d->team).total = score;
-        defformatstring(gteam)("%s", game::colourteam(g.team, "bombtex"));
+        defformatstring(gteam, "%s", game::colourteam(g.team, "bombtex"));
         game::announcef(S_V_BOMBSCORE, CON_SELF, d, true, "\fa%s destroyed the %s base for team %s%s (score: \fs\fc%d\fS, time taken: \fs\fc%s\fS)", game::colourname(d), gteam, game::colourteam(d->team), extra, score, timestr(lastmillis-f.inittime, 1));
         st.returnaffinity(relay, lastmillis, false);
     }

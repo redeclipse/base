@@ -68,13 +68,13 @@ namespace defend
             rendermodel(&b.baselight, "props/point", ANIM_MAPMODEL|ANIM_LOOP, b.render, b.yaw, 0, 0, MDL_DYNSHADOW|MDL_CULL_VFC|MDL_CULL_OCCLUDED, NULL, NULL, 0, 0, 1);
             if(b.enemy && b.owner)
             {
-                defformatstring(bowner)("%s", game::colourteam(b.owner));
-                formatstring(b.info)("%s - %s v %s", b.name, bowner, game::colourteam(b.enemy));
+                defformatstring(bowner, "%s", game::colourteam(b.owner));
+                formatstring(b.info, "%s - %s v %s", b.name, bowner, game::colourteam(b.enemy));
             }
             else
             {
                 int defend = b.owner ? b.owner : b.enemy;
-                formatstring(b.info)("%s - %s", b.name, game::colourteam(defend));
+                formatstring(b.info, "%s - %s", b.name, game::colourteam(defend));
             }
             vec above = b.above;
             float blend = camera1->o.distrange(above, enttype[AFFINITY].radius, enttype[AFFINITY].radius/8);
@@ -217,11 +217,11 @@ namespace defend
                     break;
                 case 0: team = T_NEUTRAL; break;
             }
-            defformatstring(alias)("point_%d", e->attrs[5]);
+            defformatstring(alias, "point_%d", e->attrs[5]);
             const char *name = getalias(alias);
             if(!name || !*name)
             {
-                formatstring(alias)("point #%d", st.flags.length()+1);
+                formatstring(alias, "point #%d", st.flags.length()+1);
                 name = alias;
             }
             st.addaffinity(e->o, team, e->attrs[1], e->attrs[2], name);

@@ -73,18 +73,18 @@ const char *timestr(int dur, int style)
     }
     switch(style)
     {
-        case 0: formatstring(buf)("%d.%d", tm, ms/100); break;
-        case 1: formatstring(buf)("%d:%02d.%03d", mn, ss, ms); break;
-        case 2: formatstring(buf)("%d:%02d.%d", mn, ss, ms/100); break;
-        case 3: formatstring(buf)("%d:%02d", mn, ss); break;
+        case 0: formatstring(buf, "%d.%d", tm, ms/100); break;
+        case 1: formatstring(buf, "%d:%02d.%03d", mn, ss, ms); break;
+        case 2: formatstring(buf, "%d:%02d.%d", mn, ss, ms/100); break;
+        case 3: formatstring(buf, "%d:%02d", mn, ss); break;
         case 4:
         {
             if(mn > 0)
             {
-                formatstring(buf)("%dm%ds", mn, ss);
+                formatstring(buf, "%dm%ds", mn, ss);
                 break;
             }
-            formatstring(buf)("%ds", ss);
+            formatstring(buf, "%ds", ss);
             break;
         }
     }
@@ -1267,7 +1267,7 @@ void logoutfv(const char *fmt, va_list args)
 void serverloop()
 {
 #ifdef WIN32
-    defformatstring(cap)("%s server", VERSION_NAME);
+    defformatstring(cap, "%s server", VERSION_NAME);
     setupwindow(cap);
     SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
 #endif
@@ -1465,12 +1465,12 @@ bool findoctadir(const char *name, bool fallback)
     string s = "";
     copystring(s, name);
     path(s);
-    defformatstring(octadefs)("%s/data/default_map_settings.cfg", s);
+    defformatstring(octadefs, "%s/data/default_map_settings.cfg", s);
     if(fileexists(findfile(octadefs, "r"), "r"))
     {
         conoutf("\fwfound octa directory: %s", s);
-        defformatstring(octadata)("%s/data", s);
-        defformatstring(octapaks)("%s/packages", s);
+        defformatstring(octadata, "%s/data", s);
+        defformatstring(octapaks, "%s/packages", s);
         addpackagedir(s, PACKAGEDIR_OCTA);
         addpackagedir(octadata, PACKAGEDIR_OCTA);
         addpackagedir(octapaks, PACKAGEDIR_OCTA);
@@ -1507,7 +1507,7 @@ void trytofindocta(bool fallback)
         string dir = "";
         if(SHGetFolderPath(NULL, CSIDL_PROGRAM_FILESX86, NULL, 0, dir) == S_OK)
         {
-            defformatstring(s)("%s\\Sauerbraten", dir);
+            defformatstring(s, "%s\\Sauerbraten", dir);
             if(findoctadir(s, true)) return;
         }
 #elif defined(__APPLE__)
@@ -1537,7 +1537,7 @@ void setlocations(bool wanthome)
     const char *macdir = mac_resourcedir(); // ./blah.app
     if(macdir && *macdir)
     {
-        defformatstring(s)("%s/Contents/Resources", macdir);
+        defformatstring(s, "%s/Contents/Resources", macdir);
         if(!chdir(s))
         {
             conoutf("attempting to use resources in: %s", s);
@@ -1557,7 +1557,7 @@ void setlocations(bool wanthome)
 #ifndef STANDALONE
     if(!fileexists(findfile("textures/logo.png", "r"), "r")) fatal("could not find game data");
 #endif
-    //defformatstring(gamedata)("game/%s", server::gameid());
+    //defformatstring(gamedata, "game/%s", server::gameid());
     //addpackagedir(gamedata);
     if(wanthome)
     {
@@ -1565,7 +1565,7 @@ void setlocations(bool wanthome)
         string dir = "";
         if(SHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, 0, dir) == S_OK)
         {
-            defformatstring(s)("%s\\My Games\\%s", dir, VERSION_NAME);
+            defformatstring(s, "%s\\My Games\\%s", dir, VERSION_NAME);
             sethomedir(s);
         }
 #elif defined(__APPLE__)
@@ -1573,14 +1573,14 @@ void setlocations(bool wanthome)
         const char *dir = mac_personaldir(); // typically  /Users/<name>/Application Support/
         if(dir && *dir)
         {
-            defformatstring(s)("%s/%s", dir, VERSION_NAME);
+            defformatstring(s, "%s/%s", dir, VERSION_NAME);
             sethomedir(s);
         }
 #else
         const char *dir = getenv("HOME");
         if(dir && *dir)
         {
-            defformatstring(s)("%s/.%s", dir, VERSION_UNAME);
+            defformatstring(s, "%s/.%s", dir, VERSION_UNAME);
             sethomedir(s);
         }
 #endif
@@ -1731,7 +1731,7 @@ void fatal(const char *s, ...)    // failure exit
             cleanupmaster();
             enet_deinitialize();
 #ifdef WIN32
-            defformatstring(cap)("%s: Error", VERSION_NAME);
+            defformatstring(cap, "%s: Error", VERSION_NAME);
             MessageBox(NULL, msg, cap, MB_OK|MB_SYSTEMMODAL);
 #endif
         }

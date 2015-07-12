@@ -405,7 +405,7 @@ namespace game
                 if(!file)
                 {
                     vanityfile &f = vanities[n].files.add();
-                    defformatstring(fn)("%s/%s%s", vanities[n].model, id, proj ? "/proj" : "");
+                    defformatstring(fn, "%s/%s%s", vanities[n].model, id, proj ? "/proj" : "");
                     f.id = newstring(id);
                     f.name = newstring(fn);
                     f.proj = proj;
@@ -417,7 +417,7 @@ namespace game
             {
                 if(proj && !vanities[n].proj)
                 {
-                    defformatstring(fn)("%s/proj", vanities[n].model);
+                    defformatstring(fn, "%s/proj", vanities[n].model);
                     vanities[n].proj = newstring(fn);
                 }
                 file = proj ? vanities[n].proj : vanities[n].model;
@@ -1300,7 +1300,7 @@ namespace game
             }
             if(aboveheaddamage)
             {
-                defformatstring(ds)("<sub>\fo%c%d", damage > 0 ? '-' : (damage < 0 ? '+' : '~'), damage < 0 ? 0-damage : damage);
+                defformatstring(ds, "<sub>\fo%c%d", damage > 0 ? '-' : (damage < 0 ? '+' : '~'), damage < 0 ? 0-damage : damage);
                 part_textcopy(d->abovehead(), ds, d != focus ? PART_TEXT : PART_TEXT_ONTOP, eventiconfade, 0xFFFFFF, 4, 1, -10, 0, d);
             }
         }
@@ -1461,7 +1461,7 @@ namespace game
             isme = true;
             break;
         }
-        formatstring(d->obit)("%s ", colourname(d));
+        formatstring(d->obit, "%s ", colourname(d));
         if(d != v && v->lastattacker == d->clientnum) v->lastattacker = -1;
         d->lastattacker = v->clientnum;
         if(d == v)
@@ -1637,12 +1637,12 @@ namespace game
         {
             if(showobitdists >= (d != player1 ? 2 : 1))
             {
-                defformatstring(obitx)(" \fs\fo@\fy%.2f\fom\fS", v->o.dist(d->o)/8.f);
+                defformatstring(obitx, " \fs\fo@\fy%.2f\fom\fS", v->o.dist(d->o)/8.f);
                 concatstring(d->obit, obitx);
             }
             if(showobithpleft >= (d != player1 ? 2 : 1))
             {
-                defformatstring(obitx)(" (\fs\fc%d\fS)", v->health);
+                defformatstring(obitx, " (\fs\fc%d\fS)", v->health);
                 concatstring(d->obit, obitx);
             }
         }
@@ -1659,7 +1659,7 @@ namespace game
                 concatstring(d->obit, colourname(log[i]));
                 if(showobithpleft >= (d != player1 ? 2 : 1))
                 {
-                    defformatstring(obitx)(" (\fs\fc%d\fS)", log[i]->health);
+                    defformatstring(obitx, " (\fs\fc%d\fS)", log[i]->health);
                     concatstring(d->obit, obitx);
                 }
             }
@@ -1746,7 +1746,7 @@ namespace game
     {
         if(cn < 0 || cn >= MAXPLAYERS)
         {
-            defformatstring(cnmsg)("clientnum [%d]", cn);
+            defformatstring(cnmsg, "clientnum [%d]", cn);
             neterr(cnmsg);
             return NULL;
         }
@@ -1972,21 +1972,21 @@ namespace game
         {
             if(colour&1)
             {
-                formatstring(colortmp)("\f[%d]", findcolour(d));
+                formatstring(colortmp, "\f[%d]", findcolour(d));
                 concatstring(colored, colortmp);
             }
-            formatstring(colortmp)("\f($priv%stex)", server::privnamex(d->privilege, d->actortype, true));
+            formatstring(colortmp, "\f($priv%stex)", server::privnamex(d->privilege, d->actortype, true));
             concatstring(colored, colortmp);
         }
         if(colour&2)
         {
-            formatstring(colortmp)("\f[%d]", TEAM(d->team, colour));
+            formatstring(colortmp, "\f[%d]", TEAM(d->team, colour));
             concatstring(colored, colortmp);
         }
         concatstring(colored, name);
         if(!name[0] || (d->actortype < A_ENEMY && dupname && duplicatename(d, name)))
         {
-            formatstring(colortmp)("%s[%d]", name[0] ? " " : "", d->clientnum);
+            formatstring(colortmp, "%s[%d]", name[0] ? " " : "", d->clientnum);
             concatstring(colored, colortmp);
         }
         if(colour) concatstring(colored, "\fS");
@@ -2004,11 +2004,11 @@ namespace game
         if(team < 0 || team > T_MAX) team = T_NEUTRAL;
         static string teamed; teamed[0] = 0; string teamtmp;
         concatstring(teamed, "\fs");
-        formatstring(teamtmp)("\f[%d]", TEAM(team, colour));
+        formatstring(teamtmp, "\f[%d]", TEAM(team, colour));
         concatstring(teamed, teamtmp);
         if(icon != NULL)
         {
-            formatstring(teamtmp)("\f($%s)", *icon ? icon : teamtexnamex(team));
+            formatstring(teamtmp, "\f($%s)", *icon ? icon : teamtexnamex(team));
             concatstring(teamed, teamtmp);
         }
         concatstring(teamed, TEAM(team, name));
@@ -2721,7 +2721,7 @@ namespace game
                 if(type == 6) smartmusic(true);
                 else
                 {
-                    defformatstring(musicfile)("%s", mapmusic);
+                    defformatstring(musicfile, "%s", mapmusic);
                     if(*musicdir && (type == 2 || type == 5 || ((type == 1 || type == 4) && (!*musicfile || !fileexists(findfile(musicfile, "r"), "r")))))
                     {
                         vector<char *> files;
@@ -2729,7 +2729,7 @@ namespace game
                         while(!files.empty())
                         {
                             int r = rnd(files.length());
-                            formatstring(musicfile)("%s/%s", musicdir, files[r]);
+                            formatstring(musicfile, "%s/%s", musicdir, files[r]);
                             if(files[r][0] != '.' && strcmp(files[r], "readme.txt") && playmusic(musicfile, type >= 4 ? "music" : NULL)) break;
                             else files.remove(r);
                         }
@@ -3078,7 +3078,7 @@ namespace game
                 { \
                     vec colour = vec::hexcolor(W(q, colour)); \
                     if(q != d->weapselect) colour.mul(aboveheadinventoryfade); \
-                    defformatstring(str)("\fs\f[%d]%s\f(%s)\fS", colour.tohexcolor(), q != d->weapselect ? "\fE" : "", hud::itemtex(WEAPON, q)); \
+                    defformatstring(str, "\fs\f[%d]%s\f(%s)\fS", colour.tohexcolor(), q != d->weapselect ? "\fE" : "", hud::itemtex(WEAPON, q)); \
                     concatstring(weapons, str); \
                 }
             if(aboveheadinventory >= 2) { loopi(W_MAX) printweapon(i); }

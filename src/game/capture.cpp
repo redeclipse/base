@@ -94,7 +94,7 @@ namespace capture
         static string s; s[0] = 0;
         loopv(f)
         {
-            defformatstring(d)("%s\f[%d]\f(%s)%s", i && named ? " " : "", TEAM(st.flags[f[i]].team, colour), hud::flagtex, named ? TEAM(st.flags[f[i]].team, name) : "");
+            defformatstring(d, "%s\f[%d]\f(%s)%s", i && named ? " " : "", TEAM(st.flags[f[i]].team, colour), hud::flagtex, named ? TEAM(st.flags[f[i]].team, name) : "");
             concatstring(s, d);
         }
         return s;
@@ -313,7 +313,7 @@ namespace capture
                     flagpos.z += iterflags[f.owner->clientnum]*2;
                     iterflags[f.owner->clientnum]++;
                 }
-                //defformatstring(info)("<super>%s flag", TEAM(f.team, name));
+                //defformatstring(info, "<super>%s flag", TEAM(f.team, name));
                 //part_textcopy(flagpos, info, PART_TEXT, 1, TEAM(f.team, colour), 2, blend);
                 //flagpos.z += 2.5f;
                 if(gs_playing(game::gamestate) && (f.droptime || (m_gsp3(game::gamemode, game::mutators) && f.taketime && f.owner && f.owner->team != f.team)))
@@ -323,7 +323,7 @@ namespace capture
                     part_icon(flagpos, textureload(hud::progresstex, 3), 4, 0.25f*blend, 0, 0, 1, colour);
                     part_icon(flagpos, textureload(hud::progresstex, 3), 4, blend, 0, 0, 1, colour, 0, wait);
                     //flagpos.z += 0.5f;
-                    //defformatstring(str)("<huge>%d%%", int(wait*100.f)); part_textcopy(flagpos, str, PART_TEXT, 1, 0xFFFFFF, 2, 1);
+                    //defformatstring(str, "<huge>%d%%", int(wait*100.f)); part_textcopy(flagpos, str, PART_TEXT, 1, 0xFFFFFF, 2, 1);
                     //flagpos.z += 3;
                 }
             }
@@ -331,7 +331,7 @@ namespace capture
             vec above = f.above;
             above.z += !f.owner && !f.droptime ? enttype[AFFINITY].radius*2/3 : 3;
             blend = camera1->o.distrange(above, enttype[AFFINITY].radius, enttype[AFFINITY].radius/8);
-            defformatstring(info)("<super>%s base", TEAM(f.team, name));
+            defformatstring(info, "<super>%s base", TEAM(f.team, name));
             part_textcopy(above, info, PART_TEXT, 1, TEAM(f.team, colour), 2, blend);
             above.z += 2.5f;
             if(gs_playing(game::gamestate) && (f.droptime || (m_gsp3(game::gamemode, game::mutators) && f.taketime && f.owner && f.owner->team != f.team)))
@@ -453,7 +453,7 @@ namespace capture
         {
             if(effect&1)
             {
-                defformatstring(text)("<super>\fzZe%s", str);
+                defformatstring(text, "<super>\fzZe%s", str);
                 part_textcopy(vec(from).add(vec(0, 0, enttype[AFFINITY].radius)), text, PART_TEXT, game::eventiconfade, TEAM(team, colour), 3, 1, -10);
             }
             if(game::dynlighteffects) adddynlight(vec(from).add(vec(0, 0, enttype[AFFINITY].radius)), enttype[AFFINITY].radius*2, vec::hexcolor(TEAM(team, colour)).mul(2.f), 500, 250);
@@ -462,7 +462,7 @@ namespace capture
         {
             if(effect&2)
             {
-                defformatstring(text)("<super>\fzZe%s",str);
+                defformatstring(text, "<super>\fzZe%s",str);
                 part_textcopy(vec(to).add(vec(0, 0, enttype[AFFINITY].radius)), text, PART_TEXT, game::eventiconfade, TEAM(team, colour), 3, 1, -10);
             }
             if(game::dynlighteffects) adddynlight(vec(to).add(vec(0, 0, enttype[AFFINITY].radius)), enttype[AFFINITY].radius*2, vec::hexcolor(TEAM(team, colour)).mul(2.f), 500, 250);
@@ -502,7 +502,7 @@ namespace capture
         }
         else affinityeffect(goal, d->team, f.pos(true), f.above, 3, "CAPTURED");
         hud::teamscore(d->team).total = score;
-        defformatstring(fteam)("%s", game::colourteam(f.team, "flagtex"));
+        defformatstring(fteam, "%s", game::colourteam(f.team, "flagtex"));
         game::announcef(S_V_FLAGSCORE, CON_SELF, d, true, "\fa%s captured the %s flag for team %s (score: \fs\fc%d\fS, time taken: \fs\fc%s\fS)", game::colourname(d), fteam, game::colourteam(d->team), score, timestr(lastmillis-f.taketime, 1));
         st.returnaffinity(relay, lastmillis);
     }

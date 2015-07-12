@@ -48,7 +48,7 @@
         };
 
     #define TEAM(team,name)         (*sv_team_stat_##name[team])
-    #define TEAMSTR(a,team,attr)    defformatstring(a)("sv_%s%s", teamtype[team].name, #attr)
+    #define TEAMSTR(a,team,attr)    defformatstring(a, "sv_%s%s", teamtype[team].name, #attr)
 #else
 #ifdef GAMEWORLD
     #define TPVAR(flags, name, mn, mx, w00, w01, w02, w03, w04, w05) \
@@ -125,5 +125,5 @@
         extern char **team_stat_##name[];
 #endif
     #define TEAM(team,name)         (*team_stat_##name[team])
-    #define TEAMSTR(a,team,attr)    defformatstring(a)("%s%s", teamnames[team], #attr)
+    #define TEAMSTR(a,team,attr)    defformatstring(a, "%s%s", teamnames[team], #attr)
 #endif

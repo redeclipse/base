@@ -42,7 +42,7 @@ void setcaption(const char *text, const char *text2)
     {
         copystring(prevtext, text);
         copystring(prevtext2, text2);
-        defformatstring(caption)("%s v%s-%s%d (%s)%s%s%s%s", VERSION_NAME, VERSION_STRING, versionplatname, versionarch, VERSION_RELEASE, text[0] ? ": " : "", text, text2[0] ? " - " : "", text2);
+        defformatstring(caption, "%s v%s-%s%d (%s)%s%s%s%s", VERSION_NAME, VERSION_STRING, versionplatname, versionarch, VERSION_RELEASE, text[0] ? ": " : "", text, text2[0] ? " - " : "", text2);
         SDL_WM_SetCaption(caption, NULL);
     }
 }
@@ -120,7 +120,7 @@ void fatal(const char *s, ...)    // failure exit
                 cleargamma();
             }
             #ifdef WIN32
-            defformatstring(cap)("%s: Error", VERSION_NAME);
+            defformatstring(cap, "%s: Error", VERSION_NAME);
             MessageBox(NULL, msg, cap, MB_OK|MB_SYSTEMMODAL);
             #endif
             SDL_Quit();
@@ -190,7 +190,7 @@ void screenshot(char *sname)
     glReadPixels(0, 0, screen->w, screen->h, GL_RGB, GL_UNSIGNED_BYTE, image.data);
     string fname;
     if(sname && *sname) copystring(fname, sname);
-    else formatstring(fname)("screenshots/%s", *filetimeformat ? gettime(filetimelocal ? currenttime : clocktime, filetimeformat) : (*mapname ? mapname : "screen"));
+    else formatstring(fname, "screenshots/%s", *filetimeformat ? gettime(filetimelocal ? currenttime : clocktime, filetimeformat) : (*mapname ? mapname : "screen"));
     saveimage(fname, image, imageformat, compresslevel, true);
 }
 

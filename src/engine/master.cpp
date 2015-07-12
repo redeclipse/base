@@ -98,7 +98,7 @@ void masteroutf(masterclient &c, const char *fmt, ...)
     bigstring msg;
     va_list args;
     va_start(args, fmt);
-    vformatbigstring(msg, fmt, args);
+    vformatstring(msg, fmt, args);
     va_end(args);
     masterout(c, msg);
 }

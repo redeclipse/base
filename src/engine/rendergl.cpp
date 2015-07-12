@@ -607,7 +607,7 @@ VAR(0, wireframe, 0, 0, 1);
 
 ICOMMAND(0, getcampos, "", (),
 {
-    defformatstring(pos)("%s %s %s", floatstr(camera1->o.x), floatstr(camera1->o.y), floatstr(camera1->o.z));
+    defformatstring(pos, "%s %s %s", floatstr(camera1->o.x), floatstr(camera1->o.y), floatstr(camera1->o.z));
     result(pos);
 });
 

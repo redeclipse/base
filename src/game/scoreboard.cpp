@@ -201,7 +201,7 @@ namespace hud
                             {
                                 if(sg.total == groups[i]->total)
                                 {
-                                    defformatstring(tw)("%s, ", game::colourteam(groups[i]->team));
+                                    defformatstring(tw, "%s, ", game::colourteam(groups[i]->team));
                                     concatstring(winner, tw);
                                 }
                                 else break;
@@ -268,7 +268,7 @@ namespace hud
                 concatstring(hoststr, game::colourname(e, NULL, false, false));
                 concatstring(hoststr, " ");
             }
-            defformatstring(owner)("[%d]", d->ownernum);
+            defformatstring(owner, "[%d]", d->ownernum);
             concatstring(hoststr, owner);
             return hoststr;
         }
@@ -278,7 +278,7 @@ namespace hud
     const char *scoreversion(gameent *d)
     {
         static string verstr;
-        formatstring(verstr)("%d.%d.%d-%s%d", d->version.major, d->version.minor, d->version.patch, plat_name(d->version.platform), d->version.arch);
+        formatstring(verstr, "%d.%d.%d-%s%d", d->version.major, d->version.minor, d->version.patch, plat_name(d->version.platform), d->version.arch);
         return verstr;
     }
 
@@ -819,14 +819,14 @@ namespace hud
         }
         int size = int(s*skew);
         string str, q;
-        if(m_laptime(game::gamemode, game::mutators)) { formatstring(str)("\fs\f[%d]\f(%s)\fS %s", col, insigniatex, timestr(score, inventoryracestyle)); }
-        else if(m_defend(game::gamemode) && score == INT_MAX) { formatstring(str)("\fs\f[%d]\f(%s)\fS WIN", col, insigniatex); }
-        else { formatstring(str)("\fs\f[%d]\f(%s)\fS %d", col, insigniatex, score); }
+        if(m_laptime(game::gamemode, game::mutators)) { formatstring(str, "\fs\f[%d]\f(%s)\fS %s", col, insigniatex, timestr(score, inventoryracestyle)); }
+        else if(m_defend(game::gamemode) && score == INT_MAX) { formatstring(str, "\fs\f[%d]\f(%s)\fS WIN", col, insigniatex); }
+        else { formatstring(str, "\fs\f[%d]\f(%s)\fS %d", col, insigniatex, score); }
         if(inventoryscoreinfo)
         {
             if(m_laptime(game::gamemode, game::mutators))
-                { formatstring(q)("\n\fs\f[%d]\f(%s)\fS %s", col, offset ? (offset < 0 ? arrowtex : arrowdowntex) : arrowrighttex, timestr(offset < 0 ? 0-offset : offset, inventoryracestyle)); }
-            else { formatstring(q)("%s\fs\f[%d]\f(%s)\fS %d", inventoryscorebreak ? "\n" : " ", col, offset ? (offset > 0 ? arrowtex : arrowdowntex) : arrowrighttex, offset < 0 ? 0-offset : offset); }
+                { formatstring(q, "\n\fs\f[%d]\f(%s)\fS %s", col, offset ? (offset < 0 ? arrowtex : arrowdowntex) : arrowrighttex, timestr(offset < 0 ? 0-offset : offset, inventoryracestyle)); }
+            else { formatstring(q, "%s\fs\f[%d]\f(%s)\fS %d", inventoryscorebreak ? "\n" : " ", col, offset ? (offset > 0 ? arrowtex : arrowdowntex) : arrowrighttex, offset < 0 ? 0-offset : offset); }
             concatstring(str, q);
         }
         vec c = vec::hexcolor(colour);

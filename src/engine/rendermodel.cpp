@@ -450,7 +450,7 @@ model *loadmodel(const char *name, int i, bool msg)
         if(loadingmodel || lightmapping > 1) return NULL;
         if(msg)
         {
-            defformatstring(str)("models/%s", name);
+            defformatstring(str, "models/%s", name);
             progress(loadprogress, str);
         }
         loopi(NUMMODELTYPES)
@@ -1062,7 +1062,7 @@ ICOMMAND(0, findanims, "s", (char *name),
     string num;
     loopv(anims)
     {
-        formatstring(num)("%d", anims[i]);
+        formatstring(num, "%d", anims[i]);
         if(i > 0) buf.add(' ');
         buf.put(num, strlen(num));
     }
@@ -1073,9 +1073,9 @@ ICOMMAND(0, findanims, "s", (char *name),
 void loadskin(const char *dir, const char *altdir, Texture *&skin, Texture *&masks) // model skin sharing
 {
     string dirs[3];
-    formatstring(dirs[0])("models/%s/", dir);
-    formatstring(dirs[1])("models/%s/", altdir);
-    formatstring(dirs[2])("textures/");
+    formatstring(dirs[0], "models/%s/", dir);
+    formatstring(dirs[1], "models/%s/", altdir);
+    formatstring(dirs[2], "textures/");
     masks = notexture;
 
     #define tryload(tex, prefix, cmd, path) loopi(4) { if((tex = textureload(makerelpath(i < 3 ? dirs[i] : "", path, prefix, cmd), 0, true, false)) != notexture) break; }

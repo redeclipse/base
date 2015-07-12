@@ -1590,7 +1590,7 @@ namespace ai
                 if(aidebug >= 4 && actor[d->actortype].canmove) drawroute(d, 4.f*(float(alive)/float(total)));
                 if(aidebug >= 3)
                 {
-                    defformatstring(q)("node: %d route: %d (%d)",
+                    defformatstring(q, "node: %d route: %d (%d)",
                         d->lastnode,
                         !d->ai->route.empty() ? d->ai->route[0] : -1,
                         d->ai->route.length()
@@ -1603,7 +1603,7 @@ namespace ai
                 {
                     aistate &b = d->ai->state[i];
                     gameent *e = b.owner >= 0 ? game::getclient(b.owner) : NULL;
-                    defformatstring(s)("%s%s (%s) %s:%d (\fs%s%s\fS%s%s%s)",
+                    defformatstring(s, "%s%s (%s) %s:%d (\fs%s%s\fS%s%s%s)",
                         top ? "<default>\fg" : "<sub>\fa",
                         stnames[b.type],
                         timestr(lastmillis-b.millis),

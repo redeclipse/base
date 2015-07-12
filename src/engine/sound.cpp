@@ -178,8 +178,8 @@ void getcursounds(int idx, int prop)
             case 8: intret(sounds[idx].ends); break;
             case 9: intret(sounds[idx].slotnum); break;
             case 10: intret(sounds[idx].chan); break;
-            case 11: defformatstring(pos)("%.f %.f %.f", sounds[idx].pos.x, sounds[idx].pos.y, sounds[idx].pos.z); result(pos); break;
-            case 12: defformatstring(oldpos)("%.f %.f %.f", sounds[idx].oldpos.x, sounds[idx].oldpos.y, sounds[idx].oldpos.z); result(oldpos); break;
+            case 11: defformatstring(pos, "%.f %.f %.f", sounds[idx].pos.x, sounds[idx].pos.y, sounds[idx].pos.z); result(pos); break;
+            case 12: defformatstring(oldpos, "%.f %.f %.f", sounds[idx].oldpos.x, sounds[idx].oldpos.y, sounds[idx].oldpos.z); result(oldpos); break;
             case 13: intret(sounds[idx].valid() ? 1 : 0); break;
             case 14: intret(sounds[idx].playing() ? 1 : 0); break;
             case 15: intret(sounds[idx].flags&SND_MAP ? 1 : 0); break;
@@ -225,7 +225,7 @@ bool playmusic(const char *name, const char *cmd)
         {
             loopk(sizeof(exts)/sizeof(exts[0]))
             {
-                formatstring(buf)("%s%s%s", dirs[i], name, exts[k]);
+                formatstring(buf, "%s%s%s", dirs[i], name, exts[k]);
                 if(loadmusic(buf))
                 {
                     DELETEA(musicfile);
@@ -347,7 +347,7 @@ int addsound(const char *name, int vol, int maxrad, int minrad, int value, vecto
             { \
                 loopk(sizeof(exts)/sizeof(exts[0])) \
                 { \
-                    formatstring(buf)("%s%s%s", dirs[i], sample->name, exts[k]); \
+                    formatstring(buf, "%s%s%s", dirs[i], sample->name, exts[k]); \
                     if((sample->sound = loadwav(buf)) != NULL) found = true; \
                     if(found) break; \
                 } \
@@ -358,7 +358,7 @@ int addsound(const char *name, int vol, int maxrad, int minrad, int value, vecto
     string sam;
     loopi(value > 1 ? 2 : 1)
     {
-        if(value > 1 && !i) formatstring(sam)("%s1", name);
+        if(value > 1 && !i) formatstring(sam, "%s1", name);
         else copystring(sam, name);
         loadsound(sam);
         if(!sample->sound)
@@ -375,7 +375,7 @@ int addsound(const char *name, int vol, int maxrad, int minrad, int value, vecto
     slot.samples.add(sample);
     if(value > 1) loopi(value-1)
     {
-        formatstring(sam)("%s%d", name, i+2);
+        formatstring(sam, "%s%d", name, i+2);
         loadsound(sam);
         if(!sample->sound) conoutf("\frfailed to load sample: %s", sam);
         else slot.samples.add(sample);
@@ -689,7 +689,7 @@ void initmumble()
             if(mumbleinfo) wcsncpy(mumbleinfo->name, (const wchar_t *)VERSION_UNAME, 256);
         }
     #elif _POSIX_SHARED_MEMORY_OBJECTS > 0
-        defformatstring(shmname)("/MumbleLink.%d", getuid());
+        defformatstring(shmname, "/MumbleLink.%d", getuid());
         mumblelink = shm_open(shmname, O_RDWR, 0);
         if(mumblelink >= 0)
         {

@@ -253,19 +253,19 @@ char *makefile(const char *s, const char *e, int revision, int start, bool store
 
     for(bool tryrev = false;; skip = false)
     {
-        formatstring(m)("%s%s", f, *e ? e : "");
+        formatstring(m, "%s%s", f, *e ? e : "");
         if(skip || fileexists(findfile(m, "w"), "r"))
         {
             if(revision)
             {
                 if(!tryrev)
                 {
-                    formatstring(f)("%s%s.r%.4d", store ? "backups/" : "", o, revision);
+                    formatstring(f, "%s%s.r%.4d", store ? "backups/" : "", o, revision);
                     tryrev = true;
                 }
-                else formatstring(f)("%s%s.r%.4d.%.4d", store ? "backups/" : "", o, revision, d++);
+                else formatstring(f, "%s%s.r%.4d.%.4d", store ? "backups/" : "", o, revision, d++);
             }
-            else formatstring(f)("%s%s.%.4d", store ? "backups/" : "", o, d++);
+            else formatstring(f, "%s%s.%.4d", store ? "backups/" : "", o, d++);
         }
         else break;
     }
@@ -276,15 +276,15 @@ char *makefile(const char *s, const char *e, int revision, int start, bool store
 
 void backup(const char *fname, const char *ext, int revision, int start, bool store, bool full)
 {
-    defformatstring(tname)("%s%s", fname, ext);
-    defformatstring(aname)("%s", findfile(tname, "w"));
+    defformatstring(tname, "%s%s", fname, ext);
+    defformatstring(aname, "%s", findfile(tname, "w"));
     if(fileexists(aname, "r"))
     {
         const char *bname = aname;
         if(full) bname = findfile(makefile(fname, ext, revision, start, store), "w");
         else
         {
-            formatstring(tname)("%s%s.bak%s", store ? "backups/" : "", fname, ext);
+            formatstring(tname, "%s%s.bak%s", store ? "backups/" : "", fname, ext);
             bname = findfile(tname, "w");
         }
         remove(bname);
@@ -310,7 +310,7 @@ char *makerelpath(const char *dir, const char *file, const char *prefix, const c
     if(cmd) concatstring(tmp, cmd);
     if(dir)
     {
-        defformatstring(pname)("%s/%s", dir, file);
+        defformatstring(pname, "%s/%s", dir, file);
         concatstring(tmp, pname);
     }
     else concatstring(tmp, file);
@@ -449,7 +449,7 @@ const char *findfile(const char *filename, const char *mode)
     static string s;
     if(homedir[0])
     {
-        formatstring(s)("%s%s", homedir, filename);
+        formatstring(s, "%s%s", homedir, filename);
         path(s);
         if(fileexists(s, mode)) return s;
         if(mode[0]=='w' || mode[0]=='a')
@@ -473,7 +473,7 @@ const char *findfile(const char *filename, const char *mode)
     if(mode[0]=='w' || mode[0]=='a' || fileexists(s, mode)) return s;
     loopvrev(packagedirs) if((packagedirs[i].flags & packagedirmask) == packagedirs[i].flags)
     {
-        formatstring(s)("%s%s", packagedirs[i].name, filename);
+        formatstring(s, "%s%s", packagedirs[i].name, filename);
         path(s);
         if(fileexists(s, mode)) return s;
     }
@@ -487,7 +487,7 @@ bool listdir(const char *dirname, bool rel, const char *ext, vector<char *> &fil
 {
     size_t extsize = ext ? strlen(ext)+1 : 0;
 #ifdef WIN32
-    defformatstring(pathname)(rel ? ".\\%s\\*.%s" : "%s\\*.%s", dirname, ext ? ext : "*");
+    defformatstring(pathname, rel ? ".\\%s\\*.%s" : "%s\\*.%s", dirname, ext ? ext : "*");
     WIN32_FIND_DATA FindFileData;
     HANDLE Find = FindFirstFile(pathname, &FindFileData);
     if(Find != INVALID_HANDLE_VALUE)
@@ -509,7 +509,7 @@ bool listdir(const char *dirname, bool rel, const char *ext, vector<char *> &fil
         return true;
     }
 #else
-    defformatstring(pathname)(rel ? "./%s" : "%s", dirname);
+    defformatstring(pathname, rel ? "./%s" : "%s", dirname);
     DIR *d = opendir(pathname);
     if(d)
     {
@@ -547,12 +547,12 @@ int listfiles(const char *dir, const char *ext, vector<char *> &files)
     string s;
     if(homedir[0])
     {
-        formatstring(s)("%s%s", homedir, dirname);
+        formatstring(s, "%s%s", homedir, dirname);
         if(listdir(s, false, ext, files)) dirs++;
     }
     loopvrev(packagedirs) if((packagedirs[i].flags & packagedirmask) == packagedirs[i].flags)
     {
-        formatstring(s)("%s%s", packagedirs[i].name, dirname);
+        formatstring(s, "%s%s", packagedirs[i].name, dirname);
         if(listdir(s, false, ext, files)) dirs++;
     }
     dirs += listzipfiles(dirname, ext, files);

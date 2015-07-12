@@ -112,8 +112,8 @@ namespace entities
                 loopi(G_MAX-G_PLAY) if(mode&(1<<i)) \
                 { \
                     string ds; \
-                    if(a<0) formatstring(ds)("not %s", gametype[i+G_PLAY].name); \
-                    else formatstring(ds)("%s", gametype[i+G_PLAY].name); \
+                    if(a<0) formatstring(ds, "not %s", gametype[i+G_PLAY].name); \
+                    else formatstring(ds, "%s", gametype[i+G_PLAY].name); \
                     addentinfo(ds); \
                 } \
             } \
@@ -123,8 +123,8 @@ namespace entities
                 loopi(G_M_NUM) if(muts&(1<<i)) \
                 { \
                     string ds; \
-                    if(b<0) formatstring(ds)("not %s", mutstype[i].name); \
-                    else formatstring(ds)("%s", mutstype[i].name); \
+                    if(b<0) formatstring(ds, "not %s", mutstype[i].name); \
+                    else formatstring(ds, "%s", mutstype[i].name); \
                     addentinfo(ds); \
                 } \
             } \
@@ -209,7 +209,7 @@ namespace entities
                 {
                     if(valteam(attr[0], T_FIRST))
                     {
-                        defformatstring(str)("team %s", game::colourteam(attr[0]));
+                        defformatstring(str, "team %s", game::colourteam(attr[0]));
                         addentinfo(str);
                     }
                 }
@@ -227,7 +227,7 @@ namespace entities
                 {
                     const char *lfxnames[LFX_MAX+1] = { "spotlight", "dynlight", "flicker", "pulse", "glow", "" };
                     addentinfo(lfxnames[attr[0] < 0 || attr[0] >= LFX_MAX ? LFX_MAX : attr[0]]);
-                    loopi(LFX_MAX-1) if(attr[4]&(1<<(LFX_S_MAX+i))) { defformatstring(ds)("+%s", lfxnames[i+1]); addentinfo(ds); break; }
+                    loopi(LFX_MAX-1) if(attr[4]&(1<<(LFX_S_MAX+i))) { defformatstring(ds, "+%s", lfxnames[i+1]); addentinfo(ds); break; }
                     if(attr[4]&LFX_S_RAND1) addentinfo("rnd-min");
                     if(attr[4]&LFX_S_RAND2) addentinfo("rnd-max");
                 }
@@ -248,7 +248,7 @@ namespace entities
                 int sweap = m_weapon(game::gamemode, game::mutators), attr1 = w_attr(game::gamemode, game::mutators, type, attr[0], sweap);
                 if(isweap(attr1))
                 {
-                    defformatstring(str)("\fs\f[%d]%s%s%s%s\fS", W(attr1, colour), icon ? "\f(" : "", icon ? hud::itemtex(type, attr1) : W(attr1, name), icon ? ")" : "", icon ? W(attr1, longname) : "");
+                    defformatstring(str, "\fs\f[%d]%s%s%s%s\fS", W(attr1, colour), icon ? "\f(" : "", icon ? hud::itemtex(type, attr1) : W(attr1, name), icon ? ")" : "", icon ? W(attr1, longname) : "");
                     addentinfo(str);
                     if(full)
                     {
@@ -277,7 +277,7 @@ namespace entities
                 if(mapsounds.inrange(attr[0]))
                 {
                     int samples = mapsounds[attr[0]].samples.length();
-                    defformatstring(ds)("%s (%d %s)", mapsounds[attr[0]].name, samples, samples == 1 ? "sample" : "samples");
+                    defformatstring(ds, "%s (%d %s)", mapsounds[attr[0]].name, samples, samples == 1 ? "sample" : "samples");
                     addentinfo(ds);
                 }
                 if(full)
@@ -565,7 +565,7 @@ namespace entities
                 {
                     if(d == game::player1)
                     {
-                        defformatstring(s)("on_trigger_%d", e.attrs[0]);
+                        defformatstring(s, "on_trigger_%d", e.attrs[0]);
                         trigger = d; RUNWORLD(s); trigger = NULL;
                     }
                     break;
@@ -2372,7 +2372,7 @@ namespace entities
             const char *itxt = entinfo(e.type, e.attrs, isedit);
             if(itxt && *itxt)
             {
-                defformatstring(ds)("<emphasis>%s", itxt);
+                defformatstring(ds, "<emphasis>%s", itxt);
                 part_textcopy(pos.add(off), ds, hastop ? PART_TEXT_ONTOP : PART_TEXT, 1, 0xFFFFFF);
             }
         }
@@ -2381,7 +2381,7 @@ namespace entities
             part_create(hastop ? PART_EDIT_ONTOP : PART_EDIT, 1, o, hastop ? 0xAA22FF : 0x441188, hastop ? 2.f : 1.f);
             if(showentinfo&(hasent ? 4 : 8))
             {
-                defformatstring(s)("<super>%s%s (%d)", hastop ? "\fp" : "\fv", enttype[e.type].name, idx >= 0 ? idx : 0);
+                defformatstring(s, "<super>%s%s (%d)", hastop ? "\fp" : "\fv", enttype[e.type].name, idx >= 0 ? idx : 0);
                 part_textcopy(pos.add(off), s, hastop ? PART_TEXT_ONTOP : PART_TEXT);
             }
             if(showentinfo&(hasent ? 16 : 32)) loopk(enttype[e.type].numattrs)
@@ -2406,7 +2406,7 @@ namespace entities
                     string attrval; attrval[0] = 0;
                     if(showentattrinfo&1)
                     {
-                        defformatstring(s)("\fs\fy%d\fS:", k+1);
+                        defformatstring(s, "\fs\fy%d\fS:", k+1);
                         concatstring(attrval, s);
                     }
                     if(showentattrinfo&2)
@@ -2417,10 +2417,10 @@ namespace entities
                     if(showentattrinfo&4)
                     {
                         if(*attrval) concatstring(attrval, " = ");
-                        defformatstring(s)("\fs\fc%d\fS", e.attrs[k]);
+                        defformatstring(s, "\fs\fc%d\fS", e.attrs[k]);
                         concatstring(attrval, s);
                     }
-                    defformatstring(s)("%s%s", hastop ? "\fw" : "\fa", attrval);
+                    defformatstring(s, "%s%s", hastop ? "\fw" : "\fa", attrval);
                     part_textcopy(pos.add(off), s, hastop ? PART_TEXT_ONTOP : PART_TEXT);
                 }
             }

@@ -276,9 +276,9 @@ struct duelservmode : servmode
                             else if(i == wants-2) concatstring(names, " and ");
                             else concatstring(names, ", ");
                         }
-                        formatstring(fight)("duel between %s, round \fs\fc#%d\fS", names, duelround);
+                        formatstring(fight, "duel between %s, round \fs\fc#%d\fS", names, duelround);
                     }
-                    else if(m_survivor(gamemode, mutators)) formatstring(fight)("survivor, round \fs\fc#%d\fS", duelround);
+                    else if(m_survivor(gamemode, mutators)) formatstring(fight, "survivor, round \fs\fc#%d\fS", duelround);
                     loopv(playing)
                     {
                         if(playing[i]->state.state == CS_ALIVE)
@@ -330,7 +330,7 @@ struct duelservmode : servmode
                         {
                             if(!cleanup)
                             {
-                                defformatstring(end)("\fyteam %s are the winners", colourteam(alive[0]->team));
+                                defformatstring(end, "\fyteam %s are the winners", colourteam(alive[0]->team));
                                 bool teampoints = true;
                                 loopv(clients) if(playing.find(clients[i]) >= 0)
                                 {
@@ -382,19 +382,19 @@ struct duelservmode : servmode
                             if(!m_insta(gamemode, mutators) && !m_affinity(gamemode))
                             {
                                 if(alive[0]->state.health >= m_health(gamemode, mutators, alive[0]->state.model))
-                                    formatstring(hp)(" with a \fs\fcflawless victory\fS");
-                                else formatstring(hp)(" with \fs\fc%d\fS health left", alive[0]->state.health);
+                                    formatstring(hp, " with a \fs\fcflawless victory\fS");
+                                else formatstring(hp, " with \fs\fc%d\fS health left", alive[0]->state.health);
                             }
                             if(duelwinner != alive[0]->clientnum)
                             {
                                 duelwinner = alive[0]->clientnum;
                                 duelwins = 1;
-                                formatstring(end)("\fy%s was the winner%s", colourname(alive[0]), hp);
+                                formatstring(end, "\fy%s was the winner%s", colourname(alive[0]), hp);
                             }
                             else
                             {
                                 duelwins++;
-                                formatstring(end)("\fy%s was the winner%s (\fs\fc%d\fS in a row)", colourname(alive[0]), hp, duelwins);
+                                formatstring(end, "\fy%s was the winner%s (\fs\fc%d\fS in a row)", colourname(alive[0]), hp, duelwins);
                             }
                             loopv(clients)
                             {

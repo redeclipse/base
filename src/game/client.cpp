@@ -181,12 +181,12 @@ namespace client
         copystring(d.file, name);
         string msg = "";
         if(f->read(&d.hdr, sizeof(demoheader))!=sizeof(demoheader) || memcmp(d.hdr.magic, VERSION_DEMOMAGIC, sizeof(d.hdr.magic)))
-            formatstring(msg)("\frsorry, \fs\fc%s\fS is not a demo file", name);
+            formatstring(msg, "\frsorry, \fs\fc%s\fS is not a demo file", name);
         else
         {
             lilswap(&d.hdr.gamever, 4);
             if(d.hdr.gamever!=VERSION_GAME)
-                formatstring(msg)("\frdemo \fs\fc%s\fS requires \fs\fc%s\fS version of %s", name, d.hdr.gamever<VERSION_GAME ? "an older" : "a newer", VERSION_NAME);
+                formatstring(msg, "\frdemo \fs\fc%s\fS requires \fs\fc%s\fS version of %s", name, d.hdr.gamever<VERSION_GAME ? "an older" : "a newer", VERSION_NAME);
         }
         delete f;
         if(msg[0])
@@ -366,7 +366,7 @@ namespace client
     const char *defaultserversort()
     {
         static string vals;
-        formatstring(vals)("%d %d", SINFO_NUMPLRS, SINFO_PING);
+        formatstring(vals, "%d %d", SINFO_NUMPLRS, SINFO_PING);
         return vals;
     }
 
@@ -676,7 +676,7 @@ namespace client
             case 12: result(plat_name(d->version.platform)); break;
             case 13:
             {
-                defformatstring(str)("%d.%d.%d-%s%d", d->version.major, d->version.minor, d->version.patch, plat_name(d->version.platform), d->version.arch);
+                defformatstring(str, "%d.%d.%d-%s%d", d->version.major, d->version.minor, d->version.patch, plat_name(d->version.platform), d->version.arch);
                 result(str);
             }
             default: break;
@@ -804,13 +804,13 @@ namespace client
         int numclients = 0;
         if(local)
         {
-            formatstring(cn)("%d", game::player1->clientnum);
+            formatstring(cn, "%d", game::player1->clientnum);
             buf.put(cn, strlen(cn));
             numclients++;
         }
         loopv(game::players) if(game::players[i] && (!noai || game::players[i]->actortype > (noai >= 2 ? A_PLAYER : A_BOT)))
         {
-            formatstring(cn)("%d", game::players[i]->clientnum);
+            formatstring(cn, "%d", game::players[i]->clientnum);
             if(numclients++) buf.add(' ');
             buf.put(cn, strlen(cn));
         }
@@ -1035,26 +1035,26 @@ namespace client
         filterbigstring(msg, text, true, colourchat ? false : true, true, true);
         if(*filterwords) filterword(msg, filterwords);
 
-        defformatstring(name)("%s", game::colourname(f));
+        defformatstring(name, "%s", game::colourname(f));
         if(flags&SAY_WHISPER)
         {
             if(!t) return;
-            defformatstring(sw)(" (\fs\fcwhispers to %s\fS)", t == game::player1 ? "you" : game::colourname(t));
+            defformatstring(sw, " (\fs\fcwhispers to %s\fS)", t == game::player1 ? "you" : game::colourname(t));
             concatstring(name, sw);
         }
         else if(flags&SAY_TEAM)
         {
-            defformatstring(st)(" (to team %s)", game::colourteam(f->team));
+            defformatstring(st, " (to team %s)", game::colourteam(f->team));
             concatstring(name, st);
         }
-        if(flags&SAY_ACTION) formatbigstring(line)("\fv* %s %s", name, msg);
-        else formatbigstring(line)("\fw<%s> %s", name, msg);
+        if(flags&SAY_ACTION) formatstring(line, "\fv* %s %s", name, msg);
+        else formatstring(line, "\fw<%s> %s", name, msg);
 
         int snd = S_CHAT;
         ident *wid = idents.access(flags&SAY_ACTION ? "on_action" : "on_text");
         if(wid && wid->type == ID_ALIAS && wid->getstr()[0])
         {
-            defformatbigstring(act)("%s %d %d %s %s %s",
+            defformatbigstring(act, "%s %d %d %s %s %s",
                 flags&SAY_ACTION ? "on_action" : "on_text", f->clientnum, flags&SAY_TEAM ? 1 : 0,
                 escapestring(game::colourname(f)), escapestring(text), escapestring(line));
             int ret = execute(act);
@@ -1073,7 +1073,7 @@ namespace client
         if(!waiting(false) && !client::demoplayback)
         {
             bigstring output;
-            copybigstring(output, text, messagelength);
+            copystring(output, text, messagelength);
             if(flags&SAY_WHISPER)
             {
                 gameent *e = game::getclient(parseplayer(target));
@@ -1110,7 +1110,7 @@ namespace client
 #if 0 // these shouldn't get here
                     int slen = strlen(cmd)+1+strlen(arg);
                     char *s = newstring(slen+1);
-                    formatstring(s)(slen, "%s %s", cmd, arg);
+                    formatstring(s, slen, "%s %s", cmd, arg);
                     char *ret = executestr(s);
                     delete[] s;
                     if(ret) conoutft(CON_EVENT, "\fg%s: \fc%s", cmd, ret);
@@ -1170,7 +1170,7 @@ namespace client
         }
         else
         {
-            defformatstring(scmd)("sv_%s", cmd);
+            defformatstring(scmd, "sv_%s", cmd);
             if(server::servcmd(nargs, scmd, arg))
             {
                 if(nargs > 1 && arg) parsecommand(NULL, cmd, arg);
@@ -1228,8 +1228,8 @@ namespace client
                 data += p.length();
                 len -= p.length();
                 string fname;
-                if(*filetimeformat) formatstring(fname)("demos/%s.dmo", gettime(ctime, filetimeformat));
-                else formatstring(fname)("demos/%u.dmo", uint(ctime));
+                if(*filetimeformat) formatstring(fname, "demos/%s.dmo", gettime(ctime, filetimeformat));
+                else formatstring(fname, "demos/%u.dmo", uint(ctime));
                 stream *demo = openfile(fname, "wb");
                 if(!demo) return;
                 conoutft(CON_EVENT, "\fyreceived demo: \fc%s", fname);
@@ -1246,8 +1246,8 @@ namespace client
                 if(filetype < 0 || filetype >= SENDMAP_MAX) break;
                 const char *reqmap = mapname;
                 if(!reqmap || !*reqmap) reqmap = "maps/untitled";
-                defformatstring(reqfile)(strstr(reqmap, "temp/")==reqmap || strstr(reqmap, "temp\\")==reqmap ? "%s" : "temp/%s", reqmap);
-                defformatstring(reqfext)("%s.%s", reqfile, sendmaptypes[filetype]);
+                defformatstring(reqfile, strstr(reqmap, "temp/")==reqmap || strstr(reqmap, "temp\\")==reqmap ? "%s" : "temp/%s", reqmap);
+                defformatstring(reqfext, "%s.%s", reqfile, sendmaptypes[filetype]);
                 stream *f = openfile(reqfext, "wb");
                 if(!f)
                 {
@@ -1322,10 +1322,10 @@ namespace client
         const char *reqmap = mapname;
         if(!reqmap || !*reqmap) reqmap = "maps/untitled";
         bool edit = m_edit(game::gamemode);
-        defformatstring(reqfile)("%s%s", edit ? "temp/" : "", reqmap);
+        defformatstring(reqfile, "%s%s", edit ? "temp/" : "", reqmap);
         loopi(SENDMAP_MAX)
         {
-            defformatstring(reqfext)("%s.%s", reqfile, sendmaptypes[i]);
+            defformatstring(reqfext, "%s.%s", reqfile, sendmaptypes[i]);
             if(!i && edit)
             {
                 save_world(reqfile, edit, true);
@@ -2295,7 +2295,7 @@ namespace client
                                 const char *item = entities::entinfo(e.type, e.attrs, 0);
                                 if(item && *item)
                                 {
-                                    defformatstring(ds)("<emphasis>%s", item);
+                                    defformatstring(ds, "<emphasis>%s", item);
                                     part_textcopy(pos, ds, PART_TEXT, game::eventiconfade, 0xFFFFFF, 2, 1, -10);
                                 }
                             }
@@ -2713,7 +2713,7 @@ namespace client
                             t->cpmillis = t->impulse[IM_METER] = 0;
                             if(showlaptimes >= (t != game::focus ? (t->actortype > A_PLAYER ? 3 : 2) : 1))
                             {
-                                defformatstring(best)("%s", timestr(t->cptime, 1));
+                                defformatstring(best, "%s", timestr(t->cptime, 1));
                                 conoutft(t != game::player1 ? CON_INFO : CON_SELF, "%s completed in \fs\fg%s\fS (best: \fs\fy%s\fS, laps: \fs\fc%d\fS)", game::colourname(t), timestr(t->cplast, 1), best, t->points);
                             }
                         }
@@ -2878,7 +2878,7 @@ namespace client
 
                 default:
                 {
-                    defformatstring(err)("type (got %d)", type);
+                    defformatstring(err, "type (got %d)", type);
                     neterr(err);
                     return;
                 }

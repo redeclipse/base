@@ -208,7 +208,7 @@ static bool initidents()
     initedidents = true;
     for(int i = 0; i < MAXARGS; i++)
     {
-        defformatstring(argname)("arg%d", i+1);
+        defformatstring(argname, "arg%d", i+1);
         newident(argname, IDF_ARG);
     }
     dummyident = newident("//dummy", IDF_UNKNOWN);
@@ -237,8 +237,8 @@ static const char *debugline(const char *p, const char *fmt)
             static bigstring buf;
             char color[] = { '\0', '\0', '\0' };
             if(fmt[0] == '\f') { memcpy(color, fmt, 2); fmt += strlen(color); }
-            if(sourcefile) formatbigstring(buf)("%s%s:%d: %s", color, sourcefile, num, fmt);
-            else formatbigstring(buf)("%s%d: %s", color, num, fmt);
+            if(sourcefile) formatstring(buf, "%s%s:%d: %s", color, sourcefile, num, fmt);
+            else formatstring(buf, "%s%d: %s", color, num, fmt);
             return buf;
         }
         if(!*end) break;
@@ -2444,7 +2444,7 @@ const char *intstr(int v)
 const char *intstr(ident *id)
 {
     retidx = (retidx + 1)%4;
-    formatstring(retbuf[retidx])(id->flags&IDF_HEX && *id->storage.i >= 0 ? (id->maxval==0xFFFFFF ? "0x%.6X" : "0x%X") : "%d", *id->storage.i);
+    formatstring(retbuf[retidx], id->flags&IDF_HEX && *id->storage.i >= 0 ? (id->maxval==0xFFFFFF ? "0x%.6X" : "0x%X") : "%d", *id->storage.i);
     return retbuf[retidx];
 }
 
@@ -3231,8 +3231,8 @@ ICOMMAND(0, abs, "i", (int *n), intret(abs(*n)));
 ICOMMAND(0, absf, "f", (float *n), floatret(fabs(*n)));
 ICOMMAND(0, precf, "fi", (float *a, int *b),
 {
-    defformatstring(format)("%%.%df", max(*b, 0));
-    defformatstring(retval)(format, *a);
+    defformatstring(format, "%%.%df", max(*b, 0));
+    defformatstring(retval, format, *a);
     result(retval);
 });
 
@@ -3469,8 +3469,6 @@ ICOMMAND(0, getmillis, "i", (int *total), intret(*total ? totalmillis : lastmill
 
 void getvariable(int num)
 {
-    string text = "";
-    num--;
     static vector<ident *> ids;
     static int lastupdate = 0;
     if(ids.empty() || !lastupdate || totalmillis-lastupdate >= 60000)
@@ -3479,12 +3477,14 @@ void getvariable(int num)
         enumerate(idents, ident, id, ids.add(&id));
         lastupdate = totalmillis;
     }
+    string text;
+    num--;
     if(ids.inrange(num))
     {
         ids.sort(ident::compare);
-        formatstring(text)("%s", ids[num]->name);
+        formatstring(text, "%s", ids[num]->name);
     }
-    else formatstring(text)("%d", ids.length());
+    else formatstring(text, "%d", ids.length());
     result(text);
 }
 ICOMMAND(0, getvariable, "i", (int *n), getvariable(*n));
@@ -3525,7 +3525,7 @@ ICOMMAND(0, getvarinfo, "biiiis", (int *n, int *w, int *x, int *t, int *o, char 
 
 void hexcolour(int *n)
 {
-    defformatstring(s)(*n >= 0 && *n <= 0xFFFFFF ? "0x%.6X" : "%d", *n);
+    defformatstring(s, *n >= 0 && *n <= 0xFFFFFF ? "0x%.6X" : "%d", *n);
     result(s);
 }
 
@@ -3535,7 +3535,7 @@ void genkey(char *s)
 {
     vector<char> privkey, pubkey;
     genprivkey(s, privkey, pubkey);
-    defformatstring(keybuf)("%s %s", privkey.getbuf(), pubkey.getbuf());
+    defformatstring(keybuf, "%s %s", privkey.getbuf(), pubkey.getbuf());
     result(keybuf);
 }
 COMMAND(0, genkey, "s");

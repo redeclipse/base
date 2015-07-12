@@ -157,12 +157,12 @@ struct vanitys
     void setmodel(const char *r)
     {
         if(model) delete[] model;
-        defformatstring(m)("vanities/%s", r);
+        defformatstring(m, "vanities/%s", r);
         model = newstring(m);
         if(proj)
         {
             delete[] proj;
-            formatstring(m)("vanities/%s/proj", r);
+            formatstring(m, "vanities/%s/proj", r);
             proj = newstring(m);
         }
     }

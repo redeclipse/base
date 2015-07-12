@@ -733,7 +733,7 @@ void guiplayerpreview(int *model, int *color, int *team, int *weap, char *vanity
     }
     else if(ret&GUI_ROLLOVER)
     {
-        defformatstring(str)("%d %d %d %d %s", *model, *color, *team, *weap, vanity);
+        defformatstring(str, "%d %d %d %d %s", *model, *color, *team, *weap, vanity);
         setsvar("guirollovername", str, true);
         setsvar("guirolloveraction", action, true);
         setsvar("guirollovertype", "player", true);
@@ -774,7 +774,7 @@ void guimodelpreview(char *model, char *animspec, char *action, float *scale, in
     }
     else if(ret&GUI_ROLLOVER)
     {
-        defformatstring(str)("%d %s", *model, animspec);
+        defformatstring(str, "%d %s", *model, animspec);
         setsvar("guirollovername", str, true);
         setsvar("guirolloveraction", action, true);
         setsvar("guirollovertype", "model", true);

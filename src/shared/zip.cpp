@@ -254,7 +254,7 @@ static void mountzip(ziparchive &arch, vector<zipfile> &files, const char *mount
     loopv(files)
     {
         zipfile &f = files[i];
-        formatstring(fname)("%s%s", mdir, striplen && !strncmp(f.name, stripdir, striplen) ? &f.name[striplen] : f.name);
+        formatstring(fname, "%s%s", mdir, striplen && !strncmp(f.name, stripdir, striplen) ? &f.name[striplen] : f.name);
         if(arch.files.access(fname)) continue;
         char *mname = newstring(fname);
         zipfile &mf = arch.files[mname];

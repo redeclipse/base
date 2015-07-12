@@ -100,7 +100,7 @@ font *loadfont(const char *name)
     font *f = fonts.access(name);
     if(!f)
     {
-        defformatstring(n)("config/fonts/%s.cfg", name);
+        defformatstring(n, "config/fonts/%s.cfg", name);
         if(execfile(n, false)) f = fonts.access(name);
     }
     return f;
@@ -340,7 +340,7 @@ static float icon_width(const char *name, float scale)
             if(s && end > start) \
             { \
                 bigstring value; \
-                copybigstring(value, start, min(size_t(end - start + 1), sizeof(value))); \
+                copystring(value, start, min(size_t(end - start + 1), sizeof(value))); \
                 TEXTICON(value); \
             } \
             h += end-start; \
@@ -357,7 +357,7 @@ static float icon_width(const char *name, float scale)
             if(s && end > start) \
             { \
                 bigstring value; \
-                copybigstring(value, start, min(size_t(end - start + 1), sizeof(value))); \
+                copystring(value, start, min(size_t(end - start + 1), sizeof(value))); \
                 TEXTKEY(value); \
             } \
             h += end-start; \

@@ -27,7 +27,7 @@
 void hashpassword(int cn, int sessionid, const char *pwd, char *result, int maxlen)
 {
     char buf[2*MAXSTRLEN];
-    formatstring(buf)("%d %d ", cn, sessionid);
+    formatstring(buf, "%d %d ", cn, sessionid);
     concatstring(buf, pwd, sizeof(buf));
     if(!hashstring(buf, result, maxlen)) *result = '\0';
 }
@@ -133,15 +133,15 @@ namespace auth
             ci->privilege = flags;
             if(authed)
             {
-                formatstring(msg)("\fy%s identified as \fs\fc%s\fS", colourname(ci), ci->authname);
+                formatstring(msg, "\fy%s identified as \fs\fc%s\fS", colourname(ci), ci->authname);
                 if((ci->privilege&PRIV_TYPE) > PRIV_PLAYER)
                 {
-                    defformatstring(msgx)(" (\fs\fc%s\fS)", privname(ci->privilege));
+                    defformatstring(msgx, " (\fs\fc%s\fS)", privname(ci->privilege));
                     concatstring(msg, msgx);
                 }
                 copystring(ci->handle, ci->authname);
             }
-            else formatstring(msg)("\fy%s elevated to \fs\fc%s\fS", colourname(ci), privname(ci->privilege));
+            else formatstring(msg, "\fy%s elevated to \fs\fc%s\fS", colourname(ci), privname(ci->privilege));
         }
         else
         {
@@ -153,7 +153,7 @@ namespace auth
             loopv(clients) if((clients[i]->privilege&PRIV_TYPE) >= PRIV_MODERATOR || clients[i]->local) others++;
             if(!others) mastermode = MM_OPEN;
             if(!val && (privilege&PRIV_TYPE) >= PRIV_ELEVATED)
-                formatstring(msg)("\fy%s relinquished \fs\fc%s\fS status", colourname(ci), privname(privilege));
+                formatstring(msg, "\fy%s relinquished \fs\fc%s\fS status", colourname(ci), privname(privilege));
         }
         if(val >= 0)
         {

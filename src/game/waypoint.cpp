@@ -691,7 +691,7 @@ namespace ai
     {
         if(!mname || !*mname) mname = mapname;
         if(!*mname) return false;
-        formatstring(wptname)("%s.wpt", mname);
+        nformatstring(wptname, MAXSTRLEN, "%s.wpt", mname);
         path(wptname);
         return true;
     }

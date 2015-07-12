@@ -1123,7 +1123,7 @@ void renderparticles(bool mainpass)
             if(type&PT_RND4) concatstring(info, "r,");
             if(type&PT_FLIP) concatstring(info, "f,");
             if(type&PT_ONTOP) concatstring(info, "o,");
-            defformatstring(ds)("%d\t%s: %s %s", parts[i]->count(), partnames[type&PT_TYPE], info, (title?title:""));
+            defformatstring(ds, "%d\t%s: %s %s", parts[i]->count(), partnames[type&PT_TYPE], info, (title?title:""));
             draw_text(ds, FONTH, (i+n/2)*FONTH);
         }
         glDisable(GL_BLEND);
@@ -1717,7 +1717,7 @@ void makeparticle(const vec &o, attrvector &attr)
             flares.addflare(o, attr[1], attr[2], attr[3], (attr[0]&2)!=0, false, (attr[0]&1)!=0 ? ((attr[0]&2)!=0 ? 1 : 2) : 0);
             break;
         default:
-            defformatstring(ds)("%d?", attr[0]);
+            defformatstring(ds, "%d?", attr[0]);
             part_textcopy(o, ds);
             break;
     }

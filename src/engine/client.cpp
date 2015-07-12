@@ -113,7 +113,7 @@ void connectserv(const char *name, int port, const char *password)
     {
         if(!connectguidelines)
         {
-            defformatstring(s)("connect %s %d %s", name, port, password && *password ? password : "");
+            defformatstring(s, "connect %s %d %s", name, port, password && *password ? password : "");
             setsvar("guidelinesaction", s);
             showgui("guidelines");
             return;

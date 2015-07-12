@@ -173,11 +173,11 @@ struct obj : vertmodel, vertloader<obj>
         mdl.model = this;
         mdl.index = 0;
         const char *pname = parentdir(name);
-        defformatstring(name1)("models/%s/tris.obj", name);
+        defformatstring(name1, "models/%s/tris.obj", name);
         mdl.meshes = sharemeshes(path(name1), 2.0);
         if(!mdl.meshes)
         {
-            defformatstring(name2)("models/%s/tris.obj", pname);    // try obj in parent folder (vert sharing)
+            defformatstring(name2, "models/%s/tris.obj", pname);    // try obj in parent folder (vert sharing)
             mdl.meshes = sharemeshes(path(name2), 2.0);
             if(!mdl.meshes) return false;
         }
@@ -190,8 +190,8 @@ struct obj : vertmodel, vertloader<obj>
 
     bool load()
     {
-        formatstring(dir)("models/%s", name);
-        defformatstring(cfgname)("models/%s/obj.cfg", name);
+        formatstring(dir, "models/%s", name);
+        defformatstring(cfgname, "models/%s/obj.cfg", name);
 
         loading = this;
         if(execfile(cfgname, false) && parts.length()) // configured obj, will call the obj* commands below

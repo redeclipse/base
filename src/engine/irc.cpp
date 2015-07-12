@@ -23,7 +23,7 @@ void ircprintf(ircnet *n, int relay, const char *target, const char *msg, ...)
         ircchan *c = ircfindchan(n, target);
         if(c)
         {
-            formatstring(s)("\fs\fa[%s:%s]\fS", n->name, c->name);
+            formatstring(s, "\fs\fa[%s:%s]\fS", n->name, c->name);
             #ifndef STANDALONE
             c->buffer.addline(str, MAXIRCLINES);
             c->updated |= IRCUP_MSG;
@@ -33,7 +33,7 @@ void ircprintf(ircnet *n, int relay, const char *target, const char *msg, ...)
         }
         else
         {
-            formatstring(s)("\fs\fa[%s:%s]\fS", n->name, target);
+            formatstring(s, "\fs\fa[%s:%s]\fS", n->name, target);
             #ifndef STANDALONE
             n->buffer.addline(str, MAXIRCLINES);
             n->updated |= IRCUP_MSG;
@@ -42,7 +42,7 @@ void ircprintf(ircnet *n, int relay, const char *target, const char *msg, ...)
     }
     else
     {
-        formatstring(s)("\fs\fa[%s]\fS", n->name);
+        formatstring(s, "\fs\fa[%s]\fS", n->name);
         #ifndef STANDALONE
         n->buffer.addline(newstring(str), MAXIRCLINES);
         n->updated |= IRCUP_MSG;
@@ -983,7 +983,7 @@ bool ircchangui(guient *g, ircnet *n, ircchan *c, bool tab)
         if(msg && g->visible()) c->updated &= ~IRCUP_MSG;
     }
 
-    defformatstring(cwindow)("%s_%s_window", n->name, c->name);
+    defformatstring(cwindow, "%s_%s_window", n->name, c->name);
     if(c->buffer.newlines < c->buffer.lines.length())
     {
         editor *e = UI::geteditor(cwindow, EDITORREADONLY);
@@ -991,7 +991,7 @@ bool ircchangui(guient *g, ircnet *n, ircchan *c, bool tab)
     }
     g->field(cwindow, 0x666666, -100, 25, NULL, EDITORREADONLY);
 
-    defformatstring(cinput)("%s_%s_input", n->name, c->name);
+    defformatstring(cinput, "%s_%s_input", n->name, c->name);
     char *v = g->field(cinput, 0x666666, -100, 0, "", EDITORFOREVER, g->visible(), cwindow);
     if(v && *v)
     {
@@ -1011,7 +1011,7 @@ bool ircnetgui(guient *g, ircnet *n, bool tab)
         if(msg && g->visible()) n->updated &= ~IRCUP_MSG;
     }
 
-    defformatstring(window)("%s_window", n->name);
+    defformatstring(window, "%s_window", n->name);
     if(n->buffer.newlines < n->buffer.lines.length())
     {
         editor *e = UI::geteditor(window, EDITORREADONLY);
@@ -1019,7 +1019,7 @@ bool ircnetgui(guient *g, ircnet *n, bool tab)
     }
     g->field(window, 0x666666, -100, 25, NULL, EDITORREADONLY);
 
-    defformatstring(input)("%s_input", n->name);
+    defformatstring(input, "%s_input", n->name);
     char *w = g->field(input, 0x666666, -100, 0, "", EDITORFOREVER, g->visible(), window);
     if(w && *w)
     {

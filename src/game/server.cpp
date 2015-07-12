@@ -1101,21 +1101,21 @@ namespace server
         {
             if(colour&1)
             {
-                formatstring(colortmp)("\f[%d]", findcolour(ci));
+                formatstring(colortmp, "\f[%d]", findcolour(ci));
                 concatstring(colored, colortmp);
             }
-            formatstring(colortmp)("\f($priv%stex)", privnamex(ci->privilege, ci->state.actortype, true));
+            formatstring(colortmp, "\f($priv%stex)", privnamex(ci->privilege, ci->state.actortype, true));
             concatstring(colored, colortmp);
         }
         if(colour&2)
         {
-            formatstring(colortmp)("\f[%d]", TEAM(ci->team, colour));
+            formatstring(colortmp, "\f[%d]", TEAM(ci->team, colour));
             concatstring(colored, colortmp);
         }
         concatstring(colored, name);
         if(!name[0] || (ci->state.actortype < A_ENEMY && dupname && duplicatename(ci, name)))
         {
-            formatstring(colortmp)("%s[%d]", name[0] ? " " : "", ci->clientnum);
+            formatstring(colortmp, "%s[%d]", name[0] ? " " : "", ci->clientnum);
             concatstring(colored, colortmp);
         }
         if(colour) concatstring(colored, "\fS");
@@ -1133,11 +1133,11 @@ namespace server
         if(team < 0 || team > T_MAX) team = T_NEUTRAL;
         static string teamed; teamed[0] = 0; string teamtmp;
         concatstring(teamed, "\fs");
-        formatstring(teamtmp)("\f[%d]", TEAM(team, colour));
+        formatstring(teamtmp, "\f[%d]", TEAM(team, colour));
         concatstring(teamed, teamtmp);
         if(icon != NULL)
         {
-            formatstring(teamtmp)("\f($%s)", *icon ? icon : teamtexnamex(team));
+            formatstring(teamtmp, "\f($%s)", *icon ? icon : teamtexnamex(team));
             concatstring(teamed, teamtmp);
         }
         concatstring(teamed, TEAM(team, name));
@@ -1157,7 +1157,7 @@ namespace server
     bool cmppriv(clientinfo *ci, clientinfo *cp, const char *msg = NULL)
     {
         string str = "";
-        if(msg && *msg) formatstring(str)("%s %s", msg, colourname(cp));
+        if(msg && *msg) formatstring(str, "%s %s", msg, colourname(cp));
         if(haspriv(ci, cp->local ? PRIV_ADMINISTRATOR : cp->privilege&PRIV_TYPE, str)) return true;
         return false;
     }
@@ -1200,15 +1200,15 @@ namespace server
                         string name;
                         switch(iter)
                         {
-                            case 2: case 3: formatstring(name)("%s%s%c", *gname ? gname : "", *gname ? "-" : "", mut[0]); break;
-                            case 1: formatstring(name)("%s%s%c%c", *gname ? gname : "", *gname ? "-" : "", mut[0], mut[1]); break;
-                            case 0: default: formatstring(name)("%s%s%s", *gname ? gname : "", *gname ? "-" : "", mut); break;
+                            case 2: case 3: formatstring(name, "%s%s%c", *gname ? gname : "", *gname ? "-" : "", mut[0]); break;
+                            case 1: formatstring(name, "%s%s%c%c", *gname ? gname : "", *gname ? "-" : "", mut[0], mut[1]); break;
+                            case 0: default: formatstring(name, "%s%s%s", *gname ? gname : "", *gname ? "-" : "", mut); break;
                         }
                         copystring(gname, name);
                     }
                 }
             }
-            defformatstring(mname)("%s%s%s", *gname ? gname : "", *gname ? separator : "", k < 3 ? gametype[mode].name : gametype[mode].sname);
+            defformatstring(mname, "%s%s%s", *gname ? gname : "", *gname ? separator : "", k < 3 ? gametype[mode].name : gametype[mode].sname);
             if(k < 3 && limit > 0 && int(strlen(mname)) >= limit)
             {
                 gname[0] = 0;
@@ -2167,16 +2167,16 @@ namespace server
     {
         demoheader hdr;
         string msg = "";
-        defformatstring(file)(strstr(smapname, "maps/")==smapname || strstr(smapname, "maps\\")==smapname ? "%s.dmo" : "demos/%s.dmo", smapname);
+        defformatstring(file, strstr(smapname, "maps/")==smapname || strstr(smapname, "maps\\")==smapname ? "%s.dmo" : "demos/%s.dmo", smapname);
         demoplayback = opengzfile(file, "rb");
-        if(!demoplayback) formatstring(msg)("\frcould not read demo \fs\fc%s\fS", file);
+        if(!demoplayback) formatstring(msg, "\frcould not read demo \fs\fc%s\fS", file);
         else if(demoplayback->read(&hdr, sizeof(demoheader))!=sizeof(demoheader) || memcmp(hdr.magic, VERSION_DEMOMAGIC, sizeof(hdr.magic)))
-            formatstring(msg)("\frsorry, \fs\fc%s\fS is not a demo file", file);
+            formatstring(msg, "\frsorry, \fs\fc%s\fS is not a demo file", file);
         else
         {
             lilswap(&hdr.gamever, 4);
             if(hdr.gamever!=VERSION_GAME)
-                formatstring(msg)("\frdemo \fs\fc%s\fS requires %s version of %s", file, hdr.gamever<VERSION_GAME ? "an older" : "a newer", VERSION_NAME);
+                formatstring(msg, "\frdemo \fs\fc%s\fS requires %s version of %s", file, hdr.gamever<VERSION_GAME ? "an older" : "a newer", VERSION_NAME);
         }
         if(msg[0])
         {
@@ -2261,12 +2261,12 @@ namespace server
         copystring(d.file, name);
         string msg = "";
         if(f->read(&d.hdr, sizeof(demoheader))!=sizeof(demoheader) || memcmp(d.hdr.magic, VERSION_DEMOMAGIC, sizeof(d.hdr.magic)))
-            formatstring(msg)("\fs\fc%s\fS is not a demo file", name);
+            formatstring(msg, "\fs\fc%s\fS is not a demo file", name);
         else
         {
             lilswap(&d.hdr.gamever, 4);
             if(d.hdr.gamever!=VERSION_GAME)
-                formatstring(msg)("\frdemo \fs\fc%s\fS requires \fs\fc%s\fS version of %s", name, d.hdr.gamever<VERSION_GAME ? "an older" : "a newer", VERSION_NAME);
+                formatstring(msg, "\frdemo \fs\fc%s\fS requires \fs\fc%s\fS version of %s", name, d.hdr.gamever<VERSION_GAME ? "an older" : "a newer", VERSION_NAME);
         }
         delete f;
         if(msg[0])
@@ -2287,7 +2287,7 @@ namespace server
         d.ctime = clocktime;
         d.data = new uchar[len];
         d.len = len;
-        formatstring(d.info)("%s on %s", gamename(gamemode, mutators, 0, 32), smapname);
+        formatstring(d.info, "%s on %s", gamename(gamemode, mutators, 0, 32), smapname);
         srvoutf(4, "\fydemo \fs\fc%s\fS recorded \fs\fc%s UTC\fS [\fs\fw%.2f%s\fS]", d.info, gettime(d.ctime, "%Y-%m-%d %H:%M.%S"), d.len > 1024*1024 ? d.len/(1024*1024.f) : d.len/1024.0f, d.len > 1024*1024 ? "MB" : "kB");
         demotmp->seek(0, SEEK_SET);
         demotmp->read(d.data, len);
@@ -2295,8 +2295,8 @@ namespace server
         if(G(demoautoserversave))
         {
             string dafilepath = "";
-            if(*filetimeformat) formatstring(dafilepath)("demos/sv_%s_%s-%s.dmo", gettime(d.ctime, filetimeformat), gamename(gamemode, mutators, 1, 32, "_"), smapname);
-            else formatstring(dafilepath)("demos/sv_%u_%s-%s.dmo", uint(d.ctime), gamename(gamemode, mutators, 1, 32, "_"), smapname);
+            if(*filetimeformat) formatstring(dafilepath, "demos/sv_%s_%s-%s.dmo", gettime(d.ctime, filetimeformat), gamename(gamemode, mutators, 1, 32, "_"), smapname);
+            else formatstring(dafilepath, "demos/sv_%u_%s-%s.dmo", uint(d.ctime), gamename(gamemode, mutators, 1, 32, "_"), smapname);
             stream *dafile = openrawfile(dafilepath, "w");
             dafile->write(d.data, d.len);
             dafile->close();
@@ -2308,7 +2308,7 @@ namespace server
             listfiles("demos", "dmo", files);
             loopvrev(files) if(!strncmp(files[i], "sv_", 3))
             {
-                defformatstring(dirfile)("demos/%s.dmo", files[i]);
+                defformatstring(dirfile, "demos/%s.dmo", files[i]);
                 int q = scandemo(dirfile);
                 if(q >= 0 && (clocktime-demoinfos[q].hdr.starttime) >= G(demoserverkeeptime))
                 {
@@ -3073,7 +3073,7 @@ namespace server
         {
             loopi(SENDMAP_MAX)
             {
-                defformatstring(reqfile)(strstr(reqmap, "maps/")==reqmap || strstr(reqmap, "maps\\")==reqmap ? "%s.%s" : "maps/%s.%s", reqmap, sendmaptypes[i]);
+                defformatstring(reqfile, strstr(reqmap, "maps/")==reqmap || strstr(reqmap, "maps\\")==reqmap ? "%s.%s" : "maps/%s.%s", reqmap, sendmaptypes[i]);
                 if(i == SENDMAP_MPZ)
                 {
                     stream *f = opengzfile(reqfile, "rb");
@@ -3194,8 +3194,8 @@ namespace server
                     int slen = strlen(id->name);
                     if(arg && nargs > 1) slen += strlen(arg)+1;
                     char *s = newstring(slen);
-                    if(nargs <= 1 || !arg) formatstring(s)(slen, "%s", id->name);
-                    else formatstring(s)(slen, "%s %s", id->name, arg);
+                    if(nargs <= 1 || !arg) nformatstring(s, slen, "%s", id->name);
+                    else nformatstring(s, slen, "%s %s", id->name, arg);
                     char *ret = executestr(s);
                     delete[] s;
                     if(ret)
@@ -3318,7 +3318,7 @@ namespace server
 
     void parsecommand(clientinfo *ci, int nargs, const char *cmd, const char *arg)
     { // incoming commands from clients
-        defformatstring(cmdname)("sv_%s", cmd);
+        defformatstring(cmdname, "sv_%s", cmd);
         ident *id = idents.access(cmdname);
         if(id && id->flags&IDF_SERVER)
         {
@@ -3343,8 +3343,8 @@ namespace server
                     int slen = strlen(id->name);
                     if(arg && nargs > 1) slen += strlen(arg)+1;
                     char *s = newstring(slen);
-                    if(nargs <= 1 || !arg) formatstring(s)(slen, "%s", id->name);
-                    else formatstring(s)(slen, "%s %s", id->name, arg);
+                    if(nargs <= 1 || !arg) nformatstring(s, slen, "%s", id->name);
+                    else nformatstring(s, slen, "%s %s", id->name, arg);
                     char *ret = executestr(s);
                     delete[] s;
                     if(ret && *ret) srvoutf(-3, "\fy%s executed \fs\fc%s\fS (returned: \fs\fc%s\fS)", colourname(ci), name, ret);
@@ -5792,7 +5792,7 @@ namespace server
                         fcp->state.chatmillis.add(totalmillis ? totalmillis : 1);
                     }
                     bigstring output;
-                    copybigstring(output, text, G(messagelength));
+                    copystring(output, text, G(messagelength));
                     filterstring(text, text, true, true, true, true, G(messagelength));
                     if(*(G(censorwords))) filterword(output, G(censorwords));
                     if(flags&SAY_TEAM && !m_team(gamemode, mutators)) flags &= ~SAY_TEAM;
@@ -5833,10 +5833,10 @@ namespace server
                             sendf(scn, 1, "ri4s", N_TEXT, fcp->clientnum, tcp ? tcp->clientnum : -1, flags, output);
                             sentto.add(scn);
                         }
-                        defformatstring(m)("%s", colourname(fcp));
+                        defformatstring(m, "%s", colourname(fcp));
                         if(flags&SAY_TEAM)
                         {
-                            defformatstring(t)(" (to team %s)", colourteam(fcp->team));
+                            defformatstring(t, " (to team %s)", colourteam(fcp->team));
                             concatstring(m, t);
                         }
                         if(flags&SAY_ACTION) relayf(0, "\fv* %s %s", m, output);
@@ -5880,7 +5880,7 @@ namespace server
                         }
                     }
                     QUEUE_MSG;
-                    defformatstring(oldname)("%s", colourname(ci));
+                    defformatstring(oldname, "%s", colourname(ci));
                     getstring(text, p);
                     string namestr = "";
                     filterstring(namestr, text, true, true, true, true, MAXNAMELEN);
@@ -5976,7 +5976,7 @@ namespace server
                     {
                         if(p.overread()) break;
                         getstring(text, p);
-                        defformatstring(cmdname)("sv_%s", text);
+                        defformatstring(cmdname, "sv_%s", text);
                         ident *id = idents.access(cmdname);
                         if(!skip && id && id->flags&IDF_SERVER && id->flags&IDF_WORLD && n == id->type)
                         {
@@ -6288,12 +6288,12 @@ namespace server
                     }
                     if(quarantine && cp->state.quarantine)
                     {
-                        defformatstring(name)("%s", colourname(ci));
+                        defformatstring(name, "%s", colourname(ci));
                         srvoutf(-3, "%s \fs\fcquarantined\fS %s", name, colourname(cp));
                     }
                     else if(wasq && !cp->state.quarantine)
                     {
-                        defformatstring(name)("%s", colourname(ci));
+                        defformatstring(name, "%s", colourname(ci));
                         srvoutf(-3, "%s \fs\fcreleased\fS %s from \fs\fcquarantine\fS", name, colourname(cp));
                     }
                     break;

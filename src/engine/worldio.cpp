@@ -50,14 +50,14 @@ void setnames(const char *fname, int type)
     maptype = type >= 0 || type <= MAP_MAX-1 ? type : MAP_MAPZ;
 
     string fn, mn, mf;
-    if(fname != NULL && *fname) formatstring(fn)("%s", fname);
-    else formatstring(fn)("%s/untitled", mapdirs[maptype].name);
+    if(fname != NULL && *fname) formatstring(fn, "%s", fname);
+    else formatstring(fn, "%s/untitled", mapdirs[maptype].name);
 
     if(strpbrk(fn, "/\\")) copystring(mn, fn);
-    else formatstring(mn)("%s/%s", mapdirs[maptype].name, fn);
+    else formatstring(mn, "%s/%s", mapdirs[maptype].name, fn);
     setsvar("mapname", mn);
 
-    formatstring(mf)("%s%s", mapname, mapexts[maptype].name);
+    formatstring(mf, "%s%s", mapname, mapexts[maptype].name);
     setsvar("mapfile", mf);
 }
 
@@ -801,7 +801,7 @@ void saveslotconfig(stream *h, Slot &s, int index)
 void save_config(char *mname)
 {
     if(autosavebackups) backup(mname, ".cfg", hdr.revision, autosavebackups > 2, !(autosavebackups%2));
-    defformatstring(fname)("%s.cfg", mname);
+    defformatstring(fname, "%s.cfg", mname);
     stream *h = openutf8file(fname, "w");
     if(!h) { conoutf("\frcould not write config to %s", fname); return; }
 
@@ -917,7 +917,7 @@ void save_mapshot(char *mname)
 
     glDeleteTextures(1, &tex);
     glViewport(0, 0, screen->w, screen->h);
-    defformatstring(texname)("%s", mname);
+    defformatstring(texname, "%s", mname);
     reloadtexture(texname);
 }
 ICOMMAND(0, savemapshot, "s", (char *mname), if(!(identflags&IDF_WORLD)) save_mapshot(*mname ? mname : mapname));
@@ -1122,7 +1122,7 @@ bool load_world(const char *mname, bool temp)       // still supports all map fo
             setnames(mname, format);
             if(!tempfile) loopk(2)
             {
-                defformatstring(s)("temp/%s", k ? mapfile : mapname);
+                defformatstring(s, "temp/%s", k ? mapfile : mapname);
                 setsvar(k ? "mapfile" : "mapname", s);
             }
 
@@ -1735,7 +1735,7 @@ bool load_world(const char *mname, bool temp)       // still supports all map fo
             delete f;
 
             identflags |= IDF_WORLD;
-            defformatstring(cfgname)("%s.cfg", mapname);
+            defformatstring(cfgname, "%s.cfg", mapname);
             if(maptype == MAP_OCTA)
             {
                 execfile("config/map/octa.cfg"); // for use with -pSAUER_DIR
@@ -1775,11 +1775,11 @@ bool load_world(const char *mname, bool temp)       // still supports all map fo
 
 void writeobj(char *name)
 {
-    defformatstring(fname)("%s.obj", name);
+    defformatstring(fname, "%s.obj", name);
     stream *f = openfile(path(fname), "w");
     if(!f) return;
     f->printf("# obj file of Cube 2 level\n\n");
-    defformatstring(mtlname)("%s.mtl", name);
+    defformatstring(mtlname, "%s.mtl", name);
     path(mtlname);
     f->printf("mtllib %s\n\n", mtlname);
     extern vector<vtxarray *> valist;

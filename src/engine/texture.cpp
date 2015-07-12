@@ -2141,7 +2141,7 @@ Texture *loadthumbnail(Slot &slot)
     if(colorscale == vec(1, 1, 1)) addname(name, slot, slot.sts[0], false, "<thumbnail>");
     else
     {
-        defformatstring(prefix)("<thumbnail:%.2f/%.2f/%.2f>", colorscale.x, colorscale.y, colorscale.z);
+        defformatstring(prefix, "<thumbnail:%.2f/%.2f/%.2f>", colorscale.x, colorscale.y, colorscale.z);
         addname(name, slot, slot.sts[0], false, prefix);
     }
     int glow = -1;
@@ -2152,7 +2152,7 @@ Texture *loadthumbnail(Slot &slot)
         if(glow >= 0)
         {
             glowcolor = vslot.getglowcolor();
-            defformatstring(prefix)("<glow:%.2f/%.2f/%.2f>", glowcolor.x, glowcolor.y, glowcolor.z);
+            defformatstring(prefix, "<glow:%.2f/%.2f/%.2f>", glowcolor.x, glowcolor.y, glowcolor.z);
             addname(name, slot, slot.sts[glow], true, prefix);
         }
     }
@@ -2163,7 +2163,7 @@ Texture *loadthumbnail(Slot &slot)
         if(layerscale == vec(1, 1, 1)) addname(name, *layer->slot, layer->slot->sts[0], true, "<layer>");
         else
         {
-            defformatstring(prefix)("<layer:%.2f/%.2f/%.2f>", layerscale.x, layerscale.y, layerscale.z);
+            defformatstring(prefix, "<layer:%.2f/%.2f/%.2f>", layerscale.x, layerscale.y, layerscale.z);
             addname(name, *layer->slot, layer->slot->sts[0], true, prefix);
         }
     }
@@ -2387,7 +2387,7 @@ Texture *cubemapload(const char *name, bool mipit, bool msg, bool transient)
     Texture *t = NULL;
     if(!strchr(name, '*'))
     {
-        defformatstring(pname)("%s_*", name);
+        defformatstring(pname, "%s_*", name);
         t = cubemaploadwildcard(NULL, pname, mipit, false, transient);
         if(!t && msg) conoutf("\frcould not load envmap %s", name);
     }
@@ -2888,7 +2888,7 @@ void gendds(char *infile, char *outfile)
 
     glHint(GL_TEXTURE_COMPRESSION_HINT, GL_NICEST);
 
-    defformatstring(cfile)("<compress>%s", infile);
+    defformatstring(cfile, "<compress>%s", infile);
     extern void reloadtex(char *name);
     Texture *t = textures.access(path(cfile));
     if(t) reloadtex(cfile);
@@ -3205,7 +3205,7 @@ SDL_Surface *loadsurface(const char *name, bool noload)
     const char *exts[] = { "", ".png", ".tga", ".jpg", ".bmp" }; // bmp is a last resort!
     loopi(sizeof(exts)/sizeof(exts[0]))
     {
-        defformatstring(buf)("%s%s", name, exts[i]);
+        defformatstring(buf, "%s%s", name, exts[i]);
         if(noload)
         {
             stream *f = openfile(buf, "rb");

@@ -136,30 +136,22 @@ typedef char string[MAXSTRLEN];
 #define BIGSTRLEN 4096
 typedef char bigstring[BIGSTRLEN];
 
-inline void vformatstring(char *d, const char *fmt, va_list v, int len = MAXSTRLEN)
-{
-    _vsnprintf(d, len, fmt, v);
-    d[len-1] = 0;
-}
-inline void vformatbigstring(char *d, const char *fmt, va_list v, int len = BIGSTRLEN) { vformatstring(d, fmt, v, len); }
+inline void vformatstring(char *d, const char *fmt, va_list v, int len) { _vsnprintf(d, len, fmt, v); d[len-1] = 0; }
+template<size_t N> inline void vformatstring(char (&d)[N], const char *fmt, va_list v) { vformatstring(d, fmt, v, N); }
 
-inline char *copystring(char *d, const char *s, size_t len = MAXSTRLEN)
+inline char *copystring(char *d, const char *s, size_t len)
 {
-    size_t slen = min(strlen(s)+1, len);
+    size_t slen = min(strlen(s), len-1);
     memcpy(d, s, slen);
-    d[slen-1] = 0;
+    d[slen] = 0;
     return d;
 }
-inline char *copybigstring(char *d, const char *s, size_t len = BIGSTRLEN) { return copystring(d, s, len); }
+template<size_t N> inline char *copystring(char (&d)[N], const char *s) { return copystring(d, s, N); }
 
-inline char *concatstring(char *d, const char *s, size_t len = MAXSTRLEN)
-{
-    size_t used = strlen(d);
-    return used < len ? copystring(d+used, s, len-used) : d;
-}
-inline char *concatbigstring(char *d, const char *s, size_t len = BIGSTRLEN) { return concatstring(d, s, len); }
+inline char *concatstring(char *d, const char *s, size_t len) { size_t used = strlen(d); return used < len ? copystring(d+used, s, len-used) : d; }
+template<size_t N> inline char *concatstring(char (&d)[N], const char *s) { return concatstring(d, s, N); }
 
-inline char *prependstring(char *d, const char *s, size_t len = MAXSTRLEN)
+inline char *prependstring(char *d, const char *s, size_t len)
 {
     size_t slen = min(strlen(s), len);
     memmove(&d[slen], d, min(len - slen, strlen(d) + 1));
@@ -167,55 +159,41 @@ inline char *prependstring(char *d, const char *s, size_t len = MAXSTRLEN)
     d[len-1] = 0;
     return d;
 }
-inline char *prependbigstring(char *d, const char *s, size_t len = BIGSTRLEN) { return prependstring(d, s, len); }
+template<size_t N> inline char *prependstring(char (&d)[N], const char *s) { return prependstring(d, s, N); }
 
-struct stringformatter
+inline void nformatstring(char *d, int len, const char *fmt, ...) PRINTFARGS(3, 4);
+inline void nformatstring(char *d, int len, const char *fmt, ...)
 {
-    char *buf;
-    stringformatter(char *buf): buf((char *)buf) {}
-    void operator()(const char *fmt, ...) PRINTFARGS(2, 3)
-    {
-        va_list v;
-        va_start(v, fmt);
-        vformatstring(buf, fmt, v);
-        va_end(v);
-    }
-    void operator()(int len, const char *fmt, ...) PRINTFARGS(3, 4)
-    {
-        va_list v;
-        va_start(v, fmt);
-        vformatstring(buf, fmt, v, len+1);
-        va_end(v);
-    }
-};
+    va_list v;
+    va_start(v, fmt);
+    vformatstring(d, fmt, v, len);
+    va_end(v);
+}
 
-#define formatstring(d) stringformatter((char *)d)
-#define defformatstring(d) string d; formatstring(d)
+template<size_t N> inline void formatstring(char (&d)[N], const char *fmt, ...) PRINTFARGS(2, 3);
+template<size_t N> inline void formatstring(char (&d)[N], const char *fmt, ...)
+{
+    va_list v;
+    va_start(v, fmt);
+    vformatstring(d, fmt, v, int(N));
+    va_end(v);
+}
+
+template<size_t N> inline void concformatstring(char (&d)[N], const char *fmt, ...) PRINTFARGS(2, 3);
+template<size_t N> inline void concformatstring(char (&d)[N], const char *fmt, ...)
+{
+    va_list v;
+    va_start(v, fmt);
+    int len = strlen(d);
+    vformatstring(d + len, fmt, v, int(N) - len);
+    va_end(v);
+}
+
+#define defformatstring(d,...) string d; formatstring(d, __VA_ARGS__)
 #define defvformatstring(d,last,fmt) string d; { va_list ap; va_start(ap, last); vformatstring(d, fmt, ap); va_end(ap); }
 
-struct bigstringformatter
-{
-    char *buf;
-    bigstringformatter(char *buf): buf((char *)buf) {}
-    void operator()(const char *fmt, ...) PRINTFARGS(2, 3)
-    {
-        va_list v;
-        va_start(v, fmt);
-        vformatbigstring(buf, fmt, v);
-        va_end(v);
-    }
-    void operator()(int len, const char *fmt, ...) PRINTFARGS(3, 4)
-    {
-        va_list v;
-        va_start(v, fmt);
-        vformatbigstring(buf, fmt, v, len+1);
-        va_end(v);
-    }
-};
-
-#define formatbigstring(d) bigstringformatter((char *)d)
-#define defformatbigstring(d) bigstring d; formatbigstring(d)
-#define defvformatbigstring(d,last,fmt) bigstring d; { va_list ap; va_start(ap, last); vformatbigstring(d, fmt, ap); va_end(ap); }
+#define defformatbigstring(d,...) bigstring d; formatstring(d, __VA_ARGS__)
+#define defvformatbigstring(d,last,fmt) bigstring d; { va_list ap; va_start(ap, last); vformatstring(d, fmt, ap); va_end(ap); }
 
 template<size_t N> inline bool matchstring(const char *s, size_t len, const char (&d)[N])
 {
@@ -479,12 +457,45 @@ static inline bool htcmp(const char *x, const char *y)
     return !strcmp(x, y);
 }
 
+struct stringslice
+{
+    const char *str;
+    int len;
+    stringslice() {}
+    stringslice(const char *str, int len) : str(str), len(len) {}
+    stringslice(const char *str, const char *end) : str(str), len(int(end-str)) {}
+
+    const char *end() const { return &str[len]; }
+};
+
+inline char *newstring(const stringslice &s) { return newstring(s.str, s.len); }
+inline const char *stringptr(const char *s) { return s; }
+inline const char *stringptr(const stringslice &s) { return s.str; }
+inline int stringlen(const char *s) { return int(strlen(s)); }
+inline int stringlen(const stringslice &s) { return s.len; }
+
+inline char *copystring(char *d, const stringslice &s, size_t len)
+{
+    size_t slen = min(size_t(s.len), len-1);
+    memcpy(d, s.str, slen);
+    d[slen] = 0;
+    return d;
+}
+template<size_t N> inline char *copystring(char (&d)[N], const stringslice &s) { return copystring(d, s, N); }
+
 static inline uint memhash(const void *ptr, int len)
 {
     const uchar *data = (const uchar *)ptr;
     uint h = 5381;
     loopi(len) h = ((h<<5)+h)^data[i];
     return h;
+}
+
+static inline uint hthash(const stringslice &s) { return memhash(s.str, s.len); }
+
+static inline bool htcmp(const stringslice &x, const char *y)
+{
+    return x.len == (int)strlen(y) && !memcmp(x.str, y, x.len);
 }
 
 static inline uint hthash(int key)

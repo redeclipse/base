@@ -21,19 +21,19 @@ void conline(int type, const char *sf, int n)
 
     if(n)
     {
-        copybigstring(cl.cref, "  ");
-        concatbigstring(cl.cref, sf);
+        copystring(cl.cref, "  ", BIGSTRLEN);
+        concatstring(cl.cref, sf, BIGSTRLEN);
         loopj(2)
         {
             int off = n+j;
             if(conlines.inrange(off))
             {
-                if(j) concatbigstring(conlines[off].cref, "\fs");
-                else prependbigstring(conlines[off].cref, "\fS");
+                if(j) concatstring(conlines[off].cref, "\fs", BIGSTRLEN);
+                else prependstring(conlines[off].cref, "\fS", BIGSTRLEN);
             }
         }
     }
-    else copybigstring(cl.cref, sf);
+    else copystring(cl.cref, sf, BIGSTRLEN);
 }
 
 // keymap is defined externally in keymap.cfg
@@ -279,7 +279,7 @@ void inputcommand(char *init, char *action = NULL, char *icon = NULL, int colour
     commandmillis = init ? totalmillis : -totalmillis;
     SDL_EnableUNICODE(commandmillis > 0 ? 1 : 0);
     keyrepeat(commandmillis > 0);
-    copybigstring(commandbuf, init ? init : "");
+    copystring(commandbuf, init ? init : "", BIGSTRLEN);
     DELETEA(commandaction);
     DELETEA(commandicon);
     commandpos = -1;
@@ -386,7 +386,7 @@ struct hline
 
     void restore()
     {
-        copybigstring(commandbuf, buf);
+        copystring(commandbuf, buf);
         if(commandpos >= (int)strlen(commandbuf)) commandpos = -1;
         DELETEA(commandaction);
         DELETEA(commandicon);
@@ -830,11 +830,7 @@ void complete(char *s, const char *cmdprefix)
     if(cmdprefix)
     {
         int cmdlen = strlen(cmdprefix);
-        if(strncmp(s, cmdprefix, cmdlen))
-        {
-            defformatbigstring(cmd)("%s%s", cmdprefix, start);
-            copybigstring(s, cmd);
-        }
+        if(strncmp(s, cmdprefix, cmdlen)) prependstring(s, cmdprefix, BIGSTRLEN);
         start = &s[cmdlen];
     }
     const char chrlist[7] = { ';', '(', ')', '[', ']', '\"', '$', };
@@ -863,7 +859,7 @@ void complete(char *s, const char *cmdprefix)
         if(end)
         {
             bigstring command;
-            copybigstring(command, start, min(size_t(end-start+1), sizeof(command)));
+            copystring(command, start, min(size_t(end-start+1), sizeof(command)));
             filesval **hasfiles = completions.access(command);
             if(hasfiles) f = *hasfiles;
         }
@@ -873,7 +869,7 @@ void complete(char *s, const char *cmdprefix)
     if(f) // complete using filenames
     {
         int commandsize = strchr(start, ' ')+1-start;
-        copybigstring(prefix, s, min(size_t(commandsize+1+(start-s)), sizeof(prefix)));
+        copystring(prefix, s, min(size_t(commandsize+1+(start-s)), sizeof(prefix)));
         f->update();
         loopv(f->files)
         {
@@ -884,7 +880,7 @@ void complete(char *s, const char *cmdprefix)
     }
     else // complete using command names
     {
-        copybigstring(prefix, s, min(size_t(1+(start-s)), sizeof(prefix)));
+        copystring(prefix, s, min(size_t(1+(start-s)), sizeof(prefix)));
         enumerate(idents, ident, id,
             if((variable ? id.type == ID_VAR || id.type == ID_SVAR || id.type == ID_FVAR || id.type == ID_ALIAS: id.flags&IDF_COMPLETE) && strncmp(id.name, start, completesize)==0 &&
                strcmp(id.name, lastcomplete) > 0 && (!nextcomplete || strcmp(id.name, nextcomplete) < 0))
@@ -893,8 +889,8 @@ void complete(char *s, const char *cmdprefix)
     }
     if(nextcomplete)
     {
-        formatbigstring(s)("%s%s", prefix, nextcomplete);
-        copybigstring(lastcomplete, nextcomplete);
+        nformatstring(s, BIGSTRLEN, "%s%s", prefix, nextcomplete);
+        copystring(lastcomplete, nextcomplete, BIGSTRLEN);
     }
     else
     {

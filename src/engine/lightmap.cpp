@@ -211,7 +211,7 @@ void show_calclight_lmprog()
 {
     float bar1 = float(lmprog) / float(allocnodes);
 
-    defformatstring(text)("%d textures used", lightmaps.length());
+    defformatstring(text, "%d textures used", lightmaps.length());
 
     if(LM_PACKW <= hwtexsize && !lmprogtex)
     {
@@ -2781,7 +2781,7 @@ void dumplms()
     loopv(lightmaps)
     {
         ImageData temp(LM_PACKW, LM_PACKH, lightmaps[i].bpp, lightmaps[i].data);
-        defformatstring(fname)("%s.lm%.4d", mapname, i);
+        defformatstring(fname, "%s.lm%.4d", mapname, i);
         saveimage(fname, temp, imageformat, compresslevel, true);
     }
 }

@@ -1347,7 +1347,7 @@ namespace hud
             ty += draw_textx("%s", tx, ty, 255, 255, 255, tf, TEXT_CENTERED, -1, tw, *maptitle ? maptitle : mapname);
             pushfont("reduced");
             if(*mapauthor) ty += draw_textx("by %s", tx, ty, 255, 255, 255, tf, TEXT_CENTERED, -1, tw, mapauthor);
-            defformatstring(gname)("%s", server::gamename(game::gamemode, game::mutators, 0, 32));
+            defformatstring(gname, "%s", server::gamename(game::gamemode, game::mutators, 0, 32));
             ty += draw_textx("[ \fs\fa%s\fS ]", tx, ty, 255, 255, 255, tf, TEXT_CENTERED, -1, tw, gname);
             popfont();
             ty += FONTH/3;
@@ -1503,7 +1503,7 @@ namespace hud
                                         {
                                             static struct dropattrs : attrvector { dropattrs() { add(0, 5); } } attrs;
                                             attrs[0] = drop;
-                                            defformatstring(dropweap)("%s", entities::entinfo(WEAPON, attrs, false, true));
+                                            defformatstring(dropweap, "%s", entities::entinfo(WEAPON, attrs, false, true));
                                             ty += draw_textx("Press %s to swap \fs%s\fS for \fs%s\fS", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, tw, actionkey, dropweap, entities::entinfo(e.type, e.attrs, false, true));
                                         }
                                         else ty += draw_textx("Press %s to pickup \fs%s\fS", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, tw, actionkey, entities::entinfo(e.type, e.attrs, false, true));
@@ -2441,7 +2441,7 @@ namespace hud
             string attrstr; attrstr[0] = 0;
             loopi(enttype[e.type].numattrs)
             {
-                defformatstring(s)("%s%d", i ? " " : "", e.attrs[i]);
+                defformatstring(s, "%s%d", i ? " " : "", e.attrs[i]);
                 concatstring(attrstr, s);
             }
             const char *itext = itemtex(e.type, e.attrs[0]);
@@ -2499,10 +2499,10 @@ namespace hud
                     {
                         loopj(W_MAX)
                         {
-                            defformatstring(action)("weapon %d", j);
+                            defformatstring(action, "weapon %d", j);
                             const char *actkey = searchbind(action, 0);
                             if(actkey && *actkey) copystring(weapids[j], actkey);
-                            else formatstring(weapids[j])("%d", j);
+                            else formatstring(weapids[j], "%d", j);
                         }
                         lastweapids = changedkeys;
                     }
@@ -3099,7 +3099,7 @@ namespace hud
         int mapbg = 0;
         if(showloadingmapbg && *mapname && strcmp(mapname, "maps/untitled"))
         {
-            defformatstring(tex)("<blur:2>%s", mapname);
+            defformatstring(tex, "<blur:2>%s", mapname);
             t = textureload(tex, 3, true, false);
             mapbg = showloadingmapbg;
         }

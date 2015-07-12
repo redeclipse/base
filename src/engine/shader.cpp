@@ -327,7 +327,7 @@ void Shader::allocparams(Slot *slot)
                 case TEX_DEPTH: if(t.combined<0) UNIFORMTEX("depthmap", tmu++); break;
                 case TEX_UNKNOWN:
                 {
-                    defformatstring(sname)("stex%d", stex++);
+                    defformatstring(sname, "stex%d", stex++);
                     UNIFORMTEX(sname, tmu++);
                     break;
                 }
@@ -672,9 +672,9 @@ static void gengenericvariant(Shader &s, const char *sname, const char *vs, cons
     row += rowoffset; 
     if(row < 0 || row >= MAXVARIANTROWS) return;
     int col = s.numvariants(row);
-    defformatstring(varname)("<variant:%d,%d>%s", col, row, sname);
+    defformatstring(varname, "<variant:%d,%d>%s", col, row, sname);
     string reuse;
-    if(col) formatstring(reuse)("%d", row);
+    if(col) formatstring(reuse, "%d", row);
     else copystring(reuse, "");
     newshader(s.type, varname, vschanged ? vsv.getbuf() : reuse, pschanged ? psv.getbuf() : reuse, &s, row);
 }
@@ -697,7 +697,7 @@ static bool genwatervariant(Shader &s, const char *sname, vector<char> &vs, vect
     const char *vsmain = findglslmain(vs.getbuf()), *psmain = findglslmain(ps.getbuf());
     vs.insert(vsmain ? vsmain - vs.getbuf() : 0, fadedecl, strlen(fadedecl));
     ps.insert(psmain ? psmain - ps.getbuf() : 0, fadedecl, strlen(fadedecl));
-    defformatstring(name)("<water>%s", sname);
+    defformatstring(name, "<water>%s", sname);
     Shader *variant = newshader(s.type, name, vs.getbuf(), ps.getbuf(), &s, row);
     return variant!=NULL;
 }
@@ -738,15 +738,15 @@ static void gendynlightvariant(Shader &s, const char *sname, const char *vs, con
         if(vsmain >= vs) vsdl.put(vs, vsmain - vs);
         if(psmain >= ps) psdl.put(ps, psmain - ps);
 
-        defformatstring(pos)("uniform vec4 dynlightpos[%d];\n", i+1);
+        defformatstring(pos, "uniform vec4 dynlightpos[%d];\n", i+1);
         vsdl.put(pos, strlen(pos));
         psdl.put(pos, strlen(pos));
-        defformatstring(color)("uniform vec3 dynlightcolor[%d];\n", i+1);
+        defformatstring(color, "uniform vec3 dynlightcolor[%d];\n", i+1);
         psdl.put(color, strlen(color));
 
         loopk(min(i+1, numlights))
         {
-            defformatstring(dir)("%sdynlight%ddir%s", !k ? "varying vec3 " : " ", k, k==i || k+1==numlights ? ";\n" : ",");
+            defformatstring(dir, "%sdynlight%ddir%s", !k ? "varying vec3 " : " ", k, k==i || k+1==numlights ? ";\n" : ",");
             vsdl.put(dir, strlen(dir));
             psdl.put(dir, strlen(dir));
         }
@@ -756,7 +756,7 @@ static void gendynlightvariant(Shader &s, const char *sname, const char *vs, con
 
         loopk(i+1)
         {
-            defformatstring(tc)(
+            defformatstring(tc, 
                 k<numlights ? 
                     "dynlight%ddir = gl_Vertex.xyz*dynlightpos[%d].w + dynlightpos[%d].xyz;\n" :
                     "vec3 dynlight%ddir = dynlight0dir*dynlightpos[%d].w + dynlightpos[%d].xyz;\n",     
@@ -764,7 +764,7 @@ static void gendynlightvariant(Shader &s, const char *sname, const char *vs, con
             if(k < numlights) vsdl.put(tc, strlen(tc));
             else psdl.put(tc, strlen(tc));
 
-            defformatstring(dl)(
+            defformatstring(dl, 
                 "%s.rgb += dynlightcolor[%d] * (1.0 - clamp(dot(dynlight%ddir, dynlight%ddir), 0.0, 1.0));\n",
                 pslight, k, k, k);
             psdl.put(dl, strlen(dl));
@@ -773,7 +773,7 @@ static void gendynlightvariant(Shader &s, const char *sname, const char *vs, con
         vsdl.put(vspragma, strlen(vspragma)+1);
         psdl.put(pspragma, strlen(pspragma)+1);
 
-        defformatstring(name)("<dynlight %d>%s", i+1, sname);
+        defformatstring(name, "<dynlight %d>%s", i+1, sname);
         Shader *variant = newshader(s.type, name, vsdl.getbuf(), psdl.getbuf(), &s, row);
         if(!variant) return;
         if(row < 4) genwatervariant(s, name, vsdl, psdl, row+2);
@@ -825,7 +825,7 @@ static void genshadowmapvariant(Shader &s, const char *sname, const char *vs, co
             "float smtest = shadowmaptc.z*smvals.y;\n"
             "float shadowed = smtest < smvals.x && smtest > smvals.z ? smvals.w : 0.0;\n";
     pssm.put(sm, strlen(sm));
-    defformatstring(smlight)(
+    defformatstring(smlight, 
         "%s.rgb -= shadowed*clamp(%s.rgb - shadowmapambient.rgb, 0.0, 1.0);\n",
         pslight, pslight);
     pssm.put(smlight, strlen(smlight));
@@ -841,7 +841,7 @@ static void genshadowmapvariant(Shader &s, const char *sname, const char *vs, co
     vssm.put(vspragma, strlen(vspragma)+1);
     pssm.put(pspragma, strlen(pspragma)+1);
 
-    defformatstring(name)("<shadowmap>%s", sname);
+    defformatstring(name, "<shadowmap>%s", sname);
     Shader *variant = newshader(s.type, name, vssm.getbuf(), pssm.getbuf(), &s, row);
     if(!variant) return;
     genwatervariant(s, name, vssm.getbuf(), pssm.getbuf(), row+2);
@@ -909,13 +909,13 @@ static void genuniformdefs(vector<char> &vsbuf, vector<char> &psbuf, const char 
     psbuf.put(ps, psmain - ps);
     if(variant) loopv(variant->defaultparams)
     {
-        defformatstring(uni)("\nuniform vec4 %s;\n", variant->defaultparams[i].name);
+        defformatstring(uni, "\nuniform vec4 %s;\n", variant->defaultparams[i].name);
         vsbuf.put(uni, strlen(uni));
         psbuf.put(uni, strlen(uni));
     }
     else loopv(slotparams)
     {
-        defformatstring(uni)("\nuniform vec4 %s;\n", slotparams[i].name);
+        defformatstring(uni, "\nuniform vec4 %s;\n", slotparams[i].name);
         vsbuf.put(uni, strlen(uni));
         psbuf.put(uni, strlen(uni));
     }
@@ -1019,7 +1019,7 @@ void shader(int *type, char *name, char *vs, char *ps)
         return;
     }
 
-    defformatstring(info)("shader %s", name);
+    defformatstring(info, "shader %s", name);
     progress(loadprogress, info);
 
     vector<char> vsbuf, psbuf, vsbak, psbak;
@@ -1056,8 +1056,8 @@ void variantshader(int *type, char *name, int *row, char *vs, char *ps)
     Shader *s = lookupshaderbyname(name);
     if(!s) return;
 
-    defformatstring(varname)("<variant:%d,%d>%s", s->numvariants(*row), *row, name);
-    //defformatstring(info)("shader %s", varname);
+    defformatstring(varname, "<variant:%d,%d>%s", s->numvariants(*row), *row, name);
+    //defformatstring(info, "shader %s", varname);
     //progress(loadprogress, info);
     vector<char> vsbuf, psbuf, vsbak, psbak;
     GENSHADER(s->defaultparams.length(), genuniformdefs(vsbuf, psbuf, vs, ps, s));
@@ -1414,7 +1414,7 @@ void reloadshaders()
     {
         if(!s.standard && !(s.type&(SHADER_DEFERRED|SHADER_INVALID)) && !s.variantshader)
         {
-            defformatstring(info)("shader %s", s.name);
+            defformatstring(info, "shader %s", s.name);
             progress(0.0, info);
             if(!s.compile()) s.cleanup(true);
             loopv(s.variants)
@@ -1461,7 +1461,7 @@ void setblurshader(int pass, int size, int radius, float *weights, float *offset
     Shader *&s = (target == GL_TEXTURE_RECTANGLE_ARB ? blurrectshader : blurshader)[radius-1][pass];
     if(!s)
     {
-        defformatstring(name)("blur%c%d%s", 'x'+pass, radius, target == GL_TEXTURE_RECTANGLE_ARB ? "rect" : "");
+        defformatstring(name, "blur%c%d%s", 'x'+pass, radius, target == GL_TEXTURE_RECTANGLE_ARB ? "rect" : "");
         s = lookupshaderbyname(name);
     }
     s->set();

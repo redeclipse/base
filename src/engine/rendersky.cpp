@@ -17,7 +17,7 @@ void loadsky(const char *basename, Texture *texs[6])
         }
         else
         {
-            defformatstring(ext)("_%s", side);
+            defformatstring(ext, "_%s", side);
             concatstring(name, ext);
         }
         if((texs[i] = textureload(name, 3, true, false)) == notexture)

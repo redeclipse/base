@@ -832,10 +832,10 @@ ICOMMAND(0, entselect, "e", (uint *body), if(!noentedit()) addgroup(e.type != ET
 ICOMMAND(0, entloop, "e", (uint *body), if(!noentedit()) addimplicit(groupeditloop(((void)e, execute(body)))));
 ICOMMAND(0, insel, "", (), entfocus(efocus, intret(pointinsel(sel, e.o))));
 ICOMMAND(0, entget, "", (), entfocus(efocus, {
-    defformatstring(s)("%s", entities::findname(e.type));
+    defformatstring(s, "%s", entities::findname(e.type));
     loopv(e.attrs)
     {
-        defformatstring(str)(" %d", e.attrs[i]);
+        defformatstring(str, " %d", e.attrs[i]);
         concatstring(s, str);
     }
     result(s);

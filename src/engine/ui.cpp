@@ -614,7 +614,7 @@ struct gui : guient
         if(scale == 0) scale = 1;
         int size = (int)(scale*2*FONTH);
         slice_(textureload(hud::progringtex, 3, true, false), curx, cury, size, (SDL_GetTicks()%1000)/1000.f, 0.1f);
-        string s; if(percent > 0) formatstring(s)("\fg%d%%", int(percent*100)); else formatstring(s)("\fg...");
+        string s; if(percent > 0) formatstring(s, "\fg%d%%", int(percent*100)); else formatstring(s, "\fg...");
         slice_(textureload(hud::progresstex, 3, true, false), curx, cury, size, 0, percent, s);
         layout(size, size);
     }
@@ -885,7 +885,7 @@ struct gui : guient
             }
             else
             {
-                defformatstring(texname)("%s", mapname);
+                defformatstring(texname, "%s", mapname);
                 if((t = textureload(texname, 3, true, false)) == notexture) t = textureload(emblemtex, 3, true, false);
                 float scale = float(size)/max(t->xs, t->ys); //scale and preserve aspect ratio
                 xs = t->xs*scale; ys = t->ys*scale;

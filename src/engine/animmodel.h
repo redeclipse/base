@@ -1342,7 +1342,7 @@ template<class MDL, class MESH> struct modelcommands
     static void setdir(char *name)
     {
         if(!MDL::loading) { conoutf("\frnot loading an %s", MDL::formatname()); return; }
-        formatstring(MDL::dir)("models/%s", name);
+        formatstring(MDL::dir, "models/%s", name);
     }
 
     #define loopmeshes(meshname, m, body) \
@@ -1464,7 +1464,7 @@ template<class MDL, class MESH> struct modelcommands
 
     template<class F> void modelcommand(F *fun, const char *suffix, const char *args)
     {
-        defformatstring(name)("%s%s", MDL::formatname(), suffix);
+        defformatstring(name, "%s%s", MDL::formatname(), suffix);
         addcommand(newstring(name), (void (*)())fun, args);
     }
 
