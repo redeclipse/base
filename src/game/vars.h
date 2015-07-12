@@ -195,8 +195,8 @@ GVAR(0, radardistlimit, 0, 0, VAR_MAX); // forces the radar to this distance max
 
 GVAR(0, balancemaps, -1, -1, 3); // determined if map team balancing is used: -1 = map default, 0 = off, 1 = ctf/dnc/bb, 2 = with team spawns, 3 = forced
 GVAR(0, balancereset, 0, 2, 2); // reset players when balancing them, 0 = off, 1 = only when necessary, 2 = always
-GVAR(0, balancedelay, 0, 10000, 30000); // before mapbalance forces
-GVAR(0, balancenospawn, 0, 0, 1); // prevent respawning when waiting to balance
+GVAR(0, balancedelay, 0, 5000, 30000); // before mapbalance forces
+GVAR(0, balancenospawn, 0, 1, 1); // prevent respawning when waiting to balance
 GVAR(0, balanceduke, 0, 1, 1); // enable in duel/survivor
 
 GFVAR(0, maxhealth, 0, 1.5f, FVAR_MAX);
@@ -244,9 +244,9 @@ GFVAR(0, itemrepelspeed, 0, 25, FVAR_MAX);
 
 GVAR(0, timelimit, 0, 10, VAR_MAX); // maximum time a match may last, 0 = forever
 GVAR(0, overtimeallow, 0, 1, 1); // if scores are equal, go into overtime
-GVAR(0, overtimelimit, 0, 5, VAR_MAX); // maximum time overtime may last, 0 = forever
-GVAR(0, intermlimit, 0, 15000, VAR_MAX); // .. before vote menu comes up
-GVAR(0, votelimit, 0, 45000, VAR_MAX); // .. before vote passes by default
+GVAR(0, overtimelimit, 0, 3, VAR_MAX); // maximum time overtime may last, 0 = forever
+GVAR(0, intermlimit, 0, 10000, VAR_MAX); // .. before vote menu comes up
+GVAR(0, votelimit, 0, 40000, VAR_MAX); // .. before vote passes by default
 
 GVAR(0, duelreset, 0, 1, 1); // reset winner in duel
 GVAR(0, duelclear, 0, 1, 1); // clear items in duel
@@ -280,7 +280,7 @@ GVAR(0, teambalanceduel, 0, 0, 1); // allow reassignments in duel
 GVAR(0, teambalanceplaying, 2, 2, VAR_MAX); // min players before reassignments occur
 GVAR(0, teambalanceamt, 2, 2, VAR_MAX); // max-min offset before reassignments occur
 GVAR(0, teambalancewait, 10000, 60000, VAR_MAX); // how long before can happen again
-GVAR(0, teambalancedelay, 2000, 15000, VAR_MAX); // how long before reassignments start
+GVAR(0, teambalancedelay, 2000, 10000, VAR_MAX); // how long before reassignments start
 GVAR(0, teambalanceswap, 0, 1, 1); // allow swap requests if unable to change team
 GVAR(0, teambalancelock, 0, PRIV_PLAYER, PRIV_MAX); // level at which one can override swap and automatically reassign a lower player
 GVAR(0, teambalancestyle, 0, 4, 4); // when moving players, sort by: 0 = top of list, 1 = lowest time played, 2 = lowest points, 3 = lowest frags, 4 = lowest skill
@@ -290,11 +290,11 @@ GVAR(0, racegauntletwinner, 0, 1, 1); // declare the winner when the final team 
 GVAR(0, capturelimit, 0, 0, VAR_MAX); // finish when score is this or more
 GVAR(0, captureresetstore, 0, 2, 15);
 GVAR(0, captureresetdelay, 0, 30000, VAR_MAX);
-GVAR(0, capturedefenddelay, 0, 15000, VAR_MAX);
+GVAR(0, capturedefenddelay, 0, 10000, VAR_MAX);
 GVAR(0, captureprotectdelay, 0, 15000, VAR_MAX);
 GVAR(0, capturepickupdelay, 500, 2500, VAR_MAX);
-GVAR(0, captureteampenalty, -1, 7500, VAR_MAX);
-GVAR(0, captureresetpenalty, -1, 3500, VAR_MAX);
+GVAR(0, captureteampenalty, -1, 30000, VAR_MAX);
+GVAR(0, captureresetpenalty, -1, 5000, VAR_MAX);
 GFVAR(0, capturecarryspeed, 0, 0.9f, FVAR_MAX);
 GFVAR(0, capturedropheight, 0, 8, FVAR_MAX);
 GVAR(0, capturepoints, 0, 5, VAR_MAX); // points added to score
@@ -343,8 +343,9 @@ GVAR(0, bomberbasketonly, 0, 1, 1); // prohibit touchdowns in basket game
 GVAR(0, bomberattackreset, 0, 1, 1); // defenders reset rather than carry the ball
 GVAR(0, bomberattackwinner, 0, 1, 1); // declare the winner when the final team exceeds best score
 GFVAR(0, bomberbasketmindist, 0, 48, FVAR_MAX); // prohibit baskets less than this far away
+GVAR(0, bomberwait, 0, 1000, VAR_MAX); // delay before bomb spawns
 GVAR(0, bomberresetdelay, 0, 15000, VAR_MAX);
-GVAR(0, bomberpickupdelay, 500, 5000, VAR_MAX);
+GVAR(0, bomberpickupdelay, 500, 15000, VAR_MAX);
 GVAR(0, bombercarrytime, 0, 15000, VAR_MAX);
 GFVAR(0, bombercarryspeed, 0, 0.9f, FVAR_MAX);
 GFVAR(0, bomberdropheight, 0, 8, FVAR_MAX);
@@ -404,7 +405,7 @@ GVAR(0, enemyskillmin, 1, 65, 101);
 GVAR(0, enemyskillmax, 1, 80, 101);
 GVAR(0, enemylimit, 0, 32, MAXAI);
 GVAR(0, enemyspawntime, 1, 30000, VAR_MAX); // when enemies respawn
-GVAR(0, enemyspawndelay, 0, 5000, VAR_MAX); // after map start enemies first spawn
+GVAR(0, enemyspawndelay, 0, 1000, VAR_MAX); // after map start enemies first spawn
 GVAR(0, enemyspawnstyle, 0, 1, 3); // 0 = all at once, 1 = staggered, 2 = random, 3 = randomise between both
 GFVAR(0, enemyspeed, 0, 1, FVAR_MAX);
 GFVAR(0, enemyscale, FVAR_NONZERO, 1, FVAR_MAX);

@@ -1,14 +1,14 @@
 struct bomberservmode : bomberstate, servmode
 {
-    bool hasflaginfo;
+    bool hasflaginfo, hasstarted;
     int bombertime, scoresec;
 
-    bomberservmode() : hasflaginfo(false), bombertime(-1) {}
+    bomberservmode() : hasflaginfo(false), hasstarted(false), bombertime(-1) {}
 
     void reset()
     {
         bomberstate::reset();
-        hasflaginfo = false;
+        hasflaginfo = hasstarted = false;
         bombertime = -1;
     }
 
@@ -50,7 +50,7 @@ struct bomberservmode : bomberstate, servmode
             loopv(clients) if(clients[i]->state.state == CS_ALIVE) alive++;
             if(alive <= 1) return;
         }
-        bombertime = gamemillis+G(bomberdelay);
+        bombertime = gamemillis+(hasstarted ? G(bomberwait) : 0);
         loopvj(sents) if(enttype[sents[j].type].usetype == EU_ITEM) setspawn(j, hasitem(j), true, true);
     }
 
@@ -91,7 +91,7 @@ struct bomberservmode : bomberstate, servmode
         bomberstate::returnaffinity(relay, gamemillis, false);
         sendf(-1, 1, "ri5", N_SCOREAFFIN, ci->clientnum, relay, goal, total);
         mutate(smuts, mut->scoreaffinity(ci, g.team != ci->team));
-        bombertime = m_duke(gamemode, mutators) ? -1 : gamemillis+G(bomberdelay);
+        bombertime = m_duke(gamemode, mutators) ? -1 : gamemillis+(hasstarted ? G(bomberwait) : 0);
         loopvj(flags) if(flags[j].enabled)
         {
             bomberstate::returnaffinity(j, gamemillis, false);
@@ -145,7 +145,7 @@ struct bomberservmode : bomberstate, servmode
         if(wasenabled && !f.enabled)
         {
             loopvj(flags) if(i != j && flags[j].enabled) returnaffinity(j, false);
-            if(bombertime >= 0) bombertime = gamemillis+G(bomberdelay);
+            if(bombertime >= 0) bombertime = gamemillis+(hasstarted ? G(bomberwait) : 0);
         }
     }
 
@@ -183,7 +183,7 @@ struct bomberservmode : bomberstate, servmode
         if(!canplay(hasflaginfo)) return;
         bombertime = -1;
         loopv(flags) if(flags[i].owner >= 0 || flags[i].droptime) returnaffinity(i, false);
-        bombertime = gamemillis+G(bomberdelay);
+        bombertime = gamemillis+(hasstarted ? G(bomberwait) : 0);
     }
 
     void update()
@@ -221,8 +221,10 @@ struct bomberservmode : bomberstate, servmode
                 hasflaginfo = false;
                 loopv(flags) sendf(-1, 1, "ri3", N_RESETAFFIN, i, 0);
                 srvmsgf(-1, "\fs\fzoythis map is not playable in:\fS %s", gamename(gamemode, mutators));
+                return;
             }
-            else ancmsgft(-1, m_duke(gamemode, mutators) ? S_V_BOMBDUEL : S_V_BOMBSTART, CON_SELF, "\fathe \fs\fzwvbomb\fS has been spawned");
+            ancmsgft(-1, m_duke(gamemode, mutators) ? S_V_BOMBDUEL : S_V_BOMBSTART, CON_SELF, "\fathe \fs\fzwvbomb\fS has been spawned");
+            hasstarted = true;
             bombertime = 0;
         }
         int t = (gamemillis/G(bomberholdinterval))-((gamemillis-(curtime+scoresec))/G(bomberholdinterval));
