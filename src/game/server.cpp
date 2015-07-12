@@ -947,27 +947,27 @@ namespace server
 
     void resetbans()
     {
-        loopvrev(control) if(control[i].type == ipinfo::BAN && control[i].flag == ipinfo::TEMPORARY) control.remove(i);
+        loopvrev(control) if(control[i].type == ipinfo::BAN && control[i].flag <= ipinfo::INTERNAL) control.remove(i);
     }
 
     void resetallows()
     {
-        loopvrev(control) if(control[i].type == ipinfo::ALLOW && control[i].flag == ipinfo::TEMPORARY) control.remove(i);
+        loopvrev(control) if(control[i].type == ipinfo::ALLOW && control[i].flag <= ipinfo::INTERNAL) control.remove(i);
     }
 
     void resetmutes()
     {
-        loopvrev(control) if(control[i].type == ipinfo::MUTE && control[i].flag == ipinfo::TEMPORARY) control.remove(i);
+        loopvrev(control) if(control[i].type == ipinfo::MUTE && control[i].flag <= ipinfo::INTERNAL) control.remove(i);
     }
 
     void resetlimits()
     {
-        loopvrev(control) if(control[i].type == ipinfo::LIMIT && control[i].flag == ipinfo::TEMPORARY) control.remove(i);
+        loopvrev(control) if(control[i].type == ipinfo::LIMIT && control[i].flag <= ipinfo::INTERNAL) control.remove(i);
     }
 
     void resetexcepts()
     {
-        loopvrev(control) if(control[i].type == ipinfo::EXCEPT && control[i].flag == ipinfo::TEMPORARY) control.remove(i);
+        loopvrev(control) if(control[i].type == ipinfo::EXCEPT && control[i].flag <= ipinfo::INTERNAL) control.remove(i);
     }
 
     void cleanup(bool init = false)
