@@ -120,6 +120,10 @@ setlocal enableextensions enabledelayedexpansion
 :redeclipse_update_module_blob_deploy
     echo echo %REDECLIPSE_MODULE_RUN%: deploying blob.>> "%REDECLIPSE_TEMP%\install.bat"
     echo %REDECLIPSE_UNZIP% "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.zip" -d "%REDECLIPSE_TEMP%" ^&^& ^(>> "%REDECLIPSE_TEMP%\install.bat"
+    if "%REDECLIPSE_MODULE_RUN%" == "base" goto redeclipse_update_module_blob_deploy_ext
+    echo    rmdir /s /q "%REDECLIPSE_PATH%%REDECLIPSE_MODULE_DIR%">> "%REDECLIPSE_TEMP%\install.bat"
+    echo    mkdir "%REDECLIPSE_PATH%%REDECLIPSE_MODULE_DIR%">> "%REDECLIPSE_TEMP%\install.bat"
+:redeclipse_update_module_blob_deploy_ext
     echo    xcopy /e /c /i /f /h /y "%REDECLIPSE_TEMP%\red-eclipse-%REDECLIPSE_MODULE_RUN%-%REDECLIPSE_MODULE_REMOTE:~0,7%\*" "%REDECLIPSE_PATH%%REDECLIPSE_MODULE_DIR%">> "%REDECLIPSE_TEMP%\install.bat"
     echo    rmdir /s /q "%REDECLIPSE_TEMP%\red-eclipse-%REDECLIPSE_MODULE_RUN%-%REDECLIPSE_MODULE_REMOTE:~0,7%">> "%REDECLIPSE_TEMP%\install.bat"
     echo    ^(echo %REDECLIPSE_MODULE_REMOTE%^)^> "%REDECLIPSE_PATH%%REDECLIPSE_MODULE_DIR%\version.txt">> "%REDECLIPSE_TEMP%\install.bat"
