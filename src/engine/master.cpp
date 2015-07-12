@@ -349,9 +349,9 @@ bool checkmasterclientinput(masterclient &c)
         if(!strcmp(w[0], "version") || !strcmp(w[0], "update"))
         {
             masteroutf(c, "setversion %d %d\n", server::getver(0), server::getver(1));
-            if(*masterscriptclient) masteroutf(c, "%s\n", masterscriptclient);
+            if(*masterscriptclient && !strcmp(w[0], "update")) masteroutf(c, "%s\n", masterscriptclient);
             if(verbose) conoutf("master peer %s was sent the version",  c.name);
-            found = true;
+            c.shouldpurge = found = true;
         }
         if(!strcmp(w[0], "list") || !strcmp(w[0], "update"))
         {
@@ -365,8 +365,7 @@ bool checkmasterclientinput(masterclient &c)
                 servs++;
             }
             conoutf("master peer %s was sent %d server(s)", c.name, servs);
-            c.shouldpurge = true;
-            found = true;
+            c.shouldpurge = found = true;
         }
         if(c.isserver || c.isquick)
         {
