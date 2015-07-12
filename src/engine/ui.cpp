@@ -46,9 +46,9 @@ VAR(IDF_PERSIST|IDF_HEX, guitooltipbordercolour, -1, 0x808080, 0xFFFFFF);
 FVAR(IDF_PERSIST, guitooltipborderblend, 0, 1.f, 1);
 VAR(IDF_PERSIST, guitooltipborderskin, 0, 1, 1);
 
-VAR(IDF_PERSIST|IDF_HEX, guifieldbgcolour, -1, 0x404040, 0xFFFFFF);
+VAR(IDF_PERSIST|IDF_HEX, guifieldbgcolour, -1, 0x202020, 0xFFFFFF);
 FVAR(IDF_PERSIST, guifieldbgblend, 0, 0.7f, 1);
-VAR(IDF_PERSIST|IDF_HEX, guifieldbordercolour, -1, 0xC0C0C0, 0xFFFFFF);
+VAR(IDF_PERSIST|IDF_HEX, guifieldbordercolour, -1, 0xA0A0A0, 0xFFFFFF);
 FVAR(IDF_PERSIST, guifieldborderblend, 0, 1.f, 1);
 VAR(IDF_PERSIST|IDF_HEX, guifieldactivecolour, -1, 0xF04040, 0xFFFFFF);
 FVAR(IDF_PERSIST, guifieldactiveblend, 0, 1.f, 1);
