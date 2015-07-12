@@ -295,7 +295,7 @@ bool checkmasterclientinput(masterclient &c)
             }
             w[numargs-1] = (char *)"";
             numargs--;
-            c.ishttp = true;
+            c.ishttp = c.shouldpurge = true;
         }
         bool found = false, server = !strcmp(w[0], "server");
         if((server || !strcmp(w[0], "quick")) && !c.ishttp)
