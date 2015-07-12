@@ -327,7 +327,7 @@ struct animmodel : model
 
         virtual void setshader(Shader *s)
         {
-            if(glaring) s->setvariant(0, 2);
+            if(glaring) s->setvariant(0, 1);
             else s->set();
         }
 
