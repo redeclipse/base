@@ -154,7 +154,7 @@ struct animmodel : model
             LOCALPARAM(lightmaterial, matcolor);
             LOCALPARAM(lightmaterial2, matcolor2);
             LOCALPARAMF(maskscale, 0.5f*spec, 0.5f*curglow, 16*specglare, 4*glowglare);
-            LOCALPARAMF(texscroll, lastmillis/1000.0f, scrollu*lastmillis/1000.0f, scrollv*lastmillis/1000.0f);
+            LOCALPARAMF(texscroll, scrollu*lastmillis/1000.0f, scrollv*lastmillis/1000.0f);
             if(envmaptmu>=0 && envmapmax>0) LOCALPARAMF(envmapscale, envmapmin-envmapmax, envmapmax);
         }
 
