@@ -55,7 +55,7 @@ const char *gettime(time_t ctime, const char *format)
     if(!strftime(buf, sizeof(buf), format && *format ? format : logtimeformat, t)) buf[0] = '\0';
     return buf;
 }
-ICOMMAND(0, gettime, "isi", (int *n, char *a, int *n), result(gettime(*n, a+(*n!=0 ? clockoffset : 0))));
+ICOMMAND(0, gettime, "isi", (int *n, char *a, int *p), result(gettime(*n+(*p!=0 ? clockoffset : 0), a)));
 
 const char *timestr(int dur, int style)
 {
