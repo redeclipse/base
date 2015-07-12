@@ -125,21 +125,28 @@ struct animmodel : model
 
         void setshaderparams(mesh *m, const animstate *as, bool masked, float trans)
         {
+            float mincolor = as->cur.anim&ANIM_FULLBRIGHT ? fullbrightmodels/100.0f : 0.0f;
+            if(fullbright)
+            {
+                glColor4f(fullbright/2, fullbright/2, fullbright/2, transparent);
+            }   
+            else
+            {   
+                vec color = vec(lightcolor).max(mincolor);
+                glColor4f(color.x, color.y, color.z, transparent);
+            }
+
             if(key->checkversion() && Shader::lastshader->owner == key) return;
             Shader::lastshader->owner = key;
 
             if(fullbright)
             {
-                glColor4f(fullbright/2, fullbright/2, fullbright/2, trans);
                 LOCALPARAMF(lightscale, 0, 0, 2);
             }
             else
             {
-                float mincolor = as->cur.anim&ANIM_FULLBRIGHT ? fullbrightmodels/100.0f : 0.0f,
-                      bias = max(mincolor-1.0f, 0.2f), scale = 0.5f*max(0.8f-bias, 0.0f),
+                float bias = max(mincolor-1.0f, 0.2f), scale = 0.5f*max(0.8f-bias, 0.0f),
                       minshade = scale*max(ambient, mincolor);
-                vec color = vec(lightcolor).max(mincolor);
-                glColor4f(color.x, color.y, color.z, trans);
                 LOCALPARAMF(lightscale, scale - minshade, scale, minshade + bias);
             }
             float curglow = glow;
