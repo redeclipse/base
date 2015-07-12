@@ -128,13 +128,16 @@ struct animmodel : model
             float mincolor = as->cur.anim&ANIM_FULLBRIGHT ? fullbrightmodels/100.0f : 0.0f;
             if(fullbright)
             {
-                glColor4f(fullbright/2, fullbright/2, fullbright/2, transparent);
+                glColor4f(fullbright/2, fullbright/2, fullbright/2, trans);
             }   
             else
             {   
                 vec color = vec(lightcolor).max(mincolor);
-                glColor4f(color.x, color.y, color.z, transparent);
+                glColor4f(color.x, color.y, color.z, trans);
             }
+
+            if(material > 0 && lightmaterial) LOCALPARAM(lightmaterial, lightmaterial[min(material, int(MAXLIGHTMATERIALS))-1].tocolor().mul(2));
+            if(material2 > 0 && lightmaterial) LOCALPARAM(lightmaterial2, lightmaterial[min(material2, int(MAXLIGHTMATERIALS))-1].tocolor().mul(2));
 
             if(key->checkversion() && Shader::lastshader->owner == key) return;
             Shader::lastshader->owner = key;
@@ -156,10 +159,8 @@ struct animmodel : model
                 curpulse -= floor(curpulse);
                 curglow += glowdelta*2*fabs(curpulse - 0.5f);
             }
-            vec matcolor = material > 0 && lightmaterial ? lightmaterial[min(material, int(MAXLIGHTMATERIALS))-1].tocolor().mul(2) : vec(2, 2, 2),
-                matcolor2 = material2 > 0 && lightmaterial ? lightmaterial[min(material2, int(MAXLIGHTMATERIALS))-1].tocolor().mul(2) : vec(2, 2, 2);
-            LOCALPARAM(lightmaterial, matcolor);
-            LOCALPARAM(lightmaterial2, matcolor2);
+            if(material <= 0 || !lightmaterial) LOCALPARAMF(lightmaterial, 2, 2, 2);
+            if(material2 <= 0 || !lightmaterial) LOCALPARAMF(lightmaterial2, 2, 2, 2);
             LOCALPARAMF(maskscale, 0.5f*spec, 0.5f*curglow, 16*specglare, 4*glowglare);
             LOCALPARAMF(texscroll, scrollu*lastmillis/1000.0f, scrollv*lastmillis/1000.0f);
             if(envmaptmu>=0 && envmapmax>0) LOCALPARAMF(envmapscale, envmapmin-envmapmax, envmapmax);
