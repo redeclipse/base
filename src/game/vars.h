@@ -264,7 +264,7 @@ GVAR(0, survivorclear, 0, 1, 1); // clear items in survivor
 GVAR(0, survivorregen, 0, 0, 1); // allow regen in survivor
 GVAR(0, survivordelay, 500, 1000, VAR_MAX); // round continues for this length after winning
 GVAR(0, survivorcooloff, 0, 3000, VAR_MAX); // cool off period before survivor goes to next round
-GVAR(0, survivoraffinity, 0, 1, 2); // 0 = off, 1 = on enter can respawn next iter, 2 = on enter can respawn immediately
+GVAR(0, survivoraffinity, 0, 0, 1); // 0 = off, 1 = on enter can spawn immediately
 GVAR(0, survivorbotcheck, 0, 1, 1); // 0 = off, 1 = skip bots when checking respawns
 GVAR(0, survivorovertime, 0, 1, 1); // 0 = off, 1 = ffa: only spawn leaders in overtime
 
