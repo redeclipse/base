@@ -946,9 +946,14 @@ void rendermodel(entitylight *light, const char *mdl, int anim, const vec &o, fl
                 light->millis = lastmillis;
             }
         }
-        if(light) { lightcolor = light->color; lightdir = light->dir; lightmaterial = light->material; }
+        if(light)
+        {
+            lightcolor = light->color;
+            lightdir = light->dir;
+            lightmaterial = light->material;
+            if(flags&MDL_LIGHTFX) lightcolor.max(light->effect).lerp(light->effect, 0.6f*max(max(light->effect.x, light->effect.y), light->effect.z));
+        }
         if(flags&MDL_DYNLIGHT) dynlightreaching(pos, lightcolor, lightdir);
-        if(flags&MDL_LIGHTFX) lightcolor.max(light->effect).lerp(light->effect, 0.6f*max(max(light->effect.x, light->effect.y), light->effect.z));
     }
 
     if(a) for(int i = 0; a[i].tag; i++)

@@ -270,7 +270,7 @@ namespace game
     VAR(IDF_PERSIST, playereffecttone, -1, CTONE_TEAMED, CTONE_MAX-1);
     VAR(IDF_PERSIST, playerlighttone, -1, CTONE_TEAMED, CTONE_MAX-1);
     VAR(IDF_PERSIST, playerteamtone, -1, CTONE_TEAM, CTONE_MAX-1);
-    FVAR(IDF_PERSIST, playerlightmix, 0, 0.5f, 100);
+    FVAR(IDF_PERSIST, playerlightmix, 0, 0.4f, 100);
     FVAR(IDF_PERSIST, playertonemix, 0, 0.25f, 1);
     FVAR(IDF_PERSIST, playerblend, 0, 1, 1);
     FVAR(IDF_PERSIST, playereditblend, 0, 0.5f, 1);
@@ -3040,7 +3040,7 @@ namespace game
         dynent *e = third ? (third != 2 ? (dynent *)d : (dynent *)&bodymodel) : (dynent *)&avatarmodel;
         if(e->light.millis != lastmillis)
         {
-            e->light.effect = vec::hexcolor(getcolour(d, playerlighttone)).mul(playerlightmix);
+            e->light.effect = playerlightmix > 0 ? vec::hexcolor(getcolour(d, playerlighttone)).mul(playerlightmix) : vec(0, 0, 0);
             e->light.material[0] = bvec(getcolour(d, playerovertone));
             e->light.material[1] = bvec(getcolour(d, playerundertone));
             if(isweap(d->weapselect) && (W2(d->weapselect, ammosub, false) || W2(d->weapselect, ammosub, true)) && W(d->weapselect, ammomax) > 1)
@@ -3066,34 +3066,29 @@ namespace game
             if(burntime && d->burning(lastmillis, burntime))
             {
                 vec col = rescolour(d, PULSE_BURN);
-                e->light.material[1] = bvec::fromcolor(e->light.material[1].tocolor().max(col));
-                e->light.effect.max(col);
+                e->light.material[1].max(bvec::fromcolor(e->light.material[1].tocolor().max(col)));
             }
             if(shocktime && d->shocking(lastmillis, shocktime))
             {
                 vec col = rescolour(d, PULSE_SHOCK);
-                e->light.material[1] = bvec::fromcolor(e->light.material[1].tocolor().max(col));
-                e->light.effect.max(col);
+                e->light.material[1].max(bvec::fromcolor(e->light.material[1].tocolor().max(col)));
+            }
+            if(m_bomber(gamemode) && bomber::carryaffinity(d))
+            {
+                vec col = rescolour(d, PULSE_DISCO);
+                e->light.material[1].max(bvec::fromcolor(e->light.material[1].tocolor().max(col)));
             }
             if(d->state == CS_ALIVE && bleedtime && d->bleeding(lastmillis, bleedtime))
             {
                 int millis = lastmillis%1000;
                 float amt = millis <= 500 ? millis/500.f : 1.f-((millis-500)/500.f);
                 flashcolour(e->light.material[1].r, e->light.material[1].g, e->light.material[1].b, uchar(255), uchar(52), uchar(52), amt);
-                flashcolour(e->light.effect.r, e->light.effect.g, e->light.effect.b, 1.f, 0.2f, 0.2f, amt);
             }
             if(d->state == CS_ALIVE && d->lastbuff)
             {
                 int millis = lastmillis%1000;
                 float amt = millis <= 500 ? 1.f-(millis/500.f) : (millis-500)/500.f;
                 flashcolour(e->light.material[1].r, e->light.material[1].g, e->light.material[1].b, uchar(192), uchar(192), uchar(192), amt);
-                flashcolour(e->light.effect.r, e->light.effect.g, e->light.effect.b, 1.f, 1.f, 1.f, amt);
-            }
-            if(m_bomber(gamemode) && bomber::carryaffinity(d))
-            {
-                vec col = rescolour(d, PULSE_DISCO);
-                e->light.material[1] = bvec::fromcolor(e->light.material[1].tocolor().max(col));
-                e->light.effect.max(col);
             }
         }
         rendermodel(NULL, mdl, anim, o, yaw, third == 2 && firstpersonbodypitch >= 0 ? pitch*firstpersonbodypitch : pitch, third == 2 ? 0.f : roll, flags, e, attachments, basetime, basetime2, trans, size);
