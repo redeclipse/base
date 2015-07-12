@@ -43,18 +43,19 @@ VAR(0, rehashing, 1, 0, -1);
 const char * const disc_reasons[] = { "normal", "end of packet", "client num", "user was kicked", "message error", "address is banned", "server is in private mode", "server is password protected", "server requires pure official builds", "server is at maximum capacity", "server and client are incompatible", "connection timed out", "packet overflow", "server shutting down" };
 
 SVAR(IDF_PERSIST, logtimeformat, "%Y-%m-%d %H:%M.%S");
+VAR(IDF_PERSIST, logtimelocal, 0, 1, 1); // use clockoffset to localise
 SVAR(IDF_PERSIST, filetimeformat, "%Y%m%d%H%M%S");
 VAR(IDF_PERSIST, filetimelocal, 0, 1, 1); // use clockoffset to localise
 
 const char *gettime(time_t ctime, const char *format)
 {
     static string buf;
-    if(!ctime) ctime = currenttime;
+    if(!ctime) ctime = logtimelocal ? currenttime : clocktime;
     struct tm *t = localtime(&ctime);
     if(!strftime(buf, sizeof(buf), format && *format ? format : logtimeformat, t)) buf[0] = '\0';
     return buf;
 }
-ICOMMAND(0, gettime, "is", (int *n, char *a), result(gettime(*n, a)));
+ICOMMAND(0, gettime, "isi", (int *n, char *a, int *n), result(gettime(*n, a+(*n!=0 ? clockoffset : 0))));
 
 const char *timestr(int dur, int style)
 {
@@ -198,7 +199,7 @@ void console(int type, const char *s, ...)
     defvformatbigstring(sf, s, s);
     bigstring osf;
     filterbigstring(osf, sf);
-    if(*logtimeformat) logoutf("%s %s", gettime(currenttime, logtimeformat), osf);
+    if(*logtimeformat) logoutf("%s %s", gettime(logtimelocal ? currenttime : clocktime, logtimeformat), osf);
     else logoutf("%s", osf);
 #ifndef STANDALONE
     conline(type, sf, 0);
