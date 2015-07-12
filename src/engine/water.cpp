@@ -218,7 +218,7 @@ struct Reflection
     GLuint tex, refracttex;
     int material, height, depth, age;
     bool init;
-    glmatrixf projmat;
+    matrix4 projmat;
     occludequery *query, *prevquery;
     vector<materialsurface *> matsurfs;
 
@@ -278,7 +278,7 @@ void setprojtexmatrix(Reflection &ref)
         (ref.projmat = mvpmatrix).projective();
     }
 
-    glLoadMatrixf(ref.projmat.v);
+    glLoadMatrixf(ref.projmat.a.v);
 }
 
 Reflection reflections[MAXREFLECTIONS];

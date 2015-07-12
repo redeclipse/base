@@ -334,7 +334,7 @@ void rdlimitrot(int *t1, int *t2, float *maxangle, float *qx, float *qy, float *
     r.tri[0] = *t1;
     r.tri[1] = *t2;
     r.maxangle = *maxangle * RAD;
-    r.middle = matrix3x3(quat(*qx, *qy, *qz, *qw));
+    r.middle = matrix3(quat(*qx, *qy, *qz, *qw));
 }
 COMMAND(0, rdlimitrot, "iifffff");
 

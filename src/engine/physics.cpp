@@ -718,7 +718,7 @@ bool plcollide(physent *d, const vec &dir)  // collide with player or monster
 
 void rotatebb(vec &center, vec &radius, int yaw, int pitch, int roll)
 {
-    matrix3x3 orient;
+    matrix3 orient;
     orient.identity();
     if(yaw) orient.rotate_around_z(sincosmod360(yaw));
     if(roll) orient.rotate_around_x(sincosmod360(-roll));

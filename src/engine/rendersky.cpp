@@ -425,7 +425,7 @@ static void drawfogdome(int farplane)
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     glPushMatrix();
-    glLoadMatrixf(viewmatrix.v);
+    glLoadMatrixf(viewmatrix.a.v);
     glRotatef(camera1->roll, 0, 1, 0);
     glRotatef(camera1->pitch, -1, 0, 0);
     glRotatef(camera1->yaw, 0, 0, -1);
@@ -514,7 +514,7 @@ void drawskybox(int farplane, bool limited)
         notextureshader->set();
 
         glPushMatrix();
-        glLoadMatrixf(viewmatrix.v);
+        glLoadMatrixf(viewmatrix.a.v);
         glRotatef(camera1->roll, 0, 1, 0);
         glRotatef(camera1->pitch, -1, 0, 0);
         glRotatef(camera1->yaw, 0, 0, -1);
@@ -537,7 +537,7 @@ void drawskybox(int farplane, bool limited)
         }
 
         glPushMatrix();
-        glLoadMatrixf(viewmatrix.v);
+        glLoadMatrixf(viewmatrix.a.v);
         glRotatef(camera1->roll, 0, 1, 0);
         glRotatef(camera1->pitch, -1, 0, 0);
         glRotatef(camera1->yaw+spinsky*lastmillis/1000.0f+yawsky, 0, 0, -1);
@@ -564,7 +564,7 @@ void drawskybox(int farplane, bool limited)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         glPushMatrix();
-        glLoadMatrixf(viewmatrix.v);
+        glLoadMatrixf(viewmatrix.a.v);
         glRotatef(camera1->roll, 0, 1, 0);
         glRotatef(camera1->pitch, -1, 0, 0);
         glRotatef(camera1->yaw+spinclouds*lastmillis/1000.0f+yawclouds, 0, 0, -1);
@@ -586,7 +586,7 @@ void drawskybox(int farplane, bool limited)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         glPushMatrix();
-        glLoadMatrixf(viewmatrix.v);
+        glLoadMatrixf(viewmatrix.a.v);
         glRotatef(camera1->roll, 0, 1, 0);
         glRotatef(camera1->pitch, -1, 0, 0);
         glRotatef(camera1->yaw+spincloudlayer*lastmillis/1000.0f+yawcloudlayer, 0, 0, -1);
@@ -609,7 +609,7 @@ void drawskybox(int farplane, bool limited)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         glPushMatrix();
-        glLoadMatrixf(viewmatrix.v);
+        glLoadMatrixf(viewmatrix.a.v);
         glRotatef(camera1->roll, 0, 1, 0);
         glRotatef(camera1->pitch, -1, 0, 0);
         glRotatef(camera1->yaw+spinenvlayer*lastmillis/1000.0f+yawenvlayer, 0, 0, -1);

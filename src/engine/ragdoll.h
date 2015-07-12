@@ -32,20 +32,20 @@ struct ragdollskel
     {
         int tri[2];
         float maxangle;
-        matrix3x3 middle;
+        matrix3 middle;
     };
 
     struct rotfriction
     {
         int tri[2];
-        matrix3x3 middle;
+        matrix3 middle;
     };
 
     struct joint
     {
         int bone, tri, vert[3];
         float weight;
-        matrix3x4 orient;
+        matrix4x3 orient;
     };
 
     struct reljoint
@@ -83,15 +83,15 @@ struct ragdollskel
             pos.mul(j.weight);
 
             tri &t = tris[j.tri];
-            matrix3x3 m;
+            matrix4x3 &m = j.orient;
             const vec &v1 = verts[t.vert[0]].pos,
                       &v2 = verts[t.vert[1]].pos,
                       &v3 = verts[t.vert[2]].pos;
             m.a = vec(v2).sub(v1).normalize();
             m.c.cross(m.a, vec(v3).sub(v1)).normalize();
             m.b.cross(m.c, m.a);
-
-            j.orient = matrix3x4(m, m.transform(pos).neg());
+            m.d = pos;
+            m.transpose();
         }
         loopv(verts) if(verts[i].weight) verts[i].weight = 1/verts[i].weight;
         reljoints.shrink(0);
@@ -140,8 +140,8 @@ struct ragdolldata
     vec offset, center;
     float radius, ztop, zbottom, timestep, scale;
     vert *verts;
-    matrix3x3 *tris;
-    matrix3x4 *animjoints;
+    matrix3 *tris;
+    matrix4x3 *animjoints;
     dualquat *reljoints;
 
     ragdolldata(ragdollskel *skel, float scale = 1)
@@ -155,8 +155,8 @@ struct ragdolldata
           timestep(0),
           scale(scale),
           verts(new vert[skel->verts.length()]),
-          tris(new matrix3x3[skel->tris.length()]),
-          animjoints(!skel->animjoints || skel->joints.empty() ? NULL : new matrix3x4[skel->joints.length()]),
+          tris(new matrix3[skel->tris.length()]),
+          animjoints(!skel->animjoints || skel->joints.empty() ? NULL : new matrix4x3[skel->joints.length()]),
           reljoints(skel->reljoints.empty() ? NULL : new dualquat[skel->reljoints.length()])
     {
     }
@@ -169,7 +169,7 @@ struct ragdolldata
         if(reljoints) delete[] reljoints;
     }
 
-    void calcanimjoint(int i, const matrix3x4 &anim)
+    void calcanimjoint(int i, const matrix4x3 &anim)
     {
         if(!animjoints) return;
         ragdollskel::joint &j = skel->joints[i];
@@ -178,14 +178,15 @@ struct ragdolldata
         pos.mul(j.weight);
 
         ragdollskel::tri &t = skel->tris[j.tri];
-        matrix3x3 m;
+        matrix4x3 m;
         const vec &v1 = verts[t.vert[0]].pos,
                   &v2 = verts[t.vert[1]].pos,
                   &v3 = verts[t.vert[2]].pos;
         m.a = vec(v2).sub(v1).normalize();
         m.c.cross(m.a, vec(v3).sub(v1)).normalize();
         m.b.cross(m.c, m.a);
-        animjoints[i].mul(m, m.transform(pos).neg(), anim);
+        m.d = pos;
+        animjoints[i].transposemul(m, anim);
     }
 
     void calctris()
@@ -193,7 +194,7 @@ struct ragdolldata
         loopv(skel->tris)
         {
             ragdollskel::tri &t = skel->tris[i];
-            matrix3x3 &m = tris[i];
+            matrix3 &m = tris[i];
             const vec &v1 = verts[t.vert[0]].pos,
                       &v2 = verts[t.vert[1]].pos,
                       &v3 = verts[t.vert[2]].pos;
@@ -305,17 +306,17 @@ inline void ragdolldata::applyrotlimit(ragdollskel::tri &t1, ragdollskel::tri &t
     float a1 = angle*w2, a2 = -angle*w1,
           s1 = sinf(a1), s2 = sinf(a2);
     vec c1 = vec(axis).mul(1 - cosf(a1)), c2 = vec(axis).mul(1 - cosf(a2));
-    v1a.newpos.add(vec().cross(c1, q1a).add(vec(q1a).mul(s1)).add(v1a.pos));
+    v1a.newpos.add(vec().cross(c1, q1a).madd(q1a, s1).add(v1a.pos));
     v1a.weight++;
-    v1b.newpos.add(vec().cross(c1, q1b).add(vec(q1b).mul(s1)).add(v1b.pos));
+    v1b.newpos.add(vec().cross(c1, q1b).madd(q1b, s1).add(v1b.pos));
     v1b.weight++;
-    v1c.newpos.add(vec().cross(c1, q1c).add(vec(q1c).mul(s1)).add(v1c.pos));
+    v1c.newpos.add(vec().cross(c1, q1c).madd(q1c, s1).add(v1c.pos));
     v1c.weight++;
-    v2a.newpos.add(vec().cross(c2, q2a).add(vec(q2a).mul(s2)).add(v2a.pos));
+    v2a.newpos.add(vec().cross(c2, q2a).madd(q2a, s2).add(v2a.pos));
     v2a.weight++;
-    v2b.newpos.add(vec().cross(c2, q2b).add(vec(q2b).mul(s2)).add(v2b.pos));
+    v2b.newpos.add(vec().cross(c2, q2b).madd(q2b, s2).add(v2b.pos));
     v2b.weight++;
-    v2c.newpos.add(vec().cross(c2, q2c).add(vec(q2c).mul(s2)).add(v2c.pos));
+    v2c.newpos.add(vec().cross(c2, q2c).madd(q2c, s2).add(v2c.pos));
     v2c.weight++;
 }
 
@@ -324,9 +325,9 @@ void ragdolldata::constrainrot()
     loopv(skel->rotlimits)
     {
         ragdollskel::rotlimit &r = skel->rotlimits[i];
-        matrix3x3 rot;
-        rot.transposemul(tris[r.tri[0]], r.middle);
-        rot.mul(tris[r.tri[1]]);
+        matrix3 rot;
+        rot.mul(tris[r.tri[0]], r.middle);
+        rot.multranspose(tris[r.tri[1]]);
 
         vec axis;
         float angle;
@@ -344,7 +345,7 @@ void ragdolldata::calcrotfriction()
     loopv(skel->rotfrictions)
     {
         ragdollskel::rotfriction &r = skel->rotfrictions[i];
-        r.middle.multranspose(tris[r.tri[0]], tris[r.tri[1]]);
+        r.middle.transposemul(tris[r.tri[0]], tris[r.tri[1]]);
     }
 }
 
@@ -355,9 +356,9 @@ void ragdolldata::applyrotfriction(float ts)
     loopv(skel->rotfrictions)
     {
         ragdollskel::rotfriction &r = skel->rotfrictions[i];
-        matrix3x3 rot;
-        rot.transposemul(tris[r.tri[0]], r.middle);
-        rot.mul(tris[r.tri[1]]);
+        matrix3 rot;
+        rot.mul(tris[r.tri[0]], r.middle);
+        rot.multranspose(tris[r.tri[1]]);
 
         vec axis;
         float angle;

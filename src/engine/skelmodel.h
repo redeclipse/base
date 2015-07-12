@@ -143,11 +143,10 @@ struct skelmodel : animmodel
     struct skelcacheentry : animcacheentry
     {
         dualquat *bdata;
-        matrix3x4 *mdata;
         int version;
         bool dirty;
 
-        skelcacheentry() : bdata(NULL), mdata(NULL), version(-1), dirty(false) {}
+        skelcacheentry() : bdata(NULL), version(-1), dirty(false) {}
 
         void nextversion()
         {
@@ -209,7 +208,7 @@ struct skelmodel : animmodel
             mesh::calctangents(bumpverts, verts, verts, numverts, tris, numtris, areaweight);
         }
 
-        void calcbb(vec &bbmin, vec &bbmax, const matrix3x4 &m)
+        void calcbb(vec &bbmin, vec &bbmax, const matrix4x3 &m)
         {
             loopj(numverts)
             {
@@ -222,7 +221,7 @@ struct skelmodel : animmodel
             }
         }
 
-        void gentris(Texture *tex, vector<BIH::tri> *out, const matrix3x4 &m)
+        void gentris(Texture *tex, vector<BIH::tri> *out, const matrix4x3 &m)
         {
             loopj(numtris)
             {
@@ -473,7 +472,7 @@ struct skelmodel : animmodel
     {
         char *name;
         int bone;
-        matrix3x4 matrix;
+        matrix4x3 matrix;
 
         tag() : name(NULL) {}
         ~tag() { DELETEA(name); }
@@ -566,7 +565,6 @@ struct skelmodel : animmodel
             loopv(skelcache)
             {
                 DELETEA(skelcache[i].bdata);
-                DELETEA(skelcache[i].mdata);
             }
         }
 
@@ -607,7 +605,7 @@ struct skelmodel : animmodel
             return -1;
         }
 
-        bool addtag(const char *name, int bone, const matrix3x4 &matrix)
+        bool addtag(const char *name, int bone, const matrix4x3 &matrix)
         {
             int idx = findtag(name);
             if(idx >= 0)
@@ -1005,7 +1003,7 @@ struct skelmodel : animmodel
                 const ragdollskel::joint &j = ragdoll->joints[i];
                 const boneinfo &b = bones[j.bone];
                 const dualquat &q = bdata[b.interpindex];
-                d.calcanimjoint(i, matrix3x4(q));
+                d.calcanimjoint(i, matrix4x3(q));
             }
             loopv(ragdoll->verts)
             {
@@ -1033,8 +1031,8 @@ struct skelmodel : animmodel
                 vec pos(0, 0, 0);
                 loopk(3) if(j.vert[k]>=0) pos.add(d.verts[j.vert[k]].pos);
                 pos.mul(j.weight/p->model->scale).sub(trans);
-                matrix3x4 m;
-                m.transposemul(d.tris[j.tri], pos, d.animjoints ? d.animjoints[i] : j.orient);
+                matrix4x3 m;
+                m.mul(d.tris[j.tri], pos, d.animjoints ? d.animjoints[i] : j.orient);
                 sc.bdata[b.interpindex] = dualquat(m);
             }
             loopv(ragdoll->reljoints)
@@ -1047,9 +1045,9 @@ struct skelmodel : animmodel
             loopv(antipodes) sc.bdata[antipodes[i].child].fixantipodal(sc.bdata[antipodes[i].parent]);
         }
 
-        void concattagtransform(part *p, int i, const matrix3x4 &m, matrix3x4 &n)
+        void concattagtransform(part *p, int i, const matrix4x3 &m, matrix4x3 &n)
         {
-            matrix3x4 t;
+            matrix4x3 t;
             t.mul(bones[tags[i].bone].base, tags[i].matrix);
             t.translate(vec(p->translate).mul(p->model->scale));
             n.mul(m, t);
@@ -1061,18 +1059,14 @@ struct skelmodel : animmodel
             {
                 linkedpart &l = p->links[i];
                 tag &t = tags[l.tag];
-                matrix3x4 m;
-                m.mul(bones[t.bone].base, t.matrix);
-                if(sc)
-                {
-                    int interpindex = bones[t.bone].interpindex;
-                    m.mul(sc->bdata[interpindex], matrix3x4(m));
-                }
+                dualquat q;
+                if(sc) q.mul(sc->bdata[bones[t.bone].interpindex], bones[t.bone].base);
+                else q = bones[t.bone].base;
+                matrix4x3 m;
+                m.mul(q, t.matrix);
                 float resize = p->model->scale * (attached && attached->sizescale >= 0 ? attached->sizescale : sizescale);
+                m.d.add(p->translate).mul(resize);
                 l.matrix = m;
-                l.matrix[12] = (l.matrix[12] + p->translate.x) * resize;
-                l.matrix[13] = (l.matrix[13] + p->translate.y) * resize;
-                l.matrix[14] = (l.matrix[14] + p->translate.z) * resize;
             }
         }
 
@@ -1083,7 +1077,6 @@ struct skelmodel : animmodel
                 skelcacheentry &sc = skelcache[i];
                 loopj(MAXANIMPARTS) sc.as[j].cur.fr1 = -1;
                 DELETEA(sc.bdata);
-                DELETEA(sc.mdata);
             }
             skelcache.setsize(0);
             blendoffsets.clear();
@@ -1210,7 +1203,6 @@ struct skelmodel : animmodel
             loopi(MAXBLENDCACHE)
             {
                 DELETEA(blendcache[i].bdata);
-                DELETEA(blendcache[i].mdata);
             }
             loopi(MAXVBOCACHE)
             {
@@ -1410,7 +1402,7 @@ struct skelmodel : animmodel
             }
         }
 
-        void concattagtransform(part *p, int i, const matrix3x4 &m, matrix3x4 &n)
+        void concattagtransform(part *p, int i, const matrix4x3 &m, matrix4x3 &n)
         {
             skel->concattagtransform(p, i, m, n);
         }
@@ -1484,7 +1476,6 @@ struct skelmodel : animmodel
             {
                 blendcacheentry &c = blendcache[i];
                 DELETEA(c.bdata);
-                DELETEA(c.mdata);
                 c.owner = -1;
             }
             loopi(MAXVBOCACHE)
@@ -1771,7 +1762,7 @@ template<class MDL> struct skelcommands : modelcommands<MDL, struct MDL::skelmes
             float cx = *rx ? cosf(*rx/2*RAD) : 1, sx = *rx ? sinf(*rx/2*RAD) : 0,
                   cy = *ry ? cosf(*ry/2*RAD) : 1, sy = *ry ? sinf(*ry/2*RAD) : 0,
                   cz = *rz ? cosf(*rz/2*RAD) : 1, sz = *rz ? sinf(*rz/2*RAD) : 0;
-            matrix3x4 m(matrix3x3(quat(sx*cy*cz - cx*sy*sz, cx*sy*cz + sx*cy*sz, cx*cy*sz - sx*sy*cz, cx*cy*cz + sx*sy*sz)),
+            matrix4x3 m(matrix3(quat(sx*cy*cz - cx*sy*sz, cx*sy*cz + sx*cy*sz, cx*cy*sz - sx*sy*cz, cx*cy*cz + sx*sy*sz)),
                         vec(*tx, *ty, *tz));
             ((meshgroup *)mdl.meshes)->skel->addtag(tagname, i, m);
             return;

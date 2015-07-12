@@ -63,7 +63,7 @@ struct vertmodel : animmodel
                 mesh::calctangents(&bumpverts[k*numverts], &verts[k*numverts], tcverts, numverts, tris, numtris, areaweight);
         }
 
-        void calcbb(vec &bbmin, vec &bbmax, const matrix3x4 &m)
+        void calcbb(vec &bbmin, vec &bbmax, const matrix4x3 &m)
         {
             loopj(numverts)
             {
@@ -76,7 +76,7 @@ struct vertmodel : animmodel
             }
         }
 
-        void gentris(Texture *tex, vector<BIH::tri> *out, const matrix3x4 &m)
+        void gentris(Texture *tex, vector<BIH::tri> *out, const matrix4x3 &m)
         {
             loopj(numtris)
             {
@@ -244,7 +244,7 @@ struct vertmodel : animmodel
     struct tag
     {
         char *name;
-        matrix3x4 transform;
+        matrix4x3 transform;
 
         tag() : name(NULL) {}
         ~tag() { DELETEA(name); }
@@ -288,31 +288,29 @@ struct vertmodel : animmodel
 
         int totalframes() const { return numframes; }
 
-        void concattagtransform(part *p, int i, const matrix3x4 &m, matrix3x4 &n)
+        void concattagtransform(part *p, int i, const matrix4x3 &m, matrix4x3 &n)
         {
             n.mul(m, tags[numtags + i].transform);
             n.translate(m.transformnormal(p->translate).mul(p->model->scale));
         }
 
-        void calctagmatrix(part *p, int i, const animstate &as, modelattach *attached, glmatrixf &matrix)
+        void calctagmatrix(part *p, int i, const animstate &as, modelattach *attached, matrix4 &matrix)
         {
-            const matrix3x4 &tag1 = tags[as.cur.fr1*numtags + i].transform,
+            const matrix4x3 &tag1 = tags[as.cur.fr1*numtags + i].transform,
                             &tag2 = tags[as.cur.fr2*numtags + i].transform;
-            matrix3x4 tag;
+            matrix4x3 tag;
             tag.lerp(tag1, tag2, as.cur.t);
             if(as.interp<1)
             {
-                const matrix3x4 &tag1p = tags[as.prev.fr1*numtags + i].transform,
+                const matrix4x3 &tag1p = tags[as.prev.fr1*numtags + i].transform,
                                 &tag2p = tags[as.prev.fr2*numtags + i].transform;
-                matrix3x4 tagp;
+                matrix4x3 tagp;
                 tagp.lerp(tag1p, tag2p, as.prev.t);
                 tag.lerp(tagp, tag, as.interp);
             }
             float resize = p->model->scale * (attached && attached->sizescale >= 0 ? attached->sizescale : sizescale);
-            matrix = glmatrixf(tag);
-            matrix[12] = (matrix[12] + p->translate.x) * resize;
-            matrix[13] = (matrix[13] + p->translate.y) * resize;
-            matrix[14] = (matrix[14] + p->translate.z) * resize;
+            tag.d.add(p->translate).mul(resize);
+            matrix = matrix4(tag);
         }
 
         void genvbo(bool tangents, vbocacheentry &vc)

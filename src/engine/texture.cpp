@@ -1040,13 +1040,13 @@ void texnormal(ImageData &s, int emphasis)
 template<int n, int bpp, bool normals>
 static void blurtexture(int w, int h, uchar *dst, const uchar *src, int margin)
 {
-    static const int matrix3x3[9] =
+    static const int weights3x3[9] =
     {
         0x10, 0x20, 0x10,
         0x20, 0x40, 0x20,
         0x10, 0x20, 0x10
     };
-    static const int matrix5x5[25] =
+    static const int weights5x5[25] =
     {
         0x05, 0x05, 0x09, 0x05, 0x05,
         0x05, 0x0A, 0x14, 0x0A, 0x05,
@@ -1054,7 +1054,7 @@ static void blurtexture(int w, int h, uchar *dst, const uchar *src, int margin)
         0x05, 0x0A, 0x14, 0x0A, 0x05,
         0x05, 0x05, 0x09, 0x05, 0x05
     };
-    const int *mat = n > 1 ? matrix5x5 : matrix3x3;
+    const int *mat = n > 1 ? weights5x5 : weights3x3;
     int mstride = 2*n + 1,
         mstartoffset = n*(mstride + 1),
         stride = bpp*w,

@@ -637,7 +637,7 @@ void calcsunlight(lightmapworker *w, const vec &o, const vec &normal, float tole
             hit++;
         if(offset)
         {
-            matrix3x3 rot(90*RAD, dir);
+            matrix3 rot(90*RAD, dir);
             vec spoke(yaw*RAD, (pitch + offset)*RAD);
             spoke.rotate(21*RAD, dir);
             loopk(4)

@@ -624,7 +624,7 @@ void findorientation(vec &o, float yaw, float pitch, vec &pos)
 void transplayer()
 {
     // move from RH to Z-up LH quake style worldspace
-    glLoadMatrixf(viewmatrix.v);
+    glLoadMatrixf(viewmatrix.a.v);
 
     glRotatef(camera1->roll, 0, 1, 0);
     glRotatef(camera1->pitch, -1, 0, 0);
@@ -680,21 +680,21 @@ bool vectocursor(const vec &v, float &x, float &y, float &z, float clampxy)
     return inside;
 }
 
-extern const glmatrixf viewmatrix(vec4(-1, 0, 0, 0), vec4(0, 0, 1, 0), vec4(0, -1, 0, 0));
-glmatrixf mvmatrix, projmatrix, mvpmatrix, invmvmatrix, invmvpmatrix;
+extern const matrix4 viewmatrix(vec(-1, 0, 0), vec(0, 0, 1), vec(0, -1, 0));
+matrix4 mvmatrix, projmatrix, mvpmatrix, invmvmatrix, invmvpmatrix;
 
 void readmatrices()
 {
-    glGetFloatv(GL_MODELVIEW_MATRIX, mvmatrix.v);
-    glGetFloatv(GL_PROJECTION_MATRIX, projmatrix.v);
+    glGetFloatv(GL_MODELVIEW_MATRIX, mvmatrix.a.v);
+    glGetFloatv(GL_PROJECTION_MATRIX, projmatrix.a.v);
 
     mvpmatrix.mul(projmatrix, mvmatrix);
     invmvmatrix.invert(mvmatrix);
     invmvpmatrix.invert(mvpmatrix);
 
-    mvmatrix.transposedtransformnormal(vec(viewmatrix.getcolumn(1)), camdir);
-    mvmatrix.transposedtransformnormal(vec(viewmatrix.getcolumn(0)).neg(), camright);
-    mvmatrix.transposedtransformnormal(vec(viewmatrix.getcolumn(2)), camup);
+    mvmatrix.transposedtransformnormal(vec(viewmatrix.b), camdir);
+    mvmatrix.transposedtransformnormal(vec(viewmatrix.a).neg(), camright);
+    mvmatrix.transposedtransformnormal(vec(viewmatrix.c), camup);
 }
 
 FVAR(0, nearplane, 0.01f, 0.54f, 2.0f);
@@ -712,19 +712,19 @@ void project(float fovy, float aspect, int farplane, bool flipx, bool flipy, boo
 
 VAR(0, reflectclip, 0, 6, 64);
 
-glmatrixf clipmatrix;
+matrix4 clipmatrix;
 
-static const glmatrixf dummymatrix;
+static const matrix4 dummymatrix;
 static int projectioncount = 0;
-void pushprojection(const glmatrixf &m = dummymatrix)
+void pushprojection(const matrix4 &m = dummymatrix)
 {
     glMatrixMode(GL_PROJECTION);
     if(projectioncount <= 0) glPushMatrix();
-    if(&m != &dummymatrix) glLoadMatrixf(m.v);
+    if(&m != &dummymatrix) glLoadMatrixf(m.a.v);
     if(fogging)
     {
-        glMultMatrixf(mvmatrix.v);
-        glMultMatrixf(invfogmatrix.v);
+        glMultMatrixf(mvmatrix.a.v);
+        glMultMatrixf(invfogmatrix.a.v);
     }
     glMatrixMode(GL_MODELVIEW);
     projectioncount++;
@@ -740,8 +740,8 @@ void popprojection()
         glPushMatrix();
         if(fogging)
         {
-            glMultMatrixf(mvmatrix.v);
-            glMultMatrixf(invfogmatrix.v);
+            glMultMatrixf(mvmatrix.a.v);
+            glMultMatrixf(invfogmatrix.a.v);
         }
     }
     glMatrixMode(GL_MODELVIEW);
@@ -762,16 +762,16 @@ void enablepolygonoffset(GLenum type)
 
     bool clipped = reflectz < 1e15f && reflectclip;
 
-    glmatrixf offsetmatrix = clipped ? clipmatrix : projmatrix;
-    offsetmatrix[14] += depthoffset * projmatrix[10];
+    matrix4 offsetmatrix = clipped ? clipmatrix : projmatrix;
+    offsetmatrix.d.z += depthoffset * projmatrix.c.z;
 
     glMatrixMode(GL_PROJECTION);
     if(!clipped) glPushMatrix();
-    glLoadMatrixf(offsetmatrix.v);
+    glLoadMatrixf(offsetmatrix.a.v);
     if(fogging)
     {
-        glMultMatrixf(mvmatrix.v);
-        glMultMatrixf(invfogmatrix.v);
+        glMultMatrixf(mvmatrix.a.v);
+        glMultMatrixf(invfogmatrix.a.v);
     }
     glMatrixMode(GL_MODELVIEW);
 }
@@ -789,11 +789,11 @@ void disablepolygonoffset(GLenum type)
     glMatrixMode(GL_PROJECTION);
     if(clipped)
     {
-        glLoadMatrixf(clipmatrix.v);
+        glLoadMatrixf(clipmatrix.a.v);
         if(fogging)
         {
-            glMultMatrixf(mvmatrix.v);
-            glMultMatrixf(invfogmatrix.v);
+            glMultMatrixf(mvmatrix.a.v);
+            glMultMatrixf(invfogmatrix.a.v);
         }
     }
     else glPopMatrix();
@@ -802,11 +802,9 @@ void disablepolygonoffset(GLenum type)
 
 void calcspherescissor(const vec &center, float size, float &sx1, float &sy1, float &sx2, float &sy2)
 {
-    vec worldpos(center);
+    vec worldpos(center), e;
     if(reflecting) worldpos.z = 2*reflectz - worldpos.z;
-    vec e(mvmatrix.transformx(worldpos),
-          mvmatrix.transformy(worldpos),
-          mvmatrix.transformz(worldpos));
+    mvmatrix.transform(worldpos, e);
     if(e.z > 2*size) { sx1 = sy1 = 1; sx2 = sy2 = -1; return; }
     float zzrr = e.z*e.z - size*size,
           dx = e.x*e.x + zzrr, dy = e.y*e.y + zzrr,
@@ -888,7 +886,7 @@ void popscissor()
     scissoring = 0;
 }
 
-glmatrixf envmatrix;
+matrix4 envmatrix;
 
 void setenvmatrix()
 {
@@ -1176,7 +1174,7 @@ void drawglare()
 VAR(IDF_PERSIST, reflectmms, 0, 1, 1);
 VAR(IDF_WORLD, refractsky, 0, 0, 1);
 
-glmatrixf fogmatrix, invfogmatrix;
+matrix4 fogmatrix, invfogmatrix;
 
 void drawreflection(float z, bool refract, int fogdepth, const bvec &col)
 {
@@ -1197,18 +1195,12 @@ void drawreflection(float z, bool refract, int fogdepth, const bvec &col)
     {
         glFogf(GL_FOG_START, camera1->o.z - z);
         glFogf(GL_FOG_END, camera1->o.z - (z-max(refractfog, 1)));
-        GLfloat m[16] =
-        {
-             1,   0,  0, 0,
-             0,   1,  0, 0,
-             0,   0,  1, 0,
-            -camera1->o.x, -camera1->o.y, -camera1->o.z, 1
-        };
-        memcpy(fogmatrix.v, m, sizeof(m));
+        fogmatrix.identity();
+        fogmatrix.settranslation(vec(camera1->o).neg());
         invfogmatrix.invert(fogmatrix);
         pushprojection();
         glPushMatrix();
-        glLoadMatrixf(fogmatrix.v);
+        glLoadMatrixf(fogmatrix.a.v);
         float fogc[4] = { col.x/255.0f, col.y/255.0f, col.z/255.0f, 1.0f };
         glFogfv(GL_FOG_COLOR, fogc);
     }
@@ -1273,7 +1265,7 @@ void drawreflection(float z, bool refract, int fogdepth, const bvec &col)
         {
             pushprojection();
             glPushMatrix();
-            glLoadMatrixf(fogmatrix.v);
+            glLoadMatrixf(fogmatrix.a.v);
         }
         if(reflectclip && z>=0) pushprojection(clipmatrix);
         if(fading) glColorMask(COLORMASK, GL_FALSE);

@@ -55,7 +55,7 @@ namespace mpr
 
     struct EntOBB : Ent
     {
-        matrix3x3 orient;
+        matrix3 orient;
 
         EntOBB(physent *ent) : Ent(ent)
         {
@@ -183,7 +183,7 @@ namespace mpr
     struct Model
     {
         vec o, radius;
-        matrix3x3 orient;
+        matrix3 orient;
 
         Model(const vec &ent, const vec &center, const vec &radius, int yaw, int pitch, int roll) : o(ent), radius(radius)
         {
