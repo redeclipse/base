@@ -529,12 +529,12 @@ namespace hud
                         {
                             scoregroup &sg = k == numgroups ? spectators : *groups[k];
                             if(k) g.space(0.5f);
-                            int colour = k < numgroups && sg.team >= 0 && m_play(game::gamemode) && m_team(game::gamemode, game::mutators) ? TEAM(sg.team, colour) : TEAM(T_NEUTRAL, colour);
+                            int colour = k == numgroups ? 0x404040 : (sg.team >= 0 && m_team(game::gamemode, game::mutators) ? TEAM(sg.team, colour) : TEAM(T_NEUTRAL, colour));
                             vec c = vec::hexcolor(colour);
-                            int bgcolor = vec(c).mul(k == numgroups ? 0.45f : 0.65f).tohexcolor();
-                            int bgc1 = vec(c).mul(k == numgroups ? 0.1f : 0.25f).tohexcolor();
-                            int bgc2 = vec(c).mul(k == numgroups ? 0.05f : 0.125f).tohexcolor();
-                            #define ownerfgc (scoredarken && (o->state == CS_DEAD || o->state == CS_WAITING) ? 0x7F7F7F : 0xFFFFFF)
+                            int bgcolor = vec(c).mul(0.65f).tohexcolor();
+                            int bgc1 = vec(c).mul(0.25f).tohexcolor();
+                            int bgc2 = vec(c).mul(0.125f).tohexcolor();
+                            #define ownerfgc (scoredarken && (o->state != CS_ALIVE && o->state != CS_EDITING) ? 0x707070 : 0xFFFFFF)
                             #define ownerbgc (i%2 ? bgc2 : bgc1)
                             #define ownerbgch (scorehilight && o == game::player1 ? scorehilight : (ownerbgc))
                             #define ownerbg if((scorehilight && o == game::player1) || scorebgrows >= 2) g.background(ownerbgc, scorebgblend, ownerbgch, scorebgblend, scorehilight && o == game::player1);
