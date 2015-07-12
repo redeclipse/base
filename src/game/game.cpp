@@ -206,6 +206,7 @@ namespace game
     VAR(IDF_PERSIST, zoomoffset, 0, 2, 10); // if zoomdefault = -1, then offset from zoomlevels this much for initial default
     VAR(IDF_PERSIST, zoomscroll, 0, 0, 1); // 0 = stop at min/max, 1 = go to opposite end
 
+    VAR(IDF_PERSIST, aboveheaddead, 0, 1, 1);
     VAR(IDF_PERSIST, aboveheadnames, 0, 1, 1);
     VAR(IDF_PERSIST, aboveheadinventory, 0, 0, 2); // 0 = off, 1 = weapselect only, 2 = all weapons
     VAR(IDF_PERSIST, aboveheadstatus, 0, 1, 1);
@@ -225,7 +226,6 @@ namespace game
     FVAR(IDF_PERSIST, aboveheadeventsize, 0, 3, 10);
 
     FVAR(IDF_PERSIST, aboveitemiconsize, 0, 2.5f, 10);
-
     FVAR(IDF_PERSIST, aboveheadsmooth, 0, 0.25f, 1);
     VAR(IDF_PERSIST, aboveheadsmoothmillis, 1, 100, 10000);
 
@@ -3298,7 +3298,8 @@ namespace game
                 animdelay = 300;
             }
         }
-        if(!early && third == 1 && d->actortype < A_ENEMY && !shadowmapping && !envmapping) renderabovehead(d, trans);
+        if(!early && third == 1 && d->actortype < A_ENEMY && !shadowmapping && !envmapping && (aboveheaddead || d->state == CS_ALIVE))
+            renderabovehead(d, trans);
         const char *weapmdl = showweap && isweap(weap) ? (third ? weaptype[weap].vwep : weaptype[weap].hwep) : "";
         int ai = 0;
         modelattach a[1+VANITYMAX+12];
