@@ -1,23 +1,38 @@
 #!/bin/sh
 SEMABUILD_PWD=`pwd`
+SEMABUILD_BUILD="${HOME}/deploy"
 SEMABUILD_SCP='scp -BC -o StrictHostKeyChecking=no'
 SEMABUILD_TARGET='qreeves@icculus.org:/webspace/redeclipse.net/files'
 SEMABUILD_APT='DEBIAN_FRONTEND=noninteractive apt-get'
+SEMABUILD_ALLMODS=`curl --silent --fail http://redeclipse.net/files/stable/modules.txt` || (echo "failed to retrieve modules"; exit 1)
 
 sudo ${SEMABUILD_APT} update || exit 1
 sudo ${SEMABUILD_APT} -fy install build-essential unzip zip nsis nsis-common mktorrent || exit 1
 
-mkdir -p "${HOME}/deploy/data" || exit 1
-( git archive stable | tar -x -C "${HOME}/deploy" ) || exit 1
-pushd "${SEMABUILD_PWD}/data" || exit 1
-( git archive master | tar -x -C "${HOME}/deploy/data" ) || (popd; exit 1)
-popd
+rm -rfv "${SEMABUILD_BUILD}"
+mkdir -pv "${SEMABUILD_BUILD}" || exit 1
+git submodule init || exit 1
+git submodule update || exit 1
 
-pushd "${HOME}/deploy/src" || exit 1
+for i in "${SEMABUILD_ALLMODS}"; do
+    if [ "${i}" = "base" ]; then
+        SEMABUILD_MODDIR="${SEMABUILD_BUILD}"
+        SEMABUILD_GITDIR="${SEMABUILD_PWD}"
+    else
+        SEMABUILD_MODDIR="${SEMABUILD_BUILD}/${i}"
+        SEMABUILD_GITDIR="${SEMABUILD_PWD}/${i}"
+    fi
+    mkdir -pv "${SEMABUILD_MODDIR}" || exit 1
+    pushd "${SEMABUILD_GITDIR}" || exit 1
+    (git archive stable | tar -x -C "${SEMABUILD_MODDIR}") || exit 1
+    popd
+done
+
+pushd "${SEMABUILD_BUILD}/src" || exit 1
 make dist dist-torrents || (popd; exit 1)
 popd
 
-pushd "${HOME}/deploy" || exit 1
+pushd "${SEMABUILD_BUILD}" || exit 1
 mkdir -p releases || (popd; exit 1)
 mv -vf redeclipse_*.*_*.tar.bz2 releases/ || (popd; exit 1)
 mv -vf redeclipse_*.*_*.exe releases/ || (popd; exit 1)
