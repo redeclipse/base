@@ -4,11 +4,11 @@ SDL_ENABLEAPPEVENTS=1
 REDECLIPSE_ORIGPW=`pwd`
 REDECLIPSE_APPDIR=$(dirname "$0")
 cd "${REDECLIPSE_APPDIR}"
-if [ -e "../Resources/redeclipse.sh" ]; then
+if [ -e "../Resources/readme.txt" ]; then
     cd "../Resources"
     REDECLIPSE_RESOURCES=`pwd`
     osascript -e 'tell application "Terminal" to do script "cd \"'${REDECLIPSE_RESOURCES}'\"; ./redeclipse.sh '$@'; exit"'
-elif [ -e "../../../../redeclipse.sh" ]; then
+elif [ -e "../../../../readme.txt" ]; then
     cd "../../../.."
     REDECLIPSE_RESOURCES=`pwd`
     osascript -e 'tell application "Terminal" to do script "cd \"'${REDECLIPSE_RESOURCES}'\"; ./redeclipse.sh '$@'; exit"'
