@@ -23,10 +23,14 @@ semabuild_archive() {
     echo "archiving ${BRANCH_NAME}..."
     # windows
     pushd "${SEMABUILD_DIR}/windows" || return 1
+    cp -fv "${SEMABUILD_PWD}/redeclipse.bat" "${SEMABUILD_DIR}/windows/redeclipse.bat"
+    cp -fv "${SEMABUILD_PWD}/bin/update.bat" "${SEMABUILD_DIR}/windows/bin/update.bat"
     zip -r "${SEMABUILD_DIR}/windows.zip" . || (popd; return 1)
     popd
     # linux
     pushd "${SEMABUILD_DIR}/linux" || return 1
+    cp -fv "${SEMABUILD_PWD}/redeclipse.sh" "${SEMABUILD_DIR}/linux/redeclipse.sh"
+    cp -fv "${SEMABUILD_PWD}/bin/update.sh" "${SEMABUILD_DIR}/linux/bin/update.sh"
     tar -zcvf "${SEMABUILD_DIR}/linux.tar.gz" . || (popd; return 1)
     popd
     # cleanup
