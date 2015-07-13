@@ -64,7 +64,7 @@ semabuild_process() {
             echo "${SEMABUILD_HASH}" > "${SEMABUILD_DIR}/${i}.txt"
             SEMABUILD_DEPLOY="true"
             if [ "${i}" = "base" ]; then
-                SEMABUILD_LAST=`curl --fail --silent "${SEMABUILD_SOURCE}/${BRANCH_NAME}/bins.txt"` || (popd; return 1)
+                SEMABUILD_BINS=`curl --fail --silent "${SEMABUILD_SOURCE}/${BRANCH_NAME}/bins.txt"` || (popd; return 1)
                 SEMABUILD_CHANGES=`git diff --name-only HEAD ${SEMABUILD_BINS} -- src` || (popd; return 1)
                 if [ -n "${SEMABUILD_CHANGES}" ]; then
                     echo "source files modified:"
@@ -72,7 +72,7 @@ semabuild_process() {
                     semabuild_build || (echo "build failed."; popd; return 1)
                     semabuild_archive || (echo "archive failed."; popd; return 1)
                     echo "archive 'bins' updated, syncing: ${SEMABUILD_HASH} -> ${SEMABUILD_BINS}"
-                    echo "${SEMABUILD_HASH}" > "${SEMABUILD_DIR}/bins.txt
+                    echo "${SEMABUILD_HASH}" > "${SEMABUILD_DIR}/bins.txt"
                 fi
             fi
         fi
