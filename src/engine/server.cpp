@@ -1439,6 +1439,8 @@ bool serveroption(char *opt)
                 case 's': setvar("servertype", atoi(opt+3)); return true;
                 case 'p': setvar("serverport", atoi(opt+3)); return true;
                 case 'a': setvar("servermasterport", atoi(opt+3)); return true;
+                case 'g': setvar("logtimelocal", atoi(opt+3)); return true;
+                default: return false;
             }
         }
         case 'm':
