@@ -460,7 +460,7 @@ void checkmaster()
             if(enet_address_get_host_ip(&c->address, c->name, sizeof(c->name)) < 0) copystring(c->name, "unknown");
             if(verbose) conoutf("master peer %s connected", c->name);
         }
-	break;
+        break;
     }
 
     loopv(masterclients)
