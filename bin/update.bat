@@ -49,7 +49,6 @@ setlocal enableextensions enabledelayedexpansion
     if NOT EXIST "%REDECLIPSE_TEMP%" mkdir "%REDECLIPSE_TEMP%"
     echo @ECHO OFF> "%REDECLIPSE_TEMP%\install.bat"
     echo setlocal enableextensions>> "%REDECLIPSE_TEMP%\install.bat"
-    echo set REDECLIPSE_ERROR=false>> "%REDECLIPSE_TEMP%\install.bat"
     if "%REDECLIPSE_BRANCH%" == "devel" goto redeclipse_update_bins_run
 :redeclipse_update_module
     %REDECLIPSE_CURL% --silent --output "%REDECLIPSE_TEMP%\modules.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/modules.txt"
@@ -129,7 +128,7 @@ setlocal enableextensions enabledelayedexpansion
     echo    ^(echo %REDECLIPSE_MODULE_REMOTE%^)^> "%REDECLIPSE_PATH%%REDECLIPSE_MODULE_DIR%\version.txt">> "%REDECLIPSE_TEMP%\install.bat"
     echo ^) ^|^| ^(>> "%REDECLIPSE_TEMP%\install.bat"
     echo     del /f /q "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.txt">> "%REDECLIPSE_TEMP%\install.bat"
-    echo     set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
+    echo     exit 1>> "%REDECLIPSE_TEMP%\install.bat"
     echo ^)>> "%REDECLIPSE_TEMP%\install.bat"
     set REDECLIPSE_DEPLOY=true
     exit /b 0
@@ -180,13 +179,12 @@ setlocal enableextensions enabledelayedexpansion
     echo     ^(echo %REDECLIPSE_BINS_REMOTE%^)^> "%REDECLIPSE_PATH%\bin\version.txt">> "%REDECLIPSE_TEMP%\install.bat"
     echo ^) ^|^| ^(>> "%REDECLIPSE_TEMP%\install.bat"
     echo     del /f /q "%REDECLIPSE_TEMP%\bins.txt">> "%REDECLIPSE_TEMP%\install.bat"
-    echo     set REDECLIPSE_ERROR=true>> "%REDECLIPSE_TEMP%\install.bat"
+    echo     exit 1>> "%REDECLIPSE_TEMP%\install.bat"
     echo ^)>> "%REDECLIPSE_TEMP%\install.bat"
     set REDECLIPSE_DEPLOY=true
 :redeclipse_update_deploy
     if NOT "%REDECLIPSE_DEPLOY%" == "true" exit /b 0
     echo.
-    echo if "%%REDECLIPSE_ERROR%%" == "true" (exit /b 1)>> "%REDECLIPSE_TEMP%\install.bat"
     echo deploy: %REDECLIPSE_TEMP%\install.bat
     echo.
     set REDECLIPSE_INSTALL=call

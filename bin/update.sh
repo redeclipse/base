@@ -107,7 +107,6 @@ redeclipse_update_branch() {
     REDECLIPSE_TAR="tar -xv"
     if ! [ -d "${REDECLIPSE_TEMP}" ]; then mkdir -p "${REDECLIPSE_TEMP}"; fi
     echo "#"'!'"/bin/sh" > "${REDECLIPSE_TEMP}/install.sh"
-    echo "REDECLIPSE_ERROR=\"false\"" >> "${REDECLIPSE_TEMP}/install.sh"
     if [ "${REDECLIPSE_BRANCH}" = "devel" ]; then
         redeclipse_update_bins_run
         return $?
@@ -234,7 +233,7 @@ redeclipse_update_module_blob_deploy() {
     echo "   echo \"${REDECLIPSE_MODULE_REMOTE}\" > \"${REDECLIPSE_PATH}${REDECLIPSE_MODULE_DIR}/version.txt\"" >> "${REDECLIPSE_TEMP}/install.sh"
     echo ") || (" >> "${REDECLIPSE_TEMP}/install.sh"
     echo "    rm -f \"${REDECLIPSE_TEMP}/${REDECLIPSE_MODULE_RUN}.txt\"" >> "${REDECLIPSE_TEMP}/install.sh"
-    echo "    REDECLIPSE_ERROR=\"true\"" >> "${REDECLIPSE_TEMP}/install.sh"
+    echo "    exit 1" >> "${REDECLIPSE_TEMP}/install.sh"
     echo ")" >> "${REDECLIPSE_TEMP}/install.sh"
     REDECLIPSE_DEPLOY="true"
     return $?
@@ -313,7 +312,7 @@ redeclipse_update_bins_deploy() {
     echo "    echo \"${REDECLIPSE_BINS_REMOTE}\" > \"${REDECLIPSE_PATH}/bin/version.txt\"" >> "${REDECLIPSE_TEMP}/install.sh"
     echo ") || (" >> "${REDECLIPSE_TEMP}/install.sh"
     echo "    rm -f \"${REDECLIPSE_TEMP}/bins.txt\"" >> "${REDECLIPSE_TEMP}/install.sh"
-    echo "    REDECLIPSE_ERROR=\"true\"" >> "${REDECLIPSE_TEMP}/install.sh"
+    echo "    exit 1" >> "${REDECLIPSE_TEMP}/install.sh"
     echo ")" >> "${REDECLIPSE_TEMP}/install.sh"
     REDECLIPSE_DEPLOY="true"
     redeclipse_update_deploy
@@ -323,7 +322,6 @@ redeclipse_update_bins_deploy() {
 redeclipse_update_deploy() {
     if [ "${REDECLIPSE_DEPLOY}" != "true" ]; then return 0; fi
     echo ""
-    echo "if [ \"\${REDECLIPSE_ERROR}\" = \"true\" ]; then exit 1; else exit 0; fi" >> "${REDECLIPSE_TEMP}/install.sh"
     echo "deploy: \"${REDECLIPSE_TEMP}/install.sh\""
     echo ""
     chmod ugo+x "${REDECLIPSE_TEMP}/install.sh"

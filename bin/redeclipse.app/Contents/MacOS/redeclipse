@@ -1,17 +1,18 @@
 #!/bin/sh
 SDL_SINGLEDISPLAY=1
 SDL_ENABLEAPPEVENTS=1
+REDECLIPSE_ORIGPW=`pwd`
 REDECLIPSE_APPDIR=$(dirname "$0")
-if [ -e "${REDECLIPSE_APPDIR}/../Resources/redeclipse.sh" ]; then
-    pushd "${REDECLIPSE_APPDIR}/../Resources"
-    REDECLIPSE_PATH=`pwd`
-    . "redeclipse.sh" "$@"
-    popd
-elif [ -e "${REDECLIPSE_APPDIR}/../../../../redeclipse.sh" ]; then
-    pushd "${REDECLIPSE_APPDIR}/../../../.."
-    REDECLIPSE_PATH=`pwd`
-    . "redeclipse.sh" "$@"
-    popd
-elif [ -e "${0}_universal" ]; then
-    exec "${0}_universal" "$@"
+cd "${REDECLIPSE_APPDIR}"
+if [ -e "../Resources/redeclipse.sh" ]; then
+    cd "../Resources"
+    REDECLIPSE_RESOURCES=`pwd`
+    osascript -e 'tell application "Terminal" to do script "cd \"'${REDECLIPSE_RESOURCES}'\"; ./redeclipse.sh '$@'; exit"'
+elif [ -e "../../../../redeclipse.sh" ]; then
+    cd "../../../.."
+    REDECLIPSE_RESOURCES=`pwd`
+    osascript -e 'tell application "Terminal" to do script "cd \"'${REDECLIPSE_RESOURCES}'\"; ./redeclipse.sh '$@'; exit"'
+elif [ -e "redeclipse_universal" ]; then
+    osascript -e 'tell application "Terminal" to do script "redeclipse_universal '$@'; exit"'
 fi
+cd "${REDECLIPSE_ORIGPW}"
