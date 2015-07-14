@@ -6,13 +6,13 @@ REDECLIPSE_APPDIR=$(dirname "$0")
 cd "${REDECLIPSE_APPDIR}"
 if [ -e "../Resources/readme.txt" ]; then
     cd "../Resources"
-    REDECLIPSE_RESOURCES=`pwd`
-    osascript -e 'tell application "Terminal" to do script "cd \"'${REDECLIPSE_RESOURCES}'\"; ./redeclipse.sh '$@'; exit"'
+    REDECLIPSE_RESDIR=`pwd`
+    osascript -e "tell application \"Terminal\" to do script \"cd \\\"${REDECLIPSE_RESDIR}\\\"; ./redeclipse.sh $@; exit\""
 elif [ -e "../../../../readme.txt" ]; then
     cd "../../../.."
-    REDECLIPSE_RESOURCES=`pwd`
-    osascript -e 'tell application "Terminal" to do script "cd \"'${REDECLIPSE_RESOURCES}'\"; ./redeclipse.sh '$@'; exit"'
+    REDECLIPSE_RESDIR=`pwd`
+    osascript -e "tell application \"Terminal\" to do script \"cd \\\"${REDECLIPSE_RESDIR}\\\"; ./redeclipse.sh $@; exit\""
 elif [ -e "redeclipse_universal" ]; then
-    osascript -e 'tell application "Terminal" to do script "redeclipse_universal '$@'; exit"'
+    osascript -e "tell application \"Terminal\" to do script \"./redeclipse_universal $@; exit\""
 fi
 cd "${REDECLIPSE_ORIGPW}"
