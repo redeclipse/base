@@ -3194,15 +3194,12 @@ namespace server
                     int slen = strlen(id->name);
                     if(arg && nargs > 1) slen += strlen(arg)+1;
                     char *s = newstring(slen);
-                    if(nargs <= 1 || !arg) nformatstring(s, slen, "%s", id->name);
-                    else nformatstring(s, slen, "%s %s", id->name, arg);
+                    if(nargs <= 1 || !arg) nformatstring(s, slen+1, "%s", id->name);
+                    else nformatstring(s, slen+1, "%s %s", id->name, arg);
                     char *ret = executestr(s);
+                    conoutft(CON_MESG, "\fy\fs\fc%s\fS returned \fs\fc%s\fS", id->name, ret && *ret ? ret : "failed");
                     delete[] s;
-                    if(ret)
-                    {
-                        if(*ret) conoutft(CON_MESG, "\fy\fs\fc%s\fS returned \fs\fc%s\fS", id->name, ret);
-                        delete[] ret;
-                    }
+                    delete[] ret;
                     return true;
                 }
                 case ID_VAR:
@@ -3343,10 +3340,10 @@ namespace server
                     int slen = strlen(id->name);
                     if(arg && nargs > 1) slen += strlen(arg)+1;
                     char *s = newstring(slen);
-                    if(nargs <= 1 || !arg) nformatstring(s, slen, "%s", id->name);
-                    else nformatstring(s, slen, "%s %s", id->name, arg);
+                    if(nargs <= 1 || !arg) nformatstring(s, slen+1, "%s", id->name);
+                    else nformatstring(s, slen+1, "%s %s", id->name, arg);
                     char *ret = executestr(s);
-                    srvoutf(-3, "\fy%s executed \fs\fc%s\fS (returned: \fs\fc%s\fS)", colourname(ci), s, ret && * ret ? ret : "failed");
+                    srvoutf(-3, "\fy%s executed \fs\fc%s\fS (returned: \fs\fc%s\fS)", colourname(ci), name, ret && * ret ? ret : "failed");
                     delete[] s;
                     delete[] ret;
                     return;
