@@ -18,13 +18,15 @@ for i in "${SEMABUILD_ALLMODS}"; do
     if [ "${i}" = "base" ]; then
         SEMABUILD_MODDIR="${SEMABUILD_BUILD}"
         SEMABUILD_GITDIR="${SEMABUILD_PWD}"
+        SEMABUILD_ARCHBR="stable"
     else
         SEMABUILD_MODDIR="${SEMABUILD_BUILD}/${i}"
         SEMABUILD_GITDIR="${SEMABUILD_PWD}/${i}"
+        SEMABUILD_ARCHBR="master"
     fi
     mkdir -pv "${SEMABUILD_MODDIR}" || exit 1
     pushd "${SEMABUILD_GITDIR}" || exit 1
-    (git archive stable | tar -x -C "${SEMABUILD_MODDIR}") || exit 1
+    (git archive ${SEMABUILD_ARCHBR} | tar -x -C "${SEMABUILD_MODDIR}") || exit 1
     popd
 done
 

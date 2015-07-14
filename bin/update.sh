@@ -126,6 +126,7 @@ redeclipse_update_module() {
     if [ -z "${REDECLIPSE_MODULE_LIST}" ]; then
         echo "Failed to get module list, continuing.."
     else
+        if [ -d "${REDECLIPSE_PATH}/data" ]; then rm -rfv "${REDECLIPSE_PATH}/data"; fi
         for a in ${REDECLIPSE_MODULE_LIST}; do
             REDECLIPSE_MODULE_RUN="${a}"
             if [ -n "${REDECLIPSE_MODULE_RUN}" ]; then

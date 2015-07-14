@@ -1552,12 +1552,7 @@ void setlocations(bool wanthome)
     // pseudo directory with game content
     const char *dir = getenv("GAME_DATA");
     if(dir && *dir) addpackagedir(dir);
-    else addpackagedir("data");
-#ifndef STANDALONE
-    if(!fileexists(findfile("textures/logo.png", "r"), "r")) fatal("could not find game data");
-#endif
-    //defformatstring(gamedata, "game/%s", server::gameid());
-    //addpackagedir(gamedata);
+    if(!fileexists(findfile("maps/readme.txt", "r"), "r")) fatal("could not find game data");
     if(wanthome)
     {
 #if defined(WIN32)

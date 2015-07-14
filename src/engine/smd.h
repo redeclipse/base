@@ -425,7 +425,7 @@ struct smd : skelmodel, skelloader<smd>
         const char *fname = name + strlen(name);
         do --fname; while(fname >= name && *fname!='/' && *fname!='\\');
         fname++;
-        defformatstring(meshname, "models/%s/%s.smd", name, fname);
+        defformatstring(meshname, "%s/%s.smd", name, fname);
         mdl.meshes = sharemeshes(path(meshname), NULL);
         if(!mdl.meshes) return false;
         mdl.initanimparts();
@@ -435,8 +435,8 @@ struct smd : skelmodel, skelloader<smd>
 
     bool load()
     {
-        formatstring(dir, "models/%s", name);
-        defformatstring(cfgname, "models/%s/smd.cfg", name);
+        formatstring(dir, "%s", name);
+        defformatstring(cfgname, "%s/smd.cfg", name);
 
         loading = this;
         if(execfile(cfgname, false) && parts.length()) // configured smd, will call the smd* commands below

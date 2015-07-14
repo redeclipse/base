@@ -6,8 +6,8 @@ SEMABUILD_SCP='scp -BC -o StrictHostKeyChecking=no'
 SEMABUILD_TARGET='qreeves@icculus.org:/webspace/redeclipse.net/files'
 SEMABUILD_APT='DEBIAN_FRONTEND=noninteractive apt-get'
 SEMABUILD_SOURCE="http://redeclipse.net/files"
-#SEMABUILD_MODULES=`cat "${SEMABUILD_PWD}/.gitmodules" | grep '\[submodule' | sed -e 's/^.submodule..//;s/..$//' | tr "\n" " "`
-SEMABUILD_ALLMODS="base"
+SEMABUILD_MODULES=`cat "${SEMABUILD_PWD}/.gitmodules" | grep '\[submodule' | sed -e 's/^.submodule..//;s/..$//' | tr "\n" " " | sed -e 's/ $//'`
+SEMABUILD_ALLMODS="base ${SEMABUILD_MODULES}"
 SEMABUILD_DEPLOY="false"
 
 semabuild_setup() {

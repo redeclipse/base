@@ -407,20 +407,20 @@ struct md5 : skelmodel, skelloader<md5>
         const char *fname = name + strlen(name);
         do --fname; while(fname >= name && *fname!='/' && *fname!='\\');
         fname++;
-        defformatstring(meshname, "models/%s/%s.md5mesh", name, fname);
+        defformatstring(meshname, "%s/%s.md5mesh", name, fname);
         mdl.meshes = sharemeshes(path(meshname), NULL, 2.0);
         if(!mdl.meshes) return false;
         mdl.initanimparts();
         mdl.initskins();
-        defformatstring(animname, "models/%s/%s.md5anim", name, fname);
+        defformatstring(animname, "%s/%s.md5anim", name, fname);
         ((md5meshgroup *)mdl.meshes)->loadanim(path(animname));
         return true;
     }
 
     bool load()
     {
-        formatstring(dir, "models/%s", name);
-        defformatstring(cfgname, "models/%s/md5.cfg", name);
+        formatstring(dir, "%s", name);
+        defformatstring(cfgname, "%s/md5.cfg", name);
 
         loading = this;
         if(execfile(cfgname, false) && parts.length()) // configured md5, will call the md5* commands below

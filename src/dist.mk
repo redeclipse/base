@@ -30,9 +30,8 @@ DISTFILES=$(shell cd ../ && find . -not -iname *.lo -not -iname *.gch -not -inam
 	$(MAKE) -C $@/src clean
 	$(MAKE) -C $@/src/enet clean
 	echo "stable" > $@/branch.txt
-	curl --location --insecure --fail $(appfiles)/base.txt --output $@/version.txt
+	for i in `curl --silent --fail http://redeclipse.net/files/stable/modules.txt`; do curl --location --insecure --fail $(appfiles)/$${i}.txt --output $@/data/version.txt; done
 	curl --location --insecure --fail $(appfiles)/bins.txt --output $@/bin/version.txt
-	curl --location --insecure --fail $(appfiles)/data.txt --output $@/data/version.txt
 	curl --location --insecure --fail $(appfiles)/linux.tar.gz --output linux.tar.gz
 	tar --gzip --extract --verbose --overwrite --file=linux.tar.gz --directory=$@
 	rm -f linux.tar.gz

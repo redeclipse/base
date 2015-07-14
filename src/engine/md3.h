@@ -169,11 +169,11 @@ struct md3 : vertmodel, vertloader<md3>
         parts.add(&mdl);
         mdl.model = this;
         mdl.index = 0;
-        defformatstring(name1, "models/%s/tris.md3", name);
+        defformatstring(name1, "%s/tris.md3", name);
         mdl.meshes = sharemeshes(path(name1));
         if(!mdl.meshes)
         {
-            defformatstring(name2, "models/%s/tris.md3", pname);    // try md3 in parent folder (vert sharing)
+            defformatstring(name2, "%s/tris.md3", pname);    // try md3 in parent folder (vert sharing)
             mdl.meshes = sharemeshes(path(name2));
             if(!mdl.meshes) return false;
         }
@@ -186,8 +186,8 @@ struct md3 : vertmodel, vertloader<md3>
 
     bool load()
     {
-        formatstring(dir, "models/%s", name);
-        defformatstring(cfgname, "models/%s/md3.cfg", name);
+        formatstring(dir, "%s", name);
+        defformatstring(cfgname, "%s/md3.cfg", name);
 
         loading = this;
         if(execfile(cfgname, false) && parts.length()) // configured md3, will call the md3* commands below

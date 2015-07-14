@@ -450,7 +450,7 @@ model *loadmodel(const char *name, int i, bool msg)
         if(loadingmodel || lightmapping > 1) return NULL;
         if(msg)
         {
-            defformatstring(str, "models/%s", name);
+            defformatstring(str, "%s", name);
             progress(loadprogress, str);
         }
         loopi(NUMMODELTYPES)
@@ -1078,8 +1078,8 @@ ICOMMAND(0, findanims, "s", (char *name),
 void loadskin(const char *dir, const char *altdir, Texture *&skin, Texture *&masks) // model skin sharing
 {
     string dirs[3];
-    formatstring(dirs[0], "models/%s/", dir);
-    formatstring(dirs[1], "models/%s/", altdir);
+    formatstring(dirs[0], "%s/", dir);
+    formatstring(dirs[1], "%s/", altdir);
     formatstring(dirs[2], "textures/");
     masks = notexture;
 
