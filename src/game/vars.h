@@ -279,8 +279,8 @@ GVAR(0, teambalance, 0, 5, 6); // 0 = off, 1 = by number then skill, 2 = by skil
 GVAR(0, teambalanceduel, 0, 0, 1); // allow reassignments in duel
 GVAR(0, teambalanceplaying, 2, 2, VAR_MAX); // min players before reassignments occur
 GVAR(0, teambalanceamt, 2, 2, VAR_MAX); // max-min offset before reassignments occur
-GVAR(0, teambalancewait, 10000, 60000, VAR_MAX); // how long before can happen again
-GVAR(0, teambalancedelay, 2000, 10000, VAR_MAX); // how long before reassignments start
+GVAR(0, teambalancewait, 0, 30000, VAR_MAX); // how long before can happen again
+GVAR(0, teambalancedelay, 0, 5000, VAR_MAX); // how long before reassignments start
 GVAR(0, teambalanceswap, 0, 1, 1); // allow swap requests if unable to change team
 GVAR(0, teambalancelock, 0, PRIV_PLAYER, PRIV_MAX); // level at which one can override swap and automatically reassign a lower player
 GVAR(0, teambalancestyle, 0, 4, 4); // when moving players, sort by: 0 = top of list, 1 = lowest time played, 2 = lowest points, 3 = lowest frags, 4 = lowest skill
