@@ -61,7 +61,7 @@ setlocal enableextensions enabledelayedexpansion
         echo Failed to get module list, continuing..
         goto redeclipse_update_bins_run
     )
-    if EXIST "%REDECLIPSE_PATH\data" rmdir /s /q "%REDECLIPSE_PATH\data"
+    if EXIST "%REDECLIPSE_PATH%\data" rmdir /s /q "%REDECLIPSE_PATH%\data"
     for %%a in (%REDECLIPSE_MODULE_LIST%) do (
         set REDECLIPSE_MODULE_RUN=%%a
         if NOT "!REDECLIPSE_MODULE_RUN!" == "" (
