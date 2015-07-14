@@ -14,8 +14,6 @@ semabuild_setup() {
     echo "setting up ${BRANCH_NAME}..."
     rm -rfv "${SEMABUILD_DIR}"
     mkdir -pv "${SEMABUILD_DIR}" || return 1
-    git submodule init || return 1
-    git submodule update || return 1
     return 0
 }
 
@@ -55,10 +53,13 @@ semabuild_build() {
 
 semabuild_process() {
     for i in ${SEMABUILD_ALLMODS}; do
+        echo "processing: ${i}"
         if [ "${i}" = "base" ]; then
             SEMABUILD_MODDIR="${SEMABUILD_PWD}"
         else
             SEMABUILD_MODDIR="${SEMABUILD_PWD}/${i}"
+            git submodule init "${i}"
+            git submodule update "${i}"
         fi
         pushd "${SEMABUILD_MODDIR}" || return 1
         SEMABUILD_HASH=`git rev-parse HEAD` || (popd; return 1)
