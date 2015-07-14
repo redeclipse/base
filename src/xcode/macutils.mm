@@ -79,21 +79,6 @@ const char *mac_sauerbratendir() {
     return path ? copystring(dir, [path fileSystemRepresentation]) : NULL;
 }
 
-const char *mac_resourcedir()
-{
-    static string dir;
-    CFBundleRef mainBundle = CFBundleGetMainBundle();
-    if(!mainBundle) return NULL;
-    CFURLRef mainBundleURL = CFBundleCopyBundleURL(mainBundle);
-    if(!mainBundleURL) return NULL;
-    CFStringRef cfStringRef = CFURLCopyFileSystemPath(mainBundleURL, kCFURLPOSIXPathStyle);
-    if(!cfStringRef) return NULL;
-    CFStringGetCString(cfStringRef, dir, MAXSTRLEN, kCFStringEncodingASCII);
-    CFRelease(mainBundleURL);
-    CFRelease(cfStringRef);
-    return dir;
-}
-
 bool mac_capslock()
 {
     NSUInteger flags = [NSEvent modifierFlags]&NSDeviceIndependentModifierFlagsMask;

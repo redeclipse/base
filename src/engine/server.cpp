@@ -1531,19 +1531,6 @@ void trytofindocta(bool fallback)
 void setlocations(bool wanthome)
 {
     int backstep = 3;
-#if defined(__APPLE__)
-    extern const char *mac_resourcedir();
-    const char *macdir = mac_resourcedir(); // ./blah.app
-    if(macdir && *macdir)
-    {
-        defformatstring(s, "%s/Contents/Resources", macdir);
-        if(!chdir(s))
-        {
-            conoutf("attempting to use resources in: %s", s);
-            backstep += 3;
-        }
-    }
-#endif
     loopirev(backstep) if(!fileexists(findfile("config/version.cfg", "r"), "r"))
     { // standalone solution to this is: pebkac
         if(!i || chdir("..") < 0) fatal("could not find config directory");
