@@ -1,9 +1,9 @@
 ; --------------------------------
 ; Name and file
   Name "Red Eclipse"
-  VIProductVersion "1.5.2.0"
+  VIProductVersion "1.5.3.0"
   !define MajorMinorVer "1.5.x"
-  OutFile "redeclipse_1.5.2_win.exe"
+  OutFile "redeclipse_1.5.3_win.exe"
   VIAddVersionKey "OriginalFilename" $OutFile
 ; --------------------------------
 ; Installer information
