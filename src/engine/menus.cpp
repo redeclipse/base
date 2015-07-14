@@ -180,15 +180,8 @@ void showgui(const char *name, int tab, bool *keep)
     menu *m = menus.access(name);
     if(!m) return;
     int pos = menustack.find(m);
-    if(pos<0) pushgui(m, -1, tab, keep);
-    else if(pos < menustack.length()-1) restoregui(pos, tab, keep);
-    else
-    {
-        m->world = (identflags&IDF_WORLD)!=0;
-        m->menutab = tab;
-        m->keep = keep;
-        return;
-    }
+    if(pos < 0) pushgui(m, -1, tab, keep);
+    else restoregui(pos, tab, keep);
     playsound(S_GUIPRESS, camera1->o, camera1, SND_FORCED);
 }
 
