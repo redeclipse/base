@@ -127,6 +127,9 @@ redeclipse_update_module() {
         echo "Failed to get module list, continuing.."
     else
         if [ -d "${REDECLIPSE_PATH}/data" ]; then rm -rfv "${REDECLIPSE_PATH}/data"; fi
+        if [ -d "${REDECLIPSE_TEMP}/data.txt" ]; then rm -rfv "${REDECLIPSE_TEMP}/data.txt"; fi
+        if [ -d "${REDECLIPSE_TEMP}/data.zip" ]; then rm -rfv "${REDECLIPSE_TEMP}/data.zip"; fi
+        if [ -d "${REDECLIPSE_TEMP}/data.tar.gz" ]; then rm -rfv "${REDECLIPSE_TEMP}/data.tar.gz"; fi
         for a in ${REDECLIPSE_MODULE_LIST}; do
             REDECLIPSE_MODULE_RUN="${a}"
             if [ -n "${REDECLIPSE_MODULE_RUN}" ]; then

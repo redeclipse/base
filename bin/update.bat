@@ -62,6 +62,8 @@ setlocal enableextensions enabledelayedexpansion
         goto redeclipse_update_bins_run
     )
     if EXIST "%REDECLIPSE_PATH%\data" rmdir /s /q "%REDECLIPSE_PATH%\data"
+    if EXIST "%REDECLIPSE_TEMP%\data.txt" del /f /q "%REDECLIPSE_TEMP%\data.txt"
+    if EXIST "%REDECLIPSE_TEMP%\data.zip" del /f /q "%REDECLIPSE_TEMP%\data.zip"
     for %%a in (%REDECLIPSE_MODULE_LIST%) do (
         set REDECLIPSE_MODULE_RUN=%%a
         if NOT "!REDECLIPSE_MODULE_RUN!" == "" (
