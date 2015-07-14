@@ -3346,9 +3346,8 @@ namespace server
                     if(nargs <= 1 || !arg) nformatstring(s, slen, "%s", id->name);
                     else nformatstring(s, slen, "%s %s", id->name, arg);
                     char *ret = executestr(s);
+                    srvoutf(-3, "\fy%s executed \fs\fc%s\fS (returned: \fs\fc%s\fS)", colourname(ci), s, ret && * ret ? ret : "failed");
                     delete[] s;
-                    if(ret && *ret) srvoutf(-3, "\fy%s executed \fs\fc%s\fS (returned: \fs\fc%s\fS)", colourname(ci), name, ret);
-                    else srvoutf(-3, "\fy%s executed \fs\fc%s\fS", colourname(ci), name);
                     delete[] ret;
                     return;
                 }
