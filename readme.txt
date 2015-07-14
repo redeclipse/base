@@ -89,7 +89,7 @@ The project is Free and Open Source meaning that you can both use it for free, a
 * Vadim Peretokin
 * Viktor "Unnamed" Hahn - Maps, Models, and other improvements
 * Wayne Bennett
-* Zachery "skiingpenguins" Slocum - Skyboxes
+* Zachery "freezurbern" Slocum - Skyboxes
 * "Gaming Tilt"
 * "4rson" - Maps and Support
 * "bonifarz"

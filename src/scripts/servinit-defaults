@@ -1,11 +1,11 @@
 #!/bin/bash
 #
 # This script updates the default values of the sv_* variables in
-# data/examples/servexec.cfg
+# doc/examples/servexec.cfg
 #
-# It reads all sv_* variables in data/examples/servexec.cfg, extracts their
+# It reads all sv_* variables in doc/examples/servexec.cfg, extracts their
 # default value by executing them in a Red Eclipse server, then feeds this
-# value back to the corresponding variable in data/examples/servexec.cfg
+# value back to the corresponding variable in doc/examples/servexec.cfg
 
 DIR="$(cd "$(dirname "$0")" && pwd)"
 

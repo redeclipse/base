@@ -436,7 +436,6 @@ Core & Install:
  * Workaround for Intel/Apple occlusion bug
  * Network encoding functions moved into tools
  * Weapon variable definitions structured into rows per variable
- * Moved data/maps to game/fps/maps
  * Reorganised data/ with more subdirectories
  * Enabled simpler cross-compile via PLATFORM=CROSSMINGW
 

@@ -70,10 +70,6 @@
 	path = particles
 	url = https://github.com/red-eclipse/particles.git
 	branch = master
-[submodule "penguins"]
-	path = penguins
-	url = https://github.com/red-eclipse/penguins.git
-	branch = master
 [submodule "philipk"]
 	path = philipk
 	url = https://github.com/red-eclipse/philipk.git
@@ -130,3 +126,6 @@
 	path = wicked
 	url = https://github.com/red-eclipse/wicked.git
 	branch = master
+[submodule "freezurbern"]
+	path = freezurbern
+	url = https://github.com/red-eclipse/freezurbern.git

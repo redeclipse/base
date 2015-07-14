@@ -84,7 +84,7 @@ Red Eclipse will look for files in this directory in addition the normal install
 Includes the data files found in
 .IR packagedir .
 Can be used for adding additional mods. Packages will be loaded in the order specified. By default @APPNAME@ only includes data files in its working directory
-.IR @DATADIR@/@APPNAME@/data/ ,
+.IR @DATADIR@/@APPNAME@/ ,
 and in the
 .I temp
 subdirectory of the home directory.
