@@ -53,19 +53,21 @@ semabuild_build() {
 
 semabuild_process() {
     for i in ${SEMABUILD_ALLMODS}; do
-        echo "processing: ${i}"
+        echo "module ${i} processing.."
         if [ "${i}" = "base" ]; then
             SEMABUILD_MODDIR="${SEMABUILD_PWD}"
         else
             SEMABUILD_MODDIR="${SEMABUILD_PWD}/${i}"
+            echo "module ${i} updating.."
             git submodule init "${i}"
             git submodule update "${i}"
         fi
         pushd "${SEMABUILD_MODDIR}" || return 1
         SEMABUILD_HASH=`git rev-parse HEAD` || (popd; return 1)
-        SEMABUILD_LAST=`curl --fail --silent "${SEMABUILD_SOURCE}/${BRANCH_NAME}/${i}.txt"` || (popd; return 1)
-        if [ -n "${SEMABUILD_HASH}" ] && [ -n "${SEMABUILD_LAST}" ] && [ "${SEMABUILD_HASH}" != "${SEMABUILD_LAST}" ]; then
-            echo "module '${i}' updated, syncing: ${SEMABUILD_HASH} -> ${SEMABUILD_LAST}"
+        SEMABUILD_LAST=`curl --fail --silent "${SEMABUILD_SOURCE}/${BRANCH_NAME}/${i}.txt"`
+        echo "module ${i} hash compare: ${SEMABUILD_LAST} -> ${SEMABUILD_HASH}"
+        if [ -n "${SEMABUILD_HASH}" ] && [ "${SEMABUILD_HASH}" != "${SEMABUILD_LAST}" ]; then
+            echo "module ${i} updated, syncing: ${SEMABUILD_HASH} -> ${SEMABUILD_LAST}"
             echo "${SEMABUILD_HASH}" > "${SEMABUILD_DIR}/${i}.txt"
             SEMABUILD_DEPLOY="true"
             if [ "${i}" = "base" ]; then
@@ -76,7 +78,7 @@ semabuild_process() {
                     echo "${SEMABUILD_CHANGES}"
                     semabuild_build || (echo "build failed."; popd; return 1)
                     semabuild_archive || (echo "archive failed."; popd; return 1)
-                    echo "archive 'bins' updated, syncing: ${SEMABUILD_HASH} -> ${SEMABUILD_BINS}"
+                    echo "binary archive updated, syncing: ${SEMABUILD_HASH} -> ${SEMABUILD_BINS}"
                     echo "${SEMABUILD_HASH}" > "${SEMABUILD_DIR}/bins.txt"
                 fi
             fi
