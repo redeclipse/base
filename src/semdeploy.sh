@@ -4,7 +4,8 @@ SEMABUILD_BUILD="${HOME}/deploy"
 SEMABUILD_SCP='scp -BC -o StrictHostKeyChecking=no'
 SEMABUILD_TARGET='qreeves@icculus.org:/webspace/redeclipse.net/files'
 SEMABUILD_APT='DEBIAN_FRONTEND=noninteractive apt-get'
-SEMABUILD_ALLMODS=`curl --silent --fail http://redeclipse.net/files/stable/modules.txt` || (echo "failed to retrieve modules"; exit 1)
+SEMABUILD_MODULES=`curl --silent --fail http://redeclipse.net/files/stable/modules.txt` || (echo "failed to retrieve modules"; exit 1)
+SEMABUILD_ALLMODS="base ${SEMABUILD_MODULES}"
 
 sudo ${SEMABUILD_APT} update || exit 1
 sudo ${SEMABUILD_APT} -fy install build-essential unzip zip nsis nsis-common mktorrent || exit 1
@@ -14,7 +15,7 @@ mkdir -pv "${SEMABUILD_BUILD}" || exit 1
 git submodule init || exit 1
 git submodule update || exit 1
 
-for i in "${SEMABUILD_ALLMODS}"; do
+for i in ${SEMABUILD_ALLMODS}; do
     if [ "${i}" = "base" ]; then
         SEMABUILD_MODDIR="${SEMABUILD_BUILD}"
         SEMABUILD_GITDIR="${SEMABUILD_PWD}"

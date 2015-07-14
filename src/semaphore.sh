@@ -54,7 +54,7 @@ semabuild_build() {
 }
 
 semabuild_process() {
-    for i in "${SEMABUILD_ALLMODS}"; do
+    for i in ${SEMABUILD_ALLMODS}; do
         if [ "${i}" = "base" ]; then
             SEMABUILD_MODDIR="${SEMABUILD_PWD}"
         else
