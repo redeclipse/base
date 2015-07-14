@@ -30,6 +30,9 @@
 	path = fonts
 	url = https://github.com/red-eclipse/fonts.git
 	branch = master
+[submodule "freezurbern"]
+	path = freezurbern
+	url = https://github.com/red-eclipse/freezurbern.git
 [submodule "john"]
 	path = john
 	url = https://github.com/red-eclipse/john.git
@@ -126,6 +129,3 @@
 	path = wicked
 	url = https://github.com/red-eclipse/wicked.git
 	branch = master
-[submodule "freezurbern"]
-	path = freezurbern
-	url = https://github.com/red-eclipse/freezurbern.git
