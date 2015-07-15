@@ -122,7 +122,7 @@ Copyright: Jeroen "appleflap" Boukens
 License: CC-BY-SA-3.0
 
 Files: freezurbern/*
-Copyright: 2009, 2012, Zachery "skiingfreezurbern" Slocum <freezurbern@gmail.com>
+Copyright: 2009, 2012, Zachery "freezurbern" Slocum <freezurbern@gmail.com>
 License: CC-BY-SA-3.0
 
 Files: ulukai/redeclipse*
