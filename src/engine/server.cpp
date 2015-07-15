@@ -7,6 +7,16 @@
 #include <shlobj.h>
 #endif
 
+int curtime = 0, totalmillis = 1, lastmillis = 1, timescale = 100, paused = 0, timeerr = 0, shutdownwait = 0;
+time_t clocktime = 0, currenttime = 0, clockoffset = 0;
+uint totalsecs = 0;
+
+VAR(0, maxruntime, 0, 86400, VAR_MAX); // time in seconds
+VAR(0, maxshutdownwait, 0, 3600, VAR_MAX); // time in seconds
+
+const char *load = NULL;
+vector<char *> gameargs;
+
 const char *platnames[MAX_PLATFORMS] = {
     "win", "osx", "nix"
 }, *platlongnames[MAX_PLATFORMS] = {
@@ -82,7 +92,8 @@ const char *timestr(int dur, int style)
         {
             if(mn > 0)
             {
-                formatstring(buf, "%dm%ds", mn, ss);
+                if(ss > 0) formatstring(buf, "%dm%ds", mn, ss);
+                else formatstring(buf, "%dm", mn);
                 break;
             }
             formatstring(buf, "%ds", ss);
@@ -252,12 +263,6 @@ VAR(0, serveruprate, 0, 0, VAR_MAX);
 VAR(0, serverport, 1, SERVER_PORT, VAR_MAX);
 VAR(0, serverlanport, 0, LAN_PORT, VAR_MAX);
 SVAR(0, serverip, "");
-
-int curtime = 0, totalmillis = 1, lastmillis = 1, timescale = 100, paused = 0, timeerr = 0;
-time_t clocktime = 0, currenttime = 0, clockoffset = 0;
-uint totalsecs = 0;
-const char *load = NULL;
-vector<char *> gameargs;
 
 bool filterword(char *src, const char *list)
 {
@@ -978,11 +983,16 @@ int updatetimer(bool limit)
     lastmillis += curtime;
     totalmillis = millis;
     static int lastsec = 0;
-    if(totalmillis - lastsec >= 1000)
+    if(totalmillis-lastsec >= 1000)
     {
-        int cursecs = (totalmillis - lastsec) / 1000;
+        int cursecs = (totalmillis-lastsec)/1000;
         totalsecs += cursecs;
-        lastsec += cursecs * 1000;
+        lastsec += cursecs*1000;
+        ifserver(maxruntime && !shutdownwait && totalsecs >= maxruntime)
+        {
+            server::srvoutf(-3, "\fymax run time reached (\fs\fc%s\fS), waiting for server to empty", timestr(maxruntime*1000, 4));
+            shutdownwait = totalmillis;
+        }
     }
     return elapsed;
 }
@@ -1685,16 +1695,14 @@ void reloadsignal(int signum)
     rehash(true);
 }
 
-bool shutdownwait = false;
 void shutdownsignal(int signum)
 {
 #ifndef STANDALONE
     if(servertype < 3) fatalsignal(signum);
 #endif
     server::srvoutf(-3, "\fyshutdown signal received, waiting for server to empty");
-    shutdownwait = true;
+    shutdownwait = totalmillis;
 }
-
 
 #ifdef STANDALONE
 volatile int errors = 0;

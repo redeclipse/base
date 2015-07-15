@@ -1147,7 +1147,7 @@ namespace server
 
     bool haspriv(clientinfo *ci, int flag, const char *msg = NULL)
     {
-        if(ci->local || (ci->privilege&PRIV_TYPE) >= flag) return true;
+        if((ci->local && flag <= PRIV_MAX) || (ci->privilege&PRIV_TYPE) >= flag) return true;
         else if(mastermask()&MM_AUTOAPPROVE && flag <= PRIV_ELEVATED && !numclients(ci->clientnum)) return true;
         else if(msg && *msg)
             srvmsgft(ci->clientnum, CON_CHAT, "\fraccess denied, you need to be \fs\fc%s\fS to \fs\fc%s\fS", privnamex(flag), msg);
@@ -3065,11 +3065,7 @@ namespace server
         aiman::clearai();
         aiman::poke();
         const char *reqmap = name && *name ? name : pickmap(NULL, gamemode, mutators);
-#ifdef STANDALONE // interferes with savemap on clients, in which case we can just use the auto-request
-        if(reqmap && *reqmap)
-#else
-        if(reqmap && *reqmap && servertype >= 3)
-#endif
+        ifserver(reqmap && *reqmap)
         {
             loopi(SENDMAP_MAX)
             {
@@ -3322,9 +3318,6 @@ namespace server
             const char *name = &id->name[3], *val = NULL, *oldval = NULL;
             bool needfreeoldval = false;
             int locked = min(max(id->flags&IDF_ADMIN ? int(PRIV_ADMINISTRATOR) : 0, G(varslock)), int(PRIV_CREATOR));
-            #ifndef STANDALONE
-            if(servertype < 3 && (!strcmp(id->name, "sv_gamespeed") || !strcmp(id->name, "sv_gamepaused"))) locked = PRIV_ADMINISTRATOR;
-            #endif
             if(!strcmp(id->name, "sv_gamespeed") && G(gamespeedlock) > locked) locked = min(G(gamespeedlock), int(PRIV_CREATOR));
             else if(id->type == ID_VAR)
             {
@@ -3332,6 +3325,9 @@ namespace server
                 if(len > 4 && !strcmp(&id->name[len-4], "lock"))
                     locked = min(max(max(*id->storage.i, parseint(arg)), locked), int(PRIV_CREATOR));
             }
+#ifndef STANDALONE
+            if(servertype < 3 && (!strcmp(id->name, "sv_gamespeed") || !strcmp(id->name, "sv_gamepaused"))) locked = PRIV_MAX+1;
+#endif
             switch(id->type)
             {
                 case ID_COMMAND:
@@ -4618,6 +4614,16 @@ namespace server
         }
         if(numclients())
         {
+            ifserver(shutdownwait)
+            {
+                int waituntil = maxshutdownwait*(gamestate == G_S_PLAYING ? 2000 : 1000);
+                if(totalmillis >= shutdownwait+waituntil)
+                {
+                    srvoutf(4, "waited \fs\fc%s\fS to shutdown (max: \fs\fc%s\fS), overriding and exiting...", timestr(totalmillis-shutdownwait, 4), timestr(waituntil, 4));
+                    exit(EXIT_SUCCESS);
+                    return;
+                }
+            }
             if(gamestate == G_S_WAITING)
             {
                 if(!gamewaitstart) gamewaitstart = totalmillis;
@@ -4714,7 +4720,7 @@ namespace server
             if(gs_intermission(gamestate) && gamewaittime <= totalmillis) startintermission(true); // wait then call for next map
             if(shouldcheckvotes) checkvotes();
         }
-        else if(shutdownwait)
+        else ifserver(shutdownwait)
         {
             srvoutf(4, "server empty, shutting down as scheduled");
             exit(EXIT_SUCCESS);

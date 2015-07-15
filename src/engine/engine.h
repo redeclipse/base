@@ -4,10 +4,6 @@
 #include "version.h"
 #include "cube.h"
 
-#define LAN_PORT 28799
-#define MASTER_PORT 28800
-#define SERVER_PORT 28801
-
 extern int version, versioning, versionmajor, versionminor, versionpatch, versionplatform, versionarch, versionisserver;
 extern char *versionstring, *versionname, *versionuname, *versionrelease, *versionurl, *versionmaster, *versionplatname, *versionplatlongname;
 extern uint versioncrc;
@@ -74,7 +70,7 @@ extern void writecfg();
 extern void rehash(bool reload = true);
 extern void fatalsignal(int signum);
 extern void reloadsignal(int signum);
-extern bool shutdownwait;
+extern int shutdownwait, maxshutdownwait;
 extern void shutdownsignal(int signum);
 
 #ifndef STANDALONE
