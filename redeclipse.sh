@@ -6,10 +6,6 @@ REDECLIPSE_SYSTEM="$(uname -s)"
 if [ "${REDECLIPSE_CALLED}" = "true" ]; then
     REDECLIPSE_EXITR="return"
 else
-    if [ "${REDECLIPSE_BINARY}" != "redeclipse_server" ] && ( [ "${REDECLIPSE_SYSTEM}" = "Linux" ] || [ "${REDECLIPSE_SYSTEM}" = "FreeBSD" ] ); then
-        x-terminal-emulator -e "/bin/sh -c \"REDECLIPSE_CALLED=true; ${REDECLIPSE_SCRIPT} ${REDECLIPSE_ARGS}; echo '[Press ENTER to exit]'; read cc\""
-        exit $?
-    fi
     REDECLIPSE_EXITR="exit"
 fi
 
