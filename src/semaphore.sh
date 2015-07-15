@@ -57,10 +57,10 @@ semabuild_process() {
         if [ "${i}" = "base" ]; then
             SEMABUILD_MODDIR="${SEMABUILD_PWD}"
         else
-            SEMABUILD_MODDIR="${SEMABUILD_PWD}/${i}"
+            SEMABUILD_MODDIR="${SEMABUILD_PWD}/data/${i}"
             echo "module ${i} updating.."
-            git submodule init "${i}"
-            git submodule update "${i}"
+            git submodule init "data/${i}"
+            git submodule update "data/${i}"
         fi
         pushd "${SEMABUILD_MODDIR}" || return 1
         SEMABUILD_HASH=`git rev-parse HEAD` || (popd; return 1)

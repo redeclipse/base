@@ -126,7 +126,6 @@ redeclipse_update_module() {
     if [ -z "${REDECLIPSE_MODULE_LIST}" ]; then
         echo "Failed to get module list, continuing.."
     else
-        if [ -d "${REDECLIPSE_PATH}/data" ]; then rm -rfv "${REDECLIPSE_PATH}/data"; fi
         if [ -d "${REDECLIPSE_TEMP}/data.txt" ]; then rm -rfv "${REDECLIPSE_TEMP}/data.txt"; fi
         if [ -d "${REDECLIPSE_TEMP}/data.zip" ]; then rm -rfv "${REDECLIPSE_TEMP}/data.zip"; fi
         if [ -d "${REDECLIPSE_TEMP}/data.tar.gz" ]; then rm -rfv "${REDECLIPSE_TEMP}/data.tar.gz"; fi
@@ -149,7 +148,7 @@ redeclipse_update_module_run() {
     if [ "${REDECLIPSE_MODULE_RUN}" = "base" ]; then
         REDECLIPSE_MODULE_DIR=""
     else
-        REDECLIPSE_MODULE_DIR="/${REDECLIPSE_MODULE_RUN}"
+        REDECLIPSE_MODULE_DIR="/data/${REDECLIPSE_MODULE_RUN}"
     fi
     if  [ -e "${REDECLIPSE_PATH}${REDECLIPSE_MODULE_DIR}/version.txt" ]; then
         redeclipse_update_module_ver

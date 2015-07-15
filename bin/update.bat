@@ -61,7 +61,6 @@ setlocal enableextensions enabledelayedexpansion
         echo Failed to get module list, continuing..
         goto redeclipse_update_bins_run
     )
-    if EXIST "%REDECLIPSE_PATH%\data" rmdir /s /q "%REDECLIPSE_PATH%\data"
     if EXIST "%REDECLIPSE_TEMP%\data.txt" del /f /q "%REDECLIPSE_TEMP%\data.txt"
     if EXIST "%REDECLIPSE_TEMP%\data.zip" del /f /q "%REDECLIPSE_TEMP%\data.zip"
     for %%a in (%REDECLIPSE_MODULE_LIST%) do (
@@ -73,7 +72,7 @@ setlocal enableextensions enabledelayedexpansion
     goto redeclipse_update_bins_run
 :redeclipse_update_module_run
     echo.
-    if "%REDECLIPSE_MODULE_RUN%" == "base" (set REDECLIPSE_MODULE_DIR=) else (set REDECLIPSE_MODULE_DIR=\%REDECLIPSE_MODULE_RUN%)
+    if "%REDECLIPSE_MODULE_RUN%" == "base" (set REDECLIPSE_MODULE_DIR=) else (set REDECLIPSE_MODULE_DIR=\data\%REDECLIPSE_MODULE_RUN%)
     if EXIST "%REDECLIPSE_PATH%%REDECLIPSE_MODULE_DIR%\version.txt" goto redeclipse_update_module_ver
     echo %REDECLIPSE_MODULE_RUN%: Unable to find version.txt. Will start from scratch.
     set REDECLIPSE_MODULE_INSTALLED=none

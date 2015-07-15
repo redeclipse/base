@@ -1539,6 +1539,7 @@ void setlocations(bool wanthome)
     // pseudo directory with game content
     const char *dir = getenv("GAME_DATA");
     if(dir && *dir) addpackagedir(dir);
+    else addpackagedir("data");
     if(!fileexists(findfile("maps/readme.txt", "r"), "r")) fatal("could not find game data");
     if(wanthome)
     {

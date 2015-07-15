@@ -21,8 +21,8 @@ for i in ${SEMABUILD_ALLMODS}; do
         SEMABUILD_GITDIR="${SEMABUILD_PWD}"
         SEMABUILD_ARCHBR="stable"
     else
-        SEMABUILD_MODDIR="${SEMABUILD_BUILD}/${i}"
-        SEMABUILD_GITDIR="${SEMABUILD_PWD}/${i}"
+        SEMABUILD_MODDIR="${SEMABUILD_BUILD}/data/${i}"
+        SEMABUILD_GITDIR="${SEMABUILD_PWD}/data/${i}"
         SEMABUILD_ARCHBR="master"
     fi
     mkdir -pv "${SEMABUILD_MODDIR}" || exit 1
