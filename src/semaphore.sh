@@ -23,13 +23,13 @@ semabuild_archive() {
     pushd "${SEMABUILD_DIR}/windows" || return 1
     cp -fv "${SEMABUILD_PWD}/redeclipse.bat" "${SEMABUILD_DIR}/windows/redeclipse.bat"
     cp -fv "${SEMABUILD_PWD}/bin/update.bat" "${SEMABUILD_DIR}/windows/bin/update.bat"
-    zip -r "${SEMABUILD_DIR}/windows.zip" . || (popd; return 1)
+    zip -r "${SEMABUILD_DIR}/windows.zip" . || return 1
     popd
     # linux
     pushd "${SEMABUILD_DIR}/linux" || return 1
     cp -fv "${SEMABUILD_PWD}/redeclipse.sh" "${SEMABUILD_DIR}/linux/redeclipse.sh"
     cp -fv "${SEMABUILD_PWD}/bin/update.sh" "${SEMABUILD_DIR}/linux/bin/update.sh"
-    tar -zcvf "${SEMABUILD_DIR}/linux.tar.gz" . || (popd; return 1)
+    tar -zcvf "${SEMABUILD_DIR}/linux.tar.gz" . || return 1
     popd
     # cleanup
     rm -rfv "${SEMABUILD_DIR}/windows" "${SEMABUILD_DIR}/linux" || return 1
@@ -63,7 +63,7 @@ semabuild_process() {
             git submodule update "data/${i}"
         fi
         pushd "${SEMABUILD_MODDIR}" || return 1
-        SEMABUILD_HASH=`git rev-parse HEAD` || (popd; return 1)
+        SEMABUILD_HASH=`git rev-parse HEAD` || return 1
         SEMABUILD_LAST=`curl --fail --silent "${SEMABUILD_SOURCE}/${BRANCH_NAME}/${i}.txt"`
         echo "module ${i} hash compare: ${SEMABUILD_LAST} -> ${SEMABUILD_HASH}"
         if [ -n "${SEMABUILD_HASH}" ] && [ "${SEMABUILD_HASH}" != "${SEMABUILD_LAST}" ]; then
@@ -71,13 +71,13 @@ semabuild_process() {
             echo "${SEMABUILD_HASH}" > "${SEMABUILD_DIR}/${i}.txt"
             SEMABUILD_DEPLOY="true"
             if [ "${i}" = "base" ]; then
-                SEMABUILD_BINS=`curl --fail --silent "${SEMABUILD_SOURCE}/${BRANCH_NAME}/bins.txt"` || (popd; return 1)
-                SEMABUILD_CHANGES=`git diff --name-only HEAD ${SEMABUILD_BINS} -- src` || (popd; return 1)
+                SEMABUILD_BINS=`curl --fail --silent "${SEMABUILD_SOURCE}/${BRANCH_NAME}/bins.txt"` || return 1
+                SEMABUILD_CHANGES=`git diff --name-only HEAD ${SEMABUILD_BINS} -- src` || return 1
                 if [ -n "${SEMABUILD_CHANGES}" ]; then
                     echo "source files modified:"
                     echo "${SEMABUILD_CHANGES}"
-                    semabuild_build || (echo "build failed."; popd; return 1)
-                    semabuild_archive || (echo "archive failed."; popd; return 1)
+                    semabuild_build || return 1
+                    semabuild_archive || return 1
                     echo "binary archive updated, syncing: ${SEMABUILD_HASH} -> ${SEMABUILD_BINS}"
                     echo "${SEMABUILD_HASH}" > "${SEMABUILD_DIR}/bins.txt"
                 fi
@@ -93,7 +93,7 @@ semabuild_deploy() {
     echo "${SEMABUILD_ALLMODS}" > "${SEMABUILD_DIR}/modules.txt"
     pushd "${SEMABUILD_BUILD}" || return 1
     if [ -e "${BRANCH_NAME}" ]; then
-        ${SEMABUILD_SCP} -r "${BRANCH_NAME}" "${SEMABUILD_TARGET}" || (popd; return 1)
+        ${SEMABUILD_SCP} -r "${BRANCH_NAME}" "${SEMABUILD_TARGET}" || return 1
     else
         echo "failed to send ${BRANCH_NAME} as the folder doesn't exist!"
         popd

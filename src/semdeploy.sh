@@ -4,7 +4,7 @@ SEMABUILD_BUILD="${HOME}/deploy"
 SEMABUILD_SCP='scp -BC -o StrictHostKeyChecking=no'
 SEMABUILD_TARGET='qreeves@icculus.org:/webspace/redeclipse.net/files'
 SEMABUILD_APT='DEBIAN_FRONTEND=noninteractive apt-get'
-SEMABUILD_MODULES=`curl --silent --fail http://redeclipse.net/files/stable/modules.txt` || (echo "failed to retrieve modules"; exit 1)
+SEMABUILD_MODULES=`curl --silent --fail http://redeclipse.net/files/stable/modules.txt` || exit 1
 SEMABUILD_ALLMODS="base ${SEMABUILD_MODULES}"
 
 sudo ${SEMABUILD_APT} update || exit 1
@@ -32,13 +32,13 @@ for i in ${SEMABUILD_ALLMODS}; do
 done
 
 pushd "${SEMABUILD_BUILD}/src" || exit 1
-make dist dist-torrents || (popd; exit 1)
+make dist dist-torrents || exit 1
 popd
 
 pushd "${SEMABUILD_BUILD}" || exit 1
-mkdir -p releases || (popd; exit 1)
-mv -vf redeclipse_*.*_*.tar.bz2 releases/ || (popd; exit 1)
-mv -vf redeclipse_*.*_*.exe releases/ || (popd; exit 1)
-mv -vf redeclipse_*.*_*.torrent releases/ || (popd; exit 1)
-${SEMABUILD_SCP} -r "releases" "${SEMABUILD_TARGET}" || (popd; exit 1)
+mkdir -p releases || exit 1
+mv -vf redeclipse_*.*_*.tar.bz2 releases/ || exit 1
+mv -vf redeclipse_*.*_*.exe releases/ || exit 1
+mv -vf redeclipse_*.*_*.torrent releases/ || exit 1
+${SEMABUILD_SCP} -r "releases" "${SEMABUILD_TARGET}" || exit 1
 popd
