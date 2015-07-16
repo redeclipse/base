@@ -4619,7 +4619,7 @@ namespace server
                 int waituntil = maxshutdownwait*(gamestate == G_S_PLAYING ? 2000 : 1000);
                 if(totalmillis >= shutdownwait+waituntil)
                 {
-                    srvoutf(4, "waited \fs\fc%s\fS to shutdown (max: \fs\fc%s\fS), overriding and exiting...", timestr(totalmillis-shutdownwait, 4), timestr(waituntil, 4));
+                    srvoutf(4, "waited \fs\fc%s\fS to shutdown, overriding and exiting...", timestr(totalmillis-shutdownwait, 4));
                     exit(EXIT_SUCCESS);
                     return;
                 }

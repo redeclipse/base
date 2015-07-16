@@ -30,6 +30,8 @@ extern const char *platnames[MAX_PLATFORMS], *platlongnames[MAX_PLATFORMS];
 #define plat_name(a) (sup_platform(a) ? platnames[a] : "unk")
 #define plat_longname(a) (sup_platform(a) ? platlongnames[a] : "unknown")
 
+extern const char *timestr(int dur, int style = 0);
+
 extern void setupmaster();
 extern void checkmaster();
 extern void cleanupmaster();
@@ -441,7 +443,6 @@ extern bool depthfxing;
 extern void drawdepthfxtex();
 
 // server
-extern const char *timestr(int dur, int style = 0);
 extern vector<char *> gameargs;
 extern void initgame();
 extern void changeservertype();
