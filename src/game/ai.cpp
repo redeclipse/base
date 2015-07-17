@@ -1858,7 +1858,7 @@ namespace ai
                                 break;
                             }
                         }
-                        else if(!strcasecmp(w[pos], "ball"))
+                        else if(!strcasecmp(w[pos], "ball") || !strcasecmp(w[pos], "bomb"))
                         {
                             loopv(bomber::st.flags) if(isbomberaffinity(bomber::st.flags[i]))
                             {
