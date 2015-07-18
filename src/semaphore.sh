@@ -100,7 +100,7 @@ semabuild_process() {
 
 semabuild_deploy() {
     echo "deploying ${BRANCH_NAME}..."
-    echo "${SEMABUILD_ALLMODS}" > "${SEMABUILD_DIR}/modules.txt"
+    echo "${SEMABUILD_ALLMODS}" > "${SEMABUILD_DIR}/mods.txt"
     pushd "${SEMABUILD_BUILD}" || return 1
     ${SEMABUILD_SCP} -r "${BRANCH_NAME}" "${SEMABUILD_TARGET}" || return 1
     return 0
