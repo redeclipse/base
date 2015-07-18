@@ -13,6 +13,7 @@ SEMABUILD_DEPLOY="false"
 semabuild_setup() {
     echo "setting up ${BRANCH_NAME}..."
     rm -rf "${SEMABUILD_DIR}"
+    rm -rf "${SEMABUILD_PWD}/data"
     mkdir -pv "${SEMABUILD_DIR}" || return 1
     return 0
 }
