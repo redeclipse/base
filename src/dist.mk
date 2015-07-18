@@ -59,8 +59,8 @@ dist-tar: ../$(tarname)
 	mkdir tmpdir-osx/$(dirname-osx)
 	mkdir tmpdir-osx/$(dirname-osx)/Contents
 	# Use links with tar dereference to change directory paths
-	ln -s ../../../../$</ tmpdir-osx/$(dirname-osx)/Contents/Resources
-	tar -hrf $@ -C tmpdir-osx $(dirname-osx)
+	ln -s $< tmpdir-osx/$(dirname-osx)/Contents/Resources
+	tar --exclude='tmpdir-osx' -hrf $@ -C tmpdir-osx $(dirname-osx)
 	rm -rf tmpdir-osx/
 
 dist-tar-osx: ../$(tarname-osx)
