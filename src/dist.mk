@@ -21,7 +21,7 @@ ifeq ($(APPNAME),redeclipse)
 OSX_APP=bin/$(APPNAME).app
 endif
 
-DISTFILES=$(shell cd ../ && find . -not -iname *.lo -not -iname *.gch -not -iname *.o || echo "")
+DISTFILES=$(shell cd ../ && find . -not -iname . -not -iname *.lo -not -iname *.gch -not -iname *.o || echo "")
 
 ../$(dirname):
 	rm -rf $@
@@ -30,7 +30,7 @@ DISTFILES=$(shell cd ../ && find . -not -iname *.lo -not -iname *.gch -not -inam
 	$(MAKE) -C $@/src clean
 	$(MAKE) -C $@/src/enet clean
 	echo "stable" > $@/branch.txt
-	for i in `curl --silent --fail http://redeclipse.net/files/stable/modules.txt`; do mkdir -p $@/$${i}; curl --location --insecure --fail $(appfiles)/$${i}.txt --output $@/$${i}/version.txt; done
+	for i in `curl --silent --fail http://redeclipse.net/files/stable/mods.txt`; do mkdir -p $@/$${i}; curl --location --insecure --fail $(appfiles)/$${i}.txt --output $@/$${i}/version.txt; done
 	curl --location --insecure --fail $(appfiles)/bins.txt --output $@/bin/version.txt
 	curl --location --insecure --fail $(appfiles)/linux.tar.gz --output linux.tar.gz
 	tar --gzip --extract --verbose --overwrite --file=linux.tar.gz --directory=$@
