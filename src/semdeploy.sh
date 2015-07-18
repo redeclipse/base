@@ -10,10 +10,9 @@ SEMABUILD_ALLMODS="base ${SEMABUILD_MODULES}"
 sudo ${SEMABUILD_APT} update || exit 1
 sudo ${SEMABUILD_APT} -fy install build-essential unzip zip nsis nsis-common mktorrent || exit 1
 
-rm -rfv "${SEMABUILD_BUILD}"
+rm -rf "${SEMABUILD_BUILD}"
+rm -rf "${SEMABUILD_PWD}/data"
 mkdir -pv "${SEMABUILD_BUILD}" || exit 1
-git submodule init || exit 1
-git submodule update || exit 1
 
 for i in ${SEMABUILD_ALLMODS}; do
     if [ "${i}" = "base" ]; then
@@ -24,6 +23,8 @@ for i in ${SEMABUILD_ALLMODS}; do
         SEMABUILD_MODDIR="${SEMABUILD_BUILD}/data/${i}"
         SEMABUILD_GITDIR="${SEMABUILD_PWD}/data/${i}"
         SEMABUILD_ARCHBR="master"
+        git submodule init "data/${i}"
+        git submodule update "data/${i}"
     fi
     mkdir -pv "${SEMABUILD_MODDIR}" || exit 1
     pushd "${SEMABUILD_GITDIR}" || exit 1
