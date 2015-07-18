@@ -116,13 +116,13 @@ redeclipse_update_branch() {
 }
 
 redeclipse_update_module() {
-    ${REDECLIPSE_CURL} --silent --output "${REDECLIPSE_TEMP}/modules.txt" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/modules.txt"
-    if ! [ -e "${REDECLIPSE_TEMP}/modules.txt" ]; then
+    ${REDECLIPSE_CURL} --silent --output "${REDECLIPSE_TEMP}/mods.txt" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/mods.txt"
+    if ! [ -e "${REDECLIPSE_TEMP}/mods.txt" ]; then
         echo "Failed to retrieve modules update information."
         redeclipse_update_bins_run
         return $?
     fi
-    REDECLIPSE_MODULE_LIST=`cat "${REDECLIPSE_TEMP}/modules.txt"`
+    REDECLIPSE_MODULE_LIST=`cat "${REDECLIPSE_TEMP}/mods.txt"`
     if [ -z "${REDECLIPSE_MODULE_LIST}" ]; then
         echo "Failed to get module list, continuing.."
     else

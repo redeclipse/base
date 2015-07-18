@@ -51,12 +51,12 @@ setlocal enableextensions enabledelayedexpansion
     echo setlocal enableextensions>> "%REDECLIPSE_TEMP%\install.bat"
     if "%REDECLIPSE_BRANCH%" == "devel" goto redeclipse_update_bins_run
 :redeclipse_update_module
-    %REDECLIPSE_CURL% --silent --output "%REDECLIPSE_TEMP%\modules.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/modules.txt"
-    if NOT EXIST "%REDECLIPSE_TEMP%\modules.txt" (
+    %REDECLIPSE_CURL% --silent --output "%REDECLIPSE_TEMP%\mods.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/mods.txt"
+    if NOT EXIST "%REDECLIPSE_TEMP%\mods.txt" (
         echo Failed to retrieve modules update information.
         goto redeclipse_update_bins_run
     )
-    set /p REDECLIPSE_MODULE_LIST=< "%REDECLIPSE_TEMP%\modules.txt"
+    set /p REDECLIPSE_MODULE_LIST=< "%REDECLIPSE_TEMP%\mods.txt"
     if "%REDECLIPSE_MODULE_LIST%" == "" (
         echo Failed to get module list, continuing..
         goto redeclipse_update_bins_run
