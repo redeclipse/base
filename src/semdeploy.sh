@@ -41,5 +41,11 @@ mkdir -p releases || exit 1
 mv -vf redeclipse_*.*_*.tar.bz2 releases/ || exit 1
 mv -vf redeclipse_*.*_*.exe releases/ || exit 1
 mv -vf redeclipse_*.*_*.torrent releases/ || exit 1
+pushd "${SEMABUILD_BUILD}/releases"
+for i in redeclipse_*.*; do
+    shasum "${i}" > "${i}.shasum"
+    md5sum "${i}" > "${i}.md5sum"
+done
+popd
 ${SEMABUILD_SCP} -r "releases" "${SEMABUILD_TARGET}" || exit 1
 popd
