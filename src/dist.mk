@@ -58,9 +58,10 @@ dist-tar: ../$(tarname)
 	mkdir tmpdir-osx
 	mkdir tmpdir-osx/$(dirname-osx)
 	mkdir tmpdir-osx/$(dirname-osx)/Contents
+	mkdir tmpdir-osx/$(dirname-osx)/Contents/Resources
 	# Use links with tar dereference to change directory paths
-	ln -s $< tmpdir-osx/$(dirname-osx)/Contents/Resources
-	tar --exclude='tmpdir-osx' -hrf $@ -C tmpdir-osx $(dirname-osx)
+	for i in ../../../../$</*; do j=`basename "$${i}"`; ln -sv "$${i}" "tmpdir-osx/$(dirname-osx)/Contents/Resources/$${j}"; done;
+	tar -hrf $@ -C tmpdir-osx $(dirname-osx)
 	rm -rf tmpdir-osx/
 
 dist-tar-osx: ../$(tarname-osx)
