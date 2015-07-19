@@ -53,16 +53,15 @@ distdir: ../$(dirname)
 
 dist-tar: ../$(tarname)
 
-../$(tarname-osx): ../$(dirname)
-	tar -cf $@ -C $</bin $(dirname-osx)
-	mkdir tmpdir-osx
-	mkdir tmpdir-osx/$(dirname-osx)
-	mkdir tmpdir-osx/$(dirname-osx)/Contents
-	mkdir tmpdir-osx/$(dirname-osx)/Contents/Resources
-	# Use links with tar dereference to change directory paths
-	for i in `find ../../../../$< -maxdepth 1 -not -wholename ../../../../$< -not -iname . -not -iname .git`; do j=`basename "$${i}"`; ln -sv "$${i}" "tmpdir-osx/$(dirname-osx)/Contents/Resources/$${j}"; done;
-	tar -hrf $@ -C tmpdir-osx $(dirname-osx)
-	rm -rf tmpdir-osx/
+../$(dirname-osx): ../$(dirname)
+        cp -R $</bin/$(dirname-osx) $@
+	cp -R $< $@/Contents/Resources
+	rm -rf $@/Contents/Resources/bin/*/$(appname)*linux*
+	rm -rf $@/Contents/Resources/bin/*/$(appname)*bsd*
+	rm -rf $@/Contents/Resources/bin/*/$(appname)*.exe
+
+../$(tarname-osx): ../$(dirname-osx)
+	tar -cf $@ $<
 
 dist-tar-osx: ../$(tarname-osx)
 
@@ -191,9 +190,9 @@ dist-torrent-win: ../$(exename).torrent
 dist-torrents: dist-torrent-bz2 dist-torrent-combined dist-torrent-win dist-torrent-osx
 
 dist-mostlyclean:
-	rm -rf tmpdir-osx
 	rm -rf ../$(dirname)
 	rm -rf ../$(dirname-win)
+	rm -rf ../$(dirname-osx)
 	rm -f ../$(tarname)
 	rm -f ../$(tarname-osx)
 	rm -f ../$(tarname-combined)
