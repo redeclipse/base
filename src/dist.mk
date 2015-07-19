@@ -60,7 +60,7 @@ dist-tar: ../$(tarname)
 	mkdir tmpdir-osx/$(dirname-osx)/Contents
 	mkdir tmpdir-osx/$(dirname-osx)/Contents/Resources
 	# Use links with tar dereference to change directory paths
-	for i in ../../../../$</*; do j=`basename "$${i}"`; ln -sv "$${i}" "tmpdir-osx/$(dirname-osx)/Contents/Resources/$${j}"; done;
+	for i in `find ../../../../$< -depth 1 -not -iname . -not -iname .git`; do j=`basename "$${i}"`; ln -sv "$${i}" "tmpdir-osx/$(dirname-osx)/Contents/Resources/$${j}"; done;
 	tar -hrf $@ -C tmpdir-osx $(dirname-osx)
 	rm -rf tmpdir-osx/
 
