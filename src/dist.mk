@@ -54,7 +54,7 @@ distdir: ../$(dirname)
 dist-tar: ../$(tarname)
 
 ../$(dirname-osx): ../$(dirname)
-        cp -R $</bin/$(dirname-osx) $@
+	cp -R $</bin/$(dirname-osx) $@
 	cp -R $< $@/Contents/Resources
 	rm -rf $@/Contents/Resources/bin/*/$(appname)*linux*
 	rm -rf $@/Contents/Resources/bin/*/$(appname)*bsd*
