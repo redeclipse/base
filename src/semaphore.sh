@@ -72,8 +72,9 @@ semabuild_integrate() {
             echo "${SEMABUILD_HASH}" > "${SEMABUILD_DIR}/${i}.txt"
             SEMABUILD_DEPLOY="true"
             if [ "${i}" = "base" ]; then
+                echo "module ${i} checking for source modifications.."
                 SEMABUILD_BINS=`curl --fail --silent "${SEMABUILD_SOURCE}/${BRANCH_NAME}/bins.txt"` || return 1
-                SEMABUILD_CHANGES=`git diff --name-only HEAD ${SEMABUILD_BINS} -- src | egrep '\.h$|\.c$|\.cpp$'` || return 1
+                SEMABUILD_CHANGES=`git diff --name-only HEAD ${SEMABUILD_BINS} -- src | egrep '\.h$|\.c$|\.cpp$'`
                 if [ -n "${SEMABUILD_CHANGES}" ]; then
                     echo "module ${i} has modified source files:"
                     echo "${SEMABUILD_CHANGES}"
