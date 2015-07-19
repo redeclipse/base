@@ -64,6 +64,7 @@ dist-tar: ../$(tarname)
 	tar -cf $@ $<
 
 dist-tar-osx: ../$(tarname-osx)
+	rm -rf ../$(dirname-osx)
 
 ../$(tarname-combined): ../$(dirname)
 	tar -cf $@ $<
@@ -99,13 +100,16 @@ dist-xz: ../$(tarname).xz
 	gzip -c < $< > $@
 
 dist-gz-osx: ../$(tarname-osx).gz
+	rm -rf ../$(dirname-osx)
 
 ../$(tarname-osx).bz2: ../$(tarname-osx)
 	bzip2 -c < $< > $@
 
 dist-bz2-osx: ../$(tarname-osx).bz2
+	rm -rf ../$(dirname-osx)
 
 dist-osx: ../$(tarname-osx).bz2
+	rm -rf ../$(dirname-osx)
 
 ../$(tarname-osx).xz: ../$(tarname-osx)
 	xz -c < $< > $@
@@ -134,6 +138,7 @@ dist-xz-combined: ../$(tarname-combined).xz
 	$(MV) $</src/install/win/$(exename) ../
 
 dist-win: ../$(exename)
+	rm -rf ../$(dirname-win)
 
 dist: dist-clean dist-bz2 dist-bz2-combined dist-win dist-osx
 
