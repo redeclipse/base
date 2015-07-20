@@ -22,14 +22,14 @@ semabuild_archive() {
     echo "archiving ${BRANCH_NAME}..."
     # windows
     pushd "${SEMABUILD_DIR}/windows" || return 1
-    cp -fv "${SEMABUILD_PWD}/redeclipse.bat" "${SEMABUILD_DIR}/windows/redeclipse.bat"
-    cp -fv "${SEMABUILD_PWD}/bin/update.bat" "${SEMABUILD_DIR}/windows/bin/update.bat"
+    #cp -fv "${SEMABUILD_PWD}/redeclipse.bat" "${SEMABUILD_DIR}/windows/redeclipse.bat"
+    #cp -fv "${SEMABUILD_PWD}/bin/update.bat" "${SEMABUILD_DIR}/windows/bin/update.bat"
     zip -r "${SEMABUILD_DIR}/windows.zip" . || return 1
     popd
     # linux
     pushd "${SEMABUILD_DIR}/linux" || return 1
-    cp -fv "${SEMABUILD_PWD}/redeclipse.sh" "${SEMABUILD_DIR}/linux/redeclipse.sh"
-    cp -fv "${SEMABUILD_PWD}/bin/update.sh" "${SEMABUILD_DIR}/linux/bin/update.sh"
+    #cp -fv "${SEMABUILD_PWD}/redeclipse.sh" "${SEMABUILD_DIR}/linux/redeclipse.sh"
+    #cp -fv "${SEMABUILD_PWD}/bin/update.sh" "${SEMABUILD_DIR}/linux/bin/update.sh"
     tar -zcvf "${SEMABUILD_DIR}/linux.tar.gz" . || return 1
     popd
     # cleanup
@@ -74,7 +74,7 @@ semabuild_integrate() {
             if [ "${i}" = "base" ]; then
                 echo "module ${i} checking for source modifications.."
                 SEMABUILD_BINS=`curl --fail --silent "${SEMABUILD_SOURCE}/${BRANCH_NAME}/bins.txt"` || return 1
-                SEMABUILD_CHANGES=`git diff --name-only HEAD ${SEMABUILD_BINS} -- src | egrep '\.h$|\.c$|\.cpp$'`
+                SEMABUILD_CHANGES=`git diff --name-only HEAD ${SEMABUILD_BINS} -- src | egrep '\.h$|\.c$|\.cpp$|Makefile$'`
                 if [ -n "${SEMABUILD_CHANGES}" ]; then
                     echo "module ${i} has modified source files:"
                     echo "${SEMABUILD_CHANGES}"
