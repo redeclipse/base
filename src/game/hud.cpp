@@ -2913,7 +2913,7 @@ namespace hud
                     else if(m_edit(game::gamemode)) cm += drawitemtextx(cx[i], cm, 0, TEXT_RIGHT_JUSTIFY, inventorytimeskew, "super", fade*inventorytimeblend, "\fs\fgediting\fS");
                     else if(m_play(game::gamemode) || client::demoplayback)
                     {
-                        int timecorrected = max(game::timeremaining*1000-((game::gamestate != G_S_PLAYING ? totalmillis : lastmillis)-game::lasttimeremain), 0);
+                        int timecorrected = max(game::timeremaining*1000-((gs_playing(game::gamestate) ? lastmillis : totalmillis)-game::lasttimeremain), 0);
                         if(game::gamestate != G_S_PLAYING)
                         {
                             const char *name = "";

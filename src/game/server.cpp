@@ -4616,7 +4616,7 @@ namespace server
         {
             ifserver(shutdownwait)
             {
-                int waituntil = maxshutdownwait*(gamestate == G_S_PLAYING ? 2000 : 1000);
+                int waituntil = maxshutdownwait*(gs_playing(gamestate) ? 2000 : 1000);
                 if(totalmillis >= shutdownwait+waituntil)
                 {
                     srvoutf(4, "waited \fs\fc%s\fS to shutdown, overriding and exiting...", timestr(totalmillis-shutdownwait, 4));

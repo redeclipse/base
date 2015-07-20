@@ -307,7 +307,7 @@ namespace hud
                                 if(paused) g.text(", \fs\fopaused\fS", 0xFFFFFF);
                                 else if(m_play(game::gamemode) || client::demoplayback)
                                 {
-                                    int timecorrected = max(game::timeremaining*1000-((game::gamestate != G_S_PLAYING ? totalmillis : lastmillis)-game::lasttimeremain), 0);
+                                    int timecorrected = max(game::timeremaining*1000-((gs_playing(game::gamestate) ? lastmillis : totalmillis)-game::lasttimeremain), 0);
                                     switch(game::gamestate)
                                     {
                                         case G_S_WAITING: default: g.text(", \fs\fcwaiting\fS", 0xFFFFFF); break;

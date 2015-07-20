@@ -1744,7 +1744,7 @@ namespace game
         int oldstate = gamestate;
         gamestate = state;
         timeremaining = remain;
-        lasttimeremain = gamestate != G_S_PLAYING ? totalmillis : lastmillis;
+        lasttimeremain = gs_playing(gamestate) ? lastmillis : totalmillis;
         if(gs_intermission(gamestate) && gs_playing(oldstate))
         {
             player1->stopmoving(true);
