@@ -132,6 +132,7 @@ redeclipse_update_module() {
         echo "Prefetching module versions.."
         REDECLIPSE_MODULE_PREFETCH=""
         for a in ${REDECLIPSE_MODULE_LIST}; do
+            rm -f "${REDECLIPSE_TEMP}/${a}.txt"
             if [ -n "${REDECLIPSE_MODULE_PREFETCH}" ]; then
                 REDECLIPSE_MODULE_PREFETCH="${REDECLIPSE_MODULE_PREFETCH},${a}"
             else
@@ -186,7 +187,6 @@ redeclipse_update_module_ver() {
     REDECLIPSE_MODULE_CACHED=`cat "${REDECLIPSE_TEMP}/${REDECLIPSE_MODULE_RUN}.txt"`
     if [ -z "${REDECLIPSE_MODULE_CACHED}" ]; then REDECLIPSE_MODULE_CACHED="none"; fi
     echo "${REDECLIPSE_MODULE_RUN}: ${REDECLIPSE_MODULE_CACHED} is in the cache."
-    rm -f "${REDECLIPSE_TEMP}/${REDECLIPSE_MODULE_RUN}.txt"
     redeclipse_update_module_get
     return $?
 }

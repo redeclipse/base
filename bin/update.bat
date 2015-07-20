@@ -66,6 +66,7 @@ setlocal enableextensions enabledelayedexpansion
     echo Prefetching module versions..
     set REDECLIPSE_MODULE_PREFETCH=
     for %%a in (%REDECLIPSE_MODULE_LIST%) do (
+        del /f /q "%REDECLIPSE_TEMP%\%%a.txt"
         if NOT "!REDECLIPSE_MODULE_PREFETCH!" == "" (
             set REDECLIPSE_MODULE_PREFETCH=!REDECLIPSE_MODULE_PREFETCH!,%%a
         ) else ( set REDECLIPSE_MODULE_PREFETCH=%%a )
@@ -98,7 +99,6 @@ setlocal enableextensions enabledelayedexpansion
     set /p REDECLIPSE_MODULE_CACHED=< "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.txt"
     if "%REDECLIPSE_MODULE_CACHED%" == "" set REDECLIPSE_MODULE_CACHED=none
     echo %REDECLIPSE_MODULE_RUN%: %REDECLIPSE_MODULE_CACHED% is in the cache.
-    del /f /q "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.txt"
 :redeclipse_update_module_get
     if NOT EXIST "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.txt" (
         echo %REDECLIPSE_MODULE_RUN%: Failed to retrieve update information.
