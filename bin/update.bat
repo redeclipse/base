@@ -51,19 +51,20 @@ setlocal enableextensions enabledelayedexpansion
     echo setlocal enableextensions>> "%REDECLIPSE_TEMP%\install.bat"
     if "%REDECLIPSE_BRANCH%" == "devel" goto redeclipse_update_bins_run
 :redeclipse_update_module
+    echo modules: Updating..
     %REDECLIPSE_CURL% --output "%REDECLIPSE_TEMP%\mods.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/mods.txt"
     if NOT EXIST "%REDECLIPSE_TEMP%\mods.txt" (
-        echo Failed to retrieve modules update information.
+        echo modules: Failed to retrieve update information.
         goto redeclipse_update_bins_run
     )
     set /p REDECLIPSE_MODULE_LIST=< "%REDECLIPSE_TEMP%\mods.txt"
     if "%REDECLIPSE_MODULE_LIST%" == "" (
-        echo Failed to get module list, continuing..
+        echo modules: Failed to get list, continuing..
         goto redeclipse_update_bins_run
     )
     if EXIST "%REDECLIPSE_TEMP%\data.txt" del /f /q "%REDECLIPSE_TEMP%\data.txt"
     if EXIST "%REDECLIPSE_TEMP%\data.zip" del /f /q "%REDECLIPSE_TEMP%\data.zip"
-    echo Prefetching module versions..
+    echo modules: Prefetching versions..
     set REDECLIPSE_MODULE_PREFETCH=
     for %%a in (%REDECLIPSE_MODULE_LIST%) do (
         del /f /q "%REDECLIPSE_TEMP%\%%a.txt"
@@ -72,7 +73,7 @@ setlocal enableextensions enabledelayedexpansion
         ) else ( set REDECLIPSE_MODULE_PREFETCH=%%a )
     )
     if "%REDECLIPSE_MODULE_PREFETCH" == "" (
-        echo Failed to get module version information, continuing..
+        echo modules: Failed to get version information, continuing..
         goto redeclipse_update_bins_run
     )
     %REDECLIPSE_CURL% --output "%REDECLIPSE_TEMP%\#1.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/{%REDECLIPSE_MODULE_PREFETCH%}.txt"
@@ -144,6 +145,9 @@ setlocal enableextensions enabledelayedexpansion
     set REDECLIPSE_DEPLOY=true
     exit /b 0
 :redeclipse_update_bins_run
+    echo bins: Updating..
+    del /f /q "%REDECLIPSE_TEMP%\bins.txt"
+    %REDECLIPSE_CURL% --output "%REDECLIPSE_TEMP%\bins.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/bins.txt"
     if EXIST "%REDECLIPSE_PATH%\bin\version.txt" set /p REDECLIPSE_BINS=< "%REDECLIPSE_PATH%\bin\version.txt"
     if "%REDECLIPSE_BINS%" == "" set REDECLIPSE_BINS=none
     echo bins: %REDECLIPSE_BINS% is installed.
@@ -152,9 +156,7 @@ setlocal enableextensions enabledelayedexpansion
     set /p REDECLIPSE_BINS_CACHED=< "%REDECLIPSE_TEMP%\bins.txt"
     if "%REDECLIPSE_BINS_CACHED%" == "" set REDECLIPSE_BINS_CACHED=none
     echo bins: %REDECLIPSE_BINS_CACHED% is in the cache.
-    del /f /q "%REDECLIPSE_TEMP%\bins.txt"
 :redeclipse_update_bins_get
-    %REDECLIPSE_CURL% --output "%REDECLIPSE_TEMP%\bins.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/bins.txt"
     if NOT EXIST "%REDECLIPSE_TEMP%\bins.txt" (
         echo bins: Failed to retrieve update information.
         goto redeclipse_update_deploy

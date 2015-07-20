@@ -116,20 +116,21 @@ redeclipse_update_branch() {
 }
 
 redeclipse_update_module() {
+    echo "modules: Updating.."
     ${REDECLIPSE_CURL} --output "${REDECLIPSE_TEMP}/mods.txt" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/mods.txt"
     if ! [ -e "${REDECLIPSE_TEMP}/mods.txt" ]; then
-        echo "Failed to retrieve modules update information."
+        echo "modules: Failed to retrieve update information."
         redeclipse_update_bins_run
         return $?
     fi
     REDECLIPSE_MODULE_LIST=`cat "${REDECLIPSE_TEMP}/mods.txt"`
     if [ -z "${REDECLIPSE_MODULE_LIST}" ]; then
-        echo "Failed to get module list, continuing.."
+        echo "modules: Failed to get list, continuing.."
     else
         if [ -d "${REDECLIPSE_TEMP}/data.txt" ]; then rm -rfv "${REDECLIPSE_TEMP}/data.txt"; fi
         if [ -d "${REDECLIPSE_TEMP}/data.zip" ]; then rm -rfv "${REDECLIPSE_TEMP}/data.zip"; fi
         if [ -d "${REDECLIPSE_TEMP}/data.tar.gz" ]; then rm -rfv "${REDECLIPSE_TEMP}/data.tar.gz"; fi
-        echo "Prefetching module versions.."
+        echo "modules: Prefetching versions.."
         REDECLIPSE_MODULE_PREFETCH=""
         for a in ${REDECLIPSE_MODULE_LIST}; do
             rm -f "${REDECLIPSE_TEMP}/${a}.txt"
@@ -151,7 +152,7 @@ redeclipse_update_module() {
                 fi
             done
         else
-            echo "Failed to get module version information, continuing.."
+            echo "modules: Failed to get version information, continuing.."
         fi
     fi
     redeclipse_update_bins_run
@@ -253,6 +254,9 @@ redeclipse_update_module_blob_deploy() {
 }
 
 redeclipse_update_bins_run() {
+    echo "bins: Updating.."
+    rm -f "${REDECLIPSE_TEMP}/bins.txt"
+    ${REDECLIPSE_CURL} --output "${REDECLIPSE_TEMP}/bins.txt" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/bins.txt"
     if [ -e "${REDECLIPSE_PATH}/bin/version.txt" ]; then REDECLIPSE_BINS=`cat "${REDECLIPSE_PATH}/bin/version.txt"`; fi
     if [ -z "${REDECLIPSE_BINS}" ]; then REDECLIPSE_BINS="none"; fi
     echo "bins: ${REDECLIPSE_BINS} is installed."
@@ -264,13 +268,11 @@ redeclipse_update_bins_run() {
     REDECLIPSE_BINS_CACHED=`cat "${REDECLIPSE_TEMP}/bins.txt"`
     if [ -z "${REDECLIPSE_BINS_CACHED}" ]; then REDECLIPSE_BINS_CACHED="none"; fi
     echo "bins: ${REDECLIPSE_BINS_CACHED} is in the cache."
-    rm -f "${REDECLIPSE_TEMP}/bins.txt"
     redeclipse_update_bins_get
     return $?
 }
 
 redeclipse_update_bins_get() {
-    ${REDECLIPSE_CURL} --output "${REDECLIPSE_TEMP}/bins.txt" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/bins.txt"
     if ! [ -e "${REDECLIPSE_TEMP}/bins.txt" ]; then
         echo "bins: Failed to retrieve update information."
         redeclipse_update_deploy
