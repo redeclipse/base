@@ -5,7 +5,7 @@
 
 bool interactive = false;
 
-hashset<ident> idents; // contains ALL vars/commands/aliases
+hashnameset<ident> idents; // contains ALL vars/commands/aliases
 vector<ident *> identmap;
 ident *dummyident = NULL;
 

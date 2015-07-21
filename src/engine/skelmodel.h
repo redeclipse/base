@@ -1220,13 +1220,13 @@ struct skelmodel : animmodel
                 return;
             }
 
-            static hashtable<const char *, skeleton *> skeletons;
+            static hashnameset<skeleton *> skeletons;
             if(skeletons.access(name)) skel = skeletons[name];
             else
             {
                 skel = new skeleton;
                 skel->name = newstring(name);
-                skeletons[skel->name] = skel;
+                skeletons.add(skel);
             }
             skel->users.add(this);
             skel->shared++;

@@ -103,7 +103,7 @@ void masteroutf(masterclient &c, const char *fmt, ...)
     masterout(c, msg);
 }
 
-static hashtable<char *, authuser> authusers;
+static hashnameset<authuser> authusers;
 
 void addauth(char *name, char *flags, char *pubkey, char *email)
 {

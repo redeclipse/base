@@ -12,9 +12,7 @@ FVAR(IDF_PERSIST, textkeybgblend, 0, 0.25f, 1);
 FVAR(IDF_PERSIST, textkeyfgblend, 0, 1, 1);
 TVAR(IDF_PERSIST|IDF_PRELOAD, textkeybgtex, "textures/textkeybg", 3);
 
-static inline bool htcmp(const char *key, const font &f) { return !strcmp(key, f.name); }
-
-static hashset<font> fonts;
+static hashnameset<font> fonts;
 static font *fontdef = NULL;
 static int fontdeftex = 0;
 

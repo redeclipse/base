@@ -56,7 +56,7 @@ struct ziparchive
 {
     char *name;
     FILE *data;
-    hashtable<const char *, zipfile> files;
+    hashnameset<zipfile> files;
     int openfiles;
     zipstream *owner;
 

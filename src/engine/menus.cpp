@@ -116,7 +116,7 @@ struct delayedupdate
     }
 };
 
-static hashtable<const char *, menu> menus;
+static hashnameset<menu> menus;
 static vector<menu *> menustack;
 static vector<delayedupdate> updatelater;
 static bool shouldclearmenu = true, clearlater = false;

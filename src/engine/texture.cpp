@@ -764,7 +764,7 @@ void createcompressedtexture(int tnum, int w, int h, uchar *data, int align, int
     uploadcompressedtexture(target, subtarget, format, w, h, data, align, blocksize, levels, filter > 1);
 }
 
-hashtable<char *, Texture> textures;
+hashnameset<Texture> textures;
 vector<Texture *> animtextures;
 
 Texture *notexture = NULL, *blanktexture = NULL; // used as default, ensured to be loaded

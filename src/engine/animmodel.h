@@ -494,7 +494,7 @@ struct animmodel : model
 
     meshgroup *sharemeshes(const char *name, ...)
     {
-        static hashtable<const char *, meshgroup *> meshgroups;
+        static hashnameset<meshgroup *> meshgroups;
         if(!meshgroups.access(name))
         {
             va_list args;
@@ -502,7 +502,7 @@ struct animmodel : model
             meshgroup *group = loadmeshes(name, args);
             va_end(args);
             if(!group) return NULL;
-            meshgroups[group->name] = group;
+            meshgroups.add(group);
         }
         return meshgroups[name];
     }

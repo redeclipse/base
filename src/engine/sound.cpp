@@ -36,7 +36,7 @@ void sound::reset()
     hook = NULL;
 }
 
-hashtable<const char *, soundsample> soundsamples;
+hashnameset<soundsample> soundsamples;
 vector<soundslot> gamesounds, mapsounds;
 vector<sound> sounds;
 

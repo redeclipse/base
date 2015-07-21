@@ -199,8 +199,7 @@ struct ident
     static bool compare(ident *x, ident *y) { return strcmp(x->name, y->name) < 0; }
 };
 
-static inline bool htcmp(const char *key, const ident &id) { return !strcmp(key, id.name); }
-extern hashset<ident> idents;
+extern hashnameset<ident> idents;
 
 extern void addident(ident *id);
 
