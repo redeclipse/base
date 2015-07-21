@@ -27,6 +27,9 @@ GVAR(IDF_ADMIN, serveropen, 0, 3, 3);
 GSVAR(IDF_ADMIN, serverdesc, "");
 GSVAR(IDF_ADMIN, servermotd, "");
 
+GVAR(IDF_ADMIN, duelmaxqueued, 0, 0, MAXCLIENTS); // number of players that can be queued for duel. 0 = any number of players
+GVAR(IDF_ADMIN, survivormaxqueued, 0, 0, MAXCLIENTS); // number of players that can be queued for survivor. 0 = any number of players
+
 GVAR(IDF_ADMIN, autoadmin, 0, 0, 1);
 
 GVAR(IDF_ADMIN, queryinterval, 0, 5000, VAR_MAX); // rebuild client list for server queries this often
