@@ -854,7 +854,7 @@ namespace physics
                 if(!move && !strafe) continue;
                 vecfromyawpitch(d->yaw, 0, move, strafe, dir);
                 d->o.add(dir);
-                bool collided = collide(d, dir);
+                bool collided = collide(d);
                 d->o = oldpos;
                 if(!collided || hitplayer || collidewall.iszero()) continue;
                 vec face = vec(collidewall).normalize();
@@ -874,16 +874,16 @@ namespace physics
                         if(onfloor)
                         {
                             d->o.z += space*m;
-                            if(collide(d, dir))
+                            if(collide(d))
                             {
                                 d->o.z += space*n-space*m;
-                                if(!collide(d, dir) || hitplayer) vault = true;
+                                if(!collide(d) || hitplayer) vault = true;
                             }
                         }
                         else
                         {
                             d->o.z += space*n;
-                            if(!collide(d, dir) || hitplayer) vault = true;
+                            if(!collide(d) || hitplayer) vault = true;
                         }
                         d->o = oldpos;
                     }
