@@ -3326,7 +3326,7 @@ namespace server
                     locked = min(max(max(*id->storage.i, parseint(arg)), locked), int(PRIV_CREATOR));
             }
 #ifndef STANDALONE
-            if(servertype < 3 && (!strcmp(id->name, "sv_gamespeed") || !strcmp(id->name, "sv_gamepaused"))) locked = PRIV_MAX+1;
+            if(servertype < 3 && (!strcmp(id->name, "sv_gamespeed") || !strcmp(id->name, "sv_gamepaused"))) locked = PRIV_MAX;
 #endif
             switch(id->type)
             {
