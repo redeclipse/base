@@ -736,13 +736,14 @@ namespace projs
                 } // all falls through to ..
             default: return false;
         }
+        size = clamp(size*proj.curscale, 0.1f, 1.f);
         model *m = NULL;
         if(proj.mdl && *proj.mdl && ((m = loadmodel(proj.mdl)) != NULL))
         {
             vec center, radius;
             m->boundbox(center, radius);
-            center.mul(size*proj.curscale);
-            radius.mul(size*proj.curscale);
+            center.mul(size);
+            radius.mul(size);
             rotatebb(center, radius, proj.yaw, 0, 0);
             proj.xradius = radius.x;
             proj.yradius = radius.y;
@@ -751,13 +752,13 @@ namespace projs
         }
         else switch(proj.projtype)
         {
-            case PRJ_GIBS: case PRJ_DEBRIS: case PRJ_VANITY: proj.height = proj.aboveeye = proj.radius = proj.xradius = proj.yradius = 0.5f*size*proj.curscale; break;
-            case PRJ_EJECT: proj.height = proj.aboveeye = 0.25f*size*proj.curscale; proj.radius = proj.yradius = 0.5f*size*proj.curscale; proj.xradius = 0.125f*size*proj.curscale; break;
+            case PRJ_GIBS: case PRJ_DEBRIS: case PRJ_VANITY: proj.height = proj.aboveeye = proj.radius = proj.xradius = proj.yradius = 0.5f*size; break;
+            case PRJ_EJECT: proj.height = proj.aboveeye = 0.25f*size; proj.radius = proj.yradius = 0.5f*size; proj.xradius = 0.125f*size; break;
             case PRJ_ENT:
             {
                 if(entities::ents.inrange(proj.id))
-                    proj.height = proj.aboveeye = proj.radius = proj.xradius = proj.yradius = enttype[entities::ents[proj.id]->type].radius*0.25f*size*proj.curscale;
-                else proj.height = proj.aboveeye = proj.radius = proj.xradius = proj.yradius = size*proj.curscale;
+                    proj.height = proj.aboveeye = proj.radius = proj.xradius = proj.yradius = enttype[entities::ents[proj.id]->type].radius*0.25f*size;
+                else proj.height = proj.aboveeye = proj.radius = proj.xradius = proj.yradius = size;
                 break;
             }
         }
