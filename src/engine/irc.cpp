@@ -302,6 +302,9 @@ void ircnewnet(int type, const char *name, const char *serv, int port, const cha
     n.address.host = ENET_HOST_ANY;
     n.address.port = n.port;
     n.input[0] = n.authname[0] = n.authpass[0] = 0;
+#ifndef STANDALONE
+    n.lastseen = totalmillis;
+#endif
     ircprintf(&n, 4, NULL, "added %s %s (%s:%d) [%s]", type == IRCT_RELAY ? "relay" : "client", name, serv, port, nick);
 }
 
@@ -827,6 +830,7 @@ void ircchecksockets(ENetSocketSet &readset, ENetSocketSet &writeset)
     }
 }
 
+VAR(0, ircautoaway, 0, 15, VAR_MAX); // time in seconds after closing the gui the user is marked as away
 void ircslice()
 {
     #ifndef STANDALONE
@@ -844,6 +848,19 @@ void ircslice()
             ircchan &c = n->channels[j];
             if(c.state != IRCC_JOINED && c.state != IRCC_JOINING && (c.type != IRCCT_AUTO || c.updated&IRCUP_LEAVE))
                 n->channels.remove(j);
+        }
+        if(n->type != IRCT_RELAY && n->state == IRC_ONLINE)
+        {
+            if(n->away && n->lastseen > n->away)
+            {
+                ircsend(n, "AWAY");
+                n->away = 0;
+            }
+            else if(!n->away && totalmillis-n->lastseen >= ircautoaway*1000)
+            {
+                ircsend(n, "AWAY :Auto-away after %d second%s", ircautoaway, ircautoaway != 1 ? "s" : "");
+                n->away = totalmillis;
+            }
         }
     }
     #endif
@@ -954,6 +971,15 @@ void irccmd(ircnet *n, ircchan *c, char *s)
                 ircsend(n, "QUIT :%s", r);
                 n->updated |= IRCUP_LEAVE;
             }
+            else if(!strcasecmp(q, "SYSINFO"))
+            {
+                if(c)
+                {
+                    ircsend(n, "PRIVMSG %s :%s v%s-%s%d (%s); %s (%s v%s)", c->name, VERSION_NAME, VERSION_STRING, versionplatname, versionarch, VERSION_RELEASE, gfxrenderer, gfxvendor, gfxversion);
+                    ircprintf(n, 1, c->name, "\fw<%s> %s v%s-%s%d (%s); %s (%s v%s)", n->nick, VERSION_NAME, VERSION_STRING, versionplatname, versionarch, VERSION_RELEASE, gfxrenderer, gfxvendor, gfxversion);
+                }
+                else ircprintf(n, 4, NULL, "\fyyou are not on a channel");
+            }
             else if(*r) ircsend(n, "%s %s", q, r); // send it raw so we support any command
             else ircsend(n, "%s", q);
             DELETEA(q); DELETEA(r);
@@ -1010,7 +1036,7 @@ bool ircnetgui(guient *g, ircnet *n, bool tab)
         if(front) n->updated &= ~IRCUP_NEW;
         if(msg && g->visible()) n->updated &= ~IRCUP_MSG;
     }
-
+    n->lastseen = totalmillis;
     defformatstring(window, "%s_window", n->name);
     if(n->buffer.newlines < n->buffer.lines.length())
     {

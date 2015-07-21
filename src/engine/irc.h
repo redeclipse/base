@@ -64,7 +64,7 @@ struct ircnet
     vector<ircchan> channels;
     uchar input[4096];
 #ifndef STANDALONE
-    int updated;
+    int updated, lastseen, away;
     ircbuf buffer;
 #endif
 
@@ -88,6 +88,8 @@ struct ircnet
         channels.shrink(0);
 #ifndef STANDALONE
         updated = IRCUP_NEW;
+        lastseen = totalmillis;
+        away = 0;
         buffer.reset();
 #endif
     }
