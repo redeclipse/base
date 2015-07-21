@@ -1177,7 +1177,7 @@ const char *getshaderparamname(const char *name, bool insert)
 {
     const char *exists = shaderparamnames.find(name, NULL);
     if(exists || !insert) return exists;
-    return shaderparamnames.add<const char *>(newstring(name));
+    return shaderparamnames.add(newstring(name));
 }
 
 void addslotparam(const char *name, float x, float y, float z, float w, int palette = 0, int palindex = 0)
