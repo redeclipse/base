@@ -380,6 +380,7 @@ GVAR(0, bomberregenextra, 0, 2, VAR_MAX); // add this to regen when buffed
 
 GVAR(IDF_ADMIN, airefreshdelay, 0, 1000, VAR_MAX);
 GVAR(0, botbalance, -1, -1, VAR_MAX); // -1 = always use numplayers, 0 = don't balance, 1 or more = fill only with this many
+GFVAR(0, botbalancescale, FVAR_NONZERO, 0.75f, FVAR_MAX); // use balance*this
 GVAR(0, botbalanceduel, -1, 2, VAR_MAX); // -1 = always use numplayers, 0 = don't balance, 1 or more = fill only with this many
 GVAR(0, botbalancesurvivor, -1, 2, VAR_MAX); // -1 = always use numplayers, 0 = don't balance, 1 or more = fill only with this many
 GVAR(0, botskillmin, 1, 60, 101);

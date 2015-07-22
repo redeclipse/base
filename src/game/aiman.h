@@ -3,7 +3,7 @@ namespace aiman
 {
     int dorefresh = 0, oldbotskillmin = -1, oldbotskillmax = -1, oldcoopskillmin = -1, oldcoopskillmax = -1, oldenemyskillmin = -1, oldenemyskillmax = -1,
         oldbotbalance = -2, oldnumplayers = -1, oldbotlimit = -1, oldbotoffset = 0, oldenemylimit = -1;
-    float oldcoopbalance = -1, oldcoopmultibalance = -1;
+    float oldbotbalancescale = -1;
 
     clientinfo *findaiclient(clientinfo *exclude = NULL)
     {
@@ -273,22 +273,26 @@ namespace aiman
                 case  0: balance = 0; break; // no bots
                 default: balance = max(people, bb); break; // balance to at least this
             }
-            if(m_team(gamemode, mutators) && balance > 0)
-            { // skew this if teams are unbalanced
-                int plrs[T_TOTAL] = {0}, highest = -1; // we do this because humans can unbalance in odd ways
-                loopv(clients) if(clients[i]->state.actortype == A_PLAYER && clients[i]->team >= T_FIRST && isteam(gamemode, mutators, clients[i]->team, T_FIRST))
-                {
-                    int team = clients[i]->team-T_FIRST;
-                    plrs[team]++;
-                    if(highest < 0 || plrs[team] > plrs[highest]) highest = team;
-                }
-                if(highest >= 0)
-                {
-                    int bots = balance-people;
-                    loopi(numt) if(i != highest && plrs[i] < plrs[highest]) loopj(plrs[highest]-plrs[i])
+            if(balance > 0)
+            {
+                if(G(botbalancescale) != 1) balance = int(balance*G(botbalancescale));
+                if(m_team(gamemode, mutators))
+                { // skew this if teams are unbalanced
+                    int plrs[T_TOTAL] = {0}, highest = -1; // we do this because humans can unbalance in odd ways
+                    loopv(clients) if(clients[i]->state.actortype == A_PLAYER && clients[i]->team >= T_FIRST && isteam(gamemode, mutators, clients[i]->team, T_FIRST))
                     {
-                        if(bots > 0) bots--;
-                        else balance++;
+                        int team = clients[i]->team-T_FIRST;
+                        plrs[team]++;
+                        if(highest < 0 || plrs[team] > plrs[highest]) highest = team;
+                    }
+                    if(highest >= 0)
+                    {
+                        int bots = balance-people;
+                        loopi(numt) if(i != highest && plrs[i] < plrs[highest]) loopj(plrs[highest]-plrs[i])
+                        {
+                            if(bots > 0) bots--;
+                            else balance++;
+                        }
                     }
                 }
             }
@@ -374,14 +378,12 @@ namespace aiman
                     {
                         checkold(coopskillmin);
                         checkold(coopskillmax);
-                        if(m_multi(gamemode, mutators)) { checkold(coopmultibalance); }
-                        else { checkold(coopbalance); }
                     }
                     else
                     {
                         checkold(botskillmin);
                         checkold(botskillmax);
-                        checkold(botbalance);
+                        checkold(botbalancescale);
                     }
                     checkold(botlimit);
                     checkold(botoffset);
