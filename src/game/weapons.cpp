@@ -204,7 +204,7 @@ namespace weapons
     {
         float r = 0;
         if(spreadinair > 0 && d->airmillis && !d->onladder) r += spreadinair;
-        bool running = d->running(moveslow) || d->sliding(), moving = d->move || d->strafe;
+        bool running = d->running(moveslow), moving = d->move || d->strafe;
         if(running ? (spreadrunning > 0) : (moving && spreadmoving > 0)) r += running ? spreadrunning : spreadmoving;
         else if(!d->crouching() && !zooming && spreadstill > 0) r += spreadstill;
         return r;

@@ -1412,7 +1412,7 @@ struct gameent : dynent, clientstate
     bool running(float minspeed = 0)
     {
         if(minspeed != 0 && vel.magnitude() >= minspeed) return true;
-        return !action[AC_WALK];
+        return sliding() || (!action[AC_WALK] && !crouching());
     }
 
     bool sliding(bool power = false)
