@@ -552,14 +552,14 @@ struct guient
     virtual void start(int starttime, float basescale, int *tab = NULL, bool allowinput = true, bool wantstitle = true, bool wantsbgfx = true) = 0;
     virtual void end() = 0;
 
-    virtual int text(const char *text, int color, const char *icon = NULL, int icolor = 0xFFFFFF, int wrap = -1) = 0;
-    int textf(const char *fmt, int color, const char *icon = NULL, int icolor = 0xFFFFFF, int wrap = -1, ...) PRINTFARGS(2, 7)
+    virtual int text(const char *text, int color = 0xFFFFFF, const char *icon = NULL, int icolor = 0xFFFFFF, int wrap = -1) = 0;
+    int textf(const char *fmt, int color = 0xFFFFFF, const char *icon = NULL, int icolor = 0xFFFFFF, int wrap = -1, ...) PRINTFARGS(2, 7)
     {
         defvformatstring(str, wrap, fmt);
         return text(str, color, icon, icolor, wrap);
     }
-    virtual int button(const char *text, int color, const char *icon = NULL, int icolor = 0xFFFFFF, int wrap = -1, bool faded = true) = 0;
-    int buttonf(const char *fmt, int color, const char *icon = NULL, int icolor = 0xFFFFFF, int wrap = -1, bool faded = true, ...) PRINTFARGS(2, 8)
+    virtual int button(const char *text, int color = 0xFFFFFF, const char *icon = NULL, int icolor = 0xFFFFFF, int wrap = -1, bool faded = true) = 0;
+    int buttonf(const char *fmt, int color = 0xFFFFFF, const char *icon = NULL, int icolor = 0xFFFFFF, int wrap = -1, bool faded = true, ...) PRINTFARGS(2, 8)
     {
         defvformatstring(str, faded, fmt);
         return button(str, color, icon, icolor, wrap, faded);
@@ -582,7 +582,7 @@ struct guient
     virtual int texture(VSlot &vslot, float scale, bool overlaid = true) = 0;
     virtual int slice(Texture *t, float scale, float start = 0, float end = 1, const char *text = NULL) = 0;
     virtual int slider(int &val, int vmin, int vmax, int colour, const char *label = NULL, bool reverse = false, bool scroll = false, int style = 0, int scolour = -1) = 0;
-    virtual void separator() = 0;
+    virtual void separator(int size = 0, int space = 0, int colour = -1, int border = -1) = 0;
     virtual void progress(float percent, float scale) = 0;
     virtual void pushfont(const char *font) = 0;
     virtual void popfont() = 0;

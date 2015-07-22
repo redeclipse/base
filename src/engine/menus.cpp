@@ -334,9 +334,9 @@ void guitooltip(char *str, int *width)
     if(cgui) cgui->settooltip("%s", *width, str);
 }
 
-void guibar()
+void guibar(int *size, int *space, int *colour, int *border)
 {
-    if(cgui) cgui->separator();
+    if(cgui) cgui->separator(*size, *space, *colour, *border);
 }
 
 void guifill(int *colour, int *levels)
@@ -678,7 +678,7 @@ COMMAND(0, guinohitfx, "e");
 
 COMMAND(0, guilist, "e");
 COMMAND(0, guibody, "esse");
-COMMAND(0, guibar, "");
+COMMAND(0, guibar, "iibb");
 COMMAND(0, guifill, "ii");
 COMMAND(0, guioutline, "iiii");
 COMMAND(0, guibackground, "bgbgii");
@@ -791,11 +791,11 @@ static struct applymenu : menu
     {
         if(menustack.empty()) return;
         g.start(menustart, menuscale, NULL, true);
-        g.text("the following settings have changed:", 0xFFFFFF, "info");
-        loopv(needsapply) g.text(needsapply[i].desc, 0xFFFFFF, "info");
+        g.text("the following settings have changed:");
+        loopv(needsapply) g.text(needsapply[i].desc, 0xFFFFFF, "point");
         g.separator();
-        g.text("apply changes now?", 0xFFFFFF, "info");
-        if(g.button("yes", 0xFFFFFF, "action")&GUI_UP)
+        g.text("apply changes now?");
+        if(g.button("^fgOK")&GUI_UP)
         {
             int changetypes = 0;
             loopv(needsapply) changetypes |= needsapply[i].type;
@@ -803,8 +803,7 @@ static struct applymenu : menu
             if(changetypes&CHANGE_SOUND) updatelater.add().schedule("resetsound");
             clearlater = true;
         }
-        if(g.button("no", 0xFFFFFF, "action")&GUI_UP)
-            clearlater = true;
+        if(g.button("^focancel")&GUI_UP) clearlater = true;
         g.end();
     }
 

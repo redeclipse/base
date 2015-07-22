@@ -428,7 +428,7 @@ struct gui : guient
         return button_(text, color, icon, icolor, true, wrap, faded);
     }
 
-    void separator() { line_(guisepsize); }
+    void separator(int size, int space, int colour, int border) { line_(size > 0 ? size : guisepsize, space > 0 ? space : 0, colour, border); }
 
     //use to set min size (useful when you have progress bars)
     void strut(float size) { layout(isvertical() ? int(size*FONTW) : 0, isvertical() ? 0 : int(size*FONTH)); }
@@ -1076,13 +1076,13 @@ struct gui : guient
         return space;
     }
 
-    int line_(int size, int space = 0)
+    int line_(int size, int space = 0, int colour = -1, int border = -1)
     {
         space = max(max(space, FONTW), size);
         if(visible())
         {
-            int colour1 = guibgcolour >= 0 ? guibgcolour : (guibordercolour >= 0 ? guibordercolour : 0x000000),
-                colour2 = guibordercolour >= 0 ? guibordercolour : 0x808080,
+            int colour1 = colour >= 0 ? colour : (guibgcolour >= 0 ? guibgcolour : (guibordercolour >= 0 ? guibordercolour : 0x000000)),
+                colour2 = border >= 0 ? border : (guibordercolour >= 0 ? guibordercolour : 0x808080),
                 x1 = ishorizontal() ? curx+space/2-size/2 : curx, x2 = x1+(ishorizontal() ? size : xsize),
                 y1 = ishorizontal() ? cury : cury+space/2-size/2, y2 = y1+(ishorizontal() ? ysize : size);
             if(colour1 >= 0)
