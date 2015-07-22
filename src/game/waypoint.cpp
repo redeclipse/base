@@ -176,7 +176,7 @@ namespace ai
     }
 
     void clearwpcache(bool full = true)
-	{
+    {
         loopi(NUMWPCACHES) if(full || invalidatedwpcaches&(1<<i)) { wpcaches[i].clear(); clearedwpcaches |= 1<<i; }
         if(full || invalidatedwpcaches == (1<<NUMWPCACHES)-1)
         {
@@ -184,7 +184,7 @@ namespace ai
             lastwpcache = 0;
         }
         invalidatedwpcaches = 0;
-	}
+    }
     ICOMMAND(0, clearwpcache, "", (), clearwpcache());
 
     void buildwpcache()
@@ -194,8 +194,8 @@ namespace ai
         clearedwpcaches = 0;
         lastwpcache = waypoints.length();
 
-		wpavoid.clear();
-		loopv(waypoints) if(waypoints[i].weight < 0) wpavoid.avoidnear(NULL, waypoints[i].o.z + WAYPOINTRADIUS, waypoints[i].o, WAYPOINTRADIUS);
+        wpavoid.clear();
+        loopv(waypoints) if(waypoints[i].weight < 0) wpavoid.avoidnear(NULL, waypoints[i].o.z + WAYPOINTRADIUS, waypoints[i].o, WAYPOINTRADIUS);
     }
 
     struct wpcachestack
@@ -440,18 +440,18 @@ namespace ai
                 waypoints[d->ai->prevnodes[i]].curscore = -1;
                 waypoints[d->ai->prevnodes[i]].estscore = 0;
             }
-			if(retries <= 0)
-			{
-				loopavoid(obstacles, d,
-				{
-					if(iswaypoint(wp) && wp != node && wp != goal && waypoints[node].find(wp) < 0 && waypoints[goal].find(wp) < 0)
-					{
-						waypoints[wp].route = routeid;
-						waypoints[wp].curscore = -1;
-						waypoints[wp].estscore = 0;
-					}
-				});
-			}
+            if(retries <= 0)
+            {
+                loopavoid(obstacles, d,
+                {
+                    if(iswaypoint(wp) && wp != node && wp != goal && waypoints[node].find(wp) < 0 && waypoints[goal].find(wp) < 0)
+                    {
+                        waypoints[wp].route = routeid;
+                        waypoints[wp].curscore = -1;
+                        waypoints[wp].estscore = 0;
+                    }
+                });
+            }
         }
 
         waypoints[node].route = routeid;
@@ -542,21 +542,21 @@ namespace ai
     void inferwaypoints(gameent *d, const vec &o, const vec &v, float mindist)
     {
         if(!shouldnavigate()) return;
-    	if(shoulddrop(d) && !clipped(o) && !clipped(v))
-    	{
-			int from = closestwaypoint(o, mindist, false), to = closestwaypoint(v, mindist, false);
-			if(!iswaypoint(from)) from = addwaypoint(o);
-			if(!iswaypoint(to)) to = addwaypoint(v);
-			if(d->lastnode != from && iswaypoint(d->lastnode) && iswaypoint(from))
-				linkwaypoint(waypoints[d->lastnode], from);
-			if(iswaypoint(to))
-			{
-				if(from != to && iswaypoint(from) && iswaypoint(to))
-					linkwaypoint(waypoints[from], to);
-				d->lastnode = to;
-			}
-		}
-		else d->lastnode = closestwaypoint(v, CLOSEDIST, false);
+        if(shoulddrop(d) && !clipped(o) && !clipped(v))
+        {
+            int from = closestwaypoint(o, mindist, false), to = closestwaypoint(v, mindist, false);
+            if(!iswaypoint(from)) from = addwaypoint(o);
+            if(!iswaypoint(to)) to = addwaypoint(v);
+            if(d->lastnode != from && iswaypoint(d->lastnode) && iswaypoint(from))
+                linkwaypoint(waypoints[d->lastnode], from);
+            if(iswaypoint(to))
+            {
+                if(from != to && iswaypoint(from) && iswaypoint(to))
+                    linkwaypoint(waypoints[from], to);
+                d->lastnode = to;
+            }
+        }
+        else d->lastnode = closestwaypoint(v, CLOSEDIST, false);
     }
 
     void navigate(gameent *d)
@@ -580,17 +580,17 @@ namespace ai
         else if(!iswaypoint(d->lastnode) || waypoints[d->lastnode].o.squaredist(v) > dist*dist)
         {
             dist = RETRYDIST; // workaround
-			d->lastnode = closestwaypoint(v, dist, false);
+            d->lastnode = closestwaypoint(v, dist, false);
         }
     }
 
     void navigate()
     {
-    	if(shouldnavigate())
-    	{
-    	    navigate(game::player1);
-    	    loopv(players) if(players[i]) navigate(players[i]);
-    	}
+        if(shouldnavigate())
+        {
+            navigate(game::player1);
+            loopv(players) if(players[i]) navigate(players[i]);
+        }
         if(invalidatedwpcaches) clearwpcache(false);
     }
 

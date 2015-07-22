@@ -24,7 +24,7 @@ namespace ai
     {
         vec o;
         float curscore, estscore;
-		int weight;
+        int weight;
         ushort route, prev;
         ushort links[MAXWAYPOINTLINKS];
 
@@ -34,12 +34,12 @@ namespace ai
         int score() const { return int(curscore) + int(estscore); }
 
         int find(int wp)
-		{
-			loopi(MAXWAYPOINTLINKS) if(links[i] == wp) return i;
-			return -1;
-		}
+        {
+            loopi(MAXWAYPOINTLINKS) if(links[i] == wp) return i;
+            return -1;
+        }
 
-		bool haslinks() { return links[0]!=0; }
+        bool haslinks() { return links[0]!=0; }
     };
     extern vector<waypoint> waypoints;
 
@@ -59,8 +59,8 @@ namespace ai
     extern int showwaypoints, dropwaypoints;
     extern int closestwaypoint(const vec &pos, float mindist = CLOSEDIST, bool links = true);
     extern void findwaypointswithin(const vec &pos, float mindist, float maxdist, vector<int> &results);
-	extern void inferwaypoints(gameent *d, const vec &o, const vec &v, float mindist = ai::CLOSEDIST);
-	extern void delwaypoint(int n = -1);
+    extern void inferwaypoints(gameent *d, const vec &o, const vec &v, float mindist = ai::CLOSEDIST);
+    extern void delwaypoint(int n = -1);
 
     struct avoidset
     {
@@ -94,16 +94,16 @@ namespace ai
             waypoints.add(wp);
         }
 
-		void add(avoidset &avoid)
-		{
-			waypoints.put(avoid.waypoints.getbuf(), avoid.waypoints.length());
-			loopv(avoid.obstacles)
-			{
-				obstacle &o = avoid.obstacles[i];
-				if(obstacles.empty() || o.owner != obstacles.last().owner) add(o.owner, o.above);
-				obstacles.last().numwaypoints += o.numwaypoints;
-			}
-		}
+        void add(avoidset &avoid)
+        {
+            waypoints.put(avoid.waypoints.getbuf(), avoid.waypoints.length());
+            loopv(avoid.obstacles)
+            {
+                obstacle &o = avoid.obstacles[i];
+                if(obstacles.empty() || o.owner != obstacles.last().owner) add(o.owner, o.above);
+                obstacles.last().numwaypoints += o.numwaypoints;
+            }
+        }
 
         void avoidnear(void *owner, float above, const vec &pos, float limit);
 

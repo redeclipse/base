@@ -307,21 +307,21 @@ undoblock *newundoent()
 {
     int numents = entgroup.length();
     if(numents <= 0) return NULL;
-	vector<extentity *> &ents = entities::getents();
-	int numattrs = 0;
-	loopv(entgroup) numattrs += ents[entgroup[i]]->attrs.length();
+    vector<extentity *> &ents = entities::getents();
+    int numattrs = 0;
+    loopv(entgroup) numattrs += ents[entgroup[i]]->attrs.length();
     undoblock *u = (undoblock *)new uchar[sizeof(undoblock) + numents*sizeof(undoent) + numattrs*sizeof(int)];
     u->numents = numents;
     undoent *e = (undoent *)(u + 1);
-	int *attr = (int *)(e + numents);
+    int *attr = (int *)(e + numents);
     loopv(entgroup)
     {
-		extentity *g = ents[entgroup[i]];
+        extentity *g = ents[entgroup[i]];
         e->i = entgroup[i];
         e->type = g->type;
         e->o = g->o;
-		e->numattrs = g->attrs.length();
-		loopvj(g->attrs) *attr++ = g->attrs[j];
+        e->numattrs = g->attrs.length();
+        loopvj(g->attrs) *attr++ = g->attrs[j];
         e++;
     }
     return u;

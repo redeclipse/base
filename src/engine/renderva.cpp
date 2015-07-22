@@ -1564,7 +1564,7 @@ void rendergeom(float causticspass, bool fogpass)
         glFlush();
         if(shadowmap && hasFBO && mainpass)
         {
-			glDisableClientState(GL_VERTEX_ARRAY);
+            glDisableClientState(GL_VERTEX_ARRAY);
             glBindBuffer_(GL_ARRAY_BUFFER, 0);
             glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, 0);
             rendershadowmap();

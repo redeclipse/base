@@ -311,7 +311,7 @@ bool checkmasterclientinput(masterclient &c)
             else
             {
                 if(w[1] && *w[1]) c.port = clamp(atoi(w[1]), 1, VAR_MAX);
-		c.version = w[3] && *w[3] ? atoi(w[3]) : (w[2] && *w[2] ? 150 : 0);
+                c.version = w[3] && *w[3] ? atoi(w[3]) : (w[2] && *w[2] ? 150 : 0);
                 ENetAddress address = { ENET_HOST_ANY, enet_uint16(c.port) };
                 if(w[2] && *w[2] && strcmp(w[2], "*") && (enet_address_set_host(&address, w[2]) < 0 || address.host != c.address.host))
                 {

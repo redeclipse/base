@@ -1101,8 +1101,8 @@ static void setupconsole()
     SetConsoleCtrlHandler(consolehandler, TRUE);
     conwindow = GetConsoleWindow();
     SetConsoleTitle(apptip);
-	//SendMessage(conwindow, WM_SETICON, ICON_SMALL, (LPARAM)appicon);
-	SendMessage(conwindow, WM_SETICON, ICON_BIG, (LPARAM)appicon);
+    //SendMessage(conwindow, WM_SETICON, ICON_SMALL, (LPARAM)appicon);
+    SendMessage(conwindow, WM_SETICON, ICON_BIG, (LPARAM)appicon);
     outhandle = GetStdHandle(STD_OUTPUT_HANDLE);
     CONSOLE_SCREEN_BUFFER_INFO coninfo;
     GetConsoleScreenBufferInfo(outhandle, &coninfo);
@@ -1215,12 +1215,12 @@ static char *parsecommandline(const char *src, vector<char *> &args)
         while(isspace(*src)) src++;
         if(!*src) break;
         args.add(dst);
- 		for(bool quoted = false; *src && (quoted || !isspace(*src)); src++)
+         for(bool quoted = false; *src && (quoted || !isspace(*src)); src++)
         {
             if(*src != '"') *dst++ = *src;
-			else if(dst > buf && src[-1] == '\\') dst[-1] = '"';
-			else quoted = !quoted;
-		}
+            else if(dst > buf && src[-1] == '\\') dst[-1] = '"';
+            else quoted = !quoted;
+        }
         *dst++ = '\0';
     }
     args.add(NULL);

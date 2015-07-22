@@ -584,12 +584,12 @@ namespace capture
                 }
             }
         }
-	    if(b.type == ai::AI_S_PURSUE && b.targtype == ai::AI_T_NODE) return true; // we already did this..
-		if(ai::randomnode(d, b, ai::ALERTMIN, 1e16f))
-		{
+        if(b.type == ai::AI_S_PURSUE && b.targtype == ai::AI_T_NODE) return true; // we already did this..
+        if(ai::randomnode(d, b, ai::ALERTMIN, 1e16f))
+        {
             d->ai->switchstate(b, ai::AI_S_PURSUE, ai::AI_T_NODE, d->ai->route[0], ai::AI_A_HASTE);
             return true;
-		}
+        }
         return false;
     }
 
