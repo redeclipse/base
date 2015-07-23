@@ -95,11 +95,6 @@ setlocal enableextensions enabledelayedexpansion
     if EXIST "%REDECLIPSE_PATH%%REDECLIPSE_MODULE_DIR%\version.txt" set /p REDECLIPSE_MODULE_INSTALLED=< "%REDECLIPSE_PATH%%REDECLIPSE_MODULE_DIR%\version.txt"
     if "%REDECLIPSE_MODULE_INSTALLED%" == "" set REDECLIPSE_MODULE_INSTALLED=none
     echo %REDECLIPSE_MODULE_RUN%: %REDECLIPSE_MODULE_INSTALLED% is installed.
-    set REDECLIPSE_MODULE_CACHED=none
-    if NOT EXIST "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.txt" goto redeclipse_update_module_get
-    set /p REDECLIPSE_MODULE_CACHED=< "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.txt"
-    if "%REDECLIPSE_MODULE_CACHED%" == "" set REDECLIPSE_MODULE_CACHED=none
-    echo %REDECLIPSE_MODULE_RUN%: %REDECLIPSE_MODULE_CACHED% is in the cache.
 :redeclipse_update_module_get
     if NOT EXIST "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.txt" (
         echo %REDECLIPSE_MODULE_RUN%: Failed to retrieve update information.
@@ -117,10 +112,7 @@ setlocal enableextensions enabledelayedexpansion
     )
 :redeclipse_update_module_blob
     if EXIST "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.zip" (
-        if "%REDECLIPSE_MODULE_CACHED%" == "%REDECLIPSE_MODULE_REMOTE%" (
-            echo %REDECLIPSE_MODULE_RUN%: Using cached file "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.zip"
-            goto redeclipse_update_module_blob_deploy
-        ) else del /f /q "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.zip"
+        del /f /q "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.zip"
     )
     echo %REDECLIPSE_MODULE_RUN%: %REDECLIPSE_GITHUB%/%REDECLIPSE_MODULE_RUN%/zipball/%REDECLIPSE_MODULE_REMOTE%
     %REDECLIPSE_CURL% --output "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.zip" "%REDECLIPSE_GITHUB%/%REDECLIPSE_MODULE_RUN%/zipball/%REDECLIPSE_MODULE_REMOTE%"
@@ -151,11 +143,6 @@ setlocal enableextensions enabledelayedexpansion
     if EXIST "%REDECLIPSE_PATH%\bin\version.txt" set /p REDECLIPSE_BINS=< "%REDECLIPSE_PATH%\bin\version.txt"
     if "%REDECLIPSE_BINS%" == "" set REDECLIPSE_BINS=none
     echo bins: %REDECLIPSE_BINS% is installed.
-    set REDECLIPSE_BINS_CACHED=none
-    if NOT EXIST "%REDECLIPSE_TEMP%\bins.txt" goto redeclipse_update_bins_get
-    set /p REDECLIPSE_BINS_CACHED=< "%REDECLIPSE_TEMP%\bins.txt"
-    if "%REDECLIPSE_BINS_CACHED%" == "" set REDECLIPSE_BINS_CACHED=none
-    echo bins: %REDECLIPSE_BINS_CACHED% is in the cache.
 :redeclipse_update_bins_get
     if NOT EXIST "%REDECLIPSE_TEMP%\bins.txt" (
         echo bins: Failed to retrieve update information.
@@ -173,10 +160,7 @@ setlocal enableextensions enabledelayedexpansion
     )
 :redeclipse_update_bins_blob
     if EXIST "%REDECLIPSE_TEMP%\windows.zip" (
-        if "%REDECLIPSE_BINS_CACHED%" == "%REDECLIPSE_BINS_REMOTE%" (
-            echo bins: Using cached file "%REDECLIPSE_TEMP%\windows.zip"
-            goto redeclipse_update_bins_deploy
-        ) else del /f /q "%REDECLIPSE_TEMP%\windows.zip"
+        del /f /q "%REDECLIPSE_TEMP%\windows.zip"
     )
     echo bins: %REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/windows.zip
     %REDECLIPSE_CURL% --output "%REDECLIPSE_TEMP%\windows.zip" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/windows.zip"
