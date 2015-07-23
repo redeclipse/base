@@ -479,8 +479,8 @@ GVAR(0, quakewobble, 1, 18, VAR_MAX);
 GVAR(0, quakelimit, 0, 200, VAR_MAX);
 
 GVAR(0, zoomlimitmin, 1, 10, 150);
-GVAR(0, zoomlimitmax, 1, 65, 150);
-GVAR(0, zoomtime, 1, 350, VAR_MAX);
+GVAR(0, zoomlimitmax, 1, 60, 150);
+GVAR(0, zoomtime, 1, 500, VAR_MAX);
 
 GFVAR(0, radialscale, 0, 1, FVAR_MAX);
 GFVAR(0, radiallimited, 0, 0.75f, FVAR_MAX);
