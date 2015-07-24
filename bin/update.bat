@@ -70,7 +70,7 @@ setlocal enableextensions enabledelayedexpansion
         del /f /q "%REDECLIPSE_TEMP%\%%a.txt"
         if NOT "!REDECLIPSE_MODULE_PREFETCH!" == "" (
             set REDECLIPSE_MODULE_PREFETCH=!REDECLIPSE_MODULE_PREFETCH!,%%a
-        ) else ( set REDECLIPSE_MODULE_PREFETCH=%%a )
+        ) else (set REDECLIPSE_MODULE_PREFETCH=%%a)
     )
     if "%REDECLIPSE_MODULE_PREFETCH" == "" (
         echo modules: Failed to get version information, continuing..
