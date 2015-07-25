@@ -498,9 +498,8 @@ void loadalias(const char *name, const char *fname)
         return false;
     }
     tagval v;
-    v.setstr(newstring(buf));
+    v.setstr(buf);
     setalias(name, v);
-    delete[] buf;
 }
 COMMAND(0, loadalias, "ss");
 
