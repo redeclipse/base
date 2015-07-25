@@ -804,10 +804,14 @@ static struct applymenu : menu
         if(menustack.empty()) return;
         g.start(menustart, menuscale, NULL, true);
         g.text("the following settings have changed:");
+        g.pushfont("little");
         loopv(needsapply) g.text(needsapply[i].desc, 0xFFFFFF, "point");
+        g.popfont();
         g.separator();
         g.text("apply changes now?");
-        if(g.button("^fgOK")&GUI_UP)
+        g.pushlist();
+        g.spring();
+        if(g.button("\fgOK")&GUI_UP)
         {
             int changetypes = 0;
             loopv(needsapply) changetypes |= needsapply[i].type;
@@ -815,7 +819,10 @@ static struct applymenu : menu
             if(changetypes&CHANGE_SOUND) updatelater.add().schedule("resetsound");
             clearlater = true;
         }
-        if(g.button("^focancel")&GUI_UP) clearlater = true;
+        g.spring();
+        if(g.button("\focancel")&GUI_UP) clearlater = true;
+        g.spring();
+        g.poplist();
         g.end();
     }
 
