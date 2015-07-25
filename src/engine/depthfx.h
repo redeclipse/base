@@ -30,8 +30,8 @@ static struct depthfxtexture : rendertarget
 {
     const GLenum *colorformats() const
     {
-        static const GLenum colorfmts[] = { GL_RG16F, GL_RGB16F_ARB, GL_RGBA, GL_RGBA8, GL_RGB, GL_RGB8, GL_FALSE };
-        static const GLenum colorfmtsnv[] = { GL_FLOAT_RG16_NV, GL_RGB16F_ARB, GL_RGBA, GL_RGBA8, GL_RGB, GL_RGB8, GL_FALSE };
+        static const GLenum colorfmts[] = { GL_RG16F, GL_RGB16F, GL_RGBA, GL_RGBA8, GL_RGB, GL_RGB8, GL_FALSE };
+        static const GLenum colorfmtsnv[] = { GL_FLOAT_RG16_NV, GL_RGB16F, GL_RGBA, GL_RGBA8, GL_RGB, GL_RGB8, GL_FALSE };
         if(!hasTF || !hasFBO || !fpdepthfx) return &colorfmts[2];
         if(hasTRG) return colorfmts;
         if(hasNVFB && texrect() && !filter()) return colorfmtsnv;
@@ -73,7 +73,7 @@ static struct depthfxtexture : rendertarget
     bool screenview() const { return depthfxrect!=0; }
     bool texrect() const { return depthfxrect && hasTR; }
     bool filter() const { return depthfxfilter!=0; }
-    bool highprecision() const { return colorfmt==GL_RG16F || colorfmt==GL_FLOAT_RG16_NV || colorfmt==GL_RGB16F_ARB; }
+    bool highprecision() const { return colorfmt==GL_RG16F || colorfmt==GL_FLOAT_RG16_NV || colorfmt==GL_RGB16F; }
     bool emulatehighprecision() const { return depthfxemuprecision && !depthfxfilter; }
 
     bool shouldrender()

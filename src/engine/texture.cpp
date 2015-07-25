@@ -708,14 +708,14 @@ void createtexture(int tnum, int w, int h, void *pixels, int clamp, int filter, 
 
         case GL_FLOAT_RG16_NV:
         case GL_FLOAT_R32_NV:
-        case GL_RGB16F_ARB:
-        case GL_RGB32F_ARB:
+        case GL_RGB16F:
+        case GL_RGB32F:
             if(!format) format = GL_RGB;
             type = GL_FLOAT;
             break;
 
-        case GL_RGBA16F_ARB:
-        case GL_RGBA32F_ARB:
+        case GL_RGBA16F:
+        case GL_RGBA32F:
             if(!format) format = GL_RGBA;
             type = GL_FLOAT;
             break;

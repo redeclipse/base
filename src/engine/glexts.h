@@ -384,12 +384,21 @@ typedef void (APIENTRYP PFNGLUNIFORMBLOCKBINDINGPROC) (GLuint program, GLuint un
 
 #ifndef GL_VERSION_3_0
 #define GL_VERSION_3_0 1
+#define GL_RGBA32F                        0x8814
+#define GL_RGB32F                         0x8815
+#define GL_RGBA16F                        0x881A
+#define GL_RGB16F                         0x881B
 typedef void (APIENTRYP PFNGLBINDBUFFERRANGEPROC) (GLenum target, GLuint index, GLuint buffer, GLintptr offset, GLsizeiptr size);
 typedef void (APIENTRYP PFNGLBINDBUFFERBASEPROC) (GLenum target, GLuint index, GLuint buffer);
 #elif GL_GLEXT_VERSION < 43
 typedef void (APIENTRYP PFNGLBINDBUFFERRANGEPROC) (GLenum target, GLuint index, GLuint buffer, GLintptr offset, GLsizeiptr size);
 typedef void (APIENTRYP PFNGLBINDBUFFERBASEPROC) (GLenum target, GLuint index, GLuint buffer);
 #endif
+
+#ifndef GL_VERSION_3_1
+#define GL_VERSION_3_1 1
+#define GL_TEXTURE_RECTANGLE              0x84F5
+#endif 
 
 // GL_ARB_uniform_buffer_object
 extern PFNGLGETUNIFORMINDICESPROC       glGetUniformIndices_;
