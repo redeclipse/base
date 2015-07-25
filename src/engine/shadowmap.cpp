@@ -103,8 +103,8 @@ static struct shadowmaptexture : rendertarget
 {
     const GLenum *colorformats() const
     {
-        static const GLenum rgbfmts[] = { GL_RGB, GL_RGB8, GL_FALSE }, rgbafmts[] = { GL_RGBA16F, GL_RGBA16, GL_RGBA, GL_RGBA8, GL_FALSE };
-        return hasFBO ? &rgbafmts[fpshadowmap && hasTF ? 0 : (shadowmapprecision ? 1 : 2)] : rgbfmts;
+        static const GLenum rgbafmts[] = { GL_RGBA16F, GL_RGBA16, GL_RGBA, GL_RGBA8, GL_FALSE };
+        return &rgbafmts[fpshadowmap && hasTF ? 0 : (shadowmapprecision ? 1 : 2)];
     }
 
     bool swaptexs() const { return true; }
@@ -128,14 +128,8 @@ static struct shadowmaptexture : rendertarget
 
     void doclear()
     {
-        if(!hasFBO && rtscissor)
-        {
-            glEnable(GL_SCISSOR_TEST);
-            glScissor(screen->w-vieww, screen->h-viewh, vieww, viewh);
-        }
         glClearColor(0, 0, 0, 0);
         glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-        if(!hasFBO && rtscissor) glDisable(GL_SCISSOR_TEST);
     }
 
     bool dorender()
@@ -203,15 +197,7 @@ static struct shadowmaptexture : rendertarget
         {
             int sx, sy, sw, sh;
             bool scissoring = rtscissor && scissorblur(sx, sy, sw, sh) && sw > 0 && sh > 0;
-            if(scissoring)
-            {
-                if(!hasFBO)
-                {
-                    sx += screen->w-vieww;
-                    sy += screen->h-viewh;
-                }
-                glScissor(sx, sy, sw, sh);
-            }
+            if(scissoring) glScissor(sx, sy, sw, sh);
             if(!rtscissor || scissoring) rendershadowmapreceivers();
         }
 

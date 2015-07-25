@@ -830,14 +830,6 @@ static void genshadowmapvariant(Shader &s, const char *sname, const char *vs, co
         pslight, pslight);
     pssm.put(smlight, strlen(smlight));
 
-    if(!hasFBO) for(char *s = pssm.getbuf();;)
-    {
-        s = strstr(s, "smvals.w");
-        if(!s) break;
-        s[7] = 'y';
-        s += 8;
-    }
-
     vssm.put(vspragma, strlen(vspragma)+1);
     pssm.put(pspragma, strlen(pspragma)+1);
 
@@ -1279,10 +1271,10 @@ void renderpostfx()
     glBindTexture(GL_TEXTURE_RECTANGLE_ARB, postfxtexs[binds[0]].id);
     glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, 0, 0, screen->w, screen->h);
 
-    if(hasFBO && postfxpasses.length() > 1)
+    if(postfxpasses.length() > 1)
     {
         if(!postfxfb) glGenFramebuffers_(1, &postfxfb);
-        glBindFramebuffer_(GL_FRAMEBUFFER_EXT, postfxfb);
+        glBindFramebuffer_(GL_FRAMEBUFFER, postfxfb);
     }
 
     GLOBALPARAMF(millis, lastmillis/1000.0f);
@@ -1294,12 +1286,12 @@ void renderpostfx()
         int tex = -1;
         if(!postfxpasses.inrange(i+1))
         {
-            if(hasFBO && postfxpasses.length() > 1) glBindFramebuffer_(GL_FRAMEBUFFER_EXT, 0);
+            if(postfxpasses.length() > 1) glBindFramebuffer_(GL_FRAMEBUFFER, 0);
         }
         else
         {
             tex = allocatepostfxtex(p.outputscale);
-            if(hasFBO) glFramebufferTexture2D_(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_ARB, postfxtexs[tex].id, 0);
+            glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE_ARB, postfxtexs[tex].id, 0);
         }
 
         int w = tex >= 0 ? max(screen->w>>postfxtexs[tex].scale, 1) : screen->w,
@@ -1337,11 +1329,6 @@ void renderpostfx()
             if(binds[p.outputbind] >= 0) postfxtexs[binds[p.outputbind]].used = -1;
             binds[p.outputbind] = tex;
             postfxtexs[tex].used = p.outputbind;
-            if(!hasFBO)
-            {
-                glBindTexture(GL_TEXTURE_RECTANGLE_ARB, postfxtexs[tex].id);
-                glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, 0, 0, w, h);
-            }
         }
     }
 }

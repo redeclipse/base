@@ -32,7 +32,7 @@ static struct depthfxtexture : rendertarget
     {
         static const GLenum colorfmts[] = { GL_RG16F, GL_RGB16F, GL_RGBA, GL_RGBA8, GL_RGB, GL_RGB8, GL_FALSE };
         static const GLenum colorfmtsnv[] = { GL_FLOAT_RG16_NV, GL_RGB16F, GL_RGBA, GL_RGBA8, GL_RGB, GL_RGB8, GL_FALSE };
-        if(!hasTF || !hasFBO || !fpdepthfx) return &colorfmts[2];
+        if(!hasTF || !fpdepthfx) return &colorfmts[2];
         if(hasTRG) return colorfmts;
         if(hasNVFB && texrect() && !filter()) return colorfmtsnv;
         return &colorfmts[1];

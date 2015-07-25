@@ -263,36 +263,50 @@ extern PFNGLUNIFORMMATRIX4X3FVPROC       glUniformMatrix4x3fv_;
 extern PFNGLDRAWBUFFERSPROC glDrawBuffers_;
 #endif
 
+// GL_ARB_framebuffer_object
+#ifndef GL_ARB_framebuffer_object
+#define GL_ARB_framebuffer_object 1
+#define GL_DEPTH_STENCIL_ATTACHMENT       0x821A
+#define GL_DEPTH_STENCIL                  0x84F9
+#define GL_DEPTH24_STENCIL8               0x88F0
+#define GL_READ_FRAMEBUFFER               0x8CA8
+#define GL_DRAW_FRAMEBUFFER               0x8CA9
+#define GL_FRAMEBUFFER_COMPLETE           0x8CD5
+#define GL_COLOR_ATTACHMENT0              0x8CE0
+#define GL_COLOR_ATTACHMENT1              0x8CE1
+#define GL_DEPTH_ATTACHMENT               0x8D00
+#define GL_STENCIL_ATTACHMENT             0x8D20
+#define GL_FRAMEBUFFER                    0x8D40
+#define GL_RENDERBUFFER                   0x8D41
+typedef void (APIENTRYP PFNGLBINDRENDERBUFFERPROC) (GLenum target, GLuint renderbuffer);
+typedef void (APIENTRYP PFNGLDELETERENDERBUFFERSPROC) (GLsizei n, const GLuint *renderbuffers);
+typedef void (APIENTRYP PFNGLGENRENDERBUFFERSPROC) (GLsizei n, GLuint *renderbuffers);
+typedef void (APIENTRYP PFNGLRENDERBUFFERSTORAGEPROC) (GLenum target, GLenum internalformat, GLsizei width, GLsizei height);
+typedef void (APIENTRYP PFNGLBINDFRAMEBUFFERPROC) (GLenum target, GLuint framebuffer);
+typedef void (APIENTRYP PFNGLDELETEFRAMEBUFFERSPROC) (GLsizei n, const GLuint *framebuffers);
+typedef void (APIENTRYP PFNGLGENFRAMEBUFFERSPROC) (GLsizei n, GLuint *framebuffers);
+typedef GLenum (APIENTRYP PFNGLCHECKFRAMEBUFFERSTATUSPROC) (GLenum target);
+typedef void (APIENTRYP PFNGLFRAMEBUFFERTEXTURE2DPROC) (GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
+typedef void (APIENTRYP PFNGLFRAMEBUFFERRENDERBUFFERPROC) (GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer);
+typedef void (APIENTRYP PFNGLGENERATEMIPMAPPROC) (GLenum target);
+typedef void (APIENTRYP PFNGLBLITFRAMEBUFFERPROC) (GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter);
+#endif
+
 // GL_EXT_framebuffer_object
-extern PFNGLBINDRENDERBUFFEREXTPROC        glBindRenderbuffer_;
-extern PFNGLDELETERENDERBUFFERSEXTPROC     glDeleteRenderbuffers_;
-extern PFNGLGENFRAMEBUFFERSEXTPROC         glGenRenderbuffers_;
-extern PFNGLRENDERBUFFERSTORAGEEXTPROC     glRenderbufferStorage_;
-extern PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC  glCheckFramebufferStatus_;
-extern PFNGLBINDFRAMEBUFFEREXTPROC         glBindFramebuffer_;
-extern PFNGLDELETEFRAMEBUFFERSEXTPROC      glDeleteFramebuffers_;
-extern PFNGLGENFRAMEBUFFERSEXTPROC         glGenFramebuffers_;
-extern PFNGLFRAMEBUFFERTEXTURE2DEXTPROC    glFramebufferTexture2D_;
-extern PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC glFramebufferRenderbuffer_;
-extern PFNGLGENERATEMIPMAPEXTPROC          glGenerateMipmap_;
+extern PFNGLBINDRENDERBUFFERPROC        glBindRenderbuffer_;
+extern PFNGLDELETERENDERBUFFERSPROC     glDeleteRenderbuffers_;
+extern PFNGLGENFRAMEBUFFERSPROC         glGenRenderbuffers_;
+extern PFNGLRENDERBUFFERSTORAGEPROC     glRenderbufferStorage_;
+extern PFNGLCHECKFRAMEBUFFERSTATUSPROC  glCheckFramebufferStatus_;
+extern PFNGLBINDFRAMEBUFFERPROC         glBindFramebuffer_;
+extern PFNGLDELETEFRAMEBUFFERSPROC      glDeleteFramebuffers_;
+extern PFNGLGENFRAMEBUFFERSPROC         glGenFramebuffers_;
+extern PFNGLFRAMEBUFFERTEXTURE2DPROC    glFramebufferTexture2D_;
+extern PFNGLFRAMEBUFFERRENDERBUFFERPROC glFramebufferRenderbuffer_;
+extern PFNGLGENERATEMIPMAPPROC          glGenerateMipmap_;
 
 // GL_EXT_framebuffer_blit
-#ifndef GL_EXT_framebuffer_blit
-#define GL_READ_FRAMEBUFFER_EXT           0x8CA8
-#define GL_DRAW_FRAMEBUFFER_EXT           0x8CA9
-#define GL_DRAW_FRAMEBUFFER_BINDING_EXT   0x8CA6
-#define GL_READ_FRAMEBUFFER_BINDING_EXT   0x8CAA
-typedef void (APIENTRYP PFNGLBLITFRAMEBUFFEREXTPROC) (GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter);
-#endif
-extern PFNGLBLITFRAMEBUFFEREXTPROC         glBlitFramebuffer_;
-
-// GL_EXT_packed_depth_stencil
-#ifndef GL_DEPTH_STENCIL_EXT
-#define GL_DEPTH_STENCIL_EXT 0x84F9
-#endif
-#ifndef GL_DEPTH24_STENCIL8_EXT
-#define GL_DEPTH24_STENCIL8_EXT 0x88F0
-#endif
+extern PFNGLBLITFRAMEBUFFERPROC         glBlitFramebuffer_;
 
 // GL_ARB_texture_rg
 #ifndef GL_ARB_texture_rg

@@ -1000,7 +1000,7 @@ namespace recorder
     void readbuffer(videobuffer &m, uint nextframe)
     {
         bool accelyuv = movieaccelyuv && !(m.w%8),
-                        usefbo = movieaccel && hasFBO && hasTR && file->videow <= (uint)screen->w && file->videoh <= (uint)screen->h && (accelyuv || file->videow < (uint)screen->w || file->videoh < (uint)screen->h);
+             usefbo = movieaccel && hasTR && file->videow <= (uint)screen->w && file->videoh <= (uint)screen->h && (accelyuv || file->videow < (uint)screen->w || file->videoh < (uint)screen->h);
         uint w = screen->w, h = screen->h;
         if(usefbo) { w = file->videow; h = file->videoh; }
         if(w != m.w || h != m.h) m.init(w, h, 4);
@@ -1026,22 +1026,22 @@ namespace recorder
             if(accelyuv && (!encodefb || !encoderb))
             {
                 if(!encodefb) glGenFramebuffers_(1, &encodefb);
-                glBindFramebuffer_(GL_FRAMEBUFFER_EXT, encodefb);
+                glBindFramebuffer_(GL_FRAMEBUFFER, encodefb);
                 if(!encoderb) glGenRenderbuffers_(1, &encoderb);
-                glBindRenderbuffer_(GL_RENDERBUFFER_EXT, encoderb);
-                glRenderbufferStorage_(GL_RENDERBUFFER_EXT, GL_RGBA, (m.w*3)/8, m.h);
-                glFramebufferRenderbuffer_(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_RENDERBUFFER_EXT, encoderb);
-                glBindRenderbuffer_(GL_RENDERBUFFER_EXT, 0);
-                glBindFramebuffer_(GL_FRAMEBUFFER_EXT, 0);
+                glBindRenderbuffer_(GL_RENDERBUFFER, encoderb);
+                glRenderbufferStorage_(GL_RENDERBUFFER, GL_RGBA, (m.w*3)/8, m.h);
+                glFramebufferRenderbuffer_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, encoderb);
+                glBindRenderbuffer_(GL_RENDERBUFFER, 0);
+                glBindFramebuffer_(GL_FRAMEBUFFER, 0);
             }
 
             if(tw < (uint)screen->w || th < (uint)screen->h)
             {
-                glBindFramebuffer_(GL_READ_FRAMEBUFFER_EXT, 0);
-                glBindFramebuffer_(GL_DRAW_FRAMEBUFFER_EXT, scalefb);
-                glFramebufferTexture2D_(GL_DRAW_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_ARB, scaletex[0], 0);
+                glBindFramebuffer_(GL_READ_FRAMEBUFFER, 0);
+                glBindFramebuffer_(GL_DRAW_FRAMEBUFFER, scalefb);
+                glFramebufferTexture2D_(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE_ARB, scaletex[0], 0);
                 glBlitFramebuffer_(0, 0, screen->w, screen->h, 0, 0, tw, th, GL_COLOR_BUFFER_BIT, GL_LINEAR);
-                glBindFramebuffer_(GL_DRAW_FRAMEBUFFER_EXT, 0);
+                glBindFramebuffer_(GL_DRAW_FRAMEBUFFER, 0);
             }
             else
             {
@@ -1051,7 +1051,7 @@ namespace recorder
 
             if(tw > m.w || th > m.h || (!accelyuv && tw >= m.w && th >= m.h))
             {
-                glBindFramebuffer_(GL_FRAMEBUFFER_EXT, scalefb);
+                glBindFramebuffer_(GL_FRAMEBUFFER, scalefb);
                 glViewport(0, 0, tw, th);
                 glColor3f(1, 1, 1);
                 glMatrixMode(GL_PROJECTION);
@@ -1061,7 +1061,7 @@ namespace recorder
                 glLoadIdentity();
                 do
                 {
-                    glFramebufferTexture2D_(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_ARB, scaletex[1], 0);
+                    glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE_ARB, scaletex[1], 0);
                     glBindTexture(GL_TEXTURE_RECTANGLE_ARB, scaletex[0]);
                     uint dw = max(tw/2, m.w), dh = max(th/2, m.h);
                     if(dw == m.w && dh == m.h && !accelyuv) { SETSHADER(movieyuv); m.format = aviwriter::VID_YUV; }
@@ -1074,7 +1074,7 @@ namespace recorder
             }
             if(accelyuv)
             {
-                glBindFramebuffer_(GL_FRAMEBUFFER_EXT, encodefb);
+                glBindFramebuffer_(GL_FRAMEBUFFER, encodefb);
                 glViewport(0, 0, (m.w*3)/8, m.h);
                 glColor3f(1, 1, 1);
                 glMatrixMode(GL_PROJECTION);
@@ -1097,10 +1097,10 @@ namespace recorder
             }
             else
             {
-                glBindFramebuffer_(GL_FRAMEBUFFER_EXT, scalefb);
+                glBindFramebuffer_(GL_FRAMEBUFFER, scalefb);
                 glReadPixels(0, 0, m.w, m.h, GL_BGRA, GL_UNSIGNED_BYTE, m.video);
             }
-            glBindFramebuffer_(GL_FRAMEBUFFER_EXT, 0);
+            glBindFramebuffer_(GL_FRAMEBUFFER, 0);
             glViewport(0, 0, screen->w, screen->h);
 
         }
