@@ -12,20 +12,23 @@ enum {FIELDCOMMIT, FIELDABORT, FIELDEDIT, FIELDSHOW, FIELDKEY};
 static int fieldmode = FIELDSHOW;
 static bool fieldsactive = false;
 
+FVAR(IDF_PERSIST, guiscale, FVAR_MIN, 0.5f, VAR_MAX);
+FVAR(IDF_PERSIST, guitextscale, FVAR_MIN, 2.75f, VAR_MAX);
+VAR(IDF_PERSIST, guiskinsize, 0, 0, VAR_MAX); // 0 = texture size, otherwise = size in pixels for skin scaling
+VAR(IDF_PERSIST, guislidersize, 1, 164, VAR_MAX);
+VAR(IDF_PERSIST, guisepsize, 1, 6, VAR_MAX);
+VAR(IDF_PERSIST, guispacesize, 1, 128, VAR_MAX);
+VAR(IDF_PERSIST, guitooltipwidth, -1, -1, VAR_MAX);
+VAR(IDF_PERSIST, guistatuswidth, -1, -1, VAR_MAX);
+
 VAR(IDF_PERSIST, guishadow, 0, 2, 8);
 VAR(IDF_PERSIST, guiclicktab, 0, 1, 1);
 VAR(IDF_PERSIST, guitabborder, 0, 1, 2);
 VAR(IDF_PERSIST, guitextblend, 1, 255, 255);
 VAR(IDF_PERSIST, guitextfade, 1, 200, 255);
-VAR(IDF_PERSIST, guisepsize, 1, 2, 128);
-VAR(IDF_PERSIST, guispacesize, 1, 48, 128);
 VAR(IDF_PERSIST, guiscaletime, 0, 250, VAR_MAX);
 
-VAR(IDF_PERSIST, guitooltipwidth, -1, 768, VAR_MAX);
-VAR(IDF_PERSIST, guistatuswidth, -1, 2048, VAR_MAX);
-
 VAR(IDF_PERSIST, guiskinned, 0, 3, 3); // 0 = no backgrounds, 1 = drawn backgrounds, 2 = skinned backgrounds, 3 = skinned with overlay border
-VARF(IDF_PERSIST, guiskinsize, 0, 64, VAR_MAX, if(guiskinsize) { int off = guiskinsize%4; if(off) guiskinsize += guiskinsize-off; }); // 0 = texture size, otherwise = size in pixels for skin scaling
 
 VAR(IDF_PERSIST|IDF_HEX, guibgcolour, -1, 0x000000, 0xFFFFFF);
 FVAR(IDF_PERSIST, guibgblend, 0, 0.7f, 1);
@@ -53,7 +56,6 @@ FVAR(IDF_PERSIST, guifieldborderblend, 0, 1.f, 1);
 VAR(IDF_PERSIST|IDF_HEX, guifieldactivecolour, -1, 0xF04040, 0xFFFFFF);
 FVAR(IDF_PERSIST, guifieldactiveblend, 0, 1.f, 1);
 
-VAR(IDF_PERSIST, guislidersize, 1, 48, 128);
 VAR(IDF_PERSIST|IDF_HEX, guislidercolour, -1, 0x000000, 0xFFFFFF);
 FVAR(IDF_PERSIST, guisliderblend, 0, 0.3f, 1);
 VAR(IDF_PERSIST|IDF_HEX, guisliderbordercolour, -1, 0xC0C0C0, 0xFFFFFF);
@@ -121,16 +123,16 @@ struct gui : guient
                         case 1:
                             colour = colour2;
                             blend = blend2;
-                            if(!skinbordertex) skinbordertex = textureload(guiskinbordertex, 3, true, false);
+                            if(!skinbordertex) skinbordertex = textureload(guiskinbordertex, 0, true, false);
                             if(skinbordertex && skinbordertex != notexture) t = skinbordertex;
                             break;
                         case 0: default:
-                            if(!skintex) skintex = textureload(guiskintex, 3, true, false);
+                            if(!skintex) skintex = textureload(guiskintex, 0, true, false);
                             if(skintex && skintex != notexture) t = skintex;
                             break;
                     }
                     if(!t) break;
-                    int w = x2-x1, h = y2-y1, tw = guiskinsize ? guiskinsize : t->w, th = guiskinsize ? guiskinsize : t->h;
+                    int w = max(x2-x1, 4), h = max(y2-y1, 4), tw = min(guiskinsize ? guiskinsize : t->w, w), th = min(guiskinsize ? guiskinsize : t->h, h);
                     float pw = tw*0.25f, ph = th*0.25f, qw = tw*0.5f, qh = th*0.5f, px = 0, py = 0, tx = 0, ty = 0;
                     int cw = max(int(floorf(w/qw))-1, 0), ch = max(int(floorf(h/qh))+1, 2);
 
@@ -1159,20 +1161,19 @@ struct gui : guient
 
     void adjustscale()
     {
-        int w = xsize + FONTW*8, h = ysize + FONTH*6;
+        int w = xsize+FONTW*8, h = ysize+FONTH*8;
         float aspect = forceaspect ? 1.0f/forceaspect : float(screen->h)/float(screen->w), fit = 1.0f;
         if(w*aspect*basescale>1.0f) fit = 1.0f/(w*aspect*basescale);
         if(h*basescale*fit>maxscale) fit *= maxscale/(h*basescale*fit);
         uiscale = vec(aspect*uiscale.x*fit, uiscale.y*fit, 1);
-        uiorigin = vec(0.5f - ((w-xsize)/2 - (FONTW*4))*uiscale.x, 0.5f + (0.5f*h-(FONTH*2))*uiscale.y, 0);
+        uiorigin = vec(0.5f - ((w-xsize)/2 - (FONTW*4))*uiscale.x, 0.5f + (0.5f*h-(FONTH*4))*uiscale.y, 0);
     }
 
     void start(int starttime, float initscale, int *tab, bool allowinput, bool wantstitle, bool wantsbgfx)
     {
         fontdepth = 0;
         gui::pushfont("reduced");
-        initscale *= 0.025f;
-        basescale = initscale;
+        basescale = initscale*0.025f*guiscale;
         if(guilayoutpass)
             uiscale.x = uiscale.y = uiscale.z = guiscaletime ? min(basescale*(totalmillis-starttime)/float(guiscaletime), basescale) : basescale;
         needsinput = allowinput;
@@ -1227,9 +1228,9 @@ struct gui : guient
             if(guistatusline && statusstr && *statusstr)
             {
                 gui::pushfont("little");
-                int width = 0, height = 0, tw = min(statuswidth ? statuswidth : (guistatuswidth ? guistatuswidth : -1), int(screen->w*(1/uiscale.y)));
+                int width = 0, height = 0, tw = min(statuswidth ? statuswidth : (guistatuswidth ? guistatuswidth : -1), int(screen->w*(1/uiscale.y))-FONTH*4);
                 text_bounds(statusstr, width, height, tw, TEXT_CENTERED|TEXT_NO_INDENT);
-                int w = width+FONTW*2, h = FONTH/2+height, x1 = -w/2, y1 = guispacesize, x2 = x1+w, y2 = y1+h;
+                int w = width+FONTW*2, h = height+FONTH/2, x1 = -w/2, y1 = guispacesize, x2 = x1+w, y2 = y1+h;
                 if(hasbgfx) skin(x1, y1, x2, y2, guibgcolour, guibgblend, guibordercolour, guiborderblend);
                 draw_text(statusstr, x1+FONTW, y1+FONTH/4, 255, 255, 255, 255, TEXT_CENTERED|TEXT_NO_INDENT, -1, tw);
                 gui::popfont();
@@ -1246,7 +1247,7 @@ struct gui : guient
                 if(tooltipforce || totalmillis-lasttooltip >= guitooltiptime)
                 {
                     gui::pushfont("little");
-                    int width, height, tw = min(tooltipwidth ? tooltipwidth : (guitooltipwidth ? guitooltipwidth : -1), int(screen->w*(1/uiscale.y)));
+                    int width, height, tw = min(tooltipwidth ? tooltipwidth : (guitooltipwidth ? guitooltipwidth : -1), int(screen->w*(1/uiscale.y))-FONTH*4);
                     text_bounds(tooltipstr, width, height, tw, TEXT_NO_INDENT);
                     int w = width+FONTW*2, h = FONTH/2+height, x1 = hitx, y1 = hity-height-FONTH/2, x2 = x1+w, y2 = y1+h,
                         offset = totalmillis-lasttooltip-guitooltiptime;
@@ -1394,6 +1395,8 @@ namespace UI
 
     void render()
     {
+        float oldtextscale = textscale;
+        textscale = guitextscale;
         if(guiactionon) mouseaction[0] |= GUI_PRESSED;
 
         gui::reset();
@@ -1453,6 +1456,7 @@ namespace UI
             keyrepeat(fieldmode!=FIELDSHOW);
         }
         loopi(2) mouseaction[i] = 0;
+        textscale = oldtextscale;
     }
 
     editor *geteditor(const char *name, int mode, const char *init, const char *parent)
