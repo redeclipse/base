@@ -1200,16 +1200,8 @@ void renderparticles(bool mainpass)
             {
                 if(flags&PT_SOFT)
                 {
-                    if(depthfxtex.target==GL_TEXTURE_RECTANGLE_ARB)
-                    {
-                        if(!depthfxtex.highprecision()) SETSHADER(particlesoft8rect);
-                        else SETSHADER(particlesoftrect);
-                    }
-                    else
-                    {
-                        if(!depthfxtex.highprecision()) SETSHADER(particlesoft8);
-                        else SETSHADER(particlesoft);
-                    }
+                    if(!depthfxtex.highprecision()) SETSHADER(particlesoft8);
+                    else SETSHADER(particlesoft);
 
                     binddepthfxparams(depthfxpartblend);
                 }

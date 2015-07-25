@@ -87,7 +87,7 @@ struct rendertarget
         glBindFramebuffer_(GL_FRAMEBUFFER, renderfb);
         if(!rendertex) glGenTextures(1, &rendertex);
 
-        target = texrect() ? GL_TEXTURE_RECTANGLE_ARB : GL_TEXTURE_2D;
+        target = texrect() ? GL_TEXTURE_RECTANGLE : GL_TEXTURE_2D;
 
         GLenum attach = attachment();
         if(attach == GL_DEPTH_ATTACHMENT)
@@ -174,7 +174,7 @@ struct rendertarget
     {
         glBegin(GL_QUADS);
         float wscale = vieww, hscale = viewh;
-        if(target!=GL_TEXTURE_RECTANGLE_ARB)
+        if(target!=GL_TEXTURE_RECTANGLE)
         {
             wscale /= texw;
             hscale /= texh;
@@ -245,7 +245,7 @@ struct rendertarget
 
         loopi(2)
         {
-            setblurshader(i, target == GL_TEXTURE_RECTANGLE_ARB ? 1 : (i ? texh : texw), blursize, blurweights, bluroffsets, target);
+            setblurshader(i, target == GL_TEXTURE_RECTANGLE ? 1 : (i ? texh : texw), blursize, blurweights, bluroffsets, target);
 
             if(!swaptexs() || rtsharefb) glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, i ? rendertex : blurtex, 0);
             else glBindFramebuffer_(GL_FRAMEBUFFER, i ? renderfb : blurfb);
@@ -316,7 +316,6 @@ struct rendertarget
 
     virtual void doclear() {}
 
-    virtual bool screenview() const { return false; }
     virtual bool texrect() const { return false; }
     virtual bool filter() const { return true; }
 
@@ -331,19 +330,12 @@ struct rendertarget
             vieww = w;
             viewh = h;
         }
-        else if(screenview())
-        {
-            while(screen->w < (w*3)/4) w /= 2;
-            while(screen->h < (h*3)/4) h /= 2;
-            vieww = min(w, screen->w);
-            viewh = min(h, screen->h);
-        }
         else 
         {
             vieww = w;
             viewh = h;
         }
-        if(w!=texw || h!=texh || (texrect() ? target!=GL_TEXTURE_RECTANGLE_ARB : target!=GL_TEXTURE_2D) || (swaptexs() && !rtsharefb ? !blurfb : blurfb)) cleanup();
+        if(w!=texw || h!=texh || (texrect() ? target!=GL_TEXTURE_RECTANGLE : target!=GL_TEXTURE_2D) || (swaptexs() && !rtsharefb ? !blurfb : blurfb)) cleanup();
         
         if(!filter())
         {
@@ -474,12 +466,12 @@ struct rendertarget
     {
         if(!rendertex) return;
         int w = min(screen->w, screen->h)/2, h = (w*screen->h)/screen->w;
-        (target==GL_TEXTURE_RECTANGLE_ARB ? rectshader : defaultshader)->set();
+        (target==GL_TEXTURE_RECTANGLE ? rectshader : defaultshader)->set();
         glColor3f(1, 1, 1);
         glEnable(target);
         glBindTexture(target, rendertex);
         float tx1 = 0, tx2 = vieww, ty1 = 0, ty2 = viewh;
-        if(target!=GL_TEXTURE_RECTANGLE_ARB)
+        if(target!=GL_TEXTURE_RECTANGLE)
         {
             tx2 /= vieww;
             ty2 /= viewh;

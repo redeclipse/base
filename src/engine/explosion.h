@@ -112,16 +112,8 @@ struct explosionrenderer : sharedlistrenderer
         if(glaring) SETSHADER(explosionglare);
         else if(!reflecting && !refracting && depthfx && depthfxtex.rendertex && numdepthfxranges>0)
         {
-            if(depthfxtex.target==GL_TEXTURE_RECTANGLE_ARB)
-            {
-                if(!depthfxtex.highprecision()) SETSHADER(explosionsoft8rect);
-                else SETSHADER(explosionsoftrect);
-            }
-            else
-            {
-                if(!depthfxtex.highprecision()) SETSHADER(explosionsoft8);
-                else SETSHADER(explosionsoft);
-            }
+            if(!depthfxtex.highprecision()) SETSHADER(explosionsoft8);
+            else SETSHADER(explosionsoft);
         }
         else SETSHADER(explosion);
 

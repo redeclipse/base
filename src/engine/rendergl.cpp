@@ -177,7 +177,6 @@ VAR(0, intel_immediate_bug, 0, 0, 1);
 VAR(0, intel_vertexarray_bug, 0, 0, 1);
 VAR(0, sdl_backingstore_bug, -1, 0, 1);
 VAR(0, minimizetcusage, 1, 0, 0);
-VAR(0, usetexrect, 1, 0, 0);
 VAR(0, useubo, 1, 0, 0);
 VAR(0, usetexcompress, 1, 0, 0);
 VAR(0, rtscissor, 0, 1, 1);
@@ -498,13 +497,12 @@ void gl_checkextensions()
         if(dbgexts) conoutf("\frUsing GL_ARB_uniform_buffer_object extension.");
     }
 
-    if(hasext(gfxexts, "GL_EXT_texture_rectangle") || hasext(gfxexts, "GL_ARB_texture_rectangle"))
+    if(hasext(gfxexts, "GL_ARB_texture_rectangle"))
     {
-        usetexrect = 1;
         hasTR = true;
         if(dbgexts) conoutf("\frUsing GL_ARB_texture_rectangle extension.");
     }
-    else conoutf("\frWARNING: No texture rectangle support. (no full screen shaders)");
+    else fatal("Texture rectangle support is required!");
 
     if(hasext(gfxexts, "GL_EXT_texture_compression_s3tc"))
     {
@@ -545,13 +543,9 @@ void gl_checkextensions()
         setvar("waterfallrefract", 1, false, true);
         setvar("glare", 1, false, true);
         setvar("maxdynlights", MAXDYNLIGHTS, false, true);
-        if(hasTR)
-        {
-            setvar("depthfxsize", 10, false, true);
-            setvar("depthfxrect", 1, false, true);
-            setvar("depthfxfilter", 0, false, true);
-            setvar("blurdepthfx", 0, false, true);
-        }
+        setvar("depthfxsize", 10, false, true);
+        setvar("depthfxfilter", 0, false, true);
+        setvar("blurdepthfx", 0, false, true);
     }
 }
 
@@ -1005,7 +999,7 @@ FVAR(IDF_PERSIST, motionblurscale, 0, 1, 1);
 void addmotionblur()
 {
     extern int viewtype;
-    if(!motionblur || viewtype || !hasTR || max(screen->w, screen->h) > hwtexsize) return;
+    if(!motionblur || viewtype || max(screen->w, screen->h) > hwtexsize) return;
 
     if(!motiontex || motionw != screen->w || motionh != screen->h)
     {
@@ -1013,7 +1007,7 @@ void addmotionblur()
         motionw = screen->w;
         motionh = screen->h;
         lastmotion = 0;
-        createtexture(motiontex, motionw, motionh, NULL, 3, 0, GL_RGB, GL_TEXTURE_RECTANGLE_ARB);
+        createtexture(motiontex, motionw, motionh, NULL, 3, 0, GL_RGB, GL_TEXTURE_RECTANGLE);
     }
 
     float amount = min(hud::motionblur(motionblurscale), 1.0f);
@@ -1023,7 +1017,7 @@ void addmotionblur()
         return;
     }
 
-    glBindTexture(GL_TEXTURE_RECTANGLE_ARB, motiontex);
+    glBindTexture(GL_TEXTURE_RECTANGLE, motiontex);
 
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
@@ -1058,7 +1052,7 @@ void addmotionblur()
     {
         lastmotion = totalmillis-totalmillis%motionblurmillis;
 
-        glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, 0, 0, screen->w, screen->h);
+        glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE, 0, 0, 0, 0, 0, screen->w, screen->h);
     }
 }
 
@@ -1752,7 +1746,7 @@ struct framebuffercopy
     GLenum target;
     int w, h;
 
-    framebuffercopy() : tex(0), target(GL_TEXTURE_2D), w(0), h(0) {}
+    framebuffercopy() : tex(0), target(GL_TEXTURE_RECTANGLE), w(0), h(0) {}
 
     void cleanup()
     {
@@ -1765,24 +1759,14 @@ struct framebuffercopy
     {
         if(tex) return;
         glGenTextures(1, &tex);
-        if(hasTR)
-        {
-            target = GL_TEXTURE_RECTANGLE_ARB;
-            w = screen->w;
-            h = screen->h;
-        }
-        else
-        {
-            target = GL_TEXTURE_2D;
-            for(w = 1; w < screen->w; w *= 2);
-            for(h = 1; h < screen->h; h *= 2);
-        }
+        w = screen->w;
+        h = screen->h;
         createtexture(tex, w, h, NULL, 3, false, GL_RGB, target);
     }
 
     void copy()
     {
-        if(target == GL_TEXTURE_RECTANGLE_ARB)
+        if(target == GL_TEXTURE_RECTANGLE)
         {
             if(w != screen->w || h != screen->h) cleanup();
         }
@@ -1796,7 +1780,7 @@ struct framebuffercopy
     void draw(float sx, float sy, float sw, float sh)
     {
         float tx = 0, ty = 0, tw = float(screen->w)/w, th = float(screen->h)/h;
-        if(target == GL_TEXTURE_RECTANGLE_ARB)
+        if(target == GL_TEXTURE_RECTANGLE)
         {
             rectshader->set();
             tx *= w;
@@ -1811,7 +1795,7 @@ struct framebuffercopy
         glTexCoord2f(tx,    ty+th); glVertex2f(sx,    sy+sh);
         glTexCoord2f(tx+tw, ty+th); glVertex2f(sx+sw, sy+sh);
         glEnd();
-        if(target == GL_TEXTURE_RECTANGLE_ARB)
+        if(target == GL_TEXTURE_RECTANGLE)
             defaultshader->set();
     }
 };

@@ -12,7 +12,6 @@ VAR(IDF_PERSIST, depthfxemuprecision, 0, 1, 1);
 VARF(IDF_PERSIST, depthfxsize, 6, 7, 12, cleanupdepthfx());
 VAR(IDF_PERSIST, depthfx, 0, 1, 1);
 VAR(IDF_PERSIST, depthfxparts, 0, 1, 1);
-VARF(IDF_PERSIST, depthfxrect, 0, 0, 1, cleanupdepthfx());
 VARF(IDF_PERSIST, depthfxfilter, 0, 1, 1, cleanupdepthfx());
 VAR(IDF_PERSIST, blurdepthfx, 0, 1, 7);
 VAR(IDF_PERSIST, blurdepthfxsigma, 1, 50, 200);
@@ -34,7 +33,7 @@ static struct depthfxtexture : rendertarget
         static const GLenum colorfmtsnv[] = { GL_FLOAT_RG16_NV, GL_RGB16F, GL_RGBA, GL_RGBA8, GL_RGB, GL_RGB8, GL_FALSE };
         if(!hasTF || !fpdepthfx) return &colorfmts[2];
         if(hasTRG) return colorfmts;
-        if(hasNVFB && texrect() && !filter()) return colorfmtsnv;
+        if(hasNVFB && !filter()) return colorfmtsnv;
         return &colorfmts[1];
     }
 
@@ -70,8 +69,7 @@ static struct depthfxtexture : rendertarget
         return addblurtiles(sx1, sy1, sx2, sy2);
     }
 
-    bool screenview() const { return depthfxrect!=0; }
-    bool texrect() const { return depthfxrect && hasTR; }
+    bool texrect() const { return true; }
     bool filter() const { return depthfxfilter!=0; }
     bool highprecision() const { return colorfmt==GL_RG16F || colorfmt==GL_FLOAT_RG16_NV || colorfmt==GL_RGB16F; }
     bool emulatehighprecision() const { return depthfxemuprecision && !depthfxfilter; }
@@ -146,15 +144,10 @@ bool binddepthfxtex()
     if(!reflecting && !refracting && depthfx && depthfxtex.rendertex && numdepthfxranges>0)
     {
         glActiveTexture_(GL_TEXTURE2);
-        glBindTexture(depthfxtex.target, depthfxtex.rendertex);
+        glBindTexture(GL_TEXTURE_RECTANGLE, depthfxtex.rendertex);
         glActiveTexture_(GL_TEXTURE0);
 
         float w = 0.5f*depthfxtex.vieww, h = 0.5f*depthfxtex.viewh;
-        if(depthfxtex.target!=GL_TEXTURE_RECTANGLE_ARB)
-        {
-            w /= depthfxtex.texw;
-            h /= depthfxtex.texh;
-        }
         GLOBALPARAMF(depthfxview, w, h);
         return true;
     }
