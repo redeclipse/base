@@ -12,7 +12,6 @@ VAR(IDF_PERSIST, depthfxemuprecision, 0, 1, 1);
 VARF(IDF_PERSIST, depthfxsize, 6, 7, 12, cleanupdepthfx());
 VAR(IDF_PERSIST, depthfx, 0, 1, 1);
 VAR(IDF_PERSIST, depthfxparts, 0, 1, 1);
-VARF(IDF_PERSIST, depthfxfilter, 0, 1, 1, cleanupdepthfx());
 VAR(IDF_PERSIST, blurdepthfx, 0, 1, 7);
 VAR(IDF_PERSIST, blurdepthfxsigma, 1, 50, 200);
 VAR(0, depthfxscissor, 0, 2, 2);
@@ -70,9 +69,9 @@ static struct depthfxtexture : rendertarget
     }
 
     bool texrect() const { return true; }
-    bool filter() const { return depthfxfilter!=0; }
+    bool filter() const { return blurdepthfx!=0; }
     bool highprecision() const { return colorfmt==GL_RG16F || colorfmt==GL_FLOAT_RG16_NV || colorfmt==GL_RGB16F; }
-    bool emulatehighprecision() const { return depthfxemuprecision && !depthfxfilter; }
+    bool emulatehighprecision() const { return depthfxemuprecision && !blurdepthfx; }
 
     bool shouldrender()
     {

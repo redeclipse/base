@@ -544,7 +544,6 @@ void gl_checkextensions()
         setvar("glare", 1, false, true);
         setvar("maxdynlights", MAXDYNLIGHTS, false, true);
         setvar("depthfxsize", 10, false, true);
-        setvar("depthfxfilter", 0, false, true);
         setvar("blurdepthfx", 0, false, true);
     }
 }
