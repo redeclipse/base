@@ -20,6 +20,7 @@ GFVAR(0, liquidsubmergescale, 0, 1, FVAR_MAX);
 GFVAR(IDF_WORLD, liquidextinguish, 0, 0.25f, 1);
 GFVAR(0, liquidextinguishscale, 0, 1, FVAR_MAX);
 
+GVAR(IDF_ADMIN, serverstats, 0, 0, 1);
 GVAR(IDF_ADMIN, serverdebug, 0, 0, 3);
 GVAR(IDF_ADMIN, serverclients, 1, 16, MAXCLIENTS);
 GVARF(IDF_ADMIN, serverdupclients, 0, 0, MAXCLIENTS, limitdupclients(), );

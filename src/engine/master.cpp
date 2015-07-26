@@ -8,7 +8,9 @@
 
 #include "engine.h"
 #include <enet/time.h>
+#include <sqlite3.h>
 
+#define STATDB_VERSION 0
 #define MASTER_LIMIT 4096
 #define CLIENT_TIME (60*1000)
 #define SERVER_TIME (35*60*1000)
@@ -58,6 +60,17 @@ struct masterclient
 static vector<masterclient *> masterclients;
 static ENetSocket mastersocket = ENET_SOCKET_NULL, pingsocket = ENET_SOCKET_NULL;
 static time_t starttime;
+static sqlite3 *statsdb = NULL;
+
+bool checkstatsdb(int rc)
+{
+	if(rc == SQLITE_OK)
+		return true;
+	defformatbigstring(message, "%s", sqlite3_errmsg(statsdb));
+	sqlite3_close(statsdb);
+	fatal("statistics database error: %s", message);
+	return false;
+}
 
 bool setuppingsocket(ENetAddress *address)
 {
@@ -83,6 +96,8 @@ void setupmaster()
         if(enet_socket_set_option(mastersocket, ENET_SOCKOPT_NONBLOCK, 1) < 0) fatal("failed to make master server socket non-blocking");
         if(!setuppingsocket(&address)) fatal("failed to create ping socket");
         starttime = clocktime;
+        
+        
         conoutf("master server started on %s:[%d]", *masterip ? masterip : "localhost", masterport);
     }
 }
@@ -510,6 +525,7 @@ void checkmaster()
 void cleanupmaster()
 {
     if(mastersocket != ENET_SOCKET_NULL) enet_socket_destroy(mastersocket);
+    sqlite3_close(statsdb);
 }
 
 void reloadmaster()

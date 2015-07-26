@@ -1373,10 +1373,12 @@ namespace server
     }
     
     bool checkvotes(bool force = false);
+    void sendstats();
     void startintermission(bool req = false)
     {
         if(gs_playing(gamestate))
         {
+			sendstats();
             setpause(false);
             timeremaining = 0;
             gamelimit = min(gamelimit, gamemillis);
@@ -3036,6 +3038,18 @@ namespace server
         }
         return true;
     }
+    
+    void sendstats()
+    {
+		if(G(serverstats))
+		{
+			srvoutf(-3, "\fcsubmitting statistics");
+			requestmasterf("stats begin");
+			requestmasterf("stats end");
+		}
+	}
+	
+	GICOMMAND(0, sendstats, "", (), sendstats(); result("success"),);
 
     #include "capturemode.h"
     #include "defendmode.h"
