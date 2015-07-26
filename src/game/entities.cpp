@@ -44,7 +44,7 @@ namespace entities
         else if(*n < MAXENTTYPES) result(enttype[*n].name);
     });
 
-    ICOMMAND(0, getentattr, "bba", (int *n, int *p, int *a), {
+    ICOMMAND(0, getentattr, "bbb", (int *n, int *p, int *a), {
         if(*n < 0) intret(MAXENTTYPES);
         else if(*n < MAXENTTYPES)
         {
