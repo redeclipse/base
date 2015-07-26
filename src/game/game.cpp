@@ -276,18 +276,20 @@ namespace game
     FVAR(IDF_PERSIST, playereditblend, 0, 0.5f, 1);
     FVAR(IDF_PERSIST, playerghostblend, 0, 0.5f, 1);
 
-    VAR(IDF_PERSIST, playerhint, 0, 3, 3);
+    VAR(IDF_PERSIST, playerhint, 0, 15, 15);
     VAR(IDF_PERSIST, playerhinthurt, 0, 1, 1);
     VAR(IDF_PERSIST, playerhinthurtthrob, 0, 1, 1);
     VAR(IDF_PERSIST, playerhinttone, -1, CTONE_TEAMED, CTONE_MAX-1);
-    FVAR(IDF_PERSIST, playerhintblend, 0, 0.1f, 1);
+    FVAR(IDF_PERSIST, playerhintblend, 0, 0.3f, 1);
     FVAR(IDF_PERSIST, playerhintscale, 0, 0.7f, 1); // scale blend depending on health
+    FVAR(IDF_PERSIST, playerhintlight, 0, 0.3f, 1); // override for light effect
+    FVAR(IDF_PERSIST, playerhintdom, 0, 0.3f, 1); // override for dominate effect
     FVAR(IDF_PERSIST, playerhintsize, 0, 1.2f, 2);
     FVAR(IDF_PERSIST, playerhintmaxsize, 0, 20, FVAR_MAX);
     FVAR(IDF_PERSIST, playerhintfadeat, 0, 64, FVAR_MAX);
     FVAR(IDF_PERSIST, playerhintfadecut, 0, 8, FVAR_MAX);
     FVAR(IDF_PERSIST, playerhinthurtblend, 0, 0.9f, 1);
-    FVAR(IDF_PERSIST, playerhinthurtsize, 0, 1.2f, 2);
+    FVAR(IDF_PERSIST, playerhinthurtsize, 0, 1.3f, 2);
 
     VAR(IDF_PERSIST, footstepsounds, 0, 3, 3); // 0 = off, &1 = focus, &2 = everyone else
     FVAR(IDF_PERSIST, footstepsoundmin, 0, 0, FVAR_MAX); // minimum velocity magnitude
@@ -931,7 +933,7 @@ namespace game
                         float scale = powering ? 1.f+(amt*1.5f) : (d->weapstate[d->weapselect] == W_S_IDLE ? 1.f : (reloading ? (amt-0.5f)*2 : amt));
                         adddynlight(d->ejectpos(d->weapselect), 16*scale, col, 0, 0, DL_KEEP);
                     }
-                    if((W(d->weapselect, lightpersist) || powering) && W(d->weapselect, lightradius) > 0)
+                    if((W(d->weapselect, lightpersist)&1 || powering) && W(d->weapselect, lightradius) > 0)
                     {
                         float thresh = max(amt, 0.25f), size = W(d->weapselect, lightradius)*thresh;
                         int span = max(W2(d->weapselect, cooktime, physics::secondaryweap(d))/4, 500), interval = lastmillis%span, part = span/2;
@@ -3043,24 +3045,29 @@ namespace game
             e->light.effect = playerlightmix > 0 ? vec::hexcolor(getcolour(d, playerlighttone)).mul(playerlightmix) : vec(0, 0, 0);
             e->light.material[0] = bvec(getcolour(d, playerovertone));
             e->light.material[1] = bvec(getcolour(d, playerundertone));
-            if(isweap(d->weapselect) && (W2(d->weapselect, ammosub, false) || W2(d->weapselect, ammosub, true)) && W(d->weapselect, ammomax) > 1)
+            if(isweap(d->weapselect))
             {
-                int ammo = d->ammo[d->weapselect], maxammo = W(d->weapselect, ammomax);
-                float scale = 1;
-                switch(d->weapstate[d->weapselect])
+                if((W2(d->weapselect, ammosub, false) || W2(d->weapselect, ammosub, true)) && W(d->weapselect, ammomax) > 1)
                 {
-                    case W_S_RELOAD:
+                    int ammo = d->ammo[d->weapselect], maxammo = W(d->weapselect, ammomax);
+                    float scale = 1;
+                    switch(d->weapstate[d->weapselect])
                     {
-                        int millis = lastmillis-d->weaplast[d->weapselect], check = d->weapwait[d->weapselect]/2;
-                        scale = millis >= check ? float(millis-check)/check : 0.f;
-                        if(d->weapload[d->weapselect] > 0)
-                            scale = max(scale, float(ammo - d->weapload[d->weapselect])/maxammo);
-                        break;
+                        case W_S_RELOAD:
+                        {
+                            int millis = lastmillis-d->weaplast[d->weapselect], check = d->weapwait[d->weapselect]/2;
+                            scale = millis >= check ? float(millis-check)/check : 0.f;
+                            if(d->weapload[d->weapselect] > 0)
+                                scale = max(scale, float(ammo - d->weapload[d->weapselect])/maxammo);
+                            break;
+                        }
+                        default: scale = float(ammo)/maxammo; break;
                     }
-                    default: scale = float(ammo)/maxammo; break;
+                    uchar wepmat = uchar(255*scale);
+                    e->light.material[2] = bvec(wepmat, wepmat, wepmat);
                 }
-                uchar wepmat = uchar(255*scale);
-                e->light.material[2] = bvec(wepmat, wepmat, wepmat);
+                else e->light.material[2] = bvec(255, 255, 255);
+                if(W(d->weapselect, lightpersist)&2) e->light.material[1].max(bvec::fromcolor(WPCOL(d, d->weapselect, lightcol, physics::secondaryweap(d))));
             }
             else e->light.material[2] = bvec(255, 255, 255);
             if(burntime && d->burning(lastmillis, burntime))
@@ -3360,14 +3367,33 @@ namespace game
         {
             bool useth = hud::teamhurthud&1 && hud::teamhurttime && m_team(gamemode, mutators) && focus == player1 &&
                  d->team == player1->team && d->lastteamhit >= 0 && lastmillis-d->lastteamhit <= hud::teamhurttime,
-                 hashint = playerhint&(d->team != focus->team ? 2 : 1);
-            if(d->actortype < A_ENEMY && d != focus && (useth || hashint))
+            hashint = playerhint&(d->team != focus->team ? 2 : 1), haslight = false, haspower = false, hasdom = false;
+            if(isweap(d->weapselect) && playerhint&4)
             {
-                if(hashint)
+                if(W(d->weapselect, lightpersist)&4) haslight = true;
+                if(W(d->weapselect, lightpersist)&8 && lastmillis-d->weaplast[d->weapselect] > 0 && d->weapstate[d->weapselect] == W_S_POWER)
+                    haspower = true;
+            }
+            if((!m_team(gamemode, mutators) || d->team != focus->team) && playerhint&8 && d->dominated.find(focus) >= 0) hasdom = true;
+            if(d->actortype < A_ENEMY && d != focus && (useth || hashint || haslight || haspower || hasdom))
+            {
+                if(hashint || haslight || haspower|| hasdom)
                 {
-                    vec c = vec::hexcolor(getcolour(d, playerhinttone));
+                    vec c = vec::hexcolor(hasdom ? pulsecols[PULSE_DISCO][clamp((lastmillis/100)%PULSECOLOURS, 0, PULSECOLOURS-1)] : (haslight ? WHCOL(d, d->weapselect, lightcol, physics::secondaryweap(d)) : getcolour(d, playerhinttone)));
                     float height = d->height, fade = blend;
-                    if(playerhintscale > 0)
+                    if(hasdom) fade *= playerhintdom;
+                    else if(haslight || haspower)
+                    {
+                        int millis = lastmillis-d->weaplast[d->weapselect];
+                        if(haslight)
+                        {
+                            if(d->weapstate[d->weapselect] == W_S_SWITCH || d->weapstate[d->weapselect] == W_S_USE)
+                                fade *= millis/float(max(d->weapwait[d->weapselect], 1));
+                        }
+                        else fade *= millis/float(max(d->weapwait[d->weapselect], 1));
+                        fade *= playerhintlight;
+                    }
+                    else if(playerhintscale > 0)
                     {
                         float per = d->health/float(m_health(gamemode, mutators, d->model));
                         fade = (fade*(1.f-playerhintscale))+(fade*per*playerhintscale);
@@ -3376,6 +3402,7 @@ namespace game
                             height *= 1.f+(fade-1.f);
                             fade = 1;
                         }
+                        fade *= playerhintblend;
                     }
                     if(d->state == CS_ALIVE && d->lastbuff)
                     {
@@ -3387,7 +3414,7 @@ namespace game
                     vec o = d->center(), offset = vec(o).sub(camera1->o).rescale(d->radius/2);
                     offset.z = max(offset.z, -1.0f);
                     offset.add(o);
-                    part_create(PART_HINT_BOLD_SOFT, 1, offset, c.tohexcolor(), clamp(height*playerhintsize, 1.f, playerhintmaxsize), fade*playerhintblend*camera1->o.distrange(o, playerhintfadeat, playerhintfadecut));
+                    part_create(PART_HINT_BOLD_SOFT, 1, offset, c.tohexcolor(), clamp(height*playerhintsize, 1.f, playerhintmaxsize), fade*camera1->o.distrange(o, playerhintfadeat, playerhintfadecut));
                 }
                 if(useth)
                 {

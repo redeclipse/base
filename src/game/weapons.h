@@ -466,8 +466,8 @@ WPVARK(IDF_HEX, lightcol, -PULSE_MAX, 0xFFFFFF,
     0xEEEE22,   0xC0C0C0,   0x4040F0,   0xF0F020,   0xF05820,   -1,         0x40F0C8,   -4,         0xA020F0,   -1,         0x00F068,   -1,
     0xEEEE22,   0xC0C0C0,   0x4040F0,   0xF0F020,   0xF05820,   0xF0F0F0,   0x40F0C8,   -4,         0xA020F0,   -1,         0x00F068,   -1
 );
-WPVAR(0, lightpersist, 0, 1,
-    0,          0,          1,          0,          0,          1,          0,          1,          0,          0,          0,          0
+WPVAR(0, lightpersist, 0, 15,
+    0,          0,          1,          0,          0,          1,          0,          1,          0,          8,          0,          6
 );
 WPFVAR(0, lightradius, 0, FVAR_MAX,
     0,          8,          8,          8,          8,          8,          16,         4,          16,         16,         16,         16
