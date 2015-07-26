@@ -495,7 +495,7 @@ void loadalias(const char *name, const char *fname)
     if(!buf)
     {
         conoutf("\frcould not read %s", fname);
-        return false;
+        return;
     }
     tagval v;
     v.setstr(buf);
