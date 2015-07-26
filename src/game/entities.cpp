@@ -44,12 +44,31 @@ namespace entities
         else if(*n < MAXENTTYPES) result(enttype[*n].name);
     });
 
-    ICOMMAND(0, getentattr, "bb", (int *n, int *p), {
+    ICOMMAND(0, getentattr, "bba", (int *n, int *p, int *a), {
         if(*n < 0) intret(MAXENTTYPES);
         else if(*n < MAXENTTYPES)
         {
             if(*p < 0) intret(enttype[*n].numattrs);
-            else if(*p < enttype[*n].numattrs) result(enttype[*n].attrs[*p]);
+            else if(*p < enttype[*n].numattrs)
+            {
+                const char *attrname = enttype[*n].attrs[*p];
+                if(*n == PARTICLES) switch(*a)
+                {
+                    case -1: break; // not given
+                    case 0: switch(*p) { case 1: attrname = "length"; break; case 2: attrname = "height"; break; case 3: attrname = "colour"; break; case 4: attrname = "fade"; break; case 5: attrname = "palette"; break; case 6: attrname = "palindex"; break; case 7: attrname = "size"; break; case 8: attrname = "blend"; break; case 9: attrname = "gravity"; break; case 10: attrname = "velocity"; break; case 11: attrname = "millis"; break; default: attrname = ""; } break;
+                    case 1: switch(*p) { case 1: attrname = "dir"; break; case 11: attrname = "millis"; break; default: attrname = ""; } break;
+                    case 2: switch(*p) { case 1: attrname = "dir"; break; case 11: attrname = "millis"; break; default: attrname = ""; } break;
+                    case 3: switch(*p) { case 1: attrname = "size"; break; case 2: attrname = "colour"; break; case 3: attrname = "palette"; break; case 4: attrname = "palindex"; break; case 11: attrname = "millis"; break; default: attrname = ""; } break;
+                    case 4: case 7: switch(*p) { case 1: attrname = "dir"; break; case 2: attrname = "length"; break; case 3: attrname = "colour"; break; case 4: attrname = "fade"; break; case 5: attrname = "size"; break; case 6: attrname = "palette"; break; case 7: attrname = "palindex"; break; case 11: attrname = "millis"; break; default: attrname = ""; break; } break;
+                    case 8: case 9: case 10: case 11: case 12: case 13: switch(*p) { case 1: attrname = "dir"; break; case 2: attrname = "length"; break; case 3: attrname = "colour"; break; case 4: attrname = "fade"; break; case 5: attrname = "size"; break; case 6: attrname = "decal"; break; case 7: attrname = "gravity"; break; case 8: attrname = "velocity"; break; case 9: attrname = "palette"; break; case 10: attrname = "palindex"; break; case 11: attrname = "millis"; break; default: attrname = ""; break; } break;
+                    case 14: case 15: switch(*p) { case 1: attrname = "radius"; break; case 2: attrname = "height"; break; case 3: attrname = "colour"; break; case 4: attrname = "fade"; break; case 5: attrname = "size"; break; case 6: attrname = "gravity"; break; case 7: attrname = "velocity"; break; case 8: attrname = "palette"; break; case 9: attrname = "palindex"; break; case 11: attrname = "millis"; break; default: attrname = ""; } break;
+                    case 6: switch(*p) { case 1: attrname = "amt"; break; case 2: attrname = "colour"; break; case 3: attrname = "colour2"; break; case 4: attrname = "palette1"; break; case 5: attrname = "palindex1"; break; case 6: attrname = "palette2"; break; case 7: attrname = "palindex2"; break; case 11: attrname = "millis"; break; default: attrname = ""; } break;
+                    case 5: switch(*p) { case 1: attrname = "amt"; break; case 2: attrname = "colour"; break; case 3: attrname = "palette"; break; case 4: attrname = "palindex"; break; case 11: attrname = "millis"; break; default: attrname = ""; } break;
+                    case 32: case 33: case 34: case 35: switch(*p) { case 1: attrname = "red"; break; case 2: attrname = "green"; break; case 3: attrname = "blue"; break; case 11: attrname = "millis"; break; default: attrname = ""; } break;
+                    default: attrname = ""; break;
+                }
+                result(attrname);
+            }
         }
     });
 
