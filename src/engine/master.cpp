@@ -10,7 +10,7 @@
 #include <enet/time.h>
 #include <sqlite3.h>
 
-#define STATDB_VERSION 0
+#define STATSDB_VERSION 0
 #define MASTER_LIMIT 4096
 #define CLIENT_TIME (60*1000)
 #define SERVER_TIME (35*60*1000)
@@ -62,14 +62,87 @@ static ENetSocket mastersocket = ENET_SOCKET_NULL, pingsocket = ENET_SOCKET_NULL
 static time_t starttime;
 static sqlite3 *statsdb = NULL;
 
-bool checkstatsdb(int rc)
+void closestatsdb()
+{
+	if(statsdb)
+	{
+		sqlite3_close(statsdb);
+		statsdb = NULL;
+	}
+}
+
+bool checkstatsdb(int rc, char *err_msg=NULL)
 {
 	if(rc == SQLITE_OK)
 		return true;
-	defformatbigstring(message, "%s", sqlite3_errmsg(statsdb));
-	sqlite3_close(statsdb);
+	defformatbigstring(message, "%s", err_msg ? err_msg : sqlite3_errmsg(statsdb));
+	sqlite3_free(err_msg);
+	closestatsdb();
 	fatal("statistics database error: %s", message);
 	return false;
+}
+
+int statsdbversion()
+{
+	int version = 0;
+	sqlite3_stmt *res;
+	checkstatsdb(sqlite3_prepare_v2(statsdb, "PRAGMA user_version;", -1, &res, 0));
+	while(sqlite3_step(res) == SQLITE_ROW)
+	{
+		version = sqlite3_column_int(res, 0);
+	}
+	sqlite3_finalize(res);
+	return version;
+}
+
+void loadstatsdb()
+{
+	bool initial = true;
+	if(findfile("stats.sqlite", "e")) initial = false;
+	checkstatsdb(sqlite3_open(findfile("stats.sqlite", "w"), &statsdb));
+	if(initial)
+	{
+		char *err_msg = NULL;
+		defformatstring(sql, "PRAGMA user_version = %d;", STATSDB_VERSION);
+		int rc = sqlite3_exec(statsdb, sql, 0, 0, &err_msg);
+		checkstatsdb(rc, err_msg);
+		
+		char *buf = loadfile("sql/create.sql", NULL);
+		if(!buf)
+		{
+			fatal("cannot find sql/create.sql");
+			closestatsdb();
+		}
+		rc = sqlite3_exec(statsdb, buf, 0, 0, &err_msg);
+		checkstatsdb(rc, err_msg);
+		DELETEA(buf);
+		
+		conoutf("created stats database");
+	}
+	conoutf("upgrading database from version %d to version %d", statsdbversion(), STATSDB_VERSION);
+	while(statsdbversion() < STATSDB_VERSION)
+	{
+		char *err_msg = NULL;
+		
+		int ver = statsdbversion();
+		defformatstring(path, "sql/upgrade_%d.sql", ver);
+		
+		char *buf = loadfile(path, NULL);
+		if(!buf)
+		{
+			fatal("cannot find %s", path);
+			closestatsdb();
+		}
+		int rc = sqlite3_exec(statsdb, buf, 0, 0, &err_msg);
+		checkstatsdb(rc, err_msg);
+		DELETEA(buf);
+		
+		defformatstring(sql, "PRAGMA user_version = %d;", ver + 1);
+		rc = sqlite3_exec(statsdb, sql, 0, 0, &err_msg);
+		checkstatsdb(rc, err_msg);
+		
+		conoutf("upgraded to %d", statsdbversion());
+	}
 }
 
 bool setuppingsocket(ENetAddress *address)
@@ -96,8 +169,7 @@ void setupmaster()
         if(enet_socket_set_option(mastersocket, ENET_SOCKOPT_NONBLOCK, 1) < 0) fatal("failed to make master server socket non-blocking");
         if(!setuppingsocket(&address)) fatal("failed to create ping socket");
         starttime = clocktime;
-        
-        
+        loadstatsdb();
         conoutf("master server started on %s:[%d]", *masterip ? masterip : "localhost", masterport);
     }
 }
@@ -525,7 +597,7 @@ void checkmaster()
 void cleanupmaster()
 {
     if(mastersocket != ENET_SOCKET_NULL) enet_socket_destroy(mastersocket);
-    sqlite3_close(statsdb);
+    closestatsdb();
 }
 
 void reloadmaster()
