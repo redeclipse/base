@@ -3058,6 +3058,10 @@ namespace server
 			char *smapname_e = stringtonumbers(smapname);
 			requestmasterf("stats game %s %d %d %d\n", smapname_e, gamemode, mutators, gamemillis);
 			DELETEA(smapname_e);
+			
+			char *desc_e = stringtonumbers(G(serverdesc));
+			requestmasterf("stats server %s %s %d\n", desc_e, versionstring, serverport);
+			DELETEA(desc_e);
 			requestmasterf("stats end\n");
 		}
 	}

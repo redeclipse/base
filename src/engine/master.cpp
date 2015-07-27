@@ -56,10 +56,19 @@ struct masterclient
     
     struct
     {
+		//Game
 		sqlite3_int64 id;
 		string map;
 		int mode, mutators, timeplayed;
 		time_t time;
+		//Server
+		string desc;
+		string version;
+		string host;
+		int port;
+		//Teams
+		//Players
+		//Weapons
 	} stats;
     
 	bool instats;
@@ -473,6 +482,7 @@ bool checkmasterclientinput(masterclient &c)
 			{
 				if(!strcmp(w[1], "end"))
 				{
+					statsdbexecf("BEGIN");
 					statsdbexecf("INSERT INTO games VALUES (NULL, %d, %Q, %d, %d, %d)",
 						c.stats.time,
 						c.stats.map,
@@ -481,6 +491,17 @@ bool checkmasterclientinput(masterclient &c)
 						c.stats.timeplayed
 						);
 					c.stats.id = sqlite3_last_insert_rowid(statsdb);
+					
+					statsdbexecf("INSERT INTO game_servers VALUES (%d, %Q, %Q, %Q, %Q, %d)",
+						c.stats.id,
+						c.stats.host,
+						c.stats.desc,
+						c.stats.version,
+						c.stats.host,
+						c.stats.port
+						);
+						
+					statsdbexecf("COMMIT");
 					conoutf("master peer %s commited stats, game id %lli", c.name, c.stats.id);
 					masteroutf(c, "stats success\n");
 					c.instats = false;
@@ -494,6 +515,15 @@ bool checkmasterclientinput(masterclient &c)
 					c.stats.mutators = (int)strtol(w[4], NULL, 10);
 					c.stats.timeplayed = (int)strtol(w[5], NULL, 10);
 					c.stats.time = currenttime;
+				}
+				else if(!strcmp(w[1], "server"))
+				{
+					char *desc_e = numberstostring(w[2]);
+					copystring(c.stats.desc, desc_e);
+					DELETEA(desc_e);
+					copystring(c.stats.version, w[3]);
+					copystring(c.stats.host, c.name);
+					c.stats.port = (int)strtol(w[4], NULL, 10);
 				}
 			}
 			found = true;

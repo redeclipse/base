@@ -16,7 +16,7 @@ CREATE TABLE game_servers (
     handle TEXT,
     desc TEXT,
     version TEXT,
-    ip TEXT,
+    host TEXT,
     port INTEGER
 );
 
