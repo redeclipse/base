@@ -536,7 +536,7 @@ struct editor
                 cooked = '\n';
                 // fall through
             default:
-                insert(cooked);
+                if(cooked && code >= 32) insert(cooked);
                 break;
         }
     }
