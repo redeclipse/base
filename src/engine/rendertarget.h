@@ -466,7 +466,8 @@ struct rendertarget
     {
         if(!rendertex) return;
         int w = min(screen->w, screen->h)/2, h = (w*screen->h)/screen->w;
-        (target==GL_TEXTURE_RECTANGLE ? rectshader : defaultshader)->set();
+        if(target==GL_TEXTURE_RECTANGLE) SETSHADER(hudrectshader);
+        else hudshader->set();
         glColor3f(1, 1, 1);
         glEnable(target);
         glBindTexture(target, rendertex);
@@ -483,7 +484,7 @@ struct rendertarget
         glTexCoord2f(tx1, ty2); glVertex2i(0, h);
         glTexCoord2f(tx2, ty2); glVertex2i(w, h);
         glEnd();
-        notextureshader->set();
+        hudnotextureshader->set();
         glDisable(target);
         dodebug(w, h);
     }

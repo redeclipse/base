@@ -564,14 +564,6 @@ void gl_init(int w, int h, int bpp, int depth, int fsaa)
     glDisable(GL_DEPTH_TEST);
     glShadeModel(GL_SMOOTH);
 
-
-    glDisable(GL_FOG);
-    glFogi(GL_FOG_MODE, GL_LINEAR);
-    //glHint(GL_FOG_HINT, GL_NICEST);
-    GLfloat fogcolor[4] = { 0, 0, 0, 0 };
-    glFogfv(GL_FOG_COLOR, fogcolor);
-
-
     glEnable(GL_LINE_SMOOTH);
     //glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
 
@@ -631,16 +623,100 @@ void findorientation(vec &o, float yaw, float pitch, vec &pos)
         pos = dir.mul(2*hdr.worldsize).add(o); //otherwise gui won't work when outside of map
 }
 
-void transplayer()
+void setcammatrix()
 {
     // move from RH to Z-up LH quake style worldspace
-    glLoadMatrixf(viewmatrix.a.v);
+    cammatrix = viewmatrix;
+    cammatrix.rotate_around_y(camera1->roll*RAD);
+    cammatrix.rotate_around_x(camera1->pitch*-RAD);
+    cammatrix.rotate_around_z(camera1->yaw*-RAD);
+    cammatrix.translate(vec(camera1->o).neg());
 
-    glRotatef(camera1->roll, 0, 1, 0);
-    glRotatef(camera1->pitch, -1, 0, 0);
-    glRotatef(camera1->yaw, 0, 0, -1);
+    cammatrix.transposedtransformnormal(vec(viewmatrix.b), camdir);
+    cammatrix.transposedtransformnormal(vec(viewmatrix.a).neg(), camright);
+    cammatrix.transposedtransformnormal(vec(viewmatrix.c), camup);
+}
 
-    glTranslatef(-camera1->o.x, -camera1->o.y, -camera1->o.z);
+void setcamprojmatrix(bool init = true, bool flush = false)
+{
+    if(init)
+    {   
+        setcammatrix();
+    }
+
+    camprojmatrix.muld(projmatrix, cammatrix);
+
+    if(init)
+    {
+        invcammatrix.invert(cammatrix);
+        invcamprojmatrix.invert(camprojmatrix);
+    }
+
+    GLOBALPARAM(camprojmatrix, camprojmatrix);
+
+    if(fogging)
+    {
+        vec fogplane(cammatrix.c);
+        fogplane.x /= projmatrix.a.x;
+        fogplane.y /= projmatrix.b.y;
+        fogplane.z /= projmatrix.c.w;
+        GLOBALPARAMF(fogplane, fogplane.x, fogplane.y, 0, fogplane.z); 
+    }
+    else
+    {
+        vec2 lineardepthscale = projmatrix.lineardepthscale();
+        GLOBALPARAMF(fogplane, 0, 0, lineardepthscale.x, lineardepthscale.y);
+    }
+
+    if(flush && Shader::lastshader) Shader::lastshader->flushparams();
+}
+
+matrix4 hudmatrix, hudmatrixstack[64];
+int hudmatrixpos = 0;
+
+void resethudmatrix()
+{
+    hudmatrixpos = 0;
+    GLOBALPARAM(hudmatrix, hudmatrix);
+}
+
+void pushhudmatrix()
+{
+    if(hudmatrixpos >= 0 && hudmatrixpos < int(sizeof(hudmatrixstack)/sizeof(hudmatrixstack[0]))) hudmatrixstack[hudmatrixpos] = hudmatrix;
+    ++hudmatrixpos;
+}
+
+void flushhudmatrix(bool flushparams)
+{
+    GLOBALPARAM(hudmatrix, hudmatrix);
+    if(flushparams && Shader::lastshader) Shader::lastshader->flushparams();
+}
+
+void pophudmatrix(bool flush, bool flushparams)
+{
+    --hudmatrixpos;
+    if(hudmatrixpos >= 0 && hudmatrixpos < int(sizeof(hudmatrixstack)/sizeof(hudmatrixstack[0])))
+    {
+        hudmatrix = hudmatrixstack[hudmatrixpos];
+        if(flush) flushhudmatrix(flushparams);
+    }
+}
+
+void pushhudscale(float sx, float sy)
+{
+    if(!sy) sy = sx;
+    pushhudmatrix();
+    hudmatrix.scale(sx, sy, 1);
+    flushhudmatrix();
+}
+
+void pushhudtranslate(float tx, float ty, float sx, float sy)
+{
+    if(!sy) sy = sx;
+    pushhudmatrix();
+    hudmatrix.translate(tx, ty, 0);
+    if(sy) hudmatrix.scale(sx, sy, 1);
+    flushhudmatrix();
 }
 
 float curfov = 100, fovy, aspect;
@@ -657,15 +733,15 @@ VARF(IDF_HEX|IDF_WORLD, fogcolour, 0, 0x8099B3, 0xFFFFFF,
 
 void vecfromcursor(float x, float y, float z, vec &dir)
 {
-    vec dir1 = invmvpmatrix.perspectivetransform(vec(x*2-1, 1-2*y, z*2-1)),
-        dir2 = invmvpmatrix.perspectivetransform(vec(x*2-1, 1-2*y, -1));
+    vec dir1 = invcamprojmatrix.perspectivetransform(vec(x*2-1, 1-2*y, z*2-1)),
+        dir2 = invcamprojmatrix.perspectivetransform(vec(x*2-1, 1-2*y, -1));
     (dir = dir1).sub(dir2).normalize();
 }
 
 bool vectocursor(const vec &v, float &x, float &y, float &z, float clampxy)
 {
     vec4 clippos;
-    mvpmatrix.transform(v, clippos);
+    camprojmatrix.transform(v, clippos);
     if(clippos.z <= -clippos.w)
     {
         x = y = z = 0;
@@ -691,75 +767,19 @@ bool vectocursor(const vec &v, float &x, float &y, float &z, float clampxy)
 }
 
 extern const matrix4 viewmatrix(vec(-1, 0, 0), vec(0, 0, 1), vec(0, -1, 0));
-matrix4 mvmatrix, projmatrix, mvpmatrix, invmvmatrix, invmvpmatrix;
-
-void readmatrices()
-{
-    glGetFloatv(GL_MODELVIEW_MATRIX, mvmatrix.a.v);
-    glGetFloatv(GL_PROJECTION_MATRIX, projmatrix.a.v);
-
-    mvpmatrix.mul(projmatrix, mvmatrix);
-    invmvmatrix.invert(mvmatrix);
-    invmvpmatrix.invert(mvpmatrix);
-
-    mvmatrix.transposedtransformnormal(vec(viewmatrix.b), camdir);
-    mvmatrix.transposedtransformnormal(vec(viewmatrix.a).neg(), camright);
-    mvmatrix.transposedtransformnormal(vec(viewmatrix.c), camup);
-}
+matrix4 cammatrix, projmatrix, camprojmatrix, invcammatrix, invcamprojmatrix;
 
 FVAR(0, nearplane, 0.01f, 0.54f, 2.0f);
 
-void project(float fovy, float aspect, int farplane, bool flipx, bool flipy, bool swapxy, float zscale)
-{
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    if(swapxy) glRotatef(90, 0, 0, 1);
-    if(flipx || flipy!=swapxy || zscale!=1) glScalef(flipx ? -1 : 1, flipy!=swapxy ? -1 : 1, zscale);
-    GLdouble ydist = nearplane * tan(fovy/2*RAD), xdist = ydist * aspect;
-    glFrustum(-xdist, xdist, -ydist, ydist, nearplane, farplane);
-    glMatrixMode(GL_MODELVIEW);
-}
-
 VAR(0, reflectclip, 0, 6, 64);
 
-matrix4 clipmatrix;
-
-static const matrix4 dummymatrix;
-static int projectioncount = 0;
-void pushprojection(const matrix4 &m = dummymatrix)
-{
-    glMatrixMode(GL_PROJECTION);
-    if(projectioncount <= 0) glPushMatrix();
-    if(&m != &dummymatrix) glLoadMatrixf(m.a.v);
-    if(fogging)
-    {
-        glMultMatrixf(mvmatrix.a.v);
-        glMultMatrixf(invfogmatrix.a.v);
-    }
-    glMatrixMode(GL_MODELVIEW);
-    projectioncount++;
-}
-
-void popprojection()
-{
-    --projectioncount;
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    if(projectioncount > 0)
-    {
-        glPushMatrix();
-        if(fogging)
-        {
-            glMultMatrixf(mvmatrix.a.v);
-            glMultMatrixf(invfogmatrix.a.v);
-        }
-    }
-    glMatrixMode(GL_MODELVIEW);
-}
+matrix4 clipmatrix, noclipmatrix;
 
 FVAR(0, polygonoffsetfactor, -1e4f, -3.0f, 1e4f);
 FVAR(0, polygonoffsetunits, -1e4f, -3.0f, 1e4f);
 FVAR(0, depthoffset, -1e4f, 0.01f, 1e4f);
+
+matrix4 nooffsetmatrix;
 
 void enablepolygonoffset(GLenum type)
 {
@@ -772,18 +792,9 @@ void enablepolygonoffset(GLenum type)
 
     bool clipped = reflectz < 1e15f && reflectclip;
 
-    matrix4 offsetmatrix = clipped ? clipmatrix : projmatrix;
-    offsetmatrix.d.z += depthoffset * projmatrix.c.z;
-
-    glMatrixMode(GL_PROJECTION);
-    if(!clipped) glPushMatrix();
-    glLoadMatrixf(offsetmatrix.a.v);
-    if(fogging)
-    {
-        glMultMatrixf(mvmatrix.a.v);
-        glMultMatrixf(invfogmatrix.a.v);
-    }
-    glMatrixMode(GL_MODELVIEW);
+    nooffsetmatrix = projmatrix;
+    projmatrix.d.z += depthoffset * (clipped ? noclipmatrix.c.z : projmatrix.c.z);
+    setcamprojmatrix(false, true);
 }
 
 void disablepolygonoffset(GLenum type)
@@ -794,27 +805,15 @@ void disablepolygonoffset(GLenum type)
         return;
     }
 
-    bool clipped = reflectz < 1e15f && reflectclip;
-
-    glMatrixMode(GL_PROJECTION);
-    if(clipped)
-    {
-        glLoadMatrixf(clipmatrix.a.v);
-        if(fogging)
-        {
-            glMultMatrixf(mvmatrix.a.v);
-            glMultMatrixf(invfogmatrix.a.v);
-        }
-    }
-    else glPopMatrix();
-    glMatrixMode(GL_MODELVIEW);
+    projmatrix = nooffsetmatrix;
+    setcamprojmatrix(false, true);
 }
 
 void calcspherescissor(const vec &center, float size, float &sx1, float &sy1, float &sx2, float &sy2)
 {
     vec worldpos(center), e;
     if(reflecting) worldpos.z = 2*reflectz - worldpos.z;
-    mvmatrix.transform(worldpos, e);
+    cammatrix.transform(worldpos, e);
     if(e.z > 2*size) { sx1 = sy1 = 1; sx2 = sy2 = -1; return; }
     float zzrr = e.z*e.z - size*size,
           dx = e.x*e.x + zzrr, dy = e.y*e.y + zzrr,
@@ -896,15 +895,6 @@ void popscissor()
     scissoring = 0;
 }
 
-matrix4 envmatrix;
-
-void setenvmatrix()
-{
-    envmatrix = fogging ? fogmatrix : mvmatrix;
-    if(reflecting) envmatrix.reflectz(reflectz);
-    envmatrix.transpose();
-}
-
 static float findsurface(int fogmat, const vec &v, int &abovemat)
 {
     fogmat &= MATF_VOLUME;
@@ -926,7 +916,7 @@ static float findsurface(int fogmat, const vec &v, int &abovemat)
     return hdr.worldsize;
 }
 
-static void blendfog(int fogmat, float blend, float logblend, float &start, float &end, float *fogc)
+static void blendfog(int fogmat, float blend, float logblend, float &start, float &end, vec &fogc)
 {
     switch(fogmat&MATF_VOLUME)
     {
@@ -934,7 +924,7 @@ static void blendfog(int fogmat, float blend, float logblend, float &start, floa
         {
             const bvec &wcol = getwatercol(fogmat);
             int wfog = getwaterfog(fogmat);
-            loopk(3) fogc[k] += blend*wcol[k]/255.0f;
+            fogc.madd(wcol.tocolor(), blend);
             end += logblend*min(fog, max(wfog*4, 32));
             break;
         }
@@ -943,32 +933,108 @@ static void blendfog(int fogmat, float blend, float logblend, float &start, floa
         {
             const bvec &lcol = getlavacol(fogmat);
             int lfog = getlavafog(fogmat);
-            loopk(3) fogc[k] += blend*lcol[k]/255.0f;
+            fogc.madd(lcol.tocolor(), blend);
             end += logblend*min(fog, max(lfog*4, 32));
             break;
         }
 
         default:
-            loopk(3) fogc[k] += blend*fogcolor[k]/255.0f;
+            fogc.madd(fogcolor.tocolor(), blend); 
             start += logblend*(fog+64)/8;
             end += logblend*fog;
             break;
     }
 }
 
+vec oldfogcolor(0, 0, 0), curfogcolor(0, 0, 0);
+float oldfogstart = 0, oldfogend = 1000000, curfogstart = 0, curfogend = 1000000;
+
+void setfogcolor(const vec &v)
+{
+    GLOBALPARAM(fogcolor, v);
+}
+
+void zerofogcolor()
+{
+    setfogcolor(vec(0, 0, 0));
+}
+
+void resetfogcolor()
+{
+    setfogcolor(curfogcolor);
+}
+
+void pushfogcolor(const vec &v)
+{
+    oldfogcolor = curfogcolor;
+    curfogcolor = v;
+    resetfogcolor();
+}
+
+void popfogcolor()
+{
+    curfogcolor = oldfogcolor;
+    resetfogcolor();
+}
+
+void setfogdist(float start, float end)
+{
+    GLOBALPARAMF(fogparams, 1/(end - start), end/(end - start));
+}
+
+void clearfogdist()
+{
+    setfogdist(0, 1000000);
+}
+
+void resetfogdist()
+{
+    setfogdist(curfogstart, curfogend);
+}
+
+void pushfogdist(float start, float end)
+{
+    oldfogstart = curfogstart;
+    oldfogend = curfogend;
+    curfogstart = start;
+    curfogend = end;
+    resetfogdist();
+}
+
+void popfogdist()
+{
+    curfogstart = oldfogstart;
+    curfogend = oldfogend;
+    resetfogdist();
+}
+
+static void resetfog()
+{
+    resetfogcolor();
+    resetfogdist();
+
+    glClearColor(curfogcolor.r, curfogcolor.g, curfogcolor.b, 1.0f);
+}
+
 static void setfog(int fogmat, float below = 1, int abovemat = MAT_AIR)
 {
-    float fogc[4] = { 0, 0, 0, 1 };
-    float start = 0, end = 0;
     float logscale = 256, logblend = log(1 + (logscale - 1)*below) / log(logscale);
 
-    blendfog(fogmat, below, logblend, start, end, fogc);
-    if(below < 1) blendfog(abovemat, 1-below, 1-logblend, start, end, fogc);
+    curfogstart = curfogend = 0;
+    curfogcolor = vec(0, 0, 0);
+    blendfog(fogmat, below, logblend, curfogstart, curfogend, curfogcolor);
+    if(below < 1) blendfog(abovemat, 1-below, 1-logblend, curfogstart, curfogend, curfogcolor);
 
-    glFogf(GL_FOG_START, start);
-    glFogf(GL_FOG_END, end);
-    glFogfv(GL_FOG_COLOR, fogc);
-    glClearColor(fogc[0], fogc[1], fogc[2], 1.0f);
+    resetfog();
+}
+
+static void setnofog(const vec &color = vec(0, 0, 0))
+{
+    curfogstart = 0;
+    curfogend = 1000000;
+    curfogcolor = color;
+    
+    resetfog();
 }
 
 bool deferdrawtextures = false;
@@ -1018,18 +1084,10 @@ void addmotionblur()
 
     glBindTexture(GL_TEXTURE_RECTANGLE, motiontex);
 
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glLoadIdentity();
-
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glLoadIdentity();
-
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    rectshader->set();
+    SETSHADER(screenrect);
 
     glColor4f(1, 1, 1, lastmotion ? pow(amount, max(float(totalmillis-lastmotion)/motionblurmillis, 1.0f)) : 0);
     glBegin(GL_TRIANGLE_STRIP);
@@ -1040,12 +1098,6 @@ void addmotionblur()
     glEnd();
 
     glDisable(GL_BLEND);
-
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-
-    glMatrixMode(GL_MODELVIEW);
-    glPopMatrix();
 
     if(totalmillis-lastmotion >= motionblurmillis)
     {
@@ -1062,7 +1114,7 @@ void invalidatepostfx()
     dopostfx = false;
 }
 
-static void blendfogoverlay(int fogmat, float blend, float *overlay)
+static void blendfogoverlay(int fogmat, float blend, vec &overlay)
 {
     float maxc;
     switch(fogmat&MATF_VOLUME)
@@ -1070,44 +1122,36 @@ static void blendfogoverlay(int fogmat, float blend, float *overlay)
         case MAT_WATER:
         {
             const bvec &wcol = getwatercol(fogmat);
-            maxc = max(wcol[0], max(wcol[1], wcol[2]));
-            loopk(3) overlay[k] += blend*max(0.4f, wcol[k]/min(32.0f + maxc*7.0f/8.0f, 255.0f));
+            maxc = max(wcol.r, max(wcol.g, wcol.b));
+            overlay.madd(vec(wcol.r, wcol.g, wcol.b).div(min(32.0f + maxc*7.0f/8.0f, 255.0f)).max(0.4f), blend);
             break;
         }
 
         case MAT_LAVA:
         {
             const bvec &lcol = getlavacol(fogmat);
-            maxc = max(lcol[0], max(lcol[1], lcol[2]));
-            loopk(3) overlay[k] += blend*max(0.4f, lcol[k]/min(32.0f + maxc*7.0f/8.0f, 255.0f));
+            maxc = max(lcol.r, max(lcol.g, lcol.b));
+            overlay.madd(vec(lcol.r, lcol.g, lcol.b).div(min(32.0f + maxc*7.0f/8.0f, 255.0f)).max(0.4f), blend);
             break;
         }
 
         default:
-            loopk(3) overlay[k] += blend;
+            overlay.add(blend);
             break;
     }
 }
 
 void drawfogoverlay(int fogmat, float fogblend, int abovemat)
 {
-    notextureshader->set();
+    SETSHADER(fogoverlay);
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_ZERO, GL_SRC_COLOR);
-    float overlay[3] = { 0, 0, 0 };
+    vec overlay(0, 0, 0);
     blendfogoverlay(fogmat, fogblend, overlay);
     blendfogoverlay(abovemat, 1-fogblend, overlay);
 
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glLoadIdentity();
-
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glLoadIdentity();
-
-    glColor3fv(overlay);
+    glColor3fv(overlay.v);
     glBegin(GL_TRIANGLE_STRIP);
     glVertex2f(-1, -1);
     glVertex2f(1, -1);
@@ -1115,14 +1159,6 @@ void drawfogoverlay(int fogmat, float fogblend, int abovemat)
     glVertex2f(1, 1);
     glEnd();
     glDisable(GL_BLEND);
-
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-
-    glMatrixMode(GL_MODELVIEW);
-    glPopMatrix();
-
-    defaultshader->set();
 }
 
 bool renderedgame = false, renderedavatar = false;
@@ -1133,9 +1169,24 @@ void rendergame()
     if(!shadowmapping) renderedgame = true;
 }
 
+matrix4 oldprojmatrix;
+
+void setavatarscale(float zscale)
+{
+    projmatrix = oldprojmatrix;
+    projmatrix.scalez(zscale);
+    setcamprojmatrix(false);
+}
+
 void renderavatar(bool early, bool project)
 {
+    if(project) oldprojmatrix = projmatrix;
     game::renderavatar(early, project);
+    if(project)
+    {
+        projmatrix = oldprojmatrix;
+        setcamprojmatrix(false);
+    }
 }
 
 VAR(IDF_PERSIST, skyboxglare, 0, 1, 1);
@@ -1145,14 +1196,7 @@ void drawglare()
     glaring = true;
     refracting = -1;
 
-    float oldfogstart, oldfogend, oldfogcolor[4], zerofog[4] = { 0, 0, 0, 1 };
-    glGetFloatv(GL_FOG_START, &oldfogstart);
-    glGetFloatv(GL_FOG_END, &oldfogend);
-    glGetFloatv(GL_FOG_COLOR, oldfogcolor);
-
-    glFogf(GL_FOG_START, (fog+64)/8);
-    glFogf(GL_FOG_END, fog);
-    glFogfv(GL_FOG_COLOR, zerofog);
+    pushfogcolor(vec(0, 0, 0));
 
     glClearColor(0, 0, 0, 1);
     extern int skyglare, skybgglare;
@@ -1173,9 +1217,7 @@ void drawglare()
     renderparticles();
     renderavatar(false, true);
 
-    glFogf(GL_FOG_START, oldfogstart);
-    glFogf(GL_FOG_END, oldfogend);
-    glFogfv(GL_FOG_COLOR, oldfogcolor);
+    popfogcolor();
 
     refracting = 0;
     glaring = false;
@@ -1184,7 +1226,7 @@ void drawglare()
 VAR(IDF_PERSIST, reflectmms, 0, 1, 1);
 VAR(IDF_WORLD, refractsky, 0, 0, 1);
 
-matrix4 fogmatrix, invfogmatrix;
+matrix4 noreflectmatrix;
 
 void drawreflection(float z, bool refract, int fogdepth, const bvec &col)
 {
@@ -1194,32 +1236,19 @@ void drawreflection(float z, bool refract, int fogdepth, const bvec &col)
     fading = waterrefract && waterfade && z>=0;
     fogging = refracting<0 && z>=0;
     refractfog = fogdepth;
-    refractcolor = fogging ? col : fogcolor;
-
-    float oldfogstart, oldfogend, oldfogcolor[4];
-    glGetFloatv(GL_FOG_START, &oldfogstart);
-    glGetFloatv(GL_FOG_END, &oldfogend);
-    glGetFloatv(GL_FOG_COLOR, oldfogcolor);
 
     if(fogging)
     {
-        glFogf(GL_FOG_START, camera1->o.z - z);
-        glFogf(GL_FOG_END, camera1->o.z - (z-max(refractfog, 1)));
-        fogmatrix.identity();
-        fogmatrix.settranslation(vec(camera1->o).neg());
-        invfogmatrix.invert(fogmatrix);
-        pushprojection();
-        glPushMatrix();
-        glLoadMatrixf(fogmatrix.a.v);
-        float fogc[4] = { col.x/255.0f, col.y/255.0f, col.z/255.0f, 1.0f };
-        glFogfv(GL_FOG_COLOR, fogc);
+        pushfogdist(camera1->o.z - z, camera1->o.z - (z - max(refractfog, 1)));
+        pushfogcolor(col.tocolor());
     }
     else
     {
-        glFogf(GL_FOG_START, (fog+64)/8);
-        glFogf(GL_FOG_END, fog);
-        float fogc[4] = { fogcolor.x/255.0f, fogcolor.y/255.0f, fogcolor.z/255.0f, 1.0f };
-        glFogfv(GL_FOG_COLOR, fogc);
+        vec color(0, 0, 0);
+        float start = 0, end = 0;
+        blendfog(MAT_AIR, 1, 1, start, end, color);
+        pushfogdist(start, end);
+        pushfogcolor(color);
     }
 
     if(fading)
@@ -1230,14 +1259,11 @@ void drawreflection(float z, bool refract, int fogdepth, const bvec &col)
 
     if(reflecting)
     {
-        glPushMatrix();
-        glTranslatef(0, 0, 2*z);
-        glScalef(1, 1, -1);
+        noreflectmatrix = cammatrix;
+        cammatrix.reflectz(z);
 
         glFrontFace(GL_CCW);
     }
-
-    setenvmatrix();
 
     if(reflectclip && z>=0)
     {
@@ -1254,30 +1280,30 @@ void drawreflection(float z, bool refract, int fogdepth, const bvec &col)
             if(reflecting) zclip = 2*z - zclip;
         }
         plane clipplane;
-        invmvmatrix.transposedtransform(plane(0, 0, refracting>0 ? 1 : -1, refracting>0 ? -zclip : zclip), clipplane);
+        invcammatrix.transposedtransform(plane(0, 0, refracting>0 ? 1 : -1, refracting>0 ? -zclip : zclip), clipplane);
         clipmatrix.clip(clipplane, projmatrix);
-        pushprojection(clipmatrix);
+        noclipmatrix = projmatrix;
+        projmatrix = clipmatrix;
     }
+
+    setcamprojmatrix(false, true);
 
     renderreflectedgeom(refracting<0 && z>=0 && caustics, fogging);
 
     if(reflecting || refracting>0 || (refracting<0 && refractsky) || z<0)
     {
         if(fading) glColorMask(COLORMASK, GL_TRUE);
-        if(reflectclip && z>=0) popprojection();
-        if(fogging)
-        {
-            popprojection();
-            glPopMatrix();
+        if(reflectclip && z>=0)
+        {   
+            projmatrix = noclipmatrix;
+            setcamprojmatrix(false, true);
         }
         drawskybox(farplane, false);
-        if(fogging)
+        if(reflectclip && z>=0)
         {
-            pushprojection();
-            glPushMatrix();
-            glLoadMatrixf(fogmatrix.a.v);
+            projmatrix = clipmatrix;
+            setcamprojmatrix(false, true);
         }
-        if(reflectclip && z>=0) pushprojection(clipmatrix);
         if(fading) glColorMask(COLORMASK, GL_FALSE);
     }
     else if(fading) glColorMask(COLORMASK, GL_FALSE);
@@ -1296,37 +1322,30 @@ void drawreflection(float z, bool refract, int fogdepth, const bvec &col)
 
     if(fading) glColorMask(COLORMASK, GL_TRUE);
 
-    if(reflectclip && z>=0) popprojection();
+    if(reflectclip && z>=0) projmatrix = noclipmatrix;
 
     if(reflecting)
     {
-        glPopMatrix();
+        cammatrix = noreflectmatrix;
 
         glFrontFace(GL_CW);
     }
 
-    if(fogging)
-    {
-        popprojection();
-        glPopMatrix();
-    }
-    glFogf(GL_FOG_START, oldfogstart);
-    glFogf(GL_FOG_END, oldfogend);
-    glFogfv(GL_FOG_COLOR, oldfogcolor);
+    popfogdist();
+    popfogcolor();
 
     reflectz = 1e16f;
     refracting = 0;
     reflecting = fading = fogging = false;
 
-    setenvmatrix();
+    setcamprojmatrix(false, true);
 }
 
-bool envmapping = false;
+int drawtex = 0;
 
 void drawcubemap(int size, int level, const vec &o, float yaw, float pitch, bool flipx, bool flipy, bool swapxy)
 {
-    float fovy = 90.f, aspect = 1.f;
-    envmapping = true;
+    drawtex = DRAWTEX_ENVMAP;
 
     physent *oldcamera = camera1;
     static physent cmcamera;
@@ -1339,8 +1358,6 @@ void drawcubemap(int size, int level, const vec &o, float yaw, float pitch, bool
     cmcamera.roll = 0;
     camera1 = &cmcamera;
     setviewcell(camera1->o);
-
-    defaultshader->set();
 
     updatedynlights();
 
@@ -1359,21 +1376,20 @@ void drawcubemap(int size, int level, const vec &o, float yaw, float pitch, bool
         fogmat = MAT_AIR;
     }
     setfog(fogmat, fogblend, abovemat);
-    if(level > 1 && fogmat != MAT_AIR)
-    {
-        float blend = abovemat==MAT_AIR ? fogblend : 1.0f;
-        fovy += blend*sinf(lastmillis/1000.0)*2.0f;
-        aspect += blend*sinf(lastmillis/1000.0+PI)*0.1f;
-    }
 
     int farplane = hdr.worldsize*2;
 
-    project(fovy, aspect, farplane, flipx, flipy, swapxy);
-    transplayer();
-    readmatrices();
-    setenvmatrix();
+    projmatrix.perspective(90.0f, 1.0f, nearplane, farplane);
+    if(flipx || flipy) projmatrix.scalexy(flipx ? -1 : 1, flipy ? -1 : 1);
+    if(swapxy)
+    {
+        swap(projmatrix.a.x, projmatrix.a.y);
+        swap(projmatrix.b.x, projmatrix.b.y);
+        swap(projmatrix.c.x, projmatrix.c.y);
+        swap(projmatrix.d.x, projmatrix.d.y);
+    }
+    setcamprojmatrix();
 
-    glEnable(GL_FOG);
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
 
@@ -1405,29 +1421,23 @@ void drawcubemap(int size, int level, const vec &o, float yaw, float pitch, bool
     rendermaterials();
     renderparticles();
 
-    glDisable(GL_FOG);
     glDisable(GL_CULL_FACE);
     glDisable(GL_DEPTH_TEST);
 
     if(level > 1) addglare();
 
     camera1 = oldcamera;
-    envmapping = false;
+    drawtex = 0;
 }
-
-bool modelpreviewing = false;
 
 namespace modelpreview
 {
     physent *oldcamera;
-    float oldfogstart, oldfogend, oldfogcolor[4];
-
     physent camera;
 
     void start(bool background)
     {
-        float fovy = 90.f, aspect = 1.f;
-        envmapping = modelpreviewing = true;
+        drawtex = DRAWTEX_MODELPREVIEW;
 
         oldcamera = camera1;
         camera = *camera1;
@@ -1439,27 +1449,14 @@ namespace modelpreview
         camera.roll = 0;
         camera1 = &camera;
 
-        glGetFloatv(GL_FOG_START, &oldfogstart);
-        glGetFloatv(GL_FOG_END, &oldfogend);
-        glGetFloatv(GL_FOG_COLOR, oldfogcolor);
-
-        GLfloat fogc[4] = { 0, 0, 0, 1 };
-        glFogf(GL_FOG_START, 0);
-        glFogf(GL_FOG_END, 1000000);
-        glFogfv(GL_FOG_COLOR, fogc);
-        glClearColor(fogc[0], fogc[1], fogc[2], fogc[3]);
+        clearfogdist();
+        zerofogcolor();
+        glClearColor(0, 0, 0, 1);
 
         glClear((background ? GL_COLOR_BUFFER_BIT : 0) | GL_DEPTH_BUFFER_BIT);
 
-        glMatrixMode(GL_PROJECTION);
-        glPushMatrix();
-        glMatrixMode(GL_MODELVIEW);
-        glPushMatrix();
-
-        project(fovy, aspect, 1024);
-        transplayer();
-        readmatrices();
-        setenvmatrix();
+        projmatrix.perspective(90.0f, 1.0f, nearplane, 1024);
+        setcamprojmatrix();
 
         glEnable(GL_CULL_FACE);
         glEnable(GL_DEPTH_TEST);
@@ -1470,24 +1467,14 @@ namespace modelpreview
         glDisable(GL_CULL_FACE);
         glDisable(GL_DEPTH_TEST);
 
-        defaultshader->set();
-
-        glMatrixMode(GL_PROJECTION);
-        glPopMatrix();
-        glMatrixMode(GL_MODELVIEW);
-        glPopMatrix();
-
-        glFogf(GL_FOG_START, oldfogstart);
-        glFogf(GL_FOG_END, oldfogend);
-        glFogfv(GL_FOG_COLOR, oldfogcolor);
-        glClearColor(oldfogcolor[0], oldfogcolor[1], oldfogcolor[2], oldfogcolor[3]);
+        resetfogdist();
+        resetfogcolor();
+        glClearColor(curfogcolor.r, curfogcolor.g, curfogcolor.b, 1);
 
         camera1 = oldcamera;
-        envmapping = modelpreviewing = false;
+        drawtex = 0;
     }
 }
-
-bool minimapping = false;
 
 GLuint minimaptex = 0;
 vec minimapcenter(0, 0, 0), minimapradius(0, 0, 0), minimapscale(0, 0, 0);
@@ -1560,7 +1547,7 @@ void drawminimap()
     minimapradius.x = minimapradius.y = max(minimapradius.x, minimapradius.y);
     minimapscale = vec((0.5f - 1.0f/size)/minimapradius.x, (0.5f - 1.0f/size)/minimapradius.y, 1.0f);
 
-    envmapping = minimapping = true;
+    drawtex = DRAWTEX_MINIMAP;
 
     physent *oldcamera = camera1;
     static physent cmcamera;
@@ -1574,27 +1561,16 @@ void drawminimap()
     camera1 = &cmcamera;
     setviewcell(vec(-1, -1, -1));
 
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glOrtho(-minimapradius.x, minimapradius.x, -minimapradius.y, minimapradius.y, 0, camera1->o.z + 1);
-    glScalef(-1, 1, 1);
-    glMatrixMode(GL_MODELVIEW);
+    projmatrix.ortho(-minimapradius.x, minimapradius.x, -minimapradius.y, minimapradius.y, 0, camera1->o.z + 1);
+    projmatrix.a.mul(-1); 
+    setcamprojmatrix();
 
-    transplayer();
+    setnofog(minimapcolor.tocolor());
 
-    defaultshader->set();
-
-    GLfloat fogc[4] = { minimapcolor.x/255.0f, minimapcolor.y/255.0f, minimapcolor.z/255.0f, 1.0f };
-    glFogf(GL_FOG_START, 0);
-    glFogf(GL_FOG_END, 1000000);
-    glFogfv(GL_FOG_COLOR, fogc);
-
-    glClearColor(fogc[0], fogc[1], fogc[2], fogc[3]);
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
     glViewport(0, 0, size, size);
 
-    glDisable(GL_FOG);
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
 
@@ -1612,7 +1588,7 @@ void drawminimap()
         {
             glClear(GL_DEPTH_BUFFER_BIT);
             camera1->o.z = minimapheight;
-            transplayer();
+            setcamprojmatrix();
         }
         rendergeom();
         rendermapmodels();
@@ -1625,12 +1601,11 @@ void drawminimap()
 
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
-    glDisable(GL_FOG);
 
     glViewport(0, 0, screen->w, screen->h);
 
     camera1 = oldcamera;
-    envmapping = minimapping = false;
+    drawtex = 0;
 
     glBindTexture(GL_TEXTURE_2D, minimaptex);
     glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB5, 0, 0, size, size, 0);
@@ -1742,10 +1717,9 @@ vec cursordir(0, 0, 0);
 struct framebuffercopy
 {
     GLuint tex;
-    GLenum target;
     int w, h;
 
-    framebuffercopy() : tex(0), target(GL_TEXTURE_RECTANGLE), w(0), h(0) {}
+    framebuffercopy() : tex(0), w(0), h(0) {}
 
     void cleanup()
     {
@@ -1760,46 +1734,36 @@ struct framebuffercopy
         glGenTextures(1, &tex);
         w = screen->w;
         h = screen->h;
-        createtexture(tex, w, h, NULL, 3, false, GL_RGB, target);
+        createtexture(tex, w, h, NULL, 3, false, GL_RGB, GL_TEXTURE_RECTANGLE);
     }
 
     void copy()
     {
-        if(target == GL_TEXTURE_RECTANGLE)
-        {
-            if(w != screen->w || h != screen->h) cleanup();
-        }
-        else if(w < screen->w || h < screen->h || w/2 >= screen->w || h/2 >= screen->h) cleanup();
+        if(w != screen->w || h != screen->h) cleanup();
         if(!tex) setup();
 
-        glBindTexture(target, tex);
-        glCopyTexSubImage2D(target, 0, 0, 0, 0, 0, screen->w, screen->h);
+        glBindTexture(GL_TEXTURE_RECTANGLE, tex);
+        glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE, 0, 0, 0, 0, 0, screen->w, screen->h);
     }
 
     void draw(float sx, float sy, float sw, float sh)
     {
-        float tx = 0, ty = 0, tw = float(screen->w)/w, th = float(screen->h)/h;
-        if(target == GL_TEXTURE_RECTANGLE)
-        {
-            rectshader->set();
-            tx *= w;
-            ty *= h;
-            tw *= w;
-            th *= h;
-        }
-        glBindTexture(target, tex);
+        sx = sx*2 - 1;
+        sy = sy*2 - 1;
+        sw *= 2;
+        sh *= 2;
+        float tx = 0, ty = 0, tw = screen->w, th = screen->h;
+        SETSHADER(screenrect);
+        glBindTexture(GL_TEXTURE_RECTANGLE, tex);
         glBegin(GL_TRIANGLE_STRIP);
         glTexCoord2f(tx,    ty);    glVertex2f(sx,    sy);
         glTexCoord2f(tx+tw, ty);    glVertex2f(sx+sw, sy);
         glTexCoord2f(tx,    ty+th); glVertex2f(sx,    sy+sh);
         glTexCoord2f(tx+tw, ty+th); glVertex2f(sx+sw, sy+sh);
         glEnd();
-        if(target == GL_TEXTURE_RECTANGLE)
-            defaultshader->set();
     }
 };
 
-#define DTR 0.0174532925
 enum { VW_NORMAL = 0, VW_LEFTRIGHT, VW_CROSSEYED, VW_STEREO, VW_STEREO_BLEND = VW_STEREO, VW_STEREO_BLEND_REDCYAN, VW_STEREO_AVG, VW_MAX, VW_STEREO_REDCYAN = VW_MAX };
 enum { VP_LEFT, VP_RIGHT, VP_MAX, VP_CAMERA = VP_MAX };
 
@@ -1867,26 +1831,21 @@ bool clearview(int v, int targtype)
     return true;
 }
 
-static int curview = VP_CAMERA;
-
-void viewproject(float zscale)
+void viewproject(int targtype = VP_CAMERA)
 {
-    if(curview != VP_LEFT && curview != VP_RIGHT) project(fovy, aspect, farplane, false, false, false, zscale);
+    if(targtype != VP_LEFT && targtype != VP_RIGHT) projmatrix.perspective(fovy, aspect, nearplane, farplane);
     else
     {
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
-        if(zscale != 1) glScalef(1, 1, zscale);
-        float top = stereonear*tan(DTR*fovy/2), right = aspect*top, iod = stereodist/2, fs = iod*stereonear/stereoplane;
-        glFrustum(curview == VP_LEFT ? -right+fs : -right-fs, curview == VP_LEFT ? right+fs : right-fs, -top, top, stereonear, farplane);
-        glTranslatef(curview == VP_LEFT ? iod : -iod, 0.f, 0.f);
-        glMatrixMode(GL_MODELVIEW);
+        float top = stereonear*tan(fovy/2*RAD), right = aspect*top, iod = stereodist/2;
+        if(targtype == VP_RIGHT) iod = -iod;
+        float fs = iod*stereonear/stereoplane;
+        projmatrix.frustum(-right+fs, right+fs, -top, top, stereonear, farplane);
+        projmatrix.translate(iod, 0, 0);
     }
 }
 
 void drawnoviewtype(int targtype)
 {
-    curview = targtype;
     if(targtype == VP_LEFT || targtype == VP_RIGHT)
     {
         if(viewtype >= VW_STEREO)
@@ -1904,19 +1863,17 @@ void drawnoviewtype(int targtype)
 
     xtravertsva = xtraverts = glde = gbatches = 0;
 
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
     int w = screen->w, h = screen->h;
     if(forceaspect) w = int(ceil(h*forceaspect));
     gettextres(w, h);
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glOrtho(0, w, h, 0, -1, 1);
+
+    hudmatrix.ortho(0, w, h, 0, -1, 1);
+    resethudmatrix();
 
     glClearColor(0.f, 0.f, 0.f, 1);
     if(clearview(viewtype, targtype)) glClear(GL_COLOR_BUFFER_BIT);
 
-    defaultshader->set();
+    hudshader->set();
 
     hud::update(screen->w, screen->h);
     hud::drawhud(true);
@@ -1950,13 +1907,7 @@ void drawnoview()
 
     if(!copies) return;
 
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glOrtho(0, 1, 0, 1, -1, 1);
     glDisable(GL_BLEND);
-    defaultshader->set();
     glColor3f(1.f, 1.f, 1.f);
     switch(viewtype)
     {
@@ -1998,14 +1949,11 @@ void drawnoview()
 
 void drawviewtype(int targtype)
 {
-    curview = targtype;
-
-    defaultshader->set();
     updatedynlights();
 
     setfog(fogmat, fogblend, abovemat);
-    viewproject();
-    transplayer();
+    viewproject(targtype);
+    setcamprojmatrix();
     if(targtype == VP_LEFT || targtype == VP_RIGHT)
     {
         if(viewtype >= VW_STEREO)
@@ -2021,9 +1969,6 @@ void drawviewtype(int targtype)
         }
     }
 
-    readmatrices();
-
-    glEnable(GL_FOG);
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
 
@@ -2076,7 +2021,6 @@ void drawviewtype(int targtype)
 
     if(wireframe && editmode) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-    glDisable(GL_FOG);
     glDisable(GL_CULL_FACE);
     glDisable(GL_DEPTH_TEST);
 
@@ -2098,14 +2042,13 @@ void drawviewtype(int targtype)
         glDisable(GL_DEPTH_TEST);
     }
 
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
     int w = screen->w, h = screen->h;
     if(forceaspect) w = int(ceil(h*forceaspect));
     gettextres(w, h);
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glOrtho(0, w, h, 0, -1, 1);
+
+    hudmatrix.ortho(0, w, h, 0, -1, 1);
+    resethudmatrix();
+
     glColor3f(1, 1, 1);
 
     if(!pixeling || !editmode)
@@ -2131,7 +2074,10 @@ void drawviewtype(int targtype)
             viewdepthfxtex();
         }
 
-        defaultshader->set();
+        extern void debugparticles();
+        debugparticles();
+
+        hudshader->set();
         hud::drawhud();
         rendertexturepanel(w, h);
         hud::drawlast();
@@ -2178,11 +2124,9 @@ void gl_drawframe(int w, int h)
         else fogmat = MAT_AIR;
 
         farplane = hdr.worldsize*2;
-        project(fovy, aspect, farplane);
-        transplayer();
-        readmatrices();
+        viewproject();
+        setcamprojmatrix();
         game::project(w, h);
-        setenvmatrix();
 
         int copies = 0, oldcurtime = curtime;
         loopi(VP_MAX) if(needsview(viewtype, i))
@@ -2200,13 +2144,7 @@ void gl_drawframe(int w, int h)
 
         if(!copies) return;
 
-        glMatrixMode(GL_MODELVIEW);
-        glLoadIdentity();
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
-        glOrtho(0, 1, 0, 1, -1, 1);
         glDisable(GL_BLEND);
-        defaultshader->set();
         glColor3f(1.f, 1.f, 1.f);
         switch(viewtype)
         {
@@ -2250,9 +2188,9 @@ void gl_drawframe(int w, int h)
 void usetexturing(bool on)
 {
     if(on)
-        defaultshader->set();
+        hudshader->set();
     else
-        notextureshader->set();
+        hudnotextureshader->set();
 }
 
 FVAR(IDF_PERSIST, polycolour, 0, 1, 1);

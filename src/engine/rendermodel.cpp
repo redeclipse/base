@@ -507,17 +507,16 @@ bool modeloccluded(const vec &center, float radius)
 
 VAR(0, showboundingbox, 0, 0, 2);
 
-void render2dbox(vec &o, float x, float y, float z)
+void render2dbox(vec &o, float x, float y, float z, const matrix4x3 *m)
 {
+    vec v[4] = { o, vec(o.x, o.y, o.z+z), vec(o.x+x, o.y+y, o.z+z), vec(o.x+x, o.y+y, o.z) };
+    if(m) loopk(4) v[k] = m->transform(v[k]);
     glBegin(GL_LINE_LOOP);
-    glVertex3f(o.x, o.y, o.z);
-    glVertex3f(o.x, o.y, o.z+z);
-    glVertex3f(o.x+x, o.y+y, o.z+z);
-    glVertex3f(o.x+x, o.y+y, o.z);
+    loopk(4) glVertex3fv(v[k].v);
     glEnd();
 }
 
-void render3dbox(vec &o, float tofloor, float toceil, float xradius, float yradius)
+void render3dbox(vec &o, float tofloor, float toceil, float xradius, float yradius, const matrix4x3 *m)
 {
     if(yradius<=0) yradius = xradius;
     vec c = o;
@@ -525,11 +524,11 @@ void render3dbox(vec &o, float tofloor, float toceil, float xradius, float yradi
     float xsz = xradius*2, ysz = yradius*2;
     float h = tofloor+toceil;
     glColor3f(1, 1, 1);
-    render2dbox(c, xsz, 0, h);
-    render2dbox(c, 0, ysz, h);
+    render2dbox(c, xsz, 0, h, m);
+    render2dbox(c, 0, ysz, h, m);
     c.add(vec(xsz, ysz, 0));
-    render2dbox(c, -xsz, 0, h);
-    render2dbox(c, 0, -ysz, h);
+    render2dbox(c, -xsz, 0, h, m);
+    render2dbox(c, 0, -ysz, h, m);
     xtraverts += 16;
 }
 
@@ -868,7 +867,6 @@ void rendermodel(entitylight *light, const char *mdl, int anim, const vec &o, fl
     if(flags&MDL_NORENDER) anim |= ANIM_NORENDER;
     else if(showboundingbox && !shadowmapping && !reflecting && !refracting)
     {
-        glPushMatrix();
         notextureshader->set();
         glDisable(GL_CULL_FACE);
         glEnable(GL_BLEND);
@@ -897,17 +895,17 @@ void rendermodel(entitylight *light, const char *mdl, int anim, const vec &o, fl
             else m->boundbox(center, radius);
             center.mul(size);
             radius.mul(size);
-            glTranslatef(o.x, o.y, o.z);
-            glRotatef(yaw, 0, 0, 1);
-            glRotatef(-roll, 1, 0, 0);
-            glRotatef(-pitch, 0, 1, 0);
-            render3dbox(center, radius.z, radius.z, radius.x, radius.y);
+            matrix4x3 m;
+            m.identity();
+            m.settranslation(o);
+            m.rotate_around_z(yaw*RAD);
+            m.rotate_around_x(roll*-RAD);
+            m.rotate_around_y(pitch*-RAD);
+            render3dbox(center, radius.z, radius.z, radius.x, radius.y, &m);
         }
 
-        defaultshader->set();
         glEnable(GL_CULL_FACE);
         glDisable(GL_BLEND);
-        glPopMatrix();
     }
 
     vec lightcolor(1, 1, 1), lightdir(0, 0, 1);

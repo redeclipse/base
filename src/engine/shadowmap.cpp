@@ -92,7 +92,7 @@ void guessshadowdir()
 
 bool shadowmapping = false;
 
-static matrix4 shadowmapmatrix;
+matrix4 shadowmatrix;
 
 VAR(IDF_PERSIST, shadowmapbias, 0, 5, 1024);
 VAR(IDF_PERSIST, shadowmappeelbias, 0, 20, 1024);
@@ -134,16 +134,6 @@ static struct shadowmaptexture : rendertarget
 
     bool dorender()
     {
-        // nvidia bug, must push modelview here, then switch to projection, then back to modelview before can safely modify it
-        glPushMatrix();
-
-        glMatrixMode(GL_PROJECTION);
-        glPushMatrix();
-        glLoadIdentity();
-        glOrtho(-shadowmapradius, shadowmapradius, -shadowmapradius, shadowmapradius, -shadowmapdist, shadowmapdist);
-
-        glMatrixMode(GL_MODELVIEW);
-
         vec skewdir(shadowdir);
         skewdir.rotate_around_z(-camera1->yaw*RAD);
 
@@ -158,28 +148,18 @@ static struct shadowmaptexture : rendertarget
         shadowoffset.x = -fmod(dirx.dot(camera1->o) - skewdir.x*camera1->o.z, 2.0f*shadowmapradius/vieww);
         shadowoffset.y = -fmod(diry.dot(camera1->o) - skewdir.y*camera1->o.z, 2.0f*shadowmapradius/viewh);
 
-        GLfloat skew[] =
-        {
-            1, 0, 0, 0,
-            0, 1, 0, 0,
-            skewdir.x, skewdir.y, 1, 0,
-            0, 0, 0, 1
-        };
-        glLoadMatrixf(skew);
-        glTranslatef(skewdir.x*shadowmapheight + shadowoffset.x, skewdir.y*shadowmapheight + shadowoffset.y + dir.magnitude(), -shadowmapheight);
-        glRotatef(camera1->yaw+180, 0, 0, -1);
-        glTranslatef(-camera1->o.x, -camera1->o.y, -camera1->o.z);
+        shadowmatrix.ortho(-shadowmapradius, shadowmapradius, -shadowmapradius, shadowmapradius, -shadowmapdist, shadowmapdist);
+        shadowmatrix.mul(matrix3(vec(1, 0, 0), vec(0, 1, 0), vec(skewdir.x, skewdir.y, 1)));
+        shadowmatrix.translate(skewdir.x*shadowmapheight + shadowoffset.x, skewdir.y*shadowmapheight + shadowoffset.y + dir.magnitude(), -shadowmapheight);
+        shadowmatrix.rotate_around_z((camera1->yaw+180)*-RAD);
+        shadowmatrix.translate(vec(camera1->o).neg());
+        GLOBALPARAM(shadowmatrix, shadowmatrix);
+
         shadowfocus = camera1->o;
         shadowfocus.add(dir);
         shadowfocus.add(vec(shadowdir).mul(shadowmapheight));
         shadowfocus.add(dirx.mul(shadowoffset.x));
         shadowfocus.add(diry.mul(shadowoffset.y));
-
-        matrix4 proj, mv;
-        glGetFloatv(GL_PROJECTION_MATRIX, proj.a.v);
-        glGetFloatv(GL_MODELVIEW_MATRIX, mv.a.v);
-        shadowmapmatrix.mul(proj, mv);
-        shadowmapmatrix.projective(-1, 1-shadowmapbias/float(shadowmapdist));
 
         glColor3f(0, 0, 0);
 
@@ -200,12 +180,6 @@ static struct shadowmaptexture : rendertarget
             if(scissoring) glScissor(sx, sy, sw, sh);
             if(!rtscissor || scissoring) rendershadowmapreceivers();
         }
-
-        glMatrixMode(GL_PROJECTION);
-        glPopMatrix();
-
-        glMatrixMode(GL_MODELVIEW);
-        glPopMatrix();
 
         return shadowmapcasters>0;
     }
@@ -325,10 +299,9 @@ void pushshadowmap()
     glActiveTexture_(GL_TEXTURE7);
     glBindTexture(GL_TEXTURE_2D, shadowmaptex.rendertex);
 
-    glActiveTexture_(GL_TEXTURE2);
-    glMatrixMode(GL_TEXTURE);
-    glLoadMatrixf(shadowmapmatrix.a.v);
-    glMatrixMode(GL_MODELVIEW);
+    matrix4 m = shadowmatrix;
+    m.projective(-1, 1-shadowmapbias/float(shadowmapdist));
+    GLOBALPARAM(shadowmapproject, m);
 
     glActiveTexture_(GL_TEXTURE0);
     glClientActiveTexture_(GL_TEXTURE0);
@@ -362,10 +335,7 @@ void rendershadowmap()
 {
     if(!shadowmap) return;
 
-    // Apple/ATI bug - fixed-function fog state can force software fallback even when fragment program is enabled
-    glDisable(GL_FOG);
     shadowmaptex.render(1<<shadowmapsize, 1<<shadowmapsize, blurshadowmap, blursmsigma/100.0f);
-    glEnable(GL_FOG);
 }
 
 VAR(0, debugsm, 0, 0, 1);

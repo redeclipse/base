@@ -12,7 +12,6 @@ VAR(IDF_PERSIST, maxparticletrail, 256, 512, VAR_MAX);
 
 VAR(IDF_PERSIST, particletext, 0, 1, 1);
 VAR(IDF_PERSIST, particleglare, 0, 1, 100);
-VAR(0, debugparticles, 0, 0, 1);
 
 // Check canemitparticles() to limit the rate that paricles can be emitted for models/sparklies
 // Automatically stops particles being emitted when paused or in reflective drawing
@@ -44,6 +43,7 @@ struct partrenderer
     const char *texname;
     int texclamp;
     uint type;
+    string info;
 
     partrenderer(const char *texname, int texclamp, int type)
         : tex(NULL), texname(texname), texclamp(texclamp), type(type) { }
@@ -134,6 +134,26 @@ struct partrenderer
             else p->m.add(vec(p->o).sub(o));
         }
         game::particletrack(p, type, ts, lastpass);
+    }
+
+    const char *debuginfo()
+    {
+        formatstring(info, "%d\t%s(", count(), partnames[type&0xFF]);
+        if(type&PT_GLARE) concatstring(info, "g,");
+        if(type&PT_SOFT) concatstring(info, "s,");
+        if(type&PT_LERP) concatstring(info, "l,");
+        if(type&PT_MOD) concatstring(info, "m,");
+        if(type&PT_RND4) concatstring(info, "r,");
+        if(type&PT_FLIP) concatstring(info, "f,");
+        if(type&PT_ONTOP) concatstring(info, "o,");
+        int len = strlen(info);
+        info[len-1] = info[len-1] == ',' ? ')' : '\0';
+        if(texname)
+        {
+            const char *title = strrchr(texname, '/');
+            if(title) concformatstring(info, ": %s", title+1);
+        }
+        return info;
     }
 };
 
@@ -247,7 +267,7 @@ struct listrenderer : partrenderer
 
     virtual void startrender() = 0;
     virtual void endrender() = 0;
-    virtual void renderpart(T *p, int blend, int ts, float size, uchar *color) = 0;
+    virtual void renderpart(T *p, int blend, int ts, float size) = 0;
 
     void render()
     {
@@ -262,7 +282,7 @@ struct listrenderer : partrenderer
             calc(p, blend, ts, size, lastpass);
             if(blend > 0)
             {
-                renderpart(p, blend, ts, size, p->color.v);
+                renderpart(p, blend, ts, size);
 
                 if(p->fade > 5 || !lastpass)
                 {
@@ -307,14 +327,8 @@ struct textrenderer : sharedlistrenderer
         if(p->text && p->flags&1) delete[] p->text;
     }
 
-    void renderpart(sharedlistparticle *p, int blend, int ts, float size, uchar *color)
+    void renderpart(sharedlistparticle *p, int blend, int ts, float size)
     {
-        glPushMatrix();
-        glTranslatef(p->o.x, p->o.y, p->o.z);
-        glRotatef(camera1->yaw, 0, 0, 1);
-        glRotatef(camera1->pitch-90, 1, 0, 0);
-        float scale = size/80.0f;
-        glScalef(-scale, scale, -scale);
         const char *text = p->text;
         static string font; font[0] = 0;
         if(*text == '<')
@@ -324,12 +338,17 @@ struct textrenderer : sharedlistrenderer
             if(*text) { int len = text-(start+1); memcpy(font, start+1, len); font[len] = 0; text++; }
             else text = start;
         }
-        float xoff = -text_width(text)/2;
-        glTranslatef(xoff, 0, 50);
+        float scale = p->size/80.0f, xoff = -text_width(text)/2;
+
+        matrix4x3 m(camright, vec(camup).neg(), vec(camdir).neg(), p->o);
+        m.scale(scale);
+        m.translate(xoff, 0, 50);
+
+        textmatrix = &m;
         pushfont(*font ? font : "default");
-        draw_text(text, 0, 0, color[0], color[1], color[2], int(p->blend*blend));
+        draw_text(text, 0, 0, p->color.r, p->color.g, p->color.b, int(p->blend*blend));
         popfont();
-        glPopMatrix();
+        textmatrix = NULL;
     }
 };
 static textrenderer texts(PT_TEXT|PT_LERP), textontop(PT_TEXT|PT_LERP|PT_ONTOP);
@@ -355,23 +374,19 @@ struct portalrenderer : listrenderer<portal>
         glEnable(GL_CULL_FACE);
     }
 
-    void renderpart(portal *p, int blend, int ts, float size, uchar *color)
+    void renderpart(portal *p, int blend, int ts, float size)
     {
-        glPushMatrix();
-        glTranslatef(p->o.x, p->o.y, p->o.z);
-        glRotatef(p->yaw, 0, 0, 1);
-        glRotatef(p->pitch, 1, 0, 0);
-        glScalef(size, size, size);
+        matrix4x3 m(vec(size, 0, 0), vec(0, size, 0), vec(0, 0, size), p->o);
+        m.rotate_around_z(p->yaw*RAD);
+        m.rotate_around_x(p->pitch*RAD);
 
-        glColor4ub(color[0], color[1], color[2], uchar(p->blend*blend));
+        glColor4ub(p->color.r, p->color.g, p->color.b, uchar(p->blend*blend));
         glBegin(GL_TRIANGLE_STRIP);
-        glTexCoord2f(1, 0); glVertex3f(-1, 0,  1);
-        glTexCoord2f(0, 0); glVertex3f( 1, 0,  1);
-        glTexCoord2f(1, 1); glVertex3f(-1, 0, -1);
-        glTexCoord2f(0, 1); glVertex3f( 1, 0, -1);
+        glTexCoord2f(1, 0); vec v0 = m.transform(vec(-1, 0,  1)); glVertex3f(v0.x, v0.y, v0.z);
+        glTexCoord2f(0, 0); vec v1 = m.transform(vec( 1, 0,  1)); glVertex3f(v1.x, v1.y, v1.z);
+        glTexCoord2f(1, 1); vec v2 = m.transform(vec(-1, 0, -1)); glVertex3f(v2.x, v2.y, v2.z);
+        glTexCoord2f(0, 1); vec v3 = m.transform(vec( 1, 0, -1)); glVertex3f(v3.x, v3.y, v3.z);
         glEnd();
-
-        glPopMatrix();
     }
 
     portal *addportal(const vec &o, int fade, int color, float size, float blend, float yaw, float pitch)
@@ -409,7 +424,7 @@ struct iconrenderer : listrenderer<icon>
     {
     }
 
-    void renderpart(icon *p, int blend, int ts, float size, uchar *color)
+    void renderpart(icon *p, int blend, int ts, float size)
     {
         if(p->tex != lasttex)
         {
@@ -417,14 +432,12 @@ struct iconrenderer : listrenderer<icon>
             lasttex = p->tex;
         }
 
-        glPushMatrix();
-        glTranslatef(p->o.x, p->o.y, p->o.z);
-        glRotatef(camera1->yaw, 0, 0, 1);
-        glRotatef(camera1->pitch, 1, 0, 0);
+        matrix4x3 m(camright, vec(camup).neg(), vec(camdir).neg(), p->o);
         float aspect = p->tex->w/float(p->tex->h);
-        glScalef(size*aspect, size*aspect, size);
+        m.scale(size*aspect, size*aspect, size);
+        #define iconvert(vx,vy,vz) do { vec v = m.transform(vec(vx, vy, vz)); glVertex3f(v.x, v.y, v.z); } while(0)
 
-        glColor4ub(color[0], color[1], color[2], uchar(p->blend*blend));
+        glColor4ub(p->color.r, p->color.g, p->color.b, uchar(p->blend*blend));
         if(p->start > 0 || p->length < 1)
         {
             float sx = cosf((p->start + 0.25f)*2*M_PI), sy = -sinf((p->start + 0.25f)*2*M_PI),
@@ -432,33 +445,31 @@ struct iconrenderer : listrenderer<icon>
             glBegin(GL_TRIANGLE_FAN);
             glTexCoord2f(0.5f, 0.5f); glVertex3f(0, 0, 0);
 
-            if(p->start < 0.125f || p->start >= 0.875f) { glTexCoord2f(0.5f + 0.5f*sx/sy, 0); glVertex3f(-(sx/sy), 0, 1);  }
-            else if(p->start < 0.375f) { glTexCoord2f(1, 0.5f - 0.5f*sy/sx); glVertex3f(-1, 0, sy/sx); }
-            else if(p->start < 0.625f) { glTexCoord2f(0.5f - 0.5f*sx/sy, 1); glVertex3f(sx/sy, 0, -1); }
-            else { glTexCoord2f(0, 0.5f + 0.5f*sy/sx); glVertex3f(1, 0, -(sy/sx)); }
+            if(p->start < 0.125f || p->start >= 0.875f) { glTexCoord2f(0.5f + 0.5f*sx/sy, 0); iconvert(-(sx/sy), 0, 1);  }
+            else if(p->start < 0.375f) { glTexCoord2f(1, 0.5f - 0.5f*sy/sx); iconvert(-1, 0, sy/sx); }
+            else if(p->start < 0.625f) { glTexCoord2f(0.5f - 0.5f*sx/sy, 1); iconvert(sx/sy, 0, -1); }
+            else { glTexCoord2f(0, 0.5f + 0.5f*sy/sx); iconvert(1, 0, -(sy/sx)); }
 
-            if(p->start <= 0.125f && p->end >= 0.125f) { glTexCoord2f(1, 0); glVertex3f(-1, 0, 1); }
-            if(p->start <= 0.375f && p->end >= 0.375f) { glTexCoord2f(1, 1); glVertex3f(-1, 0, -1); }
-            if(p->start <= 0.625f && p->end >= 0.625f) { glTexCoord2f(0, 1); glVertex3f(1, 0, -1); }
-            if(p->start <= 0.875f && p->end >= 0.875f) { glTexCoord2f(0, 0); glVertex3f(1, 0, 1); }
+            if(p->start <= 0.125f && p->end >= 0.125f) { glTexCoord2f(1, 0); iconvert(-1, 0, 1); }
+            if(p->start <= 0.375f && p->end >= 0.375f) { glTexCoord2f(1, 1); iconvert(-1, 0, -1); }
+            if(p->start <= 0.625f && p->end >= 0.625f) { glTexCoord2f(0, 1); iconvert(1, 0, -1); }
+            if(p->start <= 0.875f && p->end >= 0.875f) { glTexCoord2f(0, 0); iconvert(1, 0, 1); }
 
-            if(p->end < 0.125f || p->end >= 0.875f) { glTexCoord2f(0.5f + 0.5f*ex/ey, 0); glVertex3f(-(ex/ey), 0, 1);  }
-            else if(p->end < 0.375f) { glTexCoord2f(1, 0.5f - 0.5f*ey/ex); glVertex3f(-1, 0, ey/ex); }
-            else if(p->end < 0.625f) { glTexCoord2f(0.5f - 0.5f*ex/ey, 1); glVertex3f(ex/ey, 0, -1); }
-            else { glTexCoord2f(0, 0.5f + 0.5f*ey/ex); glVertex3f(1, 0, -(ey/ex)); }
+            if(p->end < 0.125f || p->end >= 0.875f) { glTexCoord2f(0.5f + 0.5f*ex/ey, 0); iconvert(-(ex/ey), 0, 1);  }
+            else if(p->end < 0.375f) { glTexCoord2f(1, 0.5f - 0.5f*ey/ex); iconvert(-1, 0, ey/ex); }
+            else if(p->end < 0.625f) { glTexCoord2f(0.5f - 0.5f*ex/ey, 1); iconvert(ex/ey, 0, -1); }
+            else { glTexCoord2f(0, 0.5f + 0.5f*ey/ex); iconvert(1, 0, -(ey/ex)); }
             glEnd();
         }
         else
         {
             glBegin(GL_TRIANGLE_STRIP);
-            glTexCoord2f(1, 1); glVertex3f(-1, 0, -1);
-            glTexCoord2f(0, 1); glVertex3f( 1, 0, -1);
-            glTexCoord2f(1, 0); glVertex3f(-1, 0,  1);
-            glTexCoord2f(0, 0); glVertex3f( 1, 0,  1);
+            glTexCoord2f(1, 1); iconvert(-1, 0, -1);
+            glTexCoord2f(0, 1); iconvert( 1, 0, -1);
+            glTexCoord2f(1, 0); iconvert(-1, 0,  1);
+            glTexCoord2f(0, 0); iconvert( 1, 0,  1);
             glEnd();
         }
-
-        glPopMatrix();
     }
 
     icon *addicon(const vec &o, Texture *tex, int fade, int color, float size, float blend, int grav, int collide, float start, float length, physent *pl = NULL)
@@ -768,19 +779,15 @@ struct lineprimitiverenderer : listrenderer<lineprimitive>
         particleshader->set();
     }
 
-    void renderpart(lineprimitive *p, int blend, int ts, float size, uchar *color)
+    void renderpart(lineprimitive *p, int blend, int ts, float size)
     {
-        glPushMatrix();
-        glTranslatef(p->o.x, p->o.y, p->o.z);
-        glScalef(size, size, size);
-        glColor4ub(color[0], color[1], color[2], uchar(p->blend*blend));
+        glColor4ub(p->color.r, p->color.g, p->color.b, uchar(p->blend*blend));
 
         glBegin(GL_LINES);
-        glVertex3f(0, 0, 0);
-        glVertex3fv(p->value.v);
+        glVertex3f(p->o.x, p->o.y, p->o.z);
+        vec end = vec(p->value).mul(size).add(p->o);
+        glVertex3f(end.x, end.y, end.z);
         glEnd();
-
-        glPopMatrix();
     }
 
     lineprimitive *addline(const vec &o, const vec &v, int fade, int color, float size, float blend)
@@ -819,20 +826,16 @@ struct trisprimitiverenderer : listrenderer<trisprimitive>
         particleshader->set();
     }
 
-    void renderpart(trisprimitive *p, int blend, int ts, float size, uchar *color)
+    void renderpart(trisprimitive *p, int blend, int ts, float size)
     {
-        glPushMatrix();
-        glTranslatef(p->o.x, p->o.y, p->o.z);
-        glScalef(size, size, size);
-        glColor4ub(color[0], color[1], color[2], uchar(p->blend*blend));
+        glColor4ub(p->color.r, p->color.g, p->color.b, uchar(p->blend*blend));
 
         glBegin(p->fill ? GL_TRIANGLES : GL_LINE_LOOP);
-        glVertex3f(0, 0, 0);
-        glVertex3fv(p->value[0].v);
-        glVertex3fv(p->value[1].v);
+        glVertex3f(p->o.x, p->o.y, p->o.z);
+        vec v0 = vec(p->value[0]).mul(size).add(p->o), v1 = vec(p->value[1]).mul(size).add(p->o);
+        glVertex3f(v0.x, v0.y, v0.z);
+        glVertex3f(v1.x, v1.y, v1.z);
         glEnd();
-
-        glPopMatrix();
     }
 
     trisprimitive *addtriangle(const vec &o, float yaw, float pitch, int fade, int color, float size, float blend, bool fill)
@@ -879,34 +882,31 @@ struct loopprimitiverenderer : listrenderer<loopprimitive>
         particleshader->set();
     }
 
-    void renderpart(loopprimitive *p, int blend, int ts, float size, uchar *color)
+    void renderpart(loopprimitive *p, int blend, int ts, float size)
     {
-        glPushMatrix();
-        glTranslatef(p->o.x, p->o.y, p->o.z);
-        glScalef(size, size, size);
-        glColor4ub(color[0], color[1], color[2], uchar(p->blend*blend));
+        glColor4ub(p->color.r, p->color.g, p->color.b, uchar(p->blend*blend));
 
         glBegin(p->fill ? GL_TRIANGLE_FAN : GL_LINE_LOOP);
-        loopi(16 + (p->fill ? 1 : 0))
+        loopi(15 + (p->fill ? 1 : 0))
         {
+            const vec2 &sc = sincos360[i*(360/15)]; 
             vec v;
             switch(p->axis)
             {
                 case 0:
-                    v = vec(p->value.x*cosf(2*M_PI*i/16.0f), p->value.z*sinf(2*M_PI*i/16.0f), 0).rotate_around_x(90*RAD);
+                    v = vec(p->value.x*sc.x, 0, p->value.z*sc.y);
                     break;
                 case 1:
-                    v = vec(p->value.z*cosf(2*M_PI*i/16.0f), p->value.y*sinf(2*M_PI*i/16.0f), 0).rotate_around_y(-90*RAD);
+                    v = vec(0, p->value.y*sc.y, p->value.z*sc.x);
                     break;
                 case 2: default:
-                    v = vec(p->value.x*cosf(2*M_PI*i/16.0f), p->value.y*sinf(2*M_PI*i/16.0f), 0).rotate_around_z(90*RAD);
+                    v = vec(-p->value.y*sc.y, p->value.x*sc.x, 0);
                     break;
             }
-            glVertex3fv(v.v);
+            v.mul(size).add(p->o);
+            glVertex3f(v.x, v.y, v.z);
         }
         glEnd();
-
-        glPopMatrix();
     }
 
     loopprimitive *addellipse(const vec &o, const vec &v, int fade, int color, float size, float blend, int axis, bool fill)
@@ -948,31 +948,26 @@ struct coneprimitiverenderer : listrenderer<coneprimitive>
         particleshader->set();
     }
 
-    void renderpart(coneprimitive *p, int blend, int ts, float size, uchar *color)
+    void renderpart(coneprimitive *p, int blend, int ts, float size)
     {
-        glPushMatrix();
-        glTranslatef(p->o.x, p->o.y, p->o.z);
-        glScalef(size, size, size);
-        glColor4ub(color[0], color[1], color[2], uchar(p->blend*blend));
+        glColor4ub(p->color.r, p->color.g, p->color.b, uchar(p->blend*blend));
 
         glBegin(GL_LINES);
-        loopi(16)
+        loopi(15)
         {
-            vec v = vec(p->spoke).rotate(2*M_PI*i/16.f, p->dir).add(p->spot);
-            glVertex3f(0, 0, 0);
-            glVertex3fv(v.v);
+            vec v = vec(p->spoke).rotate(sincos360[i*(360/15)], p->dir).add(p->spot).mul(size).add(p->o);
+            glVertex3f(p->o.x, p->o.y, p->o.z);
+            glVertex3f(v.x, v.y, v.z);
         }
         glEnd();
 
         glBegin(GL_LINE_LOOP);
-        loopi(16)
+        loopi(15)
         {
-            vec v = vec(p->spoke).rotate(2*M_PI*i/16.f, p->dir).add(p->spot);
-            glVertex3fv(v.v);
+            vec v = vec(p->spoke).rotate(sincos360[i*(360/15)], p->dir).add(p->spot).mul(size).add(p->o);
+            glVertex3f(v.x, v.y, v.z);
         }
         glEnd();
-
-        glPopMatrix();
     }
 
     coneprimitive *addcone(const vec &o, const vec &dir, float radius, float angle, int fade, int color, float size, float blend, bool fill)
@@ -1095,44 +1090,26 @@ void removetrackedparticles(physent *pl)
     loopi(sizeof(parts)/sizeof(parts[0])) parts[i]->resettracked(pl);
 }
 
+VARN(0, debugparticles, dbgparts, 0, 0, 1);
+
+void debugparticles()
+{
+    if(!dbgparts) return;
+    int n = sizeof(parts)/sizeof(parts[0]);
+    glEnable(GL_BLEND);
+    pushhudmatrix();
+    hudmatrix.ortho(0, FONTH*n*2*screen->w/float(screen->h), FONTH*n*2, 0, -1, 1); //squeeze into top-left corner        
+    flushhudmatrix();
+    hudshader->set();
+    loopi(n) draw_text(parts[i]->info, FONTH, (i+n/2)*FONTH);
+    pophudmatrix();
+    glDisable(GL_BLEND);
+}
+
 void renderparticles(bool mainpass)
 {
     //want to debug BEFORE the lastpass render (that would delete particles)
-    if(debugparticles && !glaring && !reflecting && !refracting)
-    {
-        int n = sizeof(parts)/sizeof(parts[0]);
-        glMatrixMode(GL_PROJECTION);
-        glPushMatrix();
-        glLoadIdentity();
-        glOrtho(0, FONTH*n*2, FONTH*n*2, 0, -1, 1); //squeeze into top-left corner
-        glMatrixMode(GL_MODELVIEW);
-        glPushMatrix();
-        glLoadIdentity();
-        glDisable(GL_DEPTH_TEST);
-        glEnable(GL_BLEND);
-        defaultshader->set();
-        loopi(n)
-        {
-            int type = parts[i]->type;
-            const char *title = parts[i]->texname ? strrchr(parts[i]->texname, '/')+1 : NULL;
-            string info = "";
-            if(type&PT_GLARE) concatstring(info, "g,");
-            if(type&PT_SOFT) concatstring(info, "s,");
-            if(type&PT_LERP) concatstring(info, "l,");
-            if(type&PT_MOD) concatstring(info, "m,");
-            if(type&PT_RND4) concatstring(info, "r,");
-            if(type&PT_FLIP) concatstring(info, "f,");
-            if(type&PT_ONTOP) concatstring(info, "o,");
-            defformatstring(ds, "%d\t%s: %s %s", parts[i]->count(), partnames[type&PT_TYPE], info, (title?title:""));
-            draw_text(ds, FONTH, (i+n/2)*FONTH);
-        }
-        glDisable(GL_BLEND);
-        glEnable(GL_DEPTH_TEST);
-        glMatrixMode(GL_PROJECTION);
-        glPopMatrix();
-        glMatrixMode(GL_MODELVIEW);
-        glPopMatrix();
-    }
+    if(dbgparts && mainpass) loopi(sizeof(parts)/sizeof(parts[0])) parts[i]->debuginfo();
 
     if(glaring && !particleglare) return;
 
@@ -1142,8 +1119,6 @@ void renderparticles(bool mainpass)
         parts[i]->update();
     }
 
-    static float zerofog[4] = { 0, 0, 0, 1 };
-    float oldfogc[4];
     bool rendered = false;
     uint lastflags = PT_LERP, flagmask = PT_LERP|PT_MOD|PT_ONTOP;
 
@@ -1166,7 +1141,6 @@ void renderparticles(bool mainpass)
             else GLOBALPARAMF(colorscale, 1, 1, 1, 1);
 
             particleshader->set();
-            glGetFloatv(GL_FOG_COLOR, oldfogc);
         }
 
         uint flags = p->type & flagmask;
@@ -1189,7 +1163,11 @@ void renderparticles(bool mainpass)
                     glDisableClientState(GL_COLOR_ARRAY);
                 }
             }
-            if(changedbits&PT_LERP) glFogfv(GL_FOG_COLOR, (flags&PT_LERP) ? oldfogc : zerofog);
+            if(changedbits&PT_LERP)
+            {
+                if(flags&PT_LERP) resetfogcolor();
+                else zerofogcolor();
+            }
             if(changedbits&(PT_LERP|PT_MOD))
             {
                 if(flags&PT_LERP) glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -1220,7 +1198,7 @@ void renderparticles(bool mainpass)
     if(rendered)
     {
         if(lastflags&(PT_LERP|PT_MOD)) glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-        if(!(lastflags&PT_LERP)) glFogfv(GL_FOG_COLOR, oldfogc);
+        if(!(lastflags&PT_LERP)) resetfogcolor();
         if(lastflags&0x01)
         {
             glDisableClientState(GL_VERTEX_ARRAY);

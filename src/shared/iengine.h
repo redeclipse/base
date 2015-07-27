@@ -229,6 +229,14 @@ extern void gettextres(int &w, int &h);
 extern vec minimapcenter, minimapradius, minimapscale;
 extern void bindminimap();
 
+extern matrix4 hudmatrix;
+extern void resethudmatrix();
+extern void pushhudmatrix();
+extern void flushhudmatrix(bool flushparams = true);
+extern void pophudmatrix(bool flush = true, bool flushparams = true);
+extern void pushhudscale(float sx, float sy = 0);
+extern void pushhudtranslate(float tx, float ty, float sx = 0, float sy = 0);
+
 // renderparticles
 enum
 {

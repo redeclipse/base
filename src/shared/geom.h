@@ -90,8 +90,7 @@ struct vec
 
     bool iszero() const { return x==0 && y==0 && z==0; }
     float squaredlen() const { return x*x + y*y + z*z; }
-    float dot2(const vec2 &o) const { return x*o.x + y*o.y; }
-    float dot2(const vec &o) const { return x*o.x + y*o.y; }
+    template<class T> float dot2(const T &o) const { return x*o.x + y*o.y; }
     float dot(const vec &o) const { return x*o.x + y*o.y + z*o.z; }
     float absdot(const vec &o) const { return fabs(x*o.x) + fabs(y*o.y) + fabs(z*o.z); }
     vec &mul(const vec &o)   { x *= o.x; y *= o.y; z *= o.z; return *this; }
@@ -163,11 +162,9 @@ struct vec
     vec &rotate_around_x(float angle) { return rotate_around_x(cosf(angle), sinf(angle)); }
     vec &rotate_around_y(float angle) { return rotate_around_y(cosf(angle), sinf(angle)); }
 
-    vec &rotate(float angle, const vec &d)
-    {
-        float c = cosf(angle), s = sinf(angle);
-        return rotate(c, s, d);
-    }
+    vec &rotate_around_z(const vec2 &sc) { return rotate_around_z(sc.x, sc.y); }
+    vec &rotate_around_x(const vec2 &sc) { return rotate_around_x(sc.x, sc.y); }
+    vec &rotate_around_y(const vec2 &sc) { return rotate_around_y(sc.x, sc.y); }
 
     vec &rotate(float c, float s, const vec &d)
     {
@@ -176,6 +173,8 @@ struct vec
                     x*(d.x*d.z*(1-c)-d.y*s) + y*(d.y*d.z*(1-c)+d.x*s) + z*(d.z*d.z*(1-c)+c));
         return *this;
     }
+    vec &rotate(float angle, const vec &d) { return rotate(cosf(angle), sinf(angle), d); }
+    vec &rotate(const vec2 &sc, const vec &d) { return rotate(sc.x, sc.y, d); }
 
     void orthogonal(const vec &d)
     {
@@ -1714,7 +1713,7 @@ struct matrix4
     template<class T, class U> T transformnormal(const U &in) const
     {
         T v;
-        transform(in, v);
+        transformnormal(in, v);
         return v;
     }
 
@@ -1757,6 +1756,11 @@ struct matrix4
     vec4 roww() const { return vec4(a.w, b.w, c.w, d.w); }
 
     bool invert(const matrix4 &m, double mindet = 1.0e-12);
+
+    vec2 lineardepthscale() const
+    {
+        return vec2(d.w, -d.z).div(c.z*d.w - d.z*c.w);
+    }
 };
 
 inline matrix3::matrix3(const matrix4 &m)
