@@ -75,6 +75,7 @@ FVAR(IDF_PERSIST, guiactiveblend, 0, 1.f, 1);
 static bool needsinput = false, hastitle = true, hasbgfx = true, tooltipforce = false;
 static char *statusstr = NULL, *tooltipstr = NULL, *tooltip = NULL;
 static int lasttooltip = 0, statuswidth = 0, tooltipwidth = 0;
+static int clickedlist = -1;
 
 #include "textedit.h"
 struct gui : guient
@@ -636,12 +637,7 @@ struct gui : guient
                 tooltipforce = true;
                 if(mouseaction[0]&GUI_PRESSED)
                 {
-                    int vnew = vmax-vmin+1;
-                    if(ishorizontal()) vnew = int((vnew*(reverse ? hity-y-guislidersize/2 : y+ysize-guislidersize/2-hity))/(ysize-guislidersize));
-                    else vnew = int((vnew*(reverse ? x+xsize-guislidersize/2-hitx : hitx-x-guislidersize/2))/(xsize-guislidersize));
-                    vnew += vmin;
-                    vnew = clamp(vnew, vmin, vmax);
-                    if(vnew != val) val = vnew;
+                    clickedlist = curlist;
                 }
                 else if(mouseaction[1]&GUI_UP)
                 {
@@ -654,6 +650,21 @@ struct gui : guient
             {
                 int vval = val+(reverse == !(lists[curlist].mouse[1]&GUI_ALT) ? -1 : 1),
                     vnew = clamp(vval, vmin, vmax);
+                if(vnew != val) val = vnew;
+            }
+
+            if(mouseaction[0]&GUI_UP)
+            {
+                clickedlist = -1;
+            }
+
+            if(clickedlist == curlist && mouseaction[0]&GUI_PRESSED)
+            {
+                int vnew = vmax-vmin+1;
+                if(ishorizontal()) vnew = int((vnew*(reverse ? hity-y-guislidersize/2 : y+ysize-guislidersize/2-hity))/(ysize-guislidersize));
+                else vnew = int((vnew*(reverse ? x+xsize-guislidersize/2-hitx : hitx-x-guislidersize/2))/(xsize-guislidersize));
+                vnew += vmin;
+                vnew = clamp(vnew, vmin, vmax);
                 if(vnew != val) val = vnew;
             }
         }
