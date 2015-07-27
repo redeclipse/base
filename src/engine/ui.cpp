@@ -1366,7 +1366,7 @@ namespace UI
                 }
                 break;
             default:
-                if(!cooked || (code<32)) return false;
+                if(!e && (!cooked || (code<32))) return false;
                 break;
         }
         if(!isdown) return true;
