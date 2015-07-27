@@ -53,8 +53,17 @@ struct masterclient
     enet_uint32 lastping, lastpong, lastactivity;
     vector<authreq> authreqs;
     bool isserver, isquick, ishttp, listserver, shouldping, shouldpurge;
+    
+    struct
+    {
+		string map;
+		int mode;
+		int mutators;
+	} stats;
+	
+	bool instats;
 
-    masterclient() : inputpos(0), outputpos(0), port(MASTER_PORT), numpings(0), lastcontrol(-1), version(0), lastping(0), lastpong(0), lastactivity(0), isserver(false), isquick(false), ishttp(false), listserver(false), shouldping(false), shouldpurge(false) {}
+    masterclient() : inputpos(0), outputpos(0), port(MASTER_PORT), numpings(0), lastcontrol(-1), version(0), lastping(0), lastpong(0), lastactivity(0), isserver(false), isquick(false), ishttp(false), listserver(false), shouldping(false), shouldpurge(false), instats(false) {}
 };
 
 static vector<masterclient *> masterclients;
