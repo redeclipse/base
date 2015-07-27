@@ -36,6 +36,32 @@ int guessnumcpus()
 #endif
     return max(numcpus, 1);
 }
+
+char *stringtonumbers(const char *str)
+{
+	bigstring ret = "";
+	size_t i;
+	for (i = 0; i < strlen(str); i++) {
+		defformatstring(s, "%02x", str[i]);
+		strncat(ret, s, sizeof(ret) - strlen(ret));
+	}
+	return newstring(ret);
+}
+char *numberstostring(const char *numbers)
+{
+	bigstring ret = "";
+	size_t i;
+	if(strlen(numbers) % 2 == 0)
+	{
+		for (i = 0; i < strlen(numbers); i+=2) {
+			printf("%c %c\n", numbers[i], numbers[i + 1]);
+			defformatstring(hexstring, "%c%c", numbers[i], numbers[i + 1]);
+			defformatstring(s, "%c", (char)strtol(hexstring, NULL, 16));
+			strncat(ret, s, sizeof(ret) - strlen(ret));
+		}
+	}
+	return newstring(ret);
+}
     
 ////////////////////////// rnd numbers ////////////////////////////////////////
 

@@ -3044,8 +3044,9 @@ namespace server
 		if(G(serverstats))
 		{
 			srvoutf(-3, "\fcsubmitting statistics");
-			requestmasterf("stats begin");
-			requestmasterf("stats end");
+			requestmasterf("stats begin\n");
+			requestmasterf("stats game %s %d %d\n", smapname, gamemode, mutators);
+			requestmasterf("stats end\n");
 		}
 	}
 	

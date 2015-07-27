@@ -5,11 +5,11 @@
 CREATE TABLE games (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
 	time INTEGER,
+	server INTEGER,
 	map TEXT,
 	mode INTEGER,
 	mutators INTEGER,
-	server INTEGER,
-	timeplayed INTEGER,
+	timeplayed INTEGER
 );
 
 CREATE TABLE game_servers (
@@ -39,10 +39,17 @@ CREATE TABLE game_players (
 
 CREATE TABLE game_weapons (
 	game INTEGER,
-	id TEXT,
-	damage INTEGER,
-	kills INTEGER,
-	hitratio REAL,
+	player TEXT,
+	weapon TEXT,
+	
 	timewielded INTEGER,
-	timeloadout INTEGER
+	timeloadout INTEGER,
+	
+	damage1 INTEGER,
+	kills1 INTEGER,
+	hitratio1 REAL,
+	
+	damage2 INTEGER,
+	kills2 INTEGER,
+	hitratio2 REAL
 );

@@ -328,6 +328,13 @@ namespace auth
             if(servcmd(2, w[1], w[2])) conoutf("master server variable synced: %s", w[1]);
             versioning = oldversion;
         }
+        else if(!strcmp(w[0], "stats"))
+        {
+			if(!strcmp(w[1], "success"))
+			{
+				srvoutf(-3, "\fcstatistics submitted successfully");
+			}
+		}
         else loopj(ipinfo::SYNCTYPES) if(!strcmp(w[0], ipinfotypes[j]))
         {
             ipinfo &c = control.add();

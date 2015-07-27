@@ -54,13 +54,25 @@ struct masterclient
     vector<authreq> authreqs;
     bool isserver, isquick, ishttp, listserver, shouldping, shouldpurge;
     
-    struct
+    struct stats_state
     {
-		string map;
-		int mode;
-		int mutators;
+		char *sql;
+		
+		void addsql(const char *fmt, ...)
+		{
+			va_list al;
+			va_start(al, fmt);
+			char *sql_temp = sqlite3_vmprintf(fmt, al);
+			va_end(al);
+			if(sql)
+				sql = sqlite3_mprintf("%z\n%z", sql, sql_temp);
+			else
+				sql = sqlite3_mprintf("%s\n%z", sql, sql_temp);
+		}
+		
+		stats_state() : sql(NULL) {};
 	} stats;
-	
+    
 	bool instats;
 
     masterclient() : inputpos(0), outputpos(0), port(MASTER_PORT), numpings(0), lastcontrol(-1), version(0), lastping(0), lastpong(0), lastactivity(0), isserver(false), isquick(false), ishttp(false), listserver(false), shouldping(false), shouldpurge(false), instats(false) {}
@@ -135,7 +147,7 @@ void loadstatsdb()
 	checkstatsdb(sqlite3_open(findfile("stats.sqlite", "w"), &statsdb));
 	statsdbexecf("BEGIN");
 	if(statsdbversion() < 1)
-	{		
+	{
 		statsdbexecfile("sql/stats/create.sql");
 		statsdbexecf("PRAGMA user_version = %d;", STATSDB_VERSION);
 		conoutf("created statistics database");
@@ -461,6 +473,19 @@ bool checkmasterclientinput(masterclient &c)
             conoutf("master peer %s was sent %d server(s)", c.name, servs);
             c.shouldpurge = found = true;
         }
+        if(c.isserver && !strcmp(w[0], "stats"))
+        {
+			if(!strcmp(w[1], "begin"))
+			{
+				conoutf("master peer %s began sending stats", c.name);
+			}
+			else if(!strcmp(w[1], "end"))
+			{
+				conoutf("master peer %s commited stats", c.name);
+				masteroutf(c, "stats success\n");
+			}
+			found = true;
+		}
         if(c.isserver || c.isquick)
         {
             if(!strcmp(w[0], "reqauth")) { reqauth(c, uint(atoi(w[1])), w[2], w[3]); found = true; }
