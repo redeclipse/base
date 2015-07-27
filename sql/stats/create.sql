@@ -5,7 +5,6 @@
 CREATE TABLE games (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
 	time INTEGER,
-	server INTEGER,
 	map TEXT,
 	mode INTEGER,
 	mutators INTEGER,
@@ -13,7 +12,6 @@ CREATE TABLE games (
 );
 
 CREATE TABLE game_servers (
-	id INTEGER PRIMARY KEY AUTOINCREMENT,
     game INTEGER,
     handle TEXT,
     desc TEXT,

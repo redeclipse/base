@@ -204,7 +204,7 @@ namespace server
         int state;
         projectilestate dropped, weapshots[W_MAX][2];
         int score, spree, rewards[2], shotdamage, damage;
-        int lasttimeplayed, timeplayed, aireinit, lastboost, lastresowner[WR_MAX];
+        int lasttimeplayed, timeplayed, aireinit, lastboost, lastresowner[WR_MAX], lasttimealive, timealive;
         vector<int> fraglog, fragmillis, cpnodes, chatmillis;
         vector<dmghist> damagelog;
         vector<teamkill> teamkills;
@@ -257,6 +257,14 @@ namespace server
         {
             timeplayed += totalmillis-lasttimeplayed;
             if(last) lasttimeplayed = totalmillis;
+            
+            
+            extern int gamemillis;
+            if(isalive(gamemillis))
+            {
+				timealive += totalmillis-lasttimealive;
+			}
+            if(last) lasttimealive = totalmillis;
         }
 
         float scoretime(bool update = true)
@@ -274,7 +282,7 @@ namespace server
     {
         uint ip;
         string name, handle;
-        int points, score, frags, spree, rewards, timeplayed, deaths, shotdamage, damage, cptime;
+        int points, score, frags, spree, rewards, timeplayed, timealive, deaths, shotdamage, damage, cptime;
         int warnings[WARN_MAX][2];
         vector<teamkill> teamkills;
         bool quarantine;
@@ -287,6 +295,7 @@ namespace server
             spree = gs.spree;
             rewards = gs.rewards[0];
             timeplayed = gs.timeplayed;
+            timealive = gs.timealive;
             deaths = gs.deaths;
             teamkills = gs.teamkills;
             shotdamage = gs.shotdamage;
@@ -304,6 +313,7 @@ namespace server
             gs.spree = spree;
             gs.rewards[0] = rewards;
             gs.timeplayed = timeplayed;
+            gs.timealive = timealive;
             gs.deaths = deaths;
             gs.teamkills = teamkills;
             gs.shotdamage = shotdamage;
@@ -2875,6 +2885,7 @@ namespace server
                 return false;
             }
             ci->state.lasttimeplayed = totalmillis;
+            ci->state.lasttimealive = totalmillis;
             ci->state.quarantine = false;
             waiting(ci, DROP_RESET);
             if(smode) smode->entergame(ci);
@@ -3043,9 +3054,10 @@ namespace server
     {
 		if(G(serverstats))
 		{
-			srvoutf(-3, "\fcsubmitting statistics");
 			requestmasterf("stats begin\n");
-			requestmasterf("stats game %s %d %d\n", smapname, gamemode, mutators);
+			char *smapname_e = stringtonumbers(smapname);
+			requestmasterf("stats game %s %d %d %d\n", smapname_e, gamemode, mutators, gamemillis);
+			DELETEA(smapname_e);
 			requestmasterf("stats end\n");
 		}
 	}

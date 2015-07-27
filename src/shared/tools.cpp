@@ -54,7 +54,6 @@ char *numberstostring(const char *numbers)
 	if(strlen(numbers) % 2 == 0)
 	{
 		for (i = 0; i < strlen(numbers); i+=2) {
-			printf("%c %c\n", numbers[i], numbers[i + 1]);
 			defformatstring(hexstring, "%c%c", numbers[i], numbers[i + 1]);
 			defformatstring(s, "%c", (char)strtol(hexstring, NULL, 16));
 			strncat(ret, s, sizeof(ret) - strlen(ret));

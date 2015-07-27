@@ -334,6 +334,12 @@ namespace auth
 			{
 				srvoutf(-3, "\fcstatistics submitted successfully");
 			}
+			else
+			{
+				char *errmsg = numberstostring(w[2]);
+				srvoutf(-3, "\fcstatistics were not submitted: %s", errmsg);
+				DELETEA(errmsg);
+			}
 		}
         else loopj(ipinfo::SYNCTYPES) if(!strcmp(w[0], ipinfotypes[j]))
         {

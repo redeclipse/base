@@ -54,23 +54,11 @@ struct masterclient
     vector<authreq> authreqs;
     bool isserver, isquick, ishttp, listserver, shouldping, shouldpurge;
     
-    struct stats_state
+    struct
     {
-		char *sql;
-		
-		void addsql(const char *fmt, ...)
-		{
-			va_list al;
-			va_start(al, fmt);
-			char *sql_temp = sqlite3_vmprintf(fmt, al);
-			va_end(al);
-			if(sql)
-				sql = sqlite3_mprintf("%z\n%z", sql, sql_temp);
-			else
-				sql = sqlite3_mprintf("%s\n%z", sql, sql_temp);
-		}
-		
-		stats_state() : sql(NULL) {};
+		string map;
+		int mode, mutators, timeplayed;
+		time_t time;
 	} stats;
     
 	bool instats;
@@ -478,11 +466,26 @@ bool checkmasterclientinput(masterclient &c)
 			if(!strcmp(w[1], "begin"))
 			{
 				conoutf("master peer %s began sending stats", c.name);
+				c.instats = true;
 			}
-			else if(!strcmp(w[1], "end"))
+			else if(c.instats)
 			{
-				conoutf("master peer %s commited stats", c.name);
-				masteroutf(c, "stats success\n");
+				if(!strcmp(w[1], "end"))
+				{
+					conoutf("master peer %s commited stats", c.name);
+					masteroutf(c, "stats success\n");
+					c.instats = false;
+				}
+				else if(!strcmp(w[1], "game"))
+				{
+					char *mapname_e = numberstostring(w[2]);
+					copystring(c.stats.map, mapname_e);
+					DELETEA(mapname_e);
+					c.stats.mode = (int)strtol(w[3], NULL, 10);
+					c.stats.mutators = (int)strtol(w[4], NULL, 10);
+					c.stats.timeplayed = (int)strtol(w[5], NULL, 10);
+					conoutf("%s %d %d %d", c.stats.map, c.stats.mode, c.stats.mutators, c.stats.timeplayed);
+				}
 			}
 			found = true;
 		}
