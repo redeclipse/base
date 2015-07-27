@@ -133,6 +133,7 @@ int statsdbversion()
 void loadstatsdb()
 {
 	checkstatsdb(sqlite3_open(findfile("stats.sqlite", "w"), &statsdb));
+	statsdbexecf("BEGIN");
 	if(statsdbversion() < 1)
 	{		
 		statsdbexecfile("sql/stats/create.sql");
@@ -147,6 +148,7 @@ void loadstatsdb()
 		statsdbexecf("PRAGMA user_version = %d;", ver + 1);
 		conoutf("upgraded database from %d to %d", ver, statsdbversion());
 	}
+	statsdbexecf("COMMIT");
 	conoutf("statistics database loaded");
 }
 
