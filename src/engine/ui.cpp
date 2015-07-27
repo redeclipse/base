@@ -208,7 +208,7 @@ struct gui : guient
                 x1++; y1++; x2--; y2--; // offset these slightly like a skin
                 if(colour1 >= 0)
                 {
-                    notextureshader->set();
+                    hudnotextureshader->set();
                     glColor4f((colour1>>16)/255.f, ((colour1>>8)&0xFF)/255.f, (colour1&0xFF)/255.f, blend1);
                     glBegin(GL_TRIANGLE_STRIP);
                     glVertex2f(x1, y1);
@@ -217,11 +217,11 @@ struct gui : guient
                     glVertex2f(x2, y2);
                     xtraverts += 4;
                     glEnd();
-                    defaultshader->set();
+                    hudshader->set();
                 }
                 if(skinborder && colour2 >= 0)
                 {
-                    notextureshader->set();
+                    hudnotextureshader->set();
                     glColor4f((colour2>>16)/255.f, ((colour2>>8)&0xFF)/255.f, (colour2&0xFF)/255.f, blend2);
                     glBegin(GL_LINE_LOOP);
                     glVertex2f(x1, y1);
@@ -230,7 +230,7 @@ struct gui : guient
                     glVertex2f(x1, y2);
                     xtraverts += 4;
                     glEnd();
-                    defaultshader->set();
+                    hudshader->set();
                 }
                 break;
             }
@@ -533,6 +533,7 @@ struct gui : guient
             modelpreview::start(overlaid);
             game::renderplayerpreview(model, color, team, weap, vanity, scale, blend);
             modelpreview::end();
+            hudshader->set();
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             glEnable(GL_BLEND);
             glDisable(GL_SCISSOR_TEST);
@@ -587,6 +588,7 @@ struct gui : guient
                 rendermodel(&light, name, anim, o, yaw, 0, 0, NULL, NULL, 0, scale, blend);
             }
             modelpreview::end();
+            hudshader->set();
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             glEnable(GL_BLEND);
             glDisable(GL_SCISSOR_TEST);
@@ -789,7 +791,7 @@ struct gui : guient
     void fill(int color, int inheritw, int inherith)
     {
         if(!visible()) return;
-        notextureshader->set();
+        hudnotextureshader->set();
         glColor4ub(color>>16, (color>>8)&0xFF, color&0xFF, 0x80);
         int w = xsize, h = ysize;
         if(inheritw>0)
@@ -809,13 +811,13 @@ struct gui : guient
             h = p.springs > 0 && !((curdepth-parentdepth)&1) ? lists[p.parent].h : p.h;
         }
         rect_(curx, cury, w, h, false);
-        defaultshader->set();
+        hudshader->set();
     }
 
     void outline(int color, int inheritw, int inherith, int offsetx, int offsety)
     {
         if(!visible()) return;
-        notextureshader->set();
+        hudnotextureshader->set();
         glColor4ub(color>>16, (color>>8)&0xFF, color&0xFF, 0x80);
         int w = xsize, h = ysize;
         if(inheritw>0)
@@ -835,7 +837,7 @@ struct gui : guient
             h = p.springs > 0 && !((curdepth-parentdepth)&1) ? lists[p.parent].h : p.h;
         }
         rect_(curx+offsetx, cury+offsety, w-offsetx*2, h-offsety*2, true);
-        defaultshader->set();
+        hudshader->set();
     }
 
     void background(int colour1, float blend1, int colour2, float blend2, bool skinborder, int inheritw, int inherith)
@@ -970,7 +972,7 @@ struct gui : guient
             xs -= 2*xpad;
             ys -= 2*ypad;
         }
-        SETSHADER(rgbonly);
+        SETSHADER(hudrgb);
         const vec &color = hit && hitfx && !overlaid ? vec(1.25f, 1.25f, 1.25f) : vec(1, 1, 1);
         float tc[4][2] = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
         int xoff = vslot.offset.x, yoff = vslot.offset.y;
@@ -1022,7 +1024,7 @@ struct gui : guient
             glEnd();
         }
 
-        defaultshader->set();
+        hudshader->set();
         if(overlaid)
         {
             if(!overlaytex) overlaytex = textureload(guioverlaytex, 3, true, false);
@@ -1089,7 +1091,7 @@ struct gui : guient
                 y1 = ishorizontal() ? cury : cury+space/2-size/2, y2 = y1+(ishorizontal() ? ysize : size);
             if(colour1 >= 0)
             {
-                notextureshader->set();
+                hudnotextureshader->set();
                 glColor4f((colour1>>16)/255.f, ((colour1>>8)&0xFF)/255.f, (colour1&0xFF)/255.f, guibgblend);
                 glBegin(GL_TRIANGLE_STRIP);
                 glVertex2f(x1, y1);
@@ -1098,11 +1100,11 @@ struct gui : guient
                 glVertex2f(x2, y2);
                 xtraverts += 4;
                 glEnd();
-                defaultshader->set();
+                hudshader->set();
             }
             if(colour2 >= 0)
             {
-                notextureshader->set();
+                hudnotextureshader->set();
                 glColor4f((colour2>>16)/255.f, ((colour2>>8)&0xFF)/255.f, (colour2&0xFF)/255.f, guiborderblend);
                 glBegin(GL_LINE_LOOP);
                 glVertex2f(x1, y1);
@@ -1111,7 +1113,7 @@ struct gui : guient
                 glVertex2f(x1, y2);
                 xtraverts += 4;
                 glEnd();
-                defaultshader->set();
+                hudshader->set();
             }
         }
         layout(ishorizontal() ? space : 0, ishorizontal() ? 0 : space);
@@ -1193,9 +1195,13 @@ struct gui : guient
             cury = -ysize;
             curx = -xsize/2;
 
-            glPushMatrix();
-            glTranslatef(uiorigin.x, uiorigin.y, uiorigin.z);
-            glScalef(uiscale.x, uiscale.y, uiscale.z);
+            hudmatrix.ortho(0, 1, 1, 0, -1, 1);
+            hudmatrix.translate(uiorigin);
+            hudmatrix.scale(uiscale);
+
+            resethudmatrix();
+            hudshader->set();
+
             if(hasbgfx)
             {
                 int x1 = curx-FONTW, y1 = cury-FONTH/2, x2 = x1+xsize+FONTW*2, y2 = y1+ysize+FONTH;
@@ -1262,7 +1268,6 @@ struct gui : guient
                 if(tooltip) DELETEA(tooltip);
                 lasttooltip = 0;
             }
-            glPopMatrix();
         }
         poplist();
         while(fontdepth) gui::popfont();
@@ -1428,22 +1433,8 @@ namespace UI
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-            glMatrixMode(GL_PROJECTION);
-            glPushMatrix();
-            glLoadIdentity();
-            glOrtho(0, 1, 1, 0, -1, 1);
-
-            glMatrixMode(GL_MODELVIEW);
-            glPushMatrix();
-            glLoadIdentity();
-
             //loopvrev(guis) guis[i].cb->gui(guis[i], false);
             guis.last().cb->gui(guis.last(), false);
-
-            glMatrixMode(GL_PROJECTION);
-            glPopMatrix();
-            glMatrixMode(GL_MODELVIEW);
-            glPopMatrix();
 
             glDisable(GL_BLEND);
         }

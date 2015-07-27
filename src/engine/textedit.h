@@ -647,7 +647,7 @@ struct editor
                     pey = pixelheight-FONTH;
                     pex = pixelwidth;
                 }
-                notextureshader->set();
+                hudnotextureshader->set();
                 glColor3f(0.25f, 0.25f, 0.75f);
                 glBegin(GL_QUADS);
                 if(psy == pey)
@@ -675,7 +675,7 @@ struct editor
                     glVertex2f(x+pex, y+pey);
                 }
                 glEnd();
-                defaultshader->set();
+                hudshader->set();
             }
         }
 
@@ -687,7 +687,7 @@ struct editor
             draw_text(lines[i].text, x, y+h, color>>16, (color>>8)&0xFF, color&0xFF, 0xFF, TEXT_NO_INDENT, hit && (cy == i) ? cx : -1, maxwidth);
             if(linewrap && height > FONTH) // line wrap indicator
             {
-                notextureshader->set();
+                hudnotextureshader->set();
                 glColor4f((guifieldbordercolour>>16)/255.f, ((guifieldbordercolour>>8)&0xFF)/255.f, (guifieldbordercolour&0xFF)/255.f, guifieldborderblend);
                 glBegin(GL_TRIANGLE_STRIP);
                 glVertex2f(x, y+h+FONTH);
@@ -695,7 +695,7 @@ struct editor
                 glVertex2f(x-FONTW/4, y+h+FONTH);
                 glVertex2f(x-FONTW/4, y+h+height);
                 glEnd();
-                defaultshader->set();
+                hudshader->set();
             }
             h += height;
         }

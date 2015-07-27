@@ -181,6 +181,8 @@ int draw_textf(const char *fstr, int left, int top, ...)
     return draw_text(str, left, top);
 }
 
+const matrix4x3 *textmatrix = NULL;
+
 static float draw_char(Texture *&tex, int c, float x, float y, float scale)
 {
     font::charinfo &info = curfont->chars[c-curfont->charoffset];
@@ -200,10 +202,20 @@ static float draw_char(Texture *&tex, int c, float x, float y, float scale)
           tx2 = (info.x + info.w) / float(tex->xs),
           ty2 = (info.y + info.h) / float(tex->ys);
 
-    varray::attrib<float>(x1, y1); varray::attrib<float>(tx1, ty1);
-    varray::attrib<float>(x2, y1); varray::attrib<float>(tx2, ty1);
-    varray::attrib<float>(x2, y2); varray::attrib<float>(tx2, ty2);
-    varray::attrib<float>(x1, y2); varray::attrib<float>(tx1, ty2);
+    if(textmatrix)
+    {
+        varray::attrib(textmatrix->transform(vec2(x1, y1))); varray::attrib<float>(tx1, ty1);
+        varray::attrib(textmatrix->transform(vec2(x2, y1))); varray::attrib<float>(tx2, ty1);
+        varray::attrib(textmatrix->transform(vec2(x2, y2))); varray::attrib<float>(tx2, ty2);
+        varray::attrib(textmatrix->transform(vec2(x1, y2))); varray::attrib<float>(tx1, ty2);
+    }
+    else
+    {
+        varray::attrib<float>(x1, y1); varray::attrib<float>(tx1, ty1);
+        varray::attrib<float>(x2, y1); varray::attrib<float>(tx2, ty1);
+        varray::attrib<float>(x2, y2); varray::attrib<float>(tx2, ty2);
+        varray::attrib<float>(x1, y2); varray::attrib<float>(tx1, ty2);
+    }
 
     return scale*info.advance;
 }
@@ -606,7 +618,7 @@ int draw_text(const char *str, int rleft, int rtop, int r, int g, int b, int a, 
     Texture *tex = curfont->texs[0];
     glBindTexture(GL_TEXTURE_2D, tex->id);
     varray::enable();
-    varray::defattrib(varray::ATTRIB_VERTEX, 2, GL_FLOAT);
+    varray::defattrib(varray::ATTRIB_VERTEX, textmatrix ? 3 : 2, GL_FLOAT);
     varray::defattrib(varray::ATTRIB_TEXCOORD0, 2, GL_FLOAT);
     varray::begin(GL_QUADS);
     int fade = a;

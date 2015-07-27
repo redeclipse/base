@@ -38,12 +38,12 @@ static struct depthfxtexture : rendertarget
 
     float eyedepth(const vec &p) const
     {
-        return max(-mvmatrix.transform<vec>(p).z, 0.0f);
+        return max(-cammatrix.transform<vec>(p).z, 0.0f);
     }
 
     void addscissorvert(const vec &v, float &sx1, float &sy1, float &sx2, float &sy2)
     {
-        vec p = mvpmatrix.perspectivetransform(v);
+        vec p = camprojmatrix.perspectivetransform(v);
         sx1 = min(sx1, p.x);
         sy1 = min(sy1, p.y);
         sx2 = max(sx2, p.x);
@@ -195,9 +195,6 @@ void drawdepthfxtex()
 {
     if(!depthfx) return;
 
-    // Apple/ATI bug - fixed-function fog state can force software fallback even when fragment program is enabled
-    glDisable(GL_FOG);
     depthfxtex.render(1<<depthfxsize, 1<<depthfxsize, blurdepthfx, blurdepthfxsigma/100.0f);
-    glEnable(GL_FOG);
 }
 

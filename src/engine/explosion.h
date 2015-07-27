@@ -188,7 +188,7 @@ struct explosionrenderer : sharedlistrenderer
         return numranges;
     }
 
-    void renderpart(sharedlistparticle *p, int blend, int ts, float size, uchar *color)
+    void renderpart(sharedlistparticle *p, int blend, int ts, float size)
     {
         float pmax = p->val,
               fsize = p->fade ? float(ts)/p->fade : 1,
@@ -196,29 +196,33 @@ struct explosionrenderer : sharedlistrenderer
         int pblend = int(blend*p->blend);
         if(isfoggedsphere(psize*WOBBLE, p->o)) return;
 
-        glPushMatrix();
-        glTranslatef(p->o.x, p->o.y, p->o.z);
+        vec dir = vec(p->o).sub(camera1->o), s, t;
+        float dist = dir.magnitude();
+        bool inside = dist <= psize*WOBBLE;
+        if(inside)
+        {
+            s = camright;
+            t = camup;
+        }
+        else
+        {
+            if(reflecting) { dir.z = p->o.z - reflectz; dist = dir.magnitude(); }
+            float mag2 = dir.magnitude2();
+            dir.x /= mag2;
+            dir.y /= mag2;
+            dir.z /= dist;
+            s = vec(dir.y, -dir.x, 0);
+            t = vec(dir.x*dir.z, dir.y*dir.z, -mag2/dist);
+        }
 
-        bool inside = p->o.dist(camera1->o) <= psize*WOBBLE;
-        vec oc(p->o);
-        oc.sub(camera1->o);
-        if(reflecting) oc.z = p->o.z - reflectz;
+        matrix3 rot(lastmillis/1000.0f*143*RAD, vec(1/SQRT3, 1/SQRT3, 1/SQRT3));
+        LOCALPARAM(texgenS, rot.transposedtransform(s));
+        LOCALPARAM(texgenT, rot.transposedtransform(t));
 
-        float yaw = inside ? camera1->yaw : atan2(oc.y, oc.x)/RAD - 90,
-        pitch = (inside ? camera1->pitch : asin(oc.z/oc.magnitude())/RAD) - 90;
-
-        vec s(1, 0, 0), t(0, 1, 0);
-        s.rotate(pitch*RAD, vec(-1, 0, 0));
-        s.rotate(yaw*RAD, vec(0, 0, -1));
-        t.rotate(pitch*RAD, vec(-1, 0, 0));
-        t.rotate(yaw*RAD, vec(0, 0, -1));
-
-        vec rotdir = vec(-1, 1, -1).normalize();
-        s.rotate(-lastmillis/7.0f*RAD, rotdir);
-        t.rotate(-lastmillis/7.0f*RAD, rotdir);
-
-        LOCALPARAM(texgenS, s);
-        LOCALPARAM(texgenT, t);
+        matrix4 m(rot, p->o);
+        m.scale(psize, psize, inside ? -psize : psize);
+        m.mul(camprojmatrix, m);
+        LOCALPARAM(explosionmatrix, m);
 
         vec center = vec(p->o).mul(0.015f);
         LOCALPARAM(center, center);
@@ -226,20 +230,14 @@ struct explosionrenderer : sharedlistrenderer
         LOCALPARAMF(blendparams, inside ? 0.5f : 4, inside ? 0.25f : 0);
         binddepthfxparams(depthfxblend, inside ? pblend/512.f : 0, 2*(size + pmax)*WOBBLE >= depthfxblend, p);
 
-        glRotatef(lastmillis/7.0f, -rotdir.x, rotdir.y, -rotdir.z);
-        glScalef(-psize, psize, -psize);
-
         int passes = !reflecting && !refracting && inside ? 2 : 1;
-        if(inside) glScalef(1, 1, -1);
         loopi(passes)
         {
-            glColor4ub(color[0], color[1], color[2], i ? pblend/2 : pblend);
+            glColor4ub(p->color.r, p->color.g, p->color.b, i ? pblend/2 : pblend);
             if(i) glDepthFunc(GL_GEQUAL);
             sphere::draw();
             if(i) glDepthFunc(GL_LESS);
         }
-
-        glPopMatrix();
     }
 };
 static explosionrenderer explosions("<grey>particles/explosion"),

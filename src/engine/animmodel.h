@@ -782,34 +782,26 @@ struct animmodel : model
             float resize = model->scale * (attached && attached->sizescale >= 0 ? attached->sizescale : sizescale);
             if(!(anim&ANIM_NORENDER))
             {
-                glPushMatrix();
-                glMultMatrixf(matrixstack[matrixpos].a.v);
-                if(resize!=1) glScalef(resize, resize, resize);
-                if(!translate.iszero()) glTranslatef(translate.x, translate.y, translate.z);
-                if(envmaptmu>=0)
+                matrix4 modelmatrix;
+                modelmatrix.mul(shadowmapping ? shadowmatrix : camprojmatrix, matrixstack[matrixpos]);
+                if(resize!=1) modelmatrix.scale(resize);
+                if(!translate.iszero()) modelmatrix.translate(translate);
+                GLOBALPARAM(modelmatrix, modelmatrix);
+
+                if(!(anim&ANIM_NOSKIN))
                 {
-                    glMatrixMode(GL_TEXTURE);
-                    glLoadMatrixf(matrixstack[matrixpos].a.v);
-                    glMatrixMode(GL_MODELVIEW);
+                    if(envmaptmu >= 0) GLOBALPARAM(modelworld, matrix3(matrixstack[matrixpos]));
+                    
+                    vec odir, ocampos;
+                    matrixstack[matrixpos].transposedtransformnormal(lightdir, odir);
+                    GLOBALPARAM(lightdir, odir);
+                    matrixstack[matrixpos].transposedtransform(camera1->o, ocampos);
+                    ocampos.div(resize).sub(translate);
+                    GLOBALPARAM(modelcamera, ocampos);
                 }
             }
 
-            if(!(anim&(ANIM_NOSKIN|ANIM_NORENDER)))
-            {
-                vec odir, ocampos;
-                matrixstack[matrixpos].transposedtransformnormal(lightdir, odir);
-                GLOBALPARAM(lightdir, odir);
-                matrixstack[matrixpos].transposedtransform(camera1->o, ocampos);
-                ocampos.div(resize).sub(translate);
-                GLOBALPARAM(camera, ocampos);
-            }
-
             meshes->render(as, pitch, oaxis, oforward, d, this, attached);
-
-            if(!(anim&ANIM_NORENDER))
-            {
-                glPopMatrix();
-            }
 
             if(!(anim&ANIM_REUSE))
             {
@@ -1021,13 +1013,6 @@ struct animmodel : model
         }
 
         render(anim, basetime, basetime2, pitch, axis, forward, d, a);
-
-        if(envmaptmu>=0)
-        {
-            glMatrixMode(GL_TEXTURE);
-            glLoadIdentity();
-            glMatrixMode(GL_MODELVIEW);
-        }
 
         if(transparent<1 && alphadepth) glDepthFunc(GL_LESS);
 

@@ -123,6 +123,7 @@ extern float textscale, guitextscale;
 #define FONTTAB (4*FONTW)
 
 extern font *curfont;
+extern const matrix4x3 *textmatrix;
 
 // texture
 extern int hwtexsize, hwcubetexsize, hwmaxanisotropy, maxtexsize, anisotropy, envmapradius;
@@ -165,6 +166,7 @@ extern int shaderprecision;
 
 extern int shadowmap, shadowmapcasters;
 extern bool shadowmapping;
+extern matrix4 shadowmatrix;
 
 extern bool isshadowmapcaster(const vec &o, float rad);
 extern bool addshadowmapcaster(const vec &o, float xyrad, float zrad);
@@ -196,10 +198,16 @@ extern int hasstencil;
 extern int glversion, glslversion;
 extern char *gfxvendor, *gfxexts, *gfxrenderer, *gfxversion;
 
-extern bool envmapping, minimapping, renderedgame, modelpreviewing;
+enum { DRAWTEX_NONE = 0, DRAWTEX_ENVMAP, DRAWTEX_MINIMAP, DRAWTEX_MODELPREVIEW };
+
+extern int drawtex;
+extern bool renderedgame;
 extern const matrix4 viewmatrix;
-extern matrix4 mvmatrix, projmatrix, mvpmatrix, invmvmatrix, invmvpmatrix, fogmatrix, invfogmatrix, envmatrix;
+extern matrix4 cammatrix, projmatrix, camprojmatrix, invcammatrix, invcamprojmatrix;
 extern bvec fogcolor;
+extern vec curfogcolor;
+extern int fog;
+extern float curfogstart, curfogend;
 
 extern float cursorx, cursory;
 extern vec cursordir;
@@ -226,8 +234,8 @@ extern void vecfromcursor(float x, float y, float z, vec &dir);
 extern bool vectocursor(const vec &v, float &x, float &y, float &z, float clampxy = -1);
 extern void findorientation(vec &o, float yaw, float pitch, vec &pos);
 extern void rendergame();
+extern void setavatarscale(float zscale);
 extern void renderavatar(bool early = false, bool project = false);
-extern void viewproject(float zscale = 1);
 extern void invalidatepostfx();
 extern void drawnoview();
 extern bool hasnoview();
@@ -240,6 +248,12 @@ extern void calcspherescissor(const vec &center, float size, float &sx1, float &
 extern int pushscissor(float sx1, float sy1, float sx2, float sy2);
 extern void popscissor();
 extern void setcolormask(bool r = true, bool g = true, bool b = true);
+extern void setfogcolor(const vec &v);
+extern void zerofogcolor();
+extern void resetfogcolor();
+extern void setfogdist(float start, float end);
+extern void clearfogdist();
+extern void resetfogdist();
 
 namespace modelpreview
 {
@@ -248,7 +262,7 @@ namespace modelpreview
 }
 
 // renderextras
-extern void render3dbox(vec &o, float tofloor, float toceil, float xradius, float yradius = 0);
+extern void render3dbox(vec &o, float tofloor, float toceil, float xradius, float yradius = 0, const matrix4x3 *m = NULL);
 extern void renderellipse(vec &o, float xradius, float yradius, float yaw);
 
 // octa
@@ -399,7 +413,6 @@ extern int visiblematerial(const cube &c, int orient, int x, int y, int z, int s
 
 // water
 extern int refracting, refractfog;
-extern bvec refractcolor;
 extern bool reflecting, fading, fogging;
 extern float reflectz;
 extern int reflectdist, vertwater, waterrefract, waterreflect, waterfade, caustics, waterfallrefract;
@@ -687,12 +700,9 @@ extern int dynentsize, watercolour, lavacolour, fog, fogcolour;
 extern bvec ambientcolor, skylightcolor;
 extern float curfov, fovy, aspect, forceaspect;
 
-extern void project(float fovy, float aspect, int farplane, bool flipx = false, bool flipy = false, bool swapxy = false, float zscale = 1);
-extern void transplayer();
-
 extern void usetexturing(bool on);
 
-#define rendermainview (!shadowmapping && !envmapping && !reflecting && !refracting)
+#define rendermainview (!shadowmapping && !drawtex && !reflecting && !refracting)
 #define renderatopview (glaring)
 #define rendernormally (rendermainview || renderatopview)
 

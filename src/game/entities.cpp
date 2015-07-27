@@ -2268,7 +2268,7 @@ namespace entities
     {
         if(rendermainview && shouldshowents(game::player1->state == CS_EDITING ? 1 : (!entgroup.empty() || ents.inrange(enthover) ? 2 : 3))) loopv(ents) // important, don't render lines and stuff otherwise!
             renderfocus(i, renderentshow(e, i, game::player1->state == CS_EDITING ? ((entgroup.find(i) >= 0 || enthover == i) ? 1 : 2) : 3));
-        if(!envmapping)
+        if(!drawtex)
         {
             int numents = m_edit(game::gamemode) ? ents.length() : lastuse(EU_ITEM);
             loopi(numents)
