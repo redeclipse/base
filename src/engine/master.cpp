@@ -56,6 +56,7 @@ struct masterclient
     
     struct
     {
+		sqlite3_int64 id;
 		string map;
 		int mode, mutators, timeplayed;
 		time_t time;
@@ -472,7 +473,15 @@ bool checkmasterclientinput(masterclient &c)
 			{
 				if(!strcmp(w[1], "end"))
 				{
-					conoutf("master peer %s commited stats", c.name);
+					statsdbexecf("INSERT INTO games VALUES (NULL, %d, %Q, %d, %d, %d)",
+						c.stats.time,
+						c.stats.map,
+						c.stats.mode,
+						c.stats.mutators,
+						c.stats.timeplayed
+						);
+					c.stats.id = sqlite3_last_insert_rowid(statsdb);
+					conoutf("master peer %s commited stats, game id %lli", c.name, c.stats.id);
 					masteroutf(c, "stats success\n");
 					c.instats = false;
 				}
@@ -484,7 +493,7 @@ bool checkmasterclientinput(masterclient &c)
 					c.stats.mode = (int)strtol(w[3], NULL, 10);
 					c.stats.mutators = (int)strtol(w[4], NULL, 10);
 					c.stats.timeplayed = (int)strtol(w[5], NULL, 10);
-					conoutf("%s %d %d %d", c.stats.map, c.stats.mode, c.stats.mutators, c.stats.timeplayed);
+					c.stats.time = currenttime;
 				}
 			}
 			found = true;
