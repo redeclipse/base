@@ -177,7 +177,7 @@ mutstypes mutstype[] = {
     {
         G_M_HARD, (1<<G_M_HARD),
         (1<<G_M_MULTI)|(1<<G_M_FFA)|(1<<G_M_COOP)|(1<<G_M_INSTA)|(1<<G_M_MEDIEVAL)|(1<<G_M_KABOOM)|(1<<G_M_DUEL)|(1<<G_M_SURVIVOR)|(1<<G_M_CLASSIC)|(1<<G_M_ONSLAUGHT)|(1<<G_M_FREESTYLE)|(1<<G_M_VAMPIRE)|(1<<G_M_RESIZE)|(1<<G_M_HARD)|(1<<G_M_BASIC)|(1<<G_M_GSP1)|(1<<G_M_GSP2)|(1<<G_M_GSP3),
-        "hard", "no regeneration, no radar, no impulse reset"
+        "hard", "no health regeneration, no radar"
     },
     {
         G_M_BASIC, (1<<G_M_BASIC),
@@ -236,7 +236,7 @@ extern mutstypes mutstype[];
 #define m_vampire(a,b)      ((b&(1<<G_M_VAMPIRE)) || (gametype[a].implied&(1<<G_M_VAMPIRE)))
 #define m_resize(a,b)       ((b&(1<<G_M_RESIZE)) || (gametype[a].implied&(1<<G_M_RESIZE)))
 #define m_hard(a,b)         ((b&(1<<G_M_HARD)) || (gametype[a].implied&(1<<G_M_HARD)))
-#define m_basic(a,b)         ((b&(1<<G_M_BASIC)) || (gametype[a].implied&(1<<G_M_BASIC)))
+#define m_basic(a,b)        ((b&(1<<G_M_BASIC)) || (gametype[a].implied&(1<<G_M_BASIC)))
 
 #define m_gsp1(a,b)         ((b&(1<<G_M_GSP1)) || (gametype[a].implied&(1<<G_M_GSP1)))
 #define m_gsp2(a,b)         ((b&(1<<G_M_GSP2)) || (gametype[a].implied&(1<<G_M_GSP2)))

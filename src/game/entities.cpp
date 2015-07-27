@@ -154,9 +154,9 @@ namespace entities
             {
                 switch(attr[0])
                 {
-                    case 0: addentinfo("fire plume"); break;
-                    case 1: addentinfo("smoke vent"); break;
-                    case 2: addentinfo("water fountain"); break;
+                    case 0: addentinfo("fire-plume"); break;
+                    case 1: addentinfo("smoke-vent"); break;
+                    case 2: addentinfo("water-fountain"); break;
                     case 3: addentinfo("fireball"); break;
                     case 4: addentinfo("tape"); break;
                     case 7: addentinfo("lightning"); break;
@@ -167,8 +167,8 @@ namespace entities
                     case 12: addentinfo("snow"); break;
                     case 13: addentinfo("sparks"); break;
                     case 14: addentinfo("flames"); break;
-                    case 15: addentinfo("smoke plume"); break;
-                    case 6: addentinfo("progress versus"); break;
+                    case 15: addentinfo("smoke-plume"); break;
+                    case 6: addentinfo("progress-vs"); break;
                     case 5: addentinfo("progress"); break;
                     case 32: addentinfo("lensflare-plain"); break;
                     case 33: addentinfo("lensflare-sparkle"); break;
