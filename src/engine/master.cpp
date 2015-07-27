@@ -10,7 +10,7 @@
 #include <enet/time.h>
 #include <sqlite3.h>
 
-#define STATSDB_VERSION 0
+#define STATSDB_VERSION 1
 #define MASTER_LIMIT 4096
 #define CLIENT_TIME (60*1000)
 #define SERVER_TIME (35*60*1000)
@@ -82,6 +82,32 @@ bool checkstatsdb(int rc, char *err_msg=NULL)
 	return false;
 }
 
+void statsdbexecf(const char *fmt, ...)
+{
+	char *err_msg = NULL;
+	va_list al;
+    va_start(al, fmt);
+    char *sql = sqlite3_vmprintf(fmt, al);
+    int rc = sqlite3_exec(statsdb, sql, 0, 0, &err_msg);
+    sqlite3_free(sql);
+    va_end(al);
+    checkstatsdb(rc, err_msg);
+}
+
+void statsdbexecfile(const char *path)
+{
+	char *err_msg = NULL;
+	char *buf = loadfile(path, NULL);
+	if(!buf)
+	{
+		fatal("cannot find %s", path);
+		closestatsdb();
+	}
+	int rc = sqlite3_exec(statsdb, buf, 0, 0, &err_msg);
+	checkstatsdb(rc, err_msg);
+	DELETEA(buf);
+}
+
 int statsdbversion()
 {
 	int version = 0;
@@ -97,52 +123,22 @@ int statsdbversion()
 
 void loadstatsdb()
 {
-	bool initial = true;
-	if(findfile("stats.sqlite", "e")) initial = false;
 	checkstatsdb(sqlite3_open(findfile("stats.sqlite", "w"), &statsdb));
-	if(initial)
-	{
-		char *err_msg = NULL;
-		defformatstring(sql, "PRAGMA user_version = %d;", STATSDB_VERSION);
-		int rc = sqlite3_exec(statsdb, sql, 0, 0, &err_msg);
-		checkstatsdb(rc, err_msg);
-		
-		char *buf = loadfile("sql/create.sql", NULL);
-		if(!buf)
-		{
-			fatal("cannot find sql/create.sql");
-			closestatsdb();
-		}
-		rc = sqlite3_exec(statsdb, buf, 0, 0, &err_msg);
-		checkstatsdb(rc, err_msg);
-		DELETEA(buf);
-		
-		conoutf("created stats database");
+	if(statsdbversion() < 1)
+	{		
+		statsdbexecfile("sql/stats/create.sql");
+		statsdbexecf("PRAGMA user_version = %d;", STATSDB_VERSION);
+		conoutf("created statistics database");
 	}
-	conoutf("upgrading database from version %d to version %d", statsdbversion(), STATSDB_VERSION);
 	while(statsdbversion() < STATSDB_VERSION)
 	{
-		char *err_msg = NULL;
-		
 		int ver = statsdbversion();
-		defformatstring(path, "sql/upgrade_%d.sql", ver);
-		
-		char *buf = loadfile(path, NULL);
-		if(!buf)
-		{
-			fatal("cannot find %s", path);
-			closestatsdb();
-		}
-		int rc = sqlite3_exec(statsdb, buf, 0, 0, &err_msg);
-		checkstatsdb(rc, err_msg);
-		DELETEA(buf);
-		
-		defformatstring(sql, "PRAGMA user_version = %d;", ver + 1);
-		rc = sqlite3_exec(statsdb, sql, 0, 0, &err_msg);
-		checkstatsdb(rc, err_msg);
-		
-		conoutf("upgraded to %d", statsdbversion());
+		defformatstring(path, "sql/stats/upgrade_%d.sql", ver);
+		statsdbexecfile(path);
+		statsdbexecf("PRAGMA user_version = %d;", ver + 1);
+		conoutf("upgraded database from %d to %d", ver, statsdbversion());
 	}
+	conoutf("statistics database loaded");
 }
 
 bool setuppingsocket(ENetAddress *address)
