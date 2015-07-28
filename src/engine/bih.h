@@ -1,45 +1,75 @@
-struct BIHNode
-{
-    short split[2];
-    ushort child[2];
-
-    int axis() const { return child[0]>>14; }
-    int childindex(int which) const { return child[which]&0x3FFF; }
-    bool isleaf(int which) const { return (child[1]&(1<<(14+which)))!=0; }
-};
-
 struct BIH
 {
-    struct tri : triangle
+    struct node
     {
-        vec2 tc[3];
-        Texture *tex;
+        short split[2];
+        ushort child[2];
+
+        int axis() const { return child[0]>>14; }
+        int childindex(int which) const { return child[which]&0x3FFF; }
+        bool isleaf(int which) const { return (child[1]&(1<<(14+which)))!=0; }
     };
 
-    int maxdepth;
-    int numnodes;
-    BIHNode *nodes;
-    int numtris;
-    tri *tris, *noclip;
-
-    vec bbmin, bbmax;
-    float radius;
-
-    BIH(vector<tri> *t);
-
-    ~BIH()
+    struct tri
     {
-        DELETEA(nodes);
-        DELETEA(tris);
-    }
+        ushort vert[3];
+    };
 
-    static bool triintersect(tri &t, const vec &o, const vec &ray, float maxdist, float &dist, int mode, tri *noclip);
+    struct tribb
+    {
+        svec center, radius;
 
-    void build(vector<BIHNode> &buildnodes, ushort *indices, int numindices, const vec &vmin, const vec &vmax, int depth = 1);
+        bool outside(const ivec &bo, const ivec &br) const
+        {
+            return abs(bo.x - center.x) > br.x + radius.x ||
+                   abs(bo.y - center.y) > br.y + radius.y ||
+                   abs(bo.z - center.z) > br.z + radius.z;
+        }
+    };
+
+    enum { MESH_NOCLIP = 1<<0, MESH_ALPHA = 1<<1, MESH_CULLFACE = 1<<2 };
+
+    struct mesh
+    {
+        matrix4x3 xform, invxform;
+        matrix3 xformnorm, invxformnorm;
+        float scale, invscale;
+        node *nodes;
+        int numnodes;
+        const tri *tris;
+        const tribb *tribbs;
+        int numtris;
+        const uchar *pos, *tc;
+        int posstride, tcstride;
+        Texture *tex;
+        int flags;
+        vec bbmin, bbmax;
+
+        mesh() : numnodes(0), numtris(0), tex(NULL), flags(0) {}
+
+        vec getpos(int i) const { return *(const vec *)(pos + i*posstride); }
+        vec2 gettc(int i) const { return *(const vec2 *)(tc + i*tcstride); }
+    };
+
+    mesh *meshes;
+    int nummeshes;
+    node *nodes;
+    int numnodes;
+    tribb *tribbs;
+    int numtris;
+    vec bbmin, bbmax, center;
+    float radius, entradius;
+
+    BIH(vector<mesh> &buildmeshes);
+
+    ~BIH();
+
+    void build(mesh &m, ushort *indices, int numindices, const ivec &vmin, const ivec &vmax);
 
     bool traverse(const vec &o, const vec &ray, float maxdist, float &dist, int mode);
-    bool traverse(const vec &o, const vec &ray, const vec &invray, float maxdist, float &dist, int mode, BIHNode *curnode, float tmin, float tmax, bool &hit);
-    
+    bool traverse(const mesh &m, const vec &o, const vec &ray, const vec &invray, float maxdist, float &dist, int mode, node *curnode, float tmin, float tmax);
+    bool triintersect(const mesh &m, int tidx, const vec &mo, const vec &mray, float maxdist, float &dist, int mode);
+
     void preload();
 };
 

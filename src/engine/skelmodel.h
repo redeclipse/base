@@ -223,22 +223,14 @@ struct skelmodel : animmodel
             }
         }
 
-        void gentris(Texture *tex, vector<BIH::tri> *out, const matrix4x3 &m)
+        void genBIH(BIH::mesh &m)
         {
-            loopj(numtris)
-            {
-                BIH::tri &t = out[noclip ? 1 : 0].add();
-                t.tex = tex;
-                vert &av = verts[tris[j].vert[0]],
-                     &bv = verts[tris[j].vert[1]],
-                     &cv = verts[tris[j].vert[2]];
-                t.a = m.transform(av.pos);
-                t.b = m.transform(bv.pos);
-                t.c = m.transform(cv.pos);
-                t.tc[0] = av.tc;
-                t.tc[1] = bv.tc;
-                t.tc[2] = cv.tc;
-            }
+            m.tris = (const BIH::tri *)tris;
+            m.numtris = numtris;
+            m.pos = (const uchar *)&verts->pos;
+            m.posstride = sizeof(vert);
+            m.tc = (const uchar *)&verts->tc;
+            m.tcstride = sizeof(vert);
         }
 
         static inline void assignvert(vvertn &vv, int j, vert &v, blendcombo &c)
@@ -1570,7 +1562,7 @@ struct skelmodel : animmodel
 
         uchar *partmask;
 
-        skelpart() : buildingpartmask(NULL), partmask(NULL)
+        skelpart(animmodel *model, int index = 0) : part(model, index), buildingpartmask(NULL), partmask(NULL)
         {
         }
 
@@ -1647,6 +1639,13 @@ struct skelmodel : animmodel
     }
 
     bool skeletal() const { return true; }
+
+    skelpart &addpart()
+    {
+        skelpart *p = new skelpart(this, parts.length());
+        parts.add(p);
+        return *p;
+    }
 };
 
 struct skeladjustment
@@ -1689,10 +1688,7 @@ template<class MDL> struct skelcommands : modelcommands<MDL, struct MDL::skelmes
     {
         if(!MDL::loading) { conoutf("\frnot loading an %s", MDL::formatname()); return; }
         defformatstring(filename, "%s/%s", MDL::dir, meshfile);
-        part &mdl = *new part;
-        MDL::loading->parts.add(&mdl);
-        mdl.model = MDL::loading;
-        mdl.index = MDL::loading->parts.length()-1;
+        part &mdl = MDL::loading->addpart();
         mdl.pitchscale = mdl.pitchoffset = mdl.pitchmin = mdl.pitchmax = 0;
         MDL::adjustments.setsize(0);
         mdl.meshes = MDL::loading->sharemeshes(path(filename), skelname[0] ? skelname : NULL, double(*smooth > 0 ? cos(clamp(*smooth, 0.0f, 180.0f)*RAD) : 2));

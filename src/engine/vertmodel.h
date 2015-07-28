@@ -71,22 +71,14 @@ struct vertmodel : animmodel
             }
         }
 
-        void gentris(Texture *tex, vector<BIH::tri> *out, const matrix4x3 &m)
+        void genBIH(BIH::mesh &m)
         {
-            loopj(numtris)
-            {
-                BIH::tri &t = out[noclip ? 1 : 0].add();
-                t.tex = tex;
-                t.a = m.transform(verts[tris[j].vert[0]].pos);
-                t.b = m.transform(verts[tris[j].vert[1]].pos);
-                t.c = m.transform(verts[tris[j].vert[2]].pos);
-                tcvert &av = tcverts[tris[j].vert[0]],
-                       &bv = tcverts[tris[j].vert[1]],
-                       &cv = tcverts[tris[j].vert[2]];
-                t.tc[0] = av.tc;
-                t.tc[1] = bv.tc;
-                t.tc[2] = cv.tc;
-            }
+            m.tris = (const BIH::tri *)tris;
+            m.numtris = numtris;
+            m.pos = (const uchar *)&verts->pos;
+            m.posstride = sizeof(vert);
+            m.tc = (const uchar *)&tcverts->tc;
+            m.tcstride = sizeof(tcvert);
         }
 
         static inline void assignvert(vvertn &vv, int j, tcvert &tc, vert &v)
@@ -487,10 +479,7 @@ template<class MDL> struct vertcommands : modelcommands<MDL, struct MDL::vertmes
     {
         if(!MDL::loading) { conoutf("\frnot loading an %s", MDL::formatname()); return; }
         defformatstring(filename, "%s/%s", MDL::dir, model);
-        part &mdl = *new part;
-        MDL::loading->parts.add(&mdl);
-        mdl.model = MDL::loading;
-        mdl.index = MDL::loading->parts.length()-1;
+        part &mdl = MDL::loading->addpart();
         if(mdl.index) mdl.pitchscale = mdl.pitchoffset = mdl.pitchmin = mdl.pitchmax = 0;
         mdl.meshes = MDL::loading->sharemeshes(path(filename), double(*smooth > 0 ? cos(clamp(*smooth, 0.0f, 180.0f)*RAD) : 2));
         if(!mdl.meshes) conoutf("\frcould not load %s", filename);

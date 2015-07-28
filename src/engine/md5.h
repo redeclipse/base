@@ -398,10 +398,7 @@ struct md5 : skelmodel, skelloader<md5>
 
     bool loaddefaultparts()
     {
-        skelpart &mdl = *new skelpart;
-        parts.add(&mdl);
-        mdl.model = this;
-        mdl.index = 0;
+        skelpart &mdl = addpart();
         mdl.pitchscale = mdl.pitchoffset = mdl.pitchmin = mdl.pitchmax = 0;
         adjustments.setsize(0);
         const char *fname = name + strlen(name);

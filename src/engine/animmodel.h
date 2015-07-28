@@ -306,7 +306,18 @@ struct animmodel : model
         }
 
         virtual void calcbb(vec &bbmin, vec &bbmax, const matrix4x3 &m) {}
-        virtual void gentris(Texture *tex, vector<BIH::tri> *out, const matrix4x3 &m) {}
+
+        virtual void genBIH(BIH::mesh &m) {}
+        void genBIH(skin &s, vector<BIH::mesh> &bih, const matrix4x3 &t)
+        {
+            BIH::mesh &m = bih.add();
+            m.xform = t;
+            m.tex = s.tex;
+            if(s.tex->type&Texture::ALPHA) m.flags |= BIH::MESH_ALPHA;
+            if(noclip) m.flags |= BIH::MESH_NOCLIP;
+            if(s.cullface) m.flags |= BIH::MESH_CULLFACE;
+            genBIH(m);
+        }
 
         virtual void setshader(Shader *s)
         {
@@ -493,9 +504,9 @@ struct animmodel : model
             loopv(meshes) meshes[i]->calcbb(bbmin, bbmax, m);
         }
 
-        void gentris(vector<skin> &skins, vector<BIH::tri> *tris, const matrix4x3 &m)
+        void genBIH(vector<skin> &skins, vector<BIH::mesh> &bih, const matrix4x3 &t)
         {
-            loopv(meshes) meshes[i]->gentris(skins[i].tex && skins[i].tex->type&Texture::ALPHA ? skins[i].tex : NULL, tris, m);
+            loopv(meshes) meshes[i]->genBIH(skins[i], bih, t);
         }
 
         virtual void *animkey() { return this; }
@@ -549,7 +560,7 @@ struct animmodel : model
         float pitchscale, pitchoffset, pitchmin, pitchmax;
         vec translate;
 
-        part() : meshes(NULL), numanimparts(1), pitchscale(1), pitchoffset(0), pitchmin(0), pitchmax(0), translate(0, 0, 0)
+        part(animmodel *model, int index = 0) : model(model), index(index), meshes(NULL), numanimparts(1), pitchscale(1), pitchoffset(0), pitchmin(0), pitchmax(0), translate(0, 0, 0)
         {
             loopk(MAXANIMPARTS) anims[k] = NULL;
         }
@@ -579,18 +590,18 @@ struct animmodel : model
             }
         }
 
-        void gentris(vector<BIH::tri> *tris, const matrix4x3 &m)
+        void genBIH(vector<BIH::mesh> &bih, const matrix4x3 &m)
         {
             matrix4x3 t = m;
             t.translate(translate);
             t.scale(model->scale);
-            meshes->gentris(skins, tris, t);
+            meshes->genBIH(skins, bih, t);
             loopv(links)
             {
                 matrix4x3 n;
                 meshes->concattagtransform(this, links[i].tag, m, n);
                 n.translate(links[i].translate, model->scale);
-                links[i].p->gentris(tris, n);
+                links[i].p->genBIH(bih, n);
             }
         }
 
@@ -1062,6 +1073,13 @@ struct animmodel : model
         loopv(parts) parts[i]->cleanup();
     }
 
+    part &addpart()
+    {
+        part *p = new part(this, parts.length());
+        parts.add(p);
+        return *p;
+    }
+
     void initmatrix(matrix4x3 &m)
     {
         m.identity();
@@ -1070,12 +1088,12 @@ struct animmodel : model
         if(offsetpitch) m.rotate_around_y(offsetpitch*RAD);
     }
 
-    void gentris(vector<BIH::tri> *tris)
+    void genBIH(vector<BIH::mesh> &bih)
     {
         if(parts.empty()) return;
         matrix4x3 m;
         initmatrix(m);
-        parts[0]->gentris(tris, m);
+        parts[0]->genBIH(bih, m);
     }
 
     void preloadBIH()
@@ -1087,9 +1105,9 @@ struct animmodel : model
     BIH *setBIH()
     {
         if(bih) return bih;
-        vector<BIH::tri> tris[2];
-        gentris(tris);
-        bih = new BIH(tris);
+        vector<BIH::mesh> meshes;
+        genBIH(meshes);
+        bih = new BIH(meshes);
         return bih;
     }
 
