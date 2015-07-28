@@ -47,11 +47,14 @@ struct masterclient
     ENetAddress address;
     ENetSocket socket;
     string name;
+    
     /* Server Flags:
      * b - basic
      * s - statistics
      */
     string flags;
+    string authhandle;
+    
     char input[4096];
     vector<char> output;
     int inputpos, outputpos, port, numpings, lastcontrol, version;
@@ -388,6 +391,7 @@ void confserverauth(masterclient &c, const char *val)
 	{
 		masteroutf(c, "succserverauth \"%s\" \"%s\"\n", c.serverauthreq.user->name, c.serverauthreq.user->flags);
 		conoutf("succeeded server '%s' [%s]\n", c.serverauthreq.user->name, c.serverauthreq.user->flags);
+		copystring(c.authhandle, c.serverauthreq.user->name);
 		copystring(c.flags, c.serverauthreq.user->flags);
 	}
 	else
@@ -560,6 +564,10 @@ bool checkmasterclientinput(masterclient &c)
                 masterclient &s = *masterclients[j];
                 if(!s.listserver) continue;
                 masteroutf(c, "addserver %s %d\n", s.name, s.port);
+                if(*s.authhandle)
+                {
+					masteroutf(c, "authserver %s %d %s\n", s.name, s.port, s.authhandle);
+				}
                 servs++;
             }
             conoutf("master peer %s was sent %d server(s)", c.name, servs);

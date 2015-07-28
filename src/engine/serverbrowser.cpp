@@ -246,6 +246,23 @@ void addserver(const char *name, int port, int priority, const char *desc)
 }
 ICOMMAND(0, addserver, "siis", (char *n, int *p, int *r, char *d), addserver(n, *p > 0 ? *p : SERVER_PORT, *r >= 0 ? *r : 0, d));
 
+void authserver(const char *name, int port, const char *h)
+{
+	bool found = false;
+	loopv(servers) if(!strcmp(servers[i]->name, name) && servers[i]->port == port) found = true;
+	if(!found)
+		addserver(name, port);
+    loopv(servers) if(!strcmp(servers[i]->name, name) && servers[i]->port == port)
+    {
+		copystring(servers[i]->authhandle, h);
+		if(verbose >= 2)
+		{
+			conoutf("added server auth %s to %s:%d", h, name, port);
+		}
+	}
+}
+ICOMMAND(0, authserver, "sis", (char *n, int *p, char *h), authserver(n, *p > 0 ? *p : SERVER_PORT, h));
+
 VAR(0, searchlan, 0, 0, 1);
 VAR(IDF_PERSIST, maxservpings, 0, 10, 1000);
 VAR(IDF_PERSIST, serverupdateinterval, 0, 10, VAR_MAX);
