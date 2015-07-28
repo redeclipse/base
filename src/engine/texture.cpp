@@ -1296,11 +1296,12 @@ static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, 
     return true;
 }
 
-void loadalphamask(Texture *t)
+uchar *loadalphamask(Texture *t)
 {
-    if(t->alphamask || !(t->type&Texture::ALPHA)) return;
+    if(t->alphamask) return t->alphamask;
+    if(!(t->type&Texture::ALPHA)) return NULL;
     ImageData s;
-    if(!texturedata(s, t->name, NULL, false) || !s.data || s.compressed) return;
+    if(!texturedata(s, t->name, NULL, false) || !s.data || s.compressed) return NULL;
     t->alphamask = new uchar[s.h * ((s.w+7)/8)];
     uchar *srcrow = s.data, *dst = t->alphamask-1;
     loop(y, s.h)
@@ -1315,6 +1316,7 @@ void loadalphamask(Texture *t)
         }
         srcrow += s.pitch;
     }
+    return t->alphamask;
 }
 
 Texture *textureload(const char *name, int clamp, bool mipit, bool msg)

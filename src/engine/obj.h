@@ -168,10 +168,7 @@ struct obj : vertmodel, vertloader<obj>
 
     bool loaddefaultparts()
     {
-        part &mdl = *new part;
-        parts.add(&mdl);
-        mdl.model = this;
-        mdl.index = 0;
+        part &mdl = addpart();
         const char *pname = parentdir(name);
         defformatstring(name1, "%s/tris.obj", name);
         mdl.meshes = sharemeshes(path(name1), 2.0);

@@ -521,6 +521,11 @@ struct dualquat
         return vec().cross(real, vec().cross(real, v).add(vec(v).mul(real.w)).add(vec(dual))).add(vec(dual).mul(real.w)).sub(vec(real).mul(dual.w)).mul(2).add(v);
     }
 
+    quat transform(const quat &q) const
+    {
+        return quat().mul(real, q);
+    }
+
     vec transposedtransform(const vec &v) const
     {
         return dualquat(*this).invert().transform(v);
@@ -1157,10 +1162,14 @@ struct ivec
     ivec &min(int n) { x = ::min(x, n); y = ::min(y, n); z = ::min(z, n); return *this; }
     ivec &max(int n) { x = ::max(x, n); y = ::max(y, n); z = ::max(z, n); return *this; }
     ivec &abs() { x = ::abs(x); y = ::abs(y); z = ::abs(z); return *this; }
+    ivec &clamp(int l, int h) { x = ::clamp(x, l, h); y = ::clamp(y, l, h); z = ::clamp(z, l, h); return *this; }
     ivec &cross(const ivec &a, const ivec &b) { x = a.y*b.z-a.z*b.y; y = a.z*b.x-a.x*b.z; z = a.x*b.y-a.y*b.x; return *this; }
     int dot(const ivec &o) const { return x*o.x + y*o.y + z*o.z; }
     float dist(const plane &p) const { return x*p.x + y*p.y + z*p.z + p.offset; }
     static ivec fromcolor(int color) { return ivec(int((color>>16)&0xFF), int((color>>8)&0xFF), int(color&0xFF)); }
+
+    static inline ivec floor(const vec &o) { return ivec(int(::floor(o.x)), int(::floor(o.y)), int(::floor(o.z))); }
+    static inline ivec ceil(const vec &o) { return ivec(int(::ceil(o.x)), int(::ceil(o.y)), int(::ceil(o.z))); }
 };
 
 inline vec::vec(const ivec &v) : x(v.x), y(v.y), z(v.z) {}
@@ -1779,6 +1788,29 @@ struct matrix2
     matrix2(const vec2 &a, const vec2 &b) : a(a), b(b) {}
     explicit matrix2(const matrix4 &m) : a(m.a), b(m.b) {}
     explicit matrix2(const matrix3 &m) : a(m.a), b(m.b) {}
+};
+
+struct squat
+{
+    short x, y, z, w;
+
+    squat() {}
+    squat(const vec4 &q) { convert(q); }
+
+    void convert(const vec4 &q)
+    {
+        x = short(q.x*32767.5f-0.5f);
+        y = short(q.y*32767.5f-0.5f);
+        z = short(q.z*32767.5f-0.5f);
+        w = short(q.w*32767.5f-0.5f);
+    }
+
+    void lerp(const vec4 &a, const vec4 &b, float t)
+    {
+        vec4 q;
+        q.lerp(a, b, t);
+        convert(q);
+    }
 };
 
 extern void vecfromyawpitch(float yaw, float pitch, int move, int strafe, vec &m);

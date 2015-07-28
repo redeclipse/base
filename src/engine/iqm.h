@@ -209,9 +209,7 @@ struct iqm : skelmodel, skelloader<iqm>
                         mnorm += 3;
                         if(mtan)
                         {
-                            bumpvert &bv = m->bumpverts[j];
-                            bv.tangent = vec(mtan[0], -mtan[1], mtan[2]);
-                            bv.bitangent = mtan[3];
+                            m->calctangent(m->bumpverts[j], v.norm, vec(mtan[0], -mtan[1], mtan[2]), mtan[3]);
                             mtan += 4;
                         }
                     }
@@ -379,10 +377,7 @@ struct iqm : skelmodel, skelloader<iqm>
 
     bool loaddefaultparts()
     {
-        skelpart &mdl = *new skelpart;
-        parts.add(&mdl);
-        mdl.model = this;
-        mdl.index = 0;
+        skelpart &mdl = addpart();
         mdl.pitchscale = mdl.pitchoffset = mdl.pitchmin = mdl.pitchmax = 0;
         adjustments.setsize(0);
         const char *fname = name + strlen(name);

@@ -131,7 +131,7 @@ extern int hwtexsize, hwcubetexsize, hwmaxanisotropy, maxtexsize, anisotropy, en
 extern Texture *textureload(const char *name, int clamp = 0, bool mipit = true, bool msg = true);
 extern int texalign(void *data, int w, int bpp);
 extern void cleanuptexture(Texture *t);
-extern void loadalphamask(Texture *t);
+extern uchar *loadalphamask(Texture *t);
 extern void loadlayermasks();
 extern GLuint cubemapfromsky(int size);
 extern Texture *cubemapload(const char *name, bool mipit = true, bool msg = true, bool transient = false);
@@ -589,7 +589,7 @@ extern model *loadmodel(const char *name, int i = -1, bool msg = false);
 extern mapmodelinfo *getmminfo(int i);
 extern void startmodelquery(occludequery *query);
 extern void endmodelquery();
-extern void preloadmodelshaders();
+extern void preloadmodelshaders(bool force = false);
 extern void preloadmodel(const char *name);
 extern void flushpreloadedmodels(bool msg = true);
 extern void preloadusedmapmodels(bool msg = false, bool bih = false);
