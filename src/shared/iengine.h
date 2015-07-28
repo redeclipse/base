@@ -447,6 +447,8 @@ extern ENetSocket connectmaster(bool reuse = true);
 extern void disconnectmaster();
 extern bool requestmaster(const char *req);
 extern bool requestmasterf(const char *fmt, ...) PRINTFARGS(1, 2);
+extern void flushmasteroutput();
+extern void flushmasterinput();
 
 extern bool findoctadir(const char *name, bool fallback = false);
 extern void trytofindocta(bool fallback = true);

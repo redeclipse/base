@@ -3055,13 +3055,26 @@ namespace server
 		if(G(serverstats))
 		{
 			requestmasterf("stats begin\n");
-			char *smapname_e = stringtonumbers(smapname);
-			requestmasterf("stats game %s %d %d %d\n", smapname_e, gamemode, mutators, gamemillis);
-			DELETEA(smapname_e);
 			
-			char *desc_e = stringtonumbers(G(serverdesc));
-			requestmasterf("stats server %s %s %d\n", desc_e, versionstring, serverport);
-			DELETEA(desc_e);
+			//Game
+			simpleencode(smapname_enc, smapname);
+			requestmasterf("stats game %s %d %d %d\n", smapname_enc, gamemode, mutators, gamemillis);
+			flushmasteroutput();
+			
+			//Server
+			simpleencode(desc_enc, G(serverdesc));
+			requestmasterf("stats server %s %s %d\n", desc_enc, versionstring, serverport);
+			flushmasteroutput();
+			
+			//Teams
+            loopi(numteams(gamemode, mutators))
+            {
+                int tp = m_team(gamemode, mutators) ? T_FIRST : T_NEUTRAL;
+                simpleencode(teamname_enc, TEAM(i + tp, name));
+                requestmasterf("stats team %d %d %s\n", i + tp, teamscore(i + tp).total, teamname_enc);
+                flushmasteroutput();
+            }
+			
 			requestmasterf("stats end\n");
 		}
 	}

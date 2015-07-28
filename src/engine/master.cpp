@@ -54,7 +54,7 @@ struct masterclient
     vector<authreq> authreqs;
     bool isserver, isquick, ishttp, listserver, shouldping, shouldpurge;
     
-    struct
+    struct statstate
     {
 		//Game
 		sqlite3_int64 id;
@@ -67,6 +67,12 @@ struct masterclient
 		string host;
 		int port;
 		//Teams
+		struct team
+		{
+			int index, score;
+			string name;
+		};
+		vector<team> teams;
 		//Players
 		//Weapons
 	} stats;
@@ -501,6 +507,16 @@ bool checkmasterclientinput(masterclient &c)
 						c.stats.port
 						);
 						
+					loopv(c.stats.teams)
+					{
+						statsdbexecf("INSERT INTO game_teams VALUES (%d, %d, %d, %Q)",
+							c.stats.id,
+							c.stats.teams[i].index,
+							c.stats.teams[i].score,
+							c.stats.teams[i].name
+							);
+					}
+						
 					statsdbexecf("COMMIT");
 					conoutf("master peer %s commited stats, game id %lli", c.name, c.stats.id);
 					masteroutf(c, "stats success\n");
@@ -508,9 +524,8 @@ bool checkmasterclientinput(masterclient &c)
 				}
 				else if(!strcmp(w[1], "game"))
 				{
-					char *mapname_e = numberstostring(w[2]);
-					copystring(c.stats.map, mapname_e);
-					DELETEA(mapname_e);
+					simpledecode(mapname_dec, w[2]);
+					copystring(c.stats.map, mapname_dec);
 					c.stats.mode = (int)strtol(w[3], NULL, 10);
 					c.stats.mutators = (int)strtol(w[4], NULL, 10);
 					c.stats.timeplayed = (int)strtol(w[5], NULL, 10);
@@ -518,12 +533,20 @@ bool checkmasterclientinput(masterclient &c)
 				}
 				else if(!strcmp(w[1], "server"))
 				{
-					char *desc_e = numberstostring(w[2]);
-					copystring(c.stats.desc, desc_e);
-					DELETEA(desc_e);
+					simpledecode(desc_dec, w[2]);
+					copystring(c.stats.desc, desc_dec);
 					copystring(c.stats.version, w[3]);
 					copystring(c.stats.host, c.name);
 					c.stats.port = (int)strtol(w[4], NULL, 10);
+				}
+				else if(!strcmp(w[1], "team"))
+				{
+					masterclient::statstate::team t;
+					t.index = (int)strtol(w[2], NULL, 10);
+					t.score = (int)strtol(w[3], NULL, 10);
+					simpledecode(name_dec, w[4]);
+					copystring(t.name, name_dec);
+					c.stats.teams.add(t);
 				}
 			}
 			found = true;
