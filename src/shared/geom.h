@@ -521,6 +521,11 @@ struct dualquat
         return vec().cross(real, vec().cross(real, v).add(vec(v).mul(real.w)).add(vec(dual))).add(vec(dual).mul(real.w)).sub(vec(real).mul(dual.w)).mul(2).add(v);
     }
 
+    quat transform(const quat &q) const
+    {
+        return quat().mul(real, q);
+    }
+
     vec transposedtransform(const vec &v) const
     {
         return dualquat(*this).invert().transform(v);
@@ -1779,6 +1784,29 @@ struct matrix2
     matrix2(const vec2 &a, const vec2 &b) : a(a), b(b) {}
     explicit matrix2(const matrix4 &m) : a(m.a), b(m.b) {}
     explicit matrix2(const matrix3 &m) : a(m.a), b(m.b) {}
+};
+
+struct squat
+{
+    short x, y, z, w;
+
+    squat() {}
+    squat(const vec4 &q) { convert(q); }
+
+    void convert(const vec4 &q)
+    {
+        x = short(q.x*32767.5f-0.5f);
+        y = short(q.y*32767.5f-0.5f);
+        z = short(q.z*32767.5f-0.5f);
+        w = short(q.w*32767.5f-0.5f);
+    }
+
+    void lerp(const vec4 &a, const vec4 &b, float t)
+    {
+        vec4 q;
+        q.lerp(a, b, t);
+        convert(q);
+    }
 };
 
 extern void vecfromyawpitch(float yaw, float pitch, int move, int strafe, vec &m);

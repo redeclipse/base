@@ -10,11 +10,13 @@ VAR(0, testtags, 0, 0, 1);
 struct skelmodel : animmodel
 {
     struct vert { vec pos, norm; vec2 tc; int blend, interpindex; };
-    struct vvert { vec pos; vec2 tc; vec norm; };
-    struct vvertw : vvert { uchar weights[4]; uchar bones[4]; };
-    struct vvertbump : vvert { vec tangent; float bitangent; };
-    struct vvertbumpw : vvertw { vec tangent; float bitangent; };
-    struct bumpvert { vec tangent; float bitangent; };
+    struct vvert { vec pos; vec2 tc; };
+    struct vvertn : vvert { vec norm; };
+    struct vvertbump : vvert { squat tangent; };
+    struct vvertw { uchar weights[4]; uchar bones[4]; };
+    struct vvertnw : vvertn, vvertw {};
+    struct vvertbumpw : vvertbump, vvertw {}; 
+    struct bumpvert { quat tangent; };
     struct tri { ushort vert[3]; };
 
     struct blendcombo
@@ -239,17 +241,7 @@ struct skelmodel : animmodel
             }
         }
 
-        static inline bool comparevert(vvert &w, int j, vert &v)
-        {
-            return v.tc==w.tc && v.pos==w.pos && v.norm==w.norm;
-        }
-
-        inline bool comparevert(vvertbump &w, int j, vert &v)
-        {
-            return v.tc==w.tc && v.pos==w.pos && v.norm==w.norm && (!bumpverts || (bumpverts[j].tangent==w.tangent && bumpverts[j].bitangent==w.bitangent));
-        }
-
-        static inline void assignvert(vvert &vv, int j, vert &v, blendcombo &c)
+        static inline void assignvert(vvertn &vv, int j, vert &v, blendcombo &c)
         {
             vv.pos = v.pos;
             vv.norm = v.norm;
@@ -259,21 +251,11 @@ struct skelmodel : animmodel
         inline void assignvert(vvertbump &vv, int j, vert &v, blendcombo &c)
         {
             vv.pos = v.pos;
-            vv.norm = v.norm;
             vv.tc = v.tc;
-            if(bumpverts)
-            {
-                vv.tangent = bumpverts[j].tangent;
-                vv.bitangent = bumpverts[j].bitangent;
-            }
-            else
-            {
-                vv.tangent = vec(0, 0, 0);
-                vv.bitangent = 0;
-            }
+            vv.tangent = bumpverts[j].tangent;
         }
 
-        static inline void assignvert(vvertw &vv, int j, vert &v, blendcombo &c)
+        static inline void assignvert(vvertnw &vv, int j, vert &v, blendcombo &c)
         {
             vv.pos = v.pos;
             vv.norm = v.norm;
@@ -284,18 +266,8 @@ struct skelmodel : animmodel
         inline void assignvert(vvertbumpw &vv, int j, vert &v, blendcombo &c)
         {
             vv.pos = v.pos;
-            vv.norm = v.norm;
             vv.tc = v.tc;
-            if(bumpverts)
-            {
-                vv.tangent = bumpverts[j].tangent;
-                vv.bitangent = bumpverts[j].bitangent;
-            }
-            else
-            {
-                vv.tangent = vec(0, 0, 0);
-                vv.bitangent = 0;
-            }
+            vv.tangent = bumpverts[j].tangent;
             c.serialize(vv);
         }
 
@@ -329,12 +301,14 @@ struct skelmodel : animmodel
                 {
                     int index = t.vert[j];
                     vert &v = verts[index];
+                    T vv;
+                    assignvert(vv, index, v, ((skelmeshgroup *)group)->blendcombos[v.blend]);
                     int htidx = hthash(v.pos)&(htlen-1);
                     loopk(htlen)
                     {
                         int &vidx = htdata[(htidx+k)&(htlen-1)];
-                        if(vidx < 0) { vidx = idxs.add(ushort(vverts.length())); assignvert(vverts.add(), index, v, ((skelmeshgroup *)group)->blendcombos[v.blend]); break; }
-                        else if(comparevert(vverts[vidx], index, v)) { minvert = min(minvert, idxs.add(ushort(vidx))); break; }
+                        if(vidx < 0) { vidx = idxs.add(ushort(vverts.length())); vverts.add(vv); break; }
+                        else if(!memcmp(&vverts[vidx], &vv, sizeof(vv))) { minvert = min(minvert, idxs.add(ushort(vidx))); break; }
                     }
                 }
             }
@@ -361,30 +335,17 @@ struct skelmodel : animmodel
             return numverts;
         }
 
-        void filltc(uchar *vdata, size_t stride)
+        template<class T>
+        static inline void fillvert(T &vv, int j, vert &v)
         {
-            vdata = (uchar *)((vvert *)&vdata[voffset*stride])->tc.v;
-            loopi(numverts)
-            {
-                *(vec2 *)vdata = verts[i].tc;
-                vdata += stride;
-            }
+            vv.tc = v.tc;
         }
 
-        void fillbump(uchar *vdata, size_t stride)
+        template<class T>
+        void fillverts(T *vdata)
         {
-            if(stride==sizeof(vvertbumpw)) vdata = (uchar *)&((vvertbumpw *)&vdata[voffset*stride])->tangent;
-            else vdata = (uchar *)&((vvertbump *)&vdata[voffset*stride])->tangent;
-            if(bumpverts) loopi(numverts)
-            {
-                ((bumpvert *)vdata)->bitangent = bumpverts[i].bitangent;
-                vdata += stride;
-            }
-            else loopi(numverts)
-            {
-                memset(vdata, 0, sizeof(bumpvert));
-                vdata += stride;
-            }
+            vdata += voffset;
+            loopi(numverts) fillvert(vdata[i], i, verts[i]);
         }
 
         void interpverts(const dualquat * RESTRICT bdata1, const dualquat * RESTRICT bdata2, bool tangents, void * RESTRICT vdata, skin &s)
@@ -400,22 +361,25 @@ struct skelmodel : animmodel
                     dosetup; \
                     const dualquat &b = (src.interpindex < blendoffset ? bdata1 : bdata2)[src.interpindex]; \
                     dst.pos = b.transform(src.pos); \
-                    dst.norm = b.transformnormal(src.norm); \
                     dotransform; \
                 }
 
             if(tangents)
             {
-                if(bumpverts)
+                IPLOOP(vvertbump, bumpvert &bsrc = bumpverts[i],
                 {
-                    IPLOOP(vvertbump, bumpvert &bsrc = bumpverts[i],
-                    {
-                        dst.tangent = b.transformnormal(bsrc.tangent);
-                    });
-                }
-                else { IPLOOP(vvertbump, , ); }
+                    quat q = b.transform(bsrc.tangent);
+                    fixqtangent(q, bsrc.tangent.w);
+                    dst.tangent = q;
+                });
             }
-            else { IPLOOP(vvert, , ); }
+            else
+            {
+                IPLOOP(vvertn, ,
+                {
+                    dst.norm = b.transformnormal(src.norm);
+                });
+            }
 
             #undef IPLOOP
         }
@@ -434,33 +398,6 @@ struct skelmodel : animmodel
 
         void render(const animstate *as, skin &s, vbocacheentry &vc)
         {
-            if(!(as->cur.anim&ANIM_NOSKIN))
-            {
-                if(s.tangents())
-                {
-                    if(!enabletangents || lastxbuf!=lastvbuf)
-                    {
-                        if(!enabletangents) glEnableVertexAttribArray_(1);
-                        if(lastxbuf!=lastvbuf)
-                        {
-                            if(((skelmeshgroup *)group)->vertsize==sizeof(vvertbumpw))
-                            {
-                                vvertbumpw *vverts = 0;
-                                glVertexAttribPointer_(1, 4, GL_FLOAT, GL_FALSE, ((skelmeshgroup *)group)->vertsize, &vverts->tangent.x);
-                            }
-                            else
-                            {
-                                vvertbump *vverts = 0;
-                                glVertexAttribPointer_(1, 4, GL_FLOAT, GL_FALSE, ((skelmeshgroup *)group)->vertsize, &vverts->tangent.x);
-                            }
-                        }
-                        lastxbuf = lastvbuf;
-                        enabletangents = true;
-                    }
-                }
-                else if(enabletangents) disabletangents();
-            }
-
             glDrawRangeElements_(GL_TRIANGLES, minvert, maxvert, elen, GL_UNSIGNED_SHORT, &((skelmeshgroup *)group)->edata[eoffset]);
             glde++;
             xtravertsva += numverts;
@@ -1247,20 +1184,9 @@ struct skelmodel : animmodel
             if(!vc.vbuf) glGenBuffers_(1, &vc.vbuf);
             if(ebuf) return;
 
-            #define ALLOCVDATA(vdata) \
-                do \
-                { \
-                    DELETEA(vdata); \
-                    vdata = new uchar[vlen*vertsize]; \
-                    loopv(meshes) \
-                    { \
-                        skelmesh &m = *(skelmesh *)meshes[i]; \
-                        m.filltc(vdata, vertsize); \
-                        if(tangents) m.fillbump(vdata, vertsize); \
-                    } \
-                } while(0)
-
             vector<ushort> idxs;
+
+            if(tangents) loopv(meshes) ((skelmesh *)meshes[i])->calctangents();
 
             vtangents = tangents;
             vlen = 0;
@@ -1274,10 +1200,16 @@ struct skelmodel : animmodel
                     c.interpindex = c.weights[1] ? skel->numgpubones + vblends++ : -1;
                 }
 
-                vertsize = tangents ? sizeof(vvertbump) : sizeof(vvert);
+                vertsize = tangents ? sizeof(vvertbump) : sizeof(vvertn);
                 loopv(meshes) vlen += ((skelmesh *)meshes[i])->genvbo(idxs, vlen);
                 DELETEA(vdata);
-                ALLOCVDATA(vdata);
+                vdata = new uchar[vlen*vertsize];
+                #define FILLVDATA(type) do { \
+                    loopv(meshes) ((skelmesh *)meshes[i])->fillverts((type *)vdata); \
+                } while(0)
+                if(tangents) FILLVDATA(vvertbump);
+                else FILLVDATA(vvertn);
+                #undef FILLVDATA
             }
             else
             {
@@ -1299,20 +1231,18 @@ struct skelmodel : animmodel
                 }
 
                 glBindBuffer_(GL_ARRAY_BUFFER, vc.vbuf);
-                #define GENVBO(type, args) \
-                    do \
-                    { \
-                        vertsize = sizeof(type); \
-                        vector<type> vverts; \
-                        loopv(meshes) vlen += ((skelmesh *)meshes[i])->genvbo args; \
-                        glBufferData_(GL_ARRAY_BUFFER, vverts.length()*sizeof(type), vverts.getbuf(), GL_STATIC_DRAW); \
-                    } while(0)
+                #define GENVBO(type, args) do { \
+                    vertsize = sizeof(type); \
+                    vector<type> vverts; \
+                    loopv(meshes) vlen += ((skelmesh *)meshes[i])->genvbo args; \
+                    glBufferData_(GL_ARRAY_BUFFER, vverts.length()*sizeof(type), vverts.getbuf(), GL_STATIC_DRAW); \
+                } while(0)
                 #define GENVBOANIM(type) GENVBO(type, (idxs, vlen, vverts))
                 #define GENVBOSTAT(type) GENVBO(type, (idxs, vlen, vverts, htdata, htlen))
                 if(skel->numframes)
                 {
                     if(tangents) GENVBOANIM(vvertbumpw);
-                    else GENVBOANIM(vvertw);
+                    else GENVBOANIM(vvertnw);
                 }
                 else
                 {
@@ -1323,9 +1253,12 @@ struct skelmodel : animmodel
                     int *htdata = new int[htlen];
                     memset(htdata, -1, htlen*sizeof(int));
                     if(tangents) GENVBOSTAT(vvertbump);
-                    else GENVBOSTAT(vvert);
+                    else GENVBOSTAT(vvertn);
                     delete[] htdata;
                 }
+                #undef GENVBO
+                #undef GENVBOANIM
+                #undef GENVBOSTAT
                 glBindBuffer_(GL_ARRAY_BUFFER, 0);
             }
 
@@ -1333,10 +1266,6 @@ struct skelmodel : animmodel
             glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, ebuf);
             glBufferData_(GL_ELEMENT_ARRAY_BUFFER, idxs.length()*sizeof(ushort), idxs.getbuf(), GL_STATIC_DRAW);
             glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, 0);
-            #undef GENVBO
-            #undef GENVBOANIM
-            #undef GENVBOSTAT
-            #undef ALLOCVDATA
         }
 
         void bindvbo(const animstate *as, vbocacheentry &vc, skelcacheentry *sc = NULL, blendcacheentry *bc = NULL)
@@ -1358,18 +1287,39 @@ struct skelmodel : animmodel
             {
                 if(enabletc) disabletc();
                 if(enablenormals) disablenormals();
+                if(enabletangents) disabletangents();
             }
             else
             {
-                if(!enablenormals)
+                if(vtangents)
                 {
-                    glEnableClientState(GL_NORMAL_ARRAY);
-                    enablenormals = true;
+                    if(enablenormals) disablenormals();
+                    if(!enabletangents)
+                    {
+                        glEnableVertexAttribArray_(1);
+                        enabletangents = true;
+                    }
+                    if(lastxbuf!=lastvbuf)
+                    {
+                        vvertbump *vvertbumps = 0;
+                        glVertexAttribPointer_(1, 4, GL_SHORT, GL_TRUE, vertsize, &vvertbumps->tangent.x);
+                        lastxbuf = lastvbuf;
+                    }
                 }
-                if(lastnbuf!=lastvbuf)
+                else
                 {
-                    glNormalPointer(GL_FLOAT, vertsize, vverts->norm.v);
-                    lastnbuf = lastvbuf;
+                    if(enabletangents) disabletangents();
+                    if(!enablenormals)
+                    {
+                        glEnableClientState(GL_NORMAL_ARRAY);
+                        enablenormals = true;
+                    }
+                    if(lastnbuf!=lastvbuf)
+                    {
+                        vvertn *vvertns = 0;
+                        glNormalPointer(GL_FLOAT, vertsize, vvertns->norm.v);
+                        lastnbuf = lastvbuf;
+                    }
                 }
 
                 if(!enabletc)
@@ -1396,8 +1346,10 @@ struct skelmodel : animmodel
             }
             if(lastbbuf!=lastvbuf)
             {
-                glVertexAttribPointer_(6, 4, GL_UNSIGNED_BYTE, GL_TRUE, vertsize, &((vvertw *)vverts)->weights);
-                glVertexAttribPointer_(7, 4, GL_UNSIGNED_BYTE, GL_FALSE, vertsize, &((vvertw *)vverts)->bones);
+                vvertnw *vvertnws = 0;
+                vvertbumpw *vvertbumpws = 0;
+                glVertexAttribPointer_(6, 4, GL_UNSIGNED_BYTE, GL_TRUE, vertsize, vtangents ? vvertbumpws->weights : vvertnws->weights);
+                glVertexAttribPointer_(7, 4, GL_UNSIGNED_BYTE, GL_FALSE, vertsize, vtangents ? vvertbumpws->bones : vvertnws->bones);
                 lastbbuf = lastvbuf;
             }
         }

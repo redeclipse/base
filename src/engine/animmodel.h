@@ -185,6 +185,7 @@ struct animmodel : model
             string opts;
             int optslen = 0;
             if(alphatested()) opts[optslen++] = 'a';
+            if(owner->tangents()) opts[optslen++] = 'q';
             if(bumpmapped()) opts[optslen++] = 'n';
             if(envmapped()) opts[optslen++] = 'e';
             if(masked()) opts[optslen++] = 'm';
@@ -378,6 +379,34 @@ struct animmodel : model
             loopi(numverts) verts[i].norm.normalize();
         }
 
+        template<class V, class T> void buildnorms(V *verts, int numverts, T *tris, int numtris, bool areaweight, int numframes)
+        {
+            if(!numverts) return;
+            loopi(numframes) buildnorms(&verts[i*numverts], numverts, tris, numtris, areaweight);
+        }
+
+        static inline void fixqtangent(quat &q, float bt)
+        {
+            static const float bias = -1.5f/65535, biasscale = sqrtf(1 - bias*bias);
+            if(bt < 0)
+            {
+                if(q.w >= 0) q.neg();
+                if(q.w > bias) { q.mul3(biasscale); q.w = bias; }
+            }
+            else if(q.w < 0) q.neg();
+        }
+
+        template<class V> static inline void calctangent(V &v, const vec &n, const vec &t, float bt)
+        {
+            matrix3 m;
+            m.c = n;
+            m.a = t;
+            m.b.cross(m.c, m.a);
+            quat q(m);
+            fixqtangent(q, bt);
+            v.tangent = q;
+        }
+
         template<class B, class V, class TC, class T> void calctangents(B *bumpverts, V *verts, TC *tcverts, int numverts, T *tris, int numtris, bool areaweight)
         {
             vec *tangent = new vec[2*numverts], *bitangent = tangent+numverts;
@@ -421,12 +450,21 @@ struct animmodel : model
                           &t = tangent[i],
                           &bt = bitangent[i];
                 B &bv = bumpverts[i];
-                (bv.tangent = t).sub(vec(n).mul(n.dot(t))).normalize();
-                bv.bitangent = vec().cross(n, t).dot(bt) < 0 ? -1 : 1;
+                matrix3 m;
+                m.c = n;
+                (m.a = t).project(m.c).normalize();
+                m.b.cross(m.c, m.a);
+                quat q(m);
+                fixqtangent(q, m.b.dot(bt));
+                bv.tangent = q;
             }
             delete[] tangent;
         }
 
+        template<class B, class V, class TC, class T> void calctangents(B *bumpverts, V *verts, TC *tcverts, int numverts, T *tris, int numtris, bool areaweight, int numframes)
+        {
+            loopi(numframes) calctangents(&bumpverts[i*numverts], &verts[i*numverts], tcverts, numverts, tris, numtris, areaweight);
+        }
     };
 
     struct meshgroup
@@ -601,6 +639,12 @@ struct animmodel : model
         bool envmapped()
         {
             loopv(skins) if(skins[i].envmapped()) return true;
+            return false;
+        }
+
+        bool tangents()
+        {
+            loopv(skins) if(skins[i].tangents()) return true;
             return false;
         }
 
@@ -1394,7 +1438,7 @@ template<class MDL, class MESH> struct modelcommands
     static void setbumpmap(char *meshname, char *normalmapfile)
     {
         Texture *normalmaptex = textureload(makerelpath(MDL::dir, normalmapfile), 0, true, false);
-        loopskins(meshname, s, { s.normalmap = normalmaptex; m.calctangents(); });
+        loopskins(meshname, s, s.normalmap = normalmaptex);
     }
 
     static void setfullbright(char *meshname, float *fullbright)
