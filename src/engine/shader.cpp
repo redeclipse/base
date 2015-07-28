@@ -11,7 +11,7 @@ static hashtable<const char *, int> localparams(256);
 static hashnameset<Shader> shaders(256);
 static Shader *slotshader = NULL;
 static vector<SlotShaderParam> slotparams;
-static bool standardshaders = false, forceshaders = true;
+static bool standardshaders = false, forceshaders = true, loadedshaders = false;
 
 VAR(0, reservevpparams, 1, 16, 0);
 VAR(0, maxvsuniforms, 1, 0, 0);
@@ -40,12 +40,30 @@ void loadshaders()
     foggednotextureshader = lookupshaderbyname("foggednotexture");
 
     nullshader->set();
+
+    loadedshaders = true;
 }
 
 Shader *lookupshaderbyname(const char *name)
 {
     Shader *s = shaders.access(name);
     return s && s->loaded() ? s : NULL;
+}
+
+Shader *generateshader(const char *name, const char *fmt, ...)
+{
+    if(!loadedshaders) return NULL; 
+    Shader *s = name ? lookupshaderbyname(name) : NULL;
+    if(!s)
+    {
+        defvformatstring(cmd, fmt, fmt);
+        standardshaders = true;
+        execute(cmd, true); 
+        standardshaders = false;
+        s = name ? lookupshaderbyname(name) : NULL;
+        if(!s) s = nullshader;
+    }
+    return s;
 }
 
 static void showglslinfo(GLenum type, GLuint obj, const char *name, const char **parts = NULL, int numparts = 0)

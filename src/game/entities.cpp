@@ -202,7 +202,7 @@ namespace entities
                                 case 24: case 25: case 26: addentinfo("plane-flat"); break;
                                 default: hasval = false; addentinfo("default"); break;
                             }
-                            if(hasval) switch(val%3)
+                            if(hasval) switch((val%32)%3)
                             {
                                 case 0: addentinfo("x-axis"); break;
                                 case 1: addentinfo("y-axis"); break;
