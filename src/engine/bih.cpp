@@ -53,6 +53,7 @@ inline bool BIH::traverse(const mesh &m, const vec &o, const vec &ray, const vec
     int stacksize = 0;
     ivec order(ray.x>0 ? 0 : 1, ray.y>0 ? 0 : 1, ray.z>0 ? 0 : 1);
     vec mo = m.invxform.transform(o), mray = m.invxformnorm.transform(ray);
+    bool hit = false;
     for(;;)
     {
         int axis = curnode->axis();
@@ -70,12 +71,20 @@ inline bool BIH::traverse(const mesh &m, const vec &o, const vec &ray, const vec
                     tmin = max(tmin, farsplit);
                     continue;
                 }
-                else if(triintersect(m, curnode->childindex(faridx), mo, mray, maxdist, dist, mode)) return true;
+                else if(triintersect(m, curnode->childindex(faridx), mo, mray, maxdist, maxdist, mode))
+                {
+                    if(mode&RAY_SHADOW) { dist = maxdist; return true; }
+                    hit = true;
+                }
             }
         }
         else if(curnode->isleaf(nearidx))
         {
-            if(triintersect(m, curnode->childindex(nearidx), mo, mray, maxdist, dist, mode)) return true;
+            if(triintersect(m, curnode->childindex(nearidx), mo, mray, maxdist, maxdist, mode))
+            {
+                if(mode&RAY_SHADOW) { dist = maxdist; return true; }
+                hit = true;
+            }
             if(farsplit < tmax)
             {
                 if(!curnode->isleaf(faridx))
@@ -84,7 +93,11 @@ inline bool BIH::traverse(const mesh &m, const vec &o, const vec &ray, const vec
                     tmin = max(tmin, farsplit);
                     continue;
                 }
-                else if(triintersect(m, curnode->childindex(faridx), mo, mray, maxdist, dist, mode)) return true;
+                else if(triintersect(m, curnode->childindex(faridx), mo, mray, maxdist, maxdist, mode))
+                {
+                    if(mode&RAY_SHADOW) { dist = maxdist; return true; }
+                    hit = true;
+                }
             }
         }
         else
@@ -102,19 +115,27 @@ inline bool BIH::traverse(const mesh &m, const vec &o, const vec &ray, const vec
                     }
                     else
                     {
-                        if(traverse(m, o, ray, invray, maxdist, dist, mode, curnode + curnode->childindex(nearidx), tmin, min(tmax, nearsplit))) return true;
+                        if(traverse(m, o, ray, invray, maxdist, maxdist, mode, curnode + curnode->childindex(nearidx), tmin, min(tmax, nearsplit)))
+                        {
+                            if(mode&RAY_SHADOW) { dist = maxdist; return true; }
+                            hit = true;
+                        }
                         curnode += curnode->childindex(faridx);
                         tmin = max(tmin, farsplit);
                         continue;
                     }
                 }
-                else if(triintersect(m, curnode->childindex(faridx), mo, mray, maxdist, dist, mode)) return true;
+                else if(triintersect(m, curnode->childindex(faridx), mo, mray, maxdist, maxdist, mode))
+                {
+                    if(mode&RAY_SHADOW) { dist = maxdist; return true; }
+                    hit = true;
+                }
             }
             curnode += curnode->childindex(nearidx);
             tmax = min(tmax, nearsplit);
             continue;
         }
-        if(stacksize <= 0) return false;
+        if(stacksize <= 0) { if(hit) { dist = maxdist; return true; } return false; }
         traversestate &restore = stack[--stacksize];
         curnode = restore.node;
         tmin = restore.tmin;
@@ -125,6 +146,7 @@ inline bool BIH::traverse(const mesh &m, const vec &o, const vec &ray, const vec
 inline bool BIH::traverse(const vec &o, const vec &ray, float maxdist, float &dist, int mode)
 {
     vec invray(ray.x ? 1/ray.x : 1e16f, ray.y ? 1/ray.y : 1e16f, ray.z ? 1/ray.z : 1e16f);
+    bool hit = false;
     loopi(nummeshes)
     {
         mesh &m = meshes[i];
@@ -140,8 +162,13 @@ inline bool BIH::traverse(const vec &o, const vec &ray, float maxdist, float &di
         t2 = (m.bbmax.z - o.z)*invray.z;
         if(invray.z > 0) { tmin = max(tmin, t1); tmax = min(tmax, t2); } else { tmin = max(tmin, t2); tmax = min(tmax, t1); }
         tmax = min(tmax, maxdist);
-        if(tmin < tmax && traverse(m, o, ray, invray, maxdist, dist, mode, m.nodes, tmin, tmax)) return true;
+        if(tmin < tmax && traverse(m, o, ray, invray, maxdist, maxdist, mode, m.nodes, tmin, tmax))
+        {
+            if(mode&RAY_SHADOW) { dist = maxdist; return true; }
+            hit = true;
+        }
     }
+    if(hit) { dist = maxdist; return true; }
     return false;
 }
 
