@@ -589,7 +589,7 @@ extern model *loadmodel(const char *name, int i = -1, bool msg = false);
 extern mapmodelinfo *getmminfo(int i);
 extern void startmodelquery(occludequery *query);
 extern void endmodelquery();
-extern void preloadmodelshaders();
+extern void preloadmodelshaders(bool force = false);
 extern void preloadmodel(const char *name);
 extern void flushpreloadedmodels(bool msg = true);
 extern void preloadusedmapmodels(bool msg = false, bool bih = false);

@@ -35,7 +35,7 @@ struct model
     virtual void setmaterial(int material, int material2) {}
 
     virtual void preloadBIH() { if(!bih) setBIH(); }
-    virtual void preloadshaders() {}
+    virtual void preloadshaders(bool force = false) {}
     virtual void preloadmeshes() {}
     virtual void cleanup() {}
 
