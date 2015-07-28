@@ -47,11 +47,17 @@ struct masterclient
     ENetAddress address;
     ENetSocket socket;
     string name;
+    /* Server Flags:
+     * b - basic
+     * s - statistics
+     */
+    string flags;
     char input[4096];
     vector<char> output;
     int inputpos, outputpos, port, numpings, lastcontrol, version;
     enet_uint32 lastping, lastpong, lastactivity;
     vector<authreq> authreqs;
+    authreq serverauthreq;
     bool isserver, isquick, ishttp, listserver, shouldping, shouldpurge;
     
     struct statstate
@@ -85,6 +91,17 @@ struct masterclient
 	} stats;
     
 	bool instats;
+	
+	bool hasflag(char f)
+	{
+		size_t i;
+		for(i = 0; i < strlen(flags); i++)
+		{
+			if(flags[i] == f)
+				return true;
+		}
+		return false;
+	}
 
     masterclient() : inputpos(0), outputpos(0), port(MASTER_PORT), numpings(0), lastcontrol(-1), version(0), lastping(0), lastpong(0), lastactivity(0), isserver(false), isquick(false), ishttp(false), listserver(false), shouldping(false), shouldpurge(false), instats(false) {}
 };
@@ -240,10 +257,32 @@ void addauth(char *name, char *flags, char *pubkey, char *email)
 }
 COMMAND(0, addauth, "ssss");
 
+static hashnameset<authuser> serverauthusers;
+
+void addserverauth(char *name, char *flags, char *pubkey, char *email)
+{
+    string authname;
+    if(filterstring(authname, name, true, true, true, true, 100)) name = authname;
+    if(serverauthusers.access(name))
+    {
+        conoutf("server auth handle '%s' already exists, skipping (%s)", name, email);
+        return;
+    }
+    name = newstring(name);
+    authuser &u = serverauthusers[name];
+    u.name = name;
+    u.flags = newstring(flags);
+    u.pubkey = parsepubkey(pubkey);
+    u.email = newstring(email);
+}
+COMMAND(0, addserverauth, "ssss");
+
 void clearauth()
 {
     enumerate(authusers, authuser, u, { delete[] u.name; delete[] u.flags; delete[] u.email; freepubkey(u.pubkey); });
     authusers.clear();
+    enumerate(serverauthusers, authuser, u, { delete[] u.name; delete[] u.flags; delete[] u.email; freepubkey(u.pubkey); });
+    serverauthusers.clear();
 }
 COMMAND(0, clearauth, "");
 
@@ -265,8 +304,6 @@ void purgeauths(masterclient &c)
 
 void reqauth(masterclient &c, uint id, char *name, char *hostname)
 {
-    purgeauths(c);
-
     string ip, host;
     if(enet_address_get_host_ip(&c.address, ip, sizeof(ip)) < 0) copystring(ip, "-");
     copystring(host, hostname && *hostname ? hostname : "-");
@@ -293,6 +330,32 @@ void reqauth(masterclient &c, uint id, char *name, char *hostname)
     masteroutf(c, "chalauth %u %s\n", id, buf.getbuf());
 }
 
+void reqserverauth(masterclient &c, char *name)
+{
+    purgeauths(c);
+
+    string ip;
+    if(enet_address_get_host_ip(&c.address, ip, sizeof(ip)) < 0) copystring(ip, "-");
+
+    authuser *u = serverauthusers.access(name);
+    if(!u)
+    {
+        masteroutf(c, "failserverauth\n");
+        conoutf("failed server '%s' (NOTFOUND)\n", name);
+        return;
+    }
+    conoutf("attempting server '%s'\n", name);
+	
+    c.serverauthreq.user = u;
+    c.serverauthreq.reqtime = totalmillis;
+    uint seed[3] = { uint(starttime), uint(totalmillis), randomMT() };
+    static vector<char> buf;
+    buf.setsize(0);
+    c.serverauthreq.answer = genchallenge(u->pubkey, seed, sizeof(seed), buf);
+
+    masteroutf(c, "chalserverauth %s\n", buf.getbuf());
+}
+
 void confauth(masterclient &c, uint id, const char *val)
 {
     purgeauths(c);
@@ -315,6 +378,24 @@ void confauth(masterclient &c, uint id, const char *val)
         return;
     }
     masteroutf(c, "failauth %u\n", id);
+}
+
+void confserverauth(masterclient &c, const char *val)
+{
+    string ip;
+    if(enet_address_get_host_ip(&c.address, ip, sizeof(ip)) < 0) copystring(ip, "-");
+	if(checkchallenge(val, c.serverauthreq.answer))
+	{
+		masteroutf(c, "succserverauth \"%s\" \"%s\"\n", c.serverauthreq.user->name, c.serverauthreq.user->flags);
+		conoutf("succeeded server '%s' [%s]\n", c.serverauthreq.user->name, c.serverauthreq.user->flags);
+		copystring(c.flags, c.serverauthreq.user->flags);
+	}
+	else
+	{
+		masteroutf(c, "failserverauth\n");
+		conoutf("failed server '%s' (BADKEY)\n", c.serverauthreq.user->name);
+	}
+	freechallenge(c.serverauthreq.answer);
 }
 
 void purgemasterclient(int n)
@@ -488,8 +569,17 @@ bool checkmasterclientinput(masterclient &c)
         {
 			if(!strcmp(w[1], "begin"))
 			{
-				conoutf("master peer %s began sending stats", c.name);
-				c.instats = true;
+				if(c.hasflag('s'))
+				{
+					conoutf("master peer %s began sending stats", c.name);
+					c.instats = true;
+				}
+				else
+				{
+					conoutf("master peer %s attempted to send stats without proper privilege", c.name);
+					simpleencode(msg_enc, "\frstatistics not submitted, no statistics privilege");
+					masteroutf(c, "stats failure %s\n", msg_enc);
+				}
 			}
 			else if(c.instats)
 			{
@@ -541,7 +631,7 @@ bool checkmasterclientinput(masterclient &c)
 					conoutf("master peer %s commited stats, game id %lli", c.name, c.stats.id);
 					defformatstring(msg, "\fygame statistics recorded, id \fc%lli", c.stats.id);
 					simpleencode(msg_enc, msg);
-					masteroutf(c, "stats %s\n", msg_enc);
+					masteroutf(c, "stats success %s\n", msg_enc);
 					c.instats = false;
 				}
 				else if(!strcmp(w[1], "game"))
@@ -589,7 +679,9 @@ bool checkmasterclientinput(masterclient &c)
         if(c.isserver || c.isquick)
         {
             if(!strcmp(w[0], "reqauth")) { reqauth(c, uint(atoi(w[1])), w[2], w[3]); found = true; }
+            if(!strcmp(w[0], "reqserverauth")) { reqserverauth(c, w[1]); found = true; }
             if(!strcmp(w[0], "confauth")) { confauth(c, uint(atoi(w[1])), w[2]); found = true; }
+            if(!strcmp(w[0], "confserverauth")) { confserverauth(c, w[1]); found = true; }
         }
         if(w[0] && *w[0] && !found)
         {

@@ -74,6 +74,15 @@ void localopadd(const char *name, const char *flags)
 ICOMMAND(0, addlocalop, "ss", (char *n, char *f), localopadd(n, f));
 
 VAR(IDF_PERSIST, quickauthchecks, 0, 0, 1);
+
+VAR(IDF_PERSIST, authconnect, 0, 1, 1);
+SVAR(IDF_PERSIST, accountname, "");
+SVAR(IDF_PERSIST, accountpass, "");
+ICOMMAND(0, authkey, "ss", (char *name, char *key), {
+	setsvar("accountname", name);
+	setsvar("accountpass", key);
+});
+
 namespace auth
 {
     int lastconnect = 0, lastregister = 0, quickcheck = 0;
@@ -84,6 +93,14 @@ namespace auth
         loopv(clients) if(clients[i]->authreq == id) return clients[i];
         loopv(connects) if(connects[i]->authreq == id) return connects[i];
         return NULL;
+    }
+    
+    void reqserverauth()
+    {
+        if(connectedmaster() && *accountpass && authconnect)
+        {
+			requestmasterf("reqserverauth %s\n", accountname);
+		}
     }
 
     void reqauth(clientinfo *ci)
@@ -237,6 +254,16 @@ namespace auth
     {
         authfailed(findauth(id));
     }
+    
+    void serverauthfailed()
+    {
+		conoutf("server auth request failed");
+	}
+	
+	void serverauthsucceeded(const char *name, const char *flags)
+	{
+		conoutf("server auth succeeded, now have flags %s", flags);
+	}
 
     void authsucceeded(uint id, const char *name, const char *flags)
     {
@@ -290,6 +317,19 @@ namespace auth
         if(!ci) return;
         sendf(ci->clientnum, 1, "riis", N_AUTHCHAL, id, val);
     }
+    
+    void serverauthchallenged(const char *text)
+    {
+		vector<char> buf;
+        answerchallenge(accountpass, text, buf);
+        char *val = newstring(buf.getbuf());
+        for(char *s = val; *s; s++)
+        {
+            if(!isxdigit(*s)) { *s = '\0'; break; }
+        }
+        requestmasterf("confserverauth %s\n", val);
+        DELETEA(val);
+    }
 
     bool answerchallenge(clientinfo *ci, uint id, char *val)
     {
@@ -320,7 +360,10 @@ namespace auth
         else if(!strcmp(w[0], "echo")) { conoutf("master server reply: %s", w[1]); }
         else if(!strcmp(w[0], "failauth")) authfailed((uint)(atoi(w[1])));
         else if(!strcmp(w[0], "succauth")) authsucceeded((uint)(atoi(w[1])), w[2], w[3]);
+        else if(!strcmp(w[0], "failserverauth")) serverauthfailed();
+        else if(!strcmp(w[0], "succserverauth")) serverauthsucceeded(w[1], w[2]);
         else if(!strcmp(w[0], "chalauth")) authchallenged((uint)(atoi(w[1])), w[2]);
+        else if(!strcmp(w[0], "chalserverauth")) serverauthchallenged(w[1]);
         else if(!strcmp(w[0], "sync"))
         {
             int oldversion = versioning;
@@ -330,8 +373,16 @@ namespace auth
         }
         else if(!strcmp(w[0], "stats"))
         {
-			simpledecode(msg, w[1]);
-			srvoutf(-3, "%s", msg);
+			if(!strcmp(w[1], "success"))
+			{
+				simpledecode(msg, w[2]);
+				srvoutf(-3, "%s", msg);
+			}
+			else if(!strcmp(w[1], "failure"))
+			{
+				simpledecode(msg, w[2]);
+				srvoutf(-3, "%s", msg);
+			}
 		}
         else loopj(ipinfo::SYNCTYPES) if(!strcmp(w[0], ipinfotypes[j]))
         {
@@ -362,6 +413,7 @@ namespace auth
             conoutf("updating master server");
             requestmasterf("server %d %s %d\n", serverport, *serverip ? serverip : "*", CUR_VERSION);
         }
+        reqserverauth();
     }
 
     void update()
