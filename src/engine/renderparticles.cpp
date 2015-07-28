@@ -434,8 +434,12 @@ struct iconrenderer : listrenderer<icon>
 
         matrix4x3 m(camright, vec(camup).neg(), vec(camdir).neg(), p->o);
         float aspect = p->tex->w/float(p->tex->h);
-        m.scale(size*aspect, size*aspect, size);
-        #define iconvert(vx,vy,vz) do { vec v = m.transform(vec(vx, vy, vz)); glVertex3f(v.x, v.y, v.z); } while(0)
+        m.scale(size*aspect, size, 1);
+        #define iconvert(vx,vy) do { \
+            glTexCoord2f(0.5f*(vx) + 0.5f, 0.5f*(vy) + 0.5f); \
+            vec v = m.transform(vec2(vx, vy)); \
+            glVertex3f(v.x, v.y, v.z); \
+        } while(0)
 
         glColor4ub(p->color.r, p->color.g, p->color.b, uchar(p->blend*blend));
         if(p->start > 0 || p->length < 1)
@@ -443,31 +447,31 @@ struct iconrenderer : listrenderer<icon>
             float sx = cosf((p->start + 0.25f)*2*M_PI), sy = -sinf((p->start + 0.25f)*2*M_PI),
                   ex = cosf((p->end + 0.25f)*2*M_PI), ey = -sinf((p->end + 0.25f)*2*M_PI);
             glBegin(GL_TRIANGLE_FAN);
-            glTexCoord2f(0.5f, 0.5f); glVertex3f(0, 0, 0);
+            iconvert(0, 0);
 
-            if(p->start < 0.125f || p->start >= 0.875f) { glTexCoord2f(0.5f + 0.5f*sx/sy, 0); iconvert(-(sx/sy), 0, 1);  }
-            else if(p->start < 0.375f) { glTexCoord2f(1, 0.5f - 0.5f*sy/sx); iconvert(-1, 0, sy/sx); }
-            else if(p->start < 0.625f) { glTexCoord2f(0.5f - 0.5f*sx/sy, 1); iconvert(sx/sy, 0, -1); }
-            else { glTexCoord2f(0, 0.5f + 0.5f*sy/sx); iconvert(1, 0, -(sy/sx)); }
+            if(p->start < 0.125f || p->start >= 0.875f) iconvert(sx/sy, -1);
+            else if(p->start < 0.375f) iconvert(1, -sy/sx);
+            else if(p->start < 0.625f) iconvert(-sx/sy, 1);
+            else iconvert(-1, sy/sx);
 
-            if(p->start <= 0.125f && p->end >= 0.125f) { glTexCoord2f(1, 0); iconvert(-1, 0, 1); }
-            if(p->start <= 0.375f && p->end >= 0.375f) { glTexCoord2f(1, 1); iconvert(-1, 0, -1); }
-            if(p->start <= 0.625f && p->end >= 0.625f) { glTexCoord2f(0, 1); iconvert(1, 0, -1); }
-            if(p->start <= 0.875f && p->end >= 0.875f) { glTexCoord2f(0, 0); iconvert(1, 0, 1); }
+            if(p->start <= 0.125f && p->end >= 0.125f) iconvert(1, -1);
+            if(p->start <= 0.375f && p->end >= 0.375f) iconvert(1, 1);
+            if(p->start <= 0.625f && p->end >= 0.625f) iconvert(-1, 1);
+            if(p->start <= 0.875f && p->end >= 0.875f) iconvert(-1, -1);
 
-            if(p->end < 0.125f || p->end >= 0.875f) { glTexCoord2f(0.5f + 0.5f*ex/ey, 0); iconvert(-(ex/ey), 0, 1);  }
-            else if(p->end < 0.375f) { glTexCoord2f(1, 0.5f - 0.5f*ey/ex); iconvert(-1, 0, ey/ex); }
-            else if(p->end < 0.625f) { glTexCoord2f(0.5f - 0.5f*ex/ey, 1); iconvert(ex/ey, 0, -1); }
-            else { glTexCoord2f(0, 0.5f + 0.5f*ey/ex); iconvert(1, 0, -(ey/ex)); }
+            if(p->end < 0.125f || p->end >= 0.875f) iconvert(ex/ey, -1);
+            else if(p->end < 0.375f) iconvert(1, -ey/ex);
+            else if(p->end < 0.625f) iconvert(-ex/ey, 1);
+            else iconvert(-1, ey/ex);
             glEnd();
         }
         else
         {
             glBegin(GL_TRIANGLE_STRIP);
-            glTexCoord2f(1, 1); iconvert(-1, 0, -1);
-            glTexCoord2f(0, 1); iconvert( 1, 0, -1);
-            glTexCoord2f(1, 0); iconvert(-1, 0,  1);
-            glTexCoord2f(0, 0); iconvert( 1, 0,  1);
+            iconvert( 1,  1);
+            iconvert(-1,  1);
+            iconvert( 1, -1);
+            iconvert(-1, -1);
             glEnd();
         }
     }
