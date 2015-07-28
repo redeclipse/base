@@ -96,6 +96,9 @@ struct masterclient
 	
 	bool hasflag(char f)
 	{
+		//Any flag implies 'b'
+		if(f == 'b' && *flags)
+			return true;
 		size_t i;
 		for(i = 0; i < strlen(flags); i++)
 		{
@@ -382,12 +385,25 @@ void confauth(masterclient &c, uint id, const char *val)
     masteroutf(c, "failauth %u\n", id);
 }
 
+void purgemasterclient(int n)
+{
+    masterclient &c = *masterclients[n];
+    enet_socket_destroy(c.socket);
+    if(verbose || c.isserver) conoutf("master peer %s disconnected", c.name);
+    delete masterclients[n];
+    masterclients.remove(n);
+}
+
 void confserverauth(masterclient &c, const char *val)
 {
     string ip;
     if(enet_address_get_host_ip(&c.address, ip, sizeof(ip)) < 0) copystring(ip, "-");
 	if(checkchallenge(val, c.serverauthreq.answer))
 	{
+		loopvj(masterclients) if(!(!strcmp(c.name, masterclients[j]->name) && c.port == masterclients[j]->port))
+		{
+			purgemasterclient(j);
+		}
 		masteroutf(c, "succserverauth \"%s\" \"%s\"\n", c.serverauthreq.user->name, c.serverauthreq.user->flags);
 		conoutf("succeeded server '%s' [%s]\n", c.serverauthreq.user->name, c.serverauthreq.user->flags);
 		copystring(c.authhandle, c.serverauthreq.user->name);
@@ -399,15 +415,6 @@ void confserverauth(masterclient &c, const char *val)
 		conoutf("failed server '%s' (BADKEY)\n", c.serverauthreq.user->name);
 	}
 	freechallenge(c.serverauthreq.answer);
-}
-
-void purgemasterclient(int n)
-{
-    masterclient &c = *masterclients[n];
-    enet_socket_destroy(c.socket);
-    if(verbose || c.isserver) conoutf("master peer %s disconnected", c.name);
-    delete masterclients[n];
-    masterclients.remove(n);
 }
 
 void checkmasterpongs()
