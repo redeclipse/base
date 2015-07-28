@@ -27,9 +27,6 @@ GVAR(IDF_ADMIN, serveropen, 0, 3, 3);
 GSVAR(IDF_ADMIN, serverdesc, "");
 GSVAR(IDF_ADMIN, servermotd, "");
 
-GVAR(IDF_ADMIN, duelmaxqueued, 0, 0, MAXCLIENTS); // number of players that can be queued for duel. 0 = any number of players
-GVAR(IDF_ADMIN, survivormaxqueued, 0, 0, MAXCLIENTS); // number of players that can be queued for survivor. 0 = any number of players
-
 GVAR(IDF_ADMIN, autoadmin, 0, 0, 1);
 
 GVAR(IDF_ADMIN, queryinterval, 0, 5000, VAR_MAX); // rebuild client list for server queries this often
@@ -261,6 +258,7 @@ GVAR(0, duelcycles, 0, 2, VAR_MAX); // maximum wins in a row before force-cyclin
 GVAR(0, duelaffinity, 0, 1, 2); // 0 = off, 1 = on enter can respawn next iter, 2 = on enter can respawn immediately
 GVAR(0, duelbotcheck, 0, 1, 1); // 0 = off, 1 = skip bots when checking respawns
 GVAR(0, duelovertime, 0, 1, 1); // 0 = off, 1 = ffa: only spawn leaders in overtime
+GVAR(0, duelmaxqueued, 0, 0, MAXCLIENTS); // number of players that can be queued for duel. 0 = any number of players
 
 GVAR(0, survivorreset, 0, 1, 1); // reset winners in survivor
 GVAR(0, survivorclear, 0, 1, 1); // clear items in survivor
@@ -270,6 +268,7 @@ GVAR(0, survivorcooloff, 0, 3000, VAR_MAX); // cool off period before survivor g
 GVAR(0, survivoraffinity, 0, 0, 1); // 0 = off, 1 = on enter can spawn immediately
 GVAR(0, survivorbotcheck, 0, 1, 1); // 0 = off, 1 = skip bots when checking respawns
 GVAR(0, survivorovertime, 0, 1, 1); // 0 = off, 1 = ffa: only spawn leaders in overtime
+GVAR(0, survivormaxqueued, 0, 0, MAXCLIENTS); // number of players that can be queued for survivor. 0 = any number of players
 
 GVAR(0, pointlimit, 0, 0, VAR_MAX); // finish when score is this or more
 GVAR(0, teampersist, 0, 1, 2); // 0 = off, 1 = only attempt, 2 = forced
