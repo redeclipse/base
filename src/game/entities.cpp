@@ -2462,6 +2462,7 @@ namespace entities
         loopi(numents)
         {
             gameentity &e = *(gameentity *)ents[i];
+            if(e.type == NONE || e.attrs.empty()) continue;
             if(e.type != PARTICLES && e.type != TELEPORT && e.type != ROUTE && !m_edit(game::gamemode) && enttype[e.type].usetype != EU_ITEM) continue;
             else if(e.o.squaredist(camera1->o) > maxdist) continue;
             float skew = 1;
@@ -2488,6 +2489,7 @@ namespace entities
             projent &proj = *projs::projs[i];
             if(proj.projtype != PRJ_ENT || !ents.inrange(proj.id) || !proj.ready()) continue;
             gameentity &e = *(gameentity *)ents[proj.id];
+            if(e.type == NONE || e.attrs.empty()) continue;
             float skew = 1;
             if(proj.fadetime && proj.lifemillis)
             {
