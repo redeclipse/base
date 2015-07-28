@@ -282,7 +282,7 @@ namespace server
     {
         uint ip;
         string name, handle;
-        int points, score, frags, spree, rewards, timeplayed, timealive, deaths, shotdamage, damage, cptime;
+        int points, score, frags, spree, rewards, timeplayed, timealive, deaths, shotdamage, damage, cptime, actortype;
         int warnings[WARN_MAX][2];
         vector<teamkill> teamkills;
         bool quarantine;
@@ -301,6 +301,7 @@ namespace server
             shotdamage = gs.shotdamage;
             damage = gs.damage;
             cptime = gs.cptime;
+            actortype = gs.actortype;
             loopi(WARN_MAX) loopj(2) warnings[i][j] = gs.warnings[i][j];
             quarantine = gs.quarantine;
         }
@@ -326,6 +327,7 @@ namespace server
         void mapchange()
         {
             points = frags = spree = rewards = deaths = shotdamage = damage = cptime = 0;
+            actortype = A_MAX;
             teamkills.shrink(0);
         }
     };
@@ -3074,6 +3076,26 @@ namespace server
                 requestmasterf("stats team %d %d %s\n", i + tp, teamscore(i + tp).total, teamname_enc);
                 flushmasteroutput();
             }
+            
+            //Players (Clients and Saved Scores)
+            loopv(clients) if(clients[i]->state.actortype == A_PLAYER)
+            {
+				savescore(clients[i]);
+			}
+			loopv(savedscores) if(savedscores[i].actortype == A_PLAYER)
+            {
+				simpleencode(name_enc, savedscores[i].name);
+				simpleencode(handle_enc, savedscores[i].handle);
+				requestmasterf("stats player %s %s %d %d %d %d\n",
+								name_enc,
+								handle_enc,
+								m_laptime(gamemode, mutators) ? savedscores[i].cptime : savedscores[i].score,
+								savedscores[i].timeplayed,
+								savedscores[i].frags,
+								savedscores[i].deaths
+                            );
+                flushmasteroutput();
+			}
 			
 			requestmasterf("stats end\n");
 		}

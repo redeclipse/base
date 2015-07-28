@@ -74,6 +74,13 @@ struct masterclient
 		};
 		vector<team> teams;
 		//Players
+		struct player
+		{
+			string name;
+			string handle;
+			int score, timeplayed, frags, deaths;
+		};
+		vector<player> players;
 		//Weapons
 	} stats;
     
@@ -363,7 +370,7 @@ int nextcontrolversion()
 bool checkmasterclientinput(masterclient &c)
 {
     if(c.inputpos < 0) return false;
-    const int MAXWORDS = 8;
+    const int MAXWORDS = 16;
     char *w[MAXWORDS];
     int numargs = MAXWORDS;
     const char *p = c.input;
@@ -516,10 +523,25 @@ bool checkmasterclientinput(masterclient &c)
 							c.stats.teams[i].name
 							);
 					}
+					
+					loopv(c.stats.players)
+					{
+						statsdbexecf("INSERT INTO game_players VALUES (%d, %Q, %Q, %d, %d, %d, %d)",
+							c.stats.id,
+							c.stats.players[i].name,
+							c.stats.players[i].handle,
+							c.stats.players[i].score,
+							c.stats.players[i].timeplayed,
+							c.stats.players[i].frags,
+							c.stats.players[i].deaths
+						);
+					}
 						
 					statsdbexecf("COMMIT");
 					conoutf("master peer %s commited stats, game id %lli", c.name, c.stats.id);
-					masteroutf(c, "stats success\n");
+					defformatstring(msg, "\fygame statistics recorded, id \fc%lli", c.stats.id);
+					simpleencode(msg_enc, msg);
+					masteroutf(c, "stats %s\n", msg_enc);
 					c.instats = false;
 				}
 				else if(!strcmp(w[1], "game"))
@@ -547,6 +569,19 @@ bool checkmasterclientinput(masterclient &c)
 					simpledecode(name_dec, w[4]);
 					copystring(t.name, name_dec);
 					c.stats.teams.add(t);
+				}
+				else if(!strcmp(w[1], "player"))
+				{
+					masterclient::statstate::player p;
+					simpledecode(name_dec, w[2]);
+					copystring(p.name, name_dec);
+					simpledecode(handle_dec, w[3]);
+					copystring(p.handle, handle_dec);
+					p.score = (int)strtol(w[4], NULL, 10);
+					p.timeplayed = (int)strtol(w[5], NULL, 10);
+					p.frags = (int)strtol(w[6], NULL, 10);
+					p.deaths = (int)strtol(w[7], NULL, 10);
+					c.stats.players.add(p);
 				}
 			}
 			found = true;

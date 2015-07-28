@@ -330,16 +330,8 @@ namespace auth
         }
         else if(!strcmp(w[0], "stats"))
         {
-			if(!strcmp(w[1], "success"))
-			{
-				srvoutf(-3, "\fcstatistics submitted successfully");
-			}
-			else
-			{
-				char *errmsg = numberstostring(w[2]);
-				srvoutf(-3, "\fcstatistics were not submitted: %s", errmsg);
-				DELETEA(errmsg);
-			}
+			simpledecode(msg, w[1]);
+			srvoutf(-3, "%s", msg);
 		}
         else loopj(ipinfo::SYNCTYPES) if(!strcmp(w[0], ipinfotypes[j]))
         {

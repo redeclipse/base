@@ -33,8 +33,8 @@ CREATE TABLE game_players (
     handle TEXT,
     score INTEGER,
     timeplayed INTEGER,
-    frags,
-    deaths
+    frags INTEGER,
+    deaths INTEGER
 );
 
 CREATE TABLE game_weapons (
