@@ -14,6 +14,7 @@ CREATE TABLE games (
 CREATE TABLE game_servers (
     game INTEGER,
     handle TEXT,
+    flags TEXT,
     desc TEXT,
     version TEXT,
     host TEXT,

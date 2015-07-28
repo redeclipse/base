@@ -73,7 +73,6 @@ struct masterclient
 		//Server
 		string desc;
 		string version;
-		string host;
 		int port;
 		//Teams
 		struct team
@@ -603,12 +602,13 @@ bool checkmasterclientinput(masterclient &c)
 						);
 					c.stats.id = sqlite3_last_insert_rowid(statsdb);
 					
-					statsdbexecf("INSERT INTO game_servers VALUES (%d, %Q, %Q, %Q, %Q, %d)",
+					statsdbexecf("INSERT INTO game_servers VALUES (%d, %Q, %Q, %Q, %Q, %Q, %d)",
 						c.stats.id,
-						c.stats.host,
+						c.authhandle,
+						c.flags,
 						c.stats.desc,
 						c.stats.version,
-						c.stats.host,
+						c.name,
 						c.stats.port
 						);
 						
@@ -656,7 +656,6 @@ bool checkmasterclientinput(masterclient &c)
 					simpledecode(desc_dec, w[2]);
 					copystring(c.stats.desc, desc_dec);
 					copystring(c.stats.version, w[3]);
-					copystring(c.stats.host, c.name);
 					c.stats.port = (int)strtol(w[4], NULL, 10);
 				}
 				else if(!strcmp(w[1], "team"))
