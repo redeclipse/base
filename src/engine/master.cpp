@@ -402,7 +402,8 @@ void confserverauth(masterclient &c, const char *val)
 	{
 		loopvj(masterclients) if(!(!strcmp(c.name, masterclients[j]->name) && c.port == masterclients[j]->port))
 		{
-			purgemasterclient(j);
+			if(!strcmp(masterclients[j]->authhandle, c.serverauthreq.user->name))
+				purgemasterclient(j);
 		}
 		masteroutf(c, "succserverauth \"%s\" \"%s\"\n", c.serverauthreq.user->name, c.serverauthreq.user->flags);
 		conoutf("succeeded server '%s' [%s]\n", c.serverauthreq.user->name, c.serverauthreq.user->flags);
