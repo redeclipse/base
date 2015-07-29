@@ -47,10 +47,16 @@ CREATE TABLE game_weapons (
 	timeloadout INTEGER,
 	
 	damage1 INTEGER,
-	kills1 INTEGER,
-	hitratio1 REAL,
+	frags1 INTEGER,
+	hits1 INTEGER,
+	flakhits1 INTEGER,
+	shots1 INTEGER,
+	flakshots1 INTEGER,
 	
 	damage2 INTEGER,
-	kills2 INTEGER,
-	hitratio2 REAL
+	frags2 INTEGER,
+	hits2 INTEGER,
+	flakhits2 INTEGER,
+	shots2 INTEGER,
+	flakshots2 INTEGER
 );
