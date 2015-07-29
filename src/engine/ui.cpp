@@ -12,7 +12,7 @@ enum {FIELDCOMMIT, FIELDABORT, FIELDEDIT, FIELDSHOW, FIELDKEY};
 static int fieldmode = FIELDSHOW;
 static bool fieldsactive = false;
 
-FVAR(IDF_PERSIST, guiscale, FVAR_MIN, 0.5f, VAR_MAX);
+FVAR(IDF_PERSIST, guiscale, FVAR_MIN, 0.0002f, VAR_MAX);
 FVAR(IDF_PERSIST, guitextscale, FVAR_MIN, 2.75f, VAR_MAX);
 VAR(IDF_PERSIST, guiskinsize, 0, 0, VAR_MAX); // 0 = texture size, otherwise = size in pixels for skin scaling
 VAR(IDF_PERSIST, guislidersize, 1, 164, VAR_MAX);
@@ -1171,11 +1171,11 @@ struct gui : guient
         uiorigin = vec(0.5f - ((w-xsize)/2 - (FONTW*4))*uiscale.x, 0.5f + (0.5f*h-(FONTH*4))*uiscale.y, 0);
     }
 
-    void start(int starttime, float initscale, int *tab, bool allowinput, bool wantstitle, bool wantsbgfx)
+    void start(int starttime, int *tab, bool allowinput, bool wantstitle, bool wantsbgfx)
     {
         fontdepth = 0;
         gui::pushfont("reduced");
-        basescale = initscale*0.025f*guiscale;
+        basescale = guiscale;
         if(guilayoutpass)
             uiscale.x = uiscale.y = uiscale.z = guiscaletime ? min(basescale*(totalmillis-starttime)/float(guiscaletime), basescale) : basescale;
         needsinput = allowinput;
@@ -1484,4 +1484,3 @@ namespace UI
         fieldmode = FIELDEDIT;
     }
 };
-
