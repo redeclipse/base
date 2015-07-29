@@ -2282,7 +2282,7 @@ struct texturegui : guicb
         if(autopreviewtexgui && texmru.inrange(rolltex)) curtex = rolltex;
         if(menupage > numpages) menupage = numpages;
         else if(menupage < 0) menupage = 0;
-        g.start(menustart, menuscale, NULL, true);
+        g.start(menustart, NULL, true);
         uilist(g, {
             g.space(2);
             if(g.button("\fgauto apply", 0xFFFFFF, autoapplytexgui ? "checkboxon" : "checkbox", 0xFFFFFF)&GUI_UP)

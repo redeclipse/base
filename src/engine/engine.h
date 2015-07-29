@@ -541,8 +541,6 @@ extern void swapbuffers(bool overlay = true);
 extern int getclockmillis();
 
 // menu
-extern float menuscale;
-
 extern void menuprocess();
 extern void addchange(const char *desc, int type, bool force = false);
 extern void clearchanges(int type);
@@ -747,4 +745,3 @@ namespace recorder
 #endif // STANDALONE
 
 #endif
-
