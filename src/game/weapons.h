@@ -192,7 +192,7 @@ WPVARK(0, collide, 0, COLLIDE_ALL,
     IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER|COLLIDE_TRACE,
     BOUNCE_GEOM|IMPACT_PLAYER|COLLIDE_TRACE|IMPACT_SHOTS|DRILL_PLAYER,
     IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_TRACE|COLLIDE_OWNER,
-    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_TRACE|COLLIDE_OWNER|STICK_GEOM,
+    IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_TRACE|COLLIDE_OWNER|STICK_GEOM|STICK_PLAYER,
     BOUNCE_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER,
     IMPACT_GEOM|IMPACT_SHOTS|COLLIDE_OWNER|STICK_GEOM,
     IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER|COLLIDE_TRACE|DRILL_PLAYER,
@@ -242,7 +242,7 @@ WPVARK(0, damage, VAR_MIN, VAR_MAX,
     30,         25,         30,         6,          16,         6,          18,         7,          33,         100,        100,        200,
     40,         35,         65,         6,          16,         10,         10,         12,         100,        100,        100,        200,
     30,         25,         30,         6,          16,         6,          18,         7,          10,         100,        100,        200,
-    40,         35,         65,         6,          4,          10,         10,         12,         10,         100,        100,        200
+    40,         35,         65,         6,          6,          10,         10,         12,         10,         100,        100,        200
 );
 WPFVARK(0, damagehead, FVAR_MIN, FVAR_MAX,
     1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,
@@ -678,8 +678,8 @@ WPVARK(0, residualundo, 0, WR_ALL,
     0,          0,          0,          0,          0,          WR(BURN),   0,          0,          0,          0,          0,          0
 );
 WPVARM(0, speed, 0, VAR_MAX,
-    0,          1500,       0,          1000,       2000,       400,        1200,       15000,       10000,      200,        100,        1000,
-    0,          1000,       0,          250,        750,        750,        85,         100000,      100000,     200,        100,        250
+    0,          1500,       0,          1000,       2000,       400,        950,        15000,       10000,      200,        100,        1000,
+    0,          1000,       0,          250,        1500,       750,        85,         100000,      100000,     200,        100,        250
 );
 WPFVARK(0, speeddelta, 0, FVAR_MAX,
     10.0f,      10.0f,      10.0f,      10.0f,      10.0f,      10.0f,      10.0f,      10.0f,      10.0f,      10.0f,      10.0f,      10.0f,
