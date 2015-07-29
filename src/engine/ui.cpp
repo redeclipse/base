@@ -12,7 +12,7 @@ enum {FIELDCOMMIT, FIELDABORT, FIELDEDIT, FIELDSHOW, FIELDKEY};
 static int fieldmode = FIELDSHOW;
 static bool fieldsactive = false;
 
-FVAR(IDF_PERSIST, guiscale, FVAR_MIN, 0.5f, VAR_MAX);
+FVAR(IDF_PERSIST, guiscale, FVAR_MIN, 0.35f, VAR_MAX);
 FVAR(IDF_PERSIST, guitextscale, FVAR_MIN, 2.75f, VAR_MAX);
 VAR(IDF_PERSIST, guiskinsize, 0, 0, VAR_MAX); // 0 = texture size, otherwise = size in pixels for skin scaling
 VAR(IDF_PERSIST, guislidersize, 1, 164, VAR_MAX);
@@ -1484,4 +1484,3 @@ namespace UI
         fieldmode = FIELDEDIT;
     }
 };
-
