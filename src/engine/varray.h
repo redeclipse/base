@@ -57,6 +57,21 @@ namespace varray
         data.put((const uchar *)v, N*sizeof(T)); 
     }
 
+    static inline void attrib(const vec2 &v)
+    {
+        attrib(v.x, v.y);
+    }
+
+    static inline void attrib(const vec &v)
+    {
+        attrib(v.x, v.y, v.z);
+    }
+
+    static inline void attrib(const vec4 &v)
+    {
+        attrib(v.x, v.y, v.z, v.w);
+    }
+
     extern int end();
     extern void disable();
 

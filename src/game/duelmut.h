@@ -8,7 +8,7 @@ struct duelservmode : servmode
     duelservmode() {}
 
     #define DSGS(x) DSG(gamemode, mutators, x)
-   
+
     void shrink()
     {
         allowed.shrink(0);
@@ -49,6 +49,18 @@ struct duelservmode : servmode
     {
         if(ci->state.actortype >= A_ENEMY || ci->state.state == CS_SPECTATOR) return;
         if(gamestate == G_S_OVERTIME && !restricted.empty() && restricted.find(ci) < 0) return;
+        if(DSGS(maxqueued) && duelqueue.find(ci) < 0 && playing.find(ci) < 0)
+        {
+            int count = 0;
+            loopv(duelqueue) if(duelqueue[i]->state.actortype == A_PLAYER) count++;
+            loopv(playing) if(playing[i]->state.actortype == A_PLAYER) count++;
+            if(count >= DSGS(maxqueued))
+            {
+                spectator(ci);
+                srvmsgft(ci->clientnum, CON_EVENT, "\fysorry, the \fs\fcqueue\fS is \fs\fzgcFULL\fS (max: \fs\fc%d\fS %s)", DSGS(maxqueued), DSGS(maxqueued) != 1 ? "players" : "player");
+                return;
+            }
+        }
         if(ci->state.actortype == A_PLAYER && waitforhumans) waitforhumans = false;
         int n = duelqueue.find(ci);
         if(top)

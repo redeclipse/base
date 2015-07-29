@@ -502,8 +502,6 @@ void rendereditcursor()
 
     boxoutline = false;
 
-    notextureshader->set();
-
     glDisable(GL_BLEND);
 }
 
@@ -2284,7 +2282,7 @@ struct texturegui : guicb
         if(autopreviewtexgui && texmru.inrange(rolltex)) curtex = rolltex;
         if(menupage > numpages) menupage = numpages;
         else if(menupage < 0) menupage = 0;
-        g.start(menustart, menuscale, NULL, true);
+        g.start(menustart, NULL, true);
         uilist(g, {
             g.space(2);
             if(g.button("\fgauto apply", 0xFFFFFF, autoapplytexgui ? "checkboxon" : "checkbox", 0xFFFFFF)&GUI_UP)
@@ -2417,12 +2415,13 @@ void rendertexturepanel(int w, int h)
 {
     if((texpaneltimer -= curtime)>0 && editmode)
     {
-        glLoadIdentity();
-        int width = w*1800/h;
-        glOrtho(0, width, 1800, 0, -1, 1);
-        int y = 50, gap = 10;
+        pushhudmatrix();
+        float width = w*1800.0f/h;
+        hudmatrix.ortho(0, width, 1800, 0, -1, 1);
+        flushhudmatrix(false);
+        SETSHADER(hudrgb);
 
-        SETSHADER(rgbonly);
+        int y = 50, gap = 10;
 
         loopi(7)
         {
@@ -2496,7 +2495,8 @@ void rendertexturepanel(int w, int h)
             y += s+gap;
         }
 
-        defaultshader->set();
+        pophudmatrix(true, false);
+        hudshader->set();
     }
     else texpaneltimer = 0;
 }

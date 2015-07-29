@@ -202,7 +202,7 @@ namespace entities
                                 case 24: case 25: case 26: addentinfo("plane-flat"); break;
                                 default: hasval = false; addentinfo("default"); break;
                             }
-                            if(hasval) switch(val%3)
+                            if(hasval) switch((val%32)%3)
                             {
                                 case 0: addentinfo("x-axis"); break;
                                 case 1: addentinfo("y-axis"); break;
@@ -2268,7 +2268,7 @@ namespace entities
     {
         if(rendermainview && shouldshowents(game::player1->state == CS_EDITING ? 1 : (!entgroup.empty() || ents.inrange(enthover) ? 2 : 3))) loopv(ents) // important, don't render lines and stuff otherwise!
             renderfocus(i, renderentshow(e, i, game::player1->state == CS_EDITING ? ((entgroup.find(i) >= 0 || enthover == i) ? 1 : 2) : 3));
-        if(!envmapping)
+        if(!drawtex)
         {
             int numents = m_edit(game::gamemode) ? ents.length() : lastuse(EU_ITEM);
             loopi(numents)
@@ -2462,6 +2462,7 @@ namespace entities
         loopi(numents)
         {
             gameentity &e = *(gameentity *)ents[i];
+            if(e.type == NOTUSED || e.attrs.empty()) continue;
             if(e.type != PARTICLES && e.type != TELEPORT && e.type != ROUTE && !m_edit(game::gamemode) && enttype[e.type].usetype != EU_ITEM) continue;
             else if(e.o.squaredist(camera1->o) > maxdist) continue;
             float skew = 1;
@@ -2488,6 +2489,7 @@ namespace entities
             projent &proj = *projs::projs[i];
             if(proj.projtype != PRJ_ENT || !ents.inrange(proj.id) || !proj.ready()) continue;
             gameentity &e = *(gameentity *)ents[proj.id];
+            if(e.type == NOTUSED || e.attrs.empty()) continue;
             float skew = 1;
             if(proj.fadetime && proj.lifemillis)
             {

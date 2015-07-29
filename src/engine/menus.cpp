@@ -2,7 +2,6 @@
 
 #include "engine.h"
 
-FVAR(IDF_PERSIST, menuscale, 0, 0.02f, 1);
 VAR(0, guipasses, 1, -1, -1);
 
 struct menu;
@@ -28,7 +27,7 @@ struct menu : guicb
         int oldflags = identflags;
         if(world && !builtin) identflags |= IDF_WORLD;
         if(initscript) execute(initscript);
-        cgui->start(menustart, menuscale, &menutab, useinput, usetitle, usebgfx);
+        cgui->start(menustart, &menutab, useinput, usetitle, usebgfx);
         cgui->tab(header ? header : name);
         if(contents) execute(contents);
         cgui->end();
@@ -802,7 +801,7 @@ static struct applymenu : menu
     void gui(guient &g, bool firstpass)
     {
         if(menustack.empty()) return;
-        g.start(menustart, menuscale, NULL, true);
+        g.start(menustart, NULL, true);
         g.text("the following settings have changed:");
         g.pushfont("little");
         loopv(needsapply) g.text(needsapply[i].desc, 0xFFFFFF, "point");

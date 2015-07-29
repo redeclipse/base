@@ -224,14 +224,6 @@ struct decalrenderer
     {
         if(startvert==endvert) return;
 
-        float oldfogc[4];
-        if(flags&(DF_ADD|DF_INVMOD|DF_OVERBRIGHT))
-        {
-            glGetFloatv(GL_FOG_COLOR, oldfogc);
-            static float zerofog[4] = { 0, 0, 0, 1 }, grayfog[4] = { 0.5f, 0.5f, 0.5f, 1 };
-            glFogfv(GL_FOG_COLOR, flags&DF_OVERBRIGHT ? grayfog : zerofog);
-        }
-
         if(flags&DF_OVERBRIGHT)
         {
             glBlendFunc(GL_DST_COLOR, GL_SRC_COLOR);
@@ -239,8 +231,8 @@ struct decalrenderer
         }
         else
         {
-            if(flags&DF_INVMOD) glBlendFunc(GL_ZERO, GL_ONE_MINUS_SRC_COLOR);
-            else if(flags&DF_ADD) glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_COLOR);
+            if(flags&DF_INVMOD) { glBlendFunc(GL_ZERO, GL_ONE_MINUS_SRC_COLOR); zerofogcolor(); }
+            else if(flags&DF_ADD) { glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_COLOR); setfogcolor(vec(0.5f, 0.5f, 0.5f)); }
             else glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
             if(flags&DF_SATURATE) SETSHADER(saturatedecal);
@@ -262,7 +254,7 @@ struct decalrenderer
         }
         xtravertsva += count;
 
-        if(flags&(DF_ADD|DF_INVMOD|DF_OVERBRIGHT)) glFogfv(GL_FOG_COLOR, oldfogc);
+        if(flags&(DF_ADD|DF_INVMOD)) resetfogcolor();
 
         extern int intel_vertexarray_bug;
         if(intel_vertexarray_bug) glFlush();

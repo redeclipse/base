@@ -987,13 +987,15 @@ namespace recorder
         state = REC_OK;
     }
 
-    void drawquad(float tw, float th, float x, float y, float w, float h)
+    void drawquad(float tw, float th, bool flip = false)
     {
+        float ty1 = 0, ty2 = th;
+        if(flip) swap(ty1, ty2);
         glBegin(GL_TRIANGLE_STRIP);
-        glTexCoord2f(0,  0);  glVertex2f(x,   y);
-        glTexCoord2f(tw, 0);  glVertex2f(x+w, y);
-        glTexCoord2f(0,  th); glVertex2f(x,   y+h);
-        glTexCoord2f(tw, th); glVertex2f(x+w, y+h);
+        glTexCoord2f(0,  ty1); glVertex2f(-1, -1);
+        glTexCoord2f(tw, ty1); glVertex2f( 1, -1);
+        glTexCoord2f(0,  ty2); glVertex2f(-1,  1);
+        glTexCoord2f(tw, ty2); glVertex2f( 1,  1);
         glEnd();
     }
 
@@ -1052,21 +1054,15 @@ namespace recorder
             if(tw > m.w || th > m.h || (!accelyuv && tw >= m.w && th >= m.h))
             {
                 glBindFramebuffer_(GL_FRAMEBUFFER, scalefb);
-                glViewport(0, 0, tw, th);
-                glColor3f(1, 1, 1);
-                glMatrixMode(GL_PROJECTION);
-                glLoadIdentity();
-                glOrtho(0, tw, 0, th, -1, 1);
-                glMatrixMode(GL_MODELVIEW);
-                glLoadIdentity();
                 do
                 {
-                    glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, scaletex[1], 0);
-                    glBindTexture(GL_TEXTURE_RECTANGLE, scaletex[0]);
                     uint dw = max(tw/2, m.w), dh = max(th/2, m.h);
+                    glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, scaletex[1], 0);
+                    glViewport(0, 0, dw, dh);
+                    glBindTexture(GL_TEXTURE_RECTANGLE, scaletex[0]);
                     if(dw == m.w && dh == m.h && !accelyuv) { SETSHADER(movieyuv); m.format = aviwriter::VID_YUV; }
                     else SETSHADER(moviergb);
-                    drawquad(tw, th, 0, 0, dw, dh);
+                    drawquad(tw, th);
                     tw = dw;
                     th = dh;
                     swap(scaletex[0], scaletex[1]);
@@ -1075,17 +1071,10 @@ namespace recorder
             if(accelyuv)
             {
                 glBindFramebuffer_(GL_FRAMEBUFFER, encodefb);
-                glViewport(0, 0, (m.w*3)/8, m.h);
-                glColor3f(1, 1, 1);
-                glMatrixMode(GL_PROJECTION);
-                glLoadIdentity();
-                glOrtho(0, (m.w*3)/8, m.h, 0, -1, 1);
-                glMatrixMode(GL_MODELVIEW);
-                glLoadIdentity();
                 glBindTexture(GL_TEXTURE_RECTANGLE, scaletex[0]);
-                SETSHADER(moviey); drawquad(m.w, m.h, 0, 0, m.w/4, m.h);
-                SETSHADER(moviev); drawquad(m.w, m.h, m.w/4, 0, m.w/8, m.h/2);
-                SETSHADER(movieu); drawquad(m.w, m.h, m.w/4, m.h/2, m.w/8, m.h/2);
+                glViewport(0, 0, m.w/4, m.h); SETSHADER(moviey); drawquad(m.w, m.h, true);
+                glViewport(m.w/4, 0, m.w/8, m.h/2); SETSHADER(movieu); drawquad(m.w, m.h, true);
+                glViewport(m.w/4, m.h/2, m.w/8, m.h/2); SETSHADER(moviev); drawquad(m.w, m.h, true);
                 const uint planesize = m.w * m.h;
                 glPixelStorei(GL_PACK_ALIGNMENT, texalign(m.video, m.w/4, 4));
                 glReadPixels(0, 0, m.w/4, m.h, GL_BGRA, GL_UNSIGNED_BYTE, m.video);
@@ -1138,17 +1127,12 @@ namespace recorder
         if(forceaspect) w = int(ceil(h*forceaspect));
         gettextres(w, h);
 
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
-        glOrtho(0, w, h, 0, -1, 1);
-        glMatrixMode(GL_MODELVIEW);
-        glLoadIdentity();
+        hudmatrix.ortho(0, w, h, 0, -1, 1);
+        hudmatrix.scale(1/3.0f, 1/3.0f, 1);
+        resethudmatrix();
+        hudshader->set();
 
         glEnable(GL_BLEND);
-        defaultshader->set();
-
-        glPushMatrix();
-        glScalef(1/3.0f, 1/3.0f, 1);
 
         double totalsize = file->filespaceguess();
         const char *unit = "KB";
@@ -1157,8 +1141,6 @@ namespace recorder
         else totalsize /= 1e3;
 
         draw_textx("recorded %.1f%s %d%%", w*3-FONTH*3/2, FONTH*3/2, 255, 255, 255, 255, TEXT_RIGHT_JUSTIFY, -1, -1, totalsize, unit, int(calcquality()*100));
-
-        glPopMatrix();
 
         glDisable(GL_BLEND);
     }

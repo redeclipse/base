@@ -3038,7 +3038,7 @@ namespace game
         if(d != focus && !(anim&ANIM_RAGDOLL)) flags |= MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_CULL_QUERY;
         if(early) flags |= MDL_NORENDER;
         else if(third && (anim&ANIM_INDEX)!=ANIM_DEAD) flags |= MDL_DYNSHADOW;
-        if(modelpreviewing) flags &= ~(MDL_LIGHT|MDL_FULLBRIGHT|MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_CULL_QUERY|MDL_CULL_DIST|MDL_DYNSHADOW);
+        if(drawtex == DRAWTEX_MODELPREVIEW) flags &= ~(MDL_LIGHT|MDL_FULLBRIGHT|MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_CULL_QUERY|MDL_CULL_DIST|MDL_DYNSHADOW);
         dynent *e = third ? (third != 2 ? (dynent *)d : (dynent *)&bodymodel) : (dynent *)&avatarmodel;
         if(e->light.millis != lastmillis)
         {
@@ -3299,7 +3299,7 @@ namespace game
                 animdelay = 300;
             }
         }
-        if(!early && third == 1 && d->actortype < A_ENEMY && !shadowmapping && !envmapping && (aboveheaddead || d->state == CS_ALIVE))
+        if(!early && third == 1 && d->actortype < A_ENEMY && !shadowmapping && !drawtex && (aboveheaddead || d->state == CS_ALIVE))
             renderabovehead(d, trans);
         const char *weapmdl = showweap && isweap(weap) ? (third ? weaptype[weap].vwep : weaptype[weap].hwep) : "";
         int ai = 0;
@@ -3554,15 +3554,13 @@ namespace game
     {
         bool third = thirdpersonview();
         if(rendernormally && early) focus->cleartags();
-        if(project && !third) viewproject(firstpersondepth);
+        if(project && !third) setavatarscale(firstpersondepth);
         if(third || !rendernormally) renderplayer(focus, 1, opacity(focus, thirdpersonview(true)), focus->curscale, early);
         else if(!third && focus->state == CS_ALIVE) renderplayer(focus, 0, opacity(focus, false), focus->curscale, early);
-        if(project && !third) viewproject();
         if(!third && focus->state == CS_ALIVE && firstpersonmodel == 2)
         {
-            if(project) viewproject(firstpersonbodydepth);
+            if(project) setavatarscale(firstpersonbodydepth);
             renderplayer(focus, 2, opacity(focus, false), focus->curscale, early);
-            if(project) viewproject();
         }
         if(rendernormally && early) rendercheck(focus, third);
     }

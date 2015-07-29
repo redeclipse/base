@@ -229,6 +229,14 @@ extern void gettextres(int &w, int &h);
 extern vec minimapcenter, minimapradius, minimapscale;
 extern void bindminimap();
 
+extern matrix4 hudmatrix;
+extern void resethudmatrix();
+extern void pushhudmatrix();
+extern void flushhudmatrix(bool flushparams = true);
+extern void pophudmatrix(bool flush = true, bool flushparams = true);
+extern void pushhudscale(float sx, float sy = 0);
+extern void pushhudtranslate(float tx, float ty, float sx = 0, float sy = 0);
+
 // renderparticles
 enum
 {
@@ -549,7 +557,7 @@ struct guient
 {
     virtual ~guient() {}
 
-    virtual void start(int starttime, float basescale, int *tab = NULL, bool allowinput = true, bool wantstitle = true, bool wantsbgfx = true) = 0;
+    virtual void start(int starttime, int *tab = NULL, bool allowinput = true, bool wantstitle = true, bool wantsbgfx = true) = 0;
     virtual void end() = 0;
 
     virtual int text(const char *text, int color = 0xFFFFFF, const char *icon = NULL, int icolor = 0xFFFFFF, int wrap = -1) = 0;

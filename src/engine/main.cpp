@@ -762,7 +762,7 @@ int lastprogress = 0;
 
 void progress(float bar1, const char *text1, float bar2, const char *text2)
 {
-    if(progressing || !inbetweenframes || envmapping) return;
+    if(progressing || !inbetweenframes || drawtex) return;
     int ticks = SDL_GetTicks();
     if(lastprogress > 0 && ticks < 0) lastprogress = 1-INT_MAX;
     if((actualvsync || !progressupdate || bar1 > 0) && ticks-lastprogress < progressdelay) return;

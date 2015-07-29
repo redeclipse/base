@@ -90,8 +90,7 @@ struct vec
 
     bool iszero() const { return x==0 && y==0 && z==0; }
     float squaredlen() const { return x*x + y*y + z*z; }
-    float dot2(const vec2 &o) const { return x*o.x + y*o.y; }
-    float dot2(const vec &o) const { return x*o.x + y*o.y; }
+    template<class T> float dot2(const T &o) const { return x*o.x + y*o.y; }
     float dot(const vec &o) const { return x*o.x + y*o.y + z*o.z; }
     float absdot(const vec &o) const { return fabs(x*o.x) + fabs(y*o.y) + fabs(z*o.z); }
     vec &mul(const vec &o)   { x *= o.x; y *= o.y; z *= o.z; return *this; }
@@ -163,11 +162,9 @@ struct vec
     vec &rotate_around_x(float angle) { return rotate_around_x(cosf(angle), sinf(angle)); }
     vec &rotate_around_y(float angle) { return rotate_around_y(cosf(angle), sinf(angle)); }
 
-    vec &rotate(float angle, const vec &d)
-    {
-        float c = cosf(angle), s = sinf(angle);
-        return rotate(c, s, d);
-    }
+    vec &rotate_around_z(const vec2 &sc) { return rotate_around_z(sc.x, sc.y); }
+    vec &rotate_around_x(const vec2 &sc) { return rotate_around_x(sc.x, sc.y); }
+    vec &rotate_around_y(const vec2 &sc) { return rotate_around_y(sc.x, sc.y); }
 
     vec &rotate(float c, float s, const vec &d)
     {
@@ -176,6 +173,8 @@ struct vec
                     x*(d.x*d.z*(1-c)-d.y*s) + y*(d.y*d.z*(1-c)+d.x*s) + z*(d.z*d.z*(1-c)+c));
         return *this;
     }
+    vec &rotate(float angle, const vec &d) { return rotate(cosf(angle), sinf(angle), d); }
+    vec &rotate(const vec2 &sc, const vec &d) { return rotate(sc.x, sc.y, d); }
 
     void orthogonal(const vec &d)
     {
@@ -520,6 +519,11 @@ struct dualquat
     vec transform(const vec &v) const
     {
         return vec().cross(real, vec().cross(real, v).add(vec(v).mul(real.w)).add(vec(dual))).add(vec(dual).mul(real.w)).sub(vec(real).mul(dual.w)).mul(2).add(v);
+    }
+
+    quat transform(const quat &q) const
+    {
+        return quat().mul(real, q);
     }
 
     vec transposedtransform(const vec &v) const
@@ -1158,10 +1162,14 @@ struct ivec
     ivec &min(int n) { x = ::min(x, n); y = ::min(y, n); z = ::min(z, n); return *this; }
     ivec &max(int n) { x = ::max(x, n); y = ::max(y, n); z = ::max(z, n); return *this; }
     ivec &abs() { x = ::abs(x); y = ::abs(y); z = ::abs(z); return *this; }
+    ivec &clamp(int l, int h) { x = ::clamp(x, l, h); y = ::clamp(y, l, h); z = ::clamp(z, l, h); return *this; }
     ivec &cross(const ivec &a, const ivec &b) { x = a.y*b.z-a.z*b.y; y = a.z*b.x-a.x*b.z; z = a.x*b.y-a.y*b.x; return *this; }
     int dot(const ivec &o) const { return x*o.x + y*o.y + z*o.z; }
     float dist(const plane &p) const { return x*p.x + y*p.y + z*p.z + p.offset; }
     static ivec fromcolor(int color) { return ivec(int((color>>16)&0xFF), int((color>>8)&0xFF), int(color&0xFF)); }
+
+    static inline ivec floor(const vec &o) { return ivec(int(::floor(o.x)), int(::floor(o.y)), int(::floor(o.z))); }
+    static inline ivec ceil(const vec &o) { return ivec(int(::ceil(o.x)), int(::ceil(o.y)), int(::ceil(o.z))); }
 };
 
 inline vec::vec(const ivec &v) : x(v.x), y(v.y), z(v.z) {}
@@ -1714,7 +1722,7 @@ struct matrix4
     template<class T, class U> T transformnormal(const U &in) const
     {
         T v;
-        transform(in, v);
+        transformnormal(in, v);
         return v;
     }
 
@@ -1757,6 +1765,11 @@ struct matrix4
     vec4 roww() const { return vec4(a.w, b.w, c.w, d.w); }
 
     bool invert(const matrix4 &m, double mindet = 1.0e-12);
+
+    vec2 lineardepthscale() const
+    {
+        return vec2(d.w, -d.z).div(c.z*d.w - d.z*c.w);
+    }
 };
 
 inline matrix3::matrix3(const matrix4 &m)
@@ -1775,6 +1788,29 @@ struct matrix2
     matrix2(const vec2 &a, const vec2 &b) : a(a), b(b) {}
     explicit matrix2(const matrix4 &m) : a(m.a), b(m.b) {}
     explicit matrix2(const matrix3 &m) : a(m.a), b(m.b) {}
+};
+
+struct squat
+{
+    short x, y, z, w;
+
+    squat() {}
+    squat(const vec4 &q) { convert(q); }
+
+    void convert(const vec4 &q)
+    {
+        x = short(q.x*32767.5f-0.5f);
+        y = short(q.y*32767.5f-0.5f);
+        z = short(q.z*32767.5f-0.5f);
+        w = short(q.w*32767.5f-0.5f);
+    }
+
+    void lerp(const vec4 &a, const vec4 &b, float t)
+    {
+        vec4 q;
+        q.lerp(a, b, t);
+        convert(q);
+    }
 };
 
 extern void vecfromyawpitch(float yaw, float pitch, int move, int strafe, vec &m);

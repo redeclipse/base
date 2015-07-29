@@ -1286,9 +1286,8 @@ namespace hud
         else index = POINTER_HAIR;
         if(index > POINTER_NONE)
         {
-            glMatrixMode(GL_PROJECTION);
-            glLoadIdentity();
-            glOrtho(0, hudwidth, hudheight, 0, -1, 1);
+            hudmatrix.ortho(0, hudwidth, hudheight, 0, -1, 1);
+            flushhudmatrix();
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             drawpointer(w, h, index);
@@ -1334,8 +1333,7 @@ namespace hud
 
     void drawnotices()
     {
-        glPushMatrix();
-        glScalef(noticescale, noticescale, 1);
+        pushhudscale(noticescale);
         int ty = int(((hudheight/2)+(hudheight/2*noticeoffset))/noticescale), tx = int((hudwidth/2)/noticescale),
             tf = int(255*hudblend*noticeblend), tr = 255, tg = 255, tb = 255,
             tw = int((hudwidth-((hudsize*edgesize)*2+(hudsize*inventoryleft)+(hudsize*inventoryright)))/noticescale);
@@ -1574,16 +1572,15 @@ namespace hud
             else if(m_bomber(game::gamemode)) bomber::drawnotices(hudwidth, hudheight, tx, ty, tf/255.f);
         }
         popfont();
-        glPopMatrix();
+        pophudmatrix();
     }
 
     void drawlast()
     {
         if(!progressing && showhud)
         {
-            glMatrixMode(GL_PROJECTION);
-            glLoadIdentity();
-            glOrtho(0, hudwidth, hudheight, 0, -1, 1);
+            hudmatrix.ortho(0, hudwidth, hudheight, 0, -1, 1);
+            flushhudmatrix();
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             if(commandmillis <= 0 && curcompass) rendercmenu();
@@ -1637,8 +1634,7 @@ namespace hud
                     refs.add(j);
                 }
             }
-            glPushMatrix();
-            glScalef(chatconscale, chatconscale, 1);
+            pushhudscale(chatconscale);
             int tx = int(x/chatconscale), ty = int(y/chatconscale),
                 ts = int(s/chatconscale), tr = tx+FONTW;
             tz = int(tz/chatconscale);
@@ -1651,7 +1647,7 @@ namespace hud
                     tz += draw_textx("%s %s", tr, ty-tz, 255, 255, 255, int(255*fade*f*g), TEXT_LEFT_UP, -1, ts, gettime(conlines[refs[j]].realtime, chatcondateformat), conlines[refs[j]].cref)*f;
                 else tz += draw_textx("%s", tr, ty-tz, 255, 255, 255, int(255*fade*f*g), TEXT_LEFT_UP, -1, ts, conlines[refs[j]].cref)*f;
             }
-            glPopMatrix();
+            pophudmatrix();
             tz = int(tz*chatconscale);
         }
         else
@@ -1688,8 +1684,7 @@ namespace hud
                         refs.add(j);
                     }
                 }
-                glPushMatrix();
-                glScalef(conscale, conscale, 1);
+                pushhudscale(conscale);
                 int tx = int(x/conscale), ty = int(y/conscale),
                     ts = int(s/conscale), tr = concenter ? tx+ts/2 : tx;
                 tz = int(tz/conscale);
@@ -1702,7 +1697,7 @@ namespace hud
                         tz += draw_textx("%s %s", tr, ty+tz, 255, 255, 255, int(255*fade*f*g), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, ts, gettime(conlines[refs[i]].realtime, condateformat), conlines[refs[i]].cref)*f;
                     else tz += draw_textx("%s", tr, ty+tz, 255, 255, 255, int(255*fade*f*g), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, ts, conlines[refs[i]].cref)*f;
                 }
-                glPopMatrix();
+                pophudmatrix();
                 tz = int(tz*conscale);
             }
             if(commandmillis > 0)
@@ -1713,8 +1708,7 @@ namespace hud
                 if(commandcolour) c = vec::hexcolor(commandcolour);
                 float f = float(totalmillis%1000)/1000.f;
                 if(f < 0.5f) f = 1.f-f;
-                glPushMatrix();
-                glScalef(commandscale, commandscale, 1);
+                pushhudscale(commandscale);
                 float th = FONTH, tw = float(t->w)/float(t->h)*th;
                 int tx = int(x/commandscale), ty = int(y/commandscale),
                     ts = int(s/commandscale), tq = (concenter ? tx+ts/2-FONTW*3 : tx), tr = int(tw+FONTW), tt = ts-(FONTH+FONTW);
@@ -1821,7 +1815,7 @@ namespace hud
                         }
                     }
                 }
-                glPopMatrix();
+                pophudmatrix();
                 //tz = int(tz*commandscale);
             }
         }
@@ -2204,14 +2198,13 @@ namespace hud
         drawslice(start, length, cx, cy, cs);
         if(text && *text)
         {
-            glPushMatrix();
-            glScalef(skew, skew, 1);
+            pushhudscale(skew);
             if(font && *font) pushfont(font);
             int tx = int(cx/skew), ty = int((cy-FONTH/2*skew)/skew), ti = int(255.f*fade);
             defvformatstring(str, text, text);
             draw_textx("%s", tx, ty, 255, 255, 255, ti, TEXT_CENTERED, -1, -1, str);
             if(font && *font) popfont();
-            glPopMatrix();
+            pophudmatrix();
         }
         return int(s);
     }
@@ -2315,8 +2308,7 @@ namespace hud
         drawtexture(left ? cx : cx-cw, cy-cs, cw, cs);
         if(text && *text)
         {
-            glPushMatrix();
-            glScalef(skew, skew, 1);
+            pushhudscale(skew);
             if(font && *font) pushfont(font);
             int ox = int(cw*inventorytextoffsetx), oy = int(cs*inventorytextoffsety),
                 tx = int((left ? (cx+cw-ox) : (cx-cw+ox))/skew),
@@ -2324,7 +2316,7 @@ namespace hud
             defvformatstring(str, text, text);
             draw_textx("%s", tx, ty, 255, 255, 255, int(255*fade), tj|TEXT_NO_INDENT, -1, -1, str);
             if(font && *font) popfont();
-            glPopMatrix();
+            pophudmatrix();
         }
         return sy;
     }
@@ -2332,8 +2324,7 @@ namespace hud
     int drawitemtextx(int x, int y, float size, int align, float skew, const char *font, float blend, const char *text, ...)
     {
         if(skew <= 0.f) return 0;
-        glPushMatrix();
-        glScalef(skew, skew, 1);
+        pushhudscale(skew);
         if(font && *font) pushfont(font);
         int cx = x, cy = y;
         if(inventorybg && size > 0)
@@ -2347,7 +2338,7 @@ namespace hud
             ty = int(cy/skew), ti = int(255.f*blend),
             sy = draw_textx("%s", tx, ty, 255, 255, 255, ti, align|TEXT_NO_INDENT, -1, -1, str)*skew;
         if(font && *font) popfont();
-        glPopMatrix();
+        pophudmatrix();
         return sy;
     }
 
@@ -3220,8 +3211,7 @@ namespace hud
         {
             ty /= noticescale;
             tx /= noticescale;
-            glPushMatrix();
-            glScalef(noticescale, noticescale, 1);
+            pushhudscale(noticescale);
             pushfont("huge");
             const char *col = teamnotices >= 2 ? "\fs\fzyS" : "";
             int tf = int(255*hudblend*noticeblend), tr = 255, tg = 255, tb = 255,
@@ -3231,7 +3221,7 @@ namespace hud
             else if(!m_team(game::gamemode, game::mutators)) ty -= draw_textx("%sFree-for-all %s", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, -1, col, m_bomber(game::gamemode) ? "Bomber-ball" : "Deathmatch");
             else ty -= draw_textx("%sYou are on team %s", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, tw, col, game::colourteam(game::focus->team));
             popfont();
-            glPopMatrix();
+            pophudmatrix();
             ty *= noticescale;
             tx *= noticescale;
         }
@@ -3239,8 +3229,7 @@ namespace hud
         {
             ty /= eventscale;
             tx /= eventscale;
-            glPushMatrix();
-            glScalef(eventscale, eventscale, 1);
+            pushhudscale(eventscale);
             pushfont("emphasis");
             loopv(game::focus->icons)
             {
@@ -3271,7 +3260,7 @@ namespace hud
                 }
             }
             popfont();
-            glPopMatrix();
+            pophudmatrix();
             //ty *= eventscale;
             //tx *= eventscale; // don't really care
         }
@@ -3279,8 +3268,8 @@ namespace hud
 
     void drawhud(bool noview)
     {
-        glLoadIdentity();
-        glOrtho(0, hudwidth, hudheight, 0, -1, 1);
+        hudmatrix.ortho(0, hudwidth, hudheight, 0, -1, 1);
+        flushhudmatrix();
 
         float fade = hudblend, consolefade = hudblend;
         if(!progressing)
