@@ -49,6 +49,19 @@ struct duelservmode : servmode
     {
         if(ci->state.actortype >= A_ENEMY || ci->state.state == CS_SPECTATOR) return;
         if(gamestate == G_S_OVERTIME && !restricted.empty() && restricted.find(ci) < 0) return;
+        if(DSGS(maxqueued) && duelqueue.find(ci) < 0 && playing.find(ci) < 0)
+        {
+            int player_cnt = 0;
+            loopv(duelqueue) if(duelqueue[i]->state.actortype == A_PLAYER) player_cnt++;
+            loopv(playing) if(playing[i]->state.actortype == A_PLAYER) player_cnt++;
+            if(player_cnt >= DSGS(maxqueued))
+            {
+                spectator(ci);
+                srvmsgft(ci->clientnum, CON_EVENT, "\fyyou \fs\fzgcCAN NOT\fS be queued. %s is \fs\fcFULL\fS. %d players maximum\fS",
+                            m_duel(gamemode, mutators) ? "duel" : "survivor", DSGS(maxqueued));
+                return;
+            }
+        }
         if(ci->state.actortype == A_PLAYER && waitforhumans) waitforhumans = false;
         int n = duelqueue.find(ci);
         if(top)
