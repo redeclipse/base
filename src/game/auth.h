@@ -79,8 +79,8 @@ VAR(IDF_PERSIST, authconnect, 0, 1, 1);
 SVAR(IDF_PERSIST, accountname, "");
 SVAR(IDF_PERSIST, accountpass, "");
 ICOMMAND(0, authkey, "ss", (char *name, char *key), {
-	setsvar("accountname", name);
-	setsvar("accountpass", key);
+    setsvar("accountname", name);
+    setsvar("accountpass", key);
 });
 
 namespace auth
@@ -94,13 +94,13 @@ namespace auth
         loopv(connects) if(connects[i]->authreq == id) return connects[i];
         return NULL;
     }
-    
+
     void reqserverauth()
     {
         if(connectedmaster() && *accountpass && authconnect)
         {
-			requestmasterf("reqserverauth %s\n", accountname);
-		}
+            requestmasterf("reqserverauth %s\n", accountname);
+        }
     }
 
     void reqauth(clientinfo *ci)
@@ -257,13 +257,13 @@ namespace auth
     
     void serverauthfailed()
     {
-		conoutf("server auth request failed");
-	}
-	
-	void serverauthsucceeded(const char *name, const char *flags)
-	{
-		conoutf("server auth succeeded, now have flags %s", flags);
-	}
+        conoutf("server auth request failed");
+    }
+    
+    void serverauthsucceeded(const char *name, const char *flags)
+    {
+        conoutf("server auth succeeded, now have flags %s", flags);
+    }
 
     void authsucceeded(uint id, const char *name, const char *flags)
     {
@@ -320,7 +320,7 @@ namespace auth
     
     void serverauthchallenged(const char *text)
     {
-		vector<char> buf;
+        vector<char> buf;
         answerchallenge(accountpass, text, buf);
         char *val = newstring(buf.getbuf());
         for(char *s = val; *s; s++)
@@ -373,17 +373,17 @@ namespace auth
         }
         else if(!strcmp(w[0], "stats"))
         {
-			if(!strcmp(w[1], "success"))
-			{
-				simpledecode(msg, w[2]);
-				srvoutf(-3, "%s", msg);
-			}
-			else if(!strcmp(w[1], "failure"))
-			{
-				simpledecode(msg, w[2]);
-				srvoutf(-3, "%s", msg);
-			}
-		}
+            if(!strcmp(w[1], "success"))
+            {
+                simpledecode(msg, w[2]);
+                srvoutf(-3, "%s", msg);
+            }
+            else if(!strcmp(w[1], "failure"))
+            {
+                simpledecode(msg, w[2]);
+                srvoutf(-3, "%s", msg);
+            }
+        }
         else loopj(ipinfo::SYNCTYPES) if(!strcmp(w[0], ipinfotypes[j]))
         {
             ipinfo &c = control.add();

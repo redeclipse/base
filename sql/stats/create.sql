@@ -3,12 +3,12 @@
 */
 
 CREATE TABLE games (
-	id INTEGER PRIMARY KEY AUTOINCREMENT,
-	time INTEGER,
-	map TEXT,
-	mode INTEGER,
-	mutators INTEGER,
-	timeplayed INTEGER
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    time INTEGER,
+    map TEXT,
+    mode INTEGER,
+    mutators INTEGER,
+    timeplayed INTEGER
 );
 
 CREATE TABLE game_servers (
@@ -39,24 +39,24 @@ CREATE TABLE game_players (
 );
 
 CREATE TABLE game_weapons (
-	game INTEGER,
-	player TEXT,
-	weapon TEXT,
-	
-	timewielded INTEGER,
-	timeloadout INTEGER,
-	
-	damage1 INTEGER,
-	frags1 INTEGER,
-	hits1 INTEGER,
-	flakhits1 INTEGER,
-	shots1 INTEGER,
-	flakshots1 INTEGER,
-	
-	damage2 INTEGER,
-	frags2 INTEGER,
-	hits2 INTEGER,
-	flakhits2 INTEGER,
-	shots2 INTEGER,
-	flakshots2 INTEGER
+    game INTEGER,
+    player TEXT,
+    weapon TEXT,
+    
+    timewielded INTEGER,
+    timeloadout INTEGER,
+    
+    damage1 INTEGER,
+    frags1 INTEGER,
+    hits1 INTEGER,
+    flakhits1 INTEGER,
+    shots1 INTEGER,
+    flakshots1 INTEGER,
+    
+    damage2 INTEGER,
+    frags2 INTEGER,
+    hits2 INTEGER,
+    flakhits2 INTEGER,
+    shots2 INTEGER,
+    flakshots2 INTEGER
 );

@@ -65,48 +65,48 @@ struct masterclient
     
     struct statstate
     {
-		//Game
-		sqlite3_int64 id;
-		string map;
-		int mode, mutators, timeplayed;
-		time_t time;
-		//Server
-		string desc;
-		string version;
-		int port;
-		//Teams
-		struct team
-		{
-			int index, score;
-			string name;
-		};
-		vector<team> teams;
-		//Players
-		struct player
-		{
-			string name;
-			string handle;
-			int score, timeplayed, frags, deaths;
-		};
-		vector<player> players;
-		//Weapons
-	} stats;
+        //Game
+        sqlite3_int64 id;
+        string map;
+        int mode, mutators, timeplayed;
+        time_t time;
+        //Server
+        string desc;
+        string version;
+        int port;
+        //Teams
+        struct team
+        {
+            int index, score;
+            string name;
+        };
+        vector<team> teams;
+        //Players
+        struct player
+        {
+            string name;
+            string handle;
+            int score, timeplayed, frags, deaths;
+        };
+        vector<player> players;
+        //Weapons
+    } stats;
     
-	bool instats;
-	
-	bool hasflag(char f)
-	{
-		//Any flag implies 'b'
-		if(f == 'b' && *flags)
-			return true;
-		size_t i;
-		for(i = 0; i < strlen(flags); i++)
-		{
-			if(flags[i] == f)
-				return true;
-		}
-		return false;
-	}
+    bool instats;
+    
+    bool hasflag(char f)
+    {
+        //Any flag implies 'b'
+        if(f == 'b' && *flags)
+            return true;
+        size_t i;
+        for(i = 0; i < strlen(flags); i++)
+        {
+            if(flags[i] == f)
+                return true;
+        }
+        return false;
+    }
 
     masterclient() : inputpos(0), outputpos(0), port(MASTER_PORT), numpings(0), lastcontrol(-1), version(0), lastping(0), lastpong(0), lastactivity(0), isserver(false), isquick(false), ishttp(false), listserver(false), shouldping(false), shouldpurge(false), instats(false) {}
 };
@@ -118,28 +118,28 @@ static sqlite3 *statsdb = NULL;
 
 void closestatsdb()
 {
-	if(statsdb)
-	{
-		sqlite3_close(statsdb);
-		statsdb = NULL;
-	}
+    if(statsdb)
+    {
+        sqlite3_close(statsdb);
+        statsdb = NULL;
+    }
 }
 
 bool checkstatsdb(int rc, char *err_msg=NULL)
 {
-	if(rc == SQLITE_OK)
-		return true;
-	defformatbigstring(message, "%s", err_msg ? err_msg : sqlite3_errmsg(statsdb));
-	sqlite3_free(err_msg);
-	closestatsdb();
-	fatal("statistics database error: %s", message);
-	return false;
+    if(rc == SQLITE_OK)
+        return true;
+    defformatbigstring(message, "%s", err_msg ? err_msg : sqlite3_errmsg(statsdb));
+    sqlite3_free(err_msg);
+    closestatsdb();
+    fatal("statistics database error: %s", message);
+    return false;
 }
 
 void statsdbexecf(const char *fmt, ...)
 {
-	char *err_msg = NULL;
-	va_list al;
+    char *err_msg = NULL;
+    va_list al;
     va_start(al, fmt);
     char *sql = sqlite3_vmprintf(fmt, al);
     int rc = sqlite3_exec(statsdb, sql, 0, 0, &err_msg);
@@ -150,51 +150,51 @@ void statsdbexecf(const char *fmt, ...)
 
 void statsdbexecfile(const char *path)
 {
-	char *err_msg = NULL;
-	char *buf = loadfile(path, NULL);
-	if(!buf)
-	{
-		fatal("cannot find %s", path);
-		closestatsdb();
-	}
-	int rc = sqlite3_exec(statsdb, buf, 0, 0, &err_msg);
-	checkstatsdb(rc, err_msg);
-	DELETEA(buf);
+    char *err_msg = NULL;
+    char *buf = loadfile(path, NULL);
+    if(!buf)
+    {
+        fatal("cannot find %s", path);
+        closestatsdb();
+    }
+    int rc = sqlite3_exec(statsdb, buf, 0, 0, &err_msg);
+    checkstatsdb(rc, err_msg);
+    DELETEA(buf);
 }
 
 int statsdbversion()
 {
-	int version = 0;
-	sqlite3_stmt *res;
-	checkstatsdb(sqlite3_prepare_v2(statsdb, "PRAGMA user_version;", -1, &res, 0));
-	while(sqlite3_step(res) == SQLITE_ROW)
-	{
-		version = sqlite3_column_int(res, 0);
-	}
-	sqlite3_finalize(res);
-	return version;
+    int version = 0;
+    sqlite3_stmt *res;
+    checkstatsdb(sqlite3_prepare_v2(statsdb, "PRAGMA user_version;", -1, &res, 0));
+    while(sqlite3_step(res) == SQLITE_ROW)
+    {
+        version = sqlite3_column_int(res, 0);
+    }
+    sqlite3_finalize(res);
+    return version;
 }
 
 void loadstatsdb()
 {
-	checkstatsdb(sqlite3_open(findfile("stats.sqlite", "w"), &statsdb));
-	statsdbexecf("BEGIN");
-	if(statsdbversion() < 1)
-	{
-		statsdbexecfile("sql/stats/create.sql");
-		statsdbexecf("PRAGMA user_version = %d;", STATSDB_VERSION);
-		conoutf("created statistics database");
-	}
-	while(statsdbversion() < STATSDB_VERSION)
-	{
-		int ver = statsdbversion();
-		defformatstring(path, "sql/stats/upgrade_%d.sql", ver);
-		statsdbexecfile(path);
-		statsdbexecf("PRAGMA user_version = %d;", ver + 1);
-		conoutf("upgraded database from %d to %d", ver, statsdbversion());
-	}
-	statsdbexecf("COMMIT");
-	conoutf("statistics database loaded");
+    checkstatsdb(sqlite3_open(findfile("stats.sqlite", "w"), &statsdb));
+    statsdbexecf("BEGIN");
+    if(statsdbversion() < 1)
+    {
+        statsdbexecfile("sql/stats/create.sql");
+        statsdbexecf("PRAGMA user_version = %d;", STATSDB_VERSION);
+        conoutf("created statistics database");
+    }
+    while(statsdbversion() < STATSDB_VERSION)
+    {
+        int ver = statsdbversion();
+        defformatstring(path, "sql/stats/upgrade_%d.sql", ver);
+        statsdbexecfile(path);
+        statsdbexecf("PRAGMA user_version = %d;", ver + 1);
+        conoutf("upgraded database from %d to %d", ver, statsdbversion());
+    }
+    statsdbexecf("COMMIT");
+    conoutf("statistics database loaded");
 }
 
 bool setuppingsocket(ENetAddress *address)
@@ -350,7 +350,7 @@ void reqserverauth(masterclient &c, char *name)
         return;
     }
     conoutf("attempting server '%s'\n", name);
-	
+    
     c.serverauthreq.user = u;
     c.serverauthreq.reqtime = totalmillis;
     uint seed[3] = { uint(starttime), uint(totalmillis), randomMT() };
@@ -398,24 +398,24 @@ void confserverauth(masterclient &c, const char *val)
 {
     string ip;
     if(enet_address_get_host_ip(&c.address, ip, sizeof(ip)) < 0) copystring(ip, "-");
-	if(checkchallenge(val, c.serverauthreq.answer))
-	{
-		loopvj(masterclients) if(!(!strcmp(c.name, masterclients[j]->name) && c.port == masterclients[j]->port))
-		{
-			if(!strcmp(masterclients[j]->authhandle, c.serverauthreq.user->name))
-				purgemasterclient(j);
-		}
-		masteroutf(c, "succserverauth \"%s\" \"%s\"\n", c.serverauthreq.user->name, c.serverauthreq.user->flags);
-		conoutf("succeeded server '%s' [%s]\n", c.serverauthreq.user->name, c.serverauthreq.user->flags);
-		copystring(c.authhandle, c.serverauthreq.user->name);
-		copystring(c.flags, c.serverauthreq.user->flags);
-	}
-	else
-	{
-		masteroutf(c, "failserverauth\n");
-		conoutf("failed server '%s' (BADKEY)\n", c.serverauthreq.user->name);
-	}
-	freechallenge(c.serverauthreq.answer);
+    if(checkchallenge(val, c.serverauthreq.answer))
+    {
+        loopvj(masterclients) if(!(!strcmp(c.name, masterclients[j]->name) && c.port == masterclients[j]->port))
+        {
+            if(!strcmp(masterclients[j]->authhandle, c.serverauthreq.user->name))
+                purgemasterclient(j);
+        }
+        masteroutf(c, "succserverauth \"%s\" \"%s\"\n", c.serverauthreq.user->name, c.serverauthreq.user->flags);
+        conoutf("succeeded server '%s' [%s]\n", c.serverauthreq.user->name, c.serverauthreq.user->flags);
+        copystring(c.authhandle, c.serverauthreq.user->name);
+        copystring(c.flags, c.serverauthreq.user->flags);
+    }
+    else
+    {
+        masteroutf(c, "failserverauth\n");
+        conoutf("failed server '%s' (BADKEY)\n", c.serverauthreq.user->name);
+    }
+    freechallenge(c.serverauthreq.answer);
 }
 
 void checkmasterpongs()
@@ -573,8 +573,8 @@ bool checkmasterclientinput(masterclient &c)
                 masteroutf(c, "addserver %s %d\n", s.name, s.port);
                 if(*s.authhandle)
                 {
-					masteroutf(c, "authserver %s %d %s\n", s.name, s.port, s.authhandle);
-				}
+                    masteroutf(c, "authserver %s %d %s\n", s.name, s.port, s.authhandle);
+                }
                 servs++;
             }
             conoutf("master peer %s was sent %d server(s)", c.name, servs);
@@ -582,115 +582,115 @@ bool checkmasterclientinput(masterclient &c)
         }
         if(c.isserver && !strcmp(w[0], "stats"))
         {
-			if(!strcmp(w[1], "begin"))
-			{
-				if(c.hasflag('s'))
-				{
-					conoutf("master peer %s began sending stats", c.name);
-					c.instats = true;
-				}
-				else
-				{
-					conoutf("master peer %s attempted to send stats without proper privilege", c.name);
-					simpleencode(msg_enc, "\frstatistics not submitted, no statistics privilege");
-					masteroutf(c, "stats failure %s\n", msg_enc);
-				}
-			}
-			else if(c.instats)
-			{
-				if(!strcmp(w[1], "end"))
-				{
-					statsdbexecf("BEGIN");
-					statsdbexecf("INSERT INTO games VALUES (NULL, %d, %Q, %d, %d, %d)",
-						c.stats.time,
-						c.stats.map,
-						c.stats.mode,
-						c.stats.mutators,
-						c.stats.timeplayed
-						);
-					c.stats.id = sqlite3_last_insert_rowid(statsdb);
-					
-					statsdbexecf("INSERT INTO game_servers VALUES (%d, %Q, %Q, %Q, %Q, %Q, %d)",
-						c.stats.id,
-						c.authhandle,
-						c.flags,
-						c.stats.desc,
-						c.stats.version,
-						c.name,
-						c.stats.port
-						);
-						
-					loopv(c.stats.teams)
-					{
-						statsdbexecf("INSERT INTO game_teams VALUES (%d, %d, %d, %Q)",
-							c.stats.id,
-							c.stats.teams[i].index,
-							c.stats.teams[i].score,
-							c.stats.teams[i].name
-							);
-					}
-					
-					loopv(c.stats.players)
-					{
-						statsdbexecf("INSERT INTO game_players VALUES (%d, %Q, %Q, %d, %d, %d, %d)",
-							c.stats.id,
-							c.stats.players[i].name,
-							c.stats.players[i].handle,
-							c.stats.players[i].score,
-							c.stats.players[i].timeplayed,
-							c.stats.players[i].frags,
-							c.stats.players[i].deaths
-						);
-					}
-						
-					statsdbexecf("COMMIT");
-					conoutf("master peer %s commited stats, game id %lli", c.name, c.stats.id);
-					defformatstring(msg, "\fygame statistics recorded, id \fc%lli", c.stats.id);
-					simpleencode(msg_enc, msg);
-					masteroutf(c, "stats success %s\n", msg_enc);
-					c.instats = false;
-				}
-				else if(!strcmp(w[1], "game"))
-				{
-					simpledecode(mapname_dec, w[2]);
-					copystring(c.stats.map, mapname_dec);
-					c.stats.mode = (int)strtol(w[3], NULL, 10);
-					c.stats.mutators = (int)strtol(w[4], NULL, 10);
-					c.stats.timeplayed = (int)strtol(w[5], NULL, 10);
-					c.stats.time = currenttime;
-				}
-				else if(!strcmp(w[1], "server"))
-				{
-					simpledecode(desc_dec, w[2]);
-					copystring(c.stats.desc, desc_dec);
-					copystring(c.stats.version, w[3]);
-					c.stats.port = (int)strtol(w[4], NULL, 10);
-				}
-				else if(!strcmp(w[1], "team"))
-				{
-					masterclient::statstate::team t;
-					t.index = (int)strtol(w[2], NULL, 10);
-					t.score = (int)strtol(w[3], NULL, 10);
-					simpledecode(name_dec, w[4]);
-					copystring(t.name, name_dec);
-					c.stats.teams.add(t);
-				}
-				else if(!strcmp(w[1], "player"))
-				{
-					masterclient::statstate::player p;
-					simpledecode(name_dec, w[2]);
-					copystring(p.name, name_dec);
-					simpledecode(handle_dec, w[3]);
-					copystring(p.handle, handle_dec);
-					p.score = (int)strtol(w[4], NULL, 10);
-					p.timeplayed = (int)strtol(w[5], NULL, 10);
-					p.frags = (int)strtol(w[6], NULL, 10);
-					p.deaths = (int)strtol(w[7], NULL, 10);
-					c.stats.players.add(p);
-				}
-			}
-			found = true;
-		}
+            if(!strcmp(w[1], "begin"))
+            {
+                if(c.hasflag('s'))
+                {
+                    conoutf("master peer %s began sending stats", c.name);
+                    c.instats = true;
+                }
+                else
+                {
+                    conoutf("master peer %s attempted to send stats without proper privilege", c.name);
+                    simpleencode(msg_enc, "\frstatistics not submitted, no statistics privilege");
+                    masteroutf(c, "stats failure %s\n", msg_enc);
+                }
+            }
+            else if(c.instats)
+            {
+                if(!strcmp(w[1], "end"))
+                {
+                    statsdbexecf("BEGIN");
+                    statsdbexecf("INSERT INTO games VALUES (NULL, %d, %Q, %d, %d, %d)",
+                        c.stats.time,
+                        c.stats.map,
+                        c.stats.mode,
+                        c.stats.mutators,
+                        c.stats.timeplayed
+                        );
+                    c.stats.id = sqlite3_last_insert_rowid(statsdb);
+                    
+                    statsdbexecf("INSERT INTO game_servers VALUES (%d, %Q, %Q, %Q, %Q, %Q, %d)",
+                        c.stats.id,
+                        c.authhandle,
+                        c.flags,
+                        c.stats.desc,
+                        c.stats.version,
+                        c.name,
+                        c.stats.port
+                        );
+                        
+                    loopv(c.stats.teams)
+                    {
+                        statsdbexecf("INSERT INTO game_teams VALUES (%d, %d, %d, %Q)",
+                            c.stats.id,
+                            c.stats.teams[i].index,
+                            c.stats.teams[i].score,
+                            c.stats.teams[i].name
+                            );
+                    }
+                    
+                    loopv(c.stats.players)
+                    {
+                        statsdbexecf("INSERT INTO game_players VALUES (%d, %Q, %Q, %d, %d, %d, %d)",
+                            c.stats.id,
+                            c.stats.players[i].name,
+                            c.stats.players[i].handle,
+                            c.stats.players[i].score,
+                            c.stats.players[i].timeplayed,
+                            c.stats.players[i].frags,
+                            c.stats.players[i].deaths
+                        );
+                    }
+                        
+                    statsdbexecf("COMMIT");
+                    conoutf("master peer %s commited stats, game id %lli", c.name, c.stats.id);
+                    defformatstring(msg, "\fygame statistics recorded, id \fc%lli", c.stats.id);
+                    simpleencode(msg_enc, msg);
+                    masteroutf(c, "stats success %s\n", msg_enc);
+                    c.instats = false;
+                }
+                else if(!strcmp(w[1], "game"))
+                {
+                    simpledecode(mapname_dec, w[2]);
+                    copystring(c.stats.map, mapname_dec);
+                    c.stats.mode = (int)strtol(w[3], NULL, 10);
+                    c.stats.mutators = (int)strtol(w[4], NULL, 10);
+                    c.stats.timeplayed = (int)strtol(w[5], NULL, 10);
+                    c.stats.time = currenttime;
+                }
+                else if(!strcmp(w[1], "server"))
+                {
+                    simpledecode(desc_dec, w[2]);
+                    copystring(c.stats.desc, desc_dec);
+                    copystring(c.stats.version, w[3]);
+                    c.stats.port = (int)strtol(w[4], NULL, 10);
+                }
+                else if(!strcmp(w[1], "team"))
+                {
+                    masterclient::statstate::team t;
+                    t.index = (int)strtol(w[2], NULL, 10);
+                    t.score = (int)strtol(w[3], NULL, 10);
+                    simpledecode(name_dec, w[4]);
+                    copystring(t.name, name_dec);
+                    c.stats.teams.add(t);
+                }
+                else if(!strcmp(w[1], "player"))
+                {
+                    masterclient::statstate::player p;
+                    simpledecode(name_dec, w[2]);
+                    copystring(p.name, name_dec);
+                    simpledecode(handle_dec, w[3]);
+                    copystring(p.handle, handle_dec);
+                    p.score = (int)strtol(w[4], NULL, 10);
+                    p.timeplayed = (int)strtol(w[5], NULL, 10);
+                    p.frags = (int)strtol(w[6], NULL, 10);
+                    p.deaths = (int)strtol(w[7], NULL, 10);
+                    c.stats.players.add(p);
+                }
+            }
+            found = true;
+        }
         if(c.isserver || c.isquick)
         {
             if(!strcmp(w[0], "reqauth")) { reqauth(c, uint(atoi(w[1])), w[2], w[3]); found = true; }

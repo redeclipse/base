@@ -1435,14 +1435,14 @@ extern char *stringtonumbers(const char *str);
 extern char *numberstostring(const char *numbers);
 
 #define simpleencode(v, s) \
-		char *v ## _tmp = stringtonumbers(s); \
-		defformatstring(v, "%s", v ## _tmp); \
-		DELETEA(v ## _tmp);
-		
+    char *v ## _tmp = stringtonumbers(s); \
+    defformatstring(v, "%s", v ## _tmp); \
+    DELETEA(v ## _tmp);
+        
 #define simpledecode(v, s) \
-		char *v ## _tmp = numberstostring(s); \
-		defformatstring(v, "%s", v ## _tmp); \
-		DELETEA(v ## _tmp);
+    char *v ## _tmp = numberstostring(s); \
+    defformatstring(v, "%s", v ## _tmp); \
+    DELETEA(v ## _tmp);
 
 extern char *makerelpath(const char *dir, const char *file, const char *prefix = NULL, const char *cmd = NULL);
 extern char *makefile(const char *s, const char *e = "", int revision = 0, int start = 1, bool store = false, bool skip = false);

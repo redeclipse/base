@@ -195,17 +195,17 @@ namespace server
     
     struct weaponstats
     {
-		string name;
-		int timewielded, timeloadout;
-		int hits1, hits2, flakhits1, flakhits2;
-		int shots1, shots2, flakshots1, flakshots2;
-		int frags1, frags2, damage1, damage2;
-		
-		weaponstats() : timewielded(0), timeloadout(0),
-			hits1(0), hits2(0), flakhits1(0), flakhits2(0),
-			shots1(0), shots2(0), flakshots1(0), flakshots2(0),
-			frags1(0), frags2(0), damage1(0), damage2(0) {};
-	};
+        string name;
+        int timewielded, timeloadout;
+        int hits1, hits2, flakhits1, flakhits2;
+        int shots1, shots2, flakshots1, flakshots2;
+        int frags1, frags2, damage1, damage2;
+        
+        weaponstats() : timewielded(0), timeloadout(0),
+            hits1(0), hits2(0), flakhits1(0), flakhits2(0),
+            shots1(0), shots2(0), flakshots1(0), flakshots2(0),
+            frags1(0), frags2(0), damage1(0), damage2(0) {};
+    };
 
     extern int gamemode, mutators;
 
@@ -278,8 +278,8 @@ namespace server
             extern int gamemillis;
             if(isalive(gamemillis))
             {
-				timealive += totalmillis-lasttimealive;
-			}
+                timealive += totalmillis-lasttimealive;
+            }
             if(last) lasttimealive = totalmillis;
         }
 
@@ -1409,7 +1409,7 @@ namespace server
     {
         if(gs_playing(gamestate))
         {
-			sendstats();
+            sendstats();
             setpause(false);
             timeremaining = 0;
             gamelimit = min(gamelimit, gamemillis);
@@ -3073,21 +3073,21 @@ namespace server
     
     void sendstats()
     {
-		if(G(serverstats))
-		{
-			requestmasterf("stats begin\n");
-			
-			//Game
-			simpleencode(smapname_enc, smapname);
-			requestmasterf("stats game %s %d %d %d\n", smapname_enc, gamemode, mutators, gamemillis);
-			flushmasteroutput();
-			
-			//Server
-			simpleencode(desc_enc, G(serverdesc));
-			requestmasterf("stats server %s %s %d\n", desc_enc, versionstring, serverport);
-			flushmasteroutput();
-			
-			//Teams
+        if(G(serverstats))
+        {
+            requestmasterf("stats begin\n");
+            
+            //Game
+            simpleencode(smapname_enc, smapname);
+            requestmasterf("stats game %s %d %d %d\n", smapname_enc, gamemode, mutators, gamemillis);
+            flushmasteroutput();
+            
+            //Server
+            simpleencode(desc_enc, G(serverdesc));
+            requestmasterf("stats server %s %s %d\n", desc_enc, versionstring, serverport);
+            flushmasteroutput();
+            
+            //Teams
             loopi(numteams(gamemode, mutators))
             {
                 int tp = m_team(gamemode, mutators) ? T_FIRST : T_NEUTRAL;
@@ -3099,28 +3099,28 @@ namespace server
             //Players and Weapons
             loopv(clients) if(clients[i]->state.actortype == A_PLAYER)
             {
-				savescore(clients[i]);
-			}
-			loopv(savedscores) if(savedscores[i].actortype == A_PLAYER)
+                savescore(clients[i]);
+            }
+            loopv(savedscores) if(savedscores[i].actortype == A_PLAYER)
             {
-				simpleencode(name_enc, savedscores[i].name);
-				simpleencode(handle_enc, savedscores[i].handle);
-				requestmasterf("stats player %s %s %d %d %d %d\n",
-								name_enc,
-								handle_enc,
-								m_laptime(gamemode, mutators) ? savedscores[i].cptime : savedscores[i].score,
-								savedscores[i].timeplayed,
-								savedscores[i].frags,
-								savedscores[i].deaths
+                simpleencode(name_enc, savedscores[i].name);
+                simpleencode(handle_enc, savedscores[i].handle);
+                requestmasterf("stats player %s %s %d %d %d %d\n",
+                                name_enc,
+                                handle_enc,
+                                m_laptime(gamemode, mutators) ? savedscores[i].cptime : savedscores[i].score,
+                                savedscores[i].timeplayed,
+                                savedscores[i].frags,
+                                savedscores[i].deaths
                             );
                 flushmasteroutput();
-			}
-			
-			requestmasterf("stats end\n");
-		}
-	}
-	
-	GICOMMAND(0, sendstats, "", (), sendstats(); result("success"),);
+            }
+            
+            requestmasterf("stats end\n");
+        }
+    }
+    
+    GICOMMAND(0, sendstats, "", (), sendstats(); result("success"),);
 
     #include "capturemode.h"
     #include "defendmode.h"
@@ -3875,44 +3875,44 @@ namespace server
                 v->state.damage += realdamage;
                 if(m != v && (!m_team(gamemode, mutators) || m->team != v->team))
                 {
-					if(weap == -1)
-					{
-						if(flags&HIT_BURN)
-						{
-							statalt = m->state.lastresalt[WR_BURN];
-							if(statalt)
-								v->state.weapstats[m->state.lastresweapon[WR_BURN]].damage2 += realdamage;
-							else
-								v->state.weapstats[m->state.lastresweapon[WR_BURN]].damage1 += realdamage;
-							statweap = m->state.lastresweapon[WR_BURN];
-						}
-						else if(flags&HIT_BLEED)
-						{
-							statalt = m->state.lastresalt[WR_BLEED];
-							if(statalt)
-								v->state.weapstats[m->state.lastresweapon[WR_BLEED]].damage2 += realdamage;
-							else
-								v->state.weapstats[m->state.lastresweapon[WR_BLEED]].damage1 += realdamage;
-							statweap = m->state.lastresweapon[WR_BLEED];
-						}
-						else if(flags&HIT_SHOCK)
-						{
-							statalt = m->state.lastresalt[WR_SHOCK];
-							if(statalt)
-								v->state.weapstats[m->state.lastresweapon[WR_SHOCK]].damage2 += realdamage;
-							else
-								v->state.weapstats[m->state.lastresweapon[WR_SHOCK]].damage1 += realdamage;
-							statweap = m->state.lastresweapon[WR_SHOCK];
-						}
-					}
-					else
-					{
-						if(WS(flags))
-							v->state.weapstats[statweap].damage2 += realdamage;
-						else
-							v->state.weapstats[statweap].damage1 += realdamage;
-					}
-				}
+                    if(weap == -1)
+                    {
+                        if(flags&HIT_BURN)
+                        {
+                            statalt = m->state.lastresalt[WR_BURN];
+                            if(statalt)
+                                v->state.weapstats[m->state.lastresweapon[WR_BURN]].damage2 += realdamage;
+                            else
+                                v->state.weapstats[m->state.lastresweapon[WR_BURN]].damage1 += realdamage;
+                            statweap = m->state.lastresweapon[WR_BURN];
+                        }
+                        else if(flags&HIT_BLEED)
+                        {
+                            statalt = m->state.lastresalt[WR_BLEED];
+                            if(statalt)
+                                v->state.weapstats[m->state.lastresweapon[WR_BLEED]].damage2 += realdamage;
+                            else
+                                v->state.weapstats[m->state.lastresweapon[WR_BLEED]].damage1 += realdamage;
+                            statweap = m->state.lastresweapon[WR_BLEED];
+                        }
+                        else if(flags&HIT_SHOCK)
+                        {
+                            statalt = m->state.lastresalt[WR_SHOCK];
+                            if(statalt)
+                                v->state.weapstats[m->state.lastresweapon[WR_SHOCK]].damage2 += realdamage;
+                            else
+                                v->state.weapstats[m->state.lastresweapon[WR_SHOCK]].damage1 += realdamage;
+                            statweap = m->state.lastresweapon[WR_SHOCK];
+                        }
+                    }
+                    else
+                    {
+                        if(WS(flags))
+                            v->state.weapstats[statweap].damage2 += realdamage;
+                        else
+                            v->state.weapstats[statweap].damage1 += realdamage;
+                    }
+                }
                 if(m->state.health <= 0) realflags |= HIT_KILL;
                 if(wr_burning(weap, flags))
                 {
@@ -3937,21 +3937,21 @@ namespace server
                 }
                 if(isweap(weap) && m != v && (!m_team(gamemode, mutators) || m->team != v->team) && first)
                 {
-					if(WK(flags))
-					{
-						if(WS(flags))
-							v->state.weapstats[statweap].flakhits2++;
-						else
-							v->state.weapstats[statweap].flakhits1++;
-					}
-					else
-					{
-						if(WS(flags))
-							v->state.weapstats[statweap].hits2++;
-						else
-							v->state.weapstats[statweap].hits1++;
-					}
-				}
+                    if(WK(flags))
+                    {
+                        if(WS(flags))
+                            v->state.weapstats[statweap].flakhits2++;
+                        else
+                            v->state.weapstats[statweap].flakhits1++;
+                    }
+                    else
+                    {
+                        if(WS(flags))
+                            v->state.weapstats[statweap].hits2++;
+                        else
+                            v->state.weapstats[statweap].hits1++;
+                    }
+                }
             }
         }
         if(smode) smode->dodamage(m, v, realdamage, hurt, weap, realflags, material, hitpush, hitvel, dist);
@@ -3964,19 +3964,19 @@ namespace server
             int fragvalue = 1;
             if(m != v && (!m_team(gamemode, mutators) || m->team != v->team))
             {
-				v->state.frags++;
-				if(statalt)
-					v->state.weapstats[statweap].frags2++;
-				else
-					v->state.weapstats[statweap].frags1++;
-				weaponstats w = v->state.weapstats[statweap];
-				srvoutf(-3, "frags: %d:%d, damage: %d:%d, hits: %d(%d):%d(%d), shots: %d(%d):%d(%d)",
-					w.frags1, w.frags2,
-					w.damage1, w.damage2,
-					w.hits1, w.flakhits1, w.hits2, w.flakhits2,
-					w.shots1, w.flakshots1, w.shots2, w.flakshots2
-					);
-			}
+                v->state.frags++;
+                if(statalt)
+                    v->state.weapstats[statweap].frags2++;
+                else
+                    v->state.weapstats[statweap].frags1++;
+                weaponstats w = v->state.weapstats[statweap];
+                srvoutf(-3, "frags: %d:%d, damage: %d:%d, hits: %d(%d):%d(%d), shots: %d(%d):%d(%d)",
+                    w.frags1, w.frags2,
+                    w.damage1, w.damage2,
+                    w.hits1, w.flakhits1, w.hits2, w.flakhits2,
+                    w.shots1, w.flakshots1, w.shots2, w.flakshots2
+                    );
+            }
             else fragvalue = -fragvalue;
             bool isai = m->state.actortype >= A_ENEMY, isteamkill = false;
             int pointvalue = (smode && !isai ? smode->points(m, v) : fragvalue), style = FRAG_NONE;
@@ -4281,16 +4281,16 @@ namespace server
                         int w = f%W_MAX, r = min(W2(weap, fragrays, WS(flags)), MAXPARAMS);
                         loopi(r) gs.weapshots[w][f >= W_MAX ? 1 : 0].add(-id);
                         if(WS(flags))
-							gs.weapstats[weap].flakshots2 += r;
-						else
-							gs.weapstats[weap].flakshots1 += r;
+                            gs.weapstats[weap].flakshots2 += r;
+                        else
+                            gs.weapstats[weap].flakshots1 += r;
                     }
                 }
                 sendf(-1, 1, "ri4x", N_DESTROY, ci->clientnum, 1, id, ci->clientnum);
             }
             else loopv(hits)
             {
-				bool first = true;
+                bool first = true;
                 hitset &h = hits[i];
                 clientinfo *m = (clientinfo *)getinfo(h.target);
                 loopvj(hitclients) if(hitclients[j] == m) first = false;
@@ -4369,9 +4369,9 @@ namespace server
         gs.shotdamage += W2(weap, damage, WS(flags))*shots.length();
         loopv(shots) gs.weapshots[weap][WS(flags) ? 1 : 0].add(shots[i].id);
         if(WS(flags))
-			gs.weapstats[weap].shots2++;
-		else
-			gs.weapstats[weap].shots1++;
+            gs.weapstats[weap].shots2++;
+        else
+            gs.weapstats[weap].shots1++;
         if(!gs.hasweap(weap, m_weapon(gamemode, mutators)))
         {
             //if(sents.inrange(gs.entid[weap])) setspawn(gs.entid[weap], false);
