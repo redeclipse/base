@@ -47,14 +47,14 @@ struct masterclient
     ENetAddress address;
     ENetSocket socket;
     string name;
-    
+
     /* Server Flags:
      * b - basic
      * s - statistics
      */
     string flags;
     string authhandle;
-    
+
     char input[4096];
     vector<char> output;
     int inputpos, outputpos, port, numpings, lastcontrol, version;
@@ -62,7 +62,7 @@ struct masterclient
     vector<authreq> authreqs;
     authreq serverauthreq;
     bool isserver, isquick, ishttp, listserver, shouldping, shouldpurge;
-    
+
     struct statstate
     {
         //Game
@@ -86,14 +86,15 @@ struct masterclient
         {
             string name;
             string handle;
-            int score, timeplayed, frags, deaths;
+            int score, timealive, frags, deaths;
+            int wid;
         };
         vector<player> players;
         //Weapons
     } stats;
-    
+
     bool instats;
-    
+
     bool hasflag(char f)
     {
         //Any flag implies 'b'
@@ -350,7 +351,7 @@ void reqserverauth(masterclient &c, char *name)
         return;
     }
     conoutf("attempting server '%s'\n", name);
-    
+
     c.serverauthreq.user = u;
     c.serverauthreq.reqtime = totalmillis;
     uint seed[3] = { uint(starttime), uint(totalmillis), randomMT() };
@@ -609,7 +610,7 @@ bool checkmasterclientinput(masterclient &c)
                         c.stats.timeplayed
                         );
                     c.stats.id = sqlite3_last_insert_rowid(statsdb);
-                    
+
                     statsdbexecf("INSERT INTO game_servers VALUES (%d, %Q, %Q, %Q, %Q, %Q, %d)",
                         c.stats.id,
                         c.authhandle,
@@ -619,7 +620,7 @@ bool checkmasterclientinput(masterclient &c)
                         c.name,
                         c.stats.port
                         );
-                        
+
                     loopv(c.stats.teams)
                     {
                         statsdbexecf("INSERT INTO game_teams VALUES (%d, %d, %d, %Q)",
@@ -629,20 +630,21 @@ bool checkmasterclientinput(masterclient &c)
                             c.stats.teams[i].name
                             );
                     }
-                    
+
                     loopv(c.stats.players)
                     {
-                        statsdbexecf("INSERT INTO game_players VALUES (%d, %Q, %Q, %d, %d, %d, %d)",
+                        statsdbexecf("INSERT INTO game_players VALUES (%d, %Q, %Q, %d, %d, %d, %d, %d)",
                             c.stats.id,
                             c.stats.players[i].name,
                             c.stats.players[i].handle,
                             c.stats.players[i].score,
-                            c.stats.players[i].timeplayed,
+                            c.stats.players[i].timealive,
                             c.stats.players[i].frags,
-                            c.stats.players[i].deaths
+                            c.stats.players[i].deaths,
+                            c.stats.players[i].wid
                         );
                     }
-                        
+
                     statsdbexecf("COMMIT");
                     conoutf("master peer %s commited stats, game id %lli", c.name, c.stats.id);
                     defformatstring(msg, "\fygame statistics recorded, id \fc%lli", c.stats.id);
@@ -683,9 +685,10 @@ bool checkmasterclientinput(masterclient &c)
                     simpledecode(handle_dec, w[3]);
                     copystring(p.handle, handle_dec);
                     p.score = (int)strtol(w[4], NULL, 10);
-                    p.timeplayed = (int)strtol(w[5], NULL, 10);
+                    p.timealive = (int)strtol(w[5], NULL, 10);
                     p.frags = (int)strtol(w[6], NULL, 10);
                     p.deaths = (int)strtol(w[7], NULL, 10);
+                    p.wid = (int)strtol(w[8], NULL, 10);
                     c.stats.players.add(p);
                 }
             }

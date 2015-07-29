@@ -1,5 +1,5 @@
 /*
-	SQL Database Layout
+    SQL Database Layout
 */
 
 CREATE TABLE games (
@@ -33,26 +33,27 @@ CREATE TABLE game_players (
     name TEXT,
     handle TEXT,
     score INTEGER,
-    timeplayed INTEGER,
+    timealive INTEGER,
     frags INTEGER,
-    deaths INTEGER
+    deaths INTEGER,
+    wid INTEGER
 );
 
 CREATE TABLE game_weapons (
     game INTEGER,
-    player TEXT,
+    player INTEGER,
     weapon TEXT,
-    
+
     timewielded INTEGER,
     timeloadout INTEGER,
-    
+
     damage1 INTEGER,
     frags1 INTEGER,
     hits1 INTEGER,
     flakhits1 INTEGER,
     shots1 INTEGER,
     flakshots1 INTEGER,
-    
+
     damage2 INTEGER,
     frags2 INTEGER,
     hits2 INTEGER,
