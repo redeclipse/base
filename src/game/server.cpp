@@ -3142,6 +3142,28 @@ namespace server
                 flushmasteroutput();
                 loopj(W_MAX)
                 {
+                    weaponstats w = savedscores[i].weapstats[j];
+                    requestmasterf("stats weapon %d %s %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
+                        i,
+                        weaptype[j].name,
+                        w.timewielded,
+                        w.timeloadout,
+
+                        w.damage1,
+                        w.frags1,
+                        w.hits1,
+                        w.flakhits1,
+                        w.shots1,
+                        w.flakshots1,
+
+                        w.damage2,
+                        w.frags2,
+                        w.hits2,
+                        w.flakhits2,
+                        w.shots2,
+                        w.flakshots2
+                    );
+                    flushmasteroutput();
                 }
             }
 

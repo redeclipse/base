@@ -478,7 +478,7 @@ struct serverinfo
     serverinfo(uint ip, int port, int priority = 0)
      : numplayers(0), resolved(ip==ENET_HOST_ANY ? UNRESOLVED : RESOLVED), port(port), priority(priority)
     {
-        name[0] = map[0] = sdesc[0] = '\0';
+        name[0] = map[0] = sdesc[0] = authhandle[0] = '\0';
         address.host = ip;
         address.port = port+1;
         clearpings();

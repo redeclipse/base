@@ -91,6 +91,16 @@ struct masterclient
         };
         vector<player> players;
         //Weapons
+        struct weaponstats
+        {
+            string name;
+            int pid;
+            int timewielded, timeloadout;
+            int hits1, hits2, flakhits1, flakhits2;
+            int shots1, shots2, flakshots1, flakshots2;
+            int frags1, frags2, damage1, damage2;
+        };
+        vector<weaponstats> weapstats;
     } stats;
 
     bool instats;
@@ -463,7 +473,7 @@ int nextcontrolversion()
 bool checkmasterclientinput(masterclient &c)
 {
     if(c.inputpos < 0) return false;
-    const int MAXWORDS = 16;
+    const int MAXWORDS = 24;
     char *w[MAXWORDS];
     int numargs = MAXWORDS;
     const char *p = c.input;
@@ -645,6 +655,32 @@ bool checkmasterclientinput(masterclient &c)
                         );
                     }
 
+                    loopv(c.stats.weapstats)
+                    {
+                        statsdbexecf("INSERT INTO game_weapons VALUES (%d, %d, %Q, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d)",
+                            c.stats.id,
+                            c.stats.weapstats[i].pid,
+                            c.stats.weapstats[i].name,
+
+                            c.stats.weapstats[i].timewielded,
+                            c.stats.weapstats[i].timeloadout,
+
+                            c.stats.weapstats[i].damage1,
+                            c.stats.weapstats[i].frags1,
+                            c.stats.weapstats[i].hits1,
+                            c.stats.weapstats[i].flakhits1,
+                            c.stats.weapstats[i].shots1,
+                            c.stats.weapstats[i].flakshots1,
+
+                            c.stats.weapstats[i].damage2,
+                            c.stats.weapstats[i].frags2,
+                            c.stats.weapstats[i].hits2,
+                            c.stats.weapstats[i].flakhits2,
+                            c.stats.weapstats[i].shots2,
+                            c.stats.weapstats[i].flakshots2
+                        );
+                    }
+
                     statsdbexecf("COMMIT");
                     conoutf("master peer %s commited stats, game id %lli", c.name, c.stats.id);
                     defformatstring(msg, "\fygame statistics recorded, id \fc%lli", c.stats.id);
@@ -690,6 +726,33 @@ bool checkmasterclientinput(masterclient &c)
                     p.deaths = (int)strtol(w[7], NULL, 10);
                     p.wid = (int)strtol(w[8], NULL, 10);
                     c.stats.players.add(p);
+                }
+                else if(!strcmp(w[1], "weapon"))
+                {
+                    #define wint(n) ws.n = (int)strtol(w[qidx++], NULL, 10);
+                    masterclient::statstate::weaponstats ws;
+                    ws.pid = (int)strtol(w[2], NULL, 10);
+                    copystring(ws.name, w[3]);
+                    int qidx = 4;
+
+                    wint(timewielded);
+                    wint(timeloadout);
+
+                    wint(damage1);
+                    wint(frags1);
+                    wint(hits1);
+                    wint(flakhits1);
+                    wint(shots1);
+                    wint(flakshots1);
+
+                    wint(damage2);
+                    wint(frags2);
+                    wint(hits2);
+                    wint(flakhits2);
+                    wint(shots2);
+                    wint(flakshots2);
+
+                    c.stats.weapstats.add(ws);
                 }
             }
             found = true;
