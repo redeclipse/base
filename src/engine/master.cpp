@@ -11,6 +11,7 @@
 #include <sqlite3.h>
 
 #define STATSDB_VERSION 1
+#define STATSDB_RETRYTIME (5*1000)
 #define MASTER_LIMIT 4096
 #define CLIENT_TIME (60*1000)
 #define SERVER_TIME (35*60*1000)
@@ -58,7 +59,7 @@ struct masterclient
     char input[4096];
     vector<char> output;
     int inputpos, outputpos, port, numpings, lastcontrol, version;
-    enet_uint32 lastping, lastpong, lastactivity;
+    enet_uint32 lastping, lastpong, lastactivity, laststats;
     vector<authreq> authreqs;
     authreq serverauthreq;
     bool isserver, isquick, ishttp, listserver, shouldping, shouldpurge;
@@ -104,6 +105,7 @@ struct masterclient
     } stats;
 
     bool instats;
+    bool wantstats;
 
     bool hasflag(char f)
     {
@@ -119,7 +121,7 @@ struct masterclient
         return false;
     }
 
-    masterclient() : inputpos(0), outputpos(0), port(MASTER_PORT), numpings(0), lastcontrol(-1), version(0), lastping(0), lastpong(0), lastactivity(0), isserver(false), isquick(false), ishttp(false), listserver(false), shouldping(false), shouldpurge(false), instats(false) {}
+    masterclient() : inputpos(0), outputpos(0), port(MASTER_PORT), numpings(0), lastcontrol(-1), version(0), lastping(0), lastpong(0), lastactivity(0), isserver(false), isquick(false), ishttp(false), listserver(false), shouldping(false), shouldpurge(false), instats(false), wantstats(false) {}
 };
 
 static vector<masterclient *> masterclients;
@@ -208,6 +210,111 @@ void loadstatsdb()
     conoutf("statistics database loaded");
 }
 
+void masterout(masterclient &c, const char *msg, int len = 0)
+{
+    if(!len) len = strlen(msg);
+    c.output.put(msg, len);
+}
+
+void masteroutf(masterclient &c, const char *fmt, ...)
+{
+    bigstring msg;
+    va_list args;
+    va_start(args, fmt);
+    vformatstring(msg, fmt, args);
+    va_end(args);
+    masterout(c, msg);
+}
+
+void savestats(masterclient &c)
+{
+    c.wantstats = true;
+    c.laststats = totalmillis;
+    char *err_msg = NULL;
+    int rc = sqlite3_exec(statsdb, "BEGIN IMMEDIATE", 0, 0, &err_msg);
+    if(rc == SQLITE_BUSY)
+        return;
+    else
+        checkstatsdb(rc, err_msg);
+
+    statsdbexecf("INSERT INTO games VALUES (NULL, %d, %Q, %d, %d, %d)",
+        c.stats.time,
+        c.stats.map,
+        c.stats.mode,
+        c.stats.mutators,
+        c.stats.timeplayed
+        );
+    c.stats.id = sqlite3_last_insert_rowid(statsdb);
+
+    statsdbexecf("INSERT INTO game_servers VALUES (%d, %Q, %Q, %Q, %Q, %Q, %d)",
+        c.stats.id,
+        c.authhandle,
+        c.flags,
+        c.stats.desc,
+        c.stats.version,
+        c.name,
+        c.stats.port
+        );
+
+    loopv(c.stats.teams)
+    {
+        statsdbexecf("INSERT INTO game_teams VALUES (%d, %d, %d, %Q)",
+            c.stats.id,
+            c.stats.teams[i].index,
+            c.stats.teams[i].score,
+            c.stats.teams[i].name
+            );
+    }
+
+    loopv(c.stats.players)
+    {
+        statsdbexecf("INSERT INTO game_players VALUES (%d, %Q, %Q, %d, %d, %d, %d, %d)",
+            c.stats.id,
+            c.stats.players[i].name,
+            c.stats.players[i].handle,
+            c.stats.players[i].score,
+            c.stats.players[i].timealive,
+            c.stats.players[i].frags,
+            c.stats.players[i].deaths,
+            c.stats.players[i].wid
+        );
+    }
+
+    loopv(c.stats.weapstats)
+    {
+        statsdbexecf("INSERT INTO game_weapons VALUES (%d, %d, %Q, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d)",
+            c.stats.id,
+            c.stats.weapstats[i].pid,
+            c.stats.weapstats[i].name,
+
+            c.stats.weapstats[i].timewielded,
+            c.stats.weapstats[i].timeloadout,
+
+            c.stats.weapstats[i].damage1,
+            c.stats.weapstats[i].frags1,
+            c.stats.weapstats[i].hits1,
+            c.stats.weapstats[i].flakhits1,
+            c.stats.weapstats[i].shots1,
+            c.stats.weapstats[i].flakshots1,
+
+            c.stats.weapstats[i].damage2,
+            c.stats.weapstats[i].frags2,
+            c.stats.weapstats[i].hits2,
+            c.stats.weapstats[i].flakhits2,
+            c.stats.weapstats[i].shots2,
+            c.stats.weapstats[i].flakshots2
+        );
+    }
+
+    statsdbexecf("COMMIT");
+    conoutf("master peer %s commited stats, game id %lli", c.name, c.stats.id);
+    defformatstring(msg, "\fygame statistics recorded, id \fc%lli", c.stats.id);
+    simpleencode(msg_enc, msg);
+    masteroutf(c, "stats success %s\n", msg_enc);
+    c.instats = false;
+    c.wantstats = false;
+}
+
 bool setuppingsocket(ENetAddress *address)
 {
     if(pingsocket != ENET_SOCKET_NULL) return true;
@@ -235,22 +342,6 @@ void setupmaster()
         loadstatsdb();
         conoutf("master server started on %s:[%d]", *masterip ? masterip : "localhost", masterport);
     }
-}
-
-void masterout(masterclient &c, const char *msg, int len = 0)
-{
-    if(!len) len = strlen(msg);
-    c.output.put(msg, len);
-}
-
-void masteroutf(masterclient &c, const char *fmt, ...)
-{
-    bigstring msg;
-    va_list args;
-    va_start(args, fmt);
-    vformatstring(msg, fmt, args);
-    va_end(args);
-    masterout(c, msg);
 }
 
 static hashnameset<authuser> authusers;
@@ -597,8 +688,13 @@ bool checkmasterclientinput(masterclient &c)
             {
                 if(c.hasflag('s'))
                 {
-                    conoutf("master peer %s began sending stats", c.name);
+                    conoutf("master peer %s began sending statistics", c.name);
                     c.instats = true;
+                    if(c.wantstats)
+                    {
+                        c.wantstats = false;
+                        conoutf("master peer %s is overwriting previous statistics", c.name);
+                    }
                 }
                 else
                 {
@@ -611,82 +707,7 @@ bool checkmasterclientinput(masterclient &c)
             {
                 if(!strcmp(w[1], "end"))
                 {
-                    statsdbexecf("BEGIN");
-                    statsdbexecf("INSERT INTO games VALUES (NULL, %d, %Q, %d, %d, %d)",
-                        c.stats.time,
-                        c.stats.map,
-                        c.stats.mode,
-                        c.stats.mutators,
-                        c.stats.timeplayed
-                        );
-                    c.stats.id = sqlite3_last_insert_rowid(statsdb);
-
-                    statsdbexecf("INSERT INTO game_servers VALUES (%d, %Q, %Q, %Q, %Q, %Q, %d)",
-                        c.stats.id,
-                        c.authhandle,
-                        c.flags,
-                        c.stats.desc,
-                        c.stats.version,
-                        c.name,
-                        c.stats.port
-                        );
-
-                    loopv(c.stats.teams)
-                    {
-                        statsdbexecf("INSERT INTO game_teams VALUES (%d, %d, %d, %Q)",
-                            c.stats.id,
-                            c.stats.teams[i].index,
-                            c.stats.teams[i].score,
-                            c.stats.teams[i].name
-                            );
-                    }
-
-                    loopv(c.stats.players)
-                    {
-                        statsdbexecf("INSERT INTO game_players VALUES (%d, %Q, %Q, %d, %d, %d, %d, %d)",
-                            c.stats.id,
-                            c.stats.players[i].name,
-                            c.stats.players[i].handle,
-                            c.stats.players[i].score,
-                            c.stats.players[i].timealive,
-                            c.stats.players[i].frags,
-                            c.stats.players[i].deaths,
-                            c.stats.players[i].wid
-                        );
-                    }
-
-                    loopv(c.stats.weapstats)
-                    {
-                        statsdbexecf("INSERT INTO game_weapons VALUES (%d, %d, %Q, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d)",
-                            c.stats.id,
-                            c.stats.weapstats[i].pid,
-                            c.stats.weapstats[i].name,
-
-                            c.stats.weapstats[i].timewielded,
-                            c.stats.weapstats[i].timeloadout,
-
-                            c.stats.weapstats[i].damage1,
-                            c.stats.weapstats[i].frags1,
-                            c.stats.weapstats[i].hits1,
-                            c.stats.weapstats[i].flakhits1,
-                            c.stats.weapstats[i].shots1,
-                            c.stats.weapstats[i].flakshots1,
-
-                            c.stats.weapstats[i].damage2,
-                            c.stats.weapstats[i].frags2,
-                            c.stats.weapstats[i].hits2,
-                            c.stats.weapstats[i].flakhits2,
-                            c.stats.weapstats[i].shots2,
-                            c.stats.weapstats[i].flakshots2
-                        );
-                    }
-
-                    statsdbexecf("COMMIT");
-                    conoutf("master peer %s commited stats, game id %lli", c.name, c.stats.id);
-                    defformatstring(msg, "\fygame statistics recorded, id \fc%lli", c.stats.id);
-                    simpleencode(msg_enc, msg);
-                    masteroutf(c, "stats success %s\n", msg_enc);
-                    c.instats = false;
+                    savestats(c);
                 }
                 else if(!strcmp(w[1], "game"))
                 {
@@ -818,6 +839,11 @@ void checkmaster()
         if(c.outputpos < c.output.length()) ENET_SOCKETSET_ADD(writeset, c.socket);
         else ENET_SOCKETSET_ADD(readset, c.socket);
         maxsock = max(maxsock, c.socket);
+
+        if(c.wantstats && (totalmillis - c.laststats) > STATSDB_RETRYTIME)
+        {
+            savestats(c);
+        }
     }
     if(enet_socketset_select(maxsock, &readset, &writeset, 0) <= 0) return;
 
