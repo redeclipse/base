@@ -279,7 +279,7 @@ namespace server
 
                 loopi(W_MAX)
                 {
-                    if(hasweap(i, m_weapon(gamemode, mutators)))
+                    if(holdweap(i, m_weapon(gamemode, mutators), lastmillis))
                     {
                         weapstats[i].timeloadout += totalmillis - lasttimeloadout[i];
                     }
@@ -4557,6 +4557,7 @@ namespace server
             gs.ammo[weap] = gs.entid[weap] = -1;
         }
         setspawn(ent, false, true);
+        gs.updateweaptime();
         gs.useitem(ent, sents[ent].type, attr, ammoamt, sweap, millis, G(weaponswitchdelay));
         sendf(-1, 1, "ri8", N_ITEMACC, ci->clientnum, ent, ammoamt, sents[ent].spawned ? 1 : 0, weap, dropped, ammo);
     }
