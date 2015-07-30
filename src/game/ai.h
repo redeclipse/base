@@ -24,14 +24,22 @@ namespace ai
     {
         vec o;
         float curscore, estscore;
-        int weight;
+        int pull, drag;
         ushort route, prev;
         ushort links[MAXWAYPOINTLINKS];
 
         waypoint() {}
-        waypoint(const vec &o, int weight = 0) : o(o), weight(weight), route(0) { memset(links, 0, sizeof(links)); }
+        waypoint(const vec &o, int p = 0) : o(o), pull(p), drag(0), route(0) { memset(links, 0, sizeof(links)); }
 
         int score() const { return int(curscore) + int(estscore); }
+
+        int weight(bool mod = true)
+        {
+            if(pull < 0) return -1;
+            int r = int(pull*aiweightpull);
+            if(mod && aiweightdrag) r += int(drag/float(aiweightdrag));
+            return r;
+        }
 
         int find(int wp)
         {

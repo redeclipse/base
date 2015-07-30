@@ -15,22 +15,22 @@ namespace ai
         return clipmat == MAT_CLIP || clipmat == MAT_AICLIP || material&MAT_DEATH || (material&MATF_VOLUME) == MAT_LAVA;
     }
 
-    int getweight(const vec &o)
+    int getpull(const vec &o)
     {
         vec pos = o; pos.z += JUMPMIN;
         if(!insideworld(vec(pos.x, pos.y, min(pos.z, getworldsize() - 1e-3f)))) return -2;
         float dist = raycube(pos, vec(0, 0, -1), 0, RAY_CLIPMAT);
-        int posmat = lookupmaterial(pos), weight = 1;
-        if(isliquid(posmat&MATF_VOLUME)) weight *= 5;
+        int posmat = lookupmaterial(pos), pull = 1;
+        if(isliquid(posmat&MATF_VOLUME)) pull *= 5;
         if(dist >= 0)
         {
-            weight = int(dist/JUMPMIN);
+            pull = int(dist/JUMPMIN);
             pos.z -= clamp(dist-8.0f, 0.0f, pos.z);
             int trgmat = lookupmaterial(pos);
-            if(trgmat&MAT_DEATH || (trgmat&MATF_VOLUME) == MAT_LAVA) weight *= 10;
-            else if(isliquid(trgmat&MATF_VOLUME)) weight *= 2;
+            if(trgmat&MAT_DEATH || (trgmat&MATF_VOLUME) == MAT_LAVA) pull *= 10;
+            else if(isliquid(trgmat&MATF_VOLUME)) pull *= 2;
         }
-        return weight;
+        return pull;
     }
 
     enum
@@ -195,7 +195,7 @@ namespace ai
         lastwpcache = waypoints.length();
 
         wpavoid.clear();
-        loopv(waypoints) if(waypoints[i].weight < 0) wpavoid.avoidnear(NULL, waypoints[i].o.z + WAYPOINTRADIUS, waypoints[i].o, WAYPOINTRADIUS);
+        loopv(waypoints) if(waypoints[i].weight() < 0) wpavoid.avoidnear(NULL, waypoints[i].o.z + WAYPOINTRADIUS, waypoints[i].o, WAYPOINTRADIUS);
     }
 
     struct wpcachestack
@@ -474,7 +474,7 @@ namespace ai
                 if(iswaypoint(link) && (link == node || link == goal || waypoints[link].haslinks()))
                 {
                     waypoint &n = waypoints[link];
-                    int weight = max(n.weight, 1);
+                    int weight = max(n.weight(), 1);
                     float curscore = prevscore + n.o.dist(m.o)*weight;
                     if(n.route == routeid && curscore >= n.curscore) continue;
                     n.curscore = curscore;
@@ -508,11 +508,11 @@ namespace ai
     string loadedwaypoints = "";
     VARF(0, dropwaypoints, 0, 0, 1, if(dropwaypoints) getwaypoints());
 
-    int addwaypoint(const vec &o, int weight = -1)
+    int addwaypoint(const vec &o, int pull = -1)
     {
         if(waypoints.length() > MAXWAYPOINTS) return -1;
         int n = waypoints.length();
-        waypoints.add(waypoint(o, weight >= 0 ? weight : getweight(o)));
+        waypoints.add(waypoint(o, pull >= 0 ? pull : getpull(o)));
         invalidatewpcache(n);
         return n;
     }
@@ -575,6 +575,7 @@ namespace ai
                 if(!d->airmillis) linkwaypoint(waypoints[curnode], d->lastnode);
             }
             d->lastnode = curnode;
+            waypoints[d->lastnode].drag += curtime;
             if(d->ai && iswaypoint(prevnode) && d->lastnode != prevnode) d->ai->addprevnode(prevnode);
         }
         else if(!iswaypoint(d->lastnode) || waypoints[d->lastnode].o.squaredist(v) > dist*dist)
@@ -719,7 +720,7 @@ namespace ai
             o.x = f->getlil<float>();
             o.y = f->getlil<float>();
             o.z = f->getlil<float>();
-            waypoint &w = waypoints.add(waypoint(o, getweight(o)));
+            waypoint &w = waypoints.add(waypoint(o, getpull(o)));
             int numlinks = f->getchar(), k = 0;
             loopj(numlinks) if((w.links[k] = f->getlil<ushort>()) != 0) if(++k >= MAXWAYPOINTLINKS) break;
             //if(!w.haslinks()) conoutf("warning: waypoint %d has no links", i);
@@ -778,7 +779,7 @@ namespace ai
                 v.links[j] = k+1;
                 break;
             }
-            waypoint &w = waypoints.add(waypoint(v.o, getweight(v.o)));
+            waypoint &w = waypoints.add(waypoint(v.o, getpull(v.o)));
             int k = 0;
             loopvj(v.links) if((w.links[k] = v.links[j]) != 0) if(++k >= MAXWAYPOINTLINKS) break;
             //if(!w.haslinks()) conoutf("warning: imported waypoint %d has no links", i);
@@ -858,4 +859,3 @@ namespace ai
     }
     ICOMMAND(0, moveselwaypoints, "fff", (float *x, float *y, float *z), vec v(*x, *y, *z); moveselwaypoints(v));
 }
-
