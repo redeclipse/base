@@ -1347,7 +1347,6 @@ namespace ai
                         if(d->ai->blockseq != 1 && iswaypoint(d->ai->targnode))
                         {
                             if(!d->ai->hasprevnode(d->ai->targnode)) d->ai->addprevnode(d->ai->targnode);
-                            waypoints[d->ai->targnode].weight = -1;
                             wpavoid.avoidnear(NULL, waypoints[d->ai->targnode].o.z + WAYPOINTRADIUS, waypoints[d->ai->targnode].o, WAYPOINTRADIUS);
                         }
                         break;
