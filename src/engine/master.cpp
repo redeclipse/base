@@ -686,6 +686,9 @@ bool checkmasterclientinput(masterclient &c)
         {
             if(!strcmp(w[1], "begin"))
             {
+                c.stats.teams.shrink(0);
+                c.stats.players.shrink(0);
+                c.stats.weapstats.shrink(0);
                 if(c.hasflag('s'))
                 {
                     conoutf("master peer %s began sending statistics", c.name);
