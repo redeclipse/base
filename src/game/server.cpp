@@ -242,9 +242,9 @@ namespace server
             if(state != CS_SPECTATOR) state = CS_DEAD;
             dropped.reset();
             loopi(W_MAX) loopj(2) weapshots[i][j].reset();
-            if(!change) score = timeplayed = timealive = 0;
+            if(!change) score = timeplayed;
             else clientstate::mapchange();
-            frags = spree = rewards[0] = rewards[1] = deaths = shotdamage = damage = 0;
+            frags = spree = rewards[0] = rewards[1] = deaths = shotdamage = damage = timealive = 0;
             fraglog.shrink(0);
             fragmillis.shrink(0);
             cpnodes.shrink(0);
