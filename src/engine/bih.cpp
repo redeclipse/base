@@ -292,8 +292,8 @@ BIH::BIH(vector<mesh> &buildmeshes)
             mmin.min(vmin);
             mmax.max(vmax);
             ivec imin = ivec::floor(vmin), imax = ivec::ceil(vmax);
-            dsttri->center = ivec(imin).add(imax).div(2);
-            dsttri->radius = ivec(imax).sub(imin).add(1).div(2);
+            dsttri->center = svec(ivec(imin).add(imax).div(2));
+            dsttri->radius = svec(ivec(imax).sub(imin).add(1).div(2));
             ++srctri;
             ++dsttri;
         }
