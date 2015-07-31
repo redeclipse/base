@@ -1,7 +1,6 @@
 // OpenGL 1.3
 #ifndef WIN32
 #define glActiveTexture_ glActiveTexture
-#define glClientActiveTexture_ glClientActiveTexture
 
 #define glBlendEquation_ glBlendEquation
 #define glBlendColor_ glBlendColor
@@ -21,7 +20,6 @@
 #define glDrawRangeElements_ glDrawRangeElements
 #else
 extern PFNGLACTIVETEXTUREPROC       glActiveTexture_;
-extern PFNGLCLIENTACTIVETEXTUREPROC glClientActiveTexture_;
 
 extern PFNGLBLENDEQUATIONPROC glBlendEquation_;
 extern PFNGLBLENDCOLORPROC    glBlendColor_;
@@ -161,6 +159,7 @@ typedef void (APIENTRYP PFNGLUNIFORMMATRIX4X3FVPROC) (GLint location, GLsizei co
 
 #define glDrawBuffers_ glDrawBuffers
 #else
+extern PFNGLMULTIDRAWARRAYSPROC   glMultiDrawArrays_;
 extern PFNGLMULTIDRAWELEMENTSPROC glMultiDrawElements_;
 
 extern PFNGLBLENDFUNCSEPARATEPROC glBlendFuncSeparate_;
@@ -268,6 +267,7 @@ extern PFNGLDRAWBUFFERSPROC glDrawBuffers_;
 #define GL_ARB_framebuffer_object 1
 #define GL_DEPTH_STENCIL_ATTACHMENT       0x821A
 #define GL_DEPTH_STENCIL                  0x84F9
+#define GL_UNSIGNED_INT_24_8              0x84FA
 #define GL_DEPTH24_STENCIL8               0x88F0
 #define GL_READ_FRAMEBUFFER               0x8CA8
 #define GL_DRAW_FRAMEBUFFER               0x8CA9
@@ -422,4 +422,18 @@ extern PFNGLGETACTIVEUNIFORMBLOCKIVPROC glGetActiveUniformBlockiv_;
 extern PFNGLUNIFORMBLOCKBINDINGPROC     glUniformBlockBinding_;
 extern PFNGLBINDBUFFERBASEPROC          glBindBufferBase_;
 extern PFNGLBINDBUFFERRANGEPROC         glBindBufferRange_;
+
+// GL_ARB_vertex_array_objext
+#ifndef GL_ARB_vertex_array_object
+#define GL_ARB_vertex_array_object 1
+#define GL_VERTEX_ARRAY_BINDING           0x85B5
+typedef void (APIENTRYP PFNGLBINDVERTEXARRAYPROC) (GLuint array);
+typedef void (APIENTRYP PFNGLDELETEVERTEXARRAYSPROC) (GLsizei n, const GLuint *arrays);
+typedef void (APIENTRYP PFNGLGENVERTEXARRAYSPROC) (GLsizei n, GLuint *arrays);
+typedef GLboolean (APIENTRYP PFNGLISVERTEXARRAYPROC) (GLuint array);
+#endif
+extern PFNGLBINDVERTEXARRAYPROC    glBindVertexArray_;
+extern PFNGLDELETEVERTEXARRAYSPROC glDeleteVertexArrays_;
+extern PFNGLGENVERTEXARRAYSPROC    glGenVertexArrays_;
+extern PFNGLISVERTEXARRAYPROC      glIsVertexArray_;
 

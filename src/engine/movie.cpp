@@ -987,18 +987,6 @@ namespace recorder
         state = REC_OK;
     }
 
-    void drawquad(float tw, float th, bool flip = false)
-    {
-        float ty1 = 0, ty2 = th;
-        if(flip) swap(ty1, ty2);
-        glBegin(GL_TRIANGLE_STRIP);
-        glTexCoord2f(0,  ty1); glVertex2f(-1, -1);
-        glTexCoord2f(tw, ty1); glVertex2f( 1, -1);
-        glTexCoord2f(0,  ty2); glVertex2f(-1,  1);
-        glTexCoord2f(tw, ty2); glVertex2f( 1,  1);
-        glEnd();
-    }
-
     void readbuffer(videobuffer &m, uint nextframe)
     {
         bool accelyuv = movieaccelyuv && !(m.w%8),
@@ -1020,7 +1008,7 @@ namespace recorder
                 loopi(2)
                 {
                     if(!scaletex[i]) glGenTextures(1, &scaletex[i]);
-                    createtexture(scaletex[i], tw, th, NULL, 3, 1, GL_RGB, GL_TEXTURE_RECTANGLE);
+                    createtexture(scaletex[i], tw, th, NULL, 3, 1, GL_RGB);
                 }
                 scalew = tw;
                 scaleh = th;
@@ -1041,28 +1029,29 @@ namespace recorder
             {
                 glBindFramebuffer_(GL_READ_FRAMEBUFFER, 0);
                 glBindFramebuffer_(GL_DRAW_FRAMEBUFFER, scalefb);
-                glFramebufferTexture2D_(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, scaletex[0], 0);
+                glFramebufferTexture2D_(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, scaletex[0], 0);
                 glBlitFramebuffer_(0, 0, screen->w, screen->h, 0, 0, tw, th, GL_COLOR_BUFFER_BIT, GL_LINEAR);
                 glBindFramebuffer_(GL_DRAW_FRAMEBUFFER, 0);
             }
             else
             {
-                glBindTexture(GL_TEXTURE_RECTANGLE, scaletex[0]);
-                glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE, 0, 0, 0, 0, 0, screen->w, screen->h);
+                glBindTexture(GL_TEXTURE_2D, scaletex[0]);
+                glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, screen->w, screen->h);
             }
 
+            GLOBALPARAMF(moviescale, 1.0f/scalew, 1.0f/scaleh);
             if(tw > m.w || th > m.h || (!accelyuv && tw >= m.w && th >= m.h))
             {
                 glBindFramebuffer_(GL_FRAMEBUFFER, scalefb);
                 do
                 {
                     uint dw = max(tw/2, m.w), dh = max(th/2, m.h);
-                    glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, scaletex[1], 0);
+                    glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, scaletex[1], 0);
                     glViewport(0, 0, dw, dh);
-                    glBindTexture(GL_TEXTURE_RECTANGLE, scaletex[0]);
+                    glBindTexture(GL_TEXTURE_2D, scaletex[0]);
                     if(dw == m.w && dh == m.h && !accelyuv) { SETSHADER(movieyuv); m.format = aviwriter::VID_YUV; }
                     else SETSHADER(moviergb);
-                    drawquad(tw, th);
+                    screenquad(tw/float(scalew), th/float(scaleh));
                     tw = dw;
                     th = dh;
                     swap(scaletex[0], scaletex[1]);
@@ -1071,10 +1060,11 @@ namespace recorder
             if(accelyuv)
             {
                 glBindFramebuffer_(GL_FRAMEBUFFER, encodefb);
-                glBindTexture(GL_TEXTURE_RECTANGLE, scaletex[0]);
-                glViewport(0, 0, m.w/4, m.h); SETSHADER(moviey); drawquad(m.w, m.h, true);
-                glViewport(m.w/4, 0, m.w/8, m.h/2); SETSHADER(movieu); drawquad(m.w, m.h, true);
-                glViewport(m.w/4, m.h/2, m.w/8, m.h/2); SETSHADER(moviev); drawquad(m.w, m.h, true);
+                glBindTexture(GL_TEXTURE_2D, scaletex[0]);
+                GLOBALPARAMF(moviescale, 1.0f/scalew, 1.0f/scaleh);
+                glViewport(0, 0, m.w/4, m.h); SETSHADER(moviey); screenquadflipped(m.w/float(scalew), m.h/float(scaleh));
+                glViewport(m.w/4, 0, m.w/8, m.h/2); SETSHADER(movieu); screenquadflipped(m.w/float(scalew), m.h/float(scaleh));
+                glViewport(m.w/4, m.h/2, m.w/8, m.h/2); SETSHADER(moviev); screenquadflipped(m.w/float(scalew), m.h/float(scaleh));
                 const uint planesize = m.w * m.h;
                 glPixelStorei(GL_PACK_ALIGNMENT, texalign(m.video, m.w/4, 4));
                 glReadPixels(0, 0, m.w/4, m.h, GL_BGRA, GL_UNSIGNED_BYTE, m.video);
@@ -1143,6 +1133,8 @@ namespace recorder
         draw_textx("recorded %.1f%s %d%%", w*3-FONTH*3/2, FONTH*3/2, 255, 255, 255, 255, TEXT_RIGHT_JUSTIFY, -1, -1, totalsize, unit, int(calcquality()*100));
 
         glDisable(GL_BLEND);
+
+        gle::disable();
     }
 
     void capture(bool overlay)

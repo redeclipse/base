@@ -526,8 +526,10 @@ GLenum compressedformat(GLenum format, int w, int h, int force = 0)
         case GL_RGB5:
         case GL_RGB8:
         case GL_LUMINANCE:
+        case GL_LUMINANCE8:
         case GL_RGB: return usetexcompress > 1 ? GL_COMPRESSED_RGB_S3TC_DXT1_EXT : GL_COMPRESSED_RGB;
         case GL_LUMINANCE_ALPHA:
+        case GL_LUMINANCE8_ALPHA8:
         case GL_RGBA: return usetexcompress > 1 ? GL_COMPRESSED_RGBA_S3TC_DXT5_EXT : GL_COMPRESSED_RGBA;
     }
     return format;
@@ -564,7 +566,7 @@ void resizetexture(int w, int h, bool mipmap, bool canreduce, GLenum target, int
     }
     w = min(w, sizelimit);
     h = min(h, sizelimit);
-    if(!usenp2 && target!=GL_TEXTURE_RECTANGLE && (w&(w-1) || h&(h-1)))
+    if(!usenp2 && (w&(w-1) || h&(h-1)))
     {
         tw = th = 1;
         while(tw < w) tw *= 2;
@@ -706,8 +708,6 @@ void createtexture(int tnum, int w, int h, void *pixels, int clamp, int filter, 
             type = GL_FLOAT;
             break;
 
-        case GL_FLOAT_RG16_NV:
-        case GL_FLOAT_R32_NV:
         case GL_RGB16F:
         case GL_RGB32F:
             if(!format) format = GL_RGB;
@@ -728,6 +728,7 @@ void createtexture(int tnum, int w, int h, void *pixels, int clamp, int filter, 
 
         case GL_RGB5:
         case GL_RGB8:
+        case GL_RGB10:
         case GL_RGB16:
         case GL_COMPRESSED_RGB:
         case GL_COMPRESSED_RGB_S3TC_DXT1_EXT:
@@ -741,6 +742,36 @@ void createtexture(int tnum, int w, int h, void *pixels, int clamp, int filter, 
         case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
         case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
             if(!format) format = GL_RGBA;
+            break;
+
+        case GL_DEPTH_STENCIL:
+        case GL_DEPTH24_STENCIL8:
+            if(!format) format = GL_DEPTH_STENCIL;
+            type = GL_UNSIGNED_INT_24_8;
+            break;
+
+        case GL_R8:
+        case GL_R16:
+            if(!format) format = GL_RED;
+            break;
+
+        case GL_RG8:
+        case GL_RG16:
+            if(!format) format = GL_RG;
+            break;
+
+        case GL_LUMINANCE8:
+        case GL_LUMINANCE16:
+            if(!format) format = GL_LUMINANCE;
+            break;
+
+        case GL_LUMINANCE8_ALPHA8:
+        case GL_LUMINANCE16_ALPHA16:
+            if(!format) format = GL_LUMINANCE_ALPHA;
+            break;
+
+        case GL_ALPHA8:
+            if(!format) format = GL_ALPHA;
             break;
     }
     if(!format) format = component;
@@ -2241,14 +2272,18 @@ void forcecubemapload(GLuint tex)
     glBindTexture(GL_TEXTURE_CUBE_MAP, tex);
     if(!blend) glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glBegin(GL_POINTS);
-    loopi(3)
+    gle::defvertex(2);
+    gle::deftexcoord0(3);
+    gle::defcolor(4);
+    gle::begin(GL_LINES);
+    loopi(2)
     {
-        glColor4f(1, 1, 1, 0);
-        glTexCoord3f(0, 0, 1);
-        glVertex2f(0, 0);
+        gle::attribf(i*1e-3f, 0);
+        gle::attribf(0, 0, 1);
+        gle::attribf(1, 1, 1, 0);
     }
-    glEnd();
+    gle::end();
+    gle::disable();
     if(!blend) glDisable(GL_BLEND);
     if(depthtest) glEnable(GL_DEPTH_TEST);
 }

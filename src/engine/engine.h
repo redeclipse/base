@@ -77,13 +77,11 @@ extern void shutdownsignal(int signum);
 
 #ifndef STANDALONE
 #include "world.h"
-#include "glexts.h"
 #include "octa.h"
 #include "lightmap.h"
 #include "bih.h"
 #include "texture.h"
 #include "model.h"
-#include "varray.h"
 
 extern physent *camera1, camera;
 extern mapz hdr;
@@ -193,7 +191,7 @@ static inline bool pvsoccluded(const ivec &bborigin, int size)
 }
 
 // rendergl
-extern bool hasTR, hasFBO, hasAFBO, hasDS, hasTF, hasTRG, hasS3TC, hasFXT1, hasAF, hasNVFB, hasFBB, hasUBO, hasMBR;
+extern bool hasVAO, hasFBO, hasAFBO, hasDS, hasTF, hasTRG, hasS3TC, hasFXT1, hasAF, hasFBB, hasUBO, hasMBR;
 extern int hasstencil;
 extern int glversion, glslversion;
 extern char *gfxvendor, *gfxexts, *gfxrenderer, *gfxversion;
@@ -248,6 +246,14 @@ extern void calcspherescissor(const vec &center, float size, float &sx1, float &
 extern int pushscissor(float sx1, float sy1, float sx2, float sy2);
 extern void popscissor();
 extern void setcolormask(bool r = true, bool g = true, bool b = true);
+extern void screenquad();
+extern void screenquad(float sw, float sh);
+extern void screenquadflipped(float sw, float sh);
+extern void screenquadmapped(float x, float y, float w, float h, float tx, float ty, float tw, float th);
+extern void screenquad(float sw, float sh, float sw2, float sh2);
+extern void screenquadoffset(float x, float y, float w, float h);
+extern void screenquadoffset(float x, float y, float w, float h, float x2, float y2, float w2, float h2);
+extern void hudquad(float x, float y, float w, float h, float tx = 0, float ty = 0, float tw = 1, float th = 1);
 extern void setfogcolor(const vec &v);
 extern void zerofogcolor();
 extern void resetfogcolor();
@@ -381,7 +387,9 @@ extern occludequery *newquery(void *owner);
 extern bool checkquery(occludequery *query, bool nowait = false);
 extern void resetqueries();
 extern int getnumqueries();
-extern void drawbb(const ivec &bo, const ivec &br, const vec &camera = camera1->o);
+extern void startbb(bool mask = true);
+extern void endbb(bool mask = true);
+extern void drawbb(const ivec &bo, const ivec &br);
 
 extern int oqfrags;
 
@@ -713,6 +721,7 @@ extern void polybox(vec o, float tofloor, float toceil, float xradius, float yra
 // grass
 extern void generategrass();
 extern void rendergrass();
+extern void cleanupgrass();
 
 // blendmap
 extern int blendpaintmode;

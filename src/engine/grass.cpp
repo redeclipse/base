@@ -41,6 +41,8 @@ struct grassvert
 };
 
 static vector<grassvert> grassverts;
+static GLuint grassvbo = 0;
+static int grassvbosize = 0;
 
 struct grassgroup
 {
@@ -108,9 +110,9 @@ static void gengrassquads(grassgroup *&group, const grasswedge &w, const grasstr
     vec tc;
     tc.cross(g.surface, w.dir).mul(texscale);
 
-    int color = tstep + maxstep;
-    if(color < 0) color = numgrassoffsets - (-color)%numgrassoffsets;
-    color += numsteps + numgrassoffsets - numsteps%numgrassoffsets;
+    int offset = tstep + maxstep;
+    if(offset < 0) offset = numgrassoffsets - (-offset)%numgrassoffsets;
+    offset += numsteps + numgrassoffsets - numsteps%numgrassoffsets;
 
     float leftdist = t0;
     const vec *leftv = &g.v[0];
@@ -127,7 +129,7 @@ static void gengrassquads(grassgroup *&group, const grasswedge &w, const grasstr
           leftb = 0, rightb = 0, leftdb = 0, rightdb = 0;
     bvec gcol = col.iszero() ? grasscolor : bvec(uchar(col.x*255), uchar(col.y*255), uchar(col.z*255));
     if(blend <= 0) blend = grassblend;
-    for(int i = maxstep; i >= minstep; i--, color--, leftp.add(leftdir), rightp.add(rightdir), leftb += leftdb, rightb += rightdb, dist -= grassstep)
+    for(int i = maxstep; i >= minstep; i--, offset--, leftp.add(leftdir), rightp.add(rightdir), leftb += leftdb, rightb += rightdb, dist -= grassstep)
     {
         if(dist <= leftdist)
         {
@@ -187,7 +189,7 @@ static void gengrassquads(grassgroup *&group, const grasswedge &w, const grasstr
             extern bool brightengeom;
             int lmid = brightengeom && (g.lmid < LMID_RESERVED || (fullbright && editmode)) ? LMID_BRIGHT : g.lmid;
             group->lmtex = lightmaptexs.inrange(lmid) ? lightmaptexs[lmid].id : notexture->id;
-            group->offset = grassverts.length();
+            group->offset = grassverts.length()/4;
             group->numquads = 0;
             group->scale = gs;
             group->height = gh;
@@ -196,9 +198,9 @@ static void gengrassquads(grassgroup *&group, const grasswedge &w, const grasstr
 
         group->numquads++;
 
-        float offset = grassoffsets[color%numgrassoffsets],
-              animoffset = animscale*grassanimoffsets[color%numgrassoffsets],
-              tc1 = tc.dot(p1) + offset, tc2 = tc.dot(p2) + offset,
+        float tcoffset = grassoffsets[offset%numgrassoffsets],
+              animoffset = animscale*grassanimoffsets[offset%numgrassoffsets],
+              tc1 = tc.dot(p1) + tcoffset, tc2 = tc.dot(p2) + tcoffset,
               fade = dist - t > taperdist ? (grassdist - (dist - t))*taperscale : 1,
               height = gh * fade;
         vec2 lm1(g.tcu.dot(p1), g.tcv.dot(p1)),
@@ -278,7 +280,17 @@ void generategrass()
         gengrassquads(va);
     }
 
+    if(grassgroups.empty()) return;
+
     grassgroups.sort(comparegrassgroups);
+
+    if(!grassvbo) glGenBuffers_(1, &grassvbo);
+    glBindBuffer_(GL_ARRAY_BUFFER, grassvbo);
+    int size = grassverts.length()*sizeof(grassvert);
+    grassvbosize = max(grassvbosize, size);
+    glBufferData_(GL_ARRAY_BUFFER, grassvbosize, size == grassvbosize ? grassverts.getbuf() : NULL, GL_STREAM_DRAW);
+    if(size != grassvbosize) glBufferSubData_(GL_ARRAY_BUFFER, 0, size, grassverts.getbuf());
+    glBindBuffer_(GL_ARRAY_BUFFER, 0);
 }
 
 void rendergrass()
@@ -292,21 +304,18 @@ void rendergrass()
 
     SETSHADER(grass);
 
-    glEnableClientState(GL_VERTEX_ARRAY);
-    glVertexPointer(3, GL_FLOAT, sizeof(grassvert), grassverts[0].pos.v);
+    glBindBuffer_(GL_ARRAY_BUFFER, grassvbo);
 
-    glEnableClientState(GL_COLOR_ARRAY);
-    glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(grassvert), grassverts[0].color.v);
-
-    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-    glTexCoordPointer(2, GL_FLOAT, sizeof(grassvert), grassverts[0].tc.v);
-
-    glActiveTexture_(GL_TEXTURE1);
-    glClientActiveTexture_(GL_TEXTURE1);
-    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-    glTexCoordPointer(2, GL_FLOAT, sizeof(grassvert), grassverts[0].lm.v);
-    glClientActiveTexture_(GL_TEXTURE0);
-    glActiveTexture_(GL_TEXTURE0);
+    const grassvert *ptr = 0;
+    gle::vertexpointer(sizeof(grassvert), ptr->pos.v);
+    gle::colorpointer(sizeof(grassvert), ptr->color.v);
+    gle::texcoord0pointer(sizeof(grassvert), ptr->tc.v);
+    gle::texcoord1pointer(sizeof(grassvert), ptr->lm.v);
+    gle::enablevertex();
+    gle::enablecolor();
+    gle::enabletexcoord0();
+    gle::enabletexcoord1();
+    gle::enablequads();
 
     int texid = -1, lmtexid = -1;
     loopv(grassgroups)
@@ -332,22 +341,27 @@ void rendergrass()
             lmtexid = g.lmtex;
         }
 
-        glDrawArrays(GL_QUADS, g.offset, 4*g.numquads);
+        gle::drawquads(g.offset, g.numquads);
         xtravertsva += 4*g.numquads;
     }
 
-    glDisableClientState(GL_VERTEX_ARRAY);
-    glDisableClientState(GL_COLOR_ARRAY);
-    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-
-    glActiveTexture_(GL_TEXTURE1);
-    glClientActiveTexture_(GL_TEXTURE1);
-    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-    glClientActiveTexture_(GL_TEXTURE0);
-    glActiveTexture_(GL_TEXTURE0);
+    gle::disablequads();
+    gle::disablevertex();
+    gle::disablecolor();
+    gle::disabletexcoord0();
+    gle::disabletexcoord1();
+    
+    glBindBuffer_(GL_ARRAY_BUFFER, 0);
 
     glDisable(GL_BLEND);
     glDepthMask(GL_TRUE);
     glEnable(GL_CULL_FACE);
 }
+
+void cleanupgrass()
+{
+    if(grassvbo) { glDeleteBuffers_(1, &grassvbo); grassvbo = 0; }
+    grassvbosize = 0;
+}
+
 

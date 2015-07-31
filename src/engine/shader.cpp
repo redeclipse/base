@@ -118,8 +118,6 @@ static void compileglslshader(GLenum type, GLuint &obj, const char *def, const c
         break;
     }
 
-    parts[numparts++] = "#extension GL_ARB_texture_rectangle : enable\n";
-
     parts[numparts++] = source;
 
     obj = glCreateShader_(type);
@@ -171,11 +169,14 @@ static void linkglslprogram(Shader &s, bool msg = true)
     {
         glAttachShader_(s.program, s.vsobj);
         glAttachShader_(s.program, s.psobj);
+        uint attribs = 0;
         loopv(s.attriblocs)
         {
             AttribLoc &a = s.attriblocs[i];
             glBindAttribLocation_(s.program, a.loc, a.name);
+            attribs |= 1<<a.loc;
         }
+        loopi(gle::MAXATTRIBS) if(!(attribs&(1<<i))) glBindAttribLocation_(s.program, i, gle::attribnames[i]);
         glLinkProgram_(s.program);
         glGetProgramiv_(s.program, GL_LINK_STATUS, &success);
     }
@@ -616,20 +617,23 @@ void setupshaders()
 
     standardshaders = true;
     nullshader = newshader(0, "<init>null",
+        "attribute vec4 vvertex;\n"
         "void main(void) {\n"
-        "    gl_Position = gl_Vertex;\n"
+        "    gl_Position = vvertex;\n"
         "}\n",
         "void main(void) {\n"
         "    gl_FragColor = vec4(1.0, 0.0, 1.0, 0.0);\n"
         "}\n");
     hudshader = newshader(0, "<init>hud",
-       "uniform mat4 hudmatrix;\n"
-       "varying vec2 texcoord0;\n"
-       "varying vec4 color;\n"
-       "void main(void) {\n"
-        "    gl_Position = hudmatrix * gl_Vertex;\n"
-        "    texcoord0 = gl_MultiTexCoord0.xy;\n"
-        "    color = gl_Color;\n"
+        "attribute vec4 vvertex, vcolor;\n"
+        "attribute vec2 vtexcoord0;\n"
+        "uniform mat4 hudmatrix;\n"
+        "varying vec2 texcoord0;\n"
+        "varying vec4 color;\n"
+        "void main(void) {\n"
+        "    gl_Position = hudmatrix * vvertex;\n"
+        "    texcoord0 = vtexcoord0;\n"
+        "    color = vcolor;\n"
         "}\n",
         "varying vec2 texcoord0;\n"
         "varying vec4 color;\n"
@@ -638,11 +642,13 @@ void setupshaders()
         "    gl_FragColor = color * texture2D(tex0, texcoord0);\n"
         "}\n");
     hudnotextureshader = newshader(0, "<init>hudnotexture",
+        "attribute vec4 vvertex, vcolor;\n"
+        "attribute vec2 vtexcoord0;\n"
         "uniform mat4 hudmatrix;\n"
         "varying vec4 color;\n"
         "void main(void) {\n"
-        "    gl_Position = hudmatrix * gl_Vertex;\n"
-        "    color = gl_Color;\n"
+        "    gl_Position = hudmatrix * vvertex;\n"
+        "    color = vcolor;\n"
         "}\n",
         "varying vec4 color;\n"
         "void main(void) {\n"
@@ -728,7 +734,7 @@ static bool genwatervariant(Shader &s, const char *sname, const char *vs, const 
     const char *fadeparams = "\nuniform vec4 waterfadeparams;\nvarying float fadedepth;\n";
     vsw.put(fadeparams, strlen(fadeparams));
     vsw.put(vsmain, vsend - vsmain);
-    const char *fadedef = "\nfadedepth = gl_Vertex.z*waterfadeparams.x + waterfadeparams.y;\n";
+    const char *fadedef = "\nfadedepth = vvertex.z*waterfadeparams.x + waterfadeparams.y;\n";
     vsw.put(fadedef, strlen(fadedef));
     vsw.put(vsend, strlen(vsend)+1);
         
@@ -795,7 +801,7 @@ static void gendynlightvariant(Shader &s, const char *sname, const char *vs, con
         {
             defformatstring(tc, 
                 k<numlights ? 
-                    "dynlight%ddir = gl_Vertex.xyz*dynlightpos[%d].w + dynlightpos[%d].xyz;\n" :
+                    "dynlight%ddir = vvertex.xyz*dynlightpos[%d].w + dynlightpos[%d].xyz;\n" :
                     "vec3 dynlight%ddir = dynlight0dir*dynlightpos[%d].w + dynlightpos[%d].xyz;\n",     
                 k, k, k);
             if(k < numlights) vsdl.put(tc, strlen(tc));
@@ -853,7 +859,7 @@ static void genshadowmapvariant(Shader &s, const char *sname, const char *vs, co
 
     extern int smoothshadowmappeel;
     const char *tcgen =
-        "shadowmaptc = vec3(shadowmapproject * gl_Vertex);\n";
+        "shadowmaptc = vec3(shadowmapproject * vvertex);\n";
     vssm.put(tcgen, strlen(tcgen));
     const char *sm =
         smoothshadowmappeel ?
@@ -1262,7 +1268,7 @@ static int allocatepostfxtex(int scale)
     postfxtex &t = postfxtexs.add();
     t.scale = scale;
     glGenTextures(1, &t.id);
-    createtexture(t.id, max(screen->w>>scale, 1), max(screen->h>>scale, 1), NULL, 3, 1, GL_RGB, GL_TEXTURE_RECTANGLE);
+    createtexture(t.id, max(screen->w>>scale, 1), max(screen->h>>scale, 1), NULL, 3, 1, GL_RGB);
     return postfxtexs.length()-1;
 }
 
@@ -1283,8 +1289,7 @@ void cleanuppostfx(bool fullclean)
 
 void renderpostfx()
 {
-    extern int viewtype;
-    if(postfxpasses.empty() || viewtype) return;
+    if(postfxpasses.empty()) return;
 
     if(postfxw != screen->w || postfxh != screen->h)
     {
@@ -1299,8 +1304,8 @@ void renderpostfx()
 
     binds[0] = allocatepostfxtex(0);
     postfxtexs[binds[0]].used = 0;
-    glBindTexture(GL_TEXTURE_RECTANGLE, postfxtexs[binds[0]].id);
-    glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE, 0, 0, 0, 0, 0, screen->w, screen->h);
+    glBindTexture(GL_TEXTURE_2D, postfxtexs[binds[0]].id);
+    glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, screen->w, screen->h);
 
     if(postfxpasses.length() > 1)
     {
@@ -1322,7 +1327,7 @@ void renderpostfx()
         else
         {
             tex = allocatepostfxtex(p.outputscale);
-            glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, postfxtexs[tex].id, 0);
+            glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, postfxtexs[tex].id, 0);
         }
 
         int w = tex >= 0 ? max(screen->w>>postfxtexs[tex].scale, 1) : screen->w,
@@ -1339,16 +1344,12 @@ void renderpostfx()
                 th = max(screen->h>>postfxtexs[binds[j]].scale, 1);
             }
             else glActiveTexture_(GL_TEXTURE0 + tmu);
-            glBindTexture(GL_TEXTURE_RECTANGLE, postfxtexs[binds[j]].id);
+            glBindTexture(GL_TEXTURE_2D, postfxtexs[binds[j]].id);
             ++tmu;
         }
         if(tmu) glActiveTexture_(GL_TEXTURE0);
-        glBegin(GL_TRIANGLE_STRIP);
-        glTexCoord2f(0,  0);  glVertex2f(-1, -1);
-        glTexCoord2f(tw, 0);  glVertex2f( 1, -1);
-        glTexCoord2f(0,  th); glVertex2f(-1,  1);
-        glTexCoord2f(tw, th); glVertex2f( 1,  1);
-        glEnd();
+        LOCALPARAMF(postfxscale, 1.0f/tw, 1.0f/th);
+        screenquad(1, 1);
 
         loopj(NUMPOSTFXBINDS) if(p.freeinputs&(1<<j) && binds[j] >= 0)
         {
@@ -1471,15 +1472,14 @@ void setupblurkernel(int radius, float sigma, float *weights, float *offsets)
     for(int i = radius+1; i <= MAXBLURRADIUS; i++) weights[i] = offsets[i] = 0;
 }
 
-void setblurshader(int pass, int size, int radius, float *weights, float *offsets, GLenum target)
+void setblurshader(int pass, int size, int radius, float *weights, float *offsets)
 {
     if(radius<1 || radius>MAXBLURRADIUS) return;
-    static Shader *blurshader[7][2] = { { NULL, NULL }, { NULL, NULL }, { NULL, NULL }, { NULL, NULL }, { NULL, NULL }, { NULL, NULL }, { NULL, NULL } },
-                  *blurrectshader[7][2] = { { NULL, NULL }, { NULL, NULL }, { NULL, NULL }, { NULL, NULL }, { NULL, NULL }, { NULL, NULL }, { NULL, NULL } };
-    Shader *&s = (target == GL_TEXTURE_RECTANGLE ? blurrectshader : blurshader)[radius-1][pass];
+    static Shader *blurshader[7][2] = { { NULL, NULL }, { NULL, NULL }, { NULL, NULL }, { NULL, NULL }, { NULL, NULL }, { NULL, NULL }, { NULL, NULL } };
+    Shader *&s = blurshader[radius-1][pass];
     if(!s)
     {
-        defformatstring(name, "blur%c%d%s", 'x'+pass, radius, target == GL_TEXTURE_RECTANGLE ? "rect" : "");
+        defformatstring(name, "blur%c%d", 'x'+pass, radius);
         s = lookupshaderbyname(name);
     }
     s->set();

@@ -743,12 +743,16 @@ namespace hud
 
     void drawquad(float x, float y, float w, float h, float tx1, float ty1, float tx2, float ty2, bool flipx, bool flipy)
     {
-        glBegin(GL_TRIANGLE_STRIP);
-        glTexCoord2f(flipx ? tx2 : tx1, flipy ? ty2 : ty1); glVertex2f(x, y);
-        glTexCoord2f(flipx ? tx1 : tx2, flipy ? ty2 : ty1); glVertex2f(x+w, y);
-        glTexCoord2f(flipx ? tx2 : tx1, flipy ? ty1 : ty2); glVertex2f(x, y+h);
-        glTexCoord2f(flipx ? tx1 : tx2, flipy ? ty1 : ty2); glVertex2f(x+w, y+h);
-        glEnd();
+        if(flipx) swap(tx1, tx2);
+        if(flipy) swap(ty1, ty2);
+        gle::defvertex(2);
+        gle::deftexcoord0();
+        gle::begin(GL_TRIANGLE_STRIP);
+        gle::attribf(x, y); gle::attribf(tx1, ty1);
+        gle::attribf(x+w, y); gle::attribf(tx2, ty1);
+        gle::attribf(x, y+h); gle::attribf(tx1, ty2);
+        gle::attribf(x+w, y+h); gle::attribf(tx2, ty2);
+        gle::end();
     }
     void drawcoord(float x, float y, float w, float h, float tx, float ty, float tw, float th, bool flipx, bool flipy) { drawquad(x, y, w, h, tx, ty, tx+tw, ty+th, flipx, flipy); }
     void drawtexture(float x, float y, float w, float h, bool flipx, bool flipy) { drawquad(x, y, w, h, 0, 0, 1, 1, flipx, flipy); }
@@ -758,13 +762,14 @@ namespace hud
     {
         if(!blend) glEnable(GL_BLEND);
         glBlendFunc(GL_ZERO, GL_SRC_COLOR);
-        glColor3f(r, g, b);
-        glBegin(GL_TRIANGLE_STRIP);
-        glVertex2f(x, y);
-        glVertex2f(x+w, y);
-        glVertex2f(x, y+h);
-        glVertex2f(x+w, y+h);
-        glEnd();
+        gle::colorf(r, g, b);
+        gle::defvertex(2);
+        gle::begin(GL_TRIANGLE_STRIP);
+        gle::attribf(x, y);
+        gle::attribf(x+w, y);
+        gle::attribf(x, y+h);
+        gle::attribf(x+w, y+h);
+        gle::end();
         if(!blend) glDisable(GL_BLEND);
         else glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     }
@@ -883,9 +888,9 @@ namespace hud
         else glBlendFunc(GL_ONE, GL_ONE);
         glBindTexture(GL_TEXTURE_2D, t->id);
         float val = amt < 0.25f ? amt : (amt > 0.75f ? 1.f-amt : 0.25f);
-        glColor4f(val*4.f, val*4.f, val*4.f, indicatorblend*hudblend*val);
+        gle::colorf(val*4.f, val*4.f, val*4.f, indicatorblend*hudblend*val);
         drawsized(x-s, y-s, s*2);
-        glColor4f(r, g, b, indicatorblend*hudblend);
+        gle::colorf(r, g, b, indicatorblend*hudblend);
         drawslice(0, clamp(amt, 0.f, 1.f), x, y, s);
     }
 
@@ -920,23 +925,28 @@ namespace hud
             while(rot < 0.0f) rot += 360.0f;
             while(rot >= 360.0f) rot -= 360.0f;
             vec2 loc(x+offset*sinf(RAD*angle), y+offset*-cosf(RAD*angle));
-            glColor4f(colour.r, colour.g, colour.b, blend);
+            gle::color(colour, blend);
             glBindTexture(GL_TEXTURE_2D, t->id);
-            glBegin(GL_TRIANGLE_STRIP);
+            gle::defvertex(2);
+            gle::deftexcoord0();
+            gle::begin(GL_TRIANGLE_STRIP);
             loopk(4)
             {
-                vec2 norm;
+                vec2 norm, tc;
                 switch(k)
                 {
-                    case 0: vecfromyaw(rot, 1, -1, norm);   glTexCoord2f(flipx ? 1 : 0, flipy ? 0 : 1); break;
-                    case 1: vecfromyaw(rot, 1, 1, norm);    glTexCoord2f(flipx ? 0 : 1, flipy ? 0 : 1); break;
-                    case 2: vecfromyaw(rot, -1, -1, norm);  glTexCoord2f(flipx ? 1 : 0, flipy ? 1 : 0); break;
-                    case 3: vecfromyaw(rot, -1, 1, norm);   glTexCoord2f(flipx ? 0 : 1, flipy ? 1 : 0); break;
+                    case 0: vecfromyaw(rot, 1, -1, norm);   tc = vec2(0, 1); break;
+                    case 1: vecfromyaw(rot, 1, 1, norm);    tc = vec2(1, 1); break;
+                    case 2: vecfromyaw(rot, -1, -1, norm);  tc = vec2(0, 0); break;
+                    case 3: vecfromyaw(rot, -1, 1, norm);   tc = vec2(1, 0); break;
                 }
-                norm.normalize().mul(size*0.5f).add(loc);
-                glVertex2f(norm.x, norm.y);
+                norm.mul(size*0.5f).add(loc);
+                gle::attrib(norm);
+                if(flipx) tc.x = 1 - tc.x;
+                if(flipy) tc.y = 1 - tc.y;
+                gle::attrib(tc);
             }
-            glEnd();
+            gle::end();
         }
     }
 
@@ -946,7 +956,7 @@ namespace hud
         if(t->type&Texture::ALPHA) glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         else glBlendFunc(GL_ONE, GL_ONE);
         glBindTexture(GL_TEXTURE_2D, t->id);
-        glColor4f(colour.r, colour.g, colour.b, blend);
+        gle::color(colour, blend);
         drawslice(start, length, x, y, size);
     }
 
@@ -1120,11 +1130,11 @@ namespace hud
                     break;
                 }
             }
-            glColor4f(c.r*0.25f, c.g*0.25f, c.b*0.25f, hudblend*circlebarblend*0.65f);
+            gle::color(vec(c).mul(0.25f), hudblend*circlebarblend*0.65f);
             drawslice(pos, slice, x, y, s*circlebarsize);
             if(val > 0)
             {
-                glColor4f(c.r, c.g, c.b, fade);
+                gle::color(c, fade);
                 drawslice(pos, val*slice, x, y, s*circlebarsize);
             }
             float nps = pos+val*slice;
@@ -1187,7 +1197,7 @@ namespace hud
             }
             if(val > 0)
             {
-                glColor4f(c.r, c.g, c.b, fade);
+                gle::color(c, fade);
                 drawslice(nps, val*slice, x, y, s*circlebarsize);
             }
             pos += slice;
@@ -1201,7 +1211,7 @@ namespace hud
         {
             if(t->type&Texture::ALPHA) glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             else glBlendFunc(GL_ONE, GL_ONE);
-            glColor4f(r, g, b, fade);
+            gle::colorf(r, g, b, fade);
             glBindTexture(GL_TEXTURE_2D, t->id);
             drawsized(x, y, s);
         }
@@ -1591,7 +1601,7 @@ namespace hud
                 if(t != notexture)
                 {
                     glBindTexture(GL_TEXTURE_2D, t->id);
-                    glColor4f(1.f, 1.f, 1.f, overlayblend*hudblend);
+                    gle::colorf(1.f, 1.f, 1.f, overlayblend*hudblend);
                     drawtexture(0, 0, hudwidth, hudheight);
                 }
             }
@@ -1714,7 +1724,7 @@ namespace hud
                     ts = int(s/commandscale), tq = (concenter ? tx+ts/2-FONTW*3 : tx), tr = int(tw+FONTW), tt = ts-(FONTH+FONTW);
                 tz = int(tz/commandscale);
                 glBindTexture(GL_TEXTURE_2D, t->id);
-                glColor4f(c.x, c.y, c.z, fullconblend*fade*f);
+                gle::color(c, fullconblend*fade*f);
                 drawtexture(tx, ty+tz, th, tw);
                 int cp = commandpos >= 0 ? commandpos : strlen(commandbuf);//, fp = completesize && completeoffset >= 0 ? min(pos, completeoffset+completesize) : -1;
                 tz += draw_textx("%s", tq+tr, ty+tz, 255, 255, 255, int(255*fullconblend*fade), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, cp, tt, commandbuf);
@@ -1898,37 +1908,40 @@ namespace hud
             loc.x += tx;
             loc.y += ty;
         }
-        glColor4f(colour.x, colour.y, colour.z, blend);
+        gle::color(colour, blend);
         Texture *t = textureload(tex, 3);
         if(t)
         {
             glBindTexture(GL_TEXTURE_2D, t->id);
-            glBegin(GL_TRIANGLE_STRIP);
+            gle::defvertex(2);
+            gle::deftexcoord0();
+            gle::begin(GL_TRIANGLE_STRIP);
             if(style != 2 && radarbliprotate)
             {
                 vec2 o(loc.x, loc.y);
                 loopk(4)
                 {
-                    vec2 norm;
+                    vec2 norm, tc;
                     switch(k)
                     {
-                        case 0: vecfromyaw(yaw, 1, -1, norm);   glTexCoord2f(0, 1); break;
-                        case 1: vecfromyaw(yaw, 1, 1, norm);    glTexCoord2f(1, 1); break;
-                        case 2: vecfromyaw(yaw, -1, -1, norm);  glTexCoord2f(0, 0); break;
-                        case 3: vecfromyaw(yaw, -1, 1, norm);   glTexCoord2f(1, 0); break;
+                        case 0: vecfromyaw(yaw, 1, -1, norm);   tc = vec2(0, 1); break;
+                        case 1: vecfromyaw(yaw, 1, 1, norm);    tc = vec2(1, 1); break;
+                        case 2: vecfromyaw(yaw, -1, -1, norm);  tc = vec2(0, 0); break;
+                        case 3: vecfromyaw(yaw, -1, 1, norm);   tc = vec2(1, 0); break;
                     }
-                    norm.normalize().mul(tq).add(o);
-                    glVertex2f(norm.x, norm.y);
+                    norm.mul(tq).add(o);
+                    gle::attrib(norm);
+                    gle::attrib(tc);
                 }
             }
             else
             {
-                glTexCoord2f(0, 1); glVertex2f(loc.x - tq, loc.y + tq);
-                glTexCoord2f(1, 1); glVertex2f(loc.x + tq, loc.y + tq);
-                glTexCoord2f(0, 0); glVertex2f(loc.x - tq, loc.y - tq);
-                glTexCoord2f(1, 0); glVertex2f(loc.x + tq, loc.y - tq);
+                gle::attribf(loc.x - tq, loc.y + tq); gle::attribf(0, 1);
+                gle::attribf(loc.x + tq, loc.y + tq); gle::attribf(1, 1);
+                gle::attribf(loc.x - tq, loc.y - tq); gle::attribf(0, 0);
+                gle::attribf(loc.x + tq, loc.y - tq); gle::attribf(1, 0);
             }
-            glEnd();
+            gle::end();
         }
         if(text && *text)
         {
@@ -2137,20 +2150,22 @@ namespace hud
             vec pos = vec(camera1->o).sub(minimapcenter).mul(minimapscale).add(0.5f), dir(camera1->yaw*RAD, 0.f);
             float scale = radarrange(), size = max(w, h)/2, s = size*radarcorner, x = w-s*2, y = 0, q = s*2*radarcorneroffset, r = s-q;
             bindminimap();
-            glColor4f(radarcornerbright, radarcornerbright, radarcornerbright, radarcornerblend);
-            glBegin(GL_TRIANGLE_FAN);
+            gle::colorf(radarcornerbright, radarcornerbright, radarcornerbright, radarcornerblend);
+            gle::defvertex(2);
+            gle::deftexcoord0();
+            gle::begin(GL_TRIANGLE_FAN);
             loopi(16)
             {
-                vec tc = vec(dir).rotate_around_z(i/16.0f*2*M_PI);
-                glTexCoord2f(pos.x + tc.x*scale*minimapscale.x, pos.y + tc.y*scale*minimapscale.y);
                 vec v = vec(0, -1, 0).rotate_around_z(i/16.0f*2*M_PI);
-                glVertex2f(x + q + r*(1.0f + v.x), y + q + r*(1.0f + v.y));
+                gle::attribf(x + q + r*(1.0f + v.x), y + q + r*(1.0f + v.y));
+                vec tc = vec(dir).rotate_around_z(i/16.0f*2*M_PI);
+                gle::attribf(pos.x + tc.x*scale*minimapscale.x, pos.y + tc.y*scale*minimapscale.y);
             }
-            glEnd();
+            gle::end();
             float gr = 1, gg = 1, gb = 1;
             if(radartone) skewcolour(gr, gg, gb, radartone);
             settexture(radarcornertex, 3);
-            glColor4f(gr*radartexbright, gg*radartexbright, gb*radartexbright, radartexblend);
+            gle::colorf(gr*radartexbright, gg*radartexbright, gb*radartexbright, radartexblend);
             drawsized(w-s*2, 0, s*2);
         }
         if(chkcond(radaritems, !game::tvmode()) || m_edit(game::gamemode)) drawentblips(w, h, blend*radarblend); // 2
@@ -2188,13 +2203,13 @@ namespace hud
     {
         if(skew <= 0.f) return 0;
         float q = clamp(skew, 0.f, 1.f), cr = r*q, cg = g*q, cb = b*q, s = size*skew, cs = s/2, cx = left ? x+cs : x-cs, cy = y-cs;
-        glColor4f(cr, cg, cb, fade);
+        gle::colorf(cr, cg, cb, fade);
         settexture(progringtex, 3);
         drawslice((SDL_GetTicks()%1000)/1000.f, 0.1f, cx, cy, cs);
         settexture(progresstex, 3);
-        glColor4f(cr, cg, cb, fade*0.25f);
+        gle::colorf(cr, cg, cb, fade*0.25f);
         drawslice(0, 1, cx, cy, cs);
-        glColor4f(cr, cg, cb, fade);
+        gle::colorf(cr, cg, cb, fade);
         drawslice(start, length, cx, cy, cs);
         if(text && *text)
         {
@@ -2227,7 +2242,10 @@ namespace hud
               w = float(t->w)/float(t->h)*s, btoff = 1-inventorybarbottom, middle = btoff-inventorybartop;
         int sx = int(w), sy = int(s), so = int(sx*inventorybaroffset), cx = left ? x-so : x-sx+so, cy = y-sy+int(sy*inventorybartop), cw = sx, ch = int(sy*middle), id = clamp(type, 0, 3);
         glBindTexture(GL_TEXTURE_2D, t->id);
-        glBegin(GL_TRIANGLE_STRIP);
+        gle::defvertex(2);
+        gle::deftexcoord0();
+        gle::defcolor(4);
+        gle::begin(GL_TRIANGLE_STRIP);
         const float margin = 0.1f;
         loopi(4)
         {
@@ -2240,8 +2258,8 @@ namespace hud
                           hr = cr*step.r*hlerp + cr*barsteps[id][i-1].r*(1-hlerp),
                           hg = cg*step.g*hlerp + cg*barsteps[id][i-1].g*(1-hlerp),
                           hb = cb*step.b*hlerp + cb*barsteps[id][i-1].b*(1-hlerp);
-                    glColor4f(hr, hg, hb, fade); glTexCoord2f(0, hoff*middle+inventorybartop); glVertex2f(cx, cy + hoff*ch);
-                    glColor4f(hr, hg, hb, fade); glTexCoord2f(1, hoff*middle+inventorybartop); glVertex2f(cx + cw, cy + hoff*ch);
+                    gle::attribf(cx, cy + hoff*ch); gle::attribf(0, hoff*middle+inventorybartop); gle::attribf(hr, hg, hb, fade);
+                    gle::attribf(cx + cw, cy + hoff*ch); gle::attribf(1, hoff*middle+inventorybartop); gle::attribf(hr, hg, hb, fade);
                 }
                 if(step.amt > amt + margin)
                 {
@@ -2249,17 +2267,17 @@ namespace hud
                           hr = cr*step.r*hlerp + cr*barsteps[id][i-1].r*(1-hlerp),
                           hg = cg*step.g*hlerp + cg*barsteps[id][i-1].g*(1-hlerp),
                           hb = cb*step.b*hlerp + cb*barsteps[id][i-1].b*(1-hlerp);
-                    glColor4f(hr, hg, hb, 0); glTexCoord2f(0, hoff*middle+inventorybartop); glVertex2f(cx, cy + hoff*ch);
-                    glColor4f(hr, hg, hb, 0); glTexCoord2f(1, hoff*middle+inventorybartop); glVertex2f(cx + cw, cy + hoff*ch);
+                    gle::attribf(cx, cy + hoff*ch); gle::attribf(0, hoff*middle+inventorybartop); gle::attribf(hr, hg, hb, 0);
+                    gle::attribf(cx + cw, cy + hoff*ch); gle::attribf(1, hoff*middle+inventorybartop); gle::attribf(hr, hg, hb, 0);
                     break;
                 }
             }
             float off = 1 - step.amt, hfade = fade, hr = cr*step.r, hg = cg*step.g, hb = cb*step.b;
             if(step.amt > amt) hfade *= 1 - (step.amt - amt)/margin;
-            glColor4f(hr, hg, hb, hfade); glTexCoord2f(0, off*middle+inventorybartop); glVertex2f(cx, cy + off*ch);
-            glColor4f(hr, hg, hb, hfade); glTexCoord2f(1, off*middle+inventorybartop); glVertex2f(cx + cw, cy + off*ch);
+            gle::attribf(cx, cy + off*ch); gle::attribf(0, off*middle+inventorybartop); gle::attribf(hr, hg, hb, hfade);
+            gle::attribf(cx + cw, cy + off*ch); gle::attribf(1, off*middle+inventorybartop); gle::attribf(hr, hg, hb, hfade);
         }
-        glEnd();
+        gle::end();
         return sy;
     }
 
@@ -2284,7 +2302,7 @@ namespace hud
                 glow += int(s*inventoryglow*amt);
             }
             glBindTexture(GL_TEXTURE_2D, u->id);
-            glColor4f(gr, gg, gb, fade*gf);
+            gle::colorf(gr, gg, gb, fade*gf);
             drawtexture(left ? cx-glow : cx-bw-glow, cy-cs-glow, bw+glow*2, cs+glow*2, left);
         }
         if(bg && inventorybg)
@@ -2303,7 +2321,7 @@ namespace hud
             cs = co;
             cw = int(cw*sub);
         }
-        glColor4f(cr, cg, cb, fade);
+        gle::colorf(cr, cg, cb, fade);
         glBindTexture(GL_TEXTURE_2D, t->id);
         drawtexture(left ? cx : cx-cw, cy-cs, cw, cs);
         if(text && *text)
@@ -2531,12 +2549,15 @@ namespace hud
                 glow += int(w*bgglow*skew);
             }
             settexture(bgtex, 3);
-            glColor4f(gr, gg, gb, fade*gf);
+            gle::colorf(gr, gg, gb, fade*gf);
             drawtexture(x-offset-glow, y-h-offset-glow, w+glow*2+offset*2, h+glow*2+offset*2);
         }
         if(amt <= 0.f) return h;
         settexture(tex, 3);
-        glBegin(GL_TRIANGLE_STRIP);
+        gle::defvertex(2);
+        gle::deftexcoord0();
+        gle::defcolor(4);
+        gle::begin(GL_TRIANGLE_STRIP);
         float btoff = 1-bottom, middle = btoff-top;
         int cx = x-offset, cy = y-h+int(h*top)-offset, cw = w+offset*2, ch = int(h*middle)+offset*2;
         const float margin = 0.1f;
@@ -2551,8 +2572,8 @@ namespace hud
                           r = step.r*hlerp + barsteps[id][i-1].r*(1-hlerp),
                           g = step.g*hlerp + barsteps[id][i-1].g*(1-hlerp),
                           b = step.b*hlerp + barsteps[id][i-1].b*(1-hlerp);
-                    glColor4f(r, g, b, fade); glTexCoord2f(0, hoff*middle+top); glVertex2f(cx, cy + hoff*ch);
-                    glColor4f(r, g, b, fade); glTexCoord2f(1, hoff*middle+top); glVertex2f(cx + cw, cy + hoff*ch);
+                    gle::attribf(cx, cy + hoff*ch); gle::attribf(0, hoff*middle+top); gle::attribf(r, g, b, fade);
+                    gle::attribf(cx + cw, cy + hoff*ch); gle::attribf(1, hoff*middle+top); gle::attribf(r, g, b, fade);
                 }
                 if(step.amt > amt + margin)
                 {
@@ -2560,17 +2581,17 @@ namespace hud
                           r = step.r*hlerp + barsteps[id][i-1].r*(1-hlerp),
                           g = step.g*hlerp + barsteps[id][i-1].g*(1-hlerp),
                           b = step.b*hlerp + barsteps[id][i-1].b*(1-hlerp);
-                    glColor4f(r, g, b, 0); glTexCoord2f(0, hoff*middle+top); glVertex2f(cx, cy + hoff*ch);
-                    glColor4f(r, g, b, 0); glTexCoord2f(1, hoff*middle+top); glVertex2f(cx + cw, cy + hoff*ch);
+                    gle::attribf(cx, cy + hoff*ch); gle::attribf(0, hoff*middle+top); gle::attribf(r, g, b, 0);
+                    gle::attribf(cx + cw, cy + hoff*ch); gle::attribf(1, hoff*middle+top); gle::attribf(r, g, b, 0);
                     break;
                 }
             }
             float off = 1 - step.amt, hfade = fade, r = step.r, g = step.g, b = step.b;
             if(step.amt > amt) hfade *= 1 - (step.amt - amt)/margin;
-            glColor4f(r, g, b, hfade); glTexCoord2f(0, off*middle+top); glVertex2f(cx, cy + off*ch);
-            glColor4f(r, g, b, hfade); glTexCoord2f(1, off*middle+top); glVertex2f(cx + cw, cy + off*ch);
+            gle::attribf(cx, cy + off*ch); gle::attribf(0, off*middle+top); gle::attribf(r, g, b, hfade);
+            gle::attribf(cx + cw, cy + off*ch); gle::attribf(1, off*middle+top); gle::attribf(r, g, b, hfade);
         }
-        glEnd();
+        gle::end();
         return h;
     }
 
@@ -2979,7 +3000,7 @@ namespace hud
                 if(t && t != notexture)
                 {
                     glBindTexture(GL_TEXTURE_2D, t->id);
-                    glColor4f(0.85f, 0.09f, 0.09f, pc*blend*damageblend);
+                    gle::colorf(0.85f, 0.09f, 0.09f, pc*blend*damageblend);
                     drawtexture(0, top, w, h-top-bottom);
                 }
             }
@@ -2996,7 +3017,7 @@ namespace hud
                 int interval = lastmillis-game::focus->lastres[WR_BURN];
                 float pc = interval >= burntime-500 ? 1.f+(interval-(burntime-500))/500.f : (interval%burndelay)/float(burndelay/2); if(pc > 1.f) pc = 2.f-pc;
                 glBindTexture(GL_TEXTURE_2D, t->id);
-                glColor4f(0.9f*max(pc,0.5f), 0.3f*pc, 0.0625f*max(pc,0.25f), blend*burnblend*(interval >= burntime-(burndelay/2) ? pc : min(pc+0.5f, 1.f)));
+                gle::colorf(0.9f*max(pc,0.5f), 0.3f*pc, 0.0625f*max(pc,0.25f), blend*burnblend*(interval >= burntime-(burndelay/2) ? pc : min(pc+0.5f, 1.f)));
                 drawtexture(0, top, w, h-top-bottom);
             }
         }
@@ -3029,7 +3050,7 @@ namespace hud
         }
         else c = h;
         glBindTexture(GL_TEXTURE_2D, t->id);
-        glColor4f(1.f, 1.f, 1.f, pc);
+        gle::colorf(1.f, 1.f, 1.f, pc);
         drawtexture(x, y, c, c);
     }
 
@@ -3045,7 +3066,7 @@ namespace hud
         if(!s) return;
         vec col = vec(0, 0, 0);
         if(bcolour[type]) skewcolour(col.x, col.y, col.z, bcolour[type]);
-        glColor4f(col.r, col.g, col.b, bfade[type]);
+        gle::color(col, bfade[type]);
         loopi(BORDERP_MAX) if(btype[type]&(1<<i))
         {
             const char *bptex = i ? borderbottomtex : bordertoptex;
@@ -3084,7 +3105,7 @@ namespace hud
 
     void drawbackground(int w, int h, int &top, int &bottom)
     {
-        glColor4f(1, 1, 1, 1);
+        gle::colorf(1, 1, 1, 1);
 
         Texture *t = NULL;
         int mapbg = 0;
@@ -3110,7 +3131,7 @@ namespace hud
 
         drawspecborder(w, h, BORDER_BG, top, bottom);
 
-        glColor4f(1, 1, 1, 1);
+        gle::colorf(1, 1, 1, 1);
 
         t = textureload(logotex, 3);
         glBindTexture(GL_TEXTURE_2D, t->id);
@@ -3159,7 +3180,7 @@ namespace hud
             if(t != notexture)
             {
                 glBindTexture(GL_TEXTURE_2D, t->id);
-                glColor4f(1.f, 1.f, 1.f, underlayblend*hudblend);
+                gle::colorf(1.f, 1.f, 1.f, underlayblend*hudblend);
                 drawtexture(0, top, w, h-top-bottom);
             }
         }
@@ -3186,7 +3207,7 @@ namespace hud
                         Texture *t = textureload(warningtex, 3);
                         glBindTexture(GL_TEXTURE_2D, t->id);
                         float amt = float(lastmillis%250)/250.f, value = (amt > 0.5f ? 1.f-amt : amt)*2.f;
-                        glColor4f(value, value*0.125f, value*0.125f, value);
+                        gle::colorf(value, value*0.125f, value*0.125f, value);
                         hasbound = true;
                     }
                     float cx = 0.5f, cy = 0.5f, cz = 1;
@@ -3252,8 +3273,7 @@ namespace hud
                             default: break;
                         }
                         glBindTexture(GL_TEXTURE_2D, t->id);
-                        vec c = vec::hexcolor(colour);
-                        glColor4f(c.r, c.g, c.b, fade);
+                        gle::color(vec::hexcolor(colour), fade);
                         drawtexture(tx-width/2, ty-size, width, size);
                         ty -= game::focus->icons[i].type < eventicon::SORTED ? int(size*2/3) : int(size);
                     }
@@ -3344,7 +3364,7 @@ namespace hud
         int edge = int(hudsize*edgesize), left = 0, top = 0, bottom = 0;
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glColor3f(1, 1, 1);
+        gle::colorf(1, 1, 1);
 
         if(noview) drawbackground(hudwidth, hudheight, top, bottom);
         else if(!client::waiting())

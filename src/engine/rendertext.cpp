@@ -188,7 +188,7 @@ static float draw_char(Texture *&tex, int c, float x, float y, float scale)
     font::charinfo &info = curfont->chars[c-curfont->charoffset];
     if(tex != curfont->texs[info.tex])
     {
-        xtraverts += varray::end();
+        xtraverts += gle::end();
         tex = curfont->texs[info.tex];
         glBindTexture(GL_TEXTURE_2D, tex->id);
     }
@@ -204,17 +204,17 @@ static float draw_char(Texture *&tex, int c, float x, float y, float scale)
 
     if(textmatrix)
     {
-        varray::attrib(textmatrix->transform(vec2(x1, y1))); varray::attrib<float>(tx1, ty1);
-        varray::attrib(textmatrix->transform(vec2(x2, y1))); varray::attrib<float>(tx2, ty1);
-        varray::attrib(textmatrix->transform(vec2(x2, y2))); varray::attrib<float>(tx2, ty2);
-        varray::attrib(textmatrix->transform(vec2(x1, y2))); varray::attrib<float>(tx1, ty2);
+        gle::attrib(textmatrix->transform(vec2(x1, y1))); gle::attribf(tx1, ty1);
+        gle::attrib(textmatrix->transform(vec2(x2, y1))); gle::attribf(tx2, ty1);
+        gle::attrib(textmatrix->transform(vec2(x2, y2))); gle::attribf(tx2, ty2);
+        gle::attrib(textmatrix->transform(vec2(x1, y2))); gle::attribf(tx1, ty2);
     }
     else
     {
-        varray::attrib<float>(x1, y1); varray::attrib<float>(tx1, ty1);
-        varray::attrib<float>(x2, y1); varray::attrib<float>(tx2, ty1);
-        varray::attrib<float>(x2, y2); varray::attrib<float>(tx2, ty2);
-        varray::attrib<float>(x1, y2); varray::attrib<float>(tx1, ty2);
+        gle::attribf(x1, y1); gle::attribf(tx1, ty1);
+        gle::attribf(x2, y1); gle::attribf(tx2, ty1);
+        gle::attribf(x2, y2); gle::attribf(tx2, ty2);
+        gle::attribf(x1, y2); gle::attribf(tx1, ty2);
     }
 
     return scale*info.advance;
@@ -255,7 +255,7 @@ static void text_color(char c, bvec4 *stack, int size, int &sp, bvec4 &color, in
         case 's': // save
         {
             if(sp < size-1) stack[++sp] = color;
-            break;
+            return;
         }
         case 'S': // restore
         {
@@ -265,8 +265,8 @@ static void text_color(char c, bvec4 *stack, int size, int &sp, bvec4 &color, in
         }
         default: color = stack[sp]; break; // everything else
     }
-    xtraverts += varray::end();
-    glColor4ub(color.r, color.g, color.b, color.a);
+    xtraverts += gle::end();
+    gle::color(color);
 }
 
 static const char *gettexvar(const char *var)
@@ -282,6 +282,12 @@ static const char *gettexvar(const char *var)
         default: return "";
     }
 }
+
+#define textvert(vx,vy) do { \
+    if(textmatrix) gle::attrib(textmatrix->transform(vec2(vx, vy))); \
+    else gle::attribf(vx, vy); \
+} while(0)
+
 static float draw_icon(Texture *&tex, const char *name, float x, float y, float scale)
 {
     if(!name && !*name) return 0;
@@ -292,15 +298,15 @@ static float draw_icon(Texture *&tex, const char *name, float x, float y, float 
     if(!t) return 0;
     if(tex != t)
     {
-        xtraverts += varray::end();
+        xtraverts += gle::end();
         tex = t;
         glBindTexture(GL_TEXTURE_2D, tex->id);
     }
     float h = curfont->maxh*scale, w = (t->w*h)/float(t->h);
-    varray::attrib<float>(x,     y    ); varray::attrib<float>(0, 0);
-    varray::attrib<float>(x + w, y    ); varray::attrib<float>(1, 0);
-    varray::attrib<float>(x + w, y + h); varray::attrib<float>(1, 1);
-    varray::attrib<float>(x,     y + h); varray::attrib<float>(0, 1);
+    textvert(x,     y    ); gle::attribf(0, 0);
+    textvert(x + w, y    ); gle::attribf(1, 0);
+    textvert(x + w, y + h); gle::attribf(1, 1);
+    textvert(x,     y + h); gle::attribf(0, 1);
     return w;
 }
 
@@ -514,37 +520,37 @@ int draw_key(Texture *&tex, const char *str, float sx, float sy, float sc, bvec4
         Texture *t = textureload(textkeybgtex, 3, true, false);
         if(tex != t)
         {
-            xtraverts += varray::end();
+            xtraverts += gle::end();
             tex = t;
             glBindTexture(GL_TEXTURE_2D, tex->id);
         }
 
-        glColor4ub(uchar((textkeybgcolour>>16)&0xFF), uchar((textkeybgcolour>>8)&0xFF), uchar(textkeybgcolour&0xFF), uchar(textkeybgblend*cl.a));
+        gle::colorub(uchar((textkeybgcolour>>16)&0xFF), uchar((textkeybgcolour>>8)&0xFF), uchar(textkeybgcolour&0xFF), uchar(textkeybgblend*cl.a));
 
         float sh = curfont->maxh*sc, sw = (t->w*sh)/float(t->h), w1 = sw*0.25f, w2 = sw*0.5f, amt = swidth/w2;
         int count = int(floorf(amt));
-        varray::attrib<float>(sx + ss,     sy    ); varray::attrib<float>(0, 0);
-        varray::attrib<float>(sx + ss + w1, sy    ); varray::attrib<float>(0.25f, 0);
-        varray::attrib<float>(sx + ss + w1, sy + sh); varray::attrib<float>(0.25f, 1);
-        varray::attrib<float>(sx + ss,     sy + sh); varray::attrib<float>(0, 1);
+        textvert(sx + ss,      sy     ); gle::attribf(0, 0);
+        textvert(sx + ss + w1, sy     ); gle::attribf(0.25f, 0);
+        textvert(sx + ss + w1, sy + sh); gle::attribf(0.25f, 1);
+        textvert(sx + ss,      sy + sh); gle::attribf(0, 1);
         sp = (ss += w1);
         loopi(count)
         {
-            varray::attrib<float>(sx + ss,     sy    ); varray::attrib<float>(0.25f, 0);
-            varray::attrib<float>(sx + ss + w2, sy    ); varray::attrib<float>(0.75f, 0);
-            varray::attrib<float>(sx + ss + w2, sy + sh); varray::attrib<float>(0.75f, 1);
-            varray::attrib<float>(sx + ss,     sy + sh); varray::attrib<float>(0.25f, 1);
+            textvert(sx + ss,      sy     ); gle::attribf(0.25f, 0);
+            textvert(sx + ss + w2, sy     ); gle::attribf(0.75f, 0);
+            textvert(sx + ss + w2, sy + sh); gle::attribf(0.75f, 1);
+            textvert(sx + ss,      sy + sh); gle::attribf(0.25f, 1);
             ss += w2;
         }
         float w3 = amt-float(count), w4 = w1 + w2*w3, w5 = 0.75f - 0.5f*w3;
-        varray::attrib<float>(sx + ss,     sy    ); varray::attrib<float>(w5, 0);
-        varray::attrib<float>(sx + ss + w4, sy    ); varray::attrib<float>(1, 0);
-        varray::attrib<float>(sx + ss + w4, sy + sh); varray::attrib<float>(1, 1);
-        varray::attrib<float>(sx + ss,     sy + sh); varray::attrib<float>(w5, 1);
+        textvert(sx + ss,      sy     ); gle::attribf(w5, 0);
+        textvert(sx + ss + w4, sy     ); gle::attribf(1, 0);
+        textvert(sx + ss + w4, sy + sh); gle::attribf(1, 1);
+        textvert(sx + ss,      sy + sh); gle::attribf(w5, 1);
         ss += w4;
     }
     else ss = swidth;
-    xtraverts += varray::end();
+    xtraverts += gle::end();
 
     #define TEXTINDEX(idx)
     #define TEXTWHITE(idx)
@@ -556,8 +562,8 @@ int draw_key(Texture *&tex, const char *str, float sx, float sy, float sc, bvec4
             int alpha = colorstack[colorpos].a; \
             color = TVECA(ret, alpha); \
             colorstack[colorpos] = color; \
-            xtraverts += varray::end(); \
-            glColor4ub(color.r, color.g, color.b, color.a); \
+            xtraverts += gle::end(); \
+            gle::color(color); \
         }
     #define TEXTICON(ret) x += draw_icon(tex, ret, left+x, top+y, scale);
     #define TEXTKEY(ret) x += draw_key(tex, ret, left+x, top+y, scale, color, flags);
@@ -568,12 +574,12 @@ int draw_key(Texture *&tex, const char *str, float sx, float sy, float sc, bvec4
         colorpos = 1, ly = 0, left = sx + sp, top = sy, cursor = -1, maxwidth = -1;
     bvec4 colorstack[16], color = TVECX(r, g, b, fade);
     loopi(16) colorstack[i] = color;
-    glColor4ub(color.r, color.g, color.b, color.a);
+    gle::color(color);
     TEXTSKELETON
     TEXTEND(cursor)
-    xtraverts += varray::end();
+    xtraverts += gle::end();
 
-    glColor4ub(cl.r, cl.g, cl.b, cl.a);
+    gle::color(cl);
 
     #undef TEXTINDEX
     #undef TEXTWHITE
@@ -607,20 +613,13 @@ int draw_text(const char *str, int rleft, int rtop, int r, int g, int b, int a, 
             int alpha = colorstack[colorpos].a; \
             color = TVECA(ret, alpha); \
             colorstack[colorpos] = color; \
-            xtraverts += varray::end(); \
-            glColor4ub(color.r, color.g, color.b, color.a); \
+            xtraverts += gle::end(); \
+            gle::color(color); \
         }
     #define TEXTICON(ret) x += draw_icon(tex, ret, left+x, top+y, scale);
     #define TEXTKEY(ret) x += draw_key(tex, ret, left+x, top+y, scale, color, flags);
     #define TEXTCHAR(idx) { draw_char(tex, c, left+x, top+y, scale); x += cw; }
     #define TEXTWORD TEXTWORDSKELETON
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    Texture *tex = curfont->texs[0];
-    glBindTexture(GL_TEXTURE_2D, tex->id);
-    varray::enable();
-    varray::defattrib(varray::ATTRIB_VERTEX, textmatrix ? 3 : 2, GL_FLOAT);
-    varray::defattrib(varray::ATTRIB_TEXCOORD0, 2, GL_FLOAT);
-    varray::begin(GL_QUADS);
     int fade = a;
     bool usecolor = true, hasfade = false;
     if(fade < 0) { usecolor = false; fade = -a; }
@@ -628,17 +627,22 @@ int draw_text(const char *str, int rleft, int rtop, int r, int g, int b, int a, 
     float cx = -FONTW, cy = 0;
     bvec4 colorstack[16], color = TVECX(r, g, b, fade);
     loopi(16) colorstack[i] = color;
-    glColor4ub(color.r, color.g, color.b, color.a);
+    gle::color(color);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    Texture *tex = curfont->texs[0];
+    glBindTexture(GL_TEXTURE_2D, tex->id);
+    gle::defvertex(textmatrix ? 3 : 2);
+    gle::deftexcoord0();
+    gle::begin(GL_QUADS);
     TEXTSKELETON
     TEXTEND(cursor)
-    xtraverts += varray::end();
+    xtraverts += gle::end();
     if(cursor >= 0)
     {
-        glColor4ub(255, 255, 255, int(255*clamp(1.f-(float(totalmillis%500)/500.f), 0.5f, 1.f)));
+        gle::colorub(255, 255, 255, int(255*clamp(1.f-(float(totalmillis%500)/500.f), 0.5f, 1.f)));
         draw_char(tex, '_', left+cx, top+cy, scale);
-        xtraverts += varray::end();
+        xtraverts += gle::end();
     }
-    varray::disable();
     #undef TEXTINDEX
     #undef TEXTWHITE
     #undef TEXTLINE

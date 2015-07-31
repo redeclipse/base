@@ -727,7 +727,7 @@ struct pvsworker
             bbmin[dim] += dimcoord(m.orient) ? -2 : 2;
             bbmax[C[dim]] += m.csize;
             bbmax[R[dim]] += m.rsize;
-            if(!materialoccluded(pvsnodes[0], vec(0, 0, 0), hdr.worldsize/2, bbmin, bbmax)) return false;
+            if(!materialoccluded(pvsnodes[0], ivec(0, 0, 0), hdr.worldsize/2, bbmin, bbmax)) return false;
         }
         return true;
     }
@@ -1081,8 +1081,7 @@ void testpvs(int *vcsize)
     int size = *vcsize>0 ? *vcsize : 32;
     for(int mask = 1; mask < size; mask <<= 1) size &= ~mask;
 
-    ivec o = camera1->o;
-    o.mask(~(size-1));
+    ivec o = ivec(camera1->o).mask(~(size-1));
     pvsworker w;
     int len;
     lockedpvs = w.testviewcell(o, size, &lockedwaterpvs, &len);
@@ -1232,7 +1231,7 @@ bool pvsoccluded(const ivec &bbmin, const ivec &bbmax)
 bool pvsoccludedsphere(const vec &center, float radius)
 {
     if(curpvs==NULL) return false;
-    ivec bbmin = vec(center).sub(radius), bbmax = vec(center).add(radius+1);
+    ivec bbmin(vec(center).sub(radius)), bbmax(vec(center).add(radius+1));
     return pvsoccluded(curpvs, bbmin, bbmax);
 }
 

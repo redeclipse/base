@@ -235,14 +235,14 @@ namespace bomber
                         if(t && t != notexture)
                         {
                             glBindTexture(GL_TEXTURE_2D, t->id);
-                            glColor4f(rp, gp, bp, sq);
+                            gle::colorf(rp, gp, bp, sq);
                             hud::drawsized(sx, sy, ss);
                         }
                         t = textureload(hud::crosshairtex, 3);
                         if(t && t != notexture)
                         {
                             glBindTexture(GL_TEXTURE_2D, t->id);
-                            glColor4f(rp, gp, bp, sq*0.5f);
+                            gle::colorf(rp, gp, bp, sq*0.5f);
                             hud::drawsized(sx+ss/4, sy+ss/4, ss/2);
                         }
                     }

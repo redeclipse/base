@@ -389,7 +389,7 @@ struct vacollect : verthash
 
     void genverts(void *buf)
     {
-        GENVERTS(vertex, buf, { *f = v; f->norm.flip(); });
+        GENVERTS(vertex, buf, { *f = v; f->norm.flip(); f->tangent.flip(); });
     }
 
     void setupdata(vtxarray *va)

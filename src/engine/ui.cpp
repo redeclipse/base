@@ -137,8 +137,10 @@ struct gui : guient
                     int cw = max(int(floorf(w/qw))-1, 0), ch = max(int(floorf(h/qh))+1, 2);
 
                     glBindTexture(GL_TEXTURE_2D, t->id);
-                    glColor4f((colour>>16)/255.f, ((colour>>8)&0xFF)/255.f, (colour&0xFF)/255.f, blend);
-                    glBegin(GL_QUADS);
+                    gle::color(vec::hexcolor(colour), blend);
+                    gle::defvertex(2);
+                    gle::deftexcoord0();
+                    gle::begin(GL_QUADS);
 
                     loopi(ch)
                     {
@@ -159,10 +161,10 @@ struct gui : guient
                         {
                             case 0: case 2:
                             {
-                                glTexCoord2f(tx, ty); glVertex2f(x1+px, y1+py);
-                                glTexCoord2f(tx+0.25f, ty); glVertex2f(x1+px+pw, y1+py);
-                                glTexCoord2f(tx+0.25f, ty+vth); glVertex2f(x1+px+pw, y1+py+vph);
-                                glTexCoord2f(tx, ty+vth); glVertex2f(x1+px, y1+py+vph);
+                                gle::attribf(x1+px, y1+py); gle::attribf(tx, ty);
+                                gle::attribf(x1+px+pw, y1+py); gle::attribf(tx+0.25f, ty);
+                                gle::attribf(x1+px+pw, y1+py+vph); gle::attribf(tx+0.25f, ty+vth);
+                                gle::attribf(x1+px, y1+py+vph); gle::attribf(tx, ty+vth);
                                 tx += 0.25f;
                                 px += pw;
                                 xtraverts += 4;
@@ -172,10 +174,10 @@ struct gui : guient
                             {
                                 for(int xx = 0; xx < cw; xx++)
                                 {
-                                    glTexCoord2f(tx, ty); glVertex2f(x1+px, y1+py);
-                                    glTexCoord2f(tx+0.5f, ty); glVertex2f(x1+px+qw, y1+py);
-                                    glTexCoord2f(tx+0.5f, ty+vth); glVertex2f(x1+px+qw, y1+py+vph);
-                                    glTexCoord2f(tx, ty+vth); glVertex2f(x1+px, y1+py+vph);
+                                    gle::attribf(x1+px, y1+py); gle::attribf(tx, ty);
+                                    gle::attribf(x1+px+qw, y1+py); gle::attribf(tx+0.5f, ty);
+                                    gle::attribf(x1+px+qw, y1+py+vph); gle::attribf(tx+0.5f, ty+vth);
+                                    gle::attribf(x1+px, y1+py+vph); gle::attribf(tx, ty+vth);
                                     px += qw;
                                     xtraverts += 4;
                                 }
@@ -183,10 +185,10 @@ struct gui : guient
                                 if(off > 0)
                                 {
                                     float part = 0.5f*off/qw;
-                                    glTexCoord2f(tx, ty); glVertex2f(x1+px, y1+py);
-                                    glTexCoord2f(tx+part, ty); glVertex2f(x1+want, y1+py);
-                                    glTexCoord2f(tx+part, ty+vth); glVertex2f(x1+want, y1+py+vph);
-                                    glTexCoord2f(tx, ty+vth); glVertex2f(x1+px, y1+py+vph);
+                                    gle::attribf(x1+px, y1+py); gle::attribf(tx, ty);
+                                    gle::attribf(x1+want, y1+py); gle::attribf(tx+part, ty);
+                                    gle::attribf(x1+want, y1+py+vph); gle::attribf(tx+part, ty+vth);
+                                    gle::attribf(x1+px, y1+py+vph); gle::attribf(tx, ty+vth);
                                     px = want;
                                 }
                                 tx += 0.5f;
@@ -198,7 +200,7 @@ struct gui : guient
                         py += vph;
                         if(!i) ty += vth;
                     }
-                    glEnd();
+                    xtraverts += gle::end();
                     drawn = true;
                 }
                 if(drawn) break; // otherwise fallback
@@ -209,27 +211,27 @@ struct gui : guient
                 if(colour1 >= 0)
                 {
                     hudnotextureshader->set();
-                    glColor4f((colour1>>16)/255.f, ((colour1>>8)&0xFF)/255.f, (colour1&0xFF)/255.f, blend1);
-                    glBegin(GL_TRIANGLE_STRIP);
-                    glVertex2f(x1, y1);
-                    glVertex2f(x2, y1);
-                    glVertex2f(x1, y2);
-                    glVertex2f(x2, y2);
-                    xtraverts += 4;
-                    glEnd();
+                    gle::color(vec::hexcolor(colour1), blend1);
+                    gle::defvertex(2);
+                    gle::begin(GL_TRIANGLE_STRIP);
+                    gle::attribf(x1, y1);
+                    gle::attribf(x2, y1);
+                    gle::attribf(x1, y2);
+                    gle::attribf(x2, y2);
+                    xtraverts += gle::end();
                     hudshader->set();
                 }
                 if(skinborder && colour2 >= 0)
                 {
                     hudnotextureshader->set();
-                    glColor4f((colour2>>16)/255.f, ((colour2>>8)&0xFF)/255.f, (colour2&0xFF)/255.f, blend2);
-                    glBegin(GL_LINE_LOOP);
-                    glVertex2f(x1, y1);
-                    glVertex2f(x2, y1);
-                    glVertex2f(x2, y2);
-                    glVertex2f(x1, y2);
-                    xtraverts += 4;
-                    glEnd();
+                    gle::color(vec::hexcolor(colour2), blend2);
+                    gle::defvertex(2);
+                    gle::begin(GL_LINE_LOOP);
+                    gle::attribf(x1, y1);
+                    gle::attribf(x2, y1);
+                    gle::attribf(x2, y2);
+                    gle::attribf(x1, y2);
+                    xtraverts += gle::end();
                     hudshader->set();
                 }
                 break;
@@ -530,6 +532,7 @@ struct gui : guient
             glScissor(x1, y1, x2-x1, y2-y1);
             glEnable(GL_SCISSOR_TEST);
             glDisable(GL_BLEND);
+            gle::disable();
             modelpreview::start(overlaid);
             game::renderplayerpreview(model, color, team, weap, vanity, scale, blend);
             modelpreview::end();
@@ -541,8 +544,7 @@ struct gui : guient
             if(overlaid)
             {
                 if(!overlaytex) overlaytex = textureload(guioverlaytex, 3, true, false);
-                const vec &ocolor = hit && hitfx ? vec::hexcolor(guiactivecolour) : vec(1, 1, 1);
-                glColor3fv(ocolor.v);
+                gle::color(hit && hitfx ? vec::hexcolor(guiactivecolour) : vec(1, 1, 1));
                 glBindTexture(GL_TEXTURE_2D, overlaytex->id);
                 rect_(xi - xpad, yi - ypad, xs + 2*xpad, ys + 2*ypad, 0);
             }
@@ -573,6 +575,7 @@ struct gui : guient
             glScissor(x1, y1, x2-x1, y2-y1);
             glEnable(GL_SCISSOR_TEST);
             glDisable(GL_BLEND);
+            gle::disable();
             modelpreview::start(overlaid);
             model *m = loadmodel(name);
             if(m)
@@ -596,8 +599,7 @@ struct gui : guient
             if(overlaid)
             {
                 if(!overlaytex) overlaytex = textureload(guioverlaytex, 3, true, false);
-                const vec &ocolor = hit && hitfx ? vec::hexcolor(guiactivecolour) : vec(1, 1, 1);
-                glColor3fv(ocolor.v);
+                gle::color(hit && hitfx ? vec::hexcolor(guiactivecolour) : vec(1, 1, 1));
                 glBindTexture(GL_TEXTURE_2D, overlaytex->id);
                 rect_(xi - xpad, yi - ypad, xs + 2*xpad, ys + 2*ypad, 0);
             }
@@ -760,26 +762,27 @@ struct gui : guient
 
     void rect_(float x, float y, float w, float h, bool lines = false)
     {
-        glBegin(lines ? GL_LINE_LOOP : GL_TRIANGLE_STRIP);
-        glVertex2f(x, y);
-        glVertex2f(x + w, y);
-        if(lines) glVertex2f(x + w, y + h);
-        glVertex2f(x, y + h);
-        if(!lines) glVertex2f(x + w, y + h);
-        glEnd();
-        xtraverts += 4;
+        gle::defvertex(2);
+        gle::begin(lines ? GL_LINE_LOOP : GL_TRIANGLE_STRIP);
+        gle::attribf(x, y);
+        gle::attribf(x + w, y);
+        if(lines) gle::attribf(x + w, y + h);
+        gle::attribf(x, y + h);
+        if(!lines) gle::attribf(x + w, y + h);
+        xtraverts += gle::end();
     }
 
     void rect_(float x, float y, float w, float h, int usetc)
     {
-        glBegin(GL_TRIANGLE_STRIP);
-        static const GLfloat tc[5][2] = {{0, 0}, {1, 0}, {1, 1}, {0, 1}, {0, 0}};
-        glTexCoord2fv(tc[usetc]); glVertex2f(x, y);
-        glTexCoord2fv(tc[usetc+1]); glVertex2f(x + w, y);
-        glTexCoord2fv(tc[usetc+3]); glVertex2f(x, y + h);
-        glTexCoord2fv(tc[usetc+2]); glVertex2f(x + w, y + h);
-        glEnd();
-        xtraverts += 4;
+        gle::defvertex(2);
+        gle::deftexcoord0();
+        gle::begin(GL_TRIANGLE_STRIP);
+        static const vec2 tc[5] = { vec2(0, 0), vec2(1, 0), vec2(1, 1), vec2(0, 1), vec2(0, 0) };
+        gle::attribf(x, y); gle::attrib(tc[usetc]);
+        gle::attribf(x + w, y); gle::attrib(tc[usetc+1]);
+        gle::attribf(x, y + h); gle::attrib(tc[usetc+3]);
+        gle::attribf(x + w, y + h); gle::attrib(tc[usetc+2]);
+        xtraverts += gle::end();
     }
 
     void text_(const char *text, int x, int y, int color, int alpha, bool shadow, bool force = false, int wrap = -1)
@@ -792,7 +795,7 @@ struct gui : guient
     {
         if(!visible()) return;
         hudnotextureshader->set();
-        glColor4ub(color>>16, (color>>8)&0xFF, color&0xFF, 0x80);
+        gle::colorub(color>>16, (color>>8)&0xFF, color&0xFF, 0x80);
         int w = xsize, h = ysize;
         if(inheritw>0)
         {
@@ -818,7 +821,7 @@ struct gui : guient
     {
         if(!visible()) return;
         hudnotextureshader->set();
-        glColor4ub(color>>16, (color>>8)&0xFF, color&0xFF, 0x80);
+        gle::colorub(color>>16, (color>>8)&0xFF, color&0xFF, 0x80);
         int w = xsize, h = ysize;
         if(inheritw>0)
         {
@@ -865,7 +868,7 @@ struct gui : guient
 
     void icon_(Texture *t, bool overlaid, int x, int y, int size, bool hit, int icolor)
     {
-        static const float tc[4][2] = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
+        static const vec2 tc[4] = { vec2(0, 0), vec2(1, 0), vec2(1, 1), vec2(0, 1) };
         float xs = 0, ys = 0;
         int textureid = -1;
         if(t)
@@ -908,34 +911,35 @@ struct gui : guient
             xs -= 2*xpad;
             ys -= 2*ypad;
         }
+        gle::defvertex(2);
+        gle::deftexcoord0();
         if(hit && hitfx)
         {
             float offx = xs*guihoverscale, offy = ys*guihoverscale;
             if(!hovertex) hovertex = textureload(guihovertex, 3, true, false);
             glBindTexture(GL_TEXTURE_2D, hovertex->id);
-            glColor4f((guihovercolour>>16)/255.f, ((guihovercolour>>8)&0xFF)/255.f, (guihovercolour&0xFF)/255.f, guihoverblend);
-            glBegin(GL_TRIANGLE_STRIP);
-            glTexCoord2fv(tc[0]); glVertex2f(xi-offx,    yi-offy);
-            glTexCoord2fv(tc[1]); glVertex2f(xi+xs+offx, yi-offy);
-            glTexCoord2fv(tc[3]); glVertex2f(xi-offx,    yi+ys+offy);
-            glTexCoord2fv(tc[2]); glVertex2f(xi+xs+offx, yi+ys+offy);
-            glEnd();
+            gle::color(vec::hexcolor(guihovercolour), guihoverblend);
+            gle::begin(GL_TRIANGLE_STRIP);
+            gle::attribf(xi-offx,    yi-offy);    gle::attrib(tc[0]);
+            gle::attribf(xi+xs+offx, yi-offy);    gle::attrib(tc[1]);
+            gle::attribf(xi-offx,    yi+ys+offy); gle::attrib(tc[3]);
+            gle::attribf(xi+xs+offx, yi+ys+offy); gle::attrib(tc[2]);
+            xtraverts += gle::end();
         }
         glBindTexture(GL_TEXTURE_2D, textureid);
         vec color = vec::hexcolor(icolor);
         //if(hit && hitfx && !overlaid) color.div(2);
-        glColor3fv(color.v);
-        glBegin(GL_TRIANGLE_STRIP);
-        glTexCoord2fv(tc[0]); glVertex2f(xi,    yi);
-        glTexCoord2fv(tc[1]); glVertex2f(xi+xs, yi);
-        glTexCoord2fv(tc[3]); glVertex2f(xi,    yi+ys);
-        glTexCoord2fv(tc[2]); glVertex2f(xi+xs, yi+ys);
-        glEnd();
+        gle::color(color);
+        gle::begin(GL_TRIANGLE_STRIP);
+        gle::attribf(xi,    yi);    gle::attrib(tc[0]);
+        gle::attribf(xi+xs, yi);    gle::attrib(tc[1]);
+        gle::attribf(xi,    yi+ys); gle::attrib(tc[3]);
+        gle::attribf(xi+xs, yi+ys); gle::attrib(tc[2]);
+        xtraverts += gle::end();
         if(overlaid)
         {
             if(!overlaytex) overlaytex = textureload(guioverlaytex, 3, true, false);
-            const vec &ocolor = hit && hitfx ? vec::hexcolor(guiactivecolour) : vec(1, 1, 1);
-            glColor3fv(ocolor.v);
+            gle::color(hit && hitfx ? vec::hexcolor(guiactivecolour) : vec(1, 1, 1));
             glBindTexture(GL_TEXTURE_2D, overlaytex->id);
             rect_(xi - xpad, yi - ypad, xs + 2*xpad, ys + 2*ypad, 0);
         }
@@ -973,63 +977,59 @@ struct gui : guient
             ys -= 2*ypad;
         }
         SETSHADER(hudrgb);
+        gle::defvertex(2);
+        gle::deftexcoord0();
         const vec &color = hit && hitfx && !overlaid ? vec(1.25f, 1.25f, 1.25f) : vec(1, 1, 1);
-        float tc[4][2] = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
+        vec2 tc[4] = { vec2(0, 0), vec2(1, 0), vec2(1, 1), vec2(0, 1) };
         int xoff = vslot.offset.x, yoff = vslot.offset.y;
         if(vslot.rotation)
         {
-            if((vslot.rotation&5) == 1) { swap(xoff, yoff); loopk(4) swap(tc[k][0], tc[k][1]); }
-            if(vslot.rotation >= 2 && vslot.rotation <= 4) { xoff *= -1; loopk(4) tc[k][0] *= -1; }
-            if(vslot.rotation <= 2 || vslot.rotation == 5) { yoff *= -1; loopk(4) tc[k][1] *= -1; }
+            if((vslot.rotation&5) == 1) { swap(xoff, yoff); loopk(4) swap(tc[k].x, tc[k].y); }
+            if(vslot.rotation >= 2 && vslot.rotation <= 4) { xoff *= -1; loopk(4) tc[k].x *= -1; }
+            if(vslot.rotation <= 2 || vslot.rotation == 5) { yoff *= -1; loopk(4) tc[k].y *= -1; }
         }
-        loopk(4) { tc[k][0] = tc[k][0]/xt - float(xoff)/t->xs; tc[k][1] = tc[k][1]/yt - float(yoff)/t->ys; }
-        if(slot.loaded)
-        {
-            vec colorscale = vslot.getcolorscale();
-            glColor3f(color.x*colorscale.x, color.y*colorscale.y, color.z*colorscale.z);
-        }
-        else glColor3fv(color.v);
+        loopk(4) { tc[k].x = tc[k].x/xt - xoff/t->xs; tc[k].y = tc[k].y/yt - yoff/t->ys; }
+        if(slot.loaded) gle::color(vec(color).mul(vslot.getcolorscale()));
+        else gle::color(color);
         glBindTexture(GL_TEXTURE_2D, t->id);
-        glBegin(GL_TRIANGLE_STRIP);
-        glTexCoord2fv(tc[0]); glVertex2f(xi,    yi);
-        glTexCoord2fv(tc[1]); glVertex2f(xi+xs, yi);
-        glTexCoord2fv(tc[3]); glVertex2f(xi,    yi+ys);
-        glTexCoord2fv(tc[2]); glVertex2f(xi+xs, yi+ys);
-        glEnd();
+        gle::begin(GL_TRIANGLE_STRIP);
+        gle::attribf(xi,    yi);    gle::attrib(tc[0]);
+        gle::attribf(xi+xs, yi);    gle::attrib(tc[1]);
+        gle::attribf(xi,    yi+ys); gle::attrib(tc[3]);
+        gle::attribf(xi+xs, yi+ys); gle::attrib(tc[2]);
+        gle::end();
         if(glowtex)
         {
             glBlendFunc(GL_SRC_ALPHA, GL_ONE);
             glBindTexture(GL_TEXTURE_2D, glowtex->id);
             vec glowcolor = vslot.getglowcolor();
-            if(hit || overlaid) glColor3f(color.x*glowcolor.x, color.y*glowcolor.y, color.z*glowcolor.z);
-            else glColor3fv(glowcolor.v);
-            glBegin(GL_TRIANGLE_STRIP);
-            glTexCoord2fv(tc[0]); glVertex2f(x,    y);
-            glTexCoord2fv(tc[1]); glVertex2f(x+xs, y);
-            glTexCoord2fv(tc[3]); glVertex2f(x,    y+ys);
-            glTexCoord2fv(tc[2]); glVertex2f(x+xs, y+ys);
-            glEnd();
+            if(hit || overlaid) gle::color(vec(glowcolor).mul(color));
+            else gle::color(glowcolor);
+            gle::begin(GL_TRIANGLE_STRIP);
+            gle::attribf(x,    y);    gle::attrib(tc[0]);
+            gle::attribf(x+xs, y);    gle::attrib(tc[1]);
+            gle::attribf(x,    y+ys); gle::attrib(tc[3]);
+            gle::attribf(x+xs, y+ys); gle::attrib(tc[2]);
+            gle::end();
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         }
         if(layertex)
         {
-            vec layerscale = layer->getcolorscale();
             glBindTexture(GL_TEXTURE_2D, layertex->id);
-            glColor3f(color.x*layerscale.x, color.y*layerscale.y, color.z*layerscale.z);
-            glBegin(GL_TRIANGLE_STRIP);
-            glTexCoord2fv(tc[0]); glVertex2f(x+xs/2, y+ys/2);
-            glTexCoord2fv(tc[1]); glVertex2f(x+xs,   y+ys/2);
-            glTexCoord2fv(tc[3]); glVertex2f(x+xs/2, y+ys);
-            glTexCoord2fv(tc[2]); glVertex2f(x+xs,   y+ys);
-            glEnd();
+            gle::color(vec(color).mul(layer->getcolorscale()));
+            gle::begin(GL_TRIANGLE_STRIP);
+            gle::attribf(x+xs/2, y+ys/2); gle::attrib(tc[0]);
+            gle::attribf(x+xs,   y+ys/2); gle::attrib(tc[1]);
+            gle::attribf(x+xs/2, y+ys);   gle::attrib(tc[3]);
+            gle::attribf(x+xs,   y+ys);   gle::attrib(tc[2]);
+            gle::end();
         }
 
         hudshader->set();
         if(overlaid)
         {
             if(!overlaytex) overlaytex = textureload(guioverlaytex, 3, true, false);
-            const vec &ocolor = hit && hitfx ? vec::hexcolor(guiactivecolour) : vec(1, 1, 1);
-            glColor3fv(ocolor.v);
+            gle::color(hit && hitfx ? vec::hexcolor(guiactivecolour) : vec(1, 1, 1));
             glBindTexture(GL_TEXTURE_2D, overlaytex->id);
             rect_(xi - xpad, yi - ypad, xs + 2*xpad, ys + 2*ypad, 0);
         }
@@ -1040,7 +1040,7 @@ struct gui : guient
         float scale = float(size)/max(t->xs, t->ys), xs = t->xs*scale, ys = t->ys*scale, fade = 1;
         if(start == end) { end = 1; fade = 0.5f; }
         glBindTexture(GL_TEXTURE_2D, t->id);
-        glColor4f(1, 1, 1, fade);
+        gle::colorf(1, 1, 1, fade);
         int s = max(xs,ys)/2;
         drawslice(start, end, x+s/2, y+s/2, s);
         if(text && *text)
@@ -1092,27 +1092,27 @@ struct gui : guient
             if(colour1 >= 0)
             {
                 hudnotextureshader->set();
-                glColor4f((colour1>>16)/255.f, ((colour1>>8)&0xFF)/255.f, (colour1&0xFF)/255.f, guibgblend);
-                glBegin(GL_TRIANGLE_STRIP);
-                glVertex2f(x1, y1);
-                glVertex2f(x2, y1);
-                glVertex2f(x1, y2);
-                glVertex2f(x2, y2);
-                xtraverts += 4;
-                glEnd();
+                gle::color(vec::hexcolor(colour1), guibgblend);
+                gle::defvertex();
+                gle::begin(GL_TRIANGLE_STRIP);
+                gle::attribf(x1, y1);
+                gle::attribf(x2, y1);
+                gle::attribf(x1, y2);
+                gle::attribf(x2, y2);
+                xtraverts += gle::end();
                 hudshader->set();
             }
             if(colour2 >= 0)
             {
                 hudnotextureshader->set();
-                glColor4f((colour2>>16)/255.f, ((colour2>>8)&0xFF)/255.f, (colour2&0xFF)/255.f, guiborderblend);
-                glBegin(GL_LINE_LOOP);
-                glVertex2f(x1, y1);
-                glVertex2f(x2, y1);
-                glVertex2f(x2, y2);
-                glVertex2f(x1, y2);
-                xtraverts += 4;
-                glEnd();
+                gle::color(vec::hexcolor(colour2), guiborderblend);
+                gle::defvertex();
+                gle::begin(GL_LINE_LOOP);
+                gle::attribf(x1, y1);
+                gle::attribf(x2, y1);
+                gle::attribf(x2, y2);
+                gle::attribf(x1, y2);
+                xtraverts += gle::end();
                 hudshader->set();
             }
         }
@@ -1268,6 +1268,7 @@ struct gui : guient
                 if(tooltip) DELETEA(tooltip);
                 lasttooltip = 0;
             }
+            gle::disable();
         }
         poplist();
         while(fontdepth) gui::popfont();

@@ -47,15 +47,15 @@ bool getentboundingbox(const extentity &e, ivec &o, ivec &r)
                 mmboundbox(e, m, center, radius);
                 center.add(e.o);
                 radius.max(entselradius);
-                o = vec(center).sub(radius);
-                r = vec(center).add(radius).add(1);
+                o = ivec(vec(center).sub(radius));
+                r = ivec(vec(center).add(radius).add(1));
                 break;
             }
         }
         // invisible mapmodels use entselradius
         default:
-            o = vec(e.o).sub(entselradius);
-            r = vec(e.o).add(entselradius+1);
+            o = ivec(vec(e.o).sub(entselradius));
+            r = ivec(vec(e.o).add(entselradius+1));
             break;
     }
     return true;
@@ -241,8 +241,8 @@ static inline void findents(cube *c, const ivec &o, int size, const ivec &bo, co
 void findents(int low, int high, bool notspawned, const vec &pos, const vec &radius, vector<int> &found)
 {
     vec invradius(1/radius.x, 1/radius.y, 1/radius.z);
-    ivec bo = vec(pos).sub(radius).sub(1),
-         br = vec(pos).add(radius).add(1);
+    ivec bo(vec(pos).sub(radius).sub(1)),
+         br(vec(pos).add(radius).add(1));
     int diff = (bo.x^br.x) | (bo.y^br.y) | (bo.z^br.z) | octaentsize,
         scale = worldscale-1;
     if(diff&~((1<<scale)-1) || uint(bo.x|bo.y|bo.z|br.x|br.y|br.z) >= uint(hdr.worldsize))
@@ -430,6 +430,7 @@ void entselectionbox(const extentity &e, vec &eo, vec &es)
 VAR(0, entselsnap, 0, 1, 1);
 VAR(0, entmovingshadow, 0, 1, 1);
 
+extern void boxs(int orient, vec o, const vec &s, float size);
 extern void boxs(int orient, vec o, const vec &s);
 extern void boxs3D(const vec &o, vec s, int g);
 extern bool editmoveplane(const vec &o, const vec &ray, int d, float off, vec &handle, vec &dest, bool first);
@@ -466,34 +467,65 @@ void entdrag(const vec &ray)
     entmoving = 2;
 }
 
+static void renderentbox(const vec &eo, vec es)
+{
+    es.add(eo);
+
+    // bottom quad
+    gle::attrib(eo.x, eo.y, eo.z); gle::attrib(es.x, eo.y, eo.z);
+    gle::attrib(es.x, eo.y, eo.z); gle::attrib(es.x, es.y, eo.z);
+    gle::attrib(es.x, es.y, eo.z); gle::attrib(eo.x, es.y, eo.z);
+    gle::attrib(eo.x, es.y, eo.z); gle::attrib(eo.x, eo.y, eo.z);
+
+    // top quad
+    gle::attrib(eo.x, eo.y, es.z); gle::attrib(es.x, eo.y, es.z);
+    gle::attrib(es.x, eo.y, es.z); gle::attrib(es.x, es.y, es.z);
+    gle::attrib(es.x, es.y, es.z); gle::attrib(eo.x, es.y, es.z);
+    gle::attrib(eo.x, es.y, es.z); gle::attrib(eo.x, eo.y, es.z);
+
+    // sides
+    gle::attrib(eo.x, eo.y, eo.z); gle::attrib(eo.x, eo.y, es.z);
+    gle::attrib(es.x, eo.y, eo.z); gle::attrib(es.x, eo.y, es.z);
+    gle::attrib(es.x, es.y, eo.z); gle::attrib(es.x, es.y, es.z);
+    gle::attrib(eo.x, es.y, eo.z); gle::attrib(eo.x, es.y, es.z);
+}
+
 void renderentselection(const vec &o, const vec &ray, bool entmoving)
 {
     if(noentedit()) return;
     vec eo, es;
 
-    glColor3ub(0, 40, 0);
-    loopv(entgroup) entfocus(entgroup[i],
-        entselectionbox(e, eo, es);
-        boxs3D(eo, es, 1);
-    );
+    if(entgroup.length())
+    {
+        gle::colorub(0, 40, 0);
+        gle::defvertex();
+        gle::begin(GL_LINES, entgroup.length()*24);
+        loopv(entgroup) entfocus(entgroup[i],
+            entselectionbox(e, eo, es);
+            renderentbox(eo, es);
+        );
+        xtraverts += gle::end();
+    }
 
     if(enthover >= 0)
     {
+        gle::colorub(0, 40, 0);
         entfocus(enthover, entselectionbox(e, eo, es)); // also ensures enthover is back in focus
         boxs3D(eo, es, 1);
         if(entmoving && entmovingshadow==1)
         {
             vec a, b;
-            glColor3ub(20, 20, 20);
+            gle::colorub(20, 20, 20);
             (a=eo).x=0; (b=es).x=hdr.worldsize; boxs3D(a, b, 1);
             (a=eo).y=0; (b=es).y=hdr.worldsize; boxs3D(a, b, 1);
             (a=eo).z=0; (b=es).z=hdr.worldsize; boxs3D(a, b, 1);
         }
-        glColor3ub(150,0,0);
-        glLineWidth(5);
+        gle::colorub(150,0,0);
         boxs(entorient, eo, es);
-        glLineWidth(1);
+        boxs(entorient, eo, es, clamp(0.015f*camera1->o.dist(eo)*tan(fovy*0.5f*RAD), 0.1f, 1.0f));
     }
+
+    gle::disable();
 }
 
 bool enttoggle(int id)

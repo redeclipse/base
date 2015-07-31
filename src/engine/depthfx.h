@@ -29,11 +29,7 @@ static struct depthfxtexture : rendertarget
     const GLenum *colorformats() const
     {
         static const GLenum colorfmts[] = { GL_RG16F, GL_RGB16F, GL_RGBA, GL_RGBA8, GL_RGB, GL_RGB8, GL_FALSE };
-        static const GLenum colorfmtsnv[] = { GL_FLOAT_RG16_NV, GL_RGB16F, GL_RGBA, GL_RGBA8, GL_RGB, GL_RGB8, GL_FALSE };
-        if(!hasTF || !fpdepthfx) return &colorfmts[2];
-        if(hasTRG) return colorfmts;
-        if(hasNVFB && !filter()) return colorfmtsnv;
-        return &colorfmts[1];
+        return &colorfmts[fpdepthfx && hasTF ? (hasTRG ? 0 : 1) : 2];
     }
 
     float eyedepth(const vec &p) const
@@ -68,9 +64,9 @@ static struct depthfxtexture : rendertarget
         return addblurtiles(sx1, sy1, sx2, sy2);
     }
 
-    bool texrect() const { return true; }
+    bool screenrect() const { return true; }
     bool filter() const { return blurdepthfx!=0; }
-    bool highprecision() const { return colorfmt==GL_RG16F || colorfmt==GL_FLOAT_RG16_NV || colorfmt==GL_RGB16F; }
+    bool highprecision() const { return colorfmt==GL_RG16F || colorfmt==GL_RGB16F; }
     bool emulatehighprecision() const { return depthfxemuprecision && !blurdepthfx; }
 
     bool shouldrender()
@@ -116,11 +112,11 @@ static struct depthfxtexture : rendertarget
     {
         if(numdepthfxranges > 0)
         {
-            glColor3f(0, 1, 0);
+            gle::colorf(0, 1, 0);
             debugscissor(w, h, true);
-            glColor3f(0, 0, 1);
+            gle::colorf(0, 0, 1);
             debugblurtiles(w, h, true);
-            glColor3f(1, 1, 1);
+            gle::colorf(1, 1, 1);
         }
     }
 } depthfxtex;
@@ -143,11 +139,8 @@ bool binddepthfxtex()
     if(!reflecting && !refracting && depthfx && depthfxtex.rendertex && numdepthfxranges>0)
     {
         glActiveTexture_(GL_TEXTURE2);
-        glBindTexture(GL_TEXTURE_RECTANGLE, depthfxtex.rendertex);
+        glBindTexture(GL_TEXTURE_2D, depthfxtex.rendertex);
         glActiveTexture_(GL_TEXTURE0);
-
-        float w = 0.5f*depthfxtex.vieww, h = 0.5f*depthfxtex.viewh;
-        GLOBALPARAMF(depthfxview, w, h);
         return true;
     }
     return false;
