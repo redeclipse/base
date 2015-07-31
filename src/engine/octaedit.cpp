@@ -8,6 +8,36 @@ VAR(0, showselgrid, 0, 0, 1);
 
 bool boxoutline = false;
 
+void boxs(int orient, vec o, const vec &s, float size)
+{   
+    int d = dimension(orient), dc = dimcoord(orient);
+    float f = boxoutline ? (dc>0 ? 0.2f : -0.2f) : 0;
+    o[D[d]] += dc * s[D[d]] + f;
+
+    vec r(0, 0, 0), c(0, 0, 0);
+    r[R[d]] = s[R[d]];
+    c[C[d]] = s[C[d]];
+
+    vec v1 = o, v2 = vec(o).add(r), v3 = vec(o).add(r).add(c), v4 = vec(o).add(c);
+
+    r[R[d]] = 0.5f*size;
+    c[C[d]] = 0.5f*size;
+
+    gle::defvertex();
+    gle::begin(GL_TRIANGLE_STRIP);
+    gle::attrib(vec(v1).sub(r).sub(c));
+        gle::attrib(vec(v1).add(r).add(c));
+    gle::attrib(vec(v2).add(r).sub(c));
+        gle::attrib(vec(v2).sub(r).add(c));
+    gle::attrib(vec(v3).add(r).add(c));
+        gle::attrib(vec(v3).sub(r).sub(c));
+    gle::attrib(vec(v4).sub(r).add(c));
+        gle::attrib(vec(v4).add(r).sub(c));
+    gle::attrib(vec(v1).sub(r).sub(c));
+        gle::attrib(vec(v1).add(r).add(c));
+    xtraverts += gle::end();
+}
+
 void boxs(int orient, vec o, const vec &s)
 {
     int d = dimension(orient), dc = dimcoord(orient);
