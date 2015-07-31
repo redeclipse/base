@@ -63,10 +63,10 @@ static inline T min(T a, T b)
 {
     return a < b ? a : b;
 }
-template<class T>
-static inline T clamp(T a, T b, T c)
+template<class T, class U>
+static inline T clamp(T a, U b, U c)
 {
-    return max(b, min(a, c));
+    return max(T(b), min(a, T(c)));
 }
 
 #define rnd(x) ((int)(randomMT()&0x7FFFFFFF)%(x))

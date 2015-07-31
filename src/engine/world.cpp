@@ -522,7 +522,7 @@ void renderentselection(const vec &o, const vec &ray, bool entmoving)
         }
         gle::colorub(150,0,0);
         boxs(entorient, eo, es);
-        boxs(entorient, eo, es, 0.15f);
+        boxs(entorient, eo, es, clamp(0.015f*camera1->o.dist(eo)*tan(fovy*0.5f*RAD), 0.1f, 1.0f));
     }
 
     gle::disable();
