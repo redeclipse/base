@@ -484,17 +484,13 @@ struct BlendBrush
     void gentex()
     {
         if(!tex) glGenTextures(1, &tex);
-        uchar *buf = new uchar[2*w*h];
+        uchar *buf = new uchar[w*h];
         uchar *dst = buf, *src = data;
         loopi(h)
         {
-            loopj(w)
-            {
-                *dst++ = 255 - *src;
-                *dst++ = 255 - *src++;
-            }
+            loopj(w) *dst++ = 255 - *src++;
         }
-        createtexture(tex, w, h, buf, 3, 1, GL_LUMINANCE_ALPHA);
+        createtexture(tex, w, h, buf, 3, 1, hasTRG ? GL_R8 : GL_LUMINANCE8);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
         GLfloat border[4] = { 0, 0, 0, 0 };
