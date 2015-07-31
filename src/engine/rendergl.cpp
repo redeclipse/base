@@ -454,7 +454,7 @@ void gl_checkextensions()
         rtsharefb = 0; // work-around for strange driver stalls involving when using many FBOs
         if(glversion < 300 && !hasext(gfxexts, "GL_EXT_gpu_shader4")) setvar("filltjoints", 0, false, true); // DX9 or less NV cards seem to not cause many sparklies
 
-        if(hasTF) setvar("fpdepthfx", 1, false, true);
+        if(hasTF && hasTRG) setvar("fpdepthfx", 1, false, true);
     }
     else
     {
