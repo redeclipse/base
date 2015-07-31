@@ -42,6 +42,7 @@ CREATE TABLE game_players (
 CREATE TABLE game_weapons (
     game INTEGER,
     player INTEGER,
+    playerhandle TEXT,
     weapon TEXT,
 
     timewielded INTEGER,

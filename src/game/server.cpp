@@ -3143,8 +3143,9 @@ namespace server
                 loopj(W_MAX)
                 {
                     weaponstats w = savedscores[i].weapstats[j];
-                    requestmasterf("stats weapon %d %s %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
+                    requestmasterf("stats weapon %d %s %s %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
                         i,
+                        handle_enc,
                         weaptype[j].name,
                         w.timewielded,
                         w.timeloadout,

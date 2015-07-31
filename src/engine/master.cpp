@@ -95,7 +95,8 @@ struct masterclient
         struct weaponstats
         {
             string name;
-            int pid;
+            int playerid;
+            string playerhandle;
             int timewielded, timeloadout;
             int hits1, hits2, flakhits1, flakhits2;
             int shots1, shots2, flakshots1, flakshots2;
@@ -282,9 +283,10 @@ void savestats(masterclient &c)
 
     loopv(c.stats.weapstats)
     {
-        statsdbexecf("INSERT INTO game_weapons VALUES (%d, %d, %Q, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d)",
+        statsdbexecf("INSERT INTO game_weapons VALUES (%d, %d, %Q, %Q, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d)",
             c.stats.id,
-            c.stats.weapstats[i].pid,
+            c.stats.weapstats[i].playerid,
+            c.stats.weapstats[i].playerhandle,
             c.stats.weapstats[i].name,
 
             c.stats.weapstats[i].timewielded,
@@ -755,9 +757,11 @@ bool checkmasterclientinput(masterclient &c)
                 {
                     #define wint(n) ws.n = (int)strtol(w[qidx++], NULL, 10);
                     masterclient::statstate::weaponstats ws;
-                    ws.pid = (int)strtol(w[2], NULL, 10);
-                    copystring(ws.name, w[3]);
-                    int qidx = 4;
+                    ws.playerid = (int)strtol(w[2], NULL, 10);
+                    simpledecode(handle_dec, w[3]);
+                    copystring(ws.playerhandle, handle_dec);
+                    copystring(ws.name, w[4]);
+                    int qidx = 5;
 
                     wint(timewielded);
                     wint(timeloadout);
