@@ -206,7 +206,7 @@ void addnormals(cube &c, const ivec &o, int size)
         {
             int edge = tjoints[tj].edge, e1 = edge%(MAXFACEVERTS+1), e2 = (e1+1)%numverts;
             const vec &v1 = pos[e1], &v2 = pos[e2];
-            ivec d = vec(v2).sub(v1).mul(8);
+            ivec d(vec(v2).sub(v1).mul(8));
             int axis = abs(d.x) > abs(d.y) ? (abs(d.x) > abs(d.z) ? 0 : 2) : (abs(d.y) > abs(d.z) ? 1 : 2);
             if(d[axis] < 0) d.neg();
             reduceslope(d);

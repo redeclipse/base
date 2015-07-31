@@ -477,8 +477,8 @@ struct blobrenderer
         blobmax.x += radius;
         blobmax.y += radius;
         blobmax.z += blobfadehigh;
-        (bbmin = blobmin).sub(2);
-        (bbmax = blobmax).add(2);
+        (bbmin = ivec(blobmin)).sub(2);
+        (bbmax = ivec(blobmax)).add(2);
         float scale =  fade*blobintensity*255/100.0f;
         blobalphalow = scale / blobfadelow;
         blobalphahigh = scale / blobfadehigh;

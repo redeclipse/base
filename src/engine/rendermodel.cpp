@@ -501,7 +501,7 @@ COMMAND(0, clearmodel, "s");
 
 bool modeloccluded(const vec &center, float radius)
 {
-    ivec bbmin = vec(center).sub(radius), bbmax = vec(center).add(radius+1);
+    ivec bbmin(vec(center).sub(radius)), bbmax(vec(center).add(radius+1));
     return pvsoccluded(bbmin, bbmax) || bboccluded(bbmin, bbmax);
 }
 
