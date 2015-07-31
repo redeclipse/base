@@ -37,8 +37,7 @@ endif
 CXX_TEMP:=$(CXX)
 override CXX=$(TOOLSET_PREFIX)$(CXX_TEMP)
 
-INCLUDES= -I. -Ishared -Iengine -Igame -Ienet/include
-
+INCLUDES= -I. -Ishared -Iengine -Igame -Ienet/include -Isqlite
 
 STRIP=
 ifeq (,$(findstring -g,$(CXXFLAGS)))
@@ -68,7 +67,7 @@ override WINDRES+= -F pe-i386
 endif
 STD_LIBS= -static-libgcc -static-libstdc++
 CLIENT_INCLUDES= $(INCLUDES) -Iinclude
-CLIENT_LIBS= -mwindows $(STD_LIBS) -L$(WINDLL) -L$(WINLIB) -lSDL -lSDL_image -lSDL_mixer -lzlib1 -lopengl32 -lenet -lws2_32 -lwinmm -lsqlite3 
+CLIENT_LIBS= -mwindows $(STD_LIBS) -L$(WINDLL) -L$(WINLIB) -lSDL -lSDL_image -lSDL_mixer -lzlib1 -lopengl32 -lenet -lws2_32 -lwinmm
 else
 APPMODIFIER=
 ifneq (,$(findstring linux,$(PLATFORM)))
@@ -81,7 +80,7 @@ BIN_SUFFIX=_native
 endif
 endif
 CLIENT_INCLUDES= $(INCLUDES) -I/usr/X11R6/include `sdl-config --cflags`
-CLIENT_LIBS= -Lenet -lenet -L/usr/X11R6/lib -lX11 `sdl-config --libs` -lSDL_image -lSDL_mixer -lz -lGL -lsqlite3 
+CLIENT_LIBS= -Lenet -lenet -L/usr/X11R6/lib -lX11 `sdl-config --libs` -lSDL_image -lSDL_mixer -lz -lGL
 endif
 ifneq (,$(findstring linux,$(PLATFORM)))
 CLIENT_LIBS+= -lrt
@@ -97,6 +96,7 @@ CLIENT_OBJS= \
 	shared/stream.o \
 	shared/tools.o \
 	shared/zip.o \
+	sqlite/sqlite3.o \
 	engine/bih.o \
 	engine/blend.o \
 	engine/blob.o \
@@ -155,10 +155,10 @@ CLIENT_PCH= shared/cube.h.gch engine/engine.h.gch
 
 ifneq (,$(findstring mingw,$(PLATFORM)))
 SERVER_INCLUDES= -DSTANDALONE $(INCLUDES) -Iinclude
-SERVER_LIBS= -mwindows $(STD_LIBS) -L$(WINDLL) -L$(WINLIB) -lzlib1 -lenet -lws2_32 -lwinmm -lsqlite3 
+SERVER_LIBS= -mwindows $(STD_LIBS) -L$(WINDLL) -L$(WINLIB) -lzlib1 -lenet -lws2_32 -lwinmm
 else
 SERVER_INCLUDES= -DSTANDALONE $(INCLUDES)
-SERVER_LIBS= -lsqlite3 -Lenet -lenet -lz
+SERVER_LIBS= -Lenet -lenet -lz
 endif
 SERVER_OBJS= \
 	shared/crypto-standalone.o \
@@ -166,6 +166,7 @@ SERVER_OBJS= \
 	shared/stream-standalone.o \
 	shared/tools-standalone.o \
 	shared/zip-standalone.o \
+	sqlite/sqlite3.o \
 	engine/command-standalone.o \
 	engine/irc-standalone.o \
 	engine/master-standalone.o \
@@ -188,7 +189,7 @@ clean-client:
 
 clean-server:
 	@rm -fv $(SERVER_OBJS) $(APPSERVER)$(BIN_SUFFIX)
-	
+
 clean-genkey:
 	@rm -fv $(GENKEY_OBJS) genkey$(BIN_SUFFIX)
 
@@ -200,6 +201,9 @@ clean: clean-enet clean-client clean-server clean-genkey
 
 %-standalone.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ $(subst -standalone.o,.cpp,$@)
+
+sqlite/sqlite3.o: sqlite/sqlite3.c
+	$(CC) -DSQLITE_THREADSAFE=0 -DSQLITE_OMIT_LOAD_EXTENSION -c -o sqlite/sqlite3.o sqlite/sqlite3.c
 
 $(CLIENT_OBJS): CXXFLAGS += $(CLIENT_INCLUDES)
 $(filter shared/%,$(CLIENT_OBJS)): $(filter shared/%,$(CLIENT_PCH))
@@ -373,7 +377,7 @@ engine/master.o: shared/command.h shared/geom.h shared/ents.h shared/glexts.h
 engine/master.o: shared/glemu.h shared/iengine.h shared/igame.h engine/irc.h
 engine/master.o: engine/sound.h engine/world.h engine/octa.h
 engine/master.o: engine/lightmap.h engine/bih.h engine/texture.h
-engine/master.o: engine/model.h
+engine/master.o: engine/model.h sqlite/sqlite3.h
 engine/material.o: engine/engine.h version.h shared/cube.h shared/tools.h
 engine/material.o: shared/command.h shared/geom.h shared/ents.h
 engine/material.o: shared/glexts.h shared/glemu.h shared/iengine.h
@@ -668,7 +672,7 @@ engine/irc-standalone.o: engine/irc.h engine/sound.h
 engine/master-standalone.o: engine/engine.h version.h shared/cube.h
 engine/master-standalone.o: shared/tools.h shared/command.h shared/geom.h
 engine/master-standalone.o: shared/ents.h shared/iengine.h shared/igame.h
-engine/master-standalone.o: engine/irc.h engine/sound.h
+engine/master-standalone.o: engine/irc.h engine/sound.h sqlite/sqlite3.h
 engine/server-standalone.o: engine/engine.h version.h shared/cube.h
 engine/server-standalone.o: shared/tools.h shared/command.h shared/geom.h
 engine/server-standalone.o: shared/ents.h shared/iengine.h shared/igame.h
