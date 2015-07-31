@@ -981,7 +981,7 @@ namespace physics
 
     float coastscale(const vec &o)
     {
-        return lookupvslot(lookupcube(int(o.x), int(o.y), int(o.z)).texture[O_TOP], false).coastscale;
+        return lookupvslot(lookupcube(ivec(o)).texture[O_TOP], false).coastscale;
     }
 
     void modifyvelocity(physent *pl, bool local, bool floating, int millis)

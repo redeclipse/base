@@ -996,7 +996,7 @@ static float findsurface(int fogmat, const vec &v, int &abovemat)
     int csize;
     do
     {
-        cube &c = lookupcube(o.x, o.y, o.z, 0, co, csize);
+        cube &c = lookupcube(o, 0, co, csize);
         int mat = c.material&MATF_VOLUME;
         if(mat != fogmat)
         {
@@ -1582,12 +1582,12 @@ void bindminimap()
     glBindTexture(GL_TEXTURE_2D, minimaptex);
 }
 
-void clipminimap(ivec &bbmin, ivec &bbmax, cube *c = worldroot, int x = 0, int y = 0, int z = 0, int size = hdr.worldsize>>1)
+void clipminimap(ivec &bbmin, ivec &bbmax, cube *c = worldroot, const ivec &co = ivec(0, 0, 0), int size = hdr.worldsize>>1)
 {
     loopi(8)
     {
-        ivec o(i, x, y, z, size);
-        if(c[i].children) clipminimap(bbmin, bbmax, c[i].children, o.x, o.y, o.z, size>>1);
+        ivec o(i, co, size);
+        if(c[i].children) clipminimap(bbmin, bbmax, c[i].children, o, size>>1);
         else if(!isentirelysolid(c[i]) && (c[i].material&MATF_CLIP)!=MAT_CLIP)
         {
             loopk(3) bbmin[k] = min(bbmin[k], o[k]);

@@ -17,7 +17,7 @@ static inline clipplanes &getclipplanes(const cube &c, const ivec &o, int size, 
     {
         p.owner = &c;
         p.version = clipcacheversion+offset;
-        genclipplanes(c, o.x, o.y, o.z, size, p, collide);
+        genclipplanes(c, o, size, p, collide);
     }
     return p;
 }
@@ -427,7 +427,7 @@ float shadowray(ShadowRayCache *cache, const vec &o, const vec &ray, float radiu
         {
             if(isentirelysolid(c)) return c.texture[side]==DEFAULT_SKY && mode&RAY_SKIPSKY ? radius : dist;
             clipplanes &p = cache->clipcache[int(&c - worldroot)&(MAXCLIPPLANES-1)];
-            if(p.owner != &c || p.version != cache->version) { p.owner = &c; p.version = cache->version; genclipplanes(c, lo.x, lo.y, lo.z, 1<<lshift, p, false); }
+            if(p.owner != &c || p.version != cache->version) { p.owner = &c; p.version = cache->version; genclipplanes(c, lo, 1<<lshift, p, false); }
             INTERSECTPLANES(side = p.side[i], goto nextcube);
             INTERSECTBOX(side = (i<<1) + 1 - lsizemask[i], goto nextcube);
             if(exitdist >= 0) return c.texture[side]==DEFAULT_SKY && mode&RAY_SKIPSKY ? radius : dist+max(enterdist+0.1f, 0.0f);
@@ -1125,7 +1125,7 @@ static inline bool octacollide(physent *d, const vec &dir, float cutoff, const i
     loopoctabox(cor, size, bo, bs)
     {
         if(c[i].ext && c[i].ext->ents) if(mmcollide(d, dir, cutoff, *c[i].ext->ents)) return true;
-        ivec o(i, cor.x, cor.y, cor.z, size);
+        ivec o(i, cor, size);
         if(c[i].children)
         {
             if(octacollide(d, dir, cutoff, bo, bs, c[i].children, o, size>>1)) return true;
