@@ -875,7 +875,7 @@ extern MSlot materialslots[(MATF_VOLUME|MATF_INDEX)+1];
 #define MAXBLURRADIUS 7
 
 extern void setupblurkernel(int radius, float sigma, float *weights, float *offsets);
-extern void setblurshader(int pass, int size, int radius, float *weights, float *offsets, GLenum target = GL_TEXTURE_2D);
+extern void setblurshader(int pass, int size, int radius, float *weights, float *offsets);
 
 #define _TVAR(f, n, c, m) _SVARF(n, n, c, { if(initing==NOT_INITING && n[0]) textureload(n, m, true); }, f|IDF_TEXTURE)
 #define TVAR(f, n, c, m)  _TVAR(f, n, c, m)

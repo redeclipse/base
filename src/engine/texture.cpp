@@ -564,7 +564,7 @@ void resizetexture(int w, int h, bool mipmap, bool canreduce, GLenum target, int
     }
     w = min(w, sizelimit);
     h = min(h, sizelimit);
-    if(!usenp2 && target!=GL_TEXTURE_RECTANGLE && (w&(w-1) || h&(h-1)))
+    if(!usenp2 && (w&(w-1) || h&(h-1)))
     {
         tw = th = 1;
         while(tw < w) tw *= 2;
@@ -706,8 +706,6 @@ void createtexture(int tnum, int w, int h, void *pixels, int clamp, int filter, 
             type = GL_FLOAT;
             break;
 
-        case GL_FLOAT_RG16_NV:
-        case GL_FLOAT_R32_NV:
         case GL_RGB16F:
         case GL_RGB32F:
             if(!format) format = GL_RGB;

@@ -42,17 +42,16 @@ FVAR(IDF_PERSIST, glarescale, 0, 1, 8);
 
 void addglare()
 {
-    extern int viewtype;
-    if(!glare || viewtype) return;
+    if(!glare) return;
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE);
 
-    SETSHADER(glare);
+    SETSHADER(screenrect);
 
     glBindTexture(GL_TEXTURE_2D, glaretex.rendertex);
 
-    LOCALPARAMF(glarescale, glarescale);
+    gle::colorf(glarescale, glarescale, glarescale);
 
     screenquad(1, 1);
 

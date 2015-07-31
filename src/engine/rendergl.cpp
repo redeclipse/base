@@ -2,7 +2,7 @@
 
 #include "engine.h"
 
-bool hasVAO = false, hasTR = false, hasFBO = false, hasAFBO = false, hasDS = false, hasTF = false, hasTRG = false, hasS3TC = false, hasFXT1 = false, hasAF = false, hasNVFB = false, hasFBB = false, hasUBO = false, hasMBR = false;
+bool hasVAO = false, hasFBO = false, hasAFBO = false, hasDS = false, hasTF = false, hasTRG = false, hasS3TC = false, hasFXT1 = false, hasAF = false, hasFBB = false, hasUBO = false, hasMBR = false;
 int hasstencil = 0;
 
 VAR(IDF_READONLY, glversion, 1, 0, 0);
@@ -391,12 +391,6 @@ void gl_checkextensions()
         if(glversion < 300 && dbgexts) conoutf("\frUsing GL_ARB_texture_rg extension.");
     }
 
-    if(hasext(gfxexts, "GL_NV_float_buffer"))
-    {
-        hasNVFB = true;
-        if(dbgexts) conoutf("\frUsing GL_NV_float_buffer extension.");
-    }
-
     if(glversion >= 300 || hasext(gfxexts, "GL_ARB_framebuffer_object"))
     {
         glBindRenderbuffer_        = (PFNGLBINDRENDERBUFFERPROC)       getprocaddress("glBindRenderbufferEXT");
@@ -450,7 +444,7 @@ void gl_checkextensions()
         //conoutf("\frWARNING: ATI cards may show garbage in skybox. (use \"/ati_skybox_bug 1\" to fix)");
 
         minimizetcusage = 1;
-        if(hasTF && (hasTRG || hasNVFB)) setvar("fpdepthfx", 1, false, true);
+        if(hasTF && hasTRG) setvar("fpdepthfx", 1, false, true);
         // On Catalyst 10.2, issuing an occlusion query on the first draw using a given cubemap texture causes a nasty crash
         ati_cubemap_bug = 1;
     }
@@ -498,13 +492,6 @@ void gl_checkextensions()
         hasUBO = true;
         if(glversion >= 310 && dbgexts) conoutf("\frUsing GL_ARB_uniform_buffer_object extension.");
     }
-
-    if(glversion >= 310 || hasext(gfxexts, "GL_ARB_texture_rectangle"))
-    {
-        hasTR = true;
-        if(glversion < 310 && dbgexts) conoutf("\frUsing GL_ARB_texture_rectangle extension.");
-    }
-    else fatal("Texture rectangle support is required!");
 
     if(glversion >= 300 || hasext(gfxexts, "GL_ARB_vertex_array_object"))
     {
@@ -963,7 +950,6 @@ void screenquadmapped(float x, float y, float w, float h, float tx, float ty, fl
     gle::attribf(x+w, y+h);
     gle::attribf(x,   y+h);
     gle::end();
-    gle::disable();
 }
 
 void screenquad(float sw, float sh, float sw2, float sh2)
@@ -1171,8 +1157,7 @@ FVAR(IDF_PERSIST, motionblurscale, 0, 1, 1);
 
 void addmotionblur()
 {
-    extern int viewtype;
-    if(!motionblur || viewtype || max(screen->w, screen->h) > hwtexsize) return;
+    if(!motionblur || max(screen->w, screen->h) > hwtexsize) return;
 
     if(!motiontex || motionw != screen->w || motionh != screen->h)
     {
@@ -1180,7 +1165,7 @@ void addmotionblur()
         motionw = screen->w;
         motionh = screen->h;
         lastmotion = 0;
-        createtexture(motiontex, motionw, motionh, NULL, 3, 0, GL_RGB, GL_TEXTURE_RECTANGLE);
+        createtexture(motiontex, motionw, motionh, NULL, 3, 0, GL_RGB);
     }
 
     float amount = min(hud::motionblur(motionblurscale), 1.0f);
@@ -1190,7 +1175,7 @@ void addmotionblur()
         return;
     }
 
-    glBindTexture(GL_TEXTURE_RECTANGLE, motiontex);
+    glBindTexture(GL_TEXTURE_2D, motiontex);
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -1198,7 +1183,7 @@ void addmotionblur()
     SETSHADER(screenrect);
 
     gle::colorf(1, 1, 1, lastmotion ? pow(amount, max(float(totalmillis-lastmotion)/motionblurmillis, 1.0f)) : 0);
-    screenquad(motionw, motionh);
+    screenquad(1, 1);
 
     glDisable(GL_BLEND);
 
@@ -1206,7 +1191,7 @@ void addmotionblur()
     {
         lastmotion = totalmillis-totalmillis%motionblurmillis;
 
-        glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE, 0, 0, 0, 0, 0, screen->w, screen->h);
+        glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, screen->w, screen->h);
     }
 }
 
@@ -1840,7 +1825,7 @@ struct framebuffercopy
         glGenTextures(1, &tex);
         w = screen->w;
         h = screen->h;
-        createtexture(tex, w, h, NULL, 3, false, GL_RGB, GL_TEXTURE_RECTANGLE);
+        createtexture(tex, w, h, NULL, 3, false);
     }
 
     void copy()
@@ -1848,15 +1833,16 @@ struct framebuffercopy
         if(w != screen->w || h != screen->h) cleanup();
         if(!tex) setup();
 
-        glBindTexture(GL_TEXTURE_RECTANGLE, tex);
-        glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE, 0, 0, 0, 0, 0, screen->w, screen->h);
+        glBindTexture(GL_TEXTURE_2D, tex);
+        glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, screen->w, screen->h);
     }
 
     void draw(float sx, float sy, float sw, float sh)
     {
         SETSHADER(screenrect);
-        glBindTexture(GL_TEXTURE_RECTANGLE, tex);
-        screenquadmapped(sx*2 - 1, sy*2 - 1, sw*2, sh*2, 0, 0, screen->w, screen->h);
+        glBindTexture(GL_TEXTURE_2D, tex);
+        screenquadmapped(sx*2 - 1, sy*2 - 1, sw*2, sh*2, 0, 0, 1, 1);
+        gle::disable();
     }
 };
 
@@ -2122,10 +2108,13 @@ void drawviewtype(int targtype)
     glDisable(GL_CULL_FACE);
     glDisable(GL_DEPTH_TEST);
 
-    addmotionblur();
-    addglare();
+    if(!viewtype)
+    {
+        addmotionblur();
+        addglare();
+    }
     if(isliquid(fogmat&MATF_VOLUME)) drawfogoverlay(fogmat, fogblend, abovemat);
-    renderpostfx();
+    if(!viewtype) renderpostfx();
 
     if(editmode && !pixeling)
     {
