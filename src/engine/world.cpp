@@ -519,7 +519,7 @@ void renderentselection(const vec &o, const vec &ray, bool entmoving)
             (a=eo).z=0; (b=es).z=hdr.worldsize; boxs3D(a, b, 1);
         }
         gle::colorub(150,0,0);
-        boxs(entorient, eo, es, 0.1f);
+        boxs(entorient, eo, es, 0.15f);
     }
 
     gle::disable();
