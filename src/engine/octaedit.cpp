@@ -644,9 +644,9 @@ void freeblock(block3 *b, bool alloced = true)
     if(alloced) delete[] b;
 }
 
-void selgridmap(selinfo &sel, int *g)                           // generates a map of the cube sizes at each grid point
+void selgridmap(selinfo &sel, uchar *g)                           // generates a map of the cube sizes at each grid point
 {
-    loopxyz(sel, -sel.grid, (*g++ = lusize, (void)c));
+    loopxyz(sel, -sel.grid, (*g++ = bitscan(lusize), (void)c));
 }
 
 void freeundo(undoblock *u)
@@ -662,8 +662,8 @@ void pasteundo(undoblock *u)
     {
         block3 *b = u->block();
         cube *s = b->c();
-        int *g = u->gridmap();
-        loopxyz(*b, *g++, pastecube(*s++, c));
+        uchar *g = u->gridmap();
+        loopxyz(*b, 1<<min(int(*g++), worldscale-1), pastecube(*s++, c));
     }
 }
 
@@ -680,7 +680,7 @@ static inline int undosize(undoblock *u)
     {
         block3 *b = u->block();
         cube *q = b->c();
-        int size = b->size(), total = size*sizeof(int);
+        int size = b->size(), total = size;
         loopj(size) total += familysize(*q++)*sizeof(cube);
         return total;
     }
@@ -753,14 +753,14 @@ COMMAND(0, clearundos, "");
 undoblock *newundocube(selinfo &s)
 {
     int ssize = s.size(),
-        selgridsize = ssize*sizeof(int),
+        selgridsize = ssize,
         blocksize = sizeof(block3)+ssize*sizeof(cube);
     if(blocksize <= 0 || blocksize > (undomegs<<20)) return NULL;
     undoblock *u = (undoblock *)new uchar[sizeof(undoblock) + blocksize + selgridsize];
     u->numents = 0;
     block3 *b = (block3 *)(u + 1);
     blockcopy(s, -s.grid, b);
-    int *g = (int *)((uchar *)b + blocksize);
+    uchar *g = u->gridmap();
     selgridmap(s, g);
     return u;
 }
