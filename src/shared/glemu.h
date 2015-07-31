@@ -147,9 +147,11 @@ namespace gle
     GLE_ATTRIB(ui, uint)
 
     static inline void attrib(const vec &v) { attribf(v.x, v.y, v.z); }
+    static inline void attrib(const vec &v, float w) { attribf(v.x, v.y, v.z, w); }
     static inline void attrib(const vec2 &v) { attribf(v.x, v.y); }
     static inline void attrib(const vec4 &v) { attribf(v.x, v.y, v.z, v.w); }
     static inline void attrib(const ivec &v) { attribi(v.x, v.y, v.z); }
+    static inline void attrib(const ivec &v, int w) { attribi(v.x, v.y, v.z, w); }
     static inline void attrib(const ivec2 &v) { attribi(v.x, v.y); }
     static inline void attrib(const ivec4 &v) { attribi(v.x, v.y, v.z, v.w); }
     static inline void attrib(const bvec &b) { attribub(b.x, b.y, b.z); }
