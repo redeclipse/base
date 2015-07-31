@@ -118,8 +118,6 @@ static void compileglslshader(GLenum type, GLuint &obj, const char *def, const c
         break;
     }
 
-    parts[numparts++] = "#extension GL_ARB_texture_rectangle : enable\n";
-
     parts[numparts++] = source;
 
     obj = glCreateShader_(type);
