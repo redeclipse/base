@@ -892,6 +892,7 @@ void enttype(char *what, int *numargs)
         result(entities::findname(e.type));
     })
 }
+COMMAND(0, enttype, "sN");
 
 void entattr(int *attr, int *val, int *numargs)
 {
@@ -907,8 +908,6 @@ void entattr(int *attr, int *val, int *numargs)
         if(e.attrs.inrange(*attr)) intret(e.attrs[*attr]);
     );
 }
-
-COMMAND(0, enttype, "sN");
 COMMAND(0, entattr, "iiN");
 
 void entprop(int *attr, int *val)
@@ -919,7 +918,6 @@ void entprop(int *attr, int *val)
             e.attrs[*attr] += *val;
         });
 }
-
 COMMAND(0, entprop, "ii");
 
 int findentity(int type, int index, vector<int> &attr)
@@ -1167,4 +1165,3 @@ void mpeditent(int i, const vec &o, int type, attrvector &attr, bool local)
         addentity(i);
     }
 }
-
