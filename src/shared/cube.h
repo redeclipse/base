@@ -60,6 +60,11 @@
 #include "geom.h"
 #include "ents.h"
 
+#ifndef STANDALONE
+#include "glexts.h"
+#include "glemu.h"
+#endif
+
 #include "iengine.h"
 #include "igame.h"
 

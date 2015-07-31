@@ -2241,14 +2241,18 @@ void forcecubemapload(GLuint tex)
     glBindTexture(GL_TEXTURE_CUBE_MAP, tex);
     if(!blend) glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glBegin(GL_POINTS);
-    loopi(3)
+    gle::defvertex(2);
+    gle::deftexcoord0(3);
+    gle::defcolor(4);
+    gle::begin(GL_LINES);
+    loopi(2)
     {
-        glColor4f(1, 1, 1, 0);
-        glTexCoord3f(0, 0, 1);
-        glVertex2f(0, 0);
+        gle::attribf(i*1e-3f, 0);
+        gle::attribf(0, 0, 1);
+        gle::attribf(1, 1, 1, 0);
     }
-    glEnd();
+    gle::end();
+    gle::disable();
     if(!blend) glDisable(GL_BLEND);
     if(depthtest) glEnable(GL_DEPTH_TEST);
 }

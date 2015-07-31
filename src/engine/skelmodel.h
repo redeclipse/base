@@ -1263,18 +1263,7 @@ struct skelmodel : animmodel
         void bindvbo(const animstate *as, vbocacheentry &vc, skelcacheentry *sc = NULL, blendcacheentry *bc = NULL)
         {
             vvert *vverts = 0;
-            if(lastebuf!=ebuf)
-            {
-                glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, ebuf);
-                lastebuf = ebuf;
-            }
-            if(lastvbuf != (void *)(size_t)vc.vbuf)
-            {
-                glBindBuffer_(GL_ARRAY_BUFFER, vc.vbuf);
-                if(!lastvbuf) glEnableClientState(GL_VERTEX_ARRAY);
-                glVertexPointer(3, GL_FLOAT, vertsize, &vverts->pos);
-                lastvbuf = (void *)(size_t)vc.vbuf;
-            }
+            bindpos(ebuf, vc.vbuf, &vverts->pos, vertsize);
             if(as->cur.anim&ANIM_NOSKIN)
             {
                 if(enabletc) disabletc();
@@ -1286,63 +1275,34 @@ struct skelmodel : animmodel
                 if(vtangents)
                 {
                     if(enablenormals) disablenormals();
-                    if(!enabletangents)
-                    {
-                        glEnableVertexAttribArray_(1);
-                        enabletangents = true;
-                    }
-                    if(lastxbuf!=lastvbuf)
-                    {
-                        vvertbump *vvertbumps = 0;
-                        glVertexAttribPointer_(1, 4, GL_SHORT, GL_TRUE, vertsize, &vvertbumps->tangent.x);
-                        lastxbuf = lastvbuf;
-                    }
+                    vvertbump *vvertbumps = 0;
+                    bindtangents(&vvertbumps->tangent, vertsize);
                 }
                 else
                 {
                     if(enabletangents) disabletangents();
-                    if(!enablenormals)
-                    {
-                        glEnableClientState(GL_NORMAL_ARRAY);
-                        enablenormals = true;
-                    }
-                    if(lastnbuf!=lastvbuf)
-                    {
-                        vvertn *vvertns = 0;
-                        glNormalPointer(GL_FLOAT, vertsize, vvertns->norm.v);
-                        lastnbuf = lastvbuf;
-                    }
+                    vvertn *vvertns = 0;
+                    bindnormals(&vvertns->norm, vertsize);
                 }
 
-                if(!enabletc)
-                {
-                    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-                    enabletc = true;
-                }
-                if(lasttcbuf!=lastvbuf)
-                {
-                    glTexCoordPointer(2, GL_FLOAT, vertsize, vverts->tc.v);
-                    lasttcbuf = lastvbuf;
-                }
+                bindtc(&vverts->tc, vertsize);
             }
             if(!sc || !skel->usegpuskel)
-            {
+            {   
                 if(enablebones) disablebones();
-                return;
             }
-            if(!enablebones)
+            else
             {
-                glEnableVertexAttribArray_(6);
-                glEnableVertexAttribArray_(7);
-                enablebones = true;
-            }
-            if(lastbbuf!=lastvbuf)
-            {
-                vvertnw *vvertnws = 0;
-                vvertbumpw *vvertbumpws = 0;
-                glVertexAttribPointer_(6, 4, GL_UNSIGNED_BYTE, GL_TRUE, vertsize, vtangents ? vvertbumpws->weights : vvertnws->weights);
-                glVertexAttribPointer_(7, 4, GL_UNSIGNED_BYTE, GL_FALSE, vertsize, vtangents ? vvertbumpws->bones : vvertnws->bones);
-                lastbbuf = lastvbuf;
+                if(vtangents) 
+                {
+                    vvertbumpw *vvertbumpws = 0;
+                    bindbones(vvertbumpws->weights, vvertbumpws->bones, vertsize);
+                }
+                else
+                {
+                    vvertnw *vvertnws = 0;
+                    bindbones(vvertnws->weights, vvertnws->bones, vertsize);
+                }
             }
         }
 

@@ -24,7 +24,7 @@ enum
     DF_SATURATE   = 1<<5
 };
 
-VARF(IDF_PERSIST, maxdecaltris, 1, 512, INT_MAX-1, initdecals());
+VARF(IDF_PERSIST, maxdecaltris, 1, 512, 16384, initdecals());
 FVAR(IDF_PERSIST, decalfade, 1e-4f, 1, 1000);
 VAR(0, dbgdec, 0, 0, 1);
 
@@ -37,6 +37,8 @@ struct decalrenderer
     int maxdecals, startdecal, enddecal;
     decalvert *verts;
     int maxverts, startvert, endvert, lastvert, availverts;
+    GLuint vbo;
+    bool dirty;
 
     decalrenderer(const char *texname, int flags = 0, int fadeintime = 0, int fadeouttime = 1000, int timetolive = -1)
         : texname(texname), flags(flags),
@@ -44,8 +46,15 @@ struct decalrenderer
           tex(NULL),
           decals(NULL), maxdecals(0), startdecal(0), enddecal(0),
           verts(NULL), maxverts(0), startvert(0), endvert(0), lastvert(0), availverts(0),
+          vbo(0), dirty(false),
           decalu(0), decalv(0)
     {
+    }
+
+    ~decalrenderer()
+    {
+        DELETEA(decals);
+        DELETEA(verts);
     }
 
     void init(int tris)
@@ -73,11 +82,17 @@ struct decalrenderer
         return enddecal < startdecal ? maxdecals - (startdecal - enddecal) : enddecal - startdecal;
     }
 
+    void cleanup()
+    {
+        if(vbo) { glDeleteBuffers_(1, &vbo); vbo = 0; }
+    }
+
     void cleardecals()
     {
         startdecal = enddecal = 0;
         startvert = endvert = lastvert = 0;
         availverts = maxverts - 3;
+        dirty = true;
     }
 
     int freedecal()
@@ -124,6 +139,7 @@ struct decalrenderer
                 vert++;
             }
         }
+        dirty = true;
     }
 
     void clearfadeddecals()
@@ -138,10 +154,13 @@ struct decalrenderer
             end = &decals[enddecal];
             while(d < end && d->millis <= threshold) d++;
         }
+        int prevstart = startdecal;
         startdecal = d - decals;
+        if(prevstart == startdecal) return;
         if(startdecal!=enddecal) startvert = decals[startdecal].startvert;
         else startvert = endvert = lastvert = 0;
         availverts = endvert < startvert ? startvert - endvert - 3 : maxverts - 3 - (endvert - startvert);
+        dirty = true;
     }
 
     void fadeindecals()
@@ -203,16 +222,18 @@ struct decalrenderer
         glDepthMask(GL_FALSE);
         glEnable(GL_BLEND);
 
-        glEnableClientState(GL_VERTEX_ARRAY);
-        glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-        glEnableClientState(GL_COLOR_ARRAY);
+        gle::enablevertex();
+        gle::enabletexcoord0();
+        gle::enablecolor();
     }
 
     static void cleanuprenderstate()
     {
-        glDisableClientState(GL_VERTEX_ARRAY);
-        glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-        glDisableClientState(GL_COLOR_ARRAY);
+        glBindBuffer_(GL_ARRAY_BUFFER, 0);
+
+        gle::disablevertex();
+        gle::disabletexcoord0();
+        gle::disablecolor();
 
         glDepthMask(GL_TRUE);
         glDisable(GL_BLEND);
@@ -241,23 +262,32 @@ struct decalrenderer
 
         glBindTexture(GL_TEXTURE_2D, tex->id);
 
-        glVertexPointer(3, GL_FLOAT, sizeof(decalvert), verts->pos.v);
-        glTexCoordPointer(2, GL_FLOAT, sizeof(decalvert), verts->tc.v);
-        glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(decalvert), verts->color.v);
+        if(!vbo) { glGenBuffers_(1, &vbo); dirty = true; }
+        glBindBuffer_(GL_ARRAY_BUFFER, vbo);
 
         int count = endvert < startvert ? maxverts - startvert : endvert - startvert;
-        glDrawArrays(GL_TRIANGLES, startvert, count);
-        if(endvert < startvert)
+        if(dirty)
         {
-            count += endvert;
-            glDrawArrays(GL_TRIANGLES, 0, endvert);
+            glBufferData_(GL_ARRAY_BUFFER, maxverts*sizeof(decalvert), NULL, GL_STREAM_DRAW);
+            glBufferSubData_(GL_ARRAY_BUFFER, 0, count*sizeof(decalvert), &verts[startvert]);
+            if(endvert < startvert)
+            {
+                glBufferSubData_(GL_ARRAY_BUFFER, count*sizeof(decalvert), endvert*sizeof(decalvert), verts);
+                count += endvert;
+            }
+            dirty = false;
         }
+        else if(endvert < startvert) count += endvert;
+
+        const decalvert *ptr = 0;
+        gle::vertexpointer(sizeof(decalvert), ptr->pos.v);
+        gle::texcoord0pointer(sizeof(decalvert), ptr->tc.v);
+        gle::colorpointer(sizeof(decalvert), ptr->color.v);
+
+        glDrawArrays(GL_TRIANGLES, 0, count);
         xtravertsva += count;
 
         if(flags&(DF_ADD|DF_INVMOD)) resetfogcolor();
-
-        extern int intel_vertexarray_bug;
-        if(intel_vertexarray_bug) glFlush();
     }
 
     decalinfo &newdecal()
@@ -267,6 +297,7 @@ struct decalrenderer
         if(next>=maxdecals) next = 0;
         if(next==startdecal) freedecal();
         enddecal = next;
+        dirty = true;
         return d;
     }
 
@@ -566,6 +597,11 @@ void initdecals()
 void cleardecals()
 {
     loopi(sizeof(decals)/sizeof(decals[0])) decals[i].cleardecals();
+}
+
+void cleanupdecals()
+{
+    loopi(sizeof(decals)/sizeof(decals[0])) decals[i].cleanup();
 }
 
 VARN(IDF_PERSIST, decals, showdecals, 0, 1, 1);

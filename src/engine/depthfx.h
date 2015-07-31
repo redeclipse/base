@@ -116,11 +116,11 @@ static struct depthfxtexture : rendertarget
     {
         if(numdepthfxranges > 0)
         {
-            glColor3f(0, 1, 0);
+            gle::colorf(0, 1, 0);
             debugscissor(w, h, true);
-            glColor3f(0, 0, 1);
+            gle::colorf(0, 0, 1);
             debugblurtiles(w, h, true);
-            glColor3f(1, 1, 1);
+            gle::colorf(1, 1, 1);
         }
     }
 } depthfxtex;

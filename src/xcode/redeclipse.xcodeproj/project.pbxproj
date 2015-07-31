@@ -132,10 +132,11 @@
 		FD05F1481ADD1BBA0046F323 /* playerdef.h in Headers */ = {isa = PBXBuildFile; fileRef = FD05F1441ADD1BBA0046F323 /* playerdef.h */; };
 		FD05F1491ADD1BBA0046F323 /* teamdef.h in Headers */ = {isa = PBXBuildFile; fileRef = FD05F1451ADD1BBA0046F323 /* teamdef.h */; };
 		FD05F14A1ADD1BBA0046F323 /* weapons.h in Headers */ = {isa = PBXBuildFile; fileRef = FD05F1461ADD1BBA0046F323 /* weapons.h */; };
+        FD05F14F1ADD1BD70046F323 /* glemu.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FD05F14B1ADD1BD70046F323 /* glemu.cpp */; };
+        FD05F14F1ADD1BD70046F323 /* glemu.h in Headers */ = {isa = PBXBuildFile; fileRef = FD05F14B1ADD1BD70046F323 /* glemu.h */; };
 		FD05F14F1ADD1BD70046F323 /* glexts.h in Headers */ = {isa = PBXBuildFile; fileRef = FD05F14B1ADD1BD70046F323 /* glexts.h */; };
 		FD05F1501ADD1BD70046F323 /* iqm.h in Headers */ = {isa = PBXBuildFile; fileRef = FD05F14C1ADD1BD70046F323 /* iqm.h */; };
 		FD05F1511ADD1BD70046F323 /* smd.h in Headers */ = {isa = PBXBuildFile; fileRef = FD05F14D1ADD1BD70046F323 /* smd.h */; };
-		FD05F1521ADD1BD70046F323 /* varray.h in Headers */ = {isa = PBXBuildFile; fileRef = FD05F14E1ADD1BD70046F323 /* varray.h */; };
 		FD6BC4A61B4BE57C0010977F /* master.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FD6BC4A51B4BE57C0010977F /* master.cpp */; };
 /* End PBXBuildFile section */
 
@@ -275,10 +276,11 @@
 		FD05F1441ADD1BBA0046F323 /* playerdef.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = playerdef.h; sourceTree = "<group>"; };
 		FD05F1451ADD1BBA0046F323 /* teamdef.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = teamdef.h; sourceTree = "<group>"; };
 		FD05F1461ADD1BBA0046F323 /* weapons.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = weapons.h; sourceTree = "<group>"; };
+        FD05F14B1ADD1BD70046F323 /* glemu.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.cpp; path = glemu.cpp; sourceTree = "<group>"; };
+        FD05F14B1ADD1BD70046F323 /* glemu.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = glemu.h; sourceTree = "<group>"; };
 		FD05F14B1ADD1BD70046F323 /* glexts.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = glexts.h; sourceTree = "<group>"; };
 		FD05F14C1ADD1BD70046F323 /* iqm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = iqm.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		FD05F14D1ADD1BD70046F323 /* smd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = smd.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		FD05F14E1ADD1BD70046F323 /* varray.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = varray.h; sourceTree = "<group>"; };
 		FD6BC4A51B4BE57C0010977F /* master.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; path = master.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 /* End PBXFileReference section */
 
@@ -417,7 +419,6 @@
 				B9AC7A8B0D06DB44005506F8 /* engine.h */,
 				D18B8FBE0DB0AF8200171439 /* explosion.h */,
 				D118DEB50D979281000E8C4C /* glare.cpp */,
-				FD05F14B1ADD1BD70046F323 /* glexts.h */,
 				B9AC7A8C0D06DB44005506F8 /* grass.cpp */,
 				FD05F14C1ADD1BD70046F323 /* iqm.h */,
 				D1D88AB60F350EDE000680E4 /* irc.cpp */,
@@ -465,7 +466,6 @@
 				B9AC7AA60D06DB44005506F8 /* texture.cpp */,
 				B9AC7AA70D06DB44005506F8 /* texture.h */,
 				D16A83700F130EBC00EABB1F /* ui.cpp */,
-				FD05F14E1ADD1BD70046F323 /* varray.h */,
 				B9AC7AA80D06DB44005506F8 /* vertmodel.h */,
 				B9AC7AA90D06DB44005506F8 /* water.cpp */,
 				B9AC7AAA0D06DB44005506F8 /* world.cpp */,
@@ -485,6 +485,9 @@
 				B9AC7AC40D06DB44005506F8 /* ents.h */,
 				B9AC7AC50D06DB44005506F8 /* geom.cpp */,
 				B9AC7AC60D06DB44005506F8 /* geom.h */,
+                FD05F14B1ADD1BD70046F323 /* glemu.cpp */,
+                FD05F14B1ADD1BD70046F323 /* glemu.h */,
+                FD05F14B1ADD1BD70046F323 /* glexts.h */,
 				B9AC7AC70D06DB44005506F8 /* iengine.h */,
 				B9AC7AC80D06DB44005506F8 /* igame.h */,
 				D11B5A8010CBB637003F0098 /* stream.cpp */,
@@ -565,12 +568,12 @@
 				B9AC7B100D06DB44005506F8 /* igame.h in Headers */,
 				B9AC7B160D06DB44005506F8 /* tools.h in Headers */,
 				FD05F1481ADD1BBA0046F323 /* playerdef.h in Headers */,
-				FD05F1521ADD1BD70046F323 /* varray.h in Headers */,
 				FD05F14A1ADD1BBA0046F323 /* weapons.h in Headers */,
 				B91D401F0D525FD3004EF78A /* animmodel.h in Headers */,
 				B91D40230D525FE9004EF78A /* md5.h in Headers */,
 				B91D40250D52600A004EF78A /* skelmodel.h in Headers */,
 				D116C0AB0D9F7DB500E8B945 /* rendertarget.h in Headers */,
+                FD05F14F1ADD1BD70046F323 /* glemu.h in Headers */,
 				FD05F14F1ADD1BD70046F323 /* glexts.h in Headers */,
 				D18B8FC10DB0AF8200171439 /* explosion.h in Headers */,
 				D18B8FC20DB0AF8200171439 /* lensflare.h in Headers */,
@@ -707,6 +710,7 @@
 				B9AC7AF70D06DB44005506F8 /* worldio.cpp in Sources */,
 				B9AC7B0D0D06DB44005506F8 /* geom.cpp in Sources */,
 				B9AC7B150D06DB44005506F8 /* tools.cpp in Sources */,
+                FD05F14F1ADD1BD70046F323 /* glemu.cpp in Sources */,
 				B91D40210D525FE0004EF78A /* decal.cpp in Sources */,
 				D1C660CA0D5467C8002E52C1 /* pvs.cpp in Sources */,
 				D16BD00D0D7000EA0053CECE /* dynlight.cpp in Sources */,

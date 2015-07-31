@@ -2,7 +2,7 @@
 
 #include "engine.h"
 
-bool hasTR = false, hasFBO = false, hasAFBO = false, hasDS = false, hasTF = false, hasTRG = false, hasS3TC = false, hasFXT1 = false, hasAF = false, hasNVFB = false, hasFBB = false, hasUBO = false, hasMBR = false;
+bool hasVAO = false, hasTR = false, hasFBO = false, hasAFBO = false, hasDS = false, hasTF = false, hasTRG = false, hasS3TC = false, hasFXT1 = false, hasAF = false, hasNVFB = false, hasFBB = false, hasUBO = false, hasMBR = false;
 int hasstencil = 0;
 
 VAR(IDF_READONLY, glversion, 1, 0, 0);
@@ -11,7 +11,6 @@ VAR(IDF_READONLY, glslversion, 1, 0, 0);
 // OpenGL 1.3
 #ifdef WIN32
 PFNGLACTIVETEXTUREPROC       glActiveTexture_       = NULL;
-PFNGLCLIENTACTIVETEXTUREPROC glClientActiveTexture_ = NULL;
 
 PFNGLBLENDEQUATIONEXTPROC glBlendEquation_ = NULL;
 PFNGLBLENDCOLOREXTPROC    glBlendColor_    = NULL;
@@ -165,6 +164,12 @@ PFNGLBINDBUFFERRANGEPROC         glBindBufferRange_         = NULL;
 PFNGLMAPBUFFERRANGEPROC         glMapBufferRange_         = NULL;
 PFNGLFLUSHMAPPEDBUFFERRANGEPROC glFlushMappedBufferRange_ = NULL;
 
+// GL_ARB_vertex_array_object
+PFNGLBINDVERTEXARRAYPROC    glBindVertexArray_    = NULL;
+PFNGLDELETEVERTEXARRAYSPROC glDeleteVertexArrays_ = NULL;
+PFNGLGENVERTEXARRAYSPROC    glGenVertexArrays_    = NULL;
+PFNGLISVERTEXARRAYPROC      glIsVertexArray_      = NULL;
+
 void *getprocaddress(const char *name)
 {
     return SDL_GL_GetProcAddress(name);
@@ -173,8 +178,8 @@ void *getprocaddress(const char *name)
 VAR(IDF_PERSIST, ati_skybox_bug, 0, 0, 1);
 VAR(0, ati_minmax_bug, 0, 0, 1);
 VAR(0, ati_cubemap_bug, 0, 0, 1);
-VAR(0, intel_immediate_bug, 0, 0, 1);
 VAR(0, intel_vertexarray_bug, 0, 0, 1);
+VAR(0, intel_mapbufferrange_bug, 0, 0, 1);
 VAR(0, sdl_backingstore_bug, -1, 0, 1);
 VAR(0, minimizetcusage, 1, 0, 0);
 VAR(0, useubo, 1, 0, 0);
@@ -249,7 +254,6 @@ void gl_checkextensions()
 
 #ifdef WIN32
     glActiveTexture_ =            (PFNGLACTIVETEXTUREPROC)            getprocaddress("glActiveTexture");
-    glClientActiveTexture_ =      (PFNGLCLIENTACTIVETEXTUREPROC)      getprocaddress("glClientActiveTexture");
 
     glBlendEquation_ =            (PFNGLBLENDEQUATIONPROC)            getprocaddress("glBlendEquation");
     glBlendColor_ =               (PFNGLBLENDCOLORPROC)               getprocaddress("glBlendColor");
@@ -373,18 +377,18 @@ void gl_checkextensions()
     glDrawBuffers_ =              (PFNGLDRAWBUFFERSPROC)              getprocaddress("glDrawBuffers");
 #endif
 
-    if(hasext(gfxexts, "GL_ARB_texture_float") || hasext(gfxexts, "GL_ATI_texture_float"))
+    if(glversion >= 300 || hasext(gfxexts, "GL_ARB_texture_float") || hasext(gfxexts, "GL_ATI_texture_float"))
     {
         hasTF = true;
-        if(dbgexts) conoutf("\frUsing GL_ARB_texture_float extension");
+        if(glversion < 300 && dbgexts) conoutf("\frUsing GL_ARB_texture_float extension");
         setvar("shadowmap", 1, false, true);
         setvar("smoothshadowmappeel", 1, false, true);
     }
 
-    if(hasext(gfxexts, "GL_ARB_texture_rg"))
+    if(glversion >= 300 || hasext(gfxexts, "GL_ARB_texture_rg"))
     {
         hasTRG = true;
-        if(dbgexts) conoutf("\frUsing GL_ARB_texture_rg extension.");
+        if(glversion < 300 && dbgexts) conoutf("\frUsing GL_ARB_texture_rg extension.");
     }
 
     if(hasext(gfxexts, "GL_NV_float_buffer"))
@@ -393,7 +397,7 @@ void gl_checkextensions()
         if(dbgexts) conoutf("\frUsing GL_NV_float_buffer extension.");
     }
 
-    if(hasext(gfxexts, "GL_ARB_framebuffer_object"))
+    if(glversion >= 300 || hasext(gfxexts, "GL_ARB_framebuffer_object"))
     {
         glBindRenderbuffer_        = (PFNGLBINDRENDERBUFFERPROC)       getprocaddress("glBindRenderbufferEXT");
         glDeleteRenderbuffers_     = (PFNGLDELETERENDERBUFFERSPROC)    getprocaddress("glDeleteRenderbuffersEXT");
@@ -408,7 +412,7 @@ void gl_checkextensions()
         glGenerateMipmap_          = (PFNGLGENERATEMIPMAPPROC)         getprocaddress("glGenerateMipmapEXT");
         glBlitFramebuffer_         = (PFNGLBLITFRAMEBUFFERPROC)        getprocaddress("glBlitFramebufferEXT");
         hasAFBO = hasFBO = hasFBB = hasDS = true;
-        if(dbgexts) conoutf("\frUsing GL_ARB_framebuffer_object extension.");
+        if(glversion < 300 && dbgexts) conoutf("\frUsing GL_ARB_framebuffer_object extension.");
     }
     else if(hasext(gfxexts, "GL_EXT_framebuffer_object"))
     {
@@ -462,27 +466,25 @@ void gl_checkextensions()
     {
         if(intel)
         {
-#ifdef __APPLE__
-            intel_immediate_bug = 1;
-#endif
 #ifdef WIN32
-            intel_immediate_bug = 1;
             intel_vertexarray_bug = 1;
+            // MapBufferRange is buggy on older Intel drivers on Windows
+            if(glversion <= 310) intel_mapbufferrange_bug = 1;
 #endif
         }
 
         reservevpparams = 20;
     }
 
-    if(hasext(gfxexts, "GL_ARB_map_buffer_range"))
+    if(glversion >= 300 || hasext(gfxexts, "GL_ARB_map_buffer_range"))
     {
         glMapBufferRange_         = (PFNGLMAPBUFFERRANGEPROC)        getprocaddress("glMapBufferRange");
         glFlushMappedBufferRange_ = (PFNGLFLUSHMAPPEDBUFFERRANGEPROC)getprocaddress("glFlushMappedBufferRange");
         hasMBR = true;
-        if(dbgexts) conoutf("\frUsing GL_ARB_map_buffer_range.");
+        if(glversion < 300 && dbgexts) conoutf("\frUsing GL_ARB_map_buffer_range.");
     }
 
-    if(hasext(gfxexts, "GL_ARB_uniform_buffer_object"))
+    if(glversion >= 310 || hasext(gfxexts, "GL_ARB_uniform_buffer_object"))
     {
         glGetUniformIndices_       = (PFNGLGETUNIFORMINDICESPROC)      getprocaddress("glGetUniformIndices");
         glGetActiveUniformsiv_     = (PFNGLGETACTIVEUNIFORMSIVPROC)    getprocaddress("glGetActiveUniformsiv");
@@ -494,15 +496,34 @@ void gl_checkextensions()
 
         useubo = 1;
         hasUBO = true;
-        if(dbgexts) conoutf("\frUsing GL_ARB_uniform_buffer_object extension.");
+        if(glversion >= 310 && dbgexts) conoutf("\frUsing GL_ARB_uniform_buffer_object extension.");
     }
 
-    if(hasext(gfxexts, "GL_ARB_texture_rectangle"))
+    if(glversion >= 310 || hasext(gfxexts, "GL_ARB_texture_rectangle"))
     {
         hasTR = true;
-        if(dbgexts) conoutf("\frUsing GL_ARB_texture_rectangle extension.");
+        if(glversion < 310 && dbgexts) conoutf("\frUsing GL_ARB_texture_rectangle extension.");
     }
     else fatal("Texture rectangle support is required!");
+
+    if(glversion >= 300 || hasext(gfxexts, "GL_ARB_vertex_array_object"))
+    {
+        glBindVertexArray_ =    (PFNGLBINDVERTEXARRAYPROC)   getprocaddress("glBindVertexArray");
+        glDeleteVertexArrays_ = (PFNGLDELETEVERTEXARRAYSPROC)getprocaddress("glDeleteVertexArrays");
+        glGenVertexArrays_ =    (PFNGLGENVERTEXARRAYSPROC)   getprocaddress("glGenVertexArrays");
+        glIsVertexArray_ =      (PFNGLISVERTEXARRAYPROC)     getprocaddress("glIsVertexArray");
+        hasVAO = true;
+        if(glversion < 300 && dbgexts) conoutf("\frUsing GL_ARB_vertex_array_object extension.");
+    }
+    else if(hasext(gfxexts, "GL_APPLE_vertex_array_object"))
+    {
+        glBindVertexArray_ =    (PFNGLBINDVERTEXARRAYPROC)   getprocaddress("glBindVertexArrayAPPLE");
+        glDeleteVertexArrays_ = (PFNGLDELETEVERTEXARRAYSPROC)getprocaddress("glDeleteVertexArraysAPPLE");
+        glGenVertexArrays_ =    (PFNGLGENVERTEXARRAYSPROC)   getprocaddress("glGenVertexArraysAPPLE");
+        glIsVertexArray_ =      (PFNGLISVERTEXARRAYPROC)     getprocaddress("glIsVertexArrayAPPLE");
+        hasVAO = true;
+        if(dbgexts) conoutf("\frUsing GL_APPLE_vertex_array_object extension.");
+    }
 
     if(hasext(gfxexts, "GL_EXT_texture_compression_s3tc"))
     {
@@ -584,26 +605,13 @@ void gl_init(int w, int h, int bpp, int depth, int fsaa)
     }
 #endif
 
+    gle::setup();
+
     extern void setupshaders();
     setupshaders();
 
     setuptexcompress();
 }
-
-void cleanupgl()
-{
-    extern void cleanupmotionblur();
-    cleanupmotionblur();
-
-    extern void clearminimap();
-    clearminimap();
-
-    extern void cleanupviews();
-    cleanupviews();
-}
-
-#define VARRAY_INTERNAL
-#include "varray.h"
 
 VAR(0, wireframe, 0, 0, 1);
 
@@ -895,6 +903,106 @@ void popscissor()
     scissoring = 0;
 }
 
+static GLuint screenquadvbo = 0;
+
+static void setupscreenquad()
+{
+    if(!screenquadvbo)
+    {
+        glGenBuffers_(1, &screenquadvbo);
+        glBindBuffer_(GL_ARRAY_BUFFER, screenquadvbo);
+        vec2 verts[4] = { vec2(1, -1), vec2(-1, -1), vec2(1, 1), vec2(-1, 1) };
+        glBufferData_(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
+        glBindBuffer_(GL_ARRAY_BUFFER, 0);
+    }
+}
+
+static void cleanupscreenquad()
+{
+    if(screenquadvbo) { glDeleteBuffers_(1, &screenquadvbo); screenquadvbo = 0; }
+}
+
+void screenquad()
+{
+    setupscreenquad();
+    glBindBuffer_(GL_ARRAY_BUFFER, screenquadvbo);
+    gle::enablevertex();
+    gle::vertexpointer(sizeof(vec2), (const vec2 *)0, GL_FLOAT, 2);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    gle::disablevertex();
+    glBindBuffer_(GL_ARRAY_BUFFER, 0);
+}
+
+static LocalShaderParam screentexcoord[2] = { LocalShaderParam("screentexcoord0"), LocalShaderParam("screentexcoord1") };
+
+static inline void setscreentexcoord(int i, float w, float h, float x = 0, float y = 0)
+{
+    screentexcoord[i].setf(w*0.5f, h*0.5f, x + w*0.5f, y + fabs(h)*0.5f);
+}
+
+void screenquad(float sw, float sh)
+{
+    setscreentexcoord(0, sw, sh);
+    screenquad();
+}
+
+void screenquadflipped(float sw, float sh)
+{
+    setscreentexcoord(0, sw, -sh);
+    screenquad();
+}
+
+void screenquadmapped(float x, float y, float w, float h, float tx, float ty, float tw, float th)
+{
+    float wk = tw/w, hk = th/h;
+    setscreentexcoord(0, 2*wk, 2*hk, tx - x*wk, ty - y*hk);
+    gle::defvertex(2);
+    gle::begin(GL_TRIANGLE_STRIP);
+    gle::attribf(x+w, y);
+    gle::attribf(x,   y);
+    gle::attribf(x+w, y+h);
+    gle::attribf(x,   y+h);
+    gle::end();
+    gle::disable();
+}
+
+void screenquad(float sw, float sh, float sw2, float sh2)
+{
+    setscreentexcoord(0, sw, sh);
+    setscreentexcoord(1, sw2, sh2);
+    screenquad();
+}
+
+void screenquadoffset(float x, float y, float w, float h)
+{
+    setscreentexcoord(0, w, h, x, y);
+    screenquad();
+}
+
+void screenquadoffset(float x, float y, float w, float h, float x2, float y2, float w2, float h2)
+{
+    setscreentexcoord(0, w, h, x, y);
+    setscreentexcoord(1, w2, h2, x2, y2);
+    screenquad();
+}
+
+#define HUDQUAD(x1, y1, x2, y2, sx1, sy1, sx2, sy2) { \
+    gle::defvertex(2); \
+    gle::deftexcoord0(); \
+    gle::begin(GL_TRIANGLE_STRIP); \
+    gle::attribf(x2, y1); gle::attribf(sx2, sy1); \
+    gle::attribf(x1, y1); gle::attribf(sx1, sy1); \
+    gle::attribf(x2, y2); gle::attribf(sx2, sy2); \
+    gle::attribf(x1, y2); gle::attribf(sx1, sy2); \
+    gle::end(); \
+    gle::disable(); \
+}
+
+void hudquad(float x, float y, float w, float h, float tx, float ty, float tw, float th)
+{
+    HUDQUAD(x, y, x+w, y+h, tx, ty, tx+tw, ty+th);
+}
+
 static float findsurface(int fogmat, const vec &v, int &abovemat)
 {
     fogmat &= MATF_VOLUME;
@@ -1089,13 +1197,8 @@ void addmotionblur()
 
     SETSHADER(screenrect);
 
-    glColor4f(1, 1, 1, lastmotion ? pow(amount, max(float(totalmillis-lastmotion)/motionblurmillis, 1.0f)) : 0);
-    glBegin(GL_TRIANGLE_STRIP);
-    glTexCoord2f(      0,       0); glVertex2f(-1, -1);
-    glTexCoord2f(motionw,       0); glVertex2f( 1, -1);
-    glTexCoord2f(      0, motionh); glVertex2f(-1,  1);
-    glTexCoord2f(motionw, motionh); glVertex2f( 1,  1);
-    glEnd();
+    gle::colorf(1, 1, 1, lastmotion ? pow(amount, max(float(totalmillis-lastmotion)/motionblurmillis, 1.0f)) : 0);
+    screenquad(motionw, motionh);
 
     glDisable(GL_BLEND);
 
@@ -1151,13 +1254,9 @@ void drawfogoverlay(int fogmat, float fogblend, int abovemat)
     blendfogoverlay(fogmat, fogblend, overlay);
     blendfogoverlay(abovemat, 1-fogblend, overlay);
 
-    glColor3fv(overlay.v);
-    glBegin(GL_TRIANGLE_STRIP);
-    glVertex2f(-1, -1);
-    glVertex2f(1, -1);
-    glVertex2f(-1, 1);
-    glVertex2f(1, 1);
-    glEnd();
+    gle::color(overlay);
+    screenquad();
+
     glDisable(GL_BLEND);
 }
 
@@ -1654,24 +1753,32 @@ void drawslice(float start, float length, float x, float y, float size)
     float end = start + length,
           sx = cosf((start + 0.25f)*2*M_PI), sy = -sinf((start + 0.25f)*2*M_PI),
           ex = cosf((end + 0.25f)*2*M_PI), ey = -sinf((end + 0.25f)*2*M_PI);
-    glBegin(GL_TRIANGLE_FAN);
-    glTexCoord2f(0.5f, 0.5f); glVertex2f(x, y);
 
-    if(start < 0.125f || start >= 0.875f) { glTexCoord2f(0.5f + 0.5f*sx/sy, 0); glVertex2f(x + sx/sy*size, y - size);  }
-    else if(start < 0.375f) { glTexCoord2f(1, 0.5f - 0.5f*sy/sx); glVertex2f(x + size, y - sy/sx*size); }
-    else if(start < 0.625f) { glTexCoord2f(0.5f - 0.5f*sx/sy, 1); glVertex2f(x - sx/sy*size, y + size); }
-    else { glTexCoord2f(0, 0.5f + 0.5f*sy/sx); glVertex2f(x - size, y + sy/sx*size); }
+    #define SLICEVERT(ox, oy) do { \
+        gle::attribf(x + (ox)*size, y + (oy)*size); \
+        gle::attribf(0.5f + (ox)*0.5f, 0.5f + (oy)*0.5f); \
+    } while(0)
 
-    if(start <= 0.125f && end >= 0.125f) { glTexCoord2f(1, 0); glVertex2f(x + size, y - size); }
-    if(start <= 0.375f && end >= 0.375f) { glTexCoord2f(1, 1); glVertex2f(x + size, y + size); }
-    if(start <= 0.625f && end >= 0.625f) { glTexCoord2f(0, 1); glVertex2f(x - size, y + size); }
-    if(start <= 0.875f && end >= 0.875f) { glTexCoord2f(0, 0); glVertex2f(x - size, y - size); }
+    gle::defvertex(2);
+    gle::deftexcoord0();
+    gle::begin(GL_TRIANGLE_FAN);
+    SLICEVERT(0, 0);
 
-    if(end < 0.125f || end >= 0.875f) { glTexCoord2f(0.5f + 0.5f*ex/ey, 0); glVertex2f(x + ex/ey*size, y - size);  }
-    else if(end < 0.375f) { glTexCoord2f(1, 0.5f - 0.5f*ey/ex); glVertex2f(x + size, y - ey/ex*size); }
-    else if(end < 0.625f) { glTexCoord2f(0.5f - 0.5f*ex/ey, 1); glVertex2f(x - ex/ey*size, y + size); }
-    else { glTexCoord2f(0, 0.5f + 0.5f*ey/ex); glVertex2f(x - size, y + ey/ex*size); }
-    glEnd();
+    if(start < 0.125f || start >= 0.875f) SLICEVERT(sx/sy, -1);
+    else if(start < 0.375f) SLICEVERT(1, -sy/sx);
+    else if(start < 0.625f) SLICEVERT(-sx/sy, 1);
+    else SLICEVERT(-1, sy/sx);
+
+    if(start <= 0.125f && end >= 0.125f) SLICEVERT(1, -1);
+    if(start <= 0.375f && end >= 0.375f) SLICEVERT(1, 1);
+    if(start <= 0.625f && end >= 0.625f) SLICEVERT(-1, 1);
+    if(start <= 0.875f && end >= 0.875f) SLICEVERT(-1, -1);
+
+    if(end < 0.125f || end >= 0.875f) SLICEVERT(ex/ey, -1);
+    else if(end < 0.375f) SLICEVERT(1, -ey/ex);
+    else if(end < 0.625f) SLICEVERT(-ex/ey, 1);
+    else SLICEVERT(-1, ey/ex);
+    gle::end();
 }
 
 void drawfadedslice(float start, float length, float x, float y, float size, float alpha, float r, float g, float b, float minsize)
@@ -1680,35 +1787,34 @@ void drawfadedslice(float start, float length, float x, float y, float size, flo
           sx = cosf((start + 0.25f)*2*M_PI), sy = -sinf((start + 0.25f)*2*M_PI),
           ex = cosf((end + 0.25f)*2*M_PI), ey = -sinf((end + 0.25f)*2*M_PI);
 
-    #define SLICEVERT(ox, oy) \
-    { \
-        glTexCoord2f(0.5f + (ox)*0.5f, 0.5f + (oy)*0.5f); \
-        glVertex2f(x + (ox)*size, y + (oy)*size); \
-    }
-    #define SLICESPOKE(ox, oy) \
-    { \
+    #define SLICESPOKE(ox, oy) do { \
         SLICEVERT((ox)*minsize, (oy)*minsize); \
+        gle::attrib(color); \
         SLICEVERT(ox, oy); \
-    }
+        gle::attrib(color); \
+    } while(0)
 
-    glBegin(GL_TRIANGLE_STRIP);
-    glColor4f(r, g, b, alpha);
-    if(start < 0.125f || start >= 0.875f) SLICESPOKE(sx/sy, -1)
-    else if(start < 0.375f) SLICESPOKE(1, -sy/sx)
-    else if(start < 0.625f) SLICESPOKE(-sx/sy, 1)
-    else SLICESPOKE(-1, sy/sx)
+    gle::defvertex(2);
+    gle::deftexcoord0();
+    gle::defcolor(4);
+    gle::begin(GL_TRIANGLE_STRIP);
+    vec4 color(r, g, b, alpha);
+    if(start < 0.125f || start >= 0.875f) SLICESPOKE(sx/sy, -1);
+    else if(start < 0.375f) SLICESPOKE(1, -sy/sx);
+    else if(start < 0.625f) SLICESPOKE(-sx/sy, 1);
+    else SLICESPOKE(-1, sy/sx);
 
-    if(start <= 0.125f && end >= 0.125f) { glColor4f(r, g, b, alpha - alpha*(0.125f - start)/(end - start)); SLICESPOKE(1, -1) }
-    if(start <= 0.375f && end >= 0.375f) { glColor4f(r, g, b, alpha - alpha*(0.375f - start)/(end - start)); SLICESPOKE(1, 1) }
-    if(start <= 0.625f && end >= 0.625f) { glColor4f(r, g, b, alpha - alpha*(0.625f - start)/(end - start)); SLICESPOKE(-1, 1) }
-    if(start <= 0.875f && end >= 0.875f) { glColor4f(r, g, b, alpha - alpha*(0.875f - start)/(end - start)); SLICESPOKE(-1, -1) }
+    if(start <= 0.125f && end >= 0.125f) { color.a = alpha - alpha*(0.125f - start)/(end - start); SLICESPOKE(1, -1); }
+    if(start <= 0.375f && end >= 0.375f) { color.a = alpha - alpha*(0.375f - start)/(end - start); SLICESPOKE(1, 1); }
+    if(start <= 0.625f && end >= 0.625f) { color.a = alpha - alpha*(0.625f - start)/(end - start); SLICESPOKE(-1, 1); }
+    if(start <= 0.875f && end >= 0.875f) { color.a = alpha - alpha*(0.875f - start)/(end - start); SLICESPOKE(-1, -1); }
 
-    glColor4f(r, g, b, 0);
-    if(end < 0.125f || end >= 0.875f) SLICESPOKE(ex/ey, -1)
-    else if(end < 0.375f) SLICESPOKE(1, -ey/ex)
-    else if(end < 0.625f) SLICESPOKE(-ex/ey, 1)
-    else SLICESPOKE(-1, ey/ex)
-    glEnd();
+    color.a = 0;
+    if(end < 0.125f || end >= 0.875f) SLICESPOKE(ex/ey, -1);
+    else if(end < 0.375f) SLICESPOKE(1, -ey/ex);
+    else if(end < 0.625f) SLICESPOKE(-ex/ey, 1);
+    else SLICESPOKE(-1, ey/ex);
+    gle::end();
 }
 
 float cursorx = 0.5f, cursory = 0.5f;
@@ -1748,19 +1854,9 @@ struct framebuffercopy
 
     void draw(float sx, float sy, float sw, float sh)
     {
-        sx = sx*2 - 1;
-        sy = sy*2 - 1;
-        sw *= 2;
-        sh *= 2;
-        float tx = 0, ty = 0, tw = screen->w, th = screen->h;
         SETSHADER(screenrect);
         glBindTexture(GL_TEXTURE_RECTANGLE, tex);
-        glBegin(GL_TRIANGLE_STRIP);
-        glTexCoord2f(tx,    ty);    glVertex2f(sx,    sy);
-        glTexCoord2f(tx+tw, ty);    glVertex2f(sx+sw, sy);
-        glTexCoord2f(tx,    ty+th); glVertex2f(sx,    sy+sh);
-        glTexCoord2f(tx+tw, ty+th); glVertex2f(sx+sw, sy+sh);
-        glEnd();
+        screenquadmapped(sx*2 - 1, sy*2 - 1, sw*2, sh*2, 0, 0, screen->w, screen->h);
     }
 };
 
@@ -1879,6 +1975,8 @@ void drawnoviewtype(int targtype)
     hud::drawhud(true);
     hud::drawlast();
 
+    gle::disable();
+
     if(targtype == VP_LEFT || targtype == VP_RIGHT)
     {
         if(viewtype >= VW_STEREO)
@@ -1908,7 +2006,7 @@ void drawnoview()
     if(!copies) return;
 
     glDisable(GL_BLEND);
-    glColor3f(1.f, 1.f, 1.f);
+    gle::colorf(1.f, 1.f, 1.f);
     switch(viewtype)
     {
         case VW_LEFTRIGHT:
@@ -1929,7 +2027,7 @@ void drawnoview()
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             if(viewtype == VW_STEREO_BLEND) glColorMask(GL_TRUE, GL_FALSE, GL_TRUE, GL_TRUE);
-            glColor4f(1.f, 1.f, 1.f, stereoblend); views[VP_RIGHT].draw(0, 0, 1, 1);
+            gle::colorf(1.f, 1.f, 1.f, stereoblend); views[VP_RIGHT].draw(0, 0, 1, 1);
             if(viewtype == VW_STEREO_BLEND) glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
             glDisable(GL_BLEND);
             break;
@@ -1939,7 +2037,7 @@ void drawnoview()
             glEnable(GL_BLEND);
             glBlendFunc(GL_ONE, GL_CONSTANT_COLOR);
             glBlendColor_(0.f, 0.5f, 1.f, 1.f);
-            glColor3f(1.f, 0.5f, 0.f);
+            gle::colorf(1.f, 0.5f, 0.f);
             views[VP_LEFT].draw(0, 0, 1, 1);
             glDisable(GL_BLEND);
             break;
@@ -2029,7 +2127,6 @@ void drawviewtype(int targtype)
     if(isliquid(fogmat&MATF_VOLUME)) drawfogoverlay(fogmat, fogblend, abovemat);
     renderpostfx();
 
-    notextureshader->set();
     if(editmode && !pixeling)
     {
         glEnable(GL_DEPTH_TEST);
@@ -2049,7 +2146,7 @@ void drawviewtype(int targtype)
     hudmatrix.ortho(0, w, h, 0, -1, 1);
     resethudmatrix();
 
-    glColor3f(1, 1, 1);
+    gle::colorf(1, 1, 1);
 
     if(!pixeling || !editmode)
     {
@@ -2082,6 +2179,8 @@ void drawviewtype(int targtype)
         rendertexturepanel(w, h);
         hud::drawlast();
     }
+
+    gle::disable();
 
     renderedgame = false;
 
@@ -2145,7 +2244,7 @@ void gl_drawframe(int w, int h)
         if(!copies) return;
 
         glDisable(GL_BLEND);
-        glColor3f(1.f, 1.f, 1.f);
+        gle::colorf(1.f, 1.f, 1.f);
         switch(viewtype)
         {
             case VW_LEFTRIGHT:
@@ -2166,7 +2265,7 @@ void gl_drawframe(int w, int h)
                 glEnable(GL_BLEND);
                 glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
                 if(viewtype == VW_STEREO_BLEND) glColorMask(GL_TRUE, GL_FALSE, GL_TRUE, GL_TRUE);
-                glColor4f(1.f, 1.f, 1.f, stereoblend); views[VP_RIGHT].draw(0, 0, 1, 1);
+                gle::colorf(1.f, 1.f, 1.f, stereoblend); views[VP_RIGHT].draw(0, 0, 1, 1);
                 if(viewtype == VW_STEREO_BLEND) glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
                 glDisable(GL_BLEND);
                 break;
@@ -2176,7 +2275,7 @@ void gl_drawframe(int w, int h)
                 glEnable(GL_BLEND);
                 glBlendFunc(GL_ONE, GL_CONSTANT_COLOR);
                 glBlendColor_(0.f, 0.5f, 1.f, 1.f);
-                glColor3f(1.f, 0.5f, 0.f);
+                gle::colorf(1.f, 0.5f, 0.f);
                 views[VP_LEFT].draw(0, 0, 1, 1);
                 glDisable(GL_BLEND);
                 break;
@@ -2193,32 +2292,16 @@ void usetexturing(bool on)
         hudnotextureshader->set();
 }
 
-FVAR(IDF_PERSIST, polycolour, 0, 1, 1);
-FVAR(IDF_PERSIST, polylight, 0, 1, 1);
-FVAR(IDF_PERSIST, polybright, 0, 0.65f, 1);
-
-void polyhue(dynent *d, vec &colour, int flags)
+void cleanupgl()
 {
-    if(flags&MDL_LIGHT && d->light.millis != lastmillis)
-    {
-        vec lightpos = d->type == ENT_PLAYER || d->type == ENT_AI ? d->feetpos(0.75f*(d->height + d->aboveeye)) : d->o;
-        lightreaching(lightpos, d->light.color, d->light.dir, (flags&MDL_LIGHT_FAST)!=0);
-        dynlightreaching(lightpos, d->light.color, d->light.dir);
-        if(flags&MDL_LIGHTFX) d->light.color.max(d->light.effect).lerp(d->light.effect, 0.6f);
-        d->light.millis = lastmillis;
-    }
-    vec c = vec(colour).mul(polycolour).mul(vec(d->light.color).mul(polylight));
-    loopi(3) colour[i] = max(c[i], colour[i]*polybright);
+    cleanupmotionblur();
+
+    clearminimap();
+
+    cleanupviews();
+
+    cleanupscreenquad();
+
+    gle::cleanup();
 }
 
-void polybox(vec o, float tofloor, float toceil, float xradius, float yradius)
-{
-    glBegin(GL_QUADS);
-    loopi(6) loopj(4)
-    {
-        const ivec &cc = facecoords[i][j];
-        glVertex3f(o.x + (cc.x ? xradius : -xradius), o.y + (cc.y ? yradius : -yradius), o.z + (cc.z ? toceil : -tofloor));
-    }
-    glEnd();
-    xtraverts += 24;
-}

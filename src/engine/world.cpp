@@ -466,16 +466,45 @@ void entdrag(const vec &ray)
     entmoving = 2;
 }
 
+static void renderentbox(const vec &eo, vec es)
+{
+    es.add(eo);
+
+    // bottom quad
+    gle::attrib(eo.x, eo.y, eo.z); gle::attrib(es.x, eo.y, eo.z);
+    gle::attrib(es.x, eo.y, eo.z); gle::attrib(es.x, es.y, eo.z);
+    gle::attrib(es.x, es.y, eo.z); gle::attrib(eo.x, es.y, eo.z);
+    gle::attrib(eo.x, es.y, eo.z); gle::attrib(eo.x, eo.y, eo.z);
+
+    // top quad
+    gle::attrib(eo.x, eo.y, es.z); gle::attrib(es.x, eo.y, es.z);
+    gle::attrib(es.x, eo.y, es.z); gle::attrib(es.x, es.y, es.z);
+    gle::attrib(es.x, es.y, es.z); gle::attrib(eo.x, es.y, es.z);
+    gle::attrib(eo.x, es.y, es.z); gle::attrib(eo.x, eo.y, es.z);
+
+    // sides
+    gle::attrib(eo.x, eo.y, eo.z); gle::attrib(eo.x, eo.y, es.z);
+    gle::attrib(es.x, eo.y, eo.z); gle::attrib(es.x, eo.y, es.z);
+    gle::attrib(es.x, es.y, eo.z); gle::attrib(es.x, es.y, es.z);
+    gle::attrib(eo.x, es.y, eo.z); gle::attrib(eo.x, es.y, es.z);
+}
+
 void renderentselection(const vec &o, const vec &ray, bool entmoving)
 {
     if(noentedit()) return;
     vec eo, es;
 
-    glColor3ub(0, 40, 0);
-    loopv(entgroup) entfocus(entgroup[i],
-        entselectionbox(e, eo, es);
-        boxs3D(eo, es, 1);
-    );
+    if(entgroup.length())
+    {
+        gle::colorub(0, 40, 0);
+        gle::defvertex();
+        gle::begin(GL_LINES, entgroup.length()*24);
+        loopv(entgroup) entfocus(entgroup[i],
+            entselectionbox(e, eo, es);
+            renderentbox(eo, es);
+        );
+        xtraverts += gle::end();
+    }
 
     if(enthover >= 0)
     {
@@ -484,16 +513,18 @@ void renderentselection(const vec &o, const vec &ray, bool entmoving)
         if(entmoving && entmovingshadow==1)
         {
             vec a, b;
-            glColor3ub(20, 20, 20);
+            gle::colorub(20, 20, 20);
             (a=eo).x=0; (b=es).x=hdr.worldsize; boxs3D(a, b, 1);
             (a=eo).y=0; (b=es).y=hdr.worldsize; boxs3D(a, b, 1);
             (a=eo).z=0; (b=es).z=hdr.worldsize; boxs3D(a, b, 1);
         }
-        glColor3ub(150,0,0);
+        gle::colorub(150,0,0);
         glLineWidth(5);
         boxs(entorient, eo, es);
         glLineWidth(1);
     }
+
+    gle::disable();
 }
 
 bool enttoggle(int id)

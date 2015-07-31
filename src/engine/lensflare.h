@@ -66,9 +66,7 @@ struct flarerenderer : partrenderer
         f.o = o;
         f.center = center;
         f.size = size;
-        f.color[0] = uchar(r*mod);
-        f.color[1] = uchar(g*mod);
-        f.color[2] = uchar(b*mod);
+        f.color = bvec(uchar(r*mod), uchar(g*mod), uchar(b*mod));
         f.sparkle = sparkle;
     }
 
@@ -174,7 +172,10 @@ struct flarerenderer : partrenderer
         glDisable(GL_DEPTH_TEST);
         preload();
         if(tex) glBindTexture(GL_TEXTURE_2D, tex->id);
-        glBegin(GL_QUADS);
+        gle::defattrib(gle::ATTRIB_VERTEX, 3, GL_FLOAT);
+        gle::defattrib(gle::ATTRIB_TEXCOORD0, 2, GL_FLOAT);
+        gle::defattrib(gle::ATTRIB_COLOR, 4, GL_UNSIGNED_BYTE);
+        gle::begin(GL_QUADS);
         loopi(numflares)
         {
             const flare &f = flares[i];
@@ -213,17 +214,24 @@ struct flarerenderer : partrenderer
                     color[-ft.type-1] = f.color[-ft.type-1]; //only want a single channel
                 }
                 color.a = uchar(ceilf(ft.alpha*blend));
-                glColor4ubv(color.v);
                 const float tsz = 0.25f; //flares are aranged in 4x4 grid
-                float tx = tsz*(tex&0x03);
-                float ty = tsz*((tex>>2)&0x03);
-                glTexCoord2f(tx,     ty+tsz); glVertex3f(o.x+(-camright.x+camup.x)*sz, o.y+(-camright.y+camup.y)*sz, o.z+(-camright.z+camup.z)*sz);
-                glTexCoord2f(tx+tsz, ty+tsz); glVertex3f(o.x+( camright.x+camup.x)*sz, o.y+( camright.y+camup.y)*sz, o.z+( camright.z+camup.z)*sz);
-                glTexCoord2f(tx+tsz, ty);     glVertex3f(o.x+( camright.x-camup.x)*sz, o.y+( camright.y-camup.y)*sz, o.z+( camright.z-camup.z)*sz);
-                glTexCoord2f(tx,     ty);     glVertex3f(o.x+(-camright.x-camup.x)*sz, o.y+(-camright.y-camup.y)*sz, o.z+(-camright.z-camup.z)*sz);
+                float tx = tsz*(tex&0x03), ty = tsz*((tex>>2)&0x03);
+                gle::attribf(o.x+(-camright.x+camup.x)*sz, o.y+(-camright.y+camup.y)*sz, o.z+(-camright.z+camup.z)*sz);
+                    gle::attribf(tx,     ty+tsz);
+                    gle::attrib(color);
+                gle::attribf(o.x+( camright.x+camup.x)*sz, o.y+( camright.y+camup.y)*sz, o.z+( camright.z+camup.z)*sz);
+                    gle::attribf(tx+tsz, ty+tsz);
+                    gle::attrib(color);
+                gle::attribf(o.x+( camright.x-camup.x)*sz, o.y+( camright.y-camup.y)*sz, o.z+( camright.z-camup.z)*sz);
+                    gle::attribf(tx+tsz, ty);
+                    gle::attrib(color);
+                gle::attribf(o.x+(-camright.x-camup.x)*sz, o.y+(-camright.y-camup.y)*sz, o.z+(-camright.z-camup.z)*sz);
+                    gle::attribf(tx,     ty);
+                    gle::attrib(color);
             }
         }
-        glEnd();
+        gle::end();
+        gle::disable();
         glEnable(GL_DEPTH_TEST);
     }
 

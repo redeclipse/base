@@ -987,18 +987,6 @@ namespace recorder
         state = REC_OK;
     }
 
-    void drawquad(float tw, float th, bool flip = false)
-    {
-        float ty1 = 0, ty2 = th;
-        if(flip) swap(ty1, ty2);
-        glBegin(GL_TRIANGLE_STRIP);
-        glTexCoord2f(0,  ty1); glVertex2f(-1, -1);
-        glTexCoord2f(tw, ty1); glVertex2f( 1, -1);
-        glTexCoord2f(0,  ty2); glVertex2f(-1,  1);
-        glTexCoord2f(tw, ty2); glVertex2f( 1,  1);
-        glEnd();
-    }
-
     void readbuffer(videobuffer &m, uint nextframe)
     {
         bool accelyuv = movieaccelyuv && !(m.w%8),
@@ -1062,7 +1050,7 @@ namespace recorder
                     glBindTexture(GL_TEXTURE_RECTANGLE, scaletex[0]);
                     if(dw == m.w && dh == m.h && !accelyuv) { SETSHADER(movieyuv); m.format = aviwriter::VID_YUV; }
                     else SETSHADER(moviergb);
-                    drawquad(tw, th);
+                    screenquad(tw, th);
                     tw = dw;
                     th = dh;
                     swap(scaletex[0], scaletex[1]);
@@ -1072,9 +1060,9 @@ namespace recorder
             {
                 glBindFramebuffer_(GL_FRAMEBUFFER, encodefb);
                 glBindTexture(GL_TEXTURE_RECTANGLE, scaletex[0]);
-                glViewport(0, 0, m.w/4, m.h); SETSHADER(moviey); drawquad(m.w, m.h, true);
-                glViewport(m.w/4, 0, m.w/8, m.h/2); SETSHADER(movieu); drawquad(m.w, m.h, true);
-                glViewport(m.w/4, m.h/2, m.w/8, m.h/2); SETSHADER(moviev); drawquad(m.w, m.h, true);
+                glViewport(0, 0, m.w/4, m.h); SETSHADER(moviey); screenquadflipped(m.w, m.h);
+                glViewport(m.w/4, 0, m.w/8, m.h/2); SETSHADER(movieu); screenquadflipped(m.w, m.h);
+                glViewport(m.w/4, m.h/2, m.w/8, m.h/2); SETSHADER(moviev); screenquadflipped(m.w, m.h);
                 const uint planesize = m.w * m.h;
                 glPixelStorei(GL_PACK_ALIGNMENT, texalign(m.video, m.w/4, 4));
                 glReadPixels(0, 0, m.w/4, m.h, GL_BGRA, GL_UNSIGNED_BYTE, m.video);
