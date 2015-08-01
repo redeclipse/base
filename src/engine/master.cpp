@@ -309,8 +309,8 @@ void savestats(masterclient &c)
     }
 
     statsdbexecf("COMMIT");
-    conoutf("master peer %s commited stats, game id %lli", c.name, c.stats.id);
-    defformatstring(msg, "\fygame statistics recorded, id \fc%lli", c.stats.id);
+    conoutf("master peer %s commited stats, game id %lld", c.name, c.stats.id);
+    defformatstring(msg, "\fygame statistics recorded, id \fc%lld", c.stats.id);
     simpleencode(msg_enc, msg);
     masteroutf(c, "stats success %s\n", msg_enc);
     c.instats = false;
