@@ -3103,21 +3103,21 @@ namespace server
             requestmasterf("stats begin\n");
 
             //Game
-            simpleencode(smapname_enc, smapname);
-            requestmasterf("stats game %s %d %d %d\n", smapname_enc, gamemode, mutators, gamemillis);
+            simpleencode(smapnameenc, smapname);
+            requestmasterf("stats game %s %d %d %d\n", smapnameenc, gamemode, mutators, gamemillis);
             flushmasteroutput();
 
             //Server
-            simpleencode(desc_enc, G(serverdesc));
-            requestmasterf("stats server %s %s %d\n", desc_enc, versionstring, serverport);
+            simpleencode(descenc, G(serverdesc));
+            requestmasterf("stats server %s %s %d\n", descenc, versionstring, serverport);
             flushmasteroutput();
 
             //Teams
             loopi(numteams(gamemode, mutators))
             {
                 int tp = m_team(gamemode, mutators) ? T_FIRST : T_NEUTRAL;
-                simpleencode(teamname_enc, TEAM(i + tp, name));
-                requestmasterf("stats team %d %d %s\n", i + tp, teamscore(i + tp).total, teamname_enc);
+                simpleencode(teamnameenc, TEAM(i + tp, name));
+                requestmasterf("stats team %d %d %s\n", i + tp, teamscore(i + tp).total, teamnameenc);
                 flushmasteroutput();
             }
 
@@ -3128,11 +3128,11 @@ namespace server
             }
             loopv(savedscores) if(savedscores[i].actortype == A_PLAYER)
             {
-                simpleencode(name_enc, savedscores[i].name);
-                simpleencode(handle_enc, savedscores[i].handle);
+                simpleencode(nameenc, savedscores[i].name);
+                simpleencode(handleenc, savedscores[i].handle);
                 requestmasterf("stats player %s %s %d %d %d %d %d\n",
-                                name_enc,
-                                handle_enc,
+                                nameenc,
+                                handleenc,
                                 m_laptime(gamemode, mutators) ? savedscores[i].cptime : savedscores[i].score,
                                 savedscores[i].timealive,
                                 savedscores[i].frags,
@@ -3145,7 +3145,7 @@ namespace server
                     weaponstats w = savedscores[i].weapstats[j];
                     requestmasterf("stats weapon %d %s %s %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
                         i,
-                        handle_enc,
+                        handleenc,
                         weaptype[j].name,
                         w.timewielded,
                         w.timeloadout,

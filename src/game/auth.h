@@ -75,12 +75,12 @@ ICOMMAND(0, addlocalop, "ss", (char *n, char *f), localopadd(n, f));
 
 VAR(IDF_PERSIST, quickauthchecks, 0, 0, 1);
 
-VAR(IDF_PERSIST, authconnect, 0, 1, 1);
-SVAR(IDF_PERSIST, accountname, "");
-SVAR(IDF_PERSIST, accountpass, "");
-ICOMMAND(0, authkey, "ss", (char *name, char *key), {
-    setsvar("accountname", name);
-    setsvar("accountpass", key);
+VAR(IDF_PERSIST, serverauthconnect, 0, 1, 1);
+SVAR(IDF_PERSIST, serveraccountname, "");
+SVAR(IDF_PERSIST, serveraccountpass, "");
+ICOMMAND(0, serverauthkey, "ss", (char *name, char *key), {
+    setsvar("serveraccountname", name);
+    setsvar("serveraccountpass", key);
 });
 
 namespace auth
@@ -97,9 +97,9 @@ namespace auth
 
     void reqserverauth()
     {
-        if(connectedmaster() && *accountpass && authconnect)
+        if(connectedmaster() && *serveraccountpass && serverauthconnect)
         {
-            requestmasterf("reqserverauth %s\n", accountname);
+            requestmasterf("reqserverauth %s\n", serveraccountname);
         }
     }
 
@@ -254,12 +254,12 @@ namespace auth
     {
         authfailed(findauth(id));
     }
-    
+
     void serverauthfailed()
     {
         conoutf("server auth request failed");
     }
-    
+
     void serverauthsucceeded(const char *name, const char *flags)
     {
         conoutf("server auth succeeded, now have flags %s", flags);
@@ -317,11 +317,11 @@ namespace auth
         if(!ci) return;
         sendf(ci->clientnum, 1, "riis", N_AUTHCHAL, id, val);
     }
-    
+
     void serverauthchallenged(const char *text)
     {
         vector<char> buf;
-        answerchallenge(accountpass, text, buf);
+        answerchallenge(serveraccountpass, text, buf);
         char *val = newstring(buf.getbuf());
         for(char *s = val; *s; s++)
         {
