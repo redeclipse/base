@@ -2479,7 +2479,7 @@ namespace client
                     s.corner = getint(p);
                     switch(type)
                     {
-                        case N_EDITF: { int dir = getint(p), mode = getint(p); if(sel.validate()) mpeditface(dir, mode, sel, false); break; }
+                        case N_EDITF: { int dir = getint(p), mode = getint(p); if(s.validate()) mpeditface(dir, mode, s, false); break; }
                         case N_EDITT:
                         {
                             int tex = getint(p),
@@ -2488,14 +2488,14 @@ namespace client
                             int extra = lilswap(*(const ushort *)p.pad(2));
                             if(p.remaining() < extra) return;
                             ucharbuf ebuf = p.subbuf(extra);
-                            if(sel.validate()) mpedittex(tex, allfaces, sel, ebuf);
+                            if(s.validate()) mpedittex(tex, allfaces, s, ebuf);
                             break;
                         }
-                        case N_EDITM: { int mat = getint(p), filter = getint(p), style = getint(p); if(sel.validate()) mpeditmat(mat, filter, style, sel, false); break; }
-                        case N_FLIP: if(sel.validate()) mpflip(sel, false); break;
-                        case N_COPY: if(d && sel.validate()) mpcopy(d->edit, sel, false); break;
-                        case N_PASTE: if(d && sel.validate()) mppaste(d->edit, sel, false); break;
-                        case N_ROTATE: { int dir = getint(p); if(sel.validate()) mprotate(dir, sel, false); break; }
+                        case N_EDITM: { int mat = getint(p), filter = getint(p), style = getint(p); if(s.validate()) mpeditmat(mat, filter, style, s, false); break; }
+                        case N_FLIP: if(s.validate()) mpflip(s, false); break;
+                        case N_COPY: if(d && s.validate()) mpcopy(d->edit, s, false); break;
+                        case N_PASTE: if(d && s.validate()) mppaste(d->edit, s, false); break;
+                        case N_ROTATE: { int dir = getint(p); if(s.validate()) mprotate(dir, s, false); break; }
                         case N_REPLACE:
                         {
                             int oldtex = getint(p),
@@ -2505,10 +2505,10 @@ namespace client
                             int extra = lilswap(*(const ushort *)p.pad(2));
                             if(p.remaining() < extra) return;
                             ucharbuf ebuf = p.subbuf(extra);
-                            if(sel.validate()) mpreplacetex(oldtex, newtex, insel>0, sel, ebuf);
+                            if(s.validate()) mpreplacetex(oldtex, newtex, insel>0, s, ebuf);
                             break;
                         }
-                        case N_DELCUBE: if(sel.validate()) mpdelcube(sel, false); break;
+                        case N_DELCUBE: if(s.validate()) mpdelcube(s, false); break;
                         case N_EDITVSLOT:
                         {
                             int delta = getint(p),
@@ -2517,7 +2517,7 @@ namespace client
                             int extra = lilswap(*(const ushort *)p.pad(2));
                             if(p.remaining() < extra) return;
                             ucharbuf ebuf = p.subbuf(extra);
-                            if(sel.validate()) mpeditvslot(delta, allfaces, sel, ebuf);
+                            if(s.validate()) mpeditvslot(delta, allfaces, s, ebuf);
                             break;
                         }
                     }
