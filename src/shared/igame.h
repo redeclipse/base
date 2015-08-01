@@ -36,7 +36,7 @@ namespace client
     extern void edittoggled(bool edit);
     extern void toserver(int flags, const char *text, const char *target = NULL);
     extern void editvar(ident *id, bool local);
-    extern void edittrigger(const selinfo &sel, int op, int arg1 = 0, int arg2 = 0, int arg3 = 0);
+    extern void edittrigger(const selinfo &sel, int op, int arg1 = 0, int arg2 = 0, int arg3 = 0, const VSlot *vs = NULL);
     extern void changemap(const char *name);
     extern int waiting(bool state = true);
     extern void connectattempt(const char *name, int port, const char *password, const ENetAddress &address);

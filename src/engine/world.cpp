@@ -371,6 +371,24 @@ undoblock *copyundoents(undoblock *u)
     return c;
 }
 
+void pasteundoent(int idx, const vec &o, int type, int *attrs, int numattrs)
+{
+    if(idx < 0 || idx >= MAXENTS) return;
+    vector<extentity *> &ents = entities::getents();
+    while(ents.length() < idx) ents.add(entities::newent())->type = ET_EMPTY;
+    numattrs = min(numattrs, MAXENTATTRS);
+    int efocus = -1, minattrs = entities::numattrs(type);
+    entedit(idx,
+    {
+        e.type = type;
+        e.o = o;
+        if(e.attrs.length() < numattrs) e.attrs.add(0, numattrs - e.attrs.length());
+        else if(e.attrs.length() > numattrs) e.attrs.setsize(numattrs);
+        if(numattrs < minattrs) e.attrs.add(0, minattrs - numattrs);
+        loopk(numattrs) e.attrs[k] = *attrs++;
+    });
+}
+
 void pasteundoents(undoblock *u)
 {
     undoent *ue = u->ents();
