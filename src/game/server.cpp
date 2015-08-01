@@ -2090,6 +2090,7 @@ namespace server
         gs.spawnstate(gamemode, mutators, weap, health);
         sendf(ci->clientnum, 1, "ri9iv", N_SPAWNSTATE, ci->clientnum, spawn, gs.state, gs.points, gs.frags, gs.deaths, gs.health, gs.cptime, gs.weapselect, W_MAX, &gs.ammo[0]);
         gs.lastrespawn = gs.lastspawn = gamemillis;
+        gs.updatetimeplayed();
     }
 
     template<class T>
@@ -2937,6 +2938,7 @@ namespace server
             if(smode) smode->entergame(ci);
             mutate(smuts, mut->entergame(ci));
             if(ci->isready()) aiman::poke();
+            ci->state.updatetimeplayed();
         }
         return true;
     }
@@ -4136,6 +4138,7 @@ namespace server
             mutate(smuts, mut->died(m, v));
             m->state.state = CS_DEAD; // don't issue respawn yet until DEATHMILLIS has elapsed
             m->state.lastdeath = gamemillis;
+            m->state.updatetimeplayed();
             if(m->state.actortype == A_BOT) aiman::setskill(m);
             if(m != v && v->state.actortype == A_BOT) aiman::setskill(v);
             if(isteamkill && v->state.actortype == A_PLAYER) // don't punish the idiot bots
@@ -4214,6 +4217,7 @@ namespace server
         mutate(smuts, mut->died(ci, NULL));
         gs.state = CS_DEAD;
         gs.lastdeath = gamemillis;
+        gs.updatetimeplayed();
         if(ci->state.actortype == A_BOT) aiman::setskill(ci);
     }
 
