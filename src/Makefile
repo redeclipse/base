@@ -32,10 +32,13 @@ else
 TOOLSET_PREFIX=i686-w64-mingw32-
 endif
 CXX=g++
+CC=gcc
 endif
 
 CXX_TEMP:=$(CXX)
+CC_TEMP:=$(CC)
 override CXX=$(TOOLSET_PREFIX)$(CXX_TEMP)
+override CC=$(TOOLSET_PREFIX)$(CC_TEMP)
 
 INCLUDES= -I. -Ishared -Iengine -Igame -Ienet/include -Isqlite
 

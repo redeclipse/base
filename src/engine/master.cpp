@@ -67,7 +67,7 @@ struct masterclient
     struct statstate
     {
         //Game
-        sqlite3_int64 id;
+        ulong id;
         string map;
         int mode, mutators, timeplayed;
         time_t time;
@@ -245,7 +245,7 @@ void savestats(masterclient &c)
         c.stats.mutators,
         c.stats.timeplayed
         );
-    c.stats.id = sqlite3_last_insert_rowid(statsdb);
+    c.stats.id = (ulong)sqlite3_last_insert_rowid(statsdb);
 
     statsdbexecf("INSERT INTO game_servers VALUES (%d, %Q, %Q, %Q, %Q, %Q, %d)",
         c.stats.id,
@@ -309,8 +309,8 @@ void savestats(masterclient &c)
     }
 
     statsdbexecf("COMMIT");
-    conoutf("master peer %s commited stats, game id %lld", c.name, c.stats.id);
-    defformatstring(msg, "\fygame statistics recorded, id \fc%lld", c.stats.id);
+    conoutf("master peer %s commited stats, game id %lu", c.name, c.stats.id);
+    defformatstring(msg, "\fygame statistics recorded, id \fc%lu", c.stats.id);
     simpleencode(msg_enc, msg);
     masteroutf(c, "stats success %s\n", msg_enc);
     c.instats = false;
