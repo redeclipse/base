@@ -72,7 +72,7 @@ void modifyoctaentity(int flags, int id, extentity &e, cube *c, const ivec &cor,
 {
     loopoctabox(cor, size, bo, br)
     {
-        ivec o(i, cor.x, cor.y, cor.z, size);
+        ivec o(i, cor, size);
         vtxarray *va = c[i].ext && c[i].ext->va ? c[i].ext->va : lastva;
         if(c[i].children != NULL && size > leafsize)
             modifyoctaentity(flags, id, e, c[i].children, o, size>>1, bo, br, leafsize, va);
@@ -232,7 +232,7 @@ static inline void findents(cube *c, const ivec &o, int size, const ivec &bo, co
         if(c[i].ext && c[i].ext->ents) findents(*c[i].ext->ents, low, high, notspawned, pos, invradius, found);
         if(c[i].children && size > octaentsize)
         {
-            ivec co(i, o.x, o.y, o.z, size);
+            ivec co(i, o, size);
             findents(c[i].children, co, size>>1, bo, br, low, high, notspawned, pos, invradius, found);
         }
     }
@@ -1126,7 +1126,7 @@ void shrinkmap()
     worldscale--;
     hdr.worldsize /= 2;
 
-    ivec offset(octant, 0, 0, 0, hdr.worldsize);
+    ivec offset(octant, ivec(0, 0, 0), hdr.worldsize);
     vector<extentity *> &ents = entities::getents();
     loopv(ents) ents[i]->o.sub(vec(offset));
 

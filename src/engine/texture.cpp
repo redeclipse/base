@@ -1755,9 +1755,9 @@ static void fixinsidefaces(cube *c, const ivec &o, int size, int tex)
 {
     loopi(8)
     {
-        ivec co(i, o.x, o.y, o.z, size);
+        ivec co(i, o, size);
         if(c[i].children) fixinsidefaces(c[i].children, co, size>>1, tex);
-        else loopj(6) if(!visibletris(c[i], j, co.x, co.y, co.z, size))
+        else loopj(6) if(!visibletris(c[i], j, co, size))
             c[i].texture[j] = tex;
     }
 }
@@ -1835,7 +1835,7 @@ ICOMMAND(0, autograss, "s", (char *name), if(!slots.empty()) texgrass(*slots.las
 ICOMMAND(0, texgrass, "s", (char *name), if(!slots.empty()) texgrass(*slots.last(), name));
 ICOMMAND(0, setgrass, "s", (char *name), {
     if(noedit() || multiplayer() || slots.empty()) return;
-    cube &c = lookupcube(sel.o.x, sel.o.y, sel.o.z, -sel.grid);
+    cube &c = lookupcube(sel.o, -sel.grid);
     int tex = !isempty(c) ? c.texture[sel.orient] : texmru[0];
     if(slots.inrange(tex))
     {
@@ -1851,7 +1851,7 @@ void texgrasscolor(Slot &s, float r, float g, float b)
 ICOMMAND(0, texgrasscolor, "fff", (float *r, float *g, float *b), if(!slots.empty()) texgrasscolor(*slots.last(), *r, *g, *b));
 ICOMMAND(0, setgrasscolor, "fff", (float *r, float *g, float *b), {
     if(noedit() || multiplayer() || slots.empty()) return;
-    cube &c = lookupcube(sel.o.x, sel.o.y, sel.o.z, -sel.grid);
+    cube &c = lookupcube(sel.o, -sel.grid);
     int tex = !isempty(c) ? c.texture[sel.orient] : texmru[0];
     if(slots.inrange(tex)) texgrasscolor(*slots[tex], *r, *g, *b);
 });
@@ -1863,7 +1863,7 @@ void texgrassblend(Slot &s, float blend)
 ICOMMAND(0, texgrassblend, "f", (float *blend), if(!slots.empty()) texgrassblend(*slots.last(), *blend));
 ICOMMAND(0, setgrassblend, "f", (float *blend), {
     if(noedit() || multiplayer() || slots.empty()) return;
-    cube &c = lookupcube(sel.o.x, sel.o.y, sel.o.z, -sel.grid);
+    cube &c = lookupcube(sel.o, -sel.grid);
     int tex = !isempty(c) ? c.texture[sel.orient] : texmru[0];
     if(slots.inrange(tex)) texgrassblend(*slots[tex], *blend);
 });
@@ -1875,7 +1875,7 @@ void texgrassscale(Slot &s, int scale)
 ICOMMAND(0, texgrassscale, "i", (int *scale), if(!slots.empty()) texgrassscale(*slots.last(), *scale));
 ICOMMAND(0, setgrassscale, "i", (int *scale), {
     if(noedit() || multiplayer() || slots.empty()) return;
-    cube &c = lookupcube(sel.o.x, sel.o.y, sel.o.z, -sel.grid);
+    cube &c = lookupcube(sel.o, -sel.grid);
     int tex = !isempty(c) ? c.texture[sel.orient] : texmru[0];
     if(slots.inrange(tex)) texgrassscale(*slots[tex], *scale);
 });
@@ -1887,7 +1887,7 @@ void texgrassheight(Slot &s, int height)
 ICOMMAND(0, texgrassheight, "i", (int *height), if(!slots.empty()) texgrassheight(*slots.last(), *height));
 ICOMMAND(0, setgrassheight, "i", (int *height), {
     if(noedit() || multiplayer() || slots.empty()) return;
-    cube &c = lookupcube(sel.o.x, sel.o.y, sel.o.z, -sel.grid);
+    cube &c = lookupcube(sel.o, -sel.grid);
     int tex = !isempty(c) ? c.texture[sel.orient] : texmru[0];
     if(slots.inrange(tex)) texgrassheight(*slots[tex], *height);
 });
@@ -2554,9 +2554,9 @@ ushort closestenvmap(const vec &o)
     return minemid;
 }
 
-ushort closestenvmap(int orient, int x, int y, int z, int size)
+ushort closestenvmap(int orient, const ivec &co, int size)
 {
-    vec loc(x, y, z);
+    vec loc(co);
     int dim = dimension(orient);
     if(dimcoord(orient)) loc[dim] += size;
     loc[R[dim]] += size/2;

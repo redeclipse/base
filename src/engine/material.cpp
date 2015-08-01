@@ -185,7 +185,7 @@ const char *getmaterialdesc(int mat, const char *prefix)
     return desc;
 }
 
-int visiblematerial(const cube &c, int orient, int x, int y, int z, int size, ushort matmask)
+int visiblematerial(const cube &c, int orient, const ivec &co, int size, ushort matmask)
 {
     ushort mat = c.material&matmask;
     switch(mat)
@@ -195,24 +195,24 @@ int visiblematerial(const cube &c, int orient, int x, int y, int z, int size, us
 
     case MAT_LAVA:
     case MAT_WATER:
-        if(visibleface(c, orient, x, y, z, size, mat, MAT_AIR, matmask))
+        if(visibleface(c, orient, co, size, mat, MAT_AIR, matmask))
             return (orient != O_BOTTOM ? MATSURF_VISIBLE : MATSURF_EDIT_ONLY);
         break;
 
     case MAT_GLASS:
-        if(visibleface(c, orient, x, y, z, size, MAT_GLASS, MAT_AIR, matmask))
+        if(visibleface(c, orient, co, size, MAT_GLASS, MAT_AIR, matmask))
             return MATSURF_VISIBLE;
         break;
 
     default:
-        if(visibleface(c, orient, x, y, z, size, mat, MAT_AIR, matmask))
+        if(visibleface(c, orient, co, size, mat, MAT_AIR, matmask))
             return MATSURF_EDIT_ONLY;
         break;
     }
     return MATSURF_NOT_VISIBLE;
 }
 
-void genmatsurfs(const cube &c, int cx, int cy, int cz, int size, vector<materialsurface> &matsurfs)
+void genmatsurfs(const cube &c, const ivec &co, int size, vector<materialsurface> &matsurfs)
 {
     loopi(6)
     {
@@ -220,14 +220,14 @@ void genmatsurfs(const cube &c, int cx, int cy, int cz, int size, vector<materia
         loopj(sizeof(matmasks)/sizeof(matmasks[0]))
         {
             int matmask = matmasks[j];
-            int vis = visiblematerial(c, i, cx, cy, cz, size, matmask&~MATF_INDEX);
+            int vis = visiblematerial(c, i, co, size, matmask&~MATF_INDEX);
             if(vis != MATSURF_NOT_VISIBLE)
             {
                 materialsurface m;
                 m.material = c.material&matmask;
                 m.orient = i;
                 m.visible = vis;
-                m.o = ivec(cx, cy, cz);
+                m.o = co;
                 m.csize = m.rsize = size;
                 if(dimcoord(i)) m.o[dimension(i)] += size;
                 matsurfs.add(m);
@@ -404,7 +404,7 @@ void setupmaterials(int start, int len)
                 int csize;
                 while(o[dim^1] < maxc)
                 {
-                    cube &c = lookupcube(o.x, o.y, o.z, 0, co, csize);
+                    cube &c = lookupcube(o, 0, co, csize);
                     if(isliquid(c.material&MATF_VOLUME)) { m.ends |= 1; break; }
                     o[dim^1] += csize;
                 }
@@ -413,8 +413,8 @@ void setupmaterials(int start, int len)
                 o[dim] -= coord ? 2 : -2;
                 while(o[dim^1] < maxc)
                 {
-                    cube &c = lookupcube(o.x, o.y, o.z, 0, co, csize);
-                    if(visiblematerial(c, O_TOP, co.x, co.y, co.z, csize)) { m.ends |= 2; break; }
+                    cube &c = lookupcube(o, 0, co, csize);
+                    if(visiblematerial(c, O_TOP, co, csize)) { m.ends |= 2; break; }
                     o[dim^1] += csize;
                 }
             }

@@ -72,7 +72,7 @@ static void genpvsnodes(cube *c, int parent = 0, const ivec &co = ivec(0, 0, 0),
     int index = origpvsnodes.length();
     loopi(8)
     {
-        ivec o(i, co.x, co.y, co.z, size);
+        ivec o(i, co, size);
         pvsnode &n = origpvsnodes.add();
         n.flags = 0;
         n.children = 0;
@@ -98,7 +98,7 @@ static void genpvsnodes(cube *c, int parent = 0, const ivec &co = ivec(0, 0, 0),
     int branches = 0;
     loopi(8) if(c[i].children)
     {
-        ivec o(i, co.x, co.y, co.z, size);
+        ivec o(i, co, size);
         genpvsnodes(c[i].children, index+i, o, size>>1);
         if(origpvsnodes[index+i].children) branches++;
     }
@@ -395,7 +395,7 @@ struct pvsworker
             uchar flags = 0xFF;
             loopi(8)
             {
-                ivec o(i, co.x, co.y, co.z, size>>1);
+                ivec o(i, co, size>>1);
                 shaftcullpvs(s, children[i], o, size>>1);
                 flags &= children[i].flags;
             }
@@ -451,7 +451,7 @@ struct pvsworker
             loopi(8)
             {
                 int index = order[i].index^dir;
-                ivec o(index, co.x, co.y, co.z, csize);
+                ivec o(index, co, csize);
                 cullpvs(children[index], o, csize);
             }
             if(!(p.flags & PVS_HIDE_BB)) return;
@@ -708,7 +708,7 @@ struct pvsworker
         pvsnode *children = &pvsnodes[p.children];
         loopoctabox(co, size, bbmin, bbmax)
         {
-            ivec o(i, co.x, co.y, co.z, size);
+            ivec o(i, co, size);
             if(children[i].flags & PVS_HIDE_BB) continue;
             if(!children[i].children || !materialoccluded(children[i], o, size/2, bbmin, bbmax)) return false;
         }
@@ -890,7 +890,7 @@ static int countviewcells(cube *c, const ivec &co, int size, int threshold)
     int count = 0;
     loopi(8)
     {
-        ivec o(i, co.x, co.y, co.z, size);
+        ivec o(i, co, size);
         if(pvsbounds.outside(o, size)) continue;
         cube &h = c[i];
         if(h.children)
@@ -913,7 +913,7 @@ static void genviewcells(viewcellnode &p, cube *c, const ivec &co, int size, int
     if(genpvs_canceled) return;
     loopi(8)
     {
-        ivec o(i, co.x, co.y, co.z, size);
+        ivec o(i, co, size);
         if(pvsbounds.outside(o, size)) continue;
         cube &h = c[i];
         if(h.children)
@@ -1191,7 +1191,7 @@ static inline bool pvsoccluded(uchar *buf, const ivec &co, int size, const ivec 
     uchar leafmask = buf[0];
     loopoctabox(co, size, bbmin, bbmax)
     {
-        ivec o(i, co.x, co.y, co.z, size);
+        ivec o(i, co, size);
         if(leafmask&(1<<i))
         {
             uchar leafvalues = buf[1+i];

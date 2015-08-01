@@ -417,7 +417,7 @@ struct decalrenderer
             }
         }
         else if(cu.merged&(1<<orient)) return;
-        else if(!vismask || (vismask&0x40 && visibleface(cu, orient, o.x, o.y, o.z, size, MAT_AIR, (cu.material&MAT_ALPHA)^MAT_ALPHA, MAT_ALPHA)))
+        else if(!vismask || (vismask&0x40 && visibleface(cu, orient, o, size, MAT_AIR, (cu.material&MAT_ALPHA)^MAT_ALPHA, MAT_ALPHA)))
         {
             ivec v[4];
             genfaceverts(cu, orient, v);
@@ -532,7 +532,7 @@ struct decalrenderer
         {
             if(escaped&(1<<i))
             {
-                ivec co(i, o.x, o.y, o.z, size);
+                ivec co(i, o, size);
                 if(cu[i].children) findescaped(cu[i].children, co, size>>1, cu[i].escaped);
                 else
                 {
@@ -550,7 +550,7 @@ struct decalrenderer
         {
             if(overlap&(1<<i))
             {
-                ivec co(i, o.x, o.y, o.z, size);
+                ivec co(i, o, size);
                 if(cu[i].ext && cu[i].ext->va && cu[i].ext->va->matsurfs)
                     findmaterials(cu[i].ext->va);
                 if(cu[i].children) gentris(cu[i].children, co, size>>1, cu[i].escaped);
@@ -566,7 +566,7 @@ struct decalrenderer
             }
             else if(escaped&(1<<i))
             {
-                ivec co(i, o.x, o.y, o.z, size);
+                ivec co(i, o, size);
                 if(cu[i].children) findescaped(cu[i].children, co, size>>1, cu[i].escaped);
                 else
                 {

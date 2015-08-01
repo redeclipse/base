@@ -594,7 +594,7 @@ static inline bool bboccluded(const ivec &bo, const ivec &br, cube *c, const ive
 {
     loopoctabox(o, size, bo, br)
     {
-        ivec co(i, o.x, o.y, o.z, size);
+        ivec co(i, o, size);
         if(c[i].ext && c[i].ext->va)
         {
             vtxarray *va = c[i].ext->va;
