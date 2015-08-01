@@ -861,6 +861,8 @@ extern VSlot &lookupvslot(int slot, bool load = true);
 extern VSlot *findvslot(Slot &slot, const VSlot &src, const VSlot &delta);
 extern VSlot *editvslot(const VSlot &src, const VSlot &delta);
 extern void mergevslot(VSlot &dst, const VSlot &src, const VSlot &delta);
+extern void packvslot(vector<uchar> &buf, const VSlot &src);
+extern bool unpackvslot(ucharbuf &buf, VSlot &dst, bool delta);
 
 extern Slot dummyslot;
 extern VSlot dummyvslot;

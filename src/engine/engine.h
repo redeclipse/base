@@ -153,6 +153,7 @@ extern void clearslots();
 extern void compacteditvslots();
 extern void compactmruvslots();
 extern void compactvslot(int &index);
+extern void compactvslot(VSlot &vs);
 extern void compactvslots(cube *c, int n = 8);
 extern int compactvslots(bool cull = false);
 
@@ -339,6 +340,7 @@ static inline cubeext &ext(cube &c)
 // ents
 extern bool haveselent();
 extern undoblock *copyundoents(undoblock *u);
+extern void pasteundoent(int idx, const vec &o, int type, int *attrs, int numattrs);
 extern void pasteundoents(undoblock *u);
 
 // octaedit

@@ -655,16 +655,16 @@ void freeundo(undoblock *u)
     delete[] (uchar *)u;
 }
 
+void pasteundoblock(block3 *b, uchar *g)
+{
+    cube *s = b->c();
+    loopxyz(*b, 1<<min(int(*g++), worldscale-1), pastecube(*s++, c));
+}
+
 void pasteundo(undoblock *u)
 {
     if(u->numents) pasteundoents(u);
-    else
-    {
-        block3 *b = u->block();
-        cube *s = b->c();
-        uchar *g = u->gridmap();
-        loopxyz(*b, 1<<min(int(*g++), worldscale-1), pastecube(*s++, c));
-    }
+    else pasteundoblock(u->block(), u->gridmap());
 }
 
 static inline int undosize(undoblock *u)
@@ -774,9 +774,8 @@ void addundo(undoblock *u)
     pruneundos(undomegs<<20);
 }
 
-void makeundoex(selinfo &s)
+void makeundo(selinfo &s)
 {
-    if(multiplayer(false)) return;
     undoblock *u = newundocube(s);
     if(u) addundo(u);
 }
@@ -785,17 +784,41 @@ void makeundo()                        // stores state of selected cubes before 
 {
     if(lastsel==sel || sel.s.iszero()) return;
     lastsel=sel;
-    makeundoex(sel);
+    makeundo(sel);
 }
 
-void swapundo(undolist &a, undolist &b, const char *s)
+static inline int countblock(cube *c, int n = 8)
 {
-    if(noedit() || multiplayer()) return;
-    if(a.empty()) { conoutf("\frnothing more to %s", s); return; }
+    int r = n;
+    loopi(n) if(c[i].children) r += countblock(c[i].children);
+    return r;
+}
+
+static int countblock(block3 *b) { return countblock(b->c(), b->size()); }
+
+void swapundo(undolist &a, undolist &b, int op)
+{
+    if(noedit()) return;
+    if(a.empty()) { conoutf("\frnothing more to %s", op == EDIT_REDO ? "redo" : "undo"); return; }
     int ts = a.last->timestamp;
+    if(multiplayer(false))
+    {
+        int n = 0, ops = 0;
+        for(undoblock *u = a.last; u && ts==u->timestamp; u = u->prev)
+        {
+            ++ops;
+            n += u->numents ? u->numents : countblock(u->block());
+            if(ops > 10 || n > 500)
+            {
+                multiplayer();
+                return;
+            }
+        }
+    }
     selinfo l = sel;
     while(!a.empty() && ts==a.last->timestamp)
     {
+        if(op >= 0) client::edittrigger(sel, op);
         undoblock *u = a.poplast(), *r;
         if(u->numents) r = copyundoents(u);
         else
@@ -810,11 +833,11 @@ void swapundo(undolist &a, undolist &b, const char *s)
         if(r)
         {
             r->size = u->size;
-            r->timestamp = lastmillis;
+            r->timestamp = totalmillis;
             b.add(r);
         }
         pasteundo(u);
-        if(!u->numents) changed(l, false);
+        if(!u->numents) changed(*u->block(), false);
         freeundo(u);
     }
     commitchanges();
@@ -826,8 +849,8 @@ void swapundo(undolist &a, undolist &b, const char *s)
     forcenextundo();
 }
 
-void editundo() { swapundo(undos, redos, "undo"); }
-void editredo() { swapundo(redos, undos, "redo"); }
+void editundo() { swapundo(undos, redos, EDIT_UNDO); }
+void editredo() { swapundo(redos, undos, EDIT_REDO); }
 
 // guard against subdivision
 #define protectsel(f) { undoblock *_u = newundocube(sel); f; if(_u) { pasteundo(_u); freeundo(_u); } }
@@ -868,6 +891,42 @@ static bool packblock(block3 &b, B &buf)
     return true;
 }
 
+struct vslothdr
+{
+    ushort index;
+    ushort slot;
+};
+
+static void packvslots(cube &c, vector<uchar> &buf, vector<ushort> &used)
+{
+    if(c.children)
+    {
+        loopi(8) packvslots(c.children[i], buf, used);
+    }
+    else loopi(6)
+    {
+        ushort index = c.texture[i];
+        if(vslots.inrange(index) && vslots[index]->changed && used.find(index) < 0)
+        {
+            used.add(index);
+            VSlot &vs = *vslots[index];
+            vslothdr &hdr = *(vslothdr *)buf.pad(sizeof(vslothdr));
+            hdr.index = index;
+            hdr.slot = vs.slot->index;
+            lilswap(&hdr.index, 2);
+            packvslot(buf, vs);
+        }
+    }
+}
+
+static void packvslots(block3 &b, vector<uchar> &buf)
+{
+    vector<ushort> used;
+    cube *c = b.c();
+    loopi(b.size()) packvslots(c[i], buf, used);
+    memset(buf.pad(sizeof(vslothdr)), 0, sizeof(vslothdr));
+}
+
 template<class B>
 static void unpackcube(cube &c, B &buf)
 {
@@ -891,18 +950,62 @@ static bool unpackblock(block3 *&b, B &buf)
 {
     if(b) { freeblock(b); b = NULL; }
     block3 hdr;
-    buf.get((uchar *)&hdr, sizeof(hdr));
+    if(buf.get((uchar *)&hdr, sizeof(hdr)) < int(sizeof(hdr))) return false;
     lilswap(hdr.o.v, 3);
     lilswap(hdr.s.v, 3);
     lilswap(&hdr.grid, 1);
     lilswap(&hdr.orient, 1);
-    if(hdr.size() > (1<<20)) return false;
+    if(hdr.size() > (1<<20) || hdr.grid <= 0 || hdr.grid > (1<<12)) return false;
     b = (block3 *)new uchar[sizeof(block3)+hdr.size()*sizeof(cube)];
     *b = hdr;
     cube *c = b->c();
     memset(c, 0, b->size()*sizeof(cube));
     loopi(b->size()) unpackcube(c[i], buf);
     return true;
+}
+
+struct vslotmap
+{   
+    int index;
+    VSlot *vslot;
+
+    vslotmap() {}
+    vslotmap(int index, VSlot *vslot) : index(index), vslot(vslot) {}
+};  
+static vector<vslotmap> unpackingvslots;
+    
+static void unpackvslots(cube &c, ucharbuf &buf)
+{
+    if(c.children)
+    {
+        loopi(8) unpackvslots(c.children[i], buf);
+    }
+    else loopi(6)
+    {
+        ushort tex = c.texture[i];
+        loopvj(unpackingvslots) if(unpackingvslots[j].index == tex) { c.texture[i] = unpackingvslots[j].vslot->index; break; }
+    }
+}   
+    
+static void unpackvslots(block3 &b, ucharbuf &buf)
+{
+    while(buf.remaining() >= int(sizeof(vslothdr)))
+    {
+        vslothdr &hdr = *(vslothdr *)buf.pad(sizeof(vslothdr));
+        lilswap(&hdr.index, 2);
+        if(!hdr.index) break;
+        VSlot &vs = *lookupslot(hdr.slot, false).variants;
+        VSlot ds;
+        if(!unpackvslot(buf, ds, false)) break;
+        if(vs.index < 0 || vs.index == DEFAULT_SKY) continue;
+        VSlot *edit = editvslot(vs, ds);
+        unpackingvslots.add(vslotmap(hdr.index, edit ? edit : &vs));
+    }
+
+    cube *c = b.c();
+    loopi(b.size()) unpackvslots(c[i], buf);
+
+    unpackingvslots.setsize(0);
 }
 
 static bool compresseditinfo(const uchar *inbuf, int inlen, uchar *&outbuf, int &outlen)
@@ -939,6 +1042,7 @@ bool packeditinfo(editinfo *e, int &inlen, uchar *&outbuf, int &outlen)
 {
     vector<uchar> buf;
     if(!e || !e->copy || !packblock(*e->copy, buf)) return false;
+    packvslots(*e->copy, buf);
     inlen = buf.length();
     return compresseditinfo(buf.getbuf(), buf.length(), outbuf, outlen);
 }
@@ -955,6 +1059,7 @@ bool unpackeditinfo(editinfo *&e, const uchar *inbuf, int inlen, int outlen)
         delete[] outbuf;
         return false;
     }
+    unpackvslots(*e->copy, buf);
     delete[] outbuf;
     return true;
 }
@@ -966,6 +1071,112 @@ void freeeditinfo(editinfo *&e)
     if(e->copy) freeblock(e->copy);
     delete e;
     e = NULL;
+}
+
+struct undoenthdr
+{
+    ushort i;
+    uchar type, numattrs;
+    vec o;
+};
+
+bool packundo(undoblock *u, int &inlen, uchar *&outbuf, int &outlen)
+{
+    vector<uchar> buf;
+    buf.reserve(512);
+    *(ushort *)buf.pad(2) = lilswap(ushort(u->numents));
+    if(u->numents)
+    {
+        undoent *ue = u->ents();
+        int numattrs = 0;
+        undoenthdr *hdr = (undoenthdr *)buf.pad(sizeof(undoenthdr));
+        loopi(u->numents)
+        {
+            hdr[i].i = lilswap(ushort(ue[i].i));
+            hdr[i].type = ue[i].type;
+            hdr[i].numattrs = ue[i].numattrs;
+            hdr[i].o = ue[i].o;
+            lilswap(&hdr[i].o.x, 3);
+            numattrs += ue[i].numattrs;
+        }
+        int *attrs = (int *)buf.pad(numattrs*sizeof(int));
+        memcpy(attrs, u->attrs(), numattrs*sizeof(int));
+        lilswap(attrs, numattrs);
+    }
+    else
+    {
+        block3 &b = *u->block();
+        if(!packblock(b, buf)) return false;
+        buf.put(u->gridmap(), b.size());
+        packvslots(b, buf);
+    }
+    inlen = buf.length();
+    return compresseditinfo(buf.getbuf(), buf.length(), outbuf, outlen);
+}
+
+bool unpackundo(const uchar *inbuf, int inlen, int outlen)
+{
+    uchar *outbuf = NULL;
+    if(!uncompresseditinfo(inbuf, inlen, outbuf, outlen)) return false;
+    ucharbuf buf(outbuf, outlen);
+    if(buf.remaining() < 2) return false;
+    int numents = lilswap(*(const ushort *)buf.pad(2));
+    if(numents)
+    {
+        if(buf.remaining() < numents*int(sizeof(undoenthdr)))
+        {
+            delete[] outbuf;
+            return false;
+        }
+        undoenthdr *hdr = (undoenthdr *)buf.pad(numents*sizeof(undoenthdr));
+        int numattrs = 0;
+        loopi(numents)
+        {
+            lilswap(&hdr[i].i);
+            lilswap(&hdr[i].o.x, 3);
+            numattrs += hdr[i].numattrs;
+        }
+        if(buf.remaining() < numattrs*int(sizeof(int)))
+        {
+            delete[] outbuf;
+            return false;
+        }
+        int *attrs = (int *)buf.pad(numattrs*sizeof(int));
+        lilswap(attrs, numattrs);
+        loopi(numents)
+        {
+            pasteundoent(hdr[i].i, hdr[i].o, hdr[i].type, attrs, hdr[i].numattrs);
+            attrs += hdr[i].numattrs;
+        }
+    }
+    else
+    {
+        block3 *b = NULL;
+        if(!unpackblock(b, buf) || b->grid >= hdr.worldsize || buf.remaining() < b->size())
+        {
+            freeblock(b);
+            delete[] outbuf;
+            return false;
+        }
+        uchar *g = buf.pad(b->size());
+        unpackvslots(*b, buf);
+        pasteundoblock(b, g);
+        changed(*b, false);
+        freeblock(b);
+    }
+    delete[] outbuf;
+    commitchanges();
+    return true;
+}
+
+bool packundo(int op, int &inlen, uchar *&outbuf, int &outlen)
+{
+    switch(op)
+    {
+        case EDIT_UNDO: return !undos.empty() && packundo(undos.last, inlen, outbuf, outlen);
+        case EDIT_REDO: return !redos.empty() && packundo(redos.last, inlen, outbuf, outlen);
+        default: return false;
+    }
 }
 
 struct prefabheader
@@ -1105,11 +1316,18 @@ COMMAND(0, paste, "");
 COMMANDN(0, undo, editundo, "");
 COMMANDN(0, redo, editredo, "");
 
-static VSlot *editingvslot = NULL;
+static vector<int *> editingvslots;
+struct vslotref
+{
+    vslotref(int &index) { editingvslots.add(&index); }
+    ~vslotref() { editingvslots.pop(); }
+};
+#define editingvslot(...) vslotref vslotrefs[] = { __VA_ARGS__ }; (void)vslotrefs;
 
 void compacteditvslots()
 {
-    if(editingvslot && editingvslot->layer) compactvslot(editingvslot->layer);
+    loopv(editingvslots) if(*editingvslots[i]) compactvslot(*editingvslots[i]);
+    loopv(unpackingvslots) compactvslot(*unpackingvslots[i].vslot);
     loopv(editinfos)
     {
         editinfo *e = editinfos[i];
@@ -1281,7 +1499,7 @@ namespace hmap
         // selections may damage; must makeundo before
         hundo.o = t;
         hundo.o[D[d]] -= dcr*gridsize*2;
-        makeundoex(hundo);
+        makeundo(hundo);
 
         cube **c = cmap[x][y];
         loopk(4) c[k] = NULL;
@@ -1693,25 +1911,17 @@ void tofronttex()                                       // maintain most recentl
 selinfo repsel;
 int reptex = -1;
 
-struct vslotmap
-{
-    int index;
-    VSlot *vslot;
-
-    vslotmap() {}
-    vslotmap(int index, VSlot *vslot) : index(index), vslot(vslot) {}
-};
 static vector<vslotmap> remappedvslots;
 
 VAR(0, usevdelta, 1, 0, 0);
 
-static VSlot *remapvslot(int index, const VSlot &ds)
+static VSlot *remapvslot(int index, bool delta, const VSlot &ds)
 {
     loopv(remappedvslots) if(remappedvslots[i].index == index) return remappedvslots[i].vslot;
     VSlot &vs = lookupvslot(index, false);
     if(vs.index < 0 || vs.index == DEFAULT_SKY) return NULL;
     VSlot *edit = NULL;
-    if(usevdelta)
+    if(delta)
     {
         VSlot ms;
         mergevslot(ms, vs, ds);
@@ -1723,17 +1933,17 @@ static VSlot *remapvslot(int index, const VSlot &ds)
     return edit;
 }
 
-static void remapvslots(cube &c, const VSlot &ds, int orient, bool &findrep, VSlot *&findedit)
+static void remapvslots(cube &c, bool delta, const VSlot &ds, int orient, bool &findrep, VSlot *&findedit)
 {
     if(c.children)
     {
-        loopi(8) remapvslots(c.children[i], ds, orient, findrep, findedit);
+        loopi(8) remapvslots(c.children[i], delta, ds, orient, findrep, findedit);
         return;
     }
     static VSlot ms;
     if(orient<0) loopi(6)
     {
-        VSlot *edit = remapvslot(c.texture[i], ds);
+        VSlot *edit = remapvslot(c.texture[i], delta, ds);
         if(edit)
         {
             c.texture[i] = edit->index;
@@ -1743,7 +1953,7 @@ static void remapvslots(cube &c, const VSlot &ds, int orient, bool &findrep, VSl
     else
     {
         int i = visibleorient(c, orient);
-        VSlot *edit = remapvslot(c.texture[i], ds);
+        VSlot *edit = remapvslot(c.texture[i], delta, ds);
         if(edit)
         {
             if(findrep)
@@ -1775,19 +1985,18 @@ void edittexcube(cube &c, int tex, int orient, bool &findrep)
 
 VAR(0, allfaces, 0, 0, 1);
 
-void mpeditvslot(VSlot &ds, int allfaces, selinfo &sel, bool local)
+void mpeditvslot(int delta, VSlot &ds, int allfaces, selinfo &sel, bool local)
 {
     if(local)
     {
+        client::edittrigger(sel, EDIT_VSLOT, delta, allfaces, 0, &ds);
         if(!(lastsel==sel)) tofronttex();
         if(allfaces || !(repsel == sel)) reptex = -1;
         repsel = sel;
     }
     bool findrep = local && !allfaces && reptex < 0;
     VSlot *findedit = NULL;
-    editingvslot = &ds;
-    loopselxyz(remapvslots(c, ds, allfaces ? -1 : sel.orient, findrep, findedit));
-    editingvslot = NULL;
+    loopselxyz(remapvslots(c, delta != 0, ds, allfaces ? -1 : sel.orient, findrep, findedit));
     remappedvslots.setsize(0);
     if(local && findedit)
     {
@@ -1802,9 +2011,18 @@ void mpeditvslot(VSlot &ds, int allfaces, selinfo &sel, bool local)
     }
 }
 
+bool mpeditvslot(int delta, int allfaces, selinfo &sel, ucharbuf &buf)
+{
+    VSlot ds;
+    if(!unpackvslot(buf, ds, delta != 0)) return false;
+    editingvslot(ds.layer);
+    mpeditvslot(delta, ds, allfaces, sel, false);
+    return true;
+}
+
 void vdelta(char *body)
 {
-    if(noedit() || multiplayer()) return;
+    if(noedit()) return;
     usevdelta++;
     execute(body);
     usevdelta--;
@@ -1813,11 +2031,11 @@ COMMAND(0, vdelta, "s");
 
 void vrotate(int *n)
 {
-    if(noedit() || multiplayer()) return;
+    if(noedit()) return;
     VSlot ds;
     ds.changed = 1<<VSLOT_ROTATION;
     ds.rotation = usevdelta ? *n : clamp(*n, 0, 5);
-    mpeditvslot(ds, allfaces, sel, true);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vrotate, "i");
 
@@ -1826,102 +2044,107 @@ void voffset(int *x, int *y)
     if(noedit() || multiplayer()) return;
     VSlot ds;
     ds.changed = 1<<VSLOT_OFFSET;
-    ds.offset = ivec2(*x, *y);
-    if(!usevdelta) ds.offset.max(0);
-    mpeditvslot(ds, allfaces, sel, true);
+    ds.offset = usevdelta ? ivec2(*x, *y) : ivec2(*x, *y).max(0);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, voffset, "ii");
 
 void vscroll(float *s, float *t)
 {
-    if(noedit() || multiplayer()) return;
+    if(noedit()) return;
     VSlot ds;
     ds.changed = 1<<VSLOT_SCROLL;
     ds.scroll = vec2(*s, *t).div(1000);
-    mpeditvslot(ds, allfaces, sel, true);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vscroll, "ff");
 
 void vscale(float *scale)
 {
-    if(noedit() || multiplayer()) return;
+    if(noedit()) return;
     VSlot ds;
     ds.changed = 1<<VSLOT_SCALE;
     ds.scale = *scale <= 0 ? 1 : (usevdelta ? *scale : clamp(*scale, 1/8.0f, 8.0f));
-    mpeditvslot(ds, allfaces, sel, true);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vscale, "f");
 
 void vlayer(int *n)
 {
-    if(noedit() || multiplayer()) return;
+    if(noedit()) return;
     VSlot ds;
     ds.changed = 1<<VSLOT_LAYER;
     ds.layer = vslots.inrange(*n) ? *n : 0;
-    mpeditvslot(ds, allfaces, sel, true);
+    if(vslots.inrange(*n))
+    {
+        ds.layer = *n;
+        if(vslots[ds.layer]->changed && multiplayer()) return;
+    }
+    editingvslot(ds.layer);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vlayer, "i");
 
 void valpha(float *front, float *back)
 {
-    if(noedit() || multiplayer()) return;
+    if(noedit()) return;
     VSlot ds;
     ds.changed = 1<<VSLOT_ALPHA;
     ds.alphafront = clamp(*front, 0.0f, 1.0f);
     ds.alphaback = clamp(*back, 0.0f, 1.0f);
-    mpeditvslot(ds, allfaces, sel, true);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, valpha, "ff");
 
 void vcolour(float *r, float *g, float *b)
 {
-    if(noedit() || multiplayer()) return;
+    if(noedit()) return;
     VSlot ds;
     ds.changed = 1<<VSLOT_COLOR;
     ds.colorscale = vec(max(*r, 0.0f), max(*g, 0.0f), max(*b, 0.0f));
-    mpeditvslot(ds, allfaces, sel, true);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vcolour, "fff");
 
 void vpalette(int *p, int *x)
 {
-    if(noedit() || multiplayer()) return;
+    if(noedit()) return;
     VSlot ds;
     ds.changed = 1<<VSLOT_PALETTE;
     ds.palette = max(*p, 0);
     ds.palindex = max(*x, 0);
-    mpeditvslot(ds, allfaces, sel, true);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vpalette, "ii");
 
 void vcoastscale(float *value)
 {
-    if(noedit() || multiplayer()) return;
+    if(noedit()) return;
     VSlot ds;
     ds.changed = 1<<VSLOT_COAST;
     ds.coastscale = clamp(*value, 0.f, 1000.f);
-    mpeditvslot(ds, allfaces, sel, true);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vcoastscale, "f");
 
 void vreset()
 {
-    if(noedit() || multiplayer()) return;
+    if(noedit()) return;
     VSlot ds;
-    mpeditvslot(ds, allfaces, sel, true);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vreset, "");
 
 void vshaderparam(const char *name, float *x, float *y, float *z, float *w, int *palette, int *palindex)
 {
-    if(noedit() || multiplayer()) return;
+    if(noedit()) return;
     VSlot ds;
     ds.changed = 1<<VSLOT_SHPARAM;
     if(name[0])
     {
         ds.params.add(SlotShaderParam(getshaderparamname(name), *palette, *palindex, *x, *y, *z, *w));
     }
-    mpeditvslot(ds, allfaces, sel, true);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vshaderparam, "sffffii");
 
@@ -1935,6 +2158,36 @@ void mpedittex(int tex, int allfaces, selinfo &sel, bool local)
     }
     bool findrep = local && !allfaces && reptex < 0;
     loopselxyz(edittexcube(c, tex, allfaces ? -1 : sel.orient, findrep));
+}
+
+static int unpacktex(int &tex, ucharbuf &buf, bool insert = true)
+{
+    if(tex < 0x10000) return true;
+    VSlot ds;
+    if(!unpackvslot(buf, ds, false)) return false;
+    VSlot &vs = *lookupslot(tex & 0xFFFF, false).variants;
+    if(vs.index < 0 || vs.index == DEFAULT_SKY) return false;
+    VSlot *edit = insert ? editvslot(vs, ds) : findvslot(*vs.slot, vs, ds);
+    if(!edit) return false;
+    tex = edit->index;
+    return true;
+}
+
+int shouldpacktex(int index)
+{
+    if(vslots.inrange(index))
+    {
+        VSlot &vs = *vslots[index];
+        if(vs.changed) return 0x10000 + vs.slot->index;
+    }
+    return 0;
+}
+
+bool mpedittex(int tex, int allfaces, selinfo &sel, ucharbuf &buf)
+{
+    if(!unpacktex(tex, buf)) return false;
+    mpedittex(tex, allfaces, sel, false);
+    return true;
 }
 
 void filltexlist()
@@ -2067,6 +2320,15 @@ void mpreplacetex(int oldtex, int newtex, bool insel, selinfo &sel, bool local)
         loopi(8) replacetexcube(worldroot[i], oldtex, newtex);
     }
     allchanged();
+}
+
+bool mpreplacetex(int oldtex, int newtex, bool insel, selinfo &sel, ucharbuf &buf)
+{
+    if(!unpacktex(oldtex, buf, false)) return false;
+    editingvslot(oldtex);
+    if(!unpacktex(newtex, buf)) return false;
+    mpreplacetex(oldtex, newtex, insel, sel, false);
+    return true;
 }
 
 void replacetex(bool insel, int texnum = -1)

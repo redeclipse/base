@@ -132,12 +132,12 @@
 		FD05F1481ADD1BBA0046F323 /* playerdef.h in Headers */ = {isa = PBXBuildFile; fileRef = FD05F1441ADD1BBA0046F323 /* playerdef.h */; };
 		FD05F1491ADD1BBA0046F323 /* teamdef.h in Headers */ = {isa = PBXBuildFile; fileRef = FD05F1451ADD1BBA0046F323 /* teamdef.h */; };
 		FD05F14A1ADD1BBA0046F323 /* weapons.h in Headers */ = {isa = PBXBuildFile; fileRef = FD05F1461ADD1BBA0046F323 /* weapons.h */; };
-        FD05F14F1ADD1BD70046F323 /* glemu.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FD05F14B1ADD1BD70046F323 /* glemu.cpp */; };
-        FD05F14F1ADD1BD70046F323 /* glemu.h in Headers */ = {isa = PBXBuildFile; fileRef = FD05F14B1ADD1BD70046F323 /* glemu.h */; };
-		FD05F14F1ADD1BD70046F323 /* glexts.h in Headers */ = {isa = PBXBuildFile; fileRef = FD05F14B1ADD1BD70046F323 /* glexts.h */; };
 		FD05F1501ADD1BD70046F323 /* iqm.h in Headers */ = {isa = PBXBuildFile; fileRef = FD05F14C1ADD1BD70046F323 /* iqm.h */; };
 		FD05F1511ADD1BD70046F323 /* smd.h in Headers */ = {isa = PBXBuildFile; fileRef = FD05F14D1ADD1BD70046F323 /* smd.h */; };
 		FD6BC4A61B4BE57C0010977F /* master.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FD6BC4A51B4BE57C0010977F /* master.cpp */; };
+		FD88C2981B6C824B004CEB1D /* glexts.h in Sources */ = {isa = PBXBuildFile; fileRef = FD05F14B1ADD1BD70046F323 /* glexts.h */; };
+		FDCF1C021B6C84E10035CD3C /* glemu.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FDCF1C001B6C84E10035CD3C /* glemu.cpp */; };
+		FDCF1C031B6C84E10035CD3C /* glemu.h in Headers */ = {isa = PBXBuildFile; fileRef = FDCF1C011B6C84E10035CD3C /* glemu.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -276,12 +276,12 @@
 		FD05F1441ADD1BBA0046F323 /* playerdef.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = playerdef.h; sourceTree = "<group>"; };
 		FD05F1451ADD1BBA0046F323 /* teamdef.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = teamdef.h; sourceTree = "<group>"; };
 		FD05F1461ADD1BBA0046F323 /* weapons.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = weapons.h; sourceTree = "<group>"; };
-        FD05F14B1ADD1BD70046F323 /* glemu.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.cpp; path = glemu.cpp; sourceTree = "<group>"; };
-        FD05F14B1ADD1BD70046F323 /* glemu.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = glemu.h; sourceTree = "<group>"; };
 		FD05F14B1ADD1BD70046F323 /* glexts.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = glexts.h; sourceTree = "<group>"; };
 		FD05F14C1ADD1BD70046F323 /* iqm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = iqm.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		FD05F14D1ADD1BD70046F323 /* smd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = smd.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		FD6BC4A51B4BE57C0010977F /* master.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; path = master.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
+		FDCF1C001B6C84E10035CD3C /* glemu.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = glemu.cpp; sourceTree = "<group>"; };
+		FDCF1C011B6C84E10035CD3C /* glemu.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = glemu.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -485,9 +485,9 @@
 				B9AC7AC40D06DB44005506F8 /* ents.h */,
 				B9AC7AC50D06DB44005506F8 /* geom.cpp */,
 				B9AC7AC60D06DB44005506F8 /* geom.h */,
-                FD05F14B1ADD1BD70046F323 /* glemu.cpp */,
-                FD05F14B1ADD1BD70046F323 /* glemu.h */,
-                FD05F14B1ADD1BD70046F323 /* glexts.h */,
+				FDCF1C001B6C84E10035CD3C /* glemu.cpp */,
+				FDCF1C011B6C84E10035CD3C /* glemu.h */,
+				FD05F14B1ADD1BD70046F323 /* glexts.h */,
 				B9AC7AC70D06DB44005506F8 /* iengine.h */,
 				B9AC7AC80D06DB44005506F8 /* igame.h */,
 				D11B5A8010CBB637003F0098 /* stream.cpp */,
@@ -573,8 +573,6 @@
 				B91D40230D525FE9004EF78A /* md5.h in Headers */,
 				B91D40250D52600A004EF78A /* skelmodel.h in Headers */,
 				D116C0AB0D9F7DB500E8B945 /* rendertarget.h in Headers */,
-                FD05F14F1ADD1BD70046F323 /* glemu.h in Headers */,
-				FD05F14F1ADD1BD70046F323 /* glexts.h in Headers */,
 				D18B8FC10DB0AF8200171439 /* explosion.h in Headers */,
 				D18B8FC20DB0AF8200171439 /* lensflare.h in Headers */,
 				D18B8FC30DB0AF8200171439 /* lightning.h in Headers */,
@@ -588,6 +586,7 @@
 				D16A83560F130E9500EABB1F /* defend.h in Headers */,
 				D16A83570F130E9500EABB1F /* vars.h in Headers */,
 				FD05F1471ADD1BBA0046F323 /* player.h in Headers */,
+				FDCF1C031B6C84E10035CD3C /* glemu.h in Headers */,
 				D16A83760F130EBC00EABB1F /* scale.h in Headers */,
 				D1D88A8B0F350DFE000680E4 /* auth.h in Headers */,
 				2AB901D11AC1B8E900A5F378 /* version.h in Headers */,
@@ -710,7 +709,7 @@
 				B9AC7AF70D06DB44005506F8 /* worldio.cpp in Sources */,
 				B9AC7B0D0D06DB44005506F8 /* geom.cpp in Sources */,
 				B9AC7B150D06DB44005506F8 /* tools.cpp in Sources */,
-                FD05F14F1ADD1BD70046F323 /* glemu.cpp in Sources */,
+				FD88C2981B6C824B004CEB1D /* glexts.h in Sources */,
 				B91D40210D525FE0004EF78A /* decal.cpp in Sources */,
 				D1C660CA0D5467C8002E52C1 /* pvs.cpp in Sources */,
 				D16BD00D0D7000EA0053CECE /* dynlight.cpp in Sources */,
@@ -727,6 +726,7 @@
 				D16A83580F130E9500EABB1F /* weapons.cpp in Sources */,
 				D16A83710F130EBC00EABB1F /* blend.cpp in Sources */,
 				D16A83720F130EBC00EABB1F /* blob.cpp in Sources */,
+				FDCF1C021B6C84E10035CD3C /* glemu.cpp in Sources */,
 				D16A83770F130EBC00EABB1F /* ui.cpp in Sources */,
 				D1D88AB80F350EDE000680E4 /* irc.cpp in Sources */,
 				D11B5A6610CBB4D8003F0098 /* game.cpp in Sources */,
@@ -815,7 +815,7 @@
 				);
 				INFOPLIST_FILE = "redeclipse-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 10.5;
+				MACOSX_DEPLOYMENT_TARGET = 10.9;
 				OTHER_CPLUSPLUSFLAGS = "-fomit-frame-pointer";
 				OTHER_LDFLAGS = "-lz";
 				PRODUCT_NAME = redeclipse;
@@ -848,7 +848,9 @@
 				);
 				INFOPLIST_FILE = "redeclipse-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 10.5;
+				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				MACOSX_DEPLOYMENT_TARGET_i386 = 10.9;
+				MACOSX_DEPLOYMENT_TARGET_ppc = 10.9;
 				OTHER_LDFLAGS = "-lz";
 				PRODUCT_NAME = redeclipse;
 				SDKROOT = macosx;
@@ -881,7 +883,9 @@
 				);
 				INFOPLIST_FILE = "redeclipse-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 10.5;
+				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				MACOSX_DEPLOYMENT_TARGET_i386 = 10.9;
+				MACOSX_DEPLOYMENT_TARGET_ppc = 10.9;
 				OTHER_CPLUSPLUSFLAGS = "-fomit-frame-pointer";
 				OTHER_LDFLAGS = "-lz";
 				PRODUCT_NAME = redeclipse;
@@ -901,13 +905,11 @@
 				);
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_VERSION = 4.0;
-				MACOSX_DEPLOYMENT_TARGET_i386 = 10.4;
-				MACOSX_DEPLOYMENT_TARGET_ppc = 10.3;
+				MACOSX_DEPLOYMENT_TARGET_i386 = 10.9;
+				MACOSX_DEPLOYMENT_TARGET_ppc = 10.9;
 				ONLY_ACTIVE_ARCH = YES;
 				PREBINDING = NO;
-				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.4u.sdk";
-				SDKROOT_i386 = /Developer/SDKs/MacOSX10.4u.sdk;
-				SDKROOT_ppc = /Developer/SDKs/MacOSX10.4u.sdk;
+				SDKROOT = macosx;
 				STRIP_INSTALLED_PRODUCT = NO;
 			};
 			name = Debug;
@@ -925,13 +927,11 @@
 				GCC_OPTIMIZATION_LEVEL = 3;
 				GCC_VERSION = 4.0;
 				INSTALL_PATH = "";
-				MACOSX_DEPLOYMENT_TARGET_i386 = 10.4;
-				MACOSX_DEPLOYMENT_TARGET_ppc = 10.3;
+				MACOSX_DEPLOYMENT_TARGET_i386 = 10.9;
+				MACOSX_DEPLOYMENT_TARGET_ppc = 10.9;
 				OTHER_LDFLAGS = "-no_compact_linkedit";
 				PREBINDING = NO;
-				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.4u.sdk";
-				SDKROOT_i386 = /Developer/SDKs/MacOSX10.4u.sdk;
-				SDKROOT_ppc = /Developer/SDKs/MacOSX10.4u.sdk;
+				SDKROOT = macosx;
 				SKIP_INSTALL = NO;
 				STRIP_INSTALLED_PRODUCT = YES;
 				VALID_ARCHS = "i386 ppc ppc64 ppc7400 ppc970";

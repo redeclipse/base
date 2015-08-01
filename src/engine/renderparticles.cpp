@@ -936,7 +936,7 @@ struct loopprimitiverenderer : listrenderer<loopprimitive>
         gle::begin(p->fill ? GL_TRIANGLE_FAN : GL_LINE_LOOP);
         loopi(15 + (p->fill ? 1 : 0))
         {
-            const vec2 &sc = sincos360[i*(360/15)]; 
+            const vec2 &sc = sincos360[i*(360/15)];
             vec v;
             switch(p->axis)
             {
@@ -1142,7 +1142,7 @@ void debugparticles()
     int n = sizeof(parts)/sizeof(parts[0]);
     glEnable(GL_BLEND);
     pushhudmatrix();
-    hudmatrix.ortho(0, FONTH*n*2*screen->w/float(screen->h), FONTH*n*2, 0, -1, 1); //squeeze into top-left corner        
+    hudmatrix.ortho(0, FONTH*n*2*screen->w/float(screen->h), FONTH*n*2, 0, -1, 1); //squeeze into top-left corner
     flushhudmatrix();
     hudshader->set();
     loopi(n) draw_text(parts[i]->info, FONTH, (i+n/2)*FONTH);
@@ -1733,4 +1733,3 @@ void updateparticles()
     entities::drawparticles();
     flares.drawflares(); // do after drawparticles so that we can make flares for them too
 }
-

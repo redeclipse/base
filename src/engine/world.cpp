@@ -371,6 +371,24 @@ undoblock *copyundoents(undoblock *u)
     return c;
 }
 
+void pasteundoent(int idx, const vec &o, int type, int *attrs, int numattrs)
+{
+    if(idx < 0 || idx >= MAXENTS) return;
+    vector<extentity *> &ents = entities::getents();
+    while(ents.length() < idx) ents.add(entities::newent())->type = ET_EMPTY;
+    numattrs = min(numattrs, MAXENTATTRS);
+    int efocus = -1, minattrs = entities::numattrs(type);
+    entedit(idx,
+    {
+        e.type = type;
+        e.o = o;
+        if(e.attrs.length() < numattrs) e.attrs.add(0, numattrs - e.attrs.length());
+        else if(e.attrs.length() > numattrs) e.attrs.setsize(numattrs);
+        if(numattrs < minattrs) e.attrs.add(0, minattrs - numattrs);
+        loopk(numattrs) e.attrs[k] = *attrs++;
+    });
+}
+
 void pasteundoents(undoblock *u)
 {
     undoent *ue = u->ents();
@@ -892,6 +910,7 @@ void enttype(char *what, int *numargs)
         result(entities::findname(e.type));
     })
 }
+COMMAND(0, enttype, "sN");
 
 void entattr(int *attr, int *val, int *numargs)
 {
@@ -907,8 +926,6 @@ void entattr(int *attr, int *val, int *numargs)
         if(e.attrs.inrange(*attr)) intret(e.attrs[*attr]);
     );
 }
-
-COMMAND(0, enttype, "sN");
 COMMAND(0, entattr, "iiN");
 
 void entprop(int *attr, int *val)
@@ -919,7 +936,6 @@ void entprop(int *attr, int *val)
             e.attrs[*attr] += *val;
         });
 }
-
 COMMAND(0, entprop, "ii");
 
 int findentity(int type, int index, vector<int> &attr)
@@ -1167,4 +1183,3 @@ void mpeditent(int i, const vec &o, int type, attrvector &attr, bool local)
         addentity(i);
     }
 }
-
