@@ -3172,8 +3172,6 @@ namespace server
         }
     }
 
-    GICOMMAND(0, sendstats, "", (), sendstats(); result("success"),);
-
     #include "capturemode.h"
     #include "defendmode.h"
     #include "bombermode.h"
