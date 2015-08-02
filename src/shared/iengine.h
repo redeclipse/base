@@ -462,6 +462,8 @@ extern ENetSocket connectmaster(bool reuse = true);
 extern void disconnectmaster();
 extern bool requestmaster(const char *req);
 extern bool requestmasterf(const char *fmt, ...) PRINTFARGS(1, 2);
+extern void flushmasteroutput();
+extern void flushmasterinput();
 
 extern bool findoctadir(const char *name, bool fallback = false);
 extern void trytofindocta(bool fallback = true);
@@ -481,6 +483,7 @@ struct serverinfo
     string name;
     string map;
     string sdesc;
+    string authhandle;
     int numplayers, lastping, lastinfo, nextping, ping, resolved, port, priority;
     int pings[MAXPINGS];
     vector<int> attr;
@@ -490,7 +493,7 @@ struct serverinfo
     serverinfo(uint ip, int port, int priority = 0)
      : numplayers(0), resolved(ip==ENET_HOST_ANY ? UNRESOLVED : RESOLVED), port(port), priority(priority)
     {
-        name[0] = map[0] = sdesc[0] = '\0';
+        name[0] = map[0] = sdesc[0] = authhandle[0] = '\0';
         address.host = ip;
         address.port = port+1;
         clearpings();

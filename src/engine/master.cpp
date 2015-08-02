@@ -8,7 +8,10 @@
 
 #include "engine.h"
 #include <enet/time.h>
+#include <sqlite3.h>
 
+#define STATSDB_VERSION 1
+#define STATSDB_RETRYTIME (5*1000)
 #define MASTER_LIMIT 4096
 #define CLIENT_TIME (60*1000)
 #define SERVER_TIME (35*60*1000)
@@ -45,19 +48,274 @@ struct masterclient
     ENetAddress address;
     ENetSocket socket;
     string name;
+
+    /* Server Flags:
+     * b - basic
+     * s - statistics
+     */
+    string flags;
+    string authhandle;
+
     char input[4096];
     vector<char> output;
     int inputpos, outputpos, port, numpings, lastcontrol, version;
-    enet_uint32 lastping, lastpong, lastactivity;
+    enet_uint32 lastping, lastpong, lastactivity, laststats;
     vector<authreq> authreqs;
+    authreq serverauthreq;
     bool isserver, isquick, ishttp, listserver, shouldping, shouldpurge;
 
-    masterclient() : inputpos(0), outputpos(0), port(MASTER_PORT), numpings(0), lastcontrol(-1), version(0), lastping(0), lastpong(0), lastactivity(0), isserver(false), isquick(false), ishttp(false), listserver(false), shouldping(false), shouldpurge(false) {}
+    struct statstate
+    {
+        //Game
+        ulong id;
+        string map;
+        int mode, mutators, timeplayed;
+        time_t time;
+        //Server
+        string desc;
+        string version;
+        int port;
+        //Teams
+        struct team
+        {
+            int index, score;
+            string name;
+        };
+        vector<team> teams;
+        //Players
+        struct player
+        {
+            string name;
+            string handle;
+            int score, timealive, frags, deaths;
+            int wid;
+        };
+        vector<player> players;
+        //Weapons
+        struct weaponstats
+        {
+            string name;
+            int playerid;
+            string playerhandle;
+            int timewielded, timeloadout;
+            int hits1, hits2, flakhits1, flakhits2;
+            int shots1, shots2, flakshots1, flakshots2;
+            int frags1, frags2, damage1, damage2;
+        };
+        vector<weaponstats> weapstats;
+    } stats;
+
+    bool instats;
+    bool wantstats;
+
+    bool hasflag(char f)
+    {
+        //Any flag implies 'b'
+        if(f == 'b' && *flags)
+            return true;
+        size_t i;
+        for(i = 0; i < strlen(flags); i++)
+        {
+            if(flags[i] == f)
+                return true;
+        }
+        return false;
+    }
+
+    masterclient() : inputpos(0), outputpos(0), port(MASTER_PORT), numpings(0), lastcontrol(-1), version(0), lastping(0), lastpong(0), lastactivity(0), isserver(false), isquick(false), ishttp(false), listserver(false), shouldping(false), shouldpurge(false), instats(false), wantstats(false) {}
 };
 
 static vector<masterclient *> masterclients;
 static ENetSocket mastersocket = ENET_SOCKET_NULL, pingsocket = ENET_SOCKET_NULL;
 static time_t starttime;
+static sqlite3 *statsdb = NULL;
+
+void closestatsdb()
+{
+    if(statsdb)
+    {
+        sqlite3_close(statsdb);
+        statsdb = NULL;
+    }
+}
+
+bool checkstatsdb(int rc, char *errmsg=NULL)
+{
+    if(rc == SQLITE_OK)
+        return true;
+    defformatbigstring(message, "%s", errmsg ? errmsg : sqlite3_errmsg(statsdb));
+    sqlite3_free(errmsg);
+    closestatsdb();
+    fatal("statistics database error: %s", message);
+    return false;
+}
+
+void statsdbexecf(const char *fmt, ...)
+{
+    char *errmsg = NULL;
+    va_list al;
+    va_start(al, fmt);
+    char *sql = sqlite3_vmprintf(fmt, al);
+    int rc = sqlite3_exec(statsdb, sql, 0, 0, &errmsg);
+    sqlite3_free(sql);
+    va_end(al);
+    checkstatsdb(rc, errmsg);
+}
+
+void statsdbexecfile(const char *path)
+{
+    char *errmsg = NULL;
+    char *buf = loadfile(path, NULL);
+    if(!buf)
+    {
+        fatal("cannot find %s", path);
+        closestatsdb();
+    }
+    int rc = sqlite3_exec(statsdb, buf, 0, 0, &errmsg);
+    checkstatsdb(rc, errmsg);
+    DELETEA(buf);
+}
+
+int statsdbversion()
+{
+    int version = 0;
+    sqlite3_stmt *res;
+    checkstatsdb(sqlite3_prepare_v2(statsdb, "PRAGMA user_version;", -1, &res, 0));
+    while(sqlite3_step(res) == SQLITE_ROW)
+    {
+        version = sqlite3_column_int(res, 0);
+    }
+    sqlite3_finalize(res);
+    return version;
+}
+
+void loadstatsdb()
+{
+    checkstatsdb(sqlite3_open(findfile("stats.sqlite", "w"), &statsdb));
+    statsdbexecf("BEGIN");
+    if(statsdbversion() < 1)
+    {
+        statsdbexecfile("sql/stats/create.sql");
+        statsdbexecf("PRAGMA user_version = %d;", STATSDB_VERSION);
+        conoutf("created statistics database");
+    }
+    while(statsdbversion() < STATSDB_VERSION)
+    {
+        int ver = statsdbversion();
+        defformatstring(path, "sql/stats/upgrade_%d.sql", ver);
+        statsdbexecfile(path);
+        statsdbexecf("PRAGMA user_version = %d;", ver + 1);
+        conoutf("upgraded database from %d to %d", ver, statsdbversion());
+    }
+    statsdbexecf("COMMIT");
+    conoutf("statistics database loaded");
+}
+
+void masterout(masterclient &c, const char *msg, int len = 0)
+{
+    if(!len) len = strlen(msg);
+    c.output.put(msg, len);
+}
+
+void masteroutf(masterclient &c, const char *fmt, ...)
+{
+    bigstring msg;
+    va_list args;
+    va_start(args, fmt);
+    vformatstring(msg, fmt, args);
+    va_end(args);
+    masterout(c, msg);
+}
+
+void savestats(masterclient &c)
+{
+    c.wantstats = true;
+    c.laststats = totalmillis;
+    char *errmsg = NULL;
+    int rc = sqlite3_exec(statsdb, "BEGIN IMMEDIATE", 0, 0, &errmsg);
+    if(rc == SQLITE_BUSY)
+        return;
+    else
+        checkstatsdb(rc, errmsg);
+
+    statsdbexecf("INSERT INTO games VALUES (NULL, %d, %Q, %d, %d, %d)",
+        c.stats.time,
+        c.stats.map,
+        c.stats.mode,
+        c.stats.mutators,
+        c.stats.timeplayed
+        );
+    c.stats.id = (ulong)sqlite3_last_insert_rowid(statsdb);
+
+    statsdbexecf("INSERT INTO game_servers VALUES (%d, %Q, %Q, %Q, %Q, %Q, %d)",
+        c.stats.id,
+        c.authhandle,
+        c.flags,
+        c.stats.desc,
+        c.stats.version,
+        c.name,
+        c.stats.port
+        );
+
+    loopv(c.stats.teams)
+    {
+        statsdbexecf("INSERT INTO game_teams VALUES (%d, %d, %d, %Q)",
+            c.stats.id,
+            c.stats.teams[i].index,
+            c.stats.teams[i].score,
+            c.stats.teams[i].name
+            );
+    }
+
+    loopv(c.stats.players)
+    {
+        statsdbexecf("INSERT INTO game_players VALUES (%d, %Q, %Q, %d, %d, %d, %d, %d)",
+            c.stats.id,
+            c.stats.players[i].name,
+            c.stats.players[i].handle,
+            c.stats.players[i].score,
+            c.stats.players[i].timealive,
+            c.stats.players[i].frags,
+            c.stats.players[i].deaths,
+            c.stats.players[i].wid
+        );
+    }
+
+    loopv(c.stats.weapstats)
+    {
+        statsdbexecf("INSERT INTO game_weapons VALUES (%d, %d, %Q, %Q, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d)",
+            c.stats.id,
+            c.stats.weapstats[i].playerid,
+            c.stats.weapstats[i].playerhandle,
+            c.stats.weapstats[i].name,
+
+            c.stats.weapstats[i].timewielded,
+            c.stats.weapstats[i].timeloadout,
+
+            c.stats.weapstats[i].damage1,
+            c.stats.weapstats[i].frags1,
+            c.stats.weapstats[i].hits1,
+            c.stats.weapstats[i].flakhits1,
+            c.stats.weapstats[i].shots1,
+            c.stats.weapstats[i].flakshots1,
+
+            c.stats.weapstats[i].damage2,
+            c.stats.weapstats[i].frags2,
+            c.stats.weapstats[i].hits2,
+            c.stats.weapstats[i].flakhits2,
+            c.stats.weapstats[i].shots2,
+            c.stats.weapstats[i].flakshots2
+        );
+    }
+
+    statsdbexecf("COMMIT");
+    conoutf("master peer %s commited stats, game id %lu", c.name, c.stats.id);
+    defformatstring(msg, "\fygame statistics recorded, id \fc%lu", c.stats.id);
+    simpleencode(msgenc, msg);
+    masteroutf(c, "stats success %s\n", msgenc);
+    c.instats = false;
+    c.wantstats = false;
+}
 
 bool setuppingsocket(ENetAddress *address)
 {
@@ -83,24 +341,9 @@ void setupmaster()
         if(enet_socket_set_option(mastersocket, ENET_SOCKOPT_NONBLOCK, 1) < 0) fatal("failed to make master server socket non-blocking");
         if(!setuppingsocket(&address)) fatal("failed to create ping socket");
         starttime = clocktime;
+        loadstatsdb();
         conoutf("master server started on %s:[%d]", *masterip ? masterip : "localhost", masterport);
     }
-}
-
-void masterout(masterclient &c, const char *msg, int len = 0)
-{
-    if(!len) len = strlen(msg);
-    c.output.put(msg, len);
-}
-
-void masteroutf(masterclient &c, const char *fmt, ...)
-{
-    bigstring msg;
-    va_list args;
-    va_start(args, fmt);
-    vformatstring(msg, fmt, args);
-    va_end(args);
-    masterout(c, msg);
 }
 
 static hashnameset<authuser> authusers;
@@ -123,10 +366,32 @@ void addauth(char *name, char *flags, char *pubkey, char *email)
 }
 COMMAND(0, addauth, "ssss");
 
+static hashnameset<authuser> serverauthusers;
+
+void addserverauth(char *name, char *flags, char *pubkey, char *email)
+{
+    string authname;
+    if(filterstring(authname, name, true, true, true, true, 100)) name = authname;
+    if(serverauthusers.access(name))
+    {
+        conoutf("server auth handle '%s' already exists, skipping (%s)", name, email);
+        return;
+    }
+    name = newstring(name);
+    authuser &u = serverauthusers[name];
+    u.name = name;
+    u.flags = newstring(flags);
+    u.pubkey = parsepubkey(pubkey);
+    u.email = newstring(email);
+}
+COMMAND(0, addserverauth, "ssss");
+
 void clearauth()
 {
     enumerate(authusers, authuser, u, { delete[] u.name; delete[] u.flags; delete[] u.email; freepubkey(u.pubkey); });
     authusers.clear();
+    enumerate(serverauthusers, authuser, u, { delete[] u.name; delete[] u.flags; delete[] u.email; freepubkey(u.pubkey); });
+    serverauthusers.clear();
 }
 COMMAND(0, clearauth, "");
 
@@ -148,8 +413,6 @@ void purgeauths(masterclient &c)
 
 void reqauth(masterclient &c, uint id, char *name, char *hostname)
 {
-    purgeauths(c);
-
     string ip, host;
     if(enet_address_get_host_ip(&c.address, ip, sizeof(ip)) < 0) copystring(ip, "-");
     copystring(host, hostname && *hostname ? hostname : "-");
@@ -174,6 +437,32 @@ void reqauth(masterclient &c, uint id, char *name, char *hostname)
     a.answer = genchallenge(u->pubkey, seed, sizeof(seed), buf);
 
     masteroutf(c, "chalauth %u %s\n", id, buf.getbuf());
+}
+
+void reqserverauth(masterclient &c, char *name)
+{
+    purgeauths(c);
+
+    string ip;
+    if(enet_address_get_host_ip(&c.address, ip, sizeof(ip)) < 0) copystring(ip, "-");
+
+    authuser *u = serverauthusers.access(name);
+    if(!u)
+    {
+        masteroutf(c, "failserverauth\n");
+        conoutf("failed server '%s' (NOTFOUND)\n", name);
+        return;
+    }
+    conoutf("attempting server '%s'\n", name);
+
+    c.serverauthreq.user = u;
+    c.serverauthreq.reqtime = totalmillis;
+    uint seed[3] = { uint(starttime), uint(totalmillis), randomMT() };
+    static vector<char> buf;
+    buf.setsize(0);
+    c.serverauthreq.answer = genchallenge(u->pubkey, seed, sizeof(seed), buf);
+
+    masteroutf(c, "chalserverauth %s\n", buf.getbuf());
 }
 
 void confauth(masterclient &c, uint id, const char *val)
@@ -207,6 +496,30 @@ void purgemasterclient(int n)
     if(verbose || c.isserver) conoutf("master peer %s disconnected", c.name);
     delete masterclients[n];
     masterclients.remove(n);
+}
+
+void confserverauth(masterclient &c, const char *val)
+{
+    string ip;
+    if(enet_address_get_host_ip(&c.address, ip, sizeof(ip)) < 0) copystring(ip, "-");
+    if(checkchallenge(val, c.serverauthreq.answer))
+    {
+        loopvj(masterclients) if(!(!strcmp(c.name, masterclients[j]->name) && c.port == masterclients[j]->port))
+        {
+            if(!strcmp(masterclients[j]->authhandle, c.serverauthreq.user->name))
+                purgemasterclient(j);
+        }
+        masteroutf(c, "succserverauth \"%s\" \"%s\"\n", c.serverauthreq.user->name, c.serverauthreq.user->flags);
+        conoutf("succeeded server '%s' [%s]\n", c.serverauthreq.user->name, c.serverauthreq.user->flags);
+        copystring(c.authhandle, c.serverauthreq.user->name);
+        copystring(c.flags, c.serverauthreq.user->flags);
+    }
+    else
+    {
+        masteroutf(c, "failserverauth\n");
+        conoutf("failed server '%s' (BADKEY)\n", c.serverauthreq.user->name);
+    }
+    freechallenge(c.serverauthreq.answer);
 }
 
 void checkmasterpongs()
@@ -253,7 +566,7 @@ int nextcontrolversion()
 bool checkmasterclientinput(masterclient &c)
 {
     if(c.inputpos < 0) return false;
-    const int MAXWORDS = 8;
+    const int MAXWORDS = 24;
     char *w[MAXWORDS];
     int numargs = MAXWORDS;
     const char *p = c.input;
@@ -362,15 +675,122 @@ bool checkmasterclientinput(masterclient &c)
                 masterclient &s = *masterclients[j];
                 if(!s.listserver) continue;
                 masteroutf(c, "addserver %s %d\n", s.name, s.port);
+                if(*s.authhandle)
+                {
+                    masteroutf(c, "authserver %s %d %s\n", s.name, s.port, s.authhandle);
+                }
                 servs++;
             }
             conoutf("master peer %s was sent %d server(s)", c.name, servs);
             c.shouldpurge = found = true;
         }
+        if(c.isserver && !strcmp(w[0], "stats"))
+        {
+            if(!strcmp(w[1], "begin"))
+            {
+                c.stats.teams.shrink(0);
+                c.stats.players.shrink(0);
+                c.stats.weapstats.shrink(0);
+                if(c.hasflag('s'))
+                {
+                    conoutf("master peer %s began sending statistics", c.name);
+                    c.instats = true;
+                    if(c.wantstats)
+                    {
+                        c.wantstats = false;
+                        conoutf("master peer %s is overwriting previous statistics", c.name);
+                    }
+                }
+                else
+                {
+                    conoutf("master peer %s attempted to send stats without proper privilege", c.name);
+                    simpleencode(msgenc, "\frstatistics not submitted, no statistics privilege");
+                    masteroutf(c, "stats failure %s\n", msgenc);
+                }
+            }
+            else if(c.instats)
+            {
+                if(!strcmp(w[1], "end"))
+                {
+                    savestats(c);
+                }
+                else if(!strcmp(w[1], "game"))
+                {
+                    simpledecode(mapnamedec, w[2]);
+                    copystring(c.stats.map, mapnamedec);
+                    c.stats.mode = (int)strtol(w[3], NULL, 10);
+                    c.stats.mutators = (int)strtol(w[4], NULL, 10);
+                    c.stats.timeplayed = (int)strtol(w[5], NULL, 10);
+                    c.stats.time = currenttime;
+                }
+                else if(!strcmp(w[1], "server"))
+                {
+                    simpledecode(descdec, w[2]);
+                    copystring(c.stats.desc, descdec);
+                    copystring(c.stats.version, w[3]);
+                    c.stats.port = (int)strtol(w[4], NULL, 10);
+                }
+                else if(!strcmp(w[1], "team"))
+                {
+                    masterclient::statstate::team t;
+                    t.index = (int)strtol(w[2], NULL, 10);
+                    t.score = (int)strtol(w[3], NULL, 10);
+                    simpledecode(namedec, w[4]);
+                    copystring(t.name, namedec);
+                    c.stats.teams.add(t);
+                }
+                else if(!strcmp(w[1], "player"))
+                {
+                    masterclient::statstate::player p;
+                    simpledecode(namedec, w[2]);
+                    copystring(p.name, namedec);
+                    simpledecode(handledec, w[3]);
+                    copystring(p.handle, handledec);
+                    p.score = (int)strtol(w[4], NULL, 10);
+                    p.timealive = (int)strtol(w[5], NULL, 10);
+                    p.frags = (int)strtol(w[6], NULL, 10);
+                    p.deaths = (int)strtol(w[7], NULL, 10);
+                    p.wid = (int)strtol(w[8], NULL, 10);
+                    c.stats.players.add(p);
+                }
+                else if(!strcmp(w[1], "weapon"))
+                {
+                    #define wint(n) ws.n = (int)strtol(w[qidx++], NULL, 10);
+                    masterclient::statstate::weaponstats ws;
+                    ws.playerid = (int)strtol(w[2], NULL, 10);
+                    simpledecode(handledec, w[3]);
+                    copystring(ws.playerhandle, handledec);
+                    copystring(ws.name, w[4]);
+                    int qidx = 5;
+
+                    wint(timewielded);
+                    wint(timeloadout);
+
+                    wint(damage1);
+                    wint(frags1);
+                    wint(hits1);
+                    wint(flakhits1);
+                    wint(shots1);
+                    wint(flakshots1);
+
+                    wint(damage2);
+                    wint(frags2);
+                    wint(hits2);
+                    wint(flakhits2);
+                    wint(shots2);
+                    wint(flakshots2);
+
+                    c.stats.weapstats.add(ws);
+                }
+            }
+            found = true;
+        }
         if(c.isserver || c.isquick)
         {
             if(!strcmp(w[0], "reqauth")) { reqauth(c, uint(atoi(w[1])), w[2], w[3]); found = true; }
+            if(!strcmp(w[0], "reqserverauth")) { reqserverauth(c, w[1]); found = true; }
             if(!strcmp(w[0], "confauth")) { confauth(c, uint(atoi(w[1])), w[2]); found = true; }
+            if(!strcmp(w[0], "confserverauth")) { confserverauth(c, w[1]); found = true; }
         }
         if(w[0] && *w[0] && !found)
         {
@@ -426,6 +846,11 @@ void checkmaster()
         if(c.outputpos < c.output.length()) ENET_SOCKETSET_ADD(writeset, c.socket);
         else ENET_SOCKETSET_ADD(readset, c.socket);
         maxsock = max(maxsock, c.socket);
+
+        if(c.wantstats && (totalmillis - c.laststats) > STATSDB_RETRYTIME)
+        {
+            savestats(c);
+        }
     }
     if(enet_socketset_select(maxsock, &readset, &writeset, 0) <= 0) return;
 
@@ -510,6 +935,7 @@ void checkmaster()
 void cleanupmaster()
 {
     if(mastersocket != ENET_SOCKET_NULL) enet_socket_destroy(mastersocket);
+    closestatsdb();
 }
 
 void reloadmaster()

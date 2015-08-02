@@ -32,13 +32,15 @@ else
 TOOLSET_PREFIX=i686-w64-mingw32-
 endif
 CXX=g++
+CC=gcc
 endif
 
 CXX_TEMP:=$(CXX)
+CC_TEMP:=$(CC)
 override CXX=$(TOOLSET_PREFIX)$(CXX_TEMP)
+override CC=$(TOOLSET_PREFIX)$(CC_TEMP)
 
-INCLUDES= -I. -Ishared -Iengine -Igame -Ienet/include
-
+INCLUDES= -I. -Ishared -Iengine -Igame -Ienet/include -Isqlite
 
 STRIP=
 ifeq (,$(findstring -g,$(CXXFLAGS)))
@@ -97,6 +99,7 @@ CLIENT_OBJS= \
 	shared/stream.o \
 	shared/tools.o \
 	shared/zip.o \
+	sqlite/sqlite3.o \
 	engine/bih.o \
 	engine/blend.o \
 	engine/blob.o \
@@ -166,6 +169,7 @@ SERVER_OBJS= \
 	shared/stream-standalone.o \
 	shared/tools-standalone.o \
 	shared/zip-standalone.o \
+	sqlite/sqlite3.o \
 	engine/command-standalone.o \
 	engine/irc-standalone.o \
 	engine/master-standalone.o \
@@ -188,7 +192,7 @@ clean-client:
 
 clean-server:
 	@rm -fv $(SERVER_OBJS) $(APPSERVER)$(BIN_SUFFIX)
-	
+
 clean-genkey:
 	@rm -fv $(GENKEY_OBJS) genkey$(BIN_SUFFIX)
 
@@ -200,6 +204,9 @@ clean: clean-enet clean-client clean-server clean-genkey
 
 %-standalone.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ $(subst -standalone.o,.cpp,$@)
+
+sqlite/sqlite3.o: sqlite/sqlite3.c
+	$(CC) -DSQLITE_THREADSAFE=0 -DSQLITE_OMIT_LOAD_EXTENSION -c -o sqlite/sqlite3.o sqlite/sqlite3.c
 
 $(CLIENT_OBJS): CXXFLAGS += $(CLIENT_INCLUDES)
 $(filter shared/%,$(CLIENT_OBJS)): $(filter shared/%,$(CLIENT_PCH))
@@ -373,7 +380,7 @@ engine/master.o: shared/command.h shared/geom.h shared/ents.h shared/glexts.h
 engine/master.o: shared/glemu.h shared/iengine.h shared/igame.h engine/irc.h
 engine/master.o: engine/sound.h engine/world.h engine/octa.h
 engine/master.o: engine/lightmap.h engine/bih.h engine/texture.h
-engine/master.o: engine/model.h
+engine/master.o: engine/model.h sqlite/sqlite3.h
 engine/material.o: engine/engine.h version.h shared/cube.h shared/tools.h
 engine/material.o: shared/command.h shared/geom.h shared/ents.h
 engine/material.o: shared/glexts.h shared/glemu.h shared/iengine.h
@@ -668,7 +675,7 @@ engine/irc-standalone.o: engine/irc.h engine/sound.h
 engine/master-standalone.o: engine/engine.h version.h shared/cube.h
 engine/master-standalone.o: shared/tools.h shared/command.h shared/geom.h
 engine/master-standalone.o: shared/ents.h shared/iengine.h shared/igame.h
-engine/master-standalone.o: engine/irc.h engine/sound.h
+engine/master-standalone.o: engine/irc.h engine/sound.h sqlite/sqlite3.h
 engine/server-standalone.o: engine/engine.h version.h shared/cube.h
 engine/server-standalone.o: shared/tools.h shared/command.h shared/geom.h
 engine/server-standalone.o: shared/ents.h shared/iengine.h shared/igame.h
