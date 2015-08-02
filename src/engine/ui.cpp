@@ -1093,7 +1093,7 @@ struct gui : guient
             {
                 hudnotextureshader->set();
                 gle::color(vec::hexcolor(colour1), guibgblend);
-                gle::defvertex();
+                gle::defvertex(2);
                 gle::begin(GL_TRIANGLE_STRIP);
                 gle::attribf(x1, y1);
                 gle::attribf(x2, y1);
@@ -1106,7 +1106,7 @@ struct gui : guient
             {
                 hudnotextureshader->set();
                 gle::color(vec::hexcolor(colour2), guiborderblend);
-                gle::defvertex();
+                gle::defvertex(2);
                 gle::begin(GL_LINE_LOOP);
                 gle::attribf(x1, y1);
                 gle::attribf(x2, y1);
