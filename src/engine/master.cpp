@@ -62,36 +62,33 @@ struct masterclient
     enet_uint32 lastping, lastpong, lastactivity, laststats;
     vector<authreq> authreqs;
     authreq serverauthreq;
-    bool isserver, isquick, ishttp, listserver, shouldping, shouldpurge;
+    bool isserver, isquick, ishttp, listserver, shouldping, shouldpurge, instats, wantstats;
 
     struct statstate
     {
-        //Game
+        // game
         ulong id;
         string map;
         int mode, mutators, timeplayed;
         time_t time;
-        //Server
-        string desc;
-        string version;
+        // server
+        string desc, version;
         int port;
-        //Teams
+        // teams
         struct team
         {
             int index, score;
             string name;
         };
         vector<team> teams;
-        //Players
+        // players
         struct player
         {
-            string name;
-            string handle;
-            int score, timealive, frags, deaths;
-            int wid;
+            string name, handle;
+            int score, timealive, frags, deaths, wid;
         };
         vector<player> players;
-        //Weapons
+        // weapons
         struct weaponstats
         {
             string name;
@@ -105,20 +102,11 @@ struct masterclient
         vector<weaponstats> weapstats;
     } stats;
 
-    bool instats;
-    bool wantstats;
-
     bool hasflag(char f)
     {
-        //Any flag implies 'b'
-        if(f == 'b' && *flags)
+        if(f == 'b' && *flags) return true;
+        for(const char *c = flags; *c; c++) if(*c == f)
             return true;
-        size_t i;
-        for(i = 0; i < strlen(flags); i++)
-        {
-            if(flags[i] == f)
-                return true;
-        }
         return false;
     }
 
@@ -139,10 +127,9 @@ void closestatsdb()
     }
 }
 
-bool checkstatsdb(int rc, char *errmsg=NULL)
+static inline bool checkstatsdb(int rc, char *errmsg = NULL)
 {
-    if(rc == SQLITE_OK)
-        return true;
+    if(rc == SQLITE_OK) return true;
     defformatbigstring(message, "%s", errmsg ? errmsg : sqlite3_errmsg(statsdb));
     sqlite3_free(errmsg);
     closestatsdb();
@@ -181,10 +168,7 @@ int statsdbversion()
     int version = 0;
     sqlite3_stmt *res;
     checkstatsdb(sqlite3_prepare_v2(statsdb, "PRAGMA user_version;", -1, &res, 0));
-    while(sqlite3_step(res) == SQLITE_ROW)
-    {
-        version = sqlite3_column_int(res, 0);
-    }
+    while(sqlite3_step(res) == SQLITE_ROW) version = sqlite3_column_int(res, 0);
     sqlite3_finalize(res);
     return version;
 }
@@ -233,10 +217,8 @@ void savestats(masterclient &c)
     c.laststats = totalmillis;
     char *errmsg = NULL;
     int rc = sqlite3_exec(statsdb, "BEGIN IMMEDIATE", 0, 0, &errmsg);
-    if(rc == SQLITE_BUSY)
-        return;
-    else
-        checkstatsdb(rc, errmsg);
+    if(rc == SQLITE_BUSY) return;
+    else checkstatsdb(rc, errmsg);
 
     statsdbexecf("INSERT INTO games VALUES (NULL, %d, %Q, %d, %d, %d)",
         c.stats.time,
@@ -244,7 +226,7 @@ void savestats(masterclient &c)
         c.stats.mode,
         c.stats.mutators,
         c.stats.timeplayed
-        );
+    );
     c.stats.id = (ulong)sqlite3_last_insert_rowid(statsdb);
 
     statsdbexecf("INSERT INTO game_servers VALUES (%d, %Q, %Q, %Q, %Q, %Q, %d)",
@@ -255,7 +237,7 @@ void savestats(masterclient &c)
         c.stats.version,
         c.name,
         c.stats.port
-        );
+    );
 
     loopv(c.stats.teams)
     {
@@ -264,7 +246,7 @@ void savestats(masterclient &c)
             c.stats.teams[i].index,
             c.stats.teams[i].score,
             c.stats.teams[i].name
-            );
+        );
     }
 
     loopv(c.stats.players)
@@ -310,9 +292,7 @@ void savestats(masterclient &c)
 
     statsdbexecf("COMMIT");
     conoutf("master peer %s commited stats, game id %lu", c.name, c.stats.id);
-    defformatstring(msg, "\fygame statistics recorded, id \fc%lu", c.stats.id);
-    simpleencode(msgenc, msg);
-    masteroutf(c, "stats success %s\n", msgenc);
+    masteroutf(c, "stats success \"game statistics recorded, id \fc%lu\"\n", c.stats.id);
     c.instats = false;
     c.wantstats = false;
 }
@@ -704,8 +684,7 @@ bool checkmasterclientinput(masterclient &c)
                 else
                 {
                     conoutf("master peer %s attempted to send stats without proper privilege", c.name);
-                    simpleencode(msgenc, "\frstatistics not submitted, no statistics privilege");
-                    masteroutf(c, "stats failure %s\n", msgenc);
+                    masteroutf(c, "stats failure \"statistics not submitted, no statistics privilege\"\n");
                 }
             }
             else if(c.instats)
@@ -716,50 +695,44 @@ bool checkmasterclientinput(masterclient &c)
                 }
                 else if(!strcmp(w[1], "game"))
                 {
-                    simpledecode(mapnamedec, w[2]);
-                    copystring(c.stats.map, mapnamedec);
-                    c.stats.mode = (int)strtol(w[3], NULL, 10);
-                    c.stats.mutators = (int)strtol(w[4], NULL, 10);
-                    c.stats.timeplayed = (int)strtol(w[5], NULL, 10);
+                    copystring(c.stats.map, w[2]);
+                    c.stats.mode = atoi(w[3]);
+                    c.stats.mutators = atoi(w[4]);
+                    c.stats.timeplayed = atoi(w[5]);
                     c.stats.time = currenttime;
                 }
                 else if(!strcmp(w[1], "server"))
                 {
-                    simpledecode(descdec, w[2]);
-                    copystring(c.stats.desc, descdec);
+                    copystring(c.stats.desc, w[2]);
                     copystring(c.stats.version, w[3]);
-                    c.stats.port = (int)strtol(w[4], NULL, 10);
+                    c.stats.port = atoi(w[4]);
                 }
                 else if(!strcmp(w[1], "team"))
                 {
                     masterclient::statstate::team t;
-                    t.index = (int)strtol(w[2], NULL, 10);
-                    t.score = (int)strtol(w[3], NULL, 10);
-                    simpledecode(namedec, w[4]);
-                    copystring(t.name, namedec);
+                    t.index = atoi(w[2]);
+                    t.score = atoi(w[3]);
+                    copystring(t.name, w[4]);
                     c.stats.teams.add(t);
                 }
                 else if(!strcmp(w[1], "player"))
                 {
                     masterclient::statstate::player p;
-                    simpledecode(namedec, w[2]);
-                    copystring(p.name, namedec);
-                    simpledecode(handledec, w[3]);
-                    copystring(p.handle, handledec);
-                    p.score = (int)strtol(w[4], NULL, 10);
-                    p.timealive = (int)strtol(w[5], NULL, 10);
-                    p.frags = (int)strtol(w[6], NULL, 10);
-                    p.deaths = (int)strtol(w[7], NULL, 10);
-                    p.wid = (int)strtol(w[8], NULL, 10);
+                    copystring(p.name, w[2]);
+                    copystring(p.handle, w[3]);
+                    p.score = atoi(w[4]);
+                    p.timealive = atoi(w[5]);
+                    p.frags = atoi(w[6]);
+                    p.deaths = atoi(w[7]);
+                    p.wid = atoi(w[8]);
                     c.stats.players.add(p);
                 }
                 else if(!strcmp(w[1], "weapon"))
                 {
-                    #define wint(n) ws.n = (int)strtol(w[qidx++], NULL, 10);
+                    #define wint(n) ws.n = atoi(w[qidx++]);
                     masterclient::statstate::weaponstats ws;
-                    ws.playerid = (int)strtol(w[2], NULL, 10);
-                    simpledecode(handledec, w[3]);
-                    copystring(ws.playerhandle, handledec);
+                    ws.playerid = atoi(w[2]);
+                    copystring(ws.playerhandle, w[3]);
                     copystring(ws.name, w[4]);
                     int qidx = 5;
 

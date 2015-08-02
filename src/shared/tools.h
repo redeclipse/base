@@ -1479,19 +1479,6 @@ static inline uchar cubeupper(uchar c)
 extern size_t decodeutf8(uchar *dst, size_t dstlen, const uchar *src, size_t srclen, size_t *carry = NULL);
 extern size_t encodeutf8(uchar *dstbuf, size_t dstlen, const uchar *srcbuf, size_t srclen, size_t *carry = NULL);
 
-extern char *stringtonumbers(const char *str);
-extern char *numberstostring(const char *numbers);
-
-#define simpleencode(v, s) \
-    char *v ## _tmp = stringtonumbers(s); \
-    defformatstring(v, "%s", v ## _tmp); \
-    DELETEA(v ## _tmp);
-        
-#define simpledecode(v, s) \
-    char *v ## _tmp = numberstostring(s); \
-    defformatstring(v, "%s", v ## _tmp); \
-    DELETEA(v ## _tmp);
-
 extern char *makerelpath(const char *dir, const char *file, const char *prefix = NULL, const char *cmd = NULL);
 extern char *makefile(const char *s, const char *e = "", int revision = 0, int start = 1, bool store = false, bool skip = false);
 extern char *path(char *s, bool simple = false);
@@ -1541,4 +1528,3 @@ extern void getstring(char *t, ucharbuf &p, size_t len);
 template<size_t N> static inline void getstring(char (&t)[N], ucharbuf &p) { getstring(t, p, N); }
 
 #endif
-

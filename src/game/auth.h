@@ -87,6 +87,7 @@ namespace auth
 {
     int lastconnect = 0, lastregister = 0, quickcheck = 0;
     uint nextauthreq = 1;
+    bool hasauth = false, hasstats = false;
 
     clientinfo *findauth(uint id)
     {
@@ -97,10 +98,8 @@ namespace auth
 
     void reqserverauth()
     {
-        if(connectedmaster() && *serveraccountpass && serverauthconnect)
-        {
+        if(connectedmaster() && *serveraccountpass && serverauthconnect && !hasauth)
             requestmasterf("reqserverauth %s\n", serveraccountname);
-        }
     }
 
     void reqauth(clientinfo *ci)
@@ -257,12 +256,18 @@ namespace auth
 
     void serverauthfailed()
     {
+        hasauth = hasstats = false;
         conoutf("server auth request failed");
     }
 
     void serverauthsucceeded(const char *name, const char *flags)
     {
-        conoutf("server auth succeeded, now have flags %s", flags);
+        for(const char *c = flags; *c; c++) switch(*c)
+        {
+            case 's': hasstats = hasauth = true; break;
+            case 'b': default: hasauth = true; break;
+        }
+        conoutf("server auth succeeded (%s)", flags, hasstats ? "stats" : "basic");
     }
 
     void authsucceeded(uint id, const char *name, const char *flags)
@@ -373,16 +378,8 @@ namespace auth
         }
         else if(!strcmp(w[0], "stats"))
         {
-            if(!strcmp(w[1], "success"))
-            {
-                simpledecode(msg, w[2]);
-                srvoutf(-3, "%s", msg);
-            }
-            else if(!strcmp(w[1], "failure"))
-            {
-                simpledecode(msg, w[2]);
-                srvoutf(-3, "%s", msg);
-            }
+            if(!strcmp(w[1], "success")) srvoutf(-3, "\fystats success: %s", w[2]);
+            else if(!strcmp(w[1], "failure")) srvoutf(-3, "\frstats failure: %s", w[2]);
         }
         else loopj(ipinfo::SYNCTYPES) if(!strcmp(w[0], ipinfotypes[j]))
         {
@@ -444,6 +441,7 @@ namespace auth
     void masterdisconnected()
     {
         quickcheck = 0;
+        hasauth = hasstats = false;
         loopv(clients) if(clients[i]->authreq) authfailed(clients[i]);
         loopv(connects) if(connects[i]->authreq) authfailed(connects[i]);
     }
@@ -463,4 +461,3 @@ void masterdisconnected()
 {
     auth::masterdisconnected();
 }
-
