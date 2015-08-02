@@ -29,6 +29,7 @@
 					<Add option="-fsigned-char" />
 					<Add option="-fno-exceptions" />
 					<Add option="-fno-rtti" />
+					<Add directory="sqlite" />
 					<Add directory="shared" />
 					<Add directory="engine" />
 					<Add directory="game" />
@@ -73,6 +74,7 @@
 					<Add option="-m32" />
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
+					<Add directory="sqlite" />
 					<Add directory="shared" />
 					<Add directory="engine" />
 					<Add directory="game" />
@@ -117,6 +119,7 @@
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
 					<Add option="-finline-functions" />
+					<Add directory="sqlite" />
 					<Add directory="shared" />
 					<Add directory="engine" />
 					<Add directory="game" />
@@ -165,6 +168,7 @@
 					<Add option="-fno-exceptions" />
 					<Add option="-fno-rtti" />
 					<Add option="-DSTANDALONE" />
+					<Add directory="sqlite" />
 					<Add directory="shared" />
 					<Add directory="engine" />
 					<Add directory="game" />
@@ -205,6 +209,7 @@
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
 					<Add option="-DSTANDALONE" />
+					<Add directory="sqlite" />
 					<Add directory="shared" />
 					<Add directory="engine" />
 					<Add directory="game" />
@@ -248,6 +253,7 @@
 					<Add option="-fsigned-char" />
 					<Add option="-fno-exceptions" />
 					<Add option="-fno-rtti" />
+					<Add directory="sqlite" />
 					<Add directory="shared" />
 					<Add directory="engine" />
 					<Add directory="game" />
@@ -292,6 +298,7 @@
 					<Add option="-m64" />
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
+					<Add directory="sqlite" />
 					<Add directory="shared" />
 					<Add directory="engine" />
 					<Add directory="game" />
@@ -336,6 +343,7 @@
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
 					<Add option="-finline-functions" />
+					<Add directory="sqlite" />
 					<Add directory="shared" />
 					<Add directory="engine" />
 					<Add directory="game" />
@@ -384,6 +392,7 @@
 					<Add option="-fno-exceptions" />
 					<Add option="-fno-rtti" />
 					<Add option="-DSTANDALONE" />
+					<Add directory="sqlite" />
 					<Add directory="shared" />
 					<Add directory="engine" />
 					<Add directory="game" />
@@ -424,6 +433,7 @@
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
 					<Add option="-DSTANDALONE" />
+					<Add directory="sqlite" />
 					<Add directory="shared" />
 					<Add directory="engine" />
 					<Add directory="game" />
@@ -468,6 +478,7 @@
 					<Add option="-mwindows" />
 					<Add option="-m32" />
 					<Add option="-DSTANDALONE" />
+					<Add directory="sqlite" />
 					<Add directory="shared" />
 					<Add directory="engine" />
 					<Add directory="game" />
@@ -509,6 +520,7 @@
 					<Add option="-mwindows" />
 					<Add option="-m32" />
 					<Add option="-DSTANDALONE" />
+					<Add directory="sqlite" />
 					<Add directory="shared" />
 					<Add directory="engine" />
 					<Add directory="game" />
@@ -1931,6 +1943,30 @@
 			<Option target="redeclipse-amd64-prof" />
 			<Option target="redeclipse_server-x86" />
 			<Option target="redeclipse_server-x86-dbg" />
+			<Option target="redeclipse_server-amd64" />
+			<Option target="redeclipse_server-amd64-dbg" />
+		</Unit>
+		<Unit filename="sqlite/sqlite.c">
+			<Option target="redeclipse-x86" />
+			<Option target="redeclipse-x86-dbg" />
+			<Option target="redeclipse_server-x86" />
+			<Option target="redeclipse-x86-prof" />
+			<Option target="redeclipse_server-x86-dbg" />
+			<Option target="redeclipse-amd64" />
+			<Option target="redeclipse-amd64-dbg" />
+			<Option target="redeclipse-amd64-prof" />
+			<Option target="redeclipse_server-amd64" />
+			<Option target="redeclipse_server-amd64-dbg" />
+		</Unit>
+		<Unit filename="sqlite/sqlite.h">
+			<Option target="redeclipse-x86" />
+			<Option target="redeclipse-x86-dbg" />
+			<Option target="redeclipse-x86-prof" />
+			<Option target="redeclipse_server-x86" />
+			<Option target="redeclipse_server-x86-dbg" />
+			<Option target="redeclipse-amd64" />
+			<Option target="redeclipse-amd64-dbg" />
+			<Option target="redeclipse-amd64-prof" />
 			<Option target="redeclipse_server-amd64" />
 			<Option target="redeclipse_server-amd64-dbg" />
 		</Unit>
