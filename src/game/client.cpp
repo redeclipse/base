@@ -7,6 +7,8 @@ namespace client
     int lastping = 0, sessionid = 0, sessionver = 0, lastplayerinfo = 0;
     string connectpass = "";
     int needclipboard = -1;
+    int demonameid = 0;
+    hashtable<int, const char *>demonames;
 
     SVAR(IDF_PERSIST, demolist, "");
     VAR(0, demoendless, 0, 0, 1);
@@ -1225,12 +1227,22 @@ namespace client
             case N_SENDDEMO:
             {
                 int ctime = getint(p);
+                int nameid = getint(p);
                 if(filetimelocal) ctime += clockoffset;
                 data += p.length();
                 len -= p.length();
                 string fname;
-                if(*filetimeformat) formatstring(fname, "demos/%s.dmo", gettime(ctime, filetimeformat));
-                else formatstring(fname, "demos/%u.dmo", uint(ctime));
+                const char *demoname = demonames.find(nameid, "");
+                if(*demoname)
+                {
+                    formatstring(fname, "demos/%s.dmo", demoname);
+                    DELETEA(demoname);
+                }
+                else
+                {
+                    if(*filetimeformat) formatstring(fname, "demos/%s.dmo", gettime(ctime, filetimeformat));
+                    else formatstring(fname, "demos/%u.dmo", uint(ctime));
+                }
                 stream *demo = openfile(fname, "wb");
                 if(!demo) return;
                 conoutft(CON_EVENT, "\fyreceived demo: \fc%s", fname);
@@ -1283,13 +1295,15 @@ namespace client
     }
     ICOMMAND(0, cleardemos, "i", (int *val), cleardemos(*val));
 
-    void getdemo(int i)
+    void getdemo(int i, const char *name)
     {
         if(i <= 0) conoutft(CON_EVENT, "\fygetting demo, please wait...");
         else conoutft(CON_EVENT, "\fygetting demo \fs\fc%d\fS, please wait...", i);
-        addmsg(N_GETDEMO, "ri", i);
+        addmsg(N_GETDEMO, "rii", i, demonameid);
+        if(*name) demonames.access(demonameid, newstring(name));
+        demonameid++;
     }
-    ICOMMAND(0, getdemo, "i", (int *val), getdemo(*val));
+    ICOMMAND(0, getdemo, "is", (int *val, char *name), getdemo(*val, name));
 
     void listdemos()
     {
