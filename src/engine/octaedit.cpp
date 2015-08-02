@@ -2645,7 +2645,9 @@ struct texturegui : guicb
                                 if(autoapplytexgui && (v.slot->loaded || v.slot->thumbnail!=notexture))
                                 {
                                     menutex = ti;
+                                    gle::disable();
                                     edittex(texmru[ti]);
+                                    hudshader->set();
                                     if(autoclosetexgui > 1) menuon = false;
                                 }
                             }
