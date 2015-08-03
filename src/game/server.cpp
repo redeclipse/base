@@ -3096,19 +3096,19 @@ namespace server
         if(G(serverstats) && auth::hasstats)
         {
             requestmasterf("stats begin\n");
-            requestmasterf("stats game \"%s\" %d %d %d\n", escapestring(smapname), gamemode, mutators, gamemillis);
-            requestmasterf("stats server \"%s\" %s %d\n", escapestring(G(serverdesc)), versionstring, serverport);
+            requestmasterf("stats game %s %d %d %d\n", escapestring(smapname), gamemode, mutators, gamemillis);
+            requestmasterf("stats server %s %s %d\n", escapestring(G(serverdesc)), versionstring, serverport);
             flushmasteroutput();
             loopi(numteams(gamemode, mutators))
             {
                 int tp = m_team(gamemode, mutators) ? T_FIRST : T_NEUTRAL;
-                requestmasterf("stats team %d %d \"%s\"\n", i + tp, teamscore(i + tp).total, escapestring(TEAM(i + tp, name)));
+                requestmasterf("stats team %d %d %s\n", i + tp, teamscore(i + tp).total, escapestring(TEAM(i + tp, name)));
             }
             flushmasteroutput();
             loopv(clients) if(clients[i]->state.actortype == A_PLAYER) savescore(clients[i]);
             loopv(savedscores) if(savedscores[i].actortype == A_PLAYER)
             {
-                requestmasterf("stats player \"%s\" \"%s\" %d %d %d %d %d\n",
+                requestmasterf("stats player %s %s %d %d %d %d %d\n",
                     escapestring(savedscores[i].name), escapestring(savedscores[i].handle),
                     m_laptime(gamemode, mutators) ? savedscores[i].cptime : savedscores[i].score,
                     savedscores[i].timealive, savedscores[i].frags, savedscores[i].deaths, i
@@ -3117,7 +3117,7 @@ namespace server
                 loopj(W_MAX)
                 {
                     weaponstats w = savedscores[i].weapstats[j];
-                    requestmasterf("stats weapon %d \"%s\" %s %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
+                    requestmasterf("stats weapon %d %s %s %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
                         i, escapestring(savedscores[i].handle), weaptype[j].name, w.timewielded, w.timeloadout,
                         w.damage1, w.frags1, w.hits1, w.flakhits1, w.shots1, w.flakshots1,
                         w.damage2, w.frags2, w.hits2, w.flakhits2, w.shots2, w.flakshots2
