@@ -183,7 +183,7 @@ struct masterclient
     int priority()
     {
         if(!isserver || !listserver) return -1;
-        if(!*authandle || !*flags) return 0;
+        if(!*authhandle || !*flags) return 0;
         int ret = 1;
         for(const char *c = flags; *c; c++) switch(*c)
         {
