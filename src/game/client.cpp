@@ -2654,7 +2654,7 @@ namespace client
                     conoutft(CON_EVENT, "\fydemo \fs\fc%s\fS recorded \fs\fc%s UTC\fS [\fs\fw%.2f%s\fS]", text, gettime(ctime, "%Y-%m-%d %H:%M.%S"), len > 1024*1024 ? len/(1024*1024.f) : len/1024.0f, len > 1024*1024 ? "MB" : "kB");
                     if(demoautoclientsave)
                     {
-                        getdemo(num);
+                        getdemo(num, "");
                     }
                 }
 
