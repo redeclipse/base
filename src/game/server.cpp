@@ -3096,7 +3096,7 @@ namespace server
 
     void sendstats()
     {
-        if(G(serverstats) && auth::hasstats && !sentstats)
+        if(G(serverstats) && auth::hasstats && !sentstats && gamemillis)
         {
             sentstats = true;
             requestmasterf("stats begin\n");
@@ -4942,6 +4942,7 @@ namespace server
         {
             if(m_demo(gamemode)) enddemoplayback();
         }
+        if(complete && ci->connected) if(m_laptime(gamemode, mutators)) sendstats();
         if(ci->connected)
         {
             if(reason != DISC_SHUTDOWN)
@@ -4975,7 +4976,6 @@ namespace server
         else connects.removeobj(ci);
         if(complete)
         {
-            if(m_laptime(gamemode, mutators)) sendstats();
             cleanup();
         }
         else shouldcheckvotes = true;
