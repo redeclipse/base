@@ -467,7 +467,7 @@ namespace server
     string smapname;
     int gamestate = G_S_WAITING, gamemode = G_EDITMODE, mutators = 0, gamemillis = 0, gamelimit = 0, mastermode = MM_OPEN;
     int timeremaining = -1, oldtimelimit = -1, gamewaittime = 0, gamewaitstate = 0, gamewaitstart = 0, lastteambalance = 0, nextteambalance = 0, lastrotatecycle = 0, mapsending = -1;
-    bool hasgameinfo = false, updatecontrols = false, shouldcheckvotes = false, firstblood = false;
+    bool hasgameinfo = false, updatecontrols = false, shouldcheckvotes = false, firstblood = false, sentstats = false;
     enet_uint32 lastsend = 0;
     stream *mapdata[SENDMAP_MAX] = { NULL };
     uint mapcrc = 0;
@@ -2499,6 +2499,7 @@ namespace server
         }
         if(passed)
         {
+            if(m_laptime(gamemode, mutators)) sendstats();
             endmatch();
             if(best)
             {
@@ -2612,6 +2613,7 @@ namespace server
         ci->lastvote = totalmillis;
         if(hasveto)
         {
+            if(m_laptime(gamemode, mutators)) sendstats();
             endmatch();
             srvoutf(-3, "%s forced: \fs\fy%s\fS on \fs\fo%s\fS", colourname(ci), gamename(ci->modevote, ci->mutsvote), ci->mapvote);
             sendf(-1, 1, "risi3", N_MAPCHANGE, ci->mapvote, 0, ci->modevote, ci->mutsvote);
@@ -3094,8 +3096,9 @@ namespace server
 
     void sendstats()
     {
-        if(G(serverstats) && auth::hasstats)
+        if(G(serverstats) && auth::hasstats && !sentstats)
         {
+            sentstats = true;
             requestmasterf("stats begin\n");
             requestmasterf("stats game %s %d %d %d\n", escapestring(smapname), gamemode, mutators, gamemillis);
             requestmasterf("stats server %s %s %d\n", escapestring(G(serverdesc)), versionstring, serverport);
@@ -3139,7 +3142,7 @@ namespace server
 
     void changemap(const char *name, int mode, int muts)
     {
-        hasgameinfo = shouldcheckvotes = firstblood = false;
+        hasgameinfo = shouldcheckvotes = firstblood = sentstats = false;
         stopdemo();
         resetmapdata();
         changemode(gamemode = mode, mutators = muts);
@@ -4970,7 +4973,11 @@ namespace server
             queryplayers.removeobj(ci);
         }
         else connects.removeobj(ci);
-        if(complete) cleanup();
+        if(complete)
+        {
+            if(m_laptime(gamemode, mutators)) sendstats();
+            cleanup();
+        }
         else shouldcheckvotes = true;
         if(n == mapsending)
         {
