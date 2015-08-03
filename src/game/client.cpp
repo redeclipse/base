@@ -3186,6 +3186,7 @@ namespace client
                         case 6: intret(si->ping); break;
                         case 7: intret(si->lastinfo); break;
                         case 8: result(si->authhandle); break;
+                        case 9: result(si->flags); break;
                     }
                     break;
                 case 1:

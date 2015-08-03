@@ -220,7 +220,7 @@ bool sortedservers = true;
 ENetSocket pingsock = ENET_SOCKET_NULL;
 int lastinfo = 0;
 
-static serverinfo *newserver(const char *name, int port = SERVER_PORT, int priority = 0, const char *desc = NULL, const char *handle = NULL, uint ip = ENET_HOST_ANY)
+static serverinfo *newserver(const char *name, int port = SERVER_PORT, int priority = 0, const char *desc = NULL, const char *handle = NULL, const char *flags = NULL, uint ip = ENET_HOST_ANY)
 {
     serverinfo *si = new serverinfo(ip, port, priority);
 
@@ -232,6 +232,7 @@ static serverinfo *newserver(const char *name, int port = SERVER_PORT, int prior
     }
     if(desc && *desc) copystring(si->sdesc, desc);
     if(handle && *handle) copystring(si->authhandle, handle);
+    if(flags && *flags) copystring(si->flags, flags);
 
     servers.add(si);
     sortedservers = false;
@@ -239,13 +240,13 @@ static serverinfo *newserver(const char *name, int port = SERVER_PORT, int prior
     return si;
 }
 
-void addserver(const char *name, int port, int priority, const char *desc, const char *handle)
+void addserver(const char *name, int port, int priority, const char *desc, const char *handle, const char *flags)
 {
     loopv(servers) if(!strcmp(servers[i]->name, name) && servers[i]->port == port) return;
-    if(newserver(name, port, priority, desc, handle) && verbose >= 2)
+    if(newserver(name, port, priority, desc, handle, flags) && verbose >= 2)
         conoutf("added server %s (%d) [%s]", name, port, desc);
 }
-ICOMMAND(0, addserver, "siiss", (char *n, int *p, int *r, char *d, char *h), addserver(n, *p > 0 ? *p : SERVER_PORT, *r >= 0 ? *r : 0, d, h));
+ICOMMAND(0, addserver, "siiss", (char *n, int *p, int *r, char *d, char *h, char *f), addserver(n, *p > 0 ? *p : SERVER_PORT, *r >= 0 ? *r : 0, d, h, f));
 
 VAR(0, searchlan, 0, 0, 1);
 VAR(IDF_PERSIST, maxservpings, 0, 10, 1000);
@@ -348,7 +349,7 @@ void checkpings()
         if(len <= 0) return;
         serverinfo *si = NULL;
         loopv(servers) if(addr.host == servers[i]->address.host && addr.port == servers[i]->address.port) { si = servers[i]; break; }
-        if(!si && searchlan) si = newserver(NULL, addr.port-1, 1, NULL, NULL, addr.host);
+        if(!si && searchlan) si = newserver(NULL, addr.port-1, 1, NULL, NULL, NULL, addr.host);
         if(!si) continue;
         ucharbuf p(ping, len);
         int millis = getint(p), rtt = clamp(totalmillis - millis, 0, min(serverdecay*1000, totalmillis));
