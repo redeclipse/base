@@ -3150,7 +3150,7 @@ namespace client
             else switch(prop)
             {
                 case 0:
-                    if(idx < 0) intret(8);
+                    if(idx < 0) intret(9);
                     else switch(idx)
                     {
                         case 0: intret(serverstat(si)); break;

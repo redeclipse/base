@@ -20,6 +20,10 @@
 VAR(0, masterserver, 0, 0, 1);
 VAR(0, masterport, 1, MASTER_PORT, VAR_MAX);
 VAR(0, masterminver, 0, 0, CUR_VERSION);
+
+VAR(0, mastermainver, 0, 0, CUR_VERSION);
+VAR(0, mastergamever, 0, 0, VAR_MAX);
+
 SVAR(0, masterip, "");
 SVAR(0, masterscriptclient, "");
 SVAR(0, masterscriptserver, "");
@@ -41,20 +45,25 @@ struct authreq
     void *answer;
     authuser *user;
     string hostname;
+
+    authreq() { reset(); }
+    ~authreq() {}
+
+    void reset()
+    {
+        reqtime = 0;
+        id = 0;
+        answer = NULL;
+        user = NULL;
+        hostname[0] = 0;
+    }
 };
 
 struct masterclient
 {
     ENetAddress address;
     ENetSocket socket;
-    string name;
-
-    /* Server Flags:
-     * b - basic
-     * s - statistics
-     */
-    string flags;
-    string authhandle;
+    string name, desc, flags, authhandle;
 
     char input[4096];
     vector<char> output;
@@ -66,29 +75,46 @@ struct masterclient
 
     struct statstate
     {
-        // game
         ulong id;
         string map;
         int mode, mutators, timeplayed;
         time_t time;
-        // server
+
         string desc, version;
         int port;
-        // teams
+
         struct team
         {
             int index, score;
             string name;
+
+            team() { reset(); }
+            ~team() {}
+
+            void reset()
+            {
+                index = score = 0;
+                name[0] = 0;
+            }
         };
         vector<team> teams;
-        // players
+
         struct player
         {
             string name, handle;
             int score, timealive, frags, deaths, wid;
+
+            player() { reset(); }
+            ~player() {}
+
+            void reset()
+            {
+                name[0] = handle[0] = 0;
+                score = timealive = frags = deaths = wid = 0;
+            }
         };
         vector<player> players;
-        // weapons
+
         struct weaponstats
         {
             string name;
@@ -98,8 +124,37 @@ struct masterclient
             int hits1, hits2, flakhits1, flakhits2;
             int shots1, shots2, flakshots1, flakshots2;
             int frags1, frags2, damage1, damage2;
+
+            weaponstats() { reset(); }
+            ~weaponstats() {}
+
+            void reset()
+            {
+                name[0] = playerhandle[0] = 0;
+                playerid = -1;
+                timewielded = timeloadout = 0;
+                hits1 = hits2 = flakhits1 = flakhits2 = 0;
+                shots1 = shots2 = flakshots1 = flakshots2 = 0;
+                frags1 = frags2 = damage1 = damage2 = 0;
+            }
         };
         vector<weaponstats> weapstats;
+
+        statstate() { reset(); }
+        ~statstate() {}
+
+        void reset()
+        {
+            id = 0;
+            map[0] = desc[0] = version[0] = 0;
+            mode = mutators = -1;
+            timeplayed = 0;
+            time = 0;
+            port = 0;
+            teams.shrink(0);
+            players.shrink(0);
+            weapstats.shrink(0);
+        }
     } stats;
 
     bool hasflag(char f)
@@ -110,7 +165,20 @@ struct masterclient
         return false;
     }
 
-    masterclient() : inputpos(0), outputpos(0), port(MASTER_PORT), numpings(0), lastcontrol(-1), version(0), lastping(0), lastpong(0), lastactivity(0), isserver(false), isquick(false), ishttp(false), listserver(false), shouldping(false), shouldpurge(false), instats(false), wantstats(false) {}
+    masterclient() { reset(); }
+    ~masterclient() {}
+
+    void reset()
+    {
+        name[0] = desc[0] = flags[0] = authhandle[0] = 0;
+        lastcontrol = -1;
+        inputpos = outputpos = numpings = version = 0;
+        lastping = lastpong = lastactivity = laststats = 0;
+        isserver = isquick = ishttp = listserver = shouldping = shouldpurge = instats = wantstats = false;
+        port = MASTER_PORT;
+        output.shrink(0);
+        authreqs.shrink(0);
+    }
 };
 
 static vector<masterclient *> masterclients;
@@ -484,11 +552,6 @@ void confserverauth(masterclient &c, const char *val)
     if(enet_address_get_host_ip(&c.address, ip, sizeof(ip)) < 0) copystring(ip, "-");
     if(checkchallenge(val, c.serverauthreq.answer))
     {
-        loopvj(masterclients) if(!(!strcmp(c.name, masterclients[j]->name) && c.port == masterclients[j]->port))
-        {
-            if(!strcmp(masterclients[j]->authhandle, c.serverauthreq.user->name))
-                purgemasterclient(j);
-        }
         masteroutf(c, "succserverauth \"%s\" \"%s\"\n", c.serverauthreq.user->name, c.serverauthreq.user->flags);
         conoutf("succeeded server '%s' [%s]\n", c.serverauthreq.user->name, c.serverauthreq.user->flags);
         copystring(c.authhandle, c.serverauthreq.user->name);
@@ -606,6 +669,7 @@ bool checkmasterclientinput(masterclient &c)
                 if(w[1] && *w[1]) c.port = clamp(atoi(w[1]), 1, VAR_MAX);
                 c.version = w[3] && *w[3] ? atoi(w[3]) : (w[2] && *w[2] ? 150 : 0);
                 ENetAddress address = { ENET_HOST_ANY, enet_uint16(c.port) };
+                if(w[4] && *w[4]) copystring(c.desc, w[4]); else c.desc[0] = 0;
                 if(w[2] && *w[2] && strcmp(w[2], "*") && (enet_address_set_host(&address, w[2]) < 0 || address.host != c.address.host))
                 {
                     c.listserver = c.shouldping = false;
@@ -641,9 +705,9 @@ bool checkmasterclientinput(masterclient &c)
         }
         if(!strcmp(w[0], "version") || !strcmp(w[0], "update"))
         {
-            masteroutf(c, "setversion %d %d\n", server::getver(0), server::getver(1));
+            masteroutf(c, "setversion %d %d\n", mastermainver ? mastermainver : server::getver(0), mastergamever ? mastergamever : server::getver(1));
             if(*masterscriptclient && !strcmp(w[0], "update")) masteroutf(c, "%s\n", masterscriptclient);
-            if(verbose) conoutf("master peer %s was sent the version",  c.name);
+            if(verbose) conoutf("master peer %s was sent the version", c.name);
             c.shouldpurge = found = true;
         }
         if(!strcmp(w[0], "list") || !strcmp(w[0], "update"))
@@ -654,11 +718,7 @@ bool checkmasterclientinput(masterclient &c)
             {
                 masterclient &s = *masterclients[j];
                 if(!s.listserver) continue;
-                masteroutf(c, "addserver %s %d\n", s.name, s.port);
-                if(*s.authhandle)
-                {
-                    masteroutf(c, "authserver %s %d %s\n", s.name, s.port, s.authhandle);
-                }
+                masteroutf(c, "addserver %s %d \"%s\" \"%s\"\n", s.name, s.port, escapestring(s.desc), s.authhandle);
                 servs++;
             }
             conoutf("master peer %s was sent %d server(s)", c.name, servs);

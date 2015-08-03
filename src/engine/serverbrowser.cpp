@@ -220,17 +220,18 @@ bool sortedservers = true;
 ENetSocket pingsock = ENET_SOCKET_NULL;
 int lastinfo = 0;
 
-static serverinfo *newserver(const char *name, int port = SERVER_PORT, int priority = 0, const char *desc = NULL, uint ip = ENET_HOST_ANY)
+static serverinfo *newserver(const char *name, int port = SERVER_PORT, int priority = 0, const char *desc = NULL, const char *handle = NULL, uint ip = ENET_HOST_ANY)
 {
     serverinfo *si = new serverinfo(ip, port, priority);
 
     if(name) copystring(si->name, name);
-    else if(ip==ENET_HOST_ANY || enet_address_get_host_ip(&si->address, si->name, sizeof(si->name)) < 0)
+    else if(ip == ENET_HOST_ANY || enet_address_get_host_ip(&si->address, si->name, sizeof(si->name)) < 0)
     {
         delete si;
         return NULL;
     }
     if(desc && *desc) copystring(si->sdesc, desc);
+    if(handle && *handle) copystring(si->authhandle, handle);
 
     servers.add(si);
     sortedservers = false;
@@ -238,30 +239,13 @@ static serverinfo *newserver(const char *name, int port = SERVER_PORT, int prior
     return si;
 }
 
-void addserver(const char *name, int port, int priority, const char *desc)
+void addserver(const char *name, int port, int priority, const char *desc, const char *handle)
 {
     loopv(servers) if(!strcmp(servers[i]->name, name) && servers[i]->port == port) return;
-    if(newserver(name, port, priority, desc) && verbose >= 2)
+    if(newserver(name, port, priority, desc, handle) && verbose >= 2)
         conoutf("added server %s (%d) [%s]", name, port, desc);
 }
-ICOMMAND(0, addserver, "siis", (char *n, int *p, int *r, char *d), addserver(n, *p > 0 ? *p : SERVER_PORT, *r >= 0 ? *r : 0, d));
-
-void authserver(const char *name, int port, const char *h)
-{
-    bool found = false;
-    loopv(servers) if(!strcmp(servers[i]->name, name) && servers[i]->port == port) found = true;
-    if(!found)
-        addserver(name, port);
-    loopv(servers) if(!strcmp(servers[i]->name, name) && servers[i]->port == port)
-    {
-        copystring(servers[i]->authhandle, h);
-        if(verbose >= 2)
-        {
-            conoutf("added server auth %s to %s:%d", h, name, port);
-        }
-    }
-}
-ICOMMAND(0, authserver, "sis", (char *n, int *p, char *h), authserver(n, *p > 0 ? *p : SERVER_PORT, h));
+ICOMMAND(0, addserver, "siiss", (char *n, int *p, int *r, char *d, char *h), addserver(n, *p > 0 ? *p : SERVER_PORT, *r >= 0 ? *r : 0, d, h));
 
 VAR(0, searchlan, 0, 0, 1);
 VAR(IDF_PERSIST, maxservpings, 0, 10, 1000);
@@ -364,7 +348,7 @@ void checkpings()
         if(len <= 0) return;
         serverinfo *si = NULL;
         loopv(servers) if(addr.host == servers[i]->address.host && addr.port == servers[i]->address.port) { si = servers[i]; break; }
-        if(!si && searchlan) si = newserver(NULL, addr.port-1, 1, NULL, addr.host);
+        if(!si && searchlan) si = newserver(NULL, addr.port-1, 1, NULL, NULL, addr.host);
         if(!si) continue;
         ucharbuf p(ping, len);
         int millis = getint(p), rtt = clamp(totalmillis - millis, 0, min(serverdecay*1000, totalmillis));
@@ -530,8 +514,7 @@ void writeservercfg()
     loopv(servers)
     {
         serverinfo *s = servers[i];
-        f->printf("addserver %s %d %d %s\n", escapeid(s->name), s->port, s->priority, escapeid(s->sdesc[0] ? s->sdesc : s->name));
+        f->printf("addserver %s %d %d %s \"%s\"\n", escapeid(s->name), s->port, s->priority, escapeid(s->sdesc[0] ? s->sdesc : s->name), s->authhandle);
     }
     delete f;
 }
-

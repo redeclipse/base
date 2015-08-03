@@ -480,7 +480,7 @@ extern void localconnect(bool force = true);
 extern void localdisconnect();
 
 // serverbrowser
-extern void addserver(const char *name, int port, int priority = 0, const char *desc = NULL);
+extern void addserver(const char *name, int port, int priority = 0, const char *desc = NULL, const char *handle = NULL);
 
 // client
 extern char *connectname;

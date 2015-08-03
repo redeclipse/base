@@ -267,7 +267,7 @@ namespace auth
             case 's': hasstats = hasauth = true; break;
             case 'b': default: hasauth = true; break;
         }
-        conoutf("server auth succeeded (%s)", flags, hasstats ? "stats" : "basic");
+        conoutf("server auth succeeded (%s [%s])", hasstats ? "stats" : "basic", flags);
     }
 
     void authsucceeded(uint id, const char *name, const char *flags)
@@ -408,7 +408,7 @@ namespace auth
         else
         {
             conoutf("updating master server");
-            requestmasterf("server %d %s %d\n", serverport, *serverip ? serverip : "*", CUR_VERSION);
+            requestmasterf("server %d %s %d \"%s\"\n", serverport, *serverip ? serverip : "*", CUR_VERSION, escapestring(G(serverdesc)));
         }
         reqserverauth();
     }
