@@ -68,10 +68,10 @@ struct masterclient
     char input[4096];
     vector<char> output;
     int inputpos, outputpos, port, numpings, lastcontrol, version;
-    enet_uint32 lastping, lastpong, lastactivity, laststats, willsendstats;
+    enet_uint32 lastping, lastpong, lastactivity, laststats;
     vector<authreq> authreqs;
     authreq serverauthreq;
-    bool isserver, isquick, ishttp, listserver, shouldping, shouldpurge, instats, wantstats;
+    bool isserver, isquick, ishttp, listserver, shouldping, shouldpurge, sendstats, instats, wantstats;
 
     struct statstate
     {
@@ -166,7 +166,7 @@ struct masterclient
         lastcontrol = -1;
         inputpos = outputpos = numpings = version = 0;
         lastping = lastpong = lastactivity = laststats = 0;
-        isserver = isquick = ishttp = listserver = shouldping = shouldpurge = instats = wantstats = false;
+        isserver = isquick = ishttp = listserver = shouldping = shouldpurge = sendstats = instats = wantstats = false;
         port = MASTER_PORT;
         output.shrink(0);
         authreqs.shrink(0);
@@ -188,7 +188,7 @@ struct masterclient
         for(const char *c = flags; *c; c++) switch(*c)
         {
             case 'm': ret = max(ret, 4); break;
-            case 's': ret = max(ret, 3); break;
+            case 's': ret = max(ret, sendstats ? 3 : 2); break;
             case 'b': ret = max(ret, 2); break;
             default: break;
         }
@@ -685,7 +685,7 @@ bool checkmasterclientinput(masterclient &c)
                 c.version = w[3] && *w[3] ? atoi(w[3]) : (w[2] && *w[2] ? 150 : 0);
                 ENetAddress address = { ENET_HOST_ANY, enet_uint16(c.port) };
                 if(w[4] && *w[4]) copystring(c.desc, w[4]); else c.desc[0] = 0;
-                if(w[5] && *w[5]) c.willsendstats = atoi(w[5]);
+                if(w[5] && *w[5]) c.sendstats = atoi(w[5]) != 0;
                 if(w[2] && *w[2] && strcmp(w[2], "*") && (enet_address_set_host(&address, w[2]) < 0 || address.host != c.address.host))
                 {
                     c.listserver = c.shouldping = false;
@@ -737,7 +737,7 @@ bool checkmasterclientinput(masterclient &c)
                 string filteredflags = "";
                 for(const char *flag = s.flags; *flag; flag++)
                 {
-                    if(*flag == 's' && !s.willsendstats) continue;
+                    if(*flag == 's' && !s.sendstats) continue;
                     concformatstring(filteredflags, "%c", *flag);
                 }
                 masteroutf(c, "addserver %s %d %d %s %s %s\n", s.name, s.port, s.priority(), escapestring(s.desc), escapestring(s.authhandle), escapestring(filteredflags));
@@ -902,10 +902,7 @@ void checkmaster()
         else ENET_SOCKETSET_ADD(readset, c.socket);
         maxsock = max(maxsock, c.socket);
 
-        if(c.wantstats && (totalmillis - c.laststats) > STATSDB_RETRYTIME)
-        {
-            savestats(c);
-        }
+        if(c.wantstats && ENET_TIME_DIFFERENCE(totalmillis, c.laststats) > STATSDB_RETRYTIME) savestats(c);
     }
     if(enet_socketset_select(maxsock, &readset, &writeset, 0) <= 0) return;
 

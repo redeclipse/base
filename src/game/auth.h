@@ -264,8 +264,11 @@ namespace auth
     {
         for(const char *c = flags; *c; c++) switch(*c)
         {
-            case 's': hasstats = hasauth = true; break;
-            case 'b': default: hasauth = true; break;
+            case 's':
+                hasauth = true;
+                if(G(serverstats)) hasstats = true;
+                break;
+            case 'b': case 'm': default: hasauth = true; break;
         }
         conoutf("server auth succeeded (%s [%s])", hasstats ? "stats" : "basic", flags);
     }
