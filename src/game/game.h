@@ -970,7 +970,7 @@ struct gameent : dynent, clientstate
     {
         state = CS_DEAD;
         type = ENT_PLAYER;
-        copystring(hostname, "unknown");
+        copystring(hostname, "0.0.0.0");
         copystring(hostip, "0.0.0.0");
         name[0] = handle[0] = info[0] = obit[0] = 0;
         removesounds();

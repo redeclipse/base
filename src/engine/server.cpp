@@ -50,7 +50,7 @@ ICOMMAND(0, platname, "ii", (int *p, int *g), result(*p >= 0 && *p < MAX_PLATFOR
 
 VAR(0, rehashing, 1, 0, -1);
 
-const char * const disc_reasons[] = { "normal", "end of packet", "client num", "user was kicked", "message error", "address is banned", "server is in private mode", "server is password protected", "server requires pure official builds", "server is at maximum capacity", "server and client are incompatible", "connection timed out", "packet overflow", "server shutting down" };
+const char * const disc_reasons[] = { "normal", "end of packet", "client num", "user was kicked", "message error", "address is banned", "server is in private mode", "server is password protected", "server requires pure official builds", "server is at maximum capacity", "server and client are incompatible", "connection timed out", "packet overflow", "hostname lookup failure", "server shutting down" };
 
 SVAR(IDF_PERSIST, logtimeformat, "%Y-%m-%d %H:%M.%S");
 VAR(IDF_PERSIST, logtimelocal, 0, 1, 1); // use clockoffset to localise
@@ -898,14 +898,10 @@ void serverslice(uint timeout)  // main server update, called from main loop in 
                             copystring(c.hostname, c.hostip);
                     }
                     else copystring(c.hostname, c.hostip);
+                    int reason = server::clientconnect(c.num, c.peer->address.host);
+                    if(reason) disconnect_client(c.num, reason);
                 }
-                else
-                {
-                    copystring(c.hostname, "unknown");
-                    copystring(c.hostip, "0.0.0.0");
-                }
-                int reason = server::clientconnect(c.num, c.peer->address.host);
-                if(reason) disconnect_client(c.num, reason);
+                else disconnect_client(c.num, DISC_HOSTFAIL);
                 break;
             }
             case ENET_EVENT_TYPE_RECEIVE:
@@ -1775,4 +1771,3 @@ int main(int argc, char **argv)
     return 0;
 }
 #endif
-
