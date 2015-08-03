@@ -246,7 +246,7 @@ void addserver(const char *name, int port, int priority, const char *desc, const
     if(newserver(name, port, priority, desc, handle, flags) && verbose >= 2)
         conoutf("added server %s (%d) [%s]", name, port, desc);
 }
-ICOMMAND(0, addserver, "siiss", (char *n, int *p, int *r, char *d, char *h, char *f), addserver(n, *p > 0 ? *p : SERVER_PORT, *r >= 0 ? *r : 0, d, h, f));
+ICOMMAND(0, addserver, "siisss", (char *n, int *p, int *r, char *d, char *h, char *f), addserver(n, *p > 0 ? *p : SERVER_PORT, *r >= 0 ? *r : 0, d, h, f));
 
 VAR(0, searchlan, 0, 0, 1);
 VAR(IDF_PERSIST, maxservpings, 0, 10, 1000);

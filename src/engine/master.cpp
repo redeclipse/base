@@ -68,7 +68,7 @@ struct masterclient
     char input[4096];
     vector<char> output;
     int inputpos, outputpos, port, numpings, lastcontrol, version;
-    enet_uint32 lastping, lastpong, lastactivity, laststats;
+    enet_uint32 lastping, lastpong, lastactivity, laststats, willsendstats;
     vector<authreq> authreqs;
     authreq serverauthreq;
     bool isserver, isquick, ishttp, listserver, shouldping, shouldpurge, instats, wantstats;
@@ -685,6 +685,7 @@ bool checkmasterclientinput(masterclient &c)
                 c.version = w[3] && *w[3] ? atoi(w[3]) : (w[2] && *w[2] ? 150 : 0);
                 ENetAddress address = { ENET_HOST_ANY, enet_uint16(c.port) };
                 if(w[4] && *w[4]) copystring(c.desc, w[4]); else c.desc[0] = 0;
+                if(w[5] && *w[5]) c.willsendstats = atoi(w[5]);
                 if(w[2] && *w[2] && strcmp(w[2], "*") && (enet_address_set_host(&address, w[2]) < 0 || address.host != c.address.host))
                 {
                     c.listserver = c.shouldping = false;
@@ -733,7 +734,13 @@ bool checkmasterclientinput(masterclient &c)
             {
                 masterclient &s = *masterclients[j];
                 if(!s.listserver) continue;
-                masteroutf(c, "addserver %s %d %d %s %s %s\n", s.name, s.port, s.priority(), escapestring(s.desc), escapestring(s.authhandle), escapestring(s.flags));
+                string filteredflags = "";
+                for(const char *flag = s.flags; *flag; flag++)
+                {
+                    if(*flag == 's' && !s.willsendstats) continue;
+                    concformatstring(filteredflags, "%c", *flag);
+                }
+                masteroutf(c, "addserver %s %d %d %s %s %s\n", s.name, s.port, s.priority(), escapestring(s.desc), escapestring(s.authhandle), escapestring(filteredflags));
                 servs++;
             }
             conoutf("master peer %s was sent %d server(s)", c.name, servs);
