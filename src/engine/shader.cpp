@@ -760,6 +760,8 @@ static void gendynlightvariant(Shader &s, const char *sname, const char *vs, con
     int numlights = minimizedynlighttcusage() ? 1 : MAXDYNLIGHTS;
 
     const char *vspragma = strstr(vs, "#pragma CUBE2_dynlight"), *pspragma = strstr(ps, "#pragma CUBE2_dynlight");
+    if(!vspragma || !pspragma) return;
+
     string pslight;
     vspragma += strcspn(vspragma, "\n");
     if(*vspragma) vspragma++;
@@ -826,6 +828,8 @@ static void gendynlightvariant(Shader &s, const char *sname, const char *vs, con
 static void genshadowmapvariant(Shader &s, const char *sname, const char *vs, const char *ps, int row = 1)
 {
     const char *vspragma = strstr(vs, "#pragma CUBE2_shadowmap"), *pspragma = strstr(ps, "#pragma CUBE2_shadowmap");
+    if(!vspragma || !pspragma) return;
+
     string pslight;
     vspragma += strcspn(vspragma, "\n");
     if(*vspragma) vspragma++;
