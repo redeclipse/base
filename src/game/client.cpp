@@ -19,6 +19,7 @@ namespace client
 
     VAR(IDF_PERSIST, checkpointannounce, 0, 5, 7); // 0 = never, &1 = active players, &2 = all players, &4 = all players in gauntlet
     VAR(IDF_PERSIST, checkpointannouncefilter, 0, CP_ALL, CP_ALL); // which checkpoint types to announce for
+    VAR(IDF_PERSIST, demoautoclientsave, 0, 0, 1);
 
     int state() { return game::player1->state; }
     ICOMMAND(0, getplayerstate, "", (), intret(state()));
@@ -2644,6 +2645,17 @@ namespace client
                         if(*demofile) addmsg(N_MAPVOTE, "rsi2", demofile, G_DEMO, 0);
                     }
                     break;
+                }
+                
+                case N_DEMOREADY:
+                {
+                    int num = getint(p), ctime = getint(p), len = getint(p);
+                    getstring(text, p);
+                    conoutft(CON_EVENT, "\fydemo \fs\fc%s\fS recorded \fs\fc%s UTC\fS [\fs\fw%.2f%s\fS]", text, gettime(ctime, "%Y-%m-%d %H:%M.%S"), len > 1024*1024 ? len/(1024*1024.f) : len/1024.0f, len > 1024*1024 ? "MB" : "kB");
+                    if(demoautoclientsave)
+                    {
+                        getdemo(num);
+                    }
                 }
 
                 case N_CURRENTPRIV:
