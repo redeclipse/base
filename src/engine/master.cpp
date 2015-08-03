@@ -718,7 +718,7 @@ bool checkmasterclientinput(masterclient &c)
             {
                 masterclient &s = *masterclients[j];
                 if(!s.listserver) continue;
-                masteroutf(c, "addserver %s %d \"%s\" \"%s\"\n", s.name, s.port, escapestring(s.desc), s.authhandle);
+                masteroutf(c, "addserver %s %d %s %s\n", s.name, s.port, escapestring(s.desc), escapestring(s.authhandle));
                 servs++;
             }
             conoutf("master peer %s was sent %d server(s)", c.name, servs);
