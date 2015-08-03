@@ -2191,12 +2191,12 @@ namespace server
         }
     }
 
-    void senddemo(int cn, int num)
+    void senddemo(int cn, int num, int dni)
     {
         if(!num) num = demos.length();
         if(!demos.inrange(num-1)) return;
         demofile &d = demos[num-1];
-        sendf(cn, 2, "ri2m", N_SENDDEMO, d.ctime, d.len, d.data);
+        sendf(cn, 2, "ri3m", N_SENDDEMO, d.ctime, dni, d.len, d.data);
     }
 
     void sendwelcome(clientinfo *ci);
@@ -2338,7 +2338,8 @@ namespace server
         d.data = new uchar[len];
         d.len = len;
         formatstring(d.info, "%s on %s", gamename(gamemode, mutators, 0, 32), smapname);
-        srvoutf(4, "\fydemo \fs\fc%s\fS recorded \fs\fc%s UTC\fS [\fs\fw%.2f%s\fS]", d.info, gettime(d.ctime, "%Y-%m-%d %H:%M.%S"), d.len > 1024*1024 ? d.len/(1024*1024.f) : d.len/1024.0f, d.len > 1024*1024 ? "MB" : "kB");
+        relayf(4, "\fydemo \fs\fc%s\fS recorded \fs\fc%s UTC\fS [\fs\fw%.2f%s\fS]", d.info, gettime(d.ctime, "%Y-%m-%d %H:%M.%S"), d.len > 1024*1024 ? d.len/(1024*1024.f) : d.len/1024.0f, d.len > 1024*1024 ? "MB" : "kB");
+        sendf(-1, 1, "ri4s", N_DEMOREADY, demos.length(), d.ctime, d.len, d.info);
         demotmp->seek(0, SEEK_SET);
         demotmp->read(d.data, len);
         DELETEP(demotmp);
@@ -3096,19 +3097,19 @@ namespace server
         if(G(serverstats) && auth::hasstats)
         {
             requestmasterf("stats begin\n");
-            requestmasterf("stats game \"%s\" %d %d %d\n", escapestring(smapname), gamemode, mutators, gamemillis);
-            requestmasterf("stats server \"%s\" %s %d\n", escapestring(G(serverdesc)), versionstring, serverport);
+            requestmasterf("stats game %s %d %d %d\n", escapestring(smapname), gamemode, mutators, gamemillis);
+            requestmasterf("stats server %s %s %d\n", escapestring(G(serverdesc)), versionstring, serverport);
             flushmasteroutput();
             loopi(numteams(gamemode, mutators))
             {
                 int tp = m_team(gamemode, mutators) ? T_FIRST : T_NEUTRAL;
-                requestmasterf("stats team %d %d \"%s\"\n", i + tp, teamscore(i + tp).total, escapestring(TEAM(i + tp, name)));
+                requestmasterf("stats team %d %d %s\n", i + tp, teamscore(i + tp).total, escapestring(TEAM(i + tp, name)));
             }
             flushmasteroutput();
             loopv(clients) if(clients[i]->state.actortype == A_PLAYER) savescore(clients[i]);
             loopv(savedscores) if(savedscores[i].actortype == A_PLAYER)
             {
-                requestmasterf("stats player \"%s\" \"%s\" %d %d %d %d %d\n",
+                requestmasterf("stats player %s %s %d %d %d %d %d\n",
                     escapestring(savedscores[i].name), escapestring(savedscores[i].handle),
                     m_laptime(gamemode, mutators) ? savedscores[i].cptime : savedscores[i].score,
                     savedscores[i].timealive, savedscores[i].frags, savedscores[i].deaths, i
@@ -3117,7 +3118,7 @@ namespace server
                 loopj(W_MAX)
                 {
                     weaponstats w = savedscores[i].weapstats[j];
-                    requestmasterf("stats weapon %d \"%s\" %s %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
+                    requestmasterf("stats weapon %d %s %s %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
                         i, escapestring(savedscores[i].handle), weaptype[j].name, w.timewielded, w.timeloadout,
                         w.damage1, w.frags1, w.hits1, w.flakhits1, w.shots1, w.flakshots1,
                         w.damage2, w.frags2, w.hits2, w.flakhits2, w.shots2, w.flakshots2
@@ -6527,7 +6528,8 @@ namespace server
                 case N_GETDEMO:
                 {
                     int n = getint(p);
-                    senddemo(sender, n);
+                    int dni = getint(p);
+                    senddemo(sender, n, dni);
                     break;
                 }
 

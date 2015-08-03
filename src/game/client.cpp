@@ -7,6 +7,8 @@ namespace client
     int lastping = 0, sessionid = 0, sessionver = 0, lastplayerinfo = 0;
     string connectpass = "";
     int needclipboard = -1;
+    int demonameid = 0;
+    hashtable<int, const char *>demonames;
 
     SVAR(IDF_PERSIST, demolist, "");
     VAR(0, demoendless, 0, 0, 1);
@@ -17,6 +19,7 @@ namespace client
 
     VAR(IDF_PERSIST, checkpointannounce, 0, 5, 7); // 0 = never, &1 = active players, &2 = all players, &4 = all players in gauntlet
     VAR(IDF_PERSIST, checkpointannouncefilter, 0, CP_ALL, CP_ALL); // which checkpoint types to announce for
+    VAR(IDF_PERSIST, demoautoclientsave, 0, 0, 1);
 
     int state() { return game::player1->state; }
     ICOMMAND(0, getplayerstate, "", (), intret(state()));
@@ -1225,12 +1228,22 @@ namespace client
             case N_SENDDEMO:
             {
                 int ctime = getint(p);
+                int nameid = getint(p);
                 if(filetimelocal) ctime += clockoffset;
                 data += p.length();
                 len -= p.length();
                 string fname;
-                if(*filetimeformat) formatstring(fname, "demos/%s.dmo", gettime(ctime, filetimeformat));
-                else formatstring(fname, "demos/%u.dmo", uint(ctime));
+                const char *demoname = demonames.find(nameid, "");
+                if(*demoname)
+                {
+                    formatstring(fname, "demos/%s.dmo", demoname);
+                    DELETEA(demoname);
+                }
+                else
+                {
+                    if(*filetimeformat) formatstring(fname, "demos/%s.dmo", gettime(ctime, filetimeformat));
+                    else formatstring(fname, "demos/%u.dmo", uint(ctime));
+                }
                 stream *demo = openfile(fname, "wb");
                 if(!demo) return;
                 conoutft(CON_EVENT, "\fyreceived demo: \fc%s", fname);
@@ -1283,13 +1296,15 @@ namespace client
     }
     ICOMMAND(0, cleardemos, "i", (int *val), cleardemos(*val));
 
-    void getdemo(int i)
+    void getdemo(int i, const char *name)
     {
         if(i <= 0) conoutft(CON_EVENT, "\fygetting demo, please wait...");
         else conoutft(CON_EVENT, "\fygetting demo \fs\fc%d\fS, please wait...", i);
-        addmsg(N_GETDEMO, "ri", i);
+        addmsg(N_GETDEMO, "rii", i, demonameid);
+        if(*name) demonames.access(demonameid, newstring(name));
+        demonameid++;
     }
-    ICOMMAND(0, getdemo, "i", (int *val), getdemo(*val));
+    ICOMMAND(0, getdemo, "is", (int *val, char *name), getdemo(*val, name));
 
     void listdemos()
     {
@@ -2632,6 +2647,17 @@ namespace client
                     break;
                 }
 
+                case N_DEMOREADY:
+                {
+                    int num = getint(p), ctime = getint(p), len = getint(p);
+                    getstring(text, p);
+                    conoutft(CON_EVENT, "\fydemo \fs\fc%s\fS recorded \fs\fc%s UTC\fS [\fs\fw%.2f%s\fS]", text, gettime(ctime, "%Y-%m-%d %H:%M.%S"), len > 1024*1024 ? len/(1024*1024.f) : len/1024.0f, len > 1024*1024 ? "MB" : "kB");
+                    if(demoautoclientsave)
+                    {
+                        getdemo(num, "");
+                    }
+                }
+
                 case N_CURRENTPRIV:
                 {
                     int mn = getint(p), priv = getint(p);
@@ -3009,16 +3035,14 @@ namespace client
         {
             ac = a->attr[0] == VERSION_GAME ? 0x7FFF : clamp(a->attr[0], 0, 0x7FFF-1);
             ac <<= 16;
-            if(a->address.host == masteraddress.host) ac |= 0xFFFF;
-            else ac |= clamp(1 + a->priority, 1, 0xFFFF-1);
+            ac |= clamp(1 + a->priority, 1, 0xFFFF);
         }
         if(b->address.host == ENET_HOST_ANY || b->ping >= serverinfo::WAITING || b->attr.empty()) bc = -1;
         else
         {
             bc = b->attr[0] == VERSION_GAME ? 0x7FFF : clamp(b->attr[0], 0, 0x7FFF-1);
             bc <<= 16;
-            if(b->address.host == masteraddress.host) bc |= 0xFFFF;
-            else bc |= clamp(1 + b->priority, 1, 0xFFFF-1);
+            bc |= clamp(1 + b->priority, 1, 0xFFFF);
         }
         if(ac > bc) return -1;
         if(ac < bc) return 1;
