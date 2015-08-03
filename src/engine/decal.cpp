@@ -253,7 +253,7 @@ struct decalrenderer
         else
         {
             if(flags&DF_INVMOD) { glBlendFunc(GL_ZERO, GL_ONE_MINUS_SRC_COLOR); zerofogcolor(); }
-            else if(flags&DF_ADD) { glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_COLOR); setfogcolor(vec(0.5f, 0.5f, 0.5f)); }
+            else if(flags&DF_ADD) { glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_COLOR); zerofogcolor(); }
             else glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
             if(flags&DF_SATURATE) SETSHADER(saturatedecal);
