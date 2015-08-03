@@ -2191,12 +2191,12 @@ namespace server
         }
     }
 
-    void senddemo(int cn, int num)
+    void senddemo(int cn, int num, int dni)
     {
         if(!num) num = demos.length();
         if(!demos.inrange(num-1)) return;
         demofile &d = demos[num-1];
-        sendf(cn, 2, "ri2m", N_SENDDEMO, d.ctime, d.len, d.data);
+        sendf(cn, 2, "ri3m", N_SENDDEMO, d.ctime, dni, d.len, d.data);
     }
 
     void sendwelcome(clientinfo *ci);
@@ -6527,7 +6527,8 @@ namespace server
                 case N_GETDEMO:
                 {
                     int n = getint(p);
-                    senddemo(sender, n);
+                    int dni = getint(p);
+                    senddemo(sender, n, dni);
                     break;
                 }
 
