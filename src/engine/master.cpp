@@ -157,14 +157,6 @@ struct masterclient
         }
     } stats;
 
-    bool hasflag(char f)
-    {
-        if(f == 'b' && *flags) return true;
-        for(const char *c = flags; *c; c++) if(*c == f)
-            return true;
-        return false;
-    }
-
     masterclient() { reset(); }
     ~masterclient() {}
 
@@ -178,6 +170,29 @@ struct masterclient
         port = MASTER_PORT;
         output.shrink(0);
         authreqs.shrink(0);
+    }
+
+    bool hasflag(char f)
+    {
+        if(f == 'b' && *flags) return true;
+        for(const char *c = flags; *c; c++) if(*c == f)
+            return true;
+        return false;
+    }
+
+    int priority()
+    {
+        if(!isserver || !listserver) return -1;
+        if(!*authandle || !*flags) return 0;
+        int ret = 1;
+        for(const char *c = flags; *c; c++) switch(*c)
+        {
+            case 'm': ret = max(ret, 4); break;
+            case 's': ret = max(ret, 3); break;
+            case 'b': ret = max(ret, 2); break;
+            default: break;
+        }
+        return ret;
     }
 };
 
@@ -718,7 +733,7 @@ bool checkmasterclientinput(masterclient &c)
             {
                 masterclient &s = *masterclients[j];
                 if(!s.listserver) continue;
-                masteroutf(c, "addserver %s %d 0 %s %s\n", s.name, s.port, escapestring(s.desc), escapestring(s.authhandle));
+                masteroutf(c, "addserver %s %d %d %s %s\n", s.name, s.port, s.priority(), escapestring(s.desc), escapestring(s.authhandle));
                 servs++;
             }
             conoutf("master peer %s was sent %d server(s)", c.name, servs);

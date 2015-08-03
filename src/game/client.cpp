@@ -2646,7 +2646,7 @@ namespace client
                     }
                     break;
                 }
-                
+
                 case N_DEMOREADY:
                 {
                     int num = getint(p), ctime = getint(p), len = getint(p);
@@ -3035,16 +3035,14 @@ namespace client
         {
             ac = a->attr[0] == VERSION_GAME ? 0x7FFF : clamp(a->attr[0], 0, 0x7FFF-1);
             ac <<= 16;
-            if(a->address.host == masteraddress.host) ac |= 0xFFFF;
-            else ac |= clamp(1 + a->priority, 1, 0xFFFF-1);
+            ac |= clamp(1 + a->priority, 1, 0xFFFF);
         }
         if(b->address.host == ENET_HOST_ANY || b->ping >= serverinfo::WAITING || b->attr.empty()) bc = -1;
         else
         {
             bc = b->attr[0] == VERSION_GAME ? 0x7FFF : clamp(b->attr[0], 0, 0x7FFF-1);
             bc <<= 16;
-            if(b->address.host == masteraddress.host) bc |= 0xFFFF;
-            else bc |= clamp(1 + b->priority, 1, 0xFFFF-1);
+            bc |= clamp(1 + b->priority, 1, 0xFFFF);
         }
         if(ac > bc) return -1;
         if(ac < bc) return 1;
