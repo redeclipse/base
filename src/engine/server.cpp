@@ -41,6 +41,7 @@ SVAR(IDF_READONLY, versionplatlongname, plat_longname(CUR_PLATFORM));
 VAR(IDF_READONLY, versionplatform, 0, CUR_PLATFORM, VAR_MAX);
 VAR(IDF_READONLY, versionarch, 0, CUR_ARCH, VAR_MAX);
 VAR(IDF_READONLY, versioncrc, 0, 0, VAR_MAX);
+SVAR(IDF_READONLY, versionbranch, "?");
 #ifdef STANDALONE
 VAR(IDF_READONLY, versionisserver, 0, 1, 1);
 #else
@@ -463,13 +464,6 @@ void sendpacket(int n, int chan, ENetPacket *packet, int exclude)
 
 void sendf(int cn, int chan, const char *format, ...)
 {
-    if(cn < 0)
-    {
-#ifdef STANDALONE
-            return;
-#endif
-    }
-    else if(!clients.inrange(cn)) return;
     int exclude = -1;
     bool reliable = false;
     if(*format=='r') { reliable = true; ++format; }
@@ -515,10 +509,7 @@ void sendf(int cn, int chan, const char *format, ...)
         }
     }
     va_end(args);
-    if(cn >= 0) sendpacket(cn, chan, p.finalize(), exclude);
-#ifndef STANDALONE
-    else sendclientpacket(p.finalize(), chan);
-#endif
+    sendpacket(cn, chan, p.finalize(), exclude);
 }
 
 void sendfile(int cn, int chan, stream *file, const char *format, ...)
@@ -531,8 +522,8 @@ void sendfile(int cn, int chan, stream *file, const char *format, ...)
     }
     else if(!clients.inrange(cn)) return;
 
-    int len = (int)min(file->size(), stream::offset(INT_MAX));
-    if(len <= 0 || len > 16<<20) return;
+    int len = file ? (int)min(file->size(), stream::offset(INT_MAX)) : 0;
+    if(len > 16<<20) return;
 
     packetbuf p(MAXTRANS+len, ENET_PACKET_FLAG_RELIABLE);
     va_list args;
@@ -574,10 +565,11 @@ void sendfile(int cn, int chan, stream *file, const char *format, ...)
         }
     }
     va_end(args);
-
-    file->seek(0, SEEK_SET);
-    file->read(p.subbuf(len).buf, len);
-
+    if(file && len > 0)
+    {
+        file->seek(0, SEEK_SET);
+        file->read(p.subbuf(len).buf, len);
+    }
     ENetPacket *packet = p.finalize();
     if(cn >= 0) sendpacket(cn, chan, packet, -1);
 #ifndef STANDALONE
@@ -1236,7 +1228,7 @@ static void setupwindow(const char *title)
     atexit(cleanupwindow);
 
     if(!setupsystemtray(WM_APP)) fatal("failed adding to system tray");
-    conoutf("identity: v%s-%s%d %s (%s) [0x%.8x]", VERSION_STRING, versionplatname, versionarch, versionisserver ? "server" : "client", VERSION_RELEASE, versioncrc);
+    conoutf("identity: v%s-%s%d %s [%s] (%s) [0x%.8x]", VERSION_STRING, versionplatname, versionarch, versionisserver ? "server" : "client", versionbranch, VERSION_RELEASE, versioncrc);
 }
 
 static char *parsecommandline(const char *src, vector<char *> &args)
@@ -1432,7 +1424,7 @@ void setupserver()
 
 void initgame()
 {
-    conoutf("identity: v%s-%s%d %s (%s) [0x%.8x]", VERSION_STRING, versionplatname, versionarch, versionisserver ? "server" : "client", VERSION_RELEASE, versioncrc);
+    conoutf("identity: v%s-%s%d %s [%s] (%s) [0x%.8x]", VERSION_STRING, versionplatname, versionarch, versionisserver ? "server" : "client", versionbranch, VERSION_RELEASE, versioncrc);
     server::start();
     loopv(gameargs)
     {
@@ -1685,10 +1677,11 @@ void rehash(bool reload)
 }
 ICOMMAND(0, rehash, "i", (int *nosave), if(!(identflags&IDF_WORLD)) rehash(*nosave ? false : true));
 
-void setcrc(const char *bin)
+void setverinfo(const char *bin)
 {
-    if(!bin || !*bin) return;
-    versioncrc = crcfile(bin);
+    setvar("versioncrc", crcfile(bin));
+    const char *branch = getenv("REDECLIPSE_BRANCH");
+    setsvar("versionbranch", branch);
 }
 
 volatile bool fatalsig = false;
@@ -1765,7 +1758,7 @@ int main(int argc, char **argv)
 
     setlogfile(NULL);
     setlocations(true);
-    setcrc(argv[0]);
+    setverinfo(argv[0]);
 
     char *initscript = NULL;
     for(int i = 1; i<argc; i++)

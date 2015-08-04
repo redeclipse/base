@@ -664,6 +664,12 @@ namespace client
         gameent *d = cn >= 0 ? game::getclient(cn) : game::player1;
         if(d) switch(prop)
         {
+            case -2:
+            {
+                defformatstring(str, "%d.%d.%d-%s%d", d->version.major, d->version.minor, d->version.patch, plat_name(d->version.platform), d->version.arch);
+                result(str);
+            }
+            case -1: result(plat_name(d->version.platform)); break;
             case 0: intret(d->version.major); break;
             case 1: intret(d->version.minor); break;
             case 2: intret(d->version.patch); break;
@@ -676,12 +682,7 @@ namespace client
             case 9: result(d->version.gpuvendor); break;
             case 10: result(d->version.gpurenderer); break;
             case 11: result(d->version.gpuversion); break;
-            case 12: result(plat_name(d->version.platform)); break;
-            case 13:
-            {
-                defformatstring(str, "%d.%d.%d-%s%d", d->version.major, d->version.minor, d->version.patch, plat_name(d->version.platform), d->version.arch);
-                result(str);
-            }
+            case 13: result(d->version.branch); break;
             default: break;
         }
     }
@@ -1271,10 +1272,10 @@ namespace client
                 int filetype = getint(p), filecrc = getint(p);
                 string fname;
                 getstring(fname, p);
-                if(!*fname) copystring(fname, "maps/untitled");
                 data += p.length();
                 len -= p.length();
-                if(filetype < 0 || filetype >= SENDMAP_MAX) break;
+                if(filetype < 0 || filetype >= SENDMAP_MAX || len <= 0) break;
+                if(!*fname) copystring(fname, "maps/untitled");
                 defformatstring(ffile, "%s_0x%.8x", fname, filecrc);
                 defformatstring(ffext, "%s.%s", ffile, sendmaptypes[filetype]);
                 stream *f = openfile(ffext, "wb");
@@ -1369,9 +1370,12 @@ namespace client
                 if(needclipboard >= 0) needclipboard++;
                 delete f;
             }
-            else if(i <= SENDMAP_MIN) conoutft(CON_EVENT, "\frfailed to open map file: \fc%s", reqfext);
+            else
+            {
+                conoutft(CON_EVENT, "\frfailed to open map file: \fc%s", reqfext);
+                sendfile(-1, 2, NULL, "ri3", N_SENDMAPFILE, i, mapcrc);
+            }
         }
-        sendf(-1, 2, "ri", N_SENDMAPDONE);
     }
     ICOMMAND(0, sendmap, "", (), sendmap());
 

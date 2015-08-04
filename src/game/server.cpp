@@ -2975,7 +2975,6 @@ namespace server
                 ci->gettingmap = true;
                 srvmsgft(ci->clientnum, CON_EVENT, "\fysending you the map, please wait..");
                 loopi(SENDMAP_MAX) if(mapdata[i]) sendfile(ci->clientnum, 2, mapdata[i], "ri3s", N_SENDMAPFILE, i, smapcrc, smapname);
-                sendf(ci->clientnum, 2, "ri", N_SENDMAPDONE);
                 sendwelcome(ci);
                 ci->needclipboard = totalmillis ? totalmillis : 1;
                 return true;
@@ -5004,7 +5003,7 @@ namespace server
             lastquerysort = totalmillis;
         }
         putint(p, queryplayers.length());
-        putint(p, 15); // number of attrs following
+        putint(p, 16); // number of attrs following
         putint(p, VERSION_GAME); // 1
         putint(p, gamemode); // 2
         putint(p, mutators); // 3
@@ -5018,8 +5017,9 @@ namespace server
         putint(p, VERSION_PATCH); // 11
         putint(p, versionplatform); // 12
         putint(p, versionarch); // 13
-        putint(p, gamestate); // 14
-        putint(p, timeleft()); // 15
+        sendstring(versionbranch, p); // 14
+        putint(p, gamestate); // 15
+        putint(p, timeleft()); // 16
         sendstring(smapname, p);
         if(*G(serverdesc)) sendstring(G(serverdesc), p);
         else
@@ -5040,48 +5040,32 @@ namespace server
         sendqueryreply(p);
     }
 
-    const char *tempmapfile[SENDMAP_MAX] = { "mapmpz", "mappng", "mapcfg", "mapwpt", "maptxt" };
-    bool receivefile(int sender, uchar *data, int len)
+    const char *tempmapfile[SENDMAP_MAX] = { "tmpfile.mpz", "tmpfile.png", "tmpfile.cfg", "tmpfile.wpt", "tmpfile.txt" };
+    int receivefile(int sender, uchar *data, int len)
     {
         clientinfo *ci = (clientinfo *)getinfo(sender);
         ucharbuf p(data, len);
-        int type = getint(p);
-        if(type != N_SENDMAPFILE)
-        {
-            data += p.length();
-            len -= p.length();
-            mapsending = -1;
-            if(type == N_SENDMAPDONE) return true;
-            return false;
-        }
-        int n = getint(p);
+        int type = getint(p), n = getint(p);
         data += p.length();
         len -= p.length();
-        if(n < 0 || n >= SENDMAP_MAX)
-        {
-            srvmsgf(sender, "bad map file type %d");
-            return false;
-        }
+        if(type != N_SENDMAPFILE) return -1;
+        if(n < 0 || n >= SENDMAP_MAX) return -1;
         if(ci->clientnum != mapsending)
         {
             srvmsgf(sender, "sorry, the map isn't needed from you");
-            return false;
+            return -1;
         }
-        if(!len)
-        {
-            srvmsgf(sender, "you sent a zero length packet for map data");
-            return false;
-        }
+        if(!len) return n;
         if(mapdata[n]) DELETEP(mapdata[n]);
         mapdata[n] = opentempfile(tempmapfile[n], "w+b");
         if(!mapdata[n])
         {
             srvmsgf(sender, "failed to open temporary file for map");
-            return false;
+            return n;
         }
         mapdata[n]->write(data, len);
         if(n == SENDMAP_MPZ) smapcrc = crcstream(mapdata[n]);
-        return false;
+        return n;
     }
 
     static struct msgfilter
@@ -5428,15 +5412,16 @@ namespace server
         }
         else if(chan == 2)
         {
-            if(receivefile(sender, p.buf, p.maxlen))
+            int ret = receivefile(sender, p.buf, p.maxlen);
+            if(ret == SENDMAP_MAX-1 && hasmapdata())
             {
-                if(hasmapdata()) loopv(clients)
+                loopv(clients)
                 {
                     clientinfo *cs = clients[i];
                     if(cs->state.actortype > A_PLAYER || !cs->online || !cs->name[0] || !cs->ready) continue;
                     if(cs->wantsmap || crclocked(cs, true)) getmap(cs);
                 }
-                // milestone v1.6.0 - sendf(-1, 1, "ri", N_SENDMAP);
+                sendf(-1, 1, "ri", N_SENDMAP);
             }
             return;
         }
