@@ -437,6 +437,52 @@ enum { DISC_NONE = 0, DISC_EOP, DISC_CN, DISC_KICK, DISC_MSGERR, DISC_IPBAN, DIS
 extern void *getinfo(int i);
 extern const char *gethostname(int i);
 extern const char *gethostip(int i);
+#define SENDFORMATS(_p,_a,_f,_n,_s) \
+    case 'v': \
+    { \
+        int n = va_arg(_a, int); \
+        int *v = va_arg(args, int *); \
+        loopi(n) putint(_p, v[i]); \
+        _n; \
+        break; \
+    } \
+    case 'i': \
+    { \
+        int n = isdigit(*_f) ? *_f++-'0' : 1; \
+        loopi(n) putint(_p, va_arg(_a, int)); \
+        _n; \
+        break; \
+    } \
+    case 'u': \
+    { \
+        int n = isdigit(*_f) ? *_f++-'0' : 1; \
+        loopi(n) putuint(_p, va_arg(_a, uint)); \
+        _n; \
+        break; \
+    } \
+    case 'f': \
+    { \
+        int n = isdigit(*_f) ? *_f++-'0' : 1; \
+        loopi(n) putfloat(_p, (float)va_arg(_a, double)); \
+        _n; \
+        break; \
+    } \
+    case 's': sendstring(va_arg(_a, const char *), _p); _s; break; \
+    case 'm': \
+    { \
+        int n = va_arg(_a, int); \
+        _p.put(va_arg(_a, uchar *), n); \
+        _n; \
+        break; \
+    } \
+    case 'v': \
+    { \
+        int n = va_arg(_a, int); \
+        int *v = va_arg(_a, int *); \
+        loopi(n) putint(_p, v[i]); \
+        _n; \
+        break; \
+    }
 extern void sendf(int cn, int chan, const char *format, ...);
 extern void sendfile(int cn, int chan, stream *file, const char *format = "", ...);
 extern void sendpacket(int cn, int chan, ENetPacket *packet, int exclude = -1);

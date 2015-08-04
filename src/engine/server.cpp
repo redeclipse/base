@@ -478,47 +478,10 @@ void sendf(int cn, int chan, const char *format, ...)
     va_start(args, format);
     while(*format) switch(*format++)
     {
+        SENDFORMATS(p, args, format, , )
         case 'x':
             exclude = va_arg(args, int);
             break;
-
-        case 'v':
-        {
-            int n = va_arg(args, int);
-            int *v = va_arg(args, int *);
-            loopi(n) putint(p, v[i]);
-            break;
-        }
-
-        case 'i':
-        {
-            int n = isdigit(*format) ? *format++-'0' : 1;
-            loopi(n) putint(p, va_arg(args, int));
-            break;
-        }
-
-        case 'u':
-        {
-            int n = isdigit(*format) ? *format++-'0' : 1;
-            loopi(n) putint(p, va_arg(args, uint));
-            break;
-        }
-
-        case 'f':
-        {
-            int n = isdigit(*format) ? *format++-'0' : 1;
-            loopi(n) putfloat(p, (float)va_arg(args, double));
-            break;
-        }
-
-        case 's': sendstring(va_arg(args, const char *), p); break;
-
-        case 'm':
-        {
-            int n = va_arg(args, int);
-            p.put(va_arg(args, uchar *), n);
-            break;
-        }
     }
     va_end(args);
     if(cn >= 0) sendpacket(cn, chan, p.finalize(), exclude);
@@ -545,19 +508,7 @@ void sendfile(int cn, int chan, stream *file, const char *format, ...)
     va_start(args, format);
     while(*format) switch(*format++)
     {
-        case 'i':
-        {
-            int n = isdigit(*format) ? *format++-'0' : 1;
-            loopi(n) putint(p, va_arg(args, int));
-            break;
-        }
-        case 'u':
-        {
-            int n = isdigit(*format) ? *format++-'0' : 1;
-            loopi(n) putint(p, va_arg(args, uint));
-            break;
-        }
-        case 's': sendstring(va_arg(args, const char *), p); break;
+        SENDFORMATS(p, args, format, , )
         case 'l': putint(p, len); break;
     }
     va_end(args);

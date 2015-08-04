@@ -999,37 +999,8 @@ namespace client
             va_start(args, fmt);
             while(*fmt) switch(*fmt++)
             {
+                SENDFORMATS(p, args, fmt, numi += n, nums++)
                 case 'r': reliable = true; break;
-                case 'v':
-                {
-                    int n = va_arg(args, int);
-                    int *v = va_arg(args, int *);
-                    loopi(n) putint(p, v[i]);
-                    numi += n;
-                    break;
-                }
-                case 'i':
-                {
-                    int n = isdigit(*fmt) ? *fmt++-'0' : 1;
-                    loopi(n) putint(p, va_arg(args, int));
-                    numi += n;
-                    break;
-                }
-                case 'u':
-                {
-                    int n = isdigit(*fmt) ? *fmt++-'0' : 1;
-                    loopi(n) putint(p, va_arg(args, uint));
-                    numi += n;
-                    break;
-                }
-                case 'f':
-                {
-                    int n = isdigit(*fmt) ? *fmt++-'0' : 1;
-                    loopi(n) putfloat(p, (float)va_arg(args, double));
-                    numi += n;
-                    break;
-                }
-                case 's': sendstring(va_arg(args, const char *), p); nums++; break;
             }
             va_end(args);
         }
