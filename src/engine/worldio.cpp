@@ -1138,19 +1138,18 @@ bool load_world(const char *mname, int crc)       // still supports all map form
         int mask = maskpackagedirs(format == MAP_OCTA ? ~0 : ~PACKAGEDIR_OCTA);
         setnames(mname, format, tempfile && crc > 0 ? crc : 0);
 
+        int fcrc = crcfile(mapfile);
+        if(!tempfile && crc > 0 && crc != fcrc)
+        {
+            maskpackagedirs(mask);
+            continue; // skipped iteration
+        }
         stream *f = opengzfile(mapfile, "rb");
         if(!f)
         {
             conoutf("\frnot found: %s", mapfile);
             maskpackagedirs(mask);
             continue;
-        }
-        int fcrc = crcstream(f);
-        if(!tempfile && crc > 0 && crc != fcrc)
-        {
-            delete f;
-            maskpackagedirs(mask);
-            continue; // skipped iteration
         }
         mapcrc = fcrc;
 
@@ -1764,7 +1763,7 @@ bool load_world(const char *mname, int crc)       // still supports all map form
 
         progress(0, "preloading models...");
         preloadusedmapmodels(true);
-        conoutf("loaded %s (\fs%s\fS by \fs%s\fS) v.%d:%d(r%d) [%.1fs]", mapname, *maptitle ? maptitle : "Untitled", *mapauthor ? mapauthor : "Unknown", hdr.version, hdr.gamever, hdr.revision, (SDL_GetTicks()-loadingstart)/1000.0f);
+        conoutf("loaded %s (\fs%s\fS by \fs%s\fS) v.%d:%d(r%d) [0x%.8x] in %.1fs", mapname, *maptitle ? maptitle : "Untitled", *mapauthor ? mapauthor : "Unknown", hdr.version, hdr.gamever, hdr.revision, mapcrc, (SDL_GetTicks()-loadingstart)/1000.0f);
 
         progress(0, "checking world...");
         if((maptype == MAP_OCTA && hdr.version <= 25) || (maptype == MAP_MAPZ && hdr.version <= 26))

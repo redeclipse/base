@@ -3178,8 +3178,8 @@ namespace server
             loopi(SENDMAP_MAX)
             {
                 defformatstring(reqfile, strstr(reqmap, "maps/")==reqmap || strstr(reqmap, "maps\\")==reqmap ? "%s.%s" : "maps/%s.%s", reqmap, sendmaptypes[i]);
+                if(i == SENDMAP_MPZ) smapcrc = crcfile(reqfile);
                 mapdata[i] = openfile(reqfile, "rb");
-                if(i == SENDMAP_MPZ) smapcrc = crcstream(mapdata[i]);
             }
             if(!hasmapdata()) resetmapdata();
         }
