@@ -26,7 +26,8 @@ namespace gle
     ucharbuf attribbuf;
     static uchar *attribdata;
     static attribinfo attribdefs[MAXATTRIBS], lastattribs[MAXATTRIBS];
-    static int enabled = 0, numattribs = 0, attribmask = 0, numlastattribs = 0, lastattribmask = 0, vertexsize = 0, lastvertexsize = 0;
+    int enabled = 0;
+    static int numattribs = 0, attribmask = 0, numlastattribs = 0, lastattribmask = 0, vertexsize = 0, lastvertexsize = 0;
     static GLenum primtype = GL_TRIANGLES;
     static uchar *lastbuf = NULL;
     static bool changedattribs = false;

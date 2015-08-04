@@ -16,6 +16,10 @@ namespace gle
     extern const char * const attribnames[MAXATTRIBS];
     extern ucharbuf attribbuf;
 
+    extern int enabled;
+    extern void disable();
+    static inline void fastdisable() { if(enabled) gle::disable(); }
+
     extern void begin(GLenum mode);
     extern void begin(GLenum mode, int numverts);
     extern void multidraw();
@@ -61,23 +65,29 @@ namespace gle
     static inline void tangent(const vec &v, float w = 1.0f) { glVertexAttrib4f_(ATTRIB_TANGENT, v.x, v.y, v.z, w); }
     static inline void tangent(const vec4 &v) { glVertexAttrib4fv_(ATTRIB_TANGENT, v.v); }
 
-    #define GLE_ATTRIBPOINTER(name, index, defaultnormalized, defaultsize, defaulttype) \
-        static inline void enable##name() { glEnableVertexAttribArray_(index); } \
+    #define GLE_ATTRIBPOINTER(name, index, defaultnormalized, defaultsize, defaulttype, prepare) \
+        static inline void enable##name() { prepare; glEnableVertexAttribArray_(index); } \
         static inline void disable##name() { glDisableVertexAttribArray_(index); } \
         static inline void name##pointer(int stride, const void *data, GLenum type = defaulttype, int size = defaultsize, GLenum normalized = defaultnormalized) { \
+            prepare; \
             glVertexAttribPointer_(index, size, type, normalized, stride, data); \
         }
 
-    static inline void enableattrib(int index) { glEnableVertexAttribArray_(index); }
+    static inline void enableattrib(int index) { fastdisable(); glEnableVertexAttribArray_(index); }
     static inline void disableattrib(int index) { glDisableVertexAttribArray_(index); }
-    GLE_ATTRIBPOINTER(vertex, ATTRIB_VERTEX, GL_FALSE, 3, GL_FLOAT)
-    GLE_ATTRIBPOINTER(color, ATTRIB_COLOR, GL_TRUE, 4, GL_UNSIGNED_BYTE)
-    GLE_ATTRIBPOINTER(texcoord0, ATTRIB_TEXCOORD0, GL_FALSE, 2, GL_FLOAT)
-    GLE_ATTRIBPOINTER(texcoord1, ATTRIB_TEXCOORD1, GL_FALSE, 2, GL_FLOAT)
-    GLE_ATTRIBPOINTER(normal, ATTRIB_NORMAL, GL_TRUE, 3, GL_FLOAT)
-    GLE_ATTRIBPOINTER(tangent, ATTRIB_TANGENT, GL_TRUE, 4, GL_FLOAT)
-    GLE_ATTRIBPOINTER(boneweight, ATTRIB_BONEWEIGHT, GL_TRUE, 4, GL_UNSIGNED_BYTE)
-    GLE_ATTRIBPOINTER(boneindex, ATTRIB_BONEINDEX, GL_FALSE, 4, GL_UNSIGNED_BYTE)
+    GLE_ATTRIBPOINTER(vertex, ATTRIB_VERTEX, GL_FALSE, 3, GL_FLOAT, fastdisable())
+    GLE_ATTRIBPOINTER(color, ATTRIB_COLOR, GL_TRUE, 4, GL_UNSIGNED_BYTE, )
+    GLE_ATTRIBPOINTER(texcoord0, ATTRIB_TEXCOORD0, GL_FALSE, 2, GL_FLOAT, )
+    GLE_ATTRIBPOINTER(texcoord1, ATTRIB_TEXCOORD1, GL_FALSE, 2, GL_FLOAT, )
+    GLE_ATTRIBPOINTER(normal, ATTRIB_NORMAL, GL_TRUE, 3, GL_FLOAT, )
+    GLE_ATTRIBPOINTER(tangent, ATTRIB_TANGENT, GL_TRUE, 4, GL_FLOAT, )
+    GLE_ATTRIBPOINTER(boneweight, ATTRIB_BONEWEIGHT, GL_TRUE, 4, GL_UNSIGNED_BYTE, )
+    GLE_ATTRIBPOINTER(boneindex, ATTRIB_BONEINDEX, GL_FALSE, 4, GL_UNSIGNED_BYTE, )
+
+    static inline void bindebo(GLuint ebo) { fastdisable(); glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, ebo); }
+    static inline void clearebo() { glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, 0); }
+    static inline void bindvbo(GLuint vbo) { fastdisable(); glBindBuffer_(GL_ARRAY_BUFFER, vbo); }
+    static inline void clearvbo() { glBindBuffer_(GL_ARRAY_BUFFER, 0); }
 
     template<class T>
     static inline void attrib(T x)
@@ -159,7 +169,6 @@ namespace gle
     static inline void attrib(const bvec4 &b) { attribub(b.x, b.y, b.z, b.w); }
 
     extern int end();
-    extern void disable();
 
     extern void enablequads();
     extern void disablequads();
