@@ -280,9 +280,9 @@ namespace server
             extern int gamemillis;
             if(isalive(gamemillis))
             {
-                weapstats[weapselect].timewielded += totalmillis-lasttimewielded;
+                weapstats[weapselect].timewielded += (totalmillis-lasttimewielded) / 1000;
                 loopi(W_MAX) if(holdweap(i, m_weapon(gamemode, mutators), lastmillis))
-                    weapstats[i].timeloadout += totalmillis-lasttimeloadout[i];
+                    weapstats[i].timeloadout += (totalmillis-lasttimeloadout[i]) / 1000;
             }
             lasttimewielded = totalmillis;
             loopi(W_MAX) lasttimeloadout[i] = totalmillis;
@@ -294,7 +294,7 @@ namespace server
             if(last) lasttimeplayed = totalmillis;
             extern int gamemillis;
             if(isalive(gamemillis))
-                timealive += totalmillis-lasttimealive;
+                timealive += (totalmillis-lasttimealive) / 1000;
             lasttimealive = totalmillis;
             updateweaptime();
         }
@@ -1420,12 +1420,12 @@ namespace server
     }
 
     bool checkvotes(bool force = false);
-    void sendstats();
+    void sendstats(bool fromintermission = false);
     void startintermission(bool req = false)
     {
         if(gs_playing(gamestate))
         {
-            sendstats();
+            sendstats(true);
             setpause(false);
             timeremaining = 0;
             gamelimit = min(gamelimit, gamemillis);
@@ -2499,7 +2499,7 @@ namespace server
         }
         if(passed)
         {
-            if(m_laptime(gamemode, mutators)) sendstats();
+            sendstats();
             endmatch();
             if(best)
             {
@@ -2613,7 +2613,7 @@ namespace server
         ci->lastvote = totalmillis;
         if(hasveto)
         {
-            if(m_laptime(gamemode, mutators)) sendstats();
+            sendstats();
             endmatch();
             srvoutf(-3, "%s forced: \fs\fy%s\fS on \fs\fo%s\fS", colourname(ci), gamename(ci->modevote, ci->mutsvote), ci->mapvote);
             sendf(-1, 1, "risi3", N_MAPCHANGE, ci->mapvote, 0, ci->modevote, ci->mutsvote);
@@ -3094,13 +3094,29 @@ namespace server
         return true;
     }
 
-    void sendstats()
+    void sendstats(bool fromintermission)
     {
         if(G(serverstats) && auth::hasstats && !sentstats && gamemillis)
         {
+            loopv(clients) if(clients[i]->state.actortype == A_PLAYER) savescore(clients[i]);
+            bool worthy = false;
+            if(fromintermission) worthy = true;
+            else
+            {
+                if(m_laptime(gamemode, mutators))
+                {
+                    loopv(savedscores) if(savedscores[i].actortype == A_PLAYER) if(savedscores[i].cptime > 0) {
+                        {
+                            worthy = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            if(!worthy) return;
             sentstats = true;
             requestmasterf("stats begin\n");
-            requestmasterf("stats game %s %d %d %d\n", escapestring(smapname), gamemode, mutators, gamemillis);
+            requestmasterf("stats game %s %d %d %d\n", escapestring(smapname), gamemode, mutators, gamemillis/1000);
             requestmasterf("stats server %s %s %d\n", escapestring(G(serverdesc)), versionstring, serverport);
             flushmasteroutput();
             loopi(numteams(gamemode, mutators))
@@ -3109,7 +3125,6 @@ namespace server
                 requestmasterf("stats team %d %d %s\n", i + tp, teamscore(i + tp).total, escapestring(TEAM(i + tp, name)));
             }
             flushmasteroutput();
-            loopv(clients) if(clients[i]->state.actortype == A_PLAYER) savescore(clients[i]);
             loopv(savedscores) if(savedscores[i].actortype == A_PLAYER)
             {
                 requestmasterf("stats player %s %s %d %d %d %d %d\n",
@@ -4942,7 +4957,7 @@ namespace server
         {
             if(m_demo(gamemode)) enddemoplayback();
         }
-        if(complete && ci->connected) if(m_laptime(gamemode, mutators)) sendstats();
+        if(complete && ci->connected) sendstats();
         if(ci->connected)
         {
             if(reason != DISC_SHUTDOWN)
