@@ -334,6 +334,8 @@ namespace gle
 
     void cleanup()
     {
+        disable();
+
         if(quadindexes) { glDeleteBuffers_(1, &quadindexes); quadindexes = 0; }
 
         if(vbo) { glDeleteBuffers_(1, &vbo); vbo = 0; }
