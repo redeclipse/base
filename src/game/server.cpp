@@ -3673,20 +3673,15 @@ namespace server
         putint(p, N_WELCOME);
         putint(p, N_MAPCHANGE);
         sendstring(smapname, p);
-        if(!ci) putint(p, 0);
-        else if(!ci->online && m_edit(gamemode) && numclients(ci->clientnum) >= 2)
+        putint(p, gamemode);
+        putint(p, mutators);
+        if(ci && !ci->online && m_edit(gamemode) && numclients(ci->clientnum) >= 2)
         {
             if(mapsending < 0) resetmapdata();
             getmap(ci);
-            putint(p, 1); // already in progress
+            putint(p, -1); // already in progress
         }
-        else
-        {
-            if(ci->online) putint(p, 2); // we got a temp map eh?
-            else putint(p, ci->local ? -1 : 0);
-        }
-        putint(p, gamemode);
-        putint(p, mutators);
+        else putint(p, smapcrc);
 
         enumerate(idents, ident, id, {
             if(id.flags&IDF_SERVER && !(id.flags&IDF_WORLD)) // reset vars

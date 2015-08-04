@@ -2030,13 +2030,22 @@ namespace client
                 {
                     getstring(text, p);
                     int mode = getint(p), muts = getint(p), crc = getint(p);
-                    changemapserv(text, mode, muts, crc);
-                    if(!needsmap)
+                    if(crc < 0)
                     {
-                        addmsg(N_MAPCRC, "rsi", game::clientmap, game::clientcrc);
-                        sendgameinfo = true;
+                        emptymap(0, true, NULL);
+                        setnames(text, MAP_MAPZ);
+                        needsmap = true;
                     }
-                    else addmsg(N_GETMAP, "r");
+                    else
+                    {
+                        changemapserv(text, mode, muts, crc);
+                        if(!needsmap)
+                        {
+                            addmsg(N_MAPCRC, "rsi", game::clientmap, game::clientcrc);
+                            sendgameinfo = true;
+                        }
+                        else addmsg(N_GETMAP, "r");
+                    }
                 }
 
                 case N_GAMEINFO:
