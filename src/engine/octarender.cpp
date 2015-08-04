@@ -40,6 +40,8 @@ void destroyvbo(GLuint vbo)
 
 void genvbo(int type, void *buf, int len, vtxarray **vas, int numva)
 {
+    gle::disable();
+
     GLuint vbo;
     glGenBuffers_(1, &vbo);
     GLenum target = type==VBO_VBUF ? GL_ARRAY_BUFFER : GL_ELEMENT_ARRAY_BUFFER;
@@ -77,13 +79,13 @@ bool readva(vtxarray *va, ushort *&edata, vertex *&vdata)
     edata = new ushort[3*va->tris];
     vdata = new vertex[va->verts];
 
-    glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, va->ebuf);
+    gle::bindebo(va->ebuf);
     glGetBufferSubData_(GL_ELEMENT_ARRAY_BUFFER, (size_t)va->edata, 3*va->tris*sizeof(ushort), edata);
-    glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, 0);
+    gle::clearebo();
 
-    glBindBuffer_(GL_ARRAY_BUFFER, va->vbuf);
+    gle::bindvbo(va->vbuf);
     glGetBufferSubData_(GL_ARRAY_BUFFER, va->voffset*sizeof(vertex), va->verts*sizeof(vertex), vdata);
-    glBindBuffer_(GL_ARRAY_BUFFER, 0);
+    gle::clearvbo();
     return true;
 }
 

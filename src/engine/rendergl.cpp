@@ -897,10 +897,10 @@ static void setupscreenquad()
     if(!screenquadvbo)
     {
         glGenBuffers_(1, &screenquadvbo);
-        glBindBuffer_(GL_ARRAY_BUFFER, screenquadvbo);
+        gle::bindvbo(screenquadvbo);
         vec2 verts[4] = { vec2(1, -1), vec2(-1, -1), vec2(1, 1), vec2(-1, 1) };
         glBufferData_(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
-        glBindBuffer_(GL_ARRAY_BUFFER, 0);
+        gle::clearvbo();
     }
 }
 
@@ -912,12 +912,12 @@ static void cleanupscreenquad()
 void screenquad()
 {
     setupscreenquad();
-    glBindBuffer_(GL_ARRAY_BUFFER, screenquadvbo);
+    gle::bindvbo(screenquadvbo);
     gle::enablevertex();
     gle::vertexpointer(sizeof(vec2), (const vec2 *)0, GL_FLOAT, 2);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     gle::disablevertex();
-    glBindBuffer_(GL_ARRAY_BUFFER, 0);
+    gle::clearvbo();
 }
 
 static LocalShaderParam screentexcoord[2] = { LocalShaderParam("screentexcoord0"), LocalShaderParam("screentexcoord1") };

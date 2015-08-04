@@ -53,12 +53,12 @@ namespace sphere
         }
 
         if(!vbuf) glGenBuffers_(1, &vbuf);
-        glBindBuffer_(GL_ARRAY_BUFFER, vbuf);
+        gle::bindvbo(vbuf);
         glBufferData_(GL_ARRAY_BUFFER, numverts*sizeof(vert), verts, GL_STATIC_DRAW);
         DELETEA(verts);
 
         if(!ebuf) glGenBuffers_(1, &ebuf);
-        glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, ebuf);
+        gle::bindebo(ebuf);
         glBufferData_(GL_ELEMENT_ARRAY_BUFFER, numindices*sizeof(GLushort), indices, GL_STATIC_DRAW);
         DELETEA(indices);
     }
@@ -67,8 +67,8 @@ namespace sphere
     {
         if(!vbuf) init(12, 6);
 
-        glBindBuffer_(GL_ARRAY_BUFFER, vbuf);
-        glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, ebuf);
+        gle::bindvbo(vbuf);
+        gle::bindebo(ebuf);
 
         gle::vertexpointer(sizeof(vert), &verts->pos);
         gle::texcoord0pointer(sizeof(vert), &verts->s, GL_UNSIGNED_SHORT, 2, GL_TRUE);
@@ -88,8 +88,8 @@ namespace sphere
         gle::disablevertex();
         gle::disabletexcoord0();
 
-        glBindBuffer_(GL_ARRAY_BUFFER, 0);
-        glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, 0);
+        gle::clearvbo();
+        gle::clearebo();
     }
 
     void cleanup()

@@ -229,7 +229,7 @@ struct decalrenderer
 
     static void cleanuprenderstate()
     {
-        glBindBuffer_(GL_ARRAY_BUFFER, 0);
+        gle::clearvbo();
 
         gle::disablevertex();
         gle::disabletexcoord0();
@@ -263,7 +263,7 @@ struct decalrenderer
         glBindTexture(GL_TEXTURE_2D, tex->id);
 
         if(!vbo) { glGenBuffers_(1, &vbo); dirty = true; }
-        glBindBuffer_(GL_ARRAY_BUFFER, vbo);
+        gle::bindvbo(vbo);
 
         int count = endvert < startvert ? maxverts - startvert : endvert - startvert;
         if(dirty)

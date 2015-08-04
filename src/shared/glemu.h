@@ -17,8 +17,8 @@ namespace gle
     extern ucharbuf attribbuf;
 
     extern int enabled;
-    extern void disable();
-    static inline void fastdisable() { if(enabled) gle::disable(); }
+    extern void forcedisable();
+    static inline void disable() { if(enabled) forcedisable(); }
 
     extern void begin(GLenum mode);
     extern void begin(GLenum mode, int numverts);
@@ -73,9 +73,9 @@ namespace gle
             glVertexAttribPointer_(index, size, type, normalized, stride, data); \
         }
 
-    static inline void enableattrib(int index) { fastdisable(); glEnableVertexAttribArray_(index); }
+    static inline void enableattrib(int index) { disable(); glEnableVertexAttribArray_(index); }
     static inline void disableattrib(int index) { glDisableVertexAttribArray_(index); }
-    GLE_ATTRIBPOINTER(vertex, ATTRIB_VERTEX, GL_FALSE, 3, GL_FLOAT, fastdisable())
+    GLE_ATTRIBPOINTER(vertex, ATTRIB_VERTEX, GL_FALSE, 3, GL_FLOAT, disable())
     GLE_ATTRIBPOINTER(color, ATTRIB_COLOR, GL_TRUE, 4, GL_UNSIGNED_BYTE, )
     GLE_ATTRIBPOINTER(texcoord0, ATTRIB_TEXCOORD0, GL_FALSE, 2, GL_FLOAT, )
     GLE_ATTRIBPOINTER(texcoord1, ATTRIB_TEXCOORD1, GL_FALSE, 2, GL_FLOAT, )
@@ -84,9 +84,9 @@ namespace gle
     GLE_ATTRIBPOINTER(boneweight, ATTRIB_BONEWEIGHT, GL_TRUE, 4, GL_UNSIGNED_BYTE, )
     GLE_ATTRIBPOINTER(boneindex, ATTRIB_BONEINDEX, GL_FALSE, 4, GL_UNSIGNED_BYTE, )
 
-    static inline void bindebo(GLuint ebo) { fastdisable(); glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, ebo); }
+    static inline void bindebo(GLuint ebo) { disable(); glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, ebo); }
     static inline void clearebo() { glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, 0); }
-    static inline void bindvbo(GLuint vbo) { fastdisable(); glBindBuffer_(GL_ARRAY_BUFFER, vbo); }
+    static inline void bindvbo(GLuint vbo) { disable(); glBindBuffer_(GL_ARRAY_BUFFER, vbo); }
     static inline void clearvbo() { glBindBuffer_(GL_ARRAY_BUFFER, 0); }
 
     template<class T>

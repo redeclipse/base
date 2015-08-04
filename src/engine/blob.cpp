@@ -508,8 +508,8 @@ struct blobrenderer
         gle::disabletexcoord0();
         gle::disablecolor();
 
-        glBindBuffer_(GL_ARRAY_BUFFER, 0);
-        if(glversion >= 300) glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, 0);
+        gle::clearvbo();
+        if(glversion >= 300) gle::clearebo();
 
         glDepthMask(GL_TRUE);
         glDisable(GL_BLEND);
@@ -613,9 +613,9 @@ struct blobrenderer
         if(!ebo) glGenBuffers_(1, &ebo);
         if(!vbo) glGenBuffers_(1, &vbo);
 
-        glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, ebo);
+        gle::bindebo(ebo);
         glBufferData_(GL_ELEMENT_ARRAY_BUFFER, maxindexes*sizeof(ushort), NULL, GL_STREAM_DRAW);
-        glBindBuffer_(GL_ARRAY_BUFFER, vbo);
+        gle::bindvbo(vbo);
         glBufferData_(GL_ARRAY_BUFFER, maxverts*sizeof(blobvert), NULL, GL_STREAM_DRAW);
   
         ushort *estart;

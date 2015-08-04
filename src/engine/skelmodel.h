@@ -1222,7 +1222,7 @@ struct skelmodel : animmodel
                     loopv(blendcombos) blendcombos[i].interpindex = -1;
                 }
 
-                glBindBuffer_(GL_ARRAY_BUFFER, vc.vbuf);
+                gle::bindvbo(vc.vbuf);
                 #define GENVBO(type, args) do { \
                     vertsize = sizeof(type); \
                     vector<type> vverts; \
@@ -1251,13 +1251,13 @@ struct skelmodel : animmodel
                 #undef GENVBO
                 #undef GENVBOANIM
                 #undef GENVBOSTAT
-                glBindBuffer_(GL_ARRAY_BUFFER, 0);
+                gle::clearvbo();
             }
 
             glGenBuffers_(1, &ebuf);
-            glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, ebuf);
+            gle::bindebo(ebuf);
             glBufferData_(GL_ELEMENT_ARRAY_BUFFER, idxs.length()*sizeof(ushort), idxs.getbuf(), GL_STATIC_DRAW);
-            glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, 0);
+            gle::clearebo();
         }
 
         void bindvbo(const animstate *as, vbocacheentry &vc, skelcacheentry *sc = NULL, blendcacheentry *bc = NULL)
@@ -1484,7 +1484,7 @@ struct skelmodel : animmodel
                         skelmesh &m = *(skelmesh *)meshes[i];
                         m.interpverts(sc.bdata, bc ? bc->bdata : NULL, tangents, vdata + m.voffset*vertsize, p->skins[i]);
                     }
-                    glBindBuffer_(GL_ARRAY_BUFFER, vc.vbuf);
+                    gle::bindvbo(vc.vbuf);
                     glBufferData_(GL_ARRAY_BUFFER, vlen*vertsize, vdata, GL_STREAM_DRAW);
                 }
 

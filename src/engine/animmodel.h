@@ -522,12 +522,12 @@ struct animmodel : model
         {
             if(lastebuf!=ebuf)
             {
-                glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, ebuf);
+                gle::bindebo(ebuf);
                 lastebuf = ebuf;
             }
             if(lastvbuf!=vbuf)
             {
-                glBindBuffer_(GL_ARRAY_BUFFER, vbuf);
+                gle::bindvbo(vbuf);
                 if(!lastvbuf) gle::enablevertex();
                 gle::vertexpointer(stride, v);
                 lastvbuf = vbuf;
@@ -1376,8 +1376,8 @@ struct animmodel : model
 
     static void disablevbo()
     {
-        glBindBuffer_(GL_ARRAY_BUFFER, 0);
-        glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, 0);
+        gle::clearvbo();
+        gle::clearebo();
         gle::disablevertex();
         if(enabletc) disabletc();
         if(enablenormals) disablenormals();

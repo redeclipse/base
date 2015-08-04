@@ -312,9 +312,8 @@ namespace gle
         return numvertexes;
     }
 
-    void disable()
+    void forcedisable()
     {
-        if(!enabled) return;
         for(int i = 0; enabled; i++) if(enabled&(1<<i)) { glDisableVertexAttribArray_(i); enabled &= ~(1<<i); }
         numlastattribs = lastattribmask = lastvertexsize = 0;
         lastbuf = NULL;

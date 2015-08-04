@@ -285,12 +285,12 @@ void generategrass()
     grassgroups.sort(comparegrassgroups);
 
     if(!grassvbo) glGenBuffers_(1, &grassvbo);
-    glBindBuffer_(GL_ARRAY_BUFFER, grassvbo);
+    gle::bindvbo(grassvbo);
     int size = grassverts.length()*sizeof(grassvert);
     grassvbosize = max(grassvbosize, size);
     glBufferData_(GL_ARRAY_BUFFER, grassvbosize, size == grassvbosize ? grassverts.getbuf() : NULL, GL_STREAM_DRAW);
     if(size != grassvbosize) glBufferSubData_(GL_ARRAY_BUFFER, 0, size, grassverts.getbuf());
-    glBindBuffer_(GL_ARRAY_BUFFER, 0);
+    gle::clearvbo();
 }
 
 void rendergrass()
@@ -304,7 +304,7 @@ void rendergrass()
 
     SETSHADER(grass);
 
-    glBindBuffer_(GL_ARRAY_BUFFER, grassvbo);
+    gle::bindvbo(grassvbo);
 
     const grassvert *ptr = 0;
     gle::vertexpointer(sizeof(grassvert), ptr->pos.v);
@@ -351,7 +351,7 @@ void rendergrass()
     gle::disabletexcoord0();
     gle::disabletexcoord1();
     
-    glBindBuffer_(GL_ARRAY_BUFFER, 0);
+    gle::clearvbo();
 
     glDisable(GL_BLEND);
     glDepthMask(GL_TRUE);

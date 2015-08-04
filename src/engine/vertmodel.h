@@ -297,7 +297,7 @@ struct vertmodel : animmodel
             } 
             else 
             {
-                glBindBuffer_(GL_ARRAY_BUFFER, vc.vbuf);
+                gle::bindvbo(vc.vbuf);
                 #define GENVBO(type) do { \
                     vector<type> vverts; \
                     loopv(meshes) vlen += ((vertmesh *)meshes[i])->genvbo(idxs, vlen, vverts, htdata, htlen); \
@@ -313,13 +313,13 @@ struct vertmodel : animmodel
                 else GENVBO(vvertn);
                 delete[] htdata;
                 #undef GENVBO
-                glBindBuffer_(GL_ARRAY_BUFFER, 0);
+                gle::clearvbo();
             }
 
             glGenBuffers_(1, &ebuf);
-            glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, ebuf);
+            gle::bindebo(ebuf);
             glBufferData_(GL_ELEMENT_ARRAY_BUFFER, idxs.length()*sizeof(ushort), idxs.getbuf(), GL_STATIC_DRAW);
-            glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, 0);
+            gle::clearebo();
         }
 
         void bindvbo(const animstate *as, vbocacheentry &vc)
@@ -405,7 +405,7 @@ struct vertmodel : animmodel
                         vertmesh &m = *(vertmesh *)meshes[i];
                         m.interpverts(*as, tangents, vdata + m.voffset*vertsize, p->skins[i]);
                     }
-                    glBindBuffer_(GL_ARRAY_BUFFER, vc->vbuf);
+                    gle::bindvbo(vc->vbuf);
                     glBufferData_(GL_ARRAY_BUFFER, vlen*vertsize, vdata, GL_STREAM_DRAW); 
                 }
                 vc->millis = lastmillis;
