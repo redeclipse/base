@@ -2,7 +2,7 @@
 
 namespace client
 {
-    bool sendplayerinfo = false, sendgameinfo = false, isready = false, remote = false,
+    bool sendplayerinfo = false, sendgameinfo = false, sendcrcinfo = false, isready = false, remote = false,
         demoplayback = false, needsmap = false, gettingmap = false;
     int lastping = 0, sessionid = 0, sessionver = 0, lastplayerinfo = 0;
     string connectpass = "";
@@ -957,7 +957,7 @@ namespace client
     void gamedisconnect(int clean)
     {
         if(editmode) toggleedit();
-        gettingmap = needsmap = remote = isready = sendgameinfo = sendplayerinfo = false;
+        gettingmap = needsmap = remote = isready = sendplayerinfo = sendgameinfo = sendcrcinfo = false;
         sessionid = sessionver = lastplayerinfo = 0;
         messages.shrink(0);
         mapvotes.shrink(0);
@@ -1684,7 +1684,15 @@ namespace client
                 putint(p, game::player1->loadweap.length());
                 loopv(game::player1->loadweap) putint(p, game::player1->loadweap[i]);
             }
-            if(sendgameinfo && !needsmap)
+            if(sendcrcinfo)
+            {
+                p.reliable();
+                putint(p, N_MAPCRC);
+                sendstring(game::clientmap, p);
+                putint(p, game::clientcrc);
+                sendcrcinfo = false;
+            }
+            if(sendgameinfo)
             {
                 p.reliable();
                 putint(p, N_GAMEINFO);
@@ -2039,11 +2047,7 @@ namespace client
                     else
                     {
                         changemapserv(text, mode, muts, crc);
-                        if(!needsmap)
-                        {
-                            addmsg(N_MAPCRC, "rsi", game::clientmap, game::clientcrc);
-                            sendgameinfo = true;
-                        }
+                        if(!needsmap) sendcrcinfo = sendgameinfo = true;
                         else addmsg(N_GETMAP, "r");
                     }
                 }

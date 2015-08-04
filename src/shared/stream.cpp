@@ -248,7 +248,7 @@ int crcfile(const char *s)
 {
     if(!s || !*s) return 0;
     stream *f = openfile(s, "rb");
-    if(!f) return NULL;
+    if(!f) return 0;
     int crc = crcstream(f);
     delete f;
     return crc;
@@ -1253,21 +1253,19 @@ stream *openutf8file(const char *filename, const char *mode, stream *file)
 
 char *loadstream(stream *f, size_t *size, bool utf8)
 {
-    int cur = f->seek(0, SEEK_CUR);
     f->seek(0, SEEK_SET);
     size_t len = f->size();
-    if(len <= 0) { f->seek(cur, SEEK_SET); return NULL; }
+    if(len <= 0) return NULL;
     char *buf = new char[len+1];
-    if(!buf) { f->seek(cur, SEEK_SET); return NULL; }
+    if(!buf) return NULL;
     size_t offset = 0;
     if(utf8 && len >= 3)
     {
-        if(f->read(buf, 3) != 3) { f->seek(cur, SEEK_SET); delete[] buf; return NULL; }
+        if(f->read(buf, 3) != 3) { delete[] buf; return NULL; }
         if(((uchar *)buf)[0] == 0xEF && ((uchar *)buf)[1] == 0xBB && ((uchar *)buf)[2] == 0xBF) len -= 3;
         else offset += 3;
     }
     size_t rlen = f->read(&buf[offset], len-offset);
-    f->seek(cur, SEEK_SET);
     if(rlen != len-offset) { delete[] buf; return NULL; }
     if(utf8) len = decodeutf8((uchar *)buf, len, (uchar *)buf, len);
     buf[len] = '\0';
