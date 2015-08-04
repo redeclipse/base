@@ -4,9 +4,8 @@
 #include "version.h"
 #include "cube.h"
 
-extern int version, versioning, versionmajor, versionminor, versionpatch, versionplatform, versionarch, versionisserver;
+extern int version, versioning, versionmajor, versionminor, versionpatch, versionplatform, versionarch, versionisserver, versioncrc;
 extern char *versionstring, *versionname, *versionuname, *versionrelease, *versionurl, *versionmaster, *versionplatname, *versionplatlongname;
-extern uint versioncrc;
 #define CUR_VER_MAKE(a,b,c) (((a)<<16) | ((b)<<8) | (c))
 #define CUR_VER CUR_VER_MAKE(VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH)
 #define CUR_VERSION (VERSION_MAJOR*100)+(VERSION_MINOR*10)+VERSION_PATCH
@@ -568,6 +567,7 @@ extern bool getsight(vec &o, float yaw, float pitch, vec &q, vec &v, float mdist
 
 // worldio
 extern char *maptitle, *mapauthor, *mapname;
+int mapcrc;
 extern int getmapversion();
 extern int getmaprevision();
 

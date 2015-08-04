@@ -294,7 +294,7 @@ enum
     N_MAPCHANGE, N_MAPVOTE, N_CLEARVOTE, N_CHECKPOINT, N_ITEMSPAWN, N_ITEMUSE, N_TRIGGER, N_EXECLINK,
     N_PING, N_PONG, N_CLIENTPING, N_TICK, N_ITEMACC, N_SERVMSG, N_GAMEINFO, N_RESUME,
     N_EDITMODE, N_EDITENT, N_EDITLINK, N_EDITVAR, N_EDITF, N_EDITT, N_EDITM, N_FLIP, N_COPY, N_PASTE, N_ROTATE, N_REPLACE, N_DELCUBE, N_REMIP, N_EDITVSLOT, N_UNDO, N_REDO, N_CLIPBOARD, N_NEWMAP,
-    N_GETMAP, N_SENDMAP, N_FAILMAP, N_SENDMAPFILE,
+    N_GETMAP, N_SENDMAP, N_FAILMAP, N_SENDMAPFILE, N_SENDMAPDONE,
     N_MASTERMODE, N_ADDCONTROL, N_CLRCONTROL, N_CURRENTPRIV, N_SPECTATOR, N_WAITING, N_SETPRIV, N_SETTEAM,
     N_SETUPAFFIN, N_INFOAFFIN, N_MOVEAFFIN,
     N_TAKEAFFIN, N_RETURNAFFIN, N_RESETAFFIN, N_DROPAFFIN, N_SCOREAFFIN, N_INITAFFIN, N_SCORE,
@@ -321,7 +321,7 @@ char msgsizelookup(int msg)
         N_TICK, 3, N_ITEMACC, 0,
         N_SERVMSG, 0, N_GAMEINFO, 0, N_RESUME, 0,
         N_EDITMODE, 2, N_EDITENT, 0, N_EDITLINK, 4, N_EDITVAR, 0, N_EDITF, 16, N_EDITT, 16, N_EDITM, 17, N_FLIP, 14, N_COPY, 14, N_PASTE, 14, N_ROTATE, 15, N_REPLACE, 17, N_DELCUBE, 14, N_REMIP, 1, N_EDITVSLOT, 16, N_UNDO, 0, N_REDO, 0, N_NEWMAP, 2,
-        N_GETMAP, 0, N_SENDMAP, 0, N_FAILMAP, 0, N_SENDMAPFILE, 0,
+        N_GETMAP, 0, N_SENDMAP, 0, N_FAILMAP, 0, N_SENDMAPFILE, 0, N_SENDMAPDONE, 0,
         N_MASTERMODE, 2, N_ADDCONTROL, 0, N_CLRCONTROL, 2, N_CURRENTPRIV, 3, N_SPECTATOR, 3, N_WAITING, 2, N_SETPRIV, 0, N_SETTEAM, 0,
         N_SETUPAFFIN, 0, N_INFOAFFIN, 0, N_MOVEAFFIN, 0,
         N_DROPAFFIN, 0, N_SCOREAFFIN, 0, N_RETURNAFFIN, 0, N_TAKEAFFIN, 0, N_RESETAFFIN, 0, N_INITAFFIN, 0, N_SCORE, 0,
@@ -448,9 +448,7 @@ static inline void modecheck(int &mode, int &muts, int trying = 0)
 
 struct verinfo
 {
-    int type, flag, version;
-    int major, minor, patch, game, platform, arch, gpuglver, gpuglslver;
-    uint crc;
+    int type, flag, version, major, minor, patch, game, platform, arch, gpuglver, gpuglslver, crc;
     char *gpuvendor, *gpurenderer, *gpuversion;
 
     verinfo() : gpuvendor(NULL), gpurenderer(NULL), gpuversion(NULL) { reset(); }
@@ -462,10 +460,8 @@ struct verinfo
         if(gpurenderer) delete[] gpurenderer;
         if(gpuversion) delete[] gpuversion;
         gpuvendor = gpurenderer = gpuversion = NULL;
-        type = flag = version = 0;
-        major = minor = patch = game = arch = gpuglver = gpuglslver = 0;
+        type = flag = version = major = minor = patch = game = arch = gpuglver = gpuglslver = crc = 0;
         platform = -1;
-        crc = 0;
     }
 
     template <class T>
@@ -480,7 +476,7 @@ struct verinfo
         arch = getint(p);
         gpuglver = getint(p);
         gpuglslver = getint(p);
-        crc = uint(getint(p));
+        crc = getint(p);
         if(gpuvendor) delete[] gpuvendor;
         getstring(text, p); gpuvendor = newstring(text);
         if(gpurenderer) delete[] gpurenderer;
@@ -1538,7 +1534,7 @@ struct cament
 namespace client
 {
     extern int showpresence, showteamchange;
-    extern bool sendplayerinfo, sendcrcinfo, sendgameinfo, demoplayback, isready, needsmap, gettingmap;
+    extern bool demoplayback, isready, needsmap, gettingmap;
     extern vector<uchar> messages;
     extern void clearvotes(gameent *d, bool msg = false);
     extern void ignore(int cn);

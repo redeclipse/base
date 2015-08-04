@@ -234,6 +234,26 @@ struct packagedir
 vector<packagedir> packagedirs;
 int packagedirmask = ~0;
 
+int crcstream(stream *f)
+{
+    size_t len = 0;
+    char *buf = loadstream(f, &len, false);
+    if(!buf) return 0;
+    int crc = int(crc32(0, (const Bytef *)buf, len));
+    delete[] buf;
+    return crc;
+}
+
+int crcfile(const char *s)
+{
+    if(!s || !*s) return 0;
+    stream *f = openfile(fn, "rb");
+    if(!f) return NULL;
+    int crc = crcstream(f);
+    delete f;
+    return crc;
+}
+
 char *makefile(const char *s, const char *e, int revision, int start, bool store, bool skip)
 {
     static string o;
@@ -1231,23 +1251,22 @@ stream *openutf8file(const char *filename, const char *mode, stream *file)
     return utf8;
 }
 
-char *loadfile(const char *fn, size_t *size, bool utf8)
+char *loadstream(stream *f, size_t *size, bool utf8)
 {
-    stream *f = openfile(fn, "rb");
-    if(!f) return NULL;
+    f->seek(0, SEEK_SET);
     size_t len = f->size();
-    if(len <= 0) { delete f; return NULL; }
+    if(len <= 0) { f->seek(0, SEEK_SET); return NULL; }
     char *buf = new char[len+1];
-    if(!buf) { delete f; return NULL; }
+    if(!buf) { f->seek(0, SEEK_SET); return NULL; }
     size_t offset = 0;
     if(utf8 && len >= 3)
     {
-        if(f->read(buf, 3) != 3) { delete f; delete[] buf; return NULL; }
+        if(f->read(buf, 3) != 3) { f->seek(0, SEEK_SET); delete[] buf; return NULL; }
         if(((uchar *)buf)[0] == 0xEF && ((uchar *)buf)[1] == 0xBB && ((uchar *)buf)[2] == 0xBF) len -= 3;
         else offset += 3;
     }
     size_t rlen = f->read(&buf[offset], len-offset);
-    delete f;
+    f->seek(0, SEEK_SET);
     if(rlen != len-offset) { delete[] buf; return NULL; }
     if(utf8) len = decodeutf8((uchar *)buf, len, (uchar *)buf, len);
     buf[len] = '\0';
@@ -1255,3 +1274,9 @@ char *loadfile(const char *fn, size_t *size, bool utf8)
     return buf;
 }
 
+char *loadfile(const char *fn, size_t *size, bool utf8)
+{
+    stream *f = openfile(fn, "rb");
+    if(!f) return NULL;
+    return loadstream(f, size, utf8)
+}

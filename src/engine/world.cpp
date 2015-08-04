@@ -1022,7 +1022,7 @@ void resetmap(bool empty)
     clearsleep();
     cancelsel();
     pruneundos();
-    clearmapcrc();
+    mapcrc = 0;
     entities::clearents();
     outsideents.setsize(0);
     game::resetmap(empty);

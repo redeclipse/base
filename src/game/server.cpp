@@ -380,9 +380,8 @@ namespace server
         servstate state;
         string name, handle, mapvote, authname, clientmap;
         int clientnum, connectmillis, sessionid, overflow, ping, team, lastteam, lastplayerinfo,
-            modevote, mutsvote, lastvote, privilege, gameoffset, lastevent, wslen, swapteam;
+            modevote, mutsvote, lastvote, privilege, gameoffset, lastevent, wslen, swapteam, mapcrc;
         bool connected, ready, local, timesync, online, wantsmap, gettingmap, connectauth, kicked;
-        uint mapcrc;
         vector<gameevent *> events;
         vector<uchar> position, messages;
         uchar *wsdata;
@@ -407,11 +406,10 @@ namespace server
             events.deletecontents();
             overflow = 0;
             ready = timesync = wantsmap = gettingmap = false;
-            lastevent = gameoffset = lastvote = 0;
+            lastevent = gameoffset = lastvote = mapcrc = 0;
             if(!change) lastteam = T_NEUTRAL;
             team = swapteam = T_NEUTRAL;
             clientmap[0] = '\0';
-            mapcrc = 0;
         }
 
         void cleanclipboard(bool fullclean = true)
@@ -465,12 +463,12 @@ namespace server
     }
 
     string smapname;
-    int gamestate = G_S_WAITING, gamemode = G_EDITMODE, mutators = 0, gamemillis = 0, gamelimit = 0, mastermode = MM_OPEN;
-    int timeremaining = -1, oldtimelimit = -1, gamewaittime = 0, gamewaitstate = 0, gamewaitstart = 0, lastteambalance = 0, nextteambalance = 0, lastrotatecycle = 0, mapsending = -1;
+    int gamestate = G_S_WAITING, gamemode = G_EDITMODE, mutators = 0, gamemillis = 0, gamelimit = 0, mastermode = MM_OPEN,
+        timeremaining = -1, oldtimelimit = -1, gamewaittime = 0, gamewaitstate = 0, gamewaitstart = 0,
+        lastteambalance = 0, nextteambalance = 0, lastrotatecycle = 0, mapsending = -1, mapcurcrc = 0;
     bool hasgameinfo = false, updatecontrols = false, shouldcheckvotes = false, firstblood = false, sentstats = false;
     enet_uint32 lastsend = 0;
     stream *mapdata[SENDMAP_MAX] = { NULL };
-    uint mapcrc = 0;
     vector<clientinfo *> clients, connects;
 
     struct demofile
@@ -2504,7 +2502,6 @@ namespace server
             if(best)
             {
                 srvoutf(-3, "vote passed: \fs\fy%s\fS on \fs\fo%s\fS", gamename(best->mode, best->muts), best->map);
-                sendf(-1, 1, "risi3", N_MAPCHANGE, best->map, 0, best->mode, best->muts);
                 changemap(best->map, best->mode, best->muts);
             }
             else
@@ -2513,7 +2510,6 @@ namespace server
                 changemode(mode, muts);
                 const char *map = choosemap(smapname, mode, muts);
                 srvoutf(-3, "server chooses: \fs\fy%s\fS on \fs\fo%s\fS", gamename(mode, muts), map);
-                sendf(-1, 1, "risi3", N_MAPCHANGE, map, 0, mode, muts);
                 changemap(map, mode, muts);
             }
             return true;
@@ -2616,7 +2612,6 @@ namespace server
             sendstats();
             endmatch();
             srvoutf(-3, "%s forced: \fs\fy%s\fS on \fs\fo%s\fS", colourname(ci), gamename(ci->modevote, ci->mutsvote), ci->mapvote);
-            sendf(-1, 1, "risi3", N_MAPCHANGE, ci->mapvote, 0, ci->modevote, ci->mutsvote);
             changemap(ci->mapvote, ci->modevote, ci->mutsvote);
             return;
         }
@@ -2869,13 +2864,13 @@ namespace server
 
     enum { ALST_TRY = 0, ALST_SPAWN, ALST_SPEC, ALST_EDIT, ALST_WALK, ALST_MAX };
 
-    extern bool getmap(clientinfo *ci = NULL, bool force = false);
+    bool getmap(clientinfo *ci = NULL, bool force = false);
 
     bool crclocked(clientinfo *ci, bool msg = false)
     {
-        if(m_play(gamemode) && G(crclock) && ci->state.actortype == A_PLAYER && (mapcrc ? ci->mapcrc != mapcrc : !ci->mapcrc) && !haspriv(ci, G(crclock)))
+        if(m_play(gamemode) && G(crclock) && ci->state.actortype == A_PLAYER && (mapcurcrc ? ci->mapcrc != mapcrc : !ci->mapcrc) && !haspriv(ci, G(crclock)))
         {
-            if(msg) srvmsgft(ci->clientnum, CON_EVENT, "\fyyou are \fs\fccrc locked\fS, you need the correct map version..");
+            if(msg) srvmsgft(ci->clientnum, CON_EVENT, "\fyyou are \fs\fccrc locked\fS, please wait for the correct map version..");
             return true;
         }
         return false;
@@ -2950,14 +2945,14 @@ namespace server
 
     void resetmapdata()
     {
-        mapcrc = 0;
+        mapcurcrc = 0;
         mapsending = -1;
         loopi(SENDMAP_MAX) if(mapdata[i]) DELETEP(mapdata[i]);
     }
 
     bool hasmapdata()
     {
-        if(!mapcrc) return false;
+        if(!mapcurcrc) return false;
         loopi(SENDMAP_HAS) if(!mapdata[i]) return false;
         return true;
     }
@@ -2974,12 +2969,13 @@ namespace server
             {
                 if(ci->gettingmap)
                 {
-                    srvmsgft(ci->clientnum, CON_EVENT, "\fyalready in the process of sending you the map..");
+                    //srvmsgft(ci->clientnum, CON_EVENT, "\fyalready in the process of sending you the map..");
                     return true;
                 }
                 ci->gettingmap = true;
                 srvmsgft(ci->clientnum, CON_EVENT, "\fysending you the map, please wait..");
                 loopi(SENDMAP_MAX) if(mapdata[i]) sendfile(ci->clientnum, 2, mapdata[i], "ri2", N_SENDMAPFILE, i);
+                sendf(ci->clientnum, 2, "ri", N_SENDMAPDONE);
                 sendwelcome(ci);
                 ci->needclipboard = totalmillis ? totalmillis : 1;
                 return true;
@@ -3027,8 +3023,8 @@ namespace server
         if(best)
         {
             mapsending = best->clientnum;
-            mapcrc = best->mapcrc;
-            srvoutf(4, "\fythe map crc \fs\fc0x%.8x\fS is being requested from %s..", mapcrc, colourname(best));
+            mapcurcrc = best->mapcrc;
+            srvoutf(4, "\fythe map crc \fs\fc0x%.8x\fS is being requested from %s..", mapcurcrc, colourname(best));
             sendf(best->clientnum, 1, "ri", N_GETMAP);
             loopv(clients)
             {
@@ -3182,17 +3178,8 @@ namespace server
             loopi(SENDMAP_MAX)
             {
                 defformatstring(reqfile, strstr(reqmap, "maps/")==reqmap || strstr(reqmap, "maps\\")==reqmap ? "%s.%s" : "maps/%s.%s", reqmap, sendmaptypes[i]);
-                if(i == SENDMAP_MPZ)
-                {
-                    stream *f = opengzfile(reqfile, "rb");
-                    if(f)
-                    {
-                        f->seek(-1, SEEK_END);
-                        mapcrc = f->getcrc();
-                        DELETEP(f);
-                    }
-                }
                 mapdata[i] = openfile(reqfile, "rb");
+                if(i == SENDMAP_MPZ) mapcurcrc = crcstream(mapdata[i]);
             }
             if(!hasmapdata()) resetmapdata();
         }
@@ -3255,6 +3242,7 @@ namespace server
             sendtick();
             if(m_demo(gamemode)) setupdemoplayback();
             else if(demonextmatch) setupdemorecord();
+            sendf(-1, 1, "risi3", N_MAPCHANGE, smapname, gamemode, mutators, mapcurcrc);
         }
     }
 
@@ -5057,10 +5045,18 @@ namespace server
     {
         clientinfo *ci = (clientinfo *)getinfo(sender);
         ucharbuf p(data, len);
-        int type = getint(p), n = getint(p);
+        int type = getint(p);
+        if(type != N_SENDMAPFILE)
+        {
+            data += p.length();
+            len -= p.length();
+            mapsending = -1;
+            if(type == N_SENDMAPDONE) return true;
+            return false;
+        }
+        int n = getint(p);
         data += p.length();
         len -= p.length();
-        if(type != N_SENDMAPFILE) return false;
         if(n < 0 || n >= SENDMAP_MAX)
         {
             srvmsgf(sender, "bad map file type %d");
@@ -5084,8 +5080,8 @@ namespace server
             return false;
         }
         mapdata[n]->write(data, len);
-        if(n == SENDMAP_ALL) mapsending = -1; // milestone v1.6.0
-        return n == SENDMAP_MIN;
+        if(n == SENDMAP_MPZ) mapcurcrc = crcstream(mapdata[n]);
+        return false;
     }
 
     static struct msgfilter
@@ -5341,7 +5337,7 @@ namespace server
         }
         else relayf(2, "\fg%s (%s) has joined the game [%d.%d.%d-%s%d] (%d %s)", colourname(ci), gethostname(ci->clientnum), ci->state.version.major, ci->state.version.minor, ci->state.version.patch, plat_name(ci->state.version.platform), ci->state.version.arch, amt, amt != 1 ? "players" : "player");
 
-        if(hasmapdata()) srvmsgft(ci->clientnum, CON_SELF, "\fythe server map crc for \fs\fc%s\fS is: \fs\fc0x%.8x\fS", smapname, mapcrc);
+        if(hasmapdata()) srvmsgft(ci->clientnum, CON_SELF, "\fythe server map crc for \fs\fc%s\fS is: \fs\fc0x%.8x\fS", smapname, mapcurcrc);
 
         if(m_demo(gamemode)) setupdemoplayback();
         else if(m_edit(gamemode))
@@ -5607,15 +5603,15 @@ namespace server
                 case N_MAPCRC:
                 {
                     getstring(text, p);
-                    int crc = getint(p);
+                    uint crc = getint(p);
                     if(!ci) break;
                     copystring(ci->clientmap, text);
-                    ci->mapcrc = text[0] ? crc : 0;
+                    ci->mapcrc = crc;
                     ci->ready = true;
                     ci->wantsmap = ci->gettingmap = false;
                     if(!m_edit(gamemode))
                     {
-                        if(hasmapdata()) srvoutf(4, "\fy%s has map crc: \fs\fc0x%.8x\fS (server: \fs\fc0x%.8x\fS)", colourname(ci), ci->mapcrc, mapcrc); // milestone v1.6.0
+                        if(hasmapdata()) srvoutf(4, "\fy%s has map crc: \fs\fc0x%.8x\fS (server: \fs\fc0x%.8x\fS)", colourname(ci), ci->mapcrc, mapcurcrc); // milestone v1.6.0
                         else srvoutf(4, "\fy%s has map crc: \fs\fc0x%.8x\fS", colourname(ci), ci->mapcrc);
                     }
                     getmap(crclocked(ci, true) ? ci : NULL);

@@ -40,12 +40,12 @@ SVAR(IDF_READONLY, versionplatname, plat_name(CUR_PLATFORM));
 SVAR(IDF_READONLY, versionplatlongname, plat_longname(CUR_PLATFORM));
 VAR(IDF_READONLY, versionplatform, 0, CUR_PLATFORM, VAR_MAX);
 VAR(IDF_READONLY, versionarch, 0, CUR_ARCH, VAR_MAX);
+VAR(IDF_READONLY, versioncrc, 0, 0, VAR_MAX);
 #ifdef STANDALONE
 VAR(IDF_READONLY, versionisserver, 0, 1, 1);
 #else
 VAR(IDF_READONLY, versionisserver, 0, 0, 1);
 #endif
-uint versioncrc = 0;
 ICOMMAND(0, platname, "ii", (int *p, int *g), result(*p >= 0 && *p < MAX_PLATFORMS ? (*g!=0 ? plat_longname(*p) : plat_name(*p)) : ""));
 
 VAR(0, rehashing, 1, 0, -1);
@@ -463,6 +463,13 @@ void sendpacket(int n, int chan, ENetPacket *packet, int exclude)
 
 void sendf(int cn, int chan, const char *format, ...)
 {
+    if(cn < 0)
+    {
+#ifdef STANDALONE
+            return;
+#endif
+    }
+    else if(!clients.inrange(cn)) return;
     int exclude = -1;
     bool reliable = false;
     if(*format=='r') { reliable = true; ++format; }
@@ -490,6 +497,13 @@ void sendf(int cn, int chan, const char *format, ...)
             break;
         }
 
+        case 'u':
+        {
+            int n = isdigit(*format) ? *format++-'0' : 1;
+            loopi(n) putint(p, va_arg(args, uint));
+            break;
+        }
+
         case 'f':
         {
             int n = isdigit(*format) ? *format++-'0' : 1;
@@ -507,7 +521,10 @@ void sendf(int cn, int chan, const char *format, ...)
         }
     }
     va_end(args);
-    sendpacket(cn, chan, p.finalize(), exclude);
+    if(cn >= 0) sendpacket(cn, chan, p.finalize(), exclude);
+#ifndef STANDALONE
+    else sendclientpacket(packet, chan);
+#endif
 }
 
 void sendfile(int cn, int chan, stream *file, const char *format, ...)
@@ -532,6 +549,12 @@ void sendfile(int cn, int chan, stream *file, const char *format, ...)
         {
             int n = isdigit(*format) ? *format++-'0' : 1;
             loopi(n) putint(p, va_arg(args, int));
+            break;
+        }
+        case 'u':
+        {
+            int n = isdigit(*format) ? *format++-'0' : 1;
+            loopi(n) putint(p, va_arg(args, uint));
             break;
         }
         case 's': sendstring(va_arg(args, const char *), p); break;
@@ -1200,7 +1223,7 @@ static void setupwindow(const char *title)
     atexit(cleanupwindow);
 
     if(!setupsystemtray(WM_APP)) fatal("failed adding to system tray");
-    conoutf("identity: v%s-%s%d %s (%s) [0x%x]", VERSION_STRING, versionplatname, versionarch, versionisserver ? "server" : "client", VERSION_RELEASE, versioncrc);
+    conoutf("identity: v%s-%s%d %s (%s) [0x%.8x]", VERSION_STRING, versionplatname, versionarch, versionisserver ? "server" : "client", VERSION_RELEASE, versioncrc);
 }
 
 static char *parsecommandline(const char *src, vector<char *> &args)
@@ -1396,7 +1419,7 @@ void setupserver()
 
 void initgame()
 {
-    conoutf("identity: v%s-%s%d %s (%s) [0x%x]", VERSION_STRING, versionplatname, versionarch, versionisserver ? "server" : "client", VERSION_RELEASE, versioncrc);
+    conoutf("identity: v%s-%s%d %s (%s) [0x%.8x]", VERSION_STRING, versionplatname, versionarch, versionisserver ? "server" : "client", VERSION_RELEASE, versioncrc);
     server::start();
     loopv(gameargs)
     {
@@ -1652,10 +1675,7 @@ ICOMMAND(0, rehash, "i", (int *nosave), if(!(identflags&IDF_WORLD)) rehash(*nosa
 void setcrc(const char *bin)
 {
     if(!bin || !*bin) return;
-    size_t len = 0;
-    char *buf = loadfile(bin, &len, false);
-    if(!buf) return;
-    versioncrc = crc32(0, (const Bytef *)buf, len);
+    versioncrc = crcfile(bin);
     delete[] buf;
 }
 

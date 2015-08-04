@@ -1,4 +1,4 @@
-// worldio.cpp: loading & saving of maps and savegames
+// worldio.cpp: loading & saving of maps
 
 #include "engine.h"
 
@@ -14,6 +14,7 @@ extern const namemap mapdirs[] = {
 
 VAR(0, maptype, 1, -1, -1);
 VAR(0, maploading, 1, 0, -1);
+VAR(0, mapcrc, 1, 0, -1);
 SVAR(0, mapfile, "");
 SVAR(0, mapname, "");
 
@@ -45,12 +46,24 @@ void fixmaptitle()
 SVARF(IDF_WORLD, maptitle, "", fixmaptitle());
 SVARF(IDF_WORLD, mapauthor, "", { string s; if(filterstring(s, mapauthor)) setsvar("mapauthor", s, false); });
 
-void setnames(const char *fname, int type)
+void setnames(const char *fname, int type, int crc)
 {
     maptype = type >= 0 || type <= MAP_MAX-1 ? type : MAP_MAPZ;
 
     string fn, mn, mf;
-    if(fname != NULL && *fname) formatstring(fn, "%s", fname);
+    if(fname != NULL && *fname)
+    {
+        const char *xn = strstr(fname, "_0x")
+        if(xn && *xn)
+        {
+            char *t = newstring(fname, xn-fname);
+            copystring(fn, t);
+            delete[] t;
+        }
+        else copystring(fn, fname);
+        if(crc > 0) concatformatstring(fn, "_0x%.8x", crc);
+        else if(crc < 0) concatstring(fn, "_0x0");
+    }
     else formatstring(fn, "%s/untitled", mapdirs[maptype].name);
 
     if(strpbrk(fn, "/\\")) copystring(mn, fn);
@@ -922,15 +935,13 @@ void save_mapshot(char *mname)
 }
 ICOMMAND(0, savemapshot, "s", (char *mname), if(!(identflags&IDF_WORLD)) save_mapshot(*mname ? mname : mapname));
 
-#define istempname(n) (!strncmp(n, "temp/", 5) || !strncmp(n, "temp\\", 5))
-
 void save_world(const char *mname, bool nodata, bool forcesave)
 {
     int savingstart = SDL_GetTicks();
 
-    setnames(mname, MAP_MAPZ);
+    setnames(mname, MAP_MAPZ, forcesave ? -1 : 0);
 
-    if(autosavebackups) backup(mapname, mapexts[MAP_MAPZ].name, hdr.revision, autosavebackups > 2, !(autosavebackups%2));
+    if(autosavebackups && !forcesave) backup(mapname, mapexts[MAP_MAPZ].name, hdr.revision, autosavebackups > 2, !(autosavebackups%2));
     stream *f = opengzfile(mapfile, "wb");
     if(!f) { conoutf("\frerror saving %s to %s: file error", mapname, mapfile); return; }
 
@@ -1088,16 +1099,19 @@ void save_world(const char *mname, bool nodata, bool forcesave)
         }
     }
     delete f;
-    conoutf("saved %s (\fs%s\fS by \fs%s\fS) v.%d:%d (r%d) in %.1f secs", mapname, *maptitle ? maptitle : "Untitled", *mapauthor ? mapauthor : "Unknown", hdr.version, hdr.gamever, hdr.revision, (SDL_GetTicks()-savingstart)/1000.0f);
-    if(istempname(mapname)) setnames(&mapname[5], MAP_MAPZ);
+    mapcrc = crcfile(mapfile);
+    if(forcesave)
+    {
+        string aname;
+        copystring(aname, mapname);
+        setnames(aname, MAP_MAPZ, mapcrc);
+        remove(mapfile);
+        rename(aname, mapfile);
+    }
+    conoutf("saved %s (\fs%s\fS by \fs%s\fS) v%d:%d (r%d) [0x%.8x] in %.1f secs", mapname, *maptitle ? maptitle : "Untitled", *mapauthor ? mapauthor : "Unknown", hdr.version, hdr.gamever, hdr.revision, mapcrc, (SDL_GetTicks()-savingstart)/1000.0f);
 }
 
-ICOMMAND(0, savemap, "s", (char *mname), if(!(identflags&IDF_WORLD)) save_world(*mname ? (istempname(mname) ? &mname[5] : mname) : (istempname(mapname) ? &mapname[5] : mapname)));
-
-static uint mapcrc = 0;
-
-uint getmapcrc() { return mapcrc; }
-void clearmapcrc() { mapcrc = 0; }
+ICOMMAND(0, savemap, "s", (char *mname), if(!(identflags&IDF_WORLD)) save_world(*mname ? mname : mapname));
 
 static void sanevars()
 {
@@ -1110,666 +1124,665 @@ VAR(0, sunlightyaw, 0, 0, 360);
 VAR(0, sunlightpitch, -90, 90, 90);
 FVAR(0, sunlightscale, 0, 1, 16);
 
-bool load_world(const char *mname, bool temp)       // still supports all map formats that have existed since the earliest cube betas!
+bool load_world(const char *mname, int crc)       // still supports all map formats that have existed since the earliest cube betas!
 {
     int loadingstart = SDL_GetTicks();
     maploading = 1;
-    loop(tempfile, 2) if(tempfile || temp)
+    mapcrc = 0;
+    loop(format, MAP_MAX) loop(tempfile, crc > 0 ? 2 : 1)
     {
-        loop(format, MAP_MAX)
+        int mask = maskpackagedirs(format == MAP_OCTA ? ~0 : ~PACKAGEDIR_OCTA);
+        setnames(mname, format, tempfile && crc > 0 ? crc : 0);
+
+        stream *f = opengzfile(mapfile, "rb");
+        if(!f)
         {
-            int mask = maskpackagedirs(format == MAP_OCTA ? ~0 : ~PACKAGEDIR_OCTA);
-            setnames(mname, format);
-            if(!tempfile) loopk(2)
+            conoutf("\frnot found: %s", mapfile);
+            maskpackagedirs(mask);
+            continue;
+        }
+        int fcrc = crcstream(f);
+        if(!tempfile && crc > 0 && crc != fcrc)
+        {
+            delete f;
+            maskpackagedirs(mask);
+            continue; // skipped iteration
+        }
+        mapcrc = fcrc;
+
+        bool samegame = true;
+        int eif = 0;
+        mapz newhdr;
+        if(f->read(&newhdr, sizeof(binary))!=(int)sizeof(binary))
+        {
+            conoutf("\frerror loading %s: malformatted universal header", mapname);
+            delete f;
+            maploading = 0;
+            maskpackagedirs(mask);
+            return false;
+        }
+        lilswap(&newhdr.version, 2);
+
+        clearworldvars();
+        if(memcmp(newhdr.head, "MAPZ", 4) == 0 || memcmp(newhdr.head, "BFGZ", 4) == 0)
+        {
+            // this check removed below due to breakage: size_t(newhdr.headersize) > sizeof(chdr) || f->read(&chdr.worldsize, newhdr.headersize-sizeof(binary))!=size_t(newhdr.headersize)-sizeof(binary)
+            #define MAPZCOMPAT(ver) \
+                mapzcompat##ver chdr; \
+                memcpy(&chdr, &newhdr, sizeof(binary)); \
+                if(f->read(&chdr.worldsize, sizeof(chdr)-sizeof(binary))!=sizeof(chdr)-sizeof(binary)) \
+                { \
+                    conoutf("\frerror loading %s: malformatted mapz v%d[%d] header", mapname, newhdr.version, ver); \
+                    delete f; \
+                    maploading = 0; \
+                    maskpackagedirs(mask); \
+                    return false; \
+                }
+
+            if(newhdr.version <= 25)
             {
-                defformatstring(s, "temp/%s", k ? mapfile : mapname);
-                setsvar(k ? "mapfile" : "mapname", s);
+                MAPZCOMPAT(25);
+                lilswap(&chdr.worldsize, 5);
+                memcpy(&newhdr.worldsize, &chdr.worldsize, sizeof(int)*2);
+                newhdr.numpvs = 0;
+                newhdr.lightmaps = chdr.lightmaps;
+                newhdr.blendmap = 0;
+                newhdr.numvslots = 0;
+                memcpy(&newhdr.gamever, &chdr.gamever, sizeof(int)*2);
+                memcpy(&newhdr.gameid, &chdr.gameid, 4);
+                setsvar("maptitle", chdr.maptitle, true);
+            }
+            else if(newhdr.version <= 32)
+            {
+                MAPZCOMPAT(32);
+                lilswap(&chdr.worldsize, 6);
+                memcpy(&newhdr.worldsize, &chdr.worldsize, sizeof(int)*4);
+                newhdr.blendmap = 0;
+                newhdr.numvslots = 0;
+                memcpy(&newhdr.gamever, &chdr.gamever, sizeof(int)*2);
+                memcpy(&newhdr.gameid, &chdr.gameid, 4);
+                setsvar("maptitle", chdr.maptitle, true);
+            }
+            else if(newhdr.version <= 33)
+            {
+                MAPZCOMPAT(33);
+                lilswap(&chdr.worldsize, 7);
+                memcpy(&newhdr.worldsize, &chdr.worldsize, sizeof(int)*5);
+                newhdr.numvslots = 0;
+                memcpy(&newhdr.gamever, &chdr.gamever, sizeof(int)*2);
+                memcpy(&newhdr.gameid, &chdr.gameid, 4);
+                setsvar("maptitle", chdr.maptitle, true);
+            }
+            else if(newhdr.version <= 38)
+            {
+                MAPZCOMPAT(38);
+                lilswap(&chdr.worldsize, 7);
+                memcpy(&newhdr.worldsize, &chdr.worldsize, sizeof(int)*5);
+                newhdr.numvslots = 0;
+                memcpy(&newhdr.gamever, &chdr.gamever, sizeof(int)*2);
+            }
+            else
+            {
+                if(size_t(newhdr.headersize) > sizeof(newhdr) || f->read(&newhdr.worldsize, newhdr.headersize-sizeof(binary))!=size_t(newhdr.headersize)-sizeof(binary))
+                {
+                    conoutf("\frerror loading %s: malformatted mapz v%d header", mapname, newhdr.version);
+                    delete f;
+                    maploading = 0;
+                    maskpackagedirs(mask);
+                    return false;
+                }
+                lilswap(&newhdr.worldsize, 8);
             }
 
-            stream *f = opengzfile(mapfile, "rb");
-            if(!f)
+            if(newhdr.version > MAPVERSION)
             {
-                conoutf("\frnot found: %s", mapfile);
-                maskpackagedirs(mask);
-                continue;
-            }
-
-            bool samegame = true;
-            int eif = 0;
-            mapz newhdr;
-            if(f->read(&newhdr, sizeof(binary))!=(int)sizeof(binary))
-            {
-                conoutf("\frerror loading %s: malformatted universal header", mapname);
+                conoutf("\frerror loading %s: requires a newer version of %s", mapname, VERSION_NAME);
                 delete f;
                 maploading = 0;
                 maskpackagedirs(mask);
                 return false;
             }
-            lilswap(&newhdr.version, 2);
 
-            clearworldvars();
-            if(memcmp(newhdr.head, "MAPZ", 4) == 0 || memcmp(newhdr.head, "BFGZ", 4) == 0)
+            resetmap(false);
+            hdr = newhdr;
+            progress(0, "please wait..");
+            maptype = MAP_MAPZ;
+
+            if(hdr.version <= 24) copystring(hdr.gameid, "bfa", 4); // all previous maps were bfa-fps
+            if(verbose) conoutf("loading v%d map from %s game v%d", hdr.version, hdr.gameid, hdr.gamever);
+
+            if(hdr.version >= 25 || (hdr.version == 24 && hdr.gamever >= 44))
             {
-                // this check removed below due to breakage: size_t(newhdr.headersize) > sizeof(chdr) || f->read(&chdr.worldsize, newhdr.headersize-sizeof(binary))!=size_t(newhdr.headersize)-sizeof(binary)
-                #define MAPZCOMPAT(ver) \
-                    mapzcompat##ver chdr; \
-                    memcpy(&chdr, &newhdr, sizeof(binary)); \
-                    if(f->read(&chdr.worldsize, sizeof(chdr)-sizeof(binary))!=sizeof(chdr)-sizeof(binary)) \
-                    { \
-                        conoutf("\frerror loading %s: malformatted mapz v%d[%d] header", mapname, newhdr.version, ver); \
-                        delete f; \
-                        maploading = 0; \
-                        maskpackagedirs(mask); \
-                        return false; \
-                    }
-
-                if(newhdr.version <= 25)
+                int numvars = hdr.version >= 25 ? f->getlil<int>() : f->getchar(), vars = 0;
+                identflags |= IDF_WORLD;
+                progress(0, "loading variables...");
+                loopi(numvars)
                 {
-                    MAPZCOMPAT(25);
-                    lilswap(&chdr.worldsize, 5);
-                    memcpy(&newhdr.worldsize, &chdr.worldsize, sizeof(int)*2);
-                    newhdr.numpvs = 0;
-                    newhdr.lightmaps = chdr.lightmaps;
-                    newhdr.blendmap = 0;
-                    newhdr.numvslots = 0;
-                    memcpy(&newhdr.gamever, &chdr.gamever, sizeof(int)*2);
-                    memcpy(&newhdr.gameid, &chdr.gameid, 4);
-                    setsvar("maptitle", chdr.maptitle, true);
-                }
-                else if(newhdr.version <= 32)
-                {
-                    MAPZCOMPAT(32);
-                    lilswap(&chdr.worldsize, 6);
-                    memcpy(&newhdr.worldsize, &chdr.worldsize, sizeof(int)*4);
-                    newhdr.blendmap = 0;
-                    newhdr.numvslots = 0;
-                    memcpy(&newhdr.gamever, &chdr.gamever, sizeof(int)*2);
-                    memcpy(&newhdr.gameid, &chdr.gameid, 4);
-                    setsvar("maptitle", chdr.maptitle, true);
-                }
-                else if(newhdr.version <= 33)
-                {
-                    MAPZCOMPAT(33);
-                    lilswap(&chdr.worldsize, 7);
-                    memcpy(&newhdr.worldsize, &chdr.worldsize, sizeof(int)*5);
-                    newhdr.numvslots = 0;
-                    memcpy(&newhdr.gamever, &chdr.gamever, sizeof(int)*2);
-                    memcpy(&newhdr.gameid, &chdr.gameid, 4);
-                    setsvar("maptitle", chdr.maptitle, true);
-                }
-                else if(newhdr.version <= 38)
-                {
-                    MAPZCOMPAT(38);
-                    lilswap(&chdr.worldsize, 7);
-                    memcpy(&newhdr.worldsize, &chdr.worldsize, sizeof(int)*5);
-                    newhdr.numvslots = 0;
-                    memcpy(&newhdr.gamever, &chdr.gamever, sizeof(int)*2);
-                }
-                else
-                {
-                    if(size_t(newhdr.headersize) > sizeof(newhdr) || f->read(&newhdr.worldsize, newhdr.headersize-sizeof(binary))!=size_t(newhdr.headersize)-sizeof(binary))
+                    progress(i/float(numvars), "loading variables...");
+                    int len = hdr.version >= 25 ? f->getlil<int>() : f->getchar();
+                    if(len)
                     {
-                        conoutf("\frerror loading %s: malformatted mapz v%d header", mapname, newhdr.version);
-                        delete f;
-                        maploading = 0;
-                        maskpackagedirs(mask);
-                        return false;
-                    }
-                    lilswap(&newhdr.worldsize, 8);
-                }
-
-                if(newhdr.version > MAPVERSION)
-                {
-                    conoutf("\frerror loading %s: requires a newer version of %s", mapname, VERSION_NAME);
-                    delete f;
-                    maploading = 0;
-                    maskpackagedirs(mask);
-                    return false;
-                }
-
-                resetmap(false);
-                hdr = newhdr;
-                progress(0, "please wait..");
-                maptype = MAP_MAPZ;
-
-                if(hdr.version <= 24) copystring(hdr.gameid, "bfa", 4); // all previous maps were bfa-fps
-                if(verbose) conoutf("loading v%d map from %s game v%d", hdr.version, hdr.gameid, hdr.gamever);
-
-                if(hdr.version >= 25 || (hdr.version == 24 && hdr.gamever >= 44))
-                {
-                    int numvars = hdr.version >= 25 ? f->getlil<int>() : f->getchar(), vars = 0;
-                    identflags |= IDF_WORLD;
-                    progress(0, "loading variables...");
-                    loopi(numvars)
-                    {
-                        progress(i/float(numvars), "loading variables...");
-                        int len = hdr.version >= 25 ? f->getlil<int>() : f->getchar();
-                        if(len)
+                        string name;
+                        f->read(name, len+1);
+                        if(hdr.version <= 34)
                         {
-                            string name;
-                            f->read(name, len+1);
-                            if(hdr.version <= 34)
-                            {
-                                if(!strcmp(name, "cloudcolour")) copystring(name, "cloudlayercolour");
-                                if(!strcmp(name, "cloudblend")) copystring(name, "cloudlayerblend");
-                            }
-                            if(hdr.version <= 41)
-                            {
-                                if(!strcmp(name, "liquidcurb")) copystring(name, "liquidcoast");
-                                else if(!strcmp(name, "floorcurb")) copystring(name, "floorcoast");
-                                else if(!strcmp(name, "aircurb")) copystring(name, "aircoast");
-                                else if(!strcmp(name, "slidecurb")) copystring(name, "slidecoast");
-                                else if(!strcmp(name, "floatcurb")) copystring(name, "floatcoast");
-                            }
-                            ident *id = idents.access(name);
-                            bool proceed = true;
-                            int type = hdr.version >= 28 ? f->getlil<int>()+(hdr.version >= 29 ? 0 : 1) : (id ? id->type : ID_VAR);
-                            if(!id || type != id->type)
-                            {
-                                if(id && hdr.version <= 28 && id->type == ID_FVAR && type == ID_VAR)
-                                    type = ID_FVAR;
-                                else proceed = false;
-                            }
-                            if(!id || !(id->flags&IDF_WORLD) || id->flags&IDF_SERVER) proceed = false;
-
-                            switch(type)
-                            {
-                                case ID_VAR:
-                                {
-                                    int val = hdr.version >= 25 ? f->getlil<int>() : f->getchar();
-                                    if(proceed)
-                                    {
-                                        if(val > id->maxval) val = id->maxval;
-                                        else if(val < id->minval) val = id->minval;
-                                        setvar(name, val, true);
-                                    }
-                                    break;
-                                }
-                                case ID_FVAR:
-                                {
-                                    float val = hdr.version >= 29 ? f->getlil<float>() : float(f->getlil<int>())/100.f;
-                                    if(proceed)
-                                    {
-                                        if(val > id->maxvalf) val = id->maxvalf;
-                                        else if(val < id->minvalf) val = id->minvalf;
-                                        setfvar(name, val, true);
-                                    }
-                                    break;
-                                }
-                                case ID_SVAR:
-                                {
-                                    int slen = f->getlil<int>();
-                                    if(slen >= 0)
-                                    {
-                                        char *val = newstring(slen);
-                                        f->read(val, slen+1);
-                                        if(proceed && slen) setsvar(name, val, true);
-                                        delete[] val;
-                                    }
-                                    break;
-                                }
-                                default:
-                                {
-                                    if(hdr.version <= 27)
-                                    {
-                                        if(hdr.version >= 25) f->getlil<int>();
-                                        else f->getchar();
-                                    }
-                                    proceed = false;
-                                    break;
-                                }
-                            }
-                            if(!proceed)
-                            {
-                                if(verbose) conoutf("\frWARNING: ignoring variable %s stored in map", name);
-                            }
-                            else vars++;
+                            if(!strcmp(name, "cloudcolour")) copystring(name, "cloudlayercolour");
+                            if(!strcmp(name, "cloudblend")) copystring(name, "cloudlayerblend");
                         }
-                    }
-                    identflags &= ~IDF_WORLD;
-                    if(verbose) conoutf("loaded %d variables", vars);
-                }
-                sanevars();
+                        if(hdr.version <= 41)
+                        {
+                            if(!strcmp(name, "liquidcurb")) copystring(name, "liquidcoast");
+                            else if(!strcmp(name, "floorcurb")) copystring(name, "floorcoast");
+                            else if(!strcmp(name, "aircurb")) copystring(name, "aircoast");
+                            else if(!strcmp(name, "slidecurb")) copystring(name, "slidecoast");
+                            else if(!strcmp(name, "floatcurb")) copystring(name, "floatcoast");
+                        }
+                        ident *id = idents.access(name);
+                        bool proceed = true;
+                        int type = hdr.version >= 28 ? f->getlil<int>()+(hdr.version >= 29 ? 0 : 1) : (id ? id->type : ID_VAR);
+                        if(!id || type != id->type)
+                        {
+                            if(id && hdr.version <= 28 && id->type == ID_FVAR && type == ID_VAR)
+                                type = ID_FVAR;
+                            else proceed = false;
+                        }
+                        if(!id || !(id->flags&IDF_WORLD) || id->flags&IDF_SERVER) proceed = false;
 
-                if(!server::canload(hdr.gameid))
-                {
-                    if(verbose) conoutf("\frWARNING: loading map from %s game type in %s, ignoring game specific data", hdr.gameid, server::gameid());
-                    samegame = false;
+                        switch(type)
+                        {
+                            case ID_VAR:
+                            {
+                                int val = hdr.version >= 25 ? f->getlil<int>() : f->getchar();
+                                if(proceed)
+                                {
+                                    if(val > id->maxval) val = id->maxval;
+                                    else if(val < id->minval) val = id->minval;
+                                    setvar(name, val, true);
+                                }
+                                break;
+                            }
+                            case ID_FVAR:
+                            {
+                                float val = hdr.version >= 29 ? f->getlil<float>() : float(f->getlil<int>())/100.f;
+                                if(proceed)
+                                {
+                                    if(val > id->maxvalf) val = id->maxvalf;
+                                    else if(val < id->minvalf) val = id->minvalf;
+                                    setfvar(name, val, true);
+                                }
+                                break;
+                            }
+                            case ID_SVAR:
+                            {
+                                int slen = f->getlil<int>();
+                                if(slen >= 0)
+                                {
+                                    char *val = newstring(slen);
+                                    f->read(val, slen+1);
+                                    if(proceed && slen) setsvar(name, val, true);
+                                    delete[] val;
+                                }
+                                break;
+                            }
+                            default:
+                            {
+                                if(hdr.version <= 27)
+                                {
+                                    if(hdr.version >= 25) f->getlil<int>();
+                                    else f->getchar();
+                                }
+                                proceed = false;
+                                break;
+                            }
+                        }
+                        if(!proceed)
+                        {
+                            if(verbose) conoutf("\frWARNING: ignoring variable %s stored in map", name);
+                        }
+                        else vars++;
+                    }
                 }
+                identflags &= ~IDF_WORLD;
+                if(verbose) conoutf("loaded %d variables", vars);
             }
-            else if(memcmp(newhdr.head, "OCTA", 4) == 0)
+            sanevars();
+
+            if(!server::canload(hdr.gameid))
             {
-                octa ohdr;
-                memcpy(&ohdr, &newhdr, sizeof(binary));
+                if(verbose) conoutf("\frWARNING: loading map from %s game type in %s, ignoring game specific data", hdr.gameid, server::gameid());
+                samegame = false;
+            }
+        }
+        else if(memcmp(newhdr.head, "OCTA", 4) == 0)
+        {
+            octa ohdr;
+            memcpy(&ohdr, &newhdr, sizeof(binary));
 
-                // this check removed due to breakage: (size_t)ohdr.headersize > sizeof(chdr) || f->read(&chdr.worldsize, ohdr.headersize-sizeof(binary))!=ohdr.headersize-(int)sizeof(binary)
-                #define OCTACOMPAT(ver) \
-                    octacompat##ver chdr; \
-                    memcpy(&chdr, &ohdr, sizeof(binary)); \
-                    if(f->read(&chdr.worldsize, sizeof(chdr)-sizeof(binary))!=sizeof(chdr)-sizeof(binary)) \
-                    { \
-                        conoutf("\frerror loading %s: malformatted octa v%d[%d] header", mapname, ver, ohdr.version); \
-                        delete f; \
-                        maploading = 0; \
-                        maskpackagedirs(mask); \
-                        return false; \
-                    }
-
-                #define OCTAVARS \
-                    if(chdr.lightprecision) setvar("lightprecision", chdr.lightprecision); \
-                    if(chdr.lighterror) setvar("lighterror", chdr.lighterror); \
-                    if(chdr.bumperror) setvar("bumperror", chdr.bumperror); \
-                    setvar("lightlod", chdr.lightlod); \
-                    if(chdr.ambient) setvar("ambient", chdr.ambient); \
-                    setvar("skylight", (int(chdr.skylight[0])<<16) | (int(chdr.skylight[1])<<8) | int(chdr.skylight[2])); \
-                    setvar("watercolour", (int(chdr.watercolour[0])<<16) | (int(chdr.watercolour[1])<<8) | int(chdr.watercolour[2]), true); \
-                    setvar("waterfallcolour", (int(chdr.waterfallcolour[0])<<16) | (int(chdr.waterfallcolour[1])<<8) | int(chdr.waterfallcolour[2])); \
-                    setvar("lavacolour", (int(chdr.lavacolour[0])<<16) | (int(chdr.lavacolour[1])<<8) | int(chdr.lavacolour[2])); \
-                    setvar("fullbright", 0, true); \
-                    if(chdr.lerpsubdivsize || chdr.lerpangle) setvar("lerpangle", chdr.lerpangle); \
-                    if(chdr.lerpsubdivsize) \
-                    { \
-                        setvar("lerpsubdiv", chdr.lerpsubdiv); \
-                        setvar("lerpsubdivsize", chdr.lerpsubdivsize); \
-                    } \
-                    setsvar("maptitle", chdr.maptitle, true); \
-                    ohdr.numvars = 0;
-
-                if(ohdr.version <= 25)
-                {
-                    OCTACOMPAT(25);
-                    lilswap(&chdr.worldsize, 7);
-                    memcpy(&ohdr.worldsize, &chdr.worldsize, sizeof(int)*2);
-                    ohdr.numpvs = 0;
-                    memcpy(&ohdr.lightmaps, &chdr.lightmaps, sizeof(int)*3);
-                    ohdr.numvslots = 0;
-                    OCTAVARS;
-                }
-                else if(ohdr.version <= 28)
-                {
-                    OCTACOMPAT(28);
-                    lilswap(&chdr.worldsize, 7);
-                    memcpy(&ohdr.worldsize, &chdr.worldsize, sizeof(int)*6);
-                    OCTAVARS;
-                    ohdr.blendmap = chdr.blendmap;
-                    ohdr.numvslots = 0;
-                }
-                else if(ohdr.version <= 29)
-                {
-                    OCTACOMPAT(29);
-                    lilswap(&chdr.worldsize, 6);
-                    memcpy(&ohdr.worldsize, &chdr.worldsize, sizeof(int)*6);
-                    ohdr.numvslots = 0;
-                }
-                else
-                {
-                    if(f->read(&ohdr.worldsize, sizeof(octa)-sizeof(binary))!=sizeof(octa)-(int)sizeof(binary))
-                    {
-                        conoutf("\frerror loading %s: malformatted octa v%d header", mapname, ohdr.version);
-                        delete f;
-                        maploading = 0;
-                        maskpackagedirs(mask);
-                        return false;
-                    }
-                    lilswap(&ohdr.worldsize, 7);
+            // this check removed due to breakage: (size_t)ohdr.headersize > sizeof(chdr) || f->read(&chdr.worldsize, ohdr.headersize-sizeof(binary))!=ohdr.headersize-(int)sizeof(binary)
+            #define OCTACOMPAT(ver) \
+                octacompat##ver chdr; \
+                memcpy(&chdr, &ohdr, sizeof(binary)); \
+                if(f->read(&chdr.worldsize, sizeof(chdr)-sizeof(binary))!=sizeof(chdr)-sizeof(binary)) \
+                { \
+                    conoutf("\frerror loading %s: malformatted octa v%d[%d] header", mapname, ver, ohdr.version); \
+                    delete f; \
+                    maploading = 0; \
+                    maskpackagedirs(mask); \
+                    return false; \
                 }
 
-                if(ohdr.version > OCTAVERSION)
-                {
-                    conoutf("\frerror loading %s: requires a newer version of Cube 2 support", mapname);
-                    delete f;
-                    maploading = 0;
-                    maskpackagedirs(mask);
-                    return false;
-                }
+            #define OCTAVARS \
+                if(chdr.lightprecision) setvar("lightprecision", chdr.lightprecision); \
+                if(chdr.lighterror) setvar("lighterror", chdr.lighterror); \
+                if(chdr.bumperror) setvar("bumperror", chdr.bumperror); \
+                setvar("lightlod", chdr.lightlod); \
+                if(chdr.ambient) setvar("ambient", chdr.ambient); \
+                setvar("skylight", (int(chdr.skylight[0])<<16) | (int(chdr.skylight[1])<<8) | int(chdr.skylight[2])); \
+                setvar("watercolour", (int(chdr.watercolour[0])<<16) | (int(chdr.watercolour[1])<<8) | int(chdr.watercolour[2]), true); \
+                setvar("waterfallcolour", (int(chdr.waterfallcolour[0])<<16) | (int(chdr.waterfallcolour[1])<<8) | int(chdr.waterfallcolour[2])); \
+                setvar("lavacolour", (int(chdr.lavacolour[0])<<16) | (int(chdr.lavacolour[1])<<8) | int(chdr.lavacolour[2])); \
+                setvar("fullbright", 0, true); \
+                if(chdr.lerpsubdivsize || chdr.lerpangle) setvar("lerpangle", chdr.lerpangle); \
+                if(chdr.lerpsubdivsize) \
+                { \
+                    setvar("lerpsubdiv", chdr.lerpsubdiv); \
+                    setvar("lerpsubdivsize", chdr.lerpsubdivsize); \
+                } \
+                setsvar("maptitle", chdr.maptitle, true); \
+                ohdr.numvars = 0;
 
-                resetmap(false);
-                hdr = newhdr;
-                progress(0, "please wait..");
-                maptype = MAP_OCTA;
-
-                memcpy(hdr.head, ohdr.head, 4);
-                hdr.gamever = 0; // sauer has no gamever
-                hdr.worldsize = ohdr.worldsize;
-                if(hdr.worldsize > 1<<18) hdr.worldsize = 1<<18;
-                hdr.numents = ohdr.numents;
-                hdr.numpvs = ohdr.numpvs;
-                hdr.lightmaps = ohdr.lightmaps;
-                hdr.blendmap = ohdr.blendmap;
-                hdr.numvslots = ohdr.numvslots;
-                hdr.revision = 1;
-
-                if(ohdr.version >= 29) loopi(ohdr.numvars)
-                {
-                    int type = f->getchar(), ilen = f->getlil<ushort>();
-                    string name;
-                    f->read(name, min(ilen, OCTASTRLEN-1));
-                    name[min(ilen, OCTASTRLEN-1)] = '\0';
-                    if(ilen >= OCTASTRLEN) f->seek(ilen - (OCTASTRLEN-1), SEEK_CUR);
-                    if(!strcmp(name, "cloudblend")) copystring(name, "cloudlayerblend");
-                    if(!strcmp(name, "cloudalpha")) copystring(name, "cloudblend");
-                    if(!strcmp(name, "grassalpha")) copystring(name, "grassblend");
-                    if(!strcmp(name, "skyboxcolour")) copystring(name, "skycolour");
-                    if(!strcmp(name, "cloudcolour")) copystring(name, "cloudlayercolour");
-                    if(!strcmp(name, "cloudboxcolour")) copystring(name, "cloudcolour");
-                    ident *id = getident(name);
-                    bool exists = id && id->type == type && id->flags&IDF_WORLD && !(id->flags&IDF_SERVER);
-                    switch(type)
-                    {
-                        case ID_VAR:
-                        {
-                            int val = f->getlil<int>();
-                            if(exists && id->minval <= id->maxval) setvar(name, val, true);
-                            break;
-                        }
-
-                        case ID_FVAR:
-                        {
-                            float val = f->getlil<float>();
-                            if(exists && id->minvalf <= id->maxvalf) setfvar(name, val, true);
-                            break;
-                        }
-
-                        case ID_SVAR:
-                        {
-                            int slen = f->getlil<ushort>();
-                            string val;
-                            f->read(val, min(slen, OCTASTRLEN-1));
-                            val[min(slen, OCTASTRLEN-1)] = '\0';
-                            if(slen >= OCTASTRLEN) f->seek(slen - (OCTASTRLEN-1), SEEK_CUR);
-                            if(exists) setsvar(name, val, true);
-                            break;
-                        }
-                    }
-                }
-                sanevars();
-
-                string gameid;
-                if(hdr.version >= 16)
-                {
-                    int len = f->getchar();
-                    f->read(gameid, len+1);
-                }
-                else copystring(gameid, "fps");
-                memcpy(hdr.gameid, gameid, 4);
-
-                if(!server::canload(hdr.gameid))
-                {
-                    if(verbose) conoutf("\frWARNING: loading OCTA v%d map from %s game, ignoring game specific data", hdr.version, hdr.gameid);
-                    samegame = false;
-                }
-                else if(verbose) conoutf("loading OCTA v%d map from %s game", hdr.version, hdr.gameid);
-
-                if(hdr.version>=16)
-                {
-                    eif = f->getlil<ushort>();
-                    int extrasize = f->getlil<ushort>();
-                    loopj(extrasize) f->getchar();
-                }
-
-                if(hdr.version<25) hdr.numpvs = 0;
-                if(hdr.version<28) hdr.blendmap = 0;
+            if(ohdr.version <= 25)
+            {
+                OCTACOMPAT(25);
+                lilswap(&chdr.worldsize, 7);
+                memcpy(&ohdr.worldsize, &chdr.worldsize, sizeof(int)*2);
+                ohdr.numpvs = 0;
+                memcpy(&ohdr.lightmaps, &chdr.lightmaps, sizeof(int)*3);
+                ohdr.numvslots = 0;
+                OCTAVARS;
+            }
+            else if(ohdr.version <= 28)
+            {
+                OCTACOMPAT(28);
+                lilswap(&chdr.worldsize, 7);
+                memcpy(&ohdr.worldsize, &chdr.worldsize, sizeof(int)*6);
+                OCTAVARS;
+                ohdr.blendmap = chdr.blendmap;
+                ohdr.numvslots = 0;
+            }
+            else if(ohdr.version <= 29)
+            {
+                OCTACOMPAT(29);
+                lilswap(&chdr.worldsize, 6);
+                memcpy(&ohdr.worldsize, &chdr.worldsize, sizeof(int)*6);
+                ohdr.numvslots = 0;
             }
             else
             {
+                if(f->read(&ohdr.worldsize, sizeof(octa)-sizeof(binary))!=sizeof(octa)-(int)sizeof(binary))
+                {
+                    conoutf("\frerror loading %s: malformatted octa v%d header", mapname, ohdr.version);
+                    delete f;
+                    maploading = 0;
+                    maskpackagedirs(mask);
+                    return false;
+                }
+                lilswap(&ohdr.worldsize, 7);
+            }
+
+            if(ohdr.version > OCTAVERSION)
+            {
+                conoutf("\frerror loading %s: requires a newer version of Cube 2 support", mapname);
                 delete f;
+                maploading = 0;
                 maskpackagedirs(mask);
-                continue;
+                return false;
             }
 
-            progress(0, "clearing world...");
+            resetmap(false);
+            hdr = newhdr;
+            progress(0, "please wait..");
+            maptype = MAP_OCTA;
 
-            texmru.shrink(0);
-            if(hdr.version<14)
-            {
-                uchar oldtl[256];
-                f->read(oldtl, sizeof(oldtl));
-                loopi(256) texmru.add(oldtl[i]);
-            }
-            else
-            {
-                ushort nummru = f->getlil<ushort>();
-                loopi(nummru) texmru.add(f->getlil<ushort>());
-            }
+            memcpy(hdr.head, ohdr.head, 4);
+            hdr.gamever = 0; // sauer has no gamever
+            hdr.worldsize = ohdr.worldsize;
+            if(hdr.worldsize > 1<<18) hdr.worldsize = 1<<18;
+            hdr.numents = ohdr.numents;
+            hdr.numpvs = ohdr.numpvs;
+            hdr.lightmaps = ohdr.lightmaps;
+            hdr.blendmap = ohdr.blendmap;
+            hdr.numvslots = ohdr.numvslots;
+            hdr.revision = 1;
 
-            freeocta(worldroot);
-            worldroot = NULL;
-
-            progress(0, "loading entities...");
-            vector<extentity *> &ents = entities::getents();
-            loopi(hdr.numents)
+            if(ohdr.version >= 29) loopi(ohdr.numvars)
             {
-                progress(i/float(hdr.numents), "loading entities...");
-                extentity &e = *ents.add(entities::newent());
-                if(maptype == MAP_OCTA || (maptype == MAP_MAPZ && hdr.version <= 36))
+                int type = f->getchar(), ilen = f->getlil<ushort>();
+                string name;
+                f->read(name, min(ilen, OCTASTRLEN-1));
+                name[min(ilen, OCTASTRLEN-1)] = '\0';
+                if(ilen >= OCTASTRLEN) f->seek(ilen - (OCTASTRLEN-1), SEEK_CUR);
+                if(!strcmp(name, "cloudblend")) copystring(name, "cloudlayerblend");
+                if(!strcmp(name, "cloudalpha")) copystring(name, "cloudblend");
+                if(!strcmp(name, "grassalpha")) copystring(name, "grassblend");
+                if(!strcmp(name, "skyboxcolour")) copystring(name, "skycolour");
+                if(!strcmp(name, "cloudcolour")) copystring(name, "cloudlayercolour");
+                if(!strcmp(name, "cloudboxcolour")) copystring(name, "cloudcolour");
+                ident *id = getident(name);
+                bool exists = id && id->type == type && id->flags&IDF_WORLD && !(id->flags&IDF_SERVER);
+                switch(type)
                 {
-                    entcompat ec;
-                    f->read(&ec, sizeof(entcompat));
-                    lilswap(&ec.o.x, 3);
-                    lilswap(ec.attr, 5);
-                    e.o = ec.o;
-                    e.type = ec.type;
-                    e.attrs.add(0, 5);
-                    loopk(5) e.attrs[k] = ec.attr[k];
-                }
-                else
-                {
-                    f->read(&e, sizeof(entbase));
-                    lilswap(&e.o.x, 3);
-                    int numattr = f->getlil<int>();
-                    e.attrs.add(0, clamp(numattr, entities::numattrs(e.type), MAXENTATTRS));
-                    loopk(numattr)
+                    case ID_VAR:
                     {
                         int val = f->getlil<int>();
-                        if(e.attrs.inrange(k)) e.attrs[k] = val;
+                        if(exists && id->minval <= id->maxval) setvar(name, val, true);
+                        break;
                     }
-                }
-                if((maptype == MAP_OCTA && hdr.version <= 27) || (maptype == MAP_MAPZ && hdr.version <= 31)) e.attrs[4] = 0; // init ever-present attr5
-                if(maptype == MAP_OCTA) f->seek(eif, SEEK_CUR);
 
-                // sauerbraten version increments
-                if(hdr.version <= 10 && e.type >= 7) e.type++;
-                if(hdr.version <= 12 && e.type >= 8) e.type++;
-                if(hdr.version <= 14 && e.type >= ET_MAPMODEL && e.type <= 16)
-                {
-                    if(e.type == 16) e.type = ET_MAPMODEL;
-                    else e.type++;
-                }
-                if(hdr.version <= 20 && e.type >= ET_ENVMAP) e.type++;
-                if(hdr.version <= 21 && e.type >= ET_PARTICLES) e.type++;
-                if(hdr.version <= 22 && e.type >= ET_SOUND) e.type++;
-                if(hdr.version <= 23 && e.type >= ET_LIGHTFX) e.type++;
-
-                // version increments
-                if((maptype == MAP_OCTA || (maptype == MAP_MAPZ && hdr.version <= 35)) && e.type >= ET_SUNLIGHT) e.type++;
-                if(!samegame && (e.type >= ET_GAMESPECIFIC || hdr.version <= 14))
-                {
-                    if(maptype == MAP_MAPZ && entities::maylink(hdr.gamever <= 49 && e.type >= 10 ? e.type-1 : e.type, hdr.gamever))
+                    case ID_FVAR:
                     {
-                        int links = f->getlil<int>();
-                        f->seek(sizeof(int)*links, SEEK_CUR);
+                        float val = f->getlil<float>();
+                        if(exists && id->minvalf <= id->maxvalf) setfvar(name, val, true);
+                        break;
                     }
-                    e.type = ET_EMPTY;
-                    continue;
+
+                    case ID_SVAR:
+                    {
+                        int slen = f->getlil<ushort>();
+                        string val;
+                        f->read(val, min(slen, OCTASTRLEN-1));
+                        val[min(slen, OCTASTRLEN-1)] = '\0';
+                        if(slen >= OCTASTRLEN) f->seek(slen - (OCTASTRLEN-1), SEEK_CUR);
+                        if(exists) setsvar(name, val, true);
+                        break;
+                    }
                 }
-                entities::readent(f, maptype, hdr.version, hdr.gameid, hdr.gamever, i);
+            }
+            sanevars();
+
+            string gameid;
+            if(hdr.version >= 16)
+            {
+                int len = f->getchar();
+                f->read(gameid, len+1);
+            }
+            else copystring(gameid, "fps");
+            memcpy(hdr.gameid, gameid, 4);
+
+            if(!server::canload(hdr.gameid))
+            {
+                if(verbose) conoutf("\frWARNING: loading OCTA v%d map from %s game, ignoring game specific data", hdr.version, hdr.gameid);
+                samegame = false;
+            }
+            else if(verbose) conoutf("loading OCTA v%d map from %s game", hdr.version, hdr.gameid);
+
+            if(hdr.version>=16)
+            {
+                eif = f->getlil<ushort>();
+                int extrasize = f->getlil<ushort>();
+                loopj(extrasize) f->getchar();
+            }
+
+            if(hdr.version<25) hdr.numpvs = 0;
+            if(hdr.version<28) hdr.blendmap = 0;
+        }
+        else
+        {
+            delete f;
+            maskpackagedirs(mask);
+            continue;
+        }
+
+        progress(0, "clearing world...");
+
+        texmru.shrink(0);
+        if(hdr.version<14)
+        {
+            uchar oldtl[256];
+            f->read(oldtl, sizeof(oldtl));
+            loopi(256) texmru.add(oldtl[i]);
+        }
+        else
+        {
+            ushort nummru = f->getlil<ushort>();
+            loopi(nummru) texmru.add(f->getlil<ushort>());
+        }
+
+        freeocta(worldroot);
+        worldroot = NULL;
+
+        progress(0, "loading entities...");
+        vector<extentity *> &ents = entities::getents();
+        loopi(hdr.numents)
+        {
+            progress(i/float(hdr.numents), "loading entities...");
+            extentity &e = *ents.add(entities::newent());
+            if(maptype == MAP_OCTA || (maptype == MAP_MAPZ && hdr.version <= 36))
+            {
+                entcompat ec;
+                f->read(&ec, sizeof(entcompat));
+                lilswap(&ec.o.x, 3);
+                lilswap(ec.attr, 5);
+                e.o = ec.o;
+                e.type = ec.type;
+                e.attrs.add(0, 5);
+                loopk(5) e.attrs[k] = ec.attr[k];
+            }
+            else
+            {
+                f->read(&e, sizeof(entbase));
+                lilswap(&e.o.x, 3);
+                int numattr = f->getlil<int>();
+                e.attrs.add(0, clamp(numattr, entities::numattrs(e.type), MAXENTATTRS));
+                loopk(numattr)
+                {
+                    int val = f->getlil<int>();
+                    if(e.attrs.inrange(k)) e.attrs[k] = val;
+                }
+            }
+            if((maptype == MAP_OCTA && hdr.version <= 27) || (maptype == MAP_MAPZ && hdr.version <= 31)) e.attrs[4] = 0; // init ever-present attr5
+            if(maptype == MAP_OCTA) f->seek(eif, SEEK_CUR);
+
+            // sauerbraten version increments
+            if(hdr.version <= 10 && e.type >= 7) e.type++;
+            if(hdr.version <= 12 && e.type >= 8) e.type++;
+            if(hdr.version <= 14 && e.type >= ET_MAPMODEL && e.type <= 16)
+            {
+                if(e.type == 16) e.type = ET_MAPMODEL;
+                else e.type++;
+            }
+            if(hdr.version <= 20 && e.type >= ET_ENVMAP) e.type++;
+            if(hdr.version <= 21 && e.type >= ET_PARTICLES) e.type++;
+            if(hdr.version <= 22 && e.type >= ET_SOUND) e.type++;
+            if(hdr.version <= 23 && e.type >= ET_LIGHTFX) e.type++;
+
+            // version increments
+            if((maptype == MAP_OCTA || (maptype == MAP_MAPZ && hdr.version <= 35)) && e.type >= ET_SUNLIGHT) e.type++;
+            if(!samegame && (e.type >= ET_GAMESPECIFIC || hdr.version <= 14))
+            {
                 if(maptype == MAP_MAPZ && entities::maylink(hdr.gamever <= 49 && e.type >= 10 ? e.type-1 : e.type, hdr.gamever))
                 {
                     int links = f->getlil<int>();
-                    e.links.add(0, links);
-                    loopk(links) e.links[k] = f->getlil<int>();
-                    if(verbose >= 2) conoutf("entity %s (%d) loaded %d link(s)", entities::findname(e.type), i, links);
+                    f->seek(sizeof(int)*links, SEEK_CUR);
                 }
-
-                if(maptype == MAP_OCTA && e.type == ET_PARTICLES && e.attrs[0] >= 11)
-                {
-                    if(e.attrs[0] <= 12) e.attrs[0] += 3;
-                    else e.attrs[0] = 0; // bork it up
-                }
-                if(e.type == ET_MAPMODEL)
-                {
-                    if(hdr.version <= 14)
-                    {
-                        e.o.z += e.attrs[2];
-                        if(e.attrs[3] && verbose) conoutf("\frWARNING: mapmodel ent (index %d) uses texture slot %d", i, e.attrs[3]);
-                        e.attrs[2] = e.attrs[3] = 0;
-                    }
-                    if(maptype == MAP_OCTA || hdr.version <= 31)
-                    {
-                        int angle = e.attrs[0];
-                        e.attrs[0] = e.attrs[1];
-                        e.attrs[1] = angle;
-                        loopk(e.attrs.length()-2) e.attrs[k+2] = 0;
-                    }
-                    if(maptype == MAP_MAPZ && hdr.version <= 37)
-                    {
-                        e.attrs[2] = e.attrs[3];
-                        e.attrs[5] = e.attrs[4];
-                        e.attrs[3] = e.attrs[4] = 0;
-                    }
-                    if(maptype == MAP_MAPZ && hdr.gamever <= 219)
-                    { // insert pitch at index 2 between yaw and roll
-                        e.attrs.insert(2, 0);
-                        if(e.attrs.length() > MAXENTATTRS) e.attrs.setsize(MAXENTATTRS);
-                    }
-                }
-                if(e.type == ET_SUNLIGHT && hdr.version <= 38) e.attrs[1] -= 90; // reorient pitch axis
-                if((maptype == MAP_OCTA && hdr.version <= 30) || (maptype == MAP_MAPZ && hdr.version <= 39)) switch(e.type)
-                {
-                    case ET_PLAYERSTART: case ET_MAPMODEL: e.attrs[1] = (e.attrs[1] + 180)%360; break;
-                    case ET_SUNLIGHT: e.attrs[0] = (e.attrs[0] + 180)%360; break;
-                    default: break;
-                }
-                if(verbose && !insideworld(e.o) && e.type != ET_LIGHT && e.type != ET_LIGHTFX && e.type != ET_SUNLIGHT)
-                    conoutf("\frWARNING: ent outside of world: enttype[%s] index %d (%f, %f, %f)", entities::findname(e.type), i, e.o.x, e.o.y, e.o.z);
+                e.type = ET_EMPTY;
+                continue;
             }
-            if(verbose) conoutf("loaded %d entities", hdr.numents);
-            if(maptype == MAP_OCTA && sunlight)
+            entities::readent(f, maptype, hdr.version, hdr.gameid, hdr.gamever, i);
+            if(maptype == MAP_MAPZ && entities::maylink(hdr.gamever <= 49 && e.type >= 10 ? e.type-1 : e.type, hdr.gamever))
             {
-                extentity &e = *ents.add(entities::newent());
-                e.attrs.add(0, 6);
-                e.type = ET_SUNLIGHT;
-                e.o = vec(hdr.worldsize/2, hdr.worldsize/2, hdr.worldsize*3/4);
-                e.attrs[0] = sunlightyaw;
-                e.attrs[1] = sunlightpitch-90;
-                e.attrs[2] = int(((sunlight>>16)&0xFF)*sunlightscale*5/8);
-                e.attrs[3] = int(((sunlight>>8)&0xFF)*sunlightscale*5/8);
-                e.attrs[4] = int((sunlight&0xFF)*sunlightscale*5/8);
-                e.attrs[5] = -1;
+                int links = f->getlil<int>();
+                e.links.add(0, links);
+                loopk(links) e.links[k] = f->getlil<int>();
+                if(verbose >= 2) conoutf("entity %s (%d) loaded %d link(s)", entities::findname(e.type), i, links);
             }
 
-            progress(0, "loading slots...");
-            loadvslots(f, hdr.numvslots);
-
-            progress(0, "loading octree...");
-            bool failed = false;
-            worldroot = loadchildren(f, ivec(0, 0, 0), hdr.worldsize>>1, failed);
-            if(failed) conoutf("\frgarbage in map");
-
-            progress(0, "validating...");
-            validatec(worldroot, hdr.worldsize>>1);
-
-            worldscale = 0;
-            while(1<<worldscale < hdr.worldsize) worldscale++;
-
-            if(!failed)
+            if(maptype == MAP_OCTA && e.type == ET_PARTICLES && e.attrs[0] >= 11)
             {
-                if(hdr.version >= 7) loopi(hdr.lightmaps)
+                if(e.attrs[0] <= 12) e.attrs[0] += 3;
+                else e.attrs[0] = 0; // bork it up
+            }
+            if(e.type == ET_MAPMODEL)
+            {
+                if(hdr.version <= 14)
                 {
-                    progress(i/(float)hdr.lightmaps, "loading lightmaps...");
-                    LightMap &lm = lightmaps.add();
-                    if(hdr.version >= 17)
-                    {
-                        int type = f->getchar();
-                        lm.type = type&0x7F;
-                        if(hdr.version >= 20 && type&0x80)
-                        {
-                            lm.unlitx = f->getlil<ushort>();
-                            lm.unlity = f->getlil<ushort>();
-                        }
-                    }
-                    if(lm.type&LM_ALPHA && (lm.type&LM_TYPE)!=LM_BUMPMAP1) lm.bpp = 4;
-                    lm.data = new uchar[lm.bpp*LM_PACKW*LM_PACKH];
-                    f->read(lm.data, lm.bpp * LM_PACKW * LM_PACKH);
-                    lm.finalize();
+                    e.o.z += e.attrs[2];
+                    if(e.attrs[3] && verbose) conoutf("\frWARNING: mapmodel ent (index %d) uses texture slot %d", i, e.attrs[3]);
+                    e.attrs[2] = e.attrs[3] = 0;
                 }
-
-                if(hdr.numpvs > 0) loadpvs(f);
-                if(hdr.blendmap) loadblendmap(f);
-
-                if(verbose) conoutf("loaded %d lightmaps", hdr.lightmaps);
-            }
-
-            progress(0, "initialising entities...");
-            loopv(ents)
-            {
-                extentity &e = *ents[i];
-
-                if((maptype == MAP_OCTA || (maptype == MAP_MAPZ && hdr.version <= 29)) && ents[i]->type == ET_LIGHTFX && ents[i]->attrs[0] == LFX_SPOTLIGHT)
+                if(maptype == MAP_OCTA || hdr.version <= 31)
                 {
-                    int closest = -1;
-                    float closedist = 1e10f;
-                    loopvk(ents) if(ents[k]->type == ET_LIGHT)
-                    {
-                        extentity &a = *ents[k];
-                        float dist = e.o.dist(a.o);
-                        if(dist < closedist)
-                        {
-                            closest = k;
-                            closedist = dist;
-                        }
-                    }
-                    if(ents.inrange(closest) && closedist <= 100)
-                    {
-                        extentity &a = *ents[closest];
-                        if(e.links.find(closest) < 0) e.links.add(closest);
-                        if(a.links.find(i) < 0) a.links.add(i);
-                        if(verbose) conoutf("\frWARNING: auto linked spotlight %d to light %d", i, closest);
-                    }
+                    int angle = e.attrs[0];
+                    e.attrs[0] = e.attrs[1];
+                    e.attrs[1] = angle;
+                    loopk(e.attrs.length()-2) e.attrs[k+2] = 0;
+                }
+                if(maptype == MAP_MAPZ && hdr.version <= 37)
+                {
+                    e.attrs[2] = e.attrs[3];
+                    e.attrs[5] = e.attrs[4];
+                    e.attrs[3] = e.attrs[4] = 0;
+                }
+                if(maptype == MAP_MAPZ && hdr.gamever <= 219)
+                { // insert pitch at index 2 between yaw and roll
+                    e.attrs.insert(2, 0);
+                    if(e.attrs.length() > MAXENTATTRS) e.attrs.setsize(MAXENTATTRS);
                 }
             }
-            entities::initents(maptype, hdr.version, hdr.gameid, hdr.gamever);
-
-            progress(0, "initialising config...");
-            mapcrc = f->getcrc();
-            delete f;
-
-            identflags |= IDF_WORLD;
-            defformatstring(cfgname, "%s.cfg", mapname);
-            if(maptype == MAP_OCTA)
+            if(e.type == ET_SUNLIGHT && hdr.version <= 38) e.attrs[1] -= 90; // reorient pitch axis
+            if((maptype == MAP_OCTA && hdr.version <= 30) || (maptype == MAP_MAPZ && hdr.version <= 39)) switch(e.type)
             {
-                execfile("config/map/octa.cfg"); // for use with -pSAUER_DIR
-                execfile(cfgname);
+                case ET_PLAYERSTART: case ET_MAPMODEL: e.attrs[1] = (e.attrs[1] + 180)%360; break;
+                case ET_SUNLIGHT: e.attrs[0] = (e.attrs[0] + 180)%360; break;
+                default: break;
             }
-            else if(!execfile(cfgname, false)) execfile("config/map/default.cfg");
-            identflags &= ~IDF_WORLD;
-
-            progress(0, "preloading models...");
-            preloadusedmapmodels(true);
-            conoutf("loaded %s (\fs%s\fS by \fs%s\fS) v.%d:%d(r%d) [%.1fs]", mapname, *maptitle ? maptitle : "Untitled", *mapauthor ? mapauthor : "Unknown", hdr.version, hdr.gamever, hdr.revision, (SDL_GetTicks()-loadingstart)/1000.0f);
-
-            progress(0, "checking world...");
-            if((maptype == MAP_OCTA && hdr.version <= 25) || (maptype == MAP_MAPZ && hdr.version <= 26))
-                fixlightmapnormals();
-            if((maptype == MAP_OCTA && hdr.version <= 31) || (maptype == MAP_MAPZ && hdr.version <= 40))
-                fixrotatedlightmaps();
-
-            entitiesinoctanodes();
-            initlights();
-            allchanged(true);
-
-            progress(0, "preloading textures...");
-            preloadtextures(IDF_GAMEPRELOAD);
-            maskpackagedirs(mask);
-
-            progress(0, "starting world...");
-            game::startmap(mapname, mname);
-            maploading = 0;
-            return true;
+            if(verbose && !insideworld(e.o) && e.type != ET_LIGHT && e.type != ET_LIGHTFX && e.type != ET_SUNLIGHT)
+                conoutf("\frWARNING: ent outside of world: enttype[%s] index %d (%f, %f, %f)", entities::findname(e.type), i, e.o.x, e.o.y, e.o.z);
         }
+        if(verbose) conoutf("loaded %d entities", hdr.numents);
+        if(maptype == MAP_OCTA && sunlight)
+        {
+            extentity &e = *ents.add(entities::newent());
+            e.attrs.add(0, 6);
+            e.type = ET_SUNLIGHT;
+            e.o = vec(hdr.worldsize/2, hdr.worldsize/2, hdr.worldsize*3/4);
+            e.attrs[0] = sunlightyaw;
+            e.attrs[1] = sunlightpitch-90;
+            e.attrs[2] = int(((sunlight>>16)&0xFF)*sunlightscale*5/8);
+            e.attrs[3] = int(((sunlight>>8)&0xFF)*sunlightscale*5/8);
+            e.attrs[4] = int((sunlight&0xFF)*sunlightscale*5/8);
+            e.attrs[5] = -1;
+        }
+
+        progress(0, "loading slots...");
+        loadvslots(f, hdr.numvslots);
+
+        progress(0, "loading octree...");
+        bool failed = false;
+        worldroot = loadchildren(f, ivec(0, 0, 0), hdr.worldsize>>1, failed);
+        if(failed) conoutf("\frgarbage in map");
+
+        progress(0, "validating...");
+        validatec(worldroot, hdr.worldsize>>1);
+
+        worldscale = 0;
+        while(1<<worldscale < hdr.worldsize) worldscale++;
+
+        if(!failed)
+        {
+            if(hdr.version >= 7) loopi(hdr.lightmaps)
+            {
+                progress(i/(float)hdr.lightmaps, "loading lightmaps...");
+                LightMap &lm = lightmaps.add();
+                if(hdr.version >= 17)
+                {
+                    int type = f->getchar();
+                    lm.type = type&0x7F;
+                    if(hdr.version >= 20 && type&0x80)
+                    {
+                        lm.unlitx = f->getlil<ushort>();
+                        lm.unlity = f->getlil<ushort>();
+                    }
+                }
+                if(lm.type&LM_ALPHA && (lm.type&LM_TYPE)!=LM_BUMPMAP1) lm.bpp = 4;
+                lm.data = new uchar[lm.bpp*LM_PACKW*LM_PACKH];
+                f->read(lm.data, lm.bpp * LM_PACKW * LM_PACKH);
+                lm.finalize();
+            }
+
+            if(hdr.numpvs > 0) loadpvs(f);
+            if(hdr.blendmap) loadblendmap(f);
+
+            if(verbose) conoutf("loaded %d lightmaps", hdr.lightmaps);
+        }
+
+        progress(0, "initialising entities...");
+        loopv(ents)
+        {
+            extentity &e = *ents[i];
+
+            if((maptype == MAP_OCTA || (maptype == MAP_MAPZ && hdr.version <= 29)) && ents[i]->type == ET_LIGHTFX && ents[i]->attrs[0] == LFX_SPOTLIGHT)
+            {
+                int closest = -1;
+                float closedist = 1e10f;
+                loopvk(ents) if(ents[k]->type == ET_LIGHT)
+                {
+                    extentity &a = *ents[k];
+                    float dist = e.o.dist(a.o);
+                    if(dist < closedist)
+                    {
+                        closest = k;
+                        closedist = dist;
+                    }
+                }
+                if(ents.inrange(closest) && closedist <= 100)
+                {
+                    extentity &a = *ents[closest];
+                    if(e.links.find(closest) < 0) e.links.add(closest);
+                    if(a.links.find(i) < 0) a.links.add(i);
+                    if(verbose) conoutf("\frWARNING: auto linked spotlight %d to light %d", i, closest);
+                }
+            }
+        }
+        entities::initents(maptype, hdr.version, hdr.gameid, hdr.gamever);
+        delete f;
+
+        progress(0, "initialising config...");
+        identflags |= IDF_WORLD;
+        defformatstring(cfgname, "%s.cfg", mapname);
+        if(maptype == MAP_OCTA)
+        {
+            execfile("config/map/octa.cfg"); // for use with -pSAUER_DIR
+            execfile(cfgname);
+        }
+        else if(!execfile(cfgname, false)) execfile("config/map/default.cfg");
+        identflags &= ~IDF_WORLD;
+
+        progress(0, "preloading models...");
+        preloadusedmapmodels(true);
+        conoutf("loaded %s (\fs%s\fS by \fs%s\fS) v.%d:%d(r%d) [%.1fs]", mapname, *maptitle ? maptitle : "Untitled", *mapauthor ? mapauthor : "Unknown", hdr.version, hdr.gamever, hdr.revision, (SDL_GetTicks()-loadingstart)/1000.0f);
+
+        progress(0, "checking world...");
+        if((maptype == MAP_OCTA && hdr.version <= 25) || (maptype == MAP_MAPZ && hdr.version <= 26))
+            fixlightmapnormals();
+        if((maptype == MAP_OCTA && hdr.version <= 31) || (maptype == MAP_MAPZ && hdr.version <= 40))
+            fixrotatedlightmaps();
+
+        entitiesinoctanodes();
+        initlights();
+        allchanged(true);
+
+        progress(0, "preloading textures...");
+        preloadtextures(IDF_GAMEPRELOAD);
+        maskpackagedirs(mask);
+
+        progress(0, "starting world...");
+        game::startmap(mapname, mname);
+        maploading = 0;
+        return true;
     }
     conoutf("\frunable to load %s", mname);
-    maploading = 0;
+    maploading = mapcrc = 0;
     return false;
 }
 
@@ -1881,4 +1894,3 @@ int getmapversion() { return hdr.version; }
 ICOMMAND(0, mapversion, "", (void), intret(getmapversion()));
 int getmaprevision() { return hdr.revision; }
 ICOMMAND(0, maprevision, "", (void), intret(getmaprevision()));
-
