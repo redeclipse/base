@@ -53,7 +53,7 @@ void setnames(const char *fname, int type, int crc)
     string fn, mn, mf;
     if(fname != NULL && *fname)
     {
-        const char *xn = strstr(fname, "_0x")
+        const char *xn = strstr(fname, "_0x");
         if(xn && *xn)
         {
             char *t = newstring(fname, xn-fname);
@@ -61,7 +61,11 @@ void setnames(const char *fname, int type, int crc)
             delete[] t;
         }
         else copystring(fn, fname);
-        if(crc > 0) concatformatstring(fn, "_0x%.8x", crc);
+        if(crc > 0)
+        {
+            defformatstring(cn, "_0x%.8x", crc);
+            concatstring(fn, cn);
+        }
         else if(crc < 0) concatstring(fn, "_0x0");
     }
     else formatstring(fn, "%s/untitled", mapdirs[maptype].name);

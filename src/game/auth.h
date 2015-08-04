@@ -164,7 +164,7 @@ namespace auth
             if(!(ci->privilege&PRIV_TYPE)) return;
             int privilege = ci->privilege;
             ci->privilege = PRIV_NONE;
-            ci->handle[0] = 0;
+            ci->handle[0] = '\0';
             int others = 0;
             loopv(clients) if((clients[i]->privilege&PRIV_TYPE) >= PRIV_MODERATOR || clients[i]->local) others++;
             if(!others) mastermode = MM_OPEN;
@@ -238,7 +238,7 @@ namespace auth
     void authfailed(clientinfo *ci)
     {
         if(!ci) return;
-        ci->authreq = ci->authname[0] = ci->handle[0] = 0;
+        ci->authreq = ci->authname[0] = ci->handle[0] = '\0';
         srvmsgftforce(ci->clientnum, CON_EVENT, "\foidentity verification failed, please check your credentials");
         if(ci->connectauth)
         {
@@ -309,7 +309,7 @@ namespace auth
             }
         }
         if(n > PRIV_NONE) setprivilege(ci, 1, n|(local ? PRIV_LOCAL : 0), true);
-        else ci->authname[0] = ci->handle[0] = 0;
+        else ci->authname[0] = ci->handle[0] = '\0';
         if(ci->connectauth)
         {
             ci->connectauth = false;

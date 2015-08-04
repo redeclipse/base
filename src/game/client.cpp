@@ -966,7 +966,7 @@ namespace client
         removetrackedsounds(game::player1);
         game::player1->clientnum = -1;
         game::player1->privilege = PRIV_NONE;
-        game::player1->handle[0] = 0;
+        game::player1->handle[0] = '\0';
         game::gamemode = G_EDITMODE;
         game::mutators = 0;
         loopv(game::players) if(game::players[i]) game::clientdisconnected(i);
@@ -983,7 +983,7 @@ namespace client
                 default: break;
             }
         });
-        if(clean) game::clientmap[0] = '\0';
+        if(clean) game::clientmap[0] = game::clientcrc = 0;
     }
 
     bool addmsg(int type, const char *fmt, ...)
@@ -999,8 +999,44 @@ namespace client
             va_start(args, fmt);
             while(*fmt) switch(*fmt++)
             {
-                SENDFORMATS(p, args, fmt, numi += n, nums++)
                 case 'r': reliable = true; break;
+                case 'v':
+                {
+                    int n = va_arg(args, int);
+                    int *v = va_arg(args, int *);
+                    loopi(n) putint(p, v[i]);
+                    numi += n;
+                    break;
+                }
+                case 'i':
+                {
+                    int n = isdigit(*fmt) ? *fmt++-'0' : 1;
+                    loopi(n) putint(p, va_arg(args, int));
+                    numi += n;
+                    break;
+                }
+                case 'u':
+                {
+                    int n = isdigit(*fmt) ? *fmt++-'0' : 1;
+                    loopi(n) putuint(p, va_arg(args, uint));
+                    numi += n;
+                    break;
+                }
+                case 'f':
+                {
+                    int n = isdigit(*fmt) ? *fmt++-'0' : 1;
+                    loopi(n) putfloat(p, (float)va_arg(args, double));
+                    numi += n;
+                    break;
+                }
+                case 's': sendstring(va_arg(args, const char *), p); nums++; break;
+                case 'm':
+                {
+                    int n = va_arg(args, int);
+                    p.put(va_arg(args, uchar *), n);
+                    numi += n;
+                    break;
+                }
             }
             va_end(args);
         }
@@ -1232,18 +1268,19 @@ namespace client
 
             case N_SENDMAPFILE:
             {
-                int filetype = getint(p);
+                int filetype = getint(p), filecrc = getint(p);
+                string fname;
+                getstring(fname, p);
+                if(!*fname) copystring(fname, "maps/untitled");
                 data += p.length();
                 len -= p.length();
                 if(filetype < 0 || filetype >= SENDMAP_MAX) break;
-                const char *reqmap = mapname;
-                if(!reqmap || !*reqmap) reqmap = "maps/untitled";
-                defformatstring(reqfile, reqmap);
-                defformatstring(reqfext, "%s.%s", reqfile, sendmaptypes[filetype]);
-                stream *f = openfile(reqfext, "wb");
+                defformatstring(ffile, "%s_0x%.8x", fname, filecrc);
+                defformatstring(ffext, "%s.%s", ffile, sendmaptypes[filetype]);
+                stream *f = openfile(ffext, "wb");
                 if(!f)
                 {
-                    conoutft(CON_EVENT, "\frfailed to open map file: \fc%s", reqfext);
+                    conoutft(CON_EVENT, "\frfailed to open map file: \fc%s", ffext);
                     break;
                 }
                 gettingmap = true;
@@ -1251,6 +1288,7 @@ namespace client
                 delete f;
                 break;
             }
+            default: break;
         }
     }
     ICOMMAND(0, getmap, "", (), if(multiplayer(false)) addmsg(N_GETMAP, "r"));
@@ -1317,7 +1355,7 @@ namespace client
         if(!reqmap || !*reqmap) reqmap = "maps/untitled";
         if(m_edit(game::gamemode) || maptype != MAP_MAPZ)
         {
-            save_world(mapname, edit, m_edit(game::gamemode), true);
+            save_world(mapname, m_edit(game::gamemode), true);
             reqmap = mapname;
         }
         loopi(SENDMAP_MAX)
@@ -1327,7 +1365,7 @@ namespace client
             if(f)
             {
                 conoutft(CON_EVENT, "\fytransmitting file: \fc%s", reqfext);
-                sendfile(-1, 2, f, "ri2", N_SENDMAPFILE, i);
+                sendfile(-1, 2, f, "ri3", N_SENDMAPFILE, i, mapcrc);
                 if(needclipboard >= 0) needclipboard++;
                 delete f;
             }
@@ -1991,7 +2029,7 @@ namespace client
                     changemapserv(text, mode, muts, crc);
                     if(!needsmap)
                     {
-                        addmsg(N_MAPCRC, "rsi", game::clientmap, game::clientfcrc);
+                        addmsg(N_MAPCRC, "rsi", game::clientmap, game::clientcrc);
                         sendgameinfo = true;
                     }
                     else addmsg(N_GETMAP, "r");
@@ -2578,8 +2616,7 @@ namespace client
                     game::player1->clientnum = getint(p);
                     if(!demoplayback && wasdemopb && demoendless)
                     {
-                        string demofile;
-                        demofile[0] = 0;
+                        string demofile = "";
                         if(*demolist)
                         {
                             int r = rnd(listlen(demolist)), len = 0;

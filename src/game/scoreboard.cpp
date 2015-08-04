@@ -261,7 +261,7 @@ namespace hud
         if(hostname && d->actortype > A_PLAYER)
         {
             static string hoststr;
-            hoststr[0] = 0;
+            hoststr[0] = '\0';
             gameent *e = game::getclient(d->ownernum);
             if(e)
             {

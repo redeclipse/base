@@ -329,12 +329,12 @@ struct textrenderer : sharedlistrenderer
     void renderpart(sharedlistparticle *p, int blend, int ts, float size)
     {
         const char *text = p->text;
-        static string font; font[0] = 0;
+        static string font; font[0] = '\0';
         if(*text == '<')
         {
             const char *start = text;
             while(*text && *text != '>') text++;
-            if(*text) { int len = text-(start+1); memcpy(font, start+1, len); font[len] = 0; text++; }
+            if(*text) { int len = text-(start+1); memcpy(font, start+1, len); font[len] = '\0'; text++; }
             else text = start;
         }
         float scale = p->size/80.0f, xoff = -text_width(text)/2;

@@ -2447,7 +2447,7 @@ namespace hud
         if(entities::ents.inrange(n))
         {
             gameentity &e = *(gameentity *)entities::ents[n];
-            string attrstr; attrstr[0] = 0;
+            string attrstr; attrstr[0] = '\0';
             loopi(enttype[e.type].numattrs)
             {
                 defformatstring(s, "%s%d", i ? " " : "", e.attrs[i]);

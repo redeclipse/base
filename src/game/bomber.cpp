@@ -507,7 +507,7 @@ namespace bomber
     {
         if(!st.flags.inrange(relay) || !st.flags.inrange(goal)) return;
         bomberstate::flag &f = st.flags[relay], &g = st.flags[goal];
-        string extra; extra[0] = 0;
+        string extra = "";
         if(m_gsp2(game::gamemode, game::mutators) && showbomberdists >= (d != game::player1 ? 2 : 1))
         {
             if(f.droptime) formatstring(extra, " from \fs\fy%.2f\fom\fS", f.droppos.dist(g.spawnloc)/8.f);

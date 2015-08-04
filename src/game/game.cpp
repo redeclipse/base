@@ -9,6 +9,7 @@ namespace game
     vec swaydir(0, 0, 0), swaypush(0, 0, 0);
 
     string clientmap = "";
+    int clientcrc = 0;
 
     gameent *player1 = new gameent(), *focus = player1, *lastfocus = focus;
     avatarent avatarmodel, bodymodel;
@@ -1875,6 +1876,7 @@ namespace game
         entities::spawnplayer(player1); // prevent the player from being in the middle of nowhere
         resetcamera();
         copystring(clientmap, reqname ? reqname : (name ? name : ""));
+        clientcrc = mapcrc;
         if(showloadoutmenu && m_loadout(gamemode, mutators)) wantsloadoutmenu = true;
     }
 
@@ -1983,7 +1985,7 @@ namespace game
     const char *colourname(gameent *d, char *name, bool icon, bool dupname, int colour)
     {
         if(!name) name = d->name;
-        static string colored; colored[0] = 0; string colortmp;
+        static string colored; colored[0] = '\0'; string colortmp;
         if(colour) concatstring(colored, "\fs");
         if(icon)
         {
@@ -2019,7 +2021,7 @@ namespace game
     const char *colourteam(int team, const char *icon)
     {
         if(team < 0 || team > T_MAX) team = T_NEUTRAL;
-        static string teamed; teamed[0] = 0; string teamtmp;
+        static string teamed; teamed[0] = '\0'; string teamtmp;
         concatstring(teamed, "\fs");
         formatstring(teamtmp, "\f[%d]", TEAM(team, colour));
         concatstring(teamed, teamtmp);

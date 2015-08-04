@@ -968,7 +968,7 @@ struct gameent : dynent, clientstate
         type = ENT_PLAYER;
         copystring(hostname, "0.0.0.0");
         copystring(hostip, "0.0.0.0");
-        name[0] = handle[0] = info[0] = obit[0] = 0;
+        name[0] = handle[0] = info[0] = obit[0] = '\0';
         removesounds();
         cleartags();
         checktags();
@@ -1058,7 +1058,7 @@ struct gameent : dynent, clientstate
         lasthit = lastkill = quake = turnmillis = turnside = spree = 0;
         turnroll = turnyaw = 0;
         lastteamhit = lastflag = respawned = suicided = lastnode = lastfoot = -1;
-        obit[0] = 0;
+        obit[0] = '\0';
         obliterated = headless = false;
         setscale(1, 0, true);
         icons.shrink(0);
@@ -1331,7 +1331,7 @@ struct gameent : dynent, clientstate
     void setname(const char *n)
     {
         if(n && *n) copystring(name, n, MAXNAMELEN+1);
-        else name[0] = 0;
+        else name[0] = '\0';
     }
 
     bool setvanity(const char *v)
@@ -1641,7 +1641,7 @@ namespace game
     extern int gamestate, gamemode, mutators, nextmode, nextmuts, timeremaining, lasttimeremain, maptime, lastzoom, lasttvcam, lasttvchg, spectvtime, waittvtime,
             bloodfade, bloodsize, bloodsparks, debrisfade, eventiconfade, eventiconshort,
             announcefilter, dynlighteffects, aboveheadnames, followthirdperson, nogore, forceplayermodel,
-            playerovertone, playerundertone, playerdisplaytone, playereffecttone, playerteamtone, follow, specmode, spectvfollow, spectvfollowing;
+            playerovertone, playerundertone, playerdisplaytone, playereffecttone, playerteamtone, follow, specmode, spectvfollow, spectvfollowing, clientcrc;
     extern float bloodscale, debrisscale, aboveitemiconsize;
     extern bool zooming;
     extern vec swaypush, swaydir;

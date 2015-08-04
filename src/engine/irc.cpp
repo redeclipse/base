@@ -301,7 +301,7 @@ void ircnewnet(int type, const char *name, const char *serv, int port, const cha
     copystring(n.passkey, passkey);
     n.address.host = ENET_HOST_ANY;
     n.address.port = n.port;
-    n.input[0] = n.authname[0] = n.authpass[0] = 0;
+    n.input[0] = n.authname[0] = n.authpass[0] = '\0';
 #ifndef STANDALONE
     n.lastseen = totalmillis;
 #endif

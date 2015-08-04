@@ -69,7 +69,7 @@ ICOMMAND(0, gettime, "isi", (int *n, char *a, int *p), result(gettime(*n+(*p!=0 
 
 const char *timestr(int dur, int style)
 {
-    static string buf; buf[0] = 0;
+    static string buf; buf[0] = '\0';
     int tm = dur, ms = 0, ss = 0, mn = 0;
     if(tm > 0)
     {
@@ -331,8 +331,8 @@ bool filterstring(char *dst, const char *src, bool newline, bool colour, bool wh
             dst[n++] = c;
         else filtered = true;
     }
-    if(whitespace && wsstrip && n) while(iscubespace(dst[n-1])) dst[--n] = 0;
-    dst[n <= len ? n : len] = 0;
+    if(whitespace && wsstrip && n) while(iscubespace(dst[n-1])) dst[--n] = '\0';
+    dst[n <= len ? n : len] = '\0';
     return filtered;
 }
 ICOMMAND(0, filter, "siiiiN", (char *s, int *a, int *b, int *c, int *d, int *numargs),
@@ -478,15 +478,46 @@ void sendf(int cn, int chan, const char *format, ...)
     va_start(args, format);
     while(*format) switch(*format++)
     {
-        SENDFORMATS(p, args, format, , )
         case 'x':
             exclude = va_arg(args, int);
             break;
+        case 'v':
+        {
+            int n = va_arg(args, int);
+            int *v = va_arg(args, int *);
+            loopi(n) putint(p, v[i]);
+            break;
+        }
+        case 'i':
+        {
+            int n = isdigit(*format) ? *format++-'0' : 1;
+            loopi(n) putint(p, va_arg(args, int));
+            break;
+        }
+        case 'u':
+        {
+            int n = isdigit(*format) ? *format++-'0' : 1;
+            loopi(n) putuint(p, va_arg(args, uint));
+            break;
+        }
+        case 'f':
+        {
+            int n = isdigit(*format) ? *format++-'0' : 1;
+            loopi(n) putfloat(p, (float)va_arg(args, double));
+            break;
+        }
+        case 's': sendstring(va_arg(args, const char *), p); break;
+        case 'm':
+        {
+            int n = va_arg(args, int);
+            p.put(va_arg(args, uchar *), n);
+            break;
+        }
     }
     va_end(args);
     if(cn >= 0) sendpacket(cn, chan, p.finalize(), exclude);
 #ifndef STANDALONE
-    else sendclientpacket(packet, chan);
+    else sendclientpacket(p.finalize(), chan);
 #endif
 }
 
@@ -508,8 +539,39 @@ void sendfile(int cn, int chan, stream *file, const char *format, ...)
     va_start(args, format);
     while(*format) switch(*format++)
     {
-        SENDFORMATS(p, args, format, , )
         case 'l': putint(p, len); break;
+        case 'v':
+        {
+            int n = va_arg(args, int);
+            int *v = va_arg(args, int *);
+            loopi(n) putint(p, v[i]);
+            break;
+        }
+        case 'i':
+        {
+            int n = isdigit(*format) ? *format++-'0' : 1;
+            loopi(n) putint(p, va_arg(args, int));
+            break;
+        }
+        case 'u':
+        {
+            int n = isdigit(*format) ? *format++-'0' : 1;
+            loopi(n) putuint(p, va_arg(args, uint));
+            break;
+        }
+        case 'f':
+        {
+            int n = isdigit(*format) ? *format++-'0' : 1;
+            loopi(n) putfloat(p, (float)va_arg(args, double));
+            break;
+        }
+        case 's': sendstring(va_arg(args, const char *), p); break;
+        case 'm':
+        {
+            int n = va_arg(args, int);
+            p.put(va_arg(args, uchar *), n);
+            break;
+        }
     }
     va_end(args);
 
@@ -1627,7 +1689,6 @@ void setcrc(const char *bin)
 {
     if(!bin || !*bin) return;
     versioncrc = crcfile(bin);
-    delete[] buf;
 }
 
 volatile bool fatalsig = false;

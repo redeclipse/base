@@ -567,7 +567,7 @@ extern bool getsight(vec &o, float yaw, float pitch, vec &q, vec &v, float mdist
 
 // worldio
 extern char *maptitle, *mapauthor, *mapname;
-int mapcrc;
+extern int mapcrc, maptype, maploading;
 extern int getmapversion();
 extern int getmaprevision();
 

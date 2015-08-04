@@ -91,7 +91,7 @@ namespace capture
 
     char *buildflagstr(vector<int> &f, bool named = false)
     {
-        static string s; s[0] = 0;
+        static string s; s[0] = '\0';
         loopv(f)
         {
             defformatstring(d, "%s\f[%d]\f(%s)%s", i && named ? " " : "", TEAM(st.flags[f[i]].team, colour), hud::flagtex, named ? TEAM(st.flags[f[i]].team, name) : "");

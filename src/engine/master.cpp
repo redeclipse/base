@@ -55,7 +55,7 @@ struct authreq
         id = 0;
         answer = NULL;
         user = NULL;
-        hostname[0] = 0;
+        hostname[0] = '\0';
     }
 };
 
@@ -94,7 +94,7 @@ struct masterclient
             void reset()
             {
                 index = score = 0;
-                name[0] = 0;
+                name[0] = '\0';
             }
         };
         vector<team> teams;
@@ -109,7 +109,7 @@ struct masterclient
 
             void reset()
             {
-                name[0] = handle[0] = 0;
+                name[0] = handle[0] = '\0';
                 score = timealive = frags = deaths = wid = 0;
             }
         };
@@ -130,7 +130,7 @@ struct masterclient
 
             void reset()
             {
-                name[0] = playerhandle[0] = 0;
+                name[0] = playerhandle[0] = '\0';
                 playerid = -1;
                 timewielded = timeloadout = 0;
                 hits1 = hits2 = flakhits1 = flakhits2 = 0;
@@ -146,7 +146,7 @@ struct masterclient
         void reset()
         {
             id = 0;
-            map[0] = desc[0] = version[0] = 0;
+            map[0] = desc[0] = version[0] = '\0';
             mode = mutators = -1;
             timeplayed = 0;
             time = 0;
@@ -162,7 +162,7 @@ struct masterclient
 
     void reset()
     {
-        name[0] = desc[0] = flags[0] = authhandle[0] = 0;
+        name[0] = desc[0] = flags[0] = authhandle[0] = '\0';
         lastcontrol = -1;
         inputpos = outputpos = numpings = version = 0;
         lastping = lastpong = lastactivity = laststats = 0;
@@ -684,7 +684,7 @@ bool checkmasterclientinput(masterclient &c)
                 if(w[1] && *w[1]) c.port = clamp(atoi(w[1]), 1, VAR_MAX);
                 c.version = w[3] && *w[3] ? atoi(w[3]) : (w[2] && *w[2] ? 150 : 0);
                 ENetAddress address = { ENET_HOST_ANY, enet_uint16(c.port) };
-                if(w[4] && *w[4]) copystring(c.desc, w[4]); else c.desc[0] = 0;
+                if(w[4] && *w[4]) copystring(c.desc, w[4]); else c.desc[0] = '\0';
                 if(w[5] && *w[5]) c.sendstats = atoi(w[5]) != 0;
                 if(w[2] && *w[2] && strcmp(w[2], "*") && (enet_address_set_host(&address, w[2]) < 0 || address.host != c.address.host))
                 {
