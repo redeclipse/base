@@ -4608,6 +4608,7 @@ namespace server
 
     void waiting(clientinfo *ci, int drop, bool doteam, bool exclude)
     {
+        ci->state.updatetimeplayed();
         if(ci->state.state == CS_ALIVE)
         {
             if(drop) dropitems(ci, drop);
@@ -5846,7 +5847,6 @@ namespace server
                                         int laptime = gamemillis-cp->state.cpmillis, total = 0;
                                         if(cp->state.cptime <= 0 || laptime < cp->state.cptime) cp->state.cptime = laptime;
                                         cp->state.points++;
-                                        cp->state.updatetimeplayed();
                                         sendf(-1, 1, "ri6", N_CHECKPOINT, cp->clientnum, ent, laptime, cp->state.cptime, cp->state.points);
                                         if(m_team(gamemode, mutators))
                                         {
