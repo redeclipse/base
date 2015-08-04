@@ -158,8 +158,6 @@ void drawenvbox(int w, float z1clip = 0.0f, float z2clip = 1.0f, int faces = 0x3
                        0.0f, 0.0f, -w,  w, w,
                        1.0f, 0.0f, -w, -w, w, 
                        1.0f, 1.0f,  w, -w, w, sky[5]);
-
-    gle::disable();
 }
 
 void drawenvboxbg(int w, float z1clip = 0.0f, float z2clip = 1.0f, int faces = 0x3F)
@@ -176,8 +174,6 @@ void drawenvboxbg(int w, float z1clip = 0.0f, float z2clip = 1.0f, int faces = 0
     if(faces&0x08) drawenvboxbgface( w,  w, z1, -w,  w, z1, -w,  w, z2,  w,  w, z2);
     if(z1clip <= 0 && faces&0x10) drawenvboxbgface(-w,  w, -w,  w,  w, -w,  w, -w, -w, -w, -w, -w);
     if(z2clip >= 1 && faces&0x20) drawenvboxbgface( w,  w,  w, -w,  w,  w, -w, -w,  w,  w, -w,  w);
-
-    gle::disable();
 }
 
 void drawenvoverlay(int w, float height, int subdiv, float fade, float scale, Texture *overlay = NULL, int colour = 0xFFFFFF, float a = 1.f, float tx = 0, float ty = 0)
@@ -214,7 +210,6 @@ void drawenvoverlay(int w, float height, int subdiv, float fade, float scale, Te
             gle::attrib(color, 0.0f);
     }
     xtraverts += gle::end();
-    gle::disable();
 }
 
 FVAR(IDF_WORLD, fogdomeheight, -1, -0.5f, 1);

@@ -2438,7 +2438,6 @@ void forcecubemapload(GLuint tex)
         gle::attribf(1, 1, 1, 0);
     }
     gle::end();
-    gle::disable();
     if(!blend) glDisable(GL_BLEND);
     if(depthtest) glEnable(GL_DEPTH_TEST);
 }

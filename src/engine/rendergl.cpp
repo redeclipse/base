@@ -981,7 +981,6 @@ void screenquadoffset(float x, float y, float w, float h, float x2, float y2, fl
     gle::attribf(x2, y2); gle::attribf(sx2, sy2); \
     gle::attribf(x1, y2); gle::attribf(sx1, sy2); \
     gle::end(); \
-    gle::disable(); \
 }
 
 void hudquad(float x, float y, float w, float h, float tx, float ty, float tw, float th)
@@ -1842,7 +1841,6 @@ struct framebuffercopy
         SETSHADER(screenrect);
         glBindTexture(GL_TEXTURE_2D, tex);
         screenquadmapped(sx*2 - 1, sy*2 - 1, sw*2, sh*2, 0, 0, 1, 1);
-        gle::disable();
     }
 };
 
@@ -1960,8 +1958,6 @@ void drawnoviewtype(int targtype)
     hud::update(screen->w, screen->h);
     hud::drawhud(true);
     hud::drawlast();
-
-    gle::disable();
 
     if(targtype == VP_LEFT || targtype == VP_RIGHT)
     {
@@ -2168,8 +2164,6 @@ void drawviewtype(int targtype)
         rendertexturepanel(w, h);
         hud::drawlast();
     }
-
-    gle::disable();
 
     renderedgame = false;
 

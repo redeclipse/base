@@ -925,8 +925,6 @@ void rendermodel(entitylight *light, const char *mdl, int anim, const vec &o, fl
             render3dbox(center, radius.z, radius.z, radius.x, radius.y, &m);
         }
 
-        gle::disable();
-
         glEnable(GL_CULL_FACE);
         glDisable(GL_BLEND);
     }

@@ -111,7 +111,6 @@ struct lightningrenderer : sharedlistrenderer
 
     void endrender()
     {
-        gle::disable();
         glEnable(GL_CULL_FACE);
     }
 

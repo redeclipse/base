@@ -532,7 +532,6 @@ struct gui : guient
             glScissor(x1, y1, x2-x1, y2-y1);
             glEnable(GL_SCISSOR_TEST);
             glDisable(GL_BLEND);
-            gle::disable();
             modelpreview::start(overlaid);
             game::renderplayerpreview(model, color, team, weap, vanity, scale, blend);
             modelpreview::end();
@@ -575,7 +574,6 @@ struct gui : guient
             glScissor(x1, y1, x2-x1, y2-y1);
             glEnable(GL_SCISSOR_TEST);
             glDisable(GL_BLEND);
-            gle::disable();
             modelpreview::start(overlaid);
             model *m = loadmodel(name);
             if(m)
@@ -1268,7 +1266,6 @@ struct gui : guient
                 if(tooltip) DELETEA(tooltip);
                 lasttooltip = 0;
             }
-            gle::disable();
         }
         poplist();
         while(fontdepth) gui::popfont();

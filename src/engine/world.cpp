@@ -542,8 +542,6 @@ void renderentselection(const vec &o, const vec &ray, bool entmoving)
         boxs(entorient, eo, es);
         boxs(entorient, eo, es, clamp(0.015f*camera1->o.dist(eo)*tan(fovy*0.5f*RAD), 0.1f, 1.0f));
     }
-
-    gle::disable();
 }
 
 bool enttoggle(int id)

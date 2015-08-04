@@ -242,8 +242,6 @@ struct rendertarget
             rendertiles();
         }
 
-        gle::disable();
-
         if(scissor) glDisable(GL_SCISSOR_TEST);
             
         glEnable(GL_DEPTH_TEST);
@@ -461,7 +459,6 @@ struct rendertarget
         hudquad(0, 0, w, h, tx1, ty1, tx2-tx1, ty2-ty1);
         hudnotextureshader->set();
         dodebug(w, h);
-        gle::disable();
     }
 };
 

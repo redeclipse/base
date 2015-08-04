@@ -319,7 +319,6 @@ struct textrenderer : sharedlistrenderer
 
     void endrender()
     {
-        gle::disable();
     }
 
     void killpart(sharedlistparticle *p)
@@ -376,7 +375,6 @@ struct portalrenderer : listrenderer<portal>
     void endrender()
     {
         gle::end();
-        gle::disable();
         glEnable(GL_CULL_FACE);
     }
 
@@ -431,7 +429,6 @@ struct iconrenderer : listrenderer<icon>
     void endrender()
     {
         gle::end();
-        gle::disable();
     }
 
     void renderpart(icon *p, int blend, int ts, float size)
@@ -821,7 +818,6 @@ struct lineprimitiverenderer : listrenderer<lineprimitive>
     void endrender()
     {
         gle::end();
-        gle::disable();
         glEnable(GL_CULL_FACE);
     }
 
@@ -869,7 +865,6 @@ struct trisprimitiverenderer : listrenderer<trisprimitive>
     void endrender()
     {
         gle::end();
-        gle::disable();
         glEnable(GL_CULL_FACE);
     }
 
@@ -926,7 +921,6 @@ struct loopprimitiverenderer : listrenderer<loopprimitive>
 
     void endrender()
     {
-        gle::disable();
         glEnable(GL_CULL_FACE);
     }
 
@@ -990,7 +984,6 @@ struct coneprimitiverenderer : listrenderer<coneprimitive>
 
     void endrender()
     {
-        gle::disable();
         glEnable(GL_CULL_FACE);
     }
 

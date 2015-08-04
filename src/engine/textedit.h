@@ -701,8 +701,6 @@ struct editor
             }
             h += height;
         }
-
-        gle::disable();
     }
 };
 

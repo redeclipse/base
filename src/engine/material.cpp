@@ -894,8 +894,6 @@ void rendermaterials()
         rendermatgrid(vismats);
     }
 
-    gle::disable();
-
     glEnable(GL_CULL_FACE);
 }
 
