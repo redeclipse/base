@@ -98,9 +98,9 @@ namespace game
     extern bool clientoption(char *arg);
     extern void preload();
     extern void updateworld();
-    extern void newmap(int size);
+    extern void newmap(int size, const char *mname = "");
     extern void resetmap(bool empty);
-    extern void startmap(const char *name, const char *reqname, bool empty = false);
+    extern void startmap(bool empty = false);
     extern bool allowmove(physent *d);
     extern dynent *iterdynents(int i, bool all = false);
     extern dynent *focusedent(bool force = false);

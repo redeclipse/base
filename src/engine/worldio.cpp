@@ -17,10 +17,12 @@ VAR(0, maploading, 1, 0, -1);
 VAR(0, mapcrc, 1, 0, -1);
 SVAR(0, mapfile, "");
 SVAR(0, mapname, "");
+SVAR(0, maptext, "");
 
 VAR(IDF_PERSIST, autosavebackups, 0, 2, 4); // make backups; 0 = off, 1 = single backup, 2 = named backup, 3/4 = same as 1/2 with move to "backups/"
-VAR(IDF_PERSIST, autosaveconfigs, 0, 1, 1);
 VAR(IDF_PERSIST, autosavemapshot, 0, 1, 1);
+VAR(IDF_PERSIST, autosaveconfigs, 0, 1, 1);
+VAR(IDF_PERSIST, autosavetexts, 0, 1, 1);
 
 void fixmaptitle()
 {
@@ -51,14 +53,19 @@ void setnames(const char *fname, int type, int crc)
     maptype = type >= 0 || type <= MAP_MAX-1 ? type : MAP_MAPZ;
 
     string fn, mn, mf;
-    if(fname != NULL && *fname)
+    if(fname && *fname)
     {
-        const char *xn = strstr(fname, "_0x");
-        if(xn && *xn)
+        const char *fcrc = strstr(fname, "_0x");
+        if(fcrc && *fcrc)
         {
-            char *t = newstring(fname, xn-fname);
-            copystring(fn, t);
-            delete[] t;
+            char *t = newstring(fname, fcrc-fname);
+            if(t)
+            {
+                if(*t) copystring(fn, t);
+                else copystring(fn, fname);
+                delete[] t;
+            }
+            else copystring(fn, fname);
         }
         else copystring(fn, fname);
         if(crc > 0)
@@ -76,6 +83,8 @@ void setnames(const char *fname, int type, int crc)
 
     formatstring(mf, "%s%s", mapname, mapexts[maptype].name);
     setsvar("mapfile", mf);
+
+    conoutf("set names to %s [%s]", mapname, mapfile);
 }
 
 enum { OCTSAV_CHILDREN = 0, OCTSAV_EMPTY, OCTSAV_SOLID, OCTSAV_NORMAL, OCTSAV_LODCUBE };
@@ -946,11 +955,25 @@ void save_world(const char *mname, bool nodata, bool forcesave)
     setnames(mname, MAP_MAPZ, forcesave ? -1 : 0);
 
     if(autosavebackups && !forcesave) backup(mapname, mapexts[MAP_MAPZ].name, hdr.revision, autosavebackups > 2, !(autosavebackups%2));
+    conoutf("saving: %s (%s)", mapname, forcesave ? "forced" : "normal");
+
     stream *f = opengzfile(mapfile, "wb");
     if(!f) { conoutf("\frerror saving %s to %s: file error", mapname, mapfile); return; }
 
     if(autosavemapshot || forcesave) save_mapshot(mapname);
     if(autosaveconfigs || forcesave) save_config(mapname);
+    if(*maptext && (autosavetexts || forcesave))
+    {
+        defformatstring(fname, "%s.txt", mname);
+        stream *h = openutf8file(fname, "w");
+        if(!h) conoutf("\frcould not write text to %s", fname);
+        else
+        {
+            h->printf("%s", maptext);
+            delete h;
+            if(verbose) conoutf("saved text %s", fname);
+        }
+    }
 
     int numvslots = vslots.length();
     if(!nodata && !multiplayer(false))
@@ -1104,15 +1127,28 @@ void save_world(const char *mname, bool nodata, bool forcesave)
     }
     delete f;
     mapcrc = crcfile(mapfile);
+#if 0
     if(forcesave)
     {
         string aname;
         copystring(aname, mapname);
         setnames(aname, MAP_MAPZ, mapcrc);
-        remove(mapfile);
-        rename(aname, mapfile);
+        conoutf("correcting %s to %s [0x%.8x]", aname, mapname, mapcrc);
+        const char *mapexts[4] = { "mpz", "cfg", "png", "txt" };
+        if(strcmp(aname, mapname)) loopk(4)
+        {
+            defformatstring(fname, "%s.%s", aname, mapexts[k]);
+            defformatstring(gname, "%s.%s", mapname, mapexts[k]);
+            if(fileexists(fname, "r"))
+            {
+                conoutf("moving %s to %s", fname, gname);
+                if(fileexists(gname, "r")) remove(gname);
+                rename(fname, gname);
+            }
+        }
     }
-    conoutf("saved %s (\fs%s\fS by \fs%s\fS) v%d:%d (r%d) [0x%.8x] in %.1f secs", mapname, *maptitle ? maptitle : "Untitled", *mapauthor ? mapauthor : "Unknown", hdr.version, hdr.gamever, hdr.revision, mapcrc, (SDL_GetTicks()-savingstart)/1000.0f);
+#endif
+    conoutf("saved %s (\fs%s\fS by \fs%s\fS) v%d:%d(r%d) [0x%.8x] in %.1f secs", mapname, *maptitle ? maptitle : "Untitled", *mapauthor ? mapauthor : "Unknown", hdr.version, hdr.gamever, hdr.revision, mapcrc, (SDL_GetTicks()-savingstart)/1000.0f);
 }
 
 ICOMMAND(0, savemap, "s", (char *mname), if(!(identflags&IDF_WORLD)) save_world(*mname ? mname : mapname));
@@ -1131,15 +1167,18 @@ FVAR(0, sunlightscale, 0, 1, 16);
 bool load_world(const char *mname, int crc)       // still supports all map formats that have existed since the earliest cube betas!
 {
     int loadingstart = SDL_GetTicks();
-    maploading = 1;
     mapcrc = 0;
+    setsvar("maptext", "", false);
+    maploading = 1;
     loop(format, MAP_MAX) loop(tempfile, crc > 0 ? 2 : 1)
     {
         int mask = maskpackagedirs(format == MAP_OCTA ? ~0 : ~PACKAGEDIR_OCTA);
         setnames(mname, format, tempfile && crc > 0 ? crc : 0);
 
-        int fcrc = crcfile(mapfile);
-        if(!tempfile && crc > 0 && crc != fcrc)
+        int filecrc = crcfile(mapfile);
+        conoutf("checking: %s [0x%.8x v 0x%.8x]", mapfile, filecrc, crc);
+
+        if(!tempfile && crc > 0 && crc != filecrc)
         {
             maskpackagedirs(mask);
             continue; // skipped iteration
@@ -1151,7 +1190,6 @@ bool load_world(const char *mname, int crc)       // still supports all map form
             maskpackagedirs(mask);
             continue;
         }
-        mapcrc = fcrc;
 
         bool samegame = true;
         int eif = 0;
@@ -1250,6 +1288,7 @@ bool load_world(const char *mname, int crc)       // still supports all map form
             hdr = newhdr;
             progress(0, "please wait..");
             maptype = MAP_MAPZ;
+            mapcrc = filecrc;
 
             if(hdr.version <= 24) copystring(hdr.gameid, "bfa", 4); // all previous maps were bfa-fps
             if(verbose) conoutf("loading v%d map from %s game v%d", hdr.version, hdr.gameid, hdr.gamever);
@@ -1749,6 +1788,13 @@ bool load_world(const char *mname, int crc)       // still supports all map form
         }
         entities::initents(maptype, hdr.version, hdr.gameid, hdr.gamever);
         delete f;
+        defformatstring(fname, "%s.txt", mapname);
+        char *buf = loadfile(fname, NULL);
+        if(buf)
+        {
+            setsvar("maptext", buf, false);
+            delete[] buf;
+        }
 
         progress(0, "initialising config...");
         identflags |= IDF_WORLD;
@@ -1780,11 +1826,12 @@ bool load_world(const char *mname, int crc)       // still supports all map form
         maskpackagedirs(mask);
 
         progress(0, "starting world...");
-        game::startmap(mapname, mname);
+        game::startmap();
         maploading = 0;
         return true;
     }
     conoutf("\frunable to load %s", mname);
+    setsvar("maptext", "", false);
     maploading = mapcrc = 0;
     return false;
 }

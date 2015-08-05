@@ -308,15 +308,9 @@ namespace hud
                                 else if(m_play(game::gamemode) || client::demoplayback)
                                 {
                                     int timecorrected = max(game::timeremaining*1000-((gs_playing(game::gamestate) ? lastmillis : totalmillis)-game::lasttimeremain), 0);
-                                    switch(game::gamestate)
-                                    {
-                                        case G_S_WAITING: default: g.text(", \fs\fcwaiting\fS", 0xFFFFFF); break;
-                                        case G_S_VOTING: g.text(", \fs\fcvoting\fS", 0xFFFFFF); break;
-                                        case G_S_INTERMISSION: g.text(", \fs\fcintermission\fS", 0xFFFFFF); break;
-                                        case G_S_PLAYING: g.text(", \fs\fcplaying\fS", 0xFFFFFF); break;
-                                        case G_S_OVERTIME: g.text(", \fs\fcovertime\fS", 0xFFFFFF); break;
-                                    }
-                                    g.textf(", \fs\fg%s\fS remain", 0xFFFFFF, NULL, 0, -1, timestr(timecorrected, scoretimestyle));
+                                    if(game::gamestate != G_S_PLAYING)
+                                        g.textf(", \fs\fc%s\fS, \fs%s%s\fS remain", 0xFFFFFF, NULL, 0, -1, gamestates[0][game::gamestate], gs_waiting(game::gamestate) ? "\fr" : (game::gamestate == G_S_OVERTIME ? "\fzoy" : "\fg"), timestr(timecorrected, scoretimestyle));
+                                    else if(timelimit) g.textf(", \fs\fc%s\fS, \fs%s%s\fS remain", 0xFFFFFF, NULL, 0, -1, timecorrected > 60000 ? "\fg" : "\fzgy", timestr(timecorrected, scoretimestyle));
                                 }
                             }));
                             if(*connectname)
@@ -362,7 +356,7 @@ namespace hud
                                     if(delay || m_duke(game::gamemode, game::mutators) || (m_play(game::gamemode) && maxalive > 0))
                                     {
                                         uicenterlist(g, uifont(g, "default", {
-                                            if(game::gamestate == G_S_WAITING || m_duke(game::gamemode, game::mutators)) g.text("Queued for new round", 0xFFFFFF);
+                                            if(gs_waiting(game::gamestate) || m_duke(game::gamemode, game::mutators)) g.text("Queued for new round", 0xFFFFFF);
                                             else if(delay) g.textf("%s: Down for \fs\fy%s\fS", 0xFFFFFF, NULL, 0, -1, game::player1->state == CS_WAITING ? "Please Wait" : "Fragged", timestr(delay));
                                             else if(game::player1->state == CS_WAITING && m_play(game::gamemode) && maxalive > 0 && maxalivequeue)
                                             {

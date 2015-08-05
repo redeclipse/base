@@ -31,7 +31,7 @@ namespace ai
     }
     bool dbgfocus(gameent *d)  { return d->ai && (!aidebugfocus || d == game::focus || (aidebugfocus != 2 && !game::focus->ai)); }
 
-    void startmap(const char *name, const char *reqname, bool empty)    // called just after a map load
+    void startmap(bool empty)    // called just after a map load
     {
         savewaypoints();
         clearwaypoints(true);

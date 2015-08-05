@@ -310,7 +310,7 @@ namespace ai
     extern vec aitarget;
     extern int aidebug, aideadfade, showaiinfo;
 
-    extern void startmap(const char *name, const char *reqname, bool empty);
+    extern void startmap(bool empty);
 
     extern float viewdist(int x = 101);
     extern float viewfieldx(int x = 101);

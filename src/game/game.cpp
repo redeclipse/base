@@ -8,9 +8,6 @@ namespace game
     float swayfade = 0, swayspeed = 0, swaydist = 0, bobfade = 0, bobdist = 0;
     vec swaydir(0, 0, 0), swaypush(0, 0, 0);
 
-    string clientmap = "";
-    int clientcrc = 0;
-
     gameent *player1 = new gameent(), *focus = player1, *lastfocus = focus;
     avatarent avatarmodel, bodymodel;
     vector<gameent *> players, waiting;
@@ -1857,10 +1854,10 @@ namespace game
         if(!empty) smartmusic(true);
     }
 
-    void startmap(const char *name, const char *reqname, bool empty)    // called just after a map load
+    void startmap(bool empty) // called just after a map load
     {
-        ai::startmap(name, reqname, empty);
-        gamestate = m_play(gamemode) ? G_S_WAITING : G_S_PLAYING;
+        ai::startmap(empty);
+        gamestate = G_S_WAITING;
         maptime = 0;
         specreset();
         removedamagemergeall();
@@ -1871,14 +1868,11 @@ namespace game
         resetcursor();
         resetsway();
         if(!empty) preload();
-        // reset perma-state
         gameent *d;
         int numdyns = numdynents();
         loopi(numdyns) if((d = (gameent *)iterdynents(i)) && gameent::is(d)) d->mapchange(lastmillis, gamemode, mutators);
         entities::spawnplayer(player1); // prevent the player from being in the middle of nowhere
         resetcamera();
-        copystring(clientmap, reqname ? reqname : (name ? name : ""));
-        clientcrc = mapcrc;
         if(showloadoutmenu && m_loadout(gamemode, mutators)) wantsloadoutmenu = true;
     }
 
@@ -2084,7 +2078,7 @@ namespace game
         }
     }
 
-    void newmap(int size) { client::addmsg(N_NEWMAP, "ri", size); }
+    void newmap(int size, const char *mname) { client::addmsg(N_NEWMAP, "ris", size, mname); }
 
     void fixfullrange(float &yaw, float &pitch, float &roll, bool full)
     {

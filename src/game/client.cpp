@@ -984,7 +984,6 @@ namespace client
                 default: break;
             }
         });
-        if(clean) game::clientmap[0] = game::clientcrc = 0;
     }
 
     bool addmsg(int type, const char *fmt, ...)
@@ -1201,7 +1200,7 @@ namespace client
 
     void changemapserv(char *name, int gamemode, int mutators, int crc)
     {
-        game::gamestate = m_play(gamemode) ? G_S_WAITING : G_S_PLAYING;
+        game::gamestate = G_S_WAITING;
         game::gamemode = gamemode;
         game::mutators = mutators;
         modecheck(game::gamemode, game::mutators);
@@ -1225,9 +1224,9 @@ namespace client
         needsmap = false;
         if(!name || !*name || !load_world(name, crc))
         {
-            emptymap(0, true, NULL);
-            setnames(name, MAP_MAPZ);
+            emptymap(0, true, name);
             needsmap = true;
+            return;
         }
         if(m_capture(game::gamemode)) capture::setup();
         else if(m_defend(game::gamemode)) defend::setup();
@@ -1276,7 +1275,7 @@ namespace client
                 len -= p.length();
                 if(filetype < 0 || filetype >= SENDMAP_MAX || len <= 0) break;
                 if(!*fname) copystring(fname, "maps/untitled");
-                defformatstring(ffile, "%s_0x%.8x", fname, filecrc);
+                defformatstring(ffile, strstr(fname, "maps/")==fname || strstr(fname, "maps\\")==fname ? "%s_0x%.8x" : "maps/%s_0x%.8x", fname, filecrc);
                 defformatstring(ffext, "%s.%s", ffile, sendmaptypes[filetype]);
                 stream *f = openfile(ffext, "wb");
                 if(!f)
@@ -1287,6 +1286,7 @@ namespace client
                 gettingmap = true;
                 f->write(data, len);
                 delete f;
+                conoutft(CON_EVENT, "\fywrote map file: \fc%s (%d %s) [0x%.8x]", ffext, len, len != 1 ? "bytes" : "byte", filecrc);
                 break;
             }
             default: break;
@@ -1354,10 +1354,13 @@ namespace client
         conoutft(CON_EVENT, "\fysending map...");
         const char *reqmap = mapname;
         if(!reqmap || !*reqmap) reqmap = "maps/untitled";
+        int savedtype = -1;
         if(m_edit(game::gamemode) || maptype != MAP_MAPZ)
         {
             save_world(mapname, m_edit(game::gamemode), true);
+            ai::savewaypoints(true, mapname);
             reqmap = mapname;
+            savedtype = maptype;
         }
         loopi(SENDMAP_MAX)
         {
@@ -1376,8 +1379,9 @@ namespace client
                 sendfile(-1, 2, NULL, "ri3", N_SENDMAPFILE, i, mapcrc);
             }
         }
+        if(savedtype >= 0) setnames(mapname, savedtype, 0);
     }
-    ICOMMAND(0, sendmap, "", (), sendmap());
+    //ICOMMAND(0, sendmap, "", (), sendmap());
 
     void gotoplayer(const char *arg)
     {
@@ -1688,8 +1692,8 @@ namespace client
             {
                 p.reliable();
                 putint(p, N_MAPCRC);
-                sendstring(game::clientmap, p);
-                putint(p, game::clientcrc);
+                sendstring(mapname, p);
+                putint(p, mapcrc);
                 sendcrcinfo = false;
             }
             if(sendgameinfo)
@@ -2038,25 +2042,36 @@ namespace client
                 {
                     getstring(text, p);
                     int mode = getint(p), muts = getint(p), crc = getint(p);
+                    conoutf("map change: %s (%d:%d) [0x%.8x]", text, mode, muts, crc);
                     if(crc < 0)
                     {
-                        emptymap(0, true, NULL);
-                        setnames(text, MAP_MAPZ);
-                        needsmap = true;
+                        conoutf("waiting for server..");
+                        emptymap(0, true, text);
+                        needsmap = true; // waiting for the server
                     }
                     else
                     {
+                        conoutf("changing map..");
+                        needsmap = gettingmap = false;
                         changemapserv(text, mode, muts, crc);
-                        if(!needsmap) sendcrcinfo = sendgameinfo = true;
+                        if(!needsmap) sendcrcinfo = true;
                         else addmsg(N_GETMAP, "r");
                     }
+                    break;
+                }
+
+                case N_GETGAMEINFO:
+                {
+                    conoutf("sending game info..");
+                    sendgameinfo = true;
+                    break;
                 }
 
                 case N_GAMEINFO:
                 {
                     int n;
-                    while(p.remaining() && (n = getint(p)) != -1) entities::setspawn(n, getint(p));
                     sendgameinfo = false;
+                    while(p.remaining() && (n = getint(p)) != -1) entities::setspawn(n, getint(p));
                     break;
                 }
 
@@ -2939,7 +2954,7 @@ namespace client
                 case N_SENDMAP:
                 {
                     conoutft(CON_EVENT, "\fymap data has been uploaded to the server");
-                    if(needsmap && !gettingmap) addmsg(N_GETMAP, "r");
+                    //if(needsmap && !gettingmap) addmsg(N_GETMAP, "r");
                     break;
                 }
 
@@ -2952,15 +2967,16 @@ namespace client
                 case N_NEWMAP:
                 {
                     int size = getint(p);
-                    if(size>=0) emptymap(size, true);
+                    getstring(text, p);
+                    if(size >= 0) emptymap(size, true, text);
                     else enlargemap(false, true);
                     mapvotes.shrink(0);
                     needsmap = false;
-                    if(d && d!=game::player1)
+                    if(d && d != game::player1)
                     {
                         int newsize = 0;
                         while(1<<newsize < getworldsize()) newsize++;
-                        conoutft(CON_EVENT, size>=0 ? "\fy%s started a new map of size \fs\fc%d\fS" : "\fy%s enlarged the map to size \fs\fc%d\fS", game::colourname(d), newsize);
+                        conoutft(CON_EVENT, size>=0 ? "\fy%s started new map \fs\fc%s\fS of size \fs\fc%d\fS" : "\fy%s enlarged the map \fs\fc%s\fS to size \fs\fc%d\fS", game::colourname(d), mapname, newsize);
                     }
                     break;
                 }

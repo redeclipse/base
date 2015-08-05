@@ -239,7 +239,7 @@ int crcstream(stream *f)
     size_t len = 0;
     char *buf = loadstream(f, &len, false);
     if(!buf) return 0;
-    int crc = int(crc32(0, (const Bytef *)buf, len));
+    int crc = abs(int(crc32(0, (const Bytef *)buf, len)));
     delete[] buf;
     return crc;
 }
