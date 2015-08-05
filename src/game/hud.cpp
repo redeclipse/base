@@ -1755,6 +1755,7 @@ namespace hud
                                 if(id->flags&IDF_CLIENT || id->flags&IDF_SERVER)
                                 {
                                     if(id->flags&IDF_ADMIN) concatstring(idtype, "admin-only ");
+                                    else if(id->flags&IDF_MODERATOR) concatstring(idtype, "moderator-only ");
                                     concatstring(idtype, id->flags&IDF_CLIENT ? "game " : "server ");
                                 }
                                 if(id->type != ID_COMMAND)

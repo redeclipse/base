@@ -884,29 +884,28 @@ namespace server
         enumerate(idents, ident, id, {
             if(id.flags&IDF_SERVER && !(id.flags&IDF_READONLY) && (all || !(id.flags&IDF_WORLD))) // reset vars
             {
-                bool check = !(id.flags&IDF_ADMIN) && !(id.flags&IDF_WORLD);
                 const char *val = NULL;
-                if(check) numgamevars++;
+                if(id.flags&IDF_GAMEMOD) numgamevars++;
                 switch(id.type)
                 {
                     case ID_VAR:
                     {
                         setvar(id.name, id.def.i, true);
-                        if(check && *id.storage.i != id.bin.i) numgamemods++;
+                        if(id.flags&IDF_GAMEMOD && *id.storage.i != id.bin.i) numgamemods++;
                         if(flush) val = intstr(&id);
                         break;
                     }
                     case ID_FVAR:
                     {
                         setfvar(id.name, id.def.f, true);
-                        if(check && *id.storage.f != id.bin.f) numgamemods++;
+                        if(id.flags&IDF_GAMEMOD && *id.storage.f != id.bin.f) numgamemods++;
                         if(flush) val = floatstr(*id.storage.f);
                         break;
                     }
                     case ID_SVAR:
                     {
                         setsvar(id.name, id.def.s && *id.def.s ? id.def.s : "", true);
-                        if(check && strcmp(*id.storage.s, id.bin.s)) numgamemods++;
+                        if(id.flags&IDF_GAMEMOD && strcmp(*id.storage.s, id.bin.s)) numgamemods++;
                         if(flush) val = *id.storage.s;
                         break;
                     }
@@ -3309,7 +3308,7 @@ namespace server
 
     void checkvar(ident *id, const char *arg)
     {
-        if(id && id->flags&IDF_SERVER && !(id->flags&IDF_READONLY) && !(id->flags&IDF_ADMIN) && !(id->flags&IDF_WORLD)) switch(id->type)
+        if(id && id->flags&IDF_SERVER && id->flags&IDF_GAMEMOD) switch(id->type)
         {
             case ID_VAR:
             {
@@ -3478,7 +3477,7 @@ namespace server
         {
             const char *name = &id->name[3], *val = NULL, *oldval = NULL;
             bool needfreeoldval = false;
-            int locked = min(max(id->flags&IDF_ADMIN ? int(PRIV_ADMINISTRATOR) : 0, G(varslock)), int(PRIV_CREATOR));
+            int locked = min(max(id->flags&IDF_ADMIN ? int(G(adminlock)) : (id->flags&IDF_MODERATOR ? int(G(moderatorlock)) : 0), G(varslock)), int(PRIV_CREATOR));
             if(!strcmp(id->name, "sv_gamespeed") && G(gamespeedlock) > locked) locked = min(G(gamespeedlock), int(PRIV_CREATOR));
             else if(id->type == ID_VAR)
             {

@@ -73,10 +73,10 @@ extern int mapbals[T_TOTAL][T_TOTAL];
 
 #include "teamdef.h"
 
-TPSVAR(0, name,
+TPSVAR(IDF_GAMEMOD,  name,
     "neutral",  "alpha",    "omega",    "kappa",    "sigma",    "enemy"
 );
-TPVAR(IDF_HEX, colour, 0, 0xFFFFFF,
+TPVAR(IDF_GAMEMOD|IDF_HEX, colour, 0, 0xFFFFFF,
     0x90A090,   0x5F66FF,   0xFF4F44,   0xFFD022,   0x22FF22,   0xB0B0B0
 );
 
@@ -109,16 +109,16 @@ extern float playerdims[PLAYERTYPES][3];
 
 #include "playerdef.h"
 
-PPVAR(0, health, 1, VAR_MAX,
+PPVAR(IDF_GAMEMOD,  health, 1, VAR_MAX,
     100
 );
-PPFVAR(0, weight, 0, FVAR_MAX,
+PPFVAR(IDF_GAMEMOD,  weight, 0, FVAR_MAX,
     200
 );
-PPFVAR(0, scale, FVAR_NONZERO, FVAR_MAX,
+PPFVAR(IDF_GAMEMOD,  scale, FVAR_NONZERO, FVAR_MAX,
     1
 );
-PPFVAR(0, speed, FVAR_NONZERO, FVAR_MAX,
+PPFVAR(IDF_GAMEMOD,  speed, FVAR_NONZERO, FVAR_MAX,
     50
 );
 
