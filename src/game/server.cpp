@@ -2991,10 +2991,10 @@ namespace server
 
     struct clientcrcs
     {
-        uint id;
+        int id;
         vector<clientinfo *> clients;
         clientcrcs() {}
-        clientcrcs(uint n, clientinfo *m) { id = n; clients.add(m); }
+        clientcrcs(int n, clientinfo *m) { id = n; clients.add(m); }
         ~clientcrcs() { clients.setsize(0); }
     };
 
@@ -5705,7 +5705,7 @@ namespace server
                 case N_MAPCRC:
                 {
                     getstring(text, p);
-                    uint crc = getint(p);
+                    int crc = getint(p);
                     if(!ci) break;
                     copystring(ci->clientmap, text);
                     ci->clientcrc = crc;
