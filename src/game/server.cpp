@@ -5126,7 +5126,6 @@ namespace server
         putint(p, versionarch); // 13
         putint(p, gamestate); // 14
         putint(p, timeleft()); // 15
-        sendstring(versionbranch, p);
         sendstring(smapname, p);
         if(*G(serverdesc)) sendstring(G(serverdesc), p);
         else
@@ -5139,6 +5138,7 @@ namespace server
             sendstring(cname, p);
             #endif
         }
+        sendstring(versionbranch, p);
         if(!queryplayers.empty())
         {
             loopv(queryplayers) sendstring(colourname(queryplayers[i]), p);
