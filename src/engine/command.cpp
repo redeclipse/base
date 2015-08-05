@@ -2393,9 +2393,9 @@ ICOMMAND(0, exec, "sib", (char *file, int *flags, int *msg), intret(execfile(fil
 
 const char *escapestring(const char *s)
 {
-    static vector<char> strbuf[3];
+    static vector<char> strbuf[16];
     static int stridx = 0;
-    stridx = (stridx + 1)%3;
+    stridx = (stridx+1)%16;
     vector<char> &buf = strbuf[stridx];
     buf.setsize(0);
     buf.add('"');

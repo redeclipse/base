@@ -63,7 +63,7 @@ struct masterclient
 {
     ENetAddress address;
     ENetSocket socket;
-    string name, desc, flags, authhandle;
+    string name, desc, flags, authhandle, branch;
 
     char input[4096];
     vector<char> output;
@@ -162,7 +162,7 @@ struct masterclient
 
     void reset()
     {
-        name[0] = desc[0] = flags[0] = authhandle[0] = '\0';
+        name[0] = desc[0] = flags[0] = authhandle[0] = branch[0] = '\0';
         lastcontrol = -1;
         inputpos = outputpos = numpings = version = 0;
         lastping = lastpong = lastactivity = laststats = 0;
@@ -682,10 +682,12 @@ bool checkmasterclientinput(masterclient &c)
             else
             {
                 if(w[1] && *w[1]) c.port = clamp(atoi(w[1]), 1, VAR_MAX);
-                c.version = w[3] && *w[3] ? atoi(w[3]) : (w[2] && *w[2] ? 150 : 0);
                 ENetAddress address = { ENET_HOST_ANY, enet_uint16(c.port) };
-                if(w[4] && *w[4]) copystring(c.desc, w[4]); else c.desc[0] = '\0';
+                c.version = w[3] && *w[3] ? atoi(w[3]) : (w[2] && *w[2] ? 150 : 0);
+                if(w[4] && *w[4]) copystring(c.desc, w[4]);
+                else formatstring(c.desc, "%s:[%d]", c.name, c.port);
                 if(w[5] && *w[5]) c.sendstats = atoi(w[5]) != 0;
+                copystring(c.branch, w[6] && *w[6] ? w[6] : "?");
                 if(w[2] && *w[2] && strcmp(w[2], "*") && (enet_address_set_host(&address, w[2]) < 0 || address.host != c.address.host))
                 {
                     c.listserver = c.shouldping = false;
@@ -740,7 +742,7 @@ bool checkmasterclientinput(masterclient &c)
                     if(*flag == 's' && !s.sendstats) continue;
                     concformatstring(filteredflags, "%c", *flag);
                 }
-                masteroutf(c, "addserver %s %d %d %s %s %s\n", s.name, s.port, s.priority(), escapestring(s.desc), escapestring(s.authhandle), escapestring(filteredflags));
+                masteroutf(c, "addserver %s %d %d %s %s %s %s\n", s.name, s.port, s.priority(), escapestring(s.desc), escapestring(s.authhandle), escapestring(filteredflags), escapestring(s.branch));
                 servs++;
             }
             conoutf("master peer %s was sent %d server(s)", c.name, servs);

@@ -411,7 +411,7 @@ namespace auth
         else
         {
             conoutf("updating master server");
-            requestmasterf("server %d %s %d %s %d\n", serverport, *serverip ? serverip : "*", CUR_VERSION, escapestring(G(serverdesc)), G(serverstats));
+            requestmasterf("server %d %s %d %s %d %s\n", serverport, *serverip ? serverip : "*", CUR_VERSION, escapestring(G(serverdesc)), G(serverstats), escapestring(versionbranch));
         }
         reqserverauth();
     }

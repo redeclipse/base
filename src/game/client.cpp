@@ -664,12 +664,13 @@ namespace client
         gameent *d = cn >= 0 ? game::getclient(cn) : game::player1;
         if(d) switch(prop)
         {
-            case -2:
+            case -3:
             {
                 defformatstring(str, "%d.%d.%d-%s%d", d->version.major, d->version.minor, d->version.patch, plat_name(d->version.platform), d->version.arch);
                 result(str);
             }
-            case -1: result(plat_name(d->version.platform)); break;
+            case -2: result(plat_name(d->version.platform)); break;
+            case -1: intret(14);
             case 0: intret(d->version.major); break;
             case 1: intret(d->version.minor); break;
             case 2: intret(d->version.patch); break;
@@ -3189,11 +3190,11 @@ namespace client
         else if(servers.inrange(server))
         {
             serverinfo *si = servers[server];
-            if(prop < 0) intret(3);
+            if(prop < 0) intret(4);
             else switch(prop)
             {
                 case 0:
-                    if(idx < 0) intret(9);
+                    if(idx < 0) intret(11);
                     else switch(idx)
                     {
                         case 0: intret(serverstat(si)); break;
@@ -3206,6 +3207,7 @@ namespace client
                         case 7: intret(si->lastinfo); break;
                         case 8: result(si->authhandle); break;
                         case 9: result(si->flags); break;
+                        case 10: result(si->branch); break;
                     }
                     break;
                 case 1:

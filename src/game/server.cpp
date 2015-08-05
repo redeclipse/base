@@ -5051,7 +5051,7 @@ namespace server
             lastquerysort = totalmillis;
         }
         putint(p, queryplayers.length());
-        putint(p, 16); // number of attrs following
+        putint(p, 15); // number of attrs following
         putint(p, VERSION_GAME); // 1
         putint(p, gamemode); // 2
         putint(p, mutators); // 3
@@ -5065,9 +5065,9 @@ namespace server
         putint(p, VERSION_PATCH); // 11
         putint(p, versionplatform); // 12
         putint(p, versionarch); // 13
-        sendstring(versionbranch, p); // 14
-        putint(p, gamestate); // 15
-        putint(p, timeleft()); // 16
+        putint(p, gamestate); // 14
+        putint(p, timeleft()); // 15
+        sendstring(versionbranch, p);
         sendstring(smapname, p);
         if(*G(serverdesc)) sendstring(G(serverdesc), p);
         else
