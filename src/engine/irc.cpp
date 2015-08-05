@@ -301,7 +301,7 @@ void ircnewnet(int type, const char *name, const char *serv, int port, const cha
     copystring(n.passkey, passkey);
     n.address.host = ENET_HOST_ANY;
     n.address.port = n.port;
-    n.input[0] = n.authname[0] = n.authpass[0] = 0;
+    n.input[0] = n.authname[0] = n.authpass[0] = '\0';
 #ifndef STANDALONE
     n.lastseen = totalmillis;
 #endif
@@ -489,7 +489,7 @@ void ircprocess(ircnet *n, char *user[3], int g, int numargs, char *w[])
                             ircprintf(n, 4, g ? w[g+1] : NULL, "\fr%s requests: %s %s", user[0], q, r);
 
                             if(!strcasecmp(q, "VERSION"))
-                                ircsend(n, "NOTICE %s :\vVERSION %s v%s-%s%d (%s)%s%s\v", user[0], VERSION_NAME, VERSION_STRING, versionplatname, versionarch, VERSION_RELEASE, *VERSION_URL ? ", " : "", VERSION_URL);
+                                ircsend(n, "NOTICE %s :\vVERSION %s v%s-%s%d [%s] (%s)%s%s\v", user[0], VERSION_NAME, VERSION_STRING, versionplatname, versionarch, versionbranch, VERSION_RELEASE, *VERSION_URL ? ", " : "", VERSION_URL);
                             else if(!strcasecmp(q, "PING")) // eh, echo back
                                 ircsend(n, "NOTICE %s :\vPING %s\v", user[0], r);
                         }
@@ -880,7 +880,7 @@ void ircslice()
                 {
                     if(*n->passkey) ircsend(n, "PASS %s", n->passkey);
                     ircsend(n, "NICK %s", n->nick);
-                    ircsend(n, "USER %s +iw %s :%s v%s-%s%d (%s)", VERSION_UNAME, VERSION_UNAME, VERSION_NAME, VERSION_STRING, versionplatname, versionarch, VERSION_RELEASE);
+                    ircsend(n, "USER %s +iw %s :%s v%s-%s%d [%s] (%s)", VERSION_UNAME, VERSION_UNAME, VERSION_NAME, VERSION_STRING, versionplatname, versionarch, versionbranch, VERSION_RELEASE);
                     n->state = IRC_CONN;
                     loopvj(n->channels)
                     {
@@ -975,8 +975,8 @@ void irccmd(ircnet *n, ircchan *c, char *s)
             {
                 if(c)
                 {
-                    ircsend(n, "PRIVMSG %s :%s v%s-%s%d (%s); %s (%s v%s)", c->name, VERSION_NAME, VERSION_STRING, versionplatname, versionarch, VERSION_RELEASE, gfxrenderer, gfxvendor, gfxversion);
-                    ircprintf(n, 1, c->name, "\fw<%s> %s v%s-%s%d (%s); %s (%s v%s)", n->nick, VERSION_NAME, VERSION_STRING, versionplatname, versionarch, VERSION_RELEASE, gfxrenderer, gfxvendor, gfxversion);
+                    ircsend(n, "PRIVMSG %s :%s v%s-%s%d [%s] (%s); %s (%s v%s)", c->name, VERSION_NAME, VERSION_STRING, versionplatname, versionarch, versionbranch, VERSION_RELEASE, gfxrenderer, gfxvendor, gfxversion);
+                    ircprintf(n, 1, c->name, "\fw<%s> %s v%s-%s%d [%s] (%s); %s (%s v%s)", n->nick, VERSION_NAME, VERSION_STRING, versionplatname, versionarch, versionbranch, VERSION_RELEASE, gfxrenderer, gfxvendor, gfxversion);
                 }
                 else ircprintf(n, 4, NULL, "\fyyou are not on a channel");
             }

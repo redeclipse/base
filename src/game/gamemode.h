@@ -23,9 +23,19 @@ enum
 };
 enum { G_F_GSP = 0, G_F_NUM };
 
-enum { G_S_WAITING = 0, G_S_VOTING, G_S_INTERMISSION, G_S_PLAYING, G_S_OVERTIME, G_S_MAX };
-#define gs_playing(a) (a == G_S_PLAYING || a == G_S_OVERTIME)
-#define gs_intermission(a) (a == G_S_INTERMISSION || a == G_S_VOTING)
+enum { G_S_WAITING = 0, G_S_GETMAP, G_S_SENDMAP, G_S_READYING, G_S_GAMEINFO, G_S_PLAYING, G_S_OVERTIME, G_S_INTERMISSION, G_S_VOTING, G_S_MAX };
+#ifdef GAMESERVER
+const char *gamestates[3][G_S_MAX] = {
+    { "waiting", "getmap", "sendmap", "readying", "gameinfo", "playing", "overtime", "intermission", "voting" },
+    { "waiting to start", "server getting map", "server sending map", "waiting for ready players", "waiting for game information", "playing", "overtime", "voting in progress" },
+    { "Waiting to start", "Server getting map", "Server sending map", "Waiting for ready players", "Waiting for game information", "Playing", "Overtime", "Voting in progress" }
+};
+#else
+extern const char *gamestates[3][G_S_MAX];
+#endif
+#define gs_waiting(a) (a >= G_S_WAITING && a <= G_S_GAMEINFO)
+#define gs_playing(a) (a >= G_S_PLAYING && a <= G_S_OVERTIME)
+#define gs_intermission(a) (a >= G_S_INTERMISSION && a <= G_S_VOTING)
 
 struct gametypes
 {
@@ -306,12 +316,16 @@ extern mutstypes mutstype[];
     else mapshrink(!(f), a, G(previousmaps), true) \
 }
 #ifdef GAMESERVER
-SVAR(0, gamestatename, "waiting voting intermission playing overtime");
+SVAR(0, gamestatename, "waiting getmap sendmap readying gameinfo playing overtime intermission voting");
 VAR(0, gamestatewaiting, 1, G_S_WAITING, -1);
-VAR(0, gamestatevoting, 1, G_S_VOTING, -1);
-VAR(0, gamestateintermission, 1, G_S_INTERMISSION, -1);
+VAR(0, gamestategetmap, 1, G_S_GETMAP, -1);
+VAR(0, gamestatesendmap, 1, G_S_SENDMAP, -1);
+VAR(0, gamestatereadying, 1, G_S_READYING, -1);
+VAR(0, gamestategameinfo, 1, G_S_GAMEINFO, -1);
 VAR(0, gamestateplaying, 1, G_S_PLAYING, -1);
 VAR(0, gamestateovertime, 1, G_S_OVERTIME, -1);
+VAR(0, gamestateintermission, 1, G_S_INTERMISSION, -1);
+VAR(0, gamestatevoting, 1, G_S_VOTING, -1);
 VAR(0, gamestatenum, 1, G_S_MAX, -1);
 SVAR(0, modename, "demo editing deathmatch capture-the-flag defend-and-control bomber-ball race");
 SVAR(0, modeidxname, "demo editing deathmatch capture defend bomber race");

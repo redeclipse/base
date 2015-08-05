@@ -276,6 +276,7 @@ namespace hud
     VAR(IDF_PERSIST, inventorydate, 0, 0, 1);
     SVAR(IDF_PERSIST, inventorydateformat, "%H:%M:%S");
     VAR(IDF_PERSIST, inventorytime, 0, 1, 1);
+    VAR(IDF_PERSIST, inventorytimeflash, 0, 1, 1);
     VAR(IDF_PERSIST, inventorytimestyle, 0, 3, 4);
     VAR(IDF_PERSIST, inventoryscore, 0, 1, VAR_MAX);
     VAR(IDF_PERSIST, inventoryscorespec, 0, 2, VAR_MAX);
@@ -1360,14 +1361,12 @@ namespace hud
             popfont();
             ty += FONTH/3;
         }
-        if(game::gamestate == G_S_INTERMISSION)
-            ty += draw_textx("Intermission", tx, ty, 255, 255, 255, tf, TEXT_CENTERED, -1, tw)+FONTH/3;
-        else if(game::gamestate == G_S_VOTING) ty += draw_textx("Voting in progress", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, tw)+FONTH/3;
-        else if(client::demoplayback && showdemoplayback)
+        if(client::demoplayback && showdemoplayback)
             ty += draw_textx("Demo playback in progress", tx, ty, 255, 255, 255, tf, TEXT_CENTERED, -1, tw)+FONTH/3;
-        else if(game::gamestate == G_S_WAITING) ty += draw_textx("Waiting for players", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, tw)+FONTH/3;
+        if(!gs_playing(game::gamestate))
+            ty += draw_textx("%s", tx, ty, 255, 255, 255, tf, TEXT_CENTERED, -1, tw, gamestates[2][game::gamestate])+FONTH/3;
         else if(hastkwarn(game::focus)) // first and foremost
-            ty += draw_textx("\fzryDo NOT shoot team-mates", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, -1)+FONTH/3;
+            ty += draw_textx("\fzryDo NOT shoot team-mates", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, tw)+FONTH/3;
         popfont();
 
         pushfont("default");
@@ -1390,7 +1389,7 @@ namespace hud
                 SEARCHBINDCACHE(attackkey)("primary", 0);
                 if(delay || m_duke(game::gamemode, game::mutators) || (m_play(game::gamemode) && maxalive > 0))
                 {
-                    if(game::gamestate == G_S_WAITING || m_duke(game::gamemode, game::mutators)) ty += draw_textx("Queued for new round", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, tw);
+                    if(gs_waiting(game::gamestate) || m_duke(game::gamemode, game::mutators)) ty += draw_textx("Queued for new round", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, tw);
                     else if(delay) ty += draw_textx("%s: Down for \fs\fy%s\fS", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, tw, target == game::player1 && target->state == CS_WAITING ? "Please Wait" : "Fragged", timestr(delay));
                     else if(target == game::player1 && target->state == CS_WAITING && m_play(game::gamemode) && maxalive > 0 && maxalivequeue)
                     {
@@ -2447,7 +2446,7 @@ namespace hud
         if(entities::ents.inrange(n))
         {
             gameentity &e = *(gameentity *)entities::ents[n];
-            string attrstr; attrstr[0] = 0;
+            string attrstr; attrstr[0] = '\0';
             loopi(enttype[e.type].numattrs)
             {
                 defformatstring(s, "%s%d", i ? " " : "", e.attrs[i]);
@@ -2927,46 +2926,8 @@ namespace hud
                     {
                         int timecorrected = max(game::timeremaining*1000-((gs_playing(game::gamestate) ? lastmillis : totalmillis)-game::lasttimeremain), 0);
                         if(game::gamestate != G_S_PLAYING)
-                        {
-                            const char *name = "";
-                            float amt = 0.f;
-                            switch(game::gamestate)
-                            {
-                                case G_S_WAITING:
-                                {
-                                    if(!waitforplayertime) break;
-                                    amt = float(timecorrected)/float(waitforplayertime);
-                                    name = "waiting";
-                                    break;
-                                }
-                                case G_S_VOTING:
-                                {
-                                    if(!votelimit) break;
-                                    amt = float(timecorrected)/float(votelimit);
-                                    name = "voting";
-                                    break;
-                                }
-                                case G_S_INTERMISSION:
-                                {
-                                    if(!intermlimit) break;
-                                    amt = float(timecorrected)/float(intermlimit);
-                                    name = "intermission";
-                                    break;
-                                }
-                                case G_S_OVERTIME:
-                                {
-                                    if(!overtimelimit) break;
-                                    amt = float(timecorrected)/float(overtimelimit);
-                                    name = "overtime";
-                                    break;
-                                }
-                            }
-                            const char *col = "\fo";
-                            if(amt > 0.66f) col = "\fg";
-                            else if(amt > 0.33f) col = "\fy";
-                            cm += drawitemtextx(cx[i], cm, 0, TEXT_RIGHT_JUSTIFY, inventorytimeskew, "super", fade*inventorytimeblend, "%s \fs%s%s\fS", name, col, timestr(timecorrected, inventorytimestyle));
-                        }
-                        else if(timelimit) cm += drawitemtextx(cx[i], cm, 0, TEXT_RIGHT_JUSTIFY, inventorytimeskew, "super", fade*inventorytimeblend, "\fs%s%s\fS", timecorrected > 60000 ? "\fg" : "\fy", timestr(timecorrected, inventorytimestyle));
+                            cm += drawitemtextx(cx[i], cm, 0, TEXT_RIGHT_JUSTIFY, inventorytimeskew, "super", fade*inventorytimeblend, "%s \fs%s%s\fS", gamestates[0][game::gamestate], gs_waiting(game::gamestate) ? "\fr" : (game::gamestate == G_S_OVERTIME ? (inventorytimeflash ? "\fzoy" : "\fo") : "\fg"), timestr(timecorrected, inventorytimestyle));
+                        else if(timelimit) cm += drawitemtextx(cx[i], cm, 0, TEXT_RIGHT_JUSTIFY, inventorytimeskew, "super", fade*inventorytimeblend, "\fs%s%s\fS", timecorrected > 60000 ? "\fg" : (inventorytimeflash ? "\fzgy" : "\fy"), timestr(timecorrected, inventorytimestyle));
                     }
                 }
                 if(texpaneltimer) break;
@@ -3167,7 +3128,7 @@ namespace hud
         }
         y = h-bottom-FONTH/2;
         if(showloadinggpu) y -= draw_textx("%s (%s v%s)", w-FONTH, y, 255, 255, 255, 255, TEXT_RIGHT_UP, -1, -1, gfxrenderer, gfxvendor, gfxversion);
-        if(showloadingversion) y -= draw_textx("%s v%s-%s%d (%s)", w-FONTH, y, 255, 255, 255, 255, TEXT_RIGHT_UP, -1, -1, VERSION_NAME, VERSION_STRING, versionplatname, versionarch, VERSION_RELEASE);
+        if(showloadingversion) y -= draw_textx("%s v%s-%s%d [%s] (%s)", w-FONTH, y, 255, 255, 255, 255, TEXT_RIGHT_UP, -1, -1, VERSION_NAME, VERSION_STRING, versionplatname, versionarch, versionbranch, VERSION_RELEASE);
         if(showloadingurl && *VERSION_URL) y -= draw_textx("%s", w-FONTH, y, 255, 255, 255, 255, TEXT_RIGHT_UP, -1, -1, VERSION_URL);
         popfont();
     }

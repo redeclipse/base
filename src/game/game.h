@@ -273,11 +273,11 @@ enum
 };
 
 enum {
-    SENDMAP_MPZ = 0, SENDMAP_CFG, SENDMAP_PNG, SENDMAP_WPT, SENDMAP_TXT, SENDMAP_MAX,
+    SENDMAP_MPZ = 0, SENDMAP_CFG, SENDMAP_PNG, SENDMAP_TXT, SENDMAP_GAME, SENDMAP_WPT = SENDMAP_GAME, SENDMAP_MAX,
     SENDMAP_MIN = SENDMAP_PNG, SENDMAP_HAS = SENDMAP_MIN+1, SENDMAP_ALL = SENDMAP_MAX-1
 };
 #ifdef GAMESERVER
-const char *sendmaptypes[SENDMAP_MAX] = { "mpz", "cfg", "png", "wpt", "txt" };
+const char *sendmaptypes[SENDMAP_MAX] = { "mpz", "cfg", "png", "txt", "wpt" };
 #else
 extern const char *sendmaptypes[SENDMAP_MAX];
 #endif
@@ -292,7 +292,7 @@ enum
     N_SHOOT, N_DESTROY, N_STICKY, N_SUICIDE, N_DIED, N_POINTS, N_DAMAGE, N_SHOTFX,
     N_LOADW, N_TRYSPAWN, N_SPAWNSTATE, N_SPAWN, N_DROP, N_WSELECT,
     N_MAPCHANGE, N_MAPVOTE, N_CLEARVOTE, N_CHECKPOINT, N_ITEMSPAWN, N_ITEMUSE, N_TRIGGER, N_EXECLINK,
-    N_PING, N_PONG, N_CLIENTPING, N_TICK, N_ITEMACC, N_SERVMSG, N_GAMEINFO, N_RESUME,
+    N_PING, N_PONG, N_CLIENTPING, N_TICK, N_ITEMACC, N_SERVMSG, N_GETGAMEINFO, N_GAMEINFO, N_RESUME,
     N_EDITMODE, N_EDITENT, N_EDITLINK, N_EDITVAR, N_EDITF, N_EDITT, N_EDITM, N_FLIP, N_COPY, N_PASTE, N_ROTATE, N_REPLACE, N_DELCUBE, N_REMIP, N_EDITVSLOT, N_UNDO, N_REDO, N_CLIPBOARD, N_NEWMAP,
     N_GETMAP, N_SENDMAP, N_FAILMAP, N_SENDMAPFILE,
     N_MASTERMODE, N_ADDCONTROL, N_CLRCONTROL, N_CURRENTPRIV, N_SPECTATOR, N_WAITING, N_SETPRIV, N_SETTEAM,
@@ -301,8 +301,7 @@ enum
     N_LISTDEMOS, N_SENDDEMOLIST, N_GETDEMO, N_SENDDEMO, N_DEMOREADY,
     N_DEMOPLAYBACK, N_RECORDDEMO, N_STOPDEMO, N_CLEARDEMOS,
     N_CLIENT, N_RELOAD, N_REGEN, N_INITAI, N_MAPCRC, N_CHECKMAPS,
-    N_SETPLAYERINFO, N_SWITCHTEAM,
-    N_AUTHTRY, N_AUTHCHAL, N_AUTHANS,
+    N_SETPLAYERINFO, N_SWITCHTEAM, N_AUTHTRY, N_AUTHCHAL, N_AUTHANS,
     NUMMSG
 };
 
@@ -311,16 +310,13 @@ char msgsizelookup(int msg)
 {
     static const int msgsizes[] =               // size inclusive message token, 0 for variable or not-checked sizes
     {
-        N_CONNECT, 0, N_SERVERINIT, 5, N_WELCOME, 1, N_CLIENTINIT, 0, N_POS, 0, N_SPHY, 0, N_TEXT, 0, N_COMMAND, 0,
-        N_ANNOUNCE, 0, N_DISCONNECT, 3,
+        N_CONNECT, 0, N_SERVERINIT, 5, N_WELCOME, 1, N_CLIENTINIT, 0, N_POS, 0, N_SPHY, 0, N_TEXT, 0, N_COMMAND, 0, N_ANNOUNCE, 0, N_DISCONNECT, 3,
         N_SHOOT, 0, N_DESTROY, 0, N_STICKY, 0, N_SUICIDE, 4, N_DIED, 0, N_POINTS, 4, N_DAMAGE, 14, N_SHOTFX, 0,
-        N_LOADW, 0, N_TRYSPAWN, 2, N_SPAWNSTATE, 0, N_SPAWN, 0,
-        N_DROP, 0, N_WSELECT, 0,
+        N_LOADW, 0, N_TRYSPAWN, 2, N_SPAWNSTATE, 0, N_SPAWN, 0, N_DROP, 0, N_WSELECT, 0,
         N_MAPCHANGE, 0, N_MAPVOTE, 0, N_CLEARVOTE, 0, N_CHECKPOINT, 0, N_ITEMSPAWN, 3, N_ITEMUSE, 0, N_TRIGGER, 0, N_EXECLINK, 3,
-        N_PING, 2, N_PONG, 2, N_CLIENTPING, 2,
-        N_TICK, 3, N_ITEMACC, 0,
-        N_SERVMSG, 0, N_GAMEINFO, 0, N_RESUME, 0,
-        N_EDITMODE, 2, N_EDITENT, 0, N_EDITLINK, 4, N_EDITVAR, 0, N_EDITF, 16, N_EDITT, 16, N_EDITM, 17, N_FLIP, 14, N_COPY, 14, N_PASTE, 14, N_ROTATE, 15, N_REPLACE, 17, N_DELCUBE, 14, N_REMIP, 1, N_EDITVSLOT, 16, N_UNDO, 0, N_REDO, 0, N_NEWMAP, 2,
+        N_PING, 2, N_PONG, 2, N_CLIENTPING, 2, N_TICK, 3, N_ITEMACC, 0, N_SERVMSG, 0, N_GETGAMEINFO, 0, N_GAMEINFO, 0, N_RESUME, 0,
+        N_EDITMODE, 2, N_EDITENT, 0, N_EDITLINK, 4, N_EDITVAR, 0, N_EDITF, 16, N_EDITT, 16, N_EDITM, 17, N_FLIP, 14,
+        N_COPY, 14, N_PASTE, 14, N_ROTATE, 15, N_REPLACE, 17, N_DELCUBE, 14, N_REMIP, 1, N_EDITVSLOT, 16, N_UNDO, 0, N_REDO, 0, N_NEWMAP, 3,
         N_GETMAP, 0, N_SENDMAP, 0, N_FAILMAP, 0, N_SENDMAPFILE, 0,
         N_MASTERMODE, 2, N_ADDCONTROL, 0, N_CLRCONTROL, 2, N_CURRENTPRIV, 3, N_SPECTATOR, 3, N_WAITING, 2, N_SETPRIV, 0, N_SETTEAM, 0,
         N_SETUPAFFIN, 0, N_INFOAFFIN, 0, N_MOVEAFFIN, 0,
@@ -328,8 +324,7 @@ char msgsizelookup(int msg)
         N_LISTDEMOS, 1, N_SENDDEMOLIST, 0, N_GETDEMO, 3, N_SENDDEMO, 0, N_DEMOREADY, 0,
         N_DEMOPLAYBACK, 3, N_RECORDDEMO, 2, N_STOPDEMO, 1, N_CLEARDEMOS, 2,
         N_CLIENT, 0, N_RELOAD, 0, N_REGEN, 0, N_INITAI, 0, N_MAPCRC, 0, N_CHECKMAPS, 1,
-        N_SETPLAYERINFO, 0, N_SWITCHTEAM, 0,
-        N_AUTHTRY, 0, N_AUTHCHAL, 0, N_AUTHANS, 0,
+        N_SETPLAYERINFO, 0, N_SWITCHTEAM, 0, N_AUTHTRY, 0, N_AUTHCHAL, 0, N_AUTHANS, 0,
         -1
     };
     static int sizetable[NUMMSG] = { -1 };
@@ -448,24 +443,21 @@ static inline void modecheck(int &mode, int &muts, int trying = 0)
 
 struct verinfo
 {
-    int type, flag, version;
-    int major, minor, patch, game, platform, arch, gpuglver, gpuglslver;
-    uint crc;
-    char *gpuvendor, *gpurenderer, *gpuversion;
+    int type, flag, version, major, minor, patch, game, platform, arch, gpuglver, gpuglslver, crc;
+    char *branch, *gpuvendor, *gpurenderer, *gpuversion;
 
-    verinfo() : gpuvendor(NULL), gpurenderer(NULL), gpuversion(NULL) { reset(); }
+    verinfo() : branch(NULL), gpuvendor(NULL), gpurenderer(NULL), gpuversion(NULL) { reset(); }
     ~verinfo() { reset(); }
 
     void reset()
     {
+        if(branch) delete[] branch;
         if(gpuvendor) delete[] gpuvendor;
         if(gpurenderer) delete[] gpurenderer;
         if(gpuversion) delete[] gpuversion;
-        gpuvendor = gpurenderer = gpuversion = NULL;
-        type = flag = version = 0;
-        major = minor = patch = game = arch = gpuglver = gpuglslver = 0;
+        branch = gpuvendor = gpurenderer = gpuversion = NULL;
+        type = flag = version = major = minor = patch = game = arch = gpuglver = gpuglslver = crc = 0;
         platform = -1;
-        crc = 0;
     }
 
     template <class T>
@@ -480,7 +472,9 @@ struct verinfo
         arch = getint(p);
         gpuglver = getint(p);
         gpuglslver = getint(p);
-        crc = uint(getint(p));
+        crc = getint(p);
+        if(branch) delete[] branch;
+        getstring(text, p); branch = newstring(text);
         if(gpuvendor) delete[] gpuvendor;
         getstring(text, p); gpuvendor = newstring(text);
         if(gpurenderer) delete[] gpurenderer;
@@ -501,9 +495,10 @@ struct verinfo
         putint(p, gpuglver);
         putint(p, gpuglslver);
         putint(p, crc);
-        sendstring(gpuvendor, p);
-        sendstring(gpurenderer, p);
-        sendstring(gpuversion, p);
+        sendstring(branch ? branch : "", p);
+        sendstring(gpuvendor ? gpuvendor : "", p);
+        sendstring(gpurenderer ? gpurenderer : "", p);
+        sendstring(gpuversion ? gpuversion : "", p);
     }
 
     void grab(verinfo &v)
@@ -517,6 +512,8 @@ struct verinfo
         gpuglver = v.gpuglver;
         gpuglslver = v.gpuglslver;
         crc = v.crc;
+        if(branch) delete[] branch;
+        branch = newstring(v.branch ? v.branch : "");
         if(gpuvendor) delete[] gpuvendor;
         gpuvendor = newstring(v.gpuvendor ? v.gpuvendor : "");
         if(gpurenderer) delete[] gpurenderer;
@@ -972,7 +969,7 @@ struct gameent : dynent, clientstate
         type = ENT_PLAYER;
         copystring(hostname, "0.0.0.0");
         copystring(hostip, "0.0.0.0");
-        name[0] = handle[0] = info[0] = obit[0] = 0;
+        name[0] = handle[0] = info[0] = obit[0] = '\0';
         removesounds();
         cleartags();
         checktags();
@@ -1062,7 +1059,7 @@ struct gameent : dynent, clientstate
         lasthit = lastkill = quake = turnmillis = turnside = spree = 0;
         turnroll = turnyaw = 0;
         lastteamhit = lastflag = respawned = suicided = lastnode = lastfoot = -1;
-        obit[0] = 0;
+        obit[0] = '\0';
         obliterated = headless = false;
         setscale(1, 0, true);
         icons.shrink(0);
@@ -1335,7 +1332,7 @@ struct gameent : dynent, clientstate
     void setname(const char *n)
     {
         if(n && *n) copystring(name, n, MAXNAMELEN+1);
-        else name[0] = 0;
+        else name[0] = '\0';
     }
 
     bool setvanity(const char *v)
@@ -1538,7 +1535,7 @@ struct cament
 namespace client
 {
     extern int showpresence, showteamchange;
-    extern bool sendplayerinfo, sendcrcinfo, sendgameinfo, demoplayback, isready, needsmap, gettingmap;
+    extern bool demoplayback, isready, needsmap, gettingmap;
     extern vector<uchar> messages;
     extern void clearvotes(gameent *d, bool msg = false);
     extern void ignore(int cn);
@@ -1645,7 +1642,7 @@ namespace game
     extern int gamestate, gamemode, mutators, nextmode, nextmuts, timeremaining, lasttimeremain, maptime, lastzoom, lasttvcam, lasttvchg, spectvtime, waittvtime,
             bloodfade, bloodsize, bloodsparks, debrisfade, eventiconfade, eventiconshort,
             announcefilter, dynlighteffects, aboveheadnames, followthirdperson, nogore, forceplayermodel,
-            playerovertone, playerundertone, playerdisplaytone, playereffecttone, playerteamtone, follow, specmode, spectvfollow, spectvfollowing;
+            playerovertone, playerundertone, playerdisplaytone, playereffecttone, playerteamtone, follow, specmode, spectvfollow, spectvfollowing, clientcrc;
     extern float bloodscale, debrisscale, aboveitemiconsize;
     extern bool zooming;
     extern vec swaypush, swaydir;

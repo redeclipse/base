@@ -214,7 +214,6 @@ struct bomberservmode : bomberstate, servmode
                     if(muts&(1<<G_M_GSP2)) muts &= ~(1<<G_M_GSP2);
                     muts |= (1<<G_M_GSP1);
                     srvmsgf(-1, "\fzoythis map does have enough goals, switching on hold mutator");
-                    sendf(-1, 1, "risi3", N_MAPCHANGE, smapname, 0, gamemode, muts);
                     changemap(smapname, gamemode, muts);
                     return;
                 }

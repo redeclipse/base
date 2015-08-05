@@ -46,7 +46,7 @@ struct ircchan
         state = IRCC_NONE;
         type = IRCCT_NONE;
         relay = lastjoin = lastsync = 0;
-        name[0] = friendly[0] = passkey[0] = 0;
+        name[0] = friendly[0] = passkey[0] = '\0';
 #ifndef STANDALONE
         updated = 0;
         buffer.reset();
@@ -84,7 +84,7 @@ struct ircnet
         else state = IRC_DISC;
         inputcarry = inputlen = 0;
         port = lastattempt = lastactivity = lastping = 0;
-        name[0] = serv[0] = nick[0] = ip[0] = passkey[0] = authname[0] = authpass[0] = 0;
+        name[0] = serv[0] = nick[0] = ip[0] = passkey[0] = authname[0] = authpass[0] = '\0';
         channels.shrink(0);
 #ifndef STANDALONE
         updated = IRCUP_NEW;

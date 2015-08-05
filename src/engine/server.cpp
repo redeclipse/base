@@ -40,12 +40,13 @@ SVAR(IDF_READONLY, versionplatname, plat_name(CUR_PLATFORM));
 SVAR(IDF_READONLY, versionplatlongname, plat_longname(CUR_PLATFORM));
 VAR(IDF_READONLY, versionplatform, 0, CUR_PLATFORM, VAR_MAX);
 VAR(IDF_READONLY, versionarch, 0, CUR_ARCH, VAR_MAX);
+VAR(IDF_READONLY, versioncrc, 0, 0, VAR_MAX);
+SVAR(IDF_READONLY, versionbranch, "?");
 #ifdef STANDALONE
 VAR(IDF_READONLY, versionisserver, 0, 1, 1);
 #else
 VAR(IDF_READONLY, versionisserver, 0, 0, 1);
 #endif
-uint versioncrc = 0;
 ICOMMAND(0, platname, "ii", (int *p, int *g), result(*p >= 0 && *p < MAX_PLATFORMS ? (*g!=0 ? plat_longname(*p) : plat_name(*p)) : ""));
 
 VAR(0, rehashing, 1, 0, -1);
@@ -69,7 +70,7 @@ ICOMMAND(0, gettime, "isi", (int *n, char *a, int *p), result(gettime(*n+(*p!=0 
 
 const char *timestr(int dur, int style)
 {
-    static string buf; buf[0] = 0;
+    static string buf; buf[0] = '\0';
     int tm = dur, ms = 0, ss = 0, mn = 0;
     if(tm > 0)
     {
@@ -331,8 +332,8 @@ bool filterstring(char *dst, const char *src, bool newline, bool colour, bool wh
             dst[n++] = c;
         else filtered = true;
     }
-    if(whitespace && wsstrip && n) while(iscubespace(dst[n-1])) dst[--n] = 0;
-    dst[n <= len ? n : len] = 0;
+    if(whitespace && wsstrip && n) while(iscubespace(dst[n-1])) dst[--n] = '\0';
+    dst[n <= len ? n : len] = '\0';
     return filtered;
 }
 ICOMMAND(0, filter, "siiiiN", (char *s, int *a, int *b, int *c, int *d, int *numargs),
@@ -474,7 +475,6 @@ void sendf(int cn, int chan, const char *format, ...)
         case 'x':
             exclude = va_arg(args, int);
             break;
-
         case 'v':
         {
             int n = va_arg(args, int);
@@ -482,23 +482,25 @@ void sendf(int cn, int chan, const char *format, ...)
             loopi(n) putint(p, v[i]);
             break;
         }
-
         case 'i':
         {
             int n = isdigit(*format) ? *format++-'0' : 1;
             loopi(n) putint(p, va_arg(args, int));
             break;
         }
-
+        case 'u':
+        {
+            int n = isdigit(*format) ? *format++-'0' : 1;
+            loopi(n) putuint(p, va_arg(args, uint));
+            break;
+        }
         case 'f':
         {
             int n = isdigit(*format) ? *format++-'0' : 1;
             loopi(n) putfloat(p, (float)va_arg(args, double));
             break;
         }
-
         case 's': sendstring(va_arg(args, const char *), p); break;
-
         case 'm':
         {
             int n = va_arg(args, int);
@@ -520,28 +522,54 @@ void sendfile(int cn, int chan, stream *file, const char *format, ...)
     }
     else if(!clients.inrange(cn)) return;
 
-    int len = (int)min(file->size(), stream::offset(INT_MAX));
-    if(len <= 0 || len > 16<<20) return;
+    int len = file ? (int)min(file->size(), stream::offset(INT_MAX)) : 0;
+    if(len > 16<<20) return;
 
     packetbuf p(MAXTRANS+len, ENET_PACKET_FLAG_RELIABLE);
     va_list args;
     va_start(args, format);
     while(*format) switch(*format++)
     {
+        case 'l': putint(p, len); break;
+        case 'v':
+        {
+            int n = va_arg(args, int);
+            int *v = va_arg(args, int *);
+            loopi(n) putint(p, v[i]);
+            break;
+        }
         case 'i':
         {
             int n = isdigit(*format) ? *format++-'0' : 1;
             loopi(n) putint(p, va_arg(args, int));
             break;
         }
+        case 'u':
+        {
+            int n = isdigit(*format) ? *format++-'0' : 1;
+            loopi(n) putuint(p, va_arg(args, uint));
+            break;
+        }
+        case 'f':
+        {
+            int n = isdigit(*format) ? *format++-'0' : 1;
+            loopi(n) putfloat(p, (float)va_arg(args, double));
+            break;
+        }
         case 's': sendstring(va_arg(args, const char *), p); break;
-        case 'l': putint(p, len); break;
+        case 'm':
+        {
+            int n = va_arg(args, int);
+            p.put(va_arg(args, uchar *), n);
+            break;
+        }
     }
     va_end(args);
-
-    file->seek(0, SEEK_SET);
-    file->read(p.subbuf(len).buf, len);
-
+    if(file && len > 0)
+    {
+        file->seek(0, SEEK_SET);
+        file->read(p.subbuf(len).buf, len);
+    }
     ENetPacket *packet = p.finalize();
     if(cn >= 0) sendpacket(cn, chan, packet, -1);
 #ifndef STANDALONE
@@ -1200,7 +1228,7 @@ static void setupwindow(const char *title)
     atexit(cleanupwindow);
 
     if(!setupsystemtray(WM_APP)) fatal("failed adding to system tray");
-    conoutf("identity: v%s-%s%d %s (%s) [0x%x]", VERSION_STRING, versionplatname, versionarch, versionisserver ? "server" : "client", VERSION_RELEASE, versioncrc);
+    conoutf("identity: v%s-%s%d %s [%s] (%s) [0x%.8x]", VERSION_STRING, versionplatname, versionarch, versionisserver ? "server" : "client", versionbranch, VERSION_RELEASE, versioncrc);
 }
 
 static char *parsecommandline(const char *src, vector<char *> &args)
@@ -1396,7 +1424,7 @@ void setupserver()
 
 void initgame()
 {
-    conoutf("identity: v%s-%s%d %s (%s) [0x%x]", VERSION_STRING, versionplatname, versionarch, versionisserver ? "server" : "client", VERSION_RELEASE, versioncrc);
+    conoutf("identity: v%s-%s%d %s [%s] (%s) [0x%.8x]", VERSION_STRING, versionplatname, versionarch, versionisserver ? "server" : "client", versionbranch, VERSION_RELEASE, versioncrc);
     server::start();
     loopv(gameargs)
     {
@@ -1649,14 +1677,11 @@ void rehash(bool reload)
 }
 ICOMMAND(0, rehash, "i", (int *nosave), if(!(identflags&IDF_WORLD)) rehash(*nosave ? false : true));
 
-void setcrc(const char *bin)
+void setverinfo(const char *bin)
 {
-    if(!bin || !*bin) return;
-    size_t len = 0;
-    char *buf = loadfile(bin, &len, false);
-    if(!buf) return;
-    versioncrc = crc32(0, (const Bytef *)buf, len);
-    delete[] buf;
+    setvar("versioncrc", crcfile(bin));
+    const char *branch = getenv("REDECLIPSE_BRANCH");
+    setsvar("versionbranch", branch);
 }
 
 volatile bool fatalsig = false;
@@ -1733,7 +1758,7 @@ int main(int argc, char **argv)
 
     setlogfile(NULL);
     setlocations(true);
-    setcrc(argv[0]);
+    setverinfo(argv[0]);
 
     char *initscript = NULL;
     for(int i = 1; i<argc; i++)

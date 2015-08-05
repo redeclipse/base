@@ -4,9 +4,8 @@
 #include "version.h"
 #include "cube.h"
 
-extern int version, versioning, versionmajor, versionminor, versionpatch, versionplatform, versionarch, versionisserver;
-extern char *versionstring, *versionname, *versionuname, *versionrelease, *versionurl, *versionmaster, *versionplatname, *versionplatlongname;
-extern uint versioncrc;
+extern int version, versioning, versionmajor, versionminor, versionpatch, versionplatform, versionarch, versionisserver, versioncrc;
+extern char *versionstring, *versionname, *versionuname, *versionrelease, *versionurl, *versionmaster, *versionplatname, *versionplatlongname, *versionbranch;
 #define CUR_VER_MAKE(a,b,c) (((a)<<16) | ((b)<<8) | (c))
 #define CUR_VER CUR_VER_MAKE(VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH)
 #define CUR_VERSION (VERSION_MAJOR*100)+(VERSION_MINOR*10)+VERSION_PATCH
@@ -40,7 +39,7 @@ extern int masterserver, masterport;
 extern char *masterip;
 extern int nextcontrolversion();
 
-extern void setcrc(const char *bin);
+extern void setverinfo(const char *bin);
 
 #include "irc.h"
 #include "sound.h"
@@ -567,7 +566,8 @@ extern float shadowray(ShadowRayCache *cache, const vec &o, const vec &ray, floa
 extern bool getsight(vec &o, float yaw, float pitch, vec &q, vec &v, float mdist, float fovx, float fovy);
 
 // worldio
-extern char *maptitle, *mapauthor, *mapname;
+extern char *maptitle, *mapauthor, *mapname, *maptext;
+extern int mapcrc, maptype, maploading;
 extern int getmapversion();
 extern int getmaprevision();
 

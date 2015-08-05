@@ -2,7 +2,7 @@
 
 namespace client
 {
-    bool sendplayerinfo = false, sendcrcinfo = false, sendgameinfo = false, isready = false, remote = false,
+    bool sendplayerinfo = false, sendgameinfo = false, sendcrcinfo = false, isready = false, remote = false,
         demoplayback = false, needsmap = false, gettingmap = false;
     int lastping = 0, sessionid = 0, sessionver = 0, lastplayerinfo = 0;
     string connectpass = "";
@@ -664,6 +664,12 @@ namespace client
         gameent *d = cn >= 0 ? game::getclient(cn) : game::player1;
         if(d) switch(prop)
         {
+            case -2:
+            {
+                defformatstring(str, "%d.%d.%d-%s%d", d->version.major, d->version.minor, d->version.patch, plat_name(d->version.platform), d->version.arch);
+                result(str);
+            }
+            case -1: result(plat_name(d->version.platform)); break;
             case 0: intret(d->version.major); break;
             case 1: intret(d->version.minor); break;
             case 2: intret(d->version.patch); break;
@@ -676,12 +682,7 @@ namespace client
             case 9: result(d->version.gpuvendor); break;
             case 10: result(d->version.gpurenderer); break;
             case 11: result(d->version.gpuversion); break;
-            case 12: result(plat_name(d->version.platform)); break;
-            case 13:
-            {
-                defformatstring(str, "%d.%d.%d-%s%d", d->version.major, d->version.minor, d->version.patch, plat_name(d->version.platform), d->version.arch);
-                result(str);
-            }
+            case 13: result(d->version.branch); break;
             default: break;
         }
     }
@@ -956,7 +957,7 @@ namespace client
     void gamedisconnect(int clean)
     {
         if(editmode) toggleedit();
-        gettingmap = needsmap = remote = isready = sendgameinfo = sendplayerinfo = false;
+        gettingmap = needsmap = remote = isready = sendplayerinfo = sendgameinfo = sendcrcinfo = false;
         sessionid = sessionver = lastplayerinfo = 0;
         messages.shrink(0);
         mapvotes.shrink(0);
@@ -966,7 +967,7 @@ namespace client
         removetrackedsounds(game::player1);
         game::player1->clientnum = -1;
         game::player1->privilege = PRIV_NONE;
-        game::player1->handle[0] = 0;
+        game::player1->handle[0] = '\0';
         game::gamemode = G_EDITMODE;
         game::mutators = 0;
         loopv(game::players) if(game::players[i]) game::clientdisconnected(i);
@@ -983,7 +984,6 @@ namespace client
                 default: break;
             }
         });
-        if(clean) game::clientmap[0] = '\0';
     }
 
     bool addmsg(int type, const char *fmt, ...)
@@ -1015,6 +1015,13 @@ namespace client
                     numi += n;
                     break;
                 }
+                case 'u':
+                {
+                    int n = isdigit(*fmt) ? *fmt++-'0' : 1;
+                    loopi(n) putuint(p, va_arg(args, uint));
+                    numi += n;
+                    break;
+                }
                 case 'f':
                 {
                     int n = isdigit(*fmt) ? *fmt++-'0' : 1;
@@ -1023,6 +1030,13 @@ namespace client
                     break;
                 }
                 case 's': sendstring(va_arg(args, const char *), p); nums++; break;
+                case 'm':
+                {
+                    int n = va_arg(args, int);
+                    p.put(va_arg(args, uchar *), n);
+                    numi += n;
+                    break;
+                }
             }
             va_end(args);
         }
@@ -1184,9 +1198,9 @@ namespace client
         return false;
     }
 
-    void changemapserv(char *name, int gamemode, int mutators, bool temp)
+    void changemapserv(char *name, int gamemode, int mutators, int crc)
     {
-        game::gamestate = m_play(gamemode) ? G_S_WAITING : G_S_PLAYING;
+        game::gamestate = G_S_WAITING;
         game::gamemode = gamemode;
         game::mutators = mutators;
         modecheck(game::gamemode, game::mutators);
@@ -1208,11 +1222,11 @@ namespace client
         else if(m_defend(game::gamemode)) defend::reset();
         else if(m_bomber(game::gamemode)) bomber::reset();
         needsmap = false;
-        if(!name || !*name || !load_world(name, temp))
+        if(!name || !*name || !load_world(name, crc))
         {
-            emptymap(0, true, NULL);
-            setnames(name, MAP_MAPZ);
+            emptymap(0, true, name);
             needsmap = true;
+            return;
         }
         if(m_capture(game::gamemode)) capture::setup();
         else if(m_defend(game::gamemode)) defend::setup();
@@ -1254,25 +1268,28 @@ namespace client
 
             case N_SENDMAPFILE:
             {
-                int filetype = getint(p);
+                int filetype = getint(p), filecrc = getint(p);
+                string fname;
+                getstring(fname, p);
                 data += p.length();
                 len -= p.length();
-                if(filetype < 0 || filetype >= SENDMAP_MAX) break;
-                const char *reqmap = mapname;
-                if(!reqmap || !*reqmap) reqmap = "maps/untitled";
-                defformatstring(reqfile, strstr(reqmap, "temp/")==reqmap || strstr(reqmap, "temp\\")==reqmap ? "%s" : "temp/%s", reqmap);
-                defformatstring(reqfext, "%s.%s", reqfile, sendmaptypes[filetype]);
-                stream *f = openfile(reqfext, "wb");
+                if(filetype < 0 || filetype >= SENDMAP_MAX || len <= 0) break;
+                if(!*fname) copystring(fname, "maps/untitled");
+                defformatstring(ffile, strstr(fname, "maps/")==fname || strstr(fname, "maps\\")==fname ? "%s_0x%.8x" : "maps/%s_0x%.8x", fname, filecrc);
+                defformatstring(ffext, "%s.%s", ffile, sendmaptypes[filetype]);
+                stream *f = openfile(ffext, "wb");
                 if(!f)
                 {
-                    conoutft(CON_EVENT, "\frfailed to open map file: \fc%s", reqfext);
+                    conoutft(CON_EVENT, "\frfailed to open map file: \fc%s", ffext);
                     break;
                 }
                 gettingmap = true;
                 f->write(data, len);
                 delete f;
+                conoutft(CON_EVENT, "\fywrote map file: \fc%s (%d %s) [0x%.8x]", ffext, len, len != 1 ? "bytes" : "byte", filecrc);
                 break;
             }
+            default: break;
         }
     }
     ICOMMAND(0, getmap, "", (), if(multiplayer(false)) addmsg(N_GETMAP, "r"));
@@ -1337,28 +1354,34 @@ namespace client
         conoutft(CON_EVENT, "\fysending map...");
         const char *reqmap = mapname;
         if(!reqmap || !*reqmap) reqmap = "maps/untitled";
-        bool edit = m_edit(game::gamemode);
-        defformatstring(reqfile, "%s%s", edit ? "temp/" : "", reqmap);
+        int savedtype = -1;
+        if(m_edit(game::gamemode) || maptype != MAP_MAPZ)
+        {
+            save_world(mapname, m_edit(game::gamemode), true);
+            ai::savewaypoints(true, mapname);
+            reqmap = mapname;
+            savedtype = maptype;
+        }
         loopi(SENDMAP_MAX)
         {
-            defformatstring(reqfext, "%s.%s", reqfile, sendmaptypes[i]);
-            if(!i && edit)
-            {
-                save_world(reqfile, edit, true);
-                setnames(reqmap, MAP_MAPZ);
-            }
+            defformatstring(reqfext, "%s.%s", reqmap, sendmaptypes[i]);
             stream *f = openfile(reqfext, "rb");
             if(f)
             {
                 conoutft(CON_EVENT, "\fytransmitting file: \fc%s", reqfext);
-                sendfile(-1, 2, f, "ri2", N_SENDMAPFILE, i);
+                sendfile(-1, 2, f, "ri3", N_SENDMAPFILE, i, mapcrc);
                 if(needclipboard >= 0) needclipboard++;
                 delete f;
             }
-            else if(i <= SENDMAP_MIN) conoutft(CON_EVENT, "\frfailed to open map file: \fc%s", reqfext);
+            else
+            {
+                conoutft(CON_EVENT, "\frfailed to open map file: \fc%s", reqfext);
+                sendfile(-1, 2, NULL, "ri3", N_SENDMAPFILE, i, mapcrc);
+            }
         }
+        if(savedtype >= 0) setnames(mapname, savedtype, 0);
     }
-    ICOMMAND(0, sendmap, "", (), sendmap());
+    //ICOMMAND(0, sendmap, "", (), sendmap());
 
     void gotoplayer(const char *arg)
     {
@@ -1668,12 +1691,12 @@ namespace client
             if(sendcrcinfo)
             {
                 p.reliable();
-                sendcrcinfo = false;
                 putint(p, N_MAPCRC);
-                sendstring(game::clientmap, p);
-                putint(p, game::clientmap[0] ? getmapcrc() : 0);
+                sendstring(mapname, p);
+                putint(p, mapcrc);
+                sendcrcinfo = false;
             }
-            if(sendgameinfo && !needsmap)
+            if(sendgameinfo)
             {
                 p.reliable();
                 putint(p, N_GAMEINFO);
@@ -2018,31 +2041,37 @@ namespace client
                 case N_MAPCHANGE:
                 {
                     getstring(text, p);
-                    int getit = getint(p), mode = getint(p), muts = getint(p);
-                    changemapserv(getit != 1 ? text : NULL, mode, muts, getit == 2);
-                    if(needsmap) switch(getit)
+                    int mode = getint(p), muts = getint(p), crc = getint(p);
+                    conoutf("map change: %s (%d:%d) [0x%.8x]", text, mode, muts, crc);
+                    if(crc < 0)
                     {
-                        case 0: case 2:
-                        {
-                            conoutft(CON_EVENT, "\fyserver requested map change to \fs\fc%s\fS, and we need it, so asking for it", text);
-                            addmsg(N_GETMAP, "r");
-                            break;
-                        }
-                        case 1:
-                        {
-                            conoutft(CON_EVENT, "\fyserver is requesting the map from another client for us");
-                            break;
-                        }
-                        default: needsmap = false; break;
+                        conoutf("waiting for server..");
+                        emptymap(0, true, text);
+                        needsmap = true; // waiting for the server
                     }
+                    else
+                    {
+                        conoutf("changing map..");
+                        needsmap = gettingmap = false;
+                        changemapserv(text, mode, muts, crc);
+                        if(!needsmap) sendcrcinfo = true;
+                        else addmsg(N_GETMAP, "r");
+                    }
+                    break;
+                }
+
+                case N_GETGAMEINFO:
+                {
+                    conoutf("sending game info..");
+                    sendgameinfo = true;
                     break;
                 }
 
                 case N_GAMEINFO:
                 {
                     int n;
-                    while(p.remaining() && (n = getint(p)) != -1) entities::setspawn(n, getint(p));
                     sendgameinfo = false;
+                    while(p.remaining() && (n = getint(p)) != -1) entities::setspawn(n, getint(p));
                     break;
                 }
 
@@ -2619,8 +2648,7 @@ namespace client
                     game::player1->clientnum = getint(p);
                     if(!demoplayback && wasdemopb && demoendless)
                     {
-                        string demofile;
-                        demofile[0] = 0;
+                        string demofile = "";
                         if(*demolist)
                         {
                             int r = rnd(listlen(demolist)), len = 0;
@@ -2919,29 +2947,19 @@ namespace client
                 {
                     conoutft(CON_EVENT, "\fyserver has requested we send the map..");
                     if(!needsmap && !gettingmap) sendmap();
-                    else
-                    {
-                        if(!gettingmap) conoutft(CON_EVENT, "\fy..we don't have the map though, so asking for it instead");
-                        else conoutft(CON_EVENT, "\fy..but we're in the process of getting it");
-                        addmsg(N_GETMAP, "r");
-                    }
+                    else addmsg(N_GETMAP, "r");
                     break;
                 }
 
                 case N_SENDMAP:
                 {
                     conoutft(CON_EVENT, "\fymap data has been uploaded to the server");
-                    if(needsmap && !gettingmap)
-                    {
-                        conoutft(CON_EVENT, "\fy.. and we want the map too, so asking for it");
-                        addmsg(N_GETMAP, "r");
-                    }
+                    //if(needsmap && !gettingmap) addmsg(N_GETMAP, "r");
                     break;
                 }
 
                 case N_FAILMAP:
                 {
-                    if(needsmap && (!m_edit(game::gamemode) || otherclients())) conoutft(CON_EVENT, "\fyunable to load map, nobody else has a copy of it..");
                     needsmap = gettingmap = false;
                     break;
                 }
@@ -2949,15 +2967,16 @@ namespace client
                 case N_NEWMAP:
                 {
                     int size = getint(p);
-                    if(size>=0) emptymap(size, true);
+                    getstring(text, p);
+                    if(size >= 0) emptymap(size, true, text);
                     else enlargemap(false, true);
                     mapvotes.shrink(0);
                     needsmap = false;
-                    if(d && d!=game::player1)
+                    if(d && d != game::player1)
                     {
                         int newsize = 0;
                         while(1<<newsize < getworldsize()) newsize++;
-                        conoutft(CON_EVENT, size>=0 ? "\fy%s started a new map of size \fs\fc%d\fS" : "\fy%s enlarged the map to size \fs\fc%d\fS", game::colourname(d), newsize);
+                        conoutft(CON_EVENT, size>=0 ? "\fy%s started new map \fs\fc%s\fS of size \fs\fc%d\fS" : "\fy%s enlarged the map \fs\fc%s\fS to size \fs\fc%d\fS", game::colourname(d), mapname, newsize);
                     }
                     break;
                 }

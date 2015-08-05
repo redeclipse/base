@@ -369,7 +369,7 @@ struct duelservmode : servmode
                         else if(gamemillis < dueldeath) break;
                         if(!cleanup)
                         {
-                            string end, hp; hp[0] = 0;
+                            string end = "", hp = "";
                             if(!m_insta(gamemode, mutators))
                             {
                                 if(alive[0]->state.health >= m_health(gamemode, mutators, alive[0]->state.model))
