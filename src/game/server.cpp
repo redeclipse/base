@@ -532,6 +532,7 @@ namespace server
 
     vector<srventity> sents;
     vector<savedscore> savedscores;
+    vector<savedscore> savedstatsscores;
     servmode *smode;
     vector<servmode *> smuts;
     #define mutate(a,b) { loopvk(a) { servmode *mut = a[k]; { b; } } }
@@ -2626,6 +2627,13 @@ namespace server
         return false;
     }
 
+    bool statsscorecmp(clientinfo *ci, uint ip, const char *name, const char *handle, uint clientip)
+    {
+        if(ci->handle[0] && !strcmp(handle, ci->handle)) return true;
+        else if(!ci->handle[0] && ip && clientip == ip && !strcmp(name, ci->name)) return true;
+        return false;
+    }
+
     savedscore *findscore(clientinfo *ci, bool insert)
     {
         uint ip = getclientip(ci->clientnum);
@@ -2654,6 +2662,34 @@ namespace server
         return &sc;
     }
 
+    savedscore *findstatsscore(clientinfo *ci, bool insert)
+    {
+        uint ip = getclientip(ci->clientnum);
+        if(!ip && !ci->handle[0]) return NULL;
+        if(!insert) loopv(clients)
+        {
+            clientinfo *oi = clients[i];
+            if(oi->clientnum != ci->clientnum && statsscorecmp(ci, ip, oi->name, oi->handle, getclientip(oi->clientnum)))
+            {
+                oi->state.updatetimeplayed();
+                static savedscore curscore;
+                curscore.save(oi->state);
+                return &curscore;
+            }
+        }
+        loopv(savedstatsscores)
+        {
+            savedscore &sc = savedstatsscores[i];
+            if(statsscorecmp(ci, ip, sc.name, sc.handle, sc.ip)) return &sc;
+        }
+        if(!insert) return NULL;
+        savedscore &sc = savedstatsscores.add();
+        copystring(sc.name, ci->name);
+        copystring(sc.handle, ci->handle);
+        sc.ip = ip;
+        return &sc;
+    }
+
     void givepoints(clientinfo *ci, int points, bool team = true)
     {
         ci->state.score += points;
@@ -2671,6 +2707,27 @@ namespace server
     {
         ci->state.updatetimeplayed(false);
         savedscore *sc = findscore(ci, true);
+        if(sc)
+        {
+            if(ci->state.actortype == A_PLAYER && m_dm(gamemode) && m_team(gamemode, mutators) && !m_nopoints(gamemode, mutators) && G(teamkillrestore) && canplay())
+            {
+                int restorepoints[T_MAX] = {0};
+                loopv(ci->state.teamkills) restorepoints[ci->state.teamkills[i].team] += ci->state.teamkills[i].points;
+                loopi(T_MAX) if(restorepoints[i] >= G(teamkillrestore))
+                {
+                    score &ts = teamscore(i);
+                    ts.total += restorepoints[i];
+                    sendf(-1, 1, "ri3", N_SCORE, ts.team, ts.total);
+                }
+            }
+            sc->save(ci->state);
+        }
+    }
+
+    void savestatsscore(clientinfo *ci)
+    {
+        ci->state.updatetimeplayed(false);
+        savedscore *sc = findstatsscore(ci, true);
         if(sc)
         {
             if(ci->state.actortype == A_PLAYER && m_dm(gamemode) && m_team(gamemode, mutators) && !m_nopoints(gamemode, mutators) && G(teamkillrestore) && canplay())
@@ -3096,14 +3153,14 @@ namespace server
     {
         if(G(serverstats) && auth::hasstats && !sentstats && gamemillis)
         {
-            loopv(clients) if(clients[i]->state.actortype == A_PLAYER) savescore(clients[i]);
+            loopv(clients) if(clients[i]->state.actortype == A_PLAYER) savestatsscore(clients[i]);
             bool worthy = false;
             if(fromintermission) worthy = true;
             else
             {
                 if(m_laptime(gamemode, mutators))
                 {
-                    loopv(savedscores) if(savedscores[i].actortype == A_PLAYER) if(savedscores[i].cptime > 0) {
+                    loopv(savedstatsscores) if(savedstatsscores[i].actortype == A_PLAYER) if(savedstatsscores[i].cptime > 0) {
                         {
                             worthy = true;
                             break;
@@ -3123,19 +3180,19 @@ namespace server
                 requestmasterf("stats team %d %d %s\n", i + tp, teamscore(i + tp).total, escapestring(TEAM(i + tp, name)));
             }
             flushmasteroutput();
-            loopv(savedscores) if(savedscores[i].actortype == A_PLAYER)
+            loopv(savedstatsscores) if(savedstatsscores[i].actortype == A_PLAYER)
             {
                 requestmasterf("stats player %s %s %d %d %d %d %d\n",
-                    escapestring(savedscores[i].name), escapestring(savedscores[i].handle),
-                    m_laptime(gamemode, mutators) ? savedscores[i].cptime : savedscores[i].score,
-                    savedscores[i].timealive, savedscores[i].frags, savedscores[i].deaths, i
+                    escapestring(savedstatsscores[i].name), escapestring(savedstatsscores[i].handle),
+                    m_laptime(gamemode, mutators) ? savedstatsscores[i].cptime : savedstatsscores[i].score,
+                    savedstatsscores[i].timealive, savedstatsscores[i].frags, savedstatsscores[i].deaths, i
                 );
                 flushmasteroutput();
                 loopj(W_MAX)
                 {
-                    weaponstats w = savedscores[i].weapstats[j];
+                    weaponstats w = savedstatsscores[i].weapstats[j];
                     requestmasterf("stats weapon %d %s %s %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
-                        i, escapestring(savedscores[i].handle), weaptype[j].name, w.timewielded, w.timeloadout,
+                        i, escapestring(savedstatsscores[i].handle), weaptype[j].name, w.timewielded, w.timeloadout,
                         w.damage1, w.frags1, w.hits1, w.flakhits1, w.shots1, w.flakshots1,
                         w.damage2, w.frags2, w.hits2, w.flakhits2, w.shots2, w.flakshots2
                     );
@@ -3167,6 +3224,7 @@ namespace server
         timeremaining = m_play(gamemode) && G(timelimit) ? G(timelimit)*60 : -1;
         gamelimit = m_play(gamemode) && G(timelimit) ? timeremaining*1000 : 0;
         loopv(savedscores) savedscores[i].mapchange();
+        loopv(savedstatsscores) savedstatsscores[i].mapchange();
         setuptriggers(false);
         setupspawns(false);
         if(smode) smode->reset();
@@ -5006,6 +5064,7 @@ namespace server
                     aiman::poke();
                     swapteam(ci, ci->team);
                 }
+                savestatsscore(ci);
                 loopv(clients) if(clients[i] != ci)
                 {
                     loopvk(clients[i]->state.fraglog) if(clients[i]->state.fraglog[k] == ci->clientnum)
