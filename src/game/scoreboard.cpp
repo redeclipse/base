@@ -310,7 +310,7 @@ namespace hud
                                     int timecorrected = max(game::timeremaining*1000-((gs_playing(game::gamestate) ? lastmillis : totalmillis)-game::lasttimeremain), 0);
                                     if(game::gamestate != G_S_PLAYING)
                                         g.textf(", \fs\fc%s\fS, \fs%s%s\fS remain", 0xFFFFFF, NULL, 0, -1, gamestates[0][game::gamestate], gs_waiting(game::gamestate) ? "\fr" : (game::gamestate == G_S_OVERTIME ? "\fzoy" : "\fg"), timestr(timecorrected, scoretimestyle));
-                                    else if(timelimit) g.textf(", \fs\fc%s\fS, \fs%s%s\fS remain", 0xFFFFFF, NULL, 0, -1, timecorrected > 60000 ? "\fg" : "\fzgy", timestr(timecorrected, scoretimestyle));
+                                    else if(timelimit) g.textf(", \fs\fc%s\fS, \fs%s%s\fS remain", 0xFFFFFF, NULL, 0, -1, gamestates[0][game::gamestate], timecorrected > 60000 ? "\fg" : "\fzgy", timestr(timecorrected, scoretimestyle));
                                 }
                             }));
                             if(*connectname)
