@@ -2083,7 +2083,6 @@ namespace server
         gs.spawnstate(gamemode, mutators, weap, health);
         sendf(ci->clientnum, 1, "ri9iv", N_SPAWNSTATE, ci->clientnum, spawn, gs.state, gs.points, gs.frags, gs.deaths, gs.health, gs.cptime, gs.weapselect, W_MAX, &gs.ammo[0]);
         gs.lastrespawn = gs.lastspawn = gamemillis;
-        gs.updatetimeplayed();
     }
 
     template<class T>
@@ -2934,7 +2933,6 @@ namespace server
             if(smode) smode->entergame(ci);
             mutate(smuts, mut->entergame(ci));
             if(ci->isready()) aiman::poke();
-            ci->state.updatetimeplayed();
         }
         return true;
     }
@@ -4111,9 +4109,9 @@ namespace server
             m->position.setsize(0);
             if(smode) smode->died(m, v);
             mutate(smuts, mut->died(m, v));
+            m->state.updatetimeplayed();
             m->state.state = CS_DEAD; // don't issue respawn yet until DEATHMILLIS has elapsed
             m->state.lastdeath = gamemillis;
-            m->state.updatetimeplayed();
             if(m->state.actortype == A_BOT) aiman::setskill(m);
             if(m != v && v->state.actortype == A_BOT) aiman::setskill(v);
             if(isteamkill && v->state.actortype == A_PLAYER) // don't punish the idiot bots
@@ -4190,9 +4188,9 @@ namespace server
         ci->position.setsize(0);
         if(smode) smode->died(ci, NULL);
         mutate(smuts, mut->died(ci, NULL));
+        gs.updatetimeplayed();
         gs.state = CS_DEAD;
         gs.lastdeath = gamemillis;
-        gs.updatetimeplayed();
         if(ci->state.actortype == A_BOT) aiman::setskill(ci);
     }
 
@@ -4610,6 +4608,7 @@ namespace server
 
     void waiting(clientinfo *ci, int drop, bool doteam, bool exclude)
     {
+        ci->state.updatetimeplayed();
         if(ci->state.state == CS_ALIVE)
         {
             if(drop) dropitems(ci, drop);
@@ -5673,6 +5672,7 @@ namespace server
                         break;
                     }
                     cp->state.lastrespawn = -1;
+                    cp->state.updatetimeplayed();
                     cp->state.state = CS_ALIVE;
                     if(smode) smode->spawned(cp);
                     mutate(smuts, mut->spawned(cp););
