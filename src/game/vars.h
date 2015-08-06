@@ -298,8 +298,8 @@ GVAR(IDF_GAMEMOD, captureresetdelay, 0, 30000, VAR_MAX);
 GVAR(IDF_GAMEMOD, capturedefenddelay, 0, 10000, VAR_MAX);
 GVAR(IDF_GAMEMOD, captureprotectdelay, 0, 15000, VAR_MAX);
 GVAR(IDF_GAMEMOD, capturepickupdelay, 500, 2500, VAR_MAX);
-GVAR(IDF_GAMEMOD, captureteampenalty, -1, 30000, VAR_MAX);
-GVAR(IDF_GAMEMOD, captureresetpenalty, -1, 5000, VAR_MAX);
+GVAR(IDF_GAMEMOD, captureteampenalty, -1, 7500, VAR_MAX);
+GVAR(IDF_GAMEMOD, captureresetpenalty, -1, 2500, VAR_MAX);
 GFVAR(IDF_GAMEMOD, capturecarryspeed, 0, 0.9f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, capturedropheight, 0, 8, FVAR_MAX);
 GVAR(IDF_GAMEMOD, capturepoints, 0, 5, VAR_MAX); // points added to score
@@ -350,7 +350,7 @@ GVAR(IDF_GAMEMOD, bomberattackwinner, 0, 1, 1); // declare the winner when the f
 GFVAR(IDF_GAMEMOD, bomberbasketmindist, 0, 48, FVAR_MAX); // prohibit baskets less than this far away
 GVAR(IDF_GAMEMOD, bomberwait, 0, 1000, VAR_MAX); // delay before bomb spawns
 GVAR(IDF_GAMEMOD, bomberresetdelay, 0, 15000, VAR_MAX);
-GVAR(IDF_GAMEMOD, bomberpickupdelay, 500, 15000, VAR_MAX);
+GVAR(IDF_GAMEMOD, bomberpickupdelay, 500, 7500, VAR_MAX);
 GVAR(IDF_GAMEMOD, bombercarrytime, 0, 15000, VAR_MAX);
 GFVAR(IDF_GAMEMOD, bombercarryspeed, 0, 0.9f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, bomberdropheight, 0, 8, FVAR_MAX);
