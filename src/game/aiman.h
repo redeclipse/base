@@ -275,7 +275,7 @@ namespace aiman
             }
             if(balance > 0)
             {
-                if(G(botbalancescale) != 1) balance = int(balance*G(botbalancescale));
+                if(!m_duke(gamemode, mutators) && !m_coop(gamemode, mutators) && G(botbalancescale) != 1) balance = int(ceilf(balance*G(botbalancescale)));
                 if(m_team(gamemode, mutators))
                 { // skew this if teams are unbalanced
                     int plrs[T_TOTAL] = {0}, highest = -1; // we do this because humans can unbalance in odd ways
