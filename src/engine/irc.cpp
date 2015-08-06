@@ -301,7 +301,7 @@ void ircnewnet(int type, const char *name, const char *serv, int port, const cha
     n.port = port;
     copystring(n.name, name);
     copystring(n.serv, serv);
-    copystring(n.mnick, mnick);
+    copystring(n.mnick, nick);
     copystring(n.nick, nick);
     copystring(n.ip, ip);
     copystring(n.passkey, passkey);
@@ -916,7 +916,7 @@ void ircslice()
                         ircdiscon(n, "connection attempt timed out");
                         break;
                     }
-                    if(ircnickretry && clocktime-n->lastnick >= ircnickrety && strcmp(n->nick, n->mnick))
+                    if(ircnickretry && clocktime-n->lastnick >= ircnickretry && strcmp(n->nick, n->mnick))
                     {
                         copystring(n->nick, n->mnick);
                         ircsend(n, "NICK %s", n->mnick);
