@@ -360,21 +360,25 @@ void checkpings()
         int numattr = getint(p);
         si->attr.shrink(0);
         loopj(numattr) si->attr.add(getint(p));
+        int gver = si->attr.empty() ? 0 : si->attr[0];
         getstring(text, p);
         filterstring(si->map, text, false);
         getstring(text, p);
         filterstring(si->sdesc, text);
-        getstring(text, p);
-        filterstring(si->branch, text);
         si->players.deletearrays();
         si->handles.deletearrays();
+        if(gver >= 227)
+        {
+            getstring(text, p);
+            filterstring(si->branch, text);
+        }
         loopi(si->numplayers)
         {
             if(p.overread()) break;
             getstring(text, p);
             si->players.add(newstring(text));
         }
-        loopi(si->numplayers)
+        if(gver >= 225) loopi(si->numplayers)
         {
             if(p.overread()) break;
             getstring(text, p);

@@ -80,7 +80,7 @@ struct captureservmode : capturestate, servmode
                         int score = addscore(ci->team);
                         sendf(-1, 1, "ri5", N_SCOREAFFIN, ci->clientnum, i, k, score);
                         mutate(smuts, mut->scoreaffinity(ci));
-                        if(!m_nopoints(gamemode, mutators)) givepoints(ci, G(capturepoints));
+                        givepoints(ci, G(capturepoints), m_points(gamemode, mutators), false);
                         if(!m_balance(gamemode, mutators, teamspawns) && G(capturelimit) && score >= G(capturelimit))
                         {
                             ancmsgft(-1, S_V_NOTIFY, CON_EVENT, "\fyscore limit has been reached");
@@ -102,13 +102,13 @@ struct captureservmode : capturestate, servmode
         if(m_gsp1(gamemode, mutators) && f.team == ci->team)
         {
             capturestate::returnaffinity(i, gamemillis);
-            if(!m_nopoints(gamemode, mutators)) givepoints(ci, G(capturepoints));
+            givepoints(ci, G(capturepoints), m_points(gamemode, mutators), false);
             sendf(-1, 1, "ri3", N_RETURNAFFIN, ci->clientnum, i);
         }
         else
         {
             capturestate::takeaffinity(i, ci->clientnum, gamemillis);
-            if(!m_nopoints(gamemode, mutators) && ((f.team != ci->team && !f.droptime) || f.lastowner != ci->clientnum)) givepoints(ci, G(capturepickuppoints));
+            if((f.team != ci->team && !f.droptime) || f.lastowner != ci->clientnum) givepoints(ci, G(capturepickuppoints), m_points(gamemode, mutators), false);
             sendf(-1, 1, "ri3", N_TAKEAFFIN, ci->clientnum, i);
         }
     }
@@ -153,7 +153,7 @@ struct captureservmode : capturestate, servmode
                 if(f.team != ci->team && f.taketime && gamemillis-f.taketime >= G(captureprotectdelay))
                 {
                     capturestate::returnaffinity(i, gamemillis);
-                    if(!m_nopoints(gamemode, mutators)) givepoints(ci, G(capturepoints));
+                    givepoints(ci, G(capturepoints), m_points(gamemode, mutators), false);
                     int score = addscore(ci->team);
                     sendf(-1, 1, "ri5", N_SCOREAFFIN, ci->clientnum, i, -1, score);
                     mutate(smuts, mut->scoreaffinity(ci));

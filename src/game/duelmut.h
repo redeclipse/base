@@ -319,7 +319,7 @@ struct duelservmode : servmode
                                         {
                                             if(!m_affinity(gamemode))
                                             {
-                                                givepoints(clients[i], 1, teampoints);
+                                                givepoints(clients[i], 1, true, teampoints);
                                                 teampoints = false;
                                             }
                                             else if(!duelaffin && teampoints)
@@ -394,7 +394,7 @@ struct duelservmode : servmode
                                     if(clients[i] == alive[0])
                                     {
                                         ancmsgft(clients[i]->clientnum, S_V_YOUWIN, CON_SELF, end);
-                                        if(!m_affinity(gamemode)) givepoints(clients[i], 1, true);
+                                        if(!m_affinity(gamemode)) givepoints(clients[i], 1, true, true);
                                         else if(!duelaffin)
                                         {
                                             score &ts = teamscore(clients[i]->team);

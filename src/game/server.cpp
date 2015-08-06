@@ -2689,16 +2689,19 @@ namespace server
         return &sc;
     }
 
-    void givepoints(clientinfo *ci, int points, bool team = true)
+    void givepoints(clientinfo *ci, int points, bool give, bool team = true)
     {
         ci->state.score += points;
-        ci->state.points += points;
-        sendf(-1, 1, "ri4", N_POINTS, ci->clientnum, points, ci->state.points);
-        if(team && m_team(gamemode, mutators) && m_dm(gamemode))
+        if(give)
         {
-            score &ts = teamscore(ci->team);
-            ts.total += points;
-            sendf(-1, 1, "ri3", N_SCORE, ts.team, ts.total);
+            ci->state.points += points;
+            sendf(-1, 1, "ri4", N_POINTS, ci->clientnum, points, ci->state.points);
+            if(team && m_team(gamemode, mutators) && m_dm(gamemode))
+            {
+                score &ts = teamscore(ci->team);
+                ts.total += points;
+                sendf(-1, 1, "ri3", N_SCORE, ts.team, ts.total);
+            }
         }
     }
 
@@ -3880,7 +3883,7 @@ namespace server
             if(assist)
             {
                 log.add(assist->clientnum);
-                if(points && !m_nopoints(gamemode, mutators)) givepoints(assist, points);
+                givepoints(assist, points, m_points(gamemode, mutators), true);
             }
         }
         if(clear) m->state.damagelog.shrink(0);
@@ -4135,14 +4138,14 @@ namespace server
                 m->state.cpnodes.shrink(0);
                 sendf(-1, 1, "ri3", N_CHECKPOINT, m->clientnum, -1);
             }
-            if(pointvalue && !m_nopoints(gamemode, mutators))
+            if(pointvalue)
             {
                 if(v != m && v->state.actortype >= A_ENEMY && m->state.actortype < A_ENEMY)
                 {
                     pointvalue = -pointvalue;
-                    givepoints(m, pointvalue);
+                    givepoints(m, pointvalue, m_points(gamemode, mutators), true);
                 }
-                else if(v->state.actortype < A_ENEMY) givepoints(v, pointvalue);
+                else if(v->state.actortype < A_ENEMY) givepoints(v, pointvalue, m_points(gamemode, mutators), true);
             }
             m->state.deaths++;
             m->state.rewards[1] = 0;
@@ -4216,11 +4219,11 @@ namespace server
             ci->state.cpnodes.shrink(0);
             sendf(-1, 1, "ri3", N_CHECKPOINT, ci->clientnum, -1);
         }
-        else if(!m_nopoints(gamemode, mutators) && ci->state.actortype == A_PLAYER)
+        else if(ci->state.actortype == A_PLAYER)
         {
             int pointvalue = (smode ? smode->points(ci, ci) : -1)*G(fragbonus);
             if(kamikaze) pointvalue *= G(teamkillpenalty);
-            givepoints(ci, pointvalue);
+            givepoints(ci, pointvalue, m_points(gamemode, mutators), true);
         }
         if(G(burntime) && flags&HIT_BURN)
         {

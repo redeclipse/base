@@ -261,9 +261,10 @@ extern mutstypes mutstype[];
 #define m_ghost(a,b)        (m_race(a) && !m_gsp3(a, b))
 #define m_bots(a)           (m_play(a) && !m_race(a))
 #define m_botbal(a,b)       (m_duel(a, b) ? G(botbalanceduel) : (m_survivor(a, b) ? G(botbalancesurvivor) : G(botbalance)))
-#define m_nopoints(a,b)     (m_duke(a, b) || (m_bomber(a) && m_gsp1(a, b)) || m_race(a))
 #define m_laptime(a,b)      (m_race(a) && m_gsp1(a, b))
 #define m_impulsemeter(a,b) ((m_race(a) && m_gsp2(a, b)) || !m_freestyle(a, b))
+#define m_nopoints(a,b)     (m_duke(a, b) || (m_bomber(a) && m_gsp1(a, b)) || m_race(a))
+#define m_points(a,b)       (!m_nopoints(a, b))
 
 #define m_weapon(a,b)       (m_medieval(a, b) ? W_SWORD : (m_kaboom(a, b) ? W_GRENADE : (m_insta(a, b) ? G(instaweapon) : (m_race(a) && !m_gsp3(a, b) ? G(raceweapon) : G(spawnweapon)))))
 #define m_xdelay(a,b,c)     (m_play(a) ? (m_race(a) ? (!m_gsp3(a, b) || c == T_ALPHA ? G(racedelay) : G(racedelayex)) : (m_bomber(a) ? G(bomberdelay) : (m_insta(a, b) ? G(instadelay) : G(spawndelay)))) : 0)

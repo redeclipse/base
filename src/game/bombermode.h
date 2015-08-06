@@ -80,12 +80,12 @@ struct bomberservmode : bomberstate, servmode
         int total = 0;
         if(g.team != ci->team)
         {
-            if(!m_nopoints(gamemode, mutators)) givepoints(ci, G(bomberpoints));
+            givepoints(ci, G(bomberpoints), m_points(gamemode, mutators), false);
             total = addscore(ci->team, 1);
         }
         else
         {
-            if(!m_nopoints(gamemode, mutators)) givepoints(ci, -G(bomberpenalty));
+            givepoints(ci, -G(bomberpenalty), m_points(gamemode, mutators), false);
             total = addscore(ci->team, -1);
         }
         bomberstate::returnaffinity(relay, gamemillis, false);
@@ -158,13 +158,13 @@ struct bomberservmode : bomberstate, servmode
         if(m_gsp3(gamemode, mutators) && ci->team == T_ALPHA && G(bomberattackreset))
         {
             if(!f.droptime) return;
-            if(!m_nopoints(gamemode, mutators) && (!f.droptime || f.lastowner != ci->clientnum)) givepoints(ci, G(bomberpickuppoints));
+            if(!f.droptime || f.lastowner != ci->clientnum) givepoints(ci, G(bomberpickuppoints), m_points(gamemode, mutators), false);
             returnaffinity(i, false);
         }
         else
         {
             bomberstate::takeaffinity(i, ci->clientnum, gamemillis);
-            if(!m_nopoints(gamemode, mutators) && (!f.droptime || f.lastowner != ci->clientnum)) givepoints(ci, G(bomberpickuppoints));
+            if(!f.droptime || f.lastowner != ci->clientnum) givepoints(ci, G(bomberpickuppoints), m_points(gamemode, mutators), false);
             sendf(-1, 1, "ri3", N_TAKEAFFIN, ci->clientnum, i);
         }
     }
@@ -241,7 +241,7 @@ struct bomberservmode : bomberstate, servmode
                     if(score)
                     {
                         int total = ci->state.points;
-                        givepoints(ci, score);
+                        givepoints(ci, score, true, false);
                         if(m_team(gamemode, mutators))
                         {
                             total = addscore(ci->team, score);
@@ -261,7 +261,7 @@ struct bomberservmode : bomberstate, servmode
                     dropaffinity(ci, ci->state.feetpos(G(bomberdropheight)), vec(ci->state.vel).add(ci->state.falling));
                     if(m_gsp1(gamemode, mutators) && G(bomberholdpenalty))
                     {
-                        givepoints(ci, -G(bomberholdpenalty));
+                        givepoints(ci, -G(bomberholdpenalty), true, false);
                         if(m_team(gamemode, mutators))
                         {
                             int total = addscore(ci->team, -G(bomberholdpenalty));
