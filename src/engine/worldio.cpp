@@ -84,7 +84,7 @@ void setnames(const char *fname, int type, int crc)
     formatstring(mf, "%s%s", mapname, mapexts[maptype].name);
     setsvar("mapfile", mf);
 
-    conoutf("set names to %s [%s]", mapname, mapfile);
+    conoutf("set map name to %s (%s)", mapname, mapfile);
 }
 
 enum { OCTSAV_CHILDREN = 0, OCTSAV_EMPTY, OCTSAV_SOLID, OCTSAV_NORMAL, OCTSAV_LODCUBE };
@@ -1127,27 +1127,6 @@ void save_world(const char *mname, bool nodata, bool forcesave)
     }
     delete f;
     mapcrc = crcfile(mapfile);
-#if 0
-    if(forcesave)
-    {
-        string aname;
-        copystring(aname, mapname);
-        setnames(aname, MAP_MAPZ, mapcrc);
-        conoutf("correcting %s to %s [0x%.8x]", aname, mapname, mapcrc);
-        const char *mapexts[4] = { "mpz", "cfg", "png", "txt" };
-        if(strcmp(aname, mapname)) loopk(4)
-        {
-            defformatstring(fname, "%s.%s", aname, mapexts[k]);
-            defformatstring(gname, "%s.%s", mapname, mapexts[k]);
-            if(fileexists(fname, "r"))
-            {
-                conoutf("moving %s to %s", fname, gname);
-                if(fileexists(gname, "r")) remove(gname);
-                rename(fname, gname);
-            }
-        }
-    }
-#endif
     conoutf("saved %s (\fs%s\fS by \fs%s\fS) v%d:%d(r%d) [0x%.8x] in %.1f secs", mapname, *maptitle ? maptitle : "Untitled", *mapauthor ? mapauthor : "Unknown", hdr.version, hdr.gamever, hdr.revision, mapcrc, (SDL_GetTicks()-savingstart)/1000.0f);
 }
 
@@ -1176,7 +1155,7 @@ bool load_world(const char *mname, int crc)       // still supports all map form
         setnames(mname, format, tempfile && crc > 0 ? crc : 0);
 
         int filecrc = crcfile(mapfile);
-        conoutf("checking: %s [0x%.8x v 0x%.8x]", mapfile, filecrc, crc);
+        conoutf("checking map: %s [0x%.8x] (need: 0x%.8x)", mapfile, filecrc, crc);
 
         if(!tempfile && crc > 0 && crc != filecrc)
         {

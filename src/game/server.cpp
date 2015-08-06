@@ -3017,7 +3017,16 @@ namespace server
 
     bool getmap(clientinfo *ci, bool force)
     {
-        if(gs_intermission(gamestate) || (m_edit(gamemode) && numclients() <= 1)) return false; // pointless
+        if(gs_intermission(gamestate)) return false; // pointless
+        if(m_edit(gamemode) && numclients() <= 1)
+        {
+            if(ci)
+            {
+                ci->wantsmap = false;
+                sendf(ci->clientnum, 1, "ri", N_FAILMAP);
+            }
+            return false;
+        }
         if(ci)
         {
             if(mapsending == ci->clientnum) resetmapdata();
@@ -3739,11 +3748,15 @@ namespace server
         sendstring(smapname, p);
         putint(p, gamemode);
         putint(p, mutators);
-        if(ci && !ci->online && m_edit(gamemode) && numclients(ci->clientnum) >= 2)
+        if(ci && !ci->online && m_edit(gamemode))
         {
-            if(mapsending < 0) resetmapdata();
-            getmap(ci);
-            putint(p, -1); // already in progress
+            if(numclients(ci->clientnum) >= 2)
+            {
+                if(mapsending < 0) resetmapdata();
+                getmap(ci);
+                putint(p, -2); // start with an empty map and wait for it
+            }
+            else putint(p, -1); // start with an empty map and use it
         }
         else putint(p, smapcrc);
 
@@ -4874,7 +4887,7 @@ namespace server
                 {
                     clientinfo *cs = clients[i];
                     if(cs->state.actortype > A_PLAYER) continue;
-                    if(!cs->ready || (G(waitforplayers) == 2 && cs->state.state == CS_SPECTATOR)) numwait++;
+                    if(m_play(gamemode) && (!cs->ready || (G(waitforplayers) == 2 && cs->state.state == CS_SPECTATOR))) numwait++;
                     if(cs->wantsmap || cs->gettingmap) numgetmap++;
                     if(!cs->ready) numnotready++;
                 }

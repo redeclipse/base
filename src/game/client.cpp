@@ -970,7 +970,7 @@ namespace client
         game::player1->privilege = PRIV_NONE;
         game::player1->handle[0] = '\0';
         game::gamemode = G_EDITMODE;
-        game::mutators = 0;
+        game::mutators = game::maptime = 0;
         loopv(game::players) if(game::players[i]) game::clientdisconnected(i);
         game::waiting.setsize(0);
         hud::cleanup();
@@ -1222,12 +1222,20 @@ namespace client
         if(m_capture(game::gamemode)) capture::reset();
         else if(m_defend(game::gamemode)) defend::reset();
         else if(m_bomber(game::gamemode)) bomber::reset();
-        needsmap = false;
-        if(!name || !*name || !load_world(name, crc))
+        needsmap = gettingmap = false;
+        if(crc < 0 || !name || !*name || !load_world(name, crc))
         {
             emptymap(0, true, name);
-            needsmap = true;
-            return;
+            switch(crc)
+            {
+                case -1:
+                    needsmap = gettingmap = false;
+                    sendcrcinfo = true; // the server wants us to start
+                    break;
+                case -2:
+                    conoutf("waiting for server to request the map..");
+                default: needsmap = true; break;
+            }
         }
         if(m_capture(game::gamemode)) capture::setup();
         else if(m_defend(game::gamemode)) defend::setup();
@@ -2043,21 +2051,9 @@ namespace client
                 {
                     getstring(text, p);
                     int mode = getint(p), muts = getint(p), crc = getint(p);
-                    conoutf("map change: %s (%d:%d) [0x%.8x]", text, mode, muts, crc);
-                    if(crc < 0)
-                    {
-                        conoutf("waiting for server..");
-                        emptymap(0, true, text);
-                        needsmap = true; // waiting for the server
-                    }
-                    else
-                    {
-                        conoutf("changing map..");
-                        needsmap = gettingmap = false;
-                        changemapserv(text, mode, muts, crc);
-                        if(!needsmap) sendcrcinfo = true;
-                        else addmsg(N_GETMAP, "r");
-                    }
+                    if(crc >= 0) conoutf("map change: %s (%d:%d) [0x%.8x]", text, mode, muts, crc);
+                    else  conoutf("map change: %s (%d:%d) [%d]", text, mode, muts, crc);
+                    changemapserv(text, mode, muts, crc);
                     break;
                 }
 
@@ -3004,7 +3000,7 @@ namespace client
                     getstring(text, p);
                     if(accountname[0] && accountpass[0])
                     {
-                        //conoutft(CON_EVENT, "\fyidentifying as: \fs\fc%s\fS (\fs\fw%d\fS)", accountname, id);
+                        conoutf("identifying as: \fs\fc%s\fS (\fs\fy%d\fS)", accountname, id);
                         vector<char> buf;
                         answerchallenge(accountpass, text, buf);
                         addmsg(N_AUTHANS, "ris", id, buf.getbuf());
