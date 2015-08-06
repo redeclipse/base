@@ -22,6 +22,7 @@ OSX_APP=bin/$(APPNAME).app
 endif
 
 DISTFILES=$(shell cd ../ && find . -not -iname . -not -iname *.lo -not -iname *.gch -not -iname *.o || echo "")
+CURL=curl --write-out "[%{http_code}] %{filename_effective} (%{content_type})\n%{size_download} Bytes at %{speed_download}/Bps in %{time_total}s\n" --location --insecure --fail
 
 ../$(dirname):
 	rm -rf $@
@@ -30,16 +31,16 @@ DISTFILES=$(shell cd ../ && find . -not -iname . -not -iname *.lo -not -iname *.
 	$(MAKE) -C $@/src clean
 	$(MAKE) -C $@/src/enet clean
 	echo "stable" > $@/branch.txt
-	curl --progress-bar --location --insecure --fail $(appfiles)/base.txt --output $@/version.txt
-	curl --progress-bar --location --insecure --fail $(appfiles)/bins.txt --output $@/bin/version.txt
-	for i in `curl --silent --fail $(appfiles)/mods.txt`; do if [ "$${i}" != "base" ]; then mkdir -p $@/data/$${i}; curl --progress-bar --location --insecure --fail $(appfiles)/$${i}.txt --output $@/data/$${i}/version.txt; fi; done
-	curl --progress-bar --location --insecure --fail $(appfiles)/linux.tar.gz --output linux.tar.gz
+	$(CURL) $(appfiles)/base.txt --output $@/version.txt
+	$(CURL) $(appfiles)/bins.txt --output $@/bin/version.txt
+	for i in `curl --silent --location --insecure --fail $(appfiles)/mods.txt`; do if [ "$${i}" != "base" ]; then mkdir -p $@/data/$${i}; $(CURL) $(appfiles)/$${i}.txt --output $@/data/$${i}/version.txt; fi; done
+	$(CURL) $(appfiles)/linux.tar.gz --output linux.tar.gz
 	tar --gzip --extract --verbose --overwrite --file=linux.tar.gz --directory=$@
 	rm -f linux.tar.gz
-	curl --progress-bar --location --insecure --fail $(appfiles)/macosx.tar.gz --output macosx.tar.gz
+	$(CURL) $(appfiles)/macosx.tar.gz --output macosx.tar.gz
 	tar --gzip --extract --verbose --overwrite --file=macosx.tar.gz --directory=$@
 	rm -f macosx.tar.gz
-	curl --progress-bar --location --insecure --fail $(appfiles)/windows.zip --output windows.zip
+	$(CURL) $(appfiles)/windows.zip --output windows.zip
 	unzip -o windows.zip -d $@
 	rm -f windows.zip
 
