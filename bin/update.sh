@@ -92,7 +92,7 @@ redeclipse_update_branch() {
         echo "Unable to find curl, are you sure you have it installed?"
         return 1
     fi
-    REDECLIPSE_CURL="curl --write-out \"[%{http_code}] %{filename_effective} (%{content_type})\n%{size_download} Bytes at %{speed_download}/Bps in %{time_total}s\n\" --location --insecure --fail --user-agent \"redeclipse-${REDECLIPSE_UPDATE}\""
+    REDECLIPSE_CURL="curl --location --insecure --fail --user-agent \"redeclipse-${REDECLIPSE_UPDATE}\""
     if [ "${REDECLIPSE_BLOB}" = "zipball" ]; then
         if [ -z `which unzip` ]; then
             echo "Unable to find unzip, are you sure you have it installed?"

@@ -22,7 +22,7 @@ OSX_APP=bin/$(APPNAME).app
 endif
 
 DISTFILES=$(shell cd ../ && find . -not -iname . -not -iname *.lo -not -iname *.gch -not -iname *.o || echo "")
-CURL=curl --write-out "[%{http_code}] %{filename_effective} (%{content_type})\n%{size_download} Bytes at %{speed_download}/Bps in %{time_total}s\n" --location --insecure --fail
+CURL=curl --location --insecure --fail
 
 ../$(dirname):
 	rm -rf $@
