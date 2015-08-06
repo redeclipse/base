@@ -1369,14 +1369,14 @@ namespace client
             stream *f = openfile(reqfext, "rb");
             if(f)
             {
-                conoutft(CON_EVENT, "\fytransmitting file: \fc%s", reqfext);
+                conoutf("\fytransmitting file: \fc%s", reqfext);
                 sendfile(-1, 2, f, "ri3", N_SENDMAPFILE, i, mapcrc);
                 if(needclipboard >= 0) needclipboard++;
                 delete f;
             }
             else
             {
-                conoutft(CON_EVENT, "\frfailed to open map file: \fc%s", reqfext);
+                conoutf("\frfailed to open map file: \fc%s", reqfext);
                 sendfile(-1, 2, NULL, "ri3", N_SENDMAPFILE, i, mapcrc);
             }
         }
