@@ -2,6 +2,11 @@
 
 VAR(0, ircfilter, 0, 2, 2);
 VAR(0, ircverbose, 0, 0, 2);
+VAR(0, ircnickretry, 5, 300, VAR_MAX);
+VAR(0, ircautorejoin, 0, 300, VAR_MAX);
+VAR(0, ircpingpong, 5, 120, VAR_MAX);
+VAR(0, irctimeout, 5, 60, VAR_MAX);
+VAR(0, ircautoaway, 0, 15, VAR_MAX); // time in seconds after closing the gui the user is marked as away
 
 vector<ircnet *> ircnets;
 
@@ -296,6 +301,7 @@ void ircnewnet(int type, const char *name, const char *serv, int port, const cha
     n.port = port;
     copystring(n.name, name);
     copystring(n.serv, serv);
+    copystring(n.mnick, mnick);
     copystring(n.nick, nick);
     copystring(n.ip, ip);
     copystring(n.passkey, passkey);
@@ -303,7 +309,7 @@ void ircnewnet(int type, const char *name, const char *serv, int port, const cha
     n.address.port = n.port;
     n.input[0] = n.authname[0] = n.authpass[0] = '\0';
 #ifndef STANDALONE
-    n.lastseen = totalmillis;
+    n.lastseen = clocktime;
 #endif
     ircprintf(&n, 4, NULL, "added %s %s (%s:%d) [%s]", type == IRCT_RELAY ? "relay" : "client", name, serv, port, nick);
 }
@@ -329,8 +335,8 @@ ICOMMAND(0, ircport, "ss", (const char *name, const char *s), {
 ICOMMAND(0, ircnick, "ss", (const char *name, const char *s), {
     ircnet *n = ircfind(name);
     if(!n) { conoutf("no such ircnet: %s", name); return; }
-    if(!s || !*s) { ircprintf(n, 4, NULL, "current nickname is: %s", n->nick); return; }
-    copystring(n->nick, s);
+    if(!s || !*s) { ircprintf(n, 4, NULL, "current main nickname is: %s", n->mnick); return; }
+    copystring(n->mnick, s);
 });
 ICOMMAND(0, ircbind, "ss", (const char *name, const char *s), {
     ircnet *n = ircfind(name);
@@ -639,7 +645,7 @@ void ircprocess(ircnet *n, char *user[3], int g, int numargs, char *w[])
                 if(n->state == IRC_CONN)
                 {
                     n->state = IRC_ONLINE;
-                    ircprintf(n, 4, NULL, "\fbnow connected to %s as %s", user[0], n->nick);
+                    ircprintf(n, 4, NULL, "\fbnow connected to %s as %s (%s)", user[0], n->nick, n->mnick);
                     if(*n->authname && *n->authpass) ircsend(n, "PRIVMSG %s :%s", n->authname, n->authpass);
                 }
                 break;
@@ -650,6 +656,7 @@ void ircprocess(ircnet *n, char *user[3], int g, int numargs, char *w[])
                 {
                     concatstring(n->nick, "_");
                     ircsend(n, "NICK %s", n->nick);
+                    n->lastnick = clocktime;
                 }
                 break;
             }
@@ -665,7 +672,7 @@ void ircprocess(ircnet *n, char *user[3], int g, int numargs, char *w[])
                     c->lastjoin = clocktime;
                     c->lastsync = 0;
                     if(c->type == IRCCT_AUTO)
-                        ircprintf(n, 4, w[g+2], "\fbwaiting 5 mins to rejoin %s", c->name);
+                        ircprintf(n, 4, w[g+2], "\fbwaiting %ds to rejoin %s", ircautorejoin, c->name);
                     else ircprintf(n, 4, NULL, "\fbbanned from channel: %s", c->name);
                 }
                 break;
@@ -830,7 +837,6 @@ void ircchecksockets(ENetSocketSet &readset, ENetSocketSet &writeset)
     }
 }
 
-VAR(0, ircautoaway, 0, 15, VAR_MAX); // time in seconds after closing the gui the user is marked as away
 void ircslice()
 {
     #ifndef STANDALONE
@@ -856,7 +862,7 @@ void ircslice()
                 ircsend(n, "AWAY");
                 n->away = 0;
             }
-            else if(!n->away && totalmillis-n->lastseen >= ircautoaway*1000)
+            else if(!n->away && totalmillis-n->lastseen >= ircautoaway)
             {
                 ircsend(n, "AWAY :Auto-away after %d second%s", ircautoaway, ircautoaway != 1 ? "s" : "");
                 n->away = totalmillis;
@@ -873,14 +879,16 @@ void ircslice()
             {
                 case IRC_WAIT:
                 {
-                    if(!n->lastattempt || clocktime-n->lastattempt >= 60) ircdiscon(n);
+                    if(!n->lastattempt || clocktime-n->lastattempt >= irctimeout) ircdiscon(n);
                     break;
                 }
                 case IRC_ATTEMPT:
                 {
                     if(*n->passkey) ircsend(n, "PASS %s", n->passkey);
-                    ircsend(n, "NICK %s", n->nick);
+                    copystring(n->nick, n->mnick);
+                    ircsend(n, "NICK %s", n->mnick);
                     ircsend(n, "USER %s +iw %s :%s v%s-%s%d [%s] (%s)", VERSION_UNAME, VERSION_UNAME, VERSION_NAME, VERSION_STRING, versionplatname, versionarch, versionbranch, VERSION_RELEASE);
+                    n->lastnick = clocktime;
                     n->state = IRC_CONN;
                     loopvj(n->channels)
                     {
@@ -896,21 +904,30 @@ void ircslice()
                     loopvj(n->channels)
                     {
                         ircchan *c = &n->channels[j];
-                        if(c->type == IRCCT_AUTO && c->state != IRCC_JOINED && (!c->lastjoin || clocktime-c->lastjoin >= (c->state != IRCC_BANNED ? 5 : 300)))
+                        if(c->type == IRCCT_AUTO && c->state != IRCC_JOINED && (!c->lastjoin || clocktime-c->lastjoin >= (c->state != IRCC_BANNED ? 5 : ircautorejoin)))
                             ircjoin(n, c);
                     }
                     // fall through
                 }
                 case IRC_CONN:
                 {
-                    if(n->state == IRC_CONN && (!n->lastattempt || clocktime-n->lastattempt >= 60))
+                    if(n->state == IRC_CONN && (!n->lastattempt || clocktime-n->lastattempt >= irctimeout))
+                    {
                         ircdiscon(n, "connection attempt timed out");
+                        break;
+                    }
+                    if(ircnickretry && clocktime-n->lastnick >= ircnickrety && strcmp(n->nick, n->mnick))
+                    {
+                        copystring(n->nick, n->mnick);
+                        ircsend(n, "NICK %s", n->mnick);
+                        n->lastnick = clocktime;
+                    }
                     if(!n->lastactivity)
                     {
                         n->lastactivity = clocktime;
                         n->lastping = 0;
                     }
-                    else if(clocktime-n->lastactivity >= 120)
+                    else if(clocktime-n->lastactivity >= ircpingpong)
                     {
                         if(!n->lastping)
                         {
@@ -1036,7 +1053,7 @@ bool ircnetgui(guient *g, ircnet *n, bool tab)
         if(front) n->updated &= ~IRCUP_NEW;
         if(msg && g->visible()) n->updated &= ~IRCUP_MSG;
     }
-    n->lastseen = totalmillis;
+    n->lastseen = clocktime;
     defformatstring(window, "%s_window", n->name);
     if(n->buffer.newlines < n->buffer.lines.length())
     {

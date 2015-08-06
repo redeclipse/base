@@ -57,8 +57,8 @@ enum { IRCT_NONE = 0, IRCT_CLIENT, IRCT_RELAY, IRCT_MAX };
 enum { IRC_NEW = 0, IRC_DISC, IRC_WAIT, IRC_ATTEMPT, IRC_CONN, IRC_ONLINE, IRC_QUIT, IRC_MAX };
 struct ircnet
 {
-    int type, state, port, lastattempt, lastactivity, lastping, inputcarry, inputlen;
-    string name, serv, nick, ip, passkey, authname, authpass;
+    int type, state, port, lastattempt, lastactivity, lastping, lastnick, inputcarry, inputlen;
+    string name, serv, mnick, nick, ip, passkey, authname, authpass;
     ENetAddress address;
     ENetSocket sock;
     vector<ircchan> channels;
@@ -83,12 +83,12 @@ struct ircnet
         }
         else state = IRC_DISC;
         inputcarry = inputlen = 0;
-        port = lastattempt = lastactivity = lastping = 0;
-        name[0] = serv[0] = nick[0] = ip[0] = passkey[0] = authname[0] = authpass[0] = '\0';
+        port = lastattempt = lastactivity = lastping = lastnick = 0;
+        name[0] = serv[0] = mnick[0] = nick[0] = ip[0] = passkey[0] = authname[0] = authpass[0] = '\0';
         channels.shrink(0);
 #ifndef STANDALONE
         updated = IRCUP_NEW;
-        lastseen = totalmillis;
+        lastseen = clocktime;
         away = 0;
         buffer.reset();
 #endif
