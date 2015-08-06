@@ -17,8 +17,11 @@ redeclipse_update_init() {
                 REDECLIPSE_CACHE="${REDECLIPSE_WINDOCS}/My Games/Red Eclipse/cache"
                 return 0
             fi
+        elif [ "${REDECLIPSE_TARGET}" = "macosx" ]; then
+            REDECLIPSE_CACHE="${HOME}/Library/Application Support/Red Eclipse/cache"
+        else
+            REDECLIPSE_CACHE="${HOME}/.redeclipse/cache"
         fi
-        REDECLIPSE_CACHE="${HOME}/.redeclipse/cache"
     fi
     return 0
 }
