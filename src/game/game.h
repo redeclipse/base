@@ -300,7 +300,7 @@ enum
     N_LISTDEMOS, N_SENDDEMOLIST, N_GETDEMO, N_SENDDEMO, N_DEMOREADY,
     N_DEMOPLAYBACK, N_RECORDDEMO, N_STOPDEMO, N_CLEARDEMOS,
     N_CLIENT, N_RELOAD, N_REGEN, N_INITAI, N_MAPCRC, N_CHECKMAPS,
-    N_SETPLAYERINFO, N_SWITCHTEAM, N_AUTHTRY, N_AUTHCHAL, N_AUTHANS,
+    N_SETPLAYERINFO, N_SWITCHTEAM, N_AUTHTRY, N_AUTHCHAL, N_AUTHANS, N_QUEUEPOS,
     NUMMSG
 };
 
@@ -323,7 +323,7 @@ char msgsizelookup(int msg)
         N_LISTDEMOS, 1, N_SENDDEMOLIST, 0, N_GETDEMO, 3, N_SENDDEMO, 0, N_DEMOREADY, 0,
         N_DEMOPLAYBACK, 3, N_RECORDDEMO, 2, N_STOPDEMO, 1, N_CLEARDEMOS, 2,
         N_CLIENT, 0, N_RELOAD, 0, N_REGEN, 0, N_INITAI, 0, N_MAPCRC, 0, N_CHECKMAPS, 1,
-        N_SETPLAYERINFO, 0, N_SWITCHTEAM, 0, N_AUTHTRY, 0, N_AUTHCHAL, 0, N_AUTHANS, 0,
+        N_SETPLAYERINFO, 0, N_SWITCHTEAM, 0, N_AUTHTRY, 0, N_AUTHCHAL, 0, N_AUTHANS, 0, N_QUEUEPOS, 0,
         -1
     };
     static int sizetable[NUMMSG] = { -1 };
@@ -527,15 +527,15 @@ struct clientstate
 {
     int health, ammo[W_MAX], entid[W_MAX], colour, model;
     int weapselect, weapload[W_MAX], weapshot[W_MAX], weapstate[W_MAX], weapwait[W_MAX], weaplast[W_MAX];
-    int lastdeath, lastspawn, lastrespawn, lastpain, lastregen, lastbuff, lastshoot, lastres[WR_MAX], lastrestime[WR_MAX];
-    int actortype, spawnpoint, ownernum, skill, points, frags, deaths, cpmillis, cptime;
+    int lastdeath, lastspawn, lastpain, lastregen, lastbuff, lastshoot, lastres[WR_MAX], lastrestime[WR_MAX];
+    int actortype, spawnpoint, ownernum, skill, points, frags, deaths, cpmillis, cptime, queuepos;
     bool quarantine;
     string vanity;
     vector<int> loadweap, lastweap;
     verinfo version;
 
-    clientstate() : colour(0), model(0), weapselect(W_MELEE), lastdeath(0), lastspawn(0), lastrespawn(0), lastpain(0), lastregen(0), lastbuff(0), lastshoot(0),
-        actortype(A_PLAYER), spawnpoint(-1), ownernum(-1), skill(0), points(0), frags(0), deaths(0), cpmillis(0), cptime(0), quarantine(false)
+    clientstate() : colour(0), model(0), weapselect(W_MELEE), lastdeath(0), lastspawn(0), lastpain(0), lastregen(0), lastbuff(0), lastshoot(0),
+        actortype(A_PLAYER), spawnpoint(-1), ownernum(-1), skill(0), points(0), frags(0), deaths(0), cpmillis(0), cptime(0), queuepos(-1), quarantine(false)
     {
         setvanity();
         loadweap.shrink(0);
@@ -737,7 +737,7 @@ struct clientstate
     void clearstate()
     {
         lastdeath = lastpain = lastregen = lastbuff = lastshoot = 0;
-        lastrespawn = -1;
+        queuepos = -1;
         resetresidual();
     }
 
@@ -1651,7 +1651,6 @@ namespace game
     extern const char *vanityfname(gameent *d, int n, bool proj = false);
     extern bool followswitch(int n, bool other = false);
     extern vector<cament *> cameras;
-    extern int numwaiting();
     extern gameent *newclient(int cn);
     extern gameent *getclient(int cn);
     extern gameent *intersectclosest(vec &from, vec &to, gameent *at);

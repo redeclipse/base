@@ -1389,21 +1389,39 @@ namespace hud
                 SEARCHBINDCACHE(attackkey)("primary", 0);
                 if(delay || m_duke(game::gamemode, game::mutators) || (m_play(game::gamemode) && maxalive > 0))
                 {
-                    if(gs_waiting(game::gamestate) || m_duke(game::gamemode, game::mutators)) ty += draw_textx("Queued for new round", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, tw);
+                    if(gs_waiting(game::gamestate)) ty += draw_textx("Waiting for game to start", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, tw);
+                    else if(m_survivor(game::gamemode, game::mutators)) ty += draw_textx("Queued for new round", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, tw);
+                    else if(m_duel(game::gamemode, game::mutators))
+                    {
+                        switch(target->queuepos)
+                        {
+                            case -1:
+                                if(game::gamestate == G_S_OVERTIME) ty += draw_textx("You lost, in sudden death overtime", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, tw);
+                                else ty += draw_textx("Queued for new round", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, tw);
+                                break;
+                            case 0:
+                                ty += draw_textx("You are \fs\fzcgNEXT\fS in the duel queue", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, tw);
+                                break;
+                            default:
+                                ty += draw_textx("You are \fs\fy#\fS\fs\fc%d\fS in the duel queue", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, tw, target->queuepos);
+                                break;
+                        }
+                    }
                     else if(delay) ty += draw_textx("%s: Down for \fs\fy%s\fS", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, tw, target == game::player1 && target->state == CS_WAITING ? "Please Wait" : "Fragged", timestr(delay));
                     else if(target == game::player1 && target->state == CS_WAITING && m_play(game::gamemode) && maxalive > 0 && maxalivequeue)
                     {
-                        int n = game::numwaiting(), x = max(int(G(maxalive)*G(maxplayers)), max(int(client::otherclients(true, true)*G(maxalivethreshold)), G(maxaliveminimum)));
-                        if(m_team(game::gamemode, game::mutators))
+                        switch(target->queuepos)
                         {
-                            if(x%2) x++;
-                            x = x/2;
+                            case -1:
+                                ty += draw_textx("Queued for new round", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, tw);
+                                break;
+                            case 0:
+                                ty += draw_textx("You are \fs\fzcgNEXT\fS in the spawn queue", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, tw);
+                                break;
+                            default:
+                                ty += draw_textx("You are \fs\fy#\fS\fs\fc%d\fS in the spawn queue", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, tw, target->queuepos);
+                                break;
                         }
-                        ty += draw_textx("Maximum arena capacity is: \fs\fg%d\fS %s", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, tw, x, x != 1 ? "players" : "player");
-                        pushfont("reduced");
-                        if(n) ty += draw_textx("Respawn queued, waiting for \fs\fy%d\fS %s", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, tw, n, n != 1 ? "players" : "player");
-                        else ty += draw_textx("Prepare to respawn, you are \fs\fzygnext\fS in the queue", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, tw);
-                        popfont();
                     }
                     if(target == game::player1 && target->state != CS_WAITING && shownotices >= 2 && lastmillis-target->lastdeath >= 500)
                     {

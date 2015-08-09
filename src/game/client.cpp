@@ -1361,7 +1361,7 @@ namespace client
 
     void sendmap()
     {
-        conoutft(CON_EVENT, "\fysending map...");
+        conoutf("\fysending map...");
         const char *reqmap = mapname;
         if(!reqmap || !*reqmap) reqmap = "maps/untitled";
         int savedtype = -1;
@@ -2943,7 +2943,7 @@ namespace client
 
                 case N_GETMAP:
                 {
-                    conoutft(CON_EVENT, "\fyserver has requested we send the map..");
+                    conoutf("\fyserver has requested we send the map..");
                     if(!needsmap && !gettingmap) sendmap();
                     else addmsg(N_GETMAP, "r");
                     break;
@@ -2951,7 +2951,7 @@ namespace client
 
                 case N_SENDMAP:
                 {
-                    conoutft(CON_EVENT, "\fymap data has been uploaded to the server");
+                    conoutf("\fymap data has been uploaded to the server");
                     //if(needsmap && !gettingmap) addmsg(N_GETMAP, "r");
                     break;
                 }
@@ -2974,7 +2974,7 @@ namespace client
                     {
                         int newsize = 0;
                         while(1<<newsize < getworldsize()) newsize++;
-                        conoutft(CON_EVENT, size>=0 ? "\fy%s started new map \fs\fc%s\fS of size \fs\fc%d\fS" : "\fy%s enlarged the map \fs\fc%s\fS to size \fs\fc%d\fS", game::colourname(d), mapname, newsize);
+                        conoutf(size>=0 ? "\fy%s started new map \fs\fc%s\fS of size \fs\fc%d\fS" : "\fy%s enlarged the map \fs\fc%s\fS to size \fs\fc%d\fS", game::colourname(d), mapname, newsize);
                     }
                     break;
                 }
@@ -3005,6 +3005,21 @@ namespace client
                         vector<char> buf;
                         answerchallenge(accountpass, text, buf);
                         addmsg(N_AUTHANS, "ris", id, buf.getbuf());
+                    }
+                    break;
+                }
+
+                case N_QUEUEPOS:
+                {
+                    int qcn = getint(p), pos = getint(p);
+                    gameent *o = game::newclient(qcn);
+                    bool changed = o->queuepos != pos;
+                    o->queuepos = pos;
+                    if(o == game::focus && changed && o->state != CS_ALIVE)
+                    {
+                        if(o->queuepos < 0) conoutft(CON_EVENT, "\fyyou are now \fs\fzgcqueued\fS for the \fs\fcnext match\fS");
+                        else if(o->queuepos) conoutft(CON_EVENT, "\fyyou are \fs\fzgc#%d\fS in the \fs\fcduel queue\fS", o->queuepos+1);
+                        else conoutft(CON_EVENT, "\fyyou are \fs\fzgcNEXT\fS in the \fs\fcduel queue\fS");
                     }
                     break;
                 }

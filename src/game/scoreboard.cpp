@@ -360,8 +360,7 @@ namespace hud
                                             else if(delay) g.textf("%s: Down for \fs\fy%s\fS", 0xFFFFFF, NULL, 0, -1, game::player1->state == CS_WAITING ? "Please Wait" : "Fragged", timestr(delay));
                                             else if(game::player1->state == CS_WAITING && m_play(game::gamemode) && maxalive > 0 && maxalivequeue)
                                             {
-                                                int n = game::numwaiting();
-                                                if(n) g.textf("Waiting for \fs\fy%d\fS %s", 0xFFFFFF, NULL, 0, -1, n, n != 1 ? "players" : "player");
+                                                if(game::player1->queuepos) g.textf("Waiting for \fs\fy%d\fS %s", 0xFFFFFF, NULL, 0, -1, game::player1->queuepos, game::player1->queuepos != 1 ? "players" : "player");
                                                 else g.text("You are \fs\fgnext\fS in the queue", 0xFFFFFF);
                                             }
                                         }));

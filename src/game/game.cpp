@@ -1785,13 +1785,6 @@ namespace game
         return NULL;
     }
 
-    int numwaiting()
-    {
-        int n = 0;
-        loopv(waiting) if(waiting[i]->state == CS_WAITING && (!m_team(gamemode, mutators) || waiting[i]->team == player1->team)) n++;
-        return n;
-    }
-
     void clientdisconnected(int cn, int reason)
     {
         if(!players.inrange(cn)) return;

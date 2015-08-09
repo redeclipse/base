@@ -33,22 +33,37 @@ struct duelservmode : servmode
         duelwinner = -1;
     }
 
-    void position(clientinfo *ci, int n)
+    void position()
     {
-        // milestone v1.6.0 - add N_QUEUEPOS
-        if(m_survivor(gamemode, mutators))
-            srvmsgft(ci->clientnum, CON_EVENT, "\fyyou are now \fs\fzgcqueued\fS for the \fs\fcnext match\fS");
-        else
+        loopv(clients)
         {
-            if(n) srvmsgft(ci->clientnum, CON_EVENT, "\fyyou are \fs\fzgc#%d\fS in the \fs\fcduel queue\fS", n+1);
-            else srvmsgft(ci->clientnum, CON_EVENT, "\fyyou are \fs\fzgcNEXT\fS in the \fs\fcduel queue\fS");
+            clientinfo *ci = clients[i];
+            if(m_survivor(gamemode, mutators)) ci->state.queuepos = -1;
+            else
+            {
+                int n = duelqueue.find(ci);
+                ci->state.queuepos = n > 0 && dueltime >= 0 ? n-1 : n;
+            }
+            sendf(-1, 1, "ri3", N_QUEUEPOS, ci->clientnum, ci->state.queuepos);
         }
     }
 
-    void queue(clientinfo *ci, bool pos = true, bool top = false, bool wait = true)
+    bool remqueue(clientinfo *ci, bool pos = true)
     {
-        if(ci->state.actortype >= A_ENEMY || ci->state.state == CS_SPECTATOR) return;
-        if(gamestate == G_S_OVERTIME && !restricted.empty() && restricted.find(ci) < 0) return;
+        int n = duelqueue.find(ci);
+        if(n >= 0)
+        {
+            duelqueue.remove(n);
+            if(pos) position();
+            return true;
+        }
+        return false;
+    }
+
+    bool queue(clientinfo *ci, bool pos = true, bool top = false, bool wait = true)
+    {
+        if(ci->state.actortype >= A_ENEMY || ci->state.state == CS_SPECTATOR) return remqueue(ci, pos);
+        if(gamestate == G_S_OVERTIME && !restricted.empty() && restricted.find(ci) < 0) return remqueue(ci, pos);
         if(DSGS(maxqueued) && duelqueue.find(ci) < 0 && playing.find(ci) < 0)
         {
             int count = 0;
@@ -58,7 +73,7 @@ struct duelservmode : servmode
             {
                 spectator(ci);
                 srvmsgft(ci->clientnum, CON_EVENT, "\fysorry, the \fs\fcqueue\fS is \fs\fzgcFULL\fS (max: \fs\fc%d\fS %s)", DSGS(maxqueued), DSGS(maxqueued) != 1 ? "players" : "player");
-                return;
+                return remqueue(ci, pos);
             }
         }
         if(ci->state.actortype == A_PLAYER && waitforhumans) waitforhumans = false;
@@ -74,9 +89,10 @@ struct duelservmode : servmode
             n = duelqueue.length();
             duelqueue.add(ci);
         }
-        if(allowed.find(ci) >= 0) allowed.removeobj(ci);
         if(wait && ci->state.state != CS_WAITING) waiting(ci, DROP_RESET);
-        if(pos) position(ci, n);
+        if(allowed.find(ci) >= 0) allowed.removeobj(ci);
+        if(pos) position();
+        return true;
     }
 
     void entergame(clientinfo *ci)
@@ -84,6 +100,7 @@ struct duelservmode : servmode
         queue(ci);
         if(dueltime < 0 && dueldeath < 0 && m_affinity(gamemode) && (DSGS(affinity) || numclients() <= 1)) allowed.add(ci);
     }
+
     void leavegame(clientinfo *ci, bool disconnecting = false)
     {
         if(duelwinner == ci->clientnum)
@@ -91,14 +108,14 @@ struct duelservmode : servmode
             duelwinner = -1;
             duelwins = 0;
         }
-        duelqueue.removeobj(ci);
         allowed.removeobj(ci);
         playing.removeobj(ci);
+        remqueue(ci);
     }
 
     bool damage(clientinfo *m, clientinfo *v, int damage, int weap, int flags, int material, const ivec &hitpush, const ivec &hitvel, float dist)
     {
-        if(dueltime >= 0 && m->state.actortype < A_ENEMY) return false;
+        if(dueltime >= 0) return false;
         return true;
     }
 
@@ -141,15 +158,16 @@ struct duelservmode : servmode
     {
         if(!m_affinity(gamemode) || dueltime >= 0 || duelround <= 0) return;
         #define scoredteam(x,y) (win ? x != y : x == y)
+        int queued = 0;
         loopv(clients) if(clients[i]->state.actortype < A_ENEMY) switch(clients[i]->state.state)
         {
             case CS_ALIVE:
-                if(playing.find(clients[i]) < 0 || scoredteam(clients[i]->team, ci->team)) queue(clients[i], false);
+                if(playing.find(clients[i]) < 0 || scoredteam(clients[i]->team, ci->team)) if(queue(clients[i], false)) queued++;
                 break;
             case CS_DEAD:
                 if(playing.find(clients[i]) < 0 || scoredteam(clients[i]->team, ci->team))
                 {
-                    queue(clients[i], false);
+                    if(queue(clients[i], false)) queued++;
                     break;
                 }
                 if(allowed.find(clients[i]) < 0) allowed.add(clients[i]);
@@ -158,7 +176,7 @@ struct duelservmode : servmode
             case CS_WAITING:
                 if(playing.find(clients[i]) < 0 || scoredteam(clients[i]->team, ci->team))
                 {
-                    queue(clients[i], false);
+                    if(queue(clients[i], false)) queued++;
                     break;
                 }
                 if(allowed.find(clients[i]) < 0) allowed.add(clients[i]);
@@ -167,6 +185,7 @@ struct duelservmode : servmode
         }
         duelaffin = win ? ci->team : -ci->team;
         duelcheck = gamemillis+DSGS(delay);
+        if(queued) position();
     }
 
     void clear()
@@ -194,8 +213,10 @@ struct duelservmode : servmode
                 duelwins = 0;
             }
         }
-        loopv(clients) queue(clients[i], false, !reset && clients[i]->state.state == CS_ALIVE, reset || DSGS(reset) || clients[i]->state.state != CS_ALIVE);
+        int queued = 0;
+        loopv(clients) if(queue(clients[i], false, !reset && clients[i]->state.state == CS_ALIVE, reset || DSGS(reset) || clients[i]->state.state != CS_ALIVE)) queued++;
         shrink();
+        if(queued) position();
     }
 
     void update()
@@ -214,19 +235,23 @@ struct duelservmode : servmode
                     loopv(clients)
                     {
                         clientinfo *cs = clients[i];
-                        if(cs->state.state != CS_ALIVE && cs->state.state != CS_WAITING) continue;
+                        if(cs->state.state != CS_ALIVE && cs->state.state != CS_WAITING)
+                        {
+                            remqueue(cs, false);
+                            continue;
+                        }
                         if(restricted.empty() || cs->state.points > restricted[0]->state.points)
                         {
                             restricted.shrink(0);
                             restricted.add(cs);
                         }
                         else if(cs->state.points == restricted[0]->state.points) restricted.add(cs);
+                        else remqueue(cs, false);
                     }
                 }
                 loopv(duelqueue)
                 {
                     if(m_duel(gamemode, mutators) && playing.length() >= wants) break;
-                    if(gamestate == G_S_OVERTIME && !restricted.empty() && restricted.find(duelqueue[i]) < 0) continue;
                     if(duelqueue[i]->state.state != CS_ALIVE)
                     {
                         if(duelqueue[i]->state.state != CS_WAITING) waiting(duelqueue[i], DROP_RESET);
@@ -270,7 +295,6 @@ struct duelservmode : servmode
                         else if(allowed.find(playing[i]) < 0) allowed.add(playing[i]);
                         duelqueue.removeobj(playing[i]);
                     }
-                    loopv(duelqueue) position(duelqueue[i], i);
                     if(gamestate == G_S_OVERTIME && !restricted.empty())
                         ancmsgft(-1, S_V_FIGHT, CON_SELF, "\fy\fs\fzcgsudden death\fS %s", fight);
                     else ancmsgft(-1, S_V_FIGHT, CON_SELF, "\fy%s", fight);
@@ -278,17 +302,20 @@ struct duelservmode : servmode
                     duelcheck = gamemillis+5000;
                 }
                 else shrink();
+                position();
             }
         }
         else if(duelround > 0)
         {
             bool cleanup = false;
             vector<clientinfo *> alive;
+            int queued = 0;
             loopv(clients) if(clients[i]->state.actortype < A_ENEMY && clients[i]->state.state == CS_ALIVE)
             {
-                if(playing.find(clients[i]) < 0) queue(clients[i]);
+                if(playing.find(clients[i]) < 0) { if(queue(clients[i], false)) queued++; }
                 else alive.add(clients[i]);
             }
+            if(queued) position();
             if(!allowed.empty() && duelcheck >= 0 && gamemillis >= duelcheck) loopvrev(allowed)
             {
                 if(alive.find(allowed[i]) < 0) spectator(allowed[i]);
