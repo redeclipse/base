@@ -264,7 +264,7 @@ struct duelservmode : servmode
                         {
                             playing[i]->state.lastregen = gamemillis;
                             playing[i]->state.resetresidual();
-                            playing[i]->state.health = m_health(gamemode, mutators, playing[i]->state.model);
+                            playing[i]->state.health = m_health(gamemode, mutators, playing[i]->state.actortype);
                             sendf(-1, 1, "ri4", N_REGEN, playing[i]->clientnum, playing[i]->state.health, 0); // amt = 0 regens impulse
                         }
                         else if(allowed.find(playing[i]) < 0) allowed.add(playing[i]);
@@ -372,7 +372,7 @@ struct duelservmode : servmode
                             string end = "", hp = "";
                             if(!m_insta(gamemode, mutators))
                             {
-                                if(alive[0]->state.health >= m_health(gamemode, mutators, alive[0]->state.model))
+                                if(alive[0]->state.health >= m_health(gamemode, mutators, alive[0]->state.actortype))
                                     formatstring(hp, " with a \fs\fcflawless victory\fS");
                                 else formatstring(hp, " with \fs\fc%d\fS health left", alive[0]->state.health);
                             }

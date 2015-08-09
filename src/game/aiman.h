@@ -130,7 +130,7 @@ namespace aiman
                 ci->state.colour = rnd(0xFFFFFF);
                 ci->state.model = rnd(PLAYERTYPES);
                 ci->state.setvanity(ci->state.model ? G(botfemalevanities) : G(botmalevanities)); // the first slot is special
-                copystring(ci->name, actor[ci->state.actortype].name, MAXNAMELEN);
+                copystring(ci->name, AA(ci->state.actortype, vname), MAXNAMELEN);
                 ci->state.loadweap.shrink(0);
                 if(ci->state.actortype == A_BOT)
                 {

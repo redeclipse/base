@@ -1225,7 +1225,7 @@ namespace projs
         d->weapshot[weap] = sub;
         if(offset > 0) d->weapload[weap] = -offset;
         d->lastshoot = lastmillis;
-        if(d->actortype < A_ENEMY || actor[d->actortype].canmove)
+        if(AA(d->actortype, abilities)&(1<<A_A_MOVE))
         {
             vec kick = vec(d->yaw*RAD, d->pitch*RAD).mul(-W2(weap, kickpush, WS(flags))*skew);
             if(!kick.iszero())

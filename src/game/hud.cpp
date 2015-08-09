@@ -705,7 +705,7 @@ namespace hud
             {
                 if(game::focus->state >= CS_SPECTATOR || game::focus->state == CS_EDITING) break;
                 float damage = game::focus->state == CS_ALIVE ? min(damageresidue, 100)/100.f : 1.f,
-                      healthscale = float(m_health(game::gamemode, game::mutators, game::focus->model));
+                      healthscale = float(m_health(game::gamemode, game::mutators, game::focus->actortype));
                 if(healthscale > 0) damage = max(damage, 1.f-max(game::focus->health, 0)/healthscale);
                 amt += damage*0.65f;
                 if(burntime && game::focus->burning(lastmillis, burntime))
@@ -1096,7 +1096,7 @@ namespace hud
             switch(i)
             {
                 case 0:
-                    val = min(1.f, game::focus->health/float(m_health(game::gamemode, game::mutators, game::focus->model)));
+                    val = min(1.f, game::focus->health/float(m_health(game::gamemode, game::mutators, game::focus->actortype)));
                     if(circlebarhealthtone) skewcolour(c.r, c.g, c.b, circlebarhealthtone);
                     break;
                 case 1:
@@ -1181,7 +1181,7 @@ namespace hud
                         damageloc &d = damagelocs[i];
                         int millis = lastmillis-d.outtime, delay = min(20, d.damage)*50;
                         if(millis >= delay || d.dir.iszero()) { if(millis >= radardamagetime+radardamagefade) damagelocs.remove(i--); continue; }
-                        float dam = d.damage/float(m_health(game::gamemode, game::mutators, game::focus->model)),
+                        float dam = d.damage/float(m_health(game::gamemode, game::mutators, game::focus->actortype)),
                               amt = millis/float(delay);
                         total += dam;
                         val += dam*(1-amt);
@@ -1235,7 +1235,7 @@ namespace hud
                 fade += (zoomcrosshairblend-fade)*amt;
             }
             if(crosshairtone) skewcolour(c.r, c.g, c.b, crosshairtone);
-            int heal = m_health(game::gamemode, game::mutators, game::focus->model);
+            int heal = m_health(game::gamemode, game::mutators, game::focus->actortype);
             if(crosshairflash && game::focus->state == CS_ALIVE && game::focus->health < heal)
             {
                 int millis = lastmillis%1000;
@@ -2286,7 +2286,7 @@ namespace hud
         if(skew <= 0.f) return 0;
         Texture *t = textureload(tex, 3);
         float q = clamp(skew, 0.f, 1.f), cr = left ? r : r*q, cg = left ? g : g*q, cb = left ? b : b*q, s = size*skew, w = float(t->w)/float(t->h)*s;
-        int heal = m_health(game::gamemode, game::mutators, game::focus->model), sy = int(s), cx = x, cy = y, cs = int(s), cw = int(w);
+        int heal = m_health(game::gamemode, game::mutators, game::focus->actortype), sy = int(s), cx = x, cy = y, cs = int(s), cw = int(w);
         bool pulse = inventoryflash && game::focus->state == CS_ALIVE && game::focus->health < heal;
         if(bg && sub == 0 && inventorybg)
         {
@@ -2604,7 +2604,7 @@ namespace hud
             if(inventoryhealth)
             {
                 float fade = blend*inventoryhealthblend;
-                int heal = m_health(game::gamemode, game::mutators, game::focus->model);
+                int heal = m_health(game::gamemode, game::mutators, game::focus->actortype);
                 float hpulse = inventoryhealthflash ? clamp((heal-game::focus->health)/float(heal), 0.f, 1.f) : 0.f,
                       hthrob = inventoryhealththrob > 0 && regentime && game::focus->lastregen && lastmillis-game::focus->lastregen <= regentime ? clamp((lastmillis-game::focus->lastregen)/float(regentime/2), 0.f, 2.f) : 0.f;
                 if(inventoryhealth&2)

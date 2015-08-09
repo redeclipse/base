@@ -542,7 +542,7 @@ namespace bomber
         if(f.owner)
         {
             if(!d->ai || f.owner != d) return;
-            bool forever = m_ffa(game::gamemode, game::mutators) || d->health >= m_health(game::gamemode, game::mutators, d->model)/3 || findtarget(d) < 0;
+            bool forever = m_ffa(game::gamemode, game::mutators) || d->health >= m_health(game::gamemode, game::mutators, d->actortype)/3 || findtarget(d) < 0;
             if(!carrytime && forever) return;
             int takemillis = lastmillis-f.taketime, length = forever ? carrytime-550-bomberlockondelay : min(carrytime, 1000);
             if(takemillis >= length)
@@ -658,7 +658,7 @@ namespace bomber
             if(d->actortype == A_BOT && m_duke(game::gamemode, game::mutators) && home) continue;
             static vector<int> targets; // build a list of others who are interested in this
             targets.setsize(0);
-            bool regen = d->actortype != A_BOT || f.team != d->team || !m_regen(game::gamemode, game::mutators) || d->health >= m_health(game::gamemode, game::mutators, d->model);
+            bool regen = d->actortype != A_BOT || f.team != d->team || !m_regen(game::gamemode, game::mutators) || d->health >= m_health(game::gamemode, game::mutators, d->actortype);
             ai::checkothers(targets, d, home || d->actortype != A_BOT ? ai::AI_S_DEFEND : ai::AI_S_PURSUE, ai::AI_T_AFFINITY, j, true);
             if(d->actortype == A_BOT)
             {
@@ -749,7 +749,7 @@ namespace bomber
             int walk = f.owner && f.owner->team != d->team ? 1 : 0;
             if(d->actortype == A_BOT)
             {
-                if((!m_regen(game::gamemode, game::mutators) || d->health >= m_health(game::gamemode, game::mutators, d->model)) && lastmillis-b.millis >= (201-d->skill)*33)
+                if((!m_regen(game::gamemode, game::mutators) || d->health >= m_health(game::gamemode, game::mutators, d->actortype)) && lastmillis-b.millis >= (201-d->skill)*33)
                 {
                     if(b.owner < 0)
                     {

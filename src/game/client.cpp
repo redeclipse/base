@@ -1237,6 +1237,7 @@ namespace client
                 default: needsmap = true; break;
             }
         }
+        else sendcrcinfo = true;
         if(m_capture(game::gamemode)) capture::setup();
         else if(m_defend(game::gamemode)) defend::setup();
         else if(m_bomber(game::gamemode)) bomber::setup();

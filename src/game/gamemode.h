@@ -270,7 +270,7 @@ extern mutstypes mutstype[];
 #define m_xdelay(a,b,c)     (m_play(a) ? (m_race(a) ? (!m_gsp3(a, b) || c == T_ALPHA ? G(racedelay) : G(racedelayex)) : (m_bomber(a) ? G(bomberdelay) : (m_insta(a, b) ? G(instadelay) : G(spawndelay)))) : 0)
 #define m_delay(a,b,c)      (m_duke(a,b) ? 0 : m_xdelay(a, b, c))
 #define m_protect(a,b)      (m_duke(a,b) ? DSG(a, b, protect) : (m_insta(a, b) ? G(instaprotect) : G(spawnprotect)))
-#define m_health(a,b,c)     (m_insta(a,b) ? 1 : PLAYER(c, health))
+#define m_health(a,b,c)     (m_insta(a,b) ? 1 : AA(c, health))
 #define m_maxhealth(a,b,c)  (int(m_health(a, b, c)*(m_vampire(a,b) ? G(maxhealthvampire) : G(maxhealth))))
 #define m_swapteam(a,b)     (m_team(a, b) && (!m_race(a) || m_gsp3(a, b)) && m_play(a) && (G(teambalanceduel) || !m_duel(a, b)) && !m_coop(gamemode, mutators) && G(teambalance) >= 3 && G(teambalanceswap))
 #define m_balteam(a,b,c)    (m_team(a, b) && (!m_race(a) || m_gsp3(a, b)) && m_play(a) && (G(teambalanceduel) || !m_duel(a, b)) && !m_coop(gamemode, mutators) && G(teambalance) >= c)

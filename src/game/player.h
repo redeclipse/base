@@ -1,45 +1,44 @@
 struct actors
 {
-    int type,           weap,           health;
-    float   xradius,    yradius,    height,     weight,     speed,      scale;
-    bool    canmove,    canstrafe,  canjump,    cancrouch,  useweap,    living,     hitbox;
-    const char  *name,      *playermodel[4];
+    int type;
+    float xradius, yradius, height;
+    bool useweap, living, hitbox;
+    const char *name, *playermodel[4];
 };
 
 enum { A_PLAYER = 0, A_BOT, A_TURRET, A_GRUNT, A_DRONE, A_MAX, A_ENEMY = A_TURRET, A_TOTAL = A_MAX-A_ENEMY };
+enum {
+    A_A_MOVE = 0, A_A_JUMP, A_A_CROUCH, A_A_DASH, A_A_BOOST, A_A_PARKOUR, A_A_MELEE, A_A_MAX,
+    A_A_IMFIRST = A_A_DASH, A_A_IMLAST = A_A_PARKOUR, A_A_IMPULSE = A_A_IMLAST-A_A_IMFIRST, A_A_IMCOUNT = A_A_IMPULSE+1,
+    A_A_IMOFFSET = (1<<(A_A_DASH-A_A_IMFIRST))|(1<<(A_A_BOOST-A_A_IMFIRST))|(1<<(A_A_PARKOUR-A_A_IMFIRST)), A_A_IMRELAX = (1<<(A_A_PARKOUR-A_A_IMFIRST)),
+    A_A_ALL = (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_CROUCH)|(1<<A_A_DASH)|(1<<A_A_BOOST)|(1<<A_A_PARKOUR)|(1<<A_A_MELEE)
+};
+
 #ifdef GAMESERVER
 actors actor[] = {
     {
-        A_PLAYER,         -1,             0,
-            3,          3,          14,         200,        50,         1,
-            true,       true,       true,       true,       true,       true,       true,
-                "player",   { "actors/player/male/hwep",      "actors/player/male",     "actors/player/male/body",      "actors/player/male/headless" }
+        A_PLAYER, 3, 3, 14, true, true, true,
+        "player",   { "actors/player/male/hwep",      "actors/player/male",     "actors/player/male/body",      "actors/player/male/headless" }
     },
     {
-        A_BOT,         -1,             0,
-            3,          3,          14,         200,        50,         1,
-            true,       true,       true,       true,       true,       true,       true,
-                "bot",      { "actors/player/male/hwep",      "actors/player/male",     "actors/player/male/body",      "actors/player/male/headless" }
+        A_BOT, 3, 3, 14, true, true, true,
+        "bot",      { "actors/player/male/hwep",      "actors/player/male",     "actors/player/male/body",      "actors/player/male/headless" }
     },
     {
-        A_TURRET,      W_SMG,       100,
-            4.75,       4.75,       8.75,       150,        1,          1,
-            false,      false,      false,      false,      false,      false,      false,
-                "turret",   { "actors/player/male/hwep",      "actors/turret",          "actors/player/male/body",      "actors/turret" }
+        A_TURRET, 4.75f, 4.75f, 8.75f, false, false, false,
+        "turret",   { "actors/player/male/hwep",      "actors/turret",          "actors/player/male/body",      "actors/turret" }
     },
     {
-        A_GRUNT,       W_PISTOL,   50,
-            3,          3,          14,         200,        50,         1,
-            true,       true,       true,       true,       true,       true,       true,
-                "grunt",   { "actors/player/male/hwep",      "actors/player/male",      "actors/player/male/body",      "actors/player/male/headless" }
+        A_GRUNT, 3, 3, 14, true, true, true,
+        "grunt",   { "actors/player/male/hwep",      "actors/player/male",      "actors/player/male/body",      "actors/player/male/headless" }
     },
     {
-        A_DRONE,       W_MELEE,     50,
-            3,          3,          14,         150,        40,         1,
-            true,       true,       true,       true,       true,       true,       true,
-                "drone",    { "actors/player/male/hwep",      "actors/drone",           "actors/player/male/body",      "actors/drone" }
+        A_DRONE, 3, 3, 14, true, true, true,
+        "drone",    { "actors/player/male/hwep",      "actors/drone",           "actors/player/male/body",      "actors/drone" }
     },
 };
+#else
+extern actors actor[];
 #endif
 
 enum
@@ -98,28 +97,32 @@ const char *playertypes[PLAYERTYPES][6] = {
     { "actors/player/male/hwep",      "actors/player/male",     "actors/player/male/body",      "actors/player/male/headless",      "player",   "male" },
     { "actors/player/female/hwep",    "actors/player/female",   "actors/player/male/body",      "actors/player/female/headless",    "player",   "female" }
 };
-float playerdims[PLAYERTYPES][3] = {
-    { 3,      3,      14 },
-    { 3,      3,      14 },
-};
 #else
 extern const char *playertypes[PLAYERTYPES][6];
-extern float playerdims[PLAYERTYPES][3];
 #endif
 
 #include "playerdef.h"
 
-PPVAR(IDF_GAMEMOD,  health, 1, VAR_MAX,
-    100
+APSVAR(IDF_GAMEMOD,  vname,
+    "player",   "bot",      "turret",   "grunt",    "drone"
 );
-PPFVAR(IDF_GAMEMOD,  weight, 0, FVAR_MAX,
-    200
+APVAR(IDF_GAMEMOD,  abilities, 0, A_A_ALL,
+    A_A_ALL,    A_A_ALL,    0,          A_A_ALL,    A_A_ALL
 );
-PPFVAR(IDF_GAMEMOD,  scale, FVAR_NONZERO, FVAR_MAX,
-    1
+APVAR(IDF_GAMEMOD,  health, 1, VAR_MAX,
+    100,        100,        100,        50,         50
 );
-PPFVAR(IDF_GAMEMOD,  speed, FVAR_NONZERO, FVAR_MAX,
-    50
+APVAR(IDF_GAMEMOD,  weap, -1, W_MAX,
+    -1,         -1,         W_SMG,      W_PISTOL,   W_MELEE
+);
+APFVAR(IDF_GAMEMOD,  weight, 0, FVAR_MAX,
+    200,        200,        150,        200,        150
+);
+APFVAR(IDF_GAMEMOD,  scale, FVAR_NONZERO, FVAR_MAX,
+    1,          1,          1,          1,          1
+);
+APFVAR(IDF_GAMEMOD,  speed, 0, FVAR_MAX,
+    50,         50,         0,          50,         40
 );
 
 #define VANITYMAX 16

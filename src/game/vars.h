@@ -400,8 +400,6 @@ GSVAR(IDF_MODERATOR, botmalenames, "");
 GSVAR(IDF_MODERATOR, botfemalenames, "");
 GSVAR(IDF_MODERATOR, botmalevanities, "");
 GSVAR(IDF_MODERATOR, botfemalevanities, "");
-GFVAR(IDF_GAMEMOD, botspeed, 0, 1, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, botscale, FVAR_NONZERO, 1, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, coopbalance, FVAR_NONZERO, 1.5f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, coopmultibalance, FVAR_NONZERO, 2, FVAR_MAX);
 GVAR(IDF_GAMEMOD, coopskillmin, 1, 75, 101);
@@ -415,9 +413,6 @@ GVAR(IDF_GAMEMOD, enemylimit, 0, 32, MAXAI);
 GVAR(IDF_GAMEMOD, enemyspawntime, 1, 30000, VAR_MAX); // when enemies respawn
 GVAR(IDF_GAMEMOD, enemyspawndelay, 0, 1000, VAR_MAX); // after map start enemies first spawn
 GVAR(IDF_GAMEMOD, enemyspawnstyle, 0, 1, 3); // 0 = all at once, 1 = staggered, 2 = random, 3 = randomise between both
-GFVAR(IDF_GAMEMOD, enemyspeed, 0, 1, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, enemyscale, FVAR_NONZERO, 1, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, enemystrength, FVAR_NONZERO, 1, FVAR_MAX); // scale enemy health values by this much
 
 GFVAR(IDF_GAMEMOD, movespeed, FVAR_NONZERO, 125, FVAR_MAX); // speed
 GFVAR(IDF_GAMEMOD, moveslow, 0, 50, FVAR_MAX); // threshold for moving
@@ -451,7 +446,6 @@ GFVAR(IDF_GAMEMOD, impulseparkourclimbredir, 0, 1, FVAR_MAX); // how much of the
 GFVAR(IDF_GAMEMOD, impulseparkourvault, 0, 1.5f, FVAR_MAX); // parkour vault modifier
 GFVAR(IDF_GAMEMOD, impulseparkourvaultredir, 0, 1, FVAR_MAX); // how much of the old velocity is redirected into the new one
 GFVAR(IDF_GAMEMOD, impulseparkournorm, 0, 0.5f, FVAR_MAX); // minimum parkour surface z normal
-GVAR(IDF_GAMEMOD, impulseallowed, 0, IM_A_ALL, IM_A_ALL); // impulse actions allowed; bit: 0 = off, 1 = dash, 2 = boost, 4 = parkour
 GVAR(IDF_GAMEMOD, impulsestyle, 0, 1, 3); // impulse style; 0 = off, 1 = touch and count, 2 = count only, 3 = freestyle
 GVAR(IDF_GAMEMOD, impulsecount, 0, 6, VAR_MAX); // number of impulse actions per air transit
 GVAR(IDF_GAMEMOD, impulseslip, 0, 500, VAR_MAX); // time before floor friction kicks back in
@@ -465,7 +459,7 @@ GFVAR(IDF_GAMEMOD, impulsevaultmax, FVAR_NONZERO, 1.f, FVAR_MAX); // maximum per
 
 GVAR(IDF_GAMEMOD, impulsemeter, 1, 30000, VAR_MAX); // impulse dash length; timer
 GVAR(IDF_GAMEMOD, impulsecost, 1, 5000, VAR_MAX); // cost of impulse move
-GVAR(IDF_GAMEMOD, impulsecostrelax, 0, IM_A_RELAX, IM_A_ALL); // whether the cost of an impulse move is unimportant; bit: 0 = off, 1 = dash, 2 = boost, 4 = parkour
+GVAR(IDF_GAMEMOD, impulsecostrelax, 0, A_A_IMRELAX, A_A_IMOFFSET); // whether the cost of an impulse move is unimportant
 GVAR(IDF_GAMEMOD, impulsecostscale, 0, 0, 1); // whether the cost scales depend on the amount the impulse scales
 GVAR(IDF_GAMEMOD, impulseskate, 0, 1000, VAR_MAX); // length of time a run along a wall can last
 GFVAR(IDF_GAMEMOD, impulseregen, 0, 5, FVAR_MAX); // impulse regen multiplier

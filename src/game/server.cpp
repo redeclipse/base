@@ -632,7 +632,7 @@ namespace server
             if(v != m && (!m_team(gamemode, mutators) || v->team != m->team) && v->state.state == CS_ALIVE && hurt > 0)
             {
                 int real = int(ceilf(hurt*G(vampirescale))), heal = v->state.health+real;
-                if(v->state.actortype < A_ENEMY) heal = min(heal, m_maxhealth(gamemode, mutators, v->state.model));
+                if(v->state.actortype < A_ENEMY) heal = min(heal, m_maxhealth(gamemode, mutators, v->state.actortype));
                 int eff = heal-v->state.health;
                 if(eff > 0)
                 {
@@ -2067,16 +2067,15 @@ namespace server
     void sendspawn(clientinfo *ci)
     {
         servstate &gs = ci->state;
-        int weap = -1, health = 0;
+        int weap = -1, health = m_health(gamemode, mutators, ci->state.actortype);
         if(ci->state.actortype >= A_ENEMY)
         {
             bool hasent = sents.inrange(ci->state.spawnpoint) && sents[ci->state.spawnpoint].type == ACTOR;
             if(m_sweaps(gamemode, mutators)) weap = m_weapon(gamemode, mutators);
-            else weap = hasent && sents[ci->state.spawnpoint].attrs[6] > 0 ? sents[ci->state.spawnpoint].attrs[6]-1 : actor[ci->state.actortype].weap;
-            if(!m_insta(gamemode, mutators)) health = max(int((hasent && sents[ci->state.spawnpoint].attrs[7] > 0 ? sents[ci->state.spawnpoint].attrs[7] : actor[ci->state.actortype].health)*G(enemystrength)), 1);
-            if(!isweap(weap) || (!actor[ci->state.actortype].canmove && weaptype[weap].melee)) weap = -1; // let spawnstate figure it out
+            else weap = hasent && sents[ci->state.spawnpoint].attrs[6] > 0 ? sents[ci->state.spawnpoint].attrs[6]-1 : AA(ci->state.actortype, weap);
+            if(!m_insta(gamemode, mutators) && hasent && sents[ci->state.spawnpoint].attrs[7] > 0) health = max(sents[ci->state.spawnpoint].attrs[7], 1);
+            if(!isweap(weap) || (!(AA(ci->state.actortype, abilities)&(1<<A_A_MOVE)) && weaptype[weap].melee)) weap = -1; // let spawnstate figure it out
         }
-        else health = m_health(gamemode, mutators, ci->state.model);
         int spawn = pickspawn(ci);
         gs.spawnstate(gamemode, mutators, weap, health);
         sendf(ci->clientnum, 1, "ri9iv", N_SPAWNSTATE, ci->clientnum, spawn, gs.state, gs.points, gs.frags, gs.deaths, gs.health, gs.cptime, gs.weapselect, W_MAX, &gs.ammo[0]);
@@ -3952,7 +3951,7 @@ namespace server
         else
         {
             m->state.health = m->state.health-realdamage;
-            if(m->state.actortype < A_ENEMY) m->state.health = min(m->state.health, m_maxhealth(gamemode, mutators, m->state.model));
+            if(m->state.actortype < A_ENEMY) m->state.health = min(m->state.health, m_maxhealth(gamemode, mutators, m->state.actortype));
             if(realdamage > 0)
             {
                 hurt = min(m->state.health, realdamage);
@@ -4060,7 +4059,7 @@ namespace server
             bool isai = m->state.actortype >= A_ENEMY, isteamkill = false;
             int pointvalue = (smode && !isai ? smode->points(m, v) : fragvalue), style = FRAG_NONE;
             pointvalue *= isai ? G(enemybonus) : G(fragbonus);
-            if(realdamage >= (realflags&HIT_EXPLODE ? m_health(gamemode, mutators, m->state.model)/2 : m_health(gamemode, mutators, m->state.model)))
+            if(realdamage >= (realflags&HIT_EXPLODE ? m_health(gamemode, mutators, m->state.actortype)/2 : m_health(gamemode, mutators, m->state.actortype)))
                 style = FRAG_OBLITERATE;
             m->state.spree = 0;
             if(m_team(gamemode, mutators) && v->team == m->team)
@@ -4771,7 +4770,7 @@ namespace server
                 else if(ci->state.lastres[WR_SHOCK]) ci->state.lastres[WR_SHOCK] = ci->state.lastrestime[WR_SHOCK] = 0;
                 if(m_regen(gamemode, mutators) && ci->state.actortype < A_ENEMY)
                 {
-                    int total = m_health(gamemode, mutators, ci->state.model), amt = G(regenhealth),
+                    int total = m_health(gamemode, mutators, ci->state.actortype), amt = G(regenhealth),
                         delay = ci->state.lastregen ? G(regentime) : G(regendelay);
                     if(smode) smode->regen(ci, total, amt, delay);
                     if(delay && ci->state.health != total)
@@ -4784,7 +4783,7 @@ namespace server
                             {
                                 amt = -G(regendecay);
                                 total = ci->state.health;
-                                low = m_health(gamemode, mutators, ci->state.model);
+                                low = m_health(gamemode, mutators, ci->state.actortype);
                             }
                             int heal = clamp(ci->state.health+amt, low, total), eff = heal-ci->state.health;
                             if(eff)
@@ -4875,7 +4874,7 @@ namespace server
                 int waituntil = maxshutdownwait*(gs_playing(gamestate) ? 2000 : 1000);
                 if(totalmillis >= shutdownwait+waituntil)
                 {
-                    srvoutf(4, "waited \fs\fc%s\fS to shutdown, overriding and exiting...", timestr(totalmillis-shutdownwait, 4));
+                    srvoutf(-3, "waited \fs\fc%s\fS to shutdown, overriding and exiting...", timestr(totalmillis-shutdownwait, 4));
                     exit(EXIT_SUCCESS);
                     return;
                 }
@@ -4908,7 +4907,7 @@ namespace server
                             if(mapsending < 0) getmap(NULL, true);
                             if(mapsending >= 0)
                             {
-                                srvoutf(-3, "\fyplease wait while the server downloads the map..");
+                                srvoutf(4, "\fyplease wait while the server downloads the map..");
                                 gamewaittime = totalmillis+G(waitforplayermaps);
                                 gamestate = G_S_GETMAP;
                                 sendtick();
@@ -4926,7 +4925,7 @@ namespace server
                         if(!hasmapdata() && mapsending >= 0 && gamewaittime > totalmillis) break;
                         if(numgetmap && hasmapdata())
                         {
-                            srvoutf(-3, "\fyplease wait for \fs\fc%d\fS %s to download the map..", numgetmap, numgetmap != 1 ? "players" : "player");
+                            srvoutf(4, "\fyplease wait for \fs\fc%d\fS %s to download the map..", numgetmap, numgetmap != 1 ? "players" : "player");
                             gamewaittime = totalmillis+G(waitforplayermaps);
                             gamestate = G_S_SENDMAP;
                             sendtick();
@@ -4961,7 +4960,7 @@ namespace server
                             if(best)
                             {
                                 mapgameinfo = best->clientnum;
-                                srvoutf(-3, "\fyrequesting game information from %s..", colourname(best));
+                                srvoutf(4, "\fyrequesting game information from %s..", colourname(best));
                                 sendf(best->clientnum, 1, "ri", N_GETGAMEINFO);
                                 gamewaittime = totalmillis+G(waitforplayerinfo);
                                 gamestate = G_S_GAMEINFO;
@@ -4975,7 +4974,7 @@ namespace server
                     case G_S_GAMEINFO:
                     {
                         if(!hasgameinfo && gamewaittime > totalmillis) break;
-                        if(hasgameinfo) srvoutf(-3, "\fygame information received, starting..");
+                        if(hasgameinfo) srvoutf(4, "\fygame information received, starting..");
                         else
                         {
                             if(mapgameinfo != -2)
@@ -4989,16 +4988,16 @@ namespace server
                                     sendf(cs->clientnum, 1, "ri", N_GETGAMEINFO);
                                     asked++;
                                 }
-                                if(!asked) srvoutf(-3, "\fyno game information response, and nobody to ask, giving up..");
+                                if(!asked) srvoutf(4, "\fyno game information response, and nobody to ask, giving up..");
                                 else
                                 {
-                                    srvoutf(-3, "\fyno game information response, broadcasting..");
+                                    srvoutf(4, "\fyno game information response, broadcasting..");
                                     gamewaittime = totalmillis+G(waitforplayerinfo);
                                     sendtick();
                                     break;
                                 }
                             }
-                            else srvoutf(-3, "\fyno broadcast game information response, giving up..");
+                            else srvoutf(4, "\fyno broadcast game information response, giving up..");
                         }
                         mapgameinfo = -1;
                     }
@@ -5537,8 +5536,10 @@ namespace server
             int ret = receivefile(sender, p.buf, p.maxlen);
             if(ret == SENDMAP_ALL)
             {
+                clientinfo *cs = (clientinfo *)getinfo(mapsending);
                 if(hasmapdata())
                 {
+                    if(cs && !hasgameinfo) sendf(cs->clientnum, 1, "ri", N_GETGAMEINFO);
                     mapsending = -1;
                     sendf(-1, 1, "ri", N_SENDMAP);
                     loopv(clients)
@@ -5550,7 +5551,6 @@ namespace server
                 }
                 else
                 {
-                    clientinfo *cs = (clientinfo *)getinfo(mapsending);
                     if(cs) cs->wantsmap = true;
                     resetmapdata(true);
                 }

@@ -217,7 +217,7 @@ struct captureservmode : capturestate, servmode
     void regen(clientinfo *ci, int &total, int &amt, int &delay)
     {
         if(!canplay(hasflaginfo) || !G(captureregenbuff) || !ci->state.lastbuff) return;
-        if(G(maxhealth)) total = max(m_maxhealth(gamemode, mutators, ci->state.model), total);
+        if(G(maxhealth)) total = max(m_maxhealth(gamemode, mutators, ci->state.actortype), total);
         if(ci->state.lastregen && G(captureregendelay)) delay = G(captureregendelay);
         if(G(captureregenextra)) amt += G(captureregenextra);
     }

@@ -265,7 +265,7 @@ namespace entities
                 {
                     addentinfo(actor[attr[0]+A_ENEMY].name);
                     addmodeinfo(attr[3], attr[4]);
-                    addentinfo(W(attr[6] > 0 && attr[6] <= W_MAX ? attr[6]-1 : actor[attr[0]+A_ENEMY].weap, name));
+                    addentinfo(W(attr[6] > 0 && attr[6] <= W_MAX ? attr[6]-1 : AA(attr[0]+A_ENEMY, weap), name));
                 }
                 break;
             }
@@ -2298,9 +2298,9 @@ namespace entities
                             {
                                 yaw = e.attrs[1]+90;
                                 pitch = e.attrs[2];
-                                int weap = e.attrs[6] > 0 ? e.attrs[6]-1 : actor[e.attrs[0]].weap;
+                                int weap = e.attrs[6] > 0 ? e.attrs[6]-1 : AA(e.attrs[0], weap);
                                 if(isweap(weap)) colour = W(weap, colour);
-                                size = e.attrs[9] > 0 ? e.attrs[9]/100.f : actor[e.attrs[0]].scale;
+                                size = e.attrs[9] > 0 ? e.attrs[9]/100.f : AA(e.attrs[0], scale);
                             }
                             //fade = 0.5f;
                         }

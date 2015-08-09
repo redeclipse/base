@@ -320,7 +320,7 @@ struct bomberservmode : bomberstate, servmode
     void regen(clientinfo *ci, int &total, int &amt, int &delay)
     {
         if(!canplay(hasflaginfo) || !G(bomberregenbuff) || !ci->state.lastbuff) return;
-        if(G(maxhealth)) total = max(m_maxhealth(gamemode, mutators, ci->state.model), total);
+        if(G(maxhealth)) total = max(m_maxhealth(gamemode, mutators, ci->state.actortype), total);
         if(ci->state.lastregen && G(bomberregendelay)) delay = G(bomberregendelay);
         if(G(bomberregenextra)) amt += G(bomberregenextra);
     }

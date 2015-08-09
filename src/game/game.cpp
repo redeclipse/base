@@ -1014,18 +1014,17 @@ namespace game
 
     float rescale(gameent *d)
     {
-        float total = d->actortype != A_PLAYER ? (d->actortype >= A_ENEMY ? enemyscale : botscale) : PLAYER(d->model, scale);
+        float total = AA(d->actortype, scale);
         if(d->actortype >= A_ENEMY)
         {
             bool hasent = entities::ents.inrange(d->spawnpoint) && entities::ents[d->spawnpoint]->type == ACTOR;
             if(hasent && entities::ents[d->spawnpoint]->attrs[9] > 0) total *= (entities::ents[d->spawnpoint]->attrs[9]/100.f);
-            else total *= actor[clamp(d->actortype, int(A_PLAYER), int(A_MAX-1))].scale;
         }
         if(d->state != CS_SPECTATOR && d->state != CS_EDITING)
         {
             if(m_resize(gamemode, mutators))
             {
-                float minscale = 1, amtscale = m_insta(gamemode, mutators) ? 1+(d->spree*instaresizeamt) : max(d->health, 1)/float(d->actortype >= A_ENEMY ? actor[d->actortype].health*enemystrength : m_health(gamemode, mutators, d->model));
+                float minscale = 1, amtscale = m_insta(gamemode, mutators) ? 1+(d->spree*instaresizeamt) : max(d->health, 1)/float(m_health(gamemode, mutators, d->actortype));
                 if(m_resize(gamemode, mutators))
                 {
                     minscale = minresizescale;
@@ -1090,16 +1089,12 @@ namespace game
 
         d->setscale(rescale(d), curtime, false);
         d->speedscale = d->curscale;
-        if(d->actortype > A_PLAYER)
-        {
-            bool hasent = d->actortype >= A_ENEMY && entities::ents.inrange(d->spawnpoint) && entities::ents[d->spawnpoint]->type == ACTOR;
-            if(hasent && entities::ents[d->spawnpoint]->attrs[8] > 0) d->speedscale *= entities::ents[d->spawnpoint]->attrs[8]*enemyspeed;
-            else d->speedscale *= d->actortype >= A_ENEMY ? enemyspeed : botspeed;
-        }
+        bool hasent = d->actortype >= A_ENEMY && entities::ents.inrange(d->spawnpoint) && entities::ents[d->spawnpoint]->type == ACTOR;
+        if(hasent && entities::ents[d->spawnpoint]->attrs[8] > 0) d->speedscale *= entities::ents[d->spawnpoint]->attrs[8]/100.f;
 
         float offset = d->height;
         d->o.z -= d->height;
-        if(d->state == CS_ALIVE && actor[clamp(d->actortype, int(A_PLAYER), int(A_MAX-1))].cancrouch)
+        if(d->state == CS_ALIVE && AA(d->actortype, abilities)&(1<<A_A_CROUCH))
         {
             bool crouching = d->action[AC_CROUCH];
             float crouchoff = 1.f-CROUCHHEIGHT, zrad = d->zradius-(d->zradius*crouchoff);
@@ -1391,7 +1386,7 @@ namespace game
                 d->lastpain = lastmillis;
                 if(!WK(flags)) playsound(WSND2(weap, WS(flags), S_W_IMPACT), vec(d->center()).add(vec(dir).mul(dist)), NULL, 0, clamp(int(255*scale), 64, 255));
             }
-            if(actor[d->actortype].canmove)
+            if(AA(d->actortype, abilities)&(1<<A_A_MOVE))
             {
                 if(weap == -1 && shocking && shockstun)
                 {
@@ -2463,7 +2458,7 @@ namespace game
                 gameentity &e = *(gameentity *)entities::ents[i];
                 cament *c = cameras.add(new cament(cameras.length(), cament::ENTITY, i));
                 c->o = e.o;
-                c->o.z += (e.type == PLAYERSTART ? playerdims[0][2] : enttype[e.type].radius)+2;
+                c->o.z += (e.type == PLAYERSTART ? actor[A_PLAYER].height : enttype[e.type].radius)+2;
             }
             ai::getwaypoints();
             loopv(ai::waypoints)
@@ -2471,7 +2466,7 @@ namespace game
                 ai::waypoint &w = ai::waypoints[i];
                 cament *c = cameras.add(new cament(cameras.length(), cament::WAYPOINT, i));
                 c->o = w.o;
-                c->o.z += playerdims[0][2]+2;
+                c->o.z += actor[A_PLAYER].height+2;
             }
             starttvcamdyn = cameras.length();
             loopv(players) if(players[i])
@@ -2951,7 +2946,7 @@ namespace game
         else
         {
             bool melee = d->hasmelee(lastmillis, true, d->sliding(true), onfloor);
-            if(secondary && allowmove(d) && actor[d->actortype].canmove)
+            if(secondary && allowmove(d) && AA(d->actortype, abilities)&(1<<A_A_MOVE))
             {
                 if(physics::liquidcheck(d) && d->physstate <= PHYS_FALL)
                     anim |= ((d->move || d->strafe || d->vel.z+d->falling.z>0 ? int(ANIM_SWIM) : int(ANIM_SINK))|ANIM_LOOP)<<ANIM_SECONDARY;
@@ -2978,7 +2973,7 @@ namespace game
                         anim |= ANIM_FLYKICK<<ANIM_SECONDARY;
                         basetime2 = d->weaplast[W_MELEE];
                     }
-                    else if(d->action[AC_CROUCH] || d->actiontime[AC_CROUCH]<0)
+                    else if(d->crouching())
                     {
                         if(d->move>0) anim |= ANIM_CROUCH_JUMP_FORWARD<<ANIM_SECONDARY;
                         else if(d->strafe) anim |= (d->strafe>0 ? ANIM_CROUCH_JUMP_LEFT : ANIM_CROUCH_JUMP_RIGHT)<<ANIM_SECONDARY;
@@ -3391,7 +3386,7 @@ namespace game
                     }
                     else if(playerhintscale > 0)
                     {
-                        float per = d->health/float(m_health(gamemode, mutators, d->model));
+                        float per = d->health/float(m_health(gamemode, mutators, d->actortype));
                         fade = (fade*(1.f-playerhintscale))+(fade*per*playerhintscale);
                         if(fade > 1)
                         {

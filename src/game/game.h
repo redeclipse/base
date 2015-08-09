@@ -215,7 +215,6 @@ enum {
     AC_ALL = (1<<AC_PRIMARY)|(1<<AC_SECONDARY)|(1<<AC_RELOAD)|(1<<AC_USE)|(1<<AC_JUMP)|(1<<AC_WALK)|(1<<AC_CROUCH)|(1<<AC_SPECIAL)|(1<<AC_DROP)|(1<<AC_AFFINITY)
 };
 enum { IM_METER = 0, IM_TYPE, IM_TIME, IM_REGEN, IM_COUNT, IM_COLLECT, IM_SLIP, IM_SLIDE, IM_JUMP, IM_MAX };
-enum { IM_A_NONE = 0, IM_A_DASH = 1<<0, IM_A_BOOST = 1<<1, IM_A_PARKOUR = 1<<2, IM_A_ALL = IM_A_DASH|IM_A_BOOST|IM_A_PARKOUR, IM_A_RELAX = IM_A_PARKOUR };
 enum { IM_T_NONE = 0, IM_T_BOOST, IM_T_DASH, IM_T_MELEE, IM_T_KICK, IM_T_VAULT, IM_T_SKATE, IM_T_MAX, IM_T_WALL = IM_T_MELEE };
 enum { SPHY_NONE = 0, SPHY_JUMP, SPHY_BOOST, SPHY_DASH, SPHY_MELEE, SPHY_KICK, SPHY_VAULT, SPHY_SKATE, SPHY_COOK, SPHY_EXTINGUISH, SPHY_BUFF, SPHY_MAX, SPHY_SERVER = SPHY_BUFF };
 
@@ -757,11 +756,11 @@ struct clientstate
     void spawnstate(int gamemode, int mutators, int sweap, int heal)
     {
         weapreset(true);
-        health = heal > 0 ? heal : (actortype >= A_ENEMY ? (m_insta(gamemode, mutators) ? 1 : actor[actortype].health) : m_health(gamemode, mutators, model));
+        health = heal > 0 ? heal : (m_insta(gamemode, mutators) ? 1 : m_health(gamemode, mutators, actortype));
         int s = sweap;
         if(!isweap(s))
         {
-            if(actortype >= A_ENEMY) s = actor[actortype].weap;
+            if(actortype >= A_ENEMY) s = AA(actortype, weap);
             else if(m_kaboom(gamemode, mutators)) s = W_GRENADE;
             else s = isweap(m_weapon(gamemode, mutators)) ? m_weapon(gamemode, mutators) : W_PISTOL;
         }
@@ -770,7 +769,7 @@ struct clientstate
             ammo[s] = max(1, W(s, ammomax));
             weapselect = s;
         }
-        if(s != W_MELEE && actor[actortype].canmove) ammo[W_MELEE] = max(1, W(W_MELEE, ammomax));
+        if(s != W_MELEE && AA(actortype, abilities)&(1<<A_A_MOVE)) ammo[W_MELEE] = max(1, W(W_MELEE, ammomax));
         if(actortype < A_ENEMY)
         {
             if(!m_race(gamemode) || m_gsp3(gamemode, mutators))
@@ -813,7 +812,7 @@ struct clientstate
     void editspawn(int gamemode, int mutators)
     {
         clearstate();
-        spawnstate(gamemode, mutators, m_weapon(gamemode, mutators), m_health(gamemode, mutators, model));
+        spawnstate(gamemode, mutators, m_weapon(gamemode, mutators), m_health(gamemode, mutators, actortype));
     }
 
     int respawnwait(int millis, int delay)
@@ -990,22 +989,11 @@ struct gameent : dynent, clientstate
     void setparams()
     {
         int type = clamp(actortype, 0, int(A_MAX-1));
-        if(type >= A_ENEMY)
-        {
-            xradius = actor[type].xradius*curscale;
-            yradius = actor[type].yradius*curscale;
-            zradius = height = actor[type].height*curscale;
-            speed = actor[type].speed;
-            weight = actor[type].weight*curscale;
-        }
-        else
-        {
-            xradius = playerdims[model][0]*curscale;
-            yradius = playerdims[model][1]*curscale;
-            zradius = height = playerdims[model][2]*curscale;
-            speed = PLAYER(model, speed);
-            weight = PLAYER(model, weight)*curscale;
-        }
+        xradius = actor[type].xradius*curscale;
+        yradius = actor[type].yradius*curscale;
+        zradius = height = actor[type].height*curscale;
+        speed = AA(type, speed);
+        weight = AA(type, weight)*curscale;
         radius = max(xradius, yradius);
         aboveeye = curscale;
     }
@@ -1014,12 +1002,11 @@ struct gameent : dynent, clientstate
     {
         if(scale != curscale)
         {
-            if(state == CS_ALIVE && millis > 0)
+            if(!reset && state == CS_ALIVE && millis > 0)
                 curscale = scale > curscale ? min(curscale+millis/2000.f, scale) : max(curscale-millis/2000.f, scale);
             else curscale = scale;
-            setparams();
         }
-        else if(reset) setparams();
+        setparams();
     }
 
     int getprojid()
@@ -1380,6 +1367,7 @@ struct gameent : dynent, clientstate
 
     bool hasmelee(int millis, bool check = false, bool slide = false, bool onfloor = true, bool can = true)
     {
+        if(!AA(actortype, abilities)&(1<<A_A_MELEE)) return false;
         if(check && (!action[AC_SPECIAL] || onfloor) && !slide) return false;
         if(can && (weapstate[W_MELEE] != W_S_SECONDARY || millis-weaplast[W_MELEE] >= weapwait[W_MELEE])) return false;
         return true;
@@ -1402,6 +1390,7 @@ struct gameent : dynent, clientstate
 
     bool crouching(bool limit = false)
     {
+        if(!AA(actortype, abilities)&(1<<A_A_CROUCH)) return false;
         return action[AC_CROUCH] || actiontime[AC_CROUCH] < 0 || (!limit && lastmillis-actiontime[AC_CROUCH] <= PHYSMILLIS);
     }
 
