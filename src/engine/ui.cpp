@@ -15,7 +15,7 @@ static bool fieldsactive = false;
 FVAR(IDF_PERSIST, guiscale, FVAR_MIN, 0.0002f, VAR_MAX);
 FVAR(IDF_PERSIST, guitextscale, FVAR_MIN, 2.75f, VAR_MAX);
 VAR(IDF_PERSIST, guiskinsize, 0, 0, VAR_MAX); // 0 = texture size, otherwise = size in pixels for skin scaling
-VAR(IDF_PERSIST, guislidersize, 1, 164, VAR_MAX);
+VAR(IDF_PERSIST, guislidersize, 1, 144, VAR_MAX);
 VAR(IDF_PERSIST, guisepsize, 1, 6, VAR_MAX);
 VAR(IDF_PERSIST, guispacesize, 1, 128, VAR_MAX);
 VAR(IDF_PERSIST, guitooltipwidth, -1, -1, VAR_MAX);
@@ -132,8 +132,20 @@ struct gui : guient
                             break;
                     }
                     if(!t) break;
-                    int w = max(x2-x1, 4), h = max(y2-y1, 4), tw = min(guiskinsize ? guiskinsize : t->w, w), th = min(guiskinsize ? guiskinsize : t->h, h);
+                    int w = max(x2-x1, 2), h = max(y2-y1, 2), tw = guiskinsize ? guiskinsize : t->w, th = guiskinsize ? guiskinsize : t->h;
                     float pw = tw*0.25f, ph = th*0.25f, qw = tw*0.5f, qh = th*0.5f, px = 0, py = 0, tx = 0, ty = 0;
+                    if(w < qw)
+                    {
+                        float scale = w/qw;
+                        qw *= scale; qh *= scale;
+                        pw *= scale; ph *= scale;
+                    }
+                    if(h < qh)
+                    {
+                        float scale = h/qh;
+                        qw *= scale; qh *= scale;
+                        pw *= scale; ph *= scale;
+                    }
                     int cw = max(int(floorf(w/qw))-1, 0), ch = max(int(floorf(h/qh))+1, 2);
 
                     glBindTexture(GL_TEXTURE_2D, t->id);
