@@ -119,20 +119,20 @@ WPSVAR(IDF_GAMEMOD, longname, // shown for weapon pickups and loadout menu
 );
 
 WPSVARM(IDF_GAMEMOD, desc,
-    "punch 'em up!",
+    "a weak punch attack, available only in race mode or custom games.",
     "long-range, low-damage bullets with a high rate of fire.",
     "horizontal slice, low-damage, can be swung at short intervals.",
-    "fires a lot of pellets. causes mass destruction at short range, useless at long range.",
-    "rapid-fire bullets that bounce off walls.",
+    "fires a lot of pellets, causes mass destruction at short range, useless at long range.",
+    "rapid-fire bullets that bounce off walls and knock back the victim.",
     "short-ranged flamethrower, barbecue your foes.",
-    "fires plasma balls at a high rate with high damage, but low accuracy.",
-    "instantly electrocutes your enemies, slowing them down drastically.",
-    "fires a non-charged laser.",
+    "fires plasma balls at a high rate with high damage, but relatively low accuracy and velocity.",
+    "a rapid-fire electric attack that hits almost instantly, great to finish off a wounded foe.",
+    "fires a non-charged laser that deals damage in a small area.",
     "a simple explosion device, can be cooked to control detonation delay.",
-    "explodes and discharges electricity when someone comes too close.",
+    "explodes and discharges electricity when someone comes too close, slowing them down greatly.",
     "a fast, highly explosive rocket with a large shockwave.",
     // begin secondary
-    "kicks or slides.",
+    "use kicks, slides or parkour moves as melee attacks.",
     "slower rate of fire than the primary attack, but does more damage.",
     "vertical slice, swung at slower intervals than the horizontal slice, powerful when used correctly.",
     "long-range slug, high damage, disintegrates into shavings.",
@@ -140,10 +140,10 @@ WPSVARM(IDF_GAMEMOD, desc,
     "versatile air blast to extinguish teammates or blast players off their feet.",
     "a charged, quickly-expanding ball of plasma that quickly sucks players in, causing great damage.",
     "a large electric discharge, can overload the victim's armor with electricity, slowing them down drastically.",
-    "charged laser with adjustable zoom.",
-    "a simple explosion device that sticks to whatever it hits.",
-    "emits a laser, which when tripped causes a massive electric discharge, overloading the victim's armor, stunning them.",
-    "a slower highly-explosive guided rocket."
+    "charged and focussed laser with great precision and adjustable zoom.",
+    "sticks to whatever it hits, but has a smaller area of effect than the primary mode.",
+    "emits a laser trap, which when tripped detonates the mine and slows the victim greatly even at long distances.",
+    "a guided rocket that moves significantly slower than the primary fire mode."
 );
 
 WPSVAR(IDF_GAMEMOD,  name, // keep this incase longname is too long
