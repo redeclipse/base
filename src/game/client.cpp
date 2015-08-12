@@ -2678,24 +2678,19 @@ namespace client
                     int num = getint(p), ctime = getint(p), len = getint(p);
                     getstring(text, p);
                     conoutft(CON_EVENT, "\fydemo \fs\fc%s\fS recorded \fs\fc%s UTC\fS [\fs\fw%.2f%s\fS]", text, gettime(ctime, "%Y-%m-%d %H:%M.%S"), len > 1024*1024 ? len/(1024*1024.f) : len/1024.0f, len > 1024*1024 ? "MB" : "kB");
-                    if(demoautoclientsave)
-                    {
-                        getdemo(num, "");
-                    }
+                    if(demoautoclientsave) getdemo(num, "");
+                    break;
                 }
 
                 case N_CURRENTPRIV:
                 {
                     int mn = getint(p), priv = getint(p);
                     getstring(text, p);
-                    if(mn >= 0)
+                    gameent *m = game::getclient(mn);
+                    if(m)
                     {
-                        gameent *m = game::getclient(mn);
-                        if(m)
-                        {
-                            m->privilege = priv;
-                            copystring(m->handle, text);
-                        }
+                        m->privilege = priv;
+                        copystring(m->handle, text);
                     }
                     break;
                 }
@@ -3001,7 +2996,7 @@ namespace client
                     getstring(text, p);
                     if(accountname[0] && accountpass[0])
                     {
-                        conoutf("identifying as: \fs\fc%s\fS (\fs\fy%d\fS)", accountname, id);
+                        conoutf("identifying as: \fs\fc%s\fS (\fs\fy%u\fS)", accountname, id);
                         vector<char> buf;
                         answerchallenge(accountpass, text, buf);
                         addmsg(N_AUTHANS, "ris", id, buf.getbuf());

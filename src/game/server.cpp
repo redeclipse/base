@@ -2430,8 +2430,9 @@ namespace server
         setpause(false);
         checkdemorecord(true);
         setmod(sv_botoffset, 0);
-        if(G(resetmmonend) >= 2) { mastermode = MM_OPEN; resetallows(); }
+        if(G(resetmmonend) >= 2) mastermode = MM_OPEN;
         if(G(resetvarsonend) >= 2) resetgamevars(true, false);
+        if(G(resetallowsonend) >= 2) resetallows();
         if(G(resetbansonend) >= 2) resetbans();
         if(G(resetmutesonend) >= 2) resetmutes();
         if(G(resetlimitsonend) >= 2) resetlimits();
