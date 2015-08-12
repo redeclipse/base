@@ -89,7 +89,8 @@ namespace projs
         else return 0;
 
         if(radial > 0) skew *= clamp(1.f-dist/size, 1e-6f, 1.f);
-        else if(WF(WK(flags), weap, taper, WS(flags))) skew *= clamp(dist, 0.f, 1.f);
+        else if(WF(WK(flags), weap, taper, WS(flags)))
+            skew *= clamp(dist, WF(WK(flags), weap, tapermin, WS(flags)), WF(WK(flags), weap, tapermax, WS(flags)));
 
         if(!m_insta(game::gamemode, game::mutators))
         {
@@ -1252,25 +1253,25 @@ namespace projs
                     if(distance > WF(WK(proj.flags), proj.weap, taperout, WS(proj.flags)))
                     {
                         proj.state = CS_DEAD;
-                        proj.lifesize = 0;
+                        proj.lifesize = WF(WK(proj.flags), proj.weap, tapermin, WS(proj.flags));
                         break;
                     }
                     else if(distance > WF(WK(proj.flags), proj.weap, taperin, WS(proj.flags)))
                     {
                         if(type%2 || !proj.stuck)
                         {
-                            float dist = distance-WF(WK(proj.flags), proj.weap, taperin, WS(proj.flags));
-                            proj.lifesize = 1-(dist/WF(WK(proj.flags), proj.weap, taperout, WS(proj.flags)));
+                            float dist = 1-((distance-WF(WK(proj.flags), proj.weap, taperin, WS(proj.flags)))/WF(WK(proj.flags), proj.weap, taperout, WS(proj.flags)));
+                            proj.lifesize = clamp(dist, WF(WK(proj.flags), proj.weap, tapermin, WS(proj.flags)), WF(WK(proj.flags), proj.weap, tapermax, WS(proj.flags)));
                         }
                         break;
                     }
                 }
                 if(distance < WF(WK(proj.flags), proj.weap, taperin, WS(proj.flags)))
                 {
-                    proj.lifesize = distance/WF(WK(proj.flags), proj.weap, taperin, WS(proj.flags));
+                    proj.lifesize = clamp(distance/WF(WK(proj.flags), proj.weap, taperin, WS(proj.flags)), WF(WK(proj.flags), proj.weap, tapermin, WS(proj.flags)), WF(WK(proj.flags), proj.weap, tapermax, WS(proj.flags)));
                     break;
                 }
-                proj.lifesize = 1;
+                proj.lifesize = WF(WK(proj.flags), proj.weap, tapermax, WS(proj.flags));
                 break;
             }
             case 1: case 2: case 3: case 4:
@@ -1301,20 +1302,20 @@ namespace projs
                 {
                     if(proj.lifespan < spanin)
                     {
-                        proj.lifesize = clamp(proj.lifespan/spanin, 0.f, 1.f);
+                        proj.lifesize = clamp(proj.lifespan/spanin, WF(WK(proj.flags), proj.weap, tapermin, WS(proj.flags)), WF(WK(proj.flags), proj.weap, tapermax, WS(proj.flags)));
                         break;
                     }
                     else if(spanout > 0 && proj.lifespan > (1-spanout))
                     {
                         if(type%2 || !proj.stuck)
-                            proj.lifesize = clamp(1-((proj.lifespan-(1-spanout))/spanout), 0.f, 1.f);
+                            proj.lifesize = clamp(1-((proj.lifespan-(1-spanout))/spanout), WF(WK(proj.flags), proj.weap, tapermin, WS(proj.flags)), WF(WK(proj.flags), proj.weap, tapermax, WS(proj.flags)));
                         break;
                     }
                 }
-                proj.lifesize = 1;
+                proj.lifesize = WF(WK(proj.flags), proj.weap, tapermax, WS(proj.flags));
                 break;
             }
-            default: proj.lifesize = 1; break;
+            default: proj.lifesize = WF(WK(proj.flags), proj.weap, tapermax, WS(proj.flags)); break;
         }
     }
 

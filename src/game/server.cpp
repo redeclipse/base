@@ -4273,7 +4273,8 @@ namespace server
         else return 0;
 
         if(radial > 0) skew *= clamp(1.f-dist/size, 1e-6f, 1.f);
-        else if(WF(WK(flags), weap, taper, WS(flags))) skew *= clamp(dist, 0.f, 1.f);
+        else if(WF(WK(flags), weap, taper, WS(flags)))
+            skew *= clamp(dist, WF(WK(flags), weap, tapermin, WS(flags)), WF(WK(flags), weap, tapermax, WS(flags)));
 
         if(!m_insta(gamemode, mutators))
         {
