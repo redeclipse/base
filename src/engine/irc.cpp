@@ -652,12 +652,9 @@ void ircprocess(ircnet *n, char *user[3], int g, int numargs, char *w[])
             }
             case 433:
             {
-                if(n->state == IRC_CONN)
-                {
-                    concatstring(n->nick, "_");
-                    ircsend(n, "NICK %s", n->nick);
-                    n->lastnick = clocktime;
-                }
+                concatstring(n->nick, "_");
+                ircsend(n, "NICK %s", n->nick);
+                n->lastnick = clocktime;
                 break;
             }
             case 471:
