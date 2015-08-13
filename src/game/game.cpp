@@ -1839,14 +1839,16 @@ namespace game
 
     void resetmap(bool empty) // called just before a map load
     {
-        if(!empty) smartmusic(true);
     }
 
     void startmap(bool empty) // called just after a map load
     {
         ai::startmap(empty);
-        gamestate = G_S_WAITING;
-        maptime = 0;
+        if(!empty)
+        {
+            gamestate = G_S_WAITING;
+            maptime = 0;
+        }
         specreset();
         removedamagemergeall();
         removeannounceall();
@@ -1860,8 +1862,8 @@ namespace game
         int numdyns = numdynents();
         loopi(numdyns) if((d = (gameent *)iterdynents(i)) && gameent::is(d)) d->mapchange(lastmillis, gamemode, mutators);
         entities::spawnplayer(player1); // prevent the player from being in the middle of nowhere
-        resetcamera();
         if(showloadoutmenu && m_loadout(gamemode, mutators)) wantsloadoutmenu = true;
+        resetcamera();
     }
 
     gameent *intersectclosest(vec &from, vec &to, gameent *at)

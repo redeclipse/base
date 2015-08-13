@@ -1155,8 +1155,7 @@ bool load_world(const char *mname, int crc)       // still supports all map form
         setnames(mname, format, tempfile && crc > 0 ? crc : 0);
 
         int filecrc = crcfile(mapfile);
-        conoutf("checking map: %s [0x%.8x] (need: 0x%.8x)", mapfile, filecrc, crc);
-
+        if(crc > 0) conoutf("checking map: %s [0x%.8x] (need: 0x%.8x)", mapfile, filecrc, crc);
         if(!tempfile && crc > 0 && crc != filecrc)
         {
             maskpackagedirs(mask);

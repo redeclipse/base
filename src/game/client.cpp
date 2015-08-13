@@ -1223,19 +1223,20 @@ namespace client
         else if(m_defend(game::gamemode)) defend::reset();
         else if(m_bomber(game::gamemode)) bomber::reset();
         needsmap = gettingmap = false;
-        if(crc < 0 || !name || !*name || !load_world(name, crc))
+        smartmusic(true);
+        if(crc < -1 || !name || !*name || !load_world(name, crc)) switch(crc)
         {
-            emptymap(0, true, name);
-            switch(crc)
-            {
-                case -1:
-                    needsmap = gettingmap = false;
-                    sendcrcinfo = true; // the server wants us to start
-                    break;
-                case -2:
-                    conoutf("waiting for server to request the map..");
-                default: needsmap = true; break;
-            }
+            case -1:
+                if(!mapcrc) emptymap(0, true, name);
+                needsmap = gettingmap = false;
+                sendcrcinfo = true; // the server wants us to start
+                break;
+            case -2:
+                conoutf("waiting for server to request the map..");
+            default:
+                emptymap(0, true, name);
+                needsmap = true;
+                break;
         }
         else sendcrcinfo = true;
         if(m_capture(game::gamemode)) capture::setup();
@@ -2965,7 +2966,7 @@ namespace client
                     else enlargemap(false, true);
                     mapvotes.shrink(0);
                     needsmap = false;
-                    if(d && d != game::player1)
+                    if(d)
                     {
                         int newsize = 0;
                         while(1<<newsize < getworldsize()) newsize++;
