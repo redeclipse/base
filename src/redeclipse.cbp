@@ -1946,7 +1946,7 @@
 			<Option target="redeclipse_server-amd64" />
 			<Option target="redeclipse_server-amd64-dbg" />
 		</Unit>
-		<Unit filename="sqlite/sqlite.c">
+		<Unit filename="sqlite/sqlite3.c">
 			<Option target="redeclipse-x86" />
 			<Option target="redeclipse-x86-dbg" />
 			<Option target="redeclipse_server-x86" />
@@ -1958,7 +1958,7 @@
 			<Option target="redeclipse_server-amd64" />
 			<Option target="redeclipse_server-amd64-dbg" />
 		</Unit>
-		<Unit filename="sqlite/sqlite.h">
+		<Unit filename="sqlite/sqlite3.h">
 			<Option target="redeclipse-x86" />
 			<Option target="redeclipse-x86-dbg" />
 			<Option target="redeclipse-x86-prof" />
