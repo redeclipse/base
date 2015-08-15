@@ -42,90 +42,90 @@ Files: config/*
 Copyright: 2009-2015, Red Eclipse Team
 License: Zlib
 
-Files: maps/biolytic* maps/darkness* maps/mist* maps/nova*
-       maps/panic* maps/oneiroi* maps/processing*
-       maps/vault*
+Files: data/maps/biolytic* data/maps/darkness* data/maps/mist* data/maps/nova*
+       data/maps/panic* data/maps/oneiroi* data/maps/processing*
+       data/maps/vault*
 Copyright: 2009-2013, Derek "favorito" Ponicki <favorito.redeclipse@gmail.com>
 License: Zlib
 
-Files: maps/deadsimple*
+Files: data/maps/deadsimple*
 Copyright: Jonathan 'Wicked' Roels
            2013 Ulukai <jonathan.denil@gmail.com>
 License: CC-BY-SA-3.0
 
-Files: maps/ares* maps/canals* maps/conflict* maps/enyo*
-       ulukai/*
+Files: data/maps/ares* data/maps/canals* data/maps/conflict* data/maps/enyo*
+       data/ulukai/*
 Copyright: 2011-2013, Ulukai <jonathan.denil@gmail.com>
 License: CC-BY-SA-3.0
 
-Files: maps/keystone2k* maps/livefire*
+Files: data/maps/keystone2k* data/maps/livefire*
 Copyright: 2012-2013, John_III <snaginneb@yahoo.com>
 License: CC-BY-SA-3.0
 
-Files: maps/neodrive* maps/wardepot*
+Files: data/maps/neodrive* data/maps/wardepot*
 Copyright: 2012-2013, Kirill "TristamK" Kolesnikov <tristamk@bk.ru>
 License: CC-BY-SA-3.0
 
-Files: maps/cutec*
+Files: data/maps/cutec*
 Copyright: 2012-2013, Raiden
 License: CC-BY-SA-3.0
 
-Files: maps/erosion* maps/suspended*
+Files: data/maps/erosion* data/maps/suspended*
 Copyright: 2012-2013 Matt "greasepirate" Kalt
 License: CC-BY-3.0
 
-Files: maps/battlefield*
+Files: data/maps/battlefield*
 Copyright: 2012-2013, Quinton Reeves, Ulukai <jonathan.denil@gmail.com>
 License: CC-BY-SA-3.0+
 
-Files: maps/cyanide* maps/decay* maps/octavus*
+Files: data/maps/cyanide* data/maps/decay* data/maps/octavus*
 Copyright: 2013 Ricky Thomson "unixfreak" <punkalert@gmail.com>
 License: CC-BY-SA-3.0
 
-Files: maps/steelrat*
+Files: data/maps/steelrat*
 Copyright: 2012 Kirill "TristamK" Kolesnikov <tristamk@bk.ru>
            2012-2013 D.a.M.i.E.n. <daymeenn@gmail.com>
 License: CC-BY-SA-3.0
 
-Files: maps/venus*
+Files: data/maps/venus*
 Copyright: 2011-2013, Red Eclipse Team
            2013, Ulukai <jonathan.denil@gmail.com>
 License: CC-BY-SA-3.0
 
-Files: maps/bloodlust*
+Files: data/maps/bloodlust*
 Copyright: 2013 Joseph "ballist1c" Calabria
            2013 Matt "greaserpirate" Kalt
 License: CC-BY-SA-3.0
 
-Files: maps/abuse*
+Files: data/maps/abuse*
 Copyright: 2013, Joseph "ballist1c" Calabria
 License: CC-BY-SA-3.0
 
-Files: maps/castle* maps/rooftop*
+Files: data/maps/castle* data/maps/rooftop*
 Copyright: 2014, Fatony
 License: CC0-1.0
 
-Files: maps/fortitude*
+Files: data/maps/fortitude*
 Copyright: 2014, James "Max Payne" Tonjes <tonjesjames@gmail.com>
 License: CC-BY-SA-3.0
 
-Files: maps/relax* maps/tonatiuh*
+Files: data/maps/relax* data/maps/tonatiuh*
 Copyright: 2013-2014, Bonifarz <bonifarz@gmx.ch>
 License: CC-BY-SA-3.0
 
-Files: jwin/*
+Files: data/jwin/*
 Copyright: JWindecker <jacobwindecker@hotmail.com>
 License: CC-BY-3.0
 
-Files: appleflap/*
+Files: data/appleflap/*
 Copyright: Jeroen "appleflap" Boukens
 License: CC-BY-SA-3.0
 
-Files: freezurbern/*
+Files: data/freezurbern/*
 Copyright: 2009, 2012, Zachery "freezurbern" Slocum <freezurbern@gmail.com>
 License: CC-BY-SA-3.0
 
-Files: ulukai/redeclipse*
+Files: data/ulukai/redeclipse*
 Copyright: 1999 Luc Viatour
            2013 Dratz-C
            2013 Ulukai <jonathan.denil@gmail.com>
@@ -134,117 +134,117 @@ Comment:
  sources: https://commons.wikimedia.org/wiki/File:Solar_eclips_1999_4.jpg
           http://www.lucnix.be/v/Astronomy/Solar+eclipse+1999+Luc+Viatour.jpg.html
 
-Files: crosshairs/*
+Files: data/crosshairs/*
 Copyright: 2011, fluxord <fluxord> at <yahoo.com>
 License: CC-BY-SA-3.0
 
-Files: crosshairs/fed* crosshairs/trident*
+Files: data/crosshairs/fed* data/crosshairs/trident*
 Copyright: 2014, pyccna
 License: CC-BY-SA-3.0
 
-Files: skyboxes/gradient* skyboxes/stars*
+Files: data/skyboxes/gradient* data/skyboxes/stars*
 Copyright: Quinton Reeves <qreeves@gmail.com>
 License: CC-BY-SA-3.0+
 
-Files: skyboxes/sunsetflat*
+Files: data/skyboxes/sunsetflat*
 Copyright: 2009, LedIris
 License: Zlib
 
-Files: skyboxes/skyhigh*
+Files: data/skyboxes/skyhigh*
 Copyright: Pieter Verhoeven
 License: CC-BY-SA-3.0
 
-Files: particles/entity.png particles/lightning.png
-       particles/hint.png particles/mflare.png
-       particles/sflare.png particles/spark.png
+Files: data/particles/entity.png data/particles/lightning.png
+       data/particles/hint.png data/particles/mflare.png
+       data/particles/sflare.png data/particles/spark.png
 Copyright: Quinton Reeves <qreeves@gmail.com>
 License: CC-BY-SA-3.0+
 
-Files: skyboxes/interstellar* skyboxes/miramar*
-       skyboxes/stormydays*
+Files: data/skyboxes/interstellar* data/skyboxes/miramar*
+       data/skyboxes/stormydays*
 Copyright: Jockum "hipshot" Skoglund <hipshot@zfight.com>
 License: CC-BY-3.0
 
-Files: elyvisions/*
+Files: data/elyvisions/*
 Copyright: 2012 3delyvisions
 License: CC-BY-3.0
 
-Files: mayhem/*
+Files: data/mayhem/*
 Copyright: Mayhem
 License: CC-BY-SA-3.0
 
-Files: philipk/*
+Files: data/philipk/*
 Copyright: Philip Klevestav <philipk@philipk.net>
 License: CC-BY-3.0
 
-Files: particles/bullet.png
-       particles/energy.png
-       particles/scorch.png
-       particles/blob.png
+Files: data/particles/bullet.png
+       data/particles/energy.png
+       data/particles/scorch.png
+       data/particles/blob.png
 Copyright: public-domain
 License: public-domain
  public-domain sources
 
-Files: particles/smoke.png particles/explosion.png
-       textures/lava.jpg
+Files: data/particles/smoke.png data/particles/explosion.png
+       data/textures/lava.jpg
 Copyright: RaZgRiZ
 License: RaZgRiZ-simple-attribution
  Created by RaZgRiZ Made with Filter Forge II Beta 3
  Licensed publicly for everyone to use, modify and distribute as long as the
  author is credited for the original work.
 
-Files: particles/blood.png
-       particles/fire.png
+Files: data/particles/blood.png
+       data/particles/fire.png
 Copyright: FischKopF
 License: FischKopF-public-domain
  Created by FischKopF, source: http://www.quadropolis.us/node/2693
  Uploaded explicitly as "Public Domain", with the additional comment:
  "Feel free to edit, claim it's yours, use it in own projects"
 
-Files: trak/trak4/* trak/trak6/* trak/trak7/*
+Files: data/trak/trak4/* data/trak/trak6/* data/trak/trak7/*
 Copyright: Georges 'TRaK' Grondin <drognin@gmail.com>
 License: CC-BY-3.0
 
-Files: trak/trak5/*
+Files: data/trak/trak5/*
 Copyright: 2009, Georges 'TRaK' Grondin
            http://trak.mercenariesguild.net/
 License: Expat
 
-Files: models/weapons/flamer/* models/actors/turret/*
+Files: data/models/weapons/flamer/* data/models/actors/turret/*
 Copyright: Mike Ledger ( mikeplus[i] )
 License: CC-BY-SA-3.0-AU
 
-Files: models/weapons/plasma/* models/weapons/zapper/*
+Files: data/models/weapons/plasma/* data/models/weapons/zapper/*
 Copyright: Unnamed <Viktor.Hahn@web.de>
 License: CC-BY-SA-3.0-AU
 
-Files: models/john/*
+Files: data/models/john/*
 Copyright: John_III
 License: CC-BY-SA-3.0
 
-Files: models/acerspyro/*
+Files: data/models/acerspyro/*
 Copyright: Maxim "acerspyro" Therrien
 License: CC-BY-SA-3.0
 
-Files: models/vanities/antenna/* models/vanities/blade/*
-       models/vanities/boots* models/vanities/chestplate/*
-       models/vanities/disc/* models/vanities/mask/*
-       models/vanities/microeye/* models/vanities/prongs/*
-       models/vanities/shoulder2/* models/vanities/shoulder3/*
+Files: data/models/vanities/antenna/* data/models/vanities/blade/*
+       data/models/vanities/boots* data/models/vanities/chestplate/*
+       data/models/vanities/disc/* data/models/vanities/mask/*
+       data/models/vanities/microeye/* data/models/vanities/prongs/*
+       data/models/vanities/shoulder2/* data/models/vanities/shoulder3/*
 Copyright: Unnamed <Viktor.Hahn@web.de>
 License: CC-BY-SA-3.0
 
-Files: nobiax/*
+Files: data/nobiax/*
 Copyright: Nobiax
 License: CC0-1.0
 
-Files: fonts/Play*.ttf
+Files: data/fonts/Play*.ttf
 Copyright: 2011, Jonas Hecksher, Playtypes, e-types AS (e-types.com)
 License: OFL-1.1
 Comment:
  Reserved Font Names "Play", "Playtype", "Playtype Sans".
 
-Files: fonts/play*.png
+Files: data/fonts/play*.png
 Copyright: 2011, Jonas Hecksher, Playtypes, e-types AS (e-types.com)
            2011, Red Eclipse Team
 License: OFL-1.1
@@ -253,7 +253,7 @@ Comment:
  .
  These font image grids are generated from the "Play" font via cube2font.
 
-Files: fonts/akashi*.ttf
+Files: data/fonts/akashi*.ttf
 Copyright: 2007-2013 Ten by Twenty
 License: OFL-1.1
 Comment:
@@ -338,33 +338,33 @@ Comment:
  .
  <removed previous quoted email conversation>
 
-Files: textures/logo.png luckystrike/pub2* luckystrike/pub1*
+Files: data/textures/logo.png data/luckystrike/pub2* data/luckystrike/pub1*
 Copyright: Ed Merrit, Ten by Twenty, <http://www.tenbytwenty.com/>
            2011, Red Eclipse Team
 License: CC-BY-SA-3.0+ and Mark-Policy
 
-Files: textures/emblem.png
+Files: data/textures/emblem.png
 Copyright: 2011, Red Eclipse Team
 License: CC-BY-SA-3.0+ and Mark-Policy
 
-Files: torley/*
+Files: data/torley/*
 Copyright: 2007-2008, Torley Linden
            2010, Red Eclipse Team
 License: CC-BY-SA-3.0
 
-Files: unnamed/*
+Files: data/unnamed/*
 Copyright: 2013-2014, Unnamed <Viktor.Hahn@web.de>
 License: CC-BY-SA-3.0
 
-Files: sounds/ambience/*
+Files: data/sounds/ambience/*
 Copyright: Quinton "quin" Reeves, Alex "blackshoe" Anguix
 License: CC-BY-SA-3.0
 
-Files: sounds/ambience/morph/*
+Files: data/sounds/ambience/morph/*
 Copyright: Slawek "Q009" Blauciak
 License: CC-BY-3.0
 
-Files: sounds/ambience/water.ogg
+Files: data/sounds/ambience/water.ogg
 Copyright: Paul Hertz ("ignotus")
            <http://www.freesound.org/usersViewSingle.php?id=13366>
 License: CC-BY-SA-3.0
@@ -375,7 +375,7 @@ Comment:
  Special permission for relicensing under CC-BY-SA-3.0 have been granted by the
  author.
 
-Files: sounds/ambience/wind.ogg
+Files: data/sounds/ambience/wind.ogg
 Copyright: Batuhan Bozkurt
            <http://www.freesound.org/usersViewSingle.php?id=60547>
 License: CC-BY-SA-3.0
@@ -386,7 +386,7 @@ Comment:
  Special permission for relicensing under CC-BY-SA-3.0 have been granted by the
  author.
 
-Files: sounds/ambience/hum.ogg
+Files: data/sounds/ambience/hum.ogg
 Copyright: 2006, Therac-25
            <http://www.freesound.org/usersViewSingle.php?id=173825>
 License: CC-BY-SA-3.0
@@ -397,7 +397,7 @@ Comment:
  Special permission for relicensing under CC-BY-SA-3.0 have been granted by the
  author.
 
-Files: sounds/ambience/river.ogg
+Files: data/sounds/ambience/river.ogg
 Copyright: 2005, Mike "Acclivity" of Freesound.org
            <http://www.freesound.org/usersViewSingle.php?id=37876>
 License: CC-BY-SA-3.0
@@ -408,7 +408,7 @@ Comment:
  Special permission for relicensing under CC-BY-SA-3.0 have been granted by the
  author.
 
-Files: sounds/ambience/cavedrip.ogg
+Files: data/sounds/ambience/cavedrip.ogg
 Copyright: 2006, Mike "Acclivity" of Freesound.org
            <http://www.freesound.org/usersViewSingle.php?id=37876>
            2006 Dob "dobroide" Roide
@@ -422,7 +422,7 @@ Comment:
  Special permission for relicensing under CC-BY-SA-3.0 have been granted by the
  authors.
 
-Files: sounds/ambience/distant_cars.ogg
+Files: data/sounds/ambience/distant_cars.ogg
 Copyright: 2006, fresco
            <http://www.freesound.org/usersViewSingle.php?id=26333>
            2007 WIM
@@ -437,7 +437,7 @@ Comment:
  Special permission for relicensing under CC-BY-3.0 have been granted by the
  authors.
 
-Files: sounds/ambience/nightcrickets.ogg sounds/ambience/creek.ogg
+Files: data/sounds/ambience/nightcrickets.ogg data/sounds/ambience/creek.ogg
 Copyright: 2005, Richard "RHumphries" Humphries
            <http://www.freesound.org/usersViewSingle.php?id=1112>
 License: CC-BY-SA-3.0
@@ -449,7 +449,7 @@ Comment:
  Special permission for relicensing under CC-BY-SA-3.0 have been granted by the
  author.
 
-Files: sounds/ambience/waterfall*.ogg
+Files: data/sounds/ambience/waterfall*.ogg
 Copyright: 2007, Tim "Corsica_S" Kahn
            <http://www.freesound.org/usersViewSingle.php?id=7037>
 License: CC-BY-SA-3.0
@@ -462,7 +462,7 @@ Comment:
  Special permission for relicensing under CC-BY-SA-3.0 have been granted by the
  author.
 
-Files: sounds/ambience/forest*.ogg sounds/ambience/cycadas.ogg
+Files: data/sounds/ambience/forest*.ogg data/sounds/ambience/cycadas.ogg
 Copyright: 2005, 2007, Dob "dobroide" Roide
            <http://www.freesound.org/usersViewSingle.php?id=8043>
 License: CC-BY-3.0
@@ -471,15 +471,15 @@ Comment:
  http://www.freesound.org/samplesViewSingle.php?id=34580
  http://www.freesound.org/samplesViewSingle.php?id=7292
 
-Files: sounds/ambience/vapour.ogg
+Files: data/sounds/ambience/vapour.ogg
 Copyright: 2013 D.a.M.i.E.n. <daymeenn@gmail.com>
 License: CC-BY-SA-3.0
 
-Files: sounds/music/track_*.ogg
+Files: data/sounds/music/track_*.ogg
 Copyright: Derek "JoJo" Stegall
 License: CC-BY-SA-3.0
 
-Files: maps/tonatiuh.ogg
+Files: data/maps/tonatiuh.ogg
 Copyright: yd
 License: CC0-1.0
 Comment:
