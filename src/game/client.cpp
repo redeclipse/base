@@ -4,7 +4,7 @@ namespace client
 {
     bool sendplayerinfo = false, sendgameinfo = false, sendcrcinfo = false, isready = false, remote = false,
         demoplayback = false, needsmap = false, gettingmap = false;
-    int lastping = 0, sessionid = 0, sessionver = 0, lastplayerinfo = 0;
+    int lastping = 0, sessionid = 0, sessionver = 0, lastplayerinfo = 0, mastermode = 0;
     string connectpass = "";
     int needclipboard = -1;
     int demonameid = 0;
@@ -832,6 +832,18 @@ namespace client
     }
     ICOMMAND(0, getlastclientnum, "", (), getlastclientnum());
 
+    void getmastermode(int n)
+    {
+        switch(n)
+        {
+            case 0: intret(mastermode); return;
+            case 1: result(mastermodename(mastermode)); return;
+            default: break;
+        }
+        intret(-1);
+    }
+    ICOMMAND(0, getmastermode, "i", (int *n), getmastermode(*n));
+
     void addcontrol(const char *arg, int type, const char *msg)
     {
         int i = parseplayer(arg);
@@ -959,7 +971,7 @@ namespace client
     {
         if(editmode) toggleedit();
         gettingmap = needsmap = remote = isready = sendplayerinfo = sendgameinfo = sendcrcinfo = false;
-        sessionid = sessionver = lastplayerinfo = 0;
+        sessionid = sessionver = lastplayerinfo = mastermode = 0;
         messages.shrink(0);
         mapvotes.shrink(0);
         messagereliable = false;
@@ -1952,7 +1964,8 @@ namespace client
                     break;
                 }
                 case N_WELCOME:
-                    conoutf("negotiation with server complete");
+                    mastermode = getint(p);
+                    conoutf("negotiation complete, \fs\fcmastermode\fS is \fs\fc%d\fS (\fs\fc%s\fS)", mastermode, mastermodename(mastermode));
                     isready = true;
                     break;
 
@@ -2608,6 +2621,23 @@ namespace client
                     loopv(game::players) if(game::players[i] && game::players[i]->ownernum == d->clientnum)
                         game::players[i]->ping = d->ping;
                     break;
+
+                case N_MASTERMODE:
+                {
+                    int tcn = getint(p);
+                    mastermode = getint(p);
+                    if(tcn >= 0)
+                    {
+                        gameent *e = game::getclient(tcn);
+                        if(e)
+                        {
+                            conoutft(CON_EVENT, "\fy%s set \fs\fcmastermode\fS to \fs\fc%d\fS (\fs\fc%s\fS)", game::colourname(e), mastermode, mastermodename(mastermode));
+                            break;
+                        }
+                    }
+                    conoutft(CON_EVENT, "\fythe server set \fs\fcmastermode\fS to \fs\fc%d\fS (\fs\fc%s\fS)", mastermode, mastermodename(mastermode));
+                    break;
+                }
 
                 case N_TICK:
                 {

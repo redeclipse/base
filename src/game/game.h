@@ -309,7 +309,7 @@ char msgsizelookup(int msg)
 {
     static const int msgsizes[] =               // size inclusive message token, 0 for variable or not-checked sizes
     {
-        N_CONNECT, 0, N_SERVERINIT, 5, N_WELCOME, 1, N_CLIENTINIT, 0, N_POS, 0, N_SPHY, 0, N_TEXT, 0, N_COMMAND, 0, N_ANNOUNCE, 0, N_DISCONNECT, 3,
+        N_CONNECT, 0, N_SERVERINIT, 5, N_WELCOME, 2, N_CLIENTINIT, 0, N_POS, 0, N_SPHY, 0, N_TEXT, 0, N_COMMAND, 0, N_ANNOUNCE, 0, N_DISCONNECT, 3,
         N_SHOOT, 0, N_DESTROY, 0, N_STICKY, 0, N_SUICIDE, 4, N_DIED, 0, N_POINTS, 4, N_DAMAGE, 14, N_SHOTFX, 0,
         N_LOADW, 0, N_TRYSPAWN, 2, N_SPAWNSTATE, 0, N_SPAWN, 0, N_DROP, 0, N_WSELECT, 0,
         N_MAPCHANGE, 0, N_MAPVOTE, 0, N_CLEARVOTE, 0, N_CHECKPOINT, 0, N_ITEMSPAWN, 3, N_ITEMUSE, 0, N_TRIGGER, 0, N_EXECLINK, 3,
@@ -317,7 +317,7 @@ char msgsizelookup(int msg)
         N_EDITMODE, 2, N_EDITENT, 0, N_EDITLINK, 4, N_EDITVAR, 0, N_EDITF, 16, N_EDITT, 16, N_EDITM, 17, N_FLIP, 14,
         N_COPY, 14, N_PASTE, 14, N_ROTATE, 15, N_REPLACE, 17, N_DELCUBE, 14, N_REMIP, 1, N_EDITVSLOT, 16, N_UNDO, 0, N_REDO, 0, N_NEWMAP, 0,
         N_GETMAP, 0, N_SENDMAP, 0, N_FAILMAP, 0, N_SENDMAPFILE, 0,
-        N_MASTERMODE, 2, N_ADDCONTROL, 0, N_CLRCONTROL, 2, N_CURRENTPRIV, 3, N_SPECTATOR, 3, N_WAITING, 2, N_SETPRIV, 0, N_SETTEAM, 0,
+        N_MASTERMODE, 0, N_ADDCONTROL, 0, N_CLRCONTROL, 2, N_CURRENTPRIV, 3, N_SPECTATOR, 3, N_WAITING, 2, N_SETPRIV, 0, N_SETTEAM, 0,
         N_SETUPAFFIN, 0, N_INFOAFFIN, 0, N_MOVEAFFIN, 0,
         N_DROPAFFIN, 0, N_SCOREAFFIN, 0, N_RETURNAFFIN, 0, N_TAKEAFFIN, 0, N_RESETAFFIN, 0, N_INITAFFIN, 0, N_SCORE, 0,
         N_LISTDEMOS, 1, N_SENDDEMOLIST, 0, N_GETDEMO, 3, N_SENDDEMO, 0, N_DEMOREADY, 0,
@@ -437,6 +437,19 @@ static inline void modecheck(int &mode, int &muts, int trying = 0)
             if(changed) break;
         }
         if(!changed) break;
+    }
+}
+
+static inline const char *mastermodename(int type)
+{
+    switch(type)
+    {
+        case MM_OPEN: return "open";
+        case MM_VETO: return "veto";
+        case MM_LOCKED: return "locked";
+        case MM_PRIVATE: return "private";
+        case MM_PASSWORD: return "password";
+        default: return "unknown";
     }
 }
 

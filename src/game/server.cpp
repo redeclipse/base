@@ -1072,19 +1072,6 @@ namespace server
         return ci && ci->connected && ci->state.actortype == A_PLAYER;
     }
 
-    const char *mastermodename(int type)
-    {
-        switch(type)
-        {
-            case MM_OPEN: return "open";
-            case MM_VETO: return "veto";
-            case MM_LOCKED: return "locked";
-            case MM_PRIVATE: return "private";
-            case MM_PASSWORD: return "password";
-            default: return "unknown";
-        }
-    }
-
     int numclients(int exclude, bool nospec, int actortype)
     {
         int n = 0;
@@ -3744,6 +3731,7 @@ namespace server
     int welcomepacket(packetbuf &p, clientinfo *ci)
     {
         putint(p, N_WELCOME);
+        putint(p, mastermode);
         putint(p, N_MAPCHANGE);
         sendstring(smapname, p);
         putint(p, gamemode);
@@ -5456,10 +5444,10 @@ namespace server
 
     void parsepacket(int sender, int chan, packetbuf &p)     // has to parse exactly each byte of the packet
     {
-        if(sender<0 || p.packet->flags&ENET_PACKET_FLAG_UNSEQUENCED || chan > 2) return;
+        if(sender < 0 || p.packet->flags&ENET_PACKET_FLAG_UNSEQUENCED || chan > 2) return;
         char text[MAXTRANS];
         int type = -1, prevtype = -1;
-        clientinfo *ci = sender>=0 ? (clientinfo *)getinfo(sender) : NULL;
+        clientinfo *ci = sender >= 0 ? (clientinfo *)getinfo(sender) : NULL;
         if(ci && !ci->connected)
         {
             if(chan == 0) return;
@@ -6486,21 +6474,19 @@ namespace server
                         {
                             mastermode = mm;
                             resetallows();
-                            if(mastermode >= MM_PRIVATE)
+                            if(mastermode >= MM_PRIVATE) loopv(clients)
                             {
-                                loopv(clients)
-                                {
-                                    ipinfo &allow = control.add();
-                                    allow.ip = getclientip(clients[i]->clientnum);
-                                    allow.mask = 0xFFFFFFFF;
-                                    allow.type = ipinfo::ALLOW;
-                                    allow.time = totalmillis ? totalmillis : 1;
-                                    allow.reason = newstring("mastermode set private");
-                                }
+                                ipinfo &allow = control.add();
+                                allow.ip = getclientip(clients[i]->clientnum);
+                                allow.mask = 0xFFFFFFFF;
+                                allow.type = ipinfo::ALLOW;
+                                allow.time = totalmillis ? totalmillis : 1;
+                                allow.reason = newstring("mastermode set private");
                             }
-                            srvoutf(-3, "\fymastermode is now \fs\fc%d\fS (\fs\fc%s\fS)", mastermode, mastermodename(mastermode));
+                            sendf(-1, 1, "i3", N_MASTERMODE, ci->clientnum, mastermode);
+                            //srvoutf(-3, "\fymastermode is now \fs\fc%d\fS (\fs\fc%s\fS)", mastermode, mastermodename(mastermode));
                         }
-                        else srvmsgft(sender, CON_EVENT, "\frmastermode %d (%s) is disabled on this server", mm, mastermodename(mm));
+                        else srvmsgft(ci->clientnum, CON_EVENT, "\fothe \fs\fcmastermode\fS of \fs\fc%d\fS (\fs\fc%s\fS) is disabled on this server", mm, mastermodename(mm));
                     }
                     break;
                 }
