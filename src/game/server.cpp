@@ -3154,16 +3154,12 @@ namespace server
             loopv(clients) if(clients[i]->state.actortype == A_PLAYER) savestatsscore(clients[i]);
             bool worthy = false;
             if(fromintermission) worthy = true;
-            else
+            else if(m_laptime(gamemode, mutators))
             {
-                if(m_laptime(gamemode, mutators))
+                loopv(savedstatsscores) if(savedstatsscores[i].actortype == A_PLAYER) if(savedstatsscores[i].cptime > 0)
                 {
-                    loopv(savedstatsscores) if(savedstatsscores[i].actortype == A_PLAYER) if(savedstatsscores[i].cptime > 0) {
-                        {
-                            worthy = true;
-                            break;
-                        }
-                    }
+                    worthy = true;
+                    break;
                 }
             }
             if(!worthy) return;
