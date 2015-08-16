@@ -842,7 +842,7 @@ namespace physics
             }
         }
         bool found = false;
-        if(canimpulse(d, A_A_PARKOUR, true) && (d->turnside || d->action[AC_SPECIAL]))
+        if(d->turnside || d->action[AC_SPECIAL])
         {
             vec oldpos = d->o, dir;
             const int movements[6][2] = { { 2, 2 }, { 1, 2 }, { 1, -1 }, { 1, 1 }, { 0, 2 }, { -1, 2 } };
@@ -860,7 +860,7 @@ namespace physics
                 vec face = vec(collidewall).normalize();
                 if(fabs(face.z) <= impulseparkournorm)
                 {
-                    bool cankick = d->action[AC_SPECIAL], parkour = cankick && !onfloor && !d->onladder;
+                    bool cankick = d->action[AC_SPECIAL] && canimpulse(d, A_A_PARKOUR, true), parkour = cankick && !onfloor && !d->onladder;
                     float yaw = 0, pitch = 0;
                     vectoyawpitch(face, yaw, pitch);
                     float off = yaw-d->yaw;
