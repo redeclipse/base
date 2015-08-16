@@ -747,7 +747,8 @@ struct gui : guient
                 if(editing && immediate) result = e->currentline().text;
                 fieldsactive = true;
             }
-            skin(curx, cury, curx+w, cury+h, guifieldbgcolour, guifieldbgblend, editing ? guifieldactivecolour : guifieldbordercolour, editing ? guifieldactiveblend : guifieldborderblend, true);
+            int sh = e->draw(curx+wpad/2, cury+hpad/2, color, editing, prompt, true);
+            skin(curx, cury, curx+w, cury+sh+hpad, guifieldbgcolour, guifieldbgblend, editing ? guifieldactivecolour : guifieldbordercolour, editing ? guifieldactiveblend : guifieldborderblend, true);
             e->draw(curx+wpad/2, cury+hpad/2, color, editing, prompt);
         }
         else if(e->unfocus) e->unfocus = false;
