@@ -5423,12 +5423,10 @@ namespace server
         int amt = numclients();
         if((ci->privilege&PRIV_TYPE) > PRIV_NONE)
         {
-            if(ci->handle[0]) relayf(2, "\fg%s (%s) has joined the game (\fs\fy%s\fS: \fs\fc%s\fS) [%d.%d.%d-%s%d] (%d %s)", colourname(ci), gethostname(ci->clientnum), privname(ci->privilege), ci->handle, ci->state.version.major, ci->state.version.minor, ci->state.version.patch, plat_name(ci->state.version.platform), ci->state.version.arch, amt, amt != 1 ? "players" : "player");
-            else relayf(2, "\fg%s (%s) has joined the game (\fs\fy%s\fS) [%d.%d.%d-%s%d] (%d %s)", colourname(ci), gethostname(ci->clientnum), privname(ci->privilege), ci->state.version.major, ci->state.version.minor, ci->state.version.patch, plat_name(ci->state.version.platform), ci->state.version.arch, amt, amt != 1 ? "players" : "player");
+            if(ci->handle[0]) relayf(2, "\fg%s (%s) has joined the game (\fs\fy%s\fS: \fs\fc%s\fS) [%d.%d.%d-%s%d-%s] (%d %s)", colourname(ci), gethostname(ci->clientnum), privname(ci->privilege), ci->handle, ci->state.version.major, ci->state.version.minor, ci->state.version.patch, plat_name(ci->state.version.platform), ci->state.version.arch, ci->state.version.branch, amt, amt != 1 ? "players" : "player");
+            else relayf(2, "\fg%s (%s) has joined the game (\fs\fy%s\fS) [%d.%d.%d-%s%d-%s] (%d %s)", colourname(ci), gethostname(ci->clientnum), privname(ci->privilege), ci->state.version.major, ci->state.version.minor, ci->state.version.patch, plat_name(ci->state.version.platform), ci->state.version.arch, ci->state.version.branch, amt, amt != 1 ? "players" : "player");
         }
-        else relayf(2, "\fg%s (%s) has joined the game [%d.%d.%d-%s%d] (%d %s)", colourname(ci), gethostname(ci->clientnum), ci->state.version.major, ci->state.version.minor, ci->state.version.patch, plat_name(ci->state.version.platform), ci->state.version.arch, amt, amt != 1 ? "players" : "player");
-
-        if(!m_edit(gamemode) && hasmapdata()) srvmsgft(ci->clientnum, CON_SELF, "\fythe server map crc for \fs\fc%s\fS is: \fs\fc0x%.8x\fS", smapname, smapcrc);
+        else relayf(2, "\fg%s (%s) has joined the game [%d.%d.%d-%s%d-%s] (%d %s)", colourname(ci), gethostname(ci->clientnum), ci->state.version.major, ci->state.version.minor, ci->state.version.patch, plat_name(ci->state.version.platform), ci->state.version.arch, ci->state.version.branch, amt, amt != 1 ? "players" : "player");
 
         if(m_demo(gamemode)) setupdemoplayback();
         else if(m_edit(gamemode))

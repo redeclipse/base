@@ -41,7 +41,7 @@ SVAR(IDF_READONLY, versionplatlongname, plat_longname(CUR_PLATFORM));
 VAR(IDF_READONLY, versionplatform, 0, CUR_PLATFORM, VAR_MAX);
 VAR(IDF_READONLY, versionarch, 0, CUR_ARCH, VAR_MAX);
 VAR(IDF_READONLY, versioncrc, 0, 0, VAR_MAX);
-SVAR(IDF_READONLY, versionbranch, "?");
+SVAR(IDF_READONLY, versionbranch, "inplace");
 #ifdef STANDALONE
 VAR(IDF_READONLY, versionisserver, 0, 1, 1);
 #else
@@ -1228,7 +1228,7 @@ static void setupwindow(const char *title)
     atexit(cleanupwindow);
 
     if(!setupsystemtray(WM_APP)) fatal("failed adding to system tray");
-    conoutf("identity: v%s-%s%d %s [%s] (%s) [0x%.8x]", VERSION_STRING, versionplatname, versionarch, versionisserver ? "server" : "client", versionbranch, VERSION_RELEASE, versioncrc);
+    conoutf("identity: v%s-%s%d-%s %s (%s) [0x%.8x]", VERSION_STRING, versionplatname, versionarch, versionbranch, versionisserver ? "server" : "client", VERSION_RELEASE, versioncrc);
 }
 
 static char *parsecommandline(const char *src, vector<char *> &args)
@@ -1424,7 +1424,7 @@ void setupserver()
 
 void initgame()
 {
-    conoutf("identity: v%s-%s%d %s [%s] (%s) [0x%.8x]", VERSION_STRING, versionplatname, versionarch, versionisserver ? "server" : "client", versionbranch, VERSION_RELEASE, versioncrc);
+    conoutf("identity: v%s-%s%d-%s %s (%s) [0x%.8x]", VERSION_STRING, versionplatname, versionarch, versionbranch, versionisserver ? "server" : "client", VERSION_RELEASE, versioncrc);
     server::start();
     loopv(gameargs)
     {
@@ -1681,7 +1681,7 @@ void setverinfo(const char *bin)
 {
     setvar("versioncrc", crcfile(bin));
     const char *branch = getenv("REDECLIPSE_BRANCH");
-    setsvar("versionbranch", branch);
+    setsvar("versionbranch", branch && *branch ? branch : "inplace");
 }
 
 volatile bool fatalsig = false;

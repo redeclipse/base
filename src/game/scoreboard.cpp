@@ -278,7 +278,7 @@ namespace hud
     const char *scoreversion(gameent *d)
     {
         static string verstr;
-        formatstring(verstr, "%d.%d.%d-%s%d", d->version.major, d->version.minor, d->version.patch, plat_name(d->version.platform), d->version.arch);
+        formatstring(verstr, "%d.%d.%d-%s%d-%s", d->version.major, d->version.minor, d->version.patch, plat_name(d->version.platform), d->version.arch, d->version.branch);
         return verstr;
     }
 
