@@ -574,7 +574,7 @@ struct editor
         return slines;
     }
 
-    int draw(int x, int y, int color, bool hit, const char *prompt = NULL, bool nodraw = false)
+    void draw(int x, int y, int color, bool hit, const char *prompt = NULL)
     {
         int h = 0, maxwidth = linewrap ? pixelwidth : -1;
 
@@ -593,11 +593,11 @@ struct editor
                 text_bounds(str, width, height, maxwidth, TEXT_NO_INDENT);
                 if(h+height <= pixelheight)
                 {
-                    if(!nodraw) draw_textx("%s", x, y+h, color>>16, (color>>8)&0xFF, color&0xFF, 0xFF, TEXT_NO_INDENT, hit ? 0 : -1, maxwidth, str);
+                    draw_textx("%s", x, y+h, color>>16, (color>>8)&0xFF, color&0xFF, 0xFF, TEXT_NO_INDENT, hit ? 0 : -1, maxwidth, str);
                     h += height;
                 }
             }
-            return h;
+            return;
         }
 
         int starty = scrolly, sx = 0, sy = 0, ex = 0, ey = 0;
@@ -620,7 +620,7 @@ struct editor
             }
         }
 
-        if(!nodraw && selection)
+        if(selection)
         {
             int psx, psy, pex, pey; // convert from cursor coords into pixel coords
             text_pos(lines[sy].text, sx, psx, psy, maxwidth, TEXT_NO_INDENT);
@@ -690,26 +690,22 @@ struct editor
             int width, height;
             text_bounds(lines[i].text, width, height, maxwidth, TEXT_NO_INDENT);
             if(h+height > pixelheight) break;
-            if(!nodraw)
+            draw_text(lines[i].text, x, y+h, color>>16, (color>>8)&0xFF, color&0xFF, 0xFF, TEXT_NO_INDENT, hit && (cy == i) ? cx : -1, maxwidth);
+            if(linewrap && height > FONTH) // line wrap indicator
             {
-                draw_text(lines[i].text, x, y+h, color>>16, (color>>8)&0xFF, color&0xFF, 0xFF, TEXT_NO_INDENT, hit && (cy == i) ? cx : -1, maxwidth);
-                if(linewrap && height > FONTH) // line wrap indicator
-                {
-                    hudnotextureshader->set();
-                    gle::colorf((guifieldbordercolour>>16)/255.f, ((guifieldbordercolour>>8)&0xFF)/255.f, (guifieldbordercolour&0xFF)/255.f, guifieldborderblend);
-                    gle::defvertex(2);
-                    gle::begin(GL_TRIANGLE_STRIP);
-                    gle::attribf(x, y+h+FONTH);
-                    gle::attribf(x, y+h+height);
-                    gle::attribf(x-FONTW/4, y+h+FONTH);
-                    gle::attribf(x-FONTW/4, y+h+height);
-                    gle::end();
-                    hudshader->set();
-                }
+                hudnotextureshader->set();
+                gle::colorf((guifieldbordercolour>>16)/255.f, ((guifieldbordercolour>>8)&0xFF)/255.f, (guifieldbordercolour&0xFF)/255.f, guifieldborderblend);
+                gle::defvertex(2);
+                gle::begin(GL_TRIANGLE_STRIP);
+                gle::attribf(x, y+h+FONTH);
+                gle::attribf(x, y+h+height);
+                gle::attribf(x-FONTW/4, y+h+FONTH);
+                gle::attribf(x-FONTW/4, y+h+height);
+                gle::end();
+                hudshader->set();
             }
             h += height;
         }
-        return h;
     }
 };
 

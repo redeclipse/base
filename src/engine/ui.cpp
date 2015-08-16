@@ -694,17 +694,17 @@ struct gui : guient
             e->linewrap = (length < 0);
             e->maxx = e->linewrap ? -1 : length;
             e->maxy = (height <= 0) ? 1 : -1;
-            e->pixelwidth = abs(length)*FONTW;
+            e->pixelwidth = (abs(length)+1)*FONTW;
             if(e->linewrap && e->maxy == 1)
             {
                 int temp = 0;
-                text_bounds(e->lines[0].text, temp, e->pixelheight, e->pixelwidth); //only single line editors can have variable height
+                text_bounds(e->lines[0].text, temp, e->pixelheight, e->pixelwidth, TEXT_NO_INDENT); // only single line editors can have variable height
+                int ph = e->pixelheight%FONTH;
+                if(ph) e->pixelheight += FONTH-ph;
             }
-            else e->pixelheight = FONTH*max(height, 1);
+            else e->pixelheight = max(height, 1)*FONTH;
         }
-        int h = e->pixelheight, hpad = FONTH/4, w = e->pixelwidth, wpad = FONTW;
-        h += hpad;
-        w += wpad;
+        int hpad = FONTH/4, wpad = FONTW, h = e->pixelheight+hpad, w = e->pixelwidth+wpad;
 
         bool wasvertical = isvertical();
         if(wasvertical && e->maxy != 1) pushlist(false);
@@ -747,8 +747,7 @@ struct gui : guient
                 if(editing && immediate) result = e->currentline().text;
                 fieldsactive = true;
             }
-            int sh = e->draw(curx+wpad/2, cury+hpad/2, color, editing, prompt, true);
-            skin(curx, cury, curx+w, cury+sh+hpad, guifieldbgcolour, guifieldbgblend, editing ? guifieldactivecolour : guifieldbordercolour, editing ? guifieldactiveblend : guifieldborderblend, true);
+            skin(curx, cury, curx+w, cury+h, guifieldbgcolour, guifieldbgblend, editing ? guifieldactivecolour : guifieldbordercolour, editing ? guifieldactiveblend : guifieldborderblend, true);
             e->draw(curx+wpad/2, cury+hpad/2, color, editing, prompt);
         }
         else if(e->unfocus) e->unfocus = false;
