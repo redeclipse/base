@@ -11,7 +11,7 @@ int curtime = 0, totalmillis = 1, lastmillis = 1, timescale = 100, paused = 0, t
 time_t clocktime = 0, currenttime = 0, clockoffset = 0;
 uint totalsecs = 0;
 
-VAR(0, maxruntime, 0, 86400, VAR_MAX); // time in seconds
+VAR(0, maxruntime, 0, (INT_MAX-1)/1000, VAR_MAX); // time in seconds
 VAR(0, maxshutdownwait, 0, 3600, VAR_MAX); // time in seconds
 
 const char *load = NULL;
