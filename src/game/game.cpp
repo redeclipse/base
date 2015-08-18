@@ -157,22 +157,22 @@ namespace game
     VAR(IDF_PERSIST, spectvfirstperson, 0, 0, 2); // 0 = aim in direction followed player is facing, 1 = aim in direction determined by spectv when dead, 2 = always aim in direction
     VAR(IDF_PERSIST, spectvthirdperson, 0, 2, 2); // 0 = aim in direction followed player is facing, 1 = aim in direction determined by spectv when dead, 2 = always aim in direction
 
-    VAR(IDF_PERSIST, spectvintermtime, 1000, 10000, VAR_MAX);
-    VAR(IDF_PERSIST, spectvintermmintime, 1000, 6000, VAR_MAX);
-    VAR(IDF_PERSIST, spectvintermmaxtime, 0, 20000, VAR_MAX);
-    VAR(IDF_PERSIST, spectvintermspeed, 1, 350, VAR_MAX);
-    VAR(IDF_PERSIST, spectvintermyawspeed, 1, 350, VAR_MAX);
-    VAR(IDF_PERSIST, spectvintermpitchspeed, 1, 350, VAR_MAX);
-    FVAR(IDF_PERSIST, spectvintermrotate, FVAR_MIN, 0, FVAR_MAX); // rotate style, < 0 = absolute angle, 0 = scaled, > 0 = scaled with max angle
-    FVAR(IDF_PERSIST, spectvintermyawscale, FVAR_MIN, 1, 1000);
-    FVAR(IDF_PERSIST, spectvintermpitchscale, FVAR_MIN, 1, 1000);
-    FVAR(IDF_PERSIST, spectvintermyawthresh, 0, 0, 360);
-    FVAR(IDF_PERSIST, spectvintermpitchthresh, 0, 0, 180);
+    VAR(IDF_PERSIST, spectvintertime, 1000, 10000, VAR_MAX);
+    VAR(IDF_PERSIST, spectvintermintime, 1000, 6000, VAR_MAX);
+    VAR(IDF_PERSIST, spectvintermaxtime, 0, 20000, VAR_MAX);
+    VAR(IDF_PERSIST, spectvinterspeed, 1, 350, VAR_MAX);
+    VAR(IDF_PERSIST, spectvinteryawspeed, 1, 350, VAR_MAX);
+    VAR(IDF_PERSIST, spectvinterpitchspeed, 1, 350, VAR_MAX);
+    FVAR(IDF_PERSIST, spectvinterrotate, FVAR_MIN, 0, FVAR_MAX); // rotate style, < 0 = absolute angle, 0 = scaled, > 0 = scaled with max angle
+    FVAR(IDF_PERSIST, spectvinteryawscale, FVAR_MIN, 1, 1000);
+    FVAR(IDF_PERSIST, spectvinterpitchscale, FVAR_MIN, 1, 1000);
+    FVAR(IDF_PERSIST, spectvinteryawthresh, 0, 0, 360);
+    FVAR(IDF_PERSIST, spectvinterpitchthresh, 0, 0, 180);
 
     VARF(0, spectvfollow, -1, -1, VAR_MAX, spectvfollowing = spectvfollow); // attempts to always keep this client in view
     VAR(0, spectvfollowself, 0, 1, 2); // if we are not spectating, spectv should show us; 0 = off, 1 = not duel/survivor, 2 = always
     VAR(IDF_PERSIST, spectvfollowtime, 1000, 10000, VAR_MAX);
-    VAR(IDF_PERSIST, spectvfollowmintime, 1000, 1000, VAR_MAX);
+    VAR(IDF_PERSIST, spectvfollowmintime, 1000, 2000, VAR_MAX);
     VAR(IDF_PERSIST, spectvfollowmaxtime, 0, 20000, VAR_MAX);
     VAR(IDF_PERSIST, spectvfollowspeed, 1, 250, VAR_MAX);
     VAR(IDF_PERSIST, spectvfollowyawspeed, 1, 250, VAR_MAX);
@@ -184,10 +184,10 @@ namespace game
     FVAR(IDF_PERSIST, spectvfollowpitchthresh, 0, 0, 180);
 
     FVAR(IDF_PERSIST, spectvmindist, 0, 32, FVAR_MAX);
-    FVAR(IDF_PERSIST, spectvmaxdist, 0, 256, FVAR_MAX);
+    FVAR(IDF_PERSIST, spectvmaxdist, 0, 320, FVAR_MAX);
     FVAR(IDF_PERSIST, spectvmovedist, 0, 64, FVAR_MAX);
-    FVAR(IDF_PERSIST, spectvfollowmindist, 0, 8, FVAR_MAX);
-    FVAR(IDF_PERSIST, spectvfollowmaxdist, 0, 128, FVAR_MAX);
+    FVAR(IDF_PERSIST, spectvfollowmindist, 0, 16, FVAR_MAX);
+    FVAR(IDF_PERSIST, spectvfollowmaxdist, 0, 160, FVAR_MAX);
 
     VAR(IDF_PERSIST, deathcamstyle, 0, 2, 2); // 0 = no follow, 1 = follow attacker, 2 = follow self
     VAR(IDF_PERSIST, deathcamspeed, 0, 500, VAR_MAX);
@@ -2500,7 +2500,7 @@ namespace game
         }
         if(!found) spectvfollow = spectvfollowing = -1;
         camrefresh(cam);
-        #define stvf(z) (!gs_playing(gamestate) ? spectvinterm##z : (spectvfollowing >= 0 ? spectvfollow##z : spectv##z))
+        #define stvf(z) (!gs_playing(gamestate) ? spectvinter##z : (spectvfollowing >= 0 ? spectvfollow##z : spectv##z))
         if(forced)
         {
             camupdate(cam, amt, renew, true);
@@ -2915,7 +2915,7 @@ namespace game
             o.sub(vec(yaw*RAD, 0.f).rotate_around_z(90*RAD).mul(firstpersonbodyside));
             if(firstpersonbodyfeet >= 0 && d->wantshitbox())
             {
-                float minz = max(d->toe[0].z, d->toe[1].z)+firstpersonbodyfeet;
+                float minz = max(d->toe[0].z, d->toe[1].z)+(firstpersonbodyfeet*size);
                 if(minz > camera1->o.z) o.z -= minz-camera1->o.z;
             }
         }
