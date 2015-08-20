@@ -159,14 +159,14 @@ WPVARM(IDF_GAMEMOD,  aiskew, 0, VAR_MAX,
     1,          2,          1,          3,          5,          3,          5,          3,          5,          1,          1,          5
 );
 WPVAR(IDF_GAMEMOD,  ammoadd, 1, VAR_MAX,
-    1,          10,         1,          2,          40,         60,         25,         48,         6,          1,          1,          1
+    1,          10,         1,          2,          40,         50,         25,         48,         6,          1,          1,          1
 );
 WPVAR(IDF_GAMEMOD,  ammomax, 1, VAR_MAX,
-    1,          10,          1,         8,          40,         60,         25,         48,         6,          2,          2,          1
+    1,          10,          1,         8,          40,         50,         25,         48,         6,          2,          2,          1
 );
 WPVARM(IDF_GAMEMOD,  ammosub, 0, VAR_MAX,
     0,          1,          0,          1,          1,          1,          1,          1,          1,          1,          1,          1,
-    0,          1,          0,          2,          4,          12,         25,         6,          1,          1,          1,          1
+    0,          1,          0,          2,          4,          10,         25,         6,          1,          1,          1,          1
 );
 WPFVARK(IDF_GAMEMOD,  blend, 0, 1,
     1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,
