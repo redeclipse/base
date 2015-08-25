@@ -3547,6 +3547,14 @@ void hexcolour(int *n)
 
 COMMAND(0, hexcolour, "i");
 
+void hexcrc(int *n)
+{
+    defformatstring(s, *n >= 0 && *n <= 0xFFFFFFFF ? "0x%.8X" : "%d", *n);
+    result(s);
+}
+
+COMMAND(0, hexcrc, "i");
+
 void genkey(char *s)
 {
     vector<char> privkey, pubkey;
