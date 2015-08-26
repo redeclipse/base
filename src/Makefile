@@ -274,7 +274,7 @@ $(LIBENET):
 depend:
 	makedepend -Y -I. -Ishared -Iengine -Igame -Isqlite $(subst .o,.cpp,$(CLIENT_OBJS))
 	makedepend -a -o-standalone.o -Y -I. -Ishared -Iengine -Igame -Isqlite -DSTANDALONE $(subst -standalone.o,.cpp,$(SERVER_OBJS))
-	makedepend -a -o.h.gch -Y -I. -Ishared -Iengine -Igame $(subst .h.gch,.h,$(CLIENT_PCH))
+	makedepend -a -o.h.gch -Y -I. -Ishared -Iengine -Igame -Isqlite $(subst .h.gch,.h,$(CLIENT_PCH))
 
 all: client server
 
