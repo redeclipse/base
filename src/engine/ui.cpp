@@ -540,18 +540,13 @@ struct gui : guient
             }
             int x1 = int(floor(screen->w*(xi*uiscale.x+uiorigin.x))), y1 = int(floor(screen->h*(1 - ((yi+ys)*uiscale.y+uiorigin.y)))),
                 x2 = int(ceil(screen->w*((xi+xs)*uiscale.x+uiorigin.x))), y2 = int(ceil(screen->h*(1 - (yi*uiscale.y+uiorigin.y))));
-            glViewport(x1, y1, x2-x1, y2-y1);
-            glScissor(x1, y1, x2-x1, y2-y1);
-            glEnable(GL_SCISSOR_TEST);
             glDisable(GL_BLEND);
-            modelpreview::start(overlaid);
+            modelpreview::start(x1, y1, x2-x1, y2-y1, overlaid);
             game::renderplayerpreview(model, color, team, weap, vanity, scale, blend);
             modelpreview::end();
             hudshader->set();
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             glEnable(GL_BLEND);
-            glDisable(GL_SCISSOR_TEST);
-            glViewport(0, 0, screen->w, screen->h);
             if(overlaid)
             {
                 if(!overlaytex) overlaytex = textureload(guioverlaytex, 3, true, false);
@@ -582,11 +577,8 @@ struct gui : guient
             }
             int x1 = int(floor(screen->w*(xi*uiscale.x+uiorigin.x))), y1 = int(floor(screen->h*(1 - ((yi+ys)*uiscale.y+uiorigin.y)))),
                 x2 = int(ceil(screen->w*((xi+xs)*uiscale.x+uiorigin.x))), y2 = int(ceil(screen->h*(1 - (yi*uiscale.y+uiorigin.y))));
-            glViewport(x1, y1, x2-x1, y2-y1);
-            glScissor(x1, y1, x2-x1, y2-y1);
-            glEnable(GL_SCISSOR_TEST);
             glDisable(GL_BLEND);
-            modelpreview::start(overlaid);
+            modelpreview::start(x1, y1, x2-x1, y2-y1, overlaid);
             model *m = loadmodel(name);
             if(m)
             {
@@ -595,22 +587,56 @@ struct gui : guient
                 light.dir = vec(0, -1, 2).normalize();
                 vec center, radius;
                 m->boundbox(center, radius);
-                float dist =  2.0f*max(radius.magnitude2(), 1.1f*radius.z),
-                      yaw = fmod(lastmillis/10000.0f*360.0f, 360.0f);
-                vec o(-center.x, dist - center.y, -0.1f*dist - center.z);
+                float yaw;
+                vec o = calcmodelpreviewpos(radius, yaw).sub(center);
                 rendermodel(&light, name, anim, o, yaw, 0, 0, NULL, NULL, 0, scale, blend);
             }
             modelpreview::end();
             hudshader->set();
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             glEnable(GL_BLEND);
-            glDisable(GL_SCISSOR_TEST);
-            glViewport(0, 0, screen->w, screen->h);
             if(overlaid)
             {
                 if(!overlaytex) overlaytex = textureload(guioverlaytex, 3, true, false);
                 gle::color(hit && hitfx ? vec::hexcolor(guiactivecolour) : vec(1, 1, 1));
                 glBindTexture(GL_TEXTURE_2D, overlaytex->id);
+                rect_(xi - xpad, yi - ypad, xs + 2*xpad, ys + 2*ypad, 0);
+            }
+        }
+        return layout(size+guishadow, size+guishadow);
+    }
+
+    int prefabpreview(const char *prefab, const vec &color, float sizescale, bool overlaid)
+    {
+        if(sizescale==0) sizescale = 1;
+        int size = (int)(sizescale*2*FONTH)-guishadow;
+        if(visible())
+        {
+            bool hit = ishit(size+guishadow, size+guishadow); 
+            float xs = size, ys = size, xi = curx, yi = cury, xpad = 0, ypad = 0;
+            if(overlaid)
+            {
+                xpad = xs/32;
+                ypad = ys/32;
+                xi += xpad;
+                yi += ypad;
+                xs -= 2*xpad;
+                ys -= 2*ypad;
+            }
+            int x1 = int(floor(screen->w*(xi*uiscale.x+uiorigin.x))), y1 = int(floor(screen->h*(1 - ((yi+ys)*uiscale.y+uiorigin.y)))),
+                x2 = int(ceil(screen->w*((xi+xs)*uiscale.x+uiorigin.x))), y2 = int(ceil(screen->h*(1 - (yi*uiscale.y+uiorigin.y))));
+            glDisable(GL_BLEND);
+            modelpreview::start(x1, y1, x2-x1, y2-y1, overlaid);
+            previewprefab(prefab, color);
+            modelpreview::end();
+            hudshader->set();
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            glEnable(GL_BLEND);
+            if(overlaid)
+            {
+                if(!overlaytex) overlaytex = textureload(guioverlaytex, 3, true, false);
+                gle::color(hit && hitfx ? vec::hexcolor(guiactivecolour) : vec(1, 1, 1));
+                glBindTexture(GL_TEXTURE_2D, overlaytex->id); 
                 rect_(xi - xpad, yi - ypad, xs + 2*xpad, ys + 2*ypad, 0);
             }
         }

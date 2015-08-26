@@ -778,13 +778,38 @@ void guimodelpreview(char *model, char *animspec, char *action, float *scale, in
     }
     else if(ret&GUI_ROLLOVER)
     {
-        defformatstring(str, "%d %s", *model, animspec);
+        defformatstring(str, "%s [%s]", model, animspec);
         setsvar("guirollovername", str, true);
         setsvar("guirolloveraction", action, true);
         setsvar("guirollovertype", "model", true);
     }
 }
 COMMAND(0, guimodelpreview, "sssfiffs");
+
+void guiprefabpreview(char *prefab, int *color, char *action, float *scale, int *overlaid, char *altact)
+{
+    if(!cgui) return;
+    int ret = cgui->prefabpreview(prefab, vec::hexcolor(*color), *scale, *overlaid!=0);
+    if(ret&GUI_UP)
+    {
+        char *act = NULL;
+        if(altact[0] && ret&GUI_ALT) act = altact;
+        else if(action[0]) act = action;
+        if(act)
+        {
+            updatelater.add().schedule(act);
+            if(shouldclearmenu) clearlater = true;
+        }
+    }
+    else if(ret&GUI_ROLLOVER)
+    {
+        defformatstring(str, "%s %d", prefab, *color);
+        setsvar("guirollovername", str, true);
+        setsvar("guirolloveraction", action, true);
+        setsvar("guirollovertype", "prefab", true);
+    }
+}
+COMMAND(0, guiprefabpreview, "sisfis");
 
 struct change
 {

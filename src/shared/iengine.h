@@ -239,6 +239,8 @@ extern vec worldpos, camdir, camright, camup;
 extern void getscreenres(int &w, int &h);
 extern void gettextres(int &w, int &h);
 
+extern vec calcmodelpreviewpos(const vec &radius, float &yaw);
+
 extern vec minimapcenter, minimapradius, minimapscale;
 extern void bindminimap();
 
@@ -614,7 +616,7 @@ struct guient
     virtual char *keyfield(const char *name, int color, int length, int height = 0, const char *initval = NULL, int initmode = EDITORFOCUSED, bool focus = false, const char *parent = NULL, const char *prompt = NULL, bool immediate = false) = 0;
     virtual int playerpreview(int model, int color, int team, int weap, const char *vanity, float sizescale, bool overlaid = false, float scale = 1, float blend = 1) { return 0; }
     virtual int modelpreview(const char *name, int anim, float sizescale, bool overlaid = false, float scale = 1, float blend = 1) { return 0; }
-
+    virtual int prefabpreview(const char *prefab, const vec &color, float sizescale, bool overlaid = false) { return 0; }
 };
 
 struct guicb

@@ -1186,17 +1186,36 @@ struct prefabheader
 struct prefab : editinfo
 {
     char *name;
+    GLuint ebo, vbo;
+    int numtris, numverts;
 
-    prefab() : name(NULL) {}
+    prefab() : name(NULL), ebo(0), vbo(0), numtris(0), numverts(0) {}
     ~prefab() { DELETEA(name); if(copy) freeblock(copy); }
+
+    void cleanup()
+    {
+        if(ebo) { glDeleteBuffers_(1, &ebo); ebo = 0; }
+        if(vbo) { glDeleteBuffers_(1, &vbo); vbo = 0; }
+        numtris = numverts = 0;
+    }
 };
 
 static hashnameset<prefab> prefabs;
 
+void cleanupprefabs()
+{
+    enumerate(prefabs, prefab, p, p.cleanup());
+}
+
 void delprefab(char *name)
 {
-    if(prefabs.remove(name))
+    prefab *p = prefabs.access(name);
+    if(p)
+    {
+        p->cleanup();
+        prefabs.remove(name);
         conoutf("deleted prefab %s", name);
+    }
 }
 COMMAND(0, delprefab, "s");
 
@@ -1238,31 +1257,242 @@ void pasteblock(block3 &b, selinfo &sel, bool local)
     sel.orient = o;
 }
 
+prefab *loadprefab(const char *name, bool msg = true)
+{
+   prefab *b = prefabs.access(name);
+   if(b) return b;
+   defformatstring(filename, strpbrk(name, "/\\") ? "%s.obr" : "prefab/%s.obr", name);
+   path(filename);
+   stream *f = opengzfile(filename, "rb");
+   if(!f) { if(msg) conoutf("\frcould not read prefab %s", filename); return NULL; }
+   prefabheader hdr;
+   if(f->read(&hdr, sizeof(hdr)) != sizeof(prefabheader) || memcmp(hdr.magic, "OEBR", 4)) { delete f; if(msg) conoutf("\frprefab %s has malformatted header", filename); return NULL; }
+   lilswap(&hdr.version, 1);
+   if(hdr.version != 0) { delete f; if(msg) conoutf("\frprefab %s uses unsupported version", filename); return NULL; }
+   streambuf<uchar> s(f);
+   block3 *copy = NULL;
+   if(!unpackblock(copy, s)) { delete f; if(msg) conoutf("\frcould not unpack prefab %s", filename); return NULL; }
+   delete f;
+
+   b = &prefabs[name];
+   b->name = newstring(name);
+   b->copy = copy;
+
+   return b;
+}
+
 void pasteprefab(char *name)
 {
     if(!name[0] || noedit() || multiplayer()) return;
-    prefab *b = prefabs.access(name);
-    if(!b)
-    {
-        defformatstring(filename, strpbrk(name, "/\\") ? "%s.obr" : "prefab/%s.obr", name);
-        path(filename);
-        stream *f = opengzfile(filename, "rb");
-        if(!f) { conoutf("\frcould not read prefab %s", filename); return; }
-        prefabheader hdr;
-        if(f->read(&hdr, sizeof(hdr)) != sizeof(prefabheader) || memcmp(hdr.magic, "OEBR", 4)) { delete f; conoutf("\frprefab %s has malformatted header", filename); return; }
-        lilswap(&hdr.version, 1);
-        if(hdr.version != 0) { delete f; conoutf("\frprefab %s uses unsupported version", filename); return; }
-        streambuf<uchar> s(f);
-        block3 *copy = NULL;
-        if(!unpackblock(copy, s)) { delete f; conoutf("\frcould not unpack prefab %s", filename); return; }
-        delete f;
-        b = &prefabs[name];
-        b->name = newstring(name);
-        b->copy = copy;
-    }
-    pasteblock(*b->copy, sel, true);
+    prefab *b = loadprefab(name, true);
+    if(b) pasteblock(*b->copy, sel, true);
 }
 COMMAND(0, pasteprefab, "s");
+
+struct prefabmesh
+{
+    struct vertex { vec pos; bvec4 norm; };
+
+    static const int SIZE = 1<<9;
+    int table[SIZE];
+    vector<vertex> verts;
+    vector<int> chain;
+    vector<ushort> tris;
+
+    prefabmesh() { memset(table, -1, sizeof(table)); }
+
+    int addvert(const vertex &v)
+    {
+        uint h = hthash(v.pos)&(SIZE-1);
+        for(int i = table[h]; i>=0; i = chain[i])
+        {
+            const vertex &c = verts[i];
+            if(c.pos==v.pos && c.norm==v.norm) return i;
+        }
+        if(verts.length() >= USHRT_MAX) return -1;
+        verts.add(v);
+        chain.add(table[h]);
+        return table[h] = verts.length()-1;
+    }
+
+    int addvert(const vec &pos, const bvec &norm)
+    {
+        vertex vtx;
+        vtx.pos = pos;
+        vtx.norm = norm;
+        return addvert(vtx);
+   }
+
+    void setup(prefab &p)
+    {
+        if(tris.empty()) return;
+
+        p.cleanup();
+
+        loopv(verts) verts[i].norm.flip();
+        if(!p.vbo) glGenBuffers_(1, &p.vbo);
+        gle::bindvbo(p.vbo);
+        glBufferData_(GL_ARRAY_BUFFER, verts.length()*sizeof(vertex), verts.getbuf(), GL_STATIC_DRAW);
+        gle::clearvbo();
+        p.numverts = verts.length();
+
+        if(!p.ebo) glGenBuffers_(1, &p.ebo);
+        gle::bindebo(p.ebo);
+        glBufferData_(GL_ELEMENT_ARRAY_BUFFER, tris.length()*sizeof(ushort), tris.getbuf(), GL_STATIC_DRAW);
+        gle::clearebo();
+        p.numtris = tris.length()/3;
+    }
+
+};
+
+static void genprefabmesh(prefabmesh &r, cube &c, const ivec &co, int size)
+{
+    if(c.children)
+    {
+        neighbourstack[++neighbourdepth] = c.children;
+        loopi(8)
+        {
+            ivec o(i, co, size/2);
+            genprefabmesh(r, c.children[i], o, size/2);
+        }
+        --neighbourdepth;
+    }
+    else if(!isempty(c))
+    {
+        int vis;
+        loopi(6) if((vis = visibletris(c, i, co, size)))
+        {
+            ivec v[4];
+            genfaceverts(c, i, v);
+            int convex = 0;
+            if(!flataxisface(c, i)) convex = faceconvexity(v);
+            int order = vis&4 || convex < 0 ? 1 : 0, numverts = 0;
+            vec vo(co), pos[4], norm[4];
+            pos[numverts++] = vec(v[order]).mul(size/8.0f).add(vo);
+            if(vis&1) pos[numverts++] = vec(v[order+1]).mul(size/8.0f).add(vo);
+            pos[numverts++] = vec(v[order+2]).mul(size/8.0f).add(vo);
+            if(vis&2) pos[numverts++] = vec(v[(order+3)&3]).mul(size/8.0f).add(vo);
+            guessnormals(pos, numverts, norm);
+            int index[4];
+            loopj(numverts) index[j] = r.addvert(pos[j], bvec(norm[j]));
+            loopj(numverts-2) if(index[0]!=index[j+1] && index[j+1]!=index[j+2] && index[j+2]!=index[0])
+            {
+                r.tris.add(index[0]);
+                r.tris.add(index[j+1]);
+                r.tris.add(index[j+2]);
+            }
+        }
+    }
+}
+
+void genprefabmesh(prefab &p)
+{
+    block3 b = *p.copy;
+    b.o = ivec(0, 0, 0);
+
+    cube *oldworldroot = worldroot; 
+    int oldworldscale = worldscale, oldworldsize = hdr.worldsize;
+
+    worldroot = newcubes();
+    worldscale = 1;
+    hdr.worldsize = 2;
+    while(hdr.worldsize < max(max(b.s.x, b.s.y), b.s.z)*b.grid)
+    {
+        worldscale++;
+        hdr.worldsize *= 2;
+    }
+
+    cube *s = p.copy->c();
+    loopxyz(b, b.grid, if(!isempty(*s) || s->children) pastecube(*s, c); s++);
+
+    prefabmesh r;
+    neighbourstack[++neighbourdepth] = worldroot;
+    loopi(8) genprefabmesh(r, worldroot[i], ivec(i, ivec(0, 0, 0), hdr.worldsize/2), hdr.worldsize/2);
+    --neighbourdepth;
+    r.setup(p);
+
+    freeocta(worldroot);
+
+    worldroot = oldworldroot;
+    worldscale = oldworldscale;
+    hdr.worldsize = oldworldsize;
+
+    useshaderbyname("prefab");
+}
+
+extern int outlinecolour;
+
+static void renderprefab(prefab &p, const vec &o, float yaw, float pitch, float roll, float size, const vec &color)
+{
+    if(!p.numtris)
+    {
+        genprefabmesh(p);
+        if(!p.numtris) return;
+    }
+
+    block3 &b = *p.copy;
+
+    matrix4 m;
+    m.identity();
+    m.settranslation(o);
+    if(yaw) m.rotate_around_z(yaw*RAD);
+    if(pitch) m.rotate_around_x(pitch*RAD);
+    if(roll) m.rotate_around_y(-roll*RAD);
+    matrix3 w(m);
+    if(size > 0 && size != 1) m.scale(size);
+    m.translate(vec(b.s).mul(-b.grid*0.5f));
+
+    gle::bindvbo(p.vbo);
+    gle::bindebo(p.ebo);
+    gle::enablevertex();
+    gle::enablenormal();
+    prefabmesh::vertex *v = (prefabmesh::vertex *)0;
+    gle::vertexpointer(sizeof(prefabmesh::vertex), v->pos.v);
+    gle::normalpointer(sizeof(prefabmesh::vertex), v->norm.v, GL_BYTE);
+
+    matrix4 pm;
+    pm.mul(camprojmatrix, m);
+    GLOBALPARAM(prefabmatrix, pm);
+    GLOBALPARAM(prefabworld, w);
+    SETSHADER(prefab);
+    gle::color(color);
+    glDrawRangeElements_(GL_TRIANGLES, 0, p.numverts-1, p.numtris*3, GL_UNSIGNED_SHORT, (ushort *)0);
+
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    enablepolygonoffset(GL_POLYGON_OFFSET_LINE);
+
+    pm.mul(camprojmatrix, m);
+    GLOBALPARAM(prefabmatrix, pm);
+    SETSHADER(prefab);
+    gle::color(vec::hexcolor(outlinecolour));
+    glDrawRangeElements_(GL_TRIANGLES, 0, p.numverts-1, p.numtris*3, GL_UNSIGNED_SHORT, (ushort *)0);
+
+    disablepolygonoffset(GL_POLYGON_OFFSET_LINE);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+    gle::disablevertex();
+    gle::disablenormal();
+    gle::clearebo();
+    gle::clearvbo();
+}
+
+void renderprefab(const char *name, const vec &o, float yaw, float pitch, float roll, float size, const vec &color)
+{
+    prefab *p = loadprefab(name, false);
+    if(p) renderprefab(*p, o, yaw, pitch, roll, size, color);
+}
+
+void previewprefab(const char *name, const vec &color)
+{
+    prefab *p = loadprefab(name, false);
+    if(p)
+    {
+        block3 &b = *p->copy;
+        float yaw;
+        vec o = calcmodelpreviewpos(vec(b.s).mul(b.grid*0.5f), yaw);
+        renderprefab(*p, o, yaw, 0, 0, 1, color);
+    }
+}
 
 void mpcopy(editinfo *&e, selinfo &sel, bool local)
 {

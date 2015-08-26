@@ -780,6 +780,37 @@ vec decodenormal(ushort norm)
     return vec(-yaw.y*pitch.x, yaw.x*pitch.x, pitch.y);
 }
 
+void guessnormals(const vec *pos, int numverts, vec *normals)
+{
+    vec n1, n2;
+    n1.cross(pos[0], pos[1], pos[2]);
+    if(numverts != 4)
+    {
+        n1.normalize();
+        loopk(numverts) normals[k] = n1;
+        return;
+    }
+    n2.cross(pos[0], pos[2], pos[3]);
+    if(n1.iszero())
+    {
+        n2.normalize();
+        loopk(4) normals[k] = n2;
+        return;
+    }
+    else n1.normalize();
+    if(n2.iszero())
+    {
+        loopk(4) normals[k] = n1;
+        return;
+    }
+    else n2.normalize();
+    vec avg = vec(n1).add(n2).normalize();
+    normals[0] = avg;
+    normals[1] = n1;
+    normals[2] = avg;
+    normals[3] = n2;
+}
+
 void addcubeverts(VSlot &vslot, int orient, int size, vec *pos, int convex, ushort texture, ushort lmid, vertinfo *vinfo, int numverts, int tj = -1, ushort envmap = EMID_NONE, int grassy = 0, bool alpha = false, int layer = LAYER_TOP)
 {
     int dim = dimension(orient);

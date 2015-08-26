@@ -1513,14 +1513,24 @@ void drawcubemap(int size, int level, const vec &o, float yaw, float pitch, bool
     drawtex = 0;
 }
 
+VAR(0, modelpreviewfov, 10, 20, 100);
+VAR(0, modelpreviewpitch, -90, -15, 90);
+
 namespace modelpreview
 {
     physent *oldcamera;
     physent camera;
 
-    void start(bool background)
+    float oldaspect, oldfovy, oldfov;
+    int oldfarplane;
+
+    void start(int x, int y, int w, int h, bool background)
     {
         drawtex = DRAWTEX_MODELPREVIEW;
+
+        glViewport(x, y, w, h);
+        glScissor(x, y, w, h);
+        glEnable(GL_SCISSOR_TEST);
 
         oldcamera = camera1;
         camera = *camera1;
@@ -1528,9 +1538,19 @@ namespace modelpreview
         camera.type = ENT_CAMERA;
         camera.o = vec(0, 0, 0);
         camera.yaw = 0;
-        camera.pitch = 0;
+        camera.pitch = modelpreviewpitch;
         camera.roll = 0;
         camera1 = &camera;
+
+        oldaspect = aspect;
+        oldfovy = fovy;
+        oldfov = curfov;
+        oldfarplane = farplane;
+
+        aspect = w/float(h);
+        fovy = modelpreviewfov;
+        curfov = 2*atan2(tan(fovy/2*RAD), 1/aspect)/RAD;
+        farplane = 1024;
 
         clearfogdist();
         zerofogcolor();
@@ -1538,7 +1558,7 @@ namespace modelpreview
 
         glClear((background ? GL_COLOR_BUFFER_BIT : 0) | GL_DEPTH_BUFFER_BIT);
 
-        projmatrix.perspective(90.0f, 1.0f, nearplane, 1024);
+        projmatrix.perspective(fovy, aspect, nearplane, farplane);
         setcamprojmatrix();
 
         glEnable(GL_CULL_FACE);
@@ -1554,9 +1574,24 @@ namespace modelpreview
         resetfogcolor();
         glClearColor(curfogcolor.r, curfogcolor.g, curfogcolor.b, 1);
 
+        aspect = oldaspect;
+        fovy = oldfovy;
+        curfov = oldfov;
+        farplane = oldfarplane;
+
         camera1 = oldcamera;
         drawtex = 0;
+
+        glDisable(GL_SCISSOR_TEST);
+        glViewport(0, 0, screen->w, screen->h);
     }
+}
+
+vec calcmodelpreviewpos(const vec &radius, float &yaw)
+{
+    yaw = fmod(lastmillis/10000.0f*360.0f, 360.0f);
+    float dist = 1.05f*max(radius.magnitude2()/aspect, radius.magnitude())/sinf(fovy/2*RAD);
+    return vec(0, dist, 0).rotate_around_x(camera1->pitch*RAD);
 }
 
 GLuint minimaptex = 0;

@@ -263,7 +263,7 @@ extern void resetfogdist();
 
 namespace modelpreview
 {
-    extern void start(bool background = true);
+    extern void start(int x, int y, int w, int h, bool background = true);
     extern void end();
 }
 
@@ -351,11 +351,15 @@ extern void addundo(undoblock *u);
 extern void commitchanges(bool force = false);
 extern editinfo *localedit;
 
+extern void renderprefab(const char *name, const vec &o, float yaw, float pitch, float roll, float size = 1, const vec &color = vec(1, 1, 1));
+extern void previewprefab(const char *name, const vec &color);
+
 // octarender
 extern vector<tjoint> tjoints;
 
 extern ushort encodenormal(const vec &n);
 extern vec decodenormal(ushort norm);
+extern void guessnormals(const vec *pos, int numverts, vec *normals);
 extern void reduceslope(ivec &n);
 extern void findtjoints();
 extern void octarender();
