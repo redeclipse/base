@@ -43,11 +43,14 @@ semabuild_build() {
     sudo dpkg --add-architecture i386 || return 1
     sudo ${SEMABUILD_APT} update || return 1
     sudo ${SEMABUILD_APT} -fy install build-essential multiarch-support gcc-multilib g++-multilib zlib1g-dev libsdl-mixer1.2-dev libsdl-image1.2-dev binutils-mingw-w64 g++-mingw-w64 || return 1
-    make PLATFORM=crossmingw64 PLATFORM_BIN=amd64 INSTDIR=${SEMABUILD_DIR}/windows/bin/amd64 CFLAGS=-m64 CXXFLAGS=-m64 LDFLAGS=-m64 -C src clean install || return 1
-    make PLATFORM=crossmingw32 PLATFORM_BIN=x86 INSTDIR=${SEMABUILD_DIR}/windows/bin/x86 CFLAGS=-m32 CXXFLAGS=-m32 LDFLAGS=-m32 -C src clean install || return 1
-    make PLATFORM=linux64 PLATFORM_BIN=amd64 INSTDIR=${SEMABUILD_DIR}/linux/bin/amd64 CFLAGS=-m64 CXXFLAGS=-m64 LDFLAGS=-m64 -C src clean install || return 1
-    sudo apt-get -o Dpkg::Options::="--force-overwrite" -fy install zlib1g-dev:i386 libsdl1.2-dev:i386 libsdl-mixer1.2-dev:i386 libsdl-image1.2-dev:i386 libpng12-dev:i386 libcaca-dev:i386 libglu1-mesa-dev:i386 libgl1-mesa-dev:i386 || sudo apt-get -o Dpkg::Options::="--force-overwrite" -fy install || return 1
-    sudo apt-get -o Dpkg::Options::="--force-overwrite" -fy install gcc:i386 g++:i386 || sudo apt-get -o Dpkg::Options::="--force-overwrite" -fy install || return 1
+    #make PLATFORM=crossmingw64 PLATFORM_BIN=amd64 INSTDIR=${SEMABUILD_DIR}/windows/bin/amd64 CFLAGS=-m64 CXXFLAGS=-m64 LDFLAGS=-m64 -C src clean install || return 1
+    #make PLATFORM=crossmingw32 PLATFORM_BIN=x86 INSTDIR=${SEMABUILD_DIR}/windows/bin/x86 CFLAGS=-m32 CXXFLAGS=-m32 LDFLAGS=-m32 -C src clean install || return 1
+    #make PLATFORM=linux64 PLATFORM_BIN=amd64 INSTDIR=${SEMABUILD_DIR}/linux/bin/amd64 CFLAGS=-m64 CXXFLAGS=-m64 LDFLAGS=-m64 -C src clean install || return 1
+    SEMABUILD_X86="build-essential:i386 gcc:i386 g++:i386 zlib1g-dev:i386 libsdl1.2-dev:i386 libsdl-mixer1.2-dev:i386 libsdl-image1.2-dev:i386 libpng12-dev:i386"
+    for i in ${SEMABUILD_X86}; do
+         sudo apt-get -o Dpkg::Options::="--force-overwrite" -fy build-dep ${i} || return 1
+    done
+    sudo apt-get -o Dpkg::Options::="--force-overwrite" -fy install ${SEMABUILD_X86} || return 1
     make PLATFORM=linux32 PLATFORM_BIN=x86 INSTDIR=${SEMABUILD_DIR}/linux/bin/x86 CFLAGS=-m32 CXXFLAGS=-m32 LDFLAGS=-m32 -C src clean install || return 1
     return 0
 }
@@ -109,7 +112,7 @@ semabuild_deploy() {
 
 semabuild_setup || exit 1
 semabuild_process || exit 1
-if [ "${SEMABUILD_DEPLOY}" = "true" ]; then
-    semabuild_deploy || exit 1
-fi
+#if [ "${SEMABUILD_DEPLOY}" = "true" ]; then
+#    semabuild_deploy || exit 1
+#fi
 echo "done."
