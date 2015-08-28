@@ -351,6 +351,12 @@ ICOMMAND(0, ircpass, "ss", (const char *name, const char *s), {
     if(!s || !*s) { ircprintf(n, 4, NULL, "current password is: %s", n->passkey && *n->passkey ? "<set>" : "<not set>"); return; }
     copystring(n->passkey, s);
 });
+ICOMMAND(0, ircauthcommand, "ss", (const char *name, const char *s), {
+    ircnet *n = ircfind(name);
+    if(!n) { conoutf("no such ircnet: %s", name); return; }
+    if(!s || !*s) { ircprintf(n, 4, NULL, "current auth command is: %s", n->authcommand && *n->authcommand ? "<set>" : "<not set>"); return; }
+    copystring(n->authcommand, s);
+});
 ICOMMAND(0, ircauth, "sss", (const char *name, const char *s, const char *t), {
     ircnet *n = ircfind(name);
     if(!n) { conoutf("no such ircnet: %s", name); return; }
@@ -662,6 +668,7 @@ void ircprocess(ircnet *n, char *user[3], int g, int numargs, char *w[])
                     n->state = IRC_ONLINE;
                     ircprintf(n, 4, NULL, "\fbnow connected to %s as %s (%s)", user[0], n->nick, n->mnick);
                     if(*n->authname && *n->authpass) ircsend(n, "PRIVMSG %s :%s", n->authname, n->authpass);
+                    if(*n->authcommand) ircsend(n, "%s", n->authcommand);
                 }
                 break;
             }
