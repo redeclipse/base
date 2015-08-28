@@ -46,11 +46,7 @@ semabuild_build() {
     #make PLATFORM=crossmingw64 PLATFORM_BIN=amd64 INSTDIR=${SEMABUILD_DIR}/windows/bin/amd64 CFLAGS=-m64 CXXFLAGS=-m64 LDFLAGS=-m64 -C src clean install || return 1
     #make PLATFORM=crossmingw32 PLATFORM_BIN=x86 INSTDIR=${SEMABUILD_DIR}/windows/bin/x86 CFLAGS=-m32 CXXFLAGS=-m32 LDFLAGS=-m32 -C src clean install || return 1
     #make PLATFORM=linux64 PLATFORM_BIN=amd64 INSTDIR=${SEMABUILD_DIR}/linux/bin/amd64 CFLAGS=-m64 CXXFLAGS=-m64 LDFLAGS=-m64 -C src clean install || return 1
-    SEMABUILD_X86="build-essential:i386 gcc:i386 g++:i386 zlib1g-dev:i386 libsdl1.2-dev:i386 libsdl-mixer1.2-dev:i386 libsdl-image1.2-dev:i386 libpng12-dev:i386"
-    for i in ${SEMABUILD_X86}; do
-         sudo apt-get -o Dpkg::Options::="--force-overwrite" -fy build-dep ${i} || return 1
-    done
-    sudo apt-get -o Dpkg::Options::="--force-overwrite" -fy install ${SEMABUILD_X86} || return 1
+    sudo apt-get -o Dpkg::Options::="--force-overwrite" -fy install build-essential:i386 gcc:i386 g++:i386 zlib1g-dev:i386 libsdl1.2-dev:i386 libsdl-mixer1.2-dev:i386 libsdl-image1.2-dev:i386 libpng12-dev:i386 || return 1
     make PLATFORM=linux32 PLATFORM_BIN=x86 INSTDIR=${SEMABUILD_DIR}/linux/bin/x86 CFLAGS=-m32 CXXFLAGS=-m32 LDFLAGS=-m32 -C src clean install || return 1
     return 0
 }
