@@ -7,6 +7,7 @@ VAR(0, ircautorejoin, 0, 300, VAR_MAX);
 VAR(0, ircpingpong, 5, 120, VAR_MAX);
 VAR(0, irctimeout, 5, 60, VAR_MAX);
 VAR(0, ircautoaway, 0, 15, VAR_MAX); // time in seconds after closing the gui the user is marked as away
+VAR(0, ircnickhighlight, 0, 1, 1);
 
 vector<ircnet *> ircnets;
 
@@ -461,6 +462,13 @@ ICOMMAND(0, ircfriendlychan, "sss", (const char *name, const char *chan, const c
     copystring(c->friendly, s);
 });
 
+bool ircmatchnick(ircnet *n, const char *str)
+{
+    if(!strncasecmp(str, n->mnick, strlen(n->mnick))) return true;
+    if(!strncasecmp(str, n->nick, strlen(n->nick))) return true;
+    return false;
+}
+
 void ircprocess(ircnet *n, char *user[3], int g, int numargs, char *w[])
 {
     if(!strcasecmp(w[g], "NOTICE") || !strcasecmp(w[g], "PRIVMSG"))
@@ -507,7 +515,7 @@ void ircprocess(ircnet *n, char *user[3], int g, int numargs, char *w[])
             else if(ismsg)
             {
                 string str = "";
-                if(n->type == IRCT_RELAY && g && strcasecmp(w[g+1], n->nick) && !strncasecmp(w[g+2], n->nick, strlen(n->nick)))
+                if(n->type == IRCT_RELAY && g && strcasecmp(w[g+1], n->nick) && ircmatchnick(n, w[g+2]))
                 {
                     const char *p = &w[g+2][strlen(n->nick)];
                     while(p && (*p == ':' || *p == ';' || *p == ',' || *p == '.' || *p == ' ' || *p == '\t')) p++;
@@ -521,6 +529,13 @@ void ircprocess(ircnet *n, char *user[3], int g, int numargs, char *w[])
                 {
                     irc2cube(str, w[g+2]);
                     ircprintf(n, 1, g ? w[g+1] : NULL, "\fa<\fw%s\fa>\fw %s", user[0], str);
+                    if(g)
+                    {
+                        if(!strcasecmp(w[g+1], n->nick))
+                            console(CON_SELF, "\fa[%s] <\fw%s\fa (to you)>\fw %s", n->name, user[0], str);
+                        else if(ircnickhighlight && ircmatchnick(n, w[g+2]))
+                            console(CON_SELF, "\fa[%s] <\fw%s\fa (to %s)>\fw %s", n->name, user[0], w[g+1], str);
+                    }
                 }
             }
             else ircprintf(n, 2, g ? w[g+1] : NULL, "\fo-%s- %s", user[0], w[g+2]);
