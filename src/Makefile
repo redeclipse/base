@@ -266,7 +266,7 @@ install-cube2font: cube2font
 	install -m 755 $< $(INSTDIR)/$<
 endif
 
-install: install-client install-server
+install: install-client install-server install-genkey
 
 $(LIBENET):
 	$(MAKE) -C enet
@@ -276,7 +276,7 @@ depend:
 	makedepend -a -o-standalone.o -Y -I. -Ishared -Iengine -Igame -Isqlite -DSTANDALONE $(subst -standalone.o,.cpp,$(SERVER_OBJS))
 	makedepend -a -o.h.gch -Y -I. -Ishared -Iengine -Igame -Isqlite $(subst .h.gch,.h,$(CLIENT_PCH))
 
-all: client server
+all: client server genkey
 
 include system-install.mk
 include dist.mk

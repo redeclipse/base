@@ -1,4 +1,4 @@
-appname=$(APPNAME)
+appname=$(APPNAME)
 appnamefull=$(shell sed -n 's/.define VERSION_NAME *"\([^"]*\)"/\1/p' version.h)
 appversion=$(shell sed -n 's/.define VERSION_STRING *"\([^"]*\)"/\1/p' version.h)
 appfiles=http://redeclipse.net/files/stable
@@ -49,6 +49,7 @@ distdir: ../$(dirname)
 ../$(tarname): ../$(dirname)
 	tar \
 		--exclude='$</bin/*/$(appname)*' \
+		--exclude='$</bin/*/genkey*' \
 		--exclude='$</bin/$(dirname-osx)/Contents/MacOS/$(appname)_universal' \
 		-cf $@ $<
 
@@ -60,6 +61,9 @@ dist-tar: ../$(tarname)
 	rm -rf $@/Contents/Resources/bin/*/$(appname)*linux*
 	rm -rf $@/Contents/Resources/bin/*/$(appname)*bsd*
 	rm -rf $@/Contents/Resources/bin/*/$(appname)*.exe
+	rm -rf $@/Contents/Resources/bin/*/genkey*linux*
+	rm -rf $@/Contents/Resources/bin/*/genkey*bsd*
+	rm -rf $@/Contents/Resources/bin/*/genkey.exe
 
 ../$(tarname-osx): ../$(dirname-osx)
 	tar -cf $@ $<
@@ -76,6 +80,8 @@ dist-tar-combined: ../$(tarname-combined)
 	cp -R $< $@
 	rm -rf $@/bin/*/$(appname)*linux*
 	rm -rf $@/bin/*/$(appname)*bsd*
+	rm -rf $@/bin/*/genkey*linux*
+	rm -rf $@/bin/*/genkey*bsd*
 	rm -rf $@/bin/$(dirname-osx)/Contents/MacOS/$(appname)_universal
 
 distdir-win: ../$(dirname-win)
