@@ -114,7 +114,7 @@ setlocal enableextensions enabledelayedexpansion
     if EXIST "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.zip" (
         del /f /q "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.zip"
     )
-    echo %REDECLIPSE_MODULE_RUN%: %REDECLIPSE_GITHUB%/%REDECLIPSE_MODULE_RUN%/zipball/%REDECLIPSE_MODULE_REMOTE%
+    echo %REDECLIPSE_MODULE_RUN%: Downloading %REDECLIPSE_GITHUB%/%REDECLIPSE_MODULE_RUN%/zipball/%REDECLIPSE_MODULE_REMOTE%
     %REDECLIPSE_CURL% --output "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.zip" "%REDECLIPSE_GITHUB%/%REDECLIPSE_MODULE_RUN%/zipball/%REDECLIPSE_MODULE_REMOTE%"
     if NOT EXIST "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.zip" (
         echo %REDECLIPSE_MODULE_RUN%: Failed to retrieve update package.
@@ -162,7 +162,7 @@ setlocal enableextensions enabledelayedexpansion
     if EXIST "%REDECLIPSE_TEMP%\windows.zip" (
         del /f /q "%REDECLIPSE_TEMP%\windows.zip"
     )
-    echo bins: %REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/windows.zip
+    echo bins: Downloading %REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/windows.zip
     %REDECLIPSE_CURL% --output "%REDECLIPSE_TEMP%\windows.zip" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/windows.zip"
     if NOT EXIST "%REDECLIPSE_TEMP%\windows.zip" (
         echo bins: Failed to retrieve update package.
