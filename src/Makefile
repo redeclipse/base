@@ -248,6 +248,13 @@ ifneq (,$(STRIP))
 	$(STRIP) $@
 endif
 
+$(INSTDIR)/genkey$(BIN_SUFFIX): genkey$(BIN_SUFFIX)
+	$(MKDIR) $(INSTDIR)
+	$(CP) $< $@
+ifneq (,$(STRIP))
+	$(STRIP) $@
+endif
+
 install-client: $(INSTDIR)/$(APPCLIENT)$(BIN_SUFFIX)
 
 install-server: $(INSTDIR)/$(APPSERVER)$(BIN_SUFFIX)
