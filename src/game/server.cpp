@@ -2719,17 +2719,6 @@ namespace server
         savedscore *sc = findstatsscore(ci, true);
         if(sc)
         {
-            if(ci->state.actortype == A_PLAYER && m_dm(gamemode) && m_team(gamemode, mutators) && !m_nopoints(gamemode, mutators) && G(teamkillrestore) && canplay())
-            {
-                int restorepoints[T_MAX] = {0};
-                loopv(ci->state.teamkills) restorepoints[ci->state.teamkills[i].team] += ci->state.teamkills[i].points;
-                loopi(T_MAX) if(restorepoints[i] >= G(teamkillrestore))
-                {
-                    score &ts = teamscore(i);
-                    ts.total += restorepoints[i];
-                    sendf(-1, 1, "ri3", N_SCORE, ts.team, ts.total);
-                }
-            }
             sc->save(ci->state);
         }
     }
@@ -3178,7 +3167,7 @@ namespace server
             {
                 requestmasterf("stats player %s %s %d %d %d %d %d\n",
                     escapestring(savedstatsscores[i].name), escapestring(savedstatsscores[i].handle),
-                    m_laptime(gamemode, mutators) ? savedstatsscores[i].cptime : savedstatsscores[i].score,
+                    m_laptime(gamemode, mutators) ? savedstatsscores[i].cptime : savedstatsscores[i].points,
                     savedstatsscores[i].timealive, savedstatsscores[i].frags, savedstatsscores[i].deaths, i
                 );
                 flushmasteroutput();
