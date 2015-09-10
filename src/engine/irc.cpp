@@ -220,9 +220,12 @@ void irc2cube(char *dst, const char *src)
                 case '9': *dst++ = '\f'; *dst++ = 'g'; break; // green
                 default: *dst++ = '\f'; *dst++ = 'w'; c = *--src; break;
             }
-            continue;
         }
-        if(iscubeprint(c) || iscubespace(c)) *dst++ = c;
+        else if(c == '\x0F')
+        {
+            *dst++ = '\f'; *dst++ = 'w';
+        }
+        else if(iscubeprint(c) || iscubespace(c)) *dst++ = c;
     }
     *dst = '\0';
 }
