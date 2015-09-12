@@ -474,7 +474,6 @@ void drawskybox(int farplane, bool limited)
     }
     else if(!alwaysrender)
     {
-        extern vtxarray *visibleva;
         renderedskyfaces = 0;
         renderedskyclip = INT_MAX;
         for(vtxarray *va = visibleva; va; va = va->next)

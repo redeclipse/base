@@ -356,6 +356,7 @@ extern void previewprefab(const char *name, const vec &color);
 
 // octarender
 extern vector<tjoint> tjoints;
+extern vector<vtxarray *> varoot, valist;
 
 extern ushort encodenormal(const vec &n);
 extern vec decodenormal(ushort norm);
@@ -372,6 +373,8 @@ extern void updatevabbs(bool force = false);
 
 // renderva
 extern int outline, blankgeom;
+extern vtxarray *visibleva, *reflectedva;
+
 extern void visiblecubes(bool cull = true);
 extern void setvfcP(float z = -1, const vec &bbmin = vec(-1, -1, -1), const vec &bbmax = vec(1, 1, 1));
 extern void savevfcP();

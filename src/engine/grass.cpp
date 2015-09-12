@@ -271,7 +271,6 @@ void generategrass()
         w.bound2.offset = -camera1->o.dot(w.bound2);
     }
 
-    extern vtxarray *visibleva;
     for(vtxarray *va = visibleva; va; va = va->next)
     {
         if(va->grasstris.empty() || va->occluded >= OCCLUDE_GEOM) continue;

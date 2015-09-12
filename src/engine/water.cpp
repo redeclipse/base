@@ -669,7 +669,6 @@ static void drawmaterialquery(const materialsurface &m, float offset, float bord
     }
 }
 
-extern vtxarray *visibleva;
 extern void drawreflection(float z, bool refract, int fogdepth = -1, const bvec &col = bvec(0, 0, 0));
 
 int rplanes = 0;

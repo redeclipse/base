@@ -1823,7 +1823,6 @@ void writeobj(char *name)
     defformatstring(mtlname, "%s.mtl", name);
     path(mtlname);
     f->printf("mtllib %s\n\n", mtlname);
-    extern vector<vtxarray *> valist;
     vector<vec> verts;
     vector<vec2> texcoords;
     hashtable<vec, int> shareverts(1<<16);
