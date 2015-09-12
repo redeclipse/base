@@ -92,10 +92,15 @@ redeclipse_update_branch() {
     echo "folder: ${REDECLIPSE_PATH}"
     echo "cached: ${REDECLIPSE_TEMP}"
     if [ -z `which curl` ]; then
-        echo "Unable to find curl, are you sure you have it installed?"
-        return 1
+        if [ -z `which wget` ]; then
+            echo "Unable to find curl or wget, are you sure you have one installed?"
+            return 1
+        else
+            REDECLIPSE_DOWNLOADER="wget --no-check-certificate -U \"redeclipse-${REDECLIPSE_UPDATE}\" -O"
+        fi
+    else
+        REDECLIPSE_DOWNLOADER="curl -L -k -f -A \"redeclipse-${REDECLIPSE_UPDATE}\" -o"
     fi
-    REDECLIPSE_CURL="curl --location --insecure --fail --user-agent \"redeclipse-${REDECLIPSE_UPDATE}\""
     if [ "${REDECLIPSE_BLOB}" = "zipball" ]; then
         if [ -z `which unzip` ]; then
             echo "Unable to find unzip, are you sure you have it installed?"
@@ -120,7 +125,7 @@ redeclipse_update_branch() {
 
 redeclipse_update_module() {
     echo "modules: Updating.."
-    ${REDECLIPSE_CURL} --output "${REDECLIPSE_TEMP}/mods.txt" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/mods.txt"
+    ${REDECLIPSE_DOWNLOADER} "${REDECLIPSE_TEMP}/mods.txt" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/mods.txt"
     if ! [ -e "${REDECLIPSE_TEMP}/mods.txt" ]; then
         echo "modules: Failed to retrieve update information."
         redeclipse_update_bins_run
@@ -144,7 +149,7 @@ redeclipse_update_module() {
             fi
         done
         if [ -n "${REDECLIPSE_MODULE_PREFETCH}" ]; then
-            ${REDECLIPSE_CURL} --output "${REDECLIPSE_TEMP}/#1.txt" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/{${REDECLIPSE_MODULE_PREFETCH}}.txt"
+            ${REDECLIPSE_DOWNLOADER} "${REDECLIPSE_TEMP}/#1.txt" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/{${REDECLIPSE_MODULE_PREFETCH}}.txt"
             for a in ${REDECLIPSE_MODULE_LIST}; do
                 REDECLIPSE_MODULE_RUN="${a}"
                 if [ -n "${REDECLIPSE_MODULE_RUN}" ]; then
@@ -211,7 +216,7 @@ redeclipse_update_module_blob() {
         rm -f "${REDECLIPSE_TEMP}/${REDECLIPSE_MODULE_RUN}.${REDECLIPSE_ARCHEXT}"
     fi
     echo "${REDECLIPSE_MODULE_RUN}: Downloading ${REDECLIPSE_GITHUB}/${REDECLIPSE_MODULE_RUN}/${REDECLIPSE_BLOB}/${REDECLIPSE_MODULE_REMOTE}"
-    ${REDECLIPSE_CURL} --output "${REDECLIPSE_TEMP}/${REDECLIPSE_MODULE_RUN}.${REDECLIPSE_ARCHEXT}" "${REDECLIPSE_GITHUB}/${REDECLIPSE_MODULE_RUN}/${REDECLIPSE_BLOB}/${REDECLIPSE_MODULE_REMOTE}"
+    ${REDECLIPSE_DOWNLOADER} "${REDECLIPSE_TEMP}/${REDECLIPSE_MODULE_RUN}.${REDECLIPSE_ARCHEXT}" "${REDECLIPSE_GITHUB}/${REDECLIPSE_MODULE_RUN}/${REDECLIPSE_BLOB}/${REDECLIPSE_MODULE_REMOTE}"
     if ! [ -e "${REDECLIPSE_TEMP}/${REDECLIPSE_MODULE_RUN}.${REDECLIPSE_ARCHEXT}" ]; then
         echo "${REDECLIPSE_MODULE_RUN}: Failed to retrieve update package."
         return $?
@@ -245,7 +250,7 @@ redeclipse_update_module_blob_deploy() {
 redeclipse_update_bins_run() {
     echo "bins: Updating.."
     rm -f "${REDECLIPSE_TEMP}/bins.txt"
-    ${REDECLIPSE_CURL} --output "${REDECLIPSE_TEMP}/bins.txt" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/bins.txt"
+    ${REDECLIPSE_DOWNLOADER} "${REDECLIPSE_TEMP}/bins.txt" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/bins.txt"
     if [ -e "${REDECLIPSE_PATH}/bin/version.txt" ]; then REDECLIPSE_BINS=`cat "${REDECLIPSE_PATH}/bin/version.txt"`; fi
     if [ -z "${REDECLIPSE_BINS}" ]; then REDECLIPSE_BINS="none"; fi
     echo "bins: ${REDECLIPSE_BINS} is installed."
@@ -280,7 +285,7 @@ redeclipse_update_bins_blob() {
         rm -f "${REDECLIPSE_TEMP}/${REDECLIPSE_ARCHIVE}"
     fi
     echo "bins: Downloading ${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/${REDECLIPSE_ARCHIVE}"
-    ${REDECLIPSE_CURL} --output "${REDECLIPSE_TEMP}/${REDECLIPSE_ARCHIVE}" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/${REDECLIPSE_ARCHIVE}"
+    ${REDECLIPSE_DOWNLOADER} "${REDECLIPSE_TEMP}/${REDECLIPSE_ARCHIVE}" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/${REDECLIPSE_ARCHIVE}"
     if ! [ -e "${REDECLIPSE_TEMP}/${REDECLIPSE_ARCHIVE}" ]; then
         echo "bins: Failed to retrieve bins update package."
         redeclipse_update_deploy
@@ -320,10 +325,12 @@ redeclipse_update_deploy() {
         echo "Administrator permissions are required to deploy the files."
         if [ -z `which sudo` ]; then
             echo "Unable to find sudo, are you sure it is installed?"
+            return 1
+        else
+            REDECLIPSE_INSTALL="sudo exec"
             redeclipse_update_unpack
             return $?
         fi
-        REDECLIPSE_INSTALL="sudo exec"
     )
     return $?
 }
