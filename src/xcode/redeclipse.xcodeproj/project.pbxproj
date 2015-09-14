@@ -282,8 +282,8 @@
 		FD05F14C1ADD1BD70046F323 /* iqm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = iqm.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		FD05F14D1ADD1BD70046F323 /* smd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = smd.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		FD6BC4A51B4BE57C0010977F /* master.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; path = master.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
-		FDB078181B6DE60B0005FA3F /* sqlite3.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sqlite3.c; path = ../sqlite/sqlite3.c; sourceTree = "<group>"; };
-		FDB078191B6DE60B0005FA3F /* sqlite3.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sqlite3.h; path = ../sqlite/sqlite3.h; sourceTree = "<group>"; };
+		FDB078181B6DE60B0005FA3F /* sqlite3.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sqlite3.c; path = sqlite3.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
+		FDB078191B6DE60B0005FA3F /* sqlite3.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sqlite3.h; path = sqlite3.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		FDCF1C001B6C84E10035CD3C /* glemu.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = glemu.cpp; sourceTree = "<group>"; };
 		FDCF1C011B6C84E10035CD3C /* glemu.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = glemu.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -365,7 +365,7 @@
 				B9AC7A830D06DB44005506F8 /* engine */,
 				D16A83350F130E9500EABB1F /* game */,
 				B9AC7AC10D06DB44005506F8 /* shared */,
-				FDB0781C1B6DE6140005FA3F /* sqlite */,
+				FDB0781C1B6DE6140005FA3F /* support */,
 				2AB901D01AC1B8E900A5F378 /* version.h */,
 			);
 			name = "Other Sources";
@@ -545,14 +545,15 @@
 			path = ../game;
 			sourceTree = SOURCE_ROOT;
 		};
-		FDB0781C1B6DE6140005FA3F /* sqlite */ = {
+		FDB0781C1B6DE6140005FA3F /* support */ = {
 			isa = PBXGroup;
 			children = (
 				FDB078181B6DE60B0005FA3F /* sqlite3.c */,
 				FDB078191B6DE60B0005FA3F /* sqlite3.h */,
 			);
-			name = sqlite;
-			sourceTree = "<group>";
+			name = support;
+			path = ../support;
+			sourceTree = SOURCE_ROOT;
 		};
 /* End PBXGroup section */
 
