@@ -32,6 +32,7 @@ VAR(IDF_READONLY, versionpatch, 1, VERSION_PATCH, -1);
 SVAR(IDF_READONLY, versionstring, VERSION_STRING);
 SVAR(IDF_READONLY, versionname, VERSION_NAME);
 SVAR(IDF_READONLY, versionuname, VERSION_UNAME);
+SVAR(IDF_READONLY, versionvname, VERSION_VNAME);
 SVAR(IDF_READONLY, versionrelease, VERSION_RELEASE);
 SVAR(IDF_READONLY, versionurl, VERSION_URL);
 SVAR(IDF_READONLY, versioncopy, VERSION_COPY);
@@ -41,13 +42,16 @@ SVAR(IDF_READONLY, versionplatlongname, plat_longname(CUR_PLATFORM));
 VAR(IDF_READONLY, versionplatform, 0, CUR_PLATFORM, VAR_MAX);
 VAR(IDF_READONLY, versionarch, 0, CUR_ARCH, VAR_MAX);
 VAR(IDF_READONLY, versioncrc, 0, 0, VAR_MAX);
-SVAR(IDF_READONLY, versionbranch, "inplace");
+SVAR(IDF_READONLY, versionbranch, "undef");
 #ifdef STANDALONE
 VAR(IDF_READONLY, versionisserver, 0, 1, 1);
 #else
 VAR(IDF_READONLY, versionisserver, 0, 0, 1);
 #endif
 ICOMMAND(0, platname, "ii", (int *p, int *g), result(*p >= 0 && *p < MAX_PLATFORMS ? (*g!=0 ? plat_longname(*p) : plat_name(*p)) : ""));
+
+SVAR(IDF_READONLY, systemuser, "none");
+SVAR(IDF_READONLY, systemhost, "unknown");
 
 VAR(0, rehashing, 1, 0, -1);
 
@@ -1229,7 +1233,7 @@ static void setupwindow(const char *title)
     atexit(cleanupwindow);
 
     if(!setupsystemtray(WM_APP)) fatal("failed adding to system tray");
-    conoutf("identity: v%s-%s%d-%s %s (%s) [0x%.8x]", VERSION_STRING, versionplatname, versionarch, versionbranch, versionisserver ? "server" : "client", VERSION_RELEASE, versioncrc);
+    conoutf("identity: %s@%s v%s-%s%d-%s %s (%s) [0x%.8x]", systemuser, systemhost, VERSION_STRING, versionplatname, versionarch, versionbranch, versionisserver ? "server" : "client", VERSION_RELEASE, versioncrc);
 }
 
 static char *parsecommandline(const char *src, vector<char *> &args)
@@ -1425,7 +1429,7 @@ void setupserver()
 
 void initgame()
 {
-    conoutf("identity: v%s-%s%d-%s %s (%s) [0x%.8x]", VERSION_STRING, versionplatname, versionarch, versionbranch, versionisserver ? "server" : "client", VERSION_RELEASE, versioncrc);
+    conoutf("identity: %s@%s v%s-%s%d-%s %s (%s) [0x%.8x]", systemuser, systemhost, VERSION_STRING, versionplatname, versionarch, versionbranch, versionisserver ? "server" : "client", VERSION_RELEASE, versioncrc);
     server::start();
     loopv(gameargs)
     {
@@ -1572,7 +1576,7 @@ void setlocations(bool wanthome)
     }
     if(!execfile("config/version.cfg", false, EXEC_VERSION|EXEC_BUILTIN)) fatal("cannot exec 'config/version.cfg'");
     // pseudo directory with game content
-    const char *dir = getenv("GAME_DATA");
+    const char *dir = getenv(sup_var("DATADIR"));
     if(dir && *dir) addpackagedir(dir);
     else addpackagedir("data");
     if(!fileexists(findfile("maps/readme.txt", "r"), "r")) fatal("could not find game data");
@@ -1681,8 +1685,25 @@ ICOMMAND(0, rehash, "i", (int *nosave), if(!(identflags&IDF_WORLD)) rehash(*nosa
 void setverinfo(const char *bin)
 {
     setvar("versioncrc", crcfile(bin));
-    const char *branch = getenv("REDECLIPSE_BRANCH");
-    setsvar("versionbranch", branch && *branch ? branch : "inplace");
+    const char *vbranch = getenv(sup_var("BRANCH"));
+    setsvar("versionbranch", vbranch && *vbranch ? vbranch : "undef");
+#ifdef WIN32
+    const char *suser = getenv("USERNAME");
+#else
+    const char *suser = getenv("USER");
+#endif
+    setsvar("systemuser", suser && *suser ? suser : "none");
+#ifdef WIN32
+    const char *shost = getenv("COMPUTERNAME");
+#else
+    const char *shost = getenv("HOSTNAME");
+#endif
+    if(!shost || !*shost)
+    { // only fall back to this if the variable isn't exported
+        static string hostbuf;
+        if(!gethostname(hostbuf, sizeof(string)-1)) shost = hostbuf;
+    }
+    setsvar("systemhost", shost && *shost ? shost : "unknown");
 }
 
 volatile bool fatalsig = false;

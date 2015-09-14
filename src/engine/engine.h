@@ -5,7 +5,8 @@
 #include "cube.h"
 
 extern int version, versioning, versionmajor, versionminor, versionpatch, versionplatform, versionarch, versionisserver, versioncrc;
-extern char *versionstring, *versionname, *versionuname, *versionrelease, *versionurl, *versionmaster, *versionplatname, *versionplatlongname, *versionbranch;
+extern char *versionstring, *versionname, *versionuname, *versionvname, *versionrelease, *versionurl, *versionmaster, *versionplatname, *versionplatlongname, *versionbranch;
+extern char *systemuser, *systemhost;
 #define CUR_VER_MAKE(a,b,c) (((a)<<16) | ((b)<<8) | (c))
 #define CUR_VER CUR_VER_MAKE(VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH)
 #define CUR_VERSION (VERSION_MAJOR*100)+(VERSION_MINOR*10)+VERSION_PATCH
@@ -24,6 +25,7 @@ extern char *versionstring, *versionname, *versionuname, *versionrelease, *versi
 
 #define sup_platform(a) (a >= 0 && a < MAX_PLATFORMS)
 #define sup_arch(a) (a == 32 || a == 64)
+#define sup_var(a) VERSION_VNAME"_"a
 
 extern const char *platnames[MAX_PLATFORMS], *platlongnames[MAX_PLATFORMS];
 #define plat_name(a) (sup_platform(a) ? platnames[a] : "unk")

@@ -841,6 +841,7 @@ int main(int argc, char **argv)
 
     setlogfile(NULL);
     setlocations(true);
+    setverinfo(argv[0]);
 
     char *initscript = NULL;
     initing = INIT_RESET;
@@ -852,7 +853,6 @@ int main(int argc, char **argv)
         }
     }
     setlogfile("log.txt");
-    setverinfo(argv[0]);
     execfile("init.cfg", false);
     for(int i = 1; i<argc; i++)
     {

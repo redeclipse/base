@@ -909,7 +909,7 @@ void ircslice()
                     if(*n->passkey) ircsend(n, "PASS %s", n->passkey);
                     copystring(n->nick, n->mnick);
                     ircsend(n, "NICK %s", n->mnick);
-                    ircsend(n, "USER %s +iw %s :%s v%s-%s%d-%s (%s)", VERSION_UNAME, VERSION_UNAME, VERSION_NAME, VERSION_STRING, versionplatname, versionarch, versionbranch, VERSION_RELEASE);
+                    ircsend(n, "USER %s +iw %s :%s v%s-%s%d-%s (%s)", systemuser, systemuser, VERSION_NAME, VERSION_STRING, versionplatname, versionarch, versionbranch, VERSION_RELEASE);
                     n->lastnick = clocktime;
                     n->state = IRC_CONN;
                     loopvj(n->channels)
