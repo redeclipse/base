@@ -1684,6 +1684,7 @@ ICOMMAND(0, rehash, "i", (int *nosave), if(!(identflags&IDF_WORLD)) rehash(*nosa
 
 void setverinfo(const char *bin)
 {
+    string buf;
     setvar("versioncrc", crcfile(bin));
     const char *vbranch = getenv(sup_var("BRANCH"));
     setsvar("versionbranch", vbranch && *vbranch ? vbranch : "undef");
@@ -1692,6 +1693,10 @@ void setverinfo(const char *bin)
 #else
     const char *suser = getenv("USER");
 #endif
+    if(!suser || !*suser)
+    { // only fall back to this if the variable isn't exported
+        if(!getlogin_r(buf, sizeof(string)-1) && *buf) suser = buf;
+    }
     setsvar("systemuser", suser && *suser ? suser : "none");
 #ifdef WIN32
     const char *shost = getenv("COMPUTERNAME");
@@ -1700,8 +1705,7 @@ void setverinfo(const char *bin)
 #endif
     if(!shost || !*shost)
     { // only fall back to this if the variable isn't exported
-        static string hostbuf;
-        if(!gethostname(hostbuf, sizeof(string)-1)) shost = hostbuf;
+        if(!gethostname(buf, sizeof(string)-1) && *buf) shost = buf;
     }
     setsvar("systemhost", shost && *shost ? shost : "unknown");
 }
