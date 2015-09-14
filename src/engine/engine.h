@@ -31,6 +31,13 @@ extern const char *platnames[MAX_PLATFORMS], *platlongnames[MAX_PLATFORMS];
 
 extern const char *timestr(int dur, int style = 0);
 
+extern vector<char *> gameargs;
+extern void initgame();
+extern void changeservertype();
+extern void cleanupserver();
+extern void serverslice(uint timeout = 0);
+extern int updatetimer(bool limit);
+
 extern void setupmaster();
 extern void checkmaster();
 extern void cleanupmaster();
@@ -471,13 +478,6 @@ extern bool depthfxing;
 extern void drawdepthfxtex();
 
 // server
-extern vector<char *> gameargs;
-extern void initgame();
-extern void changeservertype();
-extern void cleanupserver();
-extern void serverslice(uint timeout = 0);
-extern int updatetimer(bool limit);
-
 extern void retrieveservers(vector<char> &data);
 extern void localclienttoserver(int chan, ENetPacket *);
 extern void lanconnect();
