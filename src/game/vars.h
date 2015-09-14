@@ -470,8 +470,10 @@ GFVAR(IDF_GAMEMOD, impulseregeninair, 0, 0.75f, FVAR_MAX); // impulse regen in-a
 GFVAR(IDF_GAMEMOD, impulseregenslide, 0, 0, FVAR_MAX); // impulse regen sliding modifier
 GVAR(IDF_GAMEMOD, impulseregendelay, 0, 350, VAR_MAX); // delay before impulse regens
 
-GFVAR(IDF_GAMEMOD, spreadstill, 0, 0.25f, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, spreadmoving, 0, 1.f, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, spreadcrouch, 0, 0.25f, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, spreadzoom, 0, 0.125f, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, spreadstill, 0, 0.5f, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, spreadmoving, 0, 0.75f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, spreadrunning, 0, 1.f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, spreadinair, 0, 1.f, FVAR_MAX);
 
