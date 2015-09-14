@@ -1692,11 +1692,11 @@ void setverinfo(const char *bin)
     const char *suser = getenv("USERNAME");
 #else
     const char *suser = getenv("USER");
-#endif
     if(!suser || !*suser)
     { // only fall back to this if the variable isn't exported
         if(!getlogin_r(buf, sizeof(string)-1) && *buf) suser = buf;
     }
+#endif
     setsvar("systemuser", suser && *suser ? suser : "none");
 #ifdef WIN32
     const char *shost = getenv("COMPUTERNAME");
