@@ -4850,7 +4850,12 @@ namespace server
                 if(totalmillis >= shutdownwait+waituntil)
                 {
                     srvoutf(-3, "waited \fs\fc%s\fS to shutdown, overriding and exiting...", timestr(totalmillis-shutdownwait, 4));
+#ifdef STANDALONE
+                    cleanupserver();
                     exit(EXIT_SUCCESS);
+#else
+                    quit();
+#endif
                     return;
                 }
             }
@@ -5004,7 +5009,12 @@ namespace server
         else ifserver(shutdownwait)
         {
             srvoutf(4, "server empty, shutting down as scheduled");
+            #ifdef STANDALONE
+            cleanupserver();
             exit(EXIT_SUCCESS);
+            #else
+            quit();
+            #endif
             return;
         }
         else if(G(rotatecycle) && clocktime-lastrotatecycle >= G(rotatecycle)*60) cleanup();

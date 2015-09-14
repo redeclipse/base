@@ -412,6 +412,7 @@ void cleanupserver()
 {
     server::shutdown();
     cleanupserversockets();
+    cleanupmaster();
     irccleanup();
 }
 
@@ -1739,7 +1740,6 @@ void fatal(const char *s, ...)    // failure exit
         if(errors <= 1) // avoid recursion
         {
             cleanupserver();
-            cleanupmaster();
             enet_deinitialize();
 #ifdef WIN32
             defformatstring(cap, "%s: Error", VERSION_NAME);
@@ -1772,6 +1772,7 @@ int main(int argc, char **argv)
     }
 
     if(enet_initialize()<0) fatal("Unable to initialise network module");
+    atexit(enet_deinitialize);
 
     signal(SIGINT, fatalsignal);
     signal(SIGILL, fatalsignal);
@@ -1793,6 +1794,7 @@ int main(int argc, char **argv)
     trytofindocta();
     if(initscript) execute(initscript);
     serverloop();
+    cleanupserver();
     return 0;
 }
 #endif
