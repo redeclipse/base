@@ -112,7 +112,6 @@ struct gui : guient
         {
             case 2: case 3:
             {
-                bool drawn = false;
                 loopk(guiskinned == 3 || skinborder ? 2 : 1)
                 {
                     int colour = colour1;
@@ -124,102 +123,19 @@ struct gui : guient
                             colour = colour2;
                             blend = blend2;
                             if(!skinbordertex) skinbordertex = textureload(guiskinbordertex, 0, true, false);
-                            if(skinbordertex && skinbordertex != notexture) t = skinbordertex;
+                            t = skinbordertex;
                             break;
                         case 0: default:
                             if(!skintex) skintex = textureload(guiskintex, 0, true, false);
-                            if(skintex && skintex != notexture) t = skintex;
+                            t = skintex;
                             break;
                     }
-                    if(!t) break;
-                    int w = max(x2-x1, 2), h = max(y2-y1, 2), tw = guiskinsize ? guiskinsize : t->w, th = guiskinsize ? guiskinsize : t->h;
-                    float pw = tw*0.25f, ph = th*0.25f, qw = tw*0.5f, qh = th*0.5f, px = 0, py = 0, tx = 0, ty = 0;
-                    if(w < qw)
-                    {
-                        float scale = w/qw;
-                        qw *= scale; qh *= scale;
-                        pw *= scale; ph *= scale;
-                    }
-                    if(h < qh)
-                    {
-                        float scale = h/qh;
-                        qw *= scale; qh *= scale;
-                        pw *= scale; ph *= scale;
-                    }
-                    int cw = max(int(floorf(w/qw))-1, 0), ch = max(int(floorf(h/qh))+1, 2);
-
-                    glBindTexture(GL_TEXTURE_2D, t->id);
-                    gle::color(vec::hexcolor(colour), blend);
-                    gle::defvertex(2);
-                    gle::deftexcoord0();
-                    gle::begin(GL_QUADS);
-
-                    loopi(ch)
-                    {
-                        bool cond = !i || i == ch-1;
-                        float vph = cond ? ph : qh, vth = cond ? 0.25f : 0.5f;
-                        if(i && cond)
-                        {
-                            float off = h-py;
-                            if(off > vph)
-                            {
-                                float part = off/vph;
-                                vph *= part;
-                                vth *= part;
-                            }
-                            ty = 1-vth;
-                        }
-                        loopj(3) switch(j)
-                        {
-                            case 0: case 2:
-                            {
-                                gle::attribf(x1+px, y1+py); gle::attribf(tx, ty);
-                                gle::attribf(x1+px+pw, y1+py); gle::attribf(tx+0.25f, ty);
-                                gle::attribf(x1+px+pw, y1+py+vph); gle::attribf(tx+0.25f, ty+vth);
-                                gle::attribf(x1+px, y1+py+vph); gle::attribf(tx, ty+vth);
-                                tx += 0.25f;
-                                px += pw;
-                                xtraverts += 4;
-                                break;
-                            }
-                            case 1:
-                            {
-                                for(int xx = 0; xx < cw; xx++)
-                                {
-                                    gle::attribf(x1+px, y1+py); gle::attribf(tx, ty);
-                                    gle::attribf(x1+px+qw, y1+py); gle::attribf(tx+0.5f, ty);
-                                    gle::attribf(x1+px+qw, y1+py+vph); gle::attribf(tx+0.5f, ty+vth);
-                                    gle::attribf(x1+px, y1+py+vph); gle::attribf(tx, ty+vth);
-                                    px += qw;
-                                    xtraverts += 4;
-                                }
-                                float want = w-pw, off = want-px;
-                                if(off > 0)
-                                {
-                                    float part = 0.5f*off/qw;
-                                    gle::attribf(x1+px, y1+py); gle::attribf(tx, ty);
-                                    gle::attribf(x1+want, y1+py); gle::attribf(tx+part, ty);
-                                    gle::attribf(x1+want, y1+py+vph); gle::attribf(tx+part, ty+vth);
-                                    gle::attribf(x1+px, y1+py+vph); gle::attribf(tx, ty+vth);
-                                    px = want;
-                                }
-                                tx += 0.5f;
-                                break;
-                            }
-                            default: break;
-                        }
-                        px = tx = 0;
-                        py += vph;
-                        if(!i) ty += vth;
-                    }
-                    xtraverts += gle::end();
-                    drawn = true;
+                    drawskin(t, x1, y1, x2, y2, colour, blend, guiskinsize);
                 }
-                if(drawn) break; // otherwise fallback
+                break;
             }
             case 1:
             {
-                x1++; y1++; x2--; y2--; // offset these slightly like a skin
                 if(colour1 >= 0)
                 {
                     hudnotextureshader->set();
@@ -612,7 +528,7 @@ struct gui : guient
         int size = (int)(sizescale*2*FONTH)-guishadow;
         if(visible())
         {
-            bool hit = ishit(size+guishadow, size+guishadow); 
+            bool hit = ishit(size+guishadow, size+guishadow);
             float xs = size, ys = size, xi = curx, yi = cury, xpad = 0, ypad = 0;
             if(overlaid)
             {
@@ -636,7 +552,7 @@ struct gui : guient
             {
                 if(!overlaytex) overlaytex = textureload(guioverlaytex, 3, true, false);
                 gle::color(hit && hitfx ? vec::hexcolor(guiactivecolour) : vec(1, 1, 1));
-                glBindTexture(GL_TEXTURE_2D, overlaytex->id); 
+                glBindTexture(GL_TEXTURE_2D, overlaytex->id);
                 rect_(xi - xpad, yi - ypad, xs + 2*xpad, ys + 2*ypad, 0);
             }
         }

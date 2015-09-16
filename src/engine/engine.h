@@ -276,6 +276,8 @@ namespace modelpreview
     extern void end();
 }
 
+extern void drawskin(Texture *t, int x1, int y1, int x2, int y2, int colour = 0, float blend = 1, int size = 0, const matrix4x3 *m = NULL);
+
 // renderextras
 extern void render3dbox(vec &o, float tofloor, float toceil, float xradius, float yradius = 0, const matrix4x3 *m = NULL);
 extern void renderellipse(vec &o, float xradius, float yradius, float yaw);
@@ -656,14 +658,19 @@ extern double skyarea;
 extern void drawskybox(int farplane, bool limited);
 extern bool limitsky();
 
-// gui
+// ui
 extern int mouseaction[2];
 extern bool guiactionon;
 
-extern int guishadow, guiclicktab, guitextblend, guitextfade, guisepsize, guiscaletime,
-    guibgcolour, guibordercolour, guihovercolour, guitooltips, guitooltiptime,
-    guitooltipcolour, guitooltipbordercolour, guifieldbgcolour, guifieldbordercolour, guifieldactivecolour, guiactivecolour;
-extern float guibgblend, guiborderblend, guihoverscale, guihoverblend, guitooltipblend, guitooltipborderblend, guifieldbgblend, guifieldborderblend, guifieldactiveblend, guiactiveblend;
+extern int guilayoutpass, guiskinsize, guislidersize, guisepsize, guispacesize, guitooltipwidth, guistatuswidth,
+    guishadow, guiclicktab, guitabborder, guitextblend, guitextfade, guiscaletime, guiskinned, guibgcolour, guibordercolour,
+    guihovercolour, guistatusline, guitooltips, guitooltiptime, guitooltipfade, guitooltipcolour, guitooltipbordercolour, guitooltipborderskin,
+    guifieldbgcolour, guifieldbordercolour, guifieldactivecolour, guislidercolour, guisliderbordercolour, guisliderborderskin, guislidermarkcolour,
+    guislidermarkbordercolour, guislidermarkborderskin, guislideractivecolour, guiactivecolour;
+extern float guiscale, guitextscale, guibgblend, guiborderblend, guihoverscale, guihoverblend, guitooltipblend, guitooltipborderblend,
+    guifieldbgblend, guifieldborderblend, guifieldactiveblend, guisliderblend, guisliderborderblend, guislidermarkblend, guislidermarkborderblend,
+    guislideractiveblend, guiactiveblend;
+extern char *guiskintex, *guiskinbordertex, *guioverlaytex, *guiexittex, *guihovertex;
 
 extern void progressmenu();
 extern void mainmenu();

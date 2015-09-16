@@ -4,13 +4,18 @@ VAR(IDF_PERSIST, textblinking, 0, 250, VAR_MAX);
 FVAR(IDF_PERSIST, textscale, FVAR_NONZERO, 1, FVAR_MAX);
 VAR(IDF_PERSIST, textfaded, 0, 1, 1);
 VAR(IDF_PERSIST, textminintensity, 0, 32, 255);
-VARF(IDF_PERSIST, textkeybg, 0, 1, 1, changedkeys = totalmillis);
+
+Texture *tbgbordertex = NULL, *tbgtex = NULL;
+VARF(IDF_PERSIST, textkeybg, 0, 2, 2, changedkeys = totalmillis);
 VARF(IDF_PERSIST, textkeyseps, 0, 1, 1, changedkeys = totalmillis);
-VAR(IDF_PERSIST|IDF_HEX, textkeybgcolour, 0x000000, 0xFFFFFF, 0xFFFFFF);
+VAR(IDF_PERSIST|IDF_HEX, textkeybgcolour, 0x000000, 0xC0C0C0, 0xFFFFFF);
+VAR(IDF_PERSIST|IDF_HEX, textkeybgbordercolour, 0x000000, 0xFFFFFF, 0xFFFFFF);
 VAR(IDF_PERSIST|IDF_HEX, textkeyfgcolour, 0x000000, 0x00FFFF, 0xFFFFFF);
-FVAR(IDF_PERSIST, textkeybgblend, 0, 0.25f, 1);
+FVAR(IDF_PERSIST, textkeybgblend, 0, 0.5f, 1);
+FVAR(IDF_PERSIST, textkeybgborderblend, 0, 0.9f, 1);
 FVAR(IDF_PERSIST, textkeyfgblend, 0, 1, 1);
-TVAR(IDF_PERSIST|IDF_PRELOAD, textkeybgtex, "textures/textkeybg", 3);
+TVARN(IDF_PERSIST|IDF_PRELOAD, textkeybgtex, "textures/guiskin", tbgtex, 0);
+TVARN(IDF_PERSIST|IDF_PRELOAD, textkeybgbordertex, "textures/guiskinborder", tbgbordertex, 0);
 
 static hashnameset<font> fonts;
 static font *fontdef = NULL;
@@ -514,43 +519,37 @@ void text_boundsf(const char *str, float &width, float &height, int maxwidth, in
 
 int draw_key(Texture *&tex, const char *str, float sx, float sy, float sc, bvec4 &cl, int flags)
 {
-    float swidth = text_widthf(str, flags), ss = 0, sp = 0;
+    float swidth = text_widthf(str, flags), ss = swidth, sp = 0;
+    if(tex)
+    {
+        xtraverts += gle::end();
+        tex = NULL;
+    }
     if(textkeybg)
     {
-        Texture *t = textureload(textkeybgtex, 3, true, false);
-        if(tex != t)
+        sp += FONTW*0.5f;
+        ss += FONTW;
+        loopk(textkeybg)
         {
-            xtraverts += gle::end();
-            tex = t;
-            glBindTexture(GL_TEXTURE_2D, tex->id);
+            int colour = textkeybgcolour;
+            float blend = textkeybgblend;
+            Texture *t = NULL;
+            switch(k)
+            {
+                case 1:
+                    colour = textkeybgbordercolour;
+                    blend = textkeybgborderblend;
+                    if(!tbgbordertex) tbgbordertex = textureload(textkeybgbordertex, 0, true, false);
+                    t = tbgbordertex;
+                    break;
+                case 0: default:
+                    if(!tbgtex) tbgtex = textureload(textkeybgtex, 0, true, false);
+                    t = tbgtex;
+                    break;
+            }
+            drawskin(t, sx, sy, sx+ss, sy+(curfont->maxh*sc), colour, blend*(cl.a/255.f), 0, textmatrix);
         }
-
-        gle::colorub(uchar((textkeybgcolour>>16)&0xFF), uchar((textkeybgcolour>>8)&0xFF), uchar(textkeybgcolour&0xFF), uchar(textkeybgblend*cl.a));
-
-        float sh = curfont->maxh*sc, sw = (t->w*sh)/float(t->h), w1 = sw*0.25f, w2 = sw*0.5f, amt = swidth/w2;
-        int count = int(floorf(amt));
-        textvert(sx + ss,      sy     ); gle::attribf(0, 0);
-        textvert(sx + ss + w1, sy     ); gle::attribf(0.25f, 0);
-        textvert(sx + ss + w1, sy + sh); gle::attribf(0.25f, 1);
-        textvert(sx + ss,      sy + sh); gle::attribf(0, 1);
-        sp = (ss += w1);
-        loopi(count)
-        {
-            textvert(sx + ss,      sy     ); gle::attribf(0.25f, 0);
-            textvert(sx + ss + w2, sy     ); gle::attribf(0.75f, 0);
-            textvert(sx + ss + w2, sy + sh); gle::attribf(0.75f, 1);
-            textvert(sx + ss,      sy + sh); gle::attribf(0.25f, 1);
-            ss += w2;
-        }
-        float w3 = amt-float(count), w4 = w1 + w2*w3, w5 = 0.75f - 0.5f*w3;
-        textvert(sx + ss,      sy     ); gle::attribf(w5, 0);
-        textvert(sx + ss + w4, sy     ); gle::attribf(1, 0);
-        textvert(sx + ss + w4, sy + sh); gle::attribf(1, 1);
-        textvert(sx + ss,      sy + sh); gle::attribf(w5, 1);
-        ss += w4;
     }
-    else ss = swidth;
-    xtraverts += gle::end();
 
     #define TEXTINDEX(idx)
     #define TEXTWHITE(idx)
@@ -704,4 +703,3 @@ bool popfont(int num)
     if(fontstack.length()) { curfont = fontstack.last(); return true; }
     return setfont("default");
 }
-

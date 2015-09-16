@@ -635,7 +635,7 @@ void setcammatrix()
 void setcamprojmatrix(bool init = true, bool flush = false)
 {
     if(init)
-    {   
+    {
         setcammatrix();
     }
 
@@ -655,7 +655,7 @@ void setcamprojmatrix(bool init = true, bool flush = false)
         fogplane.x /= projmatrix.a.x;
         fogplane.y /= projmatrix.b.y;
         fogplane.z /= projmatrix.c.w;
-        GLOBALPARAMF(fogplane, fogplane.x, fogplane.y, 0, fogplane.z); 
+        GLOBALPARAMF(fogplane, fogplane.x, fogplane.y, 0, fogplane.z);
     }
     else
     {
@@ -1032,7 +1032,7 @@ static void blendfog(int fogmat, float blend, float logblend, float &start, floa
         }
 
         default:
-            fogc.madd(fogcolor.tocolor(), blend); 
+            fogc.madd(fogcolor.tocolor(), blend);
             start += logblend*(fog+64)/8;
             end += logblend*fog;
             break;
@@ -1126,7 +1126,7 @@ static void setnofog(const vec &color = vec(0, 0, 0))
     curfogstart = 0;
     curfogend = 1000000;
     curfogcolor = color;
-    
+
     resetfog();
 }
 
@@ -1377,7 +1377,7 @@ void drawreflection(float z, bool refract, int fogdepth, const bvec &col)
     {
         if(fading) glColorMask(COLORMASK, GL_TRUE);
         if(reflectclip && z>=0)
-        {   
+        {
             projmatrix = noclipmatrix;
             setcamprojmatrix(false, true);
         }
@@ -1679,7 +1679,7 @@ void drawminimap()
     setviewcell(vec(-1, -1, -1));
 
     projmatrix.ortho(-minimapradius.x, minimapradius.x, -minimapradius.y, minimapradius.y, 0, camera1->o.z + 1);
-    projmatrix.a.mul(-1); 
+    projmatrix.a.mul(-1);
     setcamprojmatrix();
 
     setnofog(minimapcolor.tocolor());
@@ -2303,22 +2303,105 @@ void gl_drawframe(int w, int h)
 
 void usetexturing(bool on)
 {
-    if(on)
-        hudshader->set();
-    else
-        hudnotextureshader->set();
+    if(on) hudshader->set();
+    else hudnotextureshader->set();
 }
 
 void cleanupgl()
 {
     cleanupmotionblur();
-
     clearminimap();
-
     cleanupviews();
-
     cleanupscreenquad();
-
     gle::cleanup();
 }
 
+void drawskin(Texture *t, int x1, int y1, int x2, int y2, int colour, float blend, int size, const matrix4x3 *m)
+{
+    int w = max(x2-x1, 2), h = max(y2-y1, 2), tw = size ? size : t->w, th = size ? size : t->h;
+    float pw = tw*0.25f, ph = th*0.25f, qw = tw*0.5f, qh = th*0.5f, px = 0, py = 0, tx = 0, ty = 0;
+    if(w < qw)
+    {
+        float scale = w/qw;
+        qw *= scale; qh *= scale;
+        pw *= scale; ph *= scale;
+    }
+    if(h < qh)
+    {
+        float scale = h/qh;
+        qw *= scale; qh *= scale;
+        pw *= scale; ph *= scale;
+    }
+    int cw = max(int(floorf(w/qw))-1, 0), ch = max(int(floorf(h/qh))+1, 2);
+
+    glBindTexture(GL_TEXTURE_2D, t->id);
+    gle::color(vec::hexcolor(colour), blend);
+    gle::defvertex(2);
+    gle::deftexcoord0();
+    gle::begin(GL_QUADS);
+
+    #define mtxvert(vx,vy) do { \
+        if(m) gle::attrib(m->transform(vec2(vx, vy))); \
+        else gle::attribf(vx, vy); \
+    } while(0)
+
+    loopi(ch)
+    {
+        bool cond = !i || i == ch-1;
+        float vph = cond ? ph : qh, vth = cond ? 0.25f : 0.5f;
+        if(i && cond)
+        {
+            float off = h-py;
+            if(off > vph)
+            {
+                float part = off/vph;
+                vph *= part;
+                vth *= part;
+            }
+            ty = 1-vth;
+        }
+        loopj(3) switch(j)
+        {
+            case 0: case 2:
+            {
+                mtxvert(x1+px, y1+py); gle::attribf(tx, ty);
+                mtxvert(x1+px+pw, y1+py); gle::attribf(tx+0.25f, ty);
+                mtxvert(x1+px+pw, y1+py+vph); gle::attribf(tx+0.25f, ty+vth);
+                mtxvert(x1+px, y1+py+vph); gle::attribf(tx, ty+vth);
+                tx += 0.25f;
+                px += pw;
+                xtraverts += 4;
+                break;
+            }
+            case 1:
+            {
+                for(int xx = 0; xx < cw; xx++)
+                {
+                    mtxvert(x1+px, y1+py); gle::attribf(tx, ty);
+                    mtxvert(x1+px+qw, y1+py); gle::attribf(tx+0.5f, ty);
+                    mtxvert(x1+px+qw, y1+py+vph); gle::attribf(tx+0.5f, ty+vth);
+                    mtxvert(x1+px, y1+py+vph); gle::attribf(tx, ty+vth);
+                    px += qw;
+                    xtraverts += 4;
+                }
+                float want = w-pw, off = want-px;
+                if(off > 0)
+                {
+                    float part = 0.5f*off/qw;
+                    mtxvert(x1+px, y1+py); gle::attribf(tx, ty);
+                    mtxvert(x1+want, y1+py); gle::attribf(tx+part, ty);
+                    mtxvert(x1+want, y1+py+vph); gle::attribf(tx+part, ty+vth);
+                    mtxvert(x1+px, y1+py+vph); gle::attribf(tx, ty+vth);
+                    px = want;
+                }
+                tx += 0.5f;
+                break;
+            }
+            default: break;
+        }
+        px = tx = 0;
+        py += vph;
+        if(!i) ty += vth;
+    }
+    xtraverts += gle::end();
+}
