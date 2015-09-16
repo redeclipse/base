@@ -27,8 +27,8 @@ enum { G_S_WAITING = 0, G_S_GETMAP, G_S_SENDMAP, G_S_READYING, G_S_GAMEINFO, G_S
 #ifdef GAMESERVER
 const char *gamestates[3][G_S_MAX] = {
     { "waiting", "getmap", "sendmap", "readying", "gameinfo", "playing", "overtime", "intermission", "voting" },
-    { "waiting to start", "server getting map", "server sending map", "waiting for ready players", "waiting for game information", "playing", "overtime", "voting in progress" },
-    { "Waiting to start", "Server getting map", "Server sending map", "Waiting for ready players", "Waiting for game information", "Playing", "Overtime", "Voting in progress" }
+    { "waiting to start", "server getting map", "server sending map", "waiting for ready players", "waiting for game information", "playing", "overtime", "intermission", "voting in progress" },
+    { "Waiting to start", "Server getting map", "Server sending map", "Waiting for ready players", "Waiting for game information", "Playing", "Overtime", "Intermission", "Voting in progress" }
 };
 #else
 extern const char *gamestates[3][G_S_MAX];
