@@ -1682,6 +1682,9 @@ void rehash(bool reload)
 }
 ICOMMAND(0, rehash, "i", (int *nosave), if(!(identflags&IDF_WORLD)) rehash(*nosave ? false : true));
 
+#ifndef WIN32
+#include <pwd.h>
+#endif
 void setverinfo(const char *bin)
 {
     string buf;
@@ -1694,7 +1697,12 @@ void setverinfo(const char *bin)
     const char *suser = getenv("USER");
     if(!suser || !*suser)
     { // only fall back to this if the variable isn't exported
-        if(!getlogin_r(buf, sizeof(string)-1) && *buf) suser = buf;
+        passwd *p = getpwuid(geteuid());
+        if(p)
+        {
+            copystring(buf, p->pw_name);
+            suser = buf;
+        }
     }
 #endif
     setsvar("systemuser", suser && *suser ? suser : "none");
