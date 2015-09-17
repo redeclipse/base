@@ -303,7 +303,7 @@ ICOMMAND(0, inputcommand, "sssis", (char *init, char *action, char *icon, int *c
 #if !defined(WIN32) && !defined(__APPLE__)
 #include <X11/Xlib.h>
 #endif
-size_t paste(char *buf, size_t len)
+bool paste(char *buf, size_t len)
 {
 #ifdef WIN32
     UINT fmt = CF_UNICODETEXT;
