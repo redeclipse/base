@@ -310,9 +310,9 @@ size_t paste(char *buf, size_t len)
     if(!IsClipboardFormatAvailable(fmt))
     {
         fmt = CF_TEXT;
-        if(!IsClipboardFormatAvailable(fmt)) return -1;
+        if(!IsClipboardFormatAvailable(fmt)) return false;
     }
-    if(!OpenClipboard(NULL)) return -1;
+    if(!OpenClipboard(NULL)) return false;
     HANDLE h = GetClipboardData(fmt);
     size_t start = strlen(buf), cblen = GlobalSize(h), decoded = 0;
     ushort *cb = (ushort *)GlobalLock(h);
@@ -334,7 +334,7 @@ size_t paste(char *buf, size_t len)
     extern char *mac_pasteconsole(size_t *cblen);
     size_t start = strlen(buf), cblen = 0;
     uchar *cb = (uchar *)mac_pasteconsole(&cblen);
-    if(!cb) return -1;
+    if(!cb) return false;
     size_t decoded = decodeutf8((uchar *)&buf[start], len-1-start, cb, cblen);
     buf[start + decoded] = '\0';
     free(cb);
@@ -342,10 +342,10 @@ size_t paste(char *buf, size_t len)
     SDL_SysWMinfo wminfo;
     SDL_VERSION(&wminfo.version);
     wminfo.subsystem = SDL_SYSWM_X11;
-    if(!SDL_GetWMInfo(&wminfo)) return -1;
+    if(!SDL_GetWMInfo(&wminfo)) return false;
     int cbsize;
     uchar *cb = (uchar *)XFetchBytes(wminfo.info.x11.display, &cbsize);
-    if(!cb || cbsize <= 0) return -1;
+    if(!cb || cbsize <= 0) return false;
     size_t start = strlen(buf);
     for(uchar *cbline = cb, *cbend; start + 1 < len && cbline < &cb[cbsize]; cbline = cbend + 1)
     {
@@ -366,7 +366,7 @@ size_t paste(char *buf, size_t len)
     }
     XFree(cb);
 #endif
-    return decoded;
+    return true;
 }
 
 SVAR(0, commandbuffer, "");
