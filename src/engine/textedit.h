@@ -394,7 +394,7 @@ struct editor
             else current.chop(cx);
             cx = 0;
         }
-        else
+        else if(ch != '\r')
         {
             int len = current.len;
             if(maxx < 0 || len <= maxx-1) current.insert(&ch, cx++, 1);
@@ -531,6 +531,16 @@ struct editor
                 break;
             case SDLK_LSHIFT:
             case SDLK_RSHIFT:
+                break;
+            case SDLK_v:
+                if(SDL_GetModState()&MOD_KEYS)
+                {
+                    bigstring pastebuf = "";
+                    paste(pastebuf, sizeof(pastebuf));
+                    for(const char *buf = &pastebuf[0]; *buf; buf++) insert(*buf);
+                    break;
+                }
+                if(cooked && code >= 32) insert(cooked);
                 break;
             case SDLK_RETURN:
                 cooked = '\n';

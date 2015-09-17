@@ -303,70 +303,70 @@ ICOMMAND(0, inputcommand, "sssis", (char *init, char *action, char *icon, int *c
 #if !defined(WIN32) && !defined(__APPLE__)
 #include <X11/Xlib.h>
 #endif
-void pasteconsole()
+size_t paste(char *buf, size_t len)
 {
 #ifdef WIN32
     UINT fmt = CF_UNICODETEXT;
     if(!IsClipboardFormatAvailable(fmt))
     {
         fmt = CF_TEXT;
-        if(!IsClipboardFormatAvailable(fmt)) return;
+        if(!IsClipboardFormatAvailable(fmt)) return -1;
     }
-    if(!OpenClipboard(NULL)) return;
+    if(!OpenClipboard(NULL)) return -1;
     HANDLE h = GetClipboardData(fmt);
-    size_t commandlen = strlen(commandbuf), cblen = GlobalSize(h), decoded = 0;
+    size_t start = strlen(buf), cblen = GlobalSize(h), decoded = 0;
     ushort *cb = (ushort *)GlobalLock(h);
     switch(fmt)
     {
         case CF_UNICODETEXT:
-            decoded = min(sizeof(commandbuf)-1-commandlen, cblen/2);
-            loopi(decoded) commandbuf[commandlen++] = uni2cube(cb[i]);
+            decoded = min(len-1-start, cblen/2);
+            loopi(decoded) buf[start++] = uni2cube(cb[i]);
             break;
         case CF_TEXT:
-            decoded = min(sizeof(commandbuf)-1-commandlen, cblen);
-            memcpy(&commandbuf[commandlen], cb, decoded);
+            decoded = min(len-1-start, cblen);
+            memcpy(&buf[start], cb, decoded);
             break;
     }
-    commandbuf[commandlen + decoded] = '\0';
+    buf[start + decoded] = '\0';
     GlobalUnlock(cb);
     CloseClipboard();
 #elif defined(__APPLE__)
     extern char *mac_pasteconsole(size_t *cblen);
-    size_t cblen = 0;
+    size_t start = strlen(buf), cblen = 0;
     uchar *cb = (uchar *)mac_pasteconsole(&cblen);
-    if(!cb) return;
-    size_t commandlen = strlen(commandbuf),
-           decoded = decodeutf8((uchar *)&commandbuf[commandlen], sizeof(commandbuf)-1-commandlen, cb, cblen);
-    commandbuf[commandlen + decoded] = '\0';
+    if(!cb) return -1;
+    size_t decoded = decodeutf8((uchar *)&buf[start], len-1-start, cb, cblen);
+    buf[start + decoded] = '\0';
     free(cb);
 #else
     SDL_SysWMinfo wminfo;
     SDL_VERSION(&wminfo.version);
     wminfo.subsystem = SDL_SYSWM_X11;
-    if(!SDL_GetWMInfo(&wminfo)) return;
+    if(!SDL_GetWMInfo(&wminfo)) return -1;
     int cbsize;
     uchar *cb = (uchar *)XFetchBytes(wminfo.info.x11.display, &cbsize);
-    if(!cb || cbsize <= 0) return;
-    size_t commandlen = strlen(commandbuf);
-    for(uchar *cbline = cb, *cbend; commandlen + 1 < sizeof(commandbuf) && cbline < &cb[cbsize]; cbline = cbend + 1)
+    if(!cb || cbsize <= 0) return -1;
+    size_t start = strlen(buf);
+    for(uchar *cbline = cb, *cbend; start + 1 < len && cbline < &cb[cbsize]; cbline = cbend + 1)
     {
         cbend = (uchar *)memchr(cbline, '\0', &cb[cbsize] - cbline);
         if(!cbend) cbend = &cb[cbsize];
-        size_t cblen = cbend-cbline, commandmax = sizeof(commandbuf)-1-commandlen;
+        size_t cblen = cbend-cbline, pmax = len-1-start;
         loopi(cblen) if((cbline[i]&0xC0) == 0x80)
         {
-            commandlen += decodeutf8((uchar *)&commandbuf[commandlen], commandmax, cbline, cblen);
+            start += decodeutf8((uchar *)&buf[start], pmax, cbline, cblen);
             goto nextline;
         }
-        cblen = min(cblen, commandmax);
-        loopi(cblen) commandbuf[commandlen++] = uni2cube(*cbline++);
+        cblen = min(cblen, pmax);
+        loopi(cblen) buf[start++] = uni2cube(*cbline++);
     nextline:
-        commandbuf[commandlen] = '\n';
-        if(commandlen + 1 < sizeof(commandbuf) && cbend < &cb[cbsize]) ++commandlen;
-        commandbuf[commandlen] = '\0';
+        buf[start] = '\n';
+        if(start + 1 < len && cbend < &cb[cbsize]) ++start;
+        buf[start] = '\0';
     }
     XFree(cb);
 #endif
+    return decoded;
 }
 
 SVAR(0, commandbuffer, "");
@@ -590,7 +590,7 @@ void consolekey(int code, bool isdown, int cooked)
                 break;
 
             case SDLK_v:
-                if(SDL_GetModState()&MOD_KEYS) pasteconsole();
+                if(SDL_GetModState()&MOD_KEYS) paste(commandbuf, sizeof(commandbuf));
                 else processkey(code, isdown, cooked);
                 break;
 
