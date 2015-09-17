@@ -78,6 +78,10 @@ struct bomberservmode : bomberstate, servmode
         flag g = flags[goal];
         if(!g.enabled) return;
         int total = 0;
+        bombstats bstats;
+        bstats.bombing = ci->team;
+        bstats.bombed = g.team;
+        ci->state.bombings.add(bstats);
         if(g.team != ci->team)
         {
             givepoints(ci, G(bomberpoints), m_points(gamemode, mutators), false);

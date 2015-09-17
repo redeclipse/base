@@ -77,6 +77,10 @@ struct captureservmode : capturestate, servmode
                     capturestate::returnaffinity(i, gamemillis);
                     if(r.team != ci->team)
                     {
+                        capturestats cstats;
+                        cstats.capturing = ci->team;
+                        cstats.captured = r.team;
+                        ci->state.captures.add(cstats);
                         int score = addscore(ci->team);
                         sendf(-1, 1, "ri5", N_SCOREAFFIN, ci->clientnum, i, k, score);
                         mutate(smuts, mut->scoreaffinity(ci));

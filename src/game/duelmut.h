@@ -219,6 +219,20 @@ struct duelservmode : servmode
         if(queued) position();
     }
 
+    void endffaround(vector<clientinfo *> alive)
+    {
+        loopv(clients)
+        {
+            if(playing.find(clients[i]) >= 0)
+            {
+                ffaroundstats rs;
+                rs.round = duelround;
+                rs.winner = (clients[i] == alive[0]);
+                clients[i]->state.ffarounds.add(rs);
+            }
+        }
+    }
+
     void update()
     {
         if(!canplay() || waitforhumans) return;
@@ -366,78 +380,83 @@ struct duelservmode : servmode
                         }
                     }
                 }
-                else switch(alive.length())
+                else
                 {
-                    case 0:
+                    switch(alive.length())
                     {
-                        if(m_affinity(gamemode) && duelaffin) // reverse it!
+                        case 0:
                         {
-                            score &ts = teamscore(abs(duelaffin));
-                            if(duelaffin > 0) ts.total--;
-                            else ts.total++;
-                            sendf(-1, 1, "ri3", N_SCORE, ts.team, ts.total);
-                        }
-                        if(!cleanup)
-                        {
-                            ancmsgft(-1, S_V_DRAW, CON_SELF, "\fyeveryone died, \fzoyepic fail");
-                            duelwinner = -1;
-                            duelwins = 0;
-                        }
-                        clear();
-                        break;
-                    }
-                    case 1:
-                    {
-                        if(dueldeath < 0)
-                        {
-                            dueldeath = gamemillis+DSGS(delay);
+                            if(m_affinity(gamemode) && duelaffin) // reverse it!
+                            {
+                                score &ts = teamscore(abs(duelaffin));
+                                if(duelaffin > 0) ts.total--;
+                                else ts.total++;
+                                sendf(-1, 1, "ri3", N_SCORE, ts.team, ts.total);
+                            }
+                            if(!cleanup)
+                            {
+                                endffaround(alive);
+                                ancmsgft(-1, S_V_DRAW, CON_SELF, "\fyeveryone died, \fzoyepic fail");
+                                duelwinner = -1;
+                                duelwins = 0;
+                            }
+                            clear();
                             break;
                         }
-                        else if(gamemillis < dueldeath) break;
-                        if(!cleanup)
+                        case 1:
                         {
-                            string end = "", hp = "";
-                            if(!m_insta(gamemode, mutators))
+                            if(dueldeath < 0)
                             {
-                                if(alive[0]->state.health >= m_health(gamemode, mutators, alive[0]->state.actortype))
-                                    formatstring(hp, " with a \fs\fcflawless victory\fS");
-                                else formatstring(hp, " with \fs\fc%d\fS health left", alive[0]->state.health);
+                                dueldeath = gamemillis+DSGS(delay);
+                                break;
                             }
-                            if(duelwinner != alive[0]->clientnum)
+                            else if(gamemillis < dueldeath) break;
+                            if(!cleanup)
                             {
-                                duelwinner = alive[0]->clientnum;
-                                duelwins = 1;
-                                formatstring(end, "\fy%s was the winner%s", colourname(alive[0]), hp);
-                            }
-                            else
-                            {
-                                duelwins++;
-                                formatstring(end, "\fy%s was the winner%s (\fs\fc%d\fS in a row)", colourname(alive[0]), hp, duelwins);
-                            }
-                            loopv(clients)
-                            {
-                                if(playing.find(clients[i]) >= 0)
+                                endffaround(alive);
+                                string end = "", hp = "";
+                                if(!m_insta(gamemode, mutators))
                                 {
-                                    if(clients[i] == alive[0])
-                                    {
-                                        ancmsgft(clients[i]->clientnum, S_V_YOUWIN, CON_SELF, end);
-                                        if(!m_affinity(gamemode)) givepoints(clients[i], 1, true, true);
-                                        else if(!duelaffin)
-                                        {
-                                            score &ts = teamscore(clients[i]->team);
-                                            ts.total++;
-                                            sendf(-1, 1, "ri3", N_SCORE, ts.team, ts.total);
-                                        }
-                                    }
-                                    else ancmsgft(clients[i]->clientnum, S_V_YOULOSE, CON_SELF, end);
+                                    if(alive[0]->state.health >= m_health(gamemode, mutators, alive[0]->state.actortype))
+                                        formatstring(hp, " with a \fs\fcflawless victory\fS");
+                                    else formatstring(hp, " with \fs\fc%d\fS health left", alive[0]->state.health);
                                 }
-                                else ancmsgft(clients[i]->clientnum, S_V_BOMBSCORE, CON_SELF, end);
+                                if(duelwinner != alive[0]->clientnum)
+                                {
+                                    duelwinner = alive[0]->clientnum;
+                                    duelwins = 1;
+                                    formatstring(end, "\fy%s was the winner%s", colourname(alive[0]), hp);
+                                }
+                                else
+                                {
+                                    duelwins++;
+                                    formatstring(end, "\fy%s was the winner%s (\fs\fc%d\fS in a row)", colourname(alive[0]), hp, duelwins);
+                                }
+                                loopv(clients)
+                                {
+                                    if(playing.find(clients[i]) >= 0)
+                                    {
+                                        if(clients[i] == alive[0])
+                                        {
+                                            ancmsgft(clients[i]->clientnum, S_V_YOUWIN, CON_SELF, end);
+                                            if(!m_affinity(gamemode)) givepoints(clients[i], 1, true, true);
+                                            else if(!duelaffin)
+                                            {
+                                                score &ts = teamscore(clients[i]->team);
+                                                ts.total++;
+                                                sendf(-1, 1, "ri3", N_SCORE, ts.team, ts.total);
+                                            }
+                                        }
+                                        else ancmsgft(clients[i]->clientnum, S_V_YOULOSE, CON_SELF, end);
+                                    }
+                                    else ancmsgft(clients[i]->clientnum, S_V_BOMBSCORE, CON_SELF, end);
+                                }
                             }
+                            clear();
+                            break;
                         }
-                        clear();
-                        break;
+                        default: break;
                     }
-                    default: break;
                 }
             }
         }

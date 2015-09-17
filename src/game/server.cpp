@@ -212,6 +212,40 @@ namespace server
         }
     };
 
+    struct capturestats
+    {
+        int capturing;
+        int captured;
+
+        capturestats() { reset(); }
+        ~capturestats() {}
+
+        void reset()
+        {
+            capturing = captured = 0;
+        }
+    };
+
+    struct bombstats
+    {
+        int bombing;
+        int bombed;
+
+        bombstats() { reset(); }
+        ~bombstats() {}
+
+        void reset()
+        {
+            bombing = bombed = 0;
+        }
+    };
+
+    struct ffaroundstats
+    {
+        int round;
+        bool winner;
+    };
+
     extern int gamemode, mutators;
 
     enum { WARN_CHAT = 0, WARN_TEAMKILL, WARN_MAX };
@@ -228,7 +262,12 @@ namespace server
         vector<int> fraglog, fragmillis, cpnodes, chatmillis;
         vector<dmghist> damagelog;
         vector<teamkill> teamkills;
+
         weaponstats weapstats[W_MAX];
+        vector<capturestats> captures;
+        vector<bombstats> bombings;
+        vector<ffaroundstats> ffarounds;
+
         int warnings[WARN_MAX][2];
 
         servstate() : state(CS_SPECTATOR), aireinit(0)
@@ -256,6 +295,9 @@ namespace server
             damagelog.shrink(0);
             teamkills.shrink(0);
             loopi(W_MAX) weapstats[i].reset();
+            captures.shrink(0);
+            bombings.shrink(0);
+            ffarounds.shrink(0);
             respawn(0);
         }
 
@@ -318,6 +360,9 @@ namespace server
         int warnings[WARN_MAX][2];
         vector<teamkill> teamkills;
         weaponstats weapstats[W_MAX];
+        vector<capturestats>captures;
+        vector<bombstats>bombings;
+        vector<ffaroundstats>ffarounds;
         bool quarantine;
 
         void save(servstate &gs)
@@ -336,6 +381,9 @@ namespace server
             cptime = gs.cptime;
             actortype = gs.actortype;
             loopi(W_MAX) weapstats[i] = gs.weapstats[i];
+            captures = gs.captures;
+            bombings = gs.bombings;
+            ffarounds = gs.ffarounds;
             loopi(WARN_MAX) loopj(2) warnings[i][j] = gs.warnings[i][j];
             quarantine = gs.quarantine;
         }
@@ -355,15 +403,22 @@ namespace server
             gs.damage = damage;
             gs.cptime = cptime;
             loopi(W_MAX) gs.weapstats[i] = weapstats[i];
+            gs.captures = captures;
+            gs.bombings = bombings;
+            gs.ffarounds = ffarounds;
             loopi(WARN_MAX) loopj(2) gs.warnings[i][j] = warnings[i][j];
             gs.quarantine = quarantine;
         }
 
         void mapchange()
         {
-            points = frags = spree = rewards = deaths = shotdamage = damage = cptime = 0;
+            points = frags = spree = rewards = deaths = timeplayed = timealive = shotdamage = damage = cptime = 0;
             actortype = A_MAX;
             teamkills.shrink(0);
+            captures.shrink(0);
+            bombings.shrink(0);
+            ffarounds.shrink(0);
+            loopi(W_MAX) weapstats[i].reset();
         }
     };
 
@@ -3179,6 +3234,27 @@ namespace server
                         w.damage1, w.frags1, w.hits1, w.flakhits1, w.shots1, w.flakshots1,
                         w.damage2, w.frags2, w.hits2, w.flakhits2, w.shots2, w.flakshots2
                     );
+                    flushmasteroutput();
+                }
+                loopvj(savedstatsscores[i].captures)
+                {
+                    requestmasterf("stats capture %d %s %d %d\n",
+                        i, escapestring(savedstatsscores[i].handle),
+                        savedstatsscores[i].captures[j].capturing, savedstatsscores[i].captures[j].captured);
+                    flushmasteroutput();
+                }
+                loopvj(savedstatsscores[i].bombings)
+                {
+                    requestmasterf("stats bombing %d %s %d %d\n",
+                        i, escapestring(savedstatsscores[i].handle),
+                        savedstatsscores[i].bombings[j].bombing, savedstatsscores[i].bombings[j].bombed);
+                    flushmasteroutput();
+                }
+                loopvj(savedstatsscores[i].ffarounds)
+                {
+                    requestmasterf("stats ffaround %d %s %d %d\n",
+                        i, escapestring(savedstatsscores[i].handle),
+                        savedstatsscores[i].ffarounds[j].round, (int)savedstatsscores[i].ffarounds[j].winner);
                     flushmasteroutput();
                 }
             }
