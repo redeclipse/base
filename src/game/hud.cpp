@@ -7,12 +7,12 @@ namespace hud
     #include "compass.h"
     vector<int> teamkills;
 
-    struct damageloc
+    struct dhloc
     {
-        int attacker, outtime, damage; vec dir, colour;
-        damageloc(int a, int t, int d, const vec &p, const vec &c) : attacker(a), outtime(t), damage(d), dir(p), colour(c) {}
+        int clientnum, outtime, damage; vec dir, colour;
+        dhloc(int a, int t, int d, const vec &p, const vec &c) : clientnum(a), outtime(t), damage(d), dir(p), colour(c) {}
     };
-    vector<damageloc> damagelocs;
+    vector<dhloc> damagelocs, hitlocs;
     VAR(IDF_PERSIST, damageresiduefade, 0, 500, VAR_MAX);
 
     ICOMMAND(0, conout, "is", (int *n, char *s), conoutft(clamp(*n, 0, CON_MAX-1), "%s", s));
@@ -484,13 +484,28 @@ namespace hud
     VAR(IDF_PERSIST, radaraffinitynames, 0, 1, 2);
 
     VAR(IDF_PERSIST, radardamage, 0, 1, 2); // 0 = off, 1 = basic damage, 2 = verbose
-    VAR(IDF_PERSIST, radardamagemerge, 1, 250, VAR_MAX);
+    VAR(IDF_PERSIST, radardamagemerge, 0, 250, VAR_MAX);
     VAR(IDF_PERSIST, radardamagetime, 1, 250, VAR_MAX);
     VAR(IDF_PERSIST, radardamagefade, 1, 3500, VAR_MAX);
     FVAR(IDF_PERSIST, radardamagesize, 0, 20, 1000);
     FVAR(IDF_PERSIST, radardamageblend, 0, 0.85f, 1);
     VAR(IDF_PERSIST, radardamagemin, 1, 10, VAR_MAX);
     VAR(IDF_PERSIST, radardamagemax, 1, 100, VAR_MAX);
+    VAR(IDF_PERSIST|IDF_HEX, radardamagecolour, 0, 0xFF8888, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, radardamageburncolour, 0, 0xFF8822, 0xFFFFFF);
+
+    VAR(IDF_PERSIST, radarhits, 0, 1, 2);
+    VAR(IDF_PERSIST, radarhitsheal, 0, 1, 1);
+    VAR(IDF_PERSIST, radarhitsfollow, 0, 1, 1);
+    VAR(IDF_PERSIST, radarhitsmerge, 0, 250, VAR_MAX);
+    VAR(IDF_PERSIST, radarhitstime, 1, 250, VAR_MAX);
+    VAR(IDF_PERSIST, radarhitsfade, 1, 3500, VAR_MAX);
+    FVAR(IDF_PERSIST, radarhitsswipe, 0, 3, 1000);
+    FVAR(IDF_PERSIST, radarhitsscale, 0, 1.35f, 1000);
+    FVAR(IDF_PERSIST, radarhitsblend, 0, 1, 1);
+    VAR(IDF_PERSIST|IDF_HEX, radarhitsdamagecolour, 0, 0xFF4444, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, radarhitsburncolour, 0, 0xFF4422, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, radarhitshealcolour, 0, 0xFF44FF, 0xFFFFFF);
 
     VAR(IDF_PERSIST, showeditradar, 0, 1, 1);
     VAR(IDF_PERSIST, editradarstyle, 0, 2, 3); // 0 = compass-sectional, 1 = compass-distance, 2 = screen-space, 3 = right-corner-positional
@@ -727,19 +742,36 @@ namespace hud
     void damage(int n, const vec &loc, gameent *v, int weap, int flags)
     {
         damageresidue = clamp(damageresidue+(n*(flags&HIT_BLEED ? 3 : 1)), 0, 200);
-        vec colour = wr_burns(weap, flags) ? vec(1.f, 0.35f, 0.0625f) : (game::nogore || game::bloodscale <= 0 ? vec(1, 0.25f, 1) : vec(1.f, 0, 0)),
+        vec colour = wr_burns(weap, flags) ? vec::hexcolor(radardamageburncolour) : (game::nogore || game::bloodscale <= 0 ? vec(1, 0.25f, 1) : vec::hexcolor(radardamagecolour)),
             dir = vec(loc).sub(camera1->o).normalize();
         loopv(damagelocs)
         {
-            damageloc &d = damagelocs[i];
-            if(v->clientnum != d.attacker) continue;
+            dhloc &d = damagelocs[i];
+            if(v->clientnum != d.clientnum) continue;
             if(lastmillis-d.outtime > radardamagemerge) continue;
             if(d.colour != colour) continue;
             d.damage += n;
             d.dir = dir;
             return; // accumulate
         }
-        damagelocs.add(damageloc(v->clientnum, lastmillis, n, dir, colour));
+        damagelocs.add(dhloc(v->clientnum, lastmillis, n, loc, colour));
+    }
+
+    void hit(int n, const vec &loc, gameent *v, int weap, int flags)
+    {
+        if(!n || (!radarhitsheal && n < 0)) return;
+        vec colour = n <= 0 ? vec::hexcolor(radarhitshealcolour) : (wr_burns(weap, flags) ? vec::hexcolor(radarhitsburncolour) : (game::nogore || game::bloodscale <= 0 ? vec(1, 1, 1) : vec::hexcolor(radarhitsdamagecolour)));
+        loopv(hitlocs)
+        {
+            dhloc &d = hitlocs[i];
+            if(v->clientnum != d.clientnum) continue;
+            if(lastmillis-d.outtime > radarhitsmerge) continue;
+            if(d.colour != colour) continue;
+            d.damage += n;
+            d.dir = v->center();
+            return; // accumulate
+        }
+        hitlocs.add(dhloc(v->clientnum, lastmillis, n, v->center(), colour));
     }
 
     void drawquad(float x, float y, float w, float h, float tx1, float ty1, float tx2, float ty2, bool flipx, bool flipy)
@@ -1178,7 +1210,7 @@ namespace hud
                     float total = 0;
                     loopv(damagelocs)
                     {
-                        damageloc &d = damagelocs[i];
+                        dhloc &d = damagelocs[i];
                         int millis = lastmillis-d.outtime, delay = min(20, d.damage)*50;
                         if(millis >= delay || d.dir.iszero()) { if(millis >= radardamagetime+radardamagefade) damagelocs.remove(i--); continue; }
                         float dam = d.damage/float(m_health(game::gamemode, game::mutators, game::focus->actortype)),
@@ -2141,28 +2173,61 @@ namespace hud
     {
         loopv(damagelocs)
         {
-            damageloc &d = damagelocs[i];
+            dhloc &d = damagelocs[i];
             int millis = lastmillis-d.outtime;
             if(millis >= radardamagetime+radardamagefade || d.dir.iszero()) { if(millis >= min(20, d.damage)*50) damagelocs.remove(i--); continue; }
-            if(game::focus->state != CS_SPECTATOR && game::focus->state != CS_EDITING)
+            if(game::focus->state == CS_SPECTATOR || game::focus->state == CS_EDITING) continue;
+            float amt = millis >= radardamagetime ? 1.f-(float(millis-radardamagetime)/float(radardamagefade)) : float(millis)/float(radardamagetime),
+                range = clamp(max(d.damage, radardamagemin)/float(max(radardamagemax-radardamagemin, 1)), radardamagemin/100.f, 1.f),
+                fade = clamp(radardamageblend*blend, min(radardamageblend*radardamagemin/100.f, 1.f), radardamageblend)*amt,
+                size = clamp(range*radardamagesize, min(radardamagesize*radardamagemin/100.f, 1.f), radardamagesize)*amt;
+            vec o = vec(camera1->o).add(vec(d.dir).mul(radarrange()));
+            if(radardamage >= 5)
             {
-                float amt = millis >= radardamagetime ? 1.f-(float(millis-radardamagetime)/float(radardamagefade)) : float(millis)/float(radardamagetime),
-                    range = clamp(max(d.damage, radardamagemin)/float(max(radardamagemax-radardamagemin, 1)), radardamagemin/100.f, 1.f),
-                    fade = clamp(radardamageblend*blend, min(radardamageblend*radardamagemin/100.f, 1.f), radardamageblend)*amt,
-                    size = clamp(range*radardamagesize, min(radardamagesize*radardamagemin/100.f, 1.f), radardamagesize)*amt;
-                vec o = vec(camera1->o).add(vec(d.dir).mul(radarrange()));
-                if(radardamage >= 5)
-                {
-                    gameent *a = game::getclient(d.attacker);
-                    drawblip(hurttex, 2+size/3, w, h, size, fade, 0, o, d.colour, "tiny", "%s +%d", a ? game::colourname(a) : "?", d.damage);
-                }
-                else drawblip(hurttex, 2+size/3, w, h, size, fade, 0, o, d.colour);
+                gameent *a = game::getclient(d.clientnum);
+                drawblip(hurttex, 2+size/3, w, h, size, fade, 0, o, d.colour, "tiny", "%s +%d", a ? game::colourname(a) : "?", d.damage);
             }
+            else drawblip(hurttex, 2+size/3, w, h, size, fade, 0, o, d.colour);
         }
+    }
+
+    void drawhits(int w, int h, float blend)
+    {
+        pushfont("tiny");
+        pushhudscale(radarhitsscale);
+        loopv(hitlocs)
+        {
+            dhloc &d = hitlocs[i];
+            int millis = lastmillis-d.outtime;
+            if(millis >= radarhitstime+radarhitsfade || d.dir.iszero()) { hitlocs.remove(i--); continue; }
+            if(game::focus->state == CS_SPECTATOR || game::focus->state == CS_EDITING) continue;
+            gameent *a = game::getclient(d.clientnum);
+            vec o = radarhitsfollow && a ? a->center() : d.dir;
+            o.z += actor[a ? a->actortype : A_PLAYER].height*0.75f;
+            float cx = 0, cy = 0, cz = 0;
+            if(!vectocursor(o, cx, cy, cz)) continue;
+            float hx = cx*w/radarhitsscale, hy = cy*h/radarhitsscale, fade = blend*radarhitsblend;
+            if(millis <= radarhitstime)
+            {
+                float amt = millis/float(radarhitstime);
+                hx -= FONTW*radarhitsswipe*(1-amt);
+                fade *= amt;
+            }
+            else
+            {
+                int offset = millis-radarhitstime;
+                hy -= FONTH*offset/float(radarhitstime);
+                fade *= 1-(offset/float(radarhitsfade));
+            }
+            draw_textx("%c%d", hx, hy, int(d.colour.r*255), int(d.colour.g*255), int(d.colour.b*255), int(fade*255), TEXT_CENTERED, -1, -1, d.damage > 0 ? '-' : (d.damage < 0 ? '+' : '~'), d.damage < 0 ? 0-d.damage : d.damage);
+        }
+        pophudmatrix();
+        popfont();
     }
 
     void drawradar(int w, int h, float blend)
     {
+        if(chkcond(radarhits, !game::tvmode())) drawhits(w, h, blend);
         if(radartype() == 3)
         {
             vec pos = vec(camera1->o).sub(minimapcenter).mul(minimapscale).add(0.5f), dir(camera1->yaw*RAD, 0.f);
@@ -3384,6 +3449,7 @@ namespace hud
     {
         teamkills.shrink(0);
         damagelocs.shrink(0);
+        hitlocs.shrink(0);
         damageresidue = lastteam = 0;
     }
 }

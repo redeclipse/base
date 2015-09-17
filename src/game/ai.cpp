@@ -607,7 +607,7 @@ namespace ai
     {
         if(d != e)
         {
-            if(d->ai && (d->actortype >= A_ENEMY || (hithurts(flags) && damage > 0) || d->ai->enemy < 0 || d->dominating.find(e))) // see if this ai is interested in a grudge
+            if(d->ai && (d->actortype >= A_ENEMY || (hitdealt(flags) && damage > 0) || d->ai->enemy < 0 || d->dominating.find(e))) // see if this ai is interested in a grudge
             {
                 aistate &b = d->ai->getstate();
                 violence(d, b, e, d->actortype != A_BOT || weaptype[d->weapselect].melee ? 1 : 0);
@@ -617,7 +617,7 @@ namespace ai
             if(checkothers(targets, d, AI_S_DEFEND, AI_T_ACTOR, d->clientnum, true))
             {
                 gameent *t;
-                loopv(targets) if((t = game::getclient(targets[i])) && t->ai && t->actortype == A_BOT && ((hithurts(flags) && damage > 0) || t->ai->enemy < 0 || t->dominating.find(e)))
+                loopv(targets) if((t = game::getclient(targets[i])) && t->ai && t->actortype == A_BOT && ((hitdealt(flags) && damage > 0) || t->ai->enemy < 0 || t->dominating.find(e)))
                 {
                     aistate &c = t->ai->getstate();
                     violence(t, c, e, weaptype[d->weapselect].melee ? 1 : 0);

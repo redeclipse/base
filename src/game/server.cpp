@@ -3993,7 +3993,7 @@ namespace server
                 m->state.lastres[WR_SHOCK] = m->state.lastrestime[WR_SHOCK] = 0;
         }
 
-        if(nodamage || !hithurts(realflags))
+        if(nodamage || !hitdealt(realflags))
         {
             realflags &= ~HIT_CLEAR;
             realflags |= HIT_WAVE;
@@ -4307,7 +4307,7 @@ namespace server
     int calcdamage(clientinfo *v, clientinfo *m, int weap, int &flags, float radial, float size, float dist, float scale, bool self)
     {
         flags &= ~HIT_SFLAGS;
-        if(!hithurts(flags))
+        if(!hitdealt(flags))
         {
             flags &= ~HIT_CLEAR;
             flags |= HIT_WAVE;

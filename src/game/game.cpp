@@ -211,7 +211,7 @@ namespace game
     VAR(IDF_PERSIST, aboveheadinventory, 0, 0, 2); // 0 = off, 1 = weapselect only, 2 = all weapons
     VAR(IDF_PERSIST, aboveheadstatus, 0, 1, 1);
     VAR(IDF_PERSIST, aboveheadteam, 0, 3, 3);
-    VAR(IDF_PERSIST, aboveheaddamage, 0, 1, 1);
+    VAR(IDF_PERSIST, aboveheaddamage, 0, 0, 1);
     VAR(IDF_PERSIST, aboveheadicons, 0, 5, 7);
     FVAR(IDF_PERSIST, aboveheadblend, 0.f, 1, 1.f);
     FVAR(IDF_PERSIST, aboveheadnamesblend, 0.f, 1, 1.f);
@@ -1360,7 +1360,8 @@ namespace game
         if(!local || burning || bleeding || shocking)
         {
             float scale = isweap(weap) && WF(WK(flags), weap, damage, WS(flags)) ? abs(damage)/float(WF(WK(flags), weap, damage, WS(flags))) : 1.f;
-            if(hithurts(flags) && damage > 0)
+            if(hitdealt(flags) && damage != 0 && v == focus) hud::hit(damage, d->o, d, weap, flags);
+            if(hitdealt(flags) && damage > 0)
             {
                 if(d == focus) hud::damage(damage, v->o, v, weap, flags);
                 if(actor[d->actortype].living)
@@ -1390,7 +1391,7 @@ namespace game
             {
                 if(weap == -1 && shocking && shockstun)
                 {
-                    float amt = WRS(flags&HIT_WAVE || !hithurts(flags) ? wavestunscale : (d->health <= 0 ? deadstunscale : hitstunscale), stun, gamemode, mutators),
+                    float amt = WRS(flags&HIT_WAVE || !hitdealt(flags) ? wavestunscale : (d->health <= 0 ? deadstunscale : hitstunscale), stun, gamemode, mutators),
                           s = G(shockstunscale)*amt, g = G(shockstunfall)*amt;
                     d->addstun(weap, lastmillis, G(shockstuntime), shockstun&W_N_STADD ? s : 0.f, shockstun&W_N_GRADD ? g : 0.f);
                     if(shockstun&W_N_STIMM && s > 0) d->vel.mul(1.f-clamp(s, 0.f, 1.f));
@@ -1402,7 +1403,7 @@ namespace game
                     if(WF(WK(flags), weap, stun, WS(flags)))
                     {
                         int stun = WF(WK(flags), weap, stun, WS(flags));
-                        float amt = scale*WRS(flags&HIT_WAVE || !hithurts(flags) ? wavestunscale : (d->health <= 0 ? deadstunscale : hitstunscale), stun, gamemode, mutators),
+                        float amt = scale*WRS(flags&HIT_WAVE || !hitdealt(flags) ? wavestunscale : (d->health <= 0 ? deadstunscale : hitstunscale), stun, gamemode, mutators),
                               s = WF(WK(flags), weap, stunscale, WS(flags))*amt, g = WF(WK(flags), weap, stunfall, WS(flags))*amt;
                         d->addstun(weap, lastmillis, int(scale*WF(WK(flags), weap, stuntime, WS(flags))), stun&W_N_STADD ? s : 0.f, stun&W_N_GRADD ? g : 0.f);
                         if(stun&W_N_STIMM && s > 0) d->vel.mul(1.f-clamp(s, 0.f, 1.f));
@@ -1411,8 +1412,8 @@ namespace game
                     }
                     if(WF(WK(flags), weap, hitpush, WS(flags)) != 0 || WF(WK(flags), weap, hitvel, WS(flags)) != 0)
                     {
-                        float amt = scale*WRS(flags&HIT_WAVE || !hithurts(flags) ? wavepushscale : (d->health <= 0 ? deadpushscale : hitpushscale), push, gamemode, mutators);
-                        bool doquake = hithurts(flags) && damage > 0;
+                        float amt = scale*WRS(flags&HIT_WAVE || !hitdealt(flags) ? wavepushscale : (d->health <= 0 ? deadpushscale : hitpushscale), push, gamemode, mutators);
+                        bool doquake = hitdealt(flags) && damage > 0;
                         if(d == v)
                         {
                             float modify = WF(WK(flags), weap, damageself, WS(flags))*G(damageselfscale);
@@ -1443,7 +1444,7 @@ namespace game
     void damaged(int weap, int flags, int damage, int health, gameent *d, gameent *v, int millis, vec &dir, vec &vel, float dist)
     {
         if(d->state != CS_ALIVE || !gs_playing(gamestate)) return;
-        if(hithurts(flags))
+        if(hitdealt(flags))
         {
             d->health = health;
             if(damage > 0)

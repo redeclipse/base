@@ -74,7 +74,7 @@ namespace projs
             else if(physics::isghost(target, v)) nodamage++;
         }
 
-        if(nodamage || !hithurts(flags))
+        if(nodamage || !hitdealt(flags))
         {
             flags &= ~HIT_CLEAR;
             flags |= HIT_WAVE;
