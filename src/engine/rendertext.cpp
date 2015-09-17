@@ -547,7 +547,7 @@ int draw_key(Texture *&tex, const char *str, float sx, float sy, float sc, bvec4
                     t = tbgtex;
                     break;
             }
-            drawskin(t, sx, sy, sx+ss, sy+curfont->maxh+4, colour, blend*(cl.a/255.f), 0, textmatrix);
+            drawskin(t, sx, sy, sx+ss, sy+(curfont->maxh+4)*sc, colour, blend*(cl.a/255.f), 0, textmatrix);
         }
     }
 
