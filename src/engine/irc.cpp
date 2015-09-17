@@ -342,6 +342,12 @@ ICOMMAND(0, ircnick, "ss", (const char *name, const char *s), {
     if(!s || !*s) { ircprintf(n, 4, NULL, "current main nickname is: %s", n->mnick); return; }
     copystring(n->mnick, s);
 });
+ICOMMAND(0, ircident, "ss", (const char *name, const char *s), {
+    ircnet *n = ircfind(name);
+    if(!n) { conoutf("no such ircnet: %s", name); return; }
+    if(!s || !*s) { ircprintf(n, 4, NULL, "current ident is: %s", n->ident); return; }
+    copystring(n->ident, s);
+});
 ICOMMAND(0, ircbind, "ss", (const char *name, const char *s), {
     ircnet *n = ircfind(name);
     if(!n) { conoutf("no such ircnet: %s", name); return; }
@@ -909,7 +915,8 @@ void ircslice()
                     if(*n->passkey) ircsend(n, "PASS %s", n->passkey);
                     copystring(n->nick, n->mnick);
                     ircsend(n, "NICK %s", n->mnick);
-                    ircsend(n, "USER %s +iw %s :%s v%s-%s%d-%s (%s)", systemuser, systemuser, VERSION_NAME, VERSION_STRING, versionplatname, versionarch, versionbranch, VERSION_RELEASE);
+                    if(!*n->ident) copystring(n->ident, systemuser);
+                    ircsend(n, "USER %s +iw %s :%s v%s-%s%d-%s (%s)", n->ident, n->ident, VERSION_NAME, VERSION_STRING, versionplatname, versionarch, versionbranch, VERSION_RELEASE);
                     n->lastnick = clocktime;
                     n->state = IRC_CONN;
                     loopvj(n->channels)
