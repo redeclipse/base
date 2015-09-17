@@ -11,8 +11,8 @@ VARF(IDF_PERSIST, textkeyseps, 0, 1, 1, changedkeys = totalmillis);
 VAR(IDF_PERSIST|IDF_HEX, textkeybgcolour, 0x000000, 0xC0C0C0, 0xFFFFFF);
 VAR(IDF_PERSIST|IDF_HEX, textkeybgbordercolour, 0x000000, 0xFFFFFF, 0xFFFFFF);
 VAR(IDF_PERSIST|IDF_HEX, textkeyfgcolour, 0x000000, 0x00FFFF, 0xFFFFFF);
-FVAR(IDF_PERSIST, textkeybgblend, 0, 0.5f, 1);
-FVAR(IDF_PERSIST, textkeybgborderblend, 0, 0.9f, 1);
+FVAR(IDF_PERSIST, textkeybgblend, 0, 0.35f, 1);
+FVAR(IDF_PERSIST, textkeybgborderblend, 0, 0.5f, 1);
 FVAR(IDF_PERSIST, textkeyfgblend, 0, 1, 1);
 TVARN(IDF_PERSIST|IDF_PRELOAD, textkeybgtex, "textures/guiskin", tbgtex, 0);
 TVARN(IDF_PERSIST|IDF_PRELOAD, textkeybgbordertex, "textures/guiskinborder", tbgbordertex, 0);
@@ -547,7 +547,7 @@ int draw_key(Texture *&tex, const char *str, float sx, float sy, float sc, bvec4
                     t = tbgtex;
                     break;
             }
-            drawskin(t, sx, sy, sx+ss, sy+(curfont->maxh*sc), colour, blend*(cl.a/255.f), 0, textmatrix);
+            drawskin(t, sx, sy, sx+ss, sy+curfont->maxh+4, colour, blend*(cl.a/255.f), 0, textmatrix);
         }
     }
 
