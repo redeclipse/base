@@ -219,6 +219,20 @@ struct duelservmode : servmode
         if(queued) position();
     }
 
+    void endffaround(vector<clientinfo *> alive)
+    {
+        loopv(clients)
+        {
+            if(playing.find(clients[i]) >= 0)
+            {
+                ffaroundstats rs;
+                rs.round = duelround;
+                rs.winner = (clients[i] == alive[0]);
+                clients[i]->state.ffarounds.add(rs);
+            }
+        }
+    }
+
     void update()
     {
         if(!canplay() || waitforhumans) return;
@@ -379,6 +393,7 @@ struct duelservmode : servmode
                         }
                         if(!cleanup)
                         {
+                            endffaround(alive);
                             ancmsgft(-1, S_V_DRAW, CON_SELF, "\fyeveryone died, \fzoyepic fail");
                             duelwinner = -1;
                             duelwins = 0;
@@ -396,6 +411,7 @@ struct duelservmode : servmode
                         else if(gamemillis < dueldeath) break;
                         if(!cleanup)
                         {
+                            endffaround(alive);
                             string end = "", hp = "";
                             if(!m_insta(gamemode, mutators))
                             {

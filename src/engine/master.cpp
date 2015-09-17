@@ -10,7 +10,7 @@
 #include <enet/time.h>
 #include <sqlite3.h>
 
-#define STATSDB_VERSION 1
+#define STATSDB_VERSION 2
 #define STATSDB_RETRYTIME (5*1000)
 #define MASTER_LIMIT 4096
 #define CLIENT_TIME (60*1000)
@@ -140,6 +140,62 @@ struct masterclient
         };
         vector<weaponstats> weapstats;
 
+        struct capturestats
+        {
+            string playerhandle;
+            int playerid;
+            int capturing, captured;
+
+            capturestats() { reset(); }
+            ~capturestats() {}
+
+            void reset()
+            {
+                playerhandle[0] = '\0';
+                playerid = -1;
+                capturing = captured = 0;
+            }
+        };
+        vector<capturestats> captures;
+
+        struct bombstats
+        {
+            string playerhandle;
+            int playerid;
+            int bombing, bombed;
+
+            bombstats() { reset(); }
+            ~bombstats() {}
+
+            void reset()
+            {
+                playerhandle[0] = '\0';
+                playerid = -1;
+                bombing = bombed = 0;
+            }
+        };
+        vector<bombstats> bombings;
+
+        struct ffaroundstats
+        {
+            string playerhandle;
+            int playerid;
+            int round;
+            bool winner;
+
+            ffaroundstats() { reset(); }
+            ~ffaroundstats() {}
+
+            void reset()
+            {
+                playerhandle[0] = '\0';
+                playerid = -1;
+                round = 0;
+                winner = false;
+            }
+        };
+        vector<ffaroundstats> ffarounds;
+
         statstate() { reset(); }
         ~statstate() {}
 
@@ -154,6 +210,9 @@ struct masterclient
             teams.shrink(0);
             players.shrink(0);
             weapstats.shrink(0);
+            captures.shrink(0);
+            bombings.shrink(0);
+            ffarounds.shrink(0);
         }
     } stats;
 
@@ -370,6 +429,39 @@ void savestats(masterclient &c)
             c.stats.weapstats[i].flakhits2,
             c.stats.weapstats[i].shots2,
             c.stats.weapstats[i].flakshots2
+        );
+    }
+
+    loopv(c.stats.ffarounds)
+    {
+        statsdbexecf("INSERT INTO game_ffarounds VALUES (%d, %d, %Q, %d, %d)",
+            c.stats.id,
+            c.stats.ffarounds[i].playerid,
+            c.stats.ffarounds[i].playerhandle,
+            c.stats.ffarounds[i].round,
+            c.stats.ffarounds[i].winner
+        );
+    }
+
+    loopv(c.stats.captures)
+    {
+        statsdbexecf("INSERT INTO game_captures VALUES (%d, %d, %Q, %d, %d)",
+            c.stats.id,
+            c.stats.captures[i].playerid,
+            c.stats.captures[i].playerhandle,
+            c.stats.captures[i].capturing,
+            c.stats.captures[i].captured
+        );
+    }
+
+    loopv(c.stats.bombings)
+    {
+        statsdbexecf("INSERT INTO game_bombings VALUES (%d, %d, %Q, %d, %d)",
+            c.stats.id,
+            c.stats.bombings[i].playerid,
+            c.stats.bombings[i].playerhandle,
+            c.stats.bombings[i].bombing,
+            c.stats.bombings[i].bombed
         );
     }
 
@@ -838,6 +930,33 @@ bool checkmasterclientinput(masterclient &c)
                     wint(flakshots2);
 
                     c.stats.weapstats.add(ws);
+                }
+                else if(!strcmp(w[1], "capture"))
+                {
+                    masterclient::statstate::capturestats cs;
+                    cs.playerid = atoi(w[2]);
+                    copystring(cs.playerhandle, w[3]);
+                    cs.capturing = atoi(w[4]);
+                    cs.captured = atoi(w[5]);
+                    c.stats.captures.add(cs);
+                }
+                else if(!strcmp(w[1], "bombing"))
+                {
+                    masterclient::statstate::bombstats bs;
+                    bs.playerid = atoi(w[2]);
+                    copystring(bs.playerhandle, w[3]);
+                    bs.bombing = atoi(w[4]);
+                    bs.bombed = atoi(w[5]);
+                    c.stats.bombings.add(bs);
+                }
+                else if(!strcmp(w[1], "ffaround"))
+                {
+                    masterclient::statstate::ffaroundstats fr;
+                    fr.playerid = atoi(w[2]);
+                    copystring(fr.playerhandle, w[3]);
+                    fr.round = atoi(w[4]);
+                    fr.winner = atoi(w[5]);
+                    c.stats.ffarounds.add(fr);
                 }
             }
             found = true;

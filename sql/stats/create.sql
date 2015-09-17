@@ -62,3 +62,29 @@ CREATE TABLE game_weapons (
     shots2 INTEGER,
     flakshots2 INTEGER
 );
+
+CREATE TABLE game_ffarounds (
+    game INTEGER,
+    player INTEGER,
+    playerhandle TEXT,
+    round INTEGER,
+    winner BOOL
+);
+
+/* Affinities */
+
+CREATE TABLE game_captures (
+    game INTEGER,
+    player INTEGER,
+    playerhandle TEXT,
+    capturing INTEGER,
+    captured INTEGER
+);
+
+CREATE TABLE game_bombings (
+    game INTEGER,
+    player INTEGER,
+    playerhandle TEXT,
+    bombing INTEGER,
+    bombed INTEGER
+);
