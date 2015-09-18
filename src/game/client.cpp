@@ -934,6 +934,13 @@ namespace client
     }
     COMMAND(0, setpriv, "s");
 
+    void addpriv(int cn, int priv)
+    {
+        addmsg(N_ADDPRIV, "ii", cn, priv);
+    }
+    ICOMMAND(0, addpriv, "ii", (int *cn, int *priv), addpriv(*cn, *priv));
+    ICOMMAND(0, resetpriv, "i", (int *cn), addpriv(*cn, -1));
+
     void tryauth()
     {
         if(accountname[0]) addmsg(N_AUTHTRY, "rs", accountname);
