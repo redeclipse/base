@@ -6981,7 +6981,7 @@ namespace server
                         srvmsgft(ci->clientnum, CON_EVENT, "\fryou may not add that privilege");
                         break;
                     }
-                    if(priv == -1 && (ci->privilege&PRIV_TYPE) <= (cp->privilege & PRIV_TYPE) && (ci->privilege&PRIV_TYPE) != PRIV_LAST)
+                    if(priv == -1 && (ci->privilege&PRIV_TYPE) <= (cp->privilege & PRIV_TYPE) && (ci->privilege&PRIV_TYPE) < PRIV_ADMINISTRATOR)
                     {
                         srvmsgft(ci->clientnum, CON_EVENT, "\fryou must be a \fs\fc%s\fS to reset that client's privileges", privname((cp->privilege & PRIV_TYPE) + 1));
                         break;
