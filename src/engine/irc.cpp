@@ -379,6 +379,11 @@ ICOMMAND(0, ircconnect, "s", (const char *name), {
     if(n->state > IRC_DISC) { ircprintf(n, 4, NULL, "network already already active"); return; }
     ircestablish(n);
 });
+ICOMMAND(0, ircconnected, "s", (const char *name), {
+    ircnet *n = ircfind(name);
+    if(n) intret(1);
+    else intret(0);
+});
 
 ircchan *ircfindchan(ircnet *n, const char *name)
 {
