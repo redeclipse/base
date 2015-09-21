@@ -1593,6 +1593,7 @@ namespace weapons
     extern bool doshot(gameent *d, vec &targ, int weap, bool pressed = false, bool secondary = false, int force = 0);
     extern void shoot(gameent *d, vec &targ, int force = 0);
     extern void preload();
+    extern bool canuse(int weap);
 }
 
 namespace hud

@@ -621,6 +621,7 @@ namespace entities
                     if(game::allowmove(f))
                     {
                         int sweap = m_weapon(game::gamemode, game::mutators), attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap);
+                        if(!weapons::canuse(attr)) return true;
                         if(!f->canuse(e.type, attr, e.attrs, sweap, lastmillis, (1<<W_S_SWITCH)))
                         {
                             if(e.type != WEAPON) return false;
