@@ -244,6 +244,15 @@ namespace server
     {
         int round;
         bool winner;
+
+        ffaroundstats() { reset(); }
+        ~ffaroundstats() {}
+
+        void reset()
+        {
+            round = 0;
+            winner = false;
+        }
     };
 
     extern int gamemode, mutators;
