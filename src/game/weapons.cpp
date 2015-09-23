@@ -9,6 +9,9 @@ namespace weapons
     VAR(IDF_PERSIST, skippistol, 0, 0, 10); // skip pistol; 0 = never, 1 = if numweaps > 1 (+2), 4 = if carry > 0 (+2), 7 = if carry > 0 and is offset (+2), 10 = always
     VAR(IDF_PERSIST, skipgrenade, 0, 0, 10); // skip grenade; 0 = never, 1 = if numweaps > 1 (+2), 4 = if carry > 0 (+2), 7 = if carry > 0 and is offset (+2), 10 = always
     VAR(IDF_PERSIST, skipmine, 0, 0, 10); // skip mine; 0 = never, 1 = if numweaps > 1 (+2), 4 = if carry > 0 (+2), 7 = if carry > 0 and is offset (+2), 10 = always
+    VAR(IDF_PERSIST, skiprocket, 0, 0, 10); // skip mine; 0 = never, 1 = if numweaps > 1 (+2), 4 = if carry > 0 (+2), 7 = if carry > 0 and is offset (+2), 10 = always
+
+    VAR(IDF_PERSIST, skippickup, 0, 0, 1);
 
     int lastweapselect = 0;
     VAR(IDF_PERSIST, weapselectdelay, 0, 200, VAR_MAX);
@@ -123,8 +126,12 @@ namespace weapons
                     skipweap(skipspawnweapon, p);
                     skipweap(skipmelee, W_MELEE);
                     skipweap(skippistol, W_PISTOL);
-                    skipweap(skipgrenade, W_GRENADE);
-                    skipweap(skipmine, W_MINE);
+                    if(!m_kaboom(game::gamemode, game::mutators))
+                    {
+                        skipweap(skipgrenade, W_GRENADE);
+                        skipweap(skipmine, W_MINE);
+                        skipweap(skiprocket, W_ROCKET);
+                    }
                 }
 
                 if(weapselect(d, n, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
@@ -138,6 +145,16 @@ namespace weapons
         game::errorsnd(d);
     }
     ICOMMAND(0, weapon, "ss", (char *a, char *b), weaponswitch(game::player1, *a ? parseint(a) : -1, *b ? parseint(b) : -1));
+
+    bool canuse(int weap)
+    {
+        if(!skippickup || m_kaboom(game::gamemode, game::mutators)) return true;
+        #define canuseweap(q,w) if(q && weap == w) return false;
+        canuseweap(skipgrenade, W_GRENADE);
+        canuseweap(skipmine, W_MINE);
+        canuseweap(skiprocket, W_ROCKET);
+        return true;
+    }
 
     void weapdrop(gameent *d, int w)
     {
