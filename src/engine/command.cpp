@@ -3497,7 +3497,7 @@ void getvariable(int num)
     num--;
     if(ids.inrange(num))
     {
-        ids.sort(ident::compare);
+        ids.sort();
         formatstring(text, "%s", ids[num]->name);
     }
     else formatstring(text, "%d", ids.length());
@@ -3518,7 +3518,7 @@ void getvarinfo(int n, int types, int notypes, int flags, int noflags, char *str
         lastnotypes = notypes;
         lastflags = flags;
         lastnoflags = noflags;
-        ids[0].sort(ident::compare);
+        ids[0].sort();
     }
     if(str && *str)
     {

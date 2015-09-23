@@ -195,8 +195,6 @@ struct ident
     int getint() const;
     const char *getstr() const;
     void getval(tagval &v) const;
-
-    static bool compare(ident *x, ident *y) { return strcmp(x->name, y->name) < 0; }
 };
 
 extern hashnameset<ident> idents;

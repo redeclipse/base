@@ -1616,7 +1616,7 @@ void writecfg()
     if(!f) return;
     vector<ident *> ids;
     enumerate(idents, ident, id, ids.add(&id));
-    ids.sort(ident::compare);
+    ids.sortname();
     bool found = false;
     loopv(ids)
     {

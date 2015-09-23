@@ -691,17 +691,12 @@ void clear_console()
     keyms.clear();
 }
 
-static inline bool sortbinds(keym *x, keym *y)
-{
-    return strcmp(x->name, y->name) < 0;
-}
-
 void writebinds(stream *f)
 {
     static const char * const cmds[4] = { "bind", "specbind", "editbind", "waitbind" };
     vector<keym *> binds;
     enumerate(keyms, keym, km, binds.add(&km));
-    binds.sort(sortbinds);
+    binds.sortname();
     loopj(4)
     {
         bool found = false;
@@ -743,14 +738,12 @@ struct filesval
     filesval(int type, const char *dir, const char *ext) : type(type), dir(newstring(dir)), ext(ext && ext[0] ? newstring(ext) : NULL), millis(-1) {}
     ~filesval() { DELETEA(dir); DELETEA(ext); loopv(files) DELETEA(files[i]); files.shrink(0); }
 
-    static bool comparefiles(const char *x, const char *y) { return strcmp(x, y) < 0; }
-
     void update()
     {
         if(type!=FILES_DIR || millis >= commandmillis) return;
         files.deletearrays();
         listfiles(dir, ext, files);
-        files.sort(comparefiles);
+        files.sort();
         loopv(files) if(i && !strcmp(files[i], files[i-1])) delete[] files.remove(i--);
         millis = totalmillis;
     }
@@ -928,16 +921,11 @@ void setiddesc(const char *s, const char *v, const char *u)
 }
 ICOMMAND(0, setdesc, "sss", (char *s, char *t, char *u), setiddesc(s, t, u));
 
-static inline bool sortcompletions(const char *x, const char *y)
-{
-    return strcmp(x, y) < 0;
-}
-
 void writecompletions(stream *f)
 {
     vector<char *> cmds;
     enumeratekt(completions, char *, k, filesval *, v, { if(v) cmds.add(k); });
-    cmds.sort(sortcompletions);
+    cmds.sort();
     loopv(cmds)
     {
         char *k = cmds[i];
