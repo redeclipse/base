@@ -238,7 +238,7 @@ genkey: genkey$(BIN_SUFFIX)
 genkey$(BIN_SUFFIX): $(GENKEY_OBJS)
 	$(CXX) $(CXXFLAGS) -o genkey$(BIN_SUFFIX) $(GENKEY_OBJS)
 
-engine/genkey.o:
+engine/genkey.o: engine/genkey.cpp
 	$(CXX) $(CXXFLAGS) $(SERVER_INCLUDES) -c -o engine/genkey.o engine/genkey.cpp
 
 $(INSTDIR)/%$(BIN_SUFFIX): %$(APPMODIFIER)$(BIN_SUFFIX)
