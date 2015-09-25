@@ -8,7 +8,8 @@ CREATE TABLE games (
     map TEXT,
     mode INTEGER,
     mutators INTEGER,
-    timeplayed INTEGER
+    timeplayed INTEGER,
+    uniqueplayers INTEGER
 );
 
 CREATE TABLE game_servers (
