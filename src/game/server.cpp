@@ -3222,6 +3222,7 @@ namespace server
             vector<uint> seen;
             loopv(savedstatsscores) if(savedstatsscores[i].actortype == A_PLAYER)
             {
+                if((gamemillis / 1000 / 25) >= savedstatsscores[i].timealive) continue;
                 if(savedstatsscores[i].handle[0])
                 {
                     seen.add(savedstatsscores[i].ip);
@@ -3238,7 +3239,6 @@ namespace server
                     }
                 }
             }
-            srvoutf(-3, "%d", unique);
             requestmasterf("stats game %s %d %d %d %d\n", escapestring(smapname), gamemode, mutators, gamemillis/1000, unique);
             requestmasterf("stats server %s %s %d\n", escapestring(G(serverdesc)), versionstring, serverport);
             flushmasteroutput();
