@@ -10,7 +10,7 @@
 #include <enet/time.h>
 #include <sqlite3.h>
 
-#define STATSDB_VERSION 2
+#define STATSDB_VERSION 3
 #define STATSDB_RETRYTIME (5*1000)
 #define MASTER_LIMIT 4096
 #define CLIENT_TIME (60*1000)
@@ -82,6 +82,8 @@ struct masterclient
 
         string desc, version;
         int port;
+
+        int unique;
 
         struct team
         {
@@ -205,7 +207,7 @@ struct masterclient
             map[0] = desc[0] = version[0] = '\0';
             mode = mutators = -1;
             timeplayed = 0;
-            time = 0;
+            unique = time = 0;
             port = 0;
             teams.shrink(0);
             players.shrink(0);
@@ -362,12 +364,13 @@ void savestats(masterclient &c)
     if(rc == SQLITE_BUSY) return;
     else checkstatsdb(rc, errmsg);
 
-    statsdbexecf("INSERT INTO games VALUES (NULL, %d, %Q, %d, %d, %d)",
+    statsdbexecf("INSERT INTO games VALUES (NULL, %d, %Q, %d, %d, %d, %d)",
         c.stats.time,
         c.stats.map,
         c.stats.mode,
         c.stats.mutators,
-        c.stats.timeplayed
+        c.stats.timeplayed,
+        c.stats.unique
     );
     c.stats.id = (ulong)sqlite3_last_insert_rowid(statsdb);
 
@@ -874,6 +877,7 @@ bool checkmasterclientinput(masterclient &c)
                     c.stats.mutators = atoi(w[4]);
                     c.stats.timeplayed = atoi(w[5]);
                     c.stats.time = currenttime;
+                    c.stats.unique = atoi(w[6]);
                 }
                 else if(!strcmp(w[1], "server"))
                 {

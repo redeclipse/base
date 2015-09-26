@@ -3218,7 +3218,28 @@ namespace server
             if(!worthy) return;
             sentstats = true;
             requestmasterf("stats begin\n");
-            requestmasterf("stats game %s %d %d %d\n", escapestring(smapname), gamemode, mutators, gamemillis/1000);
+            int unique = 0;
+            vector<uint> seen;
+            loopv(savedstatsscores) if(savedstatsscores[i].actortype == A_PLAYER)
+            {
+                if((gamemillis / 1000 / 25) >= savedstatsscores[i].timealive) continue;
+                if(savedstatsscores[i].handle[0])
+                {
+                    seen.add(savedstatsscores[i].ip);
+                    unique += 1;
+                }
+                else
+                {
+                    bool inseen = false;
+                    loopvj(seen) if(seen[j] == savedstatsscores[i].ip) inseen = true;
+                    if(!inseen)
+                    {
+                        seen.add(savedstatsscores[i].ip);
+                        unique += 1;
+                    }
+                }
+            }
+            requestmasterf("stats game %s %d %d %d %d\n", escapestring(smapname), gamemode, mutators, gamemillis/1000, unique);
             requestmasterf("stats server %s %s %d\n", escapestring(G(serverdesc)), versionstring, serverport);
             flushmasteroutput();
             loopi(numteams(gamemode, mutators))
