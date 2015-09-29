@@ -10,7 +10,7 @@
 #include <enet/time.h>
 #include <sqlite3.h>
 
-#define STATSDB_VERSION 3
+#define STATSDB_VERSION 4
 #define STATSDB_RETRYTIME (5*1000)
 #define MASTER_LIMIT 4096
 #define CLIENT_TIME (60*1000)
@@ -104,7 +104,7 @@ struct masterclient
         struct player
         {
             string name, handle;
-            int score, timealive, frags, deaths, wid;
+            int score, timealive, frags, deaths, wid, timeactive;
 
             player() { reset(); }
             ~player() {}
@@ -112,7 +112,7 @@ struct masterclient
             void reset()
             {
                 name[0] = handle[0] = '\0';
-                score = timealive = frags = deaths = wid = 0;
+                score = timealive = frags = deaths = wid = timeactive = 0;
             }
         };
         vector<player> players;
@@ -396,7 +396,7 @@ void savestats(masterclient &c)
 
     loopv(c.stats.players)
     {
-        statsdbexecf("INSERT INTO game_players VALUES (%d, %Q, %Q, %d, %d, %d, %d, %d)",
+        statsdbexecf("INSERT INTO game_players VALUES (%d, %Q, %Q, %d, %d, %d, %d, %d, %d)",
             c.stats.id,
             c.stats.players[i].name,
             c.stats.players[i].handle,
@@ -404,7 +404,8 @@ void savestats(masterclient &c)
             c.stats.players[i].timealive,
             c.stats.players[i].frags,
             c.stats.players[i].deaths,
-            c.stats.players[i].wid
+            c.stats.players[i].wid,
+            c.stats.players[i].timeactive
         );
     }
 
@@ -903,6 +904,7 @@ bool checkmasterclientinput(masterclient &c)
                     p.frags = atoi(w[6]);
                     p.deaths = atoi(w[7]);
                     p.wid = atoi(w[8]);
+                    p.timeactive = atoi(w[9]);
                     c.stats.players.add(p);
                 }
                 else if(!strcmp(w[1], "weapon"))

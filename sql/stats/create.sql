@@ -37,7 +37,8 @@ CREATE TABLE game_players (
     timealive INTEGER,
     frags INTEGER,
     deaths INTEGER,
-    wid INTEGER
+    wid INTEGER,
+    timeactive INTEGER
 );
 
 CREATE TABLE game_weapons (

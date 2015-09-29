@@ -265,7 +265,7 @@ namespace server
         float yaw, pitch, roll;
         int state, score, spree, rewards[2], shotdamage, damage;
         int lasttimewielded, lasttimeloadout[W_MAX];
-        int lasttimeplayed, timeplayed, aireinit, lastboost, lastresowner[WR_MAX], lasttimealive, timealive, lastresweapon[WR_MAX];
+        int lasttimeplayed, timeplayed, aireinit, lastboost, lastresowner[WR_MAX], lasttimealive, timealive, lasttimeactive, timeactive, lastresweapon[WR_MAX];
         bool lastresalt[W_MAX];
         projectilestate dropped, weapshots[W_MAX][2];
         vector<int> fraglog, fragmillis, cpnodes, chatmillis;
@@ -297,7 +297,7 @@ namespace server
             loopi(W_MAX) loopj(2) weapshots[i][j].reset();
             if(!change) score = timeplayed;
             else clientstate::mapchange();
-            frags = spree = rewards[0] = rewards[1] = deaths = shotdamage = damage = timealive = 0;
+            frags = spree = rewards[0] = rewards[1] = deaths = shotdamage = damage = timealive = timeactive = 0;
             fraglog.shrink(0);
             fragmillis.shrink(0);
             cpnodes.shrink(0);
@@ -346,7 +346,10 @@ namespace server
             extern int gamemillis;
             if(isalive(gamemillis))
                 timealive += (totalmillis-lasttimealive) / 1000;
+            if(state == CS_ALIVE || state == CS_DEAD || state == CS_WAITING)
+                timeactive += (totalmillis-lasttimeactive) / 1000;
             lasttimealive = totalmillis;
+            lasttimeactive = totalmillis;
             updateweaptime();
         }
 
@@ -365,7 +368,7 @@ namespace server
     {
         uint ip;
         string name, handle;
-        int points, score, frags, spree, rewards, timeplayed, timealive, deaths, shotdamage, damage, cptime, actortype;
+        int points, score, frags, spree, rewards, timeplayed, timealive, timeactive, deaths, shotdamage, damage, cptime, actortype;
         int warnings[WARN_MAX][2];
         vector<teamkill> teamkills;
         weaponstats weapstats[W_MAX];
@@ -383,6 +386,7 @@ namespace server
             rewards = gs.rewards[0];
             timeplayed = gs.timeplayed;
             timealive = gs.timealive;
+            timeactive = gs.timeactive;
             deaths = gs.deaths;
             teamkills = gs.teamkills;
             shotdamage = gs.shotdamage;
@@ -406,6 +410,7 @@ namespace server
             gs.rewards[0] = rewards;
             gs.timeplayed = timeplayed;
             gs.timealive = timealive;
+            gs.timeactive = timeactive;
             gs.deaths = deaths;
             gs.teamkills = teamkills;
             gs.shotdamage = shotdamage;
@@ -421,7 +426,7 @@ namespace server
 
         void mapchange()
         {
-            points = frags = spree = rewards = deaths = timeplayed = timealive = shotdamage = damage = cptime = 0;
+            points = frags = spree = rewards = deaths = timeplayed = timealive = timeactive = shotdamage = damage = cptime = 0;
             actortype = A_MAX;
             teamkills.shrink(0);
             captures.shrink(0);
@@ -3020,6 +3025,7 @@ namespace server
             }
             ci->state.lasttimeplayed = totalmillis;
             ci->state.lasttimealive = totalmillis;
+            ci->state.lasttimeactive = totalmillis;
             ci->state.lasttimewielded = totalmillis;
             loopi(W_MAX) ci->state.lasttimeloadout[i] = totalmillis;
             ci->state.quarantine = false;
@@ -3222,7 +3228,7 @@ namespace server
             vector<uint> seen;
             loopv(savedstatsscores) if(savedstatsscores[i].actortype == A_PLAYER)
             {
-                if((gamemillis / 1000 / 25) >= savedstatsscores[i].timealive) continue;
+                if((gamemillis / 1000 / 25) >= savedstatsscores[i].timeactive) continue;
                 if(savedstatsscores[i].handle[0])
                 {
                     seen.add(savedstatsscores[i].ip);
@@ -3250,10 +3256,11 @@ namespace server
             flushmasteroutput();
             loopv(savedstatsscores) if(savedstatsscores[i].actortype == A_PLAYER)
             {
-                requestmasterf("stats player %s %s %d %d %d %d %d\n",
+                requestmasterf("stats player %s %s %d %d %d %d %d %d\n",
                     escapestring(savedstatsscores[i].name), escapestring(savedstatsscores[i].handle),
                     m_laptime(gamemode, mutators) ? savedstatsscores[i].cptime : savedstatsscores[i].points,
-                    savedstatsscores[i].timealive, savedstatsscores[i].frags, savedstatsscores[i].deaths, i
+                    savedstatsscores[i].timealive, savedstatsscores[i].frags, savedstatsscores[i].deaths, i,
+                    savedstatsscores[i].timeactive
                 );
                 flushmasteroutput();
                 loopj(W_MAX)
@@ -5514,6 +5521,7 @@ namespace server
         ci->needclipboard = totalmillis ? totalmillis : 1;
         ci->state.lasttimeplayed = totalmillis;
         ci->state.lasttimealive = totalmillis;
+        ci->state.lasttimeactive = totalmillis;
         ci->state.lasttimewielded = totalmillis;
         loopi(W_MAX) ci->state.lasttimeloadout[i] = totalmillis;
 
