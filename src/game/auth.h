@@ -140,12 +140,13 @@ namespace auth
         return true;
     }
 
-    void setprivilege(clientinfo *ci, int val, int flags = 0, bool authed = false)
+    void setprivilege(clientinfo *ci, int val, int flags = 0, bool authed = false, clientinfo *setter = NULL)
     {
         string msg = "";
         if(val > 0)
         {
-            if((ci->privilege&PRIV_TYPE) >= (flags&PRIV_TYPE)) return;
+            if(!setter && (ci->privilege&PRIV_TYPE) >= (flags&PRIV_TYPE)) return;
+            int oldpriv = ci->privilege;
             ci->privilege = flags;
             if(authed)
             {
@@ -157,7 +158,18 @@ namespace auth
                 }
                 copystring(ci->handle, ci->authname);
             }
-            else formatstring(msg, "\fy%s elevated to \fs\fc%s\fS", colourname(ci), privname(ci->privilege));
+            else if(setter)
+            {
+                defformatstring(settername, "%s", colourname(setter));
+                if((oldpriv&PRIV_TYPE) >= (flags&PRIV_TYPE))
+                    formatstring(msg, "\fy%s was reset by %s to \fs\fc%s\fS", colourname(ci), settername, privname(ci->privilege));
+                else
+                    formatstring(msg, "\fy%s was elevated by %s to \fs\fc%s\fS", colourname(ci), settername, privname(ci->privilege));
+            }
+            else
+            {
+                formatstring(msg, "\fy%s elevated to \fs\fc%s\fS", colourname(ci), privname(ci->privilege));
+            }
         }
         else
         {

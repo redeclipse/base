@@ -449,7 +449,7 @@ namespace server
         servstate state;
         string name, handle, mapvote, authname, clientmap;
         int clientnum, connectmillis, sessionid, overflow, ping, team, lastteam, lastplayerinfo,
-            modevote, mutsvote, lastvote, privilege, gameoffset, lastevent, wslen, swapteam, clientcrc;
+            modevote, mutsvote, lastvote, privilege, oldprivilege, gameoffset, lastevent, wslen, swapteam, clientcrc;
         bool connected, ready, local, timesync, online, wantsmap, gettingmap, connectauth, kicked;
         vector<gameevent *> events;
         vector<uchar> position, messages;
@@ -492,6 +492,7 @@ namespace server
             ping = lastplayerinfo = 0;
             name[0] = handle[0] = '\0';
             privilege = PRIV_NONE;
+            oldprivilege = -1;
             connected = ready = local = online = wantsmap = gettingmap = connectauth = kicked = false;
             authreq = 0;
             position.setsize(0);
@@ -7001,6 +7002,50 @@ namespace server
                     putint(q, packlen);
                     if(packlen > 0) p.get(q.subbuf(packlen).buf, packlen);
                     sendpacket(-1, 1, q.finalize(), ci->clientnum);
+                    break;
+                }
+
+                case N_ADDPRIV:
+                {
+                    int sn = getint(p), priv = getint(p);
+                    clientinfo *cp = (clientinfo *)getinfo(sn);
+                    if(!cp)
+                    {
+                        srvmsgft(ci->clientnum, CON_EVENT, "\frthat client does not exist");
+                        break;
+                    }
+                    if((priv != -1) && (priv < PRIV_SUPPORTER || priv > PRIV_ADMINISTRATOR))
+                    {
+                        srvmsgft(ci->clientnum, CON_EVENT, "\fryou may not add that privilege");
+                        break;
+                    }
+                    if(priv == -1 && (ci->privilege&PRIV_TYPE) <= (cp->privilege & PRIV_TYPE) && (ci->privilege&PRIV_TYPE) < PRIV_ADMINISTRATOR)
+                    {
+                        srvmsgft(ci->clientnum, CON_EVENT, "\fryou must be a \fs\fc%s\fS to reset that client's privileges", privname((cp->privilege & PRIV_TYPE) + 1));
+                        break;
+                    }
+                    if(!((ci->privilege&PRIV_TYPE) >= PRIV_ADMINISTRATOR) && !haspriv(ci, priv, "add that privilege")) break;
+                    if(priv == -1)
+                    {
+                        if(cp->oldprivilege == -1)
+                        {
+                            srvmsgft(ci->clientnum, CON_EVENT, "\fr%s does not have any added privilege", colourname(cp));
+                            break;
+                        }
+                        else
+                        {
+                            auth::setprivilege(cp, 1, cp->oldprivilege, false, ci);
+                            cp->oldprivilege = -1;
+                            break;
+                        }
+                    }
+                    if(priv <= (cp->privilege&PRIV_TYPE))
+                    {
+                        srvmsgft(ci->clientnum, CON_EVENT, "\fr%s is already elevated to \fs\fc%s\fS", colourname(cp), privname(cp->privilege));
+                        break;
+                    }
+                    if(cp->oldprivilege == -1) cp->oldprivilege = cp->privilege;
+                    auth::setprivilege(cp, 1, priv|PRIV_LOCAL, false, ci);
                     break;
                 }
 
