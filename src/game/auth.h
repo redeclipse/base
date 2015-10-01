@@ -158,17 +158,18 @@ namespace auth
                 }
                 copystring(ci->handle, ci->authname);
             }
-            else
-                if(setter)
-                {
-                    defformatstring(settername, "%s", colourname(setter));
-                    if((oldpriv&PRIV_TYPE) >= (flags&PRIV_TYPE))
-                        formatstring(msg, "\fy%s was reset by %s to \fs\fc%s\fS", colourname(ci), settername, privname(ci->privilege));
-                    else
-                        formatstring(msg, "\fy%s was elevated by %s to \fs\fc%s\fS", colourname(ci), settername, privname(ci->privilege));
-                }
+            else if(setter)
+            {
+                defformatstring(settername, "%s", colourname(setter));
+                if((oldpriv&PRIV_TYPE) >= (flags&PRIV_TYPE))
+                    formatstring(msg, "\fy%s was reset by %s to \fs\fc%s\fS", colourname(ci), settername, privname(ci->privilege));
                 else
-                    formatstring(msg, "\fy%s elevated to \fs\fc%s\fS", colourname(ci), privname(ci->privilege));
+                    formatstring(msg, "\fy%s was elevated by %s to \fs\fc%s\fS", colourname(ci), settername, privname(ci->privilege));
+            }
+            else
+            {
+                formatstring(msg, "\fy%s elevated to \fs\fc%s\fS", colourname(ci), privname(ci->privilege));
+            }
         }
         else
         {
