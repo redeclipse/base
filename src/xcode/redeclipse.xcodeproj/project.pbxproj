@@ -827,7 +827,7 @@
 				HEADER_SEARCH_PATHS = (
 					../include,
 					../enet/include,
-					/usr/X11R6/include/,
+					/usr/X11/include/,
 					"$(inherited)",
 				);
 				INFOPLIST_FILE = "redeclipse-Info.plist";
@@ -860,7 +860,7 @@
 				HEADER_SEARCH_PATHS = (
 					../include,
 					../enet/include,
-					/usr/X11R6/include/,
+					/usr/X11/include/,
 					"$(inherited)",
 				);
 				INFOPLIST_FILE = "redeclipse-Info.plist";
@@ -895,7 +895,7 @@
 				HEADER_SEARCH_PATHS = (
 					../include,
 					../enet/include,
-					/usr/X11R6/include/,
+					/usr/X11/include/,
 					"$(inherited)",
 				);
 				INFOPLIST_FILE = "redeclipse-Info.plist";
