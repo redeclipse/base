@@ -2,7 +2,7 @@
 
 #include "engine.h"
 
-bool hasVAO = false, hasFBO = false, hasAFBO = false, hasDS = false, hasTF = false, hasTRG = false, hasS3TC = false, hasFXT1 = false, hasAF = false, hasFBB = false, hasUBO = false, hasMBR = false;
+bool hasVAO = false, hasFBO = false, hasAFBO = false, hasDS = false, hasTF = false, hasTRG = false, hasTSW = false, hasS3TC = false, hasFXT1 = false, hasAF = false, hasFBB = false, hasUBO = false, hasMBR = false;
 int hasstencil = 0;
 
 VAR(IDF_READONLY, glversion, 1, 0, 0);
@@ -490,7 +490,7 @@ void gl_checkextensions()
 
         useubo = 1;
         hasUBO = true;
-        if(glversion >= 310 && dbgexts) conoutf("\frUsing GL_ARB_uniform_buffer_object extension.");
+        if(glversion < 310 && dbgexts) conoutf("\frUsing GL_ARB_uniform_buffer_object extension.");
     }
 
     if(glversion >= 300 || hasext(gfxexts, "GL_ARB_vertex_array_object"))
@@ -510,6 +510,12 @@ void gl_checkextensions()
         glIsVertexArray_ =      (PFNGLISVERTEXARRAYPROC)     getprocaddress("glIsVertexArrayAPPLE");
         hasVAO = true;
         if(dbgexts) conoutf("\frUsing GL_APPLE_vertex_array_object extension.");
+    }
+
+    if(glversion >= 330 || hasext(gfxexts, "GL_ARB_texture_swizzle") || hasext(gfxexts, "GL_EXT_texture_swizzle"))
+    {
+        hasTSW = true;
+        if(glversion < 330 && dbgexts) conoutf("\frUsing GL_ARB_texture_swizzle extension.");
     }
 
     if(hasext(gfxexts, "GL_EXT_texture_compression_s3tc"))
