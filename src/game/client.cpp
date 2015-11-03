@@ -1077,7 +1077,7 @@ namespace client
         if(flags&SAY_WHISPER)
         {
             if(!t) return;
-            defformatstring(sw, " (\fs\fcwhispers to %s\fS)", t == game::player1 ? "you" : game::colourname(t));
+            defformatstring(sw, " [\fs\fy%d\fS] (\fs\fcwhispers to %s\fS [\fs\fy%d\fS])", f->clientnum, t == game::player1 ? "you" : game::colourname(t), t->clientnum);
             concatstring(name, sw);
         }
         else if(flags&SAY_TEAM)
