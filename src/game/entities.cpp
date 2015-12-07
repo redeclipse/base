@@ -1301,7 +1301,7 @@ namespace entities
             int g = -1, h = -1;
             if((toggle || !add) && (g = e.links.find(node)) >= 0)
             {
-                if(!add || (toggle && (!canlink(node, index) || (h = f.links.find(index)) >= 0)))
+                if((!add || toggle) && (!canlink(node, index) || (h = f.links.find(index)) >= 0))
                 {
                     e.links.remove(g);
                     if(recip) f.links.remove(h);
