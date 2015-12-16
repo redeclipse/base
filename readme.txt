@@ -79,12 +79,12 @@ The project is Free and Open Source meaning that you can both use it for free, a
 * Robert "Homicidal" Crane
 * Robert Winkler
 * Ryan "icculus" Gordon / icculus.org - Master server and website hosting
-* Rémi "LuckystrikeRx" Clouet d'Orval - Maps, Textures, Models, Weapons, Design/Testing, Website
+* Rï¿½mi "LuckystrikeRx" Clouet d'Orval - Maps, Textures, Models, Weapons, Design/Testing, Website
 * Scott Baker
 * Sergey "swooboo" Altshuller
 * Slawek "VibrantWave" Blauciak - Ambient Sounds
 * Stefan Norman and Peter McInerney - Game server and domain name hosting
-* Sébastien "sinma" Chauvel
+* Sï¿½bastien "sinma" Chauvel
 * Taiyo Rawle
 * Vadim Peretokin
 * Viktor "Unnamed" Hahn - Maps, Models, and other improvements
@@ -105,6 +105,7 @@ The project is Free and Open Source meaning that you can both use it for free, a
 * "John_III" - Maps and Models
 * "Korsi" - Maps
 * "littlebabyjesus"
+* "nemurati"
 * "Raiden" - Maps
 * "RaZgRiZ" - Textures and Cubescript maintenance
 * "TheLastProject" - Design, Testing and Support
