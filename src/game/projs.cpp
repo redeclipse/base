@@ -349,7 +349,16 @@ namespace projs
     {
         if(proj.stuck)
         {
-            if(init) proj.vel = vec(0, 0, 0);
+            if(init)
+            {
+                int lifetime = WF(WK(proj.flags), proj.weap, timestick, WS(proj.flags));
+                if(lifetime > 0)
+                {
+                    proj.lifetime = lifetime;
+                    proj.lifemillis = lifetime;
+                }
+                proj.vel = vec(0, 0, 0);
+            }
             if(proj.stick)
             {
                 if(proj.stick->state != CS_ALIVE)
