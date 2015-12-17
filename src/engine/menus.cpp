@@ -241,10 +241,10 @@ SVAR(0, guirollovername, "");
 SVAR(0, guirolloveraction, "");
 SVAR(0, guirollovertype, "");
 
-void guibutton(char *name, char *action, char *altact, char *icon, int *colour, int *icolour, int *wrap)
+void guibutton(char *name, char *action, char *altact, char *icon, int *colour, int *icolour, int *wrap, int *faded, char *oicon, int *ocolour)
 {
     if(!cgui) return;
-    int ret = cgui->button(name, *colour >= 0 ? *colour : 0xFFFFFF, *icon ? icon : NULL, *icolour >= 0 ? *icolour : 0xFFFFFF, *wrap > 0 ? *wrap : -1);
+    int ret = cgui->button(name, *colour >= 0 ? *colour : 0xFFFFFF, *icon ? icon : NULL, *icolour >= 0 ? *icolour : 0xFFFFFF, *wrap > 0 ? *wrap : -1, *faded != 0, *oicon ? oicon : NULL, *ocolour >= 0 ? *ocolour : 0xFFFFFF);
     if(ret&GUI_UP)
     {
         char *act = NULL;
@@ -322,9 +322,9 @@ void guislice(char *path, char *action, float *scale, float *start, float *end, 
     }
 }
 
-void guitext(char *name, char *icon, int *colour, int *icolour, int *wrap)
+void guitext(char *name, char *icon, int *colour, int *icolour, int *wrap, int *faded, char *oicon, int *ocolor)
 {
-    if(cgui) cgui->text(name, *colour >= 0 ? *colour : 0xFFFFFF, icon[0] ? icon : NULL, *icolour >= 0 ? *icolour : 0xFFFFFF, *wrap > 0 ? *wrap : -1);
+    if(cgui) cgui->text(name, *colour >= 0 ? *colour : 0xFFFFFF, *icon ? icon : NULL, *icolour >= 0 ? *icolour : 0xFFFFFF, *wrap > 0 ? *wrap : -1, *faded >= 0 ? *faded > 0 : false, *oicon ? oicon : NULL, *ocolor >= 0 ? *ocolor : 0xFFFFFF);
 }
 
 void guitab(char *name)
@@ -552,7 +552,7 @@ void guicheckbox(char *name, char *var, float *on, float *off, char *onchange, i
 {
     if(!cgui) return;
     bool enabled = getfval(var) != *off, two = getfvarmax(var) == 2, next = two && getfval(var) == 1.0f;
-    int ret = cgui->button(name, *colour >= 0 ? *colour : 0xFFFFFF, enabled ? (two && !next ? "checkboxtwo" : "checkboxon") : "checkbox", 0xFFFFFF);
+    int ret = cgui->button(name, *colour >= 0 ? *colour : 0xFFFFFF, "checkbox", 0xFFFFFF, -1, true, enabled ? "checkboxon" : NULL, enabled && two && !next ? guicheckboxtwocolour : guicheckboxcolour);
     if(ret&GUI_UP) updateval(var, enabled ? (two && next ? 2.0f : *off) : (*on || *off ? *on : 1.0f), onchange);
     else if(ret&GUI_ROLLOVER)
     {
@@ -566,7 +566,7 @@ void guiradio(char *name, char *var, float *n, char *onchange, int *colour)
 {
     if(!cgui) return;
     bool enabled = getfval(var)==*n;
-    int ret = cgui->button(name, *colour >= 0 ? *colour : 0xFFFFFF, enabled ? "radioboxon" : "radiobox", *colour >= 0 ? *colour : 0xFFFFFF);
+    int ret = cgui->button(name, *colour >= 0 ? *colour : 0xFFFFFF, "radiobox", *colour >= 0 ? *colour : 0xFFFFFF, -1, true, enabled ? "radioboxon" : NULL, guiradioboxcolour);
     if(ret&GUI_UP)
     {
         if(!enabled) updateval(var, *n, onchange);
@@ -584,7 +584,7 @@ void guibitfield(char *name, char *var, int *mask, char *onchange, int *colour)
     if(!cgui) return;
     int val = getval(var);
     bool enabled = (val & *mask) != 0;
-    int ret = cgui->button(name, *colour >= 0 ? *colour : 0xFFFFFF, enabled ? "checkboxon" : "checkbox", *colour >= 0 ? *colour : 0xFFFFFF);
+    int ret = cgui->button(name, *colour >= 0 ? *colour : 0xFFFFFF, "checkbox", *colour >= 0 ? *colour : 0xFFFFFF, -1, true, enabled ? "checkboxon" : NULL, guicheckboxcolour);
     if(ret&GUI_UP) updateval(var, enabled ? val & ~*mask : val | *mask, onchange);
     else if(ret&GUI_ROLLOVER)
     {
@@ -687,8 +687,8 @@ void guimodify(char *name, char *contents)
 COMMAND(0, newgui, "sss");
 COMMAND(0, guiheader, "s");
 COMMAND(0, guimodify, "ss");
-COMMAND(0, guibutton, "ssssbbb");
-COMMAND(0, guitext, "ssbbb");
+COMMAND(0, guibutton, "ssssbbbbsb");
+COMMAND(0, guitext, "ssbbbbsb");
 COMMANDN(0, cleargui, cleargui_, "i");
 ICOMMAND(0, showgui, "si", (const char *s, int *n), showgui(s, *n));
 COMMAND(0, guishowtitle, "i");

@@ -575,17 +575,17 @@ struct guient
     virtual void start(int starttime, int *tab = NULL, bool allowinput = true, bool wantstitle = true, bool wantsbgfx = true) = 0;
     virtual void end() = 0;
 
-    virtual int text(const char *text, int color = 0xFFFFFF, const char *icon = NULL, int icolor = 0xFFFFFF, int wrap = -1) = 0;
-    int textf(const char *fmt, int color = 0xFFFFFF, const char *icon = NULL, int icolor = 0xFFFFFF, int wrap = -1, ...) PRINTFARGS(2, 7)
+    virtual int text(const char *text, int color = 0xFFFFFF, const char *icon = NULL, int icolor = 0xFFFFFF, int wrap = -1, bool faded = false, const char *oicon = NULL, int ocolor = 0xFFFFFF) = 0;
+    int textf(const char *fmt, int color = 0xFFFFFF, const char *icon = NULL, int icolor = 0xFFFFFF, int wrap = -1, bool faded = false, const char *oicon = NULL, int ocolor = 0xFFFFFF, ...) PRINTFARGS(2, 10)
     {
-        defvformatstring(str, wrap, fmt);
-        return text(str, color, icon, icolor, wrap);
+        defvformatstring(str, ocolor, fmt);
+        return text(str, color, icon, icolor, wrap, faded, oicon, ocolor);
     }
-    virtual int button(const char *text, int color = 0xFFFFFF, const char *icon = NULL, int icolor = 0xFFFFFF, int wrap = -1, bool faded = true) = 0;
-    int buttonf(const char *fmt, int color = 0xFFFFFF, const char *icon = NULL, int icolor = 0xFFFFFF, int wrap = -1, bool faded = true, ...) PRINTFARGS(2, 8)
+    virtual int button(const char *text, int color = 0xFFFFFF, const char *icon = NULL, int icolor = 0xFFFFFF, int wrap = -1, bool faded = true, const char *oicon = NULL, int ocolor = 0xFFFFFF) = 0;
+    int buttonf(const char *fmt, int color = 0xFFFFFF, const char *icon = NULL, int icolor = 0xFFFFFF, int wrap = -1, bool faded = true, const char *oicon = NULL, int ocolor = 0xFFFFFF, ...) PRINTFARGS(2, 10)
     {
-        defvformatstring(str, faded, fmt);
-        return button(str, color, icon, icolor, wrap, faded);
+        defvformatstring(str, ocolor, fmt);
+        return button(str, color, icon, icolor, wrap, faded, oicon, ocolor);
     }
     virtual void fill(int color, int parentw = 0, int parenth = 0) = 0;
     virtual void outline(int color, int parentw = 0, int parenth = 0, int offsetx = 0, int offsety = 0) = 0;

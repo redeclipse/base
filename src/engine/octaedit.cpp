@@ -9,7 +9,7 @@ VAR(0, showselgrid, 0, 0, 1);
 bool boxoutline = false;
 
 void boxs(int orient, vec o, const vec &s, float size)
-{   
+{
     int d = dimension(orient), dc = dimcoord(orient);
     float f = boxoutline ? (dc>0 ? 0.2f : -0.2f) : 0;
     o[D[d]] += dc * s[D[d]] + f;
@@ -962,15 +962,15 @@ static bool unpackblock(block3 *&b, B &buf)
 }
 
 struct vslotmap
-{   
+{
     int index;
     VSlot *vslot;
 
     vslotmap() {}
     vslotmap(int index, VSlot *vslot) : index(index), vslot(vslot) {}
-};  
+};
 static vector<vslotmap> unpackingvslots;
-    
+
 static void unpackvslots(cube &c, ucharbuf &buf)
 {
     if(c.children)
@@ -982,8 +982,8 @@ static void unpackvslots(cube &c, ucharbuf &buf)
         ushort tex = c.texture[i];
         loopvj(unpackingvslots) if(unpackingvslots[j].index == tex) { c.texture[i] = unpackingvslots[j].vslot->index; break; }
     }
-}   
-    
+}
+
 static void unpackvslots(block3 &b, ucharbuf &buf)
 {
     while(buf.remaining() >= int(sizeof(vslothdr)))
@@ -1389,7 +1389,7 @@ void genprefabmesh(prefab &p)
     block3 b = *p.copy;
     b.o = ivec(0, 0, 0);
 
-    cube *oldworldroot = worldroot; 
+    cube *oldworldroot = worldroot;
     int oldworldscale = worldscale, oldworldsize = hdr.worldsize;
 
     worldroot = newcubes();
@@ -2891,9 +2891,9 @@ struct texturegui : guicb
             if(texmru.inrange(curtex))
             {
                 VSlot &v = lookupvslot(texmru[curtex]);
-                g.textf("#%-3d \fa%s", 0xFFFFFF, NULL, 0, -1, texmru[curtex], v.slot->sts.empty() ? "<unknown texture>" : v.slot->sts[0].name);
+                g.textf("#%-3d \fa%s", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF, texmru[curtex], v.slot->sts.empty() ? "<unknown texture>" : v.slot->sts[0].name);
             }
-            else g.textf("no texture selected", 0x888888);
+            else g.text("no texture selected", 0x888888);
         });
         g.end();
     }
@@ -2977,7 +2977,7 @@ void rendertexturepanel(int w, int h)
                     if(vslot.rotation >= 2 && vslot.rotation <= 4) { xoff *= -1; loopk(4) tc[k].x *= -1; }
                     if(vslot.rotation <= 2 || vslot.rotation == 5) { yoff *= -1; loopk(4) tc[k].y *= -1; }
                 }
-                loopk(4) { tc[k].x = tc[k].x/sx - xoff/tex->xs; tc[k].y = tc[k].y/sy - yoff/tex->ys; } 
+                loopk(4) { tc[k].x = tc[k].x/sx - xoff/tex->xs; tc[k].y = tc[k].y/sy - yoff/tex->ys; }
                 glBindTexture(GL_TEXTURE_2D, tex->id);
                 vec colorscale = vslot.getcolorscale();
                 loopj(glowtex ? 3 : 2)

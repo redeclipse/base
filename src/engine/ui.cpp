@@ -71,6 +71,9 @@ FVAR(IDF_PERSIST, guislideractiveblend, 0, 0.75f, 1);
 
 VAR(IDF_PERSIST|IDF_HEX, guiactivecolour, -1, 0xF02020, 0xFFFFFF);
 FVAR(IDF_PERSIST, guiactiveblend, 0, 1.f, 1);
+VAR(IDF_PERSIST|IDF_HEX, guicheckboxcolour, -1, 0x20F020, 0xFFFFFF);
+VAR(IDF_PERSIST|IDF_HEX, guicheckboxtwocolour, -1, 0xF020F0, 0xFFFFFF);
+VAR(IDF_PERSIST|IDF_HEX, guiradioboxcolour, -1, 0xF02020, 0xFFFFFF);
 
 static bool needsinput = false, hastitle = true, hasbgfx = true, tooltipforce = false;
 static char *statusstr = NULL, *tooltipstr = NULL, *tooltip = NULL;
@@ -351,13 +354,13 @@ struct gui : guient
     void pushfont(const char *font) { ::pushfont(font); fontdepth++; }
     void popfont() { if(fontdepth) { ::popfont(); fontdepth--; } }
 
-    int text(const char *text, int color, const char *icon, int icolor, int wrap)
+    int text(const char *text, int color, const char *icon, int icolor, int wrap, bool faded, const char *oicon, int ocolor)
     {
-        return button_(text, color, icon, icolor, false, wrap, false);
+        return button_(text, color, icon, icolor, false, wrap, faded, oicon, ocolor);
     }
-    int button(const char *text, int color, const char *icon, int icolor, int wrap, bool faded)
+    int button(const char *text, int color, const char *icon, int icolor, int wrap, bool faded, const char *oicon, int ocolor)
     {
-        return button_(text, color, icon, icolor, true, wrap, faded);
+        return button_(text, color, icon, icolor, true, wrap, faded, oicon, ocolor);
     }
 
     void separator(int size, int space, int colour, int border) { line_(size > 0 ? size : guisepsize, space > 0 ? space : 0, colour, border); }
@@ -818,7 +821,7 @@ struct gui : guient
         skin(curx, cury, curx+w, cury+h, colour1, blend1, colour2, blend2, skinborder);
     }
 
-    void icon_(Texture *t, bool overlaid, int x, int y, int size, bool hit, int icolor)
+    void icon_(Texture *t, bool overlaid, int x, int y, int size, bool hit, int icolor = 0xFFFFFF, Texture *o = NULL, int ocolor = 0xFFFFFF)
     {
         static const vec2 tc[4] = { vec2(0, 0), vec2(1, 0), vec2(1, 1), vec2(0, 1) };
         float xs = 0, ys = 0;
@@ -879,19 +882,28 @@ struct gui : guient
             xtraverts += gle::end();
         }
         glBindTexture(GL_TEXTURE_2D, textureid);
-        vec color = vec::hexcolor(icolor);
-        //if(hit && hitfx && !overlaid) color.div(2);
-        gle::color(color);
+        gle::color(vec::hexcolor(icolor), 1.f);
         gle::begin(GL_TRIANGLE_STRIP);
         gle::attribf(xi,    yi);    gle::attrib(tc[0]);
         gle::attribf(xi+xs, yi);    gle::attrib(tc[1]);
         gle::attribf(xi,    yi+ys); gle::attrib(tc[3]);
         gle::attribf(xi+xs, yi+ys); gle::attrib(tc[2]);
         xtraverts += gle::end();
+        if(o)
+        {
+            glBindTexture(GL_TEXTURE_2D, o->id);
+            gle::color(vec::hexcolor(ocolor), 1.f);
+            gle::begin(GL_TRIANGLE_STRIP);
+            gle::attribf(xi,    yi);    gle::attrib(tc[0]);
+            gle::attribf(xi+xs, yi);    gle::attrib(tc[1]);
+            gle::attribf(xi,    yi+ys); gle::attrib(tc[3]);
+            gle::attribf(xi+xs, yi+ys); gle::attrib(tc[2]);
+            xtraverts += gle::end();
+        }
         if(overlaid)
         {
             if(!overlaytex) overlaytex = textureload(guioverlaytex, 3, true, false);
-            gle::color(hit && hitfx ? vec::hexcolor(guiactivecolour) : vec(1, 1, 1));
+            gle::color(hit && hitfx ? vec::hexcolor(guiactivecolour) : vec(1, 1, 1), 1.f);
             glBindTexture(GL_TEXTURE_2D, overlaytex->id);
             rect_(xi - xpad, yi - ypad, xs + 2*xpad, ys + 2*ypad, 0);
         }
@@ -1072,10 +1084,10 @@ struct gui : guient
         return space;
     }
 
-    int button_(const char *text, int color, const char *icon, int icolor, bool clickable, int wrap = -1, bool faded = true)
+    int button_(const char *text, int color, const char *icon, int icolor, bool clickable, int wrap = -1, bool faded = true, const char *oicon = NULL, int ocolor = 0xFFFFFF)
     {
         int w = 0, h = 0;
-        if(icon && *icon)
+        if((icon && *icon) || (oicon && *oicon))
         {
             w += FONTH;
             if(text && *text) w += 8;
@@ -1093,10 +1105,11 @@ struct gui : guient
             bool hit = ishit(w, h), forcecolor = false;
             if(hit && hitfx && clickable) { forcecolor = true; color = guiactivecolour; }
             int x = curx;
-            if(icon && *icon)
+            if((icon && *icon) || (oicon && *oicon))
             {
-                const char *tname = strstr(icon, "textures/") ? icon : makerelpath("textures", icon);
-                icon_(textureload(tname, 3, true, false), false, x, cury, FONTH, clickable && hit, icolor);
+                Texture *ttex = icon && *icon ? textureload(strstr(icon, "textures/") ? icon : makerelpath("textures", icon), 3, true, false) : NULL,
+                    *otex = oicon && *oicon ? textureload(strstr(oicon, "textures/") ? oicon : makerelpath("textures", oicon), 3, true, false) : NULL;
+                icon_(ttex, false, x, cury, FONTH, clickable && hit, icolor, otex, ocolor);
                 x += FONTH;
                 if(text && *text) x += 8;
             }
