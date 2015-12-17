@@ -1380,7 +1380,7 @@ struct gameent : dynent, clientstate
 
     bool hasmelee(int millis, bool check = false, bool slide = false, bool onfloor = true, bool can = true)
     {
-        if(!AA(actortype, abilities)&(1<<A_A_MELEE)) return false;
+        if(!(AA(actortype, abilities)&(1<<A_A_MELEE))) return false;
         if(check && (!action[AC_SPECIAL] || onfloor) && !slide) return false;
         if(can && (weapstate[W_MELEE] != W_S_SECONDARY || millis-weaplast[W_MELEE] >= weapwait[W_MELEE])) return false;
         return true;
@@ -1403,7 +1403,7 @@ struct gameent : dynent, clientstate
 
     bool crouching(bool limit = false)
     {
-        if(!AA(actortype, abilities)&(1<<A_A_CROUCH)) return false;
+        if(!(AA(actortype, abilities)&(1<<A_A_CROUCH))) return false;
         return action[AC_CROUCH] || actiontime[AC_CROUCH] < 0 || (!limit && lastmillis-actiontime[AC_CROUCH] <= PHYSMILLIS);
     }
 
