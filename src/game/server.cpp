@@ -471,6 +471,7 @@ namespace server
         void mapchange(bool change = true)
         {
             mapvote[0] = '\0';
+            modevote = mutsvote = -1;
             state.reset(change);
             events.deletecontents();
             overflow = 0;
@@ -2508,7 +2509,7 @@ namespace server
             clientinfo *oi = clients[i];
             if(oi->state.actortype > A_PLAYER) continue;
             maxvotes++;
-            if(!oi->mapvote[0]) continue;
+            if(!*oi->mapvote) continue;
             if(style == 3) votes.add(votecount(oi->mapvote, oi->modevote, oi->mutsvote));
             else
             {
@@ -2603,7 +2604,7 @@ namespace server
         loopv(clients)
         {
             clientinfo *oi = clients[i];
-            if(oi->state.actortype > A_PLAYER || !oi->mapvote[0] || ci == oi) continue;
+            if(oi->state.actortype > A_PLAYER || !*oi->mapvote || ci == oi) continue;
             if(!strcmp(oi->mapvote, reqmap) && oi->modevote == reqmode && oi->mutsvote == reqmuts)
             {
                 hasvote = true;
@@ -2616,7 +2617,7 @@ namespace server
             {
                 case 1: if(!haspriv(ci, G(votelock), "vote for a new game")) return; break;
                 case 2:
-                    if(!m_edit(reqmode))
+                    if(reqmap && *reqmap && !m_edit(reqmode))
                     {
                         int n = listincludes(sv_previousmaps, reqmap, strlen(reqmap));
                         if(n >= 0 && n < G(maphistory) && !haspriv(ci, G(votelock), "vote for a recently played map")) return;
@@ -2650,7 +2651,7 @@ namespace server
                 }
                 if(list)
                 {
-                    if(listincludes(list, reqmap, strlen(reqmap)) < 0 && !haspriv(ci, G(modelock), "select maps not in the rotation"))
+                    if(reqmap && *reqmap && listincludes(list, reqmap, strlen(reqmap)) < 0 && !haspriv(ci, G(modelock), "select maps not in the rotation"))
                     {
                         DELETEA(list);
                         return;
@@ -2667,12 +2668,12 @@ namespace server
         {
             sendstats();
             endmatch();
-            srvoutf(-3, "%s forced: \fs\fy%s\fS on \fs\fo%s\fS", colourname(ci), gamename(ci->modevote, ci->mutsvote), ci->mapvote);
+            srvoutf(-3, "%s forced: \fs\fy%s\fS on \fs\fo%s\fS", colourname(ci), gamename(ci->modevote, ci->mutsvote), *ci->mapvote ? ci->mapvote : "<random>");
             changemap(ci->mapvote, ci->modevote, ci->mutsvote);
             return;
         }
         sendf(-1, 1, "ri2si2", N_MAPVOTE, ci->clientnum, ci->mapvote, ci->modevote, ci->mutsvote);
-        relayf(3, "%s suggests: \fs\fy%s\fS on \fs\fo%s\fS", colourname(ci), gamename(ci->modevote, ci->mutsvote), ci->mapvote);
+        relayf(3, "%s suggests: \fs\fy%s\fS on \fs\fo%s\fS", colourname(ci), gamename(ci->modevote, ci->mutsvote), *ci->mapvote ? ci->mapvote : "<random>");
         checkvotes();
     }
 
@@ -3332,7 +3333,7 @@ namespace server
         scores.shrink(0);
         aiman::clearai();
         aiman::poke();
-        const char *reqmap = name && *name ? name : pickmap(NULL, gamemode, mutators);
+        const char *reqmap = name && *name && strcmp(name, "<random>") ? name : pickmap(NULL, gamemode, mutators);
         ifserver(reqmap && *reqmap)
         {
             loopi(SENDMAP_MAX)
@@ -3928,7 +3929,7 @@ namespace server
             {
                 clientinfo *oi = clients[i];
                 if(oi->state.actortype > A_PLAYER || (ci && oi->clientnum == ci->clientnum)) continue;
-                if(oi->mapvote[0])
+                if(*oi->mapvote)
                 {
                     putint(p, N_MAPVOTE);
                     putint(p, oi->clientnum);

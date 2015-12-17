@@ -135,7 +135,7 @@ namespace client
         if(showmapvotes >= (!gs_playing(game::gamestate) ? 2 : 1) && !isignored(d->clientnum))
         {
             SEARCHBINDCACHE(votekey)("showgui maps 2", 0);
-            conoutft(CON_EVENT, "%s suggests: \fs\fy%s\fS on \fs\fo%s\fS, press %s to vote", game::colourname(d), server::gamename(mode, muts), text, votekey);
+            conoutft(CON_EVENT, "%s suggests: \fs\fy%s\fS on \fs\fo%s\fS, press %s to vote", game::colourname(d), server::gamename(mode, muts), *m->map ? m->map : "<random>", votekey);
         }
     }
 
@@ -1371,8 +1371,10 @@ namespace client
         }
         else
         {
-            string reqfile;
-            copystring(reqfile, !strncasecmp(name, "temp/", 5) || !strncasecmp(name, "temp\\", 5) ? name+5 : name);
+            string reqfile = "";
+            if(name && *name)
+                copystring(reqfile, !strncasecmp(name, "temp/", 5) || !strncasecmp(name, "temp\\", 5) ? name+5 : name);
+            else copystring(reqfile, "<random>");
             addmsg(N_MAPVOTE, "rsi2", reqfile, nextmode, nextmuts);
         }
     }
