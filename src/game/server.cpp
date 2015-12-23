@@ -2587,9 +2587,12 @@ namespace server
     void vote(const char *reqmap, int &reqmode, int &reqmuts, int sender)
     {
         clientinfo *ci = (clientinfo *)getinfo(sender);
+        if(!ci) return;
         reqmuts |= G(mutslockforce);
         modecheck(reqmode, reqmuts);
-        if(!ci || !m_game(reqmode) || !reqmap || !*reqmap) return;
+        if(!m_game(reqmode)) return;
+        if(!reqmap || !*reqmap) reqmap = "<random>";
+        bool israndom = !strcmp(reqmap, "<random>");
         if(m_local(reqmode) && !ci->local)
         {
             srvmsgft(ci->clientnum, CON_EVENT, "\fraccess denied, you must be a local client to start a %s game", gametype[reqmode].name);
@@ -2617,7 +2620,7 @@ namespace server
             {
                 case 1: if(!haspriv(ci, G(votelock), "vote for a new game")) return; break;
                 case 2:
-                    if(reqmap && *reqmap && !m_edit(reqmode))
+                    if(!israndom && !m_edit(reqmode))
                     {
                         int n = listincludes(sv_previousmaps, reqmap, strlen(reqmap));
                         if(n >= 0 && n < G(maphistory) && !haspriv(ci, G(votelock), "vote for a recently played map")) return;
@@ -2651,7 +2654,7 @@ namespace server
                 }
                 if(list)
                 {
-                    if(reqmap && *reqmap && listincludes(list, reqmap, strlen(reqmap)) < 0 && !haspriv(ci, G(modelock), "select maps not in the rotation"))
+                    if(!israndom && listincludes(list, reqmap, strlen(reqmap)) < 0 && !haspriv(ci, G(modelock), "select maps not in the rotation"))
                     {
                         DELETEA(list);
                         return;
@@ -2668,12 +2671,12 @@ namespace server
         {
             sendstats();
             endmatch();
-            srvoutf(-3, "%s forced: \fs\fy%s\fS on \fs\fo%s\fS", colourname(ci), gamename(ci->modevote, ci->mutsvote), *ci->mapvote ? ci->mapvote : "<random>");
+            srvoutf(-3, "%s forced: \fs\fy%s\fS on \fs\fo%s\fS", colourname(ci), gamename(ci->modevote, ci->mutsvote), ci->mapvote);
             changemap(ci->mapvote, ci->modevote, ci->mutsvote);
             return;
         }
         sendf(-1, 1, "ri2si2", N_MAPVOTE, ci->clientnum, ci->mapvote, ci->modevote, ci->mutsvote);
-        relayf(3, "%s suggests: \fs\fy%s\fS on \fs\fo%s\fS", colourname(ci), gamename(ci->modevote, ci->mutsvote), *ci->mapvote ? ci->mapvote : "<random>");
+        relayf(3, "%s suggests: \fs\fy%s\fS on \fs\fo%s\fS", colourname(ci), gamename(ci->modevote, ci->mutsvote), ci->mapvote);
         checkvotes();
     }
 

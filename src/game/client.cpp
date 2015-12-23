@@ -112,6 +112,7 @@ namespace client
     void vote(gameent *d, const char *text, int mode, int muts)
     {
         mapvote *m = NULL;
+        if(!text || !*text) text = "<random>";
         if(!mapvotes.empty()) loopvrev(mapvotes)
         {
             if(mapvotes[i].players.find(d) >= 0)
@@ -135,7 +136,7 @@ namespace client
         if(showmapvotes >= (!gs_playing(game::gamestate) ? 2 : 1) && !isignored(d->clientnum))
         {
             SEARCHBINDCACHE(votekey)("showgui maps 2", 0);
-            conoutft(CON_EVENT, "%s suggests: \fs\fy%s\fS on \fs\fo%s\fS, press %s to vote", game::colourname(d), server::gamename(mode, muts), *m->map ? m->map : "<random>", votekey);
+            conoutft(CON_EVENT, "%s suggests: \fs\fy%s\fS on \fs\fo%s\fS, press %s to vote", game::colourname(d), server::gamename(mode, muts), m->map, votekey);
         }
     }
 
