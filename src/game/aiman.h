@@ -5,9 +5,9 @@ namespace aiman
         oldbotbalance = -2, oldnumplayers = -1, oldbotlimit = -1, oldbotoffset = 0, oldenemylimit = -1;
     float oldbotbalancescale = -1;
     
-    int clientbotscore(clientinfo *ci)
+    float clientbotscore(clientinfo *ci)
     {
-        return (ci->bots.length() * 50) + ci->ping;
+        return (ci->bots.length() * G(aihostnum)) + (ci->ping * G(aihostping));
     }
 
     clientinfo *findaiclient(clientinfo *exclude = NULL)
@@ -241,7 +241,7 @@ namespace aiman
             if(!lo || clientbotscore(ci) < clientbotscore(lo)) lo = ci;
             if(!hi || clientbotscore(hi) > clientbotscore(hi)) hi = ci;
         }
-        if(hi && lo && clientbotscore(hi) - clientbotscore(lo) > 75)
+        if(hi && lo && clientbotscore(hi) - clientbotscore(lo) > G(aihostshift))
         {
             loopvrev(hi->bots)
             {
