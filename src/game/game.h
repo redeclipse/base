@@ -769,10 +769,10 @@ struct clientstate
     
     bool canrandweap(int weap)
     {
-		int cweap = weap - W_OFFSET;
-		if(!randweap.inrange(cweap)) return true;
-		return randweap[cweap];
-	}
+        int cweap = weap - W_OFFSET;
+        if(!randweap.inrange(cweap)) return true;
+        return randweap[cweap];
+    }
 
     void spawnstate(int gamemode, int mutators, int sweap, int heal)
     {
@@ -1602,7 +1602,6 @@ namespace weapons
     extern void shoot(gameent *d, vec &targ, int force = 0);
     extern void preload();
     extern bool canuse(int weap);
-    extern bool canrandom(int weap);
 }
 
 namespace hud
