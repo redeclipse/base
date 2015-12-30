@@ -6326,6 +6326,13 @@ namespace server
                         if(k >= W_LOADOUT) getint(p);
                         else ci->state.loadweap.add(getint(p));
                     }
+                    ci->state.randweap.shrink(0);
+                    int rw = getint(p);
+                    loopk(rw)
+                    {
+                        if(k >= W_LOADOUT) getint(p);
+                        else ci->state.randweap.add(getint(p));
+                    }
                     ci->lastplayerinfo = totalmillis;
                     QUEUE_STR(ci->name);
                     QUEUE_INT(ci->state.colour);
@@ -6333,6 +6340,8 @@ namespace server
                     QUEUE_STR(ci->state.vanity);
                     QUEUE_INT(ci->state.loadweap.length());
                     loopvk(ci->state.loadweap) QUEUE_INT(ci->state.loadweap[k]);
+                    QUEUE_INT(ci->state.randweap.length());
+                    loopvk(ci->state.randweap) QUEUE_INT(ci->state.randweap[k]);
                     break;
                 }
 

@@ -486,6 +486,32 @@ namespace client
         sendplayerinfo = true;
     }
     SVARF(IDF_PERSIST, playerloadweap, "", setloadweap(playerloadweap));
+    
+    void setrandweap(const char *list)
+    {
+        vector<int> items;
+        if(list && *list)
+        {
+            vector<char *> chunk;
+            explodelist(list, chunk);
+            loopv(chunk)
+            {
+                if(!chunk[i] || !*chunk[i] || !isnumeric(*chunk[i])) continue;
+                int v = parseint(chunk[i]);
+                items.add(v ? 1 : 0);
+            }
+            chunk.deletearrays();
+        }
+        game::player1->randweap.shrink(0);
+        loopv(items)
+        {
+            game::player1->randweap.add(items[i]);
+            if(game::player1->randweap.length() >= W_LOADOUT) break;
+        }
+        sendplayerinfo = true;
+    }
+    SVARF(IDF_PERSIST, playerrandweap, "", setrandweap(playerrandweap));
+    
     ICOMMAND(0, getloadweap, "i", (int *n), intret(game::player1->loadweap.inrange(*n) ? game::player1->loadweap[*n] : -1));
     ICOMMAND(0, allowedweap, "i", (int *n), intret(isweap(*n) && m_check(W(*n, modes), W(*n, muts), game::gamemode, game::mutators) && !W(*n, disabled) ? 1 : 0));
     ICOMMAND(0, hasloadweap, "bb", (int *g, int *m), intret(m_loadout(m_game(*g) ? *g : game::gamemode, *m >= 0 ? *m : game::mutators) ? 1 : 0));
@@ -1720,6 +1746,8 @@ namespace client
                 sendstring(game::player1->vanity, p);
                 putint(p, game::player1->loadweap.length());
                 loopv(game::player1->loadweap) putint(p, game::player1->loadweap[i]);
+                putint(p, game::player1->randweap.length());
+                loopv(game::player1->randweap) putint(p, game::player1->randweap[i]);                
             }
             if(sendcrcinfo)
             {
