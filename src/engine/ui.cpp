@@ -1099,6 +1099,7 @@ struct gui : guient
             w += tw;
             h += th;
         }
+        else h = FONTH;
 
         if(visible())
         {
