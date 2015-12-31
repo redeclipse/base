@@ -486,7 +486,7 @@ namespace client
         sendplayerinfo = true;
     }
     SVARF(IDF_PERSIST, playerloadweap, "", setloadweap(playerloadweap));
-    
+
     void setrandweap(const char *list)
     {
         vector<int> items;
@@ -511,7 +511,7 @@ namespace client
         sendplayerinfo = true;
     }
     SVARF(IDF_PERSIST, playerrandweap, "", setrandweap(playerrandweap));
-    
+
     ICOMMAND(0, getrandweap, "i", (int *n), intret(game::player1->randweap.inrange(*n) ? game::player1->randweap[*n] : 1));
     ICOMMAND(0, getloadweap, "i", (int *n), intret(game::player1->loadweap.inrange(*n) ? game::player1->loadweap[*n] : -1));
     ICOMMAND(0, allowedweap, "i", (int *n), intret(isweap(*n) && m_check(W(*n, modes), W(*n, muts), game::gamemode, game::mutators) && !W(*n, disabled) ? 1 : 0));
@@ -753,11 +753,13 @@ namespace client
     {
         reqmuts |= mutslockforce;
         if(!m_game(reqmode) || (m_local(reqmode) && remote)) return true;
+        if(!reqmap || !*reqmap) reqmap = "<random>";
+        bool israndom = !strcmp(reqmap, "<random>");
         if(G(votelock)) switch(G(votelocktype))
         {
             case 1: if(!haspriv(game::player1, G(votelock))) return true; break;
             case 2:
-                if(!m_edit(reqmode) && reqmap && *reqmap)
+                if(!israndom && !m_edit(reqmode))
                 {
                     int n = listincludes(previousmaps, reqmap, strlen(reqmap));
                     if(n >= 0 && n < G(maphistory) && !haspriv(game::player1, G(votelock))) return true;
@@ -773,7 +775,7 @@ namespace client
             case 2: if((!((1<<reqmode)&G(modelockfilter)) || !mutscmp(reqmuts, G(mutslockfilter))) && !haspriv(game::player1, G(modelock))) return true; break;
             case 0: default: break;
         }
-        if(reqmode != G_EDITMODE && G(mapslock) && reqmap && *reqmap)
+        if(!israndom && !m_edit(reqmode) && G(mapslock))
         {
             char *list = NULL;
             switch(G(mapslocktype))
@@ -1748,7 +1750,7 @@ namespace client
                 putint(p, game::player1->loadweap.length());
                 loopv(game::player1->loadweap) putint(p, game::player1->loadweap[i]);
                 putint(p, game::player1->randweap.length());
-                loopv(game::player1->randweap) putint(p, game::player1->randweap[i]);                
+                loopv(game::player1->randweap) putint(p, game::player1->randweap[i]);
             }
             if(sendcrcinfo)
             {
