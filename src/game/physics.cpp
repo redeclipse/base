@@ -178,7 +178,7 @@ namespace physics
     {
         if(d != e)
         {
-            if(m_ghost(game::gamemode, game::mutators)) return true;
+            if((d->actortype < A_ENEMY || !e || e->actortype < A_ENEMY) && m_ghost(game::gamemode, game::mutators)) return true;
             if(m_team(game::gamemode, game::mutators)) switch(G(damageteam))
             {
                 case 1: if(d->actortype > A_PLAYER || (e && e->actortype == A_PLAYER)) break;
@@ -187,9 +187,9 @@ namespace physics
             }
             switch(e->actortype)
             {
-                case A_PLAYER: if(!(AA(d->actortype, abilities)&A_A_PLAYERS)) return true;
-                case A_BOT: if(!(AA(d->actortype, abilities)&A_A_BOTS)) return true;
-                default: if(!(AA(d->actortype, abilities)&A_A_ENEMIES)) return true;
+                case A_PLAYER: if(!(AA(d->actortype, abilities)&A_A_PLAYERS)) return true; break;
+                case A_BOT: if(!(AA(d->actortype, abilities)&A_A_BOTS)) return true; break;
+                default: if(!(AA(d->actortype, abilities)&A_A_ENEMIES)) return true; break;
             }
         }
         return false;
