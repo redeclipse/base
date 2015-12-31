@@ -4,6 +4,11 @@ namespace aiman
     int dorefresh = 0, oldbotskillmin = -1, oldbotskillmax = -1, oldcoopskillmin = -1, oldcoopskillmax = -1, oldenemyskillmin = -1, oldenemyskillmax = -1,
         oldbotbalance = -2, oldnumplayers = -1, oldbotlimit = -1, oldbotoffset = 0, oldenemylimit = -1;
     float oldbotbalancescale = -1;
+    
+    float clientbotscore(clientinfo *ci)
+    {
+        return (ci->bots.length() * G(aihostnum)) + (ci->ping * G(aihostping));
+    }
 
     clientinfo *findaiclient(clientinfo *exclude = NULL)
     {
@@ -12,7 +17,7 @@ namespace aiman
         {
             clientinfo *ci = clients[i];
             if(ci->state.actortype > A_PLAYER || !ci->online || !ci->isready() || ci == exclude) continue;
-            if(!least || ci->bots.length() < least->bots.length()) least = ci;
+            if(!least || clientbotscore(ci) < clientbotscore(least)) least = ci;
         }
         return least;
     }
@@ -233,10 +238,10 @@ namespace aiman
             clientinfo *ci = clients[i];
             if(ci->clientnum < 0 || ci->state.actortype > A_PLAYER || !ci->isready() || ci == exclude)
                 continue;
-            if(!lo || ci->bots.length() < lo->bots.length()) lo = ci;
-            if(!hi || hi->bots.length() > hi->bots.length()) hi = ci;
+            if(!lo || clientbotscore(ci) < clientbotscore(lo)) lo = ci;
+            if(!hi || clientbotscore(hi) > clientbotscore(hi)) hi = ci;
         }
-        if(hi && lo && hi->bots.length() - lo->bots.length() > 1)
+        if(hi && lo && clientbotscore(hi) - clientbotscore(lo) > G(aihostshift))
         {
             loopvrev(hi->bots)
             {

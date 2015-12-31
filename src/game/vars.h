@@ -383,6 +383,9 @@ GVAR(IDF_GAMEMOD, bomberregenbuff, 0, 1, 1); // 0 = off, 1 = modify regeneration
 GVAR(IDF_GAMEMOD, bomberregendelay, 0, 1000, VAR_MAX); // regen this often when buffed
 GVAR(IDF_GAMEMOD, bomberregenextra, 0, 2, VAR_MAX); // add this to regen when buffed
 
+GFVAR(IDF_MODERATOR, aihostnum, 0, 50, FVAR_MAX); // Multiply number of bots hosted by this much for the bot hosting decision.
+GFVAR(IDF_MODERATOR, aihostping, 0, 1, FVAR_MAX); // Multiply host ping by this much for the bot hosting decision.
+GFVAR(IDF_MODERATOR, aihostshift, 0, 75, FVAR_MAX); // Require this much difference before shifting bot hosts.
 GVAR(IDF_MODERATOR, airefreshdelay, 0, 1000, VAR_MAX);
 GVAR(IDF_MODERATOR, aiweightdrag, 0, 5000, VAR_MAX);
 GFVAR(IDF_MODERATOR, aiweightpull, 0, 1, FVAR_MAX);
