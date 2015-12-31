@@ -185,7 +185,7 @@ namespace physics
                 case 0: if(e && d->team == e->team) return true; break;
                 case 2: default: break;
             }
-            switch(e->actortype)
+            if(e) switch(e->actortype)
             {
                 case A_PLAYER: if(!(AA(d->actortype, abilities)&A_A_PLAYERS)) return true; break;
                 case A_BOT: if(!(AA(d->actortype, abilities)&A_A_BOTS)) return true; break;
