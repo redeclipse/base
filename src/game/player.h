@@ -8,10 +8,11 @@ struct actors
 
 enum { A_PLAYER = 0, A_BOT, A_TURRET, A_GRUNT, A_DRONE, A_MAX, A_ENEMY = A_TURRET, A_TOTAL = A_MAX-A_ENEMY };
 enum {
-    A_A_MOVE = 0, A_A_JUMP, A_A_CROUCH, A_A_DASH, A_A_BOOST, A_A_PARKOUR, A_A_MELEE, A_A_MAX,
+    A_A_MOVE = 0, A_A_JUMP, A_A_CROUCH, A_A_DASH, A_A_BOOST, A_A_PARKOUR, A_A_MELEE, A_A_PRIMARY, A_A_SECONDARY, A_A_PLAYERS, A_A_BOTS, A_A_ENEMIES, A_A_MAX,
     A_A_IMFIRST = A_A_DASH, A_A_IMLAST = A_A_PARKOUR, A_A_IMPULSE = A_A_IMLAST-A_A_IMFIRST, A_A_IMCOUNT = A_A_IMPULSE+1,
     A_A_IMOFFSET = (1<<(A_A_DASH-A_A_IMFIRST))|(1<<(A_A_BOOST-A_A_IMFIRST))|(1<<(A_A_PARKOUR-A_A_IMFIRST)), A_A_IMRELAX = (1<<(A_A_PARKOUR-A_A_IMFIRST)),
-    A_A_ALL = (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_CROUCH)|(1<<A_A_DASH)|(1<<A_A_BOOST)|(1<<A_A_PARKOUR)|(1<<A_A_MELEE)
+    A_A_ALL = (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_CROUCH)|(1<<A_A_DASH)|(1<<A_A_BOOST)|(1<<A_A_PARKOUR)|(1<<A_A_MELEE)|(1<<A_A_PRIMARY)||(1<<A_A_SECONDARY)||(1<<A_A_PLAYERS)|(1<<A_A_BOTS)|(1<<A_A_ENEMIES),
+    A_A_STATIONARY = (1<<A_A_PRIMARY)||(1<<A_A_SECONDARY)||(1<<A_A_PLAYERS)|(1<<A_A_BOTS)|(1<<A_A_ENEMIES)
 };
 
 #ifdef GAMESERVER
@@ -104,25 +105,25 @@ extern const char *playertypes[PLAYERTYPES][6];
 #include "playerdef.h"
 
 APSVAR(IDF_GAMEMOD,  vname,
-    "player",   "bot",      "turret",   "grunt",    "drone"
+    "player",       "bot",          "turret",       "grunt",        "drone"
 );
 APVAR(IDF_GAMEMOD,  abilities, 0, A_A_ALL,
-    A_A_ALL,    A_A_ALL,    0,          A_A_ALL,    A_A_ALL
+    A_A_ALL,        A_A_ALL,        A_A_STATIONARY,     A_A_ALL,    A_A_ALL
 );
 APVAR(IDF_GAMEMOD,  health, 1, VAR_MAX,
-    100,        100,        100,        50,         50
+    100,            100,            100,            50,             50
 );
 APVAR(IDF_GAMEMOD,  weap, -1, W_MAX,
-    -1,         -1,         W_SMG,      W_PISTOL,   W_MELEE
+    -1,             -1,             W_SMG,          W_PISTOL,       W_MELEE
 );
 APFVAR(IDF_GAMEMOD,  weight, 0, FVAR_MAX,
-    200,        200,        150,        200,        150
+    200,            200,            150,            200,            150
 );
 APFVAR(IDF_GAMEMOD,  scale, FVAR_NONZERO, FVAR_MAX,
-    1,          1,          1,          1,          1
+    1,              1,              1,              1,              1
 );
 APFVAR(IDF_GAMEMOD,  speed, 0, FVAR_MAX,
-    50,         50,         0,          50,         40
+    50,             50,             0,              50,             40
 );
 
 #define VANITYMAX 16

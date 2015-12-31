@@ -697,6 +697,7 @@ struct clientstate
 
     bool canshoot(int weap, int flags, int sweap, int millis, int skip = 0)
     {
+        if(!(AA(actortype, abilities)&(flags&HIT_ALT ? A_A_SECONDARY : A_A_PRIMARY))) return false;
         if(weap == weapselect || weap == W_MELEE)
             if(hasweap(weap, sweap) && getammo(weap, millis) >= (W2(weap, cooktime, WS(flags)) ? 1 : W2(weap, ammosub, WS(flags))) && weapwaited(weap, millis, skip))
                 return true;
@@ -766,7 +767,7 @@ struct clientstate
         clearstate();
         weapreset(true);
     }
-    
+
     bool canrandweap(int weap)
     {
         int cweap = weap - W_OFFSET;

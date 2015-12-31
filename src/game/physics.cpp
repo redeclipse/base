@@ -176,7 +176,7 @@ namespace physics
 
     bool isghost(gameent *d, gameent *e)
     {
-        if(d != e && d->actortype < A_ENEMY && (!e || e->actortype < A_ENEMY))
+        if(d != e)
         {
             if(m_ghost(game::gamemode, game::mutators)) return true;
             if(m_team(game::gamemode, game::mutators)) switch(G(damageteam))
@@ -184,6 +184,12 @@ namespace physics
                 case 1: if(d->actortype > A_PLAYER || (e && e->actortype == A_PLAYER)) break;
                 case 0: if(e && d->team == e->team) return true; break;
                 case 2: default: break;
+            }
+            switch(e->actortype)
+            {
+                case A_PLAYER: if(!(AA(d->actortype, abilities)&A_A_PLAYERS)) return true;
+                case A_BOT: if(!(AA(d->actortype, abilities)&A_A_BOTS)) return true;
+                default: if(!(AA(d->actortype, abilities)&A_A_ENEMIES)) return true;
             }
         }
         return false;
