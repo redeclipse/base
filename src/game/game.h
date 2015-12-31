@@ -544,7 +544,7 @@ struct clientstate
     int actortype, spawnpoint, ownernum, skill, points, frags, deaths, cpmillis, cptime, queuepos;
     bool quarantine;
     string vanity;
-    vector<int> loadweap, lastweap;
+    vector<int> loadweap, lastweap, randweap;
     verinfo version;
 
     clientstate() : colour(0), model(0), weapselect(W_MELEE), lastdeath(0), lastspawn(0), lastpain(0), lastregen(0), lastbuff(0), lastshoot(0),
@@ -553,6 +553,7 @@ struct clientstate
         setvanity();
         loadweap.shrink(0);
         lastweap.shrink(0);
+        randweap.shrink(0);
         resetresidual();
     }
     ~clientstate() {}
@@ -765,6 +766,13 @@ struct clientstate
         clearstate();
         weapreset(true);
     }
+    
+    bool canrandweap(int weap)
+    {
+        int cweap = weap - W_OFFSET;
+        if(!randweap.inrange(cweap)) return true;
+        return randweap[cweap];
+    }
 
     void spawnstate(int gamemode, int mutators, int sweap, int heal)
     {
@@ -803,7 +811,7 @@ struct clientstate
                     {
                         for(int t = rnd(W_ITEM-W_OFFSET)+W_OFFSET, r = 0; r < W_LOADOUT; r++)
                         {
-                            if(t >= W_OFFSET && t < W_ITEM && !hasweap(t, sweap) && m_check(W(t, modes), W(t, muts), gamemode, mutators) && !W(t, disabled))
+                            if(t >= W_OFFSET && t < W_ITEM && !hasweap(t, sweap) && m_check(W(t, modes), W(t, muts), gamemode, mutators) && !W(t, disabled) && canrandweap(t))
                             {
                                 aweap[j] = t;
                                 break;
