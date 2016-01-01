@@ -286,7 +286,7 @@
 				<Option deps_output=".deps/redeclipse-amd64-dbg" />
 				<Option type="0" />
 				<Option compiler="gcc" />
-				<Option parameters="-hhome -r -df0 -dw800 -dh600 -glog.txt" />
+				<Option parameters="-df0 -dw800 -dh600 -glog.txt" />
 				<Option projectCompilerOptionsRelation="1" />
 				<Option projectLinkerOptionsRelation="1" />
 				<Option projectIncludeDirsRelation="1" />
@@ -1855,7 +1855,7 @@
 			<Option target="redeclipse-amd64-dbg" />
 			<Option target="redeclipse-amd64-prof" />
 		</Unit>
-		<Unit filename="shared/glemu.h">
+		<Unit filename="shared/glemu.cpp">
 			<Option target="redeclipse-x86" />
 			<Option target="redeclipse-x86-dbg" />
 			<Option target="redeclipse-x86-prof" />
@@ -1863,7 +1863,7 @@
 			<Option target="redeclipse-amd64-dbg" />
 			<Option target="redeclipse-amd64-prof" />
 		</Unit>
-		<Unit filename="shared/glemu.cpp">
+		<Unit filename="shared/glemu.h">
 			<Option target="redeclipse-x86" />
 			<Option target="redeclipse-x86-dbg" />
 			<Option target="redeclipse-x86-prof" />
@@ -1947,6 +1947,7 @@
 			<Option target="redeclipse_server-amd64-dbg" />
 		</Unit>
 		<Unit filename="support/sqlite3.c">
+			<Option compilerVar="CC" />
 			<Option target="redeclipse-x86" />
 			<Option target="redeclipse-x86-dbg" />
 			<Option target="redeclipse_server-x86" />

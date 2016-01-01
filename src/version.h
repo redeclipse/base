@@ -8,7 +8,7 @@
 #define VERSION_RELEASE "Aurora Edition"
 #define VERSION_URL "http://redeclipse.net/"
 #define VERSION_COPY "2010-2015"
-#define VERSION_DESC "A fun-filled new take on the casual first-person arena shooter."
+#define VERSION_DESC "A fun-filled new take on the first-person arena shooter."
 
 #define LAN_PORT 28799
 #define MASTER_PORT 28800
