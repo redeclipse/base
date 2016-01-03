@@ -2386,7 +2386,7 @@ namespace server
     void adddemo()
     {
         if(!demotmp) return;
-        int len = (int)min(demotmp->size(), stream::offset((G(demomaxsize)<<20) + 0x10000));
+        int len = (int)min(demotmp->size(), stream::offset(G(demomaxsize) + 0x10000));
         demofile &d = demos.add();
         d.ctime = clocktime;
         d.data = new uchar[len];
@@ -2448,7 +2448,7 @@ namespace server
         lilswap(stamp, 3);
         demorecord->write(stamp, sizeof(stamp));
         demorecord->write(data, len);
-        if(demorecord->rawtell() >= (G(demomaxsize)<<20)) enddemorecord(!gs_playing(gamestate));
+        if(demorecord->rawtell() >= G(demomaxsize)) enddemorecord(!gs_playing(gamestate));
     }
 
     void recordpacket(int chan, void *data, int len)
