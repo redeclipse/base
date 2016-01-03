@@ -958,6 +958,7 @@ template <class T> struct smallvector
 
     T remove(int i)
     {
+        ASSERT(i>=0);
         T e = buf[i];
         for(int p = i+1; p<len; p++) buf[p-1] = buf[p];
         growbuf(len-1);
@@ -966,6 +967,7 @@ template <class T> struct smallvector
 
     T removeunordered(int i)
     {
+        ASSERT(i>=0);
         T e = buf[i];
         if(len>1) buf[i] = buf[len-1];
         growbuf(len-1);
