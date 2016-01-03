@@ -1584,6 +1584,9 @@ namespace hud
                         {
                             SEARCHBINDCACHE(attackkey)("primary", 0);
                             ty += draw_textx("Press %s to attack", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, tw, attackkey);
+                        }
+                        if(target->canshoot(target->weapselect, HIT_ALT, m_weapon(game::gamemode, game::mutators), lastmillis, (1<<W_S_RELOAD)))
+                        {
                             SEARCHBINDCACHE(altkey)("secondary", 0);
                             ty += draw_textx("Press %s to %s", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, tw, altkey, W2(target->weapselect, cooked, true)&W_C_ZOOM ? "zoom" : "alt-attack");
                         }

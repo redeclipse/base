@@ -3995,15 +3995,17 @@ namespace server
 
     bool isghost(clientinfo *d, clientinfo *e)
     {
-        if(d != e && d->state.actortype < A_ENEMY && (!e || e->state.actortype < A_ENEMY))
+        if(d == e) return false;
+        if((d->state.actortype < A_ENEMY || !e || e->state.actortype < A_ENEMY) && m_ghost(gamemode, mutators)) return true;
+        if(e)
         {
-            if(m_ghost(gamemode, mutators)) return true;
-            if(m_team(gamemode, mutators)) switch(G(damageteam))
+            switch(d->state.actortype)
             {
-                case 1: if(d->state.actortype > A_PLAYER || (e && e->state.actortype == A_PLAYER)) break;
-                case 0: if(e && d->team == e->team) return true; break;
-                case 2: default: break;
+                case A_PLAYER: if(!(AA(e->state.actortype, abilities)&(1<<A_A_PLAYERS))) return true; break;
+                case A_BOT: if(!(AA(e->state.actortype, abilities)&(1<<A_A_BOTS))) return true; break;
+                default: if(!(AA(e->state.actortype, abilities)&(1<<A_A_ENEMIES))) return true; break;
             }
+            if(m_team(gamemode, mutators) && d->team == e->team && !(AA(e->state.actortype, abilities)&(1<<A_A_TEAMDAMAGE))) return true;
         }
         return false;
     }

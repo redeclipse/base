@@ -277,7 +277,6 @@ GVAR(IDF_GAMEMOD, pointlimit, 0, 0, VAR_MAX); // finish when score is this or mo
 GVAR(IDF_GAMEMOD, teampersist, 0, 1, 2); // 0 = off, 1 = only attempt, 2 = forced
 GVAR(IDF_GAMEMOD, damageself, 0, 1, 1); // 0 = off, 1 = either hurt self or use damageteam rules
 GFVAR(IDF_GAMEMOD, damageselfscale, FVAR_MIN, 1, FVAR_MAX); // 0 = off, anything else = scale for damage
-GVAR(IDF_GAMEMOD, damageteam, 0, 1, 2); // 0 = off, 1 = non-bots damage team, 2 = all players damage team
 GFVAR(IDF_GAMEMOD, damageteamscale, FVAR_MIN, 1, FVAR_MAX); // 0 = off, anything else = scale for damage
 
 GVAR(IDF_GAMEMOD, teambalance, 0, 5, 6); // 0 = off, 1 = by number then skill, 2 = by skill then number, 3 = by number and enforce, 4 = number, enforce, reassign, 5 = skill, number, enforce, reassign, 6 = skill during waiting, revert to 4 otherwise

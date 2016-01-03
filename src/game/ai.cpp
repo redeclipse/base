@@ -539,10 +539,10 @@ namespace ai
     bool find(gameent *d, aistate &b)
     {
         static vector<interest> interests; interests.setsize(0);
-        if(AA(d->actortype, abilities)&A_A_MOVE)
+        if(AA(d->actortype, abilities)&(1<<A_A_MOVE))
         {
             int sweap = m_weapon(game::gamemode, game::mutators);
-            if((AA(d->actortype, abilities)&A_A_PRIMARY || AA(d->actortype, abilities)&A_A_SECONDARY) && (!hasweap(d, weappref(d)) || d->carry(sweap) == 0))
+            if((AA(d->actortype, abilities)&(1<<A_A_PRIMARY) || AA(d->actortype, abilities)&(1<<A_A_SECONDARY)) && (!hasweap(d, weappref(d)) || d->carry(sweap) == 0))
                 items(d, b, interests, d->carry(sweap) == 0);
             if(m_team(game::gamemode, game::mutators) && !m_duke(game::gamemode, game::mutators))
                 assist(d, b, interests, false, false);
@@ -642,7 +642,7 @@ namespace ai
                 gameent *d = game::players[i];
                 aistate &b = d->ai->getstate();
                 if(b.targtype == AI_T_AFFINITY) continue; // don't override any affinity states
-                if((AA(d->actortype, abilities)&A_A_PRIMARY || AA(d->actortype, abilities)&A_A_SECONDARY) && !hasweap(d, attr) && (!hasweap(d, weappref(d)) || d->carry(sweap) == 0) && wantsweap(d, attr))
+                if((AA(d->actortype, abilities)&(1<<A_A_PRIMARY) || AA(d->actortype, abilities)&(1<<A_A_SECONDARY)) && !hasweap(d, attr) && (!hasweap(d, weappref(d)) || d->carry(sweap) == 0) && wantsweap(d, attr))
                 {
                     if(b.type == AI_S_INTEREST && (b.targtype == AI_T_ENTITY || b.targtype == AI_T_DROP))
                     {
@@ -971,7 +971,7 @@ namespace ai
         int airtime = d->airtime(lastmillis);
         bool sequenced = d->ai->blockseq || d->ai->targseq, offground = airtime && !physics::liquidcheck(d) && !d->onladder,
              impulse = physics::canimpulse(d, A_A_BOOST, false) && airtime > (b.acttype >= AI_A_LOCKON ? 100 : 250) && !d->turnside && (b.acttype >= AI_A_LOCKON || off.z >= JUMPMIN) && (m_freestyle(game::gamemode, game::mutators) || impulsemeter-d->impulse[IM_METER] >= impulsecost),
-             jumper = AA(d->actortype, abilities)&A_A_JUMP && !offground && (b.acttype == AI_A_LOCKON || sequenced || off.z >= JUMPMIN || (d->actortype == A_BOT && lastmillis >= d->ai->jumprand)),
+             jumper = AA(d->actortype, abilities)&(1<<A_A_JUMP) && !offground && (b.acttype == AI_A_LOCKON || sequenced || off.z >= JUMPMIN || (d->actortype == A_BOT && lastmillis >= d->ai->jumprand)),
              jump = (impulse || jumper) && lastmillis >= d->ai->jumpseed;
         if(jump)
         {
@@ -1005,7 +1005,7 @@ namespace ai
         {
             if(airtime > (b.acttype >= AI_A_LOCKON ? 250 : 500) && !d->turnside && (d->skill >= 100 || !rnd(101-d->skill)) && physics::canimpulse(d, A_A_PARKOUR, true))
                 d->action[AC_SPECIAL] = true;
-            else if(AA(d->actortype, abilities)&A_A_MELEE && lastmillis-d->ai->lastmelee >= (201-d->skill)*5 && d->canmelee(m_weapon(game::gamemode, game::mutators), lastmillis))
+            else if(AA(d->actortype, abilities)&(1<<A_A_MELEE) && lastmillis-d->ai->lastmelee >= (201-d->skill)*5 && d->canmelee(m_weapon(game::gamemode, game::mutators), lastmillis))
             {
                 d->action[AC_SPECIAL] = true;
                 d->ai->lastmelee = lastmillis;
