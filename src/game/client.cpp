@@ -2650,6 +2650,7 @@ namespace client
                     if(!d) return;
                     int b = getint(p), index = getint(p), node = getint(p);
                     entities::linkents(index, node, b!=0, false, false);
+                    break;
                 }
 
                 case N_PONG:

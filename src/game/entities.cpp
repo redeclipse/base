@@ -1301,10 +1301,11 @@ namespace entities
             int g = -1, h = -1;
             if((toggle || !add) && (g = e.links.find(node)) >= 0)
             {
-                if(!add || (toggle && (!canlink(node, index) || (h = f.links.find(index)) >= 0)))
+                h = f.links.find(index);
+                if(!add || !canlink(node, index) || (toggle && h >= 0))
                 {
                     e.links.remove(g);
-                    if(recip) f.links.remove(h);
+                    if(recip && h >= 0) f.links.remove(h);
                     fixentity(index, true);
                     if(local && m_edit(game::gamemode)) client::addmsg(N_EDITLINK, "ri3", 0, index, node);
                     if(verbose > 2) conoutf("\faentity %s (%d) and %s (%d) delinked", enttype[ents[index]->type].name, index, enttype[ents[node]->type].name, node);
