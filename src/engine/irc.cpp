@@ -1150,6 +1150,5 @@ bool ircgui(guient *g, const char *s)
     }
     return true;
 }
-
 #endif
 ICOMMAND(0, ircconns, "", (void), { int num = 0; loopv(ircnets) if(ircnets[i]->state >= IRC_ATTEMPT) num++; intret(num); });

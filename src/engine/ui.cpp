@@ -1447,6 +1447,7 @@ namespace UI
         if(!e) return;
         useeditor(e->name, e->mode, true);
         e->clear();
-        fieldmode = FIELDEDIT;
+        fieldmode = FIELDCOMMIT;
+        e->unfocus = true;
     }
 };

@@ -948,3 +948,18 @@ void guiirc(const char *s)
     }
 }
 ICOMMAND(0, ircgui, "s", (char *s), guiirc(s));
+
+void guiconsole()
+{
+    extern bool consolegui(guient *g, int &update);
+    static int consoleupdate = -1;
+    if(cgui)
+    {
+        if(!consolegui(cgui, consoleupdate) && shouldclearmenu)
+        {
+            clearlater = true;
+            consoleupdate = -1;
+        }
+    }
+}
+ICOMMAND(0, consolegui, "", (void), guiconsole());
