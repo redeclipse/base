@@ -277,8 +277,8 @@ ICOMMAND(0, keyspressed, "issss", (int *limit, char *s1, char *s2, char *sep1, c
 void inputcommand(char *init, char *action = NULL, char *icon = NULL, int colour = 0, char *flags = NULL) // turns input to the command line on or off
 {
     commandmillis = init ? totalmillis : -totalmillis;
-    SDL_EnableUNICODE(commandmillis > 0 ? 1 : 0);
-    keyrepeat(commandmillis > 0);
+    textinput(commandmillis >= 0, TI_CONSOLE);
+    keyrepeat(commandmillis >= 0, KR_CONSOLE);
     copystring(commandbuf, init ? init : "", BIGSTRLEN);
     DELETEA(commandaction);
     DELETEA(commandicon);
@@ -300,72 +300,16 @@ void inputcommand(char *init, char *action = NULL, char *icon = NULL, int colour
 ICOMMAND(0, saycommand, "C", (char *init), inputcommand(init));
 ICOMMAND(0, inputcommand, "sssis", (char *init, char *action, char *icon, int *colour, char *flags), inputcommand(init, action, icon, *colour, flags));
 
-#if !defined(WIN32) && !defined(__APPLE__)
-#include <X11/Xlib.h>
-#endif
 bool paste(char *buf, size_t len)
 {
-#ifdef WIN32
-    UINT fmt = CF_UNICODETEXT;
-    if(!IsClipboardFormatAvailable(fmt))
-    {
-        fmt = CF_TEXT;
-        if(!IsClipboardFormatAvailable(fmt)) return false;
-    }
-    if(!OpenClipboard(NULL)) return false;
-    HANDLE h = GetClipboardData(fmt);
-    size_t start = strlen(buf), cblen = GlobalSize(h), decoded = 0;
-    ushort *cb = (ushort *)GlobalLock(h);
-    switch(fmt)
-    {
-        case CF_UNICODETEXT:
-            decoded = min(len-1-start, cblen/2);
-            loopi(decoded) buf[start++] = uni2cube(cb[i]);
-            break;
-        case CF_TEXT:
-            decoded = min(len-1-start, cblen);
-            memcpy(&buf[start], cb, decoded);
-            break;
-    }
-    buf[start + decoded] = '\0';
-    GlobalUnlock(cb);
-    CloseClipboard();
-#elif defined(__APPLE__)
-    extern char *mac_pasteconsole(size_t *cblen);
-    size_t start = strlen(buf), cblen = 0;
-    uchar *cb = (uchar *)mac_pasteconsole(&cblen);
+    if(!SDL_HasClipboardText()) return false;
+    char *cb = SDL_GetClipboardText();
     if(!cb) return false;
-    size_t decoded = decodeutf8((uchar *)&buf[start], len-1-start, cb, cblen);
+    size_t cblen = strlen(cb),
+           start = strlen(buf),
+           decoded = decodeutf8((uchar *)&buf[start], len-1-start, (const uchar *)cb, cblen);
     buf[start + decoded] = '\0';
-    free(cb);
-#else
-    SDL_SysWMinfo wminfo;
-    SDL_VERSION(&wminfo.version);
-    wminfo.subsystem = SDL_SYSWM_X11;
-    if(!SDL_GetWMInfo(&wminfo)) return false;
-    int cbsize;
-    uchar *cb = (uchar *)XFetchBytes(wminfo.info.x11.display, &cbsize);
-    if(!cb || cbsize <= 0) return false;
-    size_t start = strlen(buf);
-    for(uchar *cbline = cb, *cbend; start + 1 < len && cbline < &cb[cbsize]; cbline = cbend + 1)
-    {
-        cbend = (uchar *)memchr(cbline, '\0', &cb[cbsize] - cbline);
-        if(!cbend) cbend = &cb[cbsize];
-        size_t cblen = cbend-cbline, pmax = len-1-start;
-        loopi(cblen) if((cbline[i]&0xC0) == 0x80)
-        {
-            start += decodeutf8((uchar *)&buf[start], pmax, cbline, cblen);
-            goto nextline;
-        }
-        cblen = min(cblen, pmax);
-        loopi(cblen) buf[start++] = uni2cube(*cbline++);
-    nextline:
-        buf[start] = '\n';
-        if(start + 1 < len && cbend < &cb[cbsize]) ++start;
-        buf[start] = '\0';
-    }
-    XFree(cb);
-#endif
+    SDL_free(cb);
     return true;
 }
 
@@ -499,28 +443,36 @@ void execbind(keym &k, bool isdown)
     k.pressed = isdown;
 }
 
-void processkey(int code, bool isdown, int cooked)
+bool consoleinput(const char *str, int len)
 {
+    if(commandmillis < 0) return false;
+    
     resetcomplete();
-    if(cooked)
+    int maxlen = int(sizeof(commandbuf));
+    if(commandflags&CF_MESSAGE) maxlen = min(client::maxmsglen(), maxlen); 
+    int cmdlen = (int)strlen(commandbuf), cmdspace = maxlen - (cmdlen+1);
+    len = min(len, cmdspace);
+    if(len <= 0) return true;
+
+    if(commandpos<0)
     {
-        size_t len = (int)strlen(commandbuf), maxlen = sizeof(commandbuf);
-        if(commandflags&CF_MESSAGE) maxlen = min((size_t)client::maxmsglen(), maxlen);
-        if(len+1 < maxlen)
-        {
-            if(commandpos<0) commandbuf[len] = cooked;
-            else
-            {
-                memmove(&commandbuf[commandpos+1], &commandbuf[commandpos], len - commandpos);
-                commandbuf[commandpos++] = cooked;
-            }
-            commandbuf[len+1] = '\0';
-        }
+        memcpy(&commandbuf[cmdlen], str, len);
     }
+    else
+    {
+        memmove(&commandbuf[commandpos+len], &commandbuf[commandpos], cmdlen - commandpos);
+        memcpy(&commandbuf[commandpos], str, len);
+        commandpos += len;
+    }
+    commandbuf[cmdlen + len] = '\0';
+
+    return true; 
 }
 
-void consolekey(int code, bool isdown, int cooked)
+bool consolekey(int code, bool isdown)
 {
+    if(commandmillis < 0) return false;
+
     if(isdown)
     {
         switch(code)
@@ -584,17 +536,9 @@ void consolekey(int code, bool isdown, int cooked)
                 }
                 break;
 
-            case SDLK_f:
-                if(SDL_GetModState()&MOD_KEYS) cooked = '\f';
-                else processkey(code, isdown, cooked);
-                break;
-
             case SDLK_v:
                 if(SDL_GetModState()&MOD_KEYS) paste(commandbuf, sizeof(commandbuf));
-                else processkey(code, isdown, cooked);
                 break;
-
-            default: processkey(code, isdown, cooked); break;
         }
     }
     else
@@ -630,6 +574,14 @@ void consolekey(int code, bool isdown, int cooked)
             inputcommand(NULL);
         }
     }
+
+    return true;
+}
+
+void processtextinput(const char *str, int len)
+{
+    if(!hud::textinput(str, len))
+        consoleinput(str, len);
 }
 
 #define keyintercept(name,body) \
@@ -650,7 +602,7 @@ void consolekey(int code, bool isdown, int cooked)
         return; \
     } \
 }
-void keypress(int code, bool isdown, int cooked)
+void processkey(int code, bool isdown)
 {
     switch(code)
     {
@@ -662,23 +614,25 @@ void keypress(int code, bool isdown, int cooked)
             keyintercept(quit, quit());
             break;
         case SDLK_RETURN:
-            keyintercept(fullscreen, setfullscreen(!fullscreen, true));
+            keyintercept(fullscreen, setfullscreen(!(SDL_GetWindowFlags(screen) & SDL_WINDOW_FULLSCREEN)));
             break;
         case SDLK_TAB:
-            keyintercept(iconify, SDL_WM_IconifyWindow());
+            keyintercept(iconify, SDL_MinimizeWindow(screen));
             break;
         case SDLK_CAPSLOCK:
             if(!isdown) capslockon = capslocked();
             break;
-        case SDLK_NUMLOCK:
+        case SDLK_NUMLOCKCLEAR:
             if(!isdown) numlockon = numlocked();
             break;
         default: break;
     }
     keym *haskey = keyms.access(code);
     if(haskey && haskey->pressed) execbind(*haskey, isdown); // allow pressed keys to release
-    else if(commandmillis > 0) consolekey(code, isdown, cooked);
-    else if(!hud::keypress(code, isdown, cooked) && haskey) execbind(*haskey, isdown);
+    else if(!consolekey(code, isdown))
+    {
+        if(!hud::keypress(code, isdown) && haskey) execbind(*haskey, isdown);
+    }
 }
 
 char *getcurcommand()

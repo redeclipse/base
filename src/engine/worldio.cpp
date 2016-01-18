@@ -942,7 +942,7 @@ void save_mapshot(char *mname)
     saveimage(mname, image, imageformat, compresslevel, true);
 
     glDeleteTextures(1, &tex);
-    glViewport(0, 0, screen->w, screen->h);
+    glViewport(0, 0, screenw, screenh);
     defformatstring(texname, "%s", mname);
     reloadtexture(texname);
 }

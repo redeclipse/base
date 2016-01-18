@@ -707,10 +707,15 @@ namespace hud
         return teamnotices >= 1 && totalmillis-lastteam <= teamnoticedelay;
     }
 
-    bool keypress(int code, bool isdown, int cooked)
+    bool textinput(const char *str, int len)
     {
-        if(curcompass) return keycmenu(code, isdown, cooked);
-        return UI::keypress(code, isdown, cooked); // ignore UI if compass is open
+        return UI::textinput(str, len);
+    }
+ 
+    bool keypress(int code, bool isdown)
+    {
+        if(curcompass) return keycmenu(code, isdown);
+        return UI::keypress(code, isdown); // ignore UI if compass is open
     }
 
     float motionblur(float scale)

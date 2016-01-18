@@ -216,8 +216,6 @@ void gl_checkextensions()
     conoutf("driver: %s", gfxversion);
 
 #ifdef __APPLE__
-    extern int mac_osversion();
-    int osversion = mac_osversion();  /* 0x0A0500 = 10.5 (Leopard) */
     sdl_backingstore_bug = -1;
 #endif
 
@@ -569,9 +567,13 @@ void glext(char *ext)
 }
 COMMAND(0, glext, "s");
 
-void gl_init(int w, int h, int bpp, int depth, int fsaa)
+void gl_resize()
 {
-    glViewport(0, 0, w, h);
+    glViewport(0, 0, screenw, screenh);
+}
+
+void gl_init()
+{
     glClearColor(0, 0, 0, 0);
     glClearDepth(1);
     glDepthFunc(GL_LESS);
@@ -588,7 +590,8 @@ void gl_init(int w, int h, int bpp, int depth, int fsaa)
 #ifdef __APPLE__
     if(sdl_backingstore_bug)
     {
-        if(fsaa)
+        int fsaa = 0;
+        if(!SDL_GL_GetAttribute(SDL_GL_MULTISAMPLE_BUFFERS, &fsaa) && fsaa)
         {
             sdl_backingstore_bug = 1;
             // since SDL doesn't add kCGLPFABackingStore to the pixelformat and so it isn't guaranteed to be preserved - only manifests when using fsaa?
@@ -600,10 +603,11 @@ void gl_init(int w, int h, int bpp, int depth, int fsaa)
 
     gle::setup();
 
-    extern void setupshaders();
     setupshaders();
 
     setuptexcompress();
+
+    gl_resize();
 }
 
 VAR(0, wireframe, 0, 0, 1);
@@ -1162,13 +1166,13 @@ FVAR(IDF_PERSIST, motionblurscale, 0, 1, 1);
 
 void addmotionblur()
 {
-    if(!motionblur || max(screen->w, screen->h) > hwtexsize) return;
+    if(!motionblur || max(screenw, screenh) > hwtexsize) return;
 
-    if(!motiontex || motionw != screen->w || motionh != screen->h)
+    if(!motiontex || motionw != screenw || motionh != screenh)
     {
         if(!motiontex) glGenTextures(1, &motiontex);
-        motionw = screen->w;
-        motionh = screen->h;
+        motionw = screenw;
+        motionh = screenh;
         lastmotion = 0;
         createtexture(motiontex, motionw, motionh, NULL, 3, 0, GL_RGB);
     }
@@ -1196,7 +1200,7 @@ void addmotionblur()
     {
         lastmotion = totalmillis-totalmillis%motionblurmillis;
 
-        glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, screen->w, screen->h);
+        glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, screenw, screenh);
     }
 }
 
@@ -1589,7 +1593,7 @@ namespace modelpreview
         drawtex = 0;
 
         glDisable(GL_SCISSOR_TEST);
-        glViewport(0, 0, screen->w, screen->h);
+        glViewport(0, 0, screenw, screenh);
     }
 }
 
@@ -1642,7 +1646,7 @@ void drawminimap()
 
     progress(0, "generating mini-map...");
 
-    int size = 1<<minimapsize, sizelimit = min(hwtexsize, min(screen->w, screen->h));
+    int size = 1<<minimapsize, sizelimit = min(hwtexsize, min(screenw, screenh));
     while(size > sizelimit) size /= 2;
     if(!minimaptex) glGenTextures(1, &minimaptex);
 
@@ -1725,7 +1729,7 @@ void drawminimap()
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
 
-    glViewport(0, 0, screen->w, screen->h);
+    glViewport(0, 0, screenw, screenh);
 
     camera1 = oldcamera;
     drawtex = 0;
@@ -1862,18 +1866,18 @@ struct framebuffercopy
     {
         if(tex) return;
         glGenTextures(1, &tex);
-        w = screen->w;
-        h = screen->h;
+        w = screenw;
+        h = screenh;
         createtexture(tex, w, h, NULL, 3, false);
     }
 
     void copy()
     {
-        if(w != screen->w || h != screen->h) cleanup();
+        if(w != screenw || h != screenh) cleanup();
         if(!tex) setup();
 
         glBindTexture(GL_TEXTURE_2D, tex);
-        glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, screen->w, screen->h);
+        glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, screenw, screenh);
     }
 
     void draw(float sx, float sy, float sw, float sh)
@@ -1983,7 +1987,7 @@ void drawnoviewtype(int targtype)
 
     xtravertsva = xtraverts = glde = gbatches = 0;
 
-    int w = screen->w, h = screen->h;
+    int w = screenw, h = screenh;
     if(forceaspect) w = int(ceil(h*forceaspect));
     gettextres(w, h);
 
@@ -1995,7 +1999,7 @@ void drawnoviewtype(int targtype)
 
     hudshader->set();
 
-    hud::update(screen->w, screen->h);
+    hud::update(screenw, screenh);
     hud::drawhud(true);
     hud::drawlast();
 
@@ -2164,7 +2168,7 @@ void drawviewtype(int targtype)
         glDisable(GL_DEPTH_TEST);
     }
 
-    int w = screen->w, h = screen->h;
+    int w = screenw, h = screenh;
     if(forceaspect) w = int(ceil(h*forceaspect));
     gettextres(w, h);
 
@@ -2222,7 +2226,7 @@ bool hasnoview()
     return client::waiting()>0;
 }
 
-void gl_drawframe(int w, int h)
+void gl_drawframe()
 {
     if(hasnoview()) drawnoview();
     else
@@ -2245,6 +2249,7 @@ void gl_drawframe(int w, int h)
         }
         else fogmat = MAT_AIR;
 
+        int w = screenw, h = screenh;
         farplane = hdr.worldsize*2;
         viewproject();
         setcamprojmatrix();

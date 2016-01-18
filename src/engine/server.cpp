@@ -1267,7 +1267,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int sw)
     int status = standalonemain(args.length()-1, args.getbuf());
     #define main standalonemain
 #else
-    SDL_SetModuleHandle(hInst);
+    SDL_SetMainReady();
     int status = SDL_main(args.length()-1, args.getbuf());
 #endif
     delete[] buf;

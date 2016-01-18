@@ -3,37 +3,7 @@
 #include "engine.h"
 #include <signal.h>
 
-SDL_Surface *screen = NULL;
-
-#ifdef FAKESHOWCURSOR
-SDL_Cursor *scursor = NULL, *ncursor = NULL;
-#endif
-
-void showcursor(bool show)
-{
-#ifdef FAKESHOWCURSOR
-    if(show)
-    {
-        if(scursor) SDL_FreeCursor(scursor);
-        scursor = NULL;
-        SDL_SetCursor(ncursor);
-    }
-    else
-    {
-        if(!ncursor) ncursor = SDL_GetCursor();
-        if(!scursor)
-        {
-            Uint8 sd[1] = { 0 };
-            if(!(scursor = SDL_CreateCursor(sd, sd, 1, 1, 0, 0)))
-                fatal("could not create blank cursor");
-        }
-
-        SDL_SetCursor(scursor);
-    }
-#else
-    SDL_ShowCursor(show ? 1 : 0);
-#endif
-}
+string caption = "";
 
 void setcaption(const char *text, const char *text2)
 {
@@ -42,28 +12,69 @@ void setcaption(const char *text, const char *text2)
     {
         copystring(prevtext, text);
         copystring(prevtext2, text2);
-        defformatstring(caption, "%s v%s-%s%d-%s (%s)%s%s%s%s", VERSION_NAME, VERSION_STRING, versionplatname, versionarch, versionbranch, VERSION_RELEASE, text[0] ? ": " : "", text, text2[0] ? " - " : "", text2);
-        SDL_WM_SetCaption(caption, NULL);
+        formatstring(caption, "%s v%s-%s%d-%s (%s)%s%s%s%s", VERSION_NAME, VERSION_STRING, versionplatname, versionarch, versionbranch, VERSION_RELEASE, text[0] ? ": " : "", text, text2[0] ? " - " : "", text2);
+        if(screen) SDL_SetWindowTitle(screen, caption);
     }
 }
 
-void keyrepeat(bool on)
+int keyrepeatmask = 0, textinputmask = 0;
+
+void keyrepeat(bool on, int mask)
 {
-    SDL_EnableKeyRepeat(on ? SDL_DEFAULT_REPEAT_DELAY : 0, SDL_DEFAULT_REPEAT_INTERVAL);
+    if(on) keyrepeatmask |= mask;
+    else keyrepeatmask &= ~mask;
 }
+
+void textinput(bool on, int mask)
+{
+    if(on)
+    {
+        if(!textinputmask) SDL_StartTextInput();
+        textinputmask |= mask;
+    }
+    else
+    {
+        textinputmask &= ~mask;
+        if(!textinputmask) SDL_StopTextInput();
+    }
+}
+
+VARN(IDF_PERSIST, relativemouse, userelativemouse, 0, 1, 1);
+
+bool shouldgrab = false, grabinput = false, canrelativemouse = true, relativemouse = false;
 
 void inputgrab(bool on)
 {
-#ifndef WIN32
-    if(!(screen->flags & SDL_FULLSCREEN)) SDL_WM_GrabInput(SDL_GRAB_OFF);
+    if(on)
+    {
+        SDL_ShowCursor(SDL_FALSE);
+        if(canrelativemouse && userelativemouse)
+        {
+            if(SDL_SetRelativeMouseMode(SDL_TRUE) >= 0)
+            {
+                SDL_SetWindowGrab(screen, SDL_TRUE);
+                relativemouse = true;
+            }
+            else
+            {
+                SDL_SetWindowGrab(screen, SDL_FALSE);
+                canrelativemouse = false;
+                relativemouse = false;
+            }
+        }
+    }
     else
-#endif
-    SDL_WM_GrabInput(on ? SDL_GRAB_ON : SDL_GRAB_OFF);
-    showcursor(!on);
-}
-
-VARF(0, grabinput, 0, 0, 1, inputgrab(grabinput!=0));
-VAR(IDF_PERSIST, autograbinput, 0, 1, 1);
+    {
+        SDL_ShowCursor(SDL_TRUE);
+        if(relativemouse)
+        {
+            SDL_SetRelativeMouseMode(SDL_FALSE);
+            SDL_SetWindowGrab(screen, SDL_FALSE);
+            relativemouse = false;
+        }
+    }
+    shouldgrab = false;
+}   
 
 extern void cleargamma();
 
@@ -71,19 +82,18 @@ void cleanup()
 {
     recorder::stop();
     cleanupserver();
-    showcursor(true);
-//#ifdef FAKESHOWCURSOR
-//    if(scursor) SDL_FreeCursor(scursor);
-//    scursor = ncursor = NULL;
-//#endif
-    SDL_WM_GrabInput(SDL_GRAB_OFF);
+    SDL_ShowCursor(SDL_TRUE);
+    SDL_SetRelativeMouseMode(SDL_FALSE);
+    if(screen) SDL_SetWindowGrab(screen, SDL_FALSE);
     cleargamma();
     freeocta(worldroot);
     extern void clear_command();    clear_command();
     extern void clear_console();    clear_console();
     extern void clear_mdls();       clear_mdls();
     stopsound();
-    closelogfile();
+    #ifdef __APPLE__
+        if(screen) SDL_SetWindowFullscreen(screen, 0);
+    #endif
     SDL_Quit();
 }
 
@@ -115,15 +125,17 @@ void fatal(const char *s, ...)    // failure exit
         {
             if(SDL_WasInit(SDL_INIT_VIDEO))
             {
-                showcursor(true);
-                SDL_WM_GrabInput(SDL_GRAB_OFF);
+                SDL_ShowCursor(SDL_TRUE);
+                SDL_SetRelativeMouseMode(SDL_FALSE); 
+                if(screen) SDL_SetWindowGrab(screen, SDL_FALSE);
                 cleargamma();
+                #ifdef __APPLE__
+                    if(screen) SDL_SetWindowFullscreen(screen, 0);
+                #endif
             }
-            #ifdef WIN32
-            defformatstring(cap, "%s: Error", VERSION_NAME);
-            MessageBox(NULL, msg, cap, MB_OK|MB_SYSTEMMODAL);
-            #endif
             SDL_Quit();
+            defformatstring(cap, "%s: Error", VERSION_NAME);
+            SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, cap, msg, NULL);
         }
     }
     exit(EXIT_FAILURE);
@@ -140,6 +152,12 @@ bool initwarning(const char *desc, int level, int type, bool force)
     return false;
 }
 
+VAR(IDF_READONLY, desktopw, 1, 0, 0);
+VAR(IDF_READONLY, desktoph, 1, 0, 0);
+int screenw = 0, screenh = 0;
+SDL_Window *screen = NULL;
+SDL_GLContext glcontext = NULL;
+
 #define SCR_MINW 320
 #define SCR_MINH 200
 #define SCR_MAXW 10000
@@ -148,12 +166,9 @@ bool initwarning(const char *desc, int level, int type, bool force)
 #define SCR_DEFAULTH 768
 VARF(0, scr_w, SCR_MINW, -1, SCR_MAXW, initwarning("screen resolution"));
 VARF(0, scr_h, SCR_MINH, -1, SCR_MAXH, initwarning("screen resolution"));
-VARF(0, colorbits, 0, 0, 32, initwarning("color depth"));
 VARF(0, depthbits, 0, 0, 32, initwarning("depth-buffer precision"));
 VARF(0, stencilbits, 0, 0, 32, initwarning("stencil-buffer precision"));
 VARF(0, fsaa, -1, -1, 16, initwarning("anti-aliasing"));
-int actualvsync = -1;
-VARF(0, vsync, -1, -1, 1, initwarning("vertical sync"));
 
 void writeinitcfg()
 {
@@ -164,13 +179,9 @@ void writeinitcfg()
     f->printf("fullscreen %d\n", fullscreen);
     f->printf("scr_w %d\n", scr_w);
     f->printf("scr_h %d\n", scr_h);
-    f->printf("colorbits %d\n", colorbits);
     f->printf("depthbits %d\n", depthbits);
     f->printf("stencilbits %d\n", stencilbits);
     f->printf("fsaa %d\n", fsaa);
-    f->printf("vsync %d\n", vsync);
-    extern int shaderprecision;
-    f->printf("shaderprecision %d\n", shaderprecision);
     extern int soundmono, soundmixchans, soundbuflen, soundfreq;
     f->printf("soundmono %d\n", soundmono);
     f->printf("soundmixchans %d\n", soundmixchans);
@@ -185,9 +196,9 @@ VAR(IDF_PERSIST, imageformat, IFMT_NONE+1, IFMT_PNG, IFMT_MAX-1);
 
 void screenshot(char *sname)
 {
-    ImageData image(screen->w, screen->h, 3);
+    ImageData image(screenw, screenh, 3);
     glPixelStorei(GL_PACK_ALIGNMENT, 1);
-    glReadPixels(0, 0, screen->w, screen->h, GL_RGB, GL_UNSIGNED_BYTE, image.data);
+    glReadPixels(0, 0, screenw, screenh, GL_RGB, GL_UNSIGNED_BYTE, image.data);
     string fname;
     if(sname && *sname) copystring(fname, sname);
     else formatstring(fname, "screenshots/%s", *filetimeformat ? gettime(filetimelocal ? currenttime : clocktime, filetimeformat) : (*mapname ? mapname : "screen"));
@@ -197,137 +208,117 @@ void screenshot(char *sname)
 ICOMMAND(0, screenshot, "s", (char *s), if(!(identflags&IDF_WORLD)) screenshot(s));
 ICOMMAND(0, quit, "", (void), if(!(identflags&IDF_WORLD)) quit());
 
-void setfullscreen(bool enable, bool force)
+bool initwindowpos = false;
+
+void setfullscreen(bool enable)
 {
     if(!screen) return;
-    fullscreen = enable ? 1 : 0;
-#if defined(WIN32) || defined(__APPLE__)
-    initwarning(enable ? "fullscreen" : "windowed", INIT_RESET, CHANGE_GFX, force);
-#else
-    if(enable == !(screen->flags&SDL_FULLSCREEN))
+    //initwarning(enable ? "fullscreen" : "windowed");
+    SDL_SetWindowFullscreen(screen, enable ? SDL_WINDOW_FULLSCREEN : 0);
+    if(!enable)
     {
-        SDL_WM_ToggleFullScreen(screen);
-        inputgrab(grabinput!=0);
+        SDL_SetWindowSize(screen, scr_w, scr_h);
+        if(initwindowpos)
+        {
+            int winx = SDL_WINDOWPOS_CENTERED, winy = SDL_WINDOWPOS_CENTERED;
+            SDL_SetWindowPosition(screen, winx, winy);
+            initwindowpos = false;
+        }
     }
-#endif
 }
 
 VARF(0, fullscreen, 0, 1, 1, if(!(identflags&IDF_WORLD)) setfullscreen(fullscreen!=0));
 
-void screenres(int *w, int *h)
-{
-#if !defined(WIN32) && !defined(__APPLE__)
-    if(initing >= INIT_RESET)
-    {
-#endif
-        scr_w = clamp(*w, SCR_MINW, SCR_MAXW);
-        scr_h = clamp(*h, SCR_MINH, SCR_MAXH);
-#if defined(WIN32) || defined(__APPLE__)
-        initwarning("screen resolution");
-#else
-        return;
+void screenres(int w, int h)
+{               
+    scr_w = clamp(w, SCR_MINW, SCR_MAXW);
+    scr_h = clamp(h, SCR_MINH, SCR_MAXH);
+    if(screen)
+    {           
+        scr_w = min(scr_w, desktopw);
+        scr_h = min(scr_h, desktoph);
+        if(SDL_GetWindowFlags(screen) & SDL_WINDOW_FULLSCREEN) gl_resize();
+        else SDL_SetWindowSize(screen, scr_w, scr_h);
     }
-    SDL_Surface *surf = SDL_SetVideoMode(clamp(*w, SCR_MINW, SCR_MAXW), clamp(*h, SCR_MINH, SCR_MAXH), 0, SDL_OPENGL|(screen->flags&SDL_FULLSCREEN ? SDL_FULLSCREEN : SDL_RESIZABLE));
-    if(!surf) return;
-    screen = surf;
-    scr_w = screen->w;
-    scr_h = screen->h;
-    glViewport(0, 0, scr_w, scr_h);
-#endif
-}
+    else
+    {
+        initwarning("screen resolution");
+    }
+}       
 
-COMMAND(0, screenres, "ii");
+ICOMMAND(0, screenres, "ii", (int *w, int *h), screenres(*w, *h));
+
+static void setgamma(int val)
+{   
+    if(screen && SDL_SetWindowBrightness(screen, val/100.0f) < 0) conoutf("\frCould not set gamma: %s", SDL_GetError());
+}   
 
 static int curgamma = 100;
 VARF(IDF_PERSIST, gamma, 30, 100, 300,
 {
-    if(gamma == curgamma) return;
+    if(initing || gamma == curgamma) return;
     curgamma = gamma;
-    float f = gamma/100.0f;
-    if(SDL_SetGamma(f,f,f)==-1)
-    {
-        conoutf("\frcould not set gamma: %s", SDL_GetError());
-    }
+    setgamma(curgamma);
 });
 
 void restoregamma()
-{
-    if(curgamma == 100) return;
-    float f = curgamma/100.0f;
-    SDL_SetGamma(1, 1, 1);
-    SDL_SetGamma(f, f, f);
+{       
+    if(initing || curgamma == 100) return;
+    setgamma(curgamma);
 }
 
 void cleargamma()
 {
-    if(curgamma != 100) SDL_SetGamma(1, 1, 1);
+    if(curgamma != 100 && screen) SDL_SetWindowBrightness(screen, 1.0f);
 }
 
-int desktopw = 0, desktoph = 0;
-
-void setupscreen(int &usedcolorbits, int &useddepthbits, int &usedfsaa)
+void restorevsync()
 {
-    int flags = SDL_RESIZABLE;
-    #if defined(WIN32) || defined(__APPLE__)
-    flags = 0;
-    #endif
-    if(fullscreen) flags = SDL_FULLSCREEN;
-    SDL_Rect **modes = SDL_ListModes(NULL, SDL_OPENGL|flags);
-    if(modes && modes!=(SDL_Rect **)-1)
-    {
-        int widest = -1, best = -1;
-        for(int i = 0; modes[i]; i++)
-        {
-            if(widest < 0 || modes[i]->w > modes[widest]->w || (modes[i]->w == modes[widest]->w && modes[i]->h > modes[widest]->h))
-                widest = i;
-        }
-        if(scr_w < 0 || scr_h < 0)
-        {
-            int w = scr_w, h = scr_h, ratiow = desktopw, ratioh = desktoph;
-            if(w < 0 && h < 0) { w = SCR_DEFAULTW; h = SCR_DEFAULTH; }
-            if(ratiow <= 0 || ratioh <= 0) { ratiow = modes[widest]->w; ratioh = modes[widest]->h; }
-            for(int i = 0; modes[i]; i++) if(modes[i]->w*ratioh == modes[i]->h*ratiow)
-            {
-                if(w <= modes[i]->w && h <= modes[i]->h && (best < 0 || modes[i]->w < modes[best]->w))
-                    best = i;
-            }
-        }
-        if(best < 0)
-        {
-            int w = scr_w, h = scr_h;
-            if(w < 0 && h < 0) { w = SCR_DEFAULTW; h = SCR_DEFAULTH; }
-            else if(w < 0) w = (h*SCR_DEFAULTW)/SCR_DEFAULTH;
-            else if(h < 0) h = (w*SCR_DEFAULTH)/SCR_DEFAULTW;
-            for(int i = 0; modes[i]; i++)
-            {
-                if(w <= modes[i]->w && h <= modes[i]->h && (best < 0 || modes[i]->w < modes[best]->w || (modes[i]->w == modes[best]->w && modes[i]->h < modes[best]->h)))
-                    best = i;
-            }
-        }
-        if(flags&SDL_FULLSCREEN)
-        {
-            if(best >= 0) { scr_w = modes[best]->w; scr_h = modes[best]->h; }
-            else if(desktopw > 0 && desktoph > 0) { scr_w = desktopw; scr_h = desktoph; }
-            else if(widest >= 0) { scr_w = modes[widest]->w; scr_h = modes[widest]->h; }
-        }
-        else if(best < 0)
-        {
-            scr_w = min(scr_w >= 0 ? scr_w : (scr_h >= 0 ? (scr_h*SCR_DEFAULTW)/SCR_DEFAULTH : SCR_DEFAULTW), (int)modes[widest]->w);
-            scr_h = min(scr_h >= 0 ? scr_h : (scr_w >= 0 ? (scr_w*SCR_DEFAULTH)/SCR_DEFAULTW : SCR_DEFAULTH), (int)modes[widest]->h);
-        }
-    }
-    if(scr_w < 0 && scr_h < 0) { scr_w = SCR_DEFAULTW; scr_h = SCR_DEFAULTH; }
-    else if(scr_w < 0) scr_w = (scr_h*SCR_DEFAULTW)/SCR_DEFAULTH;
-    else if(scr_h < 0) scr_h = (scr_w*SCR_DEFAULTH)/SCR_DEFAULTW;
+    if(initing || !glcontext) return;
+    extern int vsync, vsynctear;
+    SDL_GL_SetSwapInterval(vsync ? (vsynctear ? -1 : 1) : 0);
+}
 
-    bool hasbpp = true;
-    if(colorbits)
-        hasbpp = SDL_VideoModeOK(scr_w, scr_h, colorbits, SDL_OPENGL|flags)==colorbits;
+VARF(IDF_PERSIST, vsync, 0, 0, 1, restorevsync());
+VARF(IDF_PERSIST, vsynctear, 0, 0, 1, { if(vsync) restorevsync(); });
+
+void setupscreen()
+{
+    if(glcontext)
+    {
+        SDL_GL_DeleteContext(glcontext);
+        glcontext = NULL;
+    }
+    if(screen)
+    {
+        SDL_DestroyWindow(screen);
+        screen = NULL;
+    }
+
+    SDL_DisplayMode desktop;
+    if(SDL_GetDesktopDisplayMode(0, &desktop) < 0) fatal("failed querying desktop display mode: %s", SDL_GetError());
+    desktopw = desktop.w;
+    desktoph = desktop.h;
+
+    if(scr_h < 0) scr_h = SCR_DEFAULTH;
+    if(scr_w < 0) scr_w = (scr_h*desktopw)/desktoph;
+    scr_w = min(scr_w, desktopw);
+    scr_h = min(scr_h, desktoph);
+
+    int winx = SDL_WINDOWPOS_UNDEFINED, winy = SDL_WINDOWPOS_UNDEFINED, winw = scr_w, winh = scr_h, flags = SDL_WINDOW_RESIZABLE;
+    if(fullscreen)
+    {
+        flags |= SDL_WINDOW_FULLSCREEN;
+        initwindowpos = true;
+    }
+
+    screen = SDL_CreateWindow(caption, winx, winy, winw, winh, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_MOUSE_FOCUS | flags);
+    if(!screen) fatal("failed to create OpenGL window: %s", SDL_GetError());
+
+    SDL_SetWindowMinimumSize(screen, SCR_MINW, SCR_MINH);
+    SDL_SetWindowMaximumSize(screen, SCR_MAXW, SCR_MAXH);
 
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-#if SDL_VERSION_ATLEAST(1, 2, 11)
-    SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, vsync >= 0 ? vsync : 0);
-#endif
     static int configs[] =
     {
         0x7, /* try everything */
@@ -337,7 +328,7 @@ void setupscreen(int &usedcolorbits, int &useddepthbits, int &usedfsaa)
     };
     int config = 0;
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 0);
-    if(!depthbits) SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
+    if(!depthbits) SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
     if(!fsaa)
     {
         SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 0);
@@ -349,7 +340,7 @@ void setupscreen(int &usedcolorbits, int &useddepthbits, int &usedfsaa)
         if(!depthbits && config&1) continue;
         if(!stencilbits && config&2) continue;
         if(fsaa<=0 && config&4) continue;
-        if(depthbits) SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, config&1 ? depthbits : 16);
+        if(depthbits) SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, config&1 ? depthbits : 24);
         if(stencilbits)
         {
             hasstencil = config&2 ? stencilbits : 0;
@@ -361,28 +352,17 @@ void setupscreen(int &usedcolorbits, int &useddepthbits, int &usedfsaa)
             SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, config&4 ? 1 : 0);
             SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, config&4 ? fsaa : 0);
         }
-        screen = SDL_SetVideoMode(scr_w, scr_h, hasbpp ? colorbits : 0, SDL_OPENGL|flags);
-        if(screen) break;
+        glcontext = SDL_GL_CreateContext(screen);
     }
     if(!screen) fatal("Unable to create OpenGL screen: %s", SDL_GetError());
     else
     {
-        if(!hasbpp) conoutf("\fr%d bit color buffer not supported - disabling", colorbits);
         if(depthbits && (config&1)==0) conoutf("\fr%d bit z-buffer not supported - disabling", depthbits);
         if(stencilbits && (config&2)==0) conoutf("\frStencil buffer not supported - disabling");
         if(fsaa>0 && (config&4)==0) conoutf("\fr%dx anti-aliasing not supported - disabling", fsaa);
-#if SDL_VERSION_ATLEAST(1, 2, 11)
-        if(SDL_GL_GetAttribute(SDL_GL_SWAP_CONTROL, &actualvsync) >= 0 && actualvsync >= 0) // could be forced on
-            conoutf("vsync is %s", actualvsync ? "enabled" : "disabled");
-#endif
     }
 
-    scr_w = screen->w;
-    scr_h = screen->h;
-
-    usedcolorbits = hasbpp ? colorbits : 0;
-    useddepthbits = config&1 ? depthbits : 0;
-    usedfsaa = config&4 ? fsaa : 0;
+    SDL_GetWindowSize(screen, &screenw, &screenh);
 }
 
 void resetgl()
@@ -398,15 +378,12 @@ void resetgl()
     extern void cleanupsky();
     extern void cleanupmodels();
     extern void cleanupprefabs();
-    extern void cleanuptextures();
     extern void cleanuplightmaps();
     extern void cleanupblendmap();
     extern void cleanshadowmap();
     extern void cleanreflections();
     extern void cleanupglare();
     extern void cleanupdepthfx();
-    extern void cleanupshaders();
-    extern void cleanupgl();
     recorder::cleanup();
     cleanupva();
     cleanupparticles();
@@ -425,15 +402,9 @@ void resetgl()
     cleanupshaders();
     cleanupgl();
 
-    SDL_SetVideoMode(0, 0, 0, 0);
-
-    int usedcolorbits = 0, useddepthbits = 0, usedfsaa = 0;
-    setupscreen(usedcolorbits, useddepthbits, usedfsaa);
-    gl_init(scr_w, scr_h, usedcolorbits, useddepthbits, usedfsaa);
-
-    extern void reloadfonts();
-    extern void reloadtextures();
-    extern void reloadshaders();
+    setupscreen();
+    inputgrab(grabinput);
+    gl_init();
 
     inbetweenframes = false;
     if(!reloadtexture(notexturetex) || !reloadtexture(blanktex) || !reloadtexture(logotex) || !reloadtexture(badgetex))
@@ -442,6 +413,7 @@ void resetgl()
     inbetweenframes = true;
     progress(0, "initializing...");
     restoregamma();
+    restorevsync();
     reloadshaders();
     reloadtextures();
     initlights();
@@ -450,7 +422,7 @@ void resetgl()
 
 ICOMMAND(0, resetgl, "", (void), if(!(identflags&IDF_WORLD)) resetgl());
 
-bool activewindow = true, warping = false, minimized = false;
+bool warping = false, minimized = false;
 
 vector<SDL_Event> events;
 
@@ -464,9 +436,9 @@ static bool filterevent(const SDL_Event &event)
     switch(event.type)
     {
         case SDL_MOUSEMOTION:
-            if(grabinput || activewindow)
+            if(grabinput && !relativemouse && !(SDL_GetWindowFlags(screen) & SDL_WINDOW_FULLSCREEN))
             {
-                if(warping && event.motion.x == screen->w / 2 && event.motion.y == screen->h / 2)
+                if(warping && event.motion.x == screenw / 2 && event.motion.y == screenh / 2)
                     return false;  // ignore any motion events generated by SDL_WarpMouse
                 #ifdef __APPLE__
                 if(event.motion.y == 0)
@@ -506,14 +478,14 @@ static void ignoremousemotion()
 {
     SDL_Event e;
     SDL_PumpEvents();
-    while(SDL_PeepEvents(&e, 1, SDL_GETEVENT, SDL_EVENTMASK(SDL_MOUSEMOTION)));
+    while(SDL_PeepEvents(&e, 1, SDL_GETEVENT, SDL_MOUSEMOTION, SDL_MOUSEMOTION));
 }
 
 void resetcursor(bool warp, bool reset)
 {
-    if(warp && grabinput)
+    if(warp && grabinput && !relativemouse && !(SDL_GetWindowFlags(screen) & SDL_WINDOW_FULLSCREEN))
     {
-        SDL_WarpMouse(screen->w/2, screen->h/2);
+        SDL_WarpMouseInWindow(screen, screenw/2, screenh/2);
         warping = true;
     }
     if(reset) cursorx = cursory = 0.5f;
@@ -549,7 +521,7 @@ static void checkmousemotion(int &dx, int &dy)
 void checkinput()
 {
     SDL_Event event;
-    int lasttype = 0, lastbut = 0;
+    //int lasttype = 0, lastbut = 0;
     bool mousemoved = false, shouldwarp = false;
     while(events.length() || pollevent(event))
     {
@@ -561,57 +533,101 @@ void checkinput()
                 quit();
                 return;
 
-#if !defined(WIN32) && !defined(__APPLE__)
-            case SDL_VIDEORESIZE:
-                screenres(&event.resize.w, &event.resize.h);
+            case SDL_TEXTINPUT:
+            {
+                uchar buf[SDL_TEXTINPUTEVENT_TEXT_SIZE+1];
+                size_t len = decodeutf8(buf, sizeof(buf)-1, (const uchar *)event.text.text, strlen(event.text.text));
+                if(len > 0) { buf[len] = '\0'; processtextinput((const char *)buf, len); }
                 break;
-#endif
+            }
 
             case SDL_KEYDOWN:
             case SDL_KEYUP:
-                keypress(event.key.keysym.sym, event.key.state==SDL_PRESSED, uni2cube(event.key.keysym.unicode));
+                if(keyrepeatmask || !event.key.repeat)
+                    processkey(event.key.keysym.sym, event.key.state==SDL_PRESSED);
                 break;
 
-            case SDL_ACTIVEEVENT:
-            {
-                if(event.active.state & SDL_APPINPUTFOCUS)
+            case SDL_WINDOWEVENT:
+                switch(event.window.event)
                 {
-                    activewindow = event.active.gain ? true : false;
+                    case SDL_WINDOWEVENT_CLOSE:
+                        quit();
+                        break;
 
-                    if(autograbinput)
-                        setvar("grabinput", event.active.gain ? 1 : 0, true);
+                    case SDL_WINDOWEVENT_FOCUS_GAINED:
+                        shouldgrab = true;
+                        break;
+                    case SDL_WINDOWEVENT_ENTER:
+                        inputgrab(grabinput = true);
+                        break;
+
+                    case SDL_WINDOWEVENT_LEAVE:
+                    case SDL_WINDOWEVENT_FOCUS_LOST:
+                        inputgrab(grabinput = false);
+                        break;
+
+                    case SDL_WINDOWEVENT_MINIMIZED:
+                        minimized = true;
+                        break;
+
+                    case SDL_WINDOWEVENT_MAXIMIZED:
+                    case SDL_WINDOWEVENT_RESTORED:
+                        minimized = false;
+                        break;
+
+                    case SDL_WINDOWEVENT_RESIZED:
+                        break;
+
+                    case SDL_WINDOWEVENT_SIZE_CHANGED:
+                    {
+                        SDL_GetWindowSize(screen, &screenw, &screenh);
+                        if(!(SDL_GetWindowFlags(screen) & SDL_WINDOW_FULLSCREEN))
+                        {
+                            scr_w = clamp(screenw, SCR_MINW, SCR_MAXW);
+                            scr_h = clamp(screenh, SCR_MINH, SCR_MAXH);
+                        }
+                        gl_resize();
+                        break;
+                    }
                 }
-                if(event.active.state & SDL_APPACTIVE)
-                    minimized = !event.active.gain;
                 break;
-            }
+
             case SDL_MOUSEMOTION:
-            {
-                if(grabinput || activewindow)
+                if(grabinput)
                 {
-                    //conoutf("mouse: %d %d, %d %d [%s]", event.motion.xrel, event.motion.yrel, event.motion.x, event.motion.y, warping ? "true" : "false");
                     int dx = event.motion.xrel, dy = event.motion.yrel;
                     checkmousemotion(dx, dy);
-                    shouldwarp = game::mousemove(dx, dy, event.motion.x, event.motion.y, screen->w, screen->h); // whether game controls engine cursor
+                    shouldwarp = game::mousemove(dx, dy, event.motion.x, event.motion.y, screenw, screenh); // whether game controls engine cursor
                     mousemoved = true;
                 }
+                else if(shouldgrab) inputgrab(grabinput = true);
                 break;
-            }
+
             case SDL_MOUSEBUTTONDOWN:
             case SDL_MOUSEBUTTONUP:
-            {
-                if(lasttype==event.type && lastbut==event.button.button) break; // why?? get event twice without it
-                keypress(-event.button.button, event.button.state!=0, 0);
-                lasttype = event.type;
-                lastbut = event.button.button;
+                //if(lasttype==event.type && lastbut==event.button.button) break; // why?? get event twice without it
+                switch(event.button.button)
+                {
+                    case SDL_BUTTON_LEFT: processkey(-1, event.button.state==SDL_PRESSED); break;
+                    case SDL_BUTTON_MIDDLE: processkey(-2, event.button.state==SDL_PRESSED); break;
+                    case SDL_BUTTON_RIGHT: processkey(-3, event.button.state==SDL_PRESSED); break;
+                    case SDL_BUTTON_X1: processkey(-6, event.button.state==SDL_PRESSED); break;
+                    case SDL_BUTTON_X2: processkey(-7, event.button.state==SDL_PRESSED); break;
+                }
+                //lasttype = event.type;
+                //lastbut = event.button.button;
                 break;
-            }
+
+            case SDL_MOUSEWHEEL:
+                if(event.wheel.y > 0) { processkey(-4, true); processkey(-4, false); }
+                else if(event.wheel.y < 0) { processkey(-5, true); processkey(-5, false); }
+                break;
         }
     }
     if(mousemoved)
     {
         warping = false;
-        if((grabinput || activewindow) && shouldwarp) resetcursor(true, false);
+        if(grabinput && shouldwarp) resetcursor(true, false);
     }
 }
 
@@ -619,7 +635,7 @@ void swapbuffers(bool overlay)
 {
     recorder::capture(overlay);
     gle::disable();
-    SDL_GL_SwapBuffers();
+    SDL_GL_SwapWindow(screen);
 }
 
 VAR(IDF_PERSIST, maxfps, 0, 200, 1000);
@@ -654,7 +670,7 @@ void stackdumper(unsigned int type, EXCEPTION_POINTERS *ep)
     if(!ep) fatal("unknown type");
     EXCEPTION_RECORD *er = ep->ExceptionRecord;
     CONTEXT *context = ep->ContextRecord;
-    bigstring out, t;
+    bigstring out;
     formatstring(out, "%s Win32 Exception: 0x%x [0x%x]\n\n", VERSION_NAME, er->ExceptionCode, er->ExceptionCode==EXCEPTION_ACCESS_VIOLATION ? er->ExceptionInformation[1] : -1);
     SymInitialize(GetCurrentProcess(), NULL, TRUE);
 #ifdef _AMD64_
@@ -683,8 +699,7 @@ void stackdumper(unsigned int type, EXCEPTION_POINTERS *ep)
 #endif
         {
             char *del = strrchr(line.FileName, '\\');
-            formatstring(t, "%s - %s [%d]\n", sym.Name, del ? del + 1 : line.FileName, line.LineNumber);
-            concatstring(out, t);
+            concformatstring(out, "%s - %s [%d]\n", sym.Name, del ? del + 1 : line.FileName, line.LineNumber);
         }
     }
     fatal(out);
@@ -772,7 +787,7 @@ void progress(float bar1, const char *text1, float bar2, const char *text2)
     if(progressing || !inbetweenframes || drawtex) return;
     int ticks = SDL_GetTicks();
     if(lastprogress > 0 && ticks < 0) lastprogress = 1-INT_MAX;
-    if((actualvsync || !progressupdate || bar1 > 0) && ticks-lastprogress < progressdelay) return;
+    if((vsync || !progressupdate || bar1 > 0) && ticks-lastprogress < progressdelay) return;
     lastprogress = ticks;
     clientkeepalive();
 
@@ -867,24 +882,12 @@ int main(int argc, char **argv)
                     case 'w': scr_w = clamp(atoi(&argv[i][3]), SCR_MINW, SCR_MAXW); if(!findarg(argc, argv, "-dh")) scr_h = -1; break;
                     case 'h': scr_h = clamp(atoi(&argv[i][3]), SCR_MINH, SCR_MAXH); if(!findarg(argc, argv, "-dw")) scr_w = -1; break;
                     case 'd': depthbits = atoi(&argv[i][3]); break;
-                    case 'c': colorbits = atoi(&argv[i][3]); break;
+                    case 'c': /* compat, ignore */ break;
                     case 'a': fsaa = atoi(&argv[i][3]); break;
-                    case 'v': vsync = atoi(&argv[i][3]); break;
+                    case 'v': vsync = atoi(&argv[i][3]); if(vsync < 0) { vsynctear = 1; vsync = 1; } else vsynctear = 0; break;
                     case 'f': fullscreen = atoi(&argv[i][3]); break;
                     case 's': stencilbits = atoi(&argv[i][3]); break;
-                    case 'u':
-                    {
-                        extern int shaderprecision;
-                        int prec = shaderprecision;
-                        for(int j = 3; argv[i][j]; j++) switch(argv[i][j])
-                        {
-                            case '0': prec = 0; break;
-                            case '1': case '2': case '3': prec = argv[i][j] - '1'; break;
-                            default: break;
-                        }
-                        shaderprecision = prec;
-                        break;
-                    }
+                    case 'u': /* compat, ignore */ break;
                     default: conoutf("\frunknown display option %c", argv[i][2]); break;
                 }
                 break;
@@ -910,41 +913,22 @@ int main(int argc, char **argv)
     initgame();
 
     conoutf("loading sdl..");
-    #ifdef WIN32
-    SetEnvironmentVariable("SDL_DISABLE_LOCK_KEYS", "1");
-    SetEnvironmentVariable("SDL_VIDEO_ALLOW_SCREENSAVER", "0");
-    #else
-    setenv("SDL_DISABLE_LOCK_KEYS", "1", 1);
-    setenv("SDL_VIDEO_ALLOW_SCREENSAVER", "0", 1);
-    #endif
-    int par = 0;
-    #ifdef _DEBUG
-    par = SDL_INIT_NOPARACHUTE;
-    #ifdef WIN32
-    SetEnvironmentVariable("SDL_DEBUG", "1");
-    #endif
-    #endif
 
     //#ifdef WIN32
     //SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
     //#endif
 
-    par |= SDL_INIT_TIMER|SDL_INIT_VIDEO|SDL_INIT_NOPARACHUTE;
-    if(SDL_Init(par) < 0) fatal("error initialising SDL: %s", SDL_GetError());
+    if(SDL_Init(SDL_INIT_TIMER|SDL_INIT_VIDEO|SDL_INIT_AUDIO) < 0) fatal("error initialising SDL: %s", SDL_GetError());
 
     conoutf("loading video..");
-    const SDL_VideoInfo *video = SDL_GetVideoInfo();
-    if(video)
-    {
-        desktopw = video->current_w;
-        desktoph = video->current_h;
-    }
-    int usedcolorbits = 0, useddepthbits = 0, usedfsaa = 0;
-    setupscreen(usedcolorbits, useddepthbits, usedfsaa);
-
-    showcursor(false);
-    keyrepeat(false);
     setcaption("please wait..");
+    SDL_SetHint(SDL_HINT_GRAB_KEYBOARD, "0");
+    #if !defined(WIN32) && !defined(__APPLE__)
+    SDL_SetHint(SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS, "0");
+    #endif
+    setupscreen();
+    SDL_ShowCursor(SDL_FALSE);
+    SDL_StopTextInput(); // workaround for spurious text-input events getting sent on first text input toggle?
 
     signal(SIGINT, fatalsignal);
     signal(SIGILL, fatalsignal);
@@ -962,7 +946,7 @@ int main(int argc, char **argv)
 
     conoutf("loading gl..");
     gl_checkextensions();
-    gl_init(scr_w, scr_h, usedcolorbits, useddepthbits, usedfsaa);
+    gl_init();
     if(!(notexture = textureload(notexturetex)) || !(blanktexture = textureload(blanktex)))
         fatal("could not find core textures");
 
@@ -977,10 +961,6 @@ int main(int argc, char **argv)
     inbetweenframes = true;
     progress(0, "please wait..");
 
-    conoutf("loading gl effects..");
-    progress(0, "loading gl effects..");
-    loadshaders();
-
     conoutf("loading world..");
     progress(0, "loading world..");
     emptymap(0, true, NULL, true);
@@ -992,8 +972,11 @@ int main(int argc, char **argv)
 
     conoutf("loading required data..");
     progress(0, "loading required data..");
+    restoregamma();
+    restorevsync();
+    loadshaders();
     preloadtextures();
-    particleinit();
+    initparticles();
     initdecals();
 
     trytofindocta();
@@ -1001,12 +984,6 @@ int main(int argc, char **argv)
     progress(0, "loading main..");
     if(initscript) execute(initscript, true);
 
-#ifdef WIN32
-    SDL_SysWMinfo wminfo;
-    SDL_VERSION(&wminfo.version);
-    if(SDL_GetWMInfo(&wminfo)) ShowWindow(wminfo.window, SW_SHOW);
-#endif
-    if(autograbinput) setvar("grabinput", 1, true);
     capslockon = capslocked();
     numlockon = numlocked();
     ignoremousemotion();
@@ -1032,8 +1009,8 @@ int main(int argc, char **argv)
         ircslice();
         if(frameloops)
         {
-            game::recomputecamera(screen->w, screen->h);
-            hud::update(screen->w, screen->h);
+            game::recomputecamera(screenw, screenh);
+            hud::update(screenw, screenh);
             setviewcell(camera1->o);
             updatetextures();
             updateparticles();
@@ -1042,7 +1019,7 @@ int main(int argc, char **argv)
             if(!minimized)
             {
                 inbetweenframes = renderedframe = false;
-                gl_drawframe(screen->w, screen->h);
+                gl_drawframe();
                 renderedframe = true;
                 swapbuffers();
                 inbetweenframes = true;
@@ -1051,7 +1028,7 @@ int main(int argc, char **argv)
             {
                 if(editmode)
                 {
-                    glReadPixels(screen->w/2, screen->h/2, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, &pixel.v[0]);
+                    glReadPixels(screenw/2, screenh/2, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, &pixel.v[0]);
                     if(pixelact) execute(pixelact);
                 }
                 if(pixelact) delete[] pixelact;

@@ -484,8 +484,6 @@ void Shader::bindprograms()
     lastshader = this;
 }
 
-VARF(0, shaderprecision, 0, 0, 2, initwarning("shader quality"));
-
 bool Shader::compile()
 {
     if(!vsstr) vsobj = !reusevs || reusevs->invalid() ? 0 : reusevs->vsobj;
@@ -1272,7 +1270,7 @@ static int allocatepostfxtex(int scale)
     postfxtex &t = postfxtexs.add();
     t.scale = scale;
     glGenTextures(1, &t.id);
-    createtexture(t.id, max(screen->w>>scale, 1), max(screen->h>>scale, 1), NULL, 3, 1, GL_RGB);
+    createtexture(t.id, max(screenw>>scale, 1), max(screenh>>scale, 1), NULL, 3, 1, GL_RGB);
     return postfxtexs.length()-1;
 }
 
@@ -1295,11 +1293,11 @@ void renderpostfx()
 {
     if(postfxpasses.empty()) return;
 
-    if(postfxw != screen->w || postfxh != screen->h)
+    if(postfxw != screenw || postfxh != screenh)
     {
         cleanuppostfx(false);
-        postfxw = screen->w;
-        postfxh = screen->h;
+        postfxw = screenw;
+        postfxh = screenh;
     }
 
     int binds[NUMPOSTFXBINDS];
@@ -1309,7 +1307,7 @@ void renderpostfx()
     binds[0] = allocatepostfxtex(0);
     postfxtexs[binds[0]].used = 0;
     glBindTexture(GL_TEXTURE_2D, postfxtexs[binds[0]].id);
-    glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, screen->w, screen->h);
+    glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, screenw, screenh);
 
     if(postfxpasses.length() > 1)
     {
@@ -1334,8 +1332,8 @@ void renderpostfx()
             glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, postfxtexs[tex].id, 0);
         }
 
-        int w = tex >= 0 ? max(screen->w>>postfxtexs[tex].scale, 1) : screen->w,
-            h = tex >= 0 ? max(screen->h>>postfxtexs[tex].scale, 1) : screen->h;
+        int w = tex >= 0 ? max(screenw>>postfxtexs[tex].scale, 1) : screenw,
+            h = tex >= 0 ? max(screenh>>postfxtexs[tex].scale, 1) : screenh;
         glViewport(0, 0, w, h);
         p.shader->set();
         LOCALPARAM(params, p.params);
@@ -1344,8 +1342,8 @@ void renderpostfx()
         {
             if(!tmu)
             {
-                tw = max(screen->w>>postfxtexs[binds[j]].scale, 1);
-                th = max(screen->h>>postfxtexs[binds[j]].scale, 1);
+                tw = max(screenw>>postfxtexs[binds[j]].scale, 1);
+                th = max(screenh>>postfxtexs[binds[j]].scale, 1);
             }
             else glActiveTexture_(GL_TEXTURE0 + tmu);
             glBindTexture(GL_TEXTURE_2D, postfxtexs[binds[j]].id);

@@ -53,7 +53,8 @@ namespace hud
 {
     extern char *progresstex, *progringtex;
     extern bool hasinput(bool pass = false, bool focus = true);
-    extern bool keypress(int code, bool isdown, int cooked);
+    extern bool textinput(const char *str, int len);
+    extern bool keypress(int code, bool isdown);
     extern void drawhud(bool noview = false);
     extern void drawlast();
     extern float motionblur(float scale);

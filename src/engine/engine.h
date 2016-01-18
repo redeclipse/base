@@ -103,8 +103,9 @@ extern const uchar fvmasks[64];
 extern const uchar faceedgesidx[6][4];
 extern bool inbetweenframes, renderedframe;
 
-extern SDL_Surface *screen;
-extern int zpass, glowpass;
+extern SDL_Window *screen;
+extern int screenw, screenh;
+extern int zpass;
 
 // rendertext
 struct font
@@ -130,6 +131,8 @@ extern float textscale, guitextscale;
 
 extern font *curfont;
 extern const matrix4x3 *textmatrix;
+
+extern void reloadfonts();
 
 // texture
 extern int hwtexsize, hwcubetexsize, hwmaxanisotropy, maxtexsize, anisotropy, envmapradius;
@@ -164,6 +167,8 @@ extern void compactvslot(int &index);
 extern void compactvslot(VSlot &vs);
 extern void compactvslots(cube *c, int n = 8);
 extern int compactvslots(bool cull = false);
+extern void reloadtextures();
+extern void cleanuptextures();
 
 // shader
 
@@ -234,8 +239,9 @@ extern GLenum colormask[3];
     }
 
 extern void gl_checkextensions();
-extern void gl_init(int w, int h, int bpp, int depth, int fsaa);
-extern void cleangl();
+extern void gl_init();
+extern void gl_resize();
+extern void cleanupgl();
 
 extern void vecfromcursor(float x, float y, float z, vec &dir);
 extern bool vectocursor(const vec &v, float &x, float &y, float &z, float clampxy = -1);
@@ -246,7 +252,7 @@ extern void renderavatar(bool early = false, bool project = false);
 extern void invalidatepostfx();
 extern void drawnoview();
 extern bool hasnoview();
-extern void gl_drawframe(int w, int h);
+extern void gl_drawframe();
 extern void drawminimap();
 extern void drawtextures();
 extern void enablepolygonoffset(GLenum type);
@@ -507,7 +513,7 @@ extern ENetPeer *curpeer, *connpeer;
 
 // console
 #ifdef __APPLE__
-    #define MOD_KEYS (KMOD_LMETA|KMOD_RMETA)
+    #define MOD_KEYS (KMOD_LGUI|KMOD_RGUI)
     #define MOD_ALTS MOD_KEYS
 #else
     #define MOD_KEYS (KMOD_LCTRL|KMOD_RCTRL)
@@ -535,7 +541,7 @@ enum
     INIT_DEFAULTS
 };
 extern int initing, fullscreen, numcpus;
-void setfullscreen(bool enable, bool force = false);
+void setfullscreen(bool enable);
 extern bool progressing, pixeling;
 extern float loadprogress, progresspart, progressamt;
 extern char *progresstitle, *progresstext;
@@ -559,6 +565,14 @@ extern bool interceptkey(int sym, int mod = 0);
 extern void getfps(int &fps, int &bestdiff, int &worstdiff);
 extern void swapbuffers(bool overlay = true);
 extern int getclockmillis();
+
+enum { KR_CONSOLE = 1<<0, KR_GUI = 1<<1, KR_EDITMODE = 1<<2 };
+
+extern void keyrepeat(bool on, int mask = ~0);
+
+enum { TI_CONSOLE = 1<<0, TI_GUI = 1<<1 };
+
+extern void textinput(bool on, int mask = ~0);
 
 // menu
 extern void menuprocess();
@@ -625,7 +639,7 @@ static inline model *loadmapmodel(int n)
 }
 
 // renderparticles
-extern void particleinit();
+extern void initparticles();
 extern void clearparticles();
 extern void makeparticle(const vec &o, attrvector &attr);
 extern void updateparticles();
@@ -700,7 +714,7 @@ extern void loadsky(char *basename);
 
 // main
 extern void setcaption(const char *text = "", const char *text2 = "");
-extern int grabinput, colorpos, curfps, bestfps, worstfps, bestfpsdiff, worstfpsdiff, maxfps;
+extern int colorpos, curfps, bestfps, worstfps, bestfpsdiff, worstfpsdiff, maxfps;
 
 // editing
 extern int getmatvec(vec v);

@@ -313,8 +313,8 @@ struct rendertarget
         h = min(h, hwtexsize);
         if(screenrect())
         {
-            if(w > screen->w) w = screen->w;
-            if(h > screen->h) h = screen->h;
+            if(w > screenw) w = screenw;
+            if(h > screenh) h = screenh;
         }
         vieww = w;
         viewh = h;
@@ -385,7 +385,7 @@ struct rendertarget
         RESTORECOLORMASK
 
         glBindFramebuffer_(GL_FRAMEBUFFER, 0);
-        glViewport(0, 0, screen->w, screen->h);
+        glViewport(0, 0, screenw, screenh);
     }
 
     virtual void dodebug(int w, int h) {}
@@ -450,7 +450,7 @@ struct rendertarget
     void debug()
     {
         if(!rendertex) return;
-        int w = min(screen->w, screen->h)/2, h = (w*screen->h)/screen->w;
+        int w = min(screenw, screenh)/2, h = (w*screenh)/screenw;
         hudshader->set();
         gle::colorf(1, 1, 1);
         glBindTexture(GL_TEXTURE_2D, rendertex);

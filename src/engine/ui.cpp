@@ -457,8 +457,8 @@ struct gui : guient
                 xs -= 2*xpad;
                 ys -= 2*ypad;
             }
-            int x1 = int(floor(screen->w*(xi*uiscale.x+uiorigin.x))), y1 = int(floor(screen->h*(1 - ((yi+ys)*uiscale.y+uiorigin.y)))),
-                x2 = int(ceil(screen->w*((xi+xs)*uiscale.x+uiorigin.x))), y2 = int(ceil(screen->h*(1 - (yi*uiscale.y+uiorigin.y))));
+            int x1 = int(floor(screenw*(xi*uiscale.x+uiorigin.x))), y1 = int(floor(screenh*(1 - ((yi+ys)*uiscale.y+uiorigin.y)))),
+                x2 = int(ceil(screenw*((xi+xs)*uiscale.x+uiorigin.x))), y2 = int(ceil(screenh*(1 - (yi*uiscale.y+uiorigin.y))));
             glDisable(GL_BLEND);
             modelpreview::start(x1, y1, x2-x1, y2-y1, overlaid);
             game::renderplayerpreview(model, color, team, weap, vanity, scale, blend);
@@ -494,8 +494,8 @@ struct gui : guient
                 xs -= 2*xpad;
                 ys -= 2*ypad;
             }
-            int x1 = int(floor(screen->w*(xi*uiscale.x+uiorigin.x))), y1 = int(floor(screen->h*(1 - ((yi+ys)*uiscale.y+uiorigin.y)))),
-                x2 = int(ceil(screen->w*((xi+xs)*uiscale.x+uiorigin.x))), y2 = int(ceil(screen->h*(1 - (yi*uiscale.y+uiorigin.y))));
+            int x1 = int(floor(screenw*(xi*uiscale.x+uiorigin.x))), y1 = int(floor(screenh*(1 - ((yi+ys)*uiscale.y+uiorigin.y)))),
+                x2 = int(ceil(screenw*((xi+xs)*uiscale.x+uiorigin.x))), y2 = int(ceil(screenh*(1 - (yi*uiscale.y+uiorigin.y))));
             glDisable(GL_BLEND);
             modelpreview::start(x1, y1, x2-x1, y2-y1, overlaid);
             model *m = loadmodel(name);
@@ -542,8 +542,8 @@ struct gui : guient
                 xs -= 2*xpad;
                 ys -= 2*ypad;
             }
-            int x1 = int(floor(screen->w*(xi*uiscale.x+uiorigin.x))), y1 = int(floor(screen->h*(1 - ((yi+ys)*uiscale.y+uiorigin.y)))),
-                x2 = int(ceil(screen->w*((xi+xs)*uiscale.x+uiorigin.x))), y2 = int(ceil(screen->h*(1 - (yi*uiscale.y+uiorigin.y))));
+            int x1 = int(floor(screenw*(xi*uiscale.x+uiorigin.x))), y1 = int(floor(screenh*(1 - ((yi+ys)*uiscale.y+uiorigin.y)))),
+                x2 = int(ceil(screenw*((xi+xs)*uiscale.x+uiorigin.x))), y2 = int(ceil(screenh*(1 - (yi*uiscale.y+uiorigin.y))));
             glDisable(GL_BLEND);
             modelpreview::start(x1, y1, x2-x1, y2-y1, overlaid);
             previewprefab(prefab, color);
@@ -1130,7 +1130,7 @@ struct gui : guient
     void adjustscale()
     {
         int w = xsize+FONTW*8, h = ysize+FONTH*8;
-        float aspect = forceaspect ? 1.0f/forceaspect : float(screen->h)/float(screen->w), fit = 1.0f;
+        float aspect = forceaspect ? 1.0f/forceaspect : float(screenh)/float(screenw), fit = 1.0f;
         if(w*aspect*basescale>1.0f) fit = 1.0f/(w*aspect*basescale);
         if(h*basescale*fit>maxscale) fit *= maxscale/(h*basescale*fit);
         uiscale = vec(aspect*uiscale.x*fit, uiscale.y*fit, 1);
@@ -1200,7 +1200,7 @@ struct gui : guient
             if(guistatusline && statusstr && *statusstr)
             {
                 gui::pushfont("little");
-                int width = 0, height = 0, tw = min(statuswidth ? statuswidth : (guistatuswidth ? guistatuswidth : -1), int(screen->w*(1/uiscale.y))-FONTH*4);
+                int width = 0, height = 0, tw = min(statuswidth ? statuswidth : (guistatuswidth ? guistatuswidth : -1), int(screenw*(1/uiscale.y))-FONTH*4);
                 text_bounds(statusstr, width, height, tw, TEXT_CENTERED|TEXT_NO_INDENT);
                 int w = width+FONTW*2, h = height+FONTH/2, x1 = -w/2, y1 = guispacesize, x2 = x1+w, y2 = y1+h;
                 if(hasbgfx) skin(x1, y1, x2, y2, guibgcolour, guibgblend, guibordercolour, guiborderblend);
@@ -1219,7 +1219,7 @@ struct gui : guient
                 if(tooltipforce || totalmillis-lasttooltip >= guitooltiptime)
                 {
                     gui::pushfont("little");
-                    int width, height, tw = min(tooltipwidth ? tooltipwidth : (guitooltipwidth ? guitooltipwidth : -1), int(screen->w*(1/uiscale.y))-FONTH*4);
+                    int width, height, tw = min(tooltipwidth ? tooltipwidth : (guitooltipwidth ? guitooltipwidth : -1), int(screenw*(1/uiscale.y))-FONTH*4);
                     text_bounds(tooltipstr, width, height, tw, TEXT_NO_INDENT);
                     int w = width+FONTW*2, h = FONTH/2+height, x1 = hitx, y1 = hity-height-FONTH/2, x2 = x1+w, y2 = y1+h,
                         offset = totalmillis-lasttooltip-guitooltiptime;
@@ -1258,7 +1258,16 @@ namespace UI
 {
     bool isopen = false;
 
-    bool keypress(int code, bool isdown, int cooked)
+    bool textinput(const char *str, int len)
+    {
+        editor *e = currentfocus();
+        if(fieldmode == FIELDKEY || fieldmode == FIELDSHOW || !e || e->mode == EDITORREADONLY) return false;
+
+        e->input(str, len);
+        return true;
+    }
+
+    bool keypress(int code, bool isdown)
     {
         editor *e = currentfocus();
         if(fieldmode == FIELDKEY && e && e->mode != EDITORREADONLY)
@@ -1296,7 +1305,7 @@ namespace UI
             case -2:
                 if(isdown) cleargui(1);
                 if(active()) return true;
-            default: break;
+                break;
         }
 
         if(fieldmode == FIELDSHOW || !e || e->mode == EDITORREADONLY) return false;
@@ -1311,21 +1320,10 @@ namespace UI
                 return true;
             case SDLK_RETURN:
             case SDLK_TAB:
-                if(cooked && (e->maxy != 1)) break;
+                if(e->maxy != 1) break;
             case SDLK_KP_ENTER:
                 if(isdown) fieldmode = FIELDCOMMIT; //signal field commit (handled when drawing field)
                 return true;
-            case SDLK_HOME:
-            case SDLK_END:
-            case SDLK_DELETE:
-            case SDLK_BACKSPACE:
-            case SDLK_UP:
-            case SDLK_DOWN:
-            case SDLK_LEFT:
-            case SDLK_RIGHT:
-            case SDLK_LSHIFT:
-            case SDLK_RSHIFT:
-                break;
             case SDLK_PAGEUP:
             case SDLK_PAGEDOWN:
             case -4:
@@ -1336,12 +1334,8 @@ namespace UI
                     if(f) e = f;
                 }
                 break;
-            default:
-                if(!e && (!cooked || (code<32))) return false;
-                break;
         }
-        if(!isdown) return true;
-        e->key(code, cooked);
+        if(isdown) e->key(code);
         return true;
     }
 
@@ -1409,8 +1403,8 @@ namespace UI
         if(!fieldsactive) fieldmode = FIELDSHOW; //didn't draw any fields, so lose focus - mainly for menu closed
         if((fieldmode!=FIELDSHOW) != wasfocused)
         {
-            SDL_EnableUNICODE(fieldmode!=FIELDSHOW);
-            keyrepeat(fieldmode!=FIELDSHOW);
+            textinput(fieldmode!=FIELDSHOW, TI_GUI);
+            keyrepeat(fieldmode!=FIELDSHOW, KR_GUI);
         }
         loopi(2) mouseaction[i] = 0;
         textscale = oldtextscale;

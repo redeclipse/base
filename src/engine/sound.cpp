@@ -1,5 +1,9 @@
 #include "engine.h"
-#include "SDL_mixer.h"
+#ifdef __APPLE__
+  #include "SDL2_mixer/SDL_mixer.h"
+#else
+  #include "SDL_mixer.h"
+#endif
 
 struct soundsample
 {
@@ -200,7 +204,7 @@ Mix_Music *loadmusic(const char *name)
         if(!musicrw) musicrw = musicstream->rwops();
         if(!musicrw) DELETEP(musicstream);
     }
-    if(musicrw) music = Mix_LoadMUS_RW(musicrw);
+    if(musicrw) music = Mix_LoadMUSType_RW(musicrw, MUS_NONE, 0);
     else music = Mix_LoadMUS(findfile(name, "rb"));
     if(!music)
     {

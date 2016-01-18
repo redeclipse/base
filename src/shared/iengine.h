@@ -124,7 +124,8 @@ extern void packvslot(vector<uchar> &buf, const VSlot *vs);
 // console
 extern int changedkeys;
 
-extern void keypress(int code, bool isdown, int cooked);
+extern void processtextinput(const char *str, int len);
+extern void processkey(int code, bool isdown);
 extern char *getcurcommand();
 extern void resetcomplete();
 extern void complete(char *s, const char *cmdprefix);
@@ -163,7 +164,6 @@ extern bool showgui(const char *name, int tab = 0, bool *keep = NULL);
 
 // main
 struct igame;
-extern void keyrepeat(bool on);
 
 // rendertext
 extern char *savecolour, *restorecolour, *green, *blue, *yellow, *red, *gray, *magenta, *orange, *white, *black, *cyan;
@@ -633,7 +633,8 @@ struct editor;
 namespace UI
 {
     extern bool isopen;
-    extern bool keypress(int code, bool isdown, int cooked);
+    extern bool textinput(const char *str, int len);
+    extern bool keypress(int code, bool isdown);
     extern void update();
     extern void render();
     extern bool active(bool pass = true);

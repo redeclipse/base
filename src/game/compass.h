@@ -233,7 +233,7 @@ bool runcmenu(int idx)
     return foundmenu;
 }
 
-bool keycmenu(int code, bool isdown, int cooked)
+bool keycmenu(int code, bool isdown)
 {
     switch(code)
     {
@@ -241,25 +241,21 @@ bool keycmenu(int code, bool isdown, int cooked)
         {
             if(!isdown && ++compasspos > curcompass->actions.length()) compasspos = 0;
             return true;
-            break;
         }
         case SDLK_LEFT: case SDLK_DOWN: case -5:
         {
             if(!isdown && --compasspos < 0) compasspos = 8;
             return true;
-            break;
         }
         case SDLK_RETURN: case -1:
         {
             if(!isdown) runcmenu(cmenuhit());
             return true;
-            break;
         }
         case SDLK_ESCAPE: case -3:
         {
             if(!isdown) clearcmenu();
             return true;
-            break;
         }
         default:
         {

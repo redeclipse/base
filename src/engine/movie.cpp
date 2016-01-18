@@ -8,7 +8,11 @@
 //   kino - ok
 
 #include "engine.h"
-#include "SDL_mixer.h"
+#ifdef __APPLE__
+  #include "SDL2_mixer/SDL_mixer.h"
+#else
+  #include "SDL_mixer.h"
+#endif
 
 VAR(0, dbgmovie, 0, 0, 1);
 
@@ -289,10 +293,10 @@ struct aviwriter
         f->putlil<uint>(videofps); // vertical refresh rate
         f->putlil<uint>(videow); // horizontal total
         f->putlil<uint>(videoh); // vertical total
-        int gcd = screen->w, rem = screen->h;
+        int gcd = screenw, rem = screenh;
         while(rem > 0) { gcd %= rem; swap(gcd, rem); }
-        f->putlil<ushort>(screen->h/gcd); // aspect denominator
-        f->putlil<ushort>(screen->w/gcd); // aspect numerator
+        f->putlil<ushort>(screenh/gcd); // aspect denominator
+        f->putlil<ushort>(screenw/gcd); // aspect numerator
         f->putlil<uint>(videow); // frame width
         f->putlil<uint>(videoh); // frame height
         f->putlil<uint>(1); // fields per frame
@@ -930,7 +934,7 @@ namespace recorder
         videobuffers.clear();
         loopi(MAXVIDEOBUFFERS)
         {
-            uint w = screen->w, h = screen->w;
+            uint w = screenw, h = screenw;
             videobuffers.data[i].init(w, h, 4);
             videobuffers.data[i].frame = ~0U;
         }
@@ -941,7 +945,7 @@ namespace recorder
         videolock = SDL_CreateMutex();
         shouldencode = SDL_CreateCond();
         shouldread = SDL_CreateCond();
-        thread = SDL_CreateThread(videoencoder, NULL);
+        thread = SDL_CreateThread(videoencoder, "video encoder", NULL);
         if(file->soundfrequency > 0) Mix_SetPostMix(soundencoder, NULL);
     }
 
@@ -990,8 +994,8 @@ namespace recorder
     void readbuffer(videobuffer &m, uint nextframe)
     {
         bool accelyuv = movieaccelyuv && !(m.w%8),
-             usefbo = movieaccel && file->videow <= (uint)screen->w && file->videoh <= (uint)screen->h && (accelyuv || file->videow < (uint)screen->w || file->videoh < (uint)screen->h);
-        uint w = screen->w, h = screen->h;
+             usefbo = movieaccel && file->videow <= (uint)screenw && file->videoh <= (uint)screenh && (accelyuv || file->videow < (uint)screenw || file->videoh < (uint)screenh);
+        uint w = screenw, h = screenh;
         if(usefbo) { w = file->videow; h = file->videoh; }
         if(w != m.w || h != m.h) m.init(w, h, 4);
         m.format = aviwriter::VID_RGB;
@@ -1000,7 +1004,7 @@ namespace recorder
         glPixelStorei(GL_PACK_ALIGNMENT, texalign(m.video, m.w, 4));
         if(usefbo)
         {
-            uint tw = screen->w, th = screen->h;
+            uint tw = screenw, th = screenh;
             if(hasFBB && movieaccelblit) { tw = max(tw/2, m.w); th = max(th/2, m.h); }
             if(tw != scalew || th != scaleh)
             {
@@ -1025,18 +1029,18 @@ namespace recorder
                 glBindFramebuffer_(GL_FRAMEBUFFER, 0);
             }
 
-            if(tw < (uint)screen->w || th < (uint)screen->h)
+            if(tw < (uint)screenw || th < (uint)screenh)
             {
                 glBindFramebuffer_(GL_READ_FRAMEBUFFER, 0);
                 glBindFramebuffer_(GL_DRAW_FRAMEBUFFER, scalefb);
                 glFramebufferTexture2D_(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, scaletex[0], 0);
-                glBlitFramebuffer_(0, 0, screen->w, screen->h, 0, 0, tw, th, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+                glBlitFramebuffer_(0, 0, screenw, screenh, 0, 0, tw, th, GL_COLOR_BUFFER_BIT, GL_LINEAR);
                 glBindFramebuffer_(GL_DRAW_FRAMEBUFFER, 0);
             }
             else
             {
                 glBindTexture(GL_TEXTURE_2D, scaletex[0]);
-                glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, screen->w, screen->h);
+                glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, screenw, screenh);
             }
 
             GLOBALPARAMF(moviescale, 1.0f/scalew, 1.0f/scaleh);
@@ -1080,7 +1084,7 @@ namespace recorder
                 glReadPixels(0, 0, m.w, m.h, GL_BGRA, GL_UNSIGNED_BYTE, m.video);
             }
             glBindFramebuffer_(GL_FRAMEBUFFER, 0);
-            glViewport(0, 0, screen->w, screen->h);
+            glViewport(0, 0, screenw, screenh);
 
         }
         else glReadPixels(0, 0, m.w, m.h, GL_BGRA, GL_UNSIGNED_BYTE, m.video);
@@ -1113,7 +1117,7 @@ namespace recorder
 
     void drawhud()
     {
-        int w = screen->w, h = screen->h;
+        int w = screenw, h = screenh;
         if(forceaspect) w = int(ceil(h*forceaspect));
         gettextres(w, h);
 
@@ -1149,7 +1153,7 @@ VAR(IDF_PERSIST, moviesound, 0, 1, 1);
 void movie(char *name)
 {
     if(name[0] == '\0') recorder::stop();
-    else if(!recorder::isrecording()) recorder::start(name, moviefps, moview ? moview : screen->w, movieh ? movieh : screen->h, moviesound!=0);
+    else if(!recorder::isrecording()) recorder::start(name, moviefps, moview ? moview : screenw, movieh ? movieh : screenh, moviesound!=0);
 }
 
 COMMAND(0, movie, "s");

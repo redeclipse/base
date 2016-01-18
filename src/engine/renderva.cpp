@@ -846,7 +846,6 @@ void renderdepthobstacles(const vec &bbmin, const vec &bbmax, float scale, float
 
 VAR(0, oqdist, 0, 256, 1024);
 VAR(0, zpass, 0, 1, 1);
-VAR(0, glowpass, 0, 1, 1);
 VAR(0, envpass, 0, 1, 1);
 
 struct renderstate
