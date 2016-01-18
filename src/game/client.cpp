@@ -2018,6 +2018,13 @@ namespace client
                     parsemessages(lcn, t, q);
                     break;
                 }
+                
+                case N_WORLDEXEC:
+                {
+                    getstring(text, p);
+                    WITHWORLD(execute(text));
+                    break;
+                }
 
                 case N_SPHY: // simple phys events
                 {

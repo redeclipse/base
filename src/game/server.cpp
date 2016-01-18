@@ -3304,6 +3304,11 @@ namespace server
             flushmasteroutput();
         }
     }
+    
+    SVAR(0, ongamestart, "");
+    SVAR(0, onclientmapload, "");
+    ICOMMAND(0, srvout, "is", (int *i, char *s), srvoutf(*i, "%s", s));
+    ICOMMAND(0, getmapname, "", (), result(smapname));
 
     #include "capturemode.h"
     #include "defendmode.h"
@@ -3349,6 +3354,7 @@ namespace server
         }
         copystring(smapname, reqmap);
         sendf(-1, 1, "risi3", N_MAPCHANGE, smapname, gamemode, mutators, smapcrc);
+        sendf(-1, 1, "ris", N_WORLDEXEC, onclientmapload);
 
         // server modes
         if(m_capture(gamemode)) smode = &capturemode;
@@ -3829,6 +3835,14 @@ namespace server
         packetbuf p(MAXTRANS, ENET_PACKET_FLAG_RELIABLE);
         int chan = welcomepacket(p, ci);
         sendpacket(ci->clientnum, chan, p.finalize());
+    }
+    
+    void sendworldexec(clientinfo *ci)
+    {
+        packetbuf p(MAXTRANS, ENET_PACKET_FLAG_RELIABLE);
+        putint(p, N_WORLDEXEC);
+        sendstring(onclientmapload, p);
+        sendpacket(ci->clientnum, 1, p.finalize());
     }
 
     int welcomepacket(packetbuf &p, clientinfo *ci)
@@ -5068,6 +5082,7 @@ namespace server
                                 break;
                             }
                         }
+                        execute(ongamestart);
                         gamestate = G_S_PLAYING;
                         break;
                     }
@@ -5101,7 +5116,10 @@ namespace server
                         }
                         mapgameinfo = -1;
                     }
-                    default: gamestate = G_S_PLAYING; break;
+                    default:
+                        execute(ongamestart);
+                        gamestate = G_S_PLAYING;
+                        break;
                 }
                 if(gamestate == G_S_PLAYING)
                 {
@@ -5540,6 +5558,7 @@ namespace server
         sendwelcome(ci);
         if(restorescore(ci)) sendresume(ci);
         sendinitclient(ci);
+        sendworldexec(ci);
         int amt = numclients();
         if((ci->privilege&PRIV_TYPE) > PRIV_NONE)
         {
