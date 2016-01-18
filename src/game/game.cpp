@@ -2440,6 +2440,48 @@ namespace game
         return false;
     }
 
+    bool camcheck(vec &pos, int csize)
+    {
+        if(!insideworld(pos)) return false;
+        static struct cecam : physent
+        {
+            cecam()
+            {
+                physent::reset();
+                type = ENT_CAMERA;
+                state = CS_ALIVE;
+                height = zradius = radius = xradius = yradius = 2;
+            }
+        } c;
+        c.o = pos;
+        if(csize) c.o.z += csize;
+        if(!collide(&c, vec(0, 0, 0), 0, false))
+        {
+            pos = c.o;
+            return true;
+        }
+        if(csize) loopi(csize)
+        {
+            c.o.z -= 1;
+            if(!collide(&c, vec(0, 0, 0), 0, false))
+            {
+                pos = c.o;
+                return true;
+            }
+        }
+        static const int sphereyawchecks[8] = { 180, 135, 225, 90, 270, 45, 315 }, spherepitchchecks[5] = { 0, 45, -45, 89, -89 };
+        loopi(5) loopj(5) loopk(8)
+        {
+            c.o = vec(pos).add(vec(sphereyawchecks[k]*RAD, spherepitchchecks[j]*RAD).mul((i+1)*2));
+            if(!collide(&c, vec(0, 0, 0), 0, false))
+            {
+                pos = c.o;
+                return true;
+            }
+        }
+        return false;
+    }
+
     bool cameratv()
     {
         if(!tvmode(false)) return false;
@@ -2452,30 +2494,29 @@ namespace game
             loopv(entities::ents)
             {
                 gameentity &e = *(gameentity *)entities::ents[i];
-                cament *c = cameras.add(new cament(cameras.length(), cament::ENTITY, i));
-                c->o = e.o;
-                c->o.z += (e.type == PLAYERSTART ? actor[A_PLAYER].height : enttype[e.type].radius)+2;
+                if(e.type == MAPSOUND || e.type == MAPMODEL) continue;
+                vec pos = e.o;
+                if(!camcheck(pos, (e.type == PLAYERSTART ? actor[A_PLAYER].height : enttype[e.type].radius)+2)) continue;
+                cameras.add(new cament(cameras.length(), cament::ENTITY, i, pos));
             }
             ai::getwaypoints();
             loopv(ai::waypoints)
             {
                 ai::waypoint &w = ai::waypoints[i];
-                cament *c = cameras.add(new cament(cameras.length(), cament::WAYPOINT, i));
-                c->o = w.o;
-                c->o.z += actor[A_PLAYER].height+2;
+                vec pos = w.o;
+                if(!camcheck(pos, actor[A_PLAYER].height+2)) continue;
+                cameras.add(new cament(cameras.length(), cament::WAYPOINT, i, pos));
             }
             starttvcamdyn = cameras.length();
             loopv(players) if(players[i])
             {
                 gameent *d = players[i];
                 if(d->actortype >= A_ENEMY) continue;
-                cament *c = cameras.add(new cament(cameras.length(), cament::PLAYER, d->clientnum));
-                c->o = d->headpos();
-                c->player = d;
+                vec pos = d->headpos();
+                cameras.add(new cament(cameras.length(), cament::PLAYER, d->clientnum, pos, d));
             }
-            cament *c = cameras.add(new cament(cameras.length(), cament::PLAYER, player1->clientnum));
-            c->o = player1->headpos();
-            c->player = player1;
+            vec pos = player1->headpos();
+            cameras.add(new cament(cameras.length(), cament::PLAYER, player1->clientnum, pos, player1));
             if(m_capture(gamemode)) capture::checkcams(cameras);
             else if(m_defend(gamemode)) defend::checkcams(cameras);
             else if(m_bomber(gamemode)) bomber::checkcams(cameras);

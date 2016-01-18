@@ -1511,6 +1511,18 @@ struct cament
         reset();
         resetlast();
     }
+    cament(int p, int t, int n, vec &d) : cn(p), type(t), id(n), player(NULL), ignore(false), moveto(NULL)
+    {
+        reset();
+        resetlast();
+        o = d;
+    }
+    cament(int p, int t, int n, vec &c, gameent *d) : cn(p), type(t), id(n), player(d), ignore(false), moveto(NULL)
+    {
+        reset();
+        resetlast();
+        o = c;
+    }
     ~cament() {}
 
     void reset()
