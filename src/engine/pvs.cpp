@@ -1121,7 +1121,7 @@ void genpvs(int *viewcellsize)
     numviewcells = 0;
     genpvs_canceled = false;
     check_genpvs_progress = false;
-    SDL_TimerID timer = NULL;
+    SDL_TimerID timer = 0;
     int numthreads = pvsthreads > 0 ? pvsthreads : numcpus;
     if(numthreads<=1)
     {
