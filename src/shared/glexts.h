@@ -335,6 +335,23 @@ extern PFNGLBLITFRAMEBUFFERPROC         glBlitFramebuffer_;
 #define GL_RG32UI                         0x823C
 #endif
 
+#ifndef GL_EXT_texture_compression_latc
+#define GL_EXT_texture_compression_latc 1
+#define GL_COMPRESSED_LUMINANCE_LATC1_EXT              0x8C70
+#define GL_COMPRESSED_SIGNED_LUMINANCE_LATC1_EXT       0x8C71
+#define GL_COMPRESSED_LUMINANCE_ALPHA_LATC2_EXT        0x8C72
+#define GL_COMPRESSED_SIGNED_LUMINANCE_ALPHA_LATC2_EXT 0x8C73
+#endif
+
+// GL_ARB_texture_compression_rgtc
+#ifndef GL_ARB_texture_compression_rgtc
+#define GL_ARB_texture_compression_rgtc 1
+#define GL_COMPRESSED_RED_RGTC1           0x8DBB
+#define GL_COMPRESSED_SIGNED_RED_RGTC1    0x8DBC
+#define GL_COMPRESSED_RG_RGTC2            0x8DBD
+#define GL_COMPRESSED_SIGNED_RG_RGTC2     0x8DBE
+#endif
+
 // GL_ARB_map_buffer_range
 #ifndef GL_ARB_map_buffer_range
 #define GL_MAP_READ_BIT                   0x0001
@@ -404,10 +421,13 @@ typedef void (APIENTRYP PFNGLUNIFORMBLOCKBINDINGPROC) (GLuint program, GLuint un
 #define GL_RGB16F                         0x881B
 typedef void (APIENTRYP PFNGLBINDBUFFERRANGEPROC) (GLenum target, GLuint index, GLuint buffer, GLintptr offset, GLsizeiptr size);
 typedef void (APIENTRYP PFNGLBINDBUFFERBASEPROC) (GLenum target, GLuint index, GLuint buffer);
+typedef const GLubyte * (APIENTRYP PFNGLGETSTRINGIPROC) (GLenum name, GLuint index);
 #elif GL_GLEXT_VERSION < 43
 typedef void (APIENTRYP PFNGLBINDBUFFERRANGEPROC) (GLenum target, GLuint index, GLuint buffer, GLintptr offset, GLsizeiptr size);
 typedef void (APIENTRYP PFNGLBINDBUFFERBASEPROC) (GLenum target, GLuint index, GLuint buffer);
 #endif
+
+extern PFNGLGETSTRINGIPROC glGetStringi_;
 
 #ifndef GL_VERSION_3_1
 #define GL_VERSION_3_1 1

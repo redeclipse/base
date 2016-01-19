@@ -150,6 +150,7 @@ static void compileglslshader(GLenum type, GLuint &obj, const char *def, const c
     int numparts = 0;
     static const struct { int version; const char * const header; } glslversions[] =
     {
+        { 330, "#version 330\n" },
         { 150, "#version 150\n" },
         { 130, "#version 130\n" },
         { 120, "#version 120\n" }

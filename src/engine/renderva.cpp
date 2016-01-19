@@ -1453,7 +1453,7 @@ void loadcaustics(bool force)
     if(caustictex[0]) return;
     loopi(NUMCAUSTICS)
     {
-        defformatstring(name, "<grey><mad:-0.6,0.6>caustics/caust%.2d.png", i);
+        defformatstring(name, "<grey><noswizzle>caustics/caust%.2d.png", i);
         caustictex[i] = textureload(name);
     }
 }
@@ -1469,6 +1469,7 @@ void cleanupva()
 
 VAR(IDF_WORLD, causticscale, 1, 50, 10000);
 VAR(IDF_WORLD, causticmillis, 1, 75, 1000);
+FVAR(IDF_WORLD, causticcontrast, 0, 0.6f, 1);
 VARF(IDF_PERSIST, caustics, 0, 1, 1, loadcaustics());
 
 void setupcaustics(float blend)
@@ -1487,7 +1488,8 @@ void setupcaustics(float blend)
     SETSHADER(caustic);
     LOCALPARAM(texgenS, s);
     LOCALPARAM(texgenT, t);
-    LOCALPARAMF(frameoffset, blend*(1-frac), blend*frac, blend);
+    blend *= causticcontrast;
+    LOCALPARAMF(frameblend, blend*(1-frac), blend*frac, blend, 1 - blend);
 }
 
 void setupgeom(renderstate &cur)
@@ -1708,7 +1710,7 @@ void rendergeom(float causticspass, bool fogpass)
         glEnable(GL_BLEND);
 
         setupcaustics(causticspass);
-        glBlendFunc(GL_ZERO, GL_ONE_MINUS_SRC_COLOR);
+        glBlendFunc(GL_ZERO, GL_SRC_COLOR);
         if(fading) glColorMask(COLORMASK, GL_FALSE);
         rendergeommultipass(cur, RENDERPASS_CAUSTICS, fogpass);
         if(fading) glColorMask(COLORMASK, GL_TRUE);

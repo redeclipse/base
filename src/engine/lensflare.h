@@ -43,7 +43,7 @@ struct flarerenderer : partrenderer
     flare *flares;
 
     flarerenderer(const char *texname, int maxflares)
-        : partrenderer(texname, 3, PT_FLARE), maxflares(maxflares), numflares(0), shinetime(0)
+        : partrenderer(texname, 3, PT_FLARE|PT_SHADER), maxflares(maxflares), numflares(0), shinetime(0)
     {
         flares = new flare[maxflares];
     }
