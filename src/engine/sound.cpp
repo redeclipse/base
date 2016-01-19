@@ -439,12 +439,7 @@ void updatesound(int chan)
         if(!waiting)
         {
             Mix_Volume(chan, s.curvol);
-            if(!soundmono)
-            {
-                SDL_LockAudio(); // workaround for race condition in inside Mix_SetPanning
-                Mix_SetPanning(chan, 255-s.curpan, s.curpan);
-                SDL_UnlockAudio();
-            }
+            if(!soundmono) Mix_SetPanning(chan, 255-s.curpan, s.curpan);
         }
     }
     else
@@ -588,12 +583,6 @@ void removetrackedsounds(physent *d)
 
 void resetsound()
 {
-    const SDL_version *v = Mix_Linked_Version();
-    if(SDL_VERSIONNUM(v->major, v->minor, v->patch) <= SDL_VERSIONNUM(1, 2, 8))
-    {
-        conoutf("\frsound reset not available in-game due to SDL_mixer-1.2.8 bug, please restart for changes to take effect.");
-        return;
-    }
     clearchanges(CHANGE_SOUND);
     if(!nosound)
     {
