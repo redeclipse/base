@@ -1523,7 +1523,6 @@ extern void backup(const char *fname, const char *ext, int revision = 0, int sta
 extern void endianswap(void *, int, int);
 extern void seedMT(uint seed);
 extern uint randomMT();
-extern int guessnumcpus();
 extern void putint(ucharbuf &p, int n);
 extern void putint(packetbuf &p, int n);
 extern void putint(vector<uchar> &p, int n);

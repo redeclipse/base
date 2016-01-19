@@ -902,7 +902,7 @@ int main(int argc, char **argv)
 
     initing = NOT_INITING;
 
-    numcpus = clamp(guessnumcpus(), 1, 16);
+    numcpus = clamp(SDL_GetCPUCount(), 1, 16);
 
     conoutf("loading enet..");
     if(enet_initialize()<0) fatal("Unable to initialise network module");
