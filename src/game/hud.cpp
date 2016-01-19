@@ -493,7 +493,7 @@ namespace hud
     FVAR(IDF_PERSIST, radardamageblend, 0, 0.85f, 1);
     VAR(IDF_PERSIST, radardamagemin, 1, 10, VAR_MAX);
     VAR(IDF_PERSIST, radardamagemax, 1, 100, VAR_MAX);
-    VAR(IDF_PERSIST|IDF_HEX, radardamagecolour, 0, 0xFF8888, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, radardamagecolour, 0, 0xFF2222, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, radardamageburncolour, 0, 0xFF8822, 0xFFFFFF);
 
     VAR(IDF_PERSIST, radarhits, 0, 1, 2);
@@ -502,11 +502,18 @@ namespace hud
     VAR(IDF_PERSIST, radarhitsmerge, 0, 250, VAR_MAX);
     VAR(IDF_PERSIST, radarhitstime, 1, 250, VAR_MAX);
     VAR(IDF_PERSIST, radarhitsfade, 1, 3500, VAR_MAX);
-    FVAR(IDF_PERSIST, radarhitsswipe, 0, 3, 1000);
-    FVAR(IDF_PERSIST, radarhitsscale, 0, 1.35f, 1000);
+    FVAR(IDF_PERSIST, radarhitsswipe, 0, 7, 1000);
+    FVAR(IDF_PERSIST, radarhitsscale, 0, 2, 1000);
     FVAR(IDF_PERSIST, radarhitsblend, 0, 1, 1);
+    FVAR(IDF_PERSIST, radarhitsheight, -1000, 0, 1000);
+    FVAR(IDF_PERSIST, radarhitsoffset, -1000, 3, 1000);
+    VAR(IDF_PERSIST, radarhitsglow, 0, 1, 1);
+    FVAR(IDF_PERSIST, radarhitsglowblend, 0, 1, 1);
+    FVAR(IDF_PERSIST, radarhitsglowscale, 0, 2, 1000);
+    FVAR(IDF_PERSIST, radarhitsglowcolour, 0, 0.75f, 5);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, radarhitsglowtex, "textures/guihover", 3);
     VAR(IDF_PERSIST|IDF_HEX, radarhitsdamagecolour, 0, 0xFF4444, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, radarhitsburncolour, 0, 0xFF4422, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, radarhitsburncolour, 0, 0xFFAA44, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, radarhitshealcolour, 0, 0xFF44FF, 0xFFFFFF);
 
     VAR(IDF_PERSIST, showeditradar, 0, 1, 1);
@@ -711,7 +718,7 @@ namespace hud
     {
         return UI::textinput(str, len);
     }
- 
+
     bool keypress(int code, bool isdown)
     {
         if(curcompass) return keycmenu(code, isdown);
@@ -2215,14 +2222,16 @@ namespace hud
             if(game::focus->state == CS_SPECTATOR || game::focus->state == CS_EDITING) continue;
             gameent *a = game::getclient(d.clientnum);
             vec o = radarhitsfollow && a ? a->center() : d.dir;
-            o.z += actor[a ? a->actortype : A_PLAYER].height*0.75f;
+            o.z += actor[a ? a->actortype : A_PLAYER].height*radarhitsheight;
             float cx = 0, cy = 0, cz = 0;
             if(!vectocursor(o, cx, cy, cz)) continue;
             float hx = cx*w/radarhitsscale, hy = cy*h/radarhitsscale, fade = blend*radarhitsblend;
+            if(radarhitsoffset != 0) hx += FONTW*radarhitsoffset;
             if(millis <= radarhitstime)
             {
-                float amt = millis/float(radarhitstime);
-                hx -= FONTW*radarhitsswipe*(1-amt);
+                float amt = millis/float(radarhitstime), total = FONTW*radarhitsswipe*(1-amt);
+                if(radarhitsoffset < 0) hx -= total;
+                else hx += total;
                 fade *= amt;
             }
             else
@@ -2231,7 +2240,16 @@ namespace hud
                 hy -= FONTH*offset/float(radarhitstime);
                 fade *= 1-(offset/float(radarhitsfade));
             }
-            draw_textx("%c%d", hx, hy, int(d.colour.r*255), int(d.colour.g*255), int(d.colour.b*255), int(fade*255), TEXT_CENTERED, -1, -1, d.damage > 0 ? '-' : (d.damage < 0 ? '+' : '~'), d.damage < 0 ? 0-d.damage : d.damage);
+            defformatstring(text, "%c%d", d.damage > 0 ? '-' : (d.damage < 0 ? '+' : '~'), d.damage < 0 ? 0-d.damage : d.damage);
+            if(radarhitsglow)
+            {
+                float width = 0, height = 0;
+                text_boundsf(text, width, height, -1, TEXT_CENTERED);
+                gle::colorf(d.colour.r*radarhitsglowcolour, d.colour.g*radarhitsglowcolour, d.colour.b*radarhitsglowcolour, fade*radarhitsglowblend);
+                settexture(radarhitsglowtex);
+                drawtexture(hx-(width*radarhitsglowscale*0.5f), hy-(height*radarhitsglowscale*0.25f), width*radarhitsglowscale, height*radarhitsglowscale);
+            }
+            draw_textx("%s", hx, hy, int(d.colour.r*255), int(d.colour.g*255), int(d.colour.b*255), int(fade*255), TEXT_CENTERED, -1, -1, text);
         }
         pophudmatrix();
         popfont();
