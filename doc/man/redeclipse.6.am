@@ -129,12 +129,6 @@ If width not specified, also sets width to 4/3 of height. min is 320.
 This configuration is stored in init.cfg
 
 .TP
-.BR \-du {agf123}
-Set shader and glsl options. \'\fBa\fR' enables shadows and forces glsl off, \'\fBg\fR' enables shadows and forces glsl on, \'\fBf\fR' or no parameters disables shadows, 1-3 sets shader quality. Multiple options can be combined.
-.IP
-This configuration is stored in init.cfg
-
-.TP
 .BR \-dv {0|1}
 Turns vertical sync on or off. 0 to disable, 1 to enable. Defaults to 0.
 .IP
@@ -145,20 +139,6 @@ This configuration is stored in init.cfg
 Sets full-scene anti-aliasing (FSAA) to
 .I samples
 samples.
-.IP
-This configuration is stored in init.cfg
-
-.TP
-.BI \-dc depth
-Sets colour depth (bits per pixel) to
-.IR depth .
-.IP
-This configuration is stored in init.cfg
-
-.TP
-.BI \-ds bits
-Sets stencil buffer bits to
-.IR bits .
 .IP
 This configuration is stored in init.cfg
 
