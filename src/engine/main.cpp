@@ -315,7 +315,7 @@ void setupscreen()
     desktopw = desktop.w;
     desktoph = desktop.h;
 
-    if(scr_h < 0) scr_h = fullscreen ? dekstopw : SCR_DEFAULTH;
+    if(scr_h < 0) scr_h = fullscreen ? desktopw : SCR_DEFAULTH;
     if(scr_w < 0) scr_w = (scr_h*desktopw)/desktoph;
     scr_w = clamp(scr_w, SCR_MINW, SCR_MAXW);
     scr_h = clamp(scr_h, SCR_MINH, SCR_MAXH);
