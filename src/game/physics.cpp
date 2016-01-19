@@ -182,11 +182,11 @@ namespace physics
         {
             switch(d->actortype)
             {
-                case A_PLAYER: if(!(AA(e->actortype, abilities)&(1<<A_A_PLAYERS))) return true; break;
-                case A_BOT: if(!(AA(e->actortype, abilities)&(1<<A_A_BOTS))) return true; break;
-                default: if(!(AA(e->actortype, abilities)&(1<<A_A_ENEMIES))) return true; break;
+                case A_PLAYER: if(!(AA(e->actortype, abilities)&(1<<A_A_COLLIDE_PLAYERS))) return true; break;
+                case A_BOT: if(!(AA(e->actortype, abilities)&(1<<A_A_COLLIDE_BOTS))) return true; break;
+                default: if(!(AA(e->actortype, abilities)&(1<<A_A_COLLIDE_ENEMIES))) return true; break;
             }
-            if(m_team(game::gamemode, game::mutators) && d->team == e->team && !(AA(e->actortype, abilities)&(1<<A_A_TEAMDAMAGE)) && (proj || AA(e->actortype, abilities)&(1<<A_A_TDGHOST))) return true;
+            if(m_team(game::gamemode, game::mutators) && d->team == e->team && !(AA(e->actortype, abilities)&(1<<A_A_TEAMDAMAGE)) && (proj || AA(e->actortype, abilities)&(1<<A_A_TEAMDAMAGE_GHOST))) return true;
         }
         return false;
     }

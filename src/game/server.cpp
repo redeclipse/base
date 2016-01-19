@@ -4000,9 +4000,9 @@ namespace server
         {
             switch(d->state.actortype)
             {
-                case A_PLAYER: if(!(AA(e->state.actortype, abilities)&(1<<A_A_PLAYERS))) return true; break;
-                case A_BOT: if(!(AA(e->state.actortype, abilities)&(1<<A_A_BOTS))) return true; break;
-                default: if(!(AA(e->state.actortype, abilities)&(1<<A_A_ENEMIES))) return true; break;
+                case A_PLAYER: if(!(AA(e->state.actortype, abilities)&(1<<A_A_COLLIDE_PLAYERS))) return true; break;
+                case A_BOT: if(!(AA(e->state.actortype, abilities)&(1<<A_A_COLLIDE_BOTS))) return true; break;
+                default: if(!(AA(e->state.actortype, abilities)&(1<<A_A_COLLIDE_ENEMIES))) return true; break;
             }
             if(m_team(gamemode, mutators) && d->team == e->team && !(AA(e->state.actortype, abilities)&(1<<A_A_TEAMDAMAGE))) return true;
         }
