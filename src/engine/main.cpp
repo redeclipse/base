@@ -167,7 +167,6 @@ SDL_GLContext glcontext = NULL;
 VARF(0, scr_w, SCR_MINW, -1, SCR_MAXW, initwarning("screen resolution"));
 VARF(0, scr_h, SCR_MINH, -1, SCR_MAXH, initwarning("screen resolution"));
 VARF(0, depthbits, 0, 0, 32, initwarning("depth-buffer precision"));
-VARF(0, stencilbits, 0, 0, 32, initwarning("stencil-buffer precision"));
 VARF(0, fsaa, -1, -1, 16, initwarning("anti-aliasing"));
 
 void writeinitcfg()
@@ -181,7 +180,6 @@ void writeinitcfg()
     f->printf("scr_w %d\n", scr_w);
     f->printf("scr_h %d\n", scr_h);
     f->printf("depthbits %d\n", depthbits);
-    f->printf("stencilbits %d\n", stencilbits);
     f->printf("fsaa %d\n", fsaa);
     extern int soundmono, soundmixchans, soundbuflen, soundfreq;
     f->printf("soundmono %d\n", soundmono);
@@ -349,13 +347,11 @@ void setupscreen()
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     static int configs[] =
     {
-        0x7, /* try everything */
-        0x6, 0x5, 0x3, /* try disabling one at a time */
-        0x4, 0x2, 0x1, /* try disabling two at a time */
+        0x3, /* try everything */
+        0x2, 0x1, /* try disabling one at a time */
         0 /* try disabling everything */
     };
     int config = 0;
-    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 0);
     if(!depthbits) SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
     if(!fsaa)
     {
@@ -366,19 +362,12 @@ void setupscreen()
     {
         config = configs[i];
         if(!depthbits && config&1) continue;
-        if(!stencilbits && config&2) continue;
-        if(fsaa<=0 && config&4) continue;
+        if(fsaa<=0 && config&2) continue;
         if(depthbits) SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, config&1 ? depthbits : 24);
-        if(stencilbits)
-        {
-            hasstencil = config&2 ? stencilbits : 0;
-            SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, hasstencil);
-        }
-        else hasstencil = 0;
         if(fsaa>0)
         {
-            SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, config&4 ? 1 : 0);
-            SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, config&4 ? fsaa : 0);
+            SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, config&2 ? 1 : 0);
+            SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, config&2 ? fsaa : 0);
         }
         glcontext = SDL_GL_CreateContext(screen);
     }
@@ -386,8 +375,7 @@ void setupscreen()
     else
     {
         if(depthbits && (config&1)==0) conoutf("\fr%d bit z-buffer not supported - disabling", depthbits);
-        if(stencilbits && (config&2)==0) conoutf("\frStencil buffer not supported - disabling");
-        if(fsaa>0 && (config&4)==0) conoutf("\fr%dx anti-aliasing not supported - disabling", fsaa);
+        if(fsaa>0 && (config&2)==0) conoutf("\fr%dx anti-aliasing not supported - disabling", fsaa);
     }
 
     SDL_GetWindowSize(screen, &screenw, &screenh);
@@ -914,7 +902,7 @@ int main(int argc, char **argv)
                     case 'a': fsaa = atoi(&argv[i][3]); break;
                     case 'v': vsync = atoi(&argv[i][3]); if(vsync < 0) { vsynctear = 1; vsync = 1; } else vsynctear = 0; break;
                     case 'f': fullscreen = atoi(&argv[i][3]); break;
-                    case 's': stencilbits = atoi(&argv[i][3]); break;
+                    case 's': /* compat, ignore */ break;
                     case 'u': /* compat, ignore */ break;
                     default: conoutf("\frunknown display option %c", argv[i][2]); break;
                 }

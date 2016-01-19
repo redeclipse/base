@@ -527,9 +527,8 @@ VARF(IDF_PERSIST, reflectsize, 6, 8, 10, cleanreflections());
 void genwatertex(GLuint &tex, GLuint &fb, GLuint &db, bool refract = false)
 {
     static const GLenum colorfmts[] = { GL_RGBA, GL_RGBA8, GL_RGB, GL_RGB8, GL_FALSE },
-                        depthfmts[] = { GL_DEPTH_STENCIL, GL_DEPTH24_STENCIL8, GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT16, GL_DEPTH_COMPONENT32, GL_FALSE };
-    const int stencilfmts = 2;
-    static GLenum reflectfmt = GL_FALSE, refractfmt = GL_FALSE, depthfmt = GL_FALSE, stencilfmt = GL_FALSE;
+                        depthfmts[] = { GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT16, GL_DEPTH_COMPONENT32, GL_FALSE };
+    static GLenum reflectfmt = GL_FALSE, refractfmt = GL_FALSE, depthfmt = GL_FALSE;
     static bool usingalpha = false;
     bool needsalpha = refract && waterrefract && waterfade;
     if(refract && usingalpha!=needsalpha)
@@ -567,14 +566,13 @@ void genwatertex(GLuint &tex, GLuint &fb, GLuint &db, bool refract = false)
 
     delete[] buf;
 
-    if(!db) { glGenRenderbuffers_(1, &db); depthfmt = stencilfmt = GL_FALSE; }
+    if(!db) { glGenRenderbuffers_(1, &db); depthfmt = GL_FALSE; }
     if(!depthfmt) glBindRenderbuffer_(GL_RENDERBUFFER, db);
-    find = hasstencil && hasDS ? 0 : stencilfmts;
+    find = 0;
     do
     {
         if(!depthfmt) glRenderbufferStorage_(GL_RENDERBUFFER, depthfmts[find], size, size);
         glFramebufferRenderbuffer_(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, db);
-        if(depthfmt ? stencilfmt : find<stencilfmts) glFramebufferRenderbuffer_(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, db);
         if(glCheckFramebufferStatus_(GL_FRAMEBUFFER)==GL_FRAMEBUFFER_COMPLETE) break;
     }
     while(!depthfmt && depthfmts[++find]);
@@ -582,7 +580,6 @@ void genwatertex(GLuint &tex, GLuint &fb, GLuint &db, bool refract = false)
     {
         glBindRenderbuffer_(GL_RENDERBUFFER, 0);
         depthfmt = depthfmts[find];
-        stencilfmt = find<stencilfmts ? depthfmt : GL_FALSE;
     }
 
     glBindFramebuffer_(GL_FRAMEBUFFER, 0);
@@ -793,11 +790,11 @@ void maskreflection(Reflection &ref, float offset, bool reflect, bool clear = fa
     if(!maskreflect)
     {
         if(clear) glClearColor(color.r, color.g, color.b, 1);
-        glClear(GL_DEPTH_BUFFER_BIT | (clear ? GL_COLOR_BUFFER_BIT : 0) | (hasstencil && hasDS ? GL_STENCIL_BUFFER_BIT : 0));
+        glClear(GL_DEPTH_BUFFER_BIT | (clear ? GL_COLOR_BUFFER_BIT : 0));
         return;
     }
     glClearDepth(0);
-    glClear(GL_DEPTH_BUFFER_BIT | (hasstencil && hasDS ? GL_STENCIL_BUFFER_BIT : 0));
+    glClear(GL_DEPTH_BUFFER_BIT);
     glClearDepth(1);
     glDepthRange(1, 1);
     glDepthFunc(GL_ALWAYS);
