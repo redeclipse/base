@@ -174,9 +174,9 @@ namespace physics
         return false;
     }
 
-    bool isghost(gameent *d, gameent *e)
+    bool isghost(gameent *d, gameent *e, bool proj)
     {
-        if(d == e) return false;
+        if(d == e && !proj) return false;
         if((d->actortype < A_ENEMY || !e || e->actortype < A_ENEMY) && m_ghost(game::gamemode, game::mutators)) return true;
         if(e)
         {
@@ -186,7 +186,7 @@ namespace physics
                 case A_BOT: if(!(AA(e->actortype, abilities)&(1<<A_A_BOTS))) return true; break;
                 default: if(!(AA(e->actortype, abilities)&(1<<A_A_ENEMIES))) return true; break;
             }
-            if(m_team(game::gamemode, game::mutators) && d->team == e->team && !(AA(e->actortype, abilities)&(1<<A_A_TEAMDAMAGE))) return true;
+            if(m_team(game::gamemode, game::mutators) && d->team == e->team && !(AA(e->actortype, abilities)&(1<<A_A_TEAMDAMAGE)) && (proj || AA(e->actortype, abilities)&(1<<A_A_TDGHOST))) return true;
         }
         return false;
     }
@@ -194,16 +194,16 @@ namespace physics
     bool issolid(physent *d, physent *e, bool esc, bool impact, bool reverse)
     {
         if(d == e) return false; // don't collide with themself
-        if(e && e->type == ENT_PROJ && d->state == CS_ALIVE)
+        if(e && projent::is(e) && d->state == CS_ALIVE)
         {
             projent *p = (projent *)e;
             if(gameent::is(d))
             {
-                if(p->stick == d || isghost((gameent *)d, p->owner)) return false;
+                if(p->stick == d || isghost((gameent *)d, p->owner, true)) return false;
                 if(impact && (p->hit == d || !(p->projcollide&COLLIDE_PLAYER))) return false;
                 if(p->owner == d && (!(p->projcollide&COLLIDE_OWNER) || (esc && !p->escaped))) return false;
             }
-            else if(d->type == ENT_PROJ)
+            else if(projent::is(d))
             {
                 projent *q = (projent *)d;
                 if(p->projtype == PRJ_SHOT && q->projtype == PRJ_SHOT)
@@ -217,7 +217,7 @@ namespace physics
         if(gameent::is(d))
         {
             if(d->state != CS_ALIVE) return false;
-            if(isghost((gameent *)d, (gameent *)(e && gameent::is(e) ? e : NULL))) return false;
+            if(isghost((gameent *)d, (gameent *)(e && gameent::is(e) ? e : NULL), projent::is(d))) return false;
             if(((gameent *)d)->protect(lastmillis, m_protect(game::gamemode, game::mutators))) return false;
             return true;
         }

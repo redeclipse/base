@@ -71,7 +71,7 @@ namespace projs
         if(v->actortype < A_ENEMY)
         {
             if(v == target && !damageself) nodamage++;
-            else if(physics::isghost(target, v)) nodamage++;
+            else if(physics::isghost(target, v, true)) nodamage++;
         }
 
         if(nodamage || !hitdealt(flags))
@@ -2349,7 +2349,7 @@ namespace projs
 
     void fadeproj(projent &proj, float &trans, float &size)
     {
-        if(proj.projtype == PRJ_SHOT && proj.owner && physics::isghost(proj.owner, game::focus)) trans *= 0.5f;
+        if(proj.projtype == PRJ_SHOT && proj.owner && physics::isghost(proj.owner, game::focus, true)) trans *= 0.5f;
         if(proj.fadetime && proj.lifemillis)
         {
             int interval = min(proj.lifemillis, proj.fadetime);

@@ -1573,7 +1573,7 @@ namespace client
 namespace physics
 {
     extern int smoothmove, smoothdist;
-    extern bool isghost(gameent *d, gameent *e);
+    extern bool isghost(gameent *d, gameent *e, bool proj = false);
     extern bool carryaffinity(gameent *d);
     extern bool dropaffinity(gameent *d);
     extern bool secondaryweap(gameent *d, bool zoom = false);

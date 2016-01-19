@@ -3995,7 +3995,6 @@ namespace server
 
     bool isghost(clientinfo *d, clientinfo *e)
     {
-        if(d == e) return false;
         if((d->state.actortype < A_ENEMY || !e || e->state.actortype < A_ENEMY) && m_ghost(gamemode, mutators)) return true;
         if(e)
         {
