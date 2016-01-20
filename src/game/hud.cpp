@@ -449,10 +449,10 @@ namespace hud
     FVAR(IDF_PERSIST, radarblend, 0, 0.85f, 1);
     FVAR(IDF_PERSIST, radarplayerblend, 0, 1, 1);
     FVAR(IDF_PERSIST, radarplayerhintblend, 0, 0.65f, 1);
-    FVAR(IDF_PERSIST, radarplayersize, 0, 0.35f, 1000);
+    FVAR(IDF_PERSIST, radarplayersize, 0, 0.3f, 1000);
     FVAR(IDF_PERSIST, radarplayerhintsize, 0, 0.8f, 1);
     FVAR(IDF_PERSIST, radarblipblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, radarblipsize, 0, 0.35f, 1000);
+    FVAR(IDF_PERSIST, radarblipsize, 0, 0.3f, 1000);
     FVAR(IDF_PERSIST, radarbliprotate, 0, 1, 1);
     FVAR(IDF_PERSIST, radaraffinityblend, 0, 1, 1);
     FVAR(IDF_PERSIST, radaraffinitysize, 0, 1, 1000);
