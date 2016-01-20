@@ -972,7 +972,7 @@ struct gameent : dynent, clientstate
     ai::aiinfo *ai;
     int team, clientnum, privilege, projid, lastnode, checkpoint, cplast, respawned, suicided, lastupdate, lastpredict, plag, ping, lastflag, totaldamage,
         actiontime[AC_MAX], impulse[IM_MAX], smoothmillis, turnmillis, turnside, aschan, cschan, vschan, wschan, pschan, sschan[2],
-        lasthit, lastteamhit, lastkill, lastattacker, lastpoints, quake, spree, lastfoot;
+        lasthit, lastteamhit, lastkill, lastattacker, lastpoints, quake, spree, lastfoot, lastimpulsecollect;
     float deltayaw, deltapitch, newyaw, newpitch, turnyaw, turnroll;
     vec head, torso, muzzle, origin, eject[2], waist, jet[3], legs, hrad, trad, lrad, toe[2];
     bool action[AC_MAX], conopen, k_up, k_down, k_left, k_right, obliterated, headless;
@@ -1066,7 +1066,7 @@ struct gameent : dynent, clientstate
     void clearstate(int gamemode, int mutators)
     {
         loopi(IM_MAX) if(i != IM_METER || !m_race(gamemode) || !m_gsp2(gamemode, mutators)) impulse[i] = 0;
-        lasthit = lastkill = quake = turnmillis = turnside = 0;
+        lasthit = lastkill = quake = turnmillis = turnside = lastimpulsecollect = 0;
         turnroll = turnyaw = 0;
         lastteamhit = lastflag = respawned = suicided = lastnode = lastfoot = -1;
         obit[0] = '\0';
@@ -1728,6 +1728,7 @@ namespace game
     extern float rescale(gameent *d);
     extern float opacity(gameent *d, bool third = true);
     extern void footstep(gameent *d, int curfoot = -1);
+    extern bool canregenimpulse(gameent *d);
 }
 
 namespace entities

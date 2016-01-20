@@ -1168,8 +1168,11 @@ namespace game
                     d->impulse[IM_COLLECT] = 0;
                 }
                 else d->impulse[IM_COLLECT] += curtime;
+                if(!d->lastimpulsecollect) d->lastimpulsecollect = lastmillis;
             }
+            else d->lastimpulsecollect = 0;
         }
+        else d->lastimpulsecollect = 0;
 
         loopi(W_MAX) if(d->weapstate[i] != W_S_IDLE && (!gs_playing(gamestate) || d->weapselect != i || d->weapstate[i] != W_S_ZOOM))
         {

@@ -2646,9 +2646,9 @@ namespace hud
         return sy;
     }
 
-    int drawbar(int x, int y, int w, int h, int type, float top, float bottom, float fade, float amt, const char *tex, const char *bgtex, int tone, float bgglow, float blend, float pulse, float throb)
+    int drawbar(int x, int y, int w, int h, int type, float top, float bottom, float fade, float amt, const char *tex, const char *bgtex, int tone, float bgglow, float blend, float pulse, float throb, float throbscale)
     {
-        int offset = int(w*throb), id = clamp(type, 0, 3);
+        int offset = int(w*(throb >= 0 ? throb*throbscale : 0.f)), id = clamp(type, 0, 3);
         if(bgtex && *bgtex)
         {
             int glow = 0;
@@ -2658,7 +2658,7 @@ namespace hud
             {
                 int millis = lastmillis%1000;
                 float skew = (millis <= 500 ? millis/500.f : 1.f-((millis-500)/500.f))*pulse;
-                flashcolourf(gr, gg, gb, gf, id != 1 && (id != 2 || throb <= 0) ? 0.5f : 1.f, 0.f, id != 1 && (id != 2 || throb <= 0) ? 0.5f : 0.f, 1.f, skew);
+                flashcolourf(gr, gg, gb, gf, id != 1 && (id != 2 || throb < 0) ? 0.5f : 1.f, 0.f, id != 1 && (id != 2 || throb < 0) ? 0.5f : 0.f, 1.f, skew);
                 glow += int(w*bgglow*skew);
             }
             settexture(bgtex, 3);
@@ -2674,35 +2674,45 @@ namespace hud
         float btoff = 1-bottom, middle = btoff-top;
         int cx = x-offset, cy = y-h+int(h*top)-offset, cw = w+offset*2, ch = int(h*middle)+offset*2;
         const float margin = 0.1f;
+        vec lastbarcolour(0, 0, 0);
         loopi(4)
         {
             const barstep &step = barsteps[id][i];
+            vec colour(step.r, step.g, step.b);
+            if(throb >= 0 && i == int(roundf(3*throb))) switch(id)
+            {
+                case 1: colour = vec(barsteps[id][3].r, barsteps[id][3].g, barsteps[id][3].b); break;
+                case 2: colour = vec(1, 1, 1); break;
+                default: break;
+            }
             if(i > 0)
             {
                 if(step.amt > amt && barsteps[id][i-1].amt <= amt)
                 {
                     float hoff = 1 - amt, hlerp = (amt - barsteps[id][i-1].amt) / (step.amt - barsteps[id][i-1].amt),
-                          r = step.r*hlerp + barsteps[id][i-1].r*(1-hlerp),
-                          g = step.g*hlerp + barsteps[id][i-1].g*(1-hlerp),
-                          b = step.b*hlerp + barsteps[id][i-1].b*(1-hlerp);
+                          r = colour.r*hlerp + lastbarcolour.r*(1-hlerp),
+                          g = colour.g*hlerp + lastbarcolour.g*(1-hlerp),
+                          b = colour.b*hlerp + lastbarcolour.b*(1-hlerp);
                     gle::attribf(cx, cy + hoff*ch); gle::attribf(0, hoff*middle+top); gle::attribf(r, g, b, fade);
                     gle::attribf(cx + cw, cy + hoff*ch); gle::attribf(1, hoff*middle+top); gle::attribf(r, g, b, fade);
                 }
                 if(step.amt > amt + margin)
                 {
                     float hoff = 1 - (amt + margin), hlerp = (amt + margin - barsteps[id][i-1].amt) / (step.amt - barsteps[id][i-1].amt),
-                          r = step.r*hlerp + barsteps[id][i-1].r*(1-hlerp),
-                          g = step.g*hlerp + barsteps[id][i-1].g*(1-hlerp),
-                          b = step.b*hlerp + barsteps[id][i-1].b*(1-hlerp);
+                          r = colour.r*hlerp + lastbarcolour.r*(1-hlerp),
+                          g = colour.g*hlerp + lastbarcolour.g*(1-hlerp),
+                          b = colour.b*hlerp + lastbarcolour.b*(1-hlerp);
                     gle::attribf(cx, cy + hoff*ch); gle::attribf(0, hoff*middle+top); gle::attribf(r, g, b, 0);
                     gle::attribf(cx + cw, cy + hoff*ch); gle::attribf(1, hoff*middle+top); gle::attribf(r, g, b, 0);
+                    lastbarcolour = colour;
                     break;
                 }
             }
-            float off = 1 - step.amt, hfade = fade, r = step.r, g = step.g, b = step.b;
+            float off = 1 - step.amt, hfade = fade, r = colour.r, g = colour.g, b = colour.b;
             if(step.amt > amt) hfade *= 1 - (step.amt - amt)/margin;
             gle::attribf(cx, cy + off*ch); gle::attribf(0, off*middle+top); gle::attribf(r, g, b, hfade);
             gle::attribf(cx + cw, cy + off*ch); gle::attribf(1, off*middle+top); gle::attribf(r, g, b, hfade);
+            lastbarcolour = colour;
         }
         gle::end();
         return h;
@@ -2718,17 +2728,17 @@ namespace hud
             {
                 float fade = blend*inventoryhealthblend;
                 int heal = m_health(game::gamemode, game::mutators, game::focus->actortype);
-                float hpulse = inventoryhealthflash ? clamp((heal-game::focus->health)/float(heal), 0.f, 1.f) : 0.f,
-                      hthrob = inventoryhealththrob > 0 && regentime && game::focus->lastregen && lastmillis-game::focus->lastregen <= regentime ? clamp((lastmillis-game::focus->lastregen)/float(regentime/2), 0.f, 2.f) : 0.f;
+                float pulse = inventoryhealthflash ? clamp((heal-game::focus->health)/float(heal), 0.f, 1.f) : 0.f,
+                      throb = inventoryhealththrob > 0 && regentime && game::focus->lastregen && lastmillis-game::focus->lastregen <= regentime ? clamp((lastmillis-game::focus->lastregen)/float(regentime), 0.f, 1.f) : -1.f;
                 if(inventoryhealth&2)
-                    sy += drawbar(x, y, s, size, 1, inventoryhealthbartop, inventoryhealthbarbottom, fade, clamp(game::focus->health/float(heal), 0.f, 1.f), healthtex, healthbgtex, inventorytone, inventoryhealthbgglow, inventoryhealthbgblend, hpulse, (hthrob > 1.f ? 1.f-hthrob : hthrob)*inventoryhealththrob);
+                    sy += drawbar(x, y, s, size, 1, inventoryhealthbartop, inventoryhealthbarbottom, fade, clamp(game::focus->health/float(heal), 0.f, 1.f), healthtex, healthbgtex, inventorytone, inventoryhealthbgglow, inventoryhealthbgblend, pulse, throb, inventoryhealththrob);
                 if(inventoryhealth&1)
                 {
                     float gr = 1, gg = 1, gb = 1;
-                    if(hpulse > 0)
+                    if(pulse > 0)
                     {
                         int millis = lastmillis%1000;
-                        float amt = (millis <= 500 ? millis/500.f : 1.f-((millis-500)/500.f))*hpulse;
+                        float amt = (millis <= 500 ? millis/500.f : 1.f-((millis-500)/500.f))*pulse;
                         flashcolour(gr, gg, gb, 1.f, 0.f, 0.f, amt);
                     }
                     pushfont("super");
@@ -2747,16 +2757,13 @@ namespace hud
             if(game::focus->actortype < A_ENEMY && physics::allowimpulse(game::focus) && m_impulsemeter(game::gamemode, game::mutators) && inventoryimpulse)
             {
                 float fade = blend*inventoryimpulseblend, span = 1-clamp(float(game::focus->impulse[IM_METER])/float(impulsemeter), 0.f, 1.f),
-                      pulse = inventoryimpulseflash && game::focus->impulse[IM_METER] ? 1-span : 0.f, throb = 0, gr = 1, gg = 1, gb = 1;
+                      pulse = inventoryimpulseflash && game::focus->impulse[IM_METER] ? 1-span : 0.f,
+                      throb = game::canregenimpulse(game::focus) && game::focus->impulse[IM_METER] > 0 && game::focus->lastimpulsecollect ? clamp(((lastmillis-game::focus->lastimpulsecollect)%1000)/1000.f, 0.f, 1.f) : -1.f,
+                      gr = 1, gg = 1, gb = 1;
                 flashcolour(gr, gg, gb, 0.25f, 0.25f, 0.25f, 1-span);
-                if(pulse > 0 && inventoryimpulsethrob > 0 && impulsemeter-game::focus->impulse[IM_METER] < impulsecost)
-                {
-                    int millis = lastmillis%1000;
-                    throb = millis <= 500 ? millis/500.f : 1.f-((millis-500)/500.f);
-                    flashcolour(gr, gg, gb, 1.f, 0.f, 0.f, throb);
-                }
+                if(pulse > 0 && impulsemeter-game::focus->impulse[IM_METER] < impulsecost) flashcolour(gr, gg, gb, 1.f, 0.f, 0.f, clamp(lastmillis%1000/1000.f, 0.f, 1.f));
                 if(inventoryimpulse&2)
-                    sy += drawbar(x, y-sy, s, size, 2, inventoryimpulsebartop, inventoryimpulsebarbottom, fade, span, impulsetex, impulsebgtex, inventorytone, inventoryimpulsebgglow, inventoryimpulsebgblend, pulse, throb*inventoryimpulsethrob);
+                    sy += drawbar(x, y-sy, s, size, 2, inventoryimpulsebartop, inventoryimpulsebarbottom, fade, span, impulsetex, impulsebgtex, inventorytone, inventoryimpulsebgglow, inventoryimpulsebgblend, pulse, throb, inventoryimpulsethrob);
                 if(inventoryimpulse&1)
                 {
                     if(!(inventoryimpulse&2))
