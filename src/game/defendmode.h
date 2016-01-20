@@ -60,7 +60,6 @@ struct defendservmode : defendstate, servmode
 
     void update()
     {
-        endcheck();
         int t = (gamemillis/G(defendinterval))-((gamemillis-(curtime+scoresec))/G(defendinterval));
         if(t < 1) { scoresec += curtime; return; }
         else scoresec = 0;
@@ -132,29 +131,6 @@ struct defendservmode : defendstate, servmode
             putint(p, oi->clientnum);
             putint(p, SPHY_BUFF);
             putint(p, 1);
-        }
-    }
-
-    void winner(int team, int score)
-    {
-        sendf(-1, 1, "ri3", N_SCORE, team, score);
-        startintermission();
-    }
-
-    void endcheck()
-    {
-        if(m_balance(gamemode, mutators, teamspawns)) return;
-        int maxscore = G(defendlimit) ? G(defendlimit) : INT_MAX-1;
-        loopi(numteams(gamemode, mutators))
-        {
-            int steam = i+T_FIRST;
-            if(teamscore(steam).total >= maxscore)
-            {
-                teamscore(steam).total = maxscore;
-                ancmsgft(-1, S_V_NOTIFY, CON_EVENT, "\fyscore limit has been reached");
-                winner(steam, maxscore);
-                return;
-            }
         }
     }
 

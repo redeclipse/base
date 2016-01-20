@@ -85,11 +85,6 @@ struct captureservmode : capturestate, servmode
                         sendf(-1, 1, "ri5", N_SCOREAFFIN, ci->clientnum, i, k, score);
                         mutate(smuts, mut->scoreaffinity(ci));
                         givepoints(ci, G(capturepoints), m_points(gamemode, mutators), false);
-                        if(!m_balance(gamemode, mutators, teamspawns) && G(capturelimit) && score >= G(capturelimit))
-                        {
-                            ancmsgft(-1, S_V_NOTIFY, CON_EVENT, "\fyscore limit has been reached");
-                            startintermission();
-                        }
                     }
                     else sendf(-1, 1, "ri3", N_RETURNAFFIN, ci->clientnum, i);
                 }
@@ -161,11 +156,6 @@ struct captureservmode : capturestate, servmode
                     int score = addscore(ci->team);
                     sendf(-1, 1, "ri5", N_SCOREAFFIN, ci->clientnum, i, -1, score);
                     mutate(smuts, mut->scoreaffinity(ci));
-                    if(!m_balance(gamemode, mutators, teamspawns) && G(capturelimit) && score >= G(capturelimit))
-                    {
-                        ancmsgft(-1, S_V_NOTIFY, CON_EVENT, "\fyscore limit has been reached");
-                        startintermission();
-                    }
                 }
             }
             else if(f.owner < 0 && f.droptime && f.dropleft(gamemillis, capturestore) >= capturedelay)

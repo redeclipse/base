@@ -1697,34 +1697,43 @@ namespace server
             startintermission();
             return; // bail
         }
-        if(!m_balance(gamemode, mutators, teamspawns) && G(pointlimit) && m_dm(gamemode))
+        if(!m_balance(gamemode, mutators, teamspawns))
         {
-            if(m_team(gamemode, mutators))
+            int plimit = 0;
+            if(m_dm(gamemode)) plimit = G(pointlimit);
+            else if(m_capture(gamemode)) plimit = G(capturelimit);
+            else if(m_defend(gamemode)) plimit = G(defendlimit) ? G(defendlimit) : INT_MAX-1;
+            else if(m_bomber(gamemode)) plimit = m_gsp1(gamemode, mutators) ? G(bomberholdlimit) : G(bomberlimit);
+            else if(m_race(gamemode) && !m_gsp1(gamemode, mutators) && !m_gsp3(gamemode, mutators)) plimit = G(racelimit);
+            if(plimit)
             {
-                int best = -1;
-                loopi(numt) if(best < 0 || teamscore(i+T_FIRST).total > teamscore(best).total)
-                    best = i+T_FIRST;
-                if(best >= 0 && teamscore(best).total >= G(pointlimit))
+                if(m_team(gamemode, mutators))
                 {
-                    ancmsgft(-1, S_V_NOTIFY, CON_EVENT, "\fyscore limit has been reached");
-                    startintermission();
-                    return; // bail
+                    int best = -1;
+                    loopi(numt) if(best < 0 || teamscore(i+T_FIRST).total > teamscore(best).total)
+                        best = i+T_FIRST;
+                    if(best >= 0 && teamscore(best).total >= G(pointlimit))
+                    {
+                        ancmsgft(-1, S_V_NOTIFY, CON_EVENT, "\fyscore limit has been reached");
+                        startintermission();
+                        return; // bail
+                    }
                 }
-            }
-            else
-            {
-                int best = -1;
-                loopv(clients) if(clients[i]->state.actortype < A_ENEMY && (best < 0 || clients[i]->state.points > clients[best]->state.points))
-                    best = i;
-                if(best >= 0 && clients[best]->state.points >= G(pointlimit))
+                else
                 {
-                    ancmsgft(-1, S_V_NOTIFY, CON_EVENT, "\fyscore limit has been reached");
-                    startintermission();
-                    return; // bail
+                    int best = -1;
+                    loopv(clients) if(clients[i]->state.actortype < A_ENEMY && (best < 0 || clients[i]->state.points > clients[best]->state.points))
+                        best = i;
+                    if(best >= 0 && clients[best]->state.points >= G(pointlimit))
+                    {
+                        ancmsgft(-1, S_V_NOTIFY, CON_EVENT, "\fyscore limit has been reached");
+                        startintermission();
+                        return; // bail
+                    }
                 }
             }
         }
-        if(m_balance(gamemode, mutators, teamspawns) && gamelimit > 0 && curbalance < (numt-1))
+        else if(gamelimit > 0 && curbalance < (numt-1))
         {
             int delpart = min(gamelimit/(numt*2), G(balancedelay)), balpart = (gamelimit/numt*(curbalance+1))-delpart;
             if(gamemillis >= balpart)
@@ -1785,9 +1794,8 @@ namespace server
                 }
             }
         }
-        if(m_balteam(gamemode, mutators, 4) && gamestate != G_S_OVERTIME && gamemillis >= G(teambalancewait) &&
-           (!lastteambalance || gamemillis >= lastteambalance) && (!nextteambalance || gamemillis >= nextteambalance))
-                doteambalance(false);
+        if(m_balteam(gamemode, mutators, 4) && gamestate != G_S_OVERTIME && gamemillis >= G(teambalancewait) && (!lastteambalance || gamemillis >= lastteambalance) && (!nextteambalance || gamemillis >= nextteambalance))
+            doteambalance(false);
     }
 
     bool hasitem(int i)
