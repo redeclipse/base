@@ -791,9 +791,9 @@ struct clientstate
         {
             if(!m_race(gamemode) || m_gsp3(gamemode, mutators))
             {
-                if(s != W_GRENADE && G(spawngrenades) >= (m_insta(gamemode, mutators) ? 2 : 1))
+                if(s != W_GRENADE && AA(actortype, spawngrenades) >= (m_insta(gamemode, mutators) ? 2 : 1))
                     ammo[W_GRENADE] = max(1, W(W_GRENADE, ammomax));
-                if(s != W_MINE && !m_race(gamemode) && (m_kaboom(gamemode, mutators) || G(spawnmines) >= (m_insta(gamemode, mutators) ? 2 : 1)))
+                if(s != W_MINE && AA(actortype, spawnmines) >= (m_insta(gamemode, mutators) ? 2 : 1))
                     ammo[W_MINE] = max(1, W(W_MINE, ammomax));
             }
             if(m_loadout(gamemode, mutators))

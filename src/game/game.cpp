@@ -1002,7 +1002,7 @@ namespace game
 
     float spawnfade(gameent *d)
     {
-        int len = d->actortype >= A_ENEMY ? (actor[d->actortype].living ? min(ai::aideadfade, enemyspawntime) : 500) : m_delay(gamemode, mutators, d->team);
+        int len = m_delay(d->actortype, gamemode, mutators, d->team);
         if(len > 0)
         {
             int interval = min(len/3, ragdolleffect), over = max(len-interval, 1), millis = lastmillis-d->lastdeath;

@@ -2829,7 +2829,7 @@ namespace client
                     }
                     else if(!s->ai) s->resetinterp();
                     game::waiting.removeobj(s);
-                    if(s->state == CS_ALIVE) s->lastdeath = lastmillis; // so spawndelay shows properly
+                    if(s->state == CS_ALIVE) s->lastdeath = lastmillis; // so spawn delay shows properly
                     else entities::spawnplayer(s); // so they're not nowhere
                     s->state = CS_WAITING;
                     s->quarantine = false;

@@ -308,7 +308,7 @@ namespace ai
 
     extern avoidset obstacles, wpavoid;
     extern vec aitarget;
-    extern int aidebug, aideadfade, showaiinfo;
+    extern int aidebug, showaiinfo;
 
     extern void startmap(bool empty);
 

@@ -13,8 +13,6 @@ namespace ai
     VAR(IDF_PERSIST, showwaypointsdrop, 0, 1, 1);
     VAR(IDF_PERSIST, showwaypointsradius, 0, 256, VAR_MAX);
     VAR(IDF_PERSIST|IDF_HEX, showwaypointscolour, 0, 0xFF00FF, 0xFFFFFF);
-
-    VAR(IDF_PERSIST, aideadfade, 0, 10000, VAR_MAX);
     VAR(IDF_PERSIST, showaiinfo, 0, 0, 2); // 0/1 = shows/hides bot join/parts, 2 = show more verbose info
 
     bool dbgfocus(gameent *d)  { return d->ai && (!aidebugfocus || d == game::focus || (aidebugfocus != 2 && !game::focus->ai)); }

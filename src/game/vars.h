@@ -176,13 +176,6 @@ GVAR(IDF_MODERATOR, maxaliveminimum, 2, 4, VAR_MAX); // kicks in if alive >= thi
 GFVAR(IDF_MODERATOR, maxalivethreshold, 0, 0, FVAR_MAX); // .. or this percentage of clients
 
 GVAR(IDF_GAMEMOD, spawnrotate, 0, 2, 2); // 0 = let client decide, 1 = sequence, 2 = random
-GVAR(IDF_GAMEMOD, spawngrenades, 0, 0, 2); // 0 = never, 1 = all but insta/race, 2 = always
-GVAR(IDF_GAMEMOD, spawnmines, 0, 0, 2); // 0 = never, 1 = all but insta/race, 2 = always
-GVAR(IDF_GAMEMOD, spawndelay, 0, 5000, VAR_MAX); // delay before spawning in most modes
-GVAR(IDF_GAMEMOD, instadelay, 0, 3000, VAR_MAX); // .. in instagib matches
-GVAR(IDF_GAMEMOD, racedelay, 0, 1000, VAR_MAX); // .. in race matches
-GVAR(IDF_GAMEMOD, racedelayex, 0, 3000, VAR_MAX); // .. for defenders in gauntlet race matches
-GVAR(IDF_GAMEMOD, bomberdelay, 0, 3000, VAR_MAX); // delay before spawning in bomber
 GVAR(IDF_GAMEMOD, spawnprotect, 0, 3000, VAR_MAX); // delay before damage can be dealt to spawning player
 GVAR(IDF_GAMEMOD, duelprotect, 0, 3000, VAR_MAX); // .. in duel/survivor matches
 GVAR(IDF_GAMEMOD, survivorprotect, 0, 5000, VAR_MAX); // .. in duel/survivor matches

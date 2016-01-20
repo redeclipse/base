@@ -1431,7 +1431,7 @@ namespace hud
             gameent *target = game::player1->state != CS_SPECTATOR ? game::player1 : game::focus;
             if(target->state == CS_DEAD || target->state == CS_WAITING)
             {
-                int delay = target->respawnwait(lastmillis, m_delay(game::gamemode, game::mutators, target->team));
+                int delay = target->respawnwait(lastmillis, m_delay(target->actortype, game::gamemode, game::mutators, target->team));
                 SEARCHBINDCACHE(attackkey)("primary", 0);
                 if(delay || m_duke(game::gamemode, game::mutators) || (m_play(game::gamemode) && maxalive > 0))
                 {
@@ -2034,7 +2034,7 @@ namespace hud
         {
             if(d->clientnum == game::focus->lastattacker)
                 killer = (radarplayerkill >= 2 || d->actortype == A_PLAYER) && (d->state == CS_ALIVE || d->state == CS_DEAD || d->state == CS_WAITING);
-            if(d == game::focus) self = lastmillis-game::focus->lastdeath <= m_delay(game::gamemode, game::mutators, d->team);
+            if(d == game::focus) self = lastmillis-game::focus->lastdeath <= m_delay(game::focus->actortype, game::gamemode, game::mutators, d->team);
         }
         if(d == game::focus && !self) return;
         vec dir = vec(d->o).sub(camera1->o);
@@ -2083,7 +2083,7 @@ namespace hud
                 int millis = d->lastdeath ? lastmillis-d->lastdeath : 0;
                 if(millis > 0)
                 {
-                    int len = min(d->actortype >= A_ENEMY ? (actor[d->actortype].living ? min(ai::aideadfade, enemyspawntime ? enemyspawntime : INT_MAX-1) : 500) : m_delay(game::gamemode, game::mutators, d->team), 2500);
+                    int len = min(m_delay(d->actortype, game::gamemode, game::mutators, d->team), 2500);
                     if(len > 0) fade *= clamp(float(len-millis)/float(len), 0.f, 1.f);
                     else return;
                 }

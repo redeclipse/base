@@ -795,7 +795,7 @@ namespace server
                 return true;
             }
             if(m_balance(gamemode, mutators, teamspawns) && G(balancenospawn) && nextbalance && m_balreset(gamemode, mutators) && canbalancenow()) return false;
-            int delay = ci->state.actortype >= A_ENEMY && ci->state.lastdeath ? G(enemyspawntime) : m_delay(gamemode, mutators, ci->team);
+            int delay = m_delay(ci->state.actortype, gamemode, mutators, ci->team);
             if(delay && ci->state.respawnwait(gamemillis, delay)) return false;
             if(spawnqueue() && playing.find(ci) < 0)
             {

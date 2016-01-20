@@ -155,6 +155,33 @@ APFVAR(IDF_GAMEMOD, weight, 0, FVAR_MAX,
 APFVAR(IDF_GAMEMOD, scale, FVAR_NONZERO, FVAR_MAX,
     1,              1,              1,              1,              1
 );
+APVAR(IDF_GAMEMOD, spawndelay, 0, VAR_MAX,
+    5000,          5000,            30000,          30000,          30000
+);
+APVAR(IDF_GAMEMOD, spawndelaybomber, 0, VAR_MAX,
+    3000,          3000,            30000,          30000,          30000
+);
+APVAR(IDF_GAMEMOD, spawndelaycapture, 0, VAR_MAX,
+    5000,          5000,            30000,          30000,          30000
+);
+APVAR(IDF_GAMEMOD, spawndelaydefend, 0, VAR_MAX,
+    5000,          5000,            30000,          30000,          30000
+);
+APVAR(IDF_GAMEMOD, spawndelaygauntlet, 0, VAR_MAX,
+    3000,          3000,            30000,          30000,          30000
+);
+APFVAR(IDF_GAMEMOD, spawndelayinstascale, 0, FVAR_MAX,
+    0.5f,          0.5f,            0.75f,          0.75f,          0.75f
+);
+APVAR(IDF_GAMEMOD, spawndelayrace, 0, VAR_MAX,
+    1000,          1000,            10000,          10000,          10000
+);
+APVAR(IDF_GAMEMOD, spawngrenades, 0, 2,
+    0,              0,              0,              0,              0
+);
+APVAR(IDF_GAMEMOD, spawnmines, 0, 2,
+    0,              0,              0,              0,              0
+);
 APFVAR(IDF_GAMEMOD, speed, 0, FVAR_MAX,
     50,             50,             0,              50,             40
 );
