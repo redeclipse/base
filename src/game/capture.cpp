@@ -94,7 +94,7 @@ namespace capture
         static string s; s[0] = '\0';
         loopv(f)
         {
-            defformatstring(d, "%s\f[%d]\f(%s)%s", i && named ? " " : "", TEAM(st.flags[f[i]].team, colour), hud::flagtex, named ? TEAM(st.flags[f[i]].team, name) : "");
+            defformatstring(d, "%s\f[%d]\f(%s)%s", i && named ? (i == f.length()-1 ? " & " : ", ") : "", TEAM(st.flags[f[i]].team, colour), hud::flagtex, named ? TEAM(st.flags[f[i]].team, name) : "");
             concatstring(s, d);
         }
         return s;
@@ -186,7 +186,7 @@ namespace capture
             {
                 pushfont("huge");
                 char *str = buildflagstr(hasflags, hasflags.length() <= 3);
-                ty += draw_textx("You are holding: \fs%s\fS", tx, ty, 255, 255, 255, int(255*blend), TEXT_CENTERED, -1, -1, str)*hud::eventscale;
+                ty += draw_textx("You are holding the \fs%s\fS %s", tx, ty, 255, 255, 255, int(255*blend), TEXT_CENTERED, -1, -1, str, hasflags.length() == 1 ? "flag" : "flags")*hud::eventscale;
                 popfont();
             }
         }
