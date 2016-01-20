@@ -498,6 +498,7 @@ namespace hud
 
     VAR(IDF_PERSIST, radarhits, 0, 1, 2);
     VAR(IDF_PERSIST, radarhitsheal, 0, 1, 1);
+    VAR(IDF_PERSIST, radarhitsself, 0, 0, 1);
     VAR(IDF_PERSIST, radarhitsfollow, 0, 0, 1);
     VAR(IDF_PERSIST, radarhitsmerge, 0, 250, VAR_MAX);
     VAR(IDF_PERSIST, radarhitstime, 1, 250, VAR_MAX);
@@ -773,7 +774,7 @@ namespace hud
 
     void hit(int n, const vec &loc, gameent *v, int weap, int flags)
     {
-        if(!n || (!radarhitsheal && n < 0)) return;
+        if(!n) return;
         vec colour = n <= 0 ? vec::hexcolor(radarhitshealcolour) : (wr_burns(weap, flags) ? vec::hexcolor(radarhitsburncolour) : (game::nogore || game::bloodscale <= 0 ? vec(1, 1, 1) : vec::hexcolor(radarhitsdamagecolour)));
         loopv(hitlocs)
         {
@@ -2221,6 +2222,7 @@ namespace hud
             if(millis >= radarhitstime+radarhitsfade || d.dir.iszero()) { hitlocs.remove(i--); continue; }
             if(game::focus->state == CS_SPECTATOR || game::focus->state == CS_EDITING) continue;
             gameent *a = game::getclient(d.clientnum);
+            if((!radarhitsheal && d.damage < 0) || (!radarhitsself && a == game::focus)) continue;
             vec o = radarhitsfollow && a ? a->center() : d.dir;
             o.z += actor[a ? a->actortype : A_PLAYER].height*radarhitsheight;
             float cx = 0, cy = 0, cz = 0;
