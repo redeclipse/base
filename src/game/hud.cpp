@@ -88,13 +88,13 @@ namespace hud
     VAR(IDF_PERSIST, conskipwarn, 0, 1, 1);
     VAR(IDF_PERSIST, capslockwarn, 0, 1, 1);
 
-    FVAR(IDF_PERSIST, noticeoffset, -1, 0.3f, 1);
+    FVAR(IDF_PERSIST, noticeoffset, -1, 0.35f, 1);
     FVAR(IDF_PERSIST, noticeblend, 0, 1, 1);
     FVAR(IDF_PERSIST, noticescale, 1e-4f, 1, 1000);
     VAR(IDF_PERSIST, noticetitle, 0, 10000, 60000);
-    FVAR(IDF_PERSIST, eventoffset, -1, 0.3f, 1);
+    FVAR(IDF_PERSIST, eventoffset, -1, 0.5f, 1);
     FVAR(IDF_PERSIST, eventblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, eventscale, 1e-4f, 2.5f, 1000);
+    FVAR(IDF_PERSIST, eventscale, 1e-4f, 3.f, 1000);
     VAR(IDF_PERSIST, noticetime, 0, 5000, VAR_MAX);
     VAR(IDF_PERSIST, obitnotices, 0, 2, 2);
     VAR(IDF_PERSIST, teamnotices, 0, 2, 2);
