@@ -80,7 +80,7 @@ namespace ai
         {
             int prot = m_protect(game::gamemode, game::mutators);
             if((d->actortype >= A_ENEMY || !d->protect(lastmillis, prot)) && targetable(d, e, true))
-                return d->canshoot(d->weapselect, alt ? HIT_ALT : 0, m_weapon(game::gamemode, game::mutators), lastmillis, (1<<W_S_RELOAD));
+                return d->canshoot(d->weapselect, alt ? HIT_ALT : 0, m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis, (1<<W_S_RELOAD));
         }
         return false;
     }
@@ -143,21 +143,21 @@ namespace ai
     int weappref(gameent *d)
     {
         if(d->loadweap.length()) return d->loadweap[0];
-        return m_weapon(game::gamemode, game::mutators);
+        return m_weapon(d->actortype, game::gamemode, game::mutators);
     }
 
     bool hasweap(gameent *d, int weap)
     {
         if(!isweap(weap)) return false;
-        if(w_carry(weap, m_weapon(game::gamemode, game::mutators)))
-            return d->hasweap(weap, m_weapon(game::gamemode, game::mutators));
+        if(w_carry(weap, m_weapon(d->actortype, game::gamemode, game::mutators)))
+            return d->hasweap(weap, m_weapon(d->actortype, game::gamemode, game::mutators));
         return d->ammo[weap] >= W(weap, ammomax);
     }
 
     bool wantsweap(gameent *d, int weap)
     {
-        if(!isweap(weap) || hasweap(d, weap)) return false;
-        if(d->carry(m_weapon(game::gamemode, game::mutators)) >= maxcarry && (hasweap(d, weappref(d)) || weap != weappref(d)))
+        if(!isweap(weap) || hasweap(d, weap) || !AA(d->actortype, maxcarry)) return false;
+        if(d->carry(m_weapon(d->actortype, game::gamemode, game::mutators)) >= AA(d->actortype, maxcarry) && (hasweap(d, weappref(d)) || weap != weappref(d)))
             return false;
         return true;
     }
@@ -498,7 +498,7 @@ namespace ai
     void items(gameent *d, aistate &b, vector<interest> &interests, bool force = false)
     {
         vec pos = d->feetpos();
-        int sweap = m_weapon(game::gamemode, game::mutators);
+        int sweap = m_weapon(d->actortype, game::gamemode, game::mutators);
         loopj(entities::lastuse(EU_ITEM))
         {
             gameentity &e = *(gameentity *)entities::ents[j];
@@ -541,7 +541,7 @@ namespace ai
         static vector<interest> interests; interests.setsize(0);
         if(AA(d->actortype, abilities)&(1<<A_A_MOVE))
         {
-            int sweap = m_weapon(game::gamemode, game::mutators);
+            int sweap = m_weapon(d->actortype, game::gamemode, game::mutators);
             if((AA(d->actortype, abilities)&(1<<A_A_PRIMARY) || AA(d->actortype, abilities)&(1<<A_A_SECONDARY)) && (!hasweap(d, weappref(d)) || d->carry(sweap) == 0))
                 items(d, b, interests, d->carry(sweap) == 0);
             if(m_team(game::gamemode, game::mutators) && !m_duke(game::gamemode, game::mutators))
@@ -636,11 +636,11 @@ namespace ai
     {
         if(m_play(game::gamemode) && entities::ents.inrange(ent) && entities::ents[ent]->type == WEAPON && spawned > 0)
         {
-            int sweap = m_weapon(game::gamemode, game::mutators), attr = w_attr(game::gamemode, game::mutators, entities::ents[ent]->type, entities::ents[ent]->attrs[0], sweap);
             loopv(game::players) if(game::players[i] && game::players[i]->ai && game::players[i]->actortype == A_BOT && game::players[i]->state == CS_ALIVE && iswaypoint(game::players[i]->lastnode))
             {
                 gameent *d = game::players[i];
                 aistate &b = d->ai->getstate();
+                int sweap = m_weapon(d->actortype, game::gamemode, game::mutators), attr = w_attr(game::gamemode, game::mutators, entities::ents[ent]->type, entities::ents[ent]->attrs[0], sweap);
                 if(b.targtype == AI_T_AFFINITY) continue; // don't override any affinity states
                 if((AA(d->actortype, abilities)&(1<<A_A_PRIMARY) || AA(d->actortype, abilities)&(1<<A_A_SECONDARY)) && !hasweap(d, attr) && (!hasweap(d, weappref(d)) || d->carry(sweap) == 0) && wantsweap(d, attr))
                 {
@@ -735,7 +735,7 @@ namespace ai
                 {
                     gameentity &e = *(gameentity *)entities::ents[b.target];
                     if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON) return false;
-                    int sweap = m_weapon(game::gamemode, game::mutators), attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap);
+                    int sweap = m_weapon(d->actortype, game::gamemode, game::mutators), attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap);
                     if(!isweap(attr) || !e.spawned() || !wantsweap(d, attr)) return false;
                     //float guard = enttype[e.type].radius;
                     //if(d->feetpos().squaredist(e.o) <= guard*guard)
@@ -752,7 +752,7 @@ namespace ai
                     if(!entities::ents.inrange(proj.id) || proj.owner == d) return false;
                     gameentity &e = *(gameentity *)entities::ents[proj.id];
                     if(enttype[entities::ents[proj.id]->type].usetype != EU_ITEM || e.type != WEAPON) return false;
-                    int sweap = m_weapon(game::gamemode, game::mutators), attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap);
+                    int sweap = m_weapon(d->actortype, game::gamemode, game::mutators), attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap);
                     if(!isweap(attr) || !wantsweap(d, attr)) return false;
                     //float guard = enttype[e.type].radius;
                     //if(d->feetpos().squaredist(e.o) <= guard*guard)
@@ -1005,7 +1005,7 @@ namespace ai
         {
             if(airtime > (b.acttype >= AI_A_LOCKON ? 250 : 500) && !d->turnside && (d->skill >= 100 || !rnd(101-d->skill)) && physics::canimpulse(d, A_A_PARKOUR, true))
                 d->action[AC_SPECIAL] = true;
-            else if(AA(d->actortype, abilities)&(1<<A_A_MELEE) && lastmillis-d->ai->lastmelee >= (201-d->skill)*5 && d->canmelee(m_weapon(game::gamemode, game::mutators), lastmillis))
+            else if(AA(d->actortype, abilities)&(1<<A_A_MELEE) && lastmillis-d->ai->lastmelee >= (201-d->skill)*5 && d->canmelee(m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis))
             {
                 d->action[AC_SPECIAL] = true;
                 d->ai->lastmelee = lastmillis;
@@ -1174,11 +1174,11 @@ namespace ai
 
     bool request(gameent *d, aistate &b)
     {
-        int sweap = m_weapon(game::gamemode, game::mutators);
+        int sweap = m_weapon(d->actortype, game::gamemode, game::mutators);
         bool occupied = false, firing = false, enemyok = false,
              haswaited = d->weapwaited(d->weapselect, lastmillis, (1<<W_S_RELOAD));
         process(d, b, occupied, firing, enemyok);
-        if(d->actortype == A_BOT)
+        if(AA(d->actortype, maxcarry))
         {
             if(d->ai->dontmove && haswaited && !firing && d->carry(sweap, 1) > 1)
             {

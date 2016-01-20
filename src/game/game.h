@@ -718,7 +718,7 @@ struct clientstate
             case EU_AUTO: case EU_ACT: return true; break;
             case EU_ITEM:
             { // can't use when reloading or firing
-                if(type != WEAPON || !isweap(attr)) return false;
+                if(type != WEAPON || !isweap(attr) || !AA(actortype, maxcarry)) return false;
                 if(!hasweap(attr, sweap, 4) && weapwaited(weapselect, millis, skip))
                     return true;
                 break;
@@ -780,12 +780,7 @@ struct clientstate
         weapreset(true);
         health = heal > 0 ? heal : (m_insta(gamemode, mutators) ? 1 : m_health(gamemode, mutators, actortype));
         int s = sweap;
-        if(!isweap(s))
-        {
-            if(actortype >= A_ENEMY) s = AA(actortype, weap);
-            else if(m_kaboom(gamemode, mutators)) s = W_GRENADE;
-            else s = isweap(m_weapon(gamemode, mutators)) ? m_weapon(gamemode, mutators) : W_PISTOL;
-        }
+        if(!isweap(s)) s = m_weapon(actortype, gamemode, mutators);
         if(isweap(s))
         {
             ammo[s] = max(1, W(s, ammomax));
@@ -824,7 +819,7 @@ struct clientstate
                     {
                         ammo[aweap[j]] = max(1, W(aweap[j], ammomax));
                         if(!n) weapselect = aweap[j];
-                        if(++n >= G(maxcarry)) break;
+                        if(++n >= AA(actortype, maxcarry)) break;
                     }
                 }
             }
@@ -834,7 +829,7 @@ struct clientstate
     void editspawn(int gamemode, int mutators)
     {
         clearstate();
-        spawnstate(gamemode, mutators, m_weapon(gamemode, mutators), m_health(gamemode, mutators, actortype));
+        spawnstate(gamemode, mutators, m_weapon(actortype, gamemode, mutators), m_health(gamemode, mutators, actortype));
     }
 
     int respawnwait(int millis, int delay)

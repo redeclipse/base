@@ -21,7 +21,7 @@ namespace weapons
     {
         if(d && weapselectslot)
         {
-            int p = m_weapon(game::gamemode, game::mutators), w = 0;
+            int p = m_weapon(d->actortype, game::gamemode, game::mutators), w = 0;
             loopi(W_MAX) if(d->holdweap(i, p, lastmillis))
             {
                 if(n == (back ? w : i)) return back ? i : w;
@@ -35,7 +35,7 @@ namespace weapons
     ICOMMAND(0, weapslot, "i", (int *o), intret(slot(game::player1, *o >= 0 ? *o : game::player1->weapselect))); // -1 = weapselect slot
     ICOMMAND(0, weapselect, "", (), intret(game::player1->weapselect));
     ICOMMAND(0, ammo, "i", (int *n), intret(isweap(*n) ? game::player1->ammo[*n] : -1));
-    ICOMMAND(0, reloadweap, "i", (int *n), intret(isweap(*n) && w_reload(*n, m_weapon(game::gamemode, game::mutators)) ? 1 : 0));
+    ICOMMAND(0, reloadweap, "i", (int *n), intret(isweap(*n) && w_reload(*n, m_weapon(game::player1->actortype, game::gamemode, game::mutators)) ? 1 : 0));
     ICOMMAND(0, hasweap, "ii", (int *n, int *o), intret(isweap(*n) && game::player1->hasweap(*n, *o) ? 1 : 0));
     ICOMMAND(0, getweap, "ii", (int *n, int *o), {
         if(isweap(*n)) switch(*o)
@@ -54,9 +54,9 @@ namespace weapons
         {
             int interrupts = filter;
             interrupts &= ~(1<<W_S_RELOAD);
-            if(!d->canswitch(weap, m_weapon(game::gamemode, game::mutators), lastmillis, interrupts))
+            if(!d->canswitch(weap, m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis, interrupts))
             {
-                if(!d->canswitch(weap, m_weapon(game::gamemode, game::mutators), lastmillis, filter)) return false;
+                if(!d->canswitch(weap, m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis, filter)) return false;
                 else if(!isweap(d->weapselect) || d->weapload[d->weapselect] <= 0) return false;
                 else
                 {
@@ -77,7 +77,7 @@ namespace weapons
         if(!gs_playing(game::gamestate) || (!local && (d == game::player1 || d->ai))) return false; // this can't be fixed until 1.5
         if(local)
         {
-            if(!d->canreload(weap, m_weapon(game::gamemode, game::mutators), false, lastmillis))
+            if(!d->canreload(weap, m_weapon(d->actortype, game::gamemode, game::mutators), false, lastmillis))
             {
                 if(d->weapstate[weap] == W_S_POWER) d->setweapstate(weap, W_S_WAIT, 100, lastmillis);
                 return false;
@@ -111,7 +111,7 @@ namespace weapons
                 int n = slot(d, s, true);
                 if(a < 0)
                 { // weapon skipping when scrolling
-                    int p = m_weapon(game::gamemode, game::mutators);
+                    int p = m_weapon(d->actortype, game::gamemode, game::mutators);
                     #define skipweap(q,w) \
                     { \
                         if(q && n == w && (d->actortype >= A_ENEMY || w != W_MELEE || p == W_MELEE || d->weapselect == W_MELEE)) switch(q) \
@@ -159,7 +159,7 @@ namespace weapons
     void weapdrop(gameent *d, int w)
     {
         if(!gs_playing(game::gamestate)) return;
-        int weap = isweap(w) ? w : d->weapselect, sweap = m_weapon(game::gamemode, game::mutators);
+        int weap = isweap(w) ? w : d->weapselect, sweap = m_weapon(d->actortype, game::gamemode, game::mutators);
         d->action[AC_DROP] = false;
         if(!d->candrop(weap, sweap, lastmillis, m_loadout(game::gamemode, game::mutators), (1<<W_S_SWITCH)))
         {
@@ -181,7 +181,7 @@ namespace weapons
 
     bool autoreload(gameent *d, int flags = 0)
     {
-        if(gs_playing(game::gamestate) && d == game::player1 && W2(d->weapselect, ammosub, WS(flags)) && d->canreload(d->weapselect, m_weapon(game::gamemode, game::mutators), false, lastmillis))
+        if(gs_playing(game::gamestate) && d == game::player1 && W2(d->weapselect, ammosub, WS(flags)) && d->canreload(d->weapselect, m_weapon(d->actortype, game::gamemode, game::mutators), false, lastmillis))
         {
             bool noammo = d->ammo[d->weapselect] < W2(d->weapselect, ammosub, WS(flags)),
                  noattack = !d->action[AC_PRIMARY] && !d->action[AC_SECONDARY];
@@ -193,7 +193,7 @@ namespace weapons
 
     void checkweapons(gameent *d)
     {
-        int sweap = m_weapon(game::gamemode, game::mutators);
+        int sweap = m_weapon(d->actortype, game::gamemode, game::mutators);
         if(!d->hasweap(d->weapselect, sweap)) weapselect(d, d->bestweap(sweap, true), 1<<W_S_RELOAD, true);
         else if(d->action[AC_RELOAD] || autoreload(d)) weapreload(d, d->weapselect);
         else if(d->action[AC_DROP]) weapdrop(d, d->weapselect);
@@ -231,7 +231,7 @@ namespace weapons
 
     bool doshot(gameent *d, vec &targ, int weap, bool pressed, bool secondary, int force)
     {
-        int offset = 0, sweap = m_weapon(game::gamemode, game::mutators);
+        int offset = 0, sweap = m_weapon(d->actortype, game::gamemode, game::mutators);
         if(!d->canshoot(weap, secondary ? HIT_ALT : 0, sweap, lastmillis))
         {
             if(!d->canshoot(weap, secondary ? HIT_ALT : 0, sweap, lastmillis, (1<<W_S_RELOAD)))

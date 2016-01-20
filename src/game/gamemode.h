@@ -266,7 +266,7 @@ extern mutstypes mutstype[];
 #define m_nopoints(a,b)     (m_duke(a, b) || (m_bomber(a) && m_gsp1(a, b)) || m_race(a))
 #define m_points(a,b)       (!m_nopoints(a, b))
 
-#define m_weapon(a,b)       (m_medieval(a, b) ? W_SWORD : (m_kaboom(a, b) ? W_GRENADE : (m_insta(a, b) ? G(instaweapon) : (m_race(a) && !m_gsp3(a, b) ? G(raceweapon) : G(spawnweapon)))))
+#define m_weapon(at,a,b)    (m_medieval(a, b) ? AA(at, weaponmedieval) : (m_kaboom(a, b) ? AA(at, weaponkaboom) : (m_insta(a, b) ? AA(at, weaponinsta) : (m_race(a) && !m_gsp3(a, b) ? AA(at, weaponrace) : AA(at, weaponspawn)))))
 #define m_xdelay(a,b,c)     (m_play(a) ? (m_race(a) ? (!m_gsp3(a, b) || c == T_ALPHA ? G(racedelay) : G(racedelayex)) : (m_bomber(a) ? G(bomberdelay) : (m_insta(a, b) ? G(instadelay) : G(spawndelay)))) : 0)
 #define m_delay(a,b,c)      (m_duke(a,b) ? 0 : m_xdelay(a, b, c))
 #define m_protect(a,b)      (m_duke(a,b) ? DSG(a, b, protect) : (m_insta(a, b) ? G(instaprotect) : G(spawnprotect)))

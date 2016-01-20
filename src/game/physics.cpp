@@ -957,7 +957,7 @@ namespace physics
                 }
             }
         }
-        if(d->canmelee(m_weapon(game::gamemode, game::mutators), lastmillis, true, d->sliding(true), onfloor))
+        if(d->canmelee(m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis, true, d->sliding(true), onfloor))
             weapons::doshot(d, d->o, W_MELEE, true, true);
         if(!found && d->turnside) d->turnside = 0;
         d->action[AC_DASH] = false;

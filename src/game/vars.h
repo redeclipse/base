@@ -175,11 +175,7 @@ GVAR(IDF_MODERATOR, maxalivequeue, 0, 1, 1); // upon triggering maxalive, use a 
 GVAR(IDF_MODERATOR, maxaliveminimum, 2, 4, VAR_MAX); // kicks in if alive >= this
 GFVAR(IDF_MODERATOR, maxalivethreshold, 0, 0, FVAR_MAX); // .. or this percentage of clients
 
-GVAR(IDF_GAMEMOD, maxcarry, 1, 2, W_LOADOUT);
 GVAR(IDF_GAMEMOD, spawnrotate, 0, 2, 2); // 0 = let client decide, 1 = sequence, 2 = random
-GVAR(IDF_GAMEMOD, spawnweapon, 0, W_PISTOL, W_MAX-1);
-GVAR(IDF_GAMEMOD, instaweapon, 0, W_RIFLE, W_MAX-1);
-GVAR(IDF_GAMEMOD, raceweapon, 0, W_MELEE, W_MAX-1);
 GVAR(IDF_GAMEMOD, spawngrenades, 0, 0, 2); // 0 = never, 1 = all but insta/race, 2 = always
 GVAR(IDF_GAMEMOD, spawnmines, 0, 0, 2); // 0 = never, 1 = all but insta/race, 2 = always
 GVAR(IDF_GAMEMOD, spawndelay, 0, 5000, VAR_MAX); // delay before spawning in most modes

@@ -2443,7 +2443,7 @@ namespace projs
                         if(e.type == WEAPON)
                         {
                             flags |= MDL_LIGHTFX;
-                            int col = W(w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], m_weapon(game::gamemode, game::mutators)), colour), interval = lastmillis%1000;
+                            int col = W(w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], m_weapon(game::focus->actortype, game::gamemode, game::mutators)), colour), interval = lastmillis%1000;
                             proj.light.effect = vec::hexcolor(col).mul(interval >= 500 ? (1000-interval)/500.f : interval/500.f);
                         }
                     }

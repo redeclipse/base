@@ -333,7 +333,7 @@ namespace server
             if(isalive(gamemillis))
             {
                 weapstats[weapselect].timewielded += (totalmillis-lasttimewielded) / 1000;
-                loopi(W_MAX) if(holdweap(i, m_weapon(gamemode, mutators), lastmillis))
+                loopi(W_MAX) if(holdweap(i, m_weapon(actortype, gamemode, mutators), lastmillis))
                     weapstats[i].timeloadout += (totalmillis-lasttimeloadout[i]) / 1000;
             }
             lasttimewielded = totalmillis;
@@ -647,7 +647,7 @@ namespace server
             sents[ent].spawned = spawned;
             sents[ent].millis = sents[ent].last = gamemillis;
             if(sents[ent].type == WEAPON && !(sents[ent].attrs[1]&W_F_FORCED))
-                sents[ent].millis += w_spawn(w_attr(gamemode, mutators, sents[ent].type, sents[ent].attrs[0], m_weapon(gamemode, mutators)));
+                sents[ent].millis += w_spawn(w_attr(gamemode, mutators, sents[ent].type, sents[ent].attrs[0], m_weapon(A_PLAYER, gamemode, mutators)));
             else sents[ent].millis += G(itemspawntime);
             if(msg) sendf(-1, 1, "ri3", N_ITEMSPAWN, ent, sents[ent].spawned ? 1 : 0);
         }
@@ -664,7 +664,7 @@ namespace server
 
     void dropweapon(clientinfo *ci, int flags, int weap, vector<droplist> &drop)
     {
-        if(isweap(weap) && weap != m_weapon(gamemode, mutators) && ci->state.hasweap(weap, m_weapon(gamemode, mutators)) && sents.inrange(ci->state.entid[weap]))
+        if(isweap(weap) && weap != m_weapon(ci->state.actortype, gamemode, mutators) && ci->state.hasweap(weap, m_weapon(ci->state.actortype, gamemode, mutators)) && sents.inrange(ci->state.entid[weap]))
         {
             setspawn(ci->state.entid[weap], false);
             droplist &d = drop.add();
@@ -681,7 +681,7 @@ namespace server
     {
         bool kamikaze = false;
         vector<droplist> drop;
-        if(flags&DROP_EXPLODE || (flags&DROP_KAMIKAZE && G(kamikaze) && (G(kamikaze) > 2 || (ci->state.hasweap(W_GRENADE, m_weapon(gamemode, mutators)) && (G(kamikaze) > 1 || ci->state.weapselect == W_GRENADE)))))
+        if(flags&DROP_EXPLODE || (flags&DROP_KAMIKAZE && G(kamikaze) && (G(kamikaze) > 2 || (ci->state.hasweap(W_GRENADE, m_weapon(ci->state.actortype, gamemode, mutators)) && (G(kamikaze) > 1 || ci->state.weapselect == W_GRENADE)))))
         {
             ci->state.weapshots[W_GRENADE][0].add(1);
             droplist &d = drop.add();
@@ -1793,7 +1793,7 @@ namespace server
     bool hasitem(int i)
     {
         if((m_race(gamemode) && !m_gsp3(gamemode, mutators)) || m_basic(gamemode, mutators) || !sents.inrange(i) || sents[i].type != WEAPON) return false;
-        int sweap = m_weapon(gamemode, mutators), attr = w_attr(gamemode, mutators, sents[i].type, sents[i].attrs[0], sweap);
+        int sweap = m_weapon(A_PLAYER, gamemode, mutators), attr = w_attr(gamemode, mutators, sents[i].type, sents[i].attrs[0], sweap);
         if(!isweap(attr) || !w_item(attr, sweap) || !m_check(W(attr, modes), W(attr, muts), gamemode, mutators) || W(attr, disabled)) return false;
         if((sents[i].attrs[4] && sents[i].attrs[4] != triggerid) || !m_check(sents[i].attrs[2], sents[i].attrs[3], gamemode, mutators)) return false;
         return true;
@@ -1807,7 +1807,7 @@ namespace server
             clientinfo *ci = clients[k];
             if(ci->state.dropped.find(i) && (!spawned || gamemillis < sents[i].millis)) return true;
             else if(carry) loopj(W_MAX)
-                if(ci->online && ci->state.state == CS_ALIVE && ci->state.entid[j] == i && ci->state.hasweap(j, m_weapon(gamemode, mutators)))
+                if(ci->online && ci->state.state == CS_ALIVE && ci->state.entid[j] == i && ci->state.hasweap(j, m_weapon(A_PLAYER, gamemode, mutators)))
                     return spawned;
         }
         if(spawned && gamemillis < sents[i].millis) return true;
@@ -1826,7 +1826,7 @@ namespace server
     void setupitems(bool update)
     {
         vector<int> items, enemies;
-        int sweap = m_weapon(gamemode, mutators);
+        int sweap = m_weapon(A_PLAYER, gamemode, mutators);
         loopv(sents)
         {
             if(sents[i].type == ACTOR && sents[i].attrs[0] >= 0 && sents[i].attrs[0] < A_TOTAL && (sents[i].attrs[5] == triggerid || !sents[i].attrs[5]) && m_check(sents[i].attrs[3], sents[i].attrs[4], gamemode, mutators))
@@ -2130,8 +2130,8 @@ namespace server
         if(ci->state.actortype >= A_ENEMY)
         {
             bool hasent = sents.inrange(ci->state.spawnpoint) && sents[ci->state.spawnpoint].type == ACTOR;
-            if(m_sweaps(gamemode, mutators)) weap = m_weapon(gamemode, mutators);
-            else weap = hasent && sents[ci->state.spawnpoint].attrs[6] > 0 ? sents[ci->state.spawnpoint].attrs[6]-1 : AA(ci->state.actortype, weap);
+            if(m_sweaps(gamemode, mutators)) weap = m_weapon(ci->state.actortype, gamemode, mutators);
+            else weap = hasent && sents[ci->state.spawnpoint].attrs[6] > 0 ? sents[ci->state.spawnpoint].attrs[6]-1 : m_weapon(ci->state.actortype, gamemode, mutators);
             if(!m_insta(gamemode, mutators) && hasent && sents[ci->state.spawnpoint].attrs[7] > 0) health = max(sents[ci->state.spawnpoint].attrs[7], 1);
             if(!isweap(weap) || (!(AA(ci->state.actortype, abilities)&(1<<A_A_MOVE)) && weaptype[weap].melee)) weap = -1; // let spawnstate figure it out
         }
@@ -4526,12 +4526,12 @@ namespace server
             }
             sub = int(ceilf(sub*scale/float(W2(weap, cooktime, WS(flags)))));
         }
-        if(!gs.canshoot(weap, flags, m_weapon(gamemode, mutators), millis))
+        if(!gs.canshoot(weap, flags, m_weapon(gs.actortype, gamemode, mutators), millis))
         {
-            if(!gs.canshoot(weap, flags, m_weapon(gamemode, mutators), millis, (1<<W_S_RELOAD)))
+            if(!gs.canshoot(weap, flags, m_weapon(gs.actortype, gamemode, mutators), millis, (1<<W_S_RELOAD)))
             {
                 if(sub && W(weap, ammomax)) ci->state.ammo[weap] = max(ci->state.ammo[weap]-sub, 0);
-                if(!gs.hasweap(weap, m_weapon(gamemode, mutators))) gs.entid[weap] = -1; // its gone..
+                if(!gs.hasweap(weap, m_weapon(gs.actortype, gamemode, mutators))) gs.entid[weap] = -1; // its gone..
                 if(G(serverdebug)) srvmsgf(ci->clientnum, "sync error: shoot [%d] failed - current state disallows it", weap);
                 return;
             }
@@ -4550,7 +4550,7 @@ namespace server
         loopv(shots) gs.weapshots[weap][WS(flags) ? 1 : 0].add(shots[i].id);
         if(WS(flags)) gs.weapstats[weap].shots2++;
         else gs.weapstats[weap].shots1++;
-        if(!gs.hasweap(weap, m_weapon(gamemode, mutators)))
+        if(!gs.hasweap(weap, m_weapon(gs.actortype, gamemode, mutators)))
         {
             //if(sents.inrange(gs.entid[weap])) setspawn(gs.entid[weap], false);
             sendf(-1, 1, "ri7", N_DROP, ci->clientnum, -1, 1, weap, -1, 0);
@@ -4567,9 +4567,9 @@ namespace server
             sendf(ci->clientnum, 1, "ri3", N_WSELECT, ci->clientnum, gs.weapselect);
             return;
         }
-        if(!gs.canswitch(weap, m_weapon(gamemode, mutators), millis, (1<<W_S_SWITCH)))
+        if(!gs.canswitch(weap, m_weapon(gs.actortype, gamemode, mutators), millis, (1<<W_S_SWITCH)))
         {
-            if(!gs.canswitch(weap, m_weapon(gamemode, mutators), millis, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
+            if(!gs.canswitch(weap, m_weapon(gs.actortype, gamemode, mutators), millis, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
             {
                 if(G(serverdebug)) srvmsgf(ci->clientnum, "sync error: switch [%d] failed - current state disallows it", weap);
                 sendf(-1, 1, "ri3", N_WSELECT, ci->clientnum, gs.weapselect);
@@ -4595,7 +4595,7 @@ namespace server
             if(G(serverdebug) >= 3) srvmsgf(ci->clientnum, "sync error: drop [%d] failed - unexpected message", weap);
             return;
         }
-        int sweap = m_weapon(gamemode, mutators);
+        int sweap = m_weapon(gs.actortype, gamemode, mutators);
         if(!gs.candrop(weap, sweap, millis, m_loadout(gamemode, mutators), (1<<W_S_SWITCH)))
         {
             if(!gs.candrop(weap, sweap, millis, m_loadout(gamemode, mutators), (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
@@ -4631,7 +4631,7 @@ namespace server
             if(G(serverdebug) >= 3) srvmsgf(ci->clientnum, "sync error: reload [%d] failed - unexpected message", weap);
             return;
         }
-        if(!gs.canreload(weap, m_weapon(gamemode, mutators), false, millis))
+        if(!gs.canreload(weap, m_weapon(gs.actortype, gamemode, mutators), false, millis))
         {
             if(G(serverdebug)) srvmsgf(ci->clientnum, "sync error: reload [%d] failed - current state disallows it", weap);
             return;
@@ -4657,7 +4657,7 @@ namespace server
             return;
         }
         gs.updateweaptime();
-        int sweap = m_weapon(gamemode, mutators), attr = w_attr(gamemode, mutators, sents[ent].type, sents[ent].attrs[0], sweap);
+        int sweap = m_weapon(gs.actortype, gamemode, mutators), attr = w_attr(gamemode, mutators, sents[ent].type, sents[ent].attrs[0], sweap);
         if(!gs.canuse(sents[ent].type, attr, sents[ent].attrs, sweap, millis, (1<<W_S_SWITCH)))
         {
             if(!gs.canuse(sents[ent].type, attr, sents[ent].attrs, sweap, millis, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
@@ -4673,7 +4673,7 @@ namespace server
             }
         }
         int weap = -1, ammoamt = -1, dropped = -1, ammo = -1;
-        if(m_classic(gamemode, mutators) && !gs.hasweap(attr, sweap) && w_carry(attr, sweap) && gs.carry(sweap) >= G(maxcarry)) weap = gs.drop(sweap);
+        if(m_classic(gamemode, mutators) && !gs.hasweap(attr, sweap) && w_carry(attr, sweap) && gs.carry(sweap) >= AA(gs.actortype, maxcarry)) weap = gs.drop(sweap);
         loopvk(clients) if(clients[k]->state.dropped.find(ent))
         {
             clients[k]->state.dropped.values(ent, ammoamt);
@@ -5771,7 +5771,7 @@ namespace server
                         {
                             if(!cp->state.weapwaited(cp->state.weapselect, gamemillis, (1<<W_S_RELOAD)))
                             {
-                                if(!cp->state.hasweap(cp->state.weapselect, m_weapon(gamemode, mutators))) cp->state.entid[cp->state.weapselect] = -1; // its gone..
+                                if(!cp->state.hasweap(cp->state.weapselect, m_weapon(cp->state.actortype, gamemode, mutators))) cp->state.entid[cp->state.weapselect] = -1; // its gone..
                                 if(G(serverdebug)) srvmsgf(cp->clientnum, "sync error: power [%d] failed - current state disallows it", cp->state.weapselect);
                                 break;
                             }

@@ -128,11 +128,26 @@ APVAR(IDF_GAMEMOD, collide, 0, A_C_ALL,
 APVAR(IDF_GAMEMOD, health, 1, VAR_MAX,
     100,            100,            100,            50,             50
 );
+APVAR(IDF_GAMEMOD, maxcarry, 1, W_LOADOUT,
+    2,              2,              0,              0,              0
+);
 APVAR(IDF_GAMEMOD, teamdamage, 0, A_T_ALL,
     A_T_PLAYER,     A_T_AI,         A_T_AI,         A_T_AI,         A_T_AI
 );
-APVAR(IDF_GAMEMOD, weap, -1, W_MAX,
-    -1,             -1,             W_SMG,          W_PISTOL,       W_MELEE
+APVAR(IDF_GAMEMOD, weaponinsta, 0, W_MAX-1,
+    W_RIFLE,        W_RIFLE,        W_RIFLE,        W_RIFLE,        W_MELEE
+);
+APVAR(IDF_GAMEMOD, weaponkaboom, 0, W_MAX-1,
+    W_GRENADE,      W_GRENADE,      W_GRENADE,      W_GRENADE,      W_MELEE
+);
+APVAR(IDF_GAMEMOD, weaponmedieval, 0, W_MAX-1,
+    W_SWORD,        W_SWORD,        W_RIFLE,        W_SWORD,        W_MELEE
+);
+APVAR(IDF_GAMEMOD, weaponrace, 0, W_MAX-1,
+    W_MELEE,       W_MELEE,         W_SMG,          W_PISTOL,       W_MELEE
+);
+APVAR(IDF_GAMEMOD, weaponspawn, 0, W_MAX-1,
+    W_PISTOL,       W_PISTOL,       W_SMG,          W_PISTOL,       W_MELEE
 );
 APFVAR(IDF_GAMEMOD, weight, 0, FVAR_MAX,
     200,            200,            150,            200,            150

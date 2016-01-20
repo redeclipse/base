@@ -1306,7 +1306,7 @@ namespace hud
             if(index > POINTER_GUI)
             {
                 if(minimal(showcirclebar)) drawcirclebar(cx, cy, hudsize);
-                if(game::focus->state == CS_ALIVE && game::focus->hasweap(game::focus->weapselect, m_weapon(game::gamemode, game::mutators)))
+                if(game::focus->state == CS_ALIVE && game::focus->hasweap(game::focus->weapselect, m_weapon(game::focus->actortype, game::gamemode, game::mutators)))
                 {
                     if(minimal(showclips, true)) drawclip(game::focus->weapselect, cx, cy, hudsize);
                     if(showindicator) drawindicator(game::focus->weapselect, cx, cy, int(indicatorsize*hudsize), physics::secondaryweap(game::focus));
@@ -1564,11 +1564,11 @@ namespace hud
                                 extentity &e = *entities::ents[ent];
                                 if(enttype[e.type].usetype == EU_ITEM && e.type == WEAPON)
                                 {
-                                    int sweap = m_weapon(game::gamemode, game::mutators), attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap);
+                                    int sweap = m_weapon(target->actortype, game::gamemode, game::mutators), attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap);
                                     if(target->canuse(e.type, attr, e.attrs, sweap, lastmillis, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)) && weapons::canuse(attr))
                                     {
                                         int drop = -1;
-                                        if(m_classic(game::gamemode, game::mutators) && target->ammo[attr] < 0 && w_carry(attr, sweap) && target->carry(sweap) >= maxcarry)
+                                        if(m_classic(game::gamemode, game::mutators) && target->ammo[attr] < 0 && w_carry(attr, sweap) && target->carry(sweap) >= AA(target->actortype, maxcarry))
                                             drop = target->drop(sweap);
                                         if(isweap(drop))
                                         {
@@ -1594,17 +1594,17 @@ namespace hud
                     if(shownotices >= 4)
                     {
                         pushfont("little");
-                        if(target->canshoot(target->weapselect, 0, m_weapon(game::gamemode, game::mutators), lastmillis, (1<<W_S_RELOAD)))
+                        if(target->canshoot(target->weapselect, 0, m_weapon(target->actortype, game::gamemode, game::mutators), lastmillis, (1<<W_S_RELOAD)))
                         {
                             SEARCHBINDCACHE(attackkey)("primary", 0);
                             ty += draw_textx("Press %s to attack", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, tw, attackkey);
                         }
-                        if(target->canshoot(target->weapselect, HIT_ALT, m_weapon(game::gamemode, game::mutators), lastmillis, (1<<W_S_RELOAD)))
+                        if(target->canshoot(target->weapselect, HIT_ALT, m_weapon(target->actortype, game::gamemode, game::mutators), lastmillis, (1<<W_S_RELOAD)))
                         {
                             SEARCHBINDCACHE(altkey)("secondary", 0);
                             ty += draw_textx("Press %s to %s", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, tw, altkey, W2(target->weapselect, cooked, true)&W_C_ZOOM ? "zoom" : "alt-attack");
                         }
-                        if(target->canreload(target->weapselect, m_weapon(game::gamemode, game::mutators), false, lastmillis))
+                        if(target->canreload(target->weapselect, m_weapon(target->actortype, game::gamemode, game::mutators), false, lastmillis))
                         {
                             SEARCHBINDCACHE(reloadkey)("reload", 0);
                             ty += draw_textx("Press %s to reload ammo", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, tw, reloadkey);
@@ -2135,7 +2135,7 @@ namespace hud
             float fade = insel ? 1.f : clamp(1.f-(dist/float(radarrange())), 0.1f, 1.f), size = radarblipsize;
             if(type == WEAPON)
             {
-                int attr1 = w_attr(game::gamemode, game::mutators, type, attr[0], m_weapon(game::gamemode, game::mutators));
+                int attr1 = w_attr(game::gamemode, game::mutators, type, attr[0], m_weapon(game::focus->actortype, game::gamemode, game::mutators));
                 tex = itemtex(WEAPON, attr1);
                 colour = vec::hexcolor(W(attr1, colour));
                 fade *= radaritemblend;
@@ -2584,7 +2584,7 @@ namespace hud
             const char *hudtexs[W_MAX] = {
                 meleetex, pistoltex, swordtex, shotguntex, smgtex, flamertex, plasmatex, zappertex, rifletex, grenadetex, minetex, rockettex
             };
-            int sweap = m_weapon(game::gamemode, game::mutators);//, lastweap = game::focus->getlastweap(sweap);
+            int sweap = m_weapon(game::focus->actortype, game::gamemode, game::mutators);//, lastweap = game::focus->getlastweap(sweap);
             loopi(W_MAX) if((i != W_MELEE || sweap == W_MELEE || game::focus->weapselect == W_MELEE || !inventoryhidemelee) && game::focus->holdweap(i, sweap, lastmillis))
             {
                 if(y-sy-s < m) break;
