@@ -1672,9 +1672,9 @@ namespace hud
         {
             pushfont("huge");
             const char *col = teamnotices >= 2 ? "\fs\fzyS" : "";
-            if(m_race(game::gamemode)) ty -= draw_textt("%sRace", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, -1, col);
-            else if(!m_team(game::gamemode, game::mutators)) ty -= draw_textt("%sFree-for-all %s", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, -1, col, m_bomber(game::gamemode) ? "Bomber-ball" : "Deathmatch");
-            else ty -= draw_textt("%sYou are on team %s", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, tw, col, game::colourteam(game::focus->team));
+            if(m_race(game::gamemode)) ty -= draw_textx("%sRace", tx, ty, tr, tg, tb, tf, TEXT_SKIN|TEXT_CENTERED, -1, -1, col);
+            else if(!m_team(game::gamemode, game::mutators)) ty -= draw_textx("%sFree-for-all %s", tx, ty, tr, tg, tb, tf, TEXT_SKIN|TEXT_CENTERED, -1, -1, col, m_bomber(game::gamemode) ? "Bomber-ball" : "Deathmatch");
+            else ty -= draw_textx("%sYou are on team %s", tx, ty, tr, tg, tb, tf, TEXT_SKIN|TEXT_CENTERED, -1, tw, col, game::colourteam(game::focus->team));
             popfont();
         }
         if(m_capture(game::gamemode)) capture::drawevents(hudwidth, hudheight, tx, ty, tr, tg, tb, tf/255.f);

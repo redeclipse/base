@@ -684,25 +684,7 @@ int draw_textx(const char *fstr, int left, int top, int r, int g, int b, int a, 
     }
     if(flags&TEXT_BALLOON) top -= height/2;
     else if(flags&TEXT_UPWARD) top -= height;
-    if(flags&TEXT_SHADOW) draw_text(str, left-2, top-2, 0, 0, 0, a, flags, cursor, maxwidth);
-    return draw_text(str, left, top, r, g, b, a, flags, cursor, maxwidth);
-}
-
-int draw_textt(const char *fstr, int left, int top, int r, int g, int b, int a, int flags, int cursor, int maxwidth, ...)
-{
-    defvformatbigstring(str, maxwidth, fstr);
-
-    int width = 0, height = 0;
-    text_bounds(str, width, height, maxwidth, flags);
-    if(flags&TEXT_ALIGN) switch(flags&TEXT_ALIGN)
-    {
-        case TEXT_CENTERED: left -= width/2; break;
-        case TEXT_RIGHT_JUSTIFY: left -= width; break;
-        default: break;
-    }
-    if(flags&TEXT_BALLOON) top -= height/2;
-    else if(flags&TEXT_UPWARD) top -= height;
-    if(textbg)
+    if(flags&TEXT_SKIN && textbg)
     {
         int aw = int(FONTW*textbgwidth), ah = int(FONTH*textbgheight),
             x1 = left-aw/2, y1 = top-ah/2, x2 = x1+width+aw, y2 = y1+height+ah;
@@ -725,9 +707,11 @@ int draw_textt(const char *fstr, int left, int top, int r, int g, int b, int a, 
             }
             drawskin(t, x1, y1, x2, y2, bvec(r, g, b).tohexcolor(), blend);
         }
+        if(flags&TEXT_SHADOW) draw_text(str, left-2, top-2, 0, 0, 0, int(a*textbgfblend), flags, cursor, maxwidth);
+        return draw_text(str, left, top, 255, 255, 255, int(a*textbgfblend), flags, cursor, maxwidth);
     }
-    if(flags&TEXT_SHADOW) draw_text(str, left-2, top-2, 0, 0, 0, int(a*textbgfblend), flags, cursor, maxwidth);
-    return draw_text(str, left, top, 255, 255, 255, int(a*textbgfblend), flags, cursor, maxwidth);
+    if(flags&TEXT_SHADOW) draw_text(str, left-2, top-2, 0, 0, 0, a, flags, cursor, maxwidth);
+    return draw_text(str, left, top, r, g, b, a, flags, cursor, maxwidth);
 }
 
 vector<font *> fontstack;
