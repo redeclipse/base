@@ -184,7 +184,7 @@ namespace bomber
                 if(f.owner == game::focus)
                 {
                     pushfont("super");
-                    ty += draw_textx("You are holding the \fs\f[%d]\f(%s)bomb\fS", tx, ty, tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, pulsecols[PULSE_DISCO][clamp((lastmillis/100)%PULSECOLOURS, 0, PULSECOLOURS-1)], hud::bombtex)*hud::eventscale;
+                    ty += draw_textt("You are holding the \fs\f[%d]\f(%s)bomb\fS", tx, ty, tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, pulsecols[PULSE_DISCO][clamp((lastmillis/100)%PULSECOLOURS, 0, PULSECOLOURS-1)], hud::bombtex)*hud::eventscale;
                     popfont();
                     break;
                 }

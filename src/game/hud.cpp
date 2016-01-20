@@ -148,8 +148,8 @@ namespace hud
     VAR(IDF_PERSIST|IDF_HEX, crosshairtone, -CTONE_MAX, 0, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, hitcrosshairtone, -CTONE_MAX, 0, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, noticetone, -CTONE_MAX, 0, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, eventtone, -CTONE_MAX, 0, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, clipstone, -CTONE_MAX, -CTONE_TEAM-1, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, eventtone, -CTONE_MAX, -CTONE_TEAM-1, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, clipstone, -CTONE_MAX, 0, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, radartone, -CTONE_MAX, -CTONE_TEAM-1, 0xFFFFFF);
 
     VAR(IDF_PERSIST, teamhurthud, 0, 1, 3); // 0 = off, 1 = full body particle, 2 = fixed position and size
@@ -1039,7 +1039,8 @@ namespace hud
               area = 1-clamp(clipoffs[weap]*2, 1e-3f, 1.f), need = s*clipsize*clipskew[weap]*area*maxammo, have = 2*M_PI*s*clipoffset,
               scale = clamp(have/need, clipminscale, clipmaxscale);
         vec c(1, 1, 1);
-        if(clipstone || clipcolour) skewcolour(c.r, c.g, c.b, clipcolour ? W(weap, colour) : clipstone);
+        if(clipstone) skewcolour(c.r, c.g, c.b, clipstone);
+        if(clipcolour) skewcolour(c.r, c.g, c.b, W(weap, colour));
         if(interval <= game::focus->weapwait[weap]) switch(game::focus->weapstate[weap])
         {
             case W_S_PRIMARY: case W_S_SECONDARY:
@@ -1671,9 +1672,9 @@ namespace hud
         {
             pushfont("huge");
             const char *col = teamnotices >= 2 ? "\fs\fzyS" : "";
-            if(m_race(game::gamemode)) ty -= draw_textx("%sRace", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, -1, col);
-            else if(!m_team(game::gamemode, game::mutators)) ty -= draw_textx("%sFree-for-all %s", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, -1, col, m_bomber(game::gamemode) ? "Bomber-ball" : "Deathmatch");
-            else ty -= draw_textx("%sYou are on team %s", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, tw, col, game::colourteam(game::focus->team));
+            if(m_race(game::gamemode)) ty -= draw_textt("%sRace", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, -1, col);
+            else if(!m_team(game::gamemode, game::mutators)) ty -= draw_textt("%sFree-for-all %s", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, -1, col, m_bomber(game::gamemode) ? "Bomber-ball" : "Deathmatch");
+            else ty -= draw_textt("%sYou are on team %s", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, tw, col, game::colourteam(game::focus->team));
             popfont();
         }
         if(m_capture(game::gamemode)) capture::drawevents(hudwidth, hudheight, tx, ty, tr, tg, tb, tf/255.f);
@@ -2410,6 +2411,78 @@ namespace hud
         { { 0, 0.5f, 0, 0 }, { 0.35f, 0.25f, 0.f, 0.5f }, { 0.65f, 0.25f, 0.25f, 0.75f }, { 1, 0.75f, 0.75f, 1 } }
     };
 
+    int drawbar(int x, int y, int w, int h, int type, float top, float bottom, float fade, float amt, const char *tex, const char *bgtex, int tone, float bgglow, float blend, float pulse, float throb, float throbscale)
+    {
+        int offset = int(w*(throb >= 0 ? throb*throbscale : 0.f)), id = clamp(type, 0, 3);
+        if(bgtex && *bgtex)
+        {
+            int glow = 0;
+            float gr = 1, gg = 1, gb = 1, gf = fade*blend;
+            if(tone) skewcolour(gr, gg, gb, tone);
+            if(pulse > 0)
+            {
+                int millis = lastmillis%1000;
+                float skew = (millis <= 500 ? millis/500.f : 1.f-((millis-500)/500.f))*pulse;
+                flashcolourf(gr, gg, gb, gf, id != 1 && (id != 2 || throb < 0) ? 0.5f : 1.f, 0.f, id != 1 && (id != 2 || throb < 0) ? 0.5f : 0.f, 1.f, skew);
+                glow += int(w*bgglow*skew);
+            }
+            settexture(bgtex, 3);
+            gle::colorf(gr, gg, gb, fade*gf);
+            drawtexture(x-offset-glow, y-h-offset-glow, w+glow*2+offset*2, h+glow*2+offset*2);
+        }
+        if(amt <= 0.f) return h;
+        settexture(tex, 3);
+        gle::defvertex(2);
+        gle::deftexcoord0();
+        gle::defcolor(4);
+        gle::begin(GL_TRIANGLE_STRIP);
+        float btoff = 1-bottom, middle = btoff-top;
+        int cx = x-offset, cy = y-h+int(h*top)-offset, cw = w+offset*2, ch = int(h*middle)+offset*2;
+        const float margin = 0.1f;
+        vec lastbarcolour(0, 0, 0);
+        loopi(4)
+        {
+            const barstep &step = barsteps[id][i];
+            vec colour(step.r, step.g, step.b);
+            if(throb >= 0 && i == int(roundf(3*throb*amt))) switch(id)
+            {
+                case 1: colour = vec(barsteps[id][3].r, barsteps[id][3].g, barsteps[id][3].b); break;
+                case 2: colour = vec(1, 1, 1); break;
+                default: break;
+            }
+            if(i > 0)
+            {
+                if(step.amt > amt && barsteps[id][i-1].amt <= amt)
+                {
+                    float hoff = 1 - amt, hlerp = (amt - barsteps[id][i-1].amt) / (step.amt - barsteps[id][i-1].amt),
+                          r = colour.r*hlerp + lastbarcolour.r*(1-hlerp),
+                          g = colour.g*hlerp + lastbarcolour.g*(1-hlerp),
+                          b = colour.b*hlerp + lastbarcolour.b*(1-hlerp);
+                    gle::attribf(cx, cy + hoff*ch); gle::attribf(0, hoff*middle+top); gle::attribf(r, g, b, fade);
+                    gle::attribf(cx + cw, cy + hoff*ch); gle::attribf(1, hoff*middle+top); gle::attribf(r, g, b, fade);
+                }
+                if(step.amt > amt + margin)
+                {
+                    float hoff = 1 - (amt + margin), hlerp = (amt + margin - barsteps[id][i-1].amt) / (step.amt - barsteps[id][i-1].amt),
+                          r = colour.r*hlerp + lastbarcolour.r*(1-hlerp),
+                          g = colour.g*hlerp + lastbarcolour.g*(1-hlerp),
+                          b = colour.b*hlerp + lastbarcolour.b*(1-hlerp);
+                    gle::attribf(cx, cy + hoff*ch); gle::attribf(0, hoff*middle+top); gle::attribf(r, g, b, 0);
+                    gle::attribf(cx + cw, cy + hoff*ch); gle::attribf(1, hoff*middle+top); gle::attribf(r, g, b, 0);
+                    lastbarcolour = colour;
+                    break;
+                }
+            }
+            float off = 1 - step.amt, hfade = fade, r = colour.r, g = colour.g, b = colour.b;
+            if(step.amt > amt) hfade *= 1 - (step.amt - amt)/margin;
+            gle::attribf(cx, cy + off*ch); gle::attribf(0, off*middle+top); gle::attribf(r, g, b, hfade);
+            gle::attribf(cx + cw, cy + off*ch); gle::attribf(1, off*middle+top); gle::attribf(r, g, b, hfade);
+            lastbarcolour = colour;
+        }
+        gle::end();
+        return h;
+    }
+
     int drawitembar(int x, int y, float size, bool left, float r, float g, float b, float fade, float skew, float amt, int type)
     {
         if(skew <= 0.f || amt <= 0.f) return 0;
@@ -2707,78 +2780,6 @@ namespace hud
             }
         }
         return sy;
-    }
-
-    int drawbar(int x, int y, int w, int h, int type, float top, float bottom, float fade, float amt, const char *tex, const char *bgtex, int tone, float bgglow, float blend, float pulse, float throb, float throbscale)
-    {
-        int offset = int(w*(throb >= 0 ? throb*throbscale : 0.f)), id = clamp(type, 0, 3);
-        if(bgtex && *bgtex)
-        {
-            int glow = 0;
-            float gr = 1, gg = 1, gb = 1, gf = fade*blend;
-            if(tone) skewcolour(gr, gg, gb, tone);
-            if(pulse > 0)
-            {
-                int millis = lastmillis%1000;
-                float skew = (millis <= 500 ? millis/500.f : 1.f-((millis-500)/500.f))*pulse;
-                flashcolourf(gr, gg, gb, gf, id != 1 && (id != 2 || throb < 0) ? 0.5f : 1.f, 0.f, id != 1 && (id != 2 || throb < 0) ? 0.5f : 0.f, 1.f, skew);
-                glow += int(w*bgglow*skew);
-            }
-            settexture(bgtex, 3);
-            gle::colorf(gr, gg, gb, fade*gf);
-            drawtexture(x-offset-glow, y-h-offset-glow, w+glow*2+offset*2, h+glow*2+offset*2);
-        }
-        if(amt <= 0.f) return h;
-        settexture(tex, 3);
-        gle::defvertex(2);
-        gle::deftexcoord0();
-        gle::defcolor(4);
-        gle::begin(GL_TRIANGLE_STRIP);
-        float btoff = 1-bottom, middle = btoff-top;
-        int cx = x-offset, cy = y-h+int(h*top)-offset, cw = w+offset*2, ch = int(h*middle)+offset*2;
-        const float margin = 0.1f;
-        vec lastbarcolour(0, 0, 0);
-        loopi(4)
-        {
-            const barstep &step = barsteps[id][i];
-            vec colour(step.r, step.g, step.b);
-            if(throb >= 0 && i == int(roundf(3*throb*amt))) switch(id)
-            {
-                case 1: colour = vec(barsteps[id][3].r, barsteps[id][3].g, barsteps[id][3].b); break;
-                case 2: colour = vec(1, 1, 1); break;
-                default: break;
-            }
-            if(i > 0)
-            {
-                if(step.amt > amt && barsteps[id][i-1].amt <= amt)
-                {
-                    float hoff = 1 - amt, hlerp = (amt - barsteps[id][i-1].amt) / (step.amt - barsteps[id][i-1].amt),
-                          r = colour.r*hlerp + lastbarcolour.r*(1-hlerp),
-                          g = colour.g*hlerp + lastbarcolour.g*(1-hlerp),
-                          b = colour.b*hlerp + lastbarcolour.b*(1-hlerp);
-                    gle::attribf(cx, cy + hoff*ch); gle::attribf(0, hoff*middle+top); gle::attribf(r, g, b, fade);
-                    gle::attribf(cx + cw, cy + hoff*ch); gle::attribf(1, hoff*middle+top); gle::attribf(r, g, b, fade);
-                }
-                if(step.amt > amt + margin)
-                {
-                    float hoff = 1 - (amt + margin), hlerp = (amt + margin - barsteps[id][i-1].amt) / (step.amt - barsteps[id][i-1].amt),
-                          r = colour.r*hlerp + lastbarcolour.r*(1-hlerp),
-                          g = colour.g*hlerp + lastbarcolour.g*(1-hlerp),
-                          b = colour.b*hlerp + lastbarcolour.b*(1-hlerp);
-                    gle::attribf(cx, cy + hoff*ch); gle::attribf(0, hoff*middle+top); gle::attribf(r, g, b, 0);
-                    gle::attribf(cx + cw, cy + hoff*ch); gle::attribf(1, hoff*middle+top); gle::attribf(r, g, b, 0);
-                    lastbarcolour = colour;
-                    break;
-                }
-            }
-            float off = 1 - step.amt, hfade = fade, r = colour.r, g = colour.g, b = colour.b;
-            if(step.amt > amt) hfade *= 1 - (step.amt - amt)/margin;
-            gle::attribf(cx, cy + off*ch); gle::attribf(0, off*middle+top); gle::attribf(r, g, b, hfade);
-            gle::attribf(cx + cw, cy + off*ch); gle::attribf(1, off*middle+top); gle::attribf(r, g, b, hfade);
-            lastbarcolour = colour;
-        }
-        gle::end();
-        return h;
     }
 
     int drawhealth(int x, int y, int s, float blend, bool interm)

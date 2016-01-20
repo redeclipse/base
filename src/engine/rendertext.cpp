@@ -5,7 +5,7 @@ FVAR(IDF_PERSIST, textscale, FVAR_NONZERO, 1, FVAR_MAX);
 VAR(IDF_PERSIST, textfaded, 0, 1, 1);
 VAR(IDF_PERSIST, textminintensity, 0, 32, 255);
 
-Texture *tbgbordertex = NULL, *tbgtex = NULL;
+Texture *tkbbordertex = NULL, *tkbtex = NULL;
 VARF(IDF_PERSIST, textkeybg, 0, 2, 2, changedkeys = totalmillis);
 VARF(IDF_PERSIST, textkeyseps, 0, 1, 1, changedkeys = totalmillis);
 VAR(IDF_PERSIST|IDF_HEX, textkeybgcolour, 0x000000, 0xC0C0C0, 0xFFFFFF);
@@ -14,8 +14,18 @@ VAR(IDF_PERSIST|IDF_HEX, textkeyfgcolour, 0x000000, 0x00FFFF, 0xFFFFFF);
 FVAR(IDF_PERSIST, textkeybgblend, 0, 0.35f, 1);
 FVAR(IDF_PERSIST, textkeybgborderblend, 0, 0.5f, 1);
 FVAR(IDF_PERSIST, textkeyfgblend, 0, 1, 1);
-TVARN(IDF_PERSIST|IDF_PRELOAD, textkeybgtex, "textures/guiskin", tbgtex, 0);
-TVARN(IDF_PERSIST|IDF_PRELOAD, textkeybgbordertex, "textures/guiskinborder", tbgbordertex, 0);
+TVARN(IDF_PERSIST|IDF_PRELOAD, textkeybgtex, "textures/guiskin", tkbtex, 0);
+TVARN(IDF_PERSIST|IDF_PRELOAD, textkeybgbordertex, "textures/guiskinborder", tkbbordertex, 0);
+
+Texture *tbgbordertex = NULL, *tbgtex = NULL;
+VAR(IDF_PERSIST, textbg, 0, 1, 2);
+FVAR(IDF_PERSIST, textbgblend, 0, 0.35f, 1);
+FVAR(IDF_PERSIST, textbgfblend, 0, 1, 1);
+FVAR(IDF_PERSIST, textbgborderblend, 0, 0.5f, 1);
+FVAR(IDF_PERSIST, textbgwidth, 0, 3, 1);
+FVAR(IDF_PERSIST, textbgheight, 0, 0.125f, 1);
+TVARN(IDF_PERSIST|IDF_PRELOAD, textbgtex, "textures/guiskin", tbgtex, 0);
+TVARN(IDF_PERSIST|IDF_PRELOAD, textbgbordertex, "textures/guiskinborder", tbgbordertex, 0);
 
 static hashnameset<font> fonts;
 static font *fontdef = NULL;
@@ -539,12 +549,12 @@ int draw_key(Texture *&tex, const char *str, float sx, float sy, float sc, bvec4
                 case 1:
                     colour = textkeybgbordercolour;
                     blend = textkeybgborderblend;
-                    if(!tbgbordertex) tbgbordertex = textureload(textkeybgbordertex, 0, true, false);
-                    t = tbgbordertex;
+                    if(!tkbbordertex) tkbbordertex = textureload(textkeybgbordertex, 0, true, false);
+                    t = tkbbordertex;
                     break;
                 case 0: default:
-                    if(!tbgtex) tbgtex = textureload(textkeybgtex, 0, true, false);
-                    t = tbgtex;
+                    if(!tkbtex) tkbtex = textureload(textkeybgtex, 0, true, false);
+                    t = tkbtex;
                     break;
             }
             drawskin(t, sx, sy, sx+ss, sy+(curfont->maxh+4)*sc, colour, blend*(cl.a/255.f), 0, textmatrix);
@@ -659,7 +669,6 @@ void reloadfonts()
     );
 }
 
-
 int draw_textx(const char *fstr, int left, int top, int r, int g, int b, int a, int flags, int cursor, int maxwidth, ...)
 {
     defvformatbigstring(str, maxwidth, fstr);
@@ -676,6 +685,48 @@ int draw_textx(const char *fstr, int left, int top, int r, int g, int b, int a, 
     else if(flags&TEXT_UPWARD) top -= height;
     if(flags&TEXT_SHADOW) draw_text(str, left-2, top-2, 0, 0, 0, a, flags, cursor, maxwidth);
     return draw_text(str, left, top, r, g, b, a, flags, cursor, maxwidth);
+}
+
+int draw_textt(const char *fstr, int left, int top, int r, int g, int b, int a, int flags, int cursor, int maxwidth, ...)
+{
+    defvformatbigstring(str, maxwidth, fstr);
+
+    int width = 0, height = 0;
+    text_bounds(str, width, height, maxwidth, flags);
+    if(flags&TEXT_ALIGN) switch(flags&TEXT_ALIGN)
+    {
+        case TEXT_CENTERED: left -= width/2; break;
+        case TEXT_RIGHT_JUSTIFY: left -= width; break;
+        default: break;
+    }
+    if(flags&TEXT_BALLOON) top -= height/2;
+    else if(flags&TEXT_UPWARD) top -= height;
+    if(textbg)
+    {
+        int aw = int(FONTW*textbgwidth), ah = int(FONTH*textbgheight),
+            x1 = left-aw/2, y1 = top-ah/2, x2 = x1+width+aw, y2 = y1+height+ah;
+        loopk(textbg)
+        {
+            Texture *t = NULL;
+            float blend = a/255.f;
+            switch(k)
+            {
+                case 1:
+                    blend *= textbgborderblend;
+                    if(!tbgbordertex) tbgbordertex = textureload(textkeybgbordertex, 0, true, false);
+                    t = tkbbordertex;
+                    break;
+                case 0: default:
+                    blend *= textbgblend;
+                    if(!tbgtex) tbgtex = textureload(textkeybgtex, 0, true, false);
+                    t = tbgtex;
+                    break;
+            }
+            drawskin(t, x1, y1, x2, y2, bvec(r, g, b).tohexcolor(), blend);
+        }
+    }
+    if(flags&TEXT_SHADOW) draw_text(str, left-2, top-2, 0, 0, 0, int(a*textbgfblend), flags, cursor, maxwidth);
+    return draw_text(str, left, top, 255, 255, 255, int(a*textbgfblend), flags, cursor, maxwidth);
 }
 
 vector<font *> fontstack;
