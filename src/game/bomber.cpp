@@ -146,15 +146,12 @@ namespace bomber
                 bomberstate::flag &f = st.flags[i];
                 if(f.owner == game::focus)
                 {
-                    pushfont("emphasis");
-                    ty += draw_textx("Holding: \fs\f[%d]\f(%s)bomb\fS", tx, ty, 255, 255, 255, int(255*blend), TEXT_CENTERED, -1, -1, pulsecols[PULSE_DISCO][clamp((lastmillis/100)%PULSECOLOURS, 0, PULSECOLOURS-1)], hud::bombtex)*hud::noticescale;
-                    popfont();
                     bool important = false;
                     if(carrytime)
                     {
                         int delay = carrytime-(lastmillis-f.taketime);
                         pushfont("default");
-                        ty += draw_textx("Explodes in \fs\fzgy%s\fS", tx, ty, 255, 255, 255, int(255*blend), TEXT_CENTERED, -1, -1, timestr(delay))*hud::noticescale;
+                        ty += draw_textx("Bomb explodes in \fs\fzgy%s\fS", tx, ty, 255, 255, 255, int(255*blend), TEXT_CENTERED, -1, -1, timestr(delay))*hud::noticescale;
                         popfont();
                         if(m_gsp1(game::gamemode, game::mutators))
                         {
@@ -168,9 +165,27 @@ namespace bomber
                     {
                         SEARCHBINDCACHE(altkey)("affinity", 0, "\f{\fs\fzuy", "\fS}");
                         pushfont(important ? "emphasis" : "reduced");
-                        ty += draw_textx(important ? "\fs\fzuyPress %s to throw\fS" : "Press %s to throw", tx, ty, 255, 255, 255, int(255*blend), TEXT_CENTERED, -1, -1, altkey)*hud::noticescale;
+                        ty += draw_textx(important ? "\fs\fzuyPress %s to throw the bomb\fS" : "Press %s to throw the bomb", tx, ty, 255, 255, 255, int(255*blend), TEXT_CENTERED, -1, -1, altkey)*hud::noticescale;
                         popfont();
                     }
+                    break;
+                }
+            }
+        }
+    }
+
+    void drawevents(int w, int h, int &tx, int &ty, float blend)
+    {
+        if(game::focus->state == CS_ALIVE && hud::showevents >= 2)
+        {
+            loopv(st.flags)
+            {
+                bomberstate::flag &f = st.flags[i];
+                if(f.owner == game::focus)
+                {
+                    pushfont("huge");
+                    ty += draw_textx("You are holding the \fs\f[%d]\f(%s)bomb\fS", tx, ty, 255, 255, 255, int(255*blend), TEXT_CENTERED, -1, -1, pulsecols[PULSE_DISCO][clamp((lastmillis/100)%PULSECOLOURS, 0, PULSECOLOURS-1)], hud::bombtex)*hud::eventscale;
+                    popfont();
                     break;
                 }
             }

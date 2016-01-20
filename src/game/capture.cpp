@@ -139,10 +139,6 @@ namespace capture
                     else ty += draw_textx("Buffing \fs\fyALL\fS team-mates", tx, ty, 255, 255, 255, int(255*blend), TEXT_CENTERED, -1, -1)*hud::noticescale;
                     popfont();
                 }
-                pushfont("emphasis");
-                char *str = buildflagstr(hasflags, hasflags.length() <= 3);
-                ty += draw_textx("Holding: \fs%s\fS", tx, ty, 255, 255, 255, int(255*blend), TEXT_CENTERED, -1, -1, str)*hud::noticescale;
-                popfont();
             }
             if(!pickup.empty())
             {
@@ -155,7 +151,7 @@ namespace capture
             {
                 SEARCHBINDCACHE(altkey)("affinity", 0, "\f{\fs\fzuy", "\fS}");
                 pushfont("reduced");
-                ty += draw_textx("Press %s to %s", tx, ty, 255, 255, 255, int(255*blend), TEXT_CENTERED, -1, -1, altkey, !hasflags.empty() ? "drop" : "pick up")*hud::noticescale;
+                ty += draw_textx("Press %s to %s", tx, ty, 255, 255, 255, int(255*blend), TEXT_CENTERED, -1, -1, altkey, !hasflags.empty() ? "drop flags" : "pick up flags")*hud::noticescale;
                 popfont();
             }
             if(!taken.empty())
@@ -170,6 +166,27 @@ namespace capture
                 pushfont("default");
                 char *str = buildflagstr(droppedflags, droppedflags.length() <= 3);
                 ty += draw_textx("%s dropped: \fs%s\fS", tx, ty, 255, 255, 255, int(255*blend), TEXT_CENTERED, -1, -1, droppedflags.length() == 1 ? "Flag" : "Flags", str)*hud::noticescale;
+                popfont();
+            }
+        }
+    }
+
+    void drawevents(int w, int h, int &tx, int &ty, float blend)
+    {
+        if(game::focus->state == CS_ALIVE && hud::showevents >= 2)
+        {
+            static vector<int> hasflags;
+            hasflags.setsize(0);
+            loopv(st.flags)
+            {
+                capturestate::flag &f = st.flags[i];
+                if(f.owner == game::focus) hasflags.add(i);
+            }
+            if(!hasflags.empty())
+            {
+                pushfont("huge");
+                char *str = buildflagstr(hasflags, hasflags.length() <= 3);
+                ty += draw_textx("You are holding: \fs%s\fS", tx, ty, 255, 255, 255, int(255*blend), TEXT_CENTERED, -1, -1, str)*hud::eventscale;
                 popfont();
             }
         }

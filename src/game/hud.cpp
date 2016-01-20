@@ -27,7 +27,8 @@ namespace hud
 
     VAR(IDF_PERSIST, showconsole, 0, 2, 2);
     VAR(IDF_PERSIST, shownotices, 0, 3, 4);
-    VAR(IDF_PERSIST, showevents, 0, 3, 7);
+    VAR(IDF_PERSIST, showevents, 0, 3, 4);
+    VAR(IDF_PERSIST, showeventicons, 0, 0, 7);
     VAR(IDF_PERSIST, showloadingaspect, 0, 2, 3);
     VAR(IDF_PERSIST, showloadingmapbg, 0, 1, 1);
     VAR(IDF_PERSIST, showloadinggpu, 0, 1, 1);
@@ -92,9 +93,10 @@ namespace hud
     FVAR(IDF_PERSIST, noticeblend, 0, 1, 1);
     FVAR(IDF_PERSIST, noticescale, 1e-4f, 1, 1000);
     VAR(IDF_PERSIST, noticetitle, 0, 10000, 60000);
-    FVAR(IDF_PERSIST, eventoffset, -1, 0.5f, 1);
+    FVAR(IDF_PERSIST, eventoffset, -1, 0.61f, 1);
     FVAR(IDF_PERSIST, eventblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, eventscale, 1e-4f, 3.f, 1000);
+    FVAR(IDF_PERSIST, eventscale, 1e-4f, 1, 1000);
+    FVAR(IDF_PERSIST, eventiconscale, 1e-4f, 3, 1000);
     VAR(IDF_PERSIST, noticetime, 0, 5000, VAR_MAX);
     VAR(IDF_PERSIST, obitnotices, 0, 2, 2);
     VAR(IDF_PERSIST, teamnotices, 0, 2, 2);
@@ -145,7 +147,8 @@ namespace hud
     VAR(IDF_PERSIST|IDF_HEX, inventorytone, -CTONE_MAX, -CTONE_TEAM-1, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, crosshairtone, -CTONE_MAX, 0, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, hitcrosshairtone, -CTONE_MAX, 0, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, noticestone, -CTONE_MAX, 0, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, noticetone, -CTONE_MAX, 0, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, eventtone, -CTONE_MAX, 0, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, clipstone, -CTONE_MAX, -CTONE_TEAM-1, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, radartone, -CTONE_MAX, -CTONE_TEAM-1, 0xFFFFFF);
 
@@ -1399,7 +1402,7 @@ namespace hud
         int ty = int(((hudheight/2)+(hudheight/2*noticeoffset))/noticescale), tx = int((hudwidth/2)/noticescale),
             tf = int(255*hudblend*noticeblend), tr = 255, tg = 255, tb = 255,
             tw = int((hudwidth-((hudsize*edgesize)*2+(hudsize*inventoryleft)+(hudsize*inventoryright)))/noticescale);
-        if(noticestone) skewcolour(tr, tg, tb, noticestone);
+        if(noticetone) skewcolour(tr, tg, tb, noticetone);
 
         pushfont("emphasis");
         if(!gs_playing(game::gamestate) || lastmillis-game::maptime <= noticetitle)
@@ -3313,35 +3316,32 @@ namespace hud
 
     void drawevents(float blend)
     {
-        int ty = int((hudheight/2)-(hudheight/2*eventoffset)), tx = int(hudwidth/2);
+        pushhudscale(eventscale);
+        int ty = int(((hudheight/2)-(hudheight/2*eventoffset))/eventscale), tx = int((hudwidth/2)/eventscale),
+            tf = int(255*hudblend*eventblend), tr = 255, tg = 255, tb = 255,
+            tw = int((hudwidth-((hudsize*edgesize)*2+(hudsize*inventoryleft)+(hudsize*inventoryright)))/eventscale);
+        if(eventtone) skewcolour(tr, tg, tb, eventtone);
         if(hasteaminfo(game::focus))
         {
-            ty /= noticescale;
-            tx /= noticescale;
-            pushhudscale(noticescale);
             pushfont("huge");
             const char *col = teamnotices >= 2 ? "\fs\fzyS" : "";
-            int tf = int(255*hudblend*noticeblend), tr = 255, tg = 255, tb = 255,
-                tw = int((hudwidth-(int(hudsize*edgesize)*2+int(hudsize*inventoryleft)+(hudsize*inventoryright)))/noticescale);
-            if(noticestone) skewcolour(tr, tg, tb, noticestone);
             if(m_race(game::gamemode)) ty -= draw_textx("%sRace", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, -1, col);
             else if(!m_team(game::gamemode, game::mutators)) ty -= draw_textx("%sFree-for-all %s", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, -1, col, m_bomber(game::gamemode) ? "Bomber-ball" : "Deathmatch");
             else ty -= draw_textx("%sYou are on team %s", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, tw, col, game::colourteam(game::focus->team));
             popfont();
-            pophudmatrix();
-            ty *= noticescale;
-            tx *= noticescale;
         }
-        if(showevents && game::focus->state != CS_EDITING && game::focus->state != CS_SPECTATOR)
+        if(m_capture(game::gamemode)) capture::drawevents(hudwidth, hudheight, tx, ty, tf/255.f);
+        else if(m_defend(game::gamemode)) defend::drawevents(hudwidth, hudheight, tx, ty, tf/255.f);
+        else if(m_bomber(game::gamemode)) bomber::drawevents(hudwidth, hudheight, tx, ty, tf/255.f);
+        if(showeventicons && game::focus->state != CS_EDITING && game::focus->state != CS_SPECTATOR)
         {
-            ty /= eventscale;
-            tx /= eventscale;
-            pushhudscale(eventscale);
+            ty = int(((hudheight/2)+(hudheight/2*eventoffset))/eventscale);
+            tx = int(((hudwidth/2)+(hudwidth/2*eventoffset))/eventscale);
             pushfont("emphasis");
             loopv(game::focus->icons)
             {
-                if(game::focus->icons[i].type == eventicon::AFFINITY && !(showevents&2)) continue;
-                if(game::focus->icons[i].type == eventicon::WEAPON && !(showevents&4)) continue;
+                if(game::focus->icons[i].type == eventicon::AFFINITY && !(showeventicons&2)) continue;
+                if(game::focus->icons[i].type == eventicon::WEAPON && !(showeventicons&4)) continue;
                 int millis = lastmillis-game::focus->icons[i].millis;
                 if(millis <= game::focus->icons[i].fade)
                 {
@@ -3351,7 +3351,7 @@ namespace hud
                         int olen = min(game::focus->icons[i].length/5, 1000), ilen = olen/2, colour = 0xFFFFFF;
                         float skew = millis < ilen ? millis/float(ilen) : (millis > game::focus->icons[i].fade-olen ? (game::focus->icons[i].fade-millis)/float(olen) : 1.f),
                               fade = blend*eventblend*skew;
-                        int size = int(FONTH*skew), width = int((t->w/float(t->h))*size);
+                        int size = int(FONTH*skew*eventiconscale), width = int((t->w/float(t->h))*size);
                         switch(game::focus->icons[i].type)
                         {
                             case eventicon::WEAPON: colour = W(game::focus->icons[i].value, colour); break;
@@ -3365,10 +3365,6 @@ namespace hud
                     }
                 }
             }
-            popfont();
-            pophudmatrix();
-            //ty *= eventscale;
-            //tx *= eventscale; // don't really care
         }
     }
 
@@ -3458,7 +3454,7 @@ namespace hud
             if(showhud)
             {
                 left += drawheadsup(hudwidth, hudheight, edge, top, bottom, fade);
-                if(!texpaneltimer && !game::tvmode() && !client::waiting() && !hasinput(false)) drawevents(fade);
+                if(!texpaneltimer && !game::tvmode() && !client::waiting() && !hasinput(false) && showevents) drawevents(fade);
             }
             else if(gs_playing(game::gamestate) && game::focus == game::player1 && game::focus->state == CS_ALIVE && game::inzoom())
                 drawzoom(hudwidth, hudheight);

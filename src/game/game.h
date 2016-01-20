@@ -1620,10 +1620,10 @@ namespace hud
         *flagtakentex, *bombdroptex, *bombtakentex, *attacktex, *warningtex, *inventorytex, *indicatortex, *crosshairtex, *hithairtex,
         *spree1tex, *spree2tex, *spree3tex, *spree4tex, *multi1tex, *multi2tex, *multi3tex, *headshottex, *dominatetex, *revengetex,
         *firstbloodtex, *breakertex;
-    extern int hudwidth, hudheight, hudsize, lastteam, damageresidue, damageresiduefade, shownotices, radaraffinitynames,
+    extern int hudwidth, hudheight, hudsize, lastteam, damageresidue, damageresiduefade, shownotices, showevents, radaraffinitynames,
         inventorygame, inventoryscore, inventoryscorespec, inventoryscorebg, inventoryscoreinfo, inventoryscorebreak, inventoryscorepos, inventoryracestyle,
         teamhurthud, teamhurttime, teamhurtdist;
-    extern float noticescale, inventoryblend, inventoryskew, radaraffinityblend, radarblipblend, radaraffinitysize,
+    extern float noticescale, eventscale, inventoryblend, inventoryskew, radaraffinityblend, radarblipblend, radaraffinitysize,
         inventoryglow, inventoryscoresize, inventoryscoreshrink, inventoryscoreshrinkmax;
     extern vector<int> teamkills;
     extern const char *icontex(int type, int value);
