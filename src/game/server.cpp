@@ -1122,8 +1122,9 @@ namespace server
     void deleteinfo(void *ci) { delete (clientinfo *)ci; }
 
     int numchannels() { return 3; }
-    int maxclients() { return clamp(G(serverclients)+(G(serverspectators) >= 0 ? G(serverspectators) : G(serverclients)), 1, MAXCLIENTS); }
-    int reserveclients() { return maxclients()+4; }
+    int spectatorslots() { return clamp(G(serverspectators) > 0 ? G(serverspectators) : G(serverclients), 1, MAXCLIENTS); }
+    int maxslots() { return clamp(G(serverclients)+spectatorslots(), 1, MAXCLIENTS); }
+    int reserveclients() { return maxslots()+4; }
     int dupclients() { return G(serverdupclients); }
 
     bool hasclient(clientinfo *ci, clientinfo *cp = NULL)
@@ -1155,6 +1156,15 @@ namespace server
                     (clients[i]->state.actortype == A_PLAYER || (actortype > A_PLAYER && clients[i]->state.actortype <= actortype && clients[i]->state.ownernum >= 0)))
                         n++;
         }
+        return n;
+    }
+
+    int numspectators(int exclude = -1)
+    {
+        int n = 0;
+        loopv(clients)
+            if(clients[i]->clientnum >= 0 && clients[i]->name[0] && clients[i]->clientnum != exclude && clients[i]->state.actortype == A_PLAYER && clients[i]->state.state == CS_SPECTATOR)
+                n++;
         return n;
     }
 
@@ -5249,7 +5259,7 @@ namespace server
         putint(p, gamemode); // 2
         putint(p, mutators); // 3
         putint(p, timeremaining); // 4
-        putint(p, maxclients()); // 5
+        putint(p, maxslots()); // 5
         putint(p, serverpass[0] || G(connectlock) ? MM_PASSWORD : (m_local(gamemode) ? MM_PRIVATE : mastermode)); // 6
         putint(p, numgamevars); // 7
         putint(p, numgamemods); // 8
