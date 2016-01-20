@@ -3321,6 +3321,7 @@ namespace hud
             tf = int(255*hudblend*eventblend), tr = 255, tg = 255, tb = 255,
             tw = int((hudwidth-((hudsize*edgesize)*2+(hudsize*inventoryleft)+(hudsize*inventoryright)))/eventscale);
         if(eventtone) skewcolour(tr, tg, tb, eventtone);
+        pushfont("emphasis");
         if(hasteaminfo(game::focus))
         {
             pushfont("huge");
@@ -3337,7 +3338,6 @@ namespace hud
         {
             ty = int(((hudheight/2)+(hudheight/2*eventoffset))/eventscale);
             tx = int(((hudwidth/2)+(hudwidth/2*eventoffset))/eventscale);
-            pushfont("emphasis");
             loopv(game::focus->icons)
             {
                 if(game::focus->icons[i].type == eventicon::AFFINITY && !(showeventicons&2)) continue;
@@ -3366,6 +3366,8 @@ namespace hud
                 }
             }
         }
+        popfont();
+        pophudmatrix();
     }
 
     void drawhud(bool noview)

@@ -184,7 +184,7 @@ namespace capture
             }
             if(!hasflags.empty())
             {
-                pushfont("huge");
+                pushfont("super");
                 char *str = buildflagstr(hasflags, hasflags.length() <= 3);
                 ty += draw_textx("You are holding the \fs%s\fS %s", tx, ty, 255, 255, 255, int(255*blend), TEXT_CENTERED, -1, -1, str, hasflags.length() == 1 ? "flag" : "flags")*hud::eventscale;
                 popfont();
