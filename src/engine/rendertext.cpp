@@ -1,7 +1,8 @@
 #include "engine.h"
 
 VAR(IDF_PERSIST, textblinking, 0, 250, VAR_MAX);
-FVAR(IDF_PERSIST, textscale, FVAR_NONZERO, 1, FVAR_MAX);
+float activetextscale = 1;
+FVARF(IDF_PERSIST, textscale, FVAR_NONZERO, 1, FVAR_MAX, activetextscale = textscale);
 VAR(IDF_PERSIST, textfaded, 0, 1, 1);
 VAR(IDF_PERSIST, textminintensity, 0, 32, 255);
 
@@ -404,7 +405,7 @@ static float icon_width(const char *name, float scale)
     y += FONTH; \
 }
 #define TEXTSKELETON \
-    float y = 0, x = 0, scale = curfont->scale/float(curfont->defaulth)*textscale;\
+    float y = 0, x = 0, scale = curfont->scale/float(curfont->defaulth)*activetextscale;\
     int i = 0;\
     for(i = 0; str[i]; i++)\
     {\

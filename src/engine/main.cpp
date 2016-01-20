@@ -74,7 +74,7 @@ void inputgrab(bool on)
         }
     }
     shouldgrab = false;
-}   
+}
 
 extern void cleargamma();
 
@@ -126,7 +126,7 @@ void fatal(const char *s, ...)    // failure exit
             if(SDL_WasInit(SDL_INIT_VIDEO))
             {
                 SDL_ShowCursor(SDL_TRUE);
-                SDL_SetRelativeMouseMode(SDL_FALSE); 
+                SDL_SetRelativeMouseMode(SDL_FALSE);
                 if(screen) SDL_SetWindowGrab(screen, SDL_FALSE);
                 cleargamma();
                 #ifdef __APPLE__
@@ -238,7 +238,7 @@ void resetfullscreen()
 VARF(0, fullscreendesktop, 0, 0, 1, if(!(identflags&IDF_WORLD) && fullscreen) resetfullscreen());
 
 void screenres(int w, int h)
-{               
+{
     scr_w = clamp(w, SCR_MINW, SCR_MAXW);
     scr_h = clamp(h, SCR_MINH, SCR_MAXH);
     if(screen)
@@ -259,14 +259,14 @@ void screenres(int w, int h)
     {
         initwarning("screen resolution");
     }
-}       
+}
 
 ICOMMAND(0, screenres, "ii", (int *w, int *h), screenres(*w, *h));
 
 static void setgamma(int val)
-{   
+{
     if(screen && SDL_SetWindowBrightness(screen, val/100.0f) < 0) conoutf("\frCould not set gamma: %s", SDL_GetError());
-}   
+}
 
 static int curgamma = 100;
 VARF(IDF_PERSIST, gamma, 30, 100, 300,
@@ -277,7 +277,7 @@ VARF(IDF_PERSIST, gamma, 30, 100, 300,
 });
 
 void restoregamma()
-{       
+{
     if(initing || curgamma == 100) return;
     setgamma(curgamma);
 }
@@ -1018,6 +1018,7 @@ int main(int argc, char **argv)
 
     for(int frameloops = 0; ; frameloops = frameloops >= INT_MAX-1 ? MAXFPSHISTORY+1 : frameloops+1)
     {
+        activetextscale = textscale;
         int elapsed = updatetimer(true);
         updatefps(frameloops, elapsed);
         checkinput();

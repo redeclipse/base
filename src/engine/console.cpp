@@ -446,10 +446,10 @@ void execbind(keym &k, bool isdown)
 bool consoleinput(const char *str, int len)
 {
     if(commandmillis < 0) return false;
-    
+
     resetcomplete();
     int maxlen = int(sizeof(commandbuf));
-    if(commandflags&CF_MESSAGE) maxlen = min(client::maxmsglen(), maxlen); 
+    if(commandflags&CF_MESSAGE) maxlen = min(client::maxmsglen(), maxlen);
     int cmdlen = (int)strlen(commandbuf), cmdspace = maxlen - (cmdlen+1);
     len = min(len, cmdspace);
     if(len <= 0) return true;
@@ -466,7 +466,7 @@ bool consoleinput(const char *str, int len)
     }
     commandbuf[cmdlen + len] = '\0';
 
-    return true; 
+    return true;
 }
 
 bool consolekey(int code, bool isdown)
@@ -629,10 +629,7 @@ void processkey(int code, bool isdown)
     }
     keym *haskey = keyms.access(code);
     if(haskey && haskey->pressed) execbind(*haskey, isdown); // allow pressed keys to release
-    else if(!consolekey(code, isdown))
-    {
-        if(!hud::keypress(code, isdown) && haskey) execbind(*haskey, isdown);
-    }
+    else if(!consolekey(code, isdown) && !hud::keypress(code, isdown) && haskey) execbind(*haskey, isdown);
 }
 
 char *getcurcommand()

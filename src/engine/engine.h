@@ -124,8 +124,8 @@ struct font
     ~font() { DELETEA(name); }
 };
 
-extern float textscale, guitextscale;
-#define FONTH int(curfont->scale*textscale)
+extern float textscale, guitextscale, activetextscale;
+#define FONTH int(curfont->scale*activetextscale)
 #define FONTW (FONTH/2)
 #define FONTTAB (4*FONTW)
 
@@ -681,7 +681,7 @@ extern int guilayoutpass, guiskinsize, guislidersize, guisepsize, guispacesize, 
     guihovercolour, guistatusline, guitooltips, guitooltiptime, guitooltipfade, guitooltipcolour, guitooltipbordercolour, guitooltipborderskin,
     guifieldbgcolour, guifieldbordercolour, guifieldactivecolour, guislidercolour, guisliderbordercolour, guisliderborderskin, guislidermarkcolour,
     guislidermarkbordercolour, guislidermarkborderskin, guislideractivecolour, guiactivecolour, guicheckboxcolour, guicheckboxtwocolour, guiradioboxcolour;
-extern float guiscale, guitextscale, guibgblend, guiborderblend, guihoverscale, guihoverblend, guitooltipblend, guitooltipborderblend,
+extern float guiscale, guibgblend, guiborderblend, guihoverscale, guihoverblend, guitooltipblend, guitooltipborderblend,
     guifieldbgblend, guifieldborderblend, guifieldactiveblend, guisliderblend, guisliderborderblend, guislidermarkblend, guislidermarkborderblend,
     guislideractiveblend, guiactiveblend;
 extern char *guiskintex, *guiskinbordertex, *guioverlaytex, *guiexittex, *guihovertex;

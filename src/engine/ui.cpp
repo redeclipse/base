@@ -1291,15 +1291,19 @@ namespace UI
             return true;
         }
 
-        if(code<0) switch(code)
+        if(code < 0) switch(code)
         { // fall-through-o-rama
             case -5: mouseaction[1] |= GUI_ALT;
             case -4: mouseaction[1] |= isdown ? GUI_DOWN : GUI_UP;
                 if(active()) return true;
                 break;
             case -3: mouseaction[0] |= GUI_ALT;
-            case -1: mouseaction[0] |= (guiactionon=isdown) ? GUI_DOWN : GUI_UP;
-                if(isdown) { firstx = gui::hitx; firsty = gui::hity; }
+            case -1: mouseaction[0] |= (guiactionon = isdown) ? GUI_DOWN : GUI_UP;
+                if(isdown)
+                {
+                    firstx = gui::hitx;
+                    firsty = gui::hity;
+                }
                 if(active()) return true;
                 break;
             case -2:
@@ -1317,7 +1321,7 @@ namespace UI
                     fieldmode = FIELDABORT;
                     e->unfocus = true;
                 }
-                return true;
+                return e->mode != EDITORFOREVER;
             case SDLK_RETURN:
             case SDLK_TAB:
                 if(e->maxy != 1) break;
@@ -1360,8 +1364,8 @@ namespace UI
 
     void render()
     {
-        float oldtextscale = textscale;
-        textscale = guitextscale;
+        float oldtextscale = activetextscale;
+        activetextscale = guitextscale;
         if(guiactionon) mouseaction[0] |= GUI_PRESSED;
 
         gui::reset();
@@ -1407,7 +1411,7 @@ namespace UI
             keyrepeat(fieldmode!=FIELDSHOW, KR_GUI);
         }
         loopi(2) mouseaction[i] = 0;
-        textscale = oldtextscale;
+        activetextscale = oldtextscale;
     }
 
     editor *geteditor(const char *name, int mode, const char *init, const char *parent)
