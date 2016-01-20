@@ -1959,8 +1959,6 @@ namespace entities
                 e.o = ents[i]->o;
                 e.attrs.add(0, max(5, enttype[ACTOR].numattrs));
                 e.attrs[0] = (i%5 != 4 ? A_GRUNT : A_TURRET)-1;
-                e.attrs[6] = (i/5)%(W_MAX+1);
-                if(e.attrs[0] == A_TURRET && e.attrs[5] == W_MELEE) e.attrs[5] = W_SMG;
                 switch(ents[i]->type)
                 {
                     case PLAYERSTART:
