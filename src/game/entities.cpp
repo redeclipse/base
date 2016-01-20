@@ -1958,7 +1958,7 @@ namespace entities
                 e.type = ACTOR;
                 e.o = ents[i]->o;
                 e.attrs.add(0, max(5, enttype[ACTOR].numattrs));
-                e.attrs[0] = (i%5 != 4 ? A_GRUNT : A_TURRET)-1;
+                e.attrs[0] = (i%5 != 4 || ents[i]->type == WEAPON ? A_GRUNT : A_TURRET)-1;
                 switch(ents[i]->type)
                 {
                     case PLAYERSTART:
