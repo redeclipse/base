@@ -283,6 +283,7 @@ namespace server
         {
             loopi(WARN_MAX) loopj(2) warnings[i][j] = 0;
             resetresidualowner();
+            spree = 0;
         }
 
         bool isalive(int millis)

@@ -991,6 +991,7 @@ struct gameent : dynent, clientstate
         copystring(hostname, "0.0.0.0");
         copystring(hostip, "0.0.0.0");
         name[0] = handle[0] = info[0] = obit[0] = '\0';
+        spree = 0;
         removesounds();
         cleartags();
         checktags();
@@ -1065,7 +1066,7 @@ struct gameent : dynent, clientstate
     void clearstate(int gamemode, int mutators)
     {
         loopi(IM_MAX) if(i != IM_METER || !m_race(gamemode) || !m_gsp2(gamemode, mutators)) impulse[i] = 0;
-        lasthit = lastkill = quake = turnmillis = turnside = spree = 0;
+        lasthit = lastkill = quake = turnmillis = turnside = 0;
         turnroll = turnyaw = 0;
         lastteamhit = lastflag = respawned = suicided = lastnode = lastfoot = -1;
         obit[0] = '\0';
@@ -1103,7 +1104,7 @@ struct gameent : dynent, clientstate
     {
         respawn(millis, gamemode, mutators);
         checkpoint = -1;
-        frags = deaths = totaldamage = cplast = 0;
+        frags = deaths = totaldamage = cplast = spree = 0;
     }
 
     void mapchange(int millis, int gamemode, int mutators)
