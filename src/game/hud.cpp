@@ -498,14 +498,14 @@ namespace hud
 
     VAR(IDF_PERSIST, radarhits, 0, 1, 2);
     VAR(IDF_PERSIST, radarhitsheal, 0, 1, 1);
-    VAR(IDF_PERSIST, radarhitsfollow, 0, 1, 1);
+    VAR(IDF_PERSIST, radarhitsfollow, 0, 0, 1);
     VAR(IDF_PERSIST, radarhitsmerge, 0, 250, VAR_MAX);
     VAR(IDF_PERSIST, radarhitstime, 1, 250, VAR_MAX);
-    VAR(IDF_PERSIST, radarhitsfade, 1, 3500, VAR_MAX);
-    FVAR(IDF_PERSIST, radarhitsswipe, 0, 7, 1000);
+    VAR(IDF_PERSIST, radarhitsfade, 1, 3000, VAR_MAX);
+    FVAR(IDF_PERSIST, radarhitsswipe, 0, 6, 1000);
     FVAR(IDF_PERSIST, radarhitsscale, 0, 2, 1000);
     FVAR(IDF_PERSIST, radarhitsblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, radarhitsheight, -1000, 0, 1000);
+    FVAR(IDF_PERSIST, radarhitsheight, -1000, 0.25f, 1000);
     FVAR(IDF_PERSIST, radarhitsoffset, -1000, 3, 1000);
     VAR(IDF_PERSIST, radarhitsglow, 0, 1, 1);
     FVAR(IDF_PERSIST, radarhitsglowblend, 0, 1, 1);
@@ -513,7 +513,7 @@ namespace hud
     FVAR(IDF_PERSIST, radarhitsglowcolour, 0, 0.75f, 5);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, radarhitsglowtex, "textures/guihover", 3);
     VAR(IDF_PERSIST|IDF_HEX, radarhitsdamagecolour, 0, 0xFF4444, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, radarhitsburncolour, 0, 0xFFAA44, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, radarhitsburncolour, 0, 0xFF8822, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, radarhitshealcolour, 0, 0xFF44FF, 0xFFFFFF);
 
     VAR(IDF_PERSIST, showeditradar, 0, 1, 1);
