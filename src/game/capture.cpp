@@ -100,7 +100,7 @@ namespace capture
         return s;
     }
 
-    void drawnotices(int w, int h, int &tx, int &ty, float blend)
+    void drawnotices(int w, int h, int &tx, int &ty, int tr, int tg, int tb, float blend)
     {
         if(game::focus->state == CS_ALIVE && hud::shownotices >= 2)
         {
@@ -108,8 +108,8 @@ namespace capture
             {
                 pushfont("reduced");
                 if(m_regen(game::gamemode, game::mutators) && captureregenbuff && captureregenextra)
-                    ty += draw_textx("Buffing: \fs\fo%d%%\fS damage, \fs\fg%d%%\fS shield, +\fs\fy%d\fS regen", tx, ty, 255, 255, 255, int(255*blend), TEXT_CENTERED, -1, -1, int(capturebuffdamage*100), int(capturebuffshield*100), captureregenextra)*hud::noticescale;
-                else ty += draw_textx("Buffing: \fs\fo%d%%\fS damage, \fs\fg%d%%\fS shield", tx, ty, 255, 255, 255, int(255*blend), TEXT_CENTERED, -1, -1, int(capturebuffdamage*100), int(capturebuffshield*100))*hud::noticescale;
+                    ty += draw_textx("Buffing: \fs\fo%d%%\fS damage, \fs\fg%d%%\fS shield, +\fs\fy%d\fS regen", tx, ty, tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, int(capturebuffdamage*100), int(capturebuffshield*100), captureregenextra)*hud::noticescale;
+                else ty += draw_textx("Buffing: \fs\fo%d%%\fS damage, \fs\fg%d%%\fS shield", tx, ty, tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, int(capturebuffdamage*100), int(capturebuffshield*100))*hud::noticescale;
                 popfont();
             }
             bool ownflag = false;
@@ -135,8 +135,8 @@ namespace capture
                 if(capturebuffing&(ownflag ? 8 : 32))
                 {
                     pushfont("reduced");
-                    if(capturebuffarea > 0) ty += draw_textx("Buffing team-mates within \fs\fy%.2f\fom\fS", tx, ty, 255, 255, 255, int(255*blend), TEXT_CENTERED, -1, -1, capturebuffarea/8.f)*hud::noticescale;
-                    else ty += draw_textx("Buffing \fs\fyALL\fS team-mates", tx, ty, 255, 255, 255, int(255*blend), TEXT_CENTERED, -1, -1)*hud::noticescale;
+                    if(capturebuffarea > 0) ty += draw_textx("Buffing team-mates within \fs\fy%.2f\fom\fS", tx, ty, tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, capturebuffarea/8.f)*hud::noticescale;
+                    else ty += draw_textx("Buffing \fs\fyALL\fS team-mates", tx, ty, tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1)*hud::noticescale;
                     popfont();
                 }
             }
@@ -144,34 +144,34 @@ namespace capture
             {
                 pushfont("emphasis");
                 char *str = buildflagstr(pickup, pickup.length() <= 3);
-                ty += draw_textx("Nearby: \fs%s\fS", tx, ty, 255, 255, 255, int(255*blend), TEXT_CENTERED, -1, -1, str)*hud::noticescale;
+                ty += draw_textx("Nearby: \fs%s\fS", tx, ty, tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, str)*hud::noticescale;
                 popfont();
             }
             if(game::focus == game::player1 && (!hasflags.empty() || !pickup.empty()))
             {
                 SEARCHBINDCACHE(altkey)("affinity", 0, "\f{\fs\fzuy", "\fS}");
                 pushfont("reduced");
-                ty += draw_textx("Press %s to %s", tx, ty, 255, 255, 255, int(255*blend), TEXT_CENTERED, -1, -1, altkey, !hasflags.empty() ? "drop flags" : "pick up flags")*hud::noticescale;
+                ty += draw_textx("Press %s to %s", tx, ty, tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, altkey, !hasflags.empty() ? "drop flags" : "pick up flags")*hud::noticescale;
                 popfont();
             }
             if(!taken.empty())
             {
                 pushfont("default");
                 char *str = buildflagstr(taken, taken.length() <= 3);
-                ty += draw_textx("%s taken: \fs%s\fS", tx, ty, 255, 255, 255, int(255*blend), TEXT_CENTERED, -1, -1, taken.length() == 1 ? "Flag" : "Flags", str)*hud::noticescale;
+                ty += draw_textx("%s taken: \fs%s\fS", tx, ty, tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, taken.length() == 1 ? "Flag" : "Flags", str)*hud::noticescale;
                 popfont();
             }
             if(!droppedflags.empty())
             {
                 pushfont("default");
                 char *str = buildflagstr(droppedflags, droppedflags.length() <= 3);
-                ty += draw_textx("%s dropped: \fs%s\fS", tx, ty, 255, 255, 255, int(255*blend), TEXT_CENTERED, -1, -1, droppedflags.length() == 1 ? "Flag" : "Flags", str)*hud::noticescale;
+                ty += draw_textx("%s dropped: \fs%s\fS", tx, ty, tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, droppedflags.length() == 1 ? "Flag" : "Flags", str)*hud::noticescale;
                 popfont();
             }
         }
     }
 
-    void drawevents(int w, int h, int &tx, int &ty, float blend)
+    void drawevents(int w, int h, int &tx, int &ty, int tr, int tg, int tb, float blend)
     {
         if(game::focus->state == CS_ALIVE && hud::showevents >= 2)
         {
@@ -186,7 +186,7 @@ namespace capture
             {
                 pushfont("super");
                 char *str = buildflagstr(hasflags, hasflags.length() <= 3);
-                ty += draw_textx("You are holding the \fs%s\fS %s", tx, ty, 255, 255, 255, int(255*blend), TEXT_CENTERED, -1, -1, str, hasflags.length() == 1 ? "flag" : "flags")*hud::eventscale;
+                ty += draw_textx("You are holding the \fs%s\fS %s", tx, ty, tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, str, hasflags.length() == 1 ? "flag" : "flags")*hud::eventscale;
                 popfont();
             }
         }

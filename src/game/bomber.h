@@ -231,8 +231,8 @@ namespace bomber
     extern void setscore(int team, int total);
     extern void update();
     extern void killed(gameent *d, gameent *v);
-    extern void drawnotices(int w, int h, int &tx, int &ty, float blend);
-    extern void drawevents(int w, int h, int &tx, int &ty, float blend);
+    extern void drawnotices(int w, int h, int &tx, int &ty, int tr, int tg, int tb, float blend);
+    extern void drawevents(int w, int h, int &tx, int &ty, int tr, int tg, int tb, float blend);
     extern void drawblips(int w, int h, float blend);
     extern int drawinventory(int x, int y, int s, int m, float blend);
     extern void preload();

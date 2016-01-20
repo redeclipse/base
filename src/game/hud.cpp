@@ -1651,9 +1651,65 @@ namespace hud
                 popfont();
             }
 
-            if(m_capture(game::gamemode)) capture::drawnotices(hudwidth, hudheight, tx, ty, tf/255.f);
-            else if(m_defend(game::gamemode)) defend::drawnotices(hudwidth, hudheight, tx, ty, tf/255.f);
-            else if(m_bomber(game::gamemode)) bomber::drawnotices(hudwidth, hudheight, tx, ty, tf/255.f);
+            if(m_capture(game::gamemode)) capture::drawnotices(hudwidth, hudheight, tx, ty, tr, tg, tb, tf/255.f);
+            else if(m_defend(game::gamemode)) defend::drawnotices(hudwidth, hudheight, tx, ty, tr, tg, tb, tf/255.f);
+            else if(m_bomber(game::gamemode)) bomber::drawnotices(hudwidth, hudheight, tx, ty, tr, tg, tb, tf/255.f);
+        }
+        popfont();
+        pophudmatrix();
+    }
+
+    void drawevents(float blend)
+    {
+        pushhudscale(eventscale);
+        int ty = int(((hudheight/2)-(hudheight/2*eventoffset))/eventscale), tx = int((hudwidth/2)/eventscale),
+            tf = int(255*hudblend*eventblend), tr = 255, tg = 255, tb = 255,
+            tw = int((hudwidth-((hudsize*edgesize)*2+(hudsize*inventoryleft)+(hudsize*inventoryright)))/eventscale);
+        if(eventtone) skewcolour(tr, tg, tb, eventtone);
+        pushfont("emphasis");
+        if(hasteaminfo(game::focus))
+        {
+            pushfont("huge");
+            const char *col = teamnotices >= 2 ? "\fs\fzyS" : "";
+            if(m_race(game::gamemode)) ty -= draw_textx("%sRace", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, -1, col);
+            else if(!m_team(game::gamemode, game::mutators)) ty -= draw_textx("%sFree-for-all %s", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, -1, col, m_bomber(game::gamemode) ? "Bomber-ball" : "Deathmatch");
+            else ty -= draw_textx("%sYou are on team %s", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, tw, col, game::colourteam(game::focus->team));
+            popfont();
+        }
+        if(m_capture(game::gamemode)) capture::drawevents(hudwidth, hudheight, tx, ty, tr, tg, tb, tf/255.f);
+        else if(m_defend(game::gamemode)) defend::drawevents(hudwidth, hudheight, tx, ty, tr, tg, tb, tf/255.f);
+        else if(m_bomber(game::gamemode)) bomber::drawevents(hudwidth, hudheight, tx, ty, tr, tg, tb, tf/255.f);
+        if(showeventicons && game::focus->state != CS_EDITING && game::focus->state != CS_SPECTATOR)
+        {
+            ty = int(((hudheight/2)+(hudheight/2*eventoffset))/eventscale);
+            tx = int(((hudwidth/2)+(hudwidth/2*eventoffset))/eventscale);
+            loopv(game::focus->icons)
+            {
+                if(game::focus->icons[i].type == eventicon::AFFINITY && !(showeventicons&2)) continue;
+                if(game::focus->icons[i].type == eventicon::WEAPON && !(showeventicons&4)) continue;
+                int millis = lastmillis-game::focus->icons[i].millis;
+                if(millis <= game::focus->icons[i].fade)
+                {
+                    Texture *t = textureload(icontex(game::focus->icons[i].type, game::focus->icons[i].value));
+                    if(t && t != notexture)
+                    {
+                        int olen = min(game::focus->icons[i].length/5, 1000), ilen = olen/2, colour = 0xFFFFFF;
+                        float skew = millis < ilen ? millis/float(ilen) : (millis > game::focus->icons[i].fade-olen ? (game::focus->icons[i].fade-millis)/float(olen) : 1.f),
+                              fade = blend*eventblend*skew;
+                        int size = int(FONTH*skew*eventiconscale), width = int((t->w/float(t->h))*size);
+                        switch(game::focus->icons[i].type)
+                        {
+                            case eventicon::WEAPON: colour = W(game::focus->icons[i].value, colour); break;
+                            case eventicon::AFFINITY: colour = m_bomber(game::gamemode) ? pulsecols[PULSE_DISCO][clamp((totalmillis/100)%PULSECOLOURS, 0, PULSECOLOURS-1)] : TEAM(game::focus->icons[i].value, colour); break;
+                            default: break;
+                        }
+                        glBindTexture(GL_TEXTURE_2D, t->id);
+                        gle::color(vec::hexcolor(colour), fade);
+                        drawtexture(tx-width/2, ty-size, width, size);
+                        ty -= game::focus->icons[i].type < eventicon::SORTED ? int(size*2/3) : int(size);
+                    }
+                }
+            }
         }
         popfont();
         pophudmatrix();
@@ -3314,62 +3370,6 @@ namespace hud
         return drawinventory(w, h, edge, top, bottom, fade);
     }
 
-    void drawevents(float blend)
-    {
-        pushhudscale(eventscale);
-        int ty = int(((hudheight/2)-(hudheight/2*eventoffset))/eventscale), tx = int((hudwidth/2)/eventscale),
-            tf = int(255*hudblend*eventblend), tr = 255, tg = 255, tb = 255,
-            tw = int((hudwidth-((hudsize*edgesize)*2+(hudsize*inventoryleft)+(hudsize*inventoryright)))/eventscale);
-        if(eventtone) skewcolour(tr, tg, tb, eventtone);
-        pushfont("emphasis");
-        if(hasteaminfo(game::focus))
-        {
-            pushfont("huge");
-            const char *col = teamnotices >= 2 ? "\fs\fzyS" : "";
-            if(m_race(game::gamemode)) ty -= draw_textx("%sRace", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, -1, col);
-            else if(!m_team(game::gamemode, game::mutators)) ty -= draw_textx("%sFree-for-all %s", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, -1, col, m_bomber(game::gamemode) ? "Bomber-ball" : "Deathmatch");
-            else ty -= draw_textx("%sYou are on team %s", tx, ty, tr, tg, tb, tf, TEXT_CENTERED, -1, tw, col, game::colourteam(game::focus->team));
-            popfont();
-        }
-        if(m_capture(game::gamemode)) capture::drawevents(hudwidth, hudheight, tx, ty, tf/255.f);
-        else if(m_defend(game::gamemode)) defend::drawevents(hudwidth, hudheight, tx, ty, tf/255.f);
-        else if(m_bomber(game::gamemode)) bomber::drawevents(hudwidth, hudheight, tx, ty, tf/255.f);
-        if(showeventicons && game::focus->state != CS_EDITING && game::focus->state != CS_SPECTATOR)
-        {
-            ty = int(((hudheight/2)+(hudheight/2*eventoffset))/eventscale);
-            tx = int(((hudwidth/2)+(hudwidth/2*eventoffset))/eventscale);
-            loopv(game::focus->icons)
-            {
-                if(game::focus->icons[i].type == eventicon::AFFINITY && !(showeventicons&2)) continue;
-                if(game::focus->icons[i].type == eventicon::WEAPON && !(showeventicons&4)) continue;
-                int millis = lastmillis-game::focus->icons[i].millis;
-                if(millis <= game::focus->icons[i].fade)
-                {
-                    Texture *t = textureload(icontex(game::focus->icons[i].type, game::focus->icons[i].value));
-                    if(t && t != notexture)
-                    {
-                        int olen = min(game::focus->icons[i].length/5, 1000), ilen = olen/2, colour = 0xFFFFFF;
-                        float skew = millis < ilen ? millis/float(ilen) : (millis > game::focus->icons[i].fade-olen ? (game::focus->icons[i].fade-millis)/float(olen) : 1.f),
-                              fade = blend*eventblend*skew;
-                        int size = int(FONTH*skew*eventiconscale), width = int((t->w/float(t->h))*size);
-                        switch(game::focus->icons[i].type)
-                        {
-                            case eventicon::WEAPON: colour = W(game::focus->icons[i].value, colour); break;
-                            case eventicon::AFFINITY: colour = m_bomber(game::gamemode) ? pulsecols[PULSE_DISCO][clamp((totalmillis/100)%PULSECOLOURS, 0, PULSECOLOURS-1)] : TEAM(game::focus->icons[i].value, colour); break;
-                            default: break;
-                        }
-                        glBindTexture(GL_TEXTURE_2D, t->id);
-                        gle::color(vec::hexcolor(colour), fade);
-                        drawtexture(tx-width/2, ty-size, width, size);
-                        ty -= game::focus->icons[i].type < eventicon::SORTED ? int(size*2/3) : int(size);
-                    }
-                }
-            }
-        }
-        popfont();
-        pophudmatrix();
-    }
-
     void drawhud(bool noview)
     {
         hudmatrix.ortho(0, hudwidth, hudheight, 0, -1, 1);
@@ -3456,7 +3456,7 @@ namespace hud
             if(showhud)
             {
                 left += drawheadsup(hudwidth, hudheight, edge, top, bottom, fade);
-                if(!texpaneltimer && !game::tvmode() && !client::waiting() && !hasinput(false) && showevents) drawevents(fade);
+                if(showevents && !texpaneltimer && !game::tvmode() && !client::waiting() && !hasinput(false)) drawevents(fade);
             }
             else if(gs_playing(game::gamestate) && game::focus == game::player1 && game::focus->state == CS_ALIVE && game::inzoom())
                 drawzoom(hudwidth, hudheight);
