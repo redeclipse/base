@@ -1122,7 +1122,8 @@ namespace server
     void deleteinfo(void *ci) { delete (clientinfo *)ci; }
 
     int numchannels() { return 3; }
-    int reserveclients() { return G(serverclients)+4; }
+    int maxclients() { return clamp(G(serverclients)+(G(serverspectators) >= 0 ? G(serverspectators) : G(serverclients)), 1, MAXCLIENTS); }
+    int reserveclients() { return maxclients()+4; }
     int dupclients() { return G(serverdupclients); }
 
     bool hasclient(clientinfo *ci, clientinfo *cp = NULL)
@@ -3029,6 +3030,7 @@ namespace server
                 return false;
             }
             int nospawn = 0;
+            if(numclients(ci->clientnum, true) >= G(serverclients)) nospawn++;
             if(smode && !smode->canspawn(ci, true)) { nospawn++; }
             mutate(smuts, if(!mut->canspawn(ci, true)) { nospawn++; });
             ci->state.state = CS_DEAD;
@@ -3182,7 +3184,7 @@ namespace server
         {
             case ALST_TRY: // try spawn
             {
-                if(ci->state.quarantine) return false;
+                if(ci->state.quarantine || (ci->state.state == CS_SPECTATOR && numclients(ci->clientnum, true) >= G(serverclients))) return false;
                 if(ci->state.actortype == A_PLAYER)
                     if(mastermode >= MM_LOCKED && ip && !checkipinfo(control, ipinfo::ALLOW, ip) && !haspriv(ci, lock, "spawn"))
                         return false;
@@ -3197,7 +3199,7 @@ namespace server
             }
             case ALST_SPAWN: // spawn
             {
-                if(ci->state.quarantine) return false;
+                if(ci->state.quarantine || (ci->state.state == CS_SPECTATOR && numclients(ci->clientnum, true) >= G(serverclients))) return false;
                 if(ci->state.state != CS_DEAD && ci->state.state != CS_WAITING) return false;
                 if(ci->state.lastdeath && gamemillis-ci->state.lastdeath <= DEATHMILLIS) return false;
                 if(crclocked(ci, true))
@@ -3211,7 +3213,7 @@ namespace server
             case ALST_WALK: if(ci->state.state != CS_EDITING) return false;
             case ALST_EDIT: // edit on/off
             {
-                if(ci->state.quarantine || ci->state.actortype != A_PLAYER || !m_edit(gamemode)) return false;
+                if(ci->state.quarantine || (ci->state.state == CS_SPECTATOR && numclients(ci->clientnum, true) >= G(serverclients)) || ci->state.actortype != A_PLAYER || !m_edit(gamemode)) return false;
                 if(mastermode >= MM_LOCKED && ip && !checkipinfo(control, ipinfo::ALLOW, ip) && !haspriv(ci, lock, "edit")) return false;
                 break;
             }
@@ -5247,7 +5249,7 @@ namespace server
         putint(p, gamemode); // 2
         putint(p, mutators); // 3
         putint(p, timeremaining); // 4
-        putint(p, G(serverclients)); // 5
+        putint(p, maxclients()); // 5
         putint(p, serverpass[0] || G(connectlock) ? MM_PASSWORD : (m_local(gamemode) ? MM_PRIVATE : mastermode)); // 6
         putint(p, numgamevars); // 7
         putint(p, numgamemods); // 8

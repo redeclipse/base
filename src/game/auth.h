@@ -232,7 +232,7 @@ namespace auth
         if(m_local(gamemode)) return DISC_PRIVATE;
         if(tryident(ci, authname, pwd)) return DISC_NONE;
         // above here are short circuits
-        if(numclients() >= G(serverclients)) return DISC_MAXCLIENTS;
+        if(numclients() >= maxclients()) return DISC_MAXCLIENTS;
         uint ip = getclientip(ci->clientnum);
         if(!ip || !checkipinfo(control, ipinfo::EXCEPT, ip))
         {
