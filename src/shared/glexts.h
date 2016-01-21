@@ -457,3 +457,12 @@ extern PFNGLDELETEVERTEXARRAYSPROC glDeleteVertexArrays_;
 extern PFNGLGENVERTEXARRAYSPROC    glGenVertexArrays_;
 extern PFNGLISVERTEXARRAYPROC      glIsVertexArray_;
 
+#ifndef GL_ARB_texture_swizzle
+#define GL_ARB_texture_swizzle 1
+#define GL_TEXTURE_SWIZZLE_R              0x8E42
+#define GL_TEXTURE_SWIZZLE_G              0x8E43
+#define GL_TEXTURE_SWIZZLE_B              0x8E44
+#define GL_TEXTURE_SWIZZLE_A              0x8E45
+#define GL_TEXTURE_SWIZZLE_RGBA           0x8E46
+#endif
+
