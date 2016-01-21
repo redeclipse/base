@@ -12,21 +12,24 @@ VARF(IDF_PERSIST, textkeyseps, 0, 1, 1, changedkeys = totalmillis);
 VAR(IDF_PERSIST|IDF_HEX, textkeybgcolour, 0x000000, 0xC0C0C0, 0xFFFFFF);
 VAR(IDF_PERSIST|IDF_HEX, textkeybgbordercolour, 0x000000, 0xFFFFFF, 0xFFFFFF);
 VAR(IDF_PERSIST|IDF_HEX, textkeyfgcolour, 0x000000, 0x00FFFF, 0xFFFFFF);
-FVAR(IDF_PERSIST, textkeybgblend, 0, 0.35f, 1);
-FVAR(IDF_PERSIST, textkeybgborderblend, 0, 0.5f, 1);
+FVAR(IDF_PERSIST, textkeybgblend, 0, 0.3f, 1);
+FVAR(IDF_PERSIST, textkeybgborderblend, 0, 0.4f, 1);
 FVAR(IDF_PERSIST, textkeyfgblend, 0, 1, 1);
 TVARN(IDF_PERSIST|IDF_PRELOAD, textkeybgtex, "textures/guiskin", tkbtex, 0);
 TVARN(IDF_PERSIST|IDF_PRELOAD, textkeybgbordertex, "textures/guiskinborder", tkbbordertex, 0);
 
 Texture *tbgbordertex = NULL, *tbgtex = NULL;
-VAR(IDF_PERSIST, textbg, 0, 1, 2);
-FVAR(IDF_PERSIST, textbgblend, 0, 0.35f, 1);
+VAR(IDF_PERSIST, textbg, 0, 2, 2);
+FVAR(IDF_PERSIST, textbgblend, 0, 0.3f, 1);
 FVAR(IDF_PERSIST, textbgfblend, 0, 1, 1);
-FVAR(IDF_PERSIST, textbgborderblend, 0, 0.5f, 1);
-FVAR(IDF_PERSIST, textbgwidth, 0, 3, 1);
-FVAR(IDF_PERSIST, textbgheight, 0, 0.125f, 1);
-TVARN(IDF_PERSIST|IDF_PRELOAD, textbgtex, "textures/guiskin", tbgtex, 0);
-TVARN(IDF_PERSIST|IDF_PRELOAD, textbgbordertex, "textures/guiskinborder", tbgbordertex, 0);
+FVAR(IDF_PERSIST, textbgbright, 0, 0.6f, 10);
+FVAR(IDF_PERSIST, textbgfbright, 0, 1, 10);
+FVAR(IDF_PERSIST, textbgborderbright, 0, 1, 10);
+FVAR(IDF_PERSIST, textbgborderblend, 0, 0.4f, 1);
+FVAR(IDF_PERSIST, textbgwidth, 0, 4, 1000);
+FVAR(IDF_PERSIST, textbgheight, 0, 0.4f, 1000);
+TVARN(IDF_PERSIST|IDF_PRELOAD, textbgtex, "textures/textskin", tbgtex, 0);
+TVARN(IDF_PERSIST|IDF_PRELOAD, textbgbordertex, "textures/textskinborder", tbgbordertex, 0);
 
 static hashnameset<font> fonts;
 static font *fontdef = NULL;
@@ -526,6 +529,11 @@ void text_boundsf(const char *str, float &width, float &height, int maxwidth, in
     #undef TEXTKEY
     #undef TEXTCHAR
     #undef TEXTWORD
+    if(flags&TEXT_SKIN && textbg)
+    {
+        width += int(FONTW*textbgwidth);
+        height += int(FONTH*textbgheight);
+    }
 }
 
 int draw_key(Texture *&tex, const char *str, float sx, float sy, float sc, bvec4 &cl, int flags)
@@ -686,32 +694,36 @@ int draw_textx(const char *fstr, int left, int top, int r, int g, int b, int a, 
     else if(flags&TEXT_UPWARD) top -= height;
     if(flags&TEXT_SKIN && textbg)
     {
-        int aw = int(FONTW*textbgwidth), ah = int(FONTH*textbgheight),
-            x1 = left-aw/2, y1 = top-ah/2, x2 = x1+width+aw, y2 = y1+height+ah;
         loopk(textbg)
         {
             Texture *t = NULL;
-            float blend = a/255.f;
+            float blend = a/255.f, bright = 1;
             switch(k)
             {
                 case 1:
+                    bright *= textbgborderbright;
                     blend *= textbgborderblend;
-                    if(!tbgbordertex) tbgbordertex = textureload(textkeybgbordertex, 0, true, false);
-                    t = tkbbordertex;
+                    if(!tbgbordertex) tbgbordertex = textureload(textbgbordertex, 0, true, false);
+                    t = tbgbordertex;
                     break;
                 case 0: default:
+                    bright *= textbgbright;
                     blend *= textbgblend;
-                    if(!tbgtex) tbgtex = textureload(textkeybgtex, 0, true, false);
+                    if(!tbgtex) tbgtex = textureload(textbgtex, 0, true, false);
                     t = tbgtex;
                     break;
             }
-            drawskin(t, x1, y1, x2, y2, bvec(r, g, b).tohexcolor(), blend);
+            drawskin(t, left, top, left+width, top+height, bvec(int(r*bright), int(g*bright), int(b*bright)).min(255).tohexcolor(), blend);
         }
-        if(flags&TEXT_SHADOW) draw_text(str, left-2, top-2, 0, 0, 0, int(a*textbgfblend), flags, cursor, maxwidth);
-        return draw_text(str, left, top, 255, 255, 255, int(a*textbgfblend), flags, cursor, maxwidth);
+        left += int(FONTW*textbgwidth/2);
+        top += int(FONTH*textbgheight/2);
+        if(flags&TEXT_SHADOW) draw_text(str, left-2, top-2, 0, 0, 0, int(a*textbgfblend), flags&~TEXT_SKIN, cursor, maxwidth);
+        draw_text(str, left, top, int(255*textbgfbright), int(255*textbgfbright), int(255*textbgfbright), int(a*textbgfblend), flags, cursor, maxwidth);
+        return height;
     }
     if(flags&TEXT_SHADOW) draw_text(str, left-2, top-2, 0, 0, 0, a, flags, cursor, maxwidth);
-    return draw_text(str, left, top, r, g, b, a, flags, cursor, maxwidth);
+    draw_text(str, left, top, r, g, b, a, flags, cursor, maxwidth);
+    return height;
 }
 
 vector<font *> fontstack;

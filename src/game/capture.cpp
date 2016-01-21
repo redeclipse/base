@@ -94,7 +94,7 @@ namespace capture
         static string s; s[0] = '\0';
         loopv(f)
         {
-            defformatstring(d, "%s\f[%d]\f(%s)%s", i && named ? (i == f.length()-1 ? " & " : ", ") : "", TEAM(st.flags[f[i]].team, colour), hud::flagtex, named ? TEAM(st.flags[f[i]].team, name) : "");
+            defformatstring(d, "\fs%s\f[%d]\f(%s)%s\fS", i && named ? (i == f.length()-1 ? " & " : ", ") : "", TEAM(st.flags[f[i]].team, colour), hud::flagtex, named ? TEAM(st.flags[f[i]].team, name) : "");
             concatstring(s, d);
         }
         return s;
@@ -144,7 +144,7 @@ namespace capture
             {
                 pushfont("emphasis");
                 char *str = buildflagstr(pickup, pickup.length() <= 3);
-                ty += draw_textx("Nearby: \fs%s\fS", tx, ty, tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, str)*hud::noticescale;
+                ty += draw_textx("Nearby: %s", tx, ty, tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, str)*hud::noticescale;
                 popfont();
             }
             if(game::focus == game::player1 && (!hasflags.empty() || !pickup.empty()))
@@ -158,14 +158,14 @@ namespace capture
             {
                 pushfont("default");
                 char *str = buildflagstr(taken, taken.length() <= 3);
-                ty += draw_textx("%s taken: \fs%s\fS", tx, ty, tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, taken.length() == 1 ? "Flag" : "Flags", str)*hud::noticescale;
+                ty += draw_textx("%s taken: %s", tx, ty, tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, taken.length() == 1 ? "Flag" : "Flags", str)*hud::noticescale;
                 popfont();
             }
             if(!droppedflags.empty())
             {
                 pushfont("default");
                 char *str = buildflagstr(droppedflags, droppedflags.length() <= 3);
-                ty += draw_textx("%s dropped: \fs%s\fS", tx, ty, tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, droppedflags.length() == 1 ? "Flag" : "Flags", str)*hud::noticescale;
+                ty += draw_textx("%s dropped: %s", tx, ty, tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, droppedflags.length() == 1 ? "Flag" : "Flags", str)*hud::noticescale;
                 popfont();
             }
         }
@@ -186,7 +186,7 @@ namespace capture
             {
                 pushfont("super");
                 char *str = buildflagstr(hasflags, hasflags.length() <= 3);
-                ty += draw_textx("You are holding the \fs%s\fS %s", tx, ty, tr, tg, tb, int(255*blend), TEXT_SKIN|TEXT_CENTERED, -1, -1, str, hasflags.length() == 1 ? "flag" : "flags")*hud::eventscale;
+                ty += draw_textx("You are holding the %s %s", tx, ty, tr, tg, tb, int(255*blend), TEXT_SKIN|TEXT_CENTERED, -1, -1, str, hasflags.length() == 1 ? "flag" : "flags")*hud::eventscale;
                 popfont();
             }
         }
