@@ -1,6 +1,6 @@
 #include "cube.h"
 
-extern int glversion;
+extern int glversion, glcompat;
 extern int intel_mapbufferrange_bug;
 
 namespace gle
@@ -48,7 +48,7 @@ namespace gle
     {
         quadsenabled = true;
 
-        if(glversion < 300) return;
+        if(glcompat) return;
 
         if(quadindexes)
         {
@@ -76,7 +76,7 @@ namespace gle
     {
         quadsenabled = false;
 
-        if(glversion < 300) return;
+        if(glcompat) return;
 
         glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, 0);
     }
@@ -84,7 +84,7 @@ namespace gle
     void drawquads(int offset, int count)
     {
         if(count <= 0) return;
-        if(glversion < 300)
+        if(glcompat)
         {
             glDrawArrays(GL_QUADS, offset*4, count*4);
             return;

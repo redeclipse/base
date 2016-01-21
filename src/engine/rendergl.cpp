@@ -6,6 +6,7 @@ bool hasVAO = false, hasFBO = false, hasAFBO = false, hasDS = false, hasTF = fal
 
 VAR(IDF_READONLY, glversion, 1, 0, 0);
 VAR(IDF_READONLY, glslversion, 1, 0, 0);
+VAR(IDF_READONLY, glcompat, 1, 0, 0);
 
 // OpenGL 1.3
 #ifdef WIN32

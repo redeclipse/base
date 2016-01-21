@@ -921,12 +921,12 @@ void preloadtextures(int flags)
     });
 }
 
-static GLenum texformat(int bpp)
+static GLenum texformat(int bpp, bool swizzle = false)
 {
     switch(bpp)
     {
-        case 1: return hasTRG ? GL_RED : GL_LUMINANCE;
-        case 2: return hasTRG ? GL_RG : GL_LUMINANCE_ALPHA;
+        case 1: return hasTRG && (hasTSW || !glcompat || !swizzle) ? GL_RED : GL_LUMINANCE;
+        case 2: return hasTRG && (hasTSW || !glcompat || !swizzle) ? GL_RG : GL_LUMINANCE_ALPHA;
         case 3: return GL_RGB;
         case 4: return GL_RGBA;
         default: return 0;
@@ -989,12 +989,12 @@ static Texture *newtexture(Texture *t, const char *rname, ImageData &s, int clam
     }
     else
     {
-        format = texformat(s.bpp);
+        format = texformat(s.bpp, swizzle);
         t->bpp = s.bpp;
         if(swizzle && hasTRG && !hasTSW && swizzlemask(format))
         {
             swizzleimage(s);   
-            format = texformat(s.bpp);
+            format = texformat(s.bpp, swizzle);
             t->bpp = s.bpp;
         }
     }
@@ -2617,12 +2617,12 @@ Texture *cubemaploadwildcard(Texture *t, const char *name, bool mipit, bool msg,
     }
     else
     {
-        format = texformat(surface[0].bpp);
+        format = texformat(surface[0].bpp, true);
         t->bpp = surface[0].bpp;
         if(hasTRG && !hasTSW && swizzlemask(format))
         {
             loopi(6) swizzleimage(surface[i]);
-            format = texformat(surface[0].bpp);
+            format = texformat(surface[0].bpp, true);
             t->bpp = surface[0].bpp;
         }
     }

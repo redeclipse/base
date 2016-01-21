@@ -206,8 +206,8 @@ static inline bool pvsoccluded(const ivec &bborigin, int size)
 
 // rendergl
 extern bool hasVAO, hasFBO, hasAFBO, hasDS, hasTF, hasTRG, hasTSW, hasS3TC, hasFXT1, hasLATC, hasRGTC, hasAF, hasFBB, hasUBO, hasMBR;
-extern int glversion, glslversion;
-extern char *gfxvendor, *gfxexts, *gfxrenderer, *gfxversion;
+extern int glversion, glslversion, glcompat;
+extern char *gfxvendor, *gfxrenderer, *gfxversion;
 
 enum { DRAWTEX_NONE = 0, DRAWTEX_ENVMAP, DRAWTEX_MINIMAP, DRAWTEX_MODELPREVIEW };
 
