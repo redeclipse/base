@@ -2410,12 +2410,8 @@ namespace hud
         {
             const barstep &step = barsteps[id][i];
             vec colour(step.r, step.g, step.b);
-            if(throb >= 0 && i == int(roundf(3*throb*amt))) switch(id)
-            {
-                case 1: colour = vec(barsteps[id][3].r, barsteps[id][3].g, barsteps[id][3].b); break;
-                case 2: colour = vec(1, 1, 1); break;
-                default: break;
-            }
+            if(throb >= 0 && i == int(roundf(3*throb*amt)))
+                colour = vec(barsteps[id][3].r, barsteps[id][3].g, barsteps[id][3].b); break;
             if(i > 0)
             {
                 if(step.amt > amt && barsteps[id][i-1].amt <= amt)
