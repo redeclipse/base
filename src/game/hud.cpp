@@ -2409,9 +2409,7 @@ namespace hud
         loopi(4)
         {
             const barstep &step = barsteps[id][i];
-            vec colour(step.r, step.g, step.b);
-            if(throb >= 0 && i == int(roundf(3*throb*amt)))
-                colour = vec(barsteps[id][3].r, barsteps[id][3].g, barsteps[id][3].b); break;
+            vec colour = throb >= 0 && i == int(roundf(3*throb*amt)) ? vec(barsteps[id][3].r, barsteps[id][3].g, barsteps[id][3].b) : vec(step.r, step.g, step.b);
             if(i > 0)
             {
                 if(step.amt > amt && barsteps[id][i-1].amt <= amt)
