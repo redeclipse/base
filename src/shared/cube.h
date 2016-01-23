@@ -48,7 +48,7 @@
 #ifndef STANDALONE
   #ifdef __APPLE__
     #include "SDL2/SDL.h"
-    #include "SDL2/SDL_opengl.h"
+    #include <OpenGL/gl.h>
     #define main SDL_main
   #else
     #include <SDL.h>
