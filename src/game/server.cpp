@@ -113,7 +113,7 @@ namespace server
 
     struct suicideevent : gameevent
     {
-        int flags, material;
+        int flags, material, checkpointspawn;
         void process(clientinfo *ci);
     };
 
@@ -4344,7 +4344,7 @@ namespace server
         ci->state.spree = 0;
         ci->state.deaths++;
         bool kamikaze = dropitems(ci, actor[ci->state.actortype].living ? DROP_DEATH : DROP_EXPIRE);
-        if(m_race(gamemode) && (!m_gsp3(gamemode, mutators) || ci->team == T_ALPHA) && !(flags&HIT_SPEC) && (!flags || ci->state.cpnodes.length() == 1))
+        if(m_race(gamemode) && (!m_gsp3(gamemode, mutators) || ci->team == T_ALPHA) && !(flags&HIT_SPEC) && (!flags || ci->state.cpnodes.length() == 1 || !checkpointspawn))
         { // reset if suicided, hasn't reached another checkpoint yet
             ci->state.cpmillis = 0;
             ci->state.cpnodes.shrink(0);
@@ -5928,12 +5928,13 @@ namespace server
 
                 case N_SUICIDE:
                 {
-                    int lcn = getint(p), flags = getint(p), material = getint(p);
+                    int lcn = getint(p), flags = getint(p), material = getint(p), checkpointspawn = getint(p);
                     clientinfo *cp = (clientinfo *)getinfo(lcn);
                     if(!hasclient(cp, ci)) break;
                     suicideevent *ev = new suicideevent;
                     ev->flags = flags;
                     ev->material = material;
+                    ev->checkpointspawn = checkpointspawn;
                     cp->addevent(ev);
                     break;
                 }

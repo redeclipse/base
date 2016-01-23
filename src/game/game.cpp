@@ -307,6 +307,8 @@ namespace game
     VAR(IDF_PERSIST, vanitymodels, 0, 1, 1);
     VAR(IDF_PERSIST, headlessmodels, 0, 1, 1);
     FVAR(IDF_PERSIST, twitchspeed, 0, 8, FVAR_MAX);
+    
+    VAR(0, checkpointspawn, 0, 1, 1);
 
     bool wantsloadoutmenu = false;
     VAR(IDF_PERSIST, showloadoutmenu, 0, 0, 1); // show the loadout menu at the start of a map
@@ -2030,7 +2032,7 @@ namespace game
         if((d == player1 || d->ai) && d->state == CS_ALIVE && d->suicided < 0)
         {
             burn(d, -1, flags);
-            client::addmsg(N_SUICIDE, "ri3", d->clientnum, flags, d->inmaterial);
+            client::addmsg(N_SUICIDE, "ri4", d->clientnum, flags, d->inmaterial, checkpointspawn);
             d->suicided = lastmillis;
         }
     }
