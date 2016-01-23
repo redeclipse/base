@@ -630,7 +630,7 @@ void gl_init()
     if(sdl_backingstore_bug)
     {
         int fsaa = 0;
-        if(!SDL_GL_GetAttribute(SDL_GL_MULTISAMPLE_BUFFERS, &fsaa) && fsaa)
+        if(!SDL_GL_GetAttribute(SDL_GL_MULTISAMPLEBUFFERS, &fsaa) && fsaa)
         {
             sdl_backingstore_bug = 1;
             // since SDL doesn't add kCGLPFABackingStore to the pixelformat and so it isn't guaranteed to be preserved - only manifests when using fsaa?
