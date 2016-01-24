@@ -41,6 +41,8 @@ extern PFNGLDRAWRANGEELEMENTSPROC glDrawRangeElements_;
 
 #ifndef GL_VERSION_2_1
 #define GL_VERSION_2_1 1
+#define GL_PIXEL_PACK_BUFFER              0x88EB
+#define GL_PIXEL_UNPACK_BUFFER            0x88EC
 #define GL_FLOAT_MAT2x3                   0x8B65
 #define GL_FLOAT_MAT2x4                   0x8B66
 #define GL_FLOAT_MAT3x2                   0x8B67
