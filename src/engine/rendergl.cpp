@@ -183,7 +183,6 @@ VAR(0, ati_minmax_bug, 0, 0, 1);
 VAR(0, ati_cubemap_bug, 0, 0, 1);
 VAR(0, intel_vertexarray_bug, 0, 0, 1);
 VAR(0, intel_mapbufferrange_bug, 0, 0, 1);
-VAR(0, sdl_backingstore_bug, -1, 0, 1);
 VAR(0, minimizetcusage, 1, 0, 0);
 VAR(0, useubo, 1, 0, 0);
 VAR(0, usetexcompress, 1, 0, 0);
@@ -239,9 +238,6 @@ void gl_checkextensions()
     conoutf("renderer: %s (%s)", gfxrenderer, gfxvendor);
     conoutf("driver: %s", gfxversion);
 
-#ifdef __APPLE__
-    sdl_backingstore_bug = -1;
-#endif
 
     bool mesa = false, intel = false, ati = false, nvidia = false;
     if(strstr(gfxrenderer, "Mesa") || strstr(gfxversion, "Mesa"))
@@ -628,20 +624,6 @@ void gl_init()
     glFrontFace(GL_CW);
     glCullFace(GL_BACK);
     glDisable(GL_CULL_FACE);
-
-#ifdef __APPLE__
-    if(sdl_backingstore_bug)
-    {
-        int fsaa = 0;
-        if(!SDL_GL_GetAttribute(SDL_GL_MULTISAMPLEBUFFERS, &fsaa) && fsaa)
-        {
-            sdl_backingstore_bug = 1;
-            // since SDL doesn't add kCGLPFABackingStore to the pixelformat and so it isn't guaranteed to be preserved - only manifests when using fsaa?
-            //conoutf(CON_WARN, "WARNING: Using SDL backingstore workaround. (use \"/sdl_backingstore_bug 0\" to disable if unnecessary)");
-        }
-        else sdl_backingstore_bug = -1;
-    }
-#endif
 
     gle::setup();
 

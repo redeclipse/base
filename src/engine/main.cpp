@@ -287,11 +287,13 @@ void cleargamma()
     if(curgamma != 100 && screen) SDL_SetWindowBrightness(screen, 1.0f);
 }
 
+int curvsync = -1;
 void restorevsync()
 {
     if(initing || !glcontext) return;
     extern int vsync, vsynctear;
-    SDL_GL_SetSwapInterval(vsync ? (vsynctear ? -1 : 1) : 0);
+    if(!SDL_GL_SetSwapInterval(vsync ? (vsynctear ? -1 : 1) : 0))
+        curvsync = vsync;
 }
 
 VARF(IDF_PERSIST, vsync, 0, 0, 1, restorevsync());
@@ -309,6 +311,7 @@ void setupscreen()
         SDL_DestroyWindow(screen);
         screen = NULL;
     }
+    curvsync = -1;
 
     SDL_DisplayMode desktop;
     if(SDL_GetDesktopDisplayMode(0, &desktop) < 0) fatal("failed querying desktop display mode: %s", SDL_GetError());
@@ -910,7 +913,7 @@ int main(int argc, char **argv)
                     case 'd': depthbits = atoi(&argv[i][3]); break;
                     case 'c': /* compat, ignore */ break;
                     case 'a': fsaa = atoi(&argv[i][3]); break;
-                    case 'v': vsync = atoi(&argv[i][3]); if(vsync < 0) { vsynctear = 1; vsync = 1; } else vsynctear = 0; break;
+                    case 'v': /* compat, ignore */ break;
                     case 'f': fullscreen = atoi(&argv[i][3]); break;
                     case 's': /* compat, ignore */ break;
                     case 'u': /* compat, ignore */ break;
