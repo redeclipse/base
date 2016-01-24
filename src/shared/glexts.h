@@ -150,14 +150,14 @@ typedef void (APIENTRYP PFNGLUNIFORMMATRIX4X3FVPROC) (GLint location, GLsizei co
 #define glVertexAttrib4Nusv_ glVertexAttrib4Nusv
 #define glVertexAttribPointer_ glVertexAttribPointer
 
+#define glDrawBuffers_ glDrawBuffers
+
 #define glUniformMatrix2x3fv_ glUniformMatrix2x3fv
 #define glUniformMatrix3x2fv_ glUniformMatrix3x2fv
 #define glUniformMatrix2x4fv_ glUniformMatrix2x4fv
 #define glUniformMatrix4x2fv_ glUniformMatrix4x2fv
 #define glUniformMatrix3x4fv_ glUniformMatrix3x4fv
 #define glUniformMatrix4x3fv_ glUniformMatrix4x3fv
-
-#define glDrawBuffers_ glDrawBuffers
 #else
 extern PFNGLMULTIDRAWARRAYSPROC   glMultiDrawArrays_;
 extern PFNGLMULTIDRAWELEMENTSPROC glMultiDrawElements_;
@@ -252,14 +252,14 @@ extern PFNGLVERTEXATTRIB4NUIVPROC        glVertexAttrib4Nuiv_;
 extern PFNGLVERTEXATTRIB4NUSVPROC        glVertexAttrib4Nusv_;
 extern PFNGLVERTEXATTRIBPOINTERPROC      glVertexAttribPointer_;
 
+extern PFNGLDRAWBUFFERSPROC glDrawBuffers_;
+
 extern PFNGLUNIFORMMATRIX2X3FVPROC       glUniformMatrix2x3fv_;
 extern PFNGLUNIFORMMATRIX3X2FVPROC       glUniformMatrix3x2fv_;
 extern PFNGLUNIFORMMATRIX2X4FVPROC       glUniformMatrix2x4fv_;
 extern PFNGLUNIFORMMATRIX4X2FVPROC       glUniformMatrix4x2fv_;
 extern PFNGLUNIFORMMATRIX3X4FVPROC       glUniformMatrix3x4fv_;
 extern PFNGLUNIFORMMATRIX4X3FVPROC       glUniformMatrix4x3fv_;
-
-extern PFNGLDRAWBUFFERSPROC glDrawBuffers_;
 #endif
 
 // GL_ARB_framebuffer_object
