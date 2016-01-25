@@ -1,3 +1,10 @@
+#ifndef APIENTRY
+#define APIENTRY
+#endif
+#ifndef APIENTRYP
+#define APIENTRYP APIENTRY *
+#endif
+
 // OpenGL 1.3
 #ifndef WIN32
 #define glActiveTexture_ glActiveTexture
