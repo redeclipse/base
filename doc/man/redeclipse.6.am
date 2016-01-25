@@ -20,11 +20,8 @@
 .OP \-dw\fRwidth
 .OP \-dh\fRheight
 .OP \-du\fR{agf123}
-.OP \-dv\fR{0|1}
 .OP \-da\fRsamples
-.OP \-dc\fRdepth
 .OP \-dd\fRdepth
-.OP \-ds\fRbits
 
 '\" General options
 .OP \-x\fR'command(s)'
@@ -125,12 +122,6 @@ This configuration is stored in init.cfg
 Sets screen height to
 .IR height .
 If width not specified, also sets width to 4/3 of height. min is 320.
-.IP
-This configuration is stored in init.cfg
-
-.TP
-.BR \-dv {0|1}
-Turns vertical sync on or off. 0 to disable, 1 to enable. Defaults to 0.
 .IP
 This configuration is stored in init.cfg
 
