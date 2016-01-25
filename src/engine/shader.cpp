@@ -127,9 +127,9 @@ static void compileglslshader(GLenum type, GLuint &obj, const char *def, const c
             "#define varying out\n";
         else if(type == GL_FRAGMENT_SHADER)
         {
+            parts[numparts++] = "#define varying in\n";
             if(glslversion < 150) parts[numparts++] = "precision highp float;\n";
-            parts[numparts++] =
-                "#define varying in\n"
+            if(glversion >= 300) parts[numparts++] =
                 "out vec4 cube2_FragColor;\n"
                 "#define gl_FragColor cube2_FragColor\n";
         }
