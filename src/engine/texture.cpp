@@ -859,6 +859,7 @@ static GLenum textype(GLenum &component, GLenum &format)
             break;
 
         case GL_ALPHA8:
+        case GL_ALPHA16:
         case GL_COMPRESSED_ALPHA:
             if(!format) format = GL_ALPHA;
             break;
