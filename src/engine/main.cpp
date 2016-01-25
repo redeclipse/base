@@ -370,13 +370,13 @@ void setupscreen()
         screen = SDL_CreateWindow(caption, winx, winy, winw, winh, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_MOUSE_FOCUS | flags);
         if(!screen) continue;
 
-        static const struct { int major, minor; } glversions[] = { { 3, 3 }, { 3, 2 }, { 3, 1 }, { 3, 0 }, { 2, 0 } };
+        static const int glversions[] = { 33, 32, 31, 30, 20 };
         loopj(sizeof(glversions)/sizeof(glversions[0]))
         {
-            glcompat = glversions[j].major < 3 ? 1 : 0;
-            SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, glversions[j].major);
-            SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, glversions[j].minor);
-            SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, glcompat ? 0 : SDL_GL_CONTEXT_PROFILE_CORE);
+            glcompat = glversions[i] <= 30 ? 1 : 0;
+            SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, glversions[i] / 10);
+            SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, glversions[i] % 10);
+            SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, glversions[i] >= 32 ? SDL_GL_CONTEXT_PROFILE_CORE : 0);
             glcontext = SDL_GL_CreateContext(screen);
             if(glcontext) break;
         }
