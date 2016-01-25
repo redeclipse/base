@@ -103,49 +103,9 @@ static void showglslinfo(GLenum type, GLuint obj, const char *name, const char *
     }
 }
 
-static const char *finddecls(const char *line)
-{
-    for(;;)
-    {
-        const char *start = line + strspn(line, " \t\r");
-        switch(*start)
-        {
-            case '\n':
-                line = start + 1;
-                continue;
-            case '#':
-                do
-                {
-                    start = strchr(start + 1, '\n');
-                    if(!start) return NULL;
-                } while(start[-1] == '\\');
-                line = start + 1;
-                continue;
-            case '/':
-                switch(start[1])
-                {
-                    case '/':
-                        start = strchr(start + 2, '\n');
-                        if(!start) return NULL;
-                        line = start + 1;
-                        continue;
-                    case '*':
-                        start = strstr(start + 2, "*/");
-                        if(!start) return NULL;
-                        line = start + 2;
-                        continue;
-                }
-                // fall-through
-            default:
-                return line;
-        }
-    }
-}
-
 static void compileglslshader(GLenum type, GLuint &obj, const char *def, const char *name, bool msg = true)
 {
     const char *source = def + strspn(def, " \t\r\n");
-    char *modsource = NULL;
     const char *parts[16];
     int numparts = 0;
     static const struct { int version; const char * const header; } glslversions[] =
@@ -167,33 +127,18 @@ static void compileglslshader(GLenum type, GLuint &obj, const char *def, const c
             "#define varying out\n";
         else if(type == GL_FRAGMENT_SHADER)
         {
-            parts[numparts++] = "#define varying in\n";
-            if(glslversion < 150)
-            {
-                const char *decls = finddecls(source);
-                if(decls)
-                {
-                    static const char * const prec = "precision highp float;\n";
-                    if(decls != source)
-                    {
-                        static const int preclen = strlen(prec);
-                        int beforelen = int(decls-source), afterlen = strlen(decls);
-                        modsource = newstring(beforelen + preclen + afterlen);
-                        memcpy(modsource, source, beforelen);
-                        memcpy(&modsource[beforelen], prec, preclen);
-                        memcpy(&modsource[beforelen + preclen], decls, afterlen);
-                        modsource[beforelen + preclen + afterlen] = '\0';
-                    }
-                    else parts[numparts++] = prec;
-                }
-            }
+            if(glslversion < 150) parts[numparts++] = "precision highp float;\n";
+            parts[numparts++] =
+                "#define varying in\n"
+                "out vec4 cube2_FragColor;\n"
+                "#define gl_FragColor cube2_FragColor\n";
         }
         parts[numparts++] =
             "#define texture2D(sampler, coords) texture(sampler, coords)\n"
             "#define texture2DProj(sampler, coords) textureProj(sampler, coords)\n"
             "#define textureCube(sampler, coords) texture(sampler, coords)\n";
     }
-    parts[numparts++] = modsource ? modsource : source;
+    parts[numparts++] = source;
 
     obj = glCreateShader_(type);
     glShaderSource_(obj, numparts, (const GLchar **)parts, NULL);
@@ -207,8 +152,6 @@ static void compileglslshader(GLenum type, GLuint &obj, const char *def, const c
         obj = 0;
     }
     else if(dbgshader > 1 && msg) showglslinfo(type, obj, name, parts, numparts);
-
-    if(modsource) delete[] modsource;
 }
 
 VAR(0, dbgubo, 0, 0, 1);
@@ -254,6 +197,10 @@ static void linkglslprogram(Shader &s, bool msg = true)
             attribs |= 1<<a.loc;
         }
         loopi(gle::MAXATTRIBS) if(!(attribs&(1<<i))) glBindAttribLocation_(s.program, i, gle::attribnames[i]);
+        if(glversion >= 300)
+        {
+            glBindFragDataLocation_(s.program, 0, "cube2_FragColor");
+        }
         glLinkProgram_(s.program);
         glGetProgramiv_(s.program, GL_LINK_STATUS, &success);
     }
@@ -687,8 +634,11 @@ void setupshaders()
     maxvsuniforms = val/4;
     glGetIntegerv(GL_MAX_FRAGMENT_UNIFORM_COMPONENTS, &val);
     maxfsuniforms = val/4;
-    glGetIntegerv(GL_MAX_VARYING_FLOATS, &val);
-    maxvaryings = val;
+    if(glversion < 300)
+    {
+        glGetIntegerv(GL_MAX_VARYING_COMPONENTS, &val);
+        maxvaryings = val;
+    }
 
     standardshaders = true;
     nullshader = newshader(0, "<init>null",
@@ -828,7 +778,7 @@ static bool genwatervariant(Shader &s, const char *sname, const char *vs, const 
     return variant!=NULL;
 }
 
-bool minimizedynlighttcusage() { return maxvaryings < 48; }
+bool minimizedynlighttcusage() { return glversion < 300 && maxvaryings < 48; }
 
 static void gendynlightvariant(Shader &s, const char *sname, const char *vs, const char *ps, int row = 0)
 {

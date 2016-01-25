@@ -136,7 +136,8 @@ PFNGLUNIFORMMATRIX4X3FVPROC       glUniformMatrix4x3fv_       = NULL;
 #endif
 
 // OpenGL 3.0
-PFNGLGETSTRINGIPROC glGetStringi_ = NULL;
+PFNGLGETSTRINGIPROC           glGetStringi_           = NULL;
+PFNGLBINDFRAGDATALOCATIONPROC glBindFragDataLocation_ = NULL;
 
 // GL_EXT_framebuffer_object
 PFNGLBINDRENDERBUFFERPROC        glBindRenderbuffer_        = NULL;
@@ -389,6 +390,7 @@ void gl_checkextensions()
     if(glversion >= 300)
     {
         glGetStringi_ =            (PFNGLGETSTRINGIPROC)          getprocaddress("glGetStringi");
+        glBindFragDataLocation_ =  (PFNGLBINDFRAGDATALOCATIONPROC)getprocaddress("glBindFragDataLocation");
     }
 
     const char *glslstr = (const char *)glGetString(GL_SHADING_LANGUAGE_VERSION);
