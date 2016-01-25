@@ -356,6 +356,7 @@ extern PFNGLBLITFRAMEBUFFERPROC         glBlitFramebuffer_;
 
 // GL_ARB_map_buffer_range
 #ifndef GL_ARB_map_buffer_range
+#define GL_ARB_map_buffer_range 1
 #define GL_MAP_READ_BIT                   0x0001
 #define GL_MAP_WRITE_BIT                  0x0002
 #define GL_MAP_INVALIDATE_RANGE_BIT       0x0004
