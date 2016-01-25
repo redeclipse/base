@@ -245,14 +245,12 @@ extern PFNGLDRAWBUFFERSPROC glDrawBuffers_;
 #define GL_PIXEL_UNPACK_BUFFER            0x88EC
 #endif
 
-// GL_EXT_texture_filter_anisotropic
 #ifndef GL_EXT_texture_filter_anisotropic
 #define GL_EXT_texture_filter_anisotropic 1
 #define GL_TEXTURE_MAX_ANISOTROPY_EXT     0x84FE
 #define GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT 0x84FF
 #endif
 
-// GL_EXT_texture_compression_s3tc
 #ifndef GL_EXT_texture_compression_s3tc
 #define GL_EXT_texture_compression_s3tc 1
 #define GL_COMPRESSED_RGB_S3TC_DXT1_EXT   0x83F0
@@ -261,7 +259,6 @@ extern PFNGLDRAWBUFFERSPROC glDrawBuffers_;
 #define GL_COMPRESSED_RGBA_S3TC_DXT5_EXT  0x83F3
 #endif 
 
-// GL_ARB_framebuffer_object
 #ifndef GL_ARB_framebuffer_object
 #define GL_ARB_framebuffer_object 1
 #define GL_DEPTH_STENCIL_ATTACHMENT       0x821A
@@ -307,7 +304,6 @@ extern PFNGLGENERATEMIPMAPPROC          glGenerateMipmap_;
 // GL_EXT_framebuffer_blit
 extern PFNGLBLITFRAMEBUFFERPROC         glBlitFramebuffer_;
 
-// GL_ARB_texture_rg
 #ifndef GL_ARB_texture_rg
 #define GL_ARB_texture_rg 1
 #define GL_RG                             0x8227
@@ -334,21 +330,18 @@ extern PFNGLBLITFRAMEBUFFERPROC         glBlitFramebuffer_;
 #define GL_RG32UI                         0x823C
 #endif
 
-// GL_EXT_texture_compression_latc
 #ifndef GL_EXT_texture_compression_latc
 #define GL_EXT_texture_compression_latc 1
 #define GL_COMPRESSED_LUMINANCE_LATC1_EXT              0x8C70
 #define GL_COMPRESSED_LUMINANCE_ALPHA_LATC2_EXT        0x8C72
 #endif
 
-// GL_ARB_texture_compression_rgtc
 #ifndef GL_ARB_texture_compression_rgtc
 #define GL_ARB_texture_compression_rgtc 1
 #define GL_COMPRESSED_RED_RGTC1           0x8DBB
 #define GL_COMPRESSED_RG_RGTC2            0x8DBD
 #endif
 
-// GL_ARB_map_buffer_range
 #ifndef GL_ARB_map_buffer_range
 #define GL_ARB_map_buffer_range 1
 #define GL_MAP_READ_BIT                   0x0001
@@ -398,17 +391,22 @@ extern PFNGLFLUSHMAPPEDBUFFERRANGEPROC glFlushMappedBufferRange_;
 #define GL_UNIFORM_BLOCK_REFERENCED_BY_GEOMETRY_SHADER 0x8A45
 #define GL_UNIFORM_BLOCK_REFERENCED_BY_FRAGMENT_SHADER 0x8A46
 #define GL_INVALID_INDEX                  0xFFFFFFFFu
-
 typedef void (APIENTRYP PFNGLGETUNIFORMINDICESPROC) (GLuint program, GLsizei uniformCount, const GLchar* *uniformNames, GLuint *uniformIndices);
 typedef void (APIENTRYP PFNGLGETACTIVEUNIFORMSIVPROC) (GLuint program, GLsizei uniformCount, const GLuint *uniformIndices, GLenum pname, GLint *params);
 typedef GLuint (APIENTRYP PFNGLGETUNIFORMBLOCKINDEXPROC) (GLuint program, const GLchar *uniformBlockName);
 typedef void (APIENTRYP PFNGLGETACTIVEUNIFORMBLOCKIVPROC) (GLuint program, GLuint uniformBlockIndex, GLenum pname, GLint *params);
 typedef void (APIENTRYP PFNGLUNIFORMBLOCKBINDINGPROC) (GLuint program, GLuint uniformBlockIndex, GLuint uniformBlockBinding);
 #endif
-
 #ifndef GL_INVALID_INDEX
 #define GL_INVALID_INDEX                  0xFFFFFFFFu
 #endif
+extern PFNGLGETUNIFORMINDICESPROC       glGetUniformIndices_;
+extern PFNGLGETACTIVEUNIFORMSIVPROC     glGetActiveUniformsiv_;
+extern PFNGLGETUNIFORMBLOCKINDEXPROC    glGetUniformBlockIndex_;
+extern PFNGLGETACTIVEUNIFORMBLOCKIVPROC glGetActiveUniformBlockiv_;
+extern PFNGLUNIFORMBLOCKBINDINGPROC     glUniformBlockBinding_;
+extern PFNGLBINDBUFFERBASEPROC          glBindBufferBase_;
+extern PFNGLBINDBUFFERRANGEPROC         glBindBufferRange_;
 
 #ifndef GL_VERSION_3_0
 #define GL_VERSION_3_0 1
@@ -438,16 +436,6 @@ extern PFNGLBINDFRAGDATALOCATIONPROC glBindFragDataLocation_;
 #define GL_TEXTURE_RECTANGLE              0x84F5
 #endif 
 
-// GL_ARB_uniform_buffer_object
-extern PFNGLGETUNIFORMINDICESPROC       glGetUniformIndices_;
-extern PFNGLGETACTIVEUNIFORMSIVPROC     glGetActiveUniformsiv_;
-extern PFNGLGETUNIFORMBLOCKINDEXPROC    glGetUniformBlockIndex_;
-extern PFNGLGETACTIVEUNIFORMBLOCKIVPROC glGetActiveUniformBlockiv_;
-extern PFNGLUNIFORMBLOCKBINDINGPROC     glUniformBlockBinding_;
-extern PFNGLBINDBUFFERBASEPROC          glBindBufferBase_;
-extern PFNGLBINDBUFFERRANGEPROC         glBindBufferRange_;
-
-// GL_ARB_vertex_array_objext
 #ifndef GL_ARB_vertex_array_object
 #define GL_ARB_vertex_array_object 1
 #define GL_VERTEX_ARRAY_BINDING           0x85B5
