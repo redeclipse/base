@@ -341,14 +341,9 @@ void setupscreen()
         initwindowpos = true;
     }
 
-    screen = SDL_CreateWindow(caption, winx, winy, winw, winh, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_MOUSE_FOCUS | flags);
-    if(!screen) fatal("failed to create OpenGL window: %s", SDL_GetError());
-
-    SDL_SetWindowMinimumSize(screen, SCR_MINW, SCR_MINH);
-    SDL_SetWindowMaximumSize(screen, SCR_MAXW, SCR_MAXH);
-
+    SDL_GL_ResetAttributes();
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-    static int configs[] =
+    static const int configs[] =
     {
         0x3, /* try everything */
         0x2, 0x1, /* try disabling one at a time */
@@ -361,35 +356,42 @@ void setupscreen()
         SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 0);
         SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 0);
     }
-    static const struct { int major, minor; } glversions[] = { { 3, 3 }, { 3, 2 }, { 3, 1 }, { 3, 0 }, { 2, 0 } };
-    loopj(sizeof(glversions)/sizeof(glversions[0]))
+    loopi(sizeof(configs)/sizeof(configs[0]))
     {
-        glcompat = glversions[j].major < 3 ? 1 : 0;
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, glversions[j].major);
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, glversions[j].minor);
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, glcompat ? 0 : SDL_GL_CONTEXT_PROFILE_CORE); 
-        loopi(sizeof(configs)/sizeof(configs[0]))
+        config = configs[i];
+        if(!depthbits && config&1) continue;
+        if(fsaa<=0 && config&2) continue;
+        if(depthbits) SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, config&1 ? depthbits : 24);
+        if(fsaa>0)
         {
-            config = configs[i];
-            if(!depthbits && config&1) continue;
-            if(fsaa<=0 && config&2) continue;
-            if(depthbits) SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, config&1 ? depthbits : 24);
-            if(fsaa>0)
-            {
-                SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, config&2 ? 1 : 0);
-                SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, config&2 ? fsaa : 0);
-            }
+            SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, config&2 ? 1 : 0);
+            SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, config&2 ? fsaa : 0);
+        }
+        screen = SDL_CreateWindow(caption, winx, winy, winw, winh, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_MOUSE_FOCUS | flags);
+        if(!screen) continue;
+
+        static const struct { int major, minor; } glversions[] = { { 3, 3 }, { 3, 2 }, { 3, 1 }, { 3, 0 }, { 2, 0 } };
+        loopj(sizeof(glversions)/sizeof(glversions[0]))
+        {
+            glcompat = glversions[j].major < 3 ? 1 : 0;
+            SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, glversions[j].major);
+            SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, glversions[j].minor);
+            SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, glcompat ? 0 : SDL_GL_CONTEXT_PROFILE_CORE);
             glcontext = SDL_GL_CreateContext(screen);
             if(glcontext) break;
         }
         if(glcontext) break;
     }
-    if(!glcontext) fatal("failed to create OpenGL context: %s", SDL_GetError());
+    if(!screen) fatal("failed to create OpenGL window: %s", SDL_GetError());
+    else if(!glcontext) fatal("failed to create OpenGL context: %s", SDL_GetError());
     else
     {
         if(depthbits && (config&1)==0) conoutf("\fr%d bit z-buffer not supported - disabling", depthbits);
         if(fsaa>0 && (config&2)==0) conoutf("\fr%dx anti-aliasing not supported - disabling", fsaa);
     }
+
+    SDL_SetWindowMinimumSize(screen, SCR_MINW, SCR_MINH);
+    SDL_SetWindowMaximumSize(screen, SCR_MAXW, SCR_MAXH);
 
     SDL_GetWindowSize(screen, &screenw, &screenh);
 }
