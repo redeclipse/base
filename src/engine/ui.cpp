@@ -31,9 +31,9 @@ VAR(IDF_PERSIST, guiscaletime, 0, 250, VAR_MAX);
 VAR(IDF_PERSIST, guiskinned, 0, 3, 3); // 0 = no backgrounds, 1 = drawn backgrounds, 2 = skinned backgrounds, 3 = skinned with overlay border
 
 VAR(IDF_PERSIST|IDF_HEX, guibgcolour, -1, 0x000000, 0xFFFFFF);
-FVAR(IDF_PERSIST, guibgblend, 0, 0.7f, 1);
+FVAR(IDF_PERSIST, guibgblend, 0, 0.8f, 1);
 VAR(IDF_PERSIST|IDF_HEX, guibordercolour, -1, 0x000000, 0xFFFFFF);
-FVAR(IDF_PERSIST, guiborderblend, 0, 1.f, 1);
+FVAR(IDF_PERSIST, guiborderblend, 0, 0.6f, 1);
 
 VAR(IDF_PERSIST|IDF_HEX, guihovercolour, -1, 0xF0A0A0, 0xFFFFFF);
 FVAR(IDF_PERSIST, guihoverscale, 0, 0.3f, 1);
@@ -44,33 +44,32 @@ VAR(IDF_PERSIST, guitooltips, 0, 1, 1);
 VAR(IDF_PERSIST, guitooltiptime, 0, 500, VAR_MAX);
 VAR(IDF_PERSIST, guitooltipfade, 0, 500, VAR_MAX);
 VAR(IDF_PERSIST|IDF_HEX, guitooltipcolour, -1, 0x000000, 0xFFFFFF);
-FVAR(IDF_PERSIST, guitooltipblend, 0, 0.85f, 1);
+FVAR(IDF_PERSIST, guitooltipblend, 0, 0.8f, 1);
 VAR(IDF_PERSIST|IDF_HEX, guitooltipbordercolour, -1, 0x808080, 0xFFFFFF);
-FVAR(IDF_PERSIST, guitooltipborderblend, 0, 1.f, 1);
+FVAR(IDF_PERSIST, guitooltipborderblend, 0, 0.6f, 1);
 VAR(IDF_PERSIST, guitooltipborderskin, 0, 1, 1);
 
 VAR(IDF_PERSIST|IDF_HEX, guifieldbgcolour, -1, 0x202020, 0xFFFFFF);
-FVAR(IDF_PERSIST, guifieldbgblend, 0, 0.35f, 1);
+FVAR(IDF_PERSIST, guifieldbgblend, 0, 0.3f, 1);
 VAR(IDF_PERSIST|IDF_HEX, guifieldbordercolour, -1, 0xA0A0A0, 0xFFFFFF);
-FVAR(IDF_PERSIST, guifieldborderblend, 0, 0.5f, 1);
+FVAR(IDF_PERSIST, guifieldborderblend, 0, 0.6f, 1);
 VAR(IDF_PERSIST|IDF_HEX, guifieldactivecolour, -1, 0xF04040, 0xFFFFFF);
-FVAR(IDF_PERSIST, guifieldactiveblend, 0, 0.75f, 1);
+FVAR(IDF_PERSIST, guifieldactiveblend, 0, 0.8f, 1);
 
 VAR(IDF_PERSIST|IDF_HEX, guislidercolour, -1, 0x000000, 0xFFFFFF);
-FVAR(IDF_PERSIST, guisliderblend, 0, 0.35f, 1);
+FVAR(IDF_PERSIST, guisliderblend, 0, 0.3f, 1);
 VAR(IDF_PERSIST|IDF_HEX, guisliderbordercolour, -1, 0xC0C0C0, 0xFFFFFF);
-FVAR(IDF_PERSIST, guisliderborderblend, 0, 0.5f, 1);
+FVAR(IDF_PERSIST, guisliderborderblend, 0, 0.6f, 1);
 VAR(IDF_PERSIST, guisliderborderskin, 0, 2, 2);
 VAR(IDF_PERSIST|IDF_HEX, guislidermarkcolour, -1, 0x808080, 0xFFFFFF);
 FVAR(IDF_PERSIST, guislidermarkblend, 0, 0.5f, 1);
 VAR(IDF_PERSIST|IDF_HEX, guislidermarkbordercolour, -1, 0xC0C0C0, 0xFFFFFF);
-FVAR(IDF_PERSIST, guislidermarkborderblend, 0, 0.75f, 1);
+FVAR(IDF_PERSIST, guislidermarkborderblend, 0, 0.6f, 1);
 VAR(IDF_PERSIST, guislidermarkborderskin, 0, 0, 2);
 VAR(IDF_PERSIST|IDF_HEX, guislideractivecolour, -1, 0xF04040, 0xFFFFFF);
-FVAR(IDF_PERSIST, guislideractiveblend, 0, 0.75f, 1);
+FVAR(IDF_PERSIST, guislideractiveblend, 0, 0.8f, 1);
 
 VAR(IDF_PERSIST|IDF_HEX, guiactivecolour, -1, 0xF02020, 0xFFFFFF);
-FVAR(IDF_PERSIST, guiactiveblend, 0, 1.f, 1);
 VAR(IDF_PERSIST|IDF_HEX, guicheckboxcolour, -1, 0x20F020, 0xFFFFFF);
 VAR(IDF_PERSIST|IDF_HEX, guicheckboxtwocolour, -1, 0xF020F0, 0xFFFFFF);
 VAR(IDF_PERSIST|IDF_HEX, guiradioboxcolour, -1, 0xF02020, 0xFFFFFF);

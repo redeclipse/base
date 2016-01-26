@@ -683,7 +683,7 @@ extern int guilayoutpass, guiskinsize, guislidersize, guisepsize, guispacesize, 
     guislidermarkbordercolour, guislidermarkborderskin, guislideractivecolour, guiactivecolour, guicheckboxcolour, guicheckboxtwocolour, guiradioboxcolour;
 extern float guiscale, guibgblend, guiborderblend, guihoverscale, guihoverblend, guitooltipblend, guitooltipborderblend,
     guifieldbgblend, guifieldborderblend, guifieldactiveblend, guisliderblend, guisliderborderblend, guislidermarkblend, guislidermarkborderblend,
-    guislideractiveblend, guiactiveblend;
+    guislideractiveblend;
 extern char *guiskintex, *guiskinbordertex, *guioverlaytex, *guiexittex, *guihovertex;
 
 extern void progressmenu();
