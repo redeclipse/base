@@ -237,6 +237,14 @@ void guinohitfx(uint *contents)
     cgui->allowhitfx(true);
 }
 
+void guinoskinfx(uint *contents)
+{
+    if(!cgui) return;
+    cgui->allowskinfx(false);
+    execute(contents);
+    cgui->allowskinfx(true);
+}
+
 SVAR(0, guirollovername, "");
 SVAR(0, guirolloveraction, "");
 SVAR(0, guirollovertype, "");
@@ -695,6 +703,7 @@ COMMAND(0, guishowtitle, "i");
 COMMAND(0, guishowbgfx, "i");
 COMMAND(0, guistayopen, "e");
 COMMAND(0, guinohitfx, "e");
+COMMAND(0, guinoskinfx, "e");
 
 COMMAND(0, guilist, "e");
 COMMAND(0, guibody, "esse");

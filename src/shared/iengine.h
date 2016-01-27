@@ -596,6 +596,7 @@ struct guient
     virtual int poplist() { return 0; }
 
     virtual void allowhitfx(bool on) = 0;
+    virtual void allowskinfx(bool on) = 0;
     virtual bool visibletab() = 0;
     virtual bool visible() = 0;
     virtual bool shouldtab() { return false; }

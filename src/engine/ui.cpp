@@ -90,7 +90,7 @@ struct gui : guient
     static vector<list> lists;
     static float hitx, hity;
     static int curdepth, curlist, xsize, ysize, curx, cury, fontdepth, mergelist, mergedepth;
-    static bool hitfx;
+    static bool hitfx, skinfx;
 
     static void reset()
     {
@@ -105,6 +105,7 @@ struct gui : guient
     static int ty, tx, tpos, *tcurrent, tcolor; //tracking tab size and position since uses different layout method...
 
     void allowhitfx(bool on) { hitfx = on; }
+    void allowskinfx(bool on) { skinfx = on; }
     bool visibletab() { return !tcurrent || tpos == *tcurrent; }
     bool visible() { return !guilayoutpass && visibletab(); }
 
@@ -745,10 +746,14 @@ struct gui : guient
     void text_(const char *text, int x, int y, int color, int alpha, bool hit = false, int wrap = -1)
     {
         int flags = TEXT_NO_INDENT;
-        if(guiactiveskin && hit)
+        if(hit)
         {
-            flags |= TEXT_SKIN;
-            color = guiactivecolour;
+            if(guiactiveskin && skinfx)
+            {
+                flags |= TEXT_SKIN;
+                color = guiactivecolour;
+            }
+            else if(hitfx) color = guiactivecolour;
         }
         draw_textx(text, x, y, 0, 0, color>>16, (color>>8)&0xFF, color&0xFF, alpha, flags, -1, wrap > 0 ? wrap : -1);
     }
@@ -1255,7 +1260,7 @@ TVARN(IDF_PERSIST|IDF_PRELOAD, guihovertex, "textures/guihover", gui::hovertex, 
 
 vector<gui::list> gui::lists;
 float gui::basescale, gui::maxscale = 1, gui::hitx, gui::hity;
-bool gui::passthrough, gui::hitfx = true;
+bool gui::passthrough, gui::hitfx = true, gui::skinfx = true;
 int gui::curdepth, gui::fontdepth, gui::curlist, gui::xsize, gui::ysize, gui::curx, gui::cury, gui::mergelist, gui::mergedepth;
 int gui::ty, gui::tx, gui::tpos, *gui::tcurrent, gui::tcolor;
 static vector<gui> guis;
