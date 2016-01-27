@@ -144,6 +144,7 @@ GVAR(IDF_ADMIN, rotatecycle, 0, 10, VAR_MAX); // 0 = off, else = minutes between
 GVAR(IDF_ADMIN, varslock, 0, PRIV_OPERATOR, PRIV_MAX);
 GVAR(IDF_ADMIN, votelock, 0, PRIV_OPERATOR, PRIV_MAX);
 GVAR(IDF_ADMIN, votelocktype, 0, 2, 2); // 0 = off, 1 = lock level only, 2 = lock level can select previousmaps
+GVAR(IDF_ADMIN, votefilter, 0, 1, 1); // 0 = off, 1 = skip spectators
 GVAR(IDF_ADMIN, votewait, 0, 2500, VAR_MAX);
 GVAR(IDF_ADMIN, votestyle, 0, 2, 2); // 0 = votes don't pass mid-match, 1 = passes if votethreshold is met, 2 = passes if unanimous
 GVAR(IDF_ADMIN, voteinterm, 0, 2, 3); // 0 = must wait entire time, 1 = passes if votethreshold is met, 2 = passes if unanimous, 3 = passes after waiting then selects a random vote
