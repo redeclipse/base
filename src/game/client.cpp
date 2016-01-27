@@ -3086,8 +3086,8 @@ namespace client
                     if(o == game::focus && changed && o->state != CS_ALIVE)
                     {
                         if(o->queuepos < 0) conoutft(CON_EVENT, "\fyyou are now \fs\fzgcqueued\fS for the \fs\fcnext match\fS");
-                        else if(o->queuepos) conoutft(CON_EVENT, "\fyyou are \fs\fzgc#%d\fS in the \fs\fcduel queue\fS", o->queuepos+1);
-                        else conoutft(CON_EVENT, "\fyyou are \fs\fzgcNEXT\fS in the \fs\fcduel queue\fS");
+                        else if(o->queuepos) conoutft(CON_EVENT, "\fyyou are \fs\fzgc#%d\fS in the \fs\fcqueue\fS", o->queuepos+1);
+                        else conoutft(CON_EVENT, "\fyyou are \fs\fzgcNEXT\fS in the \fs\fcqueue\fS");
                     }
                     break;
                 }
