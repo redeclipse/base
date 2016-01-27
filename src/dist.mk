@@ -1,6 +1,6 @@
-appname=$(APPNAME)
-appnamefull=$(shell sed -n 's/.define VERSION_NAME *"\([^"]*\)"/\1/p' version.h)
-appversion=$(shell sed -n 's/.define VERSION_STRING *"\([^"]*\)"/\1/p' version.h)
+﻿appname=$(APPNAME)
+appnamefull=$(shell sed -n 's/.define VERSION_NAME *"\([^"]*\)"/\1/p' engine/version.h)
+appversion=$(shell sed -n 's/.define VERSION_STRING *"\([^"]*\)"/\1/p' engine/version.h)
 appfiles=http://redeclipse.net/files/stable
 
 dirname=$(appname)-$(appversion)

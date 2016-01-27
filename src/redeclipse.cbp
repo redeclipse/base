@@ -4,6 +4,7 @@
 	<Project>
 		<Option title="redeclipse" />
 		<Option platforms="Windows;" />
+		<Option pch_mode="2" />
 		<Option compiler="gcc" />
 		<Build>
 			<Target title="redeclipse-x86">
@@ -21,9 +22,9 @@
 				<Option projectLibDirsRelation="1" />
 				<Compiler>
 					<Add option="-fomit-frame-pointer" />
-					<Add option="-ffast-math" />
 					<Add option="-O3" />
 					<Add option="-Wall" />
+					<Add option="-ffast-math" />
 					<Add option="-m32" />
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
@@ -1072,6 +1073,7 @@
 			<Option target="redeclipse-amd64-dbg" />
 			<Option target="redeclipse-amd64-prof" />
 		</Unit>
+		<Unit filename="engine/version.h" />
 		<Unit filename="engine/vertmodel.h">
 			<Option target="redeclipse-x86" />
 			<Option target="redeclipse-x86-dbg" />
@@ -1652,22 +1654,11 @@
 			<Option target="redeclipse_server-amd64" />
 			<Option target="redeclipse_server-amd64-dbg" />
 		</Unit>
-		<Unit filename="version.h">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse_server-x86" />
-			<Option target="redeclipse_server-x86-dbg" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-			<Option target="redeclipse_server-amd64" />
-			<Option target="redeclipse_server-amd64-dbg" />
-		</Unit>
 		<Extensions>
 			<code_completion />
 			<envvars />
 			<debugger />
+			<editor_config active="1" use_tabs="0" tab_indents="1" tab_width="4" indent="4" eol_mode="0" />
 		</Extensions>
 	</Project>
 </CodeBlocks_project_file>
