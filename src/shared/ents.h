@@ -77,11 +77,24 @@ enum { PHYS_FLOAT = 0, PHYS_FALL, PHYS_SLIDE, PHYS_SLOPE, PHYS_FLOOR, PHYS_STEP_
 enum { ENT_PLAYER = 0, ENT_AI, ENT_INANIMATE, ENT_CAMERA, ENT_PROJ, ENT_RAGDOLL, ENT_DUMMY };
 enum { COLLIDE_NONE = 0, COLLIDE_ELLIPSE, COLLIDE_OBB, COLLIDE_ELLIPSE_PRECISE };
 
-struct physent                                  // base entity type, can be affected by physics
+struct baseent
 {
     vec o, vel, falling;                        // origin and velocity
-    vec deltapos, newpos;
     float yaw, pitch, roll;
+    uchar state;                                // one of CS_* above
+
+    baseent() : state(CS_SPECTATOR) { reset(); }
+
+    void reset()
+    {
+        o = vel = falling = vec(0, 0, 0);
+        yaw = pitch = roll = 0;
+    }
+};
+
+struct physent : baseent                        // can be affected by physics
+{
+    vec deltapos, newpos;
     float speed, weight;
     int airmillis, floormillis;
     float radius, height, aboveeye;             // bounding box size
@@ -94,13 +107,12 @@ struct physent                                  // base entity type, can be affe
     char move, strafe;
 
     uchar physstate;                            // one of PHYS_* above
-    uchar state;                                // one of CS_* above
     uchar type;                                 // one of ENT_* above
     uchar collidetype;                          // one of COLLIDE_* above
 
     physent() : speed(100), weight(100), radius(3), aboveeye(1),
         xradius(3), yradius(3), zradius(14), zmargin(0), curscale(1), speedscale(1),
-        state(CS_ALIVE), type(ENT_INANIMATE),
+        type(ENT_INANIMATE),
         collidetype(COLLIDE_ELLIPSE)
     {
         reset();
@@ -120,8 +132,6 @@ struct physent                                  // base entity type, can be affe
         blocked = inliquid = onladder = false;
         strafe = move = 0;
         physstate = PHYS_FALL;
-        o = vel = falling = vec(0, 0, 0);
-        yaw = pitch = roll = 0;
         floor = vec(0, 0, 1);
         resetinterp();
     }

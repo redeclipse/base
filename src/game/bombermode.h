@@ -14,7 +14,7 @@ struct bomberservmode : bomberstate, servmode
 
     void dropaffinity(clientinfo *ci, const vec &o, const vec &inertia = vec(0, 0, 0), int target = -1)
     {
-        if(!canplay(hasflaginfo) || ci->state.actortype >= A_ENEMY) return;
+        if(!canplay(hasflaginfo) || ci->actortype >= A_ENEMY) return;
         vec n = inertia.iszero() ? vec(0, 0, G(bomberspeed)/10.f) : inertia;
         loopv(flags) if(flags[i].owner == ci->clientnum)
         {
@@ -27,12 +27,12 @@ struct bomberservmode : bomberstate, servmode
     void leavegame(clientinfo *ci, bool disconnecting = false)
     {
         if(!canplay(hasflaginfo)) return;
-        dropaffinity(ci, ci->state.feetpos(G(bomberdropheight)), vec(ci->state.vel).add(ci->state.falling));
+        dropaffinity(ci, ci->feetpos(G(bomberdropheight)), vec(ci->vel).add(ci->falling));
     }
 
     void dodamage(clientinfo *m, clientinfo *v, int &damage, int &hurt, int &weap, int &flags, int &material, const ivec &hitpush, const ivec &hitvel, float dist)
     {
-        //if(weaptype[weap].melee) dropaffinity(m, m->state.o);
+        //if(weaptype[weap].melee) dropaffinity(m, m->o);
     }
 
     void spawned(clientinfo *ci)
@@ -41,13 +41,13 @@ struct bomberservmode : bomberstate, servmode
         if(m_team(gamemode, mutators))
         {
             int alive[T_MAX] = {0}, numt = numteams(gamemode, mutators);
-            loopv(clients) if(clients[i]->state.state == CS_ALIVE) alive[clients[i]->team]++;
+            loopv(clients) if(clients[i]->state == CS_ALIVE) alive[clients[i]->team]++;
             loopk(numt) if(!alive[k+1]) return;
         }
         else
         {
             int alive = 0;
-            loopv(clients) if(clients[i]->state.state == CS_ALIVE) alive++;
+            loopv(clients) if(clients[i]->state == CS_ALIVE) alive++;
             if(alive <= 1) return;
         }
         bombertime = gamemillis+(hasstarted ? G(bomberwait) : 0);
@@ -57,7 +57,7 @@ struct bomberservmode : bomberstate, servmode
     void died(clientinfo *ci, clientinfo *v)
     {
         if(!canplay(hasflaginfo)) return;
-        dropaffinity(ci, ci->state.feetpos(G(bomberdropheight)), vec(ci->state.vel).add(ci->state.falling));
+        dropaffinity(ci, ci->feetpos(G(bomberdropheight)), vec(ci->vel).add(ci->falling));
         if(v && m_gsp1(gamemode, mutators) && (!m_team(gamemode, mutators) || ci->team != v->team))
         {
             loopv(flags) if(isbomberaffinity(flags[i]) && flags[i].owner == v->clientnum)
@@ -81,7 +81,7 @@ struct bomberservmode : bomberstate, servmode
         bombstats bstats;
         bstats.bombing = ci->team;
         bstats.bombed = g.team;
-        ci->state.bombings.add(bstats);
+        ci->bombings.add(bstats);
         if(g.team != ci->team)
         {
             givepoints(ci, G(bomberpoints), m_points(gamemode, mutators), false);
@@ -127,9 +127,9 @@ struct bomberservmode : bomberstate, servmode
 
     void moved(clientinfo *ci, const vec &oldpos, const vec &newpos)
     {
-        if(!canplay(hasflaginfo) || ci->state.actortype >= A_ENEMY) return;
+        if(!canplay(hasflaginfo) || ci->actortype >= A_ENEMY) return;
         if(G(bomberthreshold) > 0 && oldpos.dist(newpos) >= G(bomberthreshold))
-            dropaffinity(ci, oldpos, vec(ci->state.vel).add(ci->state.falling));
+            dropaffinity(ci, oldpos, vec(ci->vel).add(ci->falling));
         if(m_gsp1(gamemode, mutators) || (G(bomberbasketonly) && m_gsp2(gamemode, mutators))) return;
         loopv(flags) if(isbomberaffinity(flags[i]) && flags[i].owner == ci->clientnum) loopvk(flags)
             if(isbombertarg(flags[k], ci->team) && newpos.dist(flags[k].spawnloc) <= enttype[AFFINITY].radius/2) scorebomb(ci, i, k);
@@ -150,7 +150,7 @@ struct bomberservmode : bomberstate, servmode
 
     void takeaffinity(clientinfo *ci, int i)
     {
-        if(!canplay(hasflaginfo) || !flags.inrange(i) || ci->state.state!=CS_ALIVE || ci->state.actortype >= A_ENEMY) return;
+        if(!canplay(hasflaginfo) || !flags.inrange(i) || ci->state!=CS_ALIVE || ci->actortype >= A_ENEMY) return;
         flag &f = flags[i];
         if(!isbomberaffinity(f) || f.owner >= 0 || !f.enabled) return;
         if(f.lastowner == ci->clientnum && f.droptime && gamemillis-f.droptime <= G(bomberpickupdelay)) return;
@@ -170,7 +170,7 @@ struct bomberservmode : bomberstate, servmode
 
     void resetaffinity(clientinfo *ci, int i)
     {
-        if(!canplay(hasflaginfo) || !flags.inrange(i) || ci->state.ownernum >= 0) return;
+        if(!canplay(hasflaginfo) || !flags.inrange(i) || ci->ownernum >= 0) return;
         flag &f = flags[i];
         if(!isbomberaffinity(f) || f.owner >= 0 || !f.droptime || f.votes.find(ci->clientnum) >= 0 || !f.enabled) return;
         f.votes.add(ci->clientnum);
@@ -239,7 +239,7 @@ struct bomberservmode : bomberstate, servmode
                     int score = G(bomberholdpoints)*t;
                     if(score)
                     {
-                        int total = ci->state.points;
+                        int total = ci->points;
                         givepoints(ci, score, true, false);
                         if(m_team(gamemode, mutators))
                         {
@@ -250,9 +250,9 @@ struct bomberservmode : bomberstate, servmode
                 }
                 if(ci && carrytime && gamemillis-f.taketime >= carrytime)
                 {
-                    ci->state.weapshots[W_GRENADE][0].add(1);
+                    ci->weapshots[W_GRENADE][0].add(1);
                     sendf(-1, 1, "ri7", N_DROP, ci->clientnum, -1, 1, W_GRENADE, -1, -1);
-                    dropaffinity(ci, ci->state.feetpos(G(bomberdropheight)), vec(ci->state.vel).add(ci->state.falling));
+                    dropaffinity(ci, ci->feetpos(G(bomberdropheight)), vec(ci->vel).add(ci->falling));
                     if(m_gsp1(gamemode, mutators) && G(bomberholdpenalty))
                     {
                         givepoints(ci, -G(bomberholdpenalty), true, false);
@@ -303,7 +303,7 @@ struct bomberservmode : bomberstate, servmode
         loopv(clients)
         {
             clientinfo *oi = clients[i];
-            if(!oi->connected || (ci && oi->clientnum == ci->clientnum) || !oi->state.lastbuff) continue;
+            if(!oi->connected || (ci && oi->clientnum == ci->clientnum) || !oi->lastbuff) continue;
             putint(p, N_SPHY);
             putint(p, oi->clientnum);
             putint(p, SPHY_BUFF);
@@ -313,30 +313,30 @@ struct bomberservmode : bomberstate, servmode
 
     void regen(clientinfo *ci, int &total, int &amt, int &delay)
     {
-        if(!canplay(hasflaginfo) || !G(bomberregenbuff) || !ci->state.lastbuff) return;
-        if(G(maxhealth)) total = max(m_maxhealth(gamemode, mutators, ci->state.actortype), total);
-        if(ci->state.lastregen && G(bomberregendelay)) delay = G(bomberregendelay);
+        if(!canplay(hasflaginfo) || !G(bomberregenbuff) || !ci->lastbuff) return;
+        if(G(maxhealth)) total = max(m_maxhealth(gamemode, mutators, ci->actortype), total);
+        if(ci->lastregen && G(bomberregendelay)) delay = G(bomberregendelay);
         if(G(bomberregenextra)) amt += G(bomberregenextra);
     }
 
     void checkclient(clientinfo *ci)
     {
-        if(!canplay(hasflaginfo) || ci->state.state != CS_ALIVE || m_insta(gamemode, mutators)) return;
-        #define bomberbuff1 (G(bomberbuffing)&1 && isbomberhome(f, ci->team) && (G(bomberbuffarea) > 0 ? ci->state.o.dist(f.spawnloc) <= G(bomberbuffarea) : true))
+        if(!canplay(hasflaginfo) || ci->state != CS_ALIVE || m_insta(gamemode, mutators)) return;
+        #define bomberbuff1 (G(bomberbuffing)&1 && isbomberhome(f, ci->team) && (G(bomberbuffarea) > 0 ? ci->o.dist(f.spawnloc) <= G(bomberbuffarea) : true))
         #define bomberbuff2 ((G(bomberbuffing)&2 || (G(bomberbuffing)&4 && m_gsp3(gamemode, mutators) && ci->team == T_ALPHA)) && isbomberaffinity(f) && f.owner == ci->clientnum)
         if(G(bomberbuffing)) loopv(flags)
         {
             flag &f = flags[i];
             if(f.enabled && (bomberbuff1 || bomberbuff2))
             {
-                if(!ci->state.lastbuff) sendf(-1, 1, "ri4", N_SPHY, ci->clientnum, SPHY_BUFF, 1);
-                ci->state.lastbuff = gamemillis;
+                if(!ci->lastbuff) sendf(-1, 1, "ri4", N_SPHY, ci->clientnum, SPHY_BUFF, 1);
+                ci->lastbuff = gamemillis;
                 return;
             }
         }
-        if(ci->state.lastbuff && (!G(bomberbuffing) || gamemillis-ci->state.lastbuff >= G(bomberbuffdelay)))
+        if(ci->lastbuff && (!G(bomberbuffing) || gamemillis-ci->lastbuff >= G(bomberbuffdelay)))
         {
-            ci->state.lastbuff = 0;
+            ci->lastbuff = 0;
             sendf(-1, 1, "ri4", N_SPHY, ci->clientnum, SPHY_BUFF, 0);
         }
     }
@@ -376,7 +376,7 @@ struct bomberservmode : bomberstate, servmode
             {
                 hasflaginfo = true;
                 sendaffinity();
-                loopv(clients) if(clients[i]->state.state == CS_ALIVE) entergame(clients[i]);
+                loopv(clients) if(clients[i]->state == CS_ALIVE) entergame(clients[i]);
             }
         }
     }
