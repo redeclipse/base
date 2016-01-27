@@ -11,7 +11,7 @@ VARF(IDF_PERSIST, textkeybg, 0, 2, 2, changedkeys = totalmillis);
 VARF(IDF_PERSIST, textkeyseps, 0, 1, 1, changedkeys = totalmillis);
 VAR(IDF_PERSIST|IDF_HEX, textkeybgcolour, 0x000000, 0xFFFFFF, 0xFFFFFF);
 VAR(IDF_PERSIST|IDF_HEX, textkeybgbordercolour, 0x000000, 0x666666, 0xFFFFFF);
-VAR(IDF_PERSIST|IDF_HEX, textkeyfgcolour, 0x000000, 0x333333, 0xFFFFFF);
+VAR(IDF_PERSIST|IDF_HEX, textkeyfgcolour, 0x000000, 0x222222, 0xFFFFFF);
 FVAR(IDF_PERSIST, textkeybgblend, 0, 1, 1);
 FVAR(IDF_PERSIST, textkeybgborderblend, 0, 0.9f, 1);
 FVAR(IDF_PERSIST, textkeyfgblend, 0, 1, 1);

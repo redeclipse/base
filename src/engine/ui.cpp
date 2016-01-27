@@ -12,12 +12,12 @@ enum {FIELDCOMMIT, FIELDABORT, FIELDEDIT, FIELDSHOW, FIELDKEY};
 static int fieldmode = FIELDSHOW;
 static bool fieldsactive = false;
 
-FVAR(IDF_PERSIST, guiscale, FVAR_MIN, 0.0002f, VAR_MAX);
-FVAR(IDF_PERSIST, guitextscale, FVAR_MIN, 2.75f, VAR_MAX);
-VAR(IDF_PERSIST, guiskinsize, 0, 0, VAR_MAX); // 0 = texture size, otherwise = size in pixels for skin scaling
-VAR(IDF_PERSIST, guislidersize, 1, 144, VAR_MAX);
+FVAR(IDF_PERSIST, guiscale, FVAR_NONZERO, 0.00055f, VAR_MAX);
+FVAR(IDF_PERSIST, guitextscale, FVAR_NONZERO, 1, VAR_MAX);
+VAR(IDF_PERSIST, guiskinsize, 0, 96, VAR_MAX); // 0 = texture size, otherwise = size in pixels for skin scaling
+VAR(IDF_PERSIST, guislidersize, 1, 58, VAR_MAX);
 VAR(IDF_PERSIST, guisepsize, 1, 6, VAR_MAX);
-VAR(IDF_PERSIST, guispacesize, 1, 128, VAR_MAX);
+VAR(IDF_PERSIST, guispacesize, 1, 48, VAR_MAX);
 VAR(IDF_PERSIST, guitooltipwidth, -1, -1, VAR_MAX);
 VAR(IDF_PERSIST, guistatuswidth, -1, -1, VAR_MAX);
 
@@ -1151,7 +1151,7 @@ struct gui : guient
     void start(int starttime, int *tab, bool allowinput, bool wantstitle, bool wantsbgfx)
     {
         fontdepth = 0;
-        gui::pushfont("reduced");
+        gui::pushfont("default");
         basescale = guiscale;
         if(guilayoutpass)
             uiscale.x = uiscale.y = uiscale.z = guiscaletime ? min(basescale*(totalmillis-starttime)/float(guiscaletime), basescale) : basescale;
