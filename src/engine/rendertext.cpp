@@ -9,14 +9,14 @@ VAR(IDF_PERSIST, textminintensity, 0, 32, 255);
 Texture *tkbbordertex = NULL, *tkbtex = NULL;
 VARF(IDF_PERSIST, textkeybg, 0, 2, 2, changedkeys = totalmillis);
 VARF(IDF_PERSIST, textkeyseps, 0, 1, 1, changedkeys = totalmillis);
-VAR(IDF_PERSIST|IDF_HEX, textkeybgcolour, 0x000000, 0xC0C0C0, 0xFFFFFF);
-VAR(IDF_PERSIST|IDF_HEX, textkeybgbordercolour, 0x000000, 0xFFFFFF, 0xFFFFFF);
-VAR(IDF_PERSIST|IDF_HEX, textkeyfgcolour, 0x000000, 0x00FFFF, 0xFFFFFF);
-FVAR(IDF_PERSIST, textkeybgblend, 0, 0.3f, 1);
-FVAR(IDF_PERSIST, textkeybgborderblend, 0, 0.4f, 1);
+VAR(IDF_PERSIST|IDF_HEX, textkeybgcolour, 0x000000, 0xFFFFFF, 0xFFFFFF);
+VAR(IDF_PERSIST|IDF_HEX, textkeybgbordercolour, 0x000000, 0x666666, 0xFFFFFF);
+VAR(IDF_PERSIST|IDF_HEX, textkeyfgcolour, 0x000000, 0x000000, 0xFFFFFF);
+FVAR(IDF_PERSIST, textkeybgblend, 0, 1, 1);
+FVAR(IDF_PERSIST, textkeybgborderblend, 0, 0.8f, 1);
 FVAR(IDF_PERSIST, textkeyfgblend, 0, 1, 1);
-TVARN(IDF_PERSIST|IDF_PRELOAD, textkeybgtex, "textures/guiskin", tkbtex, 0);
-TVARN(IDF_PERSIST|IDF_PRELOAD, textkeybgbordertex, "textures/guiskinborder", tkbbordertex, 0);
+TVARN(IDF_PERSIST|IDF_PRELOAD, textkeybgtex, "textures/keyskin", tkbtex, 0);
+TVARN(IDF_PERSIST|IDF_PRELOAD, textkeybgbordertex, "textures/keyskinborder", tkbbordertex, 0);
 
 Texture *tbgbordertex = NULL, *tbgtex = NULL;
 VAR(IDF_PERSIST, textskin, 0, 2, 2);
@@ -718,7 +718,7 @@ int draw_textx(const char *fstr, int left, int top, int xpad, int ypad, int r, i
     }
     if(xpad) left += xpad;
     if(ypad) top += ypad;
-    if(flags&TEXT_SHADOW) draw_text(str, left-2, top-2, 0, 0, 0, a, flags, cursor, maxwidth);
+    if(flags&TEXT_SHADOW) draw_text(str, left+2, top+2, 0, 0, 0, a, flags, cursor, maxwidth);
     draw_text(str, left, top, r, g, b, a, flags, cursor, maxwidth);
     return height;
 }

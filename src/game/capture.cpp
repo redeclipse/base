@@ -149,7 +149,7 @@ namespace capture
             }
             if(game::focus == game::player1 && (!hasflags.empty() || !pickup.empty()))
             {
-                SEARCHBINDCACHE(altkey)("affinity", 0, "\f{\fs\fzuy", "\fS}");
+                SEARCHBINDCACHE(altkey)("affinity", 0, "\f{\fs\fzue", "\fS}");
                 pushfont("reduced");
                 ty += draw_textx("Press %s to %s", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, altkey, !hasflags.empty() ? "drop flags" : "pick up flags")*hud::noticescale;
                 popfont();

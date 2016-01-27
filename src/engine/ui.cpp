@@ -1205,7 +1205,7 @@ struct gui : guient
         {
             if(guistatusline && statusstr && *statusstr)
             {
-                gui::pushfont("little");
+                gui::pushfont("reduced");
                 int width = 0, height = 0, tw = min(statuswidth ? statuswidth : (guistatuswidth ? guistatuswidth : -1), int(screenw*(1/uiscale.y))-FONTH*4);
                 text_bounds(statusstr, width, height, 0, 0, tw, TEXT_CENTERED|TEXT_NO_INDENT);
                 int w = width+FONTW*2, h = height+FONTH/2, x1 = -w/2, y1 = guispacesize, x2 = x1+w, y2 = y1+h;
