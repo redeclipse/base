@@ -2528,6 +2528,7 @@ namespace server
         {
             clientinfo *oi = clients[i];
             if(oi->state.actortype > A_PLAYER) continue;
+            if(G(votefilter) && oi->state.state == CS_SPECTATOR && !*oi->mapvote) continue; // filter out spectators who haven't voted
             maxvotes++;
             if(!*oi->mapvote) continue;
             if(style == 3) votes.add(votecount(oi->mapvote, oi->modevote, oi->mutsvote));
