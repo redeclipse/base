@@ -1622,9 +1622,9 @@ namespace hud
         *firstbloodtex, *breakertex;
     extern int hudwidth, hudheight, hudsize, lastteam, damageresidue, damageresiduefade, shownotices, showevents, radaraffinitynames,
         inventorygame, inventoryscore, inventoryscorespec, inventoryscorebg, inventoryscoreinfo, inventoryscorebreak, inventoryscorepos, inventoryracestyle,
-        teamhurthud, teamhurttime, teamhurtdist, noticepadx, noticepady, eventpadx, eventpady;
+        teamhurthud, teamhurttime, teamhurtdist;
     extern float noticescale, eventscale, inventoryblend, inventoryskew, radaraffinityblend, radarblipblend, radaraffinitysize,
-        inventoryglow, inventoryscoresize, inventoryscoreshrink, inventoryscoreshrinkmax;
+        inventoryglow, inventoryscoresize, inventoryscoreshrink, inventoryscoreshrinkmax, noticepadx, noticepady, eventpadx, eventpady;
     extern vector<int> teamkills;
     extern const char *icontex(int type, int value);
     extern bool chkcond(int val, bool cond);
@@ -1638,7 +1638,7 @@ namespace hud
     extern int drawprogress(int x, int y, float start, float length, float size, bool left, float r = 1, float g = 1, float b = 1, float fade = 1, float skew = 1, const char *font = NULL, const char *text = NULL, ...);
     extern int drawitembar(int x, int y, float size, bool left, float r = 1, float g = 1, float b = 1, float fade = 1, float skew = 1, float amt = 1, int type = 0);
     extern int drawitem(const char *tex, int x, int y, float size, float sub = 0, bool bg = true, bool left = false, float r = 1, float g = 1, float b = 1, float fade = 1, float skew = 1, const char *font = NULL, const char *text = NULL, ...);
-    extern int drawitemtextx(int x, int y, float size, int align = TEXT_LEFT_UP, float skew = 1, const char *font = NULL, float blend = 1, const char *text = NULL, ...);
+    extern int drawitemtextx(int x, int y, float size, int flags = TEXT_LEFT_UP, float skew = 1, const char *font = NULL, float blend = 1, const char *text = NULL, ...);
     extern int drawitemtext(int x, int y, float size, bool left = false, float skew = 1, const char *font = NULL, float blend = 1, const char *text = NULL, ...);
     extern int drawweapons(int x, int y, int s, float blend = 1);
     extern int drawhealth(int x, int y, int s, float blend = 1, bool interm = false);

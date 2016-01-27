@@ -654,7 +654,7 @@ int draw_text(const char *str, int rleft, int rtop, int r, int g, int b, int a, 
     xtraverts += gle::end();
     if(cursor >= 0)
     {
-        gle::colorub(255, 255, 255, int(255*clamp(1.f-(float(totalmillis%500)/500.f), 0.5f, 1.f)));
+        gle::colorub(255, 255, 255, int(clamp(1.f-(float(totalmillis%500)/500.f), 0.5f, 1.f)*255));
         draw_char(tex, '_', left+cx, top+cy, scale);
         xtraverts += gle::end();
     }
@@ -713,10 +713,8 @@ int draw_textx(const char *fstr, int left, int top, int xpad, int ypad, int r, i
             }
             drawskin(t, left-stretchx, top-stretchy, left+width+stretchx, top+height+stretchy, bvec(int(r*bright), int(g*bright), int(b*bright)).min(255).tohexcolor(), blend);
         }
-        r = int(255*textskinfbright);
-        g = int(255*textskinfbright);
-        b = int(255*textskinfbright);
-        a = int(a*textskinfblend);
+        r = g = b = int(textskinfbright*255);
+        a = int(255*textskinfblend);
     }
     if(xpad) left += xpad;
     if(ypad) top += ypad;

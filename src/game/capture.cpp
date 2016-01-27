@@ -186,7 +186,7 @@ namespace capture
             {
                 pushfont("super");
                 char *str = buildflagstr(hasflags, hasflags.length() <= 3);
-                ty += draw_textx("You are holding the %s %s", tx, ty, int(FONTW*hud::eventpadx)+FONTW/4, int(FONTH*hud::eventpady), tr, tg, tb, int(255*blend), TEXT_SKIN|TEXT_CENTERED, -1, -1, str, hasflags.length() == 1 ? "flag" : "flags")*hud::eventscale;
+                ty += draw_textx("You are holding the %s %s", tx, ty, int(FONTW*hud::eventpadx), int(FONTH*hud::eventpady), tr, tg, tb, int(255*blend), TEXT_SKIN|TEXT_CENTERED, -1, -1, str, hasflags.length() == 1 ? "flag" : "flags")*hud::eventscale;
                 popfont();
             }
         }
