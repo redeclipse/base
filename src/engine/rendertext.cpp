@@ -689,8 +689,6 @@ int draw_textx(const char *fstr, int left, int top, int xpad, int ypad, int r, i
     }
     if(flags&TEXT_BALLOON) top -= height/2;
     else if(flags&TEXT_UPWARD) top -= height;
-    if(xpad) left += xpad;
-    if(ypad) top += ypad;
     if(flags&TEXT_SKIN && textskin)
     {
         int stretchx = int(FONTW*textskinstretchx), stretchy = int(FONTH*textskinstretchy);
