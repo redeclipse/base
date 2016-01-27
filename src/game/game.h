@@ -1622,7 +1622,7 @@ namespace hud
         *firstbloodtex, *breakertex;
     extern int hudwidth, hudheight, hudsize, lastteam, damageresidue, damageresiduefade, shownotices, showevents, radaraffinitynames,
         inventorygame, inventoryscore, inventoryscorespec, inventoryscorebg, inventoryscoreinfo, inventoryscorebreak, inventoryscorepos, inventoryracestyle,
-        teamhurthud, teamhurttime, teamhurtdist;
+        teamhurthud, teamhurttime, teamhurtdist, noticepadx, noticepady, eventpadx, eventpady;
     extern float noticescale, eventscale, inventoryblend, inventoryskew, radaraffinityblend, radarblipblend, radaraffinitysize,
         inventoryglow, inventoryscoresize, inventoryscoreshrink, inventoryscoreshrinkmax;
     extern vector<int> teamkills;

@@ -1,8 +1,8 @@
 #include "engine.h"
 
 VAR(IDF_PERSIST, textblinking, 0, 250, VAR_MAX);
-float activetextscale = 1;
-FVARF(IDF_PERSIST, textscale, FVAR_NONZERO, 1, FVAR_MAX, activetextscale = textscale);
+float curtextscale = 1;
+FVARF(IDF_PERSIST, textscale, FVAR_NONZERO, 1, FVAR_MAX, curtextscale = textscale);
 VAR(IDF_PERSIST, textfaded, 0, 1, 1);
 VAR(IDF_PERSIST, textminintensity, 0, 32, 255);
 
@@ -19,17 +19,15 @@ TVARN(IDF_PERSIST|IDF_PRELOAD, textkeybgtex, "textures/guiskin", tkbtex, 0);
 TVARN(IDF_PERSIST|IDF_PRELOAD, textkeybgbordertex, "textures/guiskinborder", tkbbordertex, 0);
 
 Texture *tbgbordertex = NULL, *tbgtex = NULL;
-VAR(IDF_PERSIST, textbg, 0, 2, 2);
-FVAR(IDF_PERSIST, textbgblend, 0, 0.3f, 1);
-FVAR(IDF_PERSIST, textbgfblend, 0, 1, 1);
-FVAR(IDF_PERSIST, textbgbright, 0, 0.6f, 10);
-FVAR(IDF_PERSIST, textbgfbright, 0, 1, 10);
-FVAR(IDF_PERSIST, textbgborderbright, 0, 1, 10);
-FVAR(IDF_PERSIST, textbgborderblend, 0, 0.4f, 1);
-FVAR(IDF_PERSIST, textbgwidth, 0, 4, 1000);
-FVAR(IDF_PERSIST, textbgheight, 0, 0.4f, 1000);
-TVARN(IDF_PERSIST|IDF_PRELOAD, textbgtex, "textures/textskin", tbgtex, 0);
-TVARN(IDF_PERSIST|IDF_PRELOAD, textbgbordertex, "textures/textskinborder", tbgbordertex, 0);
+VAR(IDF_PERSIST, textskin, 0, 2, 2);
+FVAR(IDF_PERSIST, textskinblend, 0, 0.3f, 1);
+FVAR(IDF_PERSIST, textskinfblend, 0, 1, 1);
+FVAR(IDF_PERSIST, textskinbright, 0, 0.6f, 10);
+FVAR(IDF_PERSIST, textskinfbright, 0, 1, 10);
+FVAR(IDF_PERSIST, textskinborderbright, 0, 1, 10);
+FVAR(IDF_PERSIST, textskinborderblend, 0, 0.4f, 1);
+TVARN(IDF_PERSIST|IDF_PRELOAD, textskintex, "textures/textskin", tbgtex, 0);
+TVARN(IDF_PERSIST|IDF_PRELOAD, textskinbordertex, "textures/textskinborder", tbgbordertex, 0);
 
 static hashnameset<font> fonts;
 static font *fontdef = NULL;
@@ -152,13 +150,13 @@ bool setfont(const char *name)
     return true;
 }
 
-float text_widthf(const char *str, int flags)
+float text_widthf(const char *str, int xpad, int ypad, int flags)
 {
     float width, height;
-    text_boundsf(str, width, height, -1, flags);
+    text_boundsf(str, width, height, xpad, ypad, -1, flags);
     return width;
 }
-ICOMMAND(0, textwidth, "si", (char *s, int *f), floatret(text_widthf(s, *f)));
+ICOMMAND(0, textwidth, "siii", (char *s, int *f, int *x, int *y), floatret(text_widthf(s, *x, *y, *f)));
 
 int text_fontw(const char *s)
 {
@@ -408,7 +406,7 @@ static float icon_width(const char *name, float scale)
     y += FONTH; \
 }
 #define TEXTSKELETON \
-    float y = 0, x = 0, scale = curfont->scale/float(curfont->defaulth)*activetextscale;\
+    float y = 0, x = 0, scale = curfont->scale/float(curfont->defaulth)*curtextscale;\
     int i = 0;\
     for(i = 0; str[i]; i++)\
     {\
@@ -463,7 +461,7 @@ int text_visible(const char *str, float hitx, float hity, int maxwidth, int flag
     #define TEXTCOLOR(idx)
     #define TEXTHEXCOLOR(ret)
     #define TEXTICON(ret) x += icon_width(ret, scale);
-    #define TEXTKEY(ret) x += (textkeybg ? icon_width(textkeybgtex, scale)*0.6f : 0.f)+text_widthf(ret, flags);
+    #define TEXTKEY(ret) x += (textkeybg ? icon_width(textkeybgtex, scale)*0.6f : 0.f)+text_widthf(ret, 0, 0, flags);
     #define TEXTCHAR(idx) x += cw; TEXTWHITE(idx)
     #define TEXTWORD TEXTWORDSKELETON
     TEXTSKELETON
@@ -488,7 +486,7 @@ void text_posf(const char *str, int cursor, float &cx, float &cy, int maxwidth, 
     #define TEXTCOLOR(idx)
     #define TEXTHEXCOLOR(ret)
     #define TEXTICON(ret) x += icon_width(ret, scale);
-    #define TEXTKEY(ret) x += (textkeybg ? icon_width(textkeybgtex, scale)*0.6f : 0.f)+text_widthf(ret, flags);
+    #define TEXTKEY(ret) x += (textkeybg ? icon_width(textkeybgtex, scale)*0.6f : 0.f)+text_widthf(ret, 0, 0, flags);
     #define TEXTCHAR(idx) x += cw;
     #define TEXTWORD TEXTWORDSKELETON if(i >= cursor) break;
     cx = cy = 0;
@@ -505,7 +503,7 @@ void text_posf(const char *str, int cursor, float &cx, float &cy, int maxwidth, 
     #undef TEXTWORD
 }
 
-void text_boundsf(const char *str, float &width, float &height, int maxwidth, int flags)
+void text_boundsf(const char *str, float &width, float &height, int xpad, int ypad, int maxwidth, int flags)
 {
     #define TEXTINDEX(idx)
     #define TEXTWHITE(idx)
@@ -513,7 +511,7 @@ void text_boundsf(const char *str, float &width, float &height, int maxwidth, in
     #define TEXTCOLOR(idx)
     #define TEXTHEXCOLOR(ret)
     #define TEXTICON(ret) x += icon_width(ret, scale);
-    #define TEXTKEY(ret) x += (textkeybg ? icon_width(textkeybgtex, scale)*0.6f : 0.f)+text_widthf(ret, flags);
+    #define TEXTKEY(ret) x += (textkeybg ? icon_width(textkeybgtex, scale)*0.6f : 0.f)+text_widthf(ret, 0, 0, flags);
     #define TEXTCHAR(idx) x += cw;
     #define TEXTWORD TEXTWORDSKELETON
     width = 0;
@@ -529,16 +527,13 @@ void text_boundsf(const char *str, float &width, float &height, int maxwidth, in
     #undef TEXTKEY
     #undef TEXTCHAR
     #undef TEXTWORD
-    if(flags&TEXT_SKIN && textbg)
-    {
-        width += int(FONTW*textbgwidth);
-        height += int(FONTH*textbgheight);
-    }
+    if(xpad) width += xpad*2;
+    if(ypad) height += ypad*2;
 }
 
 int draw_key(Texture *&tex, const char *str, float sx, float sy, float sc, bvec4 &cl, int flags)
 {
-    float swidth = text_widthf(str, flags), ss = swidth, sp = 0;
+    float swidth = text_widthf(str, 0, 0, flags), ss = swidth, sp = 0;
     if(tex)
     {
         xtraverts += gle::end();
@@ -678,12 +673,12 @@ void reloadfonts()
     );
 }
 
-int draw_textx(const char *fstr, int left, int top, int r, int g, int b, int a, int flags, int cursor, int maxwidth, ...)
+int draw_textx(const char *fstr, int left, int top, int xpad, int ypad, int r, int g, int b, int a, int flags, int cursor, int maxwidth, ...)
 {
     defvformatbigstring(str, maxwidth, fstr);
 
     int width = 0, height = 0;
-    text_bounds(str, width, height, maxwidth, flags);
+    text_bounds(str, width, height, xpad, ypad, maxwidth, flags);
     if(flags&TEXT_ALIGN) switch(flags&TEXT_ALIGN)
     {
         case TEXT_CENTERED: left -= width/2; break;
@@ -692,35 +687,38 @@ int draw_textx(const char *fstr, int left, int top, int r, int g, int b, int a, 
     }
     if(flags&TEXT_BALLOON) top -= height/2;
     else if(flags&TEXT_UPWARD) top -= height;
-    if(flags&TEXT_SKIN && textbg)
+    if(xpad) left += xpad;
+    if(ypad) top += ypad;
+    if(flags&TEXT_SKIN && textskin)
     {
-        loopk(textbg)
+        loopk(textskin)
         {
             Texture *t = NULL;
             float blend = a/255.f, bright = 1;
             switch(k)
             {
                 case 1:
-                    bright *= textbgborderbright;
-                    blend *= textbgborderblend;
-                    if(!tbgbordertex) tbgbordertex = textureload(textbgbordertex, 0, true, false);
+                    bright *= textskinborderbright;
+                    blend *= textskinborderblend;
+                    if(!tbgbordertex) tbgbordertex = textureload(textskinbordertex, 0, true, false);
                     t = tbgbordertex;
                     break;
                 case 0: default:
-                    bright *= textbgbright;
-                    blend *= textbgblend;
-                    if(!tbgtex) tbgtex = textureload(textbgtex, 0, true, false);
+                    bright *= textskinbright;
+                    blend *= textskinblend;
+                    if(!tbgtex) tbgtex = textureload(textskintex, 0, true, false);
                     t = tbgtex;
                     break;
             }
             drawskin(t, left, top, left+width, top+height, bvec(int(r*bright), int(g*bright), int(b*bright)).min(255).tohexcolor(), blend);
         }
-        left += int(FONTW*textbgwidth/2);
-        top += int(FONTH*textbgheight/2);
-        if(flags&TEXT_SHADOW) draw_text(str, left-2, top-2, 0, 0, 0, int(a*textbgfblend), flags&~TEXT_SKIN, cursor, maxwidth);
-        draw_text(str, left, top, int(255*textbgfbright), int(255*textbgfbright), int(255*textbgfbright), int(a*textbgfblend), flags, cursor, maxwidth);
-        return height;
+        r = int(255*textskinfbright);
+        g = int(255*textskinfbright);
+        b = int(255*textskinfbright);
+        a = int(a*textskinfblend);
     }
+    if(xpad) left += xpad;
+    if(ypad) top += ypad;
     if(flags&TEXT_SHADOW) draw_text(str, left-2, top-2, 0, 0, 0, a, flags, cursor, maxwidth);
     draw_text(str, left, top, r, g, b, a, flags, cursor, maxwidth);
     return height;

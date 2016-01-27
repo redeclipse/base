@@ -4,7 +4,7 @@ namespace aiman
     int dorefresh = 0, oldbotskillmin = -1, oldbotskillmax = -1, oldcoopskillmin = -1, oldcoopskillmax = -1, oldenemyskillmin = -1, oldenemyskillmax = -1,
         oldbotbalance = -2, oldnumplayers = -1, oldbotlimit = -1, oldbotoffset = 0, oldenemylimit = -1;
     float oldbotbalancescale = -1;
-    
+
     float clientbotscore(clientinfo *ci)
     {
         return (ci->bots.length() * G(aihostnum)) + (ci->ping * G(aihostping));
@@ -268,6 +268,7 @@ namespace aiman
         {
             numt--; // filter out the human team
             balance = people+int(ceilf(people*numt*(m_multi(gamemode, mutators) ? G(coopmultibalance) : G(coopbalance))));
+            balance += G(botoffset)*numt;
         }
         else if(m_bots(gamemode) && blimit > 0)
         {
@@ -278,31 +279,30 @@ namespace aiman
                 case  0: balance = 0; break; // no bots
                 default: balance = max(people, bb); break; // balance to at least this
             }
-            if(balance > 0)
-            {
-                if(!m_duke(gamemode, mutators) && !m_coop(gamemode, mutators) && G(botbalancescale) != 1) balance = int(ceilf(balance*G(botbalancescale)));
-                if(m_team(gamemode, mutators))
-                { // skew this if teams are unbalanced
-                    int plrs[T_TOTAL] = {0}, highest = -1; // we do this because humans can unbalance in odd ways
-                    loopv(clients) if(clients[i]->state.actortype == A_PLAYER && clients[i]->team >= T_FIRST && isteam(gamemode, mutators, clients[i]->team, T_FIRST))
+            balance += G(botoffset)*numt;
+            if(!m_duke(gamemode, mutators) && G(botbalancescale) != 1) balance = int(ceilf(balance*G(botbalancescale)));
+            if(balance > 0 && m_team(gamemode, mutators))
+            { // skew this if teams are unbalanced
+                int plrs[T_TOTAL] = {0}, highest = -1, bots = 0, offset = balance%numt; // we do this because humans can unbalance in odd ways
+                if(offset) balance += numt-offset;
+                loopv(clients) if(clients[i]->team >= T_FIRST && isteam(gamemode, mutators, clients[i]->team, T_FIRST))
+                {
+                    if(clients[i]->state.actortype == A_BOT)
                     {
-                        int team = clients[i]->team-T_FIRST;
-                        plrs[team]++;
-                        if(highest < 0 || plrs[team] > plrs[highest]) highest = team;
+                        bots++;
+                        continue;
                     }
-                    if(highest >= 0)
-                    {
-                        int bots = balance-people;
-                        loopi(numt) if(i != highest && plrs[i] < plrs[highest]) loopj(plrs[highest]-plrs[i])
-                        {
-                            if(bots > 0) bots--;
-                            else balance++;
-                        }
-                    }
+                    int team = clients[i]->team-T_FIRST;
+                    plrs[team]++;
+                    if(highest < 0 || plrs[team] > plrs[highest]) highest = team;
+                }
+                if(highest >= 0) loopi(numt) if(i != highest && plrs[i] < plrs[highest]) loopj(plrs[highest]-plrs[i])
+                {
+                    if(bots > 0) bots--;
+                    else balance++;
                 }
             }
         }
-        balance += G(botoffset)*numt;
         int bots = balance-people;
         if(bots > blimit) balance -= bots-blimit;
         if(balance > 0)

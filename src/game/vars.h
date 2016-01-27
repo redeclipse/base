@@ -380,7 +380,7 @@ GVAR(IDF_MODERATOR, airefreshdelay, 0, 1000, VAR_MAX);
 GVAR(IDF_MODERATOR, aiweightdrag, 0, 5000, VAR_MAX);
 GFVAR(IDF_MODERATOR, aiweightpull, 0, 1, FVAR_MAX);
 GVAR(IDF_GAMEMOD, botbalance, -1, -1, VAR_MAX); // -1 = always use numplayers, 0 = don't balance, 1 or more = fill only with this many
-GFVAR(IDF_GAMEMOD, botbalancescale, FVAR_NONZERO, 0.75f, FVAR_MAX); // use balance*this
+GFVAR(IDF_GAMEMOD, botbalancescale, FVAR_NONZERO, 1, FVAR_MAX); // use balance*this
 GVAR(IDF_GAMEMOD, botbalanceduel, -1, 2, VAR_MAX); // -1 = always use numplayers, 0 = don't balance, 1 or more = fill only with this many
 GVAR(IDF_GAMEMOD, botbalancesurvivor, -1, 2, VAR_MAX); // -1 = always use numplayers, 0 = don't balance, 1 or more = fill only with this many
 GVAR(IDF_GAMEMOD, botskillmin, 1, 60, 101);

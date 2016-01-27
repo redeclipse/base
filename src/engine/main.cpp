@@ -1028,7 +1028,7 @@ int main(int argc, char **argv)
 
     for(int frameloops = 0; ; frameloops = frameloops >= INT_MAX-1 ? MAXFPSHISTORY+1 : frameloops+1)
     {
-        activetextscale = textscale;
+        curtextscale = textscale;
         int elapsed = updatetimer(true);
         updatefps(frameloops, elapsed);
         checkinput();

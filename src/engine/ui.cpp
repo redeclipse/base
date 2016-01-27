@@ -642,7 +642,7 @@ struct gui : guient
             if(e->linewrap && e->maxy == 1)
             {
                 int temp = 0;
-                text_bounds(e->lines[0].text, temp, e->pixelheight, e->pixelwidth, TEXT_NO_INDENT); // only single line editors can have variable height
+                text_bounds(e->lines[0].text, temp, e->pixelheight, e->pixelwidth, 0, 0, TEXT_NO_INDENT); // only single line editors can have variable height
                 int ph = e->pixelheight%FONTH;
                 if(ph) e->pixelheight += FONTH-ph;
             }
@@ -1094,7 +1094,7 @@ struct gui : guient
         if(text && *text)
         {
             int tw = 0, th = 0;
-            text_bounds(text, tw, th, wrap > 0 ? wrap : -1);
+            text_bounds(text, tw, th, 0, 0, wrap > 0 ? wrap : -1);
             w += tw;
             h += th;
         }
@@ -1200,7 +1200,7 @@ struct gui : guient
             {
                 gui::pushfont("little");
                 int width = 0, height = 0, tw = min(statuswidth ? statuswidth : (guistatuswidth ? guistatuswidth : -1), int(screenw*(1/uiscale.y))-FONTH*4);
-                text_bounds(statusstr, width, height, tw, TEXT_CENTERED|TEXT_NO_INDENT);
+                text_bounds(statusstr, width, height, 0, 0, tw, TEXT_CENTERED|TEXT_NO_INDENT);
                 int w = width+FONTW*2, h = height+FONTH/2, x1 = -w/2, y1 = guispacesize, x2 = x1+w, y2 = y1+h;
                 if(hasbgfx) skin(x1, y1, x2, y2, guibgcolour, guibgblend, guibordercolour, guiborderblend);
                 draw_text(statusstr, x1+FONTW, y1+FONTH/4, 255, 255, 255, 255, TEXT_CENTERED|TEXT_NO_INDENT, -1, tw);
@@ -1219,7 +1219,7 @@ struct gui : guient
                 {
                     gui::pushfont("little");
                     int width, height, tw = min(tooltipwidth ? tooltipwidth : (guitooltipwidth ? guitooltipwidth : -1), int(screenw*(1/uiscale.y))-FONTH*4);
-                    text_bounds(tooltipstr, width, height, tw, TEXT_NO_INDENT);
+                    text_bounds(tooltipstr, width, height, 0, 0, tw, TEXT_NO_INDENT);
                     int w = width+FONTW*2, h = FONTH/2+height, x1 = hitx, y1 = hity-height-FONTH/2, x2 = x1+w, y2 = y1+h,
                         offset = totalmillis-lasttooltip-guitooltiptime;
                     float blend = tooltipforce ? 1.f : (offset > 0 ? (offset < guitooltipfade ? offset/float(guitooltipfade) : 1.f) : 0.f);
@@ -1363,8 +1363,8 @@ namespace UI
 
     void render()
     {
-        float oldtextscale = activetextscale;
-        activetextscale = guitextscale;
+        float oldtextscale = curtextscale;
+        curtextscale = guitextscale;
         if(guiactionon) mouseaction[0] |= GUI_PRESSED;
 
         gui::reset();
@@ -1410,7 +1410,7 @@ namespace UI
             keyrepeat(fieldmode!=FIELDSHOW, KR_GUI);
         }
         loopi(2) mouseaction[i] = 0;
-        activetextscale = oldtextscale;
+        curtextscale = oldtextscale;
     }
 
     editor *geteditor(const char *name, int mode, const char *init, const char *parent)
