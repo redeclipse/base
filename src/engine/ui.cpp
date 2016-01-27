@@ -646,7 +646,7 @@ struct gui : guient
             if(e->linewrap && e->maxy == 1)
             {
                 int temp = 0;
-                text_bounds(e->lines[0].text, temp, e->pixelheight, e->pixelwidth, 0, 0, TEXT_NO_INDENT); // only single line editors can have variable height
+                text_bounds(e->lines[0].text, temp, e->pixelheight, 0, 0, e->pixelheight, TEXT_NO_INDENT); // only single line editors can have variable height
                 int ph = e->pixelheight%FONTH;
                 if(ph) e->pixelheight += FONTH-ph;
             }
