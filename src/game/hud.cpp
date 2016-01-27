@@ -1677,9 +1677,9 @@ namespace hud
         {
             pushfont("huge");
             const char *col = teamnotices >= 2 ? "\fs\fzyS" : "";
-            if(m_race(game::gamemode)) ty -= draw_textx("%sRace", tx, ty, int(FONTW*eventpadx)+FONTW, int(FONTH*eventpady), tr, tg, tb, tf, TEXT_SKIN|TEXT_CENTERED, -1, -1, col);
-            else if(!m_team(game::gamemode, game::mutators)) ty -= draw_textx("%sFree-for-all %s", tx, ty, int(FONTW*eventpadx)+FONTW, int(FONTH*eventpady), tr, tg, tb, tf, TEXT_SKIN|TEXT_CENTERED, -1, -1, col, m_bomber(game::gamemode) ? "Bomber-ball" : "Deathmatch");
-            else ty -= draw_textx("%sYou are on team %s", tx, ty, int(FONTW*eventpadx)+FONTW, int(FONTH*eventpady), tr, tg, tb, tf, TEXT_SKIN|TEXT_CENTERED, -1, tw, col, game::colourteam(game::focus->team));
+            if(m_race(game::gamemode)) ty -= draw_textx("%sRace", tx, ty, int(FONTW*eventpadx)+FONTW/4, int(FONTH*eventpady), tr, tg, tb, tf, TEXT_SKIN|TEXT_CENTERED, -1, -1, col);
+            else if(!m_team(game::gamemode, game::mutators)) ty -= draw_textx("%sFree-for-all %s", tx, ty, int(FONTW*eventpadx)+FONTW/4, int(FONTH*eventpady), tr, tg, tb, tf, TEXT_SKIN|TEXT_CENTERED, -1, -1, col, m_bomber(game::gamemode) ? "Bomber-ball" : "Deathmatch");
+            else ty -= draw_textx("%sYou are on team %s", tx, ty, int(FONTW*eventpadx)+FONTW/4, int(FONTH*eventpady), tr, tg, tb, tf, TEXT_SKIN|TEXT_CENTERED, -1, tw, col, game::colourteam(game::focus->team));
             popfont();
         }
         popfont();

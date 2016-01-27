@@ -53,6 +53,7 @@ VAR(IDF_PERSIST|IDF_HEX, guifieldbgcolour, -1, 0x202020, 0xFFFFFF);
 FVAR(IDF_PERSIST, guifieldbgblend, 0, 0.3f, 1);
 VAR(IDF_PERSIST|IDF_HEX, guifieldbordercolour, -1, 0xA0A0A0, 0xFFFFFF);
 FVAR(IDF_PERSIST, guifieldborderblend, 0, 0.6f, 1);
+
 VAR(IDF_PERSIST|IDF_HEX, guifieldactivecolour, -1, 0xF04040, 0xFFFFFF);
 FVAR(IDF_PERSIST, guifieldactiveblend, 0, 0.8f, 1);
 
@@ -69,7 +70,9 @@ VAR(IDF_PERSIST, guislidermarkborderskin, 0, 0, 2);
 VAR(IDF_PERSIST|IDF_HEX, guislideractivecolour, -1, 0xF04040, 0xFFFFFF);
 FVAR(IDF_PERSIST, guislideractiveblend, 0, 0.8f, 1);
 
+VAR(IDF_PERSIST, guiactiveskin, 0, 1, 1);
 VAR(IDF_PERSIST|IDF_HEX, guiactivecolour, -1, 0xF02020, 0xFFFFFF);
+
 VAR(IDF_PERSIST|IDF_HEX, guicheckboxcolour, -1, 0x20F020, 0xFFFFFF);
 VAR(IDF_PERSIST|IDF_HEX, guicheckboxtwocolour, -1, 0xF020F0, 0xFFFFFF);
 VAR(IDF_PERSIST|IDF_HEX, guiradioboxcolour, -1, 0xF02020, 0xFFFFFF);
@@ -217,7 +220,7 @@ struct gui : guient
             }
             else if(guitabborder == 2) border = guibordercolour;
             if(hasbgfx) skin(x1, y1, x2, y2, guibgcolour, guibgblend, border >= 0 ? border : guibordercolour, guiborderblend, border >= 0);
-            text_(name, x1+guispacesize/2, y1+guispacesize/8, tcolor, alpha, visible());
+            text_(name, x1+guispacesize/2, y1+guispacesize/8, tcolor, alpha);
         }
         tx += width+guispacesize*3/2;
         gui::popfont();
@@ -739,10 +742,15 @@ struct gui : guient
         xtraverts += gle::end();
     }
 
-    void text_(const char *text, int x, int y, int color, int alpha, bool shadow, bool force = false, int wrap = -1)
+    void text_(const char *text, int x, int y, int color, int alpha, bool hit = false, int wrap = -1)
     {
-        if(shadow) draw_text(text, x+guishadow, y+guishadow, 0x00, 0x00, 0x00, -0xC0*alpha/255, TEXT_NO_INDENT, -1, wrap > 0 ? wrap : -1);
-        draw_text(text, x, y, color>>16, (color>>8)&0xFF, color&0xFF, force ? -alpha : alpha, TEXT_NO_INDENT, -1, wrap > 0 ? wrap : -1);
+        int flags = TEXT_NO_INDENT;
+        if(guiactiveskin && hit)
+        {
+            flags |= TEXT_SKIN;
+            color = guiactivecolour;
+        }
+        draw_textx(text, x, y, 0, 0, color>>16, (color>>8)&0xFF, color&0xFF, alpha, flags, -1, wrap > 0 ? wrap : -1);
     }
 
     void fill(int color, int inheritw, int inherith)
@@ -1009,7 +1017,7 @@ struct gui : guient
         if(text && *text)
         {
             int w = text_width(text);
-            text_(text, x+s/2-w/2, y+s/2-FONTH/2, 0xFFFFFF, guitextblend, false);
+            text_(text, x+s/2-w/2, y+s/2-FONTH/2, 0xFFFFFF, guitextblend);
         }
     }
 
@@ -1102,8 +1110,7 @@ struct gui : guient
 
         if(visible())
         {
-            bool hit = ishit(w, h), forcecolor = false;
-            if(hit && hitfx && clickable) { forcecolor = true; color = guiactivecolour; }
+            bool hit = ishit(w, h);
             int x = curx;
             if((icon && *icon) || (oicon && *oicon))
             {
@@ -1113,7 +1120,7 @@ struct gui : guient
                 x += FONTH;
                 if(text && *text) x += 8;
             }
-            if(text && *text) text_(text, x, cury, color, (hit && hitfx) || !faded || !clickable ? guitextblend : guitextfade, hit && clickable, forcecolor, wrap > 0 ? wrap : -1);
+            if(text && *text) text_(text, x, cury, color, (hit && hitfx) || !faded || !clickable ? guitextblend : guitextfade, hit && clickable, wrap > 0 ? wrap : -1);
         }
         return layout(w, h);
     }
