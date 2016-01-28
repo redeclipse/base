@@ -857,7 +857,7 @@ void setidflag(const char *s, const char *v, int flag, const char *msg, bool ali
 ICOMMAND(0, setcomplete, "ss", (char *s, char *t), setidflag(s, t, IDF_COMPLETE, "complete", false));
 ICOMMAND(0, setpersist, "ss", (char *s, char *t), setidflag(s, t, IDF_PERSIST, "persist", true));
 
-void setiddesc(const char *s, const char *v, const char *u)
+void setiddesc(const char *s, const char *v, const char *f)
 {
     ident *id = idents.access(s);
     if(!id)
@@ -867,10 +867,14 @@ void setiddesc(const char *s, const char *v, const char *u)
     }
     DELETEA(id->desc);
     if(v && *v) id->desc = newstring(v);
-    DELETEA(id->usage);
-    if(u && *u) id->usage = newstring(u);
+    loopvrev(id->fields)
+    {
+        DELETEA(id->fields[i]);
+        id->fields.remove(i);
+    }
+    if(f && *f) explodelist(f, id->fields);
 }
-ICOMMAND(0, setdesc, "sss", (char *s, char *t, char *u), setiddesc(s, t, u));
+ICOMMAND(0, setdesc, "sss", (char *s, char *t, char *f), setiddesc(s, t, f));
 
 void writecompletions(stream *f)
 {

@@ -351,7 +351,9 @@ namespace client
                 }
                 // empty if nonexistent
                 f->printf("\t%s", escapestring(id.desc ? id.desc : ""));
-                f->printf("\t%s", escapestring(id.usage ? id.usage : ""));
+                string fields = "";
+                loopvj(id.fields) concformatstring(fields, "%s%s", j ? " " : "", id.fields[j]);
+                f->printf("\t%s", escapestring(*fields ? fields : ""));
                 f->printf("\n");
             }
         }

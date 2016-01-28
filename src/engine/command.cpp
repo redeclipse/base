@@ -694,11 +694,11 @@ const char *getvardesc(const char *name)
     return id->desc;
 }
 
-const char *getvarusage(const char *name)
+void getvarfields(const char *name, int prop)
 {
     ident *id = getident(name);
-    if(!id || !id->usage) return "";
-    return id->usage;
+    if(prop < 0) intret(id->fields.length());
+    else if(id->fields.inrange(prop)) result(id->fields[prop]);
 }
 
 ICOMMAND(0, getvar, "s", (char *n), intret(getvar(n)));
@@ -712,7 +712,7 @@ ICOMMAND(0, getvardef, "si", (char *n, int *b), intret(getvardef(n, *b!=0)));
 ICOMMAND(0, getfvardef, "si", (char *n, int *b), floatret(getfvardef(n, *b!=0)));
 ICOMMAND(0, getsvardef, "si", (char *n, int *b), result(getsvardef(n, *b!=0)));
 ICOMMAND(0, getvardesc, "s", (char *n), result(getvardesc(n)));
-ICOMMAND(0, getvarusage, "s", (char *n), result(getvarusage(n)));
+ICOMMAND(0, getvarfields, "sb", (char *n, int *p), getvarfields(n, *p));
 
 bool identexists(const char *name) { return idents.access(name)!=NULL; }
 ident *getident(const char *name) { return idents.access(name); }

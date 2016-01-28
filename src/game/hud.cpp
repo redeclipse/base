@@ -1877,10 +1877,8 @@ namespace hud
                                     case ID_COMMAND:
                                     {
                                         tz += draw_textx("%scommand", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, idtype);
-                                        if(strlen(id->args))
-                                            tz += draw_textx("\faargs: \fw%d \fa(\fw%s\fa)", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, strlen(id->args), id->args);
-                                        else
-                                            tz += draw_textx("\faargs: \fwnone", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt);
+                                        if(strlen(id->args)) tz += draw_textx("\faargs: \fw%d \fa(\fw%s\fa)", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, strlen(id->args), id->args);
+                                        else tz += draw_textx("\faargs: \fwnone", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt);
                                         break;
                                     }
                                     case ID_VAR:
@@ -1889,11 +1887,11 @@ namespace hud
                                         if(id->flags&IDF_HEX)
                                         {
                                             if(id->maxval == 0xFFFFFF)
-                                                tz += draw_textx("\famin: \fw0x%.6X\fa (\fw%d\fa,\fw%d\fa,\fw%d\fa), max: \fw0x%.6X\fa (\fw%d\fa,\fw%d\fa,\fw%d\fa), default: \fw0x%.6X\fa (\fw%d\fa,\fw%d\fa,\fw%d\fa), current: \fw0x%.6X (\fw%d\fa,\fw%d\fa,\fw%d\fa)", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt,
+                                                tz += draw_textx("\famin: \fw0x%.6X\fa (\fw%d\fa,\fw%d\fa,\fw%d\fa), max: \fw0x%.6X\fa (\fw%d\fa,\fw%d\fa,\fw%d\fa), default: \fw0x%.6X\fa (\fw%d\fa,\fw%d\fa,\fw%d\fa), current: \fw0x%.6X (\fw%d\fa,\fw%d\fa,\fw%d\fa) [\fs\f[%d]#\fS]", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt,
                                                         id->minval, (id->minval>>16)&0xFF, (id->minval>>8)&0xFF, id->minval&0xFF,
                                                         id->maxval, (id->maxval>>16)&0xFF, (id->maxval>>8)&0xFF, id->maxval&0xFF,
                                                         id->def.i, (id->def.i>>16)&0xFF, (id->def.i>>8)&0xFF, id->def.i&0xFF,
-                                                        *id->storage.i, (*id->storage.i>>16)&0xFF, (*id->storage.i>>8)&0xFF, *id->storage.i&0xFF);
+                                                        *id->storage.i, (*id->storage.i>>16)&0xFF, (*id->storage.i>>8)&0xFF, *id->storage.i&0xFF, *id->storage.i);
                                             else tz += draw_textx("\famin: \fw0x%X\fa, max: \fw0x%X\fa, default: \fw0x%X\fa, current: \fw0x%X", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, id->minval, id->maxval, id->def.i, *id->storage.i);
                                         }
                                         else tz += draw_textx("\famin: \fw%d\fa, max: \fw%d\fa, default: \fw%d\fa, current: \fw%d", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, id->minval, id->maxval, id->def.i, *id->storage.i);
@@ -1913,10 +1911,44 @@ namespace hud
                                     }
                                 }
 
+                                string fields = "";
+                                if(id->type == ID_VAR || id->type == ID_COMMAND)
+                                {
+                                    if(id->type == ID_VAR && id->fields.length() > 1)
+                                    {
+                                        concatstring(fields, "<bitfield>");
+                                        loopvj(id->fields) if(id->fields[j])
+                                            concformatstring(fields, "\n%d [0x%x] = %s", 1<<j, 1<<j, id->fields[j]);
+                                    }
+                                    else loopvj(id->fields) if(id->fields[j])
+                                        concformatstring(fields, "%s<%s>", j ? " " : "", id->fields[j]);
+                                }
+                                if(!*fields) switch(id->type)
+                                {
+                                    case ID_ALIAS: concatstring(fields, "<value>"); break;
+                                    case ID_VAR: concatstring(fields, "<integer>"); break;
+                                    case ID_FVAR: concatstring(fields, "<float>"); break;
+                                    case ID_SVAR: concatstring(fields, "<string>"); break;
+                                    case ID_COMMAND:
+                                    {
+                                        loopj(strlen(id->args)) switch(id->args[j])
+                                        {
+                                            case 's': concformatstring(fields, "%s<string>", j ? " " : ""); break;
+                                            case 'i': case 'b': case 'N': concformatstring(fields, "%s<%s>", j ? " " : "", id->flags&IDF_HEX ? "bitfield" : "integer"); break;
+                                            case 'f': case 'g': concformatstring(fields, "%s<float>", j ? " " : ""); break;
+                                            case 't': concformatstring(fields, "%s<null>", j ? " " : ""); break;
+                                            case 'e': concformatstring(fields, "%s<commands>", j ? " " : ""); break;
+                                            case 'r': case '$': concformatstring(fields, "%s<ident>", j ? " " : ""); break;
+                                            default: concformatstring(fields, "%s<?>", j ? " " : ""); break;
+                                        }
+                                        break;
+                                    }
+                                    default: break;
+                                }
+                                tz += draw_textx("usage: \fa/%s %s", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, id->name, fields);
+
                                 if(id->desc)
                                     tz += draw_textx("\fa%s", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, id->desc);
-                                if(id->usage)
-                                    tz += draw_textx("usage: \fa/%s %s", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, id->name, id->usage);
 
                                 if(id->type == ID_ALIAS)
                                 {
