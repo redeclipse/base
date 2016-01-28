@@ -1720,7 +1720,7 @@ namespace server
                     int best = -1;
                     loopi(numt) if(best < 0 || teamscore(i+T_FIRST).total > teamscore(best).total)
                         best = i+T_FIRST;
-                    if(best >= 0 && teamscore(best).total >= G(pointlimit))
+                    if(best >= 0 && teamscore(best).total >= plimit)
                     {
                         ancmsgft(-1, S_V_NOTIFY, CON_EVENT, "\fyscore limit has been reached");
                         startintermission();
@@ -1732,7 +1732,7 @@ namespace server
                     int best = -1;
                     loopv(clients) if(clients[i]->actortype < A_ENEMY && (best < 0 || clients[i]->points > clients[best]->points))
                         best = i;
-                    if(best >= 0 && clients[best]->points >= G(pointlimit))
+                    if(best >= 0 && clients[best]->points >= plimit)
                     {
                         ancmsgft(-1, S_V_NOTIFY, CON_EVENT, "\fyscore limit has been reached");
                         startintermission();
