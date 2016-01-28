@@ -128,6 +128,7 @@ struct physent : baseent                        // can be affected by physics
 
     void reset()
     {
+        baseent::reset();
         inmaterial = airmillis = floormillis = 0;
         blocked = inliquid = onladder = false;
         strafe = move = 0;
