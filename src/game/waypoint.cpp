@@ -12,7 +12,7 @@ namespace ai
     bool clipped(const vec &o)
     {
         int material = lookupmaterial(o), clipmat = material&MATF_CLIP;
-        return clipmat == MAT_CLIP || clipmat == MAT_AICLIP || material&MAT_DEATH || (material&MATF_VOLUME) == MAT_LAVA;
+        return clipmat == MAT_CLIP || clipmat == MAT_AICLIP || material&MAT_DEATH || material&MAT_HURT || (material&MATF_VOLUME) == MAT_LAVA;
     }
 
     int getpull(const vec &o)
@@ -27,7 +27,7 @@ namespace ai
             pull = int(dist/JUMPMIN);
             pos.z -= clamp(dist-8.0f, 0.0f, pos.z);
             int trgmat = lookupmaterial(pos);
-            if(trgmat&MAT_DEATH || (trgmat&MATF_VOLUME) == MAT_LAVA) pull *= 10;
+            if(trgmat&MAT_DEATH || trgmat&MAT_HURT || (trgmat&MATF_VOLUME) == MAT_LAVA) pull *= 10;
             else if(isliquid(trgmat&MATF_VOLUME)) pull *= 2;
         }
         return pull;

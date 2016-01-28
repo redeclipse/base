@@ -55,6 +55,7 @@ namespace game
     OBITVARS(lava)
     OBITVARS(water)
     SVAR(IDF_WORLD, obitdeath, "");
+    SVAR(IDF_WORLD, obithurt, "");
     SVAR(IDF_WORLD, obitfall, "");
 
     void stopmapmusic()
@@ -307,8 +308,6 @@ namespace game
     VAR(IDF_PERSIST, vanitymodels, 0, 1, 1);
     VAR(IDF_PERSIST, headlessmodels, 0, 1, 1);
     FVAR(IDF_PERSIST, twitchspeed, 0, 8, FVAR_MAX);
-    
-    VAR(0, checkpointspawn, 0, 1, 1);
 
     bool wantsloadoutmenu = false;
     VAR(IDF_PERSIST, showloadoutmenu, 0, 0, 1); // show the loadout menu at the start of a map
@@ -1361,8 +1360,8 @@ namespace game
     static int alarmchan = -1;
     void hiteffect(int weap, int flags, int damage, gameent *d, gameent *v, vec &dir, vec &vel, float dist, bool local)
     {
-        bool burning = burn(d, weap, flags), bleeding = bleed(d, weap, flags), shocking = shock(d, weap, flags);
-        if(!local || burning || bleeding || shocking)
+        bool burning = burn(d, weap, flags), bleeding = bleed(d, weap, flags), shocking = shock(d, weap, flags), material = flags&HIT_MATERIAL;
+        if(!local || burning || bleeding || shocking || material)
         {
             float scale = isweap(weap) && WF(WK(flags), weap, damage, WS(flags)) ? abs(damage)/float(WF(WK(flags), weap, damage, WS(flags))) : 1.f;
             if(hitdealt(flags) && damage != 0 && v == focus) hud::hit(damage, d->o, d, weap, flags);
@@ -1373,20 +1372,20 @@ namespace game
                 {
                     vec p = d->headpos(-d->height/4);
                     if(!nogore && bloodscale > 0)
-                        part_splash(PART_BLOOD, int(clamp(damage/20, 1, 5)*bloodscale)*(bleeding ? 2 : 1), bloodfade, p, 0x229999, (rnd(bloodsize/2)+(bloodsize/2))/10.f, 1, 100, DECAL_BLOOD, int(d->radius), 10);
+                        part_splash(PART_BLOOD, int(clamp(damage/20, 1, 5)*bloodscale)*(bleeding || material ? 2 : 1), bloodfade, p, 0x229999, (rnd(bloodsize/2)+(bloodsize/2))/10.f, 1, 100, DECAL_BLOOD, int(d->radius), 10);
                     if(nogore != 2 && (bloodscale <= 0 || bloodsparks))
-                        part_splash(PART_PLASMA, int(clamp(damage/20, 1, 5))*(bleeding ? 2: 1), bloodfade, p, 0x882222, 1, 0.5f, 50, DECAL_STAIN, int(d->radius));
+                        part_splash(PART_PLASMA, int(clamp(damage/20, 1, 5))*(bleeding || material ? 2: 1), bloodfade, p, 0x882222, 1, 0.5f, 50, DECAL_STAIN, int(d->radius));
                 }
                 if(d != v)
                 {
                     bool sameteam = m_team(gamemode, mutators) && d->team == v->team;
                     if(!sameteam) pushdamagemerge(d, v, weap, damage, (burning ? damagemerge::BURN : 0)|(bleeding ? damagemerge::BLEED : 0)|(shocking ? damagemerge::SHOCK : 0));
-                    else if(v == player1 && !burning && !bleeding && !shocking)
+                    else if(v == player1 && !burning && !bleeding && !shocking && !material)
                     {
                         player1->lastteamhit = d->lastteamhit = lastmillis;
                         if(!issound(alarmchan)) playsound(S_ALARM, v->o, v, 0, -1, -1, -1, &alarmchan);
                     }
-                    if(!burning && !bleeding && !shocking && !sameteam) v->lasthit = totalmillis;
+                    if(!burning && !bleeding && !shocking && !material && !sameteam) v->lasthit = totalmillis;
                 }
                 if(d->actortype < A_ENEMY && !issound(d->vschan)) playsound(S_PAIN, d->o, d, 0, -1, -1, -1, &d->vschan);
                 d->lastpain = lastmillis;
@@ -1403,7 +1402,7 @@ namespace game
                     if(shockstun&W_N_GRIMM && g > 0) d->falling.mul(1.f-clamp(g, 0.f, 1.f));
                     if(shockstun&W_N_SLIDE) d->impulse[IM_SLIP] = lastmillis;
                 }
-                else if(isweap(weap) && !burning && !bleeding && !shocking && WF(WK(flags), weap, damage, WS(flags)))
+                else if(isweap(weap) && !burning && !bleeding && !material && !shocking && WF(WK(flags), weap, damage, WS(flags)))
                 {
                     if(WF(WK(flags), weap, stun, WS(flags)))
                     {
@@ -1491,6 +1490,7 @@ namespace game
             else if(flags&HIT_SPEC) concatstring(d->obit, obitspectator);
             else if(flags&HIT_MATERIAL && curmat&MAT_WATER) concatstring(d->obit, getobitwater(material, obitdrowned));
             else if(flags&HIT_MATERIAL && curmat&MAT_LAVA) concatstring(d->obit, getobitlava(material, obitmelted));
+            else if(flags&HIT_MATERIAL && (material&MATF_FLAGS)&MAT_HURT) concatstring(d->obit, *obithurt ? obithurt : obithurtmat);
             else if(flags&HIT_MATERIAL) concatstring(d->obit, *obitdeath ? obitdeath : obitdeathmat);
             else if(flags&HIT_LOST) concatstring(d->obit, *obitfall ? obitfall : obitlost);
             else if(flags && isweap(weap) && !burning && !bleeding && !shocking) concatstring(d->obit, WF(WK(flags), weap, obitsuicide, WS(flags)));
@@ -2032,7 +2032,7 @@ namespace game
         if((d == player1 || d->ai) && d->state == CS_ALIVE && d->suicided < 0)
         {
             burn(d, -1, flags);
-            client::addmsg(N_SUICIDE, "ri4", d->clientnum, flags, d->inmaterial, checkpointspawn);
+            client::addmsg(N_SUICIDE, "ri3", d->clientnum, flags, d->inmaterial);
             d->suicided = lastmillis;
         }
     }

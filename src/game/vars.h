@@ -2,6 +2,9 @@ GVAR(IDF_WORLD, numplayers, 0, 4, MAXCLIENTS); // 0 = determine from number of s
 GVAR(IDF_WORLD, maxplayers, 0, 0, MAXCLIENTS); // 0 = numplayers*3
 GVAR(IDF_WORLD, mapbalance, 0, 0, 3); // switches teams for asymmetrical maps, 0 = off, 1 = ctf/dnc/bb, 2 = with team spawns, 3 = forced
 
+GVAR(IDF_WORLD, hurtdelay, 0, 1000, VAR_MAX);
+GVAR(IDF_WORLD, hurtdamage, 0, 3, VAR_MAX);
+
 GFVAR(IDF_WORLD, gravity, 0, 50.f, 1000); // gravity
 GFVAR(IDF_GAMEMOD, gravityscale, 0, 1, FVAR_MAX);
 GFVAR(IDF_WORLD, floorcoast, 0, 5.f, 1000);
@@ -527,6 +530,7 @@ GSVAR(0, obitspectator, "gave up their corporeal form");
 GSVAR(0, obitdrowned, "drowned");
 GSVAR(0, obitmelted, "melted into a ball of fire");
 GSVAR(0, obitdeathmat, "met their end");
+GSVAR(0, obithurtmat, "stayed under too long");
 GSVAR(0, obitlost, "fell to their death");
 GSVAR(0, obitburn, "set ablaze");
 GSVAR(0, obitburnself, "burned up");

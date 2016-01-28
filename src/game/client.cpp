@@ -19,6 +19,7 @@ namespace client
 
     VAR(IDF_PERSIST, checkpointannounce, 0, 5, 7); // 0 = never, &1 = active players, &2 = all players, &4 = all players in gauntlet
     VAR(IDF_PERSIST, checkpointannouncefilter, 0, CP_ALL, CP_ALL); // which checkpoint types to announce for
+    VARF(0, checkpointspawn, 0, 1, 1, game::player1->checkpointspawn = checkpointspawn; sendplayerinfo = true);
     VAR(IDF_PERSIST, demoautoclientsave, 0, 0, 1);
 
     int state() { return game::player1->state; }
@@ -1746,6 +1747,7 @@ namespace client
                 sendstring(game::player1->name, p);
                 putint(p, game::player1->colour);
                 putint(p, game::player1->model);
+                putint(p, game::player1->checkpointspawn);
                 sendstring(game::player1->vanity, p);
                 putint(p, game::player1->loadweap.length());
                 loopv(game::player1->loadweap) putint(p, game::player1->loadweap[i]);
@@ -2131,7 +2133,7 @@ namespace client
                 case N_SETPLAYERINFO:
                 {
                     getstring(text, p);
-                    int colour = getint(p), model = getint(p);
+                    int colour = getint(p), model = getint(p), cps = getint(p);
                     string vanity = "";
                     getstring(vanity, p);
                     int lw = getint(p);
@@ -2151,6 +2153,7 @@ namespace client
                             conoutft(CON_EVENT, "\fm%s is now known as %s", oldname, newname);
                     }
                     else d->setinfo(namestr, colour, model, vanity, lweaps);
+                    d->checkpointspawn = cps;
                     break;
                 }
 
@@ -2161,7 +2164,7 @@ namespace client
                     gameent *d = game::newclient(tcn);
                     if(!d)
                     {
-                        loopk(4) getint(p);
+                        loopk(5) getint(p);
                         getstring(text, p);
                         int w = getint(p);
                         loopk(w) getint(p);
@@ -2169,7 +2172,7 @@ namespace client
                         dummy.get(p);
                         break;
                     }
-                    int colour = getint(p), model = getint(p), team = clamp(getint(p), int(T_NEUTRAL), int(T_ENEMY)), priv = getint(p);
+                    int colour = getint(p), model = getint(p), cps = getint(p), team = clamp(getint(p), int(T_NEUTRAL), int(T_ENEMY)), priv = getint(p);
                     getstring(text, p);
                     string namestr = "";
                     filterstring(namestr, text, true, true, true, true, MAXNAMELEN);
@@ -2184,6 +2187,7 @@ namespace client
                     getstring(d->hostip, p);
                     if(d != game::player1) d->version.get(p);
                     else dummy.get(p);
+                    d->checkpointspawn = cps;
                     if(d == game::focus && d->team != team) hud::lastteam = 0;
                     d->team = team;
                     d->privilege = priv;

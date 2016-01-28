@@ -153,7 +153,8 @@ extern const namemap materials[] =
     {"aiclip", MAT_AICLIP},
     {"death", MAT_DEATH},
     {"ladder", MAT_LADDER},
-    {"alpha", MAT_ALPHA}
+    {"alpha", MAT_ALPHA},
+    {"hurt", MAT_HURT},
 };
 
 int findmaterial(const char *name, bool tryint)
@@ -170,7 +171,7 @@ const char *findmaterialname(int type)
 
 const char *getmaterialdesc(int mat, const char *prefix)
 {
-    static const ushort matmasks[] = { MATF_VOLUME|MATF_INDEX, MATF_CLIP, MAT_DEATH, MAT_LADDER, MAT_ALPHA };
+    static const ushort matmasks[] = { MATF_VOLUME|MATF_INDEX, MATF_CLIP, MAT_DEATH, MAT_LADDER, MAT_ALPHA, MAT_HURT };
     static string desc;
     desc[0] = '\0';
     loopi(sizeof(matmasks)/sizeof(matmasks[0])) if(mat&matmasks[i])
@@ -216,7 +217,7 @@ void genmatsurfs(const cube &c, const ivec &co, int size, vector<materialsurface
 {
     loopi(6)
     {
-        static const ushort matmasks[] = { MATF_VOLUME|MATF_INDEX, MATF_CLIP, MAT_DEATH, MAT_LADDER, MAT_ALPHA };
+        static const ushort matmasks[] = { MATF_VOLUME|MATF_INDEX, MATF_CLIP, MAT_DEATH, MAT_LADDER, MAT_ALPHA, MAT_HURT };
         loopj(sizeof(matmasks)/sizeof(matmasks[0]))
         {
             int matmask = matmasks[j];
@@ -548,15 +549,16 @@ void rendermatgrid(vector<materialsurface *> &vismats)
             bvec color;
             switch(m.material&~MATF_INDEX)
             {
-                case MAT_WATER:  color = bvec(  0,  0,  85); break; // blue
-                case MAT_CLIP:   color = bvec( 85,  0,   0); break; // red
-                case MAT_GLASS:  color = bvec(  0, 85,  85); break; // cyan
-                case MAT_NOCLIP: color = bvec(  0, 85,   0); break; // green
-                case MAT_LAVA:   color = bvec( 85, 40,   0); break; // orange
-                case MAT_AICLIP: color = bvec( 85, 85,   0); break; // yellow
-                case MAT_DEATH:  color = bvec( 40, 40,  40); break; // black
-                case MAT_LADDER: color = bvec(128, 64, 224); break; // violet
-                case MAT_ALPHA:  color = bvec( 85,  0,  85); break; // pink
+                case MAT_WATER:  color = bvec(  0,   0,  85); break; // blue
+                case MAT_CLIP:   color = bvec( 85,   0,   0); break; // red
+                case MAT_GLASS:  color = bvec(  0,  85,  85); break; // cyan
+                case MAT_NOCLIP: color = bvec(  0,  85,   0); break; // green
+                case MAT_LAVA:   color = bvec( 85,  40,   0); break; // orange
+                case MAT_AICLIP: color = bvec( 85,  85,   0); break; // yellow
+                case MAT_DEATH:  color = bvec( 40,  40,  40); break; // black
+                case MAT_LADDER: color = bvec(128,  64, 224); break; // violet
+                case MAT_ALPHA:  color = bvec( 85,   0,  85); break; // pink
+                case MAT_HURT:   color = bvec(128, 128, 128); break; // grey
                 default: continue;
             }
             gle::color(color);
@@ -673,6 +675,7 @@ void rendermaterials()
                     case MAT_DEATH:    color = bvec(192, 192, 192); break; // black
                     case MAT_LADDER:   color = bvec(64,  196,  32); break; // violet
                     case MAT_ALPHA:    color = bvec(  0, 255,   0); break; // pink
+                    case MAT_HURT:     color = bvec(128, 128, 128); break; // grey
                     default: continue;
                 }
                 gle::color(color);

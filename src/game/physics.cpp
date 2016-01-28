@@ -1050,7 +1050,7 @@ namespace physics
     void updatematerial(physent *pl, const vec &center, const vec &bottom, bool local)
     {
         int matid = lookupmaterial(bottom), curmat = matid&MATF_VOLUME, flagmat = matid&MATF_FLAGS,
-            oldmat = pl->inmaterial&MATF_VOLUME;
+            oldmatid = pl->inmaterial, oldmat = oldmatid&MATF_VOLUME;
         float radius = center.z-bottom.z;
         if(curmat != oldmat)
         {
@@ -1072,7 +1072,8 @@ namespace physics
             }
         }
         pl->inmaterial = matid;
-        if(local && gameent::is(pl) && pl->state == CS_ALIVE && flagmat&MAT_DEATH) game::suicide((gameent *)pl, HIT_MATERIAL);
+        if(local && gameent::is(pl) && pl->state == CS_ALIVE && pl->inmaterial != oldmatid)
+            client::addmsg(N_SPHY, "ri3", ((gameent *)pl)->clientnum, SPHY_MATERIAL, pl->inmaterial);
         if((pl->inliquid = isliquid(curmat)) != false)
         {
             float frac = radius/10.f, sub = pl->submerged;

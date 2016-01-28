@@ -216,7 +216,7 @@ enum {
 };
 enum { IM_METER = 0, IM_TYPE, IM_TIME, IM_REGEN, IM_COUNT, IM_COLLECT, IM_SLIP, IM_SLIDE, IM_JUMP, IM_MAX };
 enum { IM_T_NONE = 0, IM_T_BOOST, IM_T_DASH, IM_T_MELEE, IM_T_KICK, IM_T_VAULT, IM_T_SKATE, IM_T_MAX, IM_T_WALL = IM_T_MELEE };
-enum { SPHY_NONE = 0, SPHY_JUMP, SPHY_BOOST, SPHY_DASH, SPHY_MELEE, SPHY_KICK, SPHY_VAULT, SPHY_SKATE, SPHY_COOK, SPHY_EXTINGUISH, SPHY_BUFF, SPHY_MAX, SPHY_SERVER = SPHY_BUFF };
+enum { SPHY_NONE = 0, SPHY_JUMP, SPHY_BOOST, SPHY_DASH, SPHY_MELEE, SPHY_KICK, SPHY_VAULT, SPHY_SKATE, SPHY_COOK, SPHY_EXTINGUISH, SPHY_MATERIAL, SPHY_BUFF, SPHY_MAX, SPHY_SERVER = SPHY_BUFF };
 
 #define CROUCHHEIGHT 0.7f
 #define PHYSMILLIS 250
@@ -538,7 +538,7 @@ struct verinfo
 // inherited by gameent and server clients
 struct clientstate
 {
-    int health, ammo[W_MAX], entid[W_MAX], colour, model;
+    int health, ammo[W_MAX], entid[W_MAX], colour, model, checkpointspawn;
     int weapselect, weapload[W_MAX], weapshot[W_MAX], weapstate[W_MAX], weapwait[W_MAX], weaplast[W_MAX];
     int lastdeath, lastspawn, lastpain, lastregen, lastbuff, lastshoot, lastres[WR_MAX], lastrestime[WR_MAX];
     int actortype, spawnpoint, ownernum, skill, points, frags, deaths, cpmillis, cptime, queuepos;
@@ -547,7 +547,7 @@ struct clientstate
     vector<int> loadweap, lastweap, randweap;
     verinfo version;
 
-    clientstate() : colour(0), model(0), weapselect(W_MELEE), lastdeath(0), lastspawn(0), lastpain(0), lastregen(0), lastbuff(0), lastshoot(0),
+    clientstate() : colour(0), model(0), checkpointspawn(1), weapselect(W_MELEE), lastdeath(0), lastspawn(0), lastpain(0), lastregen(0), lastbuff(0), lastshoot(0),
         actortype(A_PLAYER), spawnpoint(-1), ownernum(-1), skill(0), points(0), frags(0), deaths(0), cpmillis(0), cptime(0), queuepos(-1), quarantine(false)
     {
         setvanity();

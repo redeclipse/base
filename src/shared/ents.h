@@ -82,6 +82,7 @@ struct baseent
     vec o, vel, falling;                        // origin and velocity
     float yaw, pitch, roll;
     uchar state;                                // one of CS_* above
+    int inmaterial;
 
     baseent() : state(CS_SPECTATOR) { reset(); }
 
@@ -89,6 +90,7 @@ struct baseent
     {
         o = vel = falling = vec(0, 0, 0);
         yaw = pitch = roll = 0;
+        inmaterial = 0;
     }
 };
 
@@ -101,7 +103,6 @@ struct physent : baseent                        // can be affected by physics
     float xradius, yradius, zradius, zmargin;
     vec floor;                                  // the normal of floor the dynent is on
 
-    int inmaterial;
     bool blocked, inliquid, onladder;
     float submerged, curscale, speedscale;
     char move, strafe;
@@ -129,7 +130,7 @@ struct physent : baseent                        // can be affected by physics
     void reset()
     {
         baseent::reset();
-        inmaterial = airmillis = floormillis = 0;
+        airmillis = floormillis = 0;
         blocked = inliquid = onladder = false;
         strafe = move = 0;
         physstate = PHYS_FALL;

@@ -113,7 +113,7 @@ namespace server
 
     struct suicideevent : gameevent
     {
-        int flags, material, checkpointspawn;
+        int flags, material;
         void process(clientinfo *ci);
     };
 
@@ -261,9 +261,8 @@ namespace server
 
     struct servstate : baseent, clientstate
     {
-        int score, spree, rewards[2], shotdamage, damage;
-        int lasttimewielded, lasttimeloadout[W_MAX];
-        int lasttimeplayed, timeplayed, aireinit, lastboost, lastresowner[WR_MAX], lasttimealive, timealive, lasttimeactive, timeactive, lastresweapon[WR_MAX];
+        int score, spree, rewards[2], shotdamage, damage, lasttimewielded, lasttimeloadout[W_MAX], lasttimeplayed, timeplayed, aireinit, lastboost,
+            lastresowner[WR_MAX], lasttimealive, timealive, lasttimeactive, timeactive, lastresweapon[WR_MAX], lasthurt;
         bool lastresalt[W_MAX];
         projectilestate dropped, weapshots[W_MAX][2];
         vector<int> fraglog, fragmillis, cpnodes, chatmillis;
@@ -296,7 +295,7 @@ namespace server
             loopi(W_MAX) loopj(2) weapshots[i][j].reset();
             if(!change) score = timeplayed;
             else clientstate::mapchange();
-            frags = spree = rewards[0] = rewards[1] = deaths = shotdamage = damage = timealive = timeactive = 0;
+            frags = spree = rewards[0] = rewards[1] = deaths = shotdamage = damage = timealive = timeactive = lasthurt = 0;
             fraglog.shrink(0);
             fragmillis.shrink(0);
             cpnodes.shrink(0);
@@ -317,12 +316,10 @@ namespace server
 
         void respawn(int millis)
         {
-            lastboost = rewards[1] = 0;
+            baseent::reset();
+            lastboost = rewards[1] = lasthurt = 0;
             resetresidualowner();
             clientstate::respawn(millis);
-            o = vec(-1e10f, -1e10f, -1e10f);
-            vel = falling = vec(0, 0, 0);
-            yaw = pitch = roll = 0;
         }
 
         void updateweaptime()
@@ -3801,6 +3798,7 @@ namespace server
             putint(p, ci->clientnum);
             putint(p, ci->colour);
             putint(p, ci->model);
+            putint(p, ci->checkpointspawn);
             putint(p, ci->team);
             putint(p, ci->privilege);
             sendstring(ci->name, p);
@@ -4038,7 +4036,7 @@ namespace server
         mutate(smuts, if(!mut->damage(m, v, realdamage, weap, realflags, material, hitpush, hitvel, dist)) { nodamage++; });
         if(v->actortype < A_ENEMY)
         {
-            if(v == m && !G(damageself)) nodamage++;
+            if(v == m && !G(damageself) && !(realflags&HIT_MATERIAL)) nodamage++;
             else if(isghost(m, v)) nodamage++;
         }
 
@@ -4336,7 +4334,7 @@ namespace server
         ci->spree = 0;
         ci->deaths++;
         bool kamikaze = dropitems(ci, actor[ci->actortype].living ? DROP_DEATH : DROP_EXPIRE);
-        if(m_race(gamemode) && (!m_gsp3(gamemode, mutators) || ci->team == T_ALPHA) && !(flags&HIT_SPEC) && (!flags || ci->cpnodes.length() == 1 || !checkpointspawn))
+        if(m_race(gamemode) && (!m_gsp3(gamemode, mutators) || ci->team == T_ALPHA) && !(flags&HIT_SPEC) && (!flags || ci->cpnodes.length() == 1 || !ci->checkpointspawn))
         { // reset if suicided, hasn't reached another checkpoint yet
             ci->cpmillis = 0;
             ci->cpnodes.shrink(0);
@@ -4839,6 +4837,13 @@ namespace server
             mutate(smuts, mut->checkclient(ci));
             if(ci->state == CS_ALIVE)
             {
+                if((ci->inmaterial&MATF_FLAGS)&MAT_HURT && (!ci->lasthurt || gamemillis-ci->lasthurt >= G(hurtdelay)))
+                {
+                    dodamage(ci, ci, G(hurtdamage), -1, HIT_MATERIAL, ci->inmaterial);
+                    if(!ci->lasthurt) ci->lasthurt = gamemillis;
+                    else ci->lasthurt += G(hurtdelay);
+                    if(ci->state != CS_ALIVE) continue;
+                }
                 if(ci->burning(gamemillis, G(burntime)))
                 {
                     if(gamemillis-ci->lastrestime[WR_BURN] >= G(burndelay))
@@ -5763,7 +5768,11 @@ namespace server
                     if(idx >= SPHY_SERVER) break; // clients can't send this
                     if(idx == SPHY_COOK) loopj(2) getint(p);
                     clientinfo *cp = (clientinfo *)getinfo(lcn);
-                    if(!hasclient(cp, ci)) break;
+                    if(!hasclient(cp, ci) || cp->state != CS_ALIVE)
+                    {
+                        if(idx == SPHY_MATERIAL) getint(p);
+                        break;
+                    }
                     if(idx == SPHY_COOK)
                     {
                         if(!cp->isalive(gamemillis))
@@ -5792,6 +5801,18 @@ namespace server
                     {
                         if(!cp->burning(gamemillis, G(burntime))) break;
                         cp->lastres[WR_BURN] = cp->lastrestime[WR_BURN] = 0;
+                    }
+                    else if(idx == SPHY_MATERIAL)
+                    {
+                        int oldmaterial = cp->inmaterial;
+                        cp->inmaterial = getint(p);
+                        if((cp->inmaterial&MATF_FLAGS)&MAT_DEATH && !((oldmaterial&MATF_FLAGS)&MAT_DEATH))
+                        {
+                            suicideevent *ev = new suicideevent;
+                            ev->flags = HIT_MATERIAL;
+                            ev->material = cp->inmaterial;
+                            cp->addevent(ev);
+                        }
                     }
                     else if(idx == SPHY_BOOST || idx == SPHY_DASH)
                     {
@@ -5912,13 +5933,12 @@ namespace server
 
                 case N_SUICIDE:
                 {
-                    int lcn = getint(p), flags = getint(p), material = getint(p), checkpointspawn = getint(p);
+                    int lcn = getint(p), flags = getint(p), material = getint(p);
                     clientinfo *cp = (clientinfo *)getinfo(lcn);
                     if(!hasclient(cp, ci)) break;
                     suicideevent *ev = new suicideevent;
                     ev->flags = flags;
-                    ev->material = material;
-                    ev->checkpointspawn = checkpointspawn;
+                    cp->inmaterial = ev->material = material;
                     cp->addevent(ev);
                     break;
                 }
@@ -6307,7 +6327,7 @@ namespace server
                         if(!allow)
                         {
                             getstring(text, p);
-                            loopk(2) getint(p);
+                            loopk(3) getint(p);
                             getstring(text, p);
                             int w = getint(p);
                             loopk(w) getint(p);
@@ -6328,6 +6348,7 @@ namespace server
                     }
                     ci->colour = max(getint(p), 0);
                     ci->model = max(getint(p), 0);
+                    ci->checkpointspawn = max(getint(p), 0);
                     getstring(text, p);
                     ci->setvanity(text);
                     ci->loadweap.shrink(0);
@@ -6349,6 +6370,7 @@ namespace server
                     QUEUE_STR(ci->name);
                     QUEUE_INT(ci->colour);
                     QUEUE_INT(ci->model);
+                    QUEUE_INT(ci->checkpointspawn);
                     QUEUE_STR(ci->vanity);
                     QUEUE_INT(ci->loadweap.length());
                     loopvk(ci->loadweap) QUEUE_INT(ci->loadweap[k]);

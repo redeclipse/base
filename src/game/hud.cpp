@@ -2237,7 +2237,9 @@ namespace hud
                 range = clamp(max(d.damage, radardamagemin)/float(max(radardamagemax-radardamagemin, 1)), radardamagemin/100.f, 1.f),
                 fade = clamp(radardamageblend*blend, min(radardamageblend*radardamagemin/100.f, 1.f), radardamageblend)*amt,
                 size = clamp(range*radardamagesize, min(radardamagesize*radardamagemin/100.f, 1.f), radardamagesize)*amt;
-            vec o = vec(camera1->o).add(vec(d.dir).mul(radarrange()));
+            vec dir = d.dir;
+            if(e == game::focus) d.dir = vec(e->yaw*RAD, 0.f).neg();
+            vec o = vec(camera1->o).add(vec(dir).mul(radarrange()));
             if(radardamage >= 5) drawblip(hurttex, 2+size/3, w, h, size, fade, 0, o, d.colour, "tiny", "%s +%d", e ? game::colourname(e) : "?", d.damage);
             else drawblip(hurttex, 2+size/3, w, h, size, fade, 0, o, d.colour);
         }
