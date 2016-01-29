@@ -799,7 +799,7 @@ namespace hud
 
     static const char *posnames[10] = { "th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th" };
 
-    int drawscoreitem(const char *icon, int colour, int x, int y, int s, float skew, float fade, int pos, int score, int offset, const char *name, const char *ext = NULL)
+    int drawscoreitem(const char *icon, int colour, int x, int y, int s, float skew, float fade, int pos, int score, int offset, const char *name)
     {
         int col = 0xFF0000;
         switch(pos)
@@ -810,25 +810,23 @@ namespace hud
             case 4: col = 0xFF8800; break;
             default: break;
         }
-        int size = int(s*skew);
-        string str, q;
-        if(m_laptime(game::gamemode, game::mutators)) { formatstring(str, "\fs\f[%d]\f(%s)\fS %s", col, insigniatex, timestr(score, inventoryracestyle)); }
-        else if(m_defend(game::gamemode) && score == INT_MAX) { formatstring(str, "\fs\f[%d]\f(%s)\fS WIN", col, insigniatex); }
-        else { formatstring(str, "\fs\f[%d]\f(%s)\fS %d", col, insigniatex, score); }
+        string str = "";
+        if(inventoryscorepos) concformatstring(str, "\fs\f[%d]%d%s\fS", col, pos, posnames[pos < 10 || pos > 13 ? pos%10 : 0]);
         if(inventoryscoreinfo)
         {
+            if(*str) concatstring(str, " ");
             if(m_laptime(game::gamemode, game::mutators))
-                { formatstring(q, "\n\fs\f[%d]\f(%s)\fS %s", col, offset ? (offset < 0 ? arrowtex : arrowdowntex) : arrowrighttex, timestr(offset < 0 ? 0-offset : offset, inventoryracestyle)); }
-            else { formatstring(q, "%s\fs\f[%d]\f(%s)\fS %d", inventoryscorebreak ? "\n" : " ", col, offset ? (offset > 0 ? arrowtex : arrowdowntex) : arrowrighttex, offset < 0 ? 0-offset : offset); }
-            concatstring(str, q);
+                concformatstring(str, "\fs\f[%d]\f(%s)\fS%s", col, offset ? (offset < 0 ? arrowtex : arrowdowntex) : arrowrighttex, timestr(offset < 0 ? 0-offset : offset, inventoryracestyle));
+            else concformatstring(str, "\fs\f[%d]\f(%s)\fS%d", col, offset ? (offset > 0 ? arrowtex : arrowdowntex) : arrowrighttex, offset < 0 ? 0-offset : offset);
         }
-        vec c = vec::hexcolor(colour);
-        drawitem(icon, x, y+size, s, 0, inventoryscorebg!=0, false, c.r, c.g, c.b, fade, skew, m_laptime(game::gamemode, game::mutators) ? "reduced" : "emphasis", "%s", str);
-        int sy = 0;
-        if(ext) sy += drawitemtextx(x, y+size, 0, TEXT_RIGHT_UP, skew, "default", fade, "%s", ext);
-        drawitemtextx(x, y+size-sy, 0, TEXT_RIGHT_UP, skew, "default", fade, "\f[%d]%s", colour, name);
-        if(inventoryscorepos) drawitemtextx(x, y, 0, TEXT_RIGHT_JUSTIFY, skew, "emphasis", fade, "\f[%d]%d%s", col, pos, posnames[pos < 10 || pos > 13 ? pos%10 : 0]);
-        return size;
+        if(*str) concatstring(str, " ");
+        if(name) concformatstring(str, "\fs\f[%d]%s\fS ", colour, name);
+        else concformatstring(str, "\fs\f[%d]\f(%s)\fS", colour, icon);
+        if(m_laptime(game::gamemode, game::mutators)) { concformatstring(str, " %s", timestr(score, inventoryracestyle)); }
+        else if(m_defend(game::gamemode) && score >= VAR_MAX) { concatstring(str, " WIN"); }
+        else { concformatstring(str, " %d", score); }
+        int sy = drawitemtextx(x, y, 0, (inventoryscorebg ? TEXT_SKIN : 0)|TEXT_RIGHT_JUSTIFY, skew, m_laptime(game::gamemode, game::mutators) ? "default" : "emphasis", fade, "%s", str);
+        return sy;
     }
 
     int drawscore(int x, int y, int s, int m, float blend, int count)
@@ -853,7 +851,7 @@ namespace hud
                     if(!sg.team || ((sg.team != game::focus->team) == !i)) continue;
                     float sk = numout && inventoryscoreshrink > 0 ? 1.f-min(numout*inventoryscoreshrink, inventoryscoreshrinkmax) : 1;
                     int offset = numgroups > 1 ? sg.total-groups[k ? 0 : 1]->total : 0;
-                    sy += drawscoreitem(teamtexname(sg.team), TEAM(sg.team, colour), x, y+sy, s, sk*inventoryscoresize, blend*inventoryblend, pos, sg.total, offset, TEAM(sg.team, name), i ? NULL : game::colourname(game::focus));
+                    sy += drawscoreitem(teamtexname(sg.team), TEAM(sg.team, colour), x, y+sy, s, sk*inventoryscoresize, blend*inventoryblend, pos, sg.total, offset, inventoryscorename >= 2 ? TEAM(sg.team, name) : NULL);
                     if(++numout >= count) return sy;
                 }
                 else
@@ -872,7 +870,7 @@ namespace hud
                         float sk = numout && inventoryscoreshrink > 0 ? 1.f-min(numout*inventoryscoreshrink, inventoryscoreshrinkmax) : 1;
                         int score = m_laptime(game::gamemode, game::mutators) ? d->cptime : d->points,
                             offset = (sg.players.length() > 1 && (!m_laptime(game::gamemode, game::mutators) || score)) ? score-(m_laptime(game::gamemode, game::mutators) ? sg.players[j ? 0 : 1]->cptime : sg.players[j ? 0 : 1]->points) : 0;
-                        sy += drawscoreitem(playertex, game::getcolour(d, game::playerteamtone), x, y+sy, s, sk*inventoryscoresize, blend*inventoryblend, pos, score, offset, game::colourname(d));
+                        sy += drawscoreitem(playertex, game::getcolour(d, game::playerteamtone), x, y+sy, s, sk*inventoryscoresize, blend*inventoryblend, pos, score, offset, inventoryscorename ? game::colourname(d) : NULL);
                         if(++numout >= count) return sy;
                     }
                 }

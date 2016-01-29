@@ -287,10 +287,10 @@ namespace hud
     VAR(IDF_PERSIST, inventorytimestyle, 0, 3, 4);
     VAR(IDF_PERSIST, inventoryscore, 0, 1, VAR_MAX);
     VAR(IDF_PERSIST, inventoryscorespec, 0, 2, VAR_MAX);
-    VAR(IDF_PERSIST, inventoryscorebg, 0, 0, 1);
+    VAR(IDF_PERSIST, inventoryscorebg, 0, 1, 1);
     VAR(IDF_PERSIST, inventoryscoreinfo, 0, 1, 1); // shows offset
-    VAR(IDF_PERSIST, inventoryscorebreak, 0, 1, 1); // two lines instead of one
     VAR(IDF_PERSIST, inventoryscorepos, 0, 1, 1); // shows position
+    VAR(IDF_PERSIST, inventoryscorename, 0, 1, 2); // 0 = off, 1 = only ffa, 2 = teams as well
     VAR(IDF_PERSIST, inventoryweapids, 0, 2, 2);
     VAR(IDF_PERSIST, inventorycolour, 0, 2, 2);
     VAR(IDF_PERSIST, inventoryflash, 0, 0, 1);
@@ -299,7 +299,7 @@ namespace hud
     FVAR(IDF_PERSIST, inventoryskew, 1e-4f, 0.65f, 1000);
     FVAR(IDF_PERSIST, inventorydateskew, 1e-4f, 0.85f, 1000);
     FVAR(IDF_PERSIST, inventorytimeskew, 1e-4f, 1, 1000);
-    FVAR(IDF_PERSIST, inventoryscoresize, 0, 0.75f, 1);
+    FVAR(IDF_PERSIST, inventoryscoresize, 0, 1, 1);
     FVAR(IDF_PERSIST, inventoryscoreshrink, 0, 0.15f, 1);
     FVAR(IDF_PERSIST, inventoryscoreshrinkmax, 0, 0.45f, 1);
     FVAR(IDF_PERSIST, inventoryblend, 0, 1, 1);
@@ -3109,21 +3109,21 @@ namespace hud
             }
             case 1:
             {
-                int cm = cr+top;
+                int cm = top;
                 if(!radardisabled && !m_hard(game::gamemode, game::mutators) && radartype() == 3 && !hasinput(true) && (game::focus->state == CS_EDITING ? showeditradar >= 1 : chkcond(showradar, !game::tvmode() || (game::focus != game::player1 && radartype() == 3))))
-                    cm += int(max(w, h)/2*radarcorner*2);
+                    cm += int(max(w, h)/2*radarcorner*2)+cr;
                 if(inventorydate)
-                    cm += drawitemtextx(cx[i], cm, 0, (inventorybg ? TEXT_SKIN : 0)|TEXT_RIGHT_JUSTIFY, inventorydateskew, "super", fade, "%s", gettime(currenttime, inventorydateformat));
+                    cm += drawitemtextx(cx[i], cm, 0, (inventorybg ? TEXT_SKIN : 0)|TEXT_RIGHT_JUSTIFY, inventorydateskew, "huge", fade, "%s", gettime(currenttime, inventorydateformat))+cr;
                 if(inventorytime)
                 {
-                    if(paused) cm += drawitemtextx(cx[i], cm, 0, (inventorybg ? TEXT_SKIN : 0)|TEXT_RIGHT_JUSTIFY, inventorytimeskew, "super", fade, "\fs\fopaused\fS", 0xFFFFFF);
-                    else if(m_edit(game::gamemode)) cm += drawitemtextx(cx[i], cm, 0, (inventorybg ? TEXT_SKIN : 0)|TEXT_RIGHT_JUSTIFY, inventorytimeskew, "super", fade, "\fs\fgediting\fS");
+                    if(paused) cm += drawitemtextx(cx[i], cm, 0, (inventorybg ? TEXT_SKIN : 0)|TEXT_RIGHT_JUSTIFY, inventorytimeskew, "huge", fade, "\fs\fopaused\fS", 0xFFFFFF)+cr;
+                    else if(m_edit(game::gamemode)) cm += drawitemtextx(cx[i], cm, 0, (inventorybg ? TEXT_SKIN : 0)|TEXT_RIGHT_JUSTIFY, inventorytimeskew, "huge", fade, "\fs\fgediting\fS")+cr;
                     else if(m_play(game::gamemode) || client::demoplayback)
                     {
                         int timecorrected = max(game::timeremaining*1000-((gs_playing(game::gamestate) ? lastmillis : totalmillis)-game::lasttimeremain), 0);
                         if(game::gamestate != G_S_PLAYING)
-                            cm += drawitemtextx(cx[i], cm, 0, (inventorybg ? TEXT_SKIN : 0)|TEXT_RIGHT_JUSTIFY, inventorytimeskew, "super", fade, "%s \fs%s%s\fS", gamestates[0][game::gamestate], gs_waiting(game::gamestate) ? "\fr" : (game::gamestate == G_S_OVERTIME ? (inventorytimeflash ? "\fzoy" : "\fo") : "\fg"), timestr(timecorrected, inventorytimestyle));
-                        else if(timelimit) cm += drawitemtextx(cx[i], cm, 0, (inventorybg ? TEXT_SKIN : 0)|TEXT_RIGHT_JUSTIFY, inventorytimeskew, "super", fade, "\fs%s%s\fS", timecorrected > 60000 ? "\fg" : (inventorytimeflash ? "\fzgy" : "\fy"), timestr(timecorrected, inventorytimestyle));
+                            cm += drawitemtextx(cx[i], cm, 0, (inventorybg ? TEXT_SKIN : 0)|TEXT_RIGHT_JUSTIFY, inventorytimeskew, "huge", fade, "%s \fs%s%s\fS", gamestates[0][game::gamestate], gs_waiting(game::gamestate) ? "\fr" : (game::gamestate == G_S_OVERTIME ? (inventorytimeflash ? "\fzoy" : "\fo") : "\fg"), timestr(timecorrected, inventorytimestyle))+cr;
+                        else if(timelimit) cm += drawitemtextx(cx[i], cm, 0, (inventorybg ? TEXT_SKIN : 0)|TEXT_RIGHT_JUSTIFY, inventorytimeskew, "huge", fade, "\fs%s%s\fS", timecorrected > 60000 ? "\fg" : (inventorytimeflash ? "\fzgy" : "\fy"), timestr(timecorrected, inventorytimestyle))+cr;
                     }
                 }
                 if(texpaneltimer) break;
