@@ -604,10 +604,10 @@ WPFVARK(IDF_GAMEMOD,  partlen, 0, FVAR_MAX,
     0.0f,       16.0f,      0.0f,       7.5f,       7.5f,       0.0f,       0.0f,       1024.f,     512.0f,     0.0f,       4.0f,       0.0f
 );
 WPFVARK(IDF_GAMEMOD,  partsize, 0, FVAR_MAX,
-    1.0f,       0.125f,     1.0f,       0.75f,      0.6f,       6.0f,       6.0f,       2.0f,       1.5f,       1.0f,       2.0f,       1.0f,
-    2.0f,       0.25f,      1.25f,      0.45f,      0.4f,       12.0f,      28.0f,      3.0f,       3.0f,       1.0f,       2.0f,       1.0f,
-    1.0f,       0.125f,     1.0f,       0.45f,      0.4f,       6.0f,       6.0f,       3.0f,       1.5f,       1.0f,       2.0f,       1.0f,
-    2.0f,       0.25f,      1.25f,      0.45f,      0.4f,       12.0f,      28.0f,      5.0f,       3.0f,       1.0f,       2.0f,       1.0f
+    1.0f,       0.125f,     1.0f,       0.75f,      0.6f,       6.0f,       6.0f,       2.0f,       1.5f,       1.0f,       2.0f,       2.0f,
+    2.0f,       0.25f,      1.25f,      0.45f,      0.4f,       12.0f,      28.0f,      3.0f,       3.0f,       1.0f,       2.0f,       2.0f,
+    1.0f,       0.125f,     1.0f,       0.45f,      0.4f,       6.0f,       6.0f,       3.0f,       1.5f,       1.0f,       2.0f,       2.0f,
+    2.0f,       0.25f,      1.25f,      0.45f,      0.4f,       12.0f,      28.0f,      5.0f,       3.0f,       1.0f,       2.0f,       2.0f
 );
 WPVARK(IDF_GAMEMOD,  parttype, 0, W_MAX-1,
     W_MELEE,    W_PISTOL,   W_SWORD,    W_SHOTGUN,  W_SMG,      W_FLAMER,   W_PLASMA,   W_ZAPPER,   W_RIFLE,    W_GRENADE,  W_MINE,     W_ROCKET,

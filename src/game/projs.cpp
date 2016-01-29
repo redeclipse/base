@@ -1211,7 +1211,7 @@ namespace projs
                 { 0, 0, 0, 0, 0, 0, 0, 0, 0 },
                 { 150, PART_MUZZLE_FLASH, 250, 10, 8, 3, 3, 6, 0.0125f },
             };
-            if(weapfx[weap].smoke) part_create(PART_SMOKE_LERP, weapfx[weap].smoke, from, 0x888888, 1, 0.25f, -20);
+            if(weapfx[weap].smoke) part_create(PART_SMOKE_LERP, weapfx[weap].smoke, from, 0x888888, 1, 0.25f, -10);
             if(weapfx[weap].sparktime && weapfx[weap].sparknum)
                 part_splash(weap == W_FLAMER ? PART_FIREBALL : PART_SPARK, weapfx[weap].sparknum, weapfx[weap].sparktime, from, colour, weapfx[weap].sparksize, muz, 1, 0, weapfx[weap].sparkrad, 15);
             if(muzzlechk(muzzleflash, d) && weapfx[weap].partsize > 0)
@@ -1421,7 +1421,7 @@ namespace projs
                         if(projhints) part_create(PART_HINT_SOFT, 1, proj.o, projhint(proj.owner, FWCOL(H, partcol, proj)), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*max(proj.lifespan, 0.25f)*projhintsize+fluc, max(proj.lifespan, 0.25f)*projhintblend*trans);
                         if(projtrails && lastmillis-proj.lasteffect >= projtraildelay)
                         {
-                            part_create(PART_SMOKE_LERP, projtraillength, proj.o, 0x888888, WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags)), 0.75f*trans, -10);
+                            part_create(PART_SMOKE_LERP, projtraillength, proj.o, 0x888888, WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags)), 0.75f*trans, -5);
                             proj.lasteffect = lastmillis - (lastmillis%projtraildelay);
                         }
                         break;
@@ -1440,11 +1440,11 @@ namespace projs
                         float fluc = 1.f+(interval ? (interval <= 500 ? interval/500.f : (1000-interval)/500.f) : 0.f);
                         part_create(PART_PLASMA_SOFT, 1, proj.o, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))+fluc, trans);
                         if(projhints) part_create(PART_HINT_SOFT, 1, proj.o, projhint(proj.owner, FWCOL(H, partcol, proj)), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*projhintsize+fluc, projhintblend*trans);
-                        if(projtrails && lastmillis-proj.lasteffect >= projtraildelay/2)
+                        if(projtrails && lastmillis-proj.lasteffect >= projtraildelay/10)
                         {
-                            part_create(PART_FIREBALL_SOFT, max(projtraillength, 1), proj.o, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*0.5f, 0.85f*trans, -5);
-                            part_create(PART_SMOKE_LERP, projtraillength*2, proj.o, 0x222222, WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags)), trans, -10);
-                            proj.lasteffect = lastmillis - (lastmillis%(projtraildelay/2));
+                            part_create(PART_FIREBALL_SOFT, max(projtraillength, 2)/2, proj.o, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags)), 0.85f*trans, -1);
+                            part_create(PART_SMOKE_LERP, max(projtraillength, 1), proj.o, 0x222222, WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*1.5f, trans, -5);
+                            proj.lasteffect = lastmillis - (lastmillis%(projtraildelay/10));
                         }
                         break;
                     }
@@ -1642,7 +1642,7 @@ namespace projs
                                 part_explosion(proj.o, expl*WF(WK(proj.flags), proj.weap, wavepush, WS(proj.flags)), PART_SHOCKWAVE, len/2, projhint(proj.owner, FWCOL(H, explcol, proj)), 1.f, 0.5f*WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags))*projhintblend);
                         }
                         else expl = max(WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags)), 0.25f)*4;
-                        part_create(PART_SMOKE_LERP_SOFT, len*3, proj.o, 0x444444, expl*0.75f, 0.75f*WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)), type != W_FLAMER ? -15 : -10);
+                        part_create(PART_SMOKE_LERP_SOFT, len*3, proj.o, 0x444444, expl*1.5f, 0.75f*WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)), type != W_FLAMER ? -15 : -10);
                         if(type != W_FLAMER && !m_kaboom(game::gamemode, game::mutators) && game::nogore != 2 && game::debrisscale > 0)
                         {
                             int debris = rnd(type != W_ROCKET ? 5 : 10)+5, amt = int((rnd(debris)+debris+1)*game::debrisscale);
@@ -1653,7 +1653,7 @@ namespace projs
                         {
                             vec to(proj.o);
                             loopk(3) to.v[k] += expl*(rnd(201)-100)/200.f;
-                            part_create(PART_FIREBALL_SOFT, len*2, to, FWCOL(H, explcol, proj), expl*1.25f, (0.5f+(rnd(50)/100.f))*WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)), -5);
+                            part_create(PART_FIREBALL_SOFT, len*2, to, FWCOL(H, explcol, proj), expl*1.25f, (0.5f+(rnd(50)/100.f))*WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)), -10);
                         }
                         adddecal(type == W_FLAMER ? DECAL_SCORCH_SHORT : DECAL_SCORCH, proj.o, proj.norm, expl*0.5f);
                         adddynlight(proj.o, expl, FWCOL(P, explcol, proj), len, 10);
