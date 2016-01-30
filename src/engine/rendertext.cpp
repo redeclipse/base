@@ -9,7 +9,7 @@ VAR(IDF_PERSIST, textminintensity, 0, 32, 255);
 VARF(IDF_PERSIST, textkeyimages, 0, 1, 1, changedkeys = totalmillis);
 VAR(IDF_PERSIST|IDF_HEX, textkeyimagecolour, 0x000000, 0xFFFFFF, 0xFFFFFF);
 FVAR(IDF_PERSIST, textkeyimageblend, 0, 1, 1);
-FVAR(IDF_PERSIST, textkeyimagescale, 0, 1.125f, FVAR_MAX);
+FVAR(IDF_PERSIST, textkeyimagescale, 0, 1, FVAR_MAX);
 VARF(IDF_PERSIST, textkeyseps, 0, 1, 1, changedkeys = totalmillis);
 
 Texture *tbgbordertex = NULL, *tbgtex = NULL;
