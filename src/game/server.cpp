@@ -4034,9 +4034,9 @@ namespace server
 
         if(smode && !smode->damage(m, v, realdamage, weap, realflags, material, hitpush, hitvel, dist)) { nodamage++; }
         mutate(smuts, if(!mut->damage(m, v, realdamage, weap, realflags, material, hitpush, hitvel, dist)) { nodamage++; });
-        if(v->actortype < A_ENEMY)
+        if(!(realflags&HIT_MATERIAL) && v->actortype < A_ENEMY)
         {
-            if(v == m && !G(damageself) && !(realflags&HIT_MATERIAL)) nodamage++;
+            if(v == m && !G(damageself)) nodamage++;
             else if(isghost(m, v)) nodamage++;
         }
 
