@@ -843,7 +843,7 @@ void save_config(char *mname)
     h->printf("// Variables stored in map file, may be uncommented here, or changed from editmode.\n");
     vector<ident *> ids;
     enumerate(idents, ident, id, ids.add(&id));
-    ids.sort();
+    ids.sortname();
     loopv(ids)
     {
         ident &id = *ids[i];

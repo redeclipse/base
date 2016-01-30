@@ -131,7 +131,7 @@ extern void resetcomplete();
 extern void complete(char *s, const char *cmdprefix);
 extern const char *searchbind(const char *action, int type);
 extern void searchbindlist(const char *action, int type, int limit, const char *s1, const char *s2, const char *sep1, const char *sep2, vector<char> &names, bool force = true);
-extern int textkeybg, textkeyseps;
+extern int textkeyimages, textkeyseps;
 
 extern bool capslockon, numlockon;
 extern bool capslocked();
@@ -149,7 +149,7 @@ struct bindlist
         if(names.empty() || lastsearch != changedkeys)
         {
             names.shrink(0);
-            searchbindlist(action, type, limit, s1, s2, textkeyseps ? (textkeybg ? "|" : ", ") : (textkeybg ? "" : " "), textkeyseps ? (textkeybg ? "|" : " or ") : (textkeybg ? "" : " "), names);
+            searchbindlist(action, type, limit, s1, s2, textkeyseps ? (textkeyimages ? "|" : ", ") : (textkeyimages ? "" : " "), textkeyseps ? (textkeyimages ? "|" : " or ") : (textkeyimages ? "" : " "), names);
             lastsearch = changedkeys;
         }
         return names.getbuf();
@@ -200,6 +200,7 @@ extern float text_widthf(const char *str, int xpad = 0, int ypad = 0, int flags 
 extern void text_boundsf(const char *str, float &width, float &height, int xpad = 0, int ypad = 0, int maxwidth = -1, int flags = 0);
 extern int text_visible(const char *str, float hitx, float hity, int maxwidth = -1, int flags = 0);
 extern void text_posf(const char *str, int cursor, float &cx, float &cy, int maxwidth, int flags = 0);
+extern float key_widthf(const char *str);
 
 static inline int text_width(const char *str, int xpad = 0, int ypad = 0, int flags = 0)
 {

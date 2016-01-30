@@ -251,7 +251,7 @@ namespace client
         if(!f) return;
         vector<ident *> ids;
         enumerate(idents, ident, id, ids.add(&id));
-        ids.sort();
+        ids.sortname();
         loopv(ids)
         {
             ident &id = *ids[i];
@@ -299,7 +299,7 @@ namespace client
         f->printf("// Fields: NAME TYPE FLAGS ARGS VALTYPE VALUE MIN MAX DESC USAGE\n");
         vector<ident *> ids;
         enumerate(idents, ident, id, ids.add(&id));
-        ids.sort();
+        ids.sortname();
         loopv(ids)
         {
             ident &id = *ids[i];

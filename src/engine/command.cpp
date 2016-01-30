@@ -3494,14 +3494,11 @@ void getvariable(int num)
         ids.setsize(0);
         enumerate(idents, ident, id, ids.add(&id));
         lastupdate = totalmillis;
+        ids.sortname();
     }
     string text;
     num--;
-    if(ids.inrange(num))
-    {
-        ids.sort();
-        formatstring(text, "%s", ids[num]->name);
-    }
+    if(ids.inrange(num)) formatstring(text, "%s", ids[num]->name);
     else formatstring(text, "%d", ids.length());
     result(text);
 }
@@ -3520,7 +3517,7 @@ void getvarinfo(int n, int types, int notypes, int flags, int noflags, char *str
         lastnotypes = notypes;
         lastflags = flags;
         lastnoflags = noflags;
-        ids[0].sort();
+        ids[0].sortname();
     }
     if(str && *str)
     {

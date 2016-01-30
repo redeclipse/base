@@ -1547,7 +1547,7 @@ namespace hud
                     float radius = max(target->height*0.5f, max(target->xradius, target->yradius));
                     if(entities::collateitems(target, pos, radius, actitems))
                     {
-                        SEARCHBINDCACHE(actionkey)("use", 0, "\f{\fs\fzua", "\fS}");
+                        SEARCHBINDCACHE(actionkey)("use", 0, "\f{", "}");
                         while(!actitems.empty())
                         {
                             actitem &t = actitems.last();
@@ -1831,7 +1831,7 @@ namespace hud
                 int cp = commandpos >= 0 ? commandpos : strlen(commandbuf);//, fp = completesize && completeoffset >= 0 ? min(pos, completeoffset+completesize) : -1;
                 tz += draw_textx("%s", tq+tr, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, cp, tt, commandbuf);
                 if(capslockwarn && capslockon)
-                    tz += draw_textx("\fs\fzoy^\fS CAPSLOCK IS \fs\fcON\fS", tq+tr, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt);
+                    tz += draw_textx("\fs\fzoy^\fS \f{CAPSLOCK} is \fs\fcON\fS", tq+tr, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt);
                 popfont();
                 if(commandbuf[0] == '/' && commandbuf[1])
                 {
