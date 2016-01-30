@@ -697,8 +697,10 @@ const char *getvardesc(const char *name)
 void getvarfields(const char *name, int prop)
 {
     ident *id = getident(name);
+    if(!id) result("");
     if(prop < 0) intret(id->fields.length());
     else if(id->fields.inrange(prop)) result(id->fields[prop]);
+    else result("");
 }
 
 ICOMMAND(0, getvar, "s", (char *n), intret(getvar(n)));
