@@ -535,6 +535,28 @@ void text_boundsf(const char *str, float &width, float &height, int xpad, int yp
 
 int draw_key(Texture *&tex, const char *str, float sx, float sy, float sc, bvec4 &cl, int flags)
 {
+    string key = "textures/keys/";
+    loopi(strlen(str)) concformatstring(key, "%c", tolower(str[i]));
+    Texture *k = textureload(key, 0, true, false);
+    if(k && k != notexture)
+    {
+        if(tex != k)
+        {
+            xtraverts += gle::end();
+            tex = k;
+            glBindTexture(GL_TEXTURE_2D, tex->id);
+        }
+        float x = sx, y = sy, h = curfont->maxh*curfont->scale/float(curfont->defaulth)*curtextscale, w = (tex->w*h)/float(tex->h);
+        x -= FONTW/3; // temporary hacks until proper textures are done
+        w *= 1.5f;
+        h *= 1.5f;
+        y -= h/6;
+        textvert(x,     y    ); gle::attribf(0, 0);
+        textvert(x + w, y    ); gle::attribf(1, 0);
+        textvert(x + w, y + h); gle::attribf(1, 1);
+        textvert(x,     y + h); gle::attribf(0, 1);
+        return w-FONTW*2/3;
+    }
     float swidth = text_widthf(str, 0, 0, flags), ss = swidth, sp = 0;
     if(tex)
     {
@@ -593,9 +615,7 @@ int draw_key(Texture *&tex, const char *str, float sx, float sy, float sc, bvec4
     TEXTSKELETON
     TEXTEND(cursor)
     xtraverts += gle::end();
-
     gle::color(cl);
-
     #undef TEXTINDEX
     #undef TEXTWHITE
     #undef TEXTLINE
