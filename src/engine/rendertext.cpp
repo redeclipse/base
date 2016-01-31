@@ -527,15 +527,40 @@ void text_boundsf(const char *str, float &width, float &height, int xpad, int yp
     if(ypad) height += ypad*2;
 }
 
+struct textkey
+{
+    char *name, *file;
+    Texture *tex;
+
+    textkey() : name(NULL), file(NULL), tex(NULL) {}
+    textkey(char *n, char *f, Texture *t) : name(newstring(n)), file(newstring(f)), tex(t) {}
+    ~textkey()
+    {
+        DELETEA(name);
+        DELETEA(file);
+    }
+};
+vector<textkey *> textkeys;
+
 float key_widthf(const char *str)
 {
     if(textkeyimages)
     {
-        string key = "textures/keys/";
-        loopi(strlen(str)) concformatstring(key, "%c", tolower(str[i]));
-        Texture *k = textureload(key, 0, true, false);
-        if(k && k != notexture)
-            return (k->w*curfont->maxh*curfont->scale/float(curfont->defaulth)*curtextscale*textkeyimagescale)/float(k->h);
+        textkey *t = NULL;
+        loopv(textkeys) if(!strcmp(textkeys[i]->name, str)) t = textkeys[i];
+        if(!t)
+        {
+            string key = "textures/keys/";
+            int q = strlen(key);
+            concatstring(key, str);
+            for(int r = strlen(key); q < r; q++) key[q] = tolower(key[q]);
+            t = new textkey;
+            t->name = newstring(str);
+            t->file = newstring(key);
+            t->tex = textureload(t->file, 0, true, false);
+            if(t->tex == notexture) t->tex = NULL;
+        }
+        if(t && t->tex) return (t->tex->w*curfont->maxh*curfont->scale/float(curfont->defaulth)*curtextscale*textkeyimagescale)/float(t->tex->h);
         // fallback if not found
     }
     return text_widthf(str);
@@ -545,15 +570,26 @@ int draw_key(Texture *&tex, const char *str, float sx, float sy)
 {
     if(textkeyimages)
     {
-        string key = "textures/keys/";
-        loopi(strlen(str)) concformatstring(key, "%c", tolower(str[i]));
-        Texture *k = textureload(key, 0, true, false);
-        if(k && k != notexture)
+        textkey *t = NULL;
+        loopv(textkeys) if(!strcmp(textkeys[i]->name, str)) t = textkeys[i];
+        if(!t)
         {
-            if(tex != k)
+            string key = "textures/keys/";
+            int q = strlen(key);
+            concatstring(key, str);
+            for(int r = strlen(key); q < r; q++) key[q] = tolower(key[q]);
+            t = new textkey;
+            t->name = newstring(str);
+            t->file = newstring(key);
+            t->tex = textureload(t->file, 0, true, false);
+            if(t->tex == notexture) t->tex = NULL;
+        }
+        if(t && t->tex)
+        {
+            if(tex != t->tex)
             {
                 xtraverts += gle::end();
-                tex = k;
+                tex = t->tex;
                 glBindTexture(GL_TEXTURE_2D, tex->id);
             }
             float sh = curfont->maxh*curfont->scale/float(curfont->defaulth)*curtextscale, h = sh*textkeyimagescale,
