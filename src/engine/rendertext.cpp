@@ -542,24 +542,26 @@ struct textkey
 };
 vector<textkey *> textkeys;
 
+textkey *findtextkey(const char *str)
+{
+    loopv(textkeys) if(!strcmp(textkeys[i]->name, str)) return textkeys[i];
+    string key = "textures/keys/";
+    int q = strlen(key);
+    concatstring(key, str);
+    for(int r = strlen(key); q < r; q++) key[q] = tolower(key[q]);
+    textkey *t = new textkey;
+    t->name = newstring(str);
+    t->file = newstring(key);
+    t->tex = textureload(t->file, 0, true, false);
+    if(t->tex == notexture) t->tex = NULL;
+    return t;
+}
+
 float key_widthf(const char *str)
 {
     if(textkeyimages)
     {
-        textkey *t = NULL;
-        loopv(textkeys) if(!strcmp(textkeys[i]->name, str)) t = textkeys[i];
-        if(!t)
-        {
-            string key = "textures/keys/";
-            int q = strlen(key);
-            concatstring(key, str);
-            for(int r = strlen(key); q < r; q++) key[q] = tolower(key[q]);
-            t = new textkey;
-            t->name = newstring(str);
-            t->file = newstring(key);
-            t->tex = textureload(t->file, 0, true, false);
-            if(t->tex == notexture) t->tex = NULL;
-        }
+        textkey *t = findtextkey(str);
         if(t && t->tex) return (t->tex->w*curfont->maxh*curfont->scale/float(curfont->defaulth)*curtextscale*textkeyimagescale)/float(t->tex->h);
         // fallback if not found
     }
@@ -570,20 +572,7 @@ int draw_key(Texture *&tex, const char *str, float sx, float sy)
 {
     if(textkeyimages)
     {
-        textkey *t = NULL;
-        loopv(textkeys) if(!strcmp(textkeys[i]->name, str)) t = textkeys[i];
-        if(!t)
-        {
-            string key = "textures/keys/";
-            int q = strlen(key);
-            concatstring(key, str);
-            for(int r = strlen(key); q < r; q++) key[q] = tolower(key[q]);
-            t = new textkey;
-            t->name = newstring(str);
-            t->file = newstring(key);
-            t->tex = textureload(t->file, 0, true, false);
-            if(t->tex == notexture) t->tex = NULL;
-        }
+        textkey *t = findtextkey(str);
         if(t && t->tex)
         {
             if(tex != t->tex)
