@@ -2034,7 +2034,7 @@ namespace client
                             t->resetphys();
                             t->impulse[IM_JUMP] = lastmillis;
                             playsound(S_JUMP, t->o, t);
-                            regularshape(PART_SMOKE, int(t->radius), 0x222222, 21, 20, 250, t->feetpos(), 1, 1, -10, 0, 10.f);
+                            createshape(PART_SMOKE, int(t->radius), 0x222222, 21, 20, 250, t->feetpos(), 1, 1, -10, 0, 10.f);
                             break;
                         }
                         case SPHY_BOOST: case SPHY_KICK: case SPHY_VAULT: case SPHY_SKATE: case SPHY_DASH: case SPHY_MELEE:
@@ -2452,9 +2452,9 @@ namespace client
                                 }
                             }
                         }
-                        regularshape(PART_SPARK, enttype[e.type].radius*1.5f, colour, 53, 50, 350, e.o, 1.5f, 1, 1, 0, 35);
+                        game::spawneffect(PART_SPARK, e.o, enttype[e.type].radius*0.25f, colour, 0.75f);
                         if(game::dynlighteffects)
-                            adddynlight(e.o, enttype[e.type].radius*2, vec::hexcolor(colour).mul(2.f), 250, 250);
+                            adddynlight(e.o, enttype[e.type].radius, vec::hexcolor(colour).mul(2.f), 250, 250);
                     }
                     break;
                 }

@@ -1488,10 +1488,8 @@ static inline vec offsetvec(vec o, int dir, int dist)
  * 24..26 flat plane
  * +32 to inverse direction
  */
-void regularshape(int type, float radius, int color, int dir, int num, int fade, const vec &p, float size, float blend, int grav, int collide, float vel)
+ void createshape(int type, float radius, int color, int dir, int num, int fade, const vec &p, float size, float blend, int grav, int collide, float vel)
 {
-    if(!canemitparticles()) return;
-
     int basetype = parts[type]->type&PT_TYPE;
     bool flare = (basetype == PT_TAPE) || (basetype == PT_LIGHTNING),
          inv = (dir&0x20)!=0, taper = (dir&0x40)!=0;
@@ -1584,6 +1582,12 @@ void regularshape(int type, float radius, int color, int dir, int num, int fade,
                 np->val = from.z - raycube(from, vec(0, 0, -1), np->collide >= 0 ? COLLIDERADIUS : max(from.z, 0.0f), RAY_CLIPMAT) + (np->collide >= 0 ? COLLIDEERROR : 0);
         }
     }
+}
+
+void regularshape(int type, float radius, int color, int dir, int num, int fade, const vec &p, float size, float blend, int grav, int collide, float vel)
+{
+    if(!canemitparticles()) return;
+    createshape(type, radius, color, dir, num, fade, p, size, blend, grav, collide, vel);
 }
 
 void regularflame(int type, const vec &p, float radius, float height, int color, int density, int fade, float size, float blend, int grav, int collide, float vel)

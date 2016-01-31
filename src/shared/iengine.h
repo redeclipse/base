@@ -365,6 +365,7 @@ extern void create(int type, int color, int fade, const vec &p, float size = 2, 
 extern void regularcreate(int type, int color, int fade, const vec &p, float size = 2, float blend = 1, int grav = 0, int collide = 0, physent *pl = NULL, int delay = 0);
 extern void splash(int type, int color, float radius, int num, int fade, const vec &p, float size = 2, float blend = 1, int grav = 0, int collide = 0, float vel = 1);
 extern void regularsplash(int type, int color, float radius, int num, int fade, const vec &p, float size = 2, float blend = 1, int grav = 0, int collide = 0, float vel = 1, int delay = 0);
+extern void createshape(int type, float radius, int color, int dir, int num, int fade, const vec &p, float size = 2, float blend = 1, int grav = 0, int collide = 0, float vel = 1);
 extern void regularshape(int type, float radius, int color, int dir, int num, int fade, const vec &p, float size = 2, float blend = 1, int grav = 0, int collide = 0, float vel = 1);
 extern void regularflame(int type, const vec &p, float radius, float height, int color, int density = 3, int fade = 500, float size = 2, float blend = 1, int grav = -1, int collide = 0, float vel = 1);
 

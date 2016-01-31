@@ -821,6 +821,22 @@ namespace game
         }
     }
 
+    void spawneffect(int type, vec &pos, float radius, int colour, float size)
+    {
+        vec o = pos;
+        o.z -= radius;
+        loopi(5)
+        {
+            o.z += radius*0.5f;
+            createshape(type, radius, colour, 3, 30, 350, o, size, 1, -1, 0, 1);
+        }
+    }
+    ICOMMAND(0, dospawnfx, "", (void), {
+        vec center = game::player1->center();
+        spawneffect(PART_SPARK, center, game::player1->height*0.5f, getcolour(game::player1, playerovertone), 1.5f);
+        spawneffect(PART_SPARK, center, game::player1->height*0.5f, getcolour(game::player1, playerundertone), 1.5f);
+    });
+
     void respawned(gameent *d, bool local, int ent)
     { // remote clients wait until first position update to process this
         if(local)
@@ -836,13 +852,11 @@ namespace game
 
         if(d->actortype < A_ENEMY)
         {
+            vec center = d->center();
             playsound(S_RESPAWN, d->o, d);
-            if(dynlighteffects)
-            {
-                adddynlight(d->headpos(), d->height*2, vec::hexcolor(getcolour(d, playereffecttone)).mul(2.f), 250, 250);
-                regularshape(PART_SPARK, d->height*2, getcolour(d, playerundertone), 53, 50, 350, d->center(), 1.5f, 1, 1, 0, 35);
-                regularshape(PART_SPARK, d->height*2, getcolour(d, playerovertone), 53, 50, 350, d->center(), 1.5f, 1, 1, 0, 35);
-            }
+            spawneffect(PART_SPARK, center, d->height*0.5f, getcolour(d, playerovertone), 1.5f);
+            spawneffect(PART_SPARK, center, d->height*0.5f, getcolour(d, playerundertone), 1.5f);
+            if(dynlighteffects) adddynlight(center, d->height*2, vec::hexcolor(getcolour(d, playereffecttone)).mul(2.f), 250, 250);
             if(entities::ents.inrange(ent) && entities::ents[ent]->type == PLAYERSTART) entities::execlink(d, ent, false);
         }
         ai::respawned(d, local, ent);
@@ -984,7 +998,7 @@ namespace game
         float scale = 0.4f+(rnd(40)/100.f);
         part_create(PART_HINT, shape ? len/2 : len/10, pos, getcolour(d, playereffecttone), scale*1.5f, scale*0.75f, 0, 0);
         part_create(PART_FIREBALL, shape ? len/2 : len/10, pos, pulsecols[PULSE_FIRE][rnd(PULSECOLOURS)], scale*1.25f, scale*0.75f, 0, 0);
-        if(shape) loopi(num) regularshape(PART_FIREBALL, int(d->radius)*2, pulsecols[PULSE_FIRE][rnd(PULSECOLOURS)], 21, 1, len, pos, scale*1.25f, 0.75f, -5, 0, 10);
+        if(shape) loopi(num) createshape(PART_FIREBALL, int(d->radius)*2, pulsecols[PULSE_FIRE][rnd(PULSECOLOURS)], 21, 1, len, pos, scale*1.25f, 0.75f, -5, 0, 10);
     }
 
     void impulseeffect(gameent *d, int effect)

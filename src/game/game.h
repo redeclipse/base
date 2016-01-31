@@ -1699,6 +1699,7 @@ namespace game
     extern void respawned(gameent *d, bool local, int ent = -1);
     extern vec pulsecolour(physent *d, int i = 0, int cycle = 50);
     extern int hexpulsecolour(physent *d, int i = 0, int cycle = 50);
+    extern void spawneffect(int type, vec &pos, float radius, int colour, float size);
     extern void impulseeffect(gameent *d, int effect = 0);
     extern void suicide(gameent *d, int flags);
     extern void fixrange(float &yaw, float &pitch);
