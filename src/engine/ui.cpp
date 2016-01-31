@@ -13,7 +13,6 @@ static int fieldmode = FIELDSHOW;
 static bool fieldsactive = false;
 
 FVAR(IDF_PERSIST, guiscale, FVAR_NONZERO, 0.00055f, VAR_MAX);
-FVAR(IDF_PERSIST, guitextscale, FVAR_NONZERO, 1, VAR_MAX);
 VAR(IDF_PERSIST, guiskinsize, 0, 96, VAR_MAX); // 0 = texture size, otherwise = size in pixels for skin scaling
 VAR(IDF_PERSIST, guislidersize, 1, 58, VAR_MAX);
 VAR(IDF_PERSIST, guisepsize, 1, 6, VAR_MAX);
@@ -1376,7 +1375,7 @@ namespace UI
     void render()
     {
         float oldtextscale = curtextscale;
-        curtextscale = guitextscale;
+        curtextscale = 1;
         if(guiactionon) mouseaction[0] |= GUI_PRESSED;
 
         gui::reset();

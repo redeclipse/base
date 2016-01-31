@@ -831,11 +831,6 @@ namespace game
             createshape(type, radius, colour, 3, 30, 350, o, size, 1, -1, 0, 1);
         }
     }
-    ICOMMAND(0, dospawnfx, "", (void), {
-        vec center = game::player1->center();
-        spawneffect(PART_SPARK, center, game::player1->height*0.5f, getcolour(game::player1, playerovertone), 1.5f);
-        spawneffect(PART_SPARK, center, game::player1->height*0.5f, getcolour(game::player1, playerundertone), 1.5f);
-    });
 
     void respawned(gameent *d, bool local, int ent)
     { // remote clients wait until first position update to process this
