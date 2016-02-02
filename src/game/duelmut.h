@@ -302,9 +302,10 @@ struct duelservmode : servmode
                         if(playing[i]->state == CS_ALIVE)
                         {
                             playing[i]->lastregen = gamemillis;
+                            playing[i]->lastregenamt = 0; // amt = 0 regens impulse
                             playing[i]->resetresidual();
                             playing[i]->health = m_health(gamemode, mutators, playing[i]->actortype);
-                            sendf(-1, 1, "ri4", N_REGEN, playing[i]->clientnum, playing[i]->health, 0); // amt = 0 regens impulse
+                            sendf(-1, 1, "ri4", N_REGEN, playing[i]->clientnum, playing[i]->health, playing[i]->lastregenamt);
                         }
                         else if(allowed.find(playing[i]) < 0) allowed.add(playing[i]);
                         duelqueue.removeobj(playing[i]);

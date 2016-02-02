@@ -704,7 +704,8 @@ namespace server
                 {
                     v->health = heal;
                     v->lastregen = gamemillis;
-                    sendf(-1, 1, "ri4", N_REGEN, v->clientnum, v->health, eff);
+                    v->lastregenamt = eff;
+                    sendf(-1, 1, "ri4", N_REGEN, v->clientnum, v->health, v->lastregenamt);
                 }
             }
         }
@@ -4065,7 +4066,7 @@ namespace server
             if(realdamage > 0)
             {
                 hurt = min(m->health, realdamage);
-                m->lastregen = 0;
+                m->lastregen = m->lastregenamt = 0;
                 m->lastpain = gamemillis;
                 v->damage += realdamage;
                 if(m != v && (!m_team(gamemode, mutators) || m->team != v->team))
@@ -4899,7 +4900,8 @@ namespace server
                             {
                                 ci->health = heal;
                                 ci->lastregen = gamemillis;
-                                sendf(-1, 1, "ri4", N_REGEN, ci->clientnum, ci->health, eff);
+                                ci->lastregenamt = eff;
+                                sendf(-1, 1, "ri4", N_REGEN, ci->clientnum, ci->health, ci->lastregenamt);
                             }
                         }
                     }

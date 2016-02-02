@@ -2344,6 +2344,7 @@ namespace client
                     else if(amt > 0 && (!f->lastregen || lastmillis-f->lastregen >= 500)) playsound(S_REGEN, f->o, f);
                     f->health = heal;
                     f->lastregen = lastmillis;
+                    f->lastregenamt = amt;
                     break;
                 }
 

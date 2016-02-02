@@ -540,14 +540,14 @@ struct clientstate
 {
     int health, ammo[W_MAX], entid[W_MAX], colour, model, checkpointspawn;
     int weapselect, weapload[W_MAX], weapshot[W_MAX], weapstate[W_MAX], weapwait[W_MAX], weaplast[W_MAX];
-    int lastdeath, lastspawn, lastpain, lastregen, lastbuff, lastshoot, lastres[WR_MAX], lastrestime[WR_MAX];
+    int lastdeath, lastspawn, lastpain, lastregen, lastregenamt, lastbuff, lastshoot, lastres[WR_MAX], lastrestime[WR_MAX];
     int actortype, spawnpoint, ownernum, skill, points, frags, deaths, cpmillis, cptime, queuepos;
     bool quarantine;
     string vanity;
     vector<int> loadweap, lastweap, randweap;
     verinfo version;
 
-    clientstate() : colour(0), model(0), checkpointspawn(1), weapselect(W_MELEE), lastdeath(0), lastspawn(0), lastpain(0), lastregen(0), lastbuff(0), lastshoot(0),
+    clientstate() : colour(0), model(0), checkpointspawn(1), weapselect(W_MELEE), lastdeath(0), lastspawn(0), lastpain(0), lastregen(0), lastregenamt(0), lastbuff(0), lastshoot(0),
         actortype(A_PLAYER), spawnpoint(-1), ownernum(-1), skill(0), points(0), frags(0), deaths(0), cpmillis(0), cptime(0), queuepos(-1), quarantine(false)
     {
         setvanity();
@@ -751,7 +751,7 @@ struct clientstate
 
     void clearstate()
     {
-        lastdeath = lastpain = lastregen = lastbuff = lastshoot = 0;
+        lastdeath = lastpain = lastregen = lastregenamt = lastbuff = lastshoot = 0;
         queuepos = -1;
         resetresidual();
     }

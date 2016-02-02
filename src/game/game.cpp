@@ -1462,7 +1462,7 @@ namespace game
             d->health = health;
             if(damage > 0)
             {
-                d->lastregen = 0;
+                d->lastregen = d->lastregenamt = 0;
                 d->lastpain = lastmillis;
                 v->totaldamage += damage;
             }
@@ -1472,7 +1472,7 @@ namespace game
 
     void killed(int weap, int flags, int damage, gameent *d, gameent *v, vector<gameent *> &log, int style, int material)
     {
-        d->lastregen = 0;
+        d->lastregen = d->lastregenamt = 0;
         d->lastpain = lastmillis;
         d->state = CS_DEAD;
         d->obliterated = (style&FRAG_OBLITERATE)!=0;

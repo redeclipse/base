@@ -1302,7 +1302,7 @@ namespace hud
             if(crosshairthrob > 0 && regentime && game::focus->lastregen && lastmillis-game::focus->lastregen <= regentime)
             {
                 float skew = clamp((lastmillis-game::focus->lastregen)/float(regentime/2), 0.f, 2.f);
-                cs += int(cs*(skew > 1.f ? 1.f-skew : skew)*crosshairthrob);
+                cs += int(cs*(skew > 1.f ? 1.f-skew : skew)*(crosshairthrob*(game::focus->lastregenamt >= 0 ? 1 : -1)));
             }
             if(showcrosshair >= 2)
             {
@@ -2416,7 +2416,7 @@ namespace hud
         { { 0, 0.5f, 0, 0 }, { 0.35f, 0.25f, 0.f, 0.5f }, { 0.65f, 0.25f, 0.25f, 0.75f }, { 1, 0.75f, 0.75f, 1 } }
     };
 
-    int drawbar(int x, int y, int w, int h, int type, float top, float bottom, float fade, float amt, const char *tex, const char *bgtex, int tone, float bgglow, float blend, float pulse, float throb, float throbscale)
+    int drawbar(int x, int y, int w, int h, int type, float top, float bottom, float fade, float amt, const char *tex, const char *bgtex, int tone, float bgglow, float blend, float pulse, float throb, float throbscale, int throbcolour = -1, int throbreverse = false)
     {
         int offset = int(w*(throb >= 0 ? throb*throbscale : 0.f)), id = clamp(type, 0, 3);
         if(bgtex && *bgtex)
@@ -2442,13 +2442,13 @@ namespace hud
         gle::defcolor(4);
         gle::begin(GL_TRIANGLE_STRIP);
         float btoff = 1-bottom, middle = btoff-top;
-        int cx = x-offset, cy = y-h+int(h*top)-offset, cw = w+offset*2, ch = int(h*middle)+offset*2;
+        int cx = x-offset, cy = y-h+int(h*top)-offset, cw = w+offset*2, ch = int(h*middle)+offset*2, throbstep = int(roundf(3*(throbreverse ? 1-throb : throb)*amt));
         const float margin = 0.1f;
         vec lastbarcolour(0, 0, 0);
         loopi(4)
         {
             const barstep &step = barsteps[id][i];
-            vec colour = throb >= 0 && i == int(roundf(3*throb*amt)) ? vec(barsteps[id][3].r, barsteps[id][3].g, barsteps[id][3].b) : vec(step.r, step.g, step.b);
+            vec colour = throb >= 0 && i == throbstep ? (throbcolour >= 0 ? vec::hexcolor(throbcolour) : vec(barsteps[id][3].r, barsteps[id][3].g, barsteps[id][3].b)) : vec(step.r, step.g, step.b);
             if(i > 0)
             {
                 if(step.amt > amt && barsteps[id][i-1].amt <= amt)
@@ -2812,7 +2812,7 @@ namespace hud
                 float pulse = inventoryhealthflash ? clamp((heal-game::focus->health)/float(heal), 0.f, 1.f) : 0.f,
                       throb = inventoryhealththrob > 0 && regentime && game::focus->lastregen && lastmillis-game::focus->lastregen <= regentime ? clamp((lastmillis-game::focus->lastregen)/float(regentime), 0.f, 1.f) : -1.f;
                 if(inventoryhealth&2)
-                    sy += drawbar(x, y, s, size, 1, inventoryhealthbartop, inventoryhealthbarbottom, fade, clamp(game::focus->health/float(heal), 0.f, 1.f), healthtex, healthbgtex, inventorytone, inventoryhealthbgglow, inventoryhealthbgblend, pulse, throb, inventoryhealththrob);
+                    sy += drawbar(x, y, s, size, 1, inventoryhealthbartop, inventoryhealthbarbottom, fade, clamp(game::focus->health/float(heal), 0.f, 1.f), healthtex, healthbgtex, inventorytone, inventoryhealthbgglow, inventoryhealthbgblend, pulse, throb, inventoryhealththrob, game::focus->lastregenamt <= 0 ? 0xFF0000 : 0x00FF00, game::focus->lastregenamt <= 0);
                 if(inventoryhealth&1)
                 {
                     float gr = 1, gg = 1, gb = 1;
@@ -2844,7 +2844,7 @@ namespace hud
                 flashcolour(gr, gg, gb, 0.25f, 0.25f, 0.25f, 1-span);
                 if(pulse > 0 && impulsemeter-game::focus->impulse[IM_METER] < impulsecost) flashcolour(gr, gg, gb, 1.f, 0.f, 0.f, clamp(lastmillis%1000/1000.f, 0.f, 1.f));
                 if(inventoryimpulse&2)
-                    sy += drawbar(x, y-sy, s, size, 2, inventoryimpulsebartop, inventoryimpulsebarbottom, fade, span, impulsetex, impulsebgtex, inventorytone, inventoryimpulsebgglow, inventoryimpulsebgblend, pulse, throb, inventoryimpulsethrob);
+                    sy += drawbar(x, y-sy, s, size, 2, inventoryimpulsebartop, inventoryimpulsebarbottom, fade, span, impulsetex, impulsebgtex, inventorytone, inventoryimpulsebgglow, inventoryimpulsebgblend, pulse, throb, inventoryimpulsethrob, 0xFFFFFF);
                 if(inventoryimpulse&1)
                 {
                     if(!(inventoryimpulse&2))
