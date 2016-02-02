@@ -814,19 +814,18 @@ namespace hud
         if(inventoryscorepos) concformatstring(str, "\fs\f[%d]%d%s\fS", col, pos, posnames[pos < 10 || pos > 13 ? pos%10 : 0]);
         if(inventoryscoreinfo)
         {
-            if(*str) concatstring(str, " ");
+            if(*str) concatstring(str, inventoryscorebreak ? "\n" : " ");
             if(m_laptime(game::gamemode, game::mutators))
                 concformatstring(str, "\fs\f[%d]\f(%s)\fS%s", col, offset ? (offset < 0 ? arrowtex : arrowdowntex) : arrowrighttex, timestr(offset < 0 ? 0-offset : offset, inventoryracestyle));
             else concformatstring(str, "\fs\f[%d]\f(%s)\fS%d", col, offset ? (offset > 0 ? arrowtex : arrowdowntex) : arrowrighttex, offset < 0 ? 0-offset : offset);
         }
-        if(*str) concatstring(str, " ");
-        if(name) concformatstring(str, "\fs\f[%d]%s\fS ", colour, name);
+        if(*str) concatstring(str, inventoryscorebreak ? "\n" : " ");
+        if(name) concformatstring(str, "\fs\f[%d]%s\fS", colour, name);
         else concformatstring(str, "\fs\f[%d]\f(%s)\fS", colour, icon);
-        if(m_laptime(game::gamemode, game::mutators)) { concformatstring(str, " %s", timestr(score, inventoryracestyle)); }
-        else if(m_defend(game::gamemode) && score >= VAR_MAX) { concatstring(str, " WIN"); }
-        else { concformatstring(str, " %d", score); }
-        int sy = drawitemtextx(x, y, 0, (inventoryscorebg ? TEXT_SKIN : 0)|TEXT_RIGHT_JUSTIFY, skew, m_laptime(game::gamemode, game::mutators) ? "default" : "emphasis", fade, "%s", str);
-        return sy;
+        if(m_laptime(game::gamemode, game::mutators)) { concformatstring(str, "%s%s", inventoryscorebreak ? "\n" : " ", timestr(score, inventoryracestyle)); }
+        else if(m_defend(game::gamemode) && score >= VAR_MAX) { concformatstring(str, "%sWIN", inventoryscorebreak ? "\n" : " "); }
+        else { concformatstring(str, "%s%d", inventoryscorebreak ? "\n" : " ", score); }
+        return drawitemtextx(x, y, 0, (inventoryscorebg ? TEXT_SKIN : 0)|(inventoryscorebreak == 2 ? TEXT_CENTERED : TEXT_RIGHT_JUSTIFY), skew, m_laptime(game::gamemode, game::mutators) ? "reduced" : "default", fade, "%s", str)+FONTH/8;
     }
 
     int drawscore(int x, int y, int s, int m, float blend, int count)

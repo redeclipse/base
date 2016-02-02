@@ -331,10 +331,11 @@ static float icon_width(const char *name, float scale)
     if(!*file) return 0;
     Texture *t = textureload(file, 3, true, false);
     if(!t) return 0;
-    return (t->w*curfont->maxh*scale)/t->h;
+    float w = (t->w*curfont->maxh*scale)/float(t->h);
+    return w;
 }
 
-#define TEXTCOLORIZE(h,s) \
+#define TEXTCOLORIZE(h,s,q) \
 { \
     if(str[h] == 'z' && str[h+1]) \
     { \
@@ -366,11 +367,11 @@ static float icon_width(const char *name, float scale)
         const char *end = strchr(start, ')'); \
         if(end) \
         { \
-            if(s && end > start) \
+            if(end > start) \
             { \
                 bigstring value; \
                 copystring(value, start, min(size_t(end - start + 1), sizeof(value))); \
-                TEXTICON(value); \
+                TEXTICON(value, q, s); \
             } \
             h += end-start; \
         } \
@@ -383,11 +384,11 @@ static float icon_width(const char *name, float scale)
         const char *end = strchr(start, '}'); \
         if(end) \
         { \
-            if(s && end > start) \
+            if(end > start) \
             { \
                 bigstring value; \
                 copystring(value, start, min(size_t(end - start + 1), sizeof(value))); \
-                TEXTKEY(value); \
+                TEXTKEY(value, q, s); \
             } \
             h += end-start; \
         } \
@@ -395,56 +396,35 @@ static float icon_width(const char *name, float scale)
     } \
     else if(s) TEXTCOLOR(h); \
 }
-#define TEXTALIGN \
+
+#define TEXTALIGN(idx) \
 { \
-    x = (!(flags&TEXT_RIGHT_JUSTIFY) && !(flags&TEXT_NO_INDENT) ? FONTTAB : 0); \
-    if(!y && (flags&TEXT_RIGHT_JUSTIFY) && !(flags&TEXT_NO_INDENT)) maxwidth -= FONTTAB; \
+    x = 0; \
+    TEXTCENTER(idx) \
+    if((flags&TEXT_LEFT_JUSTIFY) && !(flags&TEXT_NO_INDENT)) x += FONTTAB; \
+    if(!y && (flags&TEXT_RIGHT_JUSTIFY) && !(flags&TEXT_NO_INDENT)) usewidth -= FONTTAB; \
     y += FONTH; \
 }
+
 #define TEXTSKELETON \
     float y = 0, x = 0, scale = curfont->scale/float(curfont->defaulth)*curtextscale;\
-    int i = 0;\
+    int i = 0, usewidth = maxwidth;\
+    TEXTCENTER(i) \
     for(i = 0; str[i]; i++)\
     {\
         int c = uchar(str[i]);\
         TEXTINDEX(i)\
         if(c == '\t')      { x = TEXTTAB(x); TEXTWHITE(i) }\
         else if(c == ' ')  { x += scale*curfont->defaultw; TEXTWHITE(i) }\
-        else if(c == '\n') { TEXTLINE(i) TEXTALIGN }\
-        else if(c == '\f') { if(str[i+1]) { i++; TEXTCOLORIZE(i, true); } }\
+        else if(c == '\n') { TEXTLINE(i); TEXTALIGN(i+1) }\
+        else if(c == '\f') { if(str[i+1]) { i++; TEXTCOLORIZE(i, true, x); } }\
         else if(curfont->chars.inrange(c-curfont->charoffset))\
         {\
-            float cw = scale*(curfont->chars[c-curfont->charoffset].advance);\
+            float cw = scale*curfont->chars[c-curfont->charoffset].advance;\
             if(cw <= 0) continue;\
-            if(maxwidth != -1)\
-            {\
-                int j = i;\
-                float w = cw;\
-                for(; str[i+1]; i++)\
-                {\
-                    int c = uchar(str[i+1]);\
-                    if(c == '\f') { if(str[i+2]) { i += 2; TEXTCOLORIZE(i, false); } }\
-                    if(i-j > 16) break;\
-                    if(!curfont->chars.inrange(c-curfont->charoffset)) break;\
-                    cw = scale*curfont->chars[c-curfont->charoffset].advance;\
-                    if(cw <= 0 || w+cw > maxwidth) break; \
-                    w += cw;\
-                }\
-                if(x+w > maxwidth && j != 0) { TEXTLINE(j-1) TEXTALIGN }\
-                TEXTWORD\
-            }\
-            else { TEXTCHAR(i) }\
+            if(usewidth > 0 && x+cw > usewidth) { TEXTLINE(i-1); TEXTALIGN(i) } \
+            TEXTCHAR(i); \
         }\
-    }
-
-//all the chars are guaranteed to be either drawable or color commands
-#define TEXTWORDSKELETON \
-    for(; j <= i; j++) \
-    {\
-        TEXTINDEX(j)\
-        int c = uchar(str[j]);\
-        if(c == '\f') { if(str[j+1]) { j++; TEXTCOLORIZE(j, true); } }\
-        else { float cw = scale*curfont->chars[c-curfont->charoffset].advance; TEXTCHAR(j) }\
     }
 
 #define TEXTEND(cursor) if(cursor >= i) { do { TEXTINDEX(cursor); } while(0); }
@@ -456,10 +436,10 @@ int text_visible(const char *str, float hitx, float hity, int maxwidth, int flag
     #define TEXTLINE(idx) if(y+FONTH > hity) return idx;
     #define TEXTCOLOR(idx)
     #define TEXTHEXCOLOR(ret)
-    #define TEXTICON(ret) x += icon_width(ret, scale);
-    #define TEXTKEY(ret) x += key_widthf(ret);
+    #define TEXTICON(ret,q,s) q += icon_width(ret, scale);
+    #define TEXTKEY(ret,q,s) q += key_widthf(ret);
     #define TEXTCHAR(idx) x += cw; TEXTWHITE(idx)
-    #define TEXTWORD TEXTWORDSKELETON
+    #define TEXTCENTER(idx)
     TEXTSKELETON
     #undef TEXTINDEX
     #undef TEXTWHITE
@@ -469,7 +449,7 @@ int text_visible(const char *str, float hitx, float hity, int maxwidth, int flag
     #undef TEXTICON
     #undef TEXTKEY
     #undef TEXTCHAR
-    #undef TEXTWORD
+    #undef TEXTCENTER
     return i;
 }
 
@@ -481,10 +461,10 @@ void text_posf(const char *str, int cursor, float &cx, float &cy, int maxwidth, 
     #define TEXTLINE(idx)
     #define TEXTCOLOR(idx)
     #define TEXTHEXCOLOR(ret)
-    #define TEXTICON(ret) x += icon_width(ret, scale);
-    #define TEXTKEY(ret) x += key_widthf(ret);
-    #define TEXTCHAR(idx) x += cw;
-    #define TEXTWORD TEXTWORDSKELETON if(i >= cursor) break;
+    #define TEXTICON(ret,q,s) q += icon_width(ret, scale); if(i >= cursor) break;
+    #define TEXTKEY(ret,q,s) q += key_widthf(ret); if(i >= cursor) break;
+    #define TEXTCHAR(idx) x += cw; if(i >= cursor) break;
+    #define TEXTCENTER(idx)
     cx = cy = 0;
     TEXTSKELETON
     TEXTEND(cursor)
@@ -496,7 +476,7 @@ void text_posf(const char *str, int cursor, float &cx, float &cy, int maxwidth, 
     #undef TEXTICON
     #undef TEXTKEY
     #undef TEXTCHAR
-    #undef TEXTWORD
+    #undef TEXTCHAR
 }
 
 void text_boundsf(const char *str, float &width, float &height, int xpad, int ypad, int maxwidth, int flags)
@@ -506,14 +486,16 @@ void text_boundsf(const char *str, float &width, float &height, int xpad, int yp
     #define TEXTLINE(idx) if(x > width) width = x;
     #define TEXTCOLOR(idx)
     #define TEXTHEXCOLOR(ret)
-    #define TEXTICON(ret) x += icon_width(ret, scale);
-    #define TEXTKEY(ret) x += key_widthf(ret);
+    #define TEXTICON(ret,q,s) q += icon_width(ret, scale);
+    #define TEXTKEY(ret,q,s) q += key_widthf(ret);
     #define TEXTCHAR(idx) x += cw;
-    #define TEXTWORD TEXTWORDSKELETON
-    width = 0;
+    #define TEXTCENTER(idx)
+    width = height = 0;
     TEXTSKELETON
     height = y + FONTH;
     TEXTLINE(_)
+    if(xpad) width += xpad*2;
+    if(ypad) height += ypad*2;
     #undef TEXTINDEX
     #undef TEXTWHITE
     #undef TEXTLINE
@@ -522,9 +504,7 @@ void text_boundsf(const char *str, float &width, float &height, int xpad, int yp
     #undef TEXTICON
     #undef TEXTKEY
     #undef TEXTCHAR
-    #undef TEXTWORD
-    if(xpad) width += xpad*2;
-    if(ypad) height += ypad*2;
+    #undef TEXTCENTER
 }
 
 struct textkey
@@ -596,7 +576,7 @@ int draw_key(Texture *&tex, const char *str, float sx, float sy)
     return draw_textx("\fs\fa[\fS%s\fs\fa]\fS", sx, sy, 0, 0, r, g, b, a, 0, -1, -1, str);
 }
 
-int draw_text(const char *str, int rleft, int rtop, int r, int g, int b, int a, int flags, int cursor, int maxwidth)
+int draw_text(const char *str, int rleft, int rtop, int r, int g, int b, int a, int flags, int cursor, int maxwidth, int realwidth)
 {
     #define TEXTINDEX(idx) \
         if(cursor >= 0 && idx == cursor) \
@@ -621,10 +601,32 @@ int draw_text(const char *str, int rleft, int rtop, int r, int g, int b, int a, 
             xtraverts += gle::end(); \
             gle::color(color); \
         }
-    #define TEXTICON(ret) x += draw_icon(tex, ret, left+x, top+y, scale);
-    #define TEXTKEY(ret) x += draw_key(tex, ret, left+x, top+y);
+    #define TEXTICON(ret,q,s) q += s ? draw_icon(tex, ret, left+x, top+y, scale) : icon_width(ret, scale);
+    #define TEXTKEY(ret,q,s) q += s ? draw_key(tex, ret, left+x, top+y) : key_widthf(ret);
     #define TEXTCHAR(idx) { draw_char(tex, c, left+x, top+y, scale); x += cw; }
-    #define TEXTWORD TEXTWORDSKELETON
+    #define TEXTCENTER(idx) \
+    { \
+        if(flags&TEXT_CENTERED && realwidth > 0) \
+        { \
+            float qw = 0; \
+            for(int qi = idx; str[qi]; qi++) \
+            { \
+                int qc = uchar(str[qi]); \
+                if(qc == '\t')      { qw = TEXTTAB(qw); } \
+                else if(qc == ' ')  { qw += scale*curfont->defaultw; } \
+                else if(qc == '\n') { break; } \
+                else if(qc == '\f') { if(str[qi+1]) { qi++; TEXTCOLORIZE(qi, false, qw); } } \
+                else if(curfont->chars.inrange(qc-curfont->charoffset)) \
+                { \
+                    float qt = scale*curfont->chars[qc-curfont->charoffset].advance; \
+                    if(qt <= 0) continue; \
+                    if(qw+qt > realwidth) break; \
+                    qw += qt; \
+                } \
+            } \
+            x += (realwidth*0.5f)-(qw*0.5f); \
+        } \
+    }
     int fade = a;
     bool usecolor = true, hasfade = false;
     if(fade < 0) { usecolor = false; fade = -a; }
@@ -654,7 +656,7 @@ int draw_text(const char *str, int rleft, int rtop, int r, int g, int b, int a, 
     #undef TEXTCOLOR
     #undef TEXTHEXCOLOR
     #undef TEXTCHAR
-    #undef TEXTWORD
+    #undef TEXTCENTER
     return ly + FONTH;
 }
 
@@ -669,11 +671,11 @@ int draw_textx(const char *fstr, int left, int top, int xpad, int ypad, int r, i
 {
     defvformatbigstring(str, maxwidth, fstr);
 
-    int width = 0, height = 0;
+    int width = 0, height = 0, realwidth = maxwidth;
     text_bounds(str, width, height, xpad, ypad, maxwidth, flags);
     if(flags&TEXT_ALIGN) switch(flags&TEXT_ALIGN)
     {
-        case TEXT_CENTERED: left -= width/2; break;
+        case TEXT_CENTERED: left -= width/2; realwidth = width-xpad*2; break;
         case TEXT_RIGHT_JUSTIFY: left -= width; break;
         default: break;
     }
@@ -708,8 +710,8 @@ int draw_textx(const char *fstr, int left, int top, int xpad, int ypad, int r, i
     }
     if(xpad) left += xpad;
     if(ypad) top += ypad;
-    if(flags&TEXT_SHADOW) draw_text(str, left+2, top+2, 0, 0, 0, a, flags, cursor, maxwidth);
-    draw_text(str, left, top, r, g, b, a, flags, cursor, maxwidth);
+    if(flags&TEXT_SHADOW) draw_text(str, left+2, top+2, 0, 0, 0, a, flags, cursor, maxwidth, realwidth);
+    draw_text(str, left, top, r, g, b, a, flags, cursor, maxwidth, realwidth);
     return height;
 }
 

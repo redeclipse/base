@@ -291,6 +291,7 @@ namespace hud
     VAR(IDF_PERSIST, inventoryscoreinfo, 0, 1, 1); // shows offset
     VAR(IDF_PERSIST, inventoryscorepos, 0, 1, 1); // shows position
     VAR(IDF_PERSIST, inventoryscorename, 0, 1, 2); // 0 = off, 1 = only ffa, 2 = teams as well
+    VAR(IDF_PERSIST, inventoryscorebreak, 0, 2, 2); // breaks up over multiple lines, 2 = center as well
     VAR(IDF_PERSIST, inventoryweapids, 0, 2, 2);
     VAR(IDF_PERSIST, inventorycolour, 0, 2, 2);
     VAR(IDF_PERSIST, inventoryflash, 0, 0, 1);
@@ -2591,7 +2592,7 @@ namespace hud
         if(skew <= 0.f) return 0;
         pushhudscale(skew);
         if(font && *font) pushfont(font);
-        int cx = x, cy = y;
+        int curflags = flags|TEXT_NO_INDENT, cx = x, cy = y, xpad = 0, ypad = 0;
         if(inventorybg && size > 0)
         {
             int cs = int(size*skew), co = int(cs*inventorybgskew);
@@ -2599,14 +2600,27 @@ namespace hud
             cy -= co/2;
         }
         float gr = 1, gb = 1, gg = 1, gf = blend;
-        if(flags&TEXT_SKIN)
+        if(curflags&TEXT_SKIN)
         {
             if(inventorytone) skewcolour(gr, gg, gb, inventorytone);
             gf *= inventorybgskin;
+            xpad = FONTW/2;
         }
         defvformatstring(str, text, text);
-        int tx = int(((flags&TEXT_ALIGN) == TEXT_LEFT_JUSTIFY ? (cx+(FONTW*skew*0.5f)) : (cx-(FONTW*skew*0.5f)))/skew),
-            ty = int(cy/skew), sy = draw_textx("%s", tx, ty, 0, 0, int(gr*255), int(gg*255), int(gb*255), int(gf*255), flags|TEXT_NO_INDENT, -1, -1, str)*skew;
+        int tx = int(cx/skew), ty = int(cy/skew);
+        switch(curflags&TEXT_ALIGN)
+        {
+            case TEXT_LEFT_JUSTIFY: tx += FONTW*skew*0.5f; break;
+            case TEXT_RIGHT_JUSTIFY: tx -= FONTW*skew*0.5f; break;
+            case TEXT_CENTERED:
+            {
+                int width, height;
+                text_bounds(str, width, height, 0, 0, -1, curflags);
+                tx -= (width*skew*0.5f)+(FONTW*skew*0.5f);
+                break;
+            }
+        }
+        int sy = draw_textx("%s", tx, ty, xpad, ypad, int(gr*255), int(gg*255), int(gb*255), int(gf*255), curflags, -1, -1, str)*skew;
         if(font && *font) popfont();
         pophudmatrix();
         return sy;

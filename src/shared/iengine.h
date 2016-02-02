@@ -193,8 +193,8 @@ enum
 extern bool setfont(const char *name);
 extern bool pushfont(const char *name);
 extern bool popfont(int num = 1);
-extern int draw_text(const char *str, int rleft, int rtop, int r = 255, int g = 255, int b = 255, int a = 255, int flags = TEXT_SHADOW, int cursor = -1, int maxwidth = -1);
-extern int draw_textx(const char *fstr, int left, int top, int xpad = 0, int ypad = 0, int r = 255, int g = 255, int b = 255, int a = 255, int flags = TEXT_SHADOW, int cursor = -1, int maxwidth = -1, ...);
+extern int draw_text(const char *str, int rleft, int rtop, int r = 255, int g = 255, int b = 255, int a = 255, int flags = 0, int cursor = -1, int maxwidth = -1, int realwidth = -1);
+extern int draw_textx(const char *fstr, int left, int top, int xpad = 0, int ypad = 0, int r = 255, int g = 255, int b = 255, int a = 255, int flags = 0, int cursor = -1, int maxwidth = -1, ...);
 extern int draw_textf(const char *fstr, int left, int top, ...) PRINTFARGS(1, 4);
 extern float text_widthf(const char *str, int xpad = 0, int ypad = 0, int flags = 0);
 extern void text_boundsf(const char *str, float &width, float &height, int xpad = 0, int ypad = 0, int maxwidth = -1, int flags = 0);
