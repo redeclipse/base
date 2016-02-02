@@ -1113,7 +1113,7 @@ struct gameent : dynent, clientstate
 
     void cleartags() { head = torso = muzzle = origin = eject[0] = eject[1] = waist = jet[0] = jet[1] = jet[2] = toe[0] = toe[1] = vec(-1, -1, -1); }
 
-    vec checkfootpos(int foot)
+    vec footpos(int foot)
     {
         if(foot < 0 || foot > 1) return feetpos();
         if(toe[foot] == vec(-1, -1, -1))
@@ -1131,30 +1131,9 @@ struct gameent : dynent, clientstate
         return toe[foot];
     }
 
-    vec footpos(int foot)
-    {
-        return checkfootpos(foot);
-    }
-
-    vec checkoriginpos()
-    {
-        if(origin == vec(-1, -1, -1))
-        {
-            vec dir, right;
-            vecfromyawpitch(yaw, pitch, 1, 0, dir);
-            vecfromyawpitch(yaw, pitch, 0, -1, right);
-            dir.mul(radius*0.75f);
-            right.mul(radius*0.85f);
-            dir.z -= height*0.25f;
-            origin = vec(o).add(dir).add(right);
-        }
-        return origin;
-    }
-
     vec originpos(bool melee = false, bool secondary = false)
     {
-        if(melee) return secondary ? feetpos() : headpos(-height*0.25f);
-        return checkoriginpos();
+        return origin = vec(melee && secondary ? feetpos() : headpos()).add(vec(yaw*RAD, pitch*RAD));
     }
 
     vec checkmuzzlepos(int weap = -1)
@@ -1203,7 +1182,7 @@ struct gameent : dynent, clientstate
 
     vec checkejectpos(bool alt = false)
     {
-        if(eject[alt ? 1 : 0] == vec(-1, -1, -1)) eject[alt ? 1 : 0] = alt ? checkoriginpos() : checkmuzzlepos();
+        if(eject[alt ? 1 : 0] == vec(-1, -1, -1)) eject[alt ? 1 : 0] = alt ? originpos() : muzzlepos(weapselect);
         return eject[alt ? 1 : 0];
     }
 
@@ -1271,7 +1250,7 @@ struct gameent : dynent, clientstate
 
     void checktags()
     {
-        checkoriginpos();
+        originpos();
         checkmuzzlepos();
         loopi(2) checkejectpos(i!=0);
         if(wantshitbox()) checkhitboxes();

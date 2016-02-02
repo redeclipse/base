@@ -3495,12 +3495,10 @@ namespace game
             }
             if(W(d->weapselect, laser) && !reloading)
             {
-                vec v, origin = d->originpos(), muzzle = d->muzzlepos(d->weapselect);
-                origin.z += 0.25f; muzzle.z += 0.25f;
-                float yaw, pitch;
-                vectoyawpitch(vec(muzzle).sub(origin).normalize(), yaw, pitch);
+                vec v, muzzle = d->muzzlepos(d->weapselect);
+                muzzle.z += 0.25f;
                 findorientation(d->o, d->yaw, d->pitch, v);
-                part_flare(origin, v, 1, PART_FLARE, colour, 0.5f*amt, amt*blend);
+                part_flare(muzzle, v, 1, PART_FLARE, colour, 0.5f*amt, amt*blend);
             }
             if(d->weapselect == W_SWORD || d->weapselect == W_ZAPPER || powering)
             {
@@ -3532,7 +3530,7 @@ namespace game
                     {
                         int interval = lastmillis%1000;
                         float fluc = powerfx[d->weapselect].size+(interval ? (interval <= 500 ? interval/500.f : (1000-interval)/500.f) : 0.f);
-                        part_create(powerfx[d->weapselect].parttype, 1, d->originpos(), colour, (powerfx[d->weapselect].radius*max(amt, 0.25f))+fluc, max(amt, 0.1f)*blend);
+                        part_create(powerfx[d->weapselect].parttype, 1, d->muzzlepos(d->weapselect), colour, (powerfx[d->weapselect].radius*max(amt, 0.25f))+fluc, max(amt, 0.1f)*blend);
                         break;
                     }
                     case 4:
