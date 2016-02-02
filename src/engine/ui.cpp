@@ -193,7 +193,7 @@ struct gui : guient
         if(!name) name = intstr(tpos);
         gui::pushfont("super");
         int width = 0, height = 0;
-        text_bounds(name, width, height);
+        text_bounds(name, width, height, 0, 0, -1, TEXT_NO_INDENT);
         if(guilayoutpass)
         {
             ty = max(ty, ysize);
@@ -1020,7 +1020,7 @@ struct gui : guient
         drawslice(start, end, x+s/2, y+s/2, s);
         if(text && *text)
         {
-            int w = text_width(text);
+            int w = text_width(text, 0, 0, TEXT_NO_INDENT);
             text_(text, x+s/2-w/2, y+s/2-FONTH/2, 0xFFFFFF, guitextblend);
         }
     }
@@ -1106,7 +1106,7 @@ struct gui : guient
         if(text && *text)
         {
             int tw = 0, th = 0;
-            text_bounds(text, tw, th, 0, 0, wrap > 0 ? wrap : -1);
+            text_bounds(text, tw, th, 0, 0, wrap > 0 ? wrap : -1, TEXT_NO_INDENT);
             w += tw;
             h += th;
         }
