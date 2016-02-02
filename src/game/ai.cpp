@@ -108,7 +108,7 @@ namespace ai
 
     bool hastarget(gameent *d, aistate &b, gameent *e, bool alt, bool insight, float yaw, float pitch)
     { // add margins of error
-        if((insight && weaprange(d, d->weapselect, alt, e->o.squaredist(d->o))) || (d->skill <= 100 && !rnd(d->skill)))
+        if(insight && weaprange(d, d->weapselect, alt, e->o.squaredist(d->o)))
         {
             if(weaptype[d->weapselect].melee) return true;
             float skew = clamp(float(lastmillis-d->ai->enemymillis)/float((d->skill*W(d->weapselect, delayreload)/5000.f)+(d->skill*W2(d->weapselect, delayattack, alt)/500.f)), 0.f, weaptype[d->weapselect].thrown[0] ? 0.25f : 1e16f),
