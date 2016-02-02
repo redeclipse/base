@@ -510,7 +510,7 @@ namespace hud
     VAR(IDF_PERSIST, radarhitstime, 1, 250, VAR_MAX);
     VAR(IDF_PERSIST, radarhitsfade, 1, 3000, VAR_MAX);
     FVAR(IDF_PERSIST, radarhitsswipe, 0, 6, 1000);
-    FVAR(IDF_PERSIST, radarhitsscale, 0, 2, 1000);
+    FVAR(IDF_PERSIST, radarhitsscale, 0, 1.8f, 1000);
     FVAR(IDF_PERSIST, radarhitsblend, 0, 1, 1);
     FVAR(IDF_PERSIST, radarhitsheight, -1000, 0.25f, 1000);
     FVAR(IDF_PERSIST, radarhitsoffset, -1000, 3, 1000);
