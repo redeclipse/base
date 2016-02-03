@@ -6,11 +6,11 @@ FVARF(IDF_PERSIST, textscale, FVAR_NONZERO, 1, FVAR_MAX, curtextscale = textscal
 VAR(IDF_PERSIST, textfaded, 0, 1, 1);
 VAR(IDF_PERSIST, textminintensity, 0, 32, 255);
 
-VARF(IDF_PERSIST, textkeyimages, 0, 1, 1, changedkeys = totalmillis);
+VAR(IDF_PERSIST, textkeyimages, 0, 1, 1);
 VAR(IDF_PERSIST|IDF_HEX, textkeyimagecolour, 0x000000, 0xFFFFFF, 0xFFFFFF);
 FVAR(IDF_PERSIST, textkeyimageblend, 0, 1, 1);
 FVAR(IDF_PERSIST, textkeyimagescale, 0, 1, FVAR_MAX);
-VARF(IDF_PERSIST, textkeyseps, 0, 1, 1, changedkeys = totalmillis);
+VAR(IDF_PERSIST, textkeyseps, 0, 1, 1);
 
 Texture *tbgbordertex = NULL, *tbgtex = NULL;
 VAR(IDF_PERSIST, textskin, 0, 2, 2);
@@ -613,7 +613,6 @@ struct textkey
 {
     char *name, *file;
     Texture *tex;
-
     textkey() : name(NULL), file(NULL), tex(NULL) {}
     textkey(char *n, char *f, Texture *t) : name(newstring(n)), file(newstring(f)), tex(t) {}
     ~textkey()
@@ -639,43 +638,111 @@ textkey *findtextkey(const char *str)
     return t;
 }
 
-float key_widthf(const char *str)
+struct tklookup
 {
-    if(textkeyimages)
+    char *name;
+    int type;
+    bindlist blist;
+    tklookup() : name(NULL), type(0) {}
+    tklookup(char *n, int t) : name(newstring(n)), type(t) {}
+    ~tklookup()
     {
-        textkey *t = findtextkey(str);
-        if(t && t->tex) return (t->tex->w*curfont->maxh*curfont->scale/float(curfont->defaulth)*curtextscale*textkeyimagescale)/float(t->tex->h);
-        // fallback if not found
+        DELETEA(name);
     }
-    return text_widthf(str);
+};
+vector<tklookup *> tklookups;
+
+tklookup *findtklookup(const char *str, int type)
+{
+    loopv(tklookups) if(!strcmp(tklookups[i]->name, str) && tklookups[i]->type == type) return tklookups[i];
+    tklookup *t = new tklookup;
+    t->name = newstring(str);
+    t->type = type;
+    return t;
 }
 
-int draw_key(Texture *&tex, const char *str, float sx, float sy)
+static const char *gettklp(const char *str)
 {
-    if(textkeyimages)
+    int type = 0;
+    if(isnumeric(str[0]) && str[1] == ':')
     {
-        textkey *t = findtextkey(str);
-        if(t && t->tex)
-        {
-            if(tex != t->tex)
-            {
-                xtraverts += gle::end();
-                tex = t->tex;
-                glBindTexture(GL_TEXTURE_2D, tex->id);
-            }
-            float sh = curfont->maxh*curfont->scale/float(curfont->defaulth)*curtextscale, h = sh*textkeyimagescale,
-                  w = (tex->w*h)/float(tex->h), oh = h-sh, oy = sy-oh/2;
-            gle::color(vec::hexcolor(textkeyimagecolour), textkeyimageblend);
-            textvert(sx,     oy    ); gle::attribf(0, 0);
-            textvert(sx + w, oy    ); gle::attribf(1, 0);
-            textvert(sx + w, oy + h); gle::attribf(1, 1);
-            textvert(sx,     oy + h); gle::attribf(0, 1);
-            return w;
-        }
-        // fallback if not found
+        if(str[0] >= '1' && str[0] <= '9') type = str[0]-'0';
+        str += 2;
     }
+    tklookup *t = findtklookup(str, type);
+    if(!t) return "";
+    return t->blist.search(str, type, "", "", " ", " ", 5);
+}
+
+float key_widthf(const char *str)
+{
+    const char *keyn = str;
+    if(*str == '=') keyn = gettklp(++str);
+    vector<char *> list;
+    explodelist(keyn, list);
+    float width = 0, scale = curfont->maxh*curfont->scale/float(curfont->defaulth)*curtextscale*textkeyimagescale;
+    loopv(list)
+    {
+        if(i && textkeyseps) width += text_widthf("|");
+        if(textkeyimages)
+        {
+            textkey *t = findtextkey(list[i]);
+            if(t && t->tex)
+            {
+                width += (t->tex->w*scale)/float(t->tex->h);
+                continue;
+            }
+            // fallback if not found
+        }
+        width += text_widthf(list[i]);
+    }
+    list.deletearrays();
+    return width;
+}
+
+static int draw_key(Texture *&tex, const char *str, float sx, float sy)
+{
+    Texture *oldtex = tex;
+    const char *keyn = str;
+    if(*str == '=') keyn = gettklp(++str);
+    vector<char *> list;
+    explodelist(keyn, list);
+    float width = 0, sh = curfont->maxh*curfont->scale/float(curfont->defaulth)*curtextscale, h = sh*textkeyimagescale;
     int r = textkeyimagecolour>>16, g = (textkeyimagecolour>>8)&0xFF, b = textkeyimagecolour&0xFF, a = textkeyimageblend*255;
-    return draw_textx("\fs\fa[\fS%s\fs\fa]\fS", sx, sy, 0, 0, r, g, b, a, 0, -1, -1, str);
+    loopv(list)
+    {
+        if(textkeyimages)
+        {
+            textkey *t = findtextkey(list[i]);
+            if(t && t->tex)
+            {
+                if(tex != t->tex)
+                {
+                    xtraverts += gle::end();
+                    tex = t->tex;
+                    glBindTexture(GL_TEXTURE_2D, tex->id);
+                }
+                float w = (tex->w*h)/float(tex->h), oh = h-sh, oy = sy-oh/2;
+                gle::color(vec::hexcolor(textkeyimagecolour), textkeyimageblend);
+                textvert(sx + width,     oy    ); gle::attribf(0, 0);
+                textvert(sx + width + w, oy    ); gle::attribf(1, 0);
+                textvert(sx + width + w, oy + h); gle::attribf(1, 1);
+                textvert(sx + width,     oy + h); gle::attribf(0, 1);
+                width += w;
+                continue;
+            }
+            // fallback if not found
+        }
+        if(tex != oldtex)
+        {
+            xtraverts += gle::end();
+            tex = oldtex;
+            glBindTexture(GL_TEXTURE_2D, tex->id);
+        }
+        width += draw_textx("\fs\fa[\fS%s\fs\fa]\fS", sx + width, sy, 0, 0, r, g, b, a, 0, -1, -1, list[i]);
+    }
+    list.deletearrays();
+    return width;
 }
 
 int draw_text(const char *str, int rleft, int rtop, int r, int g, int b, int a, int flags, int cursor, int maxwidth, int realwidth)

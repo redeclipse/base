@@ -163,9 +163,8 @@ namespace bomber
                     }
                     if(game::focus == game::player1)
                     {
-                        SEARCHBINDCACHE(altkey)("affinity", 0, "\f{", "}");
                         pushfont(important ? "emphasis" : "reduced");
-                        ty += draw_textx(important ? "\fs\fzuyPress %s to throw the bomb\fS" : "Press %s to throw the bomb", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, altkey);
+                        ty += draw_textx(important ? "\fs\fzuyPress \f{=affinity} to throw the bomb\fS" : "Press \f{=affinity} to throw the bomb", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1);
                         popfont();
                     }
                     break;

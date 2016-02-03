@@ -131,7 +131,6 @@ extern void resetcomplete();
 extern void complete(char *s, const char *cmdprefix);
 extern const char *searchbind(const char *action, int type);
 extern void searchbindlist(const char *action, int type, int limit, const char *s1, const char *s2, const char *sep1, const char *sep2, vector<char> &names, bool force = true);
-extern int textkeyimages, textkeyseps;
 
 extern bool capslockon, numlockon;
 extern bool capslocked();
@@ -144,19 +143,17 @@ struct bindlist
 
     bindlist() : lastsearch(-1) {}
 
-    const char *search(const char *action, int type = 0, const char *s1 = "\f{", const char *s2 = "}", int limit = 5)
+    const char *search(const char *action, int type = 0, const char *s1 = "\f{", const char *s2 = "}", const char *sep1 = " ", const char *sep2 = " ", int limit = 5)
     {
         if(names.empty() || lastsearch != changedkeys)
         {
             names.shrink(0);
-            searchbindlist(action, type, limit, s1, s2, textkeyseps ? (textkeyimages ? "|" : ", ") : (textkeyimages ? "" : " "), textkeyseps ? (textkeyimages ? "|" : " or ") : (textkeyimages ? "" : " "), names);
+            searchbindlist(action, type, limit, s1, s2, sep1, sep2, names);
             lastsearch = changedkeys;
         }
         return names.getbuf();
     }
 };
-
-#define SEARCHBINDCACHE(def) static bindlist __##def; const char *def = __##def.search
 
 // menus
 extern void newgui(char *name, char *contents, char *initscript = NULL);
