@@ -53,8 +53,10 @@ FVAR(IDF_PERSIST, guifieldbgblend, 0, 0.3f, 1);
 VAR(IDF_PERSIST|IDF_HEX, guifieldbordercolour, -1, 0xA0A0A0, 0xFFFFFF);
 FVAR(IDF_PERSIST, guifieldborderblend, 0, 0.6f, 1);
 
+VAR(IDF_PERSIST|IDF_HEX, guifieldhitcolour, -1, 0xF04040, 0xFFFFFF);
+FVAR(IDF_PERSIST, guifieldhitblend, 0, 0.8f, 1);
 VAR(IDF_PERSIST|IDF_HEX, guifieldactivecolour, -1, 0xF04040, 0xFFFFFF);
-FVAR(IDF_PERSIST, guifieldactiveblend, 0, 0.8f, 1);
+FVAR(IDF_PERSIST, guifieldactiveblend, 0, 0.9f, 1);
 
 VAR(IDF_PERSIST|IDF_HEX, guislidercolour, -1, 0x000000, 0xFFFFFF);
 FVAR(IDF_PERSIST, guisliderblend, 0, 0.3f, 1);
@@ -67,7 +69,7 @@ VAR(IDF_PERSIST|IDF_HEX, guislidermarkbordercolour, -1, 0xC0C0C0, 0xFFFFFF);
 FVAR(IDF_PERSIST, guislidermarkborderblend, 0, 0.6f, 1);
 VAR(IDF_PERSIST, guislidermarkborderskin, 0, 0, 2);
 VAR(IDF_PERSIST|IDF_HEX, guislideractivecolour, -1, 0xF04040, 0xFFFFFF);
-FVAR(IDF_PERSIST, guislideractiveblend, 0, 0.8f, 1);
+FVAR(IDF_PERSIST, guislideractiveblend, 0, 0.9f, 1);
 
 VAR(IDF_PERSIST, guiactiveskin, 0, 1, 1);
 VAR(IDF_PERSIST|IDF_HEX, guiactivecolour, -1, 0xF02020, 0xFFFFFF);
@@ -694,7 +696,7 @@ struct gui : guient
                 if(editing && immediate) result = e->currentline().text;
                 fieldsactive = true;
             }
-            skin(curx, cury, curx+w, cury+h, guifieldbgcolour, guifieldbgblend, editing ? guifieldactivecolour : guifieldbordercolour, editing ? guifieldactiveblend : guifieldborderblend, true);
+            skin(curx, cury, curx+w, cury+h, guifieldbgcolour, guifieldbgblend, editing ? guifieldactivecolour : (hit ? guifieldhitcolour : guifieldbordercolour), editing ? guifieldactiveblend : (hit ? guifieldhitblend : guifieldborderblend), true);
             e->draw(curx+wpad/2, cury+hpad/2, color, editing, prompt);
         }
         else if(e->unfocus) e->unfocus = false;
