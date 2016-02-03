@@ -407,7 +407,7 @@ void guifont(char *font, uint *body)
 int guifontwidth(char *font)
 {
     float oldtextscale = curtextscale;
-    curtextscale = textscale;
+    curtextscale = 1;
     if(font && *font) pushfont(font);
     int width = FONTW;
     if(font && *font) popfont();
@@ -418,7 +418,7 @@ int guifontwidth(char *font)
 int guifontheight(char *font)
 {
     float oldtextscale = curtextscale;
-    curtextscale = textscale;
+    curtextscale = 1;
     if(font && *font) pushfont(font);
     int height = FONTH;
     if(font && *font) popfont();
@@ -429,7 +429,7 @@ int guifontheight(char *font)
 int guitextwidth(char *text, char *font, int wrap)
 {
     float oldtextscale = curtextscale;
-    curtextscale = textscale;
+    curtextscale = 1;
     if(font && *font) pushfont(font);
     int width = 0, height = 0;
     text_bounds(text, width, height, 0, 0, wrap > 0 ? wrap : -1, TEXT_NO_INDENT);
@@ -441,7 +441,7 @@ int guitextwidth(char *text, char *font, int wrap)
 int guitextheight(char *text, char *font, int wrap)
 {
     float oldtextscale = curtextscale;
-    curtextscale = textscale;
+    curtextscale = 1;
     if(font && *font) pushfont(font);
     int width = 0, height = 0;
     text_bounds(text, width, height, 0, 0, wrap > 0 ? wrap : -1, TEXT_NO_INDENT);
