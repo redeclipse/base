@@ -397,36 +397,71 @@ static float icon_width(const char *name, float scale)
     else if(s) TEXTCOLOR(h); \
 }
 
+#define TEXTWIDTHEST(wa,wb) \
+{ \
+    if((realwidth > 0 && wa+wb > realwidth) || (maxwidth > 0 && wa+wb > maxwidth)) \
+    { \
+        if(ql > 0) \
+        { \
+            qi = ql; \
+            qx = qp; \
+            usewidth = int(floorf(qp)); \
+        } \
+        break; \
+    } \
+}
+
 #define TEXTCENTER(idx) \
 { \
-    if(maxwidth > 0) usewidth = maxwidth-int(scale*curfont->chars[int('-')-curfont->charoffset].advance); \
     int ql = 0; \
-    float qw = 0, qp = 0; \
+    float qx = 0, qp = 0; \
     for(int qi = idx; str[qi]; qi++) \
     { \
         int qc = uchar(str[qi]); \
-        if(qc == '\t')      { qw = TEXTTAB(qw); ql = qi+1; qp = qw; } \
-        else if(qc == ' ')  { qw += scale*curfont->defaultw; ql = qi+1; qp = qw; } \
-        else if(qc == '\n') { ql = 0; qp = 0; break; } \
-        else if(qc == '\f') { if(str[qi+1]) { qi++; TEXTCOLORIZE(qi, false, qw); } } \
+        if(qc == '\t') \
+        { \
+            qx = TEXTTAB(qx); \
+            ql = qi+1; \
+            qp = qx; \
+        } \
+        else if(qc == ' ') \
+        { \
+            qx += scale*curfont->defaultw; \
+            ql = qi+1; \
+            qp = qx; \
+        } \
+        else if(qc == '\n') \
+        { \
+            ql = 0; \
+            qp = 0; \
+            break; \
+        } \
+        else if(qc == '\f') \
+        { \
+            int fi = qi; \
+            float fx = qx; \
+            if(str[fi+1]) \
+            { \
+                fi++; \
+                TEXTCOLORIZE(fi, false, fx); \
+                float cw = fx-qx; \
+                if(cw > 0) TEXTWIDTHEST(qx, cw); \
+            } \
+            if(str[qi+1]) \
+            { \
+                qi++; \
+                TEXTCOLORIZE(qi, false, qx); \
+            } \
+        } \
         else if(curfont->chars.inrange(qc-curfont->charoffset)) \
         { \
-            float qt = scale*curfont->chars[qc-curfont->charoffset].advance; \
-            if(qt <= 0) continue; \
-            if((realwidth > 0 && qw+qt > realwidth) || (usewidth > 0 && qw+qt > usewidth)) \
-            { \
-                if(ql > 0) \
-                { \
-                    qi = ql; \
-                    qw = qp; \
-                    usewidth = int(floorf(qp)); \
-                } \
-                break; \
-            } \
-            qw += qt; \
+            float cw = scale*curfont->chars[qc-curfont->charoffset].advance; \
+            if(cw <= 0) continue; \
+            TEXTWIDTHEST(x, cw); \
+            qx += cw; \
         } \
     } \
-    if(realwidth > 0 && flags&TEXT_CENTERED) x += (realwidth*0.5f)-(qw*0.5f); \
+    if(realwidth > 0 && flags&TEXT_CENTERED) x += (realwidth-qx)*0.5f; \
 }
 
 #define TEXTALIGN(idx) \
@@ -438,36 +473,62 @@ static float icon_width(const char *name, float scale)
     y += FONTH; \
 }
 
+#define TEXTWIDTH(wa,wb) \
+{ \
+    if(usewidth > 0 && wa+wb > usewidth) \
+    { \
+        TEXTLINE(i-1); \
+        TEXTALIGN(i); \
+    } \
+}
+
 #define TEXTSKELETON \
-    float y = 0, x = 0, scale = curfont->scale/float(curfont->defaulth)*curtextscale;\
-    int i = 0, usewidth = maxwidth;\
+    float y = 0, x = 0, scale = curfont->scale/float(curfont->defaulth)*curtextscale; \
+    int i = 0, usewidth = maxwidth; \
     TEXTCENTER(i) \
-    for(i = 0; str[i]; i++)\
-    {\
-        int c = uchar(str[i]);\
-        TEXTINDEX(i)\
-        if(c == '\t')      { x = TEXTTAB(x); TEXTWHITE(i) }\
-        else if(c == ' ')  { x += scale*curfont->defaultw; TEXTWHITE(i) }\
-        else if(c == '\n') { TEXTLINE(i); TEXTALIGN(i+1) }\
-        else if(c == '\f') { if(str[i+1]) { i++; TEXTCOLORIZE(i, true, x); } }\
-        else if(curfont->chars.inrange(c-curfont->charoffset))\
-        {\
-            float cw = scale*curfont->chars[c-curfont->charoffset].advance;\
-            if(cw <= 0) continue;\
-            if(usewidth > 0 && x+cw > usewidth) \
+    for(i = 0; str[i]; i++) \
+    { \
+        int c = uchar(str[i]); \
+        TEXTINDEX(i) \
+        if(c == '\t') \
+        { \
+            x = TEXTTAB(x); \
+            TEXTWHITE(i); \
+        } \
+        else if(c == ' ') \
+        { \
+            x += scale*curfont->defaultw; \
+            TEXTWHITE(i); \
+        } \
+        else if(c == '\n') \
+        { \
+            TEXTLINE(i); \
+            TEXTALIGN(i+1); \
+        } \
+        else if(c == '\f') \
+        { \
+            int fi = i; \
+            float fx = x; \
+            if(str[fi+1]) \
             { \
-                if(i && isalnum(int(str[i-1]))) \
-                { \
-                    int oldc = c; \
-                    c = '-'; \
-                    TEXTCHAR(i); \
-                    c = oldc; \
-                } \
-                TEXTLINE(i-1); \
-                TEXTALIGN(i); \
+                fi++; \
+                TEXTCOLORIZE(fi, false, fx); \
+                float cw = fx-x; \
+                if(cw > 0) TEXTWIDTH(x, cw); \
             } \
+            if(str[i+1]) \
+            { \
+                i++; \
+                TEXTCOLORIZE(i, true, x); \
+            } \
+        } \
+        else if(curfont->chars.inrange(c-curfont->charoffset)) \
+        { \
+            float cw = scale*curfont->chars[c-curfont->charoffset].advance; \
+            if(cw <= 0) continue; \
+            TEXTWIDTH(x, cw); \
             TEXTCHAR(i); \
-        }\
+        } \
     }
 
 #define TEXTEND(cursor) if(cursor >= i) { do { TEXTINDEX(cursor); } while(0); }
