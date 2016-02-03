@@ -1474,7 +1474,7 @@ struct cament
 {
     enum { ENTITY = 0, WAYPOINT, PLAYER, AFFINITY, MAX };
 
-    int cn, type, id, inview[MAX], lastyawtime, lastpitchtime;
+    int cn, type, id, inview[MAX], lastinview[MAX], lastyawtime, lastpitchtime;
     vec o, dir;
     float dist, lastyaw, lastpitch;
     gameent *player;
@@ -1507,7 +1507,7 @@ struct cament
 
     void reset()
     {
-        loopi(MAX) inview[i] = 0;
+        loopi(MAX) inview[i] = lastinview[i] = 0;
         if(dir.iszero()) dir = vec(float(rnd(360)), float(rnd(91)-45));
     }
 

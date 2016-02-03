@@ -154,6 +154,8 @@ namespace game
     FVAR(IDF_PERSIST, spectvpitchscale, FVAR_MIN, 1, 1000);
     FVAR(IDF_PERSIST, spectvyawthresh, 0, 0, 360);
     FVAR(IDF_PERSIST, spectvpitchthresh, 0, 0, 180);
+    FVAR(IDF_PERSIST, spectvaccel, 1, 2, FVAR_MAX);
+    FVAR(IDF_PERSIST, spectvaccelthresh, 0, 0.25f, 1);
     VAR(IDF_PERSIST, spectvdead, 0, 1, 2); // 0 = never, 1 = in all but duel/survivor, 2 = always
     VAR(IDF_PERSIST, spectvfirstperson, 0, 0, 2); // 0 = aim in direction followed player is facing, 1 = aim in direction determined by spectv when dead, 2 = always aim in direction
     VAR(IDF_PERSIST, spectvthirdperson, 0, 2, 2); // 0 = aim in direction followed player is facing, 1 = aim in direction determined by spectv when dead, 2 = always aim in direction
@@ -2589,6 +2591,7 @@ namespace game
                         c->reset(); // this camera sucks then
                         c->ignore = true;
                     }
+                    else loopi(cament::MAX) c->lastinview[i] = c->inview[i];
                 }
                 reset = true;
             }
@@ -2644,6 +2647,7 @@ namespace game
             if(!renew)
             {
                 float speed = curtime/float(chase ? followtvspeed : stvf(speed));
+                if(cam->lastinview[cament::PLAYER]-cam->inview[cament::PLAYER] >= int(cam->lastinview[cament::PLAYER]*spectvaccelthresh)) speed *= spectvaccel;
                 #define SCALEAXIS(x) \
                     float x##scale = 1, adj##x = camera1->x, off##x = x, x##thresh = chase ? followtv##x##thresh : stvf(x##thresh); \
                     if(adj##x < x - 180.0f) adj##x += 360.0f; \
