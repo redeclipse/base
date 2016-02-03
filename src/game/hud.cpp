@@ -286,12 +286,12 @@ namespace hud
     VAR(IDF_PERSIST, inventorytimeflash, 0, 1, 1);
     VAR(IDF_PERSIST, inventorytimestyle, 0, 3, 4);
     VAR(IDF_PERSIST, inventoryscore, 0, 1, VAR_MAX);
-    VAR(IDF_PERSIST, inventoryscorespec, 0, 2, VAR_MAX);
+    VAR(IDF_PERSIST, inventoryscorespec, 0, 3, VAR_MAX);
     VAR(IDF_PERSIST, inventoryscorebg, 0, 1, 1);
     VAR(IDF_PERSIST, inventoryscoreinfo, 0, 1, 1); // shows offset
     VAR(IDF_PERSIST, inventoryscorepos, 0, 1, 1); // shows position
     VAR(IDF_PERSIST, inventoryscorename, 0, 1, 2); // 0 = off, 1 = only ffa, 2 = teams as well
-    VAR(IDF_PERSIST, inventoryscorebreak, 0, 2, 2); // breaks up over multiple lines, 2 = center as well
+    VAR(IDF_PERSIST, inventoryscorebreak, 0, 0, 2); // breaks up over multiple lines, 2 = center as well
     VAR(IDF_PERSIST, inventoryweapids, 0, 2, 2);
     VAR(IDF_PERSIST, inventorycolour, 0, 2, 2);
     VAR(IDF_PERSIST, inventoryflash, 0, 0, 1);
@@ -301,8 +301,8 @@ namespace hud
     FVAR(IDF_PERSIST, inventorydateskew, 1e-4f, 0.85f, 1000);
     FVAR(IDF_PERSIST, inventorytimeskew, 1e-4f, 1, 1000);
     FVAR(IDF_PERSIST, inventoryscoresize, 0, 1, 1);
-    FVAR(IDF_PERSIST, inventoryscoreshrink, 0, 0.15f, 1);
-    FVAR(IDF_PERSIST, inventoryscoreshrinkmax, 0, 0.45f, 1);
+    FVAR(IDF_PERSIST, inventoryscoreshrink, 0, 0, 1);
+    FVAR(IDF_PERSIST, inventoryscoreshrinkmax, 0, 0.5f, 1);
     FVAR(IDF_PERSIST, inventoryblend, 0, 1, 1);
     FVAR(IDF_PERSIST, inventoryglow, 0, 0.05f, 1);
     FVAR(IDF_PERSIST, inventorytextoffsetx, -1, -0.25f, 1);
@@ -2588,13 +2588,13 @@ namespace hud
         int tx = int(cx/skew), ty = int(cy/skew);
         switch(curflags&TEXT_ALIGN)
         {
-            case TEXT_LEFT_JUSTIFY: tx += FONTW*skew*0.5f; break;
-            case TEXT_RIGHT_JUSTIFY: tx -= FONTW*skew*0.5f; break;
+            case TEXT_LEFT_JUSTIFY: tx += FONTW*0.5f; break;
+            case TEXT_RIGHT_JUSTIFY: tx -= FONTW*0.5f; break;
             case TEXT_CENTERED:
             {
                 int width, height;
-                text_bounds(str, width, height, 0, 0, -1, curflags);
-                tx -= (width*skew*0.5f)+(FONTW*skew*0.5f);
+                text_bounds(str, width, height, xpad, ypad, -1, curflags);
+                tx -= (width/skew*0.5f)+FONTW;
                 break;
             }
         }

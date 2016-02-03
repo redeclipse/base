@@ -806,7 +806,7 @@ namespace hud
         else concformatstring(str, "\fs\f[%d]\f(%s)\fS", colour, icon);
         if(m_laptime(game::gamemode, game::mutators)) { concformatstring(str, "%s%s", inventoryscorebreak ? "\n" : " ", timestr(score, inventoryracestyle)); }
         else if(m_defend(game::gamemode) && score >= VAR_MAX) { concformatstring(str, "%sWIN", inventoryscorebreak ? "\n" : " "); }
-        else { concformatstring(str, "%s%d", inventoryscorebreak ? "\n" : " ", score); }
+        else { concformatstring(str, "%s\fs\f[%d][\fS%d\fs\f[%d]]\fS", inventoryscorebreak ? "\n" : " ", col, score, col); }
         return drawitemtextx(x, y, 0, (inventoryscorebg ? TEXT_SKIN : 0)|(inventoryscorebreak == 2 ? TEXT_CENTERED : TEXT_RIGHT_JUSTIFY), skew, m_laptime(game::gamemode, game::mutators) ? "reduced" : "default", fade, "%s", str)+FONTH/8;
     }
 
