@@ -20,8 +20,6 @@ FVAR(IDF_PERSIST, textskinbright, 0, 0.6f, 10);
 FVAR(IDF_PERSIST, textskinfbright, 0, 1, 10);
 FVAR(IDF_PERSIST, textskinborderbright, 0, 1, 10);
 FVAR(IDF_PERSIST, textskinborderblend, 0, 0.4f, 1);
-FVAR(IDF_PERSIST, textskinstretchx, -1, 0.5f, 1);
-FVAR(IDF_PERSIST, textskinstretchy, -1, 0.001f, 1);
 TVARN(IDF_PERSIST|IDF_PRELOAD, textskintex, "textures/textskin", tbgtex, 0);
 TVARN(IDF_PERSIST|IDF_PRELOAD, textskinbordertex, "textures/textskinborder", tbgbordertex, 0);
 
@@ -172,12 +170,12 @@ int text_fonth(const char *s)
 }
 ICOMMAND(0, fontheight, "s", (char *s), intret(text_fonth(s)));
 
-#define TEXTTAB(x) (max((int((x)/FONTTAB)+1.0f)*FONTTAB, (x) + FONTW))
+#define TEXTTAB(x) (max((int((x)/FONTTAB)+1.0f)*FONTTAB, (x)+FONTW)-(x))
 
 void tabify(const char *str, int *numtabs)
 {
     int tw = max(*numtabs, 0)*FONTTAB-1, tabs = 0;
-    for(float w = text_widthf(str); w <= tw; w = TEXTTAB(w)) ++tabs;
+    for(float w = text_widthf(str); w <= tw; w += TEXTTAB(w)) ++tabs;
     int len = strlen(str);
     char *tstr = newstring(len + tabs);
     memcpy(tstr, str, len);
@@ -397,21 +395,26 @@ static float icon_width(const char *name, float scale)
     else if(s) TEXTCOLOR(h); \
 }
 
-#define TEXTWIDTHEST(wa,wb) \
+#define TEXTWIDTHEST(s) \
 { \
-    if((realwidth > 0 && wa+wb > realwidth) || (maxwidth > 0 && wa+wb > maxwidth)) \
+    if((realwidth > 0 && qx+cw > realwidth) || (maxwidth > 0 && qx+cw > maxwidth)) \
     { \
-        if(ql > 0) \
+        if(s) \
+        { \
+            if(maxwidth > 0 && qx+cw > maxwidth) qx = maxwidth; \
+            usewidth = int(floorf(qx)); \
+        } \
+        else if(ql > 0) \
         { \
             qi = ql; \
             qx = qp; \
-            usewidth = int(floorf(qp)); \
+            usewidth = int(floorf(qx)); \
         } \
         break; \
     } \
 }
 
-#define TEXTCENTER(idx) \
+#define TEXTESTIMATE(idx) \
 { \
     int ql = 0; \
     float qx = 0, qp = 0; \
@@ -420,13 +423,17 @@ static float icon_width(const char *name, float scale)
         int qc = uchar(str[qi]); \
         if(qc == '\t') \
         { \
-            qx = TEXTTAB(qx); \
+            float cw = TEXTTAB(qx); \
+            TEXTWIDTHEST(true); \
+            qx += cw; \
             ql = qi+1; \
             qp = qx; \
         } \
         else if(qc == ' ') \
         { \
-            qx += scale*curfont->defaultw; \
+            float cw = scale*curfont->defaultw; \
+            TEXTWIDTHEST(true); \
+            qx += cw; \
             ql = qi+1; \
             qp = qx; \
         } \
@@ -445,7 +452,7 @@ static float icon_width(const char *name, float scale)
                 fi++; \
                 TEXTCOLORIZE(fi, false, fx); \
                 float cw = fx-qx; \
-                if(cw > 0) TEXTWIDTHEST(qx, cw); \
+                if(cw > 0) TEXTWIDTHEST(false); \
             } \
             if(str[qi+1]) \
             { \
@@ -457,7 +464,7 @@ static float icon_width(const char *name, float scale)
         { \
             float cw = scale*curfont->chars[qc-curfont->charoffset].advance; \
             if(cw <= 0) continue; \
-            TEXTWIDTHEST(x, cw); \
+            TEXTWIDTHEST(false); \
             qx += cw; \
         } \
     } \
@@ -467,37 +474,52 @@ static float icon_width(const char *name, float scale)
 #define TEXTALIGN(idx) \
 { \
     x = 0; \
-    TEXTCENTER(idx) \
+    TEXTESTIMATE(idx) \
     if((flags&TEXT_LEFT_JUSTIFY) && !(flags&TEXT_NO_INDENT)) x += FONTTAB; \
     if(!y && (flags&TEXT_RIGHT_JUSTIFY) && !(flags&TEXT_NO_INDENT)) usewidth -= FONTTAB; \
     y += FONTH; \
 }
 
-#define TEXTWIDTH(wa,wb) \
+#define TEXTWIDTH(s) \
 { \
-    if(usewidth > 0 && wa+wb > usewidth) \
+    if(usewidth > 0 && x+cw > usewidth) \
     { \
-        TEXTLINE(i-1); \
-        TEXTALIGN(i); \
+        if(s) \
+        { \
+            x = usewidth; \
+            TEXTWHITE(i); \
+            TEXTLINE(i); \
+            TEXTALIGN(i+1); \
+        } \
+        else \
+        { \
+            TEXTLINE(i-1); \
+            TEXTALIGN(i); \
+        } \
+        continue; \
     } \
 }
 
 #define TEXTSKELETON \
     float y = 0, x = 0, scale = curfont->scale/float(curfont->defaulth)*curtextscale; \
     int i = 0, usewidth = maxwidth; \
-    TEXTCENTER(i) \
+    TEXTESTIMATE(i) \
     for(i = 0; str[i]; i++) \
     { \
         int c = uchar(str[i]); \
         TEXTINDEX(i) \
         if(c == '\t') \
         { \
-            x = TEXTTAB(x); \
+            float cw = TEXTTAB(x); \
+            TEXTWIDTH(true); \
+            x += cw; \
             TEXTWHITE(i); \
         } \
         else if(c == ' ') \
         { \
-            x += scale*curfont->defaultw; \
+            float cw = scale*curfont->defaultw; \
+            TEXTWIDTH(true); \
+            x += cw; \
             TEXTWHITE(i); \
         } \
         else if(c == '\n') \
@@ -514,7 +536,7 @@ static float icon_width(const char *name, float scale)
                 fi++; \
                 TEXTCOLORIZE(fi, false, fx); \
                 float cw = fx-x; \
-                if(cw > 0) TEXTWIDTH(x, cw); \
+                if(cw > 0) TEXTWIDTH(false); \
             } \
             if(str[i+1]) \
             { \
@@ -526,7 +548,7 @@ static float icon_width(const char *name, float scale)
         { \
             float cw = scale*curfont->chars[c-curfont->charoffset].advance; \
             if(cw <= 0) continue; \
-            TEXTWIDTH(x, cw); \
+            TEXTWIDTH(false); \
             TEXTCHAR(i); \
         } \
     }
@@ -828,7 +850,6 @@ int draw_textx(const char *fstr, int left, int top, int xpad, int ypad, int r, i
     else if(flags&TEXT_UPWARD) top -= height;
     if(flags&TEXT_SKIN && textskin)
     {
-        int stretchx = int(FONTW*textskinstretchx), stretchy = int(FONTH*textskinstretchy);
         loopk(textskin)
         {
             Texture *t = NULL;
@@ -848,7 +869,7 @@ int draw_textx(const char *fstr, int left, int top, int xpad, int ypad, int r, i
                     t = tbgtex;
                     break;
             }
-            drawskin(t, left-stretchx, top-stretchy, left+width+stretchx, top+height+stretchy, bvec(int(r*bright), int(g*bright), int(b*bright)).min(255).tohexcolor(), blend);
+            drawskin(t, left, top, left+width, top+height, bvec(int(r*bright), int(g*bright), int(b*bright)).min(255).tohexcolor(), blend);
         }
         r = g = b = int(textskinfbright*255);
         a = int(255*textskinfblend);
