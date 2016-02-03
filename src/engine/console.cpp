@@ -944,9 +944,9 @@ bool numlocked()
 ICOMMAND(0, getnumlock, "", (), intret(numlockon ? 1 : 0));
 
 #ifndef STANDALONE
-bool consolegui(guient *g, int &update)
+bool consolegui(guient *g, int width, int height, const char *init, int &update)
 {
-    g->strut(94);
+    g->strut(width-6);
     if(!conlines.empty() && (update < 0 || conlines[0].reftime > update))
     {
         editor *e = UI::geteditor("console_window", EDITORREADONLY);
@@ -957,8 +957,8 @@ bool consolegui(guient *g, int &update)
             update = totalmillis;
         }
     }
-    g->field("console_window", 0x666666, -100, 25, NULL, EDITORREADONLY);
-    char *w = g->field("console_input", 0x666666, -100, 0, "", EDITORFOREVER, g->visible(), "console_window");
+    g->field("console_window", 0x666666, -width, height, NULL, EDITORREADONLY);
+    char *w = g->field("console_input", 0x666666, -width, 0, init, EDITORFOREVER, g->visible(), "console_window");
     if(w && *w)
     {
         bool consolecmd = *w == '/';
@@ -992,7 +992,7 @@ bool consolegui(guient *g, int &update)
             h->run();
             interactive = false;
         }
-        UI::editoredit(UI::geteditor("console_input", EDITORFOREVER, NULL, "console_window"));
+        UI::editoredit(UI::geteditor("console_input", EDITORFOREVER, init, "console_window"), init);
     }
     return true;
 }

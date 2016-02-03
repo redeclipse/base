@@ -161,10 +161,10 @@ struct editor
 
     editor(const char *name, int mode, const char *initval, const char *parent = NULL) :
         mode(mode), active(true), rendered(false), unfocus(false), name(newstring(name)), filename(NULL), parent(newstring(parent && *parent ? parent : "")),
-        cx(0), cy(0), mx(-1), maxx(-1), maxy(-1), scrolly(mode==EDITORREADONLY ? SCROLLEND : 0), linewrap(false), pixelwidth(-1), pixelheight(-1)
+        cx(0), cy(0), mx(-1), my(-1), maxx(-1), maxy(-1), scrolly(mode==EDITORREADONLY ? SCROLLEND : 0), linewrap(false), pixelwidth(-1), pixelheight(-1)
     {
         //printf("editor %08x '%s'\n", this, name);
-        lines.add().set(initval ? initval : "");
+        clear(initval ? initval : "");
     }
 
     ~editor()
@@ -179,10 +179,15 @@ struct editor
     void clear(const char *init = "")
     {
         cx = cy = 0;
+        mx = my = -1;
         mark(false);
         loopv(lines) lines[i].clear();
         lines.shrink(0);
-        if(init) lines.add().set(init);
+        if(init)
+        {
+            lines.add().set(init);
+            cx = lines[0].len;
+        }
     }
 
     void setfile(const char *fname)

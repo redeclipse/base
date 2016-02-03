@@ -948,27 +948,27 @@ bool menuactive()
 
 ICOMMAND(0, menustacklen, "", (void), intret(menustack.length()));
 
-void guiirc(const char *s)
+void guiirc(const char *s, int width, int height)
 {
-    extern bool ircgui(guient *g, const char *s);
+    extern bool ircgui(guient *g, const char *s, int width, int height);
     if(cgui)
     {
-        if(!ircgui(cgui, s) && shouldclearmenu) clearlater = true;
+        if(!ircgui(cgui, s, width > 0 ? width : 100, height > 0 ? height : 25) && shouldclearmenu) clearlater = true;
     }
 }
-ICOMMAND(0, ircgui, "s", (char *s), guiirc(s));
+ICOMMAND(0, ircgui, "s", (char *s, int *w, int *h), guiirc(s, *w, *h));
 
-void guiconsole()
+void guiconsole(int width, int height, const char *init)
 {
-    extern bool consolegui(guient *g, int &update);
+    extern bool consolegui(guient *g, int width, int height, const char *init, int &update);
     static int consoleupdate = -1;
     if(cgui)
     {
-        if(!consolegui(cgui, consoleupdate) && shouldclearmenu)
+        if(!consolegui(cgui, width > 0 ? width : 100, height > 0 ? height : 25, init && *init ? init : "/", consoleupdate) && shouldclearmenu)
         {
             clearlater = true;
             consoleupdate = -1;
         }
     }
 }
-ICOMMAND(0, consolegui, "", (void), guiconsole());
+ICOMMAND(0, consolegui, "iis", (int *w, int *h, char *i), guiconsole(*w, *h, i));

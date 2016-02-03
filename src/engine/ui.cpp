@@ -1450,12 +1450,12 @@ namespace UI
         e->clear(init);
     }
 
-    void editoredit(editor *e)
+    void editoredit(editor *e, const char *init)
     {
         if(!e) return;
-        useeditor(e->name, e->mode, true);
-        e->clear();
-        fieldmode = FIELDCOMMIT;
+        useeditor(e->name, e->mode, true, init, e->parent);
+        e->clear(init);
+        fieldmode = FIELDEDIT;
         e->unfocus = true;
     }
 };

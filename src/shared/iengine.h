@@ -648,7 +648,7 @@ namespace UI
     extern editor *geteditor(const char *name, int mode, const char *init = NULL, const char *parent = NULL);
     extern void editorline(editor *e, const char *str, int limit = -1);
     extern void editorclear(editor *e, const char *init = "");
-    extern void editoredit(editor *e);
+    extern void editoredit(editor *e, const char *init = "");
 }
 
 // client

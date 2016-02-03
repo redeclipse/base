@@ -1050,7 +1050,7 @@ void irccmd(ircnet *n, ircchan *c, char *s)
     }
 }
 
-bool ircchangui(guient *g, ircnet *n, ircchan *c, bool tab)
+bool ircchangui(guient *g, ircnet *n, ircchan *c, bool tab, int width, int height)
 {
     if(tab)
     {
@@ -1066,10 +1066,10 @@ bool ircchangui(guient *g, ircnet *n, ircchan *c, bool tab)
         editor *e = UI::geteditor(cwindow, EDITORREADONLY);
         if(e) while(c->buffer.newlines < c->buffer.lines.length()) UI::editorline(e, c->buffer.lines[c->buffer.newlines++], MAXIRCLINES);
     }
-    g->field(cwindow, 0x666666, -100, 25, NULL, EDITORREADONLY);
+    g->field(cwindow, 0x666666, -width, height, NULL, EDITORREADONLY);
 
     defformatstring(cinput, "%s_%s_input", n->name, c->name);
-    char *v = g->field(cinput, 0x666666, -100, 0, "", EDITORFOREVER, g->visible(), cwindow);
+    char *v = g->field(cinput, 0x666666, -width, 0, "", EDITORFOREVER, g->visible(), cwindow);
     if(v && *v)
     {
         irccmd(n, c, v);
@@ -1078,7 +1078,7 @@ bool ircchangui(guient *g, ircnet *n, ircchan *c, bool tab)
     return true;
 }
 
-bool ircnetgui(guient *g, ircnet *n, bool tab)
+bool ircnetgui(guient *g, ircnet *n, bool tab, int width, int height)
 {
     if(tab)
     {
@@ -1094,10 +1094,10 @@ bool ircnetgui(guient *g, ircnet *n, bool tab)
         editor *e = UI::geteditor(window, EDITORREADONLY);
         if(e) while(n->buffer.newlines < n->buffer.lines.length()) UI::editorline(e, n->buffer.lines[n->buffer.newlines++], MAXIRCLINES);
     }
-    g->field(window, 0x666666, -100, 25, NULL, EDITORREADONLY);
+    g->field(window, 0x666666, -width, height, NULL, EDITORREADONLY);
 
     defformatstring(input, "%s_input", n->name);
-    char *w = g->field(input, 0x666666, -100, 0, "", EDITORFOREVER, g->visible(), window);
+    char *w = g->field(input, 0x666666, -width, 0, "", EDITORFOREVER, g->visible(), window);
     if(w && *w)
     {
         irccmd(n, NULL, w);
@@ -1107,21 +1107,21 @@ bool ircnetgui(guient *g, ircnet *n, bool tab)
     loopvj(n->channels) if(n->channels[j].state != IRCC_NONE && n->channels[j].name[0])
     {
         ircchan *c = &n->channels[j];
-        if(!ircchangui(g, n, c, true)) return false;
+        if(!ircchangui(g, n, c, true, width, height)) return false;
     }
     return true;
 }
 
 static const char * const ircstates[IRC_MAX] = { "\fowaiting", "\froffline", "\foconnecting", "\fynegotiating", "\fgonline", "\foquitting" };
-bool ircgui(guient *g, const char *s)
+bool ircgui(guient *g, const char *s, int width, int height)
 {
-    g->strut(94);
+    g->strut(width-6);
     if(s && *s)
     {
         ircnet *n = ircfind(s);
         if(n)
         {
-            if(!ircnetgui(g, n, false)) return false;
+            if(!ircnetgui(g, n, false, width, height)) return false;
         }
         else g->textf("not currently connected to %s", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF, s);
     }
@@ -1143,7 +1143,7 @@ bool ircgui(guient *g, const char *s)
             loopv(ircnets)
             {
                 ircnet *n = ircnets[i];
-                if(!ircnetgui(g, n, true)) return false;
+                if(!ircnetgui(g, n, true, width, height)) return false;
             }
         }
         else g->text("no current connections..", 0xFFFFFF);
