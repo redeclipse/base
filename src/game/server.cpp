@@ -4008,21 +4008,19 @@ namespace server
 
     bool isghost(clientinfo *d, clientinfo *e)
     {
-        if((d->actortype < A_ENEMY || !e || e->actortype < A_ENEMY) && m_ghost(gamemode, mutators)) return true;
-        if(e)
+        if(!e) return false;
+        if((d->actortype < A_ENEMY || e->actortype < A_ENEMY) && m_ghost(gamemode, mutators)) return true;
+        switch(d->actortype)
         {
-            switch(d->actortype)
-            {
-                case A_PLAYER: if(!(AA(e->actortype, collide)&(1<<A_C_PLAYERS))) return true; break;
-                case A_BOT: if(!(AA(e->actortype, collide)&(1<<A_C_BOTS))) return true; break;
-                default: if(!(AA(e->actortype, collide)&(1<<A_C_ENEMIES))) return true; break;
-            }
-            if(m_team(gamemode, mutators) && d->team == e->team) switch(d->actortype)
-            {
-                case A_PLAYER: if(!(AA(e->actortype, teamdamage)&(1<<A_T_PLAYERS))) return true; break;
-                case A_BOT: if(!(AA(e->actortype, teamdamage)&(1<<A_T_BOTS))) return true; break;
-                default: if(!(AA(e->actortype, teamdamage)&(1<<A_T_ENEMIES))) return true; break;
-            }
+            case A_PLAYER: if(!(AA(e->actortype, collide)&(1<<A_C_PLAYERS))) return true; break;
+            case A_BOT: if(!(AA(e->actortype, collide)&(1<<A_C_BOTS))) return true; break;
+            default: if(!(AA(e->actortype, collide)&(1<<A_C_ENEMIES))) return true; break;
+        }
+        if(m_team(gamemode, mutators) && d->team == e->team) switch(d->actortype)
+        {
+            case A_PLAYER: if(!(AA(e->actortype, teamdamage)&(1<<A_T_PLAYERS))) return true; break;
+            case A_BOT: if(!(AA(e->actortype, teamdamage)&(1<<A_T_BOTS))) return true; break;
+            default: if(!(AA(e->actortype, teamdamage)&(1<<A_T_ENEMIES))) return true; break;
         }
         return false;
     }

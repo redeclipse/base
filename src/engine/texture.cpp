@@ -995,7 +995,7 @@ static Texture *newtexture(Texture *t, const char *rname, ImageData &s, int clam
         t->bpp = s.bpp;
         if(swizzle && hasTRG && !hasTSW && swizzlemask(format))
         {
-            swizzleimage(s);   
+            swizzleimage(s);
             format = texformat(s.bpp, swizzle);
             t->bpp = s.bpp;
         }
@@ -3566,7 +3566,11 @@ SDL_Surface *loadsurface(const char *name, bool noload)
             }
             delete z;
         }
-        if(!s) s = IMG_Load(findfile(buf, "rb"));
+        if(!s)
+        {
+            const char *fname = findfile(buf, "rb");
+            if(fname && *fname) s = IMG_Load(fname);
+        }
         if(s) return fixsurfaceformat(s);
     }
     return NULL;

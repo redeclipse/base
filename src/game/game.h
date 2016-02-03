@@ -1165,9 +1165,14 @@ struct gameent : dynent, clientstate
                 vec dir, right;
                 vecfromyawpitch(yaw, pitch, 1, 0, dir);
                 vecfromyawpitch(yaw, pitch, 0, -1, right);
-                dir.mul(radius*0.9f);
-                right.mul(radius*0.6f);
-                dir.z -= height*0.25f;
+                dir.mul(radius);
+                if(weap != W_MELEE)
+                {
+                    dir.mul(0.75f);
+                    right.mul(radius*0.6f);
+                    dir.z -= height*0.25f;
+                }
+                else dir.mul(2.f);
                 muzzle = vec(o).add(dir).add(right);
             }
         }

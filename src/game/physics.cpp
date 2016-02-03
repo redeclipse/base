@@ -176,36 +176,36 @@ namespace physics
 
     bool isghost(gameent *d, gameent *e, bool proj)
     {
-        if(d == e && !proj) return false;
-        if((d->actortype < A_ENEMY || !e || e->actortype < A_ENEMY) && m_ghost(game::gamemode, game::mutators)) return true;
-        if(e)
+        if(!e || (d == e && !proj)) return false;
+        if((d->actortype < A_ENEMY && e->actortype < A_ENEMY) && m_ghost(game::gamemode, game::mutators)) return true;
+        switch(e->actortype)
         {
-            switch(d->actortype)
-            {
-                case A_PLAYER: if(!(AA(e->actortype, collide)&(1<<A_C_PLAYERS))) return true; break;
-                case A_BOT: if(!(AA(e->actortype, collide)&(1<<A_C_BOTS))) return true; break;
-                default: if(!(AA(e->actortype, collide)&(1<<A_C_ENEMIES))) return true; break;
-            }
-            if(m_team(game::gamemode, game::mutators) && d->team == e->team && (proj || AA(e->actortype, teamdamage)&(1<<A_T_GHOST))) switch(d->actortype)
-            {
-                case A_PLAYER: if(!(AA(e->actortype, teamdamage)&(1<<A_T_PLAYERS))) return true; break;
-                case A_BOT: if(!(AA(e->actortype, teamdamage)&(1<<A_T_BOTS))) return true; break;
-                default: if(!(AA(e->actortype, teamdamage)&(1<<A_T_ENEMIES))) return true; break;
-            }
+            case A_PLAYER: if(!(AA(d->actortype, collide)&(1<<A_C_PLAYERS))) return true; break;
+            case A_BOT: if(!(AA(d->actortype, collide)&(1<<A_C_BOTS))) return true; break;
+            default: if(!(AA(d->actortype, collide)&(1<<A_C_ENEMIES))) return true; break;
+        }
+        if(m_team(game::gamemode, game::mutators) && d->team == e->team && (proj || AA(d->actortype, teamdamage)&(1<<A_T_GHOST))) switch(e->actortype)
+        {
+            case A_PLAYER: if(!(AA(d->actortype, teamdamage)&(1<<A_T_PLAYERS))) return true; break;
+            case A_BOT: if(!(AA(d->actortype, teamdamage)&(1<<A_T_BOTS))) return true; break;
+            default: if(!(AA(d->actortype, teamdamage)&(1<<A_T_ENEMIES))) return true; break;
         }
         return false;
     }
 
     bool issolid(physent *d, physent *e, bool esc, bool impact, bool reverse)
     {
-        if(d == e) return false; // don't collide with themself
-        if(e && projent::is(e) && d->state == CS_ALIVE)
+        if(!e || d == e) return false; // don't collide with themself
+        if(projent::is(e))
         {
             projent *p = (projent *)e;
             if(gameent::is(d))
             {
-                if(p->stick == d || isghost((gameent *)d, p->owner, true)) return false;
-                if(impact && (p->hit == d || !(p->projcollide&COLLIDE_PLAYER))) return false;
+                gameent *g = (gameent *)d;
+                if(g->state != CS_ALIVE) return false;
+                if(g->protect(lastmillis, m_protect(game::gamemode, game::mutators))) return false;
+                if(p->stick == d || isghost(g, p->owner, true)) return false;
+                if(impact && (p->hit == g || !(p->projcollide&COLLIDE_PLAYER))) return false;
                 if(p->owner == d && (!(p->projcollide&COLLIDE_OWNER) || (esc && !p->escaped))) return false;
             }
             else if(projent::is(d))
@@ -221,12 +221,12 @@ namespace physics
         }
         if(gameent::is(d))
         {
-            if(d->state != CS_ALIVE) return false;
-            if(isghost((gameent *)d, (gameent *)(e && gameent::is(e) ? e : NULL), projent::is(d))) return false;
-            if(((gameent *)d)->protect(lastmillis, m_protect(game::gamemode, game::mutators))) return false;
+            gameent *g = (gameent *)d;
+            if(g->state != CS_ALIVE) return false;
+            if(gameent::is(e) && isghost(g, (gameent *)e)) return false;
             return true;
         }
-        else if(d->type == ENT_PROJ && e && !reverse) return issolid(e, d, esc, impact, true);
+        else if(projent::is(d) && !reverse) return issolid(e, d, esc, impact, true);
         return false;
     }
 
