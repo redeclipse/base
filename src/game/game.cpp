@@ -2239,13 +2239,15 @@ namespace game
                 height = zradius = radius = xradius = yradius = 2;
             }
         } c;
-        if(!dist && !side) return c.o = pos;
-        vec dir[3];
-        if(dist) vecfromyawpitch(yaw, pitch, -1, 0, dir[0]);
-        if(side) vecfromyawpitch(yaw, pitch, 0, -1, dir[1]);
-        dir[2] = dir[0].mul(dist).add(dir[1].mul(side)).normalize();
         c.o = pos;
-        physics::movecamera(&c, dir[2], dist, 0.1f);
+        if(dist || side)
+        {
+            vec dir[3] = { vec(0, 0, 0), vec(0, 0, 0), vec(0, 0, 0) };
+            if(dist) vecfromyawpitch(yaw, pitch, -1, 0, dir[0]);
+            if(side) vecfromyawpitch(yaw, pitch, 0, -1, dir[1]);
+            dir[2] = dir[0].mul(dist).add(dir[1].mul(side)).normalize();
+            physics::movecamera(&c, dir[2], dist, 0.1f);
+        }
         return c.o;
     }
 
