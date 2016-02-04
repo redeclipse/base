@@ -956,7 +956,7 @@ void guiirc(const char *s, int width, int height)
         if(!ircgui(cgui, s, width > 0 ? width : 100, height > 0 ? height : 25) && shouldclearmenu) clearlater = true;
     }
 }
-ICOMMAND(0, ircgui, "s", (char *s, int *w, int *h), guiirc(s, *w, *h));
+ICOMMAND(0, ircgui, "sii", (char *s, int *w, int *h), guiirc(s, *w, *h));
 
 void guiconsole(int width, int height, const char *init)
 {
