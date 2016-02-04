@@ -132,6 +132,14 @@ namespace bomber
                 }
             }
             hud::drawblip(isbomberaffinity(f) ? hud::bombtex : (isbombertarg(f, game::focus->team) ? hud::arrowtex : hud::pointtex), area, w, h, size, blend*hud::radaraffinityblend, isbombertarg(f, game::focus->team) ? 0 : -1, pos, colour);
+            if(isbombertarg(f, game::focus->team) && !hasbombs.empty() && bomberbasketmindist > 0 && game::focus->o.dist(pos) < bomberbasketmindist)
+            {
+                vec c(0.25f, 0.25f, 0.25f);
+                int millis = lastmillis%500;
+                float amt = millis <= 250 ? 1.f-(millis/250.f) : (millis-250)/250.f;
+                flashcolour(c.r, c.g, c.b, 1.f, 0.f, 0.f, amt);
+                hud::drawblip(hud::warningtex, area, w, h, size, blend*hud::radaraffinityblend*amt, 0, pos, c);
+            }
         }
     }
 
@@ -350,6 +358,17 @@ namespace bomber
                 f.baselight.material[0] = f.light.material[0] = bvec::fromcolor(effect);
                 int pcolour = effect.tohexcolor();
                 part_explosion(above, enttype[AFFINITY].radius/4*trans, PART_SHOCKBALL, 1, pcolour, 1.f, trans*blend*0.25f);
+                if(carryaffinity(game::focus) && bomberbasketmindist > 0 && game::focus->o.dist(above) < bomberbasketmindist)
+                {
+                    vec c(0.25f, 0.25f, 0.25f);
+                    int millis = lastmillis%500;
+                    float amt = millis <= 250 ? 1.f-(millis/250.f) : (millis-250)/250.f;
+                    flashcolour(c.r, c.g, c.b, 1.f, 0.f, 0.f, amt);
+                    vec offset = vec(above).sub(camera1->o).rescale(-enttype[AFFINITY].radius*0.5f);
+                    offset.z = max(offset.z, -1.0f);
+                    offset.add(above);
+                    part_icon(offset, textureload(hud::warningtex, 3, true, false), enttype[AFFINITY].radius*0.5f, amt*blend, 0, 0, 1, c.tohexcolor());
+                }
                 above.z += enttype[AFFINITY].radius/4*trans;
                 defformatstring(info, "<super>%s base", TEAM(f.team, name));
                 part_textcopy(above, info, PART_TEXT, 1, TEAM(f.team, colour), 2, trans*blend);
