@@ -869,7 +869,7 @@ int draw_textx(const char *fstr, int left, int top, int xpad, int ypad, int r, i
                     t = tbgtex;
                     break;
             }
-            drawskin(t, left, top, left+width, top+height, bvec(int(r*bright), int(g*bright), int(b*bright)).min(255).tohexcolor(), blend);
+            drawskin(t, left-FONTW, top, left+width+FONTW, top+height, bvec(int(r*bright), int(g*bright), int(b*bright)).min(255).tohexcolor(), blend);
         }
         r = g = b = int(textskinfbright*255);
         a = int(255*textskinfblend);
