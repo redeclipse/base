@@ -674,7 +674,7 @@ struct gui : guient
                     if(mouseaction[0]&GUI_ALT) clrs = true;
                     if(e->unfocus) e->unfocus = false;
                 }
-                else if(editing) fieldmode = FIELDCOMMIT;
+                else if(editing) fieldmode = e->mode != EDITORREADONLY && e->mode != EDITORFOREVER ? FIELDCOMMIT : FIELDSHOW;
             }
             if(focus)
             {
