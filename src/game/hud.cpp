@@ -559,15 +559,6 @@ namespace hud
     TVAR(IDF_PERSIST, privlocaloperatortex, "<grey>textures/privs/localoperator", 3);
     TVAR(IDF_PERSIST, privlocaladministratortex, "<grey>textures/privs/localadministrator", 3);
 
-    VAR(IDF_PERSIST|IDF_HEX, privnonecolour, 0, 0x888888, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, privplayercolour, 0, 0xAAAAAA, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, privsupportercolour, 0, 0x44FFFF, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, privmoderatorcolour, 0, 0x4444FF, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, privoperatorcolour, 0, 0x44FF44, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, privadministratorcolour, 0, 0xFF4444, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, privdevelopercolour, 0, 0x44FF88, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, privfoundercolour, 0, 0x8844FF, 0xFFFFFF);
-
     TVAR(IDF_PERSIST, modeeditingtex, "<grey>textures/modes/editing", 3);
     TVAR(IDF_PERSIST, modedeathmatchtex, "<grey>textures/modes/deathmatch", 3);
 
