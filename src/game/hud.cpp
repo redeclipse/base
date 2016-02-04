@@ -131,6 +131,7 @@ namespace hud
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, impulsetex, "<grey>textures/hud/impulse", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, impulsebgtex, "<grey>textures/hud/impulsebg", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, inventorytex, "<grey>textures/hud/inventory", 3);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, inventorybigtex, "<grey>textures/hud/inventorybig", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, inventorybartex, "<grey>textures/hud/inventorybar", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, flagtex, "<grey>textures/hud/flag", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, pointtex, "<grey>textures/hud/point", 3);
@@ -305,10 +306,10 @@ namespace hud
     FVAR(IDF_PERSIST, inventoryscoreshrinkmax, 0, 0.5f, 1);
     FVAR(IDF_PERSIST, inventoryblend, 0, 1, 1);
     FVAR(IDF_PERSIST, inventoryglow, 0, 0.05f, 1);
-    FVAR(IDF_PERSIST, inventorytextoffsetx, -1, -0.25f, 1);
+    FVAR(IDF_PERSIST, inventorytextoffsetx, -1, -0.3f, 1);
     FVAR(IDF_PERSIST, inventorytextoffsety, -1, -0.125f, 1);
 
-    VAR(IDF_PERSIST, inventorybg, 0, 1, 1);
+    VAR(IDF_PERSIST, inventorybg, 0, 1, 2);
     FVAR(IDF_PERSIST, inventorybgskew, 0, 0.05f, 1); // skew items inside by this much
     FVAR(IDF_PERSIST, inventorybgblend, 0, 0.25f, 1);
     FVAR(IDF_PERSIST, inventorybgskin, 0, 1, 1);
@@ -2507,7 +2508,7 @@ namespace hud
         bool pulse = inventoryflash && game::focus->state == CS_ALIVE && game::focus->health < heal;
         if(bg && sub == 0 && inventorybg)
         {
-            Texture *u = textureload(*inventorytex ? inventorytex : tex, 3);
+            Texture *u = textureload(inventorybg == 2 ? inventorybigtex : inventorytex, 3);
             float gr = 1, gb = 1, gg = 1, gf = fade*inventorybgblend;
             int glow = 0, bw = int(float(u->w)/float(u->h)*s);
             if(inventorytone) skewcolour(gr, gg, gb, inventorytone);
