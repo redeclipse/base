@@ -77,14 +77,17 @@ namespace capture
                     pos = f.spawnloc;
                     if(f.team == game::focus->team && !m_gsp3(game::gamemode, game::mutators) && !hasflags.empty())
                     {
-                        size *= 1.25f;
+                        int interval = lastmillis%500;
+                        float glow = interval >= 250 ? 1.f-((interval-250)/250.f) : interval/250.f;
+                        size *= 1+glow*0.25f;
+                        flashcolour(colour.r, colour.g, colour.b, 1.f, 1.f, 1.f, glow);
                         tex = hud::arrowtex;
                         arrow = true;
                     }
                     else if(f.owner || f.droptime) tex = hud::alerttex;
                 }
                 if(hud::radaraffinitynames > (arrow ? 0 : 1)) hud::drawblip(tex, arrow ? 3 : 2, w, h, size, fade, arrow ? 0 : -1, pos, colour, "little", "\f[%d]%s", TEAM(f.team, colour), k ? "flag" : "base");
-                else hud::drawblip(tex, arrow ? 3 : 2, w, h, hud::radaraffinitysize, fade, arrow ? 0 : -1, pos, colour);
+                else hud::drawblip(tex, arrow ? 3 : 2, w, h, size, fade, arrow ? 0 : -1, pos, colour);
             }
         }
     }

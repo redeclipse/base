@@ -123,7 +123,13 @@ namespace bomber
             else if(!m_gsp1(game::gamemode, game::mutators))
             {
                 area = 3;
-                if(isbombertarg(f, game::focus->team) && !hasbombs.empty()) size *= 1.25f;
+                if(isbombertarg(f, game::focus->team) && !hasbombs.empty())
+                {
+                    int interval = lastmillis%500;
+                    float glow = interval >= 250 ? 1.f-((interval-250)/250.f) : interval/250.f;
+                    size *= 1+glow*0.25f;
+                    flashcolour(colour.r, colour.g, colour.b, 1.f, 1.f, 1.f, glow);
+                }
             }
             hud::drawblip(isbomberaffinity(f) ? hud::bombtex : (isbombertarg(f, game::focus->team) ? hud::arrowtex : hud::pointtex), area, w, h, size, blend*hud::radaraffinityblend, isbombertarg(f, game::focus->team) ? 0 : -1, pos, colour);
         }
