@@ -138,7 +138,7 @@ namespace bomber
                 int millis = lastmillis%500;
                 float amt = millis <= 250 ? 1.f-(millis/250.f) : (millis-250)/250.f;
                 flashcolour(c.r, c.g, c.b, 1.f, 0.f, 0.f, amt);
-                hud::drawblip(hud::warningtex, area, w, h, size, blend*hud::radaraffinityblend*amt, 0, pos, c);
+                hud::drawblip(hud::warningtex, area, w, h, size*1.25f, blend*hud::radaraffinityblend*amt, 0, pos, c);
             }
         }
     }
@@ -367,7 +367,7 @@ namespace bomber
                     vec offset = vec(above).sub(camera1->o).rescale(-enttype[AFFINITY].radius*0.5f);
                     offset.z = max(offset.z, -1.0f);
                     offset.add(above);
-                    part_icon(offset, textureload(hud::warningtex, 3, true, false), enttype[AFFINITY].radius*0.5f, amt*blend, 0, 0, 1, c.tohexcolor());
+                    part_icon(offset, textureload(hud::warningtex, 3, true, false), enttype[AFFINITY].radius*0.75f, amt*blend, 0, 0, 1, c.tohexcolor());
                 }
                 above.z += enttype[AFFINITY].radius/4*trans;
                 defformatstring(info, "<super>%s base", TEAM(f.team, name));

@@ -341,7 +341,7 @@ GVAR(IDF_GAMEMOD, bomberholdlimit, 0, 0, VAR_MAX); // finish when score is this 
 GVAR(IDF_GAMEMOD, bomberbasketonly, 0, 1, 1); // prohibit touchdowns in basket game
 GVAR(IDF_GAMEMOD, bomberattackreset, 0, 1, 1); // defenders reset rather than carry the ball
 GVAR(IDF_GAMEMOD, bomberattackwinner, 0, 1, 1); // declare the winner when the final team exceeds best score
-GFVAR(IDF_GAMEMOD, bomberbasketmindist, 0, 192, FVAR_MAX); // prohibit baskets less than this far away
+GFVAR(IDF_GAMEMOD, bomberbasketmindist, 0, 128, FVAR_MAX); // prohibit baskets less than this far away
 GVAR(IDF_GAMEMOD, bomberwait, 0, 1000, VAR_MAX); // delay before bomb spawns
 GVAR(IDF_GAMEMOD, bomberresetdelay, 0, 15000, VAR_MAX);
 GVAR(IDF_GAMEMOD, bomberpickupdelay, 500, 7500, VAR_MAX);
