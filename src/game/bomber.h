@@ -225,7 +225,7 @@ namespace bomber
     extern void dropaffinity(gameent *d, int i, const vec &droploc, const vec &inertia, int target = -1);
     extern void scoreaffinity(gameent *d, int relay, int goal, int score);
     extern void takeaffinity(gameent *d, int i);
-    extern void resetaffinity(int i, int enabled);
+    extern void resetaffinity(int i, int value, const vec &pos);
     extern void reset();
     extern void setup();
     extern void setscore(int team, int total);

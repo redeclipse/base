@@ -64,6 +64,9 @@ struct captureservmode : capturestate, servmode
     void moved(clientinfo *ci, const vec &oldpos, const vec &newpos)
     {
         if(!canplay(hasflaginfo) || ci->actortype >= A_ENEMY) return;
+        if(ci->floorpos != vec(-1, -1, -1))
+            loopv(flags) if(flags[i].owner == ci->clientnum)
+                (flags[i].floorpos = ci->floorpos).z += (enttype[AFFINITY].radius/2)+1;
         if(G(capturethreshold) > 0 && oldpos.dist(newpos) >= G(capturethreshold))
             dropaffinity(ci, oldpos, vec(ci->vel).add(ci->falling));
         if(!m_gsp3(gamemode, mutators)) loopv(flags) if(flags[i].owner == ci->clientnum)
@@ -72,7 +75,7 @@ struct captureservmode : capturestate, servmode
             loopvk(flags)
             {
                 flag &f = flags[k];
-                if(f.team == ci->team && (f.owner < 0 || (f.owner == ci->clientnum && i == k && gamemillis-f.taketime >= G(capturepickupdelay))) && !f.droptime && (!f.nextreset || r.team != ci->team) && newpos.dist(f.spawnloc) <= enttype[AFFINITY].radius*2/3)
+                if(f.team == ci->team && (f.owner < 0 || (f.owner == ci->clientnum && i == k && gamemillis-f.taketime >= G(capturepickupdelay))) && !f.droptime && newpos.dist(f.spawnloc) <= enttype[AFFINITY].radius*2/3)
                 {
                     capturestate::returnaffinity(i, gamemillis);
                     if(r.team != ci->team)
@@ -96,7 +99,7 @@ struct captureservmode : capturestate, servmode
     {
         if(!canplay(hasflaginfo) || !flags.inrange(i) || ci->state != CS_ALIVE || !ci->team || ci->actortype >= A_ENEMY) return;
         flag &f = flags[i];
-        if(f.owner >= 0 || (f.team == ci->team && (f.nextreset || m_gsp2(gamemode, mutators) || (m_gsp1(gamemode, mutators) && !f.droptime)))) return;
+        if(f.owner >= 0 || (f.team == ci->team && (m_gsp2(gamemode, mutators) || (m_gsp1(gamemode, mutators) && !f.droptime)))) return;
         if(f.lastowner == ci->clientnum && f.droptime && gamemillis-f.droptime <= G(capturepickupdelay)) return;
         if(m_gsp1(gamemode, mutators) && f.team == ci->team)
         {
@@ -120,12 +123,18 @@ struct captureservmode : capturestate, servmode
         f.votes.add(ci->clientnum);
         if(f.votes.length() >= int(floorf(numclients()*0.5f)))
         {
-            f.nextreset = gamemillis;
-            clientinfo *last = (clientinfo *)getinfo(f.lastowner);
-            if(last && last->team == f.team) f.nextreset += G(captureteampenalty);
-            else f.nextreset += G(captureresetpenalty);
-            capturestate::returnaffinity(i, gamemillis);
-            sendf(-1, 1, "ri3", N_RESETAFFIN, i, 2);
+            conoutf("reset affinity: %d [%.2f,%.2f,%.2f]", i, f.floorpos.x, f.floorpos.y, f.floorpos.z);
+            if(f.floorpos != vec(-1, -1, -1))
+            {
+                ivec pos = ivec(vec(f.floorpos).mul(DMF));
+                capturestate::dropaffinity(i, f.floorpos, vec(0, 0, 1), gamemillis, gamemillis-f.droptime);
+                sendf(-1, 1, "ri3i3", N_RESETAFFIN, i, 2, pos.x, pos.y, pos.z);
+            }
+            else
+            {
+                capturestate::returnaffinity(i, gamemillis);
+                sendf(-1, 1, "ri3", N_RESETAFFIN, i, 1);
+            }
         }
     }
 
@@ -145,7 +154,6 @@ struct captureservmode : capturestate, servmode
         loopv(flags)
         {
             flag &f = flags[i];
-            if(f.nextreset && gamemillis > f.nextreset) f.nextreset = 0;
             if(m_gsp3(gamemode, mutators) && f.owner >= 0)
             {
                 clientinfo *ci = (clientinfo *)getinfo(f.owner);
@@ -161,7 +169,7 @@ struct captureservmode : capturestate, servmode
             else if(f.owner < 0 && f.droptime && f.dropleft(gamemillis, capturestore) >= capturedelay)
             {
                 capturestate::returnaffinity(i, gamemillis);
-                sendf(-1, 1, "ri3", N_RESETAFFIN, i, 2);
+                sendf(-1, 1, "ri3", N_RESETAFFIN, i, 1);
             }
         }
     }

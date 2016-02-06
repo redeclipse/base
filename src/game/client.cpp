@@ -1655,28 +1655,37 @@ namespace client
         uchar physstate = d->physstate | ((d->move&3)<<3) | ((d->strafe&3)<<5) | ((d->turnside&3)<<7);
         q.put(physstate);
         putuint(q, d->impulse[IM_METER]);
-        ivec o = ivec(vec(d->o.x, d->o.y, d->o.z-d->height).mul(DMF));
+        ivec o = ivec(vec(d->o.x, d->o.y, d->o.z-d->height).mul(DMF)), f = ivec(vec(d->floorpos.x, d->floorpos.y, d->floorpos.z).mul(DMF));
         uint vel = min(int(d->vel.magnitude()*DVELF), 0xFFFF), fall = min(int(d->falling.magnitude()*DVELF), 0xFFFF);
         // 3 bits position, 1 bit velocity, 3 bits falling
         uint flags = 0;
         if(o.x < 0 || o.x > 0xFFFF) flags |= 1<<0;
         if(o.y < 0 || o.y > 0xFFFF) flags |= 1<<1;
         if(o.z < 0 || o.z > 0xFFFF) flags |= 1<<2;
-        if(vel > 0xFF) flags |= 1<<3;
+        if(f.x < 0 || f.x > 0xFFFF) flags |= 1<<3;
+        if(f.y < 0 || f.y > 0xFFFF) flags |= 1<<4;
+        if(f.z < 0 || f.z > 0xFFFF) flags |= 1<<5;
+        if(vel > 0xFF) flags |= 1<<6;
         if(fall > 0)
         {
-            flags |= 1<<4;
-            if(fall > 0xFF) flags |= 1<<5;
-            if(d->falling.x || d->falling.y || d->falling.z > 0) flags |= 1<<6;
+            flags |= 1<<7;
+            if(fall > 0xFF) flags |= 1<<8;
+            if(d->falling.x || d->falling.y || d->falling.z > 0) flags |= 1<<9;
         }
-        if(d->conopen) flags |= 1<<8;
-        loopk(AC_TOTAL) if(d->action[k]) flags |= 1<<(9+k);
+        if(d->conopen) flags |= 1<<10;
+        loopk(AC_TOTAL) if(d->action[k]) flags |= 1<<(11+k);
         putuint(q, flags);
         loopk(3)
         {
             q.put(o[k]&0xFF);
             q.put((o[k]>>8)&0xFF);
             if(o[k] < 0 || o[k] > 0xFFFF) q.put((o[k]>>16)&0xFF);
+        }
+        loopk(3)
+        {
+            q.put(f[k]&0xFF);
+            q.put((f[k]>>8)&0xFF);
+            if(f[k] < 0 || f[k] > 0xFFFF) q.put((f[k]>>16)&0xFF);
         }
         float yaw = d->yaw, pitch = d->pitch;
         if(d == game::player1 && game::thirdpersonview(true, d))
@@ -1881,25 +1890,30 @@ namespace client
             case N_POS:                        // position of another client
             {
                 int lcn = getuint(p), physstate = p.get(), meter = getuint(p), flags = getuint(p);
-                vec o, vel, falling;
+                vec o, f, vel, falling;
                 float yaw, pitch, roll;
                 loopk(3)
                 {
                     int n = p.get(); n |= p.get()<<8; if(flags&(1<<k)) { n |= p.get()<<16; if(n&0x800000) n |= -1<<24; }
                     o[k] = n/DMF;
                 }
+                loopk(3)
+                {
+                    int n = p.get(); n |= p.get()<<8; if(flags&(1<<(k+3))) { n |= p.get()<<16; if(n&0x800000) n |= -1<<24; }
+                    f[k] = n/DMF;
+                }
                 int dir = p.get(); dir |= p.get()<<8;
                 yaw = dir%360;
                 pitch = clamp(dir/360, 0, 180)-90;
                 roll = clamp(int(p.get()), 0, 180)-90;
-                int mag = p.get(); if(flags&(1<<3)) mag |= p.get()<<8;
+                int mag = p.get(); if(flags&(1<<6)) mag |= p.get()<<8;
                 dir = p.get(); dir |= p.get()<<8;
                 vecfromyawpitch(dir%360, clamp(dir/360, 0, 180)-90, 1, 0, vel);
                 vel.mul(mag/DVELF);
-                if(flags&(1<<4))
+                if(flags&(1<<7))
                 {
-                    mag = p.get(); if(flags&(1<<5)) mag |= p.get()<<8;
-                    if(flags&(1<<6))
+                    mag = p.get(); if(flags&(1<<8)) mag |= p.get()<<8;
+                    if(flags&(1<<9))
                     {
                         dir = p.get(); dir |= p.get()<<8;
                         vecfromyawpitch(dir%360, clamp(dir/360, 0, 180)-90, 1, 0, falling);
@@ -1918,16 +1932,17 @@ namespace client
                 d->strafe = (physstate>>5)&2 ? -1 : (physstate>>5)&1;
                 d->turnside = (physstate>>7)&2 ? -1 : (physstate>>7)&1;
                 d->impulse[IM_METER] = meter;
-                d->conopen = flags&(1<<8) ? true : false;
+                d->conopen = flags&(1<<10) ? true : false;
                 loopk(AC_TOTAL)
                 {
                     bool val = d->action[k];
-                    d->action[k] = flags&(1<<(9+k)) ? true : false;
+                    d->action[k] = flags&(1<<(11+k)) ? true : false;
                     if(val != d->action[k]) d->actiontime[k] = lastmillis;
                 }
                 vec oldpos(d->o);
                 d->o = o;
                 d->o.z += d->height;
+                d->floorpos = f;
                 d->vel = vel;
                 d->falling = falling;
                 d->physstate = physstate&7;
@@ -3008,8 +3023,10 @@ namespace client
                 case N_RESETAFFIN:
                 {
                     int flag = getint(p), value = getint(p);
-                    if(m_capture(game::gamemode)) capture::resetaffinity(flag, value);
-                    else if(m_bomber(game::gamemode)) bomber::resetaffinity(flag, value);
+                    vec resetpos(-1, -1, -1);
+                    if(value == 2) loopk(3) resetpos[k] = getint(p)/DMF;
+                    if(m_capture(game::gamemode)) capture::resetaffinity(flag, value, resetpos);
+                    else if(m_bomber(game::gamemode)) bomber::resetaffinity(flag, value, resetpos);
                     break;
                 }
 

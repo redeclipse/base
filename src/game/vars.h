@@ -293,8 +293,6 @@ GVAR(IDF_GAMEMOD, captureresetdelay, 0, 30000, VAR_MAX);
 GVAR(IDF_GAMEMOD, capturedefenddelay, 0, 10000, VAR_MAX);
 GVAR(IDF_GAMEMOD, captureprotectdelay, 0, 15000, VAR_MAX);
 GVAR(IDF_GAMEMOD, capturepickupdelay, 500, 2500, VAR_MAX);
-GVAR(IDF_GAMEMOD, captureteampenalty, -1, 7500, VAR_MAX);
-GVAR(IDF_GAMEMOD, captureresetpenalty, -1, 2500, VAR_MAX);
 GFVAR(IDF_GAMEMOD, capturecarryspeed, 0, 0.9f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, capturedropheight, 0, 8, FVAR_MAX);
 GVAR(IDF_GAMEMOD, capturepoints, 0, 5, VAR_MAX); // points added to score

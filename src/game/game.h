@@ -4,11 +4,11 @@
 #include "engine.h"
 
 #define VERSION_GAMEID "fps"
-#define VERSION_GAME 227
+#define VERSION_GAME 228
 #define VERSION_DEMOMAGIC "RED_ECLIPSE_DEMO"
 
 #define MAXAI 256
-#define MAXPLAYERS (MAXCLIENTS + MAXAI*2)
+#define MAXPLAYERS (MAXCLIENTS+MAXAI*2)
 #define MAXPARAMS 256
 
 // network quantization scale

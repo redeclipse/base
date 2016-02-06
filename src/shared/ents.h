@@ -79,7 +79,7 @@ enum { COLLIDE_NONE = 0, COLLIDE_ELLIPSE, COLLIDE_OBB, COLLIDE_ELLIPSE_PRECISE }
 
 struct baseent
 {
-    vec o, vel, falling;                        // origin and velocity
+    vec o, vel, falling, floorpos;              // origin and velocity
     float yaw, pitch, roll;
     uchar state;                                // one of CS_* above
     int inmaterial;
@@ -89,6 +89,7 @@ struct baseent
     void reset()
     {
         o = vel = falling = vec(0, 0, 0);
+        floorpos = vec(-1, -1, -1);
         yaw = pitch = roll = 0;
         inmaterial = 0;
     }

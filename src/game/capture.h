@@ -13,8 +13,9 @@ struct capturestate
         vec droploc, inertia, spawnloc;
         int team, yaw, pitch, droptime, taketime, dropoffset;
 #ifdef GAMESERVER
-        int owner, lastowner, nextreset;
+        int owner, lastowner;
         vector<int> votes;
+        vec floorpos;
 #else
         gameent *owner, *lastowner;
         projent *proj;
@@ -30,9 +31,9 @@ struct capturestate
             inertia = vec(0, 0, 0);
             droploc = spawnloc = vec(-1, -1, -1);
 #ifdef GAMESERVER
-            nextreset = 0;
             owner = lastowner = -1;
             votes.shrink(0);
+            floorpos = vec(-1, -1, -1);
 #else
             owner = lastowner = NULL;
             proj = NULL;
@@ -184,6 +185,7 @@ struct capturestate
 #ifdef GAMESERVER
         f.owner = -1;
         f.votes.shrink(0);
+        f.floorpos = vec(-1, -1, -1);
 #else
         f.pickuptime = f.movetime = 0;
         f.owner = NULL;
@@ -204,7 +206,7 @@ namespace capture
     extern void scoreaffinity(gameent *d, int relay, int goal, int score);
     extern void returnaffinity(gameent *d, int i);
     extern void takeaffinity(gameent *d, int i);
-    extern void resetaffinity(int i, int value);
+    extern void resetaffinity(int i, int value, const vec &pos);
     extern void reset();
     extern void setup();
     extern void setscore(int team, int total);

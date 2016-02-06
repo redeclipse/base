@@ -1250,14 +1250,29 @@ namespace game
         loopv(d->icons) if(lastmillis-d->icons[i].millis > d->icons[i].fade) d->icons.remove(i--);
     }
 
-
-    void otherplayers()
+    void checkfloor(gameent *d)
     {
+        vec pos = d->feetpos();
+        if((d->physstate >= PHYS_SLOPE || d->onladder || physics::liquidcheck(d)) && pos.z > 0)
+        {
+            int mat = lookupmaterial(pos);
+            if(!isclipped(mat&MATF_VOLUME) && ((mat&MATF_VOLUME) != int(MAT_LAVA)) && !(mat&MAT_DEATH)) d->floorpos = pos;
+        }
+    }
+
+    void checkplayers()
+    {
+        checkfloor(player1);
         loopv(players) if(players[i])
         {
             gameent *d = players[i];
+            if(d->ai)
+            {
+                checkfloor(d);
+                continue;
+            }
             const int lagtime = totalmillis-d->lastupdate;
-            if(d->ai || !lagtime || !gs_playing(gamestate)) continue;
+            if(!lagtime || !gs_playing(gamestate)) continue;
             //else if(lagtime > 1000) continue;
             physics::smoothplayer(d, 1, false);
             if(gs_playing(gamestate) && (d->state == CS_DEAD || d->state == CS_WAITING)) entities::checkitems(d);
@@ -2845,7 +2860,7 @@ namespace game
                 else if(m_bomber(gamemode)) bomber::update();
                 if(player1->state == CS_ALIVE) weapons::shoot(player1, worldpos);
             }
-            otherplayers();
+            checkplayers();
             checkannounce();
             flushdamagemerges();
             if(!menuactive())

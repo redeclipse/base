@@ -496,7 +496,7 @@ namespace capture
         st.returnaffinity(i, lastmillis);
     }
 
-    void resetaffinity(int i, int value)
+    void resetaffinity(int i, int value, const vec &pos)
     {
         if(!st.flags.inrange(i)) return;
         capturestate::flag &f = st.flags[i];
@@ -505,7 +505,8 @@ namespace capture
             affinityeffect(i, T_NEUTRAL, f.droploc, f.above, 3, "RESET");
             game::announcef(S_V_FLAGRESET, CON_SELF, NULL, true, "\fathe %s flag has been reset", game::colourteam(f.team, "flagtex"));
         }
-        st.returnaffinity(i, lastmillis);
+        if(value == 2) st.dropaffinity(i, pos, vec(0, 0, 1), lastmillis, lastmillis-f.droptime);
+        else st.returnaffinity(i, lastmillis);
     }
 
     void scoreaffinity(gameent *d, int relay, int goal, int score)
