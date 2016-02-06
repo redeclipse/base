@@ -71,11 +71,11 @@ struct captureservmode : capturestate, servmode
             dropaffinity(ci, oldpos, vec(ci->vel).add(ci->falling));
         if(!m_gsp3(gamemode, mutators)) loopv(flags) if(flags[i].owner == ci->clientnum)
         {
-            flag &r = flags[i];
+            flag &r = flags[i]; // held flag
             loopvk(flags)
             {
-                flag &f = flags[k];
-                if(f.team == ci->team && (f.owner < 0 || (f.owner == ci->clientnum && i == k && gamemillis-f.taketime >= G(capturepickupdelay))) && !f.droptime && newpos.dist(f.spawnloc) <= enttype[AFFINITY].radius*2/3)
+                flag &f = flags[k]; // goal flag
+                if(f.team == ci->team && (f.owner < 0 || (f.owner == ci->clientnum && (i != k || gamemillis-f.taketime >= G(capturepickupdelay)))) && !f.droptime && newpos.dist(f.spawnloc) <= enttype[AFFINITY].radius*2/3)
                 {
                     capturestate::returnaffinity(i, gamemillis);
                     if(r.team != ci->team)
