@@ -2043,6 +2043,8 @@ namespace game
         if((d == player1 || d->ai) && d->state == CS_ALIVE && d->suicided < 0)
         {
             burn(d, -1, flags);
+            bleed(d, -1, flags);
+            shock(d, -1, flags);
             client::addmsg(N_SUICIDE, "ri3", d->clientnum, flags, d->inmaterial);
             d->suicided = lastmillis;
         }

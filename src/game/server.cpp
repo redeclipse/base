@@ -4080,7 +4080,7 @@ namespace server
                                 v->weapstats[m->lastresweapon[WR_BURN]].damage1 += realdamage;
                             statweap = m->lastresweapon[WR_BURN];
                         }
-                        else if(flags&HIT_BLEED)
+                        if(flags&HIT_BLEED)
                         {
                             statalt = m->lastresalt[WR_BLEED];
                             if(statalt)
@@ -4089,7 +4089,7 @@ namespace server
                                 v->weapstats[m->lastresweapon[WR_BLEED]].damage1 += realdamage;
                             statweap = m->lastresweapon[WR_BLEED];
                         }
-                        else if(flags&HIT_SHOCK)
+                        if(flags&HIT_SHOCK)
                         {
                             statalt = m->lastresalt[WR_SHOCK];
                             if(statalt)
@@ -4349,6 +4349,16 @@ namespace server
         {
             ci->lastres[WR_BURN] = ci->lastrestime[WR_BURN] = gamemillis;
             ci->lastresowner[WR_BURN] = ci->clientnum;
+        }
+        if(G(bleedtime) && flags&HIT_BLEED)
+        {
+            ci->lastres[WR_BLEED] = ci->lastrestime[WR_BLEED] = gamemillis;
+            ci->lastresowner[WR_BLEED] = ci->clientnum;
+        }
+        if(G(shocktime) && flags&HIT_SHOCK)
+        {
+            ci->lastres[WR_SHOCK] = ci->lastrestime[WR_SHOCK] = gamemillis;
+            ci->lastresowner[WR_SHOCK] = ci->clientnum;
         }
         static vector<int> dmglog; dmglog.setsize(0);
         gethistory(ci, ci, gamemillis, dmglog, true, 1);
@@ -4836,13 +4846,19 @@ namespace server
             mutate(smuts, mut->checkclient(ci));
             if(ci->state == CS_ALIVE)
             {
+                // hurt material
                 if((ci->inmaterial&MATF_FLAGS)&MAT_HURT && (!ci->lasthurt || gamemillis-ci->lasthurt >= G(hurtdelay)))
                 {
-                    dodamage(ci, ci, G(hurtdamage), -1, HIT_MATERIAL, ci->inmaterial);
+                    int flags = HIT_MATERIAL;
+                    if(G(hurtresidual)&WR(BURN)) flags |= HIT_BURN;
+                    if(G(hurtresidual)&WR(BLEED)) flags |= HIT_BLEED;
+                    if(G(hurtresidual)&WR(SHOCK)) flags |= HIT_SHOCK;
+                    dodamage(ci, ci, G(hurtdamage), -1, flags, ci->inmaterial);
                     if(!ci->lasthurt) ci->lasthurt = gamemillis;
                     else ci->lasthurt += G(hurtdelay);
                     if(ci->state != CS_ALIVE) continue;
                 }
+                // burning residual
                 if(ci->burning(gamemillis, G(burntime)))
                 {
                     if(gamemillis-ci->lastrestime[WR_BURN] >= G(burndelay))
@@ -4854,6 +4870,7 @@ namespace server
                     }
                 }
                 else if(ci->lastres[WR_BURN]) ci->lastres[WR_BURN] = ci->lastrestime[WR_BURN] = 0;
+                // bleeding residual
                 if(ci->bleeding(gamemillis, G(bleedtime)))
                 {
                     if(gamemillis-ci->lastrestime[WR_BLEED] >= G(bleeddelay))
@@ -4865,6 +4882,7 @@ namespace server
                     }
                 }
                 else if(ci->lastres[WR_BLEED]) ci->lastres[WR_BLEED] = ci->lastrestime[WR_BLEED] = 0;
+                // shocking residual
                 if(ci->shocking(gamemillis, G(shocktime)))
                 {
                     if(gamemillis-ci->lastrestime[WR_SHOCK] >= G(shockdelay))
@@ -4876,6 +4894,7 @@ namespace server
                     }
                 }
                 else if(ci->lastres[WR_SHOCK]) ci->lastres[WR_SHOCK] = ci->lastrestime[WR_SHOCK] = 0;
+                // regen wear-off
                 if(m_regen(gamemode, mutators) && ci->actortype < A_ENEMY)
                 {
                     int total = m_health(gamemode, mutators, ci->actortype), amt = G(regenhealth),

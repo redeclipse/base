@@ -9,8 +9,8 @@ namespace hud
 
     struct dhloc
     {
-        int clientnum, outtime, damage; vec dir, colour;
-        dhloc(int a, int t, int d, const vec &p, const vec &c) : clientnum(a), outtime(t), damage(d), dir(p), colour(c) {}
+        int clientnum, outtime, damage, colour; vec dir;
+        dhloc(int a, int t, int d, const vec &p, int c) : clientnum(a), outtime(t), damage(d), colour(c), dir(p) {}
     };
     vector<dhloc> damagelocs, hitlocs;
     VAR(IDF_PERSIST, damageresiduefade, 0, 500, VAR_MAX);
@@ -500,8 +500,10 @@ namespace hud
     FVAR(IDF_PERSIST, radardamageblend, 0, 0.85f, 1);
     VAR(IDF_PERSIST, radardamagemin, 1, 10, VAR_MAX);
     VAR(IDF_PERSIST, radardamagemax, 1, 100, VAR_MAX);
-    VAR(IDF_PERSIST|IDF_HEX, radardamagecolour, 0, 0xFF2222, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, radardamageburncolour, 0, 0xFF8822, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, radardamagecolour, -PULSE_MAX, 0xFF4444, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, radardamageburncolour, -PULSE_MAX, -PULSE_FIRE, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, radardamagebleedcolour, -PULSE_MAX, 0xFF0000, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, radardamageshockcolour, -PULSE_MAX, -PULSE_SHOCK, 0xFFFFFF);
 
     VAR(IDF_PERSIST, radarhits, 0, 1, 2);
     VAR(IDF_PERSIST, radarhitsheal, 0, 1, 1);
@@ -520,9 +522,10 @@ namespace hud
     FVAR(IDF_PERSIST, radarhitsglowscale, 0, 2, 1000);
     FVAR(IDF_PERSIST, radarhitsglowcolour, 0, 0.75f, 5);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, radarhitsglowtex, "textures/guihover", 3);
-    VAR(IDF_PERSIST|IDF_HEX, radarhitsdamagecolour, 0, 0xFF4444, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, radarhitsburncolour, 0, 0xFF8822, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, radarhitshealcolour, 0, 0xFF44FF, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, radarhitscolour, -PULSE_MAX, 0xFF4444, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, radarhitsburncolour, -PULSE_MAX, -PULSE_FIRE, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, radarhitsbleedcolour, -PULSE_MAX, 0xFF0000, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, radarhitsshockcolour, -PULSE_MAX, -PULSE_SHOCK, 0xFFFFFF);
 
     VAR(IDF_PERSIST, showeditradar, 0, 1, 1);
     VAR(IDF_PERSIST, editradarstyle, 0, 2, 3); // 0 = compass-sectional, 1 = compass-distance, 2 = screen-space, 3 = right-corner-positional
@@ -756,8 +759,12 @@ namespace hud
     {
         if(!n) return;
         damageresidue = clamp(damageresidue+(n*(flags&HIT_BLEED ? 3 : 1)), 0, 200);
-        vec colour = wr_burns(weap, flags) ? vec::hexcolor(radardamageburncolour) : (game::nogore || game::bloodscale <= 0 ? vec(1, 0.25f, 1) : vec::hexcolor(radardamagecolour)),
-            dir = vec(loc).sub(camera1->o).normalize();
+        int colour = radardamagecolour;
+        if(game::nogore || game::bloodscale <= 0) colour = 0xFF44FF;
+        else if(wr_burns(weap, flags)) colour = radardamageburncolour;
+        else if(wr_bleeds(weap, flags)) colour = radardamagebleedcolour;
+        else if(wr_shocks(weap, flags)) colour = radardamageshockcolour;
+        vec dir = vec(loc).sub(camera1->o).normalize();
         loopv(damagelocs)
         {
             dhloc &d = damagelocs[i];
@@ -774,7 +781,11 @@ namespace hud
     void hit(int n, const vec &loc, gameent *v, int weap, int flags)
     {
         if(!n) return;
-        vec colour = n <= 0 ? vec::hexcolor(radarhitshealcolour) : (wr_burns(weap, flags) ? vec::hexcolor(radarhitsburncolour) : (game::nogore || game::bloodscale <= 0 ? vec(1, 1, 1) : vec::hexcolor(radarhitsdamagecolour)));
+        int colour = radarhitscolour;
+        if(game::nogore || game::bloodscale <= 0) colour = 0xFF44FF;
+        else if(wr_burns(weap, flags)) colour = radarhitsburncolour;
+        else if(wr_bleeds(weap, flags)) colour = radarhitsbleedcolour;
+        else if(wr_shocks(weap, flags)) colour = radarhitsshockcolour;
         loopv(hitlocs)
         {
             dhloc &d = hitlocs[i];
@@ -2098,7 +2109,7 @@ namespace hud
                 float amt = millis <= 500 ? 1.f-(millis/500.f) : (millis-500)/500.f;
                 flashcolour(colour[0].r, colour[0].g, colour[0].b, 1.f, 1.f, 1.f, amt);
             }
-            else if(burning) colour[0] = game::rescolour(d, PULSE_BURN);
+            else if(burning) colour[0] = game::rescolour(d, PULSE_FIRE);
             else if(bleeding)
             {
                 int millis = lastmillis%1000;
@@ -2240,11 +2251,11 @@ namespace hud
                 range = clamp(max(d.damage, radardamagemin)/float(max(radardamagemax-radardamagemin, 1)), radardamagemin/100.f, 1.f),
                 fade = clamp(radardamageblend*blend, min(radardamageblend*radardamagemin/100.f, 1.f), radardamageblend)*amt,
                 size = clamp(range*radardamagesize, min(radardamagesize*radardamagemin/100.f, 1.f), radardamagesize)*amt;
-            vec dir = d.dir;
+            vec dir = d.dir, colour = vec::hexcolor(d.colour < 0 ? pulsecols[-1-d.colour][clamp((lastmillis/100)%PULSECOLOURS, 0, PULSECOLOURS-1)] : d.colour);
             if(e == game::focus) d.dir = vec(e->yaw*RAD, 0.f).neg();
             vec o = vec(camera1->o).add(vec(dir).mul(radarrange()));
-            if(radardamage >= 5) drawblip(hurttex, 2+size/3, w, h, size, fade, 0, o, d.colour, "tiny", "%s +%d", e ? game::colourname(e) : "?", d.damage);
-            else drawblip(hurttex, 2+size/3, w, h, size, fade, 0, o, d.colour);
+            if(radardamage >= 5) drawblip(hurttex, 2+size/3, w, h, size, fade, 0, o, colour, "tiny", "%s +%d", e ? game::colourname(e) : "?", d.damage);
+            else drawblip(hurttex, 2+size/3, w, h, size, fade, 0, o, colour);
         }
     }
 
@@ -2280,15 +2291,16 @@ namespace hud
                 fade *= 1-(offset/float(radarhitsfade));
             }
             defformatstring(text, "%c%d", d.damage > 0 ? '-' : (d.damage < 0 ? '+' : '~'), d.damage < 0 ? 0-d.damage : d.damage);
+            vec colour = vec::hexcolor(d.colour < 0 ? pulsecols[-1-d.colour][clamp((lastmillis/100)%PULSECOLOURS, 0, PULSECOLOURS-1)] : d.colour);
             if(radarhitsglow)
             {
                 float width = 0, height = 0;
                 text_boundsf(text, width, height, 0, 0, -1, TEXT_CENTERED);
-                gle::colorf(d.colour.r*radarhitsglowcolour, d.colour.g*radarhitsglowcolour, d.colour.b*radarhitsglowcolour, fade*radarhitsglowblend);
+                gle::colorf(colour.r*radarhitsglowcolour, colour.g*radarhitsglowcolour, colour.b*radarhitsglowcolour, fade*radarhitsglowblend);
                 settexture(radarhitsglowtex);
                 drawtexture(hx-(width*radarhitsglowscale*0.5f), hy-(height*radarhitsglowscale*0.25f), width*radarhitsglowscale, height*radarhitsglowscale);
             }
-            draw_textx("%s", hx, hy, 0, 0, int(d.colour.r*255), int(d.colour.g*255), int(d.colour.b*255), int(fade*255), TEXT_CENTERED, -1, -1, text);
+            draw_textx("%s", hx, hy, 0, 0, int(colour.r*255), int(colour.g*255), int(colour.b*255), int(fade*255), TEXT_CENTERED, -1, -1, text);
         }
         pophudmatrix();
         popfont();
