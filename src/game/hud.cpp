@@ -225,6 +225,8 @@ namespace hud
     FVAR(IDF_PERSIST, crosshairthrob, 1e-4f, 0.1f, 1000);
     TVAR(IDF_PERSIST|IDF_PRELOAD, pointertex, "textures/hud/pointer", 3);
     TVAR(IDF_PERSIST|IDF_PRELOAD, guicursortex, "textures/hud/cursor", 3);
+    TVAR(IDF_PERSIST|IDF_PRELOAD, guicursorhovertex, "textures/hud/cursorhover", 3);
+    TVAR(IDF_PERSIST|IDF_PRELOAD, guicursorinputtex, "textures/hud/cursorinput", 3);
 
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, crosshairtex, "crosshairs/cross-01", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, hithairtex, "crosshairs/cross-01-hit", 3);
@@ -884,7 +886,16 @@ namespace hud
         switch(index)
         {
             case POINTER_RELATIVE: return pointertex;
-            case POINTER_GUI: return guicursortex;
+            case POINTER_GUI:
+            {
+                switch(guicursortype)
+                {
+                    case 2: return guicursorinputtex; break;
+                    case 1: return guicursorhovertex; break;
+                    case 0: default: break;
+                }
+                return guicursortex;
+            }
             case POINTER_EDIT: return editcursortex;
             case POINTER_SPEC: return game::tvmode() ? tvcursortex : speccursortex;
             case POINTER_HAIR:

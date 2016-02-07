@@ -594,8 +594,11 @@ struct guient
     virtual void pushlist(bool merge = false) {}
     virtual int poplist() { return 0; }
 
-    virtual void allowhitfx(bool on) = 0;
-    virtual void allowskinfx(bool on) = 0;
+    virtual int setcursortype(int type = 0) = 0;
+    virtual int getcursortype() = 0;
+    virtual bool allowcursorfx(bool on) = 0;
+    virtual bool allowhitfx(bool on) = 0;
+    virtual bool allowskinfx(bool on) = 0;
     virtual bool visibletab() = 0;
     virtual bool visible() = 0;
     virtual bool shouldtab() { return false; }

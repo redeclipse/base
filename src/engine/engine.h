@@ -676,7 +676,7 @@ extern bool limitsky();
 extern int mouseaction[2];
 extern bool guiactionon;
 
-extern int guilayoutpass, guiskinsize, guislidersize, guisepsize, guispacesize, guitooltipwidth, guistatuswidth,
+extern int guilayoutpass, guicursortype, guiskinsize, guislidersize, guisepsize, guispacesize, guitooltipwidth, guistatuswidth,
     guishadow, guiclicktab, guitabborder, guitextblend, guitextfade, guiscaletime, guiskinned, guibgcolour, guibordercolour,
     guihovercolour, guistatusline, guitooltips, guitooltiptime, guitooltipfade, guitooltipcolour, guitooltipbordercolour, guitooltipborderskin,
     guifieldbgcolour, guifieldbordercolour, guifieldactivecolour, guislidercolour, guisliderbordercolour, guisliderborderskin, guislidermarkcolour,

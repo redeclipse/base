@@ -3,6 +3,7 @@
 int uimillis = -1;
 
 VAR(IDF_READONLY, guilayoutpass, 1, 0, -1);
+VAR(0, guicursortype, 0, 0, 2);
 bool guiactionon = false;
 int mouseaction[2] = {0};
 
@@ -91,7 +92,7 @@ struct gui : guient
     static vector<list> lists;
     static float hitx, hity;
     static int curdepth, curlist, xsize, ysize, curx, cury, fontdepth, mergelist, mergedepth;
-    static bool hitfx, skinfx;
+    static bool hitfx, skinfx, cursorfx;
 
     static void reset()
     {
@@ -105,8 +106,11 @@ struct gui : guient
 
     static int ty, tx, tpos, *tcurrent, tcolor; //tracking tab size and position since uses different layout method...
 
-    void allowhitfx(bool on) { hitfx = on; }
-    void allowskinfx(bool on) { skinfx = on; }
+    int setcursortype(int type) { return guicursortype = type; }
+    int getcursortype() { return guicursortype; }
+    bool allowcursorfx(bool on) { return hitfx = on; }
+    bool allowhitfx(bool on) { return cursorfx = on; }
+    bool allowskinfx(bool on) { return skinfx = on; }
     bool visibletab() { return !tcurrent || tpos == *tcurrent; }
     bool visible() { return !guilayoutpass && visibletab(); }
 
@@ -477,6 +481,7 @@ struct gui : guient
                 glBindTexture(GL_TEXTURE_2D, overlaytex->id);
                 rect_(xi - xpad, yi - ypad, xs + 2*xpad, ys + 2*ypad, 0);
             }
+            if(hit && hitfx && cursorfx && !guicursortype) guicursortype = 1;
         }
         return layout(size+guishadow, size+guishadow);
     }
@@ -525,6 +530,7 @@ struct gui : guient
                 glBindTexture(GL_TEXTURE_2D, overlaytex->id);
                 rect_(xi - xpad, yi - ypad, xs + 2*xpad, ys + 2*ypad, 0);
             }
+            if(hit && hitfx && cursorfx && !guicursortype) guicursortype = 1;
         }
         return layout(size+guishadow, size+guishadow);
     }
@@ -562,6 +568,7 @@ struct gui : guient
                 glBindTexture(GL_TEXTURE_2D, overlaytex->id);
                 rect_(xi - xpad, yi - ypad, xs + 2*xpad, ys + 2*ypad, 0);
             }
+            if(hit && hitfx && cursorfx && !guicursortype) guicursortype = 1;
         }
         return layout(size+guishadow, size+guishadow);
     }
@@ -698,6 +705,7 @@ struct gui : guient
             }
             skin(curx, cury, curx+w, cury+h, guifieldbgcolour, guifieldbgblend, editing ? guifieldactivecolour : (hit ? guifieldhitcolour : guifieldbordercolour), editing ? guifieldactiveblend : (hit ? guifieldhitblend : guifieldborderblend), true);
             e->draw(curx+wpad/2, cury+hpad/2, color, editing, prompt);
+            if(hit && !guicursortype) guicursortype = 2;
         }
         else if(e->unfocus) e->unfocus = false;
         layout(w, h);
@@ -754,7 +762,11 @@ struct gui : guient
                 flags |= TEXT_SKIN;
                 color = guiactivecolour;
             }
-            else if(hitfx) color = guiactivecolour;
+            else if(hitfx)
+            {
+                color = guiactivecolour;
+                if(cursorfx && !guicursortype) guicursortype = 1;
+            }
         }
         draw_textx(text, x, y, 0, 0, color>>16, (color>>8)&0xFF, color&0xFF, alpha, flags, -1, wrap > 0 ? wrap : -1);
     }
@@ -920,6 +932,7 @@ struct gui : guient
             glBindTexture(GL_TEXTURE_2D, overlaytex->id);
             rect_(xi - xpad, yi - ypad, xs + 2*xpad, ys + 2*ypad, 0);
         }
+        if(hit && hitfx && cursorfx && !guicursortype) guicursortype = 1;
     }
 
     void previewslot(VSlot &vslot, bool overlaid, int x, int y, int size, bool hit)
@@ -1010,6 +1023,7 @@ struct gui : guient
             glBindTexture(GL_TEXTURE_2D, overlaytex->id);
             rect_(xi - xpad, yi - ypad, xs + 2*xpad, ys + 2*ypad, 0);
         }
+        if(hit && hitfx && cursorfx && !guicursortype) guicursortype = 1;
     }
 
     void slice_(Texture *t, int x, int y, int size, float start = 0, float end = 1, const char *text = NULL)
@@ -1052,6 +1066,7 @@ struct gui : guient
                 }
                 skin(px, py, px+pw, py+ph, colour >= 0 ? colour : guislidermarkcolour, guislidermarkblend, hit ? guislideractivecolour : guislidermarkbordercolour, hit ? guislideractiveblend : guislidermarkborderblend, guislidermarkborderskin >= (hit ? 1 : 2));
             }
+            if(hit && hitfx && cursorfx && !guicursortype) guicursortype = 2;
         }
         layout(ishorizontal() ? space : 0, ishorizontal() ? 0 : space);
         return space;
@@ -1127,6 +1142,7 @@ struct gui : guient
                 if(text && *text) x += 8;
             }
             if(text && *text) text_(text, x, cury, color, (hit && hitfx) || !faded || !clickable ? guitextblend : guitextfade, hit && clickable, wrap > 0 ? wrap : -1);
+            if(clickable && hit && hitfx && cursorfx && !guicursortype) guicursortype = 1;
         }
         return layout(w, h);
     }
@@ -1261,7 +1277,7 @@ TVARN(IDF_PERSIST|IDF_PRELOAD, guihovertex, "textures/guihover", gui::hovertex, 
 
 vector<gui::list> gui::lists;
 float gui::basescale, gui::maxscale = 1, gui::hitx, gui::hity;
-bool gui::passthrough, gui::hitfx = true, gui::skinfx = true;
+bool gui::passthrough, gui::hitfx = true, gui::cursorfx = true, gui::skinfx = true;
 int gui::curdepth, gui::fontdepth, gui::curlist, gui::xsize, gui::ysize, gui::curx, gui::cury, gui::mergelist, gui::mergedepth;
 int gui::ty, gui::tx, gui::tpos, *gui::tcurrent, gui::tcolor;
 static vector<gui> guis;
@@ -1401,10 +1417,11 @@ namespace UI
 
         if(!guis.empty())
         {
+            guicursortype = 0;
             guilayoutpass = 1;
             //loopv(guis) guis[i].cb->gui(guis[i], true);
             guis.last().cb->gui(guis.last(), true);
-            guilayoutpass = 0;
+            guilayoutpass = guicursortype = 0;
 
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

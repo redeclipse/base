@@ -229,6 +229,14 @@ void guistayopen(uint *contents)
     shouldclearmenu = oldclearmenu;
 }
 
+void guinocursorfx(uint *contents)
+{
+    if(!cgui) return;
+    cgui->allowcursorfx(false);
+    execute(contents);
+    cgui->allowcursorfx(true);
+}
+
 void guinohitfx(uint *contents)
 {
     if(!cgui) return;
@@ -703,6 +711,7 @@ COMMAND(0, guishowtitle, "i");
 COMMAND(0, guishowbgfx, "i");
 COMMAND(0, guistayopen, "e");
 COMMAND(0, guinohitfx, "e");
+COMMAND(0, guinocursorfx, "e");
 COMMAND(0, guinoskinfx, "e");
 
 COMMAND(0, guilist, "e");
