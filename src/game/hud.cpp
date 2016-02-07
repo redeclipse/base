@@ -206,9 +206,10 @@ namespace hud
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, burntex, "<grey>textures/hud/burn", 3);
     FVAR(IDF_PERSIST, burnblend, 0, 1, 1);
 
-    VAR(IDF_PERSIST, showindicator, 0, 3, 4);
+    VAR(IDF_PERSIST, showindicator, 0, 4, 4);
     FVAR(IDF_PERSIST, indicatorsize, 0, 0.03f, 1000);
     FVAR(IDF_PERSIST, indicatorblend, 0, 0.5f, 1);
+    VAR(IDF_PERSIST, indicatorminattack, 0, 1000, VAR_MAX);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, indicatortex, "<grey>textures/hud/indicator", 3);
 
     VAR(IDF_PERSIST, showcrosshair, 0, 2, 2); // 0 = off, 1 = on, 2 = blend depending on current accuracy level
@@ -934,6 +935,12 @@ namespace hud
                 break;
             }
             case W_S_RELOAD: if(showindicator >= (W(weap, ammoadd) < W(weap, ammomax) ? 3 : 2) && millis <= game::focus->weapwait[weap])
+            {
+                amt = 1.f-clamp(float(millis)/float(game::focus->weapwait[weap]), 0.f, 1.f);
+                colourskew(r, g, b, 1.f-amt);
+                break;
+            }
+            case W_S_PRIMARY: case W_S_SECONDARY: if(showindicator >= 4 && millis <= game::focus->weapwait[weap] && game::focus->weapwait[weap] >= indicatorminattack)
             {
                 amt = 1.f-clamp(float(millis)/float(game::focus->weapwait[weap]), 0.f, 1.f);
                 colourskew(r, g, b, 1.f-amt);
