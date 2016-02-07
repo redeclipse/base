@@ -7,8 +7,6 @@ VAR(IDF_PERSIST, textfaded, 0, 1, 1);
 VAR(IDF_PERSIST, textminintensity, 0, 32, 255);
 
 VAR(IDF_PERSIST, textkeyimages, 0, 1, 1);
-VAR(IDF_PERSIST|IDF_HEX, textkeyimagecolour, 0x000000, 0xFFFFFF, 0xFFFFFF);
-FVAR(IDF_PERSIST, textkeyimageblend, 0, 1, 1);
 FVAR(IDF_PERSIST, textkeyimagescale, 0, 1, FVAR_MAX);
 VAR(IDF_PERSIST, textkeyseps, 0, 1, 1);
 
@@ -730,7 +728,6 @@ static int draw_key(Texture *&tex, const char *str, float sx, float sy)
     vector<char *> list;
     explodelist(keyn, list);
     float width = 0, sh = curfont->maxh*curfont->scale/float(curfont->defaulth)*curtextscale, h = sh*textkeyimagescale;
-    int r = textkeyimagecolour>>16, g = (textkeyimagecolour>>8)&0xFF, b = textkeyimagecolour&0xFF, a = textkeyimageblend*255;
     loopv(list)
     {
         if(textkeyimages)
@@ -745,7 +742,6 @@ static int draw_key(Texture *&tex, const char *str, float sx, float sy)
                     glBindTexture(GL_TEXTURE_2D, tex->id);
                 }
                 float w = (tex->w*h)/float(tex->h), oh = h-sh, oy = sy-oh/2;
-                gle::color(vec::hexcolor(textkeyimagecolour), textkeyimageblend);
                 textvert(sx + width,     oy    ); gle::attribf(0, 0);
                 textvert(sx + width + w, oy    ); gle::attribf(1, 0);
                 textvert(sx + width + w, oy + h); gle::attribf(1, 1);
@@ -761,7 +757,7 @@ static int draw_key(Texture *&tex, const char *str, float sx, float sy)
             tex = oldtex;
             glBindTexture(GL_TEXTURE_2D, tex->id);
         }
-        width += draw_textx("\fs\fa[\fS%s\fs\fa]\fS", sx + width, sy, 0, 0, r, g, b, a, 0, -1, -1, list[i]);
+        width += draw_textx("\fs\fa[\fS%s\fs\fa]\fS", sx + width, sy, 0, 0, 255, 255, 255, 255, 0, -1, -1, list[i]);
     }
     list.deletearrays();
     return width;
