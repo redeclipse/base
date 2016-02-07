@@ -924,24 +924,26 @@ namespace hud
     void drawindicator(int weap, int x, int y, float s, bool secondary)
     {
         int millis = lastmillis-game::focus->weaplast[weap];
+        if(!game::focus->weapwait[weap] || millis > game::focus->weapwait[weap]) return;
         float r = 1, g = 1, b = 1, amt = 0;
         switch(game::focus->weapstate[weap])
         {
-            case W_S_POWER: case W_S_ZOOM: if(game::focus->weapwait[weap])
+            case W_S_POWER: case W_S_ZOOM:
             {
-                if(millis >= game::focus->weapwait[weap]) return;
                 amt = clamp(float(millis)/float(game::focus->weapwait[weap]), 0.f, 1.f);
-                colourskew(r, g, b, 1.f-amt);
+                colourskew(r, g, b, amt);
                 break;
             }
-            case W_S_RELOAD: if(showindicator >= (W(weap, ammoadd) < W(weap, ammomax) ? 3 : 2) && millis <= game::focus->weapwait[weap])
+            case W_S_RELOAD:
             {
+                if(showindicator < (W(weap, ammoadd) < W(weap, ammomax) ? 3 : 2)) return;
                 amt = 1.f-clamp(float(millis)/float(game::focus->weapwait[weap]), 0.f, 1.f);
                 colourskew(r, g, b, 1.f-amt);
                 break;
             }
-            case W_S_PRIMARY: case W_S_SECONDARY: if(showindicator >= 4 && millis <= game::focus->weapwait[weap] && game::focus->weapwait[weap] >= indicatorminattack)
+            case W_S_PRIMARY: case W_S_SECONDARY:
             {
+                if(showindicator < 4 || game::focus->weapwait[weap] < indicatorminattack) return;
                 amt = 1.f-clamp(float(millis)/float(game::focus->weapwait[weap]), 0.f, 1.f);
                 colourskew(r, g, b, 1.f-amt);
                 break;
