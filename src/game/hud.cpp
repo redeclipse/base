@@ -260,7 +260,7 @@ namespace hud
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, tvcursortex, "", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, teamcrosshairtex, "", 3);
     VAR(IDF_PERSIST, cursorstyle, 0, 0, 1); // 0 = top left tracking, 1 = center
-    FVAR(IDF_PERSIST, cursorsize, 0, 0.025f, 1000);
+    FVAR(IDF_PERSIST, cursorsize, 0, 0.03f, 1000);
     FVAR(IDF_PERSIST, cursorblend, 0, 1, 1);
 
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, zoomtex, "textures/hud/zoom", 3);
