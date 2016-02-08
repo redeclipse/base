@@ -124,6 +124,7 @@ GSVAR(IDF_MODERATOR, racemaps, "untitled");
 
 GSVAR(IDF_MODERATOR, multimaps, "untitled"); // applies to modes which *require* multi spawns (ctf/bb)
 GSVAR(IDF_MODERATOR, duelmaps, "untitled");
+GSVAR(IDF_MODERATOR, gladiatormaps, "untitled");
 
 GSVAR(IDF_MODERATOR, smallmaps, "untitled");
 GSVAR(IDF_MODERATOR, mediummaps, "untitled");
@@ -481,23 +482,45 @@ GVAR(IDF_GAMEMOD, zoomlimitmin, 1, 10, 150);
 GVAR(IDF_GAMEMOD, zoomlimitmax, 1, 60, 150);
 GVAR(IDF_GAMEMOD, zoomtime, 1, 500, VAR_MAX);
 
-GFVAR(IDF_GAMEMOD, radialscale, 0, 1, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, radiallimited, 0, 0.75f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, damagescale, 0, 1, FVAR_MAX);
 GVAR(IDF_GAMEMOD, weaponswitchdelay, 0, 400, VAR_MAX);
 
+GFVAR(IDF_GAMEMOD, radialscale, 0, 1, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, pushscale, 0, 1, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, pushlimited, 0, 0.75f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, hitpushscale, 0, 1, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, hitvelscale, 0, 1, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, deadpushscale, 0, 2, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, wavepushscale, 0, 1, FVAR_MAX);
 
 GFVAR(IDF_GAMEMOD, stunscale, 0, 1, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, stunlimited, 0, 0.75f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, hitstunscale, 0, 1, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, deadstunscale, 0, 2, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, wavestunscale, 0, 1, FVAR_MAX);
+
+GFVAR(IDF_GAMEMOD, velscale, 0, 1, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, hitvelscale, 0, 1, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, deadvelscale, 0, 2, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, wavevelscale, 0, 1, FVAR_MAX);
+
+GFVAR(IDF_GAMEMOD, gladiatorradialscale, 0, 0.5f, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, gladiatorpushscale, 0, 10, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, gladiatorhitpushscale, 0, 10, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, gladiatordeadpushscale, 0, 20, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, gladiatorwavepushscale, 0, 10, FVAR_MAX);
+
+GFVAR(IDF_GAMEMOD, gladiatorstunscale, 0, 10, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, gladiatorhitstunscale, 0, 10, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, gladiatordeadstunscale, 0, 20, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, gladiatorwavestunscale, 0, 10, FVAR_MAX);
+
+GFVAR(IDF_GAMEMOD, gladiatorvelscale, 0, 10, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, gladiatorhitvelscale, 0, 10, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, gladiatordeadvelscale, 0, 20, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, gladiatorwavevelscale, 0, 10, FVAR_MAX);
+
+GFVAR(IDF_GAMEMOD, radiallimited, 0, 0.75f, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, pushlimited, 0, 0.75f, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, stunlimited, 0, 0.75f, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, vellimited, 0, 0.75f, FVAR_MAX);
 
 GFVAR(IDF_GAMEMOD, kickpushscale, 0, 1, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, kickpushcrouch, 0, 0, FVAR_MAX);

@@ -66,11 +66,12 @@ gametypes gametype[] = {
     {
         G_DEATHMATCH, 0, 0,
         {
-            (1<<G_M_MULTI)|(1<<G_M_FFA)|(1<<G_M_COOP)|(1<<G_M_INSTA)|(1<<G_M_DUEL)|(1<<G_M_SURVIVOR)|(1<<G_M_CLASSIC)|(1<<G_M_MEDIEVAL)|(1<<G_M_KABOOM)|(1<<G_M_ONSLAUGHT)|(1<<G_M_FREESTYLE)|(1<<G_M_VAMPIRE)|(1<<G_M_RESIZE)|(1<<G_M_HARD)|(1<<G_M_BASIC),
-            0, 0, 0
+            (1<<G_M_MULTI)|(1<<G_M_FFA)|(1<<G_M_COOP)|(1<<G_M_INSTA)|(1<<G_M_DUEL)|(1<<G_M_SURVIVOR)|(1<<G_M_CLASSIC)|(1<<G_M_MEDIEVAL)|(1<<G_M_KABOOM)|(1<<G_M_ONSLAUGHT)|(1<<G_M_FREESTYLE)|(1<<G_M_VAMPIRE)|(1<<G_M_RESIZE)|(1<<G_M_HARD)|(1<<G_M_BASIC)|(1<<G_M_GSP1),
+            (1<<G_M_MULTI)|(1<<G_M_FFA)|(1<<G_M_COOP)|(1<<G_M_INSTA)|(1<<G_M_DUEL)|(1<<G_M_SURVIVOR)|(1<<G_M_CLASSIC)|(1<<G_M_MEDIEVAL)|(1<<G_M_KABOOM)|(1<<G_M_ONSLAUGHT)|(1<<G_M_FREESTYLE)|(1<<G_M_VAMPIRE)|(1<<G_M_RESIZE)|(1<<G_M_HARD)|(1<<G_M_BASIC)|(1<<G_M_GSP1),
+            0, 0
         },
-        "deathmatch", "dm", { "", "", "" },
-        "shoot to kill and increase score by fragging", { "", "", "" },
+        "deathmatch", "dm", { "gladiator", "", "" },
+        "shoot to kill and increase score by fragging", { "fight in a confined area with increased pushback from damage", "", "" },
     },
     {
         G_CAPTURE, 0, 0,
@@ -215,8 +216,6 @@ extern gametypes gametype[];
 extern mutstypes mutstype[];
 #endif
 
-#define DSG(a,b,x)          (m_duel(a, b) ? G(duel##x) : G(survivor##x))
-
 #define m_game(a)           (a > -1 && a < G_MAX)
 #define m_check(a,b,c,d)    ((!a || (a < 0 ? !((0-a)&(1<<(c-G_PLAY))) : a&(1<<(c-G_PLAY)))) && (!b || (b < 0 ? !((0-b)&d) : b&d)))
 #define m_local(a)          (a == G_DEMO)
@@ -253,6 +252,8 @@ extern mutstypes mutstype[];
 #define m_gsp3(a,b)         ((b&(1<<G_M_GSP3)) || (gametype[a].implied&(1<<G_M_GSP3)))
 #define m_gsp(a,b)          (m_gsp1(a,b) || m_gsp2(a,b) || m_gsp3(a,b))
 
+#define m_dm_gladiator(a,b) (m_dm(a) && m_gsp1(a, b))
+
 #define m_ctf_quick(a,b)    (m_capture(a) && m_gsp1(a, b))
 #define m_ctf_defend(a,b)   (m_capture(a) && m_gsp2(a, b))
 #define m_ctf_protect(a,b)  (m_capture(a) && m_gsp3(a, b))
@@ -269,27 +270,27 @@ extern mutstypes mutstype[];
 #define m_ra_gauntlet(a,b)  (m_race(a) && m_gsp3(a, b))
 
 #define m_team(a,b)         (m_multi(a, b) || !m_ffa(a, b))
-#define m_sweaps(a,b)       ((m_race(a) && !m_gsp3(a, b)) || m_insta(a, b) || m_medieval(a, b) || m_kaboom(a, b))
+#define m_sweaps(a,b)       (m_dm_gladiator(a, b) || (m_race(a) && !m_ra_gauntlet(a, b)) || m_insta(a, b) || m_medieval(a, b) || m_kaboom(a, b))
 #define m_loadout(a,b)      (!m_classic(a, b) && !m_sweaps(a, b))
 #define m_duke(a,b)         (m_duel(a, b) || m_survivor(a, b))
 #define m_regen(a,b)        (!m_hard(a,b) && (!m_duke(a, b) || DSG(a, b, regen)) && !m_insta(a, b))
-#define m_ghost(a,b)        (m_race(a) && !m_gsp3(a, b))
+#define m_ghost(a,b)        (m_race(a) && !m_ra_gauntlet(a, b))
 #define m_bots(a)           (m_play(a) && !m_race(a))
 #define m_botbal(a,b)       (m_duel(a, b) ? G(botbalanceduel) : (m_survivor(a, b) ? G(botbalancesurvivor) : G(botbalance)))
-#define m_laptime(a,b)      (m_race(a) && m_gsp1(a, b))
-#define m_impulsemeter(a,b) ((m_race(a) && m_gsp2(a, b)) || !m_freestyle(a, b))
-#define m_nopoints(a,b)     (m_duke(a, b) || (m_bomber(a) && m_gsp1(a, b)) || m_race(a))
+#define m_laptime(a,b)      (m_ra_timed(a, b))
+#define m_impulsemeter(a,b) (m_ra_endurance(a, b) || !m_freestyle(a, b))
+#define m_nopoints(a,b)     (m_duke(a, b) || m_bb_hold(a, b) || m_race(a))
 #define m_points(a,b)       (!m_nopoints(a, b))
 
-#define m_weapon(at,a,b)    (m_medieval(a, b) ? AA(at, weaponmedieval) : (m_kaboom(a, b) ? AA(at, weaponkaboom) : (m_insta(a, b) ? AA(at, weaponinsta) : (m_race(a) && !m_gsp3(a, b) ? AA(at, weaponrace) : AA(at, weaponspawn)))))
-#define m_delay(at,a,b,c)   ((m_play(a) || at >= A_ENEMY) && !m_duke(a,b) ? int((m_race(a) ? (!m_gsp3(a, b) || c == T_ALPHA ? AA(at, spawndelayrace) : AA(at, spawndelaygauntlet)) : (m_bomber(a) ? AA(at, spawndelaybomber) : (m_defend(a) ? AA(at, spawndelaydefend) : (m_capture(a) ? AA(at, spawndelaycapture) : AA(at, spawndelay)))))*(m_insta(a, b) ? AA(at, spawndelayinstascale) : 1.f)) : 0)
+#define m_weapon(at,a,b)    (m_medieval(a, b) ? AA(at, weaponmedieval) : (m_kaboom(a, b) ? AA(at, weaponkaboom) : (m_insta(a, b) ? AA(at, weaponinsta) : (m_race(a) && !m_ra_gauntlet(a, b) ? AA(at, weaponrace) : (m_dm_gladiator(a, b) ? AA(at, weapongladiator) : AA(at, weaponspawn))))))
+#define m_delay(at,a,b,c)   ((m_play(a) || at >= A_ENEMY) && !m_duke(a,b) ? int((m_race(a) ? (!m_ra_gauntlet(a, b) || c == T_ALPHA ? AA(at, spawndelayrace) : AA(at, spawndelaygauntlet)) : (m_bomber(a) ? AA(at, spawndelaybomber) : (m_defend(a) ? AA(at, spawndelaydefend) : (m_capture(a) ? AA(at, spawndelaycapture) : AA(at, spawndelay)))))*(m_insta(a, b) ? AA(at, spawndelayinstascale) : 1.f)) : 0)
 #define m_protect(a,b)      (m_duke(a,b) ? DSG(a, b, protect) : (m_insta(a, b) ? G(instaprotect) : G(spawnprotect)))
 #define m_health(a,b,c)     (m_insta(a,b) ? 1 : AA(c, health))
 #define m_maxhealth(a,b,c)  (int(m_health(a, b, c)*(m_vampire(a,b) ? G(maxhealthvampire) : G(maxhealth))))
-#define m_swapteam(a,b)     (m_team(a, b) && (!m_race(a) || m_gsp3(a, b)) && m_play(a) && (G(teambalanceduel) || !m_duel(a, b)) && !m_coop(gamemode, mutators) && G(teambalance) >= 3 && G(teambalanceswap))
-#define m_balteam(a,b,c)    (m_team(a, b) && (!m_race(a) || m_gsp3(a, b)) && m_play(a) && (G(teambalanceduel) || !m_duel(a, b)) && !m_coop(gamemode, mutators) && G(teambalance) >= c)
-#define m_forcebal(a,b)     ((m_bomber(a) && m_gsp3(a, b)) || (m_race(a) && m_gsp3(a, b)))
-#define m_balance(a,b,c)    (m_team(a, b) && (!m_race(a) || m_gsp3(a, b)) && m_play(a) && (m_forcebal(a, b) || ((G(balanceduke) || !m_duke(a, b)) && ((G(balancemaps) >= 0 ? G(balancemaps) : G(mapbalance)) >= (m_affinity(a) ? 1 : (c ? 2 : 3))))))
+#define m_swapteam(a,b)     (m_team(a, b) && (!m_race(a) || m_ra_gauntlet(a, b)) && m_play(a) && (G(teambalanceduel) || !m_duel(a, b)) && !m_coop(gamemode, mutators) && G(teambalance) >= 3 && G(teambalanceswap))
+#define m_balteam(a,b,c)    (m_team(a, b) && (!m_race(a) || m_ra_gauntlet(a, b)) && m_play(a) && (G(teambalanceduel) || !m_duel(a, b)) && !m_coop(gamemode, mutators) && G(teambalance) >= c)
+#define m_forcebal(a,b)     (m_bb_attack(a, b) || m_ra_gauntlet(a, b))
+#define m_balance(a,b,c)    (m_team(a, b) && (!m_race(a) || m_ra_gauntlet(a, b)) && m_play(a) && (m_forcebal(a, b) || ((G(balanceduke) || !m_duke(a, b)) && ((G(balancemaps) >= 0 ? G(balancemaps) : G(mapbalance)) >= (m_affinity(a) ? 1 : (c ? 2 : 3))))))
 #define m_balreset(a,b)     (G(balancereset) && (G(balancereset) == 2 || m_capture(a) || m_bomber(a) || m_race(a) || m_duke(a, b)))
 
 #define w_carry(w1,w2)      (isweap(w1) && w1 != W_MELEE && (!isweap(w2) || (w1 != w2 && (w2 != W_GRENADE || w1 != W_MINE))) && (w1 == W_ROCKET || (w1 >= W_OFFSET && w1 < W_ITEM)))
@@ -297,6 +298,9 @@ extern mutstypes mutstype[];
 #define w_item(w1,w2)       (isweap(w1) && (w1 >= W_OFFSET && w1 < W_MAX && (!isweap(w2) || (w1 != w2 && (w2 != W_GRENADE || w1 != W_MINE)))))
 #define w_attr(a,b,t,w1,w2) (t != WEAPON || m_edit(a) ? w1 : (w1 != w2 ? (!m_classic(a, b) ? (w1 >= W_ITEM ? w1 : -1) : (w1 >= W_OFFSET && w1 < W_MAX ? w1 : -1)) : (w1 != W_GRENADE ? W_GRENADE : W_MINE)))
 #define w_spawn(weap)       int(ceilf(G(itemspawntime)*W(weap, frequency)))
+
+#define DSG(a,b,x)          (m_duel(a, b) ? G(duel##x) : G(survivor##x))
+#define GL(a,b,x)           (m_dm_gladiator(a, b) ? gladiator##x : x)
 
 #define mapshrink(a,b,c,d) if((a) && (b) && (c) && *(c)) \
 { \
@@ -325,7 +329,7 @@ extern mutstypes mutstype[];
     else if(m_defend(b)) a = newstring(m_dac_king(b, c) ? G(kingmaps) : G(defendmaps)); \
     else if(m_bomber(b)) a = newstring(m_bb_hold(b, c) ? G(holdmaps) : G(bombermaps)); \
     else if(m_race(b)) a = newstring(G(racemaps)); \
-    else if(m_play(b)) a = newstring(G(mainmaps)); \
+    else if(m_dm(b)) a = newstring(m_dm_gladiator(b, c) ? G(gladiatormaps) : G(mainmaps)); \
     else a = newstring(G(allowmaps)); \
     if(e) mapcull(a, b, c, d, e, f) \
     else mapshrink(!(f), a, G(previousmaps), true) \

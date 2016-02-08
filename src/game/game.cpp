@@ -1442,7 +1442,7 @@ namespace game
                     }
                     if(WF(WK(flags), weap, hitpush, WS(flags)) != 0 || WF(WK(flags), weap, hitvel, WS(flags)) != 0)
                     {
-                        float amt = scale*WRS(flags&HIT_WAVE || !hitdealt(flags) ? wavepushscale : (d->health <= 0 ? deadpushscale : hitpushscale), push, gamemode, mutators);
+                        float amt = scale;
                         bool doquake = hitdealt(flags) && damage > 0;
                         if(d == v)
                         {
@@ -1456,14 +1456,20 @@ namespace game
                             if(modify != 0) amt *= 1/modify;
                             else doquake = false;
                         }
-                        float hit = WF(WK(flags), weap, hitpush, WS(flags))*amt;
+                        float hit = WF(WK(flags), weap, hitpush, WS(flags));
                         if(hit != 0)
                         {
-                            d->vel.add(vec(dir).mul(hit));
+                            float modify = WRS(flags&HIT_WAVE || !hitdealt(flags) ? wavepushscale : (d->health <= 0 ? deadpushscale : hitpushscale), push, gamemode, mutators);
+                            d->vel.add(vec(dir).mul(hit*modify));
                             if(doquake) d->quake = min(d->quake+max(int(hit), 1), quakelimit);
                         }
                         hit = WF(WK(flags), weap, hitvel, WS(flags))*amt;
-                        if(hit != 0) d->vel.add(vec(vel).mul(hit));
+                        if(hit != 0)
+                        {
+                            float modify = WRS(flags&HIT_WAVE || !hitdealt(flags) ? wavevelscale : (d->health <= 0 ? deadvelscale : hitvelscale), vel, gamemode, mutators);
+                            d->vel.add(vec(vel).mul(hit*modify));
+                            if(doquake) d->quake = min(d->quake+max(int(hit), 1), quakelimit);
+                        }
                     }
                 }
             }

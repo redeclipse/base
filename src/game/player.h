@@ -134,6 +134,9 @@ APVAR(IDF_GAMEMOD, maxcarry, 1, W_LOADOUT,
 APVAR(IDF_GAMEMOD, teamdamage, 0, A_T_ALL,
     A_T_PLAYER,     A_T_AI,         A_T_AI,         A_T_AI,         A_T_AI
 );
+APVAR(IDF_GAMEMOD, weapongladiator, 0, W_MAX-1,
+    W_MELEE,       W_MELEE,         W_SMG,          W_PISTOL,       W_MELEE
+);
 APVAR(IDF_GAMEMOD, weaponinsta, 0, W_MAX-1,
     W_RIFLE,        W_RIFLE,        W_RIFLE,        W_RIFLE,        W_MELEE
 );

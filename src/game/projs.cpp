@@ -781,7 +781,7 @@ namespace projs
         {
             if(weaptype[proj.weap].traced)
             {
-                if(proj.weap == W_MELEE && WS(proj.flags))
+                if(proj.weap == W_MELEE)
                 {
                     proj.o = proj.to = proj.from = proj.dest = proj.owner->center();
                     if(proj.target && proj.target->state == CS_ALIVE)
@@ -790,7 +790,7 @@ namespace projs
                 }
                 else
                 {
-                    proj.from = proj.owner->originpos();
+                    proj.from = proj.owner->originpos(proj.weap, WS(proj.flags));
                     proj.to = proj.dest = proj.owner->muzzlepos(proj.weap, WS(proj.flags));
                     if(style != 2) proj.o = proj.from;
                 }

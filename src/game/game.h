@@ -1133,7 +1133,11 @@ struct gameent : dynent, clientstate
 
     vec originpos(bool melee = false, bool secondary = false)
     {
-        return origin = vec(melee && secondary ? feetpos() : headpos()).add(vec(yaw*RAD, pitch*RAD));
+        if(origin == vec(-1, -1, -1))
+        {
+            origin = vec(melee && secondary ? feetpos() : headpos()).add(vec(yaw*RAD, pitch*RAD));
+        }
+        return origin;
     }
 
     vec checkmuzzlepos(int weap = -1)
