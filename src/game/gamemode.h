@@ -253,6 +253,21 @@ extern mutstypes mutstype[];
 #define m_gsp3(a,b)         ((b&(1<<G_M_GSP3)) || (gametype[a].implied&(1<<G_M_GSP3)))
 #define m_gsp(a,b)          (m_gsp1(a,b) || m_gsp2(a,b) || m_gsp3(a,b))
 
+#define m_ctf_quick(a,b)    (m_capture(a) && m_gsp1(a, b))
+#define m_ctf_defend(a,b)   (m_capture(a) && m_gsp2(a, b))
+#define m_ctf_protect(a,b)  (m_capture(a) && m_gsp3(a, b))
+
+#define m_dac_quick(a,b)    (m_defend(a) && m_gsp1(a, b))
+#define m_dac_king(a,b)     (m_defend(a) && m_gsp2(a, b))
+
+#define m_bb_hold(a,b)      (m_bomber(a) && m_gsp1(a, b))
+#define m_bb_basket(a,b)    (m_bomber(a) && m_gsp2(a, b))
+#define m_bb_attack(a,b)    (m_bomber(a) && m_gsp3(a, b))
+
+#define m_ra_timed(a,b)     (m_race(a) && m_gsp1(a, b))
+#define m_ra_endurance(a,b) (m_race(a) && m_gsp2(a, b))
+#define m_ra_gauntlet(a,b)  (m_race(a) && m_gsp3(a, b))
+
 #define m_team(a,b)         (m_multi(a, b) || !m_ffa(a, b))
 #define m_sweaps(a,b)       ((m_race(a) && !m_gsp3(a, b)) || m_insta(a, b) || m_medieval(a, b) || m_kaboom(a, b))
 #define m_loadout(a,b)      (!m_classic(a, b) && !m_sweaps(a, b))
@@ -294,7 +309,7 @@ extern mutstypes mutstype[];
 }
 #define mapcull(a,b,c,d,e,f) \
 { \
-    mapshrink(m_multi(b, c) && (m_capture(b) || (m_bomber(b) && !m_gsp1(b, c))), a, G(multimaps), false) \
+    mapshrink(m_multi(b, c) && (m_capture(b) || (m_bomber(b) && !m_bb_hold(b, c))), a, G(multimaps), false) \
     mapshrink(m_duel(b, c), a, G(duelmaps), false) \
     if((d) > 0 && (e) >= 2 && m_play(b) && !m_duel(b, c)) \
     { \
@@ -307,8 +322,8 @@ extern mutstypes mutstype[];
 #define maplist(a,b,c,d,e,f) \
 { \
     if(m_capture(b)) a = newstring(G(capturemaps)); \
-    else if(m_defend(b)) a = newstring(m_gsp2(b, c) ? G(kingmaps) : G(defendmaps)); \
-    else if(m_bomber(b)) a = newstring(m_gsp1(b, c) ? G(holdmaps) : G(bombermaps)); \
+    else if(m_defend(b)) a = newstring(m_dac_king(b, c) ? G(kingmaps) : G(defendmaps)); \
+    else if(m_bomber(b)) a = newstring(m_bb_hold(b, c) ? G(holdmaps) : G(bombermaps)); \
     else if(m_race(b)) a = newstring(G(racemaps)); \
     else if(m_play(b)) a = newstring(G(mainmaps)); \
     else a = newstring(G(allowmaps)); \

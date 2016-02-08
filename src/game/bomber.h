@@ -3,10 +3,10 @@
 #define isbombertarg(a,b)   (a.enabled && !isbomberaffinity(a) && a.team != T_NEUTRAL && a.team != b)
 
 #ifdef GAMESERVER
-#define carrytime (m_gsp1(gamemode, mutators) ? G(bomberholdtime) : G(bombercarrytime))
+#define carrytime (m_bb_hold(gamemode, mutators) ? G(bomberholdtime) : G(bombercarrytime))
 #define bomberstate bomberservstate
 #else
-#define carrytime (m_gsp1(game::gamemode, game::mutators) ? G(bomberholdtime) : G(bombercarrytime))
+#define carrytime (m_bb_hold(game::gamemode, game::mutators) ? G(bomberholdtime) : G(bombercarrytime))
 #endif
 struct bomberstate
 {

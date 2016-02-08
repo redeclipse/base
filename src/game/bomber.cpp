@@ -5,7 +5,7 @@ namespace bomber
 
     void killed(gameent *d, gameent *v)
     {
-        if(v && m_gsp1(game::gamemode, game::mutators) && (!m_team(game::gamemode, game::mutators) || d->team != v->team))
+        if(v && m_bb_hold(game::gamemode, game::mutators) && (!m_team(game::gamemode, game::mutators) || d->team != v->team))
         {
             loopv(st.flags) if(isbomberaffinity(st.flags[i]) && st.flags[i].owner == v)
                 st.flags[i].taketime = lastmillis;
@@ -120,7 +120,7 @@ namespace bomber
                     if(millis < 1000) size *= 1.f+(1-clamp(float(millis)/1000.f, 0.f, 1.f));
                 }
             }
-            else if(!m_gsp1(game::gamemode, game::mutators))
+            else if(!m_bb_hold(game::gamemode, game::mutators))
             {
                 area = 3;
                 if(isbombertarg(f, game::focus->team) && !hasbombs.empty())
@@ -167,7 +167,7 @@ namespace bomber
                         pushfont("default");
                         ty += draw_textx("Bomb explodes in \fs\fzgy%s\fS", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, timestr(delay));
                         popfont();
-                        if(m_gsp1(game::gamemode, game::mutators))
+                        if(m_bb_hold(game::gamemode, game::mutators))
                         {
                             pushfont("reduced");
                             ty += draw_textx("Killing enemies resets fuse timer", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED);
@@ -350,7 +350,7 @@ namespace bomber
                     }
                 }
             }
-            else if(!m_gsp1(game::gamemode, game::mutators))
+            else if(!m_bb_hold(game::gamemode, game::mutators))
             {
                 vec above = f.above;
                 float blend = clamp(camera1->o.dist(above)/enttype[AFFINITY].radius, 0.f, 1.f);
@@ -375,7 +375,7 @@ namespace bomber
                 above.z += 2.5f;
                 part_icon(above, textureload(hud::teamtexname(f.team), 3), 2, trans*blend, 0, 0, 1, TEAM(f.team, colour));
             }
-            if(!m_gsp1(game::gamemode, game::mutators))
+            if(!m_bb_hold(game::gamemode, game::mutators))
                 rendermodel(&f.baselight, "props/point", ANIM_MAPMODEL|ANIM_LOOP, f.render, f.yaw, 0, 0, MDL_DYNSHADOW|MDL_CULL_VFC|MDL_CULL_OCCLUDED, NULL, NULL, 0, 0, 1);
         }
     }
@@ -407,7 +407,7 @@ namespace bomber
             if(!m_check(e.attrs[3], e.attrs[4], game::gamemode, game::mutators) || !isteam(game::gamemode, game::mutators, e.attrs[0], T_NEUTRAL))
                 continue;
             int team = e.attrs[0];
-            if(m_gsp3(game::gamemode, game::mutators)) switch(team)
+            if(m_bb_attack(game::gamemode, game::mutators)) switch(team)
             { // attack
                 case T_ALPHA: break; // goal
                 case T_OMEGA: team = T_NEUTRAL; break; // ball
@@ -548,7 +548,7 @@ namespace bomber
         if(!st.flags.inrange(relay) || !st.flags.inrange(goal)) return;
         bomberstate::flag &f = st.flags[relay], &g = st.flags[goal];
         string extra = "";
-        if(m_gsp2(game::gamemode, game::mutators) && showbomberdists >= (d != game::player1 ? 2 : 1))
+        if(m_bb_basket(game::gamemode, game::mutators) && showbomberdists >= (d != game::player1 ? 2 : 1))
         {
             if(f.droptime) formatstring(extra, " from \fs\fy%.2f\fom\fS", f.droppos.dist(g.spawnloc)/8.f);
             else copystring(extra, " with a \fs\fytouchdown\fS");
@@ -600,7 +600,7 @@ namespace bomber
             }
             return;
         }
-        if(!f.droptime && m_gsp3(game::gamemode, game::mutators) && d->team == T_ALPHA && bomberattackreset) return;
+        if(!f.droptime && m_bb_attack(game::gamemode, game::mutators) && d->team == T_ALPHA && bomberattackreset) return;
         if(f.pickuptime && lastmillis-f.pickuptime <= 1000) return;
         if(f.lastowner == d && f.droptime && lastmillis-f.droptime <= bomberpickupdelay) return;
         if(o.dist(f.pos()) <= enttype[AFFINITY].radius/2)
@@ -638,7 +638,7 @@ namespace bomber
     bool aihomerun(gameent *d, ai::aistate &b)
     {
         vec pos = d->feetpos();
-        if(m_team(game::gamemode, game::mutators) && !m_gsp1(game::gamemode, game::mutators) && (!m_gsp3(game::gamemode, game::mutators) || d->team != T_ALPHA))
+        if(m_team(game::gamemode, game::mutators) && !m_bb_hold(game::gamemode, game::mutators) && (!m_bb_attack(game::gamemode, game::mutators) || d->team != T_ALPHA))
         {
             int goal = -1;
             loopv(st.flags)

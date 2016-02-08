@@ -69,7 +69,7 @@ struct captureservmode : capturestate, servmode
                 (flags[i].floorpos = ci->floorpos).z += (enttype[AFFINITY].radius/2)+1;
         if(G(capturethreshold) > 0 && oldpos.dist(newpos) >= G(capturethreshold))
             dropaffinity(ci, oldpos, vec(ci->vel).add(ci->falling));
-        if(!m_gsp3(gamemode, mutators)) loopv(flags) if(flags[i].owner == ci->clientnum)
+        if(!m_ctf_protect(gamemode, mutators)) loopv(flags) if(flags[i].owner == ci->clientnum)
         {
             flag &r = flags[i]; // held flag
             loopvk(flags)
@@ -99,9 +99,9 @@ struct captureservmode : capturestate, servmode
     {
         if(!canplay(hasflaginfo) || !flags.inrange(i) || ci->state != CS_ALIVE || !ci->team || ci->actortype >= A_ENEMY) return;
         flag &f = flags[i];
-        if(f.owner >= 0 || (f.team == ci->team && (m_gsp2(gamemode, mutators) || (m_gsp1(gamemode, mutators) && !f.droptime)))) return;
+        if(f.owner >= 0 || (f.team == ci->team && (m_ctf_defend(gamemode, mutators) || (m_ctf_quick(gamemode, mutators) && !f.droptime)))) return;
         if(f.lastowner == ci->clientnum && f.droptime && gamemillis-f.droptime <= G(capturepickupdelay)) return;
-        if(m_gsp1(gamemode, mutators) && f.team == ci->team)
+        if(m_ctf_quick(gamemode, mutators) && f.team == ci->team)
         {
             capturestate::returnaffinity(i, gamemillis);
             givepoints(ci, G(capturepoints), m_points(gamemode, mutators), false);
@@ -154,7 +154,7 @@ struct captureservmode : capturestate, servmode
         loopv(flags)
         {
             flag &f = flags[i];
-            if(m_gsp3(gamemode, mutators) && f.owner >= 0)
+            if(m_ctf_protect(gamemode, mutators) && f.owner >= 0)
             {
                 clientinfo *ci = (clientinfo *)getinfo(f.owner);
                 if(f.team != ci->team && f.taketime && gamemillis-f.taketime >= G(captureprotectdelay))
@@ -234,7 +234,7 @@ struct captureservmode : capturestate, servmode
             clientinfo *owner = f.owner >= 0 ? (clientinfo *)getinfo(f.owner) : NULL;
             if(f.team == ci->team)
             {
-                if((G(capturebuffing)&1 || G(capturebuffing)&2) && !owner && (!f.droptime || m_gsp2(gamemode, mutators) || G(capturebuffing)&2) && ci->o.dist(f.droptime ? f.droploc : f.spawnloc) <= G(capturebuffarea)) { buff = true; break; }
+                if((G(capturebuffing)&1 || G(capturebuffing)&2) && !owner && (!f.droptime || m_ctf_defend(gamemode, mutators) || G(capturebuffing)&2) && ci->o.dist(f.droptime ? f.droploc : f.spawnloc) <= G(capturebuffarea)) { buff = true; break; }
                 if(G(capturebuffing)&4 && owner && ci == owner) { buff = true; break; }
                 if(G(capturebuffing)&8 && owner && ci != owner && owner->team == ci->team && (G(capturebuffarea) > 0 ? ci->o.dist(owner->o) <= G(capturebuffarea) : true)) { buff = true; break; }
             }

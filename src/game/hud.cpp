@@ -609,46 +609,46 @@ namespace hud
         if(m_edit(g)) ADDMODE(modeeditingtex) \
         else if(m_capture(g)) \
         { \
-            if(m_gsp1(g, m)) ADDMODE(modecapturequicktex) \
-            else if(m_gsp2(g, m)) ADDMODE(modecapturedefendtex) \
-            else if(m_gsp3(g, m)) ADDMODE(modecaptureprotecttex) \
+            if(m_ctf_quick(g, m)) ADDMODE(modecapturequicktex) \
+            else if(m_ctf_defend(g, m)) ADDMODE(modecapturedefendtex) \
+            else if(m_ctf_protect(g, m)) ADDMODE(modecaptureprotecttex) \
             else ADDMODE(modecapturetex) \
         } \
         else if(m_defend(g)) \
         { \
-            if(m_gsp2(g, m)) \
+            if(m_dac_king(g, m)) \
             { \
                 ADDMODE(modedefendkingtex) \
-                if(m_gsp1(g, m)) ADDMODE(modedefendquicktex) \
+                if(m_dac_quick(g, m)) ADDMODE(modedefendquicktex) \
             } \
-            else if(m_gsp1(g, m)) ADDMODE(modedefendquicktex) \
+            else if(m_dac_quick(g, m)) ADDMODE(modedefendquicktex) \
             else ADDMODE(modedefendtex) \
         } \
         else if(m_bomber(g)) \
         { \
-            if(m_gsp1(g, m)) ADDMODE(modebomberholdtex) \
-            else if(m_gsp3(g, m)) \
+            if(m_bb_hold(g, m)) ADDMODE(modebomberholdtex) \
+            else if(m_bb_attack(g, m)) \
             { \
                 ADDMODE(modebomberattacktex) \
-                if(m_gsp2(g, m)) ADDMODE(modebomberbaskettex) \
+                if(m_bb_basket(g, m)) ADDMODE(modebomberbaskettex) \
             } \
-            else if(m_gsp2(g, m)) ADDMODE(modebomberbaskettex) \
+            else if(m_bb_basket(g, m)) ADDMODE(modebomberbaskettex) \
             else ADDMODE(modebombertex) \
         } \
         else if(m_race(g)) \
         { \
-            if(m_gsp3(g, m)) \
+            if(m_ra_gauntlet(g, m)) \
             { \
                 ADDMODE(moderacegauntlettex) \
-                if(m_gsp1(g, m)) ADDMODE(moderacetimedtex) \
-                if(m_gsp2(g, m)) ADDMODE(moderaceendurancetex) \
+                if(m_ra_timed(g, m)) ADDMODE(moderacetimedtex) \
+                if(m_ra_endurance(g, m)) ADDMODE(moderaceendurancetex) \
             } \
-            else if(m_gsp1(g, m)) \
+            else if(m_ra_timed(g, m)) \
             { \
                 ADDMODE(moderacetimedtex) \
-                if(m_gsp2(g, m)) ADDMODE(moderaceendurancetex) \
+                if(m_ra_endurance(g, m)) ADDMODE(moderaceendurancetex) \
             } \
-            else if(m_gsp2(g, m)) ADDMODE(moderaceendurancetex) \
+            else if(m_ra_endurance(g, m)) ADDMODE(moderaceendurancetex) \
             else ADDMODE(moderacetex) \
         } \
         else ADDMODE(modedeathmatchtex) \
@@ -3046,7 +3046,7 @@ namespace hud
         {
             float fade = blend*inventoryraceblend;
             pushfont("default");
-            if((!m_gsp3(game::gamemode, game::mutators) || game::focus->team == T_ALPHA) && (game::focus->cpmillis || game::focus->cptime) && (game::focus->state == CS_ALIVE || game::focus->state == CS_DEAD || game::focus->state == CS_WAITING))
+            if((!m_ra_gauntlet(game::gamemode, game::mutators) || game::focus->team == T_ALPHA) && (game::focus->cpmillis || game::focus->cptime) && (game::focus->state == CS_ALIVE || game::focus->state == CS_DEAD || game::focus->state == CS_WAITING))
             {
                 sy += draw_textx("\falap: \fw%d", x, y-sy, 0, 0, 255, 255, 255, int(fade*255), TEXT_LEFT_UP, -1, -1, game::focus->points+1);
                 if(game::focus->cptime)

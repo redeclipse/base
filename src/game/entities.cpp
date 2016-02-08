@@ -808,7 +808,7 @@ namespace entities
                     if(d->state != CS_ALIVE || !gameent::is(d) || !m_race(game::gamemode)) break;
                     if(!m_check(e.attrs[3], e.attrs[4], game::gamemode, game::mutators)) break;
                     gameent *g = (gameent *)d;
-                    if(g->checkpoint == n || (m_race(game::gamemode) && m_gsp3(game::gamemode, game::mutators) && g->team != T_ALPHA)) break;
+                    if(g->checkpoint == n || (m_ra_gauntlet(game::gamemode, game::mutators) && g->team != T_ALPHA)) break;
                     if(e.attrs[6] == CP_START)
                     {
                         if(g->cpmillis || (d->vel.iszero() && !d->move && !d->strafe)) break;
@@ -1197,7 +1197,7 @@ namespace entities
                 case CHECKPOINT:
                 {
                     float yaw = ents[ent]->attrs[1], pitch = ents[ent]->attrs[2];
-                    if(m_race(game::gamemode) && m_gsp3(game::gamemode, game::mutators) && d->team != T_ALPHA)
+                    if(m_ra_gauntlet(game::gamemode, game::mutators) && d->team != T_ALPHA)
                     {
                         yaw -= 180;
                         pitch = -pitch;

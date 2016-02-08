@@ -29,10 +29,10 @@ namespace capture
         if(f.pickuptime && lastmillis-f.pickuptime <= 1000) return false;
         if(f.team == d->team)
         {
-            if(m_gsp2(game::gamemode, game::mutators)) return false;
+            if(m_ctf_defend(game::gamemode, game::mutators)) return false;
             if(!f.droptime)
             {
-                if(m_gsp1(game::gamemode, game::mutators)) return false;
+                if(m_ctf_quick(game::gamemode, game::mutators)) return false;
                 if(!check && !d->action[AC_AFFINITY]) return false;
             }
         }
@@ -75,7 +75,7 @@ namespace capture
                 else
                 {
                     pos = f.spawnloc;
-                    if(f.team == game::focus->team && !m_gsp3(game::gamemode, game::mutators) && !hasflags.empty())
+                    if(f.team == game::focus->team && !m_ctf_protect(game::gamemode, game::mutators) && !hasflags.empty())
                     {
                         int interval = lastmillis%500;
                         float glow = interval >= 250 ? 1.f-((interval-250)/250.f) : interval/250.f;
@@ -228,7 +228,7 @@ namespace capture
                 }
                 else if(f.droptime) hud::drawitem(hud::flagdroptex, x, oldy, size, 0.5f, true, false, 0.25f, 1.f, 1.f, blend, skew);
                 else hud::drawitem(hud::teamtexname(f.team), x, oldy, size, 0.5f, true, false, c.r, c.g, c.b, blend, skew);
-                if(gs_playing(game::gamestate) && (f.droptime || (m_gsp3(game::gamemode, game::mutators) && f.taketime && f.owner && f.owner->team != f.team)))
+                if(gs_playing(game::gamestate) && (f.droptime || (m_ctf_protect(game::gamemode, game::mutators) && f.taketime && f.owner && f.owner->team != f.team)))
                 {
                     float wait = f.droptime ? clamp(f.dropleft(lastmillis, capturestore)/float(capturedelay), 0.f, 1.f) : clamp((lastmillis-f.taketime)/float(captureprotectdelay), 0.f, 1.f);
                     if(wait > 0.5f)
@@ -299,8 +299,8 @@ namespace capture
         {
             capturestate::flag &f = st.flags[i];
             vec pos = f.pos(true);
-            float wait = f.droptime ? clamp(f.dropleft(lastmillis, capturestore)/float(capturedelay), 0.f, 1.f) : ((m_gsp3(game::gamemode, game::mutators) && f.taketime && f.owner && f.owner->team != f.team) ? clamp((lastmillis-f.taketime)/float(captureprotectdelay), 0.f, 1.f) : 0.f),
-                  blend = (!f.owner && (!f.droptime || m_gsp2(game::gamemode, game::mutators)) && f.team == game::focus->team ? camera1->o.distrange(pos, enttype[AFFINITY].radius, enttype[AFFINITY].radius/8) : 1.f)*(f.owner && f.owner == game::focus ? (game::thirdpersonview(true) ? (f.owner != game::player1 ? followflagblend : thirdflagblend) : firstflagblend) : freeflagblend);
+            float wait = f.droptime ? clamp(f.dropleft(lastmillis, capturestore)/float(capturedelay), 0.f, 1.f) : ((m_ctf_protect(game::gamemode, game::mutators) && f.taketime && f.owner && f.owner->team != f.team) ? clamp((lastmillis-f.taketime)/float(captureprotectdelay), 0.f, 1.f) : 0.f),
+                  blend = (!f.owner && (!f.droptime || m_ctf_defend(game::gamemode, game::mutators)) && f.team == game::focus->team ? camera1->o.distrange(pos, enttype[AFFINITY].radius, enttype[AFFINITY].radius/8) : 1.f)*(f.owner && f.owner == game::focus ? (game::thirdpersonview(true) ? (f.owner != game::player1 ? followflagblend : thirdflagblend) : firstflagblend) : freeflagblend);
             vec effect = vec::hexcolor(TEAM(f.team, colour));
             int colour = effect.tohexcolor();
             if(wait > 0.5f)
@@ -333,7 +333,7 @@ namespace capture
                 //defformatstring(info, "<super>%s flag", TEAM(f.team, name));
                 //part_textcopy(flagpos, info, PART_TEXT, 1, TEAM(f.team, colour), 2, blend);
                 //flagpos.z += 2.5f;
-                if(gs_playing(game::gamestate) && (f.droptime || (m_gsp3(game::gamemode, game::mutators) && f.taketime && f.owner && f.owner->team != f.team)))
+                if(gs_playing(game::gamestate) && (f.droptime || (m_ctf_protect(game::gamemode, game::mutators) && f.taketime && f.owner && f.owner->team != f.team)))
                 {
                     float wait = f.droptime ? clamp(f.dropleft(lastmillis, capturestore)/float(capturedelay), 0.f, 1.f) : clamp((lastmillis-f.taketime)/float(captureprotectdelay), 0.f, 1.f);
                     part_icon(flagpos, textureload(hud::progringtex, 3), 4, blend, 0, 0, 1, colour, (lastmillis%1000)/1000.f, 0.1f);
@@ -351,7 +351,7 @@ namespace capture
             defformatstring(info, "<super>%s base", TEAM(f.team, name));
             part_textcopy(above, info, PART_TEXT, 1, TEAM(f.team, colour), 2, blend);
             above.z += 2.5f;
-            if(gs_playing(game::gamestate) && (f.droptime || (m_gsp3(game::gamemode, game::mutators) && f.taketime && f.owner && f.owner->team != f.team)))
+            if(gs_playing(game::gamestate) && (f.droptime || (m_ctf_protect(game::gamemode, game::mutators) && f.taketime && f.owner && f.owner->team != f.team)))
             {
                 part_icon(above, textureload(hud::progringtex, 3), 4, blend, 0, 0, 1, colour, (lastmillis%1000)/1000.f, 0.1f);
                 part_icon(above, textureload(hud::progresstex, 3), 4, 0.25f*blend, 0, 0, 1, colour);
@@ -491,8 +491,8 @@ namespace capture
     {
         if(!st.flags.inrange(i)) return;
         capturestate::flag &f = st.flags[i];
-        affinityeffect(i, d->team, d->feetpos(), f.above, m_gsp(game::gamemode, game::mutators) ? 3 : 2, "RETURNED");
-        game::announcef(S_V_FLAGRETURN, CON_SELF, d, true, "\fa%s returned the %s flag (time taken: \fs\fc%s\fS)", game::colourname(d), game::colourteam(f.team, "flagtex"), timestr(m_gsp1(game::gamemode, game::mutators) ? f.dropleft(lastmillis, capturestore) : lastmillis-f.taketime, 1));
+        affinityeffect(i, d->team, d->feetpos(), f.above, 3, "RETURNED");
+        game::announcef(S_V_FLAGRETURN, CON_SELF, d, true, "\fa%s returned the %s flag (time taken: \fs\fc%s\fS)", game::colourname(d), game::colourteam(f.team, "flagtex"), timestr(m_ctf_quick(game::gamemode, game::mutators) ? f.dropleft(lastmillis, capturestore) : lastmillis-f.taketime, 1));
         st.returnaffinity(i, lastmillis);
     }
 
@@ -577,7 +577,7 @@ namespace capture
 
     bool aihomerun(gameent *d, ai::aistate &b)
     {
-        if(!m_gsp3(game::gamemode, game::mutators))
+        if(!m_ctf_protect(game::gamemode, game::mutators))
         {
             vec pos = d->feetpos();
             loopk(2)
@@ -623,9 +623,9 @@ namespace capture
                 capturestate::flag &g = st.flags[i];
                 if(g.owner == d)
                 {
-                    if(!m_gsp3(game::gamemode, game::mutators)) return aihomerun(d, b);
+                    if(!m_ctf_protect(game::gamemode, game::mutators)) return aihomerun(d, b);
                 }
-                else if(g.team == d->team && (m_gsp3(game::gamemode, game::mutators) || (g.owner && g.owner->team != d->team) || g.droptime))
+                else if(g.team == d->team && (m_ctf_protect(game::gamemode, game::mutators) || (g.owner && g.owner->team != d->team) || g.droptime))
                     taken.add(i);
             }
             if(!ai::badhealth(d)) while(!taken.empty())
@@ -652,7 +652,7 @@ namespace capture
             if(d->actortype == A_BOT && m_duke(game::gamemode, game::mutators) && home) continue;
             static vector<int> targets; // build a list of others who are interested in this
             targets.setsize(0);
-            bool regen = d->actortype != A_BOT || f.team == T_NEUTRAL || m_gsp3(game::gamemode, game::mutators) || !m_regen(game::gamemode, game::mutators) || d->health >= m_health(game::gamemode, game::mutators, d->actortype);
+            bool regen = d->actortype != A_BOT || f.team == T_NEUTRAL || m_ctf_protect(game::gamemode, game::mutators) || !m_regen(game::gamemode, game::mutators) || d->health >= m_health(game::gamemode, game::mutators, d->actortype);
             ai::checkothers(targets, d, home || d->actortype != A_BOT ? ai::AI_S_DEFEND : ai::AI_S_PURSUE, ai::AI_T_AFFINITY, j, true);
             if(d->actortype == A_BOT)
             {
@@ -732,7 +732,7 @@ namespace capture
     {
         if(d->actortype == A_BOT)
         {
-            if(!m_gsp3(game::gamemode, game::mutators)) loopv(st.flags) if(st.flags[i].owner == d) return aihomerun(d, b);
+            if(!m_ctf_protect(game::gamemode, game::mutators)) loopv(st.flags) if(st.flags[i].owner == d) return aihomerun(d, b);
             if(d->actortype == A_BOT && m_duke(game::gamemode, game::mutators) && b.owner < 0) return false;
         }
         if(st.flags.inrange(b.target))

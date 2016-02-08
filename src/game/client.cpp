@@ -2922,7 +2922,7 @@ namespace client
                         if(entities::ents.inrange(ent) && entities::ents[ent]->type == CHECKPOINT)
                         {
                             if(t != game::player1 && !t->ai && (!t->cpmillis || entities::ents[ent]->attrs[6] == CP_START)) t->cpmillis = lastmillis;
-                            if((checkpointannounce&(t != game::focus ? 2 : 1) || (m_gsp3(game::gamemode, game::mutators) && checkpointannounce&4)) && checkpointannouncefilter&(1<<entities::ents[ent]->attrs[6]))
+                            if((checkpointannounce&(t != game::focus ? 2 : 1) || (m_ra_gauntlet(game::gamemode, game::mutators) && checkpointannounce&4)) && checkpointannouncefilter&(1<<entities::ents[ent]->attrs[6]))
                             {
                                 switch(entities::ents[ent]->attrs[6])
                                 {
@@ -2946,7 +2946,7 @@ namespace client
                                 conoutft(t != game::player1 ? CON_INFO : CON_SELF, "%s completed in \fs\fg%s\fS (best: \fs\fy%s\fS, laps: \fs\fc%d\fS)", game::colourname(t), timestr(t->cplast, 1), best, t->points);
                             }
                         }
-                        else if(!m_gsp2(game::gamemode, game::mutators)) t->impulse[IM_METER] = 0;
+                        else if(!m_ra_endurance(game::gamemode, game::mutators)) t->impulse[IM_METER] = 0;
                     }
                     else
                     {

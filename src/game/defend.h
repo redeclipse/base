@@ -1,8 +1,8 @@
 #ifdef GAMESERVER
     #define defendstate stfservstate
-    #define defendcount (m_gsp2(gamemode, mutators) ? G(defendking) : G(defendoccupy))
+    #define defendcount (m_dac_king(gamemode, mutators) ? G(defendking) : G(defendoccupy))
 #else
-    #define defendcount (m_gsp2(game::gamemode, game::mutators) ? G(defendking) : G(defendoccupy))
+    #define defendcount (m_dac_king(game::gamemode, game::mutators) ? G(defendking) : G(defendoccupy))
 #endif
 
 struct defendstate

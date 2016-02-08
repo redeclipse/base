@@ -1,10 +1,10 @@
 #ifdef GAMESERVER
-#define capturedelay (m_gsp2(gamemode, mutators) ? G(capturedefenddelay) : G(captureresetdelay))
-#define capturestore (G(captureresetstore)&((m_gsp1(gamemode, mutators) ? 1 : 0)|(m_gsp2(gamemode, mutators) ? 2 : 0)|(m_gsp3(gamemode, mutators) ? 4 : 0)|(!m_gsp1(gamemode, mutators) && !m_gsp2(gamemode, mutators) && !m_gsp3(gamemode, mutators) ? 8 : 0)))
+#define capturedelay (m_ctf_defend(gamemode, mutators) ? G(capturedefenddelay) : G(captureresetdelay))
+#define capturestore (G(captureresetstore)&((m_ctf_quick(gamemode, mutators) ? 1 : 0)|(m_ctf_defend(gamemode, mutators) ? 2 : 0)|(m_ctf_protect(gamemode, mutators) ? 4 : 0)|(!m_ctf_quick(gamemode, mutators) && !m_ctf_defend(gamemode, mutators) && !m_ctf_protect(gamemode, mutators) ? 8 : 0)))
 #define capturestate captureservstate
 #else
-#define capturedelay (m_gsp2(game::gamemode, game::mutators) ? G(capturedefenddelay) : G(captureresetdelay))
-#define capturestore (G(captureresetstore)&((m_gsp1(game::gamemode, game::mutators) ? 1 : 0)|(m_gsp2(game::gamemode, game::mutators) ? 2 : 0)|(m_gsp3(game::gamemode, game::mutators) ? 4 : 0)|(!m_gsp1(game::gamemode, game::mutators) && !m_gsp2(game::gamemode, game::mutators) && !m_gsp3(game::gamemode, game::mutators) ? 8 : 0)))
+#define capturedelay (m_ctf_defend(game::gamemode, game::mutators) ? G(capturedefenddelay) : G(captureresetdelay))
+#define capturestore (G(captureresetstore)&((m_ctf_quick(game::gamemode, game::mutators) ? 1 : 0)|(m_ctf_defend(game::gamemode, game::mutators) ? 2 : 0)|(m_ctf_protect(game::gamemode, game::mutators) ? 4 : 0)|(!m_ctf_quick(game::gamemode, game::mutators) && !m_ctf_defend(game::gamemode, game::mutators) && !m_ctf_protect(game::gamemode, game::mutators) ? 8 : 0)))
 #endif
 struct capturestate
 {

@@ -18,7 +18,7 @@ namespace defend
         vec colour = vec::hexcolor(TEAM(owner, colour));
         if(enemy)
         {
-            int team = owner && enemy && !m_gsp1(game::gamemode, game::mutators) ? T_NEUTRAL : enemy;
+            int team = owner && enemy && !m_dac_quick(game::gamemode, game::mutators) ? T_NEUTRAL : enemy;
             int timestep = totalmillis%1000;
             float amt = clamp((timestep <= 500 ? timestep/500.f : (1000-timestep)/500.f)*occupy, 0.f, 1.f);
             colour.lerp(vec::hexcolor(TEAM(team, colour)), amt);
@@ -59,7 +59,7 @@ namespace defend
         loopv(st.flags)
         {
             defendstate::flag &b = st.flags[i];
-            float occupy = b.occupied(m_gsp1(game::gamemode, game::mutators), defendcount);
+            float occupy = b.occupied(m_dac_quick(game::gamemode, game::mutators), defendcount);
             vec effect = skewcolour(b.owner, b.enemy, occupy);
             int colour = effect.tohexcolor();
             b.baselight.material[0] = bvec::fromcolor(effect);
@@ -96,7 +96,7 @@ namespace defend
         loopv(st.flags)
         {
             defendstate::flag &f = st.flags[i];
-            float occupy = f.occupied(m_gsp1(game::gamemode, game::mutators), defendcount);
+            float occupy = f.occupied(m_dac_quick(game::gamemode, game::mutators), defendcount);
             adddynlight(vec(f.o).add(vec(0, 0, enttype[AFFINITY].radius)), enttype[AFFINITY].radius*2, skewcolour(f.owner, f.enemy, occupy), 0, 0, DL_KEEP);
         }
     }
@@ -106,7 +106,7 @@ namespace defend
         loopv(st.flags)
         {
             defendstate::flag &f = st.flags[i];
-            float occupy = f.occupied(m_gsp1(game::gamemode, game::mutators), defendcount);
+            float occupy = f.occupied(m_dac_quick(game::gamemode, game::mutators), defendcount);
             vec colour = skewcolour(f.owner, f.enemy, occupy);
             bool attack = f.owner == game::focus->team && f.enemy;
             const char *tex = f.hasflag ? hud::arrowtex : (attack ? hud::attacktex : hud::pointtex);
@@ -200,7 +200,7 @@ namespace defend
 
     void setup()
     {
-        int df = m_gsp2(game::gamemode, game::mutators) ? 0 : defendflags;
+        int df = m_dac_king(game::gamemode, game::mutators) ? 0 : defendflags;
         loopv(entities::ents)
         {
             extentity *e = entities::ents[i];
@@ -241,7 +241,7 @@ namespace defend
                 break;
             }
         }
-        if(m_gsp2(game::gamemode, game::mutators))
+        if(m_dac_king(game::gamemode, game::mutators))
         {
             vec average(0, 0, 0);
             int count = 0;
@@ -419,7 +419,7 @@ namespace defend
                     else walk = 2;
                 }
             }
-            return ai::defense(d, b, f.o, enttype[AFFINITY].radius, enttype[AFFINITY].radius*(walk+1), m_gsp2(game::gamemode, game::mutators) ? 0 : walk);
+            return ai::defense(d, b, f.o, enttype[AFFINITY].radius, enttype[AFFINITY].radius*(walk+1), m_dac_king(game::gamemode, game::mutators) ? 0 : walk);
         }
         return false;
     }

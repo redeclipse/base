@@ -1339,12 +1339,12 @@ namespace server
         if(type == 3 || type == 4) concatstring(mdname, ": ");
         if(type == 2 || type == 3 || type == 4 || type == 5)
         {
-            if((type == 4 || type == 5) && m_capture(mode) && m_gsp3(mode, muts)) concatstring(mdname, gametype[mode].gsd[2]);
-            else if((type == 4 || type == 5) && m_defend(mode) && m_gsp2(mode, muts)) concatstring(mdname, gametype[mode].gsd[1]);
-            else if((type == 4 || type == 5) && m_bomber(mode) && m_gsp1(mode, muts)) concatstring(mdname, gametype[mode].gsd[0]);
-            else if((type == 4 || type == 5) && m_bomber(mode) && m_gsp3(mode, muts)) concatstring(mdname, gametype[mode].gsd[2]);
-            else if((type == 4 || type == 5) && m_race(mode) && m_gsp1(mode, muts)) concatstring(mdname, gametype[mode].gsd[0]);
-            else if((type == 4 || type == 5) && m_race(mode) && m_gsp3(mode, muts)) concatstring(mdname, gametype[mode].gsd[2]);
+            if((type == 4 || type == 5) && m_ctf_protect(mode, muts)) concatstring(mdname, gametype[mode].gsd[2]);
+            else if((type == 4 || type == 5) && m_dac_king(mode, muts)) concatstring(mdname, gametype[mode].gsd[1]);
+            else if((type == 4 || type == 5) && m_bb_hold(mode, muts)) concatstring(mdname, gametype[mode].gsd[0]);
+            else if((type == 4 || type == 5) && m_bb_attack(mode, muts)) concatstring(mdname, gametype[mode].gsd[2]);
+            else if((type == 4 || type == 5) && m_ra_timed(mode, muts)) concatstring(mdname, gametype[mode].gsd[0]);
+            else if((type == 4 || type == 5) && m_ra_gauntlet(mode, muts)) concatstring(mdname, gametype[mode].gsd[2]);
             else concatstring(mdname, gametype[mode].desc);
         }
         return mdname;
@@ -1360,10 +1360,10 @@ namespace server
         if(mutid < 0) return "";
         if(type == 4 || type == 5)
         {
-            if(m_capture(mode) && m_gsp3(mode, muts)) return "";
-            else if(m_defend(mode) && m_gsp2(mode, muts)) return "";
-            else if(m_bomber(mode) && (m_gsp1(mode, muts) || m_gsp3(mode, muts))) return "";
-            else if(m_race(mode) && (m_gsp1(mode, muts) || m_gsp3(mode, muts))) return "";
+            if(m_ctf_protect(mode, muts)) return "";
+            else if(m_dac_king(mode, muts)) return "";
+            else if(m_bb_hold(mode, muts) || m_bb_attack(mode, muts)) return "";
+            else if(m_ra_timed(mode, muts) || m_ra_gauntlet(mode, muts)) return "";
         }
         if(type == 1 || type == 3 || type == 4)
         {
@@ -1709,8 +1709,8 @@ namespace server
             if(m_dm(gamemode)) plimit = G(pointlimit);
             else if(m_capture(gamemode)) plimit = G(capturelimit);
             else if(m_defend(gamemode)) plimit = G(defendlimit) ? G(defendlimit) : INT_MAX-1;
-            else if(m_bomber(gamemode)) plimit = m_gsp1(gamemode, mutators) ? G(bomberholdlimit) : G(bomberlimit);
-            else if(m_race(gamemode) && !m_gsp1(gamemode, mutators) && !m_gsp3(gamemode, mutators)) plimit = G(racelimit);
+            else if(m_bomber(gamemode)) plimit = m_bb_hold(gamemode, mutators) ? G(bomberholdlimit) : G(bomberlimit);
+            else if(m_race(gamemode) && !m_ra_timed(gamemode, mutators) && !m_ra_gauntlet(gamemode, mutators)) plimit = G(racelimit);
             if(plimit)
             {
                 if(m_team(gamemode, mutators))
@@ -1806,7 +1806,7 @@ namespace server
 
     bool hasitem(int i)
     {
-        if((m_race(gamemode) && !m_gsp3(gamemode, mutators)) || m_basic(gamemode, mutators) || !sents.inrange(i) || sents[i].type != WEAPON) return false;
+        if((m_race(gamemode) && !m_ra_gauntlet(gamemode, mutators)) || m_basic(gamemode, mutators) || !sents.inrange(i) || sents[i].type != WEAPON) return false;
         int sweap = m_weapon(A_PLAYER, gamemode, mutators), attr = w_attr(gamemode, mutators, sents[i].type, sents[i].attrs[0], sweap);
         if(!isweap(attr) || !w_item(attr, sweap) || !m_check(W(attr, modes), W(attr, muts), gamemode, mutators) || W(attr, disabled)) return false;
         if((sents[i].attrs[4] && sents[i].attrs[4] != triggerid) || !m_check(sents[i].attrs[2], sents[i].attrs[3], gamemode, mutators)) return false;
@@ -1950,15 +1950,15 @@ namespace server
             {
                 loopv(sents) if(sents[i].type == PLAYERSTART && sents[i].attrs[0] == T_NEUTRAL && (sents[i].attrs[5] == triggerid || !sents[i].attrs[5]) && m_check(sents[i].attrs[3], sents[i].attrs[4], gamemode, mutators))
                 {
-                    spawns[m_gsp3(gamemode, mutators) ? T_ALPHA : T_NEUTRAL].add(i);
+                    spawns[m_ra_gauntlet(gamemode, mutators) ? T_ALPHA : T_NEUTRAL].add(i);
                     totalspawns++;
                 }
                 if(!totalspawns) loopv(sents) if(sents[i].type == CHECKPOINT && sents[i].attrs[6] == CP_START && (sents[i].attrs[5] == triggerid || !sents[i].attrs[5]) && m_check(sents[i].attrs[3], sents[i].attrs[4], gamemode, mutators))
                 {
-                    spawns[m_gsp3(gamemode, mutators) ? T_ALPHA : T_NEUTRAL].add(i);
+                    spawns[m_ra_gauntlet(gamemode, mutators) ? T_ALPHA : T_NEUTRAL].add(i);
                     totalspawns++;
                 }
-                if(m_gsp3(gamemode, mutators))
+                if(m_ra_gauntlet(gamemode, mutators))
                 {
                     int enemyspawns = 0;
                     loopv(sents) if(sents[i].type == PLAYERSTART && sents[i].attrs[0] >= T_OMEGA && (sents[i].attrs[5] == triggerid || !sents[i].attrs[5]) && m_check(sents[i].attrs[3], sents[i].attrs[4], gamemode, mutators))
@@ -2075,7 +2075,7 @@ namespace server
         if(ci->actortype >= A_ENEMY) return ci->spawnpoint;
         else
         {
-            if(m_race(gamemode) && !ci->cpnodes.empty() && (!m_gsp3(gamemode, mutators) || ci->team == T_ALPHA))
+            if(m_race(gamemode) && !ci->cpnodes.empty() && (!m_ra_gauntlet(gamemode, mutators) || ci->team == T_ALPHA))
             {
                 int checkpoint = ci->cpnodes.last();
                 if(sents.inrange(checkpoint)) return checkpoint;
@@ -2089,7 +2089,7 @@ namespace server
                         team = spawns[T_ALPHA].iteration <= spawns[T_OMEGA].iteration ? T_ALPHA : T_OMEGA;
                     if(!rotate) rotate = 2;
                 }
-                else if(m_play(gamemode) && m_team(gamemode, mutators) && (!m_race(gamemode) || m_gsp3(gamemode, mutators)) && !spawns[ci->team].ents.empty()) team = ci->team;
+                else if(m_play(gamemode) && m_team(gamemode, mutators) && (!m_race(gamemode) || m_ra_gauntlet(gamemode, mutators)) && !spawns[ci->team].ents.empty()) team = ci->team;
                 else switch(rotate)
                 {
                     case 2:
@@ -4253,7 +4253,7 @@ namespace server
                     }
                 }
             }
-            if(m_race(gamemode) && (!m_gsp3(gamemode, mutators) || m->team == T_ALPHA) && m->cpnodes.length() == 1)
+            if(m_race(gamemode) && (!m_ra_gauntlet(gamemode, mutators) || m->team == T_ALPHA) && m->cpnodes.length() == 1)
             {  // reset if hasn't reached another checkpoint yet
                 m->cpmillis = 0;
                 m->cpnodes.shrink(0);
@@ -4333,7 +4333,7 @@ namespace server
         ci->spree = 0;
         ci->deaths++;
         bool kamikaze = dropitems(ci, actor[ci->actortype].living ? DROP_DEATH : DROP_EXPIRE);
-        if(m_race(gamemode) && (!m_gsp3(gamemode, mutators) || ci->team == T_ALPHA) && !(flags&HIT_SPEC) && (!flags || ci->cpnodes.length() == 1 || !ci->checkpointspawn))
+        if(m_race(gamemode) && (!m_ra_gauntlet(gamemode, mutators) || ci->team == T_ALPHA) && !(flags&HIT_SPEC) && (!flags || ci->cpnodes.length() == 1 || !ci->checkpointspawn))
         { // reset if suicided, hasn't reached another checkpoint yet
             ci->cpmillis = 0;
             ci->cpnodes.shrink(0);
@@ -6108,7 +6108,7 @@ namespace server
                         {
                             if(sents[ent].attrs[5] && sents[ent].attrs[5] != triggerid) break;
                             if(!m_check(sents[ent].attrs[3], sents[ent].attrs[4], gamemode, mutators)) break;
-                            if(!m_race(gamemode) || (m_gsp3(gamemode, mutators) && cp->team != T_ALPHA)) break;
+                            if(!m_race(gamemode) || (m_ra_gauntlet(gamemode, mutators) && cp->team != T_ALPHA)) break;
                             if(cp->cpnodes.find(ent) >= 0) break;
                             switch(sents[ent].attrs[6])
                             {
@@ -6137,7 +6137,7 @@ namespace server
                                                 total = ++ts.total;
                                                 sendf(-1, 1, "ri3", N_SCORE, ts.team, ts.total);
                                             }
-                                            if(total && m_gsp3(gamemode, mutators) && G(racegauntletwinner))
+                                            if(total && m_ra_gauntlet(gamemode, mutators) && G(racegauntletwinner))
                                             {
                                                 int numt = numteams(gamemode, mutators);
                                                 if(curbalance == numt-1)
