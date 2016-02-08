@@ -1569,7 +1569,7 @@ namespace projs
                     if(projtrails && lastmillis-proj.lasteffect >= projtraildelay) { effect = true; proj.lasteffect = lastmillis - (lastmillis%projtraildelay); }
                     int len = effect ? max(int(projtraillength*0.5f*max(1.f-proj.lifespan, 0.1f)), 1) : 1,
                         colour = !proj.id && isweap(proj.weap) ? FWCOL(H, explcol, proj) : pulsecols[PULSE_FIRE][rnd(PULSECOLOURS)];
-                    part_create(proj.projtype == PRJ_GIBS || (!proj.id && isweap(proj.weap) && WF(WK(proj.flags), proj.weap, explcol, WS(proj.flags)) < -PULSE_DISCO) ? PART_SPARK : PART_FIREBALL, len, proj.o, colour, radius, blend, -5);
+                    part_create(proj.projtype == PRJ_GIBS || (!proj.id && isweap(proj.weap) && WF(WK(proj.flags), proj.weap, explcol, WS(proj.flags)) <= PC(DISCO)) ? PART_SPARK : PART_FIREBALL, len, proj.o, colour, radius, blend, -5);
                 }
                 break;
             }

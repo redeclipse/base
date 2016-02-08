@@ -3142,31 +3142,18 @@ namespace game
             }
             else e->light.material[2] = bvec(255, 255, 255);
             if(burntime && d->burning(lastmillis, burntime))
-            {
-                vec col = rescolour(d, PULSE_BURN);
-                e->light.material[1].max(bvec::fromcolor(e->light.material[1].tocolor().max(col)));
-            }
+                e->light.material[1].max(bvec::fromcolor(e->light.material[1].div(2).tocolor().max(rescolour(d, PULSE_BURN))));
+            if(burntime && d->bleeding(lastmillis, bleedtime))
+                e->light.material[1].max(bvec::fromcolor(e->light.material[1].div(2).tocolor().max(rescolour(d, PULSE_BLEED))));
             if(shocktime && d->shocking(lastmillis, shocktime))
-            {
-                vec col = rescolour(d, PULSE_SHOCK);
-                e->light.material[1].max(bvec::fromcolor(e->light.material[1].tocolor().max(col)));
-            }
+                e->light.material[1].max(bvec::fromcolor(e->light.material[1].div(2).tocolor().max(rescolour(d, PULSE_SHOCK))));
             if(m_bomber(gamemode) && bomber::carryaffinity(d))
-            {
-                vec col = rescolour(d, PULSE_DISCO);
-                e->light.material[1].max(bvec::fromcolor(e->light.material[1].tocolor().max(col)));
-            }
-            if(d->state == CS_ALIVE && bleedtime && d->bleeding(lastmillis, bleedtime))
-            {
-                int millis = lastmillis%1000;
-                float amt = millis <= 500 ? millis/500.f : 1.f-((millis-500)/500.f);
-                flashcolour(e->light.material[1].r, e->light.material[1].g, e->light.material[1].b, uchar(255), uchar(52), uchar(52), amt);
-            }
+                e->light.material[1].max(bvec::fromcolor(e->light.material[1].div(2).tocolor().max(rescolour(d, PULSE_DISCO))));
             if(d->state == CS_ALIVE && d->lastbuff)
             {
                 int millis = lastmillis%1000;
                 float amt = millis <= 500 ? 1.f-(millis/500.f) : (millis-500)/500.f;
-                flashcolour(e->light.material[1].r, e->light.material[1].g, e->light.material[1].b, uchar(192), uchar(192), uchar(192), amt);
+                flashcolour(e->light.material[1].r, e->light.material[1].g, e->light.material[1].b, uchar(255), uchar(255), uchar(255), amt);
             }
         }
         rendermodel(NULL, mdl, anim, o, yaw, third == 2 && firstpersonbodypitch >= 0 ? pitch*firstpersonbodypitch : pitch, third == 2 ? 0.f : roll, flags, e, attachments, basetime, basetime2, trans, size);

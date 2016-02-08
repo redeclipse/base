@@ -503,10 +503,10 @@ namespace hud
     FVAR(IDF_PERSIST, radardamageblend, 0, 0.85f, 1);
     VAR(IDF_PERSIST, radardamagemin, 1, 10, VAR_MAX);
     VAR(IDF_PERSIST, radardamagemax, 1, 100, VAR_MAX);
-    VAR(IDF_PERSIST|IDF_HEX, radardamagecolour, -PULSE_MAX, 0xFF4444, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, radardamageburncolour, -PULSE_MAX, -PULSE_FIRE, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, radardamagebleedcolour, -PULSE_MAX, 0xFF0000, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, radardamageshockcolour, -PULSE_MAX, -PULSE_SHOCK, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, radardamagecolour, PC(LAST), 0xFF4444, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, radardamageburncolour, PC(LAST), PC(FIRE), 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, radardamagebleedcolour, PC(LAST), PC(BLEED), 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, radardamageshockcolour, PC(LAST), PC(SHOCK), 0xFFFFFF);
 
     VAR(IDF_PERSIST, radarhits, 0, 1, 2);
     VAR(IDF_PERSIST, radarhitsheal, 0, 1, 1);
@@ -525,10 +525,10 @@ namespace hud
     FVAR(IDF_PERSIST, radarhitsglowscale, 0, 2, 1000);
     FVAR(IDF_PERSIST, radarhitsglowcolour, 0, 0.75f, 5);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, radarhitsglowtex, "textures/guihover", 3);
-    VAR(IDF_PERSIST|IDF_HEX, radarhitscolour, -PULSE_MAX, 0xFF4444, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, radarhitsburncolour, -PULSE_MAX, -PULSE_FIRE, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, radarhitsbleedcolour, -PULSE_MAX, 0xFF0000, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, radarhitsshockcolour, -PULSE_MAX, -PULSE_SHOCK, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, radarhitscolour, PC(LAST), 0xFF4444, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, radarhitsburncolour, PC(LAST), PC(FIRE), 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, radarhitsbleedcolour, PC(LAST), PC(BLEED), 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, radarhitsshockcolour, PC(LAST), PC(SHOCK), 0xFFFFFF);
 
     VAR(IDF_PERSIST, showeditradar, 0, 1, 1);
     VAR(IDF_PERSIST, editradarstyle, 0, 2, 3); // 0 = compass-sectional, 1 = compass-distance, 2 = screen-space, 3 = right-corner-positional
@@ -861,7 +861,7 @@ namespace hud
     template<class T>
     void skewcolour(T &r, T &g, T &b, int colour = 0, bool faded = false)
     {
-        if(colour < 0) colour = game::getcolour(game::focus, -1-colour);
+        if(colour < 0) colour = game::getcolour(game::focus, INVPULSE(colour));
         vec c = vec::hexcolor(colour);
         r = T(r*c.r);
         g = T(g*c.g);
@@ -2122,28 +2122,35 @@ namespace hud
                  bleeding = radarplayereffects && bleedtime && lastmillis%150 < 50 && d->bleeding(lastmillis, bleedtime),
                  shocking = radarplayereffects && shocktime && lastmillis%150 < 50 && d->shocking(lastmillis, shocktime);
             vec colour[2];
-            if(isdominated) colour[0] = vec::hexcolor(pulsecols[PULSE_DISCO][clamp((lastmillis/100)%PULSECOLOURS, 0, PULSECOLOURS-1)]);
-            else if(d->lastbuff)
+            if(isdominated) colour[0] = game::rescolour(d, PULSE_DISCO);
+            else colour[0] = vec::hexcolor(game::getcolour(d, game::playerundertone));
+            if(d->lastbuff)
             {
                 int millis = lastmillis%1000;
                 float amt = millis <= 500 ? 1.f-(millis/500.f) : (millis-500)/500.f;
                 flashcolour(colour[0].r, colour[0].g, colour[0].b, 1.f, 1.f, 1.f, amt);
             }
-            else if(burning) colour[0] = game::rescolour(d, PULSE_FIRE);
-            else if(bleeding)
+            if(burning)
             {
                 int millis = lastmillis%1000;
                 float amt = millis <= 500 ? millis/500.f : 1.f-((millis-500)/500.f);
-                flashcolour(colour[0].r, colour[0].g, colour[0].b, 1.f, 0.2f, 0.2f, amt);
+                vec c = game::rescolour(d, PULSE_BURN);
+                flashcolour(colour[0].r, colour[0].g, colour[0].b, c.r, c.g, c.b, amt);
             }
-            else if(shocking)
+            if(bleeding)
             {
                 int millis = lastmillis%1000;
                 float amt = millis <= 500 ? millis/500.f : 1.f-((millis-500)/500.f);
                 vec c = game::rescolour(d, PULSE_SHOCK);
                 flashcolour(colour[0].r, colour[0].g, colour[0].b, c.r, c.g, c.b, amt);
             }
-            else colour[0] = vec::hexcolor(game::getcolour(d, game::playerundertone));
+            if(shocking)
+            {
+                int millis = lastmillis%1000;
+                float amt = millis <= 500 ? millis/500.f : 1.f-((millis-500)/500.f);
+                vec c = game::rescolour(d, PULSE_SHOCK);
+                flashcolour(colour[0].r, colour[0].g, colour[0].b, c.r, c.g, c.b, amt);
+            }
             colour[1] = vec::hexcolor(game::getcolour(d, game::playerovertone));
             const char *tex = isdominated ? dominatedtex : (killer || self ? arrowtex : playerbliptex);
             float fade = (force || killer || self || dominated ? 1.f : clamp(1.f-(dist/float(radarrange())), isdominated ? 0.25f : 0.f, 1.f))*blend, size = killer || self ? 1.5f : (isdominated ? 1.25f : 1.f);
@@ -2271,7 +2278,7 @@ namespace hud
                 range = clamp(max(d.damage, radardamagemin)/float(max(radardamagemax-radardamagemin, 1)), radardamagemin/100.f, 1.f),
                 fade = clamp(radardamageblend*blend, min(radardamageblend*radardamagemin/100.f, 1.f), radardamageblend)*amt,
                 size = clamp(range*radardamagesize, min(radardamagesize*radardamagemin/100.f, 1.f), radardamagesize)*amt;
-            vec dir = d.dir, colour = vec::hexcolor(d.colour < 0 ? pulsecols[-1-d.colour][clamp((lastmillis/100)%PULSECOLOURS, 0, PULSECOLOURS-1)] : d.colour);
+            vec dir = d.dir, colour = d.colour < 0 ? game::rescolour(game::focus, INVPULSE(d.colour)) : vec::hexcolor(d.colour);
             if(e == game::focus) d.dir = vec(e->yaw*RAD, 0.f).neg();
             vec o = vec(camera1->o).add(vec(dir).mul(radarrange()));
             if(radardamage >= 5) drawblip(hurttex, 2+size/3, w, h, size, fade, 0, o, colour, "tiny", "%s +%d", e ? game::colourname(e) : "?", d.damage);
@@ -2311,7 +2318,7 @@ namespace hud
                 fade *= 1-(offset/float(radarhitsfade));
             }
             defformatstring(text, "%c%d", d.damage > 0 ? '-' : (d.damage < 0 ? '+' : '~'), d.damage < 0 ? 0-d.damage : d.damage);
-            vec colour = vec::hexcolor(d.colour < 0 ? pulsecols[-1-d.colour][clamp((lastmillis/100)%PULSECOLOURS, 0, PULSECOLOURS-1)] : d.colour);
+            vec colour = d.colour < 0 ? game::rescolour(a, INVPULSE(d.colour)) : vec::hexcolor(d.colour);
             if(radarhitsglow)
             {
                 float width = 0, height = 0;
@@ -2908,7 +2915,8 @@ namespace hud
                     {
                         int millis = lastmillis%1000;
                         float amt = millis <= 500 ? millis/500.f : 1.f-((millis-500)/500.f);
-                        flashcolour(gr, gg, gb, 1.f, 0.5f, 0.f, amt);
+                        vec c = game::rescolour(game::focus, PULSE_BURN);
+                        flashcolour(gr, gg, gb, c.r, c.g, c.b, amt);
                     }
                     sy += drawitem(burningtex, x, y-sy, s, 0, false, true, gr, gg, gb, fade);
                 }
@@ -2920,7 +2928,8 @@ namespace hud
                     {
                         int millis = lastmillis%1000;
                         float amt = millis <= 500 ? millis/500.f : 1.f-((millis-500)/500.f);
-                        flashcolour(gr, gg, gb, 1.f, 0.f, 0.f, amt);
+                        vec c = game::rescolour(game::focus, PULSE_BLEED);
+                        flashcolour(gr, gg, gb, c.r, c.g, c.b, amt);
                     }
                     sy += drawitem(bleedingtex, x, y-sy, s, 0, false, true, gr, gg, gb, fade);
                 }
@@ -2932,7 +2941,8 @@ namespace hud
                     {
                         int millis = lastmillis%1000;
                         float amt = millis <= 500 ? millis/500.f : 1.f-((millis-500)/500.f);
-                        flashcolour(gr, gg, gb, 0.f, 0.8f, 1.f, amt);
+                        vec c = game::rescolour(game::focus, PULSE_SHOCK);
+                        flashcolour(gr, gg, gb, c.r, c.g, c.b, amt);
                     }
                     sy += drawitem(shockingtex, x, y-sy, s, 0, false, true, gr, gg, gb, fade);
                 }
