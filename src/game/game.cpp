@@ -1417,7 +1417,7 @@ namespace game
                 d->lastpain = lastmillis;
                 if(!WK(flags)) playsound(WSND2(weap, WS(flags), S_W_IMPACT), vec(d->center()).add(vec(dir).mul(dist)), NULL, 0, clamp(int(255*scale), 64, 255));
             }
-            if(AA(d->actortype, abilities)&(1<<A_A_MOVE))
+            if(AA(d->actortype, abilities)&(1<<A_A_PUSHABLE))
             {
                 if(weap == -1 && shocking && shockstun)
                 {
