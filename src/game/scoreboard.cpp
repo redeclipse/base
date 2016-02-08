@@ -873,9 +873,9 @@ namespace hud
                     if(sg.total)
                     {
                         pushfont("little");
-                        sy += draw_textx("by %s", x+FONTW*2, y, 0, 0, 255, 255, 255, int(blend*255), TEXT_LEFT_UP, -1, -1, game::colourteam(sg.team));
+                        sy += draw_textf("by %s", x+FONTW*2, y, 0, 0, 255, 255, 255, int(blend*255), TEXT_LEFT_UP, -1, -1, 1, game::colourteam(sg.team));
                         popfont();
-                        sy += draw_textx("\fg%s", x, y-sy, 0, 0, 255, 255, 255, int(blend*255), TEXT_LEFT_UP, -1, -1, timestr(sg.total, inventoryracestyle));
+                        sy += draw_textf("\fg%s", x, y-sy, 0, 0, 255, 255, 255, int(blend*255), TEXT_LEFT_UP, -1, -1, 1, timestr(sg.total, inventoryracestyle));
                     }
                 }
                 else if(!sg.players.empty())
@@ -883,9 +883,9 @@ namespace hud
                     if(sg.players[0]->cptime)
                     {
                         pushfont("little");
-                        sy += draw_textx("by %s", x+FONTW*2, y, 0, 0, 255, 255, 255, int(blend*255), TEXT_LEFT_UP, -1, -1, game::colourname(sg.players[0]));
+                        sy += draw_textf("by %s", x+FONTW*2, y, 0, 0, 255, 255, 255, int(blend*255), TEXT_LEFT_UP, -1, -1, 1, game::colourname(sg.players[0]));
                         popfont();
-                        sy += draw_textx("\fg%s", x, y-sy, 0, 0, 255, 255, 255, int(blend*255), TEXT_LEFT_UP, -1, -1, timestr(sg.players[0]->cptime, inventoryracestyle));
+                        sy += draw_textf("\fg%s", x, y-sy, 0, 0, 255, 255, 255, int(blend*255), TEXT_LEFT_UP, -1, -1, 1, timestr(sg.players[0]->cptime, inventoryracestyle));
                     }
                 }
             }
@@ -894,17 +894,17 @@ namespace hud
                 if(sg.total)
                 {
                     pushfont("little");
-                    sy += draw_textx("by %s", x+FONTW*2, y, 0, 0, 255, 255, 255, int(blend*255), TEXT_LEFT_UP, -1, -1, game::colourteam(sg.team));
+                    sy += draw_textf("by %s", x+FONTW*2, y, 0, 0, 255, 255, 255, int(blend*255), TEXT_LEFT_UP, -1, -1, 1, game::colourteam(sg.team));
                     popfont();
-                    sy += draw_textx("\fs\fg%d\fS %s", x, y-sy, 0, 0, 255, 255, 255, int(blend*255), TEXT_LEFT_UP, -1, -1, sg.total, sg.total != 1 ? "laps" : "lap");
+                    sy += draw_textf("\fs\fg%d\fS %s", x, y-sy, 0, 0, 255, 255, 255, int(blend*255), TEXT_LEFT_UP, -1, -1, 1, sg.total, sg.total != 1 ? "laps" : "lap");
                 }
             }
             else if(!sg.players.empty() && sg.players[0]->points)
             {
                 pushfont("little");
-                sy += draw_textx("by %s", x+FONTW*2, y, 0, 0, 255, 255, 255, int(blend*255), TEXT_LEFT_UP, -1, -1, game::colourname(sg.players[0]));
+                sy += draw_textf("by %s", x+FONTW*2, y, 0, 0, 255, 255, 255, int(blend*255), TEXT_LEFT_UP, -1, -1, 1, game::colourname(sg.players[0]));
                 popfont();
-                sy += draw_textx("\fs\fg%d\fS %s", x, y-sy, 0, 0, 255, 255, 255, int(blend*255), TEXT_LEFT_UP, -1, -1, sg.players[0]->points, sg.players[0]->points != 1 ? "laps" : "lap");
+                sy += draw_textf("\fs\fg%d\fS %s", x, y-sy, 0, 0, 255, 255, 255, int(blend*255), TEXT_LEFT_UP, -1, -1, 1, sg.players[0]->points, sg.players[0]->points != 1 ? "laps" : "lap");
             }
         }
         return sy;

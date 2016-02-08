@@ -1134,7 +1134,7 @@ namespace recorder
         else if(totalsize >= 1e6) { totalsize /= 1e6; unit = "MB"; }
         else totalsize /= 1e3;
 
-        draw_textx("recorded %.1f%s %d%%", w*3-FONTH*3/2, FONTH*3/2, 0, 0, 255, 255, 255, 255, TEXT_RIGHT_JUSTIFY, -1, -1, totalsize, unit, int(calcquality()*100));
+        draw_textf("recorded %.1f%s %d%%", w*3-FONTH*3/2, FONTH*3/2, 0, 0, 255, 255, 255, 255, TEXT_RIGHT_JUSTIFY, -1, -1, 1, totalsize, unit, int(calcquality()*100));
 
         glDisable(GL_BLEND);
     }

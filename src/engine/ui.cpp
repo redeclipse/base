@@ -768,7 +768,7 @@ struct gui : guient
                 if(cursorfx && !guicursortype) guicursortype = 1;
             }
         }
-        draw_textx("%s", x, y, 0, 0, color>>16, (color>>8)&0xFF, color&0xFF, alpha, flags, -1, wrap > 0 ? wrap : -1, text);
+        draw_textf("%s", x, y, 0, 0, color>>16, (color>>8)&0xFF, color&0xFF, alpha, flags, -1, wrap > 0 ? wrap : -1, 1, text);
     }
 
     void fill(int color, int inheritw, int inherith)

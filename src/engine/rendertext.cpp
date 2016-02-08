@@ -142,13 +142,13 @@ bool setfont(const char *name)
     return true;
 }
 
-float text_widthf(const char *str, int xpad, int ypad, int flags)
+float text_widthf(const char *str, int xpad, int ypad, int flags, float linespace)
 {
     float width, height;
-    text_boundsf(str, width, height, xpad, ypad, -1, flags);
+    text_boundsf(str, width, height, xpad, ypad, -1, flags, linespace);
     return width;
 }
-ICOMMAND(0, textwidth, "siii", (char *s, int *f, int *x, int *y), floatret(text_widthf(s, *x, *y, *f)));
+ICOMMAND(0, textwidth, "siiif", (char *s, int *f, int *x, int *y, float *p), floatret(text_widthf(s, *x, *y, *f, *p!=0 ? *p : 1.f)));
 
 int text_fontw(const char *s)
 {
@@ -183,12 +183,6 @@ void tabify(const char *str, int *numtabs)
 }
 
 COMMAND(0, tabify, "si");
-
-int draw_textf(const char *fstr, int left, int top, ...)
-{
-    defvformatbigstring(str, top, fstr);
-    return draw_text(str, left, top);
-}
 
 const matrix4x3 *textmatrix = NULL;
 
@@ -330,6 +324,8 @@ static float icon_width(const char *name, float scale)
     float w = (t->w*curfont->maxh*scale)/float(t->h);
     return w;
 }
+
+#define TEXTHEIGHT (int(FONTH*linespace))
 
 #define TEXTCOLORIZE(h,s,q) \
 { \
@@ -475,7 +471,7 @@ static float icon_width(const char *name, float scale)
     TEXTESTIMATE(idx) \
     if((flags&TEXT_LEFT_JUSTIFY) && !(flags&TEXT_NO_INDENT)) x += FONTTAB; \
     if(!y && (flags&TEXT_RIGHT_JUSTIFY) && !(flags&TEXT_NO_INDENT)) usewidth -= FONTTAB; \
-    y += FONTH; \
+    y += TEXTHEIGHT; \
 }
 
 #define TEXTWIDTH(s) \
@@ -553,7 +549,7 @@ static float icon_width(const char *name, float scale)
 
 #define TEXTEND(cursor) if(cursor >= i) { do { TEXTINDEX(cursor); } while(0); }
 
-int text_visible(const char *str, float hitx, float hity, int maxwidth, int flags)
+int text_visible(const char *str, float hitx, float hity, int maxwidth, int flags, float linespace)
 {
     int realwidth = 0;
     #define TEXTINDEX(idx)
@@ -577,7 +573,7 @@ int text_visible(const char *str, float hitx, float hity, int maxwidth, int flag
 }
 
 //inverse of text_visible
-void text_posf(const char *str, int cursor, float &cx, float &cy, int maxwidth, int flags)
+void text_posf(const char *str, int cursor, float &cx, float &cy, int maxwidth, int flags, float linespace)
 {
     int realwidth = 0;
     #define TEXTINDEX(idx) if(cursor == idx) { cx = x; cy = y; break; }
@@ -602,7 +598,7 @@ void text_posf(const char *str, int cursor, float &cx, float &cy, int maxwidth, 
     #undef TEXTCHAR
 }
 
-void text_boundsf(const char *str, float &width, float &height, int xpad, int ypad, int maxwidth, int flags)
+void text_boundsf(const char *str, float &width, float &height, int xpad, int ypad, int maxwidth, int flags, float linespace)
 {
     int realwidth = 0;
     #define TEXTINDEX(idx)
@@ -757,13 +753,13 @@ static int draw_key(Texture *&tex, const char *str, float sx, float sy)
             tex = oldtex;
             glBindTexture(GL_TEXTURE_2D, tex->id);
         }
-        width += draw_textx("\fs\fa[\fS%s\fs\fa]\fS", sx + width, sy, 0, 0, 255, 255, 255, 255, 0, -1, -1, list[i]);
+        width += draw_textf("\fs\fa[\fS%s\fs\fa]\fS", sx + width, sy, 0, 0, 255, 255, 255, 255, 0, -1, -1, 1, list[i]);
     }
     list.deletearrays();
     return width;
 }
 
-int draw_text(const char *str, int rleft, int rtop, int r, int g, int b, int a, int flags, int cursor, int maxwidth, int realwidth)
+int draw_text(const char *str, int rleft, int rtop, int r, int g, int b, int a, int flags, int cursor, int maxwidth, float linespace, int realwidth)
 {
     #define TEXTINDEX(idx) \
         if(cursor >= 0 && idx == cursor) \
@@ -777,7 +773,7 @@ int draw_text(const char *str, int rleft, int rtop, int r, int g, int b, int a, 
             } \
         }
     #define TEXTWHITE(idx)
-    #define TEXTLINE(idx) ly += FONTH;
+    #define TEXTLINE(idx) ly += TEXTHEIGHT;
     #define TEXTCOLOR(idx) if(usecolor) { text_color(str[idx], colorstack, sizeof(colorstack), colorpos, color, r, g, b, fade); }
     #define TEXTHEXCOLOR(ret) \
         if(usecolor) \
@@ -830,12 +826,12 @@ void reloadfonts()
     );
 }
 
-int draw_textx(const char *fstr, int left, int top, int xpad, int ypad, int r, int g, int b, int a, int flags, int cursor, int maxwidth, ...)
+int draw_textf(const char *fstr, int left, int top, int xpad, int ypad, int r, int g, int b, int a, int flags, int cursor, int maxwidth, float linespace, ...)
 {
-    defvformatbigstring(str, maxwidth, fstr);
+    defvformatbigstring(str, linespace, fstr);
 
     int width = 0, height = 0, realwidth = maxwidth;
-    text_bounds(str, width, height, xpad, ypad, maxwidth, flags);
+    text_bounds(str, width, height, xpad, ypad, maxwidth, flags, linespace);
     if(flags&TEXT_ALIGN) switch(flags&TEXT_ALIGN)
     {
         case TEXT_CENTERED: left -= width/2; realwidth = width-xpad*2; break;
@@ -872,8 +868,8 @@ int draw_textx(const char *fstr, int left, int top, int xpad, int ypad, int r, i
     }
     if(xpad) left += xpad;
     if(ypad) top += ypad;
-    if(flags&TEXT_SHADOW) draw_text(str, left+2, top+2, 0, 0, 0, a, flags, cursor, maxwidth, realwidth);
-    draw_text(str, left, top, r, g, b, a, flags, cursor, maxwidth, realwidth);
+    if(flags&TEXT_SHADOW) draw_text(str, left+2, top+2, 0, 0, 0, a, flags, cursor, maxwidth, linespace, realwidth);
+    draw_text(str, left, top, r, g, b, a, flags, cursor, maxwidth, linespace, realwidth);
     return height;
 }
 

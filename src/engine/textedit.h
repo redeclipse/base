@@ -609,7 +609,7 @@ struct editor
                 text_bounds(str, width, height, 0, 0, maxwidth, TEXT_NO_INDENT);
                 if(h+height <= pixelheight)
                 {
-                    draw_textx("%s", x, y+h, 0, 0, color>>16, (color>>8)&0xFF, color&0xFF, 0xFF, TEXT_NO_INDENT, hit ? 0 : -1, maxwidth, str);
+                    draw_textf("%s", x, y+h, 0, 0, color>>16, (color>>8)&0xFF, color&0xFF, 0xFF, TEXT_NO_INDENT, hit ? 0 : -1, maxwidth, 1, str);
                     h += height;
                 }
             }

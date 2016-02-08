@@ -151,8 +151,8 @@ namespace bomber
             {
                 pushfont("reduced");
                 if(m_regen(game::gamemode, game::mutators) && bomberregenbuff && bomberregenextra)
-                    ty += draw_textx("Buffing: \fs\fo%d%%\fS damage, \fs\fg%d%%\fS shield, +\fs\fy%d\fS regen", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, int(bomberbuffdamage*100), int(bomberbuffshield*100), bomberregenextra);
-                else ty += draw_textx("Buffing: \fs\fo%d%%\fS damage, \fs\fg%d%%\fS shield", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, int(bomberbuffdamage*100), int(bomberbuffshield*100));
+                    ty += draw_textf("Buffing: \fs\fo%d%%\fS damage, \fs\fg%d%%\fS shield, +\fs\fy%d\fS regen", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, int(bomberbuffdamage*100), int(bomberbuffshield*100), bomberregenextra);
+                else ty += draw_textf("Buffing: \fs\fo%d%%\fS damage, \fs\fg%d%%\fS shield", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, int(bomberbuffdamage*100), int(bomberbuffshield*100));
                 popfont();
             }
             loopv(st.flags)
@@ -165,12 +165,12 @@ namespace bomber
                     {
                         int delay = carrytime-(lastmillis-f.taketime);
                         pushfont("default");
-                        ty += draw_textx("Bomb explodes in \fs\fzgy%s\fS", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, timestr(delay));
+                        ty += draw_textf("Bomb explodes in \fs\fzgy%s\fS", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, timestr(delay));
                         popfont();
                         if(m_bb_hold(game::gamemode, game::mutators))
                         {
                             pushfont("reduced");
-                            ty += draw_textx("Killing enemies resets fuse timer", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED);
+                            ty += draw_textf("Killing enemies resets fuse timer", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED);
                             popfont();
                         }
                         if(delay <= carrytime/4) important = true;
@@ -178,7 +178,7 @@ namespace bomber
                     if(game::focus == game::player1)
                     {
                         pushfont(important ? "emphasis" : "reduced");
-                        ty += draw_textx(important ? "\fs\fzuyPress \f{=affinity} to throw the bomb\fS" : "Press \f{=affinity} to throw the bomb", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1);
+                        ty += draw_textf(important ? "\fs\fzuyPress \f{=affinity} to throw the bomb\fS" : "Press \f{=affinity} to throw the bomb", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED);
                         popfont();
                     }
                     break;
@@ -197,7 +197,7 @@ namespace bomber
                 if(f.owner == game::focus)
                 {
                     pushfont("super");
-                    ty += draw_textx("You are holding the \fs\f[%d]\f(%s)bomb\fS", tx, ty, int(FONTW*hud::eventpadx), int(FONTH*hud::eventpady), tr, tg, tb, int(255*blend), TEXT_SKIN|TEXT_CENTERED, -1, -1, pulsecols[PULSE_DISCO][clamp((lastmillis/100)%PULSECOLOURS, 0, PULSECOLOURS-1)], hud::bombtex);
+                    ty += draw_textf("You are holding the \fs\f[%d]\f(%s)bomb\fS", tx, ty, int(FONTW*hud::eventpadx), int(FONTH*hud::eventpady), tr, tg, tb, int(255*blend), TEXT_SKIN|TEXT_CENTERED, -1, -1, 1, pulsecols[PULSE_DISCO][clamp((lastmillis/100)%PULSECOLOURS, 0, PULSECOLOURS-1)], hud::bombtex);
                     popfont();
                     break;
                 }
