@@ -2613,7 +2613,7 @@ namespace hud
         {
             if(inventorytone) skewcolour(gr, gg, gb, inventorytone);
             gf *= inventorybgskin;
-            xpad = FONTW/2;
+            xpad = FONTW/4;
         }
         defvformatstring(str, text, text);
         int tx = int(cx/skew), ty = int(cy/skew);
