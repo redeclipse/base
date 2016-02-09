@@ -153,7 +153,7 @@ namespace capture
             if(game::focus == game::player1 && (!hasflags.empty() || !pickup.empty()))
             {
                 pushfont("reduced");
-                ty += draw_textf("Press \f{=affinity} to %s", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, !hasflags.empty() ? "drop flags" : "pick up flags");
+                ty += draw_textf("Press \fs\fw\f{=affinity}\fS to %s", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, !hasflags.empty() ? "drop flags" : "pick up flags");
                 popfont();
             }
             if(!taken.empty())
