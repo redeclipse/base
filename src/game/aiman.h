@@ -42,34 +42,34 @@ namespace aiman
                 {
                     m = max(G(coopskillmax), G(coopskillmin));
                     n = min(G(coopskillmin), m);
-                    if(deaths > 0 && G(coopskilldeaths) > 0)
+                    if(deaths != 0 && G(coopskilldeaths) != 0)
                     {
                         int amt = G(coopskilldeaths)*deaths;
                         m += amt;
                         n += amt;
                     }
-                    if(frags > 0 && G(coopskillfrags) > 0)
+                    if(frags != 0 && G(coopskillfrags) != 0)
                     {
                         int amt = G(coopskillfrags)*frags;
-                        m -= amt;
-                        n -= amt;
+                        m += amt;
+                        n += amt;
                     }
                 }
                 else
                 {
                     m = max(G(botskillmax), G(botskillmin));
                     n = min(G(botskillmin), m);
-                    if(deaths > 0 && G(botskilldeaths) > 0)
+                    if(deaths != 0 && G(botskilldeaths) != 0)
                     {
                         int amt = G(botskilldeaths)*deaths;
                         m += amt;
                         n += amt;
                     }
-                    if(frags > 0 && G(botskillfrags) > 0)
+                    if(frags != 0 && G(botskillfrags) != 0)
                     {
                         int amt = G(botskillfrags)*frags;
-                        m -= amt;
-                        n -= amt;
+                        m += amt;
+                        n += amt;
                     }
                 }
                 break;

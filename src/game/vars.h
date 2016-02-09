@@ -194,7 +194,7 @@ GVAR(IDF_GAMEMOD, radardistlimit, 0, 0, VAR_MAX); // forces the radar to this di
 
 GVAR(IDF_GAMEMOD, balancemaps, -1, -1, 3); // determined if map team balancing is used: -1 = map default, 0 = off, 1 = ctf/dnc/bb, 2 = with team spawns, 3 = forced
 GVAR(IDF_GAMEMOD, balancereset, 0, 2, 2); // reset players when balancing them, 0 = off, 1 = only when necessary, 2 = always
-GVAR(IDF_GAMEMOD, balancedelay, 0, 5000, 30000); // before mapbalance forces
+GVAR(IDF_GAMEMOD, balancedelay, 0, 5000, VAR_MAX); // before mapbalance forces
 GVAR(IDF_GAMEMOD, balancenospawn, 0, 1, 1); // prevent respawning when waiting to balance
 GVAR(IDF_GAMEMOD, balanceduke, 0, 1, 1); // enable in duel/survivor
 
@@ -389,8 +389,8 @@ GVAR(IDF_GAMEMOD, botbalanceduel, -1, 2, VAR_MAX); // -1 = always use numplayers
 GVAR(IDF_GAMEMOD, botbalancesurvivor, -1, 2, VAR_MAX); // -1 = always use numplayers, 0 = don't balance, 1 or more = fill only with this many
 GVAR(IDF_GAMEMOD, botskillmin, 1, 60, 101);
 GVAR(IDF_GAMEMOD, botskillmax, 1, 75, 101);
-GFVAR(IDF_GAMEMOD, botskillfrags, 0, 1, 100);
-GFVAR(IDF_GAMEMOD, botskilldeaths, 0, 1, 100);
+GFVAR(IDF_GAMEMOD, botskillfrags, -100, 0, 100);
+GFVAR(IDF_GAMEMOD, botskilldeaths, -100, 1, 100);
 GVAR(IDF_GAMEMOD, botlimit, 0, 32, MAXAI);
 GVAR(IDF_GAMEMOD, botoffset, VAR_MIN, 0, VAR_MAX);
 GSVAR(IDF_MODERATOR, botmalenames, "");
@@ -401,8 +401,8 @@ GFVAR(IDF_GAMEMOD, coopbalance, FVAR_NONZERO, 1.5f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, coopmultibalance, FVAR_NONZERO, 2, FVAR_MAX);
 GVAR(IDF_GAMEMOD, coopskillmin, 1, 75, 101);
 GVAR(IDF_GAMEMOD, coopskillmax, 1, 85, 101);
-GFVAR(IDF_GAMEMOD, coopskillfrags, 0, 1, 100);
-GFVAR(IDF_GAMEMOD, coopskilldeaths, 0, 1.5f, 100);
+GFVAR(IDF_GAMEMOD, coopskillfrags, -100, 0, 100);
+GFVAR(IDF_GAMEMOD, coopskilldeaths, -100, 1, 100);
 GVAR(IDF_GAMEMOD, enemybalance, 1, 1, 3);
 GVAR(IDF_GAMEMOD, enemyskillmin, 1, 65, 101);
 GVAR(IDF_GAMEMOD, enemyskillmax, 1, 80, 101);
