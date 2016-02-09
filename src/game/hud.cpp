@@ -327,7 +327,7 @@ namespace hud
     FVAR(IDF_PERSIST, inventoryeditskew, 1e-4f, 0.5f, 1000);
 
     VAR(IDF_PERSIST, inventoryhealth, 0, 3, 3); // 0 = off, 1 = text, 2 = bar, 3 = bar + text
-    VAR(IDF_PERSIST, inventoryhealthflash, 0, 1, 1);
+    VAR(IDF_PERSIST, inventoryhealthflash, 0, 2, 2);
     FVAR(IDF_PERSIST, inventoryhealthblend, 0, 1, 1);
     FVAR(IDF_PERSIST, inventoryhealththrob, 0, 0.035f, 1);
     FVAR(IDF_PERSIST, inventoryhealthbartop, 0, 0.09375f, 1); // starts from this offset
@@ -336,7 +336,7 @@ namespace hud
     FVAR(IDF_PERSIST, inventoryhealthbgblend, 0, 0.5f, 1);
 
     VAR(IDF_PERSIST, inventoryimpulse, 0, 2, 3); // 0 = off, 1 = text, 2 = bar, 3 = both
-    VAR(IDF_PERSIST, inventoryimpulseflash, 0, 1, 1);
+    VAR(IDF_PERSIST, inventoryimpulseflash, 0, 2, 2);
     FVAR(IDF_PERSIST, inventoryimpulseblend, 0, 1, 1);
     FVAR(IDF_PERSIST, inventoryimpulsethrob, 0, 0.035f, 1);
     FVAR(IDF_PERSIST, inventoryimpulsebartop, 0, 0.171875f, 1); // starts from this offset
@@ -2457,7 +2457,7 @@ namespace hud
         loopi(4)
         {
             const barstep &step = barsteps[id][i];
-            vec colour = throb >= 0 && i == throbstep ? (throbcolour >= 0 ? vec::hexcolor(throbcolour) : vec(barsteps[id][3].r, barsteps[id][3].g, barsteps[id][3].b)) : vec(step.r, step.g, step.b);
+            vec colour = throb >= 0 && throbcolour >= 0 && i == throbstep ? vec::hexcolor(throbcolour) : vec(step.r, step.g, step.b);
             if(i > 0)
             {
                 if(step.amt > amt && barsteps[id][i-1].amt <= amt)
@@ -2821,7 +2821,7 @@ namespace hud
                 float pulse = inventoryhealthflash ? clamp((heal-game::focus->health)/float(heal), 0.f, 1.f) : 0.f,
                       throb = inventoryhealththrob > 0 && regentime && game::focus->lastregen && lastmillis-game::focus->lastregen <= regentime ? clamp((lastmillis-game::focus->lastregen)/float(regentime), 0.f, 1.f) : -1.f;
                 if(inventoryhealth&2)
-                    sy += drawbar(x, y, s, size, 1, inventoryhealthbartop, inventoryhealthbarbottom, fade, clamp(game::focus->health/float(heal), 0.f, 1.f), healthtex, healthbgtex, inventorytone, inventoryhealthbgglow, inventoryhealthbgblend, pulse, throb, inventoryhealththrob, game::focus->lastregenamt <= 0 ? 0xFF0000 : 0x00FF00, game::focus->lastregenamt <= 0);
+                    sy += drawbar(x, y, s, size, 1, inventoryhealthbartop, inventoryhealthbarbottom, fade, clamp(game::focus->health/float(heal), 0.f, 1.f), healthtex, healthbgtex, inventorytone, inventoryhealthbgglow, inventoryhealthbgblend, pulse, throb, inventoryhealththrob, inventoryhealthflash >= 2 ? (game::focus->lastregenamt <= 0 ? 0xFF0000 : 0x00FF00) : -1, game::focus->lastregenamt <= 0);
                 if(inventoryhealth&1)
                 {
                     float gr = 1, gg = 1, gb = 1;
@@ -2853,7 +2853,7 @@ namespace hud
                 flashcolour(gr, gg, gb, 0.25f, 0.25f, 0.25f, 1-span);
                 if(pulse > 0 && impulsemeter-game::focus->impulse[IM_METER] < impulsecost) flashcolour(gr, gg, gb, 1.f, 0.f, 0.f, clamp(lastmillis%1000/1000.f, 0.f, 1.f));
                 if(inventoryimpulse&2)
-                    sy += drawbar(x, y-sy, s, size, 2, inventoryimpulsebartop, inventoryimpulsebarbottom, fade, span, impulsetex, impulsebgtex, inventorytone, inventoryimpulsebgglow, inventoryimpulsebgblend, pulse, throb, inventoryimpulsethrob, 0xFFFFFF);
+                    sy += drawbar(x, y-sy, s, size, 2, inventoryimpulsebartop, inventoryimpulsebarbottom, fade, span, impulsetex, impulsebgtex, inventorytone, inventoryimpulsebgglow, inventoryimpulsebgblend, pulse, throb, inventoryimpulsethrob, inventoryimpulseflash >= 2 ? 0xFFFFFF : -1);
                 if(inventoryimpulse&1)
                 {
                     if(!(inventoryimpulse&2))
