@@ -4074,37 +4074,29 @@ namespace server
                         if(flags&HIT_BURN)
                         {
                             statalt = m->lastresalt[WR_BURN];
-                            if(statalt)
-                                v->weapstats[m->lastresweapon[WR_BURN]].damage2 += realdamage;
-                            else
-                                v->weapstats[m->lastresweapon[WR_BURN]].damage1 += realdamage;
+                            if(statalt) v->weapstats[m->lastresweapon[WR_BURN]].damage2 += realdamage;
+                            else v->weapstats[m->lastresweapon[WR_BURN]].damage1 += realdamage;
                             statweap = m->lastresweapon[WR_BURN];
                         }
                         if(flags&HIT_BLEED)
                         {
                             statalt = m->lastresalt[WR_BLEED];
-                            if(statalt)
-                                v->weapstats[m->lastresweapon[WR_BLEED]].damage2 += realdamage;
-                            else
-                                v->weapstats[m->lastresweapon[WR_BLEED]].damage1 += realdamage;
+                            if(statalt) v->weapstats[m->lastresweapon[WR_BLEED]].damage2 += realdamage;
+                            else v->weapstats[m->lastresweapon[WR_BLEED]].damage1 += realdamage;
                             statweap = m->lastresweapon[WR_BLEED];
                         }
                         if(flags&HIT_SHOCK)
                         {
                             statalt = m->lastresalt[WR_SHOCK];
-                            if(statalt)
-                                v->weapstats[m->lastresweapon[WR_SHOCK]].damage2 += realdamage;
-                            else
-                                v->weapstats[m->lastresweapon[WR_SHOCK]].damage1 += realdamage;
+                            if(statalt) v->weapstats[m->lastresweapon[WR_SHOCK]].damage2 += realdamage;
+                            else v->weapstats[m->lastresweapon[WR_SHOCK]].damage1 += realdamage;
                             statweap = m->lastresweapon[WR_SHOCK];
                         }
                     }
                     else
                     {
-                        if(WS(flags))
-                            v->weapstats[statweap].damage2 += realdamage;
-                        else
-                            v->weapstats[statweap].damage1 += realdamage;
+                        if(WS(flags)) v->weapstats[statweap].damage2 += realdamage;
+                        else v->weapstats[statweap].damage1 += realdamage;
                     }
                 }
                 if(m->health <= 0) realflags |= HIT_KILL;
@@ -4133,17 +4125,13 @@ namespace server
                 {
                     if(WK(flags))
                     {
-                        if(WS(flags))
-                            v->weapstats[statweap].flakhits2++;
-                        else
-                            v->weapstats[statweap].flakhits1++;
+                        if(WS(flags)) v->weapstats[statweap].flakhits2++;
+                        else v->weapstats[statweap].flakhits1++;
                     }
                     else
                     {
-                        if(WS(flags))
-                            v->weapstats[statweap].hits2++;
-                        else
-                            v->weapstats[statweap].hits1++;
+                        if(WS(flags)) v->weapstats[statweap].hits2++;
+                        else v->weapstats[statweap].hits1++;
                     }
                 }
             }
@@ -4159,10 +4147,8 @@ namespace server
             if(m != v && (!m_team(gamemode, mutators) || m->team != v->team))
             {
                 v->frags++;
-                if(statalt)
-                    v->weapstats[statweap].frags2++;
-                else
-                    v->weapstats[statweap].frags1++;
+                if(statalt) v->weapstats[statweap].frags2++;
+                else v->weapstats[statweap].frags1++;
             }
             else fragvalue = -fragvalue;
             bool isai = m->actortype >= A_ENEMY, isteamkill = false;
@@ -4253,7 +4239,7 @@ namespace server
                     }
                 }
             }
-            if(m_race(gamemode) && (!m_ra_gauntlet(gamemode, mutators) || m->team == T_ALPHA) && m->cpnodes.length() == 1)
+            if(m->actortype < A_ENEMY && m_race(gamemode) && (!m_ra_gauntlet(gamemode, mutators) || m->team == T_ALPHA) && m->cpnodes.length() == 1)
             {  // reset if hasn't reached another checkpoint yet
                 m->cpmillis = 0;
                 m->cpnodes.shrink(0);
@@ -4325,7 +4311,7 @@ namespace server
     {
         if(ci->state != CS_ALIVE) return;
         if(flags&HIT_MATERIAL && (material&MATF_VOLUME) == MAT_LAVA) flags |= HIT_BURN;
-        if(!(flags&HIT_MATERIAL) && !(flags&HIT_LOST))
+        if(!(flags&HIT_MATERIAL) && !(flags&HIT_LOST) && !(flags&HIT_SPEC))
         {
             if(smode && !smode->damage(ci, ci, ci->health, -1, flags, material)) { return; }
             mutate(smuts, if(!mut->damage(ci, ci, ci->health, -1, flags, material)) { return; });
@@ -4333,13 +4319,13 @@ namespace server
         ci->spree = 0;
         ci->deaths++;
         bool kamikaze = dropitems(ci, actor[ci->actortype].living ? DROP_DEATH : DROP_EXPIRE);
-        if(m_race(gamemode) && (!m_ra_gauntlet(gamemode, mutators) || ci->team == T_ALPHA) && !(flags&HIT_SPEC) && (!flags || ci->cpnodes.length() == 1 || !ci->checkpointspawn))
+        if(ci->actortype < A_ENEMY && m_race(gamemode) && (!m_ra_gauntlet(gamemode, mutators) || ci->team == T_ALPHA) && !(flags&HIT_SPEC) && (!flags || ci->cpnodes.length() == 1 || !ci->checkpointspawn))
         { // reset if suicided, hasn't reached another checkpoint yet
             ci->cpmillis = 0;
             ci->cpnodes.shrink(0);
             sendf(-1, 1, "ri3", N_CHECKPOINT, ci->clientnum, -1);
         }
-        else if(ci->actortype == A_PLAYER)
+        else if(!(flags&HIT_LOST) && !(flags&HIT_SPEC))
         {
             int pointvalue = (smode ? smode->points(ci, ci) : -1)*G(fragbonus);
             if(kamikaze) pointvalue *= G(teamkillpenalty);
@@ -4477,10 +4463,8 @@ namespace server
                     {
                         int w = f%W_MAX, r = min(W2(weap, fragrays, WS(flags)), MAXPARAMS);
                         loopi(r) ci->weapshots[w][f >= W_MAX ? 1 : 0].add(-id);
-                        if(WS(flags))
-                            ci->weapstats[weap].flakshots2 += r;
-                        else
-                            ci->weapstats[weap].flakshots1 += r;
+                        if(WS(flags)) ci->weapstats[weap].flakshots2 += r;
+                        else ci->weapstats[weap].flakshots1 += r;
                     }
                 }
                 sendf(-1, 1, "ri4x", N_DESTROY, ci->clientnum, 1, id, ci->clientnum);
