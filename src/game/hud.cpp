@@ -294,7 +294,7 @@ namespace hud
     VAR(IDF_PERSIST, inventoryscorebg, 0, 1, 1);
     VAR(IDF_PERSIST, inventoryscoreinfo, 0, 1, 1); // shows offset
     VAR(IDF_PERSIST, inventoryscorepos, 0, 1, 1); // shows position
-    VAR(IDF_PERSIST, inventoryscorename, 0, 1, 2); // 0 = off, 1 = only ffa, 2 = teams as well
+    VAR(IDF_PERSIST, inventoryscorename, 0, 2, 2); // 0 = off, 1 = only ffa, 2 = teams as well
     VAR(IDF_PERSIST, inventoryscorebreak, 0, 0, 2); // breaks up over multiple lines, 2 = center as well
     VAR(IDF_PERSIST, inventoryweapids, 0, 2, 2);
     VAR(IDF_PERSIST, inventorycolour, 0, 2, 2);
