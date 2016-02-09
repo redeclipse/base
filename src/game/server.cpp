@@ -458,7 +458,7 @@ namespace server
 
         void save(clientinfo *ci)
         {
-            points = points;
+            points = ci->points;
             score = ci->score;
             frags = ci->frags;
             spree = ci->spree;
