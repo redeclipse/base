@@ -110,6 +110,9 @@ struct captureservmode : capturestate, servmode
         else
         {
             capturestate::takeaffinity(i, ci->clientnum, gamemillis);
+            if(ci->floorpos != vec(-1, -1, -1)) f.floorpos = ci->floorpos;
+            else f.floorpos = f.droploc;
+            f.floorpos.z += (enttype[AFFINITY].radius/2)+1;
             if((f.team != ci->team && !f.droptime) || f.lastowner != ci->clientnum) givepoints(ci, G(capturepickuppoints), m_points(gamemode, mutators), false);
             sendf(-1, 1, "ri3", N_TAKEAFFIN, ci->clientnum, i);
         }
@@ -123,7 +126,7 @@ struct captureservmode : capturestate, servmode
         f.votes.add(ci->clientnum);
         if(f.votes.length() >= int(floorf(numclients()*0.5f)))
         {
-            if(f.floorpos != vec(-1, -1, -1))
+            if(G(captureresetfloor) && f.floorpos != vec(-1, -1, -1))
             {
                 ivec pos = ivec(vec(f.floorpos).mul(DMF));
                 capturestate::dropaffinity(i, f.floorpos, vec(0, 0, 1), gamemillis);
