@@ -1,5 +1,5 @@
 #!/bin/sh
-if [ "${REDECLIPSE_CALLED}" = "true" ]; then REDECLIPSE_EXITR="return" else REDECLIPSE_EXITR="exit" fi
+if [ "${REDECLIPSE_CALLED}" = "true" ]; then REDECLIPSE_EXITR="return"; else REDECLIPSE_EXITR="exit"; fi
 REDECLIPSE_SCRIPT="$0"
 REDECLIPSE_ARGS=$@
 REDECLIPSE_SYSTEM="$(uname -s)"
