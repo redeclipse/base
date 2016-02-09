@@ -517,6 +517,21 @@ GFVAR(IDF_GAMEMOD, gladiatorhitvelscale, 0, 10, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, gladiatordeadvelscale, 0, 20, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, gladiatorwavevelscale, 0, 10, FVAR_MAX);
 
+GFVAR(IDF_GAMEMOD, gladiatorextrapushscale, 0, 1, FVAR_MAX);  // these do amt*maxhealth/health*extra
+GFVAR(IDF_GAMEMOD, gladiatorextrahitpushscale, 0, 1, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, gladiatorextradeadpushscale, 0, 1, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, gladiatorextrawavepushscale, 0, 1, FVAR_MAX);
+
+GFVAR(IDF_GAMEMOD, gladiatorextrastunscale, 0, 1, FVAR_MAX); // these do amt*maxhealth/health*extra
+GFVAR(IDF_GAMEMOD, gladiatorextrahitstunscale, 0, 1, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, gladiatorextradeadstunscale, 0, 1, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, gladiatorextrawavestunscale, 0, 1, FVAR_MAX);
+
+GFVAR(IDF_GAMEMOD, gladiatorextravelscale, 0, 1, FVAR_MAX); // these do amt*maxhealth/health*extra
+GFVAR(IDF_GAMEMOD, gladiatorextrahitvelscale, 0, 1, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, gladiatorextradeadvelscale, 0, 1, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, gladiatorextrawavevelscale, 0, 1, FVAR_MAX);
+
 GFVAR(IDF_GAMEMOD, radiallimited, 0, 0.75f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, pushlimited, 0, 0.75f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, stunlimited, 0, 0.75f, FVAR_MAX);

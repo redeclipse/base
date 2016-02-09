@@ -1421,8 +1421,13 @@ namespace game
             {
                 if(weap == -1 && shocking && shockstun)
                 {
-                    float amt = WRS(flags&HIT_WAVE || !hitdealt(flags) ? wavestunscale : (d->health <= 0 ? deadstunscale : hitstunscale), stun, gamemode, mutators),
-                          s = G(shockstunscale)*amt, g = G(shockstunfall)*amt;
+                    float amt = WRS(flags&HIT_WAVE || !hitdealt(flags) ? wavestunscale : (d->health <= 0 ? deadstunscale : hitstunscale), stun, gamemode, mutators);
+                    if(m_dm_gladiator(gamemode, mutators))
+                    {
+                        float extra = flags&HIT_WAVE || !hitdealt(flags) ? gladiatorextrawavestunscale : (d->health <= 0 ? gladiatorextradeadstunscale : gladiatorextrahitstunscale);
+                        amt *= m_health(gamemode, mutators, d->actortype)/max(d->health, 1)*extra;
+                    }
+                    float s = G(shockstunscale)*amt, g = G(shockstunfall)*amt;
                     d->addstun(weap, lastmillis, G(shockstuntime), shockstun&W_N_STADD ? s : 0.f, shockstun&W_N_GRADD ? g : 0.f);
                     if(shockstun&W_N_STIMM && s > 0) d->vel.mul(1.f-clamp(s, 0.f, 1.f));
                     if(shockstun&W_N_GRIMM && g > 0) d->falling.mul(1.f-clamp(g, 0.f, 1.f));
@@ -1433,8 +1438,13 @@ namespace game
                     if(WF(WK(flags), weap, stun, WS(flags)))
                     {
                         int stun = WF(WK(flags), weap, stun, WS(flags));
-                        float amt = scale*WRS(flags&HIT_WAVE || !hitdealt(flags) ? wavestunscale : (d->health <= 0 ? deadstunscale : hitstunscale), stun, gamemode, mutators),
-                              s = WF(WK(flags), weap, stunscale, WS(flags))*amt, g = WF(WK(flags), weap, stunfall, WS(flags))*amt;
+                        float amt = scale*WRS(flags&HIT_WAVE || !hitdealt(flags) ? wavestunscale : (d->health <= 0 ? deadstunscale : hitstunscale), stun, gamemode, mutators);
+                        if(m_dm_gladiator(gamemode, mutators))
+                        {
+                            float extra = flags&HIT_WAVE || !hitdealt(flags) ? gladiatorextrawavestunscale : (d->health <= 0 ? gladiatorextradeadstunscale : gladiatorextrahitstunscale);
+                            amt *= m_health(gamemode, mutators, d->actortype)/max(d->health, 1)*extra;
+                        }
+                        float s = WF(WK(flags), weap, stunscale, WS(flags))*amt, g = WF(WK(flags), weap, stunfall, WS(flags))*amt;
                         d->addstun(weap, lastmillis, int(scale*WF(WK(flags), weap, stuntime, WS(flags))), stun&W_N_STADD ? s : 0.f, stun&W_N_GRADD ? g : 0.f);
                         if(stun&W_N_STIMM && s > 0) d->vel.mul(1.f-clamp(s, 0.f, 1.f));
                         if(stun&W_N_GRIMM && g > 0) d->falling.mul(1.f-clamp(g, 0.f, 1.f));
@@ -1460,6 +1470,11 @@ namespace game
                         if(hit != 0)
                         {
                             float modify = WRS(flags&HIT_WAVE || !hitdealt(flags) ? wavepushscale : (d->health <= 0 ? deadpushscale : hitpushscale), push, gamemode, mutators);
+                            if(m_dm_gladiator(gamemode, mutators))
+                            {
+                                float extra = flags&HIT_WAVE || !hitdealt(flags) ? gladiatorextrawavepushscale : (d->health <= 0 ? gladiatorextradeadpushscale : gladiatorextrahitpushscale);
+                                modify *= m_health(gamemode, mutators, d->actortype)/max(d->health, 1)*extra;
+                            }
                             d->vel.add(vec(dir).mul(hit*modify));
                             if(doquake) d->quake = min(d->quake+max(int(hit), 1), quakelimit);
                         }
@@ -1467,6 +1482,11 @@ namespace game
                         if(hit != 0)
                         {
                             float modify = WRS(flags&HIT_WAVE || !hitdealt(flags) ? wavevelscale : (d->health <= 0 ? deadvelscale : hitvelscale), vel, gamemode, mutators);
+                            if(m_dm_gladiator(gamemode, mutators))
+                            {
+                                float extra = flags&HIT_WAVE || !hitdealt(flags) ? gladiatorextrawavevelscale : (d->health <= 0 ? gladiatorextradeadvelscale : gladiatorextrahitvelscale);
+                                modify *= m_health(gamemode, mutators, d->actortype)/max(d->health, 1)*extra;
+                            }
                             d->vel.add(vec(vel).mul(hit*modify));
                             if(doquake) d->quake = min(d->quake+max(int(hit), 1), quakelimit);
                         }
