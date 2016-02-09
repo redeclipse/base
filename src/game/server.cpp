@@ -5719,28 +5719,45 @@ namespace server
                     float yaw, pitch, roll;
                     loopk(3)
                     {
-                        int n = p.get(); n |= p.get()<<8; if(flags&(1<<k)) { n |= p.get()<<16; if(n&0x800000) n |= -1<<24; }
+                        int n = p.get();
+                        n |= p.get()<<8;
+                        if(flags&(1<<k))
+                        {
+                            n |= p.get()<<16;
+                            if(n&0x800000) n |= -1<<24;
+                        }
                         pos[k] = n/DMF;
                     }
                     loopk(3)
                     {
-                        int n = p.get(); n |= p.get()<<8; if(flags&(1<<(k+3))) { n |= p.get()<<16; if(n&0x800000) n |= -1<<24; }
+                        int n = p.get();
+                        n |= p.get()<<8;
+                        if(flags&(1<<(k+3)))
+                        {
+                            n |= p.get()<<16;
+                            if(n&0x800000) n |= -1<<24;
+                        }
                         floorpos[k] = n/DMF;
                     }
-                    int dir = p.get(); dir |= p.get()<<8;
+                    int dir = p.get();
+                    dir |= p.get()<<8;
                     yaw = dir%360;
                     pitch = clamp(dir/360, 0, 180)-90;
                     roll = clamp(int(p.get()), 0, 180)-90;
-                    int mag = p.get(); if(flags&(1<<6)) mag |= p.get()<<8;
-                    dir = p.get(); dir |= p.get()<<8;
+                    int mag = p.get();
+                    if(flags&(1<<6)) mag |= p.get()<<8;
+                    dir = p.get();
+                    dir |= p.get()<<8;
                     vecfromyawpitch(dir%360, clamp(dir/360, 0, 180)-90, 1, 0, vel);
                     vel.mul(mag/DVELF);
                     if(flags&(1<<7))
                     {
-                        mag = p.get(); if(flags&(1<<8)) mag |= p.get()<<8;
+                        mag = p.get();
+                        if(flags&(1<<8)) mag |= p.get()<<8;
                         if(flags&(1<<9))
                         {
-                            dir = p.get(); dir |= p.get()<<8;
+                            dir = p.get();
+                            dir |= p.get()<<8;
                             vecfromyawpitch(dir%360, clamp(dir/360, 0, 180)-90, 1, 0, falling);
                         }
                         else falling = vec(0, 0, -1);
