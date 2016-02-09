@@ -13,7 +13,7 @@ struct bomberstate
     struct flag
     {
         vec droploc, droppos, inertia, spawnloc;
-        int team, yaw, pitch, droptime, taketime;
+        int team, yaw, pitch, droptime, taketime, target;
         bool enabled;
         float distance;
 #ifdef GAMESERVER
@@ -44,6 +44,7 @@ struct bomberstate
 #endif
             team = T_NEUTRAL;
             yaw = pitch = taketime = droptime = 0;
+            target = -1;
             enabled = false;
             distance = 0;
         }
@@ -160,6 +161,7 @@ struct bomberstate
         f.owner = owner;
         f.taketime = t;
         f.droptime = 0;
+        f.target = -1;
 #ifdef GAMESERVER
         f.votes.shrink(0);
         f.lastowner = owner;
@@ -182,6 +184,7 @@ struct bomberstate
         f.inertia = p;
         f.droptime = t;
         f.taketime = 0;
+        f.target = target;
         f.distance = 0;
 #ifdef GAMESERVER
         f.owner = -1;
@@ -203,6 +206,7 @@ struct bomberstate
 #endif
         f.droptime = f.taketime = 0;
         f.enabled = enabled;
+        f.target = -1;
 #ifdef GAMESERVER
         f.owner = -1;
         f.votes.shrink(0);

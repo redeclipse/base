@@ -20,7 +20,7 @@ struct bomberservmode : bomberstate, servmode
         {
             ivec p(vec(o).mul(DMF)), q(vec(n).mul(DMF));
             sendf(-1, 1, "ri3i7", N_DROPAFFIN, ci->clientnum, target, i, p.x, p.y, p.z, q.x, q.y, q.z);
-            bomberstate::dropaffinity(i, o, n, gamemillis);
+            bomberstate::dropaffinity(i, o, n, gamemillis, target);
         }
     }
 
@@ -296,6 +296,7 @@ struct bomberservmode : bomberstate, servmode
                 putint(p, f.droptime);
                 if(f.droptime)
                 {
+                    putint(p, f.target);
                     loopj(3) putint(p, int(f.droploc[j]*DMF));
                     loopj(3) putint(p, int(f.inertia[j]*DMF));
                 }

@@ -6595,14 +6595,14 @@ namespace server
 
                 case N_DROPAFFIN:
                 {
-                    int lcn = getint(p), tcn = getint(p);
+                    int lcn = getint(p), otc = getint(p);
                     vec droploc, inertia;
                     loopk(3) droploc[k] = getint(p)/DMF;
                     loopk(3) inertia[k] = getint(p)/DMF;
                     clientinfo *cp = (clientinfo *)getinfo(lcn);
                     if(!hasclient(cp, ci) || cp->state == CS_SPECTATOR) break;
-                    if(smode==&capturemode) capturemode.dropaffinity(cp, droploc, inertia, tcn);
-                    else if(smode==&bombermode) bombermode.dropaffinity(cp, droploc, inertia, tcn);
+                    if(smode==&capturemode) capturemode.dropaffinity(cp, droploc, inertia, -1);
+                    else if(smode==&bombermode) bombermode.dropaffinity(cp, droploc, inertia, otc);
                     break;
                 }
 

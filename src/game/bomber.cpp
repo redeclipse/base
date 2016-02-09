@@ -444,7 +444,7 @@ namespace bomber
         while(st.flags.length() > numflags) st.flags.pop();
         loopi(numflags)
         {
-            int team = getint(p), yaw = getint(p), pitch = getint(p), enabled = getint(p), owner = getint(p), dropped = 0;
+            int team = getint(p), yaw = getint(p), pitch = getint(p), enabled = getint(p), owner = getint(p), dropped = 0, target = -1;
             vec spawnloc(0, 0, 0), droploc(0, 0, 0), inertia(0, 0, 0);
             loopj(3) spawnloc[j] = getint(p)/DMF;
             if(owner < 0)
@@ -452,6 +452,7 @@ namespace bomber
                 dropped = getint(p);
                 if(dropped)
                 {
+                    target = getint(p);
                     loopj(3) droploc[j] = getint(p)/DMF;
                     loopj(3) inertia[j] = getint(p)/DMF;
                 }
@@ -470,7 +471,7 @@ namespace bomber
             physics::droptofloor(f.render);
             if(f.render.z >= f.above.z-1) f.above.z += f.render.z-(f.above.z-1);
             if(owner >= 0) st.takeaffinity(i, game::newclient(owner), lastmillis);
-            else if(dropped) st.dropaffinity(i, droploc, inertia, lastmillis);
+            else if(dropped) st.dropaffinity(i, droploc, inertia, lastmillis, target);
         }
     }
 
@@ -539,7 +540,7 @@ namespace bomber
                 game::announcef(S_V_BOMBRESET, CON_SELF, NULL, true, "\fathe \fs\fzwvbomb\fS has been reset");
             }
         }
-        if(value == 2) st.dropaffinity(i, pos, vec(0, 0, 1), lastmillis, lastmillis-f.droptime);
+        if(value == 2) st.dropaffinity(i, pos, vec(0, 0, 1), lastmillis);
         else st.returnaffinity(i, lastmillis, value!=0);
     }
 

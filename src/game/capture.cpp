@@ -417,7 +417,7 @@ namespace capture
         while(st.flags.length() > numflags) st.flags.pop();
         loopi(numflags)
         {
-            int team = getint(p), yaw = getint(p), pitch = getint(p), owner = getint(p), dropped = 0, dropoffset = 0;
+            int team = getint(p), yaw = getint(p), pitch = getint(p), owner = getint(p), dropped = 0, dropoffset = -1;
             vec spawnloc(0, 0, 0), droploc(0, 0, 0), inertia(0, 0, 0);
             loopj(3) spawnloc[j] = getint(p)/DMF;
             if(owner < 0)
@@ -447,12 +447,12 @@ namespace capture
         }
     }
 
-    void dropaffinity(gameent *d, int i, const vec &droploc, const vec &inertia, int target)
+    void dropaffinity(gameent *d, int i, const vec &droploc, const vec &inertia, int offset)
     {
         if(!st.flags.inrange(i)) return;
         capturestate::flag &f = st.flags[i];
         game::announcef(S_V_FLAGDROP, CON_SELF, d, true, "\fa%s dropped the the %s flag", game::colourname(d), game::colourteam(f.team, "flagtex"));
-        st.dropaffinity(i, droploc, inertia, lastmillis, target);
+        st.dropaffinity(i, droploc, inertia, lastmillis, offset);
     }
 
     void removeplayer(gameent *d)
@@ -505,7 +505,7 @@ namespace capture
             affinityeffect(i, T_NEUTRAL, f.droploc, f.above, 3, "RESET");
             game::announcef(S_V_FLAGRESET, CON_SELF, NULL, true, "\fathe %s flag has been reset", game::colourteam(f.team, "flagtex"));
         }
-        if(value == 2) st.dropaffinity(i, pos, vec(0, 0, 1), lastmillis, lastmillis-f.droptime);
+        if(value == 2) st.dropaffinity(i, pos, vec(0, 0, 1), lastmillis);
         else st.returnaffinity(i, lastmillis);
     }
 

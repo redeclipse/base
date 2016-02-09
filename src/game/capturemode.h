@@ -10,7 +10,7 @@ struct captureservmode : capturestate, servmode
         hasflaginfo = false;
     }
 
-    void dropaffinity(clientinfo *ci, const vec &o, const vec &inertia = vec(0, 0, 0), int target = -1)
+    void dropaffinity(clientinfo *ci, const vec &o, const vec &inertia = vec(0, 0, 0), int offset = -1)
     {
         if(!canplay(hasflaginfo) || ci->actortype >= A_ENEMY) return;
         int numflags = 0, iterflags = 0;
@@ -32,8 +32,8 @@ struct captureservmode : capturestate, servmode
                 iterflags++;
             }
             ivec p(vec(o).mul(DMF)), q(vec(dir).mul(DMF));
+            capturestate::dropaffinity(i, o, dir, gamemillis, offset);
             sendf(-1, 1, "ri3i7", N_DROPAFFIN, ci->clientnum, flags[i].dropoffset, i, p.x, p.y, p.z, q.x, q.y, q.z);
-            capturestate::dropaffinity(i, o, dir, gamemillis);
         }
     }
 
@@ -123,11 +123,11 @@ struct captureservmode : capturestate, servmode
         f.votes.add(ci->clientnum);
         if(f.votes.length() >= int(floorf(numclients()*0.5f)))
         {
-            conoutf("reset affinity: %d [%.2f,%.2f,%.2f]", i, f.floorpos.x, f.floorpos.y, f.floorpos.z);
             if(f.floorpos != vec(-1, -1, -1))
             {
                 ivec pos = ivec(vec(f.floorpos).mul(DMF));
-                capturestate::dropaffinity(i, f.floorpos, vec(0, 0, 1), gamemillis, gamemillis-f.droptime);
+                capturestate::dropaffinity(i, f.floorpos, vec(0, 0, 1), gamemillis);
+                f.floorpos = vec(-1, -1, -1); // in case its a fail
                 sendf(-1, 1, "ri3i3", N_RESETAFFIN, i, 2, pos.x, pos.y, pos.z);
             }
             else
