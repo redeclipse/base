@@ -1706,7 +1706,7 @@ namespace server
         if(!m_balance(gamemode, mutators, teamspawns))
         {
             int plimit = 0;
-            if(m_dm(gamemode)) plimit = G(pointlimit);
+            if(m_dm(gamemode)) plimit = m_dm_oldschool(gamemode, mutators) ? G(fraglimit) : G(pointlimit);
             else if(m_capture(gamemode)) plimit = G(capturelimit);
             else if(m_defend(gamemode)) plimit = G(defendlimit) ? G(defendlimit) : INT_MAX-1;
             else if(m_bomber(gamemode)) plimit = m_bb_hold(gamemode, mutators) ? G(bomberholdlimit) : G(bomberlimit);
@@ -4000,7 +4000,7 @@ namespace server
             if(assist)
             {
                 log.add(assist->clientnum);
-                givepoints(assist, points, m_points(gamemode, mutators), true);
+                if(points) givepoints(assist, points, m_points(gamemode, mutators), true);
             }
         }
         if(clear) m->damagelog.shrink(0);
@@ -4152,8 +4152,9 @@ namespace server
             }
             else fragvalue = -fragvalue;
             bool isai = m->actortype >= A_ENEMY, isteamkill = false;
-            int pointvalue = (smode && !isai ? smode->points(m, v) : fragvalue), style = FRAG_NONE;
-            pointvalue *= isai ? G(enemybonus) : G(fragbonus);
+            int pointvalue = fragvalue, style = FRAG_NONE;
+            if(!m_dm_oldschool(gamemode, mutators))
+                pointvalue = (smode && !isai ? smode->points(m, v) : fragvalue)*(isai ? G(enemybonus) : G(fragbonus));
             if(realdamage >= (realflags&HIT_EXPLODE ? m_health(gamemode, mutators, m->actortype)/2 : m_health(gamemode, mutators, m->actortype)))
                 style = FRAG_OBLITERATE;
             m->spree = 0;
@@ -4162,7 +4163,7 @@ namespace server
                 v->spree = 0;
                 if(isweap(weap) && (v == m || WF(WK(flags), weap, damagepenalty, WS(flags))))
                 {
-                    pointvalue *= G(teamkillpenalty);
+                    if(!m_dm_oldschool(gamemode, mutators)) pointvalue *= G(teamkillpenalty);
                     if(v != m) isteamkill = true;
                 }
                 else pointvalue = 0; // no penalty
@@ -4173,12 +4174,12 @@ namespace server
                 {
                     firstblood = true;
                     style |= FRAG_FIRSTBLOOD;
-                    pointvalue += G(firstbloodpoints);
+                    if(!m_dm_oldschool(gamemode, mutators)) pointvalue += G(firstbloodpoints);
                 }
                 if(flags&HIT_HEAD) // NOT HZONE
                 {
                     style |= FRAG_HEADSHOT;
-                    pointvalue += G(headshotpoints);
+                    if(!m_dm_oldschool(gamemode, mutators)) pointvalue += G(headshotpoints);
                 }
                 if(m_play(gamemode) && m->actortype < A_ENEMY)
                 {
@@ -4203,14 +4204,14 @@ namespace server
                             {
                                 style |= type;
                                 v->rewards[0] |= type;
-                                pointvalue += (G(multikillbonus) ? offset+1 : 1)*G(multikillpoints);
+                                if(!m_dm_oldschool(gamemode, mutators)) pointvalue += (G(multikillbonus) ? offset+1 : 1)*G(multikillpoints);
                             }
                         }
                     }
                     loopj(FRAG_SPREES) if(m->rewards[1]&(1<<(FRAG_SPREE+j)))
                     {
                         style |= FRAG_BREAKER;
-                        pointvalue += G(spreebreaker);
+                        if(!m_dm_oldschool(gamemode, mutators)) pointvalue += G(spreebreaker);
                         break;
                     }
                     if(v->spree <= G(spreecount)*FRAG_SPREES && !(v->spree%G(spreecount)))
@@ -4220,7 +4221,7 @@ namespace server
                         {
                             style |= type;
                             loopj(2) v->rewards[j] |= type;
-                            pointvalue += G(spreepoints);
+                            if(!m_dm_oldschool(gamemode, mutators)) pointvalue += G(spreepoints);
                         }
                     }
                     logs = 0;
@@ -4228,14 +4229,14 @@ namespace server
                     if(logs >= G(dominatecount))
                     {
                         style |= FRAG_REVENGE;
-                        pointvalue += G(revengepoints);
+                        if(!m_dm_oldschool(gamemode, mutators)) pointvalue += G(revengepoints);
                     }
                     logs = 0;
                     loopv(v->fraglog) if(v->fraglog[i] == m->clientnum) logs++;
                     if(logs == G(dominatecount))
                     {
                         style |= FRAG_DOMINATE;
-                        pointvalue += G(dominatepoints);
+                        if(!m_dm_oldschool(gamemode, mutators)) pointvalue += G(dominatepoints);
                     }
                 }
             }
@@ -4259,7 +4260,7 @@ namespace server
             dropitems(m, actor[m->actortype].living ? DROP_DEATH : DROP_EXPIRE);
             static vector<int> dmglog;
             dmglog.setsize(0);
-            gethistory(m, v, gamemillis, dmglog, true, 1);
+            gethistory(m, v, gamemillis, dmglog, true, m_dm_oldschool(gamemode, mutators) ? 0 : 1);
             sendf(-1, 1, "ri9i3v", N_DIED, m->clientnum, m->deaths, v->clientnum, v->frags, v->spree, style, weap, realflags, realdamage, material, dmglog.length(), dmglog.length(), dmglog.getbuf());
             m->position.setsize(0);
             if(smode) smode->died(m, v);
@@ -4327,8 +4328,12 @@ namespace server
         }
         else if(!(flags&HIT_LOST) && !(flags&HIT_SPEC))
         {
-            int pointvalue = (smode ? smode->points(ci, ci) : -1)*G(fragbonus);
-            if(kamikaze) pointvalue *= G(teamkillpenalty);
+            int pointvalue = -1;
+            if(!m_dm_oldschool(gamemode, mutators))
+            {
+                pointvalue = (smode ? smode->points(ci, ci) : -1)*G(fragbonus);
+                if(kamikaze) pointvalue *= G(teamkillpenalty);
+            }
             givepoints(ci, pointvalue, m_points(gamemode, mutators), true);
         }
         if(G(burntime) && flags&HIT_BURN)
@@ -4347,7 +4352,7 @@ namespace server
             ci->lastresowner[WR_SHOCK] = ci->clientnum;
         }
         static vector<int> dmglog; dmglog.setsize(0);
-        gethistory(ci, ci, gamemillis, dmglog, true, 1);
+        gethistory(ci, ci, gamemillis, dmglog, true, m_dm_oldschool(gamemode, mutators) ? 0 : 1);
         sendf(-1, 1, "ri9i3v", N_DIED, ci->clientnum, ci->deaths, ci->clientnum, ci->frags, 0, 0, -1, flags, ci->health*2, material, dmglog.length(), dmglog.length(), dmglog.getbuf());
         ci->position.setsize(0);
         if(smode) smode->died(ci, NULL);

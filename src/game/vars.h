@@ -270,6 +270,7 @@ GVAR(IDF_GAMEMOD, survivorovertime, 0, 1, 1); // 0 = off, 1 = ffa: only spawn le
 GVAR(IDF_GAMEMOD, survivormaxqueued, 0, 0, MAXCLIENTS); // number of players that can be queued for survivor. 0 = any number of players
 
 GVAR(IDF_GAMEMOD, pointlimit, 0, 0, VAR_MAX); // finish when score is this or more
+GVAR(IDF_GAMEMOD, fraglimit, 0, 0, VAR_MAX); // finish when score is this or more in oldschool
 GVAR(IDF_GAMEMOD, racelimit, 0, 0, VAR_MAX); // finish when lap count is this or more
 GVAR(IDF_GAMEMOD, teampersist, 0, 1, 2); // 0 = off, 1 = only attempt, 2 = forced
 GVAR(IDF_GAMEMOD, damageself, 0, 1, 1); // 0 = off, 1 = either hurt self or use damageteam rules
