@@ -341,7 +341,7 @@ namespace physics
                 if(m_capture(game::gamemode)) scale *= capturecarryspeed;
                 else if(m_bomber(game::gamemode)) scale *= bombercarryspeed;
             }
-            if(m_impulsemeter(game::gamemode, game::mutators))
+            if(cost && m_impulsemeter(game::gamemode, game::mutators))
             {
                 if(impulsecostscale) cost = int(cost*scale);
                 int diff = impulsemeter-e->impulse[IM_METER];

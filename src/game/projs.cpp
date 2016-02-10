@@ -783,7 +783,7 @@ namespace projs
             {
                 if(proj.weap == W_MELEE)
                 {
-                    proj.o = proj.to = proj.from = proj.dest = proj.owner->center();
+                    proj.o = proj.to = proj.from = proj.dest = WS(proj.flags) ? proj.owner->center() : proj.owner->headpos();
                     if(proj.target && proj.target->state == CS_ALIVE)
                         proj.to.add(vec(proj.target->center()).sub(proj.from).normalize().mul(proj.owner->radius*2));
                     else proj.to.add(vec(proj.owner->yaw*RAD, proj.owner->pitch*RAD).mul(proj.owner->radius*2));
@@ -1829,10 +1829,31 @@ namespace projs
             else
             {
                 if(proj.norm.iszero()) proj.norm = vec(proj.vel).normalize().neg();
-                if(proj.projcollide&IMPACT_GEOM && proj.projcollide&STICK_GEOM)
+                if(proj.projcollide&IMPACT_GEOM)
                 {
-                    stick(proj, dir);
-                    return 1;
+                    if(proj.projcollide&STICK_GEOM)
+                    {
+                        stick(proj, dir);
+                        return 1;
+                    }
+                    else if(proj.projtype == PRJ_SHOT && proj.weap == W_MELEE && !WS(proj.flags) && (proj.owner == game::player1 || proj.owner->ai) && proj.owner->state == CS_ALIVE && physics::canimpulse(proj.owner, A_A_PARKOUR, true))
+                    {
+                        gameent *d = (gameent *)proj.owner;
+                        vec keepvel = vec(d->vel).add(d->falling);
+                        int cost = 0;
+                        float mag = physics::impulsevelocity(d, impulseparkourvault, cost, A_A_PARKOUR, impulseparkourvaultredir, keepvel);
+                        if(mag > 0)
+                        {
+                            d->vel = vec(vec(d->yaw*RAD, (d->pitch >= 0 ? 90 : -90)*RAD).reflect(proj.norm)).mul(mag).add(keepvel);
+                            d->doimpulse(cost, IM_T_VAULT, lastmillis);
+                            d->turnmillis = PHYSMILLIS;
+                            d->turnside = 0;
+                            d->turnyaw = d->turnroll = 0;
+                            client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_VAULT);
+                            game::impulseeffect(d);
+                            game::footstep(d);
+                        }
+                    }
                 }
                 if(proj.projcollide&(IMPACT_GEOM|BOUNCE_GEOM) && proj.projcollide&DRILL_GEOM)
                 {
