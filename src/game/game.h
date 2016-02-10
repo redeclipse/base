@@ -694,7 +694,7 @@ struct clientstate
 
     bool canswitch(int weap, int sweap, int millis, int skip = 0)
     {
-        if((actortype >= A_ENEMY || weap != W_MELEE || sweap == W_MELEE || weapselect == W_MELEE) && weap != weapselect && weapwaited(weapselect, millis, skip) && hasweap(weap, sweap) && weapwaited(weap, millis, skip))
+        if(weap != weapselect && weapwaited(weapselect, millis, skip) && hasweap(weap, sweap) && weapwaited(weap, millis, skip))
             return true;
         return false;
     }
@@ -1564,7 +1564,7 @@ namespace physics
     extern bool isghost(gameent *d, gameent *e, bool proj = false);
     extern bool carryaffinity(gameent *d);
     extern bool dropaffinity(gameent *d);
-    extern bool secondaryweap(gameent *d, bool zoom = false);
+    extern bool secondaryweap(gameent *d, bool actual = false);
     extern bool allowimpulse(physent *d, int level = 0);
     extern bool canimpulse(physent *d, int level = 0, bool kick = false);
     extern bool movecamera(physent *pl, const vec &dir, float dist, float stepdist);

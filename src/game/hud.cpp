@@ -282,7 +282,7 @@ namespace hud
     VAR(IDF_PERSIST, inventoryammo, 0, 3, 3);
     VAR(IDF_PERSIST, inventoryammobar, 0, 2, 2);
     VAR(IDF_PERSIST, inventoryammostyle, 0, 1, 1);
-    VAR(IDF_PERSIST, inventoryhidemelee, 0, 1, 1);
+    VAR(IDF_PERSIST, inventoryhidemelee, 0, 0, 1);
     VAR(IDF_PERSIST, inventorygame, 0, 2, 2);
     VAR(IDF_PERSIST, inventorydate, 0, 0, 1);
     SVAR(IDF_PERSIST, inventorydateformat, "%H:%M:%S");
@@ -1329,7 +1329,7 @@ namespace hud
             }
             if(showcrosshair >= 2)
             {
-                float accskew = weapons::accmod(game::focus, physics::secondaryweap(game::focus, true))*crosshairaccamt;
+                float accskew = weapons::accmod(game::focus, physics::secondaryweap(game::focus))*crosshairaccamt;
                 if(accskew > 0) fade /= accskew;
             }
         }

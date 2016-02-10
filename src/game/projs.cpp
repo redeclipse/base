@@ -790,7 +790,7 @@ namespace projs
                 }
                 else
                 {
-                    proj.from = proj.owner->originpos(proj.weap, WS(proj.flags));
+                    proj.from = proj.owner->originpos(proj.weap == W_MELEE, WS(proj.flags));
                     proj.to = proj.dest = proj.owner->muzzlepos(proj.weap, WS(proj.flags));
                     if(style != 2) proj.o = proj.from;
                 }

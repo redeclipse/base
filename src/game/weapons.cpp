@@ -5,7 +5,7 @@ namespace weapons
     VAR(IDF_PERSIST, autodelayreload, 0, 0, VAR_MAX);
 
     VAR(IDF_PERSIST, skipspawnweapon, 0, 0, 6); // skip spawnweapon; 0 = never, 1 = if numweaps > 1 (+1), 3 = if carry > 0 (+2), 6 = always
-    VAR(IDF_PERSIST, skipmelee, 0, 7, 10); // skip melee; 0 = never, 1 = if numweaps > 1 (+2), 4 = if carry > 0 (+2), 7 = if carry > 0 and is offset (+2), 10 = always
+    VAR(IDF_PERSIST, skipmelee, 0, 0, 10); // skip melee; 0 = never, 1 = if numweaps > 1 (+2), 4 = if carry > 0 (+2), 7 = if carry > 0 and is offset (+2), 10 = always
     VAR(IDF_PERSIST, skippistol, 0, 0, 10); // skip pistol; 0 = never, 1 = if numweaps > 1 (+2), 4 = if carry > 0 (+2), 7 = if carry > 0 and is offset (+2), 10 = always
     VAR(IDF_PERSIST, skipgrenade, 0, 0, 10); // skip grenade; 0 = never, 1 = if numweaps > 1 (+2), 4 = if carry > 0 (+2), 7 = if carry > 0 and is offset (+2), 10 = always
     VAR(IDF_PERSIST, skipmine, 0, 0, 10); // skip mine; 0 = never, 1 = if numweaps > 1 (+2), 4 = if carry > 0 (+2), 7 = if carry > 0 and is offset (+2), 10 = always
@@ -114,7 +114,7 @@ namespace weapons
                     int p = m_weapon(d->actortype, game::gamemode, game::mutators);
                     #define skipweap(q,w) \
                     { \
-                        if(q && n == w && (d->actortype >= A_ENEMY || w != W_MELEE || p == W_MELEE || d->weapselect == W_MELEE)) switch(q) \
+                        if(q && n == w) switch(q) \
                         { \
                             case 10: continue; break; \
                             case 7: case 8: case 9: if(d->carry(p, 5, w) > (q-7)) continue; break; \
@@ -332,9 +332,9 @@ namespace weapons
     void shoot(gameent *d, vec &targ, int force)
     {
         if(!game::allowmove(d)) return;
-        bool secondary = physics::secondaryweap(d);
-        if(doshot(d, targ, d->weapselect, d->action[secondary ? AC_SECONDARY : AC_PRIMARY], secondary, force))
-            if(!W2(d->weapselect, fullauto, secondary)) d->action[secondary ? AC_SECONDARY : AC_PRIMARY] = false;
+        bool melee = d->weapselect == W_MELEE, secondary = physics::secondaryweap(d, melee);
+        if(doshot(d, targ, d->weapselect, d->action[secondary ? AC_SECONDARY : AC_PRIMARY], !melee && secondary, force))
+            if(!W2(d->weapselect, fullauto, !melee && secondary)) d->action[secondary ? AC_SECONDARY : AC_PRIMARY] = false;
     }
 
     void preload()

@@ -3192,7 +3192,7 @@ namespace game
         {
             string weapons = "";
             #define printweapon(q) \
-                if((q != W_MELEE || q == d->weapselect) && d->hasweap(q, m_weapon(d->actortype, gamemode, mutators))) \
+                if(d->hasweap(q, m_weapon(d->actortype, gamemode, mutators))) \
                 { \
                     vec colour = vec::hexcolor(W(q, colour)); \
                     if(q != d->weapselect) colour.mul(aboveheadinventoryfade); \
