@@ -22,7 +22,7 @@ namespace physics
     VAR(IDF_PERSIST, dashstyle, 0, 1, 1); // 0 = only with impulse, 1 = double tap
     VAR(IDF_PERSIST, crouchstyle, 0, 0, 2); // 0 = press and hold, 1 = double-tap toggle, 2 = toggle
     VAR(IDF_PERSIST, walkstyle, 0, 0, 2); // 0 = press and hold, 1 = double-tap toggle, 2 = toggle
-    VAR(IDF_PERSIST, grabstyle, 0, 1, 1); // 0 = up=up down=down, 1 = up=down down=up
+    VAR(IDF_PERSIST, grabstyle, 0, 2, 2); // 0 = up=up down=down, 1 = up=down down=up, 2 = up=up, down=up
     VAR(IDF_PERSIST, kickoffstyle, 0, 1, 1); // 0 = old method 1 = new method
     FVAR(IDF_PERSIST, kickoffangle, 0, 60, 89);
     VAR(IDF_PERSIST, kickupstyle, 0, 1, 1); // 0 = old method 1 = new method

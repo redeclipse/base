@@ -1844,7 +1844,15 @@ namespace projs
                         float mag = physics::impulsevelocity(d, impulseparkourgrab, cost, A_A_PARKOUR, impulseparkourgrabredir, keepvel);
                         if(mag > 0)
                         {
-                            d->vel = vec(d->yaw*RAD, (d != game::player1 || physics::grabstyle ? -d->pitch : d->pitch)*RAD).mul(mag).add(keepvel);
+                            float pitch = 89.9f;
+                            if(d == game::player1) switch(physics::grabstyle)
+                            {
+                                case 0: pitch = d->pitch; break;
+                                case 1: pitch = -d->pitch; break;
+                                case 2: pitch = fabs(d->pitch); break;
+                                default: break;
+                            }
+                            d->vel = vec(d->yaw*RAD, pitch*RAD).mul(mag).add(keepvel);
                             d->doimpulse(cost, IM_T_GRAB, lastmillis);
                             d->turnmillis = PHYSMILLIS;
                             d->turnside = 0;
