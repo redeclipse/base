@@ -1844,7 +1844,7 @@ namespace projs
                         float mag = physics::impulsevelocity(d, impulseparkourvault, cost, A_A_PARKOUR, impulseparkourvaultredir, keepvel);
                         if(mag > 0)
                         {
-                            d->vel = vec(vec(d->yaw*RAD, (d->pitch >= 0 ? 90 : -90)*RAD).reflect(proj.norm)).mul(mag).add(keepvel);
+                            d->vel = vec(d->yaw*RAD, (d->pitch >= 0 ? 90 : -90)*RAD).mul(mag).add(keepvel);
                             d->doimpulse(cost, IM_T_VAULT, lastmillis);
                             d->turnmillis = PHYSMILLIS;
                             d->turnside = 0;
