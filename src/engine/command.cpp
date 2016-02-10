@@ -401,7 +401,7 @@ void resetvar(char *name)
 {
     ident *id = idents.access(name);
     if(!id) return;
-    if(id->flags&IDF_READONLY || id->flags&IDF_CLIENT || id->flags&IDF_SERVER) debugcode("\frvariable %s is read-only", id->name);
+    if(id->flags&IDF_READONLY || id->flags&IDF_CLIENT || id->flags&IDF_SERVER) debugcode("\frvariable %s is read-only or remote", id->name);
     else if(id->flags&IDF_WORLD) debugcode("\frvariable %s is only directly modifiable in editmode", id->name);
     else clearoverride(*id);
 }
@@ -749,7 +749,15 @@ ICOMMAND(0, getalias, "s", (char *s), result(getalias(s)));
             debugcode("\frcannot set world variable %s outside editmode", id->name); \
             return; \
         } \
-        if(id->flags&IDF_CLIENT && (!(id->flags&IDF_WORLD) || !(identflags&IDF_WORLD)) && client::sendcmd(2, id->name, argstr)) return; \
+        if(id->flags&IDF_CLIENT) \
+        { \
+            if((identflags&IDF_WORLD) && !(id->flags&IDF_WORLD)) \
+            { \
+                debugcode("\frcannot set variable %s from map config", id->name); \
+                return; \
+            } \
+            if(client::sendcmd(2, id->name, argstr)) return; \
+        } \
     }
 #endif
 
