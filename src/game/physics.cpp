@@ -22,6 +22,7 @@ namespace physics
     VAR(IDF_PERSIST, dashstyle, 0, 1, 1); // 0 = only with impulse, 1 = double tap
     VAR(IDF_PERSIST, crouchstyle, 0, 0, 2); // 0 = press and hold, 1 = double-tap toggle, 2 = toggle
     VAR(IDF_PERSIST, walkstyle, 0, 0, 2); // 0 = press and hold, 1 = double-tap toggle, 2 = toggle
+    VAR(IDF_PERSIST, grabstyle, 0, 1, 1); // 0 = up=up down=down, 1 = up=down down=up
     VAR(IDF_PERSIST, kickoffstyle, 0, 1, 1); // 0 = old method 1 = new method
     FVAR(IDF_PERSIST, kickoffangle, 0, 60, 89);
     VAR(IDF_PERSIST, kickupstyle, 0, 1, 1); // 0 = old method 1 = new method
@@ -42,7 +43,7 @@ namespace physics
         {
             gameent *e = (gameent *)d;
             if(!kick && impulsestyle == 1 && e->impulse[IM_TYPE] > IM_T_NONE && e->impulse[IM_TYPE] < IM_T_WALL) return false;
-            int time = e->impulse[IM_TIME], delay = e->impulse[IM_TYPE] == IM_T_KICK || e->impulse[IM_TYPE] == IM_T_VAULT ? impulsekickdelay : impulseboostdelay;
+            int time = e->impulse[IM_TIME], delay = e->impulse[IM_TYPE] == IM_T_KICK || e->impulse[IM_TYPE] == IM_T_VAULT || e->impulse[IM_TYPE] == IM_T_GRAB ? impulsekickdelay : impulseboostdelay;
             if(!time)
             {
                 time = e->impulse[IM_JUMP];
@@ -738,7 +739,7 @@ namespace physics
                     if(!power) skew = impulsedash;
                     if(!dash && !melee) d->impulse[IM_JUMP] = lastmillis;
                 }
-                int cost = impulsecost;
+                int cost = int(impulsecost*(melee ? impulsecostmeleescale : (dash ? impulsecostdashscale : impulsecostboostscale)));
                 vec keepvel = vec(d->vel).add(d->falling);
                 float force = impulsevelocity(d, skew, cost, melee ? A_A_PARKOUR : (dash ? A_A_DASH : A_A_BOOST), melee ? impulsemeleeredir : (dash ? impulsedashredir : (moving ? impulseboostredir : impulsejumpredir)), keepvel);
                 if(force > 0)
@@ -781,7 +782,7 @@ namespace physics
         {
             if(d->action[AC_JUMP] && canimpulse(d, A_A_PARKOUR, true))
             {
-                int cost = impulsecost;
+                int cost = int(impulsecost*impulsecostkickscale);
                 vec keepvel = vec(d->vel).add(d->falling);
                 float mag = impulsevelocity(d, impulseparkourkick, cost, A_A_PARKOUR, impulseparkourkickredir, keepvel);
                 if(mag > 0)
@@ -896,7 +897,7 @@ namespace physics
                     }
                     if(!d->turnside && (parkour || vault) && iskick)
                     {
-                        int cost = impulsecost;
+                        int cost = int(impulsecost*(vault ? impulsecostvaultscale : impulsecostclimbscale));
                         vec keepvel = vec(d->vel).add(d->falling);
                         float mag = impulsevelocity(d, vault ? impulseparkourvault : impulseparkourclimb, cost, A_A_PARKOUR, vault ? impulseparkourvaultredir : impulseparkourclimbredir, keepvel);
                         if(mag > 0)
@@ -926,7 +927,7 @@ namespace physics
                         vecfromyawpitch(yaw, 0.f, 1, 0, rft);
                         if(!d->turnside)
                         {
-                            int cost = impulsecost;
+                            int cost = int(impulsecost*impulsecostparkourscale);
                             vec keepvel = vec(d->vel).add(d->falling);
                             float mag = impulsevelocity(d, impulseparkour, cost, A_A_PARKOUR, impulseparkourredir, keepvel);
                             if(mag > 0)

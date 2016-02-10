@@ -1840,16 +1840,16 @@ namespace projs
                     {
                         gameent *d = (gameent *)proj.owner;
                         vec keepvel = vec(d->vel).add(d->falling);
-                        int cost = 0;
-                        float mag = physics::impulsevelocity(d, impulseparkourvault, cost, A_A_PARKOUR, impulseparkourvaultredir, keepvel);
+                        int cost = int(impulsecost*impulsecostgrabscale);
+                        float mag = physics::impulsevelocity(d, impulseparkourgrab, cost, A_A_PARKOUR, impulseparkourgrabredir, keepvel);
                         if(mag > 0)
                         {
-                            d->vel = vec(d->yaw*RAD, (d->pitch >= 0 ? 90 : -90)*RAD).mul(mag).add(keepvel);
-                            d->doimpulse(cost, IM_T_VAULT, lastmillis);
+                            d->vel = vec(d->yaw*RAD, (d != game::player1 || physics::grabstyle ? -d->pitch : d->pitch)*RAD).mul(mag).add(keepvel);
+                            d->doimpulse(cost, IM_T_GRAB, lastmillis);
                             d->turnmillis = PHYSMILLIS;
                             d->turnside = 0;
                             d->turnyaw = d->turnroll = 0;
-                            client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_VAULT);
+                            client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_GRAB);
                             game::impulseeffect(d);
                             game::footstep(d);
                         }

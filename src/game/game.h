@@ -215,8 +215,8 @@ enum {
     AC_ALL = (1<<AC_PRIMARY)|(1<<AC_SECONDARY)|(1<<AC_RELOAD)|(1<<AC_USE)|(1<<AC_JUMP)|(1<<AC_WALK)|(1<<AC_CROUCH)|(1<<AC_SPECIAL)|(1<<AC_DROP)|(1<<AC_AFFINITY)
 };
 enum { IM_METER = 0, IM_TYPE, IM_TIME, IM_REGEN, IM_COUNT, IM_COLLECT, IM_SLIP, IM_SLIDE, IM_JUMP, IM_MAX };
-enum { IM_T_NONE = 0, IM_T_BOOST, IM_T_DASH, IM_T_MELEE, IM_T_KICK, IM_T_VAULT, IM_T_SKATE, IM_T_MAX, IM_T_WALL = IM_T_MELEE };
-enum { SPHY_NONE = 0, SPHY_JUMP, SPHY_BOOST, SPHY_DASH, SPHY_MELEE, SPHY_KICK, SPHY_VAULT, SPHY_SKATE, SPHY_COOK, SPHY_EXTINGUISH, SPHY_MATERIAL, SPHY_BUFF, SPHY_MAX, SPHY_SERVER = SPHY_BUFF };
+enum { IM_T_NONE = 0, IM_T_BOOST, IM_T_DASH, IM_T_MELEE, IM_T_KICK, IM_T_VAULT, IM_T_GRAB, IM_T_SKATE, IM_T_MAX, IM_T_WALL = IM_T_MELEE };
+enum { SPHY_NONE = 0, SPHY_JUMP, SPHY_BOOST, SPHY_DASH, SPHY_MELEE, SPHY_KICK, SPHY_VAULT, SPHY_GRAB, SPHY_SKATE, SPHY_COOK, SPHY_EXTINGUISH, SPHY_MATERIAL, SPHY_BUFF, SPHY_MAX, SPHY_SERVER = SPHY_BUFF };
 
 #define CROUCHHEIGHT 0.7f
 #define PHYSMILLIS 250
@@ -1560,7 +1560,8 @@ namespace client
 
 namespace physics
 {
-    extern int smoothmove, smoothdist;
+    extern int smoothmove, smoothdist, physframetime, physinterp, impulsemethod, impulseaction, jumpstyle, dashstyle, crouchstyle, walkstyle, grabstyle, kickoffstyle, kickupstyle;
+    extern float floatspeed, floatcoast, impulsekick, impulserolll, kickoffangle, kickupangle;
     extern bool isghost(gameent *d, gameent *e, bool proj = false);
     extern bool carryaffinity(gameent *d);
     extern bool dropaffinity(gameent *d);
