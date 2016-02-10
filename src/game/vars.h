@@ -444,8 +444,10 @@ GFVAR(IDF_GAMEMOD, impulseparkourclimb, 0, 1.4f, FVAR_MAX); // parkour climb mod
 GFVAR(IDF_GAMEMOD, impulseparkourclimbredir, 0, 1, FVAR_MAX); // how much of the old velocity is redirected into the new one
 GFVAR(IDF_GAMEMOD, impulseparkourvault, 0, 1.5f, FVAR_MAX); // parkour vault modifier
 GFVAR(IDF_GAMEMOD, impulseparkourvaultredir, 0, 1, FVAR_MAX); // how much of the old velocity is redirected into the new one
-GFVAR(IDF_GAMEMOD, impulseparkourgrab, 0, 1.8f, FVAR_MAX); // parkour climb modifier
+GFVAR(IDF_GAMEMOD, impulseparkourgrab, 0, 1.8f, FVAR_MAX); // parkour grab modifier
 GFVAR(IDF_GAMEMOD, impulseparkourgrabredir, 0, 1, FVAR_MAX); // how much of the old velocity is redirected into the new one
+GFVAR(IDF_GAMEMOD, impulseparkourgrabplayer, 0, 1.1f, FVAR_MAX); // parkour grab player modifier
+GFVAR(IDF_GAMEMOD, impulseparkourgrabplayerredir, 0, 1, FVAR_MAX); // how much of the old velocity is redirected into the new one
 GFVAR(IDF_GAMEMOD, impulseparkournorm, 0, 0.5f, FVAR_MAX); // minimum parkour surface z normal
 GVAR(IDF_GAMEMOD, impulsestyle, 0, 1, 3); // impulse style; 0 = off, 1 = touch and count, 2 = count only, 3 = freestyle
 GVAR(IDF_GAMEMOD, impulsecount, 0, 6, VAR_MAX); // number of impulse actions per air transit
@@ -468,6 +470,7 @@ GFVAR(IDF_GAMEMOD, impulsecostmeleescale, 0, 1, FVAR_MAX); // scale cost melee m
 GFVAR(IDF_GAMEMOD, impulsecostclimbscale, 0, 1, FVAR_MAX); // scale cost climb move
 GFVAR(IDF_GAMEMOD, impulsecostvaultscale, 0, 1, FVAR_MAX); // scale cost vault move
 GFVAR(IDF_GAMEMOD, impulsecostgrabscale, 0, 0.5f, FVAR_MAX); // scale cost of grab move
+GFVAR(IDF_GAMEMOD, impulsecostgrabplayerscale, 0, 0.25f, FVAR_MAX); // scale cost of grab move
 GVAR(IDF_GAMEMOD, impulsecostrelax, 0, A_A_IMRELAX, A_A_IMOFFSET); // whether the cost of an impulse move is unimportant
 GVAR(IDF_GAMEMOD, impulsecostscale, 0, 0, 1); // whether the cost scales depend on the amount the impulse scales
 

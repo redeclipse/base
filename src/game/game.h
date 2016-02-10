@@ -1560,7 +1560,7 @@ namespace client
 
 namespace physics
 {
-    extern int smoothmove, smoothdist, physframetime, physinterp, impulsemethod, impulseaction, jumpstyle, dashstyle, crouchstyle, walkstyle, grabstyle, kickoffstyle, kickupstyle;
+    extern int smoothmove, smoothdist, physframetime, physinterp, impulsemethod, impulseaction, jumpstyle, dashstyle, crouchstyle, walkstyle, grabstyle, grabplayerstyle, kickoffstyle, kickupstyle;
     extern float floatspeed, floatcoast, impulsekick, impulserolll, kickoffangle, kickupangle;
     extern bool isghost(gameent *d, gameent *e, bool proj = false);
     extern bool carryaffinity(gameent *d);

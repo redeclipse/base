@@ -1829,39 +1829,10 @@ namespace projs
             else
             {
                 if(proj.norm.iszero()) proj.norm = vec(proj.vel).normalize().neg();
-                if(proj.projcollide&IMPACT_GEOM)
+                if(proj.projcollide&IMPACT_GEOM && proj.projcollide&STICK_GEOM)
                 {
-                    if(proj.projcollide&STICK_GEOM)
-                    {
-                        stick(proj, dir);
-                        return 1;
-                    }
-                    else if(proj.projtype == PRJ_SHOT && proj.weap == W_MELEE && !WS(proj.flags) && (proj.owner == game::player1 || proj.owner->ai) && proj.owner->state == CS_ALIVE && physics::canimpulse(proj.owner, A_A_PARKOUR, true))
-                    {
-                        gameent *d = (gameent *)proj.owner;
-                        vec keepvel = vec(d->vel).add(d->falling);
-                        int cost = int(impulsecost*impulsecostgrabscale);
-                        float mag = physics::impulsevelocity(d, impulseparkourgrab, cost, A_A_PARKOUR, impulseparkourgrabredir, keepvel);
-                        if(mag > 0)
-                        {
-                            float pitch = 89.9f;
-                            if(d == game::player1) switch(physics::grabstyle)
-                            {
-                                case 0: pitch = d->pitch; break;
-                                case 1: pitch = -d->pitch; break;
-                                case 2: pitch = fabs(d->pitch); break;
-                                default: break;
-                            }
-                            d->vel = vec(d->yaw*RAD, pitch*RAD).mul(mag).add(keepvel);
-                            d->doimpulse(cost, IM_T_GRAB, lastmillis);
-                            d->turnmillis = PHYSMILLIS;
-                            d->turnside = 0;
-                            d->turnyaw = d->turnroll = 0;
-                            client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_GRAB);
-                            game::impulseeffect(d);
-                            game::footstep(d);
-                        }
-                    }
+                    stick(proj, dir);
+                    return 1;
                 }
                 if(proj.projcollide&(IMPACT_GEOM|BOUNCE_GEOM) && proj.projcollide&DRILL_GEOM)
                 {
@@ -1872,6 +1843,39 @@ namespace projs
                         if(!collide(&proj, dir, 0.f, proj.projcollide&COLLIDE_DYNENT) && !collideinside && !hitplayer) return 1;
                     }
                     proj.o = orig; // continues below
+                }
+            }
+            if(proj.projtype == PRJ_SHOT && proj.weap == W_MELEE && !WS(proj.flags) && (proj.owner == game::player1 || proj.owner->ai) && proj.owner->state == CS_ALIVE && physics::canimpulse(proj.owner, A_A_PARKOUR, true))
+            {
+                gameent *e = (gameent *)proj.owner;
+                vec keepvel = vec(e->vel).add(e->falling);
+                int cost = int(impulsecost*(d ? impulsecostgrabplayerscale : impulsecostgrabscale));
+                float mag = physics::impulsevelocity(e, d ? impulseparkourgrabplayer : impulseparkourgrab, cost, A_A_PARKOUR, d ? impulseparkourgrabplayerredir : impulseparkourgrabredir, keepvel);
+                if(mag > 0)
+                {
+                    float yaw = e->yaw, pitch = 89.9f;
+                    switch(e == game::player1 ? (d ? physics::grabplayerstyle : physics::grabstyle) : (d ? 3 : 2))
+                    {
+                        case 0: pitch = e->pitch; break;
+                        case 1: pitch = -e->pitch; break;
+                        case 2: pitch = fabs(e->pitch); break;
+                        case 3:
+                            if(d)
+                            {
+                                vec toward = vec(d->center()).sub(e->center()).normalize();
+                                vectoyawpitch(toward, yaw, pitch);
+                                break;
+                            }
+                        default: break;
+                    }
+                    e->vel = vec(yaw*RAD, pitch*RAD).mul(mag).add(keepvel);
+                    e->doimpulse(cost, IM_T_GRAB, lastmillis);
+                    e->turnmillis = PHYSMILLIS;
+                    e->turnside = 0;
+                    e->turnyaw = e->turnroll = 0;
+                    client::addmsg(N_SPHY, "ri2", e->clientnum, SPHY_GRAB);
+                    game::impulseeffect(e);
+                    game::footstep(e);
                 }
             }
             bool ricochet = proj.projcollide&(d ? (d->type == ENT_PROJ ? BOUNCE_SHOTS : BOUNCE_PLAYER) : BOUNCE_GEOM);

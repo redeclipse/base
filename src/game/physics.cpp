@@ -23,6 +23,7 @@ namespace physics
     VAR(IDF_PERSIST, crouchstyle, 0, 0, 2); // 0 = press and hold, 1 = double-tap toggle, 2 = toggle
     VAR(IDF_PERSIST, walkstyle, 0, 0, 2); // 0 = press and hold, 1 = double-tap toggle, 2 = toggle
     VAR(IDF_PERSIST, grabstyle, 0, 2, 2); // 0 = up=up down=down, 1 = up=down down=up, 2 = up=up, down=up
+    VAR(IDF_PERSIST, grabplayerstyle, 0, 3, 3); // 0 = up=up down=down, 1 = up=down down=up, 2 = up=up, down=up, 3 = directly toward player
     VAR(IDF_PERSIST, kickoffstyle, 0, 1, 1); // 0 = old method 1 = new method
     FVAR(IDF_PERSIST, kickoffangle, 0, 60, 89);
     VAR(IDF_PERSIST, kickupstyle, 0, 1, 1); // 0 = old method 1 = new method
