@@ -873,7 +873,7 @@ bool checkmasterclientinput(masterclient &c)
                 }
                 else if(!strcmp(w[1], "game"))
                 {
-                    copystring(c.stats.map, w[2]);
+                    filterstring(c.stats.map, w[2]);
                     c.stats.mode = atoi(w[3]);
                     c.stats.mutators = atoi(w[4]);
                     c.stats.timeplayed = atoi(w[5]);
@@ -882,8 +882,8 @@ bool checkmasterclientinput(masterclient &c)
                 }
                 else if(!strcmp(w[1], "server"))
                 {
-                    copystring(c.stats.desc, w[2]);
-                    copystring(c.stats.version, w[3]);
+                    filterstring(c.stats.desc, w[2]);
+                    filterstring(c.stats.version, w[3]);
                     c.stats.port = atoi(w[4]);
                 }
                 else if(!strcmp(w[1], "team"))
@@ -891,14 +891,14 @@ bool checkmasterclientinput(masterclient &c)
                     masterclient::statstate::team t;
                     t.index = atoi(w[2]);
                     t.score = atoi(w[3]);
-                    copystring(t.name, w[4]);
+                    filterstring(t.name, w[4]);
                     c.stats.teams.add(t);
                 }
                 else if(!strcmp(w[1], "player"))
                 {
                     masterclient::statstate::player p;
-                    copystring(p.name, w[2]);
-                    copystring(p.handle, w[3]);
+                    filterstring(p.name, w[2]);
+                    filterstring(p.handle, w[3]);
                     p.score = atoi(w[4]);
                     p.timealive = atoi(w[5]);
                     p.frags = atoi(w[6]);
@@ -912,8 +912,8 @@ bool checkmasterclientinput(masterclient &c)
                     #define wint(n) ws.n = atoi(w[qidx++]);
                     masterclient::statstate::weaponstats ws;
                     ws.playerid = atoi(w[2]);
-                    copystring(ws.playerhandle, w[3]);
-                    copystring(ws.name, w[4]);
+                    filterstring(ws.playerhandle, w[3]);
+                    filterstring(ws.name, w[4]);
                     int qidx = 5;
 
                     wint(timewielded);
@@ -939,7 +939,7 @@ bool checkmasterclientinput(masterclient &c)
                 {
                     masterclient::statstate::capturestats cs;
                     cs.playerid = atoi(w[2]);
-                    copystring(cs.playerhandle, w[3]);
+                    filterstring(cs.playerhandle, w[3]);
                     cs.capturing = atoi(w[4]);
                     cs.captured = atoi(w[5]);
                     c.stats.captures.add(cs);
@@ -948,7 +948,7 @@ bool checkmasterclientinput(masterclient &c)
                 {
                     masterclient::statstate::bombstats bs;
                     bs.playerid = atoi(w[2]);
-                    copystring(bs.playerhandle, w[3]);
+                    filterstring(bs.playerhandle, w[3]);
                     bs.bombing = atoi(w[4]);
                     bs.bombed = atoi(w[5]);
                     c.stats.bombings.add(bs);
@@ -957,7 +957,7 @@ bool checkmasterclientinput(masterclient &c)
                 {
                     masterclient::statstate::ffaroundstats fr;
                     fr.playerid = atoi(w[2]);
-                    copystring(fr.playerhandle, w[3]);
+                    filterstring(fr.playerhandle, w[3]);
                     fr.round = atoi(w[4]);
                     fr.winner = atoi(w[5]);
                     c.stats.ffarounds.add(fr);
