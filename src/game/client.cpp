@@ -10,6 +10,8 @@ namespace client
     int demonameid = 0;
     hashtable<int, const char *>demonames;
 
+    VAR(0, debugmessages, 0, 0, 1);
+
     SVAR(IDF_PERSIST, demolist, "");
     VAR(0, demoendless, 0, 0, 1);
     VAR(IDF_PERSIST, showpresence, 0, 1, 2); // 0 = never show join/leave, 1 = show only during game, 2 = show when connecting/disconnecting
@@ -2017,7 +2019,7 @@ namespace client
         {
             prevtype = type;
             type = getint(p);
-            if(verbose > 5) conoutf("[client] msg: %d, prev: %d", type, prevtype);
+            if(debugmessages) conoutf("[client] msg: %d, prev: %d", type, prevtype);
             switch(type)
             {
                 case N_SERVERINIT: // welcome messsage from the server
@@ -2054,7 +2056,7 @@ namespace client
 
                 case N_SPHY: // simple phys events
                 {
-                    int lcn = getint(p), st = getint(p), param = st == SPHY_COOK || st == SPHY_BUFF ? getint(p) : 0;
+                    int lcn = getint(p), st = getint(p), param = st == SPHY_COOK || st == SPHY_BUFF || st == SPHY_MATERIAL ? getint(p) : 0;
                     gameent *t = game::getclient(lcn);
                     if(t && (st == SPHY_EXTINGUISH || st == SPHY_BUFF || (t != game::player1 && !t->ai))) switch(st)
                     {
@@ -3132,7 +3134,7 @@ namespace client
 
                 default:
                 {
-                    defformatstring(err, "type (got %d)", type);
+                    defformatstring(err, "type (got: %d, prev: %d, sender: %s)", type, prevtype, d ? game::colourname(d) : "<none>");
                     neterr(err);
                     return;
                 }
