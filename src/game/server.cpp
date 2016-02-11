@@ -2220,15 +2220,6 @@ namespace server
         relayf(abs(r), "%s", str);
     }
 
-    void srvoutforce(clientinfo *ci, int r, const char *s, ...)
-    {
-        defvformatbigstring(str, s, s);
-        srvmsgf(r >= 0 ? -1 : -2, "%s", str);
-        if(!allowbroadcast(ci->clientnum))
-            sendf(ci->clientnum, 1, "ri2s", N_SERVMSG, r >= 0 ? int(CON_MESG) : int(CON_EVENT), str);
-        relayf(abs(r), "%s", str);
-    }
-
     void listdemos(int cn)
     {
         packetbuf p(MAXTRANS, ENET_PACKET_FLAG_RELIABLE);
@@ -7092,12 +7083,12 @@ namespace server
                         srvmsgft(ci->clientnum, CON_EVENT, "\frthat client does not exist");
                         break;
                     }
-                    if((priv != -1) && (priv < PRIV_SUPPORTER || priv > PRIV_ADMINISTRATOR))
+                    if((priv != -1) && (priv < PRIV_SUPPORTER || priv > PRIV_ADMINISTRATOR || cp->actortype != A_PLAYER))
                     {
                         srvmsgft(ci->clientnum, CON_EVENT, "\fryou may not add that privilege");
                         break;
                     }
-                    if(priv == -1 && (ci->privilege&PRIV_TYPE) <= (cp->privilege & PRIV_TYPE) && (ci->privilege&PRIV_TYPE) < PRIV_ADMINISTRATOR)
+                    if(priv == -1 && (ci->privilege&PRIV_TYPE) <= (cp->privilege&PRIV_TYPE) && (ci->privilege&PRIV_TYPE) < PRIV_ADMINISTRATOR)
                     {
                         srvmsgft(ci->clientnum, CON_EVENT, "\fryou must be a \fs\fc%s\fS to reset that client's privileges", privname((cp->privilege & PRIV_TYPE) + 1));
                         break;

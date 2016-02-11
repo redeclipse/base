@@ -14,8 +14,9 @@ enum
     SND_NODIST  = 1<<4, // disable distance (panning only)
     SND_NOQUIET = 1<<5, // disable water effects (panning only)
     SND_CLAMPED = 1<<6, // makes volume the minimum volume to clamp to
-    SND_LOOP    = 1<<7,
-    SND_MAP     = 1<<8,
+    SND_LOOP    = 1<<7, // loops when it reaches the end
+    SND_BUFFER  = 1<<8, // channel becomes/adds to a buffer for sounds
+    SND_MAP     = 1<<9,
     SND_IMPORT  = SND_NODELAY|SND_NOCULL|SND_NOQUIET,
     SND_FORCED  = SND_IMPORT|SND_NOATTEN|SND_NODIST,
     SND_DIRECT  = SND_IMPORT|SND_CLAMPED,
@@ -47,6 +48,7 @@ struct sound
     int vol, curvol, curpan;
     int flags, maxrad, minrad, material;
     int millis, ends, slotnum, chan, *hook;
+    vector<int> buffer;
 
     sound();
     ~sound();

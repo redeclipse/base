@@ -569,77 +569,12 @@ namespace game
     }
 
     int announcerchan = -1;
-    struct ancbuf
-    {
-        int idx;
-        physent *t;
-        int *chan;
-
-        ancbuf() : idx(-1), t(NULL), chan(NULL) {}
-        ~ancbuf() {}
-
-        bool play()
-        {
-            if(!issound(*chan))
-            {
-                playsound(idx, t->o, t, t != camera1 ? SND_IMPORT : SND_FORCED, -1, -1, -1, chan);
-                return true;
-            }
-            return false;
-        }
-    };
-    vector<ancbuf> anclist;
-
-    VAR(IDF_PERSIST, announcecollect, 1, 1, 3);
-    VAR(IDF_PERSIST, announcededupe, 0, 2, 3);
-    VAR(IDF_PERSIST, announcebuffer, 1, 64, VAR_MAX);
-
-    void removeannounceall()
-    {
-        loopvrev(anclist) anclist.remove(i);
-        if(issound(announcerchan)) removesound(announcerchan);
-        announcerchan = -1;
-    }
-
-    void removeannounce(gameent *d)
-    {
-        loopvrev(anclist) if(anclist[i].chan == &d->aschan) anclist.remove(i);
-    }
-
-    void checkannounce()
-    {
-        loopv(anclist) if(anclist[i].play()) anclist.remove(i--);
-        while(anclist.length() > announcebuffer) anclist.pop();
-    }
-
     void announce(int idx, gameent *d, bool forced)
     {
         if(idx < 0) return;
         physent *t = !d || d == player1 || forced ? camera1 : d;
-        bool ispl = d && !forced, inuse = false;
-        int *chan = ispl ? &d->aschan : &announcerchan;
-        if(issound(*chan))
-        {
-            if(announcededupe&(ispl ? 2 : 1) && sounds[*chan].slotnum == idx) return; // de-dupe
-            inuse = true;
-        }
-        if(announcecollect&(ispl ? 2 : 1))
-        {
-            loopv(anclist) if(anclist[i].chan == chan)
-            {
-                if(announcededupe&(ispl ? 2 : 1) && anclist[i].idx == idx) return; // de-dupe
-                inuse = true;
-            }
-            if(inuse)
-            {
-                ancbuf &a = anclist.add();
-                a.idx = idx;
-                a.t = t;
-                a.chan = chan;
-                return;
-            }
-        }
-        playsound(idx, t->o, t, t != camera1 ? SND_IMPORT : SND_FORCED, -1, -1, -1, chan);
+        int *chan = d && !forced ? &d->aschan : &announcerchan;
+        playsound(idx, t->o, t, (t != camera1 ? SND_IMPORT : SND_FORCED)|SND_BUFFER, -1, -1, -1, chan);
     }
 
     void announcef(int idx, int targ, gameent *d, bool forced, const char *msg, ...)
@@ -1875,7 +1810,6 @@ namespace game
         client::clearvotes(d);
         projs::remove(d);
         removedamagemerges(d);
-        removeannounce(d);
         if(m_capture(gamemode)) capture::removeplayer(d);
         else if(m_defend(gamemode)) defend::removeplayer(d);
         else if(m_bomber(gamemode)) bomber::removeplayer(d);
@@ -1909,7 +1843,6 @@ namespace game
         }
         specreset();
         removedamagemergeall();
-        removeannounceall();
         projs::reset();
         physics::reset();
         resetworld();
@@ -2887,7 +2820,6 @@ namespace game
                 if(player1->state == CS_ALIVE) weapons::shoot(player1, worldpos);
             }
             checkplayers();
-            checkannounce();
             flushdamagemerges();
             if(!menuactive())
             {

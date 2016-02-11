@@ -2466,7 +2466,7 @@ namespace client
                     {
                         int sweap = m_weapon(game::focus->actortype, game::gamemode, game::mutators), attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap),
                             colour = e.type == WEAPON ? W(attr, colour) : 0xFFFFFF;
-                        playsound(e.type == WEAPON && attr >= W_OFFSET ? WSND(attr, S_W_SPAWN) : S_ITEMSPAWN, e.o);
+                        playsound(e.type == WEAPON && attr >= W_OFFSET ? WSND(attr, S_W_SPAWN) : S_ITEMSPAWN, e.o, NULL, 0, -1, -1, -1, &e.schan);
                         if(entities::showentdescs)
                         {
                             vec pos = vec(e.o).add(vec(0, 0, 4));
