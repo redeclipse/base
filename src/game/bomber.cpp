@@ -579,6 +579,7 @@ namespace bomber
 
     void checkaffinity(gameent *d, int i)
     {
+        if(!(AA(d->actortype, abilities)&(1<<A_A_AFFINITY))) return;
         vec o = d->feetpos();
         bomberstate::flag &f = st.flags[i];
         if(f.owner)
@@ -639,10 +640,10 @@ namespace bomber
 
     bool aihomerun(gameent *d, ai::aistate &b)
     {
-        vec pos = d->feetpos();
-        if(m_team(game::gamemode, game::mutators) && !m_bb_hold(game::gamemode, game::mutators) && (!m_bb_attack(game::gamemode, game::mutators) || d->team != T_ALPHA))
+        if(d->actortype < A_ENEMY && m_team(game::gamemode, game::mutators) && !m_bb_hold(game::gamemode, game::mutators) && (!m_bb_attack(game::gamemode, game::mutators) || d->team != T_ALPHA))
         {
             int goal = -1;
+            vec pos = d->feetpos();
             loopv(st.flags)
             {
                 bomberstate::flag &g = st.flags[i];

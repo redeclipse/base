@@ -23,6 +23,7 @@ namespace capture
 
     bool canpickup(gameent *d, int n, bool check = false)
     {
+        if(!(AA(d->actortype, abilities)&(1<<A_A_AFFINITY))) return false;
         if(!st.flags.inrange(n)) return false;
         capturestate::flag &f = st.flags[n];
         if(f.owner) return false;
@@ -577,7 +578,7 @@ namespace capture
 
     bool aihomerun(gameent *d, ai::aistate &b)
     {
-        if(!m_ctf_protect(game::gamemode, game::mutators))
+        if(d->actortype < A_ENEMY && !m_ctf_protect(game::gamemode, game::mutators))
         {
             vec pos = d->feetpos();
             loopk(2)

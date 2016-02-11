@@ -138,7 +138,7 @@ struct duelservmode : servmode
 
     void layout()
     {
-        loopvj(clients) if(clients[j]->actortype < A_ENEMY)
+        loopvj(clients)
         {
             vector<int> shots;
             loop(a, W_MAX) loop(b, 2)

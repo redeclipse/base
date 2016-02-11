@@ -698,7 +698,7 @@ namespace server
             if(v != m && (!m_team(gamemode, mutators) || v->team != m->team) && v->state == CS_ALIVE && hurt > 0)
             {
                 int real = int(ceilf(hurt*G(vampirescale))), heal = v->health+real;
-                if(v->actortype < A_ENEMY) heal = min(heal, m_maxhealth(gamemode, mutators, v->actortype));
+                if(AA(v->actortype, abilities)&(1<<A_A_REGEN)) heal = min(heal, m_maxhealth(gamemode, mutators, v->actortype));
                 int eff = heal-v->health;
                 if(eff > 0)
                 {
@@ -4000,7 +4000,7 @@ namespace server
     bool isghost(clientinfo *d, clientinfo *e)
     {
         if(!e) return false;
-        if((d->actortype < A_ENEMY || e->actortype < A_ENEMY) && m_ghost(gamemode, mutators)) return true;
+        if(d->actortype < A_ENEMY && e->actortype < A_ENEMY && m_ghost(gamemode, mutators)) return true;
         switch(d->actortype)
         {
             case A_PLAYER: if(!(AA(e->actortype, collide)&(1<<A_C_PLAYERS))) return true; break;
@@ -4050,8 +4050,7 @@ namespace server
         }
         else
         {
-            m->health = m->health-realdamage;
-            if(m->actortype < A_ENEMY) m->health = min(m->health, m_maxhealth(gamemode, mutators, m->actortype));
+            m->health = min(m->health-realdamage, m_maxhealth(gamemode, mutators, m->actortype));
             if(realdamage > 0)
             {
                 hurt = min(m->health, realdamage);
@@ -4875,7 +4874,7 @@ namespace server
                 }
                 else if(ci->lastres[WR_SHOCK]) ci->lastres[WR_SHOCK] = ci->lastrestime[WR_SHOCK] = 0;
                 // regen wear-off
-                if(m_regen(gamemode, mutators) && ci->actortype < A_ENEMY)
+                if(m_regen(gamemode, mutators) && AA(ci->actortype, abilities)&(1<<A_A_REGEN))
                 {
                     int total = m_health(gamemode, mutators, ci->actortype), amt = G(regenhealth),
                         delay = ci->lastregen ? G(regentime) : G(regendelay);

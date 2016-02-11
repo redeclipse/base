@@ -51,7 +51,7 @@ namespace ai
 
     bool targetable(gameent *d, gameent *e, bool solid)
     {
-        if(d && e && d != e && e->state == CS_ALIVE && (!solid || physics::issolid(e, d)))
+        if(d && e && d != e && e->state == CS_ALIVE && (AA(d->actortype, abilities)&(1<<A_A_PRIMARY) || AA(d->actortype, abilities)&(1<<A_A_SECONDARY)) && (!solid || physics::issolid(e, d)))
         {
             if(d->team == T_ENEMY && e->team == T_ENEMY) return false;
             if(m_coop(game::gamemode, game::mutators) && e->actortype != A_PLAYER) return false;
@@ -557,7 +557,7 @@ namespace ai
             n.score = -1;
             n.tolerance = 1;
         }
-        if(m_play(game::gamemode))
+        if(m_play(game::gamemode) && AA(d->actortype, abilities)&(1<<A_A_AFFINITY))
         {
             if(m_capture(game::gamemode)) capture::aifind(d, b, interests);
             else if(m_defend(game::gamemode)) defend::aifind(d, b, interests);
