@@ -3889,7 +3889,7 @@ namespace server
             }
         });
 
-        if(!ci || (m_play(gamemode) && numclients()))
+        if(!ci || numclients())
         {
             putint(p, N_TICK);
             putint(p, gamestate);
