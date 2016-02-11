@@ -59,6 +59,8 @@ struct authreq
     }
 };
 
+typedef uchar statstring[MAXSTRLEN];
+
 struct masterclient
 {
     ENetAddress address;
@@ -76,11 +78,11 @@ struct masterclient
     struct statstate
     {
         ulong id;
-        string map;
+        statstring map;
         int mode, mutators, timeplayed;
         time_t time;
 
-        string desc, version;
+        statstring desc, version;
         int port;
 
         int unique;
@@ -88,7 +90,7 @@ struct masterclient
         struct team
         {
             int index, score;
-            string name;
+            statstring name;
 
             team() { reset(); }
             ~team() {}
@@ -103,7 +105,7 @@ struct masterclient
 
         struct player
         {
-            string name, handle;
+            statstring name, handle;
             int score, timealive, frags, deaths, wid, timeactive;
 
             player() { reset(); }
@@ -119,9 +121,9 @@ struct masterclient
 
         struct weaponstats
         {
-            string name;
+            statstring name;
             int playerid;
-            string playerhandle;
+            statstring playerhandle;
             int timewielded, timeloadout;
             int hits1, hits2, flakhits1, flakhits2;
             int shots1, shots2, flakshots1, flakshots2;
@@ -144,7 +146,7 @@ struct masterclient
 
         struct capturestats
         {
-            string playerhandle;
+            statstring playerhandle;
             int playerid;
             int capturing, captured;
 
@@ -162,7 +164,7 @@ struct masterclient
 
         struct bombstats
         {
-            string playerhandle;
+            statstring playerhandle;
             int playerid;
             int bombing, bombed;
 
@@ -180,7 +182,7 @@ struct masterclient
 
         struct ffaroundstats
         {
-            string playerhandle;
+            statstring playerhandle;
             int playerid;
             int round;
             bool winner;
@@ -717,6 +719,13 @@ int nextcontrolversion()
     return controlversion;
 }
 
+template<size_t N> static inline void statfilterstring(uchar (&dst)[N], const char *src)
+{
+    char tmp[N];
+    filterstring(tmp, src);
+    encodeutf8(dst, N-1, (uchar*)tmp, N-1);
+}
+
 bool checkmasterclientinput(masterclient &c)
 {
     if(c.inputpos < 0) return false;
@@ -873,7 +882,7 @@ bool checkmasterclientinput(masterclient &c)
                 }
                 else if(!strcmp(w[1], "game"))
                 {
-                    filterstring(c.stats.map, w[2]);
+                    statfilterstring(c.stats.map, w[2]);
                     c.stats.mode = atoi(w[3]);
                     c.stats.mutators = atoi(w[4]);
                     c.stats.timeplayed = atoi(w[5]);
@@ -882,8 +891,8 @@ bool checkmasterclientinput(masterclient &c)
                 }
                 else if(!strcmp(w[1], "server"))
                 {
-                    filterstring(c.stats.desc, w[2]);
-                    filterstring(c.stats.version, w[3]);
+                    statfilterstring(c.stats.desc, w[2]);
+                    statfilterstring(c.stats.version, w[3]);
                     c.stats.port = atoi(w[4]);
                 }
                 else if(!strcmp(w[1], "team"))
@@ -891,14 +900,14 @@ bool checkmasterclientinput(masterclient &c)
                     masterclient::statstate::team t;
                     t.index = atoi(w[2]);
                     t.score = atoi(w[3]);
-                    filterstring(t.name, w[4]);
+                    statfilterstring(t.name, w[4]);
                     c.stats.teams.add(t);
                 }
                 else if(!strcmp(w[1], "player"))
                 {
                     masterclient::statstate::player p;
-                    filterstring(p.name, w[2]);
-                    filterstring(p.handle, w[3]);
+                    statfilterstring(p.name, w[2]);
+                    statfilterstring(p.handle, w[3]);
                     p.score = atoi(w[4]);
                     p.timealive = atoi(w[5]);
                     p.frags = atoi(w[6]);
@@ -912,8 +921,8 @@ bool checkmasterclientinput(masterclient &c)
                     #define wint(n) ws.n = atoi(w[qidx++]);
                     masterclient::statstate::weaponstats ws;
                     ws.playerid = atoi(w[2]);
-                    filterstring(ws.playerhandle, w[3]);
-                    filterstring(ws.name, w[4]);
+                    statfilterstring(ws.playerhandle, w[3]);
+                    statfilterstring(ws.name, w[4]);
                     int qidx = 5;
 
                     wint(timewielded);
@@ -939,7 +948,7 @@ bool checkmasterclientinput(masterclient &c)
                 {
                     masterclient::statstate::capturestats cs;
                     cs.playerid = atoi(w[2]);
-                    filterstring(cs.playerhandle, w[3]);
+                    statfilterstring(cs.playerhandle, w[3]);
                     cs.capturing = atoi(w[4]);
                     cs.captured = atoi(w[5]);
                     c.stats.captures.add(cs);
@@ -948,7 +957,7 @@ bool checkmasterclientinput(masterclient &c)
                 {
                     masterclient::statstate::bombstats bs;
                     bs.playerid = atoi(w[2]);
-                    filterstring(bs.playerhandle, w[3]);
+                    statfilterstring(bs.playerhandle, w[3]);
                     bs.bombing = atoi(w[4]);
                     bs.bombed = atoi(w[5]);
                     c.stats.bombings.add(bs);
@@ -957,7 +966,7 @@ bool checkmasterclientinput(masterclient &c)
                 {
                     masterclient::statstate::ffaroundstats fr;
                     fr.playerid = atoi(w[2]);
-                    filterstring(fr.playerhandle, w[3]);
+                    statfilterstring(fr.playerhandle, w[3]);
                     fr.round = atoi(w[4]);
                     fr.winner = atoi(w[5]);
                     c.stats.ffarounds.add(fr);
