@@ -137,7 +137,6 @@ namespace defend
     {
         if(game::focus->state == CS_ALIVE && hud::showevents >= 2)
         {
-            pushfont("super");
             loopv(st.flags) if(insideaffinity(st.flags[i], game::focus) && (st.flags[i].owner == game::focus->team || st.flags[i].enemy == game::focus->team))
             {
                 defendstate::flag &f = st.flags[i];
@@ -146,7 +145,6 @@ namespace defend
                 ty -= draw_textf("You are %s: %s \fs\f[%d]\f(%s)\f(%s)\fS \fs%s%d%%\fS", tx, ty, int(FONTW*hud::eventpadx), int(FONTH*hud::eventpady), tr, tg, tb, int(255*blend), TEXT_SKIN|TEXT_CENTERED, -1, -1, 1, overthrow ? "overthrowing" : "securing", f.name, TEAM(f.owner, colour), hud::teamtexname(f.owner), hud::pointtex, overthrow ? "\fy" : (occupy < 1.f ? "\fc" : "\fg"), int(occupy*100.f))+FONTH/4;
                 break;
             }
-            popfont();
         }
     }
 

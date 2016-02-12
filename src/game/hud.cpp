@@ -1451,10 +1451,6 @@ namespace hud
         }
         if(client::demoplayback && showdemoplayback)
             ty += draw_textf("Demo playback in progress", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), 255, 255, 255, tf, TEXT_CENTERED, -1, tw, 1)+FONTH/3;
-        if(!gs_playing(game::gamestate))
-            ty += draw_textf("%s", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), 255, 255, 255, tf, TEXT_CENTERED, -1, tw, 1, gamestates[2][game::gamestate])+FONTH/3;
-        else if(hastkwarn(game::focus)) // first and foremost
-            ty += draw_textf("\fzryDo NOT shoot team-mates", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1)+FONTH/3;
         popfont();
 
         pushfont("default");
@@ -1678,19 +1674,24 @@ namespace hud
             tf = int(hudblend*eventblend*255), tr = 255, tg = 255, tb = 255,
             tw = int((hudwidth-((hudsize*edgesize)*2+(hudsize*inventoryleft)+(hudsize*inventoryright)))/eventscale);
         if(eventtone) skewcolour(tr, tg, tb, eventtone);
-        pushfont("emphasis");
+        pushfont("huge");
+        if(!gs_playing(game::gamestate))
+            ty -= draw_textf("%s", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), 255, 255, 255, tf, TEXT_CENTERED, -1, tw, 1, gamestates[2][game::gamestate])+FONTH/3;
+        else
+        {
+            bool tkwarn = hastkwarn(game::focus), tinfo = hasteaminfo(game::focus);
+            if(tkwarn || tinfo)
+            {
+                const char *col = teamnotices >= 2 ? "\fs\fzyS" : "";
+                if(tkwarn) ty -= draw_textf("\fzryDo NOT shoot team-mates", tx, ty, int(FONTW*eventpadx)+FONTW/4, int(FONTH*eventpady), tr, tg, tb, tf, TEXT_SKIN|TEXT_CENTERED, -1, tw, 1)+FONTH/4;
+                if(m_race(game::gamemode)) ty -= draw_textf("%sRace", tx, ty, int(FONTW*eventpadx)+FONTW/4, int(FONTH*eventpady), tr, tg, tb, tf, TEXT_SKIN|TEXT_CENTERED, -1, tw, 1, col)+FONTH/4;
+                else if(!m_team(game::gamemode, game::mutators)) ty -= draw_textf("%sFree-for-all %s", tx, ty, int(FONTW*eventpadx)+FONTW/4, int(FONTH*eventpady), tr, tg, tb, tf, TEXT_SKIN|TEXT_CENTERED, -1, tw, 1, col, m_bomber(game::gamemode) ? "Bomber-ball" : "Deathmatch")+FONTH/4;
+                else ty -= draw_textf("%sYou are on team %s", tx, ty, int(FONTW*eventpadx)+FONTW/4, int(FONTH*eventpady), tr, tg, tb, tf, TEXT_SKIN|TEXT_CENTERED, -1, tw, 1, col, game::colourteam(game::focus->team))+FONTH/4;
+            }
+        }
         if(m_capture(game::gamemode)) capture::drawevents(hudwidth, hudheight, tx, ty, tr, tg, tb, tf/255.f);
         else if(m_defend(game::gamemode)) defend::drawevents(hudwidth, hudheight, tx, ty, tr, tg, tb, tf/255.f);
         else if(m_bomber(game::gamemode)) bomber::drawevents(hudwidth, hudheight, tx, ty, tr, tg, tb, tf/255.f);
-        if(hasteaminfo(game::focus))
-        {
-            pushfont("huge");
-            const char *col = teamnotices >= 2 ? "\fs\fzyS" : "";
-            if(m_race(game::gamemode)) ty -= draw_textf("%sRace", tx, ty, int(FONTW*eventpadx)+FONTW/4, int(FONTH*eventpady), tr, tg, tb, tf, TEXT_SKIN|TEXT_CENTERED, -1, tw, 1, col)+FONTH/4;
-            else if(!m_team(game::gamemode, game::mutators)) ty -= draw_textf("%sFree-for-all %s", tx, ty, int(FONTW*eventpadx)+FONTW/4, int(FONTH*eventpady), tr, tg, tb, tf, TEXT_SKIN|TEXT_CENTERED, -1, tw, 1, col, m_bomber(game::gamemode) ? "Bomber-ball" : "Deathmatch")+FONTH/4;
-            else ty -= draw_textf("%sYou are on team %s", tx, ty, int(FONTW*eventpadx)+FONTW/4, int(FONTH*eventpady), tr, tg, tb, tf, TEXT_SKIN|TEXT_CENTERED, -1, tw, 1, col, game::colourteam(game::focus->team))+FONTH/4;
-            popfont();
-        }
         popfont();
         pophudmatrix();
     }
