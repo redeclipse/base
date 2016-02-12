@@ -1997,7 +1997,7 @@ namespace hud
         return dist;
     }
 
-    void drawblip(const char *tex, float area, int w, int h, float s, float blend, int style, vec &pos, const vec &colour, const char *font, const char *text, ...)
+    void drawblip(const char *tex, float area, int w, int h, float s, float blend, int style, const vec &pos, const vec &colour, const char *font, const char *text, ...)
     {
         if(style < 0) style = radartype();
         vec dir = vec(pos).sub(camera1->o);

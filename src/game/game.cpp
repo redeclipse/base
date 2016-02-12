@@ -264,7 +264,7 @@ namespace game
     FVAR(IDF_PERSIST, gibscale, 0, 1, 1000);
     VAR(IDF_PERSIST, gibfade, 1, 5000, VAR_MAX);
     FVAR(IDF_PERSIST, impulsescale, 0, 1, 1000);
-    VAR(IDF_PERSIST, impulsefade, 0, 500, VAR_MAX);
+    VAR(IDF_PERSIST, impulsefade, 0, 250, VAR_MAX);
     VAR(IDF_PERSIST, ragdolleffect, 2, 500, VAR_MAX);
 
     VAR(IDF_PERSIST, playerovertone, -1, CTONE_TEAM, CTONE_MAX-1);
@@ -758,7 +758,7 @@ namespace game
         }
     }
 
-    void spawneffect(int type, vec &pos, float radius, int colour, float size)
+    void spawneffect(int type, const vec &pos, float radius, int colour, float size)
     {
         vec o = pos;
         o.z -= radius;
