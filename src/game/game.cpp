@@ -309,7 +309,7 @@ namespace game
     VAR(IDF_PERSIST, forceplayermodel, -1, -1, PLAYERTYPES-1);
     VAR(IDF_PERSIST, vanitymodels, 0, 1, 1);
     VAR(IDF_PERSIST, headlessmodels, 0, 1, 1);
-    FVAR(IDF_PERSIST, twitchspeed, 0, 8, FVAR_MAX);
+    FVAR(IDF_PERSIST, twitchspeed, 0, 3, FVAR_MAX);
 
     bool wantsloadoutmenu = false;
     VAR(IDF_PERSIST, showloadoutmenu, 0, 0, 1); // show the loadout menu at the start of a map
