@@ -193,6 +193,8 @@ void writeinitcfg()
     f->printf("soundbuflen %d\n", soundbuflen);
     f->printf("soundfreq %d\n", soundfreq);
     f->printf("verbose %d\n", verbose);
+    extern int noconfigfile;
+    f->printf("noconfigfile %d\n", noconfigfile);
     delete f;
 }
 

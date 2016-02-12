@@ -1609,9 +1609,14 @@ void setlocations(bool wanthome)
     }
 }
 
+#ifndef STANDALONE
+VAR(IDF_PERSIST, noconfigfile, 0, 0, 1);
+#endif // STANDALONE
+
 void writecfg()
 {
 #ifndef STANDALONE
+    if(noconfigfile) return;
     stream *f = openutf8file("config.cfg", "w");
     if(!f) return;
     vector<ident *> ids;
@@ -1650,7 +1655,6 @@ void writecfg()
     delete f;
 #endif
 }
-
 ICOMMAND(0, writecfg, "", (void), if(!(identflags&IDF_WORLD)) writecfg());
 
 void rehash(bool reload)
@@ -1672,7 +1676,7 @@ void rehash(bool reload)
     initing = INIT_LOAD;
     interactive = true;
     execfile("servers.cfg", false);
-    execfile("config.cfg", false);
+    if(!noconfigfile) execfile("config.cfg", false);
     execfile("autoexec.cfg", false);
     interactive = false;
     initing = NOT_INITING;
