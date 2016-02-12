@@ -1845,7 +1845,7 @@ namespace projs
                     proj.o = orig; // continues below
                 }
             }
-            if(proj.projtype == PRJ_SHOT && proj.weap == W_MELEE && !WS(proj.flags) && (proj.owner == game::player1 || proj.owner->ai) && proj.owner->state == CS_ALIVE && physics::canimpulse(proj.owner, A_A_PARKOUR, true))
+            if(proj.projtype == PRJ_SHOT && proj.weap == W_MELEE && !WS(proj.flags) && (proj.owner == game::player1 || proj.owner->ai) && proj.owner->state == CS_ALIVE && physics::canimpulse(proj.owner, A_A_PARKOUR, true) && (d || fabs(proj.norm.z) <= impulseparkournorm))
             {
                 gameent *e = (gameent *)proj.owner;
                 vec keepvel = vec(e->vel).add(e->falling);
