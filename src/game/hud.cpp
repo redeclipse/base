@@ -2290,6 +2290,7 @@ namespace hud
     {
         pushfont("tiny");
         pushhudscale(radarhitsscale);
+        float maxy = -1.f;
         loopv(hitlocs)
         {
             dhloc &d = hitlocs[i];
@@ -2319,6 +2320,7 @@ namespace hud
             }
             defformatstring(text, "%c%d", d.damage > 0 ? '-' : (d.damage < 0 ? '+' : '~'), d.damage < 0 ? 0-d.damage : d.damage);
             vec colour = d.colour < 0 ? game::rescolour(a, INVPULSE(d.colour)) : vec::hexcolor(d.colour);
+            if(maxy >= 0 && hy < maxy) hy = maxy;
             if(radarhitsglow)
             {
                 float width = 0, height = 0;
@@ -2327,7 +2329,8 @@ namespace hud
                 settexture(radarhitsglowtex);
                 drawtexture(hx-(width*radarhitsglowscale*0.5f), hy-(height*radarhitsglowscale*0.25f), width*radarhitsglowscale, height*radarhitsglowscale);
             }
-            draw_textf("%s", hx, hy, 0, 0, int(colour.r*255), int(colour.g*255), int(colour.b*255), int(fade*255), TEXT_CENTERED, -1, -1, 1, text);
+            hy += draw_textf("%s", hx, hy, 0, 0, int(colour.r*255), int(colour.g*255), int(colour.b*255), int(fade*255), TEXT_CENTERED, -1, -1, 1, text)/radarhitsscale;
+            if(maxy < 0 || hy > maxy) maxy = hy;
         }
         pophudmatrix();
         popfont();
