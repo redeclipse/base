@@ -1355,7 +1355,15 @@ namespace hud
                 if(crosshairdistance && (game::focus->state == CS_ALIVE || game::focus->state == CS_EDITING)) draw_textf("\fa%.1f\fwm", cx+crosshairdistancex, cy+crosshairdistancey, 0, 0, 255, 255, 255, int(hudblend*255), TEXT_RIGHT_JUSTIFY, -1, -1, 1, game::focus->o.dist(worldpos)/8.f);
             }
         }
-        else drawpointertex(getpointer(index, game::focus->weapselect), cx, cy, cs, c.r, c.g, c.b, fade*hudblend);
+        else
+        {
+            if(guicursortype == 2)
+            {
+                cy -= cs/2;
+                cx -= cs/2;
+            }
+            drawpointertex(getpointer(index, game::focus->weapselect), cx, cy, cs, c.r, c.g, c.b, fade*hudblend);
+        }
     }
 
     void drawpointers(int w, int h)
