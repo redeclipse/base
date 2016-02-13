@@ -396,8 +396,10 @@ static inline bool insideoe(const octaentities *oe, const vec &v, int margin = 1
            v.x<=oe->bbmax.x+margin && v.y<=oe->bbmax.y+margin && v.z<=oe->bbmax.z+margin;
 }
 
-void findvisiblemms(const vector<extentity *> &ents)
+void findvisiblemms(const vector<extentity *> &ents, bool doquery)
 {
+    visiblemms = NULL;
+    lastvisiblemms = &visiblemms;
     for(vtxarray *va = visibleva; va; va = va->next)
     {
         if(va->mapmodels.empty() || va->curvfc >= VFC_FOGGED || va->occluded >= OCCLUDE_BB) continue;
@@ -406,7 +408,7 @@ void findvisiblemms(const vector<extentity *> &ents)
             octaentities *oe = va->mapmodels[i];
             if(isfoggedcube(oe->o, oe->size) || pvsoccluded(oe->bbmin, oe->bbmax)) continue;
 
-            bool occluded = oe->query && oe->query->owner == oe && checkquery(oe->query);
+            bool occluded = doquery && oe->query && oe->query->owner == oe && checkquery(oe->query);
             if(occluded)
             {
                 oe->distance = -1;
@@ -530,14 +532,10 @@ void renderreflectedmapmodels()
 
 void rendermapmodels()
 {
-    const vector<extentity *> &ents = entities::getents();
-
-    visiblemms = NULL;
-    lastvisiblemms = &visiblemms;
-    findvisiblemms(ents);
-
     static int skipoq = 0;
-    bool doquery = oqfrags && oqmm;
+    bool doquery = !drawtex && oqfrags && oqmm;
+    const vector<extentity *> &ents = entities::getents();
+    findvisiblemms(ents, doquery);
 
     startmodelbatches();
     for(octaentities *oe = visiblemms; oe; oe = oe->next) if(oe->distance>=0)
