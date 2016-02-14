@@ -120,7 +120,7 @@ struct capturestate
     void create(int id)
     {
         flag &f = flags[id];
-        f.proj = projs::create(f.droploc, f.inertia, false, NULL, PRJ_AFFINITY, capturedelay, capturedelay, 1, 1, id);
+        f.proj = projs::create(f.droploc, f.inertia, false, NULL, PRJ_AFFINITY, -1, false, capturedelay, capturedelay, 1, 1, id);
     }
 #endif
 

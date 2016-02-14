@@ -1435,7 +1435,8 @@ struct projent : dynent
     bool local, limited, escaped, child;
     int projtype, projcollide, interacts;
     float elasticity, reflectivity, relativity, liquidcoast;
-    int schan, id, weap, value, flags, hitflags;
+    int schan, id, weap, fromweap, value, flags, hitflags;
+    bool fromsecondary;
     entitylight light;
     gameent *owner, *target, *stick;
     physent *hit;
@@ -1462,7 +1463,8 @@ struct projent : dynent
         inertia = sticknrm = stickpos = lastgood = vec(0, 0, 0);
         effectpos = vec(-1e16f, -1e16f, -1e16f);
         addtime = lifetime = lifemillis = waittime = spawntime = fadetime = lastradial = lasteffect = lastbounce = beenused = flags = 0;
-        schan = id = weap = value = -1;
+        schan = id = weap = fromweap = value = -1;
+        fromsecondary = false;
         movement = distance = lifespan = speedmin = speedmax = 0;
         curscale = speedscale = lifesize = 1;
         extinguish = stuck = interacts = 0;
@@ -1581,7 +1583,7 @@ namespace projs
 
     extern void reset();
     extern void update();
-    extern projent *create(const vec &from, const vec &to, bool local, gameent *d, int type, int lifetime, int lifemillis, int waittime, int speed, int id = 0, int weap = -1, int value = -1, int flags = 0, float scale = 1, bool child = false, projent *parent = NULL);
+    extern projent *create(const vec &from, const vec &to, bool local, gameent *d, int type, int fromweap, bool fromsecondary, int lifetime, int lifemillis, int waittime, int speed, int id = 0, int weap = -1, int value = -1, int flags = 0, float scale = 1, bool child = false, projent *parent = NULL);
     extern void preload();
     extern void remove(gameent *owner);
     extern void destruct(gameent *d, int id);

@@ -1083,7 +1083,7 @@ namespace projs
         proj.resetinterp();
     }
 
-    projent *create(const vec &from, const vec &to, bool local, gameent *d, int type, int lifetime, int lifemillis, int waittime, int speed, int id, int weap, int value, int flags, float scale, bool child, projent *parent)
+    projent *create(const vec &from, const vec &to, bool local, gameent *d, int type, int fromweap, bool fromsecondary, int lifetime, int lifemillis, int waittime, int speed, int id, int weap, int value, int flags, float scale, bool child, projent *parent)
     {
         projent &proj = *new projent;
         proj.o = proj.from = from;
@@ -1108,6 +1108,8 @@ namespace projs
         else
         {
             proj.weap = weap;
+            proj.fromweap = fromweap;
+            proj.fromsecondary = fromsecondary;
             proj.value = value;
             if(child)
             {
@@ -1138,12 +1140,12 @@ namespace projs
             if(ammo >= 0)
             {
                 if(entities::ents.inrange(ent))
-                    create(d->muzzlepos(), d->muzzlepos(), local, d, PRJ_ENT, w_spawn(weap), w_spawn(weap), 1, 1, ent, ammo, index);
+                    create(d->muzzlepos(), d->muzzlepos(), local, d, PRJ_ENT, -1, false, w_spawn(weap), w_spawn(weap), 1, 1, ent, ammo, index);
                 d->ammo[weap] = -1;
                 if(targ >= 0) d->setweapstate(weap, W_S_SWITCH, weaponswitchdelay, lastmillis);
             }
             else if(weap == W_GRENADE || weap == W_MINE)
-                create(d->muzzlepos(), d->muzzlepos(), local, d, PRJ_SHOT, 1, W2(weap, time, false), 1, 1, 1, weap);
+                create(d->muzzlepos(), d->muzzlepos(), local, d, PRJ_SHOT, -1, false, 1, W2(weap, time, false), 1, 1, 1, weap);
             d->entid[weap] = -1;
         }
     }
@@ -1226,9 +1228,9 @@ namespace projs
             adddynlight(from, 32, vec::hexcolor(colour).mul(0.5f), fade, peak - fade, DL_FLASH);
         }
         loopv(shots)
-            create(from, vec(shots[i].pos).div(DMF), local, d, PRJ_SHOT, max(life, 1), W2(weap, time, WS(flags)), delay+(iter*i), speed, shots[i].id, weap, -1, flags, skew);
+            create(from, vec(shots[i].pos).div(DMF), local, d, PRJ_SHOT, weap, WS(flags), max(life, 1), W2(weap, time, WS(flags)), delay+(iter*i), speed, shots[i].id, weap, -1, flags, skew);
         if(ejectfade && weaptype[weap].eject && *weaptype[weap].eprj) loopi(clamp(sub, 1, W2(weap, ammosub, WS(flags))))
-            create(from, from, local, d, PRJ_EJECT, rnd(ejectfade)+ejectfade, 0, delay, rnd(weaptype[weap].espeed)+weaptype[weap].espeed, 0, weap, -1, flags);
+            create(from, from, local, d, PRJ_EJECT, -1, false, rnd(ejectfade)+ejectfade, 0, delay, rnd(weaptype[weap].espeed)+weaptype[weap].espeed, 0, weap, -1, flags);
 
         d->setweapstate(weap, WS(flags) ? W_S_SECONDARY : W_S_PRIMARY, delayattack, lastmillis);
         d->ammo[weap] = max(d->ammo[weap]-sub-offset, 0);
@@ -1646,7 +1648,7 @@ namespace projs
                         if(type != W_FLAMER && !m_kaboom(game::gamemode, game::mutators) && game::nogore != 2 && game::debrisscale > 0)
                         {
                             int debris = rnd(type != W_ROCKET ? 5 : 10)+5, amt = int((rnd(debris)+debris+1)*game::debrisscale);
-                            loopi(amt) create(proj.o, vec(proj.o).add(proj.vel), true, NULL, PRJ_DEBRIS, rnd(game::debrisfade)+game::debrisfade, 0, rnd(501), rnd(101)+50, 0, proj.weap, 0, proj.flags);
+                            loopi(amt) create(proj.o, vec(proj.o).add(proj.vel), true, NULL, PRJ_DEBRIS, -1, false, rnd(game::debrisfade)+game::debrisfade, 0, rnd(501), rnd(101)+50, 0, proj.weap, 0, proj.flags);
                         }
                         adddecal(DECAL_ENERGY, proj.o, proj.norm, expl*0.75f, bvec::fromcolor(FWCOL(P, explcol, proj)));
                         if(type != W_FLAMER || WK(proj.flags) || W2(proj.weap, fragweap, WS(proj.flags))%W_MAX != W_FLAMER) loopi(type != W_ROCKET ? 5 : 10)
@@ -1748,19 +1750,19 @@ namespace projs
                                 mag = rnd(W2(proj.weap, fragspeed, WS(proj.flags)))*0.5f+W2(proj.weap, fragspeed, WS(proj.flags))*0.5f;
                             if(skew > 0) to.add(vec(rnd(2001)-1000, rnd(2001)-1000, rnd(2001)-1000).normalize().mul(skew*mag));
                             if(W2(proj.weap, fragrel, WS(proj.flags)) != 0) to.add(vec(dir).mul(W2(proj.weap, fragrel, WS(proj.flags))*mag));
-                            create(pos, to, proj.local, proj.owner, PRJ_SHOT, max(life, 1), W2(proj.weap, fragtime, WS(proj.flags)), delay, W2(proj.weap, fragspeed, WS(proj.flags)), proj.id, w, -1, (f >= W_MAX ? HIT_ALT : 0)|HIT_FLAK, scale, true, &proj);
+                            create(pos, to, proj.local, proj.owner, PRJ_SHOT, proj.weap, WS(proj.flags), max(life, 1), W2(proj.weap, fragtime, WS(proj.flags)), delay, W2(proj.weap, fragspeed, WS(proj.flags)), proj.id, w, -1, (f >= W_MAX ? HIT_ALT : 0)|HIT_FLAK, scale, true, &proj);
                             delay += W2(proj.weap, fragtimeiter, WS(proj.flags));
                         }
                     }
                     if(proj.local)
-                        client::addmsg(N_DESTROY, "ri8", proj.owner->clientnum, lastmillis-game::maptime, proj.weap, proj.flags, WK(proj.flags) ? -proj.id : proj.id, 0, int(proj.curscale*DNF), 0);
+                        client::addmsg(N_DESTROY, "ri9i", proj.owner->clientnum, lastmillis-game::maptime, proj.weap, proj.fromweap, proj.fromsecondary, proj.flags, WK(proj.flags) ? -proj.id : proj.id, 0, int(proj.curscale*DNF), 0);
                 }
                 break;
             }
             case PRJ_ENT:
             {
                 if(proj.beenused <= 1 && proj.local && proj.owner)
-                    client::addmsg(N_DESTROY, "ri8", proj.owner->clientnum, lastmillis-game::maptime, -1, 0, proj.id, 0, int(proj.curscale*DNF), 0);
+                    client::addmsg(N_DESTROY, "ri9i", proj.owner->clientnum, lastmillis-game::maptime, -1, -1, false, 0, proj.id, 0, int(proj.curscale*DNF), 0);
                 break;
             }
             case PRJ_AFFINITY:
@@ -2367,7 +2369,7 @@ namespace projs
                     }
                 }
                 if(!hits.empty())
-                    client::addmsg(N_DESTROY, "ri7iv", proj.owner->clientnum, lastmillis-game::maptime, proj.weap, proj.flags, WK(proj.flags) ? -proj.id : proj.id,
+                    client::addmsg(N_DESTROY, "ri9iv", proj.owner->clientnum, lastmillis-game::maptime, proj.weap, proj.fromweap, proj.fromsecondary, proj.flags, WK(proj.flags) ? -proj.id : proj.id,
                             int(expl*DNF), int(proj.curscale*DNF), hits.length(), hits.length()*sizeof(hitmsg)/sizeof(int), hits.getbuf());
                 //if(proj.weap == W_MELEE && WS(proj.flags)) proj.target = NULL;
             }

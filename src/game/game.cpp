@@ -1709,7 +1709,7 @@ namespace game
             {
                 if(found[vanities[d->vitems[k]].type]) continue;
                 if(!(vanities[d->vitems[k]].cond&2)) continue;
-                projs::create(pos, pos, true, d, PRJ_VANITY, (rnd(gibfade)+gibfade)*2, 0, 0, rnd(50)+10, -1, d->vitems[k], 0, 0);
+                projs::create(pos, pos, true, d, PRJ_VANITY, -1, false, (rnd(gibfade)+gibfade)*2, 0, 0, rnd(50)+10, -1, d->vitems[k], 0, 0);
                 found[vanities[d->vitems[k]].type]++;
             }
         }
@@ -1718,7 +1718,7 @@ namespace game
         {
             int gib = clamp(max(damage, 10)/20, 1, 10), amt = int((rnd(gib)+gib)*gibscale);
             if(d->obliterated) amt *= 2;
-            loopi(amt) projs::create(pos, pos, true, d, nogore ? PRJ_DEBRIS : PRJ_GIBS, rnd(gibfade)+gibfade, 0, rnd(500)+1, rnd(50)+10);
+            loopi(amt) projs::create(pos, pos, true, d, nogore ? PRJ_DEBRIS : PRJ_GIBS, -1, false, rnd(gibfade)+gibfade, 0, rnd(500)+1, rnd(50)+10);
         }
         if(m_team(gamemode, mutators) && d->team == v->team && d != v && v == player1 && isweap(weap) && WF(WK(flags), weap, damagepenalty, WS(flags)))
         {
