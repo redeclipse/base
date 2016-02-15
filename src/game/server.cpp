@@ -105,7 +105,7 @@ namespace server
 
     struct destroyevent : timedevent
     {
-        int id, weap, fromweap, fromsecondary, flags, radial, scale;
+        int id, weap, fromweap, fromflags, flags, radial, scale;
         vector<hitset> hits;
         bool keepable() const { return true; }
         void process(clientinfo *ci);
@@ -4016,9 +4016,9 @@ namespace server
         return false;
     }
 
-    void dodamage(clientinfo *m, clientinfo *v, int damage, int weap, int fromweap, bool fromsecondary, int flags, int material, const ivec &hitpush = ivec(0, 0, 0), const ivec &hitvel = ivec(0, 0, 0), float dist = 0, bool first = true)
+    void dodamage(clientinfo *m, clientinfo *v, int damage, int weap, int fromweap, int fromflags, int flags, int material, const ivec &hitpush = ivec(0, 0, 0), const ivec &hitvel = ivec(0, 0, 0), float dist = 0, bool first = true)
     {
-        int realdamage = damage, realflags = flags, nodamage = 0, hurt = 0, statweap = fromweap, statalt = fromsecondary;
+        int realdamage = damage, realflags = flags, nodamage = 0, hurt = 0, statweap = fromweap, statalt = WS(fromflags);
         realflags &= ~HIT_SFLAGS;
         if(realflags&HIT_MATERIAL && (material&MATF_VOLUME) == MAT_LAVA) realflags |= HIT_BURN;
 
@@ -4064,23 +4064,23 @@ namespace server
                         if(flags&HIT_BURN)
                         {
                             statalt = m->lastresalt[WR_BURN];
-                            if(statalt) v->weapstats[m->lastresweapon[WR_BURN]].damage2 += realdamage;
-                            else v->weapstats[m->lastresweapon[WR_BURN]].damage1 += realdamage;
                             statweap = m->lastresweapon[WR_BURN];
+                            if(statalt) v->weapstats[statweap].damage2 += realdamage;
+                            else v->weapstats[statweap].damage1 += realdamage;
                         }
                         if(flags&HIT_BLEED)
                         {
                             statalt = m->lastresalt[WR_BLEED];
-                            if(statalt) v->weapstats[m->lastresweapon[WR_BLEED]].damage2 += realdamage;
-                            else v->weapstats[m->lastresweapon[WR_BLEED]].damage1 += realdamage;
                             statweap = m->lastresweapon[WR_BLEED];
+                            if(statalt) v->weapstats[statweap].damage2 += realdamage;
+                            else v->weapstats[statweap].damage1 += realdamage;
                         }
                         if(flags&HIT_SHOCK)
                         {
                             statalt = m->lastresalt[WR_SHOCK];
-                            if(statalt) v->weapstats[m->lastresweapon[WR_SHOCK]].damage2 += realdamage;
-                            else v->weapstats[m->lastresweapon[WR_SHOCK]].damage1 += realdamage;
                             statweap = m->lastresweapon[WR_SHOCK];
+                            if(statalt) v->weapstats[statweap].damage2 += realdamage;
+                            else v->weapstats[statweap].damage1 += realdamage;
                         }
                     }
                     else
@@ -4095,21 +4095,21 @@ namespace server
                     m->lastres[WR_BURN] = m->lastrestime[WR_BURN] = gamemillis;
                     m->lastresowner[WR_BURN] = v->clientnum;
                     m->lastresweapon[WR_BURN] = fromweap;
-                    m->lastresalt[WR_BURN] = fromsecondary;
+                    m->lastresalt[WR_BURN] = statalt;
                 }
                 if(wr_bleeding(weap, flags))
                 {
                     m->lastres[WR_BLEED] = m->lastrestime[WR_BLEED] = gamemillis;
                     m->lastresowner[WR_BLEED] = v->clientnum;
                     m->lastresweapon[WR_BLEED] = fromweap;
-                    m->lastresalt[WR_BLEED] = fromsecondary;
+                    m->lastresalt[WR_BLEED] = statalt;
                 }
                 if(wr_shocking(weap, flags))
                 {
                     m->lastres[WR_SHOCK] = m->lastrestime[WR_SHOCK] = gamemillis;
                     m->lastresowner[WR_SHOCK] = v->clientnum;
                     m->lastresweapon[WR_SHOCK] = fromweap;
-                    m->lastresalt[WR_SHOCK] = fromsecondary;
+                    m->lastresalt[WR_SHOCK] = statalt;
                 }
                 if(isweap(weap) && m != v && (!m_team(gamemode, mutators) || m->team != v->team) && first)
                 {
@@ -4492,7 +4492,7 @@ namespace server
                     if(m->state == CS_ALIVE && !m->protect(gamemillis, m_protect(gamemode, mutators)))
                     {
                         int damage = calcdamage(ci, m, weap, hflags, rad, size, dist, skew, ci == m);
-                        if(damage) dodamage(m, ci, damage, weap, fromweap, fromsecondary, hflags, 0, h.dir, h.vel, dist, first);
+                        if(damage) dodamage(m, ci, damage, weap, fromweap, fromflags, hflags, 0, h.dir, h.vel, dist, first);
                         else if(G(serverdebug) >= 2)
                             srvmsgf(ci->clientnum, "sync error: destroy [%d (%d)] failed - hit %d [%d] determined zero damage", weap, id, i, h.target);
                     }
@@ -4832,7 +4832,7 @@ namespace server
                     if(G(hurtresidual)&WR(BURN)) flags |= HIT_BURN;
                     if(G(hurtresidual)&WR(BLEED)) flags |= HIT_BLEED;
                     if(G(hurtresidual)&WR(SHOCK)) flags |= HIT_SHOCK;
-                    dodamage(ci, ci, G(hurtdamage), -1, -1, false, flags, ci->inmaterial);
+                    dodamage(ci, ci, G(hurtdamage), -1, -1, HIT_NONE, flags, ci->inmaterial);
                     if(!ci->lasthurt) ci->lasthurt = gamemillis;
                     else ci->lasthurt += G(hurtdelay);
                     if(ci->state != CS_ALIVE) continue;
@@ -4843,7 +4843,7 @@ namespace server
                     if(gamemillis-ci->lastrestime[WR_BURN] >= G(burndelay))
                     {
                         clientinfo *co = (clientinfo *)getinfo(ci->lastresowner[WR_BURN]);
-                        dodamage(ci, co ? co : ci, G(burndamage), -1, -1, false, HIT_BURN, 0);
+                        dodamage(ci, co ? co : ci, G(burndamage), -1, -1, HIT_NONE, HIT_BURN, 0);
                         ci->lastrestime[WR_BURN] += G(burndelay);
                         if(ci->state != CS_ALIVE) continue;
                     }
@@ -4855,7 +4855,7 @@ namespace server
                     if(gamemillis-ci->lastrestime[WR_BLEED] >= G(bleeddelay))
                     {
                         clientinfo *co = (clientinfo *)getinfo(ci->lastresowner[WR_BLEED]);
-                        dodamage(ci, co ? co : ci, G(bleeddamage), -1, -1, false, HIT_BLEED, 0);
+                        dodamage(ci, co ? co : ci, G(bleeddamage), -1, -1, HIT_NONE, HIT_BLEED, 0);
                         ci->lastrestime[WR_BLEED] += G(bleeddelay);
                         if(ci->state != CS_ALIVE) continue;
                     }
@@ -4867,7 +4867,7 @@ namespace server
                     if(gamemillis-ci->lastrestime[WR_SHOCK] >= G(shockdelay))
                     {
                         clientinfo *co = (clientinfo *)getinfo(ci->lastresowner[WR_SHOCK]);
-                        dodamage(ci, co ? co : ci, G(shockdamage), -1, -1, false, HIT_SHOCK, 0);
+                        dodamage(ci, co ? co : ci, G(shockdamage), -1, -1, HIT_NONE, HIT_SHOCK, 0);
                         ci->lastrestime[WR_SHOCK] += G(shockdelay);
                         if(ci->state != CS_ALIVE) continue;
                     }
@@ -6040,7 +6040,7 @@ namespace server
                     destroyevent *ev = new destroyevent;
                     ev->weap = getint(p);
                     ev->fromweap = getint(p);
-                    ev->fromsecondary = getint(p);
+                    ev->fromflags = getint(p);
                     ev->flags = getint(p);
                     if(havecn) ev->millis = cp->getmillis(gamemillis, millis);
                     ev->id = getint(p);
