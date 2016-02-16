@@ -520,7 +520,7 @@ namespace bomber
         if(!m_kaboom(game::gamemode, game::mutators) && game::nogore != 2 && game::debrisscale > 0)
         {
             int debris = rnd(5)+5, amt = int((rnd(debris)+debris+1)*game::debrisscale);
-            loopi(amt) projs::create(o, o, true, NULL, PRJ_DEBRIS, rnd(game::debrisfade)+game::debrisfade, 0, rnd(501), rnd(101)+50);
+            loopi(amt) projs::create(o, o, true, NULL, PRJ_DEBRIS, -1, HIT_NONE, rnd(game::debrisfade)+game::debrisfade, 0, rnd(501), rnd(101)+50);
         }
         playsound(WSND2(W_GRENADE, false, S_W_EXPLODE), o, NULL, 0, 255);
     }
