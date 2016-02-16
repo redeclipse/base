@@ -15,17 +15,46 @@ namespace weapons
 
     int lastweapselect = 0;
     VAR(IDF_PERSIST, weapselectdelay, 0, 200, VAR_MAX);
-    VARF(IDF_PERSIST, weapselectslot, 0, 1, 1, changedkeys = lastmillis); // 0 = by id, 1 = by slot
+
+    vector<int> weaplist;
+    void buildweaplist(const char *str)
+    {
+        vector<char *> list;
+        explodelist(str, list);
+        weaplist.shrink(0);
+        loopv(list)
+        {
+            int weap = -1;
+            if(isnumeric(list[i][0])) weap = atoi(list[i]);
+            else loopj(W_MAX) if(!strcasecmp(weaptype[j].name, list[i]))
+            {
+                weap = j;
+                break;
+            }
+            if(isweap(weap) && weaplist.find(weap) < 0)
+                weaplist.add(weap);
+        }
+        list.deletearrays();
+        loopi(W_MAX) if(weaplist.find(i) < 0) weaplist.add(i); // make sure all weapons have a slot
+        changedkeys = lastmillis;
+    }
+    SVARF(IDF_PERSIST, weapselectlist, "", buildweaplist(weapselectlist));
+    VARF(IDF_PERSIST, weapselectslot, 0, 1, 2, buildweaplist(weapselectlist)); // 0 = by id, 1 = by slot, 2 = by list
 
     int slot(gameent *d, int n, bool back)
     {
         if(d && weapselectslot)
         {
+            if(weapselectslot == 2 && weaplist.empty()) buildweaplist(weapselectlist);
             int p = m_weapon(d->actortype, game::gamemode, game::mutators), w = 0;
-            loopi(W_MAX) if(d->holdweap(i, p, lastmillis))
+            loopi(W_MAX)
             {
-                if(n == (back ? w : i)) return back ? i : w;
-                w++;
+                int weap = weapselectslot == 2 ? weaplist[i] : i;
+                if(d->holdweap(weap, p, lastmillis))
+                {
+                    if(n == (back ? w : weap)) return back ? weap : w;
+                    w++;
+                }
             }
             return -1;
         }
