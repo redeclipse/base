@@ -490,7 +490,6 @@ namespace game
     {
         if(on != zooming)
         {
-            if(focus == game::player1) resetcursor();
             lastzoom = millis-max(zoomtime-(millis-lastzoom), 0);
             prevzoom = zooming;
             if(zoomdefault >= 0 && on) zoomlevel = zoomdefault;
