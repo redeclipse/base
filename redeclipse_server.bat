@@ -8,4 +8,4 @@ setlocal enableextensions enabledelayedexpansion
 :init
     set REDECLIPSE_BINARY=redeclipse_server
 :start
-    call "%REDECLIPSE_PATH%\redeclipse.bat"
+    call "%REDECLIPSE_PATH%\redeclipse.bat" %*
