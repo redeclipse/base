@@ -1854,7 +1854,7 @@ namespace client
         {
             d->weapreset(true);
             int weap = getint(p);
-            d->weapselect = isweap(weap) ? weap : W_MELEE;
+            d->weapselect = isweap(weap) ? weap : W_CLAW;
             loopi(W_MAX) d->ammo[i] = getint(p);
         }
     }
@@ -2467,8 +2467,8 @@ namespace client
                     if(e.spawned())
                     {
                         int sweap = m_weapon(game::focus->actortype, game::gamemode, game::mutators), attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap),
-                            colour = e.type == WEAPON ? W(attr, colour) : 0xFFFFFF;
-                        playsound(e.type == WEAPON && attr >= W_OFFSET ? WSND(attr, S_W_SPAWN) : S_ITEMSPAWN, e.o, NULL, 0, -1, -1, -1, &e.schan);
+                            colour = e.type == WEAPON && isweap(attr) ? W(attr, colour) : 0xFFFFFF;
+                        playsound(e.type == WEAPON && attr >= W_OFFSET && attr < W_ALL ? WSND(attr, S_W_SPAWN) : S_ITEMSPAWN, e.o, NULL, 0, -1, -1, -1, &e.schan);
                         if(entities::showentdescs)
                         {
                             vec pos = vec(e.o).add(vec(0, 0, 4));

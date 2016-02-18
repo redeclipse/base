@@ -295,10 +295,10 @@ extern mutstypes mutstype[];
 #define m_balance(a,b,c)    (m_team(a, b) && (!m_race(a) || m_ra_gauntlet(a, b)) && m_play(a) && (m_forcebal(a, b) || ((G(balanceduke) || !m_duke(a, b)) && ((G(balancemaps) >= 0 ? G(balancemaps) : G(mapbalance)) >= (m_affinity(a) ? 1 : (c ? 2 : 3))))))
 #define m_balreset(a,b)     (G(balancereset) && (G(balancereset) == 2 || m_capture(a) || m_bomber(a) || m_race(a) || m_duke(a, b)))
 
-#define w_carry(w1,w2)      (isweap(w1) && w1 != W_MELEE && (!isweap(w2) || (w1 != w2 && (w2 != W_GRENADE || w1 != W_MINE))) && (w1 == W_ROCKET || (w1 >= W_OFFSET && w1 < W_ITEM)))
-#define w_reload(w1,w2)     (isweap(w1) && (w1 == W_MELEE || (w1 >= W_OFFSET && w1 < W_ITEM) || (isweap(w2) && (w1 == w2 || (w2 == W_GRENADE && w1 == W_MINE)))))
-#define w_item(w1,w2)       (isweap(w1) && (w1 >= W_OFFSET && w1 < W_MAX && (!isweap(w2) || (w1 != w2 && (w2 != W_GRENADE || w1 != W_MINE)))))
-#define w_attr(a,b,t,w1,w2) (t != WEAPON || m_edit(a) ? w1 : (w1 != w2 ? (!m_classic(a, b) ? (w1 >= W_ITEM ? w1 : -1) : (w1 >= W_OFFSET && w1 < W_MAX ? w1 : -1)) : (w1 != W_GRENADE ? W_GRENADE : W_MINE)))
+#define w_carry(w1,w2)      (isweap(w1) && w1 != W_CLAW && w1 < W_ALL && (!isweap(w2) || (w1 != w2 && (w2 != W_GRENADE || w1 != W_MINE))) && (w1 == W_ROCKET || (w1 >= W_OFFSET && w1 < W_ITEM)))
+#define w_reload(w1,w2)     (isweap(w1) && (w1 >= W_ALL || (w1 >= W_OFFSET && w1 < W_ITEM) || (isweap(w2) && (w1 == w2 || (w2 == W_GRENADE && w1 == W_MINE)))))
+#define w_item(w1,w2)       (isweap(w1) && (w1 >= W_OFFSET && w1 < W_ALL && (!isweap(w2) || (w1 != w2 && (w2 != W_GRENADE || w1 != W_MINE)))))
+#define w_attr(a,b,t,w1,w2) (t != WEAPON || m_edit(a) ? w1 : (w1 != w2 ? (!m_classic(a, b) ? (w1 >= W_ITEM ? w1 : -1) : (w1 >= W_OFFSET && w1 < W_ALL ? w1 : -1)) : (w1 != W_GRENADE ? W_GRENADE : W_MINE)))
 #define w_spawn(weap)       int(ceilf(G(itemspawntime)*W(weap, frequency)))
 
 #define DSG(a,b,x)          (m_duel(a, b) ? G(duel##x) : G(survivor##x))

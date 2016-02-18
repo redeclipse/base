@@ -261,7 +261,7 @@ namespace server
 
     struct servstate : baseent, clientstate
     {
-        int score, spree, rewards[2], shotdamage, damage, lasttimewielded, lasttimeloadout[W_MAX], lasttimeplayed, timeplayed, aireinit, lastboost,
+        int score, spree, rewards[2], shotdamage, damage, lasttimewielded, lasttimeloadout[W_ALL], lasttimeplayed, timeplayed, aireinit, lastboost,
             lastresowner[WR_MAX], lasttimealive, timealive, lasttimeactive, timeactive, lastresweapon[WR_MAX], lasthurt;
         bool lastresalt[W_MAX];
         projectilestate dropped, weapshots[W_MAX][2];
@@ -328,11 +328,11 @@ namespace server
             if(isalive(gamemillis))
             {
                 weapstats[weapselect].timewielded += (totalmillis-lasttimewielded) / 1000;
-                loopi(W_MAX) if(holdweap(i, m_weapon(actortype, gamemode, mutators), lastmillis))
+                loopi(W_ALL) if(holdweap(i, m_weapon(actortype, gamemode, mutators), lastmillis))
                     weapstats[i].timeloadout += (totalmillis-lasttimeloadout[i]) / 1000;
             }
             lasttimewielded = totalmillis;
-            loopi(W_MAX) lasttimeloadout[i] = totalmillis;
+            loopi(W_ALL) lasttimeloadout[i] = totalmillis;
         }
 
         void updatetimeplayed(bool last = true)
@@ -641,7 +641,10 @@ namespace server
             sents[ent].spawned = spawned;
             sents[ent].millis = sents[ent].last = gamemillis;
             if(sents[ent].type == WEAPON && !(sents[ent].attrs[1]&W_F_FORCED))
-                sents[ent].millis += w_spawn(w_attr(gamemode, mutators, sents[ent].type, sents[ent].attrs[0], m_weapon(A_PLAYER, gamemode, mutators)));
+            {
+                int attr = w_attr(gamemode, mutators, sents[ent].type, sents[ent].attrs[0], m_weapon(A_PLAYER, gamemode, mutators));
+                if(isweap(attr)) sents[ent].millis += w_spawn(attr);
+            }
             else sents[ent].millis += G(itemspawntime);
             if(msg) sendf(-1, 1, "ri3", N_ITEMSPAWN, ent, sents[ent].spawned ? 1 : 0);
         }
@@ -684,7 +687,7 @@ namespace server
             if(!(flags&DROP_EXPLODE)) takeammo(ci, W_GRENADE, W2(W_GRENADE, ammosub, false));
             kamikaze = true;
         }
-        if(flags&DROP_WEAPONS) loopi(W_MAX) dropweapon(ci, flags, i, drop);
+        if(flags&DROP_WEAPONS) loopi(W_ALL) dropweapon(ci, flags, i, drop);
         if(!drop.empty())
             sendf(-1, 1, "ri3iv", N_DROP, ci->clientnum, -1, drop.length(), drop.length()*sizeof(droplist)/sizeof(int), drop.getbuf());
         return kamikaze;
@@ -1820,7 +1823,7 @@ namespace server
         {
             clientinfo *ci = clients[k];
             if(ci->dropped.find(i) && (!spawned || gamemillis < sents[i].millis)) return true;
-            else if(carry) loopj(W_MAX)
+            else if(carry) loopj(W_ALL)
                 if(ci->online && ci->state == CS_ALIVE && ci->entid[j] == i && ci->hasweap(j, m_weapon(A_PLAYER, gamemode, mutators)))
                     return spawned;
         }
@@ -1861,7 +1864,7 @@ namespace server
                     case 1: items.add(i); break;
                     case 2:
                     {
-                        int delay = sents[i].type == WEAPON ? w_spawn(w_attr(gamemode, mutators, sents[i].type, sents[i].attrs[0], sweap)) : G(itemspawntime);
+                        int attr = w_attr(gamemode, mutators, sents[i].type, sents[i].attrs[0], sweap), delay = sents[i].type == WEAPON && isweap(attr) ? w_spawn(attr) : G(itemspawntime);
                         if(delay > 1) sents[i].millis += (delay+rnd(delay))/2;
                         break;
                     }
@@ -2146,7 +2149,7 @@ namespace server
             if(m_sweaps(gamemode, mutators)) weap = m_weapon(ci->actortype, gamemode, mutators);
             else weap = hasent && sents[ci->spawnpoint].attrs[6] > 0 ? sents[ci->spawnpoint].attrs[6]-1 : m_weapon(ci->actortype, gamemode, mutators);
             if(!m_insta(gamemode, mutators) && hasent && sents[ci->spawnpoint].attrs[7] > 0) health = max(sents[ci->spawnpoint].attrs[7], 1);
-            if(!isweap(weap) || (!(AA(ci->actortype, abilities)&(1<<A_A_MOVE)) && weaptype[weap].melee)) weap = -1; // let spawnstate figure it out
+            if(!isweap(weap) || (!(AA(ci->actortype, abilities)&(1<<A_A_MOVE)) && closerangeweap(weap))) weap = -1; // let spawnstate figure it out
         }
         int spawn = pickspawn(ci);
         ci->spawnstate(gamemode, mutators, weap, health);
@@ -3036,7 +3039,7 @@ namespace server
             ci->lasttimealive = totalmillis;
             ci->lasttimeactive = totalmillis;
             ci->lasttimewielded = totalmillis;
-            loopi(W_MAX) ci->lasttimeloadout[i] = totalmillis;
+            loopi(W_ALL) ci->lasttimeloadout[i] = totalmillis;
             ci->quarantine = false;
             waiting(ci, DROP_RESET);
             if(smode) smode->entergame(ci);
@@ -4648,6 +4651,7 @@ namespace server
         }
         ci->updateweaptime();
         int sweap = m_weapon(ci->actortype, gamemode, mutators), attr = w_attr(gamemode, mutators, sents[ent].type, sents[ent].attrs[0], sweap);
+        if(!isweap(attr)) return;
         if(!ci->canuse(sents[ent].type, attr, sents[ent].attrs, sweap, millis, (1<<W_S_SWITCH)))
         {
             if(!ci->canuse(sents[ent].type, attr, sents[ent].attrs, sweap, millis, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
@@ -5542,7 +5546,7 @@ namespace server
         ci->lasttimealive = totalmillis;
         ci->lasttimeactive = totalmillis;
         ci->lasttimewielded = totalmillis;
-        loopi(W_MAX) ci->lasttimeloadout[i] = totalmillis;
+        loopi(W_ALL) ci->lasttimeloadout[i] = totalmillis;
 
         if(ci->handle[0]) // kick old logins
         {

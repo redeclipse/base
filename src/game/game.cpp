@@ -1123,7 +1123,7 @@ namespace game
         loopi(W_MAX) if(d->weapstate[i] != W_S_IDLE && (!gs_playing(gamestate) || d->weapselect != i || d->weapstate[i] != W_S_ZOOM))
         {
             bool timeexpired = lastmillis-d->weaplast[i] >= d->weapwait[i]+(d->weapselect != i || d->weapstate[i] != W_S_POWER ? 0 : PHYSMILLIS);
-            if(gs_playing(gamestate) && d->state == CS_ALIVE && i == d->weapselect && d->weapstate[i] == W_S_RELOAD && timeexpired && playreloadnotify&(d == focus ? 1 : 2) && (d->ammo[i] >= W(i, ammomax) || playreloadnotify&(d == focus ? 4 : 8)))
+            if(i < W_ALL && gs_playing(gamestate) && d->state == CS_ALIVE && i == d->weapselect && d->weapstate[i] == W_S_RELOAD && timeexpired && playreloadnotify&(d == focus ? 1 : 2) && (d->ammo[i] >= W(i, ammomax) || playreloadnotify&(d == focus ? 4 : 8)))
                 playsound(WSND(i, S_W_NOTIFY), d->o, d, 0, reloadnotifyvol, -1, -1, &d->wschan);
             if(!gs_playing(gamestate) || d->state != CS_ALIVE || timeexpired) d->setweapstate(i, W_S_IDLE, 0, lastmillis);
         }
@@ -3038,7 +3038,7 @@ namespace game
 
             if((anim>>ANIM_SECONDARY)&ANIM_INDEX) switch(anim&ANIM_INDEX)
             {
-                case ANIM_IDLE: case ANIM_MELEE: case ANIM_PISTOL: case ANIM_SWORD:
+                case ANIM_IDLE: case ANIM_CLAW: case ANIM_PISTOL: case ANIM_SWORD:
                 case ANIM_SHOTGUN: case ANIM_SMG: case ANIM_FLAMER: case ANIM_PLASMA: case ANIM_ZAPPER:
                 case ANIM_RIFLE: case ANIM_GRENADE: case ANIM_MINE: case ANIM_ROCKET:
                 {
@@ -3130,7 +3130,7 @@ namespace game
                     defformatstring(str, "\fs\f[%d]%s\f(%s)\fS", colour.tohexcolor(), q != d->weapselect ? "\fE" : "", hud::itemtex(WEAPON, q)); \
                     concatstring(weapons, str); \
                 }
-            if(aboveheadinventory >= 2) { loopi(W_MAX) printweapon(i); }
+            if(aboveheadinventory >= 2) { loopi(W_ALL) printweapon(i); }
             else { printweapon(d->weapselect); }
             pos.z += aboveheadinventorysize/2;
             part_textcopy(pos, weapons, PART_TEXT, 1, 0xFFFFFF, aboveheadinventorysize, blend*aboveheadinventoryblend);
@@ -3214,7 +3214,7 @@ namespace game
             else return; // screw it, don't render them
         }
         int weap = d->weapselect, lastaction = 0, animflags = ANIM_IDLE|ANIM_LOOP, weapflags = animflags, weapaction = 0, animdelay = 0;
-        bool secondary = false, showweap = third != 2 && isweap(weap) && actor[d->actortype].useweap;
+        bool secondary = false, showweap = third != 2 && isweap(weap) && weap < W_ALL && actor[d->actortype].useweap;
         float weapscale = 1.f;
         if(d->state == CS_DEAD || d->state == CS_WAITING)
         {
@@ -3473,7 +3473,7 @@ namespace game
                     int type, parttype;
                     float size, radius;
                 } powerfx[W_MAX] = {
-                    { 0, 0, 0, 0 },
+                    { 4, PART_LIGHTNING, 1.f, 1 },
                     { 2, PART_SPARK, 0.1f, 1.5f },
                     { 4, PART_LIGHTNING, 2.f, 1 },
                     { 2, PART_SPARK, 0.15f, 2 },
@@ -3483,6 +3483,7 @@ namespace game
                     { 4, PART_LIGHTZAP, 0.75f, 1 },
                     { 2, PART_PLASMA, 0.05f, 2.5f },
                     { 3, PART_PLASMA, 0.1f, 0.125f },
+                    { 0, 0, 0, 0 },
                     { 0, 0, 0, 0 },
                     { 0, 0, 0, 0 },
                 };
@@ -3592,7 +3593,7 @@ namespace game
         previewent->colour = color;
         previewent->model = model;
         previewent->team = clamp(team, 0, int(T_MULTI));
-        previewent->weapselect = clamp(weap, 0, W_MAX-1);
+        previewent->weapselect = clamp(weap, 0, W_ALL-1);
         previewent->setvanity(vanity);
         previewent->light.millis = -1;
         renderplayer(previewent, 1, blend, scale);

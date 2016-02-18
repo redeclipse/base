@@ -265,7 +265,7 @@ namespace entities
                 {
                     addentinfo(actor[attr[0]+A_ENEMY].name);
                     addmodeinfo(attr[3], attr[4]);
-                    addentinfo(W(attr[6] > 0 && attr[6] <= W_MAX ? attr[6]-1 : AA(attr[0]+A_ENEMY, weaponspawn), name));
+                    addentinfo(W(attr[6] > 0 && attr[6] <= W_ALL ? attr[6]-1 : AA(attr[0]+A_ENEMY, weaponspawn), name));
                 }
                 break;
             }
@@ -399,8 +399,8 @@ namespace entities
     {
         gameentity &e = *(gameentity *)ents[ent];
         int sweap = m_weapon(d->actortype, game::gamemode, game::mutators), attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap),
-            colour = e.type == WEAPON ? W(attr, colour) : 0x888888;
-        if(e.type == WEAPON) d->addicon(eventicon::WEAPON, lastmillis, game::eventiconshort, attr);
+            colour = e.type == WEAPON && isweap(attr) ? W(attr, colour) : 0x888888;
+        if(e.type == WEAPON && isweap(attr)) d->addicon(eventicon::WEAPON, lastmillis, game::eventiconshort, attr);
         if(isweap(weap))
         {
             d->setweapstate(weap, W_S_SWITCH, weaponswitchdelay, lastmillis);
@@ -412,7 +412,7 @@ namespace entities
             }
         }
         d->useitem(ent, e.type, attr, ammoamt, sweap, lastmillis, weaponswitchdelay);
-        playsound(e.type == WEAPON && attr >= W_OFFSET ? WSND(attr, S_W_USE) : S_ITEMUSE, d->o, d, 0, -1, -1, -1, &d->wschan);
+        playsound(e.type == WEAPON && attr >= W_OFFSET && attr < W_ALL ? WSND(attr, S_W_USE) : S_ITEMUSE, d->o, d, 0, -1, -1, -1, &d->wschan);
         if(game::dynlighteffects) adddynlight(d->center(), enttype[e.type].radius*2, vec::hexcolor(colour).mul(2.f), 250, 250);
         if(ents.inrange(drop) && ents[drop]->type == WEAPON)
         {
@@ -621,6 +621,7 @@ namespace entities
                     if(game::allowmove(f))
                     {
                         int sweap = m_weapon(f->actortype, game::gamemode, game::mutators), attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap);
+                        if(!isweap(attr)) return false;
                         if(f == game::player1 && !weapons::canuse(attr)) return true;
                         if(!f->canuse(e.type, attr, e.attrs, sweap, lastmillis, (1<<W_S_SWITCH)))
                         {
@@ -1061,9 +1062,9 @@ namespace entities
                 break;
             }
             case WEAPON:
-                if(create && (e.attrs[0] < W_OFFSET || e.attrs[0] >= W_MAX)) e.attrs[0] = W_OFFSET; // don't be stupid when creating the entity
-                while(e.attrs[0] < W_OFFSET) e.attrs[0] += W_MAX-W_OFFSET; // don't allow superimposed weaps
-                while(e.attrs[0] >= W_MAX) e.attrs[0] -= W_MAX-W_OFFSET;
+                if(create && (e.attrs[0] < W_OFFSET || e.attrs[0] >= W_ALL)) e.attrs[0] = W_OFFSET; // don't be stupid when creating the entity
+                while(e.attrs[0] < W_OFFSET) e.attrs[0] += W_ALL-W_OFFSET; // don't allow superimposed weaps
+                while(e.attrs[0] >= W_ALL) e.attrs[0] -= W_ALL-W_OFFSET;
                 break;
             case PLAYERSTART:
                 while(e.attrs[0] < 0) e.attrs[0] += T_ALL;
@@ -1086,8 +1087,8 @@ namespace entities
                 while(e.attrs[1] >= 360) e.attrs[1] -= 360;
                 while(e.attrs[2] < -90) e.attrs[2] += 180;
                 while(e.attrs[2] > 90) e.attrs[2] -= 180;
-                while(e.attrs[6] < 0) e.attrs[6] += W_MAX+1; // allow any weapon
-                while(e.attrs[6] > W_MAX) e.attrs[6] -= W_MAX+1;
+                while(e.attrs[6] < 0) e.attrs[6] += W_ALL+1; // allow any weapon
+                while(e.attrs[6] > W_ALL) e.attrs[6] -= W_ALL+1;
                 if(e.attrs[7] < 0) e.attrs[7] = 0;
                 if(e.attrs[8] < 0) e.attrs[8] = 0;
                 if(e.attrs[9] < 0) e.attrs[9] = 0;
@@ -1789,7 +1790,7 @@ namespace entities
                     if(mtype != MAP_MAPZ || gver <= 112) e.attrs[1] = 0;
                     if(mtype == MAP_MAPZ && gver <= 160)
                     {
-                        e.attrs[0]++; // add in melee
+                        e.attrs[0]++; // add in claw
                         if(e.attrs[0] < W_OFFSET) e.attrs[0] = 8; // cleanup for fixentity
                     }
                     if(mtype == MAP_MAPZ && gver <= 163) e.attrs[0]++; // add in sword
@@ -2316,9 +2317,14 @@ namespace entities
                         }
                         if(e.type == WEAPON)
                         {
-                            flags |= MDL_LIGHTFX;
-                            int col = W(w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], m_weapon(game::focus->actortype, game::gamemode, game::mutators)), colour), interval = lastmillis%1000;
-                            e.light.effect = vec::hexcolor(col).mul(interval >= 500 ? (1000-interval)/500.f : interval/500.f);
+                            int attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], m_weapon(game::focus->actortype, game::gamemode, game::mutators));
+                            if(isweap(attr))
+                            {
+                                flags |= MDL_LIGHTFX;
+                                int col = W(attr, colour), interval = lastmillis%1000;
+                                e.light.effect = vec::hexcolor(col).mul(interval >= 500 ? (1000-interval)/500.f : interval/500.f);
+                            }
+                            else continue;
                         }
                         else e.light.effect = vec(0, 0, 0);
                         e.light.material[0] = colour >= 0 ? bvec(colour) : bvec(255, 255, 255);
@@ -2373,7 +2379,7 @@ namespace entities
              hastop = hasent && e.o.squaredist(camera1->o) <= showentdist*showentdist;
         int sweap = m_weapon(game::focus->actortype, game::gamemode, game::mutators),
             attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap),
-            colour = e.type == WEAPON ? W(attr, colour) : 0x888888, interval = lastmillis%1000;
+            colour = e.type == WEAPON && isweap(attr) ? W(attr, colour) : 0x888888, interval = lastmillis%1000;
         float fluc = interval >= 500 ? (1500-interval)/1000.f : (500+interval)/1000.f;
         if(enttype[e.type].usetype == EU_ITEM && (active || isedit))
         {

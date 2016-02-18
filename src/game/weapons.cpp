@@ -5,7 +5,7 @@ namespace weapons
     VAR(IDF_PERSIST, autodelayreload, 0, 0, VAR_MAX);
 
     VAR(IDF_PERSIST, skipspawnweapon, 0, 0, 6); // skip spawnweapon; 0 = never, 1 = if numweaps > 1 (+1), 3 = if carry > 0 (+2), 6 = always
-    VAR(IDF_PERSIST, skipmelee, 0, 0, 10); // skip melee; 0 = never, 1 = if numweaps > 1 (+2), 4 = if carry > 0 (+2), 7 = if carry > 0 and is offset (+2), 10 = always
+    VAR(IDF_PERSIST, skipclaw, 0, 0, 10); // skip claw; 0 = never, 1 = if numweaps > 1 (+2), 4 = if carry > 0 (+2), 7 = if carry > 0 and is offset (+2), 10 = always
     VAR(IDF_PERSIST, skippistol, 0, 0, 10); // skip pistol; 0 = never, 1 = if numweaps > 1 (+2), 4 = if carry > 0 (+2), 7 = if carry > 0 and is offset (+2), 10 = always
     VAR(IDF_PERSIST, skipgrenade, 0, 0, 10); // skip grenade; 0 = never, 1 = if numweaps > 1 (+2), 4 = if carry > 0 (+2), 7 = if carry > 0 and is offset (+2), 10 = always
     VAR(IDF_PERSIST, skipmine, 0, 0, 10); // skip mine; 0 = never, 1 = if numweaps > 1 (+2), 4 = if carry > 0 (+2), 7 = if carry > 0 and is offset (+2), 10 = always
@@ -26,7 +26,7 @@ namespace weapons
         {
             int weap = -1;
             if(isnumeric(list[i][0])) weap = atoi(list[i]);
-            else loopj(W_MAX) if(!strcasecmp(weaptype[j].name, list[i]))
+            else loopj(W_ALL) if(!strcasecmp(weaptype[j].name, list[i]))
             {
                 weap = j;
                 break;
@@ -35,7 +35,7 @@ namespace weapons
                 weaplist.add(weap);
         }
         list.deletearrays();
-        loopi(W_MAX) if(weaplist.find(i) < 0) weaplist.add(i); // make sure all weapons have a slot
+        loopi(W_ALL) if(weaplist.find(i) < 0) weaplist.add(i); // make sure all weapons have a slot
         changedkeys = lastmillis;
     }
     SVARF(IDF_PERSIST, weapselectlist, "", buildweaplist(weapselectlist));
@@ -47,7 +47,7 @@ namespace weapons
         {
             if(weapselectslot == 2 && weaplist.empty()) buildweaplist(weapselectlist);
             int p = m_weapon(d->actortype, game::gamemode, game::mutators), w = 0;
-            loopi(W_MAX)
+            loopi(W_ALL)
             {
                 int weap = weapselectslot == 2 ? weaplist[i] : i;
                 if(d->holdweap(weap, p, lastmillis))
@@ -125,17 +125,17 @@ namespace weapons
 
     void weaponswitch(gameent *d, int a = -1, int b = -1)
     {
-        if(!gs_playing(game::gamestate) || a < -1 || b < -1 || a >= W_MAX || b >= W_MAX) return;
+        if(!gs_playing(game::gamestate) || a < -1 || b < -1 || a >= W_ALL || b >= W_ALL) return;
         if(weapselectdelay && lastweapselect && totalmillis-lastweapselect < weapselectdelay) return;
         if(d->weapwaited(d->weapselect, lastmillis, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
         {
             int s = slot(d, d->weapselect);
-            loopi(W_MAX) // only loop the amount of times we have weaps for
+            loopi(W_ALL) // only loop the amount of times we have weaps for
             {
                 if(a >= 0) s = a;
                 else s += b;
-                while(s > W_MAX-1) s -= W_MAX;
-                while(s < 0) s += W_MAX;
+                while(s > W_ALL-1) s -= W_ALL;
+                while(s < 0) s += W_ALL;
 
                 int n = slot(d, s, true);
                 if(a < 0)
@@ -153,7 +153,7 @@ namespace weapons
                         } \
                     }
                     skipweap(skipspawnweapon, p);
-                    skipweap(skipmelee, W_MELEE);
+                    skipweap(skipclaw, W_CLAW);
                     skipweap(skippistol, W_PISTOL);
                     if(!m_kaboom(game::gamemode, game::mutators))
                     {
@@ -331,14 +331,21 @@ namespace weapons
             rays = max(1, int(ceilf(rays*scale)));
         if(weaptype[weap].traced)
         {
-            from = d->originpos(weap == W_MELEE, secondary);
-            if(weap == W_MELEE) to = vec(targ).sub(from).normalize().mul(d->radius).add(from);
-            else to = d->muzzlepos(weap, secondary);
+            if(weap == W_MELEE)
+            {
+                from = d->footpos(0);
+                to = vec(from).add(vec(d->yaw*RAD, d->pitch*RAD).mul(d->radius*2));
+            }
+            else
+            {
+                from = d->originpos(weap);
+                to = d->muzzlepos(weap);
+            }
             loopi(rays) addshot(to);
         }
         else
         {
-            from = d->muzzlepos(weap, secondary);
+            from = d->muzzlepos(weap);
             to = targ;
             float m = accmod(d, W2(d->weapselect, cooked, true)&W_C_ZOOM && secondary);
             float spread = WSP(weap, secondary, game::gamemode, game::mutators, m);
@@ -361,14 +368,14 @@ namespace weapons
     void shoot(gameent *d, vec &targ, int force)
     {
         if(!game::allowmove(d)) return;
-        bool melee = d->weapselect == W_MELEE, secondary = physics::secondaryweap(d, melee);
-        if(doshot(d, targ, d->weapselect, d->action[secondary ? AC_SECONDARY : AC_PRIMARY], !melee && secondary, force))
-            if(!W2(d->weapselect, fullauto, !melee && secondary)) d->action[secondary ? AC_SECONDARY : AC_PRIMARY] = false;
+        bool secondary = physics::secondaryweap(d);
+        if(doshot(d, targ, d->weapselect, d->action[secondary ? AC_SECONDARY : AC_PRIMARY], secondary, force))
+            if(!W2(d->weapselect, fullauto, secondary)) d->action[secondary ? AC_SECONDARY : AC_PRIMARY] = false;
     }
 
     void preload()
     {
-        loopi(W_MAX)
+        loopi(W_ALL)
         {
             if(*weaptype[i].item) preloadmodel(weaptype[i].item);
             if(*weaptype[i].vwep) preloadmodel(weaptype[i].vwep);

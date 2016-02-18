@@ -231,7 +231,7 @@ enum
     ANIM_SINK, ANIM_EDIT, ANIM_WIN, ANIM_LOSE,
     ANIM_CROUCH, ANIM_CRAWL_FORWARD, ANIM_CRAWL_BACKWARD, ANIM_CRAWL_LEFT, ANIM_CRAWL_RIGHT,
     ANIM_CROUCH_JUMP_FORWARD, ANIM_CROUCH_JUMP_BACKWARD, ANIM_CROUCH_JUMP_LEFT, ANIM_CROUCH_JUMP_RIGHT, ANIM_CROUCH_JUMP,
-    ANIM_MELEE, ANIM_MELEE_PRIMARY, ANIM_MELEE_SECONDARY,
+    ANIM_CLAW, ANIM_CLAW_PRIMARY, ANIM_CLAW_SECONDARY,
     ANIM_PISTOL, ANIM_PISTOL_PRIMARY, ANIM_PISTOL_SECONDARY, ANIM_PISTOL_RELOAD,
     ANIM_SWORD, ANIM_SWORD_PRIMARY, ANIM_SWORD_SECONDARY,
     ANIM_SHOTGUN, ANIM_SHOTGUN_PRIMARY, ANIM_SHOTGUN_SECONDARY, ANIM_SHOTGUN_RELOAD,
@@ -551,7 +551,7 @@ struct clientstate
     vector<int> loadweap, lastweap, randweap;
     verinfo version;
 
-    clientstate() : colour(0), model(0), checkpointspawn(1), weapselect(W_MELEE), lastdeath(0), lastspawn(0), lastpain(0), lastregen(0), lastregenamt(0), lastbuff(0), lastshoot(0),
+    clientstate() : colour(0), model(0), checkpointspawn(1), weapselect(W_CLAW), lastdeath(0), lastspawn(0), lastpain(0), lastregen(0), lastregenamt(0), lastbuff(0), lastshoot(0),
         actortype(A_PLAYER), spawnpoint(-1), ownernum(-1), skill(0), points(0), frags(0), deaths(0), cpmillis(0), cptime(0), queuepos(-1), quarantine(false)
     {
         setvanity();
@@ -604,7 +604,7 @@ struct clientstate
     void addlastweap(int weap)
     {
         lastweap.add(weap);
-        if(lastweap.length() >= W_MAX) lastweap.remove(0);
+        if(lastweap.length() >= W_ALL) lastweap.remove(0);
     }
 
     int getlastweap(int sweap, int exclude = -1)
@@ -624,16 +624,16 @@ struct clientstate
             int w = getlastweap(sweap);
             if(hasweap(w, sweap)) return w;
         }
-        loopirev(W_MAX) if(hasweap(i, sweap, 3)) return i; // reloadable first
-        loopirev(W_MAX) if(hasweap(i, sweap, 1)) return i; // carriable second
-        loopirev(W_MAX) if(hasweap(i, sweap, 0)) return i; // any just to bail us out
+        loopirev(W_ALL) if(hasweap(i, sweap, 3)) return i; // reloadable first
+        loopirev(W_ALL) if(hasweap(i, sweap, 1)) return i; // carriable second
+        loopirev(W_ALL) if(hasweap(i, sweap, 0)) return i; // any just to bail us out
         return weapselect;
     }
 
     int carry(int sweap, int level = 1, int exclude = -1)
     {
         int carry = 0;
-        loopi(W_MAX) if(hasweap(i, sweap, level, exclude)) carry++;
+        loopi(W_ALL) if(hasweap(i, sweap, level, exclude)) carry++;
         return carry;
     }
 
@@ -642,7 +642,7 @@ struct clientstate
         if(hasweap(weapselect, sweap, 1)) return weapselect;
         int w = getlastweap(sweap, weapselect);
         if(hasweap(w, sweap, 1)) return w;
-        loopi(W_MAX) if(hasweap(i, sweap, 1)) return i;
+        loopi(W_ALL) if(hasweap(i, sweap, 1)) return i;
         return -1;
     }
 
@@ -694,6 +694,7 @@ struct clientstate
 
     bool canswitch(int weap, int sweap, int millis, int skip = 0)
     {
+        if(!isweap(weap) || weap >= W_ALL) return false;
         if(weap != weapselect && weapwaited(weapselect, millis, skip) && hasweap(weap, sweap) && weapwaited(weap, millis, skip))
             return true;
         return false;
@@ -774,7 +775,7 @@ struct clientstate
 
     bool canrandweap(int weap)
     {
-        int cweap = weap - W_OFFSET;
+        int cweap = weap-W_OFFSET;
         if(!randweap.inrange(cweap)) return true;
         return randweap[cweap];
     }
@@ -790,7 +791,8 @@ struct clientstate
             ammo[s] = max(1, W(s, ammomax));
             weapselect = s;
         }
-        if(s != W_MELEE && AA(actortype, abilities)&(1<<A_A_MOVE)) ammo[W_MELEE] = max(1, W(W_MELEE, ammomax));
+        if(s != W_CLAW && AA(actortype, abilities)&(1<<A_A_CLAW)) ammo[W_CLAW] = max(1, W(W_CLAW, ammomax));
+        if(s != W_MELEE && AA(actortype, abilities)&(1<<A_A_MELEE)) ammo[W_MELEE] = max(1, W(W_MELEE, ammomax));
         if(actortype < A_ENEMY)
         {
             if(!m_race(gamemode) || m_ra_gauntlet(gamemode, mutators))
@@ -934,7 +936,7 @@ const char * const animnames[] =
     "sink", "edit", "win", "lose",
     "crouch", "crawl forward", "crawl backward", "crawl left", "crawl right",
     "crouch jump forward", "crouch jump backward", "crouch jump left", "crouch jump right", "crouch jump",
-    "melee", "melee primary", "melee secondary",
+    "claw", "claw primary", "claw secondary",
     "pistol", "pistol primary", "pistol secondary", "pistol reload",
     "sword", "sword primary", "sword secondary",
     "shotgun", "shotgun primary", "shotgun secondary", "shotgun reload",
@@ -1135,20 +1137,19 @@ struct gameent : dynent, clientstate
         return toe[foot];
     }
 
-    vec originpos(bool melee = false, bool secondary = false)
+    vec originpos(int weap = -1)
     {
+        if(!isweap(weap)) weap = weapselect;
         if(origin == vec(-1, -1, -1))
-        {
-            origin = vec(melee && secondary ? feetpos() : headpos()).add(vec(yaw*RAD, pitch*RAD));
-        }
+            origin = vec(weap == W_MELEE ? feetpos() : center()).add(vec(yaw*RAD, pitch*RAD));
         return origin;
     }
 
-    vec checkmuzzlepos(int weap = -1)
+    vec muzzlepos(int weap = -1)
     {
+        if(!isweap(weap)) weap = weapselect;
         if(muzzle == vec(-1, -1, -1))
         {
-            if(!isweap(weap)) weap = weapselect;
             if(weap == W_SWORD && ((weapstate[weap] == W_S_PRIMARY) || (weapstate[weap] == W_S_SECONDARY)))
             {
                 float frac = (lastmillis-weaplast[weap])/float(weapwait[weap]), yx = yaw, px = pitch;
@@ -1166,46 +1167,31 @@ struct gameent : dynent, clientstate
                     if(px >= 180) px -= 360;
                     if(px < -180) px += 360;
                 }
-                muzzle = vec(originpos()).add(vec(yx*RAD, px*RAD).mul(8));
+                muzzle = vec(originpos(weap)).add(vec(yx*RAD, px*RAD).mul(8));
             }
             else
             {
-                vec dir, right;
-                vecfromyawpitch(yaw, pitch, 1, 0, dir);
-                vecfromyawpitch(yaw, pitch, 0, -1, right);
-                dir.mul(radius);
-                if(weap != W_MELEE)
+                vec dir(yaw*RAD, pitch*RAD);
+                if(weap != W_CLAW)
                 {
-                    dir.mul(0.75f);
-                    right.mul(radius*0.6f);
-                    dir.z -= height*0.25f;
+                    vec right;
+                    vecfromyawpitch(yaw, pitch, 0, -1, right);
+                    muzzle = vec(originpos(weap)).add(dir.mul(radius*0.75f)).add(right.mul(radius*0.6f));
                 }
-                else dir.mul(2.f);
-                muzzle = vec(o).add(dir).add(right);
+                else muzzle = vec(originpos(weap)).add(dir.mul(radius*2));
             }
         }
         return muzzle;
     }
 
-    vec muzzlepos(int weap = -1, bool secondary = false)
+    vec ejectpos(int weap = -1, bool alt = false)
     {
-        if(isweap(weap) && weap != W_MELEE) return checkmuzzlepos(weap);
-        return originpos(weap == W_MELEE, secondary);
-    }
-
-    vec checkejectpos(bool alt = false)
-    {
-        if(eject[alt ? 1 : 0] == vec(-1, -1, -1)) eject[alt ? 1 : 0] = alt ? originpos() : muzzlepos(weapselect);
+        if(!isweap(weap)) weap = weapselect;
+        if(eject[alt ? 1 : 0] == vec(-1, -1, -1)) eject[alt ? 1 : 0] = alt ? originpos(weap) : muzzlepos(weap);
         return eject[alt ? 1 : 0];
     }
 
-    vec ejectpos(int weap = -1, bool alt = false)
-    {
-        if(isweap(weap) && weap != W_MELEE) return checkejectpos(alt);
-        return muzzlepos();
-    }
-
-    void checkhitboxes()
+    void hitboxes()
     {
         float hsize = max(xradius*0.45f, yradius*0.45f);
         if(head == vec(-1, -1, -1))
@@ -1264,9 +1250,9 @@ struct gameent : dynent, clientstate
     void checktags()
     {
         originpos();
-        checkmuzzlepos();
-        loopi(2) checkejectpos(i!=0);
-        if(wantshitbox()) checkhitboxes();
+        muzzlepos();
+        loopi(2) ejectpos(i!=0);
+        if(wantshitbox()) hitboxes();
     }
 
 
@@ -1379,14 +1365,14 @@ struct gameent : dynent, clientstate
     {
         if(!(AA(actortype, abilities)&(1<<A_A_MELEE))) return false;
         if(check && (!action[AC_SPECIAL] || onfloor) && !slide) return false;
-        if(can && (weapstate[W_MELEE] != W_S_SECONDARY || millis-weaplast[W_MELEE] >= weapwait[W_MELEE])) return false;
+        if(can && (weapstate[W_MELEE] != (slide ? W_S_SECONDARY : W_S_PRIMARY) || millis-weaplast[W_MELEE] >= weapwait[W_MELEE])) return false;
         return true;
     }
 
     bool canmelee(int sweap, int millis, bool check = false, bool slide = false, bool onfloor = true)
     {
         if(!hasmelee(millis, check, slide, onfloor, false)) return false;
-        if(!canshoot(W_MELEE, HIT_ALT, sweap, millis, (1<<W_S_RELOAD))) return false;
+        if(!canshoot(W_MELEE, slide ? HIT_ALT : HIT_NONE, sweap, millis, (1<<W_S_RELOAD))) return false;
         return true;
     }
 
@@ -1565,7 +1551,7 @@ namespace physics
     extern bool isghost(gameent *d, gameent *e, bool proj = false);
     extern bool carryaffinity(gameent *d);
     extern bool dropaffinity(gameent *d);
-    extern bool secondaryweap(gameent *d, bool actual = false);
+    extern bool secondaryweap(gameent *d);
     extern bool allowimpulse(physent *d, int level = 0);
     extern bool canimpulse(physent *d, int level = 0, bool kick = false);
     extern float impulsevelocity(physent *d, float amt, int &cost, int type, float redir, vec &keep);

@@ -8,12 +8,12 @@ struct actors
 
 enum { A_PLAYER = 0, A_BOT, A_TURRET, A_GRUNT, A_DRONE, A_MAX, A_ENEMY = A_TURRET, A_TOTAL = A_MAX-A_ENEMY };
 enum {
-    A_A_MOVE = 0, A_A_JUMP, A_A_CROUCH, A_A_DASH, A_A_BOOST, A_A_PARKOUR, A_A_MELEE, A_A_PRIMARY, A_A_SECONDARY, A_A_PUSHABLE, A_A_AFFINITY, A_A_REGEN, A_A_MAX,
+    A_A_MOVE = 0, A_A_JUMP, A_A_CROUCH, A_A_DASH, A_A_BOOST, A_A_PARKOUR, A_A_MELEE, A_A_PRIMARY, A_A_SECONDARY, A_A_PUSHABLE, A_A_AFFINITY, A_A_REGEN, A_A_CLAW, A_A_MAX,
     A_A_IMFIRST = A_A_DASH, A_A_IMLAST = A_A_PARKOUR, A_A_IMPULSE = A_A_IMLAST-A_A_IMFIRST, A_A_IMCOUNT = A_A_IMPULSE+1,
     A_A_IMOFFSET = (1<<(A_A_DASH-A_A_IMFIRST))|(1<<(A_A_BOOST-A_A_IMFIRST))|(1<<(A_A_PARKOUR-A_A_IMFIRST)), A_A_IMRELAX = (1<<(A_A_PARKOUR-A_A_IMFIRST)),
-    A_A_ALL = (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_CROUCH)|(1<<A_A_DASH)|(1<<A_A_BOOST)|(1<<A_A_PARKOUR)|(1<<A_A_MELEE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_PUSHABLE)|(1<<A_A_AFFINITY)|(1<<A_A_REGEN),
-    A_A_PLAYER = (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_CROUCH)|(1<<A_A_DASH)|(1<<A_A_BOOST)|(1<<A_A_PARKOUR)|(1<<A_A_MELEE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_PUSHABLE)|(1<<A_A_AFFINITY)|(1<<A_A_REGEN),
-    A_A_MOVINGAI = (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_CROUCH)|(1<<A_A_DASH)|(1<<A_A_BOOST)|(1<<A_A_PARKOUR)|(1<<A_A_MELEE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_PUSHABLE)|(1<<A_A_AFFINITY)|(1<<A_A_REGEN),
+    A_A_ALL = (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_CROUCH)|(1<<A_A_DASH)|(1<<A_A_BOOST)|(1<<A_A_PARKOUR)|(1<<A_A_MELEE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_PUSHABLE)|(1<<A_A_AFFINITY)|(1<<A_A_REGEN)|(1<<A_A_CLAW),
+    A_A_PLAYER = (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_CROUCH)|(1<<A_A_DASH)|(1<<A_A_BOOST)|(1<<A_A_PARKOUR)|(1<<A_A_MELEE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_PUSHABLE)|(1<<A_A_AFFINITY)|(1<<A_A_REGEN)|(1<<A_A_CLAW),
+    A_A_MOVINGAI = (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_CROUCH)|(1<<A_A_DASH)|(1<<A_A_BOOST)|(1<<A_A_PARKOUR)|(1<<A_A_MELEE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_PUSHABLE)|(1<<A_A_AFFINITY)|(1<<A_A_REGEN)|(1<<A_A_CLAW),
     A_A_LESSAI = (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_MELEE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_PUSHABLE),
     A_A_FIXEDAI = (1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)
 };
@@ -134,23 +134,23 @@ APVAR(IDF_GAMEMOD, maxcarry, 1, W_LOADOUT,
 APVAR(IDF_GAMEMOD, teamdamage, 0, A_T_ALL,
     A_T_PLAYER,     A_T_AI,         A_T_AI,         A_T_AI,         A_T_AI
 );
-APVAR(IDF_GAMEMOD, weapongladiator, 0, W_MAX-1,
-    W_MELEE,       W_MELEE,         W_SMG,          W_PISTOL,       W_MELEE
+APVAR(IDF_GAMEMOD, weapongladiator, 0, W_ALL-1,
+    W_CLAW,         W_CLAW,         W_SMG,          W_PISTOL,       W_CLAW
 );
-APVAR(IDF_GAMEMOD, weaponinsta, 0, W_MAX-1,
-    W_RIFLE,        W_RIFLE,        W_RIFLE,        W_RIFLE,        W_MELEE
+APVAR(IDF_GAMEMOD, weaponinsta, 0, W_ALL-1,
+    W_RIFLE,        W_RIFLE,        W_RIFLE,        W_RIFLE,        W_CLAW
 );
-APVAR(IDF_GAMEMOD, weaponkaboom, 0, W_MAX-1,
-    W_GRENADE,      W_GRENADE,      W_GRENADE,      W_GRENADE,      W_MELEE
+APVAR(IDF_GAMEMOD, weaponkaboom, 0, W_ALL-1,
+    W_GRENADE,      W_GRENADE,      W_GRENADE,      W_GRENADE,      W_CLAW
 );
-APVAR(IDF_GAMEMOD, weaponmedieval, 0, W_MAX-1,
-    W_SWORD,        W_SWORD,        W_RIFLE,        W_SWORD,        W_MELEE
+APVAR(IDF_GAMEMOD, weaponmedieval, 0, W_ALL-1,
+    W_SWORD,        W_SWORD,        W_RIFLE,        W_SWORD,        W_CLAW
 );
-APVAR(IDF_GAMEMOD, weaponrace, 0, W_MAX-1,
-    W_MELEE,       W_MELEE,         W_SMG,          W_PISTOL,       W_MELEE
+APVAR(IDF_GAMEMOD, weaponrace, 0, W_ALL-1,
+    W_CLAW,        W_CLAW,          W_SMG,          W_PISTOL,       W_CLAW
 );
-APVAR(IDF_GAMEMOD, weaponspawn, 0, W_MAX-1,
-    W_PISTOL,       W_PISTOL,       W_SMG,          W_PISTOL,       W_MELEE
+APVAR(IDF_GAMEMOD, weaponspawn, 0, W_ALL-1,
+    W_PISTOL,       W_PISTOL,       W_SMG,          W_PISTOL,       W_CLAW
 );
 APFVAR(IDF_GAMEMOD, weight, 0, FVAR_MAX,
     200,            200,            150,            200,            150
