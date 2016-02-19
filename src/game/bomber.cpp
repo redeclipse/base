@@ -132,7 +132,7 @@ namespace bomber
                 }
             }
             hud::drawblip(isbomberaffinity(f) ? hud::bombtex : (isbombertarg(f, game::focus->team) ? hud::arrowtex : hud::pointtex), area, w, h, size, blend*hud::radaraffinityblend, isbombertarg(f, game::focus->team) ? 0 : -1, pos, colour);
-            if(isbombertarg(f, game::focus->team) && !hasbombs.empty() && bomberbasketmindist > 0 && game::focus->o.dist(pos) < bomberbasketmindist)
+            if(m_bb_basket(game::gamemode, game::mutators) && isbombertarg(f, game::focus->team) && !hasbombs.empty() && bomberbasketmindist > 0 && game::focus->o.dist(pos) < bomberbasketmindist)
             {
                 vec c(0.25f, 0.25f, 0.25f);
                 int millis = lastmillis%500;
@@ -357,7 +357,7 @@ namespace bomber
                 f.baselight.material[0] = f.light.material[0] = bvec::fromcolor(effect);
                 int pcolour = effect.tohexcolor();
                 part_explosion(above, enttype[AFFINITY].radius/4*trans, PART_SHOCKBALL, 1, pcolour, 1.f, trans*blend*0.25f);
-                if(carryaffinity(game::focus) && bomberbasketmindist > 0 && game::focus->o.dist(above) < bomberbasketmindist)
+                if(m_bb_basket(game::gamemode, game::mutators) && carryaffinity(game::focus) && bomberbasketmindist > 0 && game::focus->o.dist(above) < bomberbasketmindist)
                 {
                     vec c(0.25f, 0.25f, 0.25f);
                     int millis = lastmillis%500;
