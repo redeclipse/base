@@ -926,11 +926,19 @@ void serverslice(uint timeout)  // main server update, called from main loop in 
                     if(enet_address_get_host(&c.peer->address, c.hostname, sizeof(c.hostname)) >= 0)
                     {
                         ENetAddress address;
-                        string hostname;
-                        if(enet_address_set_host(&address, c.hostname) < 0 || enet_address_get_host_ip(&address, hostname, sizeof(hostname)) < 0 || strcmp(hostname, c.hostname))
+                        string ip;
+                        conoutf("checking reverse lookup of %s (%s)", c.hostip, c.hostname);
+                        if(enet_address_set_host(&address, c.hostname) < 0 || enet_address_get_host_ip(&address, ip, sizeof(ip)) < 0 || strcmp(ip, c.hostip))
+                        {
+                            conoutf("reverse lookup of %s (%s) failed (%s), using ip address", c.hostip, c.hostname, ip);
                             copystring(c.hostname, c.hostip);
+                        }
                     }
-                    else copystring(c.hostname, c.hostip);
+                    else
+                    {
+                        conoutf("reverse lookup of %s failed, using ip address", c.hostip);
+                        copystring(c.hostname, c.hostip);
+                    }
                     int reason = server::clientconnect(c.num, c.peer->address.host);
                     if(reason) disconnect_client(c.num, reason);
                 }
