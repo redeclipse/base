@@ -1050,7 +1050,7 @@ namespace physics
     {
         int matid = lookupmaterial(bottom), curmat = matid&MATF_VOLUME, flagmat = matid&MATF_FLAGS,
             oldmatid = pl->inmaterial, oldmat = oldmatid&MATF_VOLUME;
-        float radius = center.z-bottom.z;
+        float radius = center.z-bottom.z, submerged = pl->submerged;
         if(curmat != oldmat)
         {
             #define mattrig(mo,mcol,ms,mt,mz,mq,mp,mw) \
@@ -1071,8 +1071,6 @@ namespace physics
             }
         }
         pl->inmaterial = matid;
-        if(local && gameent::is(pl) && pl->state == CS_ALIVE && pl->inmaterial != oldmatid)
-            client::addmsg(N_SPHY, "ri3", ((gameent *)pl)->clientnum, SPHY_MATERIAL, pl->inmaterial);
         if((pl->inliquid = isliquid(curmat)) != false)
         {
             float frac = radius/10.f, sub = pl->submerged;
@@ -1088,26 +1086,14 @@ namespace physics
                 }
             }
             pl->submerged = found ? found/20.f : 1.f;
-            if(local)
-            {
-                if(curmat == MAT_WATER && gameent::is(pl) && pl->submerged >= PHYS(liquidextinguish))
-                {
-                    gameent *d = (gameent *)pl;
-                    if(d->burning(lastmillis, burntime) && lastmillis-d->lastres[WR_BURN] > PHYSMILLIS)
-                    {
-                        d->resetresidual(WR_BURN);
-                        playsound(S_EXTINGUISH, d->o, d);
-                        part_create(PART_SMOKE, 500, center, 0xAAAAAA, radius*4, 1, -10);
-                        if(d->state == CS_ALIVE) client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_EXTINGUISH);
-                    }
-                }
-                if(pl->physstate < PHYS_SLIDE && sub >= 0.5f && pl->submerged < 0.5f && pl->vel.z > 1e-3f)
-                    pl->vel.z = max(pl->vel.z, max(jumpvel(pl, false), max(gravityvel(pl), 50.f)));
-            }
+            if(local && pl->physstate < PHYS_SLIDE && sub >= 0.5f && pl->submerged < 0.5f && pl->vel.z > 1e-3f)
+                pl->vel.z = max(pl->vel.z, max(jumpvel(pl, false), max(gravityvel(pl), 50.f)));
         }
         else pl->submerged = 0;
         pl->onladder = flagmat&MAT_LADDER;
         if(pl->onladder && pl->physstate < PHYS_SLIDE) pl->floor = vec(0, 0, 1);
+        if(local && gameent::is(pl) && (pl->inmaterial != oldmatid || pl->submerged != submerged))
+            client::addmsg(N_SPHY, "ri3f", ((gameent *)pl)->clientnum, SPHY_MATERIAL, pl->inmaterial, pl->submerged);
     }
 
     // main physics routine, moves a player/monster for a time step

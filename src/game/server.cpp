@@ -5789,61 +5789,77 @@ namespace server
                 case N_SPHY:
                 {
                     int lcn = getint(p), idx = getint(p);
-                    if(idx >= SPHY_SERVER) break; // clients can't send this
-                    if(idx == SPHY_COOK) loopj(3) getint(p);
                     clientinfo *cp = (clientinfo *)getinfo(lcn);
-                    if(!hasclient(cp, ci) || cp->state != CS_ALIVE)
+                    bool proceed = hasclient(cp, ci), qmsg = false;
+                    switch(idx)
                     {
-                        if(idx == SPHY_MATERIAL) getint(p);
-                        break;
-                    }
-                    if(idx == SPHY_COOK)
-                    {
-                        if(!cp->isalive(gamemillis))
+                        case SPHY_COOK:
                         {
-                            if(G(serverdebug)) srvmsgf(cp->clientnum, "sync error: power [%d] failed - unexpected message", cp->weapselect);
-                            break;
-                        }
-                        if(cp->weapstate[cp->weapselect] == W_S_RELOAD && !cp->weapwaited(cp->weapselect, gamemillis))
-                        {
-                            if(!cp->weapwaited(cp->weapselect, gamemillis, (1<<W_S_RELOAD)))
+                            int wstate = getint(p), wlen = getint(p), wtime = getint(p);
+                            if(!proceed) break;
+                            if(!cp->isalive(gamemillis) || !isweap(cp->weapselect) || (wstate != W_S_IDLE && wstate != W_S_ZOOM && wstate != W_S_POWER))
                             {
-                                if(!cp->hasweap(cp->weapselect, m_weapon(cp->actortype, gamemode, mutators))) cp->entid[cp->weapselect] = -1; // its gone..
-                                if(G(serverdebug)) srvmsgf(cp->clientnum, "sync error: power [%d] failed - current state disallows it", cp->weapselect);
+                                if(G(serverdebug)) srvmsgf(cp->clientnum, "sync error: power [%d] failed - unexpected message", cp->weapselect);
                                 break;
                             }
-                            else if(cp->weapload[cp->weapselect] > 0)
+                            if(cp->weapstate[cp->weapselect] == W_S_RELOAD && !cp->weapwaited(cp->weapselect, gamemillis))
                             {
-                                takeammo(cp, cp->weapselect, cp->weapload[cp->weapselect]);
-                                cp->weapload[cp->weapselect] = -cp->weapload[cp->weapselect];
-                                sendf(-1, 1, "ri5x", N_RELOAD, cp->clientnum, cp->weapselect, cp->weapload[cp->weapselect], cp->ammo[cp->weapselect], cp->clientnum);
+                                if(!cp->weapwaited(cp->weapselect, gamemillis, (1<<W_S_RELOAD)))
+                                {
+                                    if(!cp->hasweap(cp->weapselect, m_weapon(cp->actortype, gamemode, mutators))) cp->entid[cp->weapselect] = -1; // its gone..
+                                    if(G(serverdebug)) srvmsgf(cp->clientnum, "sync error: power [%d] failed - current state disallows it", cp->weapselect);
+                                    break;
+                                }
+                                else if(cp->weapload[cp->weapselect] > 0)
+                                {
+                                    takeammo(cp, cp->weapselect, cp->weapload[cp->weapselect]);
+                                    cp->weapload[cp->weapselect] = -cp->weapload[cp->weapselect];
+                                    sendf(-1, 1, "ri5x", N_RELOAD, cp->clientnum, cp->weapselect, cp->weapload[cp->weapselect], cp->ammo[cp->weapselect], cp->clientnum);
+                                }
+                                else break;
                             }
-                            else break;
+                            cp->setweapstate(cp->weapselect, wstate, wlen, lastmillis, wtime, wstate == W_S_IDLE);
+                            qmsg = true;
+                            break;
                         }
-                    }
-                    else if(idx == SPHY_EXTINGUISH)
-                    {
-                        if(!cp->burning(gamemillis, G(burntime))) break;
-                        cp->lastres[WR_BURN] = cp->lastrestime[WR_BURN] = 0;
-                    }
-                    else if(idx == SPHY_MATERIAL)
-                    {
-                        int oldmaterial = cp->inmaterial;
-                        cp->inmaterial = getint(p);
-                        if((cp->inmaterial&MATF_FLAGS)&MAT_DEATH && !((oldmaterial&MATF_FLAGS)&MAT_DEATH))
+                        case SPHY_MATERIAL:
                         {
-                            suicideevent *ev = new suicideevent;
-                            ev->flags = HIT_MATERIAL;
-                            ev->material = cp->inmaterial;
-                            cp->addevent(ev);
+                            int inmaterial = getint(p);
+                            float submerged = getfloat(p);
+                            if(!proceed) break;
+                            int oldmaterial = cp->inmaterial;
+                            cp->inmaterial = inmaterial;
+                            cp->submerged = submerged;
+                            if(cp->state == CS_ALIVE && (cp->inmaterial&MATF_FLAGS)&MAT_DEATH && !((oldmaterial&MATF_FLAGS)&MAT_DEATH))
+                            {
+                                suicideevent *ev = new suicideevent;
+                                ev->flags = HIT_MATERIAL;
+                                ev->material = cp->inmaterial;
+                                cp->addevent(ev);
+                            }
+                            else if((cp->inmaterial&MATF_VOLUME) == MAT_WATER && cp->burning(gamemillis, G(burntime)) && cp->submerged >= G(liquidextinguish))
+                            {
+                                cp->lastres[WR_BURN] = cp->lastrestime[WR_BURN] = 0;
+                                sendf(-1, 1, "ri3", N_SPHY, cp->clientnum, SPHY_EXTINGUISH);
+                            }
+                            break;
                         }
+                        case SPHY_BOOST: case SPHY_DASH:
+                        {
+                            if(!proceed || cp->state != CS_ALIVE) break;
+                            if(cp->lastboost && gamemillis-cp->lastboost <= G(impulseboostdelay)) break;
+                            cp->lastboost = gamemillis;
+                            qmsg = true;
+                            break;
+                        }
+                        case SPHY_JUMP: case SPHY_MELEE: case SPHY_KICK: case SPHY_VAULT: case SPHY_GRAB: case SPHY_SKATE:
+                        {
+                            if(!proceed || cp->state != CS_ALIVE) break;
+                            qmsg = true; break;
+                        }
+                        default: break;
                     }
-                    else if(idx == SPHY_BOOST || idx == SPHY_DASH)
-                    {
-                        if(!cp->isalive(gamemillis) || (cp->lastboost && gamemillis-cp->lastboost <= G(impulseboostdelay))) break;
-                        cp->lastboost = gamemillis;
-                    }
-                    QUEUE_MSG;
+                    if(qmsg) QUEUE_MSG;
                     break;
                 }
 

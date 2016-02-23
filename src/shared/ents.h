@@ -83,6 +83,7 @@ struct baseent
     float yaw, pitch, roll;
     uchar state;                                // one of CS_* above
     int inmaterial;
+    float submerged;
 
     baseent() : state(CS_SPECTATOR) { reset(); }
 
@@ -92,6 +93,7 @@ struct baseent
         floorpos = vec(-1, -1, -1);
         yaw = pitch = roll = 0;
         inmaterial = 0;
+        submerged = 0;
     }
 };
 
@@ -105,7 +107,7 @@ struct physent : baseent                        // can be affected by physics
     vec floor;                                  // the normal of floor the dynent is on
 
     bool blocked, inliquid, onladder;
-    float submerged, curscale, speedscale;
+    float curscale, speedscale;
     char move, strafe;
 
     uchar physstate;                            // one of PHYS_* above
