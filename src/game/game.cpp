@@ -868,11 +868,11 @@ namespace game
             {
                 if(d->state == CS_ALIVE && isweap(d->weapselect))
                 {
-                    bool last = lastmillis-d->weaplast[d->weapselect] > 0,
+                    bool last = lastmillis-d->weaptime[d->weapselect] > 0,
                          powering = last && d->weapstate[d->weapselect] == W_S_POWER,
                          reloading = last && d->weapstate[d->weapselect] == W_S_RELOAD,
                          secondary = physics::secondaryweap(d);
-                    float amt = last ? clamp(float(lastmillis-d->weaplast[d->weapselect])/d->weapwait[d->weapselect], 0.f, 1.f) : 0.f;
+                    float amt = last ? clamp(float(lastmillis-d->weaptime[d->weapselect])/d->weapwait[d->weapselect], 0.f, 1.f) : 0.f;
                     vec col = WPCOL(d, d->weapselect, lightcol, secondary);
                     if(d->weapselect == W_FLAMER && (!reloading || amt > 0.5f) && !physics::liquidcheck(d))
                     {
@@ -1122,14 +1122,14 @@ namespace game
 
         loopi(W_MAX) if(d->weapstate[i] != W_S_IDLE && (!gs_playing(gamestate) || d->weapselect != i || d->weapstate[i] != W_S_ZOOM))
         {
-            bool timeexpired = lastmillis-d->weaplast[i] >= d->weapwait[i]+(d->weapselect != i || d->weapstate[i] != W_S_POWER ? 0 : PHYSMILLIS);
+            bool timeexpired = lastmillis-d->weaptime[i] >= d->weapwait[i]+(d->weapselect != i || d->weapstate[i] != W_S_POWER ? 0 : PHYSMILLIS);
             if(i < W_ALL && gs_playing(gamestate) && d->state == CS_ALIVE && i == d->weapselect && d->weapstate[i] == W_S_RELOAD && timeexpired && playreloadnotify&(d == focus ? 1 : 2) && (d->ammo[i] >= W(i, ammomax) || playreloadnotify&(d == focus ? 4 : 8)))
                 playsound(WSND(i, S_W_NOTIFY), d->o, d, 0, reloadnotifyvol, -1, -1, &d->wschan);
             if(!gs_playing(gamestate) || d->state != CS_ALIVE || timeexpired) d->setweapstate(i, W_S_IDLE, 0, lastmillis);
         }
         if(gs_playing(gamestate) && d->state == CS_ALIVE && isweap(d->weapselect) && (d->weapstate[d->weapselect] == W_S_POWER || d->weapstate[d->weapselect] == W_S_ZOOM))
         {
-            int millis = lastmillis-d->weaplast[d->weapselect];
+            int millis = lastmillis-d->weaptime[d->weapselect];
             if(millis >= 0 && millis <= d->weapwait[d->weapselect])
             {
                 bool secondary = physics::secondaryweap(d);
@@ -1917,7 +1917,7 @@ namespace game
                 int lastweap = d->getlastweap(m_weapon(d->actortype, gamemode, mutators));
                 if(isweap(lastweap) && d->weapselect != lastweap && (d->weapstate[d->weapselect] == W_S_USE || d->weapstate[d->weapselect] == W_S_SWITCH))
                 {
-                    float amt = (lastmillis-d->weaplast[d->weapselect])/float(d->weapwait[d->weapselect]);
+                    float amt = (lastmillis-d->weaptime[d->weapselect])/float(d->weapwait[d->weapselect]);
                     int r2 = (col>>16), g2 = ((col>>8)&0xFF), b2 = (col&0xFF),
                         c = W(lastweap, colour), r1 = (c>>16), g1 = ((c>>8)&0xFF), b1 = (c&0xFF),
                         r3 = clamp(int((r1*(1-amt))+(r2*amt)), 0, 255),
@@ -2807,8 +2807,8 @@ namespace game
             if(!allowmove(player1)) player1->stopmoving(player1->state < CS_SPECTATOR);
             if(focus->state == CS_ALIVE && gs_playing(gamestate) && isweap(focus->weapselect))
             {
-                bool haszoom = focus->zooming();
-                zoomset(haszoom, haszoom ? focus->weaplast[focus->weapselect] : lastmillis);
+                int zoomtime = focus->zooming();
+                zoomset(zoomtime ? true : false, zoomtime ? zoomtime : lastmillis);
             }
             else if(zooming) zoomset(false, 0);
 
@@ -2994,7 +2994,7 @@ namespace game
                     else if(melee)
                     {
                         anim |= ANIM_FLYKICK<<ANIM_SECONDARY;
-                        basetime2 = d->weaplast[W_MELEE];
+                        basetime2 = d->weaptime[W_MELEE];
                     }
                     else if(d->move>0) anim |= ANIM_DASH_FORWARD<<ANIM_SECONDARY;
                     else if(d->strafe) anim |= (d->strafe>0 ? ANIM_DASH_LEFT : ANIM_DASH_RIGHT)<<ANIM_SECONDARY;
@@ -3007,7 +3007,7 @@ namespace game
                     if(melee)
                     {
                         anim |= ANIM_FLYKICK<<ANIM_SECONDARY;
-                        basetime2 = d->weaplast[W_MELEE];
+                        basetime2 = d->weaptime[W_MELEE];
                     }
                     else if(d->crouching())
                     {
@@ -3082,7 +3082,7 @@ namespace game
                     {
                         case W_S_RELOAD:
                         {
-                            int millis = lastmillis-d->weaplast[d->weapselect], check = d->weapwait[d->weapselect]/2;
+                            int millis = lastmillis-d->weaptime[d->weapselect], check = d->weapwait[d->weapselect]/2;
                             scale = millis >= check ? float(millis-check)/check : 0.f;
                             if(d->weapload[d->weapselect] > 0)
                                 scale = max(scale, float(ammo - d->weapload[d->weapselect])/maxammo);
@@ -3253,13 +3253,13 @@ namespace game
             secondary = third;
             if(showweap && isweap(weap))
             {
-                weapaction = lastaction = d->weaplast[weap];
+                weapaction = lastaction = d->weaptime[weap];
                 animdelay = d->weapwait[weap];
                 switch(d->weapstate[weap])
                 {
                     case W_S_SWITCH: case W_S_USE:
                     {
-                        int millis = lastmillis-d->weaplast[weap], off = d->weapwait[weap]/3, lastweap = d->getlastweap(m_weapon(d->actortype, gamemode, mutators));
+                        int millis = lastmillis-d->weaptime[weap], off = d->weapwait[weap]/3, lastweap = d->getlastweap(m_weapon(d->actortype, gamemode, mutators));
                         if(isweap(lastweap) && millis <= off)
                         {
                             weap = lastweap;
@@ -3283,7 +3283,7 @@ namespace game
                     {
                         if(weaptype[weap].thrown[d->weapstate[weap]-W_S_PRIMARY] > 0)
                         {
-                            int millis = lastmillis-d->weaplast[weap], off = d->weapwait[weap]/2;
+                            int millis = lastmillis-d->weaptime[weap], off = d->weapwait[weap]/2;
                             if(millis <= off || !d->hasweap(weap, m_weapon(d->actortype, gamemode, mutators)))
                                 showweap = false;
                             else weapscale = (millis-off)/float(off);
@@ -3385,7 +3385,7 @@ namespace game
             if(isweap(d->weapselect) && playerhint&4)
             {
                 if(W(d->weapselect, lightpersist)&4) haslight = true;
-                if(W(d->weapselect, lightpersist)&8 && lastmillis-d->weaplast[d->weapselect] > 0 && d->weapstate[d->weapselect] == W_S_POWER)
+                if(W(d->weapselect, lightpersist)&8 && lastmillis-d->weaptime[d->weapselect] > 0 && d->weapstate[d->weapselect] == W_S_POWER)
                     haspower = true;
             }
             if((!m_team(gamemode, mutators) || d->team != focus->team) && playerhint&8 && d->dominated.find(focus) >= 0) hasdom = true;
@@ -3398,7 +3398,7 @@ namespace game
                     if(hasdom) fade *= playerhintdom;
                     else if(haslight || haspower)
                     {
-                        int millis = lastmillis-d->weaplast[d->weapselect];
+                        int millis = lastmillis-d->weaptime[d->weapselect];
                         if(haslight)
                         {
                             if(d->weapstate[d->weapselect] == W_S_SWITCH || d->weapstate[d->weapselect] == W_S_USE)
@@ -3448,15 +3448,15 @@ namespace game
             {
                 vec pos = d->footpos(i);
                 if(minz > 0 && pos.z > minz) pos.z -= pos.z-minz;
-                float amt = 1-((lastmillis-d->weaplast[W_MELEE])/float(d->weapwait[W_MELEE]));
+                float amt = 1-((lastmillis-d->weaptime[W_MELEE])/float(d->weapwait[W_MELEE]));
                 part_create(PART_HINT, 1, pos, TEAM(d->team, colour), 2.f, amt*blend, 0, 0);
             }
-            int millis = lastmillis-d->weaplast[d->weapselect];
+            int millis = lastmillis-d->weaptime[d->weapselect];
             bool last = millis > 0 && millis < d->weapwait[d->weapselect],
                  powering = last && d->weapstate[d->weapselect] == W_S_POWER,
                  reloading = last && d->weapstate[d->weapselect] == W_S_RELOAD,
                  secondary = physics::secondaryweap(d);
-            float amt = last ? (lastmillis-d->weaplast[d->weapselect])/float(d->weapwait[d->weapselect]) : 1.f;
+            float amt = last ? (lastmillis-d->weaptime[d->weapselect])/float(d->weapwait[d->weapselect]) : 1.f;
             int colour = WHCOL(d, d->weapselect, partcol, secondary);
             if(d->weapselect == W_FLAMER && (!reloading || amt > 0.5f) && !physics::liquidcheck(d))
             {

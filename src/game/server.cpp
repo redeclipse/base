@@ -5790,7 +5790,7 @@ namespace server
                 {
                     int lcn = getint(p), idx = getint(p);
                     if(idx >= SPHY_SERVER) break; // clients can't send this
-                    if(idx == SPHY_COOK) loopj(2) getint(p);
+                    if(idx == SPHY_COOK) loopj(3) getint(p);
                     clientinfo *cp = (clientinfo *)getinfo(lcn);
                     if(!hasclient(cp, ci) || cp->state != CS_ALIVE)
                     {

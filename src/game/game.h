@@ -543,7 +543,7 @@ struct verinfo
 struct clientstate
 {
     int health, ammo[W_MAX], entid[W_MAX], colour, model, checkpointspawn;
-    int weapselect, weapload[W_MAX], weapshot[W_MAX], weapstate[W_MAX], weapwait[W_MAX], weaplast[W_MAX];
+    int weapselect, weapload[W_MAX], weapshot[W_MAX], weapstate[W_MAX], weapwait[W_MAX], weaptime[W_MAX], prevstate[W_MAX], prevtime[W_MAX];
     int lastdeath, lastspawn, lastpain, lastregen, lastregenamt, lastbuff, lastshoot, lastres[WR_MAX], lastrestime[WR_MAX];
     int actortype, spawnpoint, ownernum, skill, points, frags, deaths, cpmillis, cptime, queuepos;
     bool quarantine;
@@ -573,7 +573,7 @@ struct clientstate
     {
         if(!isweap(weap)) return 0;
         int a = ammo[weap];
-        if(millis && weapstate[weap] == W_S_RELOAD && millis-weaplast[weap] < weapwait[weap] && weapload[weap] > 0)
+        if(millis && weapstate[weap] == W_S_RELOAD && millis-weaptime[weap] < weapwait[weap] && weapload[weap] > 0)
             a -= weapload[weap];
         return a;
     }
@@ -598,7 +598,7 @@ struct clientstate
 
     bool holdweap(int weap, int sweap, int millis)
     {
-        return weap == weapselect || millis-weaplast[weap] < weapwait[weap] || hasweap(weap, sweap);
+        return weap == weapselect || millis-weaptime[weap] < weapwait[weap] || hasweap(weap, sweap);
     }
 
     void addlastweap(int weap)
@@ -650,18 +650,28 @@ struct clientstate
     {
         loopi(W_MAX)
         {
-            weapstate[i] = W_S_IDLE;
-            weapwait[i] = weaplast[i] = weapload[i] = weapshot[i] = 0;
+            weapstate[i] = prevstate[i] = W_S_IDLE;
+            weapwait[i] = weaptime[i] = weapload[i] = weapshot[i] = prevtime[0] = 0;
             if(full) ammo[i] = entid[i] = -1;
         }
         lastweap.shrink(0);
     }
 
-    void setweapstate(int weap, int state, int delay, int millis)
+    void setweapstate(int weap, int state, int delay, int millis, int offtime = 0, bool blank = false)
     {
+        if(blank || (state >= W_S_RELOAD && state <= W_S_USE))
+        {
+            prevstate[weap] = W_S_IDLE;
+            prevtime[weap] = millis;
+        }
+        else if(weapstate[weap] == W_S_ZOOM || weapstate[weap] == W_S_POWER)
+        {
+            prevstate[weap] = weapstate[weap];
+            prevtime[weap] = weaptime[weap];
+        }
         weapstate[weap] = state;
         weapwait[weap] = delay;
-        weaplast[weap] = millis;
+        weaptime[weap] = millis-offtime;
     }
 
     void weapswitch(int weap, int millis, int delay = 0, int state = W_S_SWITCH)
@@ -682,7 +692,7 @@ struct clientstate
     {
         if(weap != weapselect) skip &= ~(1<<W_S_RELOAD);
         if(!weapwait[weap] || W_S_EXCLUDE&(1<<weapstate[weap]) || (skip && skip&(1<<weapstate[weap]))) return true;
-        return millis-weaplast[weap] >= weapwait[weap];
+        return millis-weaptime[weap] >= weapwait[weap];
     }
 
     bool candrop(int weap, int sweap, int millis, bool load, int skip = 0)
@@ -743,9 +753,15 @@ struct clientstate
         entid[attr] = id;
     }
 
-    bool zooming()
+    int zooming()
     {
-        return isweap(weapselect) && weapstate[weapselect] == W_S_ZOOM;
+        if(isweap(weapselect) && W2(weapselect, cooked, true)&W_C_ZOOM)
+        {
+            if(weapstate[weapselect] == W_S_ZOOM) return weaptime[weapselect];
+            if(W2(weapselect, cooked, true)&W_C_KEEP && prevstate[weapselect] == W_S_ZOOM)
+                return prevtime[weapselect];
+        }
+        return 0;
     }
 
     void resetresidual(int n = -1)
@@ -1152,7 +1168,7 @@ struct gameent : dynent, clientstate
         {
             if(weap == W_SWORD && ((weapstate[weap] == W_S_PRIMARY) || (weapstate[weap] == W_S_SECONDARY)))
             {
-                float frac = (lastmillis-weaplast[weap])/float(weapwait[weap]), yx = yaw, px = pitch;
+                float frac = (lastmillis-weaptime[weap])/float(weapwait[weap]), yx = yaw, px = pitch;
                 if(weapstate[weap] == W_S_PRIMARY)
                 {
                     yx -= 90;
@@ -1365,7 +1381,7 @@ struct gameent : dynent, clientstate
     {
         if(!(AA(actortype, abilities)&(1<<A_A_MELEE))) return false;
         if(check && (!action[AC_SPECIAL] || onfloor) && !slide) return false;
-        if(can && (weapstate[W_MELEE] != (slide ? W_S_SECONDARY : W_S_PRIMARY) || millis-weaplast[W_MELEE] >= weapwait[W_MELEE])) return false;
+        if(can && (weapstate[W_MELEE] != (slide ? W_S_SECONDARY : W_S_PRIMARY) || millis-weaptime[W_MELEE] >= weapwait[W_MELEE])) return false;
         return true;
     }
 

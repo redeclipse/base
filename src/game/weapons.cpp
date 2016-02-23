@@ -214,7 +214,7 @@ namespace weapons
         {
             bool noammo = d->ammo[d->weapselect] < W2(d->weapselect, ammosub, WS(flags)),
                  noattack = !d->action[AC_PRIMARY] && !d->action[AC_SECONDARY];
-            if((noammo || noattack) && !d->action[AC_USE] && d->weapstate[d->weapselect] == W_S_IDLE && (noammo || lastmillis-d->weaplast[d->weapselect] >= autodelayreload))
+            if((noammo || noattack) && !d->action[AC_USE] && d->weapstate[d->weapselect] == W_S_IDLE && (noammo || lastmillis-d->weaptime[d->weapselect] >= autodelayreload))
                 return autoreloading >= (noammo ? 1 : (W(d->weapselect, ammoadd) < W(d->weapselect, ammomax) ? 2 : (W2(d->weapselect, cooked, true)&W_C_ZOOM ? 4 : 3)));
         }
         return false;
@@ -273,13 +273,14 @@ namespace weapons
             else offset = d->weapload[weap];
         }
         float scale = 1;
-        bool zooming = (pressed && secondary && W2(weap, cooked, true)&W_C_ZOOM) || d->weapstate[weap] == W_S_ZOOM, wassecond = secondary;
-        if(zooming)
+        bool hadcook = W2(weap, cooked, true)&W_C_KEEP && (d->prevstate[weap] == W_S_ZOOM || d->prevstate[weap] == W_S_POWER),
+             zooming = W2(weap, cooked, true)&W_C_ZOOM && (d->weapstate[weap] == W_S_ZOOM || (pressed && secondary) || (hadcook && d->prevstate[weap] == W_S_ZOOM)), wassecond = secondary;
+        if(hadcook || zooming)
         {
             if(!pressed)
             {
-                client::addmsg(N_SPHY, "ri4", d->clientnum, SPHY_COOK, W_S_IDLE, 0);
-                d->setweapstate(weap, W_S_IDLE, 0, lastmillis);
+                client::addmsg(N_SPHY, "ri5", d->clientnum, SPHY_COOK, W_S_IDLE, 0, 0);
+                d->setweapstate(weap, W_S_IDLE, 0, lastmillis, 0, true);
                 return false;
             }
             else secondary = zooming;
@@ -301,12 +302,13 @@ namespace weapons
                             d->ammo[weap] = max(d->ammo[weap]-offset, 0);
                             d->weapload[weap] = -offset;
                         }
-                        client::addmsg(N_SPHY, "ri4", d->clientnum, SPHY_COOK, type, len);
-                        d->setweapstate(weap, type, len, lastmillis);
+                        int offtime = hadcook && d->prevstate[weap] == type ? lastmillis-d->prevtime[weap] : 0;
+                        client::addmsg(N_SPHY, "ri5", d->clientnum, SPHY_COOK, type, len, offtime);
+                        d->setweapstate(weap, type, len, lastmillis, offtime);
                     }
                     else return false;
                 }
-                cooked = len ? clamp(lastmillis-d->weaplast[weap], 1, len) : 1;
+                cooked = len ? clamp(lastmillis-d->weaptime[weap], 1, len) : 1;
                 if(zooming)
                 {
                     if(pressed && wassecond) return false;

@@ -2056,12 +2056,14 @@ namespace client
 
                 case N_SPHY: // simple phys events
                 {
-                    int lcn = getint(p), st = getint(p), param = st == SPHY_COOK || st == SPHY_BUFF || st == SPHY_MATERIAL ? getint(p) : 0;
+                    int lcn = getint(p), st = getint(p);
                     gameent *t = game::getclient(lcn);
-                    if(t && (st == SPHY_EXTINGUISH || st == SPHY_BUFF || (t != game::player1 && !t->ai))) switch(st)
+                    bool proceed = t && (st == SPHY_EXTINGUISH || st == SPHY_BUFF || (t != game::player1 && !t->ai));
+                    switch(st)
                     {
                         case SPHY_JUMP:
                         {
+                            if(!proceed) break;
                             t->resetphys();
                             t->impulse[IM_JUMP] = lastmillis;
                             playsound(S_JUMP, t->o, t);
@@ -2070,6 +2072,7 @@ namespace client
                         }
                         case SPHY_BOOST: case SPHY_KICK: case SPHY_VAULT: case SPHY_GRAB: case SPHY_SKATE: case SPHY_DASH: case SPHY_MELEE:
                         {
+                            if(!proceed) break;
                             t->doimpulse(0, IM_T_BOOST+(st-SPHY_BOOST), lastmillis);
                             game::impulseeffect(t);
                             if(st == SPHY_KICK || st == SPHY_VAULT || st == SPHY_GRAB || st == SPHY_SKATE || st == SPHY_MELEE)
@@ -2078,18 +2081,27 @@ namespace client
                         }
                         case SPHY_COOK:
                         {
-                            int value = getint(p);
-                            t->setweapstate(t->weapselect, param, value, lastmillis);
+                            int param = getint(p), value = getint(p), offtime = getint(p);
+                            if(!proceed) break;
+                            t->setweapstate(t->weapselect, param, value, lastmillis, offtime, param == W_S_IDLE);
                             break;
                         }
                         case SPHY_EXTINGUISH:
                         {
+                            if(!proceed) break;
                             t->resetresidual(WR_BURN);
                             playsound(S_EXTINGUISH, t->o, t);
                             part_create(PART_SMOKE, 500, t->feetpos(t->height/2), 0xAAAAAA, t->radius*4, 1, -10);
                             break;
                         }
-                        case SPHY_BUFF: t->lastbuff = param ? lastmillis : 0; break;
+                        case SPHY_BUFF:
+                        {
+                            int param = getint(p);
+                            if(!proceed) break;
+                            t->lastbuff = param ? lastmillis : 0;
+                            break;
+                        }
+                        case SPHY_MATERIAL: getint(p); break;
                         default: break;
                     }
                     break;
