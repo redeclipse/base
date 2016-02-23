@@ -129,6 +129,3 @@
 	path = data/wicked
 	url = https://github.com/red-eclipse/wicked.git
 	branch = master
-[submodule ".github"]
-	path = .github
-	url = https://github.com/red-eclipse/github-templates.git
