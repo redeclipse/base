@@ -494,10 +494,6 @@ GVAR(IDF_GAMEMOD, quakefade, 0, 250, VAR_MAX);
 GVAR(IDF_GAMEMOD, quakewobble, 1, 18, VAR_MAX);
 GVAR(IDF_GAMEMOD, quakelimit, 0, 200, VAR_MAX);
 
-GVAR(IDF_GAMEMOD, zoomlimitmin, 1, 10, 150);
-GVAR(IDF_GAMEMOD, zoomlimitmax, 1, 60, 150);
-GVAR(IDF_GAMEMOD, zoomtime, 1, 500, VAR_MAX);
-
 GFVAR(IDF_GAMEMOD, damagescale, 0, 1, FVAR_MAX);
 GVAR(IDF_GAMEMOD, weaponswitchdelay, 0, 400, VAR_MAX);
 

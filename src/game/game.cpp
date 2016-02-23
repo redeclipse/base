@@ -495,7 +495,7 @@ namespace game
     {
         if(on != zooming)
         {
-            lastzoom = millis-max(zoomtime-(millis-lastzoom), 0);
+            lastzoom = millis;
             prevzoom = zooming;
             if(zoomdefault >= 0 && on) zoomlevel = zoomdefault;
         }
@@ -505,7 +505,7 @@ namespace game
 
     bool inzoom()
     {
-        if(lastzoom && (zooming || lastmillis-lastzoom <= zoomtime))
+        if(lastzoom && (zooming || lastmillis-lastzoom <= W(focus->weapselect, cookzoom)))
             return true;
         return false;
     }
@@ -513,7 +513,7 @@ namespace game
 
     bool inzoomswitch()
     {
-        if(lastzoom && ((zooming && lastmillis-lastzoom >= zoomtime/2) || (!zooming && lastmillis-lastzoom <= zoomtime/2)))
+        if(lastzoom && ((zooming && lastmillis-lastzoom >= W(focus->weapselect, cookzoom)/2) || (!zooming && lastmillis-lastzoom <= W(focus->weapselect, cookzoom)/2)))
             return true;
         return false;
     }
@@ -749,7 +749,7 @@ namespace game
 
     void respawn(gameent *d)
     {
-        if(d == game::player1 && (maptime <= 0 || needname(d) || wantsloadoutmenu)) return; // prevent spawning
+        if(d == player1 && (maptime <= 0 || needname(d) || wantsloadoutmenu)) return; // prevent spawning
         if(d->state == CS_DEAD && d->respawned < 0 && (!d->lastdeath || lastmillis-d->lastdeath >= 500))
         {
             client::addmsg(N_TRYSPAWN, "ri", d->clientnum);
@@ -996,7 +996,7 @@ namespace game
             if(d == focus && inzoom())
             {
                 int frame = lastmillis-lastzoom;
-                float pc = frame <= zoomtime ? (frame)/float(zoomtime) : 1.f;
+                float pc = frame <= W(d->weapselect, cookzoom) ? (frame)/float(W(d->weapselect, cookzoom)) : 1.f;
                 total *= zooming ? 1.f-pc : pc;
             }
         }
@@ -2094,8 +2094,8 @@ namespace game
         {
             checkzoom();
             int frame = lastmillis-lastzoom;
-            float zoom = zoomlimitmax-((zoomlimitmax-zoomlimitmin)/float(zoomlevels)*zoomlevel),
-                  diff = float(fov()-zoom), amt = frame < zoomtime ? clamp(frame/float(zoomtime), 0.f, 1.f) : 1.f;
+            float zoom = W(game::focus->weapselect, cookzoommax)-((W(game::focus->weapselect, cookzoommax)-W(game::focus->weapselect, cookzoommin))/float(zoomlevels)*zoomlevel),
+                  diff = float(fov()-zoom), amt = frame < W(focus->weapselect, cookzoom) ? clamp(frame/float(W(focus->weapselect, cookzoom)), 0.f, 1.f) : 1.f;
             if(!zooming) amt = 1.f-amt;
             curfov = fov()-(amt*diff);
         }
@@ -2254,10 +2254,11 @@ namespace game
         if(firstpersonbob && gs_playing(gamestate) && d->state == CS_ALIVE)
         {
             float scale = 1;
-            if(d == focus && inzoom())
+            if(gameent::is(d) && d == focus && inzoom())
             {
+                gameent *e = (gameent *)d;
                 int frame = lastmillis-lastzoom;
-                float pc = frame <= zoomtime ? (frame)/float(zoomtime) : 1.f;
+                float pc = frame <= W(e->weapselect, cookzoom) ? (frame)/float(W(e->weapselect, cookzoom)) : 1.f;
                 scale *= zooming ? 1.f-pc : pc;
             }
             if(firstpersonbobtopspeed) scale *= clamp(d->vel.magnitude()/firstpersonbobtopspeed, firstpersonbobmin, 1.f);
@@ -2709,7 +2710,7 @@ namespace game
             if(d == focus && inzoom())
             {
                 int frame = lastmillis-lastzoom;
-                float pc = frame <= zoomtime ? (frame)/float(zoomtime) : 1.f;
+                float pc = frame <= W(d->weapselect, cookzoom) ? (frame)/float(W(d->weapselect, cookzoom)) : 1.f;
                 scale *= zooming ? 1.f-pc : pc;
             }
             if(firstpersonbobtopspeed) scale *= clamp(d->vel.magnitude()/firstpersonbobtopspeed, firstpersonbobmin, 1.f);
@@ -2804,7 +2805,11 @@ namespace game
             checkoften(player1, true);
             loopv(players) if(players[i]) checkoften(players[i], players[i]->ai != NULL);
             if(!allowmove(player1)) player1->stopmoving(player1->state < CS_SPECTATOR);
-            if(focus->state == CS_ALIVE && gs_playing(gamestate)) zoomset(focus->zooming(), lastmillis);
+            if(focus->state == CS_ALIVE && gs_playing(gamestate) && isweap(focus->weapselect))
+            {
+                bool haszoom = focus->zooming();
+                zoomset(haszoom, haszoom ? focus->weaplast[focus->weapselect] : lastmillis);
+            }
             else if(zooming) zoomset(false, 0);
 
             physics::update();
