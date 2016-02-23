@@ -30,14 +30,13 @@ namespace ai
 
     float weapmindist(int weap, bool alt)
     {
-        if(closerangeweap(weap)) return 0.f;
+        if(WF(false, weap, collide, alt)&COLLIDE_HITSCAN) return 0.f;
         if(WX(false, weap, explode, alt, game::gamemode, game::mutators, 1.f) > 0) return WX(false, weap, explode, alt, game::gamemode, game::mutators, 1.f);
         return 1.f;
     }
 
     float weapmaxdist(int weap, bool alt)
     {
-        if(closerangeweap(weap)) return CLOSEDIST;
         if(W2(weap, aidist, alt) > 0) return W2(weap, aidist, alt);
         return SIGHTMAX;
     }
@@ -110,7 +109,7 @@ namespace ai
     { // add margins of error
         if(insight && weaprange(d, d->weapselect, alt, e->o.squaredist(d->o)))
         {
-            if(closerangeweap(d->weapselect)) return true;
+            if(W2(d->weapselect, aidist, alt) < CLOSEDIST) return true;
             float skew = clamp(float(lastmillis-d->ai->enemymillis)/float((d->skill*W(d->weapselect, delayreload)/5000.f)+(d->skill*W2(d->weapselect, delayattack, alt)/500.f)), 0.f, weaptype[d->weapselect].thrown[0] ? 0.25f : 1e16f),
                 offy = yaw-d->yaw, offp = pitch-d->pitch;
             if(offy > 180) offy -= 360;
@@ -394,14 +393,14 @@ namespace ai
     {
         if(!(AA(d->actortype, abilities)&(1<<A_A_MOVE)))
         {
-            b.acttype = enemy(d, b, pos, wander, closerangeweap(d->weapselect) ? 1 : 0, false, true) ? AI_A_PROTECT : AI_A_IDLE;
+            b.acttype = enemy(d, b, pos, wander, W2(d->weapselect, aidist, false) < CLOSEDIST ? 1 : 0, false, true) ? AI_A_PROTECT : AI_A_IDLE;
             return true;
         }
         if(!walk)
         {
             if(d->feetpos().squaredist(pos) <= guard*guard)
             {
-                b.acttype = enemy(d, b, pos, d->ai->views[2], closerangeweap(d->weapselect) ? 1 : 0, false, true) ? AI_A_PROTECT : AI_A_IDLE;
+                b.acttype = enemy(d, b, pos, d->ai->views[2], W2(d->weapselect, aidist, false) < CLOSEDIST ? 1 : 0, false, true) ? AI_A_PROTECT : AI_A_IDLE;
                 return true;
             }
             walk++;
@@ -592,7 +591,7 @@ namespace ai
             if(d->ai && (d->actortype >= A_ENEMY || (hitdealt(flags) && damage > 0) || d->ai->enemy < 0 || d->dominating.find(e))) // see if this ai is interested in a grudge
             {
                 aistate &b = d->ai->getstate();
-                violence(d, b, e, d->actortype != A_BOT || closerangeweap(d->weapselect) ? 1 : 0);
+                violence(d, b, e, d->actortype != A_BOT || W2(d->weapselect, aidist, false) < CLOSEDIST ? 1 : 0);
             }
             static vector<int> targets; // check if one of our ai is defending them
             targets.setsize(0);
@@ -602,7 +601,7 @@ namespace ai
                 loopv(targets) if((t = game::getclient(targets[i])) && t->ai && t->actortype == A_BOT && ((hitdealt(flags) && damage > 0) || t->ai->enemy < 0 || t->dominating.find(e)))
                 {
                     aistate &c = t->ai->getstate();
-                    violence(t, c, e, closerangeweap(d->weapselect) ? 1 : 0);
+                    violence(t, c, e, W2(d->weapselect, aidist, false) < CLOSEDIST ? 1 : 0);
                 }
             }
         }
@@ -735,9 +734,6 @@ namespace ai
                     if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON) return false;
                     int sweap = m_weapon(d->actortype, game::gamemode, game::mutators), attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap);
                     if(!isweap(attr) || !e.spawned() || !wantsweap(d, attr)) return false;
-                    //float guard = enttype[e.type].radius;
-                    //if(d->feetpos().squaredist(e.o) <= guard*guard)
-                    //    b.acttype = enemy(d, b, e.o, guard*4, closerangeweap(d->weapselect) ? 1 : 0, false) ? AI_A_PROTECT : AI_A_IDLE;
                     return makeroute(d, b, e.o);
                 }
                 break;
@@ -752,9 +748,6 @@ namespace ai
                     if(enttype[entities::ents[proj.id]->type].usetype != EU_ITEM || e.type != WEAPON) return false;
                     int sweap = m_weapon(d->actortype, game::gamemode, game::mutators), attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap);
                     if(!isweap(attr) || !wantsweap(d, attr)) return false;
-                    //float guard = enttype[e.type].radius;
-                    //if(d->feetpos().squaredist(e.o) <= guard*guard)
-                    //    b.acttype = enemy(d, b, e.o, guard*4, closerangeweap(d->weapselect) ? 1 : 0, false) ? AI_A_PROTECT : AI_A_IDLE;
                     return makeroute(d, b, proj.o);
                 }
                 break;
@@ -1062,13 +1055,13 @@ namespace ai
             {
                 if(targetable(d, f, true))
                 {
-                    if(!enemyok) violence(d, b, f, closerangeweap(d->weapselect) ? 1 : 0);
+                    if(!enemyok) violence(d, b, f, W2(d->weapselect, aidist, altfire(d, f)) < CLOSEDIST ? 1 : 0);
                     enemyok = true;
                     e = f;
                 }
                 else enemyok = false; // would hit non-targetable person
             }
-            else if((!enemyok || d->ai->dontmove) && target(d, b, closerangeweap(d->weapselect) ? 1 : 0, d->ai->dontmove))
+            else if((!enemyok || d->ai->dontmove) && target(d, b, 0, d->ai->dontmove))
                 enemyok = (e = game::getclient(d->ai->enemy)) != NULL;
         }
         if(enemyok)
@@ -1084,7 +1077,7 @@ namespace ai
             if(d->ai->dontmove || insight || hasseen || quick)
             {
                 frame *= insight || d->skill > 100 ? 1.5f : (hasseen || quick ? 1.25f : 1.f);
-                if(lockon(d, e, 16, closerangeweap(d->weapselect)))
+                if(lockon(d, e, CLOSEDIST, W2(d->weapselect, aidist, alt) < CLOSEDIST))
                 {
                     frame *= 2.f;
                     b.acttype = AI_A_LOCKON;
@@ -1373,7 +1366,7 @@ namespace ai
             if(d->state != CS_ALIVE || !game::allowmove(d)) d->stopmoving(true);
             else
             {
-                if(!request(d, b)) target(d, b, closerangeweap(d->weapselect) ? 1 : 0);
+                if(!request(d, b)) target(d, b, W2(d->weapselect, aidist, false) < CLOSEDIST ? 1 : 0);
                 weapons::shoot(d, d->ai->target);
             }
         }

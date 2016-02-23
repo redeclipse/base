@@ -32,7 +32,6 @@ struct bomberservmode : bomberstate, servmode
 
     void dodamage(clientinfo *m, clientinfo *v, int &damage, int &hurt, int &weap, int &flags, int &material, const ivec &hitpush, const ivec &hitvel, float dist)
     {
-        //if(closerangeweap(weap)) dropaffinity(m, m->o);
     }
 
     void spawned(clientinfo *ci)

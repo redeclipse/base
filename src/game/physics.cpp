@@ -737,7 +737,7 @@ namespace physics
                     if(!power) skew = impulsedash;
                     if(!dash && !melee) d->impulse[IM_JUMP] = lastmillis;
                 }
-                int cost = int(impulsecost*(melee ? impulsecostmeleescale : (dash ? impulsecostdashscale : impulsecostboostscale)));
+                int cost = int(impulsecost*(melee ? impulsecostmelee : (dash ? impulsecostdash : impulsecostboost)));
                 vec keepvel = vec(d->vel).add(d->falling);
                 float force = impulsevelocity(d, skew, cost, melee ? A_A_PARKOUR : (dash ? A_A_DASH : A_A_BOOST), melee ? impulsemeleeredir : (dash ? impulsedashredir : (moving ? impulseboostredir : impulsejumpredir)), keepvel);
                 if(force > 0)
@@ -780,7 +780,7 @@ namespace physics
         {
             if(d->action[AC_JUMP] && canimpulse(d, A_A_PARKOUR, true))
             {
-                int cost = int(impulsecost*impulsecostkickscale);
+                int cost = int(impulsecost*impulsecostkick);
                 vec keepvel = vec(d->vel).add(d->falling);
                 float mag = impulsevelocity(d, impulseparkourkick, cost, A_A_PARKOUR, impulseparkourkickredir, keepvel);
                 if(mag > 0)
@@ -895,7 +895,7 @@ namespace physics
                     }
                     if(!d->turnside && (parkour || vault) && iskick)
                     {
-                        int cost = int(impulsecost*(vault ? impulsecostvaultscale : impulsecostclimbscale));
+                        int cost = int(impulsecost*(vault ? impulsecostvault : impulsecostclimb));
                         vec keepvel = vec(d->vel).add(d->falling);
                         float mag = impulsevelocity(d, vault ? impulseparkourvault : impulseparkourclimb, cost, A_A_PARKOUR, vault ? impulseparkourvaultredir : impulseparkourclimbredir, keepvel);
                         if(mag > 0)
@@ -925,7 +925,7 @@ namespace physics
                         vecfromyawpitch(yaw, 0.f, 1, 0, rft);
                         if(!d->turnside)
                         {
-                            int cost = int(impulsecost*impulsecostparkourscale);
+                            int cost = int(impulsecost*impulsecostparkour);
                             vec keepvel = vec(d->vel).add(d->falling);
                             float mag = impulsevelocity(d, impulseparkour, cost, A_A_PARKOUR, impulseparkourredir, keepvel);
                             if(mag > 0)

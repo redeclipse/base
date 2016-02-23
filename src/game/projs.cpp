@@ -143,7 +143,7 @@ namespace projs
         float dmag = dir.magnitude();
         if(dmag > 1e-3f) dir.div(dmag);
         else dir = vec(0, 0, 1);
-        if(isweap(proj.weap) && !weaptype[proj.weap].traced && flags&HIT_PROJ && proj.weight != 0 && d->weight != 0)
+        if(isweap(proj.weap) && !(WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_HITSCAN) && flags&HIT_PROJ && proj.weight != 0 && d->weight != 0)
             vel = vec(proj.vel).mul(proj.weight).div(d->weight);
         if(proj.owner && proj.local)
         {
@@ -292,10 +292,10 @@ namespace projs
                     adddynlight(proj.o, expl*1.1f, FWCOL(P, partcol, proj), 250, 10);
                     break;
                 default:
-                    if(closerangeweap(proj.weap))
+                    if(WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_HITSCAN)
                     {
-                        part_flare(proj.o, proj.from, type == W_SWORD ? 750 : 100, type == W_SWORD ? PART_LIGHTNING_FLARE : PART_MUZZLE_FLARE, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*proj.curscale, 0.5f);
-                        if(type != W_SWORD) part_create(PART_PLASMA, 100, proj.o, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*proj.curscale, 0.25f);
+                        part_flare(proj.o, proj.from, type == W_SWORD ? 750 : 350, type == W_SWORD ? PART_LIGHTNING_FLARE : PART_MUZZLE_FLARE, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*proj.curscale, 0.5f);
+                        if(type != W_SWORD) part_create(PART_PLASMA, 300, proj.o, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*proj.curscale, 0.25f);
                     }
                     break;
             }
@@ -593,7 +593,7 @@ namespace projs
 
     void bounce(projent &proj, bool ricochet)
     {
-        if(!proj.limited && (proj.movement >= 1 || (proj.projtype == PRJ_SHOT && weaptype[proj.weap].traced)) && (!proj.lastbounce || lastmillis-proj.lastbounce >= 250)) switch(proj.projtype)
+        if(!proj.limited && (proj.movement >= 1 || (proj.projtype == PRJ_SHOT && WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_HITSCAN)) && (!proj.lastbounce || lastmillis-proj.lastbounce >= 250)) switch(proj.projtype)
         {
             case PRJ_SHOT:
             {
@@ -778,7 +778,7 @@ namespace projs
     {
         if(proj.projtype == PRJ_SHOT && !WK(proj.flags) && proj.owner && proj.owner->state == CS_ALIVE)
         {
-            if(weaptype[proj.weap].traced)
+            if(WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_HITSCAN)
             {
                 if(proj.weap == W_MELEE)
                 {
@@ -826,7 +826,7 @@ namespace projs
                 proj.extinguish = WF(WK(proj.flags), proj.weap, extinguish, WS(proj.flags))|4;
                 proj.interacts = WF(WK(proj.flags), proj.weap, interacts, WS(proj.flags));
                 proj.mdl = weaptype[proj.weap].proj;
-                proj.escaped = !proj.owner || proj.child || WK(proj.flags) || weaptype[proj.weap].traced;
+                proj.escaped = !proj.owner || proj.child || WK(proj.flags) || WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_HITSCAN;
                 updatetargets(proj, waited ? 1 : 0);
                 if(WF(WK(proj.flags), proj.weap, guided, WS(proj.flags)) && proj.owner)
                     findorientation(proj.owner->o, proj.owner->yaw, proj.owner->pitch, proj.dest);
@@ -1042,7 +1042,7 @@ namespace projs
         proj.hit = NULL;
         proj.hitflags = HITFLAG_NONE;
         proj.movement = 1;
-        if(proj.owner && (proj.projtype != PRJ_SHOT || (!proj.child && !WK(proj.flags) && !weaptype[proj.weap].traced)))
+        if(proj.owner && (proj.projtype != PRJ_SHOT || (!proj.child && !(WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_HITSCAN))))
         {
             vec eyedir = vec(proj.o).sub(proj.owner->o);
             float eyedist = eyedir.magnitude();
@@ -1057,7 +1057,7 @@ namespace projs
                 }
             }
         }
-        if(proj.projtype != PRJ_SHOT || !weaptype[proj.weap].traced)
+        if(proj.projtype != PRJ_SHOT || !(WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_HITSCAN))
         {
             vec dir = vec(proj.to).sub(proj.o);
             float maxdist = dir.magnitude();
@@ -1861,7 +1861,7 @@ namespace projs
             {
                 gameent *e = (gameent *)proj.owner;
                 vec keepvel = vec(e->vel).add(e->falling);
-                int cost = int(impulsecost*(d ? impulsecostgrabplayerscale : impulsecostgrabscale));
+                int cost = int(impulsecost*(d ? impulsecostgrabplayer : impulsecostgrab));
                 float mag = physics::impulsevelocity(e, d ? impulseparkourgrabplayer : impulseparkourgrab, cost, A_A_PARKOUR, d ? impulseparkourgrabplayerredir : impulseparkourgrabredir, keepvel);
                 if(mag > 0)
                 {
@@ -1894,7 +1894,7 @@ namespace projs
             bounce(proj, ricochet);
             if(ricochet)
             {
-                if(proj.projtype != PRJ_SHOT || proj.child || WK(proj.flags) || !weaptype[proj.weap].traced)
+                if(proj.projtype != PRJ_SHOT || proj.child || !(WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_HITSCAN))
                 {
                     reflect(proj, proj.norm);
                     proj.o.add(vec(proj.norm).mul(0.1f)); // offset from surface slightly to avoid initial collision
@@ -2280,7 +2280,7 @@ namespace projs
                 iter(proj);
                 if(proj.projtype == PRJ_SHOT || proj.projtype == PRJ_ENT || proj.projtype == PRJ_AFFINITY)
                 {
-                    if(proj.projtype == PRJ_SHOT && !WK(proj.flags) && weaptype[proj.weap].traced ? !raymove(proj) : !move(proj)) switch(proj.projtype)
+                    if(proj.projtype == PRJ_SHOT && WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_HITSCAN ? !raymove(proj) : !move(proj)) switch(proj.projtype)
                     {
                         case PRJ_ENT: case PRJ_AFFINITY:
                         {
@@ -2317,7 +2317,7 @@ namespace projs
             if(proj.local && proj.owner && proj.projtype == PRJ_SHOT)
             {
                 float expl = WX(WK(proj.flags), proj.weap, explode, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize);
-                if(!WK(proj.flags) && weaptype[proj.weap].traced) proj.o = proj.to;
+                if(WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_HITSCAN) proj.o = proj.to;
                 if(!proj.limited && proj.state != CS_DEAD)
                 {
                     if(!(proj.projcollide&DRILL_PLAYER)) proj.hit = NULL;

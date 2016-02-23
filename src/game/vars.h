@@ -462,15 +462,15 @@ GFVAR(IDF_GAMEMOD, impulsevaultmax, FVAR_NONZERO, 1.6f, FVAR_MAX); // maximum pe
 
 GVAR(IDF_GAMEMOD, impulsemeter, 1, 30000, VAR_MAX); // impulse dash length; timer
 GVAR(IDF_GAMEMOD, impulsecost, 1, 5000, VAR_MAX); // cost of impulse move
-GFVAR(IDF_GAMEMOD, impulsecostparkourscale, 0, 1, FVAR_MAX); // scale cost boost move
-GFVAR(IDF_GAMEMOD, impulsecostboostscale, 0, 1, FVAR_MAX); // scale cost boost move
-GFVAR(IDF_GAMEMOD, impulsecostdashscale, 0, 1, FVAR_MAX); // scale cost dash move
-GFVAR(IDF_GAMEMOD, impulsecostkickscale, 0, 1, FVAR_MAX); // scale cost vault move
-GFVAR(IDF_GAMEMOD, impulsecostmeleescale, 0, 1, FVAR_MAX); // scale cost melee move
-GFVAR(IDF_GAMEMOD, impulsecostclimbscale, 0, 1, FVAR_MAX); // scale cost climb move
-GFVAR(IDF_GAMEMOD, impulsecostvaultscale, 0, 1, FVAR_MAX); // scale cost vault move
-GFVAR(IDF_GAMEMOD, impulsecostgrabscale, 0, 0.5f, FVAR_MAX); // scale cost of grab move
-GFVAR(IDF_GAMEMOD, impulsecostgrabplayerscale, 0, 0.25f, FVAR_MAX); // scale cost of grab move
+GFVAR(IDF_GAMEMOD, impulsecostparkour, 0, 1, FVAR_MAX); // scale cost boost move
+GFVAR(IDF_GAMEMOD, impulsecostboost, 0, 1, FVAR_MAX); // scale cost boost move
+GFVAR(IDF_GAMEMOD, impulsecostdash, 0, 1, FVAR_MAX); // scale cost dash move
+GFVAR(IDF_GAMEMOD, impulsecostkick, 0, 1, FVAR_MAX); // scale cost vault move
+GFVAR(IDF_GAMEMOD, impulsecostmelee, 0, 1, FVAR_MAX); // scale cost melee move
+GFVAR(IDF_GAMEMOD, impulsecostclimb, 0, 1, FVAR_MAX); // scale cost climb move
+GFVAR(IDF_GAMEMOD, impulsecostvault, 0, 1, FVAR_MAX); // scale cost vault move
+GFVAR(IDF_GAMEMOD, impulsecostgrab, 0, 0.5f, FVAR_MAX); // scale cost of grab move
+GFVAR(IDF_GAMEMOD, impulsecostgrabplayer, 0, 0.25f, FVAR_MAX); // scale cost of grab move
 GVAR(IDF_GAMEMOD, impulsecostrelax, 0, A_A_IMRELAX, A_A_IMOFFSET); // whether the cost of an impulse move is unimportant
 GVAR(IDF_GAMEMOD, impulsecostscale, 0, 0, 1); // whether the cost scales depend on the amount the impulse scales
 

@@ -2149,7 +2149,6 @@ namespace server
             if(m_sweaps(gamemode, mutators)) weap = m_weapon(ci->actortype, gamemode, mutators);
             else weap = hasent && sents[ci->spawnpoint].attrs[6] > 0 ? sents[ci->spawnpoint].attrs[6]-1 : m_weapon(ci->actortype, gamemode, mutators);
             if(!m_insta(gamemode, mutators) && hasent && sents[ci->spawnpoint].attrs[7] > 0) health = max(sents[ci->spawnpoint].attrs[7], 1);
-            if(!isweap(weap) || (!(AA(ci->actortype, abilities)&(1<<A_A_MOVE)) && closerangeweap(weap))) weap = -1; // let spawnstate figure it out
         }
         int spawn = pickspawn(ci);
         ci->spawnstate(gamemode, mutators, weap, health);

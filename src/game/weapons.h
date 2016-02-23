@@ -6,7 +6,6 @@ enum
     W_MELEE = W_ALL, W_MAX, W_LOADOUT = W_ITEM-W_OFFSET // if you add to this at all, check all arrays with W_MAX
 };
 #define isweap(a)           (a >= 0 && a < W_MAX)
-#define closerangeweap(a)   (weaptype[a].melee || weaptype[a].traced)
 
 enum { W_F_NONE = 0, W_F_FORCED = 1<<0 };
 enum {
@@ -67,12 +66,12 @@ enum
     IMPACT_GEOM = 1<<3, IMPACT_PLAYER = 1<<4, IMPACT_SHOTS = 1<<5,
     BOUNCE_GEOM = 1<<6, BOUNCE_PLAYER = 1<<7, BOUNCE_SHOTS = 1<<8,
     DRILL_GEOM = 1<<9, DRILL_PLAYER = 1<<10, DRILL_SHOTS = 1<<11,
-    STICK_GEOM = 1<<12, STICK_PLAYER = 1<<13,
+    STICK_GEOM = 1<<12, STICK_PLAYER = 1<<13, COLLIDE_HITSCAN = 1<<14,
     COLLIDE_GEOM = IMPACT_GEOM|BOUNCE_GEOM,
     COLLIDE_PLAYER = IMPACT_PLAYER|BOUNCE_PLAYER,
     COLLIDE_SHOTS = IMPACT_SHOTS|BOUNCE_SHOTS,
     COLLIDE_DYNENT = COLLIDE_PLAYER|COLLIDE_SHOTS,
-    COLLIDE_ALL = COLLIDE_TRACE|COLLIDE_PROJ|COLLIDE_OWNER|IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|BOUNCE_GEOM|BOUNCE_PLAYER|BOUNCE_SHOTS|DRILL_GEOM|DRILL_PLAYER|DRILL_SHOTS|STICK_GEOM|STICK_PLAYER
+    COLLIDE_ALL = COLLIDE_TRACE|COLLIDE_PROJ|COLLIDE_OWNER|IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|BOUNCE_GEOM|BOUNCE_PLAYER|BOUNCE_SHOTS|DRILL_GEOM|DRILL_PLAYER|DRILL_SHOTS|STICK_GEOM|STICK_PLAYER|COLLIDE_HITSCAN
 };
 
 enum
@@ -180,9 +179,9 @@ WPFVARK(IDF_GAMEMOD,  blend, 0, 1,
     1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f
 );
 WPVARK(IDF_GAMEMOD,  collide, 0, COLLIDE_ALL,
-    IMPACT_GEOM|IMPACT_PLAYER|COLLIDE_TRACE,
+    IMPACT_GEOM|IMPACT_PLAYER|COLLIDE_TRACE|COLLIDE_HITSCAN,
     IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER|COLLIDE_TRACE,
-    BOUNCE_GEOM|IMPACT_PLAYER|COLLIDE_TRACE|IMPACT_SHOTS|DRILL_PLAYER,
+    BOUNCE_GEOM|IMPACT_PLAYER|COLLIDE_TRACE|IMPACT_SHOTS|COLLIDE_HITSCAN,
     BOUNCE_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_TRACE|COLLIDE_OWNER|DRILL_GEOM,
     BOUNCE_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_TRACE|COLLIDE_OWNER|DRILL_GEOM,
     BOUNCE_GEOM|IMPACT_PLAYER|COLLIDE_OWNER,
@@ -194,9 +193,9 @@ WPVARK(IDF_GAMEMOD,  collide, 0, COLLIDE_ALL,
     IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER|COLLIDE_PROJ,
     IMPACT_PLAYER|COLLIDE_TRACE,
 
-    IMPACT_GEOM|IMPACT_PLAYER|COLLIDE_TRACE,
+    IMPACT_GEOM|IMPACT_PLAYER|COLLIDE_TRACE|COLLIDE_HITSCAN,
     IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER|COLLIDE_TRACE,
-    BOUNCE_GEOM|IMPACT_PLAYER|COLLIDE_TRACE|IMPACT_SHOTS|DRILL_PLAYER,
+    BOUNCE_GEOM|IMPACT_PLAYER|COLLIDE_TRACE|IMPACT_SHOTS|COLLIDE_HITSCAN,
     IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_TRACE|COLLIDE_OWNER,
     IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_TRACE|COLLIDE_OWNER|STICK_GEOM|STICK_PLAYER,
     BOUNCE_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER,
@@ -210,7 +209,7 @@ WPVARK(IDF_GAMEMOD,  collide, 0, COLLIDE_ALL,
 
     IMPACT_PLAYER|COLLIDE_TRACE|COLLIDE_OWNER,
     IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_TRACE|COLLIDE_OWNER,
-    BOUNCE_GEOM|IMPACT_PLAYER|COLLIDE_TRACE|IMPACT_SHOTS|DRILL_PLAYER|COLLIDE_OWNER,
+    BOUNCE_GEOM|IMPACT_PLAYER|COLLIDE_TRACE|IMPACT_SHOTS|COLLIDE_OWNER,
     BOUNCE_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_TRACE|COLLIDE_OWNER,
     BOUNCE_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_TRACE|COLLIDE_OWNER,
     BOUNCE_GEOM|IMPACT_PLAYER|COLLIDE_OWNER,
@@ -224,7 +223,7 @@ WPVARK(IDF_GAMEMOD,  collide, 0, COLLIDE_ALL,
 
     IMPACT_PLAYER|COLLIDE_TRACE|COLLIDE_OWNER,
     IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_TRACE|COLLIDE_OWNER,
-    BOUNCE_GEOM|IMPACT_PLAYER|COLLIDE_TRACE|IMPACT_SHOTS|DRILL_PLAYER|COLLIDE_OWNER,
+    BOUNCE_GEOM|IMPACT_PLAYER|COLLIDE_TRACE|IMPACT_SHOTS|COLLIDE_OWNER,
     BOUNCE_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_TRACE|COLLIDE_OWNER,
     BOUNCE_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_TRACE|COLLIDE_OWNER,
     BOUNCE_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|COLLIDE_OWNER,
@@ -855,7 +854,7 @@ WPFVARK(IDF_GAMEMOD,  weight, FVAR_MIN, FVAR_MAX,
 struct weaptypes
 {
     int     anim,               sound,      espeed;
-    bool    melee,      traced,     muzzle,     eject,      tape;
+    bool    muzzle,     eject,      tape;
     float   thrown[2],              halo,       esize;
     const char *name,   *item,                      *vwep, *hwep,                     *proj,                  *eprj;
 };
@@ -864,79 +863,79 @@ weaptypes weaptype[] =
 {
     {
             ANIM_CLAW,         S_CLAW,    1,
-            true,       true,       true,       false,      true,
+            true,       false,      true,
             { 0, 0 },               14,         0,
             "claw", "weapons/claw/item", "weapons/claw/vwep", "weapons/claw/hwep", "", ""
     },
     {
             ANIM_PISTOL,        S_PISTOL,   10,
-            false,      false,      true,       true,       false,
+            true,       true,       false,
             { 0, 0 },               8,          0.35f,
             "pistol", "weapons/pistol/item", "weapons/pistol/vwep", "weapons/pistol/hwep", "weapons/pistol/proj", "projectiles/cartridge"
     },
     {
             ANIM_SWORD,         S_SWORD,    1,
-            true,       true,       true,       false,      true,
+            true,       false,      true,
             { 0, 0 },               14,         0,
             "sword", "weapons/sword/item", "weapons/sword/vwep", "weapons/sword/hwep", "", ""
     },
     {
             ANIM_SHOTGUN,       S_SHOTGUN,  10,
-            false,      false,      true,       true,       false,
+            true,       true,       false,
             { 0, 0 },               12,         0.45f,
             "shotgun", "weapons/shotgun/item", "weapons/shotgun/vwep", "weapons/shotgun/hwep", "", "projectiles/shell"
     },
     {
             ANIM_SMG,           S_SMG,      20,
-            false,      false,      true,       true,       false,
+            true,       true,       false,
             { 0, 0 },               10,         0.35f,
             "smg", "weapons/smg/item", "weapons/smg/vwep", "weapons/smg/hwep", "", "projectiles/cartridge"
     },
     {
             ANIM_FLAMER,        S_FLAMER,   1,
-            false,      false,      true,       true,       false,
+            true,       true,       false,
             { 0, 0 },               12,         0,
             "flamer", "weapons/flamer/item", "weapons/flamer/vwep", "weapons/flamer/hwep", "", ""
     },
     {
             ANIM_PLASMA,        S_PLASMA,   1,
-            false,      false,      true,       false,      false,
+            true,       false,      false,
             { 0, 0 },               8,         0,
             "plasma", "weapons/plasma/item", "weapons/plasma/vwep", "weapons/plasma/hwep", "", ""
     },
     {
             ANIM_ZAPPER,        S_ZAPPER,   1,
-            false,      false,      true,       false,      true,
+            true,       false,      true,
             { 0, 0 },               10,         0,
             "zapper", "weapons/zapper/item", "weapons/zapper/vwep", "weapons/zapper/hwep", "", ""
     },
     {
             ANIM_RIFLE,         S_RIFLE,    1,
-            false,      false,      true,       false,      false,
+            true,       false,      false,
             { 0, 0 },               12,         0,
             "rifle", "weapons/rifle/item", "weapons/rifle/vwep", "weapons/rifle/hwep", "", ""
     },
     {
             ANIM_GRENADE,       S_GRENADE,  1,
-            false,      false,      false,      false,      false,
+            false,      false,      false,
             { 0.0625f, 0.0625f },   6,          0,
             "grenade", "weapons/grenade/item", "weapons/grenade/vwep", "weapons/grenade/hwep", "weapons/grenade/proj", ""
     },
     {
             ANIM_MINE,          S_MINE,     1,
-            false,      false,      false,      false,      false,
+            false,      false,      false,
             { 0.0625f, 0.0625f },   6,          0,
             "mine", "weapons/mine/item", "weapons/mine/vwep", "weapons/mine/hwep", "weapons/mine/proj", ""
     },
     {
             ANIM_ROCKET,        S_ROCKET,   1,
-            false,      false,      true,      false,       false,
+            true,      false,       false,
             { 0, 0 },               10,          0,
             "rocket", "weapons/rocket/item", "weapons/rocket/vwep", "weapons/rocket/hwep", "weapons/rocket/proj",  ""
     },
     {
             0,                  S_MELEE,    1,
-            true,       true,       false,      false,      false,
+            false,      false,      false,
             { 0, 0 },               1,          0,
             "melee",    "", "", "", "", ""
     }
