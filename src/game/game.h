@@ -753,17 +753,6 @@ struct clientstate
         entid[attr] = id;
     }
 
-    int zooming()
-    {
-        if(isweap(weapselect) && W2(weapselect, cooked, true)&W_C_ZOOM)
-        {
-            if(weapstate[weapselect] == W_S_ZOOM) return weaptime[weapselect];
-            if(W2(weapselect, cooked, true)&W_C_KEEP && prevstate[weapselect] == W_S_ZOOM)
-                return prevtime[weapselect];
-        }
-        return 0;
-    }
-
     void resetresidual(int n = -1)
     {
         if(n >= 0 && n < WR_MAX) lastres[n] = lastrestime[n] = 0;
@@ -1424,6 +1413,17 @@ struct gameent : dynent, clientstate
             }
         }
         return false;
+    }
+
+    int zooming()
+    {
+        if(isweap(weapselect) && W2(weapselect, cooked, true)&W_C_ZOOM)
+        {
+            if(weapstate[weapselect] == W_S_ZOOM) return weaptime[weapselect];
+            if(W2(weapselect, cooked, true)&W_C_KEEP && prevstate[weapselect] == W_S_ZOOM && action[AC_SECONDARY])
+                return prevtime[weapselect];
+        }
+        return 0;
     }
 };
 

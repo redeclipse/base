@@ -2058,7 +2058,7 @@ namespace client
                 {
                     int lcn = getint(p), st = getint(p);
                     gameent *t = game::getclient(lcn);
-                    bool proceed = t && (st == SPHY_EXTINGUISH || st == SPHY_BUFF || (t != game::player1 && !t->ai));
+                    bool proceed = t && (st >= SPHY_SERVER || (t != game::player1 && !t->ai));
                     switch(st)
                     {
                         case SPHY_JUMP:

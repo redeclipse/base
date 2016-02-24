@@ -331,12 +331,12 @@ namespace weapons
         int rays = W2(weap, rays, secondary);
         if(rays > 1 && W2(weap, cooked, secondary)&W_C_RAYS && W2(weap, cooktime, secondary) && scale < 1)
             rays = max(1, int(ceilf(rays*scale)));
-        if(WF(false, weap, collide, secondary)&COLLIDE_HITSCAN)
+        if(weap == W_MELEE || WF(false, weap, collide, secondary)&COLLIDE_HITSCAN)
         {
             if(weap == W_MELEE)
             {
-                from = d->footpos(0);
-                to = vec(from).add(vec(d->yaw*RAD, d->pitch*RAD).mul(d->radius*2));
+                from = d->center();
+                to = vec(from).add(vec(d->yaw*RAD, d->pitch*RAD).mul(d->radius*2.f));
             }
             else
             {

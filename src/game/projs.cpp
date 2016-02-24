@@ -778,14 +778,14 @@ namespace projs
     {
         if(proj.projtype == PRJ_SHOT && !WK(proj.flags) && proj.owner && proj.owner->state == CS_ALIVE)
         {
-            if(WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_HITSCAN)
+            if(proj.weap == W_MELEE || WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_HITSCAN)
             {
                 if(proj.weap == W_MELEE)
                 {
-                    proj.from = proj.to = proj.owner->feetpos();
+                    proj.from = proj.to = proj.owner->center();
                     if(proj.target && proj.target->state == CS_ALIVE)
-                        proj.to.add(vec(proj.target->center()).sub(proj.from).normalize().mul(proj.owner->radius*2));
-                    else proj.to.add(vec(proj.owner->yaw*RAD, proj.owner->pitch*RAD).mul(proj.owner->radius*2));
+                        proj.to.add(vec(proj.target->center()).sub(proj.from).normalize().mul(proj.owner->radius*2.f));
+                    else proj.to.add(vec(proj.owner->yaw*RAD, proj.owner->pitch*RAD).mul(proj.owner->radius*2.f));
                 }
                 else
                 {
@@ -826,7 +826,7 @@ namespace projs
                 proj.extinguish = WF(WK(proj.flags), proj.weap, extinguish, WS(proj.flags))|4;
                 proj.interacts = WF(WK(proj.flags), proj.weap, interacts, WS(proj.flags));
                 proj.mdl = weaptype[proj.weap].proj;
-                proj.escaped = !proj.owner || proj.child || WK(proj.flags) || WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_HITSCAN;
+                proj.escaped = !proj.owner || proj.child || WK(proj.flags) || WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_HITSCAN || proj.weap == W_MELEE;
                 updatetargets(proj, waited ? 1 : 0);
                 if(WF(WK(proj.flags), proj.weap, guided, WS(proj.flags)) && proj.owner)
                     findorientation(proj.owner->o, proj.owner->yaw, proj.owner->pitch, proj.dest);

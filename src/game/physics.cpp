@@ -841,7 +841,7 @@ namespace physics
                     loopv(projs::projs)
                     {
                         projent *p = projs::projs[i];
-                        if(p->owner != d || !p->ready() || p->projtype != PRJ_SHOT || p->weap != W_MELEE) continue;
+                        if(p->owner != d || p->projtype != PRJ_SHOT || p->weap != W_MELEE) continue;
                         p->target = (gameent *)hitplayer;
                     }
                 }

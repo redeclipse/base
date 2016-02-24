@@ -261,7 +261,7 @@ namespace server
 
     struct servstate : baseent, clientstate
     {
-        int score, spree, rewards[2], shotdamage, damage, lasttimewielded, lasttimeloadout[W_ALL], lasttimeplayed, timeplayed, aireinit, lastboost,
+        int score, spree, rewards[2], shotdamage, damage, lasttimewielded, lasttimeloadout[W_ALL], lasttimeplayed, timeplayed, aireinit,
             lastresowner[WR_MAX], lasttimealive, timealive, lasttimeactive, timeactive, lastresweapon[WR_MAX], lasthurt;
         bool lastresalt[W_MAX];
         projectilestate dropped, weapshots[W_MAX][2];
@@ -317,7 +317,7 @@ namespace server
         void respawn(int millis)
         {
             baseent::reset();
-            lastboost = rewards[1] = lasthurt = 0;
+            rewards[1] = lasthurt = 0;
             resetresidualowner();
             clientstate::respawn(millis);
         }
@@ -5793,6 +5793,12 @@ namespace server
                     bool proceed = hasclient(cp, ci), qmsg = false;
                     switch(idx)
                     {
+                        case SPHY_BOOST: case SPHY_DASH: case SPHY_MELEE: case SPHY_KICK: case SPHY_VAULT: case SPHY_GRAB: case SPHY_SKATE:
+                        {
+                            if(!proceed || cp->state != CS_ALIVE) break;
+                            qmsg = true;
+                            break;
+                        }
                         case SPHY_COOK:
                         {
                             int wstate = getint(p), wlen = getint(p), wtime = getint(p);
@@ -5842,20 +5848,7 @@ namespace server
                                 cp->lastres[WR_BURN] = cp->lastrestime[WR_BURN] = 0;
                                 sendf(-1, 1, "ri3", N_SPHY, cp->clientnum, SPHY_EXTINGUISH);
                             }
-                            break;
-                        }
-                        case SPHY_BOOST: case SPHY_DASH:
-                        {
-                            if(!proceed || cp->state != CS_ALIVE) break;
-                            if(cp->lastboost && gamemillis-cp->lastboost <= G(impulseboostdelay)) break;
-                            cp->lastboost = gamemillis;
-                            qmsg = true;
-                            break;
-                        }
-                        case SPHY_JUMP: case SPHY_MELEE: case SPHY_KICK: case SPHY_VAULT: case SPHY_GRAB: case SPHY_SKATE:
-                        {
-                            if(!proceed || cp->state != CS_ALIVE) break;
-                            qmsg = true; break;
+                            break; // does not get sent to clients
                         }
                         default: break;
                     }
