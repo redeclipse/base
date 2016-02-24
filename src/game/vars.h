@@ -243,7 +243,7 @@ GFVAR(IDF_GAMEMOD, itemrepelspeed, 0, 25, FVAR_MAX);
 
 GVAR(IDF_GAMEMOD, timelimit, 0, 10, VAR_MAX); // maximum time a match may last, 0 = forever
 GVAR(IDF_GAMEMOD, overtimeallow, 0, 1, 1); // if scores are equal, go into overtime
-GVAR(IDF_GAMEMOD, overtimelimit, 0, 3, VAR_MAX); // maximum time overtime may last, 0 = forever
+GVAR(IDF_GAMEMOD, overtimelimit, 0, 5, VAR_MAX); // maximum time overtime may last, 0 = forever
 GVAR(IDF_GAMEMOD, intermlimit, 0, 10000, VAR_MAX); // .. before vote menu comes up
 GVAR(IDF_GAMEMOD, votelimit, 0, 40000, VAR_MAX); // .. before vote passes by default
 
