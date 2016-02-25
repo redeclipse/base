@@ -62,7 +62,7 @@ struct captureservmode : capturestate, servmode
 
     void moved(clientinfo *ci, const vec &oldpos, const vec &newpos)
     {
-        if(!canplay(hasflaginfo) || !(AA(ci->actortype, abilities)&(1<<A_A_AFFINITY))) return;
+        if(!canplay(hasflaginfo) || !(AA(ci->actortype, abilities)&(1<<A_A_AFFINITY)) || ci->state != CS_ALIVE) return;
         if(ci->floorpos != vec(-1, -1, -1))
             loopv(flags) if(flags[i].owner == ci->clientnum)
                 (flags[i].floorpos = ci->floorpos).z += (enttype[AFFINITY].radius/2)+1;
