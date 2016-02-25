@@ -3847,7 +3847,7 @@ namespace server
         putint(p, mutators);
         if(ci && !ci->online && m_edit(gamemode))
         {
-            if(numclients(ci->clientnum) >= 2)
+            if(numclients(ci->clientnum))
             {
                 if(mapsending < 0) resetmapdata();
                 getmap(ci);
@@ -3949,14 +3949,6 @@ namespace server
             }
         }
 
-        if(*G(servermotd))
-        {
-            putint(p, N_ANNOUNCE);
-            putint(p, S_GUIACT);
-            putint(p, CON_CHAT);
-            sendstring(G(servermotd), p);
-        }
-
         if(m_team(gamemode, mutators)) loopv(scores)
         {
             score &cs = scores[i];
@@ -3967,6 +3959,15 @@ namespace server
 
         if(smode) smode->initclient(ci, p, true);
         mutate(smuts, mut->initclient(ci, p, true));
+
+        if(!ci->online && *G(servermotd))
+        {
+            putint(p, N_ANNOUNCE);
+            putint(p, S_GUIACT);
+            putint(p, CON_CHAT);
+            sendstring(G(servermotd), p);
+        }
+
         if(ci) ci->online = true;
         return 1;
     }
