@@ -602,13 +602,8 @@ namespace bomber
             return;
         }
         if(!f.droptime && m_bb_attack(game::gamemode, game::mutators) && d->team == T_ALPHA && bomberattackreset) return;
-        if(f.pickuptime && lastmillis-f.pickuptime <= 1000) return;
         if(f.lastowner == d && f.droptime && lastmillis-f.droptime <= bomberpickupdelay) return;
-        if(o.dist(f.pos()) <= enttype[AFFINITY].radius/2)
-        {
-            client::addmsg(N_TAKEAFFIN, "ri2", d->clientnum, i);
-            f.pickuptime = lastmillis;
-        }
+        if(o.dist(f.pos()) <= enttype[AFFINITY].radius/2) client::addmsg(N_TAKEAFFIN, "ri2", d->clientnum, i);
     }
 
     void update()

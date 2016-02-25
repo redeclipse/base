@@ -19,7 +19,7 @@ struct capturestate
 #else
         gameent *owner, *lastowner;
         projent *proj;
-        int displaytime, pickuptime, movetime, viewtime, interptime;
+        int displaytime, movetime, viewtime, interptime;
         vec viewpos, interppos, render, above;
         entitylight light, baselight;
 #endif
@@ -37,7 +37,7 @@ struct capturestate
 #else
             owner = lastowner = NULL;
             proj = NULL;
-            displaytime = pickuptime = movetime = viewtime = interptime = 0;
+            displaytime = movetime = viewtime = interptime = 0;
 #endif
             team = T_NEUTRAL;
             yaw = pitch = taketime = droptime = dropoffset = 0;
@@ -142,7 +142,7 @@ struct capturestate
         f.votes.shrink(0);
         f.lastowner = owner;
 #else
-        f.pickuptime = f.movetime = 0;
+        f.movetime = 0;
         (f.lastowner = owner)->addicon(eventicon::AFFINITY, t, game::eventiconfade, f.team);
         if(f.proj)
         {
@@ -168,7 +168,7 @@ struct capturestate
         f.owner = -1;
         f.votes.shrink(0);
 #else
-        f.pickuptime =  f.movetime = 0;
+        f.movetime = 0;
         f.owner = NULL;
         destroy(i);
         create(i);
@@ -187,7 +187,7 @@ struct capturestate
         f.votes.shrink(0);
         f.floorpos = vec(-1, -1, -1);
 #else
-        f.pickuptime = f.movetime = 0;
+        f.movetime = 0;
         f.owner = NULL;
         destroy(i);
 #endif

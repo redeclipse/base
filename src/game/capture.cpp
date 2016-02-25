@@ -27,7 +27,6 @@ namespace capture
         if(!st.flags.inrange(n)) return false;
         capturestate::flag &f = st.flags[n];
         if(f.owner) return false;
-        if(f.pickuptime && lastmillis-f.pickuptime <= 1000) return false;
         if(f.team == d->team)
         {
             if(m_ctf_defend(game::gamemode, game::mutators)) return false;
@@ -37,8 +36,7 @@ namespace capture
                 if(!check && !d->action[AC_AFFINITY]) return false;
             }
         }
-        if(f.lastowner == d && f.droptime && lastmillis-f.droptime <= capturepickupdelay)
-            return false;
+        if(f.lastowner == d && f.droptime && lastmillis-f.droptime <= capturepickupdelay) return false;
         if((f.pos()).dist(d->feetpos()) > enttype[AFFINITY].radius*2/3) return false;
         return true;
     }
@@ -540,7 +538,6 @@ namespace capture
         if(canpickup(d, i))
         {
             client::addmsg(N_TAKEAFFIN, "ri2", d->clientnum, i);
-            st.flags[i].pickuptime = lastmillis;
             d->action[AC_AFFINITY] = false;
         }
     }
