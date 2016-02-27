@@ -271,7 +271,7 @@ struct gui : guient
     {
         if(guilayoutpass)
         {
-            if(curlist>=0)
+            if(curlist >= 0)
             {
                 lists[curlist].w = xsize;
                 lists[curlist].h = ysize;
@@ -296,7 +296,8 @@ struct gui : guient
             l.curspring = 0;
             if(l.springs > 0)
             {
-                if(ishorizontal()) xsize = l.w; else ysize = l.h;
+                if(ishorizontal()) xsize = l.w;
+                else ysize = l.h;
             }
             else
             {
@@ -328,14 +329,16 @@ struct gui : guient
         if(lists.inrange(curlist))
         {
             int w = xsize, h = ysize;
-            if(ishorizontal()) cury -= h; else curx -= w;
+            if(ishorizontal()) cury -= h;
+            else curx -= w;
             list &p = lists[curlist];
             xsize = p.w;
             ysize = p.h;
             if(!guilayoutpass && p.springs > 0)
             {
                 list &s = lists[p.parent];
-                if(ishorizontal()) xsize = s.w; else ysize = s.h;
+                if(ishorizontal()) xsize = s.w;
+                else ysize = s.h;
             }
             return layout(w, h);
         }
@@ -429,7 +432,7 @@ struct gui : guient
         if(mergelist >= 0 && curdepth >= mergedepth && lists[mergelist].mouse[0]) return true;
         if(ishorizontal()) h = ysize;
         else w = xsize;
-        return hitx>=x && hity>=y && hitx<x+w && hity<y+h;
+        return hitx >= x && hity >= y && hitx < x+w && hity < y+h;
     }
 
     int image(Texture *t, float scale, bool overlaid, int icolor)
@@ -442,7 +445,7 @@ struct gui : guient
 
     int texture(VSlot &vslot, float scale, bool overlaid)
     {
-        if(scale==0) scale = 1;
+        if(scale == 0) scale = 1;
         int size = (int)(scale*2*FONTH)-guishadow;
         if(visible()) previewslot(vslot, overlaid, curx, cury, size, ishit(size+guishadow, size+guishadow));
         return layout(size+guishadow, size+guishadow);
@@ -450,7 +453,7 @@ struct gui : guient
 
     int playerpreview(int model, int color, int team, int weap, const char *vanity, float sizescale, bool overlaid, float scale, float blend)
     {
-        if(sizescale==0) sizescale = 1;
+        if(sizescale == 0) sizescale = 1;
         int size = (int)(sizescale*2*FONTH)-guishadow;
         if(visible())
         {
@@ -488,7 +491,7 @@ struct gui : guient
 
     int modelpreview(const char *name, int anim, float sizescale, bool overlaid, float scale, float blend)
     {
-        if(sizescale==0) sizescale = 1;
+        if(sizescale == 0) sizescale = 1;
         int size = (int)(sizescale*2*FONTH)-guishadow;
         if(visible())
         {
