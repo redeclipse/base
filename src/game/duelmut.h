@@ -221,15 +221,12 @@ struct duelservmode : servmode
 
     void endffaround(vector<clientinfo *> alive)
     {
-        loopv(clients)
+        loopv(clients) if(playing.find(clients[i]) >= 0)
         {
-            if(playing.find(clients[i]) >= 0)
-            {
-                ffaroundstats rs;
-                rs.round = duelround;
-                rs.winner = (clients[i] == alive[0]);
-                clients[i]->ffarounds.add(rs);
-            }
+            ffaroundstats rs;
+            rs.round = duelround;
+            rs.winner = !alive.empty() && clients[i] == alive[0];
+            clients[i]->ffarounds.add(rs);
         }
     }
 

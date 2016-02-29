@@ -3961,7 +3961,7 @@ namespace server
         if(smode) smode->initclient(ci, p, true);
         mutate(smuts, mut->initclient(ci, p, true));
 
-        if(!ci->online && *G(servermotd))
+        if(ci && !ci->online && *G(servermotd))
         {
             putint(p, N_ANNOUNCE);
             putint(p, S_GUIACT);
