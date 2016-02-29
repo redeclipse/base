@@ -301,6 +301,40 @@ extern mutstypes mutstype[];
 #define w_attr(a,b,t,w1,w2) (t != WEAPON || m_edit(a) ? w1 : (w1 != w2 ? (!m_classic(a, b) ? (w1 >= W_ITEM ? w1 : -1) : (w1 >= W_OFFSET && w1 < W_ALL ? w1 : -1)) : (w1 != W_GRENADE ? W_GRENADE : W_MINE)))
 #define w_spawn(weap)       int(ceilf(G(itemspawntime)*W(weap, frequency)))
 
+#define m_mmvar(a,b,c)      (m_dm(a) ? \
+                                (m_duel(a, b) ? G(c##duel) : \
+                                    (m_survivor(a, b) ? G(c##survivor) : \
+                                        (m_dm_gladiator(a, b) ? G(c##gladiator) : G(c)) \
+                                    ) \
+                                ) : \
+                                (m_capture(a) ? G(c##capture) : \
+                                    (m_defend(a) ? \
+                                        (m_dac_king(a, b) ? G(c##defendking) : G(c##defend)) : \
+                                        (m_bomber(a) ? (m_bb_hold(a, b) ? G(c##bomberhold) : G(c##bomber)) : \
+                                            (m_race(a) ? \
+                                                (m_ra_timed(a, b) ? G(c##racetimed) : \
+                                                    (m_ra_gauntlet(a, b) ? G(c##racegauntlet) : G(c##race)) \
+                                                ) : 0 \
+                                            ) \
+                                        ) \
+                                    ) \
+                                ) \
+                            )
+
+#define MMVAR(f,a,b,c,w01,w02,w03,w04,w05,w06,w07,w08,w09,w10,w11,w12) \
+    GVAR(f, a, b, w01, c); \
+    GVAR(f, a##duel, b, w02, c); \
+    GVAR(f, a##survivor, b, w03, c); \
+    GVAR(f, a##gladiator, b, w04, c); \
+    GVAR(f, a##capture, b, w05, c); \
+    GVAR(f, a##defend, b, w06, c); \
+    GVAR(f, a##defendking, b, w07, c); \
+    GVAR(f, a##bomber, b, w08, c); \
+    GVAR(f, a##bomberhold, b, w09, c); \
+    GVAR(f, a##race, b, w10, c); \
+    GVAR(f, a##racetimed, b, w11, c); \
+    GVAR(f, a##racegauntlet, b, w12, c);
+
 #define DSG(a,b,x)          (m_duel(a, b) ? G(duel##x) : G(survivor##x))
 #define GL(a,b,x)           (m_dm_gladiator(a, b) ? gladiator##x : x)
 

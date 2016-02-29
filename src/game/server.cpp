@@ -1520,7 +1520,7 @@ namespace server
     {
         if(smode && smode->wantsovertime()) return true;
         mutate(smuts, if(mut->wantsovertime()) return true);
-        if(!G(overtimeallow) || m_balance(gamemode, mutators, teamspawns)) return false;
+        if(!m_mmvar(gamemode, mutators, overtimeallow) || m_balance(gamemode, mutators, teamspawns)) return false;
         bool result = false;
         if(m_team(gamemode, mutators))
         {
@@ -1646,7 +1646,7 @@ namespace server
     {
         if(!m_play(gamemode)) return;
         bool wasinovertime = gamestate == G_S_OVERTIME;
-        int limit = wasinovertime ? G(overtimelimit) : G(timelimit), numt = numteams(gamemode, mutators);
+        int limit = wasinovertime ? m_mmvar(gamemode, mutators, overtimelimit) : m_mmvar(gamemode, mutators, timelimit), numt = numteams(gamemode, mutators);
         bool newlimit = limit != oldtimelimit, newtimer = gamemillis-curtime>0 && gamemillis/1000!=(gamemillis-curtime)/1000,
              iterate = newlimit || newtimer;
         if(iterate)
@@ -1670,7 +1670,7 @@ namespace server
                 {
                     if(gamestate != G_S_OVERTIME && wantsovertime())
                     {
-                        limit = oldtimelimit = G(overtimelimit);
+                        limit = oldtimelimit = m_mmvar(gamemode, mutators, overtimelimit);
                         if(limit)
                         {
                             timeremaining = limit*60;
@@ -3327,9 +3327,10 @@ namespace server
         curbalance = nextbalance = lastteambalance = nextteambalance = gamemillis = 0;
         gamestate = G_S_WAITING;
         gamewaittime = totalmillis+max(m_play(gamemode) ? G(waitforplayerload) : 1, 1);
-        oldtimelimit = m_play(gamemode) && G(timelimit) ? G(timelimit) : -1;
-        timeremaining = m_play(gamemode) && G(timelimit) ? G(timelimit)*60 : -1;
-        gamelimit = m_play(gamemode) && G(timelimit) ? timeremaining*1000 : 0;
+        bool hastime = m_play(gamemode) && m_mmvar(gamemode, mutators, timelimit);
+        oldtimelimit = hastime ? m_mmvar(gamemode, mutators, timelimit) : -1;
+        timeremaining = hastime ? m_mmvar(gamemode, mutators, timelimit)*60 : -1;
+        gamelimit = hastime ? timeremaining*1000 : 0;
         loopv(savedscores) savedscores[i].mapchange();
         loopv(savedstatsscores) savedstatsscores[i].mapchange();
         setuptriggers(false);

@@ -1401,6 +1401,7 @@ namespace ai
     {
         float guessradius = max(actor[A_PLAYER].xradius, actor[A_PLAYER].yradius);
         obstacles.clear();
+        obstacles.add(wpavoid);
         int numdyns = game::numdynents();
         loopi(numdyns)
         {
@@ -1409,14 +1410,13 @@ namespace ai
             if(d->state != CS_ALIVE || !physics::issolid(d)) continue;
             obstacles.avoidnear(d, d->o.z + d->aboveeye + 1, d->feetpos(), guessradius + d->radius + 1);
         }
-        obstacles.add(wpavoid);
         loopv(projs::projs)
         {
             projent *p = projs::projs[i];
             if(p && p->state == CS_ALIVE && p->projtype == PRJ_SHOT)
             {
                 float expl = WX(WK(p->flags), p->weap, explode, WS(p->flags), game::gamemode, game::mutators, p->curscale);
-                if(expl > 0) obstacles.avoidnear(p, p->o.z + expl, p->o, guessradius + expl + 1);
+                if(expl > 0) obstacles.avoidnear(p, p->o.z + expl + 1, p->o, guessradius + expl + 1);
             }
         }
         loopi(entities::lastent(MAPMODEL)) if(entities::ents[i]->type == MAPMODEL && !entities::ents[i]->spawned())
@@ -1442,7 +1442,7 @@ namespace ai
                 radius.mul(e.attrs[5]/100.f);
             }
             if(!mmi->m->ellipsecollide) rotatebb(center, radius, int(e.attrs[1]), int(e.attrs[2]));
-            obstacles.avoidnear(NULL, e.o.z + radius.z, e.o, max(radius.x, max(radius.y, radius.z)) + WAYPOINTRADIUS);
+            obstacles.avoidnear(NULL, e.o.z + radius.z + 1, e.o, max(radius.x, max(radius.y, radius.z)) + WAYPOINTRADIUS + 1);
         }
     }
 
