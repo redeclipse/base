@@ -464,7 +464,7 @@ WPFVARK(IDF_GAMEMOD,  hitpush, FVAR_MIN, FVAR_MAX,
     100.0f,     35.0f,      50.0f,      20.0f,      50.0f,      5.0f,       20.0f,      20.0f,      20.0f,      125.0f,     0.0f,       250.0f,     100.0f,
     200.0f,     35.0f,      100.0f,     25.0f,      15.0f,      50.0f,     -75.0f,      20.0f,      20.0f,      125.0f,     0.0f,       250.0f,     200.0f
 );
-WPFVARK(IDF_GAMEMOD,  hitvel, 0, FVAR_MAX,
+WPFVARK(IDF_GAMEMOD,  hitvel, FVAR_MIN, FVAR_MAX,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,
