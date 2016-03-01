@@ -273,6 +273,14 @@ namespace game
     VAR(IDF_PERSIST, playereffecttone, -1, CTONE_TEAMED, CTONE_MAX-1);
     VAR(IDF_PERSIST, playerlighttone, -1, CTONE_TEAMED, CTONE_MAX-1);
     VAR(IDF_PERSIST, playerteamtone, -1, CTONE_TEAM, CTONE_MAX-1);
+
+    FVAR(IDF_PERSIST, playerovertonelevel, 0.f, 1.f, 10.f);
+    FVAR(IDF_PERSIST, playerundertonelevel, 0.f, 1.f, 10.f);
+    FVAR(IDF_PERSIST, playerdisplaytonelevel, 0.f, 1.f, 10.f);
+    FVAR(IDF_PERSIST, playereffecttonelevel, 0.f, 1.f, 10.f);
+    FVAR(IDF_PERSIST, playerlighttonelevel, 0.f, 1.f, 10.f);
+    FVAR(IDF_PERSIST, playerteamtonelevel, 0.f, 1.f, 10.f);
+
     FVAR(IDF_PERSIST, playerlightmix, 0, 0.4f, 100);
     FVAR(IDF_PERSIST, playertonemix, 0, 0.25f, 1);
     FVAR(IDF_PERSIST, playerblend, 0, 1, 1);
@@ -283,6 +291,7 @@ namespace game
     VAR(IDF_PERSIST, playerhinthurt, 0, 1, 1);
     VAR(IDF_PERSIST, playerhinthurtthrob, 0, 1, 1);
     VAR(IDF_PERSIST, playerhinttone, -1, CTONE_TEAMED, CTONE_MAX-1);
+    FVAR(IDF_PERSIST, playerhinttonelevel, 0.f, 1.f, 10.f);
     FVAR(IDF_PERSIST, playerhintblend, 0, 0.3f, 1);
     FVAR(IDF_PERSIST, playerhintscale, 0, 0.7f, 1); // scale blend depending on health
     FVAR(IDF_PERSIST, playerhintlight, 0, 0.3f, 1); // override for light effect
@@ -785,9 +794,9 @@ namespace game
         {
             vec center = d->center();
             playsound(S_RESPAWN, d->o, d);
-            spawneffect(PART_SPARK, center, d->height*0.5f, getcolour(d, playerovertone), 1.5f);
-            spawneffect(PART_SPARK, center, d->height*0.5f, getcolour(d, playerundertone), 1.5f);
-            if(dynlighteffects) adddynlight(center, d->height*2, vec::hexcolor(getcolour(d, playereffecttone)).mul(2.f), 250, 250);
+            spawneffect(PART_SPARK, center, d->height*0.5f, getcolour(d, playerovertone, playerovertonelevel), 1.5f);
+            spawneffect(PART_SPARK, center, d->height*0.5f, getcolour(d, playerundertone, playerundertonelevel), 1.5f);
+            if(dynlighteffects) adddynlight(center, d->height*2, vec::hexcolor(getcolour(d, playereffecttone, playereffecttonelevel)).mul(2.f), 250, 250);
             if(entities::ents.inrange(ent) && entities::ents[ent]->type == PLAYERSTART) entities::execlink(d, ent, false);
         }
         ai::respawned(d, local, ent);
@@ -916,10 +925,7 @@ namespace game
                     adddynlight(d->center(), d->height*intensity*pc, rescolour(d, PULSE_SHOCK).mul(pc), 0, 0, DL_KEEP);
                 }
                 if(d->actortype < A_ENEMY && illumlevel > 0 && illumradius > 0)
-                {
-                    vec col = vec::hexcolor(getcolour(d, playereffecttone)).mul(illumlevel);
-                    adddynlight(d->center(), illumradius, col, 0, 0, DL_KEEP);
-                }
+                    adddynlight(d->center(), illumradius, vec::hexcolor(getcolour(d, playereffecttone, illumlevel)), 0, 0, DL_KEEP);
             }
         }
     }
@@ -927,7 +933,7 @@ namespace game
     void boosteffect(gameent *d, const vec &pos, int num, int len, bool shape = false)
     {
         float scale = 0.4f+(rnd(40)/100.f);
-        part_create(PART_HINT, shape ? len/2 : len/10, pos, getcolour(d, playereffecttone), scale*1.5f, scale*0.75f, 0, 0);
+        part_create(PART_HINT, shape ? len/2 : len/10, pos, getcolour(d, playereffecttone, playereffecttonelevel), scale*1.5f, scale*0.75f, 0, 0);
         part_create(PART_FIREBALL, shape ? len/2 : len/10, pos, pulsecols[PULSE_FIRE][rnd(PULSECOLOURS)], scale*1.25f, scale*0.75f, 0, 0);
         if(shape) loopi(num) createshape(PART_FIREBALL, int(d->radius)*2, pulsecols[PULSE_FIRE][rnd(PULSECOLOURS)], 21, 1, len, pos, scale*1.25f, 0.75f, -5, 0, 10);
     }
@@ -1906,7 +1912,12 @@ namespace game
         return false;
     }
 
-    int findcolour(gameent *d, bool tone, bool mix)
+    int levelcolour(int colour, float level)
+    {
+        return (clamp(int((colour>>16)*level), 0, 255)<<16)|(clamp(int(((colour>>8)&0xFF)*level), 0, 255)<<8)|(clamp(int((colour&0xFF)*level), 0, 255));
+    }
+
+    int findcolour(gameent *d, bool tone, bool mix, float level)
     {
         if(tone)
         {
@@ -1937,24 +1948,24 @@ namespace game
                         b3 = clamp(int((b1*(1-playertonemix))+(b2*playertonemix)), 0, 255);
                     col = (r3<<16)|(g3<<8)|b3;
                 }
-                return col;
+                return levelcolour(col, level);
             }
         }
-        return TEAM(d->team, colour);
+        return levelcolour(TEAM(d->team, colour), level);
     }
 
-    int getcolour(gameent *d, int level)
+    int getcolour(gameent *d, int type, float level)
     {
-        switch(level)
+        switch(type)
         {
-            case -1: return d->colour;
-            case CTONE_TMIX: return findcolour(d, true, d->team != T_NEUTRAL); break;
-            case CTONE_AMIX: return findcolour(d, true, d->team == T_NEUTRAL); break;
-            case CTONE_MIXED: return findcolour(d, true, true); break;
-            case CTONE_ALONE: return findcolour(d, d->team != T_NEUTRAL); break;
-            case CTONE_TEAMED: return findcolour(d, d->team == T_NEUTRAL); break;
-            case CTONE_TONE: return findcolour(d, true); break;
-            case CTONE_TEAM: default: return findcolour(d, false); break;
+            case -1: return levelcolour(d->colour, level);
+            case CTONE_TMIX: return findcolour(d, true, d->team != T_NEUTRAL, level); break;
+            case CTONE_AMIX: return findcolour(d, true, d->team == T_NEUTRAL, level); break;
+            case CTONE_MIXED: return findcolour(d, true, true, level); break;
+            case CTONE_ALONE: return findcolour(d, d->team != T_NEUTRAL, false, level); break;
+            case CTONE_TEAMED: return findcolour(d, d->team == T_NEUTRAL, false, level); break;
+            case CTONE_TONE: return findcolour(d, true, false, level); break;
+            case CTONE_TEAM: default: return findcolour(d, false, false, level); break;
         }
     }
 
@@ -3069,9 +3080,9 @@ namespace game
         dynent *e = third ? (third != 2 ? (dynent *)d : (dynent *)&bodymodel) : (dynent *)&avatarmodel;
         if(e->light.millis != lastmillis)
         {
-            e->light.effect = playerlightmix > 0 ? vec::hexcolor(getcolour(d, playerlighttone)).mul(playerlightmix) : vec(0, 0, 0);
-            e->light.material[0] = bvec(getcolour(d, playerovertone));
-            e->light.material[1] = bvec(getcolour(d, playerundertone));
+            e->light.effect = playerlightmix > 0 ? vec::hexcolor(getcolour(d, playerlighttone, playerlighttonelevel)).mul(playerlightmix) : vec(0, 0, 0);
+            e->light.material[0] = bvec(getcolour(d, playerovertone, playerovertonelevel));
+            e->light.material[1] = bvec(getcolour(d, playerundertone, playerundertonelevel));
             if(isweap(d->weapselect))
             {
                 if((W2(d->weapselect, ammosub, false) || W2(d->weapselect, ammosub, true)) && W(d->weapselect, ammomax) > 1)
@@ -3143,7 +3154,7 @@ namespace game
         if(aboveheadstatus)
         {
             Texture *t = NULL;
-            int colour = getcolour(d, playerteamtone);
+            int colour = getcolour(d, playerteamtone, playerteamtonelevel);
             if(d->state == CS_DEAD || d->state == CS_WAITING) t = textureload(hud::deadtex, 3);
             else if(d->state == CS_ALIVE)
             {
@@ -3393,7 +3404,7 @@ namespace game
             {
                 if(hashint || haslight || haspower|| hasdom)
                 {
-                    vec c = vec::hexcolor(hasdom ? pulsecols[PULSE_DISCO][clamp((lastmillis/100)%PULSECOLOURS, 0, PULSECOLOURS-1)] : (haslight ? WHCOL(d, d->weapselect, lightcol, physics::secondaryweap(d)) : getcolour(d, playerhinttone)));
+                    vec c = vec::hexcolor(hasdom ? pulsecols[PULSE_DISCO][clamp((lastmillis/100)%PULSECOLOURS, 0, PULSECOLOURS-1)] : (haslight ? WHCOL(d, d->weapselect, lightcol, physics::secondaryweap(d)) : getcolour(d, playerhinttone, playerhinttonelevel)));
                     float height = d->height, fade = blend;
                     if(hasdom) fade *= playerhintdom;
                     else if(haslight || haspower)

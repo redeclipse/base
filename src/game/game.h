@@ -1660,7 +1660,7 @@ namespace game
             bloodfade, bloodsize, bloodsparks, debrisfade, eventiconfade, eventiconshort,
             announcefilter, dynlighteffects, aboveheadnames, followthirdperson, nogore, forceplayermodel,
             playerovertone, playerundertone, playerdisplaytone, playereffecttone, playerteamtone, follow, specmode, spectvfollow, spectvfollowing, clientcrc;
-    extern float bloodscale, debrisscale, aboveitemiconsize;
+    extern float bloodscale, debrisscale, aboveitemiconsize, playerovertonelevel, playerundertonelevel, playerdisplaytonelevel, playereffecttonelevel, playerteamtonelevel;
     extern bool zooming;
     extern vec swaypush, swaydir;
     extern string clientmap;
@@ -1685,8 +1685,8 @@ namespace game
     extern void clientdisconnected(int cn, int reason = DISC_NONE);
     extern const char *colourname(gameent *d, char *name = NULL, bool icon = true, bool dupname = true, int colour = 3);
     extern const char *colourteam(int team, const char *icon = "");
-    extern int findcolour(gameent *d, bool tone = true, bool mix = false);
-    extern int getcolour(gameent *d, int level = 0);
+    extern int findcolour(gameent *d, bool tone = true, bool mix = false, float level = 1);
+    extern int getcolour(gameent *d, int type = 0, float level = 1.f);
     extern void errorsnd(gameent *d);
     extern void announce(int idx, gameent *d = NULL, bool forced = false);
     extern void announcef(int idx, int targ, gameent *d, bool forced, const char *msg, ...);

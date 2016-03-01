@@ -2131,7 +2131,7 @@ namespace hud
                  shocking = radarplayereffects && shocktime && lastmillis%150 < 50 && d->shocking(lastmillis, shocktime);
             vec colour[2];
             if(isdominated) colour[0] = game::rescolour(d, PULSE_DISCO);
-            else colour[0] = vec::hexcolor(game::getcolour(d, game::playerundertone));
+            else colour[0] = vec::hexcolor(game::getcolour(d, game::playerundertone, game::playerundertonelevel));
             if(d->lastbuff)
             {
                 int millis = lastmillis%1000;
@@ -2159,7 +2159,7 @@ namespace hud
                 vec c = game::rescolour(d, PULSE_SHOCK);
                 flashcolour(colour[0].r, colour[0].g, colour[0].b, c.r, c.g, c.b, amt);
             }
-            colour[1] = vec::hexcolor(game::getcolour(d, game::playerovertone));
+            colour[1] = vec::hexcolor(game::getcolour(d, game::playerovertone, game::playerovertonelevel));
             const char *tex = isdominated ? dominatedtex : (killer || self ? arrowtex : playerbliptex);
             float fade = (force || killer || self || dominated ? 1.f : clamp(1.f-(dist/float(radarrange())), isdominated ? 0.25f : 0.f, 1.f))*blend, size = killer || self ? 1.5f : (isdominated ? 1.25f : 1.f);
             if(!self && (d->state == CS_DEAD || d->state == CS_WAITING))
@@ -3473,7 +3473,7 @@ namespace hud
                         if(a < 3.f)
                         {
                             vec col = vec(1, 1, 1);
-                            skewcolour(col.x, col.y, col.z, game::getcolour(game::focus, game::playereffecttone));
+                            skewcolour(col.x, col.y, col.z, game::getcolour(game::focus, game::playereffecttone, game::playereffecttonelevel));
                             if(a < 1.f) { loopi(3) col[i] *= a; }
                             else { a = (a-1.f)*0.5f; loopi(3) col[i] += (1.f-col[i])*a; }
                             loopi(3) if(col[i] < colour[i]) colour[i] *= col[i];

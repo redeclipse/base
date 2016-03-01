@@ -1503,7 +1503,7 @@ namespace ai
 
     void drawroute(gameent *d, float amt)
     {
-        int colour = game::getcolour(d, game::playerdisplaytone), last = -1;
+        int colour = game::getcolour(d, game::playerdisplaytone, game::playerdisplaytonelevel), last = -1;
         loopvrev(d->ai->route)
         {
             if(d->ai->route.inrange(last))
