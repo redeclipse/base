@@ -263,11 +263,11 @@ namespace aiman
             setskill(ci);
         }
 
-        int balance = 0, people = numclients(-1, true, -1), numt = numteams(gamemode, mutators);
+        int people = numclients(-1, true, -1), balance = people, numt = numteams(gamemode, mutators);
         if(m_coop(gamemode, mutators))
         {
             numt--; // filter out the human team
-            balance = people+int(ceilf(people*numt*(m_multi(gamemode, mutators) ? G(coopmultibalance) : G(coopbalance))));
+            balance += int(ceilf(people*numt*(m_multi(gamemode, mutators) ? G(coopmultibalance) : G(coopbalance))));
             balance += G(botoffset)*numt;
         }
         else if(m_bots(gamemode) && blimit > 0)
@@ -303,6 +303,7 @@ namespace aiman
                 }
             }
         }
+        else balance += G(botoffset)*numt;
         int bots = balance-people;
         if(bots > blimit) balance -= bots-blimit;
         if(balance > 0)
