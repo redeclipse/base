@@ -1918,7 +1918,7 @@ namespace game
         {
             return colour;
         }
-        int r1 = (col>>16), g1 = ((col>>8)&0xFF), b1 = (col&0xFF);
+        int r1 = (colour>>16), g1 = ((colour>>8)&0xFF), b1 = (colour&0xFF);
         if(level<0.0)
         {
             int r2 = clamp(int(-r1*level), 0, 255),
