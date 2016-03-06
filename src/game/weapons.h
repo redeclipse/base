@@ -93,13 +93,13 @@ struct hitmsg { int flags, proj, target, dist; ivec dir, vel; };
 #define WR(x)            (1<<(WR_##x))
 #define wr_burn(x,y)     (isweap(x) && (WF(WK(y), x, residual, WS(y))&WR(BURN)))
 #define wr_burns(x,y)    (G(burntime) && hitdealt(y) && ((x == -1 && y&HIT_BURN) || wr_burn(x, y)))
-#define wr_burning(x,y)  (G(burntime) && hitdealt(y) && wr_burn(x, y))
+#define wr_burning(x,y)  (G(burntime) && hitdealt(y) && ((x == -1 && y&HIT_MATERIAL && y&HIT_BURN) || wr_burn(x, y)))
 #define wr_bleed(x,y)    (isweap(x) && (WF(WK(y), x, residual, WS(y))&WR(BLEED)))
 #define wr_bleeds(x,y)   (G(bleedtime) && hitdealt(y) && ((x == -1 && y&HIT_BLEED) || wr_bleed(x, y)))
-#define wr_bleeding(x,y) (G(bleedtime) && hitdealt(y) && wr_bleed(x, y))
+#define wr_bleeding(x,y) (G(bleedtime) && hitdealt(y) && ((x == -1 && y&HIT_MATERIAL && y&HIT_BLEED) || wr_bleed(x, y)))
 #define wr_shock(x,y)    (isweap(x) && (WF(WK(y), x, residual, WS(y))&WR(SHOCK)))
 #define wr_shocks(x,y)   (G(shocktime) && hitdealt(y) && ((x == -1 && y&HIT_SHOCK) || wr_shock(x, y)))
-#define wr_shocking(x,y) (G(shocktime) && hitdealt(y) && wr_shock(x, y))
+#define wr_shocking(x,y) (G(shocktime) && hitdealt(y) && ((x == -1 && y&HIT_MATERIAL && y&HIT_SHOCK) || wr_shock(x, y)))
 #define WZ(x)            (W_MAX+(W_##x))
 
 #include "weapdef.h"

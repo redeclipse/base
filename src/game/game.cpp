@@ -1224,7 +1224,7 @@ namespace game
         if(wr_burns(weap, flags))
         {
             d->lastrestime[WR_BURN] = lastmillis;
-            if(isweap(weap)) d->lastres[WR_BURN] = lastmillis;
+            if(isweap(weap) || flags&HIT_MATERIAL) d->lastres[WR_BURN] = lastmillis;
             else return true;
         }
         return false;
@@ -1235,7 +1235,7 @@ namespace game
         if(wr_bleeds(weap, flags))
         {
             d->lastrestime[WR_BLEED] = lastmillis;
-            if(isweap(weap)) d->lastres[WR_BLEED] = lastmillis;
+            if(isweap(weap) || flags&HIT_MATERIAL) d->lastres[WR_BLEED] = lastmillis;
             else return true;
         }
         return false;
@@ -1246,7 +1246,7 @@ namespace game
         if(wr_shocks(weap, flags))
         {
             d->lastrestime[WR_SHOCK] = lastmillis;
-            if(isweap(weap)) d->lastres[WR_SHOCK] = lastmillis;
+            if(isweap(weap) || flags&HIT_MATERIAL) d->lastres[WR_SHOCK] = lastmillis;
             else return true;
         }
         return false;
