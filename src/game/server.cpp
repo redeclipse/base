@@ -3355,7 +3355,7 @@ namespace server
             if(!hasmapdata()) resetmapdata();
         }
         copystring(smapname, reqmap);
-        sendf(-1, 1, "risi3", N_MAPCHANGE, smapname, gamemode, mutators, hasmapdata() ? smapcrc : -2);
+        sendf(-1, 1, "risi3", N_MAPCHANGE, smapname, gamemode, mutators, hasmapdata() ? smapcrc : -1);
 
         // server modes
         if(m_capture(gamemode)) smode = &capturemode;
@@ -3846,7 +3846,7 @@ namespace server
         sendstring(smapname, p);
         putint(p, gamemode);
         putint(p, mutators);
-        if(ci && m_edit(gamemode))
+        if(ci && !ci->online && m_edit(gamemode))
         {
             if(numclients(ci->clientnum))
             {
