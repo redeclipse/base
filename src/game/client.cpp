@@ -2154,7 +2154,7 @@ namespace client
                     getstring(text, p);
                     int mode = getint(p), muts = getint(p), crc = getint(p);
                     if(crc >= 0) conoutf("map change: %s (%d:%d) [0x%.8x]", text, mode, muts, crc);
-                    else  conoutf("map change: %s (%d:%d) [%d]", text, mode, muts, crc);
+                    else conoutf("map change: %s (%d:%d) [%d]", text, mode, muts, crc);
                     changemapserv(text, mode, muts, crc);
                     break;
                 }
