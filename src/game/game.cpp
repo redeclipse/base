@@ -282,7 +282,7 @@ namespace game
     FVAR(IDF_PERSIST, playerteamtonelevel, 0.f, 1.f, 10.f);
 
     FVAR(IDF_PERSIST, playerlightmix, 0, 0.4f, 100);
-    FVAR(IDF_PERSIST, playertonemix, 0, 0.25f, 1);
+    FVAR(IDF_PERSIST, playertonemix, 0, 0.5f, 1);
     FVAR(IDF_PERSIST, playerblend, 0, 1, 1);
     FVAR(IDF_PERSIST, playereditblend, 0, 0.5f, 1);
     FVAR(IDF_PERSIST, playerghostblend, 0, 0.5f, 1);
