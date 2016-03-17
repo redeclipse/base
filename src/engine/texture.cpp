@@ -39,7 +39,7 @@ TVAR(IDF_PERSIST|IDF_PRELOAD, emblemtex, "textures/emblem", 3);
 TVAR(IDF_PERSIST|IDF_PRELOAD, nothumbtex, "textures/nothumb", 3);
 TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundtex, "textures/background", 3);
 
-static void scaletexture(uchar *src, uint sw, uint sh, uint bpp, uint pitch, uchar *dst, uint dw, uint dh)
+static void scaletexture(uchar * RESTRICT src, uint sw, uint sh, uint bpp, uint pitch, uchar * RESTRICT dst, uint dw, uint dh)
 {
     if(sw == dw*2 && sh == dh*2)
     {
@@ -73,28 +73,70 @@ static void scaletexture(uchar *src, uint sw, uint sh, uint bpp, uint pitch, uch
     }
 }
 
-static inline void reorienttexture(uchar *src, int sw, int sh, int bpp, int stride, uchar *dst, bool flipx, bool flipy, bool swapxy, bool normals = false)
+template<int BPP>
+static inline void reorientnormals(uchar * RESTRICT src, int sw, int sh, int stride, uchar * RESTRICT dst, bool flipx, bool flipy, bool swapxy)
 {
-    int stridex = bpp, stridey = bpp;
+    int stridex = BPP, stridey = BPP;
     if(swapxy) stridex *= sh; else stridey *= sw;
     if(flipx) { dst += (sw-1)*stridex; stridex = -stridex; }
     if(flipy) { dst += (sh-1)*stridey; stridey = -stridey; }
     uchar *srcrow = src;
     loopi(sh)
     {
-        for(uchar *curdst = dst, *src = srcrow, *end = &srcrow[sw*bpp]; src < end;)
+        for(uchar *curdst = dst, *src = srcrow, *end = &srcrow[sw*BPP]; src < end;)
         {
-            loopk(bpp) curdst[k] = *src++;
-            if(normals)
-            {
-                if(flipx) curdst[0] = 255-curdst[0];
-                if(flipy) curdst[1] = 255-curdst[1];
-                if(swapxy) swap(curdst[0], curdst[1]);
-            }
+            uchar nx = *src++, ny = *src++;
+            if(flipx) nx = 255-nx;
+            if(flipy) ny = 255-ny;
+            if(swapxy) swap(nx, ny);
+            curdst[0] = nx;
+            curdst[1] = ny;
+            curdst[2] = *src++;
+            if(BPP > 3) curdst[3] = *src++;
             curdst += stridex;
         }
         srcrow += stride;
         dst += stridey;
+    }
+}
+
+static void reorientnormals(uchar * RESTRICT src, int sw, int sh, int bpp, int stride, uchar * RESTRICT dst, bool flipx, bool flipy, bool swapxy)
+{
+    switch(bpp)
+    {
+        case 3: return reorientnormals<3>(src, sw, sh, stride, dst, flipx, flipy, swapxy);
+        case 4: return reorientnormals<4>(src, sw, sh, stride, dst, flipx, flipy, swapxy);
+    }
+}
+
+template<int BPP>
+static inline void reorienttexture(uchar * RESTRICT src, int sw, int sh, int stride, uchar * RESTRICT dst, bool flipx, bool flipy, bool swapxy)
+{
+    int stridex = BPP, stridey = BPP;
+    if(swapxy) stridex *= sh; else stridey *= sw;
+    if(flipx) { dst += (sw-1)*stridex; stridex = -stridex; }
+    if(flipy) { dst += (sh-1)*stridey; stridey = -stridey; }
+    uchar *srcrow = src;
+    loopi(sh)
+    {
+        for(uchar *curdst = dst, *src = srcrow, *end = &srcrow[sw*BPP]; src < end;)
+        {
+            loopk(BPP) curdst[k] = *src++;
+            curdst += stridex;
+        }
+        srcrow += stride;
+        dst += stridey;
+    }
+}
+
+static void reorienttexture(uchar * RESTRICT src, int sw, int sh, int bpp, int stride, uchar * RESTRICT dst, bool flipx, bool flipy, bool swapxy)
+{
+    switch(bpp)
+    {
+        case 1: return reorienttexture<1>(src, sw, sh, stride, dst, flipx, flipy, swapxy);
+        case 2: return reorienttexture<2>(src, sw, sh, stride, dst, flipx, flipy, swapxy);
+        case 3: return reorienttexture<3>(src, sw, sh, stride, dst, flipx, flipy, swapxy);
+        case 4: return reorienttexture<4>(src, sw, sh, stride, dst, flipx, flipy, swapxy);
     }
 }
 
@@ -349,7 +391,8 @@ void texreorient(ImageData &s, bool flipx, bool flipy, bool swapxy, int type = T
             break;
         }
     default:
-        reorienttexture(s.data, s.w, s.h, s.bpp, s.pitch, d.data, flipx, flipy, swapxy, type==TEX_NORMAL);
+        if(type==TEX_NORMAL && s.bpp >= 3) reorientnormals(s.data, s.w, s.h, s.bpp, s.pitch, d.data, flipx, flipy, swapxy);
+        else reorienttexture(s.data, s.w, s.h, s.bpp, s.pitch, d.data, flipx, flipy, swapxy);
         break;
     }
     s.replace(d);
