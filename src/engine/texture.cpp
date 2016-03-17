@@ -73,17 +73,16 @@ static void scaletexture(uchar * RESTRICT src, uint sw, uint sh, uint bpp, uint 
     }
 }
 
-template<int BPP>
-static inline void reorientnormals(uchar * RESTRICT src, int sw, int sh, int stride, uchar * RESTRICT dst, bool flipx, bool flipy, bool swapxy)
+static void reorientnormals(uchar * RESTRICT src, int sw, int sh, int bpp, int stride, uchar * RESTRICT dst, bool flipx, bool flipy, bool swapxy)
 {
-    int stridex = BPP, stridey = BPP;
+    int stridex = bpp, stridey = bpp;
     if(swapxy) stridex *= sh; else stridey *= sw;
     if(flipx) { dst += (sw-1)*stridex; stridex = -stridex; }
     if(flipy) { dst += (sh-1)*stridey; stridey = -stridey; }
     uchar *srcrow = src;
     loopi(sh)
     {
-        for(uchar *curdst = dst, *src = srcrow, *end = &srcrow[sw*BPP]; src < end;)
+        for(uchar *curdst = dst, *src = srcrow, *end = &srcrow[sw*bpp]; src < end;)
         {
             uchar nx = *src++, ny = *src++;
             if(flipx) nx = 255-nx;
@@ -92,20 +91,11 @@ static inline void reorientnormals(uchar * RESTRICT src, int sw, int sh, int str
             curdst[0] = nx;
             curdst[1] = ny;
             curdst[2] = *src++;
-            if(BPP > 3) curdst[3] = *src++;
+            if(bpp > 3) curdst[3] = *src++;
             curdst += stridex;
         }
         srcrow += stride;
         dst += stridey;
-    }
-}
-
-static void reorientnormals(uchar * RESTRICT src, int sw, int sh, int bpp, int stride, uchar * RESTRICT dst, bool flipx, bool flipy, bool swapxy)
-{
-    switch(bpp)
-    {
-        case 3: return reorientnormals<3>(src, sw, sh, stride, dst, flipx, flipy, swapxy);
-        case 4: return reorientnormals<4>(src, sw, sh, stride, dst, flipx, flipy, swapxy);
     }
 }
 
