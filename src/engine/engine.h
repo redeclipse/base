@@ -407,6 +407,8 @@ extern bool isfoggedsphere(float rad, const vec &cv);
 extern int isvisiblesphere(float rad, const vec &cv);
 extern bool bboccluded(const ivec &bo, const ivec &br);
 extern occludequery *newquery(void *owner);
+extern void startquery(occludequery *query);
+extern void endquery(occludequery *query);
 extern bool checkquery(occludequery *query, bool nowait = false);
 extern void resetqueries();
 extern int getnumqueries();
@@ -415,9 +417,6 @@ extern void endbb(bool mask = true);
 extern void drawbb(const ivec &bo, const ivec &br);
 
 extern int oqfrags;
-
-#define startquery(query) do { glBeginQuery_(GL_SAMPLES_PASSED, ((occludequery *)(query))->id); } while(0)
-#define endquery(query) do { glEndQuery_(GL_SAMPLES_PASSED); } while(0)
 
 // dynlight
 

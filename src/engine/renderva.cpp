@@ -291,6 +291,16 @@ void clearqueries()
 VAR(0, oqfrags, 0, 8, 64);
 VAR(0, oqwait, 0, 1, 1);
 
+void startquery(occludequery *query)
+{
+    glBeginQuery_(GL_SAMPLES_PASSED, query->id);
+}
+
+void endquery(occludequery *query)
+{
+    glEndQuery_(GL_SAMPLES_PASSED);
+}
+
 bool checkquery(occludequery *query, bool nowait)
 {
     GLuint fragments;
