@@ -336,9 +336,9 @@ WPVARK(IDF_GAMEMOD|IDF_HEX, explcol, PC(LAST), 0xFFFFFF,
     PC(FIRE),   PC(FIRE),   0x4040F0,   0xF0F020,   0xF05820,   0x808080,   0x40F0C8,   PC(SHOCK),  0xA020F0,   PC(FIRE),   PC(SHOCK),  PC(FIRE),   PC(FIRE)
 );
 WPFVARK(IDF_GAMEMOD,  explode, 0, FVAR_MAX,
-    0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       6.0f,       6.0f,       3.0f,       4.0f,       64.0f,      32.0f,      96.0f,      0.0f,
+    0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       6.0f,       0.0f,       3.0f,       4.0f,       64.0f,      32.0f,      96.0f,      0.0f,
     0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       12.0f,      44.0f,      6.0f,       0.0f,       52.0f,      32.0f,      96.0f,      0.0f,
-    0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       6.0f,       6.0f,       3.0f,       4.0f,       64.0f,      32.0f,      96.0f,      0.0f,
+    0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       6.0f,       0.0f,       3.0f,       4.0f,       64.0f,      32.0f,      96.0f,      0.0f,
     0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       12.0f,      44.0f,      6.0f,       4.0f,       52.0f,      32.0f,      96.0f,      0.0f
 );
 WPVARK(IDF_GAMEMOD,  extinguish, 0, 7,
@@ -634,9 +634,9 @@ WPFVARK(IDF_GAMEMOD,  partlen, 0, FVAR_MAX,
     0.0f,       16.0f,      0.0f,       7.5f,       7.5f,       0.0f,       0.0f,       1024.f,     512.0f,     0.0f,       4.0f,       0.0f,       0.0f
 );
 WPFVARK(IDF_GAMEMOD,  partsize, 0, FVAR_MAX,
-    1.0f,       0.125f,     1.0f,       0.75f,      0.6f,       6.0f,       6.0f,       2.0f,       1.5f,       1.0f,       2.0f,       2.0f,       0.5f,
+    1.0f,       0.125f,     1.0f,       0.75f,      0.6f,       6.0f,       8.0f,       2.0f,       1.5f,       1.0f,       2.0f,       2.0f,       0.5f,
     2.0f,       0.25f,      1.25f,      0.45f,      0.4f,       12.0f,      28.0f,      3.0f,       3.0f,       1.0f,       2.0f,       2.0f,       1.0f,
-    1.0f,       0.125f,     1.0f,       0.45f,      0.4f,       6.0f,       6.0f,       3.0f,       1.5f,       1.0f,       2.0f,       2.0f,       0.5f,
+    1.0f,       0.125f,     1.0f,       0.45f,      0.4f,       6.0f,       8.0f,       3.0f,       1.5f,       1.0f,       2.0f,       2.0f,       0.5f,
     2.0f,       0.25f,      1.25f,      0.45f,      0.4f,       12.0f,      28.0f,      5.0f,       3.0f,       1.0f,       2.0f,       2.0f,       1.0f
 );
 WPVARK(IDF_GAMEMOD,  parttype, 0, W_MAX-1,
@@ -708,7 +708,7 @@ WPVARK(IDF_GAMEMOD, residualundo, 0, WR_ALL,
     0,          0,          0,          0,          0,          WR(BURN),   0,          0,          0,          0,          0,          0,          0
 );
 WPVARM(IDF_GAMEMOD,  speed, 0, VAR_MAX,
-    0,          1500,       0,          1000,       2000,       400,        950,        10000,      10000,      200,        100,        1000,       0,
+    0,          1500,       0,          1000,       2000,       400,        1250,       10000,      10000,      200,        100,        1000,       0,
     0,          1000,       0,          250,        1500,       750,        85,         50000,      100000,     200,        100,        250,        0
 );
 WPFVARK(IDF_GAMEMOD,  speeddelta, 0, FVAR_MAX,
