@@ -763,12 +763,12 @@ static bool fuzzycollidebox(physent *d, const vec &dir, float cutoff, const vec 
         switch(i)
         {
             default:
-            case 0: w = vec(mdlvol.orient.a).neg(); dist = -radius.x; break;
-            case 1: w = mdlvol.orient.a; dist = -radius.x; break;
-            case 2: w = vec(mdlvol.orient.b).neg(); dist = -radius.y; break;
-            case 3: w = mdlvol.orient.b; dist = -radius.y; break;
-            case 4: w = vec(mdlvol.orient.c).neg(); dist = -radius.z; break;
-            case 5: w = mdlvol.orient.c; dist = -radius.z; break;
+            case 0: w = mdlvol.orient.rowx().neg(); dist = -radius.x; break;
+            case 1: w = mdlvol.orient.rowx(); dist = -radius.x; break;
+            case 2: w = mdlvol.orient.rowy().neg(); dist = -radius.y; break;
+            case 3: w = mdlvol.orient.rowy(); dist = -radius.y; break;
+            case 4: w = mdlvol.orient.rowz().neg(); dist = -radius.z; break;
+            case 5: w = mdlvol.orient.rowz(); dist = -radius.z; break;
         }
         vec pw = entvol.supportpoint(vec(w).neg());
         dist += w.dot(vec(pw).sub(mdlvol.o));
@@ -815,8 +815,8 @@ static bool fuzzycollideellipse(physent *d, const vec &dir, float cutoff, const 
         switch(i)
         {
             default:
-            case 0: w = mdlvol.orient.c; dist = -radius.z; break;
-            case 1: w = vec(mdlvol.orient.c).neg(); dist = -radius.z; break;
+            case 0: w = mdlvol.orient.rowz(); dist = -radius.z; break;
+            case 1: w = mdlvol.orient.rowz().neg(); dist = -radius.z; break;
             case 2:
             {
                 vec2 ln(mdlvol.orient.transform(entvol.center().sub(mdlvol.o)));
