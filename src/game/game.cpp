@@ -251,9 +251,10 @@ namespace game
     VAR(IDF_PERSIST, playreloadnotify, 0, 3, 15);
     VAR(IDF_PERSIST, reloadnotifyvol, -1, -1, 255);
 
-    VAR(IDF_PERSIST, deathanim, 0, 2, 2); // 0 = hide player when dead, 1 = old death animation, 2 = ragdolls
+    VAR(IDF_PERSIST, deathanim, 0, 3, 3); // 0 = hide player when dead, 1 = old death animation, 2 = ragdolls, 3 = ragdolls, but hide in duke
     VAR(IDF_PERSIST, deathfade, 0, 1, 1); // 0 = don't fade out dead players, 1 = fade them out
     VAR(IDF_PERSIST, deathscale, 0, 0, 1); // 0 = don't scale out dead players, 1 = scale them out
+    VAR(IDF_PERSIST, deathmaxfade, 0, 0, VAR_MAX);
     VAR(IDF_PERSIST, deathbuttonmash, 0, 1000, VAR_MAX);
     FVAR(IDF_PERSIST, bloodscale, 0, 1, 1000);
     VAR(IDF_PERSIST, bloodfade, 1, 3000, VAR_MAX);
@@ -955,6 +956,7 @@ namespace game
     float spawnfade(gameent *d)
     {
         int len = min(m_delay(d->actortype, gamemode, mutators, d->team), AA(d->actortype, abilities)&(1<<A_A_MOVE) ? 5000 : 1000);
+        if(len <= 0 || len > deathmaxfade) len = deathmaxfade;
         if(len > 0)
         {
             int interval = min(len/3, ragdolleffect), over = max(len-interval, 1), millis = lastmillis-d->lastdeath;
@@ -3067,7 +3069,7 @@ namespace game
         }
 
         if(third == 1 && testanims && d == focus) yaw = 0; else yaw += 90;
-        if(d->ragdoll && (deathanim!=2 || (anim&ANIM_INDEX)!=ANIM_DYING)) cleanragdoll(d);
+        if(d->ragdoll && (deathanim < 2 || (anim&ANIM_INDEX)!=ANIM_DYING)) cleanragdoll(d);
         if(!((anim>>ANIM_SECONDARY)&ANIM_INDEX)) anim |= (ANIM_IDLE|ANIM_LOOP)<<ANIM_SECONDARY;
 
         int flags = MDL_LIGHT|MDL_LIGHTFX;
@@ -3247,6 +3249,7 @@ namespace game
                     if(t > 1000) animflags = ANIM_DEAD|ANIM_LOOP|ANIM_NOPITCH;
                     break;
                 }
+                case 3: if(m_duke(gamemode, mutators)) return;
                 case 2:
                 {
                     if(!validragdoll(d, lastaction)) animflags |= ANIM_RAGDOLL;
