@@ -75,7 +75,7 @@ int lightmapping = 0;
 
 vector<LightMap> lightmaps;
 
-VAR(IDF_WORLD, lightprecision, 1, 32, 256);
+VAR(IDF_WORLD, lightprecision, 1, 32, 1024);
 VAR(IDF_WORLD, lighterror, 1, 8, 16);
 VAR(IDF_WORLD, bumperror, 1, 3, 16);
 VAR(IDF_WORLD, lightlod, 0, 0, 10);
