@@ -170,7 +170,7 @@ WPVAR(IDF_GAMEMOD,  ammomax, 1, VAR_MAX,
 );
 WPVARM(IDF_GAMEMOD,  ammosub, 0, VAR_MAX,
     0,          1,          0,          1,          1,          1,          1,          1,          1,          1,          1,          1,          0,
-    0,          1,          0,          2,          4,          10,         25,         6,          1,          1,          1,          1,          0
+    0,          1,          0,          2,          4,          10,         25,         8,          1,          1,          1,          1,          0
 );
 WPFVARK(IDF_GAMEMOD,  blend, 0, 1,
     1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,
@@ -305,7 +305,7 @@ WPFVARK(IDF_GAMEMOD,  damagewhiplash, FVAR_MIN, FVAR_MAX,
 );
 WPVARM(IDF_GAMEMOD,  delayattack, 1, VAR_MAX,
     500,        130,        500,        750,        90,         90,         350,        90,         750,        750,        500,        1500,       500,
-    800,        200,        800,        1250,       350,        1250,       1800,       1250,       1250,       750,        500,        1500,       500
+    800,        200,        800,        1250,       350,        1250,       1800,       1800,       1250,       750,        500,        1500,       500
 );
 WPVAR(IDF_GAMEMOD,  delayreload, 0, VAR_MAX,
     50,         1000,       50,         800,        1200,       1700,       1700,       2000,       2500,       1000,       1500,       2500,       50
@@ -683,7 +683,7 @@ WPFVARK(IDF_GAMEMOD,  radius, FVAR_NONZERO, FVAR_MAX,
 );
 WPVARM(IDF_GAMEMOD,  rays, 0, MAXPARAMS,
     1,          1,          1,          20,         1,          1,          1,          1,          1,          1,          1,          1,          1,
-    1,          1,          1,          1,          1,          1,          1,          5,          1,          1,          1,          1,          1
+    1,          1,          1,          1,          1,          1,          1,          6,          1,          1,          1,          1,          1
 );
 WPFVARK(IDF_GAMEMOD,  reflectivity, 0, FVAR_MAX,
     0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,
