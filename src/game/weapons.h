@@ -163,14 +163,14 @@ WPVARM(IDF_GAMEMOD,  aiskew, 0, VAR_MAX,
     1,          2,          1,          3,          5,          3,          5,          3,          5,          1,          1,          5,          1
 );
 WPVAR(IDF_GAMEMOD,  ammoadd, 1, VAR_MAX,
-    1,          10,         1,          2,          40,         50,         25,         48,         6,          1,          1,          1,          1
+    1,          10,         1,          2,          40,         50,         30,         48,         6,          1,          1,          1,          1
 );
 WPVAR(IDF_GAMEMOD,  ammomax, 1, VAR_MAX,
-    1,          10,          1,         8,          40,         50,         25,         48,         6,          2,          2,          1,          1
+    1,          10,          1,         8,          40,         50,         30,         48,         6,          2,          2,          1,          1
 );
 WPVARM(IDF_GAMEMOD,  ammosub, 0, VAR_MAX,
-    0,          1,          0,          1,          1,          1,          1,          1,          1,          1,          1,          1,          0,
-    0,          1,          0,          2,          4,          10,         25,         8,          1,          1,          1,          1,          0
+    0,          1,          0,          1,          1,          1,          2,          1,          1,          1,          1,          1,          0,
+    0,          1,          0,          2,          4,          10,         30,         8,          1,          1,          1,          1,          0
 );
 WPFVARK(IDF_GAMEMOD,  blend, 0, 1,
     1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,
@@ -336,9 +336,9 @@ WPVARK(IDF_GAMEMOD|IDF_HEX, explcol, PC(LAST), 0xFFFFFF,
     PC(FIRE),   PC(FIRE),   0x4040F0,   0xF0F020,   0xF05820,   0x808080,   0x40F0C8,   PC(SHOCK),  0xA020F0,   PC(FIRE),   PC(SHOCK),  PC(FIRE),   PC(FIRE)
 );
 WPFVARK(IDF_GAMEMOD,  explode, 0, FVAR_MAX,
-    0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       6.0f,       8.0f,       3.0f,       4.0f,       64.0f,      32.0f,      96.0f,      0.0f,
+    0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       6.0f,       10.0f,      3.0f,       4.0f,       64.0f,      32.0f,      96.0f,      0.0f,
     0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       12.0f,      44.0f,      6.0f,       0.0f,       52.0f,      32.0f,      96.0f,      0.0f,
-    0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       6.0f,       8.0f,       3.0f,       4.0f,       64.0f,      32.0f,      96.0f,      0.0f,
+    0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       6.0f,       10.0f,      3.0f,       4.0f,       64.0f,      32.0f,      96.0f,      0.0f,
     0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       12.0f,      44.0f,      6.0f,       4.0f,       52.0f,      32.0f,      96.0f,      0.0f
 );
 WPVARK(IDF_GAMEMOD,  extinguish, 0, 7,
