@@ -128,6 +128,9 @@ APVAR(IDF_GAMEMOD, collide, 0, A_C_ALL,
 APVAR(IDF_GAMEMOD, health, 1, VAR_MAX,
     100,            100,            100,            50,             50
 );
+APVAR(IDF_GAMEMOD, hurtstop, 1, VAR_MAX,
+    0,              0,              0,              100,            500
+);
 APVAR(IDF_GAMEMOD, maxcarry, 1, W_LOADOUT,
     2,              2,              0,              0,              0
 );

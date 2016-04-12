@@ -1127,8 +1127,8 @@ namespace ai
         if((d->actortype == A_BOT || d->actortype == A_GRUNT) && d->action[AC_CROUCH] != d->ai->dontmove)
             if((d->action[AC_CROUCH] = !d->action[AC_CROUCH]) == true) d->actiontime[AC_CROUCH] = lastmillis;
 
-        if(d->ai->dontmove || (d->actortype >= A_ENEMY && lastmillis-d->lastpain <= PHYSMILLIS/3)) d->move = d->strafe = 0;
-        else if(!(AA(d->actortype, abilities)&(1<<A_A_MOVE))) d->move = d->strafe = 0;
+        if(d->ai->dontmove || !(AA(d->actortype, abilities)&(1<<A_A_MOVE)) || (AA(d->actortype, hurtstop) && lastmillis-d->lastpain <= AA(d->actortype, hurtstop)))
+            d->move = d->strafe = 0;
         else
         { // our guys move one way.. but turn another?! :)
             const struct aimdir { int move, strafe, offset; } aimdirs[8] =
