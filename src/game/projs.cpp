@@ -1308,19 +1308,16 @@ namespace projs
                     }
                     spanin = max(0.f, spanin-off);
                 }
-                if(spanin > 0)
+                if(proj.lifespan <= spanin)
                 {
-                    if(proj.lifespan < spanin)
-                    {
-                        proj.lifesize = clamp(proj.lifespan/spanin, WF(WK(proj.flags), proj.weap, tapermin, WS(proj.flags)), WF(WK(proj.flags), proj.weap, tapermax, WS(proj.flags)));
-                        break;
-                    }
-                    else if(spanout > 0 && proj.lifespan > (1-spanout))
-                    {
-                        if(type%2 || !proj.stuck)
-                            proj.lifesize = clamp(1-((proj.lifespan-(1-spanout))/spanout), WF(WK(proj.flags), proj.weap, tapermin, WS(proj.flags)), WF(WK(proj.flags), proj.weap, tapermax, WS(proj.flags)));
-                        break;
-                    }
+                    proj.lifesize = clamp(proj.lifespan/spanin, WF(WK(proj.flags), proj.weap, tapermin, WS(proj.flags)), WF(WK(proj.flags), proj.weap, tapermax, WS(proj.flags)));
+                    break;
+                }
+                else if(proj.lifespan >= (1-spanout))
+                {
+                    if(type%2 || !proj.stuck)
+                        proj.lifesize = clamp(1-((proj.lifespan-(1-spanout))/spanout), WF(WK(proj.flags), proj.weap, tapermin, WS(proj.flags)), WF(WK(proj.flags), proj.weap, tapermax, WS(proj.flags)));
+                    break;
                 }
                 proj.lifesize = WF(WK(proj.flags), proj.weap, tapermax, WS(proj.flags));
                 break;
