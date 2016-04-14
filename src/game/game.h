@@ -800,7 +800,8 @@ struct clientstate
         if(s != W_MELEE && AA(actortype, abilities)&(1<<A_A_MELEE)) ammo[W_MELEE] = max(1, W(W_MELEE, ammomax));
         if(actortype < A_ENEMY)
         {
-            if(!m_race(gamemode) || m_ra_gauntlet(gamemode, mutators))
+            if(m_kaboom(gamemode, mutators)) ammo[W_MINE] = max(1, W(W_MINE, ammomax));
+            else if(!m_race(gamemode) || m_ra_gauntlet(gamemode, mutators))
             {
                 if(s != W_GRENADE && AA(actortype, spawngrenades) >= (m_insta(gamemode, mutators) ? 2 : 1))
                     ammo[W_GRENADE] = max(1, W(W_GRENADE, ammomax));

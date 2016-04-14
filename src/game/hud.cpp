@@ -430,9 +430,9 @@ namespace hud
     FVAR(IDF_PERSIST, plasmaclipskew, 0, 0.55f, 10);
     FVAR(IDF_PERSIST, zapperclipskew, 0, 0.55f, 10);
     FVAR(IDF_PERSIST, rifleclipskew, 0, 1, 10);
-    FVAR(IDF_PERSIST, grenadeclipskew, 0, 1.5f, 10);
-    FVAR(IDF_PERSIST, mineclipskew, 0, 2.f, 10);
-    FVAR(IDF_PERSIST, rocketclipskew, 0, 1.75f, 10);
+    FVAR(IDF_PERSIST, grenadeclipskew, 0, 1.25f, 10);
+    FVAR(IDF_PERSIST, mineclipskew, 0, 1.25f, 10);
+    FVAR(IDF_PERSIST, rocketclipskew, 0, 1.25f, 10);
     VAR(IDF_PERSIST, clawcliprotate, 0, 12, 7); // "round-the-clock" rotation of texture, 0 = off, &1 = flip x, &2 = flip y, &4 = angle, &8 = spin
     VAR(IDF_PERSIST, pistolcliprotate, 0, 12, 15);
     VAR(IDF_PERSIST, swordcliprotate, 0, 12, 15);
