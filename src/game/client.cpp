@@ -667,6 +667,11 @@ namespace client
         return d ? (d->loadweap.inrange(n) ? d->loadweap[n] : 0) : -1;
     }
     ICOMMAND(0, getclientloadweap, "ii", (int *cn, int *n), intret(getclientloadweap(*cn, *n)));
+    
+    ICOMMAND(0, getclientpoints, "i", (int *cn), gameent *d = game::getclient(*cn); intret(d ? d->points : 0));
+    ICOMMAND(0, getclientfrags, "i", (int *cn), gameent *d = game::getclient(*cn); intret(d ? d->frags : 0));
+    ICOMMAND(0, getclientdeaths, "i", (int *cn), gameent *d = game::getclient(*cn); intret(d ? d->deaths : 0));
+    ICOMMAND(0, getclientcptime, "i", (int *cn), gameent *d = game::getclient(*cn); intret(d ? d->cptime : 0));
 
     bool haspriv(gameent *d, int priv)
     {
