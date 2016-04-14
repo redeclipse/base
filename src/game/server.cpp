@@ -3006,7 +3006,7 @@ namespace server
             {
                 suicideevent ev;
                 ev.flags = HIT_SPEC;
-                ev.process(ci);
+                ev.process(ci); // process death immediately
             }
             if(smode) smode->leavegame(ci);
             mutate(smuts, mut->leavegame(ci));
@@ -5840,10 +5840,10 @@ namespace server
                             cp->submerged = submerged;
                             if(cp->state == CS_ALIVE && (cp->inmaterial&MATF_FLAGS)&MAT_DEATH && !((oldmaterial&MATF_FLAGS)&MAT_DEATH))
                             {
-                                suicideevent *ev = new suicideevent;
-                                ev->flags = HIT_MATERIAL;
-                                ev->material = cp->inmaterial;
-                                cp->addevent(ev);
+                                suicideevent ev;
+                                ev.flags = HIT_MATERIAL;
+                                ev.material = cp->inmaterial;
+                                ev.process(cp); // process death immediately
                             }
                             else if((cp->inmaterial&MATF_VOLUME) == MAT_WATER && cp->burning(gamemillis, G(burntime)) && cp->submerged >= G(liquidextinguish))
                             {
@@ -5971,10 +5971,10 @@ namespace server
                     int lcn = getint(p), flags = getint(p), material = getint(p);
                     clientinfo *cp = (clientinfo *)getinfo(lcn);
                     if(!hasclient(cp, ci)) break;
-                    suicideevent *ev = new suicideevent;
-                    ev->flags = flags;
-                    cp->inmaterial = ev->material = material;
-                    cp->addevent(ev);
+                    suicideevent ev;
+                    ev.flags = flags;
+                    cp->inmaterial = ev.material = material;
+                    ev.process(cp); // process death immediately
                     break;
                 }
 
