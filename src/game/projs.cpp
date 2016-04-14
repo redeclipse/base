@@ -1308,7 +1308,7 @@ namespace projs
                     }
                     spanin = max(0.f, spanin-off);
                 }
-                if(proj.lifespan <= spanin)
+                if(proj.lifespan < spanin)
                 {
                     proj.lifesize = clamp(proj.lifespan/spanin, WF(WK(proj.flags), proj.weap, tapermin, WS(proj.flags)), WF(WK(proj.flags), proj.weap, tapermax, WS(proj.flags)));
                     break;
