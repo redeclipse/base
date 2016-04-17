@@ -75,7 +75,10 @@ int lightmapping = 0;
 
 vector<LightMap> lightmaps;
 
-VAR(IDF_WORLD, lightprecision, 1, 32, 1024);
+int curlightprecision = 32;
+VAR(IDF_WORLD, lightprecision, 1, 32, 2048);
+VAR(IDF_WORLD, lightprecisionquick, 1, 2048, 2048);
+
 VAR(IDF_WORLD, lighterror, 1, 8, 16);
 VAR(IDF_WORLD, bumperror, 1, 3, 16);
 VAR(IDF_WORLD, lightlod, 0, 0, 10);
@@ -1366,7 +1369,7 @@ static int setupsurface(lightmapworker *w, plane planes[2], int numplanes, const
     }
 
     int scale = int(min(cmax.x - cmin.x, cmax.y - cmin.y));
-    float lpu = 16.0f / float(lightlod && scale < (1 << lightlod) ? max(lightprecision / 2, 1) : lightprecision);
+    float lpu = 16.0f / float(lightlod && scale < (1 << lightlod) ? max(curlightprecision / 2, 1) : curlightprecision);
     int lw = clamp(int(ceil((cmax.x - cmin.x + 1)*lpu)), LM_MINW, LM_MAXW), lh = clamp(int(ceil((cmax.y - cmin.y + 1)*lpu)), LM_MINH, LM_MAXH);
     w->w = lw;
     w->h = lh;
@@ -2048,8 +2051,9 @@ static Uint32 calclighttimer(Uint32 interval, void *param)
     return interval;
 }
 
-bool setlightmapquality(int quality)
+bool setlightmapquality(int quality, bool quick)
 {
+    curlightprecision = quick ? lightprecisionquick : lightprecision;
     switch(quality)
     {
         case  1: lmshadows = 2; lmaa = 3; lerptjoints = 1; break;
@@ -2129,9 +2133,9 @@ static void cleanupthreads()
     lightmapping = 0;
 }
 
-void calclight(int *quality)
+void calclight(int *quality, int *quick)
 {
-    if(!setlightmapquality(*quality))
+    if(!setlightmapquality(*quality, *quick!=0))
     {
         conoutft(CON_MESG, "\frvalid range for calclight quality is -1..1");
         return;
@@ -2183,16 +2187,16 @@ void calclight(int *quality)
     if(lmprogtex) { glDeleteTextures(1, &lmprogtex); lmprogtex = 0; }
 }
 
-COMMAND(0, calclight, "i");
+COMMAND(0, calclight, "ii");
 
 VAR(0, patchnormals, 0, 0, 1);
 
-void patchlight(int *quality)
+void patchlight(int *quality, int *quick)
 {
     if(noedit(true)) return;
-    if(!setlightmapquality(*quality))
+    if(!setlightmapquality(*quality, *quick!=0))
     {
-        conoutft(CON_MESG, "\frvalid range for patchlight quality is 0..3");
+        conoutft(CON_MESG, "\frvalid range for patchlight quality is -1..1");
         return;
     }
     progress(0, "patching lightmaps...");
@@ -2243,7 +2247,7 @@ void patchlight(int *quality)
     if(lmprogtex) { glDeleteTextures(1, &lmprogtex); lmprogtex = 0; }
 }
 
-COMMAND(0, patchlight, "i");
+COMMAND(0, patchlight, "ii");
 
 void clearlightmaps()
 {
@@ -2502,7 +2506,7 @@ void genlightmaptexs(int flagmask, int flagval)
         tex.w = LM_PACKW<<((used+1)/2);
         tex.h = LM_PACKH<<(used/2);
         int bpp = firstlm->bpp;
-        uchar *data = used ? new uchar[bpp*tex.w*tex.h] : NULL;     
+        uchar *data = used ? new uchar[bpp*tex.w*tex.h] : NULL;
         int offsetx = 0, offsety = 0;
         loopv(lightmaps)
         {
@@ -2586,7 +2590,7 @@ void initlights()
     genlightmaptexs(LM_ALPHA, 0);
     genlightmaptexs(LM_ALPHA, LM_ALPHA);
     brightengeom = false;
-    shouldlightents = true; 
+    shouldlightents = true;
 }
 
 static inline void fastskylight(const vec &o, float tolerance, uchar *skylight, int flags = RAY_ALPHAPOLY, extentity *t = NULL, bool fast = false)
