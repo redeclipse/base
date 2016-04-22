@@ -1771,7 +1771,7 @@ template<class MDL> struct skelcommands : modelcommands<MDL, struct MDL::skelmes
         c.pitchmax = *pitchmax;
         c.pitchscale = *scale;
         int pos = skel->pitchcorrects.length();
-        loopv(skel->pitchcorrects) if(bone <= skel->pitchcorrects[i].bone) { pos = i; break; break; }
+        loopv(skel->pitchcorrects) if(bone <= skel->pitchcorrects[i].bone) { pos = i; break; }
         skel->pitchcorrects.insert(pos, c);
     }
 
