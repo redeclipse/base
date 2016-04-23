@@ -72,7 +72,7 @@ struct animmodel : model
         float spec, ambient, glow, glowdelta, glowpulse, specglare, glowglare, fullbright, envmapmin, envmapmax, scrollu, scrollv, alphatest;
         int material, material2;
 
-        shaderparams() : spec(1.0f), ambient(0.3f), glow(3.0f), glowdelta(0), glowpulse(0), specglare(1), glowglare(1), fullbright(0), envmapmin(0), envmapmax(0), scrollu(0), scrollv(0), alphatest(0.9f), material(0), material2(0) {}
+        shaderparams() : spec(1.0f), ambient(0.3f), glow(3.0f), glowdelta(0), glowpulse(0), specglare(1), glowglare(1), fullbright(0), envmapmin(0), envmapmax(0), scrollu(0), scrollv(0), alphatest(0.9f), material(1), material2(0) {}
     };
 
     struct shaderparamskey
@@ -131,9 +131,9 @@ struct animmodel : model
             if(fullbright)
             {
                 gle::colorf(fullbright/2, fullbright/2, fullbright/2, trans);
-            }   
+            }
             else
-            {   
+            {
                 gle::color(vec(lightcolor).max(mincolor), trans);
             }
 
@@ -907,7 +907,7 @@ struct animmodel : model
                 if(!(anim&ANIM_NOSKIN))
                 {
                     if(envmapped()) GLOBALPARAM(modelworld, matrix3(matrixstack[matrixpos]));
-                    
+
                     vec odir, ocampos;
                     matrixstack[matrixpos].transposedtransformnormal(lightdir, odir);
                     GLOBALPARAM(lightdir, odir);
