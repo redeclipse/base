@@ -847,7 +847,7 @@ bool checkmasterclientinput(masterclient &c)
                     if(*flag == 's' && !s.sendstats) continue;
                     concformatstring(filteredflags, "%c", *flag);
                 }
-                masteroutf(c, "addserver %s %d %d %s %s %s %s\n", s.name, s.port, s.priority(), escapestring(s.desc), escapestring(s.authhandle), escapestring(filteredflags), escapestring(s.branch));
+                masteroutf(c, "addserver %s %d %d %s %s %s %s\n", escapestring(s.name), s.port, s.priority(), escapestring(s.desc), escapestring(s.authhandle), escapestring(filteredflags), escapestring(s.branch));
                 servs++;
             }
             conoutf("master peer %s was sent %d server(s)", c.name, servs);

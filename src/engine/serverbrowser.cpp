@@ -522,7 +522,7 @@ void writeservercfg()
     loopv(servers)
     {
         serverinfo *s = servers[i];
-        f->printf("addserver %s %d %d %s %s %s %s\n", escapeid(s->name), s->port, s->priority, escapeid(s->sdesc[0] ? s->sdesc : s->name), escapeid(s->authhandle), escapeid(s->flags), escapeid(s->branch));
+        f->printf("addserver %s %d %d %s %s %s %s\n", escapestring(s->name), s->port, s->priority, escapestring(s->sdesc[0] ? s->sdesc : s->name), escapestring(s->authhandle), escapestring(s->flags), escapestring(s->branch));
     }
     delete f;
 }
