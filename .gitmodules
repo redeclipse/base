@@ -129,6 +129,6 @@
 	path = data/wicked
 	url = https://github.com/red-eclipse/wicked.git
 	branch = master
-[submodule "data/nieb"]
+[submodule "nieb"]
 	path = data/nieb
 	url = https://github.com/red-eclipse/nieb.git
