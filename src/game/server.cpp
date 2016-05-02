@@ -2954,11 +2954,11 @@ namespace server
                 { // remember: ai just balance teams
                     switch(G(teambalancestyle))
                     {
-                        case 1: case 6: ts.score += ci->timeplayed; break;
-                        case 2: case 7: ts.score += ci->totalpoints; break;
-                        case 3: case 8: ts.score += ci->totalfrags; break;
-                        case 4: case 9: ts.score += ci->scoretime(); break;
-                        case 5: case 10: ts.score += ci->kdratio(); break;
+                        case 1: case 6: ts.score += cp->timeplayed; break;
+                        case 2: case 7: ts.score += cp->totalpoints; break;
+                        case 3: case 8: ts.score += cp->totalfrags; break;
+                        case 4: case 9: ts.score += cp->scoretime(); break;
+                        case 5: case 10: ts.score += cp->kdratio(); break;
                         case 0: default: ts.score += 1; break;
                     }
                     ts.clients++;
