@@ -3091,7 +3091,7 @@ namespace client
                     int size = getint(p);
                     getstring(text, p);
                     if(size >= 0) emptymap(size, true, text);
-                    else enlargemap(false, true);
+                    else enlargemap(size == -2, true);
                     mapvotes.shrink(0);
                     needsmap = false;
                     if(d)

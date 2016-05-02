@@ -3110,7 +3110,7 @@ namespace server
         }
         if((!force && gs_waiting(gamestate)) || mapsending >= 0 || hasmapdata()) return false;
         clientinfo *best = NULL;
-        if(!m_edit(gamemode))
+        if(!m_edit(gamemode) || force)
         {
             vector<clientcrcs> crcs;
             loopv(clients)
@@ -5900,7 +5900,7 @@ namespace server
                     ci->wantsmap = ci->gettingmap = false;
                     if(!m_edit(gamemode))
                     {
-                        if(hasmapdata()) srvoutf(4, "\fy%s has map crc: \fs\fc0x%.8x\fS (server: \fs\fc0x%.8x\fS)", colourname(ci), ci->clientcrc, smapcrc); // milestone v1.6.0
+                        if(hasmapdata()) srvoutf(4, "\fy%s has map crc: \fs\fc0x%.8x\fS (server: \fs\fc0x%.8x\fS)", colourname(ci), ci->clientcrc, smapcrc);
                         else srvoutf(4, "\fy%s has map crc: \fs\fc0x%.8x\fS", colourname(ci), ci->clientcrc);
                     }
                     getmap(crclocked(ci, true) ? ci : NULL);

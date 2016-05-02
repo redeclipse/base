@@ -1083,7 +1083,6 @@ bool enlargemap(bool split, bool force)
         return false;
     }
     if(hdr.worldsize >= 1<<16) return false;
-    if(split && multiplayer()) split = false; // milestone v1.6.0
     while(outsideents.length()) removeentity(outsideents.pop());
 
     worldscale++;
@@ -1153,7 +1152,7 @@ void shrinkmap()
 }
 
 ICOMMAND(0, newmap, "is", (int *i, char *n), if(emptymap(*i, false, n)) game::newmap(::max(*i, 0), n));
-ICOMMAND(0, mapenlarge, "i", (int *n), if(enlargemap(*n!=0, false)) game::newmap(-1));
+ICOMMAND(0, mapenlarge, "i", (int *n), if(enlargemap(*n!=0, false)) game::newmap(*n!=0 ? -2 : -1));
 COMMAND(0, shrinkmap, "");
 ICOMMAND(0, mapsize, "", (void),
 {
