@@ -1564,7 +1564,7 @@ namespace server
             tc[cp->team-T_FIRST].add(cp);
             numplaying++;
         }
-        if(numplaying >= G(teambalanceplaying))
+        if((G(teambalancestyle) || m_swapteam(gamemode, mutators)) && numplaying >= G(teambalanceplaying))
         {
             int nt = numteams(gamemode, mutators), mid = numplaying/nt, pmax = -1, pmin = -1;
             loopi(nt)
@@ -1598,9 +1598,12 @@ namespace server
                                 case 2: if(id < 0 || tc[i][id]->points > cp->points) id = j; break;
                                 case 3: if(id < 0 || tc[i][id]->frags > cp->frags) id = j; break;
                                 case 4: if(id < 0 || tc[i][id]->scoretime(false) > cp->scoretime(false)) id = j; break;
+                                case 5: if(id < 0 || tc[i][id]->timeplayed < cp->timeplayed) id = j; break;
+                                case 6: if(id < 0 || tc[i][id]->points < cp->points) id = j; break;
+                                case 7: if(id < 0 || tc[i][id]->frags < cp->frags) id = j; break;
+                                case 8: if(id < 0 || tc[i][id]->scoretime(false) < cp->scoretime(false)) id = j; break;
                                 case 0: default: if(id < 0) id = j; break;
                             }
-                            if(!G(teambalancestyle) && !m_swapteam(gamemode, mutators)) break;
                         }
                         if(id >= 0)
                         {

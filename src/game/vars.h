@@ -293,7 +293,7 @@ GVAR(IDF_GAMEMOD, teambalancewait, 0, 30000, VAR_MAX); // how long before can ha
 GVAR(IDF_GAMEMOD, teambalancedelay, 0, 5000, VAR_MAX); // how long before reassignments start
 GVAR(IDF_GAMEMOD, teambalanceswap, 0, 1, 1); // allow swap requests if unable to change team
 GVAR(IDF_GAMEMOD, teambalancelock, 0, PRIV_PLAYER, PRIV_MAX); // level at which one can override swap and automatically reassign a lower player
-GVAR(IDF_GAMEMOD, teambalancestyle, 0, 4, 4); // when moving players, sort by: 0 = top of list, 1 = lowest time played, 2 = lowest points, 3 = lowest frags, 4 = lowest skill
+GVAR(IDF_GAMEMOD, teambalancestyle, 0, 8, 8); // when moving players, sort by: 0 = top of list, 1 = lowest time played, 2 = lowest points, 3 = lowest frags, 4 = lowest skill, 5 = highest time played, 6 = higest points, 7 = highest frags, 8 = highest skill
 
 GVAR(IDF_GAMEMOD, racegauntletwinner, 0, 1, 1); // declare the winner when the final team exceeds best score
 
