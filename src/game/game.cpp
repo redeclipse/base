@@ -1174,6 +1174,11 @@ namespace game
                     d->pschan = -1;
                 }
             }
+            else if(d->pschan >= 0)
+            {
+                if(issound(d->pschan)) removesound(d->pschan);
+                d->pschan = -1;
+            }
             if(W2(d->weapselect, cooked, true)&W_C_KEEP && d->prevstate[d->weapselect] == W_S_ZOOM && !d->action[AC_SECONDARY])
             {
                 d->prevstate[d->weapselect] = W_S_IDLE;

@@ -533,7 +533,7 @@ GFVAR(IDF_GAMEMOD, gladiatordeadstunscale, 0, 1, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, gladiatorwavestunscale, 0, 1, FVAR_MAX);
 
 GFVAR(IDF_GAMEMOD, gladiatorvelscale, 0, 1, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, gladiatorhitvelscale, 0,1, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, gladiatorhitvelscale, 0, 1, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, gladiatordeadvelscale, 0, 2, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, gladiatorwavevelscale, 0, 1, FVAR_MAX);
 
