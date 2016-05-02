@@ -901,7 +901,7 @@ struct animmodel : model
                 matrix4 modelmatrix;
                 modelmatrix.mul(shadowmapping ? shadowmatrix : camprojmatrix, matrixstack[matrixpos]);
                 if(resize!=1) modelmatrix.scale(resize);
-                if(!translate.iszero()) modelmatrix.translate(translate);
+                if(!(anim&ANIM_NOTRANS) && !translate.iszero()) modelmatrix.translate(translate);
                 GLOBALPARAM(modelmatrix, modelmatrix);
 
                 if(!(anim&ANIM_NOSKIN))
@@ -912,7 +912,8 @@ struct animmodel : model
                     matrixstack[matrixpos].transposedtransformnormal(lightdir, odir);
                     GLOBALPARAM(lightdir, odir);
                     matrixstack[matrixpos].transposedtransform(camera1->o, ocampos);
-                    ocampos.div(resize).sub(translate);
+                    ocampos.div(resize);
+                    if(!(anim&ANIM_NOTRANS)) ocampos.sub(translate);
                     GLOBALPARAM(modelcamera, ocampos);
                 }
             }

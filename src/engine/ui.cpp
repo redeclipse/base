@@ -520,7 +520,7 @@ struct gui : guient
                 m->boundbox(center, radius);
                 float yaw;
                 vec o = calcmodelpreviewpos(radius, yaw).sub(center);
-                rendermodel(&light, name, anim, o, yaw, 0, 0, NULL, NULL, 0, scale, blend);
+                rendermodel(&light, name, anim|ANIM_NOTRANS, o, yaw, 0, 0, 0, NULL, NULL, 0, 0, blend, scale);
             }
             modelpreview::end();
             hudshader->set();
