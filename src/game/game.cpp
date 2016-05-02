@@ -362,7 +362,7 @@ namespace game
     {
         if(type < 0 || type >= VANITYMAX || !ref || !name || !tag) return -1;
         int num = vanities.length();
-        vanitys &v = vanities.add();
+        vanity &v = vanities.add();
         v.type = type;
         v.ref = newstring(ref);
         v.setmodel(ref);
@@ -401,7 +401,7 @@ namespace game
 
     void vanitybuild(gameent *d)
     {
-        if(*!d->vanity) return; // not needed
+        if(!*d->vanity) return; // not needed
         vector<char *> vanitylist;
         explodelist(d->vanity, vanitylist);
         loopv(vanitylist) if(vanitylist[i] && *vanitylist[i])
