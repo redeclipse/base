@@ -285,15 +285,15 @@ GVAR(IDF_GAMEMOD, damageself, 0, 1, 1); // 0 = off, 1 = either hurt self or use 
 GFVAR(IDF_GAMEMOD, damageselfscale, FVAR_MIN, 1, FVAR_MAX); // 0 = off, anything else = scale for damage
 GFVAR(IDF_GAMEMOD, damageteamscale, FVAR_MIN, 1, FVAR_MAX); // 0 = off, anything else = scale for damage
 
-GVAR(IDF_GAMEMOD, teambalance, 0, 5, 6); // 0 = off, 1 = by number then skill, 2 = by skill then number, 3 = by number and enforce, 4 = number, enforce, reassign, 5 = skill, number, enforce, reassign, 6 = skill during waiting, revert to 4 otherwise
+GVAR(IDF_GAMEMOD, teambalance, 0, 5, 6); // 0 = off, 1 = by number then style, 2 = by style then number, 3 = by number and enforce, 4 = number, enforce, reassign, 5 = style, number, enforce, reassign, 6 = style during waiting, revert to 4 otherwise
 GVAR(IDF_GAMEMOD, teambalanceduel, 0, 0, 1); // allow reassignments in duel
 GVAR(IDF_GAMEMOD, teambalanceplaying, 2, 2, VAR_MAX); // min players before reassignments occur
 GVAR(IDF_GAMEMOD, teambalanceamt, 2, 2, VAR_MAX); // max-min offset before reassignments occur
 GVAR(IDF_GAMEMOD, teambalancewait, 0, 10000, VAR_MAX); // how long before can happen again
 GVAR(IDF_GAMEMOD, teambalancedelay, 0, 3000, VAR_MAX); // how long before reassignments start
 GVAR(IDF_GAMEMOD, teambalanceswap, 0, 1, 1); // allow swap requests if unable to change team
-GVAR(IDF_GAMEMOD, teambalancelock, 0, PRIV_PLAYER, PRIV_MAX); // level at which one can override swap and automatically reassign a lower player
-GVAR(IDF_GAMEMOD, teambalancestyle, 0, 8, 8); // when moving players, sort by: 0 = top of list, 1 = lowest time played, 2 = lowest points, 3 = lowest frags, 4 = lowest skill, 5 = highest time played, 6 = higest points, 7 = highest frags, 8 = highest skill
+GVAR(IDF_GAMEMOD, teambalancelock, 0, PRIV_MODERATOR, PRIV_MAX); // level at which one can override swap
+GVAR(IDF_GAMEMOD, teambalancestyle, 0, 10, 10); // when moving players, sort by: 0 = top of list, 1 = lowest time played, 2 = lowest points, 3 = lowest frags, 4 = lowest scoretime, 5 = lowest kdratio, 6 = highest time played, 7 = higest points, 8 = highest frags, 9 = highest scoretime, 10 = highest kdratio
 
 GVAR(IDF_GAMEMOD, racegauntletwinner, 0, 1, 1); // declare the winner when the final team exceeds best score
 

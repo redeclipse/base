@@ -36,10 +36,13 @@ namespace hud
 
     VAR(IDF_PERSIST, scorepj, 0, 0, 1);
     VAR(IDF_PERSIST, scoreping, 0, 1, 1);
-    VAR(IDF_PERSIST, scorepoints, 0, 1, 2);
     VAR(IDF_PERSIST, scoretimer, 0, 1, 2);
+    VAR(IDF_PERSIST, scorepoints, 0, 1, 2);
     VAR(IDF_PERSIST, scorefrags, 0, 2, 2);
     VAR(IDF_PERSIST, scoredeaths, 0, 2, 2);
+    VAR(IDF_PERSIST, scoretotalpoints, 0, 0, 1);
+    VAR(IDF_PERSIST, scoretotalfrags, 0, 0, 1);
+    VAR(IDF_PERSIST, scoretotaldeaths, 0, 0, 1);
     VAR(IDF_PERSIST, scoreratios, 0, 0, 2);
     VAR(IDF_PERSIST, scoreclientnum, 0, 1, 1);
     VAR(IDF_PERSIST, scoretimestyle, 0, 3, 4);
@@ -570,7 +573,11 @@ namespace hud
                                         });
                                         loopscoregroup(uilist(g, {
                                             ownerbg;
-                                            uicenter(g, uipad(g, 0.5f, g.textf("%d", ownerfgc, NULL, 0, -1, false, NULL, 0xFFFFFF, o->points)));
+                                            if(scoretotalpoints)
+                                            {
+                                                uicenter(g, uipad(g, 0.5f, g.textf("%d (%d)", ownerfgc, NULL, 0, -1, false, NULL, 0xFFFFFF, o->points, o->totalpoints)));
+                                            }
+                                            else uicenter(g, uipad(g, 0.5f, g.textf("%d", ownerfgc, NULL, 0, -1, false, NULL, 0xFFFFFF, o->points)));
                                         }));
                                     });
                                 }
@@ -599,7 +606,11 @@ namespace hud
                                         });
                                         loopscoregroup(uilist(g, {
                                             ownerbg;
-                                            uicenter(g, uipad(g, 0.5f, g.textf("%d", ownerfgc, NULL, 0, -1, false, NULL, 0xFFFFFF, o->frags)));
+                                            if(scoretotalfrags)
+                                            {
+                                                uicenter(g, uipad(g, 0.5f, g.textf("%d (%d)", ownerfgc, NULL, 0, -1, false, NULL, 0xFFFFFF, o->frags, o->totalfrags)));
+                                            }
+                                            else uicenter(g, uipad(g, 0.5f, g.textf("%d", ownerfgc, NULL, 0, -1, false, NULL, 0xFFFFFF, o->frags)));
                                         }));
                                     });
                                 }
@@ -612,7 +623,11 @@ namespace hud
                                         });
                                         loopscoregroup(uilist(g, {
                                             ownerbg;
-                                            uicenter(g, uipad(g, 0.5f, g.textf("%d", ownerfgc, NULL, 0, -1, false, NULL, 0xFFFFFF, o->deaths)));
+                                            if(scoretotaldeaths)
+                                            {
+                                                uicenter(g, uipad(g, 0.5f, g.textf("%d (%d)", ownerfgc, NULL, 0, -1, false, NULL, 0xFFFFFF, o->deaths, o->totaldeaths)));
+                                            }
+                                            else uicenter(g, uipad(g, 0.5f, g.textf("%d", ownerfgc, NULL, 0, -1, false, NULL, 0xFFFFFF, o->deaths)));
                                         }));
                                     });
                                 }
@@ -625,8 +640,13 @@ namespace hud
                                         });
                                         loopscoregroup(uilist(g, {
                                             ownerbg;
-                                            float ratio = o->frags >= o->deaths ? (o->frags/float(max(o->deaths, 1))) : -(o->deaths/float(max(o->frags, 1)));
-                                            uicenter(g, uipad(g, 0.5f, g.textf("%.1f\fs\fa:\fS%.1f", ownerfgc, NULL, 0, -1, false, NULL, 0xFFFFFF, ratio >= 0 ? ratio : 1.f, ratio >= 0 ? 1.f : -ratio)));
+                                            float kdratio = o->kdratio(false);
+                                            if(scoretotalfrags || scoretotaldeaths)
+                                            {
+                                                float tkdratio = o->kdratio(true);
+                                                uicenter(g, uipad(g, 0.5f, g.textf("%.1f\fs\fa:\fS%.1f (%.1f\fs\fa:\fS%.1f)", ownerfgc, NULL, 0, -1, false, NULL, 0xFFFFFF, kdratio >= 0 ? kdratio : 1.f, kdratio >= 0 ? 1.f : -kdratio, tkdratio >= 0 ? tkdratio : 1.f, tkdratio >= 0 ? 1.f : -tkdratio)));
+                                            }
+                                            else uicenter(g, uipad(g, 0.5f, g.textf("%.1f\fs\fa:\fS%.1f", ownerfgc, NULL, 0, -1, false, NULL, 0xFFFFFF, kdratio >= 0 ? kdratio : 1.f, kdratio >= 0 ? 1.f : -kdratio)));
                                         }));
                                     });
                                 }

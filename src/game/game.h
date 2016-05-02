@@ -4,7 +4,7 @@
 #include "engine.h"
 
 #define VERSION_GAMEID "fps"
-#define VERSION_GAME 228
+#define VERSION_GAME 229
 #define VERSION_DEMOMAGIC "RED_ECLIPSE_DEMO"
 
 #define MAXAI 256
@@ -545,14 +545,15 @@ struct clientstate
     int health, ammo[W_MAX], entid[W_MAX], colour, model, checkpointspawn;
     int weapselect, weapload[W_MAX], weapshot[W_MAX], weapstate[W_MAX], weapwait[W_MAX], weaptime[W_MAX], prevstate[W_MAX], prevtime[W_MAX];
     int lastdeath, lastspawn, lastpain, lastregen, lastregenamt, lastbuff, lastshoot, lastres[WR_MAX], lastrestime[WR_MAX];
-    int actortype, spawnpoint, ownernum, skill, points, frags, deaths, cpmillis, cptime, queuepos;
+    int actortype, spawnpoint, ownernum, skill, points, frags, deaths, totalpoints, totalfrags, totaldeaths, spree, lasttimeplayed, timeplayed, cpmillis, cptime, queuepos;
     bool quarantine;
     string vanity;
     vector<int> loadweap, lastweap, randweap;
     verinfo version;
 
     clientstate() : colour(0), model(0), checkpointspawn(1), weapselect(W_CLAW), lastdeath(0), lastspawn(0), lastpain(0), lastregen(0), lastregenamt(0), lastbuff(0), lastshoot(0),
-        actortype(A_PLAYER), spawnpoint(-1), ownernum(-1), skill(0), points(0), frags(0), deaths(0), cpmillis(0), cptime(0), queuepos(-1), quarantine(false)
+        actortype(A_PLAYER), spawnpoint(-1), ownernum(-1), skill(0), points(0), frags(0), deaths(0), totalpoints(0), totalfrags(0), totaldeaths(0), spree(0), lasttimeplayed(0), timeplayed(0),
+        cpmillis(0), cptime(0), queuepos(-1), quarantine(false)
     {
         setvanity();
         loadweap.shrink(0);
@@ -761,14 +762,14 @@ struct clientstate
 
     void clearstate()
     {
-        lastdeath = lastpain = lastregen = lastregenamt = lastbuff = lastshoot = 0;
+        spree = lastdeath = lastpain = lastregen = lastregenamt = lastbuff = lastshoot = 0;
         queuepos = -1;
         resetresidual();
     }
 
-    void mapchange()
+    void mapchange(bool change = false)
     {
-        points = cpmillis = cptime = 0;
+        points = frags = deaths = cpmillis = cptime = spree = 0;
     }
 
     void respawn(int millis)
@@ -776,6 +777,24 @@ struct clientstate
         lastspawn = millis;
         clearstate();
         weapreset(true);
+    }
+
+    void updatetimeplayed(bool last = true)
+    {
+        timeplayed += totalmillis-lasttimeplayed;
+        if(last) lasttimeplayed = totalmillis;
+    }
+
+    float scoretime(bool update = true)
+    {
+        if(update) updatetimeplayed();
+        return totalpoints/float(max(timeplayed, 1));
+    }
+
+    float kdratio(bool total = true)
+    {
+        if(total) return totalfrags >= totaldeaths ? (totalfrags/float(max(totaldeaths, 1))) : -(totaldeaths/float(max(totalfrags, 1)));
+        return frags >= deaths ? (frags/float(max(deaths, 1))) : -(deaths/float(max(frags, 1)));
     }
 
     bool canrandweap(int weap)
@@ -979,7 +998,7 @@ struct gameent : dynent, clientstate
     ai::aiinfo *ai;
     int team, clientnum, privilege, projid, lastnode, checkpoint, cplast, respawned, suicided, lastupdate, lastpredict, plag, ping, lastflag, totaldamage,
         actiontime[AC_MAX], impulse[IM_MAX], smoothmillis, turnmillis, turnside, aschan, cschan, vschan, wschan, pschan, sschan[2],
-        lasthit, lastteamhit, lastkill, lastattacker, lastpoints, quake, spree, lastfoot, lastimpulsecollect;
+        lasthit, lastteamhit, lastkill, lastattacker, lastpoints, quake, lastfoot, lastimpulsecollect;
     float deltayaw, deltapitch, newyaw, newpitch, turnyaw, turnroll;
     vec head, torso, muzzle, origin, eject[2], waist, jet[3], legs, hrad, trad, lrad, toe[2];
     bool action[AC_MAX], conopen, k_up, k_down, k_left, k_right, obliterated, headless;
@@ -998,7 +1017,6 @@ struct gameent : dynent, clientstate
         copystring(hostname, "0.0.0.0");
         copystring(hostip, "0.0.0.0");
         name[0] = handle[0] = info[0] = obit[0] = '\0';
-        spree = 0;
         removesounds();
         cleartags();
         checktags();
@@ -1112,7 +1130,7 @@ struct gameent : dynent, clientstate
     {
         respawn(millis, gamemode, mutators);
         checkpoint = -1;
-        frags = deaths = totaldamage = cplast = spree = 0;
+        frags = deaths = totaldamage = cplast = 0;
     }
 
     void mapchange(int millis, int gamemode, int mutators)

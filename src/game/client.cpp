@@ -671,6 +671,19 @@ namespace client
     ICOMMAND(0, getclientpoints, "i", (int *cn), gameent *d = game::getclient(*cn); intret(d ? d->points : -1));
     ICOMMAND(0, getclientfrags, "i", (int *cn), gameent *d = game::getclient(*cn); intret(d ? d->frags : -1));
     ICOMMAND(0, getclientdeaths, "i", (int *cn), gameent *d = game::getclient(*cn); intret(d ? d->deaths : -1));
+
+    ICOMMAND(0, getclienttotalpoints, "i", (int *cn), gameent *d = game::getclient(*cn); intret(d ? d->totalpoints : -1));
+    ICOMMAND(0, getclienttotalfrags, "i", (int *cn), gameent *d = game::getclient(*cn); intret(d ? d->totalfrags : -1));
+    ICOMMAND(0, getclienttotaldeaths, "i", (int *cn), gameent *d = game::getclient(*cn); intret(d ? d->totaldeaths : -1));
+
+    ICOMMAND(0, getclienttimeplayed, "i", (int *cn), {
+        gameent *d = game::getclient(*cn);
+        if(d) d->updatetimeplayed();
+        intret(d ? d->timeplayed : -1);
+    });
+    ICOMMAND(0, getclientscoretime, "i", (int *cn), gameent *d = game::getclient(*cn); floatret(d ? d->scoretime() : -1.f));
+    ICOMMAND(0, getclientkdratio, "ii", (int *cn, int *n), gameent *d = game::getclient(*cn); floatret(d ? d->kdratio(*n!=0) : -1.f));
+
     ICOMMAND(0, getclientcptime, "i", (int *cn), gameent *d = game::getclient(*cn); intret(d ? d->cptime : -1));
 
     bool haspriv(gameent *d, int priv)
@@ -1846,6 +1859,11 @@ namespace client
         d->points = getint(p);
         d->frags = getint(p);
         d->deaths = getint(p);
+        d->totalpoints = getint(p);
+        d->totalfrags = getint(p);
+        d->totaldeaths = getint(p);
+        d->timeplayed = getint(p);
+        d->lasttimeplayed = totalmillis;
         d->health = getint(p);
         d->cptime = getint(p);
         if(resume && (d == game::player1 || d->ai))
@@ -2397,7 +2415,7 @@ namespace client
 
                 case N_DIED:
                 {
-                    int vcn = getint(p), deaths = getint(p), acn = getint(p), frags = getint(p), spree = getint(p), style = getint(p), weap = getint(p), flags = getint(p), damage = getint(p), material = getint(p);
+                    int vcn = getint(p), deaths = getint(p), tdeaths = getint(p), acn = getint(p), frags = getint(p), tfrags = getint(p), spree = getint(p), style = getint(p), weap = getint(p), flags = getint(p), damage = getint(p), material = getint(p);
                     gameent *m = game::getclient(vcn), *v = game::getclient(acn);
                     static vector<gameent *> assist; assist.setsize(0);
                     int count = getint(p);
@@ -2409,7 +2427,9 @@ namespace client
                     }
                     if(!v || !m) break;
                     m->deaths = deaths;
+                    m->totaldeaths = tdeaths;
                     v->frags = frags;
+                    v->totalfrags = tfrags;
                     v->spree = spree;
                     game::killed(weap, flags, damage, m, v, assist, style, material);
                     m->lastdeath = lastmillis;
@@ -2419,11 +2439,12 @@ namespace client
 
                 case N_POINTS:
                 {
-                    int acn = getint(p), add = getint(p), points = getint(p);
+                    int acn = getint(p), add = getint(p), points = getint(p), total = getint(p);
                     gameent *v = game::getclient(acn);
                     if(!v) break;
                     v->lastpoints = add;
                     v->points = points;
+                    v->totalpoints = total;
                     break;
                 }
 
