@@ -407,14 +407,20 @@ namespace game
         vanitylist.deletearrays();
     }
 
+    const char *vanitymodel(gameent *d)
+    {
+        if(d->actortype >= A_ENEMY) return actor[d->actortype%A_MAX].name;
+        return playertypes[d->model%PLAYERTYPES][5];
+    }
+
     const char *vanityfname(gameent *d, int n, bool proj)
     {
         const char *file = NULL;
         if(vanities.inrange(n)) switch(vanities[n].style)
         {
-            case 1:
+            case 1: case 2:
             {
-                const char *id = server::privnamex(d->privilege, d->actortype, true);
+                const char *id = vanities[n].style == 2 ? vanitymodel(d) : server::privnamex(d->privilege, d->actortype, true);
                 loopv(vanities[n].files)
                     if(vanities[n].files[i].proj == proj && !strcmp(vanities[n].files[i].id, id))
                         file = vanities[n].files[i].name;
