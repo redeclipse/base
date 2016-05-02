@@ -206,15 +206,15 @@ struct vanityfile
         if(name) delete[] name;
     }
 };
-struct vanitys
+struct vanity
 {
-    int type, cond, style, priv;
+    int type, cond, style;
     char *ref, *model, *proj, *name, *tag;
     vector<vanityfile> files;
 
-    vanitys() : type(-1), cond(0), style(0), priv(0), ref(NULL), model(NULL), proj(NULL), name(NULL), tag(NULL) {}
-    vanitys(int t, const char *r, const char *n, const char *g, int c, int s, int p) : type(t), cond(c), style(s), priv(p), ref(newstring(r)), model(NULL), proj(NULL), name(newstring(n)), tag(newstring(g)) { setmodel(r); }
-    ~vanitys()
+    vanity() : type(-1), cond(0), style(0), ref(NULL), model(NULL), proj(NULL), name(NULL), tag(NULL) {}
+    vanity(int t, const char *r, const char *n, const char *g, int c, int s) : type(t), cond(c), style(s), ref(newstring(r)), model(NULL), proj(NULL), name(newstring(n)), tag(newstring(g)) { setmodel(r); }
+    ~vanity()
     {
         if(ref) delete[] ref;
         if(model) delete[] model;
@@ -238,7 +238,7 @@ struct vanitys
     }
 };
 #ifdef GAMEWORLD
-vector<vanitys> vanities;
+vector<vanity> vanities;
 #else
-extern vector<vanitys> vanities;
+extern vector<vanity> vanities;
 #endif

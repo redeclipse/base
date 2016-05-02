@@ -353,6 +353,8 @@ namespace game
     void vanityreset()
     {
         loopvrev(vanities) vanities.remove(i);
+        loopv(players) if(players[i]) players[i]->vitems.shrink(0);
+        player1->vitems.shrink(0);
     }
     ICOMMAND(0, resetvanity, "", (), vanityreset());
 
@@ -399,6 +401,7 @@ namespace game
 
     void vanitybuild(gameent *d)
     {
+        if(*!d->vanity) return; // not needed
         vector<char *> vanitylist;
         explodelist(d->vanity, vanitylist);
         loopv(vanitylist) if(vanitylist[i] && *vanitylist[i])

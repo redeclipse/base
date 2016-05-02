@@ -233,7 +233,7 @@ struct vec
 
     int tohexcolor() { return (int(::clamp(r, 0.0f, 1.0f)*255)<<16)|(int(::clamp(g, 0.0f, 1.0f)*255)<<8)|int(::clamp(b, 0.0f, 1.0f)*255); }
 
-    vec &restrict(float rx, float ry, float rz)
+    vec &minbounds(float rx, float ry, float rz)
     {
         if(x >= 0) x = ::min(x, rx);
         else x = 0-::min(-x, rx);
@@ -243,7 +243,7 @@ struct vec
         else z = 0-::min(-z, rz);
         return *this;
     }
-    vec &restrict(const vec &n) { return restrict(n.x, n.y, n.z); }
+    vec &minbounds(const vec &n) { return minbounds(n.x, n.y, n.z); }
 };
 
 inline vec2::vec2(const vec &v) : x(v.x), y(v.y) {}
