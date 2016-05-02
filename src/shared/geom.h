@@ -232,6 +232,18 @@ struct vec
     }
 
     int tohexcolor() { return (int(::clamp(r, 0.0f, 1.0f)*255)<<16)|(int(::clamp(g, 0.0f, 1.0f)*255)<<8)|int(::clamp(b, 0.0f, 1.0f)*255); }
+
+    vec &restrict(float rx, float ry, float rz)
+    {
+        if(x >= 0) x = ::min(x, rx);
+        else x = 0-::min(-x, rx);
+        if(y >= 0) y = ::min(y, ry);
+        else y = 0-::min(-y, ry);
+        if(z >= 0) z = ::min(z, rz);
+        else z = 0-::min(-z, rz);
+        return *this;
+    }
+    vec &restrict(const vec &n) { return restrict(n.x, n.y, n.z); }
 };
 
 inline vec2::vec2(const vec &v) : x(v.x), y(v.y) {}
@@ -1227,7 +1239,7 @@ struct ivec2
     ivec2 &min(int n) { x = ::min(x, n); y = ::min(y, n); return *this; }
     ivec2 &max(int n) { x = ::max(x, n); y = ::max(y, n); return *this; }
     ivec2 &abs() { x = ::abs(x); y = ::abs(y); return *this; }
-    int dot(const ivec2 &o) const { return x*o.x + y*o.y; } 
+    int dot(const ivec2 &o) const { return x*o.x + y*o.y; }
     int cross(const ivec2 &o) const { return x*o.y - y*o.x; }
 };
 
@@ -1435,7 +1447,7 @@ struct svec
 inline ivec::ivec(const svec &v) : x(v.x), y(v.y), z(v.z) {}
 
 struct svec2
-{   
+{
     union
     {
         struct { short x, y; };

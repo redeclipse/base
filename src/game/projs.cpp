@@ -404,17 +404,13 @@ namespace projs
                 if(!collide(&proj, vec(0, 0, 0), 0.f, proj.projcollide&COLLIDE_DYNENT) && !collideinside && (proj.stick ? hitplayer != proj.stick : !hitplayer))
                     break;
             }
+            proj.stickpos = proj.o;
             if(proj.stick)
             {
-                proj.stickpos = vec(proj.o).sub(d->center());
-                proj.stickpos.x = min(proj.stickpos.x, d->radius);
-                proj.stickpos.y = min(proj.stickpos.y, d->radius);
-                proj.stickpos.z = min(proj.stickpos.z, d->height*0.6f);
-                (proj.sticknrm = proj.stickpos).normalize();
+                proj.stickpos.sub(proj.stick->center()).normalize().mul(vec(proj.stick->xradius*1.1f, proj.stick->yradius*1.1f, proj.stick->height*0.6f));
                 proj.stickpos.rotate_around_z(-proj.stick->yaw*RAD);
                 proj.sticknrm.rotate_around_z(-proj.stick->yaw*RAD);
             }
-            else proj.stickpos = proj.o;
             if(updatesticky(proj, true) && proj.projtype == PRJ_SHOT)
                 client::addmsg(N_STICKY, "ri9i3",
                     proj.owner->clientnum, lastmillis-game::maptime, proj.weap, proj.flags, WK(proj.flags) ? -proj.id : proj.id, proj.stick ? proj.stick->clientnum : -1,
