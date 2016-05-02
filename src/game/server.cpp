@@ -4834,17 +4834,21 @@ namespace server
             if(ci->state == CS_ALIVE)
             {
                 // hurt material
-                if((ci->inmaterial&MATF_FLAGS)&MAT_HURT && (!ci->lasthurt || gamemillis-ci->lasthurt >= G(hurtdelay)))
+                if((ci->inmaterial&MATF_FLAGS)&MAT_HURT)
                 {
-                    int flags = HIT_MATERIAL;
-                    if(G(hurtresidual)&WR(BURN)) flags |= HIT_BURN;
-                    if(G(hurtresidual)&WR(BLEED)) flags |= HIT_BLEED;
-                    if(G(hurtresidual)&WR(SHOCK)) flags |= HIT_SHOCK;
-                    dodamage(ci, ci, G(hurtdamage), -1, -1, HIT_NONE, flags, ci->inmaterial);
-                    if(!ci->lasthurt) ci->lasthurt = gamemillis;
-                    else ci->lasthurt += G(hurtdelay);
-                    if(ci->state != CS_ALIVE) continue;
+                    if(!ci->lasthurt || gamemillis-ci->lasthurt >= G(hurtdelay))
+                    {
+                        int flags = HIT_MATERIAL;
+                        if(G(hurtresidual)&WR(BURN)) flags |= HIT_BURN;
+                        if(G(hurtresidual)&WR(BLEED)) flags |= HIT_BLEED;
+                        if(G(hurtresidual)&WR(SHOCK)) flags |= HIT_SHOCK;
+                        dodamage(ci, ci, G(hurtdamage), -1, -1, HIT_NONE, flags, ci->inmaterial);
+                        if(!ci->lasthurt) ci->lasthurt = gamemillis;
+                        else ci->lasthurt += G(hurtdelay);
+                        if(ci->state != CS_ALIVE) continue;
+                    }
                 }
+                else if(ci->lasthurt && gamemillis-ci->lasthurt >= G(hurtdelay)) ci->lasthurt = 0;
                 // burning residual
                 if(ci->burning(gamemillis, G(burntime)))
                 {
