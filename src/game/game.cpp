@@ -1150,26 +1150,34 @@ namespace game
                 playsound(WSND(i, S_W_NOTIFY), d->o, d, 0, reloadnotifyvol, -1, -1, &d->wschan);
             if(!gs_playing(gamestate) || d->state != CS_ALIVE || timeexpired) d->setweapstate(i, W_S_IDLE, 0, lastmillis);
         }
-        if(gs_playing(gamestate) && d->state == CS_ALIVE && isweap(d->weapselect) && (d->weapstate[d->weapselect] == W_S_POWER || d->weapstate[d->weapselect] == W_S_ZOOM))
+        if(gs_playing(gamestate) && d->state == CS_ALIVE && isweap(d->weapselect))
         {
-            int millis = lastmillis-d->weaptime[d->weapselect];
-            if(millis >= 0 && millis <= d->weapwait[d->weapselect])
+            if(d->weapstate[d->weapselect] == W_S_POWER || d->weapstate[d->weapselect] == W_S_ZOOM)
             {
-                bool secondary = physics::secondaryweap(d);
-                float amt = millis/float(d->weapwait[d->weapselect]);
-                int vol = 255, snd = d->weapstate[d->weapselect] == W_S_POWER ? WSND2(d->weapselect, secondary, S_W_POWER) : WSND(d->weapselect, S_W_ZOOM);
-                if(W2(d->weapselect, cooktime, secondary)) switch(W2(d->weapselect, cooked, secondary))
+                int millis = lastmillis-d->weaptime[d->weapselect];
+                if(millis >= 0 && millis <= d->weapwait[d->weapselect])
                 {
-                    case 4: case 5: vol = 10+int(245*(1.f-amt)); break; // longer
-                    case 1: case 2: case 3: default: vol = 10+int(245*amt); break; // shorter
+                    bool secondary = physics::secondaryweap(d);
+                    float amt = millis/float(d->weapwait[d->weapselect]);
+                    int vol = 255, snd = d->weapstate[d->weapselect] == W_S_POWER ? WSND2(d->weapselect, secondary, S_W_POWER) : WSND(d->weapselect, S_W_ZOOM);
+                    if(W2(d->weapselect, cooktime, secondary)) switch(W2(d->weapselect, cooked, secondary))
+                    {
+                        case 4: case 5: vol = 10+int(245*(1.f-amt)); break; // longer
+                        case 1: case 2: case 3: default: vol = 10+int(245*amt); break; // shorter
+                    }
+                    if(issound(d->pschan)) sounds[d->pschan].vol = vol;
+                    else playsound(snd, d->o, d, SND_LOOP, vol, -1, -1, &d->pschan);
                 }
-                if(issound(d->pschan)) sounds[d->pschan].vol = vol;
-                else playsound(snd, d->o, d, SND_LOOP, vol, -1, -1, &d->pschan);
+                else if(d->pschan >= 0)
+                {
+                    if(issound(d->pschan)) removesound(d->pschan);
+                    d->pschan = -1;
+                }
             }
-            else if(d->pschan >= 0)
+            if(W2(d->weapselect, cooked, true)&W_C_KEEP && d->prevstate[d->weapselect] == W_S_ZOOM && !d->action[AC_SECONDARY])
             {
-                if(issound(d->pschan)) removesound(d->pschan);
-                d->pschan = -1;
+                d->prevstate[d->weapselect] = W_S_IDLE;
+                d->prevtime[d->weapselect] = 0;
             }
         }
         else if(d->pschan >= 0)
