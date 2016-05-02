@@ -1056,10 +1056,10 @@ namespace game
         d->o.z -= d->height;
         if(d->state == CS_ALIVE && AA(d->actortype, abilities)&(1<<A_A_CROUCH))
         {
-            bool crouching = d->action[AC_CROUCH];
-            float crouchoff = 1.f-CROUCHHEIGHT, zrad = d->zradius-(d->zradius*crouchoff);
+            bool crouching = d->crouching(true);
+            float zrad = d->zradius*CROUCHHEIGHT, zoff = d->zradius-zrad;
             vec old = d->o;
-            if(!crouching) loopk(2)
+            if(!crouching) loopk(d->move || d->strafe ? 2 : 1)
             {
                 if(k)
                 {
@@ -1071,35 +1071,41 @@ namespace game
                 d->height = d->zradius;
                 if(collide(d, vec(0, 0, 1), 0, false) || collideinside)
                 {
-                    d->o.z -= d->zradius-zrad;
+                    d->o.z -= zoff;
                     d->height = zrad;
                     if(!collide(d, vec(0, 0, 1), 0, false) && !collideinside) crouching = true;
                 }
                 d->o = old;
                 d->height = offset;
+                if(crouching) break;
+            }
+            if(crouching || d->crouching())
+            {
+                float zamt = zoff*curtime/float(PHYSMILLIS);
                 if(crouching)
                 {
-                    if(d->actiontime[AC_CROUCH] >= 0)
-                        d->actiontime[AC_CROUCH] = max(PHYSMILLIS-(lastmillis-d->actiontime[AC_CROUCH]), 0)-lastmillis;
-                    break;
+                    if(d->actiontime[AC_CROUCH] <= 0) d->actiontime[AC_CROUCH] = lastmillis;
+                    if(d->height > zrad && ((d->height -= zamt) < zrad))
+                        d->height = zrad;
                 }
-                else if(k && d->actiontime[AC_CROUCH] < 0)
+                else
                 {
-                    d->actiontime[AC_CROUCH] = lastmillis-max(PHYSMILLIS-(lastmillis+d->actiontime[AC_CROUCH]), 0);
-                    break;
+                    if(d->actiontime[AC_CROUCH] >= 0) d->actiontime[AC_CROUCH] = -lastmillis;
+                    if(d->height < d->zradius && ((d->height += zamt) > d->zradius))
+                        d->height = d->zradius;
                 }
             }
-            if(d->crouching())
+            else
             {
-                int crouchtime = abs(d->actiontime[AC_CROUCH]);
-                float amt = lastmillis-crouchtime <= PHYSMILLIS ? clamp(float(lastmillis-crouchtime)/PHYSMILLIS, 0.f, 1.f) : 1.f;
-                if(!crouching) amt = 1.f-amt;
-                crouchoff *= amt;
-                d->height = d->zradius-(d->zradius*crouchoff);
+                d->height = d->zradius;
+                d->actiontime[AC_CROUCH] = 0;
             }
-            else d->height = d->zradius;
         }
-        else d->height = d->zradius;
+        else
+        {
+            d->height = d->zradius;
+            d->actiontime[AC_CROUCH] = 0;
+        }
         d->o.z += d->airmillis ? offset : d->height;
 
         d->checktags();
@@ -3042,7 +3048,7 @@ namespace game
                     if(!basetime2) anim |= ANIM_END<<ANIM_SECONDARY;
                 }
                 else if(d->sliding(true)) anim |= (ANIM_POWERSLIDE|ANIM_LOOP)<<ANIM_SECONDARY;
-                else if(d->crouching(true))
+                else if(d->crouching())
                 {
                     if(d->strafe) anim |= ((d->strafe>0 ? ANIM_CRAWL_LEFT : ANIM_CRAWL_RIGHT)|ANIM_LOOP)<<ANIM_SECONDARY;
                     else if(d->move>0) anim |= (ANIM_CRAWL_FORWARD|ANIM_LOOP)<<ANIM_SECONDARY;

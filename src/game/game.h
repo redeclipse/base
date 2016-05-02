@@ -1016,12 +1016,13 @@ struct gameent : dynent, clientstate
     static bool is(int t) { return t == ENT_PLAYER || t == ENT_AI; }
     static bool is(physent *d) { return d->type == ENT_PLAYER || d->type == ENT_AI; }
 
-    void setparams()
+    void setparams(bool reset)
     {
         int type = clamp(actortype, 0, int(A_MAX-1));
         xradius = actor[type].xradius*curscale;
         yradius = actor[type].yradius*curscale;
-        zradius = height = actor[type].height*curscale;
+        zradius = actor[type].height*curscale;
+        if(reset) height = zradius;
         speed = AA(type, speed);
         weight = AA(type, weight)*curscale;
         radius = max(xradius, yradius);
@@ -1036,7 +1037,7 @@ struct gameent : dynent, clientstate
                 curscale = scale > curscale ? min(curscale+millis/2000.f, scale) : max(curscale-millis/2000.f, scale);
             else curscale = scale;
         }
-        setparams();
+        setparams(reset);
     }
 
     int getprojid()
@@ -1393,7 +1394,7 @@ struct gameent : dynent, clientstate
     bool crouching(bool limit = false)
     {
         if(!(AA(actortype, abilities)&(1<<A_A_CROUCH))) return false;
-        return action[AC_CROUCH] || actiontime[AC_CROUCH] < 0 || (!limit && lastmillis-actiontime[AC_CROUCH] <= PHYSMILLIS);
+        return action[AC_CROUCH] || (!limit && zradius > height);
     }
 
     bool running(float minspeed = 0)

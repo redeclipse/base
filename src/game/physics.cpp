@@ -121,15 +121,8 @@ namespace physics
                     }
                     default: break;
                 }
-                if(type == AC_CROUCH)
-                {
-                    if(game::player1->action[type] != down)
-                    {
-                        if(game::player1->actiontime[type] >= 0) game::player1->actiontime[type] = lastmillis-max(PHYSMILLIS-(lastmillis-game::player1->actiontime[type]), 0);
-                        else if(down) game::player1->actiontime[type] = -game::player1->actiontime[type];
-                    }
-                }
-                else if(down) game::player1->actiontime[type] = lastmillis;
+                if(down) game::player1->actiontime[type] = lastmillis;
+                else if(type == AC_CROUCH) game::player1->actiontime[type] = -lastmillis;
                 game::player1->action[type] = down;
             }
             else
