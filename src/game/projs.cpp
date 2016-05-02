@@ -407,6 +407,10 @@ namespace projs
             if(proj.stick)
             {
                 proj.stickpos = vec(proj.o).sub(d->center());
+                proj.stickpos.x = min(proj.stickpos.x, d->radius);
+                proj.stickpos.y = min(proj.stickpos.y, d->radius);
+                proj.stickpos.z = min(proj.stickpos.z, d->height*0.6f);
+                (proj.sticknrm = proj.stickpos).normalize();
                 proj.stickpos.rotate_around_z(-proj.stick->yaw*RAD);
                 proj.sticknrm.rotate_around_z(-proj.stick->yaw*RAD);
             }
@@ -425,11 +429,7 @@ namespace projs
             projs[i]->stuck = projs[i]->lastbounce = lastmillis ? lastmillis : 1;
             projs[i]->sticknrm = norm;
             projs[i]->stickpos = pos;
-            if(!(projs[i]->stick = f))
-            {
-                projs[i]->o = pos;
-                projs[i]->stick = NULL;
-            }
+            if(!(projs[i]->stick = f)) projs[i]->o = pos;
             updatesticky(*projs[i], true);
             break;
         }
