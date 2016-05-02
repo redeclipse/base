@@ -235,12 +235,9 @@ struct vec
 
     vec &minbounds(float rx, float ry, float rz)
     {
-        if(x >= 0) x = ::min(x, rx);
-        else x = 0-::min(-x, rx);
-        if(y >= 0) y = ::min(y, ry);
-        else y = 0-::min(-y, ry);
-        if(z >= 0) z = ::min(z, rz);
-        else z = 0-::min(-z, rz);
+        x = ::clamp(x, -rx, rx);
+        y = ::clamp(y, -ry, ry);
+        z = ::clamp(z, -rz, rz);
         return *this;
     }
     vec &minbounds(const vec &n) { return minbounds(n.x, n.y, n.z); }
