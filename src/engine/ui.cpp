@@ -1069,7 +1069,7 @@ struct gui : guient
                 }
                 skin(px, py, px+pw, py+ph, colour >= 0 ? colour : guislidermarkcolour, guislidermarkblend, hit ? guislideractivecolour : guislidermarkbordercolour, hit ? guislideractiveblend : guislidermarkborderblend, guislidermarkborderskin >= (hit ? 1 : 2));
             }
-            if(hit && hitfx && cursorfx && !guicursortype) guicursortype = 2;
+            if(hit && hitfx && cursorfx && !guicursortype) guicursortype = 1;
         }
         layout(ishorizontal() ? space : 0, ishorizontal() ? 0 : space);
         return space;
