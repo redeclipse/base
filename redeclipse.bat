@@ -68,7 +68,7 @@ setlocal enableextensions enabledelayedexpansion
 :redeclipse_runit
     if EXIST "%REDECLIPSE_PATH%\bin\%REDECLIPSE_ARCH%\%REDECLIPSE_BINARY%%REDECLIPSE_SUFFIX%" (
         pushd "%REDECLIPSE_PATH%" || goto redeclipse_error
-        start bin\%REDECLIPSE_ARCH%\%REDECLIPSE_BINARY%%REDECLIPSE_SUFFIX% %REDECLIPSE_OPTIONS% %* || (
+        start /wait bin\%REDECLIPSE_ARCH%\%REDECLIPSE_BINARY%%REDECLIPSE_SUFFIX% %REDECLIPSE_OPTIONS% %* || (
             popd
             goto redeclipse_error
         )
