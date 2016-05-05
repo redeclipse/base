@@ -2808,13 +2808,13 @@ struct texturegui : guicb
         g.start(menustart, NULL, true);
         uilist(g, {
             g.space(2);
-            if(g.button("\fgauto apply", 0xFFFFFF, autoapplytexgui ? "checkboxon" : "checkbox", 0xFFFFFF)&GUI_UP)
+            if(g.button("\fgauto apply", 0xFFFFFF, "checkbox", 0xFFFFFF, -1, true, autoapplytexgui ? "checkboxon" : NULL, guicheckboxcolour)&GUI_UP)
                 autoapplytexgui = autoapplytexgui ? 0 : 1;
             g.space(2);
-            if(g.button("\fgauto preview", 0xFFFFFF, autopreviewtexgui ? "checkboxon" : "checkbox", 0xFFFFFF)&GUI_UP)
+            if(g.button("\fgauto preview", 0xFFFFFF, "checkbox", 0xFFFFFF, -1, true, autopreviewtexgui ? "checkboxon" : NULL, guicheckboxcolour)&GUI_UP)
                 autopreviewtexgui = autopreviewtexgui ? 0 : 1;
             g.space(2);
-            if(g.button("\fgauto close", 0xFFFFFF, autoclosetexgui ? (autoclosetexgui > 1 ? "checkboxtwo" : "checkboxon") : "checkbox", 0xFFFFFF)&GUI_UP)
+            if(g.button("\fgauto close", 0xFFFFFF, "checkbox", 0xFFFFFF, -1, true, autoclosetexgui ? "checkboxon" : NULL, autoclosetexgui > 1 ? guicheckboxtwocolour : guicheckboxcolour)&GUI_UP)
                 autoclosetexgui = autoclosetexgui ? (autoclosetexgui > 1 ? 0 : 2) : 1;
             g.space(2);
             if(g.button("\foreset order", 0xFFFFFF, NULL)&GUI_UP)
