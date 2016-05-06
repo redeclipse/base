@@ -9,6 +9,7 @@ setlocal enableextensions enabledelayedexpansion
     set REDECLIPSE_SCRIPT=%~dp0\%~0
     for %%a in ("%REDECLIPSE_SCRIPT%") do set REDECLIPSE_SCRIPT_TIME=%%~ta
     if NOT DEFINED REDECLIPSE_BINARY set REDECLIPSE_BINARY=redeclipse
+    if NOT DEFINED REDECLIPSE_START set REDECLIPSE_START=start /wait
     set REDECLIPSE_SUFFIX=.exe
     set REDECLIPSE_MAKE=mingw32-make
 :redeclipse_setup
@@ -68,7 +69,7 @@ setlocal enableextensions enabledelayedexpansion
 :redeclipse_runit
     if EXIST "%REDECLIPSE_PATH%\bin\%REDECLIPSE_ARCH%\%REDECLIPSE_BINARY%%REDECLIPSE_SUFFIX%" (
         pushd "%REDECLIPSE_PATH%" || goto redeclipse_error
-        start /wait bin\%REDECLIPSE_ARCH%\%REDECLIPSE_BINARY%%REDECLIPSE_SUFFIX% %REDECLIPSE_OPTIONS% %* || (
+        %REDECLIPSE_START% bin\%REDECLIPSE_ARCH%\%REDECLIPSE_BINARY%%REDECLIPSE_SUFFIX% %REDECLIPSE_OPTIONS% %* || (
             popd
             goto redeclipse_error
         )

@@ -7,5 +7,6 @@ setlocal enableextensions enabledelayedexpansion
     popd
 :init
     set REDECLIPSE_BINARY=redeclipse_server
+    set REDECLIPSE_START=start
 :start
     call "%REDECLIPSE_PATH%\redeclipse.bat" %*
