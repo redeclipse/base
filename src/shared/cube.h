@@ -47,7 +47,7 @@
 
 #ifndef STANDALONE
   #ifdef __APPLE__
-    #include "SDL2/SDL.h"
+    #include "SDL.h"
     #define GL_GLEXT_LEGACY
     #define __glext_h_
     #include <OpenGL/gl.h>
