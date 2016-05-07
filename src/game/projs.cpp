@@ -1119,7 +1119,7 @@ namespace projs
                 proj.yaw = d->yaw;
                 proj.pitch = d->pitch;
                 proj.inertia = vec(d->vel).add(d->falling);
-                if(proj.projtype == PRJ_SHOT && isweap(proj.weap) && issound(d->pschan) && weaptype[proj.weap].thrown[WS(proj.flags ? 1 : 0] != 0)
+                if(proj.projtype == PRJ_SHOT && isweap(proj.weap) && issound(d->pschan) && weaptype[proj.weap].thrown[WS(proj.flags) ? 1 : 0] != 0)
                     playsound(WSND2(proj.weap, WS(proj.flags), S_W_TRANSIT), proj.o, &proj, SND_LOOP, sounds[d->pschan].vol, -1, -1, &proj.schan, 0, &d->pschan);
             }
         }
