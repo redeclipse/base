@@ -60,7 +60,7 @@ namespace game
 
     void stopmapmusic()
     {
-        if(connected() && maptime > 0 && gs_intermission(gamestate)) musicdone(true);
+        if(connected() && maptime > 0) musicdone(true);
     }
     VARF(IDF_PERSIST, musictype, 0, 1, 6, stopmapmusic()); // 0 = no in-game music, 1 = map music (or random if none), 2 = always random, 3 = map music (silence if none), 4-5 = same as 1-2 but pick new tracks when done, 6 = always use theme song
     VARF(IDF_PERSIST, musicedit, -1, 0, 6, stopmapmusic()); // same as above for editmode, -1 = use musictype
