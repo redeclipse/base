@@ -486,7 +486,10 @@ void rendermapmodel(extentity &e)
             e.light.material[0] = bvec::fromcolor(r);
         }
         else e.light.material[0] = e.attrs[7] ? bvec(e.attrs[7]) : bvec(255, 255, 255);
-        rendermodel(&e.light, mmi->name, anim, e.o, e.attrs[1], e.attrs[2], e.attrs[3], flags, NULL, NULL, basetime, 0, e.attrs[4] ? min(e.attrs[4]/100.f, 1.f) : 1.f, e.attrs[5] ? max(e.attrs[5]/100.f, 1e-3f) : 1.f);
+        float yaw = e.attrs[1], pitch = e.attrs[2], roll = e.attrs[3];
+        if(e.attrs[10]) yaw += e.attrs[10]*lastmillis/1000.0f;
+        if(e.attrs[11]) pitch += e.attrs[11]*lastmillis/1000.0f;
+        rendermodel(&e.light, mmi->name, anim, e.o, yaw, pitch, roll, flags, NULL, NULL, basetime, 0, e.attrs[4] ? min(e.attrs[4]/100.f, 1.f) : 1.f, e.attrs[5] ? max(e.attrs[5]/100.f, 1e-3f) : 1.f);
     }
 }
 
@@ -1328,7 +1331,7 @@ static void renderbatches(renderstate &cur, int pass)
 void renderzpass(renderstate &cur, vtxarray *va)
 {
     if(!cur.vattribs)
-    {   
+    {
         if(cur.vquery) disablevquery(cur);
         enablevattribs(cur, false);
     }

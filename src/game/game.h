@@ -74,10 +74,10 @@ enttypes enttype[] = {
                 "light",        { "radius", "red",      "green",    "blue",     "flare",    "flarescale"  }
     },
     {
-        MAPMODEL,       1,          58,     0,      EU_NONE,    10,         -1,         -1,
+        MAPMODEL,       1,          58,     0,      EU_NONE,    12,         -1,         -1,
             (1<<TRIGGER), (1<<TRIGGER), 0,
             false,  false,  false,      false,      false,
-                "mapmodel",     { "type",   "yaw",      "pitch",    "roll",     "blend",    "scale",    "flags",    "colour",   "palette",  "palindex" }
+                "mapmodel",     { "type",   "yaw",      "pitch",    "roll",     "blend",    "scale",    "flags",    "colour",   "palette",  "palindex", "spinyaw",  "spinpitch" }
     },
     {
         PLAYERSTART,    1,          59,     0,      EU_NONE,    6,          3,          5,
