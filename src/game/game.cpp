@@ -1222,8 +1222,9 @@ namespace game
 
     void checkfloor(gameent *d)
     {
+        if(d->state != CS_ALIVE) return;
         vec pos = d->feetpos();
-        if((d->physstate >= PHYS_SLOPE || d->onladder || physics::liquidcheck(d)) && pos.z > 0)
+        if(!d->turnside && (d->physstate >= PHYS_SLOPE || d->onladder || physics::liquidcheck(d)) && pos.z > 0 && d->floortime(lastmillis))
         {
             int mat = lookupmaterial(pos);
             if(!isclipped(mat&MATF_VOLUME) && ((mat&MATF_VOLUME) != int(MAT_LAVA)) && !(mat&MAT_DEATH)) d->floorpos = pos;
@@ -1241,11 +1242,11 @@ namespace game
                 checkfloor(d);
                 continue;
             }
+            if(gs_playing(gamestate) && (d->state == CS_DEAD || d->state == CS_WAITING)) entities::checkitems(d);
             const int lagtime = totalmillis-d->lastupdate;
             if(!lagtime || !gs_playing(gamestate)) continue;
             //else if(lagtime > 1000) continue;
             physics::smoothplayer(d, 1, false);
-            if(gs_playing(gamestate) && (d->state == CS_DEAD || d->state == CS_WAITING)) entities::checkitems(d);
         }
     }
 
