@@ -679,13 +679,13 @@ namespace projs
     {
         if(!insideworld(proj.o)) return false;
         vec dir = vec(proj.vel).normalize();
-        if(collide(&proj, dir, 0, false))
+        if(collide(&proj, dir, 1e-6f, false) || collideinside)
         {
             vec orig = proj.o;
             if(!proj.lastgood.iszero())
             {
                 proj.o = proj.lastgood;
-                if(!collide(&proj, dir, 0, false))
+                if(!collide(&proj, dir, 1e-6f, false) && !collideinside)
                 {
                     if(rev)
                     {
@@ -704,7 +704,7 @@ namespace projs
             loopi(2) loopj(5) loopk(8)
             {
                 proj.o.add(vec((int(yaw+sphereyawchecks[k])%360)*RAD, spherepitchchecks[j]*RAD).mul(proj.radius*(i+1)*2));
-                if(!collide(&proj, dir, 0, false))
+                if(!collide(&proj, dir, 1e-6f, false) && !collideinside)
                 {
                     if(rev)
                     {
