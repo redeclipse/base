@@ -126,37 +126,37 @@ void drawenvbox(int w, float z1clip = 0.0f, float z2clip = 1.0f, int faces = 0x3
     if(faces&0x01)
         drawenvboxface(0.0f, v2,  -w, -w, z2,
                        1.0f, v2,  -w,  w, z2,
-                       1.0f, v1,  -w,  w, z1, 
-                       0.0f, v1,  -w, -w, z1, sky[0]); 
+                       1.0f, v1,  -w,  w, z1,
+                       0.0f, v1,  -w, -w, z1, sky[0]);
 
     if(faces&0x02)
         drawenvboxface(1.0f, v1, w, -w, z1,
                        0.0f, v1, w,  w, z1,
-                       0.0f, v2, w,  w, z2, 
-                       1.0f, v2, w, -w, z2, sky[1]); 
+                       0.0f, v2, w,  w, z2,
+                       1.0f, v2, w, -w, z2, sky[1]);
 
     if(faces&0x04)
         drawenvboxface(1.0f, v1, -w, -w, z1,
                        0.0f, v1,  w, -w, z1,
-                       0.0f, v2,  w, -w, z2, 
-                       1.0f, v2, -w, -w, z2, sky[2]); 
+                       0.0f, v2,  w, -w, z2,
+                       1.0f, v2, -w, -w, z2, sky[2]);
 
     if(faces&0x08)
         drawenvboxface(1.0f, v1,  w,  w, z1,
                        0.0f, v1, -w,  w, z1,
-                       0.0f, v2, -w,  w, z2, 
-                       1.0f, v2,  w,  w, z2, sky[3]); 
+                       0.0f, v2, -w,  w, z2,
+                       1.0f, v2,  w,  w, z2, sky[3]);
 
     if(z1clip <= 0 && faces&0x10)
         drawenvboxface(0.0f, 1.0f, -w,  w,  -w,
                        0.0f, 0.0f,  w,  w,  -w,
-                       1.0f, 0.0f,  w, -w,  -w, 
-                       1.0f, 1.0f, -w, -w,  -w, sky[4]); 
+                       1.0f, 0.0f,  w, -w,  -w,
+                       1.0f, 1.0f, -w, -w,  -w, sky[4]);
 
     if(z2clip >= 1 && faces&0x20)
         drawenvboxface(0.0f, 1.0f,  w,  w, w,
                        0.0f, 0.0f, -w,  w, w,
-                       1.0f, 0.0f, -w, -w, w, 
+                       1.0f, 0.0f, -w, -w, w,
                        1.0f, 1.0f,  w, -w, w, sky[5]);
 }
 
@@ -229,7 +229,7 @@ namespace fogdome
     {
         vec pos;
         bvec4 color;
-    
+
         vert() {}
         vert(const vec &pos, const bvec &fcolor, float alpha) : pos(pos), color(fcolor, uchar(alpha*255))
         {
@@ -244,9 +244,9 @@ namespace fogdome
     GLuint vbuf = 0, ebuf = 0;
     bvec lastcolor(0, 0, 0);
     float lastminalpha = 0, lastmaxalpha = 0, lastcapsize = -1, lastclipz = 1;
-    
+
     void subdivide(int depth, int face);
-    
+
     void genface(int depth, int i1, int i2, int i3)
     {
         int face = numindices; numindices += 3;
@@ -255,7 +255,7 @@ namespace fogdome
         indices[face+2] = i1;
         subdivide(depth, face);
     }
-    
+
     void subdivide(int depth, int face)
     {
         if(depth-- <= 0) return;
@@ -271,13 +271,13 @@ namespace fogdome
         subdivide(depth, face);
         loopi(3) genface(depth, idx[i], idx[3+i], idx[3+(i+2)%3]);
     }
-    
+
     int sortcap(GLushort x, GLushort y)
     {
         const vec &xv = verts[x].pos, &yv = verts[y].pos;
         return xv.y < 0 ? yv.y >= 0 || xv.x < yv.x : yv.y >= 0 && xv.x > yv.x;
     }
-    
+
     void init(const bvec &color, float minalpha = 0.0f, float maxalpha = 1.0f, float capsize = -1, float clipz = 1, int hres = 16, int depth = 2)
     {
         const int tris = hres << (2*depth);
@@ -312,7 +312,7 @@ namespace fogdome
                 genface(depth-1, 3*i+2, 3*((i+1)%hres)+1, 3*((i+1)%hres));
             }
         }
-    
+
         if(capsize >= 0)
         {
             GLushort *cap = &indices[numindices];
@@ -329,25 +329,25 @@ namespace fogdome
                 capindices += 3;
             }
         }
-    
+
         if(!vbuf) glGenBuffers_(1, &vbuf);
         gle::bindvbo(vbuf);
         glBufferData_(GL_ARRAY_BUFFER, numverts*sizeof(vert), verts, GL_STATIC_DRAW);
         DELETEA(verts);
-    
+
         if(!ebuf) glGenBuffers_(1, &ebuf);
         gle::bindebo(ebuf);
         glBufferData_(GL_ELEMENT_ARRAY_BUFFER, (numindices + capindices)*sizeof(GLushort), indices, GL_STATIC_DRAW);
         DELETEA(indices);
     }
-    
+
     void cleanup()
     {
         numverts = numindices = 0;
         if(vbuf) { glDeleteBuffers_(1, &vbuf); vbuf = 0; }
         if(ebuf) { glDeleteBuffers_(1, &ebuf); ebuf = 0; }
     }
-    
+
     void draw()
     {
         float capsize = fogdomecap && fogdomeheight < 1 ? (1 + fogdomeheight) / (1 - fogdomeheight) : -1;
@@ -361,7 +361,7 @@ namespace fogdome
             lastcapsize = capsize;
             lastclipz = fogdomeclip;
         }
-    
+
         gle::bindvbo(vbuf);
         gle::bindebo(ebuf);
 
@@ -369,14 +369,14 @@ namespace fogdome
         gle::colorpointer(sizeof(vert), &verts->color);
         gle::enablevertex();
         gle::enablecolor();
-    
+
         glDrawRangeElements_(GL_TRIANGLES, 0, numverts-1, numindices + fogdomecap*capindices, GL_UNSIGNED_SHORT, indices);
         xtraverts += numverts;
         glde++;
 
         gle::disablevertex();
         gle::disablecolor();
-    
+
         gle::clearvbo();
         gle::clearebo();
     }
@@ -508,6 +508,7 @@ void drawskybox(int farplane, bool limited)
     else glDepthFunc(GL_LEQUAL);
 
     glDepthMask(GL_FALSE);
+    glEnable(GL_DEPTH_CLAMP);
 
     if(clampsky) glDepthRange(1, 1);
 
@@ -524,7 +525,7 @@ void drawskybox(int farplane, bool limited)
         LOCALPARAM(skymatrix, skyprojmatrix);
 
         gle::color(vec::hexcolor(skybgcolour));
-        drawenvboxbg(farplane/2, skyclip, topclip, yawskyfaces(renderedskyfaces, yawsky, spinsky));
+        drawenvboxbg(farplane, skyclip, topclip, yawskyfaces(renderedskyfaces, yawsky, spinsky));
     }
 
     if(glaring) SETSHADER(skyboxglare);
@@ -629,6 +630,7 @@ void drawskybox(int farplane, bool limited)
 
     if(clampsky) glDepthRange(0, 1);
 
+    glDisable(GL_DEPTH_CLAMP);
     glDepthMask(GL_TRUE);
 
     if(limited)
