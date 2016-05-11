@@ -92,10 +92,10 @@
 [submodule "snipergoth"]
 	path = data/snipergoth
 	url = https://github.com/red-eclipse/snipergoth.git
+	branch = master
 [submodule "sounds"]
 	path = data/sounds
 	url = https://github.com/red-eclipse/sounds.git
-	branch = master
 	branch = master
 [submodule "textures"]
 	path = data/textures
