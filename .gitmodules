@@ -89,9 +89,13 @@
 	path = data/skyboxes
 	url = https://github.com/red-eclipse/skyboxes.git
 	branch = master
+[submodule "snipergoth"]
+	path = data/snipergoth
+	url = https://github.com/red-eclipse/snipergoth.git
 [submodule "sounds"]
 	path = data/sounds
 	url = https://github.com/red-eclipse/sounds.git
+	branch = master
 	branch = master
 [submodule "textures"]
 	path = data/textures
