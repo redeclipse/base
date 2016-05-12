@@ -65,6 +65,10 @@
 	path = data/misc
 	url = https://github.com/red-eclipse/misc.git
 	branch = master
+[submodule "nieb"]
+	path = data/nieb
+	url = https://github.com/red-eclipse/nieb.git
+	branch = master
 [submodule "nobiax"]
 	path = data/nobiax
 	url = https://github.com/red-eclipse/nobiax.git
@@ -91,6 +95,7 @@
 	branch = master
 [submodule "snipergoth"]
 	path = data/snipergoth
+
 	url = https://github.com/red-eclipse/snipergoth.git
 	branch = master
 [submodule "sounds"]
@@ -133,6 +138,3 @@
 	path = data/wicked
 	url = https://github.com/red-eclipse/wicked.git
 	branch = master
-[submodule "nieb"]
-	path = data/nieb
-	url = https://github.com/red-eclipse/nieb.git
