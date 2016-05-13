@@ -1736,7 +1736,7 @@ void fatalsignal(int signum)
     if(!fatalsig)
     {
         fatalsig = true;
-        const char *str = "";
+        const char *str = "Error: Fatal signal %d (Unknown Error)";
         switch(signum)
         {
             case SIGINT: str = "Exit signal %d (Interrupt)"; break;
@@ -1751,7 +1751,7 @@ void fatalsignal(int signum)
             case SIGPIPE: str = "Fatal signal %d (Broken Pipe)"; break;
             case SIGALRM: str = "Fatal signal %d (Alarm)"; break;
 #endif
-            default: str = "Error: Fatal signal %d (Unknown Error)"; break;
+            default: break;
         }
         fatal(str, signum);
     }
