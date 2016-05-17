@@ -551,10 +551,10 @@ namespace server
         void reset(int n = 0) { id = n; ents.shrink(0); }
     } triggers[TRIGGERIDS+1];
 
-    bool canplay(bool chk = true)
+    bool canplay()
     {
         if(!demoplayback && !m_demo(gamemode))
-            if(!chk || (m_play(gamemode) && !hasgameinfo) || !gs_playing(gamestate)) return false;
+            if((m_play(gamemode) && !hasgameinfo) || !gs_playing(gamestate)) return false;
         return true;
     }
 
@@ -1469,7 +1469,7 @@ namespace server
         switch(gamestate)
         {
             case G_S_PLAYING: case G_S_OVERTIME: return timeremaining;
-            default: return max(gamewaittime-totalmillis, 0)/1000;
+            default: return gamewaittime ? max(gamewaittime-totalmillis, 0)/1000 : 0;
         }
         return 0;
     }
@@ -3359,7 +3359,7 @@ namespace server
         changemode(gamemode = mode, mutators = muts);
         curbalance = nextbalance = lastteambalance = nextteambalance = gamemillis = 0;
         gamestate = G_S_WAITING;
-        gamewaittime = totalmillis+max(m_play(gamemode) ? G(waitforplayerload) : 1, 1);
+        gamewaittime = 0;
         bool hastime = m_play(gamemode) && m_mmvar(gamemode, mutators, timelimit);
         oldtimelimit = hastime ? m_mmvar(gamemode, mutators, timelimit) : -1;
         timeremaining = hastime ? m_mmvar(gamemode, mutators, timelimit)*60 : -1;
@@ -5059,6 +5059,7 @@ namespace server
                             sendtick();
                             break;
                         }
+                        if(!gamewaittime) gamewaittime = totalmillis+max(m_play(gamemode) ? G(waitforplayerload) : 1, 1);
                         if(numnotready && gamewaittime > totalmillis) break;
                         if(!hasmapdata())
                         {
@@ -5080,6 +5081,7 @@ namespace server
                     }
                     case G_S_GETMAP: // waiting for server
                     {
+                        if(!gamewaittime) gamewaittime = totalmillis+G(waitforplayermaps);
                         if(!hasmapdata() && mapsending >= 0 && gamewaittime > totalmillis) break;
                         if(numgetmap && hasmapdata())
                         {
@@ -5096,6 +5098,7 @@ namespace server
                     }
                     case G_S_SENDMAP: // waiting for players
                     {
+                        if(!gamewaittime) gamewaittime = totalmillis+G(waitforplayermaps);
                         if(numgetmap && gamewaittime > totalmillis && hasmapdata()) break;
                         gamewaittime = totalmillis+G(waitforplayertime);
                         gamestate = G_S_READYING;
@@ -5104,6 +5107,7 @@ namespace server
                     }
                     case G_S_READYING: // waiting for ready
                     {
+                        if(!gamewaittime) gamewaittime = totalmillis+G(waitforplayertime);
                         if(numwait && gamewaittime > totalmillis) break;
                         if(!hasgameinfo)
                         {
@@ -5131,6 +5135,7 @@ namespace server
                     }
                     case G_S_GAMEINFO:
                     {
+                        if(!gamewaittime) gamewaittime = totalmillis+G(waitforplayerinfo);
                         if(!hasgameinfo && gamewaittime > totalmillis) break;
                         if(hasgameinfo) srvoutf(4, "\fygame information received, starting..");
                         else
@@ -5170,9 +5175,9 @@ namespace server
                     sendtick();
                 }
             }
-            if(canplay(!paused)) gamemillis += curtime;
+            if(canplay() && !paused) gamemillis += curtime;
             if(m_demo(gamemode)) readdemo();
-            else if(canplay(!paused))
+            else if(canplay() && !paused)
             {
                 processevents();
                 checkents();
@@ -5184,18 +5189,21 @@ namespace server
             if(gs_intermission(gamestate) && gamewaittime <= totalmillis) startintermission(true); // wait then call for next map
             if(shouldcheckvotes) checkvotes();
         }
-        else ifserver(shutdownwait)
+        else
         {
-            srvoutf(4, "server empty, shutting down as scheduled");
-            #ifdef STANDALONE
-            cleanupserver();
-            exit(EXIT_SUCCESS);
-            #else
-            quit();
-            #endif
-            return;
+            ifserver(shutdownwait)
+            {
+                srvoutf(4, "server empty, shutting down as scheduled");
+                #ifdef STANDALONE
+                cleanupserver();
+                exit(EXIT_SUCCESS);
+                #else
+                quit();
+                #endif
+                return;
+            }
+            if(G(rotatecycle) && clocktime-lastrotatecycle >= G(rotatecycle)*60) cleanup();
         }
-        else if(G(rotatecycle) && clocktime-lastrotatecycle >= G(rotatecycle)*60) cleanup();
         aiman::checkai();
         auth::update();
     }
