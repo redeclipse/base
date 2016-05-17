@@ -5059,7 +5059,11 @@ namespace server
                             sendtick();
                             break;
                         }
-                        if(!gamewaittime) gamewaittime = totalmillis+max(m_play(gamemode) ? G(waitforplayerload) : 1, 1);
+                        if(!gamewaittime)
+                        {
+                            gamewaittime = totalmillis+max(m_play(gamemode) ? G(waitforplayerload) : 1, 1);
+                            sendtick();
+                        }
                         if(numnotready && gamewaittime > totalmillis) break;
                         if(!hasmapdata())
                         {
@@ -5081,7 +5085,11 @@ namespace server
                     }
                     case G_S_GETMAP: // waiting for server
                     {
-                        if(!gamewaittime) gamewaittime = totalmillis+G(waitforplayermaps);
+                        if(!gamewaittime)
+                        {
+                            gamewaittime = totalmillis+G(waitforplayermaps);
+                            sendtick();
+                        }
                         if(!hasmapdata() && mapsending >= 0 && gamewaittime > totalmillis) break;
                         if(numgetmap && hasmapdata())
                         {
@@ -5098,7 +5106,11 @@ namespace server
                     }
                     case G_S_SENDMAP: // waiting for players
                     {
-                        if(!gamewaittime) gamewaittime = totalmillis+G(waitforplayermaps);
+                        if(!gamewaittime)
+                        {
+                            gamewaittime = totalmillis+G(waitforplayermaps);
+                            sendtick();
+                        }
                         if(numgetmap && gamewaittime > totalmillis && hasmapdata()) break;
                         gamewaittime = totalmillis+G(waitforplayertime);
                         gamestate = G_S_READYING;
@@ -5107,7 +5119,11 @@ namespace server
                     }
                     case G_S_READYING: // waiting for ready
                     {
-                        if(!gamewaittime) gamewaittime = totalmillis+G(waitforplayertime);
+                        if(!gamewaittime)
+                        {
+                            gamewaittime = totalmillis+G(waitforplayertime);
+                            sendtick();
+                        }
                         if(numwait && gamewaittime > totalmillis) break;
                         if(!hasgameinfo)
                         {
@@ -5135,7 +5151,11 @@ namespace server
                     }
                     case G_S_GAMEINFO:
                     {
-                        if(!gamewaittime) gamewaittime = totalmillis+G(waitforplayerinfo);
+                        if(!gamewaittime)
+                        {
+                            gamewaittime = totalmillis+G(waitforplayerinfo);
+                            sendtick();
+                        }
                         if(!hasgameinfo && gamewaittime > totalmillis) break;
                         if(hasgameinfo) srvoutf(4, "\fygame information received, starting..");
                         else
