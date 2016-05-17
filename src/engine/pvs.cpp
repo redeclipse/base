@@ -445,9 +445,12 @@ struct pvsworker
                       dxz(order[1].index|order[3].index, order[1].dist+order[3].dist),
                       dyz(order[2].index|order[3].index, order[2].dist+order[3].dist);
             int j;
-            for(j = 4; j > 0 && dxy.dist < order[j-1].dist; --j) order[j] = order[j-1]; order[j] = dxy;
-            for(j = 5; j > 0 && dxz.dist < order[j-1].dist; --j) order[j] = order[j-1]; order[j] = dxz;
-            for(j = 6; j > 0 && dyz.dist < order[j-1].dist; --j) order[j] = order[j-1]; order[j] = dyz;
+            for(j = 4; j > 0 && dxy.dist < order[j-1].dist; --j) order[j] = order[j-1];
+            order[j] = dxy;
+            for(j = 5; j > 0 && dxz.dist < order[j-1].dist; --j) order[j] = order[j-1];
+            order[j] = dxz;
+            for(j = 6; j > 0 && dyz.dist < order[j-1].dist; --j) order[j] = order[j-1];
+            order[j] = dyz;
             loopi(8)
             {
                 int index = order[i].index^dir;
