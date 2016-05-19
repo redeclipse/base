@@ -229,7 +229,7 @@ GVAR(IDF_GAMEMOD, kamikaze, 0, 1, 3); // 0 = never, 1 = holding grenade, 2 = hav
 GVAR(IDF_GAMEMOD, itemspawntime, 1, 15000, VAR_MAX); // when items respawn
 GVAR(IDF_GAMEMOD, itemspawndelay, 0, 0, VAR_MAX); // after map start items first spawn
 GVAR(IDF_GAMEMOD, itemspawnstyle, 0, 0, 3); // 0 = all at once, 1 = staggered, 2 = random, 3 = randomise between both
-GVAR(IDF_GAMEMOD, itemcollide, 0, BOUNCE_GEOM, VAR_MAX);
+GVAR(IDF_GAMEMOD, itemcollide, 0, BOUNCE_GEOM, COLLIDE_ALL);
 GVAR(IDF_GAMEMOD, itemextinguish, 0, 6, 7);
 GVAR(IDF_GAMEMOD, iteminteracts, 0, 3, 3);
 GFVAR(IDF_GAMEMOD, itemelasticity, FVAR_MIN, 0.4f, FVAR_MAX);
@@ -308,7 +308,7 @@ GFVAR(IDF_GAMEMOD, capturecarryspeed, 0, 0.9f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, capturedropheight, 0, 8, FVAR_MAX);
 GVAR(IDF_GAMEMOD, capturepoints, 0, 5, VAR_MAX); // points added to score
 GVAR(IDF_GAMEMOD, capturepickuppoints, 0, 3, VAR_MAX); // points added to score
-GVAR(IDF_GAMEMOD, capturecollide, 0, BOUNCE_GEOM, VAR_MAX);
+GVAR(IDF_GAMEMOD, capturecollide, 0, BOUNCE_GEOM, COLLIDE_ALL);
 GVAR(IDF_GAMEMOD, captureextinguish, 0, 6, 7);
 GVAR(IDF_GAMEMOD, captureinteracts, 0, 3, 3);
 GFVAR(IDF_GAMEMOD, capturerelativity, 0, 0, FVAR_MAX);
@@ -370,7 +370,7 @@ GFVAR(IDF_GAMEMOD, bomberspeed, 0, 250, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, bomberspeeddelta, 0, 1000, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, bomberspeedmin, 0, 65, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, bomberspeedmax, 0, 200, FVAR_MAX);
-GVAR(IDF_GAMEMOD, bombercollide, 0, BOUNCE_GEOM, VAR_MAX);
+GVAR(IDF_GAMEMOD, bombercollide, 0, BOUNCE_GEOM, COLLIDE_ALL);
 GVAR(IDF_GAMEMOD, bomberextinguish, 0, 6, 7);
 GVAR(IDF_GAMEMOD, bomberinteracts, 0, 3, 3);
 GFVAR(IDF_GAMEMOD, bomberrelativity, 0, 0.25f, FVAR_MAX);
