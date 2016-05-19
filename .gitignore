@@ -43,3 +43,4 @@ src/xcode/build/*
 src/xcode/redeclipse.xcodeproj/project.pbxproj
 src/xcode/redeclipse.xcodeproj/project.xcworkspace
 src/xcode/redeclipse.xcodeproj/xcuserdata
+src/redeclipse.cscope_file_list
