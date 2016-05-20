@@ -121,7 +121,7 @@ WPSVAR(IDF_GAMEMOD, longname, // shown for weapon pickups and loadout menu
 );
 
 WPSVARM(IDF_GAMEMOD, desc,
-    "a weak claw attack.",
+    "basic, horizontal claw slash, best used in conjunction with an impulse kick",
     "long-range, low-damage bullets with a high rate of fire.",
     "horizontal slice, low-damage, can be swung at short intervals, causes bleed residual damage.",
     "fires a lot of pellets, causes mass destruction at short range, useless at long range.",
@@ -135,7 +135,7 @@ WPSVARM(IDF_GAMEMOD, desc,
     "a fast, highly explosive rocket with a large shockwave, causes burn residual damage.",
     "use parkour and kick moves as melee attacks.",
     // begin secondary
-    "a strong claw attack.",
+    "slower and weaker claw attack that pulls you towards the enemy or performs low impulse cost wall grabs.",
     "slower rate of fire than the primary attack, but does more damage.",
     "a slower vertical slice with much more power, causes bleed residual damage.",
     "shoots a slug that explodes and disintegrates into shavings, causes bleed residual damage.",
