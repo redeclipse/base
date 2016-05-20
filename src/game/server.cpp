@@ -2475,7 +2475,7 @@ namespace server
         if(m_demo(gamemode) || m_edit(gamemode)) return;
         demonextmatch = false;
 
-        demotmp = opentempfile("demorecord", "w+b");
+        demotmp = opentempfile("backups/demorecord", "w+b");
         stream *f = opengzfile(NULL, "wb", demotmp);
         if(!f) { DELETEP(demotmp); return; }
 
@@ -5364,7 +5364,7 @@ namespace server
         if(ci->clientnum != mapsending) return -1;
         if(!len) return n; // zero len is no file
         if(mapdata[n]) DELETEP(mapdata[n]);
-        defformatstring(fname, "tempfile.%s", sendmaptypes[n]);
+        defformatstring(fname, "backups/tempfile.%s", sendmaptypes[n]);
         mapdata[n] = opentempfile(fname, "w+b");
         if(!mapdata[n])
         {
