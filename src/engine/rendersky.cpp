@@ -508,7 +508,6 @@ void drawskybox(int farplane, bool limited)
     else glDepthFunc(GL_LEQUAL);
 
     glDepthMask(GL_FALSE);
-    glEnable(GL_DEPTH_CLAMP);
 
     if(clampsky) glDepthRange(1, 1);
 
@@ -525,7 +524,7 @@ void drawskybox(int farplane, bool limited)
         LOCALPARAM(skymatrix, skyprojmatrix);
 
         gle::color(vec::hexcolor(skybgcolour));
-        drawenvboxbg(farplane, skyclip, topclip, yawskyfaces(renderedskyfaces, yawsky, spinsky));
+        drawenvboxbg(farplane/2, skyclip, topclip, yawskyfaces(renderedskyfaces, yawsky, spinsky));
     }
 
     if(glaring) SETSHADER(skyboxglare);
@@ -630,7 +629,6 @@ void drawskybox(int farplane, bool limited)
 
     if(clampsky) glDepthRange(0, 1);
 
-    glDisable(GL_DEPTH_CLAMP);
     glDepthMask(GL_TRUE);
 
     if(limited)
