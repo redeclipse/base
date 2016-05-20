@@ -57,7 +57,7 @@ struct enttypes
     int type,           priority, links,    radius, usetype,    numattrs,   modesattr,  idattr,
             canlink, reclink, canuse;
     bool    noisy,  syncs,  resyncs,    syncpos,    synckin;
-    const char *name,           *attrs[12];
+    const char *name,           *attrs[13];
 };
 #ifdef GAMESERVER
 enttypes enttype[] = {
@@ -74,10 +74,10 @@ enttypes enttype[] = {
                 "light",        { "radius", "red",      "green",    "blue",     "flare",    "flarescale"  }
     },
     {
-        MAPMODEL,       1,          58,     0,      EU_NONE,    12,         -1,         -1,
+        MAPMODEL,       1,          58,     0,      EU_NONE,    13,         -1,         -1,
             (1<<TRIGGER), (1<<TRIGGER), 0,
             false,  false,  false,      false,      false,
-                "mapmodel",     { "type",   "yaw",      "pitch",    "roll",     "blend",    "scale",    "flags",    "colour",   "palette",  "palindex", "spinyaw",  "spinpitch" }
+                "mapmodel",     { "type",   "yaw",      "pitch",    "roll",     "blend",    "scale",    "flags",    "colour",   "palette",  "palindex", "spinyaw",  "spinpitch", "spinroll" }
     },
     {
         PLAYERSTART,    1,          59,     0,      EU_NONE,    6,          3,          5,

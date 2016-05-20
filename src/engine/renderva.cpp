@@ -489,6 +489,7 @@ void rendermapmodel(extentity &e)
         float yaw = e.attrs[1], pitch = e.attrs[2], roll = e.attrs[3];
         if(e.attrs[10]) yaw += e.attrs[10]*lastmillis/1000.0f;
         if(e.attrs[11]) pitch += e.attrs[11]*lastmillis/1000.0f;
+        if(e.attrs[12]) roll += e.attrs[12]*lastmillis/1000.0f;
         rendermodel(&e.light, mmi->name, anim, e.o, yaw, pitch, roll, flags, NULL, NULL, basetime, 0, e.attrs[4] ? min(e.attrs[4]/100.f, 1.f) : 1.f, e.attrs[5] ? max(e.attrs[5]/100.f, 1e-3f) : 1.f);
     }
 }
