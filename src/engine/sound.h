@@ -69,7 +69,7 @@ extern void initsound();
 extern void stopsound();
 extern bool playmusic(const char *name, const char *cmd = NULL);
 extern bool playingmusic(bool check = true);
-extern void smartmusic(bool cond);
+extern void smartmusic(bool cond, bool init = false);
 extern void musicdone(bool docmd);
 extern void updatesounds();
 extern int addsound(const char *name, int vol, int maxrad, int minrad, int value, vector<soundslot> &soundset);

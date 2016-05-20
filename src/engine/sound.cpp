@@ -41,7 +41,7 @@ hashnameset<soundsample> soundsamples;
 vector<soundslot> gamesounds, mapsounds;
 vector<sound> sounds;
 
-bool nosound = true, changedvol = false;
+bool nosound = true, changedvol = false, canmusic = false;
 Mix_Music *music = NULL;
 SDL_RWops *musicrw = NULL;
 stream *musicstream = NULL;
@@ -271,9 +271,10 @@ bool playingmusic(bool check)
     return false;
 }
 
-void smartmusic(bool cond)
+void smartmusic(bool cond, bool init)
 {
-    if(nosound || !mastervol || !musicvol || (!cond && Mix_PlayingMusic()) || !*titlemusic) return;
+    if(init) canmusic = true;
+    if(!canmusic || nosound || !mastervol || !musicvol || (!cond && Mix_PlayingMusic()) || !*titlemusic) return;
     if(!playingmusic() || (cond && strcmp(musicfile, titlemusic))) playmusic(titlemusic);
     else
     {

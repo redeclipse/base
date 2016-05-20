@@ -1013,7 +1013,7 @@ int main(int argc, char **argv)
     conoutf("loading config..");
     progress(0, "loading config..");
     rehash(false);
-    smartmusic(true);
+    smartmusic(true, true);
 
     conoutf("loading required data..");
     progress(0, "loading required data..");
