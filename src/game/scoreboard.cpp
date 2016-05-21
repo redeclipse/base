@@ -575,7 +575,7 @@ namespace hud
                                             ownerbg;
                                             if(scoretotalpoints)
                                             {
-                                                uicenter(g, uipad(g, 0.5f, g.textf("%d (%d)", ownerfgc, NULL, 0, -1, false, NULL, 0xFFFFFF, o->points, o->totalpoints)));
+                                                uicenter(g, uipad(g, 0.5f, g.textf("%d (%d)", ownerfgc, NULL, 0, -1, false, NULL, 0xFFFFFF, o->points, o->totalpoints())));
                                             }
                                             else uicenter(g, uipad(g, 0.5f, g.textf("%d", ownerfgc, NULL, 0, -1, false, NULL, 0xFFFFFF, o->points)));
                                         }));
@@ -608,7 +608,7 @@ namespace hud
                                             ownerbg;
                                             if(scoretotalfrags)
                                             {
-                                                uicenter(g, uipad(g, 0.5f, g.textf("%d (%d)", ownerfgc, NULL, 0, -1, false, NULL, 0xFFFFFF, o->frags, o->totalfrags)));
+                                                uicenter(g, uipad(g, 0.5f, g.textf("%d (%d)", ownerfgc, NULL, 0, -1, false, NULL, 0xFFFFFF, o->frags, o->totalfrags())));
                                             }
                                             else uicenter(g, uipad(g, 0.5f, g.textf("%d", ownerfgc, NULL, 0, -1, false, NULL, 0xFFFFFF, o->frags)));
                                         }));
@@ -625,7 +625,7 @@ namespace hud
                                             ownerbg;
                                             if(scoretotaldeaths)
                                             {
-                                                uicenter(g, uipad(g, 0.5f, g.textf("%d (%d)", ownerfgc, NULL, 0, -1, false, NULL, 0xFFFFFF, o->deaths, o->totaldeaths)));
+                                                uicenter(g, uipad(g, 0.5f, g.textf("%d (%d)", ownerfgc, NULL, 0, -1, false, NULL, 0xFFFFFF, o->deaths, o->totaldeaths())));
                                             }
                                             else uicenter(g, uipad(g, 0.5f, g.textf("%d", ownerfgc, NULL, 0, -1, false, NULL, 0xFFFFFF, o->deaths)));
                                         }));
