@@ -392,19 +392,11 @@ namespace ai
 
     bool defense(gameent *d, aistate &b, const vec &pos, float guard, float wander, int walk)
     {
-        if(!(AA(d->actortype, abilities)&(1<<A_A_MOVE)))
+        bool canmove = AA(d->actortype, abilities)&(1<<A_A_MOVE);
+        if(!canmove || (!walk && d->feetpos().squaredist(pos) <= guard*guard))
         {
-            b.acttype = enemy(d, b, pos, wander, W2(d->weapselect, aidist, false) < CLOSEDIST ? 1 : 0, false, true) ? AI_A_PROTECT : AI_A_IDLE;
+            b.acttype = enemy(d, b, pos, wander, canmove && W2(d->weapselect, aidist, false) < CLOSEDIST ? 1 : 0, false, !canmove) ? AI_A_PROTECT : AI_A_IDLE;
             return true;
-        }
-        if(!walk)
-        {
-            if(d->feetpos().squaredist(pos) <= guard*guard)
-            {
-                b.acttype = enemy(d, b, pos, d->ai->views[2], W2(d->weapselect, aidist, false) < CLOSEDIST ? 1 : 0, false, true) ? AI_A_PROTECT : AI_A_IDLE;
-                return true;
-            }
-            walk++;
         }
         return patrol(d, b, pos, guard, wander, walk);
     }
@@ -1056,13 +1048,13 @@ namespace ai
             {
                 if(targetable(d, f, true))
                 {
-                    if(!enemyok) violence(d, b, f, W2(d->weapselect, aidist, altfire(d, f)) < CLOSEDIST ? 1 : 0);
+                    if(!enemyok) violence(d, b, f, !d->ai->dontmove && (b.type != AI_S_DEFEND || b.targtype != AI_T_AFFINITY) && W2(d->weapselect, aidist, altfire(d, f)) < CLOSEDIST ? 1 : 0);
                     enemyok = true;
                     e = f;
                 }
                 else enemyok = false; // would hit non-targetable person
             }
-            else if((!enemyok || d->ai->dontmove) && target(d, b, 0, d->ai->dontmove))
+            else if((!enemyok || d->ai->dontmove) && target(d, b, 0, d->ai->dontmove && (b.type != AI_S_DEFEND || b.targtype != AI_T_AFFINITY)))
                 enemyok = (e = game::getclient(d->ai->enemy)) != NULL;
         }
         if(enemyok)

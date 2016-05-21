@@ -363,8 +363,7 @@ namespace defend
                 int numdyns = game::numdynents();
                 loopi(numdyns) if((e = (gameent *)game::iterdynents(i)) && !e->ai && e->state == CS_ALIVE && d->team == e->team)
                 {
-                    vec ep = e->feetpos();
-                    if(targets.find(e->clientnum) < 0 && ep.squaredist(f.o) <= (enttype[AFFINITY].radius*enttype[AFFINITY].radius))
+                    if(targets.find(e->clientnum) < 0 && e->feetpos().squaredist(f.o) <= (enttype[AFFINITY].radius*enttype[AFFINITY].radius))
                         targets.add(e->clientnum);
                 }
                 if((!regen && f.owner == d->team) || (targets.empty() && (f.owner != d->team || f.enemy)))
@@ -374,8 +373,8 @@ namespace defend
                     n.node = ai::closestwaypoint(f.o, ai::CLOSEDIST, false);
                     n.target = j;
                     n.targtype = ai::AI_T_AFFINITY;
-                    n.score = pos.squaredist(f.o)/(!regen ? 100.f : 1.f);
-                    n.tolerance = 0.25f;
+                    n.score = pos.squaredist(f.o)/(!regen ? 100.f : 10.f);
+                    n.tolerance = 0.5f;
                     n.team = true;
                     n.acttype = ai::AI_A_PROTECT;
                 }
@@ -392,6 +391,7 @@ namespace defend
             int walk = regen && f.owner == d->team && !f.enemy ? 1 : 0;
             if(walk)
             {
+                int teammembers = 1;
                 static vector<int> targets; // build a list of others who are interested in this
                 targets.setsize(0);
                 ai::checkothers(targets, d, ai::AI_S_DEFEND, ai::AI_T_AFFINITY, b.target, true);
@@ -399,15 +399,15 @@ namespace defend
                 {
                     gameent *e = NULL;
                     int numdyns = game::numdynents();
-                    float mindist = enttype[AFFINITY].radius*4; mindist *= mindist;
-                    loopi(numdyns) if((e = (gameent *)game::iterdynents(i)) && !e->ai && e->state == CS_ALIVE && d->team == e->team)
+                    float mindist = enttype[AFFINITY].radius*2; mindist *= mindist;
+                    loopi(numdyns) if((e = (gameent *)game::iterdynents(i)) && d->team == e->team)
                     {
-                        vec ep = e->feetpos();
-                        if(targets.find(e->clientnum) < 0 && ep.squaredist(f.o) <= mindist)
-                            targets.add(e->clientnum);
+                        teammembers++;
+                        if(e->state != CS_ALIVE || e->ai || targets.find(e->clientnum) < 0) continue;
+                        if(e->feetpos().squaredist(f.o) <= mindist) targets.add(e->clientnum);
                     }
                 }
-                if(!targets.empty())
+                if(targets.length() >= teammembers*0.5f)
                 {
                     if(lastmillis-b.millis >= (201-d->skill)*33)
                     {
@@ -417,7 +417,7 @@ namespace defend
                     else walk = 2;
                 }
             }
-            return ai::defense(d, b, f.o, enttype[AFFINITY].radius, enttype[AFFINITY].radius*(walk+1), m_dac_king(game::gamemode, game::mutators) ? 0 : walk);
+            return ai::defense(d, b, f.o, enttype[AFFINITY].radius, enttype[AFFINITY].radius*(walk+2), m_dac_king(game::gamemode, game::mutators) ? 0 : walk);
         }
         return false;
     }
