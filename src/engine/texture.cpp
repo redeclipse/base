@@ -2772,7 +2772,7 @@ GLuint genenvmap(const vec &o, int envmapsize, int blur)
                 yaw = 270; pitch = 90; break;
         }
         glFrontFace((side.flipx==side.flipy)!=side.swapxy ? GL_CW : GL_CCW);
-        drawcubemap(rendersize, 0, o, yaw, pitch, !side.flipx, !side.flipy, side.swapxy);
+        drawcubemap(0, o, yaw, pitch, !side.flipx, !side.flipy, side.swapxy);
         uchar *src = pixels, *dst = &pixels[3*rendersize*rendersize];
         glReadPixels(0, 0, rendersize, rendersize, GL_RGB, GL_UNSIGNED_BYTE, src);
         if(rendersize > texsize)

@@ -89,7 +89,7 @@ struct SlotShaderParam : SlotShaderParamValue
       : SlotShaderParamValue(palette, palindex, x, y, z, w),
         name(name), loc(-1)
     {
-    } 
+    }
 };
 
 struct SlotShaderParamState : LocalShaderParamState, SlotShaderParamValue
@@ -355,7 +355,7 @@ struct GlobalShaderParam
 
     template<class T>
     T *reserve(int n = 1) { return (T *)resolve()->buf; }
-};  
+};
 
 struct LocalShaderParam
 {
@@ -363,7 +363,7 @@ struct LocalShaderParam
     int loc;
 
     LocalShaderParam(const char *name) : name(name), loc(-1) {}
-    
+
     LocalShaderParamState *resolve()
     {
         Shader *s = Shader::lastshader;
@@ -803,7 +803,8 @@ struct MSlot : Slot, VSlot
 };
 
 extern void scaleimage(ImageData &s, int w, int h);
-
+extern void texcrop(ImageData &s, ImageData &d, int x, int y, int w, int h);
+extern void texcrop(ImageData &s, int x, int y, int w, int h);
 enum
 {
     IFMT_NONE = 0,

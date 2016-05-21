@@ -932,17 +932,29 @@ void save_mapshot(char *mname)
 
     GLuint tex;
     glGenTextures(1, &tex);
-    glViewport(0, 0, mapshotsize, mapshotsize);
     glPixelStorei(GL_PACK_ALIGNMENT, 1);
-    ImageData image(mapshotsize, mapshotsize, 3);
-    memset(image.data, 0, 3*mapshotsize*mapshotsize);
-    drawcubemap(mapshotsize, 1, camera1->o, camera1->yaw, camera1->pitch, false, false, false);
-    glReadPixels(0, 0, mapshotsize, mapshotsize, GL_RGB, GL_UNSIGNED_BYTE, image.data);
-
+    ImageData image(screenw, screenh, 3);
+    memset(image.data, 0, 3*screenw*screenh);
+    drawcubemap(2, camera1->o, camera1->yaw, camera1->pitch, false, false, false);
+    glReadPixels(0, 0, screenw, screenh, GL_RGB, GL_UNSIGNED_BYTE, image.data);
+    #if 0 // generates better images without this
+    int x = 0, y = 0, w = screenw, h = screenh;
+    if(w > h)
+    {
+        x += (w-h)/2;
+        w = h;
+    }
+    else if(h > w)
+    {
+        y += (h-w)/2;
+        h = w;
+    }
+    if(x || y) texcrop(image, x, y, w, h);
+    #endif
+    if(screenw > mapshotsize || screenh > mapshotsize) scaleimage(image, mapshotsize, mapshotsize);
     saveimage(mname, image, imageformat, compresslevel, true);
 
     glDeleteTextures(1, &tex);
-    glViewport(0, 0, screenw, screenh);
     defformatstring(texname, "%s", mname);
     reloadtexture(texname);
 }

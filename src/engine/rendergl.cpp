@@ -1445,7 +1445,7 @@ void drawreflection(float z, bool refract, int fogdepth, const bvec &col)
 
 int drawtex = 0;
 
-void drawcubemap(int size, int level, const vec &o, float yaw, float pitch, bool flipx, bool flipy, bool swapxy)
+void drawcubemap(int level, const vec &o, float yaw, float pitch, bool flipx, bool flipy, bool swapxy)
 {
     drawtex = DRAWTEX_ENVMAP;
 
