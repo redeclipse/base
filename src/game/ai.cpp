@@ -1415,16 +1415,6 @@ namespace ai
         loopi(entities::lastent(MAPMODEL)) if(entities::ents[i]->type == MAPMODEL && !entities::ents[i]->spawned())
         {
             gameentity &e = *(gameentity *)entities::ents[i];
-            bool skip = false;
-            loopvk(e.links) if(entities::ents.inrange(e.links[k]))
-            {
-                gameentity &f = *(gameentity *)entities::ents[e.links[k]];
-                if(f.type != TRIGGER || !m_check(f.attrs[5], f.attrs[6], game::gamemode, game::mutators)) continue;
-                if(f.attrs[2] != TA_AUTO || (f.attrs[1] != TR_TOGGLE && f.attrs[1] != TR_LINK)) continue;
-                skip = true;
-                break;
-            }
-            if(skip) continue;
             mapmodelinfo *mmi = getmminfo(e.attrs[0]);
             if(!mmi || !mmi->m) continue;
             vec center, radius;
@@ -1435,7 +1425,9 @@ namespace ai
                 radius.mul(e.attrs[5]/100.f);
             }
             if(!mmi->m->ellipsecollide) rotatebb(center, radius, int(e.attrs[1]), int(e.attrs[2]));
-            obstacles.avoidnear(NULL, e.o.z + radius.z + 1, e.o, max(radius.x, max(radius.y, radius.z)) + WAYPOINTRADIUS + 1);
+            float xy = max(radius.x, max(radius.y, radius.z));
+            if(e.attrs[6]&MMT_HIDE) xy += WAYPOINTRADIUS + 1;
+            obstacles.avoidnear(NULL, e.o.z + radius.z + 1, e.o, xy);
         }
     }
 
