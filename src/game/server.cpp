@@ -279,7 +279,7 @@ namespace server
         servstate() : lasttimewielded(0), aireinit(0), lasttimealive(0), timealive(0), timeactive(0), lasthurt(0)
         {
             loopi(WARN_MAX) loopj(2) warnings[i][j] = 0;
-            loop(W_ALL) lasttimeloadout[i] = 0;
+            loopi(W_ALL) lasttimeloadout[i] = 0;
             resetresidualowner();
         }
 
