@@ -3,6 +3,7 @@
 VAR(IDF_PERSIST, textblinking, 0, 250, VAR_MAX);
 float curtextscale = 1;
 FVARF(IDF_PERSIST, textscale, FVAR_NONZERO, 1, FVAR_MAX, curtextscale = textscale);
+FVAR(IDF_PERSIST, textlinespacing, FVAR_NONZERO, 1, FVAR_MAX);
 VAR(IDF_PERSIST, textfaded, 0, 1, 1);
 VAR(IDF_PERSIST, textminintensity, 0, 32, 255);
 
@@ -146,6 +147,7 @@ bool setfont(const char *name)
 float text_widthf(const char *str, int xpad, int ypad, int flags, float linespace)
 {
     float width, height;
+    if(linespace <= 0) linespace = textlinespacing;
     text_boundsf(str, width, height, xpad, ypad, -1, flags, linespace);
     return width;
 }
@@ -552,6 +554,7 @@ static float icon_width(const char *name, float scale)
 
 int text_visible(const char *str, float hitx, float hity, int maxwidth, int flags, float linespace)
 {
+    if(linespace <= 0) linespace = textlinespacing;
     int realwidth = 0;
     #define TEXTINDEX(idx)
     #define TEXTWHITE(idx) if(y+FONTH > hity && x >= hitx) return idx;
@@ -576,6 +579,7 @@ int text_visible(const char *str, float hitx, float hity, int maxwidth, int flag
 //inverse of text_visible
 void text_posf(const char *str, int cursor, float &cx, float &cy, int maxwidth, int flags, float linespace)
 {
+    if(linespace <= 0) linespace = textlinespacing;
     int realwidth = 0;
     #define TEXTINDEX(idx) if(cursor == idx) { cx = x; cy = y; break; }
     #define TEXTWHITE(idx)
@@ -601,6 +605,7 @@ void text_posf(const char *str, int cursor, float &cx, float &cy, int maxwidth, 
 
 void text_boundsf(const char *str, float &width, float &height, int xpad, int ypad, int maxwidth, int flags, float linespace)
 {
+    if(linespace <= 0) linespace = textlinespacing;
     int realwidth = 0;
     #define TEXTINDEX(idx)
     #define TEXTWHITE(idx)
@@ -762,6 +767,7 @@ static int draw_key(Texture *&tex, const char *str, float sx, float sy)
 
 int draw_text(const char *str, int rleft, int rtop, int r, int g, int b, int a, int flags, int cursor, int maxwidth, float linespace, int realwidth)
 {
+    if(linespace <= 0) linespace = textlinespacing;
     #define TEXTINDEX(idx) \
         if(cursor >= 0 && idx == cursor) \
         { \
@@ -829,6 +835,7 @@ void reloadfonts()
 
 int draw_textf(const char *fstr, int left, int top, int xpad, int ypad, int r, int g, int b, int a, int flags, int cursor, int maxwidth, float linespace, ...)
 {
+    if(linespace <= 0) linespace = textlinespacing;
     defvformatbigstring(str, linespace, fstr);
 
     int width = 0, height = 0, realwidth = maxwidth;
