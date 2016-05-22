@@ -276,9 +276,10 @@ namespace server
 
         int warnings[WARN_MAX][2];
 
-        servstate() : aireinit(0)
+        servstate() : lasttimewielded(0), aireinit(0), lasttimealive(0), timealive(0), timeactive(0), lasthurt(0)
         {
             loopi(WARN_MAX) loopj(2) warnings[i][j] = 0;
+            loop(W_ALL) lasttimeloadout[i] = 0;
             resetresidualowner();
         }
 
