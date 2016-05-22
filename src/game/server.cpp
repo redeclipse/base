@@ -323,26 +323,47 @@ namespace server
         void updateweaptime()
         {
             extern int gamemillis;
-            if(isalive(gamemillis))
+            if(lasttimewielded && isalive(gamemillis))
             {
-                weapstats[weapselect].timewielded += (totalmillis-lasttimewielded) / 1000;
-                loopi(W_ALL) if(holdweap(i, m_weapon(actortype, gamemode, mutators), lastmillis))
-                    weapstats[i].timeloadout += (totalmillis-lasttimeloadout[i]) / 1000;
+                int millis = totalmillis-lasttimewielded, secs = millis/1000;
+                weapstats[weapselect].timewielded += secs;
+                lasttimewielded = totalmillis+(secs*1000)-millis;
+                loopi(W_ALL)
+                {
+                    if(lasttimeloadout[i] && holdweap(i, m_weapon(actortype, gamemode, mutators), lastmillis))
+                    {
+                        int millis = totalmillis-lasttimeloadout[i], secs = millis/1000;
+                        weapstats[i].timeloadout += secs;
+                        lasttimeloadout[i] = totalmillis+(secs*1000)-millis;
+                    }
+                    else lasttimeloadout[i] = totalmillis ? totalmillis : 1;
+                }
             }
-            lasttimewielded = totalmillis;
-            loopi(W_ALL) lasttimeloadout[i] = totalmillis;
+            else
+            {
+                lasttimewielded = totalmillis ? totalmillis : 1;
+                loopi(W_ALL) lasttimeloadout[i] = totalmillis ? totalmillis : 1;
+            }
         }
 
-        void updatetimeplayed(bool last = true)
+        void updatetimeplayed()
         {
-            clientstate::updatetimeplayed(last);
+            clientstate::updatetimeplayed();
             extern int gamemillis;
-            if(isalive(gamemillis))
-                timealive += (totalmillis-lasttimealive) / 1000;
-            if(state == CS_ALIVE || state == CS_DEAD || state == CS_WAITING)
-                timeactive += (totalmillis-lasttimeactive) / 1000;
-            lasttimealive = totalmillis;
-            lasttimeactive = totalmillis;
+            if(lasttimealive && isalive(gamemillis))
+            {
+                int millis = totalmillis-lasttimealive, secs = millis/1000;
+                timealive += secs;
+                lasttimealive = totalmillis+(secs*1000)-millis;
+            }
+            else lasttimealive = totalmillis ? totalmillis : 1;
+            if(lasttimeactive && (state == CS_ALIVE || state == CS_DEAD || state == CS_WAITING))
+            {
+                int millis = totalmillis-lasttimeactive, secs = millis/1000;
+                timeactive += secs;
+                lasttimeactive = totalmillis+(secs*1000)-millis;
+            }
+            else lasttimeactive = totalmillis ? totalmillis : 1;
             updateweaptime();
         }
 
@@ -2783,7 +2804,7 @@ namespace server
 
     void savescore(clientinfo *ci)
     {
-        ci->updatetimeplayed(false);
+        ci->updatetimeplayed();
         savedscore *sc = findscore(ci, true);
         if(sc)
         {
@@ -2804,7 +2825,7 @@ namespace server
 
     void savestatsscore(clientinfo *ci)
     {
-        ci->updatetimeplayed(false);
+        ci->updatetimeplayed();
         savedscore *sc = findstatsscore(ci, true);
         if(sc) sc->save(ci);
     }
@@ -3046,7 +3067,7 @@ namespace server
             sendf(-1, 1, "ri3", N_SPECTATOR, ci->clientnum, quarantine ? 2 : 1);
             ci->state = CS_SPECTATOR;
             ci->quarantine = quarantine;
-            ci->updatetimeplayed(false);
+            ci->updatetimeplayed();
             setteam(ci, T_NEUTRAL, TT_INFO);
             if(ci->isready()) aiman::poke();
         }

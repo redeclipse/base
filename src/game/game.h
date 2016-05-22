@@ -779,10 +779,15 @@ struct clientstate
         weapreset(true);
     }
 
-    void updatetimeplayed(bool last = true)
+    void updatetimeplayed()
     {
-        timeplayed += totalmillis-lasttimeplayed;
-        if(last) lasttimeplayed = totalmillis;
+        if(lasttimeplayed)
+        {
+            int millis = totalmillis-lasttimeplayed, secs = millis/1000;
+            timeplayed += secs;
+            lasttimeplayed = totalmillis+(secs*1000)-millis;
+        }
+        else lasttimeplayed = totalmillis ? totalmillis : 1;
     }
 
     float scoretime(bool update = true)
