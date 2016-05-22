@@ -1245,7 +1245,7 @@ struct gui : guient
                 {
                     if(tooltip) DELETEA(tooltip);
                     tooltip = newstring(tooltipstr);
-                    lasttooltip = totalmillis;
+                    lasttooltip = totalmillis ? totalmillis : 1;
                 }
                 if(tooltipforce || totalmillis-lasttooltip >= guitooltiptime)
                 {

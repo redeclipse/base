@@ -2702,7 +2702,7 @@ namespace server
         copystring(ci->mapvote, reqmap);
         ci->modevote = reqmode;
         ci->mutsvote = reqmuts;
-        ci->lastvote = totalmillis;
+        ci->lastvote = totalmillis ? totalmillis : 1;
         if(hasveto)
         {
             sendstats();
@@ -3089,11 +3089,11 @@ namespace server
                 spectate(ci, true);
                 return false;
             }
-            ci->lasttimeplayed = totalmillis;
-            ci->lasttimealive = totalmillis;
-            ci->lasttimeactive = totalmillis;
-            ci->lasttimewielded = totalmillis;
-            loopi(W_ALL) ci->lasttimeloadout[i] = totalmillis;
+            ci->lasttimeplayed = totalmillis ? totalmillis : 1;
+            ci->lasttimealive = totalmillis ? totalmillis : 1;
+            ci->lasttimeactive = totalmillis ? totalmillis : 1;
+            ci->lasttimewielded = totalmillis ? totalmillis : 1;
+            loopi(W_ALL) ci->lasttimeloadout[i] = totalmillis ? totalmillis : 1;
             ci->quarantine = false;
             waiting(ci, DROP_RESET);
             if(smode) smode->entergame(ci);
@@ -5004,7 +5004,7 @@ namespace server
                 if(disc) disconnect_client(ci->clientnum, disc);
                 else
                 {
-                    ci->connectmillis = totalmillis; // in case it doesn't work
+                    ci->connectmillis = totalmillis ? totalmillis : 1; // in case it doesn't work
                     connected(ci);
                 }
             }
@@ -5263,7 +5263,7 @@ namespace server
     {
         clientinfo *ci = (clientinfo *)getinfo(n);
         ci->clientnum = n;
-        ci->connectmillis = totalmillis;
+        ci->connectmillis = totalmillis ? totalmillis : 1;
         ci->sessionid = (rnd(0x1000000)*((totalmillis%10000)+1))&0xFFFFFF;
         ci->local = local;
         connects.add(ci);
@@ -5334,7 +5334,7 @@ namespace server
             queryplayers.setsize(0);
             loopv(clients) if(clients[i]->clientnum >= 0 && clients[i]->name[0] && clients[i]->actortype == A_PLAYER) queryplayers.add(clients[i]);
             queryplayers.sort(querysort);
-            lastquerysort = totalmillis;
+            lastquerysort = totalmillis ? totalmillis : 1;
         }
         putint(p, queryplayers.length());
         putint(p, 15); // number of attrs following
@@ -5634,11 +5634,11 @@ namespace server
 
         ci->connected = true;
         ci->needclipboard = totalmillis ? totalmillis : 1;
-        ci->lasttimeplayed = totalmillis;
-        ci->lasttimealive = totalmillis;
-        ci->lasttimeactive = totalmillis;
-        ci->lasttimewielded = totalmillis;
-        loopi(W_ALL) ci->lasttimeloadout[i] = totalmillis;
+        ci->lasttimeplayed = totalmillis ? totalmillis : 1;
+        ci->lasttimealive = totalmillis ? totalmillis : 1;
+        ci->lasttimeactive = totalmillis ? totalmillis : 1;
+        ci->lasttimewielded = totalmillis ? totalmillis : 1;
+        loopi(W_ALL) ci->lasttimeloadout[i] = totalmillis ? totalmillis : 1;
 
         if(ci->handle[0]) // kick old logins
         {
@@ -6494,7 +6494,7 @@ namespace server
                         if(k >= W_LOADOUT) getint(p);
                         else ci->randweap.add(getint(p));
                     }
-                    ci->lastplayerinfo = totalmillis;
+                    ci->lastplayerinfo = totalmillis ? totalmillis : 1;
                     QUEUE_STR(ci->name);
                     QUEUE_INT(ci->colour);
                     QUEUE_INT(ci->model);

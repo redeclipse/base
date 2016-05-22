@@ -522,7 +522,7 @@ struct serverinfo
     {
         if(lastping >= 0 && totalmillis - lastping >= decay)
             cleanup();
-        if(lastping < 0) lastping = totalmillis;
+        if(lastping < 0) lastping = totalmillis ? totalmillis : 1;
     }
 
     void calcping()

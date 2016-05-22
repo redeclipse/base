@@ -165,7 +165,7 @@ namespace weapons
 
                 if(weapselect(d, n, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
                 {
-                    lastweapselect = totalmillis;
+                    lastweapselect = totalmillis ? totalmillis : 1;
                     return;
                 }
                 else if(a >= 0) break;

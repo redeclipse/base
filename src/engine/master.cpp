@@ -360,7 +360,7 @@ void masteroutf(masterclient &c, const char *fmt, ...)
 void savestats(masterclient &c)
 {
     c.wantstats = true;
-    c.laststats = totalmillis;
+    c.laststats = totalmillis ? totalmillis : 1;
     char *errmsg = NULL;
     int rc = sqlite3_exec(statsdb, "BEGIN IMMEDIATE", 0, 0, &errmsg);
     if(rc == SQLITE_BUSY) return;

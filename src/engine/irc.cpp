@@ -898,7 +898,7 @@ void ircslice()
             else if(!n->away && totalmillis-n->lastseen >= ircautoaway)
             {
                 ircsend(n, "AWAY :Auto-away after %d second%s", ircautoaway, ircautoaway != 1 ? "s" : "");
-                n->away = totalmillis;
+                n->away = totalmillis ? totalmillis : 1;
             }
         }
     }

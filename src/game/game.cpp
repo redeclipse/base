@@ -1290,8 +1290,8 @@ namespace game
         gameent *d, *v;
         int weap, damage, flags, millis;
 
-        damagemerge() { millis = totalmillis; }
-        damagemerge(gameent *d, gameent *v, int weap, int damage, int flags) : d(d), v(v), weap(weap), damage(damage), flags(flags) { millis = totalmillis; }
+        damagemerge() { millis = totalmillis ? totalmillis : 1; }
+        damagemerge(gameent *d, gameent *v, int weap, int damage, int flags) : d(d), v(v), weap(weap), damage(damage), flags(flags) { millis = totalmillis ? totalmillis : 1; }
 
         bool merge(const damagemerge &m)
         {
@@ -1382,7 +1382,7 @@ namespace game
                         player1->lastteamhit = d->lastteamhit = lastmillis;
                         if(!issound(alarmchan)) playsound(S_ALARM, v->o, v, 0, -1, -1, -1, &alarmchan);
                     }
-                    if(!burning && !bleeding && !shocking && !material && !sameteam) v->lasthit = totalmillis;
+                    if(!burning && !bleeding && !shocking && !material && !sameteam) v->lasthit = totalmillis ? totalmillis : 1;
                 }
                 if(d->actortype < A_ENEMY && !issound(d->vschan)) playsound(S_PAIN, d->o, d, 0, -1, -1, -1, &d->vschan);
                 d->lastpain = lastmillis;
@@ -1711,7 +1711,7 @@ namespace game
             if(v->state == CS_ALIVE && d->actortype < A_ENEMY)
             {
                 copystring(v->obit, d->obit);
-                v->lastkill = totalmillis;
+                v->lastkill = totalmillis ? totalmillis : 1;
             }
         }
         if(dth >= 0) playsound(dth, d->o, d, 0, -1, -1, -1, &d->vschan);
@@ -1759,7 +1759,7 @@ namespace game
         if(m_team(gamemode, mutators) && d->team == v->team && d != v && v == player1 && isweap(weap) && WF(WK(flags), weap, damagepenalty, WS(flags)))
         {
             hud::teamkills.add(totalmillis);
-            if(hud::numteamkills() >= teamkillwarn) hud::lastteam = totalmillis;
+            if(hud::numteamkills() >= teamkillwarn) hud::lastteam = totalmillis ? totalmillis : 1;
         }
         if(m_bomber(gamemode)) bomber::killed(d, v);
         ai::killed(d, v);

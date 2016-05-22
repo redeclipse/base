@@ -714,7 +714,7 @@ namespace hud
     bool hasteaminfo(gameent *d)
     {
         if(!m_play(game::gamemode) || game::focus->state != CS_ALIVE) return false;
-        if(!lastteam) lastteam = totalmillis;
+        if(!lastteam) lastteam = totalmillis ? totalmillis : 1;
         return teamnotices >= 1 && totalmillis-lastteam <= teamnoticedelay;
     }
 

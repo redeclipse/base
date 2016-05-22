@@ -178,7 +178,7 @@ namespace hud
                 if(on)
                 {
                     if(within) onauto = true;
-                    menulastpress = totalmillis;
+                    menulastpress = totalmillis ? totalmillis : 1;
                 }
                 else if(within && !scoresoff) { menulastpress = 0; return; }
             }

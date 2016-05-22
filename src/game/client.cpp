@@ -132,7 +132,7 @@ namespace client
             copystring(m->map, text);
             m->mode = mode;
             m->muts = muts;
-            m->millis = totalmillis;
+            m->millis = totalmillis ? totalmillis : 1;
         }
         m->players.add(d);
         mapvotes.sort(mapvote::compare);
@@ -1835,7 +1835,7 @@ namespace client
         {
             putint(p, N_PING);
             putint(p, totalmillis);
-            lastping = totalmillis;
+            lastping = totalmillis ? totalmillis : 1;
         }
 
         sendclientpacket(p.finalize(), 1);
@@ -1845,7 +1845,7 @@ namespace client
     {
         static int lastupdate = -1000;
         if(totalmillis-lastupdate < 40 && !force) return;    // don't update faster than 25fps
-        lastupdate = totalmillis;
+        lastupdate = totalmillis ? totalmillis : 1;
         sendpositions();
         sendmessages();
         flushclient();
@@ -1863,7 +1863,7 @@ namespace client
         d->totalfrags = getint(p);
         d->totaldeaths = getint(p);
         d->timeplayed = getint(p);
-        d->lasttimeplayed = totalmillis;
+        d->lasttimeplayed = totalmillis ? totalmillis : 1;
         d->health = getint(p);
         d->cptime = getint(p);
         if(resume && (d == game::player1 || d->ai))
@@ -1903,7 +1903,7 @@ namespace client
         if(lagtime)
         {
             if(d->lastupdate) d->plag = (d->plag*5+lagtime)/6;
-            d->lastupdate = totalmillis;
+            d->lastupdate = totalmillis ? totalmillis : 1;
         }
     }
 
