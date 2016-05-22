@@ -2801,7 +2801,7 @@ namespace server
         if(give)
         {
             ci->points += points;
-            sendf(-1, 1, "ri5", N_POINTS, ci->clientnum, points, ci->points, ci->localtotalpoints, ci->globaltotalpoints);
+            sendf(-1, 1, "ri6", N_POINTS, ci->clientnum, points, ci->points, ci->localtotalpoints, ci->globaltotalpoints);
             if(team && m_team(gamemode, mutators) && m_dm(gamemode))
             {
                 score &ts = teamscore(ci->team);
@@ -2809,7 +2809,7 @@ namespace server
                 sendf(-1, 1, "ri3", N_SCORE, ts.team, ts.total);
             }
         }
-        else if(points) sendf(-1, 1, "ri5", N_POINTS, ci->clientnum, points, ci->points, ci->localtotalpoints, ci->globaltotalpoints);
+        else if(points) sendf(-1, 1, "ri6", N_POINTS, ci->clientnum, points, ci->points, ci->localtotalpoints, ci->globaltotalpoints);
     }
 
     void savescore(clientinfo *ci)
@@ -3320,7 +3320,8 @@ namespace server
                     }
                 }
             }
-            requestmasterf("stats game %s %d %d %d %d\n", escapestring(smapname), gamemode, mutators, gamemillis/1000, unique);
+            requestmasterf("stats game %s %d %d %d %d %d\n", escapestring(smapname), gamemode, mutators, gamemillis/1000, unique, m_usetotals(gamemode, mutators));
+            flushmasteroutput();
             requestmasterf("stats server %s %s %d\n", escapestring(G(serverdesc)), versionstring, serverport);
             flushmasteroutput();
             loopi(numteams(gamemode, mutators))

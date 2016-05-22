@@ -283,6 +283,7 @@ extern mutstypes mutstype[];
 #define m_impulsemeter(a,b) (m_ra_endurance(a, b) || !m_freestyle(a, b))
 #define m_nopoints(a,b)     (m_duke(a, b) || m_bb_hold(a, b) || m_race(a))
 #define m_points(a,b)       (!m_nopoints(a, b))
+#define m_usetotals(a,b)    (!m_race(a))
 
 #define m_weapon(at,a,b)    (m_medieval(a, b) ? AA(at, weaponmedieval) : (m_kaboom(a, b) ? AA(at, weaponkaboom) : (m_insta(a, b) ? AA(at, weaponinsta) : (m_race(a) && !m_ra_gauntlet(a, b) ? AA(at, weaponrace) : (m_dm_gladiator(a, b) ? AA(at, weapongladiator) : AA(at, weaponspawn))))))
 #define m_delay(at,a,b,c)   ((m_play(a) || at >= A_ENEMY) && !m_duke(a,b) ? int((m_race(a) ? (!m_ra_gauntlet(a, b) || c == T_ALPHA ? AA(at, spawndelayrace) : AA(at, spawndelaygauntlet)) : (m_bomber(a) ? AA(at, spawndelaybomber) : (m_defend(a) ? AA(at, spawndelaydefend) : (m_capture(a) ? AA(at, spawndelaycapture) : AA(at, spawndelay)))))*(m_insta(a, b) ? AA(at, spawndelayinstascale) : 1.f)) : 0)

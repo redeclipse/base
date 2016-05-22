@@ -83,6 +83,25 @@ ICOMMAND(0, serverauthkey, "ss", (char *name, char *key), {
     setsvar("serveraccountpass", key);
 });
 
+struct handletotal
+{
+    int totalpoints;
+    int totalfrags;
+    int totaldeaths;
+    int totaltimealive;
+    int totaltimeactive;
+
+    handletotal() { reset(); }
+    ~handletotal() {}
+
+    void reset()
+    {
+        totalpoints = totalfrags = totaldeaths = totaltimealive = totaltimeactive = 0;
+    }
+};
+
+hashtable<const char *, handletotal> handletotals;
+
 namespace auth
 {
     int lastconnect = 0, lastregister = 0, quickcheck = 0;
@@ -290,6 +309,13 @@ namespace auth
         clientinfo *ci = findauth(id);
         if(!ci) return;
         ci->authreq = 0;
+        if(handletotals.access(name))
+        {
+            handletotal total = handletotals[name];
+            ci->globaltotalpoints = total.totalpoints;
+            ci->globaltotalfrags = total.totalfrags;
+            ci->globaltotaldeaths = total.totaldeaths;
+        }
         int n = -1;
         for(const char *c = flags; *c; c++) switch(*c)
         {
@@ -365,7 +391,7 @@ namespace auth
 
     void processinput(const char *p)
     {
-        const int MAXWORDS = 8;
+        const int MAXWORDS = 12;
         char *w[MAXWORDS];
         int numargs = MAXWORDS;
         loopi(MAXWORDS)
@@ -379,7 +405,21 @@ namespace auth
         if(!strcmp(w[0], "error")) conoutf("master server error: %s", w[1]);
         else if(!strcmp(w[0], "echo")) { conoutf("master server reply: %s", w[1]); }
         else if(!strcmp(w[0], "failauth")) authfailed((uint)(atoi(w[1])));
-        else if(!strcmp(w[0], "succauth")) authsucceeded((uint)(atoi(w[1])), w[2], w[3]);
+        else if(!strcmp(w[0], "succauth"))
+        {
+            if(!handletotals.access(w[2]))
+            {
+                handletotal totals;
+                totals.totalpoints = atoi(w[4]);
+                totals.totalfrags = atoi(w[5]);
+                totals.totaldeaths = atoi(w[6]);
+                totals.totaltimealive = atoi(w[7]);
+                totals.totaltimeactive = atoi(w[8]);
+                handletotals[w[2]] = totals;
+            }
+
+            authsucceeded((uint)(atoi(w[1])), w[2], w[3]);
+        }
         else if(!strcmp(w[0], "failserverauth")) serverauthfailed();
         else if(!strcmp(w[0], "succserverauth")) serverauthsucceeded(w[1], w[2]);
         else if(!strcmp(w[0], "chalauth")) authchallenged((uint)(atoi(w[1])), w[2]);
