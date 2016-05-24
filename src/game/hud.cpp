@@ -567,6 +567,8 @@ namespace hud
 
     TVAR(IDF_PERSIST, modeeditingtex, "<grey>textures/modes/editing", 3);
     TVAR(IDF_PERSIST, modedeathmatchtex, "<grey>textures/modes/deathmatch", 3);
+    TVAR(IDF_PERSIST, modegladiator, "<grey>textures/modes/gladiator", 3);
+    TVAR(IDF_PERSIST, modeoldschool, "<grey>textures/modes/oldschool", 3);
 
     TVAR(IDF_PERSIST, modecapturetex, "<grey>textures/modes/capture", 3);
     TVAR(IDF_PERSIST, modecapturequicktex, "<grey>textures/modes/capturequick", 3);
@@ -650,7 +652,12 @@ namespace hud
             else if(m_ra_endurance(g, m)) ADDMODE(moderaceendurancetex) \
             else ADDMODE(moderacetex) \
         } \
-        else ADDMODE(modedeathmatchtex) \
+        else \
+        { \
+            if(m_dm_gladiator(g, m)) ADDMODE(modegladiator) \
+            else if(m_dm_oldschool(g, m)) ADDMODE(modeoldschool) \
+            else ADDMODE(modedeathmatchtex) \
+        } \
     }
 
     void modetexs(int g, int m, bool before, bool implied, vector<char> &list)
