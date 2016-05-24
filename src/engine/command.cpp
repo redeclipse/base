@@ -3562,3 +3562,11 @@ void genkey(char *s)
     result(keybuf);
 }
 COMMAND(0, genkey, "s");
+
+bool hasflag(const char *flags, char f)
+{
+    for(const char *c = flags; *c; c++)
+        if(*c == f) return true;
+    return false;
+}
+ICOMMAND(0, hasflag, "ss", (char *s, char *f), intret(*s && *f && hasflag(s, *f) ? 1 : 0));
