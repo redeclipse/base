@@ -365,13 +365,13 @@ struct gui : guient
     void pushfont(const char *font) { ::pushfont(font); fontdepth++; }
     void popfont() { if(fontdepth) { ::popfont(); fontdepth--; } }
 
-    int text(const char *text, int color, const char *icon, int icolor, int wrap, bool faded, const char *oicon, int ocolor)
+    int text(const char *text, int color, const char *icon, int icolour, int wrap, bool faded, const char *oicon, int ocolor)
     {
-        return button_(text, color, icon, icolor, false, wrap, faded, oicon, ocolor);
+        return button_(text, color, icon, icolour, false, wrap, faded, oicon, ocolor);
     }
-    int button(const char *text, int color, const char *icon, int icolor, int wrap, bool faded, const char *oicon, int ocolor)
+    int button(const char *text, int color, const char *icon, int icolour, int wrap, bool faded, const char *oicon, int ocolor)
     {
-        return button_(text, color, icon, icolor, true, wrap, faded, oicon, ocolor);
+        return button_(text, color, icon, icolour, true, wrap, faded, oicon, ocolor);
     }
 
     void separator(int size, int space, int colour, int border) { line_(size > 0 ? size : guisepsize, space > 0 ? space : 0, colour, border); }
@@ -435,11 +435,11 @@ struct gui : guient
         return hitx >= x && hity >= y && hitx < x+w && hity < y+h;
     }
 
-    int image(Texture *t, float scale, bool overlaid, int icolor)
+    int image(Texture *t, float scale, bool overlaid, int icolour, Texture *o, int ocolour)
     {
         if(scale == 0) scale = 1;
         int size = (int)(scale*2*FONTH)-guishadow;
-        if(visible()) icon_(t, overlaid, curx, cury, size, ishit(size+guishadow, size+guishadow), icolor);
+        if(visible()) icon_(t, overlaid, curx, cury, size, ishit(size+guishadow, size+guishadow), icolour, o, ocolour);
         return layout(size+guishadow, size+guishadow);
     }
 
@@ -849,7 +849,7 @@ struct gui : guient
         skin(curx, cury, curx+w, cury+h, colour1, blend1, colour2, blend2, skinborder);
     }
 
-    void icon_(Texture *t, bool overlaid, int x, int y, int size, bool hit, int icolor = 0xFFFFFF, Texture *o = NULL, int ocolor = 0xFFFFFF)
+    void icon_(Texture *t, bool overlaid, int x, int y, int size, bool hit, int icolour = 0xFFFFFF, Texture *o = NULL, int ocolor = 0xFFFFFF)
     {
         static const vec2 tc[4] = { vec2(0, 0), vec2(1, 0), vec2(1, 1), vec2(0, 1) };
         float xs = 0, ys = 0;
@@ -910,7 +910,7 @@ struct gui : guient
             xtraverts += gle::end();
         }
         glBindTexture(GL_TEXTURE_2D, textureid);
-        gle::color(vec::hexcolor(icolor), 1.f);
+        gle::color(vec::hexcolor(icolour), 1.f);
         gle::begin(GL_TRIANGLE_STRIP);
         gle::attribf(xi,    yi);    gle::attrib(tc[0]);
         gle::attribf(xi+xs, yi);    gle::attrib(tc[1]);
@@ -1115,7 +1115,7 @@ struct gui : guient
         return space;
     }
 
-    int button_(const char *text, int color, const char *icon, int icolor, bool clickable, int wrap = -1, bool faded = true, const char *oicon = NULL, int ocolor = 0xFFFFFF)
+    int button_(const char *text, int color, const char *icon, int icolour, bool clickable, int wrap = -1, bool faded = true, const char *oicon = NULL, int ocolor = 0xFFFFFF)
     {
         int w = 0, h = 0;
         if((icon && *icon) || (oicon && *oicon))
@@ -1140,7 +1140,8 @@ struct gui : guient
             {
                 Texture *ttex = icon && *icon ? textureload(strstr(icon, "textures/") ? icon : makerelpath("textures", icon), 3, true, false) : NULL,
                     *otex = oicon && *oicon ? textureload(strstr(oicon, "textures/") ? oicon : makerelpath("textures", oicon), 3, true, false) : NULL;
-                icon_(ttex, false, x, cury, FONTH, clickable && hit, icolor, otex, ocolor);
+                if(otex == notexture) otex = NULL;
+                icon_(ttex, false, x, cury, FONTH, clickable && hit, icolour, otex, ocolor);
                 x += FONTH;
                 if(text && *text) x += 8;
             }

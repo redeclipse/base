@@ -264,8 +264,8 @@ void guibutton(char *name, char *action, char *altact, char *icon, int *colour, 
     if(ret&GUI_UP)
     {
         char *act = NULL;
-        if(altact[0] && ret&GUI_ALT) act = altact;
-        else if(action[0]) act = action;
+        if(altact && *altact && ret&GUI_ALT) act = altact;
+        else if(action && *action) act = action;
         if(act)
         {
             updatelater.add().schedule(act);
@@ -280,21 +280,18 @@ void guibutton(char *name, char *action, char *altact, char *icon, int *colour, 
     }
 }
 
-void guiimage(char *path, char *action, float *scale, int *overlaid, char *altpath, char *altact, int *colour)
+void guiimage(char *path, char *action, float *scale, int *overlaid, char *altpath, char *altact, int *colour, char *opath, int *ocolour)
 {
     if(!cgui) return;
-    Texture *t = path[0] ? textureload(path, 0, true, false) : NULL;
-    if(t == notexture)
-    {
-        if(*altpath) t = textureload(altpath, 0, true, false);
-        if(t == notexture) return;
-    }
-    int ret = cgui->image(t, *scale, *overlaid!=0, *colour >= 0 ? *colour : 0xFFFFFF);
+    Texture *t = path && *path ? textureload(path, 0, true, false) : NULL, *o = opath && *opath ? textureload(opath, 0, true, false) : NULL;
+    if(t == notexture && *altpath) t = textureload(altpath, 0, true, false);
+    if(o == notexture) o = NULL;
+    int ret = cgui->image(t, *scale, *overlaid!=0, *colour >= 0 ? *colour : 0xFFFFFF, o, *ocolour >= 0 ? *ocolour : 0xFFFFFF);
     if(ret&GUI_UP)
     {
         char *act = NULL;
-        if(altact[0] && ret&GUI_ALT) act = altact;
-        else if(action[0]) act = action;
+        if(altact && *altact && ret&GUI_ALT) act = altact;
+        else if(action && *action) act = action;
         if(act)
         {
             updatelater.add().schedule(act);
@@ -312,19 +309,19 @@ void guiimage(char *path, char *action, float *scale, int *overlaid, char *altpa
 void guislice(char *path, char *action, float *scale, float *start, float *end, char *text, char *altpath, char *altact)
 {
     if(!cgui) return;
-    Texture *t = path[0] ? textureload(path, 0, true, false) : NULL;
+    Texture *t = path && *path ? textureload(path, 0, true, false) : NULL;
     if(t == notexture)
     {
         if(*altpath) t = textureload(altpath, 0, true, false);
         if(t == notexture) return;
     }
-    int ret = cgui->slice(t, *scale, *start, *end, text[0] ? text : NULL);
+    int ret = cgui->slice(t, *scale, *start, *end, text && *text ? text : NULL);
     if(ret&GUI_UP)
     {
         char *act = NULL;
-        if(altact[0] && ret&GUI_ALT) act = altact;
-        else if(action[0]) act = action;
-        if(act[0])
+        if(altact && *altact && ret&GUI_ALT) act = altact;
+        else if(action && *action) act = action;
+        if(act)
         {
             updatelater.add().schedule(act);
             if(shouldclearmenu) clearlater = true;
@@ -462,7 +459,7 @@ template<class T> static void updateval(char *var, T val, char *onchange)
 {
     ident *id = writeident(var);
     updatelater.add().schedule(id, val);
-    if(onchange[0]) updatelater.add().schedule(onchange);
+    if(onchange && *onchange) updatelater.add().schedule(onchange);
 }
 
 static int getval(char *var)
@@ -641,14 +638,14 @@ void guikeyfield(char *var, int *maxlength, char *onchange, int *colour, int *fo
 void guibody(uint *contents, char *action, char *altact, uint *onhover)
 {
     if(!cgui) return;
-    cgui->pushlist(action[0] ? true : false);
+    cgui->pushlist(action && *action ? true : false);
     execute(contents);
     int ret = cgui->poplist();
     if(ret&GUI_UP)
     {
         char *act = NULL;
-        if(ret&GUI_ALT && altact[0]) act = altact;
-        else if(action[0]) act = action;
+        if(ret&GUI_ALT && altact && *altact) act = altact;
+        else if(action && *action) act = action;
         if(act)
         {
             updatelater.add().schedule(act);
@@ -681,15 +678,15 @@ void newgui(char *name, char *contents, char *initscript)
         freecode(m->contents);
         freecode(m->initscript);
     }
-    m->contents = contents && contents[0] ? compilecode(contents) : NULL;
-    m->initscript = initscript && initscript[0] ? compilecode(initscript) : NULL;
+    m->contents = contents && *contents ? compilecode(contents) : NULL;
+    m->initscript = initscript && *initscript ? compilecode(initscript) : NULL;
 }
 
 void guiheader(char *name)
 {
     if(!cmenu) return;
     DELETEA(cmenu->header);
-    cmenu->header = name && name[0] ? newstring(name) : NULL;
+    cmenu->header = name && *name ? newstring(name) : NULL;
 }
 
 void guimodify(char *name, char *contents)
@@ -697,7 +694,7 @@ void guimodify(char *name, char *contents)
     menu *m = menus.access(name);
     if(!m) return;
     freecode(m->contents);
-    m->contents = contents && contents[0] ? compilecode(contents) : NULL;
+    m->contents = contents && *contents ? compilecode(contents) : NULL;
 }
 
 COMMAND(0, newgui, "sss");
@@ -725,7 +722,7 @@ COMMAND(0, guispring, "i");
 COMMAND(0, guivisible, "e");
 COMMAND(0, guivisibletab, "e");
 COMMAND(0, guifont,"se");
-COMMAND(0, guiimage,"ssfissb");
+COMMAND(0, guiimage,"ssfissbsb");
 COMMAND(0, guislice,"ssfffsss");
 COMMAND(0, guiprogress,"ff");
 COMMAND(0, guislider,"sbbsiibib");
@@ -754,8 +751,8 @@ void guiplayerpreview(int *model, int *color, int *team, int *weap, char *vanity
     if(ret&GUI_UP)
     {
         char *act = NULL;
-        if(altact[0] && ret&GUI_ALT) act = altact;
-        else if(action[0]) act = action;
+        if(altact && *altact && ret&GUI_ALT) act = altact;
+        else if(action && *action) act = action;
         if(act)
         {
             updatelater.add().schedule(act);
@@ -776,7 +773,7 @@ void guimodelpreview(char *model, char *animspec, char *action, float *scale, in
 {
     if(!cgui) return;
     int anim = ANIM_ALL;
-    if(animspec[0])
+    if(animspec && *animspec)
     {
         if(isdigit(animspec[0]))
         {
@@ -795,8 +792,8 @@ void guimodelpreview(char *model, char *animspec, char *action, float *scale, in
     if(ret&GUI_UP)
     {
         char *act = NULL;
-        if(altact[0] && ret&GUI_ALT) act = altact;
-        else if(action[0]) act = action;
+        if(altact && *altact && ret&GUI_ALT) act = altact;
+        else if(action && *action) act = action;
         if(act)
         {
             updatelater.add().schedule(act);
@@ -820,8 +817,8 @@ void guiprefabpreview(char *prefab, int *color, char *action, float *scale, int 
     if(ret&GUI_UP)
     {
         char *act = NULL;
-        if(altact[0] && ret&GUI_ALT) act = altact;
-        else if(action[0]) act = action;
+        if(altact && *altact && ret&GUI_ALT) act = altact;
+        else if(action && *action) act = action;
         if(act)
         {
             updatelater.add().schedule(act);
