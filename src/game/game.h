@@ -933,18 +933,6 @@ struct gameentity : extentity
     }
 };
 
-enum
-{
-    ST_NONE     = 0,
-    ST_CAMERA   = 1<<0,
-    ST_CURSOR   = 1<<1,
-    ST_GAME     = 1<<2,
-    ST_SPAWNS   = 1<<3,
-    ST_DEFAULT  = ST_CAMERA|ST_CURSOR|ST_GAME,
-    ST_VIEW     = ST_CURSOR|ST_CAMERA,
-    ST_ALL      = ST_CAMERA|ST_CURSOR|ST_GAME|ST_SPAWNS,
-};
-
 struct actitem
 {
     enum { ENT = 0, PROJ };

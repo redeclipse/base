@@ -282,8 +282,8 @@ GVAR(IDF_GAMEMOD, fraglimit, 0, 0, VAR_MAX); // finish when score is this or mor
 GVAR(IDF_GAMEMOD, racelimit, 0, 0, VAR_MAX); // finish when lap count is this or more
 GVAR(IDF_GAMEMOD, teampersist, 0, 1, 2); // 0 = off, 1 = only attempt, 2 = forced
 GVAR(IDF_GAMEMOD, damageself, 0, 1, 1); // 0 = off, 1 = either hurt self or use damageteam rules
-GFVAR(IDF_GAMEMOD, damageselfscale, FVAR_MIN, 1, FVAR_MAX); // 0 = off, anything else = scale for damage
-GFVAR(IDF_GAMEMOD, damageteamscale, FVAR_MIN, 1, FVAR_MAX); // 0 = off, anything else = scale for damage
+GFVAR(IDF_GAMEMOD, damageselfscale, 0, 1, FVAR_MAX); // 0 = off, anything else = scale for damage
+GFVAR(IDF_GAMEMOD, damageteamscale, 0, 1, FVAR_MAX); // 0 = off, anything else = scale for damage
 
 GVAR(IDF_GAMEMOD, teambalance, 0, 5, 6); // 0 = off, 1 = by number then style, 2 = by style then number, 3 = by number and enforce, 4 = number, enforce, reassign, 5 = style, number, enforce, reassign, 6 = style during waiting, revert to 4 otherwise
 GVAR(IDF_GAMEMOD, teambalanceduel, 0, 0, 1); // allow reassignments in duel
@@ -293,7 +293,7 @@ GVAR(IDF_GAMEMOD, teambalancewait, 0, 10000, VAR_MAX); // how long before can ha
 GVAR(IDF_GAMEMOD, teambalancedelay, 0, 3000, VAR_MAX); // how long before reassignments start
 GVAR(IDF_GAMEMOD, teambalanceswap, 0, 1, 1); // allow swap requests if unable to change team
 GVAR(IDF_GAMEMOD, teambalancelock, 0, PRIV_MODERATOR, PRIV_MAX); // level at which one can override swap
-GVAR(IDF_GAMEMOD, teambalancestyle, 0, 10, 10); // when moving players, sort by: 0 = top of list, 1 = lowest time played, 2 = lowest points, 3 = lowest frags, 4 = lowest scoretime, 5 = lowest kdratio, 6 = highest time played, 7 = higest points, 8 = highest frags, 9 = highest scoretime, 10 = highest kdratio
+GVAR(IDF_GAMEMOD, teambalancestyle, 0, 10, 10); // when moving players, sort by: 0 = top of list, 1 = lowest time played, 2 = lowest points, 3 = lowest frags, 4 = lowest scoretime, 5 = lowest kdratio, 6 = highest time played, 7 = highest points, 8 = highest frags, 9 = highest scoretime, 10 = highest kdratio
 
 GVAR(IDF_GAMEMOD, racegauntletwinner, 0, 1, 1); // declare the winner when the final team exceeds best score
 
@@ -398,7 +398,7 @@ GFVAR(IDF_GAMEMOD, botbalancescale, FVAR_NONZERO, 1, FVAR_MAX); // use balance*t
 GVAR(IDF_GAMEMOD, botbalanceduel, -1, 2, VAR_MAX); // -1 = always use numplayers, 0 = don't balance, 1 or more = fill only with this many
 GVAR(IDF_GAMEMOD, botbalancesurvivor, -1, 2, VAR_MAX); // -1 = always use numplayers, 0 = don't balance, 1 or more = fill only with this many
 GVAR(IDF_GAMEMOD, botskillmin, 1, 60, 101);
-GVAR(IDF_GAMEMOD, botskillmax, 1, 75, 101);
+GVAR(IDF_GAMEMOD, botskillmax, 1, 80, 101);
 GFVAR(IDF_GAMEMOD, botskillfrags, -100, 0, 100);
 GFVAR(IDF_GAMEMOD, botskilldeaths, -100, 1, 100);
 GVAR(IDF_GAMEMOD, botlimit, 0, 32, MAXAI);
@@ -414,10 +414,10 @@ GVAR(IDF_GAMEMOD, coopskillmax, 1, 85, 101);
 GFVAR(IDF_GAMEMOD, coopskillfrags, -100, 0, 100);
 GFVAR(IDF_GAMEMOD, coopskilldeaths, -100, 1, 100);
 GVAR(IDF_GAMEMOD, enemybalance, 1, 1, 3);
-GVAR(IDF_GAMEMOD, enemyskillmin, 1, 65, 101);
-GVAR(IDF_GAMEMOD, enemyskillmax, 1, 80, 101);
+GVAR(IDF_GAMEMOD, enemyskillmin, 1, 55, 101);
+GVAR(IDF_GAMEMOD, enemyskillmax, 1, 75, 101);
 GVAR(IDF_GAMEMOD, enemylimit, 0, 32, MAXAI);
-GVAR(IDF_GAMEMOD, enemyspawntime, 1, 30000, VAR_MAX); // when enemies respawn
+GVAR(IDF_GAMEMOD, enemyspawntime, 1, 60000, VAR_MAX); // when enemies respawn
 GVAR(IDF_GAMEMOD, enemyspawndelay, 0, 1000, VAR_MAX); // after map start enemies first spawn
 GVAR(IDF_GAMEMOD, enemyspawnstyle, 0, 1, 3); // 0 = all at once, 1 = staggered, 2 = random, 3 = randomise between both
 
@@ -498,8 +498,8 @@ GFVAR(IDF_GAMEMOD, spreadmoving, 0, 0.75f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, spreadrunning, 0, 1.f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, spreadinair, 0, 1.f, FVAR_MAX);
 
-GVAR(IDF_GAMEMOD, quakefade, 0, 250, VAR_MAX);
-GVAR(IDF_GAMEMOD, quakewobble, 1, 18, VAR_MAX);
+GVAR(IDF_GAMEMOD, quakefade, 0, 300, VAR_MAX);
+GVAR(IDF_GAMEMOD, quakewobble, 1, 20, VAR_MAX);
 GVAR(IDF_GAMEMOD, quakelimit, 0, 200, VAR_MAX);
 
 GFVAR(IDF_GAMEMOD, damagescale, 0, 1, FVAR_MAX);
