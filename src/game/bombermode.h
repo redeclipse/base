@@ -180,7 +180,11 @@ struct bomberservmode : bomberstate, servmode
     {
         if(!canplay() || !hasflaginfo) return;
         bombertime = -1;
-        loopv(flags) if(flags[i].owner >= 0 || flags[i].droptime) returnaffinity(i, false);
+        loopvj(flags) if(flags[j].enabled)
+        {
+            bomberstate::returnaffinity(j, gamemillis, false);
+            sendf(-1, 1, "ri3", N_RESETAFFIN, j, 0);
+        }
         bombertime = gamemillis+(hasstarted ? G(bomberwait) : 0);
     }
 
