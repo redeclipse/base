@@ -3037,7 +3037,7 @@ namespace hud
                 sy += drawitem(tex, x, y-sy, s, 0, false, true, gr, gg, gb, fade);
             }
         }
-        if(inventorygameinfo)
+        if(inventorygameinfo && game::focus->state != CS_EDITING)
         {
             bool over = (!alive && inventorygameinfo&8) || inventorygameinfo&16;
             float gr = 1, gg = 1, gb = 1, fade = blend*inventorygameinfoblend;
@@ -3049,7 +3049,7 @@ namespace hud
                 flashcolour(gr, gg, gb, 0.f, 1.f, 1.f, amt);
             }
             #define ADDMODE(a) sy += drawitem(a, x, y-sy, s, 0, false, true, gr, gg, gb, fade);
-            if(game::focus->state != CS_EDITING && !m_dm(game::gamemode) && ((alive && inventorygameinfo&1) || over)) ADDMODEICON(game::gamemode, game::mutators)
+            if((alive && inventorygameinfo&1) || over) ADDMODEICON(game::gamemode, game::mutators)
             if(over && m_multi(game::gamemode, game::mutators) && !(gametype[game::gamemode].implied&(1<<G_M_MULTI))) ADDMODE(modemultitex)
             if(over && m_ffa(game::gamemode, game::mutators) && !(gametype[game::gamemode].implied&(1<<G_M_FFA))) ADDMODE(modeffatex)
             if(over && m_coop(game::gamemode, game::mutators) && !(gametype[game::gamemode].implied&(1<<G_M_COOP))) ADDMODE(modecooptex)
