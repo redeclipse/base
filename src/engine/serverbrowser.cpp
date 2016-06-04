@@ -249,7 +249,7 @@ void addserver(const char *name, int port, int priority, const char *desc, const
 }
 ICOMMAND(0, addserver, "siissss", (char *n, int *p, int *r, char *d, char *h, char *f, char *b), addserver(n, *p > 0 ? *p : SERVER_PORT, *r >= 0 ? *r : 0, d, h, f, b));
 
-VAR(0, searchlan, 0, 0, 1);
+VAR(IDF_PERSIST, searchlan, 0, 0, 1);
 VAR(IDF_PERSIST, maxservpings, 0, 10, 1000);
 VAR(IDF_PERSIST, serverupdateinterval, 0, 10, VAR_MAX);
 VAR(IDF_PERSIST, serverdecay, 0, 20, VAR_MAX);
