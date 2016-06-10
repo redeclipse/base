@@ -1,4 +1,4 @@
-﻿appname=$(APPNAME)
+﻿appname=$(APPNAME)
 appnamefull=$(shell sed -n 's/.define VERSION_NAME *"\([^"]*\)"/\1/p' engine/version.h)
 appversion=$(shell sed -n 's/.define VERSION_STRING *"\([^"]*\)"/\1/p' engine/version.h)
 appfiles=http://redeclipse.net/files/stable
@@ -48,7 +48,7 @@ distdir: ../$(dirname)
 
 ../$(tarname): ../$(dirname)
 	tar \
-		--exclude='$</bin/*/$(appname)*' \
+		--exclude='$</bin/*/$(appname)*.exe' \
 		--exclude='$</bin/*/genkey*' \
 		--exclude='$</bin/$(dirname-osx)/Contents/MacOS/$(appname)_universal' \
 		-cf $@ $<
