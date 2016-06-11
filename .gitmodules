@@ -22,6 +22,10 @@
 	path = data/crosshairs
 	url = https://github.com/red-eclipse/crosshairs.git
 	branch = master
+[submodule "dziq"]
+	path = data/dziq
+	url = https://github.com/red-eclipse/dziq.git
+	branch = master
 [submodule "elyvisions"]
 	path = data/elyvisions
 	url = https://github.com/red-eclipse/elyvisions.git
@@ -137,4 +141,3 @@
 [submodule "wicked"]
 	path = data/wicked
 	url = https://github.com/red-eclipse/wicked.git
-	branch = master
