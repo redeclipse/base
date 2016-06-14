@@ -420,6 +420,7 @@ namespace server
             if (handle[0])
             {
                 requestmasterf("reqauthstats \"%s\"\n", handle);
+                flushmasteroutput();
             }
         }
 
