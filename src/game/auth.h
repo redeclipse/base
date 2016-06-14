@@ -96,6 +96,13 @@ namespace auth
         return NULL;
     }
 
+    clientinfo *findauthhandle(const char *handle)
+    {
+        loopv(clients) if(!strcmp(clients[i]->handle, handle)) return clients[i];
+        loopv(connects) if(!strcmp(connects[i]->handle, handle)) return connects[i];
+        return NULL;
+    }
+
     void reqserverauth()
     {
         if(connectedmaster() && *serveraccountpass && serverauthconnect && !hasauth)
@@ -380,6 +387,16 @@ namespace auth
         else if(!strcmp(w[0], "echo")) { conoutf("master server reply: %s", w[1]); }
         else if(!strcmp(w[0], "failauth")) authfailed((uint)(atoi(w[1])));
         else if(!strcmp(w[0], "succauth")) authsucceeded((uint)(atoi(w[1])), w[2], w[3]);
+        else if(!strcmp(w[0], "authstats"))
+        {
+            clientinfo *ci = findauthhandle(w[1]);
+            if(ci)
+            {
+                ci->totalpoints = ci->localtotalpoints + atoi(w[2]);
+                ci->totalfrags = ci->localtotalfrags + atoi(w[3]);
+                ci->totaldeaths = ci->localtotaldeaths + atoi(w[4]);
+            }
+        }
         else if(!strcmp(w[0], "failserverauth")) serverauthfailed();
         else if(!strcmp(w[0], "succserverauth")) serverauthsucceeded(w[1], w[2]);
         else if(!strcmp(w[0], "chalauth")) authchallenged((uint)(atoi(w[1])), w[2]);
