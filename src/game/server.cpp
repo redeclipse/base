@@ -508,6 +508,9 @@ namespace server
             ci->localtotalpoints = localtotalpoints;
             ci->localtotalfrags = localtotalfrags;
             ci->localtotaldeaths = localtotaldeaths;
+            ci->totalpoints = localtotalpoints;
+            ci->totalfrags = localtotalfrags;
+            ci->totaldeaths = localtotaldeaths;
             ci->spree = spree;
             ci->rewards[0] = rewards;
             ci->timeplayed = timeplayed;
