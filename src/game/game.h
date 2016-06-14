@@ -314,7 +314,7 @@ char msgsizelookup(int msg)
     static const int msgsizes[] =               // size inclusive message token, 0 for variable or not-checked sizes
     {
         N_CONNECT, 0, N_SERVERINIT, 5, N_WELCOME, 2, N_CLIENTINIT, 0, N_POS, 0, N_SPHY, 0, N_TEXT, 0, N_COMMAND, 0, N_ANNOUNCE, 0, N_DISCONNECT, 3,
-        N_SHOOT, 0, N_DESTROY, 0, N_STICKY, 0, N_SUICIDE, 4, N_DIED, 0, N_POINTS, 4, N_DAMAGE, 14, N_SHOTFX, 0,
+        N_SHOOT, 0, N_DESTROY, 0, N_STICKY, 0, N_SUICIDE, 4, N_DIED, 0, N_POINTS, 5, N_DAMAGE, 14, N_SHOTFX, 0,
         N_LOADW, 0, N_TRYSPAWN, 2, N_SPAWNSTATE, 0, N_SPAWN, 0, N_DROP, 0, N_WSELECT, 0,
         N_MAPCHANGE, 0, N_MAPVOTE, 0, N_CLEARVOTE, 0, N_CHECKPOINT, 0, N_ITEMSPAWN, 3, N_ITEMUSE, 0, N_TRIGGER, 0, N_EXECLINK, 3,
         N_PING, 2, N_PONG, 2, N_CLIENTPING, 2, N_TICK, 3, N_ITEMACC, 0, N_SERVMSG, 0, N_GETGAMEINFO, 0, N_GAMEINFO, 0, N_RESUME, 0,
@@ -545,14 +545,14 @@ struct clientstate
     int health, ammo[W_MAX], entid[W_MAX], colour, model, checkpointspawn;
     int weapselect, weapload[W_MAX], weapshot[W_MAX], weapstate[W_MAX], weapwait[W_MAX], weaptime[W_MAX], prevstate[W_MAX], prevtime[W_MAX];
     int lastdeath, lastspawn, lastpain, lastregen, lastregenamt, lastbuff, lastshoot, lastres[WR_MAX], lastrestime[WR_MAX];
-    int actortype, spawnpoint, ownernum, skill, points, frags, deaths, totalpoints, totalfrags, totaldeaths, spree, lasttimeplayed, timeplayed, cpmillis, cptime, queuepos;
+    int actortype, spawnpoint, ownernum, skill, points, frags, deaths, localtotalpoints, localtotalfrags, localtotaldeaths, globaltotalpoints, globaltotalfrags, globaltotaldeaths, spree, lasttimeplayed, timeplayed, cpmillis, cptime, queuepos;
     bool quarantine;
     string vanity;
     vector<int> loadweap, lastweap, randweap;
     verinfo version;
 
     clientstate() : colour(0), model(0), checkpointspawn(1), weapselect(W_CLAW), lastdeath(0), lastspawn(0), lastpain(0), lastregen(0), lastregenamt(0), lastbuff(0), lastshoot(0),
-        actortype(A_PLAYER), spawnpoint(-1), ownernum(-1), skill(0), points(0), frags(0), deaths(0), totalpoints(0), totalfrags(0), totaldeaths(0), spree(0), lasttimeplayed(0), timeplayed(0),
+        actortype(A_PLAYER), spawnpoint(-1), ownernum(-1), skill(0), points(0), frags(0), deaths(0), localtotalpoints(0), localtotalfrags(0), localtotaldeaths(0), globaltotalpoints(0), globaltotalfrags(0), globaltotaldeaths(0), spree(0), lasttimeplayed(0), timeplayed(0),
         cpmillis(0), cptime(0), queuepos(-1), quarantine(false)
     {
         setvanity();
@@ -562,6 +562,10 @@ struct clientstate
         resetresidual();
     }
     ~clientstate() {}
+
+    int totalpoints() { return localtotalpoints + globaltotalpoints; }
+    int totalfrags() { return localtotalfrags + globaltotalfrags; }
+    int totaldeaths() { return localtotaldeaths + globaltotaldeaths; }
 
     bool setvanity(const char *v = "")
     {
@@ -793,12 +797,12 @@ struct clientstate
     float scoretime(bool update = true)
     {
         if(update) updatetimeplayed();
-        return totalpoints/float(max(timeplayed, 1));
+        return localtotalpoints/float(max(timeplayed, 1));
     }
 
     float kdratio(bool total = true)
     {
-        if(total) return totalfrags >= totaldeaths ? (totalfrags/float(max(totaldeaths, 1))) : -(totaldeaths/float(max(totalfrags, 1)));
+        if(total) return totalfrags() >= totaldeaths() ? (totalfrags()/float(max(totaldeaths(), 1))) : -(totaldeaths()/float(max(totalfrags(), 1)));
         return frags >= deaths ? (frags/float(max(deaths, 1))) : -(deaths/float(max(frags, 1)));
     }
 

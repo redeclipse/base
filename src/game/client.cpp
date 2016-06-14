@@ -672,9 +672,9 @@ namespace client
     ICOMMAND(0, getclientfrags, "i", (int *cn), gameent *d = game::getclient(*cn); intret(d ? d->frags : -1));
     ICOMMAND(0, getclientdeaths, "i", (int *cn), gameent *d = game::getclient(*cn); intret(d ? d->deaths : -1));
 
-    ICOMMAND(0, getclienttotalpoints, "i", (int *cn), gameent *d = game::getclient(*cn); intret(d ? d->totalpoints : -1));
-    ICOMMAND(0, getclienttotalfrags, "i", (int *cn), gameent *d = game::getclient(*cn); intret(d ? d->totalfrags : -1));
-    ICOMMAND(0, getclienttotaldeaths, "i", (int *cn), gameent *d = game::getclient(*cn); intret(d ? d->totaldeaths : -1));
+    ICOMMAND(0, getclienttotalpoints, "i", (int *cn), gameent *d = game::getclient(*cn); intret(d ? d->totalpoints() : -1));
+    ICOMMAND(0, getclienttotalfrags, "i", (int *cn), gameent *d = game::getclient(*cn); intret(d ? d->totalfrags() : -1));
+    ICOMMAND(0, getclienttotaldeaths, "i", (int *cn), gameent *d = game::getclient(*cn); intret(d ? d->totaldeaths() : -1));
 
     ICOMMAND(0, getclienttimeplayed, "i", (int *cn), {
         gameent *d = game::getclient(*cn);
@@ -1859,9 +1859,12 @@ namespace client
         d->points = getint(p);
         d->frags = getint(p);
         d->deaths = getint(p);
-        d->totalpoints = getint(p);
-        d->totalfrags = getint(p);
-        d->totaldeaths = getint(p);
+        d->localtotalpoints = getint(p);
+        d->localtotalfrags = getint(p);
+        d->localtotaldeaths = getint(p);
+        d->globaltotalpoints = getint(p);
+        d->globaltotalfrags = getint(p);
+        d->globaltotaldeaths = getint(p);
         d->timeplayed = getint(p);
         d->lasttimeplayed = totalmillis ? totalmillis : 1;
         d->health = getint(p);
@@ -2415,7 +2418,7 @@ namespace client
 
                 case N_DIED:
                 {
-                    int vcn = getint(p), deaths = getint(p), tdeaths = getint(p), acn = getint(p), frags = getint(p), tfrags = getint(p), spree = getint(p), style = getint(p), weap = getint(p), flags = getint(p), damage = getint(p), material = getint(p);
+                    int vcn = getint(p), deaths = getint(p), ltdeaths = getint(p), gtdeaths = getint(p), acn = getint(p), frags = getint(p), ltfrags = getint(p), gtfrags = getint(p), spree = getint(p), style = getint(p), weap = getint(p), flags = getint(p), damage = getint(p), material = getint(p);
                     gameent *m = game::getclient(vcn), *v = game::getclient(acn);
                     static vector<gameent *> assist; assist.setsize(0);
                     int count = getint(p);
@@ -2427,9 +2430,11 @@ namespace client
                     }
                     if(!v || !m) break;
                     m->deaths = deaths;
-                    m->totaldeaths = tdeaths;
+                    m->localtotaldeaths = ltdeaths;
+                    m->globaltotaldeaths = gtdeaths;
                     v->frags = frags;
-                    v->totalfrags = tfrags;
+                    v->localtotalfrags = ltfrags;
+                    v->globaltotalfrags = gtfrags;
                     v->spree = spree;
                     game::killed(weap, flags, damage, m, v, assist, style, material);
                     m->lastdeath = lastmillis;
@@ -2439,12 +2444,13 @@ namespace client
 
                 case N_POINTS:
                 {
-                    int acn = getint(p), add = getint(p), points = getint(p), total = getint(p);
+                    int acn = getint(p), add = getint(p), points = getint(p), localtotal = getint(p), globaltotal = getint(p);
                     gameent *v = game::getclient(acn);
                     if(!v) break;
                     v->lastpoints = add;
                     v->points = points;
-                    v->totalpoints = total;
+                    v->localtotalpoints = localtotal;
+                    v->globaltotalpoints = globaltotal;
                     break;
                 }
 

@@ -460,7 +460,7 @@ namespace server
     {
         uint ip;
         string name, handle;
-        int points, frags, deaths, totalpoints, totalfrags, totaldeaths, spree, rewards, timeplayed, timealive, timeactive, shotdamage, damage, cptime, actortype;
+        int points, frags, deaths, localtotalpoints, localtotalfrags, localtotaldeaths, globaltotalpoints, globaltotalfrags, globaltotaldeaths, spree, rewards, timeplayed, timealive, timeactive, shotdamage, damage, cptime, actortype;
         int warnings[WARN_MAX][2];
         vector<teamkill> teamkills;
         weaponstats weapstats[W_MAX];
@@ -474,9 +474,12 @@ namespace server
             points = ci->points;
             frags = ci->frags;
             deaths = ci->deaths;
-            totalpoints = ci->totalpoints;
-            totalfrags = ci->totalfrags;
-            totaldeaths = ci->totaldeaths;
+            localtotalpoints = ci->localtotalpoints;
+            localtotalfrags = ci->localtotalfrags;
+            localtotaldeaths = ci->localtotaldeaths;
+            globaltotalpoints = ci->globaltotalpoints;
+            globaltotalfrags = ci->globaltotalfrags;
+            globaltotaldeaths = ci->globaltotaldeaths;
             spree = ci->spree;
             rewards = ci->rewards[0];
             timeplayed = ci->timeplayed;
@@ -500,9 +503,12 @@ namespace server
             ci->points = points;
             ci->frags = frags;
             ci->deaths = deaths;
-            ci->totalpoints = totalpoints;
-            ci->totalfrags = totalfrags;
-            ci->totaldeaths = totaldeaths;
+            ci->localtotalpoints = localtotalpoints;
+            ci->localtotalfrags = localtotalfrags;
+            ci->localtotaldeaths = localtotaldeaths;
+            ci->globaltotalpoints = globaltotalpoints;
+            ci->globaltotalfrags = globaltotalfrags;
+            ci->globaltotaldeaths = globaltotaldeaths;
             ci->spree = spree;
             ci->rewards[0] = rewards;
             ci->timeplayed = timeplayed;
@@ -1612,13 +1618,13 @@ namespace server
                             switch(G(teambalancestyle))
                             {
                                 case 1: if(id < 0 || tc[i][id]->timeplayed > cp->timeplayed) id = j; break;
-                                case 2: if(id < 0 || tc[i][id]->totalpoints > cp->totalpoints) id = j; break;
-                                case 3: if(id < 0 || tc[i][id]->totalfrags > cp->totalfrags) id = j; break;
+                                case 2: if(id < 0 || tc[i][id]->totalpoints() > cp->totalpoints()) id = j; break;
+                                case 3: if(id < 0 || tc[i][id]->totalfrags() > cp->totalfrags()) id = j; break;
                                 case 4: if(id < 0 || tc[i][id]->scoretime(false) > cp->scoretime(false)) id = j; break;
                                 case 5: if(id < 0 || tc[i][id]->kdratio() > cp->kdratio()) id = j; break;
                                 case 6: if(id < 0 || tc[i][id]->timeplayed < cp->timeplayed) id = j; break;
-                                case 7: if(id < 0 || tc[i][id]->totalpoints < cp->totalpoints) id = j; break;
-                                case 8: if(id < 0 || tc[i][id]->totalfrags < cp->totalfrags) id = j; break;
+                                case 7: if(id < 0 || tc[i][id]->totalpoints() < cp->totalpoints()) id = j; break;
+                                case 8: if(id < 0 || tc[i][id]->totalfrags() < cp->totalfrags()) id = j; break;
                                 case 9: if(id < 0 || tc[i][id]->scoretime(false) < cp->scoretime(false)) id = j; break;
                                 case 10: if(id < 0 || tc[i][id]->kdratio() < cp->kdratio()) id = j; break;
                                 case 0: default: if(id < 0) id = j; break;
@@ -2175,7 +2181,7 @@ namespace server
         int spawn = pickspawn(ci);
         ci->spawnstate(gamemode, mutators, weap, health);
         ci->updatetimeplayed();
-        sendf(ci->clientnum, 1, "ri9i5v", N_SPAWNSTATE, ci->clientnum, spawn, ci->state, ci->points, ci->frags, ci->deaths, ci->totalpoints, ci->totalfrags, ci->totaldeaths, ci->timeplayed, ci->health, ci->cptime, ci->weapselect, W_MAX, &ci->ammo[0]);
+        sendf(ci->clientnum, 1, "ri9i8v", N_SPAWNSTATE, ci->clientnum, spawn, ci->state, ci->points, ci->frags, ci->deaths, ci->localtotalpoints, ci->localtotalfrags, ci->localtotaldeaths, ci->globaltotalpoints, ci->globaltotalfrags, ci->globaltotaldeaths, ci->timeplayed, ci->health, ci->cptime, ci->weapselect, W_MAX, &ci->ammo[0]);
         ci->lastspawn = gamemillis;
     }
 
@@ -2187,9 +2193,12 @@ namespace server
         putint(p, ci->points);
         putint(p, ci->frags);
         putint(p, ci->deaths);
-        putint(p, ci->totalpoints);
-        putint(p, ci->totalfrags);
-        putint(p, ci->totaldeaths);
+        putint(p, ci->localtotalpoints);
+        putint(p, ci->localtotalfrags);
+        putint(p, ci->localtotaldeaths);
+        putint(p, ci->globaltotalpoints);
+        putint(p, ci->globaltotalfrags);
+        putint(p, ci->globaltotaldeaths);
         putint(p, ci->timeplayed);
         putint(p, ci->health);
         putint(p, ci->cptime);
@@ -2788,11 +2797,11 @@ namespace server
 
     void givepoints(clientinfo *ci, int points, bool give, bool team = true)
     {
-        ci->totalpoints += points;
+        ci->localtotalpoints += points;
         if(give)
         {
             ci->points += points;
-            sendf(-1, 1, "ri5", N_POINTS, ci->clientnum, points, ci->points, ci->totalpoints);
+            sendf(-1, 1, "ri6", N_POINTS, ci->clientnum, points, ci->points, ci->localtotalpoints, ci->globaltotalpoints);
             if(team && m_team(gamemode, mutators) && m_dm(gamemode))
             {
                 score &ts = teamscore(ci->team);
@@ -2800,7 +2809,7 @@ namespace server
                 sendf(-1, 1, "ri3", N_SCORE, ts.team, ts.total);
             }
         }
-        else if(points) sendf(-1, 1, "ri5", N_POINTS, ci->clientnum, points, ci->points, ci->totalpoints);
+        else if(points) sendf(-1, 1, "ri6", N_POINTS, ci->clientnum, points, ci->points, ci->localtotalpoints, ci->globaltotalpoints);
     }
 
     void savescore(clientinfo *ci)
@@ -2851,8 +2860,8 @@ namespace server
             switch(G(teambalancestyle))
             {
                 case 1: case 6: csk = ci->timeplayed; break;
-                case 2: case 7: csk = ci->totalpoints; break;
-                case 3: case 8: csk = ci->totalfrags; break;
+                case 2: case 7: csk = ci->totalpoints(); break;
+                case 3: case 8: csk = ci->totalfrags(); break;
                 case 4: case 9: csk = ci->scoretime(); break;
                 case 5: case 10: csk = ci->kdratio(); break;
                 case 0: default: break;
@@ -2865,8 +2874,8 @@ namespace server
                 switch(G(teambalancestyle))
                 {
                     case 1: case 6: psk = cp->timeplayed; break;
-                    case 2: case 7: psk = cp->totalpoints; break;
-                    case 3: case 8: psk = cp->totalfrags; break;
+                    case 2: case 7: psk = cp->totalpoints(); break;
+                    case 3: case 8: psk = cp->totalfrags(); break;
                     case 4: case 9: psk = cp->scoretime(); break;
                     case 5: case 10: psk = cp->kdratio(); break;
                     case 0: default: break;
@@ -2977,8 +2986,8 @@ namespace server
                     switch(G(teambalancestyle))
                     {
                         case 1: case 6: ts.score += cp->timeplayed; break;
-                        case 2: case 7: ts.score += cp->totalpoints; break;
-                        case 3: case 8: ts.score += cp->totalfrags; break;
+                        case 2: case 7: ts.score += cp->totalpoints(); break;
+                        case 3: case 8: ts.score += cp->totalfrags(); break;
                         case 4: case 9: ts.score += cp->scoretime(); break;
                         case 5: case 10: ts.score += cp->kdratio(); break;
                         case 0: default: ts.score += 1; break;
@@ -3311,7 +3320,8 @@ namespace server
                     }
                 }
             }
-            requestmasterf("stats game %s %d %d %d %d\n", escapestring(smapname), gamemode, mutators, gamemillis/1000, unique);
+            requestmasterf("stats game %s %d %d %d %d %d\n", escapestring(smapname), gamemode, mutators, gamemillis/1000, unique, m_usetotals(gamemode, mutators));
+            flushmasteroutput();
             requestmasterf("stats server %s %s %d\n", escapestring(G(serverdesc)), versionstring, serverport);
             flushmasteroutput();
             loopi(numteams(gamemode, mutators))
@@ -3819,7 +3829,7 @@ namespace server
     void sendresume(clientinfo *ci)
     {
         ci->updatetimeplayed();
-        sendf(-1, 1, "ri9i4vi", N_RESUME, ci->clientnum, ci->state, ci->points, ci->frags, ci->deaths, ci->totalpoints, ci->totalfrags, ci->totaldeaths, ci->timeplayed, ci->health, ci->cptime, ci->weapselect, W_MAX, &ci->ammo[0], -1);
+        sendf(-1, 1, "ri9i7vi", N_RESUME, ci->clientnum, ci->state, ci->points, ci->frags, ci->deaths, ci->localtotalpoints, ci->localtotalfrags, ci->localtotaldeaths, ci->globaltotalpoints, ci->globaltotalfrags, ci->globaltotaldeaths, ci->timeplayed, ci->health, ci->cptime, ci->weapselect, W_MAX, &ci->ammo[0], -1);
     }
 
     void putinitclient(clientinfo *ci, packetbuf &p)
@@ -4197,7 +4207,7 @@ namespace server
             if(m != v && (!m_team(gamemode, mutators) || m->team != v->team))
             {
                 v->frags++;
-                v->totalfrags++;
+                v->localtotalfrags++;
                 if(statalt) v->weapstats[statweap].frags2++;
                 else v->weapstats[statweap].frags1++;
             }
@@ -4307,13 +4317,13 @@ namespace server
                 else if(v->actortype < A_ENEMY) givepoints(v, pointvalue, m_points(gamemode, mutators), true);
             }
             m->deaths++;
-            m->totaldeaths++;
+            m->localtotaldeaths++;
             m->rewards[1] = 0;
             dropitems(m, actor[m->actortype].living ? DROP_DEATH : DROP_EXPIRE);
             static vector<int> dmglog;
             dmglog.setsize(0);
             gethistory(m, v, gamemillis, dmglog, true, m_dm_oldschool(gamemode, mutators) ? 0 : 1);
-            sendf(-1, 1, "ri9i5v", N_DIED, m->clientnum, m->deaths, m->totaldeaths, v->clientnum, v->frags, v->totalfrags, v->spree, style, weap, realflags, realdamage, material, dmglog.length(), dmglog.length(), dmglog.getbuf());
+            sendf(-1, 1, "ri9i7v", N_DIED, m->clientnum, m->deaths, m->localtotaldeaths, m->globaltotaldeaths, v->clientnum, v->frags, v->localtotalfrags, v->globaltotalfrags, v->spree, style, weap, realflags, realdamage, material, dmglog.length(), dmglog.length(), dmglog.getbuf());
             m->position.setsize(0);
             if(smode) smode->died(m, v);
             mutate(smuts, mut->died(m, v));
@@ -4371,7 +4381,7 @@ namespace server
         }
         ci->spree = 0;
         ci->deaths++;
-        ci->totaldeaths++;
+        ci->localtotaldeaths++;
         bool kamikaze = dropitems(ci, actor[ci->actortype].living ? DROP_DEATH : DROP_EXPIRE);
         if(ci->actortype < A_ENEMY && m_race(gamemode) && (!m_ra_gauntlet(gamemode, mutators) || ci->team == T_ALPHA) && !(flags&HIT_SPEC) && (!flags || ci->cpnodes.length() == 1 || !ci->checkpointspawn))
         { // reset if suicided, hasn't reached another checkpoint yet
@@ -4406,7 +4416,7 @@ namespace server
         }
         static vector<int> dmglog; dmglog.setsize(0);
         gethistory(ci, ci, gamemillis, dmglog, true, m_dm_oldschool(gamemode, mutators) ? 0 : 1);
-        sendf(-1, 1, "ri9i5v", N_DIED, ci->clientnum, ci->deaths, ci->totaldeaths, ci->clientnum, ci->frags, ci->totalfrags, 0, 0, -1, flags, ci->health*2, material, dmglog.length(), dmglog.length(), dmglog.getbuf());
+        sendf(-1, 1, "ri9i7v", N_DIED, ci->clientnum, ci->deaths, ci->localtotaldeaths, ci->globaltotaldeaths, ci->clientnum, ci->frags, ci->localtotalfrags, ci->globaltotalfrags, 0, 0, -1, flags, ci->health*2, material, dmglog.length(), dmglog.length(), dmglog.getbuf());
         ci->position.setsize(0);
         if(smode) smode->died(ci, NULL);
         mutate(smuts, mut->died(ci, NULL));
