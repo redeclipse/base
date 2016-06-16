@@ -79,9 +79,8 @@ struct masterclient
     {
         ulong id;
         statstring map;
-        int mode, mutators, timeplayed;
+        int mode, mutators, timeplayed, usetotals;
         time_t time;
-        bool usetotals;
 
         statstring desc, version;
         int port;
@@ -210,8 +209,7 @@ struct masterclient
             map[0] = desc[0] = version[0] = '\0';
             mode = mutators = -1;
             timeplayed = 0;
-            unique = time = 0;
-            usetotals = false;
+            unique = time = usetotals = 0;
             port = 0;
             teams.shrink(0);
             players.shrink(0);

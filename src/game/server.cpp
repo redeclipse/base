@@ -3299,7 +3299,8 @@ namespace server
             }
             if(!worthy) return;
 
-            loopv(clients) {
+            loopv(clients)
+            {
                 clients[i]->localtotalpoints -= clients[i]->points;
                 clients[i]->localtotalfrags -= clients[i]->frags;
                 clients[i]->localtotaldeaths -= clients[i]->deaths;
@@ -3328,7 +3329,7 @@ namespace server
                     }
                 }
             }
-            requestmasterf("stats game %s %d %d %d %d %d\n", escapestring(smapname), gamemode, mutators, gamemillis/1000, unique, m_usetotals(gamemode, mutators));
+            requestmasterf("stats game %s %d %d %d %d %d\n", escapestring(smapname), gamemode, mutators, gamemillis/1000, unique, m_usetotals(gamemode, mutators) ? 1 : 0);
             flushmasteroutput();
             requestmasterf("stats server %s %s %d\n", escapestring(G(serverdesc)), versionstring, serverport);
             flushmasteroutput();
