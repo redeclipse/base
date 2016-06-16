@@ -262,7 +262,8 @@ namespace server
     struct servstate : baseent, clientstate
     {
         int rewards[2], shotdamage, damage, lasttimewielded, lasttimeloadout[W_ALL], aireinit,
-            lastresowner[WR_MAX], lasttimealive, timealive, lasttimeactive, timeactive, lastresweapon[WR_MAX], lasthurt;
+            lastresowner[WR_MAX], lasttimealive, timealive, lasttimeactive, timeactive, lastresweapon[WR_MAX], lasthurt,
+            localtotalpoints, localtotalfrags, localtotaldeaths;
         bool lastresalt[W_MAX];
         projectilestate dropped, weapshots[W_MAX][2];
         vector<int> fraglog, fragmillis, cpnodes, chatmillis;
@@ -276,7 +277,7 @@ namespace server
 
         int warnings[WARN_MAX][2];
 
-        servstate() : lasttimewielded(0), aireinit(0), lasttimealive(0), timealive(0), timeactive(0), lasthurt(0)
+        servstate() : lasttimewielded(0), aireinit(0), lasttimealive(0), timealive(0), timeactive(0), lasthurt(0), localtotalpoints(0), localtotalfrags(0), localtotaldeaths(0)
         {
             loopi(WARN_MAX) loopj(2) warnings[i][j] = 0;
             loopi(W_ALL) lasttimeloadout[i] = 0;
@@ -416,6 +417,11 @@ namespace server
             if(!change) lastteam = T_NEUTRAL;
             team = swapteam = T_NEUTRAL;
             clientmap[0] = '\0';
+            if (handle[0])
+            {
+                requestmasterf("reqauthstats \"%s\"\n", handle);
+                flushmasteroutput();
+            }
         }
 
         void cleanclipboard(bool fullclean = true)
@@ -460,7 +466,7 @@ namespace server
     {
         uint ip;
         string name, handle;
-        int points, frags, deaths, totalpoints, totalfrags, totaldeaths, spree, rewards, timeplayed, timealive, timeactive, shotdamage, damage, cptime, actortype;
+        int points, frags, deaths, localtotalpoints, localtotalfrags, localtotaldeaths, spree, rewards, timeplayed, timealive, timeactive, shotdamage, damage, cptime, actortype;
         int warnings[WARN_MAX][2];
         vector<teamkill> teamkills;
         weaponstats weapstats[W_MAX];
@@ -474,9 +480,9 @@ namespace server
             points = ci->points;
             frags = ci->frags;
             deaths = ci->deaths;
-            totalpoints = ci->totalpoints;
-            totalfrags = ci->totalfrags;
-            totaldeaths = ci->totaldeaths;
+            localtotalpoints = ci->localtotalpoints;
+            localtotalfrags = ci->localtotalfrags;
+            localtotaldeaths = ci->localtotaldeaths;
             spree = ci->spree;
             rewards = ci->rewards[0];
             timeplayed = ci->timeplayed;
@@ -500,9 +506,12 @@ namespace server
             ci->points = points;
             ci->frags = frags;
             ci->deaths = deaths;
-            ci->totalpoints = totalpoints;
-            ci->totalfrags = totalfrags;
-            ci->totaldeaths = totaldeaths;
+            ci->localtotalpoints = localtotalpoints;
+            ci->localtotalfrags = localtotalfrags;
+            ci->localtotaldeaths = localtotaldeaths;
+            ci->totalpoints = localtotalpoints;
+            ci->totalfrags = localtotalfrags;
+            ci->totaldeaths = localtotaldeaths;
             ci->spree = spree;
             ci->rewards[0] = rewards;
             ci->timeplayed = timeplayed;
@@ -2789,6 +2798,7 @@ namespace server
     void givepoints(clientinfo *ci, int points, bool give, bool team = true)
     {
         ci->totalpoints += points;
+        ci->localtotalpoints += points;
         if(give)
         {
             ci->points += points;
@@ -3288,6 +3298,14 @@ namespace server
                 }
             }
             if(!worthy) return;
+
+            loopv(clients)
+            {
+                clients[i]->localtotalpoints -= clients[i]->points;
+                clients[i]->localtotalfrags -= clients[i]->frags;
+                clients[i]->localtotaldeaths -= clients[i]->deaths;
+            }
+
             sentstats = true;
             requestmasterf("stats begin\n");
             int unique = 0;
@@ -3311,7 +3329,8 @@ namespace server
                     }
                 }
             }
-            requestmasterf("stats game %s %d %d %d %d\n", escapestring(smapname), gamemode, mutators, gamemillis/1000, unique);
+            requestmasterf("stats game %s %d %d %d %d %d\n", escapestring(smapname), gamemode, mutators, gamemillis/1000, unique, m_usetotals(gamemode, mutators) ? 1 : 0);
+            flushmasteroutput();
             requestmasterf("stats server %s %s %d\n", escapestring(G(serverdesc)), versionstring, serverport);
             flushmasteroutput();
             loopi(numteams(gamemode, mutators))
@@ -4198,6 +4217,7 @@ namespace server
             {
                 v->frags++;
                 v->totalfrags++;
+                v->localtotalfrags++;
                 if(statalt) v->weapstats[statweap].frags2++;
                 else v->weapstats[statweap].frags1++;
             }
@@ -4308,6 +4328,7 @@ namespace server
             }
             m->deaths++;
             m->totaldeaths++;
+            m->localtotaldeaths++;
             m->rewards[1] = 0;
             dropitems(m, actor[m->actortype].living ? DROP_DEATH : DROP_EXPIRE);
             static vector<int> dmglog;

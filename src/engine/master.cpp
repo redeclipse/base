@@ -10,7 +10,7 @@
 #include <enet/time.h>
 #include <sqlite3.h>
 
-#define STATSDB_VERSION 4
+#define STATSDB_VERSION 5
 #define STATSDB_RETRYTIME (5*1000)
 #define MASTER_LIMIT 4096
 #define CLIENT_TIME (60*1000)
@@ -79,7 +79,7 @@ struct masterclient
     {
         ulong id;
         statstring map;
-        int mode, mutators, timeplayed;
+        int mode, mutators, timeplayed, usetotals;
         time_t time;
 
         statstring desc, version;
@@ -209,7 +209,7 @@ struct masterclient
             map[0] = desc[0] = version[0] = '\0';
             mode = mutators = -1;
             timeplayed = 0;
-            unique = time = 0;
+            unique = time = usetotals = 0;
             port = 0;
             teams.shrink(0);
             players.shrink(0);
@@ -341,6 +341,24 @@ void loadstatsdb()
     conoutf("statistics database loaded");
 }
 
+int playertotalstat(const char *handle, const char *stat)
+{
+    int ret = 0;
+    sqlite3_stmt *stmt;
+    defformatstring(sql, "SELECT SUM(%s) FROM (SELECT %s FROM game_players WHERE handle = ? AND game IN (SELECT id FROM games WHERE usetotals = 1))", stat, stat);
+
+    checkstatsdb(sqlite3_prepare_v2(statsdb, sql, -1, &stmt, 0));
+    checkstatsdb(sqlite3_bind_text(stmt, 1, handle, strlen(handle), SQLITE_TRANSIENT));
+
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        ret = sqlite3_column_int(stmt, 0);
+    }
+
+    sqlite3_finalize(stmt);
+    return ret;
+}
+
+
 void masterout(masterclient &c, const char *msg, int len = 0)
 {
     if(!len) len = strlen(msg);
@@ -366,13 +384,14 @@ void savestats(masterclient &c)
     if(rc == SQLITE_BUSY) return;
     else checkstatsdb(rc, errmsg);
 
-    statsdbexecf("INSERT INTO games VALUES (NULL, %d, %Q, %d, %d, %d, %d)",
+    statsdbexecf("INSERT INTO games VALUES (NULL, %d, %Q, %d, %d, %d, %d, %d)",
         c.stats.time,
         c.stats.map,
         c.stats.mode,
         c.stats.mutators,
         c.stats.timeplayed,
-        c.stats.unique
+        c.stats.unique,
+        c.stats.usetotals
     );
     c.stats.id = (ulong)sqlite3_last_insert_rowid(statsdb);
 
@@ -476,6 +495,17 @@ void savestats(masterclient &c)
     masteroutf(c, "stats success \"game statistics recorded, id \fc%lu\"\n", c.stats.id);
     c.instats = false;
     c.wantstats = false;
+}
+
+void sendauthstats(masterclient &c, const char *name)
+{
+    masteroutf(c, "authstats \"%s\" %d %d %d %d %d\n", name,
+        playertotalstat(name, "score"),
+        playertotalstat(name, "frags"),
+        playertotalstat(name, "deaths"),
+        playertotalstat(name, "timealive"),
+        playertotalstat(name, "timeactive")
+    );
 }
 
 bool setuppingsocket(ENetAddress *address)
@@ -636,6 +666,7 @@ void confauth(masterclient &c, uint id, const char *val)
         if(checkchallenge(val, c.authreqs[i].answer))
         {
             masteroutf(c, "succauth %u \"%s\" \"%s\"\n", id, c.authreqs[i].user->name, c.authreqs[i].user->flags);
+            sendauthstats(c, c.authreqs[i].user->name);
             conoutf("succeeded '%s' [%s] (%u) from %s on server %s\n", c.authreqs[i].user->name, c.authreqs[i].user->flags, id, c.authreqs[i].hostname, ip);
         }
         else
@@ -888,6 +919,7 @@ bool checkmasterclientinput(masterclient &c)
                     c.stats.timeplayed = atoi(w[5]);
                     c.stats.time = currenttime;
                     c.stats.unique = atoi(w[6]);
+                    c.stats.usetotals = atoi(w[7]);
                 }
                 else if(!strcmp(w[1], "server"))
                 {
@@ -980,6 +1012,7 @@ bool checkmasterclientinput(masterclient &c)
             if(!strcmp(w[0], "reqserverauth")) { reqserverauth(c, w[1]); found = true; }
             if(!strcmp(w[0], "confauth")) { confauth(c, uint(atoi(w[1])), w[2]); found = true; }
             if(!strcmp(w[0], "confserverauth")) { confserverauth(c, w[1]); found = true; }
+            if(!strcmp(w[0], "reqauthstats")) { sendauthstats(c, w[1]); found = true; }
         }
         if(w[0] && *w[0] && !found)
         {
