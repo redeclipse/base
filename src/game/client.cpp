@@ -584,12 +584,73 @@ namespace client
         return ((gameent *)d)->clientnum;
     }
 
+    int parseplayer(const char *arg)
+    {
+        char *end;
+        int n = strtol(arg, &end, 10);
+        if(*arg && !*end)
+        {
+            if(n!=game::player1->clientnum && !game::players.inrange(n)) return -1;
+            return n;
+        }
+        // try case sensitive first
+        loopv(game::players) if(game::players[i])
+        {
+            gameent *o = game::players[i];
+            if(!strcmp(arg, o->name)) return o->clientnum;
+        }
+        // nothing found, try case insensitive
+        loopv(game::players) if(game::players[i])
+        {
+            gameent *o = game::players[i];
+            if(!strcasecmp(arg, o->name)) return o->clientnum;
+        }
+        return -1;
+    }
+
+    int parsewho(const char *arg)
+    {
+        return arg[0] ? parseplayer(arg) : game::player1->clientnum;
+    }
+
+    ICOMMAND(0, getclientnum, "s", (char *who), intret(parsewho(who)));
+
+    void listclients(bool local, int noai)
+    {
+        vector<char> buf;
+        string cn;
+        int numclients = 0;
+        if(local)
+        {
+            formatstring(cn, "%d", game::player1->clientnum);
+            buf.put(cn, strlen(cn));
+            numclients++;
+        }
+        loopv(game::players) if(game::players[i] && (!noai || game::players[i]->actortype > (noai >= 2 ? A_PLAYER : A_BOT)))
+        {
+            formatstring(cn, "%d", game::players[i]->clientnum);
+            if(numclients++) buf.add(' ');
+            buf.put(cn, strlen(cn));
+        }
+        buf.add('\0');
+        result(buf.getbuf());
+    }
+    ICOMMAND(0, listclients, "ii", (int *local, int *noai), listclients(*local!=0, *noai));
+
+    void getlastclientnum()
+    {
+        int cn = game::player1->clientnum;
+        loopv(game::players) if(game::players[i] && game::players[i]->clientnum > cn) cn = game::players[i]->clientnum;
+        intret(cn);
+    }
+    ICOMMAND(0, getlastclientnum, "", (), getlastclientnum());
+
     int getclientpresence(int cn)
     {
         gameent *d = game::getclient(cn);
         return d ? 1 : 0;
     }
-    ICOMMAND(0, getclientpresence, "i", (int *cn), intret(getclientpresence(*cn)));
+    ICOMMAND(0, getclientpresence, "s", (char *who), intret(getclientpresence(parsewho(who))));
 
     const char *getclientname(int cn, int colour)
     {
@@ -597,21 +658,21 @@ namespace client
         if(colour && d) return game::colourname(d);
         return d ? d->name : "";
     }
-    ICOMMAND(0, getclientname, "ii", (int *cn, int *colour), result(getclientname(*cn, *colour)));
+    ICOMMAND(0, getclientname, "si", (char *who, int *colour), result(getclientname(parsewho(who), *colour)));
 
     int getclientcolour(int cn)
     {
         gameent *d = game::getclient(cn);
         return d ? d->colour : -1;
     }
-    ICOMMAND(0, getclientcolour, "i", (int *cn), intret(getclientcolour(*cn)));
+    ICOMMAND(0, getclientcolour, "s", (char *who), intret(getclientcolour(parsewho(who))));
 
     int getclientmodel(int cn)
     {
         gameent *d = game::getclient(cn);
         return d ? d->model%PLAYERTYPES : -1;
     }
-    ICOMMAND(0, getclientmodel, "i", (int *cn), intret(getclientmodel(*cn)));
+    ICOMMAND(0, getclientmodel, "s", (char *who), intret(getclientmodel(parsewho(who))));
 
     const char *getmodelname(int mdl, int idx)
     {
@@ -624,67 +685,67 @@ namespace client
         gameent *d = game::getclient(cn);
         return d ? d->vanity : "";
     }
-    ICOMMAND(0, getclientvanity, "i", (int *cn), result(getclientvanity(*cn)));
+    ICOMMAND(0, getclientvanity, "s", (char *who), result(getclientvanity(parsewho(who))));
 
     void getclientvitem(int cn, int n, int v)
     {
         gameent *d = game::getclient(cn);
         if(d) getvitem(d, n, v);
     }
-    ICOMMAND(0, getclientvitem, "ibi", (int *cn, int *n, int *v), getclientvitem(*cn, *n, *v));
+    ICOMMAND(0, getclientvitem, "sbi", (char *who, int *n, int *v), getclientvitem(parsewho(who), *n, *v));
 
     const char *getclienthost(int cn)
     {
         gameent *d = game::getclient(cn);
         return d ? d->hostname : "";
     }
-    ICOMMAND(0, getclienthost, "i", (int *cn), result(getclienthost(*cn)));
+    ICOMMAND(0, getclienthost, "s", (char *who), result(getclienthost(parsewho(who))));
 
     const char *getclientip(int cn)
     {
         gameent *d = game::getclient(cn);
         return d ? d->hostip : "";
     }
-    ICOMMAND(0, getclientip, "i", (int *cn), result(getclientip(*cn)));
+    ICOMMAND(0, getclientip, "s", (char *who), result(getclientip(parsewho(who))));
 
     int getclientteam(int cn)
     {
         gameent *d = game::getclient(cn);
         return d ? d->team : -1;
     }
-    ICOMMAND(0, getclientteam, "i", (int *cn), intret(getclientteam(*cn)));
+    ICOMMAND(0, getclientteam, "s", (char *who), intret(getclientteam(parsewho(who))));
 
     int getclientweapselect(int cn)
     {
         gameent *d = game::getclient(cn);
         return d ? d->weapselect : -1;
     }
-    ICOMMAND(0, getclientweapselect, "i", (int *cn), intret(getclientweapselect(*cn)));
+    ICOMMAND(0, getclientweapselect, "s", (char *who), intret(getclientweapselect(parsewho(who))));
 
     int getclientloadweap(int cn, int n)
     {
         gameent *d = game::getclient(cn);
         return d ? (d->loadweap.inrange(n) ? d->loadweap[n] : 0) : -1;
     }
-    ICOMMAND(0, getclientloadweap, "ii", (int *cn, int *n), intret(getclientloadweap(*cn, *n)));
+    ICOMMAND(0, getclientloadweap, "si", (char *who, int *n), intret(getclientloadweap(parsewho(who), *n)));
 
-    ICOMMAND(0, getclientpoints, "i", (int *cn), gameent *d = game::getclient(*cn); intret(d ? d->points : -1));
-    ICOMMAND(0, getclientfrags, "i", (int *cn), gameent *d = game::getclient(*cn); intret(d ? d->frags : -1));
-    ICOMMAND(0, getclientdeaths, "i", (int *cn), gameent *d = game::getclient(*cn); intret(d ? d->deaths : -1));
+    ICOMMAND(0, getclientpoints, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d ? d->points : -1));
+    ICOMMAND(0, getclientfrags, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d ? d->frags : -1));
+    ICOMMAND(0, getclientdeaths, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d ? d->deaths : -1));
 
-    ICOMMAND(0, getclienttotalpoints, "i", (int *cn), gameent *d = game::getclient(*cn); intret(d ? d->totalpoints : -1));
-    ICOMMAND(0, getclienttotalfrags, "i", (int *cn), gameent *d = game::getclient(*cn); intret(d ? d->totalfrags : -1));
-    ICOMMAND(0, getclienttotaldeaths, "i", (int *cn), gameent *d = game::getclient(*cn); intret(d ? d->totaldeaths : -1));
+    ICOMMAND(0, getclienttotalpoints, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d ? d->totalpoints : -1));
+    ICOMMAND(0, getclienttotalfrags, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d ? d->totalfrags : -1));
+    ICOMMAND(0, getclienttotaldeaths, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d ? d->totaldeaths : -1));
 
-    ICOMMAND(0, getclienttimeplayed, "i", (int *cn), {
-        gameent *d = game::getclient(*cn);
+    ICOMMAND(0, getclienttimeplayed, "s", (char *who), {
+        gameent *d = game::getclient(parsewho(who));
         if(d) d->updatetimeplayed();
         intret(d ? d->timeplayed : -1);
     });
-    ICOMMAND(0, getclientscoretime, "i", (int *cn), gameent *d = game::getclient(*cn); floatret(d ? d->scoretime() : -1.f));
-    ICOMMAND(0, getclientkdratio, "ii", (int *cn, int *n), gameent *d = game::getclient(*cn); floatret(d ? d->kdratio(*n!=0) : -1.f));
+    ICOMMAND(0, getclientscoretime, "s", (char *who), gameent *d = game::getclient(parsewho(who)); floatret(d ? d->scoretime() : -1.f));
+    ICOMMAND(0, getclientkdratio, "si", (char *who, int *n), gameent *d = game::getclient(parsewho(who)); floatret(d ? d->kdratio(*n!=0) : -1.f));
 
-    ICOMMAND(0, getclientcptime, "i", (int *cn), gameent *d = game::getclient(*cn); intret(d ? d->cptime : -1));
+    ICOMMAND(0, getclientcptime, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d ? d->cptime : -1));
 
     bool haspriv(gameent *d, int priv)
     {
@@ -692,20 +753,20 @@ namespace client
         if(!priv || (d == game::player1 && !remote)) return true;
         return (d->privilege&PRIV_TYPE) >= priv;
     }
-    ICOMMAND(0, issupporter, "i", (int *cn), intret(haspriv(game::getclient(*cn), PRIV_SUPPORTER) ? 1 : 0));
-    ICOMMAND(0, ismoderator, "i", (int *cn), intret(haspriv(game::getclient(*cn), PRIV_MODERATOR) ? 1 : 0));
-    ICOMMAND(0, isadministrator, "i", (int *cn), intret(haspriv(game::getclient(*cn), PRIV_ADMINISTRATOR) ? 1 : 0));
-    ICOMMAND(0, isdeveloper, "i", (int *cn), intret(haspriv(game::getclient(*cn), PRIV_DEVELOPER) ? 1 : 0));
-    ICOMMAND(0, isfounder, "i", (int *cn), intret(haspriv(game::getclient(*cn), PRIV_CREATOR) ? 1 : 0));
+    ICOMMAND(0, issupporter, "s", (char *who), intret(haspriv(game::getclient(parsewho(who)), PRIV_SUPPORTER) ? 1 : 0));
+    ICOMMAND(0, ismoderator, "s", (char *who), intret(haspriv(game::getclient(parsewho(who)), PRIV_MODERATOR) ? 1 : 0));
+    ICOMMAND(0, isadministrator, "s", (char *who), intret(haspriv(game::getclient(parsewho(who)), PRIV_ADMINISTRATOR) ? 1 : 0));
+    ICOMMAND(0, isdeveloper, "s", (char *who), intret(haspriv(game::getclient(parsewho(who)), PRIV_DEVELOPER) ? 1 : 0));
+    ICOMMAND(0, isfounder, "s", (char *who), intret(haspriv(game::getclient(parsewho(who)), PRIV_CREATOR) ? 1 : 0));
 
-    ICOMMAND(0, getclientpriv, "ii", (int *cn, int *priv), intret(haspriv(game::getclient(*cn), *priv) ? 1 : 0));
+    ICOMMAND(0, getclientpriv, "si", (char *who, int *priv), intret(haspriv(game::getclient(parsewho(who)), *priv) ? 1 : 0));
 
     const char *getclienthandle(int cn)
     {
         gameent *d = game::getclient(cn);
         return d ? d->handle : "";
     }
-    ICOMMAND(0, getclienthandle, "i", (int *cn), result(getclienthandle(*cn)));
+    ICOMMAND(0, getclienthandle, "s", (char *who), result(getclienthandle(parsewho(who))));
 
     void getclientversion(int cn, int prop)
     {
@@ -735,21 +796,21 @@ namespace client
             default: break;
         }
     }
-    ICOMMAND(0, getclientversion, "ii", (int *cn, int *prop), getclientversion(*cn, *prop));
+    ICOMMAND(0, getclientversion, "si", (char *who, int *prop), getclientversion(parsewho(who), *prop));
 
     bool isspectator(int cn)
     {
         gameent *d = game::getclient(cn);
         return d && d->state == CS_SPECTATOR;
     }
-    ICOMMAND(0, isspectator, "i", (int *cn), intret(isspectator(*cn) ? 1 : 0));
+    ICOMMAND(0, isspectator, "s", (char *who), intret(isspectator(parsewho(who)) ? 1 : 0));
 
     bool isquarantine(int cn)
     {
         gameent *d = game::getclient(cn);
         return d && d->quarantine;
     }
-    ICOMMAND(0, isquarantine, "i", (int *cn), intret(isquarantine(*cn) ? 1 : 0));
+    ICOMMAND(0, isquarantine, "s", (char *who), intret(isquarantine(parsewho(who)) ? 1 : 0));
 
     bool isai(int cn, int type)
     {
@@ -757,7 +818,7 @@ namespace client
         int actortype = type > 0 && type < A_MAX ? type : A_BOT;
         return d && d->actortype == actortype;
     }
-    ICOMMAND(0, isai, "ii", (int *cn, int *type), intret(isai(*cn, *type) ? 1 : 0));
+    ICOMMAND(0, isai, "si", (char *who, int *type), intret(isai(parsewho(who), *type) ? 1 : 0));
 
     bool mutscmp(int req, int limit)
     {
@@ -826,61 +887,6 @@ namespace client
         return false;
     }
     ICOMMAND(0, ismodelocked, "iiis", (int *g, int *m, int *a, char *s), intret(ismodelocked(*g, *m, *a, s) ? 1 : 0));
-
-    int parseplayer(const char *arg)
-    {
-        char *end;
-        int n = strtol(arg, &end, 10);
-        if(*arg && !*end)
-        {
-            if(n!=game::player1->clientnum && !game::players.inrange(n)) return -1;
-            return n;
-        }
-        // try case sensitive first
-        loopv(game::players) if(game::players[i])
-        {
-            gameent *o = game::players[i];
-            if(!strcmp(arg, o->name)) return o->clientnum;
-        }
-        // nothing found, try case insensitive
-        loopv(game::players) if(game::players[i])
-        {
-            gameent *o = game::players[i];
-            if(!strcasecmp(arg, o->name)) return o->clientnum;
-        }
-        return -1;
-    }
-    ICOMMAND(0, getclientnum, "s", (char *name), intret(name[0] ? parseplayer(name) : game::player1->clientnum));
-
-    void listclients(bool local, int noai)
-    {
-        vector<char> buf;
-        string cn;
-        int numclients = 0;
-        if(local)
-        {
-            formatstring(cn, "%d", game::player1->clientnum);
-            buf.put(cn, strlen(cn));
-            numclients++;
-        }
-        loopv(game::players) if(game::players[i] && (!noai || game::players[i]->actortype > (noai >= 2 ? A_PLAYER : A_BOT)))
-        {
-            formatstring(cn, "%d", game::players[i]->clientnum);
-            if(numclients++) buf.add(' ');
-            buf.put(cn, strlen(cn));
-        }
-        buf.add('\0');
-        result(buf.getbuf());
-    }
-    ICOMMAND(0, listclients, "ii", (int *local, int *noai), listclients(*local!=0, *noai));
-
-    void getlastclientnum()
-    {
-        int cn = game::player1->clientnum;
-        loopv(game::players) if(game::players[i] && game::players[i]->clientnum > cn) cn = game::players[i]->clientnum;
-        intret(cn);
-    }
-    ICOMMAND(0, getlastclientnum, "", (), getlastclientnum());
 
     void getmastermode(int n)
     {
@@ -988,8 +994,8 @@ namespace client
     {
         addmsg(N_ADDPRIV, "ii", cn, priv);
     }
-    ICOMMAND(0, addpriv, "ii", (int *cn, int *priv), addpriv(*cn, *priv));
-    ICOMMAND(0, resetpriv, "i", (int *cn), addpriv(*cn, -1));
+    ICOMMAND(0, addpriv, "si", (char *who, int *priv), addpriv(parsewho(who), *priv));
+    ICOMMAND(0, resetpriv, "s", (char *who), addpriv(parsewho(who), -1));
 
     void tryauth()
     {
@@ -998,12 +1004,11 @@ namespace client
     }
     ICOMMAND(0, auth, "", (), tryauth());
 
-    void togglespectator(int val, const char *who)
+    void togglespectator(int cn, int val)
     {
-        int i = who[0] ? parseplayer(who) : game::player1->clientnum;
-        if(i >= 0) addmsg(N_SPECTATOR, "rii", i, val);
+        if(cn >= 0) addmsg(N_SPECTATOR, "rii", cn, val);
     }
-    ICOMMAND(0, spectator, "is", (int *val, char *who), togglespectator(*val, who));
+    ICOMMAND(0, spectator, "si", (char *who, int *val), togglespectator(parsewho(who), *val));
 
     ICOMMAND(0, checkmaps, "", (), addmsg(N_CHECKMAPS, "r"));
 
