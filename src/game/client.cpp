@@ -1010,8 +1010,6 @@ namespace client
     }
     ICOMMAND(0, spectator, "si", (char *who, int *val), togglespectator(parsewho(who), *val));
 
-    ICOMMAND(0, checkmaps, "", (), addmsg(N_CHECKMAPS, "r"));
-
     void connectattempt(const char *name, int port, const char *password, const ENetAddress &address)
     {
         if(*password) { copystring(connectpass, password); }

@@ -6017,9 +6017,6 @@ namespace server
                     break;
                 }
 
-                case N_CHECKMAPS:
-                    break;
-
                 case N_TRYSPAWN:
                 {
                     int lcn = getint(p);
