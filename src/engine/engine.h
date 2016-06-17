@@ -25,7 +25,7 @@ extern char *systemuser, *systemhost;
 
 #define sup_platform(a) (a >= 0 && a < MAX_PLATFORMS)
 #define sup_arch(a) (a == 32 || a == 64)
-#define sup_var(a) VERSION_VNAME"_"a
+#define sup_var(a) VERSION_VNAME"_" a
 
 extern const char *platnames[MAX_PLATFORMS], *platlongnames[MAX_PLATFORMS];
 #define plat_name(a) (sup_platform(a) ? platnames[a] : "unk")
