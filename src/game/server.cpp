@@ -3875,6 +3875,8 @@ namespace server
             sendstring(ci->vanity, p);
             putint(p, ci->loadweap.length());
             loopv(ci->loadweap) putint(p, ci->loadweap[i]);
+            putint(p, ci->randweap.length());
+            loopv(ci->randweap) putint(p, ci->randweap[i]);
             sendstring(ci->handle, p);
             sendstring(gethostname(ci->clientnum), p);
             sendstring(gethostip(ci->clientnum), p);
@@ -6461,7 +6463,7 @@ namespace server
                     break;
                 }
 
-                case N_SETPLAYERINFO:
+                case N_SETPLAYERINFO: // name colour model checkpoint vanity count <loadweaps> count <randweaps>
                 {
                     uint ip = getclientip(ci->clientnum);
                     if(ci->lastplayerinfo)
@@ -6475,8 +6477,10 @@ namespace server
                             getstring(text, p);
                             loopk(3) getint(p);
                             getstring(text, p);
-                            int w = getint(p);
-                            loopk(w) getint(p);
+                            int lw = getint(p);
+                            loopk(lw) getint(p);
+                            int rw = getint(p);
+                            loopk(rw) getint(p);
                             sendinitclientself(ci);
                             break;
                         }

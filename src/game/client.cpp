@@ -2200,7 +2200,7 @@ namespace client
                     break;
                 }
 
-                case N_SETPLAYERINFO:
+                case N_SETPLAYERINFO: // name colour model checkpoint vanity count <loadweaps> count <randweaps>
                 {
                     getstring(text, p);
                     int colour = getint(p), model = getint(p), cps = getint(p);
@@ -2209,6 +2209,9 @@ namespace client
                     int lw = getint(p);
                     vector<int> lweaps;
                     loopk(lw) lweaps.add(getint(p));
+                    int rw = getint(p);
+                    vector<int> rweaps;
+                    loopk(rw) rweaps.add(getint(p));
                     if(!d) break;
                     string namestr = "";
                     filterstring(namestr, text, true, true, true, true, MAXNAMELEN);
@@ -2217,17 +2220,17 @@ namespace client
                     {
                         string oldname, newname;
                         copystring(oldname, game::colourname(d));
-                        d->setinfo(namestr, colour, model, vanity, lweaps);
+                        d->setinfo(namestr, colour, model, vanity, lweaps, rweaps);
                         copystring(newname, game::colourname(d));
                         if(showpresence >= (waiting(false) ? 2 : 1) && !isignored(d->clientnum))
                             conoutft(CON_EVENT, "\fm%s is now known as %s", oldname, newname);
                     }
-                    else d->setinfo(namestr, colour, model, vanity, lweaps);
+                    else d->setinfo(namestr, colour, model, vanity, lweaps, rweaps);
                     d->checkpointspawn = cps;
                     break;
                 }
 
-                case N_CLIENTINIT: // another client either connected or changed name/team
+                case N_CLIENTINIT: // cn colour model checkpoint team priv name vanity count <loadweaps> count <randweaps> handle hostname hostip <version>
                 {
                     int tcn = getint(p);
                     verinfo dummy;
@@ -2252,6 +2255,9 @@ namespace client
                     int lw = getint(p);
                     vector<int> lweaps;
                     loopk(lw) lweaps.add(getint(p));
+                    int rw = getint(p);
+                    vector<int> rweaps;
+                    loopk(rw) rweaps.add(getint(p));
                     getstring(d->handle, p);
                     getstring(d->hostname, p);
                     getstring(d->hostip, p);
@@ -2261,10 +2267,10 @@ namespace client
                     if(d == game::focus && d->team != team) hud::lastteam = 0;
                     d->team = team;
                     d->privilege = priv;
-                    if(d->name[0]) d->setinfo(namestr, colour, model, vanity, lweaps); // already connected
+                    if(d->name[0]) d->setinfo(namestr, colour, model, vanity, lweaps, rweaps); // already connected
                     else // new client
                     {
-                        d->setinfo(namestr, colour, model, vanity, lweaps);
+                        d->setinfo(namestr, colour, model, vanity, lweaps, rweaps);
                         if(showpresence >= (waiting(false) ? 2 : 1))
                         {
                             int amt = otherclients(true);

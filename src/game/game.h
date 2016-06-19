@@ -1346,7 +1346,7 @@ struct gameent : dynent, clientstate
         return false;
     }
 
-    void setinfo(const char *n, int c, int m, const char *v, vector<int> &w)
+    void setinfo(const char *n, int c, int m, const char *v, vector<int> &w, vector<int> &r)
     {
         setname(n);
         colour = c;
@@ -1354,6 +1354,8 @@ struct gameent : dynent, clientstate
         setvanity(v);
         loadweap.shrink(0);
         loopv(w) loadweap.add(w[i]);
+        randweap.shrink(0);
+        loopv(r) randweap.add(r[i]);
     }
 
     void addstun(int weap, int millis, int delay, float scale, float gravity)
