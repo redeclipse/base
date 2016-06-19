@@ -809,7 +809,7 @@
 		3E184180123861470098590C /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				COMBINE_HIDPI_IMAGES = YES;
 				DEPLOYMENT_LOCATION = YES;
 				DEPLOYMENT_POSTPROCESSING = YES;
@@ -838,13 +838,14 @@
 				PRODUCT_NAME = redeclipse;
 				SDKROOT = macosx;
 				SKIP_INSTALL = NO;
+				VALID_ARCHS = "x86_64";
 			};
 			name = Release;
 		};
 		B94198C709207E810029DAD1 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					../../bin/redeclipse.app/Contents/Frameworks,
@@ -866,51 +867,12 @@
 				INFOPLIST_FILE = "redeclipse-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 10.9;
-				MACOSX_DEPLOYMENT_TARGET_i386 = 10.9;
-				MACOSX_DEPLOYMENT_TARGET_ppc = 10.9;
 				OTHER_LDFLAGS = "-lz";
 				PRODUCT_NAME = redeclipse;
 				SDKROOT = macosx;
+				VALID_ARCHS = "x86_64";
 			};
 			name = Debug;
-		};
-		B94198C809207E810029DAD1 /* Compatibility */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
-				COMBINE_HIDPI_IMAGES = YES;
-				DEPLOYMENT_LOCATION = YES;
-				DEPLOYMENT_POSTPROCESSING = YES;
-				FRAMEWORK_SEARCH_PATHS = (
-					../../bin/redeclipse.app/Contents/Frameworks,
-					"$(USER_LIBRARY_DIR)/Frameworks",
-					"$(LOCAL_LIBRARY_DIR)/Frameworks",
-				);
-				GCC_ENABLE_CPP_EXCEPTIONS = NO;
-				GCC_ENABLE_OBJC_EXCEPTIONS = NO;
-				GCC_PRECOMPILE_PREFIX_HEADER = NO;
-				GCC_PREFIX_HEADER = "";
-				GCC_PREPROCESSOR_DEFINITIONS = "";
-				GCC_VERSION = "";
-				HEADER_SEARCH_PATHS = (
-					../include,
-					../enet/include,
-					/usr/X11/include/,
-					"$(inherited)",
-				);
-				INFOPLIST_FILE = "redeclipse-Info.plist";
-				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 10.9;
-				MACOSX_DEPLOYMENT_TARGET_i386 = 10.9;
-				MACOSX_DEPLOYMENT_TARGET_ppc = 10.9;
-				OTHER_CPLUSPLUSFLAGS = "-fomit-frame-pointer";
-				OTHER_LDFLAGS = "-lz";
-				PRODUCT_NAME = redeclipse;
-				SDKROOT = macosx;
-				SKIP_INSTALL = NO;
-				VALID_ARCHS = "i386 x86_64";
-			};
-			name = Compatibility;
 		};
 		B960CF36085F3CC7004FB142 /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -922,38 +884,13 @@
 				);
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_VERSION = 4.0;
-				MACOSX_DEPLOYMENT_TARGET_i386 = 10.9;
-				MACOSX_DEPLOYMENT_TARGET_ppc = 10.9;
+				MACOSX_DEPLOYMENT_TARGET = 10.9;
 				ONLY_ACTIVE_ARCH = YES;
 				PREBINDING = NO;
 				SDKROOT = macosx;
 				STRIP_INSTALLED_PRODUCT = NO;
 			};
 			name = Debug;
-		};
-		B960CF37085F3CC7004FB142 /* Compatibility */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				COPY_PHASE_STRIP = YES;
-				DEPLOYMENT_POSTPROCESSING = YES;
-				FRAMEWORK_SEARCH_PATHS = (
-					"$(USER_LIBRARY_DIR)/Frameworks",
-					"$(LOCAL_LIBRARY_DIR)/Frameworks",
-				);
-				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
-				GCC_OPTIMIZATION_LEVEL = 3;
-				GCC_VERSION = 4.0;
-				INSTALL_PATH = "";
-				MACOSX_DEPLOYMENT_TARGET_i386 = 10.9;
-				MACOSX_DEPLOYMENT_TARGET_ppc = 10.9;
-				OTHER_LDFLAGS = "-no_compact_linkedit";
-				PREBINDING = NO;
-				SDKROOT = macosx;
-				SKIP_INSTALL = NO;
-				STRIP_INSTALLED_PRODUCT = YES;
-				VALID_ARCHS = "i386 ppc ppc64 ppc7400 ppc970";
-			};
-			name = Compatibility;
 		};
 /* End XCBuildConfiguration section */
 
@@ -962,7 +899,6 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				B94198C709207E810029DAD1 /* Debug */,
-				B94198C809207E810029DAD1 /* Compatibility */,
 				3E184180123861470098590C /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
@@ -972,7 +908,6 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				B960CF36085F3CC7004FB142 /* Debug */,
-				B960CF37085F3CC7004FB142 /* Compatibility */,
 				3E18417F123861470098590C /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;

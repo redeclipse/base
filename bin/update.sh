@@ -17,7 +17,7 @@ redeclipse_update_init() {
                 REDECLIPSE_CACHE="${REDECLIPSE_WINDOCS}/My Games/Red Eclipse/cache"
                 return 0
             fi
-        elif [ "${REDECLIPSE_TARGET}" = "macosx" ]; then
+        elif [ "${REDECLIPSE_TARGET}" = "macos" ]; then
             REDECLIPSE_CACHE="${HOME}/Library/Application Support/Red Eclipse/cache"
         else
             REDECLIPSE_CACHE="${HOME}/.redeclipse/cache"
@@ -35,7 +35,7 @@ redeclipse_update_setup() {
                 REDECLIPSE_TARGET="linux"
                 ;;
             Darwin)
-                REDECLIPSE_TARGET="macosx"
+                REDECLIPSE_TARGET="macos"
                 ;;
             FreeBSD)
                 REDECLIPSE_TARGET="bsd"
@@ -73,9 +73,9 @@ redeclipse_update_setup() {
             REDECLIPSE_ARCHIVE="linux.tar.gz"
             REDECLIPSE_ARCHEXT="tar.gz"
             ;;
-        macosx)
+        macos)
             REDECLIPSE_BLOB="tarball"
-            REDECLIPSE_ARCHIVE="macosx.tar.gz"
+            REDECLIPSE_ARCHIVE="macos.tar.gz"
             REDECLIPSE_ARCHEXT="tar.gz"
             ;;
         *)
