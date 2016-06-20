@@ -741,24 +741,20 @@ namespace hud
         float amt = 0;
         switch(motionblurfx)
         {
+            case 0: return scale; // no effects
             case 1:
             {
                 if(game::focus->state >= CS_SPECTATOR || game::focus->state == CS_EDITING) break;
-                float damage = game::focus->state == CS_ALIVE ? min(damageresidue, 100)/100.f : 1.f,
-                      healthscale = float(m_health(game::gamemode, game::mutators, game::focus->actortype));
-                if(healthscale > 0) damage = max(damage, 1.f-max(game::focus->health, 0)/healthscale);
-                amt += damage*0.65f;
+                if(game::focus->state == CS_ALIVE) amt += min(damageresidue, 100)/100.f*0.5f;
                 if(burntime && game::focus->burning(lastmillis, burntime))
-                    amt += 0.25f+(float((lastmillis-game::focus->lastres[WR_BURN])%burndelay)/float(burndelay))*0.35f;
+                    amt += (float((lastmillis-game::focus->lastres[WR_BURN])%burndelay)/float(burndelay))*0.5f;
                 if(bleedtime && game::focus->bleeding(lastmillis, bleedtime))
-                    amt += 0.25f+(float((lastmillis-game::focus->lastres[WR_BLEED])%bleeddelay)/float(bleeddelay))*0.35f;
+                    amt += (float((lastmillis-game::focus->lastres[WR_BLEED])%bleeddelay)/float(bleeddelay))*0.5f;
                 if(shocktime && game::focus->shocking(lastmillis, shocktime))
-                    amt += 0.25f+(float((lastmillis-game::focus->lastres[WR_SHOCK])%shockdelay)/float(shockdelay))*0.35f;
-                if(game::focus->turnside || game::focus->impulse[IM_JUMP])
-                    amt += game::focus->turnside ? 0.125f : 0.25f;
+                    amt += (float((lastmillis-game::focus->lastres[WR_SHOCK])%shockdelay)/float(shockdelay))*0.5f;
                 break;
             }
-            case 2: amt += motionbluramt; break;
+            case 2: amt = motionbluramt; break;
             default: break;
         }
         return clamp(amt, motionblurmin, motionblurmax)*scale;
