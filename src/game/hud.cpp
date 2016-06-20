@@ -503,7 +503,7 @@ namespace hud
     VAR(IDF_PERSIST, radardamagemin, 1, 10, VAR_MAX);
     VAR(IDF_PERSIST, radardamagemax, 1, 100, VAR_MAX);
     VAR(IDF_PERSIST|IDF_HEX, radardamagecolour, PC(LAST), 0xFF4444, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, radardamageburncolour, PC(LAST), PC(FIRE), 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, radardamageburncolour, PC(LAST), PC(BURN), 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, radardamagebleedcolour, PC(LAST), PC(BLEED), 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, radardamageshockcolour, PC(LAST), PC(SHOCK), 0xFFFFFF);
 
@@ -525,7 +525,7 @@ namespace hud
     FVAR(IDF_PERSIST, radarhitsglowcolour, 0, 0.75f, 5);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, radarhitsglowtex, "textures/guihover", 3);
     VAR(IDF_PERSIST|IDF_HEX, radarhitscolour, PC(LAST), 0xFF4444, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, radarhitsburncolour, PC(LAST), PC(FIRE), 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, radarhitsburncolour, PC(LAST), PC(BURN), 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, radarhitsbleedcolour, PC(LAST), PC(BLEED), 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, radarhitsshockcolour, PC(LAST), PC(SHOCK), 0xFFFFFF);
 
