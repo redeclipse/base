@@ -2110,7 +2110,7 @@ void drawviewtype(int targtype)
     visiblecubes();
 
     glClearColor(0, 0, 0, 0);
-    glClear(GL_DEPTH_BUFFER_BIT|(wireframe && editmode && clearview(viewtype, targtype) ? GL_COLOR_BUFFER_BIT : 0));
+    glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT); // not clearing colour buffer screws up skybox rendering (wireframe && editmode && clearview(viewtype, targtype) ? GL_COLOR_BUFFER_BIT : 0));
 
     if(wireframe && editmode) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
