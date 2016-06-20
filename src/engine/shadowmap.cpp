@@ -27,19 +27,12 @@ vec shadowoffset(0, 0, 0), shadowfocus(0, 0, 0), shadowdir(0, SHADOWSKEW, 1);
 VAR(0, shadowmapcasters, 1, 0, 0);
 float shadowmapmaxz = 0;
 
-void setshadowdir(int angle)
-{
-    shadowdir = vec(0, SHADOWSKEW, 1);
-    shadowdir.rotate_around_z(angle*RAD);
-}
-
-VARF(IDF_WORLD, shadowmapangle, 0, 0, 360, setshadowdir(shadowmapangle));
-
 void guessshadowdir()
 {
+    extern int shadowmapangle;
     if(shadowmapangle) return;
-    vec lightpos(0, 0, 0), casterpos(0, 0, 0);
-    int numlights = 0, numcasters = 0;
+    vec lightpos(0, 0, 0);
+    int numlights = 0;
     const vector<extentity *> &ents = entities::getents();
     loopv(ents)
     {
@@ -57,31 +50,16 @@ void guessshadowdir()
             }
             case ET_SUNLIGHT:
             {
-                vec dir = vec(e.attrs[0]*RAD, e.attrs[1]*RAD).mul(getworldsize());
-                lightpos.add(vec(1, 1, 1).mul(hdr.worldsize/2).add(dir));
+                lightpos.add(vec(1, 1, 1).mul(hdr.worldsize/2).add(vec(e.attrs[0]*RAD, (e.attrs[1]+90)*RAD).mul(hdr.worldsize*2)));
                 numlights++;
                 break;
             }
-            case ET_MAPMODEL:
-            {
-                casterpos.add(e.o);
-                numcasters++;
-                break;
-            }
-            default:
-            {
-                if(e.type<ET_GAMESPECIFIC) break;
-                casterpos.add(e.o);
-                numcasters++;
-                break;
-            }
-         }
+        }
     }
-    if(!numlights || !numcasters) return;
+    if(!numlights) return;
     lightpos.div(numlights);
-    casterpos.div(numcasters);
     vec dir(lightpos);
-    dir.sub(casterpos);
+    dir.sub(vec(1, 1, 1).mul(hdr.worldsize/2));
     dir.z = 0;
     if(dir.iszero()) return;
     dir.normalize();
@@ -90,8 +68,19 @@ void guessshadowdir()
     shadowdir = dir;
 }
 
-bool shadowmapping = false;
+void setshadowdir(int angle)
+{
+    if(angle)
+    {
+        shadowdir = vec(0, SHADOWSKEW, 1);
+        shadowdir.rotate_around_z(angle*RAD);
+    }
+    else guessshadowdir();
+}
 
+VARF(IDF_WORLD, shadowmapangle, 0, 0, 360, setshadowdir(shadowmapangle));
+
+bool shadowmapping = false;
 matrix4 shadowmatrix;
 
 VAR(IDF_PERSIST, shadowmapbias, 0, 5, 1024);
