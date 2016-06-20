@@ -348,7 +348,7 @@ namespace hud
     VAR(IDF_PERSIST, inventoryrace, 0, 2, 2);
     VAR(IDF_PERSIST, inventoryracestyle, 0, 1, 4);
     FVAR(IDF_PERSIST, inventoryraceblend, 0, 1, 1);
-    VAR(IDF_PERSIST, inventorystatus, 0, 2, 3); // 0 = off, 1 = text, 2 = icon, 3 = icon + tex
+    VAR(IDF_PERSIST, inventorystatus, 0, 1, 3); // 0 = off, 1 = text, 2 = icon, 3 = icon + tex
     FVAR(IDF_PERSIST, inventorystatusblend, 0, 1, 1);
     FVAR(IDF_PERSIST, inventorystatusiconblend, 0, 0.65f, 1);
 
