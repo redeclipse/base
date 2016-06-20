@@ -3114,9 +3114,9 @@ namespace hud
                 switch(showfps)
                 {
                     case 3:
-                        cy[1] -= draw_textf("+%d-%d range", cx[1], cy[1], 0, 0, 255, 255, 255, bf, TEXT_RIGHT_UP, -1, bs, 1, maxfps, curstats[9], curstats[10]);
-                    case 2:
                         cy[1] -= draw_textf("%d max", cx[1], cy[1], 0, 0, 255, 255, 255, bf, TEXT_RIGHT_UP, -1, bs, 1, maxfps);
+                    case 2:
+                        cy[1] -= draw_textf("+%d-%d range", cx[1], cy[1], 0, 0, 255, 255, 255, bf, TEXT_RIGHT_UP, -1, bs, 1, maxfps, curstats[9], curstats[10]);
                     default: break;
                 }
             }
