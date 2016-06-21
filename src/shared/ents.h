@@ -128,7 +128,7 @@ struct physent : baseent                        // can be affected by physics
         newpos = o;
         newpos.z -= height;
         deltapos = vec(0, 0, 0);
-        forcepos = force; // next message forces new position
+        if(force) forcepos = true; // next message forces new position
     }
 
     void reset()

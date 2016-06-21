@@ -2004,6 +2004,7 @@ namespace client
                 {
                     d->resetinterp();
                     d->smoothmillis = 0;
+                    d->forcepos = false;
                 }
                 else if(d->respawned < 0)
                 {
