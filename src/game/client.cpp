@@ -1009,6 +1009,7 @@ namespace client
         if(cn >= 0) addmsg(N_SPECTATOR, "rii", cn, val);
     }
     ICOMMAND(0, spectator, "si", (char *who, int *val), togglespectator(parsewho(who), *val));
+    ICOMMAND(0, spectate, "i", (int *val), togglespectator(game::player1->clientnum, *val));
 
     void connectattempt(const char *name, int port, const char *password, const ENetAddress &address)
     {
