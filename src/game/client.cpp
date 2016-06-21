@@ -1480,7 +1480,7 @@ namespace client
             game::player1->o = d->o;
             vec dir(game::player1->yaw, game::player1->pitch);
             game::player1->o.add(dir.mul(-32));
-            game::player1->resetinterp();
+            game::player1->resetinterp(true);
             game::resetcamera();
         }
     }
@@ -1697,7 +1697,12 @@ namespace client
             if(d->falling.x || d->falling.y || d->falling.z > 0) flags |= 1<<9;
         }
         if(d->conopen) flags |= 1<<10;
-        loopk(AC_TOTAL) if(d->action[k]) flags |= 1<<(11+k);
+        if(d->forcepos)
+        {
+            flags |= 1<<11;
+            d->forcepos = false;
+        }
+        loopk(AC_TOTAL) if(d->action[k]) flags |= 1<<(12+k);
         putuint(q, flags);
         loopk(3)
         {
@@ -1979,10 +1984,11 @@ namespace client
                 d->turnside = (physstate>>7)&2 ? -1 : (physstate>>7)&1;
                 d->impulse[IM_METER] = meter;
                 d->conopen = flags&(1<<10) ? true : false;
+                d->forcepos = flags&(1<<11) ? true : false;
                 loopk(AC_TOTAL)
                 {
                     bool val = d->action[k];
-                    d->action[k] = flags&(1<<(11+k)) ? true : false;
+                    d->action[k] = flags&(1<<(12+k)) ? true : false;
                     if(val != d->action[k]) d->actiontime[k] = lastmillis;
                 }
                 vec oldpos(d->o);
@@ -1994,7 +2000,7 @@ namespace client
                 d->physstate = physstate&7;
                 physics::updatephysstate(d);
                 updatepos(d);
-                if(d->state == CS_DEAD || d->state == CS_WAITING)
+                if(d->forcepos || d->state == CS_DEAD || d->state == CS_WAITING)
                 {
                     d->resetinterp();
                     d->smoothmillis = 0;

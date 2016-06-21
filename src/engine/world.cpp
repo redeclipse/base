@@ -613,7 +613,7 @@ void entpush(int *dir)
         physent *player = (physent *)game::focusedent(true);
         if(!player) player = camera1;
         player->o[d] += s*sel.grid;
-        player->resetinterp();
+        player->resetinterp(true);
     }
 }
 
@@ -634,7 +634,7 @@ void entautoview(int *dir)
     entfocus(entgroup[s],
         v.add(e.o);
         player->o = v;
-        player->resetinterp();
+        player->resetinterp(true);
     );
 }
 

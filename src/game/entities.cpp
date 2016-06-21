@@ -702,7 +702,7 @@ namespace entities
                             f.lastemit = lastmillis;
                             d->setused(n, lastmillis);
                             d->setused(q, lastmillis);
-                            d->resetinterp();
+                            d->resetinterp(true);
                             if(d->state == CS_ALIVE)
                             {
                                 if(gameent::is(d))

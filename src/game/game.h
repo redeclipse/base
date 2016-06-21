@@ -1110,7 +1110,7 @@ struct gameent : dynent, clientstate
         stopmoving(true);
         clearstate(gamemode, mutators);
         inmaterial = airmillis = floormillis = 0;
-        inliquid = onladder = false;
+        inliquid = onladder = forcepos = false;
         strafe = move = 0;
         physstate = PHYS_FALL;
         vel = falling = vec(0, 0, 0);
