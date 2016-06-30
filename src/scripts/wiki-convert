@@ -86,6 +86,9 @@ BEGIN {
         case 8192:
             flags[len++] = "IDF_GAMEPRELOAD"
             break
+        case 16384:
+            flags[len++] = "IDF_MODERATOR"
+            break
         default:
             break
         }

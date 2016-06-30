@@ -28,9 +28,9 @@
 		B91D40210D525FE0004EF78A /* decal.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B91D40200D525FE0004EF78A /* decal.cpp */; };
 		B91D40230D525FE9004EF78A /* md5.h in Headers */ = {isa = PBXBuildFile; fileRef = B91D40220D525FE9004EF78A /* md5.h */; };
 		B91D40250D52600A004EF78A /* skelmodel.h in Headers */ = {isa = PBXBuildFile; fileRef = B91D40240D52600A004EF78A /* skelmodel.h */; };
-		B92DC0FC09D08CF9008219BD /* SDL_image.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B92DC0F909D08CF9008219BD /* SDL_image.framework */; };
-		B92DC0FD09D08CF9008219BD /* SDL_mixer.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B92DC0FA09D08CF9008219BD /* SDL_mixer.framework */; };
-		B92DC0FE09D08CF9008219BD /* SDL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B92DC0FB09D08CF9008219BD /* SDL.framework */; };
+		B92DC0FC09D08CF9008219BD /* SDL2_image.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B92DC0F909D08CF9008219BD /* SDL2_image.framework */; };
+		B92DC0FD09D08CF9008219BD /* SDL2_mixer.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B92DC0FA09D08CF9008219BD /* SDL2_mixer.framework */; };
+		B92DC0FE09D08CF9008219BD /* SDL2.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B92DC0FB09D08CF9008219BD /* SDL2.framework */; };
 		B941988C09207E810029DAD1 /* SDLMain.h in Headers */ = {isa = PBXBuildFile; fileRef = F5A47A9D01A0482F01D3D55B /* SDLMain.h */; };
 		B94198A809207E810029DAD1 /* SDLMain.m in Sources */ = {isa = PBXBuildFile; fileRef = F5A47A9E01A0483001D3D55B /* SDLMain.m */; };
 		B94198C309207E810029DAD1 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
@@ -132,11 +132,14 @@
 		FD05F1481ADD1BBA0046F323 /* playerdef.h in Headers */ = {isa = PBXBuildFile; fileRef = FD05F1441ADD1BBA0046F323 /* playerdef.h */; };
 		FD05F1491ADD1BBA0046F323 /* teamdef.h in Headers */ = {isa = PBXBuildFile; fileRef = FD05F1451ADD1BBA0046F323 /* teamdef.h */; };
 		FD05F14A1ADD1BBA0046F323 /* weapons.h in Headers */ = {isa = PBXBuildFile; fileRef = FD05F1461ADD1BBA0046F323 /* weapons.h */; };
-		FD05F14F1ADD1BD70046F323 /* glexts.h in Headers */ = {isa = PBXBuildFile; fileRef = FD05F14B1ADD1BD70046F323 /* glexts.h */; };
 		FD05F1501ADD1BD70046F323 /* iqm.h in Headers */ = {isa = PBXBuildFile; fileRef = FD05F14C1ADD1BD70046F323 /* iqm.h */; };
 		FD05F1511ADD1BD70046F323 /* smd.h in Headers */ = {isa = PBXBuildFile; fileRef = FD05F14D1ADD1BD70046F323 /* smd.h */; };
-		FD05F1521ADD1BD70046F323 /* varray.h in Headers */ = {isa = PBXBuildFile; fileRef = FD05F14E1ADD1BD70046F323 /* varray.h */; };
 		FD6BC4A61B4BE57C0010977F /* master.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FD6BC4A51B4BE57C0010977F /* master.cpp */; };
+		FD88C2981B6C824B004CEB1D /* glexts.h in Sources */ = {isa = PBXBuildFile; fileRef = FD05F14B1ADD1BD70046F323 /* glexts.h */; };
+		FDB0781A1B6DE60B0005FA3F /* sqlite3.c in Sources */ = {isa = PBXBuildFile; fileRef = FDB078181B6DE60B0005FA3F /* sqlite3.c */; };
+		FDB0781B1B6DE60B0005FA3F /* sqlite3.h in Headers */ = {isa = PBXBuildFile; fileRef = FDB078191B6DE60B0005FA3F /* sqlite3.h */; };
+		FDCF1C021B6C84E10035CD3C /* glemu.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FDCF1C001B6C84E10035CD3C /* glemu.cpp */; };
+		FDCF1C031B6C84E10035CD3C /* glemu.h in Headers */ = {isa = PBXBuildFile; fileRef = FDCF1C011B6C84E10035CD3C /* glemu.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -144,7 +147,7 @@
 		1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
 		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
-		2AB901D01AC1B8E900A5F378 /* version.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = version.h; path = ../version.h; sourceTree = "<group>"; };
+		2AB901D01AC1B8E900A5F378 /* version.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = version.h; sourceTree = "<group>"; };
 		3E06CDD614A30E1300F89530 /* compass.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = compass.h; sourceTree = "<group>"; };
 		3E06CDD714A30E1300F89530 /* gamemode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = gamemode.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		3E06CDD914A30E1300F89530 /* waypoint.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = waypoint.cpp; sourceTree = "<group>"; };
@@ -166,9 +169,9 @@
 		B91D40200D525FE0004EF78A /* decal.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = decal.cpp; sourceTree = "<group>"; };
 		B91D40220D525FE9004EF78A /* md5.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = md5.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		B91D40240D52600A004EF78A /* skelmodel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = skelmodel.h; sourceTree = "<group>"; };
-		B92DC0F909D08CF9008219BD /* SDL_image.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL_image.framework; path = /Library/Frameworks/SDL_image.framework; sourceTree = "<absolute>"; };
-		B92DC0FA09D08CF9008219BD /* SDL_mixer.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL_mixer.framework; path = /Library/Frameworks/SDL_mixer.framework; sourceTree = "<absolute>"; };
-		B92DC0FB09D08CF9008219BD /* SDL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL.framework; path = /Library/Frameworks/SDL.framework; sourceTree = "<absolute>"; };
+		B92DC0F909D08CF9008219BD /* SDL2_image.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL2_image.framework; path = /Library/Frameworks/SDL2_image.framework; sourceTree = "<absolute>"; };
+		B92DC0FA09D08CF9008219BD /* SDL2_mixer.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL2_mixer.framework; path = /Library/Frameworks/SDL2_mixer.framework; sourceTree = "<absolute>"; };
+		B92DC0FB09D08CF9008219BD /* SDL2.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL2.framework; path = /Library/Frameworks/SDL2.framework; sourceTree = "<absolute>"; };
 		B930D0900A3D9BC700BDFB85 /* ConsoleView.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ConsoleView.h; sourceTree = "<group>"; };
 		B930D0910A3D9BC700BDFB85 /* ConsoleView.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; path = ConsoleView.m; sourceTree = "<group>"; };
 		B94198CB09207E810029DAD1 /* redeclipse.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = redeclipse.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -275,11 +278,14 @@
 		FD05F1441ADD1BBA0046F323 /* playerdef.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = playerdef.h; sourceTree = "<group>"; };
 		FD05F1451ADD1BBA0046F323 /* teamdef.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = teamdef.h; sourceTree = "<group>"; };
 		FD05F1461ADD1BBA0046F323 /* weapons.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = weapons.h; sourceTree = "<group>"; };
-		FD05F14B1ADD1BD70046F323 /* glexts.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = glexts.h; sourceTree = "<group>"; };
+		FD05F14B1ADD1BD70046F323 /* glexts.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = glexts.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		FD05F14C1ADD1BD70046F323 /* iqm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = iqm.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		FD05F14D1ADD1BD70046F323 /* smd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = smd.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		FD05F14E1ADD1BD70046F323 /* varray.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = varray.h; sourceTree = "<group>"; };
 		FD6BC4A51B4BE57C0010977F /* master.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; path = master.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
+		FDB078181B6DE60B0005FA3F /* sqlite3.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sqlite3.c; path = sqlite3.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
+		FDB078191B6DE60B0005FA3F /* sqlite3.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sqlite3.h; path = sqlite3.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
+		FDCF1C001B6C84E10035CD3C /* glemu.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = glemu.cpp; sourceTree = "<group>"; };
+		FDCF1C011B6C84E10035CD3C /* glemu.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = glemu.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -289,9 +295,9 @@
 			files = (
 				B94198C309207E810029DAD1 /* Cocoa.framework in Frameworks */,
 				B94198C409207E810029DAD1 /* OpenGL.framework in Frameworks */,
-				B92DC0FC09D08CF9008219BD /* SDL_image.framework in Frameworks */,
-				B92DC0FD09D08CF9008219BD /* SDL_mixer.framework in Frameworks */,
-				B92DC0FE09D08CF9008219BD /* SDL.framework in Frameworks */,
+				B92DC0FC09D08CF9008219BD /* SDL2_image.framework in Frameworks */,
+				B92DC0FD09D08CF9008219BD /* SDL2_mixer.framework in Frameworks */,
+				B92DC0FE09D08CF9008219BD /* SDL2.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -314,9 +320,9 @@
 		1058C7A0FEA54F0111CA2CBB /* Linked Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				B92DC0F909D08CF9008219BD /* SDL_image.framework */,
-				B92DC0FA09D08CF9008219BD /* SDL_mixer.framework */,
-				B92DC0FB09D08CF9008219BD /* SDL.framework */,
+				B92DC0F909D08CF9008219BD /* SDL2_image.framework */,
+				B92DC0FA09D08CF9008219BD /* SDL2_mixer.framework */,
+				B92DC0FB09D08CF9008219BD /* SDL2.framework */,
 				1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */,
 				B2F67ED704C74A3F00A80002 /* OpenGL.framework */,
 			);
@@ -359,6 +365,7 @@
 				B9AC7A830D06DB44005506F8 /* engine */,
 				D16A83350F130E9500EABB1F /* game */,
 				B9AC7AC10D06DB44005506F8 /* shared */,
+				FDB0781C1B6DE6140005FA3F /* support */,
 				2AB901D01AC1B8E900A5F378 /* version.h */,
 			);
 			name = "Other Sources";
@@ -417,7 +424,6 @@
 				B9AC7A8B0D06DB44005506F8 /* engine.h */,
 				D18B8FBE0DB0AF8200171439 /* explosion.h */,
 				D118DEB50D979281000E8C4C /* glare.cpp */,
-				FD05F14B1ADD1BD70046F323 /* glexts.h */,
 				B9AC7A8C0D06DB44005506F8 /* grass.cpp */,
 				FD05F14C1ADD1BD70046F323 /* iqm.h */,
 				D1D88AB60F350EDE000680E4 /* irc.cpp */,
@@ -465,7 +471,6 @@
 				B9AC7AA60D06DB44005506F8 /* texture.cpp */,
 				B9AC7AA70D06DB44005506F8 /* texture.h */,
 				D16A83700F130EBC00EABB1F /* ui.cpp */,
-				FD05F14E1ADD1BD70046F323 /* varray.h */,
 				B9AC7AA80D06DB44005506F8 /* vertmodel.h */,
 				B9AC7AA90D06DB44005506F8 /* water.cpp */,
 				B9AC7AAA0D06DB44005506F8 /* world.cpp */,
@@ -485,6 +490,9 @@
 				B9AC7AC40D06DB44005506F8 /* ents.h */,
 				B9AC7AC50D06DB44005506F8 /* geom.cpp */,
 				B9AC7AC60D06DB44005506F8 /* geom.h */,
+				FDCF1C001B6C84E10035CD3C /* glemu.cpp */,
+				FDCF1C011B6C84E10035CD3C /* glemu.h */,
+				FD05F14B1ADD1BD70046F323 /* glexts.h */,
 				B9AC7AC70D06DB44005506F8 /* iengine.h */,
 				B9AC7AC80D06DB44005506F8 /* igame.h */,
 				D11B5A8010CBB637003F0098 /* stream.cpp */,
@@ -537,6 +545,16 @@
 			path = ../game;
 			sourceTree = SOURCE_ROOT;
 		};
+		FDB0781C1B6DE6140005FA3F /* support */ = {
+			isa = PBXGroup;
+			children = (
+				FDB078181B6DE60B0005FA3F /* sqlite3.c */,
+				FDB078191B6DE60B0005FA3F /* sqlite3.h */,
+			);
+			name = support;
+			path = ../support;
+			sourceTree = SOURCE_ROOT;
+		};
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
@@ -565,13 +583,12 @@
 				B9AC7B100D06DB44005506F8 /* igame.h in Headers */,
 				B9AC7B160D06DB44005506F8 /* tools.h in Headers */,
 				FD05F1481ADD1BBA0046F323 /* playerdef.h in Headers */,
-				FD05F1521ADD1BD70046F323 /* varray.h in Headers */,
 				FD05F14A1ADD1BBA0046F323 /* weapons.h in Headers */,
 				B91D401F0D525FD3004EF78A /* animmodel.h in Headers */,
 				B91D40230D525FE9004EF78A /* md5.h in Headers */,
 				B91D40250D52600A004EF78A /* skelmodel.h in Headers */,
+				FDB0781B1B6DE60B0005FA3F /* sqlite3.h in Headers */,
 				D116C0AB0D9F7DB500E8B945 /* rendertarget.h in Headers */,
-				FD05F14F1ADD1BD70046F323 /* glexts.h in Headers */,
 				D18B8FC10DB0AF8200171439 /* explosion.h in Headers */,
 				D18B8FC20DB0AF8200171439 /* lensflare.h in Headers */,
 				D18B8FC30DB0AF8200171439 /* lightning.h in Headers */,
@@ -585,6 +602,7 @@
 				D16A83560F130E9500EABB1F /* defend.h in Headers */,
 				D16A83570F130E9500EABB1F /* vars.h in Headers */,
 				FD05F1471ADD1BBA0046F323 /* player.h in Headers */,
+				FDCF1C031B6C84E10035CD3C /* glemu.h in Headers */,
 				D16A83760F130EBC00EABB1F /* scale.h in Headers */,
 				D1D88A8B0F350DFE000680E4 /* auth.h in Headers */,
 				2AB901D11AC1B8E900A5F378 /* version.h in Headers */,
@@ -686,6 +704,7 @@
 				B9AC7ADB0D06DB44005506F8 /* material.cpp in Sources */,
 				B9AC7ADE0D06DB44005506F8 /* menus.cpp in Sources */,
 				B9AC7AE00D06DB44005506F8 /* normal.cpp in Sources */,
+				FDB0781A1B6DE60B0005FA3F /* sqlite3.c in Sources */,
 				B9AC7AE10D06DB44005506F8 /* octa.cpp in Sources */,
 				B9AC7AE30D06DB44005506F8 /* octaedit.cpp in Sources */,
 				B9AC7AE40D06DB44005506F8 /* octarender.cpp in Sources */,
@@ -707,6 +726,7 @@
 				B9AC7AF70D06DB44005506F8 /* worldio.cpp in Sources */,
 				B9AC7B0D0D06DB44005506F8 /* geom.cpp in Sources */,
 				B9AC7B150D06DB44005506F8 /* tools.cpp in Sources */,
+				FD88C2981B6C824B004CEB1D /* glexts.h in Sources */,
 				B91D40210D525FE0004EF78A /* decal.cpp in Sources */,
 				D1C660CA0D5467C8002E52C1 /* pvs.cpp in Sources */,
 				D16BD00D0D7000EA0053CECE /* dynlight.cpp in Sources */,
@@ -723,6 +743,7 @@
 				D16A83580F130E9500EABB1F /* weapons.cpp in Sources */,
 				D16A83710F130EBC00EABB1F /* blend.cpp in Sources */,
 				D16A83720F130EBC00EABB1F /* blob.cpp in Sources */,
+				FDCF1C021B6C84E10035CD3C /* glemu.cpp in Sources */,
 				D16A83770F130EBC00EABB1F /* ui.cpp in Sources */,
 				D1D88AB80F350EDE000680E4 /* irc.cpp in Sources */,
 				D11B5A6610CBB4D8003F0098 /* game.cpp in Sources */,
@@ -788,7 +809,7 @@
 		3E184180123861470098590C /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				COMBINE_HIDPI_IMAGES = YES;
 				DEPLOYMENT_LOCATION = YES;
 				DEPLOYMENT_POSTPROCESSING = YES;
@@ -806,24 +827,25 @@
 				HEADER_SEARCH_PATHS = (
 					../include,
 					../enet/include,
-					/usr/X11R6/include/,
+					/usr/X11/include/,
 					"$(inherited)",
 				);
 				INFOPLIST_FILE = "redeclipse-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 10.5;
+				MACOSX_DEPLOYMENT_TARGET = 10.9;
 				OTHER_CPLUSPLUSFLAGS = "-fomit-frame-pointer";
 				OTHER_LDFLAGS = "-lz";
 				PRODUCT_NAME = redeclipse;
 				SDKROOT = macosx;
 				SKIP_INSTALL = NO;
+				VALID_ARCHS = "x86_64";
 			};
 			name = Release;
 		};
 		B94198C709207E810029DAD1 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					../../bin/redeclipse.app/Contents/Frameworks,
@@ -839,53 +861,18 @@
 				HEADER_SEARCH_PATHS = (
 					../include,
 					../enet/include,
-					/usr/X11R6/include/,
+					/usr/X11/include/,
 					"$(inherited)",
 				);
 				INFOPLIST_FILE = "redeclipse-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 10.5;
+				MACOSX_DEPLOYMENT_TARGET = 10.9;
 				OTHER_LDFLAGS = "-lz";
 				PRODUCT_NAME = redeclipse;
 				SDKROOT = macosx;
+				VALID_ARCHS = "x86_64";
 			};
 			name = Debug;
-		};
-		B94198C809207E810029DAD1 /* Compatibility */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
-				COMBINE_HIDPI_IMAGES = YES;
-				DEPLOYMENT_LOCATION = YES;
-				DEPLOYMENT_POSTPROCESSING = YES;
-				FRAMEWORK_SEARCH_PATHS = (
-					../../bin/redeclipse.app/Contents/Frameworks,
-					"$(USER_LIBRARY_DIR)/Frameworks",
-					"$(LOCAL_LIBRARY_DIR)/Frameworks",
-				);
-				GCC_ENABLE_CPP_EXCEPTIONS = NO;
-				GCC_ENABLE_OBJC_EXCEPTIONS = NO;
-				GCC_PRECOMPILE_PREFIX_HEADER = NO;
-				GCC_PREFIX_HEADER = "";
-				GCC_PREPROCESSOR_DEFINITIONS = "";
-				GCC_VERSION = "";
-				HEADER_SEARCH_PATHS = (
-					../include,
-					../enet/include,
-					/usr/X11R6/include/,
-					"$(inherited)",
-				);
-				INFOPLIST_FILE = "redeclipse-Info.plist";
-				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 10.5;
-				OTHER_CPLUSPLUSFLAGS = "-fomit-frame-pointer";
-				OTHER_LDFLAGS = "-lz";
-				PRODUCT_NAME = redeclipse;
-				SDKROOT = macosx;
-				SKIP_INSTALL = NO;
-				VALID_ARCHS = "i386 x86_64";
-			};
-			name = Compatibility;
 		};
 		B960CF36085F3CC7004FB142 /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -897,42 +884,13 @@
 				);
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_VERSION = 4.0;
-				MACOSX_DEPLOYMENT_TARGET_i386 = 10.4;
-				MACOSX_DEPLOYMENT_TARGET_ppc = 10.3;
+				MACOSX_DEPLOYMENT_TARGET = 10.9;
 				ONLY_ACTIVE_ARCH = YES;
 				PREBINDING = NO;
-				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.4u.sdk";
-				SDKROOT_i386 = /Developer/SDKs/MacOSX10.4u.sdk;
-				SDKROOT_ppc = /Developer/SDKs/MacOSX10.4u.sdk;
+				SDKROOT = macosx;
 				STRIP_INSTALLED_PRODUCT = NO;
 			};
 			name = Debug;
-		};
-		B960CF37085F3CC7004FB142 /* Compatibility */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				COPY_PHASE_STRIP = YES;
-				DEPLOYMENT_POSTPROCESSING = YES;
-				FRAMEWORK_SEARCH_PATHS = (
-					"$(USER_LIBRARY_DIR)/Frameworks",
-					"$(LOCAL_LIBRARY_DIR)/Frameworks",
-				);
-				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
-				GCC_OPTIMIZATION_LEVEL = 3;
-				GCC_VERSION = 4.0;
-				INSTALL_PATH = "";
-				MACOSX_DEPLOYMENT_TARGET_i386 = 10.4;
-				MACOSX_DEPLOYMENT_TARGET_ppc = 10.3;
-				OTHER_LDFLAGS = "-no_compact_linkedit";
-				PREBINDING = NO;
-				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.4u.sdk";
-				SDKROOT_i386 = /Developer/SDKs/MacOSX10.4u.sdk;
-				SDKROOT_ppc = /Developer/SDKs/MacOSX10.4u.sdk;
-				SKIP_INSTALL = NO;
-				STRIP_INSTALLED_PRODUCT = YES;
-				VALID_ARCHS = "i386 ppc ppc64 ppc7400 ppc970";
-			};
-			name = Compatibility;
 		};
 /* End XCBuildConfiguration section */
 
@@ -941,7 +899,6 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				B94198C709207E810029DAD1 /* Debug */,
-				B94198C809207E810029DAD1 /* Compatibility */,
 				3E184180123861470098590C /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
@@ -951,7 +908,6 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				B960CF36085F3CC7004FB142 /* Debug */,
-				B960CF37085F3CC7004FB142 /* Compatibility */,
 				3E18417F123861470098590C /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;

@@ -1,13 +1,8 @@
 #!/bin/sh
+if [ "${REDECLIPSE_CALLED}" = "true" ]; then REDECLIPSE_EXITR="return"; else REDECLIPSE_EXITR="exit"; fi
 REDECLIPSE_SCRIPT="$0"
 REDECLIPSE_ARGS=$@
 REDECLIPSE_SYSTEM="$(uname -s)"
-
-if [ "${REDECLIPSE_CALLED}" = "true" ]; then
-    REDECLIPSE_EXITR="return"
-else
-    REDECLIPSE_EXITR="exit"
-fi
 
 redeclipse_path() {
     if [ -z "${REDECLIPSE_PATH+isset}" ]; then REDECLIPSE_PATH="$(cd "$(dirname "$0")" && pwd)"; fi
@@ -28,10 +23,10 @@ redeclipse_setup() {
                 REDECLIPSE_TARGET="linux"
                 ;;
             Darwin)
-		REDECLIPSE_SUFFIX="_universal"
-		REDECLIPSE_TARGET="macosx"
+		        REDECLIPSE_SUFFIX="_universal"
+		        REDECLIPSE_TARGET="macos"
                 REDECLIPSE_ARCH="redeclipse.app/Contents/MacOS"
-                REDECLIPSE_MAKE="./src/osxbuild.sh all install"
+                REDECLIPSE_MAKE="./src/macbuild.sh all install"
 		;;
             FreeBSD)
                 REDECLIPSE_SUFFIX="_bsd"
@@ -54,7 +49,7 @@ redeclipse_setup() {
                 ;;
         esac
     fi
-    if [ -z "${REDECLIPSE_ARCH+isset}" ] && [ "${REDECLIPSE_TARGET}" != "macosx" ]; then
+    if [ -z "${REDECLIPSE_ARCH+isset}" ] && [ "${REDECLIPSE_TARGET}" != "macos" ]; then
         case "${REDECLIPSE_MACHINE}" in
             i486|i586|i686|x86)
                 REDECLIPSE_ARCH="x86"
@@ -129,8 +124,7 @@ redeclipse_retry() {
 
 redeclipse_update() {
     chmod +x "${REDECLIPSE_PATH}/bin/update.sh"
-    REDECLIPSE_CALLED="true"
-    . "${REDECLIPSE_PATH}/bin/update.sh"
+    REDECLIPSE_CALLED="true" . "${REDECLIPSE_PATH}/bin/update.sh"
     if [ $? -eq 0 ]; then
         redeclipse_runit
         return $?
@@ -142,8 +136,16 @@ redeclipse_update() {
 }
 
 redeclipse_runit() {
+    export REDECLIPSE_TARGET
+    export REDECLIPSE_BRANCH
+    export REDECLIPSE_ARCH
+    export REDECLIPSE_MACHINE
+    export REDECLIPSE_BINARY
+    export REDECLIPSE_SUFFIX
+    export REDECLIPSE_PATH
     if [ -e "${REDECLIPSE_PATH}/bin/${REDECLIPSE_ARCH}/${REDECLIPSE_BINARY}${REDECLIPSE_SUFFIX}" ]; then
         REDECLIPSE_PWD=`pwd`
+        export REDECLIPSE_PWD
         cd "${REDECLIPSE_PATH}" || return 1
         exec "${REDECLIPSE_PATH}/bin/${REDECLIPSE_ARCH}/${REDECLIPSE_BINARY}${REDECLIPSE_SUFFIX}" ${REDECLIPSE_OPTIONS} ${REDECLIPSE_ARGS} || (
             cd "${REDECLIPSE_PWD}"

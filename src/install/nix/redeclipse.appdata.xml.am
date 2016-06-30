@@ -5,10 +5,10 @@
   <project_license>ZLIB and CC-BY-SA-3.0+</project_license>
   <description>
     <p>
-      Red Eclipse is a fun-filled new take on the casual first person arena
-      shooter, built as a total conversion of Cube Engine 2, which lends itself
-      toward a balanced gameplay, with a general theme of agility in a variety
-      of environments.
+      Red Eclipse is a fun-filled new take on the first person arena shooter,
+      built as a total conversion of Cube Engine 2, which lends itself toward
+      a balanced gameplay, with a general theme of agility in a variety of
+      environments.
     </p>
     <ul>
       <li>Cross-platform multiplayer</li>

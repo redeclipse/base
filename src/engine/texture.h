@@ -89,7 +89,7 @@ struct SlotShaderParam : SlotShaderParamValue
       : SlotShaderParamValue(palette, palindex, x, y, z, w),
         name(name), loc(-1)
     {
-    } 
+    }
 };
 
 struct SlotShaderParamState : LocalShaderParamState, SlotShaderParamValue
@@ -325,6 +325,9 @@ struct GlobalShaderParam
     void set(const vec2 &v, float z = 0, float w = 0) { setf(v.x, v.y, z, w); }
     void set(const vec4 &v) { setf(v.x, v.y, v.z, v.w); }
     void set(const plane &p) { setf(p.x, p.y, p.z, p.offset); }
+    void set(const matrix2 &m) { memcpy(resolve()->fval, m.a.v, sizeof(m)); }
+    void set(const matrix3 &m) { memcpy(resolve()->fval, m.a.v, sizeof(m)); }
+    void set(const matrix4 &m) { memcpy(resolve()->fval, m.a.v, sizeof(m)); }
 
     template<class T>
     void setv(const T *v, int n = 1) { memcpy(resolve()->buf, v, n*sizeof(T)); }
@@ -352,7 +355,7 @@ struct GlobalShaderParam
 
     template<class T>
     T *reserve(int n = 1) { return (T *)resolve()->buf; }
-};  
+};
 
 struct LocalShaderParam
 {
@@ -360,7 +363,7 @@ struct LocalShaderParam
     int loc;
 
     LocalShaderParam(const char *name) : name(name), loc(-1) {}
-    
+
     LocalShaderParamState *resolve()
     {
         Shader *s = Shader::lastshader;
@@ -403,6 +406,12 @@ struct LocalShaderParam
     void setv(const vec2 *v, int n = 1) { ShaderParamBinding *b = resolve(); if(b) glUniform2fv_(b->loc, n, v->v); }
     void setv(const vec4 *v, int n = 1) { ShaderParamBinding *b = resolve(); if(b) glUniform4fv_(b->loc, n, v->v); }
     void setv(const plane *p, int n = 1) { ShaderParamBinding *b = resolve(); if(b) glUniform4fv_(b->loc, n, p->v); }
+    void setv(const matrix2 *m, int n = 1) { ShaderParamBinding *b = resolve(); if(b) glUniformMatrix2fv_(b->loc, n, GL_FALSE, m->a.v); }
+    void setv(const matrix3 *m, int n = 1) { ShaderParamBinding *b = resolve(); if(b) glUniformMatrix3fv_(b->loc, n, GL_FALSE, m->a.v); }
+    void setv(const matrix4 *m, int n = 1) { ShaderParamBinding *b = resolve(); if(b) glUniformMatrix4fv_(b->loc, n, GL_FALSE, m->a.v); }
+    void set(const matrix2 &m) { setv(&m); }
+    void set(const matrix3 &m) { setv(&m); }
+    void set(const matrix4 &m) { setv(&m); }
 
     template<class T>
     void sett(T x, T y, T z, T w)
@@ -570,6 +579,7 @@ struct Texture
         TRANSIENT  = 1<<9,
         COMPRESSED = 1<<10,
         ALPHA      = 1<<11,
+        MIRROR     = 1<<12,
         FLAGS      = 0xFF00
     };
 
@@ -793,7 +803,8 @@ struct MSlot : Slot, VSlot
 };
 
 extern void scaleimage(ImageData &s, int w, int h);
-
+extern void texcrop(ImageData &s, ImageData &d, int x, int y, int w, int h);
+extern void texcrop(ImageData &s, int x, int y, int w, int h);
 enum
 {
     IFMT_NONE = 0,
@@ -832,11 +843,12 @@ struct cubemapside
 
 extern cubemapside cubemapsides[6];
 extern Texture *notexture, *blanktexture;
-extern Shader *defaultshader, *rectshader, *cubemapshader, *notextureshader, *nocolorshader, *foggedshader, *foggednotextureshader, *stdworldshader;
+extern Shader *nullshader, *hudshader, *hudnotextureshader, *textureshader, *notextureshader, *nocolorshader, *foggedshader, *foggednotextureshader, *stdworldshader;
 extern int reservevpparams, maxvsuniforms, maxfsuniforms;
 
 extern Shader *lookupshaderbyname(const char *name);
 extern Shader *useshaderbyname(const char *name);
+extern Shader *generateshader(const char *name, const char *cmd, ...);
 extern Texture *loadthumbnail(Slot &slot);
 extern void resetslotshader();
 extern void setslotshader(Slot &s);
@@ -844,6 +856,9 @@ extern void linkslotshader(Slot &s, bool load = true);
 extern void linkvslotshader(VSlot &s, bool load = true);
 extern void linkslotshaders();
 extern const char *getshaderparamname(const char *name, bool insert = true);
+extern void setupshaders();
+extern void reloadshaders();
+extern void cleanupshaders();
 
 extern MSlot &lookupmaterialslot(int slot, bool load = true);
 extern Slot &lookupslot(int slot, bool load = true);
@@ -851,7 +866,11 @@ extern VSlot &lookupvslot(int slot, bool load = true);
 extern VSlot *findvslot(Slot &slot, const VSlot &src, const VSlot &delta);
 extern VSlot *editvslot(const VSlot &src, const VSlot &delta);
 extern void mergevslot(VSlot &dst, const VSlot &src, const VSlot &delta);
+extern void packvslot(vector<uchar> &buf, const VSlot &src);
+extern bool unpackvslot(ucharbuf &buf, VSlot &dst, bool delta);
 
+extern Slot dummyslot;
+extern VSlot dummyvslot;
 extern vector<Slot *> slots;
 extern vector<VSlot *> vslots;
 extern MSlot materialslots[(MATF_VOLUME|MATF_INDEX)+1];
@@ -863,7 +882,7 @@ extern MSlot materialslots[(MATF_VOLUME|MATF_INDEX)+1];
 #define MAXBLURRADIUS 7
 
 extern void setupblurkernel(int radius, float sigma, float *weights, float *offsets);
-extern void setblurshader(int pass, int size, int radius, float *weights, float *offsets, GLenum target = GL_TEXTURE_2D);
+extern void setblurshader(int pass, int size, int radius, float *weights, float *offsets);
 
 #define _TVAR(f, n, c, m) _SVARF(n, n, c, { if(initing==NOT_INITING && n[0]) textureload(n, m, true); }, f|IDF_TEXTURE)
 #define TVAR(f, n, c, m)  _TVAR(f, n, c, m)

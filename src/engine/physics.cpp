@@ -17,7 +17,7 @@ static inline clipplanes &getclipplanes(const cube &c, const ivec &o, int size, 
     {
         p.owner = &c;
         p.version = clipcacheversion+offset;
-        genclipplanes(c, o.x, o.y, o.z, size, p, collide);
+        genclipplanes(c, o, size, p, collide);
     }
     return p;
 }
@@ -427,7 +427,7 @@ float shadowray(ShadowRayCache *cache, const vec &o, const vec &ray, float radiu
         {
             if(isentirelysolid(c)) return c.texture[side]==DEFAULT_SKY && mode&RAY_SKIPSKY ? radius : dist;
             clipplanes &p = cache->clipcache[int(&c - worldroot)&(MAXCLIPPLANES-1)];
-            if(p.owner != &c || p.version != cache->version) { p.owner = &c; p.version = cache->version; genclipplanes(c, lo.x, lo.y, lo.z, 1<<lshift, p, false); }
+            if(p.owner != &c || p.version != cache->version) { p.owner = &c; p.version = cache->version; genclipplanes(c, lo, 1<<lshift, p, false); }
             INTERSECTPLANES(side = p.side[i], goto nextcube);
             INTERSECTBOX(side = (i<<1) + 1 - lsizemask[i], goto nextcube);
             if(exitdist >= 0) return c.texture[side]==DEFAULT_SKY && mode&RAY_SKIPSKY ? radius : dist+max(enterdist+0.1f, 0.0f);
@@ -763,12 +763,12 @@ static bool fuzzycollidebox(physent *d, const vec &dir, float cutoff, const vec 
         switch(i)
         {
             default:
-            case 0: w = vec(mdlvol.orient.a).neg(); dist = -radius.x; break;
-            case 1: w = mdlvol.orient.a; dist = -radius.x; break;
-            case 2: w = vec(mdlvol.orient.b).neg(); dist = -radius.y; break;
-            case 3: w = mdlvol.orient.b; dist = -radius.y; break;
-            case 4: w = vec(mdlvol.orient.c).neg(); dist = -radius.z; break;
-            case 5: w = mdlvol.orient.c; dist = -radius.z; break;
+            case 0: w = mdlvol.orient.rowx().neg(); dist = -radius.x; break;
+            case 1: w = mdlvol.orient.rowx(); dist = -radius.x; break;
+            case 2: w = mdlvol.orient.rowy().neg(); dist = -radius.y; break;
+            case 3: w = mdlvol.orient.rowy(); dist = -radius.y; break;
+            case 4: w = mdlvol.orient.rowz().neg(); dist = -radius.z; break;
+            case 5: w = mdlvol.orient.rowz(); dist = -radius.z; break;
         }
         vec pw = entvol.supportpoint(vec(w).neg());
         dist += w.dot(vec(pw).sub(mdlvol.o));
@@ -815,8 +815,8 @@ static bool fuzzycollideellipse(physent *d, const vec &dir, float cutoff, const 
         switch(i)
         {
             default:
-            case 0: w = mdlvol.orient.c; dist = -radius.z; break;
-            case 1: w = vec(mdlvol.orient.c).neg(); dist = -radius.z; break;
+            case 0: w = mdlvol.orient.rowz(); dist = -radius.z; break;
+            case 1: w = mdlvol.orient.rowz().neg(); dist = -radius.z; break;
             case 2:
             {
                 vec2 ln(mdlvol.orient.transform(entvol.center().sub(mdlvol.o)));
@@ -1125,7 +1125,7 @@ static inline bool octacollide(physent *d, const vec &dir, float cutoff, const i
     loopoctabox(cor, size, bo, bs)
     {
         if(c[i].ext && c[i].ext->ents) if(mmcollide(d, dir, cutoff, *c[i].ext->ents)) return true;
-        ivec o(i, cor.x, cor.y, cor.z, size);
+        ivec o(i, cor, size);
         if(c[i].children)
         {
             if(octacollide(d, dir, cutoff, bo, bs, c[i].children, o, size>>1)) return true;
@@ -1228,7 +1228,7 @@ void phystest()
 {
     static const char * const states[] = {"float", "fall", "slide", "slope", "floor", "step up", "step down", "bounce"};
     physent *player = (physent *)game::focusedent();
-    conoutf("PHYS(pl): %s, air %d, mat: %d, ladder: %s, floor: (%f, %f, %f), vel: (%f, %f, %f), g: (%f, %f, %f)", states[player->physstate], lastmillis-player->airmillis, player->inmaterial, player->onladder ? "yes" : "no", player->floor.x, player->floor.y, player->floor.z, player->vel.x, player->vel.y, player->vel.z, player->falling.x, player->falling.y, player->falling.z);
+    conoutf("PHYS(pl): %d %s, air %d, mat: %d, ladder: %s, floor: (%f, %f, %f), vel: (%f, %f, %f), g: (%f, %f, %f)", player->state, states[player->physstate], lastmillis-player->airmillis, player->inmaterial, player->onladder ? "yes" : "no", player->floor.x, player->floor.y, player->floor.z, player->vel.x, player->vel.y, player->vel.z, player->falling.x, player->falling.y, player->falling.z);
 }
 
 COMMAND(0, phystest, "");

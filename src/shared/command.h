@@ -45,7 +45,7 @@ enum { ID_VAR, ID_FVAR, ID_SVAR, ID_COMMAND, ID_ALIAS, ID_LOCAL };
 #define FVAR_MAX 1e6f
 #define FVAR_NONZERO 1e-6f
 
-enum { IDF_PERSIST = 1<<0, IDF_READONLY = 1<<1, IDF_REWRITE = 1<<2, IDF_WORLD = 1<<3, IDF_COMPLETE = 1<<4, IDF_TEXTURE = 1<<5, IDF_CLIENT = 1<<6, IDF_SERVER = 1<<7, IDF_HEX = 1<<8, IDF_ADMIN = 1<<9, IDF_UNKNOWN = 1<<10, IDF_ARG = 1<<11, IDF_PRELOAD = 1<<12, IDF_GAMEPRELOAD = 1<<13 };
+enum { IDF_PERSIST = 1<<0, IDF_READONLY = 1<<1, IDF_REWRITE = 1<<2, IDF_WORLD = 1<<3, IDF_COMPLETE = 1<<4, IDF_TEXTURE = 1<<5, IDF_CLIENT = 1<<6, IDF_SERVER = 1<<7, IDF_HEX = 1<<8, IDF_ADMIN = 1<<9, IDF_UNKNOWN = 1<<10, IDF_ARG = 1<<11, IDF_PRELOAD = 1<<12, IDF_GAMEPRELOAD = 1<<13, IDF_MODERATOR = 1<<14, IDF_GAMEMOD = 1<<15 };
 
 struct ident;
 
@@ -135,41 +135,42 @@ struct ident
         };
     };
     identfun fun; // ID_VAR, ID_FVAR, ID_SVAR, ID_COMMAND
-    char *desc, *usage;
+    char *desc;
+    vector<char *> fields;
 
     ident() {}
     // ID_VAR
     ident(int t, const char *n, int m, int c, int x, int *s, void *f = NULL, int flags = IDF_COMPLETE)
-        : type(t), flags(flags | (m > x ? IDF_READONLY : 0)), name(n), minval(m), maxval(x), fun((identfun)f), desc(NULL), usage(NULL)
-    { def.i = c; bin.i = c; storage.i = s; }
+        : type(t), flags(flags | (m > x ? IDF_READONLY : 0)), name(n), minval(m), maxval(x), fun((identfun)f), desc(NULL)
+    { fields.shrink(0); def.i = c; bin.i = c; storage.i = s; }
     // ID_FVAR
     ident(int t, const char *n, float m, float c, float x, float *s, void *f = NULL, int flags = IDF_COMPLETE)
-        : type(t), flags(flags | (m > x ? IDF_READONLY : 0)), name(n), minvalf(m), maxvalf(x), fun((identfun)f), desc(NULL), usage(NULL)
-    { def.f = c; bin.f = c; storage.f = s; }
+        : type(t), flags(flags | (m > x ? IDF_READONLY : 0)), name(n), minvalf(m), maxvalf(x), fun((identfun)f), desc(NULL)
+    { fields.shrink(0); def.f = c; bin.f = c; storage.f = s; }
     // ID_SVAR
     ident(int t, const char *n, char *c, char **s, void *f = NULL, int flags = IDF_COMPLETE)
-        : type(t), flags(flags), name(n), fun((identfun)f), desc(NULL), usage(NULL)
-    { def.s = c; bin.s = newstring(c); storage.s = s; }
+        : type(t), flags(flags), name(n), fun((identfun)f), desc(NULL)
+    { fields.shrink(0); def.s = c; bin.s = newstring(c); storage.s = s; }
     // ID_ALIAS
     ident(int t, const char *n, char *a, int flags)
-        : type(t), valtype(VAL_STR), flags(flags), name(n), code(NULL), stack(NULL), desc(NULL), usage(NULL)
-    { val.s = a; }
+        : type(t), valtype(VAL_STR), flags(flags), name(n), code(NULL), stack(NULL), desc(NULL)
+    { fields.shrink(0); val.s = a; }
     ident(int t, const char *n, int a, int flags)
-        : type(t), valtype(VAL_INT), flags(flags), name(n), code(NULL), stack(NULL), desc(NULL), usage(NULL)
-    { val.i = a; }
+        : type(t), valtype(VAL_INT), flags(flags), name(n), code(NULL), stack(NULL), desc(NULL)
+    { fields.shrink(0); val.i = a; }
     ident(int t, const char *n, float a, int flags)
-        : type(t), valtype(VAL_FLOAT), flags(flags), name(n), code(NULL), stack(NULL), desc(NULL), usage(NULL)
-    { val.f = a; }
+        : type(t), valtype(VAL_FLOAT), flags(flags), name(n), code(NULL), stack(NULL), desc(NULL)
+    { fields.shrink(0); val.f = a; }
     ident(int t, const char *n, int flags)
-        : type(t), valtype(VAL_NULL), flags(flags), name(n), code(NULL), stack(NULL), desc(NULL), usage(NULL)
-    {}
+        : type(t), valtype(VAL_NULL), flags(flags), name(n), code(NULL), stack(NULL), desc(NULL)
+    { fields.shrink(0); }
     ident(int t, const char *n, const tagval &v, int flags)
-        : type(t), valtype(v.type), flags(flags), name(n), code(NULL), stack(NULL), desc(NULL), usage(NULL)
-    { val = v; }
+        : type(t), valtype(v.type), flags(flags), name(n), code(NULL), stack(NULL), desc(NULL)
+    { fields.shrink(0); val = v; }
     // ID_COMMAND
     ident(int t, const char *n, const char *args, uint argmask, int numargs, void *f = NULL, int flags = IDF_COMPLETE)
-        : type(t), numargs(numargs), flags(flags), name(n), args(args), argmask(argmask), fun((identfun)f), desc(NULL), usage(NULL)
-    {}
+        : type(t), numargs(numargs), flags(flags), name(n), args(args), argmask(argmask), fun((identfun)f), desc(NULL)
+    { fields.shrink(0); }
 
     void changed() { if(fun) fun(); }
 
@@ -195,8 +196,6 @@ struct ident
     int getint() const;
     const char *getstr() const;
     void getval(tagval &v) const;
-
-    static bool compare(ident *x, ident *y) { return strcmp(x->name, y->name) < 0; }
 };
 
 extern hashnameset<ident> idents;

@@ -74,16 +74,39 @@ void localopadd(const char *name, const char *flags)
 ICOMMAND(0, addlocalop, "ss", (char *n, char *f), localopadd(n, f));
 
 VAR(IDF_PERSIST, quickauthchecks, 0, 0, 1);
+
+VAR(IDF_PERSIST, serverauthconnect, 0, 1, 1);
+SVAR(IDF_PERSIST, serveraccountname, "");
+SVAR(IDF_PERSIST, serveraccountpass, "");
+ICOMMAND(0, serverauthkey, "ss", (char *name, char *key), {
+    setsvar("serveraccountname", name);
+    setsvar("serveraccountpass", key);
+});
+
 namespace auth
 {
     int lastconnect = 0, lastregister = 0, quickcheck = 0;
     uint nextauthreq = 1;
+    bool hasauth = false, hasstats = false;
 
     clientinfo *findauth(uint id)
     {
         loopv(clients) if(clients[i]->authreq == id) return clients[i];
         loopv(connects) if(connects[i]->authreq == id) return connects[i];
         return NULL;
+    }
+
+    clientinfo *findauthhandle(const char *handle)
+    {
+        loopv(clients) if(!strcmp(clients[i]->handle, handle)) return clients[i];
+        loopv(connects) if(!strcmp(connects[i]->handle, handle)) return connects[i];
+        return NULL;
+    }
+
+    void reqserverauth()
+    {
+        if(connectedmaster() && *serveraccountpass && serverauthconnect && !hasauth)
+            requestmasterf("reqserverauth %s\n", serveraccountname);
     }
 
     void reqauth(clientinfo *ci)
@@ -124,12 +147,13 @@ namespace auth
         return true;
     }
 
-    void setprivilege(clientinfo *ci, int val, int flags = 0, bool authed = false)
+    void setprivilege(clientinfo *ci, int val, int flags = 0, bool authed = false, clientinfo *setter = NULL)
     {
         string msg = "";
         if(val > 0)
         {
-            if((ci->privilege&PRIV_TYPE) >= (flags&PRIV_TYPE)) return;
+            if(!setter && (ci->privilege&PRIV_TYPE) >= (flags&PRIV_TYPE)) return;
+            int oldpriv = ci->privilege;
             ci->privilege = flags;
             if(authed)
             {
@@ -141,14 +165,25 @@ namespace auth
                 }
                 copystring(ci->handle, ci->authname);
             }
-            else formatstring(msg, "\fy%s elevated to \fs\fc%s\fS", colourname(ci), privname(ci->privilege));
+            else if(setter)
+            {
+                defformatstring(settername, "%s", colourname(setter));
+                if((oldpriv&PRIV_TYPE) >= (flags&PRIV_TYPE))
+                    formatstring(msg, "\fy%s was reset by %s to \fs\fc%s\fS", colourname(ci), settername, privname(ci->privilege));
+                else
+                    formatstring(msg, "\fy%s was elevated by %s to \fs\fc%s\fS", colourname(ci), settername, privname(ci->privilege));
+            }
+            else
+            {
+                formatstring(msg, "\fy%s elevated to \fs\fc%s\fS", colourname(ci), privname(ci->privilege));
+            }
         }
         else
         {
             if(!(ci->privilege&PRIV_TYPE)) return;
             int privilege = ci->privilege;
             ci->privilege = PRIV_NONE;
-            ci->handle[0] = 0;
+            ci->handle[0] = '\0';
             int others = 0;
             loopv(clients) if((clients[i]->privilege&PRIV_TYPE) >= PRIV_MODERATOR || clients[i]->local) others++;
             if(!others) mastermode = MM_OPEN;
@@ -159,7 +194,7 @@ namespace auth
         {
             if(*msg)
             {
-                if(ci->connected) srvoutforce(ci, -2, "%s", msg);
+                if(ci->connected) srvoutf(-2, "%s", msg);
                 else sendf(ci->clientnum, 1, "ri2s", N_SERVMSG, CON_EVENT, msg);
             }
             sendf(ci->connected ? -1 : ci->clientnum, 1, "ri3s", N_CURRENTPRIV, ci->clientnum, ci->privilege, ci->handle);
@@ -200,11 +235,11 @@ namespace auth
     int allowconnect(clientinfo *ci, const char *authname = "", const char *pwd = "")
     {
         if(ci->local) { tryident(ci, authname, pwd); return DISC_NONE; }
-        if(ci->state.version.game != VERSION_GAME) return DISC_INCOMPATIBLE;
+        if(ci->version.game != VERSION_GAME) return DISC_INCOMPATIBLE;
         if(m_local(gamemode)) return DISC_PRIVATE;
         if(tryident(ci, authname, pwd)) return DISC_NONE;
         // above here are short circuits
-        if(numclients() >= G(serverclients)) return DISC_MAXCLIENTS;
+        if(numspectators() >= spectatorslots()) return DISC_MAXCLIENTS;
         uint ip = getclientip(ci->clientnum);
         if(!ip || !checkipinfo(control, ipinfo::EXCEPT, ip))
         {
@@ -222,7 +257,7 @@ namespace auth
     void authfailed(clientinfo *ci)
     {
         if(!ci) return;
-        ci->authreq = ci->authname[0] = ci->handle[0] = 0;
+        ci->authreq = ci->authname[0] = ci->handle[0] = '\0';
         srvmsgftforce(ci->clientnum, CON_EVENT, "\foidentity verification failed, please check your credentials");
         if(ci->connectauth)
         {
@@ -236,6 +271,25 @@ namespace auth
     void authfailed(uint id)
     {
         authfailed(findauth(id));
+    }
+
+    void serverauthfailed()
+    {
+        hasauth = hasstats = false;
+        conoutf("server auth request failed");
+    }
+
+    void serverauthsucceeded(const char *name, const char *flags)
+    {
+        for(const char *c = flags; *c; c++) switch(*c)
+        {
+            case 's':
+                hasauth = true;
+                if(G(serverstats)) hasstats = true;
+                break;
+            case 'b': case 'm': default: hasauth = true; break;
+        }
+        conoutf("server auth succeeded (%s [%s])", hasstats ? "stats" : "basic", flags);
     }
 
     void authsucceeded(uint id, const char *name, const char *flags)
@@ -274,7 +328,7 @@ namespace auth
             }
         }
         if(n > PRIV_NONE) setprivilege(ci, 1, n|(local ? PRIV_LOCAL : 0), true);
-        else ci->authname[0] = ci->handle[0] = 0;
+        else ci->authname[0] = ci->handle[0] = '\0';
         if(ci->connectauth)
         {
             ci->connectauth = false;
@@ -289,6 +343,19 @@ namespace auth
         clientinfo *ci = findauth(id);
         if(!ci) return;
         sendf(ci->clientnum, 1, "riis", N_AUTHCHAL, id, val);
+    }
+
+    void serverauthchallenged(const char *text)
+    {
+        vector<char> buf;
+        answerchallenge(serveraccountpass, text, buf);
+        char *val = newstring(buf.getbuf());
+        for(char *s = val; *s; s++)
+        {
+            if(!isxdigit(*s)) { *s = '\0'; break; }
+        }
+        requestmasterf("confserverauth %s\n", val);
+        DELETEA(val);
     }
 
     bool answerchallenge(clientinfo *ci, uint id, char *val)
@@ -320,13 +387,31 @@ namespace auth
         else if(!strcmp(w[0], "echo")) { conoutf("master server reply: %s", w[1]); }
         else if(!strcmp(w[0], "failauth")) authfailed((uint)(atoi(w[1])));
         else if(!strcmp(w[0], "succauth")) authsucceeded((uint)(atoi(w[1])), w[2], w[3]);
+        else if(!strcmp(w[0], "authstats"))
+        {
+            clientinfo *ci = findauthhandle(w[1]);
+            if(ci)
+            {
+                ci->totalpoints = ci->localtotalpoints + atoi(w[2]);
+                ci->totalfrags = ci->localtotalfrags + atoi(w[3]);
+                ci->totaldeaths = ci->localtotaldeaths + atoi(w[4]);
+            }
+        }
+        else if(!strcmp(w[0], "failserverauth")) serverauthfailed();
+        else if(!strcmp(w[0], "succserverauth")) serverauthsucceeded(w[1], w[2]);
         else if(!strcmp(w[0], "chalauth")) authchallenged((uint)(atoi(w[1])), w[2]);
+        else if(!strcmp(w[0], "chalserverauth")) serverauthchallenged(w[1]);
         else if(!strcmp(w[0], "sync"))
         {
             int oldversion = versioning;
             versioning = 2;
             if(servcmd(2, w[1], w[2])) conoutf("master server variable synced: %s", w[1]);
             versioning = oldversion;
+        }
+        else if(!strcmp(w[0], "stats"))
+        {
+            if(!strcmp(w[1], "success")) srvoutf(-3, "\fystats success: %s", w[2]);
+            else if(!strcmp(w[1], "failure")) srvoutf(-3, "\frstats failure: %s", w[2]);
         }
         else loopj(ipinfo::SYNCTYPES) if(!strcmp(w[0], ipinfotypes[j]))
         {
@@ -355,8 +440,9 @@ namespace auth
         else
         {
             conoutf("updating master server");
-            requestmasterf("server %d %s %d\n", serverport, *serverip ? serverip : "*", CUR_VERSION);
+            requestmasterf("server %d %s %d %s %d %s\n", serverport, *serverip ? serverip : "*", CUR_VERSION, escapestring(G(serverdesc)), G(serverstats), escapestring(versionbranch));
         }
+        reqserverauth();
     }
 
     void update()
@@ -387,6 +473,7 @@ namespace auth
     void masterdisconnected()
     {
         quickcheck = 0;
+        hasauth = hasstats = false;
         loopv(clients) if(clients[i]->authreq) authfailed(clients[i]);
         loopv(connects) if(connects[i]->authreq) authfailed(connects[i]);
     }
@@ -406,4 +493,3 @@ void masterdisconnected()
 {
     auth::masterdisconnected();
 }
-

@@ -8,8 +8,6 @@ namespace game
     float swayfade = 0, swayspeed = 0, swaydist = 0, bobfade = 0, bobdist = 0;
     vec swaydir(0, 0, 0), swaypush(0, 0, 0);
 
-    string clientmap = "";
-
     gameent *player1 = new gameent(), *focus = player1, *lastfocus = focus;
     avatarent avatarmodel, bodymodel;
     vector<gameent *> players, waiting;
@@ -26,6 +24,8 @@ namespace game
         player1->version.gpuglver = glversion;
         player1->version.gpuglslver = glslversion;
         player1->version.crc = versioncrc;
+        if(player1->version.branch) delete[] player1->version.branch;
+        player1->version.branch = newstring(versionbranch);
         if(player1->version.gpuvendor) delete[] player1->version.gpuvendor;
         player1->version.gpuvendor = newstring(gfxvendor);
         if(player1->version.gpurenderer) delete[] player1->version.gpurenderer;
@@ -55,11 +55,12 @@ namespace game
     OBITVARS(lava)
     OBITVARS(water)
     SVAR(IDF_WORLD, obitdeath, "");
+    SVAR(IDF_WORLD, obithurt, "");
     SVAR(IDF_WORLD, obitfall, "");
 
     void stopmapmusic()
     {
-        if(connected() && maptime > 0 && gs_intermission(gamestate)) musicdone(true);
+        if(connected() && maptime > 0) musicdone(true);
     }
     VARF(IDF_PERSIST, musictype, 0, 1, 6, stopmapmusic()); // 0 = no in-game music, 1 = map music (or random if none), 2 = always random, 3 = map music (silence if none), 4-5 = same as 1-2 but pick new tracks when done, 6 = always use theme song
     VARF(IDF_PERSIST, musicedit, -1, 0, 6, stopmapmusic()); // same as above for editmode, -1 = use musictype
@@ -153,26 +154,28 @@ namespace game
     FVAR(IDF_PERSIST, spectvpitchscale, FVAR_MIN, 1, 1000);
     FVAR(IDF_PERSIST, spectvyawthresh, 0, 0, 360);
     FVAR(IDF_PERSIST, spectvpitchthresh, 0, 0, 180);
+    FVAR(IDF_PERSIST, spectvaccel, 1, 2, FVAR_MAX);
+    FVAR(IDF_PERSIST, spectvaccelthresh, 0, 0.25f, 1);
     VAR(IDF_PERSIST, spectvdead, 0, 1, 2); // 0 = never, 1 = in all but duel/survivor, 2 = always
     VAR(IDF_PERSIST, spectvfirstperson, 0, 0, 2); // 0 = aim in direction followed player is facing, 1 = aim in direction determined by spectv when dead, 2 = always aim in direction
     VAR(IDF_PERSIST, spectvthirdperson, 0, 2, 2); // 0 = aim in direction followed player is facing, 1 = aim in direction determined by spectv when dead, 2 = always aim in direction
 
-    VAR(IDF_PERSIST, spectvintermtime, 1000, 10000, VAR_MAX);
-    VAR(IDF_PERSIST, spectvintermmintime, 1000, 6000, VAR_MAX);
-    VAR(IDF_PERSIST, spectvintermmaxtime, 0, 20000, VAR_MAX);
-    VAR(IDF_PERSIST, spectvintermspeed, 1, 350, VAR_MAX);
-    VAR(IDF_PERSIST, spectvintermyawspeed, 1, 350, VAR_MAX);
-    VAR(IDF_PERSIST, spectvintermpitchspeed, 1, 350, VAR_MAX);
-    FVAR(IDF_PERSIST, spectvintermrotate, FVAR_MIN, 0, FVAR_MAX); // rotate style, < 0 = absolute angle, 0 = scaled, > 0 = scaled with max angle
-    FVAR(IDF_PERSIST, spectvintermyawscale, FVAR_MIN, 1, 1000);
-    FVAR(IDF_PERSIST, spectvintermpitchscale, FVAR_MIN, 1, 1000);
-    FVAR(IDF_PERSIST, spectvintermyawthresh, 0, 0, 360);
-    FVAR(IDF_PERSIST, spectvintermpitchthresh, 0, 0, 180);
+    VAR(IDF_PERSIST, spectvintertime, 1000, 10000, VAR_MAX);
+    VAR(IDF_PERSIST, spectvintermintime, 1000, 6000, VAR_MAX);
+    VAR(IDF_PERSIST, spectvintermaxtime, 0, 20000, VAR_MAX);
+    VAR(IDF_PERSIST, spectvinterspeed, 1, 350, VAR_MAX);
+    VAR(IDF_PERSIST, spectvinteryawspeed, 1, 350, VAR_MAX);
+    VAR(IDF_PERSIST, spectvinterpitchspeed, 1, 350, VAR_MAX);
+    FVAR(IDF_PERSIST, spectvinterrotate, FVAR_MIN, 0, FVAR_MAX); // rotate style, < 0 = absolute angle, 0 = scaled, > 0 = scaled with max angle
+    FVAR(IDF_PERSIST, spectvinteryawscale, FVAR_MIN, 1, 1000);
+    FVAR(IDF_PERSIST, spectvinterpitchscale, FVAR_MIN, 1, 1000);
+    FVAR(IDF_PERSIST, spectvinteryawthresh, 0, 0, 360);
+    FVAR(IDF_PERSIST, spectvinterpitchthresh, 0, 0, 180);
 
     VARF(0, spectvfollow, -1, -1, VAR_MAX, spectvfollowing = spectvfollow); // attempts to always keep this client in view
     VAR(0, spectvfollowself, 0, 1, 2); // if we are not spectating, spectv should show us; 0 = off, 1 = not duel/survivor, 2 = always
     VAR(IDF_PERSIST, spectvfollowtime, 1000, 10000, VAR_MAX);
-    VAR(IDF_PERSIST, spectvfollowmintime, 1000, 1000, VAR_MAX);
+    VAR(IDF_PERSIST, spectvfollowmintime, 1000, 2000, VAR_MAX);
     VAR(IDF_PERSIST, spectvfollowmaxtime, 0, 20000, VAR_MAX);
     VAR(IDF_PERSIST, spectvfollowspeed, 1, 250, VAR_MAX);
     VAR(IDF_PERSIST, spectvfollowyawspeed, 1, 250, VAR_MAX);
@@ -184,10 +187,10 @@ namespace game
     FVAR(IDF_PERSIST, spectvfollowpitchthresh, 0, 0, 180);
 
     FVAR(IDF_PERSIST, spectvmindist, 0, 32, FVAR_MAX);
-    FVAR(IDF_PERSIST, spectvmaxdist, 0, 256, FVAR_MAX);
+    FVAR(IDF_PERSIST, spectvmaxdist, 0, 320, FVAR_MAX);
     FVAR(IDF_PERSIST, spectvmovedist, 0, 64, FVAR_MAX);
-    FVAR(IDF_PERSIST, spectvfollowmindist, 0, 8, FVAR_MAX);
-    FVAR(IDF_PERSIST, spectvfollowmaxdist, 0, 128, FVAR_MAX);
+    FVAR(IDF_PERSIST, spectvfollowmindist, 0, 16, FVAR_MAX);
+    FVAR(IDF_PERSIST, spectvfollowmaxdist, 0, 160, FVAR_MAX);
 
     VAR(IDF_PERSIST, deathcamstyle, 0, 2, 2); // 0 = no follow, 1 = follow attacker, 2 = follow self
     VAR(IDF_PERSIST, deathcamspeed, 0, 500, VAR_MAX);
@@ -210,7 +213,7 @@ namespace game
     VAR(IDF_PERSIST, aboveheadnames, 0, 1, 1);
     VAR(IDF_PERSIST, aboveheadinventory, 0, 0, 2); // 0 = off, 1 = weapselect only, 2 = all weapons
     VAR(IDF_PERSIST, aboveheadstatus, 0, 1, 1);
-    VAR(IDF_PERSIST, aboveheadteam, 0, 0, 3);
+    VAR(IDF_PERSIST, aboveheadteam, 0, 3, 3);
     VAR(IDF_PERSIST, aboveheaddamage, 0, 0, 1);
     VAR(IDF_PERSIST, aboveheadicons, 0, 5, 7);
     FVAR(IDF_PERSIST, aboveheadblend, 0.f, 1, 1.f);
@@ -219,7 +222,7 @@ namespace game
     FVAR(IDF_PERSIST, aboveheadinventoryfade, 0.f, 0.5f, 1.f);
     FVAR(IDF_PERSIST, aboveheadstatusblend, 0.f, 1, 1.f);
     FVAR(IDF_PERSIST, aboveheadiconsblend, 0.f, 1, 1.f);
-    FVAR(IDF_PERSIST, aboveheadnamessize, 0, 3, 10);
+    FVAR(IDF_PERSIST, aboveheadnamessize, 0, 4, 10);
     FVAR(IDF_PERSIST, aboveheadinventorysize, 0, 4, 10);
     FVAR(IDF_PERSIST, aboveheadstatussize, 0, 2.5f, 10);
     FVAR(IDF_PERSIST, aboveheadiconssize, 0, 2.5f, 10);
@@ -234,7 +237,7 @@ namespace game
 
     VAR(IDF_PERSIST, showobituaries, 0, 4, 5); // 0 = off, 1 = only me, 2 = 1 + announcements, 3 = 2 + but dying bots, 4 = 3 + but bot vs bot, 5 = all
     VAR(IDF_PERSIST, showobitdists, 0, 2, 2); // 0 = off, 1 = self only, 2 = all
-    VAR(IDF_PERSIST, showobithpleft, 0, 1, 2); // 0 = off, 1 = self only, 2 = all
+    VAR(IDF_PERSIST, showobithpleft, 0, 2, 2); // 0 = off, 1 = self only, 2 = all
     VAR(IDF_PERSIST, obitannounce, 0, 2, 2); // 0 = off, 1 = only focus, 2 = everyone
     VAR(IDF_PERSIST, obitverbose, 0, 1, 1); // 0 = extremely simple, 1 = regular messages
     VAR(IDF_PERSIST, obitstyles, 0, 1, 1); // 0 = no obituary styles, 1 = show sprees/dominations/etc
@@ -248,9 +251,10 @@ namespace game
     VAR(IDF_PERSIST, playreloadnotify, 0, 3, 15);
     VAR(IDF_PERSIST, reloadnotifyvol, -1, -1, 255);
 
-    VAR(IDF_PERSIST, deathanim, 0, 2, 2); // 0 = hide player when dead, 1 = old death animation, 2 = ragdolls
+    VAR(IDF_PERSIST, deathanim, 0, 3, 3); // 0 = hide player when dead, 1 = old death animation, 2 = ragdolls, 3 = ragdolls, but hide in duke
     VAR(IDF_PERSIST, deathfade, 0, 1, 1); // 0 = don't fade out dead players, 1 = fade them out
     VAR(IDF_PERSIST, deathscale, 0, 0, 1); // 0 = don't scale out dead players, 1 = scale them out
+    VAR(IDF_PERSIST, deathmaxfade, 0, 0, VAR_MAX);
     VAR(IDF_PERSIST, deathbuttonmash, 0, 1000, VAR_MAX);
     FVAR(IDF_PERSIST, bloodscale, 0, 1, 1000);
     VAR(IDF_PERSIST, bloodfade, 1, 3000, VAR_MAX);
@@ -261,7 +265,7 @@ namespace game
     FVAR(IDF_PERSIST, gibscale, 0, 1, 1000);
     VAR(IDF_PERSIST, gibfade, 1, 5000, VAR_MAX);
     FVAR(IDF_PERSIST, impulsescale, 0, 1, 1000);
-    VAR(IDF_PERSIST, impulsefade, 0, 500, VAR_MAX);
+    VAR(IDF_PERSIST, impulsefade, 0, 250, VAR_MAX);
     VAR(IDF_PERSIST, ragdolleffect, 2, 500, VAR_MAX);
 
     VAR(IDF_PERSIST, playerovertone, -1, CTONE_TEAM, CTONE_MAX-1);
@@ -270,24 +274,35 @@ namespace game
     VAR(IDF_PERSIST, playereffecttone, -1, CTONE_TEAMED, CTONE_MAX-1);
     VAR(IDF_PERSIST, playerlighttone, -1, CTONE_TEAMED, CTONE_MAX-1);
     VAR(IDF_PERSIST, playerteamtone, -1, CTONE_TEAM, CTONE_MAX-1);
+
+    FVAR(IDF_PERSIST, playerovertonelevel, 0.f, 1.f, 10.f);
+    FVAR(IDF_PERSIST, playerundertonelevel, 0.f, 1.f, 10.f);
+    FVAR(IDF_PERSIST, playerdisplaytonelevel, 0.f, 1.f, 10.f);
+    FVAR(IDF_PERSIST, playereffecttonelevel, 0.f, 1.f, 10.f);
+    FVAR(IDF_PERSIST, playerlighttonelevel, 0.f, 1.f, 10.f);
+    FVAR(IDF_PERSIST, playerteamtonelevel, 0.f, 1.f, 10.f);
+
     FVAR(IDF_PERSIST, playerlightmix, 0, 0.4f, 100);
-    FVAR(IDF_PERSIST, playertonemix, 0, 0.25f, 1);
+    FVAR(IDF_PERSIST, playertonemix, 0, 0.5f, 1);
     FVAR(IDF_PERSIST, playerblend, 0, 1, 1);
     FVAR(IDF_PERSIST, playereditblend, 0, 0.5f, 1);
     FVAR(IDF_PERSIST, playerghostblend, 0, 0.5f, 1);
 
-    VAR(IDF_PERSIST, playerhint, 0, 3, 3);
+    VAR(IDF_PERSIST, playerhint, 0, 15, 15);
     VAR(IDF_PERSIST, playerhinthurt, 0, 1, 1);
     VAR(IDF_PERSIST, playerhinthurtthrob, 0, 1, 1);
     VAR(IDF_PERSIST, playerhinttone, -1, CTONE_TEAMED, CTONE_MAX-1);
-    FVAR(IDF_PERSIST, playerhintblend, 0, 0.1f, 1);
+    FVAR(IDF_PERSIST, playerhinttonelevel, 0.f, 1.f, 10.f);
+    FVAR(IDF_PERSIST, playerhintblend, 0, 0.3f, 1);
     FVAR(IDF_PERSIST, playerhintscale, 0, 0.7f, 1); // scale blend depending on health
+    FVAR(IDF_PERSIST, playerhintlight, 0, 0.3f, 1); // override for light effect
+    FVAR(IDF_PERSIST, playerhintdom, 0, 0.3f, 1); // override for dominate effect
     FVAR(IDF_PERSIST, playerhintsize, 0, 1.2f, 2);
     FVAR(IDF_PERSIST, playerhintmaxsize, 0, 20, FVAR_MAX);
     FVAR(IDF_PERSIST, playerhintfadeat, 0, 64, FVAR_MAX);
     FVAR(IDF_PERSIST, playerhintfadecut, 0, 8, FVAR_MAX);
     FVAR(IDF_PERSIST, playerhinthurtblend, 0, 0.9f, 1);
-    FVAR(IDF_PERSIST, playerhinthurtsize, 0, 1.2f, 2);
+    FVAR(IDF_PERSIST, playerhinthurtsize, 0, 1.3f, 2);
 
     VAR(IDF_PERSIST, footstepsounds, 0, 3, 3); // 0 = off, &1 = focus, &2 = everyone else
     FVAR(IDF_PERSIST, footstepsoundmin, 0, 0, FVAR_MAX); // minimum velocity magnitude
@@ -304,7 +319,7 @@ namespace game
     VAR(IDF_PERSIST, forceplayermodel, -1, -1, PLAYERTYPES-1);
     VAR(IDF_PERSIST, vanitymodels, 0, 1, 1);
     VAR(IDF_PERSIST, headlessmodels, 0, 1, 1);
-    FVAR(IDF_PERSIST, twitchspeed, 0, 8, FVAR_MAX);
+    FVAR(IDF_PERSIST, twitchspeed, 0, 3, FVAR_MAX);
 
     bool wantsloadoutmenu = false;
     VAR(IDF_PERSIST, showloadoutmenu, 0, 0, 1); // show the loadout menu at the start of a map
@@ -338,6 +353,8 @@ namespace game
     void vanityreset()
     {
         loopvrev(vanities) vanities.remove(i);
+        loopv(players) if(players[i]) players[i]->vitems.shrink(0);
+        player1->vitems.shrink(0);
     }
     ICOMMAND(0, resetvanity, "", (), vanityreset());
 
@@ -345,7 +362,7 @@ namespace game
     {
         if(type < 0 || type >= VANITYMAX || !ref || !name || !tag) return -1;
         int num = vanities.length();
-        vanitys &v = vanities.add();
+        vanity &v = vanities.add();
         v.type = type;
         v.ref = newstring(ref);
         v.setmodel(ref);
@@ -384,6 +401,7 @@ namespace game
 
     void vanitybuild(gameent *d)
     {
+        if(!*d->vanity) return; // not needed
         vector<char *> vanitylist;
         explodelist(d->vanity, vanitylist);
         loopv(vanitylist) if(vanitylist[i] && *vanitylist[i])
@@ -392,14 +410,20 @@ namespace game
         vanitylist.deletearrays();
     }
 
+    const char *vanitymodel(gameent *d)
+    {
+        if(d->actortype >= A_ENEMY) return actor[d->actortype%A_MAX].name;
+        return playertypes[d->model%PLAYERTYPES][5];
+    }
+
     const char *vanityfname(gameent *d, int n, bool proj)
     {
         const char *file = NULL;
         if(vanities.inrange(n)) switch(vanities[n].style)
         {
-            case 1:
+            case 1: case 2:
             {
-                const char *id = server::privnamex(d->privilege, d->actortype, true);
+                const char *id = vanities[n].style == 2 ? vanitymodel(d) : server::privnamex(d->privilege, d->actortype, true);
                 loopv(vanities[n].files)
                     if(vanities[n].files[i].proj == proj && !strcmp(vanities[n].files[i].id, id))
                         file = vanities[n].files[i].name;
@@ -490,7 +514,7 @@ namespace game
     {
         if(on != zooming)
         {
-            lastzoom = millis-max(zoomtime-(millis-lastzoom), 0);
+            lastzoom = millis;
             prevzoom = zooming;
             if(zoomdefault >= 0 && on) zoomlevel = zoomdefault;
         }
@@ -500,7 +524,7 @@ namespace game
 
     bool inzoom()
     {
-        if(lastzoom && (zooming || lastmillis-lastzoom <= zoomtime))
+        if(lastzoom && (zooming || lastmillis-lastzoom <= W(focus->weapselect, cookzoom)))
             return true;
         return false;
     }
@@ -508,7 +532,7 @@ namespace game
 
     bool inzoomswitch()
     {
-        if(lastzoom && ((zooming && lastmillis-lastzoom >= zoomtime/2) || (!zooming && lastmillis-lastzoom <= zoomtime/2)))
+        if(lastzoom && ((zooming && lastmillis-lastzoom >= W(focus->weapselect, cookzoom)/2) || (!zooming && lastmillis-lastzoom <= W(focus->weapselect, cookzoom)/2)))
             return true;
         return false;
     }
@@ -563,77 +587,12 @@ namespace game
     }
 
     int announcerchan = -1;
-    struct ancbuf
-    {
-        int idx;
-        physent *t;
-        int *chan;
-
-        ancbuf() : idx(-1), t(NULL), chan(NULL) {}
-        ~ancbuf() {}
-
-        bool play()
-        {
-            if(!issound(*chan))
-            {
-                playsound(idx, t->o, t, t != camera1 ? SND_IMPORT : SND_FORCED, -1, -1, -1, chan);
-                return true;
-            }
-            return false;
-        }
-    };
-    vector<ancbuf> anclist;
-
-    VAR(IDF_PERSIST, announcecollect, 1, 1, 3);
-    VAR(IDF_PERSIST, announcededupe, 0, 2, 3);
-    VAR(IDF_PERSIST, announcebuffer, 1, 64, VAR_MAX);
-
-    void removeannounceall()
-    {
-        loopvrev(anclist) anclist.remove(i);
-        if(issound(announcerchan)) removesound(announcerchan);
-        announcerchan = -1;
-    }
-
-    void removeannounce(gameent *d)
-    {
-        loopvrev(anclist) if(anclist[i].chan == &d->aschan) anclist.remove(i);
-    }
-
-    void checkannounce()
-    {
-        loopv(anclist) if(anclist[i].play()) anclist.remove(i--);
-        while(anclist.length() > announcebuffer) anclist.pop();
-    }
-
     void announce(int idx, gameent *d, bool forced)
     {
         if(idx < 0) return;
         physent *t = !d || d == player1 || forced ? camera1 : d;
-        bool ispl = d && !forced, inuse = false;
-        int *chan = ispl ? &d->aschan : &announcerchan;
-        if(issound(*chan))
-        {
-            if(announcededupe&(ispl ? 2 : 1) && sounds[*chan].slotnum == idx) return; // de-dupe
-            inuse = true;
-        }
-        if(announcecollect&(ispl ? 2 : 1))
-        {
-            loopv(anclist) if(anclist[i].chan == chan)
-            {
-                if(announcededupe&(ispl ? 2 : 1) && anclist[i].idx == idx) return; // de-dupe
-                inuse = true;
-            }
-            if(inuse)
-            {
-                ancbuf &a = anclist.add();
-                a.idx = idx;
-                a.t = t;
-                a.chan = chan;
-                return;
-            }
-        }
-        playsound(idx, t->o, t, t != camera1 ? SND_IMPORT : SND_FORCED, -1, -1, -1, chan);
+        int *chan = d && !forced ? &d->aschan : &announcerchan;
+        playsound(idx, t->o, t, (t != camera1 ? SND_IMPORT : SND_FORCED)|SND_BUFFER, -1, -1, -1, chan);
     }
 
     void announcef(int idx, int targ, gameent *d, bool forced, const char *msg, ...)
@@ -660,7 +619,7 @@ namespace game
         focus = player1;
         resetcamera();
     }
-    
+
     int startcam()
     {
         if(!cameras.length()) return 0;
@@ -809,11 +768,22 @@ namespace game
 
     void respawn(gameent *d)
     {
-        if(d == game::player1 && (maptime <= 0 || needname(d) || wantsloadoutmenu)) return; // prevent spawning
+        if(d == player1 && (maptime <= 0 || needname(d) || wantsloadoutmenu)) return; // prevent spawning
         if(d->state == CS_DEAD && d->respawned < 0 && (!d->lastdeath || lastmillis-d->lastdeath >= 500))
         {
             client::addmsg(N_TRYSPAWN, "ri", d->clientnum);
             d->respawned = lastmillis;
+        }
+    }
+
+    void spawneffect(int type, const vec &pos, float radius, int colour, float size)
+    {
+        vec o = pos;
+        o.z -= radius;
+        loopi(5)
+        {
+            o.z += radius*0.5f;
+            createshape(type, radius, colour, 3, 30, 350, o, size, 1, -1, 0, 1);
         }
     }
 
@@ -832,13 +802,11 @@ namespace game
 
         if(d->actortype < A_ENEMY)
         {
+            vec center = d->center();
             playsound(S_RESPAWN, d->o, d);
-            if(dynlighteffects)
-            {
-                adddynlight(d->headpos(), d->height*2, vec::hexcolor(getcolour(d, playereffecttone)).mul(2.f), 250, 250);
-                regularshape(PART_SPARK, d->height*2, getcolour(d, playerundertone), 53, 50, 350, d->center(), 1.5f, 1, 1, 0, 35);
-                regularshape(PART_SPARK, d->height*2, getcolour(d, playerovertone), 53, 50, 350, d->center(), 1.5f, 1, 1, 0, 35);
-            }
+            spawneffect(PART_SPARK, center, d->height*0.5f, getcolour(d, playerovertone, playerovertonelevel), 1.5f);
+            spawneffect(PART_SPARK, center, d->height*0.5f, getcolour(d, playerundertone, playerundertonelevel), 1.5f);
+            if(dynlighteffects) adddynlight(center, d->height*2, vec::hexcolor(getcolour(d, playereffecttone, playereffecttonelevel)).mul(2.f), 250, 250);
             if(entities::ents.inrange(ent) && entities::ents[ent]->type == PLAYERSTART) entities::execlink(d, ent, false);
         }
         ai::respawned(d, local, ent);
@@ -889,7 +857,7 @@ namespace game
                 int weap = index%W_MAX;
                 if(!m_edit(gamemode) && index < W_MAX)
                 {
-                    weap = w_attr(gamemode, mutators, WEAPON, weap, m_weapon(gamemode, mutators));
+                    weap = w_attr(gamemode, mutators, WEAPON, weap, m_weapon(focus->actortype, gamemode, mutators));
                     if(!isweap(weap) || W(weap, disabled) || (m_loadout(gamemode, mutators) && weap < W_ITEM) || !m_check(W(weap, modes), W(weap, muts), gamemode, mutators))
                         weap = -1;
                 }
@@ -919,18 +887,18 @@ namespace game
             {
                 if(d->state == CS_ALIVE && isweap(d->weapselect))
                 {
-                    bool last = lastmillis-d->weaplast[d->weapselect] > 0,
+                    bool last = lastmillis-d->weaptime[d->weapselect] > 0,
                          powering = last && d->weapstate[d->weapselect] == W_S_POWER,
                          reloading = last && d->weapstate[d->weapselect] == W_S_RELOAD,
                          secondary = physics::secondaryweap(d);
-                    float amt = last ? clamp(float(lastmillis-d->weaplast[d->weapselect])/d->weapwait[d->weapselect], 0.f, 1.f) : 0.f;
+                    float amt = last ? clamp(float(lastmillis-d->weaptime[d->weapselect])/d->weapwait[d->weapselect], 0.f, 1.f) : 0.f;
                     vec col = WPCOL(d, d->weapselect, lightcol, secondary);
                     if(d->weapselect == W_FLAMER && (!reloading || amt > 0.5f) && !physics::liquidcheck(d))
                     {
                         float scale = powering ? 1.f+(amt*1.5f) : (d->weapstate[d->weapselect] == W_S_IDLE ? 1.f : (reloading ? (amt-0.5f)*2 : amt));
                         adddynlight(d->ejectpos(d->weapselect), 16*scale, col, 0, 0, DL_KEEP);
                     }
-                    if((W(d->weapselect, lightpersist) || powering) && W(d->weapselect, lightradius) > 0)
+                    if((W(d->weapselect, lightpersist)&1 || powering) && W(d->weapselect, lightradius) > 0)
                     {
                         float thresh = max(amt, 0.25f), size = W(d->weapselect, lightradius)*thresh;
                         int span = max(W2(d->weapselect, cooktime, physics::secondaryweap(d))/4, 500), interval = lastmillis%span, part = span/2;
@@ -967,10 +935,7 @@ namespace game
                     adddynlight(d->center(), d->height*intensity*pc, rescolour(d, PULSE_SHOCK).mul(pc), 0, 0, DL_KEEP);
                 }
                 if(d->actortype < A_ENEMY && illumlevel > 0 && illumradius > 0)
-                {
-                    vec col = vec::hexcolor(getcolour(d, playereffecttone)).mul(illumlevel);
-                    adddynlight(d->center(), illumradius, col, 0, 0, DL_KEEP);
-                }
+                    adddynlight(d->center(), illumradius, vec::hexcolor(getcolour(d, playereffecttone, illumlevel)), 0, 0, DL_KEEP);
             }
         }
     }
@@ -978,9 +943,9 @@ namespace game
     void boosteffect(gameent *d, const vec &pos, int num, int len, bool shape = false)
     {
         float scale = 0.4f+(rnd(40)/100.f);
-        part_create(PART_HINT, shape ? len/2 : len/10, pos, getcolour(d, playereffecttone), scale*1.5f, scale*0.75f, 0, 0);
+        part_create(PART_HINT, shape ? len/2 : len/10, pos, getcolour(d, playereffecttone, playereffecttonelevel), scale*1.5f, scale*0.75f, 0, 0);
         part_create(PART_FIREBALL, shape ? len/2 : len/10, pos, pulsecols[PULSE_FIRE][rnd(PULSECOLOURS)], scale*1.25f, scale*0.75f, 0, 0);
-        if(shape) loopi(num) regularshape(PART_FIREBALL, int(d->radius)*2, pulsecols[PULSE_FIRE][rnd(PULSECOLOURS)], 21, 1, len, pos, scale*1.25f, 0.75f, -5, 0, 10);
+        if(shape) loopi(num) createshape(PART_FIREBALL, int(d->radius)*2, pulsecols[PULSE_FIRE][rnd(PULSECOLOURS)], 21, 1, len, pos, scale*1.25f, 0.75f, -5, 0, 10);
     }
 
     void impulseeffect(gameent *d, int effect)
@@ -999,7 +964,8 @@ namespace game
 
     float spawnfade(gameent *d)
     {
-        int len = d->actortype >= A_ENEMY ? (actor[d->actortype].living ? min(ai::aideadfade, enemyspawntime) : 500) : m_delay(gamemode, mutators, d->team);
+        int len = min(m_delay(d->actortype, gamemode, mutators, d->team), AA(d->actortype, abilities)&(1<<A_A_MOVE) ? 5000 : 1000);
+        if(len <= 0 || len > deathmaxfade) len = deathmaxfade;
         if(len > 0)
         {
             int interval = min(len/3, ragdolleffect), over = max(len-interval, 1), millis = lastmillis-d->lastdeath;
@@ -1011,18 +977,17 @@ namespace game
 
     float rescale(gameent *d)
     {
-        float total = d->actortype != A_PLAYER ? (d->actortype >= A_ENEMY ? enemyscale : botscale) : PLAYER(d->model, scale);
+        float total = AA(d->actortype, scale);
         if(d->actortype >= A_ENEMY)
         {
             bool hasent = entities::ents.inrange(d->spawnpoint) && entities::ents[d->spawnpoint]->type == ACTOR;
             if(hasent && entities::ents[d->spawnpoint]->attrs[9] > 0) total *= (entities::ents[d->spawnpoint]->attrs[9]/100.f);
-            else total *= actor[clamp(d->actortype, int(A_PLAYER), int(A_MAX-1))].scale;
         }
         if(d->state != CS_SPECTATOR && d->state != CS_EDITING)
         {
             if(m_resize(gamemode, mutators))
             {
-                float minscale = 1, amtscale = m_insta(gamemode, mutators) ? 1+(d->spree*instaresizeamt) : max(d->health, 1)/float(d->actortype >= A_ENEMY ? actor[d->actortype].health*enemystrength : m_health(gamemode, mutators, d->model));
+                float minscale = 1, amtscale = m_insta(gamemode, mutators) ? 1+(d->spree*instaresizeamt) : max(d->health, 1)/float(m_health(gamemode, mutators, d->actortype));
                 if(m_resize(gamemode, mutators))
                 {
                     minscale = minresizescale;
@@ -1048,7 +1013,7 @@ namespace game
             if(d == focus && inzoom())
             {
                 int frame = lastmillis-lastzoom;
-                float pc = frame <= zoomtime ? (frame)/float(zoomtime) : 1.f;
+                float pc = frame <= W(d->weapselect, cookzoom) ? (frame)/float(W(d->weapselect, cookzoom)) : 1.f;
                 total *= zooming ? 1.f-pc : pc;
             }
         }
@@ -1087,21 +1052,17 @@ namespace game
 
         d->setscale(rescale(d), curtime, false);
         d->speedscale = d->curscale;
-        if(d->actortype > A_PLAYER)
-        {
-            bool hasent = d->actortype >= A_ENEMY && entities::ents.inrange(d->spawnpoint) && entities::ents[d->spawnpoint]->type == ACTOR;
-            if(hasent && entities::ents[d->spawnpoint]->attrs[8] > 0) d->speedscale *= entities::ents[d->spawnpoint]->attrs[8]*enemyspeed;
-            else d->speedscale *= d->actortype >= A_ENEMY ? enemyspeed : botspeed;
-        }
+        bool hasent = d->actortype >= A_ENEMY && entities::ents.inrange(d->spawnpoint) && entities::ents[d->spawnpoint]->type == ACTOR;
+        if(hasent && entities::ents[d->spawnpoint]->attrs[8] > 0) d->speedscale *= entities::ents[d->spawnpoint]->attrs[8]/100.f;
 
         float offset = d->height;
         d->o.z -= d->height;
-        if(d->state == CS_ALIVE && actor[clamp(d->actortype, int(A_PLAYER), int(A_MAX-1))].cancrouch)
+        if(d->state == CS_ALIVE && AA(d->actortype, abilities)&(1<<A_A_CROUCH))
         {
-            bool crouching = d->action[AC_CROUCH];
-            float crouchoff = 1.f-CROUCHHEIGHT, zrad = d->zradius-(d->zradius*crouchoff);
+            bool crouching = d->crouching(true);
+            float zrad = d->zradius*CROUCHHEIGHT, zoff = d->zradius-zrad;
             vec old = d->o;
-            if(!crouching) loopk(2)
+            if(!crouching) loopk(d->move || d->strafe ? 2 : 1)
             {
                 if(k)
                 {
@@ -1113,35 +1074,41 @@ namespace game
                 d->height = d->zradius;
                 if(collide(d, vec(0, 0, 1), 0, false) || collideinside)
                 {
-                    d->o.z -= d->zradius-zrad;
+                    d->o.z -= zoff;
                     d->height = zrad;
                     if(!collide(d, vec(0, 0, 1), 0, false) && !collideinside) crouching = true;
                 }
                 d->o = old;
                 d->height = offset;
+                if(crouching) break;
+            }
+            if(crouching || d->crouching())
+            {
+                float zamt = zoff*curtime/float(PHYSMILLIS);
                 if(crouching)
                 {
-                    if(d->actiontime[AC_CROUCH] >= 0)
-                        d->actiontime[AC_CROUCH] = max(PHYSMILLIS-(lastmillis-d->actiontime[AC_CROUCH]), 0)-lastmillis;
-                    break;
+                    if(d->actiontime[AC_CROUCH] <= 0) d->actiontime[AC_CROUCH] = lastmillis;
+                    if(d->height > zrad && ((d->height -= zamt) < zrad))
+                        d->height = zrad;
                 }
-                else if(k && d->actiontime[AC_CROUCH] < 0)
+                else
                 {
-                    d->actiontime[AC_CROUCH] = lastmillis-max(PHYSMILLIS-(lastmillis+d->actiontime[AC_CROUCH]), 0);
-                    break;
+                    if(d->actiontime[AC_CROUCH] >= 0) d->actiontime[AC_CROUCH] = -lastmillis;
+                    if(d->height < d->zradius && ((d->height += zamt) > d->zradius))
+                        d->height = d->zradius;
                 }
             }
-            if(d->crouching())
+            else
             {
-                int crouchtime = abs(d->actiontime[AC_CROUCH]);
-                float amt = lastmillis-crouchtime <= PHYSMILLIS ? clamp(float(lastmillis-crouchtime)/PHYSMILLIS, 0.f, 1.f) : 1.f;
-                if(!crouching) amt = 1.f-amt;
-                crouchoff *= amt;
-                d->height = d->zradius-(d->zradius*crouchoff);
+                d->height = d->zradius;
+                d->actiontime[AC_CROUCH] = 0;
             }
-            else d->height = d->zradius;
         }
-        else d->height = d->zradius;
+        else
+        {
+            d->height = d->zradius;
+            d->actiontime[AC_CROUCH] = 0;
+        }
         d->o.z += d->airmillis ? offset : d->height;
 
         d->checktags();
@@ -1170,36 +1137,52 @@ namespace game
                     d->impulse[IM_COLLECT] = 0;
                 }
                 else d->impulse[IM_COLLECT] += curtime;
+                if(!d->lastimpulsecollect) d->lastimpulsecollect = lastmillis;
             }
+            else d->lastimpulsecollect = 0;
         }
+        else d->lastimpulsecollect = 0;
 
         loopi(W_MAX) if(d->weapstate[i] != W_S_IDLE && (!gs_playing(gamestate) || d->weapselect != i || d->weapstate[i] != W_S_ZOOM))
         {
-            bool timeexpired = lastmillis-d->weaplast[i] >= d->weapwait[i]+(d->weapselect != i || d->weapstate[i] != W_S_POWER ? 0 : PHYSMILLIS);
-            if(gs_playing(gamestate) && d->state == CS_ALIVE && i == d->weapselect && d->weapstate[i] == W_S_RELOAD && timeexpired && playreloadnotify&(d == focus ? 1 : 2) && (d->ammo[i] >= W(i, ammomax) || playreloadnotify&(d == focus ? 4 : 8)))
+            bool timeexpired = lastmillis-d->weaptime[i] >= d->weapwait[i]+(d->weapselect != i || d->weapstate[i] != W_S_POWER ? 0 : PHYSMILLIS);
+            if(i < W_ALL && gs_playing(gamestate) && d->state == CS_ALIVE && i == d->weapselect && d->weapstate[i] == W_S_RELOAD && timeexpired && playreloadnotify&(d == focus ? 1 : 2) && (d->ammo[i] >= W(i, ammomax) || playreloadnotify&(d == focus ? 4 : 8)))
                 playsound(WSND(i, S_W_NOTIFY), d->o, d, 0, reloadnotifyvol, -1, -1, &d->wschan);
             if(!gs_playing(gamestate) || d->state != CS_ALIVE || timeexpired) d->setweapstate(i, W_S_IDLE, 0, lastmillis);
         }
-        if(gs_playing(gamestate) && d->state == CS_ALIVE && isweap(d->weapselect) && (d->weapstate[d->weapselect] == W_S_POWER || d->weapstate[d->weapselect] == W_S_ZOOM))
+        if(gs_playing(gamestate) && d->state == CS_ALIVE && isweap(d->weapselect))
         {
-            int millis = lastmillis-d->weaplast[d->weapselect];
-            if(millis >= 0 && millis <= d->weapwait[d->weapselect])
+            if(d->weapstate[d->weapselect] == W_S_POWER || d->weapstate[d->weapselect] == W_S_ZOOM)
             {
-                bool secondary = physics::secondaryweap(d);
-                float amt = millis/float(d->weapwait[d->weapselect]);
-                int vol = 255, snd = d->weapstate[d->weapselect] == W_S_POWER ? WSND2(d->weapselect, secondary, S_W_POWER) : WSND(d->weapselect, S_W_ZOOM);
-                if(W2(d->weapselect, cooktime, secondary)) switch(W2(d->weapselect, cooked, secondary))
+                int millis = lastmillis-d->weaptime[d->weapselect];
+                if(millis >= 0 && millis <= d->weapwait[d->weapselect])
                 {
-                    case 4: case 5: vol = 10+int(245*(1.f-amt)); break; // longer
-                    case 1: case 2: case 3: default: vol = 10+int(245*amt); break; // shorter
+                    bool secondary = physics::secondaryweap(d);
+                    float amt = millis/float(d->weapwait[d->weapselect]);
+                    int vol = 255, snd = d->weapstate[d->weapselect] == W_S_POWER ? WSND2(d->weapselect, secondary, S_W_POWER) : WSND(d->weapselect, S_W_ZOOM);
+                    if(W2(d->weapselect, cooktime, secondary)) switch(W2(d->weapselect, cooked, secondary))
+                    {
+                        case 4: case 5: vol = 10+int(245*(1.f-amt)); break; // longer
+                        case 1: case 2: case 3: default: vol = 10+int(245*amt); break; // shorter
+                    }
+                    if(issound(d->pschan)) sounds[d->pschan].vol = vol;
+                    else playsound(snd, d->o, d, SND_LOOP, vol, -1, -1, &d->pschan);
                 }
-                if(issound(d->pschan)) sounds[d->pschan].vol = vol;
-                else playsound(snd, d->o, d, SND_LOOP, vol, -1, -1, &d->pschan);
+                else if(d->pschan >= 0)
+                {
+                    if(issound(d->pschan)) removesound(d->pschan);
+                    d->pschan = -1;
+                }
             }
             else if(d->pschan >= 0)
             {
                 if(issound(d->pschan)) removesound(d->pschan);
                 d->pschan = -1;
+            }
+            if(W2(d->weapselect, cooked, true)&W_C_KEEP && d->prevstate[d->weapselect] == W_S_ZOOM && !d->action[AC_SECONDARY])
+            {
+                d->prevstate[d->weapselect] = W_S_IDLE;
+                d->prevtime[d->weapselect] = 0;
             }
         }
         else if(d->pschan >= 0)
@@ -1237,17 +1220,33 @@ namespace game
         loopv(d->icons) if(lastmillis-d->icons[i].millis > d->icons[i].fade) d->icons.remove(i--);
     }
 
-
-    void otherplayers()
+    void checkfloor(gameent *d)
     {
+        if(d->state != CS_ALIVE) return;
+        vec pos = d->feetpos();
+        if(!d->turnside && (d->physstate >= PHYS_SLOPE || d->onladder || physics::liquidcheck(d)) && pos.z > 0 && d->floortime(lastmillis))
+        {
+            int mat = lookupmaterial(pos);
+            if(!isclipped(mat&MATF_VOLUME) && ((mat&MATF_VOLUME) != int(MAT_LAVA)) && !(mat&MAT_DEATH)) d->floorpos = pos;
+        }
+    }
+
+    void checkplayers()
+    {
+        checkfloor(player1);
         loopv(players) if(players[i])
         {
             gameent *d = players[i];
+            if(d->ai)
+            {
+                checkfloor(d);
+                continue;
+            }
+            if(gs_playing(gamestate) && (d->state == CS_DEAD || d->state == CS_WAITING)) entities::checkitems(d);
             const int lagtime = totalmillis-d->lastupdate;
-            if(d->ai || !lagtime || !gs_playing(gamestate)) continue;
+            if(!lagtime || !gs_playing(gamestate)) continue;
             //else if(lagtime > 1000) continue;
             physics::smoothplayer(d, 1, false);
-            if(gs_playing(gamestate) && (d->state == CS_DEAD || d->state == CS_WAITING)) entities::checkitems(d);
         }
     }
 
@@ -1256,7 +1255,7 @@ namespace game
         if(wr_burns(weap, flags))
         {
             d->lastrestime[WR_BURN] = lastmillis;
-            if(isweap(weap)) d->lastres[WR_BURN] = lastmillis;
+            if(isweap(weap) || flags&HIT_MATERIAL) d->lastres[WR_BURN] = lastmillis;
             else return true;
         }
         return false;
@@ -1267,7 +1266,7 @@ namespace game
         if(wr_bleeds(weap, flags))
         {
             d->lastrestime[WR_BLEED] = lastmillis;
-            if(isweap(weap)) d->lastres[WR_BLEED] = lastmillis;
+            if(isweap(weap) || flags&HIT_MATERIAL) d->lastres[WR_BLEED] = lastmillis;
             else return true;
         }
         return false;
@@ -1278,7 +1277,7 @@ namespace game
         if(wr_shocks(weap, flags))
         {
             d->lastrestime[WR_SHOCK] = lastmillis;
-            if(isweap(weap)) d->lastres[WR_SHOCK] = lastmillis;
+            if(isweap(weap) || flags&HIT_MATERIAL) d->lastres[WR_SHOCK] = lastmillis;
             else return true;
         }
         return false;
@@ -1291,8 +1290,8 @@ namespace game
         gameent *d, *v;
         int weap, damage, flags, millis;
 
-        damagemerge() { millis = totalmillis; }
-        damagemerge(gameent *d, gameent *v, int weap, int damage, int flags) : d(d), v(v), weap(weap), damage(damage), flags(flags) { millis = totalmillis; }
+        damagemerge() { millis = totalmillis ? totalmillis : 1; }
+        damagemerge(gameent *d, gameent *v, int weap, int damage, int flags) : d(d), v(v), weap(weap), damage(damage), flags(flags) { millis = totalmillis ? totalmillis : 1; }
 
         bool merge(const damagemerge &m)
         {
@@ -1358,54 +1357,65 @@ namespace game
     static int alarmchan = -1;
     void hiteffect(int weap, int flags, int damage, gameent *d, gameent *v, vec &dir, vec &vel, float dist, bool local)
     {
-        bool burning = burn(d, weap, flags), bleeding = bleed(d, weap, flags), shocking = shock(d, weap, flags);
-        if(!local || burning || bleeding || shocking)
+        bool burning = burn(d, weap, flags), bleeding = bleed(d, weap, flags), shocking = shock(d, weap, flags), material = flags&HIT_MATERIAL;
+        if(!local || burning || bleeding || shocking || material)
         {
             float scale = isweap(weap) && WF(WK(flags), weap, damage, WS(flags)) ? abs(damage)/float(WF(WK(flags), weap, damage, WS(flags))) : 1.f;
-            if(hithurts(flags) && damage > 0)
+            if(hitdealt(flags) && damage != 0 && v == focus) hud::hit(damage, d->o, d, weap, flags);
+            if(hitdealt(flags) && damage > 0)
             {
                 if(d == focus) hud::damage(damage, v->o, v, weap, flags);
                 if(actor[d->actortype].living)
                 {
                     vec p = d->headpos(-d->height/4);
                     if(!nogore && bloodscale > 0)
-                        part_splash(PART_BLOOD, int(clamp(damage/20, 1, 5)*bloodscale)*(bleeding ? 2 : 1), bloodfade, p, 0x229999, (rnd(bloodsize/2)+(bloodsize/2))/10.f, 1, 100, DECAL_BLOOD, int(d->radius), 10);
+                        part_splash(PART_BLOOD, int(clamp(damage/20, 1, 5)*bloodscale)*(bleeding || material ? 2 : 1), bloodfade, p, 0x229999, (rnd(bloodsize/2)+(bloodsize/2))/10.f, 1, 100, DECAL_BLOOD, int(d->radius), 10);
                     if(nogore != 2 && (bloodscale <= 0 || bloodsparks))
-                        part_splash(PART_PLASMA, int(clamp(damage/20, 1, 5))*(bleeding ? 2: 1), bloodfade, p, 0x882222, 1, 0.5f, 50, DECAL_STAIN, int(d->radius));
+                        part_splash(PART_PLASMA, int(clamp(damage/20, 1, 5))*(bleeding || material ? 2: 1), bloodfade, p, 0x882222, 1, 0.5f, 50, DECAL_STAIN, int(d->radius));
                 }
                 if(d != v)
                 {
                     bool sameteam = m_team(gamemode, mutators) && d->team == v->team;
                     if(!sameteam) pushdamagemerge(d, v, weap, damage, (burning ? damagemerge::BURN : 0)|(bleeding ? damagemerge::BLEED : 0)|(shocking ? damagemerge::SHOCK : 0));
-                    else if(v == player1 && !burning && !bleeding && !shocking)
+                    else if(v == player1 && !burning && !bleeding && !shocking && !material)
                     {
                         player1->lastteamhit = d->lastteamhit = lastmillis;
                         if(!issound(alarmchan)) playsound(S_ALARM, v->o, v, 0, -1, -1, -1, &alarmchan);
                     }
-                    if(!burning && !bleeding && !shocking && !sameteam) v->lasthit = totalmillis;
+                    if(!burning && !bleeding && !shocking && !material && !sameteam) v->lasthit = totalmillis ? totalmillis : 1;
                 }
                 if(d->actortype < A_ENEMY && !issound(d->vschan)) playsound(S_PAIN, d->o, d, 0, -1, -1, -1, &d->vschan);
                 d->lastpain = lastmillis;
                 if(!WK(flags)) playsound(WSND2(weap, WS(flags), S_W_IMPACT), vec(d->center()).add(vec(dir).mul(dist)), NULL, 0, clamp(int(255*scale), 64, 255));
             }
-            if(actor[d->actortype].canmove)
+            if(AA(d->actortype, abilities)&(1<<A_A_PUSHABLE))
             {
                 if(weap == -1 && shocking && shockstun)
                 {
-                    float amt = WRS(flags&HIT_WAVE || !hithurts(flags) ? wavestunscale : (d->health <= 0 ? deadstunscale : hitstunscale), stun, gamemode, mutators),
-                          s = G(shockstunscale)*amt, g = G(shockstunfall)*amt;
+                    float amt = WRS(flags&HIT_WAVE || !hitdealt(flags) ? wavestunscale : (d->health <= 0 ? deadstunscale : hitstunscale), stun, gamemode, mutators);
+                    if(m_dm_gladiator(gamemode, mutators))
+                    {
+                        float extra = flags&HIT_WAVE || !hitdealt(flags) ? gladiatorextrawavestunscale : (d->health <= 0 ? gladiatorextradeadstunscale : gladiatorextrahitstunscale);
+                        amt *= m_health(gamemode, mutators, d->actortype)/max(d->health, 1)*extra;
+                    }
+                    float s = G(shockstunscale)*amt, g = G(shockstunfall)*amt;
                     d->addstun(weap, lastmillis, G(shockstuntime), shockstun&W_N_STADD ? s : 0.f, shockstun&W_N_GRADD ? g : 0.f);
                     if(shockstun&W_N_STIMM && s > 0) d->vel.mul(1.f-clamp(s, 0.f, 1.f));
                     if(shockstun&W_N_GRIMM && g > 0) d->falling.mul(1.f-clamp(g, 0.f, 1.f));
                     if(shockstun&W_N_SLIDE) d->impulse[IM_SLIP] = lastmillis;
                 }
-                else if(isweap(weap) && !burning && !bleeding && !shocking && WF(WK(flags), weap, damage, WS(flags)))
+                else if(isweap(weap) && !burning && !bleeding && !material && !shocking && WF(WK(flags), weap, damage, WS(flags)))
                 {
                     if(WF(WK(flags), weap, stun, WS(flags)))
                     {
                         int stun = WF(WK(flags), weap, stun, WS(flags));
-                        float amt = scale*WRS(flags&HIT_WAVE || !hithurts(flags) ? wavestunscale : (d->health <= 0 ? deadstunscale : hitstunscale), stun, gamemode, mutators),
-                              s = WF(WK(flags), weap, stunscale, WS(flags))*amt, g = WF(WK(flags), weap, stunfall, WS(flags))*amt;
+                        float amt = scale*WRS(flags&HIT_WAVE || !hitdealt(flags) ? wavestunscale : (d->health <= 0 ? deadstunscale : hitstunscale), stun, gamemode, mutators);
+                        if(m_dm_gladiator(gamemode, mutators))
+                        {
+                            float extra = flags&HIT_WAVE || !hitdealt(flags) ? gladiatorextrawavestunscale : (d->health <= 0 ? gladiatorextradeadstunscale : gladiatorextrahitstunscale);
+                            amt *= m_health(gamemode, mutators, d->actortype)/max(d->health, 1)*extra;
+                        }
+                        float s = WF(WK(flags), weap, stunscale, WS(flags))*amt, g = WF(WK(flags), weap, stunfall, WS(flags))*amt;
                         d->addstun(weap, lastmillis, int(scale*WF(WK(flags), weap, stuntime, WS(flags))), stun&W_N_STADD ? s : 0.f, stun&W_N_GRADD ? g : 0.f);
                         if(stun&W_N_STIMM && s > 0) d->vel.mul(1.f-clamp(s, 0.f, 1.f));
                         if(stun&W_N_GRIMM && g > 0) d->falling.mul(1.f-clamp(g, 0.f, 1.f));
@@ -1413,8 +1423,8 @@ namespace game
                     }
                     if(WF(WK(flags), weap, hitpush, WS(flags)) != 0 || WF(WK(flags), weap, hitvel, WS(flags)) != 0)
                     {
-                        float amt = scale*WRS(flags&HIT_WAVE || !hithurts(flags) ? wavepushscale : (d->health <= 0 ? deadpushscale : hitpushscale), push, gamemode, mutators);
-                        bool doquake = hithurts(flags) && damage > 0;
+                        float amt = scale;
+                        bool doquake = hitdealt(flags) && damage > 0;
                         if(d == v)
                         {
                             float modify = WF(WK(flags), weap, damageself, WS(flags))*G(damageselfscale);
@@ -1427,14 +1437,30 @@ namespace game
                             if(modify != 0) amt *= 1/modify;
                             else doquake = false;
                         }
-                        float hit = WF(WK(flags), weap, hitpush, WS(flags))*amt;
+                        float hit = WF(WK(flags), weap, hitpush, WS(flags));
                         if(hit != 0)
                         {
-                            d->vel.add(vec(dir).mul(hit));
+                            float modify = WRS(flags&HIT_WAVE || !hitdealt(flags) ? wavepushscale : (d->health <= 0 ? deadpushscale : hitpushscale), push, gamemode, mutators);
+                            if(m_dm_gladiator(gamemode, mutators))
+                            {
+                                float extra = flags&HIT_WAVE || !hitdealt(flags) ? gladiatorextrawavepushscale : (d->health <= 0 ? gladiatorextradeadpushscale : gladiatorextrahitpushscale);
+                                modify *= m_health(gamemode, mutators, d->actortype)/max(d->health, 1)*extra;
+                            }
+                            d->vel.add(vec(dir).mul(hit*modify));
                             if(doquake) d->quake = min(d->quake+max(int(hit), 1), quakelimit);
                         }
                         hit = WF(WK(flags), weap, hitvel, WS(flags))*amt;
-                        if(hit != 0) d->vel.add(vec(vel).mul(hit));
+                        if(hit != 0)
+                        {
+                            float modify = WRS(flags&HIT_WAVE || !hitdealt(flags) ? wavevelscale : (d->health <= 0 ? deadvelscale : hitvelscale), vel, gamemode, mutators);
+                            if(m_dm_gladiator(gamemode, mutators))
+                            {
+                                float extra = flags&HIT_WAVE || !hitdealt(flags) ? gladiatorextrawavevelscale : (d->health <= 0 ? gladiatorextradeadvelscale : gladiatorextrahitvelscale);
+                                modify *= m_health(gamemode, mutators, d->actortype)/max(d->health, 1)*extra;
+                            }
+                            d->vel.add(vec(vel).mul(hit*modify));
+                            if(doquake) d->quake = min(d->quake+max(int(hit), 1), quakelimit);
+                        }
                     }
                 }
             }
@@ -1445,12 +1471,12 @@ namespace game
     void damaged(int weap, int flags, int damage, int health, gameent *d, gameent *v, int millis, vec &dir, vec &vel, float dist)
     {
         if(d->state != CS_ALIVE || !gs_playing(gamestate)) return;
-        if(hithurts(flags))
+        if(hitdealt(flags))
         {
             d->health = health;
             if(damage > 0)
             {
-                d->lastregen = 0;
+                d->lastregen = d->lastregenamt = 0;
                 d->lastpain = lastmillis;
                 v->totaldamage += damage;
             }
@@ -1460,7 +1486,7 @@ namespace game
 
     void killed(int weap, int flags, int damage, gameent *d, gameent *v, vector<gameent *> &log, int style, int material)
     {
-        d->lastregen = 0;
+        d->lastregen = d->lastregenamt = 0;
         d->lastpain = lastmillis;
         d->state = CS_DEAD;
         d->obliterated = (style&FRAG_OBLITERATE)!=0;
@@ -1487,6 +1513,7 @@ namespace game
             else if(flags&HIT_SPEC) concatstring(d->obit, obitspectator);
             else if(flags&HIT_MATERIAL && curmat&MAT_WATER) concatstring(d->obit, getobitwater(material, obitdrowned));
             else if(flags&HIT_MATERIAL && curmat&MAT_LAVA) concatstring(d->obit, getobitlava(material, obitmelted));
+            else if(flags&HIT_MATERIAL && (material&MATF_FLAGS)&MAT_HURT) concatstring(d->obit, *obithurt ? obithurt : obithurtmat);
             else if(flags&HIT_MATERIAL) concatstring(d->obit, *obitdeath ? obitdeath : obitdeathmat);
             else if(flags&HIT_LOST) concatstring(d->obit, *obitfall ? obitfall : obitlost);
             else if(flags && isweap(weap) && !burning && !bleeding && !shocking) concatstring(d->obit, WF(WK(flags), weap, obitsuicide, WS(flags)));
@@ -1684,7 +1711,7 @@ namespace game
             if(v->state == CS_ALIVE && d->actortype < A_ENEMY)
             {
                 copystring(v->obit, d->obit);
-                v->lastkill = totalmillis;
+                v->lastkill = totalmillis ? totalmillis : 1;
             }
         }
         if(dth >= 0) playsound(dth, d->o, d, 0, -1, -1, -1, &d->vschan);
@@ -1718,7 +1745,7 @@ namespace game
             {
                 if(found[vanities[d->vitems[k]].type]) continue;
                 if(!(vanities[d->vitems[k]].cond&2)) continue;
-                projs::create(pos, pos, true, d, PRJ_VANITY, (rnd(gibfade)+gibfade)*2, 0, 0, rnd(50)+10, -1, d->vitems[k], 0, 0);
+                projs::create(pos, pos, true, d, PRJ_VANITY, -1, HIT_NONE, (rnd(gibfade)+gibfade)*2, 0, 0, rnd(50)+10, -1, d->vitems[k], 0, 0);
                 found[vanities[d->vitems[k]].type]++;
             }
         }
@@ -1727,12 +1754,12 @@ namespace game
         {
             int gib = clamp(max(damage, 10)/20, 1, 10), amt = int((rnd(gib)+gib)*gibscale);
             if(d->obliterated) amt *= 2;
-            loopi(amt) projs::create(pos, pos, true, d, nogore ? PRJ_DEBRIS : PRJ_GIBS, rnd(gibfade)+gibfade, 0, rnd(500)+1, rnd(50)+10);
+            loopi(amt) projs::create(pos, pos, true, d, nogore ? PRJ_DEBRIS : PRJ_GIBS, -1, HIT_NONE, rnd(gibfade)+gibfade, 0, rnd(500)+1, rnd(50)+10);
         }
         if(m_team(gamemode, mutators) && d->team == v->team && d != v && v == player1 && isweap(weap) && WF(WK(flags), weap, damagepenalty, WS(flags)))
         {
             hud::teamkills.add(totalmillis);
-            if(hud::numteamkills() >= teamkillwarn) hud::lastteam = totalmillis;
+            if(hud::numteamkills() >= teamkillwarn) hud::lastteam = totalmillis ? totalmillis : 1;
         }
         if(m_bomber(gamemode)) bomber::killed(d, v);
         ai::killed(d, v);
@@ -1787,13 +1814,6 @@ namespace game
         return NULL;
     }
 
-    int numwaiting()
-    {
-        int n = 0;
-        loopv(waiting) if(waiting[i]->state == CS_WAITING && (!m_team(gamemode, mutators) || waiting[i]->team == player1->team)) n++;
-        return n;
-    }
-
     void clientdisconnected(int cn, int reason)
     {
         if(!players.inrange(cn)) return;
@@ -1826,7 +1846,6 @@ namespace game
         client::clearvotes(d);
         projs::remove(d);
         removedamagemerges(d);
-        removeannounce(d);
         if(m_capture(gamemode)) capture::removeplayer(d);
         else if(m_defend(gamemode)) defend::removeplayer(d);
         else if(m_bomber(gamemode)) bomber::removeplayer(d);
@@ -1848,33 +1867,30 @@ namespace game
 
     void resetmap(bool empty) // called just before a map load
     {
-        if(!empty) smartmusic(true);
     }
 
-    void startmap(const char *name, const char *reqname, bool empty)    // called just after a map load
+    void startmap(bool empty) // called just after a map load
     {
-        ai::startmap(name, reqname, empty);
-        gamestate = m_play(gamemode) ? G_S_WAITING : G_S_PLAYING;
-        maptime = 0;
+        ai::startmap(empty);
+        if(!empty)
+        {
+            gamestate = G_S_WAITING;
+            maptime = 0;
+        }
         specreset();
         removedamagemergeall();
-        removeannounceall();
         projs::reset();
         physics::reset();
         resetworld();
         resetcursor();
         resetsway();
         if(!empty) preload();
-        // reset perma-state
         gameent *d;
         int numdyns = numdynents();
         loopi(numdyns) if((d = (gameent *)iterdynents(i)) && gameent::is(d)) d->mapchange(lastmillis, gamemode, mutators);
         entities::spawnplayer(player1); // prevent the player from being in the middle of nowhere
-        resetcamera();
-        client::sendcrcinfo = true;
-        if(!empty) client::sendgameinfo = true;
-        copystring(clientmap, reqname ? reqname : (name ? name : ""));
         if(showloadoutmenu && m_loadout(gamemode, mutators)) wantsloadoutmenu = true;
+        resetcamera();
     }
 
     gameent *intersectclosest(vec &from, vec &to, gameent *at)
@@ -1927,7 +1943,12 @@ namespace game
         return false;
     }
 
-    int findcolour(gameent *d, bool tone, bool mix)
+    int levelcolour(int colour, float level)
+    {
+        return (clamp(int((colour>>16)*level), 0, 255)<<16)|(clamp(int(((colour>>8)&0xFF)*level), 0, 255)<<8)|(clamp(int((colour&0xFF)*level), 0, 255));
+    }
+
+    int findcolour(gameent *d, bool tone, bool mix, float level)
     {
         if(tone)
         {
@@ -1935,10 +1956,10 @@ namespace game
             if(!col && isweap(d->weapselect))
             {
                 col = W(d->weapselect, colour);
-                int lastweap = d->getlastweap(m_weapon(gamemode, mutators));
+                int lastweap = d->getlastweap(m_weapon(d->actortype, gamemode, mutators));
                 if(isweap(lastweap) && d->weapselect != lastweap && (d->weapstate[d->weapselect] == W_S_USE || d->weapstate[d->weapselect] == W_S_SWITCH))
                 {
-                    float amt = (lastmillis-d->weaplast[d->weapselect])/float(d->weapwait[d->weapselect]);
+                    float amt = (lastmillis-d->weaptime[d->weapselect])/float(d->weapwait[d->weapselect]);
                     int r2 = (col>>16), g2 = ((col>>8)&0xFF), b2 = (col&0xFF),
                         c = W(lastweap, colour), r1 = (c>>16), g1 = ((c>>8)&0xFF), b1 = (c&0xFF),
                         r3 = clamp(int((r1*(1-amt))+(r2*amt)), 0, 255),
@@ -1958,31 +1979,31 @@ namespace game
                         b3 = clamp(int((b1*(1-playertonemix))+(b2*playertonemix)), 0, 255);
                     col = (r3<<16)|(g3<<8)|b3;
                 }
-                return col;
+                return levelcolour(col, level);
             }
         }
-        return TEAM(d->team, colour);
+        return levelcolour(TEAM(d->team, colour), level);
     }
 
-    int getcolour(gameent *d, int level)
+    int getcolour(gameent *d, int type, float level)
     {
-        switch(level)
+        switch(type)
         {
-            case -1: return d->colour;
-            case CTONE_TMIX: return findcolour(d, true, d->team != T_NEUTRAL); break;
-            case CTONE_AMIX: return findcolour(d, true, d->team == T_NEUTRAL); break;
-            case CTONE_MIXED: return findcolour(d, true, true); break;
-            case CTONE_ALONE: return findcolour(d, d->team != T_NEUTRAL); break;
-            case CTONE_TEAMED: return findcolour(d, d->team == T_NEUTRAL); break;
-            case CTONE_TONE: return findcolour(d, true); break;
-            case CTONE_TEAM: default: return findcolour(d, false); break;
+            case -1: return levelcolour(d->colour, level);
+            case CTONE_TMIX: return findcolour(d, true, d->team != T_NEUTRAL, level); break;
+            case CTONE_AMIX: return findcolour(d, true, d->team == T_NEUTRAL, level); break;
+            case CTONE_MIXED: return findcolour(d, true, true, level); break;
+            case CTONE_ALONE: return findcolour(d, d->team != T_NEUTRAL, false, level); break;
+            case CTONE_TEAMED: return findcolour(d, d->team == T_NEUTRAL, false, level); break;
+            case CTONE_TONE: return findcolour(d, true, false, level); break;
+            case CTONE_TEAM: default: return findcolour(d, false, false, level); break;
         }
     }
 
     const char *colourname(gameent *d, char *name, bool icon, bool dupname, int colour)
     {
         if(!name) name = d->name;
-        static string colored; colored[0] = 0; string colortmp;
+        static string colored; colored[0] = '\0'; string colortmp;
         if(colour) concatstring(colored, "\fs");
         if(icon)
         {
@@ -2018,7 +2039,7 @@ namespace game
     const char *colourteam(int team, const char *icon)
     {
         if(team < 0 || team > T_MAX) team = T_NEUTRAL;
-        static string teamed; teamed[0] = 0; string teamtmp;
+        static string teamed; teamed[0] = '\0'; string teamtmp;
         concatstring(teamed, "\fs");
         formatstring(teamtmp, "\f[%d]", TEAM(team, colour));
         concatstring(teamed, teamtmp);
@@ -2037,6 +2058,8 @@ namespace game
         if((d == player1 || d->ai) && d->state == CS_ALIVE && d->suicided < 0)
         {
             burn(d, -1, flags);
+            bleed(d, -1, flags);
+            shock(d, -1, flags);
             client::addmsg(N_SUICIDE, "ri3", d->clientnum, flags, d->inmaterial);
             d->suicided = lastmillis;
         }
@@ -2050,7 +2073,7 @@ namespace game
         return vec::hexcolor(pulsecols[c][n%PULSECOLOURS]).lerp(vec::hexcolor(pulsecols[c][n2%PULSECOLOURS]), (lastmillis%50)/50.0f);
     }
 
-    void particletrack(particle *p, uint type, int &ts,  bool lastpass)
+    void particletrack(particle *p, uint type, int &ts, bool step)
     {
         if(!p || !p->owner || !gameent::is(p->owner)) return;
         gameent *d = (gameent *)p->owner;
@@ -2079,7 +2102,7 @@ namespace game
         }
     }
 
-    void newmap(int size) { client::addmsg(N_NEWMAP, "ri", size); }
+    void newmap(int size, const char *mname) { client::addmsg(N_NEWMAP, "ris", size, mname); }
 
     void fixfullrange(float &yaw, float &pitch, float &roll, bool full)
     {
@@ -2113,8 +2136,8 @@ namespace game
         {
             checkzoom();
             int frame = lastmillis-lastzoom;
-            float zoom = zoomlimitmax-((zoomlimitmax-zoomlimitmin)/float(zoomlevels)*zoomlevel),
-                  diff = float(fov()-zoom), amt = frame < zoomtime ? clamp(frame/float(zoomtime), 0.f, 1.f) : 1.f;
+            float zoom = W(game::focus->weapselect, cookzoommax)-((W(game::focus->weapselect, cookzoommax)-W(game::focus->weapselect, cookzoommin))/float(zoomlevels)*zoomlevel),
+                  diff = float(fov()-zoom), amt = frame < W(focus->weapselect, cookzoom) ? clamp(frame/float(W(focus->weapselect, cookzoom)), 0.f, 1.f) : 1.f;
             if(!zooming) amt = 1.f-amt;
             curfov = fov()-(amt*diff);
         }
@@ -2233,13 +2256,15 @@ namespace game
                 height = zradius = radius = xradius = yradius = 2;
             }
         } c;
-        if(!dist && !side) return c.o = pos;
-        vec dir[3];
-        if(dist) vecfromyawpitch(yaw, pitch, -1, 0, dir[0]);
-        if(side) vecfromyawpitch(yaw, pitch, 0, -1, dir[1]);
-        dir[2] = dir[0].mul(dist).add(dir[1].mul(side)).normalize();
         c.o = pos;
-        physics::movecamera(&c, dir[2], dist, 0.1f);
+        if(dist || side)
+        {
+            vec dir[3] = { vec(0, 0, 0), vec(0, 0, 0), vec(0, 0, 0) };
+            if(dist) vecfromyawpitch(yaw, pitch, -1, 0, dir[0]);
+            if(side) vecfromyawpitch(yaw, pitch, 0, -1, dir[1]);
+            dir[2] = dir[0].mul(dist).add(dir[1].mul(side)).normalize();
+            physics::movecamera(&c, dir[2], dist, 0.1f);
+        }
         return c.o;
     }
 
@@ -2271,10 +2296,11 @@ namespace game
         if(firstpersonbob && gs_playing(gamestate) && d->state == CS_ALIVE)
         {
             float scale = 1;
-            if(d == focus && inzoom())
+            if(gameent::is(d) && d == focus && inzoom())
             {
+                gameent *e = (gameent *)d;
                 int frame = lastmillis-lastzoom;
-                float pc = frame <= zoomtime ? (frame)/float(zoomtime) : 1.f;
+                float pc = frame <= W(e->weapselect, cookzoom) ? (frame)/float(W(e->weapselect, cookzoom)) : 1.f;
                 scale *= zooming ? 1.f-pc : pc;
             }
             if(firstpersonbobtopspeed) scale *= clamp(d->vel.magnitude()/firstpersonbobtopspeed, firstpersonbobmin, 1.f);
@@ -2450,6 +2476,48 @@ namespace game
         return false;
     }
 
+    bool camcheck(vec &pos, int csize)
+    {
+        if(!insideworld(pos)) return false;
+        static struct cecam : physent
+        {
+            cecam()
+            {
+                physent::reset();
+                type = ENT_CAMERA;
+                state = CS_ALIVE;
+                height = zradius = radius = xradius = yradius = 2;
+            }
+        } c;
+        c.o = pos;
+        if(csize) c.o.z += csize;
+        if(!collide(&c, vec(0, 0, 0), 0, false))
+        {
+            pos = c.o;
+            return true;
+        }
+        if(csize) loopi(csize)
+        {
+            c.o.z -= 1;
+            if(!collide(&c, vec(0, 0, 0), 0, false))
+            {
+                pos = c.o;
+                return true;
+            }
+        }
+        static const int sphereyawchecks[8] = { 180, 135, 225, 90, 270, 45, 315 }, spherepitchchecks[5] = { 0, 45, -45, 89, -89 };
+        loopi(5) loopj(5) loopk(8)
+        {
+            c.o = vec(pos).add(vec(sphereyawchecks[k]*RAD, spherepitchchecks[j]*RAD).mul((i+1)*2));
+            if(!collide(&c, vec(0, 0, 0), 0, false))
+            {
+                pos = c.o;
+                return true;
+            }
+        }
+        return false;
+    }
+
     bool cameratv()
     {
         if(!tvmode(false)) return false;
@@ -2462,30 +2530,29 @@ namespace game
             loopv(entities::ents)
             {
                 gameentity &e = *(gameentity *)entities::ents[i];
-                cament *c = cameras.add(new cament(cameras.length(), cament::ENTITY, i));
-                c->o = e.o;
-                c->o.z += (e.type == PLAYERSTART ? playerdims[0][2] : enttype[e.type].radius)+2;
+                if(e.type == MAPSOUND || e.type == MAPMODEL) continue;
+                vec pos = e.o;
+                if(!camcheck(pos, (e.type == PLAYERSTART ? actor[A_PLAYER].height : enttype[e.type].radius)+2)) continue;
+                cameras.add(new cament(cameras.length(), cament::ENTITY, i, pos));
             }
             ai::getwaypoints();
             loopv(ai::waypoints)
             {
                 ai::waypoint &w = ai::waypoints[i];
-                cament *c = cameras.add(new cament(cameras.length(), cament::WAYPOINT, i));
-                c->o = w.o;
-                c->o.z += playerdims[0][2]+2;
+                vec pos = w.o;
+                if(!camcheck(pos, actor[A_PLAYER].height+2)) continue;
+                cameras.add(new cament(cameras.length(), cament::WAYPOINT, i, pos));
             }
             starttvcamdyn = cameras.length();
             loopv(players) if(players[i])
             {
                 gameent *d = players[i];
                 if(d->actortype >= A_ENEMY) continue;
-                cament *c = cameras.add(new cament(cameras.length(), cament::PLAYER, d->clientnum));
-                c->o = d->headpos();
-                c->player = d;
+                vec pos = d->headpos();
+                cameras.add(new cament(cameras.length(), cament::PLAYER, d->clientnum, pos, d));
             }
-            cament *c = cameras.add(new cament(cameras.length(), cament::PLAYER, player1->clientnum));
-            c->o = player1->headpos();
-            c->player = player1;
+            vec pos = player1->headpos();
+            cameras.add(new cament(cameras.length(), cament::PLAYER, player1->clientnum, pos, player1));
             if(m_capture(gamemode)) capture::checkcams(cameras);
             else if(m_defend(gamemode)) defend::checkcams(cameras);
             else if(m_bomber(gamemode)) bomber::checkcams(cameras);
@@ -2511,7 +2578,7 @@ namespace game
         }
         if(!found) spectvfollow = spectvfollowing = -1;
         camrefresh(cam);
-        #define stvf(z) (!gs_playing(gamestate) ? spectvinterm##z : (spectvfollowing >= 0 ? spectvfollow##z : spectv##z))
+        #define stvf(z) (!gs_playing(gamestate) ? spectvinter##z : (spectvfollowing >= 0 ? spectvfollow##z : spectv##z))
         if(forced)
         {
             camupdate(cam, amt, renew, true);
@@ -2544,6 +2611,7 @@ namespace game
                         c->reset(); // this camera sucks then
                         c->ignore = true;
                     }
+                    else loopi(cament::MAX) c->lastinview[i] = c->inview[i];
                 }
                 reset = true;
             }
@@ -2599,6 +2667,7 @@ namespace game
             if(!renew)
             {
                 float speed = curtime/float(chase ? followtvspeed : stvf(speed));
+                if(cam->lastinview[cament::PLAYER]-cam->inview[cament::PLAYER] >= int(cam->lastinview[cament::PLAYER]*spectvaccelthresh)) speed *= spectvaccel;
                 #define SCALEAXIS(x) \
                     float x##scale = 1, adj##x = camera1->x, off##x = x, x##thresh = chase ? followtv##x##thresh : stvf(x##thresh); \
                     if(adj##x < x - 180.0f) adj##x += 360.0f; \
@@ -2683,7 +2752,7 @@ namespace game
             if(d == focus && inzoom())
             {
                 int frame = lastmillis-lastzoom;
-                float pc = frame <= zoomtime ? (frame)/float(zoomtime) : 1.f;
+                float pc = frame <= W(d->weapselect, cookzoom) ? (frame)/float(W(d->weapselect, cookzoom)) : 1.f;
                 scale *= zooming ? 1.f-pc : pc;
             }
             if(firstpersonbobtopspeed) scale *= clamp(d->vel.magnitude()/firstpersonbobtopspeed, firstpersonbobmin, 1.f);
@@ -2778,7 +2847,11 @@ namespace game
             checkoften(player1, true);
             loopv(players) if(players[i]) checkoften(players[i], players[i]->ai != NULL);
             if(!allowmove(player1)) player1->stopmoving(player1->state < CS_SPECTATOR);
-            if(focus->state == CS_ALIVE && gs_playing(gamestate)) zoomset(focus->zooming(), lastmillis);
+            if(focus->state == CS_ALIVE && gs_playing(gamestate) && isweap(focus->weapselect))
+            {
+                int zoomtime = focus->zooming();
+                zoomset(zoomtime ? true : false, zoomtime ? zoomtime : lastmillis);
+            }
             else if(zooming) zoomset(false, 0);
 
             physics::update();
@@ -2792,8 +2865,7 @@ namespace game
                 else if(m_bomber(gamemode)) bomber::update();
                 if(player1->state == CS_ALIVE) weapons::shoot(player1, worldpos);
             }
-            otherplayers();
-            checkannounce();
+            checkplayers();
             flushdamagemerges();
             if(!menuactive())
             {
@@ -2926,7 +2998,7 @@ namespace game
             o.sub(vec(yaw*RAD, 0.f).rotate_around_z(90*RAD).mul(firstpersonbodyside));
             if(firstpersonbodyfeet >= 0 && d->wantshitbox())
             {
-                float minz = max(d->toe[0].z, d->toe[1].z)+firstpersonbodyfeet;
+                float minz = max(d->toe[0].z, d->toe[1].z)+(firstpersonbodyfeet*size);
                 if(minz > camera1->o.z) o.z -= minz-camera1->o.z;
             }
         }
@@ -2952,7 +3024,7 @@ namespace game
         else
         {
             bool melee = d->hasmelee(lastmillis, true, d->sliding(true), onfloor);
-            if(secondary && allowmove(d) && actor[d->actortype].canmove)
+            if(secondary && allowmove(d) && AA(d->actortype, abilities)&(1<<A_A_MOVE))
             {
                 if(physics::liquidcheck(d) && d->physstate <= PHYS_FALL)
                     anim |= ((d->move || d->strafe || d->vel.z+d->falling.z>0 ? int(ANIM_SWIM) : int(ANIM_SINK))|ANIM_LOOP)<<ANIM_SECONDARY;
@@ -2960,14 +3032,14 @@ namespace game
                 else if(d->physstate == PHYS_FALL && !d->onladder && d->impulse[IM_TYPE] != IM_T_NONE && lastmillis-d->impulse[IM_TIME] <= 1000)
                 {
                     basetime2 = d->impulse[IM_TIME];
-                    if(d->impulse[IM_TYPE] == IM_T_KICK || d->impulse[IM_TYPE] == IM_T_VAULT) anim |= ANIM_WALL_JUMP<<ANIM_SECONDARY;
+                    if(d->impulse[IM_TYPE] == IM_T_KICK || d->impulse[IM_TYPE] == IM_T_VAULT || d->impulse[IM_TYPE] == IM_T_GRAB) anim |= ANIM_WALL_JUMP<<ANIM_SECONDARY;
                     else if(melee)
                     {
                         anim |= ANIM_FLYKICK<<ANIM_SECONDARY;
-                        basetime2 = d->weaplast[W_MELEE];
+                        basetime2 = d->weaptime[W_MELEE];
                     }
-                    else if(d->move>0) anim |= ANIM_DASH_FORWARD<<ANIM_SECONDARY;
                     else if(d->strafe) anim |= (d->strafe>0 ? ANIM_DASH_LEFT : ANIM_DASH_RIGHT)<<ANIM_SECONDARY;
+                    else if(d->move>0) anim |= ANIM_DASH_FORWARD<<ANIM_SECONDARY;
                     else if(d->move<0) anim |= ANIM_DASH_BACKWARD<<ANIM_SECONDARY;
                     else anim |= ANIM_DASH_UP<<ANIM_SECONDARY;
                 }
@@ -2977,43 +3049,43 @@ namespace game
                     if(melee)
                     {
                         anim |= ANIM_FLYKICK<<ANIM_SECONDARY;
-                        basetime2 = d->weaplast[W_MELEE];
+                        basetime2 = d->weaptime[W_MELEE];
                     }
-                    else if(d->action[AC_CROUCH] || d->actiontime[AC_CROUCH]<0)
+                    else if(d->crouching())
                     {
-                        if(d->move>0) anim |= ANIM_CROUCH_JUMP_FORWARD<<ANIM_SECONDARY;
-                        else if(d->strafe) anim |= (d->strafe>0 ? ANIM_CROUCH_JUMP_LEFT : ANIM_CROUCH_JUMP_RIGHT)<<ANIM_SECONDARY;
+                        if(d->strafe) anim |= (d->strafe>0 ? ANIM_CROUCH_JUMP_LEFT : ANIM_CROUCH_JUMP_RIGHT)<<ANIM_SECONDARY;
+                        else if(d->move>0) anim |= ANIM_CROUCH_JUMP_FORWARD<<ANIM_SECONDARY;
                         else if(d->move<0) anim |= ANIM_CROUCH_JUMP_BACKWARD<<ANIM_SECONDARY;
                         else anim |= ANIM_CROUCH_JUMP<<ANIM_SECONDARY;
                     }
-                    else if(d->move>0) anim |= ANIM_JUMP_FORWARD<<ANIM_SECONDARY;
                     else if(d->strafe) anim |= (d->strafe>0 ? ANIM_JUMP_LEFT : ANIM_JUMP_RIGHT)<<ANIM_SECONDARY;
+                    else if(d->move>0) anim |= ANIM_JUMP_FORWARD<<ANIM_SECONDARY;
                     else if(d->move<0) anim |= ANIM_JUMP_BACKWARD<<ANIM_SECONDARY;
                     else anim |= ANIM_JUMP<<ANIM_SECONDARY;
                     if(!basetime2) anim |= ANIM_END<<ANIM_SECONDARY;
                 }
                 else if(d->sliding(true)) anim |= (ANIM_POWERSLIDE|ANIM_LOOP)<<ANIM_SECONDARY;
-                else if(d->crouching(true))
+                else if(d->crouching())
                 {
-                    if(d->move>0) anim |= (ANIM_CRAWL_FORWARD|ANIM_LOOP)<<ANIM_SECONDARY;
-                    else if(d->strafe) anim |= ((d->strafe>0 ? ANIM_CRAWL_LEFT : ANIM_CRAWL_RIGHT)|ANIM_LOOP)<<ANIM_SECONDARY;
+                    if(d->strafe) anim |= ((d->strafe>0 ? ANIM_CRAWL_LEFT : ANIM_CRAWL_RIGHT)|ANIM_LOOP)<<ANIM_SECONDARY;
+                    else if(d->move>0) anim |= (ANIM_CRAWL_FORWARD|ANIM_LOOP)<<ANIM_SECONDARY;
                     else if(d->move<0) anim |= (ANIM_CRAWL_BACKWARD|ANIM_LOOP)<<ANIM_SECONDARY;
                     else anim |= (ANIM_CROUCH|ANIM_LOOP)<<ANIM_SECONDARY;
                 }
                 else if(d->running(moveslow))
                 {
-                    if(d->move>0) anim |= (ANIM_IMPULSE_FORWARD|ANIM_LOOP)<<ANIM_SECONDARY;
-                    else if(d->strafe) anim |= ((d->strafe>0 ? ANIM_IMPULSE_LEFT : ANIM_IMPULSE_RIGHT)|ANIM_LOOP)<<ANIM_SECONDARY;
+                    if(d->strafe) anim |= ((d->strafe>0 ? ANIM_IMPULSE_LEFT : ANIM_IMPULSE_RIGHT)|ANIM_LOOP)<<ANIM_SECONDARY;
+                    else if(d->move>0) anim |= (ANIM_IMPULSE_FORWARD|ANIM_LOOP)<<ANIM_SECONDARY;
                     else if(d->move<0) anim |= (ANIM_IMPULSE_BACKWARD|ANIM_LOOP)<<ANIM_SECONDARY;
                 }
-                else if(d->move>0) anim |= (ANIM_FORWARD|ANIM_LOOP)<<ANIM_SECONDARY;
                 else if(d->strafe) anim |= ((d->strafe>0 ? ANIM_LEFT : ANIM_RIGHT)|ANIM_LOOP)<<ANIM_SECONDARY;
+                else if(d->move>0) anim |= (ANIM_FORWARD|ANIM_LOOP)<<ANIM_SECONDARY;
                 else if(d->move<0) anim |= (ANIM_BACKWARD|ANIM_LOOP)<<ANIM_SECONDARY;
             }
 
             if((anim>>ANIM_SECONDARY)&ANIM_INDEX) switch(anim&ANIM_INDEX)
             {
-                case ANIM_IDLE: case ANIM_MELEE: case ANIM_PISTOL: case ANIM_SWORD:
+                case ANIM_IDLE: case ANIM_CLAW: case ANIM_PISTOL: case ANIM_SWORD:
                 case ANIM_SHOTGUN: case ANIM_SMG: case ANIM_FLAMER: case ANIM_PLASMA: case ANIM_ZAPPER:
                 case ANIM_RIFLE: case ANIM_GRENADE: case ANIM_MINE: case ANIM_ROCKET:
                 {
@@ -3026,7 +3098,7 @@ namespace game
         }
 
         if(third == 1 && testanims && d == focus) yaw = 0; else yaw += 90;
-        if(d->ragdoll && (deathanim!=2 || (anim&ANIM_INDEX)!=ANIM_DYING)) cleanragdoll(d);
+        if(d->ragdoll && (deathanim < 2 || (anim&ANIM_INDEX)!=ANIM_DYING)) cleanragdoll(d);
         if(!((anim>>ANIM_SECONDARY)&ANIM_INDEX)) anim |= (ANIM_IDLE|ANIM_LOOP)<<ANIM_SECONDARY;
 
         int flags = MDL_LIGHT|MDL_LIGHTFX;
@@ -3035,59 +3107,51 @@ namespace game
         if(d != focus && !(anim&ANIM_RAGDOLL)) flags |= MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_CULL_QUERY;
         if(early) flags |= MDL_NORENDER;
         else if(third && (anim&ANIM_INDEX)!=ANIM_DEAD) flags |= MDL_DYNSHADOW;
-        if(modelpreviewing) flags &= ~(MDL_LIGHT|MDL_FULLBRIGHT|MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_CULL_QUERY|MDL_CULL_DIST|MDL_DYNSHADOW);
+        if(drawtex == DRAWTEX_MODELPREVIEW) flags &= ~(MDL_LIGHT|MDL_FULLBRIGHT|MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_CULL_QUERY|MDL_CULL_DIST|MDL_DYNSHADOW);
         dynent *e = third ? (third != 2 ? (dynent *)d : (dynent *)&bodymodel) : (dynent *)&avatarmodel;
         if(e->light.millis != lastmillis)
         {
-            e->light.effect = playerlightmix > 0 ? vec::hexcolor(getcolour(d, playerlighttone)).mul(playerlightmix) : vec(0, 0, 0);
-            e->light.material[0] = bvec(getcolour(d, playerovertone));
-            e->light.material[1] = bvec(getcolour(d, playerundertone));
-            if(isweap(d->weapselect) && (W2(d->weapselect, ammosub, false) || W2(d->weapselect, ammosub, true)) && W(d->weapselect, ammomax) > 1)
+            e->light.effect = playerlightmix > 0 ? vec::hexcolor(getcolour(d, playerlighttone, playerlighttonelevel)).mul(playerlightmix) : vec(0, 0, 0);
+            e->light.material[0] = bvec(getcolour(d, playerovertone, playerovertonelevel));
+            e->light.material[1] = bvec(getcolour(d, playerundertone, playerundertonelevel));
+            if(isweap(d->weapselect))
             {
-                int ammo = d->ammo[d->weapselect], maxammo = W(d->weapselect, ammomax);
-                float scale = 1;
-                switch(d->weapstate[d->weapselect])
+                if((W2(d->weapselect, ammosub, false) || W2(d->weapselect, ammosub, true)) && W(d->weapselect, ammomax) > 1)
                 {
-                    case W_S_RELOAD:
+                    int ammo = d->ammo[d->weapselect], maxammo = W(d->weapselect, ammomax);
+                    float scale = 1;
+                    switch(d->weapstate[d->weapselect])
                     {
-                        int millis = lastmillis-d->weaplast[d->weapselect], check = d->weapwait[d->weapselect]/2;
-                        scale = millis >= check ? float(millis-check)/check : 0.f;
-                        if(d->weapload[d->weapselect] > 0)
-                            scale = max(scale, float(ammo - d->weapload[d->weapselect])/maxammo);
-                        break;
+                        case W_S_RELOAD:
+                        {
+                            int millis = lastmillis-d->weaptime[d->weapselect], check = d->weapwait[d->weapselect]/2;
+                            scale = millis >= check ? float(millis-check)/check : 0.f;
+                            if(d->weapload[d->weapselect] > 0)
+                                scale = max(scale, float(ammo - d->weapload[d->weapselect])/maxammo);
+                            break;
+                        }
+                        default: scale = float(ammo)/maxammo; break;
                     }
-                    default: scale = float(ammo)/maxammo; break;
+                    uchar wepmat = uchar(255*scale);
+                    e->light.material[2] = bvec(wepmat, wepmat, wepmat);
                 }
-                uchar wepmat = uchar(255*scale);
-                e->light.material[2] = bvec(wepmat, wepmat, wepmat);
+                else e->light.material[2] = bvec(255, 255, 255);
+                if(W(d->weapselect, lightpersist)&2) e->light.material[1].max(bvec::fromcolor(WPCOL(d, d->weapselect, lightcol, physics::secondaryweap(d))));
             }
             else e->light.material[2] = bvec(255, 255, 255);
             if(burntime && d->burning(lastmillis, burntime))
-            {
-                vec col = rescolour(d, PULSE_BURN);
-                e->light.material[1].max(bvec::fromcolor(e->light.material[1].tocolor().max(col)));
-            }
+                e->light.material[1].max(bvec::fromcolor(e->light.material[1].div(2).tocolor().max(rescolour(d, PULSE_BURN))));
+            if(burntime && d->bleeding(lastmillis, bleedtime))
+                e->light.material[1].max(bvec::fromcolor(e->light.material[1].div(2).tocolor().max(rescolour(d, PULSE_BLEED))));
             if(shocktime && d->shocking(lastmillis, shocktime))
-            {
-                vec col = rescolour(d, PULSE_SHOCK);
-                e->light.material[1].max(bvec::fromcolor(e->light.material[1].tocolor().max(col)));
-            }
+                e->light.material[1].max(bvec::fromcolor(e->light.material[1].div(2).tocolor().max(rescolour(d, PULSE_SHOCK))));
             if(m_bomber(gamemode) && bomber::carryaffinity(d))
-            {
-                vec col = rescolour(d, PULSE_DISCO);
-                e->light.material[1].max(bvec::fromcolor(e->light.material[1].tocolor().max(col)));
-            }
-            if(d->state == CS_ALIVE && bleedtime && d->bleeding(lastmillis, bleedtime))
-            {
-                int millis = lastmillis%1000;
-                float amt = millis <= 500 ? millis/500.f : 1.f-((millis-500)/500.f);
-                flashcolour(e->light.material[1].r, e->light.material[1].g, e->light.material[1].b, uchar(255), uchar(52), uchar(52), amt);
-            }
+                e->light.material[1].max(bvec::fromcolor(e->light.material[1].div(2).tocolor().max(rescolour(d, PULSE_DISCO))));
             if(d->state == CS_ALIVE && d->lastbuff)
             {
                 int millis = lastmillis%1000;
                 float amt = millis <= 500 ? 1.f-(millis/500.f) : (millis-500)/500.f;
-                flashcolour(e->light.material[1].r, e->light.material[1].g, e->light.material[1].b, uchar(192), uchar(192), uchar(192), amt);
+                flashcolour(e->light.material[1].r, e->light.material[1].g, e->light.material[1].b, uchar(255), uchar(255), uchar(255), amt);
             }
         }
         rendermodel(NULL, mdl, anim, o, yaw, third == 2 && firstpersonbodypitch >= 0 ? pitch*firstpersonbodypitch : pitch, third == 2 ? 0.f : roll, flags, e, attachments, basetime, basetime2, trans, size);
@@ -3106,14 +3170,14 @@ namespace game
         {
             string weapons = "";
             #define printweapon(q) \
-                if((q != W_MELEE || q == d->weapselect) && d->hasweap(q, m_weapon(gamemode, mutators))) \
+                if(d->hasweap(q, m_weapon(d->actortype, gamemode, mutators))) \
                 { \
                     vec colour = vec::hexcolor(W(q, colour)); \
                     if(q != d->weapselect) colour.mul(aboveheadinventoryfade); \
                     defformatstring(str, "\fs\f[%d]%s\f(%s)\fS", colour.tohexcolor(), q != d->weapselect ? "\fE" : "", hud::itemtex(WEAPON, q)); \
                     concatstring(weapons, str); \
                 }
-            if(aboveheadinventory >= 2) { loopi(W_MAX) printweapon(i); }
+            if(aboveheadinventory >= 2) { loopi(W_ALL) printweapon(i); }
             else { printweapon(d->weapselect); }
             pos.z += aboveheadinventorysize/2;
             part_textcopy(pos, weapons, PART_TEXT, 1, 0xFFFFFF, aboveheadinventorysize, blend*aboveheadinventoryblend);
@@ -3121,7 +3185,7 @@ namespace game
         if(aboveheadstatus)
         {
             Texture *t = NULL;
-            int colour = getcolour(d, playerteamtone);
+            int colour = getcolour(d, playerteamtone, playerteamtonelevel);
             if(d->state == CS_DEAD || d->state == CS_WAITING) t = textureload(hud::deadtex, 3);
             else if(d->state == CS_ALIVE)
             {
@@ -3197,7 +3261,7 @@ namespace game
             else return; // screw it, don't render them
         }
         int weap = d->weapselect, lastaction = 0, animflags = ANIM_IDLE|ANIM_LOOP, weapflags = animflags, weapaction = 0, animdelay = 0;
-        bool secondary = false, showweap = third != 2 && isweap(weap) && actor[d->actortype].useweap;
+        bool secondary = false, showweap = third != 2 && isweap(weap) && weap < W_ALL && actor[d->actortype].useweap;
         float weapscale = 1.f;
         if(d->state == CS_DEAD || d->state == CS_WAITING)
         {
@@ -3214,6 +3278,7 @@ namespace game
                     if(t > 1000) animflags = ANIM_DEAD|ANIM_LOOP|ANIM_NOPITCH;
                     break;
                 }
+                case 3: if(m_duke(gamemode, mutators)) return;
                 case 2:
                 {
                     if(!validragdoll(d, lastaction)) animflags |= ANIM_RAGDOLL;
@@ -3231,19 +3296,19 @@ namespace game
             secondary = third;
             if(showweap && isweap(weap))
             {
-                weapaction = lastaction = d->weaplast[weap];
+                weapaction = lastaction = d->weaptime[weap];
                 animdelay = d->weapwait[weap];
                 switch(d->weapstate[weap])
                 {
                     case W_S_SWITCH: case W_S_USE:
                     {
-                        int millis = lastmillis-d->weaplast[weap], off = d->weapwait[weap]/3, lastweap = d->getlastweap(m_weapon(gamemode, mutators));
+                        int millis = lastmillis-d->weaptime[weap], off = d->weapwait[weap]/3, lastweap = d->getlastweap(m_weapon(d->actortype, gamemode, mutators));
                         if(isweap(lastweap) && millis <= off)
                         {
                             weap = lastweap;
                             weapscale = 1-(millis/float(off));
                         }
-                        else if(!d->hasweap(weap, m_weapon(gamemode, mutators))) showweap = false;
+                        else if(!d->hasweap(weap, m_weapon(d->actortype, gamemode, mutators))) showweap = false;
                         else if(millis <= off*2) weapscale = (millis-off)/float(off);
                         weapflags = animflags = d->weapstate[weap] == W_S_SWITCH ? ANIM_SWITCH : ANIM_USE;
                         break;
@@ -3261,8 +3326,8 @@ namespace game
                     {
                         if(weaptype[weap].thrown[d->weapstate[weap]-W_S_PRIMARY] > 0)
                         {
-                            int millis = lastmillis-d->weaplast[weap], off = d->weapwait[weap]/2;
-                            if(millis <= off || !d->hasweap(weap, m_weapon(gamemode, mutators)))
+                            int millis = lastmillis-d->weaptime[weap], off = d->weapwait[weap]/2;
+                            if(millis <= off || !d->hasweap(weap, m_weapon(d->actortype, gamemode, mutators)))
                                 showweap = false;
                             else weapscale = (millis-off)/float(off);
                         }
@@ -3271,13 +3336,13 @@ namespace game
                     }
                     case W_S_RELOAD:
                     {
-                        if(!d->hasweap(weap, m_weapon(gamemode, mutators))) showweap = false;
+                        if(!d->hasweap(weap, m_weapon(d->actortype, gamemode, mutators))) showweap = false;
                         weapflags = animflags = weaptype[weap].anim+d->weapstate[weap];
                         break;
                     }
                     case W_S_IDLE: case W_S_WAIT: default:
                     {
-                        if(!d->hasweap(weap, m_weapon(gamemode, mutators))) showweap = false;
+                        if(!d->hasweap(weap, m_weapon(d->actortype, gamemode, mutators))) showweap = false;
                         weapflags = animflags = weaptype[weap].anim|ANIM_LOOP;
                         break;
                     }
@@ -3291,7 +3356,7 @@ namespace game
                 animdelay = 300;
             }
         }
-        if(!early && third == 1 && d->actortype < A_ENEMY && !shadowmapping && !envmapping && (aboveheaddead || d->state == CS_ALIVE))
+        if(!early && third == 1 && d->actortype < A_ENEMY && !shadowmapping && !drawtex && (aboveheaddead || d->state == CS_ALIVE))
             renderabovehead(d, trans);
         const char *weapmdl = showweap && isweap(weap) ? (third ? weaptype[weap].vwep : weaptype[weap].hwep) : "";
         int ai = 0;
@@ -3359,22 +3424,42 @@ namespace game
         {
             bool useth = hud::teamhurthud&1 && hud::teamhurttime && m_team(gamemode, mutators) && focus == player1 &&
                  d->team == player1->team && d->lastteamhit >= 0 && lastmillis-d->lastteamhit <= hud::teamhurttime,
-                 hashint = playerhint&(d->team != focus->team ? 2 : 1);
-            if(d->actortype < A_ENEMY && d != focus && (useth || hashint))
+            hashint = playerhint&(d->team != focus->team ? 2 : 1), haslight = false, haspower = false, hasdom = false;
+            if(isweap(d->weapselect) && playerhint&4)
             {
-                if(hashint)
+                if(W(d->weapselect, lightpersist)&4) haslight = true;
+                if(W(d->weapselect, lightpersist)&8 && lastmillis-d->weaptime[d->weapselect] > 0 && d->weapstate[d->weapselect] == W_S_POWER)
+                    haspower = true;
+            }
+            if((!m_team(gamemode, mutators) || d->team != focus->team) && playerhint&8 && d->dominated.find(focus) >= 0) hasdom = true;
+            if(d->actortype < A_ENEMY && d != focus && (useth || hashint || haslight || haspower || hasdom))
+            {
+                if(hashint || haslight || haspower|| hasdom)
                 {
-                    vec c = vec::hexcolor(getcolour(d, playerhinttone));
+                    vec c = vec::hexcolor(hasdom ? pulsecols[PULSE_DISCO][clamp((lastmillis/100)%PULSECOLOURS, 0, PULSECOLOURS-1)] : (haslight ? WHCOL(d, d->weapselect, lightcol, physics::secondaryweap(d)) : getcolour(d, playerhinttone, playerhinttonelevel)));
                     float height = d->height, fade = blend;
-                    if(playerhintscale > 0)
+                    if(hasdom) fade *= playerhintdom;
+                    else if(haslight || haspower)
                     {
-                        float per = d->health/float(m_health(gamemode, mutators, d->model));
+                        int millis = lastmillis-d->weaptime[d->weapselect];
+                        if(haslight)
+                        {
+                            if(d->weapstate[d->weapselect] == W_S_SWITCH || d->weapstate[d->weapselect] == W_S_USE)
+                                fade *= millis/float(max(d->weapwait[d->weapselect], 1));
+                        }
+                        else fade *= millis/float(max(d->weapwait[d->weapselect], 1));
+                        fade *= playerhintlight;
+                    }
+                    else if(playerhintscale > 0)
+                    {
+                        float per = d->health/float(m_health(gamemode, mutators, d->actortype));
                         fade = (fade*(1.f-playerhintscale))+(fade*per*playerhintscale);
                         if(fade > 1)
                         {
                             height *= 1.f+(fade-1.f);
                             fade = 1;
                         }
+                        fade *= playerhintblend;
                     }
                     if(d->state == CS_ALIVE && d->lastbuff)
                     {
@@ -3386,7 +3471,7 @@ namespace game
                     vec o = d->center(), offset = vec(o).sub(camera1->o).rescale(d->radius/2);
                     offset.z = max(offset.z, -1.0f);
                     offset.add(o);
-                    part_create(PART_HINT_BOLD_SOFT, 1, offset, c.tohexcolor(), clamp(height*playerhintsize, 1.f, playerhintmaxsize), fade*playerhintblend*camera1->o.distrange(o, playerhintfadeat, playerhintfadecut));
+                    part_create(PART_HINT_BOLD_SOFT, 1, offset, c.tohexcolor(), clamp(height*playerhintsize, 1.f, playerhintmaxsize), fade*camera1->o.distrange(o, playerhintfadeat, playerhintfadecut));
                 }
                 if(useth)
                 {
@@ -3406,15 +3491,15 @@ namespace game
             {
                 vec pos = d->footpos(i);
                 if(minz > 0 && pos.z > minz) pos.z -= pos.z-minz;
-                float amt = 1-((lastmillis-d->weaplast[W_MELEE])/float(d->weapwait[W_MELEE]));
+                float amt = 1-((lastmillis-d->weaptime[W_MELEE])/float(d->weapwait[W_MELEE]));
                 part_create(PART_HINT, 1, pos, TEAM(d->team, colour), 2.f, amt*blend, 0, 0);
             }
-            int millis = lastmillis-d->weaplast[d->weapselect];
+            int millis = lastmillis-d->weaptime[d->weapselect];
             bool last = millis > 0 && millis < d->weapwait[d->weapselect],
                  powering = last && d->weapstate[d->weapselect] == W_S_POWER,
                  reloading = last && d->weapstate[d->weapselect] == W_S_RELOAD,
                  secondary = physics::secondaryweap(d);
-            float amt = last ? (lastmillis-d->weaplast[d->weapselect])/float(d->weapwait[d->weapselect]) : 1.f;
+            float amt = last ? (lastmillis-d->weaptime[d->weapselect])/float(d->weapwait[d->weapselect]) : 1.f;
             int colour = WHCOL(d, d->weapselect, partcol, secondary);
             if(d->weapselect == W_FLAMER && (!reloading || amt > 0.5f) && !physics::liquidcheck(d))
             {
@@ -3425,12 +3510,10 @@ namespace game
             }
             if(W(d->weapselect, laser) && !reloading)
             {
-                vec v, origin = d->originpos(), muzzle = d->muzzlepos(d->weapselect);
-                origin.z += 0.25f; muzzle.z += 0.25f;
-                float yaw, pitch;
-                vectoyawpitch(vec(muzzle).sub(origin).normalize(), yaw, pitch);
+                vec v, muzzle = d->muzzlepos(d->weapselect);
+                muzzle.z += 0.25f;
                 findorientation(d->o, d->yaw, d->pitch, v);
-                part_flare(origin, v, 1, PART_FLARE, colour, 0.5f*amt, amt*blend);
+                part_flare(muzzle, v, 1, PART_FLARE, colour, 0.5f*amt, amt*blend);
             }
             if(d->weapselect == W_SWORD || d->weapselect == W_ZAPPER || powering)
             {
@@ -3438,7 +3521,7 @@ namespace game
                     int type, parttype;
                     float size, radius;
                 } powerfx[W_MAX] = {
-                    { 0, 0, 0, 0 },
+                    { 4, PART_LIGHTNING, 1.f, 1 },
                     { 2, PART_SPARK, 0.1f, 1.5f },
                     { 4, PART_LIGHTNING, 2.f, 1 },
                     { 2, PART_SPARK, 0.15f, 2 },
@@ -3448,6 +3531,7 @@ namespace game
                     { 4, PART_LIGHTZAP, 0.75f, 1 },
                     { 2, PART_PLASMA, 0.05f, 2.5f },
                     { 3, PART_PLASMA, 0.1f, 0.125f },
+                    { 0, 0, 0, 0 },
                     { 0, 0, 0, 0 },
                     { 0, 0, 0, 0 },
                 };
@@ -3462,7 +3546,7 @@ namespace game
                     {
                         int interval = lastmillis%1000;
                         float fluc = powerfx[d->weapselect].size+(interval ? (interval <= 500 ? interval/500.f : (1000-interval)/500.f) : 0.f);
-                        part_create(powerfx[d->weapselect].parttype, 1, d->originpos(), colour, (powerfx[d->weapselect].radius*max(amt, 0.25f))+fluc, max(amt, 0.1f)*blend);
+                        part_create(powerfx[d->weapselect].parttype, 1, d->muzzlepos(d->weapselect), colour, (powerfx[d->weapselect].radius*max(amt, 0.25f))+fluc, max(amt, 0.1f)*blend);
                         break;
                     }
                     case 4:
@@ -3526,15 +3610,13 @@ namespace game
     {
         bool third = thirdpersonview();
         if(rendernormally && early) focus->cleartags();
-        if(project && !third) viewproject(firstpersondepth);
+        if(project && !third) setavatarscale(firstpersondepth);
         if(third || !rendernormally) renderplayer(focus, 1, opacity(focus, thirdpersonview(true)), focus->curscale, early);
         else if(!third && focus->state == CS_ALIVE) renderplayer(focus, 0, opacity(focus, false), focus->curscale, early);
-        if(project && !third) viewproject();
         if(!third && focus->state == CS_ALIVE && firstpersonmodel == 2)
         {
-            if(project) viewproject(firstpersonbodydepth);
+            if(project) setavatarscale(firstpersonbodydepth);
             renderplayer(focus, 2, opacity(focus, false), focus->curscale, early);
-            if(project) viewproject();
         }
         if(rendernormally && early) rendercheck(focus, third);
     }
@@ -3547,18 +3629,20 @@ namespace game
             previewent = new gameent;
             previewent->state = CS_ALIVE;
             previewent->physstate = PHYS_FLOOR;
-            previewent->o = vec(0, 0.75f*(previewent->height + previewent->aboveeye), previewent->height - (previewent->height + previewent->aboveeye)/2);
             previewent->spawnstate(G_DEATHMATCH, 0, -1, m_health(G_DEATHMATCH, 0, 0));
             previewent->light.color = vec(1, 1, 1);
             previewent->light.dir = vec(0, -1, 2).normalize();
             loopi(W_MAX) previewent->ammo[i] = W(i, ammomax);
         }
+        float height = previewent->height + previewent->aboveeye,
+              zrad = height/2;
+        vec2 xyrad = vec2(previewent->xradius, previewent->yradius).max(height/4);
+        previewent->o = calcmodelpreviewpos(vec(xyrad, zrad), previewent->yaw).addz(previewent->height - zrad);
         previewent->colour = color;
         previewent->model = model;
         previewent->team = clamp(team, 0, int(T_MULTI));
-        previewent->weapselect = clamp(weap, 0, W_MAX-1);
+        previewent->weapselect = clamp(weap, 0, W_ALL-1);
         previewent->setvanity(vanity);
-        previewent->yaw = fmod(lastmillis/10000.0f*360.0f, 360.0f);
         previewent->light.millis = -1;
         renderplayer(previewent, 1, blend, scale);
     }

@@ -1,10 +1,10 @@
 #ifdef GAMESERVER
-#define capturedelay (m_gsp2(gamemode, mutators) ? G(capturedefenddelay) : G(captureresetdelay))
-#define capturestore (G(captureresetstore)&((m_gsp1(gamemode, mutators) ? 1 : 0)|(m_gsp2(gamemode, mutators) ? 2 : 0)|(m_gsp3(gamemode, mutators) ? 4 : 0)|(!m_gsp1(gamemode, mutators) && !m_gsp2(gamemode, mutators) && !m_gsp3(gamemode, mutators) ? 8 : 0)))
+#define capturedelay (m_ctf_defend(gamemode, mutators) ? G(capturedefenddelay) : G(captureresetdelay))
+#define capturestore (G(captureresetstore)&((m_ctf_quick(gamemode, mutators) ? 1 : 0)|(m_ctf_defend(gamemode, mutators) ? 2 : 0)|(m_ctf_protect(gamemode, mutators) ? 4 : 0)|(!m_ctf_quick(gamemode, mutators) && !m_ctf_defend(gamemode, mutators) && !m_ctf_protect(gamemode, mutators) ? 8 : 0)))
 #define capturestate captureservstate
 #else
-#define capturedelay (m_gsp2(game::gamemode, game::mutators) ? G(capturedefenddelay) : G(captureresetdelay))
-#define capturestore (G(captureresetstore)&((m_gsp1(game::gamemode, game::mutators) ? 1 : 0)|(m_gsp2(game::gamemode, game::mutators) ? 2 : 0)|(m_gsp3(game::gamemode, game::mutators) ? 4 : 0)|(!m_gsp1(game::gamemode, game::mutators) && !m_gsp2(game::gamemode, game::mutators) && !m_gsp3(game::gamemode, game::mutators) ? 8 : 0)))
+#define capturedelay (m_ctf_defend(game::gamemode, game::mutators) ? G(capturedefenddelay) : G(captureresetdelay))
+#define capturestore (G(captureresetstore)&((m_ctf_quick(game::gamemode, game::mutators) ? 1 : 0)|(m_ctf_defend(game::gamemode, game::mutators) ? 2 : 0)|(m_ctf_protect(game::gamemode, game::mutators) ? 4 : 0)|(!m_ctf_quick(game::gamemode, game::mutators) && !m_ctf_defend(game::gamemode, game::mutators) && !m_ctf_protect(game::gamemode, game::mutators) ? 8 : 0)))
 #endif
 struct capturestate
 {
@@ -13,12 +13,13 @@ struct capturestate
         vec droploc, inertia, spawnloc;
         int team, yaw, pitch, droptime, taketime, dropoffset;
 #ifdef GAMESERVER
-        int owner, lastowner, nextreset;
+        int owner, lastowner;
         vector<int> votes;
+        vec floorpos;
 #else
         gameent *owner, *lastowner;
         projent *proj;
-        int displaytime, pickuptime, movetime, viewtime, interptime;
+        int displaytime, movetime, viewtime, interptime;
         vec viewpos, interppos, render, above;
         entitylight light, baselight;
 #endif
@@ -30,13 +31,13 @@ struct capturestate
             inertia = vec(0, 0, 0);
             droploc = spawnloc = vec(-1, -1, -1);
 #ifdef GAMESERVER
-            nextreset = 0;
             owner = lastowner = -1;
             votes.shrink(0);
+            floorpos = vec(-1, -1, -1);
 #else
             owner = lastowner = NULL;
             proj = NULL;
-            displaytime = pickuptime = movetime = viewtime = interptime = 0;
+            displaytime = movetime = viewtime = interptime = 0;
 #endif
             team = T_NEUTRAL;
             yaw = pitch = taketime = droptime = dropoffset = 0;
@@ -119,7 +120,7 @@ struct capturestate
     void create(int id)
     {
         flag &f = flags[id];
-        f.proj = projs::create(f.droploc, f.inertia, false, NULL, PRJ_AFFINITY, capturedelay, capturedelay, 1, 1, id);
+        f.proj = projs::create(f.droploc, f.inertia, false, NULL, PRJ_AFFINITY, -1, HIT_NONE, capturedelay, capturedelay, 1, 1, id);
     }
 #endif
 
@@ -141,7 +142,7 @@ struct capturestate
         f.votes.shrink(0);
         f.lastowner = owner;
 #else
-        f.pickuptime = f.movetime = 0;
+        f.movetime = 0;
         (f.lastowner = owner)->addicon(eventicon::AFFINITY, t, game::eventiconfade, f.team);
         if(f.proj)
         {
@@ -167,7 +168,7 @@ struct capturestate
         f.owner = -1;
         f.votes.shrink(0);
 #else
-        f.pickuptime =  f.movetime = 0;
+        f.movetime = 0;
         f.owner = NULL;
         destroy(i);
         create(i);
@@ -184,8 +185,9 @@ struct capturestate
 #ifdef GAMESERVER
         f.owner = -1;
         f.votes.shrink(0);
+        f.floorpos = vec(-1, -1, -1);
 #else
-        f.pickuptime = f.movetime = 0;
+        f.movetime = 0;
         f.owner = NULL;
         destroy(i);
 #endif
@@ -200,16 +202,17 @@ namespace capture
     extern bool dropaffinity(gameent *d);
     extern void sendaffinity(packetbuf &p);
     extern void parseaffinity(ucharbuf &p);
-    extern void dropaffinity(gameent *d, int i, const vec &droploc, const vec &inertia, int target = -1);
+    extern void dropaffinity(gameent *d, int i, const vec &droploc, const vec &inertia, int offset = -1);
     extern void scoreaffinity(gameent *d, int relay, int goal, int score);
     extern void returnaffinity(gameent *d, int i);
     extern void takeaffinity(gameent *d, int i);
-    extern void resetaffinity(int i, int value);
+    extern void resetaffinity(int i, int value, const vec &pos);
     extern void reset();
     extern void setup();
     extern void setscore(int team, int total);
     extern void update();
-    extern void drawnotices(int w, int h, int &tx, int &ty, float blend);
+    extern void drawnotices(int w, int h, int &tx, int &ty, int tr, int tg, int tb, float blend);
+    extern void drawevents(int w, int h, int &tx, int &ty, int tr, int tg, int tb, float blend);
     extern void drawblips(int w, int h, float blend);
     extern int drawinventory(int x, int y, int s, int m, float blend);
     extern void preload();

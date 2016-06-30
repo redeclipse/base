@@ -71,7 +71,7 @@ void resolverinit()
         resolverthread &rt = resolverthreads.add();
         rt.query = NULL;
         rt.starttime = 0;
-        rt.thread = SDL_CreateThread(resolverloop, &rt);
+        rt.thread = SDL_CreateThread(resolverloop, "resolver", &rt);
     }
     SDL_UnlockMutex(resolvermutex);
 }
@@ -81,10 +81,10 @@ void resolverstop(resolverthread &rt)
     SDL_LockMutex(resolvermutex);
     if(rt.query)
     {
-#ifndef __APPLE__
-        SDL_KillThread(rt.thread);
+#if SDL_VERSION_ATLEAST(2, 0, 2)
+        SDL_DetachThread(rt.thread);
 #endif
-        rt.thread = SDL_CreateThread(resolverloop, &rt);
+        rt.thread = SDL_CreateThread(resolverloop, "resolver", &rt);
     }
     rt.query = NULL;
     rt.starttime = 0;
@@ -220,17 +220,20 @@ bool sortedservers = true;
 ENetSocket pingsock = ENET_SOCKET_NULL;
 int lastinfo = 0;
 
-static serverinfo *newserver(const char *name, int port = SERVER_PORT, int priority = 0, const char *desc = NULL, uint ip = ENET_HOST_ANY)
+static serverinfo *newserver(const char *name, int port = SERVER_PORT, int priority = 0, const char *desc = NULL, const char *handle = NULL, const char *flags = NULL, const char *branch = NULL, uint ip = ENET_HOST_ANY)
 {
     serverinfo *si = new serverinfo(ip, port, priority);
 
     if(name) copystring(si->name, name);
-    else if(ip==ENET_HOST_ANY || enet_address_get_host_ip(&si->address, si->name, sizeof(si->name)) < 0)
+    else if(ip == ENET_HOST_ANY || enet_address_get_host_ip(&si->address, si->name, sizeof(si->name)) < 0)
     {
         delete si;
         return NULL;
     }
     if(desc && *desc) copystring(si->sdesc, desc);
+    if(handle && *handle) copystring(si->authhandle, handle);
+    if(flags && *flags) copystring(si->flags, flags);
+    if(branch && *branch) copystring(si->branch, branch);
 
     servers.add(si);
     sortedservers = false;
@@ -238,15 +241,15 @@ static serverinfo *newserver(const char *name, int port = SERVER_PORT, int prior
     return si;
 }
 
-void addserver(const char *name, int port, int priority, const char *desc)
+void addserver(const char *name, int port, int priority, const char *desc, const char *handle, const char *flags, const char *branch)
 {
     loopv(servers) if(!strcmp(servers[i]->name, name) && servers[i]->port == port) return;
-    if(newserver(name, port, priority, desc) && verbose >= 2)
+    if(newserver(name, port, priority, desc, handle, flags, branch) && verbose >= 2)
         conoutf("added server %s (%d) [%s]", name, port, desc);
 }
-ICOMMAND(0, addserver, "siis", (char *n, int *p, int *r, char *d), addserver(n, *p > 0 ? *p : SERVER_PORT, *r >= 0 ? *r : 0, d));
+ICOMMAND(0, addserver, "siissss", (char *n, int *p, int *r, char *d, char *h, char *f, char *b), addserver(n, *p > 0 ? *p : SERVER_PORT, *r >= 0 ? *r : 0, d, h, f, b));
 
-VAR(0, searchlan, 0, 0, 1);
+VAR(IDF_PERSIST, searchlan, 0, 0, 1);
 VAR(IDF_PERSIST, maxservpings, 0, 10, 1000);
 VAR(IDF_PERSIST, serverupdateinterval, 0, 10, VAR_MAX);
 VAR(IDF_PERSIST, serverdecay, 0, 20, VAR_MAX);
@@ -347,7 +350,7 @@ void checkpings()
         if(len <= 0) return;
         serverinfo *si = NULL;
         loopv(servers) if(addr.host == servers[i]->address.host && addr.port == servers[i]->address.port) { si = servers[i]; break; }
-        if(!si && searchlan) si = newserver(NULL, addr.port-1, 1, NULL, addr.host);
+        if(!si && searchlan) si = newserver(NULL, addr.port-1, 1, NULL, NULL, NULL, NULL, addr.host);
         if(!si) continue;
         ucharbuf p(ping, len);
         int millis = getint(p), rtt = clamp(totalmillis - millis, 0, min(serverdecay*1000, totalmillis));
@@ -357,19 +360,25 @@ void checkpings()
         int numattr = getint(p);
         si->attr.shrink(0);
         loopj(numattr) si->attr.add(getint(p));
+        int gver = si->attr.empty() ? 0 : si->attr[0];
         getstring(text, p);
         filterstring(si->map, text, false);
         getstring(text, p);
         filterstring(si->sdesc, text);
         si->players.deletearrays();
         si->handles.deletearrays();
+        if(gver >= 227)
+        {
+            getstring(text, p);
+            filterstring(si->branch, text);
+        }
         loopi(si->numplayers)
         {
             if(p.overread()) break;
             getstring(text, p);
             si->players.add(newstring(text));
         }
-        loopi(si->numplayers)
+        if(gver >= 225) loopi(si->numplayers)
         {
             if(p.overread()) break;
             getstring(text, p);
@@ -513,8 +522,7 @@ void writeservercfg()
     loopv(servers)
     {
         serverinfo *s = servers[i];
-        f->printf("addserver %s %d %d %s\n", escapeid(s->name), s->port, s->priority, escapeid(s->sdesc[0] ? s->sdesc : s->name));
+        f->printf("addserver %s %d %d %s %s %s %s\n", s->name, s->port, s->priority, escapestring(s->sdesc[0] ? s->sdesc : s->name), escapestring(s->authhandle), escapestring(s->flags), escapestring(s->branch));
     }
     delete f;
 }
-

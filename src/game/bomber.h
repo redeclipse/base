@@ -3,17 +3,17 @@
 #define isbombertarg(a,b)   (a.enabled && !isbomberaffinity(a) && a.team != T_NEUTRAL && a.team != b)
 
 #ifdef GAMESERVER
-#define carrytime (m_gsp1(gamemode, mutators) ? G(bomberholdtime) : G(bombercarrytime))
+#define carrytime (m_bb_hold(gamemode, mutators) ? G(bomberholdtime) : G(bombercarrytime))
 #define bomberstate bomberservstate
 #else
-#define carrytime (m_gsp1(game::gamemode, game::mutators) ? G(bomberholdtime) : G(bombercarrytime))
+#define carrytime (m_bb_hold(game::gamemode, game::mutators) ? G(bomberholdtime) : G(bombercarrytime))
 #endif
 struct bomberstate
 {
     struct flag
     {
         vec droploc, droppos, inertia, spawnloc;
-        int team, yaw, pitch, droptime, taketime;
+        int team, yaw, pitch, droptime, taketime, target;
         bool enabled;
         float distance;
 #ifdef GAMESERVER
@@ -22,7 +22,7 @@ struct bomberstate
 #else
         gameent *owner, *lastowner;
         projent *proj;
-        int displaytime, pickuptime, movetime, inittime, viewtime, rendertime, interptime;
+        int displaytime, movetime, inittime, viewtime, rendertime, interptime;
         vec viewpos, renderpos, interppos, render, above;
         entitylight light, baselight;
 #endif
@@ -39,11 +39,12 @@ struct bomberstate
 #else
             owner = lastowner = NULL;
             proj = NULL;
-            displaytime = pickuptime = movetime = inittime = viewtime = rendertime = interptime = 0;
+            displaytime = movetime = inittime = viewtime = rendertime = interptime = 0;
             viewpos = renderpos = vec(-1, -1, -1);
 #endif
             team = T_NEUTRAL;
             yaw = pitch = taketime = droptime = 0;
+            target = -1;
             enabled = false;
             distance = 0;
         }
@@ -143,7 +144,7 @@ struct bomberstate
     void create(int id, int target)
     {
         flag &f = flags[id];
-        f.proj = projs::create(f.droploc, f.inertia, false, NULL, PRJ_AFFINITY, bomberresetdelay, bomberresetdelay, 1, 1, id, target);
+        f.proj = projs::create(f.droploc, f.inertia, false, NULL, PRJ_AFFINITY, -1, HIT_NONE, bomberresetdelay, bomberresetdelay, 1, 1, id, target);
     }
 #endif
 
@@ -160,11 +161,12 @@ struct bomberstate
         f.owner = owner;
         f.taketime = t;
         f.droptime = 0;
+        f.target = -1;
 #ifdef GAMESERVER
         f.votes.shrink(0);
         f.lastowner = owner;
 #else
-        f.pickuptime = f.movetime = 0;
+        f.movetime = 0;
         if(!f.inittime) f.inittime = t;
         owner->addicon(eventicon::AFFINITY, t, game::eventiconfade, f.team);
         f.lastowner = owner;
@@ -182,12 +184,13 @@ struct bomberstate
         f.inertia = p;
         f.droptime = t;
         f.taketime = 0;
+        f.target = target;
         f.distance = 0;
 #ifdef GAMESERVER
         f.owner = -1;
         f.votes.shrink(0);
 #else
-        f.pickuptime = f.movetime = 0;
+        f.movetime = 0;
         if(!f.inittime) f.inittime = t;
         f.owner = NULL;
         destroy(i);
@@ -203,11 +206,12 @@ struct bomberstate
 #endif
         f.droptime = f.taketime = 0;
         f.enabled = enabled;
+        f.target = -1;
 #ifdef GAMESERVER
         f.owner = -1;
         f.votes.shrink(0);
 #else
-        f.pickuptime = f.inittime = f.movetime = 0;
+        f.inittime = f.movetime = 0;
         f.owner = NULL;
         destroy(i);
 #endif
@@ -225,13 +229,14 @@ namespace bomber
     extern void dropaffinity(gameent *d, int i, const vec &droploc, const vec &inertia, int target = -1);
     extern void scoreaffinity(gameent *d, int relay, int goal, int score);
     extern void takeaffinity(gameent *d, int i);
-    extern void resetaffinity(int i, int enabled);
+    extern void resetaffinity(int i, int value, const vec &pos);
     extern void reset();
     extern void setup();
     extern void setscore(int team, int total);
     extern void update();
     extern void killed(gameent *d, gameent *v);
-    extern void drawnotices(int w, int h, int &tx, int &ty, float blend);
+    extern void drawnotices(int w, int h, int &tx, int &ty, int tr, int tg, int tb, float blend);
+    extern void drawevents(int w, int h, int &tx, int &ty, int tr, int tg, int tb, float blend);
     extern void drawblips(int w, int h, float blend);
     extern int drawinventory(int x, int y, int s, int m, float blend);
     extern void preload();

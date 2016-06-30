@@ -5,20 +5,19 @@
 
 Shader *particleshader = NULL, *particlenotextureshader = NULL;
 
-VARF(IDF_PERSIST, maxparticles, 10, 512, 40000, particleinit());
-VARF(IDF_PERSIST, fewparticles, 10, 64, 40000, particleinit());
+VARF(IDF_PERSIST, maxparticles, 10, 512, 40000, initparticles());
+VARF(IDF_PERSIST, fewparticles, 10, 64, 40000, initparticles());
 VAR(IDF_PERSIST, maxparticledistance, 256, 512, VAR_MAX);
 VAR(IDF_PERSIST, maxparticletrail, 256, 512, VAR_MAX);
 
 VAR(IDF_PERSIST, particletext, 0, 1, 1);
 VAR(IDF_PERSIST, particleglare, 0, 1, 100);
-VAR(0, debugparticles, 0, 0, 1);
 
 // Check canemitparticles() to limit the rate that paricles can be emitted for models/sparklies
 // Automatically stops particles being emitted when paused or in reflective drawing
 VAR(IDF_PERSIST, emitmillis, 1, 20, VAR_MAX);
 static int lastemitframe = 0;
-static bool emit = false;
+static bool emit = false, canstep = false;
 
 static bool canemitparticles()
 {
@@ -44,6 +43,7 @@ struct partrenderer
     const char *texname;
     int texclamp;
     uint type;
+    string info;
 
     partrenderer(const char *texname, int texclamp, int type)
         : tex(NULL), texname(texname), texclamp(texclamp), type(type) { }
@@ -61,7 +61,6 @@ struct partrenderer
     virtual void render() = 0;
     virtual bool haswork() = 0;
     virtual int count() = 0; //for debug
-    virtual bool usesvertexarray() { return false; }
     virtual void cleanup() {}
 
     void preload()
@@ -71,7 +70,7 @@ struct partrenderer
     }
 
     //blend = 0 => remove it
-    void calc(particle *p, int &blend, int &ts, float &size, bool lastpass = true)
+    void calc(particle *p, int &blend, int &ts, float &size, bool step = true)
     {
         vec o = p->o;
         if(p->fade <= 5)
@@ -115,7 +114,7 @@ struct partrenderer
                 v.z -= physics::gravityvel(&d)*secs;
                 p->o.add(v);
             }
-            if(p->collide && p->o.z < p->val && lastpass)
+            if(step && p->collide && p->o.z < p->val)
             {
                 if(p->collide >= 0)
                 {
@@ -133,7 +132,27 @@ struct partrenderer
             }
             else p->m.add(vec(p->o).sub(o));
         }
-        game::particletrack(p, type, ts, lastpass);
+        game::particletrack(p, type, ts, step);
+    }
+
+    const char *debuginfo()
+    {
+        formatstring(info, "%d\t%s(", count(), partnames[type&0xFF]);
+        if(type&PT_GLARE) concatstring(info, "g,");
+        if(type&PT_SOFT) concatstring(info, "s,");
+        if(type&PT_LERP) concatstring(info, "l,");
+        if(type&PT_MOD) concatstring(info, "m,");
+        if(type&PT_RND4) concatstring(info, "r,");
+        if(type&PT_FLIP) concatstring(info, "f,");
+        if(type&PT_ONTOP) concatstring(info, "o,");
+        int len = strlen(info);
+        info[len-1] = info[len-1] == ',' ? ')' : '\0';
+        if(texname)
+        {
+            const char *title = strrchr(texname, '/');
+            if(title) concformatstring(info, ": %s", title+1);
+        }
+        return info;
     }
 };
 
@@ -247,24 +266,23 @@ struct listrenderer : partrenderer
 
     virtual void startrender() = 0;
     virtual void endrender() = 0;
-    virtual void renderpart(T *p, int blend, int ts, float size, uchar *color) = 0;
+    virtual void renderpart(T *p, int blend, int ts, float size) = 0;
 
     void render()
     {
         preload();
         startrender();
         if(tex) glBindTexture(GL_TEXTURE_2D, tex->id);
-        bool lastpass = !reflecting && !refracting;
         for(T **prev = &list, *p = list; p; p = *prev)
         {
             int blend = 255, ts = 1;
             float size = 1;
-            calc(p, blend, ts, size, lastpass);
+            calc(p, blend, ts, size, canstep);
             if(blend > 0)
             {
-                renderpart(p, blend, ts, size, p->color.v);
+                renderpart(p, blend, ts, size);
 
-                if(p->fade > 5 || !lastpass)
+                if(p->fade > 5 || !canstep)
                 {
                     prev = &p->next;
                     continue;
@@ -290,8 +308,8 @@ typedef listrenderer<sharedlistparticle> sharedlistrenderer;
 
 struct textrenderer : sharedlistrenderer
 {
-    textrenderer(int type)
-        : sharedlistrenderer(type)
+    textrenderer(int type = 0)
+        : sharedlistrenderer(type|PT_TEXT|PT_LERP)
     {}
 
     void startrender()
@@ -307,32 +325,31 @@ struct textrenderer : sharedlistrenderer
         if(p->text && p->flags&1) delete[] p->text;
     }
 
-    void renderpart(sharedlistparticle *p, int blend, int ts, float size, uchar *color)
+    void renderpart(sharedlistparticle *p, int blend, int ts, float size)
     {
-        glPushMatrix();
-        glTranslatef(p->o.x, p->o.y, p->o.z);
-        glRotatef(camera1->yaw, 0, 0, 1);
-        glRotatef(camera1->pitch-90, 1, 0, 0);
-        float scale = size/80.0f;
-        glScalef(-scale, scale, -scale);
         const char *text = p->text;
-        static string font; font[0] = 0;
+        static string font; font[0] = '\0';
         if(*text == '<')
         {
             const char *start = text;
             while(*text && *text != '>') text++;
-            if(*text) { int len = text-(start+1); memcpy(font, start+1, len); font[len] = 0; text++; }
+            if(*text) { int len = text-(start+1); memcpy(font, start+1, len); font[len] = '\0'; text++; }
             else text = start;
         }
-        float xoff = -text_width(text)/2;
-        glTranslatef(xoff, 0, 50);
+        float scale = p->size/80.0f, xoff = -text_width(text)/2;
+
+        matrix4x3 m(camright, vec(camup).neg(), vec(camdir).neg(), p->o);
+        m.scale(scale);
+        m.translate(xoff, 0, 50);
+
+        textmatrix = &m;
         pushfont(*font ? font : "default");
-        draw_text(text, 0, 0, color[0], color[1], color[2], int(p->blend*blend));
+        draw_text(text, 0, 0, p->color.r, p->color.g, p->color.b, int(p->blend*blend));
         popfont();
-        glPopMatrix();
+        textmatrix = NULL;
     }
 };
-static textrenderer texts(PT_TEXT|PT_LERP), textontop(PT_TEXT|PT_LERP|PT_ONTOP);
+static textrenderer texts, textontop(PT_ONTOP);
 
 struct portal : listparticle<portal>
 {
@@ -348,30 +365,29 @@ struct portalrenderer : listrenderer<portal>
     void startrender()
     {
         glDisable(GL_CULL_FACE);
+        gle::defvertex();
+        gle::deftexcoord0();
+        gle::defcolor(4, GL_UNSIGNED_BYTE);
+        gle::begin(GL_QUADS);
     }
 
     void endrender()
     {
+        gle::end();
         glEnable(GL_CULL_FACE);
     }
 
-    void renderpart(portal *p, int blend, int ts, float size, uchar *color)
+    void renderpart(portal *p, int blend, int ts, float size)
     {
-        glPushMatrix();
-        glTranslatef(p->o.x, p->o.y, p->o.z);
-        glRotatef(p->yaw, 0, 0, 1);
-        glRotatef(p->pitch, 1, 0, 0);
-        glScalef(size, size, size);
+        matrix4x3 m(vec(size, 0, 0), vec(0, size, 0), vec(0, 0, size), p->o);
+        m.rotate_around_z(p->yaw*RAD);
+        m.rotate_around_x(p->pitch*RAD);
 
-        glColor4ub(color[0], color[1], color[2], uchar(p->blend*blend));
-        glBegin(GL_TRIANGLE_STRIP);
-        glTexCoord2f(1, 0); glVertex3f(-1, 0,  1);
-        glTexCoord2f(0, 0); glVertex3f( 1, 0,  1);
-        glTexCoord2f(1, 1); glVertex3f(-1, 0, -1);
-        glTexCoord2f(0, 1); glVertex3f( 1, 0, -1);
-        glEnd();
-
-        glPopMatrix();
+        bvec4 color(p->color.r, p->color.g, p->color.b, uchar(p->blend*blend));
+        gle::attrib(m.transform(vec(-1, 0,  1))); gle::attribf(1, 0); gle::color(color);
+        gle::attrib(m.transform(vec( 1, 0,  1))); gle::attribf(0, 0); gle::color(color);
+        gle::attrib(m.transform(vec( 1, 0, -1))); gle::attribf(0, 1); gle::color(color);
+        gle::attrib(m.transform(vec(-1, 0, -1))); gle::attribf(1, 1); gle::color(color);
     }
 
     portal *addportal(const vec &o, int fade, int color, float size, float blend, float yaw, float pitch)
@@ -396,69 +412,74 @@ struct iconrenderer : listrenderer<icon>
 {
     Texture *lasttex;
 
-    iconrenderer(int type)
-        : listrenderer<icon>(type)
+    iconrenderer(int type = 0)
+        : listrenderer<icon>(type|PT_ICON|PT_LERP)
     {}
 
     void startrender()
     {
         lasttex = NULL;
+        gle::defvertex();
+        gle::deftexcoord0();
+        gle::defcolor(4, GL_UNSIGNED_BYTE);
+        gle::begin(GL_QUADS);
     }
 
     void endrender()
     {
+        gle::end();
     }
 
-    void renderpart(icon *p, int blend, int ts, float size, uchar *color)
+    void renderpart(icon *p, int blend, int ts, float size)
     {
         if(p->tex != lasttex)
         {
+            gle::end();
             glBindTexture(GL_TEXTURE_2D, p->tex->id);
             lasttex = p->tex;
         }
 
-        glPushMatrix();
-        glTranslatef(p->o.x, p->o.y, p->o.z);
-        glRotatef(camera1->yaw, 0, 0, 1);
-        glRotatef(camera1->pitch, 1, 0, 0);
+        matrix4x3 m(camright, vec(camup).neg(), vec(camdir).neg(), p->o);
         float aspect = p->tex->w/float(p->tex->h);
-        glScalef(size*aspect, size*aspect, size);
+        m.scale(size*aspect, size, 1);
 
-        glColor4ub(color[0], color[1], color[2], uchar(p->blend*blend));
+        #define iconvert(vx,vy) do { \
+            gle::attrib(m.transform(vec2(vx, vy))); \
+            gle::attribf(0.5f*(vx) + 0.5f, 0.5f*(vy) + 0.5f); \
+            gle::attrib(color); \
+        } while(0)
+
+        bvec4 color(p->color.r, p->color.g, p->color.b, uchar(p->blend*blend));
         if(p->start > 0 || p->length < 1)
         {
             float sx = cosf((p->start + 0.25f)*2*M_PI), sy = -sinf((p->start + 0.25f)*2*M_PI),
                   ex = cosf((p->end + 0.25f)*2*M_PI), ey = -sinf((p->end + 0.25f)*2*M_PI);
-            glBegin(GL_TRIANGLE_FAN);
-            glTexCoord2f(0.5f, 0.5f); glVertex3f(0, 0, 0);
+            gle::end(); gle::begin(GL_TRIANGLE_FAN);
+            iconvert(0, 0);
 
-            if(p->start < 0.125f || p->start >= 0.875f) { glTexCoord2f(0.5f + 0.5f*sx/sy, 0); glVertex3f(-(sx/sy), 0, 1);  }
-            else if(p->start < 0.375f) { glTexCoord2f(1, 0.5f - 0.5f*sy/sx); glVertex3f(-1, 0, sy/sx); }
-            else if(p->start < 0.625f) { glTexCoord2f(0.5f - 0.5f*sx/sy, 1); glVertex3f(sx/sy, 0, -1); }
-            else { glTexCoord2f(0, 0.5f + 0.5f*sy/sx); glVertex3f(1, 0, -(sy/sx)); }
+            if(p->start < 0.125f || p->start >= 0.875f) iconvert(sx/sy, -1);
+            else if(p->start < 0.375f) iconvert(1, -sy/sx);
+            else if(p->start < 0.625f) iconvert(-sx/sy, 1);
+            else iconvert(-1, sy/sx);
 
-            if(p->start <= 0.125f && p->end >= 0.125f) { glTexCoord2f(1, 0); glVertex3f(-1, 0, 1); }
-            if(p->start <= 0.375f && p->end >= 0.375f) { glTexCoord2f(1, 1); glVertex3f(-1, 0, -1); }
-            if(p->start <= 0.625f && p->end >= 0.625f) { glTexCoord2f(0, 1); glVertex3f(1, 0, -1); }
-            if(p->start <= 0.875f && p->end >= 0.875f) { glTexCoord2f(0, 0); glVertex3f(1, 0, 1); }
+            if(p->start <= 0.125f && p->end >= 0.125f) iconvert(1, -1);
+            if(p->start <= 0.375f && p->end >= 0.375f) iconvert(1, 1);
+            if(p->start <= 0.625f && p->end >= 0.625f) iconvert(-1, 1);
+            if(p->start <= 0.875f && p->end >= 0.875f) iconvert(-1, -1);
 
-            if(p->end < 0.125f || p->end >= 0.875f) { glTexCoord2f(0.5f + 0.5f*ex/ey, 0); glVertex3f(-(ex/ey), 0, 1);  }
-            else if(p->end < 0.375f) { glTexCoord2f(1, 0.5f - 0.5f*ey/ex); glVertex3f(-1, 0, ey/ex); }
-            else if(p->end < 0.625f) { glTexCoord2f(0.5f - 0.5f*ex/ey, 1); glVertex3f(ex/ey, 0, -1); }
-            else { glTexCoord2f(0, 0.5f + 0.5f*ey/ex); glVertex3f(1, 0, -(ey/ex)); }
-            glEnd();
+            if(p->end < 0.125f || p->end >= 0.875f) iconvert(ex/ey, -1);
+            else if(p->end < 0.375f) iconvert(1, -ey/ex);
+            else if(p->end < 0.625f) iconvert(-ex/ey, 1);
+            else iconvert(-1, ey/ex);
+            gle::end(); gle::begin(GL_QUADS);
         }
         else
         {
-            glBegin(GL_TRIANGLE_STRIP);
-            glTexCoord2f(1, 1); glVertex3f(-1, 0, -1);
-            glTexCoord2f(0, 1); glVertex3f( 1, 0, -1);
-            glTexCoord2f(1, 0); glVertex3f(-1, 0,  1);
-            glTexCoord2f(0, 0); glVertex3f( 1, 0,  1);
-            glEnd();
+            iconvert( 1,  1);
+            iconvert(-1,  1);
+            iconvert(-1, -1);
+            iconvert( 1, -1);
         }
-
-        glPopMatrix();
     }
 
     icon *addicon(const vec &o, Texture *tex, int fade, int color, float size, float blend, int grav, int collide, float start, float length, physent *pl = NULL)
@@ -475,7 +496,7 @@ struct iconrenderer : listrenderer<icon>
     // use addicon() instead
     particle *addpart(const vec &o, const vec &d, int fade, int color, float size, float blend = 1, int grav = 0, int collide = 0, physent *pl = NULL) { return NULL; }
 };
-static iconrenderer icons(PT_ICON|PT_LERP);
+static iconrenderer icons;
 
 template<int T>
 static inline void modifyblend(const vec &o, int &blend)
@@ -558,15 +579,21 @@ struct varenderer : partrenderer
     partvert *verts;
     particle *parts;
     int maxparts, numparts, lastupdate, rndmask;
+    GLuint vbo;
 
     varenderer(const char *texname, int type, int texclamp = 3)
         : partrenderer(texname, texclamp, type),
-          verts(NULL), parts(NULL), maxparts(0), numparts(0), lastupdate(-1), rndmask(0)
+          verts(NULL), parts(NULL), maxparts(0), numparts(0), lastupdate(-1), rndmask(0), vbo(0)
     {
         if(type & PT_HFLIP) rndmask |= 0x01;
         if(type & PT_VFLIP) rndmask |= 0x02;
         if(type & PT_ROT) rndmask |= 0x1F<<2;
         if(type & PT_RND4) rndmask |= 0x03<<5;
+    }
+
+    void cleanup()
+    {
+        if(vbo) { glDeleteBuffers_(1, &vbo); vbo = 0; }
     }
 
     void init(int n)
@@ -605,8 +632,6 @@ struct varenderer : partrenderer
     {
         return (numparts > 0);
     }
-
-    bool usesvertexarray() { return true; }
 
     particle *addpart(const vec &o, const vec &d, int fade, int color, float size, float blend = 1, int grav = 0, int collide = 0, physent *pl = NULL)
     {
@@ -663,9 +688,9 @@ struct varenderer : partrenderer
                 bvec4 col(r, g, b, a); \
                 loopi(4) vs[i].color = col; \
             } while(0)
-            #define SETMODCOLOR SETCOLOR((p->color[0]*blend)>>8, (p->color[1]*blend)>>8, (p->color[2]*blend)>>8, uchar(p->blend*255))
+            #define SETMODCOLOR SETCOLOR((p->color.r*blend)>>8, (p->color.g*blend)>>8, (p->color.b*blend)>>8, uchar(p->blend*255))
             if(type&PT_MOD) SETMODCOLOR;
-            else SETCOLOR(p->color[0], p->color[1], p->color[2], uchar(p->blend*blend));
+            else SETCOLOR(p->color.r, p->color.g, p->color.b, uchar(p->blend*blend));
         }
         else if(type&PT_MOD) SETMODCOLOR;
         else loopi(4) vs[i].color.a = uchar(p->blend*blend);
@@ -674,11 +699,8 @@ struct varenderer : partrenderer
         else genpos<T>(p->o, p->d, size, ts, p->grav, vs);
     }
 
-    void update()
+    void genverts()
     {
-        if(lastmillis == lastupdate) return;
-        lastupdate = lastmillis;
-
         loopi(numparts)
         {
             particle *p = &parts[i];
@@ -698,14 +720,42 @@ struct varenderer : partrenderer
         }
     }
 
+    void update()
+    {
+        if(lastmillis == lastupdate && vbo) return;
+        lastupdate = lastmillis;
+
+        genverts();
+
+        if(!vbo) glGenBuffers_(1, &vbo);
+        gle::bindvbo(vbo);
+        glBufferData_(GL_ARRAY_BUFFER, maxparts*4*sizeof(partvert), NULL, GL_STREAM_DRAW);
+        glBufferSubData_(GL_ARRAY_BUFFER, 0, numparts*4*sizeof(partvert), verts);
+        gle::clearvbo();
+    }
+
     void render()
     {
         preload();
         if(tex) glBindTexture(GL_TEXTURE_2D, tex->id);
-        glVertexPointer(3, GL_FLOAT, sizeof(partvert), verts->pos.v);
-        glTexCoordPointer(2, GL_FLOAT, sizeof(partvert), verts->tc.v);
-        glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(partvert), verts->color.v);
-        glDrawArrays(GL_QUADS, 0, numparts*4);
+
+        gle::bindvbo(vbo);
+        const partvert *ptr = 0;
+        gle::vertexpointer(sizeof(partvert), ptr->pos.v);
+        gle::texcoord0pointer(sizeof(partvert), ptr->tc.v);
+        gle::colorpointer(sizeof(partvert), ptr->color.v);
+        gle::enablevertex();
+        gle::enabletexcoord0();
+        gle::enablecolor();
+        gle::enablequads();
+
+        gle::drawquads(0, numparts);
+
+        gle::disablequads();
+        gle::disablevertex();
+        gle::disabletexcoord0();
+        gle::disablecolor();
+        gle::clearvbo();
     }
 };
 
@@ -752,35 +802,31 @@ struct lineprimitive : listparticle<lineprimitive>
 
 struct lineprimitiverenderer : listrenderer<lineprimitive>
 {
-    lineprimitiverenderer(int type)
-        : listrenderer<lineprimitive>(type)
+    lineprimitiverenderer(int type = 0)
+        : listrenderer<lineprimitive>(type|PT_LINE|PT_LERP|PT_NOTEX)
     {}
 
     void startrender()
     {
         glDisable(GL_CULL_FACE);
-        particlenotextureshader->set();
+        gle::defvertex();
+        gle::defcolor(4, GL_UNSIGNED_BYTE);
+        gle::begin(GL_LINES);
     }
 
     void endrender()
     {
+        gle::end();
         glEnable(GL_CULL_FACE);
-        particleshader->set();
     }
 
-    void renderpart(lineprimitive *p, int blend, int ts, float size, uchar *color)
+    void renderpart(lineprimitive *p, int blend, int ts, float size)
     {
-        glPushMatrix();
-        glTranslatef(p->o.x, p->o.y, p->o.z);
-        glScalef(size, size, size);
-        glColor4ub(color[0], color[1], color[2], uchar(p->blend*blend));
-
-        glBegin(GL_LINES);
-        glVertex3f(0, 0, 0);
-        glVertex3fv(p->value.v);
-        glEnd();
-
-        glPopMatrix();
+        bvec4 color(p->color.r, p->color.g, p->color.b, uchar(p->blend*blend));
+        gle::attrib(p->o);
+            gle::attrib(color);
+        gle::attrib(vec(p->value).mul(size).add(p->o));
+            gle::attrib(color);
     }
 
     lineprimitive *addline(const vec &o, const vec &v, int fade, int color, float size, float blend)
@@ -793,7 +839,7 @@ struct lineprimitiverenderer : listrenderer<lineprimitive>
     // use addline() instead
     particle *addpart(const vec &o, const vec &d, int fade, int color, float size, float blend = 1, int grav = 0, int collide = 0, physent *pl = NULL) { return NULL; }
 };
-static lineprimitiverenderer lineprimitives(PT_LINE|PT_LERP), lineontopprimitives(PT_LINE|PT_LERP|PT_ONTOP);
+static lineprimitiverenderer lineprimitives, lineontopprimitives(PT_ONTOP);
 
 struct trisprimitive : listparticle<trisprimitive>
 {
@@ -803,36 +849,35 @@ struct trisprimitive : listparticle<trisprimitive>
 
 struct trisprimitiverenderer : listrenderer<trisprimitive>
 {
-    trisprimitiverenderer(int type)
-        : listrenderer<trisprimitive>(type)
+    trisprimitiverenderer(int type = 0)
+        : listrenderer<trisprimitive>(type|PT_TRIANGLE|PT_LERP|PT_NOTEX)
     {}
 
     void startrender()
     {
         glDisable(GL_CULL_FACE);
-        particlenotextureshader->set();
+        gle::defvertex();
+        gle::defcolor(4, GL_UNSIGNED_BYTE);
+        gle::begin(GL_TRIANGLES);
     }
 
     void endrender()
     {
+        gle::end();
         glEnable(GL_CULL_FACE);
-        particleshader->set();
     }
 
-    void renderpart(trisprimitive *p, int blend, int ts, float size, uchar *color)
+    void renderpart(trisprimitive *p, int blend, int ts, float size)
     {
-        glPushMatrix();
-        glTranslatef(p->o.x, p->o.y, p->o.z);
-        glScalef(size, size, size);
-        glColor4ub(color[0], color[1], color[2], uchar(p->blend*blend));
-
-        glBegin(p->fill ? GL_TRIANGLES : GL_LINE_LOOP);
-        glVertex3f(0, 0, 0);
-        glVertex3fv(p->value[0].v);
-        glVertex3fv(p->value[1].v);
-        glEnd();
-
-        glPopMatrix();
+        bvec4 color(p->color.r, p->color.g, p->color.b, uchar(p->blend*blend));
+        if(!p->fill) { gle::end(); gle::begin(GL_LINE_LOOP); }
+        gle::attrib(p->o);
+            gle::attrib(color);
+        gle::attrib(vec(p->value[0]).mul(size).add(p->o));
+            gle::attrib(color);
+        gle::attrib(vec(p->value[1]).mul(size).add(p->o));
+            gle::attrib(color);
+        if(!p->fill) { gle::end(); gle::begin(GL_TRIANGLES); }
     }
 
     trisprimitive *addtriangle(const vec &o, float yaw, float pitch, int fade, int color, float size, float blend, bool fill)
@@ -852,7 +897,7 @@ struct trisprimitiverenderer : listrenderer<trisprimitive>
     // use addtriangle() instead
     particle *addpart(const vec &o, const vec &d, int fade, int color, float size, float blend = 1, int grav = 0, int collide = 0, physent *pl = NULL) { return NULL; }
 };
-static trisprimitiverenderer trisprimitives(PT_TRIANGLE|PT_LERP), trisontopprimitives(PT_TRIANGLE|PT_LERP|PT_ONTOP);
+static trisprimitiverenderer trisprimitives, trisontopprimitives(PT_ONTOP);
 
 struct loopprimitive : listparticle<loopprimitive>
 {
@@ -863,50 +908,44 @@ struct loopprimitive : listparticle<loopprimitive>
 
 struct loopprimitiverenderer : listrenderer<loopprimitive>
 {
-    loopprimitiverenderer(int type)
-        : listrenderer<loopprimitive>(type)
+    loopprimitiverenderer(int type = 0)
+        : listrenderer<loopprimitive>(type|PT_ELLIPSE|PT_LERP|PT_NOTEX)
     {}
 
     void startrender()
     {
         glDisable(GL_CULL_FACE);
-        particlenotextureshader->set();
+        gle::defvertex();
     }
 
     void endrender()
     {
         glEnable(GL_CULL_FACE);
-        particleshader->set();
     }
 
-    void renderpart(loopprimitive *p, int blend, int ts, float size, uchar *color)
+    void renderpart(loopprimitive *p, int blend, int ts, float size)
     {
-        glPushMatrix();
-        glTranslatef(p->o.x, p->o.y, p->o.z);
-        glScalef(size, size, size);
-        glColor4ub(color[0], color[1], color[2], uchar(p->blend*blend));
-
-        glBegin(p->fill ? GL_TRIANGLE_FAN : GL_LINE_LOOP);
-        loopi(16 + (p->fill ? 1 : 0))
+        gle::colorub(p->color.r, p->color.g, p->color.b, uchar(p->blend*blend));
+        gle::begin(p->fill ? GL_TRIANGLE_FAN : GL_LINE_LOOP);
+        loopi(15 + (p->fill ? 1 : 0))
         {
+            const vec2 &sc = sincos360[i*(360/15)];
             vec v;
             switch(p->axis)
             {
                 case 0:
-                    v = vec(p->value.x*cosf(2*M_PI*i/16.0f), p->value.z*sinf(2*M_PI*i/16.0f), 0).rotate_around_x(90*RAD);
+                    v = vec(p->value.x*sc.x, 0, p->value.z*sc.y);
                     break;
                 case 1:
-                    v = vec(p->value.z*cosf(2*M_PI*i/16.0f), p->value.y*sinf(2*M_PI*i/16.0f), 0).rotate_around_y(-90*RAD);
+                    v = vec(0, p->value.y*sc.y, p->value.z*sc.x);
                     break;
                 case 2: default:
-                    v = vec(p->value.x*cosf(2*M_PI*i/16.0f), p->value.y*sinf(2*M_PI*i/16.0f), 0).rotate_around_z(90*RAD);
+                    v = vec(-p->value.y*sc.y, p->value.x*sc.x, 0);
                     break;
             }
-            glVertex3fv(v.v);
+            gle::attrib(v.mul(size).add(p->o));
         }
-        glEnd();
-
-        glPopMatrix();
+        gle::end();
     }
 
     loopprimitive *addellipse(const vec &o, const vec &v, int fade, int color, float size, float blend, int axis, bool fill)
@@ -921,7 +960,7 @@ struct loopprimitiverenderer : listrenderer<loopprimitive>
     // use addellipse() instead
     particle *addpart(const vec &o, const vec &d, int fade, int color, float size, float blend = 1, int grav = 0, int collide = 0, physent *pl = NULL) { return NULL; }
 };
-static loopprimitiverenderer loopprimitives(PT_ELLIPSE|PT_LERP), loopontopprimitives(PT_ELLIPSE|PT_LERP|PT_ONTOP);
+static loopprimitiverenderer loopprimitives, loopontopprimitives(PT_ONTOP);
 
 struct coneprimitive : listparticle<coneprimitive>
 {
@@ -932,47 +971,39 @@ struct coneprimitive : listparticle<coneprimitive>
 
 struct coneprimitiverenderer : listrenderer<coneprimitive>
 {
-    coneprimitiverenderer(int type)
-        : listrenderer<coneprimitive>(type)
+    coneprimitiverenderer(int type = 0)
+        : listrenderer<coneprimitive>(type|PT_CONE|PT_LERP|PT_NOTEX)
     {}
 
     void startrender()
     {
         glDisable(GL_CULL_FACE);
-        particlenotextureshader->set();
+        gle::defvertex();
     }
 
     void endrender()
     {
         glEnable(GL_CULL_FACE);
-        particleshader->set();
     }
 
-    void renderpart(coneprimitive *p, int blend, int ts, float size, uchar *color)
+    void renderpart(coneprimitive *p, int blend, int ts, float size)
     {
-        glPushMatrix();
-        glTranslatef(p->o.x, p->o.y, p->o.z);
-        glScalef(size, size, size);
-        glColor4ub(color[0], color[1], color[2], uchar(p->blend*blend));
+        gle::colorub(p->color.r, p->color.g, p->color.b, uchar(p->blend*blend));
 
-        glBegin(GL_LINES);
-        loopi(16)
+        gle::begin(GL_LINES);
+        loopi(15)
         {
-            vec v = vec(p->spoke).rotate(2*M_PI*i/16.f, p->dir).add(p->spot);
-            glVertex3f(0, 0, 0);
-            glVertex3fv(v.v);
+            gle::attrib(p->o);
+            gle::attrib(vec(p->spoke).rotate(sincos360[i*(360/15)], p->dir).add(p->spot).mul(size).add(p->o));
         }
-        glEnd();
+        gle::end();
 
-        glBegin(GL_LINE_LOOP);
-        loopi(16)
+        gle::begin(GL_LINE_LOOP);
+        loopi(15)
         {
-            vec v = vec(p->spoke).rotate(2*M_PI*i/16.f, p->dir).add(p->spot);
-            glVertex3fv(v.v);
+            gle::attrib(vec(p->spoke).rotate(sincos360[i*(360/15)], p->dir).add(p->spot).mul(size).add(p->o));
         }
-        glEnd();
-
-        glPopMatrix();
+        gle::end();
     }
 
     coneprimitive *addcone(const vec &o, const vec &dir, float radius, float angle, int fade, int color, float size, float blend, bool fill)
@@ -991,7 +1022,7 @@ struct coneprimitiverenderer : listrenderer<coneprimitive>
     // use addcone() instead
     particle *addpart(const vec &o, const vec &d, int fade, int color, float size, float blend = 1, int grav = 0, int collide = 0, physent *pl = NULL) { return NULL; }
 };
-static coneprimitiverenderer coneprimitives(PT_CONE|PT_LERP), coneontopprimitives(PT_CONE|PT_LERP|PT_ONTOP);
+static coneprimitiverenderer coneprimitives, coneontopprimitives(PT_ONTOP);
 
 static partrenderer *parts[] =
 {
@@ -1069,7 +1100,7 @@ void finddepthfxranges()
     if(depthfxscissor<2 && numdepthfxranges>0) depthfxtex.addscissorbox(depthfxmin, depthfxmax);
 }
 
-void particleinit()
+void initparticles()
 {
     if(!particleshader) particleshader = lookupshaderbyname("particle");
     if(!particlenotextureshader) particlenotextureshader = lookupshaderbyname("particlenotexture");
@@ -1095,44 +1126,27 @@ void removetrackedparticles(physent *pl)
     loopi(sizeof(parts)/sizeof(parts[0])) parts[i]->resettracked(pl);
 }
 
+VARN(0, debugparticles, dbgparts, 0, 0, 1);
+
+void debugparticles()
+{
+    if(!dbgparts) return;
+    int n = sizeof(parts)/sizeof(parts[0]);
+    glEnable(GL_BLEND);
+    pushhudmatrix();
+    hudmatrix.ortho(0, FONTH*n*2*screenw/float(screenh), FONTH*n*2, 0, -1, 1); //squeeze into top-left corner
+    flushhudmatrix();
+    hudshader->set();
+    loopi(n) draw_text(parts[i]->info, FONTH, (i+n/2)*FONTH);
+    pophudmatrix();
+    glDisable(GL_BLEND);
+}
+
 void renderparticles(bool mainpass)
 {
+    canstep = mainpass;
     //want to debug BEFORE the lastpass render (that would delete particles)
-    if(debugparticles && !glaring && !reflecting && !refracting)
-    {
-        int n = sizeof(parts)/sizeof(parts[0]);
-        glMatrixMode(GL_PROJECTION);
-        glPushMatrix();
-        glLoadIdentity();
-        glOrtho(0, FONTH*n*2, FONTH*n*2, 0, -1, 1); //squeeze into top-left corner
-        glMatrixMode(GL_MODELVIEW);
-        glPushMatrix();
-        glLoadIdentity();
-        glDisable(GL_DEPTH_TEST);
-        glEnable(GL_BLEND);
-        defaultshader->set();
-        loopi(n)
-        {
-            int type = parts[i]->type;
-            const char *title = parts[i]->texname ? strrchr(parts[i]->texname, '/')+1 : NULL;
-            string info = "";
-            if(type&PT_GLARE) concatstring(info, "g,");
-            if(type&PT_SOFT) concatstring(info, "s,");
-            if(type&PT_LERP) concatstring(info, "l,");
-            if(type&PT_MOD) concatstring(info, "m,");
-            if(type&PT_RND4) concatstring(info, "r,");
-            if(type&PT_FLIP) concatstring(info, "f,");
-            if(type&PT_ONTOP) concatstring(info, "o,");
-            defformatstring(ds, "%d\t%s: %s %s", parts[i]->count(), partnames[type&PT_TYPE], info, (title?title:""));
-            draw_text(ds, FONTH, (i+n/2)*FONTH);
-        }
-        glDisable(GL_BLEND);
-        glEnable(GL_DEPTH_TEST);
-        glMatrixMode(GL_PROJECTION);
-        glPopMatrix();
-        glMatrixMode(GL_MODELVIEW);
-        glPopMatrix();
-    }
+    if(dbgparts && mainpass) loopi(sizeof(parts)/sizeof(parts[0])) parts[i]->debuginfo();
 
     if(glaring && !particleglare) return;
 
@@ -1142,10 +1156,9 @@ void renderparticles(bool mainpass)
         parts[i]->update();
     }
 
-    static float zerofog[4] = { 0, 0, 0, 1 };
-    float oldfogc[4];
     bool rendered = false;
-    uint lastflags = PT_LERP, flagmask = PT_LERP|PT_MOD|PT_ONTOP;
+    uint lastflags = PT_LERP|PT_SHADER,
+         flagmask = PT_LERP|PT_MOD|PT_ONTOP|PT_SHADER;
 
     if(binddepthfxtex()) flagmask |= PT_SOFT;
 
@@ -1164,56 +1177,36 @@ void renderparticles(bool mainpass)
 
             if(glaring) GLOBALPARAMF(colorscale, particleglare, particleglare, particleglare, 1);
             else GLOBALPARAMF(colorscale, 1, 1, 1, 1);
-
-            particleshader->set();
-            glGetFloatv(GL_FOG_COLOR, oldfogc);
         }
 
-        uint flags = p->type & flagmask;
-        if(p->usesvertexarray()) flags |= 0x01; //0x01 = VA marker
-        uint changedbits = (flags ^ lastflags);
-        if(changedbits != 0x0000)
+        uint flags = p->type & flagmask, changedbits = (flags ^ lastflags);
+        if(changedbits)
         {
-            if(changedbits&0x01)
+            if(changedbits&PT_LERP)
             {
-                if(flags&0x01)
-                {
-                    glEnableClientState(GL_VERTEX_ARRAY);
-                    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-                    glEnableClientState(GL_COLOR_ARRAY);
-                }
-                else
-                {
-                    glDisableClientState(GL_VERTEX_ARRAY);
-                    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-                    glDisableClientState(GL_COLOR_ARRAY);
-                }
+                if(flags&PT_LERP) resetfogcolor();
+                else zerofogcolor();
             }
-            if(changedbits&PT_LERP) glFogfv(GL_FOG_COLOR, (flags&PT_LERP) ? oldfogc : zerofog);
             if(changedbits&(PT_LERP|PT_MOD))
             {
                 if(flags&PT_LERP) glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
                 else if(flags&PT_MOD) glBlendFunc(GL_ZERO, GL_ONE_MINUS_SRC_COLOR);
                 else glBlendFunc(GL_SRC_ALPHA, GL_ONE);
             }
-            if(changedbits&PT_SOFT)
+            if(!(flags&PT_SHADER))
             {
-                if(flags&PT_SOFT)
+                if(changedbits&(PT_SOFT|PT_SHADER|PT_NOTEX))
                 {
-                    if(depthfxtex.target==GL_TEXTURE_RECTANGLE_ARB)
-                    {
-                        if(!depthfxtex.highprecision()) SETSHADER(particlesoft8rect);
-                        else SETSHADER(particlesoftrect);
-                    }
-                    else
+                    if(flags&PT_SOFT)
                     {
                         if(!depthfxtex.highprecision()) SETSHADER(particlesoft8);
                         else SETSHADER(particlesoft);
-                    }
 
-                    binddepthfxparams(depthfxpartblend);
+                        binddepthfxparams(depthfxpartblend);
+                    }
+                    else if(flags&PT_NOTEX) particlenotextureshader->set();
+                    else particleshader->set();
                 }
-                else particleshader->set();
             }
             if(changedbits&PT_ONTOP)
             {
@@ -1228,13 +1221,7 @@ void renderparticles(bool mainpass)
     if(rendered)
     {
         if(lastflags&(PT_LERP|PT_MOD)) glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-        if(!(lastflags&PT_LERP)) glFogfv(GL_FOG_COLOR, oldfogc);
-        if(lastflags&0x01)
-        {
-            glDisableClientState(GL_VERTEX_ARRAY);
-            glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-            glDisableClientState(GL_COLOR_ARRAY);
-        }
+        if(!(lastflags&PT_LERP)) resetfogcolor();
         if(lastflags&PT_ONTOP) glEnable(GL_DEPTH_TEST);
         glDisable(GL_BLEND);
         glDepthMask(GL_TRUE);
@@ -1501,10 +1488,8 @@ static inline vec offsetvec(vec o, int dir, int dist)
  * 24..26 flat plane
  * +32 to inverse direction
  */
-void regularshape(int type, float radius, int color, int dir, int num, int fade, const vec &p, float size, float blend, int grav, int collide, float vel)
+ void createshape(int type, float radius, int color, int dir, int num, int fade, const vec &p, float size, float blend, int grav, int collide, float vel)
 {
-    if(!canemitparticles()) return;
-
     int basetype = parts[type]->type&PT_TYPE;
     bool flare = (basetype == PT_TAPE) || (basetype == PT_LIGHTNING),
          inv = (dir&0x20)!=0, taper = (dir&0x40)!=0;
@@ -1597,6 +1582,12 @@ void regularshape(int type, float radius, int color, int dir, int num, int fade,
                 np->val = from.z - raycube(from, vec(0, 0, -1), np->collide >= 0 ? COLLIDERADIUS : max(from.z, 0.0f), RAY_CLIPMAT) + (np->collide >= 0 ? COLLIDEERROR : 0);
         }
     }
+}
+
+void regularshape(int type, float radius, int color, int dir, int num, int fade, const vec &p, float size, float blend, int grav, int collide, float vel)
+{
+    if(!canemitparticles()) return;
+    createshape(type, radius, color, dir, num, fade, p, size, blend, grav, collide, vel);
 }
 
 void regularflame(int type, const vec &p, float radius, float height, int color, int density, int fade, float size, float blend, int grav, int collide, float vel)
@@ -1739,4 +1730,3 @@ void updateparticles()
     entities::drawparticles();
     flares.drawflares(); // do after drawparticles so that we can make flares for them too
 }
-

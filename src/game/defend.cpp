@@ -18,7 +18,7 @@ namespace defend
         vec colour = vec::hexcolor(TEAM(owner, colour));
         if(enemy)
         {
-            int team = owner && enemy && !m_gsp1(game::gamemode, game::mutators) ? T_NEUTRAL : enemy;
+            int team = owner && enemy && !m_dac_quick(game::gamemode, game::mutators) ? T_NEUTRAL : enemy;
             int timestep = totalmillis%1000;
             float amt = clamp((timestep <= 500 ? timestep/500.f : (1000-timestep)/500.f)*occupy, 0.f, 1.f);
             colour.lerp(vec::hexcolor(TEAM(team, colour)), amt);
@@ -59,7 +59,7 @@ namespace defend
         loopv(st.flags)
         {
             defendstate::flag &b = st.flags[i];
-            float occupy = b.occupied(m_gsp1(game::gamemode, game::mutators), defendcount);
+            float occupy = b.occupied(m_dac_quick(game::gamemode, game::mutators), defendcount);
             vec effect = skewcolour(b.owner, b.enemy, occupy);
             int colour = effect.tohexcolor();
             b.baselight.material[0] = bvec::fromcolor(effect);
@@ -96,7 +96,7 @@ namespace defend
         loopv(st.flags)
         {
             defendstate::flag &f = st.flags[i];
-            float occupy = f.occupied(m_gsp1(game::gamemode, game::mutators), defendcount);
+            float occupy = f.occupied(m_dac_quick(game::gamemode, game::mutators), defendcount);
             adddynlight(vec(f.o).add(vec(0, 0, enttype[AFFINITY].radius)), enttype[AFFINITY].radius*2, skewcolour(f.owner, f.enemy, occupy), 0, 0, DL_KEEP);
         }
     }
@@ -106,7 +106,7 @@ namespace defend
         loopv(st.flags)
         {
             defendstate::flag &f = st.flags[i];
-            float occupy = f.occupied(m_gsp1(game::gamemode, game::mutators), defendcount);
+            float occupy = f.occupied(m_dac_quick(game::gamemode, game::mutators), defendcount);
             vec colour = skewcolour(f.owner, f.enemy, occupy);
             bool attack = f.owner == game::focus->team && f.enemy;
             const char *tex = f.hasflag ? hud::arrowtex : (attack ? hud::attacktex : hud::pointtex);
@@ -121,26 +121,28 @@ namespace defend
         }
     }
 
-    void drawnotices(int w, int h, int &tx, int &ty, float blend)
+    void drawnotices(int w, int h, int &tx, int &ty, int tr, int tg, int tb, float blend)
     {
-        if(game::focus->state == CS_ALIVE && hud::shownotices >= 2)
+        if(game::focus->state == CS_ALIVE && hud::shownotices >= 3 && game::focus->lastbuff)
         {
-            if(game::focus->lastbuff && hud::shownotices >= 3)
-            {
-                pushfont("reduced");
-                if(m_regen(game::gamemode, game::mutators) && defendregenbuff && defendregenextra)
-                    ty += draw_textx("Buffing: \fs\fo%d%%\fS damage, \fs\fg%d%%\fS shield, +\fs\fy%d\fS regen", tx, ty, 255, 255, 255, int(255*blend), TEXT_CENTERED, -1, -1, int(defendbuffdamage*100), int(defendbuffshield*100), defendregenextra)*hud::noticescale;
-                else ty += draw_textx("Buffing: \fs\fo%d%%\fS damage, \fs\fg%d%%\fS shield", tx, ty, 255, 255, 255, int(255*blend), TEXT_CENTERED, -1, -1, int(defendbuffdamage*100), int(defendbuffshield*100))*hud::noticescale;
-                popfont();
-            }
+            pushfont("reduced");
+            if(m_regen(game::gamemode, game::mutators) && defendregenbuff && defendregenextra)
+                ty += draw_textf("Buffing: \fs\fo%d%%\fS damage, \fs\fg%d%%\fS shield, +\fs\fy%d\fS regen", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, int(defendbuffdamage*100), int(defendbuffshield*100), defendregenextra);
+            else ty += draw_textf("Buffing: \fs\fo%d%%\fS damage, \fs\fg%d%%\fS shield", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, int(defendbuffdamage*100), int(defendbuffshield*100));
+            popfont();
+        }
+    }
+
+    void drawevents(int w, int h, int &tx, int &ty, int tr, int tg, int tb, float blend)
+    {
+        if(game::focus->state == CS_ALIVE && hud::showevents >= 2)
+        {
             loopv(st.flags) if(insideaffinity(st.flags[i], game::focus) && (st.flags[i].owner == game::focus->team || st.flags[i].enemy == game::focus->team))
             {
                 defendstate::flag &f = st.flags[i];
-                pushfont("emphasis");
                 float occupy = !f.owner || f.enemy ? clamp(f.converted/float(defendcount), 0.f, 1.f) : 1.f;
                 bool overthrow = f.owner && f.enemy == game::focus->team;
-                ty += draw_textx("%s %s \fs\f[%d]\f(%s)\f(%s)\fS \fs%s%d%%\fS", tx, ty, 255, 255, 255, int(255*blend), TEXT_CENTERED, -1, -1, overthrow ? "Overthrow" : "Secure", f.name, TEAM(f.owner, colour), hud::teamtexname(f.owner), hud::pointtex, overthrow ? "\fy" : (occupy < 1.f ? "\fc" : "\fg"), int(occupy*100.f))*hud::noticescale;
-                popfont();
+                ty -= draw_textf("You are %s: %s \fs\f[%d]\f(%s)\f(%s)\fS \fs%s%d%%\fS", tx, ty, int(FONTW*hud::eventpadx), int(FONTH*hud::eventpady), tr, tg, tb, int(255*blend), TEXT_SKIN|TEXT_CENTERED, -1, -1, 1, overthrow ? "overthrowing" : "securing", f.name, TEAM(f.owner, colour), hud::teamtexname(f.owner), hud::pointtex, overthrow ? "\fy" : (occupy < 1.f ? "\fc" : "\fg"), int(occupy*100.f))+FONTH/4;
                 break;
             }
         }
@@ -196,7 +198,7 @@ namespace defend
 
     void setup()
     {
-        int df = m_gsp2(game::gamemode, game::mutators) ? 0 : defendflags;
+        int df = m_dac_king(game::gamemode, game::mutators) ? 0 : defendflags;
         loopv(entities::ents)
         {
             extentity *e = entities::ents[i];
@@ -237,7 +239,7 @@ namespace defend
                 break;
             }
         }
-        if(m_gsp2(game::gamemode, game::mutators))
+        if(m_dac_king(game::gamemode, game::mutators))
         {
             vec average(0, 0, 0);
             int count = 0;
@@ -315,7 +317,7 @@ namespace defend
                     loopi(numdyns) if((e = (gameent *)game::iterdynents(i)) && e->actortype < A_ENEMY && insideaffinity(b, e))
                         if((d = e) == game::focus) break;
                     game::announcef(S_V_FLAGSECURED, CON_SELF, d, true, "\fateam %s secured \fw%s", game::colourteam(owner), b.name);
-                    part_textcopy(vec(b.o).add(vec(0, 0, enttype[AFFINITY].radius)), "<super>\fzZeSECURED", PART_TEXT, game::eventiconfade, TEAM(owner, colour), 3, 1, -10);
+                    part_textcopy(vec(b.o).add(vec(0, 0, enttype[AFFINITY].radius)), "<huge>\fzuwSECURED", PART_TEXT, game::eventiconfade, TEAM(owner, colour), 3, 1, -10);
                     if(game::dynlighteffects) adddynlight(b.o, enttype[AFFINITY].radius*2, vec::hexcolor(TEAM(owner, colour)).mul(2.f), 500, 250);
                 }
             }
@@ -326,7 +328,7 @@ namespace defend
                 loopi(numdyns) if((e = (gameent *)game::iterdynents(i)) && e->actortype < A_ENEMY && insideaffinity(b, e))
                     if((d = e) == game::focus) break;
                 game::announcef(S_V_FLAGOVERTHROWN, CON_SELF, d, true, "\fateam %s overthrew \fw%s", game::colourteam(enemy), b.name);
-                part_textcopy(vec(b.o).add(vec(0, 0, enttype[AFFINITY].radius)), "<super>\fzZeOVERTHROWN", PART_TEXT, game::eventiconfade, TEAM(enemy, colour), 3, 1, -10);
+                part_textcopy(vec(b.o).add(vec(0, 0, enttype[AFFINITY].radius)), "<huge>\fzuwOVERTHROWN", PART_TEXT, game::eventiconfade, TEAM(enemy, colour), 3, 1, -10);
                 if(game::dynlighteffects) adddynlight(b.o, enttype[AFFINITY].radius*2, vec::hexcolor(TEAM(enemy, colour)).mul(2.f), 500, 250);
             }
             b.converted = converted;
@@ -357,12 +359,11 @@ namespace defend
                 targets.setsize(0);
                 ai::checkothers(targets, d, ai::AI_S_DEFEND, ai::AI_T_AFFINITY, j, true);
                 gameent *e = NULL;
-                bool regen = !m_regen(game::gamemode, game::mutators) || d->health >= m_health(game::gamemode, game::mutators, d->model);
+                bool regen = !m_regen(game::gamemode, game::mutators) || d->health >= m_health(game::gamemode, game::mutators, d->actortype);
                 int numdyns = game::numdynents();
                 loopi(numdyns) if((e = (gameent *)game::iterdynents(i)) && !e->ai && e->state == CS_ALIVE && d->team == e->team)
                 {
-                    vec ep = e->feetpos();
-                    if(targets.find(e->clientnum) < 0 && ep.squaredist(f.o) <= (enttype[AFFINITY].radius*enttype[AFFINITY].radius))
+                    if(targets.find(e->clientnum) < 0 && e->feetpos().squaredist(f.o) <= (enttype[AFFINITY].radius*enttype[AFFINITY].radius))
                         targets.add(e->clientnum);
                 }
                 if((!regen && f.owner == d->team) || (targets.empty() && (f.owner != d->team || f.enemy)))
@@ -372,8 +373,8 @@ namespace defend
                     n.node = ai::closestwaypoint(f.o, ai::CLOSEDIST, false);
                     n.target = j;
                     n.targtype = ai::AI_T_AFFINITY;
-                    n.score = pos.squaredist(f.o)/(!regen ? 100.f : 1.f);
-                    n.tolerance = 0.25f;
+                    n.score = pos.squaredist(f.o)/(!regen ? 100.f : 10.f);
+                    n.tolerance = 0.5f;
                     n.team = true;
                     n.acttype = ai::AI_A_PROTECT;
                 }
@@ -386,10 +387,11 @@ namespace defend
         if(st.flags.inrange(b.target))
         {
             defendstate::flag &f = st.flags[b.target];
-            bool regen = d->actortype != A_BOT || !m_regen(game::gamemode, game::mutators) || d->health >= m_health(game::gamemode, game::mutators, d->model);
+            bool regen = d->actortype != A_BOT || !m_regen(game::gamemode, game::mutators) || d->health >= m_health(game::gamemode, game::mutators, d->actortype);
             int walk = regen && f.owner == d->team && !f.enemy ? 1 : 0;
             if(walk)
             {
+                int teammembers = 1;
                 static vector<int> targets; // build a list of others who are interested in this
                 targets.setsize(0);
                 ai::checkothers(targets, d, ai::AI_S_DEFEND, ai::AI_T_AFFINITY, b.target, true);
@@ -397,15 +399,15 @@ namespace defend
                 {
                     gameent *e = NULL;
                     int numdyns = game::numdynents();
-                    float mindist = enttype[AFFINITY].radius*4; mindist *= mindist;
-                    loopi(numdyns) if((e = (gameent *)game::iterdynents(i)) && !e->ai && e->state == CS_ALIVE && d->team == e->team)
+                    float mindist = enttype[AFFINITY].radius*2; mindist *= mindist;
+                    loopi(numdyns) if((e = (gameent *)game::iterdynents(i)) && d->team == e->team)
                     {
-                        vec ep = e->feetpos();
-                        if(targets.find(e->clientnum) < 0 && ep.squaredist(f.o) <= mindist)
-                            targets.add(e->clientnum);
+                        teammembers++;
+                        if(e->state != CS_ALIVE || e->ai || targets.find(e->clientnum) < 0) continue;
+                        if(e->feetpos().squaredist(f.o) <= mindist) targets.add(e->clientnum);
                     }
                 }
-                if(!targets.empty())
+                if(targets.length() >= teammembers*0.5f)
                 {
                     if(lastmillis-b.millis >= (201-d->skill)*33)
                     {
@@ -415,7 +417,7 @@ namespace defend
                     else walk = 2;
                 }
             }
-            return ai::defense(d, b, f.o, enttype[AFFINITY].radius, enttype[AFFINITY].radius*(walk+1), m_gsp2(game::gamemode, game::mutators) ? 0 : walk);
+            return ai::defense(d, b, f.o, enttype[AFFINITY].radius, enttype[AFFINITY].radius*(walk+2), m_dac_king(game::gamemode, game::mutators) ? 0 : walk);
         }
         return false;
     }

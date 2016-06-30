@@ -36,10 +36,13 @@ namespace hud
 
     VAR(IDF_PERSIST, scorepj, 0, 0, 1);
     VAR(IDF_PERSIST, scoreping, 0, 1, 1);
-    VAR(IDF_PERSIST, scorepoints, 0, 1, 2);
     VAR(IDF_PERSIST, scoretimer, 0, 1, 2);
+    VAR(IDF_PERSIST, scorepoints, 0, 1, 2);
     VAR(IDF_PERSIST, scorefrags, 0, 2, 2);
     VAR(IDF_PERSIST, scoredeaths, 0, 2, 2);
+    VAR(IDF_PERSIST, scoretotalpoints, 0, 0, 1);
+    VAR(IDF_PERSIST, scoretotalfrags, 0, 0, 1);
+    VAR(IDF_PERSIST, scoretotaldeaths, 0, 0, 1);
     VAR(IDF_PERSIST, scoreratios, 0, 0, 2);
     VAR(IDF_PERSIST, scoreclientnum, 0, 1, 1);
     VAR(IDF_PERSIST, scoretimestyle, 0, 3, 4);
@@ -70,7 +73,7 @@ namespace hud
         {
             if(game::player1->state == CS_DEAD)
             {
-                int delay = scoresdelay ? scoresdelay : m_delay(game::gamemode, game::mutators, game::player1->team);
+                int delay = scoresdelay ? scoresdelay : m_delay(game::player1->actortype, game::gamemode, game::mutators, game::player1->team);
                 if(!delay || lastmillis-game::player1->lastdeath > delay) return true;
             }
             else return game::tvmode() && autoscores >= (game::player1->state == CS_SPECTATOR ? 2 : 3);
@@ -175,7 +178,7 @@ namespace hud
                 if(on)
                 {
                     if(within) onauto = true;
-                    menulastpress = totalmillis;
+                    menulastpress = totalmillis ? totalmillis : 1;
                 }
                 else if(within && !scoresoff) { menulastpress = 0; return; }
             }
@@ -261,7 +264,7 @@ namespace hud
         if(hostname && d->actortype > A_PLAYER)
         {
             static string hoststr;
-            hoststr[0] = 0;
+            hoststr[0] = '\0';
             gameent *e = game::getclient(d->ownernum);
             if(e)
             {
@@ -278,13 +281,13 @@ namespace hud
     const char *scoreversion(gameent *d)
     {
         static string verstr;
-        formatstring(verstr, "%d.%d.%d-%s%d", d->version.major, d->version.minor, d->version.patch, plat_name(d->version.platform), d->version.arch);
+        formatstring(verstr, "%d.%d.%d-%s%d-%s", d->version.major, d->version.minor, d->version.patch, plat_name(d->version.platform), d->version.arch, d->version.branch);
         return verstr;
     }
 
     void renderscoreboard(guient &g, bool firstpass)
     {
-        g.start(menustart, menuscale, NULL, false, false, scorebgfx!=0);
+        g.start(menustart, NULL, false, false, scorebgfx!=0);
         int numgroups = groupplayers();
         uilist(g, {
             if(scoresideinfo)
@@ -296,38 +299,32 @@ namespace hud
                     g.space(0.25f);
                     uicenter(g, {
                         uicenterlist(g, uicenterlist(g, {
-                            uicenterlist(g, uifont(g, "emphasis", g.textf("%s", 0xFFFFFF, NULL, 0, -1, *maptitle ? maptitle : mapname)));
+                            uicenterlist(g, uifont(g, "emphasis", g.textf("%s", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF, *maptitle ? maptitle : mapname)));
                             if(*mapauthor)
                             {
                                 int len = strlen(mapauthor);
-                                uicenterlist(g, uifont(g, (len >= 24 ? (len >= 40 ? "tiny" : "little") : "reduced"), g.textf("by %s", 0xFFFFFF, NULL, 0, -1, mapauthor)));
+                                uicenterlist(g, uifont(g, (len >= 24 ? (len >= 40 ? "tiny" : "little") : "reduced"), g.textf("by %s", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF, mapauthor)));
                             }
                             uicenterlist(g, uifont(g, "little", {
-                                g.textf("\fy%s", 0xFFFFFF, NULL, 0, -1, server::gamename(game::gamemode, game::mutators, 0, 32));
+                                g.textf("\fy%s", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF, server::gamename(game::gamemode, game::mutators, 0, 32));
                                 if(paused) g.text(", \fs\fopaused\fS", 0xFFFFFF);
                                 else if(m_play(game::gamemode) || client::demoplayback)
                                 {
                                     int timecorrected = max(game::timeremaining*1000-((gs_playing(game::gamestate) ? lastmillis : totalmillis)-game::lasttimeremain), 0);
-                                    switch(game::gamestate)
-                                    {
-                                        case G_S_WAITING: default: g.text(", \fs\fcwaiting\fS", 0xFFFFFF); break;
-                                        case G_S_VOTING: g.text(", \fs\fcvoting\fS", 0xFFFFFF); break;
-                                        case G_S_INTERMISSION: g.text(", \fs\fcintermission\fS", 0xFFFFFF); break;
-                                        case G_S_PLAYING: g.text(", \fs\fcplaying\fS", 0xFFFFFF); break;
-                                        case G_S_OVERTIME: g.text(", \fs\fcovertime\fS", 0xFFFFFF); break;
-                                    }
-                                    g.textf(", \fs\fg%s\fS remain", 0xFFFFFF, NULL, 0, -1, timestr(timecorrected, scoretimestyle));
+                                    if(game::gamestate != G_S_PLAYING)
+                                        g.textf(", \fs\fc%s\fS, \fs%s%s\fS remain", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF, gamestates[0][game::gamestate], gs_waiting(game::gamestate) ? "\fr" : (game::gamestate == G_S_OVERTIME ? "\fzoy" : "\fg"), timestr(timecorrected, scoretimestyle));
+                                    else if(m_mmvar(game::gamemode, game::mutators, timelimit)) g.textf(", \fs\fc%s\fS, \fs%s%s\fS remain", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF, gamestates[0][game::gamestate], timecorrected > 60000 ? "\fg" : "\fzgy", timestr(timecorrected, scoretimestyle));
                                 }
                             }));
                             if(*connectname)
                             {
                                 uicenterlist(g, uifont(g, "little", {
-                                    g.textf("\faon: \fw%s:[%d]", 0xFFFFFF, NULL, 0, -1, connectname, connectport);
+                                    g.textf("\faon: \fw%s:[%d]", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF, connectname, connectport);
                                 }));
                                 if(*serverdesc)
                                 {
                                     uicenterlist(g, uifont(g, (strlen(serverdesc) >= 32 ? "tiny" : "little"), {
-                                        g.textf("\"\fs%s\fS\"", 0xFFFFFF, NULL, 0, -1, serverdesc);
+                                        g.textf("\"\fs%s\fS\"", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF, serverdesc);
                                     }));
                                 }
                             }
@@ -356,47 +353,36 @@ namespace hud
                             {
                                 if(game::player1->state == CS_DEAD || game::player1->state == CS_WAITING)
                                 {
-                                    SEARCHBINDCACHE(attackkey)("primary", 0);
-                                    int sdelay = m_delay(game::gamemode, game::mutators, game::player1->team);
+                                    int sdelay = m_delay(game::player1->actortype, game::gamemode, game::mutators, game::player1->team);
                                     int delay = game::player1->respawnwait(lastmillis, sdelay);
                                     if(delay || m_duke(game::gamemode, game::mutators) || (m_play(game::gamemode) && maxalive > 0))
                                     {
                                         uicenterlist(g, uifont(g, "default", {
-                                            if(game::gamestate == G_S_WAITING || m_duke(game::gamemode, game::mutators)) g.text("Queued for new round", 0xFFFFFF);
-                                            else if(delay) g.textf("%s: Down for \fs\fy%s\fS", 0xFFFFFF, NULL, 0, -1, game::player1->state == CS_WAITING ? "Please Wait" : "Fragged", timestr(delay));
+                                            if(gs_waiting(game::gamestate) || m_duke(game::gamemode, game::mutators)) g.text("Queued for new round", 0xFFFFFF);
+                                            else if(delay) g.textf("%s: Down for \fs\fy%s\fS", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF, game::player1->state == CS_WAITING ? "Please Wait" : "Fragged", timestr(delay));
                                             else if(game::player1->state == CS_WAITING && m_play(game::gamemode) && maxalive > 0 && maxalivequeue)
                                             {
-                                                int n = game::numwaiting();
-                                                if(n) g.textf("Waiting for \fs\fy%d\fS %s", 0xFFFFFF, NULL, 0, -1, n, n != 1 ? "players" : "player");
+                                                if(game::player1->queuepos) g.textf("Waiting for \fs\fy%d\fS %s", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF, game::player1->queuepos, game::player1->queuepos != 1 ? "players" : "player");
                                                 else g.text("You are \fs\fgnext\fS in the queue", 0xFFFFFF);
                                             }
                                         }));
                                         if(game::player1->state != CS_WAITING && lastmillis-game::player1->lastdeath >= 500)
-                                            uicenterlist(g, uifont(g, "little", g.textf("Press %s to enter respawn queue", 0xFFFFFF, NULL, 0, -1, attackkey)));
+                                            uicenterlist(g, uifont(g, "little", g.textf("Press \fs\fw\f{=primary}\fS to enter respawn queue", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF)));
                                     }
                                     else
                                     {
                                         uicenterlist(g, uifont(g, "default", g.text("Ready to respawn", 0xFFFFFF)));
-                                        if(game::player1->state != CS_WAITING) uicenterlist(g, uifont(g, "little", g.textf("Press %s to respawn now", 0xFFFFFF, NULL, 0, -1, attackkey)));
+                                        if(game::player1->state != CS_WAITING) uicenterlist(g, uifont(g, "little", g.textf("Press \fs\fw\f{=primary}\fS to respawn now", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF)));
                                     }
                                     if(shownotices >= 2)
                                     {
                                         uifont(g, "little", {
                                             if(game::player1->state == CS_WAITING && lastmillis-game::player1->lastdeath >= 500)
-                                            {
-                                                SEARCHBINDCACHE(waitmodekey)("waitmodeswitch", 3);
-                                                uicenterlist(g, g.textf("Press %s to %s", 0xFFFFFF, NULL, 0, -1, waitmodekey, game::tvmode() ? "interact" : "switch to TV"));
-                                            }
+                                                uicenterlist(g, g.textf("Press \fs\fw\f{=3:waitmodeswitch}\fS to %s", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF, game::tvmode() ? "interact" : "switch to TV"));
                                             if(m_loadout(game::gamemode, game::mutators))
-                                            {
-                                                SEARCHBINDCACHE(loadkey)("showgui profile 2", 0);
-                                                uicenterlist(g, g.textf("Press %s to \fs%s\fS loadout", 0xFFFFFF, NULL, 0, -1, loadkey, game::player1->loadweap.empty() ? "\fzoyselect" : "change"));
-                                            }
+                                                uicenterlist(g, g.textf("Press \fs\fw\f{=showgui profile 2}\fS to \fs%s\fS loadout", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF, game::player1->loadweap.empty() ? "\fzoyselect" : "change"));
                                             if(m_play(game::gamemode) && m_team(game::gamemode, game::mutators))
-                                            {
-                                                SEARCHBINDCACHE(teamkey)("showgui team", 0);
-                                                uicenterlist(g, g.textf("Press %s to change teams", 0xFFFFFF, NULL, 0, -1, teamkey));
-                                            }
+                                                uicenterlist(g, g.textf("Press \fs\fw\f{=showgui team}\fS to change teams", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF));
                                         });
                                     }
                                 }
@@ -404,42 +390,34 @@ namespace hud
                                 {
                                     uifont(g, "default", uicenterlist(g, {
                                         if(m_team(game::gamemode, game::mutators))
-                                            g.textf("Playing for team %s", 0xFFFFFF, NULL, 0, -1, game::colourteam(game::player1->team));
+                                            g.textf("Playing for team %s", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF, game::colourteam(game::player1->team));
                                         else g.text("Playing free-for-all", 0xFFFFFF);
                                     }));
                                 }
                                 else if(game::player1->state == CS_SPECTATOR)
                                 {
                                     uifont(g, "default", uicenterlist(g, {
-                                        g.textf("You are %s", 0xFFFFFF, NULL, 0, -1, game::tvmode() ? "watching SpecTV" : "a spectator");
+                                        g.textf("You are %s", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF, game::tvmode() ? "watching SpecTV" : "a spectator");
                                     }));
-                                    SEARCHBINDCACHE(speconkey)("spectator 0", 1);
                                     uifont(g, "little", {
-                                        uicenterlist(g, g.textf("Press %s to join the game", 0xFFFFFF, NULL, 0, -1, speconkey));
+                                        uicenterlist(g, g.textf("Press \fs\fw\f{=1:spectator 0}\fS to join the game", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF));
                                         if(!m_edit(game::gamemode) && shownotices >= 2)
-                                        {
-                                            SEARCHBINDCACHE(specmodekey)("specmodeswitch", 1);
-                                            uicenterlist(g, g.textf("Press %s to %s", 0xFFFFFF, NULL, 0, -1, specmodekey, game::tvmode() ? "interact" : "switch to TV"));
-                                        }
+                                            uicenterlist(g, g.textf("Press \fs\fw\f{=1:specmodeswitch}\fS to %s", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF, game::tvmode() ? "interact" : "switch to TV"));
                                     });
                                 }
 
                                 if(m_edit(game::gamemode) && (game::player1->state != CS_EDITING || shownotices >= 4))
-                                {
-                                    SEARCHBINDCACHE(editkey)("edittoggle", 1);
-                                    uicenterlist(g, uifont(g, "reduced", g.textf("Press %s to %s editmode", 0xFFFFFF, NULL, 0, -1, editkey, game::player1->state != CS_EDITING ? "enter" : "exit")));
-                                }
+                                    uicenterlist(g, uifont(g, "reduced", g.textf("Press \fs\fw\f{=1:edittoggle}\fS to %s editmode", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF, game::player1->state != CS_EDITING ? "enter" : "exit")));
                             }
 
-                            SEARCHBINDCACHE(scoreboardkey)("showscores", 1);
-                            uicenterlist(g, uifont(g, "little", g.textf("%s %s to close this window", 0xFFFFFF, NULL, 0, -1, scoresoff ? "Release" : "Press", scoreboardkey)));
+                            uicenterlist(g, uifont(g, "little", g.textf("%s \fs\fw\f{=1:showscores}\fS to close this window", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF, scoresoff ? "Release" : "Press")));
                             uicenterlist(g, uifont(g, "tiny", g.text("Double-tap to keep the window open", 0xFFFFFF)));
 
                             if(m_play(game::gamemode) && game::player1->state != CS_SPECTATOR && (!gs_playing(game::gamestate) || scoresinfo))
                             {
                                 float ratio = game::player1->frags >= game::player1->deaths ? (game::player1->frags/float(max(game::player1->deaths, 1))) : -(game::player1->deaths/float(max(game::player1->frags, 1)));
                                 uicenterlist(g, uifont(g, "little", {
-                                    g.textf("\fs\fg%d\fS %s, \fs\fg%d\fS %s (\fs\fy%.1f\fS:\fs\fy%.1f\fS) \fs\fg%d\fS damage", 0xFFFFFF, NULL, 0, -1,
+                                    g.textf("\fs\fg%d\fS %s, \fs\fg%d\fS %s (\fs\fy%.1f\fS:\fs\fy%.1f\fS) \fs\fg%d\fS damage", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF,
                                         game::player1->frags, game::player1->frags != 1 ? "frags" : "frag",
                                         game::player1->deaths, game::player1->deaths != 1 ? "deaths" : "death", ratio >= 0 ? ratio : 1.f, ratio >= 0 ? 1.f : -ratio,
                                         game::player1->totaldamage);
@@ -553,12 +531,12 @@ namespace hud
                                     }
                                     else if(sg.team > 0 && m_team(game::gamemode, game::mutators))
                                     {
-                                        g.textf("team %s", 0xFFFFFF, teamtexname(sg.team), colour, -1, TEAM(sg.team, name));
+                                        g.textf("team %s", 0xFFFFFF, teamtexname(sg.team), colour, -1, false, NULL, 0xFFFFFF, TEAM(sg.team, name));
                                         g.spring();
                                         if(m_defend(game::gamemode) && ((defendlimit && sg.total >= defendlimit) || sg.total == INT_MAX)) g.text("WINNER", 0xFFFFFF);
-                                        else if(m_laptime(game::gamemode, game::mutators)) g.textf("%s", 0xFFFFFF, NULL, 0, -1, sg.total ? timestr(sg.total, scoreracestyle) : "\fadnf");
-                                        else if(m_race(game::gamemode)) g.textf("%d %s", 0xFFFFFF, NULL, 0, -1, sg.total, sg.total != 1 ? "laps" : "lap");
-                                        else g.textf("%d %s", 0xFFFFFF, NULL, 0, -1, sg.total, sg.total != 1 ? "points" : "point");
+                                        else if(m_laptime(game::gamemode, game::mutators)) g.textf("%s", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF, sg.total ? timestr(sg.total, scoreracestyle) : "\fadnf");
+                                        else if(m_race(game::gamemode)) g.textf("%d %s", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF, sg.total, sg.total != 1 ? "laps" : "lap");
+                                        else g.textf("%d %s", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF, sg.total, sg.total != 1 ? "points" : "point");
                                     }
                                     else
                                     {
@@ -573,7 +551,7 @@ namespace hud
                                         uicenter(g, uipad(g, 0.25f, g.space(1); g.strut(1)));
                                     });
                                     loopscoregroup(uilist(g, {
-                                        uicenter(g, uipad(g, 0.25f, uicenterlist(g, g.textf("\f($priv%stex)", game::findcolour(o), NULL, 0, -1, server::privnamex(o->privilege, o->actortype, true)))));
+                                        uicenter(g, uipad(g, 0.25f, uicenterlist(g, g.textf("\f($priv%stex)", game::findcolour(o), NULL, 0, -1, false, NULL, 0xFFFFFF, server::privnamex(o->privilege, o->actortype, true)))));
                                     }));
                                 });
 
@@ -583,7 +561,7 @@ namespace hud
                                     });
                                     loopscoregroup(uilist(g, {
                                         ownerbg;
-                                        uicenter(g, uipad(g, 0.25f, uicenterlist(g, g.textf("%s", ownerfgc, NULL, 0, -1, game::colourname(o, NULL, false, true, scorebgrows >= 2 || (scorehilight && o == game::player1) ? 0 : 3)))));
+                                        uicenter(g, uipad(g, 0.25f, uicenterlist(g, g.textf("%s", ownerfgc, NULL, 0, -1, false, NULL, 0xFFFFFF, game::colourname(o, NULL, false, true, scorebgrows >= 2 || (scorehilight && o == game::player1) ? 0 : 3)))));
                                     }));
                                 });
 
@@ -595,7 +573,11 @@ namespace hud
                                         });
                                         loopscoregroup(uilist(g, {
                                             ownerbg;
-                                            uicenter(g, uipad(g, 0.5f, g.textf("%d", ownerfgc, NULL, 0, -1, o->points)));
+                                            if(scoretotalpoints)
+                                            {
+                                                uicenter(g, uipad(g, 0.5f, g.textf("%d (%d)", ownerfgc, NULL, 0, -1, false, NULL, 0xFFFFFF, o->points, o->totalpoints)));
+                                            }
+                                            else uicenter(g, uipad(g, 0.5f, g.textf("%d", ownerfgc, NULL, 0, -1, false, NULL, 0xFFFFFF, o->points)));
                                         }));
                                     });
                                 }
@@ -610,7 +592,7 @@ namespace hud
                                             });
                                             loopscoregroup(uilist(g, {
                                                 ownerbg;
-                                                uicenter(g, uipad(g, 0.5f, g.textf("%s", ownerfgc, NULL, 0, -1, o->cptime ? timestr(o->cptime, scoreracestyle) : "\fadnf")));
+                                                uicenter(g, uipad(g, 0.5f, g.textf("%s", ownerfgc, NULL, 0, -1, false, NULL, 0xFFFFFF, o->cptime ? timestr(o->cptime, scoreracestyle) : "\fadnf")));
                                             }));
                                         });
                                     }
@@ -624,7 +606,11 @@ namespace hud
                                         });
                                         loopscoregroup(uilist(g, {
                                             ownerbg;
-                                            uicenter(g, uipad(g, 0.5f, g.textf("%d", ownerfgc, NULL, 0, -1, o->frags)));
+                                            if(scoretotalfrags)
+                                            {
+                                                uicenter(g, uipad(g, 0.5f, g.textf("%d (%d)", ownerfgc, NULL, 0, -1, false, NULL, 0xFFFFFF, o->frags, o->totalfrags)));
+                                            }
+                                            else uicenter(g, uipad(g, 0.5f, g.textf("%d", ownerfgc, NULL, 0, -1, false, NULL, 0xFFFFFF, o->frags)));
                                         }));
                                     });
                                 }
@@ -637,7 +623,11 @@ namespace hud
                                         });
                                         loopscoregroup(uilist(g, {
                                             ownerbg;
-                                            uicenter(g, uipad(g, 0.5f, g.textf("%d", ownerfgc, NULL, 0, -1, o->deaths)));
+                                            if(scoretotaldeaths)
+                                            {
+                                                uicenter(g, uipad(g, 0.5f, g.textf("%d (%d)", ownerfgc, NULL, 0, -1, false, NULL, 0xFFFFFF, o->deaths, o->totaldeaths)));
+                                            }
+                                            else uicenter(g, uipad(g, 0.5f, g.textf("%d", ownerfgc, NULL, 0, -1, false, NULL, 0xFFFFFF, o->deaths)));
                                         }));
                                     });
                                 }
@@ -650,8 +640,13 @@ namespace hud
                                         });
                                         loopscoregroup(uilist(g, {
                                             ownerbg;
-                                            float ratio = o->frags >= o->deaths ? (o->frags/float(max(o->deaths, 1))) : -(o->deaths/float(max(o->frags, 1)));
-                                            uicenter(g, uipad(g, 0.5f, g.textf("%.1f\fs\fa:\fS%.1f", ownerfgc, NULL, 0, -1, ratio >= 0 ? ratio : 1.f, ratio >= 0 ? 1.f : -ratio)));
+                                            float kdratio = o->kdratio(false);
+                                            if(scoretotalfrags || scoretotaldeaths)
+                                            {
+                                                float tkdratio = o->kdratio(true);
+                                                uicenter(g, uipad(g, 0.5f, g.textf("%.1f\fs\fa:\fS%.1f (%.1f\fs\fa:\fS%.1f)", ownerfgc, NULL, 0, -1, false, NULL, 0xFFFFFF, kdratio >= 0 ? kdratio : 1.f, kdratio >= 0 ? 1.f : -kdratio, tkdratio >= 0 ? tkdratio : 1.f, tkdratio >= 0 ? 1.f : -tkdratio)));
+                                            }
+                                            else uicenter(g, uipad(g, 0.5f, g.textf("%.1f\fs\fa:\fS%.1f", ownerfgc, NULL, 0, -1, false, NULL, 0xFFFFFF, kdratio >= 0 ? kdratio : 1.f, kdratio >= 0 ? 1.f : -kdratio)));
                                         }));
                                     });
                                 }
@@ -664,7 +659,7 @@ namespace hud
                                         });
                                         loopscoregroup(uilist(g, {
                                             ownerbg;
-                                            uicenter(g, uipad(g, 0.5f, g.textf("%d", ownerfgc, NULL, 0, -1, o->plag)));
+                                            uicenter(g, uipad(g, 0.5f, g.textf("%d", ownerfgc, NULL, 0, -1, false, NULL, 0xFFFFFF, o->plag)));
                                         }));
                                     });
                                 }
@@ -677,7 +672,7 @@ namespace hud
                                         });
                                         loopscoregroup(uilist(g, {
                                             ownerbg;
-                                            uicenter(g, uipad(g, 0.5f, g.textf("%d", ownerfgc, NULL, 0, -1, o->ping)));
+                                            uicenter(g, uipad(g, 0.5f, g.textf("%d", ownerfgc, NULL, 0, -1, false, NULL, 0xFFFFFF, o->ping)));
                                         }));
                                     });
                                 }
@@ -690,7 +685,7 @@ namespace hud
                                         });
                                         loopscoregroup(uilist(g, {
                                             ownerbg;
-                                            uicenter(g, uipad(g, 0.5f, g.textf("%d", ownerfgc, NULL, 0, -1, o->clientnum)));
+                                            uicenter(g, uipad(g, 0.5f, g.textf("%d", ownerfgc, NULL, 0, -1, false, NULL, 0xFFFFFF, o->clientnum)));
                                         }));
                                     });
                                 }
@@ -704,7 +699,7 @@ namespace hud
                                         loopscoregroup(uilist(g, {
                                             ownerbg;
                                             uicenter(g, uipad(g, 0.5f, {
-                                                if(o->actortype > A_PLAYER) g.textf("%d", ownerfgc, NULL, 0, -1, o->skill);
+                                                if(o->actortype > A_PLAYER) g.textf("%d", ownerfgc, NULL, 0, -1, false, NULL, 0xFFFFFF, o->skill);
                                                 else { g.space(1); g.strut(1); }
                                             }));
                                         }));
@@ -718,7 +713,7 @@ namespace hud
                                         });
                                         loopscoregroup(uilist(g, {
                                             ownerbg;
-                                            uicenter(g, uipad(g, 0.5f, g.textf("%s", ownerfgc, NULL, 0, -1, o->handle[0] ? o->handle : "-")));
+                                            uicenter(g, uipad(g, 0.5f, g.textf("%s", ownerfgc, NULL, 0, -1, false, NULL, 0xFFFFFF, o->handle[0] ? o->handle : "-")));
                                         }));
                                     });
                                 }
@@ -730,7 +725,7 @@ namespace hud
                                         });
                                         loopscoregroup(uilist(g, {
                                             ownerbg;
-                                            uicenter(g, uipad(g, 0.5f, g.textf("%s", ownerfgc, NULL, 0, -1, scorehost(o, false))));
+                                            uicenter(g, uipad(g, 0.5f, g.textf("%s", ownerfgc, NULL, 0, -1, false, NULL, 0xFFFFFF, scorehost(o, false))));
                                         }));
                                     });
                                 }
@@ -742,7 +737,7 @@ namespace hud
                                         });
                                         loopscoregroup(uilist(g, {
                                             ownerbg;
-                                            uicenter(g, uipad(g, 0.5f, g.textf("%s", ownerfgc, NULL, 0, -1, scorehost(o, true))));
+                                            uicenter(g, uipad(g, 0.5f, g.textf("%s", ownerfgc, NULL, 0, -1, false, NULL, 0xFFFFFF, scorehost(o, true))));
                                         }));
                                     });
                                 }
@@ -754,7 +749,7 @@ namespace hud
                                         });
                                         loopscoregroup(uilist(g, {
                                             ownerbg;
-                                            uicenter(g, uipad(g, 0.5f, g.textf("%s", ownerfgc, NULL, 0, -1, scoreversion(o))));
+                                            uicenter(g, uipad(g, 0.5f, g.textf("%s", ownerfgc, NULL, 0, -1, false, NULL, 0xFFFFFF, scoreversion(o))));
                                         }));
                                     });
                                 }
@@ -777,7 +772,7 @@ namespace hud
                                                 case CS_EDITING: status = editingtex; break;
                                                 default: break; // spectators shouldn't be here
                                             }
-                                            uicenter(g, uipad(g, 0.125f, g.textf("\f(%s)", colour, NULL, 0, -1, status)));
+                                            uicenter(g, uipad(g, 0.125f, g.textf("\f(%s)", colour, NULL, 0, -1, false, NULL, 0xFFFFFF, status)));
                                         }));
                                     });
                                 }
@@ -806,7 +801,7 @@ namespace hud
 
     static const char *posnames[10] = { "th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th" };
 
-    int drawscoreitem(const char *icon, int colour, int x, int y, int s, float skew, float fade, int pos, int score, int offset, const char *name, const char *ext = NULL)
+    int drawscoreitem(const char *name, int colour, int x, int y, int s, float skew, float fade, int pos, int score, int offset)
     {
         int col = 0xFF0000;
         switch(pos)
@@ -817,25 +812,19 @@ namespace hud
             case 4: col = 0xFF8800; break;
             default: break;
         }
-        int size = int(s*skew);
-        string str, q;
-        if(m_laptime(game::gamemode, game::mutators)) { formatstring(str, "\fs\f[%d]\f(%s)\fS %s", col, insigniatex, timestr(score, inventoryracestyle)); }
-        else if(m_defend(game::gamemode) && score == INT_MAX) { formatstring(str, "\fs\f[%d]\f(%s)\fS WIN", col, insigniatex); }
-        else { formatstring(str, "\fs\f[%d]\f(%s)\fS %d", col, insigniatex, score); }
+        string str = "";
+        if(inventoryscorepos) concformatstring(str, "\fs\f[%d]%d%s\fS", col, pos, posnames[pos < 10 || pos > 13 ? pos%10 : 0]);
+        if(name && *name) concformatstring(str, "%s\fs\f[%d]%s\fS", *str ? (inventoryscorebreak ? "\n" : " ") : "", colour, name);
         if(inventoryscoreinfo)
         {
             if(m_laptime(game::gamemode, game::mutators))
-                { formatstring(q, "\n\fs\f[%d]\f(%s)\fS %s", col, offset ? (offset < 0 ? arrowtex : arrowdowntex) : arrowrighttex, timestr(offset < 0 ? 0-offset : offset, inventoryracestyle)); }
-            else { formatstring(q, "%s\fs\f[%d]\f(%s)\fS %d", inventoryscorebreak ? "\n" : " ", col, offset ? (offset > 0 ? arrowtex : arrowdowntex) : arrowrighttex, offset < 0 ? 0-offset : offset); }
-            concatstring(str, q);
+                concformatstring(str, "%s\fs\f[%d]\f(%s)\fS%s", *str ? (inventoryscorebreak ? "\n" : " ") : "", col, offset ? (offset < 0 ? arrowtex : arrowdowntex) : arrowrighttex, timestr(offset < 0 ? 0-offset : offset, inventoryracestyle));
+            else concformatstring(str, "%s\fs\f[%d]\f(%s)\fS%d", *str ? (inventoryscorebreak ? "\n" : " ") : "", col, offset ? (offset > 0 ? arrowtex : arrowdowntex) : arrowrighttex, offset < 0 ? 0-offset : offset);
         }
-        vec c = vec::hexcolor(colour);
-        drawitem(icon, x, y+size, s, 0, inventoryscorebg!=0, false, c.r, c.g, c.b, fade, skew, m_laptime(game::gamemode, game::mutators) ? "reduced" : "emphasis", "%s", str);
-        int sy = 0;
-        if(ext) sy += drawitemtextx(x, y+size, 0, TEXT_RIGHT_UP, skew, "default", fade, "%s", ext);
-        drawitemtextx(x, y+size-sy, 0, TEXT_RIGHT_UP, skew, "default", fade, "\f[%d]%s", colour, name);
-        if(inventoryscorepos) drawitemtextx(x, y, 0, TEXT_RIGHT_JUSTIFY, skew, "emphasis", fade, "\f[%d]%d%s", col, pos, posnames[pos < 10 || pos > 13 ? pos%10 : 0]);
-        return size;
+        if(m_laptime(game::gamemode, game::mutators)) { concformatstring(str, "%s%s", *str ? (inventoryscorebreak ? "\n" : " ") : "", timestr(score, inventoryracestyle)); }
+        else if(m_defend(game::gamemode) && score >= VAR_MAX) { concformatstring(str, "%sWIN", *str ? (inventoryscorebreak ? "\n" : " ") : ""); }
+        else { concformatstring(str, "%s\fs\f[%d][\fS%d pts\fs\f[%d]]\fS", *str ? (inventoryscorebreak ? "\n" : " ") : "", col, score, col); }
+        return drawitemtextx(x, y, 0, (inventoryscorebg ? TEXT_SKIN : 0)|(inventoryscorebreak == 2 ? TEXT_CENTERED : TEXT_RIGHT_JUSTIFY), skew, m_laptime(game::gamemode, game::mutators) ? "reduced" : "default", fade, "%s", str)+FONTH/8;
     }
 
     int drawscore(int x, int y, int s, int m, float blend, int count)
@@ -860,7 +849,7 @@ namespace hud
                     if(!sg.team || ((sg.team != game::focus->team) == !i)) continue;
                     float sk = numout && inventoryscoreshrink > 0 ? 1.f-min(numout*inventoryscoreshrink, inventoryscoreshrinkmax) : 1;
                     int offset = numgroups > 1 ? sg.total-groups[k ? 0 : 1]->total : 0;
-                    sy += drawscoreitem(teamtexname(sg.team), TEAM(sg.team, colour), x, y+sy, s, sk*inventoryscoresize, blend*inventoryblend, pos, sg.total, offset, TEAM(sg.team, name), i ? NULL : game::colourname(game::focus));
+                    sy += drawscoreitem(inventoryscorename >= 2 ? game::colourteam(sg.team) : NULL, TEAM(sg.team, colour), x, y+sy, s, sk*inventoryscoresize, blend*inventoryblend, pos, sg.total, offset);
                     if(++numout >= count) return sy;
                 }
                 else
@@ -879,7 +868,7 @@ namespace hud
                         float sk = numout && inventoryscoreshrink > 0 ? 1.f-min(numout*inventoryscoreshrink, inventoryscoreshrinkmax) : 1;
                         int score = m_laptime(game::gamemode, game::mutators) ? d->cptime : d->points,
                             offset = (sg.players.length() > 1 && (!m_laptime(game::gamemode, game::mutators) || score)) ? score-(m_laptime(game::gamemode, game::mutators) ? sg.players[j ? 0 : 1]->cptime : sg.players[j ? 0 : 1]->points) : 0;
-                        sy += drawscoreitem(playertex, game::getcolour(d, game::playerteamtone), x, y+sy, s, sk*inventoryscoresize, blend*inventoryblend, pos, score, offset, game::colourname(d));
+                        sy += drawscoreitem(inventoryscorename ? game::colourname(d) : NULL, game::getcolour(d, game::playerteamtone, game::playerteamtonelevel), x, y+sy, s, sk*inventoryscoresize, blend*inventoryblend, pos, score, offset);
                         if(++numout >= count) return sy;
                     }
                 }
@@ -901,9 +890,9 @@ namespace hud
                     if(sg.total)
                     {
                         pushfont("little");
-                        sy += draw_textx("by %s", x+FONTW*2, y, 255, 255, 255, int(blend*255), TEXT_LEFT_UP, -1, -1, game::colourteam(sg.team));
+                        sy += draw_textf("by %s", x+FONTW*2, y, 0, 0, 255, 255, 255, int(blend*255), TEXT_LEFT_UP, -1, -1, 1, game::colourteam(sg.team));
                         popfont();
-                        sy += draw_textx("\fg%s", x, y-sy, 255, 255, 255, int(blend*255), TEXT_LEFT_UP, -1, -1, timestr(sg.total, inventoryracestyle));
+                        sy += draw_textf("\fg%s", x, y-sy, 0, 0, 255, 255, 255, int(blend*255), TEXT_LEFT_UP, -1, -1, 1, timestr(sg.total, inventoryracestyle));
                     }
                 }
                 else if(!sg.players.empty())
@@ -911,9 +900,9 @@ namespace hud
                     if(sg.players[0]->cptime)
                     {
                         pushfont("little");
-                        sy += draw_textx("by %s", x+FONTW*2, y, 255, 255, 255, int(blend*255), TEXT_LEFT_UP, -1, -1, game::colourname(sg.players[0]));
+                        sy += draw_textf("by %s", x+FONTW*2, y, 0, 0, 255, 255, 255, int(blend*255), TEXT_LEFT_UP, -1, -1, 1, game::colourname(sg.players[0]));
                         popfont();
-                        sy += draw_textx("\fg%s", x, y-sy, 255, 255, 255, int(blend*255), TEXT_LEFT_UP, -1, -1, timestr(sg.players[0]->cptime, inventoryracestyle));
+                        sy += draw_textf("\fg%s", x, y-sy, 0, 0, 255, 255, 255, int(blend*255), TEXT_LEFT_UP, -1, -1, 1, timestr(sg.players[0]->cptime, inventoryracestyle));
                     }
                 }
             }
@@ -922,17 +911,17 @@ namespace hud
                 if(sg.total)
                 {
                     pushfont("little");
-                    sy += draw_textx("by %s", x+FONTW*2, y, 255, 255, 255, int(blend*255), TEXT_LEFT_UP, -1, -1, game::colourteam(sg.team));
+                    sy += draw_textf("by %s", x+FONTW*2, y, 0, 0, 255, 255, 255, int(blend*255), TEXT_LEFT_UP, -1, -1, 1, game::colourteam(sg.team));
                     popfont();
-                    sy += draw_textx("\fs\fg%d\fS %s", x, y-sy, 255, 255, 255, int(blend*255), TEXT_LEFT_UP, -1, -1, sg.total, sg.total != 1 ? "laps" : "lap");
+                    sy += draw_textf("\fs\fg%d\fS %s", x, y-sy, 0, 0, 255, 255, 255, int(blend*255), TEXT_LEFT_UP, -1, -1, 1, sg.total, sg.total != 1 ? "laps" : "lap");
                 }
             }
             else if(!sg.players.empty() && sg.players[0]->points)
             {
                 pushfont("little");
-                sy += draw_textx("by %s", x+FONTW*2, y, 255, 255, 255, int(blend*255), TEXT_LEFT_UP, -1, -1, game::colourname(sg.players[0]));
+                sy += draw_textf("by %s", x+FONTW*2, y, 0, 0, 255, 255, 255, int(blend*255), TEXT_LEFT_UP, -1, -1, 1, game::colourname(sg.players[0]));
                 popfont();
-                sy += draw_textx("\fs\fg%d\fS %s", x, y-sy, 255, 255, 255, int(blend*255), TEXT_LEFT_UP, -1, -1, sg.players[0]->points, sg.players[0]->points != 1 ? "laps" : "lap");
+                sy += draw_textf("\fs\fg%d\fS %s", x, y-sy, 0, 0, 255, 255, 255, int(blend*255), TEXT_LEFT_UP, -1, -1, 1, sg.players[0]->points, sg.players[0]->points != 1 ? "laps" : "lap");
             }
         }
         return sy;

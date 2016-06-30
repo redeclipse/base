@@ -36,7 +36,7 @@ namespace client
     extern void edittoggled(bool edit);
     extern void toserver(int flags, const char *text, const char *target = NULL);
     extern void editvar(ident *id, bool local);
-    extern void edittrigger(const selinfo &sel, int op, int arg1 = 0, int arg2 = 0, int arg3 = 0);
+    extern void edittrigger(const selinfo &sel, int op, int arg1 = 0, int arg2 = 0, int arg3 = 0, const VSlot *vs = NULL);
     extern void changemap(const char *name);
     extern int waiting(bool state = true);
     extern void connectattempt(const char *name, int port, const char *password, const ENetAddress &address);
@@ -53,7 +53,8 @@ namespace hud
 {
     extern char *progresstex, *progringtex;
     extern bool hasinput(bool pass = false, bool focus = true);
-    extern bool keypress(int code, bool isdown, int cooked);
+    extern bool textinput(const char *str, int len);
+    extern bool keypress(int code, bool isdown);
     extern void drawhud(bool noview = false);
     extern void drawlast();
     extern float motionblur(float scale);
@@ -98,16 +99,16 @@ namespace game
     extern bool clientoption(char *arg);
     extern void preload();
     extern void updateworld();
-    extern void newmap(int size);
+    extern void newmap(int size, const char *mname = "");
     extern void resetmap(bool empty);
-    extern void startmap(const char *name, const char *reqname, bool empty = false);
+    extern void startmap(bool empty = false);
     extern bool allowmove(physent *d);
     extern dynent *iterdynents(int i, bool all = false);
     extern dynent *focusedent(bool force = false);
     extern int numdynents(bool all = false);
     extern vec getpalette(int palette, int index);
     extern void adddynlights();
-    extern void particletrack(particle *p, uint type, int &ts, bool lastpass);
+    extern void particletrack(particle *p, uint type, int &ts, bool step);
     extern bool mousemove(int dx, int dy, int x, int y, int w, int h);
     extern void project(int w, int h);
     extern void recomputecamera(int w, int h);

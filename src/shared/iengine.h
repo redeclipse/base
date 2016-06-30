@@ -58,7 +58,7 @@ extern int getmapversion();
 
 // octaedit
 
-enum { EDIT_FACE = 0, EDIT_TEX, EDIT_MAT, EDIT_FLIP, EDIT_COPY, EDIT_PASTE, EDIT_ROTATE, EDIT_REPLACE, EDIT_DELCUBE, EDIT_REMIP };
+enum { EDIT_FACE = 0, EDIT_TEX, EDIT_MAT, EDIT_FLIP, EDIT_COPY, EDIT_PASTE, EDIT_ROTATE, EDIT_REPLACE, EDIT_DELCUBE, EDIT_REMIP, EDIT_VSLOT, EDIT_UNDO, EDIT_REDO };
 
 struct selinfo
 {
@@ -90,34 +90,47 @@ struct editinfo;
 
 extern bool editmode;
 
+extern int shouldpacktex(int index);
 extern bool packeditinfo(editinfo *e, int &inlen, uchar *&outbuf, int &outlen);
 extern bool unpackeditinfo(editinfo *&e, const uchar *inbuf, int inlen, int outlen);
 extern void freeeditinfo(editinfo *&e);
 extern void rendereditcursor();
 extern void pruneundos(int maxremain = 0);
+extern bool packundo(int op, int &inlen, uchar *&outbuf, int &outlen);
+extern bool unpackundo(const uchar *inbuf, int inlen, int outlen);
 extern bool noedit(bool view = false);
 extern void toggleedit(bool force = true);
 extern void mpeditface(int dir, int mode, selinfo &sel, bool local);
 extern void mpedittex(int tex, int allfaces, selinfo &sel, bool local);
+extern bool mpedittex(int tex, int allfaces, selinfo &sel, ucharbuf &buf);
 extern void mpeditmat(int matid, int filter, int style, selinfo &sel, bool local);
 extern void mpflip(selinfo &sel, bool local);
 extern void mpcopy(editinfo *&e, selinfo &sel, bool local);
 extern void mppaste(editinfo *&e, selinfo &sel, bool local);
 extern void mprotate(int cw, selinfo &sel, bool local);
 extern void mpreplacetex(int oldtex, int newtex, bool insel, selinfo &sel, bool local);
+extern bool mpreplacetex(int oldtex, int newtex, bool insel, selinfo &sel, ucharbuf &buf);
 extern void mpdelcube(selinfo &sel, bool local);
+extern bool mpeditvslot(int delta, int allfaces, selinfo &sel, ucharbuf &buf);
 extern void mpremip(bool local);
+
+// texture
+
+struct VSlot;
+
+extern void packvslot(vector<uchar> &buf, int index);
+extern void packvslot(vector<uchar> &buf, const VSlot *vs);
 
 // console
 extern int changedkeys;
 
-extern void keypress(int code, bool isdown, int cooked);
+extern void processtextinput(const char *str, int len);
+extern void processkey(int code, bool isdown);
 extern char *getcurcommand();
 extern void resetcomplete();
 extern void complete(char *s, const char *cmdprefix);
 extern const char *searchbind(const char *action, int type);
 extern void searchbindlist(const char *action, int type, int limit, const char *s1, const char *s2, const char *sep1, const char *sep2, vector<char> &names, bool force = true);
-extern int textkeybg, textkeyseps;
 
 extern bool capslockon, numlockon;
 extern bool capslocked();
@@ -130,27 +143,24 @@ struct bindlist
 
     bindlist() : lastsearch(-1) {}
 
-    const char *search(const char *action, int type = 0, const char *s1 = "\f{", const char *s2 = "}", int limit = 5)
+    const char *search(const char *action, int type = 0, const char *s1 = "\f{", const char *s2 = "}", const char *sep1 = " ", const char *sep2 = " ", int limit = 5)
     {
         if(names.empty() || lastsearch != changedkeys)
         {
             names.shrink(0);
-            searchbindlist(action, type, limit, s1, s2, textkeyseps ? (textkeybg ? "|" : ", ") : (textkeybg ? "" : " "), textkeyseps ? (textkeybg ? "|" : " or ") : (textkeybg ? "" : " "), names);
+            searchbindlist(action, type, limit, s1, s2, sep1, sep2, names);
             lastsearch = changedkeys;
         }
         return names.getbuf();
     }
 };
 
-#define SEARCHBINDCACHE(def) static bindlist __##def; const char *def = __##def.search
-
 // menus
 extern void newgui(char *name, char *contents, char *initscript = NULL);
-extern void showgui(const char *name, int tab = 0, bool *keep = NULL);
+extern bool showgui(const char *name, int tab = 0, bool *keep = NULL);
 
 // main
 struct igame;
-extern void keyrepeat(bool on);
 
 // rendertext
 extern char *savecolour, *restorecolour, *green, *blue, *yellow, *red, *gray, *magenta, *orange, *white, *black, *cyan;
@@ -161,6 +171,7 @@ enum
     TEXT_NO_INDENT      = 1<<1,
     TEXT_UPWARD         = 1<<2,
     TEXT_BALLOON        = 1<<3,
+    TEXT_SKIN           = 1<<4,
 
     TEXT_ALIGN          = 3<<8,
     TEXT_LEFT_JUSTIFY   = 0<<8,
@@ -179,31 +190,31 @@ enum
 extern bool setfont(const char *name);
 extern bool pushfont(const char *name);
 extern bool popfont(int num = 1);
-extern int draw_text(const char *str, int rleft, int rtop, int r = 255, int g = 255, int b = 255, int a = 255, int flags = TEXT_SHADOW, int cursor = -1, int maxwidth = -1);
-extern int draw_textx(const char *fstr, int left, int top, int r = 255, int g = 255, int b = 255, int a = 255, int flags = TEXT_SHADOW, int cursor = -1, int maxwidth = -1, ...);
-extern int draw_textf(const char *fstr, int left, int top, ...) PRINTFARGS(1, 4);
-extern float text_widthf(const char *str, int flags = 0);
-extern void text_boundsf(const char *str, float &width, float &height, int maxwidth = -1, int flags = 0);
-extern int text_visible(const char *str, float hitx, float hity, int maxwidth = -1, int flags = 0);
-extern void text_posf(const char *str, int cursor, float &cx, float &cy, int maxwidth, int flags = 0);
+extern int draw_text(const char *str, int rleft, int rtop, int r = 255, int g = 255, int b = 255, int a = 255, int flags = 0, int cursor = -1, int maxwidth = -1, float linespace = 0, int realwidth = -1);
+extern int draw_textf(const char *fstr, int left, int top, int xpad = 0, int ypad = 0, int r = 255, int g = 255, int b = 255, int a = 255, int flags = 0, int cursor = -1, int maxwidth = -1, float linespace = 0, ...);
+extern float text_widthf(const char *str, int xpad = 0, int ypad = 0, int flags = 0, float linespace = 0);
+extern void text_boundsf(const char *str, float &width, float &height, int xpad = 0, int ypad = 0, int maxwidth = -1, int flags = 0, float linespace = 0);
+extern int text_visible(const char *str, float hitx, float hity, int maxwidth = -1, int flags = 0, float linespace =1);
+extern void text_posf(const char *str, int cursor, float &cx, float &cy, int maxwidth, int flags = 0, float linespace = 0);
+extern float key_widthf(const char *str);
 
-static inline int text_width(const char *str, int flags = 0)
+static inline int text_width(const char *str, int xpad = 0, int ypad = 0, int flags = 0, float linespace = 0)
 {
-    return int(ceil(text_widthf(str, flags)));
+    return int(ceil(text_widthf(str, xpad, ypad, flags, linespace)));
 }
 
-static inline void text_bounds(const char *str, int &width, int &height, int maxwidth = -1, int flags = 0)
+static inline void text_bounds(const char *str, int &width, int &height, int xpad = 0, int ypad = 0, int maxwidth = -1, int flags = 0, float linespace = 0)
 {
     float widthf, heightf;
-    text_boundsf(str, widthf, heightf, maxwidth, flags);
+    text_boundsf(str, widthf, heightf, xpad, ypad, maxwidth, flags, linespace);
     width = int(ceil(widthf));
     height = int(ceil(heightf));
 }
 
-static inline void text_pos(const char *str, int cursor, int &cx, int &cy, int maxwidth, int flags = 0)
+static inline void text_pos(const char *str, int cursor, int &cx, int &cy, int maxwidth, int flags = 0, float linespace = 0)
 {
     float cxf, cyf;
-    text_posf(str, cursor, cxf, cyf, maxwidth, flags);
+    text_posf(str, cursor, cxf, cyf, maxwidth, flags, linespace);
     cx = int(cxf);
     cy = int(cyf);
 }
@@ -226,8 +237,18 @@ extern vec worldpos, camdir, camright, camup;
 extern void getscreenres(int &w, int &h);
 extern void gettextres(int &w, int &h);
 
+extern vec calcmodelpreviewpos(const vec &radius, float &yaw);
+
 extern vec minimapcenter, minimapradius, minimapscale;
 extern void bindminimap();
+
+extern matrix4 hudmatrix;
+extern void resethudmatrix();
+extern void pushhudmatrix();
+extern void flushhudmatrix(bool flushparams = true);
+extern void pophudmatrix(bool flush = true, bool flushparams = true);
+extern void pushhudscale(float sx, float sy = 0);
+extern void pushhudtranslate(float tx, float ty, float sx = 0, float sy = 0);
 
 // renderparticles
 enum
@@ -259,6 +280,8 @@ enum
     PT_FEW      = 1<<17,    // allocate smaller number of particles
     PT_SHRINK   = 1<<18,    // shrink particle as it fades
     PT_GROW     = 1<<19,    // grow particle as it fades
+    PT_NOTEX    = 1<<20,
+    PT_SHADER   = 1<<21,
     PT_FLIP     = PT_HFLIP | PT_VFLIP | PT_ROT
 };
 
@@ -338,6 +361,7 @@ extern void create(int type, int color, int fade, const vec &p, float size = 2, 
 extern void regularcreate(int type, int color, int fade, const vec &p, float size = 2, float blend = 1, int grav = 0, int collide = 0, physent *pl = NULL, int delay = 0);
 extern void splash(int type, int color, float radius, int num, int fade, const vec &p, float size = 2, float blend = 1, int grav = 0, int collide = 0, float vel = 1);
 extern void regularsplash(int type, int color, float radius, int num, int fade, const vec &p, float size = 2, float blend = 1, int grav = 0, int collide = 0, float vel = 1, int delay = 0);
+extern void createshape(int type, float radius, int color, int dir, int num, int fade, const vec &p, float size = 2, float blend = 1, int grav = 0, int collide = 0, float vel = 1);
 extern void regularshape(int type, float radius, int color, int dir, int num, int fade, const vec &p, float size = 2, float blend = 1, int grav = 0, int collide = 0, float vel = 1);
 extern void regularflame(int type, const vec &p, float radius, float height, int color, int density = 3, int fade = 500, float size = 2, float blend = 1, int grav = -1, int collide = 0, float vel = 1);
 
@@ -356,11 +380,9 @@ enum
 extern void adddecal(int type, const vec &center, const vec &surface, float radius, const bvec &color = bvec(0xFF, 0xFF, 0xFF), int info = 0);
 
 // worldio
-extern void setnames(const char *fname, int type);
-extern bool load_world(const char *mname, bool temp = false);
+extern void setnames(const char *fname, int type, int crc = 0);
+extern bool load_world(const char *mname, int crc = 0);
 extern void save_world(const char *mname, bool nodata = false, bool forcesave = false);
-extern uint getmapcrc();
-extern void clearmapcrc();
 
 // physics
 extern bool ellipsecollide(physent *d, const vec &dir, const vec &o, const vec &center, float yaw, float xr, float yr, float hi, float lo);
@@ -411,7 +433,7 @@ extern void twitchragdoll(dynent *d, float vel);
 #define MAXCLIENTS 256                  // in a multiplayer game, can be arbitrarily changed
 #define MAXTRANS 5000                  // max amount of data to swallow in 1 go
 
-enum { DISC_NONE = 0, DISC_EOP, DISC_CN, DISC_KICK, DISC_MSGERR, DISC_IPBAN, DISC_PRIVATE, DISC_PASSWORD, DISC_PURE, DISC_MAXCLIENTS, DISC_INCOMPATIBLE, DISC_TIMEOUT, DISC_OVERFLOW, DISC_SHUTDOWN, DISC_NUM };
+enum { DISC_NONE = 0, DISC_EOP, DISC_CN, DISC_KICK, DISC_MSGERR, DISC_IPBAN, DISC_PRIVATE, DISC_PASSWORD, DISC_PURE, DISC_MAXCLIENTS, DISC_INCOMPATIBLE, DISC_TIMEOUT, DISC_OVERFLOW, DISC_SHUTDOWN, DISC_HOSTFAIL, DISC_NUM };
 
 extern void *getinfo(int i);
 extern const char *gethostname(int i);
@@ -439,6 +461,8 @@ extern ENetSocket connectmaster(bool reuse = true);
 extern void disconnectmaster();
 extern bool requestmaster(const char *req);
 extern bool requestmasterf(const char *fmt, ...) PRINTFARGS(1, 2);
+extern void flushmasteroutput();
+extern void flushmasterinput();
 
 extern bool findoctadir(const char *name, bool fallback = false);
 extern void trytofindocta(bool fallback = true);
@@ -455,9 +479,7 @@ struct serverinfo
     };
     enum { UNRESOLVED = 0, RESOLVING, RESOLVED };
 
-    string name;
-    string map;
-    string sdesc;
+    string name, map, sdesc, authhandle, flags, branch;
     int numplayers, lastping, lastinfo, nextping, ping, resolved, port, priority;
     int pings[MAXPINGS];
     vector<int> attr;
@@ -467,7 +489,7 @@ struct serverinfo
     serverinfo(uint ip, int port, int priority = 0)
      : numplayers(0), resolved(ip==ENET_HOST_ANY ? UNRESOLVED : RESOLVED), port(port), priority(priority)
     {
-        name[0] = map[0] = sdesc[0] = '\0';
+        name[0] = map[0] = sdesc[0] = authhandle[0] = flags[0] = branch[0] = '\0';
         address.host = ip;
         address.port = port+1;
         clearpings();
@@ -500,7 +522,7 @@ struct serverinfo
     {
         if(lastping >= 0 && totalmillis - lastping >= decay)
             cleanup();
-        if(lastping < 0) lastping = totalmillis;
+        if(lastping < 0) lastping = totalmillis ? totalmillis : 1;
     }
 
     void calcping()
@@ -549,20 +571,20 @@ struct guient
 {
     virtual ~guient() {}
 
-    virtual void start(int starttime, float basescale, int *tab = NULL, bool allowinput = true, bool wantstitle = true, bool wantsbgfx = true) = 0;
+    virtual void start(int starttime, int *tab = NULL, bool allowinput = true, bool wantstitle = true, bool wantsbgfx = true) = 0;
     virtual void end() = 0;
 
-    virtual int text(const char *text, int color = 0xFFFFFF, const char *icon = NULL, int icolor = 0xFFFFFF, int wrap = -1) = 0;
-    int textf(const char *fmt, int color = 0xFFFFFF, const char *icon = NULL, int icolor = 0xFFFFFF, int wrap = -1, ...) PRINTFARGS(2, 7)
+    virtual int text(const char *text, int color = 0xFFFFFF, const char *icon = NULL, int icolour = 0xFFFFFF, int wrap = -1, bool faded = false, const char *oicon = NULL, int ocolor = 0xFFFFFF) = 0;
+    int textf(const char *fmt, int color = 0xFFFFFF, const char *icon = NULL, int icolour = 0xFFFFFF, int wrap = -1, bool faded = false, const char *oicon = NULL, int ocolor = 0xFFFFFF, ...) PRINTFARGS(2, 10)
     {
-        defvformatstring(str, wrap, fmt);
-        return text(str, color, icon, icolor, wrap);
+        defvformatstring(str, ocolor, fmt);
+        return text(str, color, icon, icolour, wrap, faded, oicon, ocolor);
     }
-    virtual int button(const char *text, int color = 0xFFFFFF, const char *icon = NULL, int icolor = 0xFFFFFF, int wrap = -1, bool faded = true) = 0;
-    int buttonf(const char *fmt, int color = 0xFFFFFF, const char *icon = NULL, int icolor = 0xFFFFFF, int wrap = -1, bool faded = true, ...) PRINTFARGS(2, 8)
+    virtual int button(const char *text, int color = 0xFFFFFF, const char *icon = NULL, int icolour = 0xFFFFFF, int wrap = -1, bool faded = true, const char *oicon = NULL, int ocolor = 0xFFFFFF) = 0;
+    int buttonf(const char *fmt, int color = 0xFFFFFF, const char *icon = NULL, int icolour = 0xFFFFFF, int wrap = -1, bool faded = true, const char *oicon = NULL, int ocolor = 0xFFFFFF, ...) PRINTFARGS(2, 10)
     {
-        defvformatstring(str, faded, fmt);
-        return button(str, color, icon, icolor, wrap, faded);
+        defvformatstring(str, ocolor, fmt);
+        return button(str, color, icon, icolour, wrap, faded, oicon, ocolor);
     }
     virtual void fill(int color, int parentw = 0, int parenth = 0) = 0;
     virtual void outline(int color, int parentw = 0, int parenth = 0, int offsetx = 0, int offsety = 0) = 0;
@@ -571,14 +593,18 @@ struct guient
     virtual void pushlist(bool merge = false) {}
     virtual int poplist() { return 0; }
 
-    virtual void allowhitfx(bool on) = 0;
+    virtual int setcursortype(int type = 0) = 0;
+    virtual int getcursortype() = 0;
+    virtual bool allowcursorfx(bool on) = 0;
+    virtual bool allowhitfx(bool on) = 0;
+    virtual bool allowskinfx(bool on) = 0;
     virtual bool visibletab() = 0;
     virtual bool visible() = 0;
     virtual bool shouldtab() { return false; }
     virtual void tab(const char *name = NULL, int color = 0xFFFFFF, bool front = false) = 0;
     virtual void setstatus(const char *fmt, int width, ...) = 0;
     virtual void settooltip(const char *fmt, int width, ...) = 0;
-    virtual int image(Texture *t, float scale, bool overlaid = false, int icolor = 0xFFFFFF) = 0;
+    virtual int image(Texture *t, float scale, bool overlaid = false, int icolour = 0xFFFFFF, Texture *o = NULL, int ocolour = 0xFFFFFF) = 0;
     virtual int texture(VSlot &vslot, float scale, bool overlaid = true) = 0;
     virtual int slice(Texture *t, float scale, float start = 0, float end = 1, const char *text = NULL) = 0;
     virtual int slider(int &val, int vmin, int vmax, int colour, const char *label = NULL, bool reverse = false, bool scroll = false, int style = 0, int scolour = -1) = 0;
@@ -593,7 +619,7 @@ struct guient
     virtual char *keyfield(const char *name, int color, int length, int height = 0, const char *initval = NULL, int initmode = EDITORFOCUSED, bool focus = false, const char *parent = NULL, const char *prompt = NULL, bool immediate = false) = 0;
     virtual int playerpreview(int model, int color, int team, int weap, const char *vanity, float sizescale, bool overlaid = false, float scale = 1, float blend = 1) { return 0; }
     virtual int modelpreview(const char *name, int anim, float sizescale, bool overlaid = false, float scale = 1, float blend = 1) { return 0; }
-
+    virtual int prefabpreview(const char *prefab, const vec &color, float sizescale, bool overlaid = false) { return 0; }
 };
 
 struct guicb
@@ -610,7 +636,8 @@ struct editor;
 namespace UI
 {
     extern bool isopen;
-    extern bool keypress(int code, bool isdown, int cooked);
+    extern bool textinput(const char *str, int len);
+    extern bool keypress(int code, bool isdown);
     extern void update();
     extern void render();
     extern bool active(bool pass = true);
@@ -620,7 +647,7 @@ namespace UI
     extern editor *geteditor(const char *name, int mode, const char *init = NULL, const char *parent = NULL);
     extern void editorline(editor *e, const char *str, int limit = -1);
     extern void editorclear(editor *e, const char *init = "");
-    extern void editoredit(editor *e);
+    extern void editoredit(editor *e, const char *init = "");
 }
 
 // client
@@ -679,9 +706,10 @@ enum // cube empty-space materials
 
     MAT_NOCLIP = 1 << MATF_CLIP_SHIFT,  // collisions always treat cube as empty
     MAT_CLIP   = 2 << MATF_CLIP_SHIFT,  // collisions always treat cube as solid
-    MAT_AICLIP = 3 << MATF_CLIP_SHIFT,  // clip monsters only
+    MAT_AICLIP = 3 << MATF_CLIP_SHIFT,  // clip waypoints etc
 
     MAT_DEATH  = 1 << MATF_FLAG_SHIFT,  // force player suicide
     MAT_LADDER = 2 << MATF_FLAG_SHIFT,  // acts as ladder (move up/down)
-    MAT_ALPHA  = 4 << MATF_FLAG_SHIFT   // alpha blended
+    MAT_ALPHA  = 4 << MATF_FLAG_SHIFT,  // alpha blended
+    MAT_HURT   = 8 << MATF_FLAG_SHIFT   // hurt at intervals
 };

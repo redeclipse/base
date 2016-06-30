@@ -22,6 +22,10 @@
 	path = data/crosshairs
 	url = https://github.com/red-eclipse/crosshairs.git
 	branch = master
+[submodule "dziq"]
+	path = data/dziq
+	url = https://github.com/red-eclipse/dziq.git
+	branch = master
 [submodule "elyvisions"]
 	path = data/elyvisions
 	url = https://github.com/red-eclipse/elyvisions.git
@@ -65,6 +69,10 @@
 	path = data/misc
 	url = https://github.com/red-eclipse/misc.git
 	branch = master
+[submodule "nieb"]
+	path = data/nieb
+	url = https://github.com/red-eclipse/nieb.git
+	branch = master
 [submodule "nobiax"]
 	path = data/nobiax
 	url = https://github.com/red-eclipse/nobiax.git
@@ -88,6 +96,11 @@
 [submodule "skyboxes"]
 	path = data/skyboxes
 	url = https://github.com/red-eclipse/skyboxes.git
+	branch = master
+[submodule "snipergoth"]
+	path = data/snipergoth
+
+	url = https://github.com/red-eclipse/snipergoth.git
 	branch = master
 [submodule "sounds"]
 	path = data/sounds

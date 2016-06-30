@@ -11,16 +11,16 @@ int curtime = 0, totalmillis = 1, lastmillis = 1, timescale = 100, paused = 0, t
 time_t clocktime = 0, currenttime = 0, clockoffset = 0;
 uint totalsecs = 0;
 
-VAR(0, maxruntime, 0, 86400, VAR_MAX); // time in seconds
+VAR(0, maxruntime, 0, (INT_MAX-1)/1000, VAR_MAX); // time in seconds
 VAR(0, maxshutdownwait, 0, 3600, VAR_MAX); // time in seconds
 
 const char *load = NULL;
 vector<char *> gameargs;
 
 const char *platnames[MAX_PLATFORMS] = {
-    "win", "osx", "nix"
+    "win", "mac", "nix"
 }, *platlongnames[MAX_PLATFORMS] = {
-    "windows", "macosx", "linux/bsd"
+    "windows", "macos", "linux/bsd"
 };
 
 VAR(0, versioning, 1, 0, -1);
@@ -32,6 +32,7 @@ VAR(IDF_READONLY, versionpatch, 1, VERSION_PATCH, -1);
 SVAR(IDF_READONLY, versionstring, VERSION_STRING);
 SVAR(IDF_READONLY, versionname, VERSION_NAME);
 SVAR(IDF_READONLY, versionuname, VERSION_UNAME);
+SVAR(IDF_READONLY, versionvname, VERSION_VNAME);
 SVAR(IDF_READONLY, versionrelease, VERSION_RELEASE);
 SVAR(IDF_READONLY, versionurl, VERSION_URL);
 SVAR(IDF_READONLY, versioncopy, VERSION_COPY);
@@ -40,17 +41,21 @@ SVAR(IDF_READONLY, versionplatname, plat_name(CUR_PLATFORM));
 SVAR(IDF_READONLY, versionplatlongname, plat_longname(CUR_PLATFORM));
 VAR(IDF_READONLY, versionplatform, 0, CUR_PLATFORM, VAR_MAX);
 VAR(IDF_READONLY, versionarch, 0, CUR_ARCH, VAR_MAX);
+VAR(IDF_READONLY, versioncrc, 0, 0, VAR_MAX);
+SVAR(IDF_READONLY, versionbranch, "none");
 #ifdef STANDALONE
 VAR(IDF_READONLY, versionisserver, 0, 1, 1);
 #else
 VAR(IDF_READONLY, versionisserver, 0, 0, 1);
 #endif
-uint versioncrc = 0;
 ICOMMAND(0, platname, "ii", (int *p, int *g), result(*p >= 0 && *p < MAX_PLATFORMS ? (*g!=0 ? plat_longname(*p) : plat_name(*p)) : ""));
+
+SVAR(IDF_READONLY, systemuser, "none");
+SVAR(IDF_READONLY, systemhost, "unknown");
 
 VAR(0, rehashing, 1, 0, -1);
 
-const char * const disc_reasons[] = { "normal", "end of packet", "client num", "user was kicked", "message error", "address is banned", "server is in private mode", "server is password protected", "server requires pure official builds", "server is at maximum capacity", "server and client are incompatible", "connection timed out", "packet overflow", "server shutting down" };
+const char * const disc_reasons[] = { "normal", "end of packet", "client num", "user was kicked", "message error", "address is banned", "server is in private mode", "server is password protected", "server requires pure official builds", "server is at maximum capacity", "server and client are incompatible", "connection timed out", "packet overflow", "hostname lookup failure", "server shutting down" };
 
 SVAR(IDF_PERSIST, logtimeformat, "%Y-%m-%d %H:%M.%S");
 VAR(IDF_PERSIST, logtimelocal, 0, 1, 1); // use clockoffset to localise
@@ -69,7 +74,7 @@ ICOMMAND(0, gettime, "isi", (int *n, char *a, int *p), result(gettime(*n+(*p!=0 
 
 const char *timestr(int dur, int style)
 {
-    static string buf; buf[0] = 0;
+    static string buf; buf[0] = '\0';
     int tm = dur, ms = 0, ss = 0, mn = 0;
     if(tm > 0)
     {
@@ -331,8 +336,8 @@ bool filterstring(char *dst, const char *src, bool newline, bool colour, bool wh
             dst[n++] = c;
         else filtered = true;
     }
-    if(whitespace && wsstrip && n) while(iscubespace(dst[n-1])) dst[--n] = 0;
-    dst[n <= len ? n : len] = 0;
+    if(whitespace && wsstrip && n) while(iscubespace(dst[n-1])) dst[--n] = '\0';
+    dst[n <= len ? n : len] = '\0';
     return filtered;
 }
 ICOMMAND(0, filter, "siiiiN", (char *s, int *a, int *b, int *c, int *d, int *numargs),
@@ -411,6 +416,7 @@ void cleanupserver()
 {
     server::shutdown();
     cleanupserversockets();
+    cleanupmaster();
     irccleanup();
 }
 
@@ -474,7 +480,6 @@ void sendf(int cn, int chan, const char *format, ...)
         case 'x':
             exclude = va_arg(args, int);
             break;
-
         case 'v':
         {
             int n = va_arg(args, int);
@@ -482,23 +487,25 @@ void sendf(int cn, int chan, const char *format, ...)
             loopi(n) putint(p, v[i]);
             break;
         }
-
         case 'i':
         {
             int n = isdigit(*format) ? *format++-'0' : 1;
             loopi(n) putint(p, va_arg(args, int));
             break;
         }
-
+        case 'u':
+        {
+            int n = isdigit(*format) ? *format++-'0' : 1;
+            loopi(n) putuint(p, va_arg(args, uint));
+            break;
+        }
         case 'f':
         {
             int n = isdigit(*format) ? *format++-'0' : 1;
             loopi(n) putfloat(p, (float)va_arg(args, double));
             break;
         }
-
         case 's': sendstring(va_arg(args, const char *), p); break;
-
         case 'm':
         {
             int n = va_arg(args, int);
@@ -520,28 +527,54 @@ void sendfile(int cn, int chan, stream *file, const char *format, ...)
     }
     else if(!clients.inrange(cn)) return;
 
-    int len = (int)min(file->size(), stream::offset(INT_MAX));
-    if(len <= 0 || len > 16<<20) return;
+    int len = file ? (int)min(file->size(), stream::offset(INT_MAX)) : 0;
+    if(len > 16<<20) return;
 
     packetbuf p(MAXTRANS+len, ENET_PACKET_FLAG_RELIABLE);
     va_list args;
     va_start(args, format);
     while(*format) switch(*format++)
     {
+        case 'l': putint(p, len); break;
+        case 'v':
+        {
+            int n = va_arg(args, int);
+            int *v = va_arg(args, int *);
+            loopi(n) putint(p, v[i]);
+            break;
+        }
         case 'i':
         {
             int n = isdigit(*format) ? *format++-'0' : 1;
             loopi(n) putint(p, va_arg(args, int));
             break;
         }
+        case 'u':
+        {
+            int n = isdigit(*format) ? *format++-'0' : 1;
+            loopi(n) putuint(p, va_arg(args, uint));
+            break;
+        }
+        case 'f':
+        {
+            int n = isdigit(*format) ? *format++-'0' : 1;
+            loopi(n) putfloat(p, (float)va_arg(args, double));
+            break;
+        }
         case 's': sendstring(va_arg(args, const char *), p); break;
-        case 'l': putint(p, len); break;
+        case 'm':
+        {
+            int n = va_arg(args, int);
+            p.put(va_arg(args, uchar *), n);
+            break;
+        }
     }
     va_end(args);
-
-    file->seek(0, SEEK_SET);
-    file->read(p.subbuf(len).buf, len);
-
+    if(file && len > 0)
+    {
+        file->seek(0, SEEK_SET);
+        file->read(p.subbuf(len).buf, len);
+    }
     ENetPacket *packet = p.finalize();
     if(cn >= 0) sendpacket(cn, chan, packet, -1);
 #ifndef STANDALONE
@@ -909,7 +942,7 @@ void serverslice(uint timeout)  // main server update, called from main loop in 
                     int reason = server::clientconnect(c.num, c.peer->address.host);
                     if(reason) disconnect_client(c.num, reason);
                 }
-                else disconnect_client(c.num, DISC_MSGERR);
+                else disconnect_client(c.num, DISC_HOSTFAIL);
                 break;
             }
             case ENET_EVENT_TYPE_RECEIVE:
@@ -1208,7 +1241,7 @@ static void setupwindow(const char *title)
     atexit(cleanupwindow);
 
     if(!setupsystemtray(WM_APP)) fatal("failed adding to system tray");
-    conoutf("identity: v%s-%s%d %s (%s) [0x%x]", VERSION_STRING, versionplatname, versionarch, versionisserver ? "server" : "client", VERSION_RELEASE, versioncrc);
+    conoutf("identity: %s@%s v%s-%s%d-%s %s (%s) [0x%.8x]", systemuser, systemhost, VERSION_STRING, versionplatname, versionarch, versionbranch, versionisserver ? "server" : "client", VERSION_RELEASE, versioncrc);
 }
 
 static char *parsecommandline(const char *src, vector<char *> &args)
@@ -1242,7 +1275,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int sw)
     int status = standalonemain(args.length()-1, args.getbuf());
     #define main standalonemain
 #else
-    SDL_SetModuleHandle(hInst);
+    SDL_SetMainReady();
     int status = SDL_main(args.length()-1, args.getbuf());
 #endif
     delete[] buf;
@@ -1404,7 +1437,7 @@ void setupserver()
 
 void initgame()
 {
-    conoutf("identity: v%s-%s%d %s (%s) [0x%x]", VERSION_STRING, versionplatname, versionarch, versionisserver ? "server" : "client", VERSION_RELEASE, versioncrc);
+    conoutf("identity: %s@%s v%s-%s%d-%s %s (%s) [0x%.8x]", systemuser, systemhost, VERSION_STRING, versionplatname, versionarch, versionbranch, versionisserver ? "server" : "client", VERSION_RELEASE, versioncrc);
     server::start();
     loopv(gameargs)
     {
@@ -1551,7 +1584,7 @@ void setlocations(bool wanthome)
     }
     if(!execfile("config/version.cfg", false, EXEC_VERSION|EXEC_BUILTIN)) fatal("cannot exec 'config/version.cfg'");
     // pseudo directory with game content
-    const char *dir = getenv("GAME_DATA");
+    const char *dir = getenv(sup_var("DATADIR"));
     if(dir && *dir) addpackagedir(dir);
     else addpackagedir("data");
     if(!fileexists(findfile("maps/readme.txt", "r"), "r")) fatal("could not find game data");
@@ -1584,14 +1617,19 @@ void setlocations(bool wanthome)
     }
 }
 
+#ifndef STANDALONE
+VAR(IDF_PERSIST, noconfigfile, 0, 0, 1);
+#endif // STANDALONE
+
 void writecfg()
 {
 #ifndef STANDALONE
+    if(noconfigfile) return;
     stream *f = openutf8file("config.cfg", "w");
     if(!f) return;
     vector<ident *> ids;
     enumerate(idents, ident, id, ids.add(&id));
-    ids.sort(ident::compare);
+    ids.sortname();
     bool found = false;
     loopv(ids)
     {
@@ -1625,7 +1663,6 @@ void writecfg()
     delete f;
 #endif
 }
-
 ICOMMAND(0, writecfg, "", (void), if(!(identflags&IDF_WORLD)) writecfg());
 
 void rehash(bool reload)
@@ -1647,7 +1684,7 @@ void rehash(bool reload)
     initing = INIT_LOAD;
     interactive = true;
     execfile("servers.cfg", false);
-    execfile("config.cfg", false);
+    if(!noconfigfile) execfile("config.cfg", false);
     execfile("autoexec.cfg", false);
     interactive = false;
     initing = NOT_INITING;
@@ -1657,14 +1694,40 @@ void rehash(bool reload)
 }
 ICOMMAND(0, rehash, "i", (int *nosave), if(!(identflags&IDF_WORLD)) rehash(*nosave ? false : true));
 
-void setcrc(const char *bin)
+#ifndef WIN32
+#include <pwd.h>
+#endif
+void setverinfo(const char *bin)
 {
-    if(!bin || !*bin) return;
-    size_t len = 0;
-    char *buf = loadfile(bin, &len, false);
-    if(!buf) return;
-    versioncrc = crc32(0, (const Bytef *)buf, len);
-    delete[] buf;
+    string buf;
+    setvar("versioncrc", crcfile(bin));
+    const char *vbranch = getenv(sup_var("BRANCH"));
+    setsvar("versionbranch", vbranch && *vbranch ? vbranch : "none");
+#ifdef WIN32
+    const char *suser = getenv("USERNAME");
+#else
+    const char *suser = getenv("USER");
+    if(!suser || !*suser)
+    { // only fall back to this if the variable isn't exported
+        passwd *p = getpwuid(geteuid());
+        if(p)
+        {
+            copystring(buf, p->pw_name);
+            suser = buf;
+        }
+    }
+#endif
+    setsvar("systemuser", suser && *suser ? suser : "none");
+#ifdef WIN32
+    const char *shost = getenv("COMPUTERNAME");
+#else
+    const char *shost = getenv("HOSTNAME");
+#endif
+    if(!shost || !*shost)
+    { // only fall back to this if the variable isn't exported
+        if(!gethostname(buf, sizeof(string)-1) && *buf) shost = buf;
+    }
+    setsvar("systemhost", shost && *shost ? shost : "unknown");
 }
 
 volatile bool fatalsig = false;
@@ -1673,7 +1736,7 @@ void fatalsignal(int signum)
     if(!fatalsig)
     {
         fatalsig = true;
-        const char *str = "";
+        const char *str = "Error: Fatal signal %d (Unknown Error)";
         switch(signum)
         {
             case SIGINT: str = "Exit signal %d (Interrupt)"; break;
@@ -1688,7 +1751,7 @@ void fatalsignal(int signum)
             case SIGPIPE: str = "Fatal signal %d (Broken Pipe)"; break;
             case SIGALRM: str = "Fatal signal %d (Alarm)"; break;
 #endif
-            default: str = "Error: Fatal signal %d (Unknown Error)"; break;
+            default: break;
         }
         fatal(str, signum);
     }
@@ -1722,7 +1785,6 @@ void fatal(const char *s, ...)    // failure exit
         if(errors <= 1) // avoid recursion
         {
             cleanupserver();
-            cleanupmaster();
             enet_deinitialize();
 #ifdef WIN32
             defformatstring(cap, "%s: Error", VERSION_NAME);
@@ -1741,7 +1803,7 @@ int main(int argc, char **argv)
 
     setlogfile(NULL);
     setlocations(true);
-    setcrc(argv[0]);
+    setverinfo(argv[0]);
 
     char *initscript = NULL;
     for(int i = 1; i<argc; i++)
@@ -1755,6 +1817,7 @@ int main(int argc, char **argv)
     }
 
     if(enet_initialize()<0) fatal("Unable to initialise network module");
+    atexit(enet_deinitialize);
 
     signal(SIGINT, fatalsignal);
     signal(SIGILL, fatalsignal);
@@ -1776,7 +1839,7 @@ int main(int argc, char **argv)
     trytofindocta();
     if(initscript) execute(initscript);
     serverloop();
+    cleanupserver();
     return 0;
 }
 #endif
-

@@ -22,6 +22,8 @@ namespace physics
     VAR(IDF_PERSIST, dashstyle, 0, 1, 1); // 0 = only with impulse, 1 = double tap
     VAR(IDF_PERSIST, crouchstyle, 0, 0, 2); // 0 = press and hold, 1 = double-tap toggle, 2 = toggle
     VAR(IDF_PERSIST, walkstyle, 0, 0, 2); // 0 = press and hold, 1 = double-tap toggle, 2 = toggle
+    VAR(IDF_PERSIST, grabstyle, 0, 2, 2); // 0 = up=up down=down, 1 = up=down down=up, 2 = up=up, down=up
+    VAR(IDF_PERSIST, grabplayerstyle, 0, 3, 3); // 0 = up=up down=down, 1 = up=down down=up, 2 = up=up, down=up, 3 = directly toward player
     VAR(IDF_PERSIST, kickoffstyle, 0, 1, 1); // 0 = old method 1 = new method
     FVAR(IDF_PERSIST, kickoffangle, 0, 60, 89);
     VAR(IDF_PERSIST, kickupstyle, 0, 1, 1); // 0 = old method 1 = new method
@@ -32,7 +34,7 @@ namespace physics
     bool allowimpulse(physent *d, int type)
     {
         if(d && gameent::is(d))
-            return (type ? impulseallowed&type : impulseallowed != 0) && (impulsestyle || PHYS(gravity) == 0);
+            return (!type || AA(((gameent *)d)->actortype, abilities)&(1<<type)) && (impulsestyle || PHYS(gravity) == 0);
         return false;
     }
 
@@ -42,7 +44,7 @@ namespace physics
         {
             gameent *e = (gameent *)d;
             if(!kick && impulsestyle == 1 && e->impulse[IM_TYPE] > IM_T_NONE && e->impulse[IM_TYPE] < IM_T_WALL) return false;
-            int time = e->impulse[IM_TIME], delay = e->impulse[IM_TYPE] == IM_T_KICK || e->impulse[IM_TYPE] == IM_T_VAULT ? impulsekickdelay : impulseboostdelay;
+            int time = e->impulse[IM_TIME], delay = e->impulse[IM_TYPE] == IM_T_KICK || e->impulse[IM_TYPE] == IM_T_VAULT || e->impulse[IM_TYPE] == IM_T_GRAB ? impulsekickdelay : impulseboostdelay;
             if(!time)
             {
                 time = e->impulse[IM_JUMP];
@@ -63,7 +65,7 @@ namespace physics
             game::player1->v = dir; \
             if(down) \
             { \
-                if(allowimpulse(game::player1, IM_A_DASH) && dashstyle && impulseaction&2 && last##v && lastdir##v && dir == lastdir##v && lastmillis-last##v < PHYSMILLIS) \
+                if(allowimpulse(game::player1, A_A_DASH) && dashstyle && impulseaction&2 && last##v && lastdir##v && dir == lastdir##v && lastmillis-last##v < PHYSMILLIS) \
                 { \
                     game::player1->action[AC_DASH] = true; \
                     game::player1->actiontime[AC_DASH] = lastmillis; \
@@ -119,15 +121,8 @@ namespace physics
                     }
                     default: break;
                 }
-                if(type == AC_CROUCH)
-                {
-                    if(game::player1->action[type] != down)
-                    {
-                        if(game::player1->actiontime[type] >= 0) game::player1->actiontime[type] = lastmillis-max(PHYSMILLIS-(lastmillis-game::player1->actiontime[type]), 0);
-                        else if(down) game::player1->actiontime[type] = -game::player1->actiontime[type];
-                    }
-                }
-                else if(down) game::player1->actiontime[type] = lastmillis;
+                if(down) game::player1->actiontime[type] = lastmillis;
+                else if(type == AC_CROUCH) game::player1->actiontime[type] = -lastmillis;
                 game::player1->action[type] = down;
             }
             else
@@ -163,45 +158,49 @@ namespace physics
         return false;
     }
 
-    bool secondaryweap(gameent *d, bool zoom)
+    bool secondaryweap(gameent *d)
     {
         if(!isweap(d->weapselect)) return false;
-        if(d->weapselect != W_MELEE || (d->physstate == PHYS_FALL && !d->onladder))
-        {
-            if(d->action[AC_SECONDARY] && (!d->action[AC_PRIMARY] || d->actiontime[AC_SECONDARY] > d->actiontime[AC_PRIMARY])) return true;
-            else if(d->actiontime[AC_SECONDARY] > d->actiontime[AC_PRIMARY] && d->weapstate[d->weapselect] == W_S_POWER) return true;
-        }
+        if(d->action[AC_SECONDARY] && (!d->action[AC_PRIMARY] || d->actiontime[AC_SECONDARY] > d->actiontime[AC_PRIMARY])) return true;
+        else if(d->actiontime[AC_SECONDARY] > d->actiontime[AC_PRIMARY] && d->weapstate[d->weapselect] == W_S_POWER) return true;
         return false;
     }
 
-    bool isghost(gameent *d, gameent *e)
-    {
-        if(d != e && d->actortype < A_ENEMY && (!e || e->actortype < A_ENEMY))
+    bool isghost(gameent *d, gameent *e, bool proj)
+    { // d is target, e is from
+        if(!e || (d == e && !proj)) return false;
+        if(d->actortype < A_ENEMY && e->actortype < A_ENEMY && m_ghost(game::gamemode, game::mutators)) return true;
+        switch(d->actortype)
         {
-            if(m_ghost(game::gamemode, game::mutators)) return true;
-            if(m_team(game::gamemode, game::mutators)) switch(G(damageteam))
-            {
-                case 1: if(d->actortype > A_PLAYER || (e && e->actortype == A_PLAYER)) break;
-                case 0: if(e && d->team == e->team) return true; break;
-                case 2: default: break;
-            }
+            case A_PLAYER: if(!(AA(e->actortype, collide)&(1<<A_C_PLAYERS))) return true; break;
+            case A_BOT: if(!(AA(e->actortype, collide)&(1<<A_C_BOTS))) return true; break;
+            default: if(!(AA(e->actortype, collide)&(1<<A_C_ENEMIES))) return true; break;
+        }
+        if(m_team(game::gamemode, game::mutators) && d->team == e->team && (proj || AA(e->actortype, teamdamage)&(1<<A_T_GHOST))) switch(d->actortype)
+        {
+            case A_PLAYER: if(!(AA(e->actortype, teamdamage)&(1<<A_T_PLAYERS))) return true; break;
+            case A_BOT: if(!(AA(e->actortype, teamdamage)&(1<<A_T_BOTS))) return true; break;
+            default: if(!(AA(e->actortype, teamdamage)&(1<<A_T_ENEMIES))) return true; break;
         }
         return false;
     }
 
     bool issolid(physent *d, physent *e, bool esc, bool impact, bool reverse)
-    {
-        if(d == e) return false; // don't collide with themself
-        if(e && e->type == ENT_PROJ && d->state == CS_ALIVE)
+    { // d is target, e is from
+        if(!e || d == e) return false; // don't collide with themself
+        if(projent::is(e))
         {
             projent *p = (projent *)e;
             if(gameent::is(d))
             {
-                if(p->stick == d || isghost((gameent *)d, p->owner)) return false;
-                if(impact && (p->hit == d || !(p->projcollide&COLLIDE_PLAYER))) return false;
+                gameent *g = (gameent *)d;
+                if(g->state != CS_ALIVE) return false;
+                if(g->protect(lastmillis, m_protect(game::gamemode, game::mutators))) return false;
+                if(p->stick == d || isghost(g, p->owner, true)) return false;
+                if(impact && (p->hit == g || !(p->projcollide&COLLIDE_PLAYER))) return false;
                 if(p->owner == d && (!(p->projcollide&COLLIDE_OWNER) || (esc && !p->escaped))) return false;
             }
-            else if(d->type == ENT_PROJ)
+            else if(projent::is(d))
             {
                 projent *q = (projent *)d;
                 if(p->projtype == PRJ_SHOT && q->projtype == PRJ_SHOT)
@@ -214,12 +213,12 @@ namespace physics
         }
         if(gameent::is(d))
         {
-            if(d->state != CS_ALIVE) return false;
-            if(isghost((gameent *)d, (gameent *)(e && gameent::is(e) ? e : NULL))) return false;
-            if(((gameent *)d)->protect(lastmillis, m_protect(game::gamemode, game::mutators))) return false;
+            gameent *g = (gameent *)d;
+            if(g->state != CS_ALIVE) return false;
+            if(gameent::is(e) && isghost(g, (gameent *)e)) return false;
             return true;
         }
-        else if(d->type == ENT_PROJ && e && !reverse) return issolid(e, d, esc, impact, true);
+        else if(projent::is(d) && !reverse) return issolid(e, d, esc, impact, true);
         return false;
     }
 
@@ -334,13 +333,13 @@ namespace physics
                 if(m_capture(game::gamemode)) scale *= capturecarryspeed;
                 else if(m_bomber(game::gamemode)) scale *= bombercarryspeed;
             }
-            if(m_impulsemeter(game::gamemode, game::mutators))
+            if(cost && m_impulsemeter(game::gamemode, game::mutators))
             {
                 if(impulsecostscale) cost = int(cost*scale);
                 int diff = impulsemeter-e->impulse[IM_METER];
                 if(cost > diff)
                 {
-                    if(impulsecostrelax&type)
+                    if(type >= A_A_IMFIRST && impulsecostrelax&(1<<(type-A_A_IMFIRST)))
                     {
                         scale *= float(diff)/float(cost);
                         cost = diff;
@@ -719,7 +718,7 @@ namespace physics
                 if(onfloor) dash = impulseaction&2 && d->action[AC_DASH] && (!d->impulse[IM_TIME] || lastmillis-d->impulse[IM_TIME] > impulsedashdelay);
                 else pulse = ((d->actortype >= A_BOT || impulseaction&1) && d->action[AC_JUMP]) || ((d->actortype >= A_BOT || impulseaction&2) && d->action[AC_DASH]);
             }
-            if(!canimpulse(d, dash ? IM_A_DASH : IM_A_BOOST, false)) return false;
+            if(!canimpulse(d, dash ? A_A_DASH : A_A_BOOST, false)) return false;
             if(power || dash || pulse)
             {
                 bool mchk = !melee || onfloor, action = mchk && (d->actortype >= A_BOT || melee || impulseaction&2);
@@ -731,9 +730,9 @@ namespace physics
                     if(!power) skew = impulsedash;
                     if(!dash && !melee) d->impulse[IM_JUMP] = lastmillis;
                 }
-                int cost = impulsecost;
+                int cost = int(impulsecost*(melee ? impulsecostmelee : (dash ? impulsecostdash : impulsecostboost)));
                 vec keepvel = vec(d->vel).add(d->falling);
-                float force = impulsevelocity(d, skew, cost, melee ? IM_A_PARKOUR : (dash ? IM_A_DASH : IM_A_BOOST), melee ? impulsemeleeredir : (dash ? impulsedashredir : (moving ? impulseboostredir : impulsejumpredir)), keepvel);
+                float force = impulsevelocity(d, skew, cost, melee ? A_A_PARKOUR : (dash ? A_A_DASH : A_A_BOOST), melee ? impulsemeleeredir : (dash ? impulsedashredir : (moving ? impulseboostredir : impulsejumpredir)), keepvel);
                 if(force > 0)
                 {
                     vec dir(0, 0, 1);
@@ -764,7 +763,7 @@ namespace physics
     void modifyinput(gameent *d, vec &m, bool wantsmove, int millis)
     {
         bool onfloor = d->physstate >= PHYS_SLOPE || d->onladder || liquidcheck(d);
-        if(d->turnside && (!allowimpulse(d, IM_A_PARKOUR) || d->impulse[IM_TYPE] != IM_T_SKATE || (impulseskate && lastmillis-d->impulse[IM_TIME] > impulseskate) || d->vel.magnitude() <= 1))
+        if(d->turnside && (!allowimpulse(d, A_A_PARKOUR) || d->impulse[IM_TYPE] != IM_T_SKATE || (impulseskate && lastmillis-d->impulse[IM_TIME] > impulseskate) || d->vel.magnitude() <= 1))
         {
             d->turnside = 0;
             d->resetphys(true);
@@ -772,11 +771,11 @@ namespace physics
         }
         if(d->turnside)
         {
-            if(d->action[AC_JUMP] && canimpulse(d, IM_A_PARKOUR, true))
+            if(d->action[AC_JUMP] && canimpulse(d, A_A_PARKOUR, true))
             {
-                int cost = impulsecost;
+                int cost = int(impulsecost*impulsecostkick);
                 vec keepvel = vec(d->vel).add(d->falling);
-                float mag = impulsevelocity(d, impulseparkourkick, cost, IM_A_PARKOUR, impulseparkourkickredir, keepvel);
+                float mag = impulsevelocity(d, impulseparkourkick, cost, A_A_PARKOUR, impulseparkourkickredir, keepvel);
                 if(mag > 0)
                 {
                     vec rft;
@@ -795,7 +794,7 @@ namespace physics
         else
         {
             impulseplayer(d, onfloor);
-            if(onfloor && d->action[AC_JUMP])
+            if(onfloor && d->action[AC_JUMP] && AA(d->actortype, abilities)&(1<<A_A_JUMP))
             {
                 float force = jumpvel(d, true);
                 if(force > 0)
@@ -812,7 +811,7 @@ namespace physics
                     d->action[AC_JUMP] = onfloor = false;
                     client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_JUMP);
                     playsound(S_JUMP, d->o, d);
-                    regularshape(PART_SMOKE, int(d->radius), 0x222222, 21, 20, 250, d->feetpos(), 1, 1, -10, 0, 10.f);
+                    createshape(PART_SMOKE, int(d->radius), 0x222222, 21, 20, 250, d->feetpos(), 1, 1, -10, 0, 10.f);
                 }
             }
             if(d->hasmelee(lastmillis, true, d->sliding(true), onfloor))
@@ -835,7 +834,7 @@ namespace physics
                     loopv(projs::projs)
                     {
                         projent *p = projs::projs[i];
-                        if(p->owner != d || !p->ready() || p->projtype != PRJ_SHOT || p->weap != W_MELEE || !WS(p->flags)) continue;
+                        if(p->owner != d || p->projtype != PRJ_SHOT || p->weap != W_MELEE) continue;
                         p->target = (gameent *)hitplayer;
                     }
                 }
@@ -860,7 +859,7 @@ namespace physics
                 vec face = vec(collidewall).normalize();
                 if(fabs(face.z) <= impulseparkournorm)
                 {
-                    bool cankick = d->action[AC_SPECIAL] && canimpulse(d, IM_A_PARKOUR, true), parkour = cankick && !onfloor && !d->onladder;
+                    bool cankick = d->action[AC_SPECIAL] && canimpulse(d, A_A_PARKOUR, true), parkour = cankick && !onfloor && !d->onladder;
                     float yaw = 0, pitch = 0;
                     vectoyawpitch(face, yaw, pitch);
                     float off = yaw-d->yaw;
@@ -889,9 +888,9 @@ namespace physics
                     }
                     if(!d->turnside && (parkour || vault) && iskick)
                     {
-                        int cost = impulsecost;
+                        int cost = int(impulsecost*(vault ? impulsecostvault : impulsecostclimb));
                         vec keepvel = vec(d->vel).add(d->falling);
-                        float mag = impulsevelocity(d, vault ? impulseparkourvault : impulseparkourclimb, cost, IM_A_PARKOUR, vault ? impulseparkourvaultredir : impulseparkourclimbredir, keepvel);
+                        float mag = impulsevelocity(d, vault ? impulseparkourvault : impulseparkourclimb, cost, A_A_PARKOUR, vault ? impulseparkourvaultredir : impulseparkourclimbredir, keepvel);
                         if(mag > 0)
                         {
                             vec rft;
@@ -919,9 +918,9 @@ namespace physics
                         vecfromyawpitch(yaw, 0.f, 1, 0, rft);
                         if(!d->turnside)
                         {
-                            int cost = impulsecost;
+                            int cost = int(impulsecost*impulsecostparkour);
                             vec keepvel = vec(d->vel).add(d->falling);
-                            float mag = impulsevelocity(d, impulseparkour, cost, IM_A_PARKOUR, impulseparkourredir, keepvel);
+                            float mag = impulsevelocity(d, impulseparkour, cost, A_A_PARKOUR, impulseparkourredir, keepvel);
                             if(mag > 0)
                             {
                                 d->vel = vec(rft).mul(mag).add(keepvel);
@@ -950,8 +949,8 @@ namespace physics
                 }
             }
         }
-        if(d->canmelee(m_weapon(game::gamemode, game::mutators), lastmillis, true, d->sliding(true), onfloor))
-            weapons::doshot(d, d->o, W_MELEE, true, true);
+        if(d->canmelee(m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis, true, d->sliding(true), onfloor))
+            weapons::doshot(d, d->o, W_MELEE, true, d->sliding(true));
         if(!found && d->turnside) d->turnside = 0;
         d->action[AC_DASH] = false;
     }
@@ -981,7 +980,7 @@ namespace physics
 
     float coastscale(const vec &o)
     {
-        return lookupvslot(lookupcube(int(o.x), int(o.y), int(o.z)).texture[O_TOP], false).coastscale;
+        return lookupvslot(lookupcube(ivec(o)).texture[O_TOP], false).coastscale;
     }
 
     void modifyvelocity(physent *pl, bool local, bool floating, int millis)
@@ -1043,8 +1042,8 @@ namespace physics
     void updatematerial(physent *pl, const vec &center, const vec &bottom, bool local)
     {
         int matid = lookupmaterial(bottom), curmat = matid&MATF_VOLUME, flagmat = matid&MATF_FLAGS,
-            oldmat = pl->inmaterial&MATF_VOLUME;
-        float radius = center.z-bottom.z;
+            oldmatid = pl->inmaterial, oldmat = oldmatid&MATF_VOLUME;
+        float radius = center.z-bottom.z, submerged = pl->submerged;
         if(curmat != oldmat)
         {
             #define mattrig(mo,mcol,ms,mt,mz,mq,mp,mw) \
@@ -1065,7 +1064,6 @@ namespace physics
             }
         }
         pl->inmaterial = matid;
-        if(local && gameent::is(pl) && pl->state == CS_ALIVE && flagmat&MAT_DEATH) game::suicide((gameent *)pl, HIT_MATERIAL);
         if((pl->inliquid = isliquid(curmat)) != false)
         {
             float frac = radius/10.f, sub = pl->submerged;
@@ -1081,26 +1079,14 @@ namespace physics
                 }
             }
             pl->submerged = found ? found/20.f : 1.f;
-            if(local)
-            {
-                if(curmat == MAT_WATER && gameent::is(pl) && pl->submerged >= PHYS(liquidextinguish))
-                {
-                    gameent *d = (gameent *)pl;
-                    if(d->burning(lastmillis, burntime) && lastmillis-d->lastres[WR_BURN] > PHYSMILLIS)
-                    {
-                        d->resetresidual(WR_BURN);
-                        playsound(S_EXTINGUISH, d->o, d);
-                        part_create(PART_SMOKE, 500, center, 0xAAAAAA, radius*4, 1, -10);
-                        if(d->state == CS_ALIVE) client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_EXTINGUISH);
-                    }
-                }
-                if(pl->physstate < PHYS_SLIDE && sub >= 0.5f && pl->submerged < 0.5f && pl->vel.z > 1e-3f)
-                    pl->vel.z = max(pl->vel.z, max(jumpvel(pl, false), max(gravityvel(pl), 50.f)));
-            }
+            if(local && pl->physstate < PHYS_SLIDE && sub >= 0.5f && pl->submerged < 0.5f && pl->vel.z > 1e-3f)
+                pl->vel.z = max(pl->vel.z, max(jumpvel(pl, false), max(gravityvel(pl), 50.f)));
         }
         else pl->submerged = 0;
         pl->onladder = flagmat&MAT_LADDER;
         if(pl->onladder && pl->physstate < PHYS_SLIDE) pl->floor = vec(0, 0, 1);
+        if(local && gameent::is(pl) && (pl->inmaterial != oldmatid || pl->submerged != submerged))
+            client::addmsg(N_SPHY, "ri3f", ((gameent *)pl)->clientnum, SPHY_MATERIAL, pl->inmaterial, pl->submerged);
     }
 
     // main physics routine, moves a player/monster for a time step
@@ -1153,7 +1139,7 @@ namespace physics
                 gameent *d = (gameent *)pl;
                 if(!d->airmillis)
                 {
-                    if(local && impulsemethod&2 && timeinair >= impulseboostdelay && d->move == 1 && allowimpulse(d, IM_A_DASH) && d->action[AC_CROUCH])
+                    if(local && impulsemethod&2 && timeinair >= impulseboostdelay && d->move == 1 && allowimpulse(d, A_A_DASH) && d->action[AC_CROUCH])
                     {
                         d->action[AC_DASH] = true;
                         d->actiontime[AC_DASH] = lastmillis;

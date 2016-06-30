@@ -40,7 +40,7 @@ setlocal enableextensions enabledelayedexpansion
         echo Unable to find curl.exe, are you sure it is in tools?
         exit /b 0
     )
-    set REDECLIPSE_CURL="%REDECLIPSE_PATH%\bin\tools\curl.exe" --progress-bar --location --insecure --fail --user-agent "redeclipse-%REDECLIPSE_UPDATE%"
+    set REDECLIPSE_DOWNLOADER="%REDECLIPSE_PATH%\bin\tools\curl.exe" -L -k -f -A "redeclipse-%REDECLIPSE_UPDATE%" -o
     if NOT EXIST "%REDECLIPSE_PATH%\bin\tools\unzip.exe" (
         echo Unable to find unzip.exe, are you sure it is in tools?
         exit /b 0
@@ -52,7 +52,7 @@ setlocal enableextensions enabledelayedexpansion
     if "%REDECLIPSE_BRANCH%" == "devel" goto redeclipse_update_bins_run
 :redeclipse_update_module
     echo modules: Updating..
-    %REDECLIPSE_CURL% --output "%REDECLIPSE_TEMP%\mods.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/mods.txt"
+    %REDECLIPSE_DOWNLOADER% "%REDECLIPSE_TEMP%\mods.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/mods.txt"
     if NOT EXIST "%REDECLIPSE_TEMP%\mods.txt" (
         echo modules: Failed to retrieve update information.
         goto redeclipse_update_bins_run
@@ -76,7 +76,7 @@ setlocal enableextensions enabledelayedexpansion
         echo modules: Failed to get version information, continuing..
         goto redeclipse_update_bins_run
     )
-    %REDECLIPSE_CURL% --output "%REDECLIPSE_TEMP%\#1.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/{%REDECLIPSE_MODULE_PREFETCH%}.txt"
+    %REDECLIPSE_DOWNLOADER% "%REDECLIPSE_TEMP%\#1.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/{%REDECLIPSE_MODULE_PREFETCH%}.txt"
     for %%a in (%REDECLIPSE_MODULE_LIST%) do (
         set REDECLIPSE_MODULE_RUN=%%a
         if NOT "!REDECLIPSE_MODULE_RUN!" == "" (
@@ -114,8 +114,8 @@ setlocal enableextensions enabledelayedexpansion
     if EXIST "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.zip" (
         del /f /q "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.zip"
     )
-    echo %REDECLIPSE_MODULE_RUN%: %REDECLIPSE_GITHUB%/%REDECLIPSE_MODULE_RUN%/zipball/%REDECLIPSE_MODULE_REMOTE%
-    %REDECLIPSE_CURL% --output "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.zip" "%REDECLIPSE_GITHUB%/%REDECLIPSE_MODULE_RUN%/zipball/%REDECLIPSE_MODULE_REMOTE%"
+    echo %REDECLIPSE_MODULE_RUN%: Downloading %REDECLIPSE_GITHUB%/%REDECLIPSE_MODULE_RUN%/zipball/%REDECLIPSE_MODULE_REMOTE%
+    %REDECLIPSE_DOWNLOADER% "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.zip" "%REDECLIPSE_GITHUB%/%REDECLIPSE_MODULE_RUN%/zipball/%REDECLIPSE_MODULE_REMOTE%"
     if NOT EXIST "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.zip" (
         echo %REDECLIPSE_MODULE_RUN%: Failed to retrieve update package.
         exit /b 1
@@ -139,7 +139,7 @@ setlocal enableextensions enabledelayedexpansion
 :redeclipse_update_bins_run
     echo bins: Updating..
     del /f /q "%REDECLIPSE_TEMP%\bins.txt"
-    %REDECLIPSE_CURL% --output "%REDECLIPSE_TEMP%\bins.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/bins.txt"
+    %REDECLIPSE_DOWNLOADER% "%REDECLIPSE_TEMP%\bins.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/bins.txt"
     if EXIST "%REDECLIPSE_PATH%\bin\version.txt" set /p REDECLIPSE_BINS=< "%REDECLIPSE_PATH%\bin\version.txt"
     if "%REDECLIPSE_BINS%" == "" set REDECLIPSE_BINS=none
     echo bins: %REDECLIPSE_BINS% is installed.
@@ -162,8 +162,8 @@ setlocal enableextensions enabledelayedexpansion
     if EXIST "%REDECLIPSE_TEMP%\windows.zip" (
         del /f /q "%REDECLIPSE_TEMP%\windows.zip"
     )
-    echo bins: %REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/windows.zip
-    %REDECLIPSE_CURL% --output "%REDECLIPSE_TEMP%\windows.zip" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/windows.zip"
+    echo bins: Downloading %REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/windows.zip
+    %REDECLIPSE_DOWNLOADER% "%REDECLIPSE_TEMP%\windows.zip" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/windows.zip"
     if NOT EXIST "%REDECLIPSE_TEMP%\windows.zip" (
         echo bins: Failed to retrieve update package.
         goto redeclipse_update_deploy
@@ -188,7 +188,8 @@ setlocal enableextensions enabledelayedexpansion
     echo Administrator permissions are required to deploy the files.
     if NOT EXIST "%REDECLIPSE_PATH%\bin\tools\elevate.exe" (
         echo Unable to find elevate.exe, are you sure it is in tools?
-        goto redeclipse_update_unpack
+        echo There was an error deploying the files.
+        exit /b 1
     )
     set REDECLIPSE_INSTALL="%REDECLIPSE_PATH%\bin\tools\elevate.exe" -wait
 :redeclipse_update_unpack

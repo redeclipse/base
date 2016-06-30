@@ -174,14 +174,14 @@ void renderaction(int idx, int size, Texture *t, char code, const char *name, bo
     if(t && t != notexture)
     {
         glBindTexture(GL_TEXTURE_2D, t->id);
-        glColor4f(r/255.f, g/255.f, b/255.f, f/255.f*compassblend);
+        gle::colorf(r/255.f, g/255.f, b/255.f, f/255.f*compassblend);
         if(idx) drawslice(0.5f/8+(idx-2)/float(8), 1/float(8), hudwidth/2, hudheight/2, size);
         else drawsized(hudwidth/2-size*3/8, hudheight/2-size*3/8, size*3/4);
     }
-    if(code) y += draw_textx("\f{%s}", x, y, r, g, b, int((idx ? 255 : f)*compassblend), compassdir[idx].align, -1, -1, getkeyname(code));
+    if(code) y += draw_textf("\f{%s}", x, y, 0, 0, r, g, b, int((idx ? 255 : f)*compassblend), compassdir[idx].align, -1, -1, 1, getkeyname(code));
     popfont();
     pushfont(!idx || hit ? "emphasis" : "reduced");
-    draw_textx("%s", x, y, r, g, b, int(f*compassblend), compassdir[idx].align, -1, -1, name);
+    draw_textf("%s", x, y, 0, 0, r, g, b, int(f*compassblend), compassdir[idx].align, -1, -1, 1, name);
     popfont();
 }
 
@@ -203,7 +203,7 @@ void rendercmenu()
         loopi(curcompass->actions.length()-8)
         {
             caction &c = curcompass->actions[i+8];
-            y += draw_textx("\f{%s} %s", x, y, 255, 255, 255, int(192*compassblend), TEXT_CENTERED, -1, -1, getkeyname(c.code), c.name);
+            y += draw_textf("\f{%s} %s", x, y, 0, 0, 255, 255, 255, int(192*compassblend), TEXT_CENTERED, -1, -1, 1, getkeyname(c.code), c.name);
             if(y >= maxy) break;
         }
         popfont();
@@ -233,7 +233,7 @@ bool runcmenu(int idx)
     return foundmenu;
 }
 
-bool keycmenu(int code, bool isdown, int cooked)
+bool keycmenu(int code, bool isdown)
 {
     switch(code)
     {
@@ -241,25 +241,21 @@ bool keycmenu(int code, bool isdown, int cooked)
         {
             if(!isdown && ++compasspos > curcompass->actions.length()) compasspos = 0;
             return true;
-            break;
         }
         case SDLK_LEFT: case SDLK_DOWN: case -5:
         {
             if(!isdown && --compasspos < 0) compasspos = 8;
             return true;
-            break;
         }
         case SDLK_RETURN: case -1:
         {
             if(!isdown) runcmenu(cmenuhit());
             return true;
-            break;
         }
         case SDLK_ESCAPE: case -3:
         {
             if(!isdown) clearcmenu();
             return true;
-            break;
         }
         default:
         {

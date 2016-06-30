@@ -4,6 +4,7 @@
 	<Project>
 		<Option title="redeclipse" />
 		<Option platforms="Windows;" />
+		<Option pch_mode="2" />
 		<Option compiler="gcc" />
 		<Build>
 			<Target title="redeclipse-x86">
@@ -21,14 +22,15 @@
 				<Option projectLibDirsRelation="1" />
 				<Compiler>
 					<Add option="-fomit-frame-pointer" />
-					<Add option="-ffast-math" />
 					<Add option="-O3" />
 					<Add option="-Wall" />
+					<Add option="-ffast-math" />
 					<Add option="-m32" />
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
 					<Add option="-fno-exceptions" />
 					<Add option="-fno-rtti" />
+					<Add directory="support" />
 					<Add directory="shared" />
 					<Add directory="engine" />
 					<Add directory="game" />
@@ -39,9 +41,9 @@
 					<Add option="-s" />
 					<Add option="-m32" />
 					<Add option="-mwindows" />
-					<Add library="SDL" />
-					<Add library="SDL_image" />
-					<Add library="SDL_mixer" />
+					<Add library="SDL2" />
+					<Add library="SDL2_image" />
+					<Add library="SDL2_mixer" />
 					<Add library="zlib1" />
 					<Add library="opengl32" />
 					<Add library="enet" />
@@ -73,6 +75,7 @@
 					<Add option="-m32" />
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
+					<Add directory="support" />
 					<Add directory="shared" />
 					<Add directory="engine" />
 					<Add directory="game" />
@@ -82,9 +85,9 @@
 				<Linker>
 					<Add option="-m32" />
 					<Add option="-mwindows" />
-					<Add library="SDL" />
-					<Add library="SDL_image" />
-					<Add library="SDL_mixer" />
+					<Add library="SDL2" />
+					<Add library="SDL2_image" />
+					<Add library="SDL2_mixer" />
 					<Add library="zlib1" />
 					<Add library="opengl32" />
 					<Add library="enet" />
@@ -117,6 +120,7 @@
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
 					<Add option="-finline-functions" />
+					<Add directory="support" />
 					<Add directory="shared" />
 					<Add directory="engine" />
 					<Add directory="game" />
@@ -127,9 +131,9 @@
 					<Add option="-pg -lgmon" />
 					<Add option="-m32" />
 					<Add option="-mwindows" />
-					<Add library="SDL" />
-					<Add library="SDL_image" />
-					<Add library="SDL_mixer" />
+					<Add library="SDL2" />
+					<Add library="SDL2_image" />
+					<Add library="SDL2_mixer" />
 					<Add library="zlib1" />
 					<Add library="opengl32" />
 					<Add library="enet" />
@@ -165,6 +169,7 @@
 					<Add option="-fno-exceptions" />
 					<Add option="-fno-rtti" />
 					<Add option="-DSTANDALONE" />
+					<Add directory="support" />
 					<Add directory="shared" />
 					<Add directory="engine" />
 					<Add directory="game" />
@@ -205,6 +210,7 @@
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
 					<Add option="-DSTANDALONE" />
+					<Add directory="support" />
 					<Add directory="shared" />
 					<Add directory="engine" />
 					<Add directory="game" />
@@ -248,6 +254,7 @@
 					<Add option="-fsigned-char" />
 					<Add option="-fno-exceptions" />
 					<Add option="-fno-rtti" />
+					<Add directory="support" />
 					<Add directory="shared" />
 					<Add directory="engine" />
 					<Add directory="game" />
@@ -258,9 +265,9 @@
 					<Add option="-s" />
 					<Add option="-m64" />
 					<Add option="-mwindows" />
-					<Add library="SDL" />
-					<Add library="SDL_image" />
-					<Add library="SDL_mixer" />
+					<Add library="SDL2" />
+					<Add library="SDL2_image" />
+					<Add library="SDL2_mixer" />
 					<Add library="zlib1" />
 					<Add library="opengl32" />
 					<Add library="enet" />
@@ -280,7 +287,7 @@
 				<Option deps_output=".deps/redeclipse-amd64-dbg" />
 				<Option type="0" />
 				<Option compiler="gcc" />
-				<Option parameters="-hhome -r -df0 -dw800 -dh600 -glog.txt" />
+				<Option parameters="-df0 -dw800 -dh600 -glog.txt" />
 				<Option projectCompilerOptionsRelation="1" />
 				<Option projectLinkerOptionsRelation="1" />
 				<Option projectIncludeDirsRelation="1" />
@@ -292,6 +299,7 @@
 					<Add option="-m64" />
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
+					<Add directory="support" />
 					<Add directory="shared" />
 					<Add directory="engine" />
 					<Add directory="game" />
@@ -301,9 +309,9 @@
 				<Linker>
 					<Add option="-m64" />
 					<Add option="-mwindows" />
-					<Add library="SDL" />
-					<Add library="SDL_image" />
-					<Add library="SDL_mixer" />
+					<Add library="SDL2" />
+					<Add library="SDL2_image" />
+					<Add library="SDL2_mixer" />
 					<Add library="zlib1" />
 					<Add library="opengl32" />
 					<Add library="enet" />
@@ -336,6 +344,7 @@
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
 					<Add option="-finline-functions" />
+					<Add directory="support" />
 					<Add directory="shared" />
 					<Add directory="engine" />
 					<Add directory="game" />
@@ -346,9 +355,9 @@
 					<Add option="-pg -lgmon" />
 					<Add option="-m64" />
 					<Add option="-mwindows" />
-					<Add library="SDL" />
-					<Add library="SDL_image" />
-					<Add library="SDL_mixer" />
+					<Add library="SDL2" />
+					<Add library="SDL2_image" />
+					<Add library="SDL2_mixer" />
 					<Add library="zlib1" />
 					<Add library="opengl32" />
 					<Add library="enet" />
@@ -384,6 +393,7 @@
 					<Add option="-fno-exceptions" />
 					<Add option="-fno-rtti" />
 					<Add option="-DSTANDALONE" />
+					<Add directory="support" />
 					<Add directory="shared" />
 					<Add directory="engine" />
 					<Add directory="game" />
@@ -424,6 +434,7 @@
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
 					<Add option="-DSTANDALONE" />
+					<Add directory="support" />
 					<Add directory="shared" />
 					<Add directory="engine" />
 					<Add directory="game" />
@@ -468,6 +479,7 @@
 					<Add option="-mwindows" />
 					<Add option="-m32" />
 					<Add option="-DSTANDALONE" />
+					<Add directory="support" />
 					<Add directory="shared" />
 					<Add directory="engine" />
 					<Add directory="game" />
@@ -509,6 +521,7 @@
 					<Add option="-mwindows" />
 					<Add option="-m32" />
 					<Add option="-DSTANDALONE" />
+					<Add directory="support" />
 					<Add directory="shared" />
 					<Add directory="engine" />
 					<Add directory="game" />
@@ -661,14 +674,6 @@
 			<Option target="genkey" />
 		</Unit>
 		<Unit filename="engine/glare.cpp">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
-		<Unit filename="engine/glexts.h">
 			<Option target="redeclipse-x86" />
 			<Option target="redeclipse-x86-dbg" />
 			<Option target="redeclipse-x86-prof" />
@@ -1068,14 +1073,7 @@
 			<Option target="redeclipse-amd64-dbg" />
 			<Option target="redeclipse-amd64-prof" />
 		</Unit>
-		<Unit filename="engine/varray.h">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
+		<Unit filename="engine/version.h" />
 		<Unit filename="engine/vertmodel.h">
 			<Option target="redeclipse-x86" />
 			<Option target="redeclipse-x86-dbg" />
@@ -1457,326 +1455,6 @@
 			<Option target="redeclipse_server-amd64" />
 			<Option target="redeclipse_server-amd64-dbg" />
 		</Unit>
-		<Unit filename="include/GL/glext.h">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
-		<Unit filename="include/SDL.h">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
-		<Unit filename="include/SDL_active.h">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
-		<Unit filename="include/SDL_audio.h">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
-		<Unit filename="include/SDL_byteorder.h">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
-		<Unit filename="include/SDL_cdrom.h">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
-		<Unit filename="include/SDL_config.h">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
-		<Unit filename="include/SDL_config_macosx.h">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
-		<Unit filename="include/SDL_config_win32.h">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
-		<Unit filename="include/SDL_copying.h">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
-		<Unit filename="include/SDL_cpuinfo.h">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
-		<Unit filename="include/SDL_endian.h">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
-		<Unit filename="include/SDL_error.h">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
-		<Unit filename="include/SDL_events.h">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
-		<Unit filename="include/SDL_getenv.h">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
-		<Unit filename="include/SDL_image.h">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
-		<Unit filename="include/SDL_joystick.h">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
-		<Unit filename="include/SDL_keyboard.h">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
-		<Unit filename="include/SDL_keysym.h">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
-		<Unit filename="include/SDL_loadso.h">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
-		<Unit filename="include/SDL_main.h">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
-		<Unit filename="include/SDL_mixer.h">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
-		<Unit filename="include/SDL_mouse.h">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
-		<Unit filename="include/SDL_mutex.h">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
-		<Unit filename="include/SDL_name.h">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
-		<Unit filename="include/SDL_opengl.h">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
-		<Unit filename="include/SDL_platform.h">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
-		<Unit filename="include/SDL_quit.h">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
-		<Unit filename="include/SDL_rwops.h">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
-		<Unit filename="include/SDL_stdinc.h">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
-		<Unit filename="include/SDL_syswm.h">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
-		<Unit filename="include/SDL_thread.h">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
-		<Unit filename="include/SDL_timer.h">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
-		<Unit filename="include/SDL_types.h">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
-		<Unit filename="include/SDL_version.h">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
-		<Unit filename="include/SDL_video.h">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
-		<Unit filename="include/begin_code.h">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
-		<Unit filename="include/close_code.h">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
-		<Unit filename="include/zconf.h">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
-		<Unit filename="include/zlib.h">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
 		<Unit filename="redeclipse.rc">
 			<Option compilerVar="WINDRES" />
 			<Option compiler="gcc" use="1" buildCommand="$rescomp -F $WINDRES_TARGET -i $file -J rc -o $resource_output -O coff $res_includes" />
@@ -1859,6 +1537,30 @@
 			<Option target="redeclipse-amd64-dbg" />
 			<Option target="redeclipse-amd64-prof" />
 		</Unit>
+		<Unit filename="shared/glemu.cpp">
+			<Option target="redeclipse-x86" />
+			<Option target="redeclipse-x86-dbg" />
+			<Option target="redeclipse-x86-prof" />
+			<Option target="redeclipse-amd64" />
+			<Option target="redeclipse-amd64-dbg" />
+			<Option target="redeclipse-amd64-prof" />
+		</Unit>
+		<Unit filename="shared/glemu.h">
+			<Option target="redeclipse-x86" />
+			<Option target="redeclipse-x86-dbg" />
+			<Option target="redeclipse-x86-prof" />
+			<Option target="redeclipse-amd64" />
+			<Option target="redeclipse-amd64-dbg" />
+			<Option target="redeclipse-amd64-prof" />
+		</Unit>
+		<Unit filename="shared/glexts.h">
+			<Option target="redeclipse-x86" />
+			<Option target="redeclipse-x86-dbg" />
+			<Option target="redeclipse-x86-prof" />
+			<Option target="redeclipse-amd64" />
+			<Option target="redeclipse-amd64-dbg" />
+			<Option target="redeclipse-amd64-prof" />
+		</Unit>
 		<Unit filename="shared/iengine.h">
 			<Option target="redeclipse-x86" />
 			<Option target="redeclipse-x86-dbg" />
@@ -1926,7 +1628,21 @@
 			<Option target="redeclipse_server-amd64" />
 			<Option target="redeclipse_server-amd64-dbg" />
 		</Unit>
-		<Unit filename="version.h">
+		<Unit filename="support/sqlite3.c">
+			<Option compilerVar="CC" />
+			<Option compiler="gcc" use="1" buildCommand="$compiler $includes -c $file -o $object" />
+			<Option target="redeclipse-x86" />
+			<Option target="redeclipse-x86-dbg" />
+			<Option target="redeclipse_server-x86" />
+			<Option target="redeclipse-x86-prof" />
+			<Option target="redeclipse_server-x86-dbg" />
+			<Option target="redeclipse-amd64" />
+			<Option target="redeclipse-amd64-dbg" />
+			<Option target="redeclipse-amd64-prof" />
+			<Option target="redeclipse_server-amd64" />
+			<Option target="redeclipse_server-amd64-dbg" />
+		</Unit>
+		<Unit filename="support/sqlite3.h">
 			<Option target="redeclipse-x86" />
 			<Option target="redeclipse-x86-dbg" />
 			<Option target="redeclipse-x86-prof" />
@@ -1942,6 +1658,7 @@
 			<code_completion />
 			<envvars />
 			<debugger />
+			<editor_config active="1" use_tabs="0" tab_indents="1" tab_width="4" indent="4" eol_mode="0" />
 		</Extensions>
 	</Project>
 </CodeBlocks_project_file>

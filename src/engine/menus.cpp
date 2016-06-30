@@ -2,7 +2,6 @@
 
 #include "engine.h"
 
-FVAR(IDF_PERSIST, menuscale, 0, 0.02f, 1);
 VAR(0, guipasses, 1, -1, -1);
 
 struct menu;
@@ -28,7 +27,7 @@ struct menu : guicb
         int oldflags = identflags;
         if(world && !builtin) identflags |= IDF_WORLD;
         if(initscript) execute(initscript);
-        cgui->start(menustart, menuscale, &menutab, useinput, usetitle, usebgfx);
+        cgui->start(menustart, &menutab, useinput, usetitle, usebgfx);
         cgui->tab(header ? header : name);
         if(contents) execute(contents);
         cgui->end();
@@ -132,7 +131,7 @@ bool popgui(bool skip = true)
     return true;
 }
 
-void removegui(menu *m)
+bool removegui(menu *m)
 {
     loopv(menustack) if(menustack[i] == m)
     {
@@ -140,11 +139,12 @@ void removegui(menu *m)
         m->passes = 0;
         if(m->keep) *m->keep = false;
         m->clear();
-        return;
+        return true;
     }
+    return false;
 }
 
-void pushgui(menu *m, int pos = -1, int tab = 0, bool *keep = NULL)
+bool pushgui(menu *m, int pos = -1, int tab = 0, bool *keep = NULL)
 {
     if(menustack.empty()) resetcursor();
     if(pos < 0) menustack.add(m);
@@ -157,32 +157,40 @@ void pushgui(menu *m, int pos = -1, int tab = 0, bool *keep = NULL)
         m->usetitle = tab >= 0 ? true : false;
         m->world = (identflags&IDF_WORLD)!=0;
         m->keep = keep;
+        return true;
     }
+    return false;
 }
 
-void restoregui(int pos, int tab = 0, bool *keep = NULL)
+bool restoregui(int pos, int tab = 0, bool *keep = NULL)
 {
     int clear = menustack.length()-pos-1;
     loopi(clear) popgui();
     menu *m = menustack.last();
     if(m)
     {
-        m->passes = 0;
-        m->menustart = totalmillis;
+        if(clear)
+        {
+            m->passes = 0;
+            m->menustart = totalmillis;
+        }
         if(tab > 0) m->menutab = tab;
         m->world = (identflags&IDF_WORLD)!=0;
         m->keep = keep;
+        return clear != 0;
     }
+    return false;
 }
 
-void showgui(const char *name, int tab, bool *keep)
+bool showgui(const char *name, int tab, bool *keep)
 {
     menu *m = menus.access(name);
-    if(!m) return;
+    if(!m) return false;
     int pos = menustack.find(m);
     if(pos < 0) pushgui(m, -1, tab, keep);
-    else restoregui(pos, tab, keep);
+    else if(!restoregui(pos, tab, keep)) return true;
     playsound(S_GUIPRESS, camera1->o, camera1, SND_FORCED);
+    return true;
 }
 
 extern bool closetexgui();
@@ -221,6 +229,14 @@ void guistayopen(uint *contents)
     shouldclearmenu = oldclearmenu;
 }
 
+void guinocursorfx(uint *contents)
+{
+    if(!cgui) return;
+    cgui->allowcursorfx(false);
+    execute(contents);
+    cgui->allowcursorfx(true);
+}
+
 void guinohitfx(uint *contents)
 {
     if(!cgui) return;
@@ -229,19 +245,27 @@ void guinohitfx(uint *contents)
     cgui->allowhitfx(true);
 }
 
+void guinoskinfx(uint *contents)
+{
+    if(!cgui) return;
+    cgui->allowskinfx(false);
+    execute(contents);
+    cgui->allowskinfx(true);
+}
+
 SVAR(0, guirollovername, "");
 SVAR(0, guirolloveraction, "");
 SVAR(0, guirollovertype, "");
 
-void guibutton(char *name, char *action, char *altact, char *icon, int *colour, int *icolour, int *wrap)
+void guibutton(char *name, char *action, char *altact, char *icon, int *colour, int *icolour, int *wrap, int *faded, char *oicon, int *ocolour)
 {
     if(!cgui) return;
-    int ret = cgui->button(name, *colour >= 0 ? *colour : 0xFFFFFF, *icon ? icon : NULL, *icolour >= 0 ? *icolour : 0xFFFFFF, *wrap > 0 ? *wrap : -1);
+    int ret = cgui->button(name, *colour >= 0 ? *colour : 0xFFFFFF, *icon ? icon : NULL, *icolour >= 0 ? *icolour : 0xFFFFFF, *wrap > 0 ? *wrap : -1, *faded != 0, *oicon ? oicon : NULL, *ocolour >= 0 ? *ocolour : 0xFFFFFF);
     if(ret&GUI_UP)
     {
         char *act = NULL;
-        if(altact[0] && ret&GUI_ALT) act = altact;
-        else if(action[0]) act = action;
+        if(altact && *altact && ret&GUI_ALT) act = altact;
+        else if(action && *action) act = action;
         if(act)
         {
             updatelater.add().schedule(act);
@@ -256,21 +280,18 @@ void guibutton(char *name, char *action, char *altact, char *icon, int *colour, 
     }
 }
 
-void guiimage(char *path, char *action, float *scale, int *overlaid, char *altpath, char *altact, int *colour)
+void guiimage(char *path, char *action, float *scale, int *overlaid, char *altpath, char *altact, int *colour, char *opath, int *ocolour)
 {
     if(!cgui) return;
-    Texture *t = path[0] ? textureload(path, 0, true, false) : NULL;
-    if(t == notexture)
-    {
-        if(*altpath) t = textureload(altpath, 0, true, false);
-        if(t == notexture) return;
-    }
-    int ret = cgui->image(t, *scale, *overlaid!=0, *colour >= 0 ? *colour : 0xFFFFFF);
+    Texture *t = path && *path ? textureload(path, 0, true, false) : NULL, *o = opath && *opath ? textureload(opath, 0, true, false) : NULL;
+    if(t == notexture && *altpath) t = textureload(altpath, 0, true, false);
+    if(o == notexture) o = NULL;
+    int ret = cgui->image(t, *scale, *overlaid!=0, *colour >= 0 ? *colour : 0xFFFFFF, o, *ocolour >= 0 ? *ocolour : 0xFFFFFF);
     if(ret&GUI_UP)
     {
         char *act = NULL;
-        if(altact[0] && ret&GUI_ALT) act = altact;
-        else if(action[0]) act = action;
+        if(altact && *altact && ret&GUI_ALT) act = altact;
+        else if(action && *action) act = action;
         if(act)
         {
             updatelater.add().schedule(act);
@@ -288,19 +309,19 @@ void guiimage(char *path, char *action, float *scale, int *overlaid, char *altpa
 void guislice(char *path, char *action, float *scale, float *start, float *end, char *text, char *altpath, char *altact)
 {
     if(!cgui) return;
-    Texture *t = path[0] ? textureload(path, 0, true, false) : NULL;
+    Texture *t = path && *path ? textureload(path, 0, true, false) : NULL;
     if(t == notexture)
     {
         if(*altpath) t = textureload(altpath, 0, true, false);
         if(t == notexture) return;
     }
-    int ret = cgui->slice(t, *scale, *start, *end, text[0] ? text : NULL);
+    int ret = cgui->slice(t, *scale, *start, *end, text && *text ? text : NULL);
     if(ret&GUI_UP)
     {
         char *act = NULL;
-        if(altact[0] && ret&GUI_ALT) act = altact;
-        else if(action[0]) act = action;
-        if(act[0])
+        if(altact && *altact && ret&GUI_ALT) act = altact;
+        else if(action && *action) act = action;
+        if(act)
         {
             updatelater.add().schedule(act);
             if(shouldclearmenu) clearlater = true;
@@ -314,9 +335,9 @@ void guislice(char *path, char *action, float *scale, float *start, float *end, 
     }
 }
 
-void guitext(char *name, char *icon, int *colour, int *icolour, int *wrap)
+void guitext(char *name, char *icon, int *colour, int *icolour, int *wrap, int *faded, char *oicon, int *ocolor)
 {
-    if(cgui) cgui->text(name, *colour >= 0 ? *colour : 0xFFFFFF, icon[0] ? icon : NULL, *icolour >= 0 ? *icolour : 0xFFFFFF, *wrap > 0 ? *wrap : -1);
+    if(cgui) cgui->text(name, *colour >= 0 ? *colour : 0xFFFFFF, *icon ? icon : NULL, *icolour >= 0 ? *icolour : 0xFFFFFF, *wrap > 0 ? *wrap : -1, *faded >= 0 ? *faded > 0 : false, *oicon ? oicon : NULL, *ocolor >= 0 ? *ocolor : 0xFFFFFF);
 }
 
 void guitab(char *name)
@@ -390,35 +411,47 @@ void guifont(char *font, uint *body)
 
 int guifontwidth(char *font)
 {
+    float oldtextscale = curtextscale;
+    curtextscale = 1;
     if(font && *font) pushfont(font);
     int width = FONTW;
     if(font && *font) popfont();
+    curtextscale = oldtextscale;
     return width;
 }
 
 int guifontheight(char *font)
 {
+    float oldtextscale = curtextscale;
+    curtextscale = 1;
     if(font && *font) pushfont(font);
     int height = FONTH;
     if(font && *font) popfont();
+    curtextscale = oldtextscale;
     return height;
 }
 
 int guitextwidth(char *text, char *font, int wrap)
 {
+    float oldtextscale = curtextscale;
+    curtextscale = 1;
     if(font && *font) pushfont(font);
     int width = 0, height = 0;
-    text_bounds(text, width, height, wrap > 0 ? wrap : -1, TEXT_NO_INDENT);
+    text_bounds(text, width, height, 0, 0, wrap > 0 ? wrap : -1, TEXT_NO_INDENT);
     if(font && *font) popfont();
+    curtextscale = oldtextscale;
     return width;
 }
 
 int guitextheight(char *text, char *font, int wrap)
 {
+    float oldtextscale = curtextscale;
+    curtextscale = 1;
     if(font && *font) pushfont(font);
     int width = 0, height = 0;
-    text_bounds(text, width, height, wrap > 0 ? wrap : -1, TEXT_NO_INDENT);
+    text_bounds(text, width, height, 0, 0, wrap > 0 ? wrap : -1, TEXT_NO_INDENT);
     if(font && *font) popfont();
+    curtextscale = oldtextscale;
     return height;
 }
 
@@ -426,7 +459,7 @@ template<class T> static void updateval(char *var, T val, char *onchange)
 {
     ident *id = writeident(var);
     updatelater.add().schedule(id, val);
-    if(onchange[0]) updatelater.add().schedule(onchange);
+    if(onchange && *onchange) updatelater.add().schedule(onchange);
 }
 
 static int getval(char *var)
@@ -532,7 +565,7 @@ void guicheckbox(char *name, char *var, float *on, float *off, char *onchange, i
 {
     if(!cgui) return;
     bool enabled = getfval(var) != *off, two = getfvarmax(var) == 2, next = two && getfval(var) == 1.0f;
-    int ret = cgui->button(name, *colour >= 0 ? *colour : 0xFFFFFF, enabled ? (two && !next ? "checkboxtwo" : "checkboxon") : "checkbox", 0xFFFFFF);
+    int ret = cgui->button(name, *colour >= 0 ? *colour : 0xFFFFFF, "checkbox", 0xFFFFFF, -1, true, enabled ? "checkboxon" : NULL, enabled && two && !next ? guicheckboxtwocolour : guicheckboxcolour);
     if(ret&GUI_UP) updateval(var, enabled ? (two && next ? 2.0f : *off) : (*on || *off ? *on : 1.0f), onchange);
     else if(ret&GUI_ROLLOVER)
     {
@@ -546,7 +579,7 @@ void guiradio(char *name, char *var, float *n, char *onchange, int *colour)
 {
     if(!cgui) return;
     bool enabled = getfval(var)==*n;
-    int ret = cgui->button(name, *colour >= 0 ? *colour : 0xFFFFFF, enabled ? "radioboxon" : "radiobox", *colour >= 0 ? *colour : 0xFFFFFF);
+    int ret = cgui->button(name, *colour >= 0 ? *colour : 0xFFFFFF, "radiobox", *colour >= 0 ? *colour : 0xFFFFFF, -1, true, enabled ? "radioboxon" : NULL, guiradioboxcolour);
     if(ret&GUI_UP)
     {
         if(!enabled) updateval(var, *n, onchange);
@@ -564,7 +597,7 @@ void guibitfield(char *name, char *var, int *mask, char *onchange, int *colour)
     if(!cgui) return;
     int val = getval(var);
     bool enabled = (val & *mask) != 0;
-    int ret = cgui->button(name, *colour >= 0 ? *colour : 0xFFFFFF, enabled ? "checkboxon" : "checkbox", *colour >= 0 ? *colour : 0xFFFFFF);
+    int ret = cgui->button(name, *colour >= 0 ? *colour : 0xFFFFFF, "checkbox", *colour >= 0 ? *colour : 0xFFFFFF, -1, true, enabled ? "checkboxon" : NULL, guicheckboxcolour);
     if(ret&GUI_UP) updateval(var, enabled ? val & ~*mask : val | *mask, onchange);
     else if(ret&GUI_ROLLOVER)
     {
@@ -605,14 +638,14 @@ void guikeyfield(char *var, int *maxlength, char *onchange, int *colour, int *fo
 void guibody(uint *contents, char *action, char *altact, uint *onhover)
 {
     if(!cgui) return;
-    cgui->pushlist(action[0] ? true : false);
+    cgui->pushlist(action && *action ? true : false);
     execute(contents);
     int ret = cgui->poplist();
     if(ret&GUI_UP)
     {
         char *act = NULL;
-        if(ret&GUI_ALT && altact[0]) act = altact;
-        else if(action[0]) act = action;
+        if(ret&GUI_ALT && altact && *altact) act = altact;
+        else if(action && *action) act = action;
         if(act)
         {
             updatelater.add().schedule(act);
@@ -645,15 +678,15 @@ void newgui(char *name, char *contents, char *initscript)
         freecode(m->contents);
         freecode(m->initscript);
     }
-    m->contents = contents && contents[0] ? compilecode(contents) : NULL;
-    m->initscript = initscript && initscript[0] ? compilecode(initscript) : NULL;
+    m->contents = contents && *contents ? compilecode(contents) : NULL;
+    m->initscript = initscript && *initscript ? compilecode(initscript) : NULL;
 }
 
 void guiheader(char *name)
 {
     if(!cmenu) return;
     DELETEA(cmenu->header);
-    cmenu->header = name && name[0] ? newstring(name) : NULL;
+    cmenu->header = name && *name ? newstring(name) : NULL;
 }
 
 void guimodify(char *name, char *contents)
@@ -661,20 +694,22 @@ void guimodify(char *name, char *contents)
     menu *m = menus.access(name);
     if(!m) return;
     freecode(m->contents);
-    m->contents = contents && contents[0] ? compilecode(contents) : NULL;
+    m->contents = contents && *contents ? compilecode(contents) : NULL;
 }
 
 COMMAND(0, newgui, "sss");
 COMMAND(0, guiheader, "s");
 COMMAND(0, guimodify, "ss");
-COMMAND(0, guibutton, "ssssbbb");
-COMMAND(0, guitext, "ssbbb");
+COMMAND(0, guibutton, "ssssbbbbsb");
+COMMAND(0, guitext, "ssbbbbsb");
 COMMANDN(0, cleargui, cleargui_, "i");
 ICOMMAND(0, showgui, "si", (const char *s, int *n), showgui(s, *n));
 COMMAND(0, guishowtitle, "i");
 COMMAND(0, guishowbgfx, "i");
 COMMAND(0, guistayopen, "e");
 COMMAND(0, guinohitfx, "e");
+COMMAND(0, guinocursorfx, "e");
+COMMAND(0, guinoskinfx, "e");
 
 COMMAND(0, guilist, "e");
 COMMAND(0, guibody, "esse");
@@ -687,7 +722,7 @@ COMMAND(0, guispring, "i");
 COMMAND(0, guivisible, "e");
 COMMAND(0, guivisibletab, "e");
 COMMAND(0, guifont,"se");
-COMMAND(0, guiimage,"ssfissb");
+COMMAND(0, guiimage,"ssfissbsb");
 COMMAND(0, guislice,"ssfffsss");
 COMMAND(0, guiprogress,"ff");
 COMMAND(0, guislider,"sbbsiibib");
@@ -716,8 +751,8 @@ void guiplayerpreview(int *model, int *color, int *team, int *weap, char *vanity
     if(ret&GUI_UP)
     {
         char *act = NULL;
-        if(altact[0] && ret&GUI_ALT) act = altact;
-        else if(action[0]) act = action;
+        if(altact && *altact && ret&GUI_ALT) act = altact;
+        else if(action && *action) act = action;
         if(act)
         {
             updatelater.add().schedule(act);
@@ -738,7 +773,7 @@ void guimodelpreview(char *model, char *animspec, char *action, float *scale, in
 {
     if(!cgui) return;
     int anim = ANIM_ALL;
-    if(animspec[0])
+    if(animspec && *animspec)
     {
         if(isdigit(animspec[0]))
         {
@@ -757,8 +792,8 @@ void guimodelpreview(char *model, char *animspec, char *action, float *scale, in
     if(ret&GUI_UP)
     {
         char *act = NULL;
-        if(altact[0] && ret&GUI_ALT) act = altact;
-        else if(action[0]) act = action;
+        if(altact && *altact && ret&GUI_ALT) act = altact;
+        else if(action && *action) act = action;
         if(act)
         {
             updatelater.add().schedule(act);
@@ -767,13 +802,38 @@ void guimodelpreview(char *model, char *animspec, char *action, float *scale, in
     }
     else if(ret&GUI_ROLLOVER)
     {
-        defformatstring(str, "%d %s", *model, animspec);
+        defformatstring(str, "%s [%s]", model, animspec);
         setsvar("guirollovername", str, true);
         setsvar("guirolloveraction", action, true);
         setsvar("guirollovertype", "model", true);
     }
 }
 COMMAND(0, guimodelpreview, "sssfiffs");
+
+void guiprefabpreview(char *prefab, int *color, char *action, float *scale, int *overlaid, char *altact)
+{
+    if(!cgui) return;
+    int ret = cgui->prefabpreview(prefab, vec::hexcolor(*color), *scale, *overlaid!=0);
+    if(ret&GUI_UP)
+    {
+        char *act = NULL;
+        if(altact && *altact && ret&GUI_ALT) act = altact;
+        else if(action && *action) act = action;
+        if(act)
+        {
+            updatelater.add().schedule(act);
+            if(shouldclearmenu) clearlater = true;
+        }
+    }
+    else if(ret&GUI_ROLLOVER)
+    {
+        defformatstring(str, "%s %d", prefab, *color);
+        setsvar("guirollovername", str, true);
+        setsvar("guirolloveraction", action, true);
+        setsvar("guirollovertype", "prefab", true);
+    }
+}
+COMMAND(0, guiprefabpreview, "sisfis");
 
 struct change
 {
@@ -790,12 +850,16 @@ static struct applymenu : menu
     void gui(guient &g, bool firstpass)
     {
         if(menustack.empty()) return;
-        g.start(menustart, menuscale, NULL, true);
+        g.start(menustart, NULL, true);
         g.text("the following settings have changed:");
+        g.pushfont("little");
         loopv(needsapply) g.text(needsapply[i].desc, 0xFFFFFF, "point");
+        g.popfont();
         g.separator();
         g.text("apply changes now?");
-        if(g.button("^fgOK")&GUI_UP)
+        g.pushlist();
+        g.spring();
+        if(g.button("\fgOK")&GUI_UP)
         {
             int changetypes = 0;
             loopv(needsapply) changetypes |= needsapply[i].type;
@@ -803,7 +867,10 @@ static struct applymenu : menu
             if(changetypes&CHANGE_SOUND) updatelater.add().schedule("resetsound");
             clearlater = true;
         }
-        if(g.button("^focancel")&GUI_UP) clearlater = true;
+        g.spring();
+        if(g.button("\focancel")&GUI_UP) clearlater = true;
+        g.spring();
+        g.poplist();
         g.end();
     }
 
@@ -887,12 +954,27 @@ bool menuactive()
 
 ICOMMAND(0, menustacklen, "", (void), intret(menustack.length()));
 
-void guiirc(const char *s)
+void guiirc(const char *s, int width, int height)
 {
-    extern bool ircgui(guient *g, const char *s);
+    extern bool ircgui(guient *g, const char *s, int width, int height);
     if(cgui)
     {
-        if(!ircgui(cgui, s) && shouldclearmenu) clearlater = true;
+        if(!ircgui(cgui, s, width > 0 ? width : 100, height > 0 ? height : 25) && shouldclearmenu) clearlater = true;
     }
 }
-ICOMMAND(0, ircgui, "s", (char *s), guiirc(s));
+ICOMMAND(0, ircgui, "sii", (char *s, int *w, int *h), guiirc(s, *w, *h));
+
+void guiconsole(int width, int height, const char *init)
+{
+    extern bool consolegui(guient *g, int width, int height, const char *init, int &update);
+    static int consoleupdate = -1;
+    if(cgui)
+    {
+        if(!consolegui(cgui, width > 0 ? width : 100, height > 0 ? height : 25, init && *init ? init : "/", consoleupdate) && shouldclearmenu)
+        {
+            clearlater = true;
+            consoleupdate = -1;
+        }
+    }
+}
+ICOMMAND(0, consolegui, "iis", (int *w, int *h, char *i), guiconsole(*w, *h, i));

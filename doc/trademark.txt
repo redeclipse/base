@@ -127,7 +127,7 @@ as described above.
 
   Attribution
 
-This text is Copyright (C) 2011-2015, the Red Eclipse Team
+This text is Copyright (C) 2011-2016, the Red Eclipse Team
 and is available under a Creative Commons Attribution-ShareAlike 3.0 Unported
 License <http://creativecommons.org/licenses/by-sa/3.0/>
 

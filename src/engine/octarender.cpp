@@ -40,6 +40,8 @@ void destroyvbo(GLuint vbo)
 
 void genvbo(int type, void *buf, int len, vtxarray **vas, int numva)
 {
+    gle::disable();
+
     GLuint vbo;
     glGenBuffers_(1, &vbo);
     GLenum target = type==VBO_VBUF ? GL_ARRAY_BUFFER : GL_ELEMENT_ARRAY_BUFFER;
@@ -77,13 +79,13 @@ bool readva(vtxarray *va, ushort *&edata, vertex *&vdata)
     edata = new ushort[3*va->tris];
     vdata = new vertex[va->verts];
 
-    glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, va->ebuf);
+    gle::bindebo(va->ebuf);
     glGetBufferSubData_(GL_ELEMENT_ARRAY_BUFFER, (size_t)va->edata, 3*va->tris*sizeof(ushort), edata);
-    glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, 0);
+    gle::clearebo();
 
-    glBindBuffer_(GL_ARRAY_BUFFER, va->vbuf);
+    gle::bindvbo(va->vbuf);
     glGetBufferSubData_(GL_ARRAY_BUFFER, va->voffset*sizeof(vertex), va->verts*sizeof(vertex), vdata);
-    glBindBuffer_(GL_ARRAY_BUFFER, 0);
+    gle::clearvbo();
     return true;
 }
 
@@ -389,7 +391,7 @@ struct vacollect : verthash
 
     void genverts(void *buf)
     {
-        GENVERTS(vertex, buf, { *f = v; f->norm.flip(); });
+        GENVERTS(vertex, buf, { *f = v; f->norm.flip(); f->tangent.flip(); });
     }
 
     void setupdata(vtxarray *va)
@@ -778,6 +780,37 @@ vec decodenormal(ushort norm)
     return vec(-yaw.y*pitch.x, yaw.x*pitch.x, pitch.y);
 }
 
+void guessnormals(const vec *pos, int numverts, vec *normals)
+{
+    vec n1, n2;
+    n1.cross(pos[0], pos[1], pos[2]);
+    if(numverts != 4)
+    {
+        n1.normalize();
+        loopk(numverts) normals[k] = n1;
+        return;
+    }
+    n2.cross(pos[0], pos[2], pos[3]);
+    if(n1.iszero())
+    {
+        n2.normalize();
+        loopk(4) normals[k] = n2;
+        return;
+    }
+    else n1.normalize();
+    if(n2.iszero())
+    {
+        loopk(4) normals[k] = n1;
+        return;
+    }
+    else n2.normalize();
+    vec avg = vec(n1).add(n2).normalize();
+    normals[0] = avg;
+    normals[1] = n1;
+    normals[2] = avg;
+    normals[3] = n2;
+}
+
 void addcubeverts(VSlot &vslot, int orient, int size, vec *pos, int convex, ushort texture, ushort lmid, vertinfo *vinfo, int numverts, int tj = -1, ushort envmap = EMID_NONE, int grassy = 0, bool alpha = false, int layer = LAYER_TOP)
 {
     int dim = dimension(orient);
@@ -890,17 +923,17 @@ struct cubeedge
 vector<cubeedge> cubeedges;
 hashtable<edgegroup, int> edgegroups(1<<13);
 
-void gencubeedges(cube &c, int x, int y, int z, int size)
+void gencubeedges(cube &c, const ivec &co, int size)
 {
     ivec pos[MAXFACEVERTS];
     int vis;
-    loopi(6) if((vis = visibletris(c, i, x, y, z, size)))
+    loopi(6) if((vis = visibletris(c, i, co, size)))
     {
         int numverts = c.ext ? c.ext->surfaces[i].numverts&MAXFACEVERTS : 0;
         if(numverts)
         {
             vertinfo *verts = c.ext->verts() + c.ext->surfaces[i].verts;
-            ivec vo = ivec(x, y, z).mask(~0xFFF).shl(3);
+            ivec vo = ivec(co).mask(~0xFFF).shl(3);
             loopj(numverts)
             {
                 vertinfo &v = verts[j];
@@ -913,7 +946,7 @@ void gencubeedges(cube &c, int x, int y, int z, int size)
             ivec v[4];
             genfaceverts(c, i, v);
             int order = vis&4 || (!flataxisface(c, i) && faceconvexity(v) < 0) ? 1 : 0;
-            ivec vo = ivec(x, y, z).shl(3);
+            ivec vo = ivec(co).shl(3);
             pos[numverts++] = v[order].mul(size).add(vo);
             if(vis&1) pos[numverts++] = v[order+1].mul(size).add(vo);
             pos[numverts++] = v[order+2].mul(size).add(vo);
@@ -991,21 +1024,21 @@ void gencubeedges(cube &c, int x, int y, int z, int size)
     }
 }
 
-void gencubeedges(cube *c = worldroot, int x = 0, int y = 0, int z = 0, int size = hdr.worldsize>>1)
+void gencubeedges(cube *c = worldroot, const ivec &co = ivec(0, 0, 0), int size = hdr.worldsize>>1)
 {
     showocprog("fixing t-joints...");
     neighbourstack[++neighbourdepth] = c;
     loopi(8)
     {
-        ivec o(i, x, y, z, size);
+        ivec o(i, co, size);
         if(c[i].ext) c[i].ext->tjoints = -1;
-        if(c[i].children) gencubeedges(c[i].children, o.x, o.y, o.z, size>>1);
-        else if(!isempty(c[i])) gencubeedges(c[i], o.x, o.y, o.z, size);
+        if(c[i].children) gencubeedges(c[i].children, o, size>>1);
+        else if(!isempty(c[i])) gencubeedges(c[i], o, size);
     }
     --neighbourdepth;
 }
 
-void gencubeverts(cube &c, int x, int y, int z, int size, int csi)
+void gencubeverts(cube &c, const ivec &co, int size, int csi)
 {
     if(!(c.visible&0xC0)) return;
 
@@ -1014,7 +1047,7 @@ void gencubeverts(cube &c, int x, int y, int z, int size, int csi)
     if(!vismask) return;
     
     int tj = filltjoints && c.ext ? c.ext->tjoints : -1, vis;
-    loopi(6) if(vismask&(1<<i) && (vis = visibletris(c, i, x, y, z, size)))
+    loopi(6) if(vismask&(1<<i) && (vis = visibletris(c, i, co, size)))
     {
         vec pos[MAXFACEVERTS];
         vertinfo *verts = NULL;
@@ -1022,7 +1055,7 @@ void gencubeverts(cube &c, int x, int y, int z, int size, int csi)
         if(numverts)
         {
             verts = c.ext->verts() + c.ext->surfaces[i].verts;
-            vec vo(ivec(x, y, z).mask(~0xFFF));
+            vec vo(ivec(co).mask(~0xFFF));
             loopj(numverts) pos[j] = vec(verts[j].getxyz()).mul(1.0f/8).add(vo);
             if(!flataxisface(c, i)) convex = faceconvexity(verts, numverts, size);
         }
@@ -1032,7 +1065,7 @@ void gencubeverts(cube &c, int x, int y, int z, int size, int csi)
             genfaceverts(c, i, v);
             if(!flataxisface(c, i)) convex = faceconvexity(v);
             int order = vis&4 || convex < 0 ? 1 : 0;
-            vec vo(x, y, z);
+            vec vo(co);
             pos[numverts++] = vec(v[order]).mul(size/8.0f).add(vo);
             if(vis&1) pos[numverts++] = vec(v[order+1]).mul(size/8.0f).add(vo);
             pos[numverts++] = vec(v[order+2]).mul(size/8.0f).add(vo);
@@ -1041,8 +1074,8 @@ void gencubeverts(cube &c, int x, int y, int z, int size, int csi)
 
         VSlot &vslot = lookupvslot(c.texture[i], true),
               *layer = vslot.layer && !(c.material&MAT_ALPHA) ? &lookupvslot(vslot.layer, true) : NULL;
-        ushort envmap = vslot.slot->shader->type&SHADER_ENVMAP ? (vslot.slot->texmask&(1<<TEX_ENVMAP) ? EMID_CUSTOM : closestenvmap(i, x, y, z, size)) : EMID_NONE,
-               envmap2 = layer && layer->slot->shader->type&SHADER_ENVMAP ? (layer->slot->texmask&(1<<TEX_ENVMAP) ? EMID_CUSTOM : closestenvmap(i, x, y, z, size)) : EMID_NONE;
+        ushort envmap = vslot.slot->shader->type&SHADER_ENVMAP ? (vslot.slot->texmask&(1<<TEX_ENVMAP) ? EMID_CUSTOM : closestenvmap(i, co, size)) : EMID_NONE,
+               envmap2 = layer && layer->slot->shader->type&SHADER_ENVMAP ? (layer->slot->texmask&(1<<TEX_ENVMAP) ? EMID_CUSTOM : closestenvmap(i, co, size)) : EMID_NONE;
         while(tj >= 0 && tjoints[tj].edge < i*(MAXFACEVERTS+1)) tj = tjoints[tj].next;
         int hastj = tj >= 0 && tjoints[tj].edge < (i+1)*(MAXFACEVERTS+1) ? tj : -1;
         int grassy = vslot.slot->texgrass && i!=O_BOTTOM ? (vis!=3 || convex ? 1 : 2) : 0;
@@ -1065,26 +1098,26 @@ static inline bool skyoccluded(cube &c, int orient)
 }
 
 static int dummyskyfaces[6];
-static inline int hasskyfaces(cube &c, int x, int y, int z, int size, int faces[6] = dummyskyfaces)
+static inline int hasskyfaces(cube &c, const ivec &co, int size, int faces[6] = dummyskyfaces)
 {
     int numfaces = 0;
     if(isempty(c) || c.material&MAT_ALPHA)
     {
-        if(x == 0) faces[numfaces++] = O_LEFT;
-        if(x + size == hdr.worldsize) faces[numfaces++] = O_RIGHT;
-        if(y == 0) faces[numfaces++] = O_BACK;
-        if(y + size == hdr.worldsize) faces[numfaces++] = O_FRONT;
-        if(z == 0) faces[numfaces++] = O_BOTTOM;
-        if(z + size == hdr.worldsize) faces[numfaces++] = O_TOP;
+        if(co.x == 0) faces[numfaces++] = O_LEFT;
+        if(co.x + size == hdr.worldsize) faces[numfaces++] = O_RIGHT;
+        if(co.y == 0) faces[numfaces++] = O_BACK;
+        if(co.y + size == hdr.worldsize) faces[numfaces++] = O_FRONT;
+        if(co.z == 0) faces[numfaces++] = O_BOTTOM;
+        if(co.z + size == hdr.worldsize) faces[numfaces++] = O_TOP;
     }
     else if(!isentirelysolid(c))
     {
-        if(x == 0 && !skyoccluded(c, O_LEFT)) faces[numfaces++] = O_LEFT;
-        if(x + size == hdr.worldsize && !skyoccluded(c, O_RIGHT)) faces[numfaces++] = O_RIGHT;
-        if(y == 0 && !skyoccluded(c, O_BACK)) faces[numfaces++] = O_BACK;
-        if(y + size == hdr.worldsize && !skyoccluded(c, O_FRONT)) faces[numfaces++] = O_FRONT;
-        if(z == 0 && !skyoccluded(c, O_BOTTOM)) faces[numfaces++] = O_BOTTOM;
-        if(z + size == hdr.worldsize && !skyoccluded(c, O_TOP)) faces[numfaces++] = O_TOP;
+        if(co.x == 0 && !skyoccluded(c, O_LEFT)) faces[numfaces++] = O_LEFT;
+        if(co.x + size == hdr.worldsize && !skyoccluded(c, O_RIGHT)) faces[numfaces++] = O_RIGHT;
+        if(co.y == 0 && !skyoccluded(c, O_BACK)) faces[numfaces++] = O_BACK;
+        if(co.y + size == hdr.worldsize && !skyoccluded(c, O_FRONT)) faces[numfaces++] = O_FRONT;
+        if(co.z == 0 && !skyoccluded(c, O_BOTTOM)) faces[numfaces++] = O_BOTTOM;
+        if(co.z + size == hdr.worldsize && !skyoccluded(c, O_TOP)) faces[numfaces++] = O_TOP;
     }
     return numfaces;
 }
@@ -1105,7 +1138,7 @@ void minskyface(cube &cu, int orient, const ivec &co, int size, facebounds &orig
 
 void genskyfaces(cube &c, const ivec &o, int size)
 {
-    int faces[6], numfaces = hasskyfaces(c, o.x, o.y, o.z, size, faces);
+    int faces[6], numfaces = hasskyfaces(c, o, size, faces);
     if(!numfaces) return;
 
     loopi(numfaces)
@@ -1168,13 +1201,13 @@ int allocva = 0;
 int wtris = 0, wverts = 0, vtris = 0, vverts = 0, glde = 0, gbatches = 0;
 vector<vtxarray *> valist, varoot;
 
-vtxarray *newva(int x, int y, int z, int size)
+vtxarray *newva(const ivec &co, int size)
 {
     vc.optimize();
 
     vtxarray *va = new vtxarray;
     va->parent = NULL;
-    va->o = ivec(x, y, z);
+    va->o = co;
     va->size = size;
     va->skyarea = vc.skyarea;
     va->skyfaces = vc.skymask;
@@ -1328,8 +1361,8 @@ int genmergedfaces(cube &c, const ivec &co, int size, int minlevel = -1)
             VSlot &vslot = lookupvslot(mf.tex, true),
                   *layer = vslot.layer && !(c.material&MAT_ALPHA) ? &lookupvslot(vslot.layer, true) : NULL;
             if(vslot.slot->shader->type&SHADER_ENVMAP)
-                mf.envmap = vslot.slot->texmask&(1<<TEX_ENVMAP) ? EMID_CUSTOM : closestenvmap(i, co.x, co.y, co.z, size);
-            ushort envmap2 = layer && layer->slot->shader->type&SHADER_ENVMAP ? (layer->slot->texmask&(1<<TEX_ENVMAP) ? EMID_CUSTOM : closestenvmap(i, co.x, co.y, co.z, size)) : EMID_NONE;
+                mf.envmap = vslot.slot->texmask&(1<<TEX_ENVMAP) ? EMID_CUSTOM : closestenvmap(i, co, size);
+            ushort envmap2 = layer && layer->slot->shader->type&SHADER_ENVMAP ? (layer->slot->texmask&(1<<TEX_ENVMAP) ? EMID_CUSTOM : closestenvmap(i, co, size)) : EMID_NONE;
 
             if(surf.numverts&LAYER_TOP) vamerges[level].add(mf);
             if(surf.numverts&LAYER_BOTTOM)
@@ -1359,7 +1392,7 @@ int findmergedfaces(cube &c, const ivec &co, int size, int csi, int minlevel)
         int maxlevel = -1;
         loopi(8)
         {
-            ivec o(i, co.x, co.y, co.z, size/2);
+            ivec o(i, co, size/2);
             int level = findmergedfaces(c.children[i], o, size/2, csi-1, minlevel);
             maxlevel = max(maxlevel, level);
         }
@@ -1392,7 +1425,7 @@ void addmergedverts(int level, const ivec &o)
     mfl.setsize(0);
 }
 
-void rendercube(cube &c, int cx, int cy, int cz, int size, int csi, int &maxlevel)  // creates vertices and indices ready to be put into a va
+void rendercube(cube &c, const ivec &co, int size, int csi, int &maxlevel)  // creates vertices and indices ready to be put into a va
 {
     //if(size<=16) return;
     if(c.ext && c.ext->va)
@@ -1407,16 +1440,16 @@ void rendercube(cube &c, int cx, int cy, int cz, int size, int csi, int &maxleve
         c.escaped = 0;
         loopi(8)
         {
-            ivec o(i, cx, cy, cz, size/2);
+            ivec o(i, co, size/2);
             int level = -1;
-            rendercube(c.children[i], o.x, o.y, o.z, size/2, csi-1, level);
+            rendercube(c.children[i], o, size/2, csi-1, level);
             if(level >= csi)
                 c.escaped |= 1<<i;
             maxlevel = max(maxlevel, level);
         }
         --neighbourdepth;
 
-        if(csi <= MAXMERGELEVEL && vamerges[csi].length()) addmergedverts(csi, ivec(cx, cy, cz));
+        if(csi <= MAXMERGELEVEL && vamerges[csi].length()) addmergedverts(csi, co);
 
         if(c.ext)
         {
@@ -1425,26 +1458,26 @@ void rendercube(cube &c, int cx, int cy, int cz, int size, int csi, int &maxleve
         return;
     }
 
-    genskyfaces(c, ivec(cx, cy, cz), size);
+    genskyfaces(c, co, size);
 
     if(!isempty(c))
     {
-        gencubeverts(c, cx, cy, cz, size, csi);
-        if(c.merged) maxlevel = max(maxlevel, genmergedfaces(c, ivec(cx, cy, cz), size));
+        gencubeverts(c, co, size, csi);
+        if(c.merged) maxlevel = max(maxlevel, genmergedfaces(c, co, size));
     }
-    if(c.material != MAT_AIR) genmatsurfs(c, cx, cy, cz, size, vc.matsurfs);
+    if(c.material != MAT_AIR) genmatsurfs(c, co, size, vc.matsurfs);
 
     if(c.ext)
     {
         if(c.ext->ents && c.ext->ents->mapmodels.length()) vc.mapmodels.add(c.ext->ents);
     }
 
-    if(csi <= MAXMERGELEVEL && vamerges[csi].length()) addmergedverts(csi, ivec(cx, cy, cz));
+    if(csi <= MAXMERGELEVEL && vamerges[csi].length()) addmergedverts(csi, co);
 }
 
-void calcgeombb(int cx, int cy, int cz, int size, ivec &bbmin, ivec &bbmax)
+void calcgeombb(const ivec &co, int size, ivec &bbmin, ivec &bbmax)
 {
-    vec vmin(cx, cy, cz), vmax = vmin;
+    vec vmin(co), vmax = vmin;
     vmin.add(size);
 
     loopv(vc.verts)
@@ -1458,9 +1491,9 @@ void calcgeombb(int cx, int cy, int cz, int size, ivec &bbmin, ivec &bbmax)
     bbmax = ivec(vmax.mul(8)).add(7).shr(3);
 }
 
-void calcmatbb(int cx, int cy, int cz, int size, ivec &bbmin, ivec &bbmax)
+void calcmatbb(const ivec &co, int size, ivec &bbmin, ivec &bbmax)
 {
-    bbmax = ivec(cx, cy, cz);
+    bbmax = co;
     (bbmin = bbmax).add(size);
     loopv(vc.matsurfs)
     {
@@ -1490,35 +1523,35 @@ void calcmatbb(int cx, int cy, int cz, int size, ivec &bbmin, ivec &bbmax)
     }
 }
 
-void setva(cube &c, int cx, int cy, int cz, int size, int csi)
+void setva(cube &c, const ivec &co, int size, int csi)
 {
     ASSERT(size <= 0x1000);
 
     int vamergeoffset[MAXMERGELEVEL+1];
     loopi(MAXMERGELEVEL+1) vamergeoffset[i] = vamerges[i].length();
 
-    vc.origin = ivec(cx, cy, cz);
+    vc.origin = co;
     vc.size = size;
 
-    shadowmapmin = vec(cx+size, cy+size, cz+size);
-    shadowmapmax = vec(cx, cy, cz);
+    shadowmapmin = vec(co).add(size);
+    shadowmapmax = vec(co);
 
     int maxlevel = -1;
-    rendercube(c, cx, cy, cz, size, csi, maxlevel);
+    rendercube(c, co, size, csi, maxlevel);
 
     ivec bbmin, bbmax;
 
-    calcgeombb(cx, cy, cz, size, bbmin, bbmax);
+    calcgeombb(co, size, bbmin, bbmax);
 
-    addskyverts(ivec(cx, cy, cz), size);
+    addskyverts(co, size);
 
     if(size == min(0x1000, hdr.worldsize/2) || !vc.emptyva())
     {
-        vtxarray *va = newva(cx, cy, cz, size);
+        vtxarray *va = newva(co, size);
         ext(c).va = va;
         va->geommin = bbmin;
         va->geommax = bbmax;
-        calcmatbb(cx, cy, cz, size, va->matmin, va->matmax);
+        calcmatbb(co, size, va->matmin, va->matmax);
         va->shadowmapmin = ivec(shadowmapmin.mul(8)).shr(3);
         va->shadowmapmax = ivec(shadowmapmax.mul(8)).add(7).shr(3);
         va->hasmerges = vahasmerges;
@@ -1532,12 +1565,12 @@ void setva(cube &c, int cx, int cy, int cz, int size, int csi)
     vc.clear();
 }
 
-static inline int setcubevisibility(cube &c, int x, int y, int z, int size)
+static inline int setcubevisibility(cube &c, const ivec &co, int size)
 {
     int numvis = 0, vismask = 0, collidemask = 0, checkmask = 0;
     loopi(6)
     {
-        int facemask = classifyface(c, i, x, y, z, size);
+        int facemask = classifyface(c, i, co, size);
         if(facemask&1) 
         {
             vismask |= 1<<i;
@@ -1561,7 +1594,7 @@ VARF(0, vafacemax, 64, 384, 256*256, allchanged());
 VARF(0, vafacemin, 0, 96, 256*256, allchanged());
 VARF(0, vacubesize, 32, 128, 0x1000, allchanged());
 
-int updateva(cube *c, int cx, int cy, int cz, int size, int csi)
+int updateva(cube *c, const ivec &co, int size, int csi)
 {
     showocprog("recalculating geometry...");
     int ccount = 0, cmergemax = vamergemax, chasmerges = vahasmerges;
@@ -1569,7 +1602,7 @@ int updateva(cube *c, int cx, int cy, int cz, int size, int csi)
     loopi(8)                                    // counting number of semi-solid/solid children cubes
     {
         int count = 0, childpos = varoot.length();
-        ivec o(i, cx, cy, cz, size);
+        ivec o(i, co, size);
         vamergemax = 0;
         vahasmerges = 0;
         if(c[i].ext && c[i].ext->va)
@@ -1579,17 +1612,17 @@ int updateva(cube *c, int cx, int cy, int cz, int size, int csi)
         }
         else
         {
-            if(c[i].children) count += updateva(c[i].children, o.x, o.y, o.z, size/2, csi-1);
+            if(c[i].children) count += updateva(c[i].children, o, size/2, csi-1);
             else
             {
-                if(!isempty(c[i])) count += setcubevisibility(c[i], o.x, o.y, o.z, size);
-                count += hasskyfaces(c[i], o.x, o.y, o.z, size);
+                if(!isempty(c[i])) count += setcubevisibility(c[i], o, size);
+                count += hasskyfaces(c[i], o, size);
             }
             int tcount = count + (csi <= MAXMERGELEVEL ? vamerges[csi].length() : 0);
             if(tcount > vafacemax || (tcount >= vafacemin && size >= vacubesize) || size == min(0x1000, hdr.worldsize/2))
             {
                 loadprogress = clamp(recalcocprog/float(allocnodes), 0.0f, 1.0f);
-                setva(c[i], o.x, o.y, o.z, size, csi);
+                setva(c[i], o, size, csi);
                 if(c[i].ext && c[i].ext->va)
                 {
                     while(varoot.length() > childpos)
@@ -1701,7 +1734,7 @@ void octarender()                               // creates va s for all leaf cub
 
     recalcocprog = 0;
     varoot.setsize(0);
-    updateva(worldroot, 0, 0, 0, hdr.worldsize/2, csi-1);
+    updateva(worldroot, ivec(0, 0, 0), hdr.worldsize/2, csi-1);
     loadprogress = 0;
     flushvbo();
 
@@ -1714,7 +1747,6 @@ void octarender()                               // creates va s for all leaf cub
         skyarea += va->skyarea;
     }
 
-    extern vtxarray *visibleva;
     visibleva = NULL;
 }
 

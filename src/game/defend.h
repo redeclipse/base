@@ -1,8 +1,8 @@
 #ifdef GAMESERVER
     #define defendstate stfservstate
-    #define defendcount (m_gsp2(gamemode, mutators) ? G(defendking) : G(defendoccupy))
+    #define defendcount (m_dac_king(gamemode, mutators) ? G(defendking) : G(defendoccupy))
 #else
-    #define defendcount (m_gsp2(game::gamemode, game::mutators) ? G(defendking) : G(defendoccupy))
+    #define defendcount (m_dac_king(game::gamemode, game::mutators) ? G(defendking) : G(defendoccupy))
 #endif
 
 struct defendstate
@@ -206,7 +206,8 @@ namespace defend
     extern void setscore(int team, int total);
     extern void reset();
     extern void setup();
-    extern void drawnotices(int w, int h, int &tx, int &ty, float blend);
+    extern void drawnotices(int w, int h, int &tx, int &ty, int tr, int tg, int tb, float blend);
+    extern void drawevents(int w, int h, int &tx, int &ty, int tr, int tg, int tb, float blend);
     extern void drawblips(int w, int h, float blend);
     extern int drawinventory(int x, int y, int s, int m, float blend);
     extern void preload();

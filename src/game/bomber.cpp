@@ -5,7 +5,7 @@ namespace bomber
 
     void killed(gameent *d, gameent *v)
     {
-        if(v && m_gsp1(game::gamemode, game::mutators) && (!m_team(game::gamemode, game::mutators) || d->team != v->team))
+        if(v && m_bb_hold(game::gamemode, game::mutators) && (!m_team(game::gamemode, game::mutators) || d->team != v->team))
         {
             loopv(st.flags) if(isbomberaffinity(st.flags[i]) && st.flags[i].owner == v)
                 st.flags[i].taketime = lastmillis;
@@ -120,16 +120,30 @@ namespace bomber
                     if(millis < 1000) size *= 1.f+(1-clamp(float(millis)/1000.f, 0.f, 1.f));
                 }
             }
-            else if(!m_gsp1(game::gamemode, game::mutators))
+            else if(!m_bb_hold(game::gamemode, game::mutators))
             {
                 area = 3;
-                if(isbombertarg(f, game::focus->team) && !hasbombs.empty()) size *= 1.25f;
+                if(isbombertarg(f, game::focus->team) && !hasbombs.empty())
+                {
+                    int interval = lastmillis%500;
+                    float glow = interval >= 250 ? 1.f-((interval-250)/250.f) : interval/250.f;
+                    size *= 1+glow*0.25f;
+                    flashcolour(colour.r, colour.g, colour.b, 1.f, 1.f, 1.f, glow);
+                }
             }
             hud::drawblip(isbomberaffinity(f) ? hud::bombtex : (isbombertarg(f, game::focus->team) ? hud::arrowtex : hud::pointtex), area, w, h, size, blend*hud::radaraffinityblend, isbombertarg(f, game::focus->team) ? 0 : -1, pos, colour);
+            if(m_bb_basket(game::gamemode, game::mutators) && isbombertarg(f, game::focus->team) && !hasbombs.empty() && bomberbasketmindist > 0 && game::focus->o.dist(pos) < bomberbasketmindist)
+            {
+                vec c(0.25f, 0.25f, 0.25f);
+                int millis = lastmillis%500;
+                float amt = millis <= 250 ? 1.f-(millis/250.f) : (millis-250)/250.f;
+                flashcolour(c.r, c.g, c.b, 1.f, 0.f, 0.f, amt);
+                hud::drawblip(hud::warningtex, area, w, h, size*1.25f, blend*hud::radaraffinityblend*amt, 0, pos, c);
+            }
         }
     }
 
-    void drawnotices(int w, int h, int &tx, int &ty, float blend)
+    void drawnotices(int w, int h, int &tx, int &ty, int tr, int tg, int tb, float blend)
     {
         if(game::focus->state == CS_ALIVE && hud::shownotices >= 2)
         {
@@ -137,8 +151,8 @@ namespace bomber
             {
                 pushfont("reduced");
                 if(m_regen(game::gamemode, game::mutators) && bomberregenbuff && bomberregenextra)
-                    ty += draw_textx("Buffing: \fs\fo%d%%\fS damage, \fs\fg%d%%\fS shield, +\fs\fy%d\fS regen", tx, ty, 255, 255, 255, int(255*blend), TEXT_CENTERED, -1, -1, int(bomberbuffdamage*100), int(bomberbuffshield*100), bomberregenextra)*hud::noticescale;
-                else ty += draw_textx("Buffing: \fs\fo%d%%\fS damage, \fs\fg%d%%\fS shield", tx, ty, 255, 255, 255, int(255*blend), TEXT_CENTERED, -1, -1, int(bomberbuffdamage*100), int(bomberbuffshield*100))*hud::noticescale;
+                    ty += draw_textf("Buffing: \fs\fo%d%%\fS damage, \fs\fg%d%%\fS shield, +\fs\fy%d\fS regen", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, int(bomberbuffdamage*100), int(bomberbuffshield*100), bomberregenextra);
+                else ty += draw_textf("Buffing: \fs\fo%d%%\fS damage, \fs\fg%d%%\fS shield", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, int(bomberbuffdamage*100), int(bomberbuffshield*100));
                 popfont();
             }
             loopv(st.flags)
@@ -146,31 +160,44 @@ namespace bomber
                 bomberstate::flag &f = st.flags[i];
                 if(f.owner == game::focus)
                 {
-                    pushfont("emphasis");
-                    ty += draw_textx("Holding: \fs\f[%d]\f(%s)bomb\fS", tx, ty, 255, 255, 255, int(255*blend), TEXT_CENTERED, -1, -1, pulsecols[PULSE_DISCO][clamp((lastmillis/100)%PULSECOLOURS, 0, PULSECOLOURS-1)], hud::bombtex)*hud::noticescale;
-                    popfont();
                     bool important = false;
                     if(carrytime)
                     {
                         int delay = carrytime-(lastmillis-f.taketime);
                         pushfont("default");
-                        ty += draw_textx("Explodes in \fs\fzgy%s\fS", tx, ty, 255, 255, 255, int(255*blend), TEXT_CENTERED, -1, -1, timestr(delay))*hud::noticescale;
+                        ty += draw_textf("Bomb explodes in \fs\fzgy%s\fS", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, timestr(delay));
                         popfont();
-                        if(m_gsp1(game::gamemode, game::mutators))
+                        if(m_bb_hold(game::gamemode, game::mutators))
                         {
                             pushfont("reduced");
-                            ty += draw_textx("Killing enemies resets fuse timer", tx, ty, 255, 255, 255, int(255*blend), TEXT_CENTERED)*hud::noticescale;
+                            ty += draw_textf("Killing enemies resets fuse timer", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED);
                             popfont();
                         }
                         if(delay <= carrytime/4) important = true;
                     }
                     if(game::focus == game::player1)
                     {
-                        SEARCHBINDCACHE(altkey)("affinity", 0, "\f{\fs\fzuy", "\fS}");
                         pushfont(important ? "emphasis" : "reduced");
-                        ty += draw_textx(important ? "\fs\fzuyPress %s to throw\fS" : "Press %s to throw", tx, ty, 255, 255, 255, int(255*blend), TEXT_CENTERED, -1, -1, altkey)*hud::noticescale;
+                        ty += draw_textf(important ? "\fs\fzuyPress \fs\fw\f{=affinity}\fS to throw the bomb\fS" : "Press \fs\fw\f{=affinity}\fS to throw the bomb", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED);
                         popfont();
                     }
+                    break;
+                }
+            }
+        }
+    }
+
+    void drawevents(int w, int h, int &tx, int &ty, int tr, int tg, int tb, float blend)
+    {
+        if(game::focus->state == CS_ALIVE && hud::showevents >= 2)
+        {
+            loopv(st.flags)
+            {
+                bomberstate::flag &f = st.flags[i];
+                if(f.owner == game::focus)
+                {
+                    ty -= draw_textf("You are holding the \fs\f[%d]\f(%s)bomb\fS", tx, ty, int(FONTW*hud::eventpadx), int(FONTH*hud::eventpady), tr, tg, tb, int(255*blend), TEXT_SKIN|TEXT_CENTERED, -1, -1, 1, pulsecols[PULSE_DISCO][clamp((lastmillis/100)%PULSECOLOURS, 0, PULSECOLOURS-1)], hud::bombtex);
+                    ty -= FONTH/4;
                     break;
                 }
             }
@@ -235,14 +262,14 @@ namespace bomber
                         if(t && t != notexture)
                         {
                             glBindTexture(GL_TEXTURE_2D, t->id);
-                            glColor4f(rp, gp, bp, sq);
+                            gle::colorf(rp, gp, bp, sq);
                             hud::drawsized(sx, sy, ss);
                         }
                         t = textureload(hud::crosshairtex, 3);
                         if(t && t != notexture)
                         {
                             glBindTexture(GL_TEXTURE_2D, t->id);
-                            glColor4f(rp, gp, bp, sq*0.5f);
+                            gle::colorf(rp, gp, bp, sq*0.5f);
                             hud::drawsized(sx+ss/4, sy+ss/4, ss/2);
                         }
                     }
@@ -322,7 +349,7 @@ namespace bomber
                     }
                 }
             }
-            else if(!m_gsp1(game::gamemode, game::mutators))
+            else if(!m_bb_hold(game::gamemode, game::mutators))
             {
                 vec above = f.above;
                 float blend = clamp(camera1->o.dist(above)/enttype[AFFINITY].radius, 0.f, 1.f);
@@ -330,13 +357,24 @@ namespace bomber
                 f.baselight.material[0] = f.light.material[0] = bvec::fromcolor(effect);
                 int pcolour = effect.tohexcolor();
                 part_explosion(above, enttype[AFFINITY].radius/4*trans, PART_SHOCKBALL, 1, pcolour, 1.f, trans*blend*0.25f);
+                if(m_bb_basket(game::gamemode, game::mutators) && carryaffinity(game::focus) && bomberbasketmindist > 0 && game::focus->o.dist(above) < bomberbasketmindist)
+                {
+                    vec c(0.25f, 0.25f, 0.25f);
+                    int millis = lastmillis%500;
+                    float amt = millis <= 250 ? 1.f-(millis/250.f) : (millis-250)/250.f;
+                    flashcolour(c.r, c.g, c.b, 1.f, 0.f, 0.f, amt);
+                    vec offset = vec(above).sub(camera1->o).rescale(-enttype[AFFINITY].radius*0.5f);
+                    offset.z = max(offset.z, -1.0f);
+                    offset.add(above);
+                    part_icon(offset, textureload(hud::warningtex, 3, true, false), enttype[AFFINITY].radius*0.75f, amt*blend, 0, 0, 1, c.tohexcolor());
+                }
                 above.z += enttype[AFFINITY].radius/4*trans;
                 defformatstring(info, "<super>%s base", TEAM(f.team, name));
                 part_textcopy(above, info, PART_TEXT, 1, TEAM(f.team, colour), 2, trans*blend);
                 above.z += 2.5f;
                 part_icon(above, textureload(hud::teamtexname(f.team), 3), 2, trans*blend, 0, 0, 1, TEAM(f.team, colour));
             }
-            if(!m_gsp1(game::gamemode, game::mutators))
+            if(!m_bb_hold(game::gamemode, game::mutators))
                 rendermodel(&f.baselight, "props/point", ANIM_MAPMODEL|ANIM_LOOP, f.render, f.yaw, 0, 0, MDL_DYNSHADOW|MDL_CULL_VFC|MDL_CULL_OCCLUDED, NULL, NULL, 0, 0, 1);
         }
     }
@@ -368,7 +406,7 @@ namespace bomber
             if(!m_check(e.attrs[3], e.attrs[4], game::gamemode, game::mutators) || !isteam(game::gamemode, game::mutators, e.attrs[0], T_NEUTRAL))
                 continue;
             int team = e.attrs[0];
-            if(m_gsp3(game::gamemode, game::mutators)) switch(team)
+            if(m_bb_attack(game::gamemode, game::mutators)) switch(team)
             { // attack
                 case T_ALPHA: break; // goal
                 case T_OMEGA: team = T_NEUTRAL; break; // ball
@@ -404,7 +442,7 @@ namespace bomber
         while(st.flags.length() > numflags) st.flags.pop();
         loopi(numflags)
         {
-            int team = getint(p), yaw = getint(p), pitch = getint(p), enabled = getint(p), owner = getint(p), dropped = 0;
+            int team = getint(p), yaw = getint(p), pitch = getint(p), enabled = getint(p), owner = getint(p), dropped = 0, target = -1;
             vec spawnloc(0, 0, 0), droploc(0, 0, 0), inertia(0, 0, 0);
             loopj(3) spawnloc[j] = getint(p)/DMF;
             if(owner < 0)
@@ -412,6 +450,7 @@ namespace bomber
                 dropped = getint(p);
                 if(dropped)
                 {
+                    target = getint(p);
                     loopj(3) droploc[j] = getint(p)/DMF;
                     loopj(3) inertia[j] = getint(p)/DMF;
                 }
@@ -430,7 +469,7 @@ namespace bomber
             physics::droptofloor(f.render);
             if(f.render.z >= f.above.z-1) f.above.z += f.render.z-(f.above.z-1);
             if(owner >= 0) st.takeaffinity(i, game::newclient(owner), lastmillis);
-            else if(dropped) st.dropaffinity(i, droploc, inertia, lastmillis);
+            else if(dropped) st.dropaffinity(i, droploc, inertia, lastmillis, target);
         }
     }
 
@@ -455,7 +494,7 @@ namespace bomber
         {
             if(effect&1)
             {
-                defformatstring(text, "<super>\fzZe%s", str);
+                defformatstring(text, "<huge>\fzuw%s", str);
                 part_textcopy(vec(from).add(vec(0, 0, enttype[AFFINITY].radius)), text, PART_TEXT, game::eventiconfade, TEAM(team, colour), 3, 1, -10);
             }
             if(game::dynlighteffects) adddynlight(vec(from).add(vec(0, 0, enttype[AFFINITY].radius)), enttype[AFFINITY].radius*2, vec::hexcolor(TEAM(team, colour)).mul(2.f), 500, 250);
@@ -464,12 +503,12 @@ namespace bomber
         {
             if(effect&2)
             {
-                defformatstring(text, "<super>\fzZe%s", str);
+                defformatstring(text, "<huge>\fzuw%s", str);
                 part_textcopy(vec(to).add(vec(0, 0, enttype[AFFINITY].radius)), text, PART_TEXT, game::eventiconfade, TEAM(team, colour), 3, 1, -10);
             }
             if(game::dynlighteffects) adddynlight(vec(to).add(vec(0, 0, enttype[AFFINITY].radius)), enttype[AFFINITY].radius*2, vec::hexcolor(TEAM(team, colour)).mul(2.f), 500, 250);
         }
-        if(from.x >= 0 && to.x >= 0) part_trail(PART_SPARK, 500, from, to, TEAM(team, colour), 1, 1, -10);
+        if(from.x >= 0 && to.x >= 0 && from != to) part_trail(PART_SPARK, 500, from, to, TEAM(team, colour), 1, 1, -10);
     }
 
     void destroyaffinity(const vec &o)
@@ -481,16 +520,16 @@ namespace bomber
         if(!m_kaboom(game::gamemode, game::mutators) && game::nogore != 2 && game::debrisscale > 0)
         {
             int debris = rnd(5)+5, amt = int((rnd(debris)+debris+1)*game::debrisscale);
-            loopi(amt) projs::create(o, o, true, NULL, PRJ_DEBRIS, rnd(game::debrisfade)+game::debrisfade, 0, rnd(501), rnd(101)+50);
+            loopi(amt) projs::create(o, o, true, NULL, PRJ_DEBRIS, -1, HIT_NONE, rnd(game::debrisfade)+game::debrisfade, 0, rnd(501), rnd(101)+50);
         }
         playsound(WSND2(W_GRENADE, false, S_W_EXPLODE), o, NULL, 0, 255);
     }
 
-    void resetaffinity(int i, int enabled)
+    void resetaffinity(int i, int value, const vec &pos)
     {
         if(!st.flags.inrange(i)) return;
         bomberstate::flag &f = st.flags[i];
-        if(f.enabled && !enabled)
+        if(f.enabled && !value)
         {
             destroyaffinity(f.pos(true, true));
             if(isbomberaffinity(f))
@@ -499,7 +538,8 @@ namespace bomber
                 game::announcef(S_V_BOMBRESET, CON_SELF, NULL, true, "\fathe \fs\fzwvbomb\fS has been reset");
             }
         }
-        st.returnaffinity(i, lastmillis, enabled!=0);
+        if(value == 2) st.dropaffinity(i, pos, vec(0, 0, 1), lastmillis);
+        else st.returnaffinity(i, lastmillis, value!=0);
     }
 
     VAR(IDF_PERSIST, showbomberdists, 0, 2, 2); // 0 = off, 1 = self only, 2 = all
@@ -507,8 +547,8 @@ namespace bomber
     {
         if(!st.flags.inrange(relay) || !st.flags.inrange(goal)) return;
         bomberstate::flag &f = st.flags[relay], &g = st.flags[goal];
-        string extra; extra[0] = 0;
-        if(m_gsp2(game::gamemode, game::mutators) && showbomberdists >= (d != game::player1 ? 2 : 1))
+        string extra = "";
+        if(m_bb_basket(game::gamemode, game::mutators) && showbomberdists >= (d != game::player1 ? 2 : 1))
         {
             if(f.droptime) formatstring(extra, " from \fs\fy%.2f\fom\fS", f.droppos.dist(g.spawnloc)/8.f);
             else copystring(extra, " with a \fs\fytouchdown\fS");
@@ -537,12 +577,13 @@ namespace bomber
 
     void checkaffinity(gameent *d, int i)
     {
+        if(!(AA(d->actortype, abilities)&(1<<A_A_AFFINITY))) return;
         vec o = d->feetpos();
         bomberstate::flag &f = st.flags[i];
         if(f.owner)
         {
             if(!d->ai || f.owner != d) return;
-            bool forever = m_ffa(game::gamemode, game::mutators) || d->health >= m_health(game::gamemode, game::mutators, d->model)/3 || findtarget(d) < 0;
+            bool forever = m_ffa(game::gamemode, game::mutators) || d->health >= m_health(game::gamemode, game::mutators, d->actortype)/3 || findtarget(d) < 0;
             if(!carrytime && forever) return;
             int takemillis = lastmillis-f.taketime, length = forever ? carrytime-550-bomberlockondelay : min(carrytime, 1000);
             if(takemillis >= length)
@@ -560,14 +601,9 @@ namespace bomber
             }
             return;
         }
-        if(!f.droptime && m_gsp3(game::gamemode, game::mutators) && d->team == T_ALPHA && bomberattackreset) return;
-        if(f.pickuptime && lastmillis-f.pickuptime <= 1000) return;
+        if(!f.droptime && m_bb_attack(game::gamemode, game::mutators) && d->team == T_ALPHA && bomberattackreset) return;
         if(f.lastowner == d && f.droptime && lastmillis-f.droptime <= bomberpickupdelay) return;
-        if(o.dist(f.pos()) <= enttype[AFFINITY].radius/2)
-        {
-            client::addmsg(N_TAKEAFFIN, "ri2", d->clientnum, i);
-            f.pickuptime = lastmillis;
-        }
+        if(o.dist(f.pos()) <= enttype[AFFINITY].radius/2) client::addmsg(N_TAKEAFFIN, "ri2", d->clientnum, i);
     }
 
     void update()
@@ -597,10 +633,10 @@ namespace bomber
 
     bool aihomerun(gameent *d, ai::aistate &b)
     {
-        vec pos = d->feetpos();
-        if(m_team(game::gamemode, game::mutators) && !m_gsp1(game::gamemode, game::mutators) && (!m_gsp3(game::gamemode, game::mutators) || d->team != T_ALPHA))
+        if(d->actortype < A_ENEMY && m_team(game::gamemode, game::mutators) && !m_bb_hold(game::gamemode, game::mutators) && (!m_bb_attack(game::gamemode, game::mutators) || d->team != T_ALPHA))
         {
             int goal = -1;
+            vec pos = d->feetpos();
             loopv(st.flags)
             {
                 bomberstate::flag &g = st.flags[i];
@@ -658,7 +694,7 @@ namespace bomber
             if(d->actortype == A_BOT && m_duke(game::gamemode, game::mutators) && home) continue;
             static vector<int> targets; // build a list of others who are interested in this
             targets.setsize(0);
-            bool regen = d->actortype != A_BOT || f.team != d->team || !m_regen(game::gamemode, game::mutators) || d->health >= m_health(game::gamemode, game::mutators, d->model);
+            bool regen = d->actortype != A_BOT || f.team != d->team || !m_regen(game::gamemode, game::mutators) || d->health >= m_health(game::gamemode, game::mutators, d->actortype);
             ai::checkothers(targets, d, home || d->actortype != A_BOT ? ai::AI_S_DEFEND : ai::AI_S_PURSUE, ai::AI_T_AFFINITY, j, true);
             if(d->actortype == A_BOT)
             {
@@ -675,12 +711,12 @@ namespace bomber
             {
                 bool guard = false;
                 if(f.owner || f.droptime || targets.empty()) guard = true;
-                else if(d->hasweap(ai::weappref(d), m_weapon(game::gamemode, game::mutators)))
+                else if(d->hasweap(ai::weappref(d), m_weapon(d->actortype, game::gamemode, game::mutators)))
                 { // see if we can relieve someone who only has a piece of crap
                     gameent *t;
                     loopvk(targets) if((t = game::getclient(targets[k])))
                     {
-                        if((t->ai && !t->hasweap(ai::weappref(t), m_weapon(game::gamemode, game::mutators))) || (!t->ai && t->weapselect < W_OFFSET))
+                        if((t->ai && !t->hasweap(ai::weappref(t), m_weapon(t->actortype, game::gamemode, game::mutators))) || (!t->ai && t->weapselect < W_OFFSET))
                         {
                             guard = true;
                             break;
@@ -749,7 +785,7 @@ namespace bomber
             int walk = f.owner && f.owner->team != d->team ? 1 : 0;
             if(d->actortype == A_BOT)
             {
-                if((!m_regen(game::gamemode, game::mutators) || d->health >= m_health(game::gamemode, game::mutators, d->model)) && lastmillis-b.millis >= (201-d->skill)*33)
+                if((!m_regen(game::gamemode, game::mutators) || d->health >= m_health(game::gamemode, game::mutators, d->actortype)) && lastmillis-b.millis >= (201-d->skill)*33)
                 {
                     if(b.owner < 0)
                     {

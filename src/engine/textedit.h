@@ -32,6 +32,7 @@ struct editline
             vformatstring(newtext, fmt, args, maxlen);
             va_end(args);
         }
+        else newtext[0] = '\0';
         DELETEA(text);
         text = newtext;
         return true;
@@ -160,10 +161,10 @@ struct editor
 
     editor(const char *name, int mode, const char *initval, const char *parent = NULL) :
         mode(mode), active(true), rendered(false), unfocus(false), name(newstring(name)), filename(NULL), parent(newstring(parent && *parent ? parent : "")),
-        cx(0), cy(0), mx(-1), maxx(-1), maxy(-1), scrolly(mode==EDITORREADONLY ? SCROLLEND : 0), linewrap(false), pixelwidth(-1), pixelheight(-1)
+        cx(0), cy(0), mx(-1), my(-1), maxx(-1), maxy(-1), scrolly(mode==EDITORREADONLY ? SCROLLEND : 0), linewrap(false), pixelwidth(-1), pixelheight(-1)
     {
         //printf("editor %08x '%s'\n", this, name);
-        lines.add().set(initval ? initval : "");
+        clear(initval ? initval : "");
     }
 
     ~editor()
@@ -178,10 +179,15 @@ struct editor
     void clear(const char *init = "")
     {
         cx = cy = 0;
+        mx = my = -1;
         mark(false);
         loopv(lines) lines[i].clear();
         lines.shrink(0);
-        if(init) lines.add().set(init);
+        if(init)
+        {
+            lines.add().set(init);
+            cx = lines[0].len;
+        }
     }
 
     void setfile(const char *fname)
@@ -394,7 +400,7 @@ struct editor
             else current.chop(cx);
             cx = 0;
         }
-        else
+        else if(ch != '\r')
         {
             int len = current.len;
             if(maxx < 0 || len <= maxx-1) current.insert(&ch, cx++, 1);
@@ -444,12 +450,12 @@ struct editor
         }
     }
 
-    void key(int code, int cooked)
+    void key(int code)
     {
         switch(code)
         {
             case SDLK_UP:
-                mark(false); 
+                mark(false);
                 if(linewrap)
                 {
                     int x, y;
@@ -460,13 +466,13 @@ struct editor
                 cy--;
                 break;
             case SDLK_DOWN:
-                mark(false); 
+                mark(false);
                 if(linewrap)
                 {
                     int x, y, width, height;
                     char *str = currentline().text;
                     text_pos(str, cx, x, y, pixelwidth, TEXT_NO_INDENT);
-                    text_bounds(str, width, height, pixelwidth, TEXT_NO_INDENT);
+                    text_bounds(str, width, height, 0, 0, pixelwidth, TEXT_NO_INDENT);
                     y += FONTH;
                     if(y < height) { cx = text_visible(str, x, y, pixelwidth, TEXT_NO_INDENT); break; }
                 }
@@ -532,13 +538,23 @@ struct editor
             case SDLK_LSHIFT:
             case SDLK_RSHIFT:
                 break;
+            case SDLK_v:
+                if(SDL_GetModState()&MOD_KEYS)
+                {
+                    bigstring pastebuf = "";
+                    paste(pastebuf, sizeof(pastebuf));
+                    for(const char *buf = &pastebuf[0]; *buf; buf++) insert(*buf);
+                }
+                break;
             case SDLK_RETURN:
-                cooked = '\n';
-                // fall through
-            default:
-                insert(cooked);
+                insert('\n');
                 break;
         }
+    }
+
+    void input(const char *str, int len)
+    {
+        loopi(len) insert(str[i]);
     }
 
     void hit(int hitx, int hity, bool dragged)
@@ -547,7 +563,7 @@ struct editor
         for(int i = scrolly; i < lines.length(); i++)
         {
             int width, height;
-            text_bounds(lines[i].text, width, height, maxwidth, TEXT_NO_INDENT);
+            text_bounds(lines[i].text, width, height, 0, 0, maxwidth, TEXT_NO_INDENT);
             if(h + height > pixelheight) break;
 
             if(hity >= h && hity <= h+height)
@@ -566,7 +582,7 @@ struct editor
         for(int ph = pixelheight; slines > 0 && ph > 0;)
         {
             int width, height;
-            text_bounds(lines[slines-1].text, width, height, maxwidth, TEXT_NO_INDENT);
+            text_bounds(lines[slines-1].text, width, height, 0, 0, maxwidth, TEXT_NO_INDENT);
             if(height > ph) break;
             ph -= height;
             slines--;
@@ -577,6 +593,7 @@ struct editor
     void draw(int x, int y, int color, bool hit, const char *prompt = NULL)
     {
         int h = 0, maxwidth = linewrap ? pixelwidth : -1;
+
         bool hastext = false;
         loopv(lines) if(lines[i].text[0])
         {
@@ -589,12 +606,16 @@ struct editor
             {
                 int width = 0, height = 0;
                 const char *str = hit || !prompt || !prompt[0] ? " " : prompt;
-                text_bounds(str, width, height, maxwidth, TEXT_NO_INDENT);
+                text_bounds(str, width, height, 0, 0, maxwidth, TEXT_NO_INDENT);
                 if(h+height <= pixelheight)
-                    draw_textx("%s", x, y+h, color>>16, (color>>8)&0xFF, color&0xFF, 0xFF, TEXT_NO_INDENT, hit ? 0 : -1, maxwidth, str);
+                {
+                    draw_textf("%s", x, y+h, 0, 0, color>>16, (color>>8)&0xFF, color&0xFF, 0xFF, TEXT_NO_INDENT, hit ? 0 : -1, maxwidth, 1, str);
+                    h += height;
+                }
             }
             return;
         }
+
         int starty = scrolly, sx = 0, sy = 0, ex = 0, ey = 0;
         bool selection = region(sx, sy, ex, ey);
         if(starty == SCROLLEND) // fix scrolly so that <cx, cy> is always on screen
@@ -605,13 +626,13 @@ struct editor
         if(cy < starty) starty = cy;
         else
         {
-            int h = 0;
+            int ch = 0;
             for(int i = cy; i >= starty; i--)
             {
                 int width, height;
-                text_bounds(lines[i].text, width, height, maxwidth, TEXT_NO_INDENT);
-                h += height;
-                if(h > pixelheight) { starty = i+1; break; }
+                text_bounds(lines[i].text, width, height, 0, 0, maxwidth, TEXT_NO_INDENT);
+                ch += height;
+                if(ch > pixelheight) { starty = i+1; break; }
             }
         }
 
@@ -625,7 +646,7 @@ struct editor
             for(int i = starty; i < maxy; i++)
             {
                 int width, height;
-                text_bounds(lines[i].text, width, height, maxwidth, TEXT_NO_INDENT);
+                text_bounds(lines[i].text, width, height, 0, 0, maxwidth, TEXT_NO_INDENT);
                 if(h+height > pixelheight) { maxy = i; break; }
                 if(i == sy) psy += h;
                 if(i == ey) { pey += h; break; }
@@ -647,55 +668,57 @@ struct editor
                     pey = pixelheight-FONTH;
                     pex = pixelwidth;
                 }
-                notextureshader->set();
-                glColor3f(0.25f, 0.25f, 0.75f);
-                glBegin(GL_QUADS);
+                hudnotextureshader->set();
+                gle::colorf(0.25f, 0.25f, 0.75f);
+                gle::defvertex(2);
+                gle::begin(GL_QUADS);
                 if(psy == pey)
                 {
-                    glVertex2f(x+psx, y+psy);
-                    glVertex2f(x+pex, y+psy);
-                    glVertex2f(x+pex, y+pey+FONTH);
-                    glVertex2f(x+psx, y+pey+FONTH);
+                    gle::attribf(x+psx, y+psy);
+                    gle::attribf(x+pex, y+psy);
+                    gle::attribf(x+pex, y+pey+FONTH);
+                    gle::attribf(x+psx, y+pey+FONTH);
                 }
                 else
-                {   glVertex2f(x+psx, y+psy);
-                    glVertex2f(x+psx, y+psy+FONTH);
-                    glVertex2f(x+pixelwidth, y+psy+FONTH);
-                    glVertex2f(x+pixelwidth, y+psy);
+                {   gle::attribf(x+psx, y+psy);
+                    gle::attribf(x+psx, y+psy+FONTH);
+                    gle::attribf(x+pixelwidth, y+psy+FONTH);
+                    gle::attribf(x+pixelwidth, y+psy);
                     if(pey-psy > FONTH)
                     {
-                        glVertex2f(x, y+psy+FONTH);
-                        glVertex2f(x+pixelwidth, y+psy+FONTH);
-                        glVertex2f(x+pixelwidth, y+pey);
-                        glVertex2f(x, y+pey);
+                        gle::attribf(x, y+psy+FONTH);
+                        gle::attribf(x+pixelwidth, y+psy+FONTH);
+                        gle::attribf(x+pixelwidth, y+pey);
+                        gle::attribf(x, y+pey);
                     }
-                    glVertex2f(x, y+pey);
-                    glVertex2f(x, y+pey+FONTH);
-                    glVertex2f(x+pex, y+pey+FONTH);
-                    glVertex2f(x+pex, y+pey);
+                    gle::attribf(x, y+pey);
+                    gle::attribf(x, y+pey+FONTH);
+                    gle::attribf(x+pex, y+pey+FONTH);
+                    gle::attribf(x+pex, y+pey);
                 }
-                glEnd();
-                defaultshader->set();
+                gle::end();
+                hudshader->set();
             }
         }
 
         for(int i = starty; i < lines.length(); i++)
         {
             int width, height;
-            text_bounds(lines[i].text, width, height, maxwidth, TEXT_NO_INDENT);
+            text_bounds(lines[i].text, width, height, 0, 0, maxwidth, TEXT_NO_INDENT);
             if(h+height > pixelheight) break;
             draw_text(lines[i].text, x, y+h, color>>16, (color>>8)&0xFF, color&0xFF, 0xFF, TEXT_NO_INDENT, hit && (cy == i) ? cx : -1, maxwidth);
             if(linewrap && height > FONTH) // line wrap indicator
             {
-                notextureshader->set();
-                glColor4f((guifieldbordercolour>>16)/255.f, ((guifieldbordercolour>>8)&0xFF)/255.f, (guifieldbordercolour&0xFF)/255.f, guifieldborderblend);
-                glBegin(GL_TRIANGLE_STRIP);
-                glVertex2f(x, y+h+FONTH);
-                glVertex2f(x, y+h+height);
-                glVertex2f(x-FONTW/4, y+h+FONTH);
-                glVertex2f(x-FONTW/4, y+h+height);
-                glEnd();
-                defaultshader->set();
+                hudnotextureshader->set();
+                gle::colorf((guifieldbordercolour>>16)/255.f, ((guifieldbordercolour>>8)&0xFF)/255.f, (guifieldbordercolour&0xFF)/255.f, guifieldborderblend);
+                gle::defvertex(2);
+                gle::begin(GL_TRIANGLE_STRIP);
+                gle::attribf(x, y+h+FONTH);
+                gle::attribf(x, y+h+height);
+                gle::attribf(x-FONTW/4, y+h+FONTH);
+                gle::attribf(x-FONTW/4, y+h+height);
+                gle::end();
+                hudshader->set();
             }
             h += height;
         }

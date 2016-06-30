@@ -75,7 +75,10 @@ int lightmapping = 0;
 
 vector<LightMap> lightmaps;
 
-VAR(IDF_WORLD, lightprecision, 1, 32, 256);
+int curlightprecision = 32;
+VAR(IDF_WORLD, lightprecision, 1, 32, 2048);
+VAR(IDF_WORLD, lightprecisionquick, 1, 2048, 2048);
+
 VAR(IDF_WORLD, lighterror, 1, 8, 16);
 VAR(IDF_WORLD, bumperror, 1, 3, 16);
 VAR(IDF_WORLD, lightlod, 0, 0, 10);
@@ -1366,7 +1369,7 @@ static int setupsurface(lightmapworker *w, plane planes[2], int numplanes, const
     }
 
     int scale = int(min(cmax.x - cmin.x, cmax.y - cmin.y));
-    float lpu = 16.0f / float(lightlod && scale < (1 << lightlod) ? max(lightprecision / 2, 1) : lightprecision);
+    float lpu = 16.0f / float(lightlod && scale < (1 << lightlod) ? max(curlightprecision / 2, 1) : curlightprecision);
     int lw = clamp(int(ceil((cmax.x - cmin.x + 1)*lpu)), LM_MINW, LM_MAXW), lh = clamp(int(ceil((cmax.y - cmin.y + 1)*lpu)), LM_MINH, LM_MAXH);
     w->w = lw;
     w->h = lh;
@@ -1744,7 +1747,7 @@ static bool processtasks(bool finish = false)
     return true;
 }
 
-static void generatelightmaps(cube *c, int cx, int cy, int cz, int size)
+static void generatelightmaps(cube *c, const ivec &co, int size)
 {
     CHECK_PROGRESS(return);
 
@@ -1752,9 +1755,9 @@ static void generatelightmaps(cube *c, int cx, int cy, int cz, int size)
 
     loopi(8)
     {
-        ivec o(i, cx, cy, cz, size);
+        ivec o(i, co, size);
         if(c[i].children)
-            generatelightmaps(c[i].children, o.x, o.y, o.z, size >> 1);
+            generatelightmaps(c[i].children, o, size >> 1);
         else if(!isempty(c[i]))
         {
             if(c[i].ext)
@@ -1769,7 +1772,7 @@ static void generatelightmaps(cube *c, int cx, int cy, int cz, int size)
             int usefacemask = 0;
             loopj(6) if(c[i].texture[j] != DEFAULT_SKY && (!(c[i].merged&(1<<j)) || (c[i].ext && c[i].ext->surfaces[j].numverts&MAXFACEVERTS)))
             {
-                usefacemask |= visibletris(c[i], j, o.x, o.y, o.z, size)<<(4*j);
+                usefacemask |= visibletris(c[i], j, o, size)<<(4*j);
             }
             if(usefacemask)
             {
@@ -1794,7 +1797,7 @@ static bool previewblends(lightmapworker *w, cube &c, const ivec &co, int size)
 
     int usefacemask = 0;
     loopi(6) if(c.texture[i] != DEFAULT_SKY && lookupvslot(c.texture[i], false).layer)
-        usefacemask |= visibletris(c, i, co.x, co.y, co.z, size)<<(4*i);
+        usefacemask |= visibletris(c, i, co, size)<<(4*i);
     if(!usefacemask) return false;
 
     if(!setblendmaporigin(w->blendmapcache, co, size))
@@ -1939,7 +1942,7 @@ static bool previewblends(lightmapworker *w, cube *c, const ivec &co, int size, 
     bool changed = false;
     loopoctabox(co, size, bo, bs)
     {
-        ivec o(i, co.x, co.y, co.z, size);
+        ivec o(i, co, size);
         cubeext *ext = c[i].ext;
         if(ext && ext->va && ext->va->hasmerges)
         {
@@ -2038,7 +2041,7 @@ bool lightmapworker::setupthread()
 {
     if(!spacecond) spacecond = SDL_CreateCond();
     if(!spacecond) return false;
-    thread = SDL_CreateThread(work, this);
+    thread = SDL_CreateThread(work, "lightmap worker", this);
     return thread!=NULL;
 }
 
@@ -2048,8 +2051,9 @@ static Uint32 calclighttimer(Uint32 interval, void *param)
     return interval;
 }
 
-bool setlightmapquality(int quality)
+bool setlightmapquality(int quality, bool quick)
 {
+    curlightprecision = quick ? lightprecisionquick : lightprecision;
     switch(quality)
     {
         case  1: lmshadows = 2; lmaa = 3; lerptjoints = 1; break;
@@ -2129,9 +2133,9 @@ static void cleanupthreads()
     lightmapping = 0;
 }
 
-void calclight(int *quality)
+void calclight(int *quality, int *quick)
 {
-    if(!setlightmapquality(*quality))
+    if(!setlightmapquality(*quality, *quick!=0))
     {
         conoutft(CON_MESG, "\frvalid range for calclight quality is -1..1");
         return;
@@ -2155,7 +2159,7 @@ void calclight(int *quality)
     calcnormals(lerptjoints > 0);
     show_calclight_lmprog();
     setupthreads(numthreads);
-    generatelightmaps(worldroot, 0, 0, 0, hdr.worldsize >> 1);
+    generatelightmaps(worldroot, ivec(0, 0, 0), hdr.worldsize >> 1);
     cleanupthreads();
     clearnormals();
     Uint32 end = SDL_GetTicks();
@@ -2183,16 +2187,16 @@ void calclight(int *quality)
     if(lmprogtex) { glDeleteTextures(1, &lmprogtex); lmprogtex = 0; }
 }
 
-COMMAND(0, calclight, "i");
+COMMAND(0, calclight, "ii");
 
 VAR(0, patchnormals, 0, 0, 1);
 
-void patchlight(int *quality)
+void patchlight(int *quality, int *quick)
 {
     if(noedit(true)) return;
-    if(!setlightmapquality(*quality))
+    if(!setlightmapquality(*quality, *quick!=0))
     {
-        conoutft(CON_MESG, "\frvalid range for patchlight quality is 0..3");
+        conoutft(CON_MESG, "\frvalid range for patchlight quality is -1..1");
         return;
     }
     progress(0, "patching lightmaps...");
@@ -2219,7 +2223,7 @@ void patchlight(int *quality)
     if(patchnormals) calcnormals(lerptjoints > 0);
     show_calclight_lmprog();
     setupthreads(numthreads);
-    generatelightmaps(worldroot, 0, 0, 0, hdr.worldsize >> 1);
+    generatelightmaps(worldroot, ivec(0, 0, 0), hdr.worldsize >> 1);
     cleanupthreads();
     if(patchnormals) clearnormals();
     Uint32 end = SDL_GetTicks();
@@ -2243,7 +2247,7 @@ void patchlight(int *quality)
     if(lmprogtex) { glDeleteTextures(1, &lmprogtex); lmprogtex = 0; }
 }
 
-COMMAND(0, patchlight, "i");
+COMMAND(0, patchlight, "ii");
 
 void clearlightmaps()
 {
@@ -2341,7 +2345,7 @@ void fixrotatedlightmaps(cube &c, const ivec &co, int size)
 {
     if(c.children)
     {
-        loopi(8) fixrotatedlightmaps(c.children[i], ivec(i, co.x, co.y, co.z, size>>1), size>>1);
+        loopi(8) fixrotatedlightmaps(c.children[i], ivec(i, co, size>>1), size>>1);
         return;
     }
     if(!c.ext) return;
@@ -2352,7 +2356,7 @@ void fixrotatedlightmaps(cube &c, const ivec &co, int size)
         int numverts = surf.numverts&MAXFACEVERTS;
         if(numverts!=4 || (surf.lmid[0] < LMID_RESERVED && surf.lmid[1] < LMID_RESERVED)) continue;
         vertinfo *verts = c.ext->verts() + surf.verts;
-        int vis = visibletris(c, i, co.x, co.y, co.z, size);
+        int vis = visibletris(c, i, co, size);
         if(!vis || vis==3) continue;
         if((verts[0].u != verts[1].u || verts[0].v != verts[1].v) &&
            (verts[0].u != verts[3].u || verts[0].v != verts[3].v) &&
@@ -2386,7 +2390,7 @@ void fixrotatedlightmaps(cube &c, const ivec &co, int size)
 
 void fixrotatedlightmaps()
 {
-    loopi(8) fixrotatedlightmaps(worldroot[i], ivec(i, 0, 0, 0, hdr.worldsize>>1), hdr.worldsize>>1);
+    loopi(8) fixrotatedlightmaps(worldroot[i], ivec(i, ivec(0, 0, 0), hdr.worldsize>>1), hdr.worldsize>>1);
 }
 
 static void copylightmap(LightMap &lm, uchar *dst, size_t stride)
@@ -2502,7 +2506,7 @@ void genlightmaptexs(int flagmask, int flagval)
         tex.w = LM_PACKW<<((used+1)/2);
         tex.h = LM_PACKH<<(used/2);
         int bpp = firstlm->bpp;
-        uchar *data = used ? new uchar[bpp*tex.w*tex.h] : NULL;     
+        uchar *data = used ? new uchar[bpp*tex.w*tex.h] : NULL;
         int offsetx = 0, offsety = 0;
         loopv(lightmaps)
         {
@@ -2586,7 +2590,7 @@ void initlights()
     genlightmaptexs(LM_ALPHA, 0);
     genlightmaptexs(LM_ALPHA, LM_ALPHA);
     brightengeom = false;
-    shouldlightents = true; 
+    shouldlightents = true;
 }
 
 static inline void fastskylight(const vec &o, float tolerance, uchar *skylight, int flags = RAY_ALPHAPOLY, extentity *t = NULL, bool fast = false)

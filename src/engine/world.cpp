@@ -47,15 +47,15 @@ bool getentboundingbox(const extentity &e, ivec &o, ivec &r)
                 mmboundbox(e, m, center, radius);
                 center.add(e.o);
                 radius.max(entselradius);
-                o = vec(center).sub(radius);
-                r = vec(center).add(radius).add(1);
+                o = ivec(vec(center).sub(radius));
+                r = ivec(vec(center).add(radius).add(1));
                 break;
             }
         }
         // invisible mapmodels use entselradius
         default:
-            o = vec(e.o).sub(entselradius);
-            r = vec(e.o).add(entselradius+1);
+            o = ivec(vec(e.o).sub(entselradius));
+            r = ivec(vec(e.o).add(entselradius+1));
             break;
     }
     return true;
@@ -72,7 +72,7 @@ void modifyoctaentity(int flags, int id, extentity &e, cube *c, const ivec &cor,
 {
     loopoctabox(cor, size, bo, br)
     {
-        ivec o(i, cor.x, cor.y, cor.z, size);
+        ivec o(i, cor, size);
         vtxarray *va = c[i].ext && c[i].ext->va ? c[i].ext->va : lastva;
         if(c[i].children != NULL && size > leafsize)
             modifyoctaentity(flags, id, e, c[i].children, o, size>>1, bo, br, leafsize, va);
@@ -232,7 +232,7 @@ static inline void findents(cube *c, const ivec &o, int size, const ivec &bo, co
         if(c[i].ext && c[i].ext->ents) findents(*c[i].ext->ents, low, high, notspawned, pos, invradius, found);
         if(c[i].children && size > octaentsize)
         {
-            ivec co(i, o.x, o.y, o.z, size);
+            ivec co(i, o, size);
             findents(c[i].children, co, size>>1, bo, br, low, high, notspawned, pos, invradius, found);
         }
     }
@@ -241,8 +241,8 @@ static inline void findents(cube *c, const ivec &o, int size, const ivec &bo, co
 void findents(int low, int high, bool notspawned, const vec &pos, const vec &radius, vector<int> &found)
 {
     vec invradius(1/radius.x, 1/radius.y, 1/radius.z);
-    ivec bo = vec(pos).sub(radius).sub(1),
-         br = vec(pos).add(radius).add(1);
+    ivec bo(vec(pos).sub(radius).sub(1)),
+         br(vec(pos).add(radius).add(1));
     int diff = (bo.x^br.x) | (bo.y^br.y) | (bo.z^br.z) | octaentsize,
         scale = worldscale-1;
     if(diff&~((1<<scale)-1) || uint(bo.x|bo.y|bo.z|br.x|br.y|br.z) >= uint(hdr.worldsize))
@@ -371,6 +371,24 @@ undoblock *copyundoents(undoblock *u)
     return c;
 }
 
+void pasteundoent(int idx, const vec &o, int type, int *attrs, int numattrs)
+{
+    if(idx < 0 || idx >= MAXENTS) return;
+    vector<extentity *> &ents = entities::getents();
+    while(ents.length() < idx) ents.add(entities::newent())->type = ET_EMPTY;
+    numattrs = min(numattrs, MAXENTATTRS);
+    int efocus = -1, minattrs = entities::numattrs(type);
+    entedit(idx,
+    {
+        e.type = type;
+        e.o = o;
+        if(e.attrs.length() < numattrs) e.attrs.add(0, numattrs - e.attrs.length());
+        else if(e.attrs.length() > numattrs) e.attrs.setsize(numattrs);
+        if(numattrs < minattrs) e.attrs.add(0, minattrs - numattrs);
+        loopk(numattrs) e.attrs[k] = *attrs++;
+    });
+}
+
 void pasteundoents(undoblock *u)
 {
     undoent *ue = u->ents();
@@ -430,6 +448,7 @@ void entselectionbox(const extentity &e, vec &eo, vec &es)
 VAR(0, entselsnap, 0, 1, 1);
 VAR(0, entmovingshadow, 0, 1, 1);
 
+extern void boxs(int orient, vec o, const vec &s, float size);
 extern void boxs(int orient, vec o, const vec &s);
 extern void boxs3D(const vec &o, vec s, int g);
 extern bool editmoveplane(const vec &o, const vec &ray, int d, float off, vec &handle, vec &dest, bool first);
@@ -466,33 +485,62 @@ void entdrag(const vec &ray)
     entmoving = 2;
 }
 
+static void renderentbox(const vec &eo, vec es)
+{
+    es.add(eo);
+
+    // bottom quad
+    gle::attrib(eo.x, eo.y, eo.z); gle::attrib(es.x, eo.y, eo.z);
+    gle::attrib(es.x, eo.y, eo.z); gle::attrib(es.x, es.y, eo.z);
+    gle::attrib(es.x, es.y, eo.z); gle::attrib(eo.x, es.y, eo.z);
+    gle::attrib(eo.x, es.y, eo.z); gle::attrib(eo.x, eo.y, eo.z);
+
+    // top quad
+    gle::attrib(eo.x, eo.y, es.z); gle::attrib(es.x, eo.y, es.z);
+    gle::attrib(es.x, eo.y, es.z); gle::attrib(es.x, es.y, es.z);
+    gle::attrib(es.x, es.y, es.z); gle::attrib(eo.x, es.y, es.z);
+    gle::attrib(eo.x, es.y, es.z); gle::attrib(eo.x, eo.y, es.z);
+
+    // sides
+    gle::attrib(eo.x, eo.y, eo.z); gle::attrib(eo.x, eo.y, es.z);
+    gle::attrib(es.x, eo.y, eo.z); gle::attrib(es.x, eo.y, es.z);
+    gle::attrib(es.x, es.y, eo.z); gle::attrib(es.x, es.y, es.z);
+    gle::attrib(eo.x, es.y, eo.z); gle::attrib(eo.x, es.y, es.z);
+}
+
 void renderentselection(const vec &o, const vec &ray, bool entmoving)
 {
     if(noentedit()) return;
     vec eo, es;
 
-    glColor3ub(0, 40, 0);
-    loopv(entgroup) entfocus(entgroup[i],
-        entselectionbox(e, eo, es);
-        boxs3D(eo, es, 1);
-    );
+    if(entgroup.length())
+    {
+        gle::colorub(0, 40, 0);
+        gle::defvertex();
+        gle::begin(GL_LINES, entgroup.length()*24);
+        loopv(entgroup) entfocus(entgroup[i],
+            entselectionbox(e, eo, es);
+            renderentbox(eo, es);
+        );
+        xtraverts += gle::end();
+    }
 
     if(enthover >= 0)
     {
+        gle::colorub(0, 40, 0);
         entfocus(enthover, entselectionbox(e, eo, es)); // also ensures enthover is back in focus
         boxs3D(eo, es, 1);
         if(entmoving && entmovingshadow==1)
         {
             vec a, b;
-            glColor3ub(20, 20, 20);
+            gle::colorub(20, 20, 20);
             (a=eo).x=0; (b=es).x=hdr.worldsize; boxs3D(a, b, 1);
             (a=eo).y=0; (b=es).y=hdr.worldsize; boxs3D(a, b, 1);
             (a=eo).z=0; (b=es).z=hdr.worldsize; boxs3D(a, b, 1);
         }
-        glColor3ub(150,0,0);
-        glLineWidth(5);
+        gle::colorub(150,0,0);
         boxs(entorient, eo, es);
-        glLineWidth(1);
+        boxs(entorient, eo, es, clamp(0.015f*camera1->o.dist(eo)*tan(fovy*0.5f*RAD), 0.1f, 1.0f));
     }
 }
 
@@ -565,7 +613,7 @@ void entpush(int *dir)
         physent *player = (physent *)game::focusedent(true);
         if(!player) player = camera1;
         player->o[d] += s*sel.grid;
-        player->resetinterp();
+        player->resetinterp(true);
     }
 }
 
@@ -586,7 +634,7 @@ void entautoview(int *dir)
     entfocus(entgroup[s],
         v.add(e.o);
         player->o = v;
-        player->resetinterp();
+        player->resetinterp(true);
     );
 }
 
@@ -860,6 +908,7 @@ void enttype(char *what, int *numargs)
         result(entities::findname(e.type));
     })
 }
+COMMAND(0, enttype, "sN");
 
 void entattr(int *attr, int *val, int *numargs)
 {
@@ -875,8 +924,6 @@ void entattr(int *attr, int *val, int *numargs)
         if(e.attrs.inrange(*attr)) intret(e.attrs[*attr]);
     );
 }
-
-COMMAND(0, enttype, "sN");
 COMMAND(0, entattr, "iiN");
 
 void entprop(int *attr, int *val)
@@ -887,7 +934,6 @@ void entprop(int *attr, int *val)
             e.attrs[*attr] += *val;
         });
 }
-
 COMMAND(0, entprop, "ii");
 
 int findentity(int type, int index, vector<int> &attr)
@@ -976,7 +1022,8 @@ void resetmap(bool empty)
     clearsleep();
     cancelsel();
     pruneundos();
-    clearmapcrc();
+    setsvar("maptext", "", false);
+    mapcrc = 0;
     entities::clearents();
     outsideents.setsize(0);
     game::resetmap(empty);
@@ -1024,7 +1071,7 @@ bool emptymap(int scale, bool force, char *mname, bool nocfg)   // main empty wo
     initlights();
     allchanged(true);
     entities::initents(MAP_MAPZ, hdr.version, hdr.gameid, hdr.gamever);
-    game::startmap(nocfg ? "" : "maps/untitled", NULL, true);
+    game::startmap(true);
     return true;
 }
 
@@ -1036,7 +1083,6 @@ bool enlargemap(bool split, bool force)
         return false;
     }
     if(hdr.worldsize >= 1<<16) return false;
-    if(split && multiplayer()) split = false; // milestone v1.6.0
     while(outsideents.length()) removeentity(outsideents.pop());
 
     worldscale++;
@@ -1094,7 +1140,7 @@ void shrinkmap()
     worldscale--;
     hdr.worldsize /= 2;
 
-    ivec offset(octant, 0, 0, 0, hdr.worldsize);
+    ivec offset(octant, ivec(0, 0, 0), hdr.worldsize);
     vector<extentity *> &ents = entities::getents();
     loopv(ents) ents[i]->o.sub(vec(offset));
 
@@ -1105,8 +1151,8 @@ void shrinkmap()
     conoutf("shrunk map to size %d", worldscale);
 }
 
-ICOMMAND(0, newmap, "is", (int *i, char *n), if(emptymap(*i, false, n)) game::newmap(::max(*i, 0)));
-ICOMMAND(0, mapenlarge, "i", (int *n), if(enlargemap(*n!=0, false)) game::newmap(-1));
+ICOMMAND(0, newmap, "is", (int *i, char *n), if(emptymap(*i, false, n)) game::newmap(::max(*i, 0), n));
+ICOMMAND(0, mapenlarge, "i", (int *n), if(enlargemap(*n!=0, false)) game::newmap(*n!=0 ? -2 : -1));
 COMMAND(0, shrinkmap, "");
 ICOMMAND(0, mapsize, "", (void),
 {
@@ -1135,4 +1181,3 @@ void mpeditent(int i, const vec &o, int type, attrvector &attr, bool local)
         addentity(i);
     }
 }
-

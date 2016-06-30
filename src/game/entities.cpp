@@ -26,7 +26,7 @@ namespace entities
     FVAR(IDF_PERSIST, haloitemsize, 0, 1, 8);
     FVAR(IDF_PERSIST, haloitemblend, 0, 0.75f, 1);
 
-    VARF(0, routeid, -1, -1, VAR_MAX, lastroutenode = -1; lastroutetime = 0; airnodes.setsize(0)); // selected route in time race
+    VARF(0, routeid, -1, -1, VAR_MAX, lastroutenode = -1; lastroutetime = 0; airnodes.setsize(0)); // selected route in race
     VARF(0, droproute, 0, 0, 1, lastroutenode = -1; lastroutetime = 0; airnodes.setsize(0); if(routeid < 0) routeid = 0);
     VAR(IDF_HEX, routecolour, 0, 0xFF22FF, 0xFFFFFF);
     VAR(0, droproutedist, 1, 16, VAR_MAX);
@@ -44,12 +44,38 @@ namespace entities
         else if(*n < MAXENTTYPES) result(enttype[*n].name);
     });
 
-    ICOMMAND(0, getentattr, "bb", (int *n, int *p), {
+    ICOMMAND(0, getentattr, "bbb", (int *n, int *p, int *a), {
         if(*n < 0) intret(MAXENTTYPES);
         else if(*n < MAXENTTYPES)
         {
             if(*p < 0) intret(enttype[*n].numattrs);
-            else if(*p < enttype[*n].numattrs) result(enttype[*n].attrs[*p]);
+            else if(*p < enttype[*n].numattrs)
+            {
+                const char *attrname = enttype[*n].attrs[*p];
+                if(*n == PARTICLES) switch(*a)
+                {
+                    case -1: break; // not given
+                    case 0: switch(*p) { case 0: attrname = "fire-plume"; break; case 1: attrname = "length"; break; case 2: attrname = "height"; break; case 3: attrname = "colour"; break; case 4: attrname = "fade"; break; case 5: attrname = "palette"; break; case 6: attrname = "palindex"; break; case 7: attrname = "size"; break; case 8: attrname = "blend"; break; case 9: attrname = "gravity"; break; case 10: attrname = "velocity"; break; case 11: attrname = "millis"; break; default: attrname = ""; } break;
+                    case 1: switch(*p) { case 0: attrname = "smoke-vent"; break; case 1: attrname = "dir"; break; case 11: attrname = "millis"; break; default: attrname = ""; } break;
+                    case 2: switch(*p) { case 0: attrname = "water-fountain"; break;case 1: attrname = "dir"; break; case 11: attrname = "millis"; break; default: attrname = ""; } break;
+                    case 3: switch(*p) { case 0: attrname = "fireball"; break; case 1: attrname = "size"; break; case 2: attrname = "colour"; break; case 3: attrname = "palette"; break; case 4: attrname = "palindex"; break; case 11: attrname = "millis"; break; default: attrname = ""; } break;
+                    case 4: switch(*p) { case 0: attrname = "tape"; break; case 1: attrname = "dir"; break; case 2: attrname = "length"; break; case 3: attrname = "colour"; break; case 4: attrname = "fade"; break; case 5: attrname = "size"; break; case 6: attrname = "palette"; break; case 7: attrname = "palindex"; break; case 11: attrname = "millis"; break; default: attrname = ""; break; } break;
+                    case 5: switch(*p) { case 0: attrname = "progress"; break; case 1: attrname = "amt"; break; case 2: attrname = "colour"; break; case 3: attrname = "palette"; break; case 4: attrname = "palindex"; break; case 11: attrname = "millis"; break; default: attrname = ""; } break;
+                    case 6: switch(*p) { case 0: attrname = "progress-vs"; break; case 1: attrname = "amt"; break; case 2: attrname = "colour"; break; case 3: attrname = "colour2"; break; case 4: attrname = "palette1"; break; case 5: attrname = "palindex1"; break; case 6: attrname = "palette2"; break; case 7: attrname = "palindex2"; break; case 11: attrname = "millis"; break; default: attrname = ""; } break;
+                    case 7: switch(*p) { case 0: attrname = "lightning"; break; case 1: attrname = "dir"; break; case 2: attrname = "length"; break; case 3: attrname = "colour"; break; case 4: attrname = "fade"; break; case 5: attrname = "size"; break; case 6: attrname = "palette"; break; case 7: attrname = "palindex"; break; case 11: attrname = "millis"; break; default: attrname = ""; break; } break;
+                    case 8: switch(*p) { case 0: attrname = "fire"; break; case 1: attrname = "dir"; break; case 2: attrname = "length"; break; case 3: attrname = "colour"; break; case 4: attrname = "fade"; break; case 5: attrname = "size"; break; case 6: attrname = "decal"; break; case 7: attrname = "gravity"; break; case 8: attrname = "velocity"; break; case 9: attrname = "palette"; break; case 10: attrname = "palindex"; break; case 11: attrname = "millis"; break; default: attrname = ""; break; } break;
+                    case 9: switch(*p) { case 0: attrname = "smoke"; break; case 1: attrname = "dir"; break; case 2: attrname = "length"; break; case 3: attrname = "colour"; break; case 4: attrname = "fade"; break; case 5: attrname = "size"; break; case 6: attrname = "decal"; break; case 7: attrname = "gravity"; break; case 8: attrname = "velocity"; break; case 9: attrname = "palette"; break; case 10: attrname = "palindex"; break; case 11: attrname = "millis"; break; default: attrname = ""; break; } break;
+                    case 10: switch(*p) {case 0: attrname = "water"; break; case 1: attrname = "dir"; break; case 2: attrname = "length"; break; case 3: attrname = "colour"; break; case 4: attrname = "fade"; break; case 5: attrname = "size"; break; case 6: attrname = "decal"; break; case 7: attrname = "gravity"; break; case 8: attrname = "velocity"; break; case 9: attrname = "palette"; break; case 10: attrname = "palindex"; break; case 11: attrname = "millis"; break; default: attrname = ""; break; } break;
+                    case 11: switch(*p) {case 0: attrname = "plasma"; break; case 1: attrname = "dir"; break; case 2: attrname = "length"; break; case 3: attrname = "colour"; break; case 4: attrname = "fade"; break; case 5: attrname = "size"; break; case 6: attrname = "decal"; break; case 7: attrname = "gravity"; break; case 8: attrname = "velocity"; break; case 9: attrname = "palette"; break; case 10: attrname = "palindex"; break; case 11: attrname = "millis"; break; default: attrname = ""; break; } break;
+                    case 12: switch(*p) {case 0: attrname = "snow"; break; case 1: attrname = "dir"; break; case 2: attrname = "length"; break; case 3: attrname = "colour"; break; case 4: attrname = "fade"; break; case 5: attrname = "size"; break; case 6: attrname = "decal"; break; case 7: attrname = "gravity"; break; case 8: attrname = "velocity"; break; case 9: attrname = "palette"; break; case 10: attrname = "palindex"; break; case 11: attrname = "millis"; break; default: attrname = ""; break; } break;
+                    case 13: switch(*p) {case 0: attrname = "sparks"; break; case 1: attrname = "dir"; break; case 2: attrname = "length"; break; case 3: attrname = "colour"; break; case 4: attrname = "fade"; break; case 5: attrname = "size"; break; case 6: attrname = "decal"; break; case 7: attrname = "gravity"; break; case 8: attrname = "velocity"; break; case 9: attrname = "palette"; break; case 10: attrname = "palindex"; break; case 11: attrname = "millis"; break; default: attrname = ""; break; } break;
+                    case 14: switch(*p) {case 0: attrname = "flames"; break; case 1: attrname = "radius"; break; case 2: attrname = "height"; break; case 3: attrname = "colour"; break; case 4: attrname = "fade"; break; case 5: attrname = "size"; break; case 6: attrname = "gravity"; break; case 7: attrname = "velocity"; break; case 8: attrname = "palette"; break; case 9: attrname = "palindex"; break; case 11: attrname = "millis"; break; default: attrname = ""; } break;
+                    case 15: switch(*p) {case 0: attrname = "smoke-plume"; break; case 1: attrname = "radius"; break; case 2: attrname = "height"; break; case 3: attrname = "colour"; break; case 4: attrname = "fade"; break; case 5: attrname = "size"; break; case 6: attrname = "gravity"; break; case 7: attrname = "velocity"; break; case 8: attrname = "palette"; break; case 9: attrname = "palindex"; break; case 11: attrname = "millis"; break; default: attrname = ""; } break;
+                    case 32: case 33: case 34: case 35: switch(*p) { case 1: attrname = "red"; break; case 2: attrname = "green"; break; case 3: attrname = "blue"; break; case 11: attrname = "millis"; break; default: attrname = ""; } break;
+                    default: attrname = ""; break;
+                }
+                result(attrname);
+            }
         }
     });
 
@@ -135,9 +161,9 @@ namespace entities
             {
                 switch(attr[0])
                 {
-                    case 0: addentinfo("fire plume"); break;
-                    case 1: addentinfo("smoke vent"); break;
-                    case 2: addentinfo("water fountain"); break;
+                    case 0: addentinfo("fire-plume"); break;
+                    case 1: addentinfo("smoke-vent"); break;
+                    case 2: addentinfo("water-fountain"); break;
                     case 3: addentinfo("fireball"); break;
                     case 4: addentinfo("tape"); break;
                     case 7: addentinfo("lightning"); break;
@@ -148,8 +174,8 @@ namespace entities
                     case 12: addentinfo("snow"); break;
                     case 13: addentinfo("sparks"); break;
                     case 14: addentinfo("flames"); break;
-                    case 15: addentinfo("smoke plume"); break;
-                    case 6: addentinfo("progress versus"); break;
+                    case 15: addentinfo("smoke-plume"); break;
+                    case 6: addentinfo("progress-vs"); break;
                     case 5: addentinfo("progress"); break;
                     case 32: addentinfo("lensflare-plain"); break;
                     case 33: addentinfo("lensflare-sparkle"); break;
@@ -176,7 +202,7 @@ namespace entities
                                 case 24: case 25: case 26: addentinfo("plane-flat"); break;
                                 default: hasval = false; addentinfo("default"); break;
                             }
-                            if(hasval) switch(val%3)
+                            if(hasval) switch((val%32)%3)
                             {
                                 case 0: addentinfo("x-axis"); break;
                                 case 1: addentinfo("y-axis"); break;
@@ -239,13 +265,13 @@ namespace entities
                 {
                     addentinfo(actor[attr[0]+A_ENEMY].name);
                     addmodeinfo(attr[3], attr[4]);
-                    addentinfo(W(attr[6] > 0 && attr[6] <= W_MAX ? attr[6]-1 : actor[attr[0]+A_ENEMY].weap, name));
+                    addentinfo(W(attr[6] > 0 && attr[6] <= W_ALL ? attr[6]-1 : AA(attr[0]+A_ENEMY, weaponspawn), name));
                 }
                 break;
             }
             case WEAPON:
             {
-                int sweap = m_weapon(game::gamemode, game::mutators), attr1 = w_attr(game::gamemode, game::mutators, type, attr[0], sweap);
+                int sweap = m_weapon(game::focus->actortype, game::gamemode, game::mutators), attr1 = w_attr(game::gamemode, game::mutators, type, attr[0], sweap);
                 if(isweap(attr1))
                 {
                     defformatstring(str, "\fs\f[%d]%s%s%s%s\fS", W(attr1, colour), icon ? "\f(" : "", icon ? hud::itemtex(type, attr1) : W(attr1, name), icon ? ")" : "", icon ? W(attr1, longname) : "");
@@ -348,7 +374,7 @@ namespace entities
             case PLAYERSTART: return playertypes[0][1];
             case WEAPON:
             {
-                int weap = w_attr(game::gamemode, game::mutators, type, attr[0], m_weapon(game::gamemode, game::mutators));
+                int weap = w_attr(game::gamemode, game::mutators, type, attr[0], m_weapon(game::focus->actortype, game::gamemode, game::mutators));
                 return isweap(weap) && *weaptype[weap].item ? weaptype[weap].item : "projectiles/cartridge";
             }
             case ACTOR: return actor[clamp(attr[0]+A_ENEMY, int(A_ENEMY), int(A_MAX-1))].playermodel[1];
@@ -372,9 +398,9 @@ namespace entities
     void useeffects(gameent *d, int ent, int ammoamt, bool spawn, int weap, int drop, int ammo)
     {
         gameentity &e = *(gameentity *)ents[ent];
-        int sweap = m_weapon(game::gamemode, game::mutators), attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap),
-            colour = e.type == WEAPON ? W(attr, colour) : 0x888888;
-        if(e.type == WEAPON) d->addicon(eventicon::WEAPON, lastmillis, game::eventiconshort, attr);
+        int sweap = m_weapon(d->actortype, game::gamemode, game::mutators), attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap),
+            colour = e.type == WEAPON && isweap(attr) ? W(attr, colour) : 0x888888;
+        if(e.type == WEAPON && isweap(attr)) d->addicon(eventicon::WEAPON, lastmillis, game::eventiconshort, attr);
         if(isweap(weap))
         {
             d->setweapstate(weap, W_S_SWITCH, weaponswitchdelay, lastmillis);
@@ -386,7 +412,7 @@ namespace entities
             }
         }
         d->useitem(ent, e.type, attr, ammoamt, sweap, lastmillis, weaponswitchdelay);
-        playsound(e.type == WEAPON && attr >= W_OFFSET ? WSND(attr, S_W_USE) : S_ITEMUSE, d->o, d, 0, -1, -1, -1, &d->wschan);
+        playsound(e.type == WEAPON && attr >= W_OFFSET && attr < W_ALL ? WSND(attr, S_W_USE) : S_ITEMUSE, d->o, d, 0, -1, -1, -1, &d->wschan);
         if(game::dynlighteffects) adddynlight(d->center(), enttype[e.type].radius*2, vec::hexcolor(colour).mul(2.f), 250, 250);
         if(ents.inrange(drop) && ents[drop]->type == WEAPON)
         {
@@ -594,7 +620,9 @@ namespace entities
                     gameent *f = (gameent *)d;
                     if(game::allowmove(f))
                     {
-                        int sweap = m_weapon(game::gamemode, game::mutators), attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap);
+                        int sweap = m_weapon(f->actortype, game::gamemode, game::mutators), attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap);
+                        if(!isweap(attr)) return false;
+                        if(f == game::player1 && !weapons::canuse(attr)) return true;
                         if(!f->canuse(e.type, attr, e.attrs, sweap, lastmillis, (1<<W_S_SWITCH)))
                         {
                             if(e.type != WEAPON) return false;
@@ -644,10 +672,10 @@ namespace entities
                         int r = rnd(teleports.length()), q = teleports[r];
                         gameentity &f = *(gameentity *)ents[q];
                         d->o = vec(f.o).add(f.attrs[5] >= 3 ? vec(orig).sub(e.o) : vec(0, 0, d->height*0.5f));
-                        float mag = max(vec(d->vel).add(d->falling).magnitude(), f.attrs[2] ? float(f.attrs[2]) : 50.f),
+                        float mag = f.attrs[2] < 0 ? 0.f : max(vec(d->vel).add(d->falling).magnitude(), f.attrs[2] ? float(f.attrs[2]) : 50.f),
                               yaw = f.attrs[0] < 0 ? (lastmillis/5)%360 : f.attrs[0], pitch = f.attrs[1];
                         game::fixrange(yaw, pitch);
-                        if(f.attrs[5] < 6) d->vel = vec(yaw*RAD, pitch*RAD).mul(mag);
+                        if(mag > 0 && f.attrs[5] < 6) d->vel = vec(yaw*RAD, pitch*RAD).mul(mag);
                         switch(f.attrs[5]%3)
                         {
                             case 2: break; // keep
@@ -667,13 +695,14 @@ namespace entities
                             }
                         }
                         game::fixrange(d->yaw, d->pitch);
-                        if(f.attrs[5] >= 6) d->vel = vec(d->yaw*RAD, d->pitch*RAD).mul(mag);
+                        if(mag <= 0) d->vel = vec(0, 0, 0);
+                        else if(f.attrs[5] >= 6) d->vel = vec(d->yaw*RAD, d->pitch*RAD).mul(mag);
                         if(physics::entinmap(d, gameent::is(d))) // entinmap first for getting position
                         {
                             f.lastemit = lastmillis;
                             d->setused(n, lastmillis);
                             d->setused(q, lastmillis);
-                            d->resetinterp();
+                            d->resetinterp(true);
                             if(d->state == CS_ALIVE)
                             {
                                 if(gameent::is(d))
@@ -781,7 +810,7 @@ namespace entities
                     if(d->state != CS_ALIVE || !gameent::is(d) || !m_race(game::gamemode)) break;
                     if(!m_check(e.attrs[3], e.attrs[4], game::gamemode, game::mutators)) break;
                     gameent *g = (gameent *)d;
-                    if(g->checkpoint == n || (m_race(game::gamemode) && m_gsp3(game::gamemode, game::mutators) && g->team != T_ALPHA)) break;
+                    if(g->checkpoint == n || (m_ra_gauntlet(game::gamemode, game::mutators) && g->team != T_ALPHA)) break;
                     if(e.attrs[6] == CP_START)
                     {
                         if(g->cpmillis || (d->vel.iszero() && !d->move && !d->strafe)) break;
@@ -1034,9 +1063,9 @@ namespace entities
                 break;
             }
             case WEAPON:
-                if(create && (e.attrs[0] < W_OFFSET || e.attrs[0] >= W_MAX)) e.attrs[0] = W_OFFSET; // don't be stupid when creating the entity
-                while(e.attrs[0] < W_OFFSET) e.attrs[0] += W_MAX-W_OFFSET; // don't allow superimposed weaps
-                while(e.attrs[0] >= W_MAX) e.attrs[0] -= W_MAX-W_OFFSET;
+                if(create && (e.attrs[0] < W_OFFSET || e.attrs[0] >= W_ALL)) e.attrs[0] = W_OFFSET; // don't be stupid when creating the entity
+                while(e.attrs[0] < W_OFFSET) e.attrs[0] += W_ALL-W_OFFSET; // don't allow superimposed weaps
+                while(e.attrs[0] >= W_ALL) e.attrs[0] -= W_ALL-W_OFFSET;
                 break;
             case PLAYERSTART:
                 while(e.attrs[0] < 0) e.attrs[0] += T_ALL;
@@ -1059,8 +1088,8 @@ namespace entities
                 while(e.attrs[1] >= 360) e.attrs[1] -= 360;
                 while(e.attrs[2] < -90) e.attrs[2] += 180;
                 while(e.attrs[2] > 90) e.attrs[2] -= 180;
-                while(e.attrs[6] < 0) e.attrs[6] += W_MAX+1; // allow any weapon
-                while(e.attrs[6] > W_MAX) e.attrs[6] -= W_MAX+1;
+                while(e.attrs[6] < 0) e.attrs[6] += W_ALL+1; // allow any weapon
+                while(e.attrs[6] > W_ALL) e.attrs[6] -= W_ALL+1;
                 if(e.attrs[7] < 0) e.attrs[7] = 0;
                 if(e.attrs[8] < 0) e.attrs[8] = 0;
                 if(e.attrs[9] < 0) e.attrs[9] = 0;
@@ -1170,7 +1199,7 @@ namespace entities
                 case CHECKPOINT:
                 {
                     float yaw = ents[ent]->attrs[1], pitch = ents[ent]->attrs[2];
-                    if(m_race(game::gamemode) && m_gsp3(game::gamemode, game::mutators) && d->team != T_ALPHA)
+                    if(m_ra_gauntlet(game::gamemode, game::mutators) && d->team != T_ALPHA)
                     {
                         yaw -= 180;
                         pitch = -pitch;
@@ -1762,7 +1791,7 @@ namespace entities
                     if(mtype != MAP_MAPZ || gver <= 112) e.attrs[1] = 0;
                     if(mtype == MAP_MAPZ && gver <= 160)
                     {
-                        e.attrs[0]++; // add in melee
+                        e.attrs[0]++; // add in claw
                         if(e.attrs[0] < W_OFFSET) e.attrs[0] = 8; // cleanup for fixentity
                     }
                     if(mtype == MAP_MAPZ && gver <= 163) e.attrs[0]++; // add in sword
@@ -1931,9 +1960,7 @@ namespace entities
                 e.type = ACTOR;
                 e.o = ents[i]->o;
                 e.attrs.add(0, max(5, enttype[ACTOR].numattrs));
-                e.attrs[0] = (i%5 != 4 ? A_GRUNT : A_TURRET)-1;
-                e.attrs[6] = (i/5)%(W_MAX+1);
-                if(e.attrs[0] == A_TURRET && e.attrs[5] == W_MELEE) e.attrs[5] = W_SMG;
+                e.attrs[0] = (i%5 != 4 || ents[i]->type == WEAPON ? A_GRUNT : A_TURRET)-1;
                 switch(ents[i]->type)
                 {
                     case PLAYERSTART:
@@ -2243,7 +2270,7 @@ namespace entities
     {
         if(rendermainview && shouldshowents(game::player1->state == CS_EDITING ? 1 : (!entgroup.empty() || ents.inrange(enthover) ? 2 : 3))) loopv(ents) // important, don't render lines and stuff otherwise!
             renderfocus(i, renderentshow(e, i, game::player1->state == CS_EDITING ? ((entgroup.find(i) >= 0 || enthover == i) ? 1 : 2) : 3));
-        if(!envmapping)
+        if(!drawtex)
         {
             int numents = m_edit(game::gamemode) ? ents.length() : lastuse(EU_ITEM);
             loopi(numents)
@@ -2273,9 +2300,9 @@ namespace entities
                             {
                                 yaw = e.attrs[1]+90;
                                 pitch = e.attrs[2];
-                                int weap = e.attrs[6] > 0 ? e.attrs[6]-1 : actor[e.attrs[0]].weap;
+                                int weap = e.attrs[6] > 0 ? e.attrs[6]-1 : AA(e.attrs[0], weaponspawn);
                                 if(isweap(weap)) colour = W(weap, colour);
-                                size = e.attrs[9] > 0 ? e.attrs[9]/100.f : actor[e.attrs[0]].scale;
+                                size = e.attrs[9] > 0 ? e.attrs[9]/100.f : AA(e.attrs[0], scale);
                             }
                             //fade = 0.5f;
                         }
@@ -2291,9 +2318,14 @@ namespace entities
                         }
                         if(e.type == WEAPON)
                         {
-                            flags |= MDL_LIGHTFX;
-                            int col = W(w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], m_weapon(game::gamemode, game::mutators)), colour), interval = lastmillis%1000;
-                            e.light.effect = vec::hexcolor(col).mul(interval >= 500 ? (1000-interval)/500.f : interval/500.f);
+                            int attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], m_weapon(game::focus->actortype, game::gamemode, game::mutators));
+                            if(isweap(attr))
+                            {
+                                flags |= MDL_LIGHTFX;
+                                int col = W(attr, colour), interval = lastmillis%1000;
+                                e.light.effect = vec::hexcolor(col).mul(interval >= 500 ? (1000-interval)/500.f : interval/500.f);
+                            }
+                            else continue;
                         }
                         else e.light.effect = vec(0, 0, 0);
                         e.light.material[0] = colour >= 0 ? bvec(colour) : bvec(255, 255, 255);
@@ -2346,9 +2378,9 @@ namespace entities
         bool edit = m_edit(game::gamemode) && cansee(idx), isedit = edit && game::player1->state == CS_EDITING,
              hasent = isedit && idx >= 0 && (enthover == idx || entgroup.find(idx) >= 0),
              hastop = hasent && e.o.squaredist(camera1->o) <= showentdist*showentdist;
-        int sweap = m_weapon(game::gamemode, game::mutators),
+        int sweap = m_weapon(game::focus->actortype, game::gamemode, game::mutators),
             attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap),
-            colour = e.type == WEAPON ? W(attr, colour) : 0x888888, interval = lastmillis%1000;
+            colour = e.type == WEAPON && isweap(attr) ? W(attr, colour) : 0x888888, interval = lastmillis%1000;
         float fluc = interval >= 500 ? (1500-interval)/1000.f : (500+interval)/1000.f;
         if(enttype[e.type].usetype == EU_ITEM && (active || isedit))
         {
@@ -2437,6 +2469,7 @@ namespace entities
         loopi(numents)
         {
             gameentity &e = *(gameentity *)ents[i];
+            if(e.type == NOTUSED || e.attrs.empty()) continue;
             if(e.type != PARTICLES && e.type != TELEPORT && e.type != ROUTE && !m_edit(game::gamemode) && enttype[e.type].usetype != EU_ITEM) continue;
             else if(e.o.squaredist(camera1->o) > maxdist) continue;
             float skew = 1;
@@ -2463,6 +2496,7 @@ namespace entities
             projent &proj = *projs::projs[i];
             if(proj.projtype != PRJ_ENT || !ents.inrange(proj.id) || !proj.ready()) continue;
             gameentity &e = *(gameentity *)ents[proj.id];
+            if(e.type == NOTUSED || e.attrs.empty()) continue;
             float skew = 1;
             if(proj.fadetime && proj.lifemillis)
             {

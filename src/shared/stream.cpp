@@ -234,6 +234,26 @@ struct packagedir
 vector<packagedir> packagedirs;
 int packagedirmask = ~0;
 
+int crcstream(stream *f)
+{
+    size_t len = 0;
+    char *buf = loadstream(f, &len, false);
+    if(!buf) return 0;
+    int crc = abs(int(crc32(0, (const Bytef *)buf, len)));
+    delete[] buf;
+    return crc;
+}
+
+int crcfile(const char *s)
+{
+    if(!s || !*s) return 0;
+    stream *f = openfile(s, "rb");
+    if(!f) return 0;
+    int crc = crcstream(f);
+    delete f;
+    return crc;
+}
+
 char *makefile(const char *s, const char *e, int revision, int start, bool store, bool skip)
 {
     static string o;
@@ -560,20 +580,20 @@ int listfiles(const char *dir, const char *ext, vector<char *> &files)
 }
 
 #ifndef STANDALONE
-static int rwopsseek(SDL_RWops *rw, int pos, int whence)
+static Sint64 rwopsseek(SDL_RWops *rw, Sint64 pos, int whence)
 {
     stream *f = (stream *)rw->hidden.unknown.data1;
     if((!pos && whence==SEEK_CUR) || f->seek(pos, whence)) return (int)f->tell();
     return -1;
 }
 
-static int rwopsread(SDL_RWops *rw, void *buf, int size, int nmemb)
+static size_t rwopsread(SDL_RWops *rw, void *buf, size_t size, size_t nmemb)
 {
     stream *f = (stream *)rw->hidden.unknown.data1;
     return f->read(buf, size*nmemb)/size;
 }
 
-static int rwopswrite(SDL_RWops *rw, const void *buf, int size, int nmemb)
+static size_t rwopswrite(SDL_RWops *rw, const void *buf, size_t size, size_t nmemb)
 {
     stream *f = (stream *)rw->hidden.unknown.data1;
     return f->write(buf, size*nmemb)/size;
@@ -1231,23 +1251,21 @@ stream *openutf8file(const char *filename, const char *mode, stream *file)
     return utf8;
 }
 
-char *loadfile(const char *fn, size_t *size, bool utf8)
+char *loadstream(stream *f, size_t *size, bool utf8)
 {
-    stream *f = openfile(fn, "rb");
-    if(!f) return NULL;
+    f->seek(0, SEEK_SET);
     size_t len = f->size();
-    if(len <= 0) { delete f; return NULL; }
+    if(len <= 0) return NULL;
     char *buf = new char[len+1];
-    if(!buf) { delete f; return NULL; }
+    if(!buf) return NULL;
     size_t offset = 0;
     if(utf8 && len >= 3)
     {
-        if(f->read(buf, 3) != 3) { delete f; delete[] buf; return NULL; }
+        if(f->read(buf, 3) != 3) { delete[] buf; return NULL; }
         if(((uchar *)buf)[0] == 0xEF && ((uchar *)buf)[1] == 0xBB && ((uchar *)buf)[2] == 0xBF) len -= 3;
         else offset += 3;
     }
     size_t rlen = f->read(&buf[offset], len-offset);
-    delete f;
     if(rlen != len-offset) { delete[] buf; return NULL; }
     if(utf8) len = decodeutf8((uchar *)buf, len, (uchar *)buf, len);
     buf[len] = '\0';
@@ -1255,3 +1273,11 @@ char *loadfile(const char *fn, size_t *size, bool utf8)
     return buf;
 }
 
+char *loadfile(const char *fn, size_t *size, bool utf8)
+{
+    stream *f = openfile(fn, "rb");
+    if(!f) return NULL;
+    char *buf = loadstream(f, size, utf8);
+    delete f;
+    return buf;
+}

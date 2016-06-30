@@ -40,25 +40,37 @@
   #ifndef __GNUC__
     #include <eh.h>
     #include <dbghelp.h>
+    #include <intrin.h>
   #endif
   #define ZLIB_DLL
 #endif
 
-
-#include <zlib.h>
-
 #ifndef STANDALONE
-#include <SDL.h>
-#include <SDL_syswm.h>
-#include <SDL_opengl.h>
+  #ifdef __APPLE__
+    #include "SDL.h"
+    #define GL_GLEXT_LEGACY
+    #define __glext_h_
+    #include <OpenGL/gl.h>
+    #define main SDL_main
+  #else
+    #include <SDL.h>
+    #include <SDL_opengl.h>
+  #endif
 #endif
 
 #include <enet/enet.h>
+
+#include <zlib.h>
 
 #include "tools.h"
 #include "command.h"
 #include "geom.h"
 #include "ents.h"
+
+#ifndef STANDALONE
+#include "glexts.h"
+#include "glemu.h"
+#endif
 
 #include "iengine.h"
 #include "igame.h"

@@ -401,7 +401,7 @@ void resetvar(char *name)
 {
     ident *id = idents.access(name);
     if(!id) return;
-    if(id->flags&IDF_READONLY || id->flags&IDF_CLIENT || id->flags&IDF_SERVER) debugcode("\frvariable %s is read-only", id->name);
+    if(id->flags&IDF_READONLY || id->flags&IDF_CLIENT || id->flags&IDF_SERVER) debugcode("\frvariable %s is read-only or remote", id->name);
     else if(id->flags&IDF_WORLD) debugcode("\frvariable %s is only directly modifiable in editmode", id->name);
     else clearoverride(*id);
 }
@@ -486,6 +486,22 @@ void worldalias(const char *name, const char *action)
     WITHWORLD(alias(name, action));
 }
 COMMAND(0, worldalias, "ss");
+
+void loadalias(const char *name, const char *fname)
+{
+    string s;
+    copystring(s, fname);
+    char *buf = loadfile(s, NULL);
+    if(!buf)
+    {
+        conoutf("\frcould not read %s", fname);
+        return;
+    }
+    tagval v;
+    v.setstr(buf);
+    setalias(name, v);
+}
+COMMAND(0, loadalias, "ss");
 
 // variable's and commands are registered through globals, see cube.h
 
@@ -678,11 +694,13 @@ const char *getvardesc(const char *name)
     return id->desc;
 }
 
-const char *getvarusage(const char *name)
+void getvarfields(const char *name, int prop)
 {
     ident *id = getident(name);
-    if(!id || !id->usage) return "";
-    return id->usage;
+    if(!id) result("");
+    if(prop < 0) intret(id->fields.length());
+    else if(id->fields.inrange(prop)) result(id->fields[prop]);
+    else result("");
 }
 
 ICOMMAND(0, getvar, "s", (char *n), intret(getvar(n)));
@@ -696,7 +714,7 @@ ICOMMAND(0, getvardef, "si", (char *n, int *b), intret(getvardef(n, *b!=0)));
 ICOMMAND(0, getfvardef, "si", (char *n, int *b), floatret(getfvardef(n, *b!=0)));
 ICOMMAND(0, getsvardef, "si", (char *n, int *b), result(getsvardef(n, *b!=0)));
 ICOMMAND(0, getvardesc, "s", (char *n), result(getvardesc(n)));
-ICOMMAND(0, getvarusage, "s", (char *n), result(getvarusage(n)));
+ICOMMAND(0, getvarfields, "sb", (char *n, int *p), getvarfields(n, *p));
 
 bool identexists(const char *name) { return idents.access(name)!=NULL; }
 ident *getident(const char *name) { return idents.access(name); }
@@ -731,7 +749,15 @@ ICOMMAND(0, getalias, "s", (char *s), result(getalias(s)));
             debugcode("\frcannot set world variable %s outside editmode", id->name); \
             return; \
         } \
-        if(id->flags&IDF_CLIENT && (!(id->flags&IDF_WORLD) || !(identflags&IDF_WORLD)) && client::sendcmd(2, id->name, argstr)) return; \
+        if(id->flags&IDF_CLIENT) \
+        { \
+            if((identflags&IDF_WORLD) && !(id->flags&IDF_WORLD)) \
+            { \
+                debugcode("\frcannot set variable %s from map config", id->name); \
+                return; \
+            } \
+            if(client::sendcmd(2, id->name, argstr)) return; \
+        } \
     }
 #endif
 
@@ -2377,9 +2403,9 @@ ICOMMAND(0, exec, "sib", (char *file, int *flags, int *msg), intret(execfile(fil
 
 const char *escapestring(const char *s)
 {
-    static vector<char> strbuf[3];
+    static vector<char> strbuf[16];
     static int stridx = 0;
-    stridx = (stridx + 1)%3;
+    stridx = (stridx+1)%16;
     vector<char> &buf = strbuf[stridx];
     buf.setsize(0);
     buf.add('"');
@@ -3476,14 +3502,11 @@ void getvariable(int num)
         ids.setsize(0);
         enumerate(idents, ident, id, ids.add(&id));
         lastupdate = totalmillis;
+        ids.sortname();
     }
     string text;
     num--;
-    if(ids.inrange(num))
-    {
-        ids.sort(ident::compare);
-        formatstring(text, "%s", ids[num]->name);
-    }
+    if(ids.inrange(num)) formatstring(text, "%s", ids[num]->name);
     else formatstring(text, "%d", ids.length());
     result(text);
 }
@@ -3502,7 +3525,7 @@ void getvarinfo(int n, int types, int notypes, int flags, int noflags, char *str
         lastnotypes = notypes;
         lastflags = flags;
         lastnoflags = noflags;
-        ids[0].sort(ident::compare);
+        ids[0].sortname();
     }
     if(str && *str)
     {
@@ -3539,3 +3562,11 @@ void genkey(char *s)
     result(keybuf);
 }
 COMMAND(0, genkey, "s");
+
+bool hasflag(const char *flags, char f)
+{
+    for(const char *c = flags; *c; c++)
+        if(*c == f) return true;
+    return false;
+}
+ICOMMAND(0, hasflag, "ss", (char *s, char *f), intret(*s && *f && hasflag(s, *f) ? 1 : 0));

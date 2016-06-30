@@ -8,8 +8,8 @@ namespace ai
     const int WAYPOINTRADIUS    = 16;
 
     const float MINWPDIST       = 4.f;     // is on top of
-    const float CLOSEDIST       = 32.f;    // is close
-    const float RETRYDIST       = 64.f;    // is close when retrying
+    const float CLOSEDIST       = 64.f;    // is close
+    const float RETRYDIST       = 128.f;   // is close when retrying
     const float FARDIST         = 256.f;   // too far to remap close
     const float JUMPMIN         = 2.f;     // decides to jump
     const float JUMPMAX         = 32.f;    // max jump
@@ -24,14 +24,22 @@ namespace ai
     {
         vec o;
         float curscore, estscore;
-        int weight;
+        int pull, drag;
         ushort route, prev;
         ushort links[MAXWAYPOINTLINKS];
 
         waypoint() {}
-        waypoint(const vec &o, int weight = 0) : o(o), weight(weight), route(0) { memset(links, 0, sizeof(links)); }
+        waypoint(const vec &o, int p = 0) : o(o), pull(p), drag(0), route(0) { memset(links, 0, sizeof(links)); }
 
         int score() const { return int(curscore) + int(estscore); }
+
+        int weight(bool mod = true)
+        {
+            if(pull < 0) return -1;
+            int r = int(pull*aiweightpull);
+            if(mod && aiweightdrag) r += int(drag/float(aiweightdrag));
+            return r;
+        }
 
         int find(int wp)
         {
@@ -300,9 +308,9 @@ namespace ai
 
     extern avoidset obstacles, wpavoid;
     extern vec aitarget;
-    extern int aidebug, aideadfade, showaiinfo;
+    extern int aidebug, showaiinfo;
 
-    extern void startmap(const char *name, const char *reqname, bool empty);
+    extern void startmap(bool empty);
 
     extern float viewdist(int x = 101);
     extern float viewfieldx(int x = 101);

@@ -5,14 +5,19 @@ namespace aiman
         oldbotbalance = -2, oldnumplayers = -1, oldbotlimit = -1, oldbotoffset = 0, oldenemylimit = -1;
     float oldbotbalancescale = -1;
 
+    float clientbotscore(clientinfo *ci)
+    {
+        return (ci->bots.length() * G(aihostnum)) + (ci->ping * G(aihostping));
+    }
+
     clientinfo *findaiclient(clientinfo *exclude = NULL)
     {
         clientinfo *least = NULL;
         loopv(clients)
         {
             clientinfo *ci = clients[i];
-            if(ci->state.actortype > A_PLAYER || !ci->online || !ci->isready() || ci == exclude) continue;
-            if(!least || ci->bots.length() < least->bots.length()) least = ci;
+            if(ci->actortype > A_PLAYER || !ci->online || !ci->isready() || ci == exclude) continue;
+            if(!least || clientbotscore(ci) < clientbotscore(least)) least = ci;
         }
         return least;
     }
@@ -37,34 +42,34 @@ namespace aiman
                 {
                     m = max(G(coopskillmax), G(coopskillmin));
                     n = min(G(coopskillmin), m);
-                    if(deaths > 0 && G(coopskilldeaths) > 0)
+                    if(deaths != 0 && G(coopskilldeaths) != 0)
                     {
                         int amt = G(coopskilldeaths)*deaths;
                         m += amt;
                         n += amt;
                     }
-                    if(frags > 0 && G(coopskillfrags) > 0)
+                    if(frags != 0 && G(coopskillfrags) != 0)
                     {
                         int amt = G(coopskillfrags)*frags;
-                        m -= amt;
-                        n -= amt;
+                        m += amt;
+                        n += amt;
                     }
                 }
                 else
                 {
                     m = max(G(botskillmax), G(botskillmin));
                     n = min(G(botskillmin), m);
-                    if(deaths > 0 && G(botskilldeaths) > 0)
+                    if(deaths != 0 && G(botskilldeaths) != 0)
                     {
                         int amt = G(botskilldeaths)*deaths;
                         m += amt;
                         n += amt;
                     }
-                    if(frags > 0 && G(botskillfrags) > 0)
+                    if(frags != 0 && G(botskillfrags) != 0)
                     {
                         int amt = G(botskillfrags)*frags;
-                        m -= amt;
-                        n -= amt;
+                        m += amt;
+                        n += amt;
                     }
                 }
                 break;
@@ -80,11 +85,11 @@ namespace aiman
     void setskill(clientinfo *ci)
     {
         int n = 1, m = 100;
-        getskillrange(ci->state.actortype, n, m, ci->state.frags, ci->state.deaths);
-        if(ci->state.skill > m || ci->state.skill < n)
+        getskillrange(ci->actortype, n, m, ci->frags, ci->deaths);
+        if(ci->skill > m || ci->skill < n)
         { // needs re-skilling
-            ci->state.skill = (m != n ? rnd(m-n) + n + 1 : m);
-            if(!ci->state.aireinit) ci->state.aireinit = 1;
+            ci->skill = (m != n ? rnd(m-n) + n + 1 : m);
+            if(!ci->aireinit) ci->aireinit = 1;
         }
     }
 
@@ -92,18 +97,18 @@ namespace aiman
     {
         int count = 0, limit = getlimit(type);
         if(!limit) return false;
-        loopv(clients) if(clients[i]->state.actortype == type)
+        loopv(clients) if(clients[i]->actortype == type)
         {
             clientinfo *ci = clients[i];
-            if(ci->state.ownernum < 0)
+            if(ci->ownernum < 0)
             { // reuse a slot that was going to removed
                 clientinfo *owner = findaiclient();
                 if(!owner) return false;
-                ci->state.ownernum = owner->clientnum;
+                ci->ownernum = owner->clientnum;
                 owner->bots.add(ci);
-                ci->state.aireinit = 1;
-                ci->state.actortype = type;
-                ci->state.spawnpoint = ent;
+                ci->aireinit = 1;
+                ci->actortype = type;
+                ci->spawnpoint = ent;
                 return true;
             }
             if(++count >= limit) return false;
@@ -119,22 +124,22 @@ namespace aiman
                 if(skill > m || skill < n) s = (m != n ? rnd(m-n) + n + 1 : m);
                 ci->clientnum = cn;
                 clientinfo *owner = findaiclient();
-                ci->state.ownernum = owner ? owner->clientnum : -1;
+                ci->ownernum = owner ? owner->clientnum : -1;
                 if(owner) owner->bots.add(ci);
-                ci->state.aireinit = 2;
-                ci->state.actortype = type;
-                ci->state.spawnpoint = ent;
-                ci->state.skill = clamp(s, 1, 101);
+                ci->aireinit = 2;
+                ci->actortype = type;
+                ci->spawnpoint = ent;
+                ci->skill = clamp(s, 1, 101);
                 clients.add(ci);
-                ci->state.lasttimeplayed = totalmillis;
-                ci->state.colour = rnd(0xFFFFFF);
-                ci->state.model = rnd(PLAYERTYPES);
-                ci->state.setvanity(ci->state.model ? G(botfemalevanities) : G(botmalevanities)); // the first slot is special
-                copystring(ci->name, actor[ci->state.actortype].name, MAXNAMELEN);
-                ci->state.loadweap.shrink(0);
-                if(ci->state.actortype == A_BOT)
+                ci->lasttimeplayed = totalmillis;
+                ci->colour = rnd(0xFFFFFF);
+                ci->model = rnd(PLAYERTYPES);
+                ci->setvanity(ci->model ? G(botfemalevanities) : G(botmalevanities)); // the first slot is special
+                copystring(ci->name, AA(ci->actortype, vname), MAXNAMELEN);
+                ci->loadweap.shrink(0);
+                if(ci->actortype == A_BOT)
                 {
-                    const char *list = ci->state.model ? G(botfemalenames) : G(botmalenames);
+                    const char *list = ci->model ? G(botfemalenames) : G(botmalenames);
                     int len = listlen(list);
                     if(len > 0)
                     {
@@ -146,9 +151,9 @@ namespace aiman
                             delete[] name;
                         }
                     }
-                    ci->state.loadweap.add(rnd(W_LOADOUT)+W_OFFSET);
+                    ci->loadweap.add(rnd(W_LOADOUT)+W_OFFSET);
                 }
-                ci->state.state = CS_DEAD;
+                ci->state = CS_DEAD;
                 ci->team = type == A_BOT ? T_NEUTRAL : T_ENEMY;
                 ci->online = ci->connected = ci->ready = true;
                 return true;
@@ -160,18 +165,18 @@ namespace aiman
 
     void deleteai(clientinfo *ci)
     {
-        if(ci->state.actortype == A_PLAYER) return;
+        if(ci->actortype == A_PLAYER) return;
         int cn = ci->clientnum;
         loopv(clients) if(clients[i] != ci)
         {
-            loopvk(clients[i]->state.fraglog) if(clients[i]->state.fraglog[k] == ci->clientnum)
-                clients[i]->state.fraglog.remove(k--);
+            loopvk(clients[i]->fraglog) if(clients[i]->fraglog[k] == ci->clientnum)
+                clients[i]->fraglog.remove(k--);
         }
         if(smode) smode->leavegame(ci, true);
         mutate(smuts, mut->leavegame(ci, true));
         savescore(ci);
         sendf(-1, 1, "ri3", N_DISCONNECT, cn, DISC_NONE);
-        clientinfo *owner = (clientinfo *)getinfo(ci->state.ownernum);
+        clientinfo *owner = (clientinfo *)getinfo(ci->ownernum);
         if(owner) owner->bots.removeobj(ci);
         clients.removeobj(ci);
         delclient(cn);
@@ -181,9 +186,9 @@ namespace aiman
     bool delai(int type, bool skip)
     {
         bool retry = false;
-        loopvrev(clients) if(clients[i]->state.actortype == type && clients[i]->state.ownernum >= 0)
+        loopvrev(clients) if(clients[i]->actortype == type && clients[i]->ownernum >= 0)
         {
-            if(!skip || clients[i]->state.state == CS_DEAD || clients[i]->state.state == CS_WAITING)
+            if(!skip || clients[i]->state == CS_DEAD || clients[i]->state == CS_WAITING)
             {
                 deleteai(clients[i]);
                 return true;
@@ -196,28 +201,28 @@ namespace aiman
 
     void reinitai(clientinfo *ci)
     {
-        if(ci->state.actortype == A_PLAYER) return;
-        if(ci->state.ownernum < 0) deleteai(ci);
-        else if(ci->state.aireinit >= 1)
+        if(ci->actortype == A_PLAYER) return;
+        if(ci->ownernum < 0) deleteai(ci);
+        else if(ci->aireinit >= 1)
         {
-            if(ci->state.aireinit == 2) loopk(W_MAX) loopj(2) ci->state.weapshots[k][j].reset();
-            sendf(-1, 1, "ri6si3siv", N_INITAI, ci->clientnum, ci->state.ownernum, ci->state.actortype, ci->state.spawnpoint, ci->state.skill, ci->name, ci->team, ci->state.colour, ci->state.model, ci->state.vanity, ci->state.loadweap.length(), ci->state.loadweap.length(), ci->state.loadweap.getbuf());
-            if(ci->state.aireinit == 2)
+            if(ci->aireinit == 2) loopk(W_MAX) loopj(2) ci->weapshots[k][j].reset();
+            sendf(-1, 1, "ri6si3siv", N_INITAI, ci->clientnum, ci->ownernum, ci->actortype, ci->spawnpoint, ci->skill, ci->name, ci->team, ci->colour, ci->model, ci->vanity, ci->loadweap.length(), ci->loadweap.length(), ci->loadweap.getbuf());
+            if(ci->aireinit == 2)
             {
                 waiting(ci, DROP_RESET);
                 if(smode) smode->entergame(ci);
                 mutate(smuts, mut->entergame(ci));
             }
-            ci->state.aireinit = 0;
+            ci->aireinit = 0;
         }
     }
 
     void shiftai(clientinfo *ci, clientinfo *owner = NULL)
     {
-        clientinfo *prevowner = (clientinfo *)getinfo(ci->state.ownernum);
+        clientinfo *prevowner = (clientinfo *)getinfo(ci->ownernum);
         if(prevowner) prevowner->bots.removeobj(ci);
-        if(!owner) { ci->state.aireinit = 0; ci->state.ownernum = -1; }
-        else if(ci->state.ownernum != owner->clientnum) { ci->state.aireinit = 1; ci->state.ownernum = owner->clientnum; owner->bots.add(ci); }
+        if(!owner) { ci->aireinit = 0; ci->ownernum = -1; }
+        else if(ci->ownernum != owner->clientnum) { ci->aireinit = 1; ci->ownernum = owner->clientnum; owner->bots.add(ci); }
     }
 
     void removeai(clientinfo *ci, bool complete)
@@ -231,12 +236,12 @@ namespace aiman
         loopv(clients)
         {
             clientinfo *ci = clients[i];
-            if(ci->clientnum < 0 || ci->state.actortype > A_PLAYER || !ci->isready() || ci == exclude)
+            if(ci->clientnum < 0 || ci->actortype > A_PLAYER || !ci->isready() || ci == exclude)
                 continue;
-            if(!lo || ci->bots.length() < lo->bots.length()) lo = ci;
-            if(!hi || hi->bots.length() > hi->bots.length()) hi = ci;
+            if(!lo || clientbotscore(ci) < clientbotscore(lo)) lo = ci;
+            if(!hi || clientbotscore(hi) > clientbotscore(hi)) hi = ci;
         }
-        if(hi && lo && hi->bots.length() - lo->bots.length() > 1)
+        if(hi && lo && clientbotscore(hi) - clientbotscore(lo) > G(aihostshift))
         {
             loopvrev(hi->bots)
             {
@@ -250,19 +255,20 @@ namespace aiman
     void checksetup()
     {
         int numbots = 0, numenemies = 0, blimit = getlimit(A_BOT), elimit = getlimit(A_ENEMY);
-        loopv(clients) if(clients[i]->state.actortype > A_PLAYER && clients[i]->state.ownernum >= 0)
+        loopv(clients) if(clients[i]->actortype > A_PLAYER && clients[i]->ownernum >= 0)
         {
             clientinfo *ci = clients[i];
-            if(ci->state.actortype == A_BOT && ++numbots >= blimit) { shiftai(ci, NULL); continue; }
-            if(ci->state.actortype >= A_ENEMY && ++numenemies >= elimit) { shiftai(ci, NULL); continue; }
+            if(ci->actortype == A_BOT && ++numbots >= blimit) { shiftai(ci, NULL); continue; }
+            if(ci->actortype >= A_ENEMY && ++numenemies >= elimit) { shiftai(ci, NULL); continue; }
             setskill(ci);
         }
 
-        int balance = 0, people = numclients(-1, true, -1), numt = numteams(gamemode, mutators);
+        int people = numclients(-1, true, -1), balance = people, numt = numteams(gamemode, mutators);
         if(m_coop(gamemode, mutators))
         {
             numt--; // filter out the human team
-            balance = people+int(ceilf(people*numt*(m_multi(gamemode, mutators) ? G(coopmultibalance) : G(coopbalance))));
+            balance += int(ceilf(people*numt*(m_multi(gamemode, mutators) ? G(coopmultibalance) : G(coopbalance))));
+            balance += G(botoffset)*numt;
         }
         else if(m_bots(gamemode) && blimit > 0)
         {
@@ -273,31 +279,31 @@ namespace aiman
                 case  0: balance = 0; break; // no bots
                 default: balance = max(people, bb); break; // balance to at least this
             }
-            if(balance > 0)
-            {
-                if(G(botbalancescale) != 1) balance = int(balance*G(botbalancescale));
-                if(m_team(gamemode, mutators))
-                { // skew this if teams are unbalanced
-                    int plrs[T_TOTAL] = {0}, highest = -1; // we do this because humans can unbalance in odd ways
-                    loopv(clients) if(clients[i]->state.actortype == A_PLAYER && clients[i]->team >= T_FIRST && isteam(gamemode, mutators, clients[i]->team, T_FIRST))
+            balance += G(botoffset)*numt;
+            if(!m_duke(gamemode, mutators) && G(botbalancescale) != 1) balance = int(ceilf(balance*G(botbalancescale)));
+            if(balance > 0 && m_team(gamemode, mutators))
+            { // skew this if teams are unbalanced
+                int plrs[T_TOTAL] = {0}, highest = -1, bots = 0, offset = balance%numt; // we do this because humans can unbalance in odd ways
+                if(offset) balance += numt-offset;
+                loopv(clients) if(clients[i]->team >= T_FIRST && isteam(gamemode, mutators, clients[i]->team, T_FIRST))
+                {
+                    if(clients[i]->actortype == A_BOT)
                     {
-                        int team = clients[i]->team-T_FIRST;
-                        plrs[team]++;
-                        if(highest < 0 || plrs[team] > plrs[highest]) highest = team;
+                        bots++;
+                        continue;
                     }
-                    if(highest >= 0)
-                    {
-                        int bots = balance-people;
-                        loopi(numt) if(i != highest && plrs[i] < plrs[highest]) loopj(plrs[highest]-plrs[i])
-                        {
-                            if(bots > 0) bots--;
-                            else balance++;
-                        }
-                    }
+                    int team = clients[i]->team-T_FIRST;
+                    plrs[team]++;
+                    if(highest < 0 || plrs[team] > plrs[highest]) highest = team;
+                }
+                if(highest >= 0) loopi(numt) if(i != highest && plrs[i] < plrs[highest]) loopj(plrs[highest]-plrs[i])
+                {
+                    if(bots > 0) bots--;
+                    else balance++;
                 }
             }
         }
-        balance += G(botoffset)*numt;
+        else balance += G(botoffset)*numt;
         int bots = balance-people;
         if(bots > blimit) balance -= bots-blimit;
         if(balance > 0)
@@ -307,7 +313,7 @@ namespace aiman
             if(m_team(gamemode, mutators)) loopvrev(clients)
             {
                 clientinfo *ci = clients[i];
-                if(ci->state.actortype == A_BOT && ci->state.ownernum >= 0)
+                if(ci->actortype == A_BOT && ci->ownernum >= 0)
                 {
                     int teamb = chooseteam(ci, ci->team);
                     if(ci->team != teamb) setteam(ci, teamb, TT_RESETX);
@@ -324,9 +330,9 @@ namespace aiman
             loopvj(sents) if(sents[j].type == ACTOR && sents[j].attrs[0] >= 0 && sents[j].attrs[0] < A_TOTAL && gamemillis >= sents[j].millis && (sents[j].attrs[5] == triggerid || !sents[j].attrs[5]) && m_check(sents[j].attrs[3], sents[j].attrs[4], gamemode, mutators) && (sents[j].attrs[0] != A_TURRET || !m_insta(gamemode, mutators)))
             {
                 int count = 0, numenemies = 0;
-                loopvrev(clients) if(clients[i]->state.actortype >= A_ENEMY)
+                loopvrev(clients) if(clients[i]->actortype >= A_ENEMY)
                 {
-                    if(clients[i]->state.spawnpoint == j)
+                    if(clients[i]->spawnpoint == j)
                     {
                         count++;
                         if(count > G(enemybalance))
@@ -351,7 +357,7 @@ namespace aiman
 
     void clearai(int type)
     { // clear and remove all ai immediately
-        loopvrev(clients) if(!type || (type == 2 ? clients[i]->state.actortype >= A_ENEMY : clients[i]->state.actortype == A_BOT))
+        loopvrev(clients) if(!type || (type == 2 ? clients[i]->actortype >= A_ENEMY : clients[i]->actortype == A_BOT))
             deleteai(clients[i]);
     }
 
@@ -406,7 +412,7 @@ namespace aiman
                     }
                 }
                 checkenemies();
-                loopvrev(clients) if(clients[i]->state.actortype > A_PLAYER) reinitai(clients[i]);
+                loopvrev(clients) if(clients[i]->actortype > A_PLAYER) reinitai(clients[i]);
                 while(true) if(!reassignai()) break;
             }
         }

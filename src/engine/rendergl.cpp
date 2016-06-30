@@ -2,16 +2,15 @@
 
 #include "engine.h"
 
-bool hasTR = false, hasFBO = false, hasDS = false, hasTF = false, hasTRG = false, hasS3TC = false, hasFXT1 = false, hasAF = false, hasNVFB = false, hasFBB = false, hasUBO = false, hasMBR = false;
-int hasstencil = 0;
+bool hasVAO = false, hasFBO = false, hasAFBO = false, hasDS = false, hasTF = false, hasTRG = false, hasTSW = false, hasS3TC = false, hasFXT1 = false, hasLATC = false, hasRGTC = false, hasAF = false, hasFBB = false, hasUBO = false, hasMBR = false;
 
 VAR(IDF_READONLY, glversion, 1, 0, 0);
 VAR(IDF_READONLY, glslversion, 1, 0, 0);
+VAR(IDF_READONLY, glcompat, 1, 0, 0);
 
 // OpenGL 1.3
 #ifdef WIN32
 PFNGLACTIVETEXTUREPROC       glActiveTexture_       = NULL;
-PFNGLCLIENTACTIVETEXTUREPROC glClientActiveTexture_ = NULL;
 
 PFNGLBLENDEQUATIONEXTPROC glBlendEquation_ = NULL;
 PFNGLBLENDCOLOREXTPROC    glBlendColor_    = NULL;
@@ -31,7 +30,7 @@ PFNGLGETCOMPRESSEDTEXIMAGEPROC   glGetCompressedTexImage_   = NULL;
 PFNGLDRAWRANGEELEMENTSPROC glDrawRangeElements_ = NULL;
 #endif
 
-// OpenGL 2.1
+// OpenGL 2.0
 #ifndef __APPLE__
 PFNGLMULTIDRAWARRAYSPROC   glMultiDrawArrays_   = NULL;
 PFNGLMULTIDRAWELEMENTSPROC glMultiDrawElements_ = NULL;
@@ -126,31 +125,28 @@ PFNGLVERTEXATTRIB4NUIVPROC        glVertexAttrib4Nuiv_        = NULL;
 PFNGLVERTEXATTRIB4NUSVPROC        glVertexAttrib4Nusv_        = NULL;
 PFNGLVERTEXATTRIBPOINTERPROC      glVertexAttribPointer_      = NULL;
 
-PFNGLUNIFORMMATRIX2X3FVPROC       glUniformMatrix2x3fv_       = NULL;
-PFNGLUNIFORMMATRIX3X2FVPROC       glUniformMatrix3x2fv_       = NULL;
-PFNGLUNIFORMMATRIX2X4FVPROC       glUniformMatrix2x4fv_       = NULL;
-PFNGLUNIFORMMATRIX4X2FVPROC       glUniformMatrix4x2fv_       = NULL;
-PFNGLUNIFORMMATRIX3X4FVPROC       glUniformMatrix3x4fv_       = NULL;
-PFNGLUNIFORMMATRIX4X3FVPROC       glUniformMatrix4x3fv_       = NULL;
-
 PFNGLDRAWBUFFERSPROC glDrawBuffers_ = NULL;
 #endif
 
+// OpenGL 3.0
+PFNGLGETSTRINGIPROC           glGetStringi_           = NULL;
+PFNGLBINDFRAGDATALOCATIONPROC glBindFragDataLocation_ = NULL;
+
 // GL_EXT_framebuffer_object
-PFNGLBINDRENDERBUFFEREXTPROC        glBindRenderbuffer_     = NULL;
-PFNGLDELETERENDERBUFFERSEXTPROC  glDeleteRenderbuffers_  = NULL;
-PFNGLGENFRAMEBUFFERSEXTPROC      glGenRenderbuffers_        = NULL;
-PFNGLRENDERBUFFERSTORAGEEXTPROC  glRenderbufferStorage_  = NULL;
-PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC  glCheckFramebufferStatus_  = NULL;
-PFNGLBINDFRAMEBUFFEREXTPROC      glBindFramebuffer_      = NULL;
-PFNGLDELETEFRAMEBUFFERSEXTPROC    glDeleteFramebuffers_   = NULL;
-PFNGLGENFRAMEBUFFERSEXTPROC      glGenFramebuffers_      = NULL;
-PFNGLFRAMEBUFFERTEXTURE2DEXTPROC    glFramebufferTexture2D_ = NULL;
-PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC glFramebufferRenderbuffer_ = NULL;
-PFNGLGENERATEMIPMAPEXTPROC        glGenerateMipmap_       = NULL;
+PFNGLBINDRENDERBUFFERPROC        glBindRenderbuffer_        = NULL;
+PFNGLDELETERENDERBUFFERSPROC     glDeleteRenderbuffers_     = NULL;
+PFNGLGENFRAMEBUFFERSPROC         glGenRenderbuffers_        = NULL;
+PFNGLRENDERBUFFERSTORAGEPROC     glRenderbufferStorage_     = NULL;
+PFNGLCHECKFRAMEBUFFERSTATUSPROC  glCheckFramebufferStatus_  = NULL;
+PFNGLBINDFRAMEBUFFERPROC         glBindFramebuffer_         = NULL;
+PFNGLDELETEFRAMEBUFFERSPROC      glDeleteFramebuffers_      = NULL;
+PFNGLGENFRAMEBUFFERSPROC         glGenFramebuffers_         = NULL;
+PFNGLFRAMEBUFFERTEXTURE2DPROC    glFramebufferTexture2D_    = NULL;
+PFNGLFRAMEBUFFERRENDERBUFFERPROC glFramebufferRenderbuffer_ = NULL;
+PFNGLGENERATEMIPMAPPROC          glGenerateMipmap_          = NULL;
 
 // GL_EXT_framebuffer_blit
-PFNGLBLITFRAMEBUFFEREXTPROC         glBlitFramebuffer_         = NULL;
+PFNGLBLITFRAMEBUFFERPROC         glBlitFramebuffer_         = NULL;
 
 // GL_ARB_uniform_buffer_object
 PFNGLGETUNIFORMINDICESPROC       glGetUniformIndices_       = NULL;
@@ -165,6 +161,12 @@ PFNGLBINDBUFFERRANGEPROC         glBindBufferRange_         = NULL;
 PFNGLMAPBUFFERRANGEPROC         glMapBufferRange_         = NULL;
 PFNGLFLUSHMAPPEDBUFFERRANGEPROC glFlushMappedBufferRange_ = NULL;
 
+// GL_ARB_vertex_array_object
+PFNGLBINDVERTEXARRAYPROC    glBindVertexArray_    = NULL;
+PFNGLDELETEVERTEXARRAYSPROC glDeleteVertexArrays_ = NULL;
+PFNGLGENVERTEXARRAYSPROC    glGenVertexArrays_    = NULL;
+PFNGLISVERTEXARRAYPROC      glIsVertexArray_      = NULL;
+
 void *getprocaddress(const char *name)
 {
     return SDL_GL_GetProcAddress(name);
@@ -173,11 +175,9 @@ void *getprocaddress(const char *name)
 VAR(IDF_PERSIST, ati_skybox_bug, 0, 0, 1);
 VAR(0, ati_minmax_bug, 0, 0, 1);
 VAR(0, ati_cubemap_bug, 0, 0, 1);
-VAR(0, intel_immediate_bug, 0, 0, 1);
 VAR(0, intel_vertexarray_bug, 0, 0, 1);
-VAR(0, sdl_backingstore_bug, -1, 0, 1);
+VAR(0, intel_mapbufferrange_bug, 0, 0, 1);
 VAR(0, minimizetcusage, 1, 0, 0);
-VAR(0, usetexrect, 1, 0, 0);
 VAR(0, useubo, 1, 0, 0);
 VAR(0, usetexcompress, 1, 0, 0);
 VAR(0, rtscissor, 0, 1, 1);
@@ -186,36 +186,52 @@ VAR(0, rtsharefb, 0, 1, 1);
 
 VAR(0, dbgexts, 0, 0, 1);
 
-bool hasext(const char *exts, const char *ext)
+hashset<const char *> glexts;
+
+void parseglexts()
 {
-    int len = strlen(ext);
-    if(len) for(const char *cur = exts; (cur = strstr(cur, ext)); cur += len)
+    if(glversion >= 300)
     {
-        if((cur == exts || cur[-1] == ' ') && (cur[len] == ' ' || !cur[len])) return true;
+        GLint numexts = 0;
+        glGetIntegerv(GL_NUM_EXTENSIONS, &numexts);
+        loopi(numexts)
+        {
+            const char *ext = (const char *)glGetStringi_(GL_EXTENSIONS, i);
+            glexts.add(newstring(ext));
+        }
     }
-    return false;
+    else
+    {
+        const char *exts = (const char *)glGetString(GL_EXTENSIONS);
+        for(;;)
+        {
+            while(*exts == ' ') exts++;
+            if(!*exts) break;
+            const char *ext = exts;
+            while(*exts && *exts != ' ') exts++;
+            if(exts > ext) glexts.add(newstring(ext, size_t(exts-ext)));
+        }
+    }
+}
+
+bool hasext(const char *ext)
+{
+    return glexts.access(ext)!=NULL;
 }
 
 SVAR(IDF_READONLY, gfxvendor, "");
-SVAR(IDF_READONLY, gfxexts, "");
 SVAR(IDF_READONLY, gfxrenderer, "");
 SVAR(IDF_READONLY, gfxversion, "");
 
 void gl_checkextensions()
 {
     setsvar("gfxvendor", (const char *)glGetString(GL_VENDOR));
-    setsvar("gfxexts", (const char *)glGetString(GL_EXTENSIONS));
     setsvar("gfxrenderer", (const char *)glGetString(GL_RENDERER));
     setsvar("gfxversion", (const char *)glGetString(GL_VERSION));
 
     conoutf("renderer: %s (%s)", gfxrenderer, gfxvendor);
     conoutf("driver: %s", gfxversion);
 
-#ifdef __APPLE__
-    extern int mac_osversion();
-    int osversion = mac_osversion();  /* 0x0A0500 = 10.5 (Leopard) */
-    sdl_backingstore_bug = -1;
-#endif
 
     bool mesa = false, intel = false, ati = false, nvidia = false;
     if(strstr(gfxrenderer, "Mesa") || strstr(gfxversion, "Mesa"))
@@ -234,23 +250,10 @@ void gl_checkextensions()
     if(sscanf(gfxversion, " %u.%u", &glmajorversion, &glminorversion) != 2) glversion = 100;
     else glversion = glmajorversion*100 + glminorversion*10;
 
-    if(glversion < 210) fatal("OpenGL 2.1 or greater is required!");
-
-    const char *glslstr = (const char *)glGetString(GL_SHADING_LANGUAGE_VERSION);
-    uint glslmajorversion, glslminorversion;
-    if(glslstr && sscanf(glslstr, " %u.%u", &glslmajorversion, &glslminorversion) == 2) glslversion = glslmajorversion*100 + glslminorversion;
-
-    if(glslversion < 120) fatal("GLSL 1.20 or greater is required!");
-
-    GLint val;
-    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &val);
-    hwtexsize = val;
-    glGetIntegerv(GL_MAX_CUBE_MAP_TEXTURE_SIZE, &val);
-    hwcubetexsize = val;
+    if(glversion < 200) fatal("OpenGL 2.0 or greater is required!");
 
 #ifdef WIN32
     glActiveTexture_ =            (PFNGLACTIVETEXTUREPROC)            getprocaddress("glActiveTexture");
-    glClientActiveTexture_ =      (PFNGLCLIENTACTIVETEXTUREPROC)      getprocaddress("glClientActiveTexture");
 
     glBlendEquation_ =            (PFNGLBLENDEQUATIONPROC)            getprocaddress("glBlendEquation");
     glBlendColor_ =               (PFNGLBLENDCOLORPROC)               getprocaddress("glBlendColor");
@@ -364,67 +367,97 @@ void gl_checkextensions()
     glVertexAttrib4Nusv_ =        (PFNGLVERTEXATTRIB4NUSVPROC)        getprocaddress("glVertexAttrib4Nusv");
     glVertexAttribPointer_ =      (PFNGLVERTEXATTRIBPOINTERPROC)      getprocaddress("glVertexAttribPointer");
 
-    glUniformMatrix2x3fv_ =       (PFNGLUNIFORMMATRIX2X3FVPROC)       getprocaddress("glUniformMatrix2x3fv");
-    glUniformMatrix3x2fv_ =       (PFNGLUNIFORMMATRIX3X2FVPROC)       getprocaddress("glUniformMatrix3x2fv");
-    glUniformMatrix2x4fv_ =       (PFNGLUNIFORMMATRIX2X4FVPROC)       getprocaddress("glUniformMatrix2x4fv");
-    glUniformMatrix4x2fv_ =       (PFNGLUNIFORMMATRIX4X2FVPROC)       getprocaddress("glUniformMatrix4x2fv");
-    glUniformMatrix3x4fv_ =       (PFNGLUNIFORMMATRIX3X4FVPROC)       getprocaddress("glUniformMatrix3x4fv");
-    glUniformMatrix4x3fv_ =       (PFNGLUNIFORMMATRIX4X3FVPROC)       getprocaddress("glUniformMatrix4x3fv");
-
     glDrawBuffers_ =              (PFNGLDRAWBUFFERSPROC)              getprocaddress("glDrawBuffers");
 #endif
 
-    if(hasext(gfxexts, "GL_ARB_texture_float") || hasext(gfxexts, "GL_ATI_texture_float"))
+    if(glversion >= 300)
+    {
+        glGetStringi_ =            (PFNGLGETSTRINGIPROC)          getprocaddress("glGetStringi");
+        glBindFragDataLocation_ =  (PFNGLBINDFRAGDATALOCATIONPROC)getprocaddress("glBindFragDataLocation");
+    }
+
+    const char *glslstr = (const char *)glGetString(GL_SHADING_LANGUAGE_VERSION);
+    uint glslmajorversion, glslminorversion;
+    if(glslstr && sscanf(glslstr, " %u.%u", &glslmajorversion, &glslminorversion) == 2) glslversion = glslmajorversion*100 + glslminorversion;
+
+    if(glslversion < 120) fatal("GLSL 1.20 or greater is required!");
+
+    parseglexts();
+
+    GLint val;
+    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &val);
+    hwtexsize = val;
+    glGetIntegerv(GL_MAX_CUBE_MAP_TEXTURE_SIZE, &val);
+    hwcubetexsize = val;
+
+    if(glversion >= 300 || hasext("GL_ARB_texture_float") || hasext("GL_ATI_texture_float"))
     {
         hasTF = true;
-        if(dbgexts) conoutf("\frUsing GL_ARB_texture_float extension");
+        if(glversion < 300 && dbgexts) conoutf("\frUsing GL_ARB_texture_float extension");
         setvar("shadowmap", 1, false, true);
         setvar("smoothshadowmappeel", 1, false, true);
     }
 
-    if(hasext(gfxexts, "GL_ARB_texture_rg"))
+    if(glversion >= 300 || hasext("GL_ARB_texture_rg"))
     {
         hasTRG = true;
-        if(dbgexts) conoutf("\frUsing GL_ARB_texture_rg extension.");
+        if(glversion < 300 && dbgexts) conoutf("\frUsing GL_ARB_texture_rg extension.");
     }
 
-    if(hasext(gfxexts, "GL_NV_float_buffer"))
+    if(glversion >= 300 || hasext("GL_ARB_framebuffer_object"))
     {
-        hasNVFB = true;
-        if(dbgexts) conoutf("\frUsing GL_NV_float_buffer extension.");
+        glBindRenderbuffer_        = (PFNGLBINDRENDERBUFFERPROC)       getprocaddress("glBindRenderbuffer");
+        glDeleteRenderbuffers_     = (PFNGLDELETERENDERBUFFERSPROC)    getprocaddress("glDeleteRenderbuffers");
+        glGenRenderbuffers_        = (PFNGLGENFRAMEBUFFERSPROC)        getprocaddress("glGenRenderbuffers");
+        glRenderbufferStorage_     = (PFNGLRENDERBUFFERSTORAGEPROC)    getprocaddress("glRenderbufferStorage");
+        glCheckFramebufferStatus_  = (PFNGLCHECKFRAMEBUFFERSTATUSPROC) getprocaddress("glCheckFramebufferStatus");
+        glBindFramebuffer_         = (PFNGLBINDFRAMEBUFFERPROC)        getprocaddress("glBindFramebuffer");
+        glDeleteFramebuffers_      = (PFNGLDELETEFRAMEBUFFERSPROC)     getprocaddress("glDeleteFramebuffers");
+        glGenFramebuffers_         = (PFNGLGENFRAMEBUFFERSPROC)        getprocaddress("glGenFramebuffers");
+        glFramebufferTexture2D_    = (PFNGLFRAMEBUFFERTEXTURE2DPROC)   getprocaddress("glFramebufferTexture2D");
+        glFramebufferRenderbuffer_ = (PFNGLFRAMEBUFFERRENDERBUFFERPROC)getprocaddress("glFramebufferRenderbuffer");
+        glGenerateMipmap_          = (PFNGLGENERATEMIPMAPPROC)         getprocaddress("glGenerateMipmap");
+        glBlitFramebuffer_         = (PFNGLBLITFRAMEBUFFERPROC)        getprocaddress("glBlitFramebuffer");
+        hasAFBO = hasFBO = hasFBB = hasDS = true;
+        if(glversion < 300 && dbgexts) conoutf("\frUsing GL_ARB_framebuffer_object extension.");
     }
-
-    if(hasext(gfxexts, "GL_EXT_framebuffer_object"))
+    else if(hasext("GL_EXT_framebuffer_object"))
     {
-        glBindRenderbuffer_        = (PFNGLBINDRENDERBUFFEREXTPROC)       getprocaddress("glBindRenderbufferEXT");
-        glDeleteRenderbuffers_     = (PFNGLDELETERENDERBUFFERSEXTPROC)    getprocaddress("glDeleteRenderbuffersEXT");
-        glGenRenderbuffers_        = (PFNGLGENFRAMEBUFFERSEXTPROC)        getprocaddress("glGenRenderbuffersEXT");
-        glRenderbufferStorage_     = (PFNGLRENDERBUFFERSTORAGEEXTPROC)    getprocaddress("glRenderbufferStorageEXT");
-        glCheckFramebufferStatus_  = (PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC) getprocaddress("glCheckFramebufferStatusEXT");
-        glBindFramebuffer_         = (PFNGLBINDFRAMEBUFFEREXTPROC)        getprocaddress("glBindFramebufferEXT");
-        glDeleteFramebuffers_      = (PFNGLDELETEFRAMEBUFFERSEXTPROC)     getprocaddress("glDeleteFramebuffersEXT");
-        glGenFramebuffers_         = (PFNGLGENFRAMEBUFFERSEXTPROC)        getprocaddress("glGenFramebuffersEXT");
-        glFramebufferTexture2D_    = (PFNGLFRAMEBUFFERTEXTURE2DEXTPROC)   getprocaddress("glFramebufferTexture2DEXT");
-        glFramebufferRenderbuffer_ = (PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC)getprocaddress("glFramebufferRenderbufferEXT");
-        glGenerateMipmap_          = (PFNGLGENERATEMIPMAPEXTPROC)         getprocaddress("glGenerateMipmapEXT");
+        glBindRenderbuffer_        = (PFNGLBINDRENDERBUFFERPROC)       getprocaddress("glBindRenderbufferEXT");
+        glDeleteRenderbuffers_     = (PFNGLDELETERENDERBUFFERSPROC)    getprocaddress("glDeleteRenderbuffersEXT");
+        glGenRenderbuffers_        = (PFNGLGENFRAMEBUFFERSPROC)        getprocaddress("glGenRenderbuffersEXT");
+        glRenderbufferStorage_     = (PFNGLRENDERBUFFERSTORAGEPROC)    getprocaddress("glRenderbufferStorageEXT");
+        glCheckFramebufferStatus_  = (PFNGLCHECKFRAMEBUFFERSTATUSPROC) getprocaddress("glCheckFramebufferStatusEXT");
+        glBindFramebuffer_         = (PFNGLBINDFRAMEBUFFERPROC)        getprocaddress("glBindFramebufferEXT");
+        glDeleteFramebuffers_      = (PFNGLDELETEFRAMEBUFFERSPROC)     getprocaddress("glDeleteFramebuffersEXT");
+        glGenFramebuffers_         = (PFNGLGENFRAMEBUFFERSPROC)        getprocaddress("glGenFramebuffersEXT");
+        glFramebufferTexture2D_    = (PFNGLFRAMEBUFFERTEXTURE2DPROC)   getprocaddress("glFramebufferTexture2DEXT");
+        glFramebufferRenderbuffer_ = (PFNGLFRAMEBUFFERRENDERBUFFERPROC)getprocaddress("glFramebufferRenderbufferEXT");
+        glGenerateMipmap_          = (PFNGLGENERATEMIPMAPPROC)         getprocaddress("glGenerateMipmapEXT");
         hasFBO = true;
         if(dbgexts) conoutf("\frUsing GL_EXT_framebuffer_object extension.");
 
-        if(hasext(gfxexts, "GL_EXT_framebuffer_blit"))
+        if(hasext("GL_EXT_framebuffer_blit"))
         {
-            glBlitFramebuffer_     = (PFNGLBLITFRAMEBUFFEREXTPROC)        getprocaddress("glBlitFramebufferEXT");
+            glBlitFramebuffer_     = (PFNGLBLITFRAMEBUFFERPROC)        getprocaddress("glBlitFramebufferEXT");
             hasFBB = true;
             if(dbgexts) conoutf("\frUsing GL_EXT_framebuffer_blit extension.");
         }
+
+        if(hasext("GL_EXT_packed_depth_stencil") || hasext("GL_NV_packed_depth_stencil"))
+        {
+            hasDS = true;
+            if(dbgexts) conoutf("\frUsing GL_EXT_packed_depth_stencil extension.");
+        }
     }
-    else conoutf("\frWARNING: No framebuffer object support. (reflective water may be slow)");
+    else fatal("Framebuffer object support is required!");
 
     if(ati)
     {
         //conoutf("\frWARNING: ATI cards may show garbage in skybox. (use \"/ati_skybox_bug 1\" to fix)");
 
         minimizetcusage = 1;
-        if(hasTF && (hasTRG || hasNVFB)) setvar("fpdepthfx", 1, false, true);
+        if(hasTF && hasTRG) setvar("fpdepthfx", 1, false, true);
         // On Catalyst 10.2, issuing an occlusion query on the first draw using a given cubemap texture causes a nasty crash
         ati_cubemap_bug = 1;
     }
@@ -432,35 +465,33 @@ void gl_checkextensions()
     {
         reservevpparams = 10;
         rtsharefb = 0; // work-around for strange driver stalls involving when using many FBOs
-        if(glversion < 300 && !hasext(gfxexts, "GL_EXT_gpu_shader4")) setvar("filltjoints", 0, false, true); // DX9 or less NV cards seem to not cause many sparklies
+        if(glversion < 300 && !hasext("GL_EXT_gpu_shader4")) setvar("filltjoints", 0, false, true); // DX9 or less NV cards seem to not cause many sparklies
 
-        if(hasTF) setvar("fpdepthfx", 1, false, true);
+        if(hasTF && hasTRG) setvar("fpdepthfx", 1, false, true);
     }
     else
     {
         if(intel)
         {
-#ifdef __APPLE__
-            intel_immediate_bug = 1;
-#endif
 #ifdef WIN32
-            intel_immediate_bug = 1;
             intel_vertexarray_bug = 1;
+            // MapBufferRange is buggy on older Intel drivers on Windows
+            if(glversion <= 310) intel_mapbufferrange_bug = 1;
 #endif
         }
 
         reservevpparams = 20;
     }
 
-    if(hasext(gfxexts, "GL_ARB_map_buffer_range"))
+    if(glversion >= 300 || hasext("GL_ARB_map_buffer_range"))
     {
         glMapBufferRange_         = (PFNGLMAPBUFFERRANGEPROC)        getprocaddress("glMapBufferRange");
         glFlushMappedBufferRange_ = (PFNGLFLUSHMAPPEDBUFFERRANGEPROC)getprocaddress("glFlushMappedBufferRange");
         hasMBR = true;
-        if(dbgexts) conoutf("\frUsing GL_ARB_map_buffer_range.");
+        if(glversion < 300 && dbgexts) conoutf("\frUsing GL_ARB_map_buffer_range.");
     }
 
-    if(hasext(gfxexts, "GL_ARB_uniform_buffer_object"))
+    if(glversion >= 310 || hasext("GL_ARB_uniform_buffer_object"))
     {
         glGetUniformIndices_       = (PFNGLGETUNIFORMINDICESPROC)      getprocaddress("glGetUniformIndices");
         glGetActiveUniformsiv_     = (PFNGLGETACTIVEUNIFORMSIVPROC)    getprocaddress("glGetActiveUniformsiv");
@@ -472,24 +503,35 @@ void gl_checkextensions()
 
         useubo = 1;
         hasUBO = true;
-        if(dbgexts) conoutf("\frUsing GL_ARB_uniform_buffer_object extension.");
+        if(glversion < 310 && dbgexts) conoutf("\frUsing GL_ARB_uniform_buffer_object extension.");
     }
 
-    if(hasext(gfxexts, "GL_EXT_texture_rectangle") || hasext(gfxexts, "GL_ARB_texture_rectangle"))
+    if(glversion >= 300 || hasext("GL_ARB_vertex_array_object"))
     {
-        usetexrect = 1;
-        hasTR = true;
-        if(dbgexts) conoutf("\frUsing GL_ARB_texture_rectangle extension.");
+        glBindVertexArray_ =    (PFNGLBINDVERTEXARRAYPROC)   getprocaddress("glBindVertexArray");
+        glDeleteVertexArrays_ = (PFNGLDELETEVERTEXARRAYSPROC)getprocaddress("glDeleteVertexArrays");
+        glGenVertexArrays_ =    (PFNGLGENVERTEXARRAYSPROC)   getprocaddress("glGenVertexArrays");
+        glIsVertexArray_ =      (PFNGLISVERTEXARRAYPROC)     getprocaddress("glIsVertexArray");
+        hasVAO = true;
+        if(glversion < 300 && dbgexts) conoutf("\frUsing GL_ARB_vertex_array_object extension.");
     }
-    else conoutf("\frWARNING: No texture rectangle support. (no full screen shaders)");
-
-    if(hasext(gfxexts, "GL_EXT_packed_depth_stencil") || hasext(gfxexts, "GL_NV_packed_depth_stencil"))
+    else if(hasext("GL_APPLE_vertex_array_object"))
     {
-        hasDS = true;
-        if(dbgexts) conoutf("\frUsing GL_EXT_packed_depth_stencil extension.");
+        glBindVertexArray_ =    (PFNGLBINDVERTEXARRAYPROC)   getprocaddress("glBindVertexArrayAPPLE");
+        glDeleteVertexArrays_ = (PFNGLDELETEVERTEXARRAYSPROC)getprocaddress("glDeleteVertexArraysAPPLE");
+        glGenVertexArrays_ =    (PFNGLGENVERTEXARRAYSPROC)   getprocaddress("glGenVertexArraysAPPLE");
+        glIsVertexArray_ =      (PFNGLISVERTEXARRAYPROC)     getprocaddress("glIsVertexArrayAPPLE");
+        hasVAO = true;
+        if(dbgexts) conoutf("\frUsing GL_APPLE_vertex_array_object extension.");
     }
 
-    if(hasext(gfxexts, "GL_EXT_texture_compression_s3tc"))
+    if(glversion >= 330 || hasext("GL_ARB_texture_swizzle") || hasext("GL_EXT_texture_swizzle"))
+    {
+        hasTSW = true;
+        if(glversion < 330 && dbgexts) conoutf("\frUsing GL_ARB_texture_swizzle extension.");
+    }
+
+    if(hasext("GL_EXT_texture_compression_s3tc"))
     {
         hasS3TC = true;
 #ifdef __APPLE__
@@ -499,19 +541,29 @@ void gl_checkextensions()
 #endif
         if(dbgexts) conoutf("\frUsing GL_EXT_texture_compression_s3tc extension.");
     }
-    else if(hasext(gfxexts, "GL_EXT_texture_compression_dxt1") && hasext(gfxexts, "GL_ANGLE_texture_compression_dxt3") && hasext(gfxexts, "GL_ANGLE_texture_compression_dxt5"))
+    else if(hasext("GL_EXT_texture_compression_dxt1") && hasext("GL_ANGLE_texture_compression_dxt3") && hasext("GL_ANGLE_texture_compression_dxt5"))
     {
         hasS3TC = true;
         if(dbgexts) conoutf("\frUsing GL_EXT_texture_compression_dxt1 extension.");
     }
-    if(hasext(gfxexts, "GL_3DFX_texture_compression_FXT1"))
+    if(hasext("GL_3DFX_texture_compression_FXT1"))
     {
         hasFXT1 = true;
         if(mesa) usetexcompress = max(usetexcompress, 1);
         if(dbgexts) conoutf("\frUsing GL_3DFX_texture_compression_FXT1.");
     }
+    if(hasext("GL_EXT_texture_compression_latc"))
+    {
+        hasLATC = true;
+        if(dbgexts) conoutf("\frGL_EXT_texture_compression_latc extension.");
+    }
+    if(glversion >= 300 || hasext("GL_ARB_texture_compression_rgtc") || hasext("GL_EXT_texture_compression_rgtc"))
+    {
+        hasRGTC = true;
+        if(glversion < 300 && dbgexts) conoutf("\frUsing GL_ARB_texture_compression_rgtc extension.");
+    }
 
-    if(hasext(gfxexts, "GL_EXT_texture_filter_anisotropic"))
+    if(hasext("GL_EXT_texture_filter_anisotropic"))
     {
         GLint val;
         glGetIntegerv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &val);
@@ -520,7 +572,7 @@ void gl_checkextensions()
         if(dbgexts) conoutf("\frUsing GL_EXT_texture_filter_anisotropic extension.");
     }
 
-    if(glversion >= 300 || hasext(gfxexts, "GL_EXT_gpu_shader4"))
+    if(glversion >= 300 || hasext("GL_EXT_gpu_shader4"))
     {
         // on DX10 or above class cards (i.e. GF8 or RadeonHD) enable expensive features
         setvar("grass", 1, false, true);
@@ -528,39 +580,28 @@ void gl_checkextensions()
         setvar("waterfallrefract", 1, false, true);
         setvar("glare", 1, false, true);
         setvar("maxdynlights", MAXDYNLIGHTS, false, true);
-        if(hasTR)
-        {
-            setvar("depthfxsize", 10, false, true);
-            setvar("depthfxrect", 1, false, true);
-            setvar("depthfxfilter", 0, false, true);
-            setvar("blurdepthfx", 0, false, true);
-        }
+        setvar("depthfxsize", 10, false, true);
+        setvar("blurdepthfx", 0, false, true);
     }
 }
 
 void glext(char *ext)
 {
-    if(!*gfxexts) setsvar("gfxexts", (const char *)glGetString(GL_EXTENSIONS));
-    intret(hasext(gfxexts, ext) ? 1 : 0);
+    intret(hasext(ext) ? 1 : 0);
 }
 COMMAND(0, glext, "s");
 
-void gl_init(int w, int h, int bpp, int depth, int fsaa)
+void gl_resize()
 {
-    glViewport(0, 0, w, h);
+    glViewport(0, 0, screenw, screenh);
+}
+
+void gl_init()
+{
     glClearColor(0, 0, 0, 0);
     glClearDepth(1);
     glDepthFunc(GL_LESS);
     glDisable(GL_DEPTH_TEST);
-    glShadeModel(GL_SMOOTH);
-
-
-    glDisable(GL_FOG);
-    glFogi(GL_FOG_MODE, GL_LINEAR);
-    //glHint(GL_FOG_HINT, GL_NICEST);
-    GLfloat fogcolor[4] = { 0, 0, 0, 0 };
-    glFogfv(GL_FOG_COLOR, fogcolor);
-
 
     glEnable(GL_LINE_SMOOTH);
     //glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
@@ -569,39 +610,14 @@ void gl_init(int w, int h, int bpp, int depth, int fsaa)
     glCullFace(GL_BACK);
     glDisable(GL_CULL_FACE);
 
-#ifdef __APPLE__
-    if(sdl_backingstore_bug)
-    {
-        if(fsaa)
-        {
-            sdl_backingstore_bug = 1;
-            // since SDL doesn't add kCGLPFABackingStore to the pixelformat and so it isn't guaranteed to be preserved - only manifests when using fsaa?
-            //conoutf(CON_WARN, "WARNING: Using SDL backingstore workaround. (use \"/sdl_backingstore_bug 0\" to disable if unnecessary)");
-        }
-        else sdl_backingstore_bug = -1;
-    }
-#endif
+    gle::setup();
 
-    extern void setupshaders();
     setupshaders();
 
     setuptexcompress();
+
+    gl_resize();
 }
-
-void cleanupgl()
-{
-    extern void cleanupmotionblur();
-    cleanupmotionblur();
-
-    extern void clearminimap();
-    clearminimap();
-
-    extern void cleanupviews();
-    cleanupviews();
-}
-
-#define VARRAY_INTERNAL
-#include "varray.h"
 
 VAR(0, wireframe, 0, 0, 1);
 
@@ -621,16 +637,100 @@ void findorientation(vec &o, float yaw, float pitch, vec &pos)
         pos = dir.mul(2*hdr.worldsize).add(o); //otherwise gui won't work when outside of map
 }
 
-void transplayer()
+void setcammatrix()
 {
     // move from RH to Z-up LH quake style worldspace
-    glLoadMatrixf(viewmatrix.a.v);
+    cammatrix = viewmatrix;
+    cammatrix.rotate_around_y(camera1->roll*RAD);
+    cammatrix.rotate_around_x(camera1->pitch*-RAD);
+    cammatrix.rotate_around_z(camera1->yaw*-RAD);
+    cammatrix.translate(vec(camera1->o).neg());
 
-    glRotatef(camera1->roll, 0, 1, 0);
-    glRotatef(camera1->pitch, -1, 0, 0);
-    glRotatef(camera1->yaw, 0, 0, -1);
+    cammatrix.transposedtransformnormal(vec(viewmatrix.b), camdir);
+    cammatrix.transposedtransformnormal(vec(viewmatrix.a).neg(), camright);
+    cammatrix.transposedtransformnormal(vec(viewmatrix.c), camup);
+}
 
-    glTranslatef(-camera1->o.x, -camera1->o.y, -camera1->o.z);
+void setcamprojmatrix(bool init = true, bool flush = false)
+{
+    if(init)
+    {
+        setcammatrix();
+    }
+
+    camprojmatrix.muld(projmatrix, cammatrix);
+
+    if(init)
+    {
+        invcammatrix.invert(cammatrix);
+        invcamprojmatrix.invert(camprojmatrix);
+    }
+
+    GLOBALPARAM(camprojmatrix, camprojmatrix);
+
+    if(fogging)
+    {
+        vec fogplane(cammatrix.c);
+        fogplane.x /= projmatrix.a.x;
+        fogplane.y /= projmatrix.b.y;
+        fogplane.z /= projmatrix.c.w;
+        GLOBALPARAMF(fogplane, fogplane.x, fogplane.y, 0, fogplane.z);
+    }
+    else
+    {
+        vec2 lineardepthscale = projmatrix.lineardepthscale();
+        GLOBALPARAMF(fogplane, 0, 0, lineardepthscale.x, lineardepthscale.y);
+    }
+
+    if(flush && Shader::lastshader) Shader::lastshader->flushparams();
+}
+
+matrix4 hudmatrix, hudmatrixstack[64];
+int hudmatrixpos = 0;
+
+void resethudmatrix()
+{
+    hudmatrixpos = 0;
+    GLOBALPARAM(hudmatrix, hudmatrix);
+}
+
+void pushhudmatrix()
+{
+    if(hudmatrixpos >= 0 && hudmatrixpos < int(sizeof(hudmatrixstack)/sizeof(hudmatrixstack[0]))) hudmatrixstack[hudmatrixpos] = hudmatrix;
+    ++hudmatrixpos;
+}
+
+void flushhudmatrix(bool flushparams)
+{
+    GLOBALPARAM(hudmatrix, hudmatrix);
+    if(flushparams && Shader::lastshader) Shader::lastshader->flushparams();
+}
+
+void pophudmatrix(bool flush, bool flushparams)
+{
+    --hudmatrixpos;
+    if(hudmatrixpos >= 0 && hudmatrixpos < int(sizeof(hudmatrixstack)/sizeof(hudmatrixstack[0])))
+    {
+        hudmatrix = hudmatrixstack[hudmatrixpos];
+        if(flush) flushhudmatrix(flushparams);
+    }
+}
+
+void pushhudscale(float sx, float sy)
+{
+    if(!sy) sy = sx;
+    pushhudmatrix();
+    hudmatrix.scale(sx, sy, 1);
+    flushhudmatrix();
+}
+
+void pushhudtranslate(float tx, float ty, float sx, float sy)
+{
+    if(!sy) sy = sx;
+    pushhudmatrix();
+    hudmatrix.translate(tx, ty, 0);
+    if(sy) hudmatrix.scale(sx, sy, 1);
+    flushhudmatrix();
 }
 
 float curfov = 100, fovy, aspect;
@@ -647,15 +747,15 @@ VARF(IDF_HEX|IDF_WORLD, fogcolour, 0, 0x8099B3, 0xFFFFFF,
 
 void vecfromcursor(float x, float y, float z, vec &dir)
 {
-    vec dir1 = invmvpmatrix.perspectivetransform(vec(x*2-1, 1-2*y, z*2-1)),
-        dir2 = invmvpmatrix.perspectivetransform(vec(x*2-1, 1-2*y, -1));
+    vec dir1 = invcamprojmatrix.perspectivetransform(vec(x*2-1, 1-2*y, z*2-1)),
+        dir2 = invcamprojmatrix.perspectivetransform(vec(x*2-1, 1-2*y, -1));
     (dir = dir1).sub(dir2).normalize();
 }
 
 bool vectocursor(const vec &v, float &x, float &y, float &z, float clampxy)
 {
     vec4 clippos;
-    mvpmatrix.transform(v, clippos);
+    camprojmatrix.transform(v, clippos);
     if(clippos.z <= -clippos.w)
     {
         x = y = z = 0;
@@ -681,75 +781,19 @@ bool vectocursor(const vec &v, float &x, float &y, float &z, float clampxy)
 }
 
 extern const matrix4 viewmatrix(vec(-1, 0, 0), vec(0, 0, 1), vec(0, -1, 0));
-matrix4 mvmatrix, projmatrix, mvpmatrix, invmvmatrix, invmvpmatrix;
-
-void readmatrices()
-{
-    glGetFloatv(GL_MODELVIEW_MATRIX, mvmatrix.a.v);
-    glGetFloatv(GL_PROJECTION_MATRIX, projmatrix.a.v);
-
-    mvpmatrix.mul(projmatrix, mvmatrix);
-    invmvmatrix.invert(mvmatrix);
-    invmvpmatrix.invert(mvpmatrix);
-
-    mvmatrix.transposedtransformnormal(vec(viewmatrix.b), camdir);
-    mvmatrix.transposedtransformnormal(vec(viewmatrix.a).neg(), camright);
-    mvmatrix.transposedtransformnormal(vec(viewmatrix.c), camup);
-}
+matrix4 cammatrix, projmatrix, camprojmatrix, invcammatrix, invcamprojmatrix;
 
 FVAR(0, nearplane, 0.01f, 0.54f, 2.0f);
 
-void project(float fovy, float aspect, int farplane, bool flipx, bool flipy, bool swapxy, float zscale)
-{
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    if(swapxy) glRotatef(90, 0, 0, 1);
-    if(flipx || flipy!=swapxy || zscale!=1) glScalef(flipx ? -1 : 1, flipy!=swapxy ? -1 : 1, zscale);
-    GLdouble ydist = nearplane * tan(fovy/2*RAD), xdist = ydist * aspect;
-    glFrustum(-xdist, xdist, -ydist, ydist, nearplane, farplane);
-    glMatrixMode(GL_MODELVIEW);
-}
-
 VAR(0, reflectclip, 0, 6, 64);
 
-matrix4 clipmatrix;
-
-static const matrix4 dummymatrix;
-static int projectioncount = 0;
-void pushprojection(const matrix4 &m = dummymatrix)
-{
-    glMatrixMode(GL_PROJECTION);
-    if(projectioncount <= 0) glPushMatrix();
-    if(&m != &dummymatrix) glLoadMatrixf(m.a.v);
-    if(fogging)
-    {
-        glMultMatrixf(mvmatrix.a.v);
-        glMultMatrixf(invfogmatrix.a.v);
-    }
-    glMatrixMode(GL_MODELVIEW);
-    projectioncount++;
-}
-
-void popprojection()
-{
-    --projectioncount;
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    if(projectioncount > 0)
-    {
-        glPushMatrix();
-        if(fogging)
-        {
-            glMultMatrixf(mvmatrix.a.v);
-            glMultMatrixf(invfogmatrix.a.v);
-        }
-    }
-    glMatrixMode(GL_MODELVIEW);
-}
+matrix4 clipmatrix, noclipmatrix;
 
 FVAR(0, polygonoffsetfactor, -1e4f, -3.0f, 1e4f);
 FVAR(0, polygonoffsetunits, -1e4f, -3.0f, 1e4f);
 FVAR(0, depthoffset, -1e4f, 0.01f, 1e4f);
+
+matrix4 nooffsetmatrix;
 
 void enablepolygonoffset(GLenum type)
 {
@@ -762,18 +806,9 @@ void enablepolygonoffset(GLenum type)
 
     bool clipped = reflectz < 1e15f && reflectclip;
 
-    matrix4 offsetmatrix = clipped ? clipmatrix : projmatrix;
-    offsetmatrix.d.z += depthoffset * projmatrix.c.z;
-
-    glMatrixMode(GL_PROJECTION);
-    if(!clipped) glPushMatrix();
-    glLoadMatrixf(offsetmatrix.a.v);
-    if(fogging)
-    {
-        glMultMatrixf(mvmatrix.a.v);
-        glMultMatrixf(invfogmatrix.a.v);
-    }
-    glMatrixMode(GL_MODELVIEW);
+    nooffsetmatrix = projmatrix;
+    projmatrix.d.z += depthoffset * (clipped ? noclipmatrix.c.z : projmatrix.c.z);
+    setcamprojmatrix(false, true);
 }
 
 void disablepolygonoffset(GLenum type)
@@ -784,27 +819,15 @@ void disablepolygonoffset(GLenum type)
         return;
     }
 
-    bool clipped = reflectz < 1e15f && reflectclip;
-
-    glMatrixMode(GL_PROJECTION);
-    if(clipped)
-    {
-        glLoadMatrixf(clipmatrix.a.v);
-        if(fogging)
-        {
-            glMultMatrixf(mvmatrix.a.v);
-            glMultMatrixf(invfogmatrix.a.v);
-        }
-    }
-    else glPopMatrix();
-    glMatrixMode(GL_MODELVIEW);
+    projmatrix = nooffsetmatrix;
+    setcamprojmatrix(false, true);
 }
 
 void calcspherescissor(const vec &center, float size, float &sx1, float &sy1, float &sx2, float &sy2)
 {
     vec worldpos(center), e;
     if(reflecting) worldpos.z = 2*reflectz - worldpos.z;
-    mvmatrix.transform(worldpos, e);
+    cammatrix.transform(worldpos, e);
     if(e.z > 2*size) { sx1 = sy1 = 1; sx2 = sy2 = -1; return; }
     float zzrr = e.z*e.z - size*size,
           dx = e.x*e.x + zzrr, dy = e.y*e.y + zzrr,
@@ -886,13 +909,102 @@ void popscissor()
     scissoring = 0;
 }
 
-matrix4 envmatrix;
+static GLuint screenquadvbo = 0;
 
-void setenvmatrix()
+static void setupscreenquad()
 {
-    envmatrix = fogging ? fogmatrix : mvmatrix;
-    if(reflecting) envmatrix.reflectz(reflectz);
-    envmatrix.transpose();
+    if(!screenquadvbo)
+    {
+        glGenBuffers_(1, &screenquadvbo);
+        gle::bindvbo(screenquadvbo);
+        vec2 verts[4] = { vec2(1, -1), vec2(-1, -1), vec2(1, 1), vec2(-1, 1) };
+        glBufferData_(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
+        gle::clearvbo();
+    }
+}
+
+static void cleanupscreenquad()
+{
+    if(screenquadvbo) { glDeleteBuffers_(1, &screenquadvbo); screenquadvbo = 0; }
+}
+
+void screenquad()
+{
+    setupscreenquad();
+    gle::bindvbo(screenquadvbo);
+    gle::enablevertex();
+    gle::vertexpointer(sizeof(vec2), (const vec2 *)0, GL_FLOAT, 2);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    gle::disablevertex();
+    gle::clearvbo();
+}
+
+static LocalShaderParam screentexcoord[2] = { LocalShaderParam("screentexcoord0"), LocalShaderParam("screentexcoord1") };
+
+static inline void setscreentexcoord(int i, float w, float h, float x = 0, float y = 0)
+{
+    screentexcoord[i].setf(w*0.5f, h*0.5f, x + w*0.5f, y + fabs(h)*0.5f);
+}
+
+void screenquad(float sw, float sh)
+{
+    setscreentexcoord(0, sw, sh);
+    screenquad();
+}
+
+void screenquadflipped(float sw, float sh)
+{
+    setscreentexcoord(0, sw, -sh);
+    screenquad();
+}
+
+void screenquadmapped(float x, float y, float w, float h, float tx, float ty, float tw, float th)
+{
+    float wk = tw/w, hk = th/h;
+    setscreentexcoord(0, 2*wk, 2*hk, tx - x*wk, ty - y*hk);
+    gle::defvertex(2);
+    gle::begin(GL_TRIANGLE_STRIP);
+    gle::attribf(x+w, y);
+    gle::attribf(x,   y);
+    gle::attribf(x+w, y+h);
+    gle::attribf(x,   y+h);
+    gle::end();
+}
+
+void screenquad(float sw, float sh, float sw2, float sh2)
+{
+    setscreentexcoord(0, sw, sh);
+    setscreentexcoord(1, sw2, sh2);
+    screenquad();
+}
+
+void screenquadoffset(float x, float y, float w, float h)
+{
+    setscreentexcoord(0, w, h, x, y);
+    screenquad();
+}
+
+void screenquadoffset(float x, float y, float w, float h, float x2, float y2, float w2, float h2)
+{
+    setscreentexcoord(0, w, h, x, y);
+    setscreentexcoord(1, w2, h2, x2, y2);
+    screenquad();
+}
+
+#define HUDQUAD(x1, y1, x2, y2, sx1, sy1, sx2, sy2) { \
+    gle::defvertex(2); \
+    gle::deftexcoord0(); \
+    gle::begin(GL_TRIANGLE_STRIP); \
+    gle::attribf(x2, y1); gle::attribf(sx2, sy1); \
+    gle::attribf(x1, y1); gle::attribf(sx1, sy1); \
+    gle::attribf(x2, y2); gle::attribf(sx2, sy2); \
+    gle::attribf(x1, y2); gle::attribf(sx1, sy2); \
+    gle::end(); \
+}
+
+void hudquad(float x, float y, float w, float h, float tx, float ty, float tw, float th)
+{
+    HUDQUAD(x, y, x+w, y+h, tx, ty, tx+tw, ty+th);
 }
 
 static float findsurface(int fogmat, const vec &v, int &abovemat)
@@ -902,7 +1014,7 @@ static float findsurface(int fogmat, const vec &v, int &abovemat)
     int csize;
     do
     {
-        cube &c = lookupcube(o.x, o.y, o.z, 0, co, csize);
+        cube &c = lookupcube(o, 0, co, csize);
         int mat = c.material&MATF_VOLUME;
         if(mat != fogmat)
         {
@@ -916,7 +1028,7 @@ static float findsurface(int fogmat, const vec &v, int &abovemat)
     return hdr.worldsize;
 }
 
-static void blendfog(int fogmat, float blend, float logblend, float &start, float &end, float *fogc)
+static void blendfog(int fogmat, float blend, float logblend, float &start, float &end, vec &fogc)
 {
     switch(fogmat&MATF_VOLUME)
     {
@@ -924,7 +1036,7 @@ static void blendfog(int fogmat, float blend, float logblend, float &start, floa
         {
             const bvec &wcol = getwatercol(fogmat);
             int wfog = getwaterfog(fogmat);
-            loopk(3) fogc[k] += blend*wcol[k]/255.0f;
+            fogc.madd(wcol.tocolor(), blend);
             end += logblend*min(fog, max(wfog*4, 32));
             break;
         }
@@ -933,32 +1045,108 @@ static void blendfog(int fogmat, float blend, float logblend, float &start, floa
         {
             const bvec &lcol = getlavacol(fogmat);
             int lfog = getlavafog(fogmat);
-            loopk(3) fogc[k] += blend*lcol[k]/255.0f;
+            fogc.madd(lcol.tocolor(), blend);
             end += logblend*min(fog, max(lfog*4, 32));
             break;
         }
 
         default:
-            loopk(3) fogc[k] += blend*fogcolor[k]/255.0f;
+            fogc.madd(fogcolor.tocolor(), blend);
             start += logblend*(fog+64)/8;
             end += logblend*fog;
             break;
     }
 }
 
+vec oldfogcolor(0, 0, 0), curfogcolor(0, 0, 0);
+float oldfogstart = 0, oldfogend = 1000000, curfogstart = 0, curfogend = 1000000;
+
+void setfogcolor(const vec &v)
+{
+    GLOBALPARAM(fogcolor, v);
+}
+
+void zerofogcolor()
+{
+    setfogcolor(vec(0, 0, 0));
+}
+
+void resetfogcolor()
+{
+    setfogcolor(curfogcolor);
+}
+
+void pushfogcolor(const vec &v)
+{
+    oldfogcolor = curfogcolor;
+    curfogcolor = v;
+    resetfogcolor();
+}
+
+void popfogcolor()
+{
+    curfogcolor = oldfogcolor;
+    resetfogcolor();
+}
+
+void setfogdist(float start, float end)
+{
+    GLOBALPARAMF(fogparams, 1/(end - start), end/(end - start));
+}
+
+void clearfogdist()
+{
+    setfogdist(0, 1000000);
+}
+
+void resetfogdist()
+{
+    setfogdist(curfogstart, curfogend);
+}
+
+void pushfogdist(float start, float end)
+{
+    oldfogstart = curfogstart;
+    oldfogend = curfogend;
+    curfogstart = start;
+    curfogend = end;
+    resetfogdist();
+}
+
+void popfogdist()
+{
+    curfogstart = oldfogstart;
+    curfogend = oldfogend;
+    resetfogdist();
+}
+
+static void resetfog()
+{
+    resetfogcolor();
+    resetfogdist();
+
+    glClearColor(curfogcolor.r, curfogcolor.g, curfogcolor.b, 1.0f);
+}
+
 static void setfog(int fogmat, float below = 1, int abovemat = MAT_AIR)
 {
-    float fogc[4] = { 0, 0, 0, 1 };
-    float start = 0, end = 0;
     float logscale = 256, logblend = log(1 + (logscale - 1)*below) / log(logscale);
 
-    blendfog(fogmat, below, logblend, start, end, fogc);
-    if(below < 1) blendfog(abovemat, 1-below, 1-logblend, start, end, fogc);
+    curfogstart = curfogend = 0;
+    curfogcolor = vec(0, 0, 0);
+    blendfog(fogmat, below, logblend, curfogstart, curfogend, curfogcolor);
+    if(below < 1) blendfog(abovemat, 1-below, 1-logblend, curfogstart, curfogend, curfogcolor);
 
-    glFogf(GL_FOG_START, start);
-    glFogf(GL_FOG_END, end);
-    glFogfv(GL_FOG_COLOR, fogc);
-    glClearColor(fogc[0], fogc[1], fogc[2], 1.0f);
+    resetfog();
+}
+
+static void setnofog(const vec &color = vec(0, 0, 0))
+{
+    curfogstart = 0;
+    curfogend = 1000000;
+    curfogcolor = color;
+
+    resetfog();
 }
 
 bool deferdrawtextures = false;
@@ -987,16 +1175,15 @@ FVAR(IDF_PERSIST, motionblurscale, 0, 1, 1);
 
 void addmotionblur()
 {
-    extern int viewtype;
-    if(!motionblur || viewtype || !hasTR || max(screen->w, screen->h) > hwtexsize) return;
+    if(!motionblur || max(screenw, screenh) > hwtexsize) return;
 
-    if(!motiontex || motionw != screen->w || motionh != screen->h)
+    if(!motiontex || motionw != screenw || motionh != screenh)
     {
         if(!motiontex) glGenTextures(1, &motiontex);
-        motionw = screen->w;
-        motionh = screen->h;
+        motionw = screenw;
+        motionh = screenh;
         lastmotion = 0;
-        createtexture(motiontex, motionw, motionh, NULL, 3, 0, GL_RGB, GL_TEXTURE_RECTANGLE_ARB);
+        createtexture(motiontex, motionw, motionh, NULL, 3, 0, GL_RGB);
     }
 
     float amount = min(hud::motionblur(motionblurscale), 1.0f);
@@ -1006,42 +1193,23 @@ void addmotionblur()
         return;
     }
 
-    glBindTexture(GL_TEXTURE_RECTANGLE_ARB, motiontex);
-
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glLoadIdentity();
-
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glLoadIdentity();
+    glBindTexture(GL_TEXTURE_2D, motiontex);
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    rectshader->set();
+    SETSHADER(screenrect);
 
-    glColor4f(1, 1, 1, lastmotion ? pow(amount, max(float(totalmillis-lastmotion)/motionblurmillis, 1.0f)) : 0);
-    glBegin(GL_TRIANGLE_STRIP);
-    glTexCoord2f(      0,       0); glVertex2f(-1, -1);
-    glTexCoord2f(motionw,       0); glVertex2f( 1, -1);
-    glTexCoord2f(      0, motionh); glVertex2f(-1,  1);
-    glTexCoord2f(motionw, motionh); glVertex2f( 1,  1);
-    glEnd();
+    gle::colorf(1, 1, 1, lastmotion ? pow(amount, max(float(totalmillis-lastmotion)/motionblurmillis, 1.0f)) : 0);
+    screenquad(1, 1);
 
     glDisable(GL_BLEND);
-
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-
-    glMatrixMode(GL_MODELVIEW);
-    glPopMatrix();
 
     if(totalmillis-lastmotion >= motionblurmillis)
     {
         lastmotion = totalmillis-totalmillis%motionblurmillis;
 
-        glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, 0, 0, screen->w, screen->h);
+        glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, screenw, screenh);
     }
 }
 
@@ -1052,7 +1220,7 @@ void invalidatepostfx()
     dopostfx = false;
 }
 
-static void blendfogoverlay(int fogmat, float blend, float *overlay)
+static void blendfogoverlay(int fogmat, float blend, vec &overlay)
 {
     float maxc;
     switch(fogmat&MATF_VOLUME)
@@ -1060,59 +1228,39 @@ static void blendfogoverlay(int fogmat, float blend, float *overlay)
         case MAT_WATER:
         {
             const bvec &wcol = getwatercol(fogmat);
-            maxc = max(wcol[0], max(wcol[1], wcol[2]));
-            loopk(3) overlay[k] += blend*max(0.4f, wcol[k]/min(32.0f + maxc*7.0f/8.0f, 255.0f));
+            maxc = max(wcol.r, max(wcol.g, wcol.b));
+            overlay.madd(vec(wcol.r, wcol.g, wcol.b).div(min(32.0f + maxc*7.0f/8.0f, 255.0f)).max(0.4f), blend);
             break;
         }
 
         case MAT_LAVA:
         {
             const bvec &lcol = getlavacol(fogmat);
-            maxc = max(lcol[0], max(lcol[1], lcol[2]));
-            loopk(3) overlay[k] += blend*max(0.4f, lcol[k]/min(32.0f + maxc*7.0f/8.0f, 255.0f));
+            maxc = max(lcol.r, max(lcol.g, lcol.b));
+            overlay.madd(vec(lcol.r, lcol.g, lcol.b).div(min(32.0f + maxc*7.0f/8.0f, 255.0f)).max(0.4f), blend);
             break;
         }
 
         default:
-            loopk(3) overlay[k] += blend;
+            overlay.add(blend);
             break;
     }
 }
 
 void drawfogoverlay(int fogmat, float fogblend, int abovemat)
 {
-    notextureshader->set();
+    SETSHADER(fogoverlay);
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_ZERO, GL_SRC_COLOR);
-    float overlay[3] = { 0, 0, 0 };
+    vec overlay(0, 0, 0);
     blendfogoverlay(fogmat, fogblend, overlay);
     blendfogoverlay(abovemat, 1-fogblend, overlay);
 
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glLoadIdentity();
+    gle::color(overlay);
+    screenquad();
 
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glLoadIdentity();
-
-    glColor3fv(overlay);
-    glBegin(GL_TRIANGLE_STRIP);
-    glVertex2f(-1, -1);
-    glVertex2f(1, -1);
-    glVertex2f(-1, 1);
-    glVertex2f(1, 1);
-    glEnd();
     glDisable(GL_BLEND);
-
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-
-    glMatrixMode(GL_MODELVIEW);
-    glPopMatrix();
-
-    defaultshader->set();
 }
 
 bool renderedgame = false, renderedavatar = false;
@@ -1123,9 +1271,24 @@ void rendergame()
     if(!shadowmapping) renderedgame = true;
 }
 
+matrix4 oldprojmatrix;
+
+void setavatarscale(float zscale)
+{
+    projmatrix = oldprojmatrix;
+    projmatrix.scalez(zscale);
+    setcamprojmatrix(false);
+}
+
 void renderavatar(bool early, bool project)
 {
+    if(project) oldprojmatrix = projmatrix;
     game::renderavatar(early, project);
+    if(project)
+    {
+        projmatrix = oldprojmatrix;
+        setcamprojmatrix(false);
+    }
 }
 
 VAR(IDF_PERSIST, skyboxglare, 0, 1, 1);
@@ -1135,14 +1298,7 @@ void drawglare()
     glaring = true;
     refracting = -1;
 
-    float oldfogstart, oldfogend, oldfogcolor[4], zerofog[4] = { 0, 0, 0, 1 };
-    glGetFloatv(GL_FOG_START, &oldfogstart);
-    glGetFloatv(GL_FOG_END, &oldfogend);
-    glGetFloatv(GL_FOG_COLOR, oldfogcolor);
-
-    glFogf(GL_FOG_START, (fog+64)/8);
-    glFogf(GL_FOG_END, fog);
-    glFogfv(GL_FOG_COLOR, zerofog);
+    pushfogcolor(vec(0, 0, 0));
 
     glClearColor(0, 0, 0, 1);
     extern int skyglare, skybgglare;
@@ -1163,9 +1319,7 @@ void drawglare()
     renderparticles();
     renderavatar(false, true);
 
-    glFogf(GL_FOG_START, oldfogstart);
-    glFogf(GL_FOG_END, oldfogend);
-    glFogfv(GL_FOG_COLOR, oldfogcolor);
+    popfogcolor();
 
     refracting = 0;
     glaring = false;
@@ -1174,42 +1328,29 @@ void drawglare()
 VAR(IDF_PERSIST, reflectmms, 0, 1, 1);
 VAR(IDF_WORLD, refractsky, 0, 0, 1);
 
-matrix4 fogmatrix, invfogmatrix;
+matrix4 noreflectmatrix;
 
 void drawreflection(float z, bool refract, int fogdepth, const bvec &col)
 {
     reflectz = z < 0 ? 1e16f : z;
     reflecting = !refract;
     refracting = refract ? (z < 0 || camera1->o.z >= z ? -1 : 1) : 0;
-    fading = waterrefract && waterfade && hasFBO && z>=0;
+    fading = waterrefract && waterfade && z>=0;
     fogging = refracting<0 && z>=0;
     refractfog = fogdepth;
-    refractcolor = fogging ? col : fogcolor;
-
-    float oldfogstart, oldfogend, oldfogcolor[4];
-    glGetFloatv(GL_FOG_START, &oldfogstart);
-    glGetFloatv(GL_FOG_END, &oldfogend);
-    glGetFloatv(GL_FOG_COLOR, oldfogcolor);
 
     if(fogging)
     {
-        glFogf(GL_FOG_START, camera1->o.z - z);
-        glFogf(GL_FOG_END, camera1->o.z - (z-max(refractfog, 1)));
-        fogmatrix.identity();
-        fogmatrix.settranslation(vec(camera1->o).neg());
-        invfogmatrix.invert(fogmatrix);
-        pushprojection();
-        glPushMatrix();
-        glLoadMatrixf(fogmatrix.a.v);
-        float fogc[4] = { col.x/255.0f, col.y/255.0f, col.z/255.0f, 1.0f };
-        glFogfv(GL_FOG_COLOR, fogc);
+        pushfogdist(camera1->o.z - z, camera1->o.z - (z - max(refractfog, 1)));
+        pushfogcolor(col.tocolor());
     }
     else
     {
-        glFogf(GL_FOG_START, (fog+64)/8);
-        glFogf(GL_FOG_END, fog);
-        float fogc[4] = { fogcolor.x/255.0f, fogcolor.y/255.0f, fogcolor.z/255.0f, 1.0f };
-        glFogfv(GL_FOG_COLOR, fogc);
+        vec color(0, 0, 0);
+        float start = 0, end = 0;
+        blendfog(MAT_AIR, 1, 1, start, end, color);
+        pushfogdist(start, end);
+        pushfogcolor(color);
     }
 
     if(fading)
@@ -1220,14 +1361,11 @@ void drawreflection(float z, bool refract, int fogdepth, const bvec &col)
 
     if(reflecting)
     {
-        glPushMatrix();
-        glTranslatef(0, 0, 2*z);
-        glScalef(1, 1, -1);
+        noreflectmatrix = cammatrix;
+        cammatrix.reflectz(z);
 
         glFrontFace(GL_CCW);
     }
-
-    setenvmatrix();
 
     if(reflectclip && z>=0)
     {
@@ -1244,30 +1382,30 @@ void drawreflection(float z, bool refract, int fogdepth, const bvec &col)
             if(reflecting) zclip = 2*z - zclip;
         }
         plane clipplane;
-        invmvmatrix.transposedtransform(plane(0, 0, refracting>0 ? 1 : -1, refracting>0 ? -zclip : zclip), clipplane);
+        invcammatrix.transposedtransform(plane(0, 0, refracting>0 ? 1 : -1, refracting>0 ? -zclip : zclip), clipplane);
         clipmatrix.clip(clipplane, projmatrix);
-        pushprojection(clipmatrix);
+        noclipmatrix = projmatrix;
+        projmatrix = clipmatrix;
     }
+
+    setcamprojmatrix(false, true);
 
     renderreflectedgeom(refracting<0 && z>=0 && caustics, fogging);
 
     if(reflecting || refracting>0 || (refracting<0 && refractsky) || z<0)
     {
         if(fading) glColorMask(COLORMASK, GL_TRUE);
-        if(reflectclip && z>=0) popprojection();
-        if(fogging)
+        if(reflectclip && z>=0)
         {
-            popprojection();
-            glPopMatrix();
+            projmatrix = noclipmatrix;
+            setcamprojmatrix(false, true);
         }
         drawskybox(farplane, false);
-        if(fogging)
+        if(reflectclip && z>=0)
         {
-            pushprojection();
-            glPushMatrix();
-            glLoadMatrixf(fogmatrix.a.v);
+            projmatrix = clipmatrix;
+            setcamprojmatrix(false, true);
         }
-        if(reflectclip && z>=0) pushprojection(clipmatrix);
         if(fading) glColorMask(COLORMASK, GL_FALSE);
     }
     else if(fading) glColorMask(COLORMASK, GL_FALSE);
@@ -1286,37 +1424,30 @@ void drawreflection(float z, bool refract, int fogdepth, const bvec &col)
 
     if(fading) glColorMask(COLORMASK, GL_TRUE);
 
-    if(reflectclip && z>=0) popprojection();
+    if(reflectclip && z>=0) projmatrix = noclipmatrix;
 
     if(reflecting)
     {
-        glPopMatrix();
+        cammatrix = noreflectmatrix;
 
         glFrontFace(GL_CW);
     }
 
-    if(fogging)
-    {
-        popprojection();
-        glPopMatrix();
-    }
-    glFogf(GL_FOG_START, oldfogstart);
-    glFogf(GL_FOG_END, oldfogend);
-    glFogfv(GL_FOG_COLOR, oldfogcolor);
+    popfogdist();
+    popfogcolor();
 
     reflectz = 1e16f;
     refracting = 0;
     reflecting = fading = fogging = false;
 
-    setenvmatrix();
+    setcamprojmatrix(false, true);
 }
 
-bool envmapping = false;
+int drawtex = 0;
 
-void drawcubemap(int size, int level, const vec &o, float yaw, float pitch, bool flipx, bool flipy, bool swapxy)
+void drawcubemap(int level, const vec &o, float yaw, float pitch, bool flipx, bool flipy, bool swapxy)
 {
-    float fovy = 90.f, aspect = 1.f;
-    envmapping = true;
+    drawtex = DRAWTEX_ENVMAP;
 
     physent *oldcamera = camera1;
     static physent cmcamera;
@@ -1329,8 +1460,6 @@ void drawcubemap(int size, int level, const vec &o, float yaw, float pitch, bool
     cmcamera.roll = 0;
     camera1 = &cmcamera;
     setviewcell(camera1->o);
-
-    defaultshader->set();
 
     updatedynlights();
 
@@ -1349,40 +1478,26 @@ void drawcubemap(int size, int level, const vec &o, float yaw, float pitch, bool
         fogmat = MAT_AIR;
     }
     setfog(fogmat, fogblend, abovemat);
-    if(level > 1 && fogmat != MAT_AIR)
-    {
-        float blend = abovemat==MAT_AIR ? fogblend : 1.0f;
-        fovy += blend*sinf(lastmillis/1000.0)*2.0f;
-        aspect += blend*sinf(lastmillis/1000.0+PI)*0.1f;
-    }
 
     int farplane = hdr.worldsize*2;
 
-    project(fovy, aspect, farplane, flipx, flipy, swapxy);
-    transplayer();
-    readmatrices();
-    setenvmatrix();
+    projmatrix.perspective(90.0f, 1.0f, nearplane, farplane);
+    if(flipx || flipy) projmatrix.scalexy(flipx ? -1 : 1, flipy ? -1 : 1);
+    if(swapxy)
+    {
+        swap(projmatrix.a.x, projmatrix.a.y);
+        swap(projmatrix.b.x, projmatrix.b.y);
+        swap(projmatrix.c.x, projmatrix.c.y);
+        swap(projmatrix.d.x, projmatrix.d.y);
+    }
+    setcamprojmatrix();
 
-    glEnable(GL_FOG);
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
 
     xtravertsva = xtraverts = glde = gbatches = 0;
 
-    if(level > 1 && !hasFBO)
-    {
-        if(dopostfx)
-        {
-            drawglaretex();
-            drawdepthfxtex();
-            drawreflections();
-        }
-        else dopostfx = true;
-    }
-
     visiblecubes();
-
-    if(level > 1 && shadowmap && !hasFBO) rendershadowmap();
 
     glClear(GL_DEPTH_BUFFER_BIT);
 
@@ -1399,41 +1514,42 @@ void drawcubemap(int size, int level, const vec &o, float yaw, float pitch, bool
     if(level) rendergame();
     if(level > 1)
     {
-        if(hasFBO)
-        {
-            drawglaretex();
-            drawdepthfxtex();
-            drawreflections();
-        }
+        drawglaretex();
+        drawdepthfxtex();
+        drawreflections();
         renderwater(); // water screws up for some reason
     }
     rendergrass();
     rendermaterials();
     renderparticles();
 
-    glDisable(GL_FOG);
     glDisable(GL_CULL_FACE);
     glDisable(GL_DEPTH_TEST);
 
     if(level > 1) addglare();
 
     camera1 = oldcamera;
-    envmapping = false;
+    drawtex = 0;
 }
 
-bool modelpreviewing = false;
+VAR(0, modelpreviewfov, 10, 20, 100);
+VAR(0, modelpreviewpitch, -90, -15, 90);
 
 namespace modelpreview
 {
     physent *oldcamera;
-    float oldfogstart, oldfogend, oldfogcolor[4];
-
     physent camera;
 
-    void start(bool background)
+    float oldaspect, oldfovy, oldfov;
+    int oldfarplane;
+
+    void start(int x, int y, int w, int h, bool background)
     {
-        float fovy = 90.f, aspect = 1.f;
-        envmapping = modelpreviewing = true;
+        drawtex = DRAWTEX_MODELPREVIEW;
+
+        glViewport(x, y, w, h);
+        glScissor(x, y, w, h);
+        glEnable(GL_SCISSOR_TEST);
 
         oldcamera = camera1;
         camera = *camera1;
@@ -1441,31 +1557,28 @@ namespace modelpreview
         camera.type = ENT_CAMERA;
         camera.o = vec(0, 0, 0);
         camera.yaw = 0;
-        camera.pitch = 0;
+        camera.pitch = modelpreviewpitch;
         camera.roll = 0;
         camera1 = &camera;
 
-        glGetFloatv(GL_FOG_START, &oldfogstart);
-        glGetFloatv(GL_FOG_END, &oldfogend);
-        glGetFloatv(GL_FOG_COLOR, oldfogcolor);
+        oldaspect = aspect;
+        oldfovy = fovy;
+        oldfov = curfov;
+        oldfarplane = farplane;
 
-        GLfloat fogc[4] = { 0, 0, 0, 1 };
-        glFogf(GL_FOG_START, 0);
-        glFogf(GL_FOG_END, 1000000);
-        glFogfv(GL_FOG_COLOR, fogc);
-        glClearColor(fogc[0], fogc[1], fogc[2], fogc[3]);
+        aspect = w/float(h);
+        fovy = modelpreviewfov;
+        curfov = 2*atan2(tan(fovy/2*RAD), 1/aspect)/RAD;
+        farplane = 1024;
+
+        clearfogdist();
+        zerofogcolor();
+        glClearColor(0, 0, 0, 1);
 
         glClear((background ? GL_COLOR_BUFFER_BIT : 0) | GL_DEPTH_BUFFER_BIT);
 
-        glMatrixMode(GL_PROJECTION);
-        glPushMatrix();
-        glMatrixMode(GL_MODELVIEW);
-        glPushMatrix();
-
-        project(fovy, aspect, 1024);
-        transplayer();
-        readmatrices();
-        setenvmatrix();
+        projmatrix.perspective(fovy, aspect, nearplane, farplane);
+        setcamprojmatrix();
 
         glEnable(GL_CULL_FACE);
         glEnable(GL_DEPTH_TEST);
@@ -1476,24 +1589,29 @@ namespace modelpreview
         glDisable(GL_CULL_FACE);
         glDisable(GL_DEPTH_TEST);
 
-        defaultshader->set();
+        resetfogdist();
+        resetfogcolor();
+        glClearColor(curfogcolor.r, curfogcolor.g, curfogcolor.b, 1);
 
-        glMatrixMode(GL_PROJECTION);
-        glPopMatrix();
-        glMatrixMode(GL_MODELVIEW);
-        glPopMatrix();
-
-        glFogf(GL_FOG_START, oldfogstart);
-        glFogf(GL_FOG_END, oldfogend);
-        glFogfv(GL_FOG_COLOR, oldfogcolor);
-        glClearColor(oldfogcolor[0], oldfogcolor[1], oldfogcolor[2], oldfogcolor[3]);
+        aspect = oldaspect;
+        fovy = oldfovy;
+        curfov = oldfov;
+        farplane = oldfarplane;
 
         camera1 = oldcamera;
-        envmapping = modelpreviewing = false;
+        drawtex = 0;
+
+        glDisable(GL_SCISSOR_TEST);
+        glViewport(0, 0, screenw, screenh);
     }
 }
 
-bool minimapping = false;
+vec calcmodelpreviewpos(const vec &radius, float &yaw)
+{
+    yaw = fmod(lastmillis/10000.0f*360.0f, 360.0f);
+    float dist = 1.05f*max(radius.magnitude2()/aspect, radius.magnitude())/sinf(fovy/2*RAD);
+    return vec(0, dist, 0).rotate_around_x(camera1->pitch*RAD);
+}
 
 GLuint minimaptex = 0;
 vec minimapcenter(0, 0, 0), minimapradius(0, 0, 0), minimapscale(0, 0, 0);
@@ -1517,12 +1635,12 @@ void bindminimap()
     glBindTexture(GL_TEXTURE_2D, minimaptex);
 }
 
-void clipminimap(ivec &bbmin, ivec &bbmax, cube *c = worldroot, int x = 0, int y = 0, int z = 0, int size = hdr.worldsize>>1)
+void clipminimap(ivec &bbmin, ivec &bbmax, cube *c = worldroot, const ivec &co = ivec(0, 0, 0), int size = hdr.worldsize>>1)
 {
     loopi(8)
     {
-        ivec o(i, x, y, z, size);
-        if(c[i].children) clipminimap(bbmin, bbmax, c[i].children, o.x, o.y, o.z, size>>1);
+        ivec o(i, co, size);
+        if(c[i].children) clipminimap(bbmin, bbmax, c[i].children, o, size>>1);
         else if(!isentirelysolid(c[i]) && (c[i].material&MATF_CLIP)!=MAT_CLIP)
         {
             loopk(3) bbmin[k] = min(bbmin[k], o[k]);
@@ -1537,11 +1655,10 @@ void drawminimap()
 
     progress(0, "generating mini-map...");
 
-    int size = 1<<minimapsize, sizelimit = min(hwtexsize, min(screen->w, screen->h));
+    int size = 1<<minimapsize, sizelimit = min(hwtexsize, min(screenw, screenh));
     while(size > sizelimit) size /= 2;
     if(!minimaptex) glGenTextures(1, &minimaptex);
 
-    extern vector<vtxarray *> valist;
     ivec bbmin(hdr.worldsize, hdr.worldsize, hdr.worldsize), bbmax(0, 0, 0);
     loopv(valist)
     {
@@ -1566,7 +1683,7 @@ void drawminimap()
     minimapradius.x = minimapradius.y = max(minimapradius.x, minimapradius.y);
     minimapscale = vec((0.5f - 1.0f/size)/minimapradius.x, (0.5f - 1.0f/size)/minimapradius.y, 1.0f);
 
-    envmapping = minimapping = true;
+    drawtex = DRAWTEX_MINIMAP;
 
     physent *oldcamera = camera1;
     static physent cmcamera;
@@ -1580,27 +1697,16 @@ void drawminimap()
     camera1 = &cmcamera;
     setviewcell(vec(-1, -1, -1));
 
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glOrtho(-minimapradius.x, minimapradius.x, -minimapradius.y, minimapradius.y, 0, camera1->o.z + 1);
-    glScalef(-1, 1, 1);
-    glMatrixMode(GL_MODELVIEW);
+    projmatrix.ortho(-minimapradius.x, minimapradius.x, -minimapradius.y, minimapradius.y, 0, camera1->o.z + 1);
+    projmatrix.a.mul(-1);
+    setcamprojmatrix();
 
-    transplayer();
+    setnofog(minimapcolor.tocolor());
 
-    defaultshader->set();
-
-    GLfloat fogc[4] = { minimapcolor.x/255.0f, minimapcolor.y/255.0f, minimapcolor.z/255.0f, 1.0f };
-    glFogf(GL_FOG_START, 0);
-    glFogf(GL_FOG_END, 1000000);
-    glFogfv(GL_FOG_COLOR, fogc);
-
-    glClearColor(fogc[0], fogc[1], fogc[2], fogc[3]);
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
     glViewport(0, 0, size, size);
 
-    glDisable(GL_FOG);
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
 
@@ -1618,7 +1724,7 @@ void drawminimap()
         {
             glClear(GL_DEPTH_BUFFER_BIT);
             camera1->o.z = minimapheight;
-            transplayer();
+            setcamprojmatrix();
         }
         rendergeom();
         rendermapmodels();
@@ -1631,12 +1737,11 @@ void drawminimap()
 
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
-    glDisable(GL_FOG);
 
-    glViewport(0, 0, screen->w, screen->h);
+    glViewport(0, 0, screenw, screenh);
 
     camera1 = oldcamera;
-    envmapping = minimapping = false;
+    drawtex = 0;
 
     glBindTexture(GL_TEXTURE_2D, minimaptex);
     glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB5, 0, 0, size, size, 0);
@@ -1685,24 +1790,32 @@ void drawslice(float start, float length, float x, float y, float size)
     float end = start + length,
           sx = cosf((start + 0.25f)*2*M_PI), sy = -sinf((start + 0.25f)*2*M_PI),
           ex = cosf((end + 0.25f)*2*M_PI), ey = -sinf((end + 0.25f)*2*M_PI);
-    glBegin(GL_TRIANGLE_FAN);
-    glTexCoord2f(0.5f, 0.5f); glVertex2f(x, y);
 
-    if(start < 0.125f || start >= 0.875f) { glTexCoord2f(0.5f + 0.5f*sx/sy, 0); glVertex2f(x + sx/sy*size, y - size);  }
-    else if(start < 0.375f) { glTexCoord2f(1, 0.5f - 0.5f*sy/sx); glVertex2f(x + size, y - sy/sx*size); }
-    else if(start < 0.625f) { glTexCoord2f(0.5f - 0.5f*sx/sy, 1); glVertex2f(x - sx/sy*size, y + size); }
-    else { glTexCoord2f(0, 0.5f + 0.5f*sy/sx); glVertex2f(x - size, y + sy/sx*size); }
+    #define SLICEVERT(ox, oy) do { \
+        gle::attribf(x + (ox)*size, y + (oy)*size); \
+        gle::attribf(0.5f + (ox)*0.5f, 0.5f + (oy)*0.5f); \
+    } while(0)
 
-    if(start <= 0.125f && end >= 0.125f) { glTexCoord2f(1, 0); glVertex2f(x + size, y - size); }
-    if(start <= 0.375f && end >= 0.375f) { glTexCoord2f(1, 1); glVertex2f(x + size, y + size); }
-    if(start <= 0.625f && end >= 0.625f) { glTexCoord2f(0, 1); glVertex2f(x - size, y + size); }
-    if(start <= 0.875f && end >= 0.875f) { glTexCoord2f(0, 0); glVertex2f(x - size, y - size); }
+    gle::defvertex(2);
+    gle::deftexcoord0();
+    gle::begin(GL_TRIANGLE_FAN);
+    SLICEVERT(0, 0);
 
-    if(end < 0.125f || end >= 0.875f) { glTexCoord2f(0.5f + 0.5f*ex/ey, 0); glVertex2f(x + ex/ey*size, y - size);  }
-    else if(end < 0.375f) { glTexCoord2f(1, 0.5f - 0.5f*ey/ex); glVertex2f(x + size, y - ey/ex*size); }
-    else if(end < 0.625f) { glTexCoord2f(0.5f - 0.5f*ex/ey, 1); glVertex2f(x - ex/ey*size, y + size); }
-    else { glTexCoord2f(0, 0.5f + 0.5f*ey/ex); glVertex2f(x - size, y + ey/ex*size); }
-    glEnd();
+    if(start < 0.125f || start >= 0.875f) SLICEVERT(sx/sy, -1);
+    else if(start < 0.375f) SLICEVERT(1, -sy/sx);
+    else if(start < 0.625f) SLICEVERT(-sx/sy, 1);
+    else SLICEVERT(-1, sy/sx);
+
+    if(start <= 0.125f && end >= 0.125f) SLICEVERT(1, -1);
+    if(start <= 0.375f && end >= 0.375f) SLICEVERT(1, 1);
+    if(start <= 0.625f && end >= 0.625f) SLICEVERT(-1, 1);
+    if(start <= 0.875f && end >= 0.875f) SLICEVERT(-1, -1);
+
+    if(end < 0.125f || end >= 0.875f) SLICEVERT(ex/ey, -1);
+    else if(end < 0.375f) SLICEVERT(1, -ey/ex);
+    else if(end < 0.625f) SLICEVERT(-ex/ey, 1);
+    else SLICEVERT(-1, ey/ex);
+    gle::end();
 }
 
 void drawfadedslice(float start, float length, float x, float y, float size, float alpha, float r, float g, float b, float minsize)
@@ -1711,35 +1824,34 @@ void drawfadedslice(float start, float length, float x, float y, float size, flo
           sx = cosf((start + 0.25f)*2*M_PI), sy = -sinf((start + 0.25f)*2*M_PI),
           ex = cosf((end + 0.25f)*2*M_PI), ey = -sinf((end + 0.25f)*2*M_PI);
 
-    #define SLICEVERT(ox, oy) \
-    { \
-        glTexCoord2f(0.5f + (ox)*0.5f, 0.5f + (oy)*0.5f); \
-        glVertex2f(x + (ox)*size, y + (oy)*size); \
-    }
-    #define SLICESPOKE(ox, oy) \
-    { \
+    #define SLICESPOKE(ox, oy) do { \
         SLICEVERT((ox)*minsize, (oy)*minsize); \
+        gle::attrib(color); \
         SLICEVERT(ox, oy); \
-    }
+        gle::attrib(color); \
+    } while(0)
 
-    glBegin(GL_TRIANGLE_STRIP);
-    glColor4f(r, g, b, alpha);
-    if(start < 0.125f || start >= 0.875f) SLICESPOKE(sx/sy, -1)
-    else if(start < 0.375f) SLICESPOKE(1, -sy/sx)
-    else if(start < 0.625f) SLICESPOKE(-sx/sy, 1)
-    else SLICESPOKE(-1, sy/sx)
+    gle::defvertex(2);
+    gle::deftexcoord0();
+    gle::defcolor(4);
+    gle::begin(GL_TRIANGLE_STRIP);
+    vec4 color(r, g, b, alpha);
+    if(start < 0.125f || start >= 0.875f) SLICESPOKE(sx/sy, -1);
+    else if(start < 0.375f) SLICESPOKE(1, -sy/sx);
+    else if(start < 0.625f) SLICESPOKE(-sx/sy, 1);
+    else SLICESPOKE(-1, sy/sx);
 
-    if(start <= 0.125f && end >= 0.125f) { glColor4f(r, g, b, alpha - alpha*(0.125f - start)/(end - start)); SLICESPOKE(1, -1) }
-    if(start <= 0.375f && end >= 0.375f) { glColor4f(r, g, b, alpha - alpha*(0.375f - start)/(end - start)); SLICESPOKE(1, 1) }
-    if(start <= 0.625f && end >= 0.625f) { glColor4f(r, g, b, alpha - alpha*(0.625f - start)/(end - start)); SLICESPOKE(-1, 1) }
-    if(start <= 0.875f && end >= 0.875f) { glColor4f(r, g, b, alpha - alpha*(0.875f - start)/(end - start)); SLICESPOKE(-1, -1) }
+    if(start <= 0.125f && end >= 0.125f) { color.a = alpha - alpha*(0.125f - start)/(end - start); SLICESPOKE(1, -1); }
+    if(start <= 0.375f && end >= 0.375f) { color.a = alpha - alpha*(0.375f - start)/(end - start); SLICESPOKE(1, 1); }
+    if(start <= 0.625f && end >= 0.625f) { color.a = alpha - alpha*(0.625f - start)/(end - start); SLICESPOKE(-1, 1); }
+    if(start <= 0.875f && end >= 0.875f) { color.a = alpha - alpha*(0.875f - start)/(end - start); SLICESPOKE(-1, -1); }
 
-    glColor4f(r, g, b, 0);
-    if(end < 0.125f || end >= 0.875f) SLICESPOKE(ex/ey, -1)
-    else if(end < 0.375f) SLICESPOKE(1, -ey/ex)
-    else if(end < 0.625f) SLICESPOKE(-ex/ey, 1)
-    else SLICESPOKE(-1, ey/ex)
-    glEnd();
+    color.a = 0;
+    if(end < 0.125f || end >= 0.875f) SLICESPOKE(ex/ey, -1);
+    else if(end < 0.375f) SLICESPOKE(1, -ey/ex);
+    else if(end < 0.625f) SLICESPOKE(-ex/ey, 1);
+    else SLICESPOKE(-1, ey/ex);
+    gle::end();
 }
 
 float cursorx = 0.5f, cursory = 0.5f;
@@ -1748,10 +1860,9 @@ vec cursordir(0, 0, 0);
 struct framebuffercopy
 {
     GLuint tex;
-    GLenum target;
     int w, h;
 
-    framebuffercopy() : tex(0), target(GL_TEXTURE_2D), w(0), h(0) {}
+    framebuffercopy() : tex(0), w(0), h(0) {}
 
     void cleanup()
     {
@@ -1764,58 +1875,28 @@ struct framebuffercopy
     {
         if(tex) return;
         glGenTextures(1, &tex);
-        if(hasTR)
-        {
-            target = GL_TEXTURE_RECTANGLE_ARB;
-            w = screen->w;
-            h = screen->h;
-        }
-        else
-        {
-            target = GL_TEXTURE_2D;
-            for(w = 1; w < screen->w; w *= 2);
-            for(h = 1; h < screen->h; h *= 2);
-        }
-        createtexture(tex, w, h, NULL, 3, false, GL_RGB, target);
+        w = screenw;
+        h = screenh;
+        createtexture(tex, w, h, NULL, 3, false);
     }
 
     void copy()
     {
-        if(target == GL_TEXTURE_RECTANGLE_ARB)
-        {
-            if(w != screen->w || h != screen->h) cleanup();
-        }
-        else if(w < screen->w || h < screen->h || w/2 >= screen->w || h/2 >= screen->h) cleanup();
+        if(w != screenw || h != screenh) cleanup();
         if(!tex) setup();
 
-        glBindTexture(target, tex);
-        glCopyTexSubImage2D(target, 0, 0, 0, 0, 0, screen->w, screen->h);
+        glBindTexture(GL_TEXTURE_2D, tex);
+        glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, screenw, screenh);
     }
 
     void draw(float sx, float sy, float sw, float sh)
     {
-        float tx = 0, ty = 0, tw = float(screen->w)/w, th = float(screen->h)/h;
-        if(target == GL_TEXTURE_RECTANGLE_ARB)
-        {
-            rectshader->set();
-            tx *= w;
-            ty *= h;
-            tw *= w;
-            th *= h;
-        }
-        glBindTexture(target, tex);
-        glBegin(GL_TRIANGLE_STRIP);
-        glTexCoord2f(tx,    ty);    glVertex2f(sx,    sy);
-        glTexCoord2f(tx+tw, ty);    glVertex2f(sx+sw, sy);
-        glTexCoord2f(tx,    ty+th); glVertex2f(sx,    sy+sh);
-        glTexCoord2f(tx+tw, ty+th); glVertex2f(sx+sw, sy+sh);
-        glEnd();
-        if(target == GL_TEXTURE_RECTANGLE_ARB)
-            defaultshader->set();
+        SETSHADER(screenrect);
+        glBindTexture(GL_TEXTURE_2D, tex);
+        screenquadmapped(sx*2 - 1, sy*2 - 1, sw*2, sh*2, 0, 0, 1, 1);
     }
 };
 
-#define DTR 0.0174532925
 enum { VW_NORMAL = 0, VW_LEFTRIGHT, VW_CROSSEYED, VW_STEREO, VW_STEREO_BLEND = VW_STEREO, VW_STEREO_BLEND_REDCYAN, VW_STEREO_AVG, VW_MAX, VW_STEREO_REDCYAN = VW_MAX };
 enum { VP_LEFT, VP_RIGHT, VP_MAX, VP_CAMERA = VP_MAX };
 
@@ -1883,26 +1964,21 @@ bool clearview(int v, int targtype)
     return true;
 }
 
-static int curview = VP_CAMERA;
-
-void viewproject(float zscale)
+void viewproject(int targtype = VP_CAMERA)
 {
-    if(curview != VP_LEFT && curview != VP_RIGHT) project(fovy, aspect, farplane, false, false, false, zscale);
+    if(targtype != VP_LEFT && targtype != VP_RIGHT) projmatrix.perspective(fovy, aspect, nearplane, farplane);
     else
     {
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
-        if(zscale != 1) glScalef(1, 1, zscale);
-        float top = stereonear*tan(DTR*fovy/2), right = aspect*top, iod = stereodist/2, fs = iod*stereonear/stereoplane;
-        glFrustum(curview == VP_LEFT ? -right+fs : -right-fs, curview == VP_LEFT ? right+fs : right-fs, -top, top, stereonear, farplane);
-        glTranslatef(curview == VP_LEFT ? iod : -iod, 0.f, 0.f);
-        glMatrixMode(GL_MODELVIEW);
+        float top = stereonear*tan(fovy/2*RAD), right = aspect*top, iod = stereodist/2;
+        if(targtype == VP_RIGHT) iod = -iod;
+        float fs = iod*stereonear/stereoplane;
+        projmatrix.frustum(-right+fs, right+fs, -top, top, stereonear, farplane);
+        projmatrix.translate(iod, 0, 0);
     }
 }
 
 void drawnoviewtype(int targtype)
 {
-    curview = targtype;
     if(targtype == VP_LEFT || targtype == VP_RIGHT)
     {
         if(viewtype >= VW_STEREO)
@@ -1920,21 +1996,19 @@ void drawnoviewtype(int targtype)
 
     xtravertsva = xtraverts = glde = gbatches = 0;
 
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    int w = screen->w, h = screen->h;
+    int w = screenw, h = screenh;
     if(forceaspect) w = int(ceil(h*forceaspect));
     gettextres(w, h);
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glOrtho(0, w, h, 0, -1, 1);
+
+    hudmatrix.ortho(0, w, h, 0, -1, 1);
+    resethudmatrix();
 
     glClearColor(0.f, 0.f, 0.f, 1);
     if(clearview(viewtype, targtype)) glClear(GL_COLOR_BUFFER_BIT);
 
-    defaultshader->set();
+    hudshader->set();
 
-    hud::update(screen->w, screen->h);
+    hud::update(screenw, screenh);
     hud::drawhud(true);
     hud::drawlast();
 
@@ -1966,14 +2040,8 @@ void drawnoview()
 
     if(!copies) return;
 
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glOrtho(0, 1, 0, 1, -1, 1);
     glDisable(GL_BLEND);
-    defaultshader->set();
-    glColor3f(1.f, 1.f, 1.f);
+    gle::colorf(1.f, 1.f, 1.f);
     switch(viewtype)
     {
         case VW_LEFTRIGHT:
@@ -1994,7 +2062,7 @@ void drawnoview()
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             if(viewtype == VW_STEREO_BLEND) glColorMask(GL_TRUE, GL_FALSE, GL_TRUE, GL_TRUE);
-            glColor4f(1.f, 1.f, 1.f, stereoblend); views[VP_RIGHT].draw(0, 0, 1, 1);
+            gle::colorf(1.f, 1.f, 1.f, stereoblend); views[VP_RIGHT].draw(0, 0, 1, 1);
             if(viewtype == VW_STEREO_BLEND) glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
             glDisable(GL_BLEND);
             break;
@@ -2004,7 +2072,7 @@ void drawnoview()
             glEnable(GL_BLEND);
             glBlendFunc(GL_ONE, GL_CONSTANT_COLOR);
             glBlendColor_(0.f, 0.5f, 1.f, 1.f);
-            glColor3f(1.f, 0.5f, 0.f);
+            gle::colorf(1.f, 0.5f, 0.f);
             views[VP_LEFT].draw(0, 0, 1, 1);
             glDisable(GL_BLEND);
             break;
@@ -2014,14 +2082,11 @@ void drawnoview()
 
 void drawviewtype(int targtype)
 {
-    curview = targtype;
-
-    defaultshader->set();
     updatedynlights();
 
     setfog(fogmat, fogblend, abovemat);
-    viewproject();
-    transplayer();
+    viewproject(targtype);
+    setcamprojmatrix();
     if(targtype == VP_LEFT || targtype == VP_RIGHT)
     {
         if(viewtype >= VW_STEREO)
@@ -2037,30 +2102,15 @@ void drawviewtype(int targtype)
         }
     }
 
-    readmatrices();
-
-    glEnable(GL_FOG);
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
 
     xtravertsva = xtraverts = glde = gbatches = 0;
 
-    if(!hasFBO)
-    {
-        if(dopostfx)
-        {
-            drawglaretex();
-            drawdepthfxtex();
-            drawreflections();
-        }
-        else dopostfx = true;
-    }
-
     visiblecubes();
-    if(shadowmap && !hasFBO) rendershadowmap();
 
     glClearColor(0, 0, 0, 0);
-    glClear(GL_DEPTH_BUFFER_BIT|(wireframe && editmode && clearview(viewtype, targtype) ? GL_COLOR_BUFFER_BIT : 0)|(hasstencil ? GL_STENCIL_BUFFER_BIT : 0));
+    glClear(GL_DEPTH_BUFFER_BIT | (clearview(viewtype, targtype) ? GL_COLOR_BUFFER_BIT : 0));
 
     if(wireframe && editmode) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
@@ -2082,12 +2132,9 @@ void drawviewtype(int targtype)
 
     if(wireframe && editmode) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-    if(hasFBO)
-    {
-        drawglaretex();
-        drawdepthfxtex();
-        drawreflections();
-    }
+    drawglaretex();
+    drawdepthfxtex();
+    drawreflections();
 
     if(wireframe && editmode) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
@@ -2107,16 +2154,17 @@ void drawviewtype(int targtype)
 
     if(wireframe && editmode) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-    glDisable(GL_FOG);
     glDisable(GL_CULL_FACE);
     glDisable(GL_DEPTH_TEST);
 
-    addmotionblur();
-    addglare();
+    if(!viewtype)
+    {
+        addmotionblur();
+        addglare();
+    }
     if(isliquid(fogmat&MATF_VOLUME)) drawfogoverlay(fogmat, fogblend, abovemat);
-    renderpostfx();
+    if(!viewtype) renderpostfx();
 
-    notextureshader->set();
     if(editmode && !pixeling)
     {
         glEnable(GL_DEPTH_TEST);
@@ -2129,15 +2177,14 @@ void drawviewtype(int targtype)
         glDisable(GL_DEPTH_TEST);
     }
 
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    int w = screen->w, h = screen->h;
+    int w = screenw, h = screenh;
     if(forceaspect) w = int(ceil(h*forceaspect));
     gettextres(w, h);
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glOrtho(0, w, h, 0, -1, 1);
-    glColor3f(1, 1, 1);
+
+    hudmatrix.ortho(0, w, h, 0, -1, 1);
+    resethudmatrix();
+
+    gle::colorf(1, 1, 1);
 
     if(!pixeling || !editmode)
     {
@@ -2162,7 +2209,10 @@ void drawviewtype(int targtype)
             viewdepthfxtex();
         }
 
-        defaultshader->set();
+        extern void debugparticles();
+        debugparticles();
+
+        hudshader->set();
         hud::drawhud();
         rendertexturepanel(w, h);
         hud::drawlast();
@@ -2185,7 +2235,7 @@ bool hasnoview()
     return client::waiting()>0;
 }
 
-void gl_drawframe(int w, int h)
+void gl_drawframe()
 {
     if(hasnoview()) drawnoview();
     else
@@ -2208,12 +2258,11 @@ void gl_drawframe(int w, int h)
         }
         else fogmat = MAT_AIR;
 
+        int w = screenw, h = screenh;
         farplane = hdr.worldsize*2;
-        project(fovy, aspect, farplane);
-        transplayer();
-        readmatrices();
+        viewproject();
+        setcamprojmatrix();
         game::project(w, h);
-        setenvmatrix();
 
         int copies = 0, oldcurtime = curtime;
         loopi(VP_MAX) if(needsview(viewtype, i))
@@ -2231,14 +2280,8 @@ void gl_drawframe(int w, int h)
 
         if(!copies) return;
 
-        glMatrixMode(GL_MODELVIEW);
-        glLoadIdentity();
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
-        glOrtho(0, 1, 0, 1, -1, 1);
         glDisable(GL_BLEND);
-        defaultshader->set();
-        glColor3f(1.f, 1.f, 1.f);
+        gle::colorf(1.f, 1.f, 1.f);
         switch(viewtype)
         {
             case VW_LEFTRIGHT:
@@ -2259,7 +2302,7 @@ void gl_drawframe(int w, int h)
                 glEnable(GL_BLEND);
                 glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
                 if(viewtype == VW_STEREO_BLEND) glColorMask(GL_TRUE, GL_FALSE, GL_TRUE, GL_TRUE);
-                glColor4f(1.f, 1.f, 1.f, stereoblend); views[VP_RIGHT].draw(0, 0, 1, 1);
+                gle::colorf(1.f, 1.f, 1.f, stereoblend); views[VP_RIGHT].draw(0, 0, 1, 1);
                 if(viewtype == VW_STEREO_BLEND) glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
                 glDisable(GL_BLEND);
                 break;
@@ -2267,9 +2310,9 @@ void gl_drawframe(int w, int h)
             case VW_STEREO_AVG:
             {
                 glEnable(GL_BLEND);
-                glBlendFunc(GL_ONE, GL_CONSTANT_COLOR_EXT);
+                glBlendFunc(GL_ONE, GL_CONSTANT_COLOR);
                 glBlendColor_(0.f, 0.5f, 1.f, 1.f);
-                glColor3f(1.f, 0.5f, 0.f);
+                gle::colorf(1.f, 0.5f, 0.f);
                 views[VP_LEFT].draw(0, 0, 1, 1);
                 glDisable(GL_BLEND);
                 break;
@@ -2280,38 +2323,105 @@ void gl_drawframe(int w, int h)
 
 void usetexturing(bool on)
 {
-    if(on)
-        defaultshader->set();
-    else
-        notextureshader->set();
+    if(on) hudshader->set();
+    else hudnotextureshader->set();
 }
 
-FVAR(IDF_PERSIST, polycolour, 0, 1, 1);
-FVAR(IDF_PERSIST, polylight, 0, 1, 1);
-FVAR(IDF_PERSIST, polybright, 0, 0.65f, 1);
-
-void polyhue(dynent *d, vec &colour, int flags)
+void cleanupgl()
 {
-    if(flags&MDL_LIGHT && d->light.millis != lastmillis)
-    {
-        vec lightpos = d->type == ENT_PLAYER || d->type == ENT_AI ? d->feetpos(0.75f*(d->height + d->aboveeye)) : d->o;
-        lightreaching(lightpos, d->light.color, d->light.dir, (flags&MDL_LIGHT_FAST)!=0);
-        dynlightreaching(lightpos, d->light.color, d->light.dir);
-        if(flags&MDL_LIGHTFX) d->light.color.max(d->light.effect).lerp(d->light.effect, 0.6f);
-        d->light.millis = lastmillis;
-    }
-    vec c = vec(colour).mul(polycolour).mul(vec(d->light.color).mul(polylight));
-    loopi(3) colour[i] = max(c[i], colour[i]*polybright);
+    cleanupmotionblur();
+    clearminimap();
+    cleanupviews();
+    cleanupscreenquad();
+    gle::cleanup();
 }
 
-void polybox(vec o, float tofloor, float toceil, float xradius, float yradius)
+void drawskin(Texture *t, int x1, int y1, int x2, int y2, int colour, float blend, int size, const matrix4x3 *m)
 {
-    glBegin(GL_QUADS);
-    loopi(6) loopj(4)
+    int w = max(x2-x1, 2), h = max(y2-y1, 2), tw = size ? size : t->w, th = size ? size : t->h;
+    float pw = tw*0.25f, ph = th*0.25f, qw = tw*0.5f, qh = th*0.5f, px = 0, py = 0, tx = 0, ty = 0;
+    if(w < qw)
     {
-        const ivec &cc = facecoords[i][j];
-        glVertex3f(o.x + (cc.x ? xradius : -xradius), o.y + (cc.y ? yradius : -yradius), o.z + (cc.z ? toceil : -tofloor));
+        float scale = w/qw;
+        qw *= scale; qh *= scale;
+        pw *= scale; ph *= scale;
     }
-    glEnd();
-    xtraverts += 24;
+    if(h < qh)
+    {
+        float scale = h/qh;
+        qw *= scale; qh *= scale;
+        pw *= scale; ph *= scale;
+    }
+    int cw = max(int(floorf(w/qw))-1, 0), ch = max(int(floorf(h/qh))+1, 2);
+
+    glBindTexture(GL_TEXTURE_2D, t->id);
+    gle::color(vec::hexcolor(colour), blend);
+    gle::defvertex(2);
+    gle::deftexcoord0();
+    gle::begin(GL_QUADS);
+
+    #define mtxvert(vx,vy) do { \
+        if(m) gle::attrib(m->transform(vec2(vx, vy))); \
+        else gle::attribf(vx, vy); \
+    } while(0)
+
+    loopi(ch)
+    {
+        bool cond = !i || i == ch-1;
+        float vph = cond ? ph : qh, vth = cond ? 0.25f : 0.5f;
+        if(i && cond)
+        {
+            float off = h-py;
+            if(off > vph)
+            {
+                float part = off/vph;
+                vph *= part;
+                vth *= part;
+            }
+            ty = 1-vth;
+        }
+        loopj(3) switch(j)
+        {
+            case 0: case 2:
+            {
+                mtxvert(x1+px, y1+py); gle::attribf(tx, ty);
+                mtxvert(x1+px+pw, y1+py); gle::attribf(tx+0.25f, ty);
+                mtxvert(x1+px+pw, y1+py+vph); gle::attribf(tx+0.25f, ty+vth);
+                mtxvert(x1+px, y1+py+vph); gle::attribf(tx, ty+vth);
+                tx += 0.25f;
+                px += pw;
+                xtraverts += 4;
+                break;
+            }
+            case 1:
+            {
+                for(int xx = 0; xx < cw; xx++)
+                {
+                    mtxvert(x1+px, y1+py); gle::attribf(tx, ty);
+                    mtxvert(x1+px+qw, y1+py); gle::attribf(tx+0.5f, ty);
+                    mtxvert(x1+px+qw, y1+py+vph); gle::attribf(tx+0.5f, ty+vth);
+                    mtxvert(x1+px, y1+py+vph); gle::attribf(tx, ty+vth);
+                    px += qw;
+                    xtraverts += 4;
+                }
+                float want = w-pw, off = want-px;
+                if(off > 0)
+                {
+                    float part = 0.5f*off/qw;
+                    mtxvert(x1+px, y1+py); gle::attribf(tx, ty);
+                    mtxvert(x1+want, y1+py); gle::attribf(tx+part, ty);
+                    mtxvert(x1+want, y1+py+vph); gle::attribf(tx+part, ty+vth);
+                    mtxvert(x1+px, y1+py+vph); gle::attribf(tx, ty+vth);
+                    px = want;
+                }
+                tx += 0.5f;
+                break;
+            }
+            default: break;
+        }
+        px = tx = 0;
+        py += vph;
+        if(!i) ty += vth;
+    }
+    xtraverts += gle::end();
 }

@@ -277,8 +277,8 @@ ICOMMAND(0, keyspressed, "issss", (int *limit, char *s1, char *s2, char *sep1, c
 void inputcommand(char *init, char *action = NULL, char *icon = NULL, int colour = 0, char *flags = NULL) // turns input to the command line on or off
 {
     commandmillis = init ? totalmillis : -totalmillis;
-    SDL_EnableUNICODE(commandmillis > 0 ? 1 : 0);
-    keyrepeat(commandmillis > 0);
+    textinput(commandmillis >= 0, TI_CONSOLE);
+    keyrepeat(commandmillis >= 0, KR_CONSOLE);
     copystring(commandbuf, init ? init : "", BIGSTRLEN);
     DELETEA(commandaction);
     DELETEA(commandicon);
@@ -300,73 +300,17 @@ void inputcommand(char *init, char *action = NULL, char *icon = NULL, int colour
 ICOMMAND(0, saycommand, "C", (char *init), inputcommand(init));
 ICOMMAND(0, inputcommand, "sssis", (char *init, char *action, char *icon, int *colour, char *flags), inputcommand(init, action, icon, *colour, flags));
 
-#if !defined(WIN32) && !defined(__APPLE__)
-#include <X11/Xlib.h>
-#endif
-void pasteconsole()
+bool paste(char *buf, size_t len)
 {
-#ifdef WIN32
-    UINT fmt = CF_UNICODETEXT;
-    if(!IsClipboardFormatAvailable(fmt))
-    {
-        fmt = CF_TEXT;
-        if(!IsClipboardFormatAvailable(fmt)) return;
-    }
-    if(!OpenClipboard(NULL)) return;
-    HANDLE h = GetClipboardData(fmt);
-    size_t commandlen = strlen(commandbuf), cblen = GlobalSize(h), decoded = 0;
-    ushort *cb = (ushort *)GlobalLock(h);
-    switch(fmt)
-    {
-        case CF_UNICODETEXT:
-            decoded = min(sizeof(commandbuf)-1-commandlen, cblen/2);
-            loopi(decoded) commandbuf[commandlen++] = uni2cube(cb[i]);
-            break;
-        case CF_TEXT:
-            decoded = min(sizeof(commandbuf)-1-commandlen, cblen);
-            memcpy(&commandbuf[commandlen], cb, decoded);
-            break;
-    }
-    commandbuf[commandlen + decoded] = '\0';
-    GlobalUnlock(cb);
-    CloseClipboard();
-#elif defined(__APPLE__)
-    extern char *mac_pasteconsole(size_t *cblen);
-    size_t cblen = 0;
-    uchar *cb = (uchar *)mac_pasteconsole(&cblen);
-    if(!cb) return;
-    size_t commandlen = strlen(commandbuf),
-           decoded = decodeutf8((uchar *)&commandbuf[commandlen], sizeof(commandbuf)-1-commandlen, cb, cblen);
-    commandbuf[commandlen + decoded] = '\0';
-    free(cb);
-#else
-    SDL_SysWMinfo wminfo;
-    SDL_VERSION(&wminfo.version);
-    wminfo.subsystem = SDL_SYSWM_X11;
-    if(!SDL_GetWMInfo(&wminfo)) return;
-    int cbsize;
-    uchar *cb = (uchar *)XFetchBytes(wminfo.info.x11.display, &cbsize);
-    if(!cb || cbsize <= 0) return;
-    size_t commandlen = strlen(commandbuf);
-    for(uchar *cbline = cb, *cbend; commandlen + 1 < sizeof(commandbuf) && cbline < &cb[cbsize]; cbline = cbend + 1)
-    {
-        cbend = (uchar *)memchr(cbline, '\0', &cb[cbsize] - cbline);
-        if(!cbend) cbend = &cb[cbsize];
-        size_t cblen = cbend-cbline, commandmax = sizeof(commandbuf)-1-commandlen;
-        loopi(cblen) if((cbline[i]&0xC0) == 0x80)
-        {
-            commandlen += decodeutf8((uchar *)&commandbuf[commandlen], commandmax, cbline, cblen);
-            goto nextline;
-        }
-        cblen = min(cblen, commandmax);
-        loopi(cblen) commandbuf[commandlen++] = uni2cube(*cbline++);
-    nextline:
-        commandbuf[commandlen] = '\n';
-        if(commandlen + 1 < sizeof(commandbuf) && cbend < &cb[cbsize]) ++commandlen;
-        commandbuf[commandlen] = '\0';
-    }
-    XFree(cb);
-#endif
+    if(!SDL_HasClipboardText()) return false;
+    char *cb = SDL_GetClipboardText();
+    if(!cb) return false;
+    size_t cblen = strlen(cb),
+           start = strlen(buf),
+           decoded = decodeutf8((uchar *)&buf[start], len-1-start, (const uchar *)cb, cblen);
+    buf[start + decoded] = '\0';
+    SDL_free(cb);
+    return true;
 }
 
 SVAR(0, commandbuffer, "");
@@ -499,28 +443,36 @@ void execbind(keym &k, bool isdown)
     k.pressed = isdown;
 }
 
-void processkey(int code, bool isdown, int cooked)
+bool consoleinput(const char *str, int len)
 {
+    if(commandmillis < 0) return false;
+
     resetcomplete();
-    if(cooked)
+    int maxlen = int(sizeof(commandbuf));
+    if(commandflags&CF_MESSAGE) maxlen = min(client::maxmsglen(), maxlen);
+    int cmdlen = (int)strlen(commandbuf), cmdspace = maxlen - (cmdlen+1);
+    len = min(len, cmdspace);
+    if(len <= 0) return true;
+
+    if(commandpos<0)
     {
-        size_t len = (int)strlen(commandbuf), maxlen = sizeof(commandbuf);
-        if(commandflags&CF_MESSAGE) maxlen = min((size_t)client::maxmsglen(), maxlen);
-        if(len+1 < maxlen)
-        {
-            if(commandpos<0) commandbuf[len] = cooked;
-            else
-            {
-                memmove(&commandbuf[commandpos+1], &commandbuf[commandpos], len - commandpos);
-                commandbuf[commandpos++] = cooked;
-            }
-            commandbuf[len+1] = '\0';
-        }
+        memcpy(&commandbuf[cmdlen], str, len);
     }
+    else
+    {
+        memmove(&commandbuf[commandpos+len], &commandbuf[commandpos], cmdlen - commandpos);
+        memcpy(&commandbuf[commandpos], str, len);
+        commandpos += len;
+    }
+    commandbuf[cmdlen + len] = '\0';
+
+    return true;
 }
 
-void consolekey(int code, bool isdown, int cooked)
+bool consolekey(int code, bool isdown)
 {
+    if(commandmillis < 0) return false;
+
     if(isdown)
     {
         switch(code)
@@ -584,17 +536,9 @@ void consolekey(int code, bool isdown, int cooked)
                 }
                 break;
 
-            case SDLK_f:
-                if(SDL_GetModState()&MOD_KEYS) cooked = '\f';
-                else processkey(code, isdown, cooked);
-                break;
-
             case SDLK_v:
-                if(SDL_GetModState()&MOD_KEYS) pasteconsole();
-                else processkey(code, isdown, cooked);
+                if(SDL_GetModState()&MOD_KEYS) paste(commandbuf, sizeof(commandbuf));
                 break;
-
-            default: processkey(code, isdown, cooked); break;
         }
     }
     else
@@ -630,6 +574,14 @@ void consolekey(int code, bool isdown, int cooked)
             inputcommand(NULL);
         }
     }
+
+    return true;
+}
+
+void processtextinput(const char *str, int len)
+{
+    if(!hud::textinput(str, len))
+        consoleinput(str, len);
 }
 
 #define keyintercept(name,body) \
@@ -650,7 +602,7 @@ void consolekey(int code, bool isdown, int cooked)
         return; \
     } \
 }
-void keypress(int code, bool isdown, int cooked)
+void processkey(int code, bool isdown)
 {
     switch(code)
     {
@@ -662,23 +614,22 @@ void keypress(int code, bool isdown, int cooked)
             keyintercept(quit, quit());
             break;
         case SDLK_RETURN:
-            keyintercept(fullscreen, setfullscreen(!fullscreen, true));
+            keyintercept(fullscreen, setfullscreen(!(SDL_GetWindowFlags(screen) & SDL_WINDOW_FULLSCREEN)));
             break;
         case SDLK_TAB:
-            keyintercept(iconify, SDL_WM_IconifyWindow());
+            keyintercept(iconify, SDL_MinimizeWindow(screen));
             break;
         case SDLK_CAPSLOCK:
             if(!isdown) capslockon = capslocked();
             break;
-        case SDLK_NUMLOCK:
+        case SDLK_NUMLOCKCLEAR:
             if(!isdown) numlockon = numlocked();
             break;
         default: break;
     }
     keym *haskey = keyms.access(code);
     if(haskey && haskey->pressed) execbind(*haskey, isdown); // allow pressed keys to release
-    else if(commandmillis > 0) consolekey(code, isdown, cooked);
-    else if(!hud::keypress(code, isdown, cooked) && haskey) execbind(*haskey, isdown);
+    else if(!consolekey(code, isdown) && !hud::keypress(code, isdown) && haskey) execbind(*haskey, isdown);
 }
 
 char *getcurcommand()
@@ -691,17 +642,12 @@ void clear_console()
     keyms.clear();
 }
 
-static inline bool sortbinds(keym *x, keym *y)
-{
-    return strcmp(x->name, y->name) < 0;
-}
-
 void writebinds(stream *f)
 {
     static const char * const cmds[4] = { "bind", "specbind", "editbind", "waitbind" };
     vector<keym *> binds;
     enumerate(keyms, keym, km, binds.add(&km));
-    binds.sort(sortbinds);
+    binds.sortname();
     loopj(4)
     {
         bool found = false;
@@ -743,14 +689,12 @@ struct filesval
     filesval(int type, const char *dir, const char *ext) : type(type), dir(newstring(dir)), ext(ext && ext[0] ? newstring(ext) : NULL), millis(-1) {}
     ~filesval() { DELETEA(dir); DELETEA(ext); loopv(files) DELETEA(files[i]); files.shrink(0); }
 
-    static bool comparefiles(const char *x, const char *y) { return strcmp(x, y) < 0; }
-
     void update()
     {
         if(type!=FILES_DIR || millis >= commandmillis) return;
         files.deletearrays();
         listfiles(dir, ext, files);
-        files.sort(comparefiles);
+        files.sort();
         loopv(files) if(i && !strcmp(files[i], files[i-1])) delete[] files.remove(i--);
         millis = totalmillis;
     }
@@ -913,7 +857,7 @@ void setidflag(const char *s, const char *v, int flag, const char *msg, bool ali
 ICOMMAND(0, setcomplete, "ss", (char *s, char *t), setidflag(s, t, IDF_COMPLETE, "complete", false));
 ICOMMAND(0, setpersist, "ss", (char *s, char *t), setidflag(s, t, IDF_PERSIST, "persist", true));
 
-void setiddesc(const char *s, const char *v, const char *u)
+void setiddesc(const char *s, const char *v, const char *f)
 {
     ident *id = idents.access(s);
     if(!id)
@@ -923,21 +867,20 @@ void setiddesc(const char *s, const char *v, const char *u)
     }
     DELETEA(id->desc);
     if(v && *v) id->desc = newstring(v);
-    DELETEA(id->usage);
-    if(u && *u) id->usage = newstring(u);
+    loopvrev(id->fields)
+    {
+        DELETEA(id->fields[i]);
+        id->fields.remove(i);
+    }
+    if(f && *f) explodelist(f, id->fields);
 }
-ICOMMAND(0, setdesc, "sss", (char *s, char *t, char *u), setiddesc(s, t, u));
-
-static inline bool sortcompletions(const char *x, const char *y)
-{
-    return strcmp(x, y) < 0;
-}
+ICOMMAND(0, setdesc, "sss", (char *s, char *t, char *f), setiddesc(s, t, f));
 
 void writecompletions(stream *f)
 {
     vector<char *> cmds;
     enumeratekt(completions, char *, k, filesval *, v, { if(v) cmds.add(k); });
-    cmds.sort(sortcompletions);
+    cmds.sort();
     loopv(cmds)
     {
         char *k = cmds[i];
@@ -999,3 +942,58 @@ bool numlocked()
     return false;
 }
 ICOMMAND(0, getnumlock, "", (), intret(numlockon ? 1 : 0));
+
+#ifndef STANDALONE
+bool consolegui(guient *g, int width, int height, const char *init, int &update)
+{
+    g->strut(width-6);
+    if(!conlines.empty() && (update < 0 || conlines[0].reftime > update))
+    {
+        editor *e = UI::geteditor("console_window", EDITORREADONLY);
+        if(e)
+        {
+            UI::editorclear(e);
+            loopvrev(conlines) UI::editorline(e, conlines[i].cref, MAXCONLINES);
+            update = totalmillis;
+        }
+    }
+    g->field("console_window", 0x666666, -width, height, NULL, EDITORREADONLY);
+    char *w = g->field("console_input", 0x666666, -width, 0, init, EDITORFOREVER, g->visible(), "console_window");
+    if(w && *w)
+    {
+        bool consolecmd = *w == '/';
+        commandmillis = totalmillis;
+        copystring(commandbuf, w, BIGSTRLEN);
+        DELETEA(commandaction);
+        DELETEA(commandicon);
+        commandpos = strlen(commandbuf);
+        if(!consolecmd) commandaction = newstring("say $commandbuffer");
+        commandcolour = 0;
+        commandflags = CF_EXECUTE|CF_MESSAGE;
+        hline *h = NULL;
+        if(commandbuf[0])
+        {
+            if(history.empty() || history.last()->shouldsave())
+            {
+                if(maxhistory && history.length() >= maxhistory)
+                {
+                    loopi(history.length()-maxhistory+1) delete history[i];
+                    history.remove(0, history.length()-maxhistory+1);
+                }
+                history.add(h = new hline)->save();
+            }
+            else h = history.last();
+        }
+        histpos = history.length();
+        inputcommand(NULL);
+        if(h)
+        {
+            interactive = true;
+            h->run();
+            interactive = false;
+        }
+        UI::editoredit(UI::geteditor("console_input", EDITORFOREVER, init, "console_window"), init);
+    }
+    return true;
+}
+#endif

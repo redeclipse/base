@@ -21,12 +21,12 @@
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>1.5.3</string>
+	<string>1.5.5</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.5.3</string>
+	<string>1.5.5</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>10.5.0</string>
 	<key>NSHumanReadableCopyright</key>
-	<string>(C) 2010 Quinton Reeves, Lee Salzman, under the ZLIB License</string>
+	<string>(C) 2010-2016 Quinton Reeves, Lee Salzman, under the ZLIB License</string>
 </dict>
 </plist>
