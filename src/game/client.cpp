@@ -2465,6 +2465,17 @@ namespace client
                     break;
                 }
 
+                case N_TOTALS:
+                {
+                    int acn = getint(p), totalp = getint(p), totalf = getint(p), totald = getint(p);
+                    gameent *v = game::getclient(acn);
+                    if(!v) break;
+                    v->totalpoints = totalp;
+                    v->totalfrags = totalf;
+                    v->totaldeaths = totald;
+                    break;
+                }
+
                 case N_DROP:
                 {
                     int trg = getint(p), weap = getint(p), ds = getint(p);
