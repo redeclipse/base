@@ -1656,6 +1656,8 @@ namespace client
         sendstring(game::player1->vanity, p);
         putint(p, game::player1->loadweap.length());
         loopv(game::player1->loadweap) putint(p, game::player1->loadweap[i]);
+        putint(p, game::player1->randweap.length());
+        loopv(game::player1->randweap) putint(p, game::player1->randweap[i]);
 
         string hash = "";
         if(connectpass[0])
