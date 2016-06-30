@@ -17,7 +17,7 @@ VAR(IDF_PERSIST, particleglare, 0, 1, 100);
 // Automatically stops particles being emitted when paused or in reflective drawing
 VAR(IDF_PERSIST, emitmillis, 1, 20, VAR_MAX);
 static int lastemitframe = 0;
-static bool emit = false;
+static bool emit = false, canstep = false;
 
 static bool canemitparticles()
 {
@@ -70,7 +70,7 @@ struct partrenderer
     }
 
     //blend = 0 => remove it
-    void calc(particle *p, int &blend, int &ts, float &size, bool lastpass = true)
+    void calc(particle *p, int &blend, int &ts, float &size, bool step = true)
     {
         vec o = p->o;
         if(p->fade <= 5)
@@ -114,7 +114,7 @@ struct partrenderer
                 v.z -= physics::gravityvel(&d)*secs;
                 p->o.add(v);
             }
-            if(p->collide && p->o.z < p->val && lastpass)
+            if(step && p->collide && p->o.z < p->val)
             {
                 if(p->collide >= 0)
                 {
@@ -132,7 +132,7 @@ struct partrenderer
             }
             else p->m.add(vec(p->o).sub(o));
         }
-        game::particletrack(p, type, ts, lastpass);
+        game::particletrack(p, type, ts, step);
     }
 
     const char *debuginfo()
@@ -273,17 +273,16 @@ struct listrenderer : partrenderer
         preload();
         startrender();
         if(tex) glBindTexture(GL_TEXTURE_2D, tex->id);
-        bool lastpass = !reflecting && !refracting;
         for(T **prev = &list, *p = list; p; p = *prev)
         {
             int blend = 255, ts = 1;
             float size = 1;
-            calc(p, blend, ts, size, lastpass);
+            calc(p, blend, ts, size, canstep);
             if(blend > 0)
             {
                 renderpart(p, blend, ts, size);
 
-                if(p->fade > 5 || !lastpass)
+                if(p->fade > 5 || !canstep)
                 {
                     prev = &p->next;
                     continue;
@@ -1145,6 +1144,7 @@ void debugparticles()
 
 void renderparticles(bool mainpass)
 {
+    canstep = mainpass;
     //want to debug BEFORE the lastpass render (that would delete particles)
     if(dbgparts && mainpass) loopi(sizeof(parts)/sizeof(parts[0])) parts[i]->debuginfo();
 

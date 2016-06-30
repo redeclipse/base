@@ -2073,7 +2073,7 @@ namespace game
         return vec::hexcolor(pulsecols[c][n%PULSECOLOURS]).lerp(vec::hexcolor(pulsecols[c][n2%PULSECOLOURS]), (lastmillis%50)/50.0f);
     }
 
-    void particletrack(particle *p, uint type, int &ts,  bool lastpass)
+    void particletrack(particle *p, uint type, int &ts, bool step)
     {
         if(!p || !p->owner || !gameent::is(p->owner)) return;
         gameent *d = (gameent *)p->owner;
