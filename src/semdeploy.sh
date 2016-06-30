@@ -33,6 +33,8 @@ for i in ${SEMABUILD_ALLMODS}; do
     popd
 done
 
+rm -rf "${SEMABUILD_PWD}/data" "${SEMABUILD_PWD}/.git"
+
 for i in ${SEMABUILD_DIST}; do
     pushd "${SEMABUILD_BUILD}/src" || exit 1
     make dist-${i} dist-torrent-${i} || exit 1
