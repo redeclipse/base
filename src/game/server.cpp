@@ -330,7 +330,7 @@ namespace server
                 int millis = totalmillis-lasttimewielded, secs = millis/1000;
                 weapstats[weapselect].timewielded += secs;
                 lasttimewielded = totalmillis+(secs*1000)-millis;
-                loopi(W_ALL)
+                loopi(W_MAX)
                 {
                     if(lasttimeloadout[i] && holdweap(i, m_weapon(actortype, gamemode, mutators), lastmillis))
                     {
@@ -344,7 +344,7 @@ namespace server
             else
             {
                 lasttimewielded = totalmillis ? totalmillis : 1;
-                loopi(W_ALL) lasttimeloadout[i] = totalmillis ? totalmillis : 1;
+                loopi(W_MAX) lasttimeloadout[i] = totalmillis ? totalmillis : 1;
             }
         }
 
