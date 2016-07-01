@@ -261,7 +261,7 @@ namespace server
 
     struct servstate : baseent, clientstate
     {
-        int rewards[2], shotdamage, damage, lasttimewielded, lasttimeloadout[W_ALL], aireinit,
+        int rewards[2], shotdamage, damage, lasttimewielded, lasttimeloadout[W_MAX], aireinit,
             lastresowner[WR_MAX], lasttimealive, timealive, lasttimeactive, timeactive, lastresweapon[WR_MAX], lasthurt,
             localtotalpoints, localtotalfrags, localtotaldeaths;
         bool lastresalt[W_MAX];
