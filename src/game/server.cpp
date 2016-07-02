@@ -280,7 +280,7 @@ namespace server
         servstate() : lasttimewielded(0), aireinit(0), lasttimealive(0), timealive(0), timeactive(0), lasthurt(0), localtotalpoints(0), localtotalfrags(0), localtotaldeaths(0)
         {
             loopi(WARN_MAX) loopj(2) warnings[i][j] = 0;
-            loopi(W_ALL) lasttimeloadout[i] = 0;
+            loopi(W_MAX) lasttimeloadout[i] = 0;
             resetresidualowner();
         }
 
@@ -3103,7 +3103,7 @@ namespace server
             ci->lasttimealive = totalmillis ? totalmillis : 1;
             ci->lasttimeactive = totalmillis ? totalmillis : 1;
             ci->lasttimewielded = totalmillis ? totalmillis : 1;
-            loopi(W_ALL) ci->lasttimeloadout[i] = totalmillis ? totalmillis : 1;
+            loopi(W_MAX) ci->lasttimeloadout[i] = totalmillis ? totalmillis : 1;
             ci->quarantine = false;
             waiting(ci, DROP_RESET);
             if(smode) smode->entergame(ci);
@@ -5661,7 +5661,7 @@ namespace server
         ci->lasttimealive = totalmillis ? totalmillis : 1;
         ci->lasttimeactive = totalmillis ? totalmillis : 1;
         ci->lasttimewielded = totalmillis ? totalmillis : 1;
-        loopi(W_ALL) ci->lasttimeloadout[i] = totalmillis ? totalmillis : 1;
+        loopi(W_MAX) ci->lasttimeloadout[i] = totalmillis ? totalmillis : 1;
 
         if(ci->handle[0]) // kick old logins
         {
