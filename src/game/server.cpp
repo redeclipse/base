@@ -261,7 +261,7 @@ namespace server
 
     struct servstate : baseent, clientstate
     {
-        int rewards[2], shotdamage, damage, lasttimewielded, lasttimeloadout[W_ALL], aireinit,
+        int rewards[2], shotdamage, damage, lasttimewielded, lasttimeloadout[W_MAX], aireinit,
             lastresowner[WR_MAX], lasttimealive, timealive, lasttimeactive, timeactive, lastresweapon[WR_MAX], lasthurt,
             localtotalpoints, localtotalfrags, localtotaldeaths;
         bool lastresalt[W_MAX];
@@ -280,7 +280,7 @@ namespace server
         servstate() : lasttimewielded(0), aireinit(0), lasttimealive(0), timealive(0), timeactive(0), lasthurt(0), localtotalpoints(0), localtotalfrags(0), localtotaldeaths(0)
         {
             loopi(WARN_MAX) loopj(2) warnings[i][j] = 0;
-            loopi(W_ALL) lasttimeloadout[i] = 0;
+            loopi(W_MAX) lasttimeloadout[i] = 0;
             resetresidualowner();
         }
 
@@ -330,7 +330,7 @@ namespace server
                 int millis = totalmillis-lasttimewielded, secs = millis/1000;
                 weapstats[weapselect].timewielded += secs;
                 lasttimewielded = totalmillis+(secs*1000)-millis;
-                loopi(W_ALL)
+                loopi(W_MAX)
                 {
                     if(lasttimeloadout[i] && holdweap(i, m_weapon(actortype, gamemode, mutators), lastmillis))
                     {
@@ -344,7 +344,7 @@ namespace server
             else
             {
                 lasttimewielded = totalmillis ? totalmillis : 1;
-                loopi(W_ALL) lasttimeloadout[i] = totalmillis ? totalmillis : 1;
+                loopi(W_MAX) lasttimeloadout[i] = totalmillis ? totalmillis : 1;
             }
         }
 
@@ -3103,7 +3103,7 @@ namespace server
             ci->lasttimealive = totalmillis ? totalmillis : 1;
             ci->lasttimeactive = totalmillis ? totalmillis : 1;
             ci->lasttimewielded = totalmillis ? totalmillis : 1;
-            loopi(W_ALL) ci->lasttimeloadout[i] = totalmillis ? totalmillis : 1;
+            loopi(W_MAX) ci->lasttimeloadout[i] = totalmillis ? totalmillis : 1;
             ci->quarantine = false;
             waiting(ci, DROP_RESET);
             if(smode) smode->entergame(ci);
@@ -5661,7 +5661,7 @@ namespace server
         ci->lasttimealive = totalmillis ? totalmillis : 1;
         ci->lasttimeactive = totalmillis ? totalmillis : 1;
         ci->lasttimewielded = totalmillis ? totalmillis : 1;
-        loopi(W_ALL) ci->lasttimeloadout[i] = totalmillis ? totalmillis : 1;
+        loopi(W_MAX) ci->lasttimeloadout[i] = totalmillis ? totalmillis : 1;
 
         if(ci->handle[0]) // kick old logins
         {
@@ -6045,7 +6045,7 @@ namespace server
                 {
                     int lcn = getint(p), id = getint(p), weap = getint(p);
                     clientinfo *cp = (clientinfo *)getinfo(lcn);
-                    if(!hasclient(cp, ci) || !isweap(weap)) break;
+                    if(!hasclient(cp, ci) || !isweap(weap) || weap >= W_ALL) break;
                     switchevent *ev = new switchevent;
                     ev->id = id;
                     ev->weap = weap;

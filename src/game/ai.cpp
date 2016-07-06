@@ -10,6 +10,7 @@ namespace ai
 
     VARF(0, showwaypoints, 0, 0, 1, if(showwaypoints) getwaypoints());
 
+    VAR(IDF_PERSIST, autosavewaypoints, 0, 1, 1);
     VAR(IDF_PERSIST, showwaypointsdrop, 0, 1, 1);
     VAR(IDF_PERSIST, showwaypointsradius, 0, 256, VAR_MAX);
     VAR(IDF_PERSIST|IDF_HEX, showwaypointscolour, 0, 0xFF00FF, 0xFFFFFF);
@@ -17,9 +18,14 @@ namespace ai
 
     bool dbgfocus(gameent *d)  { return d->ai && (!aidebugfocus || d == game::focus || (aidebugfocus != 2 && !game::focus->ai)); }
 
+    void savemap(bool force, const char *mname)
+    {
+        if(autosavewaypoints || force) savewaypoints(true, mname);
+    }
+
     void startmap(bool empty)    // called just after a map load
     {
-        savewaypoints();
+        if(autosavewaypoints) savewaypoints();
         clearwaypoints(true);
         showwaypoints = dropwaypoints = 0;
     }

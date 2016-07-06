@@ -6,6 +6,7 @@ SEMABUILD_TARGET='qreeves@icculus.org:/webspace/redeclipse.net/files'
 SEMABUILD_APT='DEBIAN_FRONTEND=noninteractive apt-get'
 SEMABUILD_MODULES=`curl --silent --fail http://redeclipse.net/files/stable/mods.txt` || exit 1
 SEMABUILD_ALLMODS="base ${SEMABUILD_MODULES}"
+SEMABUILD_DIST="bz2 combined win mac"
 
 sudo ${SEMABUILD_APT} update || exit 1
 sudo ${SEMABUILD_APT} -fy install build-essential unzip zip nsis nsis-common mktorrent || exit 1
@@ -32,20 +33,30 @@ for i in ${SEMABUILD_ALLMODS}; do
     popd
 done
 
-pushd "${SEMABUILD_BUILD}/src" || exit 1
-make dist dist-torrents || exit 1
-popd
+rm -rf "${SEMABUILD_PWD}/data" "${SEMABUILD_PWD}/.git"
 
-pushd "${SEMABUILD_BUILD}" || exit 1
-mkdir -p releases || exit 1
-mv -vf redeclipse_*.*_*.tar.bz2 releases/ || exit 1
-mv -vf redeclipse_*.*_*.exe releases/ || exit 1
-mv -vf redeclipse_*.*_*.torrent releases/ || exit 1
-pushd "${SEMABUILD_BUILD}/releases"
-for i in redeclipse_*.*; do
-    shasum "${i}" > "${i}.shasum"
-    md5sum "${i}" > "${i}.md5sum"
+for i in ${SEMABUILD_DIST}; do
+    pushd "${SEMABUILD_BUILD}/src" || exit 1
+    make dist-${i} dist-torrent-${i} || exit 1
+    popd
+    pushd "${SEMABUILD_BUILD}" || exit 1
+    mkdir -p releases || exit 1
+    case "${i}" in
+        win)
+            mv -vf redeclipse_*.*_*.exe releases/ || exit 1
+            ;;
+        *)
+            mv -vf redeclipse_*.*_*.tar.bz2 releases/ || exit 1
+            ;;
+    esac
+    mv -vf redeclipse_*.*_*.torrent releases/ || exit 1
+    pushd "${SEMABUILD_BUILD}/releases"
+    for j in redeclipse_*.*; do
+        shasum "${j}" > "${j}.shasum"
+        md5sum "${j}" > "${j}.md5sum"
+    done
+    popd
+    ${SEMABUILD_SCP} -r "releases" "${SEMABUILD_TARGET}" || exit 1
+    rm -rf releases
+    popd
 done
-popd
-${SEMABUILD_SCP} -r "releases" "${SEMABUILD_TARGET}" || exit 1
-popd

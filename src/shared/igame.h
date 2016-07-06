@@ -101,6 +101,7 @@ namespace game
     extern void updateworld();
     extern void newmap(int size, const char *mname = "");
     extern void resetmap(bool empty);
+    extern void savemap(bool force = false, const char *mname = "");
     extern void startmap(bool empty = false);
     extern bool allowmove(physent *d);
     extern dynent *iterdynents(int i, bool all = false);

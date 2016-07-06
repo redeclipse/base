@@ -986,6 +986,7 @@ void save_world(const char *mname, bool nodata, bool forcesave)
             if(verbose) conoutf("saved text %s", fname);
         }
     }
+    game::savemap(forcesave, mapname);
 
     int numvslots = vslots.length();
     if(!nodata && !multiplayer(false))
