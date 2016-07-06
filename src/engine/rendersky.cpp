@@ -516,7 +516,6 @@ void drawskybox(int farplane, bool limited)
     if((!glaring || skybgglare) && blendsky)
     {
         SETSHADER(skyfog);
-        notextureshader->set();
 
         matrix4 skymatrix = cammatrix, skyprojmatrix;
         skymatrix.settranslation(0, 0, 0);
