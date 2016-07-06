@@ -5726,6 +5726,13 @@ namespace server
                             if(k >= W_LOADOUT) getint(p);
                             else ci->loadweap.add(getint(p));
                         }
+                        int rw = getint(p);
+                        ci->randweap.shrink(0);
+                        loopk(rw)
+                        {
+                            if(k >= W_LOADOUT) getint(p);
+                            else ci->randweap.add(getint(p));
+                        }
 
                         string password = "", authname = "";
                         getstring(password, p);
