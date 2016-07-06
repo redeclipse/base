@@ -2477,8 +2477,8 @@ namespace client
                     }
                     if(isweap(weap) && m)
                     {
-                        m->weapswitch(weap, lastmillis, weaponswitchdelay);
-                        playsound(WSND(weap, S_W_SWITCH), m->o, m, 0, -1, -1, -1, &m->wschan);
+                        if(m->weapswitch(weap, lastmillis, weaponswitchdelay))
+                            playsound(WSND(weap, S_W_SWITCH), m->o, m, 0, -1, -1, -1, &m->wschan);
                     }
                     break;
                 }

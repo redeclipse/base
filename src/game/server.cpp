@@ -6045,7 +6045,7 @@ namespace server
                 {
                     int lcn = getint(p), id = getint(p), weap = getint(p);
                     clientinfo *cp = (clientinfo *)getinfo(lcn);
-                    if(!hasclient(cp, ci) || !isweap(weap)) break;
+                    if(!hasclient(cp, ci) || !isweap(weap) || weap >= W_ALL) break;
                     switchevent *ev = new switchevent;
                     ev->id = id;
                     ev->weap = weap;

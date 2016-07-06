@@ -675,9 +675,9 @@ struct clientstate
         weaptime[weap] = millis-offtime;
     }
 
-    void weapswitch(int weap, int millis, int delay = 0, int state = W_S_SWITCH)
+    bool weapswitch(int weap, int millis, int delay = 0, int state = W_S_SWITCH)
     {
-        if(isweap(weap))
+        if(isweap(weap) && weap < W_ALL)
         {
             if(isweap(weapselect))
             {
@@ -686,7 +686,9 @@ struct clientstate
             }
             weapselect = weap;
             setweapstate(weap, state, delay, millis);
+            return true;
         }
+        return false;
     }
 
     bool weapwaited(int weap, int millis, int skip = 0)
@@ -815,6 +817,7 @@ struct clientstate
         health = heal > 0 ? heal : (m_insta(gamemode, mutators) ? 1 : m_health(gamemode, mutators, actortype));
         int s = sweap;
         if(!isweap(s)) s = m_weapon(actortype, gamemode, mutators);
+        if(s >= W_ALL) s = W_CLAW;
         if(isweap(s))
         {
             ammo[s] = max(1, W(s, ammomax));

@@ -79,6 +79,7 @@ namespace weapons
     bool weapselect(gameent *d, int weap, int filter, bool local)
     {
         if(!gs_playing(game::gamestate)) return false;
+        bool newoff = false;
         if(local)
         {
             int interrupts = filter;
@@ -87,18 +88,25 @@ namespace weapons
             {
                 if(!d->canswitch(weap, m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis, filter)) return false;
                 else if(!isweap(d->weapselect) || d->weapload[d->weapselect] <= 0) return false;
-                else
+                else newoff = true;
+            }
+        }
+        if(d->weapswitch(weap, lastmillis, weaponswitchdelay))
+        {
+            if(local)
+            {
+                if(newoff)
                 {
                     int offset = d->weapload[d->weapselect];
                     d->ammo[d->weapselect] = max(d->ammo[d->weapselect]-offset, 0);
                     d->weapload[d->weapselect] = -d->weapload[d->weapselect];
                 }
+                client::addmsg(N_WSELECT, "ri3", d->clientnum, lastmillis-game::maptime, weap);
             }
-            client::addmsg(N_WSELECT, "ri3", d->clientnum, lastmillis-game::maptime, weap);
+            playsound(WSND(weap, S_W_SWITCH), d->o, d, 0, -1, -1, -1, &d->wschan);
+            return true;
         }
-        playsound(WSND(weap, S_W_SWITCH), d->o, d, 0, -1, -1, -1, &d->wschan);
-        d->weapswitch(weap, lastmillis, weaponswitchdelay);
-        return true;
+        return false;
     }
 
     bool weapreload(gameent *d, int weap, int load, int ammo, bool local)

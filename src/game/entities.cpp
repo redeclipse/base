@@ -405,7 +405,7 @@ namespace entities
         {
             d->setweapstate(weap, W_S_SWITCH, weaponswitchdelay, lastmillis);
             d->ammo[weap] = -1;
-            if(d->weapselect != weap)
+            if(d->weapselect != weap && weap < W_ALL)
             {
                 d->addlastweap(d->weapselect);
                 d->weapselect = weap;
