@@ -759,10 +759,9 @@ static int draw_key(Texture *&tex, const char *str, float sx, float sy)
             tex = oldtex;
             glBindTexture(GL_TEXTURE_2D, tex->id);
         }
-        defformatbigstring(key_str, "\fs\fa[\fS%s\fs\fa]\fS", list[i]);
-        float key_width = text_widthf(key_str);
-        draw_text(key_str, sx + width, sy, 255, 255, 255, 255, 0, -1, -1, 1, key_width);
-        width += key_width;
+        defformatbigstring(keystr, "\fs\fa[\fS%s\fs\fa]\fS", list[i]);
+        draw_text(keystr, sx + width, sy, 255, 255, 255, 255, 0, -1, -1, 1, -1);
+        width += text_widthf(keystr);
     }
     list.deletearrays();
     return width;
