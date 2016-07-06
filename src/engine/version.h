@@ -1,7 +1,7 @@
 #define VERSION_MAJOR 1
 #define VERSION_MINOR 5
-#define VERSION_PATCH 5
-#define VERSION_STRING "1.5.5"
+#define VERSION_PATCH 6
+#define VERSION_STRING "1.5.6"
 #define VERSION_NAME "Red Eclipse"
 #define VERSION_UNAME "redeclipse"
 #define VERSION_VNAME "REDECLIPSE"
