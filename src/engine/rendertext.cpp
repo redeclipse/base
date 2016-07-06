@@ -716,7 +716,7 @@ float key_widthf(const char *str)
             }
             // fallback if not found
         }
-        width += text_widthf(list[i]);
+        width += text_widthf(list[i]) + text_widthf("[]");
     }
     list.deletearrays();
     return width;
