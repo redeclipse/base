@@ -523,7 +523,7 @@ void drawskybox(int farplane, bool limited)
         LOCALPARAM(skymatrix, skyprojmatrix);
 
         gle::color(vec::hexcolor(skybgcolour));
-        drawenvboxbg(farplane/2); //, skyclip, topclip, yawskyfaces(renderedskyfaces, yawsky, spinsky));
+        drawenvboxbg(farplane/2, skyclip, topclip, yawskyfaces(renderedskyfaces, yawsky, spinsky));
     }
 
     if(glaring) SETSHADER(skyboxglare);
