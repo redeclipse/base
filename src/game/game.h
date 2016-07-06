@@ -1674,7 +1674,7 @@ namespace hud
 enum { CTONE_TEAM = 0, CTONE_TONE, CTONE_TEAMED, CTONE_ALONE, CTONE_MIXED, CTONE_TMIX, CTONE_AMIX, CTONE_MAX };
 namespace game
 {
-    extern int gamestate, gamemode, mutators, nextmode, nextmuts, timeremaining, lasttimeremain, maptime, lastzoom, lasttvcam, lasttvchg, spectvtime, waittvtime,
+    extern int gamestate, gamemode, mutators, nextmode, nextmuts, timeremaining, lasttimeremain, maptime, lastzoom, prevzoom, lasttvcam, lasttvchg, spectvtime, waittvtime,
             bloodfade, bloodsize, bloodsparks, debrisfade, eventiconfade, eventiconshort,
             announcefilter, dynlighteffects, aboveheadnames, followthirdperson, nogore, forceplayermodel,
             playerovertone, playerundertone, playerdisplaytone, playereffecttone, playerteamtone, follow, specmode, spectvfollow, spectvfollowing, clientcrc;
@@ -1724,7 +1724,6 @@ namespace game
     extern int deadzone();
     extern void checkzoom();
     extern bool inzoom();
-    extern bool inzoomswitch();
     extern void zoomview(bool down);
     extern bool tvmode(bool check = true, bool force = true);
     extern void resetcamera(bool cam = true, bool input = true);

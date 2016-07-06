@@ -1314,7 +1314,12 @@ namespace hud
             {
                 int frame = lastmillis-game::lastzoom, off = int(zoomcrosshairsize*hudsize)-cs;
                 float amt = frame <= W(game::focus->weapselect, cookzoom) ? clamp(float(frame)/float(W(game::focus->weapselect, cookzoom)), 0.f, 1.f) : 1.f;
-                if(!game::zooming) amt = 1.f-amt;
+                if(!game::zooming)
+                {
+                    float prevframe = game::lastzoom - game::prevzoom;
+                    float maxamt = prevframe <= W(game::focus->weapselect, cookzoom) ? float(prevframe)/float(W(game::focus->weapselect, cookzoom)) : 1.f;
+                    amt = amt > maxamt ? 0.f : maxamt - amt;
+                }
                 cs += int(off*amt);
                 fade += (zoomcrosshairblend-fade)*amt;
             }
@@ -3262,7 +3267,12 @@ namespace hud
         Texture *t = textureload(zoomtex, 3);
         int frame = lastmillis-game::lastzoom;
         float pc = frame <= W(game::focus->weapselect, cookzoom) ? float(frame)/float(W(game::focus->weapselect, cookzoom)) : 1.f;
-        if(!game::zooming) pc = 1.f-pc;
+        if(!game::zooming)
+        {
+            float prevframe = game::lastzoom - game::prevzoom;
+            float maxpc = prevframe <= W(game::focus->weapselect, cookzoom) ? float(prevframe)/float(W(game::focus->weapselect, cookzoom)) : 1.f;
+            pc = pc > maxpc ? 0.f : maxpc - pc;
+        }
         int x = 0, y = 0, c = 0;
         if(w > h)
         {
