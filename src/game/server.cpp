@@ -2324,7 +2324,7 @@ namespace server
         {
             lilswap(&hdr.gamever, 4);
             if(hdr.gamever!=VERSION_GAME)
-                formatstring(msg, "\frdemo \fs\fc%s\fS requires %s version of %s", file, hdr.gamever<VERSION_GAME ? "an older" : "a newer", VERSION_NAME);
+                formatstring(msg, "\frdemo \fs\fc%s\fS requires %s version of %s", file, hdr.gamever<VERSION_GAME ? "an older" : "a newer", versionname);
         }
         if(msg[0])
         {
@@ -2414,7 +2414,7 @@ namespace server
         {
             lilswap(&d.hdr.gamever, 4);
             if(d.hdr.gamever!=VERSION_GAME)
-                formatstring(msg, "\frdemo \fs\fc%s\fS requires \fs\fc%s\fS version of %s", name, d.hdr.gamever<VERSION_GAME ? "an older" : "a newer", VERSION_NAME);
+                formatstring(msg, "\frdemo \fs\fc%s\fS requires \fs\fc%s\fS version of %s", name, d.hdr.gamever<VERSION_GAME ? "an older" : "a newer", versionname);
         }
         delete f;
         if(msg[0])

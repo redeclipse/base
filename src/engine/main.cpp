@@ -12,7 +12,7 @@ void setcaption(const char *text, const char *text2)
     {
         copystring(prevtext, text);
         copystring(prevtext2, text2);
-        formatstring(caption, "%s v%s-%s%d-%s (%s)%s%s%s%s", VERSION_NAME, VERSION_STRING, versionplatname, versionarch, versionbranch, VERSION_RELEASE, text[0] ? ": " : "", text, text2[0] ? " - " : "", text2);
+        formatstring(caption, "%s v%s-%s%d-%s (%s)%s%s%s%s", versionname, versionstring, versionplatname, versionarch, versionbranch, versionrelease, text[0] ? ": " : "", text, text2[0] ? " - " : "", text2);
         if(screen) SDL_SetWindowTitle(screen, caption);
     }
 }
@@ -140,7 +140,7 @@ void fatal(const char *s, ...)    // failure exit
                 #endif
             }
             SDL_Quit();
-            defformatstring(cap, "%s: Error", VERSION_NAME);
+            defformatstring(cap, "%s: Error", versionname);
             SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, cap, msg, NULL);
         }
     }
@@ -715,7 +715,7 @@ void stackdumper(unsigned int type, EXCEPTION_POINTERS *ep)
     EXCEPTION_RECORD *er = ep->ExceptionRecord;
     CONTEXT *context = ep->ContextRecord;
     bigstring out;
-    formatstring(out, "%s Win32 Exception: 0x%x [0x%x]\n\n", VERSION_NAME, er->ExceptionCode, er->ExceptionCode==EXCEPTION_ACCESS_VIOLATION ? er->ExceptionInformation[1] : -1);
+    formatstring(out, "%s Win32 Exception: 0x%x [0x%x]\n\n", versionname, er->ExceptionCode, er->ExceptionCode==EXCEPTION_ACCESS_VIOLATION ? er->ExceptionInformation[1] : -1);
     SymInitialize(GetCurrentProcess(), NULL, TRUE);
 #ifdef _AMD64_
     STACKFRAME64 sf = {{context->Rip, 0, AddrModeFlat}, {}, {context->Rbp, 0, AddrModeFlat}, {context->Rsp, 0, AddrModeFlat}, 0};

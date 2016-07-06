@@ -373,7 +373,7 @@ struct aviwriter
         endlistchunk(); // LIST odml
 
         listchunk("LIST", "INFO");
-        const char *software = VERSION_NAME;
+        const char *software = versionname;
         writechunk("ISFT", software, strlen(software)+1);
         endlistchunk(); // LIST INFO
 
