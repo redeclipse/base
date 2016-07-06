@@ -1869,6 +1869,11 @@ namespace game
     {
     }
 
+    void savemap(bool force, const char *mname)
+    {
+        ai::savemap(force, mname);
+    }
+
     void startmap(bool empty) // called just after a map load
     {
         ai::startmap(empty);
