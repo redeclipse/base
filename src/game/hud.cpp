@@ -1696,35 +1696,30 @@ namespace hud
         if(m_capture(game::gamemode)) capture::drawevents(hudwidth, hudheight, tx, ty, tr, tg, tb, tf/255.f);
         else if(m_defend(game::gamemode)) defend::drawevents(hudwidth, hudheight, tx, ty, tr, tg, tb, tf/255.f);
         else if(m_bomber(game::gamemode)) bomber::drawevents(hudwidth, hudheight, tx, ty, tr, tg, tb, tf/255.f);
-        if(showeventicons && game::focus->state != CS_EDITING && game::focus->state != CS_SPECTATOR)
+        if(showeventicons && game::focus->state != CS_EDITING && game::focus->state != CS_SPECTATOR) loopv(game::focus->icons)
         {
-            ty = int(((hudheight/2)+(hudheight/2*eventoffset))/eventscale);
-            tx = int(((hudwidth/2)+(hudwidth/2*eventoffset))/eventscale);
-            loopv(game::focus->icons)
+            if(game::focus->icons[i].type == eventicon::AFFINITY && !(showeventicons&2)) continue;
+            if(game::focus->icons[i].type == eventicon::WEAPON && !(showeventicons&4)) continue;
+            int millis = lastmillis-game::focus->icons[i].millis;
+            if(millis <= game::focus->icons[i].fade)
             {
-                if(game::focus->icons[i].type == eventicon::AFFINITY && !(showeventicons&2)) continue;
-                if(game::focus->icons[i].type == eventicon::WEAPON && !(showeventicons&4)) continue;
-                int millis = lastmillis-game::focus->icons[i].millis;
-                if(millis <= game::focus->icons[i].fade)
+                Texture *t = textureload(icontex(game::focus->icons[i].type, game::focus->icons[i].value));
+                if(t && t != notexture)
                 {
-                    Texture *t = textureload(icontex(game::focus->icons[i].type, game::focus->icons[i].value));
-                    if(t && t != notexture)
+                    int olen = min(game::focus->icons[i].length/5, 1000), ilen = olen/2, colour = 0xFFFFFF;
+                    float skew = millis < ilen ? millis/float(ilen) : (millis > game::focus->icons[i].fade-olen ? (game::focus->icons[i].fade-millis)/float(olen) : 1.f),
+                          fade = blend*eventblend*skew;
+                    int size = int(FONTH*skew*eventiconscale), width = int((t->w/float(t->h))*size);
+                    switch(game::focus->icons[i].type)
                     {
-                        int olen = min(game::focus->icons[i].length/5, 1000), ilen = olen/2, colour = 0xFFFFFF;
-                        float skew = millis < ilen ? millis/float(ilen) : (millis > game::focus->icons[i].fade-olen ? (game::focus->icons[i].fade-millis)/float(olen) : 1.f),
-                              fade = blend*eventblend*skew;
-                        int size = int(FONTH*skew*eventiconscale), width = int((t->w/float(t->h))*size);
-                        switch(game::focus->icons[i].type)
-                        {
-                            case eventicon::WEAPON: colour = W(game::focus->icons[i].value, colour); break;
-                            case eventicon::AFFINITY: colour = m_bomber(game::gamemode) ? pulsecols[PULSE_DISCO][clamp((totalmillis/100)%PULSECOLOURS, 0, PULSECOLOURS-1)] : TEAM(game::focus->icons[i].value, colour); break;
-                            default: break;
-                        }
-                        glBindTexture(GL_TEXTURE_2D, t->id);
-                        gle::color(vec::hexcolor(colour), fade);
-                        drawtexture(tx-width/2, ty-size, width, size);
-                        ty -= game::focus->icons[i].type < eventicon::SORTED ? int(size*2/3) : int(size);
+                        case eventicon::WEAPON: colour = W(game::focus->icons[i].value, colour); break;
+                        case eventicon::AFFINITY: colour = m_bomber(game::gamemode) ? pulsecols[PULSE_DISCO][clamp((totalmillis/100)%PULSECOLOURS, 0, PULSECOLOURS-1)] : TEAM(game::focus->icons[i].value, colour); break;
+                        default: break;
                     }
+                    glBindTexture(GL_TEXTURE_2D, t->id);
+                    gle::color(vec::hexcolor(colour), fade);
+                    drawtexture(tx-width/2, ty-size, width, size);
+                    ty -= game::focus->icons[i].type < eventicon::SORTED ? int(size*2/3) : int(size);
                 }
             }
         }
