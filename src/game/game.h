@@ -1724,7 +1724,6 @@ namespace game
     extern int deadzone();
     extern void checkzoom();
     extern bool inzoom();
-    extern bool inzoomswitch();
     extern void zoomview(bool down);
     extern bool tvmode(bool check = true, bool force = true);
     extern void resetcamera(bool cam = true, bool input = true);
