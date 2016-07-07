@@ -3,8 +3,8 @@
 namespace game
 {
     int nextmode = G_EDITMODE, nextmuts = 0, gamestate = G_S_WAITING, gamemode = G_EDITMODE, mutators = 0, maptime = 0, timeremaining = 0, lasttimeremain = 0,
-        lastcamera = 0, lasttvcam = 0, lasttvchg = 0, lastzoom = 0, spectvfollowing = -1, starttvcamdyn = -1, lastcamcn = -1;
-    bool prevzoom = false, zooming = false, inputmouse = false, inputview = false, inputmode = false;
+        lastcamera = 0, lasttvcam = 0, lasttvchg = 0, lastzoom = 0, prevzoom = 0, spectvfollowing = -1, starttvcamdyn = -1, lastcamcn = -1;
+    bool zooming = false, inputmouse = false, inputview = false, inputmode = false;
     float swayfade = 0, swayspeed = 0, swaydist = 0, bobfade = 0, bobdist = 0;
     vec swaydir(0, 0, 0), swaypush(0, 0, 0);
 
@@ -514,8 +514,8 @@ namespace game
     {
         if(on != zooming)
         {
+            prevzoom = lastzoom;
             lastzoom = millis;
-            prevzoom = zooming;
             if(zoomdefault >= 0 && on) zoomlevel = zoomdefault;
         }
         checkzoom();
@@ -524,18 +524,11 @@ namespace game
 
     bool inzoom()
     {
-        if(lastzoom && (zooming || lastmillis-lastzoom <= W(focus->weapselect, cookzoom)))
+        if(lastzoom && (zooming || lastmillis-lastzoom <= min(lastzoom - prevzoom, W(focus->weapselect, cookzoom))))
             return true;
         return false;
     }
     ICOMMAND(0, iszooming, "", (), intret(inzoom() ? 1 : 0));
-
-    bool inzoomswitch()
-    {
-        if(lastzoom && ((zooming && lastmillis-lastzoom >= W(focus->weapselect, cookzoom)/2) || (!zooming && lastmillis-lastzoom <= W(focus->weapselect, cookzoom)/2)))
-            return true;
-        return false;
-    }
 
     void resetsway()
     {
@@ -2143,7 +2136,13 @@ namespace game
             int frame = lastmillis-lastzoom;
             float zoom = W(game::focus->weapselect, cookzoommax)-((W(game::focus->weapselect, cookzoommax)-W(game::focus->weapselect, cookzoommin))/float(zoomlevels)*zoomlevel),
                   diff = float(fov()-zoom), amt = frame < W(focus->weapselect, cookzoom) ? clamp(frame/float(W(focus->weapselect, cookzoom)), 0.f, 1.f) : 1.f;
-            if(!zooming) amt = 1.f-amt;
+            if(!zooming)
+            {
+                float prevframe = lastzoom - prevzoom;
+                float maxamt = prevframe < W(focus->weapselect, cookzoom) ? clamp(prevframe/float(W(focus->weapselect, cookzoom)), 0.f, 1.f) : 1.f;
+                amt = amt > maxamt ? 0.f : maxamt - amt;
+            }
+
             curfov = fov()-(amt*diff);
         }
         else curfov = float(fov());
