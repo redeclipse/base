@@ -696,6 +696,8 @@ static const char *gettklp(const char *str)
     return t->blist.search(str, type, "", "", " ", " ", 5);
 }
 
+#define defformatkey(dest, key) defformatbigstring((dest), "\fs\fa[\fS%s\fs\fa]\fS", (key))
+
 float key_widthf(const char *str)
 {
     const char *keyn = str;
@@ -716,7 +718,8 @@ float key_widthf(const char *str)
             }
             // fallback if not found
         }
-        width += text_widthf(list[i]) + text_widthf("[]");
+        defformatkey(keystr, list[i]);
+        width += text_widthf(keystr);
     }
     list.deletearrays();
     return width;
@@ -759,7 +762,7 @@ static int draw_key(Texture *&tex, const char *str, float sx, float sy)
             tex = oldtex;
             glBindTexture(GL_TEXTURE_2D, tex->id);
         }
-        defformatbigstring(keystr, "\fs\fa[\fS%s\fs\fa]\fS", list[i]);
+        defformatkey(keystr, list[i]);
         draw_text(keystr, sx + width, sy, 255, 255, 255, 255, 0, -1, -1, 1, -1);
         width += text_widthf(keystr);
     }
