@@ -763,7 +763,7 @@ static int draw_key(Texture *&tex, const char *str, float sx, float sy)
             glBindTexture(GL_TEXTURE_2D, tex->id);
         }
         defformatkey(keystr, list[i]);
-        draw_text(keystr, sx + width, sy, 64,  255, 255, 255, 0, -1, -1, 1, -1);
+        draw_text(keystr, sx + width, sy, 64, 255, 255, 255, 0, -1, -1, 1, -1);
         width += text_widthf(keystr);
     }
     list.deletearrays();
