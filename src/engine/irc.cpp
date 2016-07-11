@@ -50,7 +50,7 @@ void ircprintf(ircnet *n, int relay, const char *target, const char *msg, ...)
     {
         formatstring(s, "\fs\fa[%s]\fS", n->name);
         #ifndef STANDALONE
-        n->buffer.addline(newstring(str), MAXIRCLINES);
+        n->buffer.addline(str, MAXIRCLINES);
         n->updated |= IRCUP_MSG;
         #endif
     }
