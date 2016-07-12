@@ -112,7 +112,7 @@ void quit()                  // normal exit
     writeservercfg();
     writecfg();
     abortconnect();
-    disconnect(1);
+    disconnect(true);
     cleanup();
     exit(EXIT_SUCCESS);
 }

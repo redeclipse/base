@@ -545,7 +545,7 @@ extern vector<serverinfo *> servers;
 
 extern void sendclientpacket(ENetPacket *packet, int chan);
 extern void flushclient();
-extern void disconnect(int onlyclean = 0, int async = 0);
+extern void disconnect(bool onlyclean = false, bool async = false);
 extern bool multiplayer(bool msg = true);
 extern void neterr(const char *s);
 extern void gets2c();
