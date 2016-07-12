@@ -10,6 +10,7 @@ VAR(IDF_PERSIST, textminintensity, 0, 32, 255);
 VAR(IDF_PERSIST, textkeyimages, 0, 1, 1);
 FVAR(IDF_PERSIST, textkeyimagescale, 0, 1, FVAR_MAX);
 VAR(IDF_PERSIST, textkeyseps, 0, 1, 1);
+VAR(IDF_PERSIST|IDF_HEX, textkeycolour, 0, 0x00FFFF, 0xFFFFFF);
 
 Texture *tbgbordertex = NULL, *tbgtex = NULL;
 VAR(IDF_PERSIST, textskin, 0, 2, 2);
@@ -696,7 +697,7 @@ static const char *gettklp(const char *str)
     return t->blist.search(str, type, "", "", " ", " ", 5);
 }
 
-#define defformatkey(dest, key) defformatbigstring((dest), "\fs\fa[\fS%s\fs\fa]\fS", (key))
+#define defformatkey(dest, key) defformatbigstring((dest), "\fs\fa[\fS\fs\f[%d]%s\fS\fs\fa]\fS", textkeycolour, (key))
 
 float key_widthf(const char *str)
 {
