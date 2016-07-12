@@ -6993,7 +6993,12 @@ namespace server
                     {
                         if(oldtype == PLAYERSTART || sents[n].type == PLAYERSTART) setupspawns(true);
                         hasgameinfo = true;
-                        QUEUE_MSG;
+                        packetbuf cep(MAXTRANS, ENET_PACKET_FLAG_RELIABLE);
+                        putint(cep, N_CLIENT);
+                        putint(cep, ci->clientnum);
+                        putuint(cep, p.length());
+                        cep.put(p.getbuf(), p.length());
+                        sendpacket(-1, 1, cep.finalize(), ci->clientnum);
                         if(tweaked && enttype[sents[n].type].usetype != EU_NONE)
                         {
                             if(enttype[sents[n].type].usetype == EU_ITEM) setspawn(n, true, true, true);
