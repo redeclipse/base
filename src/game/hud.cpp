@@ -95,10 +95,10 @@ namespace hud
     FVAR(IDF_PERSIST, noticepadx, FVAR_MIN, 0, FVAR_MAX);
     FVAR(IDF_PERSIST, noticepady, FVAR_MIN, 0, FVAR_MAX);
     VAR(IDF_PERSIST, noticetitle, 0, 10000, 60000);
-    FVAR(IDF_PERSIST, eventoffset, -1, 0.61f, 1);
+    FVAR(IDF_PERSIST, eventoffset, -1, 0.58f, 1);
     FVAR(IDF_PERSIST, eventblend, 0, 1, 1);
     FVAR(IDF_PERSIST, eventscale, 1e-4f, 1, 1000);
-    FVAR(IDF_PERSIST, eventiconscale, 1e-4f, 3, 1000);
+    FVAR(IDF_PERSIST, eventiconscale, 1e-4f, 2.35f, 1000);
     FVAR(IDF_PERSIST, eventpadx, FVAR_MIN, 0.5f, FVAR_MAX);
     FVAR(IDF_PERSIST, eventpady, FVAR_MIN, 0.125f, FVAR_MAX);
     VAR(IDF_PERSIST, noticetime, 0, 5000, VAR_MAX);
@@ -1678,7 +1678,7 @@ namespace hud
             tf = int(hudblend*eventblend*255), tr = 255, tg = 255, tb = 255,
             tw = int((hudwidth-((hudsize*edgesize)*2+(hudsize*inventoryleft)+(hudsize*inventoryright)))/eventscale);
         if(eventtone) skewcolour(tr, tg, tb, eventtone);
-        pushfont("huge");
+        pushfont("emphasis");
         if(!gs_playing(game::gamestate))
             ty -= draw_textf("%s", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), 255, 255, 255, tf, TEXT_CENTERED, -1, tw, 1, gamestates[2][game::gamestate])+FONTH/3;
         else
@@ -1709,7 +1709,7 @@ namespace hud
                     int olen = min(game::focus->icons[i].length/5, 1000), ilen = olen/2, colour = 0xFFFFFF;
                     float skew = millis < ilen ? millis/float(ilen) : (millis > game::focus->icons[i].fade-olen ? (game::focus->icons[i].fade-millis)/float(olen) : 1.f),
                           fade = blend*eventblend*skew;
-                    int size = int(FONTH*skew*eventiconscale), width = int((t->w/float(t->h))*size);
+                    int size = int(FONTH*skew*eventiconscale), width = int((t->w/float(t->h))*size), rsize = game::focus->icons[i].type < eventicon::SORTED ? int(size*2/3) : int(size);
                     switch(game::focus->icons[i].type)
                     {
                         case eventicon::WEAPON: colour = W(game::focus->icons[i].value, colour); break;
@@ -1718,8 +1718,8 @@ namespace hud
                     }
                     glBindTexture(GL_TEXTURE_2D, t->id);
                     gle::color(vec::hexcolor(colour), fade);
-                    drawtexture(tx-width/2, ty-size, width, size);
-                    ty -= game::focus->icons[i].type < eventicon::SORTED ? int(size*2/3) : int(size);
+                    drawtexture(tx-width/2, ty-rsize/2, width, size);
+                    ty -= rsize;
                 }
             }
         }

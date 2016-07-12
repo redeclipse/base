@@ -232,7 +232,7 @@ namespace game
     FVAR(IDF_PERSIST, aboveheadsmooth, 0, 0.25f, 1);
     VAR(IDF_PERSIST, aboveheadsmoothmillis, 1, 100, 10000);
 
-    VAR(IDF_PERSIST, eventiconfade, 500, 7000, VAR_MAX);
+    VAR(IDF_PERSIST, eventiconfade, 500, 8000, VAR_MAX);
     VAR(IDF_PERSIST, eventiconshort, 500, 3500, VAR_MAX);
 
     VAR(IDF_PERSIST, showobituaries, 0, 4, 5); // 0 = off, 1 = only me, 2 = 1 + announcements, 3 = 2 + but dying bots, 4 = 3 + but bot vs bot, 5 = all
