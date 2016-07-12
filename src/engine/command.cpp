@@ -1245,7 +1245,7 @@ done:
     }
     return;
 invalid:
-    if (lookup) delete[] lookup;
+    delete[] lookup;
     switch(ltype)
     {
         case VAL_NULL: case VAL_ANY: compilenull(code); break;
