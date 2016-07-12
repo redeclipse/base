@@ -84,7 +84,7 @@ void setnames(const char *fname, int type, int crc)
     formatstring(mf, "%s%s", mapname, mapexts[maptype].name);
     setsvar("mapfile", mf);
 
-    conoutf("set map name to %s (%s)", mapname, mapfile);
+    if(verbose >= 1) conoutf("set map name to %s (%s)", mapname, mapfile);
 }
 
 enum { OCTSAV_CHILDREN = 0, OCTSAV_EMPTY, OCTSAV_SOLID, OCTSAV_NORMAL, OCTSAV_LODCUBE };
