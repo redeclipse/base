@@ -198,11 +198,6 @@ extern int text_visible(const char *str, float hitx, float hity, int maxwidth = 
 extern void text_posf(const char *str, int cursor, float &cx, float &cy, int maxwidth, int flags = 0, float linespace = 0);
 extern float key_widthf(const char *str);
 
-static inline int text_width(const char *str, int xpad = 0, int ypad = 0, int flags = 0, float linespace = 0)
-{
-    return int(ceil(text_widthf(str, xpad, ypad, flags, linespace)));
-}
-
 static inline void text_bounds(const char *str, int &width, int &height, int xpad = 0, int ypad = 0, int maxwidth = -1, int flags = 0, float linespace = 0)
 {
     float widthf, heightf;

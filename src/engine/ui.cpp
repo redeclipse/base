@@ -1039,7 +1039,7 @@ struct gui : guient
         drawslice(start, end, x+s/2, y+s/2, s);
         if(text && *text)
         {
-            int w = text_width(text, 0, 0, TEXT_NO_INDENT);
+            int w = int(ceil(text_widthf(text, 0, 0, TEXT_NO_INDENT)));
             text_(text, x+s/2-w/2, y+s/2-FONTH/2, 0xFFFFFF, guitextblend);
         }
     }
