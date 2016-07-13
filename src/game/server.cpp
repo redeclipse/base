@@ -468,12 +468,12 @@ namespace server
         string name, handle;
         int points, frags, deaths, localtotalpoints, localtotalfrags, localtotaldeaths, spree, rewards, timeplayed, timealive, timeactive, shotdamage, damage, cptime, actortype;
         int warnings[WARN_MAX][2];
-        vector<teamkill> teamkills;
+        bool quarantine;
         weaponstats weapstats[W_MAX];
+        vector<teamkill> teamkills;
         vector<capturestats> captures;
         vector<bombstats> bombings;
         vector<ffaroundstats> ffarounds;
-        bool quarantine;
 
         void save(clientinfo *ci)
         {
@@ -488,17 +488,21 @@ namespace server
             timeplayed = ci->timeplayed;
             timealive = ci->timealive;
             timeactive = ci->timeactive;
-            teamkills = ci->teamkills;
             shotdamage = ci->shotdamage;
             damage = ci->damage;
             cptime = ci->cptime;
             actortype = ci->actortype;
             loopi(W_MAX) weapstats[i] = ci->weapstats[i];
-            captures = ci->captures;
-            bombings = ci->bombings;
-            ffarounds = ci->ffarounds;
             loopi(WARN_MAX) loopj(2) warnings[i][j] = ci->warnings[i][j];
             quarantine = ci->quarantine;
+            teamkills.shrink(0);
+            loopv(ci->teamkills) teamkills.add(ci->teamkills[i]);
+            captures.shrink(0);
+            loopv(ci->captures) captures.add(ci->captures[i]);
+            bombings.shrink(0);
+            loopv(ci->bombings) bombings.add(ci->bombings[i]);
+            ffarounds.shrink(0);
+            loopv(ci->ffarounds) ffarounds.add(ci->ffarounds[i]);
         }
 
         void restore(clientinfo *ci)
@@ -517,16 +521,20 @@ namespace server
             ci->timeplayed = timeplayed;
             ci->timealive = timealive;
             ci->timeactive = timeactive;
-            ci->teamkills = teamkills;
             ci->shotdamage = shotdamage;
             ci->damage = damage;
             ci->cptime = cptime;
             loopi(W_MAX) ci->weapstats[i] = weapstats[i];
-            ci->captures = captures;
-            ci->bombings = bombings;
-            ci->ffarounds = ffarounds;
             loopi(WARN_MAX) loopj(2) ci->warnings[i][j] = warnings[i][j];
             ci->quarantine = quarantine;
+            ci->teamkills.shrink(0);
+            loopv(teamkills) ci->teamkills.add(teamkills[i]);
+            ci->captures.shrink(0);
+            loopv(captures) ci->captures.add(captures[i]);
+            ci->bombings.shrink(0);
+            loopv(bombings) ci->bombings.add(bombings[i]);
+            ci->ffarounds.shrink(0);
+            loopv(ffarounds) ci->ffarounds.add(ffarounds[i]);
         }
 
         void mapchange()
