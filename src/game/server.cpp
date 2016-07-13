@@ -3148,13 +3148,10 @@ namespace server
     bool getmap(clientinfo *ci, bool force)
     {
         if(gs_intermission(gamestate)) return false; // pointless
-        if(m_edit(gamemode) && numclients() <= 1)
+        if(ci && !numclients(ci->clientnum))
         {
-            if(ci)
-            {
-                ci->wantsmap = false;
-                sendf(ci->clientnum, 1, "ri", N_FAILMAP);
-            }
+            ci->wantsmap = false;
+            sendf(ci->clientnum, 1, "ri", N_FAILMAP);
             return false;
         }
         if(ci)
@@ -3239,7 +3236,7 @@ namespace server
             }
             return true;
         }
-        if(ci) srvmsgft(ci->clientnum, CON_EVENT, "\fysorry, unable to get a valid map..");
+        if(ci) srvmsgft(ci->clientnum, CON_EVENT, "\fysorry, unable to get a map..");
         sendf(-1, 1, "ri", N_FAILMAP);
         return false;
     }
@@ -6029,7 +6026,7 @@ namespace server
                         if(hasmapdata()) srvoutf(4, "\fy%s has map crc: \fs\fc0x%.8x\fS (server: \fs\fc0x%.8x\fS)", colourname(ci), ci->clientcrc, smapcrc);
                         else srvoutf(4, "\fy%s has map crc: \fs\fc0x%.8x\fS", colourname(ci), ci->clientcrc);
                     }
-                    getmap(crclocked(ci, true) ? ci : NULL);
+                    if(crclocked(ci, true)) getmap(ci);
                     if(ci->isready()) aiman::poke();
                     break;
                 }
@@ -7072,7 +7069,7 @@ namespace server
                 case N_GETMAP:
                 {
                     ci->ready = true;
-                    if(!getmap(ci) && numclients() <= 1) sendf(ci->clientnum, 1, "ri", N_FAILMAP);
+                    getmap(ci);
                     break;
                 }
 
