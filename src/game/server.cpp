@@ -6976,8 +6976,9 @@ namespace server
                 case N_EDITENT:
                 {
                     int n = getint(p), oldtype = NOTUSED, newtype = NOTUSED;
+                    ivec o(0, 0, 0);
                     bool tweaked = false, inrange = n < MAXENTS;
-                    loopk(3) getint(p);
+                    loopk(3) o[k] = getint(p);
                     if(p.overread()) break;
                     if(sents.inrange(n)) oldtype = sents[n].type;
                     else if(inrange) while(sents.length() <= n) sents.add();
@@ -6996,13 +6997,25 @@ namespace server
                     }
                     if(inrange)
                     {
-                        if(oldtype == PLAYERSTART || sents[n].type == PLAYERSTART) setupspawns(true);
                         hasgameinfo = true;
-                        QUEUE_MSG;
-                        if(tweaked && enttype[sents[n].type].usetype != EU_NONE)
+                        sents[n].o = vec(o).div(DMF);
+                        packetbuf q(MAXTRANS, ENET_PACKET_FLAG_RELIABLE);
+                        putint(q, N_CLIENT);
+                        putint(q, ci->clientnum);
+                        putint(q, N_EDITENT);
+                        putint(q, n);
+                        putint(q, o.x);
+                        putint(q, o.y);
+                        putint(q, o.z);
+                        putint(q, sents[n].type);
+                        putint(q, sents[n].attrs.length());
+                        loopvk(sents[n].attrs) putint(q, sents[n].attrs[k]);
+                        sendpacket(-1, 1, q.finalize(), ci->clientnum);
+                        if(tweaked)
                         {
                             if(enttype[sents[n].type].usetype == EU_ITEM) setspawn(n, true, true, true);
-                            if(sents[n].type == TRIGGER) setuptriggers(true);
+                            if(oldtype == PLAYERSTART || sents[n].type == PLAYERSTART) setupspawns(true);
+                            if(oldtype == TRIGGER || sents[n].type == TRIGGER) setuptriggers(true);
                         }
                     }
                     break;
