@@ -251,7 +251,7 @@ namespace game
     VAR(IDF_PERSIST, playreloadnotify, 0, 3, 15);
     VAR(IDF_PERSIST, reloadnotifyvol, -1, -1, 255);
 
-    VAR(IDF_PERSIST, deathanim, 0, 3, 3); // 0 = hide player when dead, 1 = old death animation, 2 = ragdolls, 3 = ragdolls, but hide in duke
+    VAR(IDF_PERSIST, deathanim, 0, 2, 3); // 0 = hide player when dead, 1 = old death animation, 2 = ragdolls, 3 = ragdolls, but hide in duke
     VAR(IDF_PERSIST, deathfade, 0, 1, 1); // 0 = don't fade out dead players, 1 = fade them out
     VAR(IDF_PERSIST, deathscale, 0, 0, 1); // 0 = don't scale out dead players, 1 = scale them out
     VAR(IDF_PERSIST, deathmaxfade, 0, 0, VAR_MAX);
