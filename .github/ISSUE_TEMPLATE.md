@@ -1,9 +1,17 @@
-## Have you verified that you can reproduce the problem? [Y/N]
-
-## Have you checked on the forums or issue tracker to see if your issue has already been reported and/or resolved upstream? [Y/N]
-
-## Provide a good description along with a link to your original forum topic (if applicable).
+**Note**: Only report a feature request if it was already discussed on the forums. For reporting bugs and other problems, you can delete this note and use the following template. You can insert screenshots with drag&drop.
 
 
-## Attach, or provide direct links to, any files which demonstrates your issue and any patches you might have here.
+---
+**First seen in**: commit ... / stable version ... / current master
 
+**Related forum topic**: http://redeclipse.net/forum/viewtopic.php?f=7&t=...
+
+**Observation**: 
+
+**How to reproduce**:
+1. 
+2. 
+... 
+
+I searched the issue list and checked that this is not a duplicate :white_check_mark: 
+I tried to rename my *config.cfg*, and the problem also occurs with default settings :white_check_mark: 
