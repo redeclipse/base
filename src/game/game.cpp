@@ -673,8 +673,7 @@ namespace game
             else switch(player1->state)
             {
                 case CS_SPECTATOR: if(specmode || (force && focus != player1 && followmode && followaim())) return true; break;
-                case CS_WAITING: if((waitmode && (!player1->lastdeath || lastmillis-player1->lastdeath >= 500)) || (force && focus != player1 && followmode && followaim()))
-                    return true; break;
+                case CS_WAITING: if((waitmode && (!player1->lastdeath || lastmillis-player1->lastdeath >= 500)) || (force && focus != player1 && followmode && followaim())) return true; break;
                 default: break;
             }
         }
