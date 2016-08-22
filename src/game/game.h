@@ -555,7 +555,7 @@ struct clientstate
         actortype(A_PLAYER), spawnpoint(-1), ownernum(-1), skill(0), points(0), frags(0), deaths(0), totalpoints(0), totalfrags(0), totaldeaths(0), spree(0), lasttimeplayed(0), timeplayed(0),
         cpmillis(0), cptime(0), queuepos(-1), quarantine(false)
     {
-        setvanity();
+        vanity[0] = '\0';
         loadweap.shrink(0);
         lastweap.shrink(0);
         randweap.shrink(0);
@@ -563,10 +563,10 @@ struct clientstate
     }
     ~clientstate() {}
 
-    bool setvanity(const char *v = "")
+    bool setvanity(const char *v)
     {
         bool changed = strcmp(v, vanity);
-        copystring(vanity, v);
+        if(changed) copystring(vanity, v);
         return changed;
     }
 
