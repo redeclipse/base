@@ -308,6 +308,8 @@ struct decalrenderer
 
     void adddecal(const vec &center, const vec &dir, float radius, const bvec &color, int info)
     {
+        if(dir.iszero()) return;
+
         int bbradius = int(ceil(radius));
         bbmin = ivec(center).sub(bbradius);
         bbmax = ivec(center).add(bbradius);

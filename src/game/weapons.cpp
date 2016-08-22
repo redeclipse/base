@@ -249,8 +249,11 @@ namespace weapons
             v.z = z > 0 ? v.z/z : 0;
             dest = to;
             dest.add(v);
-            vec dir = vec(dest).sub(from).normalize();
-            raycubepos(from, dir, dest, 0, RAY_CLIPMAT|RAY_ALPHAPOLY);
+            if(dest != from)
+            {
+                vec dir = vec(dest).sub(from).normalize();
+                raycubepos(from, dir, dest, 0, RAY_CLIPMAT|RAY_ALPHAPOLY);
+            }
             return;
         }
     }
