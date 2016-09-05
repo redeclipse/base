@@ -14,7 +14,7 @@ VAR(IDF_PERSIST|IDF_HEX, textkeycolour, 0, 0x00FFFF, 0xFFFFFF);
 
 Texture *tbgbordertex = NULL, *tbgtex = NULL;
 VAR(IDF_PERSIST, textskin, 0, 2, 2);
-VAR(IDF_PERSIST, textskinsize, 0, 96, VAR_MAX);
+VAR(IDF_PERSIST, textskinsize, 0, 48, VAR_MAX);
 FVAR(IDF_PERSIST, textskinblend, 0, 0.3f, 1);
 FVAR(IDF_PERSIST, textskinfblend, 0, 1, 1);
 FVAR(IDF_PERSIST, textskinbright, 0, 0.6f, 10);
