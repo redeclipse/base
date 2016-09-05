@@ -1647,7 +1647,7 @@ namespace hud
                 pushfont("little");
                 if(!client::demoplayback)
                 {
-                    ty += draw_textf("Press \fs\fw\f{=1:spectator 0}\fS to join the game", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1);
+                    ty += draw_textf("Press \fs\fw\f{=1:spectate 0}\fS to join the game", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1);
                     if(m_play(game::gamemode) && m_team(game::gamemode, game::mutators) && shownotices >= 2)
                         ty += draw_textf("Press \fs\fw\f{=1:showgui team}\fS to join a team", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1);
                 }
