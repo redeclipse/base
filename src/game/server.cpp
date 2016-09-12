@@ -4151,25 +4151,34 @@ namespace server
                         {
                             statalt = m->lastresalt[WR_BURN];
                             statweap = m->lastresweapon[WR_BURN];
-                            if(statalt) v->weapstats[statweap].damage2 += realdamage;
-                            else v->weapstats[statweap].damage1 += realdamage;
+                            if(isweap(statweap))
+                            {
+                                if(statalt) v->weapstats[statweap].damage2 += realdamage;
+                                else v->weapstats[statweap].damage1 += realdamage;
+                            }
                         }
                         if(flags&HIT_BLEED)
                         {
                             statalt = m->lastresalt[WR_BLEED];
                             statweap = m->lastresweapon[WR_BLEED];
-                            if(statalt) v->weapstats[statweap].damage2 += realdamage;
-                            else v->weapstats[statweap].damage1 += realdamage;
+                            if(isweap(statweap))
+                            {
+                                if(statalt) v->weapstats[statweap].damage2 += realdamage;
+                                else v->weapstats[statweap].damage1 += realdamage;
+                            }
                         }
                         if(flags&HIT_SHOCK)
                         {
                             statalt = m->lastresalt[WR_SHOCK];
                             statweap = m->lastresweapon[WR_SHOCK];
-                            if(statalt) v->weapstats[statweap].damage2 += realdamage;
-                            else v->weapstats[statweap].damage1 += realdamage;
+                            if(isweap(statweap))
+                            {
+                                if(statalt) v->weapstats[statweap].damage2 += realdamage;
+                                else v->weapstats[statweap].damage1 += realdamage;
+                            }
                         }
                     }
-                    else
+                    else if(isweap(statweap))
                     {
                         if(statalt) v->weapstats[statweap].damage2 += realdamage;
                         else v->weapstats[statweap].damage1 += realdamage;
@@ -4197,7 +4206,7 @@ namespace server
                     m->lastresweapon[WR_SHOCK] = fromweap;
                     m->lastresalt[WR_SHOCK] = statalt;
                 }
-                if(isweap(weap) && m != v && (!m_team(gamemode, mutators) || m->team != v->team) && first)
+                if(isweap(statweap) && m != v && (!m_team(gamemode, mutators) || m->team != v->team) && first)
                 {
                     if(WK(flags))
                     {
@@ -4225,8 +4234,11 @@ namespace server
                 v->frags++;
                 v->totalfrags++;
                 v->localtotalfrags++;
-                if(statalt) v->weapstats[statweap].frags2++;
-                else v->weapstats[statweap].frags1++;
+                if(isweap(statweap))
+                {
+                    if(statalt) v->weapstats[statweap].frags2++;
+                    else v->weapstats[statweap].frags1++;
+                }
             }
             else fragvalue = -fragvalue;
             bool isai = m->actortype >= A_ENEMY, isteamkill = false;
