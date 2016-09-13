@@ -839,6 +839,11 @@ struct clientstate
         if(AA(actortype, maxcarry) && m_loadout(gamemode, mutators))
         {
             int n = 0;
+            int unfiltered = 0;
+            loopj(W_LOADOUT) if(canrandweap(j + W_OFFSET)) unfiltered++;
+            int musthave = AA(actortype, maxcarry) - unfiltered;
+            vector<bool> forced;
+            loopj(W_LOADOUT) forced.add(false);
             vector<int> aweap;
             loopj(W_LOADOUT) aweap.add(loadweap.inrange(j) ? loadweap[j] : 0);
             loopvj(aweap)
@@ -847,7 +852,14 @@ struct clientstate
                 {
                     for(int t = rnd(W_ITEM-W_OFFSET)+W_OFFSET, r = 0; r < W_LOADOUT; r++)
                     {
-                        if(t >= W_OFFSET && t < W_ITEM && !hasweap(t, sweap) && m_check(W(t, modes), W(t, muts), gamemode, mutators) && !W(t, disabled) && canrandweap(t))
+                        bool canuse = canrandweap(t);
+                        if(!canuse && musthave > 0 && !forced[t - W_OFFSET])
+                        {
+                            canuse = true;
+                            musthave--;
+                            forced[t - W_OFFSET] = true;
+                        }
+                        if(t >= W_OFFSET && t < W_ITEM && !hasweap(t, sweap) && m_check(W(t, modes), W(t, muts), gamemode, mutators) && !W(t, disabled) && canuse)
                         {
                             aweap[j] = t;
                             break;
