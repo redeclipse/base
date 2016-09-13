@@ -4,7 +4,7 @@ namespace game
 {
     int nextmode = G_EDITMODE, nextmuts = 0, gamestate = G_S_WAITING, gamemode = G_EDITMODE, mutators = 0, maptime = 0, timeremaining = 0, lasttimeremain = 0,
         lastcamera = 0, lasttvcam = 0, lasttvchg = 0, lastzoom = 0, spectvfollowing = -1, starttvcamdyn = -1, lastcamcn = -1;
-    bool prevzoom = false, zooming = false, inputmouse = false, inputview = false, inputmode = false;
+    bool zooming = false, inputmouse = false, inputview = false, inputmode = false;
     float swayfade = 0, swayspeed = 0, swaydist = 0, bobfade = 0, bobdist = 0;
     vec swaydir(0, 0, 0), swaypush(0, 0, 0);
 
@@ -232,7 +232,7 @@ namespace game
     FVAR(IDF_PERSIST, aboveheadsmooth, 0, 0.25f, 1);
     VAR(IDF_PERSIST, aboveheadsmoothmillis, 1, 100, 10000);
 
-    VAR(IDF_PERSIST, eventiconfade, 500, 7000, VAR_MAX);
+    VAR(IDF_PERSIST, eventiconfade, 500, 8000, VAR_MAX);
     VAR(IDF_PERSIST, eventiconshort, 500, 3500, VAR_MAX);
 
     VAR(IDF_PERSIST, showobituaries, 0, 4, 5); // 0 = off, 1 = only me, 2 = 1 + announcements, 3 = 2 + but dying bots, 4 = 3 + but bot vs bot, 5 = all
@@ -251,7 +251,7 @@ namespace game
     VAR(IDF_PERSIST, playreloadnotify, 0, 3, 15);
     VAR(IDF_PERSIST, reloadnotifyvol, -1, -1, 255);
 
-    VAR(IDF_PERSIST, deathanim, 0, 3, 3); // 0 = hide player when dead, 1 = old death animation, 2 = ragdolls, 3 = ragdolls, but hide in duke
+    VAR(IDF_PERSIST, deathanim, 0, 2, 3); // 0 = hide player when dead, 1 = old death animation, 2 = ragdolls, 3 = ragdolls, but hide in duke
     VAR(IDF_PERSIST, deathfade, 0, 1, 1); // 0 = don't fade out dead players, 1 = fade them out
     VAR(IDF_PERSIST, deathscale, 0, 0, 1); // 0 = don't scale out dead players, 1 = scale them out
     VAR(IDF_PERSIST, deathmaxfade, 0, 0, VAR_MAX);
@@ -514,8 +514,7 @@ namespace game
     {
         if(on != zooming)
         {
-            lastzoom = millis;
-            prevzoom = zooming;
+            lastzoom = millis - max(W(focus->weapselect, cookzoom) - (millis - lastzoom), 0);
             if(zoomdefault >= 0 && on) zoomlevel = zoomdefault;
         }
         checkzoom();
@@ -529,13 +528,6 @@ namespace game
         return false;
     }
     ICOMMAND(0, iszooming, "", (), intret(inzoom() ? 1 : 0));
-
-    bool inzoomswitch()
-    {
-        if(lastzoom && ((zooming && lastmillis-lastzoom >= W(focus->weapselect, cookzoom)/2) || (!zooming && lastmillis-lastzoom <= W(focus->weapselect, cookzoom)/2)))
-            return true;
-        return false;
-    }
 
     void resetsway()
     {

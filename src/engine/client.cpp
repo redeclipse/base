@@ -83,13 +83,13 @@ void connectfail()
     localconnect(false);
 }
 
-void trydisconnect()
+void trydisconnect(bool force)
 {
     if(connpeer) abortconnect();
     else if(curpeer || haslocalclients())
     {
         if(verbose) conoutft(CON_MESG, "\faattempting to disconnect...");
-        disconnect(0, !discmillis);
+        disconnect(false, !force && !discmillis);
     }
     else conoutft(CON_MESG, "\frnot connected");
 }
@@ -155,9 +155,9 @@ void connectserv(const char *name, int port, const char *password)
     conoutft(CON_MESG, "\fgconnecting to %s:[%d]", name != NULL ? name : "local server", port);
 }
 
-void disconnect(int onlyclean, int async)
+void disconnect(bool onlyclean, bool async)
 {
-    bool cleanup = onlyclean!=0;
+    bool cleanup = onlyclean;
     if(curpeer || haslocalclients())
     {
         if(curpeer)
@@ -193,7 +193,7 @@ void disconnect(int onlyclean, int async)
 }
 
 ICOMMAND(0, connect, "sis", (char *n, int *a, char *pwd), connectserv(*n ? n : servermaster, *n || *a ? *a : SERVER_PORT, pwd));
-COMMANDN(0, disconnect, trydisconnect, "");
+ICOMMAND(0, disconnect, "i", (int *force), trydisconnect(*force!=0));
 
 ICOMMAND(0, lanconnect, "is", (int *a, char *pwd), connectserv(NULL, *a, pwd));
 ICOMMAND(0, localconnect, "i", (int *n), localconnect(*n ? false : true));
@@ -207,7 +207,7 @@ void reconnect(const char *pass)
     string addr = "";
     if(*connectname) copystring(addr, connectname);
     if(connectport) port = connectport;
-    disconnect(1);
+    disconnect(true);
     connectserv(*addr ? addr : NULL, port > 0 ? port : SERVER_PORT, pass);
 }
 COMMAND(0, reconnect, "s");

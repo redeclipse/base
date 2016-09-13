@@ -80,6 +80,7 @@ namespace weapons
     {
         if(!gs_playing(game::gamestate)) return false;
         bool newoff = false;
+        int oldweap = d->weapselect;
         if(local)
         {
             int interrupts = filter;
@@ -87,7 +88,7 @@ namespace weapons
             if(!d->canswitch(weap, m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis, interrupts))
             {
                 if(!d->canswitch(weap, m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis, filter)) return false;
-                else if(!isweap(d->weapselect) || d->weapload[d->weapselect] <= 0) return false;
+                else if(!isweap(oldweap) || d->weapload[oldweap] <= 0) return false;
                 else newoff = true;
             }
         }
@@ -97,9 +98,9 @@ namespace weapons
             {
                 if(newoff)
                 {
-                    int offset = d->weapload[d->weapselect];
-                    d->ammo[d->weapselect] = max(d->ammo[d->weapselect]-offset, 0);
-                    d->weapload[d->weapselect] = -d->weapload[d->weapselect];
+                    int offset = d->weapload[oldweap];
+                    d->ammo[oldweap] = max(d->ammo[oldweap]-offset, 0);
+                    d->weapload[oldweap] = -d->weapload[oldweap];
                 }
                 client::addmsg(N_WSELECT, "ri3", d->clientnum, lastmillis-game::maptime, weap);
             }
@@ -248,8 +249,11 @@ namespace weapons
             v.z = z > 0 ? v.z/z : 0;
             dest = to;
             dest.add(v);
-            vec dir = vec(dest).sub(from).normalize();
-            raycubepos(from, dir, dest, 0, RAY_CLIPMAT|RAY_ALPHAPOLY);
+            if(dest != from)
+            {
+                vec dir = vec(dest).sub(from).normalize();
+                raycubepos(from, dir, dest, 0, RAY_CLIPMAT|RAY_ALPHAPOLY);
+            }
             return;
         }
     }

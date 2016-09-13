@@ -336,17 +336,17 @@ struct textrenderer : sharedlistrenderer
             if(*text) { int len = text-(start+1); memcpy(font, start+1, len); font[len] = '\0'; text++; }
             else text = start;
         }
-        float scale = p->size/80.0f, xoff = -text_width(text)/2;
+        pushfont(*font ? font : "default");
+        float scale = p->size/80.0f, xoff = -text_widthf(text)*0.5f;
 
         matrix4x3 m(camright, vec(camup).neg(), vec(camdir).neg(), p->o);
         m.scale(scale);
         m.translate(xoff, 0, 50);
 
         textmatrix = &m;
-        pushfont(*font ? font : "default");
         draw_text(text, 0, 0, p->color.r, p->color.g, p->color.b, int(p->blend*blend));
-        popfont();
         textmatrix = NULL;
+        popfont();
     }
 };
 static textrenderer texts, textontop(PT_ONTOP);

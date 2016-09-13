@@ -1241,7 +1241,7 @@ static void setupwindow(const char *title)
     atexit(cleanupwindow);
 
     if(!setupsystemtray(WM_APP)) fatal("failed adding to system tray");
-    conoutf("identity: %s@%s v%s-%s%d-%s %s (%s) [0x%.8x]", systemuser, systemhost, VERSION_STRING, versionplatname, versionarch, versionbranch, versionisserver ? "server" : "client", VERSION_RELEASE, versioncrc);
+    conoutf("identity: %s@%s v%s-%s%d-%s %s (%s) [0x%.8x]", systemuser, systemhost, versionstring, versionplatname, versionarch, versionbranch, versionisserver ? "server" : "client", versionrelease, versioncrc);
 }
 
 static char *parsecommandline(const char *src, vector<char *> &args)
@@ -1311,7 +1311,7 @@ void logoutfv(const char *fmt, va_list args)
 void serverloop()
 {
 #ifdef WIN32
-    defformatstring(cap, "%s server", VERSION_NAME);
+    defformatstring(cap, "%s server", versionname);
     setupwindow(cap);
     SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
 #endif
@@ -1437,7 +1437,7 @@ void setupserver()
 
 void initgame()
 {
-    conoutf("identity: %s@%s v%s-%s%d-%s %s (%s) [0x%.8x]", systemuser, systemhost, VERSION_STRING, versionplatname, versionarch, versionbranch, versionisserver ? "server" : "client", VERSION_RELEASE, versioncrc);
+    conoutf("identity: %s@%s v%s-%s%d-%s %s (%s) [0x%.8x]", systemuser, systemhost, versionstring, versionplatname, versionarch, versionbranch, versionisserver ? "server" : "client", versionrelease, versioncrc);
     server::start();
     loopv(gameargs)
     {
@@ -1594,7 +1594,7 @@ void setlocations(bool wanthome)
         string dir = "";
         if(SHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, 0, dir) == S_OK)
         {
-            defformatstring(s, "%s\\My Games\\%s", dir, VERSION_NAME);
+            defformatstring(s, "%s\\My Games\\%s", dir, versionname);
             sethomedir(s);
         }
 #elif defined(__APPLE__)
@@ -1602,14 +1602,14 @@ void setlocations(bool wanthome)
         const char *dir = mac_personaldir(); // typically  /Users/<name>/Application Support/
         if(dir && *dir)
         {
-            defformatstring(s, "%s/%s", dir, VERSION_NAME);
+            defformatstring(s, "%s/%s", dir, versionname);
             sethomedir(s);
         }
 #else
         const char *dir = getenv("HOME");
         if(dir && *dir)
         {
-            defformatstring(s, "%s/.%s", dir, VERSION_UNAME);
+            defformatstring(s, "%s/.%s", dir, versionuname);
             sethomedir(s);
         }
 #endif
@@ -1787,7 +1787,7 @@ void fatal(const char *s, ...)    // failure exit
             cleanupserver();
             enet_deinitialize();
 #ifdef WIN32
-            defformatstring(cap, "%s: Error", VERSION_NAME);
+            defformatstring(cap, "%s: Error", versionname);
             MessageBox(NULL, msg, cap, MB_OK|MB_SYSTEMMODAL);
 #endif
         }

@@ -9,7 +9,8 @@ CREATE TABLE games (
     mode INTEGER,
     mutators INTEGER,
     timeplayed INTEGER,
-    uniqueplayers INTEGER
+    uniqueplayers INTEGER,
+    usetotals INTEGER
 );
 
 CREATE TABLE game_servers (

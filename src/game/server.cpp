@@ -277,7 +277,7 @@ namespace server
 
         int warnings[WARN_MAX][2];
 
-        servstate() : lasttimewielded(0), aireinit(0), lasttimealive(0), timealive(0), timeactive(0), lasthurt(0), localtotalpoints(0), localtotalfrags(0), localtotaldeaths(0)
+        servstate() : lasttimewielded(0), aireinit(0), lasttimealive(0), timealive(0), lasttimeactive(0), timeactive(0), lasthurt(0), localtotalpoints(0), localtotalfrags(0), localtotaldeaths(0)
         {
             loopi(WARN_MAX) loopj(2) warnings[i][j] = 0;
             loopi(W_MAX) lasttimeloadout[i] = 0;
@@ -2332,7 +2332,7 @@ namespace server
         {
             lilswap(&hdr.gamever, 4);
             if(hdr.gamever!=VERSION_GAME)
-                formatstring(msg, "\frdemo \fs\fc%s\fS requires %s version of %s", file, hdr.gamever<VERSION_GAME ? "an older" : "a newer", VERSION_NAME);
+                formatstring(msg, "\frdemo \fs\fc%s\fS requires %s version of %s", file, hdr.gamever<VERSION_GAME ? "an older" : "a newer", versionname);
         }
         if(msg[0])
         {
@@ -2422,7 +2422,7 @@ namespace server
         {
             lilswap(&d.hdr.gamever, 4);
             if(d.hdr.gamever!=VERSION_GAME)
-                formatstring(msg, "\frdemo \fs\fc%s\fS requires \fs\fc%s\fS version of %s", name, d.hdr.gamever<VERSION_GAME ? "an older" : "a newer", VERSION_NAME);
+                formatstring(msg, "\frdemo \fs\fc%s\fS requires \fs\fc%s\fS version of %s", name, d.hdr.gamever<VERSION_GAME ? "an older" : "a newer", versionname);
         }
         delete f;
         if(msg[0])
@@ -3148,13 +3148,10 @@ namespace server
     bool getmap(clientinfo *ci, bool force)
     {
         if(gs_intermission(gamestate)) return false; // pointless
-        if(m_edit(gamemode) && numclients() <= 1)
+        if(ci && !numclients(ci->clientnum))
         {
-            if(ci)
-            {
-                ci->wantsmap = false;
-                sendf(ci->clientnum, 1, "ri", N_FAILMAP);
-            }
+            ci->wantsmap = false;
+            sendf(ci->clientnum, 1, "ri", N_FAILMAP);
             return false;
         }
         if(ci)
@@ -3239,7 +3236,7 @@ namespace server
             }
             return true;
         }
-        if(ci) srvmsgft(ci->clientnum, CON_EVENT, "\fysorry, unable to get a valid map..");
+        if(ci) srvmsgft(ci->clientnum, CON_EVENT, "\fysorry, unable to get a map..");
         sendf(-1, 1, "ri", N_FAILMAP);
         return false;
     }
@@ -4154,25 +4151,34 @@ namespace server
                         {
                             statalt = m->lastresalt[WR_BURN];
                             statweap = m->lastresweapon[WR_BURN];
-                            if(statalt) v->weapstats[statweap].damage2 += realdamage;
-                            else v->weapstats[statweap].damage1 += realdamage;
+                            if(isweap(statweap))
+                            {
+                                if(statalt) v->weapstats[statweap].damage2 += realdamage;
+                                else v->weapstats[statweap].damage1 += realdamage;
+                            }
                         }
                         if(flags&HIT_BLEED)
                         {
                             statalt = m->lastresalt[WR_BLEED];
                             statweap = m->lastresweapon[WR_BLEED];
-                            if(statalt) v->weapstats[statweap].damage2 += realdamage;
-                            else v->weapstats[statweap].damage1 += realdamage;
+                            if(isweap(statweap))
+                            {
+                                if(statalt) v->weapstats[statweap].damage2 += realdamage;
+                                else v->weapstats[statweap].damage1 += realdamage;
+                            }
                         }
                         if(flags&HIT_SHOCK)
                         {
                             statalt = m->lastresalt[WR_SHOCK];
                             statweap = m->lastresweapon[WR_SHOCK];
-                            if(statalt) v->weapstats[statweap].damage2 += realdamage;
-                            else v->weapstats[statweap].damage1 += realdamage;
+                            if(isweap(statweap))
+                            {
+                                if(statalt) v->weapstats[statweap].damage2 += realdamage;
+                                else v->weapstats[statweap].damage1 += realdamage;
+                            }
                         }
                     }
-                    else
+                    else if(isweap(statweap))
                     {
                         if(statalt) v->weapstats[statweap].damage2 += realdamage;
                         else v->weapstats[statweap].damage1 += realdamage;
@@ -4200,7 +4206,7 @@ namespace server
                     m->lastresweapon[WR_SHOCK] = fromweap;
                     m->lastresalt[WR_SHOCK] = statalt;
                 }
-                if(isweap(weap) && m != v && (!m_team(gamemode, mutators) || m->team != v->team) && first)
+                if(isweap(statweap) && m != v && (!m_team(gamemode, mutators) || m->team != v->team) && first)
                 {
                     if(WK(flags))
                     {
@@ -4228,8 +4234,11 @@ namespace server
                 v->frags++;
                 v->totalfrags++;
                 v->localtotalfrags++;
-                if(statalt) v->weapstats[statweap].frags2++;
-                else v->weapstats[statweap].frags1++;
+                if(isweap(statweap))
+                {
+                    if(statalt) v->weapstats[statweap].frags2++;
+                    else v->weapstats[statweap].frags1++;
+                }
             }
             else fragvalue = -fragvalue;
             bool isai = m->actortype >= A_ENEMY, isteamkill = false;
@@ -5734,6 +5743,13 @@ namespace server
                             if(k >= W_LOADOUT) getint(p);
                             else ci->loadweap.add(getint(p));
                         }
+                        int rw = getint(p);
+                        ci->randweap.shrink(0);
+                        loopk(rw)
+                        {
+                            if(k >= W_LOADOUT) getint(p);
+                            else ci->randweap.add(getint(p));
+                        }
 
                         string password = "", authname = "";
                         getstring(password, p);
@@ -6022,7 +6038,7 @@ namespace server
                         if(hasmapdata()) srvoutf(4, "\fy%s has map crc: \fs\fc0x%.8x\fS (server: \fs\fc0x%.8x\fS)", colourname(ci), ci->clientcrc, smapcrc);
                         else srvoutf(4, "\fy%s has map crc: \fs\fc0x%.8x\fS", colourname(ci), ci->clientcrc);
                     }
-                    getmap(crclocked(ci, true) ? ci : NULL);
+                    if(crclocked(ci, true)) getmap(ci);
                     if(ci->isready()) aiman::poke();
                     break;
                 }
@@ -6972,8 +6988,9 @@ namespace server
                 case N_EDITENT:
                 {
                     int n = getint(p), oldtype = NOTUSED, newtype = NOTUSED;
+                    ivec o(0, 0, 0);
                     bool tweaked = false, inrange = n < MAXENTS;
-                    loopk(3) getint(p);
+                    loopk(3) o[k] = getint(p);
                     if(p.overread()) break;
                     if(sents.inrange(n)) oldtype = sents[n].type;
                     else if(inrange) while(sents.length() <= n) sents.add();
@@ -6992,13 +7009,25 @@ namespace server
                     }
                     if(inrange)
                     {
-                        if(oldtype == PLAYERSTART || sents[n].type == PLAYERSTART) setupspawns(true);
                         hasgameinfo = true;
-                        QUEUE_MSG;
-                        if(tweaked && enttype[sents[n].type].usetype != EU_NONE)
+                        sents[n].o = vec(o).div(DMF);
+                        packetbuf q(MAXTRANS, ENET_PACKET_FLAG_RELIABLE);
+                        putint(q, N_CLIENT);
+                        putint(q, ci->clientnum);
+                        putint(q, N_EDITENT);
+                        putint(q, n);
+                        putint(q, o.x);
+                        putint(q, o.y);
+                        putint(q, o.z);
+                        putint(q, sents[n].type);
+                        putint(q, sents[n].attrs.length());
+                        loopvk(sents[n].attrs) putint(q, sents[n].attrs[k]);
+                        sendpacket(-1, 1, q.finalize(), ci->clientnum);
+                        if(tweaked)
                         {
                             if(enttype[sents[n].type].usetype == EU_ITEM) setspawn(n, true, true, true);
-                            if(sents[n].type == TRIGGER) setuptriggers(true);
+                            if(oldtype == PLAYERSTART || sents[n].type == PLAYERSTART) setupspawns(true);
+                            if(oldtype == TRIGGER || sents[n].type == TRIGGER) setuptriggers(true);
                         }
                     }
                     break;
@@ -7065,7 +7094,7 @@ namespace server
                 case N_GETMAP:
                 {
                     ci->ready = true;
-                    if(!getmap(ci) && numclients() <= 1) sendf(ci->clientnum, 1, "ri", N_FAILMAP);
+                    getmap(ci);
                     break;
                 }
 

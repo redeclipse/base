@@ -10,10 +10,11 @@ VAR(IDF_PERSIST, textminintensity, 0, 32, 255);
 VAR(IDF_PERSIST, textkeyimages, 0, 1, 1);
 FVAR(IDF_PERSIST, textkeyimagescale, 0, 1, FVAR_MAX);
 VAR(IDF_PERSIST, textkeyseps, 0, 1, 1);
+VAR(IDF_PERSIST|IDF_HEX, textkeycolour, 0, 0x00FFFF, 0xFFFFFF);
 
 Texture *tbgbordertex = NULL, *tbgtex = NULL;
 VAR(IDF_PERSIST, textskin, 0, 2, 2);
-VAR(IDF_PERSIST, textskinsize, 0, 96, VAR_MAX);
+VAR(IDF_PERSIST, textskinsize, 0, 48, VAR_MAX);
 FVAR(IDF_PERSIST, textskinblend, 0, 0.3f, 1);
 FVAR(IDF_PERSIST, textskinfblend, 0, 1, 1);
 FVAR(IDF_PERSIST, textskinbright, 0, 0.6f, 10);
@@ -696,6 +697,8 @@ static const char *gettklp(const char *str)
     return t->blist.search(str, type, "", "", " ", " ", 5);
 }
 
+#define defformatkey(dest, key) defformatbigstring((dest), "\fs\fa[\fS\fs\f[%d]%s\fS\fs\fa]\fS", textkeycolour, (key))
+
 float key_widthf(const char *str)
 {
     const char *keyn = str;
@@ -716,7 +719,8 @@ float key_widthf(const char *str)
             }
             // fallback if not found
         }
-        width += text_widthf(list[i]);
+        defformatkey(keystr, list[i]);
+        width += text_widthf(keystr);
     }
     list.deletearrays();
     return width;
@@ -759,7 +763,7 @@ static int draw_key(Texture *&tex, const char *str, float sx, float sy)
             tex = oldtex;
             glBindTexture(GL_TEXTURE_2D, tex->id);
         }
-        defformatbigstring(keystr, "\fs\fa[\fS%s\fs\fa]\fS", list[i]);
+        defformatkey(keystr, list[i]);
         draw_text(keystr, sx + width, sy, 255, 255, 255, 255, 0, -1, -1, 1, -1);
         width += text_widthf(keystr);
     }

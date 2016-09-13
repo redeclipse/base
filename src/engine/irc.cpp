@@ -50,7 +50,7 @@ void ircprintf(ircnet *n, int relay, const char *target, const char *msg, ...)
     {
         formatstring(s, "\fs\fa[%s]\fS", n->name);
         #ifndef STANDALONE
-        n->buffer.addline(newstring(str), MAXIRCLINES);
+        n->buffer.addline(str, MAXIRCLINES);
         n->updated |= IRCUP_MSG;
         #endif
     }
@@ -523,7 +523,7 @@ void ircprocess(ircnet *n, char *user[3], int g, int numargs, char *w[])
                             ircprintf(n, 4, g ? w[g+1] : NULL, "\fr%s requests: %s %s", user[0], q, r);
 
                             if(!strcasecmp(q, "VERSION"))
-                                ircsend(n, "NOTICE %s :\vVERSION %s v%s-%s%d-%s (%s)%s%s\v", user[0], VERSION_NAME, VERSION_STRING, versionplatname, versionarch, versionbranch, VERSION_RELEASE, *VERSION_URL ? ", " : "", VERSION_URL);
+                                ircsend(n, "NOTICE %s :\vVERSION %s v%s-%s%d-%s (%s)%s%s\v", user[0], versionname, versionstring, versionplatname, versionarch, versionbranch, versionrelease, *versionurl ? ", " : "", versionurl);
                             else if(!strcasecmp(q, "PING")) // eh, echo back
                                 ircsend(n, "NOTICE %s :\vPING %s\v", user[0], r);
                         }
@@ -809,7 +809,7 @@ void irccleanup()
     loopv(ircnets) if(ircnets[i]->sock != ENET_SOCKET_NULL)
     {
         ircnet *n = ircnets[i];
-        ircsend(n, "QUIT :%s%s%s", VERSION_NAME, *VERSION_URL ? ", " : "", VERSION_URL);
+        ircsend(n, "QUIT :%s%s%s", versionname, *versionurl ? ", " : "", versionurl);
         ircdiscon(n, "shutdown");
     }
 }
@@ -921,7 +921,7 @@ void ircslice()
                     copystring(n->nick, n->mnick);
                     ircsend(n, "NICK %s", n->mnick);
                     if(!*n->ident) copystring(n->ident, systemuser);
-                    ircsend(n, "USER %s +iw %s :%s v%s-%s%d-%s (%s)", n->ident, n->ident, VERSION_NAME, VERSION_STRING, versionplatname, versionarch, versionbranch, VERSION_RELEASE);
+                    ircsend(n, "USER %s +iw %s :%s v%s-%s%d-%s (%s)", n->ident, n->ident, versionname, versionstring, versionplatname, versionarch, versionbranch, versionrelease);
                     n->lastnick = clocktime;
                     n->state = IRC_CONN;
                     loopvj(n->channels)
@@ -1026,8 +1026,8 @@ void irccmd(ircnet *n, ircchan *c, char *s)
             {
                 if(c)
                 {
-                    ircsend(n, "PRIVMSG %s :%s v%s-%s%d-%s (%s); %s (%s v%s)", c->name, VERSION_NAME, VERSION_STRING, versionplatname, versionarch, versionbranch, VERSION_RELEASE, gfxrenderer, gfxvendor, gfxversion);
-                    ircprintf(n, 1, c->name, "\fw<%s> %s v%s-%s%d-%s (%s); %s (%s v%s)", n->nick, VERSION_NAME, VERSION_STRING, versionplatname, versionarch, versionbranch, VERSION_RELEASE, gfxrenderer, gfxvendor, gfxversion);
+                    ircsend(n, "PRIVMSG %s :%s v%s-%s%d-%s (%s); %s (%s v%s)", c->name, versionname, versionstring, versionplatname, versionarch, versionbranch, versionrelease, gfxrenderer, gfxvendor, gfxversion);
+                    ircprintf(n, 1, c->name, "\fw<%s> %s v%s-%s%d-%s (%s); %s (%s v%s)", n->nick, versionname, versionstring, versionplatname, versionarch, versionbranch, versionrelease, gfxrenderer, gfxvendor, gfxversion);
                 }
                 else ircprintf(n, 4, NULL, "\fyyou are not on a channel");
             }

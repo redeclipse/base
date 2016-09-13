@@ -964,7 +964,7 @@ namespace projs
             case PRJ_AFFINITY:
             {
                 proj.height = proj.aboveeye = proj.radius = proj.xradius = proj.yradius = 4;
-                vec dir = vec(proj.to).sub(proj.from).normalize();
+                vec dir = vec(proj.to).sub(proj.from).safenormalize();
                 vectoyawpitch(dir, proj.yaw, proj.pitch);
                 proj.reflectivity = 0.f;
                 proj.escaped = true;
@@ -1523,7 +1523,7 @@ namespace projs
                         {
                             if(type != W_ZAPPER || !proj.owner || proj.owner->weapselect != proj.weap || WK(proj.flags))
                                 proj.to = vec(proj.o).sub(vec(proj.vel).normalize().mul(size));
-                            else proj.to = vec(proj.o).sub(vec(proj.o).sub(from).normalize().mul(size));
+                            else proj.to = vec(proj.o).sub(vec(proj.o).sub(from).safenormalize().mul(size));
                             part_flare(proj.to, proj.o, 1, type != W_ZAPPER ? PART_FLARE : PART_LIGHTZAP_FLARE, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*proj.curscale, 0.85f*trans);
                             if(projhints) part_flare(proj.to, proj.o, 1, type != W_ZAPPER ? PART_FLARE : PART_LIGHTZAP_FLARE, projhint(proj.owner, FWCOL(H, partcol, proj)), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*projhintsize*proj.curscale, projhintblend*trans);
                             if(type != W_ZAPPER && !WK(proj.flags) && W2(proj.weap, fragweap, WS(proj.flags)) >= 0)
@@ -1708,7 +1708,7 @@ namespace projs
                         {
                             if(type != W_ZAPPER || !proj.owner || proj.owner->weapselect != proj.weap || WK(proj.flags))
                                 proj.to = vec(proj.o).sub(vec(proj.vel).normalize().mul(size));
-                            else proj.to = vec(proj.o).sub(vec(proj.o).sub(from).normalize().mul(size));
+                            else proj.to = vec(proj.o).sub(vec(proj.o).sub(from).safenormalize().mul(size));
                         }
                         if(expl > 0)
                         {
@@ -2084,7 +2084,7 @@ namespace projs
         float secs = float(qtime)/1000.f;
         if(proj.projtype == PRJ_AFFINITY && m_bomber(game::gamemode) && proj.target && !proj.lastbounce)
         {
-            vec targ = vec(proj.target->o).sub(proj.o).normalize();
+            vec targ = vec(proj.target->o).sub(proj.o).safenormalize();
             if(!targ.iszero())
             {
                 vec dir = vec(proj.vel).normalize();
@@ -2145,7 +2145,7 @@ namespace projs
             {
                 float amt = clamp(WF(WK(proj.flags), proj.weap, speeddelta, WS(proj.flags))*secs, 1e-8f, 1.f),
                       mag = max(proj.vel.magnitude(), physics::movevelocity(&proj));
-                dir.mul(1.f-amt).add(vec(proj.dest).sub(proj.o).normalize().mul(amt)).normalize();
+                dir.mul(1.f-amt).add(vec(proj.dest).sub(proj.o).safenormalize().mul(amt)).normalize();
                 if(!dir.iszero()) (proj.vel = dir).mul(mag);
             }
         }
@@ -2200,7 +2200,7 @@ namespace projs
         float dist = tracecollide(&proj, proj.from, ray, maxdist, RAY_CLIPMAT|RAY_ALPHAPOLY, proj.projcollide&COLLIDE_DYNENT);
         if(dist >= 0)
         {
-            vec dir = vec(proj.to).sub(proj.from).normalize();
+            vec dir = vec(proj.to).sub(proj.from).safenormalize();
             proj.o = vec(proj.from).add(vec(dir).mul(dist));
             switch(impact(proj, dir, hitplayer, hitflags, hitsurface))
             {

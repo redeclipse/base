@@ -468,10 +468,10 @@ namespace hud
                             scoregroup &sg = k == numgroups ? spectators : *groups[k];
                             loopscoregroup({
                                 if(scorebotinfo && o->actortype > A_PLAYER) hasbots = true;
-                                namepad = max(namepad, (float)text_width(game::colourname(o, NULL, false, true))/FONTW*0.51f);
+                                namepad = max(namepad, text_widthf(game::colourname(o, NULL, false, true))/FONTW*0.51f);
                                 if(scorehandles && o->handle[0])
                                 {
-                                    handlepad = max(handlepad, (float)text_width(o->handle)/FONTW*0.51f);
+                                    handlepad = max(handlepad, text_widthf(o->handle)/FONTW*0.51f);
                                     hashandle = true;
                                 }
                                 if(scoreipinfo)
@@ -479,7 +479,7 @@ namespace hud
                                     const char *host = scorehost(o, false);
                                     if(host && *host)
                                     {
-                                        ippad = max(ippad, (float)text_width(host)/FONTW*0.51f);
+                                        ippad = max(ippad, text_widthf(host)/FONTW*0.51f);
                                         if(o->ownernum != game::player1->clientnum) hasip = true;
                                     }
                                 }
@@ -488,7 +488,7 @@ namespace hud
                                     const char *host = scorehost(o, true);
                                     if(host && *host)
                                     {
-                                        hostpad = max(hostpad, (float)text_width(host)/FONTW*0.51f);
+                                        hostpad = max(hostpad, text_widthf(host)/FONTW*0.51f);
                                         if(o->ownernum != game::player1->clientnum) hashost = true;
                                     }
                                 }
@@ -497,7 +497,7 @@ namespace hud
                                     const char *ver = scoreversion(o);
                                     if(ver && *ver)
                                     {
-                                        verpad = max(verpad, (float)text_width(ver)/FONTW*0.51f);
+                                        verpad = max(verpad, text_widthf(ver)/FONTW*0.51f);
                                         if(o->ownernum != game::player1->clientnum) hasver = true;
                                     }
                                 }

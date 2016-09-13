@@ -492,7 +492,7 @@ void savestats(masterclient &c)
 
     statsdbexecf("COMMIT");
     conoutf("master peer %s commited stats, game id %lu", c.name, c.stats.id);
-    masteroutf(c, "stats success \"game statistics recorded, id \fc%lu\"\n", c.stats.id);
+    masteroutf(c, "stats success \"game statistics recorded (\fs\fy%lu\fS) \fs\fc%sstats/game/%lu\fS\"\n", c.stats.id, versionurl, c.stats.id);
     c.instats = false;
     c.wantstats = false;
 }

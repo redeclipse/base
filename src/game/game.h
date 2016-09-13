@@ -4,7 +4,7 @@
 #include "engine.h"
 
 #define VERSION_GAMEID "fps"
-#define VERSION_GAME 229
+#define VERSION_GAME 230
 #define VERSION_DEMOMAGIC "RED_ECLIPSE_DEMO"
 
 #define MAXAI 256
@@ -292,7 +292,7 @@ extern const char *sendmaptypes[SENDMAP_MAX];
 enum
 {
     N_CONNECT = 0, N_SERVERINIT, N_WELCOME, N_CLIENTINIT, N_POS, N_SPHY, N_TEXT, N_COMMAND, N_ANNOUNCE, N_DISCONNECT,
-    N_SHOOT, N_DESTROY, N_STICKY, N_SUICIDE, N_DIED, N_POINTS, N_DAMAGE, N_SHOTFX,
+    N_SHOOT, N_DESTROY, N_STICKY, N_SUICIDE, N_DIED, N_POINTS, N_TOTALS, N_DAMAGE, N_SHOTFX,
     N_LOADW, N_TRYSPAWN, N_SPAWNSTATE, N_SPAWN, N_DROP, N_WSELECT,
     N_MAPCHANGE, N_MAPVOTE, N_CLEARVOTE, N_CHECKPOINT, N_ITEMSPAWN, N_ITEMUSE, N_TRIGGER, N_EXECLINK,
     N_PING, N_PONG, N_CLIENTPING, N_TICK, N_ITEMACC, N_SERVMSG, N_GETGAMEINFO, N_GAMEINFO, N_RESUME,
@@ -314,7 +314,7 @@ char msgsizelookup(int msg)
     static const int msgsizes[] =               // size inclusive message token, 0 for variable or not-checked sizes
     {
         N_CONNECT, 0, N_SERVERINIT, 5, N_WELCOME, 2, N_CLIENTINIT, 0, N_POS, 0, N_SPHY, 0, N_TEXT, 0, N_COMMAND, 0, N_ANNOUNCE, 0, N_DISCONNECT, 3,
-        N_SHOOT, 0, N_DESTROY, 0, N_STICKY, 0, N_SUICIDE, 4, N_DIED, 0, N_POINTS, 4, N_DAMAGE, 14, N_SHOTFX, 0,
+        N_SHOOT, 0, N_DESTROY, 0, N_STICKY, 0, N_SUICIDE, 4, N_DIED, 0, N_POINTS, 4, N_TOTALS, 0, N_DAMAGE, 14, N_SHOTFX, 0,
         N_LOADW, 0, N_TRYSPAWN, 2, N_SPAWNSTATE, 0, N_SPAWN, 0, N_DROP, 0, N_WSELECT, 0,
         N_MAPCHANGE, 0, N_MAPVOTE, 0, N_CLEARVOTE, 0, N_CHECKPOINT, 0, N_ITEMSPAWN, 3, N_ITEMUSE, 0, N_TRIGGER, 0, N_EXECLINK, 3,
         N_PING, 2, N_PONG, 2, N_CLIENTPING, 2, N_TICK, 3, N_ITEMACC, 0, N_SERVMSG, 0, N_GETGAMEINFO, 0, N_GAMEINFO, 0, N_RESUME, 0,
@@ -555,7 +555,7 @@ struct clientstate
         actortype(A_PLAYER), spawnpoint(-1), ownernum(-1), skill(0), points(0), frags(0), deaths(0), totalpoints(0), totalfrags(0), totaldeaths(0), spree(0), lasttimeplayed(0), timeplayed(0),
         cpmillis(0), cptime(0), queuepos(-1), quarantine(false)
     {
-        setvanity();
+        vanity[0] = '\0';
         loadweap.shrink(0);
         lastweap.shrink(0);
         randweap.shrink(0);
@@ -563,10 +563,10 @@ struct clientstate
     }
     ~clientstate() {}
 
-    bool setvanity(const char *v = "")
+    bool setvanity(const char *v)
     {
         bool changed = strcmp(v, vanity);
-        copystring(vanity, v);
+        if(changed) copystring(vanity, v);
         return changed;
     }
 
@@ -1565,8 +1565,8 @@ struct cament
 
 namespace client
 {
-    extern int showpresence, showteamchange;
-    extern bool demoplayback, isready, needsmap, gettingmap;
+    extern int showpresence, showteamchange, needsmap, gettingmap;
+    extern bool demoplayback, isready;
     extern vector<uchar> messages;
     extern void clearvotes(gameent *d, bool msg = false);
     extern void ignore(int cn);
@@ -1724,7 +1724,6 @@ namespace game
     extern int deadzone();
     extern void checkzoom();
     extern bool inzoom();
-    extern bool inzoomswitch();
     extern void zoomview(bool down);
     extern bool tvmode(bool check = true, bool force = true);
     extern void resetcamera(bool cam = true, bool input = true);

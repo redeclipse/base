@@ -2,12 +2,9 @@
 
 namespace client
 {
-    bool sendplayerinfo = false, sendgameinfo = false, sendcrcinfo = false, isready = false, remote = false,
-        demoplayback = false, needsmap = false, gettingmap = false;
-    int lastping = 0, sessionid = 0, sessionver = 0, lastplayerinfo = 0, mastermode = 0;
+    bool sendplayerinfo = false, sendgameinfo = false, sendcrcinfo = false, isready = false, remote = false, demoplayback = false;
+    int needsmap = 0, gettingmap = 0, lastping = 0, sessionid = 0, sessionver = 0, lastplayerinfo = 0, mastermode = 0, needclipboard = -1, demonameid = 0;
     string connectpass = "";
-    int needclipboard = -1;
-    int demonameid = 0;
     hashtable<int, const char *>demonames;
 
     VAR(0, debugmessages, 0, 0, 1);
@@ -1031,8 +1028,8 @@ namespace client
     void gamedisconnect(int clean)
     {
         if(editmode) toggleedit();
-        gettingmap = needsmap = remote = isready = sendplayerinfo = sendgameinfo = sendcrcinfo = false;
-        sessionid = sessionver = lastplayerinfo = mastermode = 0;
+        remote = isready = sendplayerinfo = sendgameinfo = sendcrcinfo = false;
+        gettingmap = needsmap = sessionid = sessionver = lastplayerinfo = mastermode = 0;
         messages.shrink(0);
         mapvotes.shrink(0);
         messagereliable = false;
@@ -1295,20 +1292,20 @@ namespace client
         if(m_capture(game::gamemode)) capture::reset();
         else if(m_defend(game::gamemode)) defend::reset();
         else if(m_bomber(game::gamemode)) bomber::reset();
-        needsmap = gettingmap = false;
+        needsmap = gettingmap = 0;
         smartmusic(true);
         if(crc < -1 || !name || !*name || !load_world(name, crc)) switch(crc)
         {
             case -1:
                 if(!mapcrc) emptymap(0, true, name);
-                needsmap = gettingmap = false;
+                needsmap = gettingmap = 0;
                 sendcrcinfo = true; // the server wants us to start
                 break;
             case -2:
                 conoutf("waiting for server to request the map..");
             default:
                 emptymap(0, true, name);
-                needsmap = true;
+                needsmap = totalmillis;
                 break;
         }
         else sendcrcinfo = true;
@@ -1354,6 +1351,7 @@ namespace client
             {
                 int filetype = getint(p), filecrc = getint(p);
                 string fname;
+                gettingmap = totalmillis;
                 getstring(fname, p);
                 data += p.length();
                 len -= p.length();
@@ -1367,7 +1365,6 @@ namespace client
                     conoutft(CON_EVENT, "\frfailed to open map file: \fc%s", ffext);
                     break;
                 }
-                gettingmap = true;
                 f->write(data, len);
                 delete f;
                 conoutft(CON_EVENT, "\fywrote map file: \fc%s (%d %s) [0x%.8x]", ffext, len, len != 1 ? "bytes" : "byte", filecrc);
@@ -1656,6 +1653,8 @@ namespace client
         sendstring(game::player1->vanity, p);
         putint(p, game::player1->loadweap.length());
         loopv(game::player1->loadweap) putint(p, game::player1->loadweap[i]);
+        putint(p, game::player1->randweap.length());
+        loopv(game::player1->randweap) putint(p, game::player1->randweap[i]);
 
         string hash = "";
         if(connectpass[0])
@@ -1831,6 +1830,12 @@ namespace client
                 else if(m_defend(game::gamemode)) defend::sendaffinity(p);
                 else if(m_bomber(game::gamemode)) bomber::sendaffinity(p);
                 sendgameinfo = false;
+            }
+            if(gs_playing(game::gamestate) && needsmap && !gettingmap && totalmillis-needsmap >= 30000)
+            {
+                p.reliable();
+                putint(p, N_GETMAP);
+                needsmap = totalmillis;
             }
         }
         if(messages.length())
@@ -2462,6 +2467,17 @@ namespace client
                     v->lastpoints = add;
                     v->points = points;
                     v->totalpoints = total;
+                    break;
+                }
+
+                case N_TOTALS:
+                {
+                    int acn = getint(p), totalp = getint(p), totalf = getint(p), totald = getint(p);
+                    gameent *v = game::getclient(acn);
+                    if(!v) break;
+                    v->totalpoints = totalp;
+                    v->totalfrags = totalf;
+                    v->totaldeaths = totald;
                     break;
                 }
 
@@ -3114,13 +3130,13 @@ namespace client
                 case N_SENDMAP:
                 {
                     conoutf("\fymap data has been uploaded to the server");
-                    //if(needsmap && !gettingmap) addmsg(N_GETMAP, "r");
                     break;
                 }
 
                 case N_FAILMAP:
                 {
-                    needsmap = gettingmap = false;
+                    conoutf("\fyfailed to get a valid map");
+                    needsmap = gettingmap = 0;
                     break;
                 }
 
@@ -3131,7 +3147,7 @@ namespace client
                     if(size >= 0) emptymap(size, true, text);
                     else enlargemap(size == -2, true);
                     mapvotes.shrink(0);
-                    needsmap = false;
+                    needsmap = 0;
                     if(d)
                     {
                         int newsize = 0;
