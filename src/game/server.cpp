@@ -7012,16 +7012,20 @@ namespace server
                         hasgameinfo = true;
                         sents[n].o = vec(o).div(DMF);
                         packetbuf q(MAXTRANS, ENET_PACKET_FLAG_RELIABLE);
+                        uchar s[MAXTRANS];
+                        ucharbuf r(s, MAXTRANS);
                         putint(q, N_CLIENT);
                         putint(q, ci->clientnum);
-                        putint(q, N_EDITENT);
-                        putint(q, n);
-                        putint(q, o.x);
-                        putint(q, o.y);
-                        putint(q, o.z);
-                        putint(q, sents[n].type);
-                        putint(q, sents[n].attrs.length());
-                        loopvk(sents[n].attrs) putint(q, sents[n].attrs[k]);
+                        putint(r, N_EDITENT);
+                        putint(r, n);
+                        putint(r, o.x);
+                        putint(r, o.y);
+                        putint(r, o.z);
+                        putint(r, sents[n].type);
+                        putint(r, sents[n].attrs.length());
+                        loopvk(sents[n].attrs) putint(r, sents[n].attrs[k]);
+                        putuint(q, r.length());
+                        q.put(r.getbuf(), r.length());
                         sendpacket(-1, 1, q.finalize(), ci->clientnum);
                         if(tweaked)
                         {
