@@ -804,6 +804,11 @@ struct clientstate
         return frags >= deaths ? (frags/float(max(deaths, 1))) : -(deaths/float(max(frags, 1)));
     }
 
+    float combinedkdratio()
+    {
+        return kdratio() + kdratio(false);
+    }
+
     bool canrandweap(int weap)
     {
         int cweap = weap-W_OFFSET;
