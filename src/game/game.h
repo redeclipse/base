@@ -838,10 +838,8 @@ struct clientstate
         }
         if(AA(actortype, maxcarry) && m_loadout(gamemode, mutators))
         {
-            int n = 0;
-            int unfiltered = 0;
-            loopj(W_LOADOUT) if(canrandweap(j + W_OFFSET)) unfiltered++;
-            int musthave = AA(actortype, maxcarry) - unfiltered;
+            int n = 0, musthave = AA(actortype, maxcarry);
+            loopj(W_LOADOUT) if(canrandweap(j + W_OFFSET)) musthave--;
             vector<bool> forced;
             loopj(W_LOADOUT) forced.add(false);
             vector<int> aweap;
