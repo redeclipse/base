@@ -495,14 +495,19 @@ namespace capture
         capturestate::flag &f = st.flags[i];
         if(value > 0)
         {
-            affinityeffect(i, T_NEUTRAL, f.droploc, f.above, 3, "RESET");
+            affinityeffect(i, T_NEUTRAL, f.droploc, value == 2 ? pos : f.above, 3, "RESET");
             game::spawneffect(PART_SPARK, vec(f.pos()).add(vec(0, 0, enttype[AFFINITY].radius*0.45f)), enttype[AFFINITY].radius*0.25f, TEAM(f.team, colour), 1.5f);
             game::spawneffect(PART_SPARK, vec(f.pos()).add(vec(0, 0, enttype[AFFINITY].radius*0.45f)), enttype[AFFINITY].radius*0.25f, 0xFFFFFF, 1.5f);
             game::spawneffect(PART_SPARK, value == 2 ? pos : vec(f.spawnloc).add(vec(0, 0, enttype[AFFINITY].radius*0.45f)), enttype[AFFINITY].radius*0.25f, TEAM(f.team, colour), 1.5f);
             game::spawneffect(PART_SPARK, value == 2 ? pos : vec(f.spawnloc).add(vec(0, 0, enttype[AFFINITY].radius*0.45f)), enttype[AFFINITY].radius*0.25f, 0xFFFFFF, 1.5f);
             game::announcef(S_V_FLAGRESET, CON_SELF, NULL, true, "\fathe %s flag has been reset", game::colourteam(f.team, "flagtex"));
         }
-        if(value == 2) st.dropaffinity(i, pos, vec(0, 0, 1), lastmillis);
+        if(value == 2)
+        {
+            st.dropaffinity(i, pos, vec(0, 0, 1), lastmillis);
+            f.proj->stuck = 1;
+            f.proj->stick = NULL;
+        }
         else st.returnaffinity(i, lastmillis);
     }
 

@@ -65,7 +65,7 @@ struct captureservmode : capturestate, servmode
         if(!canplay() || !hasflaginfo || !(AA(ci->actortype, abilities)&(1<<A_A_AFFINITY)) || ci->state != CS_ALIVE) return;
         if(ci->floorpos != vec(-1, -1, -1))
             loopv(flags) if(flags[i].owner == ci->clientnum)
-                (flags[i].floorpos = ci->floorpos).z += (enttype[AFFINITY].radius/2)+1;
+                (flags[i].floorpos = ci->floorpos).z += (enttype[AFFINITY].radius/4)+1;
         if(G(capturethreshold) > 0 && oldpos.dist(newpos) >= G(capturethreshold))
             dropaffinity(ci, oldpos, vec(ci->vel).add(ci->falling));
         if(!m_ctf_protect(gamemode, mutators)) loopv(flags) if(flags[i].owner == ci->clientnum)
@@ -112,7 +112,7 @@ struct captureservmode : capturestate, servmode
             capturestate::takeaffinity(i, ci->clientnum, gamemillis);
             if(ci->floorpos != vec(-1, -1, -1)) f.floorpos = ci->floorpos;
             else f.floorpos = f.droploc;
-            f.floorpos.z += (enttype[AFFINITY].radius/2)+1;
+            f.floorpos.z += (enttype[AFFINITY].radius/4)+1;
             if((f.team != ci->team && !f.droptime) || f.lastowner != ci->clientnum) givepoints(ci, G(capturepickuppoints), m_points(gamemode, mutators), false);
             sendf(-1, 1, "ri3", N_TAKEAFFIN, ci->clientnum, i);
         }
@@ -126,12 +126,15 @@ struct captureservmode : capturestate, servmode
         f.votes.add(ci->clientnum);
         if(f.votes.length() >= int(floorf(numclients()*0.5f)))
         {
-            if(G(captureresetfloor) && f.floorpos != vec(-1, -1, -1))
+            if(G(captureresetfloor))
             {
-                ivec pos = ivec(vec(f.floorpos).mul(DMF));
-                capturestate::dropaffinity(i, f.floorpos, vec(0, 0, 1), gamemillis);
-                f.floorpos = vec(-1, -1, -1); // in case its a fail
-                sendf(-1, 1, "ri3i3", N_RESETAFFIN, i, 2, pos.x, pos.y, pos.z);
+                if (f.floorpos != vec(-1, -1, -1))
+                {
+                    ivec pos = ivec(vec(f.floorpos).mul(DMF));
+                    capturestate::dropaffinity(i, f.floorpos, vec(0, 0, 1), gamemillis);
+                    f.floorpos = vec(-1, -1, -1);
+                    sendf(-1, 1, "ri3i3", N_RESETAFFIN, i, 2, pos.x, pos.y, pos.z);
+                }
             }
             else
             {
