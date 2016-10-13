@@ -1398,7 +1398,7 @@ namespace projs
                             if(projhints)
                             {
                                 part_flare(proj.to, proj.o, 1, PART_MUZZLE_FLARE, projhint(proj.owner, FWCOL(H, partcol, proj)), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*projhintsize*proj.curscale, clamp(1.25f-proj.lifespan, 0.35f, 0.85f)*projhintblend*trans);
-                                part_create(PART_HINT, 1, proj.o, projhint(proj.owner, FWCOL(H, partcol, proj)), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*projhintsize*proj.curscale, clamp(1.25f-proj.lifespan, 0.35f, 0.85f)*projhintblend*trans);
+                                part_create(PART_HINT_SOFT, 1, proj.o, projhint(proj.owner, FWCOL(H, partcol, proj)), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*projhintsize*proj.curscale, clamp(1.25f-proj.lifespan, 0.35f, 0.85f)*projhintblend*trans);
                             }
                         }
                         break;
@@ -1581,7 +1581,7 @@ namespace projs
             case PRJ_EJECT:
             {
                 if(isweap(proj.weap) && ejecthint)
-                    part_create(PART_HINT, 1, proj.o, W(proj.weap, colour), max(proj.xradius, proj.yradius)*1.25f, clamp(1.f-proj.lifespan, 0.1f, 1.f)*0.35f);
+                    part_create(PART_HINT_SOFT, 1, proj.o, W(proj.weap, colour), max(proj.xradius, proj.yradius)*1.25f, clamp(1.f-proj.lifespan, 0.1f, 1.f)*0.35f);
                 bool moving = proj.movement >= 1;
                 if(moving && lastmillis-proj.lasteffect >= 100)
                 {

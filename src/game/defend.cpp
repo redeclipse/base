@@ -54,6 +54,9 @@ namespace defend
         }
     }
 
+    FVAR(IDF_PERSIST, defendhintfadeat, 0, 64, FVAR_MAX);
+    FVAR(IDF_PERSIST, defendhintfadecut, 0, 8, FVAR_MAX);
+
     void render()
     {
         loopv(st.flags)
@@ -75,18 +78,19 @@ namespace defend
                 formatstring(b.info, "%s - %s", b.name, game::colourteam(defend));
             }
             vec above = b.above;
-            float blend = camera1->o.distrange(above, enttype[AFFINITY].radius, enttype[AFFINITY].radius/8);
-            part_explosion(above, 3, PART_SHOCKBALL, 1, colour, 1, 0.5f*blend);
+            float blend = camera1->o.distrange(above, defendhintfadeat, defendhintfadecut);
+            part_explosion(above, 3, PART_SHOCKBALL, 1, colour, 1, blend*0.5f);
+            part_create(PART_HINT_SOFT, 1, above, colour, 6, blend*0.5f);
             above.z += 4;
             part_text(above, b.info, PART_TEXT, 1, 0xFFFFFF, 2, blend);
-            above.z += 3;
+            above.z += 4;
             if(b.enemy)
             {
-                part_icon(above, textureload(hud::progringtex, 3), 4, blend, 0, 0, 1, colour, (lastmillis%1000)/1000.f, 0.1f);
-                part_icon(above, textureload(hud::progresstex, 3), 4, blend, 0, 0, 1, TEAM(b.enemy, colour), 0, occupy);
-                part_icon(above, textureload(hud::progresstex, 3), 4, 0.25f*blend, 0, 0, 1, TEAM(b.owner, colour), occupy, 1-occupy);
+                part_icon(above, textureload(hud::progringtex, 3), 5, blend, 0, 0, 1, colour, (lastmillis%1000)/1000.f, 0.1f);
+                part_icon(above, textureload(hud::progresstex, 3), 5, blend, 0, 0, 1, TEAM(b.enemy, colour), 0, occupy);
+                part_icon(above, textureload(hud::progresstex, 3), 5, 0.25f*blend, 0, 0, 1, TEAM(b.owner, colour), occupy, 1-occupy);
             }
-            else part_icon(above, textureload(hud::teamtexname(b.owner), 3), 3, blend, 0, 0, 1, TEAM(b.owner, colour));
+            else part_icon(above, textureload(hud::teamtexname(b.owner), 3), 4, blend, 0, 0, 1, TEAM(b.owner, colour));
         }
     }
 

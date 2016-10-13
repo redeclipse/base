@@ -277,6 +277,9 @@ namespace capture
     FVAR(IDF_PERSIST, firstflagblend, 0, 1, 1);
     FVAR(IDF_PERSIST, freeflagblend, 0, 1, 1);
 
+    FVAR(IDF_PERSIST, capturehintfadeat, 0, 64, FVAR_MAX);
+    FVAR(IDF_PERSIST, capturehintfadecut, 0, 8, FVAR_MAX);
+
     void render()
     {
         static vector<int> numflags, iterflags; // dropped/owned
@@ -308,7 +311,12 @@ namespace capture
             }
             f.baselight.material[0] = f.light.material[0] = bvec::fromcolor(effect);
             if(!f.owner && !f.droptime)
-                rendermodel(&f.light, "props/flag", ANIM_MAPMODEL|ANIM_LOOP, pos, f.yaw, f.pitch, 0, MDL_DYNSHADOW|MDL_CULL_VFC|MDL_CULL_OCCLUDED, NULL, NULL, 0, 0, blend);
+            {
+                vec flagpos = pos;
+                rendermodel(&f.light, "props/flag", ANIM_MAPMODEL|ANIM_LOOP, flagpos, f.yaw, f.pitch, 0, MDL_DYNSHADOW|MDL_CULL_VFC|MDL_CULL_OCCLUDED, NULL, NULL, 0, 0, blend);
+                flagpos.z += enttype[AFFINITY].radius/3;
+                part_create(PART_HINT_VERT_SOFT, 1, flagpos, effect.tohexcolor(), enttype[AFFINITY].radius/2+1, blend*0.5f*camera1->o.distrange(flagpos, capturehintfadeat, capturehintfadecut));
+            }
             else if(!f.owner || f.owner != game::focus || game::thirdpersonview(true) || !(rendernormally))
             {
                 vec flagpos = pos;
@@ -321,7 +329,9 @@ namespace capture
                 }
                 while(yaw >= 360.f) yaw -= 360.f;
                 rendermodel(&f.light, "props/flag", ANIM_MAPMODEL|ANIM_LOOP, flagpos, yaw, pitch, roll, MDL_DYNSHADOW|MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_LIGHT|MDL_LIGHTFX, NULL, NULL, 0, 0, blend);
-                flagpos.z += enttype[AFFINITY].radius*2/3;
+                flagpos.z += enttype[AFFINITY].radius/3;
+                part_create(PART_HINT_VERT_SOFT, 1, flagpos, effect.tohexcolor(), enttype[AFFINITY].radius/2+1, blend*0.5f*camera1->o.distrange(flagpos, capturehintfadeat, capturehintfadecut));
+                flagpos.z += enttype[AFFINITY].radius/2;
                 if(f.owner)
                 {
                     flagpos.z += iterflags[f.owner->clientnum]*2;
@@ -330,9 +340,9 @@ namespace capture
                 if(gs_playing(game::gamestate) && (f.droptime || (m_ctf_protect(game::gamemode, game::mutators) && f.taketime && f.owner && f.owner->team != f.team)))
                 {
                     float wait = f.droptime ? clamp(f.dropleft(lastmillis, capturestore)/float(capturedelay), 0.f, 1.f) : clamp((lastmillis-f.taketime)/float(captureprotectdelay), 0.f, 1.f);
-                    part_icon(flagpos, textureload(hud::progringtex, 3), 4, blend, 0, 0, 1, colour, (lastmillis%1000)/1000.f, 0.1f);
-                    part_icon(flagpos, textureload(hud::progresstex, 3), 4, 0.25f*blend, 0, 0, 1, colour);
-                    part_icon(flagpos, textureload(hud::progresstex, 3), 4, blend, 0, 0, 1, colour, 0, wait);
+                    part_icon(flagpos, textureload(hud::progringtex, 3), 5, blend, 0, 0, 1, colour, (lastmillis%1000)/1000.f, 0.1f);
+                    part_icon(flagpos, textureload(hud::progresstex, 3), 5, 0.25f*blend, 0, 0, 1, colour);
+                    part_icon(flagpos, textureload(hud::progresstex, 3), 5, blend, 0, 0, 1, colour, 0, wait);
                 }
             }
             rendermodel(&f.baselight, "props/point", ANIM_MAPMODEL|ANIM_LOOP, f.render, f.yaw, 0, 0, MDL_DYNSHADOW|MDL_CULL_VFC|MDL_CULL_OCCLUDED, NULL, NULL, 0, 0, 1);
@@ -341,17 +351,17 @@ namespace capture
             blend = camera1->o.distrange(above, enttype[AFFINITY].radius, enttype[AFFINITY].radius/8);
             defformatstring(info, "<super>%s base", TEAM(f.team, name));
             part_textcopy(above, info, PART_TEXT, 1, TEAM(f.team, colour), 2, blend);
-            above.z += 2.5f;
+            above.z += 4;
             if(gs_playing(game::gamestate) && (f.droptime || (m_ctf_protect(game::gamemode, game::mutators) && f.taketime && f.owner && f.owner->team != f.team)))
             {
-                part_icon(above, textureload(hud::progringtex, 3), 4, blend, 0, 0, 1, colour, (lastmillis%1000)/1000.f, 0.1f);
-                part_icon(above, textureload(hud::progresstex, 3), 4, 0.25f*blend, 0, 0, 1, colour);
-                part_icon(above, textureload(hud::progresstex, 3), 4, blend, 0, 0, 1, colour, 0, wait);
-                above.z += 3;
+                part_icon(above, textureload(hud::progringtex, 3), 5, blend, 0, 0, 1, colour, (lastmillis%1000)/1000.f, 0.1f);
+                part_icon(above, textureload(hud::progresstex, 3), 5, 0.25f*blend, 0, 0, 1, colour);
+                part_icon(above, textureload(hud::progresstex, 3), 5, blend, 0, 0, 1, colour, 0, wait);
+                above.z += 4;
             }
-            if(f.owner) part_icon(above, textureload(hud::flagtakentex, 3), 2, blend, 0, 0, 1, TEAM(f.owner->team, colour));
-            else if(f.droptime) part_icon(above, textureload(hud::flagdroptex, 3), 2, blend, 0, 0, 1, 0x28FFFF);
-            else part_icon(above, textureload(hud::teamtexname(f.team), 3), 2, blend, 0, 0, 1, TEAM(f.team, colour));
+            if(f.owner) part_icon(above, textureload(hud::flagtakentex, 3), 4, blend, 0, 0, 1, TEAM(f.owner->team, colour));
+            else if(f.droptime) part_icon(above, textureload(hud::flagdroptex, 3), 4, blend, 0, 0, 1, 0x28FFFF);
+            else part_icon(above, textureload(hud::teamtexname(f.team), 3), 4, blend, 0, 0, 1, TEAM(f.team, colour));
         }
     }
 

@@ -16,10 +16,10 @@ namespace entities
     VAR(IDF_PERSIST, showentlinks, 0, 1, 3);
     VAR(IDF_PERSIST, showentinterval, 0, 32, VAR_MAX);
     VAR(IDF_PERSIST, showentdist, 0, 512, VAR_MAX);
-    FVAR(IDF_PERSIST, showentsize, 0, 2, 10);
+    FVAR(IDF_PERSIST, showentsize, 0, 3, 10);
 
     VAR(IDF_PERSIST, simpleitems, 0, 0, 2); // 0 = items are models, 1 = items are icons, 2 = items are off and only halos appear
-    FVAR(IDF_PERSIST, simpleitemsize, 0, 5, 8);
+    FVAR(IDF_PERSIST, simpleitemsize, 0, 6, 8);
     FVAR(IDF_PERSIST, simpleitemblend, 0, 1, 1);
     FVAR(IDF_PERSIST, simpleitemhalo, 0, 0.5f, 1);
 
