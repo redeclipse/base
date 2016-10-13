@@ -128,12 +128,12 @@ redeclipse_update_module() {
     ${REDECLIPSE_DOWNLOADER} "${REDECLIPSE_TEMP}/mods.txt" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/mods.txt"
     if ! [ -e "${REDECLIPSE_TEMP}/mods.txt" ]; then
         echo "modules: Failed to retrieve update information."
-        redeclipse_update_bins_run
-        return $?
+        return 1
     fi
     REDECLIPSE_MODULE_LIST=`cat "${REDECLIPSE_TEMP}/mods.txt"`
     if [ -z "${REDECLIPSE_MODULE_LIST}" ]; then
-        echo "modules: Failed to get list, continuing.."
+        echo "modules: Failed to get list, aborting.."
+        return 1
     else
         if [ -d "${REDECLIPSE_TEMP}/data.txt" ]; then rm -rfv "${REDECLIPSE_TEMP}/data.txt"; fi
         if [ -d "${REDECLIPSE_TEMP}/data.zip" ]; then rm -rfv "${REDECLIPSE_TEMP}/data.zip"; fi
@@ -142,7 +142,21 @@ redeclipse_update_module() {
         REDECLIPSE_MODULE_PREFETCH=""
         for a in ${REDECLIPSE_MODULE_LIST}; do
             rm -f "${REDECLIPSE_TEMP}/${a}.txt"
-            if [ -n "${REDECLIPSE_MODULE_PREFETCH}" ]; then
+            if [ "${a}" = "base" ]; then
+                ${REDECLIPSE_DOWNLOADER} "${REDECLIPSE_TEMP}/${a}.txt" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/${a}.txt"
+                REDECLIPSE_MODULE_RUN="${a}"
+                if [ -n "${REDECLIPSE_MODULE_RUN}" ]; then
+                    redeclipse_update_module_run
+                    if [ $? -ne 0 ]; then
+                        echo "${REDECLIPSE_MODULE_RUN}: There was an error updating the module, aborting.."
+                        return 1
+                    elif [ "${REDECLIPSE_DEPLOY}" != "true" ]
+                        echo "${REDECLIPSE_MODULE_RUN}: Not updated, skipping other modules.."
+                        redeclipse_update_bins_run
+                        return $?
+                    fi
+                fi
+            elif [ -n "${REDECLIPSE_MODULE_PREFETCH}" ]; then
                 REDECLIPSE_MODULE_PREFETCH="${REDECLIPSE_MODULE_PREFETCH},${a}"
             else
                 REDECLIPSE_MODULE_PREFETCH="${a}"
@@ -151,16 +165,20 @@ redeclipse_update_module() {
         if [ -n "${REDECLIPSE_MODULE_PREFETCH}" ]; then
             ${REDECLIPSE_DOWNLOADER} "${REDECLIPSE_TEMP}/#1.txt" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/{${REDECLIPSE_MODULE_PREFETCH}}.txt"
             for a in ${REDECLIPSE_MODULE_LIST}; do
-                REDECLIPSE_MODULE_RUN="${a}"
-                if [ -n "${REDECLIPSE_MODULE_RUN}" ]; then
-                    redeclipse_update_module_run
-                    if [ $? -ne 0 ]; then
-                        echo "${REDECLIPSE_MODULE_RUN}: There was an error updating the module, continuing.."
+                if [ "${a}" != "base" ]; then
+                    REDECLIPSE_MODULE_RUN="${a}"
+                    if [ -n "${REDECLIPSE_MODULE_RUN}" ]; then
+                        redeclipse_update_module_run
+                        if [ $? -ne 0 ]; then
+                            echo "${REDECLIPSE_MODULE_RUN}: There was an error updating the module, aborting.."
+                            return 1
+                        fi
                     fi
                 fi
             done
         else
-            echo "modules: Failed to get version information, continuing.."
+            echo "modules: Failed to get version information, aborting.."
+            return 1
         fi
     fi
     redeclipse_update_bins_run
@@ -195,12 +213,12 @@ redeclipse_update_module_ver() {
 redeclipse_update_module_get() {
     if ! [ -e "${REDECLIPSE_TEMP}/${REDECLIPSE_MODULE_RUN}.txt" ]; then
         echo "${REDECLIPSE_MODULE_RUN}: Failed to retrieve update information."
-        return $?
+        return 1
     fi
     REDECLIPSE_MODULE_REMOTE=`cat "${REDECLIPSE_TEMP}/${REDECLIPSE_MODULE_RUN}.txt"`
     if [ -z "${REDECLIPSE_MODULE_REMOTE}" ]; then
         echo "${REDECLIPSE_MODULE_RUN}: Failed to read update information."
-        return $?
+        return 1
     fi
     echo "${REDECLIPSE_MODULE_RUN}: ${REDECLIPSE_MODULE_REMOTE} is the current version."
     if [ "${REDECLIPSE_MODULE_REMOTE}" = "${REDECLIPSE_MODULE_INSTALLED}" ]; then
@@ -219,7 +237,7 @@ redeclipse_update_module_blob() {
     ${REDECLIPSE_DOWNLOADER} "${REDECLIPSE_TEMP}/${REDECLIPSE_MODULE_RUN}.${REDECLIPSE_ARCHEXT}" "${REDECLIPSE_GITHUB}/${REDECLIPSE_MODULE_RUN}/${REDECLIPSE_BLOB}/${REDECLIPSE_MODULE_REMOTE}"
     if ! [ -e "${REDECLIPSE_TEMP}/${REDECLIPSE_MODULE_RUN}.${REDECLIPSE_ARCHEXT}" ]; then
         echo "${REDECLIPSE_MODULE_RUN}: Failed to retrieve update package."
-        return $?
+        return 1
     fi
     redeclipse_update_module_blob_deploy
     return $?
@@ -261,14 +279,12 @@ redeclipse_update_bins_run() {
 redeclipse_update_bins_get() {
     if ! [ -e "${REDECLIPSE_TEMP}/bins.txt" ]; then
         echo "bins: Failed to retrieve update information."
-        redeclipse_update_deploy
-        return $?
+        return 1
     fi
     REDECLIPSE_BINS_REMOTE=`cat "${REDECLIPSE_TEMP}/bins.txt"`
     if [ -z "${REDECLIPSE_BINS_REMOTE}" ]; then
         echo "bins: Failed to read update information."
-        redeclipse_update_deploy
-        return $?
+        return 1
     fi
     echo "bins: ${REDECLIPSE_BINS_REMOTE} is the current version."
     if [ "${REDECLIPSE_TRYUPDATE}" != "true" ] && [ "${REDECLIPSE_BINS_REMOTE}" = "${REDECLIPSE_BINS}" ]; then
@@ -288,8 +304,7 @@ redeclipse_update_bins_blob() {
     ${REDECLIPSE_DOWNLOADER} "${REDECLIPSE_TEMP}/${REDECLIPSE_ARCHIVE}" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/${REDECLIPSE_ARCHIVE}"
     if ! [ -e "${REDECLIPSE_TEMP}/${REDECLIPSE_ARCHIVE}" ]; then
         echo "bins: Failed to retrieve bins update package."
-        redeclipse_update_deploy
-        return $?
+        return 1
     fi
     redeclipse_update_bins_deploy
     return $?

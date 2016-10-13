@@ -55,32 +55,51 @@ setlocal enableextensions enabledelayedexpansion
     %REDECLIPSE_DOWNLOADER% "%REDECLIPSE_TEMP%\mods.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/mods.txt"
     if NOT EXIST "%REDECLIPSE_TEMP%\mods.txt" (
         echo modules: Failed to retrieve update information.
-        goto redeclipse_update_bins_run
+        exit /b 1
     )
     set /p REDECLIPSE_MODULE_LIST=< "%REDECLIPSE_TEMP%\mods.txt"
     if "%REDECLIPSE_MODULE_LIST%" == "" (
-        echo modules: Failed to get list, continuing..
-        goto redeclipse_update_bins_run
+        echo modules: Failed to get list, aborting..
+        exit /b 1
     )
     if EXIST "%REDECLIPSE_TEMP%\data.txt" del /f /q "%REDECLIPSE_TEMP%\data.txt"
     if EXIST "%REDECLIPSE_TEMP%\data.zip" del /f /q "%REDECLIPSE_TEMP%\data.zip"
-    echo modules: Prefetching versions..
     set REDECLIPSE_MODULE_PREFETCH=
     for %%a in (%REDECLIPSE_MODULE_LIST%) do (
         del /f /q "%REDECLIPSE_TEMP%\%%a.txt"
-        if NOT "!REDECLIPSE_MODULE_PREFETCH!" == "" (
+        if "%%a" == "base" (
+            %REDECLIPSE_DOWNLOADER% "%REDECLIPSE_TEMP%\%%a.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/%%a.txt"
+            set REDECLIPSE_MODULE_RUN=%%a
+            if NOT "!REDECLIPSE_MODULE_RUN!" == "" (
+                call :redeclipse_update_module_run "%REDECLIPSE_UPDATER%"
+                if %ERRORLEVEL% NEQ 0 (
+                    echo !REDECLIPSE_MODULE_RUN!: There was an error updating the module, aborting...
+                    exit /b 1
+                ) else if NOT "!REDECLIPSE_DEPLOY!" == "true" (
+                    echo !REDECLIPSE_MODULE_RUN!: Not updated, skipping other modules...
+                    goto redeclipse_update_bins_run
+                )
+            )
+        ) else if NOT "!REDECLIPSE_MODULE_PREFETCH!" == "" (
             set REDECLIPSE_MODULE_PREFETCH=!REDECLIPSE_MODULE_PREFETCH!,%%a
         ) else (set REDECLIPSE_MODULE_PREFETCH=%%a)
     )
     if "%REDECLIPSE_MODULE_PREFETCH" == "" (
-        echo modules: Failed to get version information, continuing..
-        goto redeclipse_update_bins_run
+        echo modules: Failed to get version information, aborting..
+        exit /b 1
     )
+    echo modules: Prefetching versions..
     %REDECLIPSE_DOWNLOADER% "%REDECLIPSE_TEMP%\#1.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/{%REDECLIPSE_MODULE_PREFETCH%}.txt"
     for %%a in (%REDECLIPSE_MODULE_LIST%) do (
-        set REDECLIPSE_MODULE_RUN=%%a
-        if NOT "!REDECLIPSE_MODULE_RUN!" == "" (
-            call :redeclipse_update_module_run "%REDECLIPSE_UPDATER%" || (echo !REDECLIPSE_MODULE_RUN!: There was an error updating the module, continuing..)
+        if NOT "%%a" == "base" (
+            set REDECLIPSE_MODULE_RUN=%%a
+            if NOT "!REDECLIPSE_MODULE_RUN!" == "" (
+                call :redeclipse_update_module_run "%REDECLIPSE_UPDATER%"
+                if %ERRORLEVEL% NEQ 0 (
+                    echo !REDECLIPSE_MODULE_RUN!: There was an error updating the module, aborting...
+                    exit /b 1
+                )
+            )
         )
     )
     goto redeclipse_update_bins_run
@@ -146,12 +165,12 @@ setlocal enableextensions enabledelayedexpansion
 :redeclipse_update_bins_get
     if NOT EXIST "%REDECLIPSE_TEMP%\bins.txt" (
         echo bins: Failed to retrieve update information.
-        goto redeclipse_update_deploy
+        exit /b 1
     )
     set /p REDECLIPSE_BINS_REMOTE=< "%REDECLIPSE_TEMP%\bins.txt"
     if "%REDECLIPSE_BINS_REMOTE%" == "" (
         echo bins: Failed to read update information.
-        goto redeclipse_update_deploy
+        exit /b 1
     )
     echo bins: %REDECLIPSE_BINS_REMOTE% is the current version.
     if NOT "%REDECLIPSE_TRYUPDATE%" == "true" if "%REDECLIPSE_BINS_REMOTE%" == "%REDECLIPSE_BINS%" (
@@ -166,7 +185,7 @@ setlocal enableextensions enabledelayedexpansion
     %REDECLIPSE_DOWNLOADER% "%REDECLIPSE_TEMP%\windows.zip" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/windows.zip"
     if NOT EXIST "%REDECLIPSE_TEMP%\windows.zip" (
         echo bins: Failed to retrieve update package.
-        goto redeclipse_update_deploy
+        exit /b 1
     )
 :redeclipse_update_bins_deploy
     echo echo bins: deploying blob.>> "%REDECLIPSE_TEMP%\install.bat"
