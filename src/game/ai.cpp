@@ -146,7 +146,7 @@ namespace ai
 
     int weappref(gameent *d)
     {
-        if(!m_basic(game::gamemode, game::mutators) && d->loadweap.length()) return d->loadweap[0];
+        if(d->loadweap.length()) return d->loadweap[0];
         return m_weapon(d->actortype, game::gamemode, game::mutators);
     }
 
