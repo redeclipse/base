@@ -275,8 +275,7 @@ enum
     PT_FEW      = 1<<17,    // allocate smaller number of particles
     PT_SHRINK   = 1<<18,    // shrink particle as it fades
     PT_GROW     = 1<<19,    // grow particle as it fades
-    PT_NOTEX    = 1<<20,
-    PT_SHADER   = 1<<21,
+    PT_SHADER   = 1<<20,
     PT_FLIP     = PT_HFLIP | PT_VFLIP | PT_ROT
 };
 

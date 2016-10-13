@@ -2775,7 +2775,7 @@ namespace hud
                 concatstring(attrstr, s);
             }
             const char *itext = itemtex(e.type, e.attrs[0]);
-            int ty = drawitem(itext && *itext ? itext : "textures/blank", x, y, s, 0, true, false, 1.f, 1.f, 1.f, fade, skew),
+            int ty = drawitem(itext && *itext ? itext : "textures/notexture", x, y, s, 0, true, false, 1.f, 1.f, 1.f, fade, skew),
                 qy = drawitemtext(x, y, s, false, skew, "reduced", fade, "%s", attrstr);
             qy += drawitemtext(x, y-qy, s, false, skew, "reduced", fade, "%s", entities::entinfo(e.type, e.attrs, true));
             qy += drawitemtext(x, y-qy, s, false, skew, "default", fade, "%s (%d)", enttype[e.type].name, n);
