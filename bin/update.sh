@@ -150,7 +150,7 @@ redeclipse_update_module() {
                     if [ $? -ne 0 ]; then
                         echo "${REDECLIPSE_MODULE_RUN}: There was an error updating the module, aborting.."
                         return 1
-                    elif [ "${REDECLIPSE_DEPLOY}" != "true" ]
+                    elif [ "${REDECLIPSE_DEPLOY}" != "true" ]; then
                         echo "${REDECLIPSE_MODULE_RUN}: Not updated, skipping other modules.."
                         redeclipse_update_bins_run
                         return $?
