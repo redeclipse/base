@@ -309,6 +309,9 @@ namespace bomber
         }
     }
 
+    FVAR(IDF_PERSIST, bomberhintfadeat, 0, 64, FVAR_MAX);
+    FVAR(IDF_PERSIST, bomberhintfadecut, 0, 8, FVAR_MAX);
+
     void render()
     {
         loopv(st.flags) // flags/bases
@@ -321,6 +324,7 @@ namespace bomber
             else if(isbomberaffinity(f))
             {
                 vec above(f.pos(true, true));
+                float blend = camera1->o.distrange(above, bomberhintfadeat, bomberhintfadecut);
                 if(!f.owner && !f.droptime) above.z += enttype[AFFINITY].radius/4*trans;
                 float size = trans, yaw = !f.owner && f.proj ? f.proj->yaw : (lastmillis/4)%360, pitch = !f.owner && f.proj ? f.proj->pitch : 0, roll = !f.owner && f.proj ? f.proj->roll : 0,
                       wait = f.droptime ? clamp((lastmillis-f.droptime)/float(bomberresetdelay), 0.f, 1.f) : ((f.owner && carrytime) ? clamp((lastmillis-f.taketime)/float(carrytime), 0.f, 1.f) : 0.f);
@@ -339,24 +343,24 @@ namespace bomber
                     rendermodel(&f.light, "props/ball", ANIM_MAPMODEL|ANIM_LOOP, above, yaw, pitch, roll, MDL_DYNSHADOW|MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_LIGHTFX, NULL, NULL, 0, 0, trans, size);
                     float fluc = interval >= 500 ? (1500-interval)/1000.f : (500+interval)/1000.f;
                     int pcolour = effect.tohexcolor();
-                    part_create(PART_HINT_SOFT, 1, above, pcolour, enttype[AFFINITY].radius/4*trans+(2*fluc), fluc*trans);
+                    part_create(PART_HINT_SOFT, 1, above, pcolour, enttype[AFFINITY].radius/4*trans+(2*fluc), fluc*trans*blend);
                     if(gs_playing(game::gamestate) && f.droptime)
                     {
                         above.z += enttype[AFFINITY].radius/4*trans+1.5f;
-                        part_icon(above, textureload(hud::progringtex, 3), 4*trans, 1, 0, 0, 1, pcolour, (lastmillis%1000)/1000.f, 0.1f);
-                        part_icon(above, textureload(hud::progresstex, 3), 4*trans, 0.25f, 0, 0, 1, pcolour);
-                        part_icon(above, textureload(hud::progresstex, 3), 4*trans, 1, 0, 0, 1, pcolour, 0, wait);
+                        part_icon(above, textureload(hud::progringtex, 3), 5*trans, 1, 0, 0, 1, pcolour, (lastmillis%1000)/1000.f, 0.1f);
+                        part_icon(above, textureload(hud::progresstex, 3), 5*trans, 0.25f, 0, 0, 1, pcolour);
+                        part_icon(above, textureload(hud::progresstex, 3), 5*trans, 1, 0, 0, 1, pcolour, 0, wait);
                     }
                 }
             }
             else if(!m_bb_hold(game::gamemode, game::mutators))
             {
-                vec above = f.above;
-                float blend = clamp(camera1->o.dist(above)/enttype[AFFINITY].radius, 0.f, 1.f);
-                vec effect = vec::hexcolor(TEAM(f.team, colour)).mul(trans);
+                vec above = f.above, effect = vec::hexcolor(TEAM(f.team, colour)).mul(trans);
+                float blend = camera1->o.distrange(above, bomberhintfadeat, bomberhintfadecut);
                 f.baselight.material[0] = f.light.material[0] = bvec::fromcolor(effect);
                 int pcolour = effect.tohexcolor();
-                part_explosion(above, enttype[AFFINITY].radius/4*trans, PART_SHOCKBALL, 1, pcolour, 1.f, trans*blend*0.25f);
+                part_explosion(above, 3, PART_SHOCKBALL, 1, pcolour, 1, trans*blend*0.5f);
+                part_create(PART_HINT_SOFT, 1, above, pcolour, 6, trans*blend*0.5f);
                 if(m_bb_basket(game::gamemode, game::mutators) && carryaffinity(game::focus) && bomberbasketmindist > 0 && game::focus->o.dist(above) < bomberbasketmindist)
                 {
                     vec c(0.25f, 0.25f, 0.25f);
@@ -371,8 +375,8 @@ namespace bomber
                 above.z += enttype[AFFINITY].radius/4*trans;
                 defformatstring(info, "<super>%s base", TEAM(f.team, name));
                 part_textcopy(above, info, PART_TEXT, 1, TEAM(f.team, colour), 2, trans*blend);
-                above.z += 2.5f;
-                part_icon(above, textureload(hud::teamtexname(f.team), 3), 2, trans*blend, 0, 0, 1, TEAM(f.team, colour));
+                above.z += 4;
+                part_icon(above, textureload(hud::teamtexname(f.team), 3), 4, trans*blend, 0, 0, 1, TEAM(f.team, colour));
             }
             if(!m_bb_hold(game::gamemode, game::mutators))
                 rendermodel(&f.baselight, "props/point", ANIM_MAPMODEL|ANIM_LOOP, f.render, f.yaw, 0, 0, MDL_DYNSHADOW|MDL_CULL_VFC|MDL_CULL_OCCLUDED, NULL, NULL, 0, 0, 1);

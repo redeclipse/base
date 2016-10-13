@@ -803,7 +803,7 @@ struct lineprimitive : listparticle<lineprimitive>
 struct lineprimitiverenderer : listrenderer<lineprimitive>
 {
     lineprimitiverenderer(int type = 0)
-        : listrenderer<lineprimitive>(type|PT_LINE|PT_LERP|PT_NOTEX)
+        : listrenderer<lineprimitive>(type|PT_LINE|PT_LERP)
     {}
 
     void startrender()
@@ -822,6 +822,7 @@ struct lineprimitiverenderer : listrenderer<lineprimitive>
 
     void renderpart(lineprimitive *p, int blend, int ts, float size)
     {
+        glBindTexture(GL_TEXTURE_2D, blanktexture->id);
         bvec4 color(p->color.r, p->color.g, p->color.b, uchar(p->blend*blend));
         gle::attrib(p->o);
             gle::attrib(color);
@@ -850,7 +851,7 @@ struct trisprimitive : listparticle<trisprimitive>
 struct trisprimitiverenderer : listrenderer<trisprimitive>
 {
     trisprimitiverenderer(int type = 0)
-        : listrenderer<trisprimitive>(type|PT_TRIANGLE|PT_LERP|PT_NOTEX)
+        : listrenderer<trisprimitive>(type|PT_TRIANGLE|PT_LERP)
     {}
 
     void startrender()
@@ -869,6 +870,7 @@ struct trisprimitiverenderer : listrenderer<trisprimitive>
 
     void renderpart(trisprimitive *p, int blend, int ts, float size)
     {
+        glBindTexture(GL_TEXTURE_2D, blanktexture->id);
         bvec4 color(p->color.r, p->color.g, p->color.b, uchar(p->blend*blend));
         if(!p->fill) { gle::end(); gle::begin(GL_LINE_LOOP); }
         gle::attrib(p->o);
@@ -909,7 +911,7 @@ struct loopprimitive : listparticle<loopprimitive>
 struct loopprimitiverenderer : listrenderer<loopprimitive>
 {
     loopprimitiverenderer(int type = 0)
-        : listrenderer<loopprimitive>(type|PT_ELLIPSE|PT_LERP|PT_NOTEX)
+        : listrenderer<loopprimitive>(type|PT_ELLIPSE|PT_LERP)
     {}
 
     void startrender()
@@ -925,6 +927,7 @@ struct loopprimitiverenderer : listrenderer<loopprimitive>
 
     void renderpart(loopprimitive *p, int blend, int ts, float size)
     {
+        glBindTexture(GL_TEXTURE_2D, blanktexture->id);
         gle::colorub(p->color.r, p->color.g, p->color.b, uchar(p->blend*blend));
         gle::begin(p->fill ? GL_TRIANGLE_FAN : GL_LINE_LOOP);
         loopi(15 + (p->fill ? 1 : 0))
@@ -972,7 +975,7 @@ struct coneprimitive : listparticle<coneprimitive>
 struct coneprimitiverenderer : listrenderer<coneprimitive>
 {
     coneprimitiverenderer(int type = 0)
-        : listrenderer<coneprimitive>(type|PT_CONE|PT_LERP|PT_NOTEX)
+        : listrenderer<coneprimitive>(type|PT_CONE|PT_LERP)
     {}
 
     void startrender()
@@ -988,6 +991,7 @@ struct coneprimitiverenderer : listrenderer<coneprimitive>
 
     void renderpart(coneprimitive *p, int blend, int ts, float size)
     {
+        glBindTexture(GL_TEXTURE_2D, blanktexture->id);
         gle::colorub(p->color.r, p->color.g, p->color.b, uchar(p->blend*blend));
 
         gle::begin(GL_LINES);
@@ -1039,12 +1043,20 @@ static partrenderer *parts[] =
     new quadrenderer("<grey>particles/hint", PT_PART|PT_GLARE|PT_LERP),
     new softquadrenderer("<grey>particles/hint_bold", PT_PART|PT_GLARE|PT_LERP),
     new quadrenderer("<grey>particles/hint_bold", PT_PART|PT_GLARE|PT_LERP),
+    new softquadrenderer("<grey>particles/hint_vert", PT_PART|PT_GLARE|PT_LERP),
+    new quadrenderer("<grey><rotate:1>particles/hint_vert", PT_PART|PT_GLARE|PT_LERP),
+    new softquadrenderer("<grey><rotate:1>particles/hint_vert", PT_PART|PT_GLARE|PT_LERP),
+    new quadrenderer("<grey>particles/hint_vert", PT_PART|PT_GLARE|PT_LERP),
     new softquadrenderer("<grey>particles/smoke", PT_PART|PT_FLIP|PT_SHRINK),
     new quadrenderer("<grey>particles/smoke", PT_PART|PT_FLIP|PT_SHRINK),
     new softquadrenderer("<grey>particles/hint", PT_PART|PT_GLARE),
     new quadrenderer("<grey>particles/hint", PT_PART|PT_GLARE),
     new softquadrenderer("<grey>particles/hint_bold", PT_PART|PT_GLARE),
     new quadrenderer("<grey>particles/hint_bold", PT_PART|PT_GLARE),
+    new softquadrenderer("<grey>particles/hint_vert", PT_PART|PT_GLARE),
+    new quadrenderer("<grey>particles/hint_vert", PT_PART|PT_GLARE),
+    new softquadrenderer("<grey><rotate:1>particles/hint_vert", PT_PART|PT_GLARE),
+    new quadrenderer("<grey><rotate:1>particles/hint_vert", PT_PART|PT_GLARE),
     new quadrenderer("<grey>particles/blood", PT_PART|PT_MOD|PT_RND4|PT_FLIP),
     new quadrenderer("<grey>particles/entity", PT_PART|PT_GLARE),
     new quadrenderer("<grey>particles/entity", PT_PART|PT_GLARE|PT_ONTOP),
@@ -1195,7 +1207,7 @@ void renderparticles(bool mainpass)
             }
             if(!(flags&PT_SHADER))
             {
-                if(changedbits&(PT_SOFT|PT_SHADER|PT_NOTEX))
+                if(changedbits&(PT_SOFT|PT_SHADER))
                 {
                     if(flags&PT_SOFT)
                     {
@@ -1204,7 +1216,6 @@ void renderparticles(bool mainpass)
 
                         binddepthfxparams(depthfxpartblend);
                     }
-                    else if(flags&PT_NOTEX) particlenotextureshader->set();
                     else particleshader->set();
                 }
             }

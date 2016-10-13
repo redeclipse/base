@@ -224,11 +224,11 @@ namespace game
     FVAR(IDF_PERSIST, aboveheadiconsblend, 0.f, 1, 1.f);
     FVAR(IDF_PERSIST, aboveheadnamessize, 0, 4, 10);
     FVAR(IDF_PERSIST, aboveheadinventorysize, 0, 4, 10);
-    FVAR(IDF_PERSIST, aboveheadstatussize, 0, 2.5f, 10);
+    FVAR(IDF_PERSIST, aboveheadstatussize, 0, 3.f, 10);
     FVAR(IDF_PERSIST, aboveheadiconssize, 0, 2.5f, 10);
     FVAR(IDF_PERSIST, aboveheadeventsize, 0, 3, 10);
 
-    FVAR(IDF_PERSIST, aboveitemiconsize, 0, 2.5f, 10);
+    FVAR(IDF_PERSIST, aboveitemiconsize, 0, 3.f, 10);
     FVAR(IDF_PERSIST, aboveheadsmooth, 0, 0.25f, 1);
     VAR(IDF_PERSIST, aboveheadsmoothmillis, 1, 100, 10000);
 
@@ -673,8 +673,7 @@ namespace game
             else switch(player1->state)
             {
                 case CS_SPECTATOR: if(specmode || (force && focus != player1 && followmode && followaim())) return true; break;
-                case CS_WAITING: if((waitmode && (!player1->lastdeath || lastmillis-player1->lastdeath >= 500)) || (force && focus != player1 && followmode && followaim()))
-                    return true; break;
+                case CS_WAITING: if((waitmode && (!player1->lastdeath || lastmillis-player1->lastdeath >= 500)) || (force && focus != player1 && followmode && followaim())) return true; break;
                 default: break;
             }
         }
@@ -935,8 +934,8 @@ namespace game
     void boosteffect(gameent *d, const vec &pos, int num, int len, bool shape = false)
     {
         float scale = 0.4f+(rnd(40)/100.f);
-        part_create(PART_HINT, shape ? len/2 : len/10, pos, getcolour(d, playereffecttone, playereffecttonelevel), scale*1.5f, scale*0.75f, 0, 0);
-        part_create(PART_FIREBALL, shape ? len/2 : len/10, pos, pulsecols[PULSE_FIRE][rnd(PULSECOLOURS)], scale*1.25f, scale*0.75f, 0, 0);
+        part_create(PART_HINT_BOLD_SOFT, shape ? len/2 : len/10, pos, getcolour(d, playereffecttone, playereffecttonelevel), scale*1.5f, scale*0.75f, 0, 0);
+        part_create(PART_FIREBALL_SOFT, shape ? len/2 : len/10, pos, pulsecols[PULSE_FIRE][rnd(PULSECOLOURS)], scale*1.25f, scale*0.75f, 0, 0);
         if(shape) loopi(num) createshape(PART_FIREBALL, int(d->radius)*2, pulsecols[PULSE_FIRE][rnd(PULSECOLOURS)], 21, 1, len, pos, scale*1.25f, 0.75f, -5, 0, 10);
     }
 
@@ -3431,7 +3430,7 @@ namespace game
             if((!m_team(gamemode, mutators) || d->team != focus->team) && playerhint&8 && d->dominated.find(focus) >= 0) hasdom = true;
             if(d->actortype < A_ENEMY && d != focus && (useth || hashint || haslight || haspower || hasdom))
             {
-                if(hashint || haslight || haspower|| hasdom)
+                if(hashint || haslight || haspower || hasdom)
                 {
                     vec c = vec::hexcolor(hasdom ? pulsecols[PULSE_DISCO][clamp((lastmillis/100)%PULSECOLOURS, 0, PULSECOLOURS-1)] : (haslight ? WHCOL(d, d->weapselect, lightcol, physics::secondaryweap(d)) : getcolour(d, playerhinttone, playerhinttonelevel)));
                     float height = d->height, fade = blend;
@@ -3468,7 +3467,7 @@ namespace game
                     vec o = d->center(), offset = vec(o).sub(camera1->o).rescale(d->radius/2);
                     offset.z = max(offset.z, -1.0f);
                     offset.add(o);
-                    part_create(PART_HINT_BOLD_SOFT, 1, offset, c.tohexcolor(), clamp(height*playerhintsize, 1.f, playerhintmaxsize), fade*camera1->o.distrange(o, playerhintfadeat, playerhintfadecut));
+                    part_create(PART_HINT_VERT_SOFT, 1, offset, c.tohexcolor(), clamp(height*playerhintsize, 1.f, playerhintmaxsize), fade*camera1->o.distrange(o, playerhintfadeat, playerhintfadecut));
                 }
                 if(useth)
                 {
@@ -3489,7 +3488,7 @@ namespace game
                 vec pos = d->footpos(i);
                 if(minz > 0 && pos.z > minz) pos.z -= pos.z-minz;
                 float amt = 1-((lastmillis-d->weaptime[W_MELEE])/float(d->weapwait[W_MELEE]));
-                part_create(PART_HINT, 1, pos, TEAM(d->team, colour), 2.f, amt*blend, 0, 0);
+                part_create(PART_HINT_SOFT, 1, pos, TEAM(d->team, colour), 2.f, amt*blend, 0, 0);
             }
             int millis = lastmillis-d->weaptime[d->weapselect];
             bool last = millis > 0 && millis < d->weapwait[d->weapselect],
@@ -3501,8 +3500,8 @@ namespace game
             if(d->weapselect == W_FLAMER && (!reloading || amt > 0.5f) && !physics::liquidcheck(d))
             {
                 float scale = powering ? 1.f+(amt*1.5f) : (d->weapstate[d->weapselect] == W_S_IDLE ? 1.f : (reloading ? (amt-0.5f)*2 : amt));
-                part_create(PART_HINT, 1, d->ejectpos(d->weapselect), 0x1818A8, 0.75f*scale, min(0.65f*scale, 0.8f)*blend, 0, 0);
-                part_create(PART_FIREBALL, 1, d->ejectpos(d->weapselect), colour, 0.5f*scale, min(0.75f*scale, 0.95f)*blend, 0, 0);
+                part_create(PART_HINT_SOFT, 1, d->ejectpos(d->weapselect), 0x1818A8, 0.75f*scale, min(0.65f*scale, 0.8f)*blend, 0, 0);
+                part_create(PART_FIREBALL_SOFT, 1, d->ejectpos(d->weapselect), colour, 0.5f*scale, min(0.75f*scale, 0.95f)*blend, 0, 0);
                 regular_part_create(PART_FIREBALL, d->vel.magnitude() > 10 ? 30 : 75, d->ejectpos(d->weapselect), colour, 0.5f*scale, min(0.75f*scale, 0.95f)*blend, d->vel.magnitude() > 10 ? -40 : -10, 0);
             }
             if(W(d->weapselect, laser) && !reloading)
@@ -3572,12 +3571,12 @@ namespace game
             float fade = blend*(d != focus ? 1.f : 0.5f);
             loopi(3+rnd(10))
             {
-                float q = 0.75f;
+                float q = 0.5f;
                 vec from = vec(origin).add(vec(rnd(201)-100, rnd(201)-100, rnd(201)-100).div(100.f).normalize().mul(rad).mul(rnd(200)/100.f)), to = from;
-                loopj(1+rnd(3))
+                loopj(2+rnd(3))
                 {
                     to = vec(from).add(vec(rnd(201)-100, rnd(201)-100, rnd(201)-100).div(100.f).normalize().mul(rad).mul(rnd(200)/100.f*q));
-                    part_flare(from, to, 1, PART_LIGHTNING_FLARE, colour, q, fade*q);
+                    part_flare(from, to, 1, PART_LIGHTNING_FLARE, colour, q*0.75f, fade*q);
                     from = to;
                     q = q*0.75f;
                 }

@@ -211,7 +211,7 @@ struct gui : guient
             int x1 = curx+tx, x2 = x1+width+guispacesize, y1 = cury-guispacesize-height, y2 = cury-guispacesize*3/4, alpha = guitextblend, border = -1;
             if(!visibletab())
             {
-                if(tcurrent && hitx>=x1 && hity>=y1 && hitx<x2 && hity<y2)
+                if(tcurrent && !passthrough && fieldmode != FIELDKEY && hitx>=x1 && hity>=y1 && hitx<x2 && hity<y2)
                 {
                     if(!guiclicktab || mouseaction[0]&GUI_UP) *tcurrent = tpos; // switch tab
                     tcolor = guiactivecolour;
@@ -245,7 +245,7 @@ struct gui : guient
             { \
                 int border = -1; \
                 bool hit = false; \
-                if(hitx>=x1 && hity>=y1 && hitx<x2 && hity<y2) \
+                if(!passthrough && fieldmode != FIELDKEY && hitx>=x1 && hity>=y1 && hitx<x2 && hity<y2) \
                 { \
                     if(mouseaction[0]&GUI_UP) { b; } \
                     hit = true; \
@@ -428,7 +428,7 @@ struct gui : guient
 
     bool ishit(int w, int h, int x = curx, int y = cury)
     {
-        if(passthrough) return false;
+        if(passthrough || fieldmode == FIELDKEY) return false;
         if(mergelist >= 0 && curdepth >= mergedepth && lists[mergelist].mouse[0]) return true;
         if(ishorizontal()) h = ysize;
         else w = xsize;
@@ -1220,7 +1220,7 @@ struct gui : guient
             if(tcurrent) *tcurrent = max(1, min(*tcurrent, tpos));
             adjustscale();
 
-            if(!passthrough)
+            if(!passthrough && fieldmode != FIELDKEY)
             {
                 hitx = (cursorx - uiorigin.x)/uiscale.x;
                 hity = (cursory - uiorigin.y)/uiscale.y;
@@ -1240,7 +1240,7 @@ struct gui : guient
                 gui::popfont();
             }
             if(needsinput) uibuttons();
-            if((guitooltips || tooltipforce) && tooltipstr && *tooltipstr)
+            if(!passthrough && fieldmode != FIELDKEY && (guitooltips || tooltipforce) && tooltipstr && *tooltipstr)
             {
                 if(!tooltip || !lasttooltip || strcmp(tooltip, tooltipstr))
                 {
