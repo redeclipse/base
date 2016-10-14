@@ -2587,8 +2587,9 @@ namespace hud
     int drawitem(const char *tex, int x, int y, float size, float sub, bool bg, bool left, float r, float g, float b, float fade, float skew, const char *font, const char *text, ...)
     {
         if(skew <= 0.f) return 0;
-        Texture *t = textureload(tex, 3);
-        float q = clamp(skew, 0.f, 1.f), cr = left ? r : r*q, cg = left ? g : g*q, cb = left ? b : b*q, s = size*skew, w = float(t->w)/float(t->h)*s;
+        Texture *t = tex && *tex ? textureload(tex, 3, true, false) : NULL;
+        if(t == notexture) t = NULL;
+        float q = clamp(skew, 0.f, 1.f), cr = left ? r : r*q, cg = left ? g : g*q, cb = left ? b : b*q, s = size*skew, w = t ? float(t->w)/float(t->h)*s : s;
         int heal = m_health(game::gamemode, game::mutators, game::focus->actortype), sy = int(s), cx = x, cy = y, cs = int(s), cw = int(w);
         bool pulse = inventoryflash && game::focus->state == CS_ALIVE && game::focus->health < heal;
         if(bg && sub == 0 && inventorybg)
@@ -2624,9 +2625,12 @@ namespace hud
             cs = co;
             cw = int(cw*sub);
         }
-        gle::colorf(cr, cg, cb, fade);
-        glBindTexture(GL_TEXTURE_2D, t->id);
-        drawtexture(left ? cx : cx-cw, cy-cs, cw, cs);
+        if(t)
+        {
+            gle::colorf(cr, cg, cb, fade);
+            glBindTexture(GL_TEXTURE_2D, t->id);
+            drawtexture(left ? cx : cx-cw, cy-cs, cw, cs);
+        }
         if(text && *text)
         {
             pushhudscale(skew);
@@ -2774,8 +2778,7 @@ namespace hud
                 defformatstring(s, "%s%d", i ? " " : "", e.attrs[i]);
                 concatstring(attrstr, s);
             }
-            const char *itext = itemtex(e.type, e.attrs[0]);
-            int ty = drawitem(itext && *itext ? itext : "textures/notexture", x, y, s, 0, true, false, 1.f, 1.f, 1.f, fade, skew),
+            int ty = drawitem(itemtex(e.type, e.attrs[0]), x, y, s, 0, true, false, 1.f, 1.f, 1.f, fade, skew),
                 qy = drawitemtext(x, y, s, false, skew, "reduced", fade, "%s", attrstr);
             qy += drawitemtext(x, y-qy, s, false, skew, "reduced", fade, "%s", entities::entinfo(e.type, e.attrs, true));
             qy += drawitemtext(x, y-qy, s, false, skew, "default", fade, "%s (%d)", enttype[e.type].name, n);
