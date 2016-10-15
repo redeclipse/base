@@ -380,7 +380,7 @@ void savestats(masterclient &c)
     c.wantstats = true;
     c.laststats = totalmillis ? totalmillis : 1;
     char *errmsg = NULL;
-    int rc = sqlite3_exec(statsdb, "BEGIN IMMEDIATE", 0, 0, &errmsg);
+    int rc = sqlite3_exec(statsdb, "BEGIN EXCLUSIVE", 0, 0, &errmsg);
     if(rc == SQLITE_BUSY) return;
     else checkstatsdb(rc, errmsg);
 
