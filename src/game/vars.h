@@ -285,7 +285,7 @@ GVAR(IDF_GAMEMOD, damageself, 0, 1, 1); // 0 = off, 1 = either hurt self or use 
 GFVAR(IDF_GAMEMOD, damageselfscale, 0, 1, FVAR_MAX); // 0 = off, anything else = scale for damage
 GFVAR(IDF_GAMEMOD, damageteamscale, 0, 1, FVAR_MAX); // 0 = off, anything else = scale for damage
 
-GVAR(IDF_GAMEMOD, teambalance, 0, 5, 6); // 0 = off, 1 = by number then style, 2 = by style then number, 3 = by number and enforce, 4 = number, enforce, reassign, 5 = style, number, enforce, reassign, 6 = style during waiting, revert to 4 otherwise
+GVAR(IDF_GAMEMOD, teambalance, 0, 6, 6); // 0 = off, 1 = by number then style, 2 = by style then number, 3 = by number and enforce, 4 = number, enforce, reassign, 5 = style, number, enforce, reassign, 6 = style during waiting, revert to 4 otherwise
 GVAR(IDF_GAMEMOD, teambalanceduel, 0, 0, 1); // allow reassignments in duel
 GVAR(IDF_GAMEMOD, teambalanceplaying, 2, 2, VAR_MAX); // min players before reassignments occur
 GVAR(IDF_GAMEMOD, teambalanceamt, 2, 2, VAR_MAX); // max-min offset before reassignments occur
