@@ -535,10 +535,9 @@ void guilistslider(char *var, char *list, char *onchange, int *reverse, int *scr
         list += strspn(list, "\n\t ");
     }
     if(vals.empty()) return;
-    int val = getval(var), oldoffset = vals.length()-1, offset = oldoffset;
-    loopv(vals) if(val <= vals[i]) { oldoffset = offset = i; break; }
+    int val = getval(var), index = vals.find(val), offset = index;
     cgui->slider(offset, 0, vals.length()-1, *colour >= 0 ? *colour : 0xFFFFFF, intstr(val), *reverse ? true : false, *scroll ? true : false, *style, *scolour);
-    if(offset != oldoffset) updateval(var, vals[offset], onchange);
+    if(offset != index) updateval(var, vals[offset], onchange);
 }
 
 void guinameslider(char *var, char *names, char *list, char *onchange, int *reverse, int *scroll, int *colour, int *style, int *scolour)
@@ -553,11 +552,10 @@ void guinameslider(char *var, char *names, char *list, char *onchange, int *reve
         list += strspn(list, "\n\t ");
     }
     if(vals.empty()) return;
-    int val = getval(var), oldoffset = vals.length()-1, offset = oldoffset;
-    loopv(vals) if(val <= vals[i]) { oldoffset = offset = i; break; }
+    int val = getval(var), index = vals.find(val), offset = index;
     char *label = indexlist(names, offset);
     cgui->slider(offset, 0, vals.length()-1, *colour >= 0 ? *colour : 0xFFFFFF, label, *reverse ? true : false, *scroll ? true : false, *style, *scolour);
-    if(offset != oldoffset) updateval(var, vals[offset], onchange);
+    if(offset != index) updateval(var, vals[offset], onchange);
     delete[] label;
 }
 
