@@ -194,15 +194,6 @@ struct capturestate
         destroy(i);
 #endif
     }
-    
-    bool cantake(int i, int cn, int t)
-    {
-#ifdef GAMESERVER
-        flag &f = flags[i];
-        if (f.lastowner == cn && f.returntime + 1000 >= t) return false;
-#endif
-        return true;
-    }
 };
 
 #ifndef GAMESERVER

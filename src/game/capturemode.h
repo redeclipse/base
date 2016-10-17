@@ -100,7 +100,7 @@ struct captureservmode : capturestate, servmode
         flag &f = flags[i];
         if(f.owner >= 0 || (f.team == ci->team && (m_ctf_defend(gamemode, mutators) || (m_ctf_quick(gamemode, mutators) && !f.droptime)))) return;
         if(f.lastowner == ci->clientnum && f.droptime && gamemillis-f.droptime <= G(capturepickupdelay)) return;
-        if(!m_ctf_protect(gamemode, mutators) && f.team != ci->team && !capturestate::cantake(i, ci->clientnum, gamemillis)) return;
+        if(!m_ctf_protect(gamemode, mutators) && f.team != ci->team && f.lastowner == ci->clientnum && f.returntime + G(captureretakedelay) >= gamemillis) return;
         if(m_ctf_quick(gamemode, mutators) && f.team == ci->team)
         {
             capturestate::returnaffinity(i, gamemillis);
