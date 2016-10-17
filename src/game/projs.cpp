@@ -678,6 +678,7 @@ namespace projs
     bool spherecheck(projent &proj, bool rev = false)
     {
         if(!insideworld(proj.o)) return false;
+        if(proj.stuck) return false;
         vec dir = vec(proj.vel).normalize();
         if(collide(&proj, dir, 1e-6f, false) || collideinside)
         {

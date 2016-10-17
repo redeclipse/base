@@ -13,7 +13,7 @@ struct capturestate
         vec droploc, inertia, spawnloc;
         int team, yaw, pitch, droptime, taketime, dropoffset;
 #ifdef GAMESERVER
-        int owner, lastowner;
+        int owner, lastowner, returntime;
         vector<int> votes;
         vec floorpos;
 #else
@@ -32,6 +32,7 @@ struct capturestate
             droploc = spawnloc = vec(-1, -1, -1);
 #ifdef GAMESERVER
             owner = lastowner = -1;
+            returntime = 0;
             votes.shrink(0);
             floorpos = vec(-1, -1, -1);
 #else
@@ -183,6 +184,7 @@ struct capturestate
 #endif
         f.droptime = f.taketime = f.dropoffset = 0;
 #ifdef GAMESERVER
+        f.returntime = t;
         f.owner = -1;
         f.votes.shrink(0);
         f.floorpos = vec(-1, -1, -1);

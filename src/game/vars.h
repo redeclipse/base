@@ -328,6 +328,7 @@ GFVAR(IDF_GAMEMOD, capturebuffshield, 1, 1.25f, FVAR_MAX); // divide incoming da
 GVAR(IDF_GAMEMOD, captureregenbuff, 0, 1, 1); // 0 = off, 1 = modify regeneration when buffed
 GVAR(IDF_GAMEMOD, captureregendelay, 0, 1000, VAR_MAX); // regen this often when buffed
 GVAR(IDF_GAMEMOD, captureregenextra, 0, 2, VAR_MAX); // add this to regen when buffed
+GVAR(IDF_GAMEMOD, captureretakedelay, 0, 1000, VAR_MAX); // same person can't take same flag this long after capturing it
 
 GVAR(IDF_GAMEMOD, defendlimit, 0, 0, VAR_MAX); // finish when score is this or more
 GVAR(IDF_GAMEMOD, defendpoints, 0, 1, VAR_MAX); // points added to score
