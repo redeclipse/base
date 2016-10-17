@@ -128,7 +128,7 @@ struct captureservmode : capturestate, servmode
         {
             if(G(captureresetfloor))
             {
-                if (f.floorpos != vec(-1, -1, -1))
+                if(f.floorpos != vec(-1, -1, -1))
                 {
                     ivec pos = ivec(vec(f.floorpos).mul(DMF));
                     capturestate::dropaffinity(i, f.floorpos, vec(0, 0, 1), gamemillis);

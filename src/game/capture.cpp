@@ -517,7 +517,7 @@ namespace capture
         float radius = enttype[AFFINITY].radius;
         vec abovegoal, capturepos, returnpos;
         capturestate::flag &f = st.flags[relay];
-        if (st.flags.inrange(goal))
+        if(st.flags.inrange(goal))
         {
             capturestate::flag &g = st.flags[goal];
             abovegoal = g.above;
