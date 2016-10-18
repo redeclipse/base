@@ -109,7 +109,7 @@ struct captureservmode : capturestate, servmode
         }
         else
         {
-            capturestate::takeaffinity(i, ci->clientnum, gamemillis);
+            capturestate::takeaffinity(i, ci->clientnum, gamemillis, ci->team);
             if(ci->floorpos != vec(-1, -1, -1)) f.floorpos = ci->floorpos;
             else f.floorpos = f.droploc;
             f.floorpos.z += (enttype[AFFINITY].radius/4)+1;
@@ -126,7 +126,7 @@ struct captureservmode : capturestate, servmode
         f.votes.add(ci->clientnum);
         if(f.votes.length() >= int(floorf(numclients()*0.5f)))
         {
-            if(G(captureresetfloor))
+            if(G(captureresetfloor) && (f.lastownerteam == f.team || G(captureresetfloor)<2))
             {
                 if(f.floorpos != vec(-1, -1, -1))
                 {
