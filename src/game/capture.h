@@ -13,7 +13,7 @@ struct capturestate
         vec droploc, inertia, spawnloc;
         int team, yaw, pitch, droptime, taketime, dropoffset;
 #ifdef GAMESERVER
-        int owner, lastowner, returntime;
+        int owner, lastowner, lastownerteam, returntime;
         vector<int> votes;
         vec floorpos;
 #else
@@ -32,7 +32,7 @@ struct capturestate
             droploc = spawnloc = vec(-1, -1, -1);
 #ifdef GAMESERVER
             owner = lastowner = -1;
-            returntime = 0;
+            lastownerteam = returntime = 0;
             votes.shrink(0);
             floorpos = vec(-1, -1, -1);
 #else
@@ -126,7 +126,7 @@ struct capturestate
 #endif
 
 #ifdef GAMESERVER
-    void takeaffinity(int i, int owner, int t)
+    void takeaffinity(int i, int owner, int t, int ownerteam)
 #else
     void takeaffinity(int i, gameent *owner, int t)
 #endif
@@ -142,6 +142,7 @@ struct capturestate
 #ifdef GAMESERVER
         f.votes.shrink(0);
         f.lastowner = owner;
+        f.lastownerteam = ownerteam;
 #else
         f.movetime = 0;
         (f.lastowner = owner)->addicon(eventicon::AFFINITY, t, game::eventiconfade, f.team);
