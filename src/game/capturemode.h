@@ -126,7 +126,7 @@ struct captureservmode : capturestate, servmode
         f.votes.add(ci->clientnum);
         if(f.votes.length() >= int(floorf(numclients()*0.5f)))
         {
-            if(G(captureresetfloor) && !(f.lastownerteam != f.team && G(captureresetfloor)>=2))
+            if(G(captureresetfloor) && (f.lastownerteam == f.team || G(captureresetfloor)<2))
             {
                 if(f.floorpos != vec(-1, -1, -1))
                 {
