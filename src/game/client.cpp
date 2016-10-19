@@ -1538,7 +1538,7 @@ namespace client
             {
                 switch(op)
                 {
-                    case EDIT_COPY: needclipboard = 0; break;
+                    case EDIT_COPY: needclipboard = arg1; break; // 0 - has clipboard; 1 - has clipboard with unknown geometry
                     case EDIT_PASTE:
                         if(needclipboard > 0)
                         {
