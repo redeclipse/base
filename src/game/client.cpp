@@ -1517,14 +1517,14 @@ namespace client
         {
             outbuf = NULL;
             inlen = outlen = 0;
-        }
+            needclipboard = -1;
+        } else needclipboard = 0;
         packetbuf p(16 + outlen, ENET_PACKET_FLAG_RELIABLE);
         putint(p, N_CLIPBOARD);
         putint(p, inlen);
         putint(p, outlen);
         if(outlen > 0) p.put(outbuf, outlen);
         sendclientpacket(p.finalize(), 1);
-        needclipboard = -1;
     }
 
     void edittrigger(const selinfo &sel, int op, int arg1, int arg2, int arg3, const VSlot *vs)
