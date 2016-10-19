@@ -7238,13 +7238,15 @@ namespace server
                         break;
                     }
                     if(p.remaining() < packlen) { disconnect_client(sender, DISC_MSGERR); return; }
-                    packetbuf q(32 + packlen, ENET_PACKET_FLAG_RELIABLE);
+                    uchar s[MAXTRANS];
+                    ucharbuf q(s, MAXTRANS);
                     putint(q, type);
                     putint(q, ci->clientnum);
                     putint(q, unpacklen);
                     putint(q, packlen);
                     if(packlen > 0) p.get(q.subbuf(packlen).buf, packlen);
-                    sendpacket(-1, 1, q.finalize(), ci->clientnum);
+                    ci->messages.put(q.buf, q.length());
+                    curmsg += q.length();
                     break;
                 }
 
