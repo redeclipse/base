@@ -219,7 +219,7 @@ namespace hud
     VAR(IDF_PERSIST, crosshairdistancex, VAR_MIN, 160, VAR_MAX); // offset from the crosshair
     VAR(IDF_PERSIST, crosshairdistancey, VAR_MIN, 80, VAR_MAX); // offset from the crosshair
     VAR(IDF_PERSIST, crosshairweapons, 0, 0, 3); // 0 = off, &1 = crosshair-specific weapons, &2 = also appy colour
-    FVAR(IDF_PERSIST, crosshairsize, 0, 0.06f, 1000);
+    FVAR(IDF_PERSIST, crosshairsize, 0, 0.03f, 1000);
     VAR(IDF_PERSIST, crosshairhitspeed, 0, 500, VAR_MAX);
     FVAR(IDF_PERSIST, crosshairblend, 0, 0.75f, 1);
     FVAR(IDF_PERSIST, crosshairaccamt, 0, 0.75f, 1);
@@ -392,8 +392,8 @@ namespace hud
 
     VAR(IDF_PERSIST, showclips, 0, 2, 2);
     VAR(IDF_PERSIST, clipanims, 0, 2, 2);
-    FVAR(IDF_PERSIST, clipsize, 0, 0.035f, 1000);
-    FVAR(IDF_PERSIST, clipoffset, 0, 0.04f, 1000);
+    FVAR(IDF_PERSIST, clipsize, 0, 0.03f, 1000);
+    FVAR(IDF_PERSIST, clipoffset, 0, 0.035f, 1000);
     FVAR(IDF_PERSIST, clipminscale, 0, 0.3f, 1000);
     FVAR(IDF_PERSIST, clipmaxscale, 0, 1, 1000);
     FVAR(IDF_PERSIST, clipblend, 0, 0.5f, 1);
@@ -467,9 +467,9 @@ namespace hud
     FVAR(IDF_PERSIST, radaraffinityblend, 0, 1, 1);
     FVAR(IDF_PERSIST, radaraffinitysize, 0, 0.85f, 1000);
     FVAR(IDF_PERSIST, radaritemblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, radaritemsize, 0, 0.75f, 1000);
+    FVAR(IDF_PERSIST, radaritemsize, 0, 0.6f, 1000);
     FVAR(IDF_PERSIST, radarsize, 0, 0.05f, 1000);
-    FVAR(IDF_PERSIST, radaroffset, 0, 0.08f, 1000);
+    FVAR(IDF_PERSIST, radaroffset, 0, 0.07f, 1000);
     FVAR(IDF_PERSIST, radarcorner, 0, 0.15f, 1000);
     FVAR(IDF_PERSIST, radarcornersize, 0, 0.04f, 1000);
     FVAR(IDF_PERSIST, radarcorneroffset, 0, 0.045f, 1);
