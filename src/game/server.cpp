@@ -417,7 +417,7 @@ namespace server
             if(!change) lastteam = T_NEUTRAL;
             team = swapteam = T_NEUTRAL;
             clientmap[0] = '\0';
-            if (handle[0])
+            if(handle[0])
             {
                 requestmasterf("reqauthstats \"%s\"\n", handle);
                 flushmasteroutput();

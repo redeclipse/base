@@ -5,6 +5,12 @@ namespace aiman
         oldbotbalance = -2, oldnumplayers = -1, oldbotlimit = -1, oldbotoffset = 0, oldenemylimit = -1;
     float oldbotbalancescale = -1;
 
+    int botrnd(clientinfo *ci, int t, int m)
+    {
+        if(G(botcolourseed)&t) return ci->colour%m;
+        return rnd(m);
+    }
+
     float clientbotscore(clientinfo *ci)
     {
         return (ci->bots.length() * G(aihostnum)) + (ci->ping * G(aihostping));
@@ -88,7 +94,7 @@ namespace aiman
         getskillrange(ci->actortype, n, m, ci->frags, ci->deaths);
         if(ci->skill > m || ci->skill < n)
         { // needs re-skilling
-            ci->skill = (m != n ? rnd(m-n) + n + 1 : m);
+            ci->skill = (m != n ? botrnd(ci, 2, m-n) + n + 1 : m);
             if(!ci->aireinit) ci->aireinit = 1;
         }
     }
@@ -119,9 +125,6 @@ namespace aiman
             clientinfo *ci = (clientinfo *)getinfo(cn);
             if(ci)
             {
-                int s = skill, n = 1, m = 100;
-                getskillrange(type, n, m);
-                if(skill > m || skill < n) s = (m != n ? rnd(m-n) + n + 1 : m);
                 ci->clientnum = cn;
                 clientinfo *owner = findaiclient();
                 ci->ownernum = owner ? owner->clientnum : -1;
@@ -129,12 +132,14 @@ namespace aiman
                 ci->aireinit = 2;
                 ci->actortype = type;
                 ci->spawnpoint = ent;
-                ci->skill = clamp(s, 1, 101);
                 clients.add(ci);
                 ci->lasttimeplayed = totalmillis;
                 ci->colour = rnd(0xFFFFFF);
-                ci->model = rnd(PLAYERTYPES);
-                ci->setvanity(ci->model ? G(botfemalevanities) : G(botmalevanities)); // the first slot is special
+                ci->model = botrnd(ci, 4, PLAYERTYPES);
+                int s = skill, n = 1, m = 100;
+                getskillrange(type, n, m);
+                if(skill > m || skill < n) s = (m != n ? botrnd(ci, 2, m-n) + n + 1 : m);
+                ci->skill = clamp(s, 1, 101);
                 copystring(ci->name, AA(ci->actortype, vname), MAXNAMELEN);
                 ci->loadweap.shrink(0);
                 if(ci->actortype == A_BOT)
@@ -143,7 +148,7 @@ namespace aiman
                     int len = listlen(list);
                     if(len > 0)
                     {
-                        int r = rnd(len);
+                        int r = botrnd(ci, 1, len);
                         char *name = indexlist(list, r);
                         if(name)
                         {
@@ -151,7 +156,8 @@ namespace aiman
                             delete[] name;
                         }
                     }
-                    ci->loadweap.add(rnd(W_LOADOUT)+W_OFFSET);
+                    ci->setvanity(ci->model ? G(botfemalevanities) : G(botmalevanities));
+                    ci->loadweap.add(botrnd(ci, 8, W_LOADOUT)+W_OFFSET);
                 }
                 ci->state = CS_DEAD;
                 ci->team = type == A_BOT ? T_NEUTRAL : T_ENEMY;
