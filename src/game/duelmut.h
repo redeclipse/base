@@ -353,7 +353,7 @@ struct duelservmode : servmode
                                 {
                                     if(clients[i]->team == alive[0]->team)
                                     {
-                                        ancmsgft(clients[i]->clientnum, S_V_YOUWIN, CON_SELF, end);
+                                        ancmsgft(clients[i]->clientnum, S_V_YOUWIN, CON_SELF, "%s", end);
                                         if(alive.find(clients[i]) >= 0)
                                         {
                                             if(!m_affinity(gamemode))
@@ -370,9 +370,9 @@ struct duelservmode : servmode
                                             }
                                         }
                                     }
-                                    else ancmsgft(clients[i]->clientnum, S_V_YOULOSE, CON_SELF, end);
+                                    else ancmsgft(clients[i]->clientnum, S_V_YOULOSE, CON_SELF, "%s", end);
                                 }
-                                else ancmsgft(clients[i]->clientnum, S_V_BOMBSCORE, CON_SELF, end);
+                                else ancmsgft(clients[i]->clientnum, S_V_BOMBSCORE, CON_SELF, "%s", end);
                             }
                             clear();
                         }
@@ -434,7 +434,7 @@ struct duelservmode : servmode
                                 {
                                     if(clients[i] == alive[0])
                                     {
-                                        ancmsgft(clients[i]->clientnum, S_V_YOUWIN, CON_SELF, end);
+                                        ancmsgft(clients[i]->clientnum, S_V_YOUWIN, CON_SELF, "%s", end);
                                         if(!m_affinity(gamemode)) givepoints(clients[i], 1, true, true);
                                         else if(!duelaffin)
                                         {
@@ -443,9 +443,9 @@ struct duelservmode : servmode
                                             sendf(-1, 1, "ri3", N_SCORE, ts.team, ts.total);
                                         }
                                     }
-                                    else ancmsgft(clients[i]->clientnum, S_V_YOULOSE, CON_SELF, end);
+                                    else ancmsgft(clients[i]->clientnum, S_V_YOULOSE, CON_SELF, "%s", end);
                                 }
-                                else ancmsgft(clients[i]->clientnum, S_V_BOMBSCORE, CON_SELF, end);
+                                else ancmsgft(clients[i]->clientnum, S_V_BOMBSCORE, CON_SELF, "%s", end);
                             }
                         }
                         clear();
