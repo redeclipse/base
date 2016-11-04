@@ -1278,7 +1278,16 @@ static bool compileblockstr(vector<uint> &code, const char *str, const char *end
                 break;
             }
             case '/':
-                if(str[1] == '/') str += strcspn(str, "\n\0");
+                if(str[1] == '/')
+                {
+                    size_t comment = strcspn(str, "\n\0");
+                    if (iscubepunct(str[2]))
+                    {
+                        memcpy(&buf[len], str, comment);
+                        len += comment;
+                    }
+                    str += comment;
+                }
                 else buf[len++] = *str++;
                 break;
             case '@':
