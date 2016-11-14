@@ -2785,12 +2785,13 @@ VAR(IDF_PERSIST, autoapplytexgui, 0, 1, 1);
 VAR(IDF_PERSIST, autopreviewtexgui, 0, 1, 1);
 VAR(IDF_PERSIST, autoclosetexgui, 0, 2, 2);
 
-VAR(IDF_PERSIST, thumbwidth, 0, 8, 1000);
-VAR(IDF_PERSIST, thumbheight, 0, 6, 1000);
+VAR(IDF_PERSIST, thumbwidth, 0, 10, 1000);
+VAR(IDF_PERSIST, thumbheight, 0, 8, 1000);
 VAR(IDF_PERSIST, thumbtime, 0, 25, 1000);
 FVAR(IDF_PERSIST, thumbsize, 0, 2, 25);
 
 static int lastthumbnail = 0;
+static const char *rotations[6] = { "none", "90 degrees", "180 degrees", "270 degrees", "flip x", "flip y" };
 struct texturegui : guicb
 {
     bool menuon;
@@ -2826,25 +2827,45 @@ struct texturegui : guicb
         });
         g.space(1);
         uilist(g, {
-            if(texmru.inrange(curtex))
-            {
-                VSlot &v = lookupvslot(texmru[curtex], false);
-                if(v.slot->sts.empty()) g.texture(dummyvslot, thumbheight*thumbsize, false);
-                else if(!v.slot->loaded && !v.slot->thumbnail)
+            uilist(g, {
+                if(texmru.inrange(curtex))
                 {
-                    if(totalmillis-lastthumbnail<thumbtime)
-                        g.texture(dummyvslot, thumbheight*thumbsize, false); //create an empty space
-                    loadthumbnail(*v.slot);
-                    lastthumbnail = totalmillis;
+                    VSlot &v = lookupvslot(texmru[curtex], false);
+                    g.strut(50);
+                    if(v.slot->sts.empty()) g.texture(dummyvslot, thumbheight*thumbsize/2, false);
+                    else if(!v.slot->loaded && !v.slot->thumbnail)
+                    {
+                        if(totalmillis-lastthumbnail<thumbtime)
+                            g.texture(dummyvslot, thumbheight*thumbsize/2, false); //create an empty space
+                        loadthumbnail(*v.slot);
+                        lastthumbnail = totalmillis;
+                    }
+                    int ret = g.texture(v, thumbheight*thumbsize/2, true);
+                    if(ret&GUI_UP)
+                    {
+                        edittex(texmru[curtex]);
+                        if(autoclosetexgui) menuon = false;
+                    }
+                    g.space(0.5f);
+                    g.textf(" texture #%03d \fa(%s)", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF, texmru[curtex], v.slot->sts.empty() ? "<no texture>" : v.slot->sts[0].name);
+                    g.textf(" - scale: \fa%f", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF, v.scale);
+                    g.textf(" - rotation: \fa%d (%s)", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF, v.rotation, rotations[clamp(v.rotation, 0, 5)]);
+                    g.textf(" - offset: \fa%d %d", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF, v.offset.x, v.offset.y);
+                    g.textf(" - scroll: \fa%f %f", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF, v.scroll.x, v.scroll.y);
+                    g.textf(" - alpha: \fa%f \fAfront \fa%f \fAback", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF, v.alphafront, v.alphaback);
+                    g.textf(" - colour: \fr%f \fg%f \fb%f", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF, v.colorscale[0], v.colorscale[1], v.colorscale[2]);
+                    g.textf(" - palette: \fa%d %d", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF, v.palette, v.palindex);
+                    g.textf(" - coast: \fa%f", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF, v.coastscale);
+                    VSlot &vl = lookupvslot(v.layer);
+                    g.textf(" - layer: \fa%03d (%s)", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF, v.layer, vl.slot->sts.empty() ? "<no texture>" : vl.slot->sts[0].name);
+                    loopv(v.params)
+                    {
+                        SlotShaderParam &p = v.params[i];
+                        g.textf(" - shader: \fa%s %f %f %f %f %d %d", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF, p.name, p.val[0], p.val[1], p.val[2], p.val[3], v.palette, v.palindex);
+                    }
                 }
-                int ret = g.texture(v, thumbheight*thumbsize, true);
-                if(ret&GUI_UP)
-                {
-                    edittex(texmru[curtex]);
-                    if(autoclosetexgui) menuon = false;
-                }
-            }
-            else g.image(textureload(nothumbtex, 3), thumbheight*thumbsize, true);
+                else g.image(textureload(nothumbtex, 3), thumbheight*thumbsize/2, true);
+            });
             g.space(1);
             uilistv(g, 2, {
                 uilist(g, loop(h, thumbheight)
@@ -2884,16 +2905,6 @@ struct texturegui : guicb
                 });
                 g.slider(menupage, 0, numpages, 0xFFFFFF, NULL, true, true);
             });
-        });
-        g.space(1);
-        uilist(g, {
-            g.space(1);
-            if(texmru.inrange(curtex))
-            {
-                VSlot &v = lookupvslot(texmru[curtex]);
-                g.textf("#%-3d \fa%s 0x%.6X", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF, texmru[curtex], v.slot->sts.empty() ? "<unknown texture>" : v.slot->sts[0].name, v.changed&VSLOT_COLOR ? v.colorscale.tohexcolor() : 0xFFFFFF);
-            }
-            else g.text("no texture selected", 0x888888);
         });
         g.end();
     }
