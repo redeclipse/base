@@ -1953,20 +1953,17 @@ namespace hud
                                 }
 
                                 string fields = "";
-                                if(id->type == ID_VAR || id->type == ID_COMMAND)
+                                if(id->type == ID_VAR && id->fields.length() > 1)
                                 {
-                                    if(id->type == ID_VAR && id->fields.length() > 1)
-                                    {
-                                        concatstring(fields, "<bitfield>");
-                                        loopvj(id->fields) if(id->fields[j])
-                                            concformatstring(fields, "\n%d [0x%x] = %s", 1<<j, 1<<j, id->fields[j]);
-                                    }
-                                    else loopvj(id->fields) if(id->fields[j])
-                                        concformatstring(fields, "%s<%s>", j ? " " : "", id->fields[j]);
+                                    concatstring(fields, "<bitfield>");
+                                    loopvj(id->fields) if(id->fields[j])
+                                        concformatstring(fields, "\n%d [0x%x] = %s", 1<<j, 1<<j, id->fields[j]);
                                 }
+                                else loopvj(id->fields) if(id->fields[j])
+                                    concformatstring(fields, "%s<%s>", j ? " " : "", id->fields[j]);
                                 if(!*fields) switch(id->type)
                                 {
-                                    case ID_ALIAS: concatstring(fields, "<value>"); break;
+                                    case ID_ALIAS: concatstring(fields, "<arguments>"); break;
                                     case ID_VAR: concatstring(fields, "<integer>"); break;
                                     case ID_FVAR: concatstring(fields, "<float>"); break;
                                     case ID_SVAR: concatstring(fields, "<string>"); break;
