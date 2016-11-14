@@ -1351,6 +1351,7 @@ struct bvec
     void scale(int k, int d) { x = uchar((x*k)/d); y = uchar((y*k)/d); z = uchar((z*k)/d); }
 
     static bvec fromcolor(const vec &v) { return bvec(uchar(v.r*255.0f), uchar(v.g*255.0f), uchar(v.b*255.0f)); }
+    static bvec fromcolor(int color) { return bvec(int((color>>16)&0xFF), int((color>>8)&0xFF), int(color&0xFF)); }
     vec tocolor() const { return vec(r*(1.0f/255.0f), g*(1.0f/255.0f), b*(1.0f/255.0f)); }
 
     static bvec from565(ushort c) { return bvec((((c>>11)&0x1F)*527 + 15) >> 6, (((c>>5)&0x3F)*259 + 35) >> 6, ((c&0x1F)*527 + 15) >> 6); }

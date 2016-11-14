@@ -2460,6 +2460,14 @@ namespace projs
                 {
                     if(shadowents) flags |= MDL_DYNSHADOW;
                     trans *= fadeweap(proj);
+                    if(proj.weap == W_GRENADE)
+                    {
+                        float amt = clamp(proj.lifespan, 0.f, 1.f);
+                        proj.light.material[0] = bvec::fromcolor(W(proj.weap, colour));
+                        proj.light.material[0].r += int((255-proj.light.material[0].r)*amt);
+                        proj.light.material[0].g -= int(proj.light.material[0].g*amt);
+                        proj.light.material[0].b -= int(proj.light.material[0].b*amt);
+                    }
                     if(WF(WK(proj.flags), proj.weap, partcol, WS(proj.flags)))
                     {
                         flags |= MDL_LIGHTFX;
@@ -2486,6 +2494,7 @@ namespace projs
                                 flags |= MDL_LIGHTFX;
                                 int col = W(attr, colour), interval = lastmillis%1000;
                                 proj.light.effect = vec::hexcolor(col).mul(interval >= 500 ? (1000-interval)/500.f : interval/500.f);
+                                if(attr == W_GRENADE) proj.light.material[0] = bvec::fromcolor(col);
                             }
                             else continue;
                         }

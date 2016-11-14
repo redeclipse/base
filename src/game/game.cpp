@@ -3112,7 +3112,18 @@ namespace game
             e->light.material[1] = bvec(getcolour(d, playerundertone, playerundertonelevel));
             if(isweap(d->weapselect))
             {
-                if((W2(d->weapselect, ammosub, false) || W2(d->weapselect, ammosub, true)) && W(d->weapselect, ammomax) > 1)
+                if(d->weapselect == W_GRENADE)
+                {
+                    e->light.material[2] = bvec::fromcolor(W(d->weapselect, colour));
+                    if(lastmillis-d->weaptime[d->weapselect] > 0 && d->weapstate[d->weapselect] == W_S_POWER)
+                    {
+                        float amt = clamp(float(lastmillis-d->weaptime[d->weapselect])/d->weapwait[d->weapselect], 0.f, 1.f);
+                        e->light.material[2].r += int((255-e->light.material[2].r)*amt);
+                        e->light.material[2].g -= int(e->light.material[2].g*amt);
+                        e->light.material[2].b -= int(e->light.material[2].b*amt);
+                    }
+                }
+                else if((W2(d->weapselect, ammosub, false) || W2(d->weapselect, ammosub, true)) && W(d->weapselect, ammomax) > 1)
                 {
                     int ammo = d->ammo[d->weapselect], maxammo = W(d->weapselect, ammomax);
                     float scale = 1;
