@@ -2831,7 +2831,7 @@ struct texturegui : guicb
                 if(texmru.inrange(curtex))
                 {
                     VSlot &v = lookupvslot(texmru[curtex], false);
-                    g.strut(50);
+                    g.strut(60);
                     if(v.slot->sts.empty()) g.texture(dummyvslot, thumbheight*thumbsize/2, false);
                     else if(!v.slot->loaded && !v.slot->thumbnail)
                     {
