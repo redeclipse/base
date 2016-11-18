@@ -961,7 +961,7 @@ void screenquadflipped(float sw, float sh)
 void screenquadmapped(float x, float y, float w, float h, float tx, float ty, float tw, float th)
 {
     float wk = tw/w, hk = th/h;
-    setscreentexcoord(0, 2*wk, 2*hk, tx - x*wk, ty - y*hk);
+    screentexcoord[0].setf(wk, hk, tx - x*wk, ty - y*hk);
     gle::defvertex(2);
     gle::begin(GL_TRIANGLE_STRIP);
     gle::attribf(x+w, y);
