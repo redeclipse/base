@@ -708,6 +708,26 @@ void limitfps(int &millis, int curmillis)
     }
 }
 
+#ifdef WIN32
+// Force Optimus setups to use the NVIDIA GPU
+extern "C"
+{
+#ifdef __GNUC__
+__attribute__((dllexport))
+#else
+__declspec(dllexport)
+#endif
+    DWORD NvOptimusEnablement = 1;
+
+#ifdef __GNUC__
+__attribute__((dllexport))
+#else
+__declspec(dllexport)
+#endif
+    DWORD AmdPowerXpressRequestHighPerformance = 1;
+}
+#endif
+
 #if defined(WIN32) && !defined(_DEBUG) && !defined(__GNUC__)
 void stackdumper(unsigned int type, EXCEPTION_POINTERS *ep)
 {
