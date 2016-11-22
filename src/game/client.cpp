@@ -1306,6 +1306,7 @@ namespace client
             default:
                 emptymap(0, true, name);
                 needsmap = totalmillis;
+                if(crc > 0) addmsg(N_GETMAP, "r");
                 break;
         }
         else sendcrcinfo = true;
