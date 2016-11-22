@@ -1518,7 +1518,8 @@ namespace client
             outbuf = NULL;
             inlen = outlen = 0;
             needclipboard = -1;
-        } else needclipboard = 0;
+        }
+        else needclipboard = 0;
         packetbuf p(16 + outlen, ENET_PACKET_FLAG_RELIABLE);
         putint(p, N_CLIPBOARD);
         putint(p, inlen);
