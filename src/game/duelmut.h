@@ -257,7 +257,14 @@ struct duelservmode : servmode
                             restricted.add(cs);
                         }
                         else if(cs->points == restricted[0]->points) restricted.add(cs);
-                        else remqueue(cs, false);
+                    }
+                    loopv(clients)
+                    {
+                        clientinfo *cs = clients[i];
+                        if(duelqueue.find(cs) >= 0 && restricted.find(cs) < 0)
+                        {
+                            remqueue(cs, false);
+                        }
                     }
                 }
                 loopv(duelqueue)
