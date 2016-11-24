@@ -3153,7 +3153,7 @@ namespace server
     bool getmap(clientinfo *ci, bool force)
     {
         if(gs_intermission(gamestate)) return false; // pointless
-        if(ci && !numclients(ci->clientnum))
+        if(ci && !numclients(ci->clientnum) && !hasmapdata())
         {
             ci->wantsmap = false;
             sendf(ci->clientnum, 1, "ri", N_FAILMAP);
