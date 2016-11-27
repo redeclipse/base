@@ -6919,7 +6919,7 @@ namespace server
                         if(G(serverdebug)) srvmsgf(ci->clientnum, "sync error: unable to modify spectator %s - %d [%d, %d] - invalid", colourname(cp), cp->state, cp->lastdeath, gamemillis);
                         break;
                     }
-                    if(sn != sender ? !haspriv(ci, max(m_edit(gamemode) ? G(spawneditlock) : G(spawnlock), G(speclock)), "control other players") : !allowstate(cp, val ? ALST_SPEC : ALST_TRY, m_edit(gamemode) ? G(spawneditlock) : G(spawnlock)))
+                    if(sn != sender ? !haspriv(ci, max(m_edit(gamemode) ? G(spawneditlock) : G(spawnlock), G(speclock)), "control other players") : (!haspriv(ci, max(m_edit(gamemode) ? G(spawneditlock) : G(spawnlock), G(speclock))) && !allowstate(cp, val ? ALST_SPEC : ALST_TRY, m_edit(gamemode) ? G(spawneditlock) : G(spawnlock))))
                     {
                         if(G(serverdebug)) srvmsgf(ci->clientnum, "sync error: unable to modify spectator %s - %d [%d, %d] - restricted", colourname(cp), cp->state, cp->lastdeath, gamemillis);
                         break;
