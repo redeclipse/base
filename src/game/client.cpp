@@ -369,7 +369,7 @@ namespace client
     const char *defaultserversort()
     {
         static string vals;
-        formatstring(vals, "%d %d %d", SINFO_PRIO, SINFO_NUMPLRS, SINFO_PING);
+        formatstring(vals, "%d %d %d", SINFO_NUMPLRS, SINFO_PRIO, SINFO_PING);
         return vals;
     }
 
