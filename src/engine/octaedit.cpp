@@ -1280,13 +1280,29 @@ prefab *loadprefab(const char *name, bool msg = true)
    return b;
 }
 
-void pasteprefab(char *name)
+/* Create a copy of block3 */
+block3 *copyblock(block3 *s)
 {
-    if(!name[0] || noedit() || multiplayer()) return;
-    prefab *b = loadprefab(name, true);
-    if(b) pasteblock(*b->copy, sel, true);
+    int bsize = sizeof(block3)+sizeof(cube)*s->size();
+    if(bsize <= 0 || bsize > (100<<20)) return 0;
+    block3 *b = (block3 *)new uchar[bsize];
+    *b = *s;
+    loopi(s->size()) copycube(s->c()[i], b->c()[i]);
+    return b;
 }
-COMMAND(0, pasteprefab, "s");
+
+/* Copy prefab `name` to clipboard */
+void copyprefab(char *name)
+{
+    if(!name[0] || noedit()) return;
+    prefab *b = loadprefab(name, true);
+    if(!b) return;
+    if(multiplayer(false)) client::edittrigger(sel, EDIT_COPY, 1);
+    if(!localedit) localedit = editinfos.add(new editinfo);
+    if(localedit->copy) freeblock(localedit->copy);
+    localedit->copy = copyblock(b->copy);
+}
+COMMAND(0, copyprefab, "s");
 
 struct prefabmesh
 {

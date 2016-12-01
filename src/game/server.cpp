@@ -3176,7 +3176,7 @@ namespace server
                 srvmsgft(ci->clientnum, CON_EVENT, "\fysending you the map, please wait..");
                 loopi(SENDMAP_MAX) if(mapdata[i]) sendfile(ci->clientnum, 2, mapdata[i], "ri3s", N_SENDMAPFILE, i, smapcrc, smapname);
                 sendwelcome(ci);
-                ci->needclipboard = totalmillis ? totalmillis : 1;
+                ci->needclipboard = 0;
                 return true;
             }
         }
@@ -5662,10 +5662,11 @@ namespace server
         loopv(clients)
         {
             clientinfo &e = *clients[i];
-            if(e.clientnum != ci->clientnum && e.needclipboard - ci->lastclipboard >= 0)
+            if(e.clientnum != ci->clientnum && e.needclipboard < ci->lastclipboard)
             {
                 if(!flushed) { flushserver(true); flushed = true; }
                 sendpacket(e.clientnum, 1, ci->clipboard);
+                e.needclipboard = ci->lastclipboard;
             }
         }
     }
@@ -5678,7 +5679,7 @@ namespace server
         clients.add(ci);
 
         ci->connected = true;
-        ci->needclipboard = totalmillis ? totalmillis : 1;
+        ci->needclipboard = 0;
         ci->lasttimeplayed = totalmillis ? totalmillis : 1;
         ci->lasttimealive = totalmillis ? totalmillis : 1;
         ci->lasttimeactive = totalmillis ? totalmillis : 1;
@@ -7191,7 +7192,8 @@ namespace server
                 case N_CLIPBOARD:
                 {
                     int unpacklen = getint(p), packlen = getint(p);
-                    ci->cleanclipboard(false);
+                    ci->cleanclipboard();
+                    ci->lastclipboard = totalmillis ? totalmillis : 1;
                     if(ci->state != CS_EDITING)
                     {
                         if(packlen > 0) p.subbuf(packlen);
@@ -7238,13 +7240,15 @@ namespace server
                         break;
                     }
                     if(p.remaining() < packlen) { disconnect_client(sender, DISC_MSGERR); return; }
-                    packetbuf q(32 + packlen, ENET_PACKET_FLAG_RELIABLE);
+                    uchar s[MAXTRANS];
+                    ucharbuf q(s, MAXTRANS);
                     putint(q, type);
                     putint(q, ci->clientnum);
                     putint(q, unpacklen);
                     putint(q, packlen);
                     if(packlen > 0) p.get(q.subbuf(packlen).buf, packlen);
-                    sendpacket(-1, 1, q.finalize(), ci->clientnum);
+                    ci->messages.put(q.buf, q.length());
+                    curmsg += q.length();
                     break;
                 }
 
