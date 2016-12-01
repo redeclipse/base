@@ -1102,11 +1102,16 @@ namespace ai
                 d->ai->targnode = -1;
             }
         }
-        if(b.type == AI_S_OVERRIDE && b.overridetype == AI_O_DANCE && (!d->ai->lastturn || lastmillis-d->ai->lastturn >= 250))
+        bool dancing = b.type == AI_S_OVERRIDE && b.overridetype == AI_O_DANCE;
+        if(dancing)
         {
-            d->ai->targyaw = rnd(360);
-            d->ai->targpitch = rnd(179)-90;
-            d->ai->lastturn = lastmillis;
+            if(!d->ai->lastturn || lastmillis-d->ai->lastturn >= 500)
+            {
+                d->ai->targyaw = rnd(360);
+                d->ai->targpitch = rnd(178)-89;
+                d->ai->lastturn = lastmillis;
+                if(rnd(d->skill)) d->ai->spot.z += rnd(int(d->height*3/2));
+            }
         }
         else
         {
@@ -1175,9 +1180,10 @@ namespace ai
         if(!firing) d->action[AC_PRIMARY] = d->action[AC_SECONDARY] = false;
 
         game::fixrange(d->ai->targyaw, d->ai->targpitch);
-        if(!occupied)
+        if(dancing || !occupied)
         {
-            if(!m_insta(game::gamemode, game::mutators))
+            if(dancing) frame *= 10;
+            else if(!m_insta(game::gamemode, game::mutators))
             {
                 if(b.acttype == AI_A_NORMAL && (d->health <= m_health(game::gamemode, game::mutators, d->actortype)/3 || (iswaypoint(d->ai->targnode) && obstacles.find(d->ai->targnode, d))))
                     b.acttype = AI_A_HASTE;
@@ -1716,7 +1722,7 @@ namespace ai
 
     void scanchat(gameent *d, gameent *t, int flags, const char *text)
     {
-        if((!m_edit(game::gamemode) && !m_team(game::gamemode, game::mutators)) || flags&SAY_ACTION || d->actortype != A_PLAYER) return;
+        if(flags&SAY_ACTION || d->actortype != A_PLAYER) return;
         bigstring msg;
         filterstring(msg, text, true, true, true, true);
         const int MAXWORDS = 8;
@@ -1755,7 +1761,7 @@ namespace ai
                 }
             }
             else aimed = true;
-            if(!m_edit(game::gamemode) && d->team != e->team && !aimed && !client::haspriv(d, botoverridelock))
+            if(!m_edit(game::gamemode) && d->team != e->team && (!aimed || !client::haspriv(d, botoverridelock)))
             {
                 if(aimed) botsay(e, d, "sorry, can't obey you");
                 continue;
