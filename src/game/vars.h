@@ -409,6 +409,7 @@ GSVAR(IDF_MODERATOR, botfemalenames, "");
 GSVAR(IDF_MODERATOR, botmalevanities, "");
 GSVAR(IDF_MODERATOR, botfemalevanities, "");
 GVAR(IDF_GAMEMOD, botcolourseed, 0, 15, 15); // random bot things will be determined by colour as seed, bitwise: 0 = off, 1 = skill, 2 = name, 4 = model, 8 = loadout
+GVAR(IDF_ADMIN, botoverridelock, PRIV_NONE, PRIV_ADMINISTRATOR, PRIV_MAX);
 GFVAR(IDF_GAMEMOD, coopbalance, FVAR_NONZERO, 1.5f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, coopmultibalance, FVAR_NONZERO, 2, FVAR_MAX);
 GVAR(IDF_GAMEMOD, coopskillmin, 1, 75, 101);

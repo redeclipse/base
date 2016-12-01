@@ -396,12 +396,13 @@ namespace ai
         return true;
     }
 
-    bool defense(gameent *d, aistate &b, const vec &pos, float guard, float wander, int walk)
+    bool defense(gameent *d, aistate &b, const vec &pos, float guard, float wander, int walk, int actoverride)
     {
         bool canmove = AA(d->actortype, abilities)&(1<<A_A_MOVE);
         if(!canmove || (!walk && d->feetpos().squaredist(pos) <= guard*guard))
         {
-            b.acttype = enemy(d, b, pos, wander, canmove && W2(d->weapselect, aidist, false) < CLOSEDIST ? 1 : 0, false, !canmove) ? AI_A_PROTECT : AI_A_IDLE;
+            if(actoverride >= 0) b.acttype = actoverride;
+            else b.acttype = enemy(d, b, pos, wander >= 0 ? wander : guard*2, canmove && W2(d->weapselect, aidist, false) < CLOSEDIST ? 1 : 0, false, !canmove) ? AI_A_PROTECT : AI_A_IDLE;
             return true;
         }
         return patrol(d, b, pos, guard, wander, walk);
@@ -803,6 +804,62 @@ namespace ai
         return false;
     }
 
+    bool dooverride(gameent *d, aistate &b)
+    {
+        if(d->state != CS_ALIVE) return false;
+        switch(b.targtype)
+        {
+            case AI_T_NODE:
+            {
+                if(iswaypoint(b.target)) switch(b.overridetype)
+                {
+                    case AI_O_DANCE:
+                        return defense(d, b, waypoints[b.target].o, MINWPDIST, CLOSEDIST, 2, AI_A_HASTE); break;
+                    case AI_O_STAND: case AI_O_CROUCH: default:
+                        return defense(d, b, waypoints[b.target].o, MINWPDIST, 0, 0, AI_A_IDLE);
+                }
+                break;
+            }
+            case AI_T_ACTOR:
+            {
+                gameent *e = game::getclient(b.target);
+                if(e && e->state == CS_ALIVE && iswaypoint(e->lastnode) && waypoints[e->lastnode].haslinks())
+                {
+                    switch(b.overridetype)
+                    {
+                        case AI_O_DANCE:
+                            return defense(d, b, waypoints[e->lastnode].o, MINWPDIST, CLOSEDIST, 2, AI_A_HASTE);
+                        case AI_O_STAND: case AI_O_CROUCH: default:
+                        {
+                            int closest = -1;
+                            float closedist = 1e16f;
+                            loopi(MAXWAYPOINTLINKS)
+                            {
+                                int n = waypoints[e->lastnode].links[i];
+                                if(!n || obstacles.find(n, d)) break;
+                                float dist = waypoints[n].o.dist(d->feetpos());
+                                if(closest < 0 || dist < closedist)
+                                {
+                                    closest = n;
+                                    closedist = dist;
+                                }
+                            }
+                            return defense(d, b, waypoints[closest].o, MINWPDIST, 0, 0, AI_A_IDLE);
+                        }
+                    }
+                }
+                break;
+            }
+            default:
+            {
+                if(iswaypoint(b.target)) return defense(d, b, waypoints[b.target].o, MINWPDIST, 0, 0, AI_A_IDLE);
+                break;
+            }
+        }
+        if(b.owner >= 0) return defense(d, b, d->feetpos(), CLOSEDIST, FARDIST, 0, AI_A_IDLE);
+        return false;
+    }
+
     int closenode(gameent *d)
     {
         vec pos = d->feetpos();
@@ -922,7 +979,7 @@ namespace ai
         return false;
     }
 
-    bool hunt(gameent *d, aistate &b)
+    bool hunt(gameent *d, aistate &b, bool allowrnd)
     {
         if(!d->ai->route.empty())
         {
@@ -948,7 +1005,7 @@ namespace ai
             }
         }
         b.override = false;
-        return anynode(d, b);
+        return allowrnd ? anynode(d, b) : false;
     }
 
     void jumpto(gameent *d, aistate &b, const vec &pos)
@@ -1015,7 +1072,7 @@ namespace ai
         int skmod = max(101-d->skill, 1);
         float frame = d->skill <= 100 ? ((lastmillis-d->ai->lastrun)*(100.f/gamespeed))/float(skmod*10) : 1;
         if(d->dominating.length()) frame *= 1+d->dominating.length();
-
+        bool allowrnd = b.type == AI_S_WAIT || b.type == AI_S_PURSUE || b.type == AI_S_INTEREST;
         d->action[AC_SPECIAL] = d->ai->dontmove = false;
         if(b.acttype == AI_A_IDLE || !(AA(d->actortype, abilities)&(1<<A_A_MOVE)))
         {
@@ -1023,7 +1080,7 @@ namespace ai
             d->ai->dontmove = true;
             d->ai->spot = d->feetpos();
         }
-        else if(hunt(d, b))
+        else if(hunt(d, b, allowrnd))
         {
             vec fp = d->feetpos();
             game::getyawpitch(fp, d->ai->spot, d->ai->targyaw, d->ai->targpitch);
@@ -1031,77 +1088,89 @@ namespace ai
         }
         else
         {
-            if((d->blocked || (d->inmaterial&MATF_CLIP) == MAT_AICLIP) && (!d->ai->lastturn || lastmillis-d->ai->lastturn >= 1000))
+            if(!allowrnd) d->ai->dontmove = true;
+            else
             {
-                d->ai->targyaw += 90+rnd(180);
-                d->ai->lastturn = lastmillis;
+                if((d->blocked || (d->inmaterial&MATF_CLIP) == MAT_AICLIP) && (!d->ai->lastturn || lastmillis-d->ai->lastturn >= 1000))
+                {
+                    d->ai->targyaw += 90+rnd(180);
+                    d->ai->lastturn = lastmillis;
+                }
+                d->ai->targpitch = 0;
+                vec dir(d->ai->targyaw, d->ai->targpitch);
+                d->ai->spot = vec(d->feetpos()).add(dir.mul(CLOSEDIST));
+                d->ai->targnode = -1;
             }
-            d->ai->targpitch = 0;
-            vec dir(d->ai->targyaw, d->ai->targpitch);
-            d->ai->spot = vec(d->feetpos()).add(dir.mul(CLOSEDIST));
-            d->ai->targnode = -1;
         }
-
-        gameent *e = game::getclient(d->ai->enemy);
-        if(!(enemyok = (e && targetable(d, e, true))) || d->skill >= 50 || d->ai->dontmove)
+        if(b.type == AI_S_OVERRIDE && b.overridetype == AI_O_DANCE && (!d->ai->lastturn || lastmillis-d->ai->lastturn >= 250))
         {
-            gameent *f = game::intersectclosest(d->o, d->ai->target, d);
-            if(f)
+            d->ai->targyaw = rnd(360);
+            d->ai->targpitch = rnd(179)-90;
+            d->ai->lastturn = lastmillis;
+        }
+        else
+        {
+            gameent *e = game::getclient(d->ai->enemy);
+            if(!(enemyok = (e && targetable(d, e, true))) || d->skill >= 50 || d->ai->dontmove)
             {
-                if(targetable(d, f, true))
+                gameent *f = game::intersectclosest(d->o, d->ai->target, d);
+                if(f)
                 {
-                    if(!enemyok) violence(d, b, f, !d->ai->dontmove && (b.type != AI_S_DEFEND || b.targtype != AI_T_AFFINITY) && W2(d->weapselect, aidist, altfire(d, f)) < CLOSEDIST ? 1 : 0);
-                    enemyok = true;
-                    e = f;
+                    if(targetable(d, f, true))
+                    {
+                        if(!enemyok) violence(d, b, f, !d->ai->dontmove && (b.type != AI_S_DEFEND || b.targtype != AI_T_AFFINITY) && W2(d->weapselect, aidist, altfire(d, f)) < CLOSEDIST ? 1 : 0);
+                        enemyok = true;
+                        e = f;
+                    }
+                    else enemyok = false; // would hit non-targetable person
                 }
-                else enemyok = false; // would hit non-targetable person
+                else if((!enemyok || d->ai->dontmove) && target(d, b, 0, d->ai->dontmove && (b.type != AI_S_DEFEND || b.targtype != AI_T_AFFINITY)))
+                    enemyok = (e = game::getclient(d->ai->enemy)) != NULL;
             }
-            else if((!enemyok || d->ai->dontmove) && target(d, b, 0, d->ai->dontmove && (b.type != AI_S_DEFEND || b.targtype != AI_T_AFFINITY)))
-                enemyok = (e = game::getclient(d->ai->enemy)) != NULL;
-        }
-        if(enemyok)
-        {
-            bool alt = altfire(d, e);
-            vec ep = getaimpos(d, e, alt);
-            float yaw, pitch;
-            game::getyawpitch(d->o, ep, yaw, pitch);
-            game::fixrange(yaw, pitch);
-            bool insight = cansee(d, d->o, e->o), hasseen = d->ai->enemyseen && lastmillis-d->ai->enemyseen <= (d->skill*10)+1000,
-                 quick = d->ai->enemyseen && lastmillis-d->ai->enemyseen <= (W2(d->weapselect, fullauto, alt) ? W2(d->weapselect, delayattack, alt)*3 : skmod*3)+skmod*3;
-            if(insight) d->ai->enemyseen = lastmillis;
-            if(d->ai->dontmove || insight || hasseen || quick)
+            if(enemyok)
             {
-                frame *= insight || d->skill > 100 ? 1.5f : (hasseen || quick ? 1.25f : 1.f);
-                if(lockon(d, e, CLOSEDIST, W2(d->weapselect, aidist, alt) < CLOSEDIST))
+                bool alt = altfire(d, e);
+                vec ep = getaimpos(d, e, alt);
+                float yaw, pitch;
+                game::getyawpitch(d->o, ep, yaw, pitch);
+                game::fixrange(yaw, pitch);
+                bool insight = cansee(d, d->o, e->o), hasseen = d->ai->enemyseen && lastmillis-d->ai->enemyseen <= (d->skill*10)+1000,
+                     quick = d->ai->enemyseen && lastmillis-d->ai->enemyseen <= (W2(d->weapselect, fullauto, alt) ? W2(d->weapselect, delayattack, alt)*3 : skmod*3)+skmod*3;
+                if(insight) d->ai->enemyseen = lastmillis;
+                if(d->ai->dontmove || insight || hasseen || quick)
                 {
-                    frame *= 2.f;
-                    b.acttype = AI_A_LOCKON;
-                    d->ai->dontmove = false;
-                    d->ai->targyaw = yaw;
-                    d->ai->targpitch = pitch;
-                    d->ai->spot = e->feetpos();
+                    frame *= insight || d->skill > 100 ? 1.5f : (hasseen || quick ? 1.25f : 1.f);
+                    if(lockon(d, e, CLOSEDIST, W2(d->weapselect, aidist, alt) < CLOSEDIST))
+                    {
+                        frame *= 2.f;
+                        b.acttype = AI_A_LOCKON;
+                        d->ai->dontmove = false;
+                        d->ai->targyaw = yaw;
+                        d->ai->targpitch = pitch;
+                        d->ai->spot = e->feetpos();
+                    }
+                    game::scaleyawpitch(d->yaw, d->pitch, yaw, pitch, frame, frame*0.75f);
+                    bool shoot = canshoot(d, e, alt);
+                    if(d->action[alt ? AC_SECONDARY : AC_PRIMARY] && W2(d->weapselect, cooktime, alt) && W2(d->weapselect, cooked, alt))
+                    { // TODO: make AI more aware of what they're shooting
+                        int cooked = W2(d->weapselect, cooked, alt);
+                        if(cooked&8) shoot = false; // inverted life
+                    }
+                    if(shoot && hastarget(d, b, e, alt, insight || (!d->ai->dontmove && quick), yaw, pitch))
+                    {
+                        d->action[alt ? AC_SECONDARY : AC_PRIMARY] = true;
+                        d->actiontime[alt ? AC_SECONDARY : AC_PRIMARY] = lastmillis;
+                        firing = true;
+                    }
+                    occupied = true;
                 }
-                game::scaleyawpitch(d->yaw, d->pitch, yaw, pitch, frame, frame*0.75f);
-                bool shoot = canshoot(d, e, alt);
-                if(d->action[alt ? AC_SECONDARY : AC_PRIMARY] && W2(d->weapselect, cooktime, alt) && W2(d->weapselect, cooked, alt))
-                { // TODO: make AI more aware of what they're shooting
-                    int cooked = W2(d->weapselect, cooked, alt);
-                    if(cooked&8) shoot = false; // inverted life
-                }
-                if(shoot && hastarget(d, b, e, alt, insight || (!d->ai->dontmove && quick), yaw, pitch))
-                {
-                    d->action[alt ? AC_SECONDARY : AC_PRIMARY] = true;
-                    d->actiontime[alt ? AC_SECONDARY : AC_PRIMARY] = lastmillis;
-                    firing = true;
-                }
-                occupied = true;
+                else enemyok = false;
             }
-            else enemyok = false;
-        }
-        if(!enemyok)
-        {
-            d->ai->enemy = -1;
-            d->ai->enemyseen = d->ai->enemymillis = 0;
+            if(!enemyok)
+            {
+                d->ai->enemy = -1;
+                d->ai->enemyseen = d->ai->enemymillis = 0;
+            }
         }
         if(!firing) d->action[AC_PRIMARY] = d->action[AC_SECONDARY] = false;
 
@@ -1119,7 +1188,7 @@ namespace ai
         }
 
         if(AA(d->actortype, abilities)&(1<<A_A_JUMP)) jumpto(d, b, d->ai->spot);
-        if((d->actortype == A_BOT || d->actortype == A_GRUNT) && d->action[AC_CROUCH] != d->ai->dontmove)
+        if((d->actortype == A_BOT || d->actortype == A_GRUNT) && d->action[AC_CROUCH] != (d->ai->dontmove && (b.type != AI_S_OVERRIDE || b.overridetype == AI_O_CROUCH)))
             if((d->action[AC_CROUCH] = !d->action[AC_CROUCH]) == true) d->actiontime[AC_CROUCH] = lastmillis;
 
         if(d->ai->dontmove || !(AA(d->actortype, abilities)&(1<<A_A_MOVE)) || (AA(d->actortype, hurtstop) && lastmillis-d->lastpain <= AA(d->actortype, hurtstop)))
@@ -1472,9 +1541,10 @@ namespace ai
                     case AI_S_DEFEND: result = dodefense(d, c); break;
                     case AI_S_PURSUE: result = dopursue(d, c); break;
                     case AI_S_INTEREST: result = dointerest(d, c); break;
+                    case AI_S_OVERRIDE: result = dooverride(d, c); break;
                     default: result = 0; break;
                 }
-                if(!result && c.type != AI_S_WAIT)
+                if(!result && c.type != AI_S_WAIT && c.owner < 0)
                 {
                     d->ai->removestate(i);
                     cleannext = true;
@@ -1521,7 +1591,7 @@ namespace ai
     }
 
     const char *stnames[AI_S_MAX] = {
-        "wait", "defend", "pursue", "interest"
+        "wait", "defend", "pursue", "interest", "override"
     }, *sttypes[AI_T_MAX+1] = {
         "none", "node", "actor", "affinity", "entity", "drop"
     }, *attypes[AI_A_MAX] = {
@@ -1664,8 +1734,8 @@ namespace ai
         if(*w[0]) loopvj(game::players) if(game::players[j] && game::players[j]->actortype == A_BOT && game::players[j]->ai)
         {
             gameent *e = game::players[j];
-            if(!m_edit(game::gamemode) && d->team != e->team) continue;
             int pos = 0;
+            bool aimed = false;
             if(!(flags&SAY_WHISPER))
             {
                 if(!strncmp(w[0], "bots", 4)) pos = 1;
@@ -1681,7 +1751,14 @@ namespace ai
                     }
                     if(w[0][len] != 0) continue;
                     pos = 1;
+                    aimed = true;
                 }
+            }
+            else aimed = true;
+            if(!m_edit(game::gamemode) && d->team != e->team && !aimed && !client::haspriv(d, botoverridelock))
+            {
+                if(aimed) botsay(e, d, "sorry, can't obey you");
+                continue;
             }
             const char *affirm[4] = { "roger", "okay", "will do", "i'm on it" };
             if(!strcasecmp(w[pos], "defend"))
@@ -1741,7 +1818,7 @@ namespace ai
                                     }
                                 }
                                 #endif
-                                else botsay(e, d, "'me', 'here', or 'flag'");
+                                else botsay(e, d, "use: me, here, or flag");
                                 break;
                             }
                             case G_BOMBER:
@@ -1756,10 +1833,10 @@ namespace ai
                                         break;
                                     }
                                 }
-                                else botsay(e, d, "'me', 'here', or 'goal'");
+                                else botsay(e, d, "use: me, here, or goal");
                                 break;
                             }
-                            default: botsay(e, d, "'me', or 'here'"); break;
+                            default: botsay(e, d, "use: me, or here"); break;
                         }
                     }
                 }
@@ -1794,7 +1871,7 @@ namespace ai
                             }
                         }
                         #endif
-                        else botsay(e, d, "'flag' is the only option");
+                        else botsay(e, d, "sorry, flag is the only option");
 
                         break;
                     }
@@ -1820,10 +1897,55 @@ namespace ai
                                 break;
                             }
                         }
-                        else botsay(e, d, "'goal', or 'ball'");
+                        else botsay(e, d, "use: goal, or ball");
                         break;
                     }
                     default: botsay(e, d, "sorry, no attack directions in this game"); break;
+                }
+            }
+            else if(!strcasecmp(w[pos], "stand") || !strcasecmp(w[pos], "crouch") || !strcasecmp(w[pos], "dance"))
+            {
+                int state = AI_O_STAND, act = AI_A_NORMAL;
+                const char *cmd = "stand";
+                if(!strcasecmp(w[pos], "crouch"))
+                {
+                    state = AI_O_CROUCH;
+                    cmd = "crouch";
+                }
+                else if(!strcasecmp(w[pos], "dance"))
+                {
+                    state = AI_O_DANCE;
+                    act = AI_A_HASTE;
+                    cmd = "dance";
+                }
+                pos++;
+                if(!strcasecmp(w[pos], "here"))
+                {
+                    e->ai->clear();
+                    e->ai->addstate(AI_S_OVERRIDE, AI_T_NODE, d->lastnode, act, d->clientnum, state);
+                    botsay(e, d, "%s, will %s at your position (%d)", affirm[rnd(4)], cmd, d->lastnode);
+                }
+                else if(!strcasecmp(w[pos], "with") || !strcasecmp(w[pos], "next"))
+                {
+                    pos++;
+                    if(!strcasecmp(w[pos], "me"))
+                    {
+                        e->ai->clear();
+                        e->ai->addstate(AI_S_OVERRIDE, AI_T_ACTOR, d->clientnum, act, d->clientnum, state);
+                        botsay(e, d, "%s, will %s next to you", affirm[rnd(4)], cmd);
+                    }
+                    else
+                    {
+                        gameent *f = NULL;
+                        int numdyns = game::numdynents();
+                        loopi(numdyns) if((f = (gameent *)game::iterdynents(i)) && f != e && f->team == e->team && !strcmp(w[pos], f->name))
+                        {
+                            e->ai->clear();
+                            e->ai->addstate(AI_S_OVERRIDE, AI_T_ACTOR, f->clientnum, act, d->clientnum, state);
+                            botsay(e, d, "%s, will %s next to %s", affirm[rnd(4)], cmd, f->name);
+                            break;
+                        }
+                    }
                 }
             }
             else if(!strcasecmp(w[pos], "forget"))
@@ -1838,7 +1960,7 @@ namespace ai
                 const char *quip[4] = { "what was i doing again?", "duh... off i go..", "who were you again?", "ummmm... wtf do i do now?" };
                 botsay(e, d, "%s, %s", affirm[rnd(4)], quip[rnd(4)]);
             }
-            else botsay(e, d, "'defend', 'attack', 'forget', or 'reset'");
+            else botsay(e, d, "use: defend, attack, stand, crouch, dance, forget, or reset");
         }
         loopi(numargs) DELETEA(w[i]);
     }

@@ -7,11 +7,11 @@ namespace ai
     const int MAXWAYPOINTLINKS  = 6;
     const int WAYPOINTRADIUS    = 16;
 
-    const float MINWPDIST       = 4.f;     // is on top of
+    const float MINWPDIST       = 8.f;     // is on top of
     const float CLOSEDIST       = 64.f;    // is close
     const float RETRYDIST       = 128.f;   // is close when retrying
     const float FARDIST         = 256.f;   // too far to remap close
-    const float JUMPMIN         = 2.f;     // decides to jump
+    const float JUMPMIN         = 3.f;     // decides to jump
     const float JUMPMAX         = 32.f;    // max jump
     const float SIGHTMIN        = 128.f;   // minimum line of sight
     const float SIGHTMAX        = 1024.f;  // maximum line of sight
@@ -159,6 +159,7 @@ namespace ai
         AI_S_DEFEND,        // defend goal target
         AI_S_PURSUE,        // pursue goal target
         AI_S_INTEREST,      // interest in goal entity
+        AI_S_OVERRIDE,      // overridden to do a specific thing
         AI_S_MAX
     };
 
@@ -182,21 +183,29 @@ namespace ai
         AI_A_MAX
     };
 
+    enum
+    {
+        AI_O_STAND = 0,
+        AI_O_CROUCH,
+        AI_O_DANCE,
+        AI_O_MAX
+    };
+
     struct interest
     {
-        int state, node, target, targtype, acttype;
+        int state, node, target, targtype, acttype, overridetype;
         float score, tolerance;
         bool team;
-        interest() : state(-1), node(-1), target(-1), targtype(-1), acttype(AI_A_NORMAL), score(0.f), tolerance(1.f), team(false) {}
+        interest() : state(-1), node(-1), target(-1), targtype(-1), acttype(AI_A_NORMAL), overridetype(-1), score(0.f), tolerance(1.f), team(false) {}
         ~interest() {}
     };
 
     struct aistate
     {
-        int type, millis, targtype, target, acttype, owner;
+        int type, millis, targtype, target, acttype, owner, overridetype;
         bool override;
 
-        aistate(int m, int t, int r = -1, int v = -1, int a = AI_A_NORMAL, int o = -1) : type(t), millis(m), targtype(r), target(v), acttype(a), owner(o)
+        aistate(int m, int t, int r = -1, int v = -1, int a = AI_A_NORMAL, int o = -1, int y = -1) : type(t), millis(m), targtype(r), target(v), acttype(a), owner(o), overridetype(y)
         {
             reset();
         }
@@ -273,9 +282,9 @@ namespace ai
             }
         }
 
-        aistate &addstate(int t, int r = -1, int v = -1, int a = AI_A_NORMAL, int o = -1)
+        aistate &addstate(int t, int r = -1, int v = -1, int a = AI_A_NORMAL, int o = -1, int y = -1)
         {
-            return state.add(aistate(lastmillis, t, r, v, a, o));
+            return state.add(aistate(lastmillis, t, r, v, a, o, y));
         }
 
         void removestate(int index = -1)
@@ -291,7 +300,7 @@ namespace ai
             return state.last();
         }
 
-        aistate &switchstate(aistate &b, int t, int r = -1, int v = -1, int a = AI_A_NORMAL, int o = -1)
+        aistate &switchstate(aistate &b, int t, int r = -1, int v = -1, int a = AI_A_NORMAL, int o = -1, int y = -1)
         {
             if(((b.type == t && b.targtype == r) || (b.type == AI_S_INTEREST && b.targtype == AI_T_NODE)) && b.owner == o)
             {
@@ -299,10 +308,11 @@ namespace ai
                 b.target = v;
                 b.acttype = a;
                 b.owner = o;
+                b.overridetype = y;
                 b.reset();
                 return b;
             }
-            return addstate(t, r, v, a);
+            return addstate(t, r, v, a, o, y);
         }
     };
 
@@ -332,7 +342,7 @@ namespace ai
     extern bool randomnode(gameent *d, aistate &b, float guard = ALERTMIN, float wander = ALERTMAX);
     extern bool violence(gameent *d, aistate &b, gameent *e, int pursue = 0);
     extern bool patrol(gameent *d, aistate &b, const vec &pos, float guard = CLOSEDIST, float wander = FARDIST, int walk = 1, bool retry = false);
-    extern bool defense(gameent *d, aistate &b, const vec &pos, float guard = CLOSEDIST, float wander = FARDIST, int walk = 0);
+    extern bool defense(gameent *d, aistate &b, const vec &pos, float guard = CLOSEDIST, float wander = FARDIST, int walk = 0, int actoverride = -1);
 
     extern void respawned(gameent *d, bool local, int ent = -1);
     extern void damaged(gameent *d, gameent *e, int weap, int flags, int damage);
