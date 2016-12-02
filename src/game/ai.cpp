@@ -1072,7 +1072,8 @@ namespace ai
         int skmod = max(101-d->skill, 1);
         float frame = d->skill <= 100 ? ((lastmillis-d->ai->lastrun)*(100.f/gamespeed))/float(skmod*10) : 1;
         if(d->dominating.length()) frame *= 1+d->dominating.length();
-        bool allowrnd = b.type == AI_S_WAIT || b.type == AI_S_PURSUE || b.type == AI_S_INTEREST;
+        bool dancing = b.type == AI_S_OVERRIDE && b.overridetype == AI_O_DANCE,
+             allowrnd = dancing || b.type == AI_S_WAIT || b.type == AI_S_PURSUE || b.type == AI_S_INTEREST;
         d->action[AC_SPECIAL] = d->ai->dontmove = false;
         if(b.acttype == AI_A_IDLE || !(AA(d->actortype, abilities)&(1<<A_A_MOVE)))
         {
@@ -1102,7 +1103,6 @@ namespace ai
                 d->ai->targnode = -1;
             }
         }
-        bool dancing = b.type == AI_S_OVERRIDE && b.overridetype == AI_O_DANCE;
         if(dancing)
         {
             if(!d->ai->lastturn || lastmillis-d->ai->lastturn >= 500)
@@ -1110,7 +1110,7 @@ namespace ai
                 d->ai->targyaw = rnd(360);
                 d->ai->targpitch = rnd(178)-89;
                 d->ai->lastturn = lastmillis;
-                if(rnd(d->skill)) d->ai->spot.z += rnd(int(d->height*3/2));
+                if(rnd(d->skill) < d->skill/4) d->ai->spot.z += rnd(int(d->height*3/2));
             }
         }
         else
