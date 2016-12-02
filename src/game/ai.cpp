@@ -1110,7 +1110,7 @@ namespace ai
                 d->ai->targyaw = rnd(360);
                 d->ai->targpitch = rnd(178)-89;
                 d->ai->lastturn = lastmillis;
-                if(rnd(d->skill) < d->skill/4) d->ai->spot.z += rnd(int(d->height*3/2));
+                if(rnd(d->skill) > d->skill/2) d->ai->spot.z += rnd(int(d->height*3/2));
             }
         }
         else
