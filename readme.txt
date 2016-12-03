@@ -46,6 +46,7 @@ The project is Free and Open Source meaning that you can both use it for free, a
 * Christopher "Dratz-_C" Dratz
 * Christopher "paroneayea" Webber
 * Corey "c0rdawg" Maher
+* Dale "graphitemaster" Weiler - Check out Neothyne @ http://neothyne.org/
 * Daniel "Imerion" Eriksson
 * David "srbs" Forrest
 * Derek "Favorito" Ponicki - Maps, Textures, Design/Testing
