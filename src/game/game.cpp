@@ -3047,7 +3047,7 @@ namespace game
                         anim |= ANIM_FLYKICK<<ANIM_SECONDARY;
                         basetime2 = d->weaptime[W_MELEE];
                     }
-                    else if(d->crouching())
+                    else if(d->crouching(true))
                     {
                         if(d->strafe) anim |= (d->strafe>0 ? ANIM_CROUCH_JUMP_LEFT : ANIM_CROUCH_JUMP_RIGHT)<<ANIM_SECONDARY;
                         else if(d->move>0) anim |= ANIM_CROUCH_JUMP_FORWARD<<ANIM_SECONDARY;
@@ -3061,7 +3061,7 @@ namespace game
                     if(!basetime2) anim |= ANIM_END<<ANIM_SECONDARY;
                 }
                 else if(d->sliding(true)) anim |= (ANIM_POWERSLIDE|ANIM_LOOP)<<ANIM_SECONDARY;
-                else if(d->crouching())
+                else if(d->crouching(true))
                 {
                     if(d->strafe) anim |= ((d->strafe>0 ? ANIM_CRAWL_LEFT : ANIM_CRAWL_RIGHT)|ANIM_LOOP)<<ANIM_SECONDARY;
                     else if(d->move>0) anim |= (ANIM_CRAWL_FORWARD|ANIM_LOOP)<<ANIM_SECONDARY;
