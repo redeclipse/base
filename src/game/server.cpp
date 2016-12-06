@@ -3078,7 +3078,16 @@ namespace server
                 }
                 if(worst)
                 {
-                    team = worst->team;
+                    vector <int> possibleteams;
+                    loopi(numteams(gamemode, mutators)) if(allowteam(ci, teamchecks[i].team, T_FIRST, false))
+                    {
+                        teamcheck &ts = teamchecks[i];
+                        if(ts.score == worst->score && ts.clients == worst->clients)
+                        {
+                            possibleteams.add(ts.team);
+                        }
+                    }
+                    team = possibleteams[rnd(possibleteams.length())];
                     break;
                 }
                 team = -1;
