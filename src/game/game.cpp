@@ -1351,7 +1351,7 @@ namespace game
         bool burning = burn(d, weap, flags), bleeding = bleed(d, weap, flags), shocking = shock(d, weap, flags), material = flags&HIT_MATERIAL;
         if(!local || burning || bleeding || shocking || material)
         {
-            float scale = isweap(weap) && WF(WK(flags), weap, damage, WS(flags)) ? abs(damage)/float(WF(WK(flags), weap, damage, WS(flags))) : 1.f;
+            float scale = isweap(weap) && WF(WK(flags), weap, damage, WS(flags)) != 0 ? abs(damage)/float(WF(WK(flags), weap, damage, WS(flags))) : 1.f;
             if(hitdealt(flags) && damage != 0 && v == focus) hud::hit(damage, d->o, d, weap, flags);
             if(hitdealt(flags) && damage > 0)
             {
@@ -1395,9 +1395,9 @@ namespace game
                     if(shockstun&W_N_GRIMM && g > 0) d->falling.mul(1.f-clamp(g, 0.f, 1.f));
                     if(shockstun&W_N_SLIDE) d->impulse[IM_SLIP] = lastmillis;
                 }
-                else if(isweap(weap) && !burning && !bleeding && !material && !shocking && WF(WK(flags), weap, damage, WS(flags)))
+                else if(isweap(weap) && !burning && !bleeding && !material && !shocking && WF(WK(flags), weap, damage, WS(flags)) != 0)
                 {
-                    if(WF(WK(flags), weap, stun, WS(flags)))
+                    if(WF(WK(flags), weap, stun, WS(flags)) != 0)
                     {
                         int stun = WF(WK(flags), weap, stun, WS(flags));
                         float amt = scale*WRS(flags&HIT_WAVE || !hitdealt(flags) ? wavestunscale : (d->health <= 0 ? deadstunscale : hitstunscale), stun, gamemode, mutators);
@@ -1747,7 +1747,7 @@ namespace game
             if(d->obliterated) amt *= 2;
             loopi(amt) projs::create(pos, pos, true, d, nogore ? PRJ_DEBRIS : PRJ_GIBS, -1, HIT_NONE, rnd(gibfade)+gibfade, 0, rnd(500)+1, rnd(50)+10);
         }
-        if(m_team(gamemode, mutators) && d->team == v->team && d != v && v == player1 && isweap(weap) && WF(WK(flags), weap, damagepenalty, WS(flags)))
+        if(m_team(gamemode, mutators) && d->team == v->team && d != v && v == player1 && isweap(weap) && WF(WK(flags), weap, damagepenalty, WS(flags)) != 0)
         {
             hud::teamkills.add(totalmillis);
             if(hud::numteamkills() >= teamkillwarn) hud::lastteam = totalmillis ? totalmillis : 1;

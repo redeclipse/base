@@ -181,7 +181,7 @@ namespace projs
 
     bool radialeffect(dynent *d, projent &proj, int flags, float radius)
     {
-        bool push = WF(WK(proj.flags), proj.weap, wavepush, WS(proj.flags)) > 1, radiated = false;
+        bool push = WF(WK(proj.flags), proj.weap, wavepush, WS(proj.flags)) != 0, radiated = false;
         float maxdist = push ? radius*WF(WK(proj.flags), proj.weap, wavepush, WS(proj.flags)) : radius;
         #define radialpush(xx,yx,yy,yz1,yz2,zz) \
             if(!proj.o.rejectxyz(xx, yx, yy, yz1, yz2)) zz = 0; \
@@ -658,18 +658,18 @@ namespace projs
         if(WF(WK(proj.flags), proj.weap, fade, WS(proj.flags))&(proj.owner != game::focus ? 2 : 1))
         {
             int millis = lastmillis-proj.spawntime;
-            if(millis < WF(WK(proj.flags), proj.weap, fadetime, WS(proj.flags)))
+            if(WF(WK(proj.flags), proj.weap, fadetime, WS(proj.flags)) != 0 && millis < WF(WK(proj.flags), proj.weap, fadetime, WS(proj.flags)))
                 trans *= millis/float(WF(WK(proj.flags), proj.weap, fadetime, WS(proj.flags)));
             if(!proj.escaped && proj.owner == game::focus && WF(WK(proj.flags), proj.weap, fadeat, WS(proj.flags)) > 0)
                 trans *= camera1->o.distrange(proj.o, WF(WK(proj.flags), proj.weap, fadeat, WS(proj.flags)), WF(WK(proj.flags), proj.weap, fadecut, WS(proj.flags)));
         }
-        if(proj.stuck && isweap(proj.weap) && WF(WK(proj.flags), proj.weap, vistime, WS(proj.flags)))
+        if(proj.stuck && isweap(proj.weap) && WF(WK(proj.flags), proj.weap, vistime, WS(proj.flags)) != 0)
         {
             int millis = lastmillis-proj.stuck;
-            if(millis < WF(WK(proj.flags), proj.weap, vistime, WS(proj.flags)))
+            if(WF(WK(proj.flags), proj.weap, vistime, WS(proj.flags)) != 0 && millis < WF(WK(proj.flags), proj.weap, vistime, WS(proj.flags)))
                 trans *= 1.f-(WF(WK(proj.flags), proj.weap, visfade, WS(proj.flags))*millis/float(WF(WK(proj.flags), proj.weap, vistime, WS(proj.flags))));
             else trans *= 1.f-WF(WK(proj.flags), proj.weap, visfade, WS(proj.flags));
-            if(proj.beenused && proj.lifetime < WF(WK(proj.flags), proj.weap, proxtime, WS(proj.flags)))
+            if(proj.beenused && WF(WK(proj.flags), proj.weap, proxtime, WS(proj.flags)) != 0 && proj.lifetime < WF(WK(proj.flags), proj.weap, proxtime, WS(proj.flags)))
                 trans += (1.f-trans)*((WF(WK(proj.flags), proj.weap, proxtime, WS(proj.flags))-proj.lifetime)/float(WF(WK(proj.flags), proj.weap, proxtime, WS(proj.flags))));
         }
         return trans;
@@ -825,7 +825,7 @@ namespace projs
                 proj.mdl = weaptype[proj.weap].proj;
                 proj.escaped = !proj.owner || proj.child || WK(proj.flags) || WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_HITSCAN || proj.weap == W_MELEE;
                 updatetargets(proj, waited ? 1 : 0);
-                if(WF(WK(proj.flags), proj.weap, guided, WS(proj.flags)) && proj.owner)
+                if(WF(WK(proj.flags), proj.weap, guided, WS(proj.flags)) != 0 && proj.owner)
                     findorientation(proj.owner->o, proj.owner->yaw, proj.owner->pitch, proj.dest);
                 if(proj.projcollide&COLLIDE_PROJ) collideprojs.add(&proj);
                 break;
@@ -1257,13 +1257,13 @@ namespace projs
             {
                 if(WF(WK(proj.flags), proj.weap, taperout, WS(proj.flags)) > 0)
                 {
-                    if(distance > WF(WK(proj.flags), proj.weap, taperout, WS(proj.flags)))
+                    if(WF(WK(proj.flags), proj.weap, taperout, WS(proj.flags)) > 0 && distance > WF(WK(proj.flags), proj.weap, taperout, WS(proj.flags)))
                     {
                         proj.state = CS_DEAD;
                         proj.lifesize = WF(WK(proj.flags), proj.weap, tapermin, WS(proj.flags));
                         break;
                     }
-                    else if(distance > WF(WK(proj.flags), proj.weap, taperin, WS(proj.flags)))
+                    else if(WF(WK(proj.flags), proj.weap, taperin, WS(proj.flags)) > 0 && distance > WF(WK(proj.flags), proj.weap, taperin, WS(proj.flags)))
                     {
                         if(type%2 || !proj.stuck)
                         {
@@ -1273,7 +1273,7 @@ namespace projs
                         break;
                     }
                 }
-                if(distance < WF(WK(proj.flags), proj.weap, taperin, WS(proj.flags)))
+                if(WF(WK(proj.flags), proj.weap, taperin, WS(proj.flags)) > 0 && distance < WF(WK(proj.flags), proj.weap, taperin, WS(proj.flags)))
                 {
                     proj.lifesize = clamp(distance/WF(WK(proj.flags), proj.weap, taperin, WS(proj.flags)), WF(WK(proj.flags), proj.weap, tapermin, WS(proj.flags)), WF(WK(proj.flags), proj.weap, tapermax, WS(proj.flags)));
                     break;

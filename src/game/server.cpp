@@ -4121,7 +4121,7 @@ namespace server
             else if(isghost(m, v)) nodamage++;
         }
 
-        if(isweap(weap) && WF(WK(flags), weap, residualundo, WS(flags)))
+        if(isweap(weap) && WF(WK(flags), weap, residualundo, WS(flags)) != 0)
         {
             if(WF(WK(flags), weap, residualundo, WS(flags))&WR(BURN) && m->burning(gamemillis, G(burntime)))
             {
@@ -4256,7 +4256,7 @@ namespace server
             if(m_team(gamemode, mutators) && v->team == m->team)
             {
                 v->spree = 0;
-                if(isweap(weap) && (v == m || WF(WK(flags), weap, damagepenalty, WS(flags))))
+                if(isweap(weap) && (v == m || WF(WK(flags), weap, damagepenalty, WS(flags)) != 0))
                 {
                     if(!m_dm_oldschool(gamemode, mutators)) pointvalue *= G(teamkillpenalty);
                     if(v != m) isteamkill = true;
@@ -4479,7 +4479,7 @@ namespace server
         else return 0;
 
         if(radial > 0) skew *= clamp(1.f-dist/size, 1e-6f, 1.f);
-        else if(WF(WK(flags), weap, taper, WS(flags)))
+        else if(WF(WK(flags), weap, taper, WS(flags)) != 0)
             skew *= clamp(dist, WF(WK(flags), weap, tapermin, WS(flags)), WF(WK(flags), weap, tapermax, WS(flags)));
 
         if(!m_insta(gamemode, mutators))
