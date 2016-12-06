@@ -1616,7 +1616,7 @@ namespace server
                     nextteambalance = gamemillis+G(teambalancedelay);
                     ancmsgft(-1, S_V_BALWARN, CON_EVENT, "\fy\fs\fzoyWARNING:\fS \fs\fcteams\fS will be \fs\fcbalanced\fS in \fs\fc%d\fS %s", secs, secs != 1 ? "seconds" : "second");
                 }
-                else if (init)
+                else if(init)
                 {
                     vector <clientinfo *> pool;
                     loopvj(clients)
@@ -1644,7 +1644,7 @@ namespace server
                                 case 6: case 12: score = cp->combinedkdratio(); break;
                                 case 0: default: break;
                             }
-                            if (score > bestscore)
+                            if(score > bestscore)
                             {
                                 best = cp;
                                 bestscore = score;
@@ -1661,7 +1661,7 @@ namespace server
                         }
                     }
                 }
-                else if (canbalancenow())
+                else if(canbalancenow())
                 {
                     int moved = 0;
                     loopi(nt) for(int team = i+T_FIRST, iters = tc[i].length(); iters > 0 && tc[i].length() > mid; iters--)
