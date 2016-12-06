@@ -1648,7 +1648,7 @@ namespace server
                             {
                                 best = cp;
                                 bestscore = score;
-                                bestindex = 0;
+                                bestindex = j;
                             }
                         }
                         pool.remove(bestindex);
