@@ -806,7 +806,7 @@ struct clientstate
 
     float combinedkdratio()
     {
-        return ((totalfrags / max(totaldeaths, 1)) + (frags / max(deaths, 1))) / 2;
+        return ((totalfrags / max(totaldeaths, 1)) + (frags / max(deaths, 1))) / 2.0f;
     }
 
     bool canrandweap(int weap)
