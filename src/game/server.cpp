@@ -1616,7 +1616,52 @@ namespace server
                     nextteambalance = gamemillis+G(teambalancedelay);
                     ancmsgft(-1, S_V_BALWARN, CON_EVENT, "\fy\fs\fzoyWARNING:\fS \fs\fcteams\fS will be \fs\fcbalanced\fS in \fs\fc%d\fS %s", secs, secs != 1 ? "seconds" : "second");
                 }
-                else if(init || canbalancenow())
+                else if(init)
+                {
+                    vector <clientinfo *> pool;
+                    loopvj(clients)
+                    {
+                        clientinfo *cp = clients[j];
+                        if(!cp->team || cp->state == CS_SPECTATOR || cp->actortype > A_PLAYER) continue;
+                        pool.add(cp);
+                    }
+                    while(pool.length())
+                    {
+                        int bestindex = 0;
+                        clientinfo *best = pool[bestindex];
+                        int bestscore = 0;
+                        loopvj(pool)
+                        {
+                            clientinfo *cp = pool[j];
+                            int score = 0;
+                            switch(G(teambalancestyle))
+                            {
+                                case 1: case 7: score = cp->timeplayed; break;
+                                case 2: case 8: score = cp->totalpoints; break;
+                                case 3: case 9: score = cp->totalfrags; break;
+                                case 4: case 10: score = cp->scoretime(); break;
+                                case 5: case 11: score = cp->kdratio(); break;
+                                case 6: case 12: score = cp->combinedkdratio(); break;
+                                case 0: default: break;
+                            }
+                            if(score > bestscore)
+                            {
+                                best = cp;
+                                bestscore = score;
+                                bestindex = j;
+                            }
+                        }
+                        pool.remove(bestindex);
+                        best->swapteam = T_NEUTRAL;
+                        int t = chooseteam(best, -1, true);
+                        if(t != best->team)
+                        {
+                            setteam(best, t, (m_balreset(gamemode, mutators) ? TT_RESET : 0)|TT_INFOSM, false);
+                            best->lastdeath = 0;
+                        }
+                    }
+                }
+                else if(canbalancenow())
                 {
                     int moved = 0;
                     loopi(nt) for(int team = i+T_FIRST, iters = tc[i].length(); iters > 0 && tc[i].length() > mid; iters--)
@@ -3033,7 +3078,16 @@ namespace server
                 }
                 if(worst)
                 {
-                    team = worst->team;
+                    vector <int> possibleteams;
+                    loopi(numteams(gamemode, mutators)) if(allowteam(ci, teamchecks[i].team, T_FIRST, false))
+                    {
+                        teamcheck &ts = teamchecks[i];
+                        if(ts.score == worst->score && ts.clients == worst->clients)
+                        {
+                            possibleteams.add(ts.team);
+                        }
+                    }
+                    team = possibleteams[rnd(possibleteams.length())];
                     break;
                 }
                 team = -1;
