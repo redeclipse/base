@@ -1629,11 +1629,11 @@ namespace server
                     {
                         int bestindex = 0;
                         clientinfo *best = pool[bestindex];
-                        int bestscore = 0;
+                        float bestscore = 0;
                         loopvj(pool)
                         {
                             clientinfo *cp = pool[j];
-                            int score = 0;
+                            float score = 0.0f;
                             switch(G(teambalancestyle))
                             {
                                 case 1: case 7: score = cp->timeplayed; break;
