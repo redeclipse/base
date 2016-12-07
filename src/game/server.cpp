@@ -1586,11 +1586,9 @@ namespace server
         return result;
     }
 
-    int balancecmp(clientinfo *a, clientinfo *b)
+    bool balancecmp(clientinfo *a, clientinfo *b)
     {
-        if(a->balancescore() < b->balancescore()) return -1;
-        if(a->balancescore() > b->balancescore()) return 1;
-        return 0;
+        return (a->balancescore() > b->balancescore());
     }
 
     void doteambalance(bool init)
