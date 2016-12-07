@@ -1633,17 +1633,7 @@ namespace server
                         loopvj(pool)
                         {
                             clientinfo *cp = pool[j];
-                            float score = 0.0f;
-                            switch(G(teambalancestyle))
-                            {
-                                case 1: case 7: score = cp->timeplayed; break;
-                                case 2: case 8: score = cp->totalpoints; break;
-                                case 3: case 9: score = cp->totalfrags; break;
-                                case 4: case 10: score = cp->scoretime(); break;
-                                case 5: case 11: score = cp->kdratio(); break;
-                                case 6: case 12: score = cp->combinedkdratio(); break;
-                                case 0: default: break;
-                            }
+                            float score = cp->balancescore();
                             if(score > bestscore)
                             {
                                 best = cp;
@@ -1671,21 +1661,17 @@ namespace server
                         {
                             clientinfo *cp = tc[i][j];
                             if(m_swapteam(gamemode, mutators) && cp->swapteam && cp->swapteam == team) { id = j; break; }
-                            switch(G(teambalancestyle))
+                            if(G(teambalancestyle) == 0)
                             {
-                                case 1: if(id < 0 || tc[i][id]->timeplayed > cp->timeplayed) id = j; break;
-                                case 2: if(id < 0 || tc[i][id]->totalpoints > cp->totalpoints) id = j; break;
-                                case 3: if(id < 0 || tc[i][id]->totalfrags > cp->totalfrags) id = j; break;
-                                case 4: if(id < 0 || tc[i][id]->scoretime(false) > cp->scoretime(false)) id = j; break;
-                                case 5: if(id < 0 || tc[i][id]->kdratio() > cp->kdratio()) id = j; break;
-                                case 6: if(id < 0 || tc[i][id]->combinedkdratio() > cp->combinedkdratio()) id = j; break;
-                                case 7: if(id < 0 || tc[i][id]->timeplayed < cp->timeplayed) id = j; break;
-                                case 8: if(id < 0 || tc[i][id]->totalpoints < cp->totalpoints) id = j; break;
-                                case 9: if(id < 0 || tc[i][id]->totalfrags < cp->totalfrags) id = j; break;
-                                case 10: if(id < 0 || tc[i][id]->scoretime(false) < cp->scoretime(false)) id = j; break;
-                                case 11: if(id < 0 || tc[i][id]->kdratio() < cp->kdratio()) id = j; break;
-                                case 12: if(id < 0 || tc[i][id]->combinedkdratio() < cp->combinedkdratio()) id = j; break;
-                                case 0: default: if(id < 0) id = j; break;
+                                if(id < 0) id = j;
+                            }
+                            else if(G(teambalancehighest))
+                            {
+                                if(id < 0 || tc[i][id]->balancescore() < cp->balancescore()) id = j;
+                            }
+                            else
+                            {
+                                if(id < 0 || tc[i][id]->balancescore() > cp->balancescore()) id = j;
                             }
                         }
                         if(id >= 0)
@@ -2913,31 +2899,13 @@ namespace server
         {
             int worst = -1;
             float csk = 0, wsk = 0;
-            switch(G(teambalancestyle))
-            {
-                case 1: case 7: csk = ci->timeplayed; break;
-                case 2: case 8: csk = ci->totalpoints; break;
-                case 3: case 9: csk = ci->totalfrags; break;
-                case 4: case 10: csk = ci->scoretime(); break;
-                case 5: case 11: csk = ci->kdratio(); break;
-                case 6: case 12: csk = ci->combinedkdratio(); break;
-                case 0: default: break;
-            }
+            csk = ci->balancescore();
             loopv(clients) if(clients[i] && clients[i] != ci)
             {
                 clientinfo *cp = clients[i];
                 if(cp->actortype != A_PLAYER || (newteam && cp->team != newteam)) continue;
                 float psk = 0;
-                switch(G(teambalancestyle))
-                {
-                    case 1: case 7: psk = cp->timeplayed; break;
-                    case 2: case 8: psk = cp->totalpoints; break;
-                    case 3: case 9: psk = cp->totalfrags; break;
-                    case 4: case 10: psk = cp->scoretime(); break;
-                    case 5: case 11: psk = cp->kdratio(); break;
-                    case 6: case 12: psk = ci->combinedkdratio(); break;
-                    case 0: default: break;
-                }
+                psk = cp->balancescore();
                 if(psk > csk || psk > wsk) continue;
                 worst = i;
                 wsk = psk;
@@ -3041,16 +3009,7 @@ namespace server
                     return team; // swapteam
                 if(ci->actortype > A_PLAYER || (ci->actortype == A_PLAYER && cp->actortype == A_PLAYER))
                 { // remember: ai just balance teams
-                    switch(G(teambalancestyle))
-                    {
-                        case 1: case 7: ts.score += cp->timeplayed; break;
-                        case 2: case 8: ts.score += cp->totalpoints; break;
-                        case 3: case 9: ts.score += cp->totalfrags; break;
-                        case 4: case 10: ts.score += cp->scoretime(); break;
-                        case 5: case 11: ts.score += cp->kdratio(); break;
-                        case 6: case 12: ts.score += cp->combinedkdratio(); break;
-                        case 0: default: ts.score += 1; break;
-                    }
+                    ts.score += cp->balancescore(1);
                     ts.clients++;
                 }
             }
