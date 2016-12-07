@@ -1586,6 +1586,13 @@ namespace server
         return result;
     }
 
+    int balancecmp(clientinfo *a, clientinfo *b)
+    {
+        if(a->balancescore() < b->balancescore()) return -1;
+        if(a->balancescore() > b->balancescore()) return 1;
+        return 0;
+    }
+
     void doteambalance(bool init)
     {
         vector<clientinfo *> tc[T_TOTAL];
@@ -1625,29 +1632,16 @@ namespace server
                         if(!cp->team || cp->state == CS_SPECTATOR || cp->actortype > A_PLAYER) continue;
                         pool.add(cp);
                     }
-                    while(pool.length())
+                    pool.sort(balancecmp);
+                    loopvj(pool)
                     {
-                        int bestindex = 0;
-                        clientinfo *best = pool[bestindex];
-                        float bestscore = 0;
-                        loopvj(pool)
+                        clientinfo *cp = pool[j];
+                        cp->swapteam = T_NEUTRAL;
+                        int t = chooseteam(cp, -1, true);
+                        if(t != cp->team)
                         {
-                            clientinfo *cp = pool[j];
-                            float score = cp->balancescore();
-                            if(score > bestscore)
-                            {
-                                best = cp;
-                                bestscore = score;
-                                bestindex = j;
-                            }
-                        }
-                        pool.remove(bestindex);
-                        best->swapteam = T_NEUTRAL;
-                        int t = chooseteam(best, -1, true);
-                        if(t != best->team)
-                        {
-                            setteam(best, t, (m_balreset(gamemode, mutators) ? TT_RESET : 0)|TT_INFOSM, false);
-                            best->lastdeath = 0;
+                            setteam(cp, t, (m_balreset(gamemode, mutators) ? TT_RESET : 0)|TT_INFOSM, false);
+                            cp->lastdeath = 0;
                         }
                     }
                 }
