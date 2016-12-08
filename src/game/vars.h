@@ -349,10 +349,10 @@ GVAR(IDF_GAMEMOD, defendregenextra, 0, 2, VAR_MAX); // add this to regen when bu
 
 GVAR(IDF_GAMEMOD, bomberlimit, 0, 0, VAR_MAX); // finish when score is this or more (non-hold)
 GVAR(IDF_GAMEMOD, bomberholdlimit, 0, 0, VAR_MAX); // finish when score is this or more (hold)
-GVAR(IDF_GAMEMOD, bomberbasketonly, 0, 1, 1); // prohibit touchdowns in basket game
+GVAR(IDF_GAMEMOD, bomberbasketonly, 0, 0, 1); // prohibit touchdowns in basket game
 GVAR(IDF_GAMEMOD, bomberattackreset, 0, 1, 1); // defenders reset rather than carry the ball
 GVAR(IDF_GAMEMOD, bomberattackwinner, 0, 1, 1); // declare the winner when the final team exceeds best score
-GFVAR(IDF_GAMEMOD, bomberbasketmindist, 0, 128, FVAR_MAX); // prohibit baskets less than this far away
+GFVAR(IDF_GAMEMOD, bomberbasketmindist, 0, 0, FVAR_MAX); // prohibit baskets less than this far away
 GVAR(IDF_GAMEMOD, bomberwait, 0, 1000, VAR_MAX); // delay before bomb spawns
 GVAR(IDF_GAMEMOD, bomberresetdelay, 0, 15000, VAR_MAX);
 GVAR(IDF_GAMEMOD, bomberpickupdelay, 500, 7500, VAR_MAX);
@@ -362,6 +362,8 @@ GFVAR(IDF_GAMEMOD, bomberdropheight, 0, 8, FVAR_MAX);
 GVAR(IDF_GAMEMOD, bomberpoints, 0, 5, VAR_MAX); // points added to score
 GVAR(IDF_GAMEMOD, bomberpenalty, 0, 5, VAR_MAX); // points taken from score
 GVAR(IDF_GAMEMOD, bomberpickuppoints, 0, 3, VAR_MAX); // points added to score
+GVAR(IDF_GAMEMOD, bomberthrowinpoints, 0, 3, VAR_MAX); // team points for throw in
+GVAR(IDF_GAMEMOD, bombertouchdownpoints, 0, 1, VAR_MAX); // team points for touch down
 GVAR(IDF_GAMEMOD, bomberholdtime, 0, 15000, VAR_MAX);
 GVAR(IDF_GAMEMOD, bomberholdpoints, 0, 1, VAR_MAX); // points added to score
 GVAR(IDF_GAMEMOD, bomberholdpenalty, 0, 10, VAR_MAX); // penalty for holding too long

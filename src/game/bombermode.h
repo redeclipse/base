@@ -84,7 +84,8 @@ struct bomberservmode : bomberstate, servmode
         if(g.team != ci->team)
         {
             givepoints(ci, G(bomberpoints), m_points(gamemode, mutators), false);
-            total = addscore(ci->team, 1);
+            int points = flags[relay].droptime ? G(bomberthrowinpoints) : G(bombertouchdownpoints);
+            total = addscore(ci->team, points);
         }
         else
         {
