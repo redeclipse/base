@@ -1160,7 +1160,7 @@ static inline void compileval(vector<uint> &code, int wordtype, char *word, int 
             code.add(CODE_BLOCK);
             code.add(CODE_OFFSET|((start+2)<<8));
             const char *p = word;
-            compilestatements(code, p, VAL_ANY);
+            if(p) compilestatements(code, p, VAL_ANY);
             code.add(CODE_EXIT|RET_STR);
             code[start] |= uint(code.length() - (start + 1))<<8;
             break;
