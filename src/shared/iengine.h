@@ -382,8 +382,8 @@ extern void save_world(const char *mname, bool nodata = false, bool forcesave = 
 
 // physics
 extern bool ellipsecollide(physent *d, const vec &dir, const vec &o, const vec &center, float yaw, float xr, float yr, float hi, float lo);
-extern bool collide(physent *d, const vec &dir = vec(0, 0, 0), float cutoff = 0, bool playercol = true);
-extern bool plcollide(physent *d, const vec &dir = vec(0, 0, 0));
+extern bool collide(physent *d, const vec &dir = vec(0, 0, 0), float cutoff = 0, bool playercol = true, bool insideplayercol = false);
+extern bool plcollide(physent *d, const vec &dir = vec(0, 0, 0), bool insideplayercol = false);
 extern bool plcollide(physent *d, const vec &dir, physent *o);
 extern float pltracecollide(physent *d, const vec &o, const vec &ray, float maxdist);
 extern float tracecollide(physent *d, const vec &o, const vec &ray, float maxdist, int mode = RAY_CLIPMAT|RAY_ALPHAPOLY, bool playercol = true);
@@ -666,7 +666,7 @@ extern ENetHost *serverhost;
 
 // world
 
-extern bool collideinside;
+extern int collideinside;
 extern physent *hitplayer;
 extern int hitflags;
 extern vec collidewall, hitsurface;

@@ -1160,7 +1160,7 @@ static inline void compileval(vector<uint> &code, int wordtype, char *word, int 
             code.add(CODE_BLOCK);
             code.add(CODE_OFFSET|((start+2)<<8));
             const char *p = word;
-            compilestatements(code, p, VAL_ANY);
+            if(p) compilestatements(code, p, VAL_ANY);
             code.add(CODE_EXIT|RET_STR);
             code[start] |= uint(code.length() - (start + 1))<<8;
             break;
@@ -1278,7 +1278,16 @@ static bool compileblockstr(vector<uint> &code, const char *str, const char *end
                 break;
             }
             case '/':
-                if(str[1] == '/') str += strcspn(str, "\n\0");
+                if(str[1] == '/')
+                {
+                    size_t comment = strcspn(str, "\n\0");
+                    if (iscubepunct(str[2]))
+                    {
+                        memcpy(&buf[len], str, comment);
+                        len += comment;
+                    }
+                    str += comment;
+                }
                 else buf[len++] = *str++;
                 break;
             case '@':

@@ -34,7 +34,7 @@ namespace hud
     VAR(IDF_PERSIST, scoresinfo, 0, 1, 1);
     VAR(IDF_PERSIST, scorehandles, 0, 1, 1);
 
-    VAR(IDF_PERSIST, scorepj, 0, 0, 1);
+    VAR(IDF_PERSIST, scorepj, 0, 1, 1);
     VAR(IDF_PERSIST, scoreping, 0, 1, 1);
     VAR(IDF_PERSIST, scoretimer, 0, 1, 2);
     VAR(IDF_PERSIST, scorepoints, 0, 1, 2);
@@ -43,7 +43,7 @@ namespace hud
     VAR(IDF_PERSIST, scoretotalpoints, 0, 0, 1);
     VAR(IDF_PERSIST, scoretotalfrags, 0, 0, 1);
     VAR(IDF_PERSIST, scoretotaldeaths, 0, 0, 1);
-    VAR(IDF_PERSIST, scoreratios, 0, 0, 2);
+    VAR(IDF_PERSIST, scoreratios, 0, 4, 4); // 0 = off, 1 = dm only, 2 = always, 3 = total dm only, 4 = total always
     VAR(IDF_PERSIST, scoreclientnum, 0, 1, 1);
     VAR(IDF_PERSIST, scoretimestyle, 0, 3, 4);
     VAR(IDF_PERSIST, scoreracestyle, 0, 1, 4);
@@ -52,7 +52,7 @@ namespace hud
     VAR(IDF_PERSIST, scoreconnecting, 0, 0, 1);
     VAR(IDF_PERSIST, scorehostinfo, 0, 0, 1);
     VAR(IDF_PERSIST, scoreipinfo, 0, 0, 1);
-    VAR(IDF_PERSIST, scoreverinfo, 0, 0, 1);
+    VAR(IDF_PERSIST, scoreverinfo, 0, 1, 1);
     VAR(IDF_PERSIST, scoreicons, 0, 1, 1);
     VAR(IDF_PERSIST|IDF_HEX, scorehilight, 0, 0xFFFFFF, 0xFFFFFF);
     VAR(IDF_PERSIST, scoredarken, 0, 1, 1);
@@ -632,7 +632,7 @@ namespace hud
                                     });
                                 }
 
-                                if(scoreratios >= (!m_dm(game::gamemode) ? 2 : 1))
+                                if(scoreratios && (m_dm(game::gamemode) || scoreratios%2 == 0))
                                 {
                                     uilist(g, {
                                         uilist(g, {
@@ -640,8 +640,9 @@ namespace hud
                                         });
                                         loopscoregroup(uilist(g, {
                                             ownerbg;
-                                            float kdratio = o->kdratio(false);
-                                            if(scoretotalfrags || scoretotaldeaths)
+                                            bool hastotal = scoretotalfrags || scoretotaldeaths;
+                                            float kdratio = o->kdratio(!hastotal && scoreratios >= 3);
+                                            if(hastotal)
                                             {
                                                 float tkdratio = o->kdratio(true);
                                                 uicenter(g, uipad(g, 0.5f, g.textf("%.1f\fs\fa:\fS%.1f (%.1f\fs\fa:\fS%.1f)", ownerfgc, NULL, 0, -1, false, NULL, 0xFFFFFF, kdratio >= 0 ? kdratio : 1.f, kdratio >= 0 ? 1.f : -kdratio, tkdratio >= 0 ? tkdratio : 1.f, tkdratio >= 0 ? 1.f : -tkdratio)));

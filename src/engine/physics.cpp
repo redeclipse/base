@@ -490,7 +490,7 @@ float rayfloor(const vec &o, vec &floor, int mode, float radius)
 /////////////////////////  entity collision  ///////////////////////////////////////////////
 
 // info about collisions
-bool collideinside; // whether an internal collision happened
+int collideinside; // whether an internal collision happened
 physent *hitplayer; // whether the collection hit a player
 int hitflags = HITFLAG_NONE;
 vec collidewall; // just the normal vectors.
@@ -545,7 +545,7 @@ bool ellipseboxcollide(physent *d, const vec &dir, const vec &o, const vec &cent
             collidewall = vec(0, 0, 1);
             return true;
         }
-        collideinside = true;
+        collideinside++;
     }
     return false;
 }
@@ -584,7 +584,7 @@ bool ellipsecollide(physent *d, const vec &dir, const vec &o, const vec &center,
             collidewall = vec(0, 0, 1);
             return true;
         }
-        collideinside = true;
+        collideinside++;
     }
     return false;
 }
@@ -675,7 +675,7 @@ static inline bool plcollide(physent *d, const vec &dir, physent *o)
         vec wn = vec(cp).sub(obvol.center());
         collidewall = obvol.contactface(wn, dir.iszero() ? vec(wn).neg() : dir);
         if(!collidewall.iszero()) return true;
-        collideinside = true;
+        collideinside++;
     }
     return false;
 }
@@ -696,9 +696,11 @@ bool plcollide(physent *d, const vec &dir, physent *o)
     }
 }
 
-bool plcollide(physent *d, const vec &dir)  // collide with player or monster
+bool plcollide(physent *d, const vec &dir, bool insideplayercol)  // collide with player or monster
 {
     if(d->type==ENT_CAMERA || d->state!=CS_ALIVE) return false;
+    int lastinside = collideinside;
+    physent *insideplayer = NULL;
     loopdynentcache(x, y, d->o, d->radius)
     {
         const vector<physent *> &dynents = checkdynentcache(x, y);
@@ -711,7 +713,17 @@ bool plcollide(physent *d, const vec &dir)  // collide with player or monster
                 hitplayer = o;
                 return true;
             }
+            if(collideinside > lastinside)
+            {   
+                lastinside = collideinside;
+                insideplayer = o;
+            }
         }
+    }
+    if(insideplayer && insideplayercol)
+    {
+        hitplayer = insideplayer;
+        return true;
     }
     return false;
 }
@@ -738,7 +750,7 @@ static inline bool mmcollide(physent *d, const vec &dir, const extentity &e, con
         vec wn = vec(cp).sub(mdlvol.center());
         collidewall = mdlvol.contactface(wn, dir.iszero() ? vec(wn).neg() : dir);
         if(!collidewall.iszero()) return true;
-        collideinside = true;
+        collideinside++;
     }
     return false;
 }
@@ -789,7 +801,7 @@ static bool fuzzycollidebox(physent *d, const vec &dir, float cutoff, const vec 
     }
     if(collidewall.iszero())
     {
-        collideinside = true;
+        collideinside++;
         return false;
     }
     return true;
@@ -847,7 +859,7 @@ static bool fuzzycollideellipse(physent *d, const vec &dir, float cutoff, const 
     }
     if(collidewall.iszero())
     {
-        collideinside = true;
+        collideinside++;
         return false;
     }
     return true;
@@ -936,7 +948,7 @@ static bool fuzzycollidesolid(physent *d, const vec &dir, float cutoff, const cu
 
     if(collidewall.iszero())
     {
-        collideinside = true;
+        collideinside++;
         return false;
     }
     return true;
@@ -1014,7 +1026,7 @@ static bool fuzzycollideplanes(physent *d, const vec &dir, float cutoff, const c
     if(bestplane >= 0) collidewall = p.p[bestplane];
     else if(collidewall.iszero())
     {
-        collideinside = true;
+        collideinside++;
         return false;
     }
     return true;
@@ -1044,7 +1056,7 @@ static bool cubecollidesolid(physent *d, const vec &dir, float cutoff, const cub
 
     if(collidewall.iszero())
     {
-        collideinside = true;
+        collideinside++;
         return false;
     }
     return true;
@@ -1097,7 +1109,7 @@ static bool cubecollideplanes(physent *d, const vec &dir, float cutoff, const cu
     if(bestplane >= 0) collidewall = p.p[bestplane];
     else if(collidewall.iszero())
     {
-        collideinside = true;
+        collideinside++;
         return false;
     }
     return true;
@@ -1173,16 +1185,16 @@ static inline bool octacollide(physent *d, const vec &dir, float cutoff, const i
 }
 
 // all collision happens here
-bool collide(physent *d, const vec &dir, float cutoff, bool playercol)
+bool collide(physent *d, const vec &dir, float cutoff, bool playercol, bool insideplayercol)
 {
-    collideinside = false;
+    collideinside = 0;
     hitplayer = NULL;
     hitflags = HITFLAG_NONE;
     collidewall = vec(0, 0, 0);
     ivec bo(int(d->o.x-d->radius), int(d->o.y-d->radius), int(d->o.z-d->height)),
          bs(int(d->o.x+d->radius), int(d->o.y+d->radius), int(d->o.z+d->aboveeye));
     bs.add(1);  // guard space for rounding errors
-    return octacollide(d, dir, cutoff, bo, bs) || (playercol && plcollide(d, dir));
+    return octacollide(d, dir, cutoff, bo, bs) || (playercol && plcollide(d, dir, insideplayercol));
 }
 
 float pltracecollide(physent *d, const vec &from, const vec &ray, float maxdist)

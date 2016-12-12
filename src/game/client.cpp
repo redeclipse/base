@@ -369,7 +369,7 @@ namespace client
     const char *defaultserversort()
     {
         static string vals;
-        formatstring(vals, "%d %d", SINFO_NUMPLRS, SINFO_PING);
+        formatstring(vals, "%d %d %d", SINFO_NUMPLRS, SINFO_PRIO, SINFO_PING);
         return vals;
     }
 
@@ -1306,6 +1306,7 @@ namespace client
             default:
                 emptymap(0, true, name);
                 needsmap = totalmillis;
+                if(crc > 0) addmsg(N_GETMAP, "r");
                 break;
         }
         else sendcrcinfo = true;
@@ -1517,14 +1518,15 @@ namespace client
         {
             outbuf = NULL;
             inlen = outlen = 0;
+            needclipboard = -1;
         }
+        else needclipboard = 0;
         packetbuf p(16 + outlen, ENET_PACKET_FLAG_RELIABLE);
         putint(p, N_CLIPBOARD);
         putint(p, inlen);
         putint(p, outlen);
         if(outlen > 0) p.put(outbuf, outlen);
         sendclientpacket(p.finalize(), 1);
-        needclipboard = -1;
     }
 
     void edittrigger(const selinfo &sel, int op, int arg1, int arg2, int arg3, const VSlot *vs)
@@ -1538,7 +1540,7 @@ namespace client
             {
                 switch(op)
                 {
-                    case EDIT_COPY: needclipboard = 0; break;
+                    case EDIT_COPY: needclipboard = arg1; break; // 0 - has clipboard; 1 - has clipboard with unknown geometry
                     case EDIT_PASTE:
                         if(needclipboard > 0)
                         {
@@ -3241,19 +3243,9 @@ namespace client
     {
         int ac = 0, bc = 0;
         if(a->address.host == ENET_HOST_ANY || a->ping >= serverinfo::WAITING || a->attr.empty()) ac = -1;
-        else
-        {
-            ac = a->attr[0] == VERSION_GAME ? 0x7FFF : clamp(a->attr[0], 0, 0x7FFF-1);
-            ac <<= 16;
-            ac |= clamp(1 + a->priority, 1, 0xFFFF);
-        }
+        else ac = a->attr[0] == VERSION_GAME ? 0x7FFF : clamp(a->attr[0], 0, 0x7FFF-1);
         if(b->address.host == ENET_HOST_ANY || b->ping >= serverinfo::WAITING || b->attr.empty()) bc = -1;
-        else
-        {
-            bc = b->attr[0] == VERSION_GAME ? 0x7FFF : clamp(b->attr[0], 0, 0x7FFF-1);
-            bc <<= 16;
-            bc |= clamp(1 + b->priority, 1, 0xFFFF);
-        }
+        else bc = b->attr[0] == VERSION_GAME ? 0x7FFF : clamp(b->attr[0], 0, 0x7FFF-1);
         if(ac > bc) return -1;
         if(ac < bc) return 1;
 
@@ -3349,6 +3341,11 @@ namespace client
                     retsw(aa->ping, ab->ping, true);
                     break;
                 }
+                case SINFO_PRIO:
+                {
+                    retsw(aa->priority, ab->priority, false);
+                    break;
+                }
                 default: break;
             }
         }
@@ -3398,6 +3395,7 @@ namespace client
                         case 8: result(si->authhandle); break;
                         case 9: result(si->flags); break;
                         case 10: result(si->branch); break;
+                        case 11: intret(si->priority); break;
                     }
                     break;
                 case 1:

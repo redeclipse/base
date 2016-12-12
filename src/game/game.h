@@ -207,7 +207,7 @@ enum {
 #define MM_OPENSERV (MM_AUTOAPPROVE|(1<<MM_OPEN))
 
 enum { MM_OPEN = 0, MM_VETO, MM_LOCKED, MM_PRIVATE, MM_PASSWORD };
-enum { SINFO_NONE = 0, SINFO_STATUS, SINFO_NAME, SINFO_PORT, SINFO_QPORT, SINFO_DESC, SINFO_MODE, SINFO_MUTS, SINFO_MAP, SINFO_TIME, SINFO_NUMPLRS, SINFO_MAXPLRS, SINFO_PING, SINFO_MAX };
+enum { SINFO_NONE = 0, SINFO_STATUS, SINFO_NAME, SINFO_PORT, SINFO_QPORT, SINFO_DESC, SINFO_MODE, SINFO_MUTS, SINFO_MAP, SINFO_TIME, SINFO_NUMPLRS, SINFO_MAXPLRS, SINFO_PING, SINFO_PRIO, SINFO_MAX };
 enum { SSTAT_OPEN = 0, SSTAT_LOCKED, SSTAT_PRIVATE, SSTAT_FULL, SSTAT_UNKNOWN, SSTAT_MAX };
 
 enum {
@@ -715,7 +715,7 @@ struct clientstate
 
     bool canshoot(int weap, int flags, int sweap, int millis, int skip = 0)
     {
-        if(!(AA(actortype, abilities)&(1<<(flags&HIT_ALT ? A_A_SECONDARY : A_A_PRIMARY)))) return false;
+        if(!(AA(actortype, abilities)&(1<<(WS(flags) ? A_A_SECONDARY : A_A_PRIMARY)))) return false;
         if(weap == weapselect || weap == W_MELEE)
             if(hasweap(weap, sweap) && getammo(weap, millis) >= (W2(weap, cooktime, WS(flags)) ? 1 : W2(weap, ammosub, WS(flags))) && weapwaited(weap, millis, skip))
                 return true;
@@ -806,7 +806,7 @@ struct clientstate
 
     float combinedkdratio()
     {
-        return kdratio() + kdratio(false);
+        return ((totalfrags / float(max(totaldeaths, 1))) + (frags / float(max(deaths, 1)))) / ((frags || deaths) ? 2.0f : 1.0f);
     }
 
     bool canrandweap(int weap)

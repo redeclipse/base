@@ -272,6 +272,18 @@ namespace weapons
 
     bool doshot(gameent *d, vec &targ, int weap, bool pressed, bool secondary, int force)
     {
+        bool hadcook = W2(weap, cooked, true)&W_C_KEEP && (d->prevstate[weap] == W_S_ZOOM || d->prevstate[weap] == W_S_POWER),
+             zooming = W2(weap, cooked, true)&W_C_ZOOM && (d->weapstate[weap] == W_S_ZOOM || (pressed && secondary) || (hadcook && d->prevstate[weap] == W_S_ZOOM)), wassecond = secondary;
+        if(hadcook || zooming)
+        {
+            if(!pressed)
+            {
+                client::addmsg(N_SPHY, "ri5", d->clientnum, SPHY_COOK, W_S_IDLE, 0, 0);
+                d->setweapstate(weap, W_S_IDLE, 0, lastmillis, 0, true);
+                return false;
+            }
+            else secondary = zooming;
+        }
         int offset = 0, sweap = m_weapon(d->actortype, game::gamemode, game::mutators);
         if(!d->canshoot(weap, secondary ? HIT_ALT : 0, sweap, lastmillis))
         {
@@ -285,18 +297,6 @@ namespace weapons
             else offset = d->weapload[weap];
         }
         float scale = 1;
-        bool hadcook = W2(weap, cooked, true)&W_C_KEEP && (d->prevstate[weap] == W_S_ZOOM || d->prevstate[weap] == W_S_POWER),
-             zooming = W2(weap, cooked, true)&W_C_ZOOM && (d->weapstate[weap] == W_S_ZOOM || (pressed && secondary) || (hadcook && d->prevstate[weap] == W_S_ZOOM)), wassecond = secondary;
-        if(hadcook || zooming)
-        {
-            if(!pressed)
-            {
-                client::addmsg(N_SPHY, "ri5", d->clientnum, SPHY_COOK, W_S_IDLE, 0, 0);
-                d->setweapstate(weap, W_S_IDLE, 0, lastmillis, 0, true);
-                return false;
-            }
-            else secondary = zooming;
-        }
         int sub = W2(weap, ammosub, secondary), cooked = force;
         if(W2(weap, cooktime, secondary) || zooming)
         {

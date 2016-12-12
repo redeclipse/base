@@ -417,7 +417,7 @@ namespace server
             if(!change) lastteam = T_NEUTRAL;
             team = swapteam = T_NEUTRAL;
             clientmap[0] = '\0';
-            if (handle[0])
+            if(handle[0])
             {
                 requestmasterf("reqauthstats \"%s\"\n", handle);
                 flushmasteroutput();
@@ -1616,7 +1616,52 @@ namespace server
                     nextteambalance = gamemillis+G(teambalancedelay);
                     ancmsgft(-1, S_V_BALWARN, CON_EVENT, "\fy\fs\fzoyWARNING:\fS \fs\fcteams\fS will be \fs\fcbalanced\fS in \fs\fc%d\fS %s", secs, secs != 1 ? "seconds" : "second");
                 }
-                else if(init || canbalancenow())
+                else if(init)
+                {
+                    vector <clientinfo *> pool;
+                    loopvj(clients)
+                    {
+                        clientinfo *cp = clients[j];
+                        if(!cp->team || cp->state == CS_SPECTATOR || cp->actortype > A_PLAYER) continue;
+                        pool.add(cp);
+                    }
+                    while(pool.length())
+                    {
+                        int bestindex = 0;
+                        clientinfo *best = pool[bestindex];
+                        float bestscore = 0;
+                        loopvj(pool)
+                        {
+                            clientinfo *cp = pool[j];
+                            float score = 0.0f;
+                            switch(G(teambalancestyle))
+                            {
+                                case 1: case 7: score = cp->timeplayed; break;
+                                case 2: case 8: score = cp->totalpoints; break;
+                                case 3: case 9: score = cp->totalfrags; break;
+                                case 4: case 10: score = cp->scoretime(); break;
+                                case 5: case 11: score = cp->kdratio(); break;
+                                case 6: case 12: score = cp->combinedkdratio(); break;
+                                case 0: default: break;
+                            }
+                            if(score > bestscore)
+                            {
+                                best = cp;
+                                bestscore = score;
+                                bestindex = j;
+                            }
+                        }
+                        pool.remove(bestindex);
+                        best->swapteam = T_NEUTRAL;
+                        int t = chooseteam(best, -1, true);
+                        if(t != best->team)
+                        {
+                            setteam(best, t, (m_balreset(gamemode, mutators) ? TT_RESET : 0)|TT_INFOSM, false);
+                            best->lastdeath = 0;
+                        }
+                    }
+                }
+                else if(canbalancenow())
                 {
                     int moved = 0;
                     loopi(nt) for(int team = i+T_FIRST, iters = tc[i].length(); iters > 0 && tc[i].length() > mid; iters--)
@@ -3033,7 +3078,16 @@ namespace server
                 }
                 if(worst)
                 {
-                    team = worst->team;
+                    vector <int> possibleteams;
+                    loopi(numteams(gamemode, mutators)) if(allowteam(ci, teamchecks[i].team, T_FIRST, false))
+                    {
+                        teamcheck &ts = teamchecks[i];
+                        if(ts.score == worst->score && ts.clients == worst->clients)
+                        {
+                            possibleteams.add(ts.team);
+                        }
+                    }
+                    team = possibleteams[rnd(possibleteams.length())];
                     break;
                 }
                 team = -1;
@@ -3153,7 +3207,7 @@ namespace server
     bool getmap(clientinfo *ci, bool force)
     {
         if(gs_intermission(gamestate)) return false; // pointless
-        if(ci && !numclients(ci->clientnum))
+        if(ci && !numclients(ci->clientnum) && !hasmapdata())
         {
             ci->wantsmap = false;
             sendf(ci->clientnum, 1, "ri", N_FAILMAP);
@@ -3176,7 +3230,7 @@ namespace server
                 srvmsgft(ci->clientnum, CON_EVENT, "\fysending you the map, please wait..");
                 loopi(SENDMAP_MAX) if(mapdata[i]) sendfile(ci->clientnum, 2, mapdata[i], "ri3s", N_SENDMAPFILE, i, smapcrc, smapname);
                 sendwelcome(ci);
-                ci->needclipboard = totalmillis ? totalmillis : 1;
+                ci->needclipboard = 0;
                 return true;
             }
         }
@@ -4121,7 +4175,7 @@ namespace server
             else if(isghost(m, v)) nodamage++;
         }
 
-        if(isweap(weap) && WF(WK(flags), weap, residualundo, WS(flags)))
+        if(isweap(weap) && WF(WK(flags), weap, residualundo, WS(flags)) != 0)
         {
             if(WF(WK(flags), weap, residualundo, WS(flags))&WR(BURN) && m->burning(gamemillis, G(burntime)))
             {
@@ -4256,7 +4310,7 @@ namespace server
             if(m_team(gamemode, mutators) && v->team == m->team)
             {
                 v->spree = 0;
-                if(isweap(weap) && (v == m || WF(WK(flags), weap, damagepenalty, WS(flags))))
+                if(isweap(weap) && (v == m || WF(WK(flags), weap, damagepenalty, WS(flags)) != 0))
                 {
                     if(!m_dm_oldschool(gamemode, mutators)) pointvalue *= G(teamkillpenalty);
                     if(v != m) isteamkill = true;
@@ -4479,7 +4533,7 @@ namespace server
         else return 0;
 
         if(radial > 0) skew *= clamp(1.f-dist/size, 1e-6f, 1.f);
-        else if(WF(WK(flags), weap, taper, WS(flags)))
+        else if(WF(WK(flags), weap, taper, WS(flags)) != 0)
             skew *= clamp(dist, WF(WK(flags), weap, tapermin, WS(flags)), WF(WK(flags), weap, tapermax, WS(flags)));
 
         if(!m_insta(gamemode, mutators))
@@ -5662,10 +5716,11 @@ namespace server
         loopv(clients)
         {
             clientinfo &e = *clients[i];
-            if(e.clientnum != ci->clientnum && e.needclipboard - ci->lastclipboard >= 0)
+            if(e.clientnum != ci->clientnum && e.needclipboard < ci->lastclipboard)
             {
                 if(!flushed) { flushserver(true); flushed = true; }
                 sendpacket(e.clientnum, 1, ci->clipboard);
+                e.needclipboard = ci->lastclipboard;
             }
         }
     }
@@ -5678,7 +5733,7 @@ namespace server
         clients.add(ci);
 
         ci->connected = true;
-        ci->needclipboard = totalmillis ? totalmillis : 1;
+        ci->needclipboard = 0;
         ci->lasttimeplayed = totalmillis ? totalmillis : 1;
         ci->lasttimealive = totalmillis ? totalmillis : 1;
         ci->lasttimeactive = totalmillis ? totalmillis : 1;
@@ -6919,7 +6974,7 @@ namespace server
                         if(G(serverdebug)) srvmsgf(ci->clientnum, "sync error: unable to modify spectator %s - %d [%d, %d] - invalid", colourname(cp), cp->state, cp->lastdeath, gamemillis);
                         break;
                     }
-                    if(sn != sender ? !haspriv(ci, max(m_edit(gamemode) ? G(spawneditlock) : G(spawnlock), G(speclock)), "control other players") : !allowstate(cp, val ? ALST_SPEC : ALST_TRY, m_edit(gamemode) ? G(spawneditlock) : G(spawnlock)))
+                    if(sn != sender ? !haspriv(ci, max(m_edit(gamemode) ? G(spawneditlock) : G(spawnlock), G(speclock)), "control other players") : (!haspriv(ci, max(m_edit(gamemode) ? G(spawneditlock) : G(spawnlock), G(speclock))) && !allowstate(cp, val ? ALST_SPEC : ALST_TRY, m_edit(gamemode) ? G(spawneditlock) : G(spawnlock))))
                     {
                         if(G(serverdebug)) srvmsgf(ci->clientnum, "sync error: unable to modify spectator %s - %d [%d, %d] - restricted", colourname(cp), cp->state, cp->lastdeath, gamemillis);
                         break;
@@ -7191,7 +7246,8 @@ namespace server
                 case N_CLIPBOARD:
                 {
                     int unpacklen = getint(p), packlen = getint(p);
-                    ci->cleanclipboard(false);
+                    ci->cleanclipboard();
+                    ci->lastclipboard = totalmillis ? totalmillis : 1;
                     if(ci->state != CS_EDITING)
                     {
                         if(packlen > 0) p.subbuf(packlen);
@@ -7238,13 +7294,15 @@ namespace server
                         break;
                     }
                     if(p.remaining() < packlen) { disconnect_client(sender, DISC_MSGERR); return; }
-                    packetbuf q(32 + packlen, ENET_PACKET_FLAG_RELIABLE);
+                    uchar s[MAXTRANS];
+                    ucharbuf q(s, MAXTRANS);
                     putint(q, type);
                     putint(q, ci->clientnum);
                     putint(q, unpacklen);
                     putint(q, packlen);
                     if(packlen > 0) p.get(q.subbuf(packlen).buf, packlen);
-                    sendpacket(-1, 1, q.finalize(), ci->clientnum);
+                    ci->messages.put(q.buf, q.length());
+                    curmsg += q.length();
                     break;
                 }
 

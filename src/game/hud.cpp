@@ -219,7 +219,7 @@ namespace hud
     VAR(IDF_PERSIST, crosshairdistancex, VAR_MIN, 160, VAR_MAX); // offset from the crosshair
     VAR(IDF_PERSIST, crosshairdistancey, VAR_MIN, 80, VAR_MAX); // offset from the crosshair
     VAR(IDF_PERSIST, crosshairweapons, 0, 0, 3); // 0 = off, &1 = crosshair-specific weapons, &2 = also appy colour
-    FVAR(IDF_PERSIST, crosshairsize, 0, 0.06f, 1000);
+    FVAR(IDF_PERSIST, crosshairsize, 0, 0.03f, 1000);
     VAR(IDF_PERSIST, crosshairhitspeed, 0, 500, VAR_MAX);
     FVAR(IDF_PERSIST, crosshairblend, 0, 0.75f, 1);
     FVAR(IDF_PERSIST, crosshairaccamt, 0, 0.75f, 1);
@@ -392,8 +392,8 @@ namespace hud
 
     VAR(IDF_PERSIST, showclips, 0, 2, 2);
     VAR(IDF_PERSIST, clipanims, 0, 2, 2);
-    FVAR(IDF_PERSIST, clipsize, 0, 0.035f, 1000);
-    FVAR(IDF_PERSIST, clipoffset, 0, 0.04f, 1000);
+    FVAR(IDF_PERSIST, clipsize, 0, 0.03f, 1000);
+    FVAR(IDF_PERSIST, clipoffset, 0, 0.035f, 1000);
     FVAR(IDF_PERSIST, clipminscale, 0, 0.3f, 1000);
     FVAR(IDF_PERSIST, clipmaxscale, 0, 1, 1000);
     FVAR(IDF_PERSIST, clipblend, 0, 0.5f, 1);
@@ -467,9 +467,9 @@ namespace hud
     FVAR(IDF_PERSIST, radaraffinityblend, 0, 1, 1);
     FVAR(IDF_PERSIST, radaraffinitysize, 0, 0.85f, 1000);
     FVAR(IDF_PERSIST, radaritemblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, radaritemsize, 0, 0.75f, 1000);
+    FVAR(IDF_PERSIST, radaritemsize, 0, 0.6f, 1000);
     FVAR(IDF_PERSIST, radarsize, 0, 0.05f, 1000);
-    FVAR(IDF_PERSIST, radaroffset, 0, 0.08f, 1000);
+    FVAR(IDF_PERSIST, radaroffset, 0, 0.07f, 1000);
     FVAR(IDF_PERSIST, radarcorner, 0, 0.15f, 1000);
     FVAR(IDF_PERSIST, radarcornersize, 0, 0.04f, 1000);
     FVAR(IDF_PERSIST, radarcorneroffset, 0, 0.045f, 1);
@@ -1953,20 +1953,17 @@ namespace hud
                                 }
 
                                 string fields = "";
-                                if(id->type == ID_VAR || id->type == ID_COMMAND)
+                                if(id->type == ID_VAR && id->fields.length() > 1)
                                 {
-                                    if(id->type == ID_VAR && id->fields.length() > 1)
-                                    {
-                                        concatstring(fields, "<bitfield>");
-                                        loopvj(id->fields) if(id->fields[j])
-                                            concformatstring(fields, "\n%d [0x%x] = %s", 1<<j, 1<<j, id->fields[j]);
-                                    }
-                                    else loopvj(id->fields) if(id->fields[j])
-                                        concformatstring(fields, "%s<%s>", j ? " " : "", id->fields[j]);
+                                    concatstring(fields, "<bitfield>");
+                                    loopvj(id->fields) if(id->fields[j])
+                                        concformatstring(fields, "\n%d [0x%x] = %s", 1<<j, 1<<j, id->fields[j]);
                                 }
+                                else loopvj(id->fields) if(id->fields[j])
+                                    concformatstring(fields, "%s<%s>", j ? " " : "", id->fields[j]);
                                 if(!*fields) switch(id->type)
                                 {
-                                    case ID_ALIAS: concatstring(fields, "<value>"); break;
+                                    case ID_ALIAS: concatstring(fields, "<arguments>"); break;
                                     case ID_VAR: concatstring(fields, "<integer>"); break;
                                     case ID_FVAR: concatstring(fields, "<float>"); break;
                                     case ID_SVAR: concatstring(fields, "<string>"); break;
@@ -2587,8 +2584,9 @@ namespace hud
     int drawitem(const char *tex, int x, int y, float size, float sub, bool bg, bool left, float r, float g, float b, float fade, float skew, const char *font, const char *text, ...)
     {
         if(skew <= 0.f) return 0;
-        Texture *t = textureload(tex, 3);
-        float q = clamp(skew, 0.f, 1.f), cr = left ? r : r*q, cg = left ? g : g*q, cb = left ? b : b*q, s = size*skew, w = float(t->w)/float(t->h)*s;
+        Texture *t = tex && *tex ? textureload(tex, 3, true, false) : NULL;
+        if(t == notexture) t = NULL;
+        float q = clamp(skew, 0.f, 1.f), cr = left ? r : r*q, cg = left ? g : g*q, cb = left ? b : b*q, s = size*skew, w = t ? float(t->w)/float(t->h)*s : s;
         int heal = m_health(game::gamemode, game::mutators, game::focus->actortype), sy = int(s), cx = x, cy = y, cs = int(s), cw = int(w);
         bool pulse = inventoryflash && game::focus->state == CS_ALIVE && game::focus->health < heal;
         if(bg && sub == 0 && inventorybg)
@@ -2624,9 +2622,12 @@ namespace hud
             cs = co;
             cw = int(cw*sub);
         }
-        gle::colorf(cr, cg, cb, fade);
-        glBindTexture(GL_TEXTURE_2D, t->id);
-        drawtexture(left ? cx : cx-cw, cy-cs, cw, cs);
+        if(t)
+        {
+            gle::colorf(cr, cg, cb, fade);
+            glBindTexture(GL_TEXTURE_2D, t->id);
+            drawtexture(left ? cx : cx-cw, cy-cs, cw, cs);
+        }
         if(text && *text)
         {
             pushhudscale(skew);
@@ -2774,8 +2775,7 @@ namespace hud
                 defformatstring(s, "%s%d", i ? " " : "", e.attrs[i]);
                 concatstring(attrstr, s);
             }
-            const char *itext = itemtex(e.type, e.attrs[0]);
-            int ty = drawitem(itext && *itext ? itext : "textures/notexture", x, y, s, 0, true, false, 1.f, 1.f, 1.f, fade, skew),
+            int ty = drawitem(itemtex(e.type, e.attrs[0]), x, y, s, 0, true, false, 1.f, 1.f, 1.f, fade, skew),
                 qy = drawitemtext(x, y, s, false, skew, "reduced", fade, "%s", attrstr);
             qy += drawitemtext(x, y-qy, s, false, skew, "reduced", fade, "%s", entities::entinfo(e.type, e.attrs, true));
             qy += drawitemtext(x, y-qy, s, false, skew, "default", fade, "%s (%d)", enttype[e.type].name, n);

@@ -2324,6 +2324,7 @@ namespace entities
                                 flags |= MDL_LIGHTFX;
                                 int col = W(attr, colour), interval = lastmillis%1000;
                                 e.light.effect = vec::hexcolor(col).mul(interval >= 500 ? (1000-interval)/500.f : interval/500.f);
+                                if(attr == W_GRENADE) colour = col;
                             }
                             else continue;
                         }
