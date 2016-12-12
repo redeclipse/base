@@ -809,6 +809,20 @@ struct clientstate
         return ((totalfrags / float(max(totaldeaths, 1))) + (frags / float(max(deaths, 1)))) / ((frags || deaths) ? 2.0f : 1.0f);
     }
 
+    float balancescore(float none=0.0f)
+    {
+        switch(G(teambalancestyle))
+        {
+            case 1: return timeplayed;
+            case 2: return totalpoints;
+            case 3: return totalfrags;
+            case 4: return scoretime();
+            case 5: return kdratio();
+            case 6: return combinedkdratio();
+            case 0: default: return none;
+        }
+    }
+
     bool canrandweap(int weap)
     {
         int cweap = weap-W_OFFSET;

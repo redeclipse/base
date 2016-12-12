@@ -44,6 +44,7 @@ namespace hud
     VAR(IDF_PERSIST, scoretotalfrags, 0, 0, 1);
     VAR(IDF_PERSIST, scoretotaldeaths, 0, 0, 1);
     VAR(IDF_PERSIST, scoreratios, 0, 4, 4); // 0 = off, 1 = dm only, 2 = always, 3 = total dm only, 4 = total always
+    VAR(IDF_PERSIST, scorebalancescore, 0, 0, 1);
     VAR(IDF_PERSIST, scoreclientnum, 0, 1, 1);
     VAR(IDF_PERSIST, scoretimestyle, 0, 3, 4);
     VAR(IDF_PERSIST, scoreracestyle, 0, 1, 4);
@@ -648,6 +649,19 @@ namespace hud
                                                 uicenter(g, uipad(g, 0.5f, g.textf("%.1f\fs\fa:\fS%.1f (%.1f\fs\fa:\fS%.1f)", ownerfgc, NULL, 0, -1, false, NULL, 0xFFFFFF, kdratio >= 0 ? kdratio : 1.f, kdratio >= 0 ? 1.f : -kdratio, tkdratio >= 0 ? tkdratio : 1.f, tkdratio >= 0 ? 1.f : -tkdratio)));
                                             }
                                             else uicenter(g, uipad(g, 0.5f, g.textf("%.1f\fs\fa:\fS%.1f", ownerfgc, NULL, 0, -1, false, NULL, 0xFFFFFF, kdratio >= 0 ? kdratio : 1.f, kdratio >= 0 ? 1.f : -kdratio)));
+                                        }));
+                                    });
+                                }
+
+                                if(scorebalancescore)
+                                {
+                                    uilist(g, {
+                                        uilist(g, {
+                                            uicenter(g, uipad(g, 2, g.text("balscore", 0xFFFFFF)));
+                                        });
+                                        loopscoregroup(uilist(g, {
+                                            ownerbg;
+                                            uicenter(g, uipad(g, 0.5f, g.textf("%.1f", ownerfgc, NULL, 0, -1, false, NULL, 0xFFFFFF, o->balancescore())));
                                         }));
                                     });
                                 }
