@@ -189,6 +189,7 @@ GVAR(IDF_GAMEMOD, survivorprotect, 0, 5000, VAR_MAX); // .. in duel/survivor mat
 GVAR(IDF_GAMEMOD, instaprotect, 0, 3000, VAR_MAX); // .. in instagib matches
 GVAR(IDF_GAMEMOD, protectbreak, 0, 1, 1); // 0 = off, 1 = protection is broken when player starts firing
 
+GVAR(IDF_GAMEMOD, radarhardaffinity, 0, 1, 1); // 0 = do not allow showing affinities with hard mutator, 1 = allow it
 GVAR(IDF_GAMEMOD, radardisabled, 0, 0, 1); // forces the radar to be off
 GVAR(IDF_GAMEMOD, radardistlimit, 0, 0, VAR_MAX); // forces the radar to this distance max, 0 = off
 
