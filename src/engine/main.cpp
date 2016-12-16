@@ -1057,34 +1057,40 @@ int main(int argc, char **argv)
     resetfps();
 
     // redeclipse:// URI support
-    // example: redeclipse://hostname:port/password
-    // (password is optional)
-    char reprotoprefix[] = "redeclipse://";
-    for (int i = 0; i < argc; i++) {
+    // examples:
+    // redeclipse://password@hostname:port
+    // redeclipse://hostname:port
+    // redeclipse://hostname
+    // (password and port are optional)
+    const char reprotoprefix[] = "redeclipse://";
+    for(int i = 1; i < argc; i++)
+    {
+        string argument;
+        strcpy(argument, argv[1]);
+
         // check if string is prefixed with redeclipse://
-        if (strncmp(argv[i], reprotoprefix, strlen(reprotoprefix)) == 0) {
-            char *hoststr = NULL;
-            char *portstr = NULL;
-            char *passwordstr = NULL;
+        int offset = strlen(reprotoprefix);
+
+        if(strncmp(argv[i], reprotoprefix, offset) == 0)
+        {
+            char *passwordstr = strtok(argument + offset, "@");
+
+            if(passwordstr) offset += strlen(passwordstr) + 1;
+
+            char *hoststr = strtok(argument + offset, ":");
+            char *portstr = strtok(NULL, "/");
 
             int port = SERVER_PORT;
 
-            hoststr = strtok(argv[i] + 13, ":");
-            portstr = strtok(NULL, "/");
+            if(portstr) port = strtol(portstr, NULL, 10);
 
-            if (portstr != NULL) {
-                passwordstr = strtok(NULL, "/");
-                port = strtol(portstr, NULL, 10);
-            }
-
-            if (hoststr == NULL) {
-                conoutf("\frMalformed commandline argument: %s", argv[i]);
-            } else {
-                connectserv(hoststr, port, passwordstr);
-            }
-        } else {
+            if(!hoststr) conoutf("\frMalformed commandline argument: %s", argument);
+            else connectserv(hoststr, port, passwordstr);
+        }
+        else
+        {
             // only supported commandline argument type are redeclipse:// URIs
-            conoutf("\frMalformed commandline argument: %s", argv[i]);
+            conoutf("\frMalformed commandline argument: %s", argv[1]);
         }
     }
 
