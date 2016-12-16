@@ -1056,6 +1056,38 @@ int main(int argc, char **argv)
     localconnect(false);
     resetfps();
 
+    // redeclipse:// URI support
+    // example: redeclipse://hostname:port/password
+    // (password is optional)
+    char reprotoprefix[] = "redeclipse://";
+    for (int i = 0; i < argc; i++) {
+        // check if string is prefixed with redeclipse://
+        if (strncmp(argv[i], reprotoprefix, strlen(reprotoprefix)) == 0) {
+            char *hoststr = NULL;
+            char *portstr = NULL;
+            char *passwordstr = NULL;
+
+            int port = SERVER_PORT;
+
+            hoststr = strtok(argv[i] + 13, ":");
+            portstr = strtok(NULL, "/");
+
+            if (portstr != NULL) {
+                passwordstr = strtok(NULL, "/");
+                port = strtol(portstr, NULL, 10);
+            }
+
+            if (hoststr == NULL) {
+                conoutf("\frMalformed commandline argument: %s", argv[i]);
+            } else {
+                connectserv(hoststr, port, passwordstr);
+            }
+        } else {
+            // only supported commandline argument type are redeclipse:// URIs
+            conoutf("\frMalformed commandline argument: %s", argv[i]);
+        }
+    }
+
     for(int frameloops = 0; ; frameloops = frameloops >= INT_MAX-1 ? MAXFPSHISTORY+1 : frameloops+1)
     {
         curtextscale = textscale;
