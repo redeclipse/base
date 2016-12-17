@@ -1089,11 +1089,6 @@ int main(int argc, char **argv)
             if(!host) conoutf("\frMalformed commandline argument: %s", argument);
             else connectserv(host, port, password);
         }
-        else
-        {
-            // only supported commandline argument type are redeclipse:// URIs
-            conoutf("\frMalformed commandline argument: %s", argument);
-        }
     }
 
     for(int frameloops = 0; ; frameloops = frameloops >= INT_MAX-1 ? MAXFPSHISTORY+1 : frameloops+1)
