@@ -1066,12 +1066,12 @@ int main(int argc, char **argv)
     for(int i = 1; i < argc; i++)
     {
         string argument;
-        strcpy(argument, argv[1]);
+        strcpy(argument, argv[i]);
 
         // check if string is prefixed with redeclipse://
         int offset = strlen(reprotoprefix);
 
-        if(strncmp(argv[i], reprotoprefix, offset) == 0)
+        if(strncmp(argument, reprotoprefix, offset) == 0)
         {
             char *password = strtok(argument + offset, "@");
 
