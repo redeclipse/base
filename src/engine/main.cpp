@@ -924,6 +924,17 @@ int main(int argc, char **argv)
 
     char *initscript = NULL;
     initing = INIT_RESET;
+
+    // used to support redeclipse:// URIs
+    // see below for more information
+    const char reprotoprefix[] = "redeclipse://";
+    const int reprotooffset = strlen(reprotoprefix);
+    char* connectpassword = NULL;
+    char* connecthost = NULL;
+    int connectport = SERVER_PORT;
+
+    // try to parse home directory argument
+    // (has to be parsed first to be able to set the logfile path correctly)
     for(int i = 1; i<argc; i++)
     {
         if(argv[i][0]=='-') switch(argv[i][1])
@@ -931,8 +942,11 @@ int main(int argc, char **argv)
             case 'h': serveroption(argv[i]); break;
         }
     }
+
     setlogfile("log.txt");
     execfile("init.cfg", false);
+
+    // parse the rest of the arguments
     for(int i = 1; i<argc; i++)
     {
         if(argv[i][0]=='-') switch(argv[i][1])
@@ -960,6 +974,52 @@ int main(int argc, char **argv)
             default:
                 if(!serveroption(argv[i])) gameargs.add(argv[i]);
                 break;
+        }
+
+        // redeclipse:// URI support
+        // examples:
+        // redeclipse://password@hostname:port
+        // redeclipse://hostname:port
+        // redeclipse://hostname
+        // (password and port are optional)
+        else if(!strncmp(argv[i], reprotoprefix, reprotooffset))
+        {
+            string payload;
+            strcpy(payload, argv[i] + reprotooffset);
+
+            // skip trailing slashes (if any)
+            uint posofslash = strcspn(payload, "/");
+            if (posofslash < strlen(payload)) memset(payload + posofslash, 0, strlen(payload) - posofslash - 1);
+
+            char password[512];
+            char hostname[512];
+            char portbuf[512];
+            int port = SERVER_PORT;
+
+            uint posofat = strcspn(payload, "@");
+            if(posofat < strlen(payload) && posofat > 0)
+            {
+                strncpy(password, payload, posofat);
+                password[posofat] = '\x0';
+                posofat++;
+            } else posofat = 0;
+
+            uint posofcolon = strcspn(payload, ":");
+            if(posofcolon < strlen(payload) && posofcolon > 0)
+            {
+                strncpy(portbuf, payload + posofcolon + 1, posofslash - posofcolon);
+                port = strtol(portbuf, NULL, 10);
+            }
+            strncpy(hostname, payload + posofat, posofcolon - posofat);
+            hostname[posofcolon - posofat] = '\x0';
+
+            if(portbuf) connectport = strtol(portbuf, NULL, 10);
+
+            connecthost = hostname;
+            connectport = port;
+            connectpassword = password;
+
+            if(!connecthost) conoutf("\frMalformed commandline argument: %s", argv[i]);
         }
         else gameargs.add(argv[i]);
     }
@@ -1055,6 +1115,10 @@ int main(int argc, char **argv)
 
     localconnect(false);
     resetfps();
+
+    // redeclipse:// URI support
+    // see above argument parser for more information
+    if(connecthost) connectserv(connecthost, connectport, connectpassword);
 
     for(int frameloops = 0; ; frameloops = frameloops >= INT_MAX-1 ? MAXFPSHISTORY+1 : frameloops+1)
     {
