@@ -1073,24 +1073,26 @@ int main(int argc, char **argv)
 
         if(strncmp(argv[i], reprotoprefix, offset) == 0)
         {
-            char *passwordstr = strtok(argument + offset, "@");
+            char *password = strtok(argument + offset, "@");
 
-            if(passwordstr) offset += strlen(passwordstr) + 1;
+            if(password) offset += strlen(password) + 1;
 
             char *hoststr = strtok(argument + offset, ":");
             char *portstr = strtok(NULL, "/");
 
+            // skip trailing slashes
+            char *host = strtok(hoststr, "/");
             int port = SERVER_PORT;
 
             if(portstr) port = strtol(portstr, NULL, 10);
 
-            if(!hoststr) conoutf("\frMalformed commandline argument: %s", argument);
-            else connectserv(hoststr, port, passwordstr);
+            if(!host) conoutf("\frMalformed commandline argument: %s", argument);
+            else connectserv(host, port, password);
         }
         else
         {
             // only supported commandline argument type are redeclipse:// URIs
-            conoutf("\frMalformed commandline argument: %s", argv[1]);
+            conoutf("\frMalformed commandline argument: %s", argument);
         }
     }
 
