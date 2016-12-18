@@ -3915,7 +3915,7 @@ namespace server
         p.finalize();
         putinitclient(ci, q, false);
         q.finalize();
-        loopv(clients) if(clients[i] != ci)
+        loopv(clients) if(clients[i] != ci && allowbroadcast(i))
             sendpacket(clients[i]->clientnum, 1, haspriv(clients[i], G(iphostlock)) ? p.packet : q.packet);
         sendpacket(-1, -1, q.packet); // anonymous packet just for recording
     }
