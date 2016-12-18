@@ -982,7 +982,7 @@ namespace server
     }
 
     int numgamevars = 0, numgamemods = 0;
-    void resetgamevars(bool flush, bool all)
+    void resetgamevars(bool all)
     {
         numgamevars = numgamemods = 0;
         enumerate(idents, ident, id, {
@@ -994,28 +994,37 @@ namespace server
                 {
                     case ID_VAR:
                     {
-                        setvar(id.name, id.def.i, true);
+                        if(*id.storage.i != id.def.i)
+                        {
+                            setvar(id.name, id.def.i, true);
+                            val = intstr(&id);
+                        }
                         if(id.flags&IDF_GAMEMOD && *id.storage.i != id.bin.i) numgamemods++;
-                        if(flush) val = intstr(&id);
                         break;
                     }
                     case ID_FVAR:
                     {
-                        setfvar(id.name, id.def.f, true);
+                        if(*id.storage.f != id.def.f)
+                        {
+                            setfvar(id.name, id.def.f, true);
+                            val = floatstr(*id.storage.f);
+                        }
                         if(id.flags&IDF_GAMEMOD && *id.storage.f != id.bin.f) numgamemods++;
-                        if(flush) val = floatstr(*id.storage.f);
                         break;
                     }
                     case ID_SVAR:
                     {
-                        setsvar(id.name, id.def.s && *id.def.s ? id.def.s : "", true);
+                        if(strcmp(*id.storage.s, id.bin.s))
+                        {
+                            setsvar(id.name, id.def.s && *id.def.s ? id.def.s : "", true);
+                            val = *id.storage.s;
+                        }
                         if(id.flags&IDF_GAMEMOD && strcmp(*id.storage.s, id.bin.s)) numgamemods++;
-                        if(flush) val = *id.storage.s;
                         break;
                     }
                     default: break;
                 }
-                if(flush && val) sendf(-1, 1, "ri2sis", N_COMMAND, -1, &id.name[3], strlen(val), val);
+                if(val) sendf(-1, 1, "ri2sis", N_COMMAND, -1, &id.name[3], strlen(val), val);
             }
         });
     }
@@ -1127,7 +1136,7 @@ namespace server
         if(G(resetmutesonend)) resetmutes();
         if(G(resetlimitsonend)) resetlimits();
         if(G(resetexceptsonend)) resetexcepts();
-        if(G(resetvarsonend) || init) resetgamevars(true, true);
+        if(G(resetvarsonend) || init) resetgamevars(true);
         changemap();
         lastrotatecycle = clocktime;
     }
@@ -2341,7 +2350,7 @@ namespace server
         srvoutf(4, "\fydemo playback finished");
         loopv(clients) sendwelcome(clients[i]);
         startintermission(true);
-        resetgamevars(true, true);
+        resetgamevars(true);
     }
 
     void setupdemoplayback()
@@ -2566,7 +2575,7 @@ namespace server
         checkdemorecord(true);
         setmod(sv_botoffset, 0);
         if(G(resetmmonend) >= 2) mastermode = MM_OPEN;
-        if(G(resetvarsonend) >= 2) resetgamevars(true, false);
+        if(G(resetvarsonend) >= 2) resetgamevars(false);
         if(G(resetallowsonend) >= 2) resetallows();
         if(G(resetbansonend) >= 2) resetbans();
         if(G(resetmutesonend) >= 2) resetmutes();

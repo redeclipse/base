@@ -171,10 +171,10 @@ GVAR(IDF_MODERATOR, waitforplayerinfo, 0, 10000, VAR_MAX); // wait at least this
 
 namespace server
 {
-    extern void resetgamevars(bool flush, bool all);
+    extern void resetgamevars(bool all);
     extern void savegamevars();
 }
-GICOMMAND(0, resetvars, "", (), server::resetgamevars(true, false); result("success"), );
+GICOMMAND(0, resetvars, "i", (int *n), server::resetgamevars(*n!=0); result("success"), );
 GICOMMAND(IDF_ADMIN, savevars, "", (), server::savegamevars(); result("success"), );
 GICOMMAND(IDF_MODERATOR, resetconfig, "", (), rehash(true); result("success"), );
 
