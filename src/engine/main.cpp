@@ -1108,8 +1108,11 @@ int main(int argc, char **argv)
     localconnect(false);
     resetfps();
 
-    if(connecthost && *connecthost) connectserv(connecthost, connectport, connectpassword);
-    else conoutf("\frmalformed commandline argument: %s", reprotoarg);
+    if(reprotoarg)
+    {
+        if(connecthost && *connecthost) connectserv(connecthost, connectport, connectpassword);
+        else conoutf("\frmalformed commandline argument: %s", reprotoarg);
+    }
 
     // housekeeping
     if(connectstr)
