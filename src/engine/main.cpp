@@ -925,8 +925,12 @@ int main(int argc, char **argv)
     char *initscript = NULL;
     initing = INIT_RESET;
 
-    // used to support redeclipse:// URIs
-    // see below for more information
+    // redeclipse:// URI support
+    // examples:
+    // redeclipse://password@hostname:port
+    // redeclipse://hostname:port
+    // redeclipse://hostname
+    // (password and port are optional)
     const char reprotoprefix[] = "redeclipse://";
     const int reprotolen = sizeof(reprotoprefix) - 1;
     char *reprotoarg = NULL;
@@ -978,12 +982,6 @@ int main(int argc, char **argv)
                 break;
         }
 
-        // redeclipse:// URI support
-        // examples:
-        // redeclipse://password@hostname:port
-        // redeclipse://hostname:port
-        // redeclipse://hostname
-        // (password and port are optional)
         // will only parse the first argument that is possibly a redeclipse:// URL argument and ignore any following
         else if(!strncmp(argv[i], reprotoprefix, reprotolen) && !reprotoarg)
         {
@@ -1110,8 +1108,6 @@ int main(int argc, char **argv)
     localconnect(false);
     resetfps();
 
-    // redeclipse:// URI support
-    // see above argument parser for more information
     if(connecthost && *connecthost) connectserv(connecthost, connectport, connectpassword);
     else conoutf("\frmalformed commandline argument: %s", reprotoarg);
 
@@ -1121,7 +1117,8 @@ int main(int argc, char **argv)
         delete[] connectstr;
         connectstr = NULL;
     }
-    if(reprotoarg) {
+    if(reprotoarg)
+    {
         delete[] reprotoarg;
         reprotoarg = NULL;
     }
