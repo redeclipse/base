@@ -920,6 +920,11 @@ namespace client
     {
         gameent *d = game::getclient(cn);
         if(!d || d == game::player1) return;
+        if(!strcmp(d->hostip, "*"))
+        {
+            conoutft(CON_EVENT, "\frcannot ignore %s: host information is private", game::colourname(d));
+            return;
+        }
         if(ignores.find(d->hostip) < 0)
         {
             conoutft(CON_EVENT, "\fyignoring: \fs%s\fS (\fs\fc%s\fS)", game::colourname(d), d->hostip);
@@ -933,6 +938,11 @@ namespace client
     {
         gameent *d = game::getclient(cn);
         if(!d) return;
+        if(!strcmp(d->hostip, "*"))
+        {
+            conoutft(CON_EVENT, "\frcannot unignore %s: host information is private", game::colourname(d));
+            return;
+        }
         if(ignores.find(d->hostip) >= 0)
         {
             conoutft(CON_EVENT, "\fystopped ignoring: \fs%s\fS (\fs\fc%s\fS)", game::colourname(d), d->hostip);
@@ -945,6 +955,7 @@ namespace client
     bool isignored(int cn)
     {
         gameent *d = game::getclient(cn);
+        if(!d || !strcmp(d->hostip, "*")) return false;
         return ignores.find(d->hostip) >= 0;
     }
 
