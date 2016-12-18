@@ -77,6 +77,7 @@ GVAR(IDF_MODERATOR, spawnlock, 0, PRIV_MODERATOR, PRIV_MAX); // if locked, requi
 GVAR(IDF_MODERATOR, spawneditlock, 0, PRIV_MODERATOR, PRIV_MAX); // if locked in editmode, require this to spawn
 GVAR(IDF_MODERATOR, masterlock, 0, PRIV_MODERATOR, PRIV_MAX);
 GVAR(IDF_MODERATOR, crclock, 0, PRIV_MAX, PRIV_MAX);
+GVAR(IDF_MODERATOR, iphostlock, 0, PRIV_OPERATOR, PRIV_MAX); // require this level to see ip/hosts
 
 GVAR(IDF_ADMIN, overflowlock, 0, PRIV_MODERATOR, PRIV_MAX); // normal message queue override
 GVAR(IDF_ADMIN, overflowsize, 0, 255, VAR_MAX); // kick if queued messages >= this
