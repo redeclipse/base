@@ -210,7 +210,7 @@ namespace auth
             loopv(clients) if((clients[i]->privilege&PRIV_TYPE) >= PRIV_ADMINISTRATOR || clients[i]->local) others++;
             if(!others) setpause(false);
         }
-        if(resendinit)
+        if(ci->connected && resendinit)
         {
             bool iph = haspriv(ci, G(iphostlock));
             packetbuf p(MAXTRANS, ENET_PACKET_FLAG_RELIABLE);
