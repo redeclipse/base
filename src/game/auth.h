@@ -23,7 +23,6 @@
 // Team, each modification must be approved and will be done on a case-by-case
 // basis.
 
-
 void hashpassword(int cn, int sessionid, const char *pwd, char *result, int maxlen)
 {
     char buf[2*MAXSTRLEN];
@@ -82,8 +81,6 @@ ICOMMAND(0, serverauthkey, "ss", (char *name, char *key), {
     setsvar("serveraccountname", name);
     setsvar("serveraccountpass", key);
 });
-
-extern void putinitclient(clientinfo *ci, packetbuf &p, bool allow);
 
 namespace auth
 {
@@ -212,14 +209,8 @@ namespace auth
         }
         if(ci->connected && resendinit)
         {
-            bool iph = haspriv(ci, G(iphostlock));
             packetbuf p(MAXTRANS, ENET_PACKET_FLAG_RELIABLE);
-            loopv(clients)
-            {
-                clientinfo *cp = clients[i];
-                if(cp == ci || !cp->connected) continue;
-                putinitclient(cp, p, iph);
-            }
+            welcomeinitclient(ci, p, ci->clientnum, true);
             sendpacket(ci->clientnum, 1, p.finalize());
         }
     }

@@ -3064,6 +3064,7 @@ namespace server
     }
 
     void connected(clientinfo *ci);
+    void welcomeinitclient(clientinfo *ci, packetbuf &p, int exclude = -1, bool nobots = false);
 
     #include "auth.h"
 
@@ -3915,7 +3916,7 @@ namespace server
         p.finalize();
         putinitclient(ci, q, false);
         q.finalize();
-        loopv(clients) if(clients[i] != ci && allowbroadcast(i))
+        loopv(clients) if(clients[i] != ci && allowbroadcast(clients[i]->clientnum))
             sendpacket(clients[i]->clientnum, 1, haspriv(clients[i], G(iphostlock)) ? p.packet : q.packet);
         sendpacket(-1, -1, q.packet); // anonymous packet just for recording
     }
@@ -3927,13 +3928,13 @@ namespace server
         sendpacket(ci->clientnum, 1, p.finalize());
     }
 
-    void welcomeinitclient(clientinfo *ci, packetbuf &p, int exclude = -1)
+    void welcomeinitclient(clientinfo *ci, packetbuf &p, int exclude, bool nobots)
     {
         bool iph = ci ? haspriv(ci, G(iphostlock)) : false;
         loopv(clients)
         {
             clientinfo *cp = clients[i];
-            if(!cp->connected || cp->clientnum == exclude) continue;
+            if(!cp->connected || cp->clientnum == exclude || (nobots && cp->actortype != A_PLAYER)) continue;
             putinitclient(cp, p, iph);
         }
     }
