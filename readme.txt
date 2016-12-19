@@ -1,19 +1,19 @@
 ﻿# Red Eclipse
-* A free, arena shooter; released as Open Source
-* Available for Windows, GNU/Linux, BSD, and OS X
-* Features parkour, impulse boosts, dashing, and other tricks
+* A free first-person arena shooter; released as Open Source software
+* Available for Windows, GNU/Linux, BSD, and OSX
+* Features parkour gameplay, such as impulse boosts, dashing, and other tricks
 * Favourite gamemodes with an array of mutators and variables
-* Builtin editor lets you create your own maps cooperatively online
-* Free download from http://redeclipse.net/
+* A built-in editor lets you create your own maps cooperatively online
+* Download for free at http://redeclipse.net/
 
 ## About
-Red Eclipse is a fun-filled new take on the first person arena shooter, built as a total conversion of Cube Engine 2, which lends itself toward a balanced gameplay, with a general theme of agility in a variety of environments. For more information, please see our Wiki or Forum.
+Red Eclipse is a fun-filled new take on the first-person arena shooter, built as a total conversion of Cube Engine 2, which lends itself towards a balanced gameplay, with a general theme of agility in a variety of environments. For more information, visit our Wiki or Forum.
 
 [Wiki](http://redeclipse.net/wiki)
 
 [Forum](http://redeclipse.net/forum)
 
-The project is a Free and Open Source game, built on Cube Engine 2 using SDL and OpenGL which allows it to be ported to many platforms; you can download a package for Windows, GNU/Linux, BSD, and Mac OS X; or grab a development copy from our Git repository and live on the bleeding edge.
+The project is a Free and Open Source game built on the Cube Engine 2 using SDL2 and OpenGL which allows it to be ported to many platforms; you can download a package for Windows, GNU/Linux, BSD, and Mac OS X; or grab a development copy from our Git repository and live on the bleeding edge.
 
 [Download](http://redeclipse.net/download)
 
@@ -21,15 +21,15 @@ The project is a Free and Open Source game, built on Cube Engine 2 using SDL and
 
 In a true open source by the people for the people nature, we try to work closely with the gaming and open source communities to provide a better overall experience, aiming to create a game environment that is fun and easy to play, while still having elements to master.
 
-If you think you might have something to contribute to the game or community, please feel free to drop by our Chat or Forums and talk to us directly. We try to maintain a standard of friendly behaviour in our community, so don't be afraid to speak up and have your say in building this game for us all :)
+If you think you might have something to contribute to the game or community, please feel free to drop by our [Chat](http://webchat.freenode.net/?channels=redeclipse) or [Forums](http://redeclipse.net/forums) and talk to us directly. We try to maintain a standard of friendly behaviour in our community, so don't be afraid to speak up and have your say in building this game for us all! :)
 
 ## Get Involved
-You're encouraged to help the project by joining in with the rest of the community to make a better project! You can do this by participating in our Community, or using the development version, and reporting any issues, ideas, suggestions, or comments you might have.
+You're encouraged to help the project by joining in with the rest of the community to make a better project! You can do this by participating in our Community, using the development version and reporting any issues, ideas, suggestions or comments you may have.
 
 We chat via IRC in the channel #redeclipse on irc.freenode.net, if you don't have an IRC client you can use http://redeclipse.net/chat - You can use this service to talk directly to the Red Eclipse developers, contributors, and supporters, whether you just want to have a chat, report a problem, or make a suggestion, this is the best place to do it.
 
 ## Open Source
-The project is Free and Open Source meaning that you can both use it for free, and you can be a part of it by contributing in whatever way you can. These are people who have helped shape Red Eclipse into what you see today, and they are regular people just like you who volunteer their time or donate in the spirit of making a really cool game, your name could be here too.
+The project is Free and Open Source, meaning that you can both use it for free and be a part of it by contributing in whatever way you can. These are the people who have helped shape Red Eclipse into what you see today. They are regular people just like you who volunteer their time or donate in the spirit of making a really cool game. Your name could be down here, too!
 
 ### Founders
 * Quinton "Quin" Reeves - Lead Developer
