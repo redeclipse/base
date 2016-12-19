@@ -6945,6 +6945,11 @@ namespace server
                         break;
                     }
                     bool spec = val != 0, quarantine = cp != ci && val == 2, wasq = cp->quarantine;
+                    if(quarantine && ci->privilege <= cp->privilege)
+                    {
+                        srvmsgf(ci->clientnum, "\frerror: you may not quarantine higher or equally privileged player %s", colourname(cp));
+                        break;
+                    }
                     if(!spectate(cp, spec, quarantine))
                     {
                         if(G(serverdebug)) srvmsgf(ci->clientnum, "sync error: unable to modify spectator %s - %d [%d, %d] - failed", colourname(cp), cp->state, cp->lastdeath, gamemillis);
