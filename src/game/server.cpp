@@ -3924,16 +3924,17 @@ namespace server
     {
         packetbuf p(MAXTRANS, ENET_PACKET_FLAG_RELIABLE);
         putinitclient(ci, p, true);
-        sendpacket(ci->clientnum, 1, p.finalize(), ci->clientnum);
+        sendpacket(ci->clientnum, 1, p.finalize());
     }
 
-    void welcomeinitclient(packetbuf &p, int exclude = -1)
+    void welcomeinitclient(clientinfo *ci, packetbuf &p, int exclude = -1)
     {
+        bool iph = ci ? haspriv(ci, G(iphostlock)) : false;
         loopv(clients)
         {
-            clientinfo *ci = clients[i];
-            if(!ci->connected || ci->clientnum == exclude) continue;
-            putinitclient(ci, p, haspriv(ci, G(iphostlock)));
+            clientinfo *cp = clients[i];
+            if(!cp->connected || cp->clientnum == exclude) continue;
+            putinitclient(cp, p, iph);
         }
     }
 
@@ -4040,7 +4041,7 @@ namespace server
                 sendstate(oi, p);
             }
             putint(p, -1);
-            welcomeinitclient(p, ci ? ci->clientnum : -1);
+            welcomeinitclient(ci, p, ci ? ci->clientnum : -1);
             loopv(clients)
             {
                 clientinfo *oi = clients[i];

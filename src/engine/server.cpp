@@ -576,7 +576,7 @@ void sendfile(int cn, int chan, stream *file, const char *format, ...)
         file->read(p.subbuf(len).buf, len);
     }
     ENetPacket *packet = p.finalize();
-    if(cn >= 0) sendpacket(cn, chan, packet, -1);
+    if(cn >= 0) sendpacket(cn, chan, packet);
 #ifndef STANDALONE
     else sendclientpacket(packet, chan);
 #endif
