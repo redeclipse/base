@@ -1,5 +1,5 @@
 ﻿# Red Eclipse
-* A free first-person arena shooter; released as Open Source software
+* A free first-person arena shooter; released as free and open source software
 * Available for Windows, GNU/Linux, BSD, and OSX
 * Features parkour gameplay, such as impulse boosts, dashing, and other tricks
 * Favourite gamemodes with an array of mutators and variables
@@ -7,13 +7,13 @@
 * Download for free at http://redeclipse.net/
 
 ## About
-Red Eclipse is a fun-filled new take on the first-person arena shooter, built as a total conversion of Cube Engine 2, which lends itself towards a balanced gameplay, with a general theme of agility in a variety of environments. For more information, visit our Wiki or Forum.
+Red Eclipse is a fun-filled new take on the first-person arena shooter, built as a total conversion of Cube Engine 2, which lends itself towards a balanced gameplay, with a general theme of agility in a variety of environments. For more information, visit our [wiki](http://redeclipse.net/wiki) or [forums](http://redeclipse.net/forum).
 
 [Wiki](http://redeclipse.net/wiki)
 
-[Forum](http://redeclipse.net/forum)
+[Forums](http://redeclipse.net/forum)
 
-The project is a Free and Open Source game built on the Cube Engine 2 using SDL2 and OpenGL which allows it to be ported to many platforms; you can download a package for Windows, GNU/Linux, BSD, and Mac OS X; or grab a development copy from our Git repository and live on the bleeding edge.
+The project is a Free and Open Source game built on the Cube Engine 2 using SDL and OpenGL which allows it to be ported to many platforms; you can download a package for Windows, GNU/Linux, BSD, and Mac OSX; or grab a development copy from our Git repository and live on the bleeding edge.
 
 [Download](http://redeclipse.net/download)
 
@@ -21,7 +21,7 @@ The project is a Free and Open Source game built on the Cube Engine 2 using SDL2
 
 In a true open source by the people for the people nature, we try to work closely with the gaming and open source communities to provide a better overall experience, aiming to create a game environment that is fun and easy to play, while still having elements to master.
 
-If you think you might have something to contribute to the game or community, please feel free to drop by our [Chat](http://webchat.freenode.net/?channels=redeclipse) or [Forums](http://redeclipse.net/forums) and talk to us directly. We try to maintain a standard of friendly behaviour in our community, so don't be afraid to speak up and have your say in building this game for us all! :)
+If you think you might have something to contribute to the game or community, please feel free to drop by our [IRC chatroom](http://webchat.freenode.net/?channels=redeclipse) or [Forums](http://redeclipse.net/forums) and talk to us directly. We try to maintain a standard of friendly behaviour in our community, so don't be afraid to speak up and have your say in building this game for us all! :)
 
 ## Get Involved
 You're encouraged to help the project by joining in with the rest of the community to make a better project! You can do this by participating in our Community, using the development version and reporting any issues, ideas, suggestions or comments you may have.
