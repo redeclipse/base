@@ -25,10 +25,10 @@ We chat via IRC in the channel `#redeclipse` on `irc.freenode.net`, if you don't
 The project is Free and Open Source, meaning that you can both use it for free and be a part of it by contributing in whatever way you can. These are the people who have helped shape Red Eclipse into what you see today. They are regular people just like you who volunteer their time or donate in the spirit of making a really cool game. Your name could be down here, too!
 
 ### Founders
-* Quinton "Quin" Reeves - Lead Developer
+* Quinton "Quin" Reeves - Lead Developer - YouTube channel @ http://youtube.com/qreeves
     - Gameplay and AI Design, Community Management
 
-* Lee "Eihrul" Salzman - Lead Programmer / Advisor
+* Lee "Eihrul" Salzman - Lead Programmer / Advisor - Check out Tesseract @ http://tesseract.gg/
     - Cube 2 Engine and Backports/Support, Speed Improvements
 
 ### Contributors, Developers and Supporters
