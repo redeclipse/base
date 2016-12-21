@@ -6947,7 +6947,7 @@ namespace server
                         break;
                     }
                     bool spec = val != 0, quarantine = cp != ci && val == 2, wasq = cp->quarantine;
-                    if(quarantine && ci->privilege&PRIV_TYPE <= cp->privilege&PRIV_TYPE)
+                    if(quarantine && (ci->privilege&PRIV_TYPE) <= (cp->privilege&PRIV_TYPE))
                     {
                         srvmsgf(ci->clientnum, "\fraccess denied, you may not quarantine higher or equally privileged player %s", colourname(cp));
                         break;
