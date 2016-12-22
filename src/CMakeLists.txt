@@ -86,16 +86,16 @@ foreach(dep IN LISTS client_deps)
 endforeach(dep)
 
 # configure enet
-add_subdirectory(enet)
+set(ENET_SOURCE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/enet)
+add_subdirectory(${ENET_SOURCE_DIRECTORY})
 
 # configure local includes
 include_directories(
-    ${CMAKE_CURRENT_SOURCE_DIR}/enet/include
+    ${ENET_SOURCE_DIRECTORY}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/engine
     ${CMAKE_CURRENT_SOURCE_DIR}/game
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/shared
-    ${ENET_INCLUDE_DIRS}
 )
 
 # add the client executable and link it to enet
