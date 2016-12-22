@@ -99,8 +99,8 @@ include_directories(
 )
 
 # add the client executable and link it to enet
-add_executable(redeclipse_client${BIN_SUFFIX} ${client_sources})
-target_link_libraries(redeclipse_client${BIN_SUFFIX} enet)
+add_executable(redeclipse${BIN_SUFFIX} ${client_sources})
+target_link_libraries(redeclipse${BIN_SUFFIX} enet)
 
 # add the server executable and link it to enet
 # (define STANDALONE to "notify" the preprocessor that the server is built this time)
@@ -113,7 +113,7 @@ set_target_properties(redeclipse_server${BIN_SUFFIX} PROPERTIES
 if(APPLE)
     # include framework required in xcode/ code
     find_library(COCOA_LIBRARY Cocoa)
-    target_link_libraries(redeclipse_client${BIN_SUFFIX} ${COCOA_LIBRARY})
+    target_link_libraries(redeclipse${BIN_SUFFIX} ${COCOA_LIBRARY})
     target_link_libraries(redeclipse_server${BIN_SUFFIX} ${COCOA_LIBRARY})
 else(APPLE)
     # add the genkey executable
