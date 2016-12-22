@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8.11)
 # Use pkg-config to configure dependencies later
 find_package(PkgConfig REQUIRED)
 # the dependencies required by all platforms
-set(client_deps zlib sdl2 SDL2_image SDL2_mixer gl sqlite3)
+set(client_deps zlib sdl2 SDL2_image SDL2_mixer gl)
 
 # the client depends on almost all the source files
 file(GLOB client_sources engine/*.cpp game/*.cpp shared/*.cpp support/sqlite3.c)
