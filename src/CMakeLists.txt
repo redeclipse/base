@@ -119,3 +119,19 @@ else(APPLE)
     # add the genkey executable
     add_executable(genkey${BIN_SUFFIX} ${genkey_sources})
 endif(APPLE)
+
+# install to ../bin/
+if(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "i[3-6]86")
+	set(ARCHITECTURE "x86")
+elseif(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "x86_64")
+	set(ARCHITECTURE "amd64")
+else()
+    set(ARCHITECTURE "native")
+endif()
+set(targets redeclipse${BIN_SUFFIX} redeclipse_server${BIN_SUFFIX} genkey${BIN_SUFFIX})
+foreach(target IN LISTS targets)
+    install(
+        TARGETS ${target}
+        DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/../bin/${ARCHITECTURE}/
+    )
+endforeach()
