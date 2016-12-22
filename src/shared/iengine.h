@@ -159,11 +159,9 @@ struct bindlist
 extern void newgui(char *name, char *contents, char *initscript = NULL);
 extern bool showgui(const char *name, int tab = 0, bool *keep = NULL);
 
-// main
-struct igame;
-
 // rendertext
 extern char *savecolour, *restorecolour, *green, *blue, *yellow, *red, *gray, *magenta, *orange, *white, *black, *cyan;
+extern int textskinsize, textskinpad;
 
 enum
 {

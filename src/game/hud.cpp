@@ -2664,23 +2664,23 @@ namespace hud
         {
             if(inventorytone) skewcolour(gr, gg, gb, inventorytone);
             gf *= inventorybgskin;
-            xpad = FONTW/4;
+            xpad = textskinpad;
         }
         defvformatstring(str, text, text);
         int tx = int(cx/skew), ty = int(cy/skew);
         switch(curflags&TEXT_ALIGN)
         {
-            case TEXT_LEFT_JUSTIFY: tx += FONTW*0.5f; break;
-            case TEXT_RIGHT_JUSTIFY: tx -= FONTW*0.5f; break;
+            case TEXT_LEFT_JUSTIFY: tx += xpad; break;
+            case TEXT_RIGHT_JUSTIFY: tx -= xpad; break;
             case TEXT_CENTERED:
             {
                 int width, height;
                 text_bounds(str, width, height, xpad, ypad, -1, curflags, 1);
-                tx -= (width/skew*0.5f)+FONTW;
+                tx -= width/skew*0.5f;
                 break;
             }
         }
-        int sy = draw_textf("%s", tx, ty, xpad, ypad, int(gr*255), int(gg*255), int(gb*255), int(gf*255), curflags, -1, -1, 1, str)*skew;
+        int sy = draw_textf("%s", tx, ty, 0, 0, int(gr*255), int(gg*255), int(gb*255), int(gf*255), curflags, -1, -1, 1, str)*skew;
         if(font && *font) popfont();
         pophudmatrix();
         return sy;
@@ -3185,7 +3185,7 @@ namespace hud
             }
             case 1:
             {
-                int cm = top;
+                int cm = top+edge;
                 if(!radardisabled && !m_hard(game::gamemode, game::mutators) && radartype() == 3 && !hasinput(true) && (game::focus->state == CS_EDITING ? showeditradar >= 1 : chkcond(showradar, !game::tvmode() || (game::focus != game::player1 && radartype() == 3))))
                     cm += int(max(w, h)/2*radarcorner*2)+cr;
                 if(inventorydate)
