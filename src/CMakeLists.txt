@@ -94,10 +94,14 @@ include_directories(
     ${ENET_SOURCE_DIRECTORY}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/engine
     ${CMAKE_CURRENT_SOURCE_DIR}/game
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/shared
     ${CMAKE_CURRENT_SOURCE_DIR}/support
 )
+
+# include the headers for the libraries bundled in ../bin
+if(MINGW)
+    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+endif()
 
 # add the client executable and link it to enet
 add_executable(redeclipse${BIN_SUFFIX} ${client_sources})
