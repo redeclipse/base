@@ -486,12 +486,10 @@ namespace game
 
     int fov()
     {
-        int r = curfov;
-        if(player1->state == CS_EDITING) r = editfov;
-        else if(focus == player1 && player1->state == CS_SPECTATOR) r = specfov;
-        else if(thirdpersonview(true)) r = thirdpersonfov;
-        else r = firstpersonfov;
-        return r;
+        if(player1->state == CS_EDITING) return editfov;
+        if(focus == player1 && player1->state == CS_SPECTATOR) return specfov;
+        if(thirdpersonview(true)) return thirdpersonfov;
+        return firstpersonfov;
     }
 
     void checkzoom()
