@@ -486,12 +486,10 @@ namespace game
 
     int fov()
     {
-        int r = curfov;
-        if(player1->state == CS_EDITING) r = editfov;
-        else if(focus == player1 && player1->state == CS_SPECTATOR) r = specfov;
-        else if(thirdpersonview(true)) r = thirdpersonfov;
-        else r = firstpersonfov;
-        return r;
+        if(player1->state == CS_EDITING) return editfov;
+        if(focus == player1 && player1->state == CS_SPECTATOR) return specfov;
+        if(thirdpersonview(true)) return thirdpersonfov;
+        return firstpersonfov;
     }
 
     void checkzoom()
@@ -2563,7 +2561,7 @@ namespace game
             cament *c = cameras[i];
             if(c->type == cament::PLAYER && (c->player || ((c->player = getclient(c->id)) != NULL)))
             {
-                if(!found && c->id == spectvfollowing && c->player->state != CS_SPECTATOR) found = true;
+                if(!found && c->id == spectvfollowing && allowspec(c->player, spectvdead, spectvfollowing)) found = true;
                 c->o = c->player->headpos();
                 if(forced && c->player == focus) cam = c;
             }
@@ -2584,18 +2582,18 @@ namespace game
                 cam->resetlast();
             }
         }
-        else loopk(spectvfollowing >= 0 ? 2 : 1)
+        else
         {
             int lastcn = cam->cn, millis = lasttvchg ? lastmillis-lasttvchg : 0;
             if(millis) amt = float(millis)/float(stvf(maxtime));
-            bool updated = camupdate(cam, amt, renew), override = !lasttvchg || millis >= stvf(mintime),
+            bool updated = camupdate(cam, amt, renew), ovr = !lasttvchg || millis >= stvf(mintime),
                  reset = (stvf(maxtime) && millis >= stvf(maxtime)) || !lasttvcam || lastmillis-lasttvcam >= stvf(time);
-            if(spectvfollowing >= 0 && !reset && !updated && !override)
+            if(spectvfollowing >= 0 && !updated && !reset)
             {
                 spectvfollowing = -1;
-                continue;
+                reset = true;
             }
-            if(reset || (!updated && override))
+            else if(reset || (!updated && ovr))
             {
                 loopv(cameras) if(cameras[i]->ignore) cameras[i]->ignore = false;
                 cam->ignore = true; // so we don't use the last one we just used
@@ -2652,7 +2650,6 @@ namespace game
                     }
                 }
             }
-            break;
         }
         bool chase = cam->player && (forced || spectvaiming(cam->player));
         if(!cam->player || chase)

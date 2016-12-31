@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8.11)
 # Use pkg-config to configure dependencies later
 find_package(PkgConfig REQUIRED)
 # the dependencies required by all platforms
-set(client_deps zlib sdl2 SDL2_image SDL2_mixer gl sqlite3)
+set(client_deps zlib sdl2 SDL2_image SDL2_mixer gl)
 
 # the client depends on almost all the source files
 file(GLOB client_sources engine/*.cpp game/*.cpp shared/*.cpp support/sqlite3.c)
@@ -86,20 +86,26 @@ foreach(dep IN LISTS client_deps)
 endforeach(dep)
 
 # configure enet
-add_subdirectory(enet)
+set(ENET_SOURCE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/enet)
+add_subdirectory(${ENET_SOURCE_DIRECTORY})
 
 # configure local includes
 include_directories(
+    ${ENET_SOURCE_DIRECTORY}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/engine
     ${CMAKE_CURRENT_SOURCE_DIR}/game
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/shared
-    ${ENET_INCLUDE_DIRS}
+    ${CMAKE_CURRENT_SOURCE_DIR}/support
 )
 
+# include the headers for the libraries bundled in ../bin
+if(MINGW)
+    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+endif()
+
 # add the client executable and link it to enet
-add_executable(redeclipse_client${BIN_SUFFIX} ${client_sources})
-target_link_libraries(redeclipse_client${BIN_SUFFIX} enet)
+add_executable(redeclipse${BIN_SUFFIX} ${client_sources})
+target_link_libraries(redeclipse${BIN_SUFFIX} enet)
 
 # add the server executable and link it to enet
 # (define STANDALONE to "notify" the preprocessor that the server is built this time)
@@ -112,9 +118,25 @@ set_target_properties(redeclipse_server${BIN_SUFFIX} PROPERTIES
 if(APPLE)
     # include framework required in xcode/ code
     find_library(COCOA_LIBRARY Cocoa)
-    target_link_libraries(redeclipse_client${BIN_SUFFIX} ${COCOA_LIBRARY})
+    target_link_libraries(redeclipse${BIN_SUFFIX} ${COCOA_LIBRARY})
     target_link_libraries(redeclipse_server${BIN_SUFFIX} ${COCOA_LIBRARY})
 else(APPLE)
     # add the genkey executable
     add_executable(genkey${BIN_SUFFIX} ${genkey_sources})
 endif(APPLE)
+
+# install to ../bin/
+if(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "i[3-6]86")
+	set(ARCHITECTURE "x86")
+elseif(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "x86_64")
+	set(ARCHITECTURE "amd64")
+else()
+    set(ARCHITECTURE "native")
+endif()
+set(targets redeclipse${BIN_SUFFIX} redeclipse_server${BIN_SUFFIX} genkey${BIN_SUFFIX})
+foreach(target IN LISTS targets)
+    install(
+        TARGETS ${target}
+        DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/../bin/${ARCHITECTURE}/
+    )
+endforeach()

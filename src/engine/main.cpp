@@ -924,6 +924,23 @@ int main(int argc, char **argv)
 
     char *initscript = NULL;
     initing = INIT_RESET;
+
+    // redeclipse:// URI support
+    // examples:
+    // redeclipse://password@hostname:port
+    // redeclipse://hostname:port
+    // redeclipse://hostname
+    // (password and port are optional)
+    const char reprotoprefix[] = "redeclipse://";
+    const int reprotolen = sizeof(reprotoprefix) - 1;
+    char *reprotoarg = NULL;
+    char *connectstr = NULL;
+    char *connectpassword = NULL;
+    char *connecthost = NULL;
+    int connectport = SERVER_PORT;
+
+    // try to parse home directory argument
+    // (has to be parsed first to be able to set the logfile path correctly)
     for(int i = 1; i<argc; i++)
     {
         if(argv[i][0]=='-') switch(argv[i][1])
@@ -933,8 +950,11 @@ int main(int argc, char **argv)
     }
     setlogfile("log.txt");
     execfile("init.cfg", false);
+
+    // parse the rest of the arguments
     for(int i = 1; i<argc; i++)
     {
+        // switches that can modify both server and client behavior
         if(argv[i][0]=='-') switch(argv[i][1])
         {
             case 'h': /* parsed first */ break;
@@ -961,6 +981,38 @@ int main(int argc, char **argv)
                 if(!serveroption(argv[i])) gameargs.add(argv[i]);
                 break;
         }
+
+        // will only parse the first argument that is possibly a redeclipse:// URL argument and ignore any following
+        else if(!strncmp(argv[i], reprotoprefix, reprotolen) && !reprotoarg)
+        {
+            reprotoarg = newstring(argv[i]);
+            connectstr = newstring(reprotoarg + reprotolen);
+
+            // check if there's actually text after the protocol prefix
+            if(!*connectstr) continue;
+
+            // skip trailing slashes (if any)
+            char* slashchr = strchr(connectstr, '/');
+            if(slashchr) *slashchr = '\0';
+
+            connecthost = strchr(connectstr, '@');
+            if(connecthost)
+            {
+                connectpassword = connectstr;
+                *connecthost++ = '\0';
+            }
+            else connecthost = connectstr;
+
+            char *portbuf = strchr(connecthost, ':');
+            if(portbuf)
+            {
+                *portbuf++ = '\0';
+                connectport = parseint(portbuf);
+                if(!connectport) connectport = SERVER_PORT;
+            }
+        }
+
+        // unmatched arguments
         else gameargs.add(argv[i]);
     }
 
@@ -1055,6 +1107,24 @@ int main(int argc, char **argv)
 
     localconnect(false);
     resetfps();
+
+    if(reprotoarg)
+    {
+        if(connecthost && *connecthost) connectserv(connecthost, connectport, connectpassword);
+        else conoutf("\frmalformed commandline argument: %s", reprotoarg);
+    }
+
+    // housekeeping
+    if(connectstr)
+    {
+        delete[] connectstr;
+        connectstr = NULL;
+    }
+    if(reprotoarg)
+    {
+        delete[] reprotoarg;
+        reprotoarg = NULL;
+    }
 
     for(int frameloops = 0; ; frameloops = frameloops >= INT_MAX-1 ? MAXFPSHISTORY+1 : frameloops+1)
     {

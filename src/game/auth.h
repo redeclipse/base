@@ -23,7 +23,6 @@
 // Team, each modification must be approved and will be done on a case-by-case
 // basis.
 
-
 void hashpassword(int cn, int sessionid, const char *pwd, char *result, int maxlen)
 {
     char buf[2*MAXSTRLEN];
@@ -150,10 +149,11 @@ namespace auth
     void setprivilege(clientinfo *ci, int val, int flags = 0, bool authed = false, clientinfo *setter = NULL)
     {
         string msg = "";
+        bool resendinit = false;
+        int oldpriv = ci->privilege;
         if(val > 0)
         {
             if(!setter && (ci->privilege&PRIV_TYPE) >= (flags&PRIV_TYPE)) return;
-            int oldpriv = ci->privilege;
             ci->privilege = flags;
             if(authed)
             {
@@ -177,6 +177,7 @@ namespace auth
             {
                 formatstring(msg, "\fy%s elevated to \fs\fc%s\fS", colourname(ci), privname(ci->privilege));
             }
+            if((oldpriv&PRIV_TYPE) < G(iphostlock) && (ci->privilege&PRIV_TYPE) >= G(iphostlock)) resendinit = true;
         }
         else
         {
@@ -189,6 +190,7 @@ namespace auth
             if(!others) mastermode = MM_OPEN;
             if(!val && (privilege&PRIV_TYPE) >= PRIV_ELEVATED)
                 formatstring(msg, "\fy%s relinquished \fs\fc%s\fS status", colourname(ci), privname(privilege));
+            if((oldpriv&PRIV_TYPE) >= G(iphostlock) && (ci->privilege&PRIV_TYPE) < G(iphostlock)) resendinit = true;
         }
         if(val >= 0)
         {
@@ -204,6 +206,12 @@ namespace auth
             int others = 0;
             loopv(clients) if((clients[i]->privilege&PRIV_TYPE) >= PRIV_ADMINISTRATOR || clients[i]->local) others++;
             if(!others) setpause(false);
+        }
+        if(ci->connected && resendinit)
+        {
+            packetbuf p(MAXTRANS, ENET_PACKET_FLAG_RELIABLE);
+            welcomeinitclient(ci, p, ci->clientnum, true);
+            sendpacket(ci->clientnum, 1, p.finalize());
         }
     }
 

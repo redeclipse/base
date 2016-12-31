@@ -15,6 +15,7 @@ VAR(IDF_PERSIST|IDF_HEX, textkeycolour, 0, 0x00FFFF, 0xFFFFFF);
 Texture *tbgbordertex = NULL, *tbgtex = NULL;
 VAR(IDF_PERSIST, textskin, 0, 2, 2);
 VAR(IDF_PERSIST, textskinsize, 0, 48, VAR_MAX);
+VAR(IDF_PERSIST, textskinpad, 0, 16, VAR_MAX);
 FVAR(IDF_PERSIST, textskinblend, 0, 0.3f, 1);
 FVAR(IDF_PERSIST, textskinfblend, 0, 1, 1);
 FVAR(IDF_PERSIST, textskinbright, 0, 0.6f, 10);
@@ -875,7 +876,7 @@ int draw_textf(const char *fstr, int left, int top, int xpad, int ypad, int r, i
                     t = tbgtex;
                     break;
             }
-            drawskin(t, left-FONTW, top, left+width+FONTW, top+height, bvec(int(r*bright), int(g*bright), int(b*bright)).min(255).tohexcolor(), blend, textskinsize);
+            drawskin(t, left-textskinpad, top, left+width+textskinpad, top+height, bvec(int(r*bright), int(g*bright), int(b*bright)).min(255).tohexcolor(), blend, textskinsize);
         }
         r = g = b = int(textskinfbright*255);
         a = int(255*textskinfblend);

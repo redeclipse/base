@@ -2378,38 +2378,42 @@ namespace hud
 
     void drawradar(int w, int h, float blend)
     {
-        if(chkcond(radarhits, !game::tvmode())) drawhits(w, h, blend);
-        if(radartype() == 3)
+        if(!m_hard(game::gamemode, game::mutators) || G(radarhardaffinity))
         {
-            vec pos = vec(camera1->o).sub(minimapcenter).mul(minimapscale).add(0.5f), dir(camera1->yaw*RAD, 0.f);
-            float scale = radarrange(), size = max(w, h)/2, s = size*radarcorner, x = w-s*2, y = 0, q = s*2*radarcorneroffset, r = s-q;
-            bindminimap();
-            gle::colorf(radarcornerbright, radarcornerbright, radarcornerbright, radarcornerblend);
-            gle::defvertex(2);
-            gle::deftexcoord0();
-            gle::begin(GL_TRIANGLE_FAN);
-            loopi(16)
+            if(radartype() == 3) // right-corner radar
             {
-                vec v = vec(0, -1, 0).rotate_around_z(i/16.0f*2*M_PI);
-                gle::attribf(x + q + r*(1.0f + v.x), y + q + r*(1.0f + v.y));
-                vec tc = vec(dir).rotate_around_z(i/16.0f*2*M_PI);
-                gle::attribf(pos.x + tc.x*scale*minimapscale.x, pos.y + tc.y*scale*minimapscale.y);
+                vec pos = vec(camera1->o).sub(minimapcenter).mul(minimapscale).add(0.5f), dir(camera1->yaw*RAD, 0.f);
+                float scale = radarrange(), size = max(w, h)/2, s = size*radarcorner, x = w-s*2, y = 0, q = s*2*radarcorneroffset, r = s-q;
+                bindminimap();
+                gle::colorf(radarcornerbright, radarcornerbright, radarcornerbright, radarcornerblend);
+                gle::defvertex(2);
+                gle::deftexcoord0();
+                gle::begin(GL_TRIANGLE_FAN);
+                loopi(16)
+                {
+                    vec v = vec(0, -1, 0).rotate_around_z(i/16.0f*2*M_PI);
+                    gle::attribf(x + q + r*(1.0f + v.x), y + q + r*(1.0f + v.y));
+                    vec tc = vec(dir).rotate_around_z(i/16.0f*2*M_PI);
+                    gle::attribf(pos.x + tc.x*scale*minimapscale.x, pos.y + tc.y*scale*minimapscale.y);
+                }
+                gle::end();
+                float gr = 1, gg = 1, gb = 1;
+                if(radartone) skewcolour(gr, gg, gb, radartone);
+                settexture(radarcornertex, 3);
+                gle::colorf(gr*radartexbright, gg*radartexbright, gb*radartexbright, radartexblend);
+                drawsized(w-s*2, 0, s*2);
             }
-            gle::end();
-            float gr = 1, gg = 1, gb = 1;
-            if(radartone) skewcolour(gr, gg, gb, radartone);
-            settexture(radarcornertex, 3);
-            gle::colorf(gr*radartexbright, gg*radartexbright, gb*radartexbright, radartexblend);
-            drawsized(w-s*2, 0, s*2);
+            if(chkcond(radaraffinity, !game::tvmode()))
+            {
+                if(m_capture(game::gamemode)) capture::drawblips(w, h, blend*radarblend);
+                else if(m_defend(game::gamemode)) defend::drawblips(w, h, blend*radarblend);
+                else if(m_bomber(game::gamemode)) bomber::drawblips(w, h, blend*radarblend);
+            }
         }
-        if(chkcond(radaritems, !game::tvmode()) || m_edit(game::gamemode)) drawentblips(w, h, blend*radarblend); // 2
-        if(chkcond(radaraffinity, !game::tvmode())) // 3
-        {
-            if(m_capture(game::gamemode)) capture::drawblips(w, h, blend*radarblend);
-            else if(m_defend(game::gamemode)) defend::drawblips(w, h, blend*radarblend);
-            else if(m_bomber(game::gamemode)) bomber::drawblips(w, h, blend*radarblend);
-        }
-        if(chkcond(radarplayers, radarplayerfilter != 3 || m_duke(game::gamemode, game::mutators) || m_edit(game::gamemode))) // 4
+        if(m_hard(game::gamemode, game::mutators)) return;
+        if(chkcond(radarhits, !game::tvmode())) drawhits(w, h, blend);
+        if(chkcond(radaritems, !game::tvmode()) || m_edit(game::gamemode)) drawentblips(w, h, blend*radarblend);
+        if(chkcond(radarplayers, radarplayerfilter != 3 || m_duke(game::gamemode, game::mutators) || m_edit(game::gamemode)))
         {
             gameent *d = NULL;
             int numdyns = game::numdynents(), style = radartype() != 2 ? radartype() : 1, others[T_MAX] = {0};
@@ -2430,7 +2434,7 @@ namespace hud
                 drawplayerblip(d, w, h, style, blend*radarblend, force);
             }
         }
-        if(radardamage) drawdamageblips(w, h, blend*radarblend); // 5+
+        if(radardamage) drawdamageblips(w, h, blend*radarblend);
     }
 
     int drawprogress(int x, int y, float start, float length, float size, bool left, float r, float g, float b, float fade, float skew, const char *font, const char *text, ...)
@@ -2660,23 +2664,23 @@ namespace hud
         {
             if(inventorytone) skewcolour(gr, gg, gb, inventorytone);
             gf *= inventorybgskin;
-            xpad = FONTW/4;
+            xpad = textskinpad;
         }
         defvformatstring(str, text, text);
         int tx = int(cx/skew), ty = int(cy/skew);
         switch(curflags&TEXT_ALIGN)
         {
-            case TEXT_LEFT_JUSTIFY: tx += FONTW*0.5f; break;
-            case TEXT_RIGHT_JUSTIFY: tx -= FONTW*0.5f; break;
+            case TEXT_LEFT_JUSTIFY: tx += xpad; break;
+            case TEXT_RIGHT_JUSTIFY: tx -= xpad; break;
             case TEXT_CENTERED:
             {
                 int width, height;
                 text_bounds(str, width, height, xpad, ypad, -1, curflags, 1);
-                tx -= (width/skew*0.5f)+FONTW;
+                tx -= width/skew*0.5f;
                 break;
             }
         }
-        int sy = draw_textf("%s", tx, ty, xpad, ypad, int(gr*255), int(gg*255), int(gb*255), int(gf*255), curflags, -1, -1, 1, str)*skew;
+        int sy = draw_textf("%s", tx, ty, 0, 0, int(gr*255), int(gg*255), int(gb*255), int(gf*255), curflags, -1, -1, 1, str)*skew;
         if(font && *font) popfont();
         pophudmatrix();
         return sy;
@@ -3181,7 +3185,7 @@ namespace hud
             }
             case 1:
             {
-                int cm = top;
+                int cm = top+edge;
                 if(!radardisabled && !m_hard(game::gamemode, game::mutators) && radartype() == 3 && !hasinput(true) && (game::focus->state == CS_EDITING ? showeditradar >= 1 : chkcond(showradar, !game::tvmode() || (game::focus != game::player1 && radartype() == 3))))
                     cm += int(max(w, h)/2*radarcorner*2)+cr;
                 if(inventorydate)
@@ -3447,7 +3451,7 @@ namespace hud
                     }
                 }
             }
-            if(!radardisabled && !m_hard(game::gamemode, game::mutators) && !hasinput(true) && (game::focus->state == CS_EDITING ? showeditradar >= 1 : chkcond(showradar, !game::tvmode() || (game::focus != game::player1 && radartype() == 3))))
+            if(!radardisabled && !hasinput(true) && (game::focus->state == CS_EDITING ? showeditradar >= 1 : chkcond(showradar, !game::tvmode() || (game::focus != game::player1 && radartype() == 3))))
                 drawradar(w, h, fade);
         }
         drawspecborder(w, h, !gs_playing(game::gamestate) || game::player1->state == CS_SPECTATOR ? BORDER_SPEC : (game::player1->state == CS_WAITING ? BORDER_WAIT : (game::player1->state == CS_WAITING ? BORDER_EDIT : BORDER_PLAY)), top, bottom);

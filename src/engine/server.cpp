@@ -444,7 +444,7 @@ void sendpacket(int n, int chan, ENetPacket *packet, int exclude)
         loopv(clients) if(i != server::peerowner(exclude) && server::allowbroadcast(i)) sendpacket(i, chan, packet, exclude);
         return;
     }
-    switch(clients[n]->type)
+    if(clients.inrange(n)) switch(clients[n]->type)
     {
         case ST_REMOTE:
         {
@@ -576,7 +576,7 @@ void sendfile(int cn, int chan, stream *file, const char *format, ...)
         file->read(p.subbuf(len).buf, len);
     }
     ENetPacket *packet = p.finalize();
-    if(cn >= 0) sendpacket(cn, chan, packet, -1);
+    if(cn >= 0) sendpacket(cn, chan, packet);
 #ifndef STANDALONE
     else sendclientpacket(packet, chan);
 #endif

@@ -982,7 +982,7 @@ namespace server
     }
 
     int numgamevars = 0, numgamemods = 0;
-    void resetgamevars(bool flush, bool all)
+    void resetgamevars(bool all)
     {
         numgamevars = numgamemods = 0;
         enumerate(idents, ident, id, {
@@ -994,28 +994,37 @@ namespace server
                 {
                     case ID_VAR:
                     {
-                        setvar(id.name, id.def.i, true);
+                        if(*id.storage.i != id.def.i)
+                        {
+                            setvar(id.name, id.def.i, true);
+                            val = intstr(&id);
+                        }
                         if(id.flags&IDF_GAMEMOD && *id.storage.i != id.bin.i) numgamemods++;
-                        if(flush) val = intstr(&id);
                         break;
                     }
                     case ID_FVAR:
                     {
-                        setfvar(id.name, id.def.f, true);
+                        if(*id.storage.f != id.def.f)
+                        {
+                            setfvar(id.name, id.def.f, true);
+                            val = floatstr(*id.storage.f);
+                        }
                         if(id.flags&IDF_GAMEMOD && *id.storage.f != id.bin.f) numgamemods++;
-                        if(flush) val = floatstr(*id.storage.f);
                         break;
                     }
                     case ID_SVAR:
                     {
-                        setsvar(id.name, id.def.s && *id.def.s ? id.def.s : "", true);
+                        if(strcmp(*id.storage.s, id.bin.s))
+                        {
+                            setsvar(id.name, id.def.s && *id.def.s ? id.def.s : "", true);
+                            val = *id.storage.s;
+                        }
                         if(id.flags&IDF_GAMEMOD && strcmp(*id.storage.s, id.bin.s)) numgamemods++;
-                        if(flush) val = *id.storage.s;
                         break;
                     }
                     default: break;
                 }
-                if(flush && val) sendf(-1, 1, "ri2sis", N_COMMAND, -1, &id.name[3], strlen(val), val);
+                if(val) sendf(-1, 1, "ri2sis", N_COMMAND, -1, &id.name[3], strlen(val), val);
             }
         });
     }
@@ -1127,7 +1136,7 @@ namespace server
         if(G(resetmutesonend)) resetmutes();
         if(G(resetlimitsonend)) resetlimits();
         if(G(resetexceptsonend)) resetexcepts();
-        if(G(resetvarsonend) || init) resetgamevars(true, true);
+        if(G(resetvarsonend) || init) resetgamevars(true);
         changemap();
         lastrotatecycle = clocktime;
     }
@@ -1586,6 +1595,11 @@ namespace server
         return result;
     }
 
+    bool balancecmp(clientinfo *a, clientinfo *b)
+    {
+        return (a->balancescore() > b->balancescore());
+    }
+
     void doteambalance(bool init)
     {
         vector<clientinfo *> tc[T_TOTAL];
@@ -1625,39 +1639,16 @@ namespace server
                         if(!cp->team || cp->state == CS_SPECTATOR || cp->actortype > A_PLAYER) continue;
                         pool.add(cp);
                     }
-                    while(pool.length())
+                    pool.sort(balancecmp);
+                    loopvj(pool)
                     {
-                        int bestindex = 0;
-                        clientinfo *best = pool[bestindex];
-                        float bestscore = 0;
-                        loopvj(pool)
+                        clientinfo *cp = pool[j];
+                        cp->swapteam = T_NEUTRAL;
+                        int t = chooseteam(cp, -1, true);
+                        if(t != cp->team)
                         {
-                            clientinfo *cp = pool[j];
-                            float score = 0.0f;
-                            switch(G(teambalancestyle))
-                            {
-                                case 1: case 7: score = cp->timeplayed; break;
-                                case 2: case 8: score = cp->totalpoints; break;
-                                case 3: case 9: score = cp->totalfrags; break;
-                                case 4: case 10: score = cp->scoretime(); break;
-                                case 5: case 11: score = cp->kdratio(); break;
-                                case 6: case 12: score = cp->combinedkdratio(); break;
-                                case 0: default: break;
-                            }
-                            if(score > bestscore)
-                            {
-                                best = cp;
-                                bestscore = score;
-                                bestindex = j;
-                            }
-                        }
-                        pool.remove(bestindex);
-                        best->swapteam = T_NEUTRAL;
-                        int t = chooseteam(best, -1, true);
-                        if(t != best->team)
-                        {
-                            setteam(best, t, (m_balreset(gamemode, mutators) ? TT_RESET : 0)|TT_INFOSM, false);
-                            best->lastdeath = 0;
+                            setteam(cp, t, (m_balreset(gamemode, mutators) ? TT_RESET : 0)|TT_INFOSM, false);
+                            cp->lastdeath = 0;
                         }
                     }
                 }
@@ -1671,21 +1662,17 @@ namespace server
                         {
                             clientinfo *cp = tc[i][j];
                             if(m_swapteam(gamemode, mutators) && cp->swapteam && cp->swapteam == team) { id = j; break; }
-                            switch(G(teambalancestyle))
+                            if(G(teambalancestyle) == 0)
                             {
-                                case 1: if(id < 0 || tc[i][id]->timeplayed > cp->timeplayed) id = j; break;
-                                case 2: if(id < 0 || tc[i][id]->totalpoints > cp->totalpoints) id = j; break;
-                                case 3: if(id < 0 || tc[i][id]->totalfrags > cp->totalfrags) id = j; break;
-                                case 4: if(id < 0 || tc[i][id]->scoretime(false) > cp->scoretime(false)) id = j; break;
-                                case 5: if(id < 0 || tc[i][id]->kdratio() > cp->kdratio()) id = j; break;
-                                case 6: if(id < 0 || tc[i][id]->combinedkdratio() > cp->combinedkdratio()) id = j; break;
-                                case 7: if(id < 0 || tc[i][id]->timeplayed < cp->timeplayed) id = j; break;
-                                case 8: if(id < 0 || tc[i][id]->totalpoints < cp->totalpoints) id = j; break;
-                                case 9: if(id < 0 || tc[i][id]->totalfrags < cp->totalfrags) id = j; break;
-                                case 10: if(id < 0 || tc[i][id]->scoretime(false) < cp->scoretime(false)) id = j; break;
-                                case 11: if(id < 0 || tc[i][id]->kdratio() < cp->kdratio()) id = j; break;
-                                case 12: if(id < 0 || tc[i][id]->combinedkdratio() < cp->combinedkdratio()) id = j; break;
-                                case 0: default: if(id < 0) id = j; break;
+                                if(id < 0) id = j;
+                            }
+                            else if(G(teambalancehighest))
+                            {
+                                if(id < 0 || tc[i][id]->balancescore() < cp->balancescore()) id = j;
+                            }
+                            else
+                            {
+                                if(id < 0 || tc[i][id]->balancescore() > cp->balancescore()) id = j;
                             }
                         }
                         if(id >= 0)
@@ -2363,7 +2350,7 @@ namespace server
         srvoutf(4, "\fydemo playback finished");
         loopv(clients) sendwelcome(clients[i]);
         startintermission(true);
-        resetgamevars(true, true);
+        resetgamevars(true);
     }
 
     void setupdemoplayback()
@@ -2588,7 +2575,7 @@ namespace server
         checkdemorecord(true);
         setmod(sv_botoffset, 0);
         if(G(resetmmonend) >= 2) mastermode = MM_OPEN;
-        if(G(resetvarsonend) >= 2) resetgamevars(true, false);
+        if(G(resetvarsonend) >= 2) resetgamevars(false);
         if(G(resetallowsonend) >= 2) resetallows();
         if(G(resetbansonend) >= 2) resetbans();
         if(G(resetmutesonend) >= 2) resetmutes();
@@ -2913,31 +2900,13 @@ namespace server
         {
             int worst = -1;
             float csk = 0, wsk = 0;
-            switch(G(teambalancestyle))
-            {
-                case 1: case 7: csk = ci->timeplayed; break;
-                case 2: case 8: csk = ci->totalpoints; break;
-                case 3: case 9: csk = ci->totalfrags; break;
-                case 4: case 10: csk = ci->scoretime(); break;
-                case 5: case 11: csk = ci->kdratio(); break;
-                case 6: case 12: csk = ci->combinedkdratio(); break;
-                case 0: default: break;
-            }
+            csk = ci->balancescore();
             loopv(clients) if(clients[i] && clients[i] != ci)
             {
                 clientinfo *cp = clients[i];
                 if(cp->actortype != A_PLAYER || (newteam && cp->team != newteam)) continue;
                 float psk = 0;
-                switch(G(teambalancestyle))
-                {
-                    case 1: case 7: psk = cp->timeplayed; break;
-                    case 2: case 8: psk = cp->totalpoints; break;
-                    case 3: case 9: psk = cp->totalfrags; break;
-                    case 4: case 10: psk = cp->scoretime(); break;
-                    case 5: case 11: psk = cp->kdratio(); break;
-                    case 6: case 12: psk = ci->combinedkdratio(); break;
-                    case 0: default: break;
-                }
+                psk = cp->balancescore();
                 if(psk > csk || psk > wsk) continue;
                 worst = i;
                 wsk = psk;
@@ -3041,16 +3010,7 @@ namespace server
                     return team; // swapteam
                 if(ci->actortype > A_PLAYER || (ci->actortype == A_PLAYER && cp->actortype == A_PLAYER))
                 { // remember: ai just balance teams
-                    switch(G(teambalancestyle))
-                    {
-                        case 1: case 7: ts.score += cp->timeplayed; break;
-                        case 2: case 8: ts.score += cp->totalpoints; break;
-                        case 3: case 9: ts.score += cp->totalfrags; break;
-                        case 4: case 10: ts.score += cp->scoretime(); break;
-                        case 5: case 11: ts.score += cp->kdratio(); break;
-                        case 6: case 12: ts.score += cp->combinedkdratio(); break;
-                        case 0: default: ts.score += 1; break;
-                    }
+                    ts.score += cp->balancescore(1);
                     ts.clients++;
                 }
             }
@@ -3104,6 +3064,7 @@ namespace server
     }
 
     void connected(clientinfo *ci);
+    void welcomeinitclient(clientinfo *ci, packetbuf &p, int exclude = -1, bool nobots = false);
 
     #include "auth.h"
 
@@ -3905,7 +3866,7 @@ namespace server
         sendf(-1, 1, "ri9i4vi", N_RESUME, ci->clientnum, ci->state, ci->points, ci->frags, ci->deaths, ci->totalpoints, ci->totalfrags, ci->totaldeaths, ci->timeplayed, ci->health, ci->cptime, ci->weapselect, W_MAX, &ci->ammo[0], -1);
     }
 
-    void putinitclient(clientinfo *ci, packetbuf &p)
+    void putinitclient(clientinfo *ci, packetbuf &p, bool allow)
     {
         if(ci->actortype > A_PLAYER)
         {
@@ -3942,33 +3903,39 @@ namespace server
             putint(p, ci->randweap.length());
             loopv(ci->randweap) putint(p, ci->randweap[i]);
             sendstring(ci->handle, p);
-            sendstring(gethostname(ci->clientnum), p);
-            sendstring(gethostip(ci->clientnum), p);
+            sendstring(allow ? gethostname(ci->clientnum) : "*", p);
+            sendstring(allow ? gethostip(ci->clientnum) : "*", p);
             ci->version.put(p);
         }
     }
 
     void sendinitclient(clientinfo *ci)
     {
-        packetbuf p(MAXTRANS, ENET_PACKET_FLAG_RELIABLE);
-        putinitclient(ci, p);
-        sendpacket(-1, 1, p.finalize(), ci->clientnum);
+        packetbuf p(MAXTRANS, ENET_PACKET_FLAG_RELIABLE), q(MAXTRANS, ENET_PACKET_FLAG_RELIABLE);
+        putinitclient(ci, p, true);
+        p.finalize();
+        putinitclient(ci, q, false);
+        q.finalize();
+        loopv(clients) if(clients[i] != ci && allowbroadcast(clients[i]->clientnum))
+            sendpacket(clients[i]->clientnum, 1, haspriv(clients[i], G(iphostlock)) ? p.packet : q.packet);
+        sendpacket(-1, -1, q.packet); // anonymous packet just for recording
     }
 
     void sendinitclientself(clientinfo *ci)
     {
         packetbuf p(MAXTRANS, ENET_PACKET_FLAG_RELIABLE);
-        putinitclient(ci, p);
-        sendpacket(ci->clientnum, 1, p.finalize(), ci->clientnum);
+        putinitclient(ci, p, true);
+        sendpacket(ci->clientnum, 1, p.finalize());
     }
 
-    void welcomeinitclient(packetbuf &p, int exclude = -1)
+    void welcomeinitclient(clientinfo *ci, packetbuf &p, int exclude, bool nobots)
     {
+        bool iph = ci ? haspriv(ci, G(iphostlock)) : false;
         loopv(clients)
         {
-            clientinfo *ci = clients[i];
-            if(!ci->connected || ci->clientnum == exclude) continue;
-            putinitclient(ci, p);
+            clientinfo *cp = clients[i];
+            if(!cp->connected || cp->clientnum == exclude || (nobots && cp->actortype != A_PLAYER)) continue;
+            putinitclient(cp, p, iph);
         }
     }
 
@@ -4075,7 +4042,7 @@ namespace server
                 sendstate(oi, p);
             }
             putint(p, -1);
-            welcomeinitclient(p, ci ? ci->clientnum : -1);
+            welcomeinitclient(ci, p, ci ? ci->clientnum : -1);
             loopv(clients)
             {
                 clientinfo *oi = clients[i];
@@ -4444,7 +4411,7 @@ namespace server
                             c.flag = ipinfo::INTERNAL;
                             c.time = totalmillis ? totalmillis : 1;
                             c.reason = newstring("team killing is not permitted");
-                            srvoutf(-3, "\fs\fcbanned\fS %s (%s/%s): %s", colourname(v), gethostname(v->clientnum), gethostip(v->clientnum), c.reason);
+                            srvoutf(-3, "\fs\fcbanned\fS %s: %s", colourname(v), c.reason);
                             updatecontrols = true;
                         }
                         else if(G(teamkillkick) && v->warnings[WARN_TEAMKILL][0] >= G(teamkillkick))
@@ -5406,7 +5373,7 @@ namespace server
             if(ci->name[0])
             {
                 int amt = numclients(ci->clientnum);
-                relayf(2, "\fo%s (%s) has left the game (%s, %d %s)", colourname(ci), gethostname(n), reason >= 0 ? disc_reasons[reason] : "normal", amt, amt != 1 ? "players" : "player");
+                relayf(2, "\fo%s has left the game (%s, %d %s)", colourname(ci), reason >= 0 ? disc_reasons[reason] : "normal", amt, amt != 1 ? "players" : "player");
             }
             clients.removeobj(ci);
             queryplayers.removeobj(ci);
@@ -5751,10 +5718,10 @@ namespace server
         int amt = numclients();
         if((ci->privilege&PRIV_TYPE) > PRIV_NONE)
         {
-            if(ci->handle[0]) relayf(2, "\fg%s (%s) has joined the game (\fs\fy%s\fS: \fs\fc%s\fS) [%d.%d.%d-%s%d-%s] (%d %s)", colourname(ci), gethostname(ci->clientnum), privname(ci->privilege), ci->handle, ci->version.major, ci->version.minor, ci->version.patch, plat_name(ci->version.platform), ci->version.arch, ci->version.branch, amt, amt != 1 ? "players" : "player");
-            else relayf(2, "\fg%s (%s) has joined the game (\fs\fy%s\fS) [%d.%d.%d-%s%d-%s] (%d %s)", colourname(ci), gethostname(ci->clientnum), privname(ci->privilege), ci->version.major, ci->version.minor, ci->version.patch, plat_name(ci->version.platform), ci->version.arch, ci->version.branch, amt, amt != 1 ? "players" : "player");
+            if(ci->handle[0]) relayf(2, "\fg%s has joined the game (\fs\fy%s\fS: \fs\fc%s\fS) [%d.%d.%d-%s%d-%s] (%d %s)", colourname(ci), privname(ci->privilege), ci->handle, ci->version.major, ci->version.minor, ci->version.patch, plat_name(ci->version.platform), ci->version.arch, ci->version.branch, amt, amt != 1 ? "players" : "player");
+            else relayf(2, "\fg%s has joined the game (\fs\fy%s\fS) [%d.%d.%d-%s%d-%s] (%d %s)", colourname(ci), privname(ci->privilege), ci->version.major, ci->version.minor, ci->version.patch, plat_name(ci->version.platform), ci->version.arch, ci->version.branch, amt, amt != 1 ? "players" : "player");
         }
-        else relayf(2, "\fg%s (%s) has joined the game [%d.%d.%d-%s%d-%s] (%d %s)", colourname(ci), gethostname(ci->clientnum), ci->version.major, ci->version.minor, ci->version.patch, plat_name(ci->version.platform), ci->version.arch, ci->version.branch, amt, amt != 1 ? "players" : "player");
+        else relayf(2, "\fg%s has joined the game [%d.%d.%d-%s%d-%s] (%d %s)", colourname(ci), ci->version.major, ci->version.minor, ci->version.patch, plat_name(ci->version.platform), ci->version.arch, ci->version.branch, amt, amt != 1 ? "players" : "player");
 
         if(m_demo(gamemode)) setupdemoplayback();
         else if(m_edit(gamemode))
@@ -6937,7 +6904,7 @@ namespace server
                                     c.type = value; \
                                     c.time = totalmillis ? totalmillis : 1; \
                                     c.reason = newstring(text); \
-                                    if(text[0]) srvoutf(-3, "%s added \fs\fc" #y "\fS on %s (%s/%s): %s", name, colourname(cp), gethostname(cp->clientnum), gethostip(cp->clientnum), text); \
+                                    if(text[0]) srvoutf(-3, "%s added \fs\fc" #y "\fS on %s: %s", name, colourname(cp), text); \
                                     else srvoutf(-3, "%s added \fs\fc" #y "\fS on %s", name, colourname(cp)); \
                                     if(value == ipinfo::BAN) updatecontrols = true; \
                                     else if(value == ipinfo::LIMIT) cp->swapteam = 0; \
@@ -6980,6 +6947,11 @@ namespace server
                         break;
                     }
                     bool spec = val != 0, quarantine = cp != ci && val == 2, wasq = cp->quarantine;
+                    if(quarantine && (ci->privilege&PRIV_TYPE) <= (cp->privilege&PRIV_TYPE))
+                    {
+                        srvmsgf(ci->clientnum, "\fraccess denied, you may not quarantine higher or equally privileged player %s", colourname(cp));
+                        break;
+                    }
                     if(!spectate(cp, spec, quarantine))
                     {
                         if(G(serverdebug)) srvmsgf(ci->clientnum, "sync error: unable to modify spectator %s - %d [%d, %d] - failed", colourname(cp), cp->state, cp->lastdeath, gamemillis);

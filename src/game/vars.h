@@ -77,6 +77,7 @@ GVAR(IDF_MODERATOR, spawnlock, 0, PRIV_MODERATOR, PRIV_MAX); // if locked, requi
 GVAR(IDF_MODERATOR, spawneditlock, 0, PRIV_MODERATOR, PRIV_MAX); // if locked in editmode, require this to spawn
 GVAR(IDF_MODERATOR, masterlock, 0, PRIV_MODERATOR, PRIV_MAX);
 GVAR(IDF_MODERATOR, crclock, 0, PRIV_MAX, PRIV_MAX);
+GVAR(IDF_MODERATOR, iphostlock, 0, PRIV_OPERATOR, PRIV_MAX); // require this level to see ip/hosts
 
 GVAR(IDF_ADMIN, overflowlock, 0, PRIV_MODERATOR, PRIV_MAX); // normal message queue override
 GVAR(IDF_ADMIN, overflowsize, 0, 255, VAR_MAX); // kick if queued messages >= this
@@ -170,10 +171,10 @@ GVAR(IDF_MODERATOR, waitforplayerinfo, 0, 10000, VAR_MAX); // wait at least this
 
 namespace server
 {
-    extern void resetgamevars(bool flush, bool all);
+    extern void resetgamevars(bool all);
     extern void savegamevars();
 }
-GICOMMAND(0, resetvars, "", (), server::resetgamevars(true, false); result("success"), );
+GICOMMAND(0, resetvars, "i", (int *n), server::resetgamevars(*n!=0); result("success"), );
 GICOMMAND(IDF_ADMIN, savevars, "", (), server::savegamevars(); result("success"), );
 GICOMMAND(IDF_MODERATOR, resetconfig, "", (), rehash(true); result("success"), );
 
@@ -189,6 +190,7 @@ GVAR(IDF_GAMEMOD, survivorprotect, 0, 5000, VAR_MAX); // .. in duel/survivor mat
 GVAR(IDF_GAMEMOD, instaprotect, 0, 3000, VAR_MAX); // .. in instagib matches
 GVAR(IDF_GAMEMOD, protectbreak, 0, 1, 1); // 0 = off, 1 = protection is broken when player starts firing
 
+GVAR(IDF_GAMEMOD, radarhardaffinity, 0, 1, 1); // 0 = do not allow showing affinities with hard mutator, 1 = allow it
 GVAR(IDF_GAMEMOD, radardisabled, 0, 0, 1); // forces the radar to be off
 GVAR(IDF_GAMEMOD, radardistlimit, 0, 0, VAR_MAX); // forces the radar to this distance max, 0 = off
 
@@ -293,7 +295,8 @@ GVAR(IDF_GAMEMOD, teambalancewait, 0, 10000, VAR_MAX); // how long before can ha
 GVAR(IDF_GAMEMOD, teambalancedelay, 0, 3000, VAR_MAX); // how long before reassignments start
 GVAR(IDF_GAMEMOD, teambalanceswap, 0, 1, 1); // allow swap requests if unable to change team
 GVAR(IDF_GAMEMOD, teambalancelock, 0, PRIV_MODERATOR, PRIV_MAX); // level at which one can override swap
-GVAR(IDF_GAMEMOD, teambalancestyle, 0, 12, 12); // when moving players, sort by: 0 = top of list, 1 = lowest time played, 2 = lowest points, 3 = lowest frags, 4 = lowest scoretime, 5 = lowest kdratio, 6 = lowest combined kdratio, 7 = highest time played, 8 = highest points, 9 = highest frags, 10 = highest scoretime, 11 = highest kdratio, 12 = highest combined kdratio
+GVAR(IDF_GAMEMOD, teambalancestyle, 0, 6, 6); // when moving players, sort by: 0 = top of list, 1 = time played, 2 = points, 3 = frags, 4 = scoretime, 5 = kdratio, 6 = combined kdratio
+GVAR(IDF_GAMEMOD, teambalancehighest, 0, 1, 1); // when moving players, move highest first
 
 GVAR(IDF_GAMEMOD, racegauntletwinner, 0, 1, 1); // declare the winner when the final team exceeds best score
 

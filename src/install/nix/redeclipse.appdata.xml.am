@@ -2,7 +2,7 @@
 <component type="desktop">
   <id>@APPNAME@.desktop</id>
   <metadata_license>CC-BY-SA-3.0+</metadata_license>
-  <project_license>ZLIB and CC-BY-SA-3.0+</project_license>
+  <project_license>Zlib and CC-BY-SA-3.0+</project_license>
   <description>
     <p>
       Red Eclipse is a fun-filled new take on the first person arena shooter,
