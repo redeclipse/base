@@ -1606,9 +1606,10 @@ namespace modelpreview
     }
 }
 
-vec calcmodelpreviewpos(const vec &radius, float &yaw)
+vec calcmodelpreviewpos(const vec &radius, float &yaw, float setyaw)
 {
-    yaw = fmod(lastmillis/10000.0f*360.0f, 360.0f);
+    if(setyaw >= 0) yaw = fmod(setyaw, 360.0f);
+    else yaw = fmod(lastmillis/10000.0f*360.0f, 360.0f);
     float dist = 1.05f*max(radius.magnitude2()/aspect, radius.magnitude())/sinf(fovy/2*RAD);
     return vec(0, dist, 0).rotate_around_x(camera1->pitch*RAD);
 }
