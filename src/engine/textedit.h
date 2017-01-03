@@ -613,6 +613,14 @@ struct editor
                     h += height;
                 }
             }
+            if(hit) // When hit and no text, still draw cursor.
+            {
+                int width = 0, height = 0;
+                text_bounds(" ", width, height, maxwidth, TEXT_NO_INDENT);
+                if(h+height <= pixelheight)
+                    draw_text(" ", x, y+h, color>>16, (color>>8)&0xFF, color&0xFF, 0xFF, TEXT_NO_INDENT, 0, maxwidth);
+
+            }
             return;
         }
 
