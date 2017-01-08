@@ -3,8 +3,8 @@ THE RED ECLIPSE LICENSE
 Red Eclipse is based on Cube Engine 2, both of which are covered under the ZLIB
 license, you may use the source code so long as you obey this license.
 
-    Red Eclipse, Copyright (C) 2009-2016 Quinton Reeves, Lee Salzman
-    Cube Engine 2, Copyright (C) 2001-2016 Wouter van Oortmerssen, Lee Salzman,
+    Red Eclipse, Copyright (C) 2009-2017 Quinton Reeves, Lee Salzman
+    Cube Engine 2, Copyright (C) 2001-2017 Wouter van Oortmerssen, Lee Salzman,
         Mike Dysart, Robert Pointon, and Quinton Reeves
     http://www.opensource.org/licenses/zlib-license.php
 
@@ -36,7 +36,7 @@ the CC-BY-SA license, either version 3.0 or (at your option) any later version,
 you may use the content in Red Eclipse so long as you obey individual
 licensing criteria.
 
-    Red Eclipse, Copyright (C) 2009-2016 Red Eclipse Team
+    Red Eclipse, Copyright (C) 2009-2017 Red Eclipse Team
     Creative Commons Attribution ShareAlike 3.0+ License (CC-BY-SA)
     See cc-by-sa.txt or http://creativecommons.org/licenses/by-sa/3.0/
 
