@@ -1638,6 +1638,7 @@ namespace server
                         clientinfo *cp = clients[j];
                         if(!cp->team || cp->state == CS_SPECTATOR || cp->actortype > A_PLAYER) continue;
                         pool.add(cp);
+                        setteam(cp, T_NEUTRAL, 0, false);
                     }
                     pool.sort(balancecmp);
                     loopvj(pool)
