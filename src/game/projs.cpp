@@ -1876,9 +1876,6 @@ namespace projs
                     }
                     e->vel = vec(yaw*RAD, pitch*RAD).mul(mag).add(keepvel);
                     e->doimpulse(cost, IM_T_GRAB, lastmillis);
-                    e->turnmillis = PHYSMILLIS;
-                    e->turnside = 0;
-                    e->turnyaw = e->turnroll = 0;
                     client::addmsg(N_SPHY, "ri2", e->clientnum, SPHY_GRAB);
                     game::impulseeffect(e);
                     game::footstep(e);
