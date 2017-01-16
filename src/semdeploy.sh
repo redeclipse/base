@@ -9,7 +9,11 @@ SEMABUILD_ALLMODS="base ${SEMABUILD_MODULES}"
 SEMABUILD_DIST="bz2 combined win mac"
 
 sudo ${SEMABUILD_APT} update || exit 1
-sudo ${SEMABUILD_APT} -fy install build-essential unzip zip nsis nsis-common mktorrent || exit 1
+sudo ${SEMABUILD_APT} -fy install build-essential unzip zip nsis nsis-common mktorrent golang || exit 1
+
+export GOPATH="${HOME}/gofiles"
+go get "github.com/aktau/github-release"
+SEMABUILD_GHR="${GOPATH}/bin/github-release"
 
 rm -rf "${SEMABUILD_BUILD}"
 rm -rf "${SEMABUILD_PWD}/data"
@@ -35,27 +39,41 @@ done
 
 rm -rf "${SEMABUILD_PWD}/data" "${SEMABUILD_PWD}/.git"
 
+SEMABUILD_NAME=`sed -n 's/.define VERSION_NAME *"\([^"]*\)"/\1/p' "${SEMABUILD_PWD}/engine/version.h"`
+SEMABUILD_UNAME=`sed -n 's/.define VERSION_UNAME *"\([^"]*\)"/\1/p' "${SEMABUILD_PWD}/engine/version.h"`
+SEMABUILD_VERSION=`sed -n 's/.define VERSION_STRING *"\([^"]*\)"/\1/p' "${SEMABUILD_PWD}/engine/version.h"`
+SEMABUILD_RELEASE=`sed -n 's/.define VERSION_RELEASE *"\([^"]*\)"/\1/p' "${SEMABUILD_PWD}/engine/version.h"`
+
+${SEMABUILD_GHR} --verbose release --user "red-eclipse" --repo "base" --tag "v${SEMABUILD_VERSION}" --name "v${SEMABUILD_VERSION} (${SEMABUILD_RELEASE})" --description "${SEMABUILD_NAME} v${SEMABUILD_VERSION} (${SEMABUILD_RELEASE}) has been released!" --target "stable" --draft
+
 for i in ${SEMABUILD_DIST}; do
     pushd "${SEMABUILD_BUILD}/src" || exit 1
     make dist-${i} dist-torrent-${i} || exit 1
     popd
     pushd "${SEMABUILD_BUILD}" || exit 1
     mkdir -p releases || exit 1
+    m="${i}"
+    n=""
     case "${i}" in
+        bz2)
+            m="linux"
+            n="tar.bz2"
+            ;;
         win)
-            mv -vf redeclipse_*.*_*.exe releases/ || exit 1
+            n="exe"
             ;;
         *)
-            mv -vf redeclipse_*.*_*.tar.bz2 releases/ || exit 1
+            n="tar.bz2"
             ;;
     esac
-    mv -vf redeclipse_*.*_*.torrent releases/ || exit 1
-    pushd "${SEMABUILD_BUILD}/releases"
-    for j in redeclipse_*.*; do
-        shasum "${j}" > "${j}.shasum"
-        md5sum "${j}" > "${j}.md5sum"
+    o="${SEMABUILD_UNAME}_${SEMABUILD_VERSION}_${m}"
+    p="${o}.${n} ${o}.${n}.torrent"
+    for q in ${p}; do
+        mv -vf "${q}" "releases/${q}"
+        shasum "releases/${q}" > "releases/${q}.shasum"
+        md5sum "releases/${q}" > "releases/${q}.md5sum"
+        ${SEMABUILD_GHR} --verbose upload --user "red-eclipse" --repo "base" --tag "v${SEMABUILD_VERSION}" --name "${q}" --file "releases/${q}"
     done
-    popd
     ${SEMABUILD_SCP} -r "releases" "${SEMABUILD_TARGET}" || exit 1
     rm -rf releases
     popd
