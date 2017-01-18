@@ -192,6 +192,7 @@ extern enttypes enttype[];
 #endif
 
 #define MAXNAMELEN 24
+#define MAXBRANCHLEN 16
 enum { SAY_NONE = 0, SAY_ACTION = 1<<0, SAY_TEAM = 1<<1, SAY_WHISPER = 1<<2, SAY_NUM = 3 };
 
 enum {
@@ -490,7 +491,7 @@ struct verinfo
         gpuglslver = getint(p);
         crc = getint(p);
         if(branch) delete[] branch;
-        getstring(text, p); branch = newstring(text);
+        getstring(text, p); branch = newstring(text, MAXBRANCHLEN);
         if(gpuvendor) delete[] gpuvendor;
         getstring(text, p); gpuvendor = newstring(text);
         if(gpurenderer) delete[] gpurenderer;
@@ -529,7 +530,7 @@ struct verinfo
         gpuglslver = v.gpuglslver;
         crc = v.crc;
         if(branch) delete[] branch;
-        branch = newstring(v.branch ? v.branch : "");
+        branch = newstring(v.branch ? v.branch : "", MAXBRANCHLEN);
         if(gpuvendor) delete[] gpuvendor;
         gpuvendor = newstring(v.gpuvendor ? v.gpuvendor : "");
         if(gpurenderer) delete[] gpurenderer;
