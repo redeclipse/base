@@ -192,7 +192,6 @@ extern enttypes enttype[];
 #endif
 
 #define MAXNAMELEN 24
-#define MAXBRANCHLEN 16
 enum { SAY_NONE = 0, SAY_ACTION = 1<<0, SAY_TEAM = 1<<1, SAY_WHISPER = 1<<2, SAY_NUM = 3 };
 
 enum {
