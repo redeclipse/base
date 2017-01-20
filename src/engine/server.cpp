@@ -1702,7 +1702,8 @@ void setverinfo(const char *bin)
     string buf;
     setvar("versioncrc", crcfile(bin));
     const char *vbranch = getenv(sup_var("BRANCH"));
-    setsvar("versionbranch", vbranch && *vbranch ? vbranch : "none");
+    string truncatedbranch; copystring(truncatedbranch, vbranch && *vbranch ? vbranch : "none", MAXBRANCHLEN + 1);
+    setsvar("versionbranch", truncatedbranch);
 #ifdef WIN32
     const char *suser = getenv("USERNAME");
 #else
