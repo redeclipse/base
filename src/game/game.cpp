@@ -25,7 +25,7 @@ namespace game
         player1->version.gpuglslver = glslversion;
         player1->version.crc = versioncrc;
         if(player1->version.branch) delete[] player1->version.branch;
-        player1->version.branch = newstring(versionbranch);
+        player1->version.branch = newstring(versionbranch, MAXBRANCHLEN);
         if(player1->version.gpuvendor) delete[] player1->version.gpuvendor;
         player1->version.gpuvendor = newstring(gfxvendor);
         if(player1->version.gpurenderer) delete[] player1->version.gpurenderer;
