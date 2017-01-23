@@ -1253,9 +1253,10 @@ stream *openutf8file(const char *filename, const char *mode, stream *file)
 
 char *loadstream(stream *f, size_t *size, bool utf8)
 {
-    f->seek(0, SEEK_SET);
-    size_t len = f->size();
-    if(len <= 0) return NULL;
+    if(!f->seek(0, SEEK_SET)) return NULL;
+    stream::offset flen = f->size();
+    if(flen <= 0) return NULL;
+    size_t len = (size_t)flen;
     char *buf = new char[len+1];
     if(!buf) return NULL;
     size_t offset = 0;
