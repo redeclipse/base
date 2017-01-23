@@ -55,7 +55,7 @@ SVAR(IDF_READONLY, systemhost, "unknown");
 
 VAR(0, rehashing, 1, 0, -1);
 
-const char * const disc_reasons[] = { "normal", "end of packet", "client num", "user was kicked", "message error", "address is banned", "server is in private mode", "server is password protected", "server requires pure official builds", "server is at maximum capacity", "server and client are incompatible", "connection timed out", "packet overflow", "hostname lookup failure", "server shutting down" };
+const char * const disc_reasons[] = { "normal", "end of packet", "client num", "user was kicked", "message error", "address is banned", "server is in private mode", "server is password protected", "server requires pure official builds", "server is at maximum capacity", "server and client are incompatible", "connection timed out", "packet overflow", "server shutting down", "hostname lookup failure" };
 
 SVAR(IDF_PERSIST, logtimeformat, "%Y-%m-%d %H:%M.%S");
 VAR(IDF_PERSIST, logtimelocal, 0, 1, 1); // use clockoffset to localise
