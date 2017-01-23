@@ -56,7 +56,7 @@ for i in ${SEMABUILD_DIST}; do
     n=""
     case "${i}" in
         bz2)
-            m="linux"
+            m="nix"
             n="tar.bz2"
             ;;
         win)

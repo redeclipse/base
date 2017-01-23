@@ -42,7 +42,7 @@ SVAR(IDF_READONLY, versionplatlongname, plat_longname(CUR_PLATFORM));
 VAR(IDF_READONLY, versionplatform, 0, CUR_PLATFORM, VAR_MAX);
 VAR(IDF_READONLY, versionarch, 0, CUR_ARCH, VAR_MAX);
 VAR(IDF_READONLY, versioncrc, 0, 0, VAR_MAX);
-SVAR(IDF_READONLY, versionbranch, "none");
+SVARF(IDF_READONLY, versionbranch, "none", versionbranch[MAXBRANCHLEN+1] = 0);
 #ifdef STANDALONE
 VAR(IDF_READONLY, versionisserver, 0, 1, 1);
 #else
@@ -1702,7 +1702,7 @@ void setverinfo(const char *bin)
     string buf;
     setvar("versioncrc", crcfile(bin));
     const char *vbranch = getenv(sup_var("BRANCH"));
-    setsvar("versionbranch", vbranch && *vbranch ? vbranch : "none");
+    setsvar("versionbranch", vbranch);
 #ifdef WIN32
     const char *suser = getenv("USERNAME");
 #else

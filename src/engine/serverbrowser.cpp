@@ -233,7 +233,7 @@ static serverinfo *newserver(const char *name, int port = SERVER_PORT, int prior
     if(desc && *desc) copystring(si->sdesc, desc);
     if(handle && *handle) copystring(si->authhandle, handle);
     if(flags && *flags) copystring(si->flags, flags);
-    if(branch && *branch) copystring(si->branch, branch);
+    if(branch && *branch) copystring(si->branch, branch, MAXBRANCHLEN+1);
 
     servers.add(si);
     sortedservers = false;
@@ -370,7 +370,7 @@ void checkpings()
         if(gver >= 227)
         {
             getstring(text, p);
-            filterstring(si->branch, text);
+            filterstring(si->branch, text, true, true, true, false, MAXBRANCHLEN+1);
         }
         loopi(si->numplayers)
         {

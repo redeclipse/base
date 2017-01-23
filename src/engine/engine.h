@@ -31,6 +31,8 @@ extern const char *platnames[MAX_PLATFORMS], *platlongnames[MAX_PLATFORMS];
 #define plat_name(a) (sup_platform(a) ? platnames[a] : "unk")
 #define plat_longname(a) (sup_platform(a) ? platlongnames[a] : "unknown")
 
+#define MAXBRANCHLEN 16
+
 extern const char *timestr(int dur, int style = 0);
 
 extern vector<char *> gameargs;

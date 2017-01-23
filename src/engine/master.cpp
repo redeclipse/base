@@ -823,7 +823,7 @@ bool checkmasterclientinput(masterclient &c)
                 if(w[4] && *w[4]) copystring(c.desc, w[4]);
                 else formatstring(c.desc, "%s:[%d]", c.name, c.port);
                 if(w[5] && *w[5]) c.sendstats = atoi(w[5]) != 0;
-                copystring(c.branch, w[6] && *w[6] ? w[6] : "?");
+                copystring(c.branch, w[6] && *w[6] ? w[6] : "?", MAXBRANCHLEN+1);
                 if(w[2] && *w[2] && strcmp(w[2], "*") && (enet_address_set_host(&address, w[2]) < 0 || address.host != c.address.host))
                 {
                     c.listserver = c.shouldping = false;

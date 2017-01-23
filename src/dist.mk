@@ -1,6 +1,7 @@
 ﻿appname=$(APPNAME)
 appnamefull=$(shell sed -n 's/.define VERSION_NAME *"\([^"]*\)"/\1/p' engine/version.h)
 appversion=$(shell sed -n 's/.define VERSION_STRING *"\([^"]*\)"/\1/p' engine/version.h)
+apprelease=$(shell sed -n 's/.define VERSION_RELEASE *"\([^"]*\)"/\1/p' engine/version.h)
 appfiles=http://redeclipse.net/files/stable
 
 dirname=$(appname)-$(appversion)
@@ -156,7 +157,7 @@ dist: dist-clean dist-bz2 dist-bz2-combined dist-win dist-mac
 		-a $(torrent-trackers-url) \
 		-w $(torrent-webseed-baseurl)/$(tarname).bz2 \
 		-n $(tarname).bz2 \
-		-c "Red Eclipse $(appversion) for GNU/Linux" \
+		-c "Red Eclipse v$(appversion) ($(apprelease)) for GNU/Linux" \
 		$(tarname).bz2
 
 dist-torrent-nix: ../$(tarname).bz2.torrent
@@ -170,7 +171,7 @@ dist-torrent-bz2: ../$(tarname).bz2.torrent
 		-a $(torrent-trackers-url) \
 		-w $(torrent-webseed-baseurl)/$(tarname-mac).bz2 \
 		-n $(tarname-mac).bz2 \
-		-c "$(appnamefull) $(appversion) for Mac mac" \
+		-c "$(appnamefull) v$(appversion) ($(apprelease)) for macOS" \
 		$(tarname-mac).bz2
 
 dist-torrent-mac: ../$(tarname-mac).bz2.torrent
@@ -182,7 +183,7 @@ dist-torrent-mac: ../$(tarname-mac).bz2.torrent
 		-a $(torrent-trackers-url) \
 		-w $(torrent-webseed-baseurl)/$(tarname-combined).bz2 \
 		-n $(tarname-combined).bz2 \
-		-c "$(appnamefull) $(appversion) Combined Platforms" \
+		-c "$(appnamefull) v$(appversion) ($(apprelease)) Combined Platforms" \
 		$(tarname-combined).bz2
 
 dist-torrent-combined: ../$(tarname-combined).bz2.torrent
@@ -194,7 +195,7 @@ dist-torrent-combined: ../$(tarname-combined).bz2.torrent
 		-a $(torrent-trackers-url) \
 		-w $(torrent-webseed-baseurl)/$(exename) \
 		-n $(exename) \
-		-c "$(appnamefull) $(appversion) for Windows" \
+		-c "$(appnamefull) v$(appversion) ($(apprelease)) for Windows" \
 		$(exename)
 
 dist-torrent-win: ../$(exename).torrent
