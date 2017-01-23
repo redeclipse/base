@@ -2561,7 +2561,7 @@ namespace game
             cament *c = cameras[i];
             if(c->type == cament::PLAYER && (c->player || ((c->player = getclient(c->id)) != NULL)))
             {
-                if(!found && c->id == spectvfollowing && allowspec(c->player, spectvdead, spectvfollowing)) found = true;
+                if(!found && c->id == spectvfollowing && c->player->state != CS_SPECTATOR) found = true;
                 c->o = c->player->headpos();
                 if(forced && c->player == focus) cam = c;
             }
@@ -2582,18 +2582,18 @@ namespace game
                 cam->resetlast();
             }
         }
-        else
+        else loopk(spectvfollowing >= 0 ? 2 : 1)
         {
             int lastcn = cam->cn, millis = lasttvchg ? lastmillis-lasttvchg : 0;
             if(millis) amt = float(millis)/float(stvf(maxtime));
-            bool updated = camupdate(cam, amt, renew), ovr = !lasttvchg || millis >= stvf(mintime),
+            bool updated = camupdate(cam, amt, renew), override = !lasttvchg || millis >= stvf(mintime),
                  reset = (stvf(maxtime) && millis >= stvf(maxtime)) || !lasttvcam || lastmillis-lasttvcam >= stvf(time);
-            if(spectvfollowing >= 0 && !updated && !reset)
+            if(spectvfollowing >= 0 && !reset && !updated && !override)
             {
                 spectvfollowing = -1;
-                reset = true;
+                continue;
             }
-            else if(reset || (!updated && ovr))
+            if(reset || (!updated && override))
             {
                 loopv(cameras) if(cameras[i]->ignore) cameras[i]->ignore = false;
                 cam->ignore = true; // so we don't use the last one we just used
@@ -2650,6 +2650,7 @@ namespace game
                     }
                 }
             }
+            break;
         }
         bool chase = cam->player && (forced || spectvaiming(cam->player));
         if(!cam->player || chase)
