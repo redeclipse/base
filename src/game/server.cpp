@@ -5711,7 +5711,7 @@ namespace server
         if(ci->handle[0]) // kick old logins
         {
             loopvrev(clients) if(clients[i] != ci && clients[i]->handle[0] && !strcmp(clients[i]->handle, ci->handle))
-                disconnect_client(clients[i]->clientnum, DISC_KICK);
+                disconnect_client(clients[i]->clientnum, DISC_AUTH);
         }
         sendwelcome(ci);
         if(restorescore(ci)) sendresume(ci);
