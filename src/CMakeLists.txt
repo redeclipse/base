@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 2.8.11)
 
+# set compile options
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -fomit-frame-pointer -ffast-math -Wall -fsigned-char -fno-exceptions -fno-rtti")
+
 # Use pkg-config to configure dependencies later
 find_package(PkgConfig REQUIRED)
 # the dependencies required by all platforms
