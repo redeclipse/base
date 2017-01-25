@@ -50,9 +50,6 @@ VAR(IDF_READONLY, versionisserver, 0, 0, 1);
 #endif
 ICOMMAND(0, platname, "ii", (int *p, int *g), result(*p >= 0 && *p < MAX_PLATFORMS ? (*g!=0 ? plat_longname(*p) : plat_name(*p)) : ""));
 
-SVAR(IDF_READONLY, systemuser, "none");
-SVAR(IDF_READONLY, systemhost, "unknown");
-
 VAR(0, rehashing, 1, 0, -1);
 
 const char * const disc_reasons[] = { "normal", "end of packet", "client num", "user was kicked", "message error", "address is banned", "server is in private mode", "server is password protected", "server requires pure official builds", "server is at maximum capacity", "server and client are incompatible", "connection timed out", "packet overflow", "server shutting down", "hostname lookup failure", "client with same handle authenticated" };
@@ -1241,7 +1238,7 @@ static void setupwindow(const char *title)
     atexit(cleanupwindow);
 
     if(!setupsystemtray(WM_APP)) fatal("failed adding to system tray");
-    conoutf("identity: %s@%s v%s-%s%d-%s %s (%s) [0x%.8x]", systemuser, systemhost, versionstring, versionplatname, versionarch, versionbranch, versionisserver ? "server" : "client", versionrelease, versioncrc);
+    conoutf("version: %s-%s%d-%s %s (%s) [0x%.8x]", versionstring, versionplatname, versionarch, versionbranch, versionisserver ? "server" : "client", versionrelease, versioncrc);
 }
 
 static char *parsecommandline(const char *src, vector<char *> &args)
@@ -1437,7 +1434,7 @@ void setupserver()
 
 void initgame()
 {
-    conoutf("identity: %s@%s v%s-%s%d-%s %s (%s) [0x%.8x]", systemuser, systemhost, versionstring, versionplatname, versionarch, versionbranch, versionisserver ? "server" : "client", versionrelease, versioncrc);
+    conoutf("version: %s-%s%d-%s %s (%s) [0x%.8x]", versionstring, versionplatname, versionarch, versionbranch, versionisserver ? "server" : "client", versionrelease, versioncrc);
     server::start();
     loopv(gameargs)
     {
@@ -1703,31 +1700,6 @@ void setverinfo(const char *bin)
     setvar("versioncrc", crcfile(bin));
     const char *vbranch = getenv(sup_var("BRANCH"));
     setsvar("versionbranch", vbranch);
-#ifdef WIN32
-    const char *suser = getenv("USERNAME");
-#else
-    const char *suser = getenv("USER");
-    if(!suser || !*suser)
-    { // only fall back to this if the variable isn't exported
-        passwd *p = getpwuid(geteuid());
-        if(p)
-        {
-            copystring(buf, p->pw_name);
-            suser = buf;
-        }
-    }
-#endif
-    setsvar("systemuser", suser && *suser ? suser : "none");
-#ifdef WIN32
-    const char *shost = getenv("COMPUTERNAME");
-#else
-    const char *shost = getenv("HOSTNAME");
-#endif
-    if(!shost || !*shost)
-    { // only fall back to this if the variable isn't exported
-        if(!gethostname(buf, sizeof(string)-1) && *buf) shost = buf;
-    }
-    setsvar("systemhost", shost && *shost ? shost : "unknown");
 }
 
 volatile bool fatalsig = false;
