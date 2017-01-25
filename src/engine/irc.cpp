@@ -920,7 +920,7 @@ void ircslice()
                     if(*n->passkey) ircsend(n, "PASS %s", n->passkey);
                     copystring(n->nick, n->mnick);
                     ircsend(n, "NICK %s", n->mnick);
-                    if(!*n->ident) copystring(n->ident, systemuser);
+                    if(!*n->ident) copystring(n->ident, VERSION_UNAME);
                     ircsend(n, "USER %s +iw %s :%s v%s-%s%d-%s (%s)", n->ident, n->ident, versionname, versionstring, versionplatname, versionarch, versionbranch, versionrelease);
                     n->lastnick = clocktime;
                     n->state = IRC_CONN;
