@@ -50,8 +50,6 @@ VAR(IDF_READONLY, versionisserver, 0, 0, 1);
 #endif
 ICOMMAND(0, platname, "ii", (int *p, int *g), result(*p >= 0 && *p < MAX_PLATFORMS ? (*g!=0 ? plat_longname(*p) : plat_name(*p)) : ""));
 
-SVAR(IDF_READONLY, systemhost, "unknown");
-
 VAR(0, rehashing, 1, 0, -1);
 
 const char * const disc_reasons[] = { "normal", "end of packet", "client num", "user was kicked", "message error", "address is banned", "server is in private mode", "server is password protected", "server requires pure official builds", "server is at maximum capacity", "server and client are incompatible", "connection timed out", "packet overflow", "server shutting down", "hostname lookup failure", "client with same handle authenticated" };
