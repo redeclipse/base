@@ -1,16 +1,16 @@
 ; --------------------------------
 ; Name and file
   Name "Red Eclipse"
-  VIProductVersion "1.5.8.0"
-  !define MajorMinorVer "1.5.x"
-  OutFile "redeclipse_1.5.8_win.exe"
+  VIProductVersion "~REPVERSION~.0"
+  !define MajorMinorVer "~REPSERIES~"
+  OutFile "~REPOUTFILE~"
   VIAddVersionKey "OriginalFilename" $OutFile
 ; --------------------------------
 ; Installer information
   VIAddVersionKey "ProductName" "Red Eclipse Installer"
   VIAddVersionKey "FileDescription" "Red Eclipse Installer"
   VIAddVersionKey "CompanyName" "Red Eclipse Team"
-  VIAddVersionKey "LegalCopyright" "2015 Red Eclipse Team"
+  VIAddVersionKey "LegalCopyright" "2010-2017 Red Eclipse Team"
   VIAddVersionKey "FileVersion" "1.0.0.0"
   BrandingText "Red Eclipse Team" ; Change the branding from NSIS version to Red Eclipse Team
 ; --------------------------------

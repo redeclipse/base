@@ -2,6 +2,7 @@
 appnamefull=$(shell sed -n 's/.define VERSION_NAME *"\([^"]*\)"/\1/p' engine/version.h)
 appversion=$(shell sed -n 's/.define VERSION_STRING *"\([^"]*\)"/\1/p' engine/version.h)
 apprelease=$(shell sed -n 's/.define VERSION_RELEASE *"\([^"]*\)"/\1/p' engine/version.h)
+appseries=$(shell sed -n 's/.define VERSION_STRING *"\([^"]*\)\..$"/\1.x/p' engine/version.h)
 appfiles=http://redeclipse.net/files/stable
 
 dirname=$(appname)-$(appversion)
@@ -9,7 +10,7 @@ dirname-mac=$(appname).app
 dirname-win=$(dirname)-win
 
 exename=$(appname)_$(appversion)_win.exe
-
+zipname=$(appname)_$(appversion)_win.zip
 tarname=$(appname)_$(appversion)_nix.tar
 tarname-mac=$(appname)_$(appversion)_mac.tar
 tarname-combined=$(appname)_$(appversion)_combined.tar
@@ -25,29 +26,39 @@ endif
 DISTFILES=$(shell cd ../ && find . -not -iname . -not -iname *.lo -not -iname *.gch -not -iname *.o || echo "")
 CURL=curl --location --insecure --fail
 
+dist-branch:
+	echo "stable" > $@/branch.txt
+	$(CURL) $(appfiles)/base.txt --output $@/version.txt
+	$(CURL) $(appfiles)/bins.txt --output $@/bin/version.txt
+	for i in `curl --silent --location --insecure --fail $(appfiles)/mods.txt`; do if [ "$${i}" != "base" ]; then mkdir -p $@/data/$${i}; $(CURL) $(appfiles)/$${i}.txt --output $@/data/$${i}/version.txt; fi; done
+
+dist-branch-nix: dist-branch
+	$(CURL) $(appfiles)/linux.tar.gz --output linux.tar.gz
+	tar --gzip --extract --verbose --overwrite --file=linux.tar.gz --directory=$@
+	rm -f linux.tar.gz
+
+dist-branch-mac: dist-branch
+	$(CURL) $(appfiles)/macos.tar.gz --output macos.tar.gz
+	tar --gzip --extract --verbose --overwrite --file=macos.tar.gz --directory=$@
+	rm -f macos.tar.gz
+
+dist-branch-win: dist-branch
+	$(CURL) $(appfiles)/windows.zip --output windows.zip
+	unzip -o windows.zip -d $@
+	rm -f windows.zip
+
+dist-branch-combined: dist-branch dist-branch-win dist-branch-nix dist-branch-mac
+
 ../$(dirname):
 	rm -rf $@
 	tar --exclude=.git --exclude=$(dirname) \
 		-cf - $(DISTFILES:%=../%) | (mkdir $@/; cd $@/ ; tar -xpf -)
 	$(MAKE) -C $@/src clean
 	$(MAKE) -C $@/src/enet clean
-	echo "stable" > $@/branch.txt
-	$(CURL) $(appfiles)/base.txt --output $@/version.txt
-	$(CURL) $(appfiles)/bins.txt --output $@/bin/version.txt
-	for i in `curl --silent --location --insecure --fail $(appfiles)/mods.txt`; do if [ "$${i}" != "base" ]; then mkdir -p $@/data/$${i}; $(CURL) $(appfiles)/$${i}.txt --output $@/data/$${i}/version.txt; fi; done
-	$(CURL) $(appfiles)/linux.tar.gz --output linux.tar.gz
-	tar --gzip --extract --verbose --overwrite --file=linux.tar.gz --directory=$@
-	rm -f linux.tar.gz
-	$(CURL) $(appfiles)/macos.tar.gz --output macos.tar.gz
-	tar --gzip --extract --verbose --overwrite --file=macos.tar.gz --directory=$@
-	rm -f macos.tar.gz
-	$(CURL) $(appfiles)/windows.zip --output windows.zip
-	unzip -o windows.zip -d $@
-	rm -f windows.zip
 
 distdir: ../$(dirname)
 
-../$(tarname): ../$(dirname)
+../$(tarname): ../$(dirname) dist-branch-nix
 	tar \
 		--exclude='$</bin/*/$(appname)*.exe' \
 		--exclude='$</bin/*/genkey*' \
@@ -56,7 +67,7 @@ distdir: ../$(dirname)
 
 dist-tar: ../$(tarname)
 
-../$(dirname-mac): ../$(dirname)
+../$(dirname-mac): ../$(dirname) dist-branch-mac
 	cp -R $</bin/$(dirname-mac) $@
 	cp -R $</* $@/Contents/Resources
 	rm -rf $@/Contents/Resources/bin/*/$(appname)*linux*
@@ -72,12 +83,12 @@ dist-tar: ../$(tarname)
 dist-tar-mac: ../$(tarname-mac)
 	rm -rf ../$(dirname-mac)
 
-../$(tarname-combined): ../$(dirname)
+../$(tarname-combined): ../$(dirname) dist-branch-combined
 	tar -cf $@ $<
 
 dist-tar-combined: ../$(tarname-combined)
 
-../$(dirname-win): ../$(dirname)
+../$(dirname-win): ../$(dirname) dist-branch-win
 	cp -R $< $@
 	rm -rf $@/bin/*/$(appname)*linux*
 	rm -rf $@/bin/*/$(appname)*bsd*
@@ -142,10 +153,18 @@ dist-combined: ../$(tarname-combined).bz2
 dist-xz-combined: ../$(tarname-combined).xz
 
 ../$(exename): ../$(dirname-win)
-	makensis -V2 $</src/install/win/$(appname).nsi
+	sed -n "s/~REPVERSION~/$(appversion)/g;s/~REPSERIES~/$(appseries)/g;s/~REPOUTFILE~/$(exename)/g" $</src/install/win/$(appname).nsi > $</src/install/win/$(appversion)_$(appname).nsi
+    makensis -V2 $</src/install/win/$(appversion)_$(appname).nsi
 	$(MV) $</src/install/win/$(exename) ../
+    rm -rf $</src/install/win/$(appversion)_$(appname).nsi
+
+../$(zipname): ../$(dirname-win)
+    zip -r "../$(zipname)" $<
 
 dist-win: ../$(exename)
+	rm -rf ../$(dirname-win)
+
+dist-zip: ../$(zipname)
 	rm -rf ../$(dirname-win)
 
 dist: dist-clean dist-bz2 dist-bz2-combined dist-win dist-mac
