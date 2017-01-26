@@ -155,10 +155,6 @@ struct bindlist
     }
 };
 
-// menus
-extern void newgui(char *name, char *contents, char *initscript = NULL);
-extern bool showgui(const char *name, int tab = 0, bool *keep = NULL);
-
 // rendertext
 extern char *savecolour, *restorecolour, *green, *blue, *yellow, *red, *gray, *magenta, *orange, *white, *black, *cyan;
 extern int textskinsize, textskinpad;
@@ -555,94 +551,43 @@ extern void *genchallenge(void *pubkey, const void *seed, int seedlen, vector<ch
 extern void freechallenge(void *answer);
 extern bool checkchallenge(const char *answerstr, void *correct);
 
-// gui
-enum { GUI_DOWN = 1<<0, GUI_UP = 1<<1, GUI_ALT = 1<<2, GUI_PRESSED = 1<<3, GUI_ROLLOVER = 1<<4, GUI_DRAGGED = 1<<5 };
+// ui
 enum { EDITORFOCUSED = 1, EDITORUSED, EDITORFOREVER, EDITORREADONLY };
-
-struct Texture;
-struct VSlot;
-struct guient
-{
-    virtual ~guient() {}
-
-    virtual void start(int starttime, int *tab = NULL, bool allowinput = true, bool wantstitle = true, bool wantsbgfx = true) = 0;
-    virtual void end() = 0;
-
-    virtual int text(const char *text, int color = 0xFFFFFF, const char *icon = NULL, int icolour = 0xFFFFFF, int wrap = -1, bool faded = false, const char *oicon = NULL, int ocolor = 0xFFFFFF) = 0;
-    int textf(const char *fmt, int color = 0xFFFFFF, const char *icon = NULL, int icolour = 0xFFFFFF, int wrap = -1, bool faded = false, const char *oicon = NULL, int ocolor = 0xFFFFFF, ...) PRINTFARGS(2, 10)
-    {
-        defvformatstring(str, ocolor, fmt);
-        return text(str, color, icon, icolour, wrap, faded, oicon, ocolor);
-    }
-    virtual int button(const char *text, int color = 0xFFFFFF, const char *icon = NULL, int icolour = 0xFFFFFF, int wrap = -1, bool faded = true, const char *oicon = NULL, int ocolor = 0xFFFFFF) = 0;
-    int buttonf(const char *fmt, int color = 0xFFFFFF, const char *icon = NULL, int icolour = 0xFFFFFF, int wrap = -1, bool faded = true, const char *oicon = NULL, int ocolor = 0xFFFFFF, ...) PRINTFARGS(2, 10)
-    {
-        defvformatstring(str, ocolor, fmt);
-        return button(str, color, icon, icolour, wrap, faded, oicon, ocolor);
-    }
-    virtual void fill(int color, int parentw = 0, int parenth = 0) = 0;
-    virtual void outline(int color, int parentw = 0, int parenth = 0, int offsetx = 0, int offsety = 0) = 0;
-    virtual void background(int colour1 = -1, float blend1 = -1, int colour2 = -1, float blend2 = -1, bool skinborder = false, int parentw = 0, int parenth = 0) = 0;
-
-    virtual void pushlist(bool merge = false) {}
-    virtual int poplist() { return 0; }
-
-    virtual int setcursortype(int type = 0) = 0;
-    virtual int getcursortype() = 0;
-    virtual bool allowcursorfx(bool on) = 0;
-    virtual bool allowhitfx(bool on) = 0;
-    virtual bool allowskinfx(bool on) = 0;
-    virtual bool visibletab() = 0;
-    virtual bool visible() = 0;
-    virtual bool shouldtab() { return false; }
-    virtual void tab(const char *name = NULL, int color = 0xFFFFFF, bool front = false) = 0;
-    virtual void setstatus(const char *fmt, int width, ...) = 0;
-    virtual void settooltip(const char *fmt, int width, ...) = 0;
-    virtual int image(Texture *t, float scale, bool overlaid = false, int icolour = 0xFFFFFF, Texture *o = NULL, int ocolour = 0xFFFFFF) = 0;
-    virtual int texture(VSlot &vslot, float scale, bool overlaid = true) = 0;
-    virtual int slice(Texture *t, float scale, float start = 0, float end = 1, const char *text = NULL) = 0;
-    virtual int slider(int &val, int vmin, int vmax, int colour, const char *label = NULL, bool reverse = false, bool scroll = false, int style = 0, int scolour = -1) = 0;
-    virtual void separator(int size = 0, int space = 0, int colour = -1, int border = -1) = 0;
-    virtual void progress(float percent, float scale) = 0;
-    virtual void pushfont(const char *font) = 0;
-    virtual void popfont() = 0;
-    virtual void strut(float size = 1) = 0;
-    virtual void space(float size = 1) = 0;
-    virtual void spring(int weight = 1) = 0;
-    virtual char *field(const char *name, int color, int length, int height = 0, const char *initval = NULL, int initmode = EDITORFOCUSED, bool focus = false, const char *parent = NULL, const char *prompt = NULL, bool immediate = false) = 0;
-    virtual char *keyfield(const char *name, int color, int length, int height = 0, const char *initval = NULL, int initmode = EDITORFOCUSED, bool focus = false, const char *parent = NULL, const char *prompt = NULL, bool immediate = false) = 0;
-    virtual int playerpreview(int model, int color, int team, int weap, const char *vanity, float sizescale, bool overlaid = false, float scale = 1, float blend = 1) { return 0; }
-    virtual int modelpreview(const char *name, int anim, float sizescale, bool overlaid = false, float scale = 1, float blend = 1) { return 0; }
-    virtual int prefabpreview(const char *prefab, const vec &color, float sizescale, bool overlaid = false) { return 0; }
-};
-
-struct guicb
-{
-    virtual ~guicb() {}
-    static int starttime() { extern int totalmillis; return totalmillis; }
-    virtual void gui(guient &g, bool firstpass) = 0;
-};
-
-extern char *guiskintex, *guiskinbordertex, *guioverlaytex, *guiexittex, *guihovertex;
-
 struct editor;
 
 namespace UI
 {
-    extern bool isopen;
-    extern bool textinput(const char *str, int len);
-    extern bool keypress(int code, bool isdown);
-    extern void update();
-    extern void render();
-    extern bool active(bool pass = true);
-    extern bool hit(bool on, bool act);
-    extern void addcb(guicb *cb);
-    extern void limitscale(float scale);
+    bool showui(const char *name);
+    bool hideui(const char *name);
+    bool toggleui(const char *name);
+    void holdui(const char *name, bool on);
+    bool uivisible(const char *name);
+    bool hascursor();
+    void getcursorpos(float &x, float &y);
+    void resetcursor();
+    bool movecursor(int dx, int dy);
+    bool keypress(int code, bool isdown);
+    bool textinput(const char *str, int len);
+    float abovehud();
+
+    void setup();
+    void update();
+    void render();
+    void cleanup();
+
     extern editor *geteditor(const char *name, int mode, const char *init = NULL, const char *parent = NULL);
     extern void editorline(editor *e, const char *str, int limit = -1);
     extern void editorclear(editor *e, const char *init = "");
     extern void editoredit(editor *e, const char *init = "");
 }
+
+// menus
+extern int mainmenu;
+
+extern void addchange(const char *desc, int type);
+extern void clearchanges(int type);
+extern void menuprocess();
+extern void clearmainmenu();
 
 // client
 enum { ST_EMPTY, ST_LOCAL, ST_TCPIP, ST_REMOTE };

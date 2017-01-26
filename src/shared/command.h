@@ -319,6 +319,8 @@ extern void executeret(const uint *code, tagval &result = *commandret);
 extern void executeret(const char *p, tagval &result = *commandret);
 extern char *executestr(const uint *code);
 extern char *executestr(const char *p);
+extern char *executestr(ident *id, tagval *args, int numargs, bool lookup);
+extern char *execidentstr(const char *name, bool lookup);
 extern int execute(const uint *code);
 extern int execute(const char *p);
 extern int execute(const char *p, bool nonworld);

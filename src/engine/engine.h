@@ -573,10 +573,11 @@ enum { TI_CONSOLE = 1<<0, TI_GUI = 1<<1 };
 
 extern void textinput(bool on, int mask = ~0);
 
-// menu
-extern void menuprocess();
+// menus
 extern void addchange(const char *desc, int type, bool force = false);
 extern void clearchanges(int type);
+extern void menuprocess();
+extern void clearmainmenu();
 
 // physics
 extern bool pointincube(const clipplanes &p, const vec &v);
@@ -722,9 +723,6 @@ extern vector<int> entgroup;
 
 extern int newentity(int type, const attrvector &attrs);
 extern int newentity(const vec &v, int type, const attrvector &attrs);
-
-// menu
-enum { MN_BACK = 0, MN_INPUT, MN_MAX };
 
 // console
 #define MAXCONLINES 1000
