@@ -6,7 +6,7 @@ SEMABUILD_TARGET='qreeves@icculus.org:/webspace/redeclipse.net/files'
 SEMABUILD_APT='DEBIAN_FRONTEND=noninteractive apt-get'
 SEMABUILD_MODULES=`curl --silent --fail http://redeclipse.net/files/stable/mods.txt` || exit 1
 SEMABUILD_ALLMODS="base ${SEMABUILD_MODULES}"
-SEMABUILD_DIST="bz2 combined win mac"
+SEMABUILD_DIST="bz2 combined win zip mac"
 
 sudo ${SEMABUILD_APT} update || exit 1
 sudo ${SEMABUILD_APT} -fy install build-essential unzip zip nsis nsis-common mktorrent golang || exit 1
@@ -61,6 +61,9 @@ for i in ${SEMABUILD_DIST}; do
             ;;
         win)
             n="exe"
+            ;;
+        zip)
+            m="win"
             ;;
         *)
             n="tar.bz2"
