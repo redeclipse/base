@@ -1882,10 +1882,10 @@ namespace UI
 
             changedraw(CHANGE_SHADER | CHANGE_COLOR);
 
-            float oldscale = textscale;
-            textscale = drawscale();
-            draw_text(getstr(), sx/textscale, sy/textscale, color.r, color.g, color.b, color.a, TEXT_NO_INDENT, -1, wrap >= 0 ? int(wrap/textscale) : -1);
-            textscale = oldscale;
+            float oldscale = curtextscale;
+            curtextscale = drawscale();
+            draw_text(getstr(), sx/curtextscale, sy/curtextscale, color.r, color.g, color.b, color.a, TEXT_NO_INDENT, -1, wrap >= 0 ? int(wrap/curtextscale) : -1);
+            curtextscale = oldscale;
         }
 
         void layout()
@@ -2354,13 +2354,14 @@ namespace UI
         {
             case ID_VAR: val = *id->storage.i; break;
             case ID_FVAR: val = *id->storage.f; break;
-            case ID_SVAR: val = parsefloat(*id->storage.s); break;
-            case ID_ALIAS: val = id->getfloat(); break;
+            case ID_SVAR: val = parsenumber(*id->storage.s); break;
+            case ID_ALIAS: val = id->getnumber(); break;
             case ID_COMMAND:
             {
-                char *str = executestr(id->name);
-                val = parsefloat(str);
-                DELETEP(str);
+                tagval t;
+                executeret(id, NULL, 0, true, t);
+                val = t.getnumber();
+                t.cleanup();
                 break;
             }
         }
@@ -2373,12 +2374,13 @@ namespace UI
         {
             case ID_VAR: setvarchecked(id, int(clamp(val, double(INT_MIN), double(INT_MAX)))); break;
             case ID_FVAR: setfvarchecked(id, val); break;
-            case ID_SVAR: setsvarchecked(id, floatstr(val)); break;
-            case ID_ALIAS: alias(id->name, floatstr(val)); break;
+            case ID_SVAR: setsvarchecked(id, numberstr(val)); break;
+            case ID_ALIAS: alias(id->name, numberstr(val)); break;
             case ID_COMMAND:
             {
-                defformatstring(str, "%s %f", id->name, val);
-                execute(str);
+                tagval t;
+                t.setnumber(val);
+                execute(id, &t, 1);
                 break;
             }
         }
@@ -2743,7 +2745,7 @@ namespace UI
             case ID_FVAR: val = floatstr(*id->storage.f); break;
             case ID_SVAR: val = *id->storage.s; break;
             case ID_ALIAS: val = id->getstr(); break;
-            case ID_COMMAND: val = executestr(id->name); shouldfree = true; break;
+            case ID_COMMAND: val = executestr(id, NULL, 0, true); shouldfree = true; break;
         }
         return val;
     }
@@ -2758,8 +2760,9 @@ namespace UI
             case ID_ALIAS: alias(id->name, val); break;
             case ID_COMMAND:
             {
-                defformatstring(str, "%s %s", id->name, val);
-                execute(str);
+                tagval t;
+                t.setstr(newstring(val));
+                execute(id, &t, 1);
                 break;
             }
         }
@@ -3347,6 +3350,7 @@ namespace UI
             case VAL_FLOAT:
                 BUILD(TextFloat, o, o->setup(t.f, scale, color, wrap), children);
                 break;
+            case VAL_CSTR:
             case VAL_MACRO:
             case VAL_STR:
                 if(t.s[0])
@@ -3540,6 +3544,8 @@ namespace UI
 
     void update()
     {
+        float oldtextscale = curtextscale;
+        curtextscale = 1;
         pushfont("default");
         readyeditors();
 
@@ -3554,15 +3560,19 @@ namespace UI
 
         flusheditors();
         popfont();
+        curtextscale = oldtextscale;
     }
 
     void render()
     {
+        float oldtextscale = curtextscale;
+        curtextscale = 1;
         pushfont("default");
         world->layout();
         world->adjustchildren();
         world->draw();
         popfont();
+        curtextscale = oldtextscale;
     }
 
     float abovehud()
