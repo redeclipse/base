@@ -108,33 +108,6 @@ extern SDL_Window *screen;
 extern int screenw, screenh;
 extern int zpass;
 
-// rendertext
-struct font
-{
-    struct charinfo
-    {
-        short x, y, w, h, offsetx, offsety, advance, tex;
-    };
-
-    char *name;
-    vector<Texture *> texs;
-    vector<charinfo> chars;
-    int charoffset, defaultw, defaulth, maxw, maxh, scale;
-
-    font() : name(NULL) {}
-    ~font() { DELETEA(name); }
-};
-
-extern float textscale, curtextscale;
-#define FONTH int(curfont->scale*curtextscale)
-#define FONTW (FONTH/2)
-#define FONTTAB (4*FONTW)
-
-extern font *curfont;
-extern const matrix4x3 *textmatrix;
-
-extern void reloadfonts();
-
 // texture
 extern int hwtexsize, hwcubetexsize, hwmaxanisotropy, maxtexsize, anisotropy, envmapradius;
 
@@ -526,7 +499,7 @@ extern const char *addreleaseaction(char *s);
 extern const char *getkeyname(int code);
 extern int findkeycode(char *key);
 
-extern int uimillis, commandmillis,  commandpos, commandcolour, completeoffset, completesize;
+extern int commandmillis,  commandpos, commandcolour, completeoffset, completesize;
 extern bigstring commandbuf;
 extern char *commandaction, *commandicon;
 extern bool fullconsole;
@@ -552,7 +525,7 @@ enum
     CHANGE_GFX   = 1<<0,
     CHANGE_SOUND = 1<<1
 };
-extern bool initwarning(const char *desc, int level = INIT_RESET, int type = CHANGE_GFX, bool force = false);
+extern bool initwarning(const char *desc, int level = INIT_RESET, int type = CHANGE_GFX);
 
 extern bool minimized;
 
@@ -572,12 +545,6 @@ extern void keyrepeat(bool on, int mask = ~0);
 enum { TI_CONSOLE = 1<<0, TI_GUI = 1<<1 };
 
 extern void textinput(bool on, int mask = ~0);
-
-// menus
-extern void addchange(const char *desc, int type, bool force = false);
-extern void clearchanges(int type);
-extern void menuprocess();
-extern void clearmainmenu();
 
 // physics
 extern bool pointincube(const clipplanes &p, const vec &v);
@@ -672,39 +639,6 @@ extern double skyarea;
 
 extern void drawskybox(int farplane, bool limited);
 extern bool limitsky();
-
-// ui
-extern int mouseaction[2];
-extern bool guiactionon;
-
-extern int guilayoutpass, guicursortype, guiskinsize, guislidersize, guisepsize, guispacesize, guitooltipwidth, guistatuswidth,
-    guishadow, guiclicktab, guitabborder, guitextblend, guitextfade, guiscaletime, guiskinned, guibgcolour, guibordercolour,
-    guihovercolour, guistatusline, guitooltips, guitooltiptime, guitooltipfade, guitooltipcolour, guitooltipbordercolour, guitooltipborderskin,
-    guifieldbgcolour, guifieldbordercolour, guifieldactivecolour, guislidercolour, guisliderbordercolour, guisliderborderskin, guislidermarkcolour,
-    guislidermarkbordercolour, guislidermarkborderskin, guislideractivecolour, guiactivecolour, guicheckboxcolour, guicheckboxtwocolour, guiradioboxcolour;
-extern float guiscale, guibgblend, guiborderblend, guihoverscale, guihoverblend, guitooltipblend, guitooltipborderblend,
-    guifieldbgblend, guifieldborderblend, guifieldactiveblend, guisliderblend, guisliderborderblend, guislidermarkblend, guislidermarkborderblend,
-    guislideractiveblend;
-extern char *guiskintex, *guiskinbordertex, *guioverlaytex, *guiexittex, *guihovertex;
-
-extern void progressmenu();
-extern void mainmenu();
-extern void texturemenu();
-extern bool menuactive();
-extern int cleargui(int n = 0, bool skip = true);
-
-#define uipad(parent,count,body) { (parent).space(count); body; (parent).space(count); }
-#define uifont(parent,font,body) { (parent).pushfont(font); body; (parent).popfont(); }
-#define uicenter(parent, body) { (parent).spring(); body; (parent).spring(); }
-#define uilistv(parent,count,body) \
-{ \
-    loop(uilistv##__LINE__, count) (parent).pushlist(); \
-    body; \
-    loop(uilistv##__LINE__, count) (parent).poplist(); \
-}
-#define uilist(parent,body) uilistv(parent, 1, body)
-#define uicenterlistv(parent,count,body) uilistv(parent, count, uicenter(parent, body))
-#define uicenterlist(parent,body) uicenterlistv(parent, 1, body)
 
 // octaedit
 extern void replacetexcube(cube &c, int oldtex, int newtex);

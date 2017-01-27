@@ -93,6 +93,7 @@ void cleanup()
     if(screen) SDL_SetWindowGrab(screen, SDL_FALSE);
     cleargamma();
     freeocta(worldroot);
+    UI::cleanup();
     extern void clear_command();    clear_command();
     extern void clear_console();    clear_console();
     extern void clear_mdls();       clear_mdls();
@@ -148,11 +149,11 @@ void fatal(const char *s, ...)    // failure exit
 }
 
 int initing = NOT_INITING;
-bool initwarning(const char *desc, int level, int type, bool force)
+bool initwarning(const char *desc, int level, int type)
 {
     if(initing < level)
     {
-        addchange(desc, type, force);
+        addchange(desc, type);
         return true;
     }
     return false;
@@ -1075,6 +1076,9 @@ int main(int argc, char **argv)
     conoutf("loading defaults..");
     if(!execfile("config/stdlib.cfg", false)) fatal("cannot find data files");
     if(!setfont("default")) fatal("no default font specified");
+
+    UI::setup();
+
     inbetweenframes = true;
     progress(0, "please wait..");
 
@@ -1133,6 +1137,7 @@ int main(int argc, char **argv)
         updatefps(frameloops, elapsed);
         checkinput();
         menuprocess();
+        UI::update();
 
         if(frameloops)
         {
@@ -1151,7 +1156,6 @@ int main(int argc, char **argv)
             updatetextures();
             updateparticles();
             updatesounds();
-            UI::update();
             if(!minimized)
             {
                 inbetweenframes = renderedframe = false;

@@ -2323,7 +2323,7 @@ namespace client
                 case N_LOADW:
                 {
                     hud::showscores(false);
-                    if(!menuactive()) showgui("profile", 2);
+                    if(!UI::hasinput()) UI::showui("profile");
                     lastplayerinfo = 0;
                     break;
                 }

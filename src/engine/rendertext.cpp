@@ -29,6 +29,7 @@ static hashnameset<font> fonts;
 static font *fontdef = NULL;
 static int fontdeftex = 0;
 
+vector<font *> fontstack;
 font *curfont = NULL;
 int curfonttex = 0;
 
@@ -138,12 +139,50 @@ void fontalias(const char *dst, const char *src)
 
 COMMAND(0, fontalias, "ss");
 
+font *findfont(const char *name)
+{
+    return fonts.access(name);
+}
+
+bool setfont(font *id)
+{
+    if(!id) return false;
+    curfont = id;
+    return true;
+}
+
 bool setfont(const char *name)
 {
-    font *f = loadfont(name);
-    if(!f) return false;
-    curfont = f;
-    return true;
+    return setfont(loadfont(name));
+}
+
+bool pushfont(font *id)
+{
+    if(!fontstack.length() && curfont)
+        fontstack.add(curfont);
+
+    if(setfont(id))
+    {
+        fontstack.add(curfont);
+        return true;
+    }
+    return false;
+}
+
+bool pushfont(const char *name)
+{
+    return pushfont(loadfont(name));
+}
+
+bool popfont(int num)
+{
+    loopi(num)
+    {
+        if(fontstack.empty()) break;
+        fontstack.pop();
+    }
+    if(fontstack.length()) { curfont = fontstack.last(); return true; }
+    return setfont("default");
 }
 
 float text_widthf(const char *str, int xpad, int ypad, int flags, float linespace)
@@ -886,30 +925,4 @@ int draw_textf(const char *fstr, int left, int top, int xpad, int ypad, int r, i
     if(flags&TEXT_SHADOW) draw_text(str, left+2, top+2, 0, 0, 0, a, flags, cursor, maxwidth, linespace, realwidth);
     draw_text(str, left, top, r, g, b, a, flags, cursor, maxwidth, linespace, realwidth);
     return height;
-}
-
-vector<font *> fontstack;
-
-bool pushfont(const char *name)
-{
-    if(!fontstack.length() && curfont)
-        fontstack.add(curfont);
-
-    if(setfont(name))
-    {
-        fontstack.add(curfont);
-        return true;
-    }
-    return false;
-}
-
-bool popfont(int num)
-{
-    loopi(num)
-    {
-        if(fontstack.empty()) break;
-        fontstack.pop();
-    }
-    if(fontstack.length()) { curfont = fontstack.last(); return true; }
-    return setfont("default");
 }

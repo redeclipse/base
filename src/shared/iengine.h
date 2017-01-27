@@ -156,6 +156,31 @@ struct bindlist
 };
 
 // rendertext
+struct font
+{
+    struct charinfo
+    {
+        short x, y, w, h, offsetx, offsety, advance, tex;
+    };
+
+    char *name;
+    vector<Texture *> texs;
+    vector<charinfo> chars;
+    int charoffset, defaultw, defaulth, maxw, maxh, scale;
+
+    font() : name(NULL) {}
+    ~font() { DELETEA(name); }
+};
+extern float textscale, curtextscale;
+#define FONTH int(curfont->scale*curtextscale)
+#define FONTW (FONTH/2)
+#define FONTTAB (4*FONTW)
+
+extern font *curfont;
+extern const matrix4x3 *textmatrix;
+
+extern void reloadfonts();
+
 extern char *savecolour, *restorecolour, *green, *blue, *yellow, *red, *gray, *magenta, *orange, *white, *black, *cyan;
 extern int textskinsize, textskinpad;
 
@@ -181,7 +206,10 @@ enum
     TEXT_RIGHT_BAL      = TEXT_BALLOON|TEXT_RIGHT_JUSTIFY
 };
 
+extern font *findfont(const char *name);
+extern bool setfont(font *id);
 extern bool setfont(const char *name);
+extern bool pushfont(font *id);
 extern bool pushfont(const char *name);
 extern bool popfont(int num = 1);
 extern int draw_text(const char *str, int rleft, int rtop, int r = 255, int g = 255, int b = 255, int a = 255, int flags = 0, int cursor = -1, int maxwidth = -1, float linespace = 0, int realwidth = -1);
@@ -557,23 +585,22 @@ struct editor;
 
 namespace UI
 {
-    bool showui(const char *name);
-    bool hideui(const char *name);
-    bool toggleui(const char *name);
-    void holdui(const char *name, bool on);
-    bool uivisible(const char *name);
-    bool hascursor();
-    void getcursorpos(float &x, float &y);
-    void resetcursor();
-    bool movecursor(int dx, int dy);
-    bool keypress(int code, bool isdown);
-    bool textinput(const char *str, int len);
-    float abovehud();
+    extern int uimillis;
 
-    void setup();
-    void update();
-    void render();
-    void cleanup();
+    extern bool showui(const char *name);
+    extern bool hideui(const char *name);
+    extern bool toggleui(const char *name);
+    extern void holdui(const char *name, bool on);
+    extern bool uivisible(const char *name);
+    extern bool hasinput();
+    extern bool keypress(int code, bool isdown);
+    extern bool textinput(const char *str, int len);
+    extern float abovehud();
+
+    extern void setup();
+    extern void update();
+    extern void render();
+    extern void cleanup();
 
     extern editor *geteditor(const char *name, int mode, const char *init = NULL, const char *parent = NULL);
     extern void editorline(editor *e, const char *str, int limit = -1);
@@ -582,12 +609,9 @@ namespace UI
 }
 
 // menus
-extern int mainmenu;
-
 extern void addchange(const char *desc, int type);
 extern void clearchanges(int type);
 extern void menuprocess();
-extern void clearmainmenu();
 
 // client
 enum { ST_EMPTY, ST_LOCAL, ST_TCPIP, ST_REMOTE };

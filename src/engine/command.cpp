@@ -906,6 +906,7 @@ int unescapestring(char *dst, const char *src, const char *end)
         }
         else *dst++ = c;
     }
+    *dst = '\0';
     return dst - start;
 }
 
@@ -2292,21 +2293,6 @@ char *executestr(const char *p)
     if(result.type == VAL_NULL) return NULL;
     forcestr(result);
     return result.s;
-}
-
-char *executestr(ident *id, tagval *args, int numargs, bool lookup)
-{
-    tagval result;
-    executeret(id, args, numargs, lookup, result);
-    if(result.type == VAL_NULL) return NULL;
-    forcestr(result);
-    return result.s;
-}
-
-char *execidentstr(const char *name, bool lookup)
-{
-    ident *id = idents.access(name);
-    return id ? executestr(id, NULL, 0, lookup) : NULL;
 }
 
 int execute(const uint *code)

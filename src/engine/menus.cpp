@@ -10,8 +10,8 @@ struct change
 };
 static vector<change> needsapply;
 
-VARP(applydialog, 0, 1, 1);
-VAR(hidechanges, 0, 0, 1);
+VAR(IDF_PERSIST, applydialog, 0, 1, 1);
+VAR(0, hidechanges, 0, 0, 1);
 
 void addchange(const char *desc, int type)
 {
@@ -39,33 +39,14 @@ void applychanges()
 {
     int changetypes = 0;
     loopv(needsapply) changetypes |= needsapply[i].type;
-    if(changetypes&CHANGE_GFX) execident("resetgl");
-    if(changetypes&CHANGE_SOUND) execident("resetsound");
+    if(changetypes&CHANGE_GFX) execute("resetgl");
+    if(changetypes&CHANGE_SOUND) execute("resetsound");
 }
 
-COMMAND(applychanges, "");
-ICOMMAND(pendingchanges, "b", (int *idx), { if(needsapply.inrange(*idx)) result(needsapply[*idx].desc); else if(*idx < 0) intret(needsapply.length()); });
-
-static int lastmainmenu = -1;
+COMMAND(0, applychanges, "");
+ICOMMAND(0, pendingchanges, "b", (int *idx), { if(needsapply.inrange(*idx)) result(needsapply[*idx].desc); else if(*idx < 0) intret(needsapply.length()); });
 
 void menuprocess()
 {
-    if(lastmainmenu != mainmenu)
-    {
-        lastmainmenu = mainmenu;
-        execident("mainmenutoggled");
-    }
-    if(mainmenu && !connected(true) && !UI::hascursor()) UI::showui("main");
-}
-
-VAR(mainmenu, 1, 1, 0);
-
-void clearmainmenu()
-{
-    hidechanges = 0;
-    if(mainmenu && connected())
-    {
-        mainmenu = 0;
-        UI::hideui(NULL);
-    }
+    hud::gamemenus();
 }

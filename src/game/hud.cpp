@@ -711,7 +711,7 @@ namespace hud
     bool hasinput(bool pass, bool focus)
     {
         if(focus && (commandmillis > 0 || curcompass)) return true;
-        return UI::active(pass);
+        return UI::hasinput();
     }
 
     bool hastkwarn(gameent *d)
@@ -892,12 +892,14 @@ namespace hud
             case POINTER_RELATIVE: return pointertex;
             case POINTER_GUI:
             {
+                #if 0
                 switch(guicursortype)
                 {
                     case 2: return guicursorinputtex; break;
                     case 1: return guicursorhovertex; break;
                     case 0: default: break;
                 }
+                #endif
                 return guicursortex;
             }
             case POINTER_EDIT: return editcursortex;
@@ -1361,11 +1363,13 @@ namespace hud
         }
         else
         {
+            #if 0
             if(guicursortype == 2)
             {
                 cy -= cs/2;
                 cx -= cs/2;
             }
+            #endif
             drawpointertex(getpointer(index, game::focus->weapselect), cx, cy, cs, c.r, c.g, c.b, fade*hudblend);
         }
     }
@@ -3481,10 +3485,10 @@ namespace hud
                 else a += (1.f-compassfadeamt);
                 loopi(3) if(a < colour[i]) colour[i] *= a;
             }
-            if(uifade && (uimillis > 0 || totalmillis-abs(uimillis) <= uifade))
+            if(uifade && (UI::uimillis > 0 || totalmillis-abs(UI::uimillis) <= uifade))
             {
-                float n = min(float(totalmillis-abs(uimillis))/float(uifade), 1.f), a = n*uifadeamt;
-                if(uimillis > 0) a = 1.f-a;
+                float n = min(float(totalmillis-abs(UI::uimillis))/float(uifade), 1.f), a = n*uifadeamt;
+                if(UI::uimillis > 0) a = 1.f-a;
                 else a += (1.f-uifadeamt);
                 loopi(3) if(a < colour[i]) colour[i] *= a;
             }

@@ -770,11 +770,13 @@ static editor *useeditor(const char *name, int mode, bool focus, const char *ini
     return e;
 }
 
+#if 0
 static editor *findeditor(const char *name)
 {
     loopv(editors) if(strcmp(editors[i]->name, name) == 0) return editors[i];
     return NULL;
 }
+#endif // 0
 
 #define TEXTCOMMAND(f, s, d, body) ICOMMAND(0, f, s, d,\
     if(!textfocus || identflags&IDF_WORLD) return;\
