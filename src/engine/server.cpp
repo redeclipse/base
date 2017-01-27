@@ -1696,7 +1696,6 @@ ICOMMAND(0, rehash, "i", (int *nosave), if(!(identflags&IDF_WORLD)) rehash(*nosa
 #endif
 void setverinfo(const char *bin)
 {
-    string buf;
     setvar("versioncrc", crcfile(bin));
     const char *vbranch = getenv(sup_var("BRANCH"));
     setsvar("versionbranch", vbranch);

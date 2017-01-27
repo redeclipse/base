@@ -338,6 +338,9 @@ namespace client
                             case VAL_STR:
                                 f->printf("\t%s", escapestring(id.val.s));
                                 break;
+                            case VAL_CSTR:
+                                f->printf("\t%s", escapestring(id.val.cstr));
+                                break;
                         }
                         f->printf("\t\t"); // empty MIN MAX
                         break;

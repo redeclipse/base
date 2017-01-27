@@ -2142,7 +2142,7 @@ void calclight(int *quality, int *quick)
     }
     progress(0, "computing lightmaps...");
     mpremip(true);
-    optimizeblendmap();
+    dooptimizeblendmap();
     loadlayermasks();
     int numthreads = lightthreads > 0 ? lightthreads : numcpus;
     if(numthreads > 1) preloadusedmapmodels(false, true);

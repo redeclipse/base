@@ -496,6 +496,7 @@ extern bool paste(char *buf, size_t len);
 extern void writebinds(stream *f);
 extern void writecompletions(stream *f);
 extern const char *addreleaseaction(char *s);
+extern tagval *addreleaseaction(ident *id, int numargs);
 extern const char *getkeyname(int code);
 extern int findkeycode(char *key);
 
@@ -698,7 +699,7 @@ extern uchar lookupblendmap(BlendMapCache *cache, const vec &pos);
 extern void resetblendmap();
 extern void enlargeblendmap();
 extern void shrinkblendmap(int octant);
-extern void optimizeblendmap();
+extern void dooptimizeblendmap();
 extern void stoppaintblendmap();
 extern void trypaintblendmap();
 extern void renderblendbrush(GLuint tex, float x, float y, float w, float h);

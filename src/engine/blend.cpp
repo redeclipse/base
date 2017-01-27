@@ -349,11 +349,6 @@ static void optimizeblendmap(uchar &type, BlendMapNode &node)
     }
 }
 
-void optimizeblendmap()
-{
-    optimizeblendmap(blendmap.type, blendmap);
-}
-
 VARF(0, blendpaintmode, 0, 0, 5,
 {
     if(!blendpaintmode) stoppaintblendmap();
@@ -705,12 +700,14 @@ COMMAND(0, invertblendmapsel, "");
 
 void invertblendmap()
 {
+}
+
+ICOMMAND(0, invertblendmap, "", (),
+{
     if(noedit(false)) return;
     invertblendmap(0, 0, hdr.worldsize>>BM_SCALE, hdr.worldsize>>BM_SCALE);
     previewblends(ivec(0, 0, 0), ivec(hdr.worldsize, hdr.worldsize, hdr.worldsize));
-}
-
-COMMAND(0, invertblendmap, "");
+});
 
 void showblendmap()
 {
@@ -718,8 +715,13 @@ void showblendmap()
     previewblends(ivec(0, 0, 0), ivec(hdr.worldsize, hdr.worldsize, hdr.worldsize));
 }
 
+void dooptimizeblendmap()
+{
+    optimizeblendmap(blendmap.type, blendmap);
+}
+
 COMMAND(0, showblendmap, "");
-COMMAND(0, optimizeblendmap, "");
+ICOMMAND(0, optimizeblendmap, "", (), dooptimizeblendmap());
 ICOMMAND(0, clearblendmap, "", (),
 {
     if(noedit(true)) return;

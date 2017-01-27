@@ -390,7 +390,13 @@ COMMANDN(0, history, history_, "i");
 struct releaseaction
 {
     keym *key;
-    char *action;
+    union
+    {
+        char *action;
+        ident *id;
+    };
+    int numargs;
+    tagval args[3];
 };
 vector<releaseaction> releaseactions;
 
@@ -400,7 +406,18 @@ const char *addreleaseaction(char *s)
     releaseaction &ra = releaseactions.add();
     ra.key = keypressed;
     ra.action = s;
+    ra.numargs = -1;
     return keypressed->name;
+}
+
+tagval *addreleaseaction(ident *id, int numargs)
+{
+    if(!keypressed || numargs > 3) return NULL;
+    releaseaction &ra = releaseactions.add();
+    ra.key = keypressed;
+    ra.id = id;
+    ra.numargs = numargs;
+    return ra.args;
 }
 
 void onrelease(const char *s)
@@ -417,8 +434,12 @@ void execbind(keym &k, bool isdown)
         releaseaction &ra = releaseactions[i];
         if(ra.key==&k)
         {
-            if(!isdown) execute(ra.action);
-            delete[] ra.action;
+            if(ra.numargs < 0)
+            {
+            	if(!isdown) execute(ra.action);
+            	delete[] ra.action;
+            }
+            else execute(isdown ? NULL : ra.id, ra.args, ra.numargs);
             releaseactions.remove(i--);
         }
     }

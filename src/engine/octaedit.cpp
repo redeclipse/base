@@ -1546,16 +1546,14 @@ void pastehilight()
     havesel = true;
 }
 
-void paste()
-{
-    if(noedit() || !localedit) return;
-    mppaste(localedit, sel, true);
-}
-
 COMMAND(0, copy, "");
 COMMAND(0, pasteclear, "");
 COMMAND(0, pastehilight, "");
-COMMAND(0, paste, "");
+ICOMMAND(0, paste, "", (),
+{
+    if(noedit() || !localedit) return;
+    mppaste(localedit, sel, true);
+});
 COMMANDN(0, undo, editundo, "");
 COMMANDN(0, redo, editredo, "");
 
