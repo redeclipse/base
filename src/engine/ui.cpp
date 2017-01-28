@@ -1321,7 +1321,7 @@ namespace UI
 
         void draw(float sx, float sy)
         {
-            changedraw(CHANGE_COLOR);
+            changedraw(CHANGE_COLOR | CHANGE_BLEND);
 
             pushhudtranslate(sx, sy, uitextscale);
             drawskin(tex, 0, 0, w/uitextscale, h/uitextscale, color.tohexcolor(), color.a/255.f, partsize);
