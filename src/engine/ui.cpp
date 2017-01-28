@@ -1880,11 +1880,11 @@ namespace UI
         {
             Object::draw(sx, sy);
 
-            changedraw(CHANGE_SHADER | CHANGE_COLOR);
+            changedraw(CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
 
             float oldscale = curtextscale;
             curtextscale = drawscale();
-            draw_text(getstr(), sx/curtextscale, sy/curtextscale, color.r, color.g, color.b, color.a, TEXT_NO_INDENT, -1, wrap >= 0 ? int(wrap/curtextscale) : -1);
+            draw_textf("%s", 10, 10, 0, 0, color.r, color.g, color.b, color.a, TEXT_NO_INDENT, -1, wrap >= 0 ? int(wrap/curtextscale) : -1, 1, getstr());
             curtextscale = oldscale;
         }
 
@@ -1892,10 +1892,12 @@ namespace UI
         {
             Object::layout();
 
-            float k = drawscale(), tw, th;
-            text_boundsf(getstr(), tw, th, wrap >= 0 ? int(wrap/k) : -1);
-            w = max(w, tw*k);
-            h = max(h, th*k);
+            float oldscale = curtextscale, tw, th;
+            curtextscale = drawscale();
+            text_boundsf(getstr(), tw, th, 0, 0, wrap >= 0 ? int(wrap/curtextscale) : -1, TEXT_NO_INDENT);
+            w = max(w, tw*curtextscale);
+            h = max(h, th*curtextscale);
+            curtextscale = oldscale;
         }
     };
 
@@ -2564,7 +2566,7 @@ namespace UI
         editor *edit;
         char *keyfilter, *prompt;
 
-        TextEditor() : edit(NULL), keyfilter(NULL) {}
+        TextEditor() : edit(NULL), keyfilter(NULL), prompt(NULL ) {}
 
         void setup(const char *name, int length, int height, float scale_ = 1, const char *initval = NULL, int mode = EDITORUSED, const char *keyfilter_ = NULL, const char *parent_ = NULL, const char *prompt_ = NULL)
         {

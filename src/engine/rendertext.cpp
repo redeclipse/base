@@ -847,10 +847,10 @@ int draw_text(const char *str, int rleft, int rtop, int r, int g, int b, int a, 
     float cx = -FONTW, cy = 0;
     bvec4 colorstack[16], color = TVECX(r, g, b, fade);
     loopi(16) colorstack[i] = color;
-    gle::color(color);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     Texture *tex = curfont->texs[0];
     glBindTexture(GL_TEXTURE_2D, tex->id);
+    gle::color(color);
     gle::defvertex(textmatrix ? 3 : 2);
     gle::deftexcoord0();
     gle::begin(GL_QUADS);
