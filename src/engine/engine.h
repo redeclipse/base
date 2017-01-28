@@ -255,7 +255,7 @@ namespace modelpreview
     extern void end();
 }
 
-extern void drawskin(Texture *t, int x1, int y1, int x2, int y2, int colour = 0, float blend = 1, int size = 0, const matrix4x3 *m = NULL);
+extern void drawskin(Texture *t, float x1, float y1, float x2, float y2, int colour = 0, float blend = 1, float size = 0, const matrix4x3 *m = NULL);
 
 // renderextras
 extern void render3dbox(vec &o, float tofloor, float toceil, float xradius, float yradius = 0, const matrix4x3 *m = NULL);

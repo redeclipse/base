@@ -2344,24 +2344,29 @@ void cleanupgl()
     gle::cleanup();
 }
 
-void drawskin(Texture *t, int x1, int y1, int x2, int y2, int colour, float blend, int size, const matrix4x3 *m)
+void drawskin(Texture *t, float x1, float y1, float x2, float y2, int colour, float blend, float size, const matrix4x3 *m)
 {
-    int w = max(x2-x1, 2), h = max(y2-y1, 2), tw = size ? size : t->w, th = size ? size : t->h;
-    float pw = tw*0.25f, ph = th*0.25f, qw = tw*0.5f, qh = th*0.5f, px = 0, py = 0, tx = 0, ty = 0;
+    float w = x2-x1, h = y2-y1, tw = size > 0 ? size : t->w, th = size > 0 ? size : t->h,
+          pw = tw*0.25f, ph = th*0.25f, qw = tw*0.5f, qh = th*0.5f, px = 0, py = 0, tx = 0, ty = 0;
     if(w < qw)
     {
         float scale = w/qw;
-        qw *= scale; qh *= scale;
-        pw *= scale; ph *= scale;
+        qw *= scale;
+        qh *= scale;
+        pw *= scale;
+        ph *= scale;
     }
     if(h < qh)
     {
         float scale = h/qh;
-        qw *= scale; qh *= scale;
-        pw *= scale; ph *= scale;
+        qw *= scale;
+        qh *= scale;
+        pw *= scale;
+        ph *= scale;
     }
     int cw = max(int(floorf(w/qw))-1, 0), ch = max(int(floorf(h/qh))+1, 2);
 
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glBindTexture(GL_TEXTURE_2D, t->id);
     gle::color(vec::hexcolor(colour), blend);
     gle::defvertex(2);

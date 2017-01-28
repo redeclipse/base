@@ -3,6 +3,12 @@
 
 namespace UI
 {
+    VAR(IDF_PERSIST, uitextrows, 1, 32, 1000);
+    FVAR(0, uitextscale, 1, 0, 0);
+    VAR(IDF_PERSIST, uiscrollsteptime, 0, 50, 1000);
+    VAR(IDF_PERSIST, uislidersteptime, 0, 50, 1000);
+    VAR(IDF_PERSIST, uislotviewtime, 0, 25, 1000);
+
     static void quads(float x, float y, float w, float h, float tx = 0, float ty = 0, float tw = 1, float th = 1)
     {
         gle::attribf(x,   y);   gle::attribf(tx,    ty);
@@ -1256,6 +1262,9 @@ namespace UI
         void attrib() { gle::attribub(r, g, b, a); }
 
         static void def() { gle::defcolor(4, GL_UNSIGNED_BYTE); }
+
+        vec tocolor() const { return vec(r*(1.0f/255.0f), g*(1.0f/255.0f), b*(1.0f/255.0f)); }
+        int tohexcolor() const { return (int(r)<<16)|(int(g)<<8)|int(b); }
     };
 
     struct Filler : Object
@@ -1295,6 +1304,33 @@ namespace UI
         }
     };
 
+    struct Skin : Target
+    {
+        Texture *tex;
+        float partsize;
+
+        void setup(Texture *tex_, const Color &color_, float partsize_ = 0, float minw_ = 0, float minh_ = 0)
+        {
+            Target::setup(color_, minw_, minh_);
+            tex = tex_;
+            partsize = partsize_;
+        }
+
+        static const char *typestr() { return "#Skin"; }
+        const char *gettype() const { return typestr(); }
+
+        void draw(float sx, float sy)
+        {
+            changedraw(CHANGE_COLOR);
+
+            pushhudtranslate(sx, sy, uitextscale);
+            drawskin(tex, 0, 0, w/uitextscale, h/uitextscale, color.tohexcolor(), color.a/255.f, partsize);
+            pophudmatrix();
+
+            Object::draw(sx, sy);
+        }
+    };
+
     struct FillColor : Target
     {
         enum { SOLID = 0, MODULATE };
@@ -1305,7 +1341,6 @@ namespace UI
         {
             Target::setup(color_, minw_, minh_);
             type = type_;
-            color = color_;
         }
 
         static const char *typestr() { return "#FillColor"; }
@@ -1841,10 +1876,6 @@ namespace UI
         }
     };
 
-    // default size of text in terms of rows per screenful
-    VAR(IDF_PERSIST, uitextrows, 1, 32, 1000);
-    FVAR(0, uitextscale, 1, 0, 0);
-
     #define SETSTR(dst, src) do { \
         if(dst) { if(dst != src && strcmp(dst, src)) { delete[] dst; dst = newstring(src); } } \
         else dst = newstring(src); \
@@ -2243,8 +2274,6 @@ namespace UI
         }
     };
 
-    VAR(IDF_PERSIST, uiscrollsteptime, 0, 50, 1000);
-
     void ScrollBar::wheelscroll(float step)
     {
         ScrollArrow *arrow = (ScrollArrow *)findsibling(ScrollArrow::typestr());
@@ -2448,8 +2477,6 @@ namespace UI
             changed = true;
         }
     };
-
-    VAR(IDF_PERSIST, uislidersteptime, 0, 50, 1000);
 
     struct SliderArrow : Object
     {
@@ -2989,7 +3016,6 @@ namespace UI
         }
     };
 
-    VAR(IDF_PERSIST, uislotviewtime, 0, 25, 1000);
     static int lastthumbnail = 0;
 
     struct SlotViewer : Target
@@ -3316,6 +3342,9 @@ namespace UI
             break;
         }
     });
+
+    ICOMMAND(0, uiskin, "sifffe", (char *texname, int *c, float *s, float *minw, float *minh, uint *children),
+        BUILD(Skin, o, o->setup(textureload(texname, 3, true, false), Color(*c), *s, *minw, *minh), children));
 
     ICOMMAND(0, uivgradient, "iiffe", (int *c, int *c2, float *minw, float *minh, uint *children),
         BUILD(Gradient, o, o->setup(Gradient::SOLID, Gradient::VERTICAL, Color(*c), Color(*c2), *minw, *minh), children));
