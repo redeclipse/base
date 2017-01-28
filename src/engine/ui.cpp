@@ -4,8 +4,6 @@
 namespace UI
 {
     int uimillis = 0;
-    float cursorx = 0.499f, cursory = 0.499f;
-
     static void quads(float x, float y, float w, float h, float tx = 0, float ty = 0, float tw = 1, float th = 1)
     {
         gle::attribf(x,   y);   gle::attribf(tx,    ty);
@@ -1878,26 +1876,24 @@ namespace UI
 
         void draw(float sx, float sy)
         {
+            changedraw(CHANGE_COLOR);
+
+            float k = drawscale();
+            pushhudtranslate(sx, sy, k);
+            draw_textf("%s", 0, 0, 0, 0, color.r, color.g, color.b, color.a, TEXT_NO_INDENT, -1, wrap >= 0 ? int(wrap/k) : -1, 1, getstr());
+            pophudmatrix();
+
             Object::draw(sx, sy);
-
-            changedraw(CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
-
-            float oldscale = curtextscale;
-            curtextscale = drawscale();
-            draw_textf("%s", 10, 10, 0, 0, color.r, color.g, color.b, color.a, TEXT_NO_INDENT, -1, wrap >= 0 ? int(wrap/curtextscale) : -1, 1, getstr());
-            curtextscale = oldscale;
         }
 
         void layout()
         {
             Object::layout();
 
-            float oldscale = curtextscale, tw, th;
-            curtextscale = drawscale();
-            text_boundsf(getstr(), tw, th, 0, 0, wrap >= 0 ? int(wrap/curtextscale) : -1, TEXT_NO_INDENT);
-            w = max(w, tw*curtextscale);
-            h = max(h, th*curtextscale);
-            curtextscale = oldscale;
+            float k = drawscale(), tw, th;
+            text_boundsf(getstr(), tw, th, 0, 0, wrap >= 0 ? int(wrap/k) : -1, TEXT_NO_INDENT);
+            w = max(w, tw*k);
+            h = max(h, th*k);
         }
     };
 
@@ -2628,7 +2624,7 @@ namespace UI
 
         void draw(float sx, float sy)
         {
-            changedraw(CHANGE_SHADER | CHANGE_COLOR);
+            changedraw(CHANGE_COLOR);
 
             edit->rendered = true;
 
