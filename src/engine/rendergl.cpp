@@ -1543,8 +1543,16 @@ namespace modelpreview
     float oldaspect, oldfovy, oldfov;
     int oldfarplane;
 
-    void start(int x, int y, int w, int h, bool background)
+    int x, y, w, h;
+    bool background, scissor;
+
+    void start(int x, int y, int w, int h, bool background, bool scissor)
     {
+        modelpreview::x = x;
+        modelpreview::y = y;
+        modelpreview::w = w;
+        modelpreview::h = h;
+        modelpreview::background = background;
         drawtex = DRAWTEX_MODELPREVIEW;
 
         glViewport(x, y, w, h);
@@ -1609,7 +1617,7 @@ namespace modelpreview
 vec calcmodelpreviewpos(const vec &radius, float &yaw)
 {
     yaw = fmod(lastmillis/10000.0f*360.0f, 360.0f);
-    float dist = 1.05f*max(radius.magnitude2()/aspect, radius.magnitude())/sinf(fovy/2*RAD);
+    float dist = max(radius.magnitude2()/aspect, radius.magnitude())/sinf(fovy/2*RAD);
     return vec(0, dist, 0).rotate_around_x(camera1->pitch*RAD);
 }
 

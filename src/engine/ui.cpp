@@ -2838,7 +2838,6 @@ namespace UI
         bool allowtextinput() const { return false; }
     };
 
-    #if 0
     struct Preview : Target
     {
         void startdraw()
@@ -2860,11 +2859,12 @@ namespace UI
     {
         char *name;
         int anim;
+        float scale, blend;
 
         ModelPreview() : name(NULL) {}
         ~ModelPreview() { delete[] name; }
 
-        void setup(const char *name_, const char *animspec, float minw_, float minh_)
+        void setup(const char *name_, const char *animspec, float scale_, float blend_, float minw_, float minh_)
         {
             Preview::setup(minw_, minh_);
             SETSTR(name, name_);
@@ -2886,6 +2886,8 @@ namespace UI
                 }
             }
             anim |= ANIM_LOOP;
+            scale = scale_;
+            blend = blend_;
         }
 
         static const char *typestr() { return "#ModelPreview"; }
@@ -2903,11 +2905,14 @@ namespace UI
             model *m = loadmodel(name);
             if(m)
             {
+                entitylight light;
+                light.color = vec(1, 1, 1);
+                light.dir = vec(0, -1, 2).normalize();
                 vec center, radius;
                 m->boundbox(center, radius);
                 float yaw;
                 vec o = calcmodelpreviewpos(radius, yaw).sub(center);
-                rendermodel(name, anim, o, yaw, 0, 0, 0, NULL, NULL, 0);
+                rendermodel(&light, name, anim|ANIM_NOTRANS, o, yaw, 0, 0, 0, NULL, NULL, 0, 0, blend, scale);
             }
             if(clipstack.length()) clipstack.last().scissor();
             modelpreview::end();
@@ -2917,14 +2922,23 @@ namespace UI
     struct PlayerPreview : Preview
     {
         int model, color, team, weapon;
+        float scale, blend;
+        char *vanity;
 
-        void setup(int model_, int color_, int team_, int weapon_, float minw_, float minh_)
+        PlayerPreview() : vanity(NULL) {}
+        ~PlayerPreview() { DELETEA(vanity); }
+
+        void setup(int model_, int color_, int team_, int weapon_, char *vanity_, float scale_, float blend_, float minw_, float minh_)
         {
             Preview::setup(minw_, minh_);
             model = model_;
             color = color_;
             team = team_;
             weapon = weapon_;
+            scale = scale_;
+            blend = blend_;
+            if(vanity_) SETSTR(vanity, vanity_);
+            else DELETEA(vanity);
         }
 
         static const char *typestr() { return "#PlayerPreview"; }
@@ -2939,7 +2953,7 @@ namespace UI
             int sx1, sy1, sx2, sy2;
             window->calcscissor(sx, sy, sx+w, sy+h, sx1, sy1, sx2, sy2, false);
             modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, false, clipstack.length() > 0);
-            game::renderplayerpreview(model, color, team, weapon);
+            game::renderplayerpreview(model, color, team, weapon, vanity, scale, blend);
             if(clipstack.length()) clipstack.last().scissor();
             modelpreview::end();
         }
@@ -2977,7 +2991,6 @@ namespace UI
             modelpreview::end();
         }
     };
-    #endif
 
     VAR(IDF_PERSIST, uislotviewtime, 0, 25, 1000);
     static int lastthumbnail = 0;
@@ -3457,16 +3470,14 @@ namespace UI
             o->setup(tex, *minw, *minh, *tilew <= 0 ? 1 : *tilew, *tileh <= 0 ? 1 : *tileh);
         }, children));
 
-    #if 0
-    ICOMMAND(0, uimodelpreview, "ssffe", (char *model, char *animspec, float *minw, float *minh, uint *children),
-        BUILD(ModelPreview, o, o->setup(model, animspec, *minw, *minh), children));
+    ICOMMAND(0, uimodelpreview, "ssffffe", (char *model, char *animspec, float *scale, float *blend, float *minw, float *minh, uint *children),
+        BUILD(ModelPreview, o, o->setup(model, animspec, *scale, *blend, *minw, *minh), children));
 
-    ICOMMAND(0, uiplayerpreview, "iiiiffe", (int *model, int *color, int *team, int *weapon, float *minw, float *minh, uint *children),
-        BUILD(PlayerPreview, o, o->setup(*model, *color, *team, *weapon, *minw, *minh), children));
+    ICOMMAND(0, uiplayerpreview, "iiiisffffe", (int *model, int *color, int *team, int *weapon, char *vanity, float *scale, float *blend, float *minw, float *minh, uint *children),
+        BUILD(PlayerPreview, o, o->setup(*model, *color, *team, *weapon, vanity, *scale, *blend, *minw, *minh), children));
 
     ICOMMAND(0, uiprefabpreview, "siffe", (char *prefab, int *color, float *minw, float *minh, uint *children),
         BUILD(PrefabPreview, o, o->setup(prefab, *color, *minw, *minh), children));
-    #endif
 
     ICOMMAND(0, uislotview, "iffe", (int *index, float *minw, float *minh, uint *children),
         BUILD(SlotViewer, o, o->setup(*index, *minw, *minh), children));

@@ -251,7 +251,7 @@ extern void resetfogdist();
 
 namespace modelpreview
 {
-    extern void start(int x, int y, int w, int h, bool background = true);
+    extern void start(int x, int y, int w, int h, bool background = true, bool scissor = false);
     extern void end();
 }
 
