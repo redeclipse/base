@@ -1455,11 +1455,13 @@ namespace UI
         static Texture *lasttex;
 
         Texture *tex;
+        bool alphatarget;
 
-        void setup(Texture *tex_, const Color &color_, float minw_ = 0, float minh_ = 0)
+        void setup(Texture *tex_, const Color &color_, bool alphatarget_ = false, float minw_ = 0, float minh_ = 0)
         {
             Filler::setup(color_, minw_, minh_);
             tex = tex_;
+            alphatarget = alphatarget_;
         }
 
         static const char *typestr() { return "#Image"; }
@@ -1467,7 +1469,7 @@ namespace UI
 
         bool target(float cx, float cy)
         {
-            return !(tex->type&Texture::ALPHA) || checkalphamask(tex, cx/w, cy/h);
+            return !alphatarget || !(tex->type&Texture::ALPHA) || checkalphamask(tex, cx/w, cy/h);
         }
 
         void startdraw()
@@ -1505,9 +1507,9 @@ namespace UI
     {
         float cropx, cropy, cropw, croph;
 
-        void setup(Texture *tex_, const Color &color_, float minw_ = 0, float minh_ = 0, float cropx_ = 0, float cropy_ = 0, float cropw_ = 1, float croph_ = 1)
+        void setup(Texture *tex_, const Color &color_, bool alphatarget_ = false, float minw_ = 0, float minh_ = 0, float cropx_ = 0, float cropy_ = 0, float cropw_ = 1, float croph_ = 1)
         {
-            Image::setup(tex_, color_, minw_, minh_);
+            Image::setup(tex_, color_, alphatarget_, minw_, minh_);
             cropx = cropx_;
             cropy = cropy_;
             cropw = cropw_;
@@ -1519,7 +1521,7 @@ namespace UI
 
         bool target(float cx, float cy)
         {
-            return !(tex->type&Texture::ALPHA) || checkalphamask(tex, cropx + cx/w*cropw, cropy + cy/h*croph);
+            return !alphatarget || !(tex->type&Texture::ALPHA) || checkalphamask(tex, cropx + cx/w*cropw, cropy + cy/h*croph);
         }
 
         void draw(float sx, float sy)
@@ -1542,7 +1544,7 @@ namespace UI
 
         bool target(float cx, float cy)
         {
-            if(!(tex->type&Texture::ALPHA)) return true;
+            if(!alphatarget || !(tex->type&Texture::ALPHA)) return true;
 
             float mx, my;
             if(w <= minw) mx = cx/w;
@@ -1604,9 +1606,9 @@ namespace UI
     {
         float texborder, screenborder;
 
-        void setup(Texture *tex_, const Color &color_, float texborder_, float screenborder_)
+        void setup(Texture *tex_, const Color &color_, bool alphatarget_ = false, float texborder_ = 0, float screenborder_ = 0)
         {
-            Image::setup(tex_, color_);
+            Image::setup(tex_, color_, alphatarget_);
             texborder = texborder_;
             screenborder = screenborder_;
         }
@@ -1616,7 +1618,7 @@ namespace UI
 
         bool target(float cx, float cy)
         {
-            if(!(tex->type&Texture::ALPHA)) return true;
+            if(!alphatarget || !(tex->type&Texture::ALPHA)) return true;
 
             float mx, my;
             if(cx < screenborder) mx = cx/screenborder*texborder;
@@ -1672,9 +1674,9 @@ namespace UI
     {
         float tilew, tileh;
 
-        void setup(Texture *tex_, const Color &color_, float minw_ = 0, float minh_ = 0, float tilew_ = 0, float tileh_ = 0)
+        void setup(Texture *tex_, const Color &color_, bool alphatarget_ = false, float minw_ = 0, float minh_ = 0, float tilew_ = 0, float tileh_ = 0)
         {
-            Image::setup(tex_, color_, minw_, minh_);
+            Image::setup(tex_, color_, alphatarget_, minw_, minh_);
             tilew = tilew_;
             tileh = tileh_;
         }
@@ -1684,7 +1686,7 @@ namespace UI
 
         bool target(float cx, float cy)
         {
-            if(!(tex->type&Texture::ALPHA)) return true;
+            if(!alphatarget || !(tex->type&Texture::ALPHA)) return true;
 
             return checkalphamask(tex, fmod(cx/tilew, 1), fmod(cy/tileh, 1));
         }
@@ -3431,11 +3433,11 @@ namespace UI
     ICOMMAND(0, uikeyfield, "riefe", (ident *var, int *length, uint *onchange, float *scale, uint *children),
         BUILD(KeyField, o, o->setup(var, *length, onchange, (*scale <= 0 ? 1 : *scale) * uitextscale), children));
 
-    ICOMMAND(0, uiimage, "siffe", (char *texname, int *c, float *minw, float *minh, uint *children),
-        BUILD(Image, o, o->setup(textureload(texname, 3, true, false), Color(*c), *minw, *minh), children));
+    ICOMMAND(0, uiimage, "siiffe", (char *texname, int *c, int *a, float *minw, float *minh, uint *children),
+        BUILD(Image, o, o->setup(textureload(texname, 3, true, false), Color(*c), *a!=0, *minw, *minh), children));
 
-    ICOMMAND(0, uistretchedimage, "siffe", (char *texname, int *c, float *minw, float *minh, uint *children),
-        BUILD(StretchedImage, o, o->setup(textureload(texname, 3, true, false), Color(*c), *minw, *minh), children));
+    ICOMMAND(0, uistretchedimage, "siiffe", (char *texname, int *c, int *a, float *minw, float *minh, uint *children),
+        BUILD(StretchedImage, o, o->setup(textureload(texname, 3, true, false), Color(*c), *a!=0, *minw, *minh), children));
 
     static inline float parsepixeloffset(const tagval *t, int size)
     {
@@ -3454,26 +3456,26 @@ namespace UI
         }
     }
 
-    ICOMMAND(0, uicroppedimage, "sifftttte", (char *texname, int *c, float *minw, float *minh, tagval *cropx, tagval *cropy, tagval *cropw, tagval *croph, uint *children),
+    ICOMMAND(0, uicroppedimage, "siifftttte", (char *texname, int *c, int *a, float *minw, float *minh, tagval *cropx, tagval *cropy, tagval *cropw, tagval *croph, uint *children),
         BUILD(CroppedImage, o, {
             Texture *tex = textureload(texname, 3, true, false);
-            o->setup(tex, Color(*c), *minw, *minh,
+            o->setup(tex, Color(*c), *a!=0, *minw, *minh,
                 parsepixeloffset(cropx, tex->xs), parsepixeloffset(cropy, tex->ys),
                 parsepixeloffset(cropw, tex->xs), parsepixeloffset(croph, tex->ys));
         }, children));
 
-    ICOMMAND(0, uiborderedimage, "sitfe", (char *texname, int *c, tagval *texborder, float *screenborder, uint *children),
+    ICOMMAND(0, uiborderedimage, "siitfe", (char *texname, int *c, int *a, tagval *texborder, float *screenborder, uint *children),
         BUILD(BorderedImage, o, {
             Texture *tex = textureload(texname, 3, true, false);
-            o->setup(tex, Color(*c),
+            o->setup(tex, Color(*c), *a!=0,
                 parsepixeloffset(texborder, tex->xs),
                 *screenborder);
         }, children));
 
-    ICOMMAND(0, uitiledimage, "sffffe", (char *texname, int *c, float *tilew, float *tileh, float *minw, float *minh, uint *children),
+    ICOMMAND(0, uitiledimage, "siiffffe", (char *texname, int *c, int *a, float *tilew, float *tileh, float *minw, float *minh, uint *children),
         BUILD(TiledImage, o, {
             Texture *tex = textureload(texname, 0, true, false);
-            o->setup(tex, Color(*c), *minw, *minh, *tilew <= 0 ? 1 : *tilew, *tileh <= 0 ? 1 : *tileh);
+            o->setup(tex, Color(*c), *a!=0, *minw, *minh, *tilew <= 0 ? 1 : *tilew, *tileh <= 0 ? 1 : *tileh);
         }, children));
 
     ICOMMAND(0, uimodelpreview, "ssffffe", (char *model, char *animspec, float *scale, float *blend, float *minw, float *minh, uint *children),
