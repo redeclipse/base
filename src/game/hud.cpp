@@ -31,9 +31,10 @@ namespace hud
     VAR(IDF_PERSIST, showeventicons, 0, 1, 7);
     VAR(IDF_PERSIST, showloadingaspect, 0, 2, 3);
     VAR(IDF_PERSIST, showloadingmapbg, 0, 1, 1);
-    VAR(IDF_PERSIST, showloadinggpu, 0, 1, 1);
+    VAR(IDF_PERSIST, showloadinglogos, 0, 0, 1);
+    VAR(IDF_PERSIST, showloadinggpu, 0, 0, 1);
     VAR(IDF_PERSIST, showloadingversion, 0, 1, 1);
-    VAR(IDF_PERSIST, showloadingurl, 0, 1, 1);
+    VAR(IDF_PERSIST, showloadingurl, 0, 0, 1);
 
     VAR(IDF_PERSIST, showfps, 0, 0, 3);
     VAR(IDF_PERSIST, showstats, 0, 1, 2);
@@ -3368,15 +3369,18 @@ namespace hud
 
         drawspecborder(w, h, BORDER_BG, top, bottom);
 
-        gle::colorf(1, 1, 1, 1);
+        if(showloadinglogos)
+        {
+            gle::colorf(1, 1, 1, 1);
 
-        t = textureload(logotex, 3);
-        glBindTexture(GL_TEXTURE_2D, t->id);
-        drawtexture(w-1024, top, 1024, 256);
+            t = textureload(logotex, 3);
+            glBindTexture(GL_TEXTURE_2D, t->id);
+            drawtexture(w-1024, top, 1024, 256);
 
-        t = textureload(badgetex, 3);
-        glBindTexture(GL_TEXTURE_2D, t->id);
-        drawtexture(w-336, top, 256, 128);
+            t = textureload(badgetex, 3);
+            glBindTexture(GL_TEXTURE_2D, t->id);
+            drawtexture(w-336, top, 256, 128);
+        }
 
         pushfont("console");
         int y = h-bottom-FONTH/2;
