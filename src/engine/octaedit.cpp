@@ -1116,7 +1116,12 @@ bool unpackundo(const uchar *inbuf, int inlen, int outlen)
     uchar *outbuf = NULL;
     if(!uncompresseditinfo(inbuf, inlen, outbuf, outlen)) return false;
     ucharbuf buf(outbuf, outlen);
-    if(buf.remaining() < 2) return false;
+    if(buf.remaining() < 2)
+    {
+        delete[] outbuf;
+        return false;
+    }
+
     int numents = lilswap(*(const ushort *)buf.pad(2));
     if(numents)
     {
