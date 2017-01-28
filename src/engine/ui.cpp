@@ -3,7 +3,6 @@
 
 namespace UI
 {
-    int uimillis = 0;
     static void quads(float x, float y, float w, float h, float tx = 0, float ty = 0, float tw = 1, float th = 1)
     {
         gle::attribf(x,   y);   gle::attribf(tx,    ty);
@@ -1843,7 +1842,7 @@ namespace UI
     };
 
     // default size of text in terms of rows per screenful
-    VAR(IDF_PERSIST, uitextrows, 1, 24, 200);
+    VAR(IDF_PERSIST, uitextrows, 1, 32, 1000);
     FVAR(0, uitextscale, 1, 0, 0);
 
     #define SETSTR(dst, src) do { \
@@ -3111,21 +3110,18 @@ namespace UI
         Window *window = windows.find(name, NULL);
         if(!window) return false;
         if(hidetop) world->hidetop();
-        bool ret = world->show(window);
-        if(uimillis <= 0 && hasinput()) uimillis = totalmillis;
-        return ret;
+        return world->show(window);
     }
 
     bool hideui(const char *name)
     {
-        bool hadinput = hasinput(), ret = false;
-        if(!name) ret = world->hideall() > 0;
+        if(!name) return world->hideall() > 0;
         else
         {
             Window *window = windows.find(name, NULL);
-            if(window) ret = world->hide(window);
+            if(window) return world->hide(window);
         }
-        return ret;
+        return false;
     }
 
     bool toggleui(const char *name)
@@ -3427,8 +3423,8 @@ namespace UI
         BUILD(Console, o, o->setup(*minw, *minh), children));
     #endif // 0
 
-    ICOMMAND(0, uifield, "riefe", (ident *var, int *length, uint *onchange, float *scale, uint *children),
-        BUILD(Field, o, o->setup(var, *length, onchange, (*scale <= 0 ? 1 : *scale) * uitextscale), children));
+    ICOMMAND(0, uifield, "riefsse", (ident *var, int *length, uint *onchange, float *scale, char *parent, char *prompt, uint *children),
+        BUILD(Field, o, o->setup(var, *length, onchange, (*scale <= 0 ? 1 : *scale) * uitextscale, NULL, parent, prompt), children));
 
     ICOMMAND(0, uikeyfield, "riefe", (ident *var, int *length, uint *onchange, float *scale, uint *children),
         BUILD(KeyField, o, o->setup(var, *length, onchange, (*scale <= 0 ? 1 : *scale) * uitextscale), children));

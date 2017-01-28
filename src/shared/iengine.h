@@ -585,8 +585,6 @@ struct editor;
 
 namespace UI
 {
-    extern int uimillis;
-
     extern bool showui(const char *name, bool hidetop = true);
     extern bool hideui(const char *name);
     extern bool toggleui(const char *name);

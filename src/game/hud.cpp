@@ -2,7 +2,7 @@
 namespace hud
 {
     const int NUMSTATS = 11;
-    int damageresidue = 0, hudwidth = 0, hudheight = 0, lastteam = 0, laststats = 0, prevstats[NUMSTATS] = {0}, curstats[NUMSTATS] = {0};
+    int uimillis = 0, damageresidue = 0, hudwidth = 0, hudheight = 0, lastteam = 0, laststats = 0, prevstats[NUMSTATS] = {0}, curstats[NUMSTATS] = {0};
 
     #include "compass.h"
     vector<int> teamkills;
@@ -3485,11 +3485,11 @@ namespace hud
                 else a += (1.f-compassfadeamt);
                 loopi(3) if(a < colour[i]) colour[i] *= a;
             }
-            if(UI::uimillis > 0 && !UI::hasinput()) UI::uimillis = -totalmillis;
-            if(uifade && (UI::uimillis > 0 || totalmillis-abs(UI::uimillis) <= uifade))
+            if(UI::hasinput() ? uimillis < 0 : uimillis > 0) uimillis = UI::hasinput() ? totalmillis : -totalmillis;
+            if(uifade && (uimillis > 0 || totalmillis-abs(uimillis) <= uifade))
             {
-                float n = min(float(totalmillis-abs(UI::uimillis))/float(uifade), 1.f), a = n*uifadeamt;
-                if(UI::uimillis > 0) a = 1.f-a;
+                float n = min(float(totalmillis-abs(uimillis))/float(uifade), 1.f), a = n*uifadeamt;
+                if(uimillis > 0) a = 1.f-a;
                 else a += (1.f-uifadeamt);
                 loopi(3) if(a < colour[i]) colour[i] *= a;
             }
