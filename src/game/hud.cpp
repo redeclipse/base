@@ -3485,6 +3485,7 @@ namespace hud
                 else a += (1.f-compassfadeamt);
                 loopi(3) if(a < colour[i]) colour[i] *= a;
             }
+            if(UI::uimillis > 0 && !UI::hasinput()) UI::uimillis = -totalmillis;
             if(uifade && (UI::uimillis > 0 || totalmillis-abs(UI::uimillis) <= uifade))
             {
                 float n = min(float(totalmillis-abs(UI::uimillis))/float(uifade), 1.f), a = n*uifadeamt;

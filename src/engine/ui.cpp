@@ -3106,10 +3106,11 @@ namespace UI
     ICOMMAND(0, uiallowinput, "b", (int *val), { if(window) { if(*val >= 0) window->allowinput = *val!=0; intret(window->allowinput ? 1 : 0); } });
     ICOMMAND(0, uieschide, "b", (int *val), { if(window) { if(*val >= 0) window->eschide = *val!=0; intret(window->eschide ? 1 : 0); } });
 
-    bool showui(const char *name)
+    bool showui(const char *name, bool hidetop)
     {
         Window *window = windows.find(name, NULL);
         if(!window) return false;
+        if(hidetop) world->hidetop();
         bool ret = world->show(window);
         if(uimillis <= 0 && hasinput()) uimillis = totalmillis;
         return ret;
@@ -3124,7 +3125,6 @@ namespace UI
             Window *window = windows.find(name, NULL);
             if(window) ret = world->hide(window);
         }
-        if(uimillis >= 0 && hadinput && !hasinput()) uimillis = -totalmillis;
         return ret;
     }
 
@@ -3148,7 +3148,7 @@ namespace UI
         return window && world->children.find(window) >= 0;
     }
 
-    ICOMMAND(0, showui, "s", (char *name), intret(showui(name) ? 1 : 0));
+    ICOMMAND(0, showui, "sb", (char *name, int *hide), intret(showui(name, *hide!=0) ? 1 : 0));
     ICOMMAND(0, hideui, "s", (char *name), intret(hideui(name) ? 1 : 0));
     ICOMMAND(0, hidetopui, "", (), intret(world->hidetop() ? 1 : 0));
     ICOMMAND(0, hideallui, "", (), intret(world->hideall()));

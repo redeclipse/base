@@ -587,7 +587,7 @@ namespace UI
 {
     extern int uimillis;
 
-    extern bool showui(const char *name);
+    extern bool showui(const char *name, bool hidetop = true);
     extern bool hideui(const char *name);
     extern bool toggleui(const char *name);
     extern void holdui(const char *name, bool on);
