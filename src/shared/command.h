@@ -419,8 +419,8 @@ extern int filetimelocal;
 extern const char *gettime(time_t ctime = 0, const char *format = NULL);
 
 // nasty macros for registering script functions, abuses globals to avoid excessive infrastructure
-#define KEYWORD(flags, name, type) UNUSED static bool __dummy_##type = addcommand(#name, (identfun)NULL, NULL, type, flags)
-#define COMMANDKN(flags, name, type, fun, nargs) UNUSED static bool __dummy_##fun = addcommand(#name, (identfun)fun, nargs, type, flags)
+#define KEYWORD(flags, name, type) UNUSED static bool __dummy_##type = addcommand(#name, (identfun)NULL, NULL, type, flags|IDF_COMPLETE)
+#define COMMANDKN(flags, name, type, fun, nargs) UNUSED static bool __dummy_##fun = addcommand(#name, (identfun)fun, nargs, type, flags|IDF_COMPLETE)
 #define COMMANDK(flags, name, type, nargs) COMMANDKN(flags, name, type, name, nargs)
 #define COMMANDN(flags, name, fun, nargs) COMMANDKN(flags, name, ID_COMMAND, fun, nargs)
 #define COMMAND(flags, name, nargs) COMMANDN(flags, name, name, nargs)
@@ -428,7 +428,7 @@ extern const char *gettime(time_t ctime = 0, const char *format = NULL);
 // anonymous inline commands, uses nasty template trick with line numbers to keep names unique
 #define ICOMMANDNAME(name) _icmd_##name
 #define ICOMMANDSNAME _icmds_
-#define ICOMMANDKNS(flags, name, type, cmdname, nargs, proto, b) template<int N> struct cmdname; template<> struct cmdname<__LINE__> { static bool init; static void run proto; }; bool cmdname<__LINE__>::init = addcommand(name, (identfun)cmdname<__LINE__>::run, nargs, type, flags); void cmdname<__LINE__>::run proto \
+#define ICOMMANDKNS(flags, name, type, cmdname, nargs, proto, b) template<int N> struct cmdname; template<> struct cmdname<__LINE__> { static bool init; static void run proto; }; bool cmdname<__LINE__>::init = addcommand(name, (identfun)cmdname<__LINE__>::run, nargs, type, flags|IDF_COMPLETE); void cmdname<__LINE__>::run proto \
     { b; }
 #define ICOMMANDKN(flags, name, type, cmdname, nargs, proto, b) ICOMMANDKNS(flags, #name, type, cmdname, nargs, proto, b)
 #define ICOMMANDK(flags, name, type, nargs, proto, b) ICOMMANDKN(flags, name, type, ICOMMANDNAME(name), nargs, proto, b)
