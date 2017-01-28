@@ -489,6 +489,8 @@ namespace UI
         template<class T> bool istype() const { return T::typestr() == gettype(); }
         bool isnamed(const char *name) const { return name[0] == '#' ? name == gettypename() : !strcmp(name, getname()); }
 
+        virtual bool isfiller() const { return false; }
+
         Object *find(const char *name, bool recurse = true, const Object *exclude = NULL) const
         {
             loopchildren(o,
@@ -1242,19 +1244,37 @@ namespace UI
         }
     };
 
+    struct Color
+    {
+        uchar r, g, b, a;
+
+        Color() {}
+        Color(uint c) : r((c>>16)&0xFF), g((c>>8)&0xFF), b(c&0xFF), a(c>>24 ? c>>24 : 0xFF) {}
+        Color(uint c, uchar a) : r((c>>16)&0xFF), g((c>>8)&0xFF), b(c&0xFF), a(a) {}
+        Color(uchar r, uchar g, uchar b, uchar a = 255) : r(r), g(g), b(b), a(a) {}
+
+        void init() { gle::colorub(r, g, b, a); }
+        void attrib() { gle::attribub(r, g, b, a); }
+
+        static void def() { gle::defcolor(4, GL_UNSIGNED_BYTE); }
+    };
+
     struct Filler : Object
     {
+        Color color;
         float minw, minh;
 
-        void setup(float minw_, float minh_)
+        void setup(const Color &color_, float minw_, float minh_)
         {
             Object::setup();
             minw = minw_;
             minh = minh_;
+            color = color_;
         }
 
         static const char *typestr() { return "#Filler"; }
         const char *gettype() const { return typestr(); }
+        bool isfiller() const { return true; }
 
         void layout()
         {
@@ -1276,31 +1296,15 @@ namespace UI
         }
     };
 
-    struct Color
-    {
-        uchar r, g, b, a;
-
-        Color() {}
-        Color(uint c) : r((c>>16)&0xFF), g((c>>8)&0xFF), b(c&0xFF), a(c>>24 ? c>>24 : 0xFF) {}
-        Color(uint c, uchar a) : r((c>>16)&0xFF), g((c>>8)&0xFF), b(c&0xFF), a(a) {}
-        Color(uchar r, uchar g, uchar b, uchar a = 255) : r(r), g(g), b(b), a(a) {}
-
-        void init() { gle::colorub(r, g, b, a); }
-        void attrib() { gle::attribub(r, g, b, a); }
-
-        static void def() { gle::defcolor(4, GL_UNSIGNED_BYTE); }
-    };
-
     struct FillColor : Target
     {
         enum { SOLID = 0, MODULATE };
 
         int type;
-        Color color;
 
         void setup(int type_, const Color &color_, float minw_ = 0, float minh_ = 0)
         {
-            Target::setup(minw_, minh_);
+            Target::setup(color_, minw_, minh_);
             type = type_;
             color = color_;
         }
@@ -1373,12 +1377,9 @@ namespace UI
 
     struct Line : Filler
     {
-        Color color;
-
         void setup(const Color &color_, float minw_ = 0, float minh_ = 0)
         {
-            Filler::setup(minw_, minh_);
-            color = color_;
+            Filler::setup(color_, minw_, minh_);
         }
 
         static const char *typestr() { return "#Line"; }
@@ -1406,12 +1407,9 @@ namespace UI
 
     struct Outline : Filler
     {
-        Color color;
-
         void setup(const Color &color_, float minw_ = 0, float minh_ = 0)
         {
-            Filler::setup(minw_, minh_);
-            color = color_;
+            Filler::setup(color_, minw_, minh_);
         }
 
         static const char *typestr() { return "#Outline"; }
@@ -1458,9 +1456,9 @@ namespace UI
 
         Texture *tex;
 
-        void setup(Texture *tex_, float minw_ = 0, float minh_ = 0)
+        void setup(Texture *tex_, const Color &color_, float minw_ = 0, float minh_ = 0)
         {
-            Filler::setup(minw_, minh_);
+            Filler::setup(color_, minw_, minh_);
             tex = tex_;
         }
 
@@ -1490,9 +1488,10 @@ namespace UI
         {
             if(tex != notexture)
             {
-                changedraw();
+                changedraw(CHANGE_COLOR);
                 if(lasttex != tex) { if(lasttex) gle::end(); lasttex = tex; glBindTexture(GL_TEXTURE_2D, tex->id); }
 
+                color.init();
                 quads(sx, sy, w, h);
             }
 
@@ -1506,9 +1505,9 @@ namespace UI
     {
         float cropx, cropy, cropw, croph;
 
-        void setup(Texture *tex_, float minw_ = 0, float minh_ = 0, float cropx_ = 0, float cropy_ = 0, float cropw_ = 1, float croph_ = 1)
+        void setup(Texture *tex_, const Color &color_, float minw_ = 0, float minh_ = 0, float cropx_ = 0, float cropy_ = 0, float cropw_ = 1, float croph_ = 1)
         {
-            Image::setup(tex_, minw_, minh_);
+            Image::setup(tex_, color_, minw_, minh_);
             cropx = cropx_;
             cropy = cropy_;
             cropw = cropw_;
@@ -1605,9 +1604,9 @@ namespace UI
     {
         float texborder, screenborder;
 
-        void setup(Texture *tex_, float texborder_, float screenborder_)
+        void setup(Texture *tex_, const Color &color_, float texborder_, float screenborder_)
         {
-            Image::setup(tex_);
+            Image::setup(tex_, color_);
             texborder = texborder_;
             screenborder = screenborder_;
         }
@@ -1673,9 +1672,9 @@ namespace UI
     {
         float tilew, tileh;
 
-        void setup(Texture *tex_, float minw_ = 0, float minh_ = 0, float tilew_ = 0, float tileh_ = 0)
+        void setup(Texture *tex_, const Color &color_, float minw_ = 0, float minh_ = 0, float tilew_ = 0, float tileh_ = 0)
         {
-            Image::setup(tex_, minw_, minh_);
+            Image::setup(tex_, color_, minw_, minh_);
             tilew = tilew_;
             tileh = tileh_;
         }
@@ -1720,13 +1719,10 @@ namespace UI
         enum { SOLID = 0, OUTLINE, MODULATE };
 
         int type;
-        Color color;
 
         void setup(const Color &color_, int type_ = SOLID, float minw_ = 0, float minh_ = 0)
         {
-            Filler::setup(minw_, minh_);
-
-            color = color_;
+            Filler::setup(color_, minw_, minh_);
             type = type_;
         }
 
@@ -2034,7 +2030,7 @@ namespace UI
     {
         void setup(float minw_ = 0, float minh_ = 0)
         {
-            Filler::setup(minw_, minh_);
+            Filler::setup(color_, minw_, minh_);
         }
 
         static const char *typestr() { return "#Console"; }
@@ -2866,7 +2862,7 @@ namespace UI
 
         void setup(const char *name_, const char *animspec, float scale_, float blend_, float minw_, float minh_)
         {
-            Preview::setup(minw_, minh_);
+            Preview::setup(Color(0xFFFFFF), minw_, minh_);
             SETSTR(name, name_);
 
             anim = ANIM_ALL;
@@ -2930,7 +2926,7 @@ namespace UI
 
         void setup(int model_, int color_, int team_, int weapon_, char *vanity_, float scale_, float blend_, float minw_, float minh_)
         {
-            Preview::setup(minw_, minh_);
+            Preview::setup(Color(0xFFFFFF), minw_, minh_);
             model = model_;
             color = color_;
             team = team_;
@@ -2969,7 +2965,7 @@ namespace UI
 
         void setup(const char *name_, int color_, float minw_, float minh_)
         {
-            Preview::setup(minw_, minh_);
+            Preview::setup(Color(0xFFFFFF), minw_, minh_);
             SETSTR(name, name_);
             color = vec::hexcolor(color_);
         }
@@ -3001,7 +2997,7 @@ namespace UI
 
         void setup(int index_, float minw_ = 0, float minh_ = 0)
         {
-            Target::setup(minw_, minh_);
+            Target::setup(Color(0xFFFFFF), minw_, minh_);
             index = index_;
         }
 
@@ -3253,11 +3249,11 @@ namespace UI
     ICOMMAND(0, uioffset, "ffe", (float *offsetx, float *offsety, uint *children),
         BUILD(Offsetter, o, o->setup(*offsetx, *offsety), children));
 
-    ICOMMAND(0, uifill, "ffe", (float *minw, float *minh, uint *children),
-        BUILD(Filler, o, o->setup(*minw, *minh), children));
+    ICOMMAND(0, uifill, "iffe", (int *c, float *minw, float *minh, uint *children),
+        BUILD(Filler, o, o->setup(Color(*c), *minw, *minh), children));
 
-    ICOMMAND(0, uitarget, "ffe", (float *minw, float *minh, uint *children),
-        BUILD(Target, o, o->setup(*minw, *minh), children));
+    ICOMMAND(0, uitarget, "iffe", (int *c, float *minw, float *minh, uint *children),
+        BUILD(Target, o, o->setup(Color(*c), *minw, *minh), children));
 
     ICOMMAND(0, uiclip, "ffe", (float *clipw, float *cliph, uint *children),
         BUILD(Clipper, o, o->setup(*clipw, *cliph), children));
@@ -3312,6 +3308,16 @@ namespace UI
 
     ICOMMAND(0, uimodcolor, "iffe", (int *c, float *minw, float *minh, uint *children),
         BUILD(FillColor, o, o->setup(FillColor::MODULATE, Color(*c), *minw, *minh), children));
+
+    ICOMMAND(0, uisetcolor, "iffe", (int *c),
+    {
+        for(Object *o = buildparent; o != NULL; o = o->parent)
+        {
+            if(!o->isfiller()) continue;
+            ((Filler *)o)->color = Color(*c);
+            break;
+        }
+    });
 
     ICOMMAND(0, uivgradient, "iiffe", (int *c, int *c2, float *minw, float *minh, uint *children),
         BUILD(Gradient, o, o->setup(Gradient::SOLID, Gradient::VERTICAL, Color(*c), Color(*c2), *minw, *minh), children));
@@ -3382,8 +3388,8 @@ namespace UI
     ICOMMAND(0, uitext, "tfe", (tagval *text, float *scale, uint *children),
         buildtext(*text, *scale, uitextscale, Color(255, 255, 255), -1, children));
 
-    ICOMMAND(0, uitextfill, "ffe", (float *minw, float *minh, uint *children),
-        BUILD(Filler, o, o->setup(*minw * uitextscale*0.5f, *minh * uitextscale), children));
+    ICOMMAND(0, uitextfill, "iffe", (int *c, float *minw, float *minh, uint *children),
+        BUILD(Filler, o, o->setup(Color(*c), *minw * uitextscale*0.5f, *minh * uitextscale), children));
 
     ICOMMAND(0, uiwrapcolortext, "tfife", (tagval *text, float *wrap, int *c, float *scale, uint *children),
         buildtext(*text, *scale, uitextscale, Color(*c), *wrap, children));
@@ -3397,8 +3403,8 @@ namespace UI
     ICOMMAND(0, uicontext, "tfe", (tagval *text, float *scale, uint *children),
         buildtext(*text, *scale, FONTH*uicontextscale, Color(255, 255, 255), -1, children));
 
-    ICOMMAND(0, uicontextfill, "ffe", (float *minw, float *minh, uint *children),
-        BUILD(Filler, o, o->setup(*minw * FONTH*uicontextscale*0.5f, *minh * FONTH*uicontextscale), children));
+    ICOMMAND(0, uicontextfill, "iffe", (int *c, float *minw, float *minh, uint *children),
+        BUILD(Filler, o, o->setup(Color(*c), *minw * FONTH*uicontextscale*0.5f, *minh * FONTH*uicontextscale), children));
 
     ICOMMAND(0, uiwrapcolorcontext, "tfife", (tagval *text, float *wrap, int *c, float *scale, uint *children),
         buildtext(*text, *scale, FONTH*uicontextscale, Color(*c), *wrap, children));
@@ -3425,11 +3431,11 @@ namespace UI
     ICOMMAND(0, uikeyfield, "riefe", (ident *var, int *length, uint *onchange, float *scale, uint *children),
         BUILD(KeyField, o, o->setup(var, *length, onchange, (*scale <= 0 ? 1 : *scale) * uitextscale), children));
 
-    ICOMMAND(0, uiimage, "sffe", (char *texname, float *minw, float *minh, uint *children),
-        BUILD(Image, o, o->setup(textureload(texname, 3, true, false), *minw, *minh), children));
+    ICOMMAND(0, uiimage, "siffe", (char *texname, int *c, float *minw, float *minh, uint *children),
+        BUILD(Image, o, o->setup(textureload(texname, 3, true, false), Color(*c), *minw, *minh), children));
 
-    ICOMMAND(0, uistretchedimage, "sffe", (char *texname, float *minw, float *minh, uint *children),
-        BUILD(StretchedImage, o, o->setup(textureload(texname, 3, true, false), *minw, *minh), children));
+    ICOMMAND(0, uistretchedimage, "siffe", (char *texname, int *c, float *minw, float *minh, uint *children),
+        BUILD(StretchedImage, o, o->setup(textureload(texname, 3, true, false), Color(*c), *minw, *minh), children));
 
     static inline float parsepixeloffset(const tagval *t, int size)
     {
@@ -3448,26 +3454,26 @@ namespace UI
         }
     }
 
-    ICOMMAND(0, uicroppedimage, "sfftttte", (char *texname, float *minw, float *minh, tagval *cropx, tagval *cropy, tagval *cropw, tagval *croph, uint *children),
+    ICOMMAND(0, uicroppedimage, "sifftttte", (char *texname, int *c, float *minw, float *minh, tagval *cropx, tagval *cropy, tagval *cropw, tagval *croph, uint *children),
         BUILD(CroppedImage, o, {
             Texture *tex = textureload(texname, 3, true, false);
-            o->setup(tex, *minw, *minh,
+            o->setup(tex, Color(*c), *minw, *minh,
                 parsepixeloffset(cropx, tex->xs), parsepixeloffset(cropy, tex->ys),
                 parsepixeloffset(cropw, tex->xs), parsepixeloffset(croph, tex->ys));
         }, children));
 
-    ICOMMAND(0, uiborderedimage, "stfe", (char *texname, tagval *texborder, float *screenborder, uint *children),
+    ICOMMAND(0, uiborderedimage, "sitfe", (char *texname, int *c, tagval *texborder, float *screenborder, uint *children),
         BUILD(BorderedImage, o, {
             Texture *tex = textureload(texname, 3, true, false);
-            o->setup(tex,
+            o->setup(tex, Color(*c),
                 parsepixeloffset(texborder, tex->xs),
                 *screenborder);
         }, children));
 
-    ICOMMAND(0, uitiledimage, "sffffe", (char *texname, float *tilew, float *tileh, float *minw, float *minh, uint *children),
+    ICOMMAND(0, uitiledimage, "sffffe", (char *texname, int *c, float *tilew, float *tileh, float *minw, float *minh, uint *children),
         BUILD(TiledImage, o, {
             Texture *tex = textureload(texname, 0, true, false);
-            o->setup(tex, *minw, *minh, *tilew <= 0 ? 1 : *tilew, *tileh <= 0 ? 1 : *tileh);
+            o->setup(tex, Color(*c), *minw, *minh, *tilew <= 0 ? 1 : *tilew, *tileh <= 0 ? 1 : *tileh);
         }, children));
 
     ICOMMAND(0, uimodelpreview, "ssffffe", (char *model, char *animspec, float *scale, float *blend, float *minw, float *minh, uint *children),
