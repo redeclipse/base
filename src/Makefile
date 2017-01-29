@@ -8,6 +8,8 @@ override CXXFLAGS+= -Wall -fsigned-char -fno-exceptions -fno-rtti
 
 PLATFORM= $(shell $(CC) -dumpmachine)
 
+RMFLAGS= -fv
+
 ifeq (,$(PLATFORM_BIN))
 ifneq (,$(findstring arm,$(PLATFORM)))
 PLATFORM_BIN=arm
@@ -87,6 +89,9 @@ BIN_SUFFIX=_linux
 else
 ifneq (,$(findstring bsd,$(PLATFORM)))
 BIN_SUFFIX=_bsd
+ifneq (,$(findstring openbsd,$(PLATFORM)))
+RMFLAGS= -f
+endif
 else
 BIN_SUFFIX=_native
 endif
@@ -198,13 +203,13 @@ clean-enet:
 	$(MAKE) -C enet clean
 
 clean-client:
-	@rm -fv $(CLIENT_PCH) $(CLIENT_OBJS) $(APPCLIENT)$(BIN_SUFFIX)
+	@rm $(RMFLAGS) $(CLIENT_PCH) $(CLIENT_OBJS) $(APPCLIENT)$(BIN_SUFFIX)
 
 clean-server:
-	@rm -fv $(SERVER_OBJS) $(APPSERVER)$(BIN_SUFFIX)
+	@rm $(RMFLAGS) $(SERVER_OBJS) $(APPSERVER)$(BIN_SUFFIX)
 
 clean-genkey:
-	@rm -fv $(GENKEY_OBJS) genkey$(BIN_SUFFIX)
+	@rm $(RMFLAGS) $(GENKEY_OBJS) genkey$(BIN_SUFFIX)
 
 clean: clean-enet clean-client clean-server clean-genkey
 
