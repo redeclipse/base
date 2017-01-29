@@ -67,6 +67,7 @@ The project is Free and Open Source, meaning that you can both use it for free a
 * Mikhail "Agustis" Kashin
 * Nick "Fatal_Glory" Watts
 * Petri Lukkarinen
+* Radek "Dziq" Jędrecki - Models and Textures
 * Ricky "unixfreak" Thomson - Maps
 * Riidom Li - Models
 * Rob "Lloir" Shannon
@@ -86,6 +87,8 @@ The project is Free and Open Source, meaning that you can both use it for free a
 * Zachery "freezurbern" Slocum - Skyboxes
 * "Gaming Tilt"
 * "4rson" - Maps and Support
+* "Beha" - Stats system, bug fixes and other improvements
+* "Bobbo" - Bug fixes and other improvements
 * "bonifarz"
 * "Boognish" - Maps
 * "CD Xbow"
@@ -102,5 +105,6 @@ The project is Free and Open Source, meaning that you can both use it for free a
 * "nemurati"
 * "Raiden" - Maps
 * "RaZgRiZ" - Textures and Cubescript maintenance
+* "TheAssassin" - Web stuff, privacy and bug fixes and other improvements
 * "TheLastProject" - Design, Testing and Support
 * "w00p|dazza"
