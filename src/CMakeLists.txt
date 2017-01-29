@@ -4,8 +4,8 @@ cmake_minimum_required(VERSION 2.8.11)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -fomit-frame-pointer -ffast-math -Wall -fsigned-char -fno-exceptions -fno-rtti")
 
 # set Git build information
-include(CMakeModules/GetGitRevisionDescription.cmake)
-include(CMakeModules/GetGitRepositoryStatus.cmake)
+include(cmake/GetGitRevisionDescription.cmake)
+include(cmake/GetGitRepositoryStatus.cmake)
 
 get_git_head_revision(GIT_REFSPEC GIT_SHA1)
 string(SUBSTRING ${GIT_SHA1} 0 7 GIT_SHA1_SHORT)
