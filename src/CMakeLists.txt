@@ -3,6 +3,17 @@ cmake_minimum_required(VERSION 2.8.11)
 # set compile options
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -fomit-frame-pointer -ffast-math -Wall -fsigned-char -fno-exceptions -fno-rtti")
 
+# set Git build information
+include(CMakeModules/GetGitRevisionDescription.cmake)
+include(CMakeModules/GetGitRepositoryStatus.cmake)
+
+get_git_head_revision(GIT_REFSPEC GIT_SHA1)
+string(SUBSTRING ${GIT_SHA1} 0 7 GIT_SHA1_SHORT)
+
+git_repository_dirty(GIT_REPO_DIRTY)
+
+string(APPEND CMAKE_CXX_FLAGS " -DGIT_REVISION_ID=\\\"${GIT_SHA1_SHORT}\\\" -DGIT_REPO_DIRTY=\"${GIT_REPO_DIRTY}\"")
+
 # Use pkg-config to configure dependencies later
 find_package(PkgConfig REQUIRED)
 # the dependencies required by all platforms
