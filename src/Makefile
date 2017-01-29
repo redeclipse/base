@@ -35,6 +35,15 @@ CXX=g++
 CC=gcc
 endif
 
+GIT := $(shell command -v git 2> /dev/null)
+ifndef GIT
+    $(warning "git is not available")
+else
+    GIT_REVISION_ID := $(shell $(GIT) rev-parse --short=7 HEAD)
+    GIT_REPO_DIRTY := $(shell $(GIT) diff-index --quiet HEAD && echo false || echo true)
+    override CXXFLAGS += -DGIT_REVISION_ID=\"$(GIT_REVISION_ID)\" -DGIT_REPO_DIRTY=$(GIT_REPO_DIRTY)
+endif
+
 CXX_TEMP:=$(CXX)
 CC_TEMP:=$(CC)
 override CXX=$(TOOLSET_PREFIX)$(CXX_TEMP)
