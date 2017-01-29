@@ -15,24 +15,3 @@
 #define LAN_PORT 28799
 #define MASTER_PORT 28800
 #define SERVER_PORT 28801
-
-#ifndef GIT_REVISION_ID
-#define GIT_REVISION_ID "unknown-commit"
-#endif
-
-#ifdef GIT_REPO_DIRTY
-#define DEVELOPMENT_BUILD true
-#define VERSION_SUFFIX "-dirty"
-#endif
-
-#ifndef VERSION_SUFFIX
-#define VERSION_SUFFIX ""
-#endif
-
-#ifndef DEVELOPMENT_BUILD
-#define DEVELOPMENT_BUILD false
-#endif
-
-#ifndef GIT_REPO_DIRTY
-#define GIT_REPO_DIRTY false
-#endif

@@ -145,6 +145,7 @@ CLIENT_OBJS= \
 	engine/sound.o \
 	engine/texture.o \
 	engine/ui.o \
+	engine/version.o \
 	engine/water.o \
 	engine/world.o \
 	engine/worldio.o \
@@ -225,6 +226,7 @@ $(filter game/%,$(CLIENT_OBJS)): $(filter game/%,$(CLIENT_PCH))
 $(SERVER_OBJS): CXXFLAGS += $(SERVER_INCLUDES)
 
 $(APPCLIENT)_windows$(BIN_SUFFIX): $(CLIENT_OBJS)
+	touch engine/version.cpp
 	$(WINDRES) -i $(APPNAME).rc -J rc -o $(APPNAME).res -O coff
 	$(CXX) $(CXXFLAGS) -o $@ $(APPNAME).res $(CLIENT_OBJS) $(CLIENT_LIBS)
 
@@ -233,6 +235,7 @@ $(APPSERVER)_windows$(BIN_SUFFIX): $(SERVER_OBJS)
 	$(CXX) $(CXXFLAGS) -o $@ $(APPNAME).res $(SERVER_OBJS) $(SERVER_LIBS)
 
 $(APPCLIENT)$(BIN_SUFFIX): $(LIBENET) $(CLIENT_OBJS)
+	touch engine/version.cpp
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(CLIENT_OBJS) $(CLIENT_LIBS)
 
 $(APPSERVER)$(BIN_SUFFIX): $(LIBENET) $(SERVER_OBJS)
