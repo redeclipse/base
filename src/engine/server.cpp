@@ -25,11 +25,14 @@ const char *platnames[MAX_PLATFORMS] = {
 
 VAR(0, versioning, 1, 0, -1);
 
+VAR(IDF_READONLY, isdevelopmentbuild, 1, DEVELOPMENT_BUILD, 0);
+SVAR(IDF_READONLY, gitrevisionid, GIT_REVISION_ID);
 VAR(IDF_READONLY, version, 1, CUR_VERSION, -1);
 VAR(IDF_READONLY, versionmajor, 1, VERSION_MAJOR, -1);
 VAR(IDF_READONLY, versionminor, 1, VERSION_MINOR, -1);
 VAR(IDF_READONLY, versionpatch, 1, VERSION_PATCH, -1);
 SVAR(IDF_READONLY, versionstring, VERSION_STRING);
+SVAR(IDF_READONLY, versionsuffix, VERSION_SUFFIX);
 SVAR(IDF_READONLY, versionname, VERSION_NAME);
 SVAR(IDF_READONLY, versionuname, VERSION_UNAME);
 SVAR(IDF_READONLY, versionvname, VERSION_VNAME);
