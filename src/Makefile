@@ -208,6 +208,9 @@ clean-genkey:
 
 clean: clean-enet clean-client clean-server clean-genkey
 
+touch-version-cpp:
+	touch engine/version.cpp
+
 %.h.gch: %.h
 	$(CXX) $(CXXFLAGS) -x c++-header -o $(subst .h.gch,.tmp.h.gch,$@) $(subst .h.gch,.h,$@)
 	$(MV) $(subst .h.gch,.tmp.h.gch,$@) $@
@@ -226,7 +229,6 @@ $(filter game/%,$(CLIENT_OBJS)): $(filter game/%,$(CLIENT_PCH))
 $(SERVER_OBJS): CXXFLAGS += $(SERVER_INCLUDES)
 
 $(APPCLIENT)_windows$(BIN_SUFFIX): $(CLIENT_OBJS)
-	touch engine/version.cpp
 	$(WINDRES) -i $(APPNAME).rc -J rc -o $(APPNAME).res -O coff
 	$(CXX) $(CXXFLAGS) -o $@ $(APPNAME).res $(CLIENT_OBJS) $(CLIENT_LIBS)
 
@@ -235,13 +237,12 @@ $(APPSERVER)_windows$(BIN_SUFFIX): $(SERVER_OBJS)
 	$(CXX) $(CXXFLAGS) -o $@ $(APPNAME).res $(SERVER_OBJS) $(SERVER_LIBS)
 
 $(APPCLIENT)$(BIN_SUFFIX): $(LIBENET) $(CLIENT_OBJS)
-	touch engine/version.cpp
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(CLIENT_OBJS) $(CLIENT_LIBS)
 
 $(APPSERVER)$(BIN_SUFFIX): $(LIBENET) $(SERVER_OBJS)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(SERVER_OBJS) $(SERVER_LIBS)
 
-client: $(APPCLIENT)$(APPMODIFIER)$(BIN_SUFFIX)
+client: touch-version-cpp $(APPCLIENT)$(APPMODIFIER)$(BIN_SUFFIX)
 
 server: $(APPSERVER)$(APPMODIFIER)$(BIN_SUFFIX)
 
