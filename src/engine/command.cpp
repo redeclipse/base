@@ -4202,6 +4202,9 @@ ICOMMAND(0, uniquelist, "srre", (char *list, ident *x, ident *y, uint *body), so
 MATHICMD(+, 0, );
 MATHICMD(*, 1, );
 MATHICMD(-, 0, val = -val);
+MATHICMDN(add, +, 0, );
+MATHICMDN(mul, *, 1, );
+MATHICMDN(sub, -, 0, val = -val);
 CMPICMDN(=, ==);
 CMPICMD(!=);
 CMPICMD(<);
@@ -4221,6 +4224,9 @@ MATHCMD(">>", i, int, val >>= clamp(val2, 0, 31), 0, );
 MATHFCMD(+, 0, );
 MATHFCMD(*, 1, );
 MATHFCMD(-, 0, val = -val);
+MATHFCMDN(add, +, 0, );
+MATHFCMDN(mul, *, 1, );
+MATHFCMDN(sub, -, 0, val = -val);
 CMPFCMDN(=, ==);
 CMPFCMD(!=);
 CMPFCMD(<);
@@ -4286,6 +4292,18 @@ MINMAXCMD(min, i, int, min);
 MINMAXCMD(max, i, int, max);
 MINMAXCMD(minf, f, float, min);
 MINMAXCMD(maxf, f, float, max);
+
+#define CLAMPCMD(name, fmt, type, op) \
+    ICOMMAND(0, name, #fmt "1V", (tagval *args, int numargs), \
+    { \
+        type val = numargs > 0 ? args[0].fmt : 0; \
+        if(numargs >= 2) val = op(val, args[1].fmt, args[2].fmt); \
+        else if(numargs >= 2) val = op(val, type(0), args[1].fmt); \
+        type##ret(val); \
+    })
+
+CLAMPCMD(clamp, i, int, clamp);
+CLAMPCMD(clampf, f, float, clamp);
 
 ICOMMAND(0, bitscan, "i", (int *n), intret(bitscan(*n)));
 

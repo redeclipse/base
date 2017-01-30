@@ -521,7 +521,9 @@ namespace UI
         template<class T> bool istype() const { return T::typestr() == gettype(); }
         bool isnamed(const char *name) const { return name[0] == '#' ? name == gettypename() : !strcmp(name, getname()); }
 
+        virtual bool iswindow() const { return false; }
         virtual bool isfiller() const { return false; }
+        virtual bool istext() const { return false; }
 
         Object *find(const char *name, bool recurse = true, const Object *exclude = NULL) const
         {
@@ -637,6 +639,7 @@ namespace UI
         static const char *typestr() { return "#Window"; }
         const char *gettype() const { return typestr(); }
         const char *getname() const { return name; }
+        bool iswindow() const { return true; }
 
         void build();
 
@@ -1938,6 +1941,7 @@ namespace UI
 
         static const char *typestr() { return "#Text"; }
         const char *gettype() const { return typestr(); }
+        bool istext() const { return true; }
 
         float drawscale() const { return scale / FONTH; }
 
@@ -3388,14 +3392,58 @@ namespace UI
     ICOMMAND(0, uimodcolour, "iffe", (int *c, float *minw, float *minh, uint *children),
         BUILD(FillColor, o, o->setup(FillColor::MODULATE, Color(*c), *minw, *minh), children));
 
-    ICOMMAND(0, uisetcolour, "iffe", (int *c),
+    ICOMMAND(0, uisetcolour, "i", (int *c),
     {
         for(Object *o = buildparent; o != NULL; o = o->parent)
         {
-            if(!o->isfiller()) continue;
-            ((Filler *)o)->color = Color(*c);
-            break;
+            if(o->isfiller()) { ((Filler *)o)->color = Color(*c); break; }
+            if(o->istext()) { ((Text *)o)->color = Color(*c); break; }
+            if(o->iswindow()) break;
         }
+    });
+
+    void setchildcolours(Object *o, int c)
+    {
+        if(o->isfiller()) ((Filler *)o)->color = Color(c);
+        if(o->istext()) ((Text *)o)->color = Color(c);
+        loopv(o->children) setchildcolours(o->children[i], c);
+    }
+    ICOMMAND(0, uisetcolours, "i", (int *c),
+    {
+        Object *root = buildparent;
+        if(!root->iswindow()) while(root->parent)
+        {
+            root = root->parent;
+            if(root->iswindow()) break;
+        }
+        setchildcolours(root, *c);
+    });
+
+    ICOMMAND(0, uichangeblend, "i", (int *c),
+    {
+        for(Object *o = buildparent; o != NULL; o = o->parent)
+        {
+            if(o->isfiller()) { ((Filler *)o)->color.a = clamp(*c, 0, 255); break; }
+            if(o->istext()) { ((Text *)o)->color.a = clamp(*c, 0, 255); break; }
+            if(o->iswindow()) break;
+        }
+    });
+
+    void setchildblends(Object *o, int c)
+    {
+        if(o->isfiller()) ((Filler *)o)->color.a = c;
+        if(o->istext()) ((Text *)o)->color.a = c;
+        loopv(o->children) setchildblends(o->children[i], c);
+    }
+    ICOMMAND(0, uichangeblends, "i", (int *c),
+    {
+        Object *root = buildparent;
+        if(!root->iswindow()) while(root->parent)
+        {
+            root = root->parent;
+            if(root->iswindow()) break;
+        }
+        setchildblends(root, clamp(*c, 0, 255));
     });
 
     ICOMMAND(0, uiskin, "sifffe", (char *texname, int *c, float *s, float *minw, float *minh, uint *children),
