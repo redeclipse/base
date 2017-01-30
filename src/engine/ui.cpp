@@ -3327,13 +3327,13 @@ namespace UI
     ICOMMAND(0, uisliderbutton, "e", (uint *children),
         BUILD(SliderButton, o, o->setup(), children));
 
-    ICOMMAND(0, uicolor, "iffe", (int *c, float *minw, float *minh, uint *children),
+    ICOMMAND(0, uicolour, "iffe", (int *c, float *minw, float *minh, uint *children),
         BUILD(FillColor, o, o->setup(FillColor::SOLID, Color(*c), *minw, *minh), children));
 
-    ICOMMAND(0, uimodcolor, "iffe", (int *c, float *minw, float *minh, uint *children),
+    ICOMMAND(0, uimodcolour, "iffe", (int *c, float *minw, float *minh, uint *children),
         BUILD(FillColor, o, o->setup(FillColor::MODULATE, Color(*c), *minw, *minh), children));
 
-    ICOMMAND(0, uisetcolor, "iffe", (int *c),
+    ICOMMAND(0, uisetcolour, "iffe", (int *c),
     {
         for(Object *o = buildparent; o != NULL; o = o->parent)
         {
@@ -3409,7 +3409,7 @@ namespace UI
         }
     }
 
-    ICOMMAND(0, uicolortext, "tife", (tagval *text, int *c, float *scale, uint *children),
+    ICOMMAND(0, uicolourtext, "tife", (tagval *text, int *c, float *scale, uint *children),
         buildtext(*text, *scale, uitextscale, Color(*c), -1, children));
 
     ICOMMAND(0, uitext, "tfe", (tagval *text, float *scale, uint *children),
@@ -3418,13 +3418,13 @@ namespace UI
     ICOMMAND(0, uitextfill, "iffe", (int *c, float *minw, float *minh, uint *children),
         BUILD(Filler, o, o->setup(Color(*c), *minw * uitextscale*0.5f, *minh * uitextscale), children));
 
-    ICOMMAND(0, uiwrapcolortext, "tfife", (tagval *text, float *wrap, int *c, float *scale, uint *children),
+    ICOMMAND(0, uiwrapcolourtext, "tfife", (tagval *text, float *wrap, int *c, float *scale, uint *children),
         buildtext(*text, *scale, uitextscale, Color(*c), *wrap, children));
 
     ICOMMAND(0, uiwraptext, "tffe", (tagval *text, float *wrap, float *scale, uint *children),
         buildtext(*text, *scale, uitextscale, Color(255, 255, 255), *wrap, children));
 
-    ICOMMAND(0, uicolorcontext, "tife", (tagval *text, int *c, float *scale, uint *children),
+    ICOMMAND(0, uicolourcontext, "tife", (tagval *text, int *c, float *scale, uint *children),
         buildtext(*text, *scale, FONTH*uicontextscale, Color(*c), -1, children));
 
     ICOMMAND(0, uicontext, "tfe", (tagval *text, float *scale, uint *children),
@@ -3433,7 +3433,7 @@ namespace UI
     ICOMMAND(0, uicontextfill, "iffe", (int *c, float *minw, float *minh, uint *children),
         BUILD(Filler, o, o->setup(Color(*c), *minw * FONTH*uicontextscale*0.5f, *minh * FONTH*uicontextscale), children));
 
-    ICOMMAND(0, uiwrapcolorcontext, "tfife", (tagval *text, float *wrap, int *c, float *scale, uint *children),
+    ICOMMAND(0, uiwrapcolourcontext, "tfife", (tagval *text, float *wrap, int *c, float *scale, uint *children),
         buildtext(*text, *scale, FONTH*uicontextscale, Color(*c), *wrap, children));
 
     ICOMMAND(0, uiwrapcontext, "tffe", (tagval *text, float *wrap, float *scale, uint *children),
@@ -3506,11 +3506,11 @@ namespace UI
     ICOMMAND(0, uimodelpreview, "ssffffe", (char *model, char *animspec, float *scale, float *blend, float *minw, float *minh, uint *children),
         BUILD(ModelPreview, o, o->setup(model, animspec, *scale, *blend, *minw, *minh), children));
 
-    ICOMMAND(0, uiplayerpreview, "iiiisffffe", (int *model, int *color, int *team, int *weapon, char *vanity, float *scale, float *blend, float *minw, float *minh, uint *children),
-        BUILD(PlayerPreview, o, o->setup(*model, *color, *team, *weapon, vanity, *scale, *blend, *minw, *minh), children));
+    ICOMMAND(0, uiplayerpreview, "iiiisffffe", (int *model, int *colour, int *team, int *weapon, char *vanity, float *scale, float *blend, float *minw, float *minh, uint *children),
+        BUILD(PlayerPreview, o, o->setup(*model, *colour, *team, *weapon, vanity, *scale, *blend, *minw, *minh), children));
 
-    ICOMMAND(0, uiprefabpreview, "siffe", (char *prefab, int *color, float *minw, float *minh, uint *children),
-        BUILD(PrefabPreview, o, o->setup(prefab, *color, *minw, *minh), children));
+    ICOMMAND(0, uiprefabpreview, "siffe", (char *prefab, int *colour, float *minw, float *minh, uint *children),
+        BUILD(PrefabPreview, o, o->setup(prefab, *colour, *minw, *minh), children));
 
     ICOMMAND(0, uislotview, "iffe", (int *index, float *minw, float *minh, uint *children),
         BUILD(SlotViewer, o, o->setup(*index, *minw, *minh), children));
