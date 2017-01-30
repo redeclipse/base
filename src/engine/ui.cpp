@@ -3,7 +3,7 @@
 
 namespace UI
 {
-    VAR(IDF_PERSIST, uitextrows, 1, 32, 1000);
+    VAR(IDF_PERSIST, uitextrows, 1, 48, 1000);
     FVAR(0, uitextscale, 1, 0, 0);
     VAR(IDF_PERSIST, uiscrollsteptime, 0, 50, 1000);
     VAR(IDF_PERSIST, uislidersteptime, 0, 50, 1000);
