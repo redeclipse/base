@@ -624,7 +624,7 @@ namespace UI
             contents(compilecode(contents)),
             onshow(onshow && onshow[0] ? compilecode(onshow) : NULL),
             onhide(onhide && onhide[0] ? compilecode(onhide) : NULL),
-            allowinput(true), eschide(true), abovehud(false), tipwindow(tipwindow_),
+            allowinput(!tipwindow_), eschide(true), abovehud(false), tipwindow(tipwindow_),
             px(0), py(0), pw(0), ph(0),
             sscale(1, 1), soffset(0, 0)
         {
@@ -659,7 +659,8 @@ namespace UI
         void setup()
         {
             Object::setup();
-            allowinput = eschide = true;
+            allowinput = !tipwindow;
+            eschide = true;
             abovehud = false;
             px = py = pw = ph = 0;
         }
