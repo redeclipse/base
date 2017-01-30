@@ -177,12 +177,13 @@ namespace UI
     struct Object
     {
         Object *parent;
-        float x, y, w, h;
+        float x, y, w, h, ox, oy;
+        bool overridepos;
         uchar adjust;
         ushort state, childstate;
         vector<Object *> children;
 
-        Object() : adjust(0), state(0), childstate(0) {}
+        Object() : ox(0), oy(0), overridepos(false), adjust(0), state(0), childstate(0) {}
         virtual ~Object()
         {
             clearchildren();
@@ -191,6 +192,11 @@ namespace UI
         void resetlayout()
         {
             x = y = w = h = 0;
+            if(overridepos)
+            {
+                x = ox;
+                y = oy;
+            }
         }
 
         void reset()
@@ -290,18 +296,26 @@ namespace UI
 
         void adjustlayout(float px, float py, float pw, float ph)
         {
-            switch(adjust&ALIGN_HMASK)
+            if(overridepos)
             {
-                case ALIGN_LEFT:    x = px; break;
-                case ALIGN_HCENTER: x = px + (pw - w) / 2; break;
-                case ALIGN_RIGHT:   x = px + pw - w; break;
+                x = ox;
+                y = oy;
             }
-
-            switch(adjust&ALIGN_VMASK)
+            else
             {
-                case ALIGN_TOP:     y = py; break;
-                case ALIGN_VCENTER: y = py + (ph - h) / 2; break;
-                case ALIGN_BOTTOM:  y = py + ph - h; break;
+                switch(adjust&ALIGN_HMASK)
+                {
+                    case ALIGN_LEFT:    x = px; break;
+                    case ALIGN_HCENTER: x = px + (pw - w) / 2; break;
+                    case ALIGN_RIGHT:   x = px + pw - w; break;
+                }
+
+                switch(adjust&ALIGN_VMASK)
+                {
+                    case ALIGN_TOP:     y = py; break;
+                    case ALIGN_VCENTER: y = py + (ph - h) / 2; break;
+                    case ALIGN_BOTTOM:  y = py + ph - h; break;
+                }
             }
 
             if(adjust&CLAMP_MASK)
@@ -329,6 +343,19 @@ namespace UI
             if(right) adjust |= CLAMP_RIGHT;
             if(top) adjust |= CLAMP_TOP;
             if(bottom) adjust |= CLAMP_BOTTOM;
+        }
+
+        void setpos(float xpos, float ypos)
+        {
+            x = ox = xpos;
+            y = oy = ypos;
+            overridepos = true;
+        }
+
+        void resetpos()
+        {
+            x = ox = y = oy = 0;
+            overridepos = false;
         }
 
         virtual bool target(float cx, float cy)
@@ -585,16 +612,16 @@ namespace UI
     {
         char *name;
         uint *contents, *onshow, *onhide;
-        bool allowinput, eschide, abovehud;
+        bool allowinput, eschide, abovehud, tipwindow;
         float px, py, pw, ph;
         vec2 sscale, soffset;
 
-        Window(const char *name, const char *contents, const char *onshow, const char *onhide) :
+        Window(const char *name, const char *contents, const char *onshow, const char *onhide, bool tipwindow_) :
             name(newstring(name)),
             contents(compilecode(contents)),
             onshow(onshow && onshow[0] ? compilecode(onshow) : NULL),
             onhide(onhide && onhide[0] ? compilecode(onhide) : NULL),
-            allowinput(true), eschide(true), abovehud(false),
+            allowinput(true), eschide(true), abovehud(false), tipwindow(tipwindow_),
             px(0), py(0), pw(0), ph(0),
             sscale(1, 1), soffset(0, 0)
         {
@@ -849,7 +876,13 @@ namespace UI
         void draw()
         {
             if(children.empty()) return;
-            loopwindows(w, w->draw(w == children.last()));
+            Window *last = NULL;
+            loopwindows(w,
+            {
+                if(!w->tipwindow) last = w;
+                else w->setpos(cursorx*float(screenw)/float(screenh), cursory-w->h-0.005f);
+            });
+            loopwindows(w, w->draw(w->tipwindow || w == last));
         }
 
         float abovehud()
@@ -3136,15 +3169,22 @@ namespace UI
         }
     };
 
-    ICOMMAND(0, newui, "ssss", (char *name, char *contents, char *onshow, char *onhide),
+    ICOMMAND(0, newui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *tipwindow),
     {
         Window *window = windows.find(name, NULL);
         if(window) { world->hide(window); windows.remove(name); delete window; }
-        windows[name] = new Window(name, contents, onshow, onhide);
+        windows[name] = new Window(name, contents, onshow, onhide, *tipwindow!=0);
     });
 
     ICOMMAND(0, uiallowinput, "b", (int *val), { if(window) { if(*val >= 0) window->allowinput = *val!=0; intret(window->allowinput ? 1 : 0); } });
     ICOMMAND(0, uieschide, "b", (int *val), { if(window) { if(*val >= 0) window->eschide = *val!=0; intret(window->eschide ? 1 : 0); } });
+
+    ICOMMAND(0, uioverridepos, "", (), { if(window) { intret(window->overridepos ? 1 : 0); } });
+    ICOMMAND(0, uisetpos, "ff", (float *xpos, float *ypos), { if(window) { window->setpos(*xpos, *ypos); } });
+    ICOMMAND(0, uiresetpos, "", (), { if(window) { window->resetpos(); } });
+
+    ICOMMAND(0, uicursorx, "", (), floatret(cursorx*float(screenw)/screenh));
+    ICOMMAND(0, uicursory, "", (), floatret(cursory));
 
     bool showui(const char *name, bool hidetop)
     {
