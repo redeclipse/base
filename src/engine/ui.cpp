@@ -523,6 +523,7 @@ namespace UI
 
         virtual bool iswindow() const { return false; }
         virtual bool isfiller() const { return false; }
+        virtual bool isgradient() const { return false; }
         virtual bool istext() const { return false; }
 
         Object *find(const char *name, bool recurse = true, const Object *exclude = NULL) const
@@ -1311,7 +1312,7 @@ namespace UI
 
     struct Filler : Object
     {
-        Color color;
+        Color color, origcolor;
         float minw, minh;
 
         void setup(const Color &color_, float minw_, float minh_)
@@ -1320,6 +1321,7 @@ namespace UI
             minw = minw_;
             minh = minh_;
             color = color_;
+            origcolor = color;
         }
 
         static const char *typestr() { return "#Filler"; }
@@ -1427,6 +1429,7 @@ namespace UI
 
         static const char *typestr() { return "#Gradient"; }
         const char *gettype() const { return typestr(); }
+        bool isgradient() const { return true; }
 
         void startdraw()
         {
@@ -1927,7 +1930,7 @@ namespace UI
     {
         float scale, wrap, tw, th;
         int align;
-        Color color;
+        Color color, origcolor;
 
         void setup(float scale_ = 1, const Color &color_ = Color(255, 255, 255), float wrap_ = -1, int align_ = -1)
         {
@@ -1935,6 +1938,7 @@ namespace UI
             tw = th = 0;
             scale = scale_;
             color = color_;
+            origcolor = color;
             wrap = wrap_;
             align = align_;
         }
@@ -2988,7 +2992,7 @@ namespace UI
                 m->boundbox(center, radius);
                 float yaw;
                 vec o = calcmodelpreviewpos(radius, yaw).sub(center);
-                rendermodel(&light, name, anim|ANIM_NOTRANS, o, yaw, 0, 0, 0, NULL, NULL, 0, 0, blend, scale);
+                rendermodel(&light, name, anim|ANIM_NOTRANS, o, yaw, 0, 0, 0, NULL, NULL, 0, 0, blend*(color.a/255.f), scale);
             }
             if(clipstack.length()) clipstack.last().scissor();
             modelpreview::end();
@@ -2997,18 +3001,18 @@ namespace UI
 
     struct PlayerPreview : Preview
     {
-        int model, color, team, weapon;
+        int model, pcol, team, weapon;
         float scale, blend;
         char *vanity;
 
         PlayerPreview() : vanity(NULL) {}
         ~PlayerPreview() { DELETEA(vanity); }
 
-        void setup(int model_, int color_, int team_, int weapon_, char *vanity_, float scale_, float blend_, float minw_, float minh_)
+        void setup(int model_, int pcol_, int team_, int weapon_, char *vanity_, float scale_, float blend_, float minw_, float minh_)
         {
             Preview::setup(Color(0xFFFFFF), minw_, minh_);
             model = model_;
-            color = color_;
+            pcol = pcol_;
             team = team_;
             weapon = weapon_;
             scale = scale_;
@@ -3029,7 +3033,7 @@ namespace UI
             int sx1, sy1, sx2, sy2;
             window->calcscissor(sx, sy, sx+w, sy+h, sx1, sy1, sx2, sy2, false);
             modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, false, clipstack.length() > 0);
-            game::renderplayerpreview(model, color, team, weapon, vanity, scale, blend);
+            game::renderplayerpreview(model, pcol, team, weapon, vanity, scale, blend*(color.a/255.f));
             if(clipstack.length()) clipstack.last().scissor();
             modelpreview::end();
         }
@@ -3038,16 +3042,17 @@ namespace UI
     struct PrefabPreview : Preview
     {
         char *name;
-        vec color;
+        vec pcol;
+        float blend;
 
         PrefabPreview() : name(NULL) {}
         ~PrefabPreview() { delete[] name; }
 
-        void setup(const char *name_, int color_, float minw_, float minh_)
+        void setup(const char *name_, int pcol_, float blend, float minw_, float minh_)
         {
             Preview::setup(Color(0xFFFFFF), minw_, minh_);
             SETSTR(name, name_);
-            color = vec::hexcolor(color_);
+            pcol = vec::hexcolor(pcol_);
         }
 
         static const char *typestr() { return "#PrefabPreview"; }
@@ -3062,7 +3067,7 @@ namespace UI
             int sx1, sy1, sx2, sy2;
             window->calcscissor(sx, sy, sx+w, sy+h, sx1, sy1, sx2, sy2, false);
             modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, false, clipstack.length() > 0);
-            previewprefab(name, color);
+            previewprefab(name, pcol, blend*(color.a/255.f));
             if(clipstack.length()) clipstack.last().scissor();
             modelpreview::end();
         }
@@ -3126,7 +3131,7 @@ namespace UI
             float xt = min(1.0f, t->xs/float(t->ys)), yt = min(1.0f, t->ys/float(t->xs));
             loopk(4) { tc[k].x = tc[k].x/xt - float(xoff)/t->xs; tc[k].y = tc[k].y/yt - float(yoff)/t->ys; }
             glBindTexture(GL_TEXTURE_2D, t->id);
-            if(slot.loaded) gle::color(vslot.colorscale);
+            if(slot.loaded) gle::colorf(vslot.colorscale.x, vslot.colorscale.y, vslot.colorscale.z, color.a/255.f);
             quad(x, y, w, h, tc);
             if(detailtex)
             {
@@ -3138,14 +3143,14 @@ namespace UI
                 glBlendFunc(GL_SRC_ALPHA, GL_ONE);
                 glBindTexture(GL_TEXTURE_2D, glowtex->id);
                 vec glowcolor = vslot.getglowcolor();
-                gle::color(glowcolor);
+                gle::colorf(glowcolor.x, glowcolor.y, glowcolor.z, color.a/255.f);
                 quad(x, y, w, h, tc);
                 glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             }
             if(layertex)
             {
                 glBindTexture(GL_TEXTURE_2D, layertex->id);
-                gle::color(layer->colorscale);
+                gle::colorf(layer->colorscale.x, layer->colorscale.y, layer->colorscale.z, color.a/255.f);
                 quad(x, y, w/2, h/2, tc);
             }
         }
@@ -3419,23 +3424,24 @@ namespace UI
         setchildcolours(root, *c);
     });
 
-    ICOMMAND(0, uichangeblend, "i", (int *c),
+    ICOMMAND(0, uichangeblend, "f", (float *c),
     {
         for(Object *o = buildparent; o != NULL; o = o->parent)
         {
-            if(o->isfiller()) { ((Filler *)o)->color.a = clamp(*c, 0, 255); break; }
-            if(o->istext()) { ((Text *)o)->color.a = clamp(*c, 0, 255); break; }
+            if(o->isfiller()) { ((Filler *)o)->color.a = clamp(int(*c * ((Filler *)o)->origcolor.a), 0, 255); break; }
+            if(o->istext()) { ((Text *)o)->color.a = clamp(int(*c * ((Text *)o)->origcolor.a), 0, 255); break; }
             if(o->iswindow()) break;
         }
     });
 
-    void setchildblends(Object *o, int c)
+    void setchildblends(Object *o, float c)
     {
-        if(o->isfiller()) ((Filler *)o)->color.a = c;
-        if(o->istext()) ((Text *)o)->color.a = c;
+        if(o->isfiller()) ((Filler *)o)->color.a = clamp(int(c * ((Filler *)o)->origcolor.a), 0, 255);
+        if(o->istext()) ((Text *)o)->color.a = clamp(int(c * ((Text *)o)->origcolor.a), 0, 255);
+        if(o->isgradient()) ((Gradient *)o)->color.a = clamp(int(c * ((Text *)o)->origcolor.a), 0, 255);
         loopv(o->children) setchildblends(o->children[i], c);
     }
-    ICOMMAND(0, uichangeblends, "i", (int *c),
+    ICOMMAND(0, uichangeblends, "f", (float *c),
     {
         Object *root = buildparent;
         if(!root->iswindow()) while(root->parent)
@@ -3443,7 +3449,7 @@ namespace UI
             root = root->parent;
             if(root->iswindow()) break;
         }
-        setchildblends(root, clamp(*c, 0, 255));
+        setchildblends(root, clamp(*c, 0.f, 1.f));
     });
 
     ICOMMAND(0, uiskin, "sifffe", (char *texname, int *c, float *s, float *minw, float *minh, uint *children),
@@ -3612,8 +3618,8 @@ namespace UI
     ICOMMAND(0, uiplayerpreview, "iiiisffffe", (int *model, int *colour, int *team, int *weapon, char *vanity, float *scale, float *blend, float *minw, float *minh, uint *children),
         BUILD(PlayerPreview, o, o->setup(*model, *colour, *team, *weapon, vanity, *scale, *blend, *minw, *minh), children));
 
-    ICOMMAND(0, uiprefabpreview, "siffe", (char *prefab, int *colour, float *minw, float *minh, uint *children),
-        BUILD(PrefabPreview, o, o->setup(prefab, *colour, *minw, *minh), children));
+    ICOMMAND(0, uiprefabpreview, "sifffe", (char *prefab, int *colour, float *blend, float *minw, float *minh, uint *children),
+        BUILD(PrefabPreview, o, o->setup(prefab, *colour, *blend, *minw, *minh), children));
 
     ICOMMAND(0, uislotview, "iffe", (int *index, float *minw, float *minh, uint *children),
         BUILD(SlotViewer, o, o->setup(*index, *minw, *minh), children));

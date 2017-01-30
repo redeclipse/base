@@ -341,8 +341,8 @@ extern void addundo(undoblock *u);
 extern void commitchanges(bool force = false);
 extern editinfo *localedit;
 
-extern void renderprefab(const char *name, const vec &o, float yaw, float pitch, float roll, float size = 1, const vec &color = vec(1, 1, 1));
-extern void previewprefab(const char *name, const vec &color);
+extern void renderprefab(const char *name, const vec &o, float yaw, float pitch, float roll, float size = 1, const vec &color = vec(1, 1, 1), float blend = 1);
+extern void previewprefab(const char *name, const vec &color, float blend = 1);
 
 // octarender
 extern vector<tjoint> tjoints;

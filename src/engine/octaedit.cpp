@@ -1437,7 +1437,7 @@ void genprefabmesh(prefab &p)
 
 extern int outlinecolour;
 
-static void renderprefab(prefab &p, const vec &o, float yaw, float pitch, float roll, float size, const vec &color)
+static void renderprefab(prefab &p, const vec &o, float yaw, float pitch, float roll, float size, const vec &color, float blend)
 {
     if(!p.numtris)
     {
@@ -1470,7 +1470,7 @@ static void renderprefab(prefab &p, const vec &o, float yaw, float pitch, float 
     GLOBALPARAM(prefabmatrix, pm);
     GLOBALPARAM(prefabworld, w);
     SETSHADER(prefab);
-    gle::color(color);
+    gle::colorf(color.x, color.y, color.z, blend);
     glDrawRangeElements_(GL_TRIANGLES, 0, p.numverts-1, p.numtris*3, GL_UNSIGNED_SHORT, (ushort *)0);
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -1479,7 +1479,8 @@ static void renderprefab(prefab &p, const vec &o, float yaw, float pitch, float 
     pm.mul(camprojmatrix, m);
     GLOBALPARAM(prefabmatrix, pm);
     SETSHADER(prefab);
-    gle::color(vec::hexcolor(outlinecolour));
+    vec ocolor = vec::hexcolor(outlinecolour);
+    gle::colorf(ocolor.x, ocolor.y, ocolor.z, blend);
     glDrawRangeElements_(GL_TRIANGLES, 0, p.numverts-1, p.numtris*3, GL_UNSIGNED_SHORT, (ushort *)0);
 
     disablepolygonoffset(GL_POLYGON_OFFSET_LINE);
@@ -1491,13 +1492,13 @@ static void renderprefab(prefab &p, const vec &o, float yaw, float pitch, float 
     gle::clearvbo();
 }
 
-void renderprefab(const char *name, const vec &o, float yaw, float pitch, float roll, float size, const vec &color)
+void renderprefab(const char *name, const vec &o, float yaw, float pitch, float roll, float size, const vec &color, float blend)
 {
     prefab *p = loadprefab(name, false);
-    if(p) renderprefab(*p, o, yaw, pitch, roll, size, color);
+    if(p) renderprefab(*p, o, yaw, pitch, roll, size, color, blend);
 }
 
-void previewprefab(const char *name, const vec &color)
+void previewprefab(const char *name, const vec &color, float blend)
 {
     prefab *p = loadprefab(name, false);
     if(p)
@@ -1505,7 +1506,7 @@ void previewprefab(const char *name, const vec &color)
         block3 &b = *p->copy;
         float yaw;
         vec o = calcmodelpreviewpos(vec(b.s).mul(b.grid*0.5f), yaw);
-        renderprefab(*p, o, yaw, 0, 0, 1, color);
+        renderprefab(*p, o, yaw, 0, 0, 1, color, blend);
     }
 }
 
