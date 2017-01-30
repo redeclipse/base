@@ -615,7 +615,7 @@ namespace UI
     {
         char *name;
         uint *contents, *onshow, *onhide;
-        bool allowinput, eschide, abovehud, tipwindow;
+        bool allowinput, abovehud, tipwindow;
         float px, py, pw, ph;
         vec2 sscale, soffset;
 
@@ -624,7 +624,7 @@ namespace UI
             contents(compilecode(contents)),
             onshow(onshow && onshow[0] ? compilecode(onshow) : NULL),
             onhide(onhide && onhide[0] ? compilecode(onhide) : NULL),
-            allowinput(!tipwindow_), eschide(true), abovehud(false), tipwindow(tipwindow_),
+            allowinput(!tipwindow_), abovehud(false), tipwindow(tipwindow_),
             px(0), py(0), pw(0), ph(0),
             sscale(1, 1), soffset(0, 0)
         {
@@ -660,7 +660,6 @@ namespace UI
         {
             Object::setup();
             allowinput = !tipwindow;
-            eschide = true;
             abovehud = false;
             px = py = pw = ph = 0;
         }
@@ -737,8 +736,6 @@ namespace UI
             }
         DOSTATES
         #undef DOSTATE
-
-        void escrelease(float cx, float cy);
 
         void projection()
         {
@@ -899,11 +896,6 @@ namespace UI
     };
 
     static World *world = NULL;
-
-    void Window::escrelease(float cx, float cy)
-    {
-        if(eschide) world->hide(this);
-    }
 
     void Window::build()
     {
@@ -3187,7 +3179,6 @@ namespace UI
     });
 
     ICOMMAND(0, uiallowinput, "b", (int *val), { if(window) { if(*val >= 0) window->allowinput = *val!=0; intret(window->allowinput ? 1 : 0); } });
-    ICOMMAND(0, uieschide, "b", (int *val), { if(window) { if(*val >= 0) window->eschide = *val!=0; intret(window->eschide ? 1 : 0); } });
 
     ICOMMAND(0, uioverridepos, "", (), { if(window) { intret(window->overridepos ? 1 : 0); } });
     ICOMMAND(0, uisetpos, "ff", (float *xpos, float *ypos), { if(window) { window->setpos(*xpos, *ypos); } });
