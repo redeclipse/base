@@ -3834,10 +3834,7 @@ void looplist4(ident *id, ident *id2, ident *id3, ident *id4, const char *list, 
         setiter(*id, listelem(start, end, qstart), stack);
         setiter(*id2, parselist(s, start, end, qstart) ? listelem(start, end, qstart) : newstring(""), stack2);
         setiter(*id3, parselist(s, start, end, qstart) ? listelem(start, end, qstart) : newstring(""), stack3);
-        tagval t;
-        t.setint(r);
-        pusharg(*id4, t, stack4);
-        id4->flags &= ~IDF_UNKNOWN;
+        setiter(*id4, r, stack4);
         execute(body);
     }
     if(n) { poparg(*id); poparg(*id2); poparg(*id3); poparg(*id4); }
