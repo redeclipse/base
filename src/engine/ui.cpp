@@ -881,8 +881,9 @@ namespace UI
             Window *last = NULL;
             loopwindows(w,
             {
-                if(!w->tipwindow) last = w;
-                else w->setpos(cursorx*float(screenw)/float(screenh), cursory-w->h-0.005f);
+                if(w->tipwindow)
+                    w->setpos((cursorx*float(screenw)/float(screenh))-(w->w*cursorx), cursory-w->h-0.002f);
+                else last = w;
             });
             loopwindows(w, w->draw(w->tipwindow || w == last));
         }
