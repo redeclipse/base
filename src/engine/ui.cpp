@@ -3,6 +3,9 @@
 
 namespace UI
 {
+    SVAR(0, uiopencmd, "showui");
+    SVAR(0, uiclosecmd, "hideui");
+
     VAR(IDF_PERSIST, uitextrows, 1, 48, 1000);
     FVAR(0, uitextscale, 1, 0, 0);
     VAR(IDF_PERSIST, uiscrollsteptime, 0, 50, 1000);
@@ -872,6 +875,12 @@ namespace UI
         }
 
         bool allowinput() const { loopwindows(w, { if(w->allowinput && !(w->state&STATE_HIDDEN)) return true; }); return false; }
+
+        const char *topname()
+        {
+            loopwindowsrev(w, { if(w->allowinput && !(w->state&STATE_HIDDEN)) { return w->name; } });
+            return NULL;
+        }
 
         void draw(float sx, float sy) {}
 
@@ -3188,11 +3197,10 @@ namespace UI
     ICOMMAND(0, uicursorx, "", (), floatret(cursorx*float(screenw)/screenh));
     ICOMMAND(0, uicursory, "", (), floatret(cursory));
 
-    bool showui(const char *name, bool hidetop)
+    bool showui(const char *name)
     {
         Window *window = windows.find(name, NULL);
         if(!window) return false;
-        if(hidetop) world->hidetop();
         return world->show(window);
     }
 
@@ -3214,6 +3222,18 @@ namespace UI
         return false;
     }
 
+    int openui(const char *name)
+    {
+        defformatstring(cmd, "%s \"%s\"", uiopencmd, name ? name : "");
+        return execute(cmd);
+    }
+
+    int closeui(const char *name)
+    {
+        defformatstring(cmd, "%s \"%s\"", uiclosecmd, name ? name : "");
+        return execute(cmd);
+    }
+
     void holdui(const char *name, bool on)
     {
         if(on) showui(name);
@@ -3227,9 +3247,10 @@ namespace UI
         return window && world->children.find(window) >= 0;
     }
 
-    ICOMMAND(0, showui, "sb", (char *name, int *hide), intret(showui(name, *hide!=0) ? 1 : 0));
+    ICOMMAND(0, showui, "s", (char *name), intret(showui(name) ? 1 : 0));
     ICOMMAND(0, hideui, "s", (char *name), intret(hideui(name) ? 1 : 0));
     ICOMMAND(0, hidetopui, "", (), intret(world->hidetop() ? 1 : 0));
+    ICOMMAND(0, topui, "", (), result(world->topname()));
     ICOMMAND(0, hideallui, "", (), intret(world->hideall()));
     ICOMMAND(0, toggleui, "s", (char *name), intret(toggleui(name) ? 1 : 0));
     ICOMMAND(0, holdui, "sD", (char *name, int *down), holdui(name, *down!=0));

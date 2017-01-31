@@ -1769,7 +1769,7 @@ namespace game
         if(gamestate == G_S_VOTING && oldstate != G_S_VOTING)
         {
             hud::showscores(false);
-            UI::showui("maps");
+            UI::openui("maps");
         }
     }
 
@@ -2787,7 +2787,7 @@ namespace game
     {
         specreset();
         hud::showscores(false);
-        UI::hideui(NULL);
+        UI::closeui(NULL);
     }
 
     void resetstate()
@@ -2863,11 +2863,11 @@ namespace game
             flushdamagemerges();
             if(!UI::hasinput() && (needname(player1) || wantsloadoutmenu))
             {
-                UI::showui("profile");
+                UI::openui("profile");
                 wantsloadoutmenu = false;
             }
         }
-        else if(!UI::hasinput()) UI::showui(needname(player1) ? "profile" : "main");
+        else if(!UI::hasinput()) UI::openui(needname(player1) ? "profile" : "main");
         gets2c();
         adjustscaled(hud::damageresidue, hud::damageresiduefade);
         if(connected())

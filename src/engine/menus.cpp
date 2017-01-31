@@ -18,7 +18,7 @@ void addchange(const char *desc, int type)
     if(!applydialog) return;
     loopv(needsapply) if(!strcmp(needsapply[i].desc, desc)) return;
     needsapply.add(change(type, desc));
-    if(!hidechanges) UI::showui("changes");
+    if(!hidechanges) UI::openui("changes");
 }
 
 void clearchanges(int type)
@@ -32,7 +32,7 @@ void clearchanges(int type)
             if(!c.type) needsapply.remove(i);
         }
     }
-    if(needsapply.empty()) UI::hideui("changes");
+    if(needsapply.empty()) UI::closeui("changes");
 }
 
 void applychanges()

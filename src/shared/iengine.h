@@ -585,9 +585,13 @@ struct editor;
 
 namespace UI
 {
-    extern bool showui(const char *name, bool hidetop = true);
+    extern bool showui(const char *name);
     extern bool hideui(const char *name);
     extern bool toggleui(const char *name);
+
+    extern int openui(const char *name);
+    extern int closeui(const char *name);
+
     extern void holdui(const char *name, bool on);
     extern bool uivisible(const char *name);
     extern bool hasinput();
