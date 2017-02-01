@@ -2,7 +2,7 @@
 #include "game.h"
 namespace game
 {
-    int nextmode = G_EDITMODE, nextmuts = 0, gamestate = G_S_WAITING, gamemode = G_EDITMODE, mutators = 0, maptime = 0, timeremaining = 0, lasttimeremain = 0,
+    int nextmode = G_EDITMODE, nextmuts = 0, gamestate = G_S_WAITING, gamemode = G_EDITMODE, mutators = 0, maptime = 0, mapstart = 0, timeremaining = 0, lasttimeremain = 0,
         lastcamera = 0, lasttvcam = 0, lasttvchg = 0, lastzoom = 0, spectvfollowing = -1, starttvcamdyn = -1, lastcamcn = -1;
     bool zooming = false, inputmouse = false, inputview = false, inputmode = false;
     float swayfade = 0, swayspeed = 0, swaydist = 0, bobfade = 0, bobdist = 0;
@@ -1206,7 +1206,7 @@ namespace game
             }
             else if(hassound) loopi(2) if(issound(d->sschan[i])) sounds[d->sschan[i]].pos = d->footpos(i);
         }
-        loopv(d->icons) if(lastmillis-d->icons[i].millis > d->icons[i].fade) d->icons.remove(i--);
+        loopv(d->icons) if(totalmillis-d->icons[i].millis > d->icons[i].fade) d->icons.remove(i--);
     }
 
     void checkfloor(gameent *d)
@@ -1532,7 +1532,7 @@ namespace game
             bool override = false;
             if(d->headless)
             {
-                v->addicon(eventicon::HEADSHOT, lastmillis, eventiconfade, 0);
+                v->addicon(eventicon::HEADSHOT, totalmillis, eventiconfade, 0);
                 if(!override && allowanc) anc = S_V_HEADSHOT;
             }
             if(!m_play(gamemode) || v->actortype >= A_ENEMY)
@@ -1551,7 +1551,7 @@ namespace game
                 if(style&FRAG_REVENGE)
                 {
                     concatstring(d->obit, " \fs\fzoyvengeful\fS");
-                    v->addicon(eventicon::REVENGE, lastmillis, eventiconfade); // revenge
+                    v->addicon(eventicon::REVENGE, totalmillis, eventiconfade); // revenge
                     v->dominating.removeobj(d);
                     d->dominated.removeobj(v);
                     if(allowanc)
@@ -1563,7 +1563,7 @@ namespace game
                 else if(style&FRAG_DOMINATE)
                 {
                     concatstring(d->obit, " \fs\fzoydominating\fS");
-                    v->addicon(eventicon::DOMINATE, lastmillis, eventiconfade); // dominating
+                    v->addicon(eventicon::DOMINATE, totalmillis, eventiconfade); // dominating
                     if(v->dominated.find(d) < 0) v->dominated.add(d);
                     if(d->dominating.find(v) < 0) d->dominating.add(v);
                     if(allowanc)
@@ -1578,7 +1578,7 @@ namespace game
                 if(style&FRAG_BREAKER)
                 {
                     concatstring(d->obit, " \fs\fzPwspree-breaking\fS");
-                    v->addicon(eventicon::BREAKER, lastmillis, eventiconfade);
+                    v->addicon(eventicon::BREAKER, totalmillis, eventiconfade);
                     if(!override && allowanc) anc = S_V_BREAKER;
                 }
 
@@ -1586,21 +1586,21 @@ namespace game
                 {
                     if(style&FRAG_BREAKER) concatstring(d->obit, " and");
                     concatstring(d->obit, " \fs\fzcwdouble-killing\fS");
-                    v->addicon(eventicon::MULTIKILL, lastmillis, eventiconfade, 0);
+                    v->addicon(eventicon::MULTIKILL, totalmillis, eventiconfade, 0);
                     if(!override && allowanc) anc = S_V_MULTI;
                 }
                 else if(style&FRAG_MKILL2)
                 {
                     if(style&FRAG_BREAKER) concatstring(d->obit, " and");
                     concatstring(d->obit, " \fs\fzcwtriple-killing\fS");
-                    v->addicon(eventicon::MULTIKILL, lastmillis, eventiconfade, 1);
+                    v->addicon(eventicon::MULTIKILL, totalmillis, eventiconfade, 1);
                     if(!override && allowanc) anc = S_V_MULTI2;
                 }
                 else if(style&FRAG_MKILL3)
                 {
                     if(style&FRAG_BREAKER) concatstring(d->obit, " and");
                     concatstring(d->obit, " \fs\fzcwmulti-killing\fS");
-                    v->addicon(eventicon::MULTIKILL, lastmillis, eventiconfade, 2);
+                    v->addicon(eventicon::MULTIKILL, totalmillis, eventiconfade, 2);
                     if(!override && allowanc) anc = S_V_MULTI3;
                 }
             }
@@ -1614,7 +1614,7 @@ namespace game
                 if(style&FRAG_FIRSTBLOOD)
                 {
                     concatstring(d->obit, " for \fs\fzrwfirst blood\fS");
-                    v->addicon(eventicon::FIRSTBLOOD, lastmillis, eventiconfade, 0);
+                    v->addicon(eventicon::FIRSTBLOOD, totalmillis, eventiconfade, 0);
                     if(allowanc)
                     {
                         anc = S_V_FIRSTBLOOD;
@@ -1625,7 +1625,7 @@ namespace game
                 if(style&FRAG_SPREE1)
                 {
                     concatstring(d->obit, " in total \fs\fzYwcarnage\fS");
-                    v->addicon(eventicon::SPREE, lastmillis, eventiconfade, 0);
+                    v->addicon(eventicon::SPREE, totalmillis, eventiconfade, 0);
                     if(!override && allowanc)
                     {
                         anc = S_V_SPREE;
@@ -1635,7 +1635,7 @@ namespace game
                 else if(style&FRAG_SPREE2)
                 {
                     concatstring(d->obit, " on a \fs\fzYwslaughter\fS");
-                    v->addicon(eventicon::SPREE, lastmillis, eventiconfade, 1);
+                    v->addicon(eventicon::SPREE, totalmillis, eventiconfade, 1);
                     if(!override && allowanc)
                     {
                         anc = S_V_SPREE2;
@@ -1645,7 +1645,7 @@ namespace game
                 else if(style&FRAG_SPREE3)
                 {
                     concatstring(d->obit, " on a \fs\fzYwmassacre\fS");
-                    v->addicon(eventicon::SPREE, lastmillis, eventiconfade, 2);
+                    v->addicon(eventicon::SPREE, totalmillis, eventiconfade, 2);
                     if(!override && allowanc)
                     {
                         anc = S_V_SPREE3;
@@ -1655,7 +1655,7 @@ namespace game
                 else if(style&FRAG_SPREE4)
                 {
                     concatstring(d->obit, " in a \fs\fzYPbloodbath\fS");
-                    v->addicon(eventicon::SPREE, lastmillis, eventiconfade, 3);
+                    v->addicon(eventicon::SPREE, totalmillis, eventiconfade, 3);
                     if(!override && allowanc)
                     {
                         anc = S_V_SPREE4;
@@ -1869,7 +1869,7 @@ namespace game
         if(!empty)
         {
             gamestate = G_S_WAITING;
-            maptime = 0;
+            mapstart = maptime = 0;
         }
         specreset();
         removedamagemergeall();
@@ -2578,16 +2578,16 @@ namespace game
             camupdate(cam, amt, renew, true);
             if(renew)
             {
-                lasttvchg = lasttvcam = lastmillis;
+                lasttvchg = lasttvcam = totalmillis;
                 cam->resetlast();
             }
         }
         else loopk(spectvfollowing >= 0 ? 2 : 1)
         {
-            int lastcn = cam->cn, millis = lasttvchg ? lastmillis-lasttvchg : 0;
+            int lastcn = cam->cn, millis = lasttvchg ? totalmillis-lasttvchg : 0;
             if(millis) amt = float(millis)/float(stvf(maxtime));
             bool updated = camupdate(cam, amt, renew), override = !lasttvchg || millis >= stvf(mintime),
-                 reset = (stvf(maxtime) && millis >= stvf(maxtime)) || !lasttvcam || lastmillis-lasttvcam >= stvf(time);
+                 reset = (stvf(maxtime) && millis >= stvf(maxtime)) || !lasttvcam || totalmillis-lasttvcam >= stvf(time);
             if(spectvfollowing >= 0 && !reset && !updated && !override)
             {
                 spectvfollowing = -1;
@@ -2617,13 +2617,13 @@ namespace game
                 scams.sort(cament::compare);
                 lastcamcn = scams[0]->cn;
                 cam = cameras[lastcamcn];
-                lasttvcam = lastmillis;
+                lasttvcam = totalmillis;
             }
             camrefresh(cam, reset);
             if(!lasttvchg || cam->cn != lastcn)
             {
                 amt = 0;
-                lasttvchg = lastmillis;
+                lasttvchg = totalmillis;
                 renew = true;
                 cam->moveto = NULL;
                 cam->resetlast();
@@ -2669,12 +2669,12 @@ namespace game
                     off##x -= adj##x; \
                     if(cam->last##x == 0 || (off##x > 0 && cam->last##x < 0) || (off##x < 0 && cam->last##x > 0) || (x##thresh > 0 && (fabs(cam->last##x - off##x) >= x##thresh))) \
                     { \
-                        cam->last##x##time = lastmillis; \
+                        cam->last##x##time = totalmillis; \
                         x##scale = 0; \
                     } \
                     else if(cam->last##x##time) \
                     { \
-                        int offtime = lastmillis-cam->last##x##time, x##speed = chase ? followtv##x##speed : stvf(x##speed); \
+                        int offtime = totalmillis-cam->last##x##time, x##speed = chase ? followtv##x##speed : stvf(x##speed); \
                         if(offtime <= x##speed) x##scale = offtime/float(x##speed); \
                     } \
                     cam->last##x = off##x; \
@@ -2811,6 +2811,7 @@ namespace game
             else if(maptime < 0)
             {
                 maptime = lastmillis ? lastmillis : 1;
+                mapstart = totalmillis ? totalmillis : 1;
                 if(type != 6) musicdone(false);
                 RUNWORLD("on_start");
                 resetcamera();
@@ -2960,7 +2961,7 @@ namespace game
 
             camera1->inmaterial = lookupmaterial(camera1->o);
             camera1->inliquid = isliquid(camera1->inmaterial&MATF_VOLUME);
-            lastcamera = lastmillis;
+            lastcamera = totalmillis;
         }
     }
 
@@ -3221,7 +3222,7 @@ namespace game
         {
             if(d->icons[i].type == eventicon::AFFINITY && !(aboveheadicons&2)) continue;
             if(d->icons[i].type == eventicon::WEAPON && !(aboveheadicons&4)) continue;
-            int millis = lastmillis-d->icons[i].millis;
+            int millis = totalmillis-d->icons[i].millis;
             if(millis <= d->icons[i].fade)
             {
                 Texture *t = textureload(hud::icontex(d->icons[i].type, d->icons[i].value));

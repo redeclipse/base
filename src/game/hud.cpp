@@ -777,13 +777,13 @@ namespace hud
         {
             dhloc &d = damagelocs[i];
             if(v->clientnum != d.clientnum) continue;
-            if(lastmillis-d.outtime > radardamagemerge) continue;
+            if(totalmillis-d.outtime > radardamagemerge) continue;
             if(d.colour != colour) continue;
             d.damage += n;
             d.dir = dir;
             return; // accumulate
         }
-        damagelocs.add(dhloc(v->clientnum, lastmillis, n, loc, colour));
+        damagelocs.add(dhloc(v->clientnum, totalmillis, n, loc, colour));
     }
 
     void hit(int n, const vec &loc, gameent *v, int weap, int flags)
@@ -798,13 +798,13 @@ namespace hud
         {
             dhloc &d = hitlocs[i];
             if(v->clientnum != d.clientnum) continue;
-            if(lastmillis-d.outtime > radarhitsmerge) continue;
+            if(totalmillis-d.outtime > radarhitsmerge) continue;
             if(d.colour != colour) continue;
             d.damage += n;
             d.dir = v->center();
             return; // accumulate
         }
-        hitlocs.add(dhloc(v->clientnum, lastmillis, n, v->center(), colour));
+        hitlocs.add(dhloc(v->clientnum, totalmillis, n, v->center(), colour));
     }
 
     void drawquad(float x, float y, float w, float h, float tx1, float ty1, float tx2, float ty2, bool flipx, bool flipy)
@@ -1264,7 +1264,7 @@ namespace hud
                     loopv(damagelocs)
                     {
                         dhloc &d = damagelocs[i];
-                        int millis = lastmillis-d.outtime, delay = min(20, d.damage)*50;
+                        int millis = totalmillis-d.outtime, delay = min(20, d.damage)*50;
                         if(millis >= delay || d.dir.iszero()) { if(millis >= radardamagetime+radardamagefade) damagelocs.remove(i--); continue; }
                         gameent *e = game::getclient(d.clientnum);
                         if(!radardamageself && e == game::focus) continue;
@@ -1448,7 +1448,7 @@ namespace hud
         if(noticetone) skewcolour(tr, tg, tb, noticetone);
 
         pushfont("emphasis");
-        if(!gs_playing(game::gamestate) || lastmillis-game::maptime <= noticetitle)
+        if(!gs_playing(game::gamestate) || totalmillis-game::mapstart <= noticetitle)
         {
             ty += draw_textf("%s", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), 255, 255, 255, tf, TEXT_CENTERED, -1, tw, 1, *maptitle ? maptitle : mapname);
             pushfont("reduced");
@@ -1705,7 +1705,7 @@ namespace hud
         {
             if(game::focus->icons[i].type == eventicon::AFFINITY && !(showeventicons&2)) continue;
             if(game::focus->icons[i].type == eventicon::WEAPON && !(showeventicons&4)) continue;
-            int millis = lastmillis-game::focus->icons[i].millis;
+            int millis = totalmillis-game::focus->icons[i].millis;
             if(millis <= game::focus->icons[i].fade)
             {
                 Texture *t = textureload(icontex(game::focus->icons[i].type, game::focus->icons[i].value));
@@ -2167,27 +2167,27 @@ namespace hud
             else colour[0] = vec::hexcolor(game::getcolour(d, game::playerundertone, game::playerundertonelevel));
             if(d->lastbuff)
             {
-                int millis = lastmillis%1000;
+                int millis = totalmillis%1000;
                 float amt = millis <= 500 ? 1.f-(millis/500.f) : (millis-500)/500.f;
                 flashcolour(colour[0].r, colour[0].g, colour[0].b, 1.f, 1.f, 1.f, amt);
             }
             if(burning)
             {
-                int millis = lastmillis%1000;
+                int millis = totalmillis%1000;
                 float amt = millis <= 500 ? millis/500.f : 1.f-((millis-500)/500.f);
                 vec c = game::rescolour(d, PULSE_BURN);
                 flashcolour(colour[0].r, colour[0].g, colour[0].b, c.r, c.g, c.b, amt);
             }
             if(bleeding)
             {
-                int millis = lastmillis%1000;
+                int millis = totalmillis%1000;
                 float amt = millis <= 500 ? millis/500.f : 1.f-((millis-500)/500.f);
                 vec c = game::rescolour(d, PULSE_SHOCK);
                 flashcolour(colour[0].r, colour[0].g, colour[0].b, c.r, c.g, c.b, amt);
             }
             if(shocking)
             {
-                int millis = lastmillis%1000;
+                int millis = totalmillis%1000;
                 float amt = millis <= 500 ? millis/500.f : 1.f-((millis-500)/500.f);
                 vec c = game::rescolour(d, PULSE_SHOCK);
                 flashcolour(colour[0].r, colour[0].g, colour[0].b, c.r, c.g, c.b, amt);
@@ -2314,7 +2314,7 @@ namespace hud
         loopv(damagelocs)
         {
             dhloc &d = damagelocs[i];
-            int millis = lastmillis-d.outtime;
+            int millis = totalmillis-d.outtime;
             if(millis >= radardamagetime+radardamagefade || d.dir.iszero()) { if(millis >= min(20, d.damage)*50) damagelocs.remove(i--); continue; }
             if(game::focus->state == CS_SPECTATOR || game::focus->state == CS_EDITING) continue;
             gameent *e = game::getclient(d.clientnum);
@@ -2339,7 +2339,7 @@ namespace hud
         loopv(hitlocs)
         {
             dhloc &d = hitlocs[i];
-            int millis = lastmillis-d.outtime;
+            int millis = totalmillis-d.outtime;
             if(millis >= radarhitstime+radarhitsfade || d.dir.iszero()) { hitlocs.remove(i--); continue; }
             if(game::focus->state == CS_SPECTATOR || game::focus->state == CS_EDITING) continue;
             gameent *a = game::getclient(d.clientnum);
@@ -2487,7 +2487,7 @@ namespace hud
             if(tone) skewcolour(gr, gg, gb, tone);
             if(pulse > 0)
             {
-                int millis = lastmillis%1000;
+                int millis = totalmillis%1000;
                 float skew = (millis <= 500 ? millis/500.f : 1.f-((millis-500)/500.f))*pulse;
                 flashcolourf(gr, gg, gb, gf, id != 1 && (id != 2 || throb < 0) ? 0.5f : 1.f, 0.f, id != 1 && (id != 2 || throb < 0) ? 0.5f : 0.f, 1.f, skew);
                 glow += int(w*bgglow*skew);
@@ -2606,7 +2606,7 @@ namespace hud
             if(inventorytone) skewcolour(gr, gg, gb, inventorytone);
             if(pulse)
             {
-                int millis = lastmillis%1000;
+                int millis = totalmillis%1000;
                 float amt = (millis <= 500 ? millis/500.f : 1.f-((millis-500)/500.f))*clamp(float(heal-game::focus->health)/float(heal), 0.f, 1.f);
                 flashcolourf(gr, gg, gb, gf, 1.f, 0.f, 0.f, 1.f, amt);
                 glow += int(s*inventoryglow*amt);
@@ -2882,7 +2882,7 @@ namespace hud
                     float gr = 1, gg = 1, gb = 1;
                     if(pulse > 0)
                     {
-                        int millis = lastmillis%1000;
+                        int millis = totalmillis%1000;
                         float amt = (millis <= 500 ? millis/500.f : 1.f-((millis-500)/500.f))*pulse;
                         flashcolour(gr, gg, gb, 1.f, 0.f, 0.f, amt);
                     }
@@ -2906,7 +2906,7 @@ namespace hud
                       throb = game::canregenimpulse(game::focus) && game::focus->impulse[IM_METER] > 0 && game::focus->lastimpulsecollect ? clamp(((lastmillis-game::focus->lastimpulsecollect)%1000)/1000.f, 0.f, 1.f) : -1.f,
                       gr = 1, gg = 1, gb = 1;
                 flashcolour(gr, gg, gb, 0.25f, 0.25f, 0.25f, 1-span);
-                if(pulse > 0 && impulsemeter-game::focus->impulse[IM_METER] < impulsecost) flashcolour(gr, gg, gb, 1.f, 0.f, 0.f, clamp(lastmillis%1000/1000.f, 0.f, 1.f));
+                if(pulse > 0 && impulsemeter-game::focus->impulse[IM_METER] < impulsecost) flashcolour(gr, gg, gb, 1.f, 0.f, 0.f, clamp(totalmillis%1000/1000.f, 0.f, 1.f));
                 if(inventoryimpulse&2)
                     sy += drawbar(x, y-sy, s, size, 2, inventoryimpulsebartop, inventoryimpulsebarbottom, fade, span, impulsetex, impulsebgtex, inventorytone, inventoryimpulsebgglow, inventoryimpulsebgblend, pulse, throb, inventoryimpulsethrob, inventoryimpulseflash >= 2 ? 0xFFFFFF : -1);
                 if(inventoryimpulse&1)
@@ -2956,7 +2956,7 @@ namespace hud
                     if(inventorytone) skewcolour(gr, gg, gb, inventorytone);
                     if(inventoryalertflash)
                     {
-                        int millis = lastmillis%1000;
+                        int millis = totalmillis%1000;
                         float amt = millis <= 500 ? millis/500.f : 1.f-((millis-500)/500.f);
                         flashcolour(gr, gg, gb, 1.f, 1.f, 1.f, amt);
                     }
@@ -2968,7 +2968,7 @@ namespace hud
                     if(inventorytone) skewcolour(gr, gg, gb, inventorytone);
                     if(inventoryalertflash)
                     {
-                        int millis = lastmillis%1000;
+                        int millis = totalmillis%1000;
                         float amt = millis <= 500 ? millis/500.f : 1.f-((millis-500)/500.f);
                         vec c = game::rescolour(game::focus, PULSE_BURN);
                         flashcolour(gr, gg, gb, c.r, c.g, c.b, amt);
@@ -2981,7 +2981,7 @@ namespace hud
                     if(inventorytone) skewcolour(gr, gg, gb, inventorytone);
                     if(inventoryalertflash)
                     {
-                        int millis = lastmillis%1000;
+                        int millis = totalmillis%1000;
                         float amt = millis <= 500 ? millis/500.f : 1.f-((millis-500)/500.f);
                         vec c = game::rescolour(game::focus, PULSE_BLEED);
                         flashcolour(gr, gg, gb, c.r, c.g, c.b, amt);
@@ -2994,7 +2994,7 @@ namespace hud
                     if(inventorytone) skewcolour(gr, gg, gb, inventorytone);
                     if(inventoryalertflash)
                     {
-                        int millis = lastmillis%1000;
+                        int millis = totalmillis%1000;
                         float amt = millis <= 500 ? millis/500.f : 1.f-((millis-500)/500.f);
                         vec c = game::rescolour(game::focus, PULSE_SHOCK);
                         flashcolour(gr, gg, gb, c.r, c.g, c.b, amt);
@@ -3011,7 +3011,7 @@ namespace hud
                     if(inventorytone) skewcolour(gr, gg, gb, inventorytone);
                     if(inventoryconopenflash)
                     {
-                        int millis = lastmillis%1000;
+                        int millis = totalmillis%1000;
                         float amt = millis <= 500 ? millis/500.f : 1.f-((millis-500)/500.f);
                         flashcolour(gr, gg, gb, 1.f, 1.f, 1.f, amt);
                     }
@@ -3077,7 +3077,7 @@ namespace hud
             if(inventorytone) skewcolour(gr, gg, gb, inventorytone);
             if(alive && inventorygameinfoflash && lastmillis-game::focus->lastspawn <= inventorygameinfoflash)
             {
-                int millis = lastmillis%1000;
+                int millis = totalmillis%1000;
                 float amt = millis <= 500 ? millis/500.f : 1.f-((millis-500)/500.f);
                 flashcolour(gr, gg, gb, 0.f, 1.f, 1.f, amt);
             }
@@ -3447,7 +3447,7 @@ namespace hud
                     {
                         Texture *t = textureload(warningtex, 3);
                         glBindTexture(GL_TEXTURE_2D, t->id);
-                        float amt = float(lastmillis%250)/250.f, value = (amt > 0.5f ? 1.f-amt : amt)*2.f;
+                        float amt = float(totalmillis%250)/250.f, value = (amt > 0.5f ? 1.f-amt : amt)*2.f;
                         gle::colorf(value, value*0.125f, value*0.125f, value);
                         hasbound = true;
                     }
@@ -3499,14 +3499,14 @@ namespace hud
             }
             if(!noview)
             {
-                if(titlefade && (client::waiting() || lastmillis-game::maptime <= titlefade))
+                if(titlefade && (client::waiting() || !game::mapstart || totalmillis-game::mapstart <= titlefade))
                 {
-                    float a = !client::waiting() ? float(lastmillis-game::maptime)/float(titlefade) : 0.f;
+                    float a = !client::waiting() || !game::mapstart ? float(totalmillis-game::mapstart)/float(titlefade) : 0.f;
                     loopi(3) if(a < colour[i]) colour[i] *= a;
                 }
                 if(tvmodefade && game::tvmode())
                 {
-                    float a = game::lasttvchg ? (lastmillis-game::lasttvchg <= tvmodefade ? float(lastmillis-game::lasttvchg)/float(tvmodefade) : 1.f) : 0.f;
+                    float a = game::lasttvchg ? (totalmillis-game::lasttvchg <= tvmodefade ? float(totalmillis-game::lasttvchg)/float(tvmodefade) : 1.f) : 0.f;
                     loopi(3) if(a < colour[i]) colour[i] *= a;
                 }
                 if(game::focus == game::player1 || !game::thirdpersonview(true))
