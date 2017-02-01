@@ -1368,7 +1368,7 @@ namespace game
                     if(!sameteam) pushdamagemerge(d, v, weap, damage, (burning ? damagemerge::BURN : 0)|(bleeding ? damagemerge::BLEED : 0)|(shocking ? damagemerge::SHOCK : 0));
                     else if(v == player1 && !burning && !bleeding && !shocking && !material)
                     {
-                        player1->lastteamhit = d->lastteamhit = lastmillis;
+                        player1->lastteamhit = d->lastteamhit = totalmillis;
                         if(!issound(alarmchan)) playsound(S_ALARM, v->o, v, 0, -1, -1, -1, &alarmchan);
                     }
                     if(!burning && !bleeding && !shocking && !material && !sameteam) v->lasthit = totalmillis ? totalmillis : 1;
@@ -3429,7 +3429,7 @@ namespace game
         if(d->state == CS_ALIVE)
         {
             bool useth = hud::teamhurthud&1 && hud::teamhurttime && m_team(gamemode, mutators) && focus == player1 &&
-                 d->team == player1->team && d->lastteamhit >= 0 && lastmillis-d->lastteamhit <= hud::teamhurttime,
+                 d->team == player1->team && d->lastteamhit >= 0 && totalmillis-d->lastteamhit <= hud::teamhurttime,
             hashint = playerhint&(d->team != focus->team ? 2 : 1), haslight = false, haspower = false, hasdom = false;
             if(isweap(d->weapselect) && playerhint&4)
             {

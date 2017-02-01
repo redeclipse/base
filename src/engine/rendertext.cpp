@@ -437,7 +437,7 @@ static float icon_width(const char *name, float scale)
 { \
     if(maxwidth > 0 && qx+cw > maxwidth) \
     { \
-        qx = qw; \
+        qx = min(qw > x ? qw : qx, maxwidth); \
         break; \
     } \
     else if(s) qw = qx; \
@@ -446,6 +446,7 @@ static float icon_width(const char *name, float scale)
 #define TEXTESTIMATE(idx) \
 { \
     float qx = x, qw = x; \
+    usewidth = x; \
     for(int qi = idx; str[qi]; qi++) \
     { \
         int qc = uchar(str[qi]); \
@@ -553,6 +554,11 @@ static float icon_width(const char *name, float scale)
             float cw = scale*curfont->chars[c-curfont->charoffset].advance; \
             if(cw <= 0) continue; \
             TEXTCHAR(i); \
+            if(usewidth > 0 && x > usewidth) \
+            { \
+                TEXTLINE(i); \
+                TEXTALIGN(i+1); \
+            } \
         } \
     }
 
