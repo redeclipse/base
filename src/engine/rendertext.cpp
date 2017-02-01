@@ -185,32 +185,32 @@ bool popfont(int num)
     return setfont("default");
 }
 
-float text_widthf(const char *str, int xpad, int ypad, int flags, float linespace)
+float text_widthf(const char *str, float xpad, float ypad, int flags, float linespace)
 {
     float width, height;
     if(linespace <= 0) linespace = textlinespacing;
     text_boundsf(str, width, height, xpad, ypad, -1, flags, linespace);
     return width;
 }
-ICOMMAND(0, textwidth, "siiif", (char *s, int *f, int *x, int *y, float *p), floatret(text_widthf(s, *x, *y, *f, *p!=0 ? *p : 1.f)));
+ICOMMAND(0, textwidth, "sifff", (char *s, int *f, float *x, float *y, float *p), floatret(text_widthf(s, *x, *y, *f, *p!=0 ? *p : 1.f)));
 
-int text_fontw(const char *s)
+float text_fontw(const char *s)
 {
     if(s && *s) pushfont(s);
-    int w = FONTW;
+    float w = FONTW;
     if(s && *s) popfont();
     return w;
 }
-ICOMMAND(0, fontwidth, "s", (char *s), intret(text_fontw(s)));
+ICOMMAND(0, fontwidth, "s", (char *s), floatret(text_fontw(s)));
 
-int text_fonth(const char *s)
+float text_fonth(const char *s)
 {
     if(s && *s) pushfont(s);
-    int h = FONTH;
+    float h = FONTH;
     if(s && *s) popfont();
     return h;
 }
-ICOMMAND(0, fontheight, "s", (char *s), intret(text_fonth(s)));
+ICOMMAND(0, fontheight, "s", (char *s), floatret(text_fonth(s)));
 
 #define TEXTTAB(x) (max((int((x)/FONTTAB)+1.0f)*FONTTAB, (x)+FONTW)-(x))
 
@@ -369,7 +369,7 @@ static float icon_width(const char *name, float scale)
     return w;
 }
 
-#define TEXTHEIGHT (int(FONTH*linespace))
+#define TEXTHEIGHT (FONTH*linespace)
 
 #define TEXTCOLORIZE(h,s,q) \
 { \
@@ -440,13 +440,13 @@ static float icon_width(const char *name, float scale)
         if(s) \
         { \
             if(maxwidth > 0 && qx+cw > maxwidth) qx = maxwidth; \
-            usewidth = int(floorf(qx)); \
+            usewidth = qx; \
         } \
         else if(ql > 0) \
         { \
             qi = ql; \
             qx = qp; \
-            usewidth = int(floorf(qx)); \
+            usewidth = qx; \
         } \
         break; \
     } \
@@ -539,8 +539,8 @@ static float icon_width(const char *name, float scale)
 }
 
 #define TEXTSKELETON \
-    float y = 0, x = 0, scale = curfont->scale/float(curfont->defaulth)*curtextscale; \
-    int i = 0, usewidth = maxwidth; \
+    float y = 0, x = 0, scale = curfont->scale/float(curfont->defaulth)*curtextscale, usewidth = maxwidth; \
+    int i = 0; \
     TEXTESTIMATE(i) \
     for(i = 0; str[i]; i++) \
     { \
@@ -593,10 +593,10 @@ static float icon_width(const char *name, float scale)
 
 #define TEXTEND(cursor) if(cursor >= i) { do { TEXTINDEX(cursor); } while(0); }
 
-int text_visible(const char *str, float hitx, float hity, int maxwidth, int flags, float linespace)
+float text_visible(const char *str, float hitx, float hity, float maxwidth, int flags, float linespace)
 {
     if(linespace <= 0) linespace = textlinespacing;
-    int realwidth = 0;
+    float realwidth = 0;
     #define TEXTINDEX(idx)
     #define TEXTWHITE(idx) if(y+FONTH > hity && x >= hitx) return idx;
     #define TEXTLINE(idx) if(y+FONTH > hity) return idx;
@@ -618,10 +618,10 @@ int text_visible(const char *str, float hitx, float hity, int maxwidth, int flag
 }
 
 //inverse of text_visible
-void text_posf(const char *str, int cursor, float &cx, float &cy, int maxwidth, int flags, float linespace)
+void text_posf(const char *str, int cursor, float &cx, float &cy, float maxwidth, int flags, float linespace)
 {
     if(linespace <= 0) linespace = textlinespacing;
-    int realwidth = 0;
+    float realwidth = 0;
     #define TEXTINDEX(idx) if(cursor == idx) { cx = x; cy = y; break; }
     #define TEXTWHITE(idx)
     #define TEXTLINE(idx)
@@ -644,10 +644,10 @@ void text_posf(const char *str, int cursor, float &cx, float &cy, int maxwidth, 
     #undef TEXTCHAR
 }
 
-void text_boundsf(const char *str, float &width, float &height, int xpad, int ypad, int maxwidth, int flags, float linespace)
+void text_boundsf(const char *str, float &width, float &height, float xpad, float ypad, float maxwidth, int flags, float linespace)
 {
     if(linespace <= 0) linespace = textlinespacing;
-    int realwidth = 0;
+    float realwidth = 0;
     #define TEXTINDEX(idx)
     #define TEXTWHITE(idx)
     #define TEXTLINE(idx) if(x > width) width = x;
@@ -766,7 +766,7 @@ float key_widthf(const char *str)
     return width;
 }
 
-static int draw_key(Texture *&tex, const char *str, float sx, float sy)
+static float draw_key(Texture *&tex, const char *str, float sx, float sy)
 {
     Texture *oldtex = tex;
     const char *keyn = str;
@@ -811,7 +811,7 @@ static int draw_key(Texture *&tex, const char *str, float sx, float sy)
     return width;
 }
 
-int draw_text(const char *str, int rleft, int rtop, int r, int g, int b, int a, int flags, int cursor, int maxwidth, float linespace, int realwidth)
+float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, int a, int flags, int cursor, float maxwidth, float linespace, float realwidth)
 {
     if(linespace <= 0) linespace = textlinespacing;
     #define TEXTINDEX(idx) \
@@ -879,13 +879,13 @@ void reloadfonts()
     );
 }
 
-int draw_textf(const char *fstr, int left, int top, int xpad, int ypad, int r, int g, int b, int a, int flags, int cursor, int maxwidth, float linespace, ...)
+float draw_textf(const char *fstr, float left, float top, float xpad, float ypad, int r, int g, int b, int a, int flags, int cursor, float maxwidth, float linespace, ...)
 {
     if(linespace <= 0) linespace = textlinespacing;
     defvformatbigstring(str, linespace, fstr);
 
-    int width = 0, height = 0, realwidth = maxwidth;
-    text_bounds(str, width, height, xpad, ypad, maxwidth, flags, linespace);
+    float width = 0, height = 0, realwidth = maxwidth;
+    text_boundsf(str, width, height, xpad, ypad, maxwidth, flags, linespace);
     if(flags&TEXT_ALIGN) switch(flags&TEXT_ALIGN)
     {
         case TEXT_CENTERED: left -= width/2; realwidth = width-xpad*2; break;

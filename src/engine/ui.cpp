@@ -1999,7 +1999,7 @@ namespace UI
                 case 1: a = TEXT_RIGHT_JUSTIFY; xoff = tw*k; break;
             }
             pushhudtranslate(sx+xoff, sy, k);
-            draw_textf("%s", 0, 0, 0, 0, color.r, color.g, color.b, color.a, TEXT_NO_INDENT|a, -1, wrap >= 0 ? int(wrap/k) : -1, 1, getstr());
+            draw_textf("%s", 0, 0, 0, 0, color.r, color.g, color.b, color.a, TEXT_NO_INDENT|a, -1, wrap >= 0 ? wrap/k : -1.f, 1, getstr());
             pophudmatrix();
 
             Object::draw(sx, sy);
@@ -2010,7 +2010,7 @@ namespace UI
             Object::layout();
 
             float k = drawscale();
-            text_boundsf(getstr(), tw, th, 0, 0, wrap >= 0 ? int(wrap/k) : -1, TEXT_NO_INDENT);
+            text_boundsf(getstr(), tw, th, 0, 0, wrap >= 0 ? wrap/k : -1.f, TEXT_NO_INDENT);
             w = max(w, tw*k);
             h = max(h, th*k);
         }
