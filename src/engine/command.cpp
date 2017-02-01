@@ -4020,6 +4020,20 @@ void listsplice(const char *s, const char *vals, int *skip, int *count)
 }
 COMMAND(0, listsplice, "ssii");
 
+ICOMMAND(0, listfiles, "ss", (char *dir, char *ext),
+{
+    vector<char *> files;
+    listfiles(dir, ext[0] ? ext : NULL, files);
+    vector<char> p;
+    loopv(files)
+    {
+        if(i) p.put(' ');
+        p.put(files[i], strlen(files[i]));
+    }
+    p.add('\0');
+    commandret->setstr(newstring(p.getbuf(), p.length()-1));
+});
+
 ICOMMAND(0, loopfiles, "rsse", (ident *id, char *dir, char *ext, uint *body),
 {
     if(id->type!=ID_ALIAS) return;
@@ -4372,26 +4386,34 @@ ICOMMAND(0, tohex, "ii", (int *n, int *p),
     stringret(buf);
 });
 
-#define CMPSCMD(name, op) \
+#define CMPSCMD(func, name, op) \
     ICOMMAND(0, name, "s1V", (tagval *args, int numargs), \
     { \
         bool val; \
         if(numargs >= 2) \
         { \
-            val = strcmp(args[0].s, args[1].s) op 0; \
-            for(int i = 2; i < numargs && val; i++) val = strcmp(args[i-1].s, args[i].s) op 0; \
+            val = func(args[0].s, args[1].s) op 0; \
+            for(int i = 2; i < numargs && val; i++) val = func(args[i-1].s, args[i].s) op 0; \
         } \
         else val = (numargs > 0 ? args[0].s[0] : 0) op 0; \
         intret(int(val)); \
     })
 
-CMPSCMD(strcmp, ==);
-CMPSCMD(=s, ==);
-CMPSCMD(!=s, !=);
-CMPSCMD(<s, <);
-CMPSCMD(>s, >);
-CMPSCMD(<=s, <=);
-CMPSCMD(>=s, >=);
+CMPSCMD(strcmp, strcmp, ==);
+CMPSCMD(strcmp, =s, ==);
+CMPSCMD(strcmp, !=s, !=);
+CMPSCMD(strcmp, <s, <);
+CMPSCMD(strcmp, >s, >);
+CMPSCMD(strcmp, <=s, <=);
+CMPSCMD(strcmp, >=s, >=);
+
+CMPSCMD(strcasecmp, strcasecmp, ==);
+CMPSCMD(strcasecmp, ~=s, ==);
+CMPSCMD(strcasecmp, !~=s, !=);
+CMPSCMD(strcasecmp, <~s, <);
+CMPSCMD(strcasecmp, >~s, >);
+CMPSCMD(strcasecmp, <~=s, <=);
+CMPSCMD(strcasecmp, >~=s, >=);
 
 ICOMMAND(0, echo, "C", (char *s), conoutf("%s", s));
 ICOMMAND(0, error, "C", (char *s), conoutf("\fr%s", s));

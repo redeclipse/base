@@ -853,6 +853,7 @@ void progress(float bar1, const char *text1, float bar2, const char *text2)
     int ticks = SDL_GetTicks();
     if(lastprogress > 0 && ticks < 0) lastprogress = 1-INT_MAX;
     if((vsync || !progressupdate || bar1 > 0) && ticks-lastprogress < progressdelay) return;
+    UI::hideui(NULL);
     lastprogress = ticks;
     clientkeepalive();
 
