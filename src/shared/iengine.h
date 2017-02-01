@@ -212,11 +212,11 @@ extern bool setfont(const char *name);
 extern bool pushfont(font *id);
 extern bool pushfont(const char *name);
 extern bool popfont(int num = 1);
-extern float draw_text(const char *str, float rleft, float rtop, int r = 255, int g = 255, int b = 255, int a = 255, int flags = 0, int cursor = -1, float maxwidth = -1, float linespace = 0, float realwidth = -1);
+extern float draw_text(const char *str, float rleft, float rtop, int r = 255, int g = 255, int b = 255, int a = 255, int flags = 0, int cursor = -1, float maxwidth = -1, float linespace = 0);
 extern float draw_textf(const char *fstr, float left, float top, float xpad = 0, float ypad = 0, int r = 255, int g = 255, int b = 255, int a = 255, int flags = 0, int cursor = -1, float maxwidth = -1, float linespace = 0, ...);
 extern float text_widthf(const char *str, float xpad = 0, float ypad = 0, int flags = 0, float linespace = 0);
 extern void text_boundsf(const char *str, float &width, float &height, float xpad = 0, float ypad = 0, float maxwidth = -1, int flags = 0, float linespace = 0);
-extern float text_visible(const char *str, float hitx, float hity, float maxwidth = -1, int flags = 0, float linespace =1);
+extern int text_visible(const char *str, float hitx, float hity, float maxwidth = -1, int flags = 0, float linespace =1);
 extern void text_posf(const char *str, int cursor, float &cx, float &cy, float maxwidth, int flags = 0, float linespace = 0);
 extern float key_widthf(const char *str);
 
