@@ -3605,7 +3605,7 @@ namespace UI
         buildtext(*text, *scale, FONTH*uicontextscale, Color(255, 255, 255), *wrap, *align, false, children));
 
     ICOMMAND(0, uiautocontext, "tfbe", (tagval *text, float *scale, int *align, uint *children),
-        buildtext(*text, *scale, FONTH*uicontextscale, Color(255, 255, 255), -1.f, *align, false, children));
+        buildtext(*text, *scale, FONTH*uicontextscale, Color(255, 255, 255), -1.f, *align, true, children));
 
     ICOMMAND(0, uitexteditor, "siifsisse", (char *name, int *length, int *height, float *scale, char *initval, int *mode, char *parent, char *prompt, uint *children),
         BUILD(TextEditor, o, o->setup(name, *length, *height, (*scale <= 0 ? 1 : *scale) * uitextscale, initval, *mode <= 0 ? EDITORFOREVER : *mode, NULL, parent, prompt), children));
