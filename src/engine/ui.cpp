@@ -3,14 +3,20 @@
 
 namespace UI
 {
+    FVAR(0, uitextscale, 1, 0, 0);
+
     SVAR(0, uiopencmd, "showui");
     SVAR(0, uiclosecmd, "hideui");
 
-    VAR(IDF_PERSIST, uitextrows, 1, 48, 1000);
-    FVAR(0, uitextscale, 1, 0, 0);
-    VAR(IDF_PERSIST, uiscrollsteptime, 0, 50, 1000);
-    VAR(IDF_PERSIST, uislidersteptime, 0, 50, 1000);
-    VAR(IDF_PERSIST, uislotviewtime, 0, 25, 1000);
+    VAR(IDF_PERSIST, uitextrows, 1, 48, VAR_MAX);
+
+    VAR(IDF_PERSIST, uiobscure, 0, 1, 1);
+    VAR(IDF_PERSIST, uiobscuretime, 0, 125, VAR_MAX);
+    FVAR(IDF_PERSIST, uiobscureblend, 0, 0.65f, 1.f);
+
+    VAR(IDF_PERSIST, uiscrollsteptime, 0, 50, VAR_MAX);
+    VAR(IDF_PERSIST, uislidersteptime, 0, 50, VAR_MAX);
+    VAR(IDF_PERSIST, uislotviewtime, 0, 25, VAR_MAX);
 
     static void quads(float x, float y, float w, float h, float tx = 0, float ty = 0, float tw = 1, float th = 1)
     {
@@ -621,6 +627,7 @@ namespace UI
         bool allowinput, abovehud, tipwindow;
         float px, py, pw, ph;
         vec2 sscale, soffset;
+        int lasttopmost, lastobscured;
 
         Window(const char *name, const char *contents, const char *onshow, const char *onhide, bool tipwindow_) :
             name(newstring(name)),
@@ -629,7 +636,8 @@ namespace UI
             onhide(onhide && onhide[0] ? compilecode(onhide) : NULL),
             allowinput(!tipwindow_), abovehud(false), tipwindow(tipwindow_),
             px(0), py(0), pw(0), ph(0),
-            sscale(1, 1), soffset(0, 0)
+            sscale(1, 1), soffset(0, 0),
+            lasttopmost(0), lastobscured(0)
         {
         }
         ~Window()
@@ -695,10 +703,34 @@ namespace UI
 
             stopdrawing();
 
+            float obscure = 0.f;
             if(!topmost)
             {
+                if(!lasttopmost) lasttopmost = totalmillis ? totalmillis : 1;
+                if(uiobscure)
+                {
+                    obscure = uiobscureblend;
+                    if(uiobscuretime)
+                    {
+                        int millis = totalmillis-lasttopmost;
+                        if(millis < uiobscuretime) obscure *= millis/float(uiobscuretime);
+                    }
+                }
+                lastobscured = totalmillis ? totalmillis : 1;
+            }
+            else
+            {
+                if(uiobscure && lastobscured && uiobscuretime)
+                {
+                    int millis = totalmillis-lastobscured;
+                    if(millis < uiobscuretime) obscure = uiobscureblend*(1.f-(millis/float(uiobscuretime)));
+                }
+                lasttopmost = totalmillis ? totalmillis : 1;
+            }
+            if(obscure > 0)
+            {
                 pushhudtranslate(sx, sy, uitextscale);
-                drawskin(textureload("textures/guiskin", 3, true, false), 0, 0, w/uitextscale, h/uitextscale, 0x000000, 0.75f, 1);
+                drawskin(textureload("textures/guiskin", 3, true, false), 0, 0, w/uitextscale, h/uitextscale, 0x000000, obscure, 1);
                 pophudmatrix();
             }
 
@@ -3411,60 +3443,61 @@ namespace UI
     ICOMMAND(0, uimodcolour, "iffe", (int *c, float *minw, float *minh, uint *children),
         BUILD(FillColor, o, o->setup(FillColor::MODULATE, Color(*c), *minw, *minh), children));
 
-    ICOMMAND(0, uisetcolour, "i", (int *c),
+    Object *uirootwin(Object *root)
     {
-        for(Object *o = buildparent; o != NULL; o = o->parent)
+        if(root)
         {
-            if(o->isfiller()) { ((Filler *)o)->color = Color(*c); break; }
-            if(o->istext()) { ((Text *)o)->color = Color(*c); break; }
-            if(o->iswindow()) break;
+            if(root->iswindow()) return root;
+            if(root && !root->iswindow()) while(root->parent)
+            {
+                root = root->parent;
+                if(root->iswindow()) return root;
+            }
         }
-    });
+        return NULL;
+    }
 
-    void setchildcolours(Object *o, int c)
+    #define UIWINCMDC(func, types, argtypes, body) \
+        ICOMMAND(0, ui##func, types, argtypes, \
+        { \
+            Object *o = uirootwin(buildparent); \
+            if(o) { body; } \
+        });
+
+    #define UIREVCMDC(func, types, argtypes, body) \
+        ICOMMAND(0, ui##func, types, argtypes, \
+        { \
+            for(Object *o = buildparent; o != NULL; o = o->parent) \
+            { \
+                body; \
+                if(o->iswindow()) break; \
+            } \
+        });
+
+    #define UICOLOURCMDS(t) \
+        if(o->isfiller()) { ((Filler *)o)->color = Color(*c); t; } \
+        else if(o->istext()) { ((Text *)o)->color = Color(*c); t; } \
+
+    UIREVCMDC(setcolour, "i", (int *c), UICOLOURCMDS(break));
+    void setchildcolours(Object *o, int *c)
     {
-        if(o->isfiller()) ((Filler *)o)->color = Color(c);
-        if(o->istext()) ((Text *)o)->color = Color(c);
+        UICOLOURCMDS();
         loopv(o->children) setchildcolours(o->children[i], c);
     }
-    ICOMMAND(0, uisetcolours, "i", (int *c),
-    {
-        Object *root = buildparent;
-        if(!root->iswindow()) while(root->parent)
-        {
-            root = root->parent;
-            if(root->iswindow()) break;
-        }
-        setchildcolours(root, *c);
-    });
+    UIWINCMDC(setcolours, "i", (int *c), setchildcolours(o, c));
 
-    ICOMMAND(0, uichangeblend, "f", (float *c),
-    {
-        for(Object *o = buildparent; o != NULL; o = o->parent)
-        {
-            if(o->isfiller()) { ((Filler *)o)->color.a = clamp(int(*c * ((Filler *)o)->origcolor.a), 0, 255); break; }
-            if(o->istext()) { ((Text *)o)->color.a = clamp(int(*c * ((Text *)o)->origcolor.a), 0, 255); break; }
-            if(o->iswindow()) break;
-        }
-    });
+    #define UIBLENDCMDS(t) \
+        if(o->isfiller()) { ((Filler *)o)->color.a = clamp(int(*c * ((Filler *)o)->origcolor.a), 0, 255); t; } \
+        else if(o->istext()) { ((Text *)o)->color.a = clamp(int(*c * ((Text *)o)->origcolor.a), 0, 255); t; } \
+        else if(o->isgradient()) { ((Gradient *)o)->color.a = clamp(int(*c * ((Text *)o)->origcolor.a), 0, 255); t; }
 
-    void setchildblends(Object *o, float c)
+    UIREVCMDC(changeblend, "f", (float *c), UIBLENDCMDS(break));
+    void setchildblends(Object *o, float *c)
     {
-        if(o->isfiller()) ((Filler *)o)->color.a = clamp(int(c * ((Filler *)o)->origcolor.a), 0, 255);
-        if(o->istext()) ((Text *)o)->color.a = clamp(int(c * ((Text *)o)->origcolor.a), 0, 255);
-        if(o->isgradient()) ((Gradient *)o)->color.a = clamp(int(c * ((Text *)o)->origcolor.a), 0, 255);
+        UIBLENDCMDS();
         loopv(o->children) setchildblends(o->children[i], c);
     }
-    ICOMMAND(0, uichangeblends, "f", (float *c),
-    {
-        Object *root = buildparent;
-        if(!root->iswindow()) while(root->parent)
-        {
-            root = root->parent;
-            if(root->iswindow()) break;
-        }
-        setchildblends(root, clamp(*c, 0.f, 1.f));
-    });
+    UIWINCMDC(changeblends, "f", (float *c), setchildblends(o, c));
 
     ICOMMAND(0, uiskin, "sifffe", (char *texname, int *c, float *s, float *minw, float *minh, uint *children),
         BUILD(Skin, o, o->setup(textureload(texname, 3, true, false), Color(*c), *s, *minw, *minh), children));
