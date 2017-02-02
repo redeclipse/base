@@ -2001,7 +2001,7 @@ namespace UI
                 case 1: a = TEXT_RIGHT_JUSTIFY; xoff = tw*k; break;
             }
             pushhudtranslate(sx+xoff, sy, k);
-            draw_textf("%s", 0, 0, 0, 0, color.r, color.g, color.b, color.a, TEXT_NO_INDENT|a, -1, autowrap ? w : (wrap >= 0 ? wrap/k : -1.f), 1, getstr());
+            draw_textf("%s", 0, 0, 0, 0, color.r, color.g, color.b, color.a, TEXT_NO_INDENT|a, -1, autowrap ? w/k : (wrap >= 0 ? wrap/k : -1.f), 1, getstr());
             pophudmatrix();
 
             Object::draw(sx, sy);
@@ -2012,7 +2012,7 @@ namespace UI
             Object::layout();
 
             float k = drawscale();
-            text_boundsf(getstr(), tw, th, 0, 0, autowrap ? w : (wrap >= 0 ? wrap/k : -1.f), TEXT_NO_INDENT);
+            text_boundsf(getstr(), tw, th, 0, 0, autowrap ? w/k : (wrap >= 0 ? wrap/k : -1.f), TEXT_NO_INDENT);
             w = max(w, tw*k);
             h = max(h, th*k);
         }
@@ -2679,7 +2679,7 @@ namespace UI
         editor *edit;
         char *keyfilter, *prompt;
 
-        TextEditor() : edit(NULL), keyfilter(NULL), prompt(NULL ) {}
+        TextEditor() : edit(NULL), keyfilter(NULL), prompt(NULL) {}
 
         void setup(const char *name, int length, int height, float scale_ = 1, const char *initval = NULL, int mode = EDITORUSED, const char *keyfilter_ = NULL, const char *parent_ = NULL, const char *prompt_ = NULL)
         {
@@ -2891,9 +2891,16 @@ namespace UI
 
         Field() : id(NULL), changed(false) {}
 
-        void setup(ident *id_, int length, uint *onchange, float scale = 1, const char *keyfilter_ = NULL, const char *parent_ = NULL, const char *prompt_ = NULL)
+        void setup(ident *id_, int length, uint *onchange, float scale = 1, const char *keyfilter_ = NULL, const char *parent_ = NULL, const char *prompt_ = NULL, bool immediate = false)
         {
             if(isfocus() && !hasstate(STATE_HOVER)) commit();
+            if(isfocus() && immediate && edit && id == id_)
+            {
+                bool shouldfree = false;
+                const char *curval = getsval(id, shouldfree);
+                if(strcmp(edit->lines[0].text, curval)) changed = true;
+                if(shouldfree) delete[] curval;
+            }
             if(changed)
             {
                 if(id == id_) setsval(id, edit->lines[0].text, onchange);
@@ -3620,8 +3627,8 @@ namespace UI
         BUILD(Console, o, o->setup(*minw, *minh), children));
     #endif // 0
 
-    ICOMMAND(0, uifield, "riefsse", (ident *var, int *length, uint *onchange, float *scale, char *parent, char *prompt, uint *children),
-        BUILD(Field, o, o->setup(var, *length, onchange, (*scale <= 0 ? 1 : *scale) * uitextscale, NULL, parent, prompt), children));
+    ICOMMAND(0, uifield, "riefssie", (ident *var, int *length, uint *onchange, float *scale, char *parent, char *prompt, int *immediate, uint *children),
+        BUILD(Field, o, o->setup(var, *length, onchange, (*scale <= 0 ? 1 : *scale) * uitextscale, NULL, parent, prompt, *immediate!=0), children));
 
     ICOMMAND(0, uikeyfield, "riefe", (ident *var, int *length, uint *onchange, float *scale, uint *children),
         BUILD(KeyField, o, o->setup(var, *length, onchange, (*scale <= 0 ? 1 : *scale) * uitextscale), children));
