@@ -1811,8 +1811,8 @@ namespace game
         if(d->name[0] && client::showpresence >= (client::waiting(false) ? 2 : 1))
         {
             string formattedreason = "";
-            if(reason >= 0) formatstring(formattedreason, " (%s)", disc_reasons[reason]);
             string ipaddr = "";
+            if(reason >= 0) formatstring(formattedreason, " (%s)", disc_reasons[reason]);
             if(client::haspriv(game::player1, G(iphostlock))) formatstring(ipaddr, " (%s)", d->hostname);
             if(d->actortype == A_PLAYER)
             {
@@ -1820,7 +1820,7 @@ namespace game
                 conoutft(CON_EVENT, "\fo%s%s left the game%s (%d %s)", colourname(d), ipaddr, formattedreason, amt, amt != 1 ? "players" : "player");
             }
             else if(d->actortype == A_BOT && ai::showaiinfo)
-                conoutft(CON_EVENT, "\fo%s was removed from the game%s", colourname(d), formattedreason);
+                conoutft(CON_EVENT, "\fo%s was removed from the game%s", colourname(d), reason >= 0 ? "" : formattedreason);
         }
         gameent *e = NULL;
         int numdyns = numdynents();
