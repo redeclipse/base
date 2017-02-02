@@ -1812,7 +1812,7 @@ namespace game
         {
             defformatstring(formattedreason, " (%s)", disc_reasons[reason]);
             string ipaddr = "";
-            if (client::haspriv(game::player1, G(iphostlock))) formatstring(ipaddr, " (%s)", d->hostname);
+            if(client::haspriv(game::player1, G(iphostlock))) formatstring(ipaddr, " (%s)", d->hostname);
             if(d->actortype == A_PLAYER)
             {
                 int amt = client::otherclients(); // not including self to disclude this player
