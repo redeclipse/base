@@ -1820,7 +1820,7 @@ namespace game
                 conoutft(CON_EVENT, "\fo%s%s left the game%s (%d %s)", colourname(d), ipaddr, formattedreason, amt, amt != 1 ? "players" : "player");
             }
             else if(d->actortype == A_BOT && ai::showaiinfo)
-                conoutft(CON_EVENT, "\fo%s was removed from the game%s", colourname(d), reason >= 0 ? "" : formattedreason);
+                conoutft(CON_EVENT, "\fo%s was removed from the game%s", colourname(d), formattedreason);
         }
         gameent *e = NULL;
         int numdyns = numdynents();
