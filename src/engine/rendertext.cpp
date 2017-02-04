@@ -725,7 +725,7 @@ float key_widthf(const char *str)
     float width = 0, scale = curfont->maxh*curfont->scale/float(curfont->defaulth)*curtextscale*textkeyimagescale;
     loopv(list)
     {
-        if(i && textkeyseps) width += text_widthf("|");
+        if(i && textkeyseps) width += text_widthf(" or ");
         if(textkeyimages)
         {
             textkey *t = findtextkey(list[i]);
@@ -753,6 +753,17 @@ static float draw_key(Texture *&tex, const char *str, float sx, float sy)
     float width = 0, sh = curfont->maxh*curfont->scale/float(curfont->defaulth)*curtextscale, h = sh*textkeyimagescale;
     loopv(list)
     {
+        if(i && textkeyseps)
+        {
+            if(tex != oldtex)
+            {
+                xtraverts += gle::end();
+                tex = oldtex;
+                glBindTexture(GL_TEXTURE_2D, tex->id);
+            }
+            draw_text(" or ", sx + width, sy, 255, 255, 255, 255, 0, -1, -1, 1);
+            width += text_widthf(" or ");
+        }
         if(textkeyimages)
         {
             textkey *t = findtextkey(list[i]);
