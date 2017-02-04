@@ -10,10 +10,6 @@ namespace UI
 
     VAR(IDF_PERSIST, uitextrows, 1, 48, VAR_MAX);
 
-    VAR(IDF_PERSIST, uiobscure, 0, 1, 1);
-    VAR(IDF_PERSIST, uiobscuretime, 0, 125, VAR_MAX);
-    FVAR(IDF_PERSIST, uiobscureblend, 0, 0.65f, 1.f);
-
     VAR(IDF_PERSIST, uiscrollsteptime, 0, 50, VAR_MAX);
     VAR(IDF_PERSIST, uislidersteptime, 0, 50, VAR_MAX);
     VAR(IDF_PERSIST, uislotviewtime, 0, 25, VAR_MAX);
@@ -634,7 +630,6 @@ namespace UI
         bool allowinput, abovehud, windowflags;
         float px, py, pw, ph;
         vec2 sscale, soffset;
-        int lasttopmost, lastobscured;
 
         Window(const char *name, const char *contents, const char *onshow, const char *onhide, int windowflags_ = WINDOW_NONE) :
             name(newstring(name)),
@@ -643,8 +638,7 @@ namespace UI
             onhide(onhide && onhide[0] ? compilecode(onhide) : NULL),
             allowinput(true), abovehud(false),
             px(0), py(0), pw(0), ph(0),
-            sscale(1, 1), soffset(0, 0),
-            lasttopmost(0), lastobscured(0)
+            sscale(1, 1), soffset(0, 0)
         {
             windowflags = clamp(windowflags_, 0, int(WINDOW_ALL));
         }
@@ -691,7 +685,7 @@ namespace UI
             window = NULL;
         }
 
-        void draw(float sx, float sy, bool topmost)
+        void draw(float sx, float sy)
         {
             if(state&STATE_HIDDEN) return;
             window = this;
@@ -711,45 +705,14 @@ namespace UI
 
             stopdrawing();
 
-            float obscure = 0.f;
-            if(!topmost)
-            {
-                if(!lasttopmost) lasttopmost = totalmillis ? totalmillis : 1;
-                if(uiobscure)
-                {
-                    obscure = uiobscureblend;
-                    if(uiobscuretime)
-                    {
-                        int millis = totalmillis-lasttopmost;
-                        if(millis < uiobscuretime) obscure *= millis/float(uiobscuretime);
-                    }
-                }
-                lastobscured = totalmillis ? totalmillis : 1;
-            }
-            else
-            {
-                if(uiobscure && lastobscured && uiobscuretime)
-                {
-                    int millis = totalmillis-lastobscured;
-                    if(millis < uiobscuretime) obscure = uiobscureblend*(1.f-(millis/float(uiobscuretime)));
-                }
-                lasttopmost = totalmillis ? totalmillis : 1;
-            }
-            if(obscure > 0)
-            {
-                pushhudtranslate(sx, sy, uitextscale);
-                drawskin(textureload("textures/guiskin", 3, true, false), 0, 0, w/uitextscale, h/uitextscale, 0x000000, obscure, 1);
-                pophudmatrix();
-            }
-
             glDisable(GL_BLEND);
 
             window = NULL;
         }
 
-        void draw(bool topmost)
+        void draw()
         {
-            draw(x, y, topmost);
+            draw(x, y);
         }
 
         void adjustchildren()
@@ -927,14 +890,12 @@ namespace UI
         void draw()
         {
             if(children.empty()) return;
-            Window *last = NULL;
             loopwindows(w,
             {
                 if(w->windowflags&WINDOW_TIP) // follows cursor
                     w->setpos((cursorx*float(screenw)/float(screenh))-(w->w*cursorx), cursory-w->h-0.002f);
-                else last = w;
             });
-            loopwindows(w, w->draw(w->windowflags&WINDOW_TIP || w == last));
+            loopwindows(w, w->draw());
         }
 
         float abovehud()
@@ -3365,6 +3326,16 @@ namespace UI
     ICOMMANDNS(0, "uiclamp*", uiclamp__, "iiii", (int *left, int *right, int *top, int *bottom),
     {
         if(buildparent) loopi(buildchild) buildparent->children[i]->setclamp(*left, *right, *top, *bottom);
+    });
+
+    ICOMMAND(0, uiposition, "ff", (float *x, float *y),
+    {
+        if(buildparent) buildparent->setpos(*x, *y);
+    });
+
+    ICOMMANDNS(0, "uiposition-", uiposition_, "ff", (float *x, float *y),
+    {
+        if(buildparent) loopi(buildchild) buildparent->children[i]->setpos(*x, *y);
     });
 
     ICOMMAND(0, uigroup, "e", (uint *children),
