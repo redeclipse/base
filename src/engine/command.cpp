@@ -4429,20 +4429,20 @@ CMPSCMD(strcasecmp, >~=s, >=);
     })
 
 CMPSNCMD(strncmp, strncmp, ==);
-CMPSNCMD(strncmp, =s, ==);
-CMPSNCMD(strncmp, !=s, !=);
-CMPSNCMD(strncmp, <s, <);
-CMPSNCMD(strncmp, >s, >);
-CMPSNCMD(strncmp, <=s, <=);
-CMPSNCMD(strncmp, >=s, >=);
+CMPSNCMD(strncmp, =sn, ==);
+CMPSNCMD(strncmp, !=sn, !=);
+CMPSNCMD(strncmp, <sn, <);
+CMPSNCMD(strncmp, >sn, >);
+CMPSNCMD(strncmp, <=sn, <=);
+CMPSNCMD(strncmp, >=sn, >=);
 
 CMPSNCMD(strncasecmp, strncasecmp, ==);
-CMPSNCMD(strncasecmp, ~=s, ==);
-CMPSNCMD(strncasecmp, !~=s, !=);
-CMPSNCMD(strncasecmp, <~s, <);
-CMPSNCMD(strncasecmp, >~s, >);
-CMPSNCMD(strncasecmp, <~=s, <=);
-CMPSNCMD(strncasecmp, >~=s, >=);
+CMPSNCMD(strncasecmp, ~=sn, ==);
+CMPSNCMD(strncasecmp, !~=sn, !=);
+CMPSNCMD(strncasecmp, <~sn, <);
+CMPSNCMD(strncasecmp, >~sn, >);
+CMPSNCMD(strncasecmp, <~=sn, <=);
+CMPSNCMD(strncasecmp, >~=sn, >=);
 
 ICOMMAND(0, echo, "C", (char *s), conoutf("%s", s));
 ICOMMAND(0, error, "C", (char *s), conoutf("\fr%s", s));
