@@ -585,6 +585,7 @@ struct editor;
 
 namespace UI
 {
+    extern char *uiopencmd, *uiclosecmd;
     extern bool showui(const char *name);
     extern bool hideui(const char *name);
     extern bool toggleui(const char *name);

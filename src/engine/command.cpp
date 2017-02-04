@@ -4415,6 +4415,35 @@ CMPSCMD(strcasecmp, >~s, >);
 CMPSCMD(strcasecmp, <~=s, <=);
 CMPSCMD(strcasecmp, >~=s, >=);
 
+#define CMPSNCMD(func, name, op) \
+    ICOMMAND(0, name, "s1V", (tagval *args, int numargs), \
+    { \
+        int val; \
+        if(numargs >= 3) \
+        { \
+            val = func(args[0].s, args[1].s, args[2].i) op 0; \
+            for(int i = 5; i < numargs && val; i++) val = func(args[i-2].s, args[i-1].s, args[i].i) op 0; \
+        } \
+        else val = (numargs > 0 ? args[0].s[0] : 0) op 0; \
+        intret(int(val)); \
+    })
+
+CMPSNCMD(strncmp, strncmp, ==);
+CMPSNCMD(strncmp, =s, ==);
+CMPSNCMD(strncmp, !=s, !=);
+CMPSNCMD(strncmp, <s, <);
+CMPSNCMD(strncmp, >s, >);
+CMPSNCMD(strncmp, <=s, <=);
+CMPSNCMD(strncmp, >=s, >=);
+
+CMPSNCMD(strncasecmp, strncasecmp, ==);
+CMPSNCMD(strncasecmp, ~=s, ==);
+CMPSNCMD(strncasecmp, !~=s, !=);
+CMPSNCMD(strncasecmp, <~s, <);
+CMPSNCMD(strncasecmp, >~s, >);
+CMPSNCMD(strncasecmp, <~=s, <=);
+CMPSNCMD(strncasecmp, >~=s, >=);
+
 ICOMMAND(0, echo, "C", (char *s), conoutf("%s", s));
 ICOMMAND(0, error, "C", (char *s), conoutf("\fr%s", s));
 ICOMMAND(0, strstr, "ss", (char *a, char *b), { char *s = strstr(a, b); intret(s ? s-a : -1); });

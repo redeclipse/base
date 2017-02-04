@@ -1551,13 +1551,13 @@ namespace hud
                         if(m_loadout(game::gamemode, game::mutators))
                         {
                             pushfont("little");
-                            ty += draw_textf("Press \fs\fw\f{=openui profile}\fS to \fs%s\fS loadout", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1, target->loadweap.empty() ? "\fzoyselect" : "change");
+                            ty += draw_textf("Press \fs\fw\f{=%s profile}\fS to \fs%s\fS loadout", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1, UI::uiopencmd, target->loadweap.empty() ? "\fzoyselect" : "change");
                             popfont();
                         }
                         if(m_play(game::gamemode) && m_team(game::gamemode, game::mutators))
                         {
                             pushfont("little");
-                            ty += draw_textf("Press \fs\fw\f{=openui team}\fS to change teams", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1);
+                            ty += draw_textf("Press \fs\fw\f{=%s team}\fS to change teams", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1, UI::uiopencmd);
                             popfont();
                         }
                     }
@@ -1654,7 +1654,7 @@ namespace hud
                 {
                     ty += draw_textf("Press \fs\fw\f{=1:spectate 0}\fS to join the game", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1);
                     if(m_play(game::gamemode) && m_team(game::gamemode, game::mutators) && shownotices >= 2)
-                        ty += draw_textf("Press \fs\fw\f{=1:openui team}\fS to join a team", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1);
+                        ty += draw_textf("Press \fs\fw\f{=1:%s team}\fS to join a team", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1, UI::uiopencmd);
                 }
                 if(!m_edit(game::gamemode) && shownotices >= 2)
                     ty += draw_textf("Press \fs\fw\f{=1:specmodeswitch}\fS to %s", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1, game::tvmode() ? "interact" : "switch to TV");

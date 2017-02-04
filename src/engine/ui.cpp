@@ -620,25 +620,33 @@ namespace UI
 
     static Window *window = NULL;
 
+    enum
+    {
+        WINDOW_NONE = 0,
+        WINDOW_TIP = 1<<0,
+        WINDOW_ALL = WINDOW_TIP
+    };
+
     struct Window : Object
     {
         char *name;
         uint *contents, *onshow, *onhide;
-        bool allowinput, abovehud, tipwindow;
+        bool allowinput, abovehud, windowflags;
         float px, py, pw, ph;
         vec2 sscale, soffset;
         int lasttopmost, lastobscured;
 
-        Window(const char *name, const char *contents, const char *onshow, const char *onhide, bool tipwindow_) :
+        Window(const char *name, const char *contents, const char *onshow, const char *onhide, int windowflags_ = WINDOW_NONE) :
             name(newstring(name)),
             contents(compilecode(contents)),
             onshow(onshow && onshow[0] ? compilecode(onshow) : NULL),
             onhide(onhide && onhide[0] ? compilecode(onhide) : NULL),
-            allowinput(!tipwindow_), abovehud(false), tipwindow(tipwindow_),
+            allowinput(true), abovehud(false),
             px(0), py(0), pw(0), ph(0),
             sscale(1, 1), soffset(0, 0),
             lasttopmost(0), lastobscured(0)
         {
+            windowflags = clamp(windowflags_, 0, int(WINDOW_ALL));
         }
         ~Window()
         {
@@ -670,7 +678,7 @@ namespace UI
         void setup()
         {
             Object::setup();
-            allowinput = !tipwindow;
+            allowinput = true;
             abovehud = false;
             px = py = pw = ph = 0;
         }
@@ -922,11 +930,11 @@ namespace UI
             Window *last = NULL;
             loopwindows(w,
             {
-                if(w->tipwindow)
+                if(w->windowflags&WINDOW_TIP) // follows cursor
                     w->setpos((cursorx*float(screenw)/float(screenh))-(w->w*cursorx), cursory-w->h-0.002f);
                 else last = w;
             });
-            loopwindows(w, w->draw(w->tipwindow || w == last));
+            loopwindows(w, w->draw(w->windowflags&WINDOW_TIP || w == last));
         }
 
         float abovehud()
@@ -1993,15 +2001,16 @@ namespace UI
             changedraw(CHANGE_COLOR);
 
             float k = drawscale(), xoff = 0;
-            int a = 0;
+            int a = TEXT_NO_INDENT;
             switch(align)
             {
-                case -1: a = TEXT_LEFT_JUSTIFY; break;
-                case 0: a = TEXT_CENTERED; xoff = tw*k/2; break;
-                case 1: a = TEXT_RIGHT_JUSTIFY; xoff = tw*k; break;
+                case -1: a |= TEXT_LEFT_JUSTIFY; break;
+                case 0: a |= TEXT_CENTERED; xoff = tw*k/2; break;
+                case 1: a |= TEXT_RIGHT_JUSTIFY; xoff = tw*k; break;
+                default: break;
             }
             pushhudtranslate(sx+xoff, sy, k);
-            draw_textf("%s", 0, 0, 0, 0, color.r, color.g, color.b, color.a, TEXT_NO_INDENT|a, -1, autowrap ? w/k : (wrap >= 0 ? wrap/k : -1.f), 1, getstr());
+            draw_textf("%s", 0, 0, 0, 0, color.r, color.g, color.b, color.a, a, -1, autowrap ? w/k : (wrap >= 0 ? wrap/k : -1.f), 1, getstr());
             pophudmatrix();
 
             Object::draw(sx, sy);
@@ -3222,11 +3231,11 @@ namespace UI
         }
     };
 
-    ICOMMAND(0, newui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *tipwindow),
+    ICOMMAND(0, newui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *windowflags),
     {
         Window *window = windows.find(name, NULL);
         if(window) { world->hide(window); windows.remove(name); delete window; }
-        windows[name] = new Window(name, contents, onshow, onhide, *tipwindow!=0);
+        windows[name] = new Window(name, contents, onshow, onhide, clamp(*windowflags, 0, int(WINDOW_ALL)));
     });
 
     ICOMMAND(0, uiallowinput, "b", (int *val), { if(window) { if(*val >= 0) window->allowinput = *val!=0; intret(window->allowinput ? 1 : 0); } });

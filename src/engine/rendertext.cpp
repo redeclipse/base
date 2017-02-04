@@ -437,17 +437,30 @@ static float icon_width(const char *name, float scale)
 { \
     if(maxwidth > 0 && qx+cw > maxwidth) \
     { \
-        qx = min(qw > x ? qw : qx, maxwidth); \
+        if(qp >= 0) \
+        { \
+            wrappos = qp; \
+            qx = min(qw, maxwidth); \
+        } \
+        else \
+        { \
+            wrappos = max(s ? qi : qi-1, 0); \
+            qx = min(qx, maxwidth); \
+        } \
         break; \
     } \
-    else if(s) qw = qx; \
+    else if(s) \
+    { \
+        qp = qi; \
+        qw = qx; \
+    } \
 }
 
-#define TEXTESTIMATE(idx) \
+#define TEXTESTIMATE(tidx) \
 { \
     float qx = x, qw = x; \
-    usewidth = x; \
-    for(int qi = idx; str[qi]; qi++) \
+    int qp = -1; \
+    for(int qi = tidx; str[qi]; qi++) \
     { \
         int qc = uchar(str[qi]); \
         if(qc == '\t') \
@@ -487,26 +500,25 @@ static float icon_width(const char *name, float scale)
             qx += cw; \
         } \
     } \
-    usewidth = qx; \
-    if(maxwidth > 0 && flags&TEXT_CENTERED) \
+    if(flags&TEXT_CENTERED) \
     { \
-        float offwidth = (maxwidth-usewidth)*0.5f; \
-        x += offwidth; \
-        usewidth += offwidth; \
+        if(tidx <= 0) maxwidth = qx; \
+        else x += (maxwidth-qx)*0.5f; \
     } \
 }
 
-#define TEXTALIGN(idx) \
+#define TEXTALIGN(aidx) \
 { \
     x = 0; \
+    wrappos = -1; \
     if((flags&TEXT_LEFT_JUSTIFY) && !(flags&TEXT_NO_INDENT)) x += FONTTAB; \
-    TEXTESTIMATE(idx) \
+    TEXTESTIMATE(aidx) \
     y += TEXTHEIGHT; \
 }
 
 #define TEXTWIDTH \
 { \
-    if(usewidth > 0 && x+cw > usewidth) \
+    if(wrappos >= 0 && i >= wrappos) \
     { \
         TEXTLINE(i); \
         TEXTALIGN(i+1); \
@@ -515,8 +527,8 @@ static float icon_width(const char *name, float scale)
 }
 
 #define TEXTSKELETON \
-    float y = 0, x = 0, scale = curfont->scale/float(curfont->defaulth)*curtextscale, usewidth = 0; \
-    int i = 0; \
+    float y = 0, x = 0, scale = curfont->scale/float(curfont->defaulth)*curtextscale; \
+    int i = 0, wrappos = -1; \
     TEXTESTIMATE(i) \
     for(i = 0; str[i]; i++) \
     { \
@@ -554,11 +566,7 @@ static float icon_width(const char *name, float scale)
             float cw = scale*curfont->chars[c-curfont->charoffset].advance; \
             if(cw <= 0) continue; \
             TEXTCHAR(i); \
-            if(usewidth > 0 && x > usewidth) \
-            { \
-                TEXTLINE(i); \
-                TEXTALIGN(i+1); \
-            } \
+            TEXTWIDTH; \
         } \
     }
 
@@ -783,9 +791,6 @@ static float draw_key(Texture *&tex, const char *str, float sx, float sy)
 float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, int a, int flags, int cursor, float maxwidth, float linespace)
 {
     if(linespace <= 0) linespace = textlinespacing;
-    float width = 0, height = 0;
-    text_boundsf(str, width, height, 0, 0, maxwidth, flags, linespace);
-    maxwidth = width;
     #define TEXTINDEX(idx) \
         if(cursor >= 0 && idx == cursor) \
         { \
