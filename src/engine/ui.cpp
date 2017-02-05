@@ -1424,13 +1424,14 @@ namespace UI
         enum { VERTICAL, HORIZONTAL };
 
         int dir;
-        Color color2;
+        Color color2, origcolor2;
 
         void setup(int type_, int dir_, const Color &color_, const Color &color2_, float minw_ = 0, float minh_ = 0)
         {
             FillColor::setup(type_, color_, minw_, minh_);
             dir = dir_;
             color2 = color2_;
+            origcolor2 = color2;
         }
 
         static const char *typestr() { return "#Gradient"; }
@@ -3483,7 +3484,7 @@ namespace UI
 
     #define UICOLOURCMDS(t) \
         if(o->isfiller()) { ((Filler *)o)->color = Color(*c); t; } \
-        else if(o->istext()) { ((Text *)o)->color = Color(*c); t; } \
+        else if(o->istext()) { ((Text *)o)->color = Color(*c); t; }
 
     UIREVCMDC(setcolour, "i", (int *c), UICOLOURCMDS(break));
     void setchildcolours(Object *o, int *c)
@@ -3496,15 +3497,50 @@ namespace UI
     #define UIBLENDCMDS(t) \
         if(o->isfiller()) { ((Filler *)o)->color.a = clamp(int(*c * ((Filler *)o)->origcolor.a), 0, 255); t; } \
         else if(o->istext()) { ((Text *)o)->color.a = clamp(int(*c * ((Text *)o)->origcolor.a), 0, 255); t; } \
-        else if(o->isgradient()) { ((Gradient *)o)->color.a = clamp(int(*c * ((Text *)o)->origcolor.a), 0, 255); t; }
+        else if(o->isgradient()) { ((Gradient *)o)->color.a = clamp(int(*c * ((Gradient *)o)->origcolor.a), 0, 255); ((Gradient *)o)->color2.a = clamp(int(*c * ((Gradient *)o)->origcolor2.a), 0, 255); t; }
 
     UIREVCMDC(changeblend, "f", (float *c), UIBLENDCMDS(break));
-    void setchildblends(Object *o, float *c)
+    void changechildblends(Object *o, float *c)
     {
         UIBLENDCMDS();
-        loopv(o->children) setchildblends(o->children[i], c);
+        loopv(o->children) changechildblends(o->children[i], c);
     }
-    UIWINCMDC(changeblends, "f", (float *c), setchildblends(o, c));
+    UIWINCMDC(changeblends, "f", (float *c), changechildblends(o, c));
+
+
+    #define UICHGCOLCMDS(t) \
+        if(o->isfiller()) \
+        { \
+            ((Filler *)o)->color.r = clamp(int(*c * ((Filler *)o)->origcolor.r), 0, 255); \
+            ((Filler *)o)->color.g = clamp(int(*c * ((Filler *)o)->origcolor.g), 0, 255); \
+            ((Filler *)o)->color.b = clamp(int(*c * ((Filler *)o)->origcolor.b), 0, 255); \
+            t; \
+        } \
+        else if(o->istext()) \
+        { \
+            ((Text *)o)->color.r = clamp(int(*c * ((Text *)o)->origcolor.r), 0, 255); \
+            ((Text *)o)->color.g = clamp(int(*c * ((Text *)o)->origcolor.g), 0, 255); \
+            ((Text *)o)->color.b = clamp(int(*c * ((Text *)o)->origcolor.b), 0, 255); \
+            t; \
+        } \
+        else if(o->isgradient()) \
+        { \
+            ((Gradient *)o)->color.r = clamp(int(*c * ((Gradient *)o)->origcolor.r), 0, 255); \
+            ((Gradient *)o)->color.g = clamp(int(*c * ((Gradient *)o)->origcolor.g), 0, 255); \
+            ((Gradient *)o)->color.b = clamp(int(*c * ((Gradient *)o)->origcolor.b), 0, 255); \
+            ((Gradient *)o)->color2.r = clamp(int(*c * ((Gradient *)o)->origcolor2.r), 0, 255); \
+            ((Gradient *)o)->color2.g = clamp(int(*c * ((Gradient *)o)->origcolor2.g), 0, 255); \
+            ((Gradient *)o)->color2.b = clamp(int(*c * ((Gradient *)o)->origcolor2.b), 0, 255); \
+            t; \
+        }
+
+    UIREVCMDC(changecolour, "f", (float *c), UICHGCOLCMDS(break));
+    void changechildcolours(Object *o, float *c)
+    {
+        UICHGCOLCMDS();
+        loopv(o->children) changechildcolours(o->children[i], c);
+    }
+    UIWINCMDC(changecolours, "f", (float *c), changechildcolours(o, c));
 
     ICOMMAND(0, uiskin, "sifffe", (char *texname, int *c, float *s, float *minw, float *minh, uint *children),
         BUILD(Skin, o, o->setup(textureload(texname, 3, true, false), Color(*c), *s, *minw, *minh), children));
