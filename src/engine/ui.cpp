@@ -3572,34 +3572,34 @@ namespace UI
         }
     }
 
-    ICOMMAND(0, uicolourtext, "tifbe", (tagval *text, int *c, float *scale, int *align, uint *children),
+    ICOMMAND(0, uicolourtext, "tifie", (tagval *text, int *c, float *scale, int *align, uint *children),
         buildtext(*text, *scale, uitextscale, Color(*c), -1, *align, children));
 
-    ICOMMAND(0, uitext, "tfbe", (tagval *text, float *scale, int *align, uint *children),
+    ICOMMAND(0, uitext, "tfie", (tagval *text, float *scale, int *align, uint *children),
         buildtext(*text, *scale, uitextscale, Color(255, 255, 255), -1, *align, children));
 
     ICOMMAND(0, uitextfill, "iffe", (int *c, float *minw, float *minh, uint *children),
         BUILD(Filler, o, o->setup(Color(*c), *minw * uitextscale*0.5f, *minh * uitextscale), children));
 
-    ICOMMAND(0, uiwrapcolourtext, "tfifbe", (tagval *text, float *wrap, int *c, float *scale, int *align, uint *children),
+    ICOMMAND(0, uiwrapcolourtext, "tfifie", (tagval *text, float *wrap, int *c, float *scale, int *align, uint *children),
         buildtext(*text, *scale, uitextscale, Color(*c), *wrap, *align, children));
 
-    ICOMMAND(0, uiwraptext, "tffbe", (tagval *text, float *wrap, float *scale, int *align, uint *children),
+    ICOMMAND(0, uiwraptext, "tffie", (tagval *text, float *wrap, float *scale, int *align, uint *children),
         buildtext(*text, *scale, uitextscale, Color(255, 255, 255), *wrap, *align, children));
 
-    ICOMMAND(0, uicolourcontext, "tifbe", (tagval *text, int *c, float *scale, int *align, uint *children),
+    ICOMMAND(0, uicolourcontext, "tifie", (tagval *text, int *c, float *scale, int *align, uint *children),
         buildtext(*text, *scale, FONTH*uicontextscale, Color(*c), -1, *align, children));
 
-    ICOMMAND(0, uicontext, "tfbe", (tagval *text, float *scale, int *align, uint *children),
+    ICOMMAND(0, uicontext, "tfie", (tagval *text, float *scale, int *align, uint *children),
         buildtext(*text, *scale, FONTH*uicontextscale, Color(255, 255, 255), -1, *align, children));
 
     ICOMMAND(0, uicontextfill, "iffe", (int *c, float *minw, float *minh, uint *children),
         BUILD(Filler, o, o->setup(Color(*c), *minw * FONTH*uicontextscale*0.5f, *minh * FONTH*uicontextscale), children));
 
-    ICOMMAND(0, uiwrapcolourcontext, "tfifbe", (tagval *text, float *wrap, int *c, float *scale, int *align, uint *children),
+    ICOMMAND(0, uiwrapcolourcontext, "tfifie", (tagval *text, float *wrap, int *c, float *scale, int *align, uint *children),
         buildtext(*text, *scale, FONTH*uicontextscale, Color(*c), *wrap, *align, children));
 
-    ICOMMAND(0, uiwrapcontext, "tffbe", (tagval *text, float *wrap, float *scale, int *align, uint *children),
+    ICOMMAND(0, uiwrapcontext, "tffie", (tagval *text, float *wrap, float *scale, int *align, uint *children),
         buildtext(*text, *scale, FONTH*uicontextscale, Color(255, 255, 255), *wrap, *align, children));
 
     ICOMMAND(0, uitexteditor, "siifsisse", (char *name, int *length, int *height, float *scale, char *initval, int *mode, char *parent, char *prompt, uint *children),

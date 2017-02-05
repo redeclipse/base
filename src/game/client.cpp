@@ -109,13 +109,13 @@ namespace client
         }
     }
 
-    void vote(gameent *d, const char *text, int mode, int muts)
+    void vote(gameent *d, const char *text, int mode, int muts, bool force = false)
     {
         mapvote *m = NULL;
         if(!text || !*text) text = "<random>";
         if(!mapvotes.empty()) loopvrev(mapvotes)
         {
-            if(mapvotes[i].players.find(d) >= 0)
+            if(!force && mapvotes[i].players.find(d) >= 0)
             {
                 if(!strcmp(text, mapvotes[i].map) && mode == mapvotes[i].mode && muts == mapvotes[i].muts) return;
                 mapvotes[i].players.removeobj(d);
@@ -136,6 +136,7 @@ namespace client
         if(showmapvotes >= (!gs_playing(game::gamestate) ? 2 : 1) && !isignored(d->clientnum))
             conoutft(CON_EVENT, "%s suggests: \fs\fy%s\fS on \fs\fo%s\fS, press \f{=%s maps} to vote", UI::uiopencmd, game::colourname(d), server::gamename(mode, muts), m->map);
     }
+    ICOMMAND(0, fakevote, "", (), loopi(20) vote(game::player1, "maps/bloodlust", G_DEATHMATCH, 0, true); loopi(20) vote(game::player1, "maps/dutility", G_CAPTURE, 1<<G_M_GSP1, true));
 
     void getvotes(int vote, int prop, int idx)
     {
