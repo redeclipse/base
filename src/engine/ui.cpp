@@ -3609,10 +3609,10 @@ namespace UI
     }
 
     ICOMMAND(0, uicolourtext, "tifie", (tagval *text, int *c, float *scale, int *align, uint *children),
-        buildtext(*text, *scale, uitextscale, Color(*c), -1, *align, children));
+        buildtext(*text, *scale, uitextscale, Color(*c), 0, *align, children));
 
     ICOMMAND(0, uitext, "tfie", (tagval *text, float *scale, int *align, uint *children),
-        buildtext(*text, *scale, uitextscale, Color(255, 255, 255), -1, *align, children));
+        buildtext(*text, *scale, uitextscale, Color(255, 255, 255), 0, *align, children));
 
     ICOMMAND(0, uitextfill, "iffe", (int *c, float *minw, float *minh, uint *children),
         BUILD(Filler, o, o->setup(Color(*c), *minw * uitextscale*0.5f, *minh * uitextscale), children));
@@ -3624,10 +3624,10 @@ namespace UI
         buildtext(*text, *scale, uitextscale, Color(255, 255, 255), *wrap, *align, children));
 
     ICOMMAND(0, uicolourcontext, "tifie", (tagval *text, int *c, float *scale, int *align, uint *children),
-        buildtext(*text, *scale, FONTH*uicontextscale, Color(*c), -1, *align, children));
+        buildtext(*text, *scale, FONTH*uicontextscale, Color(*c), 0, *align, children));
 
     ICOMMAND(0, uicontext, "tfie", (tagval *text, float *scale, int *align, uint *children),
-        buildtext(*text, *scale, FONTH*uicontextscale, Color(255, 255, 255), -1, *align, children));
+        buildtext(*text, *scale, FONTH*uicontextscale, Color(255, 255, 255), 0, *align, children));
 
     ICOMMAND(0, uicontextfill, "iffe", (int *c, float *minw, float *minh, uint *children),
         BUILD(Filler, o, o->setup(Color(*c), *minw * FONTH*uicontextscale*0.5f, *minh * FONTH*uicontextscale), children));
@@ -3753,7 +3753,6 @@ namespace UI
                 }
                 world->clearstate(hold);
             }
-            return world->allowinput();
         }
         return world->key(code, isdown);
     }
