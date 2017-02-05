@@ -4178,6 +4178,9 @@ void sortlist(char *list, ident *x, ident *y, uint *body, uint *unique)
 COMMAND(0, sortlist, "srree");
 ICOMMAND(0, uniquelist, "srre", (char *list, ident *x, ident *y, uint *body), sortlist(list, x, y, NULL, body));
 
+ICOMMAND(0, true, "", (), intret(1));
+ICOMMAND(0, false, "", (), intret(0));
+
 #define MATHCMD(name, fmt, type, op, initval, unaryop) \
     ICOMMANDS(0, name, #fmt "1V", (tagval *args, int numargs), \
     { \
