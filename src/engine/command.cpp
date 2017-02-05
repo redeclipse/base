@@ -3664,6 +3664,7 @@ void at(tagval *args, int numargs)
     {
         const char *list = start;
         int pos = args[i].getint();
+        if(pos < 0) pos = listlen(list)+pos;
         for(; pos > 0; pos--) if(!parselist(list)) break;
         if(pos > 0 || !parselist(list, start, end, qstart)) start = end = qstart = "";
     }

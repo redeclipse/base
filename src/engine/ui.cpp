@@ -1539,22 +1539,26 @@ namespace UI
     {
         static Texture *lasttex;
 
-        Texture *tex;
+        Texture *tex, *fallback;
         bool alphatarget;
 
-        void setup(Texture *tex_, const Color &color_, bool alphatarget_ = false, float minw_ = 0, float minh_ = 0)
+        void setup(Texture *tex_, const Color &color_, bool alphatarget_ = false, float minw_ = 0, float minh_ = 0, Texture *fallback_ = notexture)
         {
             Filler::setup(color_, minw_, minh_);
             tex = tex_;
+            fallback = fallback_;
             alphatarget = alphatarget_;
         }
 
         static const char *typestr() { return "#Image"; }
         const char *gettype() const { return typestr(); }
 
+        Texture *curtex() const { return tex != notexture ? tex : fallback; }
+
         bool target(float cx, float cy)
         {
-            return !alphatarget || !(tex->type&Texture::ALPHA) || checkalphamask(tex, cx/w, cy/h);
+            Texture *t = curtex();
+            return !alphatarget || !(t->type&Texture::ALPHA) || checkalphamask(t, cx/w, cy/h);
         }
 
         void startdraw()
@@ -1573,10 +1577,11 @@ namespace UI
 
         void draw(float sx, float sy)
         {
-            if(tex != notexture)
+            Texture *t = curtex();
+            if(t != notexture)
             {
                 changedraw(CHANGE_COLOR);
-                if(lasttex != tex) { if(lasttex) gle::end(); lasttex = tex; glBindTexture(GL_TEXTURE_2D, tex->id); }
+                if(lasttex != t) { if(lasttex) gle::end(); lasttex = t; glBindTexture(GL_TEXTURE_2D, t->id); }
 
                 color.init();
                 quads(sx, sy, w, h);
@@ -1594,7 +1599,7 @@ namespace UI
 
         void setup(Texture *tex_, const Color &color_, bool alphatarget_ = false, float minw_ = 0, float minh_ = 0, float cropx_ = 0, float cropy_ = 0, float cropw_ = 1, float croph_ = 1)
         {
-            Image::setup(tex_, color_, alphatarget_, minw_, minh_);
+            Image::setup(tex_, color_, alphatarget_, minw_, minh_, notexture);
             cropx = cropx_;
             cropy = cropy_;
             cropw = cropw_;
@@ -1606,15 +1611,17 @@ namespace UI
 
         bool target(float cx, float cy)
         {
-            return !alphatarget || !(tex->type&Texture::ALPHA) || checkalphamask(tex, cropx + cx/w*cropw, cropy + cy/h*croph);
+            Texture *t = curtex();
+            return !alphatarget || !(t->type&Texture::ALPHA) || checkalphamask(t, cropx + cx/w*cropw, cropy + cy/h*croph);
         }
 
         void draw(float sx, float sy)
         {
-            if(tex == notexture) { Object::draw(sx, sy); return; }
+            Texture *t = curtex();
+            if(t == notexture) { Object::draw(sx, sy); return; }
 
             changedraw();
-            if(lasttex != tex) { if(lasttex) gle::end(); lasttex = tex; glBindTexture(GL_TEXTURE_2D, tex->id); }
+            if(lasttex != t) { if(lasttex) gle::end(); lasttex = t; glBindTexture(GL_TEXTURE_2D, t->id); }
 
             quads(sx, sy, w, h, cropx, cropy, cropw, croph);
 
@@ -1629,7 +1636,8 @@ namespace UI
 
         bool target(float cx, float cy)
         {
-            if(!alphatarget || !(tex->type&Texture::ALPHA)) return true;
+            Texture *t = curtex();
+            if(!alphatarget || !(t->type&Texture::ALPHA)) return true;
 
             float mx, my;
             if(w <= minw) mx = cx/w;
@@ -1641,15 +1649,16 @@ namespace UI
             else if(cy >= h - minh/2) my = 1 - (h - cy) / minh;
             else my = 0.5f;
 
-            return checkalphamask(tex, mx, my);
+            return checkalphamask(t, mx, my);
         }
 
         void draw(float sx, float sy)
         {
-            if(tex == notexture) { Object::draw(sx, sy); return; }
+            Texture *t = curtex();
+            if(t == notexture) { Object::draw(sx, sy); return; }
 
             changedraw();
-            if(lasttex != tex) { if(lasttex) gle::end(); lasttex = tex; glBindTexture(GL_TEXTURE_2D, tex->id); }
+            if(lasttex != t) { if(lasttex) gle::end(); lasttex = t; glBindTexture(GL_TEXTURE_2D, t->id); }
 
             float splitw = (minw ? min(minw, w) : w) / 2,
                   splith = (minh ? min(minh, h) : h) / 2,
@@ -1693,7 +1702,7 @@ namespace UI
 
         void setup(Texture *tex_, const Color &color_, bool alphatarget_ = false, float texborder_ = 0, float screenborder_ = 0)
         {
-            Image::setup(tex_, color_, alphatarget_);
+            Image::setup(tex_, color_, alphatarget_, 0, 0, notexture);
             texborder = texborder_;
             screenborder = screenborder_;
         }
@@ -1703,7 +1712,8 @@ namespace UI
 
         bool target(float cx, float cy)
         {
-            if(!alphatarget || !(tex->type&Texture::ALPHA)) return true;
+            Texture *t = curtex();
+            if(!alphatarget || !(t->type&Texture::ALPHA)) return true;
 
             float mx, my;
             if(cx < screenborder) mx = cx/screenborder*texborder;
@@ -1713,15 +1723,16 @@ namespace UI
             else if(cy >= h - screenborder) my = 1-texborder + (cy - (h - screenborder))/screenborder*texborder;
             else my = texborder + (cy - screenborder)/(h - 2*screenborder)*(1 - 2*texborder);
 
-            return checkalphamask(tex, mx, my);
+            return checkalphamask(t, mx, my);
         }
 
         void draw(float sx, float sy)
         {
-            if(tex == notexture) { Object::draw(sx, sy); return; }
+            Texture *t = curtex();
+            if(t == notexture) { Object::draw(sx, sy); return; }
 
             changedraw();
-            if(lasttex != tex) { if(lasttex) gle::end(); lasttex = tex; glBindTexture(GL_TEXTURE_2D, tex->id); }
+            if(lasttex != t) { if(lasttex) gle::end(); lasttex = t; glBindTexture(GL_TEXTURE_2D, t->id); }
 
             float vy = sy, ty = 0;
             loopi(3)
@@ -1759,9 +1770,9 @@ namespace UI
     {
         float tilew, tileh;
 
-        void setup(Texture *tex_, const Color &color_, bool alphatarget_ = false, float minw_ = 0, float minh_ = 0, float tilew_ = 0, float tileh_ = 0)
+        void setup(Texture *tex_, const Color &color_, bool alphatarget_ = false, float minw_ = 0, float minh_ = 0, float tilew_ = 0, float tileh_ = 0, Texture *fallback_ = notexture)
         {
-            Image::setup(tex_, color_, alphatarget_, minw_, minh_);
+            Image::setup(tex_, color_, alphatarget_, minw_, minh_, fallback_);
             tilew = tilew_;
             tileh = tileh_;
         }
@@ -1771,19 +1782,21 @@ namespace UI
 
         bool target(float cx, float cy)
         {
-            if(!alphatarget || !(tex->type&Texture::ALPHA)) return true;
+            Texture *t = curtex();
+            if(!alphatarget || !(t->type&Texture::ALPHA)) return true;
 
-            return checkalphamask(tex, fmod(cx/tilew, 1), fmod(cy/tileh, 1));
+            return checkalphamask(t, fmod(cx/tilew, 1), fmod(cy/tileh, 1));
         }
 
         void draw(float sx, float sy)
         {
-            if(tex == notexture) { Object::draw(sx, sy); return; }
+            Texture *t = curtex();
+            if(t == notexture) { Object::draw(sx, sy); return; }
 
             changedraw();
-            if(lasttex != tex) { if(lasttex) gle::end(); lasttex = tex; glBindTexture(GL_TEXTURE_2D, tex->id); }
+            if(lasttex != t) { if(lasttex) gle::end(); lasttex = t; glBindTexture(GL_TEXTURE_2D, t->id); }
 
-            if(tex->clamp)
+            if(t->clamp)
             {
                 for(float dy = 0; dy < h; dy += tileh)
                 {
@@ -3608,11 +3621,11 @@ namespace UI
     ICOMMAND(0, uikeyfield, "riefe", (ident *var, int *length, uint *onchange, float *scale, uint *children),
         BUILD(KeyField, o, o->setup(var, *length, onchange, (*scale <= 0 ? 1 : *scale) * uitextscale), children));
 
-    ICOMMAND(0, uiimage, "siiffe", (char *texname, int *c, int *a, float *minw, float *minh, uint *children),
-        BUILD(Image, o, o->setup(textureload(texname, 3, true, false), Color(*c), *a!=0, *minw, *minh), children));
+    ICOMMAND(0, uiimage, "siiffse", (char *texname, int *c, int *a, float *minw, float *minh, char *alttex, uint *children),
+        BUILD(Image, o, o->setup(textureload(texname, 3, true, false), Color(*c), *a!=0, *minw, *minh, textureload(alttex, 3, true, false)), children));
 
-    ICOMMAND(0, uistretchedimage, "siiffe", (char *texname, int *c, int *a, float *minw, float *minh, uint *children),
-        BUILD(StretchedImage, o, o->setup(textureload(texname, 3, true, false), Color(*c), *a!=0, *minw, *minh), children));
+    ICOMMAND(0, uistretchedimage, "siiffse", (char *texname, int *c, int *a, float *minw, float *minh, char *alttex, uint *children),
+        BUILD(StretchedImage, o, o->setup(textureload(texname, 3, true, false), Color(*c), *a!=0, *minw, *minh, textureload(alttex, 3, true, false)), children));
 
     static inline float parsepixeloffset(const tagval *t, int size)
     {
@@ -3647,11 +3660,8 @@ namespace UI
                 *screenborder);
         }, children));
 
-    ICOMMAND(0, uitiledimage, "siiffffe", (char *texname, int *c, int *a, float *tilew, float *tileh, float *minw, float *minh, uint *children),
-        BUILD(TiledImage, o, {
-            Texture *tex = textureload(texname, 0, true, false);
-            o->setup(tex, Color(*c), *a!=0, *minw, *minh, *tilew <= 0 ? 1 : *tilew, *tileh <= 0 ? 1 : *tileh);
-        }, children));
+    ICOMMAND(0, uitiledimage, "siiffffse", (char *texname, int *c, int *a, float *tilew, float *tileh, float *minw, float *minh, char *alttex, uint *children),
+        BUILD(TiledImage, o, o->setup(textureload(texname, 0, true, false), Color(*c), *a!=0, *minw, *minh, *tilew <= 0 ? 1 : *tilew, *tileh <= 0 ? 1 : *tileh, textureload(alttex, 0, true, false)), children));
 
     ICOMMAND(0, uimodelpreview, "ssffffe", (char *model, char *animspec, float *scale, float *blend, float *minw, float *minh, uint *children),
         BUILD(ModelPreview, o, o->setup(model, animspec, *scale, *blend, *minw, *minh), children));

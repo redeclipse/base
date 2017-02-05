@@ -568,6 +568,7 @@ namespace hud
     TVAR(IDF_PERSIST, privlocaloperatortex, "<grey>textures/privs/localoperator", 3);
     TVAR(IDF_PERSIST, privlocaladministratortex, "<grey>textures/privs/localadministrator", 3);
 
+    TVAR(IDF_PERSIST, modedemotex, "<grey>textures/spectator", 3);
     TVAR(IDF_PERSIST, modeeditingtex, "<grey>textures/modes/editing", 3);
     TVAR(IDF_PERSIST, modedeathmatchtex, "<grey>textures/modes/deathmatch", 3);
     TVAR(IDF_PERSIST, modegladiatortex, "<grey>textures/modes/gladiator", 3);
@@ -610,7 +611,8 @@ namespace hud
 
     #define ADDMODEICON(g,m) \
     { \
-        if(m_edit(g)) ADDMODE(modeeditingtex) \
+        if(m_demo(g)) ADDMODE(modedemotex) \
+        else if(m_edit(g)) ADDMODE(modeeditingtex) \
         else if(m_capture(g)) \
         { \
             if(m_ctf_quick(g, m)) ADDMODE(modecapturequicktex) \
@@ -663,11 +665,17 @@ namespace hud
         } \
     }
 
+    #define ADDMODE(s) { if(list.length()) list.add(' '); list.put(s, strlen(s)); }
+    void modetex(int g, int m, vector<char> &list)
+    {
+        modecheck(g, m);
+        ADDMODEICON(g, m);
+    }
+
     void modetexs(int g, int m, bool before, bool implied, vector<char> &list)
     {
         modecheck(g, m);
-        #define ADDMODE(s) { list.put(s, strlen(s)); list.add(' '); }
-        if(before) ADDMODEICON(g, m)
+        if(before) modetex(g, m, list);
         if(m_multi(g, m) && (implied || !(gametype[g].implied&(1<<G_M_MULTI)))) ADDMODE(modemultitex)
         if(m_ffa(g, m) && (implied || !(gametype[g].implied&(1<<G_M_FFA)))) ADDMODE(modeffatex)
         if(m_coop(g, m) && (implied || !(gametype[g].implied&(1<<G_M_COOP)))) ADDMODE(modecooptex)
@@ -683,14 +691,15 @@ namespace hud
         if(m_resize(g, m) && (implied || !(gametype[g].implied&(1<<G_M_RESIZE)))) ADDMODE(moderesizetex)
         if(m_hard(g, m) && (implied || !(gametype[g].implied&(1<<G_M_HARD)))) ADDMODE(modehardtex)
         if(m_basic(g, m) && (implied || !(gametype[g].implied&(1<<G_M_BASIC)))) ADDMODE(modebasictex)
-        if(!before) ADDMODEICON(g, m)
-        #undef ADDMODE
+        if(!before) modetex(g, m, list);
     }
+    #undef ADDMODE
 
-    ICOMMAND(0, modetexlist, "iiii", (int *g, int *m, int *b, int *p),
+    ICOMMAND(0, modetexlist, "iibi", (int *g, int *m, int *b, int *p),
     {
         vector<char> list;
-        modetexs(*g, *m, *b!=0, *p!=0, list);
+        if(*b >= 0) modetexs(*g, *m, *b!=0, *p!=0, list);
+        else modetex(*g, *m, list);
         list.add('\0');
         result(list.getbuf());
     });
