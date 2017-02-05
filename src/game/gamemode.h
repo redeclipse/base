@@ -428,6 +428,7 @@ VAR(0, mutsidxgsp3, 1, G_M_GSP3, -1);
 VAR(0, mutsidxgsn, 1, G_M_GSN, -1);
 VAR(0, mutsidxgsp, 1, G_M_GSP, -1);
 VAR(0, mutsidxnum, 1, G_M_NUM, -1);
+VAR(0, mutsidxnormal, 1, G_M_NUM-G_M_GSN, -1);
 VAR(0, mutsbitmulti, 1, (1<<G_M_MULTI), -1);
 VAR(0, mutsbitffa, 1, (1<<G_M_FFA), -1);
 VAR(0, mutsbitcoop, 1, (1<<G_M_COOP), -1);
