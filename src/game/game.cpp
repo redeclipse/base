@@ -2862,13 +2862,13 @@ namespace game
             }
             checkplayers();
             flushdamagemerges();
-            if(!UI::hasinput() && (needname(player1) || wantsloadoutmenu))
+            if(!UI::hasmenu() && (needname(player1) || wantsloadoutmenu))
             {
                 UI::openui("profile");
                 wantsloadoutmenu = false;
             }
         }
-        else if(!UI::hasinput()) UI::openui(needname(player1) ? "profile" : "main");
+        else if(!UI::hasmenu()) UI::openui(needname(player1) ? "profile" : "main");
         gets2c();
         adjustscaled(hud::damageresidue, hud::damageresiduefade);
         if(connected())

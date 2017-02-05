@@ -712,7 +712,7 @@ namespace hud
     bool hasinput(bool pass, bool focus)
     {
         if(focus && (commandmillis > 0 || curcompass)) return true;
-        return UI::hasinput();
+        return UI::hasinput() || UI::hasmenu();
     }
 
     bool hastkwarn(gameent *d)
@@ -3489,7 +3489,7 @@ namespace hud
                 else a += (1.f-compassfadeamt);
                 loopi(3) if(a < colour[i]) colour[i] *= a;
             }
-            if(UI::hasinput() ? uimillis < 0 : uimillis > 0) uimillis = UI::hasinput() ? totalmillis : -totalmillis;
+            if(UI::hasmenu() ? uimillis < 0 : uimillis > 0) uimillis = UI::hasmenu() ? totalmillis : -totalmillis;
             if(uifade && (uimillis > 0 || totalmillis-abs(uimillis) <= uifade))
             {
                 float n = min(float(totalmillis-abs(uimillis))/float(uifade), 1.f), a = n*uifadeamt;

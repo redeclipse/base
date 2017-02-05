@@ -619,19 +619,20 @@ namespace UI
     enum
     {
         WINDOW_NONE = 0,
-        WINDOW_TIP = 1<<0,
-        WINDOW_ALL = WINDOW_TIP
+        WINDOW_MENU = 1<<0, WINDOW_TIP = 1<<1,
+        WINDOW_ALL = WINDOW_MENU|WINDOW_TIP
     };
 
     struct Window : Object
     {
         char *name;
         uint *contents, *onshow, *onhide;
-        bool allowinput, abovehud, windowflags;
+        bool allowinput, abovehud;
+        int windowflags;
         float px, py, pw, ph;
         vec2 sscale, soffset;
 
-        Window(const char *name, const char *contents, const char *onshow, const char *onhide, int windowflags_ = WINDOW_NONE) :
+        Window(const char *name, const char *contents, const char *onshow, const char *onhide, int windowflags_) :
             name(newstring(name)),
             contents(compilecode(contents)),
             onshow(onshow && onshow[0] ? compilecode(onshow) : NULL),
@@ -878,6 +879,7 @@ namespace UI
         }
 
         bool allowinput() const { loopwindows(w, { if(w->allowinput && !(w->state&STATE_HIDDEN)) return true; }); return false; }
+        bool hasmenu() const { loopwindows(w, { if(w->windowflags&WINDOW_MENU && !(w->state&STATE_HIDDEN)) return true; }); return false; }
 
         const char *topname()
         {
@@ -3196,10 +3198,11 @@ namespace UI
     {
         Window *window = windows.find(name, NULL);
         if(window) { world->hide(window); windows.remove(name); delete window; }
-        windows[name] = new Window(name, contents, onshow, onhide, clamp(*windowflags, 0, int(WINDOW_ALL)));
+        windows[name] = new Window(name, contents, onshow, onhide, *windowflags);
     });
 
     ICOMMAND(0, uiallowinput, "b", (int *val), { if(window) { if(*val >= 0) window->allowinput = *val!=0; intret(window->allowinput ? 1 : 0); } });
+    ICOMMAND(0, uiwindowflags, "b", (int *val), { if(window) { if(*val >= 0) window->windowflags = clamp(*val, 0, int(WINDOW_ALL)); intret(window->windowflags); } });
 
     ICOMMAND(0, uioverridepos, "", (), { if(window) { intret(window->overridepos ? 1 : 0); } });
     ICOMMAND(0, uisetpos, "ff", (float *xpos, float *ypos), { if(window) { window->setpos(*xpos, *ypos); } });
@@ -3676,6 +3679,11 @@ namespace UI
     bool hasinput()
     {
         return world->allowinput();
+    }
+
+    bool hasmenu()
+    {
+        return world->hasmenu();
     }
 
     bool keypress(int code, bool isdown)
