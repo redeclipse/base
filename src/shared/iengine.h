@@ -594,6 +594,7 @@ namespace UI
     extern int closeui(const char *name);
 
     extern void holdui(const char *name, bool on);
+    extern void pressui(const char *name, bool on);
     extern bool uivisible(const char *name);
     extern bool hasinput();
     extern bool hasmenu(bool pass = true);

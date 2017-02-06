@@ -864,7 +864,7 @@ namespace UI
 
         bool hidetop()
         {
-            loopwindowsrev(w, { if(w->allowinput && !(w->state&STATE_HIDDEN)) { hide(w, i); return true; } });
+            loopwindowsrev(w, { if((w->allowinput || w->windowflags&WINDOW_PASS) && !(w->state&STATE_HIDDEN)) { hide(w, i); return true; } });
             return false;
         }
 
@@ -884,7 +884,7 @@ namespace UI
 
         const char *topname()
         {
-            loopwindowsrev(w, { if(w->allowinput && !(w->state&STATE_HIDDEN)) { return w->name; } });
+            loopwindowsrev(w, { if((w->allowinput || w->windowflags&WINDOW_PASS) && !(w->state&STATE_HIDDEN)) { return w->name; } });
             return NULL;
         }
 
@@ -3254,6 +3254,12 @@ namespace UI
         else hideui(name);
     }
 
+    void pressui(const char *name, bool on)
+    {
+        if(on) { if(!uivisible(name)) openui(name); }
+        else if(uivisible(name)) closeui(name);
+    }
+
     bool uivisible(const char *name)
     {
         if(!name) return world->children.length() > 0;
@@ -3268,6 +3274,7 @@ namespace UI
     ICOMMAND(0, hideallui, "", (), intret(world->hideall()));
     ICOMMAND(0, toggleui, "s", (char *name), intret(toggleui(name) ? 1 : 0));
     ICOMMAND(0, holdui, "sD", (char *name, int *down), holdui(name, *down!=0));
+    ICOMMAND(0, pressui, "sD", (char *name, int *down), pressui(name, *down!=0));
     ICOMMAND(0, uivisible, "s", (char *name), intret(uivisible(name) ? 1 : 0));
     ICOMMAND(0, uiname, "", (), { if(window) result(window->name); });
 

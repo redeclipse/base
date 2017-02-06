@@ -275,7 +275,7 @@ namespace hud
 
     void gamemenus()
     {
-        UI::holdui("scoreboard", scoreson);
+        UI::pressui("scoreboard", scoreson);
         if(game::player1->state == CS_DEAD) { if(scoreson) shownscores = true; }
         else shownscores = false;
     }
