@@ -229,31 +229,8 @@ namespace hud
         else scoresoff = scoreson = false;
     }
 
-    const char *scorehost(gameent *d, bool hostname = true)
-    {
-        if(hostname && d->actortype > A_PLAYER)
-        {
-            static string hoststr;
-            hoststr[0] = '\0';
-            gameent *e = game::getclient(d->ownernum);
-            if(e)
-            {
-                concatstring(hoststr, game::colourname(e, NULL, false, false));
-                concatstring(hoststr, " ");
-            }
-            defformatstring(owner, "[%d]", d->ownernum);
-            concatstring(hoststr, owner);
-            return hoststr;
-        }
-        return hostname ? d->hostname : d->hostip;
-    }
-
-    const char *scoreversion(gameent *d)
-    {
-        static string verstr;
-        formatstring(verstr, "%d.%d.%d-%s%d-%s", d->version.major, d->version.minor, d->version.patch, plat_name(d->version.platform), d->version.arch, d->version.branch);
-        return verstr;
-    }
+    ICOMMAND(0, getscoreteam, "i", (int *group), intret(groups.inrange(*group) ? groups[*group]->team : -1));
+    ICOMMAND(0, getscoretotal, "i", (int *group), intret(groups.inrange(*group) ? groups[*group]->total : 0));
 
     ICOMMAND(0, refreshscoreboard, "", (), groupplayers());
     ICOMMAND(0, numscoregroups, "", (), intret(groups.length()));
