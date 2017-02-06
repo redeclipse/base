@@ -27,6 +27,21 @@ namespace client
 
     int maxmsglen() { return G(messagelength); }
 
+    ICOMMAND(0, numgameplayers, "i", (int *group), intret(game::numdynents()));
+    ICOMMAND(0, loopgameplayers, "rie", (ident *id, int *group, uint *body),
+    {
+        loopstart(id, stack);
+        int numdyns = game::numdynents();
+        loopi(numdyns)
+        {
+            gameent *d = (gameent *)game::iterdynents(i);
+            if(!d) continue;
+            loopiter(id, stack, d->clientnum);
+            execute(body);
+        }
+        loopend(id, stack);
+    });
+
     int otherclients(bool self, bool nospec)
     {
         int n = self ? 1 : 0;
