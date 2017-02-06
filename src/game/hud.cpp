@@ -721,7 +721,7 @@ namespace hud
     bool hasinput(bool pass, bool focus)
     {
         if(focus && (commandmillis > 0 || curcompass)) return true;
-        return UI::hasinput() || UI::hasmenu();
+        return UI::hasinput() || UI::hasmenu(pass);
     }
 
     bool hastkwarn(gameent *d)

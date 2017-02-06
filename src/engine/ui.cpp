@@ -620,8 +620,8 @@ namespace UI
     enum
     {
         WINDOW_NONE = 0,
-        WINDOW_MENU = 1<<0, WINDOW_TIP = 1<<1,
-        WINDOW_ALL = WINDOW_MENU|WINDOW_TIP
+        WINDOW_MENU = 1<<0, WINDOW_PASS = 1<<1, WINDOW_TIP = 1<<2,
+        WINDOW_ALL = WINDOW_MENU|WINDOW_PASS|WINDOW_TIP
     };
 
     struct Window : Object
@@ -880,7 +880,7 @@ namespace UI
         }
 
         bool allowinput() const { loopwindows(w, { if(w->allowinput && !(w->state&STATE_HIDDEN)) return true; }); return false; }
-        bool hasmenu() const { loopwindows(w, { if(w->windowflags&WINDOW_MENU && !(w->state&STATE_HIDDEN)) return true; }); return false; }
+        bool hasmenu(bool pass = false) const { loopwindows(w, { if(w->windowflags&WINDOW_MENU && !(w->state&STATE_HIDDEN)) return !pass || !(w->windowflags&WINDOW_PASS); }); return false; }
 
         const char *topname()
         {
@@ -3726,9 +3726,9 @@ namespace UI
         return world->allowinput();
     }
 
-    bool hasmenu()
+    bool hasmenu(bool pass)
     {
-        return world->hasmenu();
+        return world->hasmenu(pass);
     }
 
     bool keypress(int code, bool isdown)
