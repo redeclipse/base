@@ -4379,6 +4379,7 @@ ICOMMAND(0, cond, "ee2V", (tagval *args, int numargs),
 CASECOMMAND(case, "i", int, args[0].getint(), args[i].type == VAL_NULL || args[i].getint() == val);
 CASECOMMAND(casef, "f", float, args[0].getfloat(), args[i].type == VAL_NULL || args[i].getfloat() == val);
 CASECOMMAND(cases, "s", const char *, args[0].getstr(), args[i].type == VAL_NULL || !strcmp(args[i].getstr(), val));
+CASECOMMAND(cases~, "s", const char *, args[0].getstr(), args[i].type == VAL_NULL || !strcasecmp(args[i].getstr(), val));
 
 ICOMMAND(0, rnd, "ii", (int *a, int *b), intret(*a - *b > 0 ? rnd(*a - *b) + *b : *b));
 
