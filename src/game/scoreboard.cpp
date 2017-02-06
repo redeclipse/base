@@ -255,6 +255,31 @@ namespace hud
         return verstr;
     }
 
+    ICOMMAND(0, refreshscoreboard, "", (), groupplayers());
+    ICOMMAND(0, numscoregroups, "", (), intret(groups.length()));
+    ICOMMAND(0, numscoreboard, "i", (int *group), intret(*group >= 0 ? (groups.inrange(*group) ? groups[*group]->players.length() : 0) : spectators.players.length()));
+    ICOMMAND(0, loopscoreboard, "rie", (ident *id, int *group, uint *body),
+    {
+        if(*group >= groups.length()) return;
+        loopstart(id, stack);
+        scoregroup &g = *group < 0 ? spectators : *groups[*group];
+        loopv(g.players)
+        {
+            loopiter(id, stack, g.players[i]->clientnum);
+            execute(body);
+        }
+        loopend(id, stack);
+    });
+
+    ICOMMAND(0, showscores, "D", (int *down), showscores(*down!=0, false, false, true));
+
+    void gamemenus()
+    {
+        UI::holdui("scoreboard", scoreson);
+        if(game::player1->state == CS_DEAD) { if(scoreson) shownscores = true; }
+        else shownscores = false;
+    }
+
     static const char *posnames[10] = { "th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th" };
 
     int drawscoreitem(const char *name, int colour, int x, int y, int s, float skew, float fade, int pos, int score, int offset)
@@ -381,14 +406,5 @@ namespace hud
             }
         }
         return sy;
-    }
-
-    ICOMMAND(0, showscores, "D", (int *down), showscores(*down!=0, false, false, true));
-
-    void gamemenus()
-    {
-        UI::holdui("scoreboard", scoreson);
-        if(game::player1->state == CS_DEAD) { if(scoreson) shownscores = true; }
-        else shownscores = false;
     }
 }
