@@ -526,6 +526,12 @@ namespace UI
         template<class T> bool istype() const { return T::typestr() == gettype(); }
         bool isnamed(const char *name) const { return name[0] == '#' ? name == gettypename() : !strcmp(name, getname()); }
 
+        virtual bool iswindow() const { return false; }
+        virtual bool isfiller() const { return false; }
+        virtual bool isgradient() const { return false; }
+        virtual bool istext() const { return false; }
+        virtual bool isimage() const { return false; }
+
         Object *find(const char *name, bool recurse = true, const Object *exclude = NULL) const
         {
             loopchildren(o,
@@ -649,6 +655,7 @@ namespace UI
         static const char *typestr() { return "#Window"; }
         const char *gettype() const { return typestr(); }
         const char *getname() const { return name; }
+        bool iswindow() const { return true; }
 
         void build();
 
@@ -1326,6 +1333,7 @@ namespace UI
 
         static const char *typestr() { return "#Filler"; }
         const char *gettype() const { return typestr(); }
+        bool isfiller() const { return true; }
 
         void layout()
         {
@@ -1429,6 +1437,7 @@ namespace UI
 
         static const char *typestr() { return "#Gradient"; }
         const char *gettype() const { return typestr(); }
+        bool isgradient() const { return true; }
 
         void startdraw()
         {
@@ -1544,6 +1553,7 @@ namespace UI
 
         static const char *typestr() { return "#Image"; }
         const char *gettype() const { return typestr(); }
+        bool isimage() const { return true; }
 
         bool target(float cx, float cy)
         {
@@ -1943,6 +1953,7 @@ namespace UI
 
         static const char *typestr() { return "#Text"; }
         const char *gettype() const { return typestr(); }
+        bool istext() const { return true; }
 
         float drawscale() const { return scale / FONTH; }
 
@@ -3432,11 +3443,11 @@ namespace UI
     {
         if(root)
         {
-            if(root->istype<Window>()) return root;
-            if(root && !root->istype<Window>()) while(root->parent)
+            if(root->iswindow()) return root;
+            if(root && !root->iswindow()) while(root->parent)
             {
                 root = root->parent;
-                if(root->istype<Window>()) return root;
+                if(root->iswindow()) return root;
             }
         }
         return NULL;
@@ -3455,13 +3466,13 @@ namespace UI
             for(Object *o = buildparent; o != NULL; o = o->parent) \
             { \
                 body; \
-                if(o->istype<Window>()) break; \
+                if(o->iswindow()) break; \
             } \
         });
 
     #define UICOLOURCMDS(t) \
-        if(o->istype<Filler>()) { ((Filler *)o)->color = Color(*c); t; } \
-        else if(o->istype<Text>()) { ((Text *)o)->color = Color(*c); t; }
+        if(o->isfiller()) { ((Filler *)o)->color = Color(*c); t; } \
+        else if(o->istext()) { ((Text *)o)->color = Color(*c); t; }
 
     UIREVCMDC(setcolour, "i", (int *c), UICOLOURCMDS(break));
     void setchildcolours(Object *o, int *c)
@@ -3472,9 +3483,9 @@ namespace UI
     UIWINCMDC(setcolours, "i", (int *c), setchildcolours(o, c));
 
     #define UIBLENDCMDS(t) \
-        if(o->istype<Filler>()) { ((Filler *)o)->color.a = clamp(int(*c * ((Filler *)o)->origcolor.a), 0, 255); t; } \
-        else if(o->istype<Text>()) { ((Text *)o)->color.a = clamp(int(*c * ((Text *)o)->origcolor.a), 0, 255); t; } \
-        else if(o->istype<Gradient>()) { ((Gradient *)o)->color.a = clamp(int(*c * ((Gradient *)o)->origcolor.a), 0, 255); ((Gradient *)o)->color2.a = clamp(int(*c * ((Gradient *)o)->origcolor2.a), 0, 255); t; }
+        if(o->isfiller()) { ((Filler *)o)->color.a = clamp(int(*c * ((Filler *)o)->origcolor.a), 0, 255); t; } \
+        else if(o->istext()) { ((Text *)o)->color.a = clamp(int(*c * ((Text *)o)->origcolor.a), 0, 255); t; } \
+        else if(o->isgradient()) { ((Gradient *)o)->color.a = clamp(int(*c * ((Gradient *)o)->origcolor.a), 0, 255); ((Gradient *)o)->color2.a = clamp(int(*c * ((Gradient *)o)->origcolor2.a), 0, 255); t; }
 
     UIREVCMDC(changeblend, "f", (float *c), UIBLENDCMDS(break));
     void changechildblends(Object *o, float *c)
@@ -3486,21 +3497,21 @@ namespace UI
 
 
     #define UICHGCOLCMDS(t) \
-        if(o->istype<Filler>()) \
+        if(o->isfiller()) \
         { \
             ((Filler *)o)->color.r = clamp(int(*c * ((Filler *)o)->origcolor.r), 0, 255); \
             ((Filler *)o)->color.g = clamp(int(*c * ((Filler *)o)->origcolor.g), 0, 255); \
             ((Filler *)o)->color.b = clamp(int(*c * ((Filler *)o)->origcolor.b), 0, 255); \
             t; \
         } \
-        else if(o->istype<Text>()) \
+        else if(o->istext()) \
         { \
             ((Text *)o)->color.r = clamp(int(*c * ((Text *)o)->origcolor.r), 0, 255); \
             ((Text *)o)->color.g = clamp(int(*c * ((Text *)o)->origcolor.g), 0, 255); \
             ((Text *)o)->color.b = clamp(int(*c * ((Text *)o)->origcolor.b), 0, 255); \
             t; \
         } \
-        else if(o->istype<Gradient>()) \
+        else if(o->isgradient()) \
         { \
             ((Gradient *)o)->color.r = clamp(int(*c * ((Gradient *)o)->origcolor.r), 0, 255); \
             ((Gradient *)o)->color.g = clamp(int(*c * ((Gradient *)o)->origcolor.g), 0, 255); \
@@ -3690,7 +3701,7 @@ namespace UI
 
     ICOMMAND(0, uialtimage, "s", (char *texname),
     {
-        if(!buildparent || !buildparent->istype<Image>()) return;
+        if(!buildparent || !buildparent->isimage()) return;
         Image *o = (Image *)buildparent;
         if(o && o->tex == notexture) o->tex = textureload(texname, 3, true, false);
     });
