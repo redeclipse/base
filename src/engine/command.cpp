@@ -3842,6 +3842,21 @@ void looplist4(ident *id, ident *id2, ident *id3, ident *id4, const char *list, 
 }
 COMMAND(0, looplist4, "rrrrse");
 
+void looplistn(ident *id, ident *id2, const char *list, const uint *body)
+{
+    if(id->type!=ID_ALIAS || id2->type!=ID_ALIAS) return;
+    identstack stack, stack2;
+    int n = 0;
+    for(const char *s = list, *start, *end, *qstart; parselist(s, start, end, qstart); n++)
+    {
+        setiter(*id, listelem(start, end, qstart), stack);
+        setiter(*id2, n, stack2);
+        execute(body);
+    }
+    if(n) { poparg(*id); poparg(*id2); }
+}
+COMMAND(0, looplistn, "rrse");
+
 void looplistconc(ident *id, const char *list, const uint *body, bool space)
 {
     if(id->type!=ID_ALIAS) return;
