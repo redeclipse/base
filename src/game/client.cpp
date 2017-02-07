@@ -440,6 +440,7 @@ namespace client
     ICOMMAND(0, getplayerteam, "i", (int *p), *p ? intret(game::player1->team) : result(TEAM(game::player1->team, name)));
     ICOMMAND(0, getplayerteamicon, "", (), result(hud::teamtexname(game::player1->team)));
     ICOMMAND(0, getplayerteamcolour, "", (), intret(TEAM(game::player1->team, colour)));
+    ICOMMAND(0, getplayercn, "", (), intret(game::player1->clientnum));
 
     const char *getname() { return game::player1->name; }
 
