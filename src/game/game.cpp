@@ -3626,7 +3626,7 @@ namespace game
         if(rendernormally && early) rendercheck(focus, third);
     }
 
-    void renderplayerpreview(int model, int color, int team, int weap, const char *vanity, float scale, float blend)
+    void renderplayerpreview(int model, int color, int team, int weap, const char *vanity, float scale, float blend, float yaw)
     {
         static gameent *previewent = NULL;
         if(!previewent)
@@ -3642,7 +3642,7 @@ namespace game
         float height = previewent->height + previewent->aboveeye,
               zrad = height/2;
         vec2 xyrad = vec2(previewent->xradius, previewent->yradius).max(height/4);
-        previewent->o = calcmodelpreviewpos(vec(xyrad, zrad), previewent->yaw).addz(previewent->height - zrad);
+        previewent->o = calcmodelpreviewpos(vec(xyrad, zrad), previewent->yaw, yaw).addz(previewent->height - zrad);
         previewent->colour = color;
         previewent->model = model;
         previewent->team = clamp(team, 0, int(T_MULTI));

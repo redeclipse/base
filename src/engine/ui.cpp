@@ -470,9 +470,10 @@ struct gui : guient
             }
             int x1 = int(floor(screenw*(xi*uiscale.x+uiorigin.x))), y1 = int(floor(screenh*(1 - ((yi+ys)*uiscale.y+uiorigin.y)))),
                 x2 = int(ceil(screenw*((xi+xs)*uiscale.x+uiorigin.x))), y2 = int(ceil(screenh*(1 - (yi*uiscale.y+uiorigin.y))));
+            float setyaw = hit ? (xi - hitx + xs) * 360.0f / xs : -1;
             glDisable(GL_BLEND);
             modelpreview::start(x1, y1, x2-x1, y2-y1, overlaid);
-            game::renderplayerpreview(model, color, team, weap, vanity, scale, blend);
+            game::renderplayerpreview(model, color, team, weap, vanity, scale, blend, setyaw);
             modelpreview::end();
             hudshader->set();
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

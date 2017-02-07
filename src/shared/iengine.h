@@ -230,7 +230,7 @@ extern vec worldpos, camdir, camright, camup;
 extern void getscreenres(int &w, int &h);
 extern void gettextres(int &w, int &h);
 
-extern vec calcmodelpreviewpos(const vec &radius, float &yaw);
+extern vec calcmodelpreviewpos(const vec &radius, float &yaw, float setyaw = -1);
 
 extern vec minimapcenter, minimapradius, minimapscale;
 extern void bindminimap();
