@@ -4689,3 +4689,13 @@ bool hasflag(const char *flags, char f)
     return false;
 }
 ICOMMAND(0, hasflag, "ss", (char *s, char *f), intret(*s && *f && hasflag(s, *f) ? 1 : 0));
+
+int modcolour(int c, float m)
+{
+    if(m < 0 || m == 1) return c;
+    int r = clamp(int(m*((c>>16)&0xFF)), 0, 255),
+        g = clamp(int(m*((c>>8)&0xFF)), 0, 255),
+        b = clamp(int(m*(c&0xFF)), 0, 255);
+    return (r<<16)|(g<<8)|b;
+}
+ICOMMAND(0, modcolour, "if", (int *c, float *m), intret(modcolour(*c, *m)));
