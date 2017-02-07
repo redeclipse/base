@@ -765,6 +765,9 @@ namespace client
     ICOMMAND(0, getclientcplast, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d ? d->cplast : -1));
     ICOMMAND(0, getclientcpmillis, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d ? lastmillis-d->cpmillis : -1));
 
+    ICOMMAND(0, getclientping, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d ? d->ping : -1));
+    ICOMMAND(0, getclientpj, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d ? d->plag : -1));
+
     bool haspriv(gameent *d, int priv)
     {
         if(!d) return false;
