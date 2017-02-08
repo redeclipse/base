@@ -235,11 +235,12 @@ namespace hud
     ICOMMAND(0, refreshscoreboard, "", (), groupplayers());
     ICOMMAND(0, numscoregroups, "", (), intret(groups.length()));
     ICOMMAND(0, numscoreboard, "i", (int *group), intret(*group >= 0 ? (groups.inrange(*group) ? groups[*group]->players.length() : 0) : spectators.players.length()));
+    ICOMMAND(0, numspectators, "i", (int *group), intret(spectators.players.length()));
     ICOMMAND(0, loopscoreboard, "rie", (ident *id, int *group, uint *body),
     {
         if(*group >= groups.length()) return;
         loopstart(id, stack);
-        scoregroup &g = *group < 0 ? spectators : *groups[*group];
+        scoregroup &g = *group >= 0 ? *groups[*group] : spectators;
         loopv(g.players)
         {
             loopiter(id, stack, g.players[i]->clientnum);
