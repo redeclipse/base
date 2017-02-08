@@ -1334,7 +1334,7 @@ namespace server
     }
     ICOMMAND(0, getversion, "i", (int *a), intret(getver(*a)));
 
-    const char *gamename(int mode, int muts, int compact, int limit, const char *separator)
+    const char *gamename(int mode, int muts, int compact, int limit, char separator)
     {
         if(!m_game(mode)) mode = G_DEATHMATCH;
         if(gametype[mode].implied) muts |= gametype[mode].implied;
@@ -1363,18 +1363,19 @@ namespace server
                     }
                 }
             }
-            defformatstring(mname, "%s%s%s", *gname ? gname : "", *gname ? separator : "", k < 3 ? gametype[mode].name : gametype[mode].sname);
+            defformatstring(mname, "%s%s%s", *gname ? gname : "", *gname ? "-" : "", k < 3 ? gametype[mode].name : gametype[mode].sname);
             if(k < 3 && limit > 0 && int(strlen(mname)) >= limit)
             {
                 gname[0] = '\0';
                 continue; // let's try again
             }
             copystring(gname, mname);
+            if(separator != ' ') for(int n = strlen(mname); mname[n]; n++) if(mname[n] == ' ') mname[n] = separator;
             break;
         }
         return gname;
     }
-    ICOMMAND(0, gamename, "iiii", (int *g, int *m, int *c, int *t), result(gamename(*g, *m, *c, *t)));
+    ICOMMAND(0, gamename, "iiiis", (int *g, int *m, int *c, int *t, char *s), result(gamename(*g, *m, *c, *t, *s)));
 
     const char *modedesc(int mode, int muts, int type)
     {
@@ -2487,8 +2488,8 @@ namespace server
         if(G(demoautoserversave))
         {
             string dafilepath = "";
-            if(*filetimeformat) formatstring(dafilepath, "demos/sv_%s_%s-%s.dmo", gettime(d.ctime, filetimeformat), gamename(gamemode, mutators, 1, 32, "_"), smapname);
-            else formatstring(dafilepath, "demos/sv_%u_%s-%s.dmo", uint(d.ctime), gamename(gamemode, mutators, 1, 32, "_"), smapname);
+            if(*filetimeformat) formatstring(dafilepath, "demos/sv_%s_%s-%s.dmo", gettime(d.ctime, filetimeformat), gamename(gamemode, mutators, 1, 32, '_'), smapname);
+            else formatstring(dafilepath, "demos/sv_%u_%s-%s.dmo", uint(d.ctime), gamename(gamemode, mutators, 1, 32, '_'), smapname);
             stream *dafile = openrawfile(dafilepath, "w");
             dafile->write(d.data, d.len);
             dafile->close();

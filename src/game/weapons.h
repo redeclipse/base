@@ -105,19 +105,19 @@ struct hitmsg { int flags, proj, target, dist; ivec dir, vel; };
 #include "weapdef.h"
 
 WPSVAR(IDF_GAMEMOD, longname, // shown for weapon pickups and loadout menu
-    "claw-attack",
-    "sidearm-pistol",
-    "energy-sword",
-    "super-shotgun",
-    "submachine-gun",
-    "flame-thrower",
-    "plasma-inductor",
-    "electro-zapper",
-    "laser-rifle",
-    "frag-grenade",
-    "shock-mine",
-    "rocket-launcher",
-    "melee-attack"
+    "Claw Attack",
+    "Sidearm Pistol",
+    "Energy Sword",
+    "Super Shotgun",
+    "Sub-Machine Gun",
+    "Flame Thrower",
+    "Plasma Inductor",
+    "Electro Zapper",
+    "Laser Rifle",
+    "Frag Grenade",
+    "Shock Mine",
+    "Rocket Launcher",
+    "Melee Attack"
 );
 
 WPSVARM(IDF_GAMEMOD, desc,
@@ -151,7 +151,7 @@ WPSVARM(IDF_GAMEMOD, desc,
 );
 
 WPSVAR(IDF_GAMEMOD,  name, // keep this incase longname is too long
-    "claw",     "pistol",   "sword",    "shotgun",  "smg",      "flamer",   "plasma",   "zapper",   "rifle",    "grenade",  "mine",     "rocket",   "melee"
+    "Claw",     "Pistol",   "Sword",    "Shotgun",  "SMG",      "Flamer",   "Plasma",   "Zapper",   "Rifle",    "Grenade",  "Mine",     "Rocket",   "Melee"
 );
 
 WPFVARM(IDF_GAMEMOD,  aidist, 0, FVAR_MAX,

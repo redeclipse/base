@@ -71,7 +71,6 @@ enum
 };
 
 #ifdef GAMESERVER
-const char *teamnames[T_MAX] = { "neutral", "alpha", "omega", "kappa", "sigma", "enemy" };
 int mapbals[T_TOTAL][T_TOTAL] = {
     { T_ALPHA, T_OMEGA, T_KAPPA, T_SIGMA },
     { T_OMEGA, T_ALPHA, T_SIGMA, T_KAPPA },
@@ -79,14 +78,13 @@ int mapbals[T_TOTAL][T_TOTAL] = {
     { T_SIGMA, T_KAPPA, T_OMEGA, T_ALPHA }
 };
 #else
-extern const char *teamnames[T_MAX];
 extern int mapbals[T_TOTAL][T_TOTAL];
 #endif
 
 #include "teamdef.h"
 
 TPSVAR(IDF_GAMEMOD,  name,
-    "neutral",  "alpha",    "omega",    "kappa",    "sigma",    "enemy"
+    "Neutral",  "Alpha",    "Omega",    "Kappa",    "Sigma",    "Enemy"
 );
 TPVAR(IDF_GAMEMOD|IDF_HEX, colour, 0, 0xFFFFFF,
     0x90A090,   0x5F66FF,   0xFF4F44,   0xFFD022,   0x22FF22,   0xB0B0B0
@@ -117,7 +115,7 @@ extern const char *playertypes[PLAYERTYPES][6];
 #include "playerdef.h"
 
 APSVAR(IDF_GAMEMOD, vname,
-    "player",       "bot",          "turret",       "grunt",        "drone"
+    "Player",       "Bot",          "Turret",       "Grunt",        "Drone"
 );
 APVAR(IDF_GAMEMOD, abilities, 0, A_A_ALL,
     A_A_PLAYER,     A_A_MOVINGAI,   A_A_FIXEDAI,    A_A_MOVINGAI,   A_A_LESSAI
