@@ -14,7 +14,7 @@ namespace UI
     VAR(IDF_PERSIST, uislidersteptime, 0, 50, VAR_MAX);
     VAR(IDF_PERSIST, uislotviewtime, 0, 25, VAR_MAX);
 
-    FVAR(IDF_PERSIST, uitipoffset, 0, 0.003f, 1);
+    FVAR(IDF_PERSIST, uitipoffset, 0, 0.005f, 1);
 
     static void quads(float x, float y, float w, float h, float tx = 0, float ty = 0, float tw = 1, float th = 1)
     {

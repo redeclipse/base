@@ -435,7 +435,7 @@ namespace client
 
     ICOMMAND(0, mastermode, "i", (int *val), addmsg(N_MASTERMODE, "ri", *val));
     ICOMMAND(0, getplayername, "", (), result(game::player1->name));
-    ICOMMAND(0, getplayercolour, "bg", (int *m, int *f), intret(game::getcolour(game::player1, *m, *f >= 0 && *f <= 10.f ? *f : 1.f)));
+    ICOMMAND(0, getplayercolour, "bg", (int *m, int *f), intret(game::getcolour(game::player1, *m, *f >= 0 && *f <= 10 ? *f : 1.f)));
     ICOMMAND(0, getplayermodel, "", (), intret(game::player1->model));
     ICOMMAND(0, getplayerteam, "i", (int *p), *p ? intret(game::player1->team) : result(TEAM(game::player1->team, name)));
     ICOMMAND(0, getplayerteamicon, "", (), result(hud::teamtexname(game::player1->team)));
@@ -677,12 +677,19 @@ namespace client
     }
     ICOMMAND(0, getclientname, "si", (char *who, int *colour), result(getclientname(parsewho(who), *colour)));
 
-    int getclientcolour(int cn)
+    int getclientcolour(int cn, int m, float f)
+    {
+        gameent *d = game::getclient(cn);
+        return d ? game::getcolour(d, m, f >= 0 && f <= 10 ? f : 1.f) : -1;
+    }
+    ICOMMAND(0, getclientcolour, "sbg", (char *who, int *m, float *f), intret(getclientcolour(parsewho(who), *m, *f)));
+
+    int getclientpcolour(int cn)
     {
         gameent *d = game::getclient(cn);
         return d ? d->colour : -1;
     }
-    ICOMMAND(0, getclientcolour, "s", (char *who), intret(getclientcolour(parsewho(who))));
+    ICOMMAND(0, getclientpcolour, "s", (char *who), intret(getclientpcolour(parsewho(who))));
 
     int getclientmodel(int cn)
     {
@@ -768,6 +775,10 @@ namespace client
 
     ICOMMAND(0, getclientping, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d ? d->ping : -1));
     ICOMMAND(0, getclientpj, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d ? d->plag : -1));
+
+    ICOMMAND(0, getclientprivilege, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d ? d->privilege&PRIV_TYPE : -1));
+    ICOMMAND(0, getclientprivlocal, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d ? (d->privilege&PRIV_LOCAL ? 1 : 0) : -1));
+    ICOMMAND(0, getclientprivtex, "s", (char *who), gameent *d = game::getclient(parsewho(who)); result(d ? hud::privtex(d->privilege, d->actortype) : ""));
 
     bool haspriv(gameent *d, int priv)
     {

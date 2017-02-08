@@ -1983,15 +1983,17 @@ namespace game
     {
         switch(type)
         {
-            case -1: return levelcolour(d->colour, level);
+            case -1: return findcolour(d, true, false, level); break;
             case CTONE_TMIX: return findcolour(d, true, d->team != T_NEUTRAL, level); break;
             case CTONE_AMIX: return findcolour(d, true, d->team == T_NEUTRAL, level); break;
             case CTONE_MIXED: return findcolour(d, true, true, level); break;
             case CTONE_ALONE: return findcolour(d, d->team != T_NEUTRAL, false, level); break;
             case CTONE_TEAMED: return findcolour(d, d->team == T_NEUTRAL, false, level); break;
             case CTONE_TONE: return findcolour(d, true, false, level); break;
-            case CTONE_TEAM: default: return findcolour(d, false, false, level); break;
+            case CTONE_TEAM: return findcolour(d, false, false, level); break;
+            case -2: default: return levelcolour(d->colour, level); break;
         }
+        return 0;
     }
 
     const char *colourname(gameent *d, char *name, bool icon, bool dupname, int colour)
