@@ -533,6 +533,7 @@ namespace UI
         virtual bool isgradient() const { return false; }
         virtual bool istext() const { return false; }
         virtual bool isimage() const { return false; }
+        virtual bool iseditor() const { return false; }
 
         Object *find(const char *name, bool recurse = true, const Object *exclude = NULL) const
         {
@@ -1317,6 +1318,9 @@ namespace UI
 
         vec tocolor() const { return vec(r*(1.0f/255.0f), g*(1.0f/255.0f), b*(1.0f/255.0f)); }
         int tohexcolor() const { return (int(r)<<16)|(int(g)<<8)|int(b); }
+
+        vec4 tocolor4() const { return vec4(r*(1.0f/255.0f), g*(1.0f/255.0f), b*(1.0f/255.0f), a*(1.0f/255.0f)); }
+        int tohexcolor4() const { return (int(a)<<24)|(int(r)<<16)|(int(g)<<8)|int(b); }
     };
 
     struct Filler : Object
@@ -2652,8 +2656,11 @@ namespace UI
         float scale, offsetx, offsety;
         editor *edit;
         char *keyfilter, *prompt;
+        Color color, origcolor;
 
         TextEditor() : edit(NULL), keyfilter(NULL), prompt(NULL) {}
+
+        bool iseditor() const { return true; }
 
         void setup(const char *name, int length, int height, float scale_ = 1, const char *initval = NULL, int mode = EDITORUSED, const char *keyfilter_ = NULL, const char *parent_ = NULL, const char *prompt_ = NULL)
         {
@@ -2673,6 +2680,7 @@ namespace UI
             edit->pixelwidth = abs(length)*FONTW;
             if(edit->linewrap && edit->maxy == 1) edit->updateheight();
             else edit->pixelheight = FONTH*max(height, 1);
+            origcolor = color = Color(255, 255, 255, 255);
             scale = scale_;
             if(keyfilter_) SETSTR(keyfilter, keyfilter_);
             else DELETEA(keyfilter);
@@ -2722,7 +2730,7 @@ namespace UI
             float k = drawscale();
             pushhudtranslate(sx, sy, k);
 
-            edit->draw(FONTW/2, 0, 0xFFFFFF, isfocus(), prompt);
+            edit->draw(FONTW/2, 0, color.tohexcolor(), color.a, isfocus(), prompt);
 
             pophudmatrix();
 
@@ -3481,7 +3489,8 @@ namespace UI
 
     #define UICOLOURCMDS(t) \
         if(o->isfiller()) { ((Filler *)o)->color = Color(*c); t; } \
-        else if(o->istext()) { ((Text *)o)->color = Color(*c); t; }
+        else if(o->istext()) { ((Text *)o)->color = Color(*c); t; } \
+        else if(o->iseditor()) { ((TextEditor *)o)->color = Color(*c); t; }
 
     UIREVCMDC(setcolour, "i", (int *c), UICOLOURCMDS(break));
     void setchildcolours(Object *o, int *c)
@@ -3492,9 +3501,15 @@ namespace UI
     UIWINCMDC(setcolours, "i", (int *c), setchildcolours(o, c));
 
     #define UIBLENDCMDS(t) \
-        if(o->isfiller()) { ((Filler *)o)->color.a = clamp(int(*c * ((Filler *)o)->origcolor.a), 0, 255); t; } \
+        if(o->isgradient()) \
+        { \
+            ((Gradient *)o)->color.a = clamp(int(*c * ((Gradient *)o)->origcolor.a), 0, 255); \
+            ((Gradient *)o)->color2.a = clamp(int(*c * ((Gradient *)o)->origcolor2.a), 0, 255); \
+            t; \
+        } \
+        else if(o->isfiller()) { ((Filler *)o)->color.a = clamp(int(*c * ((Filler *)o)->origcolor.a), 0, 255); t; } \
         else if(o->istext()) { ((Text *)o)->color.a = clamp(int(*c * ((Text *)o)->origcolor.a), 0, 255); t; } \
-        else if(o->isgradient()) { ((Gradient *)o)->color.a = clamp(int(*c * ((Gradient *)o)->origcolor.a), 0, 255); ((Gradient *)o)->color2.a = clamp(int(*c * ((Gradient *)o)->origcolor2.a), 0, 255); t; }
+        else if(o->iseditor()) { ((TextEditor *)o)->color.a = clamp(int(*c * ((TextEditor *)o)->origcolor.a), 0, 255); t; }
 
     UIREVCMDC(changeblend, "f", (float *c), UIBLENDCMDS(break));
     void changechildblends(Object *o, float *c)
@@ -3506,7 +3521,17 @@ namespace UI
 
 
     #define UICHGCOLCMDS(t) \
-        if(o->isfiller()) \
+        if(o->isgradient()) \
+        { \
+            ((Gradient *)o)->color.r = clamp(int(*c * ((Gradient *)o)->origcolor.r), 0, 255); \
+            ((Gradient *)o)->color.g = clamp(int(*c * ((Gradient *)o)->origcolor.g), 0, 255); \
+            ((Gradient *)o)->color.b = clamp(int(*c * ((Gradient *)o)->origcolor.b), 0, 255); \
+            ((Gradient *)o)->color2.r = clamp(int(*c * ((Gradient *)o)->origcolor2.r), 0, 255); \
+            ((Gradient *)o)->color2.g = clamp(int(*c * ((Gradient *)o)->origcolor2.g), 0, 255); \
+            ((Gradient *)o)->color2.b = clamp(int(*c * ((Gradient *)o)->origcolor2.b), 0, 255); \
+            t; \
+        } \
+        else if(o->isfiller()) \
         { \
             ((Filler *)o)->color.r = clamp(int(*c * ((Filler *)o)->origcolor.r), 0, 255); \
             ((Filler *)o)->color.g = clamp(int(*c * ((Filler *)o)->origcolor.g), 0, 255); \
@@ -3520,14 +3545,11 @@ namespace UI
             ((Text *)o)->color.b = clamp(int(*c * ((Text *)o)->origcolor.b), 0, 255); \
             t; \
         } \
-        else if(o->isgradient()) \
+        else if(o->iseditor()) \
         { \
-            ((Gradient *)o)->color.r = clamp(int(*c * ((Gradient *)o)->origcolor.r), 0, 255); \
-            ((Gradient *)o)->color.g = clamp(int(*c * ((Gradient *)o)->origcolor.g), 0, 255); \
-            ((Gradient *)o)->color.b = clamp(int(*c * ((Gradient *)o)->origcolor.b), 0, 255); \
-            ((Gradient *)o)->color2.r = clamp(int(*c * ((Gradient *)o)->origcolor2.r), 0, 255); \
-            ((Gradient *)o)->color2.g = clamp(int(*c * ((Gradient *)o)->origcolor2.g), 0, 255); \
-            ((Gradient *)o)->color2.b = clamp(int(*c * ((Gradient *)o)->origcolor2.b), 0, 255); \
+            ((TextEditor *)o)->color.r = clamp(int(*c * ((TextEditor *)o)->origcolor.r), 0, 255); \
+            ((TextEditor *)o)->color.g = clamp(int(*c * ((TextEditor *)o)->origcolor.g), 0, 255); \
+            ((TextEditor *)o)->color.b = clamp(int(*c * ((TextEditor *)o)->origcolor.b), 0, 255); \
             t; \
         }
 

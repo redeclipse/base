@@ -600,7 +600,7 @@ struct editor
         return slines;
     }
 
-    void draw(int x, int y, int color, bool hit, const char *prompt = NULL)
+    void draw(int x, int y, int color, int alpha, bool hit, const char *prompt = NULL)
     {
         int h = 0, maxwidth = linewrap ? pixelwidth : -1;
 
@@ -619,7 +619,7 @@ struct editor
                 text_bounds(str, width, height, 0, 0, maxwidth, TEXT_NO_INDENT);
                 if(h+height <= pixelheight)
                 {
-                    draw_textf("%s", x, y+h, 0, 0, color>>16, (color>>8)&0xFF, color&0xFF, 0xFF, TEXT_NO_INDENT, hit ? 0 : -1, maxwidth, 1, str);
+                    draw_textf("%s", x, y+h, 0, 0, color>>16, (color>>8)&0xFF, color&0xFF, alpha, TEXT_NO_INDENT, hit ? 0 : -1, maxwidth, 1, str);
                     h += height;
                 }
             }
@@ -679,7 +679,7 @@ struct editor
                     pex = pixelwidth;
                 }
                 hudnotextureshader->set();
-                gle::colorf(0.25f, 0.25f, 0.75f);
+                gle::colorf(0.25f, 0.25f, 0.75f, alpha/255.f);
                 gle::defvertex(2);
                 gle::begin(GL_QUADS);
                 if(psy == pey)
@@ -716,11 +716,11 @@ struct editor
             int width, height;
             text_bounds(lines[i].text, width, height, 0, 0, maxwidth, TEXT_NO_INDENT);
             if(h+height > pixelheight) break;
-            draw_text(lines[i].text, x, y+h, color>>16, (color>>8)&0xFF, color&0xFF, 0xFF, TEXT_NO_INDENT, hit && (cy == i) ? cx : -1, maxwidth);
+            draw_text(lines[i].text, x, y+h, color>>16, (color>>8)&0xFF, color&0xFF, alpha, TEXT_NO_INDENT, hit && (cy == i) ? cx : -1, maxwidth);
             if(linewrap && height > FONTH) // line wrap indicator
             {
                 hudnotextureshader->set();
-                gle::colorf(1, 1, 1, 1);
+                gle::colorf(1, 1, 1, alpha/255.f);
                 gle::defvertex(2);
                 gle::begin(GL_TRIANGLE_STRIP);
                 gle::attribf(x, y+h+FONTH);

@@ -743,7 +743,7 @@ float key_widthf(const char *str)
     return width;
 }
 
-static float draw_key(Texture *&tex, const char *str, float sx, float sy)
+static float draw_key(Texture *&tex, const char *str, float sx, float sy, bvec4 &color)
 {
     Texture *oldtex = tex;
     const char *keyn = str;
@@ -761,7 +761,7 @@ static float draw_key(Texture *&tex, const char *str, float sx, float sy)
                 tex = oldtex;
                 glBindTexture(GL_TEXTURE_2D, tex->id);
             }
-            draw_text(" or ", sx + width, sy, 255, 255, 255, 255, 0, -1, -1, 1);
+            draw_text(" or ", sx + width, sy, color.r, color.g, color.b, color.a, 0, -1, -1, 1);
             width += text_widthf(" or ");
         }
         if(textkeyimages)
@@ -792,7 +792,7 @@ static float draw_key(Texture *&tex, const char *str, float sx, float sy)
             glBindTexture(GL_TEXTURE_2D, tex->id);
         }
         defformatkey(keystr, list[i]);
-        draw_text(keystr, sx + width, sy, 255, 255, 255, 255, 0, -1, -1, 1);
+        draw_text(keystr, sx + width, sy, color.r, color.g, color.b, color.a, 0, -1, -1, 1);
         width += text_widthf(keystr);
     }
     list.deletearrays();
@@ -826,7 +826,7 @@ float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, i
             gle::color(color); \
         }
     #define TEXTICON(ret,q,s) q += s ? draw_icon(tex, ret, left+x, top+y, scale) : icon_width(ret, scale);
-    #define TEXTKEY(ret,q,s) q += s ? draw_key(tex, ret, left+x, top+y) : key_widthf(ret);
+    #define TEXTKEY(ret,q,s) q += s ? draw_key(tex, ret, left+x, top+y, color) : key_widthf(ret);
     #define TEXTCHAR(idx) { draw_char(tex, c, left+x, top+y, scale); x += cw; }
     int fade = a;
     bool usecolor = true, hasfade = false;
