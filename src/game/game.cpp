@@ -346,7 +346,7 @@ namespace game
     ICOMMAND(0, gspmutname, "ii", (int *g, int *n), result(*g >= 0 && *g < G_MAX && *n >= 0 && *n < G_M_GSN ? gametype[*g].gsp[*n] : ""));
     ICOMMAND(0, getintermission, "", (), intret(gs_intermission(gamestate) ? 1 : 0));
     ICOMMAND(0, getgamestate, "", (), intret(gamestate));
-    ICOMMAND(0, getgamestatestr, "i", (int *n), result(gamestates[clamp(*n, 0, 3)][clamp(gamestate, 0, int(G_S_MAX))]));
+    ICOMMAND(0, getgamestatestr, "ib", (int *n, int *b), result(gamestates[clamp(*n, 0, 3)][clamp(*b >= 0 ? *b : gamestate, 0, int(G_S_MAX))]));
     ICOMMAND(0, getgametimeremain, "", (), intret(max(timeremaining*1000-((gs_playing(gamestate) ? lastmillis : totalmillis)-lasttimeremain), 0)));
 
     const char *gametitle() { return connected() ? server::gamename(gamemode, mutators) : "ready"; }
