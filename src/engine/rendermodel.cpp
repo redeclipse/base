@@ -450,7 +450,7 @@ model *loadmodel(const char *name, int i, bool msg)
         if(loadingmodel || lightmapping > 1) return NULL;
         if(msg)
         {
-            defformatstring(str, "%s", name);
+            defformatstring(str, "Loading model: %s", name);
             progress(loadprogress, str);
         }
         loopi(NUMMODELTYPES)
