@@ -346,6 +346,8 @@ namespace game
     ICOMMAND(0, gspmutname, "ii", (int *g, int *n), result(*g >= 0 && *g < G_MAX && *n >= 0 && *n < G_M_GSN ? gametype[*g].gsp[*n] : ""));
     ICOMMAND(0, getintermission, "", (), intret(gs_intermission(gamestate) ? 1 : 0));
     ICOMMAND(0, getgamestate, "", (), intret(gamestate));
+    ICOMMAND(0, getgamestatestr, "i", (int *n), result(gamestates[clamp(*n, 0, 3)][clamp(gamestate, 0, int(G_S_MAX))]));
+    ICOMMAND(0, getgametimeremain, "", (), intret(max(timeremaining*1000-((gs_playing(gamestate) ? lastmillis : totalmillis)-lasttimeremain), 0)));
 
     const char *gametitle() { return connected() ? server::gamename(gamemode, mutators) : "ready"; }
     const char *gametext() { return connected() ? mapname : "not connected"; }
@@ -2135,7 +2137,7 @@ namespace game
         {
             checkzoom();
             int frame = lastmillis-lastzoom;
-            float zoom = W(game::focus->weapselect, cookzoommax)-((W(game::focus->weapselect, cookzoommax)-W(game::focus->weapselect, cookzoommin))/float(zoomlevels)*zoomlevel),
+            float zoom = W(focus->weapselect, cookzoommax)-((W(focus->weapselect, cookzoommax)-W(focus->weapselect, cookzoommin))/float(zoomlevels)*zoomlevel),
                   diff = float(fov()-zoom), amt = frame < W(focus->weapselect, cookzoom) ? clamp(frame/float(W(focus->weapselect, cookzoom)), 0.f, 1.f) : 1.f;
             if(!zooming) amt = 1.f-amt;
             curfov = fov()-(amt*diff);
