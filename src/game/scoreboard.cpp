@@ -35,7 +35,7 @@ namespace hud
     VAR(IDF_PERSIST, scoreracestyle, 0, 1, 4);
 
     static bool scoreson = false, scoresoff = false, shownscores = false;
-    static int menustart = 0, menulastpress = 0;
+    static int scorespress = 0;
 
     bool canshowscores()
     {
@@ -144,15 +144,14 @@ namespace hud
         {
             if(ispress)
             {
-                bool within = menulastpress && totalmillis-menulastpress < PHYSMILLIS;
+                bool within = scorespress && totalmillis-scorespress < PHYSMILLIS;
                 if(on)
                 {
                     if(within) onauto = true;
-                    menulastpress = totalmillis ? totalmillis : 1;
+                    scorespress = totalmillis ? totalmillis : 1;
                 }
-                else if(within && !scoresoff) { menulastpress = 0; return; }
+                else if(within && !scoresoff) { scorespress = 0; return; }
             }
-            if(!scoreson && on) menustart = lastmillis;
             scoresoff = !onauto;
             scoreson = on;
             if(m_play(game::gamemode) && m_play(game::gamemode) && interm)
@@ -267,6 +266,7 @@ namespace hud
     });
 
     ICOMMAND(0, showscores, "D", (int *down), showscores(*down!=0, false, false, true));
+    ICOMMAND(0, togglescores, "b", (int *on), scoreson = *on >= 0 ? *on!=0 : !scoreson);
 
     void gamemenus()
     {
