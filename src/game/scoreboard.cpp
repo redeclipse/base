@@ -248,6 +248,23 @@ namespace hud
         }
         loopend(id, stack);
     });
+    ICOMMAND(0, loopscoregroups, "reee", (ident *id, uint *group, uint *spec, uint *body),
+    {
+        loopstart(id, stack);
+        loopv(groups) if(groups[i]->players.length())
+        {
+            loopiter(id, stack, i);
+            execute(group);
+            execute(body);
+        }
+        if(spectators.players.length())
+        {
+            loopiter(id, stack, -1);
+            execute(spec);
+            execute(body);
+        }
+        loopend(id, stack);
+    });
 
     ICOMMAND(0, showscores, "D", (int *down), showscores(*down!=0, false, false, true));
 
