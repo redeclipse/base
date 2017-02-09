@@ -1912,56 +1912,56 @@ namespace hud
                                 string idtype = "";
                                 if(id->flags&IDF_CLIENT || id->flags&IDF_SERVER)
                                 {
-                                    if(id->flags&IDF_ADMIN) concatstring(idtype, "admin-only ");
-                                    else if(id->flags&IDF_MODERATOR) concatstring(idtype, "moderator-only ");
-                                    concatstring(idtype, id->flags&IDF_CLIENT ? "game " : "server ");
+                                    if(id->flags&IDF_ADMIN) concatstring(idtype, "Admin-only ");
+                                    else if(id->flags&IDF_MODERATOR) concatstring(idtype, "Moderator-only ");
+                                    concatstring(idtype, id->flags&IDF_CLIENT ? "Game " : "Server ");
                                 }
                                 if(id->type != ID_COMMAND)
                                 {
-                                    if(id->flags&IDF_READONLY) concatstring(idtype, "read-only ");
-                                    if(id->flags&IDF_PERSIST) concatstring(idtype, "persistent ");
-                                    if(id->flags&IDF_WORLD) concatstring(idtype, "world ");
+                                    if(id->flags&IDF_READONLY) concatstring(idtype, "Read-only ");
+                                    if(id->flags&IDF_PERSIST) concatstring(idtype, "Persistent ");
+                                    if(id->flags&IDF_WORLD) concatstring(idtype, "World ");
                                 }
                                 switch(id->type)
                                 {
                                     case ID_ALIAS:
                                     {
-                                        tz += draw_textf("%salias", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, idtype);
+                                        tz += draw_textf("%s%sAlias", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, idtype, *idtype ? " " : "");
                                         break;
                                     }
                                     case ID_COMMAND:
                                     {
-                                        tz += draw_textf("%scommand", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, idtype);
+                                        tz += draw_textf("%sCommand", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, idtype, *idtype ? " " : "");
                                         if(strlen(id->args)) tz += draw_textf("\faArgs: \fw%d \fa(\fw%s\fa)", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, strlen(id->args), id->args);
                                         else tz += draw_textf("\faArgs: \fwnone", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1);
                                         break;
                                     }
                                     case ID_VAR:
                                     {
-                                        tz += draw_textf("%sinteger", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, idtype);
+                                        tz += draw_textf("%s%sinteger", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, idtype, *idtype ? " " : "");
                                         if(id->flags&IDF_HEX)
                                         {
                                             if(id->maxval == 0xFFFFFF)
-                                                tz += draw_textf("\faMin: \fw0x%.6X\fa (\fw%d\fa,\fw%d\fa,\fw%d\fa), max: \fw0x%.6X\fa (\fw%d\fa,\fw%d\fa,\fw%d\fa), default: \fw0x%.6X\fa (\fw%d\fa,\fw%d\fa,\fw%d\fa), current: \fw0x%.6X (\fw%d\fa,\fw%d\fa,\fw%d\fa) [\fs\f[%d]#\fS]", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1,
+                                                tz += draw_textf("\faMin: \fw0x%.6X\fa (\fw%d\fa,\fw%d\fa,\fw%d\fa), Max: \fw0x%.6X\fa (\fw%d\fa,\fw%d\fa,\fw%d\fa), Default: \fw0x%.6X\fa (\fw%d\fa,\fw%d\fa,\fw%d\fa), Current: \fw0x%.6X (\fw%d\fa,\fw%d\fa,\fw%d\fa) [\fs\f[%d]#\fS]", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1,
                                                         id->minval, (id->minval>>16)&0xFF, (id->minval>>8)&0xFF, id->minval&0xFF,
                                                         id->maxval, (id->maxval>>16)&0xFF, (id->maxval>>8)&0xFF, id->maxval&0xFF,
                                                         id->def.i, (id->def.i>>16)&0xFF, (id->def.i>>8)&0xFF, id->def.i&0xFF,
                                                         *id->storage.i, (*id->storage.i>>16)&0xFF, (*id->storage.i>>8)&0xFF, *id->storage.i&0xFF, *id->storage.i);
-                                            else tz += draw_textf("\faMin: \fw0x%X\fa, max: \fw0x%X\fa, default: \fw0x%X\fa, current: \fw0x%X", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->minval, id->maxval, id->def.i, *id->storage.i);
+                                            else tz += draw_textf("\faMin: \fw0x%X\fa, Max: \fw0x%X\fa, Default: \fw0x%X\fa, Current: \fw0x%X", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->minval, id->maxval, id->def.i, *id->storage.i);
                                         }
-                                        else tz += draw_textf("\faMin: \fw%d\fa, max: \fw%d\fa, default: \fw%d\fa, current: \fw%d", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->minval, id->maxval, id->def.i, *id->storage.i);
+                                        else tz += draw_textf("\faMin: \fw%d\fa, Max: \fw%d\fa, Default: \fw%d\fa, Current: \fw%d", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->minval, id->maxval, id->def.i, *id->storage.i);
                                         break;
                                     }
                                     case ID_FVAR:
                                     {
-                                        tz += draw_textf("%sfloat", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, idtype);
-                                        tz += draw_textf("\faMin: \fw%f\fa, max: \fw%f\fa, default: \fw%f\fa, current: \fw%f", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->minvalf, id->maxvalf, id->def.f, *id->storage.f);
+                                        tz += draw_textf("%s%sfloat", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, idtype, *idtype ? " " : "");
+                                        tz += draw_textf("\faMin: \fw%f\fa, Max: \fw%f\fa, Default: \fw%f\fa, Current: \fw%f", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->minvalf, id->maxvalf, id->def.f, *id->storage.f);
                                         break;
                                     }
                                     case ID_SVAR:
                                     {
-                                        tz += draw_textf("%s%s", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, idtype, id->flags&IDF_TEXTURE ? "texture" : "string");
-                                        tz += draw_textf("\faDefault: \fw%s\fa, current: \fw%s", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->def.s, *id->storage.s);
+                                        tz += draw_textf("%s%s%s", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, *idtype ? " " : "", idtype, id->flags&IDF_TEXTURE ? "Texture" : "String");
+                                        tz += draw_textf("\faDefault: \fw%s\fa, Current: \fw%s", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->def.s, *id->storage.s);
                                         break;
                                     }
                                 }
@@ -1997,7 +1997,7 @@ namespace hud
                                     }
                                     default: break;
                                 }
-                                tz += draw_textf("usage: \fa/%s %s", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->name, fields);
+                                tz += draw_textf("Usage: \fa/%s %s", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->name, fields);
 
                                 if(id->desc)
                                     tz += draw_textf("\fa%s", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->desc);
