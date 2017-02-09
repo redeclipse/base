@@ -883,7 +883,7 @@ namespace UI
         }
 
         bool allowinput() const { loopwindows(w, { if(w->allowinput && !(w->state&STATE_HIDDEN)) return true; }); return false; }
-        bool hasmenu(bool pass = false) const { loopwindows(w, { if(w->windowflags&WINDOW_MENU && !(w->state&STATE_HIDDEN)) return !pass || !(w->windowflags&WINDOW_PASS); }); return false; }
+        bool hasmenu(bool pass = true) const { loopwindows(w, { if(w->windowflags&WINDOW_MENU && !(w->state&STATE_HIDDEN)) return !pass || !(w->windowflags&WINDOW_PASS); }); return false; }
 
         const char *topname()
         {
