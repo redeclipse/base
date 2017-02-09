@@ -174,6 +174,22 @@ namespace client
     }
     ICOMMAND(0, getvote, "bbb", (int *vote, int *prop, int *idx), getvotes(*vote, *prop, *idx));
 
+    ICOMMAND(0, loopvotes, "ree", (ident *id, uint *body, uint *none),
+    {
+        loopstart(id, stack);
+        if(mapvotes.empty())
+        {
+            loopiter(id, stack, -1);
+            execute(none);
+        }
+        else loopv(mapvotes)
+        {
+            loopiter(id, stack, i);
+            execute(body);
+        }
+        loopend(id, stack);
+    });
+
     struct demoinfo
     {
         demoheader hdr;
