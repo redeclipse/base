@@ -126,7 +126,7 @@ struct aviwriter
             videoframes += seg.videoframes;
             indexframes += seg.indexframes;
         }
-        if(dbgmovie) conoutf("fileframes: sound=%d, video=%d+%d(dups)\n", soundframes, videoframes, indexframes-videoframes);
+        if(dbgmovie) conoutf("Fileframes: sound=%d, video=%d+%d(dups)\n", soundframes, videoframes, indexframes-videoframes);
         f->seek(fileframesoffset, SEEK_SET);
         f->putlil<uint>(segments[0].indexframes);
         f->seek(filevideooffset, SEEK_SET);
@@ -193,7 +193,7 @@ struct aviwriter
                 case AUDIO_S16MSB: desc = "s16b"; break;
                 default:           desc = "unkn";
             }
-            if(dbgmovie) conoutf("soundspec: %dhz %s x %d", soundfrequency, desc, soundchannels);
+            if(dbgmovie) conoutf("Soundspec: %dhz %s x %d", soundfrequency, desc, soundchannels);
         }
     }
 
@@ -907,7 +907,7 @@ namespace recorder
 
         int fps, bestdiff, worstdiff;
         getfps(fps, bestdiff, worstdiff);
-        if(videofps > fps) conoutf("frame rate may be too low to capture at %d fps", videofps);
+        if(videofps > fps) conoutf("Frame rate may be too low to capture at %d fps", videofps);
 
         if(videow%2) videow += 1;
         if(videoh%2) videoh += 1;
@@ -915,11 +915,11 @@ namespace recorder
         file = new aviwriter(filename, videow, videoh, videofps, sound);
         if(!file->open())
         {
-            conoutf("unable to create file %s", filename);
+            conoutf("Unable to create file %s", filename);
             DELETEP(file);
             return;
         }
-        conoutf("movie recording to: %s %dx%d @ %dfps%s", file->filename, file->videow, file->videoh, file->videofps, (file->soundfrequency>0)?" + sound":"");
+        conoutf("Movie recording to: %s %dx%d @ %dfps%s", file->filename, file->videow, file->videoh, file->videofps, (file->soundfrequency>0)?" + sound":"");
 
         starttime = gettimet();
         loopi(file->videofps) stats[i] = 0;
@@ -981,7 +981,7 @@ namespace recorder
         thread = NULL;
 
         static const char * const mesgs[] = { "ok", "stopped", "computer too slow", "file error"};
-        conoutf("movie recording halted: %s, %d frames", mesgs[state], file->videoframes);
+        conoutf("Movie recording halted: %s, %d frames", mesgs[state], file->videoframes);
 
         DELETEP(file);
         state = REC_OK;

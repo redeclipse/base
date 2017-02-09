@@ -164,7 +164,7 @@ namespace hud
                 {
                     int anc = sg.players.find(game::player1) >= 0 ? S_V_YOUWIN : (game::player1->state != CS_SPECTATOR ? S_V_YOULOSE : -1);
                     if(m_defend(game::gamemode) && sg.total == INT_MAX)
-                        game::announcef(anc, CON_MESG, NULL, true, "\fwteam %s secured all flags", game::colourteam(sg.team));
+                        game::announcef(anc, CON_MESG, NULL, true, "\fwTeam %s secured all flags", game::colourteam(sg.team));
                     else
                     {
                         if(numgroups > 1 && sg.total == groups[1]->total)
@@ -181,7 +181,7 @@ namespace hud
                             }
                             game::announcef(S_V_DRAW, CON_MESG, NULL, true, "\fw%s tied %swith a total score of \fs\fc%s\fS", game::colourteam(sg.team), winner, m_laptime(game::gamemode, game::mutators) ? timestr(sg.total, scoreracestyle) : intstr(sg.total));
                         }
-                        else game::announcef(anc, CON_MESG, NULL, true, "\fwteam %s won the match with a total score of \fs\fc%s\fS", game::colourteam(sg.team), m_laptime(game::gamemode, game::mutators) ? timestr(sg.total, scoreracestyle) : intstr(sg.total));
+                        else game::announcef(anc, CON_MESG, NULL, true, "\fwTeam %s won the match with a total score of \fs\fc%s\fS", game::colourteam(sg.team), m_laptime(game::gamemode, game::mutators) ? timestr(sg.total, scoreracestyle) : intstr(sg.total));
                     }
                 }
                 else

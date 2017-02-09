@@ -404,7 +404,7 @@ template<class T> static inline ident *newident(const T &name, int flags)
     {
         if(checknumber(name))
         {
-            debugcode("\frnumber %.*s is not a valid identifier name", stringlen(name), stringptr(name));
+            debugcode("\frNumber %.*s is not a valid identifier name", stringlen(name), stringptr(name));
             return dummyident;
         }
         id = addident(ident(ID_ALIAS, newstring(name), flags));
@@ -464,8 +464,8 @@ void resetvar(char *name)
 {
     ident *id = idents.access(name);
     if(!id) return;
-    if(id->flags&IDF_READONLY || id->flags&IDF_CLIENT || id->flags&IDF_SERVER) debugcode("\frvariable %s is read-only or remote", id->name);
-    else if(id->flags&IDF_WORLD) debugcode("\frvariable %s is only directly modifiable in editmode", id->name);
+    if(id->flags&IDF_READONLY || id->flags&IDF_CLIENT || id->flags&IDF_SERVER) debugcode("\frVariable %s is read-only or remote", id->name);
+    else if(id->flags&IDF_WORLD) debugcode("\frVariable %s is only directly modifiable in editmode", id->name);
     else clearoverride(*id);
 }
 
@@ -517,14 +517,14 @@ static void setalias(const char *name, tagval &v)
                 setsvarchecked(id, v.getstr());
                 break;
             default:
-                debugcode("\frcannot redefine builtin %s with an alias", id->name);
+                debugcode("\frCannot redefine builtin %s with an alias", id->name);
                 break;
         }
         freearg(v);
     }
     else if(checknumber(name))
     {
-        debugcode("\frcannot alias number %s", name);
+        debugcode("\frCannot alias number %s", name);
         freearg(v);
     }
     else
@@ -567,7 +567,7 @@ void loadalias(const char *name, const char *fname)
     char *buf = loadfile(s, NULL);
     if(!buf)
     {
-        conoutf("\frcould not read %s", fname);
+        conoutf("\frCould not read %s", fname);
         return;
     }
     tagval v;
@@ -868,8 +868,8 @@ int clampvar(ident *id, int val, int minval, int maxval)
     else if(val > maxval) val = maxval;
     else return val;
     debugcode(id->flags&IDF_HEX ?
-            (minval <= 255 ? "\frvalid range for %s is %d..0x%X" : "\frvalid range for %s is 0x%X..0x%X") :
-            "\frvalid range for %s is %d..%d",
+            (minval <= 255 ? "\frValid range for %s is %d..0x%X" : "\frValid range for %s is 0x%X..0x%X") :
+            "\frValid range for %s is %d..%d",
         id->name, minval, maxval);
     return val;
 }
@@ -880,14 +880,14 @@ int clampvar(ident *id, int val, int minval, int maxval)
     { \
         if(!(identflags&IDF_WORLD) && !editmode && id->flags&IDF_WORLD && !(id->flags&IDF_REWRITE)) \
         { \
-            debugcode("\frcannot set world variable %s outside editmode", id->name); \
+            debugcode("\frCannot set world variable %s outside editmode", id->name); \
             return; \
         } \
         if(id->flags&IDF_CLIENT) \
         { \
             if((identflags&IDF_WORLD) && !(id->flags&IDF_WORLD)) \
             { \
-                debugcode("\frcannot set variable %s from map config", id->name); \
+                debugcode("\frCannot set variable %s from map config", id->name); \
                 return; \
             } \
             if(client::sendcmd(2, id->name, argstr)) return; \
@@ -897,7 +897,7 @@ int clampvar(ident *id, int val, int minval, int maxval)
 
 void setvarchecked(ident *id, int val)
 {
-    if(id->flags&IDF_READONLY) debugcode("\frvariable %s is read-only", id->name);
+    if(id->flags&IDF_READONLY) debugcode("\frVariable %s is read-only", id->name);
     else
     {
 #ifndef STANDALONE
@@ -908,8 +908,8 @@ void setvarchecked(ident *id, int val)
             val = val<id->minval ? id->minval : id->maxval;                // clamp to valid range
             debugcode(
                 id->flags&IDF_HEX ?
-                    (id->minval <= 255 ? "\frvalid range for %s is %d..0x%X" : "\frvalid range for %s is 0x%X..0x%X") :
-                    "\frvalid range for %s is %d..%d",
+                    (id->minval <= 255 ? "\frValid range for %s is %d..0x%X" : "\frValid range for %s is 0x%X..0x%X") :
+                    "\frValid range for %s is %d..%d",
                 id->name, id->minval, id->maxval);
         }
         *id->storage.i = val;
@@ -942,13 +942,13 @@ float clampfvar(ident *id, float val, float minval, float maxval)
     if(val < minval) val = minval;
     else if(val > maxval) val = maxval;
     else return val;
-    debugcode("\frvalid range for %s is %s..%s", id->name, floatstr(minval), floatstr(maxval));
+    debugcode("\frValid range for %s is %s..%s", id->name, floatstr(minval), floatstr(maxval));
     return val;
 }
 
 void setfvarchecked(ident *id, float val)
 {
-    if(id->flags&IDF_READONLY) debugcode("\frvariable %s is read-only", id->name);
+    if(id->flags&IDF_READONLY) debugcode("\frVariable %s is read-only", id->name);
     else
     {
 #ifndef STANDALONE
@@ -957,7 +957,7 @@ void setfvarchecked(ident *id, float val)
         if(val<id->minvalf || val>id->maxvalf)
         {
             val = val<id->minvalf ? id->minvalf : id->maxvalf;                // clamp to valid range
-            debugcode("\frvalid range for %s is %s..%s", id->name, floatstr(id->minvalf), floatstr(id->maxvalf));
+            debugcode("\frValid range for %s is %s..%s", id->name, floatstr(id->minvalf), floatstr(id->maxvalf));
         }
         *id->storage.f = val;
         if(versioning)
@@ -975,7 +975,7 @@ void setfvarchecked(ident *id, float val)
 
 void setsvarchecked(ident *id, const char *val)
 {
-    if(id->flags&IDF_READONLY) debugcode("\frvariable %s is read-only", id->name);
+    if(id->flags&IDF_READONLY) debugcode("\frVariable %s is read-only", id->name);
     else
     {
 #ifndef STANDALONE
@@ -1653,7 +1653,7 @@ static void compileblockmain(vector<uint> &code, const char *&p, int wordtype, i
         switch(c)
         {
             case '\0':
-                debugcodeline(line, "\frmissing \"]\"");
+                debugcodeline(line, "\frMissing \"]\"");
                 p--;
                 goto done;
             case '\"':
@@ -1671,7 +1671,7 @@ static void compileblockmain(vector<uint> &code, const char *&p, int wordtype, i
                 while(*p == '@') p++;
                 int level = p - (esc - 1);
                 if(brak > level) continue;
-                else if(brak < level) debugcodeline(line, "\frtoo many @s");
+                else if(brak < level) debugcodeline(line, "\frToo many @s");
                 if(!concs && prevargs >= MAXRESULTS) code.add(CODE_ENTER);
                 if(concs + 2 > MAXARGS)
                 {
@@ -2136,14 +2136,14 @@ static void compilestatements(vector<uint> &code, const char *&p, int rettype, i
         switch(c)
         {
             case '\0':
-                if(c != brak) debugcodeline(line, "\frmissing \"%c\"", brak);
+                if(c != brak) debugcodeline(line, "\frMissing \"%c\"", brak);
                 p--;
                 return;
 
             case ')':
             case ']':
                 if(c == brak) return;
-                debugcodeline(line, "\frunexpected \"%c\"", c);
+                debugcodeline(line, "\frUnexpected \"%c\"", c);
                 break;
 
             case '/':
@@ -2727,7 +2727,7 @@ static const uint *runcode(const uint *code, tagval &result)
                         } \
                         default: freearg(arg); nval; continue; \
                     } \
-                    debugcode("\frunknown alias lookup: %s", arg.s); \
+                    debugcode("\frUnknown alias lookup: %s", arg.s); \
                     freearg(arg); \
                     nval; \
                     continue; \
@@ -2740,7 +2740,7 @@ static const uint *runcode(const uint *code, tagval &result)
             case CODE_LOOKUP|RET_STR:
                 #define LOOKUP(aval) { \
                     ident *id = identmap[op>>8]; \
-                    if(id->flags&IDF_UNKNOWN) debugcode("\frunknown alias lookup: %s", id->name); \
+                    if(id->flags&IDF_UNKNOWN) debugcode("\frUnknown alias lookup: %s", id->name); \
                     aval; \
                     continue; \
                 }
@@ -2946,7 +2946,7 @@ static const uint *runcode(const uint *code, tagval &result)
                 int callargs = (op>>8)&0x1F, offset = numargs-callargs;
                 if(id->flags&IDF_UNKNOWN)
                 {
-                    debugcode("\frunknown command: %s", id->name);
+                    debugcode("\frUnknown command: %s", id->name);
                     FORCERESULT;
                 }
                 CALLALIAS;
@@ -2986,7 +2986,7 @@ static const uint *runcode(const uint *code, tagval &result)
                     {
                         if(server::rewritecommand(id, args, numargs)) FORCERESULT;
                     }
-                    debugcode("\frunknown command: %s", idarg.s);
+                    debugcode("\frUnknown command: %s", idarg.s);
                     forcenull(result);
                     FORCERESULT;
                 }
@@ -3253,7 +3253,7 @@ bool execfile(const char *cfgfile, bool msg, int flags)
     char *buf = loadfile(s, NULL);
     if(!buf)
     {
-        if(msg || verbose >= 2) conoutf("\frcould not read %s", cfgfile);
+        if(msg || verbose >= 2) conoutf("\frCould not read %s", cfgfile);
         return false;
     }
     int oldflags = identflags;
@@ -3269,7 +3269,7 @@ bool execfile(const char *cfgfile, bool msg, int flags)
     if(flags&EXEC_NOWORLD) identflags = oldflags;
     if(flags&EXEC_VERSION) versioning = oldversion;
     delete[] buf;
-    if(verbose >= 2) conoutf("\faloaded script %s", cfgfile);
+    if(verbose >= 2) conoutf("\faLoaded script %s", cfgfile);
     return true;
 }
 ICOMMAND(0, exec, "sib", (char *file, int *flags, int *msg), intret(execfile(file, *msg != 0, *flags) ? 1 : 0));

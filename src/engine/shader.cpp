@@ -1134,7 +1134,7 @@ void setshader(char *name)
     Shader *s = shaders.access(name);
     if(!s)
     {
-        conoutf("\frno such shader: %s", name);
+        conoutf("\frNo such shader: %s", name);
     }
     else slotshader = s;
 }
@@ -1400,7 +1400,7 @@ static bool addpostfx(const char *name, int outputbind, int outputscale, uint in
     Shader *s = useshaderbyname(name);
     if(!s)
     {
-        conoutf("no such postfx shader: %s", name);
+        conoutf("No such postfx shader: %s", name);
         return false;
     }
     postfxpass &p = postfxpasses.add();

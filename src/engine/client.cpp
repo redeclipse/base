@@ -10,7 +10,7 @@ bool multiplayer(bool msg)
 {
     // check if we're playing alone
     int n = client::otherclients();
-    if(n && msg) conoutft(CON_MESG, "\froperation not available with other clients");
+    if(n && msg) conoutft(CON_MESG, "\frOperation not available with other clients");
     return n > 0;
 }
 
@@ -69,7 +69,7 @@ void abortconnect(bool msg)
 {
     if(!connpeer) return;
     client::connectfail();
-    if(msg) conoutft(CON_MESG, "\faaborting connection attempt");
+    if(msg) conoutft(CON_MESG, "\faAborting connection attempt");
     if(connpeer->state!=ENET_PEER_STATE_DISCONNECTED) enet_peer_reset(connpeer);
     connpeer = NULL;
     if(curpeer) return;
@@ -88,10 +88,10 @@ void trydisconnect(bool force)
     if(connpeer) abortconnect();
     else if(curpeer || haslocalclients())
     {
-        if(verbose) conoutft(CON_MESG, "\faattempting to disconnect...");
+        if(verbose) conoutft(CON_MESG, "\faAttempting to disconnect...");
         disconnect(false, !force && !discmillis);
     }
-    else conoutft(CON_MESG, "\frnot connected");
+    else conoutft(CON_MESG, "\frNot connected");
 }
 
 SVAR(0, connectname, "");
@@ -119,10 +119,10 @@ void connectserv(const char *name, int port, const char *password)
             return;
         }
         addserver(name, port);
-        conoutft(CON_MESG, "\faattempting to connect to %s:[%d]", name, port);
+        conoutft(CON_MESG, "\faAttempting to connect to %s:[%d]", name, port);
         if(!resolverwait(name, &address))
         {
-            conoutft(CON_MESG, "\frcould not resolve host %s", name);
+            conoutft(CON_MESG, "\frCould not resolve host %s", name);
             connectfail();
             return;
         }
@@ -131,7 +131,7 @@ void connectserv(const char *name, int port, const char *password)
     }
     else
     {
-        conoutft(CON_MESG, "\faattempting to connect to a local server");
+        conoutft(CON_MESG, "\faAttempting to connect to a local server");
         address.host = ENET_HOST_BROADCAST;
     }
 
@@ -140,7 +140,7 @@ void connectserv(const char *name, int port, const char *password)
         clienthost = enet_host_create(NULL, 2, server::numchannels(), rate*1024, rate*1024);
         if(!clienthost)
         {
-            conoutft(CON_MESG, "\frfailed creating client socket");
+            conoutft(CON_MESG, "\frFailed creating client socket");
             connectfail();
             return;
         }
@@ -152,7 +152,7 @@ void connectserv(const char *name, int port, const char *password)
     connmillis = totalmillis;
     connattempts = 0;
     client::connectattempt(name ? name : "", port, password ? password : "", address);
-    conoutft(CON_MESG, "\fgconnecting to %s:[%d]", name != NULL ? name : "local server", port);
+    conoutft(CON_MESG, "\fgConnecting to %s:[%d]", name != NULL ? name : "local server", port);
 }
 
 void disconnect(bool onlyclean, bool async)
@@ -176,7 +176,7 @@ void disconnect(bool onlyclean, bool async)
             curpeer = NULL;
         }
         discmillis = 0;
-        conoutft(CON_MESG, "\frdisconnected");
+        conoutft(CON_MESG, "\frDisconnected");
         cleanup = true;
     }
     if(!connpeer && clienthost)
@@ -227,7 +227,7 @@ void flushclient()
 
 void neterr(const char *s)
 {
-    conoutft(CON_MESG, "\frillegal network message (%s)", s);
+    conoutft(CON_MESG, "\frIllegal network message (%s)", s);
     disconnect();
 }
 
@@ -256,11 +256,11 @@ void gets2c()           // get updates from the server
         connmillis = totalmillis;
         if(++connattempts > connectattempts)
         {
-            conoutft(CON_MESG, "\frcould not connect to server");
+            conoutft(CON_MESG, "\frCould not connect to server");
             connectfail();
             return;
         }
-        else conoutft(CON_MESG, "\faconnection attempt %d", connattempts);
+        else conoutft(CON_MESG, "\faConnection attempt %d", connattempts);
     }
     while(clienthost && enet_host_service(clienthost, &event, 0) > 0) switch(event.type)
     {
@@ -268,14 +268,14 @@ void gets2c()           // get updates from the server
             disconnect(1);
             curpeer = connpeer;
             connpeer = NULL;
-            conoutft(CON_MESG, "\fgconnected to server");
+            conoutft(CON_MESG, "\fgConnected to server");
             throttle();
             if(rate) setrate(rate);
             client::gameconnect(true);
             break;
 
         case ENET_EVENT_TYPE_RECEIVE:
-            if(discmillis) conoutft(CON_MESG, "\faattempting to disconnect...");
+            if(discmillis) conoutft(CON_MESG, "\faAttempting to disconnect...");
             else localservertoclient(event.channelID, event.packet);
             enet_packet_destroy(event.packet);
             break;
@@ -284,12 +284,12 @@ void gets2c()           // get updates from the server
             if(event.data >= DISC_NUM) event.data = DISC_NONE;
             if(event.peer == connpeer)
             {
-                conoutft(CON_MESG, "\frcould not connect to server");
+                conoutft(CON_MESG, "\frCould not connect to server");
                 connectfail();
             }
             else
             {
-                if(!discmillis || event.data) conoutft(CON_MESG, "\frserver disconnected (%s) ...", disc_reasons[event.data]);
+                if(!discmillis || event.data) conoutft(CON_MESG, "\frServer disconnected (%s) ...", disc_reasons[event.data]);
                 disconnect();
             }
             return;

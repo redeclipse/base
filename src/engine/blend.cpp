@@ -547,10 +547,10 @@ void addblendbrush(const char *name, const char *imgname)
     delblendbrush(name);
 
     ImageData s;
-    if(!loadimage(imgname, s)) { conoutf("\frcould not load blend brush image %s", imgname); return; }
+    if(!loadimage(imgname, s)) { conoutf("\frCould not load blend brush image %s", imgname); return; }
     if(max(s.w, s.h) > (1<<12))
     {
-        conoutf("\frblend brush image size exceeded %dx%d pixels: %s", 1<<12, 1<<12, imgname);
+        conoutf("\frBlend brush image size exceeded %dx%d pixels: %s", 1<<12, 1<<12, imgname);
         return;
     }
 
@@ -605,12 +605,12 @@ bool canpaintblendmap(bool brush = true, bool sel = false, bool msg = true)
     if(noedit(!sel)) return false;
     if(!blendpaintmode)
     {
-        conoutft(CON_MESG, "\froperation only allowed in blend paint mode");
+        conoutft(CON_MESG, "\frOperation only allowed in blend paint mode");
         return false;
     }
     if(brush && !brushes.inrange(curbrush))
     {
-        if(msg) conoutft(CON_MESG, "\frno blend brush selected");
+        if(msg) conoutft(CON_MESG, "\frNo blend brush selected");
         return false;
     }
     return true;

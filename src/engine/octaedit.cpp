@@ -172,7 +172,7 @@ void toggleedit(bool force)
 
 bool noedit(bool view)
 {
-    if(!editmode) { conoutf("\froperation only allowed in edit mode"); return true; }
+    if(!editmode) { conoutf("\frOperation only allowed in edit mode"); return true; }
     if(view || haveselent()) return false;
     float r = 1.0f;
     vec o(sel.o), s(sel.s);
@@ -180,7 +180,7 @@ bool noedit(bool view)
     o.add(s);
     r = float(max(s.x, max(s.y, s.z)));
     bool viewable = (isvisiblesphere(r, o) != VFC_NOT_VISIBLE);
-    if(!viewable) conoutf("\frselection not in view");
+    if(!viewable) conoutf("\frSelection not in view");
     return !viewable;
 }
 
@@ -734,7 +734,7 @@ void pruneundos(int maxremain)                          // bound memory
         totalundos -= u->size;
         freeundo(u);
     }
-    //conoutf("\faundo: %d of %d(%%%d)", totalundos, undomegs<<20, totalundos*100/(undomegs<<20));
+    //conoutf("\faUndo: %d of %d(%%%d)", totalundos, undomegs<<20, totalundos*100/(undomegs<<20));
     while(!redos.empty())
     {
         undoblock *u = redos.popfirst();
@@ -796,7 +796,7 @@ static int countblock(block3 *b) { return countblock(b->c(), b->size()); }
 void swapundo(undolist &a, undolist &b, int op)
 {
     if(noedit()) return;
-    if(a.empty()) { conoutf("\frnothing more to %s", op == EDIT_REDO ? "redo" : "undo"); return; }
+    if(a.empty()) { conoutf("\frNothing more to %s", op == EDIT_REDO ? "redo" : "undo"); return; }
     int ts = a.last->timestamp;
     if(multiplayer(false))
     {
@@ -1213,7 +1213,7 @@ void delprefab(char *name)
     {
         p->cleanup();
         prefabs.remove(name);
-        conoutf("deleted prefab %s", name);
+        conoutf("Deleted prefab %s", name);
     }
 }
 COMMAND(0, delprefab, "s");
@@ -1233,16 +1233,16 @@ void saveprefab(char *name)
     defformatstring(filename, strpbrk(name, "/\\") ? "%s.obr" : "prefab/%s.obr", name);
     path(filename);
     stream *f = opengzfile(filename, "wb");
-    if(!f) { conoutf("\frcould not write prefab to %s", filename); return; }
+    if(!f) { conoutf("\frCould not write prefab to %s", filename); return; }
     prefabheader hdr;
     memcpy(hdr.magic, "OEBR", 4);
     hdr.version = 0;
     lilswap(&hdr.version, 1);
     f->write(&hdr, sizeof(hdr));
     streambuf<uchar> s(f);
-    if(!packblock(*b->copy, s)) { delete f; conoutf("\frcould not pack prefab %s", filename); return; }
+    if(!packblock(*b->copy, s)) { delete f; conoutf("\frCould not pack prefab %s", filename); return; }
     delete f;
-    conoutf("wrote prefab file %s", filename);
+    conoutf("Wrote prefab file %s", filename);
 }
 ICOMMAND(0, saveprefab, "s", (char *s), if(!(identflags&IDF_WORLD)) saveprefab(s));
 
@@ -1263,14 +1263,14 @@ prefab *loadprefab(const char *name, bool msg = true)
    defformatstring(filename, strpbrk(name, "/\\") ? "%s.obr" : "prefab/%s.obr", name);
    path(filename);
    stream *f = opengzfile(filename, "rb");
-   if(!f) { if(msg) conoutf("\frcould not read prefab %s", filename); return NULL; }
+   if(!f) { if(msg) conoutf("\frCould not read prefab %s", filename); return NULL; }
    prefabheader hdr;
-   if(f->read(&hdr, sizeof(hdr)) != sizeof(prefabheader) || memcmp(hdr.magic, "OEBR", 4)) { delete f; if(msg) conoutf("\frprefab %s has malformatted header", filename); return NULL; }
+   if(f->read(&hdr, sizeof(hdr)) != sizeof(prefabheader) || memcmp(hdr.magic, "OEBR", 4)) { delete f; if(msg) conoutf("\frPrefab %s has malformatted header", filename); return NULL; }
    lilswap(&hdr.version, 1);
-   if(hdr.version != 0) { delete f; if(msg) conoutf("\frprefab %s uses unsupported version", filename); return NULL; }
+   if(hdr.version != 0) { delete f; if(msg) conoutf("\frPrefab %s uses unsupported version", filename); return NULL; }
    streambuf<uchar> s(f);
    block3 *copy = NULL;
-   if(!unpackblock(copy, s)) { delete f; if(msg) conoutf("\frcould not unpack prefab %s", filename); return NULL; }
+   if(!unpackblock(copy, s)) { delete f; if(msg) conoutf("\frCould not unpack prefab %s", filename); return NULL; }
    delete f;
 
    b = &prefabs[name];
@@ -1650,7 +1650,7 @@ void brushimport(char *name)
             }
         }
     }
-    else conoutf("\frcould not load: %s", name);
+    else conoutf("\frCould not load: %s", name);
 }
 
 COMMAND(0, brushimport, "s");
@@ -2581,12 +2581,12 @@ void replacetex(bool insel, int texnum = -1)
 
 ICOMMAND(0, replace, "iN", (int *t, int *numargs), {
     int tex = *numargs >= 1 ? *t : reptex;
-    if(tex < 0) { conoutf("\frcan only replace after a texture edit"); return; }
+    if(tex < 0) { conoutf("\frCan only replace after a texture edit"); return; }
     replacetex(false, tex);
 });
 ICOMMAND(0, replacesel, "iN", (int *t, int *numargs), {
     int tex = *numargs >= 1 ? *t : reptex;
-    if(tex < 0) { conoutf("\frcan only replace after a texture edit"); return; }
+    if(tex < 0) { conoutf("\frCan only replace after a texture edit"); return; }
     replacetex(true, tex);
 });
 ICOMMAND(0, replaceall, "", (void), replacetex(false));
@@ -2783,13 +2783,13 @@ void editmat(char *name, char *filtername, int *style)
     {
         loopi(sizeof(editmatfilters)/sizeof(editmatfilters[0])) if(!strcmp(editmatfilters[i].name, filtername)) { filter = editmatfilters[i].filter; break; }
         if(filter < 0) filter = findmaterial(filtername, true);
-        if(filter < 0) { conoutf("\frunknown material \"%s\"", filtername); return; }
+        if(filter < 0) { conoutf("\frUnknown material \"%s\"", filtername); return; }
     }
     int id = -1;
     if(name[0] || filter < 0)
     {
         id = findmaterial(name, true);
-        if(id<0) { conoutf("\frunknown material \"%s\"", name); return; }
+        if(id<0) { conoutf("\frUnknown material \"%s\"", name); return; }
     }
     mpeditmat(id, filter, *style, sel, true);
 }

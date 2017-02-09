@@ -274,21 +274,21 @@ bool addzip(const char *name, const char *mount = NULL, const char *strip = NULL
     ziparchive *exists = findzip(pname);
     if(exists)
     {
-        conoutf("already added zip %s", pname);
+        conoutf("Already added zip %s", pname);
         return true;
     }
 
     FILE *f = fopen(findfile(pname, "rb"), "rb");
     if(!f)
     {
-        conoutf("could not open file %s", pname);
+        conoutf("Could not open file %s", pname);
         return false;
     }
     zipdirectoryheader h;
     vector<zipfile> files;
     if(!findzipdirectory(f, h) || !readzipdirectory(pname, f, h.entries, h.offset, h.size, files))
     {
-        conoutf("could not read directory in zip %s", pname);
+        conoutf("Could not read directory in zip %s", pname);
         fclose(f);
         return false;
     }
@@ -299,7 +299,7 @@ bool addzip(const char *name, const char *mount = NULL, const char *strip = NULL
     mountzip(*arch, files, mount, strip);
     archives.add(arch);
 
-    conoutf("added zip %s", pname);
+    conoutf("Added zip %s", pname);
     return true;
 }
 
@@ -313,15 +313,15 @@ bool removezip(const char *name)
     ziparchive *exists = findzip(pname);
     if(!exists)
     {
-        conoutf("zip %s is not loaded", pname);
+        conoutf("Zip %s is not loaded", pname);
         return false;
     }
     if(exists->openfiles)
     {
-        conoutf("zip %s has open files", pname);
+        conoutf("Zip %s has open files", pname);
         return false;
     }
-    conoutf("removed zip %s", exists->name);
+    conoutf("Removed zip %s", exists->name);
     archives.removeobj(exists);
     delete exists;
     return true;
@@ -514,7 +514,7 @@ struct zipstream : stream
                 else
                 {
 #ifndef STANDALONE
-                    if(dbgzip) conoutf("inflate error: %s", zError(err));
+                    if(dbgzip) conoutf("Inflate error: %s", zError(err));
 #endif
                     stopreading();
                 }

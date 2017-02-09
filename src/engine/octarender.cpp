@@ -52,7 +52,7 @@ void genvbo(int type, void *buf, int len, vtxarray **vas, int numva)
     vboinfo &vbi = vbos[vbo];
     vbi.uses = numva;
 
-    if(printvbo) conoutf("vbo %d: type %d, size %d, %d uses", vbo, type, len, numva);
+    if(printvbo) conoutf("Vbo %d: type %d, size %d, %d uses", vbo, type, len, numva);
 
     loopi(numva)
     {
@@ -1768,7 +1768,7 @@ void precachetextures()
 
 void allchanged(bool load)
 {
-    progress(0, "clearing vertex arrays...");
+    progress(0, "Clearing vertex arrays...");
     clearvas(worldroot);
     resetqueries();
     resetclipplanes();

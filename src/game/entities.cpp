@@ -1286,11 +1286,11 @@ namespace entities
                     (enttype[ents[index]->type].canlink&(1<<ents[node]->type)))
                         return true;
             if(msg)
-                conoutf("\frentity %s (%d) and %s (%d) are not linkable", enttype[ents[index]->type].name, index, enttype[ents[node]->type].name, node);
+                conoutf("\frEntity %s (%d) and %s (%d) are not linkable", enttype[ents[index]->type].name, index, enttype[ents[node]->type].name, node);
 
             return false;
         }
-        if(msg) conoutf("\frentity %d and %d are unable to be linked as one does not seem to exist", index, node);
+        if(msg) conoutf("\frEntity %d and %d are unable to be linked as one does not seem to exist", index, node);
         return false;
     }
 
@@ -1310,7 +1310,7 @@ namespace entities
                     if(recip && h >= 0) f.links.remove(h);
                     fixentity(index, true);
                     if(local && m_edit(game::gamemode)) client::addmsg(N_EDITLINK, "ri3", 0, index, node);
-                    if(verbose > 2) conoutf("\faentity %s (%d) and %s (%d) delinked", enttype[ents[index]->type].name, index, enttype[ents[node]->type].name, node);
+                    if(verbose > 2) conoutf("\faEntity %s (%d) and %s (%d) delinked", enttype[ents[index]->type].name, index, enttype[ents[node]->type].name, node);
                     return true;
                 }
                 else if(toggle && canlink(node, index))
@@ -1319,7 +1319,7 @@ namespace entities
                     if(recip && (h = e.links.find(node)) < 0) e.links.add(node);
                     fixentity(node, true);
                     if(local && m_edit(game::gamemode)) client::addmsg(N_EDITLINK, "ri3", 1, node, index);
-                    if(verbose > 2) conoutf("\faentity %s (%d) and %s (%d) linked", enttype[ents[node]->type].name, node, enttype[ents[index]->type].name, index);
+                    if(verbose > 2) conoutf("\faEntity %s (%d) and %s (%d) linked", enttype[ents[node]->type].name, node, enttype[ents[index]->type].name, index);
                     return true;
                 }
             }
@@ -1329,7 +1329,7 @@ namespace entities
                 if(recip && (h = e.links.find(node)) >= 0) e.links.remove(h);
                 fixentity(node, true);
                 if(local && m_edit(game::gamemode)) client::addmsg(N_EDITLINK, "ri3", 0, node, index);
-                if(verbose > 2) conoutf("\faentity %s (%d) and %s (%d) delinked", enttype[ents[node]->type].name, node, enttype[ents[index]->type].name, index);
+                if(verbose > 2) conoutf("\faEntity %s (%d) and %s (%d) delinked", enttype[ents[node]->type].name, node, enttype[ents[index]->type].name, index);
                 return true;
             }
             else if(toggle || add)
@@ -1338,12 +1338,12 @@ namespace entities
                 if(recip && (h = f.links.find(index)) < 0) f.links.add(index);
                 fixentity(index, true);
                 if(local && m_edit(game::gamemode)) client::addmsg(N_EDITLINK, "ri3", 1, index, node);
-                if(verbose > 2) conoutf("\faentity %s (%d) and %s (%d) linked", enttype[ents[index]->type].name, index, enttype[ents[node]->type].name, node);
+                if(verbose > 2) conoutf("\faEntity %s (%d) and %s (%d) linked", enttype[ents[index]->type].name, index, enttype[ents[node]->type].name, node);
                 return true;
             }
         }
         if(verbose > 2)
-            conoutf("\frentity %s (%d) and %s (%d) failed linking", enttype[ents[index]->type].name, index, enttype[ents[node]->type].name, node);
+            conoutf("\frEntity %s (%d) and %s (%d) failed linking", enttype[ents[index]->type].name, index, enttype[ents[node]->type].name, node);
         return false;
     }
 
@@ -1531,7 +1531,7 @@ namespace entities
     void importentities(int mtype, int mver, int gver)
     {
         int flag = 0, teams[T_TOTAL] = {0};
-        progress(0, "importing entities...");
+        progress(0, "Importing entities...");
         loopv(octateles) // translate teledest to teleport and link them appropriately
         {
             octatele &t = octateles[i];
@@ -1596,7 +1596,7 @@ namespace entities
         loopv(ents)
         {
             gameentity &e = *(gameentity *)ents[i];
-            progress(i/float(ents.length()), "importing entities...");
+            progress(i/float(ents.length()), "Importing entities...");
             switch(e.type)
             {
                 case WEAPON:
@@ -1701,7 +1701,7 @@ namespace entities
         loopvj(ents)
         {
             gameentity &e = *(gameentity *)ents[j];
-            progress(j/float(ents.length()), "updating old entities...");
+            progress(j/float(ents.length()), "Updating old entities...");
             switch(e.type)
             {
                 case LIGHTFX:
@@ -1932,7 +1932,7 @@ namespace entities
         loopv(ents)
         {
             gameentity &e = *(gameentity *)ents[i];
-            progress(i/float(ents.length()), "setting entity attributes...");
+            progress(i/float(ents.length()), "Setting entity attributes...");
             int num = max(5, enttype[e.type].numattrs);
             if(e.attrs.length() < num) e.attrs.add(0, num - e.attrs.length());
             else if(e.attrs.length() > num) e.attrs.setsize(num);
@@ -1941,7 +1941,7 @@ namespace entities
         if(mtype == MAP_OCTA || (mtype == MAP_MAPZ && gver < VERSION_GAME)) updateoldentities(mtype, mver, gver);
         loopv(ents)
         {
-            progress(i/float(ents.length()), "fixing entities...");
+            progress(i/float(ents.length()), "Fixing entities...");
             fixentity(i, false);
             switch(ents[i]->type)
             {
@@ -1978,7 +1978,7 @@ namespace entities
         loopv(ents)
         {
             gameentity &e = *(gameentity *)ents[i];
-            progress(i/float(ents.length()), "updating entities...");
+            progress(i/float(ents.length()), "Updating entities...");
             if(mtype == MAP_MAPZ && gver <= 212)
             {
                 if(e.type == ROUTE) e.type = NOTUSED;

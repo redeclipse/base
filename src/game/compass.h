@@ -131,7 +131,7 @@ void showcmenu(const char *name)
         playsound(S_GUIPRESS, camera1->o, camera1, SND_FORCED);
         return;
     }
-    conoutft(CON_DEBUG, "\frno such compass menu: %s", name);
+    conoutft(CON_DEBUG, "\frNo such compass menu: %s", name);
 }
 ICOMMAND(0, showcompass, "s", (char *n), showcmenu(n));
 

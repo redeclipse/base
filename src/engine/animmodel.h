@@ -962,7 +962,7 @@ struct animmodel : model
             if(animpart<0 || animpart>=MAXANIMPARTS) return;
             if(frame<0 || range<=0 || !meshes || !meshes->hasframes(frame, range))
             {
-                conoutf("invalid frame %d, range %d in model %s", frame, range, model->name);
+                conoutf("Invalid frame %d, range %d in model %s", frame, range, model->name);
                 return;
             }
             if(!anims[animpart]) anims[animpart] = new vector<animspec>[game::numanims()];
@@ -1444,12 +1444,12 @@ template<class MDL, class MESH> struct modelcommands
 
     static void setdir(char *name)
     {
-        if(!MDL::loading) { conoutf("\frnot loading an %s", MDL::formatname()); return; }
+        if(!MDL::loading) { conoutf("\frNot loading an %s", MDL::formatname()); return; }
         formatstring(MDL::dir, "%s", name);
     }
 
     #define loopmeshes(meshname, m, body) \
-        if(!MDL::loading || MDL::loading->parts.empty()) { conoutf("\frnot loading an %s", MDL::formatname()); return; } \
+        if(!MDL::loading || MDL::loading->parts.empty()) { conoutf("\frNot loading an %s", MDL::formatname()); return; } \
         part &mdl = *MDL::loading->parts.last(); \
         if(!mdl.meshes) return; \
         loopv(mdl.meshes->meshes) \
@@ -1560,9 +1560,9 @@ template<class MDL, class MESH> struct modelcommands
 
     static void setlink(int *parent, int *child, char *tagname, float *x, float *y, float *z, float *yaw, float *pitch, float *roll)
     {
-        if(!MDL::loading) { conoutf("\frnot loading an %s", MDL::formatname()); return; }
-        if(!MDL::loading->parts.inrange(*parent) || !MDL::loading->parts.inrange(*child)) { conoutf("\frno models loaded to link"); return; }
-        if(!MDL::loading->parts[*parent]->link(MDL::loading->parts[*child], tagname, vec(*x, *y, *z), vec(*yaw, *pitch, *roll))) conoutf("\frcould not link model %s", MDL::loading->name);
+        if(!MDL::loading) { conoutf("\frNot loading an %s", MDL::formatname()); return; }
+        if(!MDL::loading->parts.inrange(*parent) || !MDL::loading->parts.inrange(*child)) { conoutf("\frNo models loaded to link"); return; }
+        if(!MDL::loading->parts[*parent]->link(MDL::loading->parts[*child], tagname, vec(*x, *y, *z), vec(*yaw, *pitch, *roll))) conoutf("\frCould not link model %s", MDL::loading->name);
     }
 
     template<class F> void modelcommand(F *fun, const char *suffix, const char *args)

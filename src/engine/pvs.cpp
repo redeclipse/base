@@ -980,7 +980,7 @@ static void lockpvs_(bool lock)
     lockedwaterpvs = 0;
     loopi(wbytes) lockedwaterpvs |= pvsbuf[d->offset + i] << (i*8);
     loopi(MAXWATERPVS) lockedwaterplanes[i] = waterplanes[i].height;
-    conoutf("\fglocked view cell at %.1f, %.1f, %.1f", camera1->o.x, camera1->o.y, camera1->o.z);
+    conoutf("\fgLocked view cell at %.1f, %.1f, %.1f", camera1->o.x, camera1->o.y, camera1->o.z);
 }
 
 VARF(0, lockpvs, 0, 0, 1, lockpvs_(lockpvs!=0));
@@ -1088,7 +1088,7 @@ void testpvs(int *vcsize)
     lockedpvs = w.testviewcell(o, size, &lockedwaterpvs, &len);
     loopi(MAXWATERPVS) lockedwaterplanes[i] = waterplanes[i].height;
     lockpvs = 1;
-    conoutf("\fggenerated test view cell of size %d at %.1f, %.1f, %.1f (%d B)", size, camera1->o.x, camera1->o.y, camera1->o.z, len);
+    conoutf("\fgGenerated test view cell of size %d at %.1f, %.1f, %.1f (%d B)", size, camera1->o.x, camera1->o.y, camera1->o.z, len);
 
     origpvsnodes.setsize(0);
     numwaterplanes = oldnumwaterplanes;
@@ -1101,14 +1101,14 @@ void genpvs(int *viewcellsize)
 {
     if(hdr.worldsize > 1<<15)
     {
-        conoutf("\frmap is too large for PVS");
+        conoutf("\frMap is too large for PVS");
         return;
     }
 
-    progress(0, "generating PVS");
+    progress(0, "Generating PVS");
     genpvs_canceled = false;
     Uint32 start = SDL_GetTicks();
-    progress(0, "finding view cells");
+    progress(0, "Finding view cells");
 
     clearpvs();
     calcpvsbounds();
@@ -1139,7 +1139,7 @@ void genpvs(int *viewcellsize)
     }
     else
     {
-        progress(0, "creating threads");
+        progress(0, "Creating threads");
         if(!pvsmutex) pvsmutex = SDL_CreateMutex();
         if(!viewcellmutex) viewcellmutex = SDL_CreateMutex();
         loopi(numthreads)
@@ -1171,9 +1171,9 @@ void genpvs(int *viewcellsize)
     if(genpvs_canceled)
     {
         clearpvs();
-        conoutf("\frgenpvs aborted");
+        conoutf("\frGenpvs aborted");
     }
-    else conoutf("\fggenerated %d unique view cells totaling %.1f kB and averaging %d B (%.1f seconds)",
+    else conoutf("\fgGenerated %d unique view cells totaling %.1f kB and averaging %d B (%.1f seconds)",
             pvs.length(), pvsbuf.length()/1024.0f, pvsbuf.length()/max(pvs.length(), 1), (end - start) / 1000.0f);
 }
 

@@ -131,7 +131,7 @@ static uint nmprog = 0;
 void show_addnormals_nmprog()
 {
     float bar1 = float(nmprog) / float(allocnodes);
-    progress(bar1, "computing normals...");
+    progress(bar1, "Computing normals...");
 }
 
 #define CHECK_PROGRESS(exit) CHECK_CALCLIGHT_PROGRESS(exit, show_addnormals_nmprog)

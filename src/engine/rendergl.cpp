@@ -229,8 +229,8 @@ void gl_checkextensions()
     setsvar("gfxrenderer", (const char *)glGetString(GL_RENDERER));
     setsvar("gfxversion", (const char *)glGetString(GL_VERSION));
 
-    conoutf("renderer: %s (%s)", gfxrenderer, gfxvendor);
-    conoutf("driver: %s", gfxversion);
+    conoutf("Renderer: %s (%s)", gfxrenderer, gfxvendor);
+    conoutf("Driver: %s", gfxversion);
 
 
     bool mesa = false, intel = false, ati = false, nvidia = false;
@@ -1661,7 +1661,7 @@ void drawminimap()
 {
     if(!hud::needminimap()) { clearminimap(); return; }
 
-    progress(0, "generating mini-map...");
+    progress(0, "Generating mini-map...");
 
     int size = 1<<minimapsize, sizelimit = min(hwtexsize, min(screenw, screenh));
     while(size > sizelimit) size /= 2;

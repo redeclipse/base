@@ -539,7 +539,7 @@ namespace bomber
             if(isbomberaffinity(f))
             {
                 affinityeffect(i, T_NEUTRAL, f.pos(true, true), f.spawnloc, 3, "RESET");
-                game::announcef(S_V_BOMBRESET, CON_SELF, NULL, true, "\fathe \fs\fzwvbomb\fS has been reset");
+                game::announcef(S_V_BOMBRESET, CON_SELF, NULL, true, "\faThe \fs\fzwvbomb\fS has been reset");
             }
         }
         if(value == 2) st.dropaffinity(i, pos, vec(0, 0, 1), lastmillis);

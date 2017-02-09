@@ -25,13 +25,14 @@ enum { G_F_GSP = 0, G_F_NUM };
 
 enum { G_S_WAITING = 0, G_S_GETMAP, G_S_SENDMAP, G_S_READYING, G_S_GAMEINFO, G_S_PLAYING, G_S_OVERTIME, G_S_INTERMISSION, G_S_VOTING, G_S_MAX };
 #ifdef GAMESERVER
-const char *gamestates[3][G_S_MAX] = {
-    { "waiting", "getmap", "sendmap", "readying", "gameinfo", "playing", "overtime", "intermission", "voting" },
-    { "waiting to start", "server getting map", "server sending map", "waiting for ready players", "waiting for game information", "playing", "overtime", "intermission", "voting in progress" },
-    { "Waiting to start", "Server getting map", "Server sending map", "Waiting for ready players", "Waiting for game information", "Playing", "Overtime", "Intermission", "Voting in progress" }
+const char *gamestates[4][G_S_MAX] = {
+    { "waiting", "getmap", "sendmap", "readying", "syncing", "playing", "overtime", "intermission", "voting" },
+    { "Waiting", "Getmap", "Sendmap", "Readying", "Syncing", "Playing", "Overtime", "Intermission", "Voting" },
+    { "waiting to start", "server getting map", "server sending map", "waiting for ready players", "syncing game information", "playing", "overtime", "intermission", "voting in progress" },
+    { "Waiting to start", "Server getting map", "Server sending map", "Waiting for ready players", "Syncing game information", "Playing", "Overtime", "Intermission", "Voting in progress" }
 };
 #else
-extern const char *gamestates[3][G_S_MAX];
+extern const char *gamestates[4][G_S_MAX];
 #endif
 #define gs_waiting(a) (a >= G_S_WAITING && a <= G_S_GAMEINFO)
 #define gs_playing(a) (a >= G_S_PLAYING && a <= G_S_OVERTIME)

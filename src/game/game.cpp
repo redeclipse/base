@@ -1577,7 +1577,7 @@ namespace game
 
                 if(style&FRAG_BREAKER)
                 {
-                    concatstring(d->obit, " \fs\fzPwspree-breaking\fS");
+                    concatstring(d->obit, " \fs\fzpwspree-breaking\fS");
                     v->addicon(eventicon::BREAKER, totalmillis, eventiconfade);
                     if(!override && allowanc) anc = S_V_BREAKER;
                 }
@@ -1624,7 +1624,7 @@ namespace game
 
                 if(style&FRAG_SPREE1)
                 {
-                    concatstring(d->obit, " in total \fs\fzYwcarnage\fS");
+                    concatstring(d->obit, " in total \fs\fzywcarnage\fS");
                     v->addicon(eventicon::SPREE, totalmillis, eventiconfade, 0);
                     if(!override && allowanc)
                     {
@@ -1634,7 +1634,7 @@ namespace game
                 }
                 else if(style&FRAG_SPREE2)
                 {
-                    concatstring(d->obit, " on a \fs\fzYwslaughter\fS");
+                    concatstring(d->obit, " on a \fs\fzywslaughter\fS");
                     v->addicon(eventicon::SPREE, totalmillis, eventiconfade, 1);
                     if(!override && allowanc)
                     {
@@ -1644,7 +1644,7 @@ namespace game
                 }
                 else if(style&FRAG_SPREE3)
                 {
-                    concatstring(d->obit, " on a \fs\fzYwmassacre\fS");
+                    concatstring(d->obit, " on a \fs\fzywmassacre\fS");
                     v->addicon(eventicon::SPREE, totalmillis, eventiconfade, 2);
                     if(!override && allowanc)
                     {
@@ -1654,7 +1654,7 @@ namespace game
                 }
                 else if(style&FRAG_SPREE4)
                 {
-                    concatstring(d->obit, " in a \fs\fzYPbloodbath\fS");
+                    concatstring(d->obit, " in a \fs\fzyPbloodbath\fS");
                     v->addicon(eventicon::SPREE, totalmillis, eventiconfade, 3);
                     if(!override && allowanc)
                     {

@@ -625,7 +625,7 @@ void localconnect(bool force)
         c.peer = NULL;
         copystring(c.hostname, "localhost");
         copystring(c.hostip, "127.0.0.1");
-        conoutf("\fglocal client %d connected", c.num);
+        conoutf("\fgLocal client %d connected", c.num);
         client::gameconnect(false);
         server::clientconnect(c.num, 0, true);
     }
@@ -668,7 +668,7 @@ void disconnectmaster()
         server::masterdisconnected();
         enet_socket_destroy(mastersock);
         mastersock = ENET_SOCKET_NULL;
-        if(servertype >= 2 && masterconnected) conoutf("disconnected from master server");
+        if(servertype >= 2 && masterconnected) conoutf("Disconnected from master server");
     }
 
     masterout.setsize(0);
@@ -689,18 +689,18 @@ ENetSocket connectmaster(bool reuse)
     if(!servermaster[0]) return ENET_SOCKET_NULL;
     if(masteraddress.host == ENET_HOST_ANY)
     {
-        if(servertype >= 2) conoutf("\falooking up %s:[%d]...", servermaster, servermasterport);
+        if(servertype >= 2) conoutf("\faLooking up %s:[%d]...", servermaster, servermasterport);
         masteraddress.port = servermasterport;
         if(!resolverwait(servermaster, &masteraddress))
         {
-            conoutf("\frfailed resolving %s:[%d]", servermaster, servermasterport);
+            conoutf("\frFailed resolving %s:[%d]", servermaster, servermasterport);
             return ENET_SOCKET_NULL;
         }
     }
     ENetSocket sock = enet_socket_create(ENET_SOCKET_TYPE_STREAM);
     if(sock == ENET_SOCKET_NULL)
     {
-        conoutf("\frcould not open master server socket");
+        conoutf("\frCould not open master server socket");
         return ENET_SOCKET_NULL;
     }
     if(!reuse || serveraddress.host == ENET_HOST_ANY || !enet_socket_bind(sock, &serveraddress))
@@ -718,7 +718,7 @@ ENetSocket connectmaster(bool reuse)
         }
     }
     enet_socket_destroy(sock);
-    conoutf("\frcould not connect to master server");
+    conoutf("\frCould not connect to master server");
     return ENET_SOCKET_NULL;
 }
 
@@ -770,7 +770,7 @@ void flushmasteroutput()
 {
     if(masterconnecting && totalmillis - masterconnecting >= 60000)
     {
-        conoutf("\frcould not connect to master server");
+        conoutf("\frCould not connect to master server");
         disconnectmaster();
     }
     if(masterout.empty() || !masterconnected) return;
@@ -897,7 +897,7 @@ void serverslice(uint timeout)  // main server update, called from main loop in 
     {
         laststatus = totalmillis;
         if(serverhost->totalSentData || serverhost->totalReceivedData || server::numclients())
-            conoutf("status: %d clients, %.1f send, %.1f rec (K/sec)\n", server::numclients(), serverhost->totalSentData/60.0f/1024, serverhost->totalReceivedData/60.0f/1024);
+            conoutf("Status: %d clients, %.1f send, %.1f rec (K/sec)\n", server::numclients(), serverhost->totalSentData/60.0f/1024, serverhost->totalReceivedData/60.0f/1024);
         serverhost->totalSentData = serverhost->totalReceivedData = 0;
     }
 
@@ -924,16 +924,16 @@ void serverslice(uint timeout)  // main server update, called from main loop in 
                     {
                         ENetAddress address;
                         string ip;
-                        conoutf("checking reverse lookup of %s (%s)", c.hostip, c.hostname);
+                        conoutf("Checking reverse lookup of %s (%s)", c.hostip, c.hostname);
                         if(enet_address_set_host(&address, c.hostname) < 0 || enet_address_get_host_ip(&address, ip, sizeof(ip)) < 0 || strcmp(ip, c.hostip))
                         {
-                            conoutf("reverse lookup of %s (%s) failed (%s), using ip address", c.hostip, c.hostname, ip);
+                            conoutf("Reverse lookup of %s (%s) failed (%s), using ip address", c.hostip, c.hostname, ip);
                             copystring(c.hostname, c.hostip);
                         }
                     }
                     else
                     {
-                        conoutf("reverse lookup of %s failed, using ip address", c.hostip);
+                        conoutf("Reverse lookup of %s failed, using ip address", c.hostip);
                         copystring(c.hostname, c.hostip);
                     }
                     int reason = server::clientconnect(c.num, c.peer->address.host);
@@ -1024,7 +1024,7 @@ int updatetimer(bool limit)
         lastsec += cursecs*1000;
         ifserver(maxruntime && !shutdownwait && int(totalsecs) >= maxruntime)
         {
-            server::srvoutf(-3, "\fymax run time reached (\fs\fc%s\fS), waiting for server to empty", timestr(maxruntime*1000, 4));
+            server::srvoutf(-3, "\fyMax run time reached (\fs\fc%s\fS), waiting for server to empty", timestr(maxruntime*1000, 4));
             shutdownwait = totalmillis;
         }
     }
@@ -1238,7 +1238,7 @@ static void setupwindow(const char *title)
     atexit(cleanupwindow);
 
     if(!setupsystemtray(WM_APP)) fatal("failed adding to system tray");
-    conoutf("version: %s-%s%d-%s %s (%s) [0x%.8x]", versionstring, versionplatname, versionarch, versionbranch, versionisserver ? "server" : "client", versionrelease, versioncrc);
+    conoutf("Version: %s-%s%d-%s %s (%s) [0x%.8x]", versionstring, versionplatname, versionarch, versionbranch, versionisserver ? "server" : "client", versionrelease, versioncrc);
 }
 
 static char *parsecommandline(const char *src, vector<char *> &args)
@@ -1312,7 +1312,7 @@ void serverloop()
     setupwindow(cap);
     SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
 #endif
-    conoutf("\fgdedicated server started, waiting for clients...");
+    conoutf("\fgDedicated server started, waiting for clients...");
     for(;;)
     {
         //int _lastmillis = lastmillis;
@@ -1365,7 +1365,7 @@ int setupserversockets()
 #ifdef STANDALONE
             fatal("could not create server socket on port %d", serverport);
 #else
-            conoutf("\frcould not create server socket on port %d", serverport);
+            conoutf("\frCould not create server socket on port %d", serverport);
             setvar("servertype", 0);
 #endif
             return servertype;
@@ -1387,7 +1387,7 @@ int setupserversockets()
 #ifdef STANDALONE
             fatal("could not create server info socket on port %d", serverport+1);
 #else
-            conoutf("\frcould not create server info socket on port %d, publicity disabled", serverport+1);
+            conoutf("\frCould not create server info socket on port %d, publicity disabled", serverport+1);
             setvar("servertype", 1);
 #endif
             return servertype;
@@ -1402,7 +1402,7 @@ int setupserversockets()
                 enet_socket_destroy(lansock);
                 lansock = ENET_SOCKET_NULL;
             }
-            if(lansock == ENET_SOCKET_NULL) conoutf("\frcould not create LAN server info socket");
+            if(lansock == ENET_SOCKET_NULL) conoutf("\frCould not create LAN server info socket");
             else enet_socket_set_option(lansock, ENET_SOCKOPT_NONBLOCK, 1);
         }
     }
@@ -1425,8 +1425,8 @@ void setupserver()
     server::changemap(load && *load ? load : NULL);
     if(!servertype) return;
     setupmaster();
-    conoutf("loading server (%s:%d)..", *serverip ? serverip : "*", serverport);
-    if(setupserversockets() && verbose) conoutf("game server started");
+    conoutf("Loading server (%s:%d)..", *serverip ? serverip : "*", serverport);
+    if(setupserversockets() && verbose) conoutf("Game server started");
 #ifndef STANDALONE
     if(servertype >= 3) serverloop();
 #endif
@@ -1434,7 +1434,7 @@ void setupserver()
 
 void initgame()
 {
-    conoutf("version: %s-%s%d-%s %s (%s) [0x%.8x]", versionstring, versionplatname, versionarch, versionbranch, versionisserver ? "server" : "client", versionrelease, versioncrc);
+    conoutf("Version: %s-%s%d-%s %s (%s) [0x%.8x]", versionstring, versionplatname, versionarch, versionbranch, versionisserver ? "server" : "client", versionrelease, versioncrc);
     server::start();
     loopv(gameargs)
     {
@@ -1442,7 +1442,7 @@ void initgame()
         if(game::clientoption(gameargs[i])) continue;
 #endif
         if(server::serveroption(gameargs[i])) continue;
-        conoutf("\frunknown command-line option: %s", gameargs[i]);
+        conoutf("\frUnknown command-line option: %s", gameargs[i]);
     }
 #ifdef STANDALONE
     rehash(false);
@@ -1511,7 +1511,7 @@ bool findoctadir(const char *name, bool fallback)
     defformatstring(octadefs, "%s/data/default_map_settings.cfg", s);
     if(fileexists(findfile(octadefs, "r"), "r"))
     {
-        conoutf("\fwfound octa directory: %s", s);
+        conoutf("\fwFound octa directory: %s", s);
         defformatstring(octadata, "%s/data", s);
         defformatstring(octapaks, "%s/packages", s);
         addpackagedir(s, PACKAGEDIR_OCTA);
@@ -1686,7 +1686,7 @@ void rehash(bool reload)
     interactive = false;
     initing = NOT_INITING;
 #endif
-    conoutf("\fwconfiguration %s", reload ? "reloaded" : "loaded");
+    conoutf("\fwConfiguration %s", reload ? "reloaded" : "loaded");
     rehashing = 0;
 }
 ICOMMAND(0, rehash, "i", (int *nosave), if(!(identflags&IDF_WORLD)) rehash(*nosave ? false : true));
@@ -1738,7 +1738,7 @@ void shutdownsignal(int signum)
 #ifndef STANDALONE
     if(servertype < 3) fatalsignal(signum);
 #endif
-    server::srvoutf(-3, "\fyshutdown signal received, waiting for server to empty");
+    server::srvoutf(-3, "\fyShutdown signal received, waiting for server to empty");
     shutdownwait = totalmillis;
 }
 

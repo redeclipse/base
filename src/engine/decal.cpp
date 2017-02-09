@@ -338,7 +338,7 @@ struct decalrenderer
         if(dbgdec)
         {
             int nverts = endvert < lastvert ? endvert + maxverts - lastvert : endvert - lastvert;
-            conoutf("\fatris = %d, verts = %d, total tris = %d", nverts/3, nverts, (maxverts - 3 - availverts)/3);
+            conoutf("\faTris = %d, verts = %d, total tris = %d", nverts/3, nverts, (maxverts - 3 - availverts)/3);
         }
         if(endvert==lastvert) return;
 

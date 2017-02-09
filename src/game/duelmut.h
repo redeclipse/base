@@ -72,7 +72,7 @@ struct duelservmode : servmode
             if(count >= DSGS(maxqueued))
             {
                 spectator(ci);
-                srvmsgft(ci->clientnum, CON_EVENT, "\fysorry, the \fs\fcqueue\fS is \fs\fzgcFULL\fS (max: \fs\fc%d\fS %s)", DSGS(maxqueued), DSGS(maxqueued) != 1 ? "players" : "player");
+                srvmsgft(ci->clientnum, CON_EVENT, "\fySorry, the \fs\fcqueue\fS is \fs\fzgcFULL\fS (max: \fs\fc%d\fS %s)", DSGS(maxqueued), DSGS(maxqueued) != 1 ? "players" : "player");
                 return remqueue(ci, pos);
             }
         }
@@ -354,7 +354,7 @@ struct duelservmode : servmode
                         {
                             if(!cleanup)
                             {
-                                defformatstring(end, "\fyteam %s are the winners", colourteam(alive[0]->team));
+                                defformatstring(end, "\fyTeam %s are the winners", colourteam(alive[0]->team));
                                 bool teampoints = true;
                                 loopv(clients) if(playing.find(clients[i]) >= 0)
                                 {
@@ -399,7 +399,7 @@ struct duelservmode : servmode
                         if(!cleanup)
                         {
                             endffaround(alive);
-                            ancmsgft(-1, S_V_DRAW, CON_SELF, "\fyeveryone died, \fzoyepic fail");
+                            ancmsgft(-1, S_V_DRAW, CON_SELF, "\fyEveryone died, \fzoyepic fail");
                             duelwinner = -1;
                             duelwins = 0;
                         }

@@ -61,7 +61,7 @@ hashtable<int, keym> keyms(128);
 
 void keymap(int *code, char *key)
 {
-    if(identflags&IDF_WORLD) { conoutf("\frcannot override keymap"); return; }
+    if(identflags&IDF_WORLD) { conoutf("\frCannot override keymap"); return; }
     keym &km = keyms[*code];
     km.code = *code;
     DELETEA(km.name);
@@ -244,9 +244,9 @@ int changedkeys = 0;
 
 void bindkey(char *key, char *action, int state, const char *cmd)
 {
-    if(identflags&IDF_WORLD) { conoutf("\frcannot override %s \"%s\"", cmd, key); return; }
+    if(identflags&IDF_WORLD) { conoutf("\frCannot override %s \"%s\"", cmd, key); return; }
     keym *km = findbind(key);
-    if(!km) { conoutf("\frunknown key \"%s\"", key); return; }
+    if(!km) { conoutf("\frUnknown key \"%s\"", key); return; }
     char *&binding = km->actions[state];
     bool *persist = &km->persist[state];
     if(!keypressed || keyaction!=binding) delete[] binding;
@@ -743,7 +743,7 @@ void addcomplete(char *command, int type, char *dir, char *ext)
 {
     if(identflags&IDF_WORLD)
     {
-        conoutf("\frcannot override complete %s", command);
+        conoutf("\frCannot override complete %s", command);
         return;
     }
     if(!dir[0])
@@ -862,7 +862,7 @@ void setidflag(const char *s, const char *v, int flag, const char *msg, bool ali
     ident *id = idents.access(s);
     if(!id || (alias && id->type != ID_ALIAS))
     {
-        if(verbose) conoutf("\fradding %s of %s failed as it is not available", msg, s);
+        if(verbose) conoutf("\frAdding %s of %s failed as it is not available", msg, s);
         return;
     }
     bool on = false;
@@ -883,7 +883,7 @@ void setiddesc(const char *s, const char *v, const char *f)
     ident *id = idents.access(s);
     if(!id)
     {
-        if(verbose) conoutf("\fradding description of %s failed as it is not available", s);
+        if(verbose) conoutf("\frAdding description of %s failed as it is not available", s);
         return;
     }
     DELETEA(id->desc);
