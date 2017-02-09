@@ -27,8 +27,8 @@ namespace client
 
     int maxmsglen() { return G(messagelength); }
 
-    ICOMMAND(0, numgameplayers, "i", (int *group), intret(game::numdynents()));
-    ICOMMAND(0, loopgameplayers, "rie", (ident *id, int *group, uint *body),
+    ICOMMAND(0, numgameplayers, "", (), intret(game::numdynents()));
+    ICOMMAND(0, loopgameplayers, "re", (ident *id, uint *body),
     {
         loopstart(id, stack);
         int numdyns = game::numdynents();
@@ -3477,4 +3477,19 @@ namespace client
         }
     }
     ICOMMAND(0, getserver, "bbb", (int *server, int *prop, int *idx, int *numargs), getservers(*server, *prop, *idx));
+    ICOMMAND(0, loopservers, "ree", (ident *id, uint *body, uint *none),
+    {
+        loopstart(id, stack);
+        if(servers.empty())
+        {
+            loopiter(id, stack, -1);
+            execute(none);
+        }
+        else loopv(servers)
+        {
+            loopiter(id, stack, i);
+            execute(body);
+        }
+        loopend(id, stack);
+    });
 }

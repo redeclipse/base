@@ -1105,7 +1105,7 @@ void genpvs(int *viewcellsize)
         return;
     }
 
-    progress(0, "Generating PVS");
+    progress(-1, "Generating PVS");
     genpvs_canceled = false;
     Uint32 start = SDL_GetTicks();
     progress(0, "Finding view cells");

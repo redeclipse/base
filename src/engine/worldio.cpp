@@ -1277,7 +1277,7 @@ bool load_world(const char *mname, int crc)       // still supports all map form
 
             resetmap(false);
             hdr = newhdr;
-            progress(0, "Please wait...");
+            progress(-1, "Please wait...");
             maptype = MAP_MAPZ;
             mapcrc = filecrc;
 

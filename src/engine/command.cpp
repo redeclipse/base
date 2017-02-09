@@ -4358,6 +4358,24 @@ ICOMMAND(0, bitscan, "i", (int *n), intret(bitscan(*n)));
 
 ICOMMAND(0, abs, "i", (int *n), intret(abs(*n)));
 ICOMMAND(0, absf, "f", (float *n), floatret(fabs(*n)));
+ICOMMAND(0, precf, "fi", (float *a, int *b),
+{
+    defformatstring(format, "%%.%df", max(*b, 0));
+    defformatstring(retval, format, *a);
+    result(retval);
+});
+
+#define LISTAVGCOMMAND(name, type) \
+    ICOMMAND(0, name, "V", (tagval *args, int numargs), \
+    { \
+        type val = 0; \
+        loopi(numargs) val += args[i].get##type(); \
+        if(numargs > 0) val /= type(numargs); \
+        type##ret(val); \
+    });
+
+LISTAVGCOMMAND(listavg, int);
+LISTAVGCOMMAND(listavgf, float);
 
 ICOMMAND(0, floor, "f", (float *n), floatret(floor(*n)));
 ICOMMAND(0, ceil, "f", (float *n), floatret(ceil(*n)));

@@ -2140,7 +2140,7 @@ void calclight(int *quality, int *quick)
         conoutft(CON_MESG, "\frValid range for calclight quality is -1..1");
         return;
     }
-    progress(0, "Computing lightmaps...");
+    progress(-1, "Computing lightmaps...");
     mpremip(true);
     dooptimizeblendmap();
     loadlayermasks();
@@ -2199,7 +2199,7 @@ void patchlight(int *quality, int *quick)
         conoutft(CON_MESG, "\frValid range for patchlight quality is -1..1");
         return;
     }
-    progress(0, "Patching lightmaps...");
+    progress(-1, "Patching lightmaps...");
     loadlayermasks();
     int numthreads = lightthreads > 0 ? lightthreads : numcpus;
     if(numthreads > 1) preloadusedmapmodels(false, true);
@@ -2252,7 +2252,7 @@ COMMAND(0, patchlight, "ii");
 void clearlightmaps()
 {
     if(noedit(true)) return;
-    progress(0, "Clearing lightmaps...");
+    progress(-1, "Clearing lightmaps...");
     resetlightmaps(false);
     clearsurfaces(worldroot);
     initlights();
