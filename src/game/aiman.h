@@ -152,7 +152,12 @@ namespace aiman
                         char *name = indexlist(list, r);
                         if(name)
                         {
-                            if(*name) copystring(ci->name, name, MAXNAMELEN);
+                            if(*name)
+                            {
+                                copystring(ci->name, name, MAXNAMELEN);
+                                if(G(botrandomcase) && rnd(G(botrandomcase)))
+                                    ci->name[0] = iscubeupper(ci->name[0]) ? cubelower(ci->name[0]) : cubeupper(ci->name[0]);
+                            }
                             delete[] name;
                         }
                     }
