@@ -261,7 +261,7 @@ namespace client
             }
         }
     }
-    ICOMMAND(0, demoinfo, "bb", (int *idx, int *prop, int *numargs), infodemo(*idx, *prop));
+    ICOMMAND(0, demoinfo, "bb", (int *idx, int *prop), infodemo(*idx, *prop));
 
     VAR(IDF_PERSIST, authconnect, 0, 1, 1);
     SVAR(IDF_PERSIST, accountname, "");
@@ -3476,7 +3476,7 @@ namespace client
             }
         }
     }
-    ICOMMAND(0, getserver, "bbb", (int *server, int *prop, int *idx, int *numargs), getservers(*server, *prop, *idx));
+    ICOMMAND(0, getserver, "bbb", (int *server, int *prop, int *idx), getservers(*server, *prop, *idx));
     ICOMMAND(0, getserveractive, "", (),
     {
         int n = 0;
