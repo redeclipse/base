@@ -4565,7 +4565,7 @@ char *rigcasestr(const char *s, const char *n)
 
 ICOMMAND(0, strcasestr, "ss", (char *a, char *b), { char *s = rigcasestr(a, b); intret(s ? s-a : -1); });
 
-char *strreplace(const char *s, const char *oldval, const char *newval, const char *newval2)
+char *strreplace(const char *s, const char *oldval, const char *newval, const char *newval2, bool docase)
 {
     vector<char> buf;
 
@@ -4573,7 +4573,7 @@ char *strreplace(const char *s, const char *oldval, const char *newval, const ch
     if(!oldlen) return newstring(s);
     for(int i = 0;; i++)
     {
-        const char *found = strstr(s, oldval);
+        const char *found = docase ? rigcasestr(s, oldval) : strstr(s, oldval);
         if(found)
         {
             while(s < found) buf.add(*s++);
@@ -4589,7 +4589,8 @@ char *strreplace(const char *s, const char *oldval, const char *newval, const ch
     }
 }
 
-ICOMMAND(0, strreplace, "ssss", (char *s, char *o, char *n, char *n2), commandret->setstr(strreplace(s, o, n, n2[0] ? n2 : n)));
+ICOMMAND(0, strreplace, "ssss", (char *s, char *o, char *n, char *n2), commandret->setstr(strreplace(s, o, n, n2[0] ? n2 : n, false)));
+ICOMMAND(0, strcasereplace, "ssss", (char *s, char *o, char *n, char *n2), commandret->setstr(strreplace(s, o, n, n2[0] ? n2 : n, true)));
 
 void strsplice(const char *s, const char *vals, int *skip, int *count)
 {
