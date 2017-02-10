@@ -849,15 +849,15 @@ int lastprogress = 0;
 
 void progress(float bar1, const char *text1, float bar2, const char *text2)
 {
-    if(progressing || !inbetweenframes || drawtex) return;
-    int ticks = SDL_GetTicks();
-    if(lastprogress > 0 && ticks < 0) lastprogress = 1-INT_MAX;
-    if((vsync || !progressupdate || bar1 > 0) && ticks-lastprogress < progressdelay) return;
     if(bar1 < 0)
     {
         UI::hideui(NULL);
         bar1 = 0;
     }
+    if(progressing || !inbetweenframes || drawtex) return;
+    int ticks = SDL_GetTicks();
+    if(lastprogress > 0 && ticks < 0) lastprogress = 1-INT_MAX;
+    if((vsync || !progressupdate || bar1 > 0) && ticks-lastprogress < progressdelay) return;
     lastprogress = ticks;
     clientkeepalive();
 
