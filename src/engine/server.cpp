@@ -1698,7 +1698,7 @@ void setverinfo(const char *bin)
 {
     setvar("versioncrc", crcfile(bin));
     const char *vbranch = getenv(sup_var("BRANCH"));
-    setsvar("versionbranch", vbranch);
+    setsvar("versionbranch", vbranch && *vbranch ? vbranch : "none");
 }
 
 volatile bool fatalsig = false;
