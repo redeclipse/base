@@ -3966,7 +3966,7 @@ void prettylist(const char *s, const char *conj)
     const char *start, *end, *qstart;
     for(int len = listlen(s), n = 0; parselist(s, start, end, qstart); n++)
     {
-        if(*qstart == '"') p.advance(unescapestring(p.reserve(end - start).buf, start, end));
+        if(*qstart == '"') p.advance(unescapestring(p.reserve(end - start + 1).buf, start, end));
         else p.put(start, end - start);
         if(n+1 < len)
         {
