@@ -1969,28 +1969,31 @@ int scanmapc(const char *fname)
     loopv(mapcinfos) if(!strcmp(mapcinfos[i].file, fname)) return i;
     loopv(failmapcs) if(!strcmp(failmapcs[i], fname)) return -1;
     int num = mapcinfos.length();
-    mapcinfo &d = mapcinfos.add();
-    copystring(d.file, fname);
-    /////////////////////////////////////////////////////////////////////////////////////
     bool mapok = false;
     string msg = "";
     //loop(format, MAP_MAX)
     for(int format = MAP_MAPZ;;)
     {
         int mask = maskpackagedirs(format == MAP_OCTA ? ~0 : ~PACKAGEDIR_OCTA);
-        if(strpbrk(d.file, "/\\")) copystring(d.mapfile, d.file);
-        else formatstring(d.mapfile, "%s/%s", mapdirs[format].name, d.file);
-        formatstring(d.mapfext, "%s%s", d.mapfile, mapexts[format].name);
-        loopv(mapcinfos) if(!strcmp(mapcinfos[i].file, d.mapfile))
+        string dmapfile = "", dmapfext = "";
+        if(strpbrk(fname, "/\\")) copystring(dmapfile, fname);
+        else formatstring(dmapfile, "%s/%s", mapdirs[format].name, fname);
+        formatstring(dmapfext, "%s%s", dmapfile, mapexts[format].name);
+        loopv(mapcinfos) if(!strcmp(mapcinfos[i].file, dmapfile))
         {
             mapcinfos.pop();
             return i;
         }
-        loopv(failmapcs) if(!strcmp(failmapcs[i], d.mapfile))
+        loopv(failmapcs) if(!strcmp(failmapcs[i], dmapfile))
         {
             mapcinfos.pop();
             return -1;
         }
+
+        mapcinfo &d = mapcinfos.add();
+        copystring(d.file, fname);
+        copystring(d.mapfile, dmapfile);
+        copystring(d.mapfext, dmapfext);
 
         stream *f = opengzfile(d.mapfext, "rb");
         if(!f)
@@ -1998,6 +2001,7 @@ int scanmapc(const char *fname)
             //formatstring(msg, "Error loading %s: file not found", d.mapfext);
             maskpackagedirs(mask);
             //continue;
+            mapcinfos.pop();
             break;
         }
 
@@ -2006,6 +2010,7 @@ int scanmapc(const char *fname)
             formatstring(msg, "Error loading %s: malformatted universal header", d.mapfext);
             delete f;
             maskpackagedirs(mask);
+            mapcinfos.pop();
             break;
         }
         lilswap(&d.maphdr.version, 2);
@@ -2020,6 +2025,7 @@ int scanmapc(const char *fname)
                     formatstring(msg, "Error loading %s: malformatted mapz v%d[%d] header", d.mapfext, d.maphdr.version, ver); \
                     delete f; \
                     maskpackagedirs(mask); \
+                    mapcinfos.pop(); \
                     break; \
                 }
 
@@ -2072,6 +2078,7 @@ int scanmapc(const char *fname)
                     formatstring(msg, "Error loading %s: malformatted mapz v%d header", d.mapfext, d.maphdr.version);
                     delete f;
                     maskpackagedirs(mask);
+                    mapcinfos.pop();
                     break;
                 }
                 lilswap(&d.maphdr.worldsize, 8);
@@ -2082,6 +2089,7 @@ int scanmapc(const char *fname)
                 formatstring(msg, "Error loading %s: requires a newer version of %s", d.mapfext, versionname);
                 delete f;
                 maskpackagedirs(mask);
+                mapcinfos.pop();
                 break;
             }
 
@@ -2356,6 +2364,7 @@ int scanmapc(const char *fname)
             delete f;
             maskpackagedirs(mask);
             //continue;
+            mapcinfos.pop();
             break;
         }
         delete f;
@@ -2387,7 +2396,6 @@ int scanmapc(const char *fname)
     /////////////////////////////////////////////////////////////////////////////////////
     if(!mapok)
     {
-        mapcinfos.pop();
         failmapcs.add(newstring(fname));
         if(msg[0])
         {
