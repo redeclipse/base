@@ -674,7 +674,7 @@ namespace ai
                     k--;
                 }
             }
-            //if(!w.haslinks()) conoutf("warning: waypoint %d has no links after import", i);
+            //if(!w.haslinks()) conoutf("Warning: waypoint %d has no links after import", i);
 
         }
         if(cleared)
@@ -723,11 +723,11 @@ namespace ai
             waypoint &w = waypoints.add(waypoint(o, getpull(o)));
             int numlinks = f->getchar(), k = 0;
             loopj(numlinks) if((w.links[k] = f->getlil<ushort>()) != 0) if(++k >= MAXWAYPOINTLINKS) break;
-            //if(!w.haslinks()) conoutf("warning: waypoint %d has no links", i);
+            //if(!w.haslinks()) conoutf("Warning: waypoint %d has no links", i);
         }
 
         delete f;
-        conoutf("loaded %d waypoints from %s", numwp, wptname);
+        conoutf("Loaded %d waypoints from %s", numwp, wptname);
 
         if(!cleanwaypoints()) clearwpcache();
         game::specreset();
@@ -759,7 +759,7 @@ namespace ai
         }
 
         delete f;
-        conoutf("saved %d waypoints to %s", waypoints.length()-1, wptname);
+        conoutf("Saved %d waypoints to %s", waypoints.length()-1, wptname);
     }
 
     ICOMMAND(0, savewaypoints, "s", (char *mname), if(!(identflags&IDF_WORLD)) savewaypoints(true, mname));
@@ -782,9 +782,9 @@ namespace ai
             waypoint &w = waypoints.add(waypoint(v.o, getpull(v.o)));
             int k = 0;
             loopvj(v.links) if((w.links[k] = v.links[j]) != 0) if(++k >= MAXWAYPOINTLINKS) break;
-            //if(!w.haslinks()) conoutf("warning: imported waypoint %d has no links", i);
+            //if(!w.haslinks()) conoutf("Warning: imported waypoint %d has no links", i);
         }
-        conoutf("imported %d waypoints from the map file", oldwaypoints.length());
+        conoutf("Imported %d waypoints from the map file", oldwaypoints.length());
         oldwaypoints.setsize(0);
         if(!cleanwaypoints()) clearwpcache();
         return true;

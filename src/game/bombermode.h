@@ -118,7 +118,7 @@ struct bomberservmode : bomberstate, servmode
                 }
                 if(!found)
                 {
-                    ancmsgft(-1, S_V_NOTIFY, CON_EVENT, "\fybest score has been reached");
+                    ancmsgft(-1, S_V_NOTIFY, CON_EVENT, "\fyBest score has been reached");
                     startintermission();
                 }
             }
@@ -217,16 +217,16 @@ struct bomberservmode : bomberstate, servmode
                     if(muts&(1<<G_M_GSP2)) muts &= ~(1<<G_M_GSP2);
                     if(muts&(1<<G_M_GSP3)) muts &= ~(1<<G_M_GSP3);
                     muts |= (1<<G_M_GSP1);
-                    srvmsgf(-1, "\fzoythis map does have enough goals, switching to hold mutator");
+                    srvmsgf(-1, "\fzoyThis map does have enough goals, switching to hold mutator");
                     changemap(smapname, gamemode, muts);
                     return;
                 }
                 hasflaginfo = false;
                 loopv(flags) sendf(-1, 1, "ri3", N_RESETAFFIN, i, 0);
-                srvmsgf(-1, "\fs\fzoythis map is not playable in:\fS %s", gamename(gamemode, mutators));
+                srvmsgf(-1, "\fs\fzoyThis map is not playable in:\fS %s", gamename(gamemode, mutators));
                 return;
             }
-            ancmsgft(-1, m_duke(gamemode, mutators) ? S_V_BOMBDUEL : S_V_BOMBSTART, CON_SELF, "\fathe \fs\fzwvbomb\fS has been spawned");
+            ancmsgft(-1, m_duke(gamemode, mutators) ? S_V_BOMBDUEL : S_V_BOMBSTART, CON_SELF, "\faThe \fs\fzwvbomb\fS has been spawned");
             hasstarted = true;
             bombertime = 0;
         }

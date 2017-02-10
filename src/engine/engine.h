@@ -108,33 +108,6 @@ extern SDL_Window *screen;
 extern int screenw, screenh;
 extern int zpass;
 
-// rendertext
-struct font
-{
-    struct charinfo
-    {
-        short x, y, w, h, offsetx, offsety, advance, tex;
-    };
-
-    char *name;
-    vector<Texture *> texs;
-    vector<charinfo> chars;
-    int charoffset, defaultw, defaulth, maxw, maxh, scale;
-
-    font() : name(NULL) {}
-    ~font() { DELETEA(name); }
-};
-
-extern float textscale, curtextscale;
-#define FONTH int(curfont->scale*curtextscale)
-#define FONTW (FONTH/2)
-#define FONTTAB (4*FONTW)
-
-extern font *curfont;
-extern const matrix4x3 *textmatrix;
-
-extern void reloadfonts();
-
 // texture
 extern int hwtexsize, hwcubetexsize, hwmaxanisotropy, maxtexsize, anisotropy, envmapradius;
 
@@ -278,11 +251,11 @@ extern void resetfogdist();
 
 namespace modelpreview
 {
-    extern void start(int x, int y, int w, int h, bool background = true);
+    extern void start(int x, int y, int w, int h, bool background = true, bool scissor = false);
     extern void end();
 }
 
-extern void drawskin(Texture *t, int x1, int y1, int x2, int y2, int colour = 0, float blend = 1, int size = 0, const matrix4x3 *m = NULL);
+extern void drawskin(Texture *t, float x1, float y1, float x2, float y2, int colour = 0, float blend = 1, float size = 0, const matrix4x3 *m = NULL);
 
 // renderextras
 extern void render3dbox(vec &o, float tofloor, float toceil, float xradius, float yradius = 0, const matrix4x3 *m = NULL);
@@ -368,8 +341,8 @@ extern void addundo(undoblock *u);
 extern void commitchanges(bool force = false);
 extern editinfo *localedit;
 
-extern void renderprefab(const char *name, const vec &o, float yaw, float pitch, float roll, float size = 1, const vec &color = vec(1, 1, 1));
-extern void previewprefab(const char *name, const vec &color);
+extern void renderprefab(const char *name, const vec &o, float yaw, float pitch, float roll, float size = 1, const vec &color = vec(1, 1, 1), float blend = 1);
+extern void previewprefab(const char *name, const vec &color, float blend = 1);
 
 // octarender
 extern vector<tjoint> tjoints;
@@ -523,10 +496,11 @@ extern bool paste(char *buf, size_t len);
 extern void writebinds(stream *f);
 extern void writecompletions(stream *f);
 extern const char *addreleaseaction(char *s);
+extern tagval *addreleaseaction(ident *id, int numargs);
 extern const char *getkeyname(int code);
 extern int findkeycode(char *key);
 
-extern int uimillis, commandmillis,  commandpos, commandcolour, completeoffset, completesize;
+extern int commandmillis,  commandpos, commandcolour, completeoffset, completesize;
 extern bigstring commandbuf;
 extern char *commandaction, *commandicon;
 extern bool fullconsole;
@@ -552,7 +526,7 @@ enum
     CHANGE_GFX   = 1<<0,
     CHANGE_SOUND = 1<<1
 };
-extern bool initwarning(const char *desc, int level = INIT_RESET, int type = CHANGE_GFX, bool force = false);
+extern bool initwarning(const char *desc, int level = INIT_RESET, int type = CHANGE_GFX);
 
 extern bool minimized;
 
@@ -572,11 +546,6 @@ extern void keyrepeat(bool on, int mask = ~0);
 enum { TI_CONSOLE = 1<<0, TI_GUI = 1<<1 };
 
 extern void textinput(bool on, int mask = ~0);
-
-// menu
-extern void menuprocess();
-extern void addchange(const char *desc, int type, bool force = false);
-extern void clearchanges(int type);
 
 // physics
 extern bool pointincube(const clipplanes &p, const vec &v);
@@ -672,39 +641,6 @@ extern double skyarea;
 extern void drawskybox(int farplane, bool limited);
 extern bool limitsky();
 
-// ui
-extern int mouseaction[2];
-extern bool guiactionon;
-
-extern int guilayoutpass, guicursortype, guiskinsize, guislidersize, guisepsize, guispacesize, guitooltipwidth, guistatuswidth,
-    guishadow, guiclicktab, guitabborder, guitextblend, guitextfade, guiscaletime, guiskinned, guibgcolour, guibordercolour,
-    guihovercolour, guistatusline, guitooltips, guitooltiptime, guitooltipfade, guitooltipcolour, guitooltipbordercolour, guitooltipborderskin,
-    guifieldbgcolour, guifieldbordercolour, guifieldactivecolour, guislidercolour, guisliderbordercolour, guisliderborderskin, guislidermarkcolour,
-    guislidermarkbordercolour, guislidermarkborderskin, guislideractivecolour, guiactivecolour, guicheckboxcolour, guicheckboxtwocolour, guiradioboxcolour;
-extern float guiscale, guibgblend, guiborderblend, guihoverscale, guihoverblend, guitooltipblend, guitooltipborderblend,
-    guifieldbgblend, guifieldborderblend, guifieldactiveblend, guisliderblend, guisliderborderblend, guislidermarkblend, guislidermarkborderblend,
-    guislideractiveblend;
-extern char *guiskintex, *guiskinbordertex, *guioverlaytex, *guiexittex, *guihovertex;
-
-extern void progressmenu();
-extern void mainmenu();
-extern void texturemenu();
-extern bool menuactive();
-extern int cleargui(int n = 0, bool skip = true);
-
-#define uipad(parent,count,body) { (parent).space(count); body; (parent).space(count); }
-#define uifont(parent,font,body) { (parent).pushfont(font); body; (parent).popfont(); }
-#define uicenter(parent, body) { (parent).spring(); body; (parent).spring(); }
-#define uilistv(parent,count,body) \
-{ \
-    loop(uilistv##__LINE__, count) (parent).pushlist(); \
-    body; \
-    loop(uilistv##__LINE__, count) (parent).poplist(); \
-}
-#define uilist(parent,body) uilistv(parent, 1, body)
-#define uicenterlistv(parent,count,body) uilistv(parent, count, uicenter(parent, body))
-#define uicenterlist(parent,body) uicenterlistv(parent, 1, body)
-
 // octaedit
 extern void replacetexcube(cube &c, int oldtex, int newtex);
 
@@ -722,9 +658,6 @@ extern vector<int> entgroup;
 
 extern int newentity(int type, const attrvector &attrs);
 extern int newentity(const vec &v, int type, const attrvector &attrs);
-
-// menu
-enum { MN_BACK = 0, MN_INPUT, MN_MAX };
 
 // console
 #define MAXCONLINES 1000
@@ -766,7 +699,7 @@ extern uchar lookupblendmap(BlendMapCache *cache, const vec &pos);
 extern void resetblendmap();
 extern void enlargeblendmap();
 extern void shrinkblendmap(int octant);
-extern void optimizeblendmap();
+extern void dooptimizeblendmap();
 extern void stoppaintblendmap();
 extern void trypaintblendmap();
 extern void renderblendbrush(GLuint tex, float x, float y, float w, float h);

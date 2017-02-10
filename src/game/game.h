@@ -924,7 +924,7 @@ namespace server
     extern void stopdemo();
     extern void hashpassword(int cn, int sessionid, const char *pwd, char *result, int maxlen = MAXSTRLEN);
     extern bool servcmd(int nargs, const char *cmd, const char *arg);
-    extern const char *gamename(int mode, int muts, int compact = 0, int limit = 0, const char *separator = " ");
+    extern const char *gamename(int mode, int muts, int compact = 0, int limit = 0, char separator = ' ');
     extern const char *privname(int priv = PRIV_NONE, int actortype = A_PLAYER);
     extern const char *privnamex(int priv = PRIV_NONE, int actortype = A_PLAYER, bool local = false);
 #ifdef GAMESERVER
@@ -1570,7 +1570,7 @@ struct cament
 
     void resetlast()
     {
-        lastyawtime = lastpitchtime = lastmillis;
+        lastyawtime = lastpitchtime = totalmillis;
         lastyaw = lastpitch = 0;
     }
 
@@ -1703,7 +1703,7 @@ namespace hud
 enum { CTONE_TEAM = 0, CTONE_TONE, CTONE_TEAMED, CTONE_ALONE, CTONE_MIXED, CTONE_TMIX, CTONE_AMIX, CTONE_MAX };
 namespace game
 {
-    extern int gamestate, gamemode, mutators, nextmode, nextmuts, timeremaining, lasttimeremain, maptime, lastzoom, lasttvcam, lasttvchg, spectvtime, waittvtime,
+    extern int gamestate, gamemode, mutators, nextmode, nextmuts, timeremaining, lasttimeremain, maptime, mapstart, lastzoom, lasttvcam, lasttvchg, spectvtime, waittvtime,
             bloodfade, bloodsize, bloodsparks, debrisfade, eventiconfade, eventiconshort,
             announcefilter, dynlighteffects, aboveheadnames, followthirdperson, nogore, forceplayermodel,
             playerovertone, playerundertone, playerdisplaytone, playereffecttone, playerteamtone, follow, specmode, spectvfollow, spectvfollowing, clientcrc;

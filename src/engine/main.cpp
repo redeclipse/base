@@ -93,6 +93,7 @@ void cleanup()
     if(screen) SDL_SetWindowGrab(screen, SDL_FALSE);
     cleargamma();
     freeocta(worldroot);
+    UI::cleanup();
     extern void clear_command();    clear_command();
     extern void clear_console();    clear_console();
     extern void clear_mdls();       clear_mdls();
@@ -148,11 +149,11 @@ void fatal(const char *s, ...)    // failure exit
 }
 
 int initing = NOT_INITING;
-bool initwarning(const char *desc, int level, int type, bool force)
+bool initwarning(const char *desc, int level, int type)
 {
     if(initing < level)
     {
-        addchange(desc, type, force);
+        addchange(desc, type);
         return true;
     }
     return false;
@@ -412,7 +413,7 @@ void resetgl()
 {
     clearchanges(CHANGE_GFX);
 
-    progress(0, "resetting OpenGL..");
+    progress(0, "Resetting OpenGL..");
 
     extern void cleanupva();
     extern void cleanupparticles();
@@ -454,7 +455,7 @@ void resetgl()
         fatal("failed to reload core textures");
     reloadfonts();
     inbetweenframes = true;
-    progress(0, "initializing...");
+    progress(0, "Initializing...");
     restoregamma();
     restorevsync();
     reloadshaders();
@@ -852,6 +853,11 @@ void progress(float bar1, const char *text1, float bar2, const char *text2)
     int ticks = SDL_GetTicks();
     if(lastprogress > 0 && ticks < 0) lastprogress = 1-INT_MAX;
     if((vsync || !progressupdate || bar1 > 0) && ticks-lastprogress < progressdelay) return;
+    if(bar1 < 0)
+    {
+        UI::hideui(NULL);
+        bar1 = 0;
+    }
     lastprogress = ticks;
     clientkeepalive();
 
@@ -867,7 +873,7 @@ void progress(float bar1, const char *text1, float bar2, const char *text2)
     {
         if(text2) conoutf("%s [%.2f%%], %s [%.2f%%]", text1, bar1*100.f, text2, bar2*100.f);
         else if(text1) conoutf("%s [%.2f%%]", text1, bar1*100.f);
-        else conoutf("progressing [%.2f%%]", bar1*100.f);
+        else conoutf("Progressing [%.2f%%]", bar1*100.f);
     }
 
     progressing = true;
@@ -880,7 +886,7 @@ bool pixeling = false;
 bvec pixel(0, 0, 0);
 char *pixelact = NULL;
 
-ICOMMAND(0, printpixel, "", (void), conoutft(CON_SELF, "pixel = 0x%.6X (%d, %d, %d)", pixel.tohexcolor(), pixel.r, pixel.g, pixel.b));
+ICOMMAND(0, printpixel, "", (void), conoutft(CON_SELF, "Pixel = 0x%.6X (%d, %d, %d)", pixel.tohexcolor(), pixel.r, pixel.g, pixel.b));
 ICOMMAND(0, getpixel, "i", (int *n), {
     switch(*n)
     {
@@ -894,7 +900,7 @@ ICOMMAND(0, getpixel, "i", (int *n), {
 void readpixel(char *act)
 {
     if(pixeling) return;
-    if(!editmode) { conoutf("\froperation only allowed in edit mode"); return; }
+    if(!editmode) { conoutf("\frOperation only allowed in edit mode"); return; }
     if(pixelact) delete[] pixelact;
     pixelact = act && *act ? newstring(act) : NULL;
     pixeling = true;
@@ -972,7 +978,7 @@ int main(int argc, char **argv)
                     case 'f': fullscreen = atoi(&argv[i][3]); break;
                     case 's': /* compat, ignore */ break;
                     case 'u': /* compat, ignore */ break;
-                    default: conoutf("\frunknown display option %c", argv[i][2]); break;
+                    default: conoutf("\frUnknown display option %c", argv[i][2]); break;
                 }
                 break;
             }
@@ -1020,15 +1026,15 @@ int main(int argc, char **argv)
 
     numcpus = clamp(SDL_GetCPUCount(), 1, 16);
 
-    conoutf("loading enet..");
+    conoutf("Loading enet..");
     if(enet_initialize()<0) fatal("Unable to initialise network module");
     atexit(enet_deinitialize);
     enet_time_set(0);
 
-    conoutf("loading game..");
+    conoutf("Loading game..");
     initgame();
 
-    conoutf("loading sdl..");
+    conoutf("Loading sdl..");
 
     //#ifdef WIN32
     //SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
@@ -1036,7 +1042,7 @@ int main(int argc, char **argv)
 
     if(SDL_Init(SDL_INIT_TIMER|SDL_INIT_VIDEO|SDL_INIT_AUDIO) < 0) fatal("error initialising SDL: %s", SDL_GetError());
 
-    conoutf("loading video..");
+    conoutf("Loading video..");
     setcaption("please wait..");
     SDL_SetHint(SDL_HINT_GRAB_KEYBOARD, "0");
     SDL_SetHint(SDL_HINT_VIDEO_ALLOW_SCREENSAVER, "0");
@@ -1061,34 +1067,37 @@ int main(int argc, char **argv)
     signal(SIGALRM, fatalsignal);
 #endif
 
-    conoutf("loading gl..");
+    conoutf("Loading gl..");
     gl_checkextensions();
     gl_init();
     if(!(notexture = textureload(notexturetex)) || !(blanktexture = textureload(blanktex)))
         fatal("could not find core textures");
 
-    conoutf("loading sound..");
+    conoutf("Loading sound..");
     initsound();
 
     game::start();
 
-    conoutf("loading defaults..");
+    conoutf("Loading defaults..");
     if(!execfile("config/stdlib.cfg", false)) fatal("cannot find data files");
     if(!setfont("default")) fatal("no default font specified");
-    inbetweenframes = true;
-    progress(0, "please wait..");
 
-    conoutf("loading world..");
-    progress(0, "loading world..");
+    UI::setup();
+
+    inbetweenframes = true;
+    progress(0, "Please wait..");
+
+    conoutf("Loading world..");
+    progress(0, "Loading world..");
     emptymap(0, true, NULL, true);
 
-    conoutf("loading config..");
-    progress(0, "loading config..");
+    conoutf("Loading config..");
+    progress(0, "Loading config..");
     rehash(false);
     smartmusic(true, true);
 
-    conoutf("loading required data..");
-    progress(0, "loading required data..");
+    conoutf("Loading required data..");
+    progress(0, "Loading required data..");
     restoregamma();
     restorevsync();
     loadshaders();
@@ -1097,8 +1106,8 @@ int main(int argc, char **argv)
     initdecals();
 
     trytofindocta();
-    conoutf("loading main..");
-    progress(0, "loading main..");
+    conoutf("Loading main..");
+    progress(0, "Loading main..");
     if(initscript) execute(initscript, true);
 
     capslockon = capslocked();
@@ -1111,7 +1120,7 @@ int main(int argc, char **argv)
     if(reprotoarg)
     {
         if(connecthost && *connecthost) connectserv(connecthost, connectport, connectpassword);
-        else conoutf("\frmalformed commandline argument: %s", reprotoarg);
+        else conoutf("\frMalformed commandline argument: %s", reprotoarg);
     }
 
     // housekeeping
@@ -1133,6 +1142,7 @@ int main(int argc, char **argv)
         updatefps(frameloops, elapsed);
         checkinput();
         menuprocess();
+        UI::update();
 
         if(frameloops)
         {
@@ -1151,7 +1161,6 @@ int main(int argc, char **argv)
             updatetextures();
             updateparticles();
             updatesounds();
-            UI::update();
             if(!minimized)
             {
                 inbetweenframes = renderedframe = false;

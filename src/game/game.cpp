@@ -2,7 +2,7 @@
 #include "game.h"
 namespace game
 {
-    int nextmode = G_EDITMODE, nextmuts = 0, gamestate = G_S_WAITING, gamemode = G_EDITMODE, mutators = 0, maptime = 0, timeremaining = 0, lasttimeremain = 0,
+    int nextmode = G_EDITMODE, nextmuts = 0, gamestate = G_S_WAITING, gamemode = G_EDITMODE, mutators = 0, maptime = 0, mapstart = 0, timeremaining = 0, lasttimeremain = 0,
         lastcamera = 0, lasttvcam = 0, lasttvchg = 0, lastzoom = 0, spectvfollowing = -1, starttvcamdyn = -1, lastcamcn = -1;
     bool zooming = false, inputmouse = false, inputview = false, inputmode = false;
     float swayfade = 0, swayspeed = 0, swaydist = 0, bobfade = 0, bobdist = 0;
@@ -346,6 +346,8 @@ namespace game
     ICOMMAND(0, gspmutname, "ii", (int *g, int *n), result(*g >= 0 && *g < G_MAX && *n >= 0 && *n < G_M_GSN ? gametype[*g].gsp[*n] : ""));
     ICOMMAND(0, getintermission, "", (), intret(gs_intermission(gamestate) ? 1 : 0));
     ICOMMAND(0, getgamestate, "", (), intret(gamestate));
+    ICOMMAND(0, getgamestatestr, "ib", (int *n, int *b), result(gamestates[clamp(*n, 0, 3)][clamp(*b >= 0 ? *b : gamestate, 0, int(G_S_MAX))]));
+    ICOMMAND(0, getgametimeremain, "", (), intret(max(timeremaining*1000-((gs_playing(gamestate) ? lastmillis : totalmillis)-lasttimeremain), 0)));
 
     const char *gametitle() { return connected() ? server::gamename(gamemode, mutators) : "ready"; }
     const char *gametext() { return connected() ? mapname : "not connected"; }
@@ -1206,7 +1208,7 @@ namespace game
             }
             else if(hassound) loopi(2) if(issound(d->sschan[i])) sounds[d->sschan[i]].pos = d->footpos(i);
         }
-        loopv(d->icons) if(lastmillis-d->icons[i].millis > d->icons[i].fade) d->icons.remove(i--);
+        loopv(d->icons) if(totalmillis-d->icons[i].millis > d->icons[i].fade) d->icons.remove(i--);
     }
 
     void checkfloor(gameent *d)
@@ -1368,7 +1370,7 @@ namespace game
                     if(!sameteam) pushdamagemerge(d, v, weap, damage, (burning ? damagemerge::BURN : 0)|(bleeding ? damagemerge::BLEED : 0)|(shocking ? damagemerge::SHOCK : 0));
                     else if(v == player1 && !burning && !bleeding && !shocking && !material)
                     {
-                        player1->lastteamhit = d->lastteamhit = lastmillis;
+                        player1->lastteamhit = d->lastteamhit = totalmillis;
                         if(!issound(alarmchan)) playsound(S_ALARM, v->o, v, 0, -1, -1, -1, &alarmchan);
                     }
                     if(!burning && !bleeding && !shocking && !material && !sameteam) v->lasthit = totalmillis ? totalmillis : 1;
@@ -1532,7 +1534,7 @@ namespace game
             bool override = false;
             if(d->headless)
             {
-                v->addicon(eventicon::HEADSHOT, lastmillis, eventiconfade, 0);
+                v->addicon(eventicon::HEADSHOT, totalmillis, eventiconfade, 0);
                 if(!override && allowanc) anc = S_V_HEADSHOT;
             }
             if(!m_play(gamemode) || v->actortype >= A_ENEMY)
@@ -1551,7 +1553,7 @@ namespace game
                 if(style&FRAG_REVENGE)
                 {
                     concatstring(d->obit, " \fs\fzoyvengeful\fS");
-                    v->addicon(eventicon::REVENGE, lastmillis, eventiconfade); // revenge
+                    v->addicon(eventicon::REVENGE, totalmillis, eventiconfade); // revenge
                     v->dominating.removeobj(d);
                     d->dominated.removeobj(v);
                     if(allowanc)
@@ -1563,7 +1565,7 @@ namespace game
                 else if(style&FRAG_DOMINATE)
                 {
                     concatstring(d->obit, " \fs\fzoydominating\fS");
-                    v->addicon(eventicon::DOMINATE, lastmillis, eventiconfade); // dominating
+                    v->addicon(eventicon::DOMINATE, totalmillis, eventiconfade); // dominating
                     if(v->dominated.find(d) < 0) v->dominated.add(d);
                     if(d->dominating.find(v) < 0) d->dominating.add(v);
                     if(allowanc)
@@ -1577,8 +1579,8 @@ namespace game
 
                 if(style&FRAG_BREAKER)
                 {
-                    concatstring(d->obit, " \fs\fzPwspree-breaking\fS");
-                    v->addicon(eventicon::BREAKER, lastmillis, eventiconfade);
+                    concatstring(d->obit, " \fs\fzpwspree-breaking\fS");
+                    v->addicon(eventicon::BREAKER, totalmillis, eventiconfade);
                     if(!override && allowanc) anc = S_V_BREAKER;
                 }
 
@@ -1586,21 +1588,21 @@ namespace game
                 {
                     if(style&FRAG_BREAKER) concatstring(d->obit, " and");
                     concatstring(d->obit, " \fs\fzcwdouble-killing\fS");
-                    v->addicon(eventicon::MULTIKILL, lastmillis, eventiconfade, 0);
+                    v->addicon(eventicon::MULTIKILL, totalmillis, eventiconfade, 0);
                     if(!override && allowanc) anc = S_V_MULTI;
                 }
                 else if(style&FRAG_MKILL2)
                 {
                     if(style&FRAG_BREAKER) concatstring(d->obit, " and");
                     concatstring(d->obit, " \fs\fzcwtriple-killing\fS");
-                    v->addicon(eventicon::MULTIKILL, lastmillis, eventiconfade, 1);
+                    v->addicon(eventicon::MULTIKILL, totalmillis, eventiconfade, 1);
                     if(!override && allowanc) anc = S_V_MULTI2;
                 }
                 else if(style&FRAG_MKILL3)
                 {
                     if(style&FRAG_BREAKER) concatstring(d->obit, " and");
                     concatstring(d->obit, " \fs\fzcwmulti-killing\fS");
-                    v->addicon(eventicon::MULTIKILL, lastmillis, eventiconfade, 2);
+                    v->addicon(eventicon::MULTIKILL, totalmillis, eventiconfade, 2);
                     if(!override && allowanc) anc = S_V_MULTI3;
                 }
             }
@@ -1614,7 +1616,7 @@ namespace game
                 if(style&FRAG_FIRSTBLOOD)
                 {
                     concatstring(d->obit, " for \fs\fzrwfirst blood\fS");
-                    v->addicon(eventicon::FIRSTBLOOD, lastmillis, eventiconfade, 0);
+                    v->addicon(eventicon::FIRSTBLOOD, totalmillis, eventiconfade, 0);
                     if(allowanc)
                     {
                         anc = S_V_FIRSTBLOOD;
@@ -1624,8 +1626,8 @@ namespace game
 
                 if(style&FRAG_SPREE1)
                 {
-                    concatstring(d->obit, " in total \fs\fzYwcarnage\fS");
-                    v->addicon(eventicon::SPREE, lastmillis, eventiconfade, 0);
+                    concatstring(d->obit, " in total \fs\fzywcarnage\fS");
+                    v->addicon(eventicon::SPREE, totalmillis, eventiconfade, 0);
                     if(!override && allowanc)
                     {
                         anc = S_V_SPREE;
@@ -1634,8 +1636,8 @@ namespace game
                 }
                 else if(style&FRAG_SPREE2)
                 {
-                    concatstring(d->obit, " on a \fs\fzYwslaughter\fS");
-                    v->addicon(eventicon::SPREE, lastmillis, eventiconfade, 1);
+                    concatstring(d->obit, " on a \fs\fzywslaughter\fS");
+                    v->addicon(eventicon::SPREE, totalmillis, eventiconfade, 1);
                     if(!override && allowanc)
                     {
                         anc = S_V_SPREE2;
@@ -1644,8 +1646,8 @@ namespace game
                 }
                 else if(style&FRAG_SPREE3)
                 {
-                    concatstring(d->obit, " on a \fs\fzYwmassacre\fS");
-                    v->addicon(eventicon::SPREE, lastmillis, eventiconfade, 2);
+                    concatstring(d->obit, " on a \fs\fzywmassacre\fS");
+                    v->addicon(eventicon::SPREE, totalmillis, eventiconfade, 2);
                     if(!override && allowanc)
                     {
                         anc = S_V_SPREE3;
@@ -1654,8 +1656,8 @@ namespace game
                 }
                 else if(style&FRAG_SPREE4)
                 {
-                    concatstring(d->obit, " in a \fs\fzYPbloodbath\fS");
-                    v->addicon(eventicon::SPREE, lastmillis, eventiconfade, 3);
+                    concatstring(d->obit, " in a \fs\fzyPbloodbath\fS");
+                    v->addicon(eventicon::SPREE, totalmillis, eventiconfade, 3);
                     if(!override && allowanc)
                     {
                         anc = S_V_SPREE4;
@@ -1769,7 +1771,7 @@ namespace game
         if(gamestate == G_S_VOTING && oldstate != G_S_VOTING)
         {
             hud::showscores(false);
-            showgui("maps", 1);
+            UI::openui("maps");
         }
     }
 
@@ -1869,7 +1871,7 @@ namespace game
         if(!empty)
         {
             gamestate = G_S_WAITING;
-            maptime = 0;
+            mapstart = maptime = 0;
         }
         specreset();
         removedamagemergeall();
@@ -1983,15 +1985,17 @@ namespace game
     {
         switch(type)
         {
-            case -1: return levelcolour(d->colour, level);
+            case -1: return findcolour(d, true, false, level); break;
             case CTONE_TMIX: return findcolour(d, true, d->team != T_NEUTRAL, level); break;
             case CTONE_AMIX: return findcolour(d, true, d->team == T_NEUTRAL, level); break;
             case CTONE_MIXED: return findcolour(d, true, true, level); break;
             case CTONE_ALONE: return findcolour(d, d->team != T_NEUTRAL, false, level); break;
             case CTONE_TEAMED: return findcolour(d, d->team == T_NEUTRAL, false, level); break;
             case CTONE_TONE: return findcolour(d, true, false, level); break;
-            case CTONE_TEAM: default: return findcolour(d, false, false, level); break;
+            case CTONE_TEAM: return findcolour(d, false, false, level); break;
+            case -2: default: return levelcolour(d->colour, level); break;
         }
+        return 0;
     }
 
     const char *colourname(gameent *d, char *name, bool icon, bool dupname, int colour)
@@ -2046,6 +2050,9 @@ namespace game
         concatstring(teamed, "\fS");
         return teamed;
     }
+
+    ICOMMAND(0, getteamname, "i", (int *team), result(*team >= 0 && *team < T_MAX ? TEAM(*team, name) : ""));
+    ICOMMAND(0, getteamcolour, "i", (int *team), intret(*team >= 0 && *team < T_MAX ? TEAM(*team, colour) : 0));
 
     void suicide(gameent *d, int flags)
     {
@@ -2130,7 +2137,7 @@ namespace game
         {
             checkzoom();
             int frame = lastmillis-lastzoom;
-            float zoom = W(game::focus->weapselect, cookzoommax)-((W(game::focus->weapselect, cookzoommax)-W(game::focus->weapselect, cookzoommin))/float(zoomlevels)*zoomlevel),
+            float zoom = W(focus->weapselect, cookzoommax)-((W(focus->weapselect, cookzoommax)-W(focus->weapselect, cookzoommin))/float(zoomlevels)*zoomlevel),
                   diff = float(fov()-zoom), amt = frame < W(focus->weapselect, cookzoom) ? clamp(frame/float(W(focus->weapselect, cookzoom)), 0.f, 1.f) : 1.f;
             if(!zooming) amt = 1.f-amt;
             curfov = fov()-(amt*diff);
@@ -2578,16 +2585,16 @@ namespace game
             camupdate(cam, amt, renew, true);
             if(renew)
             {
-                lasttvchg = lasttvcam = lastmillis;
+                lasttvchg = lasttvcam = totalmillis;
                 cam->resetlast();
             }
         }
         else loopk(spectvfollowing >= 0 ? 2 : 1)
         {
-            int lastcn = cam->cn, millis = lasttvchg ? lastmillis-lasttvchg : 0;
+            int lastcn = cam->cn, millis = lasttvchg ? totalmillis-lasttvchg : 0;
             if(millis) amt = float(millis)/float(stvf(maxtime));
             bool updated = camupdate(cam, amt, renew), override = !lasttvchg || millis >= stvf(mintime),
-                 reset = (stvf(maxtime) && millis >= stvf(maxtime)) || !lasttvcam || lastmillis-lasttvcam >= stvf(time);
+                 reset = (stvf(maxtime) && millis >= stvf(maxtime)) || !lasttvcam || totalmillis-lasttvcam >= stvf(time);
             if(spectvfollowing >= 0 && !reset && !updated && !override)
             {
                 spectvfollowing = -1;
@@ -2617,13 +2624,13 @@ namespace game
                 scams.sort(cament::compare);
                 lastcamcn = scams[0]->cn;
                 cam = cameras[lastcamcn];
-                lasttvcam = lastmillis;
+                lasttvcam = totalmillis;
             }
             camrefresh(cam, reset);
             if(!lasttvchg || cam->cn != lastcn)
             {
                 amt = 0;
-                lasttvchg = lastmillis;
+                lasttvchg = totalmillis;
                 renew = true;
                 cam->moveto = NULL;
                 cam->resetlast();
@@ -2669,12 +2676,12 @@ namespace game
                     off##x -= adj##x; \
                     if(cam->last##x == 0 || (off##x > 0 && cam->last##x < 0) || (off##x < 0 && cam->last##x > 0) || (x##thresh > 0 && (fabs(cam->last##x - off##x) >= x##thresh))) \
                     { \
-                        cam->last##x##time = lastmillis; \
+                        cam->last##x##time = totalmillis; \
                         x##scale = 0; \
                     } \
                     else if(cam->last##x##time) \
                     { \
-                        int offtime = lastmillis-cam->last##x##time, x##speed = chase ? followtv##x##speed : stvf(x##speed); \
+                        int offtime = totalmillis-cam->last##x##time, x##speed = chase ? followtv##x##speed : stvf(x##speed); \
                         if(offtime <= x##speed) x##scale = offtime/float(x##speed); \
                     } \
                     cam->last##x = off##x; \
@@ -2787,7 +2794,7 @@ namespace game
     {
         specreset();
         hud::showscores(false);
-        cleargui();
+        UI::closeui(NULL);
     }
 
     void resetstate()
@@ -2811,6 +2818,7 @@ namespace game
             else if(maptime < 0)
             {
                 maptime = lastmillis ? lastmillis : 1;
+                mapstart = totalmillis ? totalmillis : 1;
                 if(type != 6) musicdone(false);
                 RUNWORLD("on_start");
                 resetcamera();
@@ -2861,13 +2869,13 @@ namespace game
             }
             checkplayers();
             flushdamagemerges();
-            if(!menuactive())
+            if(!UI::hasmenu() && (needname(player1) || wantsloadoutmenu))
             {
-                if(needname(player1)) showgui("profile", 1);
-                else if(wantsloadoutmenu) showgui("profile", 2, &wantsloadoutmenu);
+                UI::openui("profile");
+                wantsloadoutmenu = false;
             }
         }
-        else if(!menuactive()) showgui(needname(player1) ? "profile" : "main", 1);
+        else if(!UI::hasmenu()) UI::openui(needname(player1) ? "profile" : "main");
         gets2c();
         adjustscaled(hud::damageresidue, hud::damageresiduefade);
         if(connected())
@@ -2960,7 +2968,7 @@ namespace game
 
             camera1->inmaterial = lookupmaterial(camera1->o);
             camera1->inliquid = isliquid(camera1->inmaterial&MATF_VOLUME);
-            lastcamera = lastmillis;
+            lastcamera = totalmillis;
         }
     }
 
@@ -3221,7 +3229,7 @@ namespace game
         {
             if(d->icons[i].type == eventicon::AFFINITY && !(aboveheadicons&2)) continue;
             if(d->icons[i].type == eventicon::WEAPON && !(aboveheadicons&4)) continue;
-            int millis = lastmillis-d->icons[i].millis;
+            int millis = totalmillis-d->icons[i].millis;
             if(millis <= d->icons[i].fade)
             {
                 Texture *t = textureload(hud::icontex(d->icons[i].type, d->icons[i].value));
@@ -3428,7 +3436,7 @@ namespace game
         if(d->state == CS_ALIVE)
         {
             bool useth = hud::teamhurthud&1 && hud::teamhurttime && m_team(gamemode, mutators) && focus == player1 &&
-                 d->team == player1->team && d->lastteamhit >= 0 && lastmillis-d->lastteamhit <= hud::teamhurttime,
+                 d->team == player1->team && d->lastteamhit >= 0 && totalmillis-d->lastteamhit <= hud::teamhurttime,
             hashint = playerhint&(d->team != focus->team ? 2 : 1), haslight = false, haspower = false, hasdom = false;
             if(isweap(d->weapselect) && playerhint&4)
             {

@@ -63,7 +63,7 @@ void localopadd(const char *name, const char *flags)
     if(!name || !flags) return;
     loopv(localops) if(!strcmp(name, localops[i].name))
     {
-        conoutf("local operator %s already exists with flags %s", localops[i].name, localops[i].flags);
+        conoutf("Local operator %s already exists with flags %s", localops[i].name, localops[i].flags);
         return;
     }
     localop &o = localops.add();
@@ -117,14 +117,14 @@ namespace auth
             if(quickauthchecks)
             {
                 if(!ci->connectauth)
-                    srvmsgftforce(ci->clientnum, CON_EVENT, "\fyplease wait, connecting to master server for a quick match..");
+                    srvmsgftforce(ci->clientnum, CON_EVENT, "\fyPlease wait, connecting to master server for a quick match..");
                 quickcheck = totalmillis ? totalmillis : 1;
             }
-            else if(!ci->local) srvmsgftforce(ci->clientnum, CON_EVENT, "\founable to verify, not connected to master server");
+            else if(!ci->local) srvmsgftforce(ci->clientnum, CON_EVENT, "\foUnable to verify, not connected to master server");
             return;
         }
         if(!ci->connectauth)
-            srvmsgftforce(ci->clientnum, CON_EVENT, "\fyplease wait, requesting credential match from master server..");
+            srvmsgftforce(ci->clientnum, CON_EVENT, "\fyPlease wait, requesting credential match from master server..");
         requestmasterf("reqauth %u %s %s\n", ci->authreq, ci->authname, gethostname(ci->clientnum));
     }
 
@@ -133,12 +133,12 @@ namespace auth
         if(!ci) return false;
         if(!connectedmaster() && !quickauthchecks)
         {
-            if(!ci->local) srvmsgftforce(ci->clientnum, CON_EVENT, "\founable to verify, not connected to master server");
+            if(!ci->local) srvmsgftforce(ci->clientnum, CON_EVENT, "\foUnable to verify, not connected to master server");
             return false;
         }
         else if(ci->authreq)
         {
-            srvmsgftforce(ci->clientnum, CON_EVENT, "\foplease wait, still processing previous attempt..");
+            srvmsgftforce(ci->clientnum, CON_EVENT, "\foPlease wait, still processing previous attempt..");
             return true;
         }
         copystring(ci->authname, authname);
@@ -255,7 +255,7 @@ namespace auth
             ipinfo *info = checkipinfo(control, ipinfo::BAN, ip);
             if(info)
             {
-                srvmsgftforce(ci->clientnum, CON_EVENT, "\foyou are \fs\fcbanned\fS: \fy%s", info->reason && *info->reason ? info->reason : "no reason specified");
+                srvmsgftforce(ci->clientnum, CON_EVENT, "\foYou are \fs\fcbanned\fS: \fy%s", info->reason && *info->reason ? info->reason : "no reason specified");
                 return DISC_IPBAN;
             }
         }
@@ -266,7 +266,7 @@ namespace auth
     {
         if(!ci) return;
         ci->authreq = ci->authname[0] = ci->handle[0] = '\0';
-        srvmsgftforce(ci->clientnum, CON_EVENT, "\foidentity verification failed, please check your credentials");
+        srvmsgftforce(ci->clientnum, CON_EVENT, "\foIdentity verification failed, please check your credentials");
         if(ci->connectauth)
         {
             ci->connectauth = false;
@@ -284,7 +284,7 @@ namespace auth
     void serverauthfailed()
     {
         hasauth = hasstats = false;
-        conoutf("server auth request failed");
+        conoutf("Server auth request failed");
     }
 
     void serverauthsucceeded(const char *name, const char *flags)
@@ -297,7 +297,7 @@ namespace auth
                 break;
             case 'b': case 'm': default: hasauth = true; break;
         }
-        conoutf("server auth succeeded (%s [%s])", hasstats ? "stats" : "basic", flags);
+        conoutf("Server auth succeeded (%s [%s])", hasstats ? "stats" : "basic", flags);
     }
 
     void authsucceeded(uint id, const char *name, const char *flags)
@@ -373,7 +373,7 @@ namespace auth
         {
             if(!isxdigit(*s)) { *s = '\0'; break; }
         }
-        //srvmsgftforce(ci->clientnum, CON_EVENT, "\fyconfirming identity with master server..");
+        //srvmsgftforce(ci->clientnum, CON_EVENT, "\fyConfirming identity with master server..");
         requestmasterf("confauth %u %s\n", id, val);
         return true;
     }
@@ -391,8 +391,8 @@ namespace auth
             if(s) w[i] = s;
             else numargs = i;
         }
-        if(!strcmp(w[0], "error")) conoutf("master server error: %s", w[1]);
-        else if(!strcmp(w[0], "echo")) { conoutf("master server reply: %s", w[1]); }
+        if(!strcmp(w[0], "error")) conoutf("Master server error: %s", w[1]);
+        else if(!strcmp(w[0], "echo")) { conoutf("Master server reply: %s", w[1]); }
         else if(!strcmp(w[0], "failauth")) authfailed((uint)(atoi(w[1])));
         else if(!strcmp(w[0], "succauth")) authsucceeded((uint)(atoi(w[1])), w[2], w[3]);
         else if(!strcmp(w[0], "authstats"))
@@ -414,13 +414,13 @@ namespace auth
         {
             int oldversion = versioning;
             versioning = 2;
-            if(servcmd(2, w[1], w[2])) conoutf("master server variable synced: %s", w[1]);
+            if(servcmd(2, w[1], w[2])) conoutf("Master server variable synced: %s", w[1]);
             versioning = oldversion;
         }
         else if(!strcmp(w[0], "stats"))
         {
-            if(!strcmp(w[1], "success")) srvoutf(-3, "\fystats success: %s", w[2]);
-            else if(!strcmp(w[1], "failure")) srvoutf(-3, "\frstats failure: %s", w[2]);
+            if(!strcmp(w[1], "success")) srvoutf(-3, "\fyStats success: %s", w[2]);
+            else if(!strcmp(w[1], "failure")) srvoutf(-3, "\frStats failure: %s", w[2]);
         }
         else loopj(ipinfo::SYNCTYPES) if(!strcmp(w[0], ipinfotypes[j]))
         {
@@ -448,7 +448,7 @@ namespace auth
         }
         else
         {
-            conoutf("updating master server");
+            conoutf("Updating master server");
             requestmasterf("server %d %s %d %s %d %s\n", serverport, *serverip ? serverip : "*", CUR_VERSION, escapestring(G(serverdesc)), G(serverstats), escapestring(versionbranch));
         }
         reqserverauth();

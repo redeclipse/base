@@ -510,7 +510,7 @@ namespace capture
             game::spawneffect(PART_SPARK, vec(f.pos()).add(vec(0, 0, enttype[AFFINITY].radius*0.45f)), enttype[AFFINITY].radius*0.25f, 0xFFFFFF, 1.5f);
             game::spawneffect(PART_SPARK, value == 2 ? pos : vec(f.spawnloc).add(vec(0, 0, enttype[AFFINITY].radius*0.45f)), enttype[AFFINITY].radius*0.25f, TEAM(f.team, colour), 1.5f);
             game::spawneffect(PART_SPARK, value == 2 ? pos : vec(f.spawnloc).add(vec(0, 0, enttype[AFFINITY].radius*0.45f)), enttype[AFFINITY].radius*0.25f, 0xFFFFFF, 1.5f);
-            game::announcef(S_V_FLAGRESET, CON_SELF, NULL, true, "\fathe %s flag has been reset", game::colourteam(f.team, "flagtex"));
+            game::announcef(S_V_FLAGRESET, CON_SELF, NULL, true, "\faThe %s flag has been reset", game::colourteam(f.team, "flagtex"));
         }
         if(value == 2)
         {

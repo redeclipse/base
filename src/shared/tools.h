@@ -60,9 +60,19 @@ static inline T max(T a, T b)
     return a > b ? a : b;
 }
 template<class T>
+static inline T max(T a, T b, T c)
+{
+    return max(max(a, b), c);
+}
+template<class T>
 static inline T min(T a, T b)
 {
     return a < b ? a : b;
+}
+template<class T>
+static inline T min(T a, T b, T c)
+{
+    return min(min(a, b), c);
 }
 template<class T, class U>
 static inline T clamp(T a, U b, U c)
@@ -113,10 +123,11 @@ static inline int bitscan(uint mask)
 #define DELETEP(p) if(p) { delete   p; p = 0; }
 #define DELETEA(p) if(p) { delete[] p; p = 0; }
 
-#define PI  (3.1415927f)
+#define PI (3.14159265358979f)
 #define PI2 (2*PI)
-#define SQRT2 (1.4142136f)
-#define SQRT3 (1.7320508f)
+#define SQRT2 (1.4142135623731f)
+#define SQRT3 (1.73205080756888f)
+#define SQRT5 (2.23606797749979f)
 #define RAD (PI / 180.0f)
 
 #ifdef WIN32
@@ -214,6 +225,8 @@ template<size_t N> inline void concformatstring(char (&d)[N], const char *fmt, .
     va_end(v);
 }
 
+extern char *tempformatstring(const char *fmt, ...) PRINTFARGS(1, 2);
+
 #define defformatstring(d,...) string d; formatstring(d, __VA_ARGS__)
 #define defvformatstring(d,last,fmt) string d; { va_list ap; va_start(ap, last); vformatstring(d, fmt, ap); va_end(ap); }
 
@@ -228,6 +241,16 @@ template<size_t N> inline bool matchstring(const char *s, size_t len, const char
 inline char *newstring(size_t l)                { return new char[l+1]; }
 inline char *newstring(const char *s, size_t l) { return copystring(newstring(l), s, l+1); }
 inline char *newstring(const char *s)           { if(!s) s = ""; size_t l = strlen(s); char *d = newstring(l); memcpy(d, s, l+1); return d; }
+
+inline char *newconcatstring(const char *s, const char *t)
+{
+    size_t slen = strlen(s), tlen = strlen(t);
+    char *r = newstring(slen + tlen);
+    memcpy(r, s, slen);
+    memcpy(&r[slen], t, tlen);
+    r[slen+tlen] = '\0';
+    return r;
+}
 
 #define loopv(v)    for(int i = 0; i<(v).length(); i++)
 #define loopvj(v)   for(int j = 0; j<(v).length(); j++)
@@ -297,18 +320,25 @@ struct databuf
 
     void put(const T *vals, int numvals)
     {
-        if(maxlen-len<numvals) flags |= OVERWROTE;
-        memcpy(&buf[len], (const void *)vals, min(maxlen-len, numvals)*sizeof(T));
-        len += min(maxlen-len, numvals);
+        if(maxlen - len < numvals)
+        {
+            numvals = maxlen - len;
+            flags |= OVERWROTE;
+        }
+        memcpy(&buf[len], (const void *)vals, numvals*sizeof(T));
+        len += numvals;
     }
 
     int get(T *vals, int numvals)
     {
-        int read = min(maxlen-len, numvals);
-        if(read<numvals) flags |= OVERREAD;
-        memcpy(vals, (void *)&buf[len], read*sizeof(T));
-        len += read;
-        return read;
+        if(maxlen - len < numvals)
+        {
+            numvals = maxlen - len;
+            flags |= OVERREAD;
+        }
+        memcpy(vals, (void *)&buf[len], numvals*sizeof(T));
+        len += numvals;
+        return numvals;
     }
 
     void offset(int n)
@@ -664,13 +694,13 @@ template <class T> struct vector
     T &operator[](int i) { ASSERT(i>=0 && i<ulen); return buf[i]; }
     const T &operator[](int i) const { ASSERT(i >= 0 && i<ulen); return buf[i]; }
 
-    void disown() { buf = NULL; alen = ulen = 0; }
+    T *disown() { T *r = buf; buf = NULL; alen = ulen = 0; return r; }
 
     void shrink(int i) { ASSERT(i<=ulen); if(isclass<T>::no) ulen = i; else while(ulen>i) drop(); }
     void setsize(int i) { ASSERT(i<=ulen); ulen = i; }
 
-    void deletecontents() { while(!empty()) delete   pop(); }
-    void deletearrays() { while(!empty()) delete[] pop(); }
+    void deletecontents(int n = 0) { while(ulen > n) delete pop(); }
+    void deletearrays(int n = 0) { while(ulen > n) delete[] pop(); }
 
     T *getbuf() { return buf; }
     const T *getbuf() const { return buf; }
@@ -862,6 +892,35 @@ template <class T> struct vector
         if(ulen) downheap(0);
         return e;
     }
+
+    template<class K>
+    int htfind(const K &key)
+    {
+        loopi(ulen) if(htcmp(key, buf[i])) return i;
+        return -1;
+    }
+
+    #define UNIQUE(overwrite, cleanup) \
+        for(int i = 1; i < ulen; i++) if(htcmp(buf[i-1], buf[i])) \
+        { \
+            int n = i; \
+            while(++i < ulen) if(!htcmp(buf[n-1], buf[i])) { overwrite; n++; } \
+            cleanup; \
+            break; \
+        }
+    void unique() // contents must be initially sorted
+    {
+        UNIQUE(buf[n] = buf[i], setsize(n));
+    }
+    void uniquedeletecontents()
+    {
+        UNIQUE(swap(buf[n], buf[i]), deletecontents(n));
+    }
+    void uniquedeletearrays()
+    {
+        UNIQUE(swap(buf[n], buf[i]), deletearrays(n));
+    }
+    #undef UNIQUE
 };
 
 template <class T> struct smallvector
@@ -1140,6 +1199,26 @@ template<class H, class E, class K, class T> struct hashbase
         return false;
     }
 
+    void recycle()
+    {
+        if(!numelems) return;
+        loopi(size)
+        {
+            chain *c = chains[i];
+            if(!c) continue;
+            for(;;)
+            {
+                htrecycle(c->elem);
+                if(!c->next) break;
+                c = c->next;
+            }
+            c->next = unused;
+            unused = chains[i];
+            chains[i] = NULL;
+        }
+        numelems = 0;
+    }
+
     void deletechunks()
     {
         for(chainchunk *nextchunk; chunks; chunks = nextchunk)
@@ -1162,6 +1241,8 @@ template<class H, class E, class K, class T> struct hashbase
     static inline K &enumkey(void *i) { return H::getkey(((chain *)i)->elem); }
     static inline T &enumdata(void *i) { return H::getdata(((chain *)i)->elem); }
 };
+
+template<class T> static inline void htrecycle(const T &) {}
 
 template<class T> struct hashset : hashbase<hashset<T>, T, T, T>
 {
@@ -1203,6 +1284,13 @@ template<class K, class T> struct hashtableentry
     K key;
     T data;
 };
+
+template<class K, class T>
+static inline void htrecycle(hashtableentry<K, T> &entry)
+{
+    htrecycle(entry.key);
+    htrecycle(entry.data);
+}
 
 template<class K, class T> struct hashtable : hashbase<hashtable<K, T>, hashtableentry<K, T>, K, T>
 {
@@ -1549,5 +1637,13 @@ extern void sendstring(const char *t, packetbuf &p);
 extern void sendstring(const char *t, vector<uchar> &p);
 extern void getstring(char *t, ucharbuf &p, size_t len);
 template<size_t N> static inline void getstring(char (&t)[N], ucharbuf &p) { getstring(t, p, N); }
+struct ipmask
+{
+    enet_uint32 ip, mask;
+
+    void parse(const char *name);
+    int print(char *buf) const;
+    bool check(enet_uint32 host) const { return (host & mask) == ip; }
+};
 
 #endif

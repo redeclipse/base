@@ -61,7 +61,7 @@ hashtable<int, keym> keyms(128);
 
 void keymap(int *code, char *key)
 {
-    if(identflags&IDF_WORLD) { conoutf("\frcannot override keymap"); return; }
+    if(identflags&IDF_WORLD) { conoutf("\frCannot override keymap"); return; }
     keym &km = keyms[*code];
     km.code = *code;
     DELETEA(km.name);
@@ -244,9 +244,9 @@ int changedkeys = 0;
 
 void bindkey(char *key, char *action, int state, const char *cmd)
 {
-    if(identflags&IDF_WORLD) { conoutf("\frcannot override %s \"%s\"", cmd, key); return; }
+    if(identflags&IDF_WORLD) { conoutf("\frCannot override %s \"%s\"", cmd, key); return; }
     keym *km = findbind(key);
-    if(!km) { conoutf("\frunknown key \"%s\"", key); return; }
+    if(!km) { conoutf("\frUnknown key \"%s\"", key); return; }
     char *&binding = km->actions[state];
     bool *persist = &km->persist[state];
     if(!keypressed || keyaction!=binding) delete[] binding;
@@ -390,7 +390,13 @@ COMMANDN(0, history, history_, "i");
 struct releaseaction
 {
     keym *key;
-    char *action;
+    union
+    {
+        char *action;
+        ident *id;
+    };
+    int numargs;
+    tagval args[3];
 };
 vector<releaseaction> releaseactions;
 
@@ -400,7 +406,18 @@ const char *addreleaseaction(char *s)
     releaseaction &ra = releaseactions.add();
     ra.key = keypressed;
     ra.action = s;
+    ra.numargs = -1;
     return keypressed->name;
+}
+
+tagval *addreleaseaction(ident *id, int numargs)
+{
+    if(!keypressed || numargs > 3) return NULL;
+    releaseaction &ra = releaseactions.add();
+    ra.key = keypressed;
+    ra.id = id;
+    ra.numargs = numargs;
+    return ra.args;
 }
 
 void onrelease(const char *s)
@@ -417,8 +434,12 @@ void execbind(keym &k, bool isdown)
         releaseaction &ra = releaseactions[i];
         if(ra.key==&k)
         {
-            if(!isdown) execute(ra.action);
-            delete[] ra.action;
+            if(ra.numargs < 0)
+            {
+            	if(!isdown) execute(ra.action);
+            	delete[] ra.action;
+            }
+            else execute(isdown ? NULL : ra.id, ra.args, ra.numargs);
             releaseactions.remove(i--);
         }
     }
@@ -722,7 +743,7 @@ void addcomplete(char *command, int type, char *dir, char *ext)
 {
     if(identflags&IDF_WORLD)
     {
-        conoutf("\frcannot override complete %s", command);
+        conoutf("\frCannot override complete %s", command);
         return;
     }
     if(!dir[0])
@@ -841,7 +862,7 @@ void setidflag(const char *s, const char *v, int flag, const char *msg, bool ali
     ident *id = idents.access(s);
     if(!id || (alias && id->type != ID_ALIAS))
     {
-        if(verbose) conoutf("\fradding %s of %s failed as it is not available", msg, s);
+        if(verbose) conoutf("\frAdding %s of %s failed as it is not available", msg, s);
         return;
     }
     bool on = false;
@@ -862,7 +883,7 @@ void setiddesc(const char *s, const char *v, const char *f)
     ident *id = idents.access(s);
     if(!id)
     {
-        if(verbose) conoutf("\fradding description of %s failed as it is not available", s);
+        if(verbose) conoutf("\frAdding description of %s failed as it is not available", s);
         return;
     }
     DELETEA(id->desc);
@@ -942,58 +963,3 @@ bool numlocked()
     return false;
 }
 ICOMMAND(0, getnumlock, "", (), intret(numlockon ? 1 : 0));
-
-#ifndef STANDALONE
-bool consolegui(guient *g, int width, int height, const char *init, int &update)
-{
-    g->strut(width-6);
-    if(!conlines.empty() && (update < 0 || conlines[0].reftime > update))
-    {
-        editor *e = UI::geteditor("console_window", EDITORREADONLY);
-        if(e)
-        {
-            UI::editorclear(e);
-            loopvrev(conlines) UI::editorline(e, conlines[i].cref, MAXCONLINES);
-            update = totalmillis;
-        }
-    }
-    g->field("console_window", 0x666666, -width, height, NULL, EDITORREADONLY);
-    char *w = g->field("console_input", 0x666666, -width, 0, init, EDITORFOREVER, g->visible(), "console_window");
-    if(w && *w)
-    {
-        bool consolecmd = *w == '/';
-        commandmillis = totalmillis;
-        copystring(commandbuf, w, BIGSTRLEN);
-        DELETEA(commandaction);
-        DELETEA(commandicon);
-        commandpos = strlen(commandbuf);
-        if(!consolecmd) commandaction = newstring("say $commandbuffer");
-        commandcolour = 0;
-        commandflags = CF_EXECUTE|CF_MESSAGE;
-        hline *h = NULL;
-        if(commandbuf[0])
-        {
-            if(history.empty() || history.last()->shouldsave())
-            {
-                if(maxhistory && history.length() >= maxhistory)
-                {
-                    loopi(history.length()-maxhistory+1) delete history[i];
-                    history.remove(0, history.length()-maxhistory+1);
-                }
-                history.add(h = new hline)->save();
-            }
-            else h = history.last();
-        }
-        histpos = history.length();
-        inputcommand(NULL);
-        if(h)
-        {
-            interactive = true;
-            h->run();
-            interactive = false;
-        }
-        UI::editoredit(UI::geteditor("console_input", EDITORFOREVER, init, "console_window"), init);
-    }
-    return true;
-}
-#endif

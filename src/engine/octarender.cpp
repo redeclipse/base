@@ -52,7 +52,7 @@ void genvbo(int type, void *buf, int len, vtxarray **vas, int numva)
     vboinfo &vbi = vbos[vbo];
     vbi.uses = numva;
 
-    if(printvbo) conoutf("vbo %d: type %d, size %d, %d uses", vbo, type, len, numva);
+    if(printvbo) conoutf("Vbo %d: type %d, size %d, %d uses", vbo, type, len, numva);
 
     loopi(numva)
     {
@@ -156,7 +156,7 @@ struct verthash
     {
         vertex vtx;
         vtx.pos = pos;
-        vtx.tc = tc; 
+        vtx.tc = tc;
         vtx.lm = lm;
         vtx.norm = norm;
         vtx.tangent = tangent;
@@ -603,7 +603,7 @@ void addtris(const sortkey &key, int orient, vertex *verts, int *index, int numv
             {
             case 1: i1 = i2 = mid; cedge = edge+i+1; break;
             case 2: if(i1 != mid || i0 == left) { i0 = i1; i1 = right; } i2 = right; if(i+1 == numverts-2) cedge = edge+i+2; break;
-            case 3: if(i0 == start) { i0 = i1; i1 = left; } i2 = left; // fall-through 
+            case 3: if(i0 == start) { i0 = i1; i1 = left; } i2 = left; // fall-through
             default: if(!i) cedge = edge; break;
             }
             if(i1 != i2)
@@ -1026,7 +1026,7 @@ void gencubeedges(cube &c, const ivec &co, int size)
 
 void gencubeedges(cube *c = worldroot, const ivec &co = ivec(0, 0, 0), int size = hdr.worldsize>>1)
 {
-    showocprog("fixing t-joints...");
+    showocprog("Fixing t-joints...");
     neighbourstack[++neighbourdepth] = c;
     loopi(8)
     {
@@ -1045,7 +1045,7 @@ void gencubeverts(cube &c, const ivec &co, int size, int csi)
     int vismask = ~c.merged & 0x3F;
     if(!(c.visible&0x80)) vismask &= c.visible;
     if(!vismask) return;
-    
+
     int tj = filltjoints && c.ext ? c.ext->tjoints : -1, vis;
     loopi(6) if(vismask&(1<<i) && (vis = visibletris(c, i, co, size)))
     {
@@ -1571,19 +1571,19 @@ static inline int setcubevisibility(cube &c, const ivec &co, int size)
     loopi(6)
     {
         int facemask = classifyface(c, i, co, size);
-        if(facemask&1) 
+        if(facemask&1)
         {
             vismask |= 1<<i;
             if(c.merged&(1<<i))
             {
                 if(c.ext && c.ext->surfaces[i].numverts&MAXFACEVERTS) numvis++;
             }
-            else 
+            else
             {
                 numvis++;
                 if(c.texture[i] != DEFAULT_SKY && !(c.ext && c.ext->surfaces[i].numverts&MAXFACEVERTS)) checkmask |= 1<<i;
             }
-        } 
+        }
         if(facemask&2 && collideface(c, i)) collidemask |= 1<<i;
     }
     c.visible = collidemask | (vismask ? (vismask != collidemask ? (checkmask ? 0x80|0x40 : 0x80) : 0x40) : 0);
@@ -1596,7 +1596,7 @@ VARF(0, vacubesize, 32, 128, 0x1000, allchanged());
 
 int updateva(cube *c, const ivec &co, int size, int csi)
 {
-    showocprog("recalculating geometry...");
+    showocprog("Recalculating geometry...");
     int ccount = 0, cmergemax = vamergemax, chasmerges = vahasmerges;
     neighbourstack[++neighbourdepth] = c;
     loopi(8)                                    // counting number of semi-solid/solid children cubes
@@ -1768,7 +1768,7 @@ void precachetextures()
 
 void allchanged(bool load)
 {
-    progress(0, "clearing vertex arrays...");
+    progress(0, "Clearing vertex arrays...");
     clearvas(worldroot);
     resetqueries();
     resetclipplanes();

@@ -145,7 +145,7 @@ bool resolverwait(const char *name, ENetAddress *address)
 {
     if(resolverthreads.empty()) resolverinit();
 
-    defformatstring(text, "resolving %s...", name);
+    defformatstring(text, "Resolving %s...", name);
     progress(0, text);
 
     SDL_LockMutex(resolvermutex);
@@ -186,7 +186,7 @@ bool resolverwait(const char *name, ENetAddress *address)
 
 int connectwithtimeout(ENetSocket sock, const char *hostname, const ENetAddress &address)
 {
-    defformatstring(text, "connecting to %s:[%d]...", hostname != NULL ? hostname : "local server", address.port);
+    defformatstring(text, "Connecting to %s:[%d]...", hostname != NULL ? hostname : "local server", address.port);
     progress(0, text);
 
     ENetSocketSet readset, writeset;
@@ -245,7 +245,7 @@ void addserver(const char *name, int port, int priority, const char *desc, const
 {
     loopv(servers) if(!strcmp(servers[i]->name, name) && servers[i]->port == port) return;
     if(newserver(name, port, priority, desc, handle, flags, branch) && verbose >= 2)
-        conoutf("added server %s (%d) [%s]", name, port, desc);
+        conoutf("Added server %s (%d) [%s]", name, port, desc);
 }
 ICOMMAND(0, addserver, "siissss", (char *n, int *p, int *r, char *d, char *h, char *f, char *b), addserver(n, *p > 0 ? *p : SERVER_PORT, *r >= 0 ? *r : 0, d, h, f, b));
 
@@ -425,7 +425,7 @@ void retrieveservers(vector<char> &data)
     ENetSocket sock = connectmaster(false);
     if(sock == ENET_SOCKET_NULL) return;
 
-    defformatstring(text, "retrieving servers from %s:[%d]", servermaster, servermasterport);
+    defformatstring(text, "Retrieving servers from %s:[%d]", servermaster, servermasterport);
     progress(0, text);
 
     int starttime = SDL_GetTicks(), timeout = 0;
@@ -495,10 +495,10 @@ void updatefrommaster()
     {
         //clearservers();
         execute(data.getbuf());
-        if(verbose) conoutf("\faretrieved %d server(s) from master", servers.length());
-        else conoutf("\faretrieved list from master successfully");//, servers.length());
+        if(verbose) conoutf("\faRetrieved %d server(s) from master", servers.length());
+        else conoutf("\faRetrieved list from master successfully");//, servers.length());
     }
-    else conoutf("master server not replying");
+    else conoutf("Master server not replying");
     refreshservers();
     reqmaster = true;
 }

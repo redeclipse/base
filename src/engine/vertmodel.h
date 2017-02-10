@@ -439,18 +439,18 @@ template<class MDL> struct vertcommands : modelcommands<MDL, struct MDL::vertmes
 
     static void loadpart(char *model, float *smooth)
     {
-        if(!MDL::loading) { conoutf("\frnot loading an %s", MDL::formatname()); return; }
+        if(!MDL::loading) { conoutf("\frNot loading an %s", MDL::formatname()); return; }
         defformatstring(filename, "%s/%s", MDL::dir, model);
         part &mdl = MDL::loading->addpart();
         if(mdl.index) mdl.pitchscale = mdl.pitchoffset = mdl.pitchmin = mdl.pitchmax = 0;
         mdl.meshes = MDL::loading->sharemeshes(path(filename), double(*smooth > 0 ? cos(clamp(*smooth, 0.0f, 180.0f)*RAD) : 2));
-        if(!mdl.meshes) conoutf("\frcould not load %s", filename);
+        if(!mdl.meshes) conoutf("\frCould not load %s", filename);
         else mdl.initskins();
     }
     
     static void setpitch(float *pitchscale, float *pitchoffset, float *pitchmin, float *pitchmax)
     {
-        if(!MDL::loading || MDL::loading->parts.empty()) { conoutf("\frnot loading an %s", MDL::formatname()); return; }
+        if(!MDL::loading || MDL::loading->parts.empty()) { conoutf("\frNot loading an %s", MDL::formatname()); return; }
         part &mdl = *MDL::loading->parts.last();
     
         mdl.pitchscale = *pitchscale;
@@ -469,10 +469,10 @@ template<class MDL> struct vertcommands : modelcommands<MDL, struct MDL::vertmes
 
     static void setanim(char *anim, int *frame, int *range, float *speed, int *priority)
     {
-        if(!MDL::loading || MDL::loading->parts.empty()) { conoutf("\frnot loading an %s", MDL::formatname()); return; }
+        if(!MDL::loading || MDL::loading->parts.empty()) { conoutf("\frNot loading an %s", MDL::formatname()); return; }
         vector<int> anims;
         game::findanims(anim, anims);
-        if(anims.empty()) conoutf("\frcould not find animation %s", anim);
+        if(anims.empty()) conoutf("\frCould not find animation %s", anim);
         else loopv(anims)
         {
             MDL::loading->parts.last()->setanim(0, anims[i], *frame, *range, *speed, *priority);

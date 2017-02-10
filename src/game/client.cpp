@@ -27,6 +27,21 @@ namespace client
 
     int maxmsglen() { return G(messagelength); }
 
+    ICOMMAND(0, numgameplayers, "", (), intret(game::numdynents()));
+    ICOMMAND(0, loopgameplayers, "re", (ident *id, uint *body),
+    {
+        loopstart(id, stack);
+        int numdyns = game::numdynents();
+        loopi(numdyns)
+        {
+            gameent *d = (gameent *)game::iterdynents(i);
+            if(!d) continue;
+            loopiter(id, stack, d->clientnum);
+            execute(body);
+        }
+        loopend(id, stack);
+    });
+
     int otherclients(bool self, bool nospec)
     {
         int n = self ? 1 : 0;
@@ -109,13 +124,13 @@ namespace client
         }
     }
 
-    void vote(gameent *d, const char *text, int mode, int muts)
+    void vote(gameent *d, const char *text, int mode, int muts, bool force = false)
     {
         mapvote *m = NULL;
         if(!text || !*text) text = "<random>";
         if(!mapvotes.empty()) loopvrev(mapvotes)
         {
-            if(mapvotes[i].players.find(d) >= 0)
+            if(!force && mapvotes[i].players.find(d) >= 0)
             {
                 if(!strcmp(text, mapvotes[i].map) && mode == mapvotes[i].mode && muts == mapvotes[i].muts) return;
                 mapvotes[i].players.removeobj(d);
@@ -134,8 +149,9 @@ namespace client
         m->players.add(d);
         mapvotes.sort(mapvote::compare);
         if(showmapvotes >= (!gs_playing(game::gamestate) ? 2 : 1) && !isignored(d->clientnum))
-            conoutft(CON_EVENT, "%s suggests: \fs\fy%s\fS on \fs\fo%s\fS, press \f{=showgui maps 2} to vote", game::colourname(d), server::gamename(mode, muts), m->map);
+            conoutft(CON_EVENT, "%s suggests: \fs\fy%s\fS on \fs\fo%s\fS, press \f{=%s maps} to vote", UI::uiopencmd, game::colourname(d), server::gamename(mode, muts), m->map);
     }
+    ICOMMAND(0, fakevote, "", (), loopi(20) vote(game::player1, "maps/bloodlust", G_DEATHMATCH, 0, true); loopi(20) vote(game::player1, "maps/dutility", G_CAPTURE, 1<<G_M_GSP1, true));
 
     void getvotes(int vote, int prop, int idx)
     {
@@ -157,6 +173,22 @@ namespace client
         }
     }
     ICOMMAND(0, getvote, "bbb", (int *vote, int *prop, int *idx), getvotes(*vote, *prop, *idx));
+
+    ICOMMAND(0, loopvotes, "ree", (ident *id, uint *body, uint *none),
+    {
+        loopstart(id, stack);
+        if(mapvotes.empty())
+        {
+            loopiter(id, stack, -1);
+            execute(none);
+        }
+        else loopv(mapvotes)
+        {
+            loopiter(id, stack, i);
+            execute(body);
+        }
+        loopend(id, stack);
+    });
 
     struct demoinfo
     {
@@ -182,12 +214,12 @@ namespace client
         copystring(d.file, name);
         string msg = "";
         if(f->read(&d.hdr, sizeof(demoheader))!=sizeof(demoheader) || memcmp(d.hdr.magic, VERSION_DEMOMAGIC, sizeof(d.hdr.magic)))
-            formatstring(msg, "\frsorry, \fs\fc%s\fS is not a demo file", name);
+            formatstring(msg, "\frSorry, \fs\fc%s\fS is not a demo file", name);
         else
         {
             lilswap(&d.hdr.gamever, 4);
             if(d.hdr.gamever!=VERSION_GAME)
-                formatstring(msg, "\frdemo \fs\fc%s\fS requires \fs\fc%s\fS version of %s", name, d.hdr.gamever<VERSION_GAME ? "an older" : "a newer", VERSION_NAME);
+                formatstring(msg, "\frDemo \fs\fc%s\fS requires \fs\fc%s\fS version of %s", name, d.hdr.gamever<VERSION_GAME ? "an older" : "a newer", VERSION_NAME);
         }
         delete f;
         if(msg[0])
@@ -338,6 +370,9 @@ namespace client
                             case VAL_STR:
                                 f->printf("\t%s", escapestring(id.val.s));
                                 break;
+                            case VAL_CSTR:
+                                f->printf("\t%s", escapestring(id.val.cstr));
+                                break;
                         }
                         f->printf("\t\t"); // empty MIN MAX
                         break;
@@ -416,11 +451,12 @@ namespace client
 
     ICOMMAND(0, mastermode, "i", (int *val), addmsg(N_MASTERMODE, "ri", *val));
     ICOMMAND(0, getplayername, "", (), result(game::player1->name));
-    ICOMMAND(0, getplayercolour, "bg", (int *m, int *f), intret(game::getcolour(game::player1, *m, *f >= 0 && *f <= 10.f ? *f : 1.f)));
+    ICOMMAND(0, getplayercolour, "bg", (int *m, int *f), intret(game::getcolour(game::player1, *m, *f >= 0 && *f <= 10 ? *f : 1.f)));
     ICOMMAND(0, getplayermodel, "", (), intret(game::player1->model));
     ICOMMAND(0, getplayerteam, "i", (int *p), *p ? intret(game::player1->team) : result(TEAM(game::player1->team, name)));
     ICOMMAND(0, getplayerteamicon, "", (), result(hud::teamtexname(game::player1->team)));
     ICOMMAND(0, getplayerteamcolour, "", (), intret(TEAM(game::player1->team, colour)));
+    ICOMMAND(0, getplayercn, "", (), intret(game::player1->clientnum));
 
     const char *getname() { return game::player1->name; }
 
@@ -546,16 +582,16 @@ namespace client
                 int t = teamname(team);
                 if(isteam(game::gamemode, game::mutators, t, T_FIRST)) addmsg(N_SWITCHTEAM, "ri", t);
             }
-            else conoutft(CON_INFO, "\frcan only change teams when actually playing in team games");
+            else conoutft(CON_INFO, "\frCan only change teams when actually playing in team games");
         }
-        else conoutft(CON_INFO, "\fgyour team is: %s", game::colourteam(game::player1->team));
+        else conoutft(CON_INFO, "\fgYour team is: %s", game::colourteam(game::player1->team));
     }
     ICOMMAND(0, team, "s", (char *s), switchteam(s));
 
     bool allowedittoggle(bool edit)
     {
         bool allow = edit || m_edit(game::gamemode); // && game::player1->state == CS_ALIVE);
-        if(!allow) conoutft(CON_INFO, "\fryou must start an editing game to edit the map");
+        if(!allow) conoutft(CON_INFO, "\frYou must start an editing game to edit the map");
         return allow;
     }
 
@@ -657,12 +693,19 @@ namespace client
     }
     ICOMMAND(0, getclientname, "si", (char *who, int *colour), result(getclientname(parsewho(who), *colour)));
 
-    int getclientcolour(int cn)
+    int getclientcolour(int cn, int m, float f)
+    {
+        gameent *d = game::getclient(cn);
+        return d ? game::getcolour(d, m, f >= 0 && f <= 10 ? f : 1.f) : -1;
+    }
+    ICOMMAND(0, getclientcolour, "sbg", (char *who, int *m, float *f), intret(getclientcolour(parsewho(who), *m, *f)));
+
+    int getclientpcolour(int cn)
     {
         gameent *d = game::getclient(cn);
         return d ? d->colour : -1;
     }
-    ICOMMAND(0, getclientcolour, "s", (char *who), intret(getclientcolour(parsewho(who))));
+    ICOMMAND(0, getclientpcolour, "s", (char *who), intret(getclientpcolour(parsewho(who))));
 
     int getclientmodel(int cn)
     {
@@ -743,6 +786,15 @@ namespace client
     ICOMMAND(0, getclientkdratio, "si", (char *who, int *n), gameent *d = game::getclient(parsewho(who)); floatret(d ? d->kdratio(*n!=0) : -1.f));
 
     ICOMMAND(0, getclientcptime, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d ? d->cptime : -1));
+    ICOMMAND(0, getclientcplast, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d ? d->cplast : -1));
+    ICOMMAND(0, getclientcpmillis, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d ? lastmillis-d->cpmillis : -1));
+
+    ICOMMAND(0, getclientping, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d ? d->ping : -1));
+    ICOMMAND(0, getclientpj, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d ? d->plag : -1));
+
+    ICOMMAND(0, getclientprivilege, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d ? d->privilege&PRIV_TYPE : -1));
+    ICOMMAND(0, getclientprivlocal, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d ? (d->privilege&PRIV_LOCAL ? 1 : 0) : -1));
+    ICOMMAND(0, getclientprivtex, "s", (char *who), gameent *d = game::getclient(parsewho(who)); result(d ? hud::privtex(d->privilege, d->actortype) : ""));
 
     bool haspriv(gameent *d, int priv)
     {
@@ -922,16 +974,16 @@ namespace client
         if(!d || d == game::player1) return;
         if(!strcmp(d->hostip, "*"))
         {
-            conoutft(CON_EVENT, "\frcannot ignore %s: host information is private", game::colourname(d));
+            conoutft(CON_EVENT, "\frCannot ignore %s: host information is private", game::colourname(d));
             return;
         }
         if(ignores.find(d->hostip) < 0)
         {
-            conoutft(CON_EVENT, "\fyignoring: \fs%s\fS (\fs\fc%s\fS)", game::colourname(d), d->hostip);
+            conoutft(CON_EVENT, "\fyIgnoring: \fs%s\fS (\fs\fc%s\fS)", game::colourname(d), d->hostip);
             ignores.add(d->hostip);
         }
         else
-            conoutft(CON_EVENT, "\fralready ignoring: \fs%s\fS (\fs\fc%s\fS)", game::colourname(d), d->hostip);
+            conoutft(CON_EVENT, "\frAlready ignoring: \fs%s\fS (\fs\fc%s\fS)", game::colourname(d), d->hostip);
     }
 
     void unignore(int cn)
@@ -940,16 +992,16 @@ namespace client
         if(!d) return;
         if(!strcmp(d->hostip, "*"))
         {
-            conoutft(CON_EVENT, "\frcannot unignore %s: host information is private", game::colourname(d));
+            conoutft(CON_EVENT, "\frCannot unignore %s: host information is private", game::colourname(d));
             return;
         }
         if(ignores.find(d->hostip) >= 0)
         {
-            conoutft(CON_EVENT, "\fystopped ignoring: \fs%s\fS (\fs\fc%s\fS)", game::colourname(d), d->hostip);
+            conoutft(CON_EVENT, "\fyStopped ignoring: \fs%s\fS (\fs\fc%s\fS)", game::colourname(d), d->hostip);
             ignores.removeobj(d->hostip);
         }
         else
-            conoutft(CON_EVENT, "\fryou are not ignoring: \fs%s\fS (\fs\fc%s\fS)", game::colourname(d), d->hostip);
+            conoutft(CON_EVENT, "\frYou are not ignoring: \fs%s\fS (\fs\fc%s\fS)", game::colourname(d), d->hostip);
     }
 
     bool isignored(int cn)
@@ -974,7 +1026,7 @@ namespace client
                 if(t) addmsg(N_SETTEAM, "ri2", i, t);
             }
         }
-        else conoutft(CON_INFO, "\frcan only change teams in team games");
+        else conoutft(CON_INFO, "\frCan only change teams in team games");
     }
     ICOMMAND(0, setteam, "ss", (char *who, char *team), setteam(who, team));
 
@@ -1008,7 +1060,7 @@ namespace client
     void tryauth()
     {
         if(accountname[0]) addmsg(N_AUTHTRY, "rs", accountname);
-        else conoutft(CON_INFO, "\frno account set for \fcauth");
+        else conoutft(CON_INFO, "\frNo account set for \fcauth");
     }
     ICOMMAND(0, auth, "", (), tryauth());
 
@@ -1313,7 +1365,7 @@ namespace client
                 sendcrcinfo = true; // the server wants us to start
                 break;
             case -2:
-                conoutf("waiting for server to request the map..");
+                conoutf("Waiting for server to request the map..");
             default:
                 emptymap(0, true, name);
                 needsmap = totalmillis;
@@ -1353,7 +1405,7 @@ namespace client
                 }
                 stream *demo = openfile(fname, "wb");
                 if(!demo) return;
-                conoutft(CON_EVENT, "\fyreceived demo: \fc%s", fname);
+                conoutft(CON_EVENT, "\fyReceived demo: \fc%s", fname);
                 demo->write(data, len);
                 delete demo;
                 break;
@@ -1374,12 +1426,12 @@ namespace client
                 stream *f = openfile(ffext, "wb");
                 if(!f)
                 {
-                    conoutft(CON_EVENT, "\frfailed to open map file: \fc%s", ffext);
+                    conoutft(CON_EVENT, "\frFailed to open map file: \fc%s", ffext);
                     break;
                 }
                 f->write(data, len);
                 delete f;
-                conoutft(CON_EVENT, "\fywrote map file: \fc%s (%d %s) [0x%.8x]", ffext, len, len != 1 ? "bytes" : "byte", filecrc);
+                conoutft(CON_EVENT, "\fyWrote map file: \fc%s (%d %s) [0x%.8x]", ffext, len, len != 1 ? "bytes" : "byte", filecrc);
                 break;
             }
             default: break;
@@ -1408,8 +1460,8 @@ namespace client
 
     void getdemo(int i, const char *name)
     {
-        if(i <= 0) conoutft(CON_EVENT, "\fygetting demo, please wait...");
-        else conoutft(CON_EVENT, "\fygetting demo \fs\fc%d\fS, please wait...", i);
+        if(i <= 0) conoutft(CON_EVENT, "\fyGetting demo, please wait...");
+        else conoutft(CON_EVENT, "\fyGetting demo \fs\fc%d\fS, please wait...", i);
         addmsg(N_GETDEMO, "rii", i, demonameid);
         if(*name) demonames.access(demonameid, newstring(name));
         demonameid++;
@@ -1418,7 +1470,7 @@ namespace client
 
     void listdemos()
     {
-        conoutft(CON_EVENT, "\fylisting demos...");
+        conoutft(CON_EVENT, "\fyListing demos...");
         addmsg(N_LISTDEMOS, "r");
     }
     ICOMMAND(0, listdemos, "", (), listdemos());
@@ -1446,7 +1498,7 @@ namespace client
 
     void sendmap()
     {
-        conoutf("\fysending map...");
+        conoutf("\fySending map...");
         const char *reqmap = mapname;
         if(!reqmap || !*reqmap) reqmap = "maps/untitled";
         int savedtype = -1;
@@ -1463,14 +1515,14 @@ namespace client
             stream *f = openfile(reqfext, "rb");
             if(f)
             {
-                conoutf("\fytransmitting file: \fc%s", reqfext);
+                conoutf("\fyTransmitting file: \fc%s", reqfext);
                 sendfile(-1, 2, f, "ri3", N_SENDMAPFILE, i, mapcrc);
                 if(needclipboard >= 0) needclipboard++;
                 delete f;
             }
             else
             {
-                conoutf("\frfailed to open map file: \fc%s", reqfext);
+                conoutf("\frFailed to open map file: \fc%s", reqfext);
                 sendfile(-1, 2, NULL, "ri3", N_SENDMAPFILE, i, mapcrc);
             }
         }
@@ -2083,17 +2135,17 @@ namespace client
                     sessionid = getint(p);
                     if(sessionver != VERSION_GAME)
                     {
-                        conoutft(CON_EVENT, "\frerror: this server is running an incompatible protocol (%d v %d)", sessionver, VERSION_GAME);
+                        conoutft(CON_EVENT, "\frError: this server is running an incompatible protocol (%d v %d)", sessionver, VERSION_GAME);
                         disconnect();
                         return;
                     }
-                    conoutf("connected, starting negotiation with server");
+                    conoutf("Connected, starting negotiation with server");
                     sendintro();
                     break;
                 }
                 case N_WELCOME:
                     mastermode = getint(p);
-                    conoutf("negotiation complete, \fs\fcmastermode\fS is \fs\fc%d\fS (\fs\fc%s\fS)", mastermode, mastermodename(mastermode));
+                    conoutf("Negotiation complete, \fs\fcmastermode\fS is \fs\fc%d\fS (\fs\fc%s\fS)", mastermode, mastermodename(mastermode));
                     isready = true;
                     break;
 
@@ -2205,15 +2257,15 @@ namespace client
                 {
                     getstring(text, p);
                     int mode = getint(p), muts = getint(p), crc = getint(p);
-                    if(crc >= 0) conoutf("map change: %s (%d:%d) [0x%.8x]", text, mode, muts, crc);
-                    else conoutf("map change: %s (%d:%d) [%d]", text, mode, muts, crc);
+                    if(crc >= 0) conoutf("Map change: %s (%d:%d) [0x%.8x]", text, mode, muts, crc);
+                    else conoutf("Map change: %s (%d:%d) [%d]", text, mode, muts, crc);
                     changemapserv(text, mode, muts, crc);
                     break;
                 }
 
                 case N_GETGAMEINFO:
                 {
-                    conoutf("sending game info..");
+                    conoutf("Sending game info..");
                     sendgameinfo = true;
                     break;
                 }
@@ -2323,7 +2375,7 @@ namespace client
                 case N_LOADW:
                 {
                     hud::showscores(false);
-                    if(!menuactive()) showgui("profile", 2);
+                    if(!UI::hasmenu()) UI::openui("profile");
                     lastplayerinfo = 0;
                     break;
                 }
@@ -2798,7 +2850,7 @@ namespace client
                             break;
                         }
                     }
-                    conoutft(CON_EVENT, "\fythe server set \fs\fcmastermode\fS to \fs\fc%d\fS (\fs\fc%s\fS)", mastermode, mastermodename(mastermode));
+                    conoutft(CON_EVENT, "\fyThe server set \fs\fcmastermode\fS to \fs\fc%d\fS (\fs\fc%s\fS)", mastermode, mastermodename(mastermode));
                     break;
                 }
 
@@ -2820,13 +2872,13 @@ namespace client
                 case N_SENDDEMOLIST:
                 {
                     int demos = getint(p);
-                    if(demos <= 0) conoutft(CON_EVENT, "\fono demos available");
+                    if(demos <= 0) conoutft(CON_EVENT, "\foNo demos available");
                     else loopi(demos)
                     {
                         getstring(text, p);
                         int len = getint(p), ctime = getint(p);
                         if(p.overread()) break;
-                        conoutft(CON_EVENT, "\fydemo: %2d. \fs\fc%s\fS recorded \fs\fc%s UTC\fS [\fs\fw%.2f%s\fS]", i+1, text, gettime(ctime, "%Y-%m-%d %H:%M.%S"), len > 1024*1024 ? len/(1024*1024.f) : len/1024.0f, len > 1024*1024 ? "MB" : "kB");
+                        conoutft(CON_EVENT, "\fyDemo: %2d. \fs\fc%s\fS recorded \fs\fc%s UTC\fS [\fs\fw%.2f%s\fS]", i+1, text, gettime(ctime, "%Y-%m-%d %H:%M.%S"), len > 1024*1024 ? len/(1024*1024.f) : len/1024.0f, len > 1024*1024 ? "MB" : "kB");
                     }
                     break;
                 }
@@ -2871,7 +2923,7 @@ namespace client
                 {
                     int num = getint(p), ctime = getint(p), len = getint(p);
                     getstring(text, p);
-                    conoutft(CON_EVENT, "\fydemo \fs\fc%s\fS recorded \fs\fc%s UTC\fS [\fs\fw%.2f%s\fS]", text, gettime(ctime, "%Y-%m-%d %H:%M.%S"), len > 1024*1024 ? len/(1024*1024.f) : len/1024.0f, len > 1024*1024 ? "MB" : "kB");
+                    conoutft(CON_EVENT, "\fyDemo \fs\fc%s\fS recorded \fs\fc%s UTC\fS [\fs\fw%.2f%s\fS]", text, gettime(ctime, "%Y-%m-%d %H:%M.%S"), len > 1024*1024 ? len/(1024*1024.f) : len/1024.0f, len > 1024*1024 ? "MB" : "kB");
                     if(demoautoclientsave) getdemo(num, "");
                     break;
                 }
@@ -3134,7 +3186,7 @@ namespace client
 
                 case N_GETMAP:
                 {
-                    conoutf("\fyserver has requested we send the map..");
+                    conoutf("\fyServer has requested we send the map..");
                     if(!needsmap && !gettingmap) sendmap();
                     else addmsg(N_GETMAP, "r");
                     break;
@@ -3142,13 +3194,13 @@ namespace client
 
                 case N_SENDMAP:
                 {
-                    conoutf("\fymap data has been uploaded to the server");
+                    conoutf("\fyMap data has been uploaded to the server");
                     break;
                 }
 
                 case N_FAILMAP:
                 {
-                    conoutf("\fyfailed to get a valid map");
+                    conoutf("\fyFailed to get a valid map");
                     needsmap = gettingmap = 0;
                     break;
                 }
@@ -3192,7 +3244,7 @@ namespace client
                     getstring(text, p);
                     if(accountname[0] && accountpass[0])
                     {
-                        conoutf("identifying as: \fs\fc%s\fS (\fs\fy%u\fS)", accountname, id);
+                        conoutf("Identifying as: \fs\fc%s\fS (\fs\fy%u\fS)", accountname, id);
                         vector<char> buf;
                         answerchallenge(accountpass, text, buf);
                         addmsg(N_AUTHANS, "ris", id, buf.getbuf());
@@ -3208,9 +3260,9 @@ namespace client
                     o->queuepos = pos;
                     if(o == game::focus && changed && o->state != CS_ALIVE)
                     {
-                        if(o->queuepos < 0) conoutft(CON_EVENT, "\fyyou are now \fs\fzgcqueued\fS for the \fs\fcnext match\fS");
-                        else if(o->queuepos) conoutft(CON_EVENT, "\fyyou are \fs\fzgc#%d\fS in the \fs\fcqueue\fS", o->queuepos+1);
-                        else conoutft(CON_EVENT, "\fyyou are \fs\fzgcNEXT\fS in the \fs\fcqueue\fS");
+                        if(o->queuepos < 0) conoutft(CON_EVENT, "\fyYou are now \fs\fzgcqueued\fS for the \fs\fcnext match\fS");
+                        else if(o->queuepos) conoutft(CON_EVENT, "\fyYou are \fs\fzgc#%d\fS in the \fs\fcqueue\fS", o->queuepos+1);
+                        else conoutft(CON_EVENT, "\fyYou are \fs\fzgcNEXT\fS in the \fs\fcqueue\fS");
                     }
                     break;
                 }
@@ -3425,4 +3477,25 @@ namespace client
         }
     }
     ICOMMAND(0, getserver, "bbb", (int *server, int *prop, int *idx, int *numargs), getservers(*server, *prop, *idx));
+    ICOMMAND(0, getserverplayers, "", (),
+    {
+        int n = 0;
+        loopv(servers) n += servers[i]->numplayers;
+        intret(n);
+    });
+    ICOMMAND(0, loopservers, "ree", (ident *id, uint *body, uint *none),
+    {
+        loopstart(id, stack);
+        if(servers.empty())
+        {
+            loopiter(id, stack, -1);
+            execute(none);
+        }
+        else loopv(servers)
+        {
+            loopiter(id, stack, i);
+            execute(body);
+        }
+        loopend(id, stack);
+    });
 }

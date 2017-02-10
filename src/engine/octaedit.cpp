@@ -172,7 +172,7 @@ void toggleedit(bool force)
 
 bool noedit(bool view)
 {
-    if(!editmode) { conoutf("\froperation only allowed in edit mode"); return true; }
+    if(!editmode) { conoutf("\frOperation only allowed in edit mode"); return true; }
     if(view || haveselent()) return false;
     float r = 1.0f;
     vec o(sel.o), s(sel.s);
@@ -180,7 +180,7 @@ bool noedit(bool view)
     o.add(s);
     r = float(max(s.x, max(s.y, s.z)));
     bool viewable = (isvisiblesphere(r, o) != VFC_NOT_VISIBLE);
-    if(!viewable) conoutf("\frselection not in view");
+    if(!viewable) conoutf("\frSelection not in view");
     return !viewable;
 }
 
@@ -734,7 +734,7 @@ void pruneundos(int maxremain)                          // bound memory
         totalundos -= u->size;
         freeundo(u);
     }
-    //conoutf("\faundo: %d of %d(%%%d)", totalundos, undomegs<<20, totalundos*100/(undomegs<<20));
+    //conoutf("\faUndo: %d of %d(%%%d)", totalundos, undomegs<<20, totalundos*100/(undomegs<<20));
     while(!redos.empty())
     {
         undoblock *u = redos.popfirst();
@@ -796,7 +796,7 @@ static int countblock(block3 *b) { return countblock(b->c(), b->size()); }
 void swapundo(undolist &a, undolist &b, int op)
 {
     if(noedit()) return;
-    if(a.empty()) { conoutf("\frnothing more to %s", op == EDIT_REDO ? "redo" : "undo"); return; }
+    if(a.empty()) { conoutf("\frNothing more to %s", op == EDIT_REDO ? "redo" : "undo"); return; }
     int ts = a.last->timestamp;
     if(multiplayer(false))
     {
@@ -1218,7 +1218,7 @@ void delprefab(char *name)
     {
         p->cleanup();
         prefabs.remove(name);
-        conoutf("deleted prefab %s", name);
+        conoutf("Deleted prefab %s", name);
     }
 }
 COMMAND(0, delprefab, "s");
@@ -1238,16 +1238,16 @@ void saveprefab(char *name)
     defformatstring(filename, strpbrk(name, "/\\") ? "%s.obr" : "prefab/%s.obr", name);
     path(filename);
     stream *f = opengzfile(filename, "wb");
-    if(!f) { conoutf("\frcould not write prefab to %s", filename); return; }
+    if(!f) { conoutf("\frCould not write prefab to %s", filename); return; }
     prefabheader hdr;
     memcpy(hdr.magic, "OEBR", 4);
     hdr.version = 0;
     lilswap(&hdr.version, 1);
     f->write(&hdr, sizeof(hdr));
     streambuf<uchar> s(f);
-    if(!packblock(*b->copy, s)) { delete f; conoutf("\frcould not pack prefab %s", filename); return; }
+    if(!packblock(*b->copy, s)) { delete f; conoutf("\frCould not pack prefab %s", filename); return; }
     delete f;
-    conoutf("wrote prefab file %s", filename);
+    conoutf("Wrote prefab file %s", filename);
 }
 ICOMMAND(0, saveprefab, "s", (char *s), if(!(identflags&IDF_WORLD)) saveprefab(s));
 
@@ -1268,14 +1268,14 @@ prefab *loadprefab(const char *name, bool msg = true)
    defformatstring(filename, strpbrk(name, "/\\") ? "%s.obr" : "prefab/%s.obr", name);
    path(filename);
    stream *f = opengzfile(filename, "rb");
-   if(!f) { if(msg) conoutf("\frcould not read prefab %s", filename); return NULL; }
+   if(!f) { if(msg) conoutf("\frCould not read prefab %s", filename); return NULL; }
    prefabheader hdr;
-   if(f->read(&hdr, sizeof(hdr)) != sizeof(prefabheader) || memcmp(hdr.magic, "OEBR", 4)) { delete f; if(msg) conoutf("\frprefab %s has malformatted header", filename); return NULL; }
+   if(f->read(&hdr, sizeof(hdr)) != sizeof(prefabheader) || memcmp(hdr.magic, "OEBR", 4)) { delete f; if(msg) conoutf("\frPrefab %s has malformatted header", filename); return NULL; }
    lilswap(&hdr.version, 1);
-   if(hdr.version != 0) { delete f; if(msg) conoutf("\frprefab %s uses unsupported version", filename); return NULL; }
+   if(hdr.version != 0) { delete f; if(msg) conoutf("\frPrefab %s uses unsupported version", filename); return NULL; }
    streambuf<uchar> s(f);
    block3 *copy = NULL;
-   if(!unpackblock(copy, s)) { delete f; if(msg) conoutf("\frcould not unpack prefab %s", filename); return NULL; }
+   if(!unpackblock(copy, s)) { delete f; if(msg) conoutf("\frCould not unpack prefab %s", filename); return NULL; }
    delete f;
 
    b = &prefabs[name];
@@ -1442,7 +1442,7 @@ void genprefabmesh(prefab &p)
 
 extern int outlinecolour;
 
-static void renderprefab(prefab &p, const vec &o, float yaw, float pitch, float roll, float size, const vec &color)
+static void renderprefab(prefab &p, const vec &o, float yaw, float pitch, float roll, float size, const vec &color, float blend)
 {
     if(!p.numtris)
     {
@@ -1475,7 +1475,7 @@ static void renderprefab(prefab &p, const vec &o, float yaw, float pitch, float 
     GLOBALPARAM(prefabmatrix, pm);
     GLOBALPARAM(prefabworld, w);
     SETSHADER(prefab);
-    gle::color(color);
+    gle::colorf(color.x, color.y, color.z, blend);
     glDrawRangeElements_(GL_TRIANGLES, 0, p.numverts-1, p.numtris*3, GL_UNSIGNED_SHORT, (ushort *)0);
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -1484,7 +1484,8 @@ static void renderprefab(prefab &p, const vec &o, float yaw, float pitch, float 
     pm.mul(camprojmatrix, m);
     GLOBALPARAM(prefabmatrix, pm);
     SETSHADER(prefab);
-    gle::color(vec::hexcolor(outlinecolour));
+    vec ocolor = vec::hexcolor(outlinecolour);
+    gle::colorf(ocolor.x, ocolor.y, ocolor.z, blend);
     glDrawRangeElements_(GL_TRIANGLES, 0, p.numverts-1, p.numtris*3, GL_UNSIGNED_SHORT, (ushort *)0);
 
     disablepolygonoffset(GL_POLYGON_OFFSET_LINE);
@@ -1496,13 +1497,13 @@ static void renderprefab(prefab &p, const vec &o, float yaw, float pitch, float 
     gle::clearvbo();
 }
 
-void renderprefab(const char *name, const vec &o, float yaw, float pitch, float roll, float size, const vec &color)
+void renderprefab(const char *name, const vec &o, float yaw, float pitch, float roll, float size, const vec &color, float blend)
 {
     prefab *p = loadprefab(name, false);
-    if(p) renderprefab(*p, o, yaw, pitch, roll, size, color);
+    if(p) renderprefab(*p, o, yaw, pitch, roll, size, color, blend);
 }
 
-void previewprefab(const char *name, const vec &color)
+void previewprefab(const char *name, const vec &color, float blend)
 {
     prefab *p = loadprefab(name, false);
     if(p)
@@ -1510,7 +1511,7 @@ void previewprefab(const char *name, const vec &color)
         block3 &b = *p->copy;
         float yaw;
         vec o = calcmodelpreviewpos(vec(b.s).mul(b.grid*0.5f), yaw);
-        renderprefab(*p, o, yaw, 0, 0, 1, color);
+        renderprefab(*p, o, yaw, 0, 0, 1, color, blend);
     }
 }
 
@@ -1551,16 +1552,14 @@ void pastehilight()
     havesel = true;
 }
 
-void paste()
-{
-    if(noedit() || !localedit) return;
-    mppaste(localedit, sel, true);
-}
-
 COMMAND(0, copy, "");
 COMMAND(0, pasteclear, "");
 COMMAND(0, pastehilight, "");
-COMMAND(0, paste, "");
+ICOMMAND(0, paste, "", (),
+{
+    if(noedit() || !localedit) return;
+    mppaste(localedit, sel, true);
+});
 COMMANDN(0, undo, editundo, "");
 COMMANDN(0, redo, editredo, "");
 
@@ -1656,7 +1655,7 @@ void brushimport(char *name)
             }
         }
     }
-    else conoutf("\frcould not load: %s", name);
+    else conoutf("\frCould not load: %s", name);
 }
 
 COMMAND(0, brushimport, "s");
@@ -2587,12 +2586,12 @@ void replacetex(bool insel, int texnum = -1)
 
 ICOMMAND(0, replace, "iN", (int *t, int *numargs), {
     int tex = *numargs >= 1 ? *t : reptex;
-    if(tex < 0) { conoutf("\frcan only replace after a texture edit"); return; }
+    if(tex < 0) { conoutf("\frCan only replace after a texture edit"); return; }
     replacetex(false, tex);
 });
 ICOMMAND(0, replacesel, "iN", (int *t, int *numargs), {
     int tex = *numargs >= 1 ? *t : reptex;
-    if(tex < 0) { conoutf("\frcan only replace after a texture edit"); return; }
+    if(tex < 0) { conoutf("\frCan only replace after a texture edit"); return; }
     replacetex(true, tex);
 });
 ICOMMAND(0, replaceall, "", (void), replacetex(false));
@@ -2789,183 +2788,17 @@ void editmat(char *name, char *filtername, int *style)
     {
         loopi(sizeof(editmatfilters)/sizeof(editmatfilters[0])) if(!strcmp(editmatfilters[i].name, filtername)) { filter = editmatfilters[i].filter; break; }
         if(filter < 0) filter = findmaterial(filtername, true);
-        if(filter < 0) { conoutf("\frunknown material \"%s\"", filtername); return; }
+        if(filter < 0) { conoutf("\frUnknown material \"%s\"", filtername); return; }
     }
     int id = -1;
     if(name[0] || filter < 0)
     {
         id = findmaterial(name, true);
-        if(id<0) { conoutf("\frunknown material \"%s\"", name); return; }
+        if(id<0) { conoutf("\frUnknown material \"%s\"", name); return; }
     }
     mpeditmat(id, filter, *style, sel, true);
 }
-
 COMMAND(0, editmat, "ssi");
-
-VAR(IDF_PERSIST, autoapplytexgui, 0, 1, 1);
-VAR(IDF_PERSIST, autopreviewtexgui, 0, 1, 1);
-VAR(IDF_PERSIST, autoclosetexgui, 0, 2, 2);
-
-VAR(IDF_PERSIST, thumbwidth, 0, 10, 1000);
-VAR(IDF_PERSIST, thumbheight, 0, 8, 1000);
-VAR(IDF_PERSIST, thumbtime, 0, 25, 1000);
-FVAR(IDF_PERSIST, thumbsize, 0, 2, 25);
-
-static int lastthumbnail = 0;
-static const char *rotations[6] = { "none", "90 degrees", "180 degrees", "270 degrees", "flip x", "flip y" };
-struct texturegui : guicb
-{
-    bool menuon;
-    int menustart, menupage, menutex, rolltex;
-
-    texturegui() : menustart(-1), menutex(-1), rolltex(-1) {}
-
-    void gui(guient &g, bool firstpass)
-    {
-        extern VSlot dummyvslot;
-        int curtex = menutex, numpages = max((texmru.length() + thumbwidth*thumbheight - 1)/(thumbwidth*thumbheight), 1)-1;
-        if(autopreviewtexgui && texmru.inrange(rolltex)) curtex = rolltex;
-        if(menupage > numpages) menupage = numpages;
-        else if(menupage < 0) menupage = 0;
-        g.start(menustart, NULL, true);
-        uilist(g, {
-            g.space(2);
-            if(g.button("\fgauto apply", 0xFFFFFF, "checkbox", 0xFFFFFF, -1, true, autoapplytexgui ? "checkboxon" : NULL, guicheckboxcolour)&GUI_UP)
-                autoapplytexgui = autoapplytexgui ? 0 : 1;
-            g.space(2);
-            if(g.button("\fgauto preview", 0xFFFFFF, "checkbox", 0xFFFFFF, -1, true, autopreviewtexgui ? "checkboxon" : NULL, guicheckboxcolour)&GUI_UP)
-                autopreviewtexgui = autopreviewtexgui ? 0 : 1;
-            g.space(2);
-            if(g.button("\fgauto close", 0xFFFFFF, "checkbox", 0xFFFFFF, -1, true, autoclosetexgui ? "checkboxon" : NULL, autoclosetexgui > 1 ? guicheckboxtwocolour : guicheckboxcolour)&GUI_UP)
-                autoclosetexgui = autoclosetexgui ? (autoclosetexgui > 1 ? 0 : 2) : 1;
-            g.space(2);
-            if(g.button("\foreset order", 0xFFFFFF, NULL)&GUI_UP)
-            {
-                int old = texmru.inrange(menutex) ? texmru[menutex] : -1;
-                resettexmru();
-                curtex = menutex = rolltex = texmru.find(old);
-            }
-        });
-        g.space(1);
-        uilist(g, {
-            uilist(g, {
-                if(texmru.inrange(curtex))
-                {
-                    VSlot &v = lookupvslot(texmru[curtex], false);
-                    g.strut(60);
-                    if(v.slot->sts.empty()) g.texture(dummyvslot, thumbheight*thumbsize/2, false);
-                    else if(!v.slot->loaded && !v.slot->thumbnail)
-                    {
-                        if(totalmillis-lastthumbnail<thumbtime)
-                            g.texture(dummyvslot, thumbheight*thumbsize/2, false); //create an empty space
-                        loadthumbnail(*v.slot);
-                        lastthumbnail = totalmillis;
-                    }
-                    int ret = g.texture(v, thumbheight*thumbsize/2, true);
-                    if(ret&GUI_UP)
-                    {
-                        edittex(texmru[curtex]);
-                        if(autoclosetexgui) menuon = false;
-                    }
-                    g.space(0.5f);
-                    g.textf(" texture #%03d \fa(%s)", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF, texmru[curtex], v.slot->sts.empty() ? "<no texture>" : v.slot->sts[0].name);
-                    g.textf(" - scale: \fa%f", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF, v.scale);
-                    g.textf(" - rotation: \fa%d (%s)", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF, v.rotation, rotations[clamp(v.rotation, 0, 5)]);
-                    g.textf(" - offset: \fa%d %d", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF, v.offset.x, v.offset.y);
-                    g.textf(" - scroll: \fa%f %f", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF, v.scroll.x, v.scroll.y);
-                    g.textf(" - alpha: \fa%f \fAfront \fa%f \fAback", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF, v.alphafront, v.alphaback);
-                    g.textf(" - colour: \fr%f \fg%f \fb%f", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF, v.colorscale[0], v.colorscale[1], v.colorscale[2]);
-                    g.textf(" - palette: \fa%d %d", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF, v.palette, v.palindex);
-                    g.textf(" - coast: \fa%f", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF, v.coastscale);
-                    VSlot &vl = lookupvslot(v.layer);
-                    g.textf(" - layer: \fa%03d (%s)", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF, v.layer, vl.slot->sts.empty() ? "<no texture>" : vl.slot->sts[0].name);
-                    loopv(v.params)
-                    {
-                        SlotShaderParam &p = v.params[i];
-                        g.textf(" - shader: \fa%s %f %f %f %f %d %d", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF, p.name, p.val[0], p.val[1], p.val[2], p.val[3], v.palette, v.palindex);
-                    }
-                }
-                else g.image(textureload(nothumbtex, 3), thumbheight*thumbsize/2, true);
-            });
-            g.space(1);
-            uilistv(g, 2, {
-                uilist(g, loop(h, thumbheight)
-                {
-                    uilist(g,  loop(w, thumbwidth)
-                    {
-                        int ti = (menupage*thumbheight+h)*thumbwidth+w;
-                        if(ti<texmru.length())
-                        {
-                            VSlot &v = lookupvslot(texmru[ti], false);
-                            if(v.slot->sts.empty()) continue;
-                            else if(!v.slot->loaded && !v.slot->thumbnail)
-                            {
-                                if(totalmillis-lastthumbnail<thumbtime)
-                                {
-                                    g.texture(dummyvslot, thumbsize, false); //create an empty space
-                                    continue;
-                                }
-                                loadthumbnail(*v.slot);
-                                lastthumbnail = totalmillis;
-                            }
-                            int ret = g.texture(v, thumbsize, true);
-                            if(ret&GUI_UP)
-                            {
-                                if(autoapplytexgui && (v.slot->loaded || v.slot->thumbnail!=notexture))
-                                {
-                                    menutex = ti;
-                                    edittex(texmru[ti]);
-                                    hudshader->set();
-                                    if(autoclosetexgui > 1) menuon = false;
-                                }
-                            }
-                            else if(ret&GUI_ROLLOVER) rolltex = ti;
-                        }
-                        else g.texture(dummyvslot, thumbsize, false); //create an empty space
-                    });
-                });
-                g.slider(menupage, 0, numpages, 0xFFFFFF, NULL, true, true);
-            });
-        });
-        g.end();
-    }
-
-    void showtextures(bool on)
-    {
-        if(on != menuon && (menuon = on))
-        {
-            menustart = starttime();
-            cube &c = lookupcube(sel.o, -sel.grid);
-            rolltex = -1;
-            if(texmru.length() > 0)
-            {
-                if(!texmru.inrange(menutex = !isempty(c) ? texmru.find(c.texture[sel.orient]) : texmru.find(lasttex)))
-                    menutex = 0;
-                menupage = clamp(menutex, 0, texmru.length()-1)/(thumbwidth*thumbheight);
-            }
-            else menutex = menupage = 0;
-        }
-    }
-
-    void show()
-    {
-        if(!menuon) return;
-        filltexlist();
-        if(!editmode) menuon = false;
-        else UI::addcb(this);
-    }
-} gui;
-
-void texturemenu() { gui.show(); }
-bool closetexgui() { if(gui.menuon) { gui.menuon = false; return true; } return false; }
-
-void showtexgui(int *n)
-{
-    if(!editmode) { conoutf("\froperation only allowed in edit mode"); return; }
-    gui.showtextures(*n==0 ? !gui.menuon : *n==1);
-}
-
-COMMAND(0, showtexgui, "i"); // 0/noargs = toggle, 1 = on, other = off - will autoclose when exiting editmode
 
 void rendertexturepanel(int w, int h)
 {

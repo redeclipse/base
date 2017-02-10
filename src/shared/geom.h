@@ -27,11 +27,15 @@ struct vec2
     vec2 &normalize() { mul(1/magnitude()); return *this; }
     vec2 &safenormalize() { float m = magnitude(); if(m) mul(1/m); return *this; }
     float cross(const vec2 &o) const { return x*o.y - y*o.x; }
+    float squaredist(const vec2 &e) const { return vec2(*this).sub(e).squaredlen(); }
+    float dist(const vec2 &e) const { return sqrtf(squaredist(e)); }
 
     vec2 &mul(float f)       { x *= f; y *= f; return *this; }
     vec2 &mul(const vec2 &o) { x *= o.x; y *= o.y; return *this; }
+    vec2 &square()           { mul(*this); return *this; }
     vec2 &div(float f)       { x /= f; y /= f; return *this; }
     vec2 &div(const vec2 &o) { x /= o.x; y /= o.y; return *this; }
+    vec2 &recip()            { x = 1/x; y = 1/y; return *this; }
     vec2 &add(float f)       { x += f; y += f; return *this; }
     vec2 &add(const vec2 &o) { x += o.x; y += o.y; return *this; }
     vec2 &sub(float f)       { x -= f; y -= f; return *this; }
@@ -49,6 +53,10 @@ struct vec2
     vec2 &avg(const vec2 &b) { add(b); mul(0.5f); return *this; }
     template<class B> vec2 &madd(const vec2 &a, const B &b) { return add(vec2(a).mul(b)); }
     template<class B> vec2 &msub(const vec2 &a, const B &b) { return sub(vec2(a).mul(b)); }
+
+    vec2 &rotate_around_z(float c, float s) { float rx = x, ry = y; x = c*rx-s*ry; y = c*ry+s*rx; return *this; }
+    vec2 &rotate_around_z(float angle) { return rotate_around_z(cosf(angle), sinf(angle)); }
+    vec2 &rotate_around_z(const vec2 &sc) { return rotate_around_z(sc.x, sc.y); }
 };
 
 static inline bool htcmp(const vec2 &x, const vec2 &y)
@@ -65,6 +73,8 @@ static inline uint hthash(const vec2 &k)
 }
 
 struct ivec;
+struct usvec;
+struct svec;
 
 struct vec
 {
@@ -84,6 +94,8 @@ struct vec
     explicit vec(const vec2 &v, float z = 0) : x(v.x), y(v.y), z(z) {}
     explicit vec(const vec4 &v);
     explicit vec(const ivec &v);
+    explicit vec(const usvec &v);
+    explicit vec(const svec &v);
 
     vec(float yaw, float pitch) : x(-sinf(yaw)*cosf(pitch)), y(cosf(yaw)*cosf(pitch)), z(sinf(pitch)) {}
 
@@ -97,13 +109,20 @@ struct vec
 
     bool iszero() const { return x==0 && y==0 && z==0; }
     float squaredlen() const { return x*x + y*y + z*z; }
-    template<class T> float dot2(const T &o) const { return x*o.x + y*o.y; }
+    float dot2(const vec2 &o) const { return x*o.x + y*o.y; }
+    float dot2(const vec &o) const { return x*o.x + y*o.y; }
     float dot(const vec &o) const { return x*o.x + y*o.y + z*o.z; }
+    float squaredot(const vec &o) const { float k = dot(o); return k*k; }
     float absdot(const vec &o) const { return fabs(x*o.x) + fabs(y*o.y) + fabs(z*o.z); }
+    float zdot(const vec &o) const { return z*o.z; }
     vec &mul(const vec &o)   { x *= o.x; y *= o.y; z *= o.z; return *this; }
     vec &mul(float f)        { x *= f; y *= f; z *= f; return *this; }
+    vec &mul2(float f)       { x *= f; y *= f; return *this; }
+    vec &square()            { mul(*this); return *this; }
     vec &div(const vec &o)   { x /= o.x; y /= o.y; z /= o.z; return *this; }
     vec &div(float f)        { x /= f; y /= f; z /= f; return *this; }
+    vec &div2(float f)       { x /= f; y /= f; return *this; }
+    vec &recip()             { x = 1/x; y = 1/y; z = 1/z; return *this; }
     vec &add(const vec &o)   { x += o.x; y += o.y; z += o.z; return *this; }
     vec &add(float f)        { x += f; y += f; z += f; return *this; }
     vec &add2(float f)       { x += f; y += f; return *this; }
@@ -126,16 +145,18 @@ struct vec
     vec &safenormalize()     { float m = magnitude(); if(m) div(m); return *this; }
     bool isnormalized() const { float m = squaredlen(); return (m>0.99f && m<1.01f); }
     float squaredist(const vec &e) const { return vec(*this).sub(e).squaredlen(); }
-    float dist(const vec &e) const { vec t; return dist(e, t); }
+    float dist(const vec &e) const { return sqrtf(squaredist(e)); }
     float dist(const vec &e, vec &t) const { t = *this; t.sub(e); return t.magnitude(); }
     float dist2(const vec &o) const { float dx = x-o.x, dy = y-o.y; return sqrtf(dx*dx + dy*dy); }
+    template<class T>
+    bool reject(const T &o, float r) { return x>o.x+r || x<o.x-r || y>o.y+r || y<o.y-r; }
     float distrange(const vec &o, float r = 1e16f, float m = 0.f) const { float dt = dist(o); return r > m && dt > m ? (dt < r ? (dt-m)/(r-m) : 1.f) : 0.f; }
-    bool reject(const vec &o, float r) { return x>o.x+r || x<o.x-r || y>o.y+r || y<o.y-r; }
     bool rejectxyz(const vec &o, float rx, float ry, float rz1, float rz2) { return x>o.x+rx || x<o.x-rx || y>o.y+ry || y<o.y-ry || z>o.z+rz2 || z<o.z-rz1; }
     template<class A, class B>
     vec &cross(const A &a, const B &b) { x = a.y*b.z-a.z*b.y; y = a.z*b.x-a.x*b.z; z = a.x*b.y-a.y*b.x; return *this; }
     vec &cross(const vec &o, const vec &a, const vec &b) { return cross(vec(a).sub(o), vec(b).sub(o)); }
     float scalartriple(const vec &a, const vec &b) const { return x*(a.y*b.z-a.z*b.y) + y*(a.z*b.x-a.x*b.z) + z*(a.x*b.y-a.y*b.x); }
+    float zscalartriple(const vec &a, const vec &b) const { return z*(a.x*b.y-a.y*b.x); }
     vec &reflectz(float rz) { z = 2*rz - z; return *this; }
     vec &reflect(const vec &n) { float k = 2*dot(n); x -= k*n.x; y -= k*n.y; z -= k*n.z; return *this; }
     vec &project(const vec &n) { float k = dot(n); x -= k*n.x; y -= k*n.y; z -= k*n.z; return *this; }
@@ -156,6 +177,7 @@ struct vec
     }
     vec &lerp(const vec &b, float t) { x += (b.x-x)*t; y += (b.y-y)*t; z += (b.z-z)*t; return *this; }
     vec &lerp(const vec &a, const vec &b, float t) { x = a.x + (b.x-a.x)*t; y = a.y + (b.y-a.y)*t; z = a.z + (b.z-a.z)*t; return *this; }
+    vec &avg(const vec &b) { add(b); mul(0.5f); return *this; }
     template<class B> vec &madd(const vec &a, const B &b) { return add(vec(a).mul(b)); }
     template<class B> vec &msub(const vec &a, const B &b) { return sub(vec(a).mul(b)); }
 
@@ -195,21 +217,29 @@ struct vec
 
     void orthonormalize(vec &s, vec &t) const
     {
-        s.sub(vec(*this).mul(dot(s)));
-        t.sub(vec(*this).mul(dot(t)))
-         .sub(vec(s).mul(s.dot(t)));
+        s.project(*this);
+        t.project(*this).project(s);
     }
 
-    template<class T>
-    bool insidebb(const T &bbmin, const T &bbmax) const
+    template<class T> bool insidebb(const T &bbmin, const T &bbmax) const
     {
         return x >= bbmin.x && x <= bbmax.x && y >= bbmin.y && y <= bbmax.y && z >= bbmin.z && z <= bbmax.z;
     }
 
-    template<class T, class U>
-    bool insidebb(const T &o, U size) const
+    template<class T, class U> bool insidebb(const T &bbmin, const T &bbmax, U margin) const
+    {
+        return x >= bbmin.x-margin && x <= bbmax.x+margin && y >= bbmin.y-margin && y <= bbmax.y+margin && z >= bbmin.z-margin && z <= bbmax.z+margin;
+    }
+
+    template<class T, class U> bool insidebb(const T &o, U size) const
     {
         return x >= o.x && x <= o.x + size && y >= o.y && y <= o.y + size && z >= o.z && z <= o.z + size;
+    }
+
+    template<class T, class U> bool insidebb(const T &o, U size, U margin) const
+    {
+        size += margin;
+        return x >= o.x-margin && x <= o.x + size && y >= o.y-margin && y <= o.y + size && z >= o.z-margin && z <= o.z + size;
     }
 
     template<class T> float dist_to_bb(const T &min, const T &max) const
@@ -228,12 +258,17 @@ struct vec
         return dist_to_bb(o, T(o).add(size));
     }
 
+    template<class T> float project_bb(const T &min, const T &max) const
+    {
+        return x*(x < 0 ? max.x : min.x) + y*(y < 0 ? max.y : min.y) + z*(z < 0 ? max.z : min.z);
+    }
+
     static vec hexcolor(int color)
     {
         return vec(((color>>16)&0xFF)*(1.0f/255.0f), ((color>>8)&0xFF)*(1.0f/255.0f), (color&0xFF)*(1.0f/255.0f));
     }
 
-    int tohexcolor() { return (int(::clamp(r, 0.0f, 1.0f)*255)<<16)|(int(::clamp(g, 0.0f, 1.0f)*255)<<8)|int(::clamp(b, 0.0f, 1.0f)*255); }
+    int tohexcolor() const { return (int(::clamp(r, 0.0f, 1.0f)*255)<<16)|(int(::clamp(g, 0.0f, 1.0f)*255)<<8)|int(::clamp(b, 0.0f, 1.0f)*255); }
 
     vec &minbounds(float rx, float ry, float rz)
     {
@@ -271,11 +306,15 @@ struct vec4
 
     vec4() {}
     explicit vec4(const vec &p, float w = 0) : x(p.x), y(p.y), z(p.z), w(w) {}
+    explicit vec4(const vec2 &p, float z = 0, float w = 0) : x(p.x), y(p.y), z(z), w(w) {}
     vec4(float x, float y, float z, float w) : x(x), y(y), z(z), w(w) {}
     explicit vec4(const float *v) : x(v[0]), y(v[1]), z(v[2]), w(v[3]) {}
 
     float &operator[](int i)       { return v[i]; }
     float  operator[](int i) const { return v[i]; }
+
+    bool operator==(const vec4 &o) const { return x == o.x && y == o.y && z == o.z && w == o.w; }
+    bool operator!=(const vec4 &o) const { return x != o.x || y != o.y || z != o.z || w != o.w; }
 
     float dot3(const vec4 &o) const { return x*o.x + y*o.y + z*o.z; }
     float dot3(const vec &o) const { return x*o.x + y*o.y + z*o.z; }
@@ -303,31 +342,51 @@ struct vec4
         w = a.w+(b.w-a.w)*t;
         return *this;
     }
+    vec4 &avg(const vec4 &b) { add(b); mul(0.5f); return *this; }
+    template<class B> vec4 &madd(const vec4 &a, const B &b) { return add(vec4(a).mul(b)); }
+    template<class B> vec4 &msub(const vec4 &a, const B &b) { return sub(vec4(a).mul(b)); }
 
     vec4 &mul3(float f)      { x *= f; y *= f; z *= f; return *this; }
     vec4 &mul(float f)       { mul3(f); w *= f; return *this; }
     vec4 &mul(const vec4 &o) { x *= o.x; y *= o.y; z *= o.z; w *= o.w; return *this; }
+    vec4 &mul(const vec &o)  { x *= o.x; y *= o.y; z *= o.z; return *this; }
+    vec4 &square()           { mul(*this); return *this; }
     vec4 &div3(float f)      { x /= f; y /= f; z /= f; return *this; }
     vec4 &div(float f)       { div3(f); w /= f; return *this; }
     vec4 &div(const vec4 &o) { x /= o.x; y /= o.y; z /= o.z; w /= o.w; return *this; }
+    vec4 &div(const vec &o)  { x /= o.x; y /= o.y; z /= o.z; return *this; }
+    vec4 &recip()            { x = 1/x; y = 1/y; z = 1/z; w = 1/w; return *this; }
     vec4 &add(const vec4 &o) { x += o.x; y += o.y; z += o.z; w += o.w; return *this; }
+    vec4 &add(const vec &o)  { x += o.x; y += o.y; z += o.z; return *this; }
+    vec4 &add3(float f)      { x += f; y += f; z += f; return *this; }
+    vec4 &add(float f)       { add3(f); w += f; return *this; }
     vec4 &addw(float f)      { w += f; return *this; }
     vec4 &sub(const vec4 &o) { x -= o.x; y -= o.y; z -= o.z; w -= o.w; return *this; }
+    vec4 &sub(const vec &o)  { x -= o.x; y -= o.y; z -= o.z; return *this; }
+    vec4 &sub3(float f)      { x -= f; y -= f; z -= f; return *this; }
+    vec4 &sub(float f)       { sub3(f); w -= f; return *this; }
     vec4 &subw(float f)      { w -= f; return *this; }
     vec4 &neg3()             { x = -x; y = -y; z = -z; return *this; }
     vec4 &neg()              { neg3(); w = -w; return *this; }
-    template<class B> vec4 &madd(const vec4 &a, const B &b) { return add(vec4(a).mul(b)); }
-    template<class B> vec4 &msub(const vec4 &a, const B &b) { return sub(vec4(a).mul(b)); }
+    vec4 &clamp(float l, float h) { x = ::clamp(x, l, h); y = ::clamp(y, l, h); z = ::clamp(z, l, h); w = ::clamp(w, l, h); return *this; }
+
+    template<class A, class B>
+    vec4 &cross(const A &a, const B &b) { x = a.y*b.z-a.z*b.y; y = a.z*b.x-a.x*b.z; z = a.x*b.y-a.y*b.x; return *this; }
+    vec4 &cross(const vec &o, const vec &a, const vec &b) { return cross(vec(a).sub(o), vec(b).sub(o)); }
 
     void setxyz(const vec &v) { x = v.x; y = v.y; z = v.z; }
 
     vec4 &rotate_around_z(float c, float s) { float rx = x, ry = y; x = c*rx-s*ry; y = c*ry+s*rx; return *this; }
     vec4 &rotate_around_x(float c, float s) { float ry = y, rz = z; y = c*ry-s*rz; z = c*rz+s*ry; return *this; }
-    vec4 &rotate_around_y(float c, float s) { float rx = x, rz = z; x = c*rx+s*rz; z = c*rz-s*rx; return *this; }
+    vec4 &rotate_around_y(float c, float s) { float rx = x, rz = z; x = c*rx-s*rz; z = c*rz+s*rx; return *this; }
 
     vec4 &rotate_around_z(float angle) { return rotate_around_z(cosf(angle), sinf(angle)); }
     vec4 &rotate_around_x(float angle) { return rotate_around_x(cosf(angle), sinf(angle)); }
     vec4 &rotate_around_y(float angle) { return rotate_around_y(cosf(angle), sinf(angle)); }
+
+    vec4 &rotate_around_z(const vec2 &sc) { return rotate_around_z(sc.x, sc.y); }
+    vec4 &rotate_around_x(const vec2 &sc) { return rotate_around_x(sc.x, sc.y); }
+    vec4 &rotate_around_y(const vec2 &sc) { return rotate_around_y(sc.x, sc.y); }
 };
 
 inline vec2::vec2(const vec4 &v) : x(v.x), y(v.y) {}
@@ -349,6 +408,12 @@ struct quat : vec4
         y = s*axis.y;
         z = s*axis.z;
     }
+    quat(const vec &u, const vec &v)
+    {
+        w = sqrtf(u.squaredlen() * v.squaredlen()) + u.dot(v);
+        cross(u, v);
+        normalize();
+    }
     explicit quat(const vec &v)
     {
         x = v.x;
@@ -365,6 +430,8 @@ struct quat : vec4
     quat &add(const vec4 &o) { vec4::add(o); return *this; }
     quat &sub(const vec4 &o) { vec4::sub(o); return *this; }
     quat &mul(float k) { vec4::mul(k); return *this; }
+    template<class B> quat &madd(const vec4 &a, const B &b) { return add(vec4(a).mul(b)); }
+    template<class B> quat &msub(const vec4 &a, const B &b) { return sub(vec4(a).mul(b)); }
 
     quat &mul(const quat &p, const quat &o)
     {
@@ -378,7 +445,9 @@ struct quat : vec4
 
     quat &invert() { neg3(); return *this; }
 
-    void calcangleaxis(float &angle, vec &axis)
+    quat &normalize() { vec4::normalize(); return *this; }
+
+    void calcangleaxis(float &angle, vec &axis) const
     {
         float rr = dot3(*this);
         if(rr>0)
@@ -389,14 +458,25 @@ struct quat : vec4
         else { angle = 0; axis = vec(0, 0, 1); }
     }
 
+    vec calcangles() const
+    {
+        vec4 qq = vec4(*this).square();
+        float rr = qq.x + qq.y + qq.z + qq.w,
+              t = x*y + z*w;
+        if(fabs(t) > 0.49999f*rr) return t < 0 ? vec(-2*atan2f(x, w), -M_PI/2, 0) : vec(2*atan2f(x, w), M_PI/2, 0);
+        return vec(atan2f(2*(y*w - x*z), qq.x - qq.y - qq.z + qq.w),
+                   asinf(2*t/rr),
+                   atan2f(2*(x*w - y*z), -qq.x + qq.y - qq.z + qq.w));
+    }
+
     vec rotate(const vec &v) const
     {
-        return vec().cross(*this, vec().cross(*this, v).add(vec(v).mul(w))).mul(2).add(v);
+        return vec().cross(*this, vec().cross(*this, v).madd(v, w)).mul(2).add(v);
     }
 
     vec invertedrotate(const vec &v) const
     {
-        return vec().cross(*this, vec().cross(*this, v).sub(vec(v).mul(w))).mul(2).add(v);
+        return vec().cross(*this, vec().cross(*this, v).msub(v, w)).mul(2).add(v);
     }
 
     template<class M>
@@ -460,15 +540,15 @@ struct dualquat
     dualquat &lerp(const dualquat &to, float t)
     {
         float k = real.dot(to.real) < 0 ? -t : t;
-        real.mul(1-t).add(vec4(to.real).mul(k));
-        dual.mul(1-t).add(vec4(to.dual).mul(k));
+        real.mul(1-t).madd(to.real, k);
+        dual.mul(1-t).madd(to.dual, k);
         return *this;
     }
     dualquat &lerp(const dualquat &from, const dualquat &to, float t)
     {
         float k = from.real.dot(to.real) < 0 ? -t : t;
-        (real = from.real).mul(1-t).add(vec4(to.real).mul(k));
-        (dual = from.dual).mul(1-t).add(vec4(to.dual).mul(k));
+        (real = from.real).mul(1-t).madd(to.real, k);
+        (dual = from.dual).mul(1-t).madd(to.dual, k);
         return *this;
     }
 
@@ -476,7 +556,7 @@ struct dualquat
     {
         real.invert();
         dual.invert();
-        dual.sub(quat(real).mul(2*real.dot(dual)));
+        dual.msub(real, 2*real.dot(dual));
         return *this;
     }
 
@@ -497,10 +577,10 @@ struct dualquat
     {
         quat trans;
         trans.mul(base.dual, quat(base.real).invert());
-        dual.mul(quat(q).invert(), quat(real).mul(trans).add(dual));
+        dual.mul(quat(q).invert(), quat().mul(real, trans).add(dual));
 
         real.mul(q, quat(real));
-        dual.add(quat().mul(real, trans.invert())).sub(quat(real).mul(2*base.real.dot(base.dual)));
+        dual.add(quat().mul(real, trans.invert())).msub(real, 2*base.real.dot(base.dual));
     }
 
     void normalize()
@@ -535,13 +615,13 @@ struct dualquat
     void accumulate(const dualquat &d, float k)
     {
         if(real.dot(d.real) < 0) k = -k;
-        real.add(vec4(d.real).mul(k));
-        dual.add(vec4(d.dual).mul(k));
+        real.madd(d.real, k);
+        dual.madd(d.dual, k);
     }
 
     vec transform(const vec &v) const
     {
-        return vec().cross(real, vec().cross(real, v).add(vec(v).mul(real.w)).add(vec(dual))).add(vec(dual).mul(real.w)).sub(vec(real).mul(dual.w)).mul(2).add(v);
+        return vec().cross(real, vec().cross(real, v).madd(v, real.w).add(vec(dual))).madd(vec(dual), real.w).msub(vec(real), dual.w).mul(2).add(v);
     }
 
     quat transform(const quat &q) const
@@ -566,7 +646,7 @@ struct dualquat
 
     vec gettranslation() const
     {
-        return vec().cross(real, dual).add(vec(dual).mul(real.w)).sub(vec(real).mul(dual.w)).mul(2);
+        return vec().cross(real, dual).madd(vec(dual), real.w).msub(vec(real), dual.w).mul(2);
     }
 };
 
@@ -1107,7 +1187,7 @@ struct triangle
 
 /**
 
-Sauerbraten uses 3 different linear coordinate systems
+The engine uses 3 different linear coordinate systems
 which are oriented around each of the axis dimensions.
 
 So any point within the game can be defined by four coordinates: (d, x, y, z)
@@ -1129,8 +1209,6 @@ const int D[3]  = {0, 1, 2}; // depth
 
 struct ivec4;
 struct ivec2;
-struct usvec;
-struct svec;
 
 struct ivec
 {
@@ -1174,7 +1252,7 @@ struct ivec
     ivec &add(const ivec &v) { x += v.x; y += v.y; z += v.z; return *this; }
     ivec &sub(const ivec &v) { x -= v.x; y -= v.y; z -= v.z; return *this; }
     ivec &mask(int n) { x &= n; y &= n; z &= n; return *this; }
-    ivec &neg() { return mul(-1); }
+    ivec &neg() { x = -x; y = -y; z = -z; return *this; }
     ivec &min(const ivec &o) { x = ::min(x, o.x); y = ::min(y, o.y); z = ::min(z, o.z); return *this; }
     ivec &max(const ivec &o) { x = ::max(x, o.x); y = ::max(y, o.y); z = ::max(z, o.z); return *this; }
     ivec &min(int n) { x = ::min(x, n); y = ::min(y, n); z = ::min(z, n); return *this; }
@@ -1310,8 +1388,6 @@ struct bvec
 
     bool iszero() const { return x==0 && y==0 && z==0; }
 
-    bvec &shl(int n) { x<<= n; y<<= n; z<<= n; return *this; }
-    bvec &shr(int n) { x>>= n; y>>= n; z>>= n; return *this; }
     bvec &mul(int n) { x *= n; y *= n; z *= n; return *this; }
     bvec &div(int n) { x /= n; y /= n; z /= n; return *this; }
     bvec &add(int n) { x += n; y += n; z += n; return *this; }
@@ -1337,7 +1413,12 @@ struct bvec
         return *this;
     }
 
-    void lerp(const bvec &a, const bvec &b, float t) { x = uchar(a.x + (b.x-a.x)*t); y = uchar(a.y + (b.y-a.y)*t); z = uchar(a.z + (b.z-a.z)*t); }
+    void lerp(const bvec &a, const bvec &b, float t)
+    {
+        x = uchar(a.x + (b.x-a.x)*t);
+        y = uchar(a.y + (b.y-a.y)*t);
+        z = uchar(a.z + (b.z-a.z)*t);
+    }
 
     void lerp(const bvec &a, const bvec &b, int ka, int kb, int d)
     {
@@ -1350,13 +1431,20 @@ struct bvec
 
     void scale(int k, int d) { x = uchar((x*k)/d); y = uchar((y*k)/d); z = uchar((z*k)/d); }
 
-    static bvec fromcolor(const vec &v) { return bvec(uchar(v.r*255.0f), uchar(v.g*255.0f), uchar(v.b*255.0f)); }
+    bvec &shl(int n) { x<<= n; y<<= n; z<<= n; return *this; }
+    bvec &shr(int n) { x>>= n; y>>= n; z>>= n; return *this; }
+
+    static bvec fromcolor(const vec &v) { return bvec(uchar(v.x*255.0f), uchar(v.y*255.0f), uchar(v.z*255.0f)); }
     static bvec fromcolor(int color) { return bvec(int((color>>16)&0xFF), int((color>>8)&0xFF), int(color&0xFF)); }
-    vec tocolor() const { return vec(r*(1.0f/255.0f), g*(1.0f/255.0f), b*(1.0f/255.0f)); }
+    vec tocolor() const { return vec(x*(1.0f/255.0f), y*(1.0f/255.0f), z*(1.0f/255.0f)); }
 
     static bvec from565(ushort c) { return bvec((((c>>11)&0x1F)*527 + 15) >> 6, (((c>>5)&0x3F)*259 + 35) >> 6, ((c&0x1F)*527 + 15) >> 6); }
 
-    int tohexcolor() { return ((::clamp(int(r), 0, 255))<<16)|((::clamp(int(g), 0, 255))<<8)|(::clamp(int(b), 0, 255)); }
+    static bvec hexcolor(int color)
+    {
+        return bvec((color>>16)&0xFF, (color>>8)&0xFF, color&0xFF);
+    }
+    int tohexcolor() const { return (int(r)<<16)|(int(g)<<8)|int(b); }
 };
 
 struct bvec4
@@ -1407,6 +1495,14 @@ struct bvec4
         return *this;
     }
 
+    void lerp(const bvec4 &a, const bvec4 &b, const bvec4 &c, float ta, float tb, float tc)
+    {
+        x = uchar(a.x*ta + b.x*tb + c.x*tc);
+        y = uchar(a.y*ta + b.y*tb + c.y*tc);
+        z = uchar(a.z*ta + b.z*tb + c.z*tc);
+        w = uchar(a.w*ta + b.w*tb + c.w*tc);
+    }
+
     void flip() { mask ^= 0x80808080; }
 
     bvec4 &alpha(uchar n) { a = n; return *this; }
@@ -1427,6 +1523,7 @@ struct usvec
     ushort operator[](int i) const { return v[i]; }
 };
 
+inline vec::vec(const usvec &v) : x(v.x), y(v.y), z(v.z) {}
 inline ivec::ivec(const usvec &v) : x(v.x), y(v.y), z(v.z) {}
 
 struct svec
@@ -1445,6 +1542,7 @@ struct svec
     short operator[](int i) const { return v[i]; }
 };
 
+inline vec::vec(const svec &v) : x(v.x), y(v.y), z(v.z) {}
 inline ivec::ivec(const svec &v) : x(v.x), y(v.y), z(v.z) {}
 
 struct svec2
@@ -1807,6 +1905,72 @@ struct matrix2
     matrix2(const vec2 &a, const vec2 &b) : a(a), b(b) {}
     explicit matrix2(const matrix4 &m) : a(m.a), b(m.b) {}
     explicit matrix2(const matrix3 &m) : a(m.a), b(m.b) {}
+};
+
+struct half
+{
+    ushort val;
+
+    half() {}
+    half(float f)
+    {
+        union { int i; float f; } conv;
+        conv.f = f;
+        ushort signbit = (conv.i>>(31-15)) & (1<<15), mantissa = (conv.i>>(23-10)) & 0x3FF;
+        int exponent = ((conv.i>>23)&0xFF) - 127 + 15;
+        if(exponent <= 0)
+        {
+            mantissa |= 0x400;
+            mantissa >>= min(1-exponent, 10+1);
+            exponent = 0;
+        }
+        else if(exponent >= 0x1F)
+        {
+            mantissa = 0;
+            exponent = 0x1F;
+        }
+        val = signbit | (ushort(exponent)<<10) | mantissa;
+    }
+
+    bool operator==(const half &h) const { return val == h.val; }
+    bool operator!=(const half &h) const { return val != h.val; }
+};
+
+struct hvec2
+{
+    half x, y;
+
+    hvec2() {}
+    template<class T> hvec2(T x, T y) : x(x), y(y) {}
+    hvec2(const vec2 &v) : x(v.x), y(v.y) {}
+
+    bool operator==(const hvec2 &h) const { return x == h.x && y == h.y; }
+    bool operator!=(const hvec2 &h) const { return x != h.x || y != h.y; }
+};
+
+struct hvec
+{
+    half x, y, z;
+
+    hvec() {}
+    template<class T> hvec(T x, T y, T z) : x(x), y(y), z(z) {}
+    hvec(const vec &v) : x(v.x), y(v.y), z(v.z) {}
+
+    bool operator==(const hvec &h) const { return x == h.x && y == h.y && z == h.z; }
+    bool operator!=(const hvec &h) const { return x != h.x || y != h.y || z != h.z; }
+};
+
+struct hvec4
+{
+    half x, y, z, w;
+
+    hvec4() {}
+    template<class T> hvec4(T x, T y, T z, T w) : x(x), y(y), z(z), w(w) {}
+    template<class T> hvec4(const vec &v, T w = 0) : x(v.x), y(v.y), z(v.z), w(w) {}
+    hvec4(const vec4 &v) : x(v.x), y(v.y), z(v.z), w(v.w) {}
+
+    bool operator==(const hvec4 &h) const { return x == h.x && y == h.y && z == h.z && w == h.w; }
+    bool operator!=(const hvec4 &h) const { return x != h.x || y != h.y || z != h.z || w != h.w; }
 };
 
 struct squat

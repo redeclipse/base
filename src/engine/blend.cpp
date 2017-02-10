@@ -349,11 +349,6 @@ static void optimizeblendmap(uchar &type, BlendMapNode &node)
     }
 }
 
-void optimizeblendmap()
-{
-    optimizeblendmap(blendmap.type, blendmap);
-}
-
 VARF(0, blendpaintmode, 0, 0, 5,
 {
     if(!blendpaintmode) stoppaintblendmap();
@@ -552,10 +547,10 @@ void addblendbrush(const char *name, const char *imgname)
     delblendbrush(name);
 
     ImageData s;
-    if(!loadimage(imgname, s)) { conoutf("\frcould not load blend brush image %s", imgname); return; }
+    if(!loadimage(imgname, s)) { conoutf("\frCould not load blend brush image %s", imgname); return; }
     if(max(s.w, s.h) > (1<<12))
     {
-        conoutf("\frblend brush image size exceeded %dx%d pixels: %s", 1<<12, 1<<12, imgname);
+        conoutf("\frBlend brush image size exceeded %dx%d pixels: %s", 1<<12, 1<<12, imgname);
         return;
     }
 
@@ -610,12 +605,12 @@ bool canpaintblendmap(bool brush = true, bool sel = false, bool msg = true)
     if(noedit(!sel)) return false;
     if(!blendpaintmode)
     {
-        conoutft(CON_MESG, "\froperation only allowed in blend paint mode");
+        conoutft(CON_MESG, "\frOperation only allowed in blend paint mode");
         return false;
     }
     if(brush && !brushes.inrange(curbrush))
     {
-        if(msg) conoutft(CON_MESG, "\frno blend brush selected");
+        if(msg) conoutft(CON_MESG, "\frNo blend brush selected");
         return false;
     }
     return true;
@@ -705,12 +700,14 @@ COMMAND(0, invertblendmapsel, "");
 
 void invertblendmap()
 {
+}
+
+ICOMMAND(0, invertblendmap, "", (),
+{
     if(noedit(false)) return;
     invertblendmap(0, 0, hdr.worldsize>>BM_SCALE, hdr.worldsize>>BM_SCALE);
     previewblends(ivec(0, 0, 0), ivec(hdr.worldsize, hdr.worldsize, hdr.worldsize));
-}
-
-COMMAND(0, invertblendmap, "");
+});
 
 void showblendmap()
 {
@@ -718,8 +715,13 @@ void showblendmap()
     previewblends(ivec(0, 0, 0), ivec(hdr.worldsize, hdr.worldsize, hdr.worldsize));
 }
 
+void dooptimizeblendmap()
+{
+    optimizeblendmap(blendmap.type, blendmap);
+}
+
 COMMAND(0, showblendmap, "");
-COMMAND(0, optimizeblendmap, "");
+ICOMMAND(0, optimizeblendmap, "", (), dooptimizeblendmap());
 ICOMMAND(0, clearblendmap, "", (),
 {
     if(noedit(true)) return;

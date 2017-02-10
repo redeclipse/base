@@ -271,7 +271,7 @@ VARF(0, entediting, 0, 0, 1, { if(!entediting) { entcancel(); efocus = enthover 
 
 bool noentedit()
 {
-    if(!editmode) { conoutft(CON_MESG, "\froperation only allowed in edit mode"); return true; }
+    if(!editmode) { conoutft(CON_MESG, "\frOperation only allowed in edit mode"); return true; }
     return !entediting;
 }
 
@@ -729,7 +729,7 @@ extentity *newentity(bool local, const vec &o, int type, const attrvector &attrs
     {
         idx = -1;
         for(int i = keepents; i < ents.length(); i++)  if(ents[i]->type == ET_EMPTY) { idx = i; break; }
-        if(idx < 0 && ents.length() >= MAXENTS) { conoutft(CON_MESG, "\frtoo many entities"); return NULL; }
+        if(idx < 0 && ents.length() >= MAXENTS) { conoutft(CON_MESG, "\frToo many entities"); return NULL; }
     }
     else while(ents.length() < idx) ents.add(entities::newent())->type = ET_EMPTY;
     extentity &e = *entities::newent();
@@ -842,18 +842,18 @@ void entlink()
             {
                 int node = entgroup[i+1];
 
-                if(verbose >= 2) conoutf("\faattempting to link %d and %d (%d)", index, node, i+1);
+                if(verbose >= 2) conoutf("\faAttempting to link %d and %d (%d)", index, node, i+1);
                 if(ents.inrange(node))
                 {
                     if(!entities::linkents(index, node) && !entities::linkents(node, index))
-                        conoutf("\frfailed linking %d and %d (%d)", index, node, i+1);
+                        conoutf("\frFailed linking %d and %d (%d)", index, node, i+1);
                 }
                 else conoutf("\fr%d (%d) is not in range", node, i+1);
             }
         }
         else conoutf("\fr%d (%d) is not in range", index, 0);
     }
-    else conoutft(CON_MESG, "\frmore than one entity must be selected to link");
+    else conoutft(CON_MESG, "\frMore than one entity must be selected to link");
 }
 COMMAND(0, entlink, "");
 
@@ -863,7 +863,7 @@ void entset(char *what, char *attr)
     int type = entities::findtype(what);
     if(type == ET_EMPTY)
     {
-        conoutft(CON_MESG, "\frunknown entity type \"%s\"", what);
+        conoutft(CON_MESG, "\frUnknown entity type \"%s\"", what);
         return;
     }
     attrvector attrs;
@@ -898,7 +898,7 @@ void enttype(char *what, int *numargs)
         int type = entities::findtype(what);
         if(type == ET_EMPTY)
         {
-            conoutft(CON_MESG, "\frunknown entity type \"%s\"", what);
+            conoutft(CON_MESG, "\frUnknown entity type \"%s\"", what);
             return;
         }
         groupedit(e.type = type);
@@ -1000,7 +1000,7 @@ void clearworldvars(bool msg)
             }
         }
     });
-    if(msg) conoutf("world variables reset");
+    if(msg) conoutf("World variables reset");
     identflags &= ~IDF_WORLD;
 }
 
@@ -1008,7 +1008,7 @@ ICOMMAND(0, resetworldvars, "", (), if(editmode || identflags&IDF_WORLD) clearwo
 
 void resetmap(bool empty)
 {
-    progress(0, "resetting map...");
+    progress(0, "Resetting map...");
     resetmaterials();
     resetmapmodels();
     clearsound();
@@ -1033,7 +1033,7 @@ bool emptymap(int scale, bool force, char *mname, bool nocfg)   // main empty wo
 {
     if(!force && !editmode)
     {
-        conoutft(CON_MESG, "\frnewmap only allowed in edit mode");
+        conoutft(CON_MESG, "\frNewmap only allowed in edit mode");
         return false;
     }
 
@@ -1079,7 +1079,7 @@ bool enlargemap(bool split, bool force)
 {
     if(!force && !editmode)
     {
-        conoutft(CON_MESG, "\frmapenlarge only allowed in edit mode");
+        conoutft(CON_MESG, "\frMapenlarge only allowed in edit mode");
         return false;
     }
     if(hdr.worldsize >= 1<<16) return false;
@@ -1148,7 +1148,7 @@ void shrinkmap()
 
     allchanged();
 
-    conoutf("shrunk map to size %d", worldscale);
+    conoutf("Shrunk map to size %d", worldscale);
 }
 
 ICOMMAND(0, newmap, "is", (int *i, char *n), if(emptymap(*i, false, n)) game::newmap(::max(*i, 0), n));

@@ -297,7 +297,7 @@ void ircnewnet(int type, const char *name, const char *serv, int port, const cha
     ircnet *m = ircfind(name);
     if(m)
     {
-        conoutf("ircnet %s already exists", m->name);
+        conoutf("Ircnet %s already exists", m->name);
         return;
     }
     ircnet &n = *ircnets.add(new ircnet);
@@ -326,56 +326,56 @@ ICOMMAND(0, ircaddrelay, "ssisss", (const char *n, const char *s, int *p, const 
 });
 ICOMMAND(0, ircserv, "ss", (const char *name, const char *s), {
     ircnet *n = ircfind(name);
-    if(!n) { conoutf("no such ircnet: %s", name); return; }
+    if(!n) { conoutf("No such ircnet: %s", name); return; }
     if(!s || !*s) { ircprintf(n, 4, NULL, "current server is: %s", n->serv); return; }
     copystring(n->serv, s);
 });
 ICOMMAND(0, ircport, "ss", (const char *name, const char *s), {
     ircnet *n = ircfind(name);
-    if(!n) { conoutf("no such ircnet: %s", name); return; }
+    if(!n) { conoutf("No such ircnet: %s", name); return; }
     if(!s || !*s || !parseint(s)) { ircprintf(n, 4, NULL, "current port is: %d", n->port); return; }
     n->port = parseint(s);
 });
 ICOMMAND(0, ircnick, "ss", (const char *name, const char *s), {
     ircnet *n = ircfind(name);
-    if(!n) { conoutf("no such ircnet: %s", name); return; }
+    if(!n) { conoutf("No such ircnet: %s", name); return; }
     if(!s || !*s) { ircprintf(n, 4, NULL, "current main nickname is: %s", n->mnick); return; }
     copystring(n->mnick, s);
 });
 ICOMMAND(0, ircident, "ss", (const char *name, const char *s), {
     ircnet *n = ircfind(name);
-    if(!n) { conoutf("no such ircnet: %s", name); return; }
+    if(!n) { conoutf("No such ircnet: %s", name); return; }
     if(!s || !*s) { ircprintf(n, 4, NULL, "current ident is: %s", n->ident); return; }
     copystring(n->ident, s);
 });
 ICOMMAND(0, ircbind, "ss", (const char *name, const char *s), {
     ircnet *n = ircfind(name);
-    if(!n) { conoutf("no such ircnet: %s", name); return; }
+    if(!n) { conoutf("No such ircnet: %s", name); return; }
     if(!s || !*s) { ircprintf(n, 4, NULL, "currently bound to: %s", n->ip); return; }
     copystring(n->ip, s);
 });
 ICOMMAND(0, ircpass, "ss", (const char *name, const char *s), {
     ircnet *n = ircfind(name);
-    if(!n) { conoutf("no such ircnet: %s", name); return; }
+    if(!n) { conoutf("No such ircnet: %s", name); return; }
     if(!s || !*s) { ircprintf(n, 4, NULL, "current password is: %s", n->passkey && *n->passkey ? "<set>" : "<not set>"); return; }
     copystring(n->passkey, s);
 });
 ICOMMAND(0, ircauthcommand, "ss", (const char *name, const char *s), {
     ircnet *n = ircfind(name);
-    if(!n) { conoutf("no such ircnet: %s", name); return; }
+    if(!n) { conoutf("No such ircnet: %s", name); return; }
     if(!s || !*s) { ircprintf(n, 4, NULL, "current auth command is: %s", n->authcommand && *n->authcommand ? "<set>" : "<not set>"); return; }
     copystring(n->authcommand, s);
 });
 ICOMMAND(0, ircauth, "sss", (const char *name, const char *s, const char *t), {
     ircnet *n = ircfind(name);
-    if(!n) { conoutf("no such ircnet: %s", name); return; }
+    if(!n) { conoutf("No such ircnet: %s", name); return; }
     if(!s || !*s || !t || !*t) { ircprintf(n, 4, NULL, "current auth details are: %s (%s)", n->authname, n->authpass && *n->authpass ? "<set>" : "<not set>"); return; }
     copystring(n->authname, s);
     copystring(n->authpass, t);
 });
 ICOMMAND(0, ircconnect, "s", (const char *name), {
     ircnet *n = ircfind(name);
-    if(!n) { conoutf("no such ircnet: %s", name); return; }
+    if(!n) { conoutf("No such ircnet: %s", name); return; }
     if(n->state > IRC_DISC) { ircprintf(n, 4, NULL, "network already already active"); return; }
     ircestablish(n);
 });
@@ -429,7 +429,7 @@ bool ircnewchan(int type, const char *name, const char *channel, const char *fri
     ircnet *n = ircfind(name);
     if(!n)
     {
-        conoutf("no such ircnet: %s", name);
+        conoutf("No such ircnet: %s", name);
         return false;
     }
     ircchan *c = ircfindchan(n, channel);
@@ -459,7 +459,7 @@ ICOMMAND(0, ircjoinchan, "ssssi", (const char *n, const char *c, const char *f, 
 });
 ICOMMAND(0, ircpasschan, "sss", (const char *name, const char *chan, const char *s), {
     ircnet *n = ircfind(name);
-    if(!n) { conoutf("no such ircnet: %s", name); return; }
+    if(!n) { conoutf("No such ircnet: %s", name); return; }
     ircchan *c = ircfindchan(n, chan);
     if(!c) { ircprintf(n, 4, NULL, "no such channel: %s", chan); return; }
     if(!s || !*s) { ircprintf(n, 4, NULL, "channel %s current password is: %s", c->name, c->passkey && *c->passkey ? "<set>" : "<not set>"); return; }
@@ -467,7 +467,7 @@ ICOMMAND(0, ircpasschan, "sss", (const char *name, const char *chan, const char 
 });
 ICOMMAND(0, ircrelaychan, "sss", (const char *name, const char *chan, const char *s), {
     ircnet *n = ircfind(name);
-    if(!n) { conoutf("no such ircnet: %s", name); return; }
+    if(!n) { conoutf("No such ircnet: %s", name); return; }
     ircchan *c = ircfindchan(n, chan);
     if(!c) { ircprintf(n, 4, NULL, "no such channel: %s", chan); return; }
     if(!s || !*s) { ircprintf(n, 4, NULL, "channel %s current relay level is: %d", c->name, c->relay); return; }
@@ -475,7 +475,7 @@ ICOMMAND(0, ircrelaychan, "sss", (const char *name, const char *chan, const char
 });
 ICOMMAND(0, ircfriendlychan, "sss", (const char *name, const char *chan, const char *s), {
     ircnet *n = ircfind(name);
-    if(!n) { conoutf("no such ircnet: %s", name); return; }
+    if(!n) { conoutf("No such ircnet: %s", name); return; }
     ircchan *c = ircfindchan(n, chan);
     if(!c) { ircprintf(n, 4, NULL, "no such channel: %s", chan); return; }
     if(!s || !*s) { ircprintf(n, 4, NULL, "channel %s current friendly name is: %s", c->name, c->friendly); return; }
@@ -680,7 +680,7 @@ void ircprocess(ircnet *n, char *user[3], int g, int numargs, char *w[])
                 if(n->state == IRC_CONN)
                 {
                     n->state = IRC_ONLINE;
-                    ircprintf(n, 4, NULL, "\fbnow connected to %s as %s (%s)", user[0], n->nick, n->mnick);
+                    ircprintf(n, 4, NULL, "\fbNow connected to %s as %s (%s)", user[0], n->nick, n->mnick);
                     if(*n->authname && *n->authpass) ircsend(n, "PRIVMSG %s :%s", n->authname, n->authpass);
                     if(*n->authcommand) ircsend(n, "%s", n->authcommand);
                 }
@@ -705,8 +705,8 @@ void ircprocess(ircnet *n, char *user[3], int g, int numargs, char *w[])
                     c->lastjoin = clocktime;
                     c->lastsync = 0;
                     if(c->type == IRCCT_AUTO)
-                        ircprintf(n, 4, w[g+2], "\fbwaiting %ds to rejoin %s", ircautorejoin, c->name);
-                    else ircprintf(n, 4, NULL, "\fbbanned from channel: %s", c->name);
+                        ircprintf(n, 4, w[g+2], "\fbWaiting %ds to rejoin %s", ircautorejoin, c->name);
+                    else ircprintf(n, 4, NULL, "\fbBanned from channel: %s", c->name);
                 }
                 break;
             }
@@ -998,7 +998,7 @@ void irccmd(ircnet *n, ircchan *c, char *s)
                     ircsend(n, "PRIVMSG %s :\vACTION %s\v", c->name, r);
                     ircprintf(n, 1, c->name, "\fv* %s %s", n->nick, r);
                 }
-                else ircprintf(n, 4, NULL, "\fyyou are not on a channel");
+                else ircprintf(n, 4, NULL, "\fyYou are not on a channel");
             }
             else if(!strcasecmp(q, "JOIN"))
             {
@@ -1015,7 +1015,7 @@ void irccmd(ircnet *n, ircchan *c, char *s)
                     ircsend(n, "PART %s", d->name);
                     d->updated |= IRCUP_LEAVE;
                 }
-                else ircprintf(n, 4, NULL, "\fyyou are not on a channel");
+                else ircprintf(n, 4, NULL, "\fyYou are not on a channel");
             }
             else if(!strcasecmp(q, "QUIT"))
             {
@@ -1029,14 +1029,14 @@ void irccmd(ircnet *n, ircchan *c, char *s)
                     ircsend(n, "PRIVMSG %s :%s v%s-%s%d-%s (%s); %s (%s v%s)", c->name, versionname, versionstring, versionplatname, versionarch, versionbranch, versionrelease, gfxrenderer, gfxvendor, gfxversion);
                     ircprintf(n, 1, c->name, "\fw<%s> %s v%s-%s%d-%s (%s); %s (%s v%s)", n->nick, versionname, versionstring, versionplatname, versionarch, versionbranch, versionrelease, gfxrenderer, gfxvendor, gfxversion);
                 }
-                else ircprintf(n, 4, NULL, "\fyyou are not on a channel");
+                else ircprintf(n, 4, NULL, "\fyYou are not on a channel");
             }
             else if(*r) ircsend(n, "%s %s", q, r); // send it raw so we support any command
             else ircsend(n, "%s", q);
             DELETEA(q); DELETEA(r);
             return;
         }
-        ircprintf(n, 4, c ? c->name : NULL, "\fyyou are not on a channel");
+        ircprintf(n, 4, c ? c->name : NULL, "\fyYou are not on a channel");
     }
     else if(c)
     {
@@ -1048,107 +1048,6 @@ void irccmd(ircnet *n, ircchan *c, char *s)
         ircsend(n, "%s", p);
         ircprintf(n, 4, NULL, "\fa>%s< %s", n->nick, p);
     }
-}
-
-bool ircchangui(guient *g, ircnet *n, ircchan *c, bool tab, int width, int height)
-{
-    if(tab)
-    {
-        bool front = c->updated&IRCUP_NEW, msg = c->updated&IRCUP_MSG;
-        g->tab(c->name, msg ? 0x00FFFF : 0xFFFFFF, front);
-        if(front) c->updated &= ~IRCUP_NEW;
-        if(msg && g->visible()) c->updated &= ~IRCUP_MSG;
-    }
-
-    defformatstring(cwindow, "%s_%s_window", n->name, c->name);
-    if(c->buffer.newlines < c->buffer.lines.length())
-    {
-        editor *e = UI::geteditor(cwindow, EDITORREADONLY);
-        if(e) while(c->buffer.newlines < c->buffer.lines.length()) UI::editorline(e, c->buffer.lines[c->buffer.newlines++], MAXIRCLINES);
-    }
-    g->field(cwindow, 0x666666, -width, height, NULL, EDITORREADONLY);
-
-    defformatstring(cinput, "%s_%s_input", n->name, c->name);
-    char *v = g->field(cinput, 0x666666, -width, 0, "", EDITORFOREVER, g->visible(), cwindow);
-    if(v && *v)
-    {
-        irccmd(n, c, v);
-        UI::editoredit(UI::geteditor(cinput, EDITORFOREVER, NULL, cwindow));
-    }
-    return true;
-}
-
-bool ircnetgui(guient *g, ircnet *n, bool tab, int width, int height)
-{
-    if(tab)
-    {
-        bool front = n->updated&IRCUP_NEW, msg = n->updated&IRCUP_MSG;
-        g->tab(n->name, msg ? 0x00FFFF : 0xFFFFFF, front);
-        if(front) n->updated &= ~IRCUP_NEW;
-        if(msg && g->visible()) n->updated &= ~IRCUP_MSG;
-    }
-    n->lastseen = clocktime;
-    defformatstring(window, "%s_window", n->name);
-    if(n->buffer.newlines < n->buffer.lines.length())
-    {
-        editor *e = UI::geteditor(window, EDITORREADONLY);
-        if(e) while(n->buffer.newlines < n->buffer.lines.length()) UI::editorline(e, n->buffer.lines[n->buffer.newlines++], MAXIRCLINES);
-    }
-    g->field(window, 0x666666, -width, height, NULL, EDITORREADONLY);
-
-    defformatstring(input, "%s_input", n->name);
-    char *w = g->field(input, 0x666666, -width, 0, "", EDITORFOREVER, g->visible(), window);
-    if(w && *w)
-    {
-        irccmd(n, NULL, w);
-        UI::editoredit(UI::geteditor(input, EDITORFOREVER, NULL, window));
-    }
-
-    loopvj(n->channels) if(n->channels[j].state != IRCC_NONE && n->channels[j].name[0])
-    {
-        ircchan *c = &n->channels[j];
-        if(!ircchangui(g, n, c, true, width, height)) return false;
-    }
-    return true;
-}
-
-static const char * const ircstates[IRC_MAX] = { "\fowaiting", "\froffline", "\foconnecting", "\fynegotiating", "\fgonline", "\foquitting" };
-bool ircgui(guient *g, const char *s, int width, int height)
-{
-    g->strut(width-6);
-    if(s && *s)
-    {
-        ircnet *n = ircfind(s);
-        if(n)
-        {
-            if(!ircnetgui(g, n, false, width, height)) return false;
-        }
-        else g->textf("not currently connected to %s", 0xFFFFFF, NULL, 0, -1, false, NULL, 0xFFFFFF, s);
-    }
-    else
-    {
-        int nets = 0;
-        loopv(ircnets) if(ircnets[i]->name[0] && ircnets[i]->sock != ENET_SOCKET_NULL)
-        {
-            ircnet *n = ircnets[i];
-            uilist(*g, {
-                g->buttonf("%s via %s:[%d]", 0xFFFFFF, NULL, 0, -1, true, NULL, 0xFFFFFF, n->name, n->serv, n->port);
-                g->space(1);
-                g->buttonf("\fs%s\fS as %s", 0xFFFFFF, NULL, 0, -1, true, NULL, 0xFFFFFF, ircstates[n->state], n->nick);
-            });
-            nets++;
-        }
-        if(nets)
-        {
-            loopv(ircnets)
-            {
-                ircnet *n = ircnets[i];
-                if(!ircnetgui(g, n, true, width, height)) return false;
-            }
-        }
-        else g->text("no current connections..", 0xFFFFFF);
-    }
-    return true;
 }
 #endif
 ICOMMAND(0, ircconns, "", (void), { int num = 0; loopv(ircnets) if(ircnets[i]->state >= IRC_ATTEMPT) num++; intret(num); });

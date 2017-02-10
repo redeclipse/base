@@ -233,7 +233,7 @@ void show_calclight_lmprog()
         glPixelStorei(GL_UNPACK_ALIGNMENT, texalign(data, LM_PACKW, bpp));
         glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, LM_PACKW, LM_PACKH, bpp > 3 ? GL_RGBA : GL_RGB, GL_UNSIGNED_BYTE, data);
     }
-    progress(bar1, "computing lightmaps..", bar1, text);//, lmprogtexticks ? lmprogtex : 0);
+    progress(bar1, "Computing lightmaps..", bar1, text);//, lmprogtexticks ? lmprogtex : 0);
 }
 
 #define CHECK_PROGRESS_LOCKED(exit, before, after) CHECK_CALCLIGHT_PROGRESS_LOCKED(exit, show_calclight_lmprog, before, after)
@@ -2137,12 +2137,12 @@ void calclight(int *quality, int *quick)
 {
     if(!setlightmapquality(*quality, *quick!=0))
     {
-        conoutft(CON_MESG, "\frvalid range for calclight quality is -1..1");
+        conoutft(CON_MESG, "\frValid range for calclight quality is -1..1");
         return;
     }
-    progress(0, "computing lightmaps...");
+    progress(-1, "Computing lightmaps...");
     mpremip(true);
-    optimizeblendmap();
+    dooptimizeblendmap();
     loadlayermasks();
     int numthreads = lightthreads > 0 ? lightthreads : numcpus;
     if(numthreads > 1) preloadusedmapmodels(false, true);
@@ -2174,12 +2174,12 @@ void calclight(int *quality, int *quick)
     }
     if(!editmode) compressed.clear();
     initlights();
-    progress(0, "lighting done...");
+    progress(0, "Lighting done...");
     allchanged();
     if(calclight_canceled)
-        conoutf("\frcalclight aborted");
+        conoutf("\frCalclight aborted");
     else
-        conoutf("\fggenerated %d lightmaps using %d%% of %d textures (%.1f seconds)",
+        conoutf("\fgGenerated %d lightmaps using %d%% of %d textures (%.1f seconds)",
             total,
             lightmaps.length() ? lumels * 100 / (lightmaps.length() * LM_PACKW * LM_PACKH) : 0,
             lightmaps.length(),
@@ -2196,10 +2196,10 @@ void patchlight(int *quality, int *quick)
     if(noedit(true)) return;
     if(!setlightmapquality(*quality, *quick!=0))
     {
-        conoutft(CON_MESG, "\frvalid range for patchlight quality is -1..1");
+        conoutft(CON_MESG, "\frValid range for patchlight quality is -1..1");
         return;
     }
-    progress(0, "patching lightmaps...");
+    progress(-1, "Patching lightmaps...");
     loadlayermasks();
     int numthreads = lightthreads > 0 ? lightthreads : numcpus;
     if(numthreads > 1) preloadusedmapmodels(false, true);
@@ -2218,7 +2218,7 @@ void patchlight(int *quality, int *quick)
     calclight_canceled = false;
     check_calclight_lmprog = false;
     SDL_TimerID timer = SDL_AddTimer(250, calclighttimer, NULL);
-    if(patchnormals) progress(0, "computing normals...");
+    if(patchnormals) progress(0, "Computing normals...");
     Uint32 start = SDL_GetTicks();
     if(patchnormals) calcnormals(lerptjoints > 0);
     show_calclight_lmprog();
@@ -2234,12 +2234,12 @@ void patchlight(int *quality, int *quick)
         lumels += lightmaps[i].lumels;
     }
     initlights();
-    progress(0, "lighting done...");
+    progress(0, "Lighting done...");
     allchanged();
     if(calclight_canceled)
-        conoutf("\frpatchlight aborted");
+        conoutf("\frPatchlight aborted");
     else
-        conoutf("\fgpatched %d lightmaps using %d%% of %d textures (%.1f seconds)",
+        conoutf("\fgPatched %d lightmaps using %d%% of %d textures (%.1f seconds)",
             total,
             lightmaps.length() ? lumels * 100 / (lightmaps.length() * LM_PACKW * LM_PACKH) : 0,
             lightmaps.length(),
@@ -2252,7 +2252,7 @@ COMMAND(0, patchlight, "ii");
 void clearlightmaps()
 {
     if(noedit(true)) return;
-    progress(0, "clearing lightmaps...");
+    progress(-1, "Clearing lightmaps...");
     resetlightmaps(false);
     clearsurfaces(worldroot);
     initlights();

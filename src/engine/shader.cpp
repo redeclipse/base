@@ -52,13 +52,13 @@ Shader *lookupshaderbyname(const char *name)
 
 Shader *generateshader(const char *name, const char *fmt, ...)
 {
-    if(!loadedshaders) return NULL; 
+    if(!loadedshaders) return NULL;
     Shader *s = name ? lookupshaderbyname(name) : NULL;
     if(!s)
     {
         defvformatstring(cmd, fmt, fmt);
         standardshaders = true;
-        execute(cmd, true); 
+        execute(cmd, true);
         standardshaders = false;
         s = name ? lookupshaderbyname(name) : NULL;
         if(!s) s = nullshader;
@@ -436,7 +436,7 @@ static inline float *findslotparam(VSlot &s, const char *name, float *noval)
     SlotShaderParamValue *p = findslotparam(s, name);
     return p ? p->val : noval;
 }
- 
+
 static inline void setslotparam(SlotShaderParamState &l, const float *val)
 {
     switch(l.format)
@@ -737,7 +737,7 @@ static void gengenericvariant(Shader &s, const char *sname, const char *vs, cons
             memset(end, ' ', endlen);
         }
     }
-    row += rowoffset; 
+    row += rowoffset;
     if(row < 0 || row >= MAXVARIANTROWS) return;
     int col = s.numvariants(row);
     defformatstring(varname, "<variant:%d,%d>%s", col, row, sname);
@@ -762,7 +762,7 @@ static bool genwatervariant(Shader &s, const char *sname, const char *vs, const 
     const char *fadedef = "\nfadedepth = vvertex.z*waterfadeparams.x + waterfadeparams.y;\n";
     vsw.put(fadedef, strlen(fadedef));
     vsw.put(vsend, strlen(vsend)+1);
-        
+
     const char *psmain = findglslmain(ps), *psend = strrchr(ps, '}');
     if(!psmain || !psend) return false;
     psw.put(ps, psmain - ps);
@@ -826,15 +826,15 @@ static void gendynlightvariant(Shader &s, const char *sname, const char *vs, con
 
         loopk(i+1)
         {
-            defformatstring(tc, 
-                k<numlights ? 
+            defformatstring(tc,
+                k<numlights ?
                     "dynlight%ddir = vvertex.xyz*dynlightpos[%d].w + dynlightpos[%d].xyz;\n" :
-                    "vec3 dynlight%ddir = dynlight0dir*dynlightpos[%d].w + dynlightpos[%d].xyz;\n",     
+                    "vec3 dynlight%ddir = dynlight0dir*dynlightpos[%d].w + dynlightpos[%d].xyz;\n",
                 k, k, k);
             if(k < numlights) vsdl.put(tc, strlen(tc));
             else psdl.put(tc, strlen(tc));
 
-            defformatstring(dl, 
+            defformatstring(dl,
                 "%s.rgb += dynlightcolor[%d] * (1.0 - clamp(dot(dynlight%ddir, dynlight%ddir), 0.0, 1.0));\n",
                 pslight, k, k, k);
             psdl.put(dl, strlen(dl));
@@ -900,7 +900,7 @@ static void genshadowmapvariant(Shader &s, const char *sname, const char *vs, co
             "float smtest = shadowmaptc.z*smvals.y;\n"
             "float shadowed = smtest < smvals.x && smtest > smvals.z ? smvals.w : 0.0;\n";
     pssm.put(sm, strlen(sm));
-    defformatstring(smlight, 
+    defformatstring(smlight,
         "%s.rgb -= shadowed*clamp(%s.rgb - shadowmapambient.rgb, 0.0, 1.0);\n",
         pslight, pslight);
     pssm.put(smlight, strlen(smlight));
@@ -1077,7 +1077,7 @@ void shader(int *type, char *name, char *vs, char *ps)
 {
     if(lookupshaderbyname(name)) return;
 
-    defformatstring(info, "shader %s", name);
+    defformatstring(info, "Loading shader: %s", name);
     progress(loadprogress, info);
 
     vector<char> vsbuf, psbuf, vsbak, psbak;
@@ -1134,7 +1134,7 @@ void setshader(char *name)
     Shader *s = shaders.access(name);
     if(!s)
     {
-        conoutf("\frno such shader: %s", name);
+        conoutf("\frNo such shader: %s", name);
     }
     else slotshader = s;
 }
@@ -1239,7 +1239,7 @@ const char *getshaderparamname(const char *name, bool insert)
 }
 
 void addslotparam(const char *name, float x, float y, float z, float w, int palette = 0, int palindex = 0)
-{   
+{
     if(name) name = getshaderparamname(name);
     loopv(slotparams)
     {
@@ -1400,7 +1400,7 @@ static bool addpostfx(const char *name, int outputbind, int outputscale, uint in
     Shader *s = useshaderbyname(name);
     if(!s)
     {
-        conoutf("no such postfx shader: %s", name);
+        conoutf("No such postfx shader: %s", name);
         return false;
     }
     postfxpass &p = postfxpasses.add();
@@ -1462,7 +1462,7 @@ void reloadshaders()
     {
         if(!s.standard && !(s.type&(SHADER_DEFERRED|SHADER_INVALID)) && !s.variantshader)
         {
-            defformatstring(info, "shader %s", s.name);
+            defformatstring(info, "Loading shader: %s", s.name);
             progress(0.0, info);
             if(!s.compile()) s.cleanup(true);
             loopv(s.variants)

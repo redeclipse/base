@@ -229,8 +229,8 @@ void gl_checkextensions()
     setsvar("gfxrenderer", (const char *)glGetString(GL_RENDERER));
     setsvar("gfxversion", (const char *)glGetString(GL_VERSION));
 
-    conoutf("renderer: %s (%s)", gfxrenderer, gfxvendor);
-    conoutf("driver: %s", gfxversion);
+    conoutf("Renderer: %s (%s)", gfxrenderer, gfxvendor);
+    conoutf("Driver: %s", gfxversion);
 
 
     bool mesa = false, intel = false, ati = false, nvidia = false;
@@ -634,7 +634,7 @@ void findorientation(vec &o, float yaw, float pitch, vec &pos)
 {
     vec dir(yaw*RAD, pitch*RAD);
     if(raycubepos(o, dir, pos, 0, RAY_CLIPMAT|RAY_SKIPFIRST) == -1)
-        pos = dir.mul(2*hdr.worldsize).add(o); //otherwise gui won't work when outside of map
+        pos = dir.mul(2*hdr.worldsize).add(o);
 }
 
 void setcammatrix()
@@ -1543,8 +1543,16 @@ namespace modelpreview
     float oldaspect, oldfovy, oldfov;
     int oldfarplane;
 
-    void start(int x, int y, int w, int h, bool background)
+    int x, y, w, h;
+    bool background, scissor;
+
+    void start(int x, int y, int w, int h, bool background, bool scissor)
     {
+        modelpreview::x = x;
+        modelpreview::y = y;
+        modelpreview::w = w;
+        modelpreview::h = h;
+        modelpreview::background = background;
         drawtex = DRAWTEX_MODELPREVIEW;
 
         glViewport(x, y, w, h);
@@ -1609,7 +1617,7 @@ namespace modelpreview
 vec calcmodelpreviewpos(const vec &radius, float &yaw)
 {
     yaw = fmod(lastmillis/10000.0f*360.0f, 360.0f);
-    float dist = 1.05f*max(radius.magnitude2()/aspect, radius.magnitude())/sinf(fovy/2*RAD);
+    float dist = max(radius.magnitude2()/aspect, radius.magnitude())/sinf(fovy/2*RAD);
     return vec(0, dist, 0).rotate_around_x(camera1->pitch*RAD);
 }
 
@@ -1653,7 +1661,7 @@ void drawminimap()
 {
     if(!hud::needminimap()) { clearminimap(); return; }
 
-    progress(0, "generating mini-map...");
+    progress(0, "Generating mini-map...");
 
     int size = 1<<minimapsize, sizelimit = min(hwtexsize, min(screenw, screenh));
     while(size > sizelimit) size /= 2;
@@ -2336,24 +2344,29 @@ void cleanupgl()
     gle::cleanup();
 }
 
-void drawskin(Texture *t, int x1, int y1, int x2, int y2, int colour, float blend, int size, const matrix4x3 *m)
+void drawskin(Texture *t, float x1, float y1, float x2, float y2, int colour, float blend, float size, const matrix4x3 *m)
 {
-    int w = max(x2-x1, 2), h = max(y2-y1, 2), tw = size ? size : t->w, th = size ? size : t->h;
-    float pw = tw*0.25f, ph = th*0.25f, qw = tw*0.5f, qh = th*0.5f, px = 0, py = 0, tx = 0, ty = 0;
+    float w = x2-x1, h = y2-y1, tw = size > 0 ? size : t->w, th = size > 0 ? size : t->h,
+          pw = tw*0.25f, ph = th*0.25f, qw = tw*0.5f, qh = th*0.5f, px = 0, py = 0, tx = 0, ty = 0;
     if(w < qw)
     {
         float scale = w/qw;
-        qw *= scale; qh *= scale;
-        pw *= scale; ph *= scale;
+        qw *= scale;
+        qh *= scale;
+        pw *= scale;
+        ph *= scale;
     }
     if(h < qh)
     {
         float scale = h/qh;
-        qw *= scale; qh *= scale;
-        pw *= scale; ph *= scale;
+        qw *= scale;
+        qh *= scale;
+        pw *= scale;
+        ph *= scale;
     }
     int cw = max(int(floorf(w/qw))-1, 0), ch = max(int(floorf(h/qh))+1, 2);
 
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glBindTexture(GL_TEXTURE_2D, t->id);
     gle::color(vec::hexcolor(colour), blend);
     gle::defvertex(2);

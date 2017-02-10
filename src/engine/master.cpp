@@ -327,7 +327,7 @@ void loadstatsdb()
     {
         statsdbexecfile("sql/stats/create.sql");
         statsdbexecf("PRAGMA user_version = %d;", STATSDB_VERSION);
-        conoutf("created statistics database");
+        conoutf("Created statistics database");
     }
     while(statsdbversion() < STATSDB_VERSION)
     {
@@ -335,10 +335,10 @@ void loadstatsdb()
         defformatstring(path, "sql/stats/upgrade_%d.sql", ver);
         statsdbexecfile(path);
         statsdbexecf("PRAGMA user_version = %d;", ver + 1);
-        conoutf("upgraded database from %d to %d", ver, statsdbversion());
+        conoutf("Upgraded database from %d to %d", ver, statsdbversion());
     }
     statsdbexecf("COMMIT");
-    conoutf("statistics database loaded");
+    conoutf("Statistics database loaded");
 }
 
 int playertotalstat(const char *handle, const char *stat)
@@ -491,7 +491,7 @@ void savestats(masterclient &c)
     }
 
     statsdbexecf("COMMIT");
-    conoutf("master peer %s commited stats, game id %lu", c.name, c.stats.id);
+    conoutf("Master peer %s commited stats, game id %lu", c.name, c.stats.id);
     masteroutf(c, "stats success \"game statistics recorded (\fs\fy%lu\fS) \fs\fc%sstats/game/%lu\fS\"\n", c.stats.id, versionurl, c.stats.id);
     c.instats = false;
     c.wantstats = false;
@@ -522,7 +522,7 @@ void setupmaster()
 {
     if(masterserver)
     {
-        conoutf("loading master (%s:%d)..", *masterip ? masterip : "*", masterport);
+        conoutf("Loading master (%s:%d)..", *masterip ? masterip : "*", masterport);
         ENetAddress address = { ENET_HOST_ANY, enet_uint16(masterport) };
         if(*masterip && enet_address_set_host(&address, masterip) < 0) fatal("failed to resolve master address: %s", masterip);
         if((mastersocket = enet_socket_create(ENET_SOCKET_TYPE_STREAM)) == ENET_SOCKET_NULL) fatal("failed to create master server socket");
@@ -533,7 +533,7 @@ void setupmaster()
         if(!setuppingsocket(&address)) fatal("failed to create ping socket");
         starttime = clocktime;
         loadstatsdb();
-        conoutf("master server started on %s:[%d]", *masterip ? masterip : "localhost", masterport);
+        conoutf("Master server started on %s:[%d]", *masterip ? masterip : "localhost", masterport);
     }
 }
 
@@ -545,7 +545,7 @@ void addauth(char *name, char *flags, char *pubkey, char *email)
     if(filterstring(authname, name, true, true, true, true, 100)) name = authname;
     if(authusers.access(name))
     {
-        conoutf("auth handle '%s' already exists, skipping (%s)", name, email);
+        conoutf("Auth handle '%s' already exists, skipping (%s)", name, email);
         return;
     }
     name = newstring(name);
@@ -565,7 +565,7 @@ void addserverauth(char *name, char *flags, char *pubkey, char *email)
     if(filterstring(authname, name, true, true, true, true, 100)) name = authname;
     if(serverauthusers.access(name))
     {
-        conoutf("server auth handle '%s' already exists, skipping (%s)", name, email);
+        conoutf("Server auth handle '%s' already exists, skipping (%s)", name, email);
         return;
     }
     name = newstring(name);
@@ -612,10 +612,10 @@ void reqauth(masterclient &c, uint id, char *name, char *hostname)
     if(!u)
     {
         masteroutf(c, "failauth %u\n", id);
-        conoutf("failed '%s' (%u) from %s on server %s (NOTFOUND)\n", name, id, host, ip);
+        conoutf("Failed '%s' (%u) from %s on server %s (NOTFOUND)\n", name, id, host, ip);
         return;
     }
-    conoutf("attempting '%s' (%u) from %s on server %s\n", name, id, host, ip);
+    conoutf("Attempting '%s' (%u) from %s on server %s\n", name, id, host, ip);
 
     authreq &a = c.authreqs.add();
     a.user = u;
@@ -641,10 +641,10 @@ void reqserverauth(masterclient &c, char *name)
     if(!u)
     {
         masteroutf(c, "failserverauth\n");
-        conoutf("failed server '%s' (NOTFOUND)\n", name);
+        conoutf("Failed server '%s' (NOTFOUND)\n", name);
         return;
     }
-    conoutf("attempting server '%s'\n", name);
+    conoutf("Attempting server '%s'\n", name);
 
     c.serverauthreq.user = u;
     c.serverauthreq.reqtime = totalmillis;
@@ -667,12 +667,12 @@ void confauth(masterclient &c, uint id, const char *val)
         {
             masteroutf(c, "succauth %u \"%s\" \"%s\"\n", id, c.authreqs[i].user->name, c.authreqs[i].user->flags);
             sendauthstats(c, c.authreqs[i].user->name);
-            conoutf("succeeded '%s' [%s] (%u) from %s on server %s\n", c.authreqs[i].user->name, c.authreqs[i].user->flags, id, c.authreqs[i].hostname, ip);
+            conoutf("Succeeded '%s' [%s] (%u) from %s on server %s\n", c.authreqs[i].user->name, c.authreqs[i].user->flags, id, c.authreqs[i].hostname, ip);
         }
         else
         {
             masteroutf(c, "failauth %u\n", id);
-            conoutf("failed '%s' (%u) from %s on server %s (BADKEY)\n", c.authreqs[i].user->name, id, c.authreqs[i].hostname, ip);
+            conoutf("Failed '%s' (%u) from %s on server %s (BADKEY)\n", c.authreqs[i].user->name, id, c.authreqs[i].hostname, ip);
         }
         freechallenge(c.authreqs[i].answer);
         c.authreqs.remove(i--);
@@ -685,7 +685,7 @@ void purgemasterclient(int n)
 {
     masterclient &c = *masterclients[n];
     enet_socket_destroy(c.socket);
-    if(verbose || c.isserver) conoutf("master peer %s disconnected", c.name);
+    if(verbose || c.isserver) conoutf("Master peer %s disconnected", c.name);
     delete masterclients[n];
     masterclients.remove(n);
 }
@@ -697,14 +697,14 @@ void confserverauth(masterclient &c, const char *val)
     if(checkchallenge(val, c.serverauthreq.answer))
     {
         masteroutf(c, "succserverauth \"%s\" \"%s\"\n", c.serverauthreq.user->name, c.serverauthreq.user->flags);
-        conoutf("succeeded server '%s' [%s]\n", c.serverauthreq.user->name, c.serverauthreq.user->flags);
+        conoutf("Succeeded server '%s' [%s]\n", c.serverauthreq.user->name, c.serverauthreq.user->flags);
         copystring(c.authhandle, c.serverauthreq.user->name);
         copystring(c.flags, c.serverauthreq.user->flags);
     }
     else
     {
         masteroutf(c, "failserverauth\n");
-        conoutf("failed server '%s' (BADKEY)\n", c.serverauthreq.user->name);
+        conoutf("Failed server '%s' (BADKEY)\n", c.serverauthreq.user->name);
     }
     freechallenge(c.serverauthreq.answer);
 }
@@ -729,7 +729,7 @@ void checkmasterpongs()
                 c.listserver = true;
                 c.shouldping = false;
                 masteroutf(c, "echo \"ping reply confirmed (on port %d), server is now listed\"\n", addr.port);
-                conoutf("master peer %s responded to ping request on port %d successfully",  c.name, addr.port);
+                conoutf("Master peer %s responded to ping request on port %d successfully",  c.name, addr.port);
                 break;
             }
         }
@@ -813,7 +813,7 @@ bool checkmasterclientinput(masterclient &c)
             {
                 c.isquick = true;
                 masteroutf(c, "echo \"session initiated, awaiting auth requests\"\n");
-                conoutf("master peer %s quickly checking auth request",  c.name);
+                conoutf("Master peer %s quickly checking auth request",  c.name);
             }
             else
             {
@@ -844,13 +844,13 @@ bool checkmasterclientinput(masterclient &c)
                     if(c.isserver)
                     {
                         masteroutf(c, "echo \"server updated (port %d), sending ping request (on port %d)\"\n", c.port, c.port+1);
-                        conoutf("master peer %s updated server info (%d)",  c.name, c.port);
+                        conoutf("Master peer %s updated server info (%d)",  c.name, c.port);
                     }
                     else
                     {
                         if(*masterscriptserver) masteroutf(c, "%s\n", masterscriptserver);
                         masteroutf(c, "echo \"server registered (port %d), sending ping request (on port %d)\"\n", c.port, c.port+1);
-                        conoutf("master peer %s registered as a server (%d)", c.name, c.port);
+                        conoutf("Master peer %s registered as a server (%d)", c.name, c.port);
                     }
                     c.isserver = true;
                 }
@@ -861,7 +861,7 @@ bool checkmasterclientinput(masterclient &c)
         {
             masteroutf(c, "setversion %d %d\n", mastermainver ? mastermainver : server::getver(0), mastergamever ? mastergamever : server::getver(1));
             if(*masterscriptclient && !strcmp(w[0], "update")) masteroutf(c, "%s\n", masterscriptclient);
-            if(verbose) conoutf("master peer %s was sent the version", c.name);
+            if(verbose) conoutf("Master peer %s was sent the version", c.name);
             c.shouldpurge = found = true;
         }
         if(!strcmp(w[0], "list") || !strcmp(w[0], "update"))
@@ -881,7 +881,7 @@ bool checkmasterclientinput(masterclient &c)
                 masteroutf(c, "addserver %s %d %d %s %s %s %s\n", s.name, s.port, s.priority(), escapestring(s.desc), escapestring(s.authhandle), escapestring(filteredflags), escapestring(s.branch));
                 servs++;
             }
-            conoutf("master peer %s was sent %d server(s)", c.name, servs);
+            conoutf("Master peer %s was sent %d server(s)", c.name, servs);
             c.shouldpurge = found = true;
         }
         if(c.isserver && !strcmp(w[0], "stats"))
@@ -891,17 +891,17 @@ bool checkmasterclientinput(masterclient &c)
                 c.stats.reset();
                 if(c.hasflag('s'))
                 {
-                    conoutf("master peer %s began sending statistics", c.name);
+                    conoutf("Master peer %s began sending statistics", c.name);
                     c.instats = true;
                     if(c.wantstats)
                     {
                         c.wantstats = false;
-                        conoutf("master peer %s is overwriting previous statistics", c.name);
+                        conoutf("Master peer %s is overwriting previous statistics", c.name);
                     }
                 }
                 else
                 {
-                    conoutf("master peer %s attempted to send stats without proper privilege", c.name);
+                    conoutf("Master peer %s attempted to send stats without proper privilege", c.name);
                     masteroutf(c, "stats failure \"statistics not submitted, no statistics privilege\"\n");
                 }
             }
@@ -1017,7 +1017,7 @@ bool checkmasterclientinput(masterclient &c)
         if(w[0] && *w[0] && !found)
         {
             masteroutf(c, "error \"unknown command %s\"\n", w[0]);
-            conoutf("master peer %s (client) sent unknown command: %s",  c.name, w[0]);
+            conoutf("Master peer %s (client) sent unknown command: %s",  c.name, w[0]);
         }
         loopi(numargs) DELETEA(w[i]);
     }
@@ -1102,7 +1102,7 @@ void checkmaster()
             c->lastactivity = totalmillis ? totalmillis : 1;
             masterclients.add(c);
             if(enet_address_get_host_ip(&c->address, c->name, sizeof(c->name)) < 0) copystring(c->name, "unknown");
-            if(verbose) conoutf("master peer %s connected", c->name);
+            if(verbose) conoutf("Master peer %s connected", c->name);
         }
         break;
     }

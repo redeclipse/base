@@ -1088,7 +1088,7 @@ static Texture *newtexture(Texture *t, const char *rname, ImageData &s, int clam
             createtexture(t->frames[i], t->w, t->h, data, clamp, filter, component, GL_TEXTURE_2D, t->xs, t->ys, pitch, false, format, swizzle);
 
             if(verbose >= 3)
-                conoutf("\faadding frame: %s (%d) [%d,%d:%d,%d]", t->name, i+1, t->w, t->h, t->xs, t->ys);
+                conoutf("\faAdding frame: %s (%d) [%d,%d:%d,%d]", t->name, i+1, t->w, t->h, t->xs, t->ys);
         }
     }
     t->id = t->frames.length() ? t->frames[0] : 0;
@@ -1346,7 +1346,7 @@ static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, 
         else file++;
     }
 
-    if(!file) { if(msg) conoutf("\frcould not load texture: %s", tname); return false; }
+    if(!file) { if(msg) conoutf("\frCould not load texture: %s", tname); return false; }
 
     bool raw = !usedds || !compress, dds = false;
     for(const char *pcmds = cmds; pcmds;)
@@ -1370,7 +1370,11 @@ static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, 
         else if(matchstring(cmd, len, "stub")) return loadsurface(file, true)!=NULL;
     }
 
-    if(msg) progress(loadprogress, file);
+    if(msg)
+    {
+        defformatstring(text, "Loading texture: %s", file);
+        progress(loadprogress, text);
+    }
 
     int flen = strlen(file);
     if((flen >= 4 && !strcasecmp(file + flen - 4, ".dds")) || (dds && !raw))
@@ -1381,7 +1385,7 @@ static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, 
         else concatstring(dfile, ".dds");
         if(!loaddds(dfile, d, raw ? 1 : (dds ? 0 : -1)) && (!dds || raw))
         {
-            if(msg) conoutf("\frcould not load texture %s", dfile);
+            if(msg) conoutf("\frCould not load texture %s", dfile);
             return false;
         }
         if(d.data && !d.compressed && !dds && compress) *compress = scaledds;
@@ -1390,9 +1394,9 @@ static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, 
     if(!d.data)
     {
         SDL_Surface *s = loadsurface(file);
-        if(!s) { if(msg) conoutf("\frcould not load texture %s", file); return false; }
+        if(!s) { if(msg) conoutf("\frCould not load texture %s", file); return false; }
         int bpp = s->format->BitsPerPixel;
-        if(bpp%8 || !texformat(bpp/8)) { SDL_FreeSurface(s); conoutf("\frtexture must be 8, 16, 24, or 32 bpp: %s", file); return false; }
+        if(bpp%8 || !texformat(bpp/8)) { SDL_FreeSurface(s); conoutf("\frTexture must be 8, 16, 24, or 32 bpp: %s", file); return false; }
         d.wrap(s);
     }
 
@@ -1467,7 +1471,7 @@ static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, 
     if((anim && anim->count ? max(anim->w, anim->h) : max(d.w, d.h)) > (1<<12))
     {
         d.cleanup();
-        conoutf("\frtexture size exceeded %dx%d: %s", 1<<12, 1<<12, file);
+        conoutf("\frTexture size exceeded %dx%d: %s", 1<<12, 1<<12, file);
         return false;
     }
 
@@ -1601,7 +1605,7 @@ void compactvslot(VSlot &vs)
 
 void compactvslots(cube *c, int n)
 {
-    if((compactvslotsprogress++&0xFFF)==0) progress(min(float(compactvslotsprogress)/allocnodes, 1.0f), markingvslots ? "marking slots..." : "compacting slots...");
+    if((compactvslotsprogress++&0xFFF)==0) progress(min(float(compactvslotsprogress)/allocnodes, 1.0f), markingvslots ? "Marking slots..." : "Compacting slots...");
     loopi(n)
     {
         if(c[i].children) compactvslots(c[i].children);
@@ -2109,7 +2113,7 @@ void texture(char *type, char *name, int *rot, int *xoffset, int *yoffset, float
     Slot &s = matslot>=0 ? materialslots[matslot] : *(tnum!=TEX_DIFFUSE ? slots.last() : slots.add(new Slot(slots.length())));
     s.loaded = false;
     s.texmask |= 1<<tnum;
-    if(s.sts.length() >= TEX_MAX) conoutf("\frwarning: too many textures, [%d] %s (%d,%d)", slots.length()-1, name, matslot, lastmatslot);
+    if(s.sts.length() >= TEX_MAX) conoutf("\frWarning: too many textures, [%d] %s (%d,%d)", slots.length()-1, name, matslot, lastmatslot);
     Slot::Tex &st = s.sts.add();
     st.type = tnum;
     st.combined = -1;
@@ -2621,12 +2625,12 @@ Texture *cubemaploadwildcard(Texture *t, const char *name, bool mipit, bool msg,
         if(!s.data) return NULL;
         if(s.w != s.h)
         {
-            if(msg) conoutf("\frcubemap texture %s does not have square size", sname);
+            if(msg) conoutf("\frCubemap texture %s does not have square size", sname);
             return NULL;
         }
         if(s.compressed ? s.compressed!=surface[0].compressed || s.w!=surface[0].w || s.h!=surface[0].h || s.levels!=surface[0].levels : surface[0].compressed || s.bpp!=surface[0].bpp)
         {
-            if(msg) conoutf("\frcubemap texture %s doesn't match other sides' format", sname);
+            if(msg) conoutf("\frCubemap texture %s doesn't match other sides' format", sname);
             return NULL;
         }
         tsize = max(tsize, max(s.w, s.h));
@@ -2709,7 +2713,7 @@ Texture *cubemapload(const char *name, bool mipit, bool msg, bool transient)
     {
         defformatstring(pname, "%s_*", name);
         t = cubemaploadwildcard(NULL, pname, mipit, false, transient);
-        if(!t && msg) conoutf("\frcould not load envmap %s", name);
+        if(!t && msg) conoutf("\frCould not load envmap %s", name);
     }
     else t = cubemaploadwildcard(NULL, name, mipit, msg, transient);
     return t;
@@ -2816,7 +2820,7 @@ void initenvmaps()
 void genenvmaps()
 {
     if(envmaps.empty()) return;
-    progress(0, "generating environment maps...");
+    progress(0, "Generating environment maps...");
     int lastprogress = SDL_GetTicks();
     loopv(envmaps)
     {
@@ -2826,7 +2830,7 @@ void genenvmaps()
         int millis = SDL_GetTicks();
         if(millis - lastprogress >= 250)
         {
-            progress(float(i+1)/envmaps.length(), "generating environment maps...");
+            progress(float(i+1)/envmaps.length(), "Generating environment maps...");
             lastprogress = millis;
         }
     }
@@ -2938,8 +2942,8 @@ bool reloadtexture(Texture *t)
 void reloadtex(char *name)
 {
     Texture *t = textures.access(copypath(name));
-    if(!t) { conoutf("\frtexture %s is not loaded", name); return; }
-    if(t->type&Texture::TRANSIENT) { conoutf("\frcan't reload transient texture %s", name); return; }
+    if(!t) { conoutf("\frTexture %s is not loaded", name); return; }
+    if(t->type&Texture::TRANSIENT) { conoutf("\frCan't reload transient texture %s", name); return; }
     DELETEA(t->alphamask);
     Texture oldtex = *t;
     t->frames.shrink(0);
@@ -2947,7 +2951,7 @@ void reloadtex(char *name)
     {
         loopv(t->frames) if(t->frames[i]) glDeleteTextures(1, &t->frames[i]);
         *t = oldtex;
-        conoutf("\frfailed to reload texture %s", name);
+        conoutf("\frFailed to reload texture %s", name);
     }
 }
 COMMAND(0, reloadtex, "s");
@@ -3258,7 +3262,7 @@ void gendds(char *infile, char *outfile)
     Texture *t = textures.access(path(cfile));
     if(t) reloadtex(cfile);
     t = textureload(cfile);
-    if(t==notexture || t->frames.empty()) { conoutf("\frfailed loading %s", infile); return; }
+    if(t==notexture || t->frames.empty()) { conoutf("\frFailed loading %s", infile); return; }
 
     glBindTexture(GL_TEXTURE_2D, t->frames[0]);
     GLint compressed = 0, format = 0, width = 0, height = 0;
@@ -3267,20 +3271,20 @@ void gendds(char *infile, char *outfile)
     glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width);
     glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &height);
 
-    if(!compressed) { conoutf("\frfailed compressing %s", infile); return; }
+    if(!compressed) { conoutf("\frFailed compressing %s", infile); return; }
     int fourcc = 0;
     switch(format)
     {
-        case GL_COMPRESSED_RGB_S3TC_DXT1_EXT: fourcc = FOURCC_DXT1; conoutf("compressed as DXT1"); break;
-        case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT: fourcc = FOURCC_DXT1; conoutf("compressed as DXT1a"); break;
-        case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT: fourcc = FOURCC_DXT3; conoutf("compressed as DXT3"); break;
-        case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT: fourcc = FOURCC_DXT5; conoutf("compressed as DXT5"); break;
+        case GL_COMPRESSED_RGB_S3TC_DXT1_EXT: fourcc = FOURCC_DXT1; conoutf("Compressed as DXT1"); break;
+        case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT: fourcc = FOURCC_DXT1; conoutf("Compressed as DXT1a"); break;
+        case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT: fourcc = FOURCC_DXT3; conoutf("Compressed as DXT3"); break;
+        case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT: fourcc = FOURCC_DXT5; conoutf("Compressed as DXT5"); break;
         case GL_COMPRESSED_LUMINANCE_LATC1_EXT:
-        case GL_COMPRESSED_RED_RGTC1: fourcc = FOURCC_ATI1; conoutf("compressed as ATI1"); break;
+        case GL_COMPRESSED_RED_RGTC1: fourcc = FOURCC_ATI1; conoutf("Compressed as ATI1"); break;
         case GL_COMPRESSED_LUMINANCE_ALPHA_LATC2_EXT:
-        case GL_COMPRESSED_RG_RGTC2: fourcc = FOURCC_ATI2; conoutf("compressed as ATI2"); break;
+        case GL_COMPRESSED_RG_RGTC2: fourcc = FOURCC_ATI2; conoutf("Compressed as ATI2"); break;
         default:
-            conoutf("\frfailed compressing %s: unknown format: 0x%X", infile, format); break;
+            conoutf("\frFailed compressing %s: unknown format: 0x%X", infile, format); break;
             return;
     }
 
@@ -3295,7 +3299,7 @@ void gendds(char *infile, char *outfile)
     }
 
     stream *f = openfile(outfile, "wb");
-    if(!f) { conoutf("\frfailed writing to %s", outfile); return; }
+    if(!f) { conoutf("\frFailed writing to %s", outfile); return; }
 
     int csize = 0;
     for(int lw = width, lh = height, level = 0;;)
@@ -3341,7 +3345,7 @@ void gendds(char *infile, char *outfile)
 
     delete[] data;
 
-    conoutf("wrote DDS file %s", outfile);
+    conoutf("Wrote DDS file %s", outfile);
 
     setuptexcompress();
 }
@@ -3368,10 +3372,10 @@ void savepng(const char *filename, ImageData &image, int compress, bool flip)
         case 2: ctype = 4; break;
         case 3: ctype = 2; break;
         case 4: ctype = 6; break;
-        default: conoutf("\frfailed saving png to %s", filename); return;
+        default: conoutf("\frFailed saving png to %s", filename); return;
     }
     stream *f = openfile(filename, "wb");
-    if(!f) { conoutf("\frcould not write to %s", filename); return; }
+    if(!f) { conoutf("\frCould not write to %s", filename); return; }
 
     uchar signature[] = { 137, 80, 78, 71, 13, 10, 26, 10 };
     f->write(signature, sizeof(signature));
@@ -3450,7 +3454,7 @@ cleanuperror:
 error:
     delete f;
 
-    conoutf("\frfailed saving png to %s", filename);
+    conoutf("\frFailed saving png to %s", filename);
 }
 
 struct tgaheader
@@ -3474,11 +3478,11 @@ void savetga(const char *filename, ImageData &image, int compress, bool flip)
     switch(image.bpp)
     {
         case 3: case 4: break;
-        default: conoutf("\frfailed saving tga to %s", filename); return;
+        default: conoutf("\frFailed saving tga to %s", filename); return;
     }
 
     stream *f = openfile(filename, "wb");
-    if(!f) { conoutf("\frcould not write to %s", filename); return; }
+    if(!f) { conoutf("\frCould not write to %s", filename); return; }
 
     tgaheader hdr;
     memset(&hdr, 0, sizeof(hdr));

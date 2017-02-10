@@ -73,11 +73,11 @@ void initsound()
     {
         if(Mix_OpenAudio(soundfreq, MIX_DEFAULT_FORMAT, soundmono ? 1 : 2, soundbuflen) == -1)
         {
-            conoutf("\frsound initialisation failed: %s", Mix_GetError());
+            conoutf("\frSound initialisation failed: %s", Mix_GetError());
             return;
         }
         int chans = Mix_AllocateChannels(soundmixchans);
-        conoutf("allocated %d of %d sound channels", chans, soundmixchans);
+        conoutf("Allocated %d of %d sound channels", chans, soundmixchans);
         nosound = false;
     }
     initmumble();
@@ -242,7 +242,7 @@ bool playmusic(const char *name, const char *cmd)
                 }
             }
         }
-        if(!music) conoutf("\frcould not play music: %s", name);
+        if(!music) conoutf("\frCould not play music: %s", name);
     }
     return false;
 }
@@ -365,7 +365,7 @@ int addsound(const char *name, int vol, int maxrad, int minrad, int value, vecto
         loadsound(sam);
         if(!sample->sound)
         {
-            if(value < 2 || i) conoutf("\frfailed to load sample: %s", name);
+            if(value < 2 || i) conoutf("\frFailed to load sample: %s", name);
         }
         else break;
     }
@@ -379,7 +379,7 @@ int addsound(const char *name, int vol, int maxrad, int minrad, int value, vecto
     {
         formatstring(sam, "%s%d", name, i+2);
         loadsound(sam);
-        if(!sample->sound) conoutf("\frfailed to load sample: %s", sam);
+        if(!sample->sound) conoutf("\frFailed to load sample: %s", sam);
         else slot.samples.add(sample);
     }
     return soundset.length()-1;
@@ -443,7 +443,7 @@ void updatesound(int chan)
     else
     {
         removesound(chan);
-        if(verbose >= 4) conoutf("culled sound %d (%d)", chan, s.curvol);
+        if(verbose >= 4) conoutf("Culled sound %d (%d)", chan, s.curvol);
     }
 }
 
@@ -481,7 +481,7 @@ void updatesounds()
                     lowest = i;
                 if(sounds.inrange(lowest))
                 {
-                    if(verbose >= 4) conoutf("culled channel %d (%d)", lowest, sounds[lowest].curvol);
+                    if(verbose >= 4) conoutf("Culled channel %d (%d)", lowest, sounds[lowest].curvol);
                     removesound(lowest);
                     chan = Mix_PlayChannel(-1, sample->sound, s.flags&SND_LOOP ? -1 : 0);
                 }
@@ -577,7 +577,7 @@ int playsound(int n, const vec &pos, physent *d, int flags, int vol, int maxrad,
                         lowest = i;
                     if(sounds.inrange(lowest))
                     {
-                        if(verbose >= 4) conoutf("culled channel %d (%d)", lowest, sounds[lowest].curvol);
+                        if(verbose >= 4) conoutf("Culled channel %d (%d)", lowest, sounds[lowest].curvol);
                         removesound(lowest);
                         chan = Mix_PlayChannel(-1, sample->sound, flags&SND_LOOP ? -1 : 0);
                     }
@@ -616,11 +616,11 @@ int playsound(int n, const vec &pos, physent *d, int flags, int vol, int maxrad,
                 return chan;
             }
             else if(verbose >= 2)
-                conoutf("\frcannot play sound %d (%s): %s", n, slot->name, Mix_GetError());
+                conoutf("\frCannot play sound %d (%s): %s", n, slot->name, Mix_GetError());
         }
-        else if(verbose >= 4) conoutf("culled sound %d (%d)", n, cvol);
+        else if(verbose >= 4) conoutf("Culled sound %d (%d)", n, cvol);
     }
-    else if(n > 0) conoutf("\frunregistered sound: %d", n);
+    else if(n > 0) conoutf("\frUnregistered sound: %d", n);
     if(oldhook && issound(*oldhook)) removesound(*oldhook);
     return -1;
 }

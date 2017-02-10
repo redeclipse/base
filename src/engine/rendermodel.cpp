@@ -39,7 +39,7 @@ MODELTYPE(MDL_OBJ, obj);
 MODELTYPE(MDL_SMD, smd);
 MODELTYPE(MDL_IQM, iqm);
 
-#define checkmdl if(!loadingmodel) { conoutf("\frnot loading a model"); return; }
+#define checkmdl if(!loadingmodel) { conoutf("\frNot loading a model"); return; }
 
 void mdlmaterial(int *material, int *material2)
 {
@@ -266,7 +266,7 @@ void mdlname()
 COMMAND(0, mdlname, "");
 
 #define checkragdoll \
-    if(!loadingmodel->skeletal()) { conoutf("\frnot loading a skeletal model"); return; } \
+    if(!loadingmodel->skeletal()) { conoutf("\frNot loading a skeletal model"); return; } \
     skelmodel *m = (skelmodel *)loadingmodel; \
     if(m->parts.empty()) return; \
     skelmodel::skelmeshgroup *meshes = (skelmodel::skelmeshgroup *)m->parts.last()->meshes; \
@@ -394,7 +394,7 @@ void flushpreloadedmodels(bool msg)
     {
         loadprogress = float(i+1)/preloadmodels.length();
         model *m = loadmodel(preloadmodels[i], -1, msg);
-        if(!m) { if(msg) conoutf("\frcould not load model: %s", preloadmodels[i]); }
+        if(!m) { if(msg) conoutf("\frCould not load model: %s", preloadmodels[i]); }
         else
         {
             m->preloadmeshes();
@@ -422,8 +422,8 @@ void preloadusedmapmodels(bool msg, bool bih)
         loadprogress = float(i+1)/mapmodels.length();
         int mmindex = mapmodels[i];
         mapmodelinfo *mmi = getmminfo(mmindex);
-        if(!mmi) { if(msg) conoutf("\frcould not find map model: %d", mmindex); }
-        else if(!loadmodel(NULL, mmindex, true)) { if(msg) conoutf("\frcould not load model: %s", mmi->name); }
+        if(!mmi) { if(msg) conoutf("\frCould not find map model: %d", mmindex); }
+        else if(!loadmodel(NULL, mmindex, true)) { if(msg) conoutf("\frCould not load model: %s", mmi->name); }
         else if(mmi->m)
         {
             if(bih) mmi->m->preloadBIH();
@@ -450,7 +450,7 @@ model *loadmodel(const char *name, int i, bool msg)
         if(loadingmodel || lightmapping > 1) return NULL;
         if(msg)
         {
-            defformatstring(str, "%s", name);
+            defformatstring(str, "Loading model: %s", name);
             progress(loadprogress, str);
         }
         loopi(NUMMODELTYPES)
@@ -489,12 +489,12 @@ void cleanupmodels()
 void clearmodel(char *name)
 {
     model **m = models.access(name);
-    if(!m) { conoutf("\frmodel %s is not loaded", name); return; }
+    if(!m) { conoutf("\frModel %s is not loaded", name); return; }
     loopv(mapmodels) if(mapmodels[i].m==*m) mapmodels[i].m = NULL;
     models.remove(name);
     (*m)->cleanup();
     delete *m;
-    conoutf("\fgcleared model %s", name);
+    conoutf("\fgCleared model %s", name);
 }
 
 COMMAND(0, clearmodel, "s");

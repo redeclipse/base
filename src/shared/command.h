@@ -1,31 +1,36 @@
 // script binding functionality
 
-enum { VAL_NULL = 0, VAL_INT, VAL_FLOAT, VAL_STR, VAL_ANY, VAL_CODE, VAL_MACRO, VAL_IDENT };
+enum { VAL_NULL = 0, VAL_INT, VAL_FLOAT, VAL_STR, VAL_ANY, VAL_CODE, VAL_MACRO, VAL_IDENT, VAL_CSTR, VAL_CANY, VAL_WORD, VAL_POP, VAL_COND };
 
 enum
 {
     CODE_START = 0,
     CODE_OFFSET,
+    CODE_NULL, CODE_TRUE, CODE_FALSE, CODE_NOT,
     CODE_POP,
-    CODE_ENTER,
-    CODE_EXIT,
-    CODE_VAL,
-    CODE_VALI,
+    CODE_ENTER, CODE_ENTER_RESULT,
+    CODE_EXIT, CODE_RESULT_ARG,
+    CODE_VAL, CODE_VALI,
+    CODE_DUP,
     CODE_MACRO,
     CODE_BOOL,
-    CODE_BLOCK,
-    CODE_COMPILE,
+    CODE_BLOCK, CODE_EMPTY,
+    CODE_COMPILE, CODE_COND,
     CODE_FORCE,
     CODE_RESULT,
     CODE_IDENT, CODE_IDENTU, CODE_IDENTARG,
     CODE_COM, CODE_COMD, CODE_COMC, CODE_COMV,
     CODE_CONC, CODE_CONCW, CODE_CONCM, CODE_DOWN,
-    CODE_SVAR, CODE_SVAR1,
+    CODE_SVAR, CODE_SVARM, CODE_SVAR1,
     CODE_IVAR, CODE_IVAR1, CODE_IVAR2, CODE_IVAR3,
     CODE_FVAR, CODE_FVAR1,
-    CODE_LOOKUP, CODE_LOOKUPU, CODE_LOOKUPARG, CODE_ALIAS, CODE_ALIASU, CODE_ALIASARG, CODE_CALL, CODE_CALLU, CODE_CALLARG,
+    CODE_LOOKUP, CODE_LOOKUPU, CODE_LOOKUPARG,
+    CODE_LOOKUPM, CODE_LOOKUPMU, CODE_LOOKUPMARG,
+    CODE_ALIAS, CODE_ALIASU, CODE_ALIASARG, CODE_CALL, CODE_CALLU, CODE_CALLARG,
     CODE_PRINT,
     CODE_LOCAL,
+    CODE_DO, CODE_DOARGS,
+    CODE_JUMP, CODE_JUMP_TRUE, CODE_JUMP_FALSE, CODE_JUMP_RESULT_TRUE, CODE_JUMP_RESULT_FALSE,
 
     CODE_OP_MASK = 0x3F,
     CODE_RET = 6,
@@ -38,7 +43,7 @@ enum
     RET_FLOAT  = VAL_FLOAT<<CODE_RET,
 };
 
-enum { ID_VAR, ID_FVAR, ID_SVAR, ID_COMMAND, ID_ALIAS, ID_LOCAL };
+enum { ID_VAR, ID_FVAR, ID_SVAR, ID_COMMAND, ID_ALIAS, ID_LOCAL, ID_DO, ID_DOARGS, ID_IF, ID_RESULT, ID_NOT, ID_AND, ID_OR };
 #define VAR_MIN INT_MIN+1
 #define VAR_MAX INT_MAX-1
 #define FVAR_MIN -1e6f
@@ -58,6 +63,7 @@ struct identval
         char *s;    // ID_SVAR, VAL_STR
         const uint *code; // VAL_CODE
         ident *id;  // VAL_IDENT
+        const char *cstr; // VAL_CSTR
     };
 };
 
@@ -67,16 +73,20 @@ struct tagval : identval
 
     void setint(int val) { type = VAL_INT; i = val; }
     void setfloat(float val) { type = VAL_FLOAT; f = val; }
+    void setnumber(double val) { i = int(val); if(val == i) type = VAL_INT; else { type = VAL_FLOAT; f = val; } }
     void setstr(char *val) { type = VAL_STR; s = val; }
     void setnull() { type = VAL_NULL; i = 0; }
     void setcode(const uint *val) { type = VAL_CODE; code = val; }
     void setmacro(const uint *val) { type = VAL_MACRO; code = val; }
+    void setcstr(const char *val) { type = VAL_CSTR; cstr = val; }
     void setident(ident *val) { type = VAL_IDENT; id = val; }
 
     const char *getstr() const;
     int getint() const;
     float getfloat() const;
+    double getnumber() const;
     bool getbool() const;
+    void getval(tagval &r) const;
 
     void cleanup();
 };
@@ -90,12 +100,13 @@ struct identstack
 
 union identvalptr
 {
+    void *p;  // ID_*VAR
     int *i;   // ID_VAR
     float *f; // ID_FVAR
     char **s; // ID_SVAR
 };
 
-typedef void (__cdecl *identfun)();
+typedef void (__cdecl *identfun)(ident *id);
 
 struct ident
 {
@@ -172,7 +183,7 @@ struct ident
         : type(t), numargs(numargs), flags(flags), name(n), args(args), argmask(argmask), fun((identfun)f), desc(NULL)
     { fields.shrink(0); }
 
-    void changed() { if(fun) fun(); }
+    void changed() { if(fun) fun(this); }
 
     void setval(const tagval &v)
     {
@@ -194,8 +205,11 @@ struct ident
 
     float getfloat() const;
     int getint() const;
+    double getnumber() const;
     const char *getstr() const;
-    void getval(tagval &v) const;
+    void getval(tagval &r) const;
+    void getcstr(tagval &v) const;
+    void getcval(tagval &v) const;
 };
 
 extern hashnameset<ident> idents;
@@ -208,6 +222,8 @@ extern const char *intstr(ident *id);
 extern void intret(int v);
 extern const char *floatstr(float v);
 extern void floatret(float v);
+extern const char *numberstr(double v);
+extern void numberret(double v);
 extern void stringret(char *s);
 extern void result(tagval &v);
 extern void result(const char *s);
@@ -228,22 +244,31 @@ static inline int parseint(const char *s)
     return int(strtoul(s, NULL, 0));
 }
 
-static inline float parsefloat(const char *s)
-{
-    // not all platforms (windows) can parse hexadecimal integers via strtod
-    char *end;
-    double val = strtod(s, &end);
-    return val || end==s || (*end!='x' && *end!='X') ? float(val) : float(parseint(s));
+#define PARSEFLOAT(name, type) \
+    static inline type parse##name(const char *s) \
+    { \
+        /* not all platforms (windows) can parse hexadecimal integers via strtod */ \
+        char *end; \
+        double val = strtod(s, &end); \
+        return val || end==s || (*end!='x' && *end!='X') ? type(val) : type(parseint(s)); \
 }
+PARSEFLOAT(float, float)
+PARSEFLOAT(number, double)
 
 static inline void intformat(char *buf, int v, int len = 20) { nformatstring(buf, len, "%d", v); }
 static inline void floatformat(char *buf, float v, int len = 20) { nformatstring(buf, len, v==int(v) ? "%.1f" : "%.7g", v); }
+static inline void numberformat(char *buf, double v, int len = 20)
+{
+    int i = int(v);
+    if(v == i) nformatstring(buf, len, "%d", i);
+    else nformatstring(buf, len, "%.7g", v);
+}
 
 static inline const char *getstr(const identval &v, int type)
 {
     switch(type)
     {
-        case VAL_STR: case VAL_MACRO: return v.s;
+        case VAL_STR: case VAL_MACRO: case VAL_CSTR: return v.s;
         case VAL_INT: return intstr(v.i);
         case VAL_FLOAT: return floatstr(v.f);
         default: return "";
@@ -252,37 +277,55 @@ static inline const char *getstr(const identval &v, int type)
 inline const char *tagval::getstr() const { return ::getstr(*this, type); }
 inline const char *ident::getstr() const { return ::getstr(val, valtype); }
 
-static inline int getint(const identval &v, int type)
+#define GETNUMBER(name, ret) \
+    static inline ret get##name(const identval &v, int type) \
+    { \
+        switch(type) \
+        { \
+            case VAL_FLOAT: return ret(v.f); \
+            case VAL_INT: return ret(v.i); \
+            case VAL_STR: case VAL_MACRO: case VAL_CSTR: return parse##name(v.s); \
+            default: return ret(0); \
+        } \
+    } \
+    inline ret tagval::get##name() const { return ::get##name(*this, type); } \
+    inline ret ident::get##name() const { return ::get##name(val, valtype); }
+GETNUMBER(int, int)
+GETNUMBER(float, float)
+GETNUMBER(number, double)
+
+static inline void getval(const identval &v, int type, tagval &r)
 {
     switch(type)
     {
-        case VAL_INT: return v.i;
-        case VAL_FLOAT: return int(v.f);
-        case VAL_STR: case VAL_MACRO: return parseint(v.s);
-        default: return 0;
+        case VAL_STR: case VAL_MACRO: case VAL_CSTR: r.setstr(newstring(v.s)); break;
+        case VAL_INT: r.setint(v.i); break;
+        case VAL_FLOAT: r.setfloat(v.f); break;
+        default: r.setnull(); break;
     }
 }
-inline int tagval::getint() const { return ::getint(*this, type); }
-inline int ident::getint() const { return ::getint(val, valtype); }
 
-static inline float getfloat(const identval &v, int type)
-{
-    switch(type)
-    {
-        case VAL_FLOAT: return v.f;
-        case VAL_INT: return float(v.i);
-        case VAL_STR: case VAL_MACRO: return parsefloat(v.s);
-        default: return 0.0f;
-    }
-}
-inline float tagval::getfloat() const { return ::getfloat(*this, type); }
-inline float ident::getfloat() const { return ::getfloat(val, valtype); }
+inline void tagval::getval(tagval &r) const { ::getval(*this, type, r); }
+inline void ident::getval(tagval &r) const { ::getval(val, valtype, r); }
 
-inline void ident::getval(tagval &v) const
+inline void ident::getcstr(tagval &v) const
 {
     switch(valtype)
     {
-        case VAL_STR: case VAL_MACRO: v.setstr(newstring(val.s)); break;
+        case VAL_MACRO: v.setmacro(val.code); break;
+        case VAL_STR: case VAL_CSTR: v.setcstr(val.s); break;
+        case VAL_INT: v.setstr(newstring(intstr(val.i))); break;
+        case VAL_FLOAT: v.setstr(newstring(floatstr(val.f))); break;
+        default: v.setcstr(""); break;
+    }
+}
+
+inline void ident::getcval(tagval &v) const
+{
+    switch(valtype)
+    {
+        case VAL_MACRO: v.setmacro(val.code); break;
+        case VAL_STR: case VAL_CSTR: v.setcstr(val.s); break;
         case VAL_INT: v.setint(val.i); break;
         case VAL_FLOAT: v.setfloat(val.f); break;
         default: v.setnull(); break;
@@ -309,27 +352,54 @@ extern ident *getident(const char *name);
 extern ident *newident(const char *name, int flags = 0);
 extern ident *readident(const char *name);
 extern ident *writeident(const char *name, int flags = 0);
-extern bool addcommand(const char *name, identfun fun, const char *narg, int flags = IDF_COMPLETE);
-extern bool addkeyword(int type, const char *name, int flags = 0);
+extern bool addcommand(const char *name, identfun fun, const char *args, int type = ID_COMMAND, int flags = IDF_COMPLETE);
 
 extern uint *compilecode(const char *p);
 extern void keepcode(uint *p);
 extern void freecode(uint *p);
 extern void executeret(const uint *code, tagval &result = *commandret);
 extern void executeret(const char *p, tagval &result = *commandret);
+extern void executeret(ident *id, tagval *args, int numargs, bool lookup = false, tagval &result = *commandret);
 extern char *executestr(const uint *code);
 extern char *executestr(const char *p);
+extern char *executestr(ident *id, tagval *args, int numargs, bool lookup = false);
+extern char *execidentstr(const char *name, bool lookup = false);
 extern int execute(const uint *code);
 extern int execute(const char *p);
 extern int execute(const char *p, bool nonworld);
+extern int execute(ident *id, tagval *args, int numargs, bool lookup = false);
+extern int execident(const char *name, int noid = 0, bool lookup = false);
+extern float executefloat(const uint *code);
+extern float executefloat(const char *p);
+extern float executefloat(ident *id, tagval *args, int numargs, bool lookup = false);
+extern float execidentfloat(const char *name, float noid = 0, bool lookup = false);
 extern bool executebool(const uint *code);
 extern bool executebool(const char *p);
+extern bool executebool(ident *id, tagval *args, int numargs, bool lookup = false);
+extern bool execidentbool(const char *name, bool noid = false, bool lookup = false);
 enum { EXEC_NOWORLD = 1<<0, EXEC_VERSION = 1<<1, EXEC_BUILTIN = 1<<2 };
 extern bool execfile(const char *cfgfile, bool msg = true, int flags = 0);
 extern void alias(const char *name, const char *action);
 extern void alias(const char *name, tagval &v);
 extern void worldalias(const char *name, const char *action);
 extern const char *getalias(const char *name);
+extern const char *escapestring(const char *s);
+extern const char *escapeid(const char *s);
+static inline const char *escapeid(ident &id) { return escapeid(id.name); }
+extern bool validateblock(const char *s);
+extern void explodelist(const char *s, vector<char *> &elems, int limit = -1);
+extern char *parsetext(const char *&p);
+extern char *indexlist(const char *s, int pos);
+extern const char *indexlist(const char *s, int pos, int &len);
+extern int listincludes(const char *list, const char *needl, int needlelen);
+extern char *shrinklist(const char *list, const char *limit, int failover = 0, bool invert = false);
+extern int listlen(const char *s);
+extern void printvar(ident *id);
+extern void printvar(ident *id, int i);
+extern void printfvar(ident *id, float f);
+extern void printsvar(ident *id, const char *s);
+extern int clampvar(ident *id, int i, int minval, int maxval);
+extern float clampfvar(ident *id, float f, float minval, float maxval);
 extern void loopiter(ident *id, identstack &stack, const tagval &v);
 extern void loopend(ident *id, identstack &stack);
 
@@ -341,18 +411,6 @@ static inline void loopiter(ident *id, identstack &stack, const char *s) { tagva
 extern int identflags;
 extern bool interactive;
 
-extern const char *escapestring(const char *s);
-extern const char *escapeid(const char *s);
-static inline const char *escapeid(ident &id) { return escapeid(id.name); }
-extern bool validateblock(const char *s);
-extern char *parsetext(const char *&p);
-extern void explodelist(const char *s, vector<char *> &elems, int limit = -1);
-extern int listlen(const char *s);
-extern char *indexlist(const char *s, int pos);
-extern const char *indexlist(const char *s, int pos, int &len);
-extern int listincludes(const char *list, const char *needl, int needlelen);
-extern char *shrinklist(const char *list, const char *limit, int failover = 0, bool invert = false);
-
 extern void checksleep(int millis);
 extern void clearsleep(bool clearworlds = true);
 
@@ -361,37 +419,43 @@ extern int filetimelocal;
 extern const char *gettime(time_t ctime = 0, const char *format = NULL);
 
 // nasty macros for registering script functions, abuses globals to avoid excessive infrastructure
-#define KEYWORD(flags, name, type) UNUSED static bool __dummy_##name = addkeyword(type, #name, flags)
-#define COMMANDN(flags, name, fun, nargs) UNUSED static bool __dummy_##fun = addcommand(#name, (identfun)fun, nargs, flags|IDF_COMPLETE)
+#define KEYWORD(flags, name, type) UNUSED static bool __dummy_##type = addcommand(#name, (identfun)NULL, NULL, type, flags|IDF_COMPLETE)
+#define COMMANDKN(flags, name, type, fun, nargs) UNUSED static bool __dummy_##fun = addcommand(#name, (identfun)fun, nargs, type, flags|IDF_COMPLETE)
+#define COMMANDK(flags, name, type, nargs) COMMANDKN(flags, name, type, name, nargs)
+#define COMMANDN(flags, name, fun, nargs) COMMANDKN(flags, name, ID_COMMAND, fun, nargs)
 #define COMMAND(flags, name, nargs) COMMANDN(flags, name, name, nargs)
 
 // anonymous inline commands, uses nasty template trick with line numbers to keep names unique
-#define ICOMMANDNS(flags, name, cmdname, nargs, proto, b) template<int N> struct cmdname; template<> struct cmdname<__LINE__> { static bool init; static void run proto; }; bool cmdname<__LINE__>::init = addcommand(name, (identfun)cmdname<__LINE__>::run, nargs, flags|IDF_COMPLETE); void cmdname<__LINE__>::run proto \
-    { b; }
-#define ICOMMANDN(flags, name, cmdname, nargs, proto, b) ICOMMANDNS(flags, #name, cmdname, nargs, proto, b)
 #define ICOMMANDNAME(name) _icmd_##name
-#define ICOMMAND(flags, name, nargs, proto, b) ICOMMANDN(flags, name, ICOMMANDNAME(name), nargs, proto, b)
 #define ICOMMANDSNAME _icmds_
+#define ICOMMANDKNS(flags, name, type, cmdname, nargs, proto, b) template<int N> struct cmdname; template<> struct cmdname<__LINE__> { static bool init; static void run proto; }; bool cmdname<__LINE__>::init = addcommand(name, (identfun)cmdname<__LINE__>::run, nargs, type, flags|IDF_COMPLETE); void cmdname<__LINE__>::run proto \
+    { b; }
+#define ICOMMANDKN(flags, name, type, cmdname, nargs, proto, b) ICOMMANDKNS(flags, #name, type, cmdname, nargs, proto, b)
+#define ICOMMANDK(flags, name, type, nargs, proto, b) ICOMMANDKN(flags, name, type, ICOMMANDNAME(name), nargs, proto, b)
+#define ICOMMANDKS(flags, name, type, nargs, proto, b) ICOMMANDKNS(flags, name, type, ICOMMANDSNAME, nargs, proto, b)
+#define ICOMMANDNS(flags, name, cmdname, nargs, proto, b) ICOMMANDKNS(flags, name, ID_COMMAND, cmdname, nargs, proto, b)
+#define ICOMMANDN(flags, name, cmdname, nargs, proto, b) ICOMMANDNS(flags, #name, cmdname, nargs, proto, b)
+#define ICOMMAND(flags, name, nargs, proto, b) ICOMMANDN(flags, name, ICOMMANDNAME(name), nargs, proto, b)
 #define ICOMMANDS(flags, name, nargs, proto, b) ICOMMANDNS(flags, name, ICOMMANDSNAME, nargs, proto, b)
 
 #define _VAR(name, global, min, cur, max, flags) int global = variable(#name, min, cur, max, &global, NULL, flags|IDF_COMPLETE)
 #define VARN(flags, name, global, min, cur, max) _VAR(name, global, min, cur, max, flags)
 #define VAR(flags, name, min, cur, max) _VAR(name, name, min, cur, max, flags)
-#define _VARF(name, global, min, cur, max, body, flags)  void var_##name(); int global = variable(#name, min, cur, max, &global, var_##name, flags|IDF_COMPLETE); void var_##name() { body; }
+#define _VARF(name, global, min, cur, max, body, flags)  void var_##name(ident *id); int global = variable(#name, min, cur, max, &global, var_##name, flags|IDF_COMPLETE); void var_##name(ident *id) { body; }
 #define VARFN(flags, name, global, min, cur, max, body) _VARF(name, global, min, cur, max, body, flags)
 #define VARF(flags, name, min, cur, max, body) _VARF(name, name, min, cur, max, body, flags)
 
 #define _FVAR(name, global, min, cur, max, flags) float global = fvariable(#name, min, cur, max, &global, NULL, flags|IDF_COMPLETE)
 #define FVARN(flags, name, global, min, cur, max) _FVAR(name, global, min, cur, max, flags)
 #define FVAR(flags, name, min, cur, max) _FVAR(name, name, min, cur, max, flags)
-#define _FVARF(name, global, min, cur, max, body, flags) void var_##name(); float global = fvariable(#name, min, cur, max, &global, var_##name, flags|IDF_COMPLETE); void var_##name() { body; }
+#define _FVARF(name, global, min, cur, max, body, flags) void var_##name(ident *id); float global = fvariable(#name, min, cur, max, &global, var_##name, flags|IDF_COMPLETE); void var_##name(ident *id) { body; }
 #define FVARFN(flags, name, global, min, cur, max, body) _FVARF(name, global, min, cur, max, body, flags)
 #define FVARF(flags, name, min, cur, max, body) _FVARF(name, name, min, cur, max, body, flags)
 
 #define _SVAR(name, global, cur, flags) char *global = svariable(#name, cur, &global, NULL, flags|IDF_COMPLETE)
 #define SVARN(flags, name, global, cur) _SVAR(name, global, cur, flags)
 #define SVAR(flags, name, cur) _SVAR(name, name, cur, flags)
-#define _SVARF(name, global, cur, body, flags) void var_##name(); char *global = svariable(#name, cur, &global, var_##name, flags|IDF_COMPLETE); void var_##name() { body; }
+#define _SVARF(name, global, cur, body, flags) void var_##name(ident *id); char *global = svariable(#name, cur, &global, var_##name, flags|IDF_COMPLETE); void var_##name(ident *id) { body; }
 #define SVARFN(flags, name, global, cur, body) _SVARF(name, global, cur, body, flags)
 #define SVARF(flags, name, cur, body) _SVARF(name, name, cur, body, flags)
 
