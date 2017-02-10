@@ -401,6 +401,8 @@ extern void adddecal(int type, const vec &center, const vec &surface, float radi
 extern void setnames(const char *fname, int type, int crc = 0);
 extern bool load_world(const char *mname, int crc = 0);
 extern void save_world(const char *mname, bool nodata = false, bool forcesave = false);
+extern char *mapctitle(const char *s);
+extern char *mapcauthor(const char *s);
 
 // physics
 extern bool ellipsecollide(physent *d, const vec &dir, const vec &o, const vec &center, float yaw, float xr, float yr, float hi, float lo);

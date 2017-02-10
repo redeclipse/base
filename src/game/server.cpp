@@ -5827,7 +5827,7 @@ namespace server
                 clientinfo *cs = (clientinfo *)getinfo(mapsending);
                 if(hasmapdata())
                 {
-                    if(cs && !hasgameinfo) sendf(cs->clientnum, 1, "ri", N_GETGAMEINFO);
+                    if(cs && !hasgameinfo && !gs_waiting(gamestate)) sendf(cs->clientnum, 1, "ri", N_GETGAMEINFO);
                     mapsending = -1;
                     sendf(-1, 1, "ri", N_SENDMAP);
                     loopv(clients)
