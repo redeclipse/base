@@ -1934,3 +1934,13 @@ int getmapversion() { return hdr.version; }
 ICOMMAND(0, mapversion, "", (void), intret(getmapversion()));
 int getmaprevision() { return hdr.revision; }
 ICOMMAND(0, maprevision, "", (void), intret(getmaprevision()));
+
+ICOMMAND(0, getmapfile, "s", (char *s),
+{
+    if(strpbrk(s, "/\\")) result(s);
+    else
+    {
+        defformatstring(str, "%s/%s", mapdirs[MAP_MAPZ].name, s);
+        result(str);
+    }
+});

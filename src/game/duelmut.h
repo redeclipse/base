@@ -298,9 +298,9 @@ struct duelservmode : servmode
                             else if(i == wants-2) concatstring(names, " and ");
                             else concatstring(names, ", ");
                         }
-                        formatstring(fight, "duel between %s, round \fs\fc#%d\fS", names, duelround);
+                        formatstring(fight, "Duel between %s, round \fs\fc#%d\fS", names, duelround);
                     }
-                    else if(m_survivor(gamemode, mutators)) formatstring(fight, "survivor, round \fs\fc#%d\fS", duelround);
+                    else if(m_survivor(gamemode, mutators)) formatstring(fight, "Survivor, round \fs\fc#%d\fS", duelround);
                     loopv(playing)
                     {
                         if(playing[i]->state == CS_ALIVE)
@@ -315,7 +315,7 @@ struct duelservmode : servmode
                         duelqueue.removeobj(playing[i]);
                     }
                     if(gamestate == G_S_OVERTIME && !restricted.empty())
-                        ancmsgft(-1, S_V_FIGHT, CON_SELF, "\fy\fs\fzcgsudden death\fS %s", fight);
+                        ancmsgft(-1, S_V_FIGHT, CON_SELF, "\fy\fs\fzcgSudden Death\fS, %s", fight);
                     else ancmsgft(-1, S_V_FIGHT, CON_SELF, "\fy%s", fight);
                     dueltime = dueldeath = -1;
                     duelcheck = gamemillis+5000;
@@ -399,7 +399,7 @@ struct duelservmode : servmode
                         if(!cleanup)
                         {
                             endffaround(alive);
-                            ancmsgft(-1, S_V_DRAW, CON_SELF, "\fyEveryone died, \fzoyepic fail");
+                            ancmsgft(-1, S_V_DRAW, CON_SELF, "\fyEveryone died, \fzoyEPIC FAIL!");
                             duelwinner = -1;
                             duelwins = 0;
                         }
