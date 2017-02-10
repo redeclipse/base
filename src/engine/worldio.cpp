@@ -996,7 +996,7 @@ void save_world(const char *mname, bool nodata, bool forcesave)
     }
 
     savemapprogress = 0;
-    progress(0, "Saving map..");
+    progress(-1, "Saving map..");
     memcpy(hdr.head, "MAPZ", 4);
     hdr.version = MAPVERSION;
     hdr.headersize = sizeof(mapz);
@@ -1161,7 +1161,6 @@ bool load_world(const char *mname, int crc)       // still supports all map form
     int loadingstart = SDL_GetTicks();
     mapcrc = 0;
     setsvar("maptext", "", false);
-    maploading = 1;
     loop(format, MAP_MAX) loop(tempfile, crc > 0 ? 2 : 1)
     {
         int mask = maskpackagedirs(format == MAP_OCTA ? ~0 : ~PACKAGEDIR_OCTA);
@@ -1189,7 +1188,6 @@ bool load_world(const char *mname, int crc)       // still supports all map form
         {
             conoutf("\frError loading %s: malformatted universal header", mapname);
             delete f;
-            maploading = 0;
             maskpackagedirs(mask);
             return false;
         }
@@ -1206,7 +1204,6 @@ bool load_world(const char *mname, int crc)       // still supports all map form
                 { \
                     conoutf("\frError loading %s: malformatted mapz v%d[%d] header", mapname, newhdr.version, ver); \
                     delete f; \
-                    maploading = 0; \
                     maskpackagedirs(mask); \
                     return false; \
                 }
@@ -1259,7 +1256,6 @@ bool load_world(const char *mname, int crc)       // still supports all map form
                 {
                     conoutf("\frError loading %s: malformatted mapz v%d header", mapname, newhdr.version);
                     delete f;
-                    maploading = 0;
                     maskpackagedirs(mask);
                     return false;
                 }
@@ -1270,13 +1266,13 @@ bool load_world(const char *mname, int crc)       // still supports all map form
             {
                 conoutf("\frError loading %s: requires a newer version of %s", mapname, versionname);
                 delete f;
-                maploading = 0;
                 maskpackagedirs(mask);
                 return false;
             }
 
             resetmap(false);
             hdr = newhdr;
+            maploading = 1;
             progress(-1, "Please wait...");
             maptype = MAP_MAPZ;
             mapcrc = filecrc;
@@ -1399,7 +1395,6 @@ bool load_world(const char *mname, int crc)       // still supports all map form
                 { \
                     conoutf("\frError loading %s: malformatted octa v%d[%d] header", mapname, ver, ohdr.version); \
                     delete f; \
-                    maploading = 0; \
                     maskpackagedirs(mask); \
                     return false; \
                 }
@@ -1456,7 +1451,6 @@ bool load_world(const char *mname, int crc)       // still supports all map form
                 {
                     conoutf("\frError loading %s: malformatted octa v%d header", mapname, ohdr.version);
                     delete f;
-                    maploading = 0;
                     maskpackagedirs(mask);
                     return false;
                 }
@@ -1468,14 +1462,14 @@ bool load_world(const char *mname, int crc)       // still supports all map form
             {
                 conoutf("\frError loading %s: requires a newer version of Cube 2 support", mapname);
                 delete f;
-                maploading = 0;
                 maskpackagedirs(mask);
                 return false;
             }
 
             resetmap(false);
             hdr = newhdr;
-            progress(0, "Please wait..");
+            maploading = 1;
+            progress(-1, "Please wait..");
             maptype = MAP_OCTA;
 
             memcpy(hdr.head, ohdr.head, 4);

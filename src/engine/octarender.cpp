@@ -1768,7 +1768,7 @@ void precachetextures()
 
 void allchanged(bool load)
 {
-    progress(0, "Clearing vertex arrays...");
+    progress(-1, "Clearing vertex arrays...");
     clearvas(worldroot);
     resetqueries();
     resetclipplanes();

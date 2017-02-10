@@ -1008,7 +1008,7 @@ ICOMMAND(0, resetworldvars, "", (), if(editmode || identflags&IDF_WORLD) clearwo
 
 void resetmap(bool empty)
 {
-    progress(0, "Resetting map...");
+    progress(-1, "Resetting map...");
     resetmaterials();
     resetmapmodels();
     clearsound();
