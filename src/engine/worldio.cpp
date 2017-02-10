@@ -1981,8 +1981,16 @@ int scanmapc(const char *fname)
         if(strpbrk(d.file, "/\\")) copystring(d.mapfile, d.file);
         else formatstring(d.mapfile, "%s/%s", mapdirs[format].name, d.file);
         formatstring(d.mapfext, "%s%s", d.mapfile, mapexts[format].name);
-        loopv(mapcinfos) if(!strcmp(mapcinfos[i].file, d.mapfile)) return i;
-        loopv(failmapcs) if(!strcmp(failmapcs[i], d.mapfile)) return -1;
+        loopv(mapcinfos) if(!strcmp(mapcinfos[i].file, d.mapfile))
+        {
+            mapcinfos.pop();
+            return i;
+        }
+        loopv(failmapcs) if(!strcmp(failmapcs[i], d.mapfile))
+        {
+            mapcinfos.pop();
+            return -1;
+        }
 
         stream *f = opengzfile(d.mapfext, "rb");
         if(!f)
