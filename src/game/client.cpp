@@ -3477,6 +3477,12 @@ namespace client
         }
     }
     ICOMMAND(0, getserver, "bbb", (int *server, int *prop, int *idx, int *numargs), getservers(*server, *prop, *idx));
+    ICOMMAND(0, getserveractive, "", (),
+    {
+        int n = 0;
+        loopv(servers) if(servers[i]->numplayers) n++;
+        intret(n);
+    });
     ICOMMAND(0, getserverplayers, "", (),
     {
         int n = 0;
