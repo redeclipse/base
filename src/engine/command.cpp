@@ -3541,20 +3541,11 @@ COMMAND(0, concatword, "V");
 void append(ident *id, tagval *v, bool space)
 {
     if(id->type != ID_ALIAS || v->type == VAL_NULL) return;
-    if(id->valtype == VAL_NULL)
-    {
-    noprefix:
-        if(id->index < MAXARGS) setarg(*id, *v); else setalias(*id, *v);
-        v->type = VAL_NULL;
-    }
-    else
-    {
-        const char *prefix = id->getstr();
-        if(!prefix[0]) goto noprefix;
-        tagval r;
-        r.setstr(conc(v, 1, space, prefix));
-        if(id->index < MAXARGS) setarg(*id, r); else setalias(*id, r);
-    }
+    tagval r;
+    const char *prefix = id->getstr();
+    if(prefix[0]) r.setstr(conc(v, 1, space, prefix));
+    else v->getval(r);
+    if(id->index < MAXARGS) setarg(*id, r); else setalias(*id, r);
 }
 ICOMMAND(0, append, "rt", (ident *id, tagval *v), append(id, v, true));
 ICOMMAND(0, appendword, "rt", (ident *id, tagval *v), append(id, v, false));
