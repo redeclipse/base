@@ -109,7 +109,7 @@ WPSVAR(IDF_GAMEMOD, longname, // shown for weapon pickups and loadout menu
     "Sidearm Pistol",
     "Energy Sword",
     "Super Shotgun",
-    "Sub-Machine Gun",
+    "Submachine Gun",
     "Flame Thrower",
     "Plasma Inductor",
     "Electro Zapper",
