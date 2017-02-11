@@ -294,12 +294,10 @@ bool editmoveplane(const vec &o, const vec &ray, int d, float off, vec &handle, 
 {
     plane pl(d, off);
     float dist = 0.0f;
-    physent *player = (physent *)game::focusedent(true);
-    if(!player) player = camera1;
-    if(!pl.rayintersect(player->o, ray, dist))
+    if(!pl.rayintersect(camera1->o, ray, dist))
         return false;
 
-    dest = vec(ray).mul(dist).add(player->o);
+    dest = vec(ray).mul(dist).add(camera1->o);
     if(first) handle = vec(dest).sub(o);
     dest.sub(handle);
     return true;
@@ -320,9 +318,7 @@ void rendereditcursor()
     if(!insideworld(target)) loopi(3)
         target[i] = max(min(target[i], float(hdr.worldsize)), 0.0f);
     vec ray(target);
-    physent *player = (physent *)game::focusedent(true);
-    if(!player) player = camera1;
-    ray.sub(player->o).normalize();
+    ray.sub(camera1->o).normalize();
     int d   = dimension(sel.orient),
         od  = dimension(orient),
         odc = dimcoord(orient);
@@ -357,14 +353,14 @@ void rendereditcursor()
         float sdist = 0, wdist = 0, t;
         int entorient = 0, ent = -1;
 
-        wdist = rayent(player->o, ray, 1e16f,
+        wdist = rayent(camera1->o, ray, 1e16f,
                        (editmode && showmat ? RAY_EDITMAT : 0)   // select cubes first
                                             | (!dragging && entediting ? RAY_ENTS : 0)
                                             | RAY_SKIPFIRST
                                             | (passthroughcube==1 ? RAY_PASS : 0), gridsize, entorient, ent);
 
         if((havesel || dragging) && !passthroughsel && !hmapedit)     // now try selecting the selection
-            if(rayboxintersect(vec(sel.o), vec(sel.s).mul(sel.grid), player->o, ray, sdist, orient))
+            if(rayboxintersect(vec(sel.o), vec(sel.s).mul(sel.grid), camera1->o, ray, sdist, orient))
             {   // and choose the nearest of the two
                 if(sdist < wdist)
                 {
@@ -384,22 +380,22 @@ void rendereditcursor()
         }
         else
         {
-            vec w = vec(ray).mul(wdist+0.05f).add(player->o);
+            vec w = vec(ray).mul(wdist+0.05f).add(camera1->o);
             if(!insideworld(w))
             {
-                loopi(3) wdist = min(wdist, ((ray[i] > 0 ? hdr.worldsize : 0) - player->o[i]) / ray[i]);
-                w = vec(ray).mul(wdist-0.05f).add(player->o);
+                loopi(3) wdist = min(wdist, ((ray[i] > 0 ? hdr.worldsize : 0) - camera1->o[i]) / ray[i]);
+                w = vec(ray).mul(wdist-0.05f).add(camera1->o);
                 if(!insideworld(w))
                 {
                     wdist = 0;
-                    loopi(3) w[i] = clamp(player->o[i], 0.0f, float(hdr.worldsize));
+                    loopi(3) w[i] = clamp(camera1->o[i], 0.0f, float(hdr.worldsize));
                 }
             }
             cube *c = &lookupcube(ivec(w));
             if(gridlookup && !dragging && !moving && !havesel && hmapedit!=1) gridsize = lusize;
             int mag = gridsize && lusize ? lusize / gridsize : 0;
             normalizelookupcube(ivec(w));
-            if(sdist == 0 || sdist > wdist) rayboxintersect(vec(lu), vec(gridsize), player->o, ray, t=0, orient); // just getting orient
+            if(sdist == 0 || sdist > wdist) rayboxintersect(vec(lu), vec(gridsize), camera1->o, ray, t=0, orient); // just getting orient
             cur = lu;
             cor = ivec(vec(w).mul(2).div(gridsize));
             od = dimension(orient);
@@ -469,7 +465,7 @@ void rendereditcursor()
 
     notextureshader->set();
 
-    renderentselection(player->o, ray, entmoving!=0);
+    renderentselection(camera1->o, ray, entmoving!=0);
 
     boxoutline = outline || (fullbright && blankgeom);
 
