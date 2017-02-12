@@ -621,7 +621,11 @@ hashnameset<defvar> defvars;
 #define DEFVAR(cmdname, fmt, args, body) \
     ICOMMAND(0, cmdname, fmt, args, \
     { \
-        if(idents.access(name)) { debugcode("cannot redefine %s as a variable", name); return; } \
+        if(idents.access(name)) \
+        { \
+            if(!defvars.access(name)) debugcode("cannot redefine %s as a variable", name); \
+            return; \
+        } \
         name = newstring(name); \
         defvar &def = defvars[name]; \
         def.name = name; \

@@ -904,10 +904,7 @@ namespace UI
                 if(w->windowflags&WINDOW_TIP) // follows cursor
                     w->setpos((cursorx*float(screenw)/float(screenh))-(w->w*cursorx), cursory-w->h-uitipoffset);
                 else if(w->windowflags&WINDOW_POPUP && !w->overridepos)
-                {
                     w->setpos((cursorx*float(screenw)/float(screenh))-(w->w*cursorx), cursory-w->h*0.5f);
-                    conoutf("setpos: %f %f", (cursorx*float(screenw)/float(screenh))-(w->w*cursorx), cursory-w->h*0.5f);
-                }
             });
             loopwindows(w, w->draw());
         }
