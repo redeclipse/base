@@ -37,6 +37,15 @@ CXX=g++
 CC=gcc
 endif
 
+GIT := $(shell command -v git 2> /dev/null)
+ifndef GIT
+    $(warning "git is not available")
+else
+    GIT_REVISION_ID := $(shell $(GIT) rev-parse --short=7 HEAD)
+    GIT_REPO_DIRTY := $(shell $(GIT) diff-index --quiet HEAD && echo false || echo true)
+    override CXXFLAGS += -DGIT_REVISION_ID=\"$(GIT_REVISION_ID)\" -DGIT_REPO_DIRTY=$(GIT_REPO_DIRTY)
+endif
+
 CXX_TEMP:=$(CXX)
 CC_TEMP:=$(CC)
 override CXX=$(TOOLSET_PREFIX)$(CXX_TEMP)
@@ -141,6 +150,7 @@ CLIENT_OBJS= \
 	engine/sound.o \
 	engine/texture.o \
 	engine/ui.o \
+	engine/version.o \
 	engine/water.o \
 	engine/world.o \
 	engine/worldio.o \
@@ -203,6 +213,9 @@ clean-genkey:
 
 clean: clean-enet clean-client clean-server clean-genkey
 
+touch-version-cpp:
+	touch engine/version.cpp
+
 %.h.gch: %.h
 	$(CXX) $(CXXFLAGS) -x c++-header -o $(subst .h.gch,.tmp.h.gch,$@) $(subst .h.gch,.h,$@)
 	$(MV) $(subst .h.gch,.tmp.h.gch,$@) $@
@@ -234,7 +247,7 @@ $(APPCLIENT)$(BIN_SUFFIX): $(LIBENET) $(CLIENT_OBJS)
 $(APPSERVER)$(BIN_SUFFIX): $(LIBENET) $(SERVER_OBJS)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(SERVER_OBJS) $(SERVER_LIBS)
 
-client: $(APPCLIENT)$(APPMODIFIER)$(BIN_SUFFIX)
+client: touch-version-cpp $(APPCLIENT)$(APPMODIFIER)$(BIN_SUFFIX)
 
 server: $(APPSERVER)$(APPMODIFIER)$(BIN_SUFFIX)
 

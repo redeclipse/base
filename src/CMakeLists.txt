@@ -3,6 +3,19 @@ cmake_minimum_required(VERSION 2.8.11)
 # set compile options
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -fomit-frame-pointer -ffast-math -Wall -fsigned-char -fno-exceptions -fno-rtti")
 
+# set Git build information
+include(cmake/get-git-revision-description.cmake)
+include(cmake/get-git-repository-status.cmake)
+
+get_git_head_revision(GIT_REFSPEC GIT_SHA1)
+string(SUBSTRING ${GIT_SHA1} 0 7 GIT_SHA1_SHORT)
+
+git_repository_dirty(GIT_REPO_DIRTY)
+
+string(APPEND CMAKE_CXX_FLAGS " -DGIT_REVISION_ID=\\\"${GIT_SHA1_SHORT}\\\" -DGIT_REPO_DIRTY=\"${GIT_REPO_DIRTY}\"")
+
+add_custom_target(TOUCH_VERSION_CPP COMMAND touch ${CMAKE_CURRENT_SOURCE_DIR}/engine/version.cpp)
+
 # Use pkg-config to configure dependencies later
 find_package(PkgConfig REQUIRED)
 # the dependencies required by all platforms
@@ -109,6 +122,7 @@ endif()
 # add the client executable and link it to enet
 add_executable(redeclipse${BIN_SUFFIX} ${client_sources})
 target_link_libraries(redeclipse${BIN_SUFFIX} enet)
+add_dependencies(redeclipse${BIN_SUFFIX} TOUCH_VERSION_CPP)
 
 # add the server executable and link it to enet
 # (define STANDALONE to "notify" the preprocessor that the server is built this time)
