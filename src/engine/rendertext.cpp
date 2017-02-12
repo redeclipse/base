@@ -278,17 +278,17 @@ static float draw_char(Texture *&tex, int c, float x, float y, float scale)
 VAR(IDF_PERSIST|IDF_HEX, colourblack, 0, 0x000000, 0xFFFFFF);
 VAR(IDF_PERSIST|IDF_HEX, colourwhite, 0, 0xFFFFFF, 0xFFFFFF);
 
-COLOURVAR(green, 0x40FF40);
-COLOURVAR(blue, 0x6080FF);
-COLOURVAR(yellow, 0xFFFF10);
-COLOURVAR(red, 0xFF4040);
-COLOURVAR(grey, 0xC0C0C0);
-COLOURVAR(magenta, 0xFFB0FF);
-COLOURVAR(orange, 0xFF4010);
-COLOURVAR(cyan, 0x40FFFF);
+COLOURVAR(green, 0x00FF00);
+COLOURVAR(blue, 0x0000FF);
+COLOURVAR(yellow, 0xFFFF00);
+COLOURVAR(red, 0xFF0000);
+COLOURVAR(grey, 0xB0B0B0);
+COLOURVAR(magenta, 0xFF80FF);
+COLOURVAR(orange, 0xFF4000);
+COLOURVAR(cyan, 0x00FFFF);
 COLOURVAR(pink, 0xFF8080);
-COLOURVAR(violet, 0xC080FF);
-COLOURVAR(purple, 0xE040E0);
+COLOURVAR(violet, 0xB060FF);
+COLOURVAR(purple, 0xFF00FF);
 COLOURVAR(brown, 0xA05030);
 
 static void text_color(char c, bvec4 *stack, int size, int &sp, bvec4 &color, int r, int g, int b, int a)

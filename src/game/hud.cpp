@@ -1720,7 +1720,7 @@ namespace hud
                 Texture *t = textureload(icontex(game::focus->icons[i].type, game::focus->icons[i].value));
                 if(t && t != notexture)
                 {
-                    int olen = min(game::focus->icons[i].length/5, 1000), ilen = olen/2, colour = 0xFFFFFF;
+                    int olen = min(game::focus->icons[i].length/5, 1000), ilen = olen/2, colour = colourwhite;
                     float skew = millis < ilen ? millis/float(ilen) : (millis > game::focus->icons[i].fade-olen ? (game::focus->icons[i].fade-millis)/float(olen) : 1.f),
                           fade = blend*eventblend*skew;
                     int size = int(FONTH*skew*eventiconscale), width = int((t->w/float(t->h))*size), rsize = game::focus->icons[i].type < eventicon::SORTED ? int(size*2/3) : int(size);
@@ -2854,7 +2854,7 @@ namespace hud
                         }
                         lastweapids = changedkeys;
                     }
-                    drawitemtext(x, oldy, size, false, skew, "default", blend, "\f[%d]%s", inventorycolour >= 2 ? W(i, colour) : 0xAAAAAA, isweap(n) ? weapids[n] : "?");
+                    drawitemtext(x, oldy, size, false, skew, "default", blend, "\f[%d]%s", inventorycolour >= 2 ? W(i, colour) : colourgrey, isweap(n) ? weapids[n] : "?");
                 }
             }
         }
@@ -2885,7 +2885,7 @@ namespace hud
                 float pulse = inventoryhealthflash ? clamp((heal-game::focus->health)/float(heal), 0.f, 1.f) : 0.f,
                       throb = inventoryhealththrob > 0 && regentime && game::focus->lastregen && lastmillis-game::focus->lastregen <= regentime ? clamp((lastmillis-game::focus->lastregen)/float(regentime), 0.f, 1.f) : -1.f;
                 if(inventoryhealth&2)
-                    sy += drawbar(x, y, s, size, 1, inventoryhealthbartop, inventoryhealthbarbottom, fade, clamp(game::focus->health/float(heal), 0.f, 1.f), healthtex, healthbgtex, inventorytone, inventoryhealthbgglow, inventoryhealthbgblend, pulse, throb, inventoryhealththrob, inventoryhealthflash >= 2 ? (game::focus->lastregenamt <= 0 ? 0xFF0000 : 0x00FF00) : -1, game::focus->lastregenamt <= 0);
+                    sy += drawbar(x, y, s, size, 1, inventoryhealthbartop, inventoryhealthbarbottom, fade, clamp(game::focus->health/float(heal), 0.f, 1.f), healthtex, healthbgtex, inventorytone, inventoryhealthbgglow, inventoryhealthbgblend, pulse, throb, inventoryhealththrob, inventoryhealthflash >= 2 ? (game::focus->lastregenamt <= 0 ? colourred : colourgreen) : -1, game::focus->lastregenamt <= 0);
                 if(inventoryhealth&1)
                 {
                     float gr = 1, gg = 1, gb = 1;
@@ -2917,7 +2917,7 @@ namespace hud
                 flashcolour(gr, gg, gb, 0.25f, 0.25f, 0.25f, 1-span);
                 if(pulse > 0 && impulsemeter-game::focus->impulse[IM_METER] < impulsecost) flashcolour(gr, gg, gb, 1.f, 0.f, 0.f, clamp(totalmillis%1000/1000.f, 0.f, 1.f));
                 if(inventoryimpulse&2)
-                    sy += drawbar(x, y-sy, s, size, 2, inventoryimpulsebartop, inventoryimpulsebarbottom, fade, span, impulsetex, impulsebgtex, inventorytone, inventoryimpulsebgglow, inventoryimpulsebgblend, pulse, throb, inventoryimpulsethrob, inventoryimpulseflash >= 2 ? 0xFFFFFF : -1);
+                    sy += drawbar(x, y-sy, s, size, 2, inventoryimpulsebartop, inventoryimpulsebarbottom, fade, span, impulsetex, impulsebgtex, inventorytone, inventoryimpulsebgglow, inventoryimpulsebgblend, pulse, throb, inventoryimpulsethrob, inventoryimpulseflash >= 2 ? colourwhite : -1);
                 if(inventoryimpulse&1)
                 {
                     if(!(inventoryimpulse&2))
@@ -3206,7 +3206,7 @@ namespace hud
                     cm += drawitemtextx(cx[i], cm, 0, (inventorybg ? TEXT_SKIN : 0)|TEXT_RIGHT_JUSTIFY, inventorydateskew, "huge", fade, "%s", gettime(currenttime, inventorydateformat))+cr;
                 if(inventorytime)
                 {
-                    if(paused) cm += drawitemtextx(cx[i], cm, 0, (inventorybg ? TEXT_SKIN : 0)|TEXT_RIGHT_JUSTIFY, inventorytimeskew, "huge", fade, "\fs\foPaused\fS", 0xFFFFFF)+cr;
+                    if(paused) cm += drawitemtextx(cx[i], cm, 0, (inventorybg ? TEXT_SKIN : 0)|TEXT_RIGHT_JUSTIFY, inventorytimeskew, "huge", fade, "\fs\foPaused\fS", colourwhite)+cr;
                     else if(m_edit(game::gamemode)) cm += drawitemtextx(cx[i], cm, 0, (inventorybg ? TEXT_SKIN : 0)|TEXT_RIGHT_JUSTIFY, inventorytimeskew, "huge", fade, "\fs\fgEditing\fS")+cr;
                     else if(m_play(game::gamemode) || client::demoplayback)
                     {

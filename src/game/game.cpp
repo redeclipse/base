@@ -1306,7 +1306,7 @@ namespace game
             if(aboveheaddamage)
             {
                 defformatstring(ds, "<sub>\fo%c%d", damage > 0 ? '-' : (damage < 0 ? '+' : '~'), damage < 0 ? 0-damage : damage);
-                part_textcopy(d->abovehead(), ds, d != focus ? PART_TEXT : PART_TEXT_ONTOP, eventiconfade, 0xFFFFFF, 4, 1, -10, 0, d);
+                part_textcopy(d->abovehead(), ds, d != focus ? PART_TEXT : PART_TEXT_ONTOP, eventiconfade, colourwhite, 4, 1, -10, 0, d);
             }
         }
     };
@@ -1948,7 +1948,7 @@ namespace game
     {
         if(tone)
         {
-            int col = d->actortype >= A_ENEMY ? 0x060606 : d->colour;
+            int col = d->actortype >= A_ENEMY ? TEAM(T_ENEMY, colour) : d->colour;
             if(!col && isweap(d->weapselect))
             {
                 col = W(d->weapselect, colour);
@@ -3177,7 +3177,7 @@ namespace game
         if(aboveheadnames && d != player1)
         {
             pos.z += aboveheadnamessize/2;
-            part_textcopy(pos, colourname(d), PART_TEXT, 1, 0xFFFFFF, aboveheadnamessize, blend*aboveheadnamesblend);
+            part_textcopy(pos, colourname(d), PART_TEXT, 1, colourwhite, aboveheadnamessize, blend*aboveheadnamesblend);
         }
         if(aboveheadinventory && d != player1)
         {
@@ -3193,7 +3193,7 @@ namespace game
             if(aboveheadinventory >= 2) { loopi(W_ALL) printweapon(i); }
             else { printweapon(d->weapselect); }
             pos.z += aboveheadinventorysize/2;
-            part_textcopy(pos, weapons, PART_TEXT, 1, 0xFFFFFF, aboveheadinventorysize, blend*aboveheadinventoryblend);
+            part_textcopy(pos, weapons, PART_TEXT, 1, colourwhite, aboveheadinventorysize, blend*aboveheadinventoryblend);
         }
         if(aboveheadstatus)
         {
@@ -3235,7 +3235,7 @@ namespace game
                 Texture *t = textureload(hud::icontex(d->icons[i].type, d->icons[i].value));
                 if(t && t != notexture)
                 {
-                    int olen = min(d->icons[i].length/5, 1000), ilen = olen/2, colour = 0xFFFFFF;
+                    int olen = min(d->icons[i].length/5, 1000), ilen = olen/2, colour = colourwhite;
                     float skew = millis < ilen ? millis/float(ilen) : (millis > d->icons[i].fade-olen ? (d->icons[i].fade-millis)/float(olen) : 1.f),
                           size = skew, fade = blend*skew;
                     if(d->icons[i].type >= eventicon::SORTED)

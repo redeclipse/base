@@ -1220,7 +1220,7 @@ namespace server
     {
         if(tone)
         {
-            int col = ci->actortype < A_ENEMY ? ci->colour : 0x060606;
+            int col = ci->actortype < A_ENEMY ? ci->colour : TEAM(T_ENEMY, colour);
             if(!col && isweap(ci->weapselect)) col = W(ci->weapselect, colour);
             if(col) return col;
         }

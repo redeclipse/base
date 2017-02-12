@@ -399,7 +399,7 @@ namespace entities
     {
         gameentity &e = *(gameentity *)ents[ent];
         int sweap = m_weapon(d->actortype, game::gamemode, game::mutators), attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap),
-            colour = e.type == WEAPON && isweap(attr) ? W(attr, colour) : 0x888888;
+            colour = e.type == WEAPON && isweap(attr) ? W(attr, colour) : colourwhite;
         if(e.type == WEAPON && isweap(attr)) d->addicon(eventicon::WEAPON, lastmillis, game::eventiconshort, attr);
         if(isweap(weap))
         {
@@ -2031,7 +2031,7 @@ namespace entities
                     both = true;
                     break;
                 }
-                part_trace(e.o, f.o, showentsize, 1, 1, both ? 0xFF8822 : 0xFF2222, showentinterval);
+                part_trace(e.o, f.o, showentsize, 1, 1, both ? colourviolet : colourdarkviolet, showentinterval);
             }
         }
     }
@@ -2056,20 +2056,20 @@ namespace entities
                 }
                 case ACTOR:
                 {
-                    part_radius(vec(e.o).add(vec(0, 0, actor[e.attrs[0]].height/2)), vec(actor[e.attrs[0]].xradius, actor[e.attrs[0]].height/2), showentsize, 1, 1, 0x888888);
-                    part_radius(e.o, vec(ai::ALERTMAX, ai::ALERTMAX, ai::ALERTMAX), showentsize, 1, 1, 0x888888);
+                    part_radius(vec(e.o).add(vec(0, 0, actor[e.attrs[0]].height/2)), vec(actor[e.attrs[0]].xradius, actor[e.attrs[0]].height/2), showentsize, 1, 1, TEAM(T_ENEMY, colour));
+                    part_radius(e.o, vec(ai::ALERTMAX, ai::ALERTMAX, ai::ALERTMAX), showentsize, 1, 1, TEAM(T_ENEMY, colour));
                     break;
                 }
                 case MAPSOUND:
                 {
-                    part_radius(e.o, vec(e.attrs[1], e.attrs[1], e.attrs[1]), showentsize, 1, 1, 0x00FFFF);
-                    part_radius(e.o, vec(e.attrs[2], e.attrs[2], e.attrs[2]), showentsize, 1, 1, 0x00FFFF);
+                    part_radius(e.o, vec(e.attrs[1], e.attrs[1], e.attrs[1]), showentsize, 1, 1, colourcyan);
+                    part_radius(e.o, vec(e.attrs[2], e.attrs[2], e.attrs[2]), showentsize, 1, 1, colourcyan);
                     break;
                 }
                 case ENVMAP:
                 {
                     int s = e.attrs[0] ? clamp(e.attrs[0], 0, 10000) : envmapradius;
-                    part_radius(e.o, vec(s, s, s), showentsize, 1, 1, 0x00FFFF);
+                    part_radius(e.o, vec(s, s, s), showentsize, 1, 1, colourcyan);
                     break;
                 }
                 case LIGHT:
@@ -2123,9 +2123,9 @@ namespace entities
                     float radius = enttype[e.type].radius;
                     if((e.type == TRIGGER || e.type == TELEPORT || e.type == PUSHER || e.type == CHECKPOINT) && e.attrs[e.type == CHECKPOINT ? 0 : 3])
                         radius = e.attrs[e.type == CHECKPOINT ? 0 : 3];
-                    if(radius > 0) part_radius(e.o, vec(radius, radius, radius), showentsize, 1, 1, 0x00FFFF);
+                    if(radius > 0) part_radius(e.o, vec(radius, radius, radius), showentsize, 1, 1, colourcyan);
                     if(e.type == PUSHER && e.attrs[4] > 0 && e.attrs[4] < radius)
-                        part_radius(e.o, vec(e.attrs[4], e.attrs[4], e.attrs[4]), showentsize, 1, 1, 0x00FFFF);
+                        part_radius(e.o, vec(e.attrs[4], e.attrs[4], e.attrs[4]), showentsize, 1, 1, colourcyan);
                     break;
                 }
             }
@@ -2142,23 +2142,23 @@ namespace entities
                 }
                 //case MAPMODEL:
                 //{
-                //    entdirpart(e.o, e.attrs[1], 360-e.attrs[3], 4.f, 1, 0x00FFFF);
+                //    entdirpart(e.o, e.attrs[1], 360-e.attrs[3], 4.f, 1, colourcyan);
                 //    break;
                 //}
                 case ACTOR:
                 {
-                    entdirpart(e.o, e.attrs[1], e.attrs[2], 4.f, 1, 0xAAAAAA);
+                    entdirpart(e.o, e.attrs[1], e.attrs[2], 4.f, 1, TEAM(T_ENEMY, colour));
                     break;
                 }
                 case TELEPORT:
                 {
-                    if(e.attrs[0] < 0) { entdirpart(e.o, (lastmillis/5)%360, e.attrs[1], 4.f, 1, 0x00FFFF); }
-                    else { entdirpart(e.o, e.attrs[0], e.attrs[1], 8.f, 1, 0x00FFFF); }
+                    if(e.attrs[0] < 0) { entdirpart(e.o, (lastmillis/5)%360, e.attrs[1], 4.f, 1, colourcyan); }
+                    else { entdirpart(e.o, e.attrs[0], e.attrs[1], 8.f, 1, colourcyan); }
                     break;
                 }
                 case PUSHER:
                 {
-                    entdirpart(e.o, e.attrs[0], e.attrs[1], 4.f+e.attrs[2], 1, 0x00FFFF);
+                    entdirpart(e.o, e.attrs[0], e.attrs[1], 4.f+e.attrs[2], 1, colourcyan);
                     break;
                 }
                 default: break;
@@ -2381,7 +2381,7 @@ namespace entities
              hastop = hasent && e.o.squaredist(camera1->o) <= showentdist*showentdist;
         int sweap = m_weapon(game::focus->actortype, game::gamemode, game::mutators),
             attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap),
-            colour = e.type == WEAPON && isweap(attr) ? W(attr, colour) : 0x888888, interval = lastmillis%1000;
+            colour = e.type == WEAPON && isweap(attr) ? W(attr, colour) : colourwhite, interval = lastmillis%1000;
         float fluc = interval >= 500 ? (1500-interval)/1000.f : (500+interval)/1000.f;
         if(enttype[e.type].usetype == EU_ITEM && (active || isedit))
         {
@@ -2407,12 +2407,12 @@ namespace entities
             if(itxt && *itxt)
             {
                 defformatstring(ds, "<emphasis>%s", itxt);
-                part_textcopy(pos.add(off), ds, hastop ? PART_TEXT_ONTOP : PART_TEXT, 1, 0xFFFFFF);
+                part_textcopy(pos.add(off), ds, hastop ? PART_TEXT_ONTOP : PART_TEXT, 1, colourwhite);
             }
         }
         if(edit)
         {
-            part_create(hastop ? PART_EDIT_ONTOP : PART_EDIT, 1, o, hastop ? 0xAA22FF : 0x441188, hastop ? 2.f : 1.f);
+            part_create(hastop ? PART_EDIT_ONTOP : PART_EDIT, 1, o, hastop ? colourviolet : colourdarkviolet, hastop ? 2.f : 1.f);
             if(showentinfo&(hasent ? 4 : 8))
             {
                 defformatstring(s, "<super>%s%s (%d)", hastop ? "\fp" : "\fv", enttype[e.type].name, idx >= 0 ? idx : 0);

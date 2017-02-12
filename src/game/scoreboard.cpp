@@ -288,13 +288,13 @@ namespace hud
 
     int drawscoreitem(const char *name, int colour, int x, int y, int s, float skew, float fade, int pos, int score, int offset)
     {
-        int col = 0xFF0000;
+        int col = colourred;
         switch(pos)
         {
-            case 1: col = 0x00FF00; break;
-            case 2: col = 0x00FFFF; break;
-            case 3: col = 0xFFFF00; break;
-            case 4: col = 0xFF8800; break;
+            case 1: col = colourgreen; break;
+            case 2: col = colourcyan; break;
+            case 3: col = colouryellow; break;
+            case 4: col = colourorange; break;
             default: break;
         }
         string str = "";

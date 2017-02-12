@@ -206,6 +206,10 @@ enum
     TEXT_RIGHT_BAL      = TEXT_BALLOON|TEXT_RIGHT_JUSTIFY
 };
 
+extern int colourblack, colourwhite,
+    colourgreen, colourblue, colouryellow, colourred, colourgrey, colourmagenta, colourorange, colourcyan, colourpink, colourviolet, colourpurple, colourbrown,
+    colourdarkgreen, colourdarkblue, colourdarkyellow, colourdarkred, colourdarkgrey, colourdarkmagenta, colourdarkorange, colourdarkcyan, colourdarkpink, colourdarkviolet, colourdarkpurple, colourdarkbrown;
+
 extern font *findfont(const char *name);
 extern bool setfont(font *id);
 extern bool setfont(const char *name);

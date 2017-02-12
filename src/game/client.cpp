@@ -2622,7 +2622,7 @@ namespace client
                     if(e.spawned())
                     {
                         int sweap = m_weapon(game::focus->actortype, game::gamemode, game::mutators), attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap),
-                            colour = e.type == WEAPON && isweap(attr) ? W(attr, colour) : 0xFFFFFF;
+                            colour = e.type == WEAPON && isweap(attr) ? W(attr, colour) : colourwhite;
                         playsound(e.type == WEAPON && attr >= W_OFFSET && attr < W_ALL ? WSND(attr, S_W_SPAWN) : S_ITEMSPAWN, e.o, NULL, 0, -1, -1, -1, &e.schan);
                         if(entities::showentdescs)
                         {
@@ -2635,7 +2635,7 @@ namespace client
                                 if(item && *item)
                                 {
                                     defformatstring(ds, "<emphasis>%s", item);
-                                    part_textcopy(pos, ds, PART_TEXT, game::eventiconfade, 0xFFFFFF, 2, 1, -10);
+                                    part_textcopy(pos, ds, PART_TEXT, game::eventiconfade, colourwhite, 2, 1, -10);
                                 }
                             }
                         }

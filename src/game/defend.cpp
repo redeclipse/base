@@ -82,7 +82,7 @@ namespace defend
             part_explosion(above, 3, PART_SHOCKBALL, 1, colour, 1, blend*0.5f);
             part_create(PART_HINT_SOFT, 1, above, colour, 6, blend*0.5f);
             above.z += 4;
-            part_text(above, b.info, PART_TEXT, 1, 0xFFFFFF, 2, blend);
+            part_text(above, b.info, PART_TEXT, 1, colourwhite, 2, blend);
             above.z += 4;
             if(b.enemy)
             {
@@ -118,8 +118,8 @@ namespace defend
             if(hud::radaraffinitynames >= (f.hasflag ? 1 : 2))
             {
                 bool overthrow = f.owner && f.enemy == game::focus->team;
-                if(occupy < 1.f) hud::drawblip(tex, f.hasflag ? 3 : 2, w, h, size, blend*hud::radaraffinityblend, f.hasflag ? 0 : -1, f.o, colour, "little", "\f[%d]%d%%", f.hasflag ? (overthrow ? 0xFF8800 : (occupy < 1.f ? 0xFFFF00 : 0x00FF00)) : TEAM(f.owner, colour), int(occupy*100.f));
-                else hud::drawblip(tex, f.hasflag ? 3 : 2, w, h, size, blend*hud::radaraffinityblend, f.hasflag ? 0 : -1, f.o, colour, "little", "\f[%d]%s", f.hasflag ? (overthrow ? 0xFF8800 : (occupy < 1.f ? 0xFFFF00 : 0x00FF00)) : TEAM(f.owner, colour), TEAM(f.owner, name));
+                if(occupy < 1.f) hud::drawblip(tex, f.hasflag ? 3 : 2, w, h, size, blend*hud::radaraffinityblend, f.hasflag ? 0 : -1, f.o, colour, "little", "\f[%d]%d%%", f.hasflag ? (overthrow ? colourorange : (occupy < 1.f ? colouryellow : colourgreen)) : TEAM(f.owner, colour), int(occupy*100.f));
+                else hud::drawblip(tex, f.hasflag ? 3 : 2, w, h, size, blend*hud::radaraffinityblend, f.hasflag ? 0 : -1, f.o, colour, "little", "\f[%d]%s", f.hasflag ? (overthrow ? colourorange : (occupy < 1.f ? colouryellow : colourgreen)) : TEAM(f.owner, colour), TEAM(f.owner, name));
             }
             else hud::drawblip(tex, f.hasflag ? 3 : 2, w, h, size, blend*hud::radaraffinityblend, f.hasflag ? 0 : -1, f.o, colour);
         }

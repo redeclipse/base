@@ -1585,12 +1585,12 @@ namespace ai
         if(aidebug >= 5)
         {
             vec pos = d->feetpos();
-            if(!d->ai->spot.iszero()) part_trace(pos, d->ai->spot, 1, 1, 1, 0x00FFFF);
-            if(iswaypoint(d->ai->targnode)) part_trace(pos, waypoints[d->ai->targnode].o, 1, 1, 1, 0xFF00FF);
-            if(iswaypoint(d->lastnode)) part_trace(pos, waypoints[d->lastnode].o, 1, 1, 1, 0xFFFF00);
+            if(!d->ai->spot.iszero()) part_trace(pos, d->ai->spot, 1, 1, 1, colourcyan);
+            if(iswaypoint(d->ai->targnode)) part_trace(pos, waypoints[d->ai->targnode].o, 1, 1, 1, colourpurple);
+            if(iswaypoint(d->lastnode)) part_trace(pos, waypoints[d->lastnode].o, 1, 1, 1, colouryellow);
             loopi(NUMPREVNODES) if(iswaypoint(d->ai->prevnodes[i]))
             {
-                part_trace(pos, waypoints[d->ai->prevnodes[i]].o, 1, 1, 1, 0x884400);
+                part_trace(pos, waypoints[d->ai->prevnodes[i]].o, 1, 1, 1, colourbrown);
                 pos = waypoints[d->ai->prevnodes[i]].o;
             }
         }
@@ -1673,7 +1673,7 @@ namespace ai
                     {
                         int ent = obstacles.waypoints[cur];
                         if(iswaypoint(ent))
-                            part_create(PART_EDIT, 1, waypoints[ent].o, 0xFF6600, 2);
+                            part_create(PART_EDIT, 1, waypoints[ent].o, colourpurple, 2);
                     }
                     cur = next;
                 }
@@ -1704,7 +1704,7 @@ namespace ai
                 }
             }
             if(game::player1->state == CS_ALIVE && iswaypoint(game::player1->lastnode))
-                part_trace(game::player1->feetpos(), waypoints[game::player1->lastnode].o, 1, 1, 1, 0xFFFF00);
+                part_trace(game::player1->feetpos(), waypoints[game::player1->lastnode].o, 1, 1, 1, colouryellow);
         }
     }
 

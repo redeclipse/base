@@ -2972,7 +2972,7 @@ namespace UI
 
         void setup(const char *name_, const char *animspec, float scale_, float blend_, float minw_, float minh_)
         {
-            Preview::setup(Color(0xFFFFFF), minw_, minh_);
+            Preview::setup(Color(colourwhite), minw_, minh_);
             SETSTR(name, name_);
 
             anim = ANIM_ALL;
@@ -3036,7 +3036,7 @@ namespace UI
 
         void setup(int model_, int pcol_, int team_, int weapon_, char *vanity_, float scale_, float blend_, float minw_, float minh_)
         {
-            Preview::setup(Color(0xFFFFFF), minw_, minh_);
+            Preview::setup(Color(colourwhite), minw_, minh_);
             model = model_;
             pcol = pcol_;
             team = team_;
@@ -3076,7 +3076,7 @@ namespace UI
 
         void setup(const char *name_, int pcol_, float blend, float minw_, float minh_)
         {
-            Preview::setup(Color(0xFFFFFF), minw_, minh_);
+            Preview::setup(Color(colourwhite), minw_, minh_);
             SETSTR(name, name_);
             pcol = vec::hexcolor(pcol_);
         }
@@ -3107,7 +3107,7 @@ namespace UI
 
         void setup(int index_, float minw_ = 0, float minh_ = 0)
         {
-            Target::setup(Color(0xFFFFFF), minw_, minh_);
+            Target::setup(Color(colourwhite), minw_, minh_);
             index = index_;
         }
 
