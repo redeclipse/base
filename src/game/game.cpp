@@ -2805,6 +2805,7 @@ namespace game
 
     void updateworld()      // main game update loop
     {
+        UI::hideui("loading");
         if(connected())
         {
             if(!curtime || !client::isready)

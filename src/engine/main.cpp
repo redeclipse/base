@@ -852,6 +852,7 @@ void progress(float bar1, const char *text1, float bar2, const char *text2)
     if(bar1 < 0)
     {
         UI::hideui(NULL);
+        UI::showui("loading");
         bar1 = 0;
     }
     if(progressing || !inbetweenframes || drawtex) return;
@@ -877,6 +878,7 @@ void progress(float bar1, const char *text1, float bar2, const char *text2)
     }
 
     progressing = true;
+    UI::update();
     loopi(2) { drawnoview(); swapbuffers(false); }
     progressing = false;
 }
