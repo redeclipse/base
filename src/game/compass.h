@@ -203,7 +203,7 @@ void rendercmenu()
         loopi(curcompass->actions.length()-8)
         {
             caction &c = curcompass->actions[i+8];
-            y += draw_textf("\f{%s} %s", x, y, 0, 0, 255, 255, 255, int(192*compassblend), TEXT_CENTERED, -1, -1, 1, getkeyname(c.code), c.name);
+            y += draw_textf("\f{%s} %s", x, y, 0, 0, -1, -1, -1, int(192*compassblend), TEXT_CENTERED, -1, -1, 1, getkeyname(c.code), c.name);
             if(y >= maxy) break;
         }
         popfont();

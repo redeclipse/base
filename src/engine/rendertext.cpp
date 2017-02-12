@@ -846,6 +846,9 @@ float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, i
     if(fade < 0) { usecolor = false; fade = -a; }
     int colorpos = 1, ly = 0, left = rleft, top = rtop;
     float cx = -FONTW, cy = 0;
+    if(r < 0) r = (colourwhite>>16)&0xFF;
+    if(g < 0) g = (colourwhite>>8)&0xFF;
+    if(b < 0) b = colourwhite&0xFF;
     bvec4 colorstack[16], color = TVECX(r, g, b, fade);
     loopi(16) colorstack[i] = color;
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

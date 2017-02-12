@@ -3148,10 +3148,10 @@ namespace game
                     uchar wepmat = uchar(255*scale);
                     e->light.material[2] = bvec(wepmat, wepmat, wepmat);
                 }
-                else e->light.material[2] = bvec(255, 255, 255);
+                else e->light.material[2] = bvec(colourwhite);
                 if(W(d->weapselect, lightpersist)&2) e->light.material[1].max(bvec::fromcolor(WPCOL(d, d->weapselect, lightcol, physics::secondaryweap(d))));
             }
-            else e->light.material[2] = bvec(255, 255, 255);
+            else e->light.material[2] = bvec(colourwhite);
             if(burntime && d->burning(lastmillis, burntime))
                 e->light.material[1].max(bvec::fromcolor(e->light.material[1].div(2).tocolor().max(rescolour(d, PULSE_BURN))));
             if(burntime && d->bleeding(lastmillis, bleedtime))

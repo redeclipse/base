@@ -1946,7 +1946,7 @@ namespace UI
         int align;
         Color color, origcolor;
 
-        void setup(float scale_ = 1, const Color &color_ = Color(255, 255, 255), float wrap_ = 0, int align_ = -1)
+        void setup(float scale_ = 1, const Color &color_ = Color(colourwhite), float wrap_ = 0, int align_ = -1)
         {
             Object::setup();
             tw = th = 0;
@@ -2003,7 +2003,7 @@ namespace UI
         TextString() : str(NULL) {}
         ~TextString() { delete[] str; }
 
-        void setup(const char *str_, float scale_ = 1, const Color &color_ = Color(255, 255, 255), float wrap_ = 0, int align_ = -1)
+        void setup(const char *str_, float scale_ = 1, const Color &color_ = Color(colourwhite), float wrap_ = 0, int align_ = -1)
         {
             Text::setup(scale_, color_, wrap_, align_);
 
@@ -2023,7 +2023,7 @@ namespace UI
 
         TextInt() : val(0) { str[0] = '0'; str[1] = '\0'; }
 
-        void setup(int val_, float scale_ = 1, const Color &color_ = Color(255, 255, 255), float wrap_ = 0, int align_ = -1)
+        void setup(int val_, float scale_ = 1, const Color &color_ = Color(colourwhite), float wrap_ = 0, int align_ = -1)
         {
             Text::setup(scale_, color_, wrap_, align_);
 
@@ -2043,7 +2043,7 @@ namespace UI
 
         TextFloat() : val(0) { memcpy(str, "0.0", 4); }
 
-        void setup(float val_, float scale_ = 1, const Color &color_ = Color(255, 255, 255), float wrap_ = 0, int align_ = -1)
+        void setup(float val_, float scale_ = 1, const Color &color_ = Color(colourwhite), float wrap_ = 0, int align_ = -1)
         {
             Text::setup(scale_, color_, wrap_, align_);
 
@@ -2680,7 +2680,7 @@ namespace UI
             edit->pixelwidth = abs(length)*FONTW;
             if(edit->linewrap && edit->maxy == 1) edit->updateheight();
             else edit->pixelheight = FONTH*max(height, 1);
-            origcolor = color = Color(255, 255, 255, 255);
+            origcolor = color = Color(colourwhite);
             scale = scale_;
             if(keyfilter_) SETSTR(keyfilter, keyfilter_);
             else DELETEA(keyfilter);
@@ -3631,7 +3631,7 @@ namespace UI
         buildtext(*text, *scale, uitextscale, Color(*c), 0, *align, children));
 
     ICOMMAND(0, uitext, "tfie", (tagval *text, float *scale, int *align, uint *children),
-        buildtext(*text, *scale, uitextscale, Color(255, 255, 255), 0, *align, children));
+        buildtext(*text, *scale, uitextscale, Color(colourwhite), 0, *align, children));
 
     ICOMMAND(0, uitextfill, "iffe", (int *c, float *minw, float *minh, uint *children),
         BUILD(Filler, o, o->setup(Color(*c), *minw * uitextscale*0.5f, *minh * uitextscale), children));
@@ -3640,13 +3640,13 @@ namespace UI
         buildtext(*text, *scale, uitextscale, Color(*c), *wrap, *align, children));
 
     ICOMMAND(0, uiwraptext, "tffie", (tagval *text, float *wrap, float *scale, int *align, uint *children),
-        buildtext(*text, *scale, uitextscale, Color(255, 255, 255), *wrap, *align, children));
+        buildtext(*text, *scale, uitextscale, Color(colourwhite), *wrap, *align, children));
 
     ICOMMAND(0, uicolourcontext, "tifie", (tagval *text, int *c, float *scale, int *align, uint *children),
         buildtext(*text, *scale, FONTH*uicontextscale, Color(*c), 0, *align, children));
 
     ICOMMAND(0, uicontext, "tfie", (tagval *text, float *scale, int *align, uint *children),
-        buildtext(*text, *scale, FONTH*uicontextscale, Color(255, 255, 255), 0, *align, children));
+        buildtext(*text, *scale, FONTH*uicontextscale, Color(colourwhite), 0, *align, children));
 
     ICOMMAND(0, uicontextfill, "iffe", (int *c, float *minw, float *minh, uint *children),
         BUILD(Filler, o, o->setup(Color(*c), *minw * FONTH*uicontextscale*0.5f, *minh * FONTH*uicontextscale), children));
@@ -3655,7 +3655,7 @@ namespace UI
         buildtext(*text, *scale, FONTH*uicontextscale, Color(*c), *wrap, *align, children));
 
     ICOMMAND(0, uiwrapcontext, "tffie", (tagval *text, float *wrap, float *scale, int *align, uint *children),
-        buildtext(*text, *scale, FONTH*uicontextscale, Color(255, 255, 255), *wrap, *align, children));
+        buildtext(*text, *scale, FONTH*uicontextscale, Color(colourwhite), *wrap, *align, children));
 
     ICOMMAND(0, uitexteditor, "siifsisse", (char *name, int *length, int *height, float *scale, char *initval, int *mode, char *parent, char *prompt, uint *children),
         BUILD(TextEditor, o, o->setup(name, *length, *height, (*scale <= 0 ? 1 : *scale) * uitextscale, initval, *mode <= 0 ? EDITORFOREVER : *mode, NULL, parent, prompt), children));

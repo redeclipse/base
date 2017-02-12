@@ -1368,7 +1368,7 @@ namespace hud
                     else c2 = c;
                     drawpointertex(getpointer(POINTER_HIT, game::focus->weapselect), cx-cs/2, cy-cs/2, cs, c2.r, c2.g, c2.b, crosshairblend*hudblend);
                 }
-                if(crosshairdistance && game::focus->state == CS_EDITING) draw_textf("\fa%.1f\fwm", cx+crosshairdistancex, cy+crosshairdistancey, 0, 0, 255, 255, 255, int(hudblend*255), TEXT_RIGHT_JUSTIFY, -1, -1, 1, game::focus->o.dist(worldpos)/8.f);
+                if(crosshairdistance && game::focus->state == CS_EDITING) draw_textf("\fa%.1f\fwm", cx+crosshairdistancex, cy+crosshairdistancey, 0, 0, -1, -1, -1, int(hudblend*255), TEXT_RIGHT_JUSTIFY, -1, -1, 1, game::focus->o.dist(worldpos)/8.f);
             }
         }
         else
@@ -1459,16 +1459,16 @@ namespace hud
         pushfont("emphasis");
         if(!gs_playing(game::gamestate) || totalmillis-game::mapstart <= noticetitle)
         {
-            ty += draw_textf("%s", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), 255, 255, 255, tf, TEXT_CENTERED, -1, tw, 1, *maptitle ? maptitle : mapname);
+            ty += draw_textf("%s", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), -1, -1, -1, tf, TEXT_CENTERED, -1, tw, 1, *maptitle ? maptitle : mapname);
             pushfont("reduced");
-            if(*mapauthor) ty += draw_textf("by %s", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), 255, 255, 255, tf, TEXT_CENTERED, -1, tw, 1, mapauthor);
+            if(*mapauthor) ty += draw_textf("by %s", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), -1, -1, -1, tf, TEXT_CENTERED, -1, tw, 1, mapauthor);
             defformatstring(gname, "%s", server::gamename(game::gamemode, game::mutators, 0, 32));
-            ty += draw_textf("[ \fs\fa%s\fS ]", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), 255, 255, 255, tf, TEXT_CENTERED, -1, tw, 1, gname);
+            ty += draw_textf("[ \fs\fa%s\fS ]", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), -1, -1, -1, tf, TEXT_CENTERED, -1, tw, 1, gname);
             popfont();
             ty += FONTH/3;
         }
         if(client::demoplayback && showdemoplayback)
-            ty += draw_textf("Demo playback in progress", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), 255, 255, 255, tf, TEXT_CENTERED, -1, tw, 1)+FONTH/3;
+            ty += draw_textf("Demo playback in progress", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), -1, -1, -1, tf, TEXT_CENTERED, -1, tw, 1)+FONTH/3;
         popfont();
 
         pushfont("default");
@@ -1694,7 +1694,7 @@ namespace hud
         if(eventtone) skewcolour(tr, tg, tb, eventtone);
         pushfont("emphasis");
         if(!gs_playing(game::gamestate))
-            ty -= draw_textf("%s", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), 255, 255, 255, tf, TEXT_CENTERED, -1, tw, 1, gamestates[3][game::gamestate])+FONTH/3;
+            ty -= draw_textf("%s", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), -1, -1, -1, tf, TEXT_CENTERED, -1, tw, 1, gamestates[3][game::gamestate])+FONTH/3;
         else
         {
             bool tkwarn = hastkwarn(game::focus), tinfo = hasteaminfo(game::focus);
@@ -1809,8 +1809,8 @@ namespace hud
                 float f = full || !chatconfade ? 1.f : clamp(((len+chatconfade)-(totalmillis-conlines[refs[j]].reftime))/float(chatconfade), 0.f, 1.f),
                     g = conlines[refs[j]].type > CON_CHAT ? conblend : chatconblend;
                 if(chatcondate && *chatcondateformat)
-                    tz += draw_textf("%s %s", tr, ty-tz, 0, 0, 255, 255, 255, int(fade*f*g*255), TEXT_LEFT_UP, -1, ts, 1, gettime(conlines[refs[j]].realtime, chatcondateformat), conlines[refs[j]].cref)*f;
-                else tz += draw_textf("%s", tr, ty-tz, 0, 0, 255, 255, 255, int(fade*f*g*255), TEXT_LEFT_UP, -1, ts, 1, conlines[refs[j]].cref)*f;
+                    tz += draw_textf("%s %s", tr, ty-tz, 0, 0, -1, -1, -1, int(fade*f*g*255), TEXT_LEFT_UP, -1, ts, 1, gettime(conlines[refs[j]].realtime, chatcondateformat), conlines[refs[j]].cref)*f;
+                else tz += draw_textf("%s", tr, ty-tz, 0, 0, -1, -1, -1, int(fade*f*g*255), TEXT_LEFT_UP, -1, ts, 1, conlines[refs[j]].cref)*f;
             }
             pophudmatrix();
             tz = int(tz*chatconscale);
@@ -1859,11 +1859,11 @@ namespace hud
                     float f = full || !confade ? 1.f : clamp(((len+confade)-(totalmillis-conlines[refs[i]].reftime))/float(confade), 0.f, 1.f),
                         g = full ? fullconblend  : (conlines[refs[i]].type >= CON_IMPORTANT ? selfconblend : conblend);
                     if(condate && *condateformat)
-                        tz += draw_textf("%s %s", tr, ty+tz, 0, 0, 255, 255, 255, int(fade*f*g*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, ts, 1, gettime(conlines[refs[i]].realtime, condateformat), conlines[refs[i]].cref)*f;
-                    else tz += draw_textf("%s", tr, ty+tz, 0, 0, 255, 255, 255, int(fade*f*g*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, ts, 1, conlines[refs[i]].cref)*f;
+                        tz += draw_textf("%s %s", tr, ty+tz, 0, 0, -1, -1, -1, int(fade*f*g*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, ts, 1, gettime(conlines[refs[i]].realtime, condateformat), conlines[refs[i]].cref)*f;
+                    else tz += draw_textf("%s", tr, ty+tz, 0, 0, -1, -1, -1, int(fade*f*g*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, ts, 1, conlines[refs[i]].cref)*f;
                 }
                 if(conskipwarn && conskip)
-                    tz += draw_textf("\fs\fzwy^^^\fS IN BACKLOG: \fs\fy%d\fS \fs\fzwy^^^\fS", tr, ty+tz, 0, 0, 255, 255, 255, int(fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, ts, 1, conskip);
+                    tz += draw_textf("\fs\fzwy^^^\fS IN BACKLOG: \fs\fy%d\fS \fs\fzwy^^^\fS", tr, ty+tz, 0, 0, -1, -1, -1, int(fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, ts, 1, conskip);
                 pophudmatrix();
                 tz = int(tz*conscale);
             }
@@ -1884,9 +1884,9 @@ namespace hud
                 gle::color(c, fullconblend*fade*f);
                 drawtexture(tx, ty+tz, th, tw);
                 int cp = commandpos >= 0 ? commandpos : strlen(commandbuf);//, fp = completesize && completeoffset >= 0 ? min(pos, completeoffset+completesize) : -1;
-                tz += draw_textf("%s", tq+tr, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, cp, tt, 1, commandbuf);
+                tz += draw_textf("%s", tq+tr, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, cp, tt, 1, commandbuf);
                 if(capslockwarn && capslockon)
-                    tz += draw_textf("\fs\fzoy^\fS \fs\fw\f{CAPSLOCK}\fS is \fs\fcON\fS", tq+tr, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1);
+                    tz += draw_textf("\fs\fzoy^\fS \fs\fw\f{CAPSLOCK}\fS is \fs\fcON\fS", tq+tr, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1);
                 popfont();
                 if(commandbuf[0] == '/' && commandbuf[1])
                 {
@@ -1926,42 +1926,42 @@ namespace hud
                                 {
                                     case ID_ALIAS:
                                     {
-                                        tz += draw_textf("%s%sAlias", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, idtype, *idtype ? " " : "");
+                                        tz += draw_textf("%s%sAlias", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, idtype, *idtype ? " " : "");
                                         break;
                                     }
                                     case ID_COMMAND:
                                     {
-                                        tz += draw_textf("%sCommand", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, idtype, *idtype ? " " : "");
-                                        if(strlen(id->args)) tz += draw_textf("\faArgs: \fw%d \fa(\fw%s\fa)", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, strlen(id->args), id->args);
-                                        else tz += draw_textf("\faArgs: \fwnone", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1);
+                                        tz += draw_textf("%sCommand", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, idtype, *idtype ? " " : "");
+                                        if(strlen(id->args)) tz += draw_textf("\faArgs: \fw%d \fa(\fw%s\fa)", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, strlen(id->args), id->args);
+                                        else tz += draw_textf("\faArgs: \fwnone", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1);
                                         break;
                                     }
                                     case ID_VAR:
                                     {
-                                        tz += draw_textf("%s%sinteger", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, idtype, *idtype ? " " : "");
+                                        tz += draw_textf("%s%sinteger", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, idtype, *idtype ? " " : "");
                                         if(id->flags&IDF_HEX)
                                         {
                                             if(id->maxval == 0xFFFFFF)
-                                                tz += draw_textf("\faMin: \fw0x%.6X\fa (\fw%d\fa,\fw%d\fa,\fw%d\fa), Max: \fw0x%.6X\fa (\fw%d\fa,\fw%d\fa,\fw%d\fa), Default: \fw0x%.6X\fa (\fw%d\fa,\fw%d\fa,\fw%d\fa), Current: \fw0x%.6X (\fw%d\fa,\fw%d\fa,\fw%d\fa) [\fs\f[%d]#\fS]", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1,
+                                                tz += draw_textf("\faMin: \fw0x%.6X\fa (\fw%d\fa,\fw%d\fa,\fw%d\fa), Max: \fw0x%.6X\fa (\fw%d\fa,\fw%d\fa,\fw%d\fa), Default: \fw0x%.6X\fa (\fw%d\fa,\fw%d\fa,\fw%d\fa), Current: \fw0x%.6X (\fw%d\fa,\fw%d\fa,\fw%d\fa) [\fs\f[%d]#\fS]", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1,
                                                         id->minval, (id->minval>>16)&0xFF, (id->minval>>8)&0xFF, id->minval&0xFF,
                                                         id->maxval, (id->maxval>>16)&0xFF, (id->maxval>>8)&0xFF, id->maxval&0xFF,
                                                         id->def.i, (id->def.i>>16)&0xFF, (id->def.i>>8)&0xFF, id->def.i&0xFF,
                                                         *id->storage.i, (*id->storage.i>>16)&0xFF, (*id->storage.i>>8)&0xFF, *id->storage.i&0xFF, *id->storage.i);
-                                            else tz += draw_textf("\faMin: \fw0x%X\fa, Max: \fw0x%X\fa, Default: \fw0x%X\fa, Current: \fw0x%X", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->minval, id->maxval, id->def.i, *id->storage.i);
+                                            else tz += draw_textf("\faMin: \fw0x%X\fa, Max: \fw0x%X\fa, Default: \fw0x%X\fa, Current: \fw0x%X", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->minval, id->maxval, id->def.i, *id->storage.i);
                                         }
-                                        else tz += draw_textf("\faMin: \fw%d\fa, Max: \fw%d\fa, Default: \fw%d\fa, Current: \fw%d", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->minval, id->maxval, id->def.i, *id->storage.i);
+                                        else tz += draw_textf("\faMin: \fw%d\fa, Max: \fw%d\fa, Default: \fw%d\fa, Current: \fw%d", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->minval, id->maxval, id->def.i, *id->storage.i);
                                         break;
                                     }
                                     case ID_FVAR:
                                     {
-                                        tz += draw_textf("%s%sfloat", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, idtype, *idtype ? " " : "");
-                                        tz += draw_textf("\faMin: \fw%f\fa, Max: \fw%f\fa, Default: \fw%f\fa, Current: \fw%f", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->minvalf, id->maxvalf, id->def.f, *id->storage.f);
+                                        tz += draw_textf("%s%sfloat", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, idtype, *idtype ? " " : "");
+                                        tz += draw_textf("\faMin: \fw%f\fa, Max: \fw%f\fa, Default: \fw%f\fa, Current: \fw%f", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->minvalf, id->maxvalf, id->def.f, *id->storage.f);
                                         break;
                                     }
                                     case ID_SVAR:
                                     {
-                                        tz += draw_textf("%s%s%s", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, *idtype ? " " : "", idtype, id->flags&IDF_TEXTURE ? "Texture" : "String");
-                                        tz += draw_textf("\faDefault: \fw%s\fa, Current: \fw%s", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->def.s, *id->storage.s);
+                                        tz += draw_textf("%s%s%s", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, *idtype ? " " : "", idtype, id->flags&IDF_TEXTURE ? "Texture" : "String");
+                                        tz += draw_textf("\faDefault: \fw%s\fa, Current: \fw%s", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->def.s, *id->storage.s);
                                         break;
                                     }
                                 }
@@ -1997,15 +1997,15 @@ namespace hud
                                     }
                                     default: break;
                                 }
-                                tz += draw_textf("Usage: \fa/%s %s", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->name, fields);
+                                tz += draw_textf("Usage: \fa/%s %s", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->name, fields);
 
                                 if(id->desc)
-                                    tz += draw_textf("\fa%s", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->desc);
+                                    tz += draw_textf("\fa%s", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->desc);
 
                                 if(id->type == ID_ALIAS)
                                 {
                                     pushfont("consub");
-                                    tz += draw_textf("\faContents: \fw%s", tq, ty+tz, 0, 0, 255, 255, 255, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->getstr());
+                                    tz += draw_textf("\faContents: \fw%s", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->getstr());
                                     popfont();
                                 }
                             }
@@ -2141,7 +2141,7 @@ namespace hud
                 text_bounds(str, width, height, 0, 0, -1, TEXT_CENTERED|TEXT_NO_INDENT, 1);
                 loc.y -= y*height;
             }
-            draw_textf("%s", int(loc.x), int(loc.y), 0, 0, 255, 255, 255, int(blend*255.f), TEXT_CENTERED|TEXT_NO_INDENT, -1, -1, 1, str);
+            draw_textf("%s", int(loc.x), int(loc.y), 0, 0, -1, -1, -1, int(blend*255.f), TEXT_CENTERED|TEXT_NO_INDENT, -1, -1, 1, str);
             if(font && *font) popfont();
         }
     }
@@ -2469,7 +2469,7 @@ namespace hud
             if(font && *font) pushfont(font);
             int tx = int(cx/skew), ty = int((cy-FONTH/2*skew)/skew), ti = int(255.f*fade);
             defvformatstring(str, text, text);
-            draw_textf("%s", tx, ty, 0, 0, 255, 255, 255, ti, TEXT_CENTERED, -1, -1, 1, str);
+            draw_textf("%s", tx, ty, 0, 0, -1, -1, -1, ti, TEXT_CENTERED, -1, -1, 1, str);
             if(font && *font) popfont();
             pophudmatrix();
         }
@@ -2654,7 +2654,7 @@ namespace hud
                 tx = int((left ? (cx+cw-ox) : (cx-cw+ox))/skew),
                 ty = int((cy-cs/2+oy)/skew), tj = left ? TEXT_LEFT_BAL : TEXT_RIGHT_BAL;
             defvformatstring(str, text, text);
-            draw_textf("%s", tx, ty, 0, 0, 255, 255, 255, int(fade*255), tj|TEXT_NO_INDENT, -1, -1, 1, str);
+            draw_textf("%s", tx, ty, 0, 0, -1, -1, -1, int(fade*255), tj|TEXT_NO_INDENT, -1, -1, 1, str);
             if(font && *font) popfont();
             pophudmatrix();
         }
@@ -2902,7 +2902,7 @@ namespace hud
                     if(!(inventoryhealth&2))
                     {
                         pushfont("reduced");
-                        ty += draw_textf("health", x+s/2, y-sy-ty, 0, 0, 255, 255, 255, int(fade*255), TEXT_CENTER_UP, -1, -1, 1);
+                        ty += draw_textf("health", x+s/2, y-sy-ty, 0, 0, -1, -1, -1, int(fade*255), TEXT_CENTER_UP, -1, -1, 1);
                         popfont();
                         sy += ty;
                     }
@@ -2926,7 +2926,7 @@ namespace hud
                         int ty = draw_textf("%d%%", x+s/2, y-sy+(inventoryimpulse&2 ? size/2 : 0), 0, 0, int(gr*255), int(gg*255), int(gb*255), int(fade*255), TEXT_CENTER_UP, -1, -1, 1, int(span*100));
                         popfont();
                         pushfont("reduced");
-                        ty += draw_textf("impulse", x+s/2, y-sy-ty, 0, 0, 255, 255, 255, int(fade*255), TEXT_CENTER_UP, -1, -1, 1);
+                        ty += draw_textf("impulse", x+s/2, y-sy-ty, 0, 0, -1, -1, -1, int(fade*255), TEXT_CENTER_UP, -1, -1, 1);
                         popfont();
                         sy += ty;
                     }
@@ -3034,20 +3034,20 @@ namespace hud
                 };
                 pushfont("little");
 
-                sy += draw_textf("\f[%d]\f(%s)", x+s/2, y-sy, 0, 0, 255, 255, 255, int(blend*inventoryinputblend*255), TEXT_CENTER_UP, -1, -1, 1,
+                sy += draw_textf("\f[%d]\f(%s)", x+s/2, y-sy, 0, 0, -1, -1, -1, int(blend*inventoryinputblend*255), TEXT_CENTER_UP, -1, -1, 1,
                         game::focus->move == -1 ? inventoryinputactive : inventoryinputcolour, arrowdowntex);
 
-                sy += draw_textf("\f[%d]\f(%s)  \f[%d]\f(%s)", x+s/2, y-sy, 0, 0, 255, 255, 255, int(blend*inventoryinputblend*255), TEXT_CENTER_UP, -1, -1, 1,
+                sy += draw_textf("\f[%d]\f(%s)  \f[%d]\f(%s)", x+s/2, y-sy, 0, 0, -1, -1, -1, int(blend*inventoryinputblend*255), TEXT_CENTER_UP, -1, -1, 1,
                         game::focus->strafe == 1 ? inventoryinputactive : inventoryinputcolour, arrowlefttex,
                         game::focus->strafe == -1 ? inventoryinputactive : inventoryinputcolour, arrowrighttex);
 
-                sy += draw_textf("\f[%d]\f(%s)", x+s/2, y-sy, 0, 0, 255, 255, 255, int(blend*inventoryinputblend*255), TEXT_CENTER_UP, -1, -1, 1,
+                sy += draw_textf("\f[%d]\f(%s)", x+s/2, y-sy, 0, 0, -1, -1, -1, int(blend*inventoryinputblend*255), TEXT_CENTER_UP, -1, -1, 1,
                         game::focus->move == 1 ? inventoryinputactive : inventoryinputcolour, arrowtex);
 
                 loopi(AC_TOTAL) if(inventoryinputfilter&(1<<i))
                 {
                     bool active = game::focus->action[i] || (inventoryinputlinger&(1<<i) && game::focus->actiontime[i] && lastmillis-abs(game::focus->actiontime[i]) <= inventoryinputdelay);
-                    sy += draw_textf("\fs\fw\f{\f[%d]%s}\fS", x+s/2, y-sy, 0, 0, 255, 255, 255, int(blend*inventoryinputblend*255), TEXT_CENTER_UP, -1, -1, 1,
+                    sy += draw_textf("\fs\fw\f{\f[%d]%s}\fS", x+s/2, y-sy, 0, 0, -1, -1, -1, int(blend*inventoryinputblend*255), TEXT_CENTER_UP, -1, -1, 1,
                             active ? inventoryinputactive : inventoryinputcolour, actionnames[i]);
                 }
 
@@ -3069,7 +3069,7 @@ namespace hud
             {
                 sy -= x/2;
                 pushfont("emphasis");
-                sy += draw_textf("%s", x+s/2, y-sy, 0, 0, 255, 255, 255, int(blend*inventorystatusblend*255), TEXT_CENTER_UP, -1, -1, 1, state);
+                sy += draw_textf("%s", x+s/2, y-sy, 0, 0, -1, -1, -1, int(blend*inventorystatusblend*255), TEXT_CENTER_UP, -1, -1, 1, state);
                 popfont();
             }
             if(inventorystatus&2 && *tex)
@@ -3122,13 +3122,13 @@ namespace hud
             pushfont("default");
             if((!m_ra_gauntlet(game::gamemode, game::mutators) || game::focus->team == T_ALPHA) && (game::focus->cpmillis || game::focus->cptime) && (game::focus->state == CS_ALIVE || game::focus->state == CS_DEAD || game::focus->state == CS_WAITING))
             {
-                sy += draw_textf("\faLap: \fw%d", x, y-sy, 0, 0, 255, 255, 255, int(fade*255), TEXT_LEFT_UP, -1, -1, 1, game::focus->points+1);
+                sy += draw_textf("\faLap: \fw%d", x, y-sy, 0, 0, -1, -1, -1, int(fade*255), TEXT_LEFT_UP, -1, -1, 1, game::focus->points+1);
                 if(game::focus->cptime)
-                    sy += draw_textf("\fy%s", x, y-sy, 0, 0, 255, 255, 255, int(fade*255), TEXT_LEFT_UP, -1, -1, 1, timestr(game::focus->cptime, inventoryracestyle));
+                    sy += draw_textf("\fy%s", x, y-sy, 0, 0, -1, -1, -1, int(fade*255), TEXT_LEFT_UP, -1, -1, 1, timestr(game::focus->cptime, inventoryracestyle));
                 if(game::focus->cpmillis)
-                    sy += draw_textf("%s", x, y-sy, 0, 0, 255, 255, 255, int(fade*255), TEXT_LEFT_UP, -1, -1, 1, timestr(lastmillis-game::focus->cpmillis, inventoryracestyle));
+                    sy += draw_textf("%s", x, y-sy, 0, 0, -1, -1, -1, int(fade*255), TEXT_LEFT_UP, -1, -1, 1, timestr(lastmillis-game::focus->cpmillis, inventoryracestyle));
                 else if(game::focus->cplast)
-                    sy += draw_textf("\fzwe%s", x, y-sy, 0, 0, 255, 255, 255, int(fade*255), TEXT_LEFT_UP, -1, -1, 1, timestr(game::focus->cplast, inventoryracestyle));
+                    sy += draw_textf("\fzwe%s", x, y-sy, 0, 0, -1, -1, -1, int(fade*255), TEXT_LEFT_UP, -1, -1, 1, timestr(game::focus->cplast, inventoryracestyle));
             }
             sy += raceinventory(x, y-sy, s, fade);
             popfont();
@@ -3155,31 +3155,31 @@ namespace hud
             if(showfps)
             {
                 pushfont("console");
-                cy[1] -= draw_textf("%d fps", cx[1], cy[1], 0, 0, 255, 255, 255, bf, TEXT_RIGHT_UP, -1, bs, 1, curstats[8]);
+                cy[1] -= draw_textf("%d fps", cx[1], cy[1], 0, 0, -1, -1, -1, bf, TEXT_RIGHT_UP, -1, bs, 1, curstats[8]);
                 popfont();
                 switch(showfps)
                 {
                     case 3:
-                        cy[1] -= draw_textf("%d max", cx[1], cy[1], 0, 0, 255, 255, 255, bf, TEXT_RIGHT_UP, -1, bs, 1, maxfps);
+                        cy[1] -= draw_textf("%d max", cx[1], cy[1], 0, 0, -1, -1, -1, bf, TEXT_RIGHT_UP, -1, bs, 1, maxfps);
                     case 2:
-                        cy[1] -= draw_textf("+%d-%d range", cx[1], cy[1], 0, 0, 255, 255, 255, bf, TEXT_RIGHT_UP, -1, bs, 1, maxfps, curstats[9], curstats[10]);
+                        cy[1] -= draw_textf("+%d-%d range", cx[1], cy[1], 0, 0, -1, -1, -1, bf, TEXT_RIGHT_UP, -1, bs, 1, maxfps, curstats[9], curstats[10]);
                     default: break;
                 }
             }
             if(showstats >= (m_edit(game::gamemode) ? 1 : 2))
             {
-                cy[1] -= draw_textf("ond:%d va:%d gl:%d(%d) oq:%d", cx[1], cy[1], 0, 0, 255, 255, 255, bf, TEXT_RIGHT_UP, -1, bs, 1, allocnodes*8, allocva, curstats[4], curstats[5], curstats[6]);
-                cy[1] -= draw_textf("wtr:%dk(%d%%) wvt:%dk(%d%%) evt:%dk eva:%dk", cx[1], cy[1], 0, 0, 255, 255, 255, bf, TEXT_RIGHT_UP, -1, bs, 1, wtris/1024, curstats[0], wverts/1024, curstats[1], curstats[2], curstats[3]);
-                cy[1] -= draw_textf("ents:%d(%d) wp:%d lm:%d rp:%d pvs:%d", cx[1], cy[1], 0, 0, 255, 255, 255, bf, TEXT_RIGHT_UP, -1, bs, 1, entities::ents.length(), entgroup.length(), ai::waypoints.length(), lightmaps.length(), curstats[7], getnumviewcells());
+                cy[1] -= draw_textf("ond:%d va:%d gl:%d(%d) oq:%d", cx[1], cy[1], 0, 0, -1, -1, -1, bf, TEXT_RIGHT_UP, -1, bs, 1, allocnodes*8, allocva, curstats[4], curstats[5], curstats[6]);
+                cy[1] -= draw_textf("wtr:%dk(%d%%) wvt:%dk(%d%%) evt:%dk eva:%dk", cx[1], cy[1], 0, 0, -1, -1, -1, bf, TEXT_RIGHT_UP, -1, bs, 1, wtris/1024, curstats[0], wverts/1024, curstats[1], curstats[2], curstats[3]);
+                cy[1] -= draw_textf("ents:%d(%d) wp:%d lm:%d rp:%d pvs:%d", cx[1], cy[1], 0, 0, -1, -1, -1, bf, TEXT_RIGHT_UP, -1, bs, 1, entities::ents.length(), entgroup.length(), ai::waypoints.length(), lightmaps.length(), curstats[7], getnumviewcells());
                 if(game::player1->state == CS_EDITING)
                 {
-                    cy[1] -= draw_textf("cube:%s%d corner:%d orient:%d grid:%d%s", cx[1], cy[1], 0, 0, 255, 255, 255, bf, TEXT_RIGHT_UP, -1, bs, 1,
+                    cy[1] -= draw_textf("cube:%s%d corner:%d orient:%d grid:%d%s", cx[1], cy[1], 0, 0, -1, -1, -1, bf, TEXT_RIGHT_UP, -1, bs, 1,
                             selchildcount<0 ? "1/" : "", abs(selchildcount), sel.corner, sel.orient, sel.grid, showmat && selchildmat > 0 ? getmaterialdesc(selchildmat, " mat:") : "");
-                    cy[1] -= draw_textf("sel:%d,%d,%d %d,%d,%d (%d,%d,%d,%d)", cx[1], cy[1], 0, 0, 255, 255, 255, bf, TEXT_RIGHT_UP, -1, bs, 1,
+                    cy[1] -= draw_textf("sel:%d,%d,%d %d,%d,%d (%d,%d,%d,%d)", cx[1], cy[1], 0, 0, -1, -1, -1, bf, TEXT_RIGHT_UP, -1, bs, 1,
                             sel.o.x, sel.o.y, sel.o.z, sel.s.x, sel.s.y, sel.s.z,
                                 sel.cx, sel.cxs, sel.cy, sel.cys);
                 }
-                cy[1] -= draw_textf("pos:%.2f,%.2f,%.2f yaw:%.2f pitch:%.2f", cx[1], cy[1], 0, 0, 255, 255, 255, bf, TEXT_RIGHT_UP, -1, bs, 1,
+                cy[1] -= draw_textf("pos:%.2f,%.2f,%.2f yaw:%.2f pitch:%.2f", cx[1], cy[1], 0, 0, -1, -1, -1, bf, TEXT_RIGHT_UP, -1, bs, 1,
                         camera1->o.x, camera1->o.y, camera1->o.z, camera1->yaw, camera1->pitch);
             }
             popfont();
@@ -3412,13 +3412,13 @@ namespace hud
             if(pamt > 0) drawprogress(FONTH, y, 0, pamt, FONTH*2, true, 1, 1, 1, 1, 1, "consub", "\fy%d%%", int(pamt*100));
             else drawprogress(FONTH, y, 0, pamt, FONTH*2, true, 1, 1, 1, 1, 1, "consub", "\fg...");
             y -= FONTH/2;
-            if(*ptext) y -= draw_textf("%s %s [\fs\fa%d%%\fS]", FONTH*7/2, y, 0, 0, 255, 255, 255, 255, TEXT_LEFT_UP, -1, -1, 1, *ptitle ? ptitle : "Please wait...", ptext, int(ppart*100));
-            else y -= draw_textf("%s", FONTH*7/2, y, 0, 0, 255, 255, 255, 255, TEXT_LEFT_UP, -1, -1, 1, *ptitle ? ptitle : "Please wait...");
+            if(*ptext) y -= draw_textf("%s %s [\fs\fa%d%%\fS]", FONTH*7/2, y, 0, 0, -1, -1, -1, 255, TEXT_LEFT_UP, -1, -1, 1, *ptitle ? ptitle : "Please wait...", ptext, int(ppart*100));
+            else y -= draw_textf("%s", FONTH*7/2, y, 0, 0, -1, -1, -1, 255, TEXT_LEFT_UP, -1, -1, 1, *ptitle ? ptitle : "Please wait...");
         }
         y = h-bottom-FONTH;
-        if(showloadinggpu) y -= draw_textf("%s (%s v%s)", w-FONTH, y, 0, 0, 255, 255, 255, 255, TEXT_RIGHT_UP, -1, -1, 1, gfxrenderer, gfxvendor, gfxversion);
-        if(showloadingversion) y -= draw_textf("%s v%s-%s%d-%s (%s)", w-FONTH, y, 0, 0, 255, 255, 255, 255, TEXT_RIGHT_UP, -1, -1, 1, versionname, versionstring, versionplatname, versionarch, versionbranch, versionrelease);
-        if(showloadingurl && *versionurl) y -= draw_textf("%s", w-FONTH, y, 0, 0, 255, 255, 255, 255, TEXT_RIGHT_UP, -1, -1, 1, versionurl);
+        if(showloadinggpu) y -= draw_textf("%s (%s v%s)", w-FONTH, y, 0, 0, -1, -1, -1, 255, TEXT_RIGHT_UP, -1, -1, 1, gfxrenderer, gfxvendor, gfxversion);
+        if(showloadingversion) y -= draw_textf("%s v%s-%s%d-%s (%s)", w-FONTH, y, 0, 0, -1, -1, -1, 255, TEXT_RIGHT_UP, -1, -1, 1, versionname, versionstring, versionplatname, versionarch, versionbranch, versionrelease);
+        if(showloadingurl && *versionurl) y -= draw_textf("%s", w-FONTH, y, 0, 0, -1, -1, -1, 255, TEXT_RIGHT_UP, -1, -1, 1, versionurl);
         popfont();
     }
 

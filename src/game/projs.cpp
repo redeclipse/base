@@ -1808,7 +1808,7 @@ namespace projs
                 if(vol > 0) playsound(snd, proj.o, NULL, 0, vol);
                 part_create(PART_SMOKE, 500, proj.o, 0xAAAAAA, max(size, 1.5f), 1, -10);
                 proj.limited = true;
-                if(proj.projtype == PRJ_DEBRIS) proj.light.material[0] = bvec(255, 255, 255);
+                if(proj.projtype == PRJ_DEBRIS) proj.light.material[0] = bvec(colourwhite);
             }
             proj.norm = dir;
             if(proj.extinguish&4) return 0;

@@ -485,7 +485,7 @@ void rendermapmodel(extentity &e)
             if(e.attrs[7]) r.mul(vec::hexcolor(e.attrs[7]));
             e.light.material[0] = bvec::fromcolor(r);
         }
-        else e.light.material[0] = e.attrs[7] ? bvec(e.attrs[7]) : bvec(255, 255, 255);
+        else e.light.material[0] = e.attrs[7] ? bvec(e.attrs[7]) : bvec(colourwhite);
         float yaw = e.attrs[1], pitch = e.attrs[2], roll = e.attrs[3];
         if(e.attrs[10]) yaw += e.attrs[10]*lastmillis/1000.0f;
         if(e.attrs[11]) pitch += e.attrs[11]*lastmillis/1000.0f;

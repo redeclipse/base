@@ -2329,7 +2329,7 @@ namespace entities
                             else continue;
                         }
                         else e.light.effect = vec(0, 0, 0);
-                        e.light.material[0] = colour >= 0 ? bvec(colour) : bvec(255, 255, 255);
+                        e.light.material[0] = colour >= 0 ? bvec(colour) : bvec(colourwhite);
                         rendermodel(&e.light, mdlname, ANIM_MAPMODEL|ANIM_LOOP, pos, yaw, pitch, 0.f, flags, NULL, NULL, 0, 0, fade, size);
                     }
                 }
