@@ -4,7 +4,7 @@ namespace game
 {
     int nextmode = G_EDITMODE, nextmuts = 0, gamestate = G_S_WAITING, gamemode = G_EDITMODE, mutators = 0, maptime = 0, mapstart = 0, timeremaining = 0, lasttimeremain = 0,
         lastcamera = 0, lasttvcam = 0, lasttvchg = 0, lastzoom = 0, spectvfollowing = -1, starttvcamdyn = -1, lastcamcn = -1;
-    bool zooming = false, inputmouse = false, inputview = false, inputmode = false;
+    bool zooming = false, inputmouse = false, inputview = false, inputmode = false, wantsloadoutmenu = false;
     float swayfade = 0, swayspeed = 0, swaydist = 0, bobfade = 0, bobdist = 0;
     vec swaydir(0, 0, 0), swaypush(0, 0, 0);
 
@@ -320,16 +320,6 @@ namespace game
     VAR(IDF_PERSIST, vanitymodels, 0, 1, 1);
     VAR(IDF_PERSIST, headlessmodels, 0, 1, 1);
     FVAR(IDF_PERSIST, twitchspeed, 0, 3, FVAR_MAX);
-
-    bool wantsloadoutmenu = false;
-    VAR(IDF_PERSIST, showloadoutmenu, 0, 0, 1); // show the loadout menu at the start of a map
-
-    bool needname(gameent *d)
-    {
-        if(!d || *d->name) return false; // || client::waiting()) return false;
-        return true;
-    }
-    ICOMMAND(0, needname, "b", (int *cn), intret(needname(*cn >= 0 ? getclient(*cn) : player1) ? 1 : 0));
 
     ICOMMAND(0, gamemode, "", (), intret(gamemode));
     ICOMMAND(0, mutators, "", (), intret(mutators));
@@ -756,6 +746,13 @@ namespace game
         }
         return true;
     }
+
+    bool needname(gameent *d)
+    {
+        if(!d || *d->name) return false; // || client::waiting()) return false;
+        return true;
+    }
+    ICOMMAND(0, needname, "b", (int *cn), intret(needname(*cn >= 0 ? getclient(*cn) : player1) ? 1 : 0));
 
     void respawn(gameent *d)
     {
@@ -1865,6 +1862,8 @@ namespace game
         ai::savemap(force, mname);
     }
 
+    VAR(IDF_PERSIST, showloadoutmenu, 0, 0, 1); // show the loadout menu at the start of a map
+
     void startmap(bool empty) // called just after a map load
     {
         ai::startmap(empty);
@@ -2805,7 +2804,6 @@ namespace game
 
     void updateworld()      // main game update loop
     {
-        UI::hideui("loading");
         if(connected())
         {
             if(!curtime || !client::isready)
@@ -2870,13 +2868,7 @@ namespace game
             }
             checkplayers();
             flushdamagemerges();
-            if(!UI::hasmenu() && (needname(player1) || wantsloadoutmenu))
-            {
-                UI::openui("profile");
-                wantsloadoutmenu = false;
-            }
         }
-        else if(!UI::hasmenu()) UI::openui(needname(player1) ? "profile" : "main");
         gets2c();
         adjustscaled(hud::damageresidue, hud::damageresiduefade);
         if(connected())

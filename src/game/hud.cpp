@@ -748,6 +748,25 @@ namespace hud
         return UI::keypress(code, isdown); // ignore UI if compass is open
     }
 
+    void processmenu()
+    {
+        if(connected())
+        {
+            if(!UI::hasmenu() && (game::needname(game::player1) || game::wantsloadoutmenu))
+            {
+                UI::openui("profile");
+                game::wantsloadoutmenu = false;
+            }
+            else
+            {
+                UI::pressui("scoreboard", scoreson);
+                if(game::player1->state == CS_DEAD) { if(scoreson) shownscores = true; }
+                else shownscores = false;
+            }
+        }
+        else if(!UI::hasmenu()) UI::openui(game::needname(game::player1) ? "profile" : "main");
+    }
+
     float motionblur(float scale)
     {
         float amt = 0;

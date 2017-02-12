@@ -48,5 +48,7 @@ ICOMMAND(0, pendingchanges, "b", (int *idx), { if(needsapply.inrange(*idx)) resu
 
 void menuprocess()
 {
-    hud::gamemenus();
+    UI::hideui("loading");
+    hud::processmenu();
+    UI::update();
 }

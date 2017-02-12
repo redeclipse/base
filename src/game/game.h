@@ -1668,6 +1668,7 @@ namespace hud
         teamhurthud, teamhurttime, teamhurtdist;
     extern float noticescale, eventscale, inventoryblend, inventoryskew, radaraffinityblend, radarblipblend, radaraffinitysize,
         inventoryglow, inventoryscoresize, inventoryscoreshrink, inventoryscoreshrinkmax, noticepadx, noticepady, eventpadx, eventpady;
+    extern bool scoreson, scoresoff, shownscores;
     extern vector<int> teamkills;
     extern const char *icontex(int type, int value);
     extern bool chkcond(int val, bool cond);
@@ -1708,7 +1709,7 @@ namespace game
             announcefilter, dynlighteffects, aboveheadnames, followthirdperson, nogore, forceplayermodel,
             playerovertone, playerundertone, playerdisplaytone, playereffecttone, playerteamtone, follow, specmode, spectvfollow, spectvfollowing, clientcrc;
     extern float bloodscale, debrisscale, aboveitemiconsize, playerovertonelevel, playerundertonelevel, playerdisplaytonelevel, playereffecttonelevel, playerteamtonelevel;
-    extern bool zooming;
+    extern bool zooming, wantsloadoutmenu;
     extern vec swaypush, swaydir;
     extern string clientmap;
 
@@ -1721,6 +1722,7 @@ namespace game
     };
     extern avatarent avatarmodel, bodymodel;
 
+    extern bool needname(gameent *d);
     extern void vanityreset();
     extern void vanitybuild(gameent *d);
     extern const char *vanityfname(gameent *d, int n, bool proj = false);

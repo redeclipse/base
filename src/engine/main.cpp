@@ -1144,7 +1144,6 @@ int main(int argc, char **argv)
         updatefps(frameloops, elapsed);
         checkinput();
         menuprocess();
-        UI::update();
 
         if(frameloops)
         {

@@ -35,8 +35,8 @@ namespace hud
     VAR(IDF_PERSIST, scoreconnecting, 0, 0, 1);
     VAR(IDF_PERSIST, scoreracestyle, 0, 1, 4);
 
-    static bool scoreson = false, scoresoff = false, shownscores = false;
-    static int scorespress = 0;
+    bool scoreson = false, scoresoff = false, shownscores = false;
+    int scorespress = 0;
 
     bool canshowscores()
     {
@@ -276,13 +276,6 @@ namespace hud
 
     ICOMMAND(0, showscores, "D", (int *down), showscores(*down!=0, false, false, true));
     ICOMMAND(0, togglescores, "b", (int *on), scoreson = *on >= 0 ? *on!=0 : !scoreson);
-
-    void gamemenus()
-    {
-        UI::pressui("scoreboard", scoreson);
-        if(game::player1->state == CS_DEAD) { if(scoreson) shownscores = true; }
-        else shownscores = false;
-    }
 
     static const char *posnames[10] = { "th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th" };
 
