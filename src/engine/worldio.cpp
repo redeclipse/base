@@ -1955,6 +1955,13 @@ struct mapcinfo
         type = MAP_MAPZ;
         samegame = false;
     }
+
+    static int compare(mapcinfo &a, mapcinfo &b)
+    {
+        if(a.type < b.type) return -1;
+        if(a.type > b.type) return 1;
+        return strcmp(a.title, b.title);
+    }
 };
 vector<mapcinfo> mapcinfos;
 vector<char *> failmapcs;
@@ -1964,8 +1971,7 @@ int scanmapc(const char *fname)
     if(!fname || !*fname) return -1;
     loopv(mapcinfos) if(!strcmp(mapcinfos[i].file, fname)) return i;
     loopv(failmapcs) if(!strcmp(failmapcs[i], fname)) return -1;
-    int num = mapcinfos.length();
-    bool mapok = false;
+    int num = -1;
     string msg = "";
     loop(format, MAP_MAX)
     {
@@ -2347,10 +2353,10 @@ int scanmapc(const char *fname)
             if(!strcmp(fname, d.title)) d.title[fcrc-fname] = 0;
             concformatstring(d.title, " (%s)", ++fcrc);
         }
-        mapok = true;
+        num = mapcinfos.length()-1;
         break;
     }
-    if(!mapok)
+    if(num < 0)
     {
         failmapcs.add(newstring(fname));
         if(msg[0])
@@ -2373,6 +2379,7 @@ void resetmapcs(bool all)
     }
 }
 ICOMMAND(0, mapcreset, "i", (int *all), resetmapcs(*all!=0));
+ICOMMAND(0, mapcsort, "", (), mapcinfos.sort(mapcinfo::compare));
 
 void infomapc(int idx, int prop, int pt)
 {
@@ -2440,3 +2447,20 @@ char *mapcauthor(const char *s)
     return mapcauthorstr;
 }
 ICOMMAND(0, getmapauthor, "s", (char *s), result(mapcauthor(s)));
+
+ICOMMAND(0, loopmapcs, "rrre", (ident *id, ident *id2, ident *id3, uint *body),
+{
+    loopstart(id, stack);
+    loopstart(id2, stack2);
+    loopstart(id3, stack3);
+    loopv(mapcinfos)
+    {
+        loopiter(id, stack, i);
+        loopiter(id2, stack2, mapcinfos[i].file);
+        loopiter(id3, stack3, mapcinfos[i].title);
+        execute(body);
+    }
+    loopend(id, stack);
+    loopend(id2, stack2);
+    loopend(id3, stack3);
+});

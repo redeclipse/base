@@ -194,6 +194,11 @@ namespace client
     {
         demoheader hdr;
         string file;
+
+        static int compare(demoinfo &a, demoinfo &b)
+        {
+            return strcmp(a.file, b.file);
+        }
     };
     vector<demoinfo> demoinfos;
     vector<char *> faildemos;
@@ -243,6 +248,7 @@ namespace client
         }
     }
     ICOMMAND(0, demoreset, "i", (int *all), resetdemos(*all!=0));
+    ICOMMAND(0, demosort, "", (), demoinfos.sort(demoinfo::compare));
 
     void infodemo(int idx, int prop)
     {
@@ -262,6 +268,20 @@ namespace client
         }
     }
     ICOMMAND(0, demoinfo, "bb", (int *idx, int *prop), infodemo(*idx, *prop));
+
+    ICOMMAND(0, loopdemos, "rre", (ident *id, ident *id2, uint *body),
+    {
+        loopstart(id, stack);
+        loopstart(id2, stack2);
+        loopv(demoinfos)
+        {
+            loopiter(id, stack, i);
+            loopiter(id2, stack2, demoinfos[i].file);
+            execute(body);
+        }
+        loopend(id, stack);
+        loopend(id2, stack2);
+    });
 
     VAR(IDF_PERSIST, authconnect, 0, 1, 1);
     SVAR(IDF_PERSIST, accountname, "");

@@ -4161,8 +4161,8 @@ void sortlist(char *list, ident *x, ident *y, uint *body, uint *unique)
     int totalunique = total, numunique = items.length();
     if(body)
     {
-    sortfun f = { x, y, body };
-    items.sort(f);
+        sortfun f = { x, y, body };
+        items.sort(f);
         if((*unique&CODE_OP_MASK) != CODE_EXIT)
         {
             f.body = unique;
