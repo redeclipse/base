@@ -638,12 +638,12 @@ hashnameset<defvar> defvars;
     DEFVAR(cmdname, "sss", (char *name, char *cur, char *onchange), \
         def.s = svariable(name, cur, &def.s, def.onchange ? defvar::changed : NULL, flags))
 
-DEFIVAR(defvar, 0);
-DEFIVAR(defvarp, IDF_PERSIST);
-DEFFVAR(deffvar, 0);
-DEFFVAR(deffvarp, IDF_PERSIST);
-DEFSVAR(defsvar, 0);
-DEFSVAR(defsvarp, IDF_PERSIST);
+DEFIVAR(defvar, IDF_COMPLETE);
+DEFIVAR(defvarp, IDF_COMPLETE|IDF_PERSIST);
+DEFFVAR(deffvar, IDF_COMPLETE);
+DEFFVAR(deffvarp, IDF_COMPLETE|IDF_PERSIST);
+DEFSVAR(defsvar, IDF_COMPLETE);
+DEFSVAR(defsvarp, IDF_COMPLETE|IDF_PERSIST);
 
 #define GETVAR(id, vartype, name, retval) \
     ident *id = idents.access(name); \
