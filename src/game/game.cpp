@@ -1656,7 +1656,7 @@ namespace game
                 }
                 else if(style&FRAG_SPREE4)
                 {
-                    concatstring(d->obit, " in a \fs\fzyPbloodbath\fS");
+                    concatstring(d->obit, " in a \fs\fzyibloodbath\fS");
                     v->addicon(eventicon::SPREE, totalmillis, eventiconfade, 3);
                     if(!override && allowanc)
                     {

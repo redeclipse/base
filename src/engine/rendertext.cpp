@@ -270,33 +270,46 @@ static float draw_char(Texture *&tex, int c, float x, float y, float scale)
 #define TVECA(ci, ca) (bvec4::fromcolor(ci).lighten(textminintensity).alpha(ca))
 #define TVECX(cr, cg, cb, ca) (bvec4(cr, cg, cb, 255).lighten(textminintensity).alpha(ca))
 
+#define COLOURDARK 0.45f
+#define COLOURVAR(a,b) \
+    VAR(IDF_PERSIST|IDF_HEX, colour##a, 0, b, 0xFFFFFF); \
+    VAR(IDF_PERSIST|IDF_HEX, colourdark##a, 0, ((int(COLOURDARK*((b>>16)&0xFF)))<<16)|((int(COLOURDARK*((b>>8)&0xFF)))<<8)|(int(COLOURDARK*(b&0xFF))), 0xFFFFFF);
+
+VAR(IDF_PERSIST|IDF_HEX, colourblack, 0, 0x000000, 0xFFFFFF);
+VAR(IDF_PERSIST|IDF_HEX, colourwhite, 0, 0xFFFFFF, 0xFFFFFF);
+
+COLOURVAR(green, 0x40FF40);
+COLOURVAR(blue, 0x6080FF);
+COLOURVAR(yellow, 0xFFFF10);
+COLOURVAR(red, 0xFF4040);
+COLOURVAR(grey, 0xC0C0C0);
+COLOURVAR(magenta, 0xFFB0FF);
+COLOURVAR(orange, 0xFF4010);
+COLOURVAR(cyan, 0x40FFFF);
+COLOURVAR(pink, 0xFF8080);
+COLOURVAR(violet, 0xC080FF);
+COLOURVAR(purple, 0xE040E0);
+COLOURVAR(brown, 0xA05030);
+
 static void text_color(char c, bvec4 *stack, int size, int &sp, bvec4 &color, int r, int g, int b, int a)
 {
     int alpha = stack[sp].a;
     switch(c)
     {
-        case 'g': case '0': stack[sp] = color = TVECX( 64, 255,  64, alpha); break; // green
-        case 'b': case '1': stack[sp] = color = TVECX(86,  92,  255, alpha); break; // blue
-        case 'y': case '2': stack[sp] = color = TVECX(255, 255,   0, alpha); break; // yellow
-        case 'r': case '3': stack[sp] = color = TVECX(255,  64,  64, alpha); break; // red
-        case 'a': case '4': stack[sp] = color = TVECX(192, 192, 192, alpha); break; // grey
-        case 'm': case '5': stack[sp] = color = TVECX(255, 186, 255, alpha); break; // magenta
-        case 'o': case '6': stack[sp] = color = TVECX(255,  64,   0, alpha); break; // orange
-        case 'w': case '7': stack[sp] = color = TVECX(255, 255, 255, alpha); break; // white
-        case 'k': case '8': stack[sp] = color = TVECX(0,     0,   0, alpha); break; // black
-        case 'c': case '9': stack[sp] = color = TVECX(64,  255, 255, alpha); break; // cyan
-        case 'v': stack[sp] = color = TVECX(192,  96, 255, alpha); break; // violet
-        case 'p': stack[sp] = color = TVECX(224,  64, 224, alpha); break; // purple
-        case 'n': stack[sp] = color = TVECX(164,  72,  56, alpha); break; // brown
-        case 'G': stack[sp] = color = TVECX( 86, 164,  56, alpha); break; // dark green
-        case 'B': stack[sp] = color = TVECX( 56,  64, 172, alpha); break; // dark blue
-        case 'Y': stack[sp] = color = TVECX(172, 172,   0, alpha); break; // dark yellow
-        case 'R': stack[sp] = color = TVECX(172,  56,  56, alpha); break; // dark red
-        case 'M': stack[sp] = color = TVECX(172,  72, 172, alpha); break; // dark magenta
-        case 'O': stack[sp] = color = TVECX(172,  56,   0, alpha); break; // dark orange
-        case 'C': stack[sp] = color = TVECX(48,  172, 172, alpha); break; // dark cyan
-        case 'A': case 'd': stack[sp] = color = TVECX(102, 102, 102, alpha); break; // dark grey
-        case 'P': stack[sp] = color = TVECX(255, 128, 128, alpha); break; // pink
+        case '0': case 'g': case 'G': stack[sp] = color = TVECA(c == 'G' ? colourdarkgreen : colourgreen, alpha); break;
+        case '1': case 'b': case 'B': stack[sp] = color = TVECA(c == 'B' ? colourdarkblue : colourblue, alpha); break;
+        case '2': case 'y': case 'Y': stack[sp] = color = TVECA(c == 'Y' ? colourdarkyellow : colouryellow, alpha); break;
+        case '3': case 'r': case 'R': stack[sp] = color = TVECA(c == 'R' ? colourdarkred : colourred, alpha); break;
+        case '4': case 'a': case 'A': stack[sp] = color = TVECA(c == 'A' ? colourdarkgrey : colourgrey, alpha); break;
+        case '5': case 'm': case 'M': stack[sp] = color = TVECA(c == 'M' ? colourdarkmagenta : colourmagenta, alpha); break;
+        case '6': case 'o': case 'O': stack[sp] = color = TVECA(c == 'O' ? colourdarkorange : colourorange, alpha); break;
+        case '7': case 'w': stack[sp] = color = TVECA(colourwhite, alpha); break;
+        case '8': case 'k': stack[sp] = color = TVECA(colourblack, alpha); break;
+        case '9': case 'c': case 'C': stack[sp] = color = TVECA(c == 'C' ? colourdarkcyan : colourcyan, alpha); break;
+        case 'i': case 'I': stack[sp] = color = TVECA(c == 'I' ? colourdarkpink : colourpink, alpha); break;
+        case 'v': case 'V': stack[sp] = color = TVECA(c == 'V' ? colourdarkviolet : colourviolet, alpha); break;
+        case 'p': case 'P': stack[sp] = color = TVECA(c == 'P' ? colourdarkpurple : colourpurple, alpha); break;
+        case 'n': case 'N': stack[sp] = color = TVECA(c == 'N' ? colourdarkbrown : colourbrown, alpha); break;
         case 'e': case 'E': (stack[sp] = color = stack[sp]).alpha(c != 'E' ? a/2 : a/4); break;
         case 'u': case 'Z': stack[sp] = color = TVECX(r, g, b, a); break; // default colour
         case 's': // save
