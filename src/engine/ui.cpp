@@ -624,8 +624,8 @@ namespace UI
     enum
     {
         WINDOW_NONE = 0,
-        WINDOW_MENU = 1<<0, WINDOW_PASS = 1<<1, WINDOW_TIP = 1<<2,
-        WINDOW_ALL = WINDOW_MENU|WINDOW_PASS|WINDOW_TIP
+        WINDOW_MENU = 1<<0, WINDOW_PASS = 1<<1, WINDOW_TIP = 1<<2, WINDOW_POPUP = 1<<3,
+        WINDOW_ALL = WINDOW_MENU|WINDOW_PASS|WINDOW_TIP|WINDOW_POPUP
     };
 
     struct Window : Object
@@ -665,11 +665,13 @@ namespace UI
 
         void hide()
         {
+            overridepos = false;
             if(onhide) execute(onhide);
         }
 
         void show()
         {
+            overridepos = false;
             state |= STATE_HIDDEN;
             clearstate(STATE_HOLD_MASK);
             if(onshow) execute(onshow);
@@ -901,6 +903,11 @@ namespace UI
             {
                 if(w->windowflags&WINDOW_TIP) // follows cursor
                     w->setpos((cursorx*float(screenw)/float(screenh))-(w->w*cursorx), cursory-w->h-uitipoffset);
+                else if(w->windowflags&WINDOW_POPUP && !w->overridepos)
+                {
+                    w->setpos((cursorx*float(screenw)/float(screenh))-(w->w*cursorx), cursory-w->h*0.5f);
+                    conoutf("setpos: %f %f", (cursorx*float(screenw)/float(screenh))-(w->w*cursorx), cursory-w->h*0.5f);
+                }
             });
             loopwindows(w, w->draw());
         }
