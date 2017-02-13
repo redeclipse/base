@@ -400,6 +400,20 @@ const char *parentdir(const char *directory)
     return parent;
 }
 
+bool checkfile(const char *path)
+{
+    if(!path || !*path) return false;
+#ifdef WIN32
+    DWORD st = GetFileAttributes(path);
+    if(st == INVALID_FILE_ATTRIBUTES || st&FILE_ATTRIBUTE_DEVICE || st&FILE_ATTRIBUTE_DIRECTORY) return false;
+#else
+    struct stat st;
+    if(lstat(path, &st) < 0) return false;
+    if(!S_ISREG(st.st_mode)) return false;
+#endif
+    return true;
+}
+
 bool fileexists(const char *path, const char *mode)
 {
     bool exists = true;
@@ -1213,6 +1227,7 @@ stream *openrawfile(const char *filename, const char *mode)
 {
     const char *found = findfile(filename, mode);
     if(!found) return NULL;
+    if(!checkfile(found)) return NULL;
     filestream *file = new filestream;
     if(!file->open(found, mode)) { delete file; return NULL; }
     return file;

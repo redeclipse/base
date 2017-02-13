@@ -1595,6 +1595,7 @@ extern char *makefile(const char *s, const char *e = "", int revision = 0, int s
 extern char *path(char *s, bool simple = false);
 extern char *copypath(const char *s, bool simple = false);
 extern const char *parentdir(const char *directory);
+extern bool checkfile(const char *path);
 extern bool fileexists(const char *path, const char *mode);
 extern bool createdir(const char *path);
 extern void sethomedir(const char *dir);
