@@ -418,7 +418,7 @@ static float icon_width(const char *name, float scale)
         { \
             if(end > start) \
             { \
-                bigstring value; \
+                string value; \
                 copystring(value, start, min(size_t(end - start + 1), sizeof(value))); \
                 TEXTICON(value, q, s); \
             } \
@@ -435,7 +435,7 @@ static float icon_width(const char *name, float scale)
         { \
             if(end > start) \
             { \
-                bigstring value; \
+                string value; \
                 copystring(value, start, min(size_t(end - start + 1), sizeof(value))); \
                 TEXTKEY(value, q, s); \
             } \
@@ -732,7 +732,7 @@ static const char *gettklp(const char *str)
     return t->blist.search(str, type, "", "", " ", " ", 5);
 }
 
-#define defformatkey(dest, key) defformatbigstring((dest), "\fs\fa[\fS\fs\f[%d]%s\fS\fs\fa]\fS", textkeycolour, (key))
+#define defformatkey(dest, key) defformatstring((dest), "\fs\fa[\fS\fs\f[%d]%s\fS\fs\fa]\fS", textkeycolour, (key))
 
 float key_widthf(const char *str)
 {
@@ -891,7 +891,7 @@ void reloadfonts()
 float draw_textf(const char *fstr, float left, float top, float xpad, float ypad, int r, int g, int b, int a, int flags, int cursor, float maxwidth, float linespace, ...)
 {
     if(linespace <= 0) linespace = textlinespacing;
-    defvformatbigstring(str, linespace, fstr);
+    defvformathugestring(str, linespace, fstr);
 
     float width = 0, height = 0;
     text_boundsf(str, width, height, xpad, ypad, maxwidth, flags, linespace);

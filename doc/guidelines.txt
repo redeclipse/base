@@ -21,8 +21,7 @@ use on the master server should first seek permission from the Red Eclipse
 Team, each modification must be approved and will be done on a case-by-case
 basis.
 
-
-    Guidelines for Servers
+== Guidelines for Servers ==
 
 (See RE Mark Policy for definitions of "substantially (un)modified")
 
@@ -62,8 +61,7 @@ basis.
   removal of the server in question from listing on the master server, without
   warning.
 
-
-    Guidelines for Users
+== Guidelines for Users ==
 
 * Players must behave in a manner that is not disruptive to the game.
   - Cussing is fine, so long as it doesn't involve bigotry (racist, religious,
@@ -84,8 +82,7 @@ basis.
   in an immediate ban, without warning, possibly from the master server and
   all Red Eclipse servers listed on it.
 
-
-    Guidelines for Moderators
+== Guidelines for Moderators ==
 
 * Moderators must act in a fair and impartial manner, employing the "warn, then
   kick, then ban" approach, unless there is an emergency or immediate need.
@@ -104,8 +101,7 @@ basis.
 * Failure by a moderator to follow or uphold the rules may result in their
   access being immediately revoked, without warning.
 
-
-    Attribution
+== Attribution ==
 
 This text is Copyright (C) 2011-2017, the Red Eclipse Team
 and is available under a Creative Commons Attribution-ShareAlike 3.0 Unported

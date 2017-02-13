@@ -172,6 +172,9 @@ typedef char string[MAXSTRLEN];
 #define BIGSTRLEN 4096
 typedef char bigstring[BIGSTRLEN];
 
+#define HUGESTRLEN 8192
+typedef char hugestring[HUGESTRLEN];
+
 inline void vformatstring(char *d, const char *fmt, va_list v, int len) { _vsnprintf(d, len, fmt, v); d[len-1] = 0; }
 template<size_t N> inline void vformatstring(char (&d)[N], const char *fmt, va_list v) { vformatstring(d, fmt, v, N); }
 
@@ -232,6 +235,9 @@ extern char *tempformatstring(const char *fmt, ...) PRINTFARGS(1, 2);
 
 #define defformatbigstring(d,...) bigstring d; formatstring(d, __VA_ARGS__)
 #define defvformatbigstring(d,last,fmt) bigstring d; { va_list ap; va_start(ap, last); vformatstring(d, fmt, ap); va_end(ap); }
+
+#define defformathugestring(d,...) hugestring d; formatstring(d, __VA_ARGS__)
+#define defvformathugestring(d,last,fmt) hugestring d; { va_list ap; va_start(ap, last); vformatstring(d, fmt, ap); va_end(ap); }
 
 template<size_t N> inline bool matchstring(const char *s, size_t len, const char (&d)[N])
 {
