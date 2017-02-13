@@ -502,7 +502,7 @@ void loadc(stream *f, cube &c, const ivec &co, int size, bool &failed)
         {
             int surfmask, totalverts;
             surfmask = f->getchar();
-            totalverts = f->getchar();
+            totalverts = max(f->getchar(), 0);
             newcubeext(c, totalverts, false);
             memset(c.ext->surfaces, 0, sizeof(c.ext->surfaces));
             memset(c.ext->verts(), 0, totalverts*sizeof(vertinfo));
@@ -745,7 +745,8 @@ void loadvslot(stream *f, VSlot &vs, int changed)
 
 void loadvslots(stream *f, int numvslots)
 {
-    int *prev = new int[numvslots];
+    int *prev = new (false) int[numvslots];
+    if(!prev) return;
     memset(prev, -1, numvslots*sizeof(int));
     while(numvslots > 0)
     {

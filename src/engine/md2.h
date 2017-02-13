@@ -133,7 +133,10 @@ struct md2 : vertmodel, vertloader<md2>
             file->read(&header, sizeof(md2_header));
             lilswap(&header.magic, sizeof(md2_header)/sizeof(int));
 
-            if(header.magic!=844121161 || header.version!=8)
+            if(header.magic!=844121161 || header.version!=8 ||
+               header.numframes <= 0 || header.numframes > 1000 ||
+               header.numglcommands <= 0 || header.numglcommands > (1<<20) ||
+               header.numvertices <= 0 || header.numvertices > (1<<20))
             {
                 delete file;
                 return false;
