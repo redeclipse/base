@@ -33,6 +33,8 @@ typedef unsigned long long int ullong;
 #define UNUSED
 #endif
 
+void *operator new(size_t, bool);
+void *operator new[](size_t, bool);
 inline void *operator new(size_t, void *p) { return p; }
 inline void *operator new[](size_t, void *p) { return p; }
 inline void operator delete(void *, void *) {}

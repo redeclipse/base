@@ -1272,7 +1272,7 @@ char *loadstream(stream *f, size_t *size, bool utf8)
     stream::offset flen = f->size();
     if(flen <= 0) return NULL;
     size_t len = (size_t)flen;
-    char *buf = new char[len+1];
+    char *buf = new (false) char[len+1];
     if(!buf) return NULL;
     size_t offset = 0;
     if(utf8 && len >= 3)
