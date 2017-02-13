@@ -715,13 +715,15 @@ struct filestream : stream
     {
 #ifdef WIN32
 #ifdef __GNUC__
-        return ftello64(file);
+        offset off = ftello64(file);
 #else
-        return _ftelli64(file);
+        offset off = _ftelli64(file);
 #endif
 #else
-        return ftello(file);
+        offset off = ftello(file);
 #endif
+        // ftello returns LONG_MAX for directories on some platforms
+        return off + 1 >= 0 ? off : -1;
     }
     bool seek(offset pos, int whence)
     {
