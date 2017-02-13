@@ -560,7 +560,7 @@ extern float shadowray(ShadowRayCache *cache, const vec &o, const vec &ray, floa
 extern bool getsight(vec &o, float yaw, float pitch, vec &q, vec &v, float mdist, float fovx, float fovy);
 
 // worldio
-extern char *maptitle, *mapauthor, *mapname, *maptext;
+extern char *maptitle, *mapauthor, *mapname, *maptext, *mapdesc;
 extern int mapcrc, maptype, maploading;
 extern int getmapversion();
 extern int getmaprevision();

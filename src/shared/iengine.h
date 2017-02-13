@@ -407,6 +407,7 @@ extern bool load_world(const char *mname, int crc = 0);
 extern void save_world(const char *mname, bool nodata = false, bool forcesave = false);
 extern char *mapctitle(const char *s);
 extern char *mapcauthor(const char *s);
+extern char *mapcdesc(const char *s);
 
 // physics
 extern bool ellipsecollide(physent *d, const vec &dir, const vec &o, const vec &center, float yaw, float xr, float yr, float hi, float lo);
