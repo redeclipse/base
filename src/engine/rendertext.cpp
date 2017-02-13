@@ -520,7 +520,12 @@ static float icon_width(const char *name, float scale)
 { \
     x = 0; \
     wrappos = -1; \
-    if((flags&TEXT_LEFT_JUSTIFY) && !(flags&TEXT_NO_INDENT)) x += FONTTAB; \
+    if(!(flags&TEXT_NO_INDENT)) \
+    { \
+        if(flags&TEXT_LEFT_JUSTIFY) x += FONTTAB; \
+        else if(!indents && (flags&TEXT_RIGHT_JUSTIFY)) maxwidth -= FONTTAB; \
+        indents++; \
+    } \
     TEXTESTIMATE(aidx) \
     y += TEXTHEIGHT; \
 }
@@ -537,7 +542,7 @@ static float icon_width(const char *name, float scale)
 
 #define TEXTSKELETON \
     float y = 0, x = 0, scale = curfont->scale/float(curfont->defaulth)*curtextscale; \
-    int i = 0, wrappos = -1; \
+    int i = 0, wrappos = -1, indents = 0; \
     TEXTESTIMATE(i) \
     for(i = 0; str[i]; i++) \
     { \
