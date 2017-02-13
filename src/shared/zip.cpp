@@ -116,8 +116,8 @@ VAR(0, dbgzip, 0, 0, 1);
 
 static bool readzipdirectory(const char *archname, FILE *f, int entries, int offset, uint size, vector<zipfile> &files)
 {
-    uchar *buf = new uchar[size], *src = buf;
-    if(fseek(f, offset, SEEK_SET) < 0 || fread(buf, 1, size, f) != size) { delete[] buf; return false; }
+    uchar *buf = new (false) uchar[size], *src = buf;
+    if(!buf || fseek(f, offset, SEEK_SET) < 0 || fread(buf, 1, size, f) != size) { delete[] buf; return false; }
     loopi(entries)
     {
         if(src + ZIP_FILE_SIZE > &buf[size]) break;
