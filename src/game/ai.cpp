@@ -1716,14 +1716,14 @@ namespace ai
     void botsay(gameent *d, gameent *t, const char *fmt, ...)
     {
         if(!d || !t) return;
-        defvformatbigstring(msg, fmt, fmt);
+        defvformatbigstrings(msg, fmt, fmt);
         client::addmsg(N_TEXT, "ri3s", d->clientnum, t->clientnum, SAY_WHISPER, msg);
     }
 
     void scanchat(gameent *d, gameent *t, int flags, const char *text)
     {
         if(flags&SAY_ACTION || d->actortype != A_PLAYER) return;
-        bigstring msg;
+        static bigstring msg;
         filterstring(msg, text, true, true, true, true);
         const int MAXWORDS = 8;
         int numargs = MAXWORDS;

@@ -1974,17 +1974,17 @@ namespace UI
         {
             changedraw(CHANGE_COLOR);
 
-            float k = drawscale(), xoff = 0;
+            float k = drawscale(), left = sx/k, top = sy/k;
             int a = TEXT_NO_INDENT;
             switch(align)
             {
                 case -1: a |= TEXT_LEFT_JUSTIFY; break;
-                case 0: a |= TEXT_CENTERED; xoff = tw*k*0.5f; break;
-                case 1: a |= TEXT_RIGHT_JUSTIFY; xoff = tw*k; break;
+                case 0: a |= TEXT_CENTERED; left += tw*k*0.5f; break;
+                case 1: a |= TEXT_RIGHT_JUSTIFY; left += tw*k; break;
                 default: break;
             }
-            pushhudtranslate(sx+xoff, sy, k);
-            draw_textf("%s", 0, 0, 0, 0, color.r, color.g, color.b, color.a, a, -1, wrap > 0 ? wrap/k : 0.f, 1, getstr());
+            pushhudtranslate(0, 0, k);
+            draw_text(getstr(), left, top, color.r, color.g, color.b, color.a, a, -1, wrap > 0 ? wrap/k : 0.f, 1);
             pophudmatrix();
 
             Object::draw(sx, sy);

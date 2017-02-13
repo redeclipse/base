@@ -793,7 +793,7 @@ static float draw_key(Texture *&tex, const char *str, float sx, float sy, bvec4 
                     tex = t->tex;
                     glBindTexture(GL_TEXTURE_2D, tex->id);
                 }
-                float w = (tex->w*h)/float(tex->h), oh = h-sh, oy = sy-oh/2;
+                float w = (tex->w*h)/float(tex->h), oh = h-sh, oy = sy-oh*0.5f;
                 textvert(sx + width,     oy    ); gle::attribf(0, 0);
                 textvert(sx + width + w, oy    ); gle::attribf(1, 0);
                 textvert(sx + width + w, oy + h); gle::attribf(1, 1);
@@ -891,17 +891,17 @@ void reloadfonts()
 float draw_textf(const char *fstr, float left, float top, float xpad, float ypad, int r, int g, int b, int a, int flags, int cursor, float maxwidth, float linespace, ...)
 {
     if(linespace <= 0) linespace = textlinespacing;
-    defvformathugestring(str, linespace, fstr);
+    defvformathugestrings(str, linespace, fstr);
 
     float width = 0, height = 0;
     text_boundsf(str, width, height, xpad, ypad, maxwidth, flags, linespace);
     if(flags&TEXT_ALIGN) switch(flags&TEXT_ALIGN)
     {
-        case TEXT_CENTERED: left -= width/2-xpad; break;
-        case TEXT_RIGHT_JUSTIFY: left -= width-xpad/2; break;
+        case TEXT_CENTERED: left -= width*0.5f-xpad; break;
+        case TEXT_RIGHT_JUSTIFY: left -= width-xpad*0.5f; break;
         default: break;
     }
-    if(flags&TEXT_BALLOON) top -= height/2;
+    if(flags&TEXT_BALLOON) top -= height*0.5f;
     else if(flags&TEXT_UPWARD) top -= height;
     if(flags&TEXT_SKIN && textskin)
     {

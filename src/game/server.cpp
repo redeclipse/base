@@ -2252,10 +2252,10 @@ namespace server
 
     void relayf(int r, const char *s, ...)
     {
-        defvformatbigstring(str, s, s);
+        defvformatbigstrings(str, s, s);
         ircoutf(r, "%s", str);
 #ifdef STANDALONE
-        bigstring ft;
+        static bigstring ft;
         filterstring(ft, str);
         logoutf("%s", ft);
 #endif
@@ -2263,26 +2263,26 @@ namespace server
 
     void ancmsgft(int cn, int snd, int conlevel, const char *s, ...)
     {
-        defvformatbigstring(str, s, s);
+        defvformatbigstrings(str, s, s);
         if(cn < 0 || allowbroadcast(cn)) sendf(cn, 1, "ri3s", N_ANNOUNCE, snd, conlevel, str);
     }
 
     void srvmsgft(int cn, int conlevel, const char *s, ...)
     {
-        defvformatbigstring(str, s, s);
+        defvformatbigstrings(str, s, s);
         if(cn < 0 || allowbroadcast(cn)) sendf(cn, 1, "ri2s", N_SERVMSG, conlevel, str);
     }
 
     void srvmsgftforce(int cn, int conlevel, const char *s, ...)
     {
-        defvformatbigstring(str, s, s);
+        defvformatbigstrings(str, s, s);
         if(cn < 0 || allowbroadcast(cn)) sendf(cn, 1, "ri2s", N_SERVMSG, conlevel, str);
         if(cn >= 0 && !allowbroadcast(cn)) sendf(cn, 1, "ri2s", N_SERVMSG, conlevel, str);
     }
 
     void srvmsgf(int cn, const char *s, ...)
     {
-        defvformatbigstring(str, s, s);
+        defvformatbigstrings(str, s, s);
         if(cn < 0 || allowbroadcast(cn))
         {
             int conlevel = CON_MESG;
@@ -2298,7 +2298,7 @@ namespace server
 
     void srvoutf(int r, const char *s, ...)
     {
-        defvformatbigstring(str, s, s);
+        defvformatbigstrings(str, s, s);
         srvmsgf(r >= 0 ? -1 : -2, "%s", str);
         relayf(abs(r), "%s", str);
     }
@@ -6448,7 +6448,7 @@ namespace server
                         }
                         fcp->chatmillis.add(totalmillis ? totalmillis : 1);
                     }
-                    bigstring output;
+                    static bigstring output;
                     copystring(output, text, G(messagelength));
                     filterstring(text, text, true, true, true, true, G(messagelength));
                     if(*(G(censorwords))) filterword(output, G(censorwords));

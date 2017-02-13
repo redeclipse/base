@@ -234,12 +234,18 @@ extern char *tempformatstring(const char *fmt, ...) PRINTFARGS(1, 2);
 
 #define defformatstring(d,...) string d; formatstring(d, __VA_ARGS__)
 #define defvformatstring(d,last,fmt) string d; { va_list ap; va_start(ap, last); vformatstring(d, fmt, ap); va_end(ap); }
+#define defformatstrings(d,...) static string d; formatstring(d, __VA_ARGS__)
+#define defvformatstrings(d,last,fmt) static string d; { va_list ap; va_start(ap, last); vformatstring(d, fmt, ap); va_end(ap); }
 
 #define defformatbigstring(d,...) bigstring d; formatstring(d, __VA_ARGS__)
 #define defvformatbigstring(d,last,fmt) bigstring d; { va_list ap; va_start(ap, last); vformatstring(d, fmt, ap); va_end(ap); }
+#define defformatbigstrings(d,...) static bigstring d; formatstring(d, __VA_ARGS__)
+#define defvformatbigstrings(d,last,fmt) static bigstring d; { va_list ap; va_start(ap, last); vformatstring(d, fmt, ap); va_end(ap); }
 
 #define defformathugestring(d,...) hugestring d; formatstring(d, __VA_ARGS__)
 #define defvformathugestring(d,last,fmt) hugestring d; { va_list ap; va_start(ap, last); vformatstring(d, fmt, ap); va_end(ap); }
+#define defformathugestrings(d,...) static hugestring d; formatstring(d, __VA_ARGS__)
+#define defvformathugestrings(d,last,fmt) static hugestring d; { va_list ap; va_start(ap, last); vformatstring(d, fmt, ap); va_end(ap); }
 
 template<size_t N> inline bool matchstring(const char *s, size_t len, const char (&d)[N])
 {

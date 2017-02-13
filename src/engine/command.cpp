@@ -260,7 +260,7 @@ static void debugcode(const char *fmt, ...)
 {
     if(nodebug) return;
 
-    defvformatbigstring(msg, fmt, fmt);
+    defvformatbigstrings(msg, fmt, fmt);
     conoutft(CON_MESG, "%s", msg);
 
     debugalias();
@@ -272,7 +272,7 @@ static void debugcodeline(const char *p, const char *fmt, ...)
 {
     if(nodebug) return;
 
-    defvformatbigstring(msg, fmt, debugline(p, fmt));
+    defvformatbigstrings(msg, fmt, debugline(p, fmt));
     conoutft(CON_MESG, "%s", msg);
 
     debugalias();

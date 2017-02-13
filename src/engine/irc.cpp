@@ -22,7 +22,7 @@ ircnet *ircfind(const char *name)
 
 void ircprintf(ircnet *n, int relay, const char *target, const char *msg, ...)
 {
-    defvformatbigstring(str, msg, msg);
+    defvformatbigstrings(str, msg, msg);
     string s = "";
     if(target && *target && strcasecmp(target, n->nick))
     {
