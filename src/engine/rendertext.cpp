@@ -513,14 +513,18 @@ static float icon_width(const char *name, float scale)
             qx += cw; \
         } \
     } \
-    if(flags&TEXT_CENTERED && tidx > 0) x += (maxwidth-qx)*0.5f; \
+    if(flags&TEXT_CENTERED) \
+    { \
+        if(tidx <= 0) maxwidth = qx; \
+        else x += (maxwidth-qx)*0.5f; \
+    } \
 }
 
 #define TEXTALIGN(aidx) \
 { \
     x = 0; \
     wrappos = -1; \
-    if(!(flags&TEXT_NO_INDENT)) \
+    if(!(flags&TEXT_NO_INDENT) && !(flags&TEXT_CENTERED)) \
     { \
         if(flags&TEXT_LEFT_JUSTIFY) x += FONTTAB; \
         else if(!indents && (flags&TEXT_RIGHT_JUSTIFY)) maxwidth -= FONTTAB; \

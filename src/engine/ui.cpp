@@ -1979,7 +1979,7 @@ namespace UI
             switch(align)
             {
                 case -1: a |= TEXT_LEFT_JUSTIFY; break;
-                case 0: a |= TEXT_CENTERED; xoff = tw*k/2; break;
+                case 0: a |= TEXT_CENTERED; xoff = tw*k*0.5f; break;
                 case 1: a |= TEXT_RIGHT_JUSTIFY; xoff = tw*k; break;
                 default: break;
             }
@@ -1995,7 +1995,15 @@ namespace UI
             Object::layout();
 
             float k = drawscale();
-            text_boundsf(getstr(), tw, th, 0, 0, wrap > 0 ? wrap/k : 0.f, TEXT_NO_INDENT);
+            int a = TEXT_NO_INDENT;
+            switch(align)
+            {
+                case -1: a |= TEXT_LEFT_JUSTIFY; break;
+                case 0: a |= TEXT_CENTERED; break;
+                case 1: a |= TEXT_RIGHT_JUSTIFY; break;
+                default: break;
+            }
+            text_boundsf(getstr(), tw, th, 0, 0, wrap > 0 ? wrap/k : 0.f, a);
             w = max(w, tw*k);
             h = max(h, th*k);
         }
