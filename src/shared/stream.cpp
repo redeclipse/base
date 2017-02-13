@@ -1229,7 +1229,6 @@ stream *openrawfile(const char *filename, const char *mode)
 {
     const char *found = findfile(filename, mode);
     if(!found) return NULL;
-    if(!checkfile(found)) return NULL;
     filestream *file = new filestream;
     if(!file->open(found, mode)) { delete file; return NULL; }
     return file;
