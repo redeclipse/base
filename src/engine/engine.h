@@ -492,7 +492,7 @@ extern ENetPeer *curpeer, *connpeer;
     #define MOD_ALTS (KMOD_LALT|KMOD_RALT)
 #endif
 
-extern bool paste(char *buf, size_t len);
+extern char *pastetext();
 extern void writebinds(stream *f);
 extern void writecompletions(stream *f);
 extern const char *addreleaseaction(char *s);

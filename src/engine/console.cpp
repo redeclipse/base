@@ -300,17 +300,22 @@ void inputcommand(char *init, char *action = NULL, char *icon = NULL, int colour
 ICOMMAND(0, saycommand, "C", (char *init), inputcommand(init));
 ICOMMAND(0, inputcommand, "sssis", (char *init, char *action, char *icon, int *colour, char *flags), inputcommand(init, action, icon, *colour, flags));
 
-bool paste(char *buf, size_t len)
+char *pastetext()
 {
-    if(!SDL_HasClipboardText()) return false;
+    if(!SDL_HasClipboardText()) return NULL;
     char *cb = SDL_GetClipboardText();
-    if(!cb) return false;
-    size_t cblen = strlen(cb),
-           start = strlen(buf),
-           decoded = decodeutf8((uchar *)&buf[start], len-1-start, (const uchar *)cb, cblen);
-    buf[start + decoded] = '\0';
+    if(!cb) return NULL;
+    char *buf = NULL;
+    if(*cb)
+    {
+        size_t cblen = strlen(cb);
+        char *pbuf = newstring(cb, cblen);
+        size_t decoded = decodeutf8((uchar *)&pbuf[0], cblen, (const uchar *)cb, cblen);
+        pbuf[decoded] = '\0';
+        buf = newstring(pbuf);
+    }
     SDL_free(cb);
-    return true;
+    return buf;
 }
 
 SVAR(0, commandbuffer, "");
@@ -558,7 +563,15 @@ bool consolekey(int code, bool isdown)
                 break;
 
             case SDLK_v:
-                if(SDL_GetModState()&MOD_KEYS) paste(commandbuf, sizeof(commandbuf));
+                if(SDL_GetModState()&MOD_KEYS)
+                {
+                    char *pastebuf = pastetext();
+                    if(pastebuf)
+                    {
+                        concatstring(commandbuf, pastebuf);
+                        delete[] pastebuf;
+                    }
+                }
                 break;
         }
     }
