@@ -328,7 +328,7 @@ struct textrenderer : sharedlistrenderer
     void renderpart(sharedlistparticle *p, int blend, int ts, float size)
     {
         const char *text = p->text;
-        static string font; font[0] = '\0';
+        stringz(font);
         if(*text == '<')
         {
             const char *start = text;

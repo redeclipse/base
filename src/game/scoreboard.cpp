@@ -177,7 +177,7 @@ namespace hud
                     {
                         if(numgroups > 1 && sg.total == groups[1]->total)
                         {
-                            string winner = "";
+                            stringz(winner);
                             loopi(numgroups) if(i)
                             {
                                 if(sg.total == groups[i]->total)
@@ -199,7 +199,7 @@ namespace hud
                     {
                         if(sg.players.length() > 1 && sg.players[0]->cptime == sg.players[1]->cptime)
                         {
-                            string winner = "";
+                            stringz(winner);
                             loopv(sg.players) if(i)
                             {
                                 if(sg.players[0]->cptime == sg.players[i]->cptime)
@@ -217,7 +217,7 @@ namespace hud
                     {
                         if(sg.players.length() > 1 && sg.players[0]->points == sg.players[1]->points)
                         {
-                            string winner = "";
+                            stringz(winner);
                             loopv(sg.players) if(i)
                             {
                                 if(sg.players[0]->points == sg.players[i]->points)
@@ -290,7 +290,7 @@ namespace hud
             case 4: col = colourorange; break;
             default: break;
         }
-        string str = "";
+        stringz(str);
         if(inventoryscorepos) concformatstring(str, "\fs\f[%d]%d%s\fS", col, pos, posnames[pos < 10 || pos > 13 ? pos%10 : 0]);
         if(name && *name) concformatstring(str, "%s\fs\f[%d]%s\fS", *str ? (inventoryscorebreak ? "\n" : " ") : "", colour, name);
         if(inventoryscoreinfo)

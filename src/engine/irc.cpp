@@ -23,7 +23,7 @@ ircnet *ircfind(const char *name)
 void ircprintf(ircnet *n, int relay, const char *target, const char *msg, ...)
 {
     defvformatbigstring(str, msg, msg);
-    string s = "";
+    stringz(s);
     if(target && *target && strcasecmp(target, n->nick))
     {
         ircchan *c = ircfindchan(n, target);
@@ -233,7 +233,7 @@ void irc2cube(char *dst, const char *src)
 void ircoutf(int relay, const char *msg, ...)
 {
     defvformatstring(src, msg, msg);
-    string str = "";
+    stringz(str);
     switch(ircfilter)
     {
         case 2: filterstring(str, src); break;
@@ -244,7 +244,7 @@ void ircoutf(int relay, const char *msg, ...)
     {
         ircnet *n = ircnets[i];
 #if 0 // workaround for freenode's crappy dropping all but the first target of multi-target messages even though they don't state MAXTARGETS=1 in 005 string..
-        string s = "";
+        stringz(s);
         loopvj(n->channels) if(n->channels[j].state == IRCC_JOINED && n->channels[j].relay >= relay)
         {
             ircchan *c = &n->channels[j];
@@ -514,7 +514,7 @@ void ircprocess(ircnet *n, char *user[3], int g, int numargs, char *w[])
                     {
                         if(!strcasecmp(q, "ACTION"))
                         {
-                            string str = "";
+                            stringz(str);
                             irc2cube(str, r);
                             ircprintf(n, 1, g ? w[g+1] : NULL, "\fv* %s %s", user[0], str);
                         }
@@ -534,7 +534,7 @@ void ircprocess(ircnet *n, char *user[3], int g, int numargs, char *w[])
             }
             else if(ismsg)
             {
-                string str = "";
+                stringz(str);
                 if(n->type == IRCT_RELAY && g && strcasecmp(w[g+1], n->nick) && ircmatchnick(n, w[g+2]))
                 {
                     const char *p = &w[g+2][strlen(n->nick)];
@@ -622,7 +622,7 @@ void ircprocess(ircnet *n, char *user[3], int g, int numargs, char *w[])
     {
         if(numargs > g+2)
         {
-            string modestr = "";
+            stringz(modestr);
             loopi(numargs-g-2)
             {
                 if(i) concatstring(modestr, " ");
@@ -655,7 +655,7 @@ void ircprocess(ircnet *n, char *user[3], int g, int numargs, char *w[])
     else
     {
         int numeric = *w[g] && *w[g] >= '0' && *w[g] <= '9' ? atoi(w[g]) : 0, off = 0;
-        string s = "";
+        stringz(s);
         #define irctarget(a) (!strcasecmp(n->nick, a) || *a == '#' || ircfindchan(n, a))
         char *targ = numargs > g+1 && irctarget(w[g+1]) ? w[g+1] : NULL;
         if(numeric)

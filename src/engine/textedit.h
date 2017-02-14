@@ -551,8 +551,7 @@ struct editor
             case SDLK_v:
                 if(SDL_GetModState()&MOD_KEYS)
                 {
-                    static hugestring pastebuf;
-                    pastebuf[0] = 0;
+                    hugestringz(pastebuf);
                     paste(pastebuf, sizeof(pastebuf));
                     for(const char *buf = &pastebuf[0]; *buf; buf++) insert(*buf);
                 }

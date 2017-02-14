@@ -287,10 +287,10 @@ struct duelservmode : servmode
                     if(smode) smode->layout();
                     mutate(smuts, mut->layout());
                     duelround++;
-                    string fight = "";
+                    stringz(fight);
                     if(m_duel(gamemode, mutators))
                     {
-                        string names = "";
+                        stringz(names);
                         loopv(playing)
                         {
                             concatstring(names, colourname(playing[i]));
@@ -417,7 +417,8 @@ struct duelservmode : servmode
                         if(!cleanup)
                         {
                             endffaround(alive);
-                            string end = "", hp = "";
+                            stringz(end);
+                            stringz(hp);
                             if(!m_insta(gamemode, mutators))
                             {
                                 if(alive[0]->health >= m_health(gamemode, mutators, alive[0]->actortype))

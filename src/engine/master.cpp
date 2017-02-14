@@ -872,7 +872,7 @@ bool checkmasterclientinput(masterclient &c)
             {
                 masterclient &s = *masterclients[j];
                 if(!s.listserver) continue;
-                string filteredflags = "";
+                stringz(filteredflags);
                 for(const char *flag = s.flags; *flag; flag++)
                 {
                     if(*flag == 's' && !s.sendstats) continue;

@@ -1928,7 +1928,7 @@ namespace hud
                             ident *id = idents.access(idname);
                             if(id)
                             {
-                                string idtype = "";
+                                stringz(idtype);
                                 if(id->flags&IDF_CLIENT || id->flags&IDF_SERVER)
                                 {
                                     if(id->flags&IDF_ADMIN) concatstring(idtype, "Admin-only ");
@@ -1985,7 +1985,7 @@ namespace hud
                                     }
                                 }
 
-                                string fields = "";
+                                stringz(fields);
                                 if(id->type == ID_VAR && id->fields.length() > 1)
                                 {
                                     concatstring(fields, "<bitfield>");

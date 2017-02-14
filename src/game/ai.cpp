@@ -1723,7 +1723,7 @@ namespace ai
     void scanchat(gameent *d, gameent *t, int flags, const char *text)
     {
         if(flags&SAY_ACTION || d->actortype != A_PLAYER) return;
-        static bigstring msg;
+        bigstring msg;
         filterstring(msg, text, true, true, true, true);
         const int MAXWORDS = 8;
         int numargs = MAXWORDS;

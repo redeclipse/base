@@ -217,7 +217,7 @@ namespace client
         int num = demoinfos.length();
         demoinfo &d = demoinfos.add();
         copystring(d.file, name);
-        string msg = "";
+        stringz(msg);
         if(f->read(&d.hdr, sizeof(demoheader))!=sizeof(demoheader) || memcmp(d.hdr.magic, VERSION_DEMOMAGIC, sizeof(d.hdr.magic)))
             formatstring(msg, "\frSorry, \fs\fc%s\fS is not a demo file", name);
         else
@@ -402,7 +402,7 @@ namespace client
                 }
                 // empty if nonexistent
                 f->printf("\t%s", escapestring(id.desc ? id.desc : ""));
-                string fields = "";
+                stringz(fields);
                 loopvj(id.fields) concformatstring(fields, "%s%s", j ? " " : "", id.fields[j]);
                 f->printf("\t%s", escapestring(*fields ? fields : ""));
                 f->printf("\n");
@@ -1063,7 +1063,7 @@ namespace client
     {
         if(!arg[0]) return;
         int val = 1;
-        string hash = "";
+        stringz(hash);
         if(!arg[1] && isdigit(arg[0])) val = parseint(arg);
         else server::hashpassword(game::player1->clientnum, sessionid, arg, hash);
         addmsg(N_SETPRIV, "ris", val, hash);
@@ -1203,7 +1203,7 @@ namespace client
 
     void saytext(gameent *f, gameent *t, int flags, char *text)
     {
-        static bigstring msg, line;
+        bigstring msg, line;
         filterstring(msg, text, true, colourchat ? false : true, true, true);
         if(*filterwords) filterword(msg, filterwords);
 
@@ -1244,7 +1244,7 @@ namespace client
     {
         if(!waiting(false) && !client::demoplayback)
         {
-            static bigstring output;
+            bigstring output;
             copystring(output, text, messagelength);
             if(flags&SAY_WHISPER)
             {
@@ -1506,7 +1506,7 @@ namespace client
         }
         else
         {
-            string reqfile = "";
+            stringz(reqfile);
             if(name && *name)
                 copystring(reqfile, !strncasecmp(name, "temp/", 5) || !strncasecmp(name, "temp\\", 5) ? name+5 : name);
             else copystring(reqfile, "<random>");
@@ -1741,7 +1741,7 @@ namespace client
         putint(p, game::player1->randweap.length());
         loopv(game::player1->randweap) putint(p, game::player1->randweap[i]);
 
-        string hash = "";
+        stringz(hash);
         if(connectpass[0])
         {
             server::hashpassword(game::player1->clientnum, sessionid, connectpass, hash);
@@ -2302,7 +2302,7 @@ namespace client
                 {
                     getstring(text, p);
                     int colour = getint(p), model = getint(p), cps = getint(p);
-                    string vanity = "";
+                    stringz(vanity);
                     getstring(vanity, p);
                     int lw = getint(p);
                     vector<int> lweaps;
@@ -2311,7 +2311,7 @@ namespace client
                     vector<int> rweaps;
                     loopk(rw) rweaps.add(getint(p));
                     if(!d) break;
-                    string namestr = "";
+                    stringz(namestr);
                     filterstring(namestr, text, true, true, true, true, MAXNAMELEN);
                     if(!*namestr) copystring(namestr, "unnamed");
                     if(strcmp(d->name, namestr))
@@ -2345,10 +2345,10 @@ namespace client
                     }
                     int colour = getint(p), model = getint(p), cps = getint(p), team = clamp(getint(p), int(T_NEUTRAL), int(T_ENEMY)), priv = getint(p);
                     getstring(text, p);
-                    string namestr = "";
+                    stringz(namestr);
                     filterstring(namestr, text, true, true, true, true, MAXNAMELEN);
                     if(!*namestr) copystring(namestr, "unnamed");
-                    string vanity = "";
+                    stringz(vanity);
                     getstring(vanity, p);
                     int lw = getint(p);
                     vector<int> lweaps;
@@ -2372,7 +2372,7 @@ namespace client
                         if(showpresence >= (waiting(false) ? 2 : 1))
                         {
                             int amt = otherclients(true);
-                            string ipaddr = "";
+                            stringz(ipaddr);
                             if(client::haspriv(game::player1, G(iphostlock))) formatstring(ipaddr, " (%s)", d->hostname);
                             if(priv > PRIV_NONE)
                             {
@@ -2914,7 +2914,7 @@ namespace client
                     game::player1->clientnum = getint(p);
                     if(!demoplayback && wasdemopb && demoendless)
                     {
-                        string demofile = "";
+                        stringz(demofile);
                         if(*demolist)
                         {
                             int r = rnd(listlen(demolist)), len = 0;

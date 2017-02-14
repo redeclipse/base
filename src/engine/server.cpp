@@ -142,7 +142,8 @@ ICOMMAND(0, addtrust, "ss", (char *name, char *reason), addipinfo(control, ipinf
 const char *ipinfotypes[ipinfo::MAXTYPES] = { "allow", "ban", "mute", "limit", "trust" };
 char *printipinfo(const ipinfo &info, char *buf)
 {
-    static string ipinfobuf = ""; char *str = buf ? buf : (char *)&ipinfobuf;
+    static string ipinfobuf = "";
+    char *str = buf ? buf : (char *)&ipinfobuf;
     union { uchar b[sizeof(enet_uint32)]; enet_uint32 i; } ip, mask;
     ip.i = info.ip;
     mask.i = info.mask;
@@ -210,7 +211,7 @@ void logoutf(const char *fmt, ...)
 void console(int type, const char *s, ...)
 {
     defvformatbigstring(sf, s, s);
-    static bigstring osf;
+    bigstring osf;
     filterstring(osf, sf);
     if(*logtimeformat) logoutf("%s %s", gettime(logtimelocal ? currenttime : clocktime, logtimeformat), osf);
     else logoutf("%s", osf);
@@ -1505,7 +1506,7 @@ bool serveroption(char *opt)
 
 bool findoctadir(const char *name, bool fallback)
 {
-    string s = "";
+    stringz(s);
     copystring(s, name);
     path(s);
     defformatstring(octadefs, "%s/data/default_map_settings.cfg", s);
@@ -1547,7 +1548,7 @@ void trytofindocta(bool fallback)
     if((!octadir || !*octadir || !findoctadir(octadir, false)) && fallback)
     { // user hasn't specifically set it, try some common locations alongside our folder
 #if defined(WIN32)
-        string dir = "";
+        stringz(dir);
         if(SHGetFolderPath(NULL, CSIDL_PROGRAM_FILESX86, NULL, 0, dir) == S_OK)
         {
             defformatstring(s, "%s\\Sauerbraten", dir);
@@ -1588,7 +1589,7 @@ void setlocations(bool wanthome)
     if(wanthome)
     {
 #if defined(WIN32)
-        string dir = "";
+        stringz(dir);
         if(SHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, 0, dir) == S_OK)
         {
             defformatstring(s, "%s\\My Games\\%s", dir, versionname);

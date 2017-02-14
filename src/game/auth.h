@@ -148,7 +148,7 @@ namespace auth
 
     void setprivilege(clientinfo *ci, int val, int flags = 0, bool authed = false, clientinfo *setter = NULL)
     {
-        string msg = "";
+        stringz(msg);
         bool resendinit = false;
         int oldpriv = ci->privilege;
         if(val > 0)

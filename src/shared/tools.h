@@ -234,12 +234,15 @@ extern char *tempformatstring(const char *fmt, ...) PRINTFARGS(1, 2);
 
 #define defformatstring(d,...) string d; formatstring(d, __VA_ARGS__)
 #define defvformatstring(d,last,fmt) string d; { va_list ap; va_start(ap, last); vformatstring(d, fmt, ap); va_end(ap); }
+#define stringz(d) string d; d[0] = 0;
 
 #define defformatbigstring(d,...) bigstring d; formatstring(d, __VA_ARGS__)
 #define defvformatbigstring(d,last,fmt) bigstring d; { va_list ap; va_start(ap, last); vformatstring(d, fmt, ap); va_end(ap); }
+#define bigstringz(d) bigstring d; d[0] = 0;
 
 #define defformathugestring(d,...) hugestring d; formatstring(d, __VA_ARGS__)
 #define defvformathugestring(d,last,fmt) hugestring d; { va_list ap; va_start(ap, last); vformatstring(d, fmt, ap); va_end(ap); }
+#define hugestringz(d) hugestring d; d[0] = 0;
 
 template<size_t N> inline bool matchstring(const char *s, size_t len, const char (&d)[N])
 {

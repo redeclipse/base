@@ -1311,7 +1311,7 @@ namespace server
 
     bool cmppriv(clientinfo *ci, clientinfo *cp, const char *msg = NULL)
     {
-        string str = "";
+        stringz(str);
         if(msg && *msg) formatstring(str, "%s %s", msg, colourname(cp));
         if(haspriv(ci, cp->local ? PRIV_ADMINISTRATOR : cp->privilege&PRIV_TYPE, str)) return true;
         return false;
@@ -2255,7 +2255,7 @@ namespace server
         defvformatbigstring(str, s, s);
         ircoutf(r, "%s", str);
 #ifdef STANDALONE
-        static bigstring ft;
+        bigstring ft;
         filterstring(ft, str);
         logoutf("%s", ft);
 #endif
@@ -2358,7 +2358,7 @@ namespace server
     void setupdemoplayback()
     {
         demoheader hdr;
-        string msg = "";
+        stringz(msg);
         defformatstring(file, strstr(smapname, "maps/")==smapname || strstr(smapname, "maps\\")==smapname ? "%s.dmo" : "demos/%s.dmo", smapname);
         demoplayback = opengzfile(file, "rb");
         if(!demoplayback) formatstring(msg, "\frCould not read demo \fs\fc%s\fS", file);
@@ -2451,7 +2451,7 @@ namespace server
         int num = demoinfos.length();
         demoinfo &d = demoinfos.add();
         copystring(d.file, name);
-        string msg = "";
+        stringz(msg);
         if(f->read(&d.hdr, sizeof(demoheader))!=sizeof(demoheader) || memcmp(d.hdr.magic, VERSION_DEMOMAGIC, sizeof(d.hdr.magic)))
             formatstring(msg, "\fs\fc%s\fS is not a demo file", name);
         else
@@ -2487,7 +2487,7 @@ namespace server
         DELETEP(demotmp);
         if(G(demoautoserversave))
         {
-            string dafilepath = "";
+            stringz(dafilepath);
             if(*filetimeformat) formatstring(dafilepath, "demos/sv_%s_%s-%s.dmo", gettime(d.ctime, filetimeformat), gamename(gamemode, mutators, 1, 32, '_'), smapname);
             else formatstring(dafilepath, "demos/sv_%u_%s-%s.dmo", uint(d.ctime), gamename(gamemode, mutators, 1, 32, '_'), smapname);
             stream *dafile = openrawfile(dafilepath, "w");
@@ -5757,7 +5757,7 @@ namespace server
                     case N_CONNECT:
                     {
                         getstring(text, p);
-                        string namestr = "";
+                        stringz(namestr);
                         filterstring(namestr, text, true, true, true, true, MAXNAMELEN);
                         if(!*namestr) copystring(namestr, "unnamed");
                         copystring(ci->name, namestr, MAXNAMELEN+1);
@@ -5780,7 +5780,8 @@ namespace server
                             else ci->randweap.add(getint(p));
                         }
 
-                        string password = "", authname = "";
+                        stringz(password);
+                        stringz(authname);
                         getstring(password, p);
                         getstring(text, p);
                         filterstring(authname, text, true, true, true, true, 100);
@@ -6448,7 +6449,7 @@ namespace server
                         }
                         fcp->chatmillis.add(totalmillis ? totalmillis : 1);
                     }
-                    static bigstring output;
+                    bigstring output;
                     copystring(output, text, G(messagelength));
                     filterstring(text, text, true, true, true, true, G(messagelength));
                     if(*(G(censorwords))) filterword(output, G(censorwords));
@@ -6541,7 +6542,7 @@ namespace server
                     QUEUE_MSG;
                     defformatstring(oldname, "%s", colourname(ci));
                     getstring(text, p);
-                    string namestr = "";
+                    stringz(namestr);
                     filterstring(namestr, text, true, true, true, true, MAXNAMELEN);
                     if(!*namestr) copystring(namestr, "unnamed");
                     if(strcmp(ci->name, namestr))
@@ -7194,7 +7195,7 @@ namespace server
                 case N_AUTHTRY:
                 {
                     getstring(text, p);
-                    string authname = "";
+                    stringz(authname);
                     filterstring(authname, text, true, true, true, true, 100);
                     auth::tryauth(ci, authname);
                     break;

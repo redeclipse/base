@@ -1809,7 +1809,8 @@ namespace game
         if(!d) return;
         if(d->name[0] && client::showpresence >= (client::waiting(false) ? 2 : 1))
         {
-            string formattedreason = "", ipaddr = "";
+            stringz(formattedreason);
+            stringz(ipaddr);
             if(reason >= 0) formatstring(formattedreason, " (%s)", disc_reasons[reason]);
             if(client::haspriv(game::player1, G(iphostlock))) formatstring(ipaddr, " (%s)", d->hostname);
             if(d->actortype == A_PLAYER)
@@ -3177,7 +3178,7 @@ namespace game
         }
         if(aboveheadinventory && d != player1)
         {
-            string weapons = "";
+            stringz(weapons);
             #define printweapon(q) \
                 if(d->hasweap(q, m_weapon(d->actortype, gamemode, mutators))) \
                 { \

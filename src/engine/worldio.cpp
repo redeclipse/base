@@ -1978,12 +1978,13 @@ int scanmapc(const char *fname)
     loopv(mapcinfos) if(!strcmp(mapcinfos[i].file, fname)) return i;
     loopv(failmapcs) if(!strcmp(failmapcs[i], fname)) return -1;
     int num = -1;
-    string msg = "";
+    stringz(msg);
     loop(format, MAP_MAX)
     {
         int mask = maskpackagedirs(format == MAP_OCTA ? ~0 : ~PACKAGEDIR_OCTA);
 
-        string dfile = "", dfileext = "";
+        stringz(dfile);
+        stringz(dfileext);
         if(strpbrk(fname, "/\\")) copystring(dfile, fname);
         else formatstring(dfile, "%s/%s", mapdirs[format].name, fname);
         formatstring(dfileext, "%s%s", dfile, mapexts[format].name);
@@ -2333,7 +2334,7 @@ int scanmapc(const char *fname)
         }
         delete f;
         maskpackagedirs(mask);
-        string s = ""; // remove colour from these things in RE
+        stringz(s); // remove colour from these things in RE
         if(filterstring(s, d.title)) copystring(d.title, s);
         if(d.title[0])
         {
