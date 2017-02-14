@@ -552,7 +552,7 @@ struct editor
                     char *pastebuf = pastetext();
                     if(pastebuf)
                     {
-                        for(const char *buf = &pastebuf[0]; *buf; buf++) insert(*buf);
+                        insert(pastebuf);
                         delete[] pastebuf;
                     }
                 }

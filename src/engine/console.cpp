@@ -300,19 +300,20 @@ void inputcommand(char *init, char *action = NULL, char *icon = NULL, int colour
 ICOMMAND(0, saycommand, "C", (char *init), inputcommand(init));
 ICOMMAND(0, inputcommand, "sssis", (char *init, char *action, char *icon, int *colour, char *flags), inputcommand(init, action, icon, *colour, flags));
 
-char *pastetext()
+char *pastetext(char *buf, size_t len)
 {
     if(!SDL_HasClipboardText()) return NULL;
     char *cb = SDL_GetClipboardText();
     if(!cb) return NULL;
-    char *buf = NULL;
-    if(*cb)
+    size_t cblen = strlen(cb);
+    if(cblen)
     {
-        size_t cblen = strlen(cb);
-        char *pbuf = newstring(cblen);
-        size_t decoded = decodeutf8((uchar *)&pbuf[0], cblen, (const uchar *)cb, cblen);
-        pbuf[decoded] = '\0';
-        buf = newstring(pbuf);
+        size_t start = 0;
+        if(buf) start = strlen(buf);
+        else if(len) return NULL;
+        else { buf = newstring(cblen); len = cblen+1; }
+        size_t decoded = decodeutf8((uchar *)&buf[start], len-1-start, (const uchar *)cb, cblen);
+        buf[start + decoded] = '\0';
     }
     SDL_free(cb);
     return buf;
@@ -563,15 +564,7 @@ bool consolekey(int code, bool isdown)
                 break;
 
             case SDLK_v:
-                if(SDL_GetModState()&MOD_KEYS)
-                {
-                    char *pastebuf = pastetext();
-                    if(pastebuf)
-                    {
-                        concatstring(commandbuf, pastebuf);
-                        delete[] pastebuf;
-                    }
-                }
+                if(SDL_GetModState()&MOD_KEYS) pastetext(commandbuf, sizeof(commandbuf));
                 break;
         }
     }
