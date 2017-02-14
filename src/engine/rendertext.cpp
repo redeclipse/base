@@ -891,7 +891,7 @@ void reloadfonts()
 float draw_textf(const char *fstr, float left, float top, float xpad, float ypad, int r, int g, int b, int a, int flags, int cursor, float maxwidth, float linespace, ...)
 {
     if(linespace <= 0) linespace = textlinespacing;
-    defvformathugestrings(str, linespace, fstr);
+    defvformathugestring(str, linespace, fstr);
 
     float width = 0, height = 0;
     text_boundsf(str, width, height, xpad, ypad, maxwidth, flags, linespace);

@@ -1226,7 +1226,7 @@ namespace client
         ident *wid = idents.access(flags&SAY_ACTION ? "on_action" : "on_text");
         if(wid && wid->type == ID_ALIAS && wid->getstr()[0])
         {
-            defformatbigstrings(act, "%s %d %d %s %s %s",
+            defformatbigstring(act, "%s %d %d %s %s %s",
                 flags&SAY_ACTION ? "on_action" : "on_text", f->clientnum, flags&SAY_TEAM ? 1 : 0,
                 escapestring(game::colourname(f)), escapestring(text), escapestring(line));
             int ret = execute(act);

@@ -1716,7 +1716,7 @@ namespace ai
     void botsay(gameent *d, gameent *t, const char *fmt, ...)
     {
         if(!d || !t) return;
-        defvformatbigstrings(msg, fmt, fmt);
+        defvformatbigstring(msg, fmt, fmt);
         client::addmsg(N_TEXT, "ri3s", d->clientnum, t->clientnum, SAY_WHISPER, msg);
     }
 

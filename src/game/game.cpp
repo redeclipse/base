@@ -581,7 +581,7 @@ namespace game
     {
         if(targ >= 0 && msg && *msg)
         {
-            defvformatbigstrings(text, msg, msg);
+            defvformatbigstring(text, msg, msg);
             conoutft(targ == CON_INFO && d == player1 ? CON_SELF : targ, "%s", text);
         }
         announce(idx, d, forced);
@@ -1809,8 +1809,7 @@ namespace game
         if(!d) return;
         if(d->name[0] && client::showpresence >= (client::waiting(false) ? 2 : 1))
         {
-            string formattedreason = "";
-            string ipaddr = "";
+            string formattedreason = "", ipaddr = "";
             if(reason >= 0) formatstring(formattedreason, " (%s)", disc_reasons[reason]);
             if(client::haspriv(game::player1, G(iphostlock))) formatstring(ipaddr, " (%s)", d->hostname);
             if(d->actortype == A_PLAYER)

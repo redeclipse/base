@@ -209,7 +209,7 @@ void logoutf(const char *fmt, ...)
 
 void console(int type, const char *s, ...)
 {
-    defvformatbigstrings(sf, s, s);
+    defvformatbigstring(sf, s, s);
     static bigstring osf;
     filterstring(osf, sf);
     if(*logtimeformat) logoutf("%s %s", gettime(logtimelocal ? currenttime : clocktime, logtimeformat), osf);
@@ -221,14 +221,14 @@ void console(int type, const char *s, ...)
 
 void conoutft(int type, const char *s, ...)
 {
-    defvformatbigstrings(sf, s, s);
+    defvformatbigstring(sf, s, s);
     console(type, "%s", sf);
     ircoutf(5, "%s", sf);
 }
 
 void conoutf(const char *s, ...)
 {
-    defvformatbigstrings(sf, s, s);
+    defvformatbigstring(sf, s, s);
     conoutft(0, "%s", sf);
 }
 
