@@ -2680,17 +2680,17 @@ namespace UI
 
         float scale, offsetx, offsety;
         editor *edit;
-        char *keyfilter, *prompt;
+        char *keyfilter;
         Color color, origcolor;
 
-        TextEditor() : edit(NULL), keyfilter(NULL), prompt(NULL) {}
+        TextEditor() : edit(NULL), keyfilter(NULL) {}
 
         bool iseditor() const { return true; }
 
-        void setup(const char *name, int length, int height, float scale_ = 1, const char *initval = NULL, int mode = EDITORUSED, const char *keyfilter_ = NULL, const char *parent_ = NULL, const char *prompt_ = NULL)
+        void setup(const char *name, int length, int height, float scale_ = 1, const char *initval = NULL, int mode = EDITORUSED, const char *keyfilter_ = NULL)
         {
             Object::setup();
-            editor *edit_ = useeditor(name, mode, false, initval, parent_);
+            editor *edit_ = useeditor(name, mode, false, initval);
             if(edit_ != edit)
             {
                 if(edit) clearfocus();
@@ -2709,14 +2709,11 @@ namespace UI
             scale = scale_;
             if(keyfilter_) SETSTR(keyfilter, keyfilter_);
             else DELETEA(keyfilter);
-            if(prompt_) SETSTR(prompt, prompt_);
-            else DELETEA(prompt);
         }
         ~TextEditor()
         {
             clearfocus();
             DELETEA(keyfilter);
-            DELETEA(prompt);
         }
 
         static void setfocus(TextEditor *e)
@@ -2730,11 +2727,6 @@ namespace UI
         void setfocus() { setfocus(this); }
         void clearfocus() { if(focus == this) setfocus(NULL); }
         bool isfocus() const { return focus == this; }
-        void setprompt(const char *p = NULL)
-        {
-            if(p) SETSTR(prompt, p);
-            else DELETEA(prompt);
-        }
 
         static const char *typestr() { return "#TextEditor"; }
         const char *gettype() const { return typestr(); }
@@ -2755,7 +2747,7 @@ namespace UI
             float k = drawscale();
             pushhudtranslate(sx, sy, k);
 
-            edit->draw(FONTW/2, 0, color.tohexcolor(), color.a, isfocus(), prompt);
+            edit->draw(FONTW/2, 0, color.tohexcolor(), color.a, isfocus());
 
             pophudmatrix();
 
@@ -2898,7 +2890,7 @@ namespace UI
 
         Field() : id(NULL), changed(false) {}
 
-        void setup(ident *id_, int length, uint *onchange, float scale = 1, const char *keyfilter_ = NULL, const char *parent_ = NULL, const char *prompt_ = NULL, bool immediate = false)
+        void setup(ident *id_, int length, uint *onchange, float scale = 1, const char *keyfilter_ = NULL, bool immediate = false)
         {
             if(isfocus() && !hasstate(STATE_HOVER)) commit();
             if(isfocus() && immediate && edit && id == id_)
@@ -2915,7 +2907,7 @@ namespace UI
             }
             bool shouldfree = false;
             const char *initval = id != id_ || !isfocus() ? getsval(id_, shouldfree) : NULL;
-            TextEditor::setup(id_->name, length, 0, scale, initval, EDITORFOCUSED, keyfilter_, parent_, prompt_);
+            TextEditor::setup(id_->name, length, 0, scale, initval, EDITORFOCUSED, keyfilter_);
             if(shouldfree) delete[] initval;
             id = id_;
         }
@@ -3682,8 +3674,8 @@ namespace UI
     ICOMMAND(0, uiwrapcontext, "tffie", (tagval *text, float *wrap, float *scale, int *align, uint *children),
         buildtext(*text, *scale*uiscale, FONTH*uicontextscale, Color(colourwhite), *wrap*uiscale, *align, children));
 
-    ICOMMAND(0, uitexteditor, "siifsisse", (char *name, int *length, int *height, float *scale, char *initval, int *mode, char *parent, char *prompt, uint *children),
-        BUILD(TextEditor, o, o->setup(name, *length, *height, (*scale <= 0 ? 1 : *scale)*uiscale * uitextscale, initval, *mode <= 0 ? EDITORFOREVER : *mode, NULL, parent, prompt), children));
+    ICOMMAND(0, uitexteditor, "siifsie", (char *name, int *length, int *height, float *scale, char *initval, int *mode, uint *children),
+        BUILD(TextEditor, o, o->setup(name, *length, *height, (*scale <= 0 ? 1 : *scale)*uiscale * uitextscale, initval, *mode <= 0 ? EDITORFOREVER : *mode, NULL), children));
 
     ICOMMAND(0, uifont, "se", (char *name, uint *children),
         BUILD(Font, o, o->setup(name), children));
@@ -3695,8 +3687,8 @@ namespace UI
         BUILD(Console, o, o->setup(*minw, *minh), children));
     #endif // 0
 
-    ICOMMAND(0, uifield, "riefssie", (ident *var, int *length, uint *onchange, float *scale, char *parent, char *prompt, int *immediate, uint *children),
-        BUILD(Field, o, o->setup(var, *length, onchange, (*scale <= 0 ? 1 : *scale)*uiscale * uitextscale, NULL, parent, prompt, *immediate!=0), children));
+    ICOMMAND(0, uifield, "riefie", (ident *var, int *length, uint *onchange, float *scale, int *immediate, uint *children),
+        BUILD(Field, o, o->setup(var, *length, onchange, (*scale <= 0 ? 1 : *scale)*uiscale * uitextscale, NULL, *immediate!=0), children));
 
     ICOMMAND(0, uikeyfield, "riefe", (ident *var, int *length, uint *onchange, float *scale, uint *children),
         BUILD(KeyField, o, o->setup(var, *length, onchange, (*scale <= 0 ? 1 : *scale)*uiscale * uitextscale), children));
@@ -3886,9 +3878,9 @@ namespace UI
         return world->abovehud();
     }
 
-    editor *geteditor(const char *name, int mode, const char *init, const char *parent)
+    editor *geteditor(const char *name, int mode, const char *init)
     {
-        return useeditor(name, mode, false, init, parent);
+        return useeditor(name, mode, false, init);
     }
 
     void editorline(editor *e, const char *str, int limit)
@@ -3915,7 +3907,7 @@ namespace UI
     void editoredit(editor *e, const char *init)
     {
         if(!e) return;
-        useeditor(e->name, e->mode, true, init, e->parent);
+        useeditor(e->name, e->mode, true, init);
         e->clear(init);
         e->unfocus = true;
     }

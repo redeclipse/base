@@ -144,7 +144,6 @@ struct editor
     bool active, rendered, unfocus;
     const char *name;
     const char *filename;
-    const char *parent;
 
     int cx, cy; // cursor position - ensured to be valid after a region() or currentline()
     int mx, my; // selection mark, mx=-1 if following cursor - avoid direct access, instead use region()
@@ -158,8 +157,8 @@ struct editor
 
     vector<editline> lines; // MUST always contain at least one line!
 
-    editor(const char *name, int mode, const char *initval, const char *parent = NULL) :
-        mode(mode), active(true), rendered(false), unfocus(false), name(newstring(name)), filename(NULL), parent(newstring(parent && *parent ? parent : "")),
+    editor(const char *name, int mode, const char *initval) :
+        mode(mode), active(true), rendered(false), unfocus(false), name(newstring(name)), filename(NULL),
         cx(0), cy(0), mx(-1), my(-1), maxx(-1), maxy(-1), scrolly(mode==EDITORREADONLY ? SCROLLEND : 0), linewrap(false), pixelwidth(-1), pixelheight(-1)
     {
         //printf("editor %08x '%s'\n", this, name);
@@ -171,7 +170,6 @@ struct editor
         //printf("~editor %08x '%s'\n", this, name);
         DELETEA(name);
         DELETEA(filename);
-        DELETEA(parent);
         clear(NULL);
     }
 
@@ -600,33 +598,10 @@ struct editor
         return slines;
     }
 
-    void draw(int x, int y, int color, int alpha, bool hit, const char *prompt = NULL)
+    void draw(int x, int y, int color, int alpha, bool hit)
     {
-        int h = 0, maxwidth = linewrap ? pixelwidth : -1;
-
-        bool hastext = false;
-        loopv(lines) if(lines[i].text[0])
-        {
-            hastext = true;
-            break;
-        }
-        if(!hastext)
-        {
-            if(hit || (prompt && prompt[0]))
-            {
-                int width = 0, height = 0;
-                const char *str = hit || !prompt || !prompt[0] ? " " : prompt;
-                text_bounds(str, width, height, 0, 0, maxwidth, TEXT_NO_INDENT);
-                if(h+height <= pixelheight)
-                {
-                    draw_textf("%s", x, y+h, 0, 0, color>>16, (color>>8)&0xFF, color&0xFF, alpha, TEXT_NO_INDENT, hit ? 0 : -1, maxwidth, 1, str);
-                    h += height;
-                }
-            }
-            return;
-        }
-
-        int starty = scrolly, sx = 0, sy = 0, ex = 0, ey = 0;
+        int h = 0, maxwidth = linewrap ? pixelwidth : -1,
+            starty = scrolly, sx = 0, sy = 0, ex = 0, ey = 0;
         bool selection = region(sx, sy, ex, ey);
         if(starty == SCROLLEND) // fix scrolly so that <cx, cy> is always on screen
         {
@@ -754,7 +729,7 @@ static void flusheditors()
     }
 }
 
-static editor *useeditor(const char *name, int mode, bool focus, const char *initval = NULL, const char *parent = NULL)
+static editor *useeditor(const char *name, int mode, bool focus, const char *initval = NULL)
 {
     loopv(editors) if(!strcmp(editors[i]->name, name))
     {
@@ -764,7 +739,7 @@ static editor *useeditor(const char *name, int mode, bool focus, const char *ini
         return e;
     }
     if(mode < 0) return NULL;
-    editor *e = new editor(name, mode, initval, parent);
+    editor *e = new editor(name, mode, initval);
     editors.add(e);
     if(focus) textfocus = e;
     return e;
@@ -799,9 +774,9 @@ TEXTCOMMAND(textshow, "", (), // @DEBUG return the start of the buffer
     result(line.text);
     line.clear();
 );
-ICOMMAND(0, textfocus, "siss", (char *name, int *mode, char *initval, char *parent), // focus on a (or create a persistent) specific editor, else returns current name
+ICOMMAND(0, textfocus, "sis", (char *name, int *mode, char *initval), // focus on a (or create a persistent) specific editor, else returns current name
     if(identflags&IDF_WORLD) return;
-    if(*name) useeditor(name, *mode<=0 ? EDITORFOREVER : *mode, true, initval, parent);
+    if(*name) useeditor(name, *mode<=0 ? EDITORFOREVER : *mode, true, initval);
     else if(editors.length() > 0) result(editors.last()->name);
 );
 TEXTCOMMAND(textprev, "", (), editors.insert(0, textfocus); editors.pop();); // return to the previous editor
