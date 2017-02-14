@@ -1333,12 +1333,12 @@ namespace UI
         Color color, origcolor;
         float minw, minh;
 
-        void setup(const Color &color_, float minw_, float minh_)
+        void setup(float minw_, float minh_)
         {
             Object::setup();
             minw = minw_;
             minh = minh_;
-            color = color_;
+            color = Color(colourwhite);
             origcolor = color;
         }
 
@@ -1373,7 +1373,9 @@ namespace UI
 
         void setup(Texture *tex_, const Color &color_, float partsize_ = 0, float minw_ = 0, float minh_ = 0)
         {
-            Target::setup(color_, minw_, minh_);
+            Target::setup(minw_, minh_);
+            color = color_;
+            origcolor = color;
             tex = tex_;
             partsize = partsize_;
         }
@@ -1401,7 +1403,9 @@ namespace UI
 
         void setup(int type_, const Color &color_, float minw_ = 0, float minh_ = 0)
         {
-            Target::setup(color_, minw_, minh_);
+            Target::setup(minw_, minh_);
+            color = color_;
+            origcolor = color;
             type = type_;
         }
 
@@ -1477,7 +1481,9 @@ namespace UI
     {
         void setup(const Color &color_, float minw_ = 0, float minh_ = 0)
         {
-            Filler::setup(color_, minw_, minh_);
+            Filler::setup(minw_, minh_);
+            color = color_;
+            origcolor = color;
         }
 
         static const char *typestr() { return "#Line"; }
@@ -1507,7 +1513,9 @@ namespace UI
     {
         void setup(const Color &color_, float minw_ = 0, float minh_ = 0)
         {
-            Filler::setup(color_, minw_, minh_);
+            Filler::setup(minw_, minh_);
+            color = color_;
+            origcolor = color;
         }
 
         static const char *typestr() { return "#Outline"; }
@@ -1557,7 +1565,9 @@ namespace UI
 
         void setup(Texture *tex_, const Color &color_, bool alphatarget_ = false, float minw_ = 0, float minh_ = 0)
         {
-            Filler::setup(color_, minw_, minh_);
+            Filler::setup(minw_, minh_);
+            color = color_;
+            origcolor = color;
             tex = tex_;
             alphatarget = alphatarget_;
         }
@@ -1822,7 +1832,9 @@ namespace UI
 
         void setup(const Color &color_, int type_ = SOLID, float minw_ = 0, float minh_ = 0)
         {
-            Filler::setup(color_, minw_, minh_);
+            Filler::setup(minw_, minh_);
+            color = color_;
+            origcolor = color;
             type = type_;
         }
 
@@ -2985,7 +2997,7 @@ namespace UI
 
         void setup(const char *name_, const char *animspec, float scale_, float blend_, float minw_, float minh_)
         {
-            Preview::setup(Color(colourwhite), minw_, minh_);
+            Preview::setup(minw_, minh_);
             SETSTR(name, name_);
 
             anim = ANIM_ALL;
@@ -3049,7 +3061,7 @@ namespace UI
 
         void setup(int model_, int pcol_, int team_, int weapon_, char *vanity_, float scale_, float blend_, float minw_, float minh_)
         {
-            Preview::setup(Color(colourwhite), minw_, minh_);
+            Preview::setup(minw_, minh_);
             model = model_;
             pcol = pcol_;
             team = team_;
@@ -3089,7 +3101,7 @@ namespace UI
 
         void setup(const char *name_, int pcol_, float blend, float minw_, float minh_)
         {
-            Preview::setup(Color(colourwhite), minw_, minh_);
+            Preview::setup(minw_, minh_);
             SETSTR(name, name_);
             pcol = vec::hexcolor(pcol_);
         }
@@ -3120,7 +3132,7 @@ namespace UI
 
         void setup(int index_, float minw_ = 0, float minh_ = 0)
         {
-            Target::setup(Color(colourwhite), minw_, minh_);
+            Target::setup(minw_, minh_);
             index = index_;
         }
 
@@ -3409,11 +3421,11 @@ namespace UI
     ICOMMAND(0, uioffset, "ffe", (float *offsetx, float *offsety, uint *children),
         BUILD(Offsetter, o, o->setup(*offsetx*uiscale, *offsety*uiscale), children));
 
-    ICOMMAND(0, uifill, "iffe", (int *c, float *minw, float *minh, uint *children),
-        BUILD(Filler, o, o->setup(Color(*c), *minw*uiscale, *minh*uiscale), children));
+    ICOMMAND(0, uifill, "ffe", (float *minw, float *minh, uint *children),
+        BUILD(Filler, o, o->setup(*minw*uiscale, *minh*uiscale), children));
 
-    ICOMMAND(0, uitarget, "iffe", (int *c, float *minw, float *minh, uint *children),
-        BUILD(Target, o, o->setup(Color(*c), *minw*uiscale, *minh*uiscale), children));
+    ICOMMAND(0, uitarget, "ffe", (float *minw, float *minh, uint *children),
+        BUILD(Target, o, o->setup(*minw*uiscale, *minh*uiscale), children));
 
     ICOMMAND(0, uiclip, "ffe", (float *clipw, float *cliph, uint *children),
         BUILD(Clipper, o, o->setup(*clipw*uiscale, *cliph*uiscale), children));
@@ -3646,8 +3658,8 @@ namespace UI
     ICOMMAND(0, uitext, "tfie", (tagval *text, float *scale, int *align, uint *children),
         buildtext(*text, *scale*uiscale, uitextscale, Color(colourwhite), 0, *align, children));
 
-    ICOMMAND(0, uitextfill, "iffe", (int *c, float *minw, float *minh, uint *children),
-        BUILD(Filler, o, o->setup(Color(*c), *minw*uiscale * uitextscale*0.5f, *minh*uiscale * uitextscale), children));
+    ICOMMAND(0, uitextfill, "ffe", (float *minw, float *minh, uint *children),
+        BUILD(Filler, o, o->setup(*minw*uiscale * uitextscale*0.5f, *minh*uiscale * uitextscale), children));
 
     ICOMMAND(0, uiwrapcolourtext, "tfifie", (tagval *text, float *wrap, int *c, float *scale, int *align, uint *children),
         buildtext(*text, *scale*uiscale, uitextscale, Color(*c), *wrap*uiscale, *align, children));
@@ -3661,8 +3673,8 @@ namespace UI
     ICOMMAND(0, uicontext, "tfie", (tagval *text, float *scale, int *align, uint *children),
         buildtext(*text, *scale*uiscale, FONTH*uicontextscale, Color(colourwhite), 0, *align, children));
 
-    ICOMMAND(0, uicontextfill, "iffe", (int *c, float *minw, float *minh, uint *children),
-        BUILD(Filler, o, o->setup(Color(*c), *minw*uiscale * FONTH*uicontextscale*0.5f, *minh*uiscale * FONTH*uicontextscale), children));
+    ICOMMAND(0, uicontextfill, "ffe", (float *minw, float *minh, uint *children),
+        BUILD(Filler, o, o->setup(*minw*uiscale * FONTH*uicontextscale*0.5f, *minh*uiscale * FONTH*uicontextscale), children));
 
     ICOMMAND(0, uiwrapcolourcontext, "tfifie", (tagval *text, float *wrap, int *c, float *scale, int *align, uint *children),
         buildtext(*text, *scale*uiscale, FONTH*uicontextscale, Color(*c), *wrap*uiscale, *align, children));
