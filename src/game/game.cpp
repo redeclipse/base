@@ -1810,13 +1810,17 @@ namespace game
         if(!d) return;
         if(d->name[0] && client::showpresence >= (client::waiting(false) ? 2 : 1))
         {
+            string formattedreason = "";
+            string ipaddr = "";
+            if(reason >= 0) formatstring(formattedreason, " (%s)", disc_reasons[reason]);
+            if(client::haspriv(game::player1, G(iphostlock))) formatstring(ipaddr, " (%s)", d->hostname);
             if(d->actortype == A_PLAYER)
             {
                 int amt = client::otherclients(); // not including self to disclude this player
-                conoutft(CON_EVENT, "\fo%s (%s) left the game (%s) (%d %s)", colourname(d), d->hostname, reason >= 0 ? disc_reasons[reason] : "normal", amt, amt != 1 ? "players" : "player");
+                conoutft(CON_EVENT, "\fo%s%s left the game%s (%d %s)", colourname(d), ipaddr, formattedreason, amt, amt != 1 ? "players" : "player");
             }
             else if(d->actortype == A_BOT && ai::showaiinfo)
-                conoutft(CON_EVENT, "\fo%s was removed from the game (%s)", colourname(d), reason >= 0 ? disc_reasons[reason] : "normal");
+                conoutft(CON_EVENT, "\fo%s was removed from the game%s", colourname(d), formattedreason);
         }
         gameent *e = NULL;
         int numdyns = numdynents();
