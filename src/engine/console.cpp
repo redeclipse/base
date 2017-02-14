@@ -309,7 +309,7 @@ char *pastetext()
     if(*cb)
     {
         size_t cblen = strlen(cb);
-        char *pbuf = newstring(cb, cblen);
+        char *pbuf = newstring(cblen);
         size_t decoded = decodeutf8((uchar *)&pbuf[0], cblen, (const uchar *)cb, cblen);
         pbuf[decoded] = '\0';
         buf = newstring(pbuf);
