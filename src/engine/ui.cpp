@@ -1959,14 +1959,14 @@ namespace UI
 
     struct Text : Object
     {
-        float scale, wrap, tw, th;
+        float scale, wrap, tw, th, wlen;
         int align;
         Color color, origcolor;
 
         void setup(float scale_ = 1, const Color &color_ = Color(colourwhite), float wrap_ = 0, int align_ = -1)
         {
             Object::setup();
-            tw = th = 0;
+            tw = th = wlen = 0;
             scale = scale_;
             color = color_;
             origcolor = color;
@@ -1996,7 +1996,7 @@ namespace UI
                 default: break;
             }
             pushhudtranslate(0, 0, k);
-            draw_text(getstr(), left, top, color.r, color.g, color.b, color.a, a, -1, wrap > 0 ? wrap/k : 0.f, 1);
+            draw_text(getstr(), left, top, color.r, color.g, color.b, color.a, a, -1, wlen, 1);
             pophudmatrix();
 
             Object::draw(sx, sy);
@@ -2007,6 +2007,20 @@ namespace UI
             Object::layout();
 
             float k = drawscale();
+            if(wrap > 0) wlen = wrap/k;
+            else if(wrap < 0)
+            {
+                wlen = 0-wrap;
+                for(Object *o = this->parent; o != NULL; o = o->parent)
+                {
+                    if(o->w > 0)
+                    {
+                        wlen *= o->w/k;
+                        break;
+                    }
+                    if(o->iswindow()) break;
+                }
+            }
             int a = TEXT_NO_INDENT;
             switch(align)
             {
@@ -2015,7 +2029,7 @@ namespace UI
                 case 1: a |= TEXT_RIGHT_JUSTIFY; break;
                 default: break;
             }
-            text_boundsf(getstr(), tw, th, 0, 0, wrap > 0 ? wrap/k : 0.f, a);
+            text_boundsf(getstr(), tw, th, 0, 0, wlen, a);
             w = max(w, tw*k);
             h = max(h, th*k);
         }
