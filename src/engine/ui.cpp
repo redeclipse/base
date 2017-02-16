@@ -1366,35 +1366,6 @@ namespace UI
         }
     };
 
-    struct Skin : Target
-    {
-        Texture *tex;
-        float partsize;
-
-        void setup(Texture *tex_, const Color &color_, float partsize_ = 0, float minw_ = 0, float minh_ = 0)
-        {
-            Target::setup(minw_, minh_);
-            color = color_;
-            origcolor = color;
-            tex = tex_;
-            partsize = partsize_;
-        }
-
-        static const char *typestr() { return "#Skin"; }
-        const char *gettype() const { return typestr(); }
-
-        void draw(float sx, float sy)
-        {
-            changedraw(CHANGE_COLOR | CHANGE_BLEND);
-
-            pushhudtranslate(sx, sy, uitextscale);
-            drawskin(tex, 0, 0, w/uitextscale, h/uitextscale, color.tohexcolor(), color.a/255.f, partsize);
-            pophudmatrix();
-
-            Object::draw(sx, sy);
-        }
-    };
-
     struct FillColor : Target
     {
         enum { SOLID = 0, MODULATE };
@@ -3595,9 +3566,6 @@ namespace UI
         loopv(o->children) changechildcolours(o->children[i], c);
     }
     UIWINCMDC(changecolours, "f", (float *c), changechildcolours(o, c));
-
-    ICOMMAND(0, uiskin, "sifffe", (char *texname, int *c, float *s, float *minw, float *minh, uint *children),
-        BUILD(Skin, o, o->setup(textureload(texname, 3, true, false), Color(*c), *s, *minw*uiscale, *minh*uiscale), children));
 
     ICOMMAND(0, uivgradient, "iiffe", (int *c, int *c2, float *minw, float *minh, uint *children),
         BUILD(Gradient, o, o->setup(Gradient::SOLID, Gradient::VERTICAL, Color(*c), Color(*c2), *minw*uiscale, *minh*uiscale), children));
