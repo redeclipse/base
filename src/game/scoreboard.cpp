@@ -275,7 +275,7 @@ namespace hud
     });
 
     ICOMMAND(0, showscores, "D", (int *down), showscores(*down!=0, false, false, true));
-    ICOMMAND(0, togglescores, "b", (int *on), scoreson = *on >= 0 ? *on!=0 : !scoreson);
+    ICOMMAND(0, togglescores, "b", (int *on), showscores(*on >= 0 ? *on!=0 : !scoreson, false, false, false));
 
     static const char *posnames[10] = { "th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th" };
 
