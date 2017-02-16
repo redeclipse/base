@@ -253,6 +253,9 @@ MMVAR(IDF_GAMEMOD, overtimeallow, 0, 1,
 MMVAR(IDF_GAMEMOD, overtimelimit, 0, VAR_MAX,
     5,          2,          3,          2,          5,          5,          5,          5,          5,          5,          5,          5
 );
+#ifdef GAMESERVER
+SVAR(0, limitidxname, "duel survivor gladiator capture defend defendking bomber bomberhold race racetimed racegauntlet");
+#endif
 
 GVAR(IDF_GAMEMOD, intermlimit, 0, 10000, VAR_MAX); // .. before vote menu comes up
 GVAR(IDF_GAMEMOD, votelimit, 0, 40000, VAR_MAX); // .. before vote passes by default
