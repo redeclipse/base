@@ -530,7 +530,7 @@ namespace UI
         bool isnamed(const char *name) const { return name[0] == '#' ? name == gettypename() : !strcmp(name, getname()); }
 
         virtual bool iswindow() const { return false; }
-        virtual bool isfiller() const { return false; }
+        virtual bool iscolor() const { return false; }
         virtual bool isgradient() const { return false; }
         virtual bool istext() const { return false; }
         virtual bool isimage() const { return false; }
@@ -1330,7 +1330,6 @@ namespace UI
 
     struct Filler : Object
     {
-        Color color, origcolor;
         float minw, minh;
 
         void setup(float minw_, float minh_)
@@ -1338,13 +1337,10 @@ namespace UI
             Object::setup();
             minw = minw_;
             minh = minh_;
-            color = Color(colourwhite);
-            origcolor = color;
         }
 
         static const char *typestr() { return "#Filler"; }
         const char *gettype() const { return typestr(); }
-        bool isfiller() const { return true; }
 
         void layout()
         {
@@ -1366,7 +1362,28 @@ namespace UI
         }
     };
 
-    struct FillColor : Target
+    struct TargetColor : Target
+    {
+        Color color, origcolor;
+
+        void setup(const Color &color_, float minw_ = 0, float minh_ = 0)
+        {
+            Target::setup(minw_, minh_);
+            color = color_;
+            origcolor = color;
+        }
+
+        static const char *typestr() { return "#TargetColor"; }
+        const char *gettype() const { return typestr(); }
+        bool iscolor() const { return true; }
+
+        bool target(float cx, float cy)
+        {
+            return true;
+        }
+    };
+
+    struct FillColor : TargetColor
     {
         enum { SOLID = 0, MODULATE };
 
@@ -1374,9 +1391,7 @@ namespace UI
 
         void setup(int type_, const Color &color_, float minw_ = 0, float minh_ = 0)
         {
-            Target::setup(minw_, minh_);
-            color = color_;
-            origcolor = color;
+            TargetColor::setup(color_, minw_, minh_);
             type = type_;
         }
 
@@ -1448,15 +1463,8 @@ namespace UI
         }
     };
 
-    struct Line : Filler
+    struct Line : TargetColor
     {
-        void setup(const Color &color_, float minw_ = 0, float minh_ = 0)
-        {
-            Filler::setup(minw_, minh_);
-            color = color_;
-            origcolor = color;
-        }
-
         static const char *typestr() { return "#Line"; }
         const char *gettype() const { return typestr(); }
 
@@ -1480,15 +1488,8 @@ namespace UI
         }
     };
 
-    struct Outline : Filler
+    struct Outline : TargetColor
     {
-        void setup(const Color &color_, float minw_ = 0, float minh_ = 0)
-        {
-            Filler::setup(minw_, minh_);
-            color = color_;
-            origcolor = color;
-        }
-
         static const char *typestr() { return "#Outline"; }
         const char *gettype() const { return typestr(); }
 
@@ -1527,7 +1528,7 @@ namespace UI
         return false;
     }
 
-    struct Image : Filler
+    struct Image : TargetColor
     {
         static Texture *lasttex;
 
@@ -1536,9 +1537,7 @@ namespace UI
 
         void setup(Texture *tex_, const Color &color_, bool alphatarget_ = false, float minw_ = 0, float minh_ = 0)
         {
-            Filler::setup(minw_, minh_);
-            color = color_;
-            origcolor = color;
+            TargetColor::setup(color_, minw_, minh_);
             tex = tex_;
             alphatarget = alphatarget_;
         }
@@ -1799,7 +1798,7 @@ namespace UI
         }
     };
 
-    struct Shape : Filler
+    struct Shape : TargetColor
     {
         enum { SOLID = 0, OUTLINE, MODULATE };
 
@@ -1807,9 +1806,7 @@ namespace UI
 
         void setup(const Color &color_, int type_ = SOLID, float minw_ = 0, float minh_ = 0)
         {
-            Filler::setup(minw_, minh_);
-            color = color_;
-            origcolor = color;
+            TargetColor::setup(color_, minw_, minh_);
             type = type_;
         }
 
@@ -2147,7 +2144,7 @@ namespace UI
     {
         void setup(float minw_ = 0, float minh_ = 0)
         {
-            Filler::setup(color_, minw_, minh_);
+            Filler::setup(minw_, minh_);
         }
 
         static const char *typestr() { return "#Console"; }
@@ -2950,7 +2947,7 @@ namespace UI
         bool allowtextinput() const { return false; }
     };
 
-    struct Preview : Target
+    struct Preview : TargetColor
     {
         void startdraw()
         {
@@ -2978,7 +2975,7 @@ namespace UI
 
         void setup(const char *name_, const char *animspec, float scale_, float blend_, float minw_, float minh_)
         {
-            Preview::setup(minw_, minh_);
+            Preview::setup(Color(colourwhite), minw_, minh_);
             SETSTR(name, name_);
 
             anim = ANIM_ALL;
@@ -3042,7 +3039,7 @@ namespace UI
 
         void setup(int model_, int pcol_, int team_, int weapon_, char *vanity_, float scale_, float blend_, float minw_, float minh_)
         {
-            Preview::setup(minw_, minh_);
+            Preview::setup(Color(colourwhite), minw_, minh_);
             model = model_;
             pcol = pcol_;
             team = team_;
@@ -3107,13 +3104,13 @@ namespace UI
 
     static int lastthumbnail = 0;
 
-    struct SlotViewer : Target
+    struct SlotViewer : TargetColor
     {
         int index;
 
         void setup(int index_, float minw_ = 0, float minh_ = 0)
         {
-            Target::setup(minw_, minh_);
+            TargetColor::setup(Color(colourwhite), minw_, minh_);
             index = index_;
         }
 
@@ -3494,7 +3491,7 @@ namespace UI
         });
 
     #define UICOLOURCMDS(t) \
-        if(o->isfiller()) { ((Filler *)o)->color = Color(*c); t; } \
+        if(o->iscolor()) { ((TargetColor *)o)->color = Color(*c); t; } \
         else if(o->istext()) { ((Text *)o)->color = Color(*c); t; } \
         else if(o->iseditor()) { ((TextEditor *)o)->color = Color(*c); t; }
 
@@ -3513,7 +3510,7 @@ namespace UI
             ((Gradient *)o)->color2.a = clamp(int(*c * ((Gradient *)o)->origcolor2.a), 0, 255); \
             t; \
         } \
-        else if(o->isfiller()) { ((Filler *)o)->color.a = clamp(int(*c * ((Filler *)o)->origcolor.a), 0, 255); t; } \
+        else if(o->iscolor()) { ((TargetColor *)o)->color.a = clamp(int(*c * ((TargetColor *)o)->origcolor.a), 0, 255); t; } \
         else if(o->istext()) { ((Text *)o)->color.a = clamp(int(*c * ((Text *)o)->origcolor.a), 0, 255); t; } \
         else if(o->iseditor()) { ((TextEditor *)o)->color.a = clamp(int(*c * ((TextEditor *)o)->origcolor.a), 0, 255); t; }
 
@@ -3537,11 +3534,11 @@ namespace UI
             ((Gradient *)o)->color2.b = clamp(int(*c * ((Gradient *)o)->origcolor2.b), 0, 255); \
             t; \
         } \
-        else if(o->isfiller()) \
+        else if(o->iscolor()) \
         { \
-            ((Filler *)o)->color.r = clamp(int(*c * ((Filler *)o)->origcolor.r), 0, 255); \
-            ((Filler *)o)->color.g = clamp(int(*c * ((Filler *)o)->origcolor.g), 0, 255); \
-            ((Filler *)o)->color.b = clamp(int(*c * ((Filler *)o)->origcolor.b), 0, 255); \
+            ((TargetColor *)o)->color.r = clamp(int(*c * ((TargetColor *)o)->origcolor.r), 0, 255); \
+            ((TargetColor *)o)->color.g = clamp(int(*c * ((TargetColor *)o)->origcolor.g), 0, 255); \
+            ((TargetColor *)o)->color.b = clamp(int(*c * ((TargetColor *)o)->origcolor.b), 0, 255); \
             t; \
         } \
         else if(o->istext()) \
