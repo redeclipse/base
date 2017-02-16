@@ -1309,7 +1309,11 @@ namespace UI
 
     struct Color
     {
-        uchar r, g, b, a;
+        union
+        {
+            struct { uchar r, g, b, a; };
+            uint mask;
+        };
 
         Color() {}
         Color(uint c) : r((c>>16)&0xFF), g((c>>8)&0xFF), b(c&0xFF), a(c>>24 ? c>>24 : 0xFF) {}
@@ -1326,6 +1330,9 @@ namespace UI
 
         vec4 tocolor4() const { return vec4(r*(1.0f/255.0f), g*(1.0f/255.0f), b*(1.0f/255.0f), a*(1.0f/255.0f)); }
         int tohexcolor4() const { return (int(a)<<24)|(int(r)<<16)|(int(g)<<8)|int(b); }
+
+        bool operator==(const Color &o) const { return mask == o.mask; }
+        bool operator!=(const Color &o) const { return mask != o.mask; }
     };
 
     struct Filler : Object
@@ -1526,6 +1533,7 @@ namespace UI
     struct Image : TargetColor
     {
         static Texture *lasttex;
+        static Color lastcolor;
 
         Texture *tex;
         bool alphatarget;
@@ -1549,6 +1557,7 @@ namespace UI
         void startdraw()
         {
             lasttex = NULL;
+            lastcolor = Color(255, 255, 255);
 
             gle::defvertex(2);
             gle::deftexcoord0();
@@ -1560,14 +1569,18 @@ namespace UI
             gle::end();
         }
 
+        void bindtex()
+        {
+            changedraw(CHANGE_COLOR);
+            if(lasttex != tex) { gle::end(); lasttex = tex; glBindTexture(GL_TEXTURE_2D, tex->id); }
+            if(lastcolor != color) { gle::end(); lastcolor = color; color.init(); }
+        }
+
         void draw(float sx, float sy)
         {
             if(tex != notexture)
             {
-                changedraw(CHANGE_COLOR);
-                if(lasttex != tex) { if(lasttex) gle::end(); lasttex = tex; glBindTexture(GL_TEXTURE_2D, tex->id); }
-
-                color.init();
+                bindtex();
                 quads(sx, sy, w, h);
             }
 
@@ -1576,6 +1589,7 @@ namespace UI
     };
 
     Texture *Image::lasttex = NULL;
+    Color Image::lastcolor(255, 255, 255);
 
     struct CroppedImage : Image
     {
@@ -1602,10 +1616,7 @@ namespace UI
         {
             if(tex == notexture) { Object::draw(sx, sy); return; }
 
-            changedraw(CHANGE_COLOR);
-            if(lasttex != tex) { if(lasttex) gle::end(); lasttex = tex; glBindTexture(GL_TEXTURE_2D, tex->id); }
-
-            color.init();
+            bindtex();
             quads(sx, sy, w, h, cropx, cropy, cropw, croph);
 
             Object::draw(sx, sy);
@@ -1638,10 +1649,8 @@ namespace UI
         {
             if(tex == notexture) { Object::draw(sx, sy); return; }
 
-            changedraw(CHANGE_COLOR);
-            if(lasttex != tex) { if(lasttex) gle::end(); lasttex = tex; glBindTexture(GL_TEXTURE_2D, tex->id); }
+            bindtex();
 
-            color.init();
             float splitw = (minw ? min(minw, w) : w) / 2,
                   splith = (minh ? min(minh, h) : h) / 2,
                   vy = sy, ty = 0;
@@ -1711,10 +1720,8 @@ namespace UI
         {
             if(tex == notexture) { Object::draw(sx, sy); return; }
 
-            changedraw(CHANGE_COLOR);
-            if(lasttex != tex) { if(lasttex) gle::end(); lasttex = tex; glBindTexture(GL_TEXTURE_2D, tex->id); }
+            bindtex();
 
-            color.init();
             float vy = sy, ty = 0;
             loopi(3)
             {
@@ -1771,10 +1778,8 @@ namespace UI
         {
             if(tex == notexture) { Object::draw(sx, sy); return; }
 
-            changedraw(CHANGE_COLOR);
-            if(lasttex != tex) { if(lasttex) gle::end(); lasttex = tex; glBindTexture(GL_TEXTURE_2D, tex->id); }
+            bindtex();
 
-            color.init();
             if(tex->clamp)
             {
                 for(float dy = 0; dy < h; dy += tileh)
