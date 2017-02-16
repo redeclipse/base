@@ -1376,11 +1376,6 @@ namespace UI
         static const char *typestr() { return "#TargetColor"; }
         const char *gettype() const { return typestr(); }
         bool iscolor() const { return true; }
-
-        bool target(float cx, float cy)
-        {
-            return true;
-        }
     };
 
     struct FillColor : TargetColor
