@@ -1315,7 +1315,7 @@ namespace UI
             uint mask;
         };
 
-        Color() {}
+        Color() : mask(0xFFFFFFFFU) {}
         Color(uint c) : r((c>>16)&0xFF), g((c>>8)&0xFF), b(c&0xFF), a(c>>24 ? c>>24 : 0xFF) {}
         Color(uint c, uchar a) : r((c>>16)&0xFF), g((c>>8)&0xFF), b(c&0xFF), a(a) {}
         Color(uchar r, uchar g, uchar b, uchar a = 255) : r(r), g(g), b(b), a(a) {}
