@@ -1557,7 +1557,7 @@ static inline vec offsetvec(vec o, int dir, int dist)
         }
         else if(dir < 24) //sphere
         {
-            to = vec(PI2*float(rnd(1000))/1000.0, PI*float(rnd(1000)-500)/1000.0).mul(radius);
+            to = vec(2*M_PI*float(rnd(1000))/1000.0, M_PI*float(rnd(1000)-500)/1000.0).mul(radius);
             to.add(p);
             from = p;
         }

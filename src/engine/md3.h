@@ -111,15 +111,11 @@ struct md3 : vertmodel, vertloader<md3>
                     f->read(&v, sizeof(md3vertex)); // read the vertices
                     lilswap(v.vertex, 4);
 
-                    m.verts[j].pos.x = v.vertex[0]/64.0f;
-                    m.verts[j].pos.y = -v.vertex[1]/64.0f;
-                    m.verts[j].pos.z = v.vertex[2]/64.0f;
+                    m.verts[j].pos = vec(v.vertex[0]/64.0f, -v.vertex[1]/64.0f, v.vertex[2]/64.0f);
 
-                    float lng = (v.normal&0xFF)*PI2/255.0f; // decode vertex normals
-                    float lat = ((v.normal>>8)&0xFF)*PI2/255.0f;
-                    m.verts[j].norm.x = cosf(lat)*sinf(lng);
-                    m.verts[j].norm.y = -sinf(lat)*sinf(lng);
-                    m.verts[j].norm.z = cosf(lng);
+                    float lng = (v.normal&0xFF)*2*M_PI/255.0f; // decode vertex normals
+                    float lat = ((v.normal>>8)&0xFF)*2*M_PI/255.0f;
+                    m.verts[j].norm = vec(cosf(lat)*sinf(lng), -sinf(lat)*sinf(lng), cosf(lng));
                 }
 
                 mesh_offset += mheader.meshsize;
