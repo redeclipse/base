@@ -1637,9 +1637,10 @@ namespace UI
         {
             if(tex == notexture) { Object::draw(sx, sy); return; }
 
-            changedraw();
+            changedraw(CHANGE_COLOR);
             if(lasttex != tex) { if(lasttex) gle::end(); lasttex = tex; glBindTexture(GL_TEXTURE_2D, tex->id); }
 
+            color.init();
             quads(sx, sy, w, h, cropx, cropy, cropw, croph);
 
             Object::draw(sx, sy);
@@ -1672,9 +1673,10 @@ namespace UI
         {
             if(tex == notexture) { Object::draw(sx, sy); return; }
 
-            changedraw();
+            changedraw(CHANGE_COLOR);
             if(lasttex != tex) { if(lasttex) gle::end(); lasttex = tex; glBindTexture(GL_TEXTURE_2D, tex->id); }
 
+            color.init();
             float splitw = (minw ? min(minw, w) : w) / 2,
                   splith = (minh ? min(minh, h) : h) / 2,
                   vy = sy, ty = 0;
@@ -1715,9 +1717,9 @@ namespace UI
     {
         float texborder, screenborder;
 
-        void setup(Texture *tex_, const Color &color_, bool alphatarget_ = false, float texborder_ = 0, float screenborder_ = 0)
+        void setup(Texture *tex_, const Color &color_, bool alphatarget_ = false, float texborder_ = 0, float screenborder_ = 0, float minw_ = 0, float minh_ = 0)
         {
-            Image::setup(tex_, color_, alphatarget_, 0, 0);
+            Image::setup(tex_, color_, alphatarget_, minw_, minh_);
             texborder = texborder_;
             screenborder = screenborder_;
         }
@@ -1744,9 +1746,10 @@ namespace UI
         {
             if(tex == notexture) { Object::draw(sx, sy); return; }
 
-            changedraw();
+            changedraw(CHANGE_COLOR);
             if(lasttex != tex) { if(lasttex) gle::end(); lasttex = tex; glBindTexture(GL_TEXTURE_2D, tex->id); }
 
+            color.init();
             float vy = sy, ty = 0;
             loopi(3)
             {
@@ -1803,9 +1806,10 @@ namespace UI
         {
             if(tex == notexture) { Object::draw(sx, sy); return; }
 
-            changedraw();
+            changedraw(CHANGE_COLOR);
             if(lasttex != tex) { if(lasttex) gle::end(); lasttex = tex; glBindTexture(GL_TEXTURE_2D, tex->id); }
 
+            color.init();
             if(tex->clamp)
             {
                 for(float dy = 0; dy < h; dy += tileh)
@@ -3746,12 +3750,12 @@ namespace UI
                 parsepixeloffset(cropw, tex->xs), parsepixeloffset(croph, tex->ys));
         }, children));
 
-    ICOMMAND(0, uiborderedimage, "siitfe", (char *texname, int *c, int *a, tagval *texborder, float *screenborder, uint *children),
+    ICOMMAND(0, uiborderedimage, "siitfffe", (char *texname, int *c, int *a, tagval *texborder, float *screenborder, float *minw, float *minh, uint *children),
         BUILD(BorderedImage, o, {
             Texture *tex = textureload(texname, 3, true, false);
             o->setup(tex, Color(*c), *a!=0,
                 parsepixeloffset(texborder, tex->xs),
-                *screenborder);
+                *screenborder, *minw, *minh);
         }, children));
 
     ICOMMAND(0, uitiledimage, "siiffffse", (char *texname, int *c, int *a, float *tilew, float *tileh, float *minw, float *minh, char *alttex, uint *children),
