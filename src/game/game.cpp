@@ -3631,7 +3631,7 @@ namespace game
         if(rendernormally && early) rendercheck(focus, third);
     }
 
-    void renderplayerpreview(int model, int color, int team, int weap, const char *vanity, float scale, float blend)
+    void renderplayerpreview(int model, int color, int team, int weap, const char *vanity, float scale, float blend, const vec &lightcolor, const vec &lightdir)
     {
         static gameent *previewent = NULL;
         if(!previewent)
@@ -3640,8 +3640,6 @@ namespace game
             previewent->state = CS_ALIVE;
             previewent->physstate = PHYS_FLOOR;
             previewent->spawnstate(G_DEATHMATCH, 0, -1, m_health(G_DEATHMATCH, 0, 0));
-            previewent->light.color = vec(1, 1, 1);
-            previewent->light.dir = vec(0, -1, 2).normalize();
             loopi(W_MAX) previewent->ammo[i] = W(i, ammomax);
         }
         float height = previewent->height + previewent->aboveeye,
@@ -3653,6 +3651,8 @@ namespace game
         previewent->team = clamp(team, 0, int(T_MULTI));
         previewent->weapselect = clamp(weap, 0, W_ALL-1);
         previewent->setvanity(vanity);
+        previewent->light.color = lightcolor;
+        (previewent->light.dir = lightdir).normalize();
         previewent->light.millis = -1;
         renderplayer(previewent, 1, blend, scale);
     }

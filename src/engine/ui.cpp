@@ -1331,8 +1331,6 @@ namespace UI
         vec4 tocolor4() const { return vec4(r*(1.0f/255.0f), g*(1.0f/255.0f), b*(1.0f/255.0f), a*(1.0f/255.0f)); }
         int tohexcolor4() const { return (int(a)<<24)|(int(r)<<16)|(int(g)<<8)|int(b); }
 
-        float alphahack() const { return (r+g+b+a)*0.25f; }
-
         bool operator==(const Color &o) const { return mask == o.mask; }
         bool operator!=(const Color &o) const { return mask != o.mask; }
     };
@@ -3029,13 +3027,13 @@ namespace UI
             if(m)
             {
                 entitylight light;
-                light.color = vec(1, 1, 1);
+                light.color = color.tocolor();
                 light.dir = vec(0, -1, 2).normalize();
                 vec center, radius;
                 m->boundbox(center, radius);
                 float yaw;
                 vec o = calcmodelpreviewpos(radius, yaw).sub(center);
-                rendermodel(&light, name, anim|ANIM_NOTRANS, o, yaw, 0, 0, 0, NULL, NULL, 0, 0, blend*(color.alphahack()/255.f), scale);
+                rendermodel(&light, name, anim|ANIM_NOTRANS, o, yaw, 0, 0, 0, NULL, NULL, 0, 0, blend*(color.a/255.f), scale);
             }
             if(clipstack.length()) clipstack.last().scissor();
             modelpreview::end();
@@ -3044,14 +3042,15 @@ namespace UI
 
     struct PlayerPreview : Preview
     {
-        int model, pcol, team, weapon;
+        int model, team, weapon;
         float scale, blend;
         char *vanity;
+        Color pcol;
 
         PlayerPreview() : vanity(NULL) {}
         ~PlayerPreview() { DELETEA(vanity); }
 
-        void setup(int model_, int pcol_, int team_, int weapon_, char *vanity_, float scale_, float blend_, float minw_, float minh_)
+        void setup(int model_, const Color &pcol_, int team_, int weapon_, char *vanity_, float scale_, float blend_, float minw_, float minh_)
         {
             Preview::setup(Color(colourwhite), minw_, minh_);
             model = model_;
@@ -3076,7 +3075,7 @@ namespace UI
             int sx1, sy1, sx2, sy2;
             window->calcscissor(sx, sy, sx+w, sy+h, sx1, sy1, sx2, sy2, false);
             modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, false, clipstack.length() > 0);
-            game::renderplayerpreview(model, pcol, team, weapon, vanity, scale, blend*(color.alphahack()/255.f));
+            game::renderplayerpreview(model, pcol.tohexcolor(), team, weapon, vanity, scale, blend*(color.a/255.f), color.tocolor());
             if(clipstack.length()) clipstack.last().scissor();
             modelpreview::end();
         }
@@ -3085,17 +3084,15 @@ namespace UI
     struct PrefabPreview : Preview
     {
         char *name;
-        vec pcol;
         float blend;
 
         PrefabPreview() : name(NULL) {}
         ~PrefabPreview() { delete[] name; }
 
-        void setup(const char *name_, int pcol_, float blend, float minw_, float minh_)
+        void setup(const char *name_, const Color &color_, float blend, float minw_, float minh_)
         {
-            Preview::setup(Color(colourwhite), minw_, minh_);
+            Preview::setup(color_, minw_, minh_);
             SETSTR(name, name_);
-            pcol = vec::hexcolor(pcol_);
         }
 
         static const char *typestr() { return "#PrefabPreview"; }
@@ -3110,7 +3107,7 @@ namespace UI
             int sx1, sy1, sx2, sy2;
             window->calcscissor(sx, sy, sx+w, sy+h, sx1, sy1, sx2, sy2, false);
             modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, false, clipstack.length() > 0);
-            previewprefab(name, pcol, blend*(color.alphahack()/255.f));
+            previewprefab(name, color.tocolor(), blend*(color.a/255.f));
             if(clipstack.length()) clipstack.last().scissor();
             modelpreview::end();
         }
@@ -3755,10 +3752,10 @@ namespace UI
         BUILD(ModelPreview, o, o->setup(model, animspec, *scale, *blend, *minw*uiscale, *minh*uiscale), children));
 
     ICOMMAND(0, uiplayerpreview, "iiiisffffe", (int *model, int *colour, int *team, int *weapon, char *vanity, float *scale, float *blend, float *minw, float *minh, uint *children),
-        BUILD(PlayerPreview, o, o->setup(*model, *colour, *team, *weapon, vanity, *scale, *blend, *minw*uiscale, *minh*uiscale), children));
+        BUILD(PlayerPreview, o, o->setup(*model, Color(*colour), *team, *weapon, vanity, *scale, *blend, *minw*uiscale, *minh*uiscale), children));
 
     ICOMMAND(0, uiprefabpreview, "sifffe", (char *prefab, int *colour, float *blend, float *minw, float *minh, uint *children),
-        BUILD(PrefabPreview, o, o->setup(prefab, *colour, *blend, *minw*uiscale, *minh*uiscale), children));
+        BUILD(PrefabPreview, o, o->setup(prefab, Color(*colour), *blend, *minw*uiscale, *minh*uiscale), children));
 
     ICOMMAND(0, uislotview, "iffe", (int *index, float *minw, float *minh, uint *children),
         BUILD(SlotViewer, o, o->setup(*index, *minw*uiscale, *minh*uiscale), children));
