@@ -1557,7 +1557,7 @@ namespace UI
         void startdraw()
         {
             lasttex = NULL;
-            lastcolor = Color(255, 255, 255);
+            lastcolor = Color(0, 0, 0, 0);
 
             gle::defvertex(2);
             gle::deftexcoord0();
