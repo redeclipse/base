@@ -1469,6 +1469,21 @@ struct bvec4
 
     bool iszero() const { return mask==0; }
 
+    bvec4 &mul(int n) { x *= n; y *= n; z *= n; w *= n; return *this; }
+    bvec4 &div(int n) { x /= n; y /= n; z /= n; w /= n; return *this; }
+    bvec4 &add(int n) { x += n; y += n; z += n; w += n; return *this; }
+    bvec4 &sub(int n) { x -= n; y -= n; z -= n; w -= n; return *this; }
+    bvec4 &mul(const bvec4 &v) { x *= v.x; y *= v.y; z *= v.z; w *= v.w; return *this; }
+    bvec4 &div(const bvec4 &v) { x /= v.x; y /= v.y; z /= v.z; w /= v.w; return *this; }
+    bvec4 &add(const bvec4 &v) { x += v.x; y += v.y; z += v.z; w += v.w; return *this; }
+    bvec4 &sub(const bvec4 &v) { x -= v.x; y -= v.y; z -= v.z; w -= v.w; return *this; }
+    bvec4 &mul(float xx, float yy, float zz, float ww = 1) { x = uchar(x*xx); y = uchar(y*yy); z = uchar(z*zz); w = uchar(w*ww); return *this; }
+    bvec4 &div(float xx, float yy, float zz, float ww = 1) { x = uchar(x/xx); y = uchar(y/yy); z = uchar(z/zz); w = uchar(w/ww); return *this; }
+    bvec4 &min(const bvec4 &o)   { x = ::min(x, o.x); y = ::min(y, o.y); z = ::min(z, o.z); w = ::min(w, o.w); return *this; }
+    bvec4 &max(const bvec4 &o)   { x = ::max(x, o.x); y = ::max(y, o.y); z = ::max(z, o.z); z = ::max(w, o.w); return *this; }
+    bvec4 &min(int f)        { x = ::min(int(x), f); y = ::min(int(y), f); z = ::min(int(z), f); w = ::min(int(w), f); return *this; }
+    bvec4 &max(int f)        { x = ::max(int(x), f); y = ::max(int(y), f); z = ::max(int(z), f); w = ::max(int(w), f); return *this; }
+
     vec tonormal() const { return vec(x*(2.0f/255.0f)-1.0f, y*(2.0f/255.0f)-1.0f, z*(2.0f/255.0f)-1.0f); }
 
     void lerp(const bvec4 &a, const bvec4 &b, float t)

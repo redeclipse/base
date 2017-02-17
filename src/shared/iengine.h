@@ -191,6 +191,7 @@ enum
     TEXT_UPWARD         = 1<<2,
     TEXT_BALLOON        = 1<<3,
     TEXT_SKIN           = 1<<4,
+    TEXT_MODCOL         = 1<<5,
 
     TEXT_ALIGN          = 3<<8,
     TEXT_LEFT_JUSTIFY   = 0<<8,

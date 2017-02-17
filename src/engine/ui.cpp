@@ -1959,7 +1959,7 @@ namespace UI
             changedraw(CHANGE_COLOR);
 
             float k = drawscale(), left = sx/k, top = sy/k;
-            int a = TEXT_NO_INDENT;
+            int a = TEXT_NO_INDENT|TEXT_MODCOL;
             switch(align)
             {
                 case -1: a |= TEXT_LEFT_JUSTIFY; break;
@@ -1993,7 +1993,7 @@ namespace UI
                     if(o->iswindow()) break;
                 }
             }
-            int a = TEXT_NO_INDENT;
+            int a = TEXT_NO_INDENT|TEXT_MODCOL;
             switch(align)
             {
                 case -1: a |= TEXT_LEFT_JUSTIFY; break;

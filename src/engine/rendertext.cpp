@@ -267,7 +267,8 @@ static float draw_char(Texture *&tex, int c, float x, float y, float scale)
     return scale*info.advance;
 }
 
-#define TVECA(ci, ca) (bvec4::fromcolor(ci).lighten(textminintensity).alpha(ca))
+#define TVECR(ci, ca) (bvec4::fromcolor(ci).lighten(textminintensity).alpha(ca))
+#define TVECA(ci, ca) (flags&TEXT_MODCOL ? (TVECR(ci, ca).mul(r/255.f, g/255.f, b/255.f, a/255.f)) : (TVECR(ci, ca)))
 #define TVECX(cr, cg, cb, ca) (bvec4(cr, cg, cb, 255).lighten(textminintensity).alpha(ca))
 
 #define COLOURDARK 0.45f
@@ -291,7 +292,7 @@ COLOURVAR(violet, 0xB060FF);
 COLOURVAR(purple, 0xFF00FF);
 COLOURVAR(brown, 0xA05030);
 
-static void text_color(char c, bvec4 *stack, int size, int &sp, bvec4 &color, int r, int g, int b, int a)
+static void text_color(char c, bvec4 *stack, int size, int &sp, bvec4 &color, int r, int g, int b, int a, int flags)
 {
     int alpha = stack[sp].a;
     switch(c)
@@ -827,13 +828,13 @@ float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, i
             cy = y; \
             if(!hasfade && usecolor && textfaded) \
             { \
-                text_color('e', colorstack, sizeof(colorstack), colorpos, color, r, g, b, fade); \
+                text_color('e', colorstack, sizeof(colorstack), colorpos, color, r, g, b, fade, flags); \
                 hasfade = true; \
             } \
         }
     #define TEXTWHITE(idx)
     #define TEXTLINE(idx) ly += TEXTHEIGHT;
-    #define TEXTCOLOR(idx) if(usecolor) { text_color(str[idx], colorstack, sizeof(colorstack), colorpos, color, r, g, b, fade); }
+    #define TEXTCOLOR(idx) if(usecolor) { text_color(str[idx], colorstack, sizeof(colorstack), colorpos, color, r, g, b, fade, flags); }
     #define TEXTHEXCOLOR(ret) \
         if(usecolor) \
         { \
