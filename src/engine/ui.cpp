@@ -1331,6 +1331,8 @@ namespace UI
         vec4 tocolor4() const { return vec4(r*(1.0f/255.0f), g*(1.0f/255.0f), b*(1.0f/255.0f), a*(1.0f/255.0f)); }
         int tohexcolor4() const { return (int(a)<<24)|(int(r)<<16)|(int(g)<<8)|int(b); }
 
+        float alphahack() const { return (r+g+b+a)*0.25f; }
+
         bool operator==(const Color &o) const { return mask == o.mask; }
         bool operator!=(const Color &o) const { return mask != o.mask; }
     };
@@ -3021,7 +3023,7 @@ namespace UI
                 m->boundbox(center, radius);
                 float yaw;
                 vec o = calcmodelpreviewpos(radius, yaw).sub(center);
-                rendermodel(&light, name, anim|ANIM_NOTRANS, o, yaw, 0, 0, 0, NULL, NULL, 0, 0, blend*(color.a/255.f), scale);
+                rendermodel(&light, name, anim|ANIM_NOTRANS, o, yaw, 0, 0, 0, NULL, NULL, 0, 0, blend*(color.alphahack()/255.f), scale);
             }
             if(clipstack.length()) clipstack.last().scissor();
             modelpreview::end();
@@ -3062,7 +3064,7 @@ namespace UI
             int sx1, sy1, sx2, sy2;
             window->calcscissor(sx, sy, sx+w, sy+h, sx1, sy1, sx2, sy2, false);
             modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, false, clipstack.length() > 0);
-            game::renderplayerpreview(model, pcol, team, weapon, vanity, scale, blend*(color.a/255.f));
+            game::renderplayerpreview(model, pcol, team, weapon, vanity, scale, blend*(color.alphahack()/255.f));
             if(clipstack.length()) clipstack.last().scissor();
             modelpreview::end();
         }
@@ -3079,7 +3081,7 @@ namespace UI
 
         void setup(const char *name_, int pcol_, float blend, float minw_, float minh_)
         {
-            Preview::setup(minw_, minh_);
+            Preview::setup(Color(colourwhite), minw_, minh_);
             SETSTR(name, name_);
             pcol = vec::hexcolor(pcol_);
         }
@@ -3096,7 +3098,7 @@ namespace UI
             int sx1, sy1, sx2, sy2;
             window->calcscissor(sx, sy, sx+w, sy+h, sx1, sy1, sx2, sy2, false);
             modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, false, clipstack.length() > 0);
-            previewprefab(name, pcol, blend*(color.a/255.f));
+            previewprefab(name, pcol, blend*(color.alphahack()/255.f));
             if(clipstack.length()) clipstack.last().scissor();
             modelpreview::end();
         }
@@ -3160,7 +3162,7 @@ namespace UI
             float xt = min(1.0f, t->xs/float(t->ys)), yt = min(1.0f, t->ys/float(t->xs));
             loopk(4) { tc[k].x = tc[k].x/xt - float(xoff)/t->xs; tc[k].y = tc[k].y/yt - float(yoff)/t->ys; }
             glBindTexture(GL_TEXTURE_2D, t->id);
-            if(slot.loaded) gle::colorf(vslot.colorscale.x, vslot.colorscale.y, vslot.colorscale.z, color.a/255.f);
+            if(slot.loaded) gle::colorf(vslot.colorscale.x*color.r/255.f, vslot.colorscale.y*color.g/255.f, vslot.colorscale.z*color.b/255.f, color.a/255.f);
             quad(x, y, w, h, tc);
             if(detailtex)
             {
@@ -3172,14 +3174,14 @@ namespace UI
                 glBlendFunc(GL_SRC_ALPHA, GL_ONE);
                 glBindTexture(GL_TEXTURE_2D, glowtex->id);
                 vec glowcolor = vslot.getglowcolor();
-                gle::colorf(glowcolor.x, glowcolor.y, glowcolor.z, color.a/255.f);
+                gle::colorf(glowcolor.x*color.r/255.f, glowcolor.y*color.g/255.f, glowcolor.z*color.b/255.f, color.a/255.f);
                 quad(x, y, w, h, tc);
                 glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             }
             if(layertex)
             {
                 glBindTexture(GL_TEXTURE_2D, layertex->id);
-                gle::colorf(layer->colorscale.x, layer->colorscale.y, layer->colorscale.z, color.a/255.f);
+                gle::colorf(layer->colorscale.x*color.r/255.f, layer->colorscale.y*color.g/255.f, layer->colorscale.z*color.g/255.f, color.a/255.f);
                 quad(x, y, w/2, h/2, tc);
             }
         }

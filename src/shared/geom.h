@@ -1479,6 +1479,8 @@ struct bvec4
     bvec4 &sub(const bvec4 &v) { x -= v.x; y -= v.y; z -= v.z; w -= v.w; return *this; }
     bvec4 &mul(float xx, float yy, float zz, float ww = 1) { x = uchar(x*xx); y = uchar(y*yy); z = uchar(z*zz); w = uchar(w*ww); return *this; }
     bvec4 &div(float xx, float yy, float zz, float ww = 1) { x = uchar(x/xx); y = uchar(y/yy); z = uchar(z/zz); w = uchar(w/ww); return *this; }
+    bvec4 &muld(float xx, float yy, float zz, float ww = 1, float ss = 1) { x = uchar(x*xx/ss); y = uchar(y*yy/ss); z = uchar(z*zz/ss); w = uchar(w*ww/ss); return *this; }
+    bvec4 &divd(float xx, float yy, float zz, float ww = 1, float ss = 1) { x = uchar(x*ss/xx); y = uchar(y*ss/yy); z = uchar(z*ss/zz); w = uchar(w*ss/ww); return *this; }
     bvec4 &min(const bvec4 &o)   { x = ::min(x, o.x); y = ::min(y, o.y); z = ::min(z, o.z); w = ::min(w, o.w); return *this; }
     bvec4 &max(const bvec4 &o)   { x = ::max(x, o.x); y = ::max(y, o.y); z = ::max(z, o.z); z = ::max(w, o.w); return *this; }
     bvec4 &min(int f)        { x = ::min(int(x), f); y = ::min(int(y), f); z = ::min(int(z), f); w = ::min(int(w), f); return *this; }
