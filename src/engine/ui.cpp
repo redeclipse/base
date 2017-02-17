@@ -1574,8 +1574,20 @@ namespace UI
         void bindtex()
         {
             changedraw(CHANGE_COLOR);
-            if(lasttex != tex) { gle::end(); lasttex = tex; glBindTexture(GL_TEXTURE_2D, tex->id); }
-            if(lastcolor != color) { gle::end(); lastcolor = color; color.init(); }
+            if(lasttex != tex)
+            {
+                gle::end();
+                lasttex = tex;
+                glBindTexture(GL_TEXTURE_2D, tex->id);
+                goto changecolor;
+            }
+            if(lastcolor != color)
+            {
+                gle::end();
+            changecolor:
+                lastcolor = color;
+                color.init();
+            }
         }
 
         void draw(float sx, float sy)
