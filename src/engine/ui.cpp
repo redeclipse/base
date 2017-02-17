@@ -530,6 +530,7 @@ namespace UI
         bool isnamed(const char *name) const { return name[0] == '#' ? name == gettypename() : !strcmp(name, getname()); }
 
         virtual bool iswindow() const { return false; }
+        virtual bool isspacer() const { return false; }
         virtual bool iscolor() const { return false; }
         virtual bool isgradient() const { return false; }
         virtual bool istext() const { return false; }
@@ -1250,6 +1251,7 @@ namespace UI
 
         static const char *typestr() { return "#Spacer"; }
         const char *gettype() const { return typestr(); }
+        bool isspacer() const { return true; }
 
         void layout()
         {
@@ -1286,6 +1288,7 @@ namespace UI
 
         static const char *typestr() { return "#Offsetter"; }
         const char *gettype() const { return typestr(); }
+        bool isspacer() const { return true; }
 
         void layout()
         {
@@ -1997,7 +2000,7 @@ namespace UI
                 wlen = 0-wrap;
                 for(Object *o = this->parent; o != NULL; o = o->parent)
                 {
-                    if(o->w > 0)
+                    if(!o->isspacer() && o->w > 0)
                     {
                         wlen *= o->w/k;
                         break;
