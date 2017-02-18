@@ -26,6 +26,15 @@ namespace hud
     {
         vector<gameent *> players;
         bool active;
+
+        scoregroup() { reset(); }
+        ~scoregroup() { reset(); }
+
+        void reset()
+        {
+            players.shrink(0);
+            active = false;
+        }
     };
     vector<scoregroup *> groups;
     scoregroup spectators;
@@ -100,8 +109,8 @@ namespace hud
     int groupplayers()
     {
         int numgroups = 0;
-        loopv(groups) groups[i]->active = false;
-        spectators.players.shrink(0);
+        loopv(groups) groups[i]->reset();
+        spectators.reset();
         int numdyns = game::numdynents();
         loopi(numdyns)
         {
@@ -130,7 +139,6 @@ namespace hud
             if(!team) g.total = 0;
             else if(m_team(game::gamemode, game::mutators)) g.total = teamscore(o->team).total;
             else g.total = o->points;
-            g.players.shrink(0);
             g.players.add(o);
             g.active = true;
         }
@@ -138,8 +146,7 @@ namespace hud
         loopvrev(groups) if(!groups[i]->active)
         {
             scoregroup *g = groups[i];
-            g->players.shrink(0);
-            groups.remove(i);
+            groups.removeobj(g);
             delete g;
         }
         spectators.players.sort(playersort);
