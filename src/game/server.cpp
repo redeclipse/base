@@ -4097,15 +4097,33 @@ namespace server
         if(!found) m->damagelog.add(dmghist(v->clientnum, millis));
     }
 
-    void gethistory(clientinfo *m, clientinfo *v, int millis, vector<int> &log, bool clear = false, int points = 0)
+    void gethistory(clientinfo *m, clientinfo *v, int millis, vector<int> &log, bool clear = false, int points = 0, int lastpoints = 0)
     {
-        loopv(m->damagelog) if(m->damagelog[i].clientnum != v->clientnum && millis-m->damagelog[i].millis <= G(assistkilldelay))
+        int last = -1;
+        if(lastpoints)
+        {
+            loopv(m->damagelog) if(m->damagelog[i].clientnum != v->clientnum && millis-m->damagelog[i].millis <= G(lasthitdelay))
+            {
+                if(last == -1 || m->damagelog[i].millis > m->damagelog[last].millis) last = i;
+            }
+        }
+        loopv(m->damagelog) if(m->damagelog[i].clientnum != v->clientnum)
         {
             clientinfo *assist = (clientinfo *)getinfo(m->damagelog[i].clientnum);
             if(assist)
             {
                 log.add(assist->clientnum);
-                if(points) givepoints(assist, points, m_points(gamemode, mutators), true);
+                if(points)
+                {
+                    if(!lastpoints || i != last)
+                    {
+                        if(millis-m->damagelog[i].millis <= G(assistkilldelay)) givepoints(assist, points, m_points(gamemode, mutators), true);
+                    }
+                    else
+                    {
+                        givepoints(assist, lastpoints, m_points(gamemode, mutators), true);
+                    }
+                }
             }
         }
         if(clear) m->damagelog.shrink(0);
@@ -4473,7 +4491,7 @@ namespace server
             ci->lastresowner[WR_SHOCK] = ci->clientnum;
         }
         static vector<int> dmglog; dmglog.setsize(0);
-        gethistory(ci, ci, gamemillis, dmglog, true, m_dm_oldschool(gamemode, mutators) ? 0 : 1);
+        gethistory(ci, ci, gamemillis, dmglog, true, m_dm_oldschool(gamemode, mutators) ? 0 : 1, m_lasthit(gamemode, mutators) ? G(lasthitbonus) : 0);
         sendf(-1, 1, "ri9i5v", N_DIED, ci->clientnum, ci->deaths, ci->totaldeaths, ci->clientnum, ci->frags, ci->totalfrags, 0, 0, -1, flags, ci->health*2, material, dmglog.length(), dmglog.length(), dmglog.getbuf());
         ci->position.setsize(0);
         if(smode) smode->died(ci, NULL);
