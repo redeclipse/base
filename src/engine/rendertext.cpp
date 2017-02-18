@@ -268,7 +268,7 @@ static float draw_char(Texture *&tex, int c, float x, float y, float scale)
 }
 
 #define TVECR(ci, ca) (bvec4::fromcolor(ci).lighten(textminintensity).alpha(ca))
-#define TVECA(ci, ca) (flags&TEXT_MODCOL ? (TVECR(ci, ca).muld(r, g, b, a, 255.f)) : (TVECR(ci, ca)))
+#define TVECA(ci, ca) (flags&TEXT_MODCOL ? (TVECR(ci, ca).muld(r, g, b, 255.f)) : (TVECR(ci, ca)))
 #define TVECX(cr, cg, cb, ca) (bvec4(cr, cg, cb, 255).lighten(textminintensity).alpha(ca))
 
 #define COLOURDARK 0.45f
