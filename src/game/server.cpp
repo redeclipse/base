@@ -4104,7 +4104,7 @@ namespace server
         {
             loopv(m->damagelog) if(m->damagelog[i].clientnum != v->clientnum && millis-m->damagelog[i].millis <= G(lasthitdelay))
             {
-                if(last == -1 || m->damagelog[i].millis > m->damagelog[last].millis) last = i;
+                if(last < 0 || m->damagelog[i].millis > m->damagelog[last].millis) last = i;
             }
         }
         loopv(m->damagelog) if(m->damagelog[i].clientnum != v->clientnum)
