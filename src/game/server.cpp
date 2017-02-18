@@ -4119,10 +4119,7 @@ namespace server
                     {
                         if(millis-m->damagelog[i].millis <= G(assistkilldelay)) givepoints(assist, points, m_points(gamemode, mutators), true);
                     }
-                    else
-                    {
-                        givepoints(assist, lastpoints, m_points(gamemode, mutators), true);
-                    }
+                    else givepoints(assist, lastpoints, m_points(gamemode, mutators), true);
                 }
             }
         }
