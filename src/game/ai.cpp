@@ -1139,12 +1139,11 @@ namespace ai
                 float yaw, pitch;
                 game::getyawpitch(d->o, ep, yaw, pitch);
                 game::fixrange(yaw, pitch);
-                bool insight = cansee(d, d->o, e->o), hasseen = d->ai->enemyseen && lastmillis-d->ai->enemyseen <= (d->skill*10)+1000,
-                     quick = d->ai->enemyseen && lastmillis-d->ai->enemyseen <= (W2(d->weapselect, fullauto, alt) ? W2(d->weapselect, delayattack, alt)*3 : skmod*3)+skmod*3;
+                bool insight = cansee(d, d->o, e->o), hasseen = d->ai->enemyseen && lastmillis-d->ai->enemyseen <= (d->skill*10)+1000;
                 if(insight) d->ai->enemyseen = lastmillis;
-                if(d->ai->dontmove || insight || hasseen || quick)
+                if(d->ai->dontmove || insight || hasseen)
                 {
-                    frame *= insight || d->skill > 100 ? 1.5f : (hasseen || quick ? 1.25f : 1.f);
+                    frame *= insight || d->skill > 100 ? 1.5f : (hasseen ? 1.25f : 1.f);
                     if(lockon(d, e, CLOSEDIST, W2(d->weapselect, aidist, alt) < CLOSEDIST))
                     {
                         frame *= 2.f;
@@ -1161,7 +1160,7 @@ namespace ai
                         int cooked = W2(d->weapselect, cooked, alt);
                         if(cooked&8) shoot = false; // inverted life
                     }
-                    if(shoot && hastarget(d, b, e, alt, insight || (!d->ai->dontmove && quick), yaw, pitch))
+                    if(shoot && hastarget(d, b, e, alt, insight, yaw, pitch))
                     {
                         d->action[alt ? AC_SECONDARY : AC_PRIMARY] = true;
                         d->actiontime[alt ? AC_SECONDARY : AC_PRIMARY] = lastmillis;
