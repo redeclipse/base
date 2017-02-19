@@ -576,11 +576,13 @@ GFVAR(IDF_GAMEMOD, kickpushzoom, 0, 0.125f, FVAR_MAX);
 
 GVAR(IDF_GAMEMOD, fragbonus, 0, 3, VAR_MAX);
 GVAR(IDF_GAMEMOD, enemybonus, 0, 1, VAR_MAX);
+GVAR(IDF_GAMEMOD, lasthitbonus, 0, 3, VAR_MAX);
 GVAR(IDF_GAMEMOD, teamkillpenalty, 0, 2, VAR_MAX);
 GVAR(IDF_GAMEMOD, firstbloodpoints, 0, 1, VAR_MAX);
 GVAR(IDF_GAMEMOD, headshotpoints, 0, 1, VAR_MAX);
 
 GVAR(IDF_GAMEMOD, assistkilldelay, 0, 5000, VAR_MAX);
+GVAR(IDF_GAMEMOD, lasthitdelay, 0, 10000, VAR_MAX);
 GVAR(IDF_GAMEMOD, multikilldelay, 0, 5000, VAR_MAX);
 GVAR(IDF_GAMEMOD, multikillpoints, 0, 1, VAR_MAX);
 GVAR(IDF_GAMEMOD, multikillbonus, 0, 0, 1); // if bonus is on, then points are multiplied by the current kill mutliplier (x2, x3, x4)
