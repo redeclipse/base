@@ -1374,13 +1374,12 @@ namespace UI
 
     struct TargetColor : Target
     {
-        Color color, origcolor;
+        Color color;
 
         void setup(const Color &color_, float minw_ = 0, float minh_ = 0)
         {
             Target::setup(minw_, minh_);
             color = color_;
-            origcolor = color;
         }
 
         static const char *typestr() { return "#TargetColor"; }
@@ -1431,14 +1430,13 @@ namespace UI
         enum { VERTICAL, HORIZONTAL };
 
         int dir;
-        Color color2, origcolor2;
+        Color color2;
 
         void setup(int type_, int dir_, const Color &color_, const Color &color2_, float minw_ = 0, float minh_ = 0)
         {
             FillColor::setup(type_, color_, minw_, minh_);
             dir = dir_;
             color2 = color2_;
-            origcolor2 = color2;
         }
 
         static const char *typestr() { return "#Gradient"; }
@@ -1948,7 +1946,7 @@ namespace UI
     {
         float scale, wrap, tw, th, wlen;
         int align;
-        Color color, origcolor;
+        Color color;
 
         void setup(float scale_ = 1, const Color &color_ = Color(colourwhite), float wrap_ = 0, int align_ = -1)
         {
@@ -1956,7 +1954,6 @@ namespace UI
             tw = th = wlen = 0;
             scale = scale_;
             color = color_;
-            origcolor = color;
             wrap = wrap_;
             align = align_;
         }
@@ -2682,7 +2679,7 @@ namespace UI
         float scale, offsetx, offsety;
         editor *edit;
         char *keyfilter;
-        Color color, origcolor;
+        Color color;
 
         TextEditor() : edit(NULL), keyfilter(NULL) {}
 
@@ -2706,7 +2703,7 @@ namespace UI
             edit->pixelwidth = abs(length)*FONTW;
             if(edit->linewrap && edit->maxy == 1) edit->updateheight();
             else edit->pixelheight = FONTH*max(height, 1);
-            origcolor = color = Color(colourwhite);
+            color = Color(colourwhite);
             scale = scale_;
             if(keyfilter_) SETSTR(keyfilter, keyfilter_);
             else DELETEA(keyfilter);
@@ -3520,13 +3517,13 @@ namespace UI
     #define UIBLENDCMDS(t) \
         if(o->isgradient()) \
         { \
-            ((Gradient *)o)->color.a = clamp(int(*c * ((Gradient *)o)->origcolor.a), 0, 255); \
-            ((Gradient *)o)->color2.a = clamp(int(*c * ((Gradient *)o)->origcolor2.a), 0, 255); \
+            ((Gradient *)o)->color.a = clamp(int(*c * ((Gradient *)o)->color.a), 0, 255); \
+            ((Gradient *)o)->color2.a = clamp(int(*c * ((Gradient *)o)->color2.a), 0, 255); \
             t; \
         } \
-        else if(o->iscolor()) { ((TargetColor *)o)->color.a = clamp(int(*c * ((TargetColor *)o)->origcolor.a), 0, 255); t; } \
-        else if(o->istext()) { ((Text *)o)->color.a = clamp(int(*c * ((Text *)o)->origcolor.a), 0, 255); t; } \
-        else if(o->iseditor()) { ((TextEditor *)o)->color.a = clamp(int(*c * ((TextEditor *)o)->origcolor.a), 0, 255); t; }
+        else if(o->iscolor()) { ((TargetColor *)o)->color.a = clamp(int(*c * ((TargetColor *)o)->color.a), 0, 255); t; } \
+        else if(o->istext()) { ((Text *)o)->color.a = clamp(int(*c * ((Text *)o)->color.a), 0, 255); t; } \
+        else if(o->iseditor()) { ((TextEditor *)o)->color.a = clamp(int(*c * ((TextEditor *)o)->color.a), 0, 255); t; }
 
     UIREVCMDC(changeblend, "f", (float *c), UIBLENDCMDS(break));
     void changechildblends(Object *o, float *c)
@@ -3540,33 +3537,33 @@ namespace UI
     #define UICHGCOLCMDS(t) \
         if(o->isgradient()) \
         { \
-            ((Gradient *)o)->color.r = clamp(int(*c * ((Gradient *)o)->origcolor.r), 0, 255); \
-            ((Gradient *)o)->color.g = clamp(int(*c * ((Gradient *)o)->origcolor.g), 0, 255); \
-            ((Gradient *)o)->color.b = clamp(int(*c * ((Gradient *)o)->origcolor.b), 0, 255); \
-            ((Gradient *)o)->color2.r = clamp(int(*c * ((Gradient *)o)->origcolor2.r), 0, 255); \
-            ((Gradient *)o)->color2.g = clamp(int(*c * ((Gradient *)o)->origcolor2.g), 0, 255); \
-            ((Gradient *)o)->color2.b = clamp(int(*c * ((Gradient *)o)->origcolor2.b), 0, 255); \
+            ((Gradient *)o)->color.r = clamp(int(*c * ((Gradient *)o)->color.r), 0, 255); \
+            ((Gradient *)o)->color.g = clamp(int(*c * ((Gradient *)o)->color.g), 0, 255); \
+            ((Gradient *)o)->color.b = clamp(int(*c * ((Gradient *)o)->color.b), 0, 255); \
+            ((Gradient *)o)->color2.r = clamp(int(*c * ((Gradient *)o)->color2.r), 0, 255); \
+            ((Gradient *)o)->color2.g = clamp(int(*c * ((Gradient *)o)->color2.g), 0, 255); \
+            ((Gradient *)o)->color2.b = clamp(int(*c * ((Gradient *)o)->color2.b), 0, 255); \
             t; \
         } \
         else if(o->iscolor()) \
         { \
-            ((TargetColor *)o)->color.r = clamp(int(*c * ((TargetColor *)o)->origcolor.r), 0, 255); \
-            ((TargetColor *)o)->color.g = clamp(int(*c * ((TargetColor *)o)->origcolor.g), 0, 255); \
-            ((TargetColor *)o)->color.b = clamp(int(*c * ((TargetColor *)o)->origcolor.b), 0, 255); \
+            ((TargetColor *)o)->color.r = clamp(int(*c * ((TargetColor *)o)->color.r), 0, 255); \
+            ((TargetColor *)o)->color.g = clamp(int(*c * ((TargetColor *)o)->color.g), 0, 255); \
+            ((TargetColor *)o)->color.b = clamp(int(*c * ((TargetColor *)o)->color.b), 0, 255); \
             t; \
         } \
         else if(o->istext()) \
         { \
-            ((Text *)o)->color.r = clamp(int(*c * ((Text *)o)->origcolor.r), 0, 255); \
-            ((Text *)o)->color.g = clamp(int(*c * ((Text *)o)->origcolor.g), 0, 255); \
-            ((Text *)o)->color.b = clamp(int(*c * ((Text *)o)->origcolor.b), 0, 255); \
+            ((Text *)o)->color.r = clamp(int(*c * ((Text *)o)->color.r), 0, 255); \
+            ((Text *)o)->color.g = clamp(int(*c * ((Text *)o)->color.g), 0, 255); \
+            ((Text *)o)->color.b = clamp(int(*c * ((Text *)o)->color.b), 0, 255); \
             t; \
         } \
         else if(o->iseditor()) \
         { \
-            ((TextEditor *)o)->color.r = clamp(int(*c * ((TextEditor *)o)->origcolor.r), 0, 255); \
-            ((TextEditor *)o)->color.g = clamp(int(*c * ((TextEditor *)o)->origcolor.g), 0, 255); \
-            ((TextEditor *)o)->color.b = clamp(int(*c * ((TextEditor *)o)->origcolor.b), 0, 255); \
+            ((TextEditor *)o)->color.r = clamp(int(*c * ((TextEditor *)o)->color.r), 0, 255); \
+            ((TextEditor *)o)->color.g = clamp(int(*c * ((TextEditor *)o)->color.g), 0, 255); \
+            ((TextEditor *)o)->color.b = clamp(int(*c * ((TextEditor *)o)->color.b), 0, 255); \
             t; \
         }
 
