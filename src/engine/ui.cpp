@@ -1432,6 +1432,9 @@ namespace UI
         int dir;
         vector<Color> colors;
 
+        Gradient() : dir(VERTICAL) {}
+        ~Gradient() { colors.shrink(0); }
+
         void setup(int type_, int dir_, const Color &color_, const Color &color2_, float minw_ = 0, float minh_ = 0)
         {
             FillColor::setup(type_, color_, minw_, minh_);
