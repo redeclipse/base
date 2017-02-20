@@ -1461,17 +1461,17 @@ namespace UI
             float gw = dir == HORIZONTAL ? w/float(cols-1) : w,
                   gh = dir == VERTICAL ? h/float(cols-1) : h,
                   vx = sx, vy = sy;
+            gle::begin(GL_TRIANGLE_STRIP);
             loopi(cols-1)
             {
-                gle::begin(GL_TRIANGLE_STRIP); // inside the loop because it creates colour banding otherwise
-                gle::attribf(vx+gw, vy);    (dir == HORIZONTAL ? colors[i+1] : colors[i]).attrib();
                 gle::attribf(vx,    vy);    colors[i].attrib();
-                gle::attribf(vx+gw, vy+gh); colors[i+1].attrib();
+                gle::attribf(vx+gw, vy);    (dir == HORIZONTAL ? colors[i+1] : colors[i]).attrib();
                 gle::attribf(vx,    vy+gh); (dir == HORIZONTAL ? colors[i] : colors[i+1]).attrib();
+                gle::attribf(vx+gw, vy+gh); colors[i+1].attrib();
                 if(dir == HORIZONTAL) vx += gw;
                 else if(dir == VERTICAL) vy += gh;
-                gle::end();
             }
+            gle::end();
 
             Object::draw(sx, sy);
         }
