@@ -1430,13 +1430,15 @@ namespace UI
         enum { VERTICAL, HORIZONTAL };
 
         int dir;
-        Color color2;
+        vector<Color> colors;
 
         void setup(int type_, int dir_, const Color &color_, const Color &color2_, float minw_ = 0, float minh_ = 0)
         {
             FillColor::setup(type_, color_, minw_, minh_);
             dir = dir_;
-            color2 = color2_;
+            colors.shrink(0);
+            colors.add(color_);
+            colors.add(color2_);
         }
 
         static const char *typestr() { return "#Gradient"; }
@@ -1455,12 +1457,21 @@ namespace UI
             changedraw(CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
             if(type==MODULATE) modblend(); else resetblend();
 
-            gle::begin(GL_TRIANGLE_STRIP);
-            gle::attribf(sx+w, sy);   (dir == HORIZONTAL ? color2 : color).attrib();
-            gle::attribf(sx,   sy);   color.attrib();
-            gle::attribf(sx+w, sy+h); color2.attrib();
-            gle::attribf(sx,   sy+h); (dir == HORIZONTAL ? color : color2).attrib();
-            gle::end();
+            int cols = colors.length();
+            float gw = dir == HORIZONTAL ? w/float(cols-1) : w,
+                  gh = dir == VERTICAL ? h/float(cols-1) : h,
+                  vx = sx, vy = sy;
+            loopi(cols-1)
+            {
+                gle::begin(GL_TRIANGLE_STRIP); // inside the loop because it creates colour banding otherwise
+                gle::attribf(vx+gw, vy);    (dir == HORIZONTAL ? colors[i+1] : colors[i]).attrib();
+                gle::attribf(vx,    vy);    colors[i].attrib();
+                gle::attribf(vx+gw, vy+gh); colors[i+1].attrib();
+                gle::attribf(vx,    vy+gh); (dir == HORIZONTAL ? colors[i] : colors[i+1]).attrib();
+                if(dir == HORIZONTAL) vx += gw;
+                else if(dir == VERTICAL) vy += gh;
+                gle::end();
+            }
 
             Object::draw(sx, sy);
         }
@@ -3517,8 +3528,7 @@ namespace UI
     #define UIBLENDCMDS(t) \
         if(o->isgradient()) \
         { \
-            ((Gradient *)o)->color.a = clamp(int(*c * ((Gradient *)o)->color.a), 0, 255); \
-            ((Gradient *)o)->color2.a = clamp(int(*c * ((Gradient *)o)->color2.a), 0, 255); \
+            loopvk(((Gradient *)o)->colors) ((Gradient *)o)->colors[k].a = clamp(int(*c * ((Gradient *)o)->colors[k].a), 0, 255); \
             t; \
         } \
         else if(o->iscolor()) { ((TargetColor *)o)->color.a = clamp(int(*c * ((TargetColor *)o)->color.a), 0, 255); t; } \
@@ -3537,12 +3547,12 @@ namespace UI
     #define UICHGCOLCMDS(t) \
         if(o->isgradient()) \
         { \
-            ((Gradient *)o)->color.r = clamp(int(*c * ((Gradient *)o)->color.r), 0, 255); \
-            ((Gradient *)o)->color.g = clamp(int(*c * ((Gradient *)o)->color.g), 0, 255); \
-            ((Gradient *)o)->color.b = clamp(int(*c * ((Gradient *)o)->color.b), 0, 255); \
-            ((Gradient *)o)->color2.r = clamp(int(*c * ((Gradient *)o)->color2.r), 0, 255); \
-            ((Gradient *)o)->color2.g = clamp(int(*c * ((Gradient *)o)->color2.g), 0, 255); \
-            ((Gradient *)o)->color2.b = clamp(int(*c * ((Gradient *)o)->color2.b), 0, 255); \
+            loopvk(((Gradient *)o)->colors) \
+            { \
+                ((Gradient *)o)->colors[k].r = clamp(int(*c * ((Gradient *)o)->colors[k].r), 0, 255); \
+                ((Gradient *)o)->colors[k].g = clamp(int(*c * ((Gradient *)o)->colors[k].g), 0, 255); \
+                ((Gradient *)o)->colors[k].b = clamp(int(*c * ((Gradient *)o)->colors[k].b), 0, 255); \
+            } \
             t; \
         } \
         else if(o->iscolor()) \
@@ -3586,6 +3596,17 @@ namespace UI
 
     ICOMMAND(0, uimodhgradient, "iiffe", (int *c, int *c2, float *minw, float *minh, uint *children),
         BUILD(Gradient, o, o->setup(Gradient::MODULATE, Gradient::HORIZONTAL, Color(*c), Color(*c2), *minw*uiscale, *minh*uiscale), children));
+
+    ICOMMAND(0, uiaddgradient, "i", (int *c),
+    {
+        for(Object *o = buildparent; o != NULL; o = o->parent)
+        {
+            if(o->iswindow()) break;
+            if(!o->isgradient()) continue;
+            ((Gradient *)o)->colors.add(Color(*c));
+            break;
+        }
+    });
 
     ICOMMAND(0, uioutline, "iffe", (int *c, float *minw, float *minh, uint *children),
         BUILD(Outline, o, o->setup(Color(*c), *minw*uiscale, *minh*uiscale), children));
