@@ -532,7 +532,6 @@ namespace UI
         virtual bool iswindow() const { return false; }
         virtual bool isspacer() const { return false; }
         virtual bool iscolor() const { return false; }
-        virtual bool isgradient() const { return false; }
         virtual bool istext() const { return false; }
         virtual bool isimage() const { return false; }
         virtual bool iseditor() const { return false; }
@@ -1374,12 +1373,19 @@ namespace UI
 
     struct TargetColor : Target
     {
-        Color color;
+        enum { SOLID = 0, MODULATE, OUTLINE };
+        enum { VERTICAL, HORIZONTAL };
 
-        void setup(const Color &color_, float minw_ = 0, float minh_ = 0)
+        int type, dir;
+        vector<Color> colors;
+
+        void setup(const Color &color_, float minw_ = 0, float minh_ = 0, int type_ = SOLID, int dir_ = VERTICAL)
         {
             Target::setup(minw_, minh_);
-            color = color_;
+            colors.shrink(0);
+            colors.add(color_);
+            type = type_;
+            dir = dir_;
         }
 
         static const char *typestr() { return "#TargetColor"; }
@@ -1389,61 +1395,13 @@ namespace UI
 
     struct FillColor : TargetColor
     {
-        enum { SOLID = 0, MODULATE };
-
-        int type;
-
-        void setup(int type_, const Color &color_, float minw_ = 0, float minh_ = 0)
+        void setup(const Color &color_, float minw_ = 0, float minh_ = 0, int type_ = SOLID, int dir_ = VERTICAL)
         {
-            TargetColor::setup(color_, minw_, minh_);
-            type = type_;
+            TargetColor::setup(color_, minw_, minh_, type_, dir_);
         }
 
         static const char *typestr() { return "#FillColor"; }
         const char *gettype() const { return typestr(); }
-
-        void startdraw()
-        {
-            hudnotextureshader->set();
-            gle::defvertex(2);
-        }
-
-        void draw(float sx, float sy)
-        {
-            changedraw(CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
-            if(type==MODULATE) modblend(); else resetblend();
-
-            color.init();
-            gle::begin(GL_TRIANGLE_STRIP);
-            gle::attribf(sx+w, sy);
-            gle::attribf(sx,   sy);
-            gle::attribf(sx+w, sy+h);
-            gle::attribf(sx,   sy+h);
-            gle::end();
-
-            Object::draw(sx, sy);
-        }
-    };
-
-    struct Gradient : FillColor
-    {
-        enum { VERTICAL, HORIZONTAL };
-
-        int dir;
-        vector<Color> colors;
-
-        void setup(int type_, int dir_, const Color &color_, const Color &color2_, float minw_ = 0, float minh_ = 0)
-        {
-            FillColor::setup(type_, color_, minw_, minh_);
-            dir = dir_;
-            colors.shrink(0);
-            colors.add(color_);
-            colors.add(color2_);
-        }
-
-        static const char *typestr() { return "#Gradient"; }
-        const char *gettype() const { return typestr(); }
-        bool isgradient() const { return true; }
 
         void startdraw()
         {
@@ -1458,23 +1416,46 @@ namespace UI
             if(type==MODULATE) modblend(); else resetblend();
 
             int cols = colors.length();
-            float gw = dir == HORIZONTAL ? w/float(cols-1) : w,
-                  gh = dir == VERTICAL ? h/float(cols-1) : h,
-                  vx = sx, vy = sy;
             gle::begin(GL_TRIANGLE_STRIP);
-            loopi(cols-1)
+            if(cols >= 2)
             {
-                gle::attribf(vx,    vy);    colors[i].attrib();
-                gle::attribf(vx+gw, vy);    (dir == HORIZONTAL ? colors[i+1] : colors[i]).attrib();
-                gle::attribf(vx,    vy+gh); (dir == HORIZONTAL ? colors[i] : colors[i+1]).attrib();
-                gle::attribf(vx+gw, vy+gh); colors[i+1].attrib();
-                if(dir == HORIZONTAL) vx += gw;
-                else if(dir == VERTICAL) vy += gh;
+                float gw = dir == HORIZONTAL ? w/float(cols-1) : w,
+                      gh = dir == VERTICAL ? h/float(cols-1) : h,
+                      vx = sx, vy = sy;
+                loopi(cols-1)
+                {
+                    gle::attribf(vx,    vy);    colors[i].attrib();
+                    gle::attribf(vx+gw, vy);    (dir == HORIZONTAL ? colors[i+1] : colors[i]).attrib();
+                    gle::attribf(vx,    vy+gh); (dir == HORIZONTAL ? colors[i] : colors[i+1]).attrib();
+                    gle::attribf(vx+gw, vy+gh); colors[i+1].attrib();
+                    if(dir == HORIZONTAL) vx += gw;
+                    else if(dir == VERTICAL) vy += gh;
+                }
+            }
+            else
+            {
+                colors[0].init();
+                gle::attribf(sx+w, sy);
+                gle::attribf(sx,   sy);
+                gle::attribf(sx+w, sy+h);
+                gle::attribf(sx,   sy+h);
             }
             gle::end();
 
             Object::draw(sx, sy);
         }
+    };
+
+    struct Gradient : FillColor
+    {
+        void setup(const Color &color_, const Color &color2_, float minw_ = 0, float minh_ = 0, int type_ = SOLID, int dir_ = VERTICAL)
+        {
+            FillColor::setup(color_, minw_, minh_, type_, dir_);
+            colors.add(color2_);
+        }
+
+        static const char *typestr() { return "#Gradient"; }
+        const char *gettype() const { return typestr(); }
     };
 
     struct Line : TargetColor
@@ -1492,7 +1473,7 @@ namespace UI
         {
             changedraw(CHANGE_SHADER | CHANGE_COLOR);
 
-            color.init();
+            colors[0].init();
             gle::begin(GL_LINES);
             gle::attribf(sx,   sy);
             gle::attribf(sx+w, sy+h);
@@ -1517,7 +1498,7 @@ namespace UI
         {
             changedraw(CHANGE_SHADER | CHANGE_COLOR);
 
-            color.init();
+            colors[0].init();
             gle::begin(GL_LINE_LOOP);
             gle::attribf(sx,   sy);
             gle::attribf(sx+w, sy);
@@ -1591,12 +1572,12 @@ namespace UI
                 glBindTexture(GL_TEXTURE_2D, tex->id);
                 goto changecolor;
             }
-            if(lastcolor != color)
+            if(lastcolor != colors[0])
             {
                 gle::end();
             changecolor:
-                lastcolor = color;
-                color.init();
+                lastcolor = colors[0];
+                colors[0].init();
             }
         }
 
@@ -1824,14 +1805,9 @@ namespace UI
 
     struct Shape : TargetColor
     {
-        enum { SOLID = 0, OUTLINE, MODULATE };
-
-        int type;
-
         void setup(const Color &color_, int type_ = SOLID, float minw_ = 0, float minh_ = 0)
         {
-            TargetColor::setup(color_, minw_, minh_);
-            type = type_;
+            TargetColor::setup(color_, minw_, minh_, type_);
         }
 
         void startdraw()
@@ -1884,7 +1860,7 @@ namespace UI
             changedraw(CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
             if(type==MODULATE) modblend(); else resetblend();
 
-            color.init();
+            colors[0].init();
             gle::begin(type == OUTLINE ? GL_LINE_LOOP : GL_TRIANGLES);
             gle::attrib(vec2(sx, sy).add(a));
             gle::attrib(vec2(sx, sy).add(b));
@@ -1922,7 +1898,7 @@ namespace UI
             if(type==MODULATE) modblend(); else resetblend();
 
             float r = radius <= 0 ? min(w, h)/2 : radius;
-            color.init();
+            colors[0].init();
             vec2 center(sx + r, sy + r);
             if(type == OUTLINE)
             {
@@ -3038,13 +3014,13 @@ namespace UI
             if(m)
             {
                 entitylight light;
-                light.color = color.tocolor();
+                light.color = colors[0].tocolor();
                 light.dir = vec(0, -1, 2).normalize();
                 vec center, radius;
                 m->boundbox(center, radius);
                 float yaw;
                 vec o = calcmodelpreviewpos(radius, yaw).sub(center);
-                rendermodel(&light, name, anim|ANIM_NOTRANS, o, yaw, 0, 0, 0, NULL, NULL, 0, 0, blend*(color.a/255.f), scale);
+                rendermodel(&light, name, anim|ANIM_NOTRANS, o, yaw, 0, 0, 0, NULL, NULL, 0, 0, blend*(colors[0].a/255.f), scale);
             }
             if(clipstack.length()) clipstack.last().scissor();
             modelpreview::end();
@@ -3086,7 +3062,7 @@ namespace UI
             int sx1, sy1, sx2, sy2;
             window->calcscissor(sx, sy, sx+w, sy+h, sx1, sy1, sx2, sy2, false);
             modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, false, clipstack.length() > 0);
-            game::renderplayerpreview(model, pcol.tohexcolor(), team, weapon, vanity, scale, blend*(color.a/255.f), color.tocolor());
+            game::renderplayerpreview(model, pcol.tohexcolor(), team, weapon, vanity, scale, blend*(colors[0].a/255.f), colors[0].tocolor());
             if(clipstack.length()) clipstack.last().scissor();
             modelpreview::end();
         }
@@ -3118,7 +3094,7 @@ namespace UI
             int sx1, sy1, sx2, sy2;
             window->calcscissor(sx, sy, sx+w, sy+h, sx1, sy1, sx2, sy2, false);
             modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, false, clipstack.length() > 0);
-            previewprefab(name, color.tocolor(), blend*(color.a/255.f));
+            previewprefab(name, colors[0].tocolor(), blend*(colors[0].a/255.f));
             if(clipstack.length()) clipstack.last().scissor();
             modelpreview::end();
         }
@@ -3182,7 +3158,7 @@ namespace UI
             float xt = min(1.0f, t->xs/float(t->ys)), yt = min(1.0f, t->ys/float(t->xs));
             loopk(4) { tc[k].x = tc[k].x/xt - float(xoff)/t->xs; tc[k].y = tc[k].y/yt - float(yoff)/t->ys; }
             glBindTexture(GL_TEXTURE_2D, t->id);
-            if(slot.loaded) gle::colorf(vslot.colorscale.x*color.r/255.f, vslot.colorscale.y*color.g/255.f, vslot.colorscale.z*color.b/255.f, color.a/255.f);
+            if(slot.loaded) gle::colorf(vslot.colorscale.x*colors[0].r/255.f, vslot.colorscale.y*colors[0].g/255.f, vslot.colorscale.z*colors[0].b/255.f, colors[0].a/255.f);
             quad(x, y, w, h, tc);
             if(detailtex)
             {
@@ -3194,14 +3170,14 @@ namespace UI
                 glBlendFunc(GL_SRC_ALPHA, GL_ONE);
                 glBindTexture(GL_TEXTURE_2D, glowtex->id);
                 vec glowcolor = vslot.getglowcolor();
-                gle::colorf(glowcolor.x*color.r/255.f, glowcolor.y*color.g/255.f, glowcolor.z*color.b/255.f, color.a/255.f);
+                gle::colorf(glowcolor.x*colors[0].r/255.f, glowcolor.y*colors[0].g/255.f, glowcolor.z*colors[0].b/255.f, colors[0].a/255.f);
                 quad(x, y, w, h, tc);
                 glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             }
             if(layertex)
             {
                 glBindTexture(GL_TEXTURE_2D, layertex->id);
-                gle::colorf(layer->colorscale.x*color.r/255.f, layer->colorscale.y*color.g/255.f, layer->colorscale.z*color.g/255.f, color.a/255.f);
+                gle::colorf(layer->colorscale.x*colors[0].r/255.f, layer->colorscale.y*colors[0].g/255.f, layer->colorscale.z*colors[0].g/255.f, colors[0].a/255.f);
                 quad(x, y, w/2, h/2, tc);
             }
         }
@@ -3476,10 +3452,10 @@ namespace UI
         BUILD(SliderButton, o, o->setup(), children));
 
     ICOMMAND(0, uicolour, "iffe", (int *c, float *minw, float *minh, uint *children),
-        BUILD(FillColor, o, o->setup(FillColor::SOLID, Color(*c), *minw*uiscale, *minh*uiscale), children));
+        BUILD(FillColor, o, o->setup(Color(*c), *minw*uiscale, *minh*uiscale, TargetColor::SOLID), children));
 
     ICOMMAND(0, uimodcolour, "iffe", (int *c, float *minw, float *minh, uint *children),
-        BUILD(FillColor, o, o->setup(FillColor::MODULATE, Color(*c), *minw*uiscale, *minh*uiscale), children));
+        BUILD(FillColor, o, o->setup(Color(*c), *minw*uiscale, *minh*uiscale, TargetColor::MODULATE), children));
 
     Object *uirootwin(Object *root)
     {
@@ -3512,8 +3488,22 @@ namespace UI
             } \
         });
 
+    #define UIREVCMDW(func, types, argtypes, body) \
+        ICOMMAND(0, ui##func, types, argtypes, \
+        { \
+            for(Object *o = buildparent; o != NULL; o = o->parent) \
+            { \
+                if(o->iswindow()) break; \
+                body; \
+            } \
+        });
+
     #define UICOLOURCMDS(t) \
-        if(o->iscolor()) { ((TargetColor *)o)->color = Color(*c); t; } \
+        if(o->iscolor()) \
+        { \
+            loopvk(((TargetColor *)o)->colors) ((TargetColor *)o)->colors[k] = Color(*c); \
+            t; \
+        } \
         else if(o->istext()) { ((Text *)o)->color = Color(*c); t; } \
         else if(o->iseditor()) { ((TextEditor *)o)->color = Color(*c); t; }
 
@@ -3526,12 +3516,11 @@ namespace UI
     UIWINCMDC(setcolours, "i", (int *c), setchildcolours(o, c));
 
     #define UIBLENDCMDS(t) \
-        if(o->isgradient()) \
+        if(o->iscolor()) \
         { \
-            loopvk(((Gradient *)o)->colors) ((Gradient *)o)->colors[k].a = clamp(int(*c * ((Gradient *)o)->colors[k].a), 0, 255); \
+            loopvk(((TargetColor *)o)->colors) ((TargetColor *)o)->colors[k].a = clamp(int(*c * ((TargetColor *)o)->colors[k].a), 0, 255); \
             t; \
         } \
-        else if(o->iscolor()) { ((TargetColor *)o)->color.a = clamp(int(*c * ((TargetColor *)o)->color.a), 0, 255); t; } \
         else if(o->istext()) { ((Text *)o)->color.a = clamp(int(*c * ((Text *)o)->color.a), 0, 255); t; } \
         else if(o->iseditor()) { ((TextEditor *)o)->color.a = clamp(int(*c * ((TextEditor *)o)->color.a), 0, 255); t; }
 
@@ -3545,21 +3534,14 @@ namespace UI
 
 
     #define UICHGCOLCMDS(t) \
-        if(o->isgradient()) \
+        if(o->iscolor()) \
         { \
-            loopvk(((Gradient *)o)->colors) \
+            loopvk(((TargetColor *)o)->colors) \
             { \
-                ((Gradient *)o)->colors[k].r = clamp(int(*c * ((Gradient *)o)->colors[k].r), 0, 255); \
-                ((Gradient *)o)->colors[k].g = clamp(int(*c * ((Gradient *)o)->colors[k].g), 0, 255); \
-                ((Gradient *)o)->colors[k].b = clamp(int(*c * ((Gradient *)o)->colors[k].b), 0, 255); \
+                ((TargetColor *)o)->colors[k].r = clamp(int(*c * ((TargetColor *)o)->colors[k].r), 0, 255); \
+                ((TargetColor *)o)->colors[k].g = clamp(int(*c * ((TargetColor *)o)->colors[k].g), 0, 255); \
+                ((TargetColor *)o)->colors[k].b = clamp(int(*c * ((TargetColor *)o)->colors[k].b), 0, 255); \
             } \
-            t; \
-        } \
-        else if(o->iscolor()) \
-        { \
-            ((TargetColor *)o)->color.r = clamp(int(*c * ((TargetColor *)o)->color.r), 0, 255); \
-            ((TargetColor *)o)->color.g = clamp(int(*c * ((TargetColor *)o)->color.g), 0, 255); \
-            ((TargetColor *)o)->color.b = clamp(int(*c * ((TargetColor *)o)->color.b), 0, 255); \
             t; \
         } \
         else if(o->istext()) \
@@ -3585,28 +3567,46 @@ namespace UI
     }
     UIWINCMDC(changecolours, "f", (float *c), changechildcolours(o, c));
 
+    UIREVCMDW(addcolour, "i", (int *c),
+    {
+        if(!o->iscolor()) continue;
+        ((TargetColor *)o)->colors.add(Color(*c));
+        break;
+    });
+
+    UIREVCMDW(delcolour, "i", (int *c),
+    {
+        if(!o->iscolor()) continue;
+        loopvrev(((TargetColor *)o)->colors) if(((TargetColor *)o)->colors[i] == Color(*c)) ((TargetColor *)o)->colors.remove(i);
+        if(((TargetColor *)o)->colors.empty()) ((TargetColor *)o)->colors.add(Color(255, 255, 255));
+        break;
+    });
+
+    UIREVCMDW(setgradient, "i", (int *c),
+    {
+        if(!o->iscolor()) continue;
+        ((TargetColor *)o)->dir = clamp(*c, TargetColor::VERTICAL, TargetColor::HORIZONTAL);
+        break;
+    });
+
+    UIREVCMDW(setgradmod, "i", (int *c),
+    {
+        if(!o->iscolor()) continue;
+        ((TargetColor *)o)->type = clamp(*c, TargetColor::SOLID, TargetColor::MODULATE);
+        break;
+    });
+
     ICOMMAND(0, uivgradient, "iiffe", (int *c, int *c2, float *minw, float *minh, uint *children),
-        BUILD(Gradient, o, o->setup(Gradient::SOLID, Gradient::VERTICAL, Color(*c), Color(*c2), *minw*uiscale, *minh*uiscale), children));
+        BUILD(Gradient, o, o->setup(Color(*c), Color(*c2), *minw*uiscale, *minh*uiscale, Gradient::SOLID, Gradient::VERTICAL), children));
 
     ICOMMAND(0, uimodvgradient, "iiffe", (int *c, int *c2, float *minw, float *minh, uint *children),
-        BUILD(Gradient, o, o->setup(Gradient::MODULATE, Gradient::VERTICAL, Color(*c), Color(*c2), *minw*uiscale, *minh*uiscale), children));
+        BUILD(Gradient, o, o->setup(Color(*c), Color(*c2), *minw*uiscale, *minh*uiscale, Gradient::MODULATE, Gradient::VERTICAL), children));
 
     ICOMMAND(0, uihgradient, "iiffe", (int *c, int *c2, float *minw, float *minh, uint *children),
-        BUILD(Gradient, o, o->setup(Gradient::SOLID, Gradient::HORIZONTAL, Color(*c), Color(*c2), *minw*uiscale, *minh*uiscale), children));
+        BUILD(Gradient, o, o->setup(Color(*c), Color(*c2), *minw*uiscale, *minh*uiscale, Gradient::SOLID, Gradient::HORIZONTAL), children));
 
     ICOMMAND(0, uimodhgradient, "iiffe", (int *c, int *c2, float *minw, float *minh, uint *children),
-        BUILD(Gradient, o, o->setup(Gradient::MODULATE, Gradient::HORIZONTAL, Color(*c), Color(*c2), *minw*uiscale, *minh*uiscale), children));
-
-    ICOMMAND(0, uiaddgradient, "i", (int *c),
-    {
-        for(Object *o = buildparent; o != NULL; o = o->parent)
-        {
-            if(o->iswindow()) break;
-            if(!o->isgradient()) continue;
-            ((Gradient *)o)->colors.add(Color(*c));
-            break;
-        }
-    });
+        BUILD(Gradient, o, o->setup(Color(*c), Color(*c2), *minw*uiscale, *minh*uiscale, Gradient::MODULATE, Gradient::HORIZONTAL), children));
 
     ICOMMAND(0, uioutline, "iffe", (int *c, float *minw, float *minh, uint *children),
         BUILD(Outline, o, o->setup(Color(*c), *minw*uiscale, *minh*uiscale), children));
