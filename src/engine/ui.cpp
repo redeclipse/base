@@ -1422,14 +1422,22 @@ namespace UI
                 float gw = dir == HORIZONTAL ? w/float(cols-1) : w,
                       gh = dir == VERTICAL ? h/float(cols-1) : h,
                       vx = sx, vy = sy;
-                loopi(cols-1)
+                loopi(cols-1) switch(dir)
                 {
-                    gle::attribf(vx,    vy);    colors[i].attrib();
-                    gle::attribf(vx+gw, vy);    (dir == HORIZONTAL ? colors[i+1] : colors[i]).attrib();
-                    gle::attribf(vx,    vy+gh); (dir == HORIZONTAL ? colors[i] : colors[i+1]).attrib();
-                    gle::attribf(vx+gw, vy+gh); colors[i+1].attrib();
-                    if(dir == HORIZONTAL) vx += gw;
-                    else if(dir == VERTICAL) vy += gh;
+                    case HORIZONTAL:
+                        gle::attribf(vx,    vy);    colors[i].attrib();
+                        gle::attribf(vx+gw, vy);    colors[i+1].attrib();
+                        gle::attribf(vx,    vy+gh); colors[i].attrib();
+                        gle::attribf(vx+gw, vy+gh); colors[i+1].attrib();
+                        vx += gw;
+                        break;
+                    case VERTICAL:
+                        gle::attribf(vx+gw, vy);    colors[i].attrib();
+                        gle::attribf(vx+gw, vy+gh); colors[i+1].attrib();
+                        gle::attribf(vx,    vy);    colors[i].attrib();
+                        gle::attribf(vx,    vy+gh); colors[i+1].attrib();
+                        vy += gh;
+                        break;
                 }
             }
             else
