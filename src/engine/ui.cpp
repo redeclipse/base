@@ -1382,7 +1382,7 @@ namespace UI
         void setup(const Color &color_, float minw_ = 0, float minh_ = 0, int type_ = SOLID, int dir_ = VERTICAL)
         {
             Target::setup(minw_, minh_);
-            colors.shrink(0);
+            colors.setsize(0);
             colors.add(color_);
             type = type_;
             dir = dir_;
