@@ -1442,11 +1442,10 @@ namespace UI
             }
             else
             {
-                colors[0].init();
-                gle::attribf(sx+w, sy);
-                gle::attribf(sx,   sy);
-                gle::attribf(sx+w, sy+h);
-                gle::attribf(sx,   sy+h);
+                gle::attribf(sx+w, sy);   colors[0].attrib();
+                gle::attribf(sx,   sy);   colors[0].attrib();
+                gle::attribf(sx+w, sy+h); colors[0].attrib();
+                gle::attribf(sx,   sy+h); colors[0].attrib();
             }
             gle::end();
 
