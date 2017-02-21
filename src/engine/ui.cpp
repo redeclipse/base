@@ -1478,7 +1478,8 @@ namespace UI
 
         void draw(float sx, float sy)
         {
-            changedraw(CHANGE_SHADER | CHANGE_COLOR);
+            changedraw(CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
+            if(type==MODULATE) modblend(); else resetblend();
 
             colors[0].init();
             gle::begin(GL_LINES);
@@ -1503,7 +1504,8 @@ namespace UI
 
         void draw(float sx, float sy)
         {
-            changedraw(CHANGE_SHADER | CHANGE_COLOR);
+            changedraw(CHANGE_SHADER | CHANGE_COLOR | CHANGE_BLEND);
+            if(type==MODULATE) modblend(); else resetblend();
 
             colors[0].init();
             gle::begin(GL_LINE_LOOP);
@@ -1534,13 +1536,22 @@ namespace UI
     {
         static Texture *lasttex;
         static Color lastcolor;
+        static GLenum lastmode;
 
         Texture *tex;
         bool alphatarget;
 
         void setup(Texture *tex_, const Color &color_, bool alphatarget_ = false, float minw_ = 0, float minh_ = 0)
         {
-            TargetColor::setup(color_, minw_, minh_);
+            TargetColor::setup(color_, minw_, minh_, SOLID, VERTICAL);
+            tex = tex_;
+            alphatarget = alphatarget_;
+        }
+
+        void setup(Texture *tex_, const Color &color_, const Color &color2_, bool alphatarget_ = false, float minw_ = 0, float minh_ = 0, int dir_ = VERTICAL)
+        {
+            TargetColor::setup(color_, minw_, minh_, SOLID, dir_);
+            colors.add(color2_); // gradient version
             tex = tex_;
             alphatarget = alphatarget_;
         }
@@ -1558,10 +1569,7 @@ namespace UI
         {
             lasttex = NULL;
             lastcolor = Color(0, 0, 0, 0);
-
-            gle::defvertex(2);
-            gle::deftexcoord0();
-            gle::begin(GL_QUADS);
+            lastmode = GL_POINTS; // force mode change in bindtex
         }
 
         void enddraw()
@@ -1569,32 +1577,81 @@ namespace UI
             gle::end();
         }
 
-        void bindtex()
+        void bindtex(GLenum mode = GL_QUADS)
         {
-            changedraw(CHANGE_COLOR);
+            changedraw(CHANGE_COLOR | CHANGE_BLEND);
+            if(type==MODULATE) modblend(); else resetblend();
+            if(lastmode != mode)
+            {
+                if(lastmode != GL_POINTS) gle::end();
+                gle::defvertex(2);
+                gle::deftexcoord0();
+                if(mode == GL_TRIANGLE_STRIP) Color::def(); // gradient
+                gle::begin(mode);
+                lastmode = mode;
+                goto changetex;
+            }
             if(lasttex != tex)
             {
                 gle::end();
+            changetex:
                 lasttex = tex;
                 glBindTexture(GL_TEXTURE_2D, tex->id);
                 goto changecolor;
             }
-            if(lastcolor != colors[0])
+            if(mode == GL_QUADS && lastcolor != colors[0])
             {
                 gle::end();
             changecolor:
-                lastcolor = colors[0];
-                colors[0].init();
+                switch(mode)
+                {
+                    case GL_TRIANGLE_STRIP:
+                        lastcolor = Color(0, 0, 0, 0);
+                    case GL_QUADS:
+                        lastcolor = colors[0];
+                        colors[0].init();
+                        break;
+                }
             }
         }
 
         void draw(float sx, float sy)
         {
-            if(tex != notexture)
+            if(tex == notexture) { Object::draw(sx, sy); return; }
+
+            int cols = colors.length();
+            bindtex(cols >= 2 ? GL_TRIANGLE_STRIP : GL_QUADS);
+            if(cols >= 2)
             {
-                bindtex();
-                quads(sx, sy, w, h);
+                float gw = dir == HORIZONTAL ? w/float(cols-1) : w,
+                      gh = dir == VERTICAL ? h/float(cols-1) : h,
+                      part = 1/float(cols-1),
+                      vx = sx, vy = sy, ts = 0;
+                loopi(cols-1)
+                {
+                    float left = 1-(ts+part);
+                    if(left < part) part += left;
+                    switch(dir)
+                    {
+                        case HORIZONTAL:
+                            gle::attribf(vx, vy);       gle::attribf(ts, 0.f);      colors[i].attrib();
+                            gle::attribf(vx+gw, vy);    gle::attribf(ts+part, 0.f); colors[i+1].attrib();
+                            gle::attribf(vx, vy+gh);    gle::attribf(ts, 1.f);      colors[i].attrib();
+                            gle::attribf(vx+gw, vy+gh); gle::attribf(ts+part, 1.f); colors[i+1].attrib();
+                            vx += gw;
+                            break;
+                        case VERTICAL:
+                            gle::attribf(vx+gw, vy);    gle::attribf(1.f, ts);      colors[i].attrib();
+                            gle::attribf(vx+gw, vy+gh); gle::attribf(1.f, ts+part); colors[i+1].attrib();
+                            gle::attribf(vx, vy);       gle::attribf(0.f, ts);      colors[i].attrib();
+                            gle::attribf(vx, vy+gh);    gle::attribf(0.f, ts+part); colors[i+1].attrib();
+                            vy += gh;
+                            break;
+                    }
+                    ts += part;
+                }
             }
+            else quads(sx, sy, w, h);
 
             Object::draw(sx, sy);
         }
@@ -1602,6 +1659,7 @@ namespace UI
 
     Texture *Image::lasttex = NULL;
     Color Image::lastcolor(255, 255, 255);
+    GLenum Image::lastmode = GL_POINTS; // something we don't use
 
     struct CroppedImage : Image
     {
@@ -3720,6 +3778,20 @@ namespace UI
             Texture *tex = textureload(texname, 3, true, false);
             if(tex == notexture && *alttex) tex = textureload(alttex, 3, true, false);
             o->setup(tex, Color(*c), *a!=0, *minw*uiscale, *minh*uiscale);
+        }, children));
+
+    ICOMMAND(0, uiimagevgradient, "siiiffse", (char *texname, int *c, int *c2, int *a, float *minw, float *minh, char *alttex, uint *children),
+        BUILD(Image, o, {
+            Texture *tex = textureload(texname, 3, true, false);
+            if(tex == notexture && *alttex) tex = textureload(alttex, 3, true, false);
+            o->setup(tex, Color(*c), Color(*c2), *a!=0, *minw*uiscale, *minh*uiscale, Image::VERTICAL);
+        }, children));
+
+    ICOMMAND(0, uiimagehgradient, "siiiffse", (char *texname, int *c, int *c2, int *a, float *minw, float *minh, char *alttex, uint *children),
+        BUILD(Image, o, {
+            Texture *tex = textureload(texname, 3, true, false);
+            if(tex == notexture && *alttex) tex = textureload(alttex, 3, true, false);
+            o->setup(tex, Color(*c), Color(*c2), *a!=0, *minw*uiscale, *minh*uiscale, Image::HORIZONTAL);
         }, children));
 
     ICOMMAND(0, uistretchedimage, "siiffse", (char *texname, int *c, int *a, float *minw, float *minh, char *alttex, uint *children),
