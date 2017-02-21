@@ -163,37 +163,6 @@ namespace hud
     VAR(IDF_PERSIST, teamhurtdist, 0, 0, VAR_MAX);
     FVAR(IDF_PERSIST, teamhurtsize, 0, 0.0175f, 1000);
 
-    enum { BORDER_PLAY, BORDER_EDIT, BORDER_SPEC, BORDER_WAIT, BORDER_BG, BORDER_MAX };
-    enum { BORDERP_TOP, BORDERP_BOTTOM, BORDERP_MAX, BORDERP_ALL = (1<<BORDERP_TOP)|(1<<BORDERP_BOTTOM) };
-
-    VAR(IDF_PERSIST, playborder, 0, 0, BORDERP_ALL);
-    VAR(IDF_PERSIST|IDF_HEX, playbordertone, -CTONE_MAX, -CTONE_TEAM-1, 0xFFFFFF);
-    FVAR(IDF_PERSIST, playbordersize, 0, 0.05f, 1);
-    FVAR(IDF_PERSIST, playborderblend, 0, 0.5f, 1);
-
-    VAR(IDF_PERSIST, editborder, 0, 0, BORDERP_ALL);
-    VAR(IDF_PERSIST|IDF_HEX, editbordertone, -CTONE_MAX, 0, 0xFFFFFF);
-    FVAR(IDF_PERSIST, editbordersize, 0, 0.05f, 1);
-    FVAR(IDF_PERSIST, editborderblend, 0, 0.9f, 1);
-
-    VAR(IDF_PERSIST, specborder, 0, BORDERP_ALL, BORDERP_ALL);
-    VAR(IDF_PERSIST|IDF_HEX, specbordertone, -CTONE_MAX, 0, 0xFFFFFF);
-    FVAR(IDF_PERSIST, specbordersize, 0, 0.05f, 1);
-    FVAR(IDF_PERSIST, specborderblend, 0, 0.9f, 1);
-
-    VAR(IDF_PERSIST, waitborder, 0, BORDERP_ALL, BORDERP_ALL);
-    VAR(IDF_PERSIST|IDF_HEX, waitbordertone, -CTONE_MAX, 0, 0xFFFFFF);
-    FVAR(IDF_PERSIST, waitbordersize, 0, 0.05f, 1);
-    FVAR(IDF_PERSIST, waitborderblend, 0, 0.9f, 1);
-
-    VAR(IDF_PERSIST, backgroundborder, 0, 0, BORDERP_ALL);
-    VAR(IDF_PERSIST|IDF_HEX, backgroundbordertone, -CTONE_MAX, 0, 0xFFFFFF);
-    FVAR(IDF_PERSIST, backgroundbordersize, 0, 0.05f, 1);
-    FVAR(IDF_PERSIST, backgroundborderblend, 0, 0.5f, 1);
-
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, bordertoptex, "<grey>textures/hud/border", 3);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, borderbottomtex, "<grey><rotate:2>textures/hud/border", 3);
-
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, underlaytex, "", 3);
     VAR(IDF_PERSIST, underlaydisplay, 0, 0, 2); // 0 = only firstperson and alive, 1 = only when alive, 2 = always
     VAR(IDF_PERSIST, underlayblend, 0, 1, 1);
@@ -762,9 +731,15 @@ namespace hud
                 UI::pressui("scoreboard", scoreson);
                 if(game::player1->state == CS_DEAD) { if(scoreson) shownscores = true; }
                 else shownscores = false;
+                if(showhud) UI::showui("hud");
+                else UI::hideui("hud");
             }
         }
-        else if(!UI::hasmenu()) UI::openui(game::needname(game::player1) ? "profile" : "main");
+        else
+        {
+            UI::hideui("hud");
+            if(!UI::hasmenu()) UI::openui(game::needname(game::player1) ? "profile" : "main");
+        }
     }
 
     float motionblur(float scale)
@@ -3211,7 +3186,7 @@ namespace hud
             case 0:
             {
                 bool found = false;
-                if((cc = drawhealth(cx[i], cy[i], csl, fade, interm)) > 0) { cy[i] -= cc+cr; found = true; }
+                //if((cc = drawhealth(cx[i], cy[i], csl, fade, interm)) > 0) { cy[i] -= cc+cr; found = true; }
                 if(!interm && (cc = drawtimer(cx[i], cy[i], csl, fade)) > 0) { cy[i] -= cc+cr; found = true; }
                 if(found) left += csl;
                 break;
@@ -3320,55 +3295,6 @@ namespace hud
         drawtexture(x, y, c, c);
     }
 
-    void drawspecborder(int w, int h, int type, int &top, int &bottom)
-    {
-        if(type < 0 || type >= BORDER_MAX) return;
-        int btype[BORDER_MAX] = { playborder, editborder, specborder, waitborder, backgroundborder };
-        if(!btype[type]) return;
-        int bcolour[BORDER_MAX] = { playbordertone, editbordertone, specbordertone, waitbordertone, backgroundbordertone };
-        float bsize[BORDER_MAX] = { playbordersize, editbordersize, specbordersize, waitbordersize, backgroundbordersize },
-              bfade[BORDER_MAX] = { playborderblend, editborderblend, specborderblend, waitborderblend, backgroundborderblend };
-        int s = int(h*0.5f*bsize[type]);
-        if(!s) return;
-        vec col = vec(0, 0, 0);
-        if(bcolour[type]) skewcolour(col.x, col.y, col.z, bcolour[type]);
-        gle::color(col, bfade[type]);
-        loopi(BORDERP_MAX) if(btype[type]&(1<<i))
-        {
-            const char *bptex = i ? borderbottomtex : bordertoptex;
-            if(*bptex)
-            {
-                Texture *t = textureload(bptex, 3);
-                glBindTexture(GL_TEXTURE_2D, t->id);
-                float tw = t->w*(s/float(t->h));
-                int cw = int(ceilf(w/tw));
-                loopk(cw) switch(i)
-                {
-                    case BORDERP_TOP: drawtexture(k*tw, 0, tw, s); break;
-                    case BORDERP_BOTTOM: drawtexture(k*tw, h-s, tw, s); break;
-                    default: break;
-                }
-            }
-            else
-            {
-                usetexturing(false);
-                switch(i)
-                {
-                    case BORDERP_TOP: drawblend(0, 0, w, s, col.r, col.g, col.b, true); break;
-                    case BORDERP_BOTTOM: drawblend(0, h-s, w, s, col.r, col.g, col.b, true); break;
-                    default: break;
-                }
-                usetexturing(true);
-            }
-            switch(i)
-            {
-                case BORDERP_TOP: top += s; break;
-                case BORDERP_BOTTOM: bottom += s; break;
-                default: break;
-            }
-        }
-    }
-
     void drawbackground(int w, int h, int &top, int &bottom)
     {
         gle::colorf(1, 1, 1, 1);
@@ -3394,8 +3320,6 @@ namespace hud
             else if(h > w) offsetx = ((h-w)/float(h))*0.5f;
         }
         drawquad(0, 0, w, h, offsetx, offsety, 1-offsetx, 1-offsety);
-
-        drawspecborder(w, h, BORDER_BG, top, bottom);
 
         if(showloadinglogos)
         {
@@ -3490,7 +3414,6 @@ namespace hud
             if(!radardisabled && !hasinput(true) && (game::focus->state == CS_EDITING ? showeditradar >= 1 : chkcond(showradar, !game::tvmode() || (game::focus != game::player1 && radartype() == 3))))
                 drawradar(w, h, fade);
         }
-        drawspecborder(w, h, !gs_playing(game::gamestate) || game::player1->state == CS_SPECTATOR ? BORDER_SPEC : (game::player1->state == CS_WAITING ? BORDER_WAIT : (game::player1->state == CS_WAITING ? BORDER_EDIT : BORDER_PLAY)), top, bottom);
         return drawinventory(w, h, edge, top, bottom, fade);
     }
 

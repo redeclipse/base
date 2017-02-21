@@ -631,6 +631,8 @@ namespace client
         if(m_edit(game::gamemode)) addmsg(N_EDITMODE, "ri", edit ? 1 : 0);
     }
 
+    ICOMMAND(0, getclientfocused, "", (), intret(game::focus ? game::focus->clientnum : game::player1->clientnum));
+
     int getcn(physent *d)
     {
         if(!d || !gameent::is(d)) return -1;
@@ -775,6 +777,20 @@ namespace client
     }
     ICOMMAND(0, getclientteam, "s", (char *who), intret(getclientteam(parsewho(who))));
 
+    int getclientstate(int cn)
+    {
+        gameent *d = game::getclient(cn);
+        return d ? d->state : -1;
+    }
+    ICOMMAND(0, getclientstate, "s", (char *who), intret(getclientstate(parsewho(who))));
+
+    int getclienthealth(int cn)
+    {
+        gameent *d = game::getclient(cn);
+        return d ? d->health : -1;
+    }
+    ICOMMAND(0, getclienthealth, "s", (char *who), intret(getclienthealth(parsewho(who))));
+
     int getclientweapselect(int cn)
     {
         gameent *d = game::getclient(cn);
@@ -815,6 +831,14 @@ namespace client
     ICOMMAND(0, getclientprivilege, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d ? d->privilege&PRIV_TYPE : -1));
     ICOMMAND(0, getclientprivlocal, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d ? (d->privilege&PRIV_LOCAL ? 1 : 0) : -1));
     ICOMMAND(0, getclientprivtex, "s", (char *who), gameent *d = game::getclient(parsewho(who)); result(d ? hud::privtex(d->privilege, d->actortype) : ""));
+
+    ICOMMAND(0, getclientactortype, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d ? d->actortype : -1));
+    ICOMMAND(0, getclientallowimpulse, "sbb", (char *who, int *a, int *b),
+    {
+        gameent *d = game::getclient(parsewho(who));
+        intret(d && m_impulsemeter((*a >= 0 ? *a : game::gamemode), (*b >= 0 ? *b : game::mutators)) && physics::allowimpulse(d) ? 1 : 0);
+    });
+    ICOMMAND(0, getclientimpulse, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d ? d->impulse[IM_METER] : -1));
 
     bool haspriv(gameent *d, int priv)
     {

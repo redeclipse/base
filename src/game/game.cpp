@@ -339,6 +339,13 @@ namespace game
     ICOMMAND(0, getgamestatestr, "ib", (int *n, int *b), result(gamestates[clamp(*n, 0, 3)][clamp(*b >= 0 ? *b : gamestate, 0, int(G_S_MAX))]));
     ICOMMAND(0, getgametimeremain, "", (), intret(max(timeremaining*1000-((gs_playing(gamestate) ? lastmillis : totalmillis)-lasttimeremain), 0)));
 
+    ICOMMAND(0, getspawnweap, "bbb", (int *at, int *a, int *b), intret(m_weapon((*at >= 0 ? *at : game::focus->actortype), (*a >= 0 ? *a : gamemode), (*b >= 0 ? *b : mutators))));
+    ICOMMAND(0, getspawndelay, "bbbb", (int *at, int *a, int *b, int *c), intret(m_delay((*at >= 0 ? *at : game::focus->actortype), (*a >= 0 ? *a : gamemode), (*b >= 0 ? *b : mutators), (*c >= 0 ? *c : game::focus->team))));
+    ICOMMAND(0, getspawnprotect, "bb", (int *a, int *b), intret(m_protect((*a >= 0 ? *a : gamemode), (*b >= 0 ? *b : mutators))));
+    ICOMMAND(0, getspawnhealth, "bbb", (int *at, int *a, int *b), intret(m_health((*a >= 0 ? *a : gamemode), (*b >= 0 ? *b : mutators), (*at >= 0 ? *at : game::focus->actortype))));
+    ICOMMAND(0, getmaxhealth, "bbb", (int *at, int *a, int *b), intret(m_maxhealth((*a >= 0 ? *a : gamemode), (*b >= 0 ? *b : mutators), (*at >= 0 ? *at : game::focus->actortype))));
+    ICOMMAND(0, getimpulsemeter, "bb", (int *a, int *b), intret(m_impulsemeter((*a >= 0 ? *a : gamemode), (*b >= 0 ? *b : mutators))));
+
     const char *gametitle() { return connected() ? server::gamename(gamemode, mutators) : "ready"; }
     const char *gametext() { return connected() ? mapname : "not connected"; }
 
