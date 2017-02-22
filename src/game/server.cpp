@@ -2457,8 +2457,6 @@ namespace server
         else
         {
             lilswap(&d.hdr.gamever, 4);
-            if(d.hdr.gamever!=VERSION_GAME)
-                formatstring(msg, "\frDemo \fs\fc%s\fS requires \fs\fc%s\fS version of %s", name, d.hdr.gamever<VERSION_GAME ? "an older" : "a newer", versionname);
         }
         delete f;
         if(msg[0])
