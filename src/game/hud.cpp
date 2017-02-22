@@ -1760,19 +1760,20 @@ namespace hud
         if(!progressing) drawpointers(hudwidth, hudheight);
     }
 
-    void drawconsole(int type, int w, int h, int x, int y, int s, float fade)
+    void drawconsole(int w, int h, int x, int y, int s, float fade)
     {
         static vector<int> refs; refs.setsize(0);
         bool full = fullconsole || commandmillis > 0;
         int tz = 0;
         pushfont("console");
-        if(type >= 2)
+        if((showconsole && showhud) || commandmillis > 0)
         {
-            int numl = chatconsize, numo = chatconsize+chatconoverflow;
-            loopvj(conlines) if(conlines[j].type >= CON_CHAT)
+            int numl = consize, numo = consize+conoverflow;
+            loopvj(conlines) if(conlines[j].type >= (confilter && !full ? CON_INFO : 0))
             {
-                int len = !full && conlines[j].type > CON_CHAT ? chatcontime/2 : chatcontime;
-                if(full || totalmillis-conlines[j].reftime <= len+chatconfade)
+                int len = conlines[j].type >= CON_CHAT ? (!full && conlines[j].type > CON_CHAT ? chatcontime/2 : chatcontime) : (!full && conlines[j].type < CON_IMPORTANT ? contime/2 : contime),
+                    fadelen = conlines[j].type >= CON_CHAT ? chatconfade : confade;
+                if(conskip ? j>=conskip-1 || j>=conlines.length()-numl : full || totalmillis-conlines[j].reftime <= len+fadelen)
                 {
                     if(refs.length() >= numl)
                     {
@@ -1780,11 +1781,15 @@ namespace hud
                         {
                             if(full) break;
                             bool found = false;
-                            loopvrev(refs) if(conlines[refs[i]].reftime+(conlines[refs[i]].type > CON_CHAT ? chatcontime/2 : chatcontime) < conlines[j].reftime+len)
+                            loopvrev(refs)
                             {
-                                refs.remove(i);
-                                found = true;
-                                break;
+                                int check = conlines[refs[i]].type >= CON_CHAT ? (!full && conlines[refs[i]].type > CON_CHAT ? chatcontime/2 : chatcontime) : (!full && conlines[refs[i]].type < CON_IMPORTANT ? contime/2 : contime);
+                                if(conlines[refs[i]].reftime+check < conlines[j].reftime+len)
+                                {
+                                    refs.remove(i);
+                                    found = true;
+                                    break;
+                                }
                             }
                             if(!found) continue;
                         }
@@ -1793,222 +1798,171 @@ namespace hud
                     refs.add(j);
                 }
             }
-            pushhudscale(chatconscale);
-            int tx = int(x/chatconscale), ty = int(y/chatconscale),
-                ts = int(s/chatconscale), tr = tx+FONTW;
-            tz = int(tz/chatconscale);
-            loopvj(refs)
+            pushhudscale(conscale);
+            int tx = int(x/conscale), ty = int(y/conscale),
+                ts = int(s/conscale), tr = concenter ? tx+ts/2 : tx;
+            tz = int(tz/conscale);
+            loopvrev(refs)
             {
-                int len = !full && conlines[refs[j]].type > CON_CHAT ? chatcontime/2 : chatcontime;
-                float f = full || !chatconfade ? 1.f : clamp(((len+chatconfade)-(totalmillis-conlines[refs[j]].reftime))/float(chatconfade), 0.f, 1.f),
-                    g = conlines[refs[j]].type > CON_CHAT ? conblend : chatconblend;
-                if(chatcondate && *chatcondateformat)
-                    tz += draw_textf("%s %s", tr, ty-tz, 0, 0, -1, -1, -1, int(fade*f*g*255), TEXT_LEFT_UP, -1, ts, 1, gettime(conlines[refs[j]].realtime, chatcondateformat), conlines[refs[j]].cref)*f;
-                else tz += draw_textf("%s", tr, ty-tz, 0, 0, -1, -1, -1, int(fade*f*g*255), TEXT_LEFT_UP, -1, ts, 1, conlines[refs[j]].cref)*f;
+                int len = !full && conlines[refs[i]].type < CON_IMPORTANT ? contime/2 : contime;
+                float f = full || !confade ? 1.f : clamp(((len+confade)-(totalmillis-conlines[refs[i]].reftime))/float(confade), 0.f, 1.f),
+                    g = full ? fullconblend  : (conlines[refs[i]].type >= CON_IMPORTANT ? selfconblend : conblend);
+                if(condate && *condateformat)
+                    tz += draw_textf("%s %s", tr, ty+tz, 0, 0, -1, -1, -1, int(fade*f*g*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, ts, 1, gettime(conlines[refs[i]].realtime, condateformat), conlines[refs[i]].cref)*f;
+                else tz += draw_textf("%s", tr, ty+tz, 0, 0, -1, -1, -1, int(fade*f*g*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, ts, 1, conlines[refs[i]].cref)*f;
+            }
+            if(conskipwarn && conskip)
+                tz += draw_textf("\fs\fzwy^^^\fS IN BACKLOG: \fs\fy%d\fS \fs\fzwy^^^\fS", tr, ty+tz, 0, 0, -1, -1, -1, int(fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, ts, 1, conskip);
+            pophudmatrix();
+            tz = int(tz*conscale);
+        }
+        if(commandmillis > 0)
+        {
+            pushfont("command");
+            Texture *t = textureload(commandicon ? commandicon : inputtex, 3);
+            vec c(1, 1, 1);
+            if(commandcolour) c = vec::hexcolor(commandcolour);
+            float f = float(totalmillis%1000)/1000.f;
+            if(f < 0.5f) f = 1.f-f;
+            pushhudscale(commandscale);
+            float th = FONTH, tw = float(t->w)/float(t->h)*th;
+            int tx = int(x/commandscale), ty = int(y/commandscale),
+                ts = int(s/commandscale), tq = (concenter ? tx+ts/2-FONTW*3 : tx), tr = int(tw+FONTW), tt = ts-(FONTH+FONTW);
+            tz = int(tz/commandscale);
+            glBindTexture(GL_TEXTURE_2D, t->id);
+            gle::color(c, fullconblend*fade*f);
+            drawtexture(tx, ty+tz, th, tw);
+            int cp = commandpos >= 0 ? commandpos : strlen(commandbuf);//, fp = completesize && completeoffset >= 0 ? min(pos, completeoffset+completesize) : -1;
+            tz += draw_textf("%s", tq+tr, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, cp, tt, 1, commandbuf);
+            if(capslockwarn && capslockon)
+                tz += draw_textf("\fs\fzoy^\fS \fs\fw\f{CAPSLOCK}\fS is \fs\fcON\fS", tq+tr, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1);
+            popfont();
+            if(commandbuf[0] == '/' && commandbuf[1])
+            {
+                char *start = &commandbuf[1];
+                const char chrlist[7] = { ';', '(', ')', '[', ']', '\"', '$', };
+                loopi(7)
+                {
+                    char *semi = strrchr(start, chrlist[i]);
+                    if(semi) start = semi+1;
+                }
+                while(*start == ' ') start++;
+                if(*start)
+                {
+                    char *end = start;
+                    end += strcspn(start, " \t\0");
+                    if(end)
+                    {
+                        string idname;
+                        copystring(idname, start, min(size_t(end-start+1), sizeof(idname)));
+                        ident *id = idents.access(idname);
+                        if(id)
+                        {
+                            stringz(idtype);
+                            if(id->flags&IDF_CLIENT || id->flags&IDF_SERVER)
+                            {
+                                if(id->flags&IDF_ADMIN) concatstring(idtype, "Admin-only ");
+                                else if(id->flags&IDF_MODERATOR) concatstring(idtype, "Moderator-only ");
+                                concatstring(idtype, id->flags&IDF_CLIENT ? "Game " : "Server ");
+                            }
+                            if(id->type != ID_COMMAND)
+                            {
+                                if(id->flags&IDF_READONLY) concatstring(idtype, "Read-only ");
+                                if(id->flags&IDF_PERSIST) concatstring(idtype, "Persistent ");
+                                if(id->flags&IDF_WORLD) concatstring(idtype, "World ");
+                            }
+                            switch(id->type)
+                            {
+                                case ID_ALIAS:
+                                {
+                                    tz += draw_textf("%s%sAlias", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, idtype, *idtype ? " " : "");
+                                    break;
+                                }
+                                case ID_COMMAND:
+                                {
+                                    tz += draw_textf("%sCommand", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, idtype, *idtype ? " " : "");
+                                    if(strlen(id->args)) tz += draw_textf("\faArgs: \fw%d \fa(\fw%s\fa)", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, strlen(id->args), id->args);
+                                    else tz += draw_textf("\faArgs: \fwnone", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1);
+                                    break;
+                                }
+                                case ID_VAR:
+                                {
+                                    tz += draw_textf("%s%sinteger", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, idtype, *idtype ? " " : "");
+                                    if(id->flags&IDF_HEX)
+                                    {
+                                        if(id->maxval == 0xFFFFFF)
+                                            tz += draw_textf("\faMin: \fw0x%.6X\fa (\fw%d\fa,\fw%d\fa,\fw%d\fa), Max: \fw0x%.6X\fa (\fw%d\fa,\fw%d\fa,\fw%d\fa), Default: \fw0x%.6X\fa (\fw%d\fa,\fw%d\fa,\fw%d\fa), Current: \fw0x%.6X (\fw%d\fa,\fw%d\fa,\fw%d\fa) [\fs\f[%d]#\fS]", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1,
+                                                    id->minval, (id->minval>>16)&0xFF, (id->minval>>8)&0xFF, id->minval&0xFF,
+                                                    id->maxval, (id->maxval>>16)&0xFF, (id->maxval>>8)&0xFF, id->maxval&0xFF,
+                                                    id->def.i, (id->def.i>>16)&0xFF, (id->def.i>>8)&0xFF, id->def.i&0xFF,
+                                                    *id->storage.i, (*id->storage.i>>16)&0xFF, (*id->storage.i>>8)&0xFF, *id->storage.i&0xFF, *id->storage.i);
+                                        else tz += draw_textf("\faMin: \fw0x%X\fa, Max: \fw0x%X\fa, Default: \fw0x%X\fa, Current: \fw0x%X", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->minval, id->maxval, id->def.i, *id->storage.i);
+                                    }
+                                    else tz += draw_textf("\faMin: \fw%d\fa, Max: \fw%d\fa, Default: \fw%d\fa, Current: \fw%d", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->minval, id->maxval, id->def.i, *id->storage.i);
+                                    break;
+                                }
+                                case ID_FVAR:
+                                {
+                                    tz += draw_textf("%s%sfloat", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, idtype, *idtype ? " " : "");
+                                    tz += draw_textf("\faMin: \fw%f\fa, Max: \fw%f\fa, Default: \fw%f\fa, Current: \fw%f", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->minvalf, id->maxvalf, id->def.f, *id->storage.f);
+                                    break;
+                                }
+                                case ID_SVAR:
+                                {
+                                    tz += draw_textf("%s%s%s", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, *idtype ? " " : "", idtype, id->flags&IDF_TEXTURE ? "Texture" : "String");
+                                    tz += draw_textf("\faDefault: \fw%s\fa, Current: \fw%s", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->def.s, *id->storage.s);
+                                    break;
+                                }
+                            }
+
+                            stringz(fields);
+                            if(id->type == ID_VAR && id->fields.length() > 1)
+                            {
+                                concatstring(fields, "<bitfield>");
+                                loopvj(id->fields) if(id->fields[j])
+                                    concformatstring(fields, "\n%d [0x%x] = %s", 1<<j, 1<<j, id->fields[j]);
+                            }
+                            else loopvj(id->fields) if(id->fields[j])
+                                concformatstring(fields, "%s<%s>", j ? " " : "", id->fields[j]);
+                            if(!*fields) switch(id->type)
+                            {
+                                case ID_ALIAS: concatstring(fields, "<arguments>"); break;
+                                case ID_VAR: concatstring(fields, "<integer>"); break;
+                                case ID_FVAR: concatstring(fields, "<float>"); break;
+                                case ID_SVAR: concatstring(fields, "<string>"); break;
+                                case ID_COMMAND:
+                                {
+                                    loopj(strlen(id->args)) switch(id->args[j])
+                                    {
+                                        case 's': concformatstring(fields, "%s<string>", j ? " " : ""); break;
+                                        case 'i': case 'b': case 'N': concformatstring(fields, "%s<%s>", j ? " " : "", id->flags&IDF_HEX ? "bitfield" : "integer"); break;
+                                        case 'f': case 'g': concformatstring(fields, "%s<float>", j ? " " : ""); break;
+                                        case 't': concformatstring(fields, "%s<null>", j ? " " : ""); break;
+                                        case 'e': concformatstring(fields, "%s<commands>", j ? " " : ""); break;
+                                        case 'r': case '$': concformatstring(fields, "%s<ident>", j ? " " : ""); break;
+                                        default: concformatstring(fields, "%s<?>", j ? " " : ""); break;
+                                    }
+                                    break;
+                                }
+                                default: break;
+                            }
+                            tz += draw_textf("Usage: \fa/%s %s", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->name, fields);
+
+                            if(id->desc)
+                                tz += draw_textf("\fa%s", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->desc);
+
+                            if(id->type == ID_ALIAS)
+                            {
+                                pushfont("consub");
+                                tz += draw_textf("\faContents: \fw%s", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->getstr());
+                                popfont();
+                            }
+                        }
+                    }
+                }
             }
             pophudmatrix();
-            tz = int(tz*chatconscale);
-        }
-        else
-        {
-            if((showconsole && showhud) || commandmillis > 0)
-            {
-                int numl = consize, numo = consize+conoverflow;
-                loopvj(conlines) if(type ? conlines[j].type >= (confilter && !full ? CON_LO : 0) && conlines[j].type <= CON_HI : conlines[j].type >= (confilter && !full ? CON_LO : 0))
-                {
-                    int len = conlines[j].type >= CON_CHAT ? (!full && conlines[j].type > CON_CHAT ? chatcontime/2 : chatcontime) : (!full && conlines[j].type < CON_IMPORTANT ? contime/2 : contime),
-                        fadelen = conlines[j].type >= CON_CHAT ? chatconfade : confade;
-                    if(conskip ? j>=conskip-1 || j>=conlines.length()-numl : full || totalmillis-conlines[j].reftime <= len+fadelen)
-                    {
-                        if(refs.length() >= numl)
-                        {
-                            if(refs.length() >= numo)
-                            {
-                                if(full) break;
-                                bool found = false;
-                                loopvrev(refs)
-                                {
-                                    int check = conlines[refs[i]].type >= CON_CHAT ? (!full && conlines[refs[i]].type > CON_CHAT ? chatcontime/2 : chatcontime) : (!full && conlines[refs[i]].type < CON_IMPORTANT ? contime/2 : contime);
-                                    if(conlines[refs[i]].reftime+check < conlines[j].reftime+len)
-                                    {
-                                        refs.remove(i);
-                                        found = true;
-                                        break;
-                                    }
-                                }
-                                if(!found) continue;
-                            }
-                            conlines[j].reftime = min(conlines[j].reftime, totalmillis-len);
-                        }
-                        refs.add(j);
-                    }
-                }
-                pushhudscale(conscale);
-                int tx = int(x/conscale), ty = int(y/conscale),
-                    ts = int(s/conscale), tr = concenter ? tx+ts/2 : tx;
-                tz = int(tz/conscale);
-                loopvrev(refs)
-                {
-                    int len = !full && conlines[refs[i]].type < CON_IMPORTANT ? contime/2 : contime;
-                    float f = full || !confade ? 1.f : clamp(((len+confade)-(totalmillis-conlines[refs[i]].reftime))/float(confade), 0.f, 1.f),
-                        g = full ? fullconblend  : (conlines[refs[i]].type >= CON_IMPORTANT ? selfconblend : conblend);
-                    if(condate && *condateformat)
-                        tz += draw_textf("%s %s", tr, ty+tz, 0, 0, -1, -1, -1, int(fade*f*g*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, ts, 1, gettime(conlines[refs[i]].realtime, condateformat), conlines[refs[i]].cref)*f;
-                    else tz += draw_textf("%s", tr, ty+tz, 0, 0, -1, -1, -1, int(fade*f*g*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, ts, 1, conlines[refs[i]].cref)*f;
-                }
-                if(conskipwarn && conskip)
-                    tz += draw_textf("\fs\fzwy^^^\fS IN BACKLOG: \fs\fy%d\fS \fs\fzwy^^^\fS", tr, ty+tz, 0, 0, -1, -1, -1, int(fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, ts, 1, conskip);
-                pophudmatrix();
-                tz = int(tz*conscale);
-            }
-            if(commandmillis > 0)
-            {
-                pushfont("command");
-                Texture *t = textureload(commandicon ? commandicon : inputtex, 3);
-                vec c(1, 1, 1);
-                if(commandcolour) c = vec::hexcolor(commandcolour);
-                float f = float(totalmillis%1000)/1000.f;
-                if(f < 0.5f) f = 1.f-f;
-                pushhudscale(commandscale);
-                float th = FONTH, tw = float(t->w)/float(t->h)*th;
-                int tx = int(x/commandscale), ty = int(y/commandscale),
-                    ts = int(s/commandscale), tq = (concenter ? tx+ts/2-FONTW*3 : tx), tr = int(tw+FONTW), tt = ts-(FONTH+FONTW);
-                tz = int(tz/commandscale);
-                glBindTexture(GL_TEXTURE_2D, t->id);
-                gle::color(c, fullconblend*fade*f);
-                drawtexture(tx, ty+tz, th, tw);
-                int cp = commandpos >= 0 ? commandpos : strlen(commandbuf);//, fp = completesize && completeoffset >= 0 ? min(pos, completeoffset+completesize) : -1;
-                tz += draw_textf("%s", tq+tr, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, cp, tt, 1, commandbuf);
-                if(capslockwarn && capslockon)
-                    tz += draw_textf("\fs\fzoy^\fS \fs\fw\f{CAPSLOCK}\fS is \fs\fcON\fS", tq+tr, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1);
-                popfont();
-                if(commandbuf[0] == '/' && commandbuf[1])
-                {
-                    char *start = &commandbuf[1];
-                    const char chrlist[7] = { ';', '(', ')', '[', ']', '\"', '$', };
-                    loopi(7)
-                    {
-                        char *semi = strrchr(start, chrlist[i]);
-                        if(semi) start = semi+1;
-                    }
-                    while(*start == ' ') start++;
-                    if(*start)
-                    {
-                        char *end = start;
-                        end += strcspn(start, " \t\0");
-                        if(end)
-                        {
-                            string idname;
-                            copystring(idname, start, min(size_t(end-start+1), sizeof(idname)));
-                            ident *id = idents.access(idname);
-                            if(id)
-                            {
-                                stringz(idtype);
-                                if(id->flags&IDF_CLIENT || id->flags&IDF_SERVER)
-                                {
-                                    if(id->flags&IDF_ADMIN) concatstring(idtype, "Admin-only ");
-                                    else if(id->flags&IDF_MODERATOR) concatstring(idtype, "Moderator-only ");
-                                    concatstring(idtype, id->flags&IDF_CLIENT ? "Game " : "Server ");
-                                }
-                                if(id->type != ID_COMMAND)
-                                {
-                                    if(id->flags&IDF_READONLY) concatstring(idtype, "Read-only ");
-                                    if(id->flags&IDF_PERSIST) concatstring(idtype, "Persistent ");
-                                    if(id->flags&IDF_WORLD) concatstring(idtype, "World ");
-                                }
-                                switch(id->type)
-                                {
-                                    case ID_ALIAS:
-                                    {
-                                        tz += draw_textf("%s%sAlias", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, idtype, *idtype ? " " : "");
-                                        break;
-                                    }
-                                    case ID_COMMAND:
-                                    {
-                                        tz += draw_textf("%sCommand", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, idtype, *idtype ? " " : "");
-                                        if(strlen(id->args)) tz += draw_textf("\faArgs: \fw%d \fa(\fw%s\fa)", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, strlen(id->args), id->args);
-                                        else tz += draw_textf("\faArgs: \fwnone", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1);
-                                        break;
-                                    }
-                                    case ID_VAR:
-                                    {
-                                        tz += draw_textf("%s%sinteger", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, idtype, *idtype ? " " : "");
-                                        if(id->flags&IDF_HEX)
-                                        {
-                                            if(id->maxval == 0xFFFFFF)
-                                                tz += draw_textf("\faMin: \fw0x%.6X\fa (\fw%d\fa,\fw%d\fa,\fw%d\fa), Max: \fw0x%.6X\fa (\fw%d\fa,\fw%d\fa,\fw%d\fa), Default: \fw0x%.6X\fa (\fw%d\fa,\fw%d\fa,\fw%d\fa), Current: \fw0x%.6X (\fw%d\fa,\fw%d\fa,\fw%d\fa) [\fs\f[%d]#\fS]", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1,
-                                                        id->minval, (id->minval>>16)&0xFF, (id->minval>>8)&0xFF, id->minval&0xFF,
-                                                        id->maxval, (id->maxval>>16)&0xFF, (id->maxval>>8)&0xFF, id->maxval&0xFF,
-                                                        id->def.i, (id->def.i>>16)&0xFF, (id->def.i>>8)&0xFF, id->def.i&0xFF,
-                                                        *id->storage.i, (*id->storage.i>>16)&0xFF, (*id->storage.i>>8)&0xFF, *id->storage.i&0xFF, *id->storage.i);
-                                            else tz += draw_textf("\faMin: \fw0x%X\fa, Max: \fw0x%X\fa, Default: \fw0x%X\fa, Current: \fw0x%X", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->minval, id->maxval, id->def.i, *id->storage.i);
-                                        }
-                                        else tz += draw_textf("\faMin: \fw%d\fa, Max: \fw%d\fa, Default: \fw%d\fa, Current: \fw%d", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->minval, id->maxval, id->def.i, *id->storage.i);
-                                        break;
-                                    }
-                                    case ID_FVAR:
-                                    {
-                                        tz += draw_textf("%s%sfloat", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, idtype, *idtype ? " " : "");
-                                        tz += draw_textf("\faMin: \fw%f\fa, Max: \fw%f\fa, Default: \fw%f\fa, Current: \fw%f", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->minvalf, id->maxvalf, id->def.f, *id->storage.f);
-                                        break;
-                                    }
-                                    case ID_SVAR:
-                                    {
-                                        tz += draw_textf("%s%s%s", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, *idtype ? " " : "", idtype, id->flags&IDF_TEXTURE ? "Texture" : "String");
-                                        tz += draw_textf("\faDefault: \fw%s\fa, Current: \fw%s", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->def.s, *id->storage.s);
-                                        break;
-                                    }
-                                }
-
-                                stringz(fields);
-                                if(id->type == ID_VAR && id->fields.length() > 1)
-                                {
-                                    concatstring(fields, "<bitfield>");
-                                    loopvj(id->fields) if(id->fields[j])
-                                        concformatstring(fields, "\n%d [0x%x] = %s", 1<<j, 1<<j, id->fields[j]);
-                                }
-                                else loopvj(id->fields) if(id->fields[j])
-                                    concformatstring(fields, "%s<%s>", j ? " " : "", id->fields[j]);
-                                if(!*fields) switch(id->type)
-                                {
-                                    case ID_ALIAS: concatstring(fields, "<arguments>"); break;
-                                    case ID_VAR: concatstring(fields, "<integer>"); break;
-                                    case ID_FVAR: concatstring(fields, "<float>"); break;
-                                    case ID_SVAR: concatstring(fields, "<string>"); break;
-                                    case ID_COMMAND:
-                                    {
-                                        loopj(strlen(id->args)) switch(id->args[j])
-                                        {
-                                            case 's': concformatstring(fields, "%s<string>", j ? " " : ""); break;
-                                            case 'i': case 'b': case 'N': concformatstring(fields, "%s<%s>", j ? " " : "", id->flags&IDF_HEX ? "bitfield" : "integer"); break;
-                                            case 'f': case 'g': concformatstring(fields, "%s<float>", j ? " " : ""); break;
-                                            case 't': concformatstring(fields, "%s<null>", j ? " " : ""); break;
-                                            case 'e': concformatstring(fields, "%s<commands>", j ? " " : ""); break;
-                                            case 'r': case '$': concformatstring(fields, "%s<ident>", j ? " " : ""); break;
-                                            default: concformatstring(fields, "%s<?>", j ? " " : ""); break;
-                                        }
-                                        break;
-                                    }
-                                    default: break;
-                                }
-                                tz += draw_textf("Usage: \fa/%s %s", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->name, fields);
-
-                                if(id->desc)
-                                    tz += draw_textf("\fa%s", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->desc);
-
-                                if(id->type == ID_ALIAS)
-                                {
-                                    pushfont("consub");
-                                    tz += draw_textf("\faContents: \fw%s", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->getstr());
-                                    popfont();
-                                }
-                            }
-                        }
-                    }
-                }
-                pophudmatrix();
-                //tz = int(tz*commandscale);
-            }
+            //tz = int(tz*commandscale);
         }
         popfont();
     }
@@ -3509,9 +3463,7 @@ namespace hud
             else if(gs_playing(game::gamestate) && game::focus == game::player1 && game::focus->state == CS_ALIVE && game::inzoom())
                 drawzoom(hudwidth, hudheight);
         }
-        drawconsole(showconsole < 2 || noview ? 0 : 1, hudwidth, hudheight, edge*2, edge+top, hudwidth-edge*4-FONTW*2, consolefade);
-        if(showconsole >= 2 && !noview && showconsole && showhud)
-            drawconsole(2, hudwidth, hudheight, left, hudheight-edge-bottom, showfps >= 2 || showstats >= (m_edit(game::gamemode) ? 1 : 2) ? (hudwidth-left*2)/2-edge*4-FONTW*2 : ((hudwidth-left*2)/2-edge*4)*2-FONTW*2, consolefade);
+        drawconsole(hudwidth, hudheight, edge*2, edge+top, hudwidth-edge*4-FONTW*2, consolefade);
         glDisable(GL_BLEND);
     }
 
