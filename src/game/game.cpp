@@ -3494,12 +3494,11 @@ namespace game
                 }
                 if(useth)
                 {
-                    vec c(0.25f, 0.25f, 0.25f);
                     int millis = lastmillis%500;
                     float amt = millis <= 250 ? 1.f-(millis/250.f) : (millis-250)/250.f, height = d->height*0.5f;
-                    flashcolour(c.r, c.g, c.b, 1.f, 0.f, 0.f, amt);
                     if(playerhinthurtthrob) height += height*amt*0.1f;
-                    vec o = d->center(), offset = vec(o).sub(camera1->o).rescale(-d->radius);
+                    vec c = rescolour(d, PULSE_WARN),
+                        o = d->center(), offset = vec(o).sub(camera1->o).rescale(-d->radius);
                     offset.z = max(offset.z, -1.0f);
                     offset.add(o);
                     part_icon(offset, textureload(hud::warningtex, 3, true, false), height*playerhinthurtsize, amt*blend*playerhinthurtblend, 0, 0, 1, c.tohexcolor());

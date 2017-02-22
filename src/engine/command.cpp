@@ -4393,8 +4393,10 @@ ICOMMAND(0, precf, "fi", (float *a, int *b),
 LISTAVGCOMMAND(listavg, int);
 LISTAVGCOMMAND(listavgf, float);
 
-ICOMMAND(0, floor, "f", (float *n), floatret(floor(*n)));
-ICOMMAND(0, ceil, "f", (float *n), floatret(ceil(*n)));
+ICOMMAND(0, floor, "f", (float *n), intret(floor(*n)));
+ICOMMAND(0, ceil, "f", (float *n), intret(ceil(*n)));
+ICOMMAND(0, floorf, "f", (float *n), floatret(floor(*n)));
+ICOMMAND(0, ceilf, "f", (float *n), floatret(ceil(*n)));
 ICOMMAND(0, round, "ff", (float *n, float *k),
 {
     double step = *k;
@@ -4406,7 +4408,7 @@ ICOMMAND(0, round, "ff", (float *n, float *k),
     }
     else r = r < 0 ? ceil(r - 0.5) : floor(r + 0.5);
     floatret(float(r));
-    });
+});
 
 ICOMMAND(0, cond, "ee2V", (tagval *args, int numargs),
 {
@@ -4445,6 +4447,44 @@ CASECOMMAND(case, "i", int, args[0].getint(), args[i].type == VAL_NULL || args[i
 CASECOMMAND(casef, "f", float, args[0].getfloat(), args[i].type == VAL_NULL || args[i].getfloat() == val);
 CASECOMMAND(cases, "s", const char *, args[0].getstr(), args[i].type == VAL_NULL || !strcmp(args[i].getstr(), val));
 CASECOMMAND(cases~, "s", const char *, args[0].getstr(), args[i].type == VAL_NULL || !strcasecmp(args[i].getstr(), val));
+
+ICOMMAND(0, caseif, "te2V", (tagval *args, int numargs),
+{
+    for(int i = 0; i+1 < numargs; i += 2)
+    {
+        bool compare = false;
+        switch(args[i].type)
+        {
+            case VAL_NULL: compare = true; break;
+            case VAL_INT: compare = args[i].getint() != 0; break;
+            case VAL_FLOAT: compare = args[i].getfloat() != 0; break;
+            case VAL_CODE: compare = executebool(args[i].code); break;
+            default: compare = executebool(args[i].getstr()); break;
+        }
+        if(compare)
+        {
+            executeret(args[i+1].code, *commandret);
+            return;
+        }
+    }
+});
+
+ICOMMAND(0, doif, "te2V", (tagval *args, int numargs),
+{
+    for(int i = 0; i+1 < numargs; i += 2)
+    {
+        bool compare = false;
+        switch(args[i].type)
+        {
+            case VAL_NULL: compare = true; break;
+            case VAL_INT: compare = args[i].getint() != 0; break;
+            case VAL_FLOAT: compare = args[i].getfloat() != 0; break;
+            case VAL_CODE: compare = executebool(args[i].code); break;
+            default: compare = executebool(args[i].getstr()); break;
+        }
+        if(compare) executeret(args[i+1].code, *commandret);
+    }
+});
 
 ICOMMAND(0, rnd, "ii", (int *a, int *b), intret(*a - *b > 0 ? rnd(*a - *b) + *b : *b));
 
