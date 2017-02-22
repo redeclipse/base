@@ -838,7 +838,12 @@ namespace client
         gameent *d = game::getclient(parsewho(who));
         intret(d && m_impulsemeter((*a >= 0 ? *a : game::gamemode), (*b >= 0 ? *b : game::mutators)) && physics::allowimpulse(d) ? 1 : 0);
     });
-    ICOMMAND(0, getclientimpulse, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d ? d->impulse[IM_METER] : -1));
+    ICOMMAND(0, getclientimpulse, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d ? d->impulse[IM_METER] : 0));
+    ICOMMAND(0, getclientbuffing, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d ? d->lastbuff : 0));
+    ICOMMAND(0, getclientburning, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d && burntime ? d->burning(lastmillis, burntime) : 0));
+    ICOMMAND(0, getclientbleeding, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d && bleedtime ? d->bleeding(lastmillis, bleedtime) : 0));
+    ICOMMAND(0, getclientshocking, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d && shocktime ? d->shocking(lastmillis, shocktime) : 0));
+    ICOMMAND(0, getclientrescolour, "si", (char *who, int *res), gameent *d = game::getclient(parsewho(who)); intret(d ? game::rescolint(d, *res) : 0));
 
     bool haspriv(gameent *d, int priv)
     {

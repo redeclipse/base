@@ -247,7 +247,7 @@ enum
     ANIM_MAX
 };
 
-enum { PULSE_FIRE = 0, PULSE_BURN, PULSE_DISCO, PULSE_SHOCK, PULSE_BLEED, PULSE_MAX, PULSE_LAST = PULSE_MAX-1 };
+enum { PULSE_FIRE = 0, PULSE_BURN, PULSE_DISCO, PULSE_SHOCK, PULSE_BLEED, PULSE_BUFF, PULSE_MAX, PULSE_LAST = PULSE_MAX-1 };
 #define PULSECOLOURS 8
 #define PULSE(x) (PULSE_##x)
 #define INVPULSE(x) (-1-(x))
@@ -258,7 +258,8 @@ int pulsecols[PULSE_MAX][PULSECOLOURS] = {
     { 0xFFC848, 0xF86838, 0xA85828, 0xA84838, 0xF8A858, 0xC84828, 0xF86848, 0xA89858 },
     { 0xFF8888, 0xFFAA88, 0xFFFF88, 0x88FF88, 0x88FFFF, 0x8888FF, 0xFF88FF, 0xFFFFFF },
     { 0xAA88FF, 0xAA88FF, 0xAAAAFF, 0x44AAFF, 0x88AAFF, 0x4444FF, 0xAA44FF, 0xFFFFFF },
-    { 0xFF0000, 0xFF2222, 0xFF0022, 0xFF2200, 0x880000, 0x882222, 0x880022, 0x882200 }
+    { 0xFF0000, 0xFF2222, 0xFF0022, 0xFF2200, 0x880000, 0x882222, 0x880022, 0x882200 },
+    { 0xFFFFFF, 0xFFCCCC, 0xCCFFCC, 0xCCCCFF, 0xFFCCFF, 0xFFFFCC, 0xCCFFFF, 0xCCCCCC }
 };
 #else
 extern int pulsecols[PULSE_MAX][PULSECOLOURS];
@@ -1765,6 +1766,7 @@ namespace game
     extern void killed(int weap, int flags, int damage, gameent *d, gameent *v, vector<gameent*> &log, int style, int material);
     extern void timeupdate(int state, int remain);
     extern vec rescolour(dynent *d, int c = PULSE_BURN);
+    extern int rescolint(dynent *d, int c = PULSE_BURN);
     extern float rescale(gameent *d);
     extern float opacity(gameent *d, bool third = true);
     extern void footstep(gameent *d, int curfoot = -1);

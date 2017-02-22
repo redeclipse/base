@@ -2084,6 +2084,13 @@ namespace game
         return vec::hexcolor(pulsecols[c][n%PULSECOLOURS]).lerp(vec::hexcolor(pulsecols[c][n2%PULSECOLOURS]), (lastmillis%50)/50.0f);
     }
 
+    int rescolint(dynent *d, int c)
+    {
+        size_t seed = size_t(d) + (lastmillis/50);
+        int n = detrnd(seed, 2*PULSECOLOURS), n2 = detrnd(seed + 1, 2*PULSECOLOURS);
+        return vec::hexcolor(pulsecols[c][n%PULSECOLOURS]).lerp(vec::hexcolor(pulsecols[c][n2%PULSECOLOURS]), (lastmillis%50)/50.0f).tohexcolor();
+    }
+
     void particletrack(particle *p, uint type, int &ts, bool step)
     {
         if(!p || !p->owner || !gameent::is(p->owner)) return;
@@ -3164,12 +3171,6 @@ namespace game
                 e->light.material[1].max(bvec::fromcolor(e->light.material[1].div(2).tocolor().max(rescolour(d, PULSE_SHOCK))));
             if(m_bomber(gamemode) && bomber::carryaffinity(d))
                 e->light.material[1].max(bvec::fromcolor(e->light.material[1].div(2).tocolor().max(rescolour(d, PULSE_DISCO))));
-            if(d->state == CS_ALIVE && d->lastbuff)
-            {
-                int millis = lastmillis%1000;
-                float amt = millis <= 500 ? 1.f-(millis/500.f) : (millis-500)/500.f;
-                flashcolour(e->light.material[1].r, e->light.material[1].g, e->light.material[1].b, uchar(255), uchar(255), uchar(255), amt);
-            }
         }
         rendermodel(NULL, mdl, anim, o, yaw, third == 2 && firstpersonbodypitch >= 0 ? pitch*firstpersonbodypitch : pitch, third == 2 ? 0.f : roll, flags, e, attachments, basetime, basetime2, trans, size);
     }
@@ -3482,7 +3483,8 @@ namespace game
                     {
                         int millis = lastmillis%1000;
                         float amt = millis <= 500 ? 1.f-(millis/500.f) : (millis-500)/500.f;
-                        flashcolour(c.r, c.g, c.b, 1.f, 1.f, 1.f, amt);
+                        vec pc = game::rescolour(d, PULSE_BUFF);
+                        flashcolour(c.r, c.g, c.b, pc.r, pc.g, pc.b, amt);
                         height += height*amt*0.1f;
                     }
                     vec o = d->center(), offset = vec(o).sub(camera1->o).rescale(d->radius/2);
