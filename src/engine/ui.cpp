@@ -535,6 +535,7 @@ namespace UI
         virtual bool istext() const { return false; }
         virtual bool isimage() const { return false; }
         virtual bool iseditor() const { return false; }
+        virtual bool isclipper() const { return false; }
 
         Object *find(const char *name, bool recurse = true, const Object *exclude = NULL) const
         {
@@ -2236,18 +2237,19 @@ namespace UI
 
         Clipper() : offsetx(0), offsety(0) {}
 
-        void setup(float clipw_ = 0, float cliph_ = 0, float offsetx_ = 0, float offsety_ = 0)
+        void setup(float clipw_ = 0, float cliph_ = 0, float offsetx_ = -1, float offsety_ = -1)
         {
             Object::setup();
             clipw = clipw_;
             cliph = cliph_;
-            if(offsetx_ != 0) offsetx = offsetx_;
-            if(offsety_ != 0) offsety = offsety_;
+            if(offsetx_ >= 0) offsetx = offsetx_;
+            if(offsety_ >= 0) offsety = offsety_;
             virtw = virth = 0;
         }
 
         static const char *typestr() { return "#Clipper"; }
         const char *gettype() const { return typestr(); }
+        bool isclipper() const { return true; }
 
         void layout()
         {
@@ -3449,7 +3451,7 @@ namespace UI
     ICOMMAND(0, uitarget, "ffe", (float *minw, float *minh, uint *children),
         BUILD(Target, o, o->setup(*minw*uiscale, *minh*uiscale), children));
 
-    ICOMMAND(0, uiclip, "ffffe", (float *clipw, float *cliph, float *offsetx, float *offsety, uint *children),
+    ICOMMAND(0, uiclip, "ffgge", (float *clipw, float *cliph, float *offsetx, float *offsety, uint *children),
         BUILD(Clipper, o, o->setup(*clipw*uiscale, *cliph*uiscale, *offsetx*uiscale, *offsety*uiscale), children));
 
     ICOMMAND(0, uiscroll, "ffe", (float *clipw, float *cliph, uint *children),
@@ -3457,12 +3459,7 @@ namespace UI
 
     ICOMMAND(0, uihscrolloffset, "", (),
     {
-        if(buildparent && buildparent->istype<Scroller>())
-        {
-            Scroller *scroller = (Scroller *)buildparent;
-            floatret(scroller->offsetx);
-        }
-        else if(buildparent && buildparent->istype<Clipper>())
+        if(buildparent && buildparent->isclipper())
         {
             Clipper *clipper = (Clipper *)buildparent;
             floatret(clipper->offsetx);
@@ -3471,12 +3468,7 @@ namespace UI
 
     ICOMMAND(0, uivscrolloffset, "", (),
     {
-        if(buildparent && buildparent->istype<Scroller>())
-        {
-            Scroller *scroller = (Scroller *)buildparent;
-            floatret(scroller->offsety);
-        }
-        else if(buildparent && buildparent->istype<Clipper>())
+        if(buildparent && buildparent->isclipper())
         {
             Clipper *clipper = (Clipper *)buildparent;
             floatret(clipper->offsety);
