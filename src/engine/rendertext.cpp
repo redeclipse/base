@@ -659,6 +659,7 @@ textkey *findtextkey(const char *str)
     t->file = newstring(key);
     t->tex = textureload(t->file, 0, true, false);
     if(t->tex == notexture) t->tex = NULL;
+    textkeys.add(t);
     return t;
 }
 
@@ -682,6 +683,7 @@ tklookup *findtklookup(const char *str, int type)
     tklookup *t = new tklookup;
     t->name = newstring(str);
     t->type = type;
+    tklookups.add(t);
     return t;
 }
 
