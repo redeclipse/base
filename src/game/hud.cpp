@@ -1,7 +1,7 @@
 #include "game.h"
 namespace hud
 {
-    const int NUMSTATS = 20;
+    const int NUMSTATS = 22;
     int uimillis = 0, damageresidue = 0, hudwidth = 0, hudheight = 0, lastteam = 0, laststats = 0, prevstats[NUMSTATS] = {0}, curstats[NUMSTATS] = {0};
 
     #include "compass.h"
@@ -46,13 +46,14 @@ namespace hud
         }
         int nextstats[NUMSTATS] = {
             wtris/1024, vtris*100/max(wtris, 1), wverts/1024, vverts*100/max(wverts, 1), xtraverts/1024, xtravertsva/1024, allocnodes*8, allocva, glde, gbatches, getnumqueries(), rplanes,
-            curfps, bestfpsdiff, worstfpsdiff, entities::ents.length(), entgroup.length(), ai::waypoints.length(), lightmaps.length(), getnumviewcells()
+            curfps, bestfpsdiff, worstfpsdiff, entities::ents.length(), entgroup.length(), ai::waypoints.length(), lightmaps.length(), getnumviewcells(),
+            int(vec(game::focus->vel).add(game::focus->falling).magnitude()), int(vec(game::focus->vel).add(game::focus->falling).magnitude()/8)
         };
         loopi(NUMSTATS) if(prevstats[i] == curstats[i]) curstats[i] = nextstats[i];
     }
     ICOMMAND(0, refreshenginestats, "", (), enginestatrefresh());
     ICOMMAND(0, getenginestat, "ii", (int *n, int *prev), intret(*n >= 0 && *n < NUMSTATS ? (*prev!=0 ? prevstats[*n] : curstats[*n]) : -1));
-    static const char *enginestats[NUMSTATS] = { "wtr", "wtr%", "wvt", "wvt%", "evt", "eva", "ond", "va", "gl" "gb", "oq", "rp", "fps", "best", "worst", "ents", "entsel", "wp", "lm", "pvs" };
+    static const char *enginestats[NUMSTATS] = { "wtr", "wtr%", "wvt", "wvt%", "evt", "eva", "ond", "va", "gl" "gb", "oq", "rp", "fps", "best", "worst", "ents", "entsel", "wp", "lm", "pvs", "vel", "mps" };
     ICOMMAND(0, getenginestatname, "i", (int *n), result(*n >= 0 && *n < NUMSTATS ? enginestats[*n]: ""));
     #define LOOPENGSTATS(name,op) \
         ICOMMAND(0, loopenginestat##name, "re", (ident *id, uint *body), \

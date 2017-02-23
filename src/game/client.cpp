@@ -872,6 +872,7 @@ namespace client
     ICOMMAND(0, getclientbleeding, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d && bleedtime ? d->bleeding(lastmillis, bleedtime) : 0));
     ICOMMAND(0, getclientshocking, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d && shocktime ? d->shocking(lastmillis, shocktime) : 0));
     ICOMMAND(0, getclientrescolour, "si", (char *who, int *res), gameent *d = game::getclient(parsewho(who)); intret(d ? game::rescolint(d, *res) : 0));
+    ICOMMAND(0, getclientvelocity, "si", (char *who, int *full), gameent *d = game::getclient(parsewho(who)); floatret(d ? vec(d->vel).add(d->falling).magnitude()*(*full!= 0 ? 1.f : 0.125f) : 0.f));
 
     bool haspriv(gameent *d, int priv)
     {
