@@ -3590,17 +3590,17 @@ namespace game
         {
             vec origin = d->center(), col = rescolour(d, PULSE_SHOCK), rad = vec(d->xradius, d->yradius, d->height/(d->state == CS_ALIVE ? 2 : 3)).mul(blend);
             int colour = (int(col.x*255)<<16)|(int(col.y*255)<<8)|(int(col.z*255));
-            float fade = blend*(d != focus ? 1.f : 0.5f);
-            loopi(3+rnd(10))
+            float fade = blend*(d != focus || d->state != CS_ALIVE ? 1.f : 0.65f);
+            loopi(4+rnd(8))
             {
-                float q = 0.5f;
+                float q = 1.f;
                 vec from = vec(origin).add(vec(rnd(201)-100, rnd(201)-100, rnd(201)-100).div(100.f).normalize().mul(rad).mul(rnd(200)/100.f)), to = from;
-                loopj(2+rnd(3))
+                loopj(3+rnd(3))
                 {
-                    to = vec(from).add(vec(rnd(201)-100, rnd(201)-100, rnd(201)-100).div(100.f).normalize().mul(rad).mul(rnd(200)/100.f*q));
-                    part_flare(from, to, 1, PART_LIGHTNING_FLARE, colour, q*0.75f, fade*q);
+                    to = vec(from).add(vec(rnd(201)-100, rnd(201)-100, rnd(201)-100).div(100.f).normalize().mul(rad).mul(rnd(200)/100.f*q*0.5f));
+                    part_flare(from, to, 1, PART_LIGHTNING_FLARE, colour, q*0.5f, fade*q);
                     from = to;
-                    q = q*0.75f;
+                    q *= 0.8f;
                 }
             }
             if(rendernormally && d->ragdoll && twitchspeed > 0) twitchragdoll(d, twitchspeed*blend*rnd(100)/80.f);

@@ -240,6 +240,8 @@ namespace capture
         }
         return sy;
     }
+    ICOMMAND(0, getcapturedelay, "i", (int *n), intret(capturedelay));
+    ICOMMAND(0, getcapturestore, "i", (int *n), intret(capturestore));
 
     ICOMMAND(0, getcaptureteam, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].team : -1));
     ICOMMAND(0, getcapturedroptime, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].droptime : -1));
