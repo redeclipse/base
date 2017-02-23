@@ -3,6 +3,31 @@ namespace capture
 {
     capturestate st;
 
+    ICOMMAND(0, getcapturedelay, "i", (int *n), intret(capturedelay));
+    ICOMMAND(0, getcapturestore, "i", (int *n), intret(capturestore));
+
+    ICOMMAND(0, getcaptureteam, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].team : -1));
+    ICOMMAND(0, getcapturedroptime, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].droptime : -1));
+    ICOMMAND(0, getcapturetaketime, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].taketime : -1));
+    ICOMMAND(0, getcapturedisptime, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].displaytime : -1));
+    ICOMMAND(0, getcaptureowner, "i", (int *n), intret(st.flags.inrange(*n) && st.flags[*n].owner ? st.flags[*n].owner->clientnum : -1));
+    ICOMMAND(0, getcapturelastowner, "i", (int *n), intret(st.flags.inrange(*n) && st.flags[*n].lastowner ? st.flags[*n].lastowner->clientnum : -1));
+
+    #define LOOPCAPTURE(name,op) \
+        ICOMMAND(0, loopcapture##name, "re", (ident *id, uint *body), \
+        { \
+            if(!m_capture(game::gamemode)) return; \
+            loopstart(id, stack); \
+            op(st.flags) \
+            { \
+                loopiter(id, stack, i); \
+                execute(body); \
+            } \
+            loopend(id, stack); \
+        });
+    LOOPCAPTURE(,loopv);
+    LOOPCAPTURE(rev,loopvrev);
+
     bool carryaffinity(gameent *d)
     {
         loopv(st.flags) if(st.flags[i].owner == d) return true;
@@ -190,31 +215,6 @@ namespace capture
             }
         }
     }
-
-    ICOMMAND(0, getcapturedelay, "i", (int *n), intret(capturedelay));
-    ICOMMAND(0, getcapturestore, "i", (int *n), intret(capturestore));
-
-    ICOMMAND(0, getcaptureteam, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].team : -1));
-    ICOMMAND(0, getcapturedroptime, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].droptime : -1));
-    ICOMMAND(0, getcapturetaketime, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].taketime : -1));
-    ICOMMAND(0, getcapturedisptime, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].displaytime : -1));
-    ICOMMAND(0, getcaptureowner, "i", (int *n), intret(st.flags.inrange(*n) && st.flags[*n].owner ? st.flags[*n].owner->clientnum : -1));
-    ICOMMAND(0, getcapturelastowner, "i", (int *n), intret(st.flags.inrange(*n) && st.flags[*n].lastowner ? st.flags[*n].lastowner->clientnum : -1));
-
-    #define LOOPCAPTURE(name,op) \
-        ICOMMAND(0, loopcapture##name, "re", (ident *id, uint *body), \
-        { \
-            if(!m_capture(game::gamemode)) return; \
-            loopstart(id, stack); \
-            op(st.flags) \
-            { \
-                loopiter(id, stack, i); \
-                execute(body); \
-            } \
-            loopend(id, stack); \
-        });
-    LOOPCAPTURE(,loopv);
-    LOOPCAPTURE(rev,loopvrev);
 
     void checkcams(vector<cament *> &cameras)
     {

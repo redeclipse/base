@@ -3,6 +3,36 @@ namespace bomber
 {
     bomberstate st;
 
+    ICOMMAND(0, getbomberenabled, "i", (int *n), intret(st.flags.inrange(*n) && st.flags[*n].enabled ? 1 : 0));
+    ICOMMAND(0, getbomberteam, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].team : -1));
+    ICOMMAND(0, getbomberdroptime, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].droptime : -1));
+    ICOMMAND(0, getbombertaketime, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].taketime : -1));
+    ICOMMAND(0, getbomberdisptime, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].displaytime : -1));
+    ICOMMAND(0, getbombertarget, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].target : -1));
+    ICOMMAND(0, getbomberowner, "i", (int *n), intret(st.flags.inrange(*n) && st.flags[*n].owner ? st.flags[*n].owner->clientnum : -1));
+    ICOMMAND(0, getbomberlastowner, "i", (int *n), intret(st.flags.inrange(*n) && st.flags[*n].lastowner ? st.flags[*n].lastowner->clientnum : -1));
+
+    #define LOOPBOMBER(name,op) \
+        ICOMMAND(0, loopbomber##name, "ire", (int *base, ident *id, uint *body), \
+        { \
+            if(!m_bomber(game::gamemode)) return; \
+            loopstart(id, stack); \
+            op(st.flags) if(st.flags[i].enabled) \
+            { \
+                switch(*base) \
+                { \
+                    case 0: if(st.flags[i].team != T_NEUTRAL) continue; break; \
+                    case 1: if(st.flags[i].team == T_NEUTRAL) continue; break; \
+                    default: break; \
+                } \
+                loopiter(id, stack, i); \
+                execute(body); \
+            } \
+            loopend(id, stack); \
+        });
+    LOOPBOMBER(,loopv);
+    LOOPBOMBER(rev,loopvrev);
+
     void killed(gameent *d, gameent *v)
     {
         if(v && m_bb_hold(game::gamemode, game::mutators) && (!m_team(game::gamemode, game::mutators) || d->team != v->team))
@@ -101,6 +131,7 @@ namespace bomber
         return vec::hexcolor(pulsecols[PULSE_DISCO][n%PULSECOLOURS]).lerp(vec::hexcolor(pulsecols[PULSE_DISCO][(n+1)%PULSECOLOURS]), (lastmillis%100)/100.0f);
     }
 
+    FVAR(IDF_PERSIST, bomberreticlesize, 0, 0.1f, 1.f);
     void drawblips(int w, int h, float blend)
     {
         static vector<int> hasbombs; hasbombs.setsize(0);
@@ -108,37 +139,69 @@ namespace bomber
         loopv(st.flags)
         {
             bomberstate::flag &f = st.flags[i];
-            if(hasbombs.find(i) >= 0 || !f.enabled) continue;
-            vec pos = f.pos(true), colour = isbomberaffinity(f) ? pulsecolour() : vec::hexcolor(TEAM(f.team, colour));
-            float area = 3, size = hud::radaraffinitysize;
-            if(isbomberaffinity(f))
+            if(!f.enabled) continue;
+            vec colour = isbomberaffinity(f) ? pulsecolour() : vec::hexcolor(TEAM(f.team, colour));
+            if(hasbombs.find(i) < 0)
             {
-                area = 2;
-                if(!f.owner && !f.droptime)
+                vec pos = f.pos(true);
+                float area = 3, size = hud::radaraffinitysize;
+                if(isbomberaffinity(f))
                 {
-                    int millis = lastmillis-f.displaytime;
-                    if(millis < 1000) size *= 1.f+(1-clamp(float(millis)/1000.f, 0.f, 1.f));
+                    area = 2;
+                    if(!f.owner && !f.droptime)
+                    {
+                        int millis = lastmillis-f.displaytime;
+                        if(millis < 1000) size *= 1.f+(1-clamp(float(millis)/1000.f, 0.f, 1.f));
+                    }
+                }
+                else if(!m_bb_hold(game::gamemode, game::mutators))
+                {
+                    area = 3;
+                    if(isbombertarg(f, game::focus->team) && !hasbombs.empty())
+                    {
+                        int interval = lastmillis%500;
+                        float glow = interval >= 250 ? 1.f-((interval-250)/250.f) : interval/250.f;
+                        size *= 1+glow*0.25f;
+                        flashcolour(colour.r, colour.g, colour.b, 1.f, 1.f, 1.f, glow);
+                    }
+                }
+                hud::drawblip(isbomberaffinity(f) ? hud::bombtex : (isbombertarg(f, game::focus->team) ? hud::arrowtex : hud::pointtex), area, w, h, size, blend*hud::radaraffinityblend, isbombertarg(f, game::focus->team) ? 0 : -1, pos, colour);
+                if(m_bb_basket(game::gamemode, game::mutators) && isbombertarg(f, game::focus->team) && !hasbombs.empty() && bomberbasketmindist > 0 && game::focus->o.dist(pos) < bomberbasketmindist)
+                {
+                    vec c(0.25f, 0.25f, 0.25f);
+                    int millis = lastmillis%500;
+                    float amt = millis <= 250 ? 1.f-(millis/250.f) : (millis-250)/250.f;
+                    flashcolour(c.r, c.g, c.b, 1.f, 0.f, 0.f, amt);
+                    hud::drawblip(hud::warningtex, area, w, h, size*1.25f, blend*hud::radaraffinityblend*amt, 0, pos, c);
                 }
             }
-            else if(!m_bb_hold(game::gamemode, game::mutators))
+            else if(gs_playing(game::gamestate) && m_team(game::gamemode, game::mutators) && bomberlockondelay && f.owner->action[AC_AFFINITY] && lastmillis-f.owner->actiontime[AC_AFFINITY] >= bomberlockondelay)
             {
-                area = 3;
-                if(isbombertarg(f, game::focus->team) && !hasbombs.empty())
+                gameent *e = game::getclient(findtarget(f.owner));
+                float cx = 0.5f, cy = 0.5f, cz = 1;
+                if(e && vectocursor(e->headpos(), cx, cy, cz))
                 {
                     int interval = lastmillis%500;
-                    float glow = interval >= 250 ? 1.f-((interval-250)/250.f) : interval/250.f;
-                    size *= 1+glow*0.25f;
-                    flashcolour(colour.r, colour.g, colour.b, 1.f, 1.f, 1.f, glow);
+                    float rp = 1, gp = 1, bp = 1,
+                          sp = interval >= 250 ? (500-interval)/250.f : interval/250.f,
+                          sq = max(sp, 0.5f), size = bomberreticlesize*min(w, h);
+                    hud::colourskew(rp, gp, bp, sp);
+                    int sx = int(cx*w-size*sq), sy = int(cy*h-size*sq), ss = int(size*2*sq);
+                    Texture *t = textureload(hud::indicatortex, 3);
+                    if(t && t != notexture)
+                    {
+                        glBindTexture(GL_TEXTURE_2D, t->id);
+                        gle::colorf(rp, gp, bp, sq);
+                        hud::drawsized(sx, sy, ss);
+                    }
+                    t = textureload(hud::crosshairtex, 3);
+                    if(t && t != notexture)
+                    {
+                        glBindTexture(GL_TEXTURE_2D, t->id);
+                        gle::colorf(rp, gp, bp, sq*0.5f);
+                        hud::drawsized(sx+ss/4, sy+ss/4, ss/2);
+                    }
                 }
-            }
-            hud::drawblip(isbomberaffinity(f) ? hud::bombtex : (isbombertarg(f, game::focus->team) ? hud::arrowtex : hud::pointtex), area, w, h, size, blend*hud::radaraffinityblend, isbombertarg(f, game::focus->team) ? 0 : -1, pos, colour);
-            if(m_bb_basket(game::gamemode, game::mutators) && isbombertarg(f, game::focus->team) && !hasbombs.empty() && bomberbasketmindist > 0 && game::focus->o.dist(pos) < bomberbasketmindist)
-            {
-                vec c(0.25f, 0.25f, 0.25f);
-                int millis = lastmillis%500;
-                float amt = millis <= 250 ? 1.f-(millis/250.f) : (millis-250)/250.f;
-                flashcolour(c.r, c.g, c.b, 1.f, 0.f, 0.f, amt);
-                hud::drawblip(hud::warningtex, area, w, h, size*1.25f, blend*hud::radaraffinityblend*amt, 0, pos, c);
             }
         }
     }
