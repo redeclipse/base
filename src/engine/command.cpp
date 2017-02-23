@@ -4528,7 +4528,7 @@ CMPSCMD(strcasecmp, >~=s, >=);
 #define CMPSNCMD(func, name, op) \
     ICOMMAND(0, name, "s1V", (tagval *args, int numargs), \
     { \
-        int val; \
+        bool val; \
         if(numargs >= 3) \
         { \
             val = func(args[0].s, args[1].s, args[2].i) op 0; \
