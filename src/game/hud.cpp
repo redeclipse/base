@@ -51,7 +51,7 @@ namespace hud
         loopi(NUMSTATS) if(prevstats[i] == curstats[i]) curstats[i] = nextstats[i];
     }
     ICOMMAND(0, refreshenginestats, "", (), enginestatrefresh());
-    ICOMMAND(0, getenginestat, "i", (int *n), intret(*n >= 0 && *n < NUMSTATS ? curstats[*n]: -1));
+    ICOMMAND(0, getenginestat, "ii", (int *n, int *prev), intret(*n >= 0 && *n < NUMSTATS ? (*prev!=0 ? prevstats[*n] : curstats[*n]) : -1));
     static const char *enginestats[NUMSTATS] = { "wtr", "wtr%", "wvt", "wvt%", "evt", "eva", "ond", "va", "gl" "gb", "oq", "rp", "fps", "best", "worst", "ents", "entsel", "wp", "lm", "pvs" };
     ICOMMAND(0, getenginestatname, "i", (int *n), result(*n >= 0 && *n < NUMSTATS ? enginestats[*n]: ""));
     #define LOOPENGSTATS(name,op) \
