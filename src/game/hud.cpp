@@ -1,7 +1,7 @@
 #include "game.h"
 namespace hud
 {
-    const int NUMSTATS = 11;
+    const int NUMSTATS = 20;
     int uimillis = 0, damageresidue = 0, hudwidth = 0, hudheight = 0, lastteam = 0, laststats = 0, prevstats[NUMSTATS] = {0}, curstats[NUMSTATS] = {0};
 
     #include "compass.h"
@@ -36,10 +36,37 @@ namespace hud
     VAR(IDF_PERSIST, showloadingversion, 0, 1, 1);
     VAR(IDF_PERSIST, showloadingurl, 0, 0, 1);
 
-    VAR(IDF_PERSIST, showfps, 0, 0, 3);
-    VAR(IDF_PERSIST, showstats, 0, 1, 2);
     VAR(IDF_PERSIST, statrate, 0, 200, 1000);
-    FVAR(IDF_PERSIST, statblend, 0, 1, 1);
+    void enginestatrefresh()
+    {
+        if(totalmillis-laststats >= statrate)
+        {
+            memcpy(prevstats, curstats, sizeof(prevstats));
+            laststats = totalmillis-(totalmillis%statrate);
+        }
+        int nextstats[NUMSTATS] = {
+            wtris/1024, vtris*100/max(wtris, 1), wverts/1024, vverts*100/max(wverts, 1), xtraverts/1024, xtravertsva/1024, allocnodes*8, allocva, glde, gbatches, getnumqueries(), rplanes,
+            curfps, bestfpsdiff, worstfpsdiff, entities::ents.length(), entgroup.length(), ai::waypoints.length(), lightmaps.length(), getnumviewcells()
+        };
+        loopi(NUMSTATS) if(prevstats[i] == curstats[i]) curstats[i] = nextstats[i];
+    }
+    ICOMMAND(0, refreshenginestats, "", (), enginestatrefresh());
+    ICOMMAND(0, getenginestat, "i", (int *n), intret(*n >= 0 && *n < NUMSTATS ? curstats[*n]: -1));
+    static const char *enginestats[NUMSTATS] = { "wtr", "wtr%", "wvt", "wvt%", "evt", "eva", "ond", "va", "gl" "gb", "oq", "rp", "fps", "best", "worst", "ents", "entsel", "wp", "lm", "pvs" };
+    ICOMMAND(0, getenginestatname, "i", (int *n), result(*n >= 0 && *n < NUMSTATS ? enginestats[*n]: ""));
+    #define LOOPENGSTATS(name,op) \
+        ICOMMAND(0, loopenginestat##name, "re", (ident *id, uint *body), \
+        { \
+            loopstart(id, stack); \
+            op(NUMSTATS) \
+            { \
+                loopiter(id, stack, i); \
+                execute(body); \
+            } \
+            loopend(id, stack); \
+        });
+    LOOPENGSTATS(,loopi)
+    LOOPENGSTATS(rev,loopirev)
 
     bool fullconsole = false;
     void toggleconsole() { fullconsole = !fullconsole; }
@@ -2750,316 +2777,6 @@ namespace hud
         return 0;
     }
 
-    int drawselection(int x, int y, int s, int m, float blend)
-    {
-        int sy = 0;
-        if(game::focus->state == CS_ALIVE && inventoryammo)
-        {
-            const char *hudtexs[W_ALL] = {
-                clawtex, pistoltex, swordtex, shotguntex, smgtex, flamertex, plasmatex, zappertex, rifletex, grenadetex, minetex, rockettex
-            };
-            int sweap = m_weapon(game::focus->actortype, game::gamemode, game::mutators);//, lastweap = game::focus->getlastweap(sweap);
-            loopi(W_ALL) if(game::focus->holdweap(i, sweap, lastmillis))
-            {
-                if(y-sy-s < m) break;
-                float size = s, skew = 0.f;
-                if(game::focus->weapstate[i] == W_S_SWITCH || game::focus->weapstate[i] == W_S_USE)// && (i != game::focus->weapselect || i != lastweap))
-                {
-                    float amt = clamp(float(lastmillis-game::focus->weaptime[i])/float(game::focus->weapwait[i]), 0.f, 1.f);
-                    if(i != game::focus->weapselect) skew = game::focus->hasweap(i, sweap) ? 1.f-(amt*(1.f-inventoryskew)) : 1.f-amt;
-                    else skew = game::focus->weapstate[i] == W_S_USE ? amt : inventoryskew+(amt*(1.f-inventoryskew));
-                }
-                else if(game::focus->hasweap(i, sweap) || i == game::focus->weapselect) skew = i != game::focus->weapselect ? inventoryskew : 1.f;
-                else continue;
-                vec c(1, 1, 1);
-                if(inventorytone || inventorycolour) skewcolour(c.r, c.g, c.b, inventorycolour ? W(i, colour) : inventorytone);
-                int oldy = y-sy, curammo = game::focus->ammo[i];
-                if(inventoryammostyle && (game::focus->weapstate[i] == W_S_RELOAD || game::focus->weapstate[i] == W_S_USE) && game::focus->weapload[i] > 0)
-                {
-                    int reloaded = int(curammo*clamp(float(lastmillis-game::focus->weaptime[i])/float(game::focus->weapwait[i]), 0.f, 1.f));
-                    curammo = max(curammo-game::focus->weapload[i], 0);
-                    if(reloaded > curammo) curammo = reloaded;
-                }
-
-                if(inventoryammo >= 2 && (i == game::focus->weapselect || inventoryammo >= 3) && W(i, ammomax) > 1 && game::focus->hasweap(i, sweap))
-                    sy += drawitem(hudtexs[i], x, y-sy, size, 0, true, false, c.r, c.g, c.b, blend, skew, "super", "%d", curammo);
-                else sy += drawitem(hudtexs[i], x, y-sy, size, 0, true, false, c.r, c.g, c.b, blend, skew);
-                if(inventoryammobar && (i == game::focus->weapselect || inventoryammobar >= 2) && W(i, ammomax) > 1 && game::focus->hasweap(i, sweap))
-                    drawitembar(x, oldy, size, false, c.r, c.g, c.b, blend, skew, curammo/float(W(i, ammomax)));
-                if(inventoryweapids && (i == game::focus->weapselect || inventoryweapids >= 2))
-                {
-                    static string weapids[W_ALL];
-                    static int lastweapids = -1;
-                    int n = weapons::slot(game::focus, i);
-                    if(lastweapids != changedkeys)
-                    {
-                        loopj(W_ALL)
-                        {
-                            defformatstring(action, "weapon %d", j);
-                            const char *actkey = searchbind(action, 0);
-                            if(actkey && *actkey) copystring(weapids[j], actkey);
-                            else formatstring(weapids[j], "%d", j);
-                        }
-                        lastweapids = changedkeys;
-                    }
-                    drawitemtext(x, oldy, size, false, skew, "default", blend, "\f[%d]%s", inventorycolour >= 2 ? W(i, colour) : colourgrey, isweap(n) ? weapids[n] : "?");
-                }
-            }
-        }
-        else if(game::focus->state == CS_EDITING && inventoryedit)
-        {
-            int hover = entities::ents.inrange(enthover) ? enthover : (!entgroup.empty() ? entgroup[0] : -1);
-            sy += FONTH*4;
-            if(y-sy-s >= m) sy += drawentitem(hover, x, y-sy, s, 1.f, blend*inventoryeditblend);
-            loopv(entgroup) if(entgroup[i] != hover)
-            {
-                if(y-sy-s < m) break;
-                sy += drawentitem(entgroup[i], x, y-sy, s, inventoryeditskew, blend*inventoryeditblend);
-            }
-        }
-        return sy;
-    }
-
-    int drawhealth(int x, int y, int s, float blend, bool interm)
-    {
-        int size = s*2, sy = 0;
-        bool alive = !interm && game::focus->state == CS_ALIVE;
-        if(alive)
-        {
-            if(inventoryhealth)
-            {
-                float fade = blend*inventoryhealthblend;
-                int heal = m_health(game::gamemode, game::mutators, game::focus->actortype);
-                float pulse = inventoryhealthflash ? clamp((heal-game::focus->health)/float(heal), 0.f, 1.f) : 0.f,
-                      throb = inventoryhealththrob > 0 && regentime && game::focus->lastregen && lastmillis-game::focus->lastregen <= regentime ? clamp((lastmillis-game::focus->lastregen)/float(regentime), 0.f, 1.f) : -1.f;
-                if(inventoryhealth&2)
-                    sy += drawbar(x, y, s, size, 1, inventoryhealthbartop, inventoryhealthbarbottom, fade, clamp(game::focus->health/float(heal), 0.f, 1.f), healthtex, healthbgtex, inventorytone, inventoryhealthbgglow, inventoryhealthbgblend, pulse, throb, inventoryhealththrob, inventoryhealthflash >= 2 ? (game::focus->lastregenamt <= 0 ? colourred : colourgreen) : -1, game::focus->lastregenamt <= 0);
-                if(inventoryhealth&1)
-                {
-                    float gr = 1, gg = 1, gb = 1;
-                    if(pulse > 0)
-                    {
-                        int millis = totalmillis%1000;
-                        float amt = (millis <= 500 ? millis/500.f : 1.f-((millis-500)/500.f))*pulse;
-                        flashcolour(gr, gg, gb, 1.f, 0.f, 0.f, amt);
-                    }
-                    pushfont("super");
-                    int ty = inventoryhealth&2 ? 0-size/2 : 0;
-                    ty += draw_textf("%d", x+s/2, y-sy-ty, 0, 0, int(gr*255), int(gg*255), int(gb*255), int(fade*255), TEXT_CENTER_UP, -1, -1, 1, max(game::focus->health, 0));
-                    popfont();
-                    if(!(inventoryhealth&2))
-                    {
-                        pushfont("reduced");
-                        ty += draw_textf("health", x+s/2, y-sy-ty, 0, 0, -1, -1, -1, int(fade*255), TEXT_CENTER_UP, -1, -1, 1);
-                        popfont();
-                        sy += ty;
-                    }
-                }
-            }
-            if(game::focus->actortype < A_ENEMY && physics::allowimpulse(game::focus) && m_impulsemeter(game::gamemode, game::mutators) && inventoryimpulse)
-            {
-                float fade = blend*inventoryimpulseblend, span = 1-clamp(float(game::focus->impulse[IM_METER])/float(impulsemeter), 0.f, 1.f),
-                      pulse = inventoryimpulseflash && game::focus->impulse[IM_METER] ? 1-span : 0.f,
-                      throb = game::canregenimpulse(game::focus) && game::focus->impulse[IM_METER] > 0 && game::focus->lastimpulsecollect ? clamp(((lastmillis-game::focus->lastimpulsecollect)%1000)/1000.f, 0.f, 1.f) : -1.f,
-                      gr = 1, gg = 1, gb = 1;
-                flashcolour(gr, gg, gb, 0.25f, 0.25f, 0.25f, 1-span);
-                if(pulse > 0 && impulsemeter-game::focus->impulse[IM_METER] < impulsecost) flashcolour(gr, gg, gb, 1.f, 0.f, 0.f, clamp(totalmillis%1000/1000.f, 0.f, 1.f));
-                if(inventoryimpulse&2)
-                    sy += drawbar(x, y-sy, s, size, 2, inventoryimpulsebartop, inventoryimpulsebarbottom, fade, span, impulsetex, impulsebgtex, inventorytone, inventoryimpulsebgglow, inventoryimpulsebgblend, pulse, throb, inventoryimpulsethrob, inventoryimpulseflash >= 2 ? colourwhite : -1);
-                if(inventoryimpulse&1)
-                {
-                    if(!(inventoryimpulse&2))
-                    {
-                        pushfont("super");
-                        int ty = draw_textf("%d%%", x+s/2, y-sy+(inventoryimpulse&2 ? size/2 : 0), 0, 0, int(gr*255), int(gg*255), int(gb*255), int(fade*255), TEXT_CENTER_UP, -1, -1, 1, int(span*100));
-                        popfont();
-                        pushfont("reduced");
-                        ty += draw_textf("impulse", x+s/2, y-sy-ty, 0, 0, -1, -1, -1, int(fade*255), TEXT_CENTER_UP, -1, -1, 1);
-                        popfont();
-                        sy += ty;
-                    }
-                    else
-                    {
-                        pushfont("super");
-                        draw_textf("%d", x+s/2, y-sy+(inventoryimpulse&2 ? size/2 : 0), 0, 0, int(gr*255), int(gg*255), int(gb*255), int(fade*255), TEXT_CENTER_UP, -1, -1, 1, int(span*100));
-                        popfont();
-                    }
-                }
-            }
-            if(inventoryvelocity >= (m_race(game::gamemode) ? 1 : 2))
-            {
-                int flags = TEXT_CENTER_UP;
-                float gr = 1, gg = 1, gb = 1, gf = blend;
-                if(inventorybg)
-                {
-                    if(inventorytone) skewcolour(gr, gg, gb, inventorytone);
-                    gf *= inventorybgskin;
-                    flags |= TEXT_SKIN;
-                }
-                else gf *= inventoryvelocityblend;
-                pushfont("emphasis");
-                sy += draw_textf("%d", x+s/2, y-sy, 0, 0, int(gr*255), int(gg*255), int(gb*255), int(gf*255), flags, -1, -1, 1, int(vec(game::focus->vel).add(game::focus->falling).magnitude()));
-                popfont();
-                pushfont("reduced");
-                sy += draw_textf("speed", x+s/2, y-sy, 0, 0, int(gr*255), int(gg*255), int(gb*255), int(gf*255), flags, -1, -1, 1);
-                popfont();
-            }
-            if(inventoryalert)
-            {
-                float fade = blend*inventoryalertblend;
-                if(game::focus->lastbuff)
-                {
-                    float gr = 1, gg = 1, gb = 1;
-                    if(inventorytone) skewcolour(gr, gg, gb, inventorytone);
-                    if(inventoryalertflash)
-                    {
-                        int millis = totalmillis%1000;
-                        float amt = millis <= 500 ? millis/500.f : 1.f-((millis-500)/500.f);
-                        flashcolour(gr, gg, gb, 1.f, 1.f, 1.f, amt);
-                    }
-                    sy += drawitem(buffedtex, x, y-sy, s, 0, false, true, gr, gg, gb, fade);
-                }
-                if(burntime && game::focus->burning(lastmillis, burntime))
-                {
-                    float gr = 1, gg = 1, gb = 1;
-                    if(inventorytone) skewcolour(gr, gg, gb, inventorytone);
-                    if(inventoryalertflash)
-                    {
-                        int millis = totalmillis%1000;
-                        float amt = millis <= 500 ? millis/500.f : 1.f-((millis-500)/500.f);
-                        vec c = game::rescolour(game::focus, PULSE_BURN);
-                        flashcolour(gr, gg, gb, c.r, c.g, c.b, amt);
-                    }
-                    sy += drawitem(burningtex, x, y-sy, s, 0, false, true, gr, gg, gb, fade);
-                }
-                if(bleedtime && game::focus->bleeding(lastmillis, bleedtime))
-                {
-                    float gr = 1, gg = 1, gb = 1;
-                    if(inventorytone) skewcolour(gr, gg, gb, inventorytone);
-                    if(inventoryalertflash)
-                    {
-                        int millis = totalmillis%1000;
-                        float amt = millis <= 500 ? millis/500.f : 1.f-((millis-500)/500.f);
-                        vec c = game::rescolour(game::focus, PULSE_BLEED);
-                        flashcolour(gr, gg, gb, c.r, c.g, c.b, amt);
-                    }
-                    sy += drawitem(bleedingtex, x, y-sy, s, 0, false, true, gr, gg, gb, fade);
-                }
-                if(shocktime && game::focus->shocking(lastmillis, shocktime))
-                {
-                    float gr = 1, gg = 1, gb = 1;
-                    if(inventorytone) skewcolour(gr, gg, gb, inventorytone);
-                    if(inventoryalertflash)
-                    {
-                        int millis = totalmillis%1000;
-                        float amt = millis <= 500 ? millis/500.f : 1.f-((millis-500)/500.f);
-                        vec c = game::rescolour(game::focus, PULSE_SHOCK);
-                        flashcolour(gr, gg, gb, c.r, c.g, c.b, amt);
-                    }
-                    sy += drawitem(shockingtex, x, y-sy, s, 0, false, true, gr, gg, gb, fade);
-                }
-            }
-            if(inventoryconopen)
-            {
-                float fade = blend*inventoryconopenblend;
-                if(game::focus->conopen)
-                {
-                    float gr = 1, gg = 1, gb = 1;
-                    if(inventorytone) skewcolour(gr, gg, gb, inventorytone);
-                    if(inventoryconopenflash)
-                    {
-                        int millis = totalmillis%1000;
-                        float amt = millis <= 500 ? millis/500.f : 1.f-((millis-500)/500.f);
-                        flashcolour(gr, gg, gb, 1.f, 1.f, 1.f, amt);
-                    }
-                    sy += drawitem(chattex, x, y-sy, s, 0, false, true, gr, gg, gb, fade);
-                }
-            }
-            if(inventoryinput&(game::focus != game::player1 ? 2 : 1))
-            {
-                static const char *actionnames[AC_TOTAL] = {
-                    "shoot1", "shoot2", "reload", "use", "jump", "walk", "crouch", "special", "drop", "affinity"
-                };
-                pushfont("little");
-
-                sy += draw_textf("\f[%d]\f(%s)", x+s/2, y-sy, 0, 0, -1, -1, -1, int(blend*inventoryinputblend*255), TEXT_CENTER_UP, -1, -1, 1,
-                        game::focus->move == -1 ? inventoryinputactive : inventoryinputcolour, arrowdowntex);
-
-                sy += draw_textf("\f[%d]\f(%s)  \f[%d]\f(%s)", x+s/2, y-sy, 0, 0, -1, -1, -1, int(blend*inventoryinputblend*255), TEXT_CENTER_UP, -1, -1, 1,
-                        game::focus->strafe == 1 ? inventoryinputactive : inventoryinputcolour, arrowlefttex,
-                        game::focus->strafe == -1 ? inventoryinputactive : inventoryinputcolour, arrowrighttex);
-
-                sy += draw_textf("\f[%d]\f(%s)", x+s/2, y-sy, 0, 0, -1, -1, -1, int(blend*inventoryinputblend*255), TEXT_CENTER_UP, -1, -1, 1,
-                        game::focus->move == 1 ? inventoryinputactive : inventoryinputcolour, arrowtex);
-
-                loopi(AC_TOTAL) if(inventoryinputfilter&(1<<i))
-                {
-                    bool active = game::focus->action[i] || (inventoryinputlinger&(1<<i) && game::focus->actiontime[i] && lastmillis-abs(game::focus->actiontime[i]) <= inventoryinputdelay);
-                    sy += draw_textf("\fs\fw\f{\f[%d]%s}\fS", x+s/2, y-sy, 0, 0, -1, -1, -1, int(blend*inventoryinputblend*255), TEXT_CENTER_UP, -1, -1, 1,
-                            active ? inventoryinputactive : inventoryinputcolour, actionnames[i]);
-                }
-
-                popfont();
-            }
-        }
-        else
-        {
-            int st = interm ? CS_WAITING : game::player1->state;
-            const char *state = "", *tex = "";
-            switch(st)
-            {
-                case CS_EDITING: state = "EDIT"; tex = editingtex; break;
-                case CS_SPECTATOR: state = "SPEC"; tex = spectatortex; break;
-                case CS_WAITING: state = "WAIT"; tex = waitingtex; break;
-                case CS_DEAD: state = "DEAD"; tex = deadtex; break;
-            }
-            if(inventorystatus&1 && *state)
-            {
-                sy -= x/2;
-                pushfont("emphasis");
-                sy += draw_textf("%s", x+s/2, y-sy, 0, 0, -1, -1, -1, int(blend*inventorystatusblend*255), TEXT_CENTER_UP, -1, -1, 1, state);
-                popfont();
-            }
-            if(inventorystatus&2 && *tex)
-            {
-                float gr = 1, gg = 1, gb = 1, fade = blend*inventorystatusiconblend;
-                if(inventorytone) skewcolour(gr, gg, gb, inventorytone);
-                sy += drawitem(tex, x, y-sy, s, 0, false, true, gr, gg, gb, fade);
-            }
-        }
-        if(inventorygameinfo && game::focus->state != CS_EDITING)
-        {
-            bool over = (!alive && inventorygameinfo&8) || inventorygameinfo&16;
-            float gr = 1, gg = 1, gb = 1, fade = blend*inventorygameinfoblend;
-            if(inventorytone) skewcolour(gr, gg, gb, inventorytone);
-            if(alive && inventorygameinfoflash && lastmillis-game::focus->lastspawn <= inventorygameinfoflash)
-            {
-                int millis = totalmillis%1000;
-                float amt = millis <= 500 ? millis/500.f : 1.f-((millis-500)/500.f);
-                flashcolour(gr, gg, gb, 0.f, 1.f, 1.f, amt);
-            }
-            #define ADDMODE(a) sy += drawitem(a, x, y-sy, s, 0, false, true, gr, gg, gb, fade);
-            if((alive && inventorygameinfo&1) || over) ADDMODEICON(game::gamemode, game::mutators)
-            if(over && m_multi(game::gamemode, game::mutators) && !(gametype[game::gamemode].implied&(1<<G_M_MULTI))) ADDMODE(modemultitex)
-            if(over && m_ffa(game::gamemode, game::mutators) && !(gametype[game::gamemode].implied&(1<<G_M_FFA))) ADDMODE(modeffatex)
-            if(over && m_coop(game::gamemode, game::mutators) && !(gametype[game::gamemode].implied&(1<<G_M_COOP))) ADDMODE(modecooptex)
-            if(over && m_insta(game::gamemode, game::mutators) && !(gametype[game::gamemode].implied&(1<<G_M_INSTA))) ADDMODE(modeinstatex)
-            if(over && m_medieval(game::gamemode, game::mutators) && !(gametype[game::gamemode].implied&(1<<G_M_MEDIEVAL))) ADDMODE(modemedievaltex)
-            if(over && m_kaboom(game::gamemode, game::mutators) && !(gametype[game::gamemode].implied&(1<<G_M_KABOOM))) ADDMODE(modekaboomtex)
-            if(((alive && inventorygameinfo&4) || over) && m_duel(game::gamemode, game::mutators) && !(gametype[game::gamemode].implied&(1<<G_M_DUEL))) ADDMODE(modedueltex)
-            if(((alive && inventorygameinfo&4) || over) && m_survivor(game::gamemode, game::mutators) && !(gametype[game::gamemode].implied&(1<<G_M_SURVIVOR))) ADDMODE(modesurvivortex)
-            if(over && m_classic(game::gamemode, game::mutators) && !(gametype[game::gamemode].implied&(1<<G_M_CLASSIC))) ADDMODE(modeclassictex)
-            if(over && m_onslaught(game::gamemode, game::mutators) && !(gametype[game::gamemode].implied&(1<<G_M_ONSLAUGHT))) ADDMODE(modeonslaughttex)
-            if(((alive && inventorygameinfo&2) || over) && m_freestyle(game::gamemode, game::mutators)) ADDMODE(modefreestyletex)
-            if(((alive && inventorygameinfo&2) || over) && m_vampire(game::gamemode, game::mutators)) ADDMODE(modevampiretex)
-            if((alive && inventorygameinfo&4) && m_resize(game::gamemode, game::mutators) && !(gametype[game::gamemode].implied&(1<<G_M_RESIZE))) ADDMODE(moderesizetex)
-            if(((alive && inventorygameinfo&2) || over) && m_hard(game::gamemode, game::mutators)) ADDMODE(modehardtex)
-            if(((alive && inventorygameinfo&2) || over) && m_basic(game::gamemode, game::mutators)) ADDMODE(modebasictex)
-            #undef ADDMODE
-        }
-        return sy;
-    }
-
     int drawtimer(int x, int y, int s, float blend)
     {
         if(game::focus->state == CS_EDITING || game::focus->state == CS_SPECTATOR) return 0;
@@ -3087,51 +2804,7 @@ namespace hud
     int drawinventory(int w, int h, int edge, int top, int bottom, float blend)
     {
         int cx[2] = { edge, w-edge }, cy[2] = { h-edge-bottom, h-edge-bottom }, left = edge,
-            csl = int(inventoryleft*w), csr = int(inventoryright*w), cr = edge/2, cc = 0, bf = blend*255, bs = (w-edge*2)/2;
-        if(!texpaneltimer)
-        {
-            if(totalmillis-laststats >= statrate)
-            {
-                memcpy(prevstats, curstats, sizeof(prevstats));
-                laststats = totalmillis-(totalmillis%statrate);
-            }
-            int nextstats[NUMSTATS] = {
-                vtris*100/max(wtris, 1), vverts*100/max(wverts, 1), xtraverts/1024, xtravertsva/1024, glde, gbatches, getnumqueries(), rplanes, curfps, bestfpsdiff, worstfpsdiff
-            };
-            loopi(NUMSTATS) if(prevstats[i] == curstats[i]) curstats[i] = nextstats[i];
-            pushfont("consub");
-            if(showfps)
-            {
-                pushfont("console");
-                cy[1] -= draw_textf("%d fps", cx[1], cy[1], 0, 0, -1, -1, -1, bf, TEXT_RIGHT_UP, -1, bs, 1, curstats[8]);
-                popfont();
-                switch(showfps)
-                {
-                    case 3:
-                        cy[1] -= draw_textf("%d max", cx[1], cy[1], 0, 0, -1, -1, -1, bf, TEXT_RIGHT_UP, -1, bs, 1, maxfps);
-                    case 2:
-                        cy[1] -= draw_textf("+%d-%d range", cx[1], cy[1], 0, 0, -1, -1, -1, bf, TEXT_RIGHT_UP, -1, bs, 1, maxfps, curstats[9], curstats[10]);
-                    default: break;
-                }
-            }
-            if(showstats >= (m_edit(game::gamemode) ? 1 : 2))
-            {
-                cy[1] -= draw_textf("ond:%d va:%d gl:%d(%d) oq:%d", cx[1], cy[1], 0, 0, -1, -1, -1, bf, TEXT_RIGHT_UP, -1, bs, 1, allocnodes*8, allocva, curstats[4], curstats[5], curstats[6]);
-                cy[1] -= draw_textf("wtr:%dk(%d%%) wvt:%dk(%d%%) evt:%dk eva:%dk", cx[1], cy[1], 0, 0, -1, -1, -1, bf, TEXT_RIGHT_UP, -1, bs, 1, wtris/1024, curstats[0], wverts/1024, curstats[1], curstats[2], curstats[3]);
-                cy[1] -= draw_textf("ents:%d(%d) wp:%d lm:%d rp:%d pvs:%d", cx[1], cy[1], 0, 0, -1, -1, -1, bf, TEXT_RIGHT_UP, -1, bs, 1, entities::ents.length(), entgroup.length(), ai::waypoints.length(), lightmaps.length(), curstats[7], getnumviewcells());
-                if(game::player1->state == CS_EDITING)
-                {
-                    cy[1] -= draw_textf("cube:%s%d corner:%d orient:%d grid:%d%s", cx[1], cy[1], 0, 0, -1, -1, -1, bf, TEXT_RIGHT_UP, -1, bs, 1,
-                            selchildcount<0 ? "1/" : "", abs(selchildcount), sel.corner, sel.orient, sel.grid, showmat && selchildmat > 0 ? getmaterialdesc(selchildmat, " mat:") : "");
-                    cy[1] -= draw_textf("sel:%d,%d,%d %d,%d,%d (%d,%d,%d,%d)", cx[1], cy[1], 0, 0, -1, -1, -1, bf, TEXT_RIGHT_UP, -1, bs, 1,
-                            sel.o.x, sel.o.y, sel.o.z, sel.s.x, sel.s.y, sel.s.z,
-                                sel.cx, sel.cxs, sel.cy, sel.cys);
-                }
-                cy[1] -= draw_textf("pos:%.2f,%.2f,%.2f yaw:%.2f pitch:%.2f", cx[1], cy[1], 0, 0, -1, -1, -1, bf, TEXT_RIGHT_UP, -1, bs, 1,
-                        camera1->o.x, camera1->o.y, camera1->o.z, camera1->yaw, camera1->pitch);
-            }
-            popfont();
-        }
+            csl = int(inventoryleft*w), csr = int(inventoryright*w), cr = edge/2, cc = 0;
         if(!minimal(showinventory, true)) return left;
         float fade = blend*inventoryblend;
         bool interm = !gs_playing(game::gamestate) && game::tvmode() && game::focus == game::player1;
@@ -3140,7 +2813,6 @@ namespace hud
             case 0:
             {
                 bool found = false;
-                //if((cc = drawhealth(cx[i], cy[i], csl, fade, interm)) > 0) { cy[i] -= cc+cr; found = true; }
                 if(!interm && (cc = drawtimer(cx[i], cy[i], csl, fade)) > 0) { cy[i] -= cc+cr; found = true; }
                 if(found) left += csl;
                 break;
@@ -3170,15 +2842,6 @@ namespace hud
                     int count = game::player1->state == CS_SPECTATOR ? inventoryscorespec : inventoryscore;
                     if(count && ((cc = drawscore(cx[i], cm, csr, (h-edge*2)/2, fade, count)) > 0)) cm += cc+cr;
                 }
-                #if 0
-                if((cc = drawselection(cx[i], cy[i], csr, cm, fade)) > 0) cy[i] -= cc+cr;
-                if(inventorygame)
-                {
-                    if(m_capture(game::gamemode) && ((cc = capture::drawinventory(cx[i], cy[i], csr, cm, fade)) > 0)) cy[i] -= cc+cr;
-                    else if(m_defend(game::gamemode) && ((cc = defend::drawinventory(cx[i], cy[i], csr, cm, fade)) > 0)) cy[i] -= cc+cr;
-                    else if(m_bomber(game::gamemode) && ((cc = bomber::drawinventory(cx[i], cy[i], csr, cm, fade)) > 0)) cy[i] -= cc+cr;
-                }
-                #endif
                 break;
             }
             default: break;

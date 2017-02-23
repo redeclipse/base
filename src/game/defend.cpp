@@ -152,49 +152,6 @@ namespace defend
         }
     }
 
-    int drawinventory(int x, int y, int s, int m, float blend)
-    {
-        int sy = 0, numflags = st.flags.length(), estsize = ((numflags-1)*s*hud::inventoryskew)+s, fitsize = y-m, size = s;
-        if(estsize > fitsize) size = int((fitsize/float(estsize))*s);
-        loopv(st.flags)
-        {
-            if(y-sy-size < m) break;
-            defendstate::flag &f = st.flags[i];
-            bool hasflag = game::focus->state == CS_ALIVE && insideaffinity(f, game::focus);
-            if(f.hasflag != hasflag) { f.hasflag = hasflag; f.lasthad = lastmillis-max(1000-(lastmillis-f.lasthad), 0); }
-            int millis = lastmillis-f.lasthad;
-            bool headsup = hud::chkcond(hud::inventorygame, game::player1->state == CS_SPECTATOR || f.owner == game::focus->team || st.flags.length() == 1);
-            if(headsup || f.hasflag || millis <= 1000)
-            {
-                float skew = headsup ? hud::inventoryskew : 0.f,
-                    occupy = f.enemy ? clamp(f.converted/float(defendcount), 0.f, 1.f) : (f.owner ? 1.f : 0.f);
-                vec c = vec::hexcolor(TEAM(f.owner, colour)), c1 = c;
-                if(f.enemy)
-                {
-                    float amt = float(lastmillis%1000)/500.f;
-                    if(amt > 1.f) amt = 2.f-amt;
-                    c.lerp(vec::hexcolor(TEAM(f.enemy, colour)), amt);
-                }
-                if(f.hasflag) skew += (millis <= 1000 ? clamp(float(millis)/1000.f, 0.f, 1.f)*(1.f-skew) : 1.f-skew);
-                else if(millis <= 1000) skew += (1.f-skew)-(clamp(float(millis)/1000.f, 0.f, 1.f)*(1.f-skew));
-                int oldy = y-sy;
-                if(hasflag || f.enemy)
-                    sy += hud::drawitem(hud::pointtex, x, oldy, size, 0, true, false, c.r, c.g, c.b, blend, skew, "super", "%s%d%%", hasflag ? (f.owner && f.enemy == game::focus->team ? "\fy" : (occupy < 1.f ? "\fc" : "\fg")) : "\fw", int(occupy*100.f));
-                else sy += hud::drawitem(hud::pointtex, x, oldy, size, 0, true, false, c.r, c.g, c.b, blend, skew);
-                if(f.enemy)
-                {
-                    vec c2 = vec::hexcolor(TEAM(f.enemy, colour));
-                    hud::drawitem(hud::attacktex, x, oldy, size, 0.5f, true, false, c2.r, c2.g, c2.b, blend, skew);
-                    hud::drawitembar(x, oldy, size, false, c.r, c.g, c.b, blend, skew, occupy);
-                }
-                else if(f.owner)
-                    hud::drawitem(hud::teamtexname(f.owner), x, oldy, size, 0.5f, true, false, c1.r, c1.g, c1.b, blend, skew);
-                hud::drawitemtext(x, oldy, size, false, skew, "default", blend, "%s", f.name);
-            }
-        }
-        return sy;
-    }
-
     void reset()
     {
         st.reset();

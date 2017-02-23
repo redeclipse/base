@@ -3588,7 +3588,7 @@ namespace game
         }
         if(shocktime && d->shocking(lastmillis, shocktime))
         {
-            vec origin = d->center(), col = rescolour(d, PULSE_SHOCK), rad = vec(d->xradius, d->yradius, d->height/(d->state == CS_ALIVE ? 2 : 3)).mul(blend);
+            vec origin = d->center(), col = rescolour(d, PULSE_SHOCK), rad = vec(d->xradius, d->yradius, (d->state == CS_ALIVE ? d->height*0.5f : max(d->yradius, d->xradius)*0.5f)).mul(blend);
             int colour = (int(col.x*255)<<16)|(int(col.y*255)<<8)|(int(col.z*255));
             float fade = blend*(d != focus || d->state != CS_ALIVE ? 1.f : 0.65f);
             loopi(4+rnd(8))
