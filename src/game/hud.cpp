@@ -3170,6 +3170,7 @@ namespace hud
                     int count = game::player1->state == CS_SPECTATOR ? inventoryscorespec : inventoryscore;
                     if(count && ((cc = drawscore(cx[i], cm, csr, (h-edge*2)/2, fade, count)) > 0)) cm += cc+cr;
                 }
+                #if 0
                 if((cc = drawselection(cx[i], cy[i], csr, cm, fade)) > 0) cy[i] -= cc+cr;
                 if(inventorygame)
                 {
@@ -3177,6 +3178,7 @@ namespace hud
                     else if(m_defend(game::gamemode) && ((cc = defend::drawinventory(cx[i], cy[i], csr, cm, fade)) > 0)) cy[i] -= cc+cr;
                     else if(m_bomber(game::gamemode) && ((cc = bomber::drawinventory(cx[i], cy[i], csr, cm, fade)) > 0)) cy[i] -= cc+cr;
                 }
+                #endif
                 break;
             }
             default: break;
