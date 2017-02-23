@@ -241,6 +241,28 @@ namespace capture
         return sy;
     }
 
+    ICOMMAND(0, getcaptureteam, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].team : -1));
+    ICOMMAND(0, getcapturedroptime, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].droptime : -1));
+    ICOMMAND(0, getcapturetaketime, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].taketime : -1));
+    ICOMMAND(0, getcapturedisptime, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].displaytime : -1));
+    ICOMMAND(0, getcaptureowner, "i", (int *n), intret(st.flags.inrange(*n) && st.flags[*n].owner ? st.flags[*n].owner->clientnum : -1));
+    ICOMMAND(0, getcapturelastowner, "i", (int *n), intret(st.flags.inrange(*n) && st.flags[*n].lastowner ? st.flags[*n].lastowner->clientnum : -1));
+
+    #define LOOPCAPTURE(name,op) \
+        ICOMMAND(0, loopcapture##name, "re", (ident *id, uint *body), \
+        { \
+            if(!m_capture(game::gamemode)) return; \
+            loopstart(id, stack); \
+            op(st.flags) \
+            { \
+                loopiter(id, stack, i); \
+                execute(body); \
+            } \
+            loopend(id, stack); \
+        });
+    LOOPCAPTURE(,loopv);
+    LOOPCAPTURE(rev,loopvrev);
+
     void checkcams(vector<cament *> &cameras)
     {
         loopv(st.flags) // flags/bases

@@ -816,8 +816,8 @@ namespace client
         intret(d && isweap(*n) && d->holdweap(*n, m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis) ? 1 : 0);
     });
 
-    #define LOOPINVENTORY(name, op) \
-        ICOMMAND(0, loop##name, "sre", (char *who, ident *id, uint *body), \
+    #define LOOPINVENTORY(name,op) \
+        ICOMMAND(0, loopinventory##name, "sre", (char *who, ident *id, uint *body), \
         { \
             gameent *d = game::getclient(parsewho(who)); \
             if(!d) return; \
@@ -829,9 +829,8 @@ namespace client
             } \
             loopend(id, stack); \
         });
-
-    LOOPINVENTORY(inventory, loopi);
-    LOOPINVENTORY(inventoryrev, loopirev);
+    LOOPINVENTORY(,loopi);
+    LOOPINVENTORY(rev,loopirev);
 
     ICOMMAND(0, getclientpoints, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d ? d->points : -1));
     ICOMMAND(0, getclientfrags, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d ? d->frags : -1));
