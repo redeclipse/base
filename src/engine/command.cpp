@@ -4363,7 +4363,7 @@ MINMAXCMD(maxf, f, float, max);
     { \
         type val = numargs > 0 ? args[0].fmt : 0; \
         if(numargs >= 2) val = op(val, args[1].fmt, args[2].fmt); \
-        else if(numargs >= 2) val = op(val, type(0), args[1].fmt); \
+        else if(numargs >= 1) val = op(val, type(0), args[1].fmt); \
         type##ret(val); \
     })
 
