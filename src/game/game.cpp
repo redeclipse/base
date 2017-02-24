@@ -1747,9 +1747,8 @@ namespace game
 
         if(actor[d->actortype].living && nogore != 2 && gibscale > 0 && !(flags&HIT_LOST))
         {
-            int gib = clamp(max(damage, 10)/20, 1, 10), amt = int((rnd(gib)+gib)*gibscale);
-            if(d->obliterated) amt *= 2;
-            loopi(amt) projs::create(pos, pos, true, d, nogore ? PRJ_DEBRIS : PRJ_GIBS, -1, HIT_NONE, rnd(gibfade)+gibfade, 0, rnd(500)+1, rnd(50)+10);
+            int gib = clamp(max(damage, 10)/(d->obliterated ? 10 : 20), 2, 10), amt = int((rnd(gib)+gib)*(1+gibscale));
+            loopi(amt) projs::create(pos, pos, true, d, nogore ? PRJ_DEBRIS : PRJ_GIBS, -1, HIT_NONE, rnd(gibfade)+gibfade, 0, rnd(250)+1, rnd(d->obliterated ? 80 : 40)+10);
         }
         if(m_team(gamemode, mutators) && d->team == v->team && d != v && v == player1 && isweap(weap) && WF(WK(flags), weap, damagepenalty, WS(flags)) != 0)
         {
