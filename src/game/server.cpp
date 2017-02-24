@@ -4110,7 +4110,7 @@ namespace server
             clientinfo *assist = (clientinfo *)getinfo(m->damagelog[i].clientnum);
             if(assist)
             {
-                log.add(assist->clientnum);
+                if(millis-m->damagelog[i].millis <= G(assistkilldelay)) log.add(assist->clientnum);
                 if(points)
                 {
                     if(!lastpoints || i != last)
