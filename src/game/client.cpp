@@ -707,13 +707,13 @@ namespace client
     }
     ICOMMAND(0, getclientpresence, "s", (char *who), intret(getclientpresence(parsewho(who))));
 
-    const char *getclientname(int cn, int colour)
+    const char *getclientname(int cn, int colour, int icon, int dupname)
     {
         gameent *d = game::getclient(cn);
-        if(colour && d) return game::colourname(d);
+        if(colour && d) return game::colourname(d, NULL, icon!=0, dupname!=0, colour >= 0 ? colour : 3);
         return d ? d->name : "";
     }
-    ICOMMAND(0, getclientname, "si", (char *who, int *colour), result(getclientname(parsewho(who), *colour)));
+    ICOMMAND(0, getclientname, "sbbb", (char *who, int *colour, int *icon, int *dupname), result(getclientname(parsewho(who), *colour, *icon, *dupname)));
 
     int getclientcolour(int cn, int m, float f)
     {
