@@ -530,6 +530,7 @@ namespace UI
         bool isnamed(const char *name) const { return name[0] == '#' ? name == gettypename() : !strcmp(name, getname()); }
 
         virtual bool iswindow() const { return false; }
+        virtual bool isfiller() const { return false; }
         virtual bool isspacer() const { return false; }
         virtual bool iscolor() const { return false; }
         virtual bool istext() const { return false; }
@@ -1351,6 +1352,7 @@ namespace UI
 
         static const char *typestr() { return "#Filler"; }
         const char *gettype() const { return typestr(); }
+        bool isfiller() const { return true; }
 
         void layout()
         {
@@ -2050,12 +2052,19 @@ namespace UI
             if(wrap > 0) wlen = wrap/k;
             else if(wrap < 0)
             {
+                float wp = 0.f;
                 wlen = 0-wrap;
                 for(Object *o = this->parent; o != NULL; o = o->parent)
                 {
-                    if(!o->isspacer() && o->w > 0)
+                    if(o->isspacer())
                     {
-                        wlen *= o->w/k;
+                        wp += ((Spacer *)o)->spacew*2;
+                        continue;
+                    }
+                    float ww = o->w > 0 || !o->isfiller() ? o->w : ((Filler *)o)->minw;
+                    if(ww > 0)
+                    {
+                        wlen *= (ww-wp)/k;
                         break;
                     }
                     if(o->iswindow()) break;
@@ -2074,12 +2083,19 @@ namespace UI
             rescale = 1;
             if(limit != 0)
             {
-                float lw = tw*k, lm = fabs(limit);
+                float lw = tw*k, lm = fabs(limit), lp = 0;
                 if(lw > 0) for(Object *o = this->parent; o != NULL; o = o->parent)
                 {
-                    if(!o->isspacer() && o->w > 0)
+                    if(o->isspacer())
                     {
-                        if(lw > o->w*lm) rescale *= o->w/lw;
+                        lp += ((Spacer *)o)->spacew*2;
+                        continue;
+                    }
+                    float ls = o->w > 0 || !o->isfiller() ? o->w : ((Filler *)o)->minw;
+                    if(ls > 0)
+                    {
+                        float lo = (ls-lp)*lm;
+                        if(lw > lo) rescale *= lo/lw;
                         break;
                     }
                     if(o->iswindow()) break;
