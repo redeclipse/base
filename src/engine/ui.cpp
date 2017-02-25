@@ -1397,7 +1397,7 @@ namespace UI
             if(amt == 0 || colors.length() <= 1) return;
             int cols = colors.length(), pieces = 0;
             float progress = clamp(fabs(amt), 0.f, 1.f), part = 1.f/cols;
-            while(progress > part)
+            while(progress >= part)
             {
                 progress -= part;
                 pieces++;
