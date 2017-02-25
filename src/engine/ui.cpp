@@ -1323,6 +1323,7 @@ namespace UI
         Color(uint c) : r((c>>16)&0xFF), g((c>>8)&0xFF), b(c&0xFF), a(c>>24 ? c>>24 : 0xFF) {}
         Color(uint c, uchar a) : r((c>>16)&0xFF), g((c>>8)&0xFF), b(c&0xFF), a(a) {}
         Color(uchar r, uchar g, uchar b, uchar a = 255) : r(r), g(g), b(b), a(a) {}
+        Color(const Color &c) : r(c.r), g(c.g), b(c.b), a(c.a) {}
 
         void init() { gle::colorub(r, g, b, a); }
         void attrib() { gle::attribub(r, g, b, a); }
@@ -1389,6 +1390,51 @@ namespace UI
             colors.add(color_);
             type = type_;
             dir = dir_;
+        }
+
+        void rotatecolors(float amt)
+        {
+            if(amt == 0 || colors.length() <= 1) return;
+            int cols = colors.length(), pieces = 0;
+            float progress = clamp(fabs(amt), 0.f, 1.f), part = 1.f/cols;
+            while(progress > part)
+            {
+                progress -= part;
+                pieces++;
+            }
+            float iter = progress/part;
+            static vector<Color> colorstack;
+            colorstack.setsize(0);
+            if(amt > 0)
+            {
+                loopv(colors)
+                {
+                    int m = (i+pieces)%cols, n = (m+1)%cols;
+                    colorstack.add(
+                        Color(colors[m].r-int((colors[m].r-colors[n].r)*iter),
+                              colors[m].g-int((colors[m].g-colors[n].g)*iter),
+                              colors[m].b-int((colors[m].b-colors[n].b)*iter),
+                              colors[m].a-int((colors[m].a-colors[n].a)*iter)
+                             )
+                        );
+                }
+            }
+            else
+            {
+                loopv(colors)
+                {
+                    int p = i-pieces, m = p >= 0 ? p : cols+p, q = m-1, n = q >= 0 ? q : cols+q;
+                    colorstack.add(
+                        Color(colors[m].r-int((colors[m].r-colors[n].r)*iter),
+                              colors[m].g-int((colors[m].g-colors[n].g)*iter),
+                              colors[m].b-int((colors[m].b-colors[n].b)*iter),
+                              colors[m].a-int((colors[m].a-colors[n].a)*iter)
+                             )
+                        );
+                }
+            }
+            colors.setsize(0);
+            loopv(colorstack) colors.add(colorstack[i]);
         }
 
         static const char *typestr() { return "#TargetColor"; }
@@ -3675,6 +3721,13 @@ namespace UI
     {
         if(!o->iscolor()) continue;
         ((TargetColor *)o)->type = clamp(*c, TargetColor::SOLID, TargetColor::MODULATE);
+        break;
+    });
+
+    UIREVCMDW(rotategrad, "f", (float *amt),
+    {
+        if(!o->iscolor()) continue;
+        ((TargetColor *)o)->rotatecolors(*amt);
         break;
     });
 
