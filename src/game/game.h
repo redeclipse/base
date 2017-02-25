@@ -1697,7 +1697,6 @@ namespace hud
     extern void showscores(bool on, bool interm = false, bool onauto = true, bool ispress = false);
     extern score &teamscore(int team);
     extern void resetscores();
-    extern int raceinventory(int x, int y, int s, float blend);
     extern int drawscore(int x, int y, int s, int m, float blend, int count);
     extern void cleanup();
 }

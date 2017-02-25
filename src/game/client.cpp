@@ -849,9 +849,9 @@ namespace client
     ICOMMAND(0, getclientscoretime, "s", (char *who), gameent *d = game::getclient(parsewho(who)); floatret(d ? d->scoretime() : -1.f));
     ICOMMAND(0, getclientkdratio, "si", (char *who, int *n), gameent *d = game::getclient(parsewho(who)); floatret(d ? d->kdratio(*n!=0) : -1.f));
 
-    ICOMMAND(0, getclientcptime, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d ? d->cptime : -1));
-    ICOMMAND(0, getclientcplast, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d ? d->cplast : -1));
-    ICOMMAND(0, getclientcpmillis, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d ? lastmillis-d->cpmillis : -1));
+    ICOMMAND(0, getclientcptime, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d ? d->cptime : 0));
+    ICOMMAND(0, getclientcplast, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d ? d->cplast : 0));
+    ICOMMAND(0, getclientcpmillis, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d && d->cpmillis ? lastmillis-d->cpmillis : 0));
 
     ICOMMAND(0, getclientping, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d ? d->ping : -1));
     ICOMMAND(0, getclientpj, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d ? d->plag : -1));

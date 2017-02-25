@@ -2778,74 +2778,32 @@ namespace hud
         return 0;
     }
 
-    int drawtimer(int x, int y, int s, float blend)
-    {
-        if(game::focus->state == CS_EDITING || game::focus->state == CS_SPECTATOR) return 0;
-        int sy = 0;
-        if(inventoryrace && m_race(game::gamemode))
-        {
-            float fade = blend*inventoryraceblend;
-            pushfont("default");
-            if((!m_ra_gauntlet(game::gamemode, game::mutators) || game::focus->team == T_ALPHA) && (game::focus->cpmillis || game::focus->cptime) && (game::focus->state == CS_ALIVE || game::focus->state == CS_DEAD || game::focus->state == CS_WAITING))
-            {
-                sy += draw_textf("\faLap: \fw%d", x, y-sy, 0, 0, -1, -1, -1, int(fade*255), TEXT_LEFT_UP, -1, -1, 1, game::focus->points+1);
-                if(game::focus->cptime)
-                    sy += draw_textf("\fy%s", x, y-sy, 0, 0, -1, -1, -1, int(fade*255), TEXT_LEFT_UP, -1, -1, 1, timestr(game::focus->cptime, inventoryracestyle));
-                if(game::focus->cpmillis)
-                    sy += draw_textf("%s", x, y-sy, 0, 0, -1, -1, -1, int(fade*255), TEXT_LEFT_UP, -1, -1, 1, timestr(lastmillis-game::focus->cpmillis, inventoryracestyle));
-                else if(game::focus->cplast)
-                    sy += draw_textf("\fzwe%s", x, y-sy, 0, 0, -1, -1, -1, int(fade*255), TEXT_LEFT_UP, -1, -1, 1, timestr(game::focus->cplast, inventoryracestyle));
-            }
-            sy += raceinventory(x, y-sy, s, fade);
-            popfont();
-        }
-        return sy;
-    }
-
     int drawinventory(int w, int h, int edge, int top, int bottom, float blend)
     {
-        int cx[2] = { edge, w-edge }, cy[2] = { h-edge-bottom, h-edge-bottom }, left = edge,
-            csl = int(inventoryleft*w), csr = int(inventoryright*w), cr = edge/2, cc = 0;
-        if(!minimal(showinventory, true)) return left;
+        if(!minimal(showinventory, true)) return edge;
+        int cx = w-edge, left = edge, csr = int(inventoryright*w), cm = top+edge, cr = edge/2, cc = 0;
         float fade = blend*inventoryblend;
-        bool interm = !gs_playing(game::gamestate) && game::tvmode() && game::focus == game::player1;
-        loopi(2) switch(i)
+        if(!radardisabled && !m_hard(game::gamemode, game::mutators) && radartype() == 3 && !hasinput(true) && (game::focus->state == CS_EDITING ? showeditradar >= 1 : chkcond(showradar, !game::tvmode() || (game::focus != game::player1 && radartype() == 3))))
+            cm += int(max(w, h)/2*radarcorner*2)+cr;
+        if(inventorydate)
+            cm += drawitemtextx(cx, cm, 0, (inventorybg ? TEXT_SKIN : 0)|TEXT_RIGHT_JUSTIFY, inventorydateskew, "huge", fade, "%s", gettime(currenttime, inventorydateformat))+cr;
+        if(inventorytime)
         {
-            case 0:
+            if(paused) cm += drawitemtextx(cx, cm, 0, (inventorybg ? TEXT_SKIN : 0)|TEXT_RIGHT_JUSTIFY, inventorytimeskew, "huge", fade, "\fs\foPaused\fS", colourwhite)+cr;
+            else if(m_edit(game::gamemode)) cm += drawitemtextx(cx, cm, 0, (inventorybg ? TEXT_SKIN : 0)|TEXT_RIGHT_JUSTIFY, inventorytimeskew, "huge", fade, "\fs\fgEditing\fS")+cr;
+            else if(m_play(game::gamemode) || client::demoplayback)
             {
-                bool found = false;
-                if(!interm && (cc = drawtimer(cx[i], cy[i], csl, fade)) > 0) { cy[i] -= cc+cr; found = true; }
-                if(found) left += csl;
-                break;
+                int timecorrected = max(game::timeremaining*1000-((gs_playing(game::gamestate) ? lastmillis : totalmillis)-game::lasttimeremain), 0);
+                if(game::gamestate != G_S_PLAYING)
+                    cm += drawitemtextx(cx, cm, 0, (inventorybg ? TEXT_SKIN : 0)|TEXT_RIGHT_JUSTIFY, inventorytimeskew, "huge", fade, "%s \fs%s%s\fS", gamestates[1][game::gamestate], gs_waiting(game::gamestate) ? "\fr" : (game::gamestate == G_S_OVERTIME ? (inventorytimeflash ? "\fzoy" : "\fo") : "\fg"), timestr(timecorrected, inventorytimestyle))+cr;
+                else if(m_mmvar(game::gamemode, game::mutators, timelimit)) cm += drawitemtextx(cx, cm, 0, (inventorybg ? TEXT_SKIN : 0)|TEXT_RIGHT_JUSTIFY, inventorytimeskew, "huge", fade, "\fs%s%s\fS", timecorrected > 60000 ? "\fg" : (inventorytimeflash ? "\fzgy" : "\fy"), timestr(timecorrected, inventorytimestyle))+cr;
             }
-            case 1:
-            {
-                int cm = top+edge;
-                if(!radardisabled && !m_hard(game::gamemode, game::mutators) && radartype() == 3 && !hasinput(true) && (game::focus->state == CS_EDITING ? showeditradar >= 1 : chkcond(showradar, !game::tvmode() || (game::focus != game::player1 && radartype() == 3))))
-                    cm += int(max(w, h)/2*radarcorner*2)+cr;
-                if(inventorydate)
-                    cm += drawitemtextx(cx[i], cm, 0, (inventorybg ? TEXT_SKIN : 0)|TEXT_RIGHT_JUSTIFY, inventorydateskew, "huge", fade, "%s", gettime(currenttime, inventorydateformat))+cr;
-                if(inventorytime)
-                {
-                    if(paused) cm += drawitemtextx(cx[i], cm, 0, (inventorybg ? TEXT_SKIN : 0)|TEXT_RIGHT_JUSTIFY, inventorytimeskew, "huge", fade, "\fs\foPaused\fS", colourwhite)+cr;
-                    else if(m_edit(game::gamemode)) cm += drawitemtextx(cx[i], cm, 0, (inventorybg ? TEXT_SKIN : 0)|TEXT_RIGHT_JUSTIFY, inventorytimeskew, "huge", fade, "\fs\fgEditing\fS")+cr;
-                    else if(m_play(game::gamemode) || client::demoplayback)
-                    {
-                        int timecorrected = max(game::timeremaining*1000-((gs_playing(game::gamestate) ? lastmillis : totalmillis)-game::lasttimeremain), 0);
-                        if(game::gamestate != G_S_PLAYING)
-                            cm += drawitemtextx(cx[i], cm, 0, (inventorybg ? TEXT_SKIN : 0)|TEXT_RIGHT_JUSTIFY, inventorytimeskew, "huge", fade, "%s \fs%s%s\fS", gamestates[1][game::gamestate], gs_waiting(game::gamestate) ? "\fr" : (game::gamestate == G_S_OVERTIME ? (inventorytimeflash ? "\fzoy" : "\fo") : "\fg"), timestr(timecorrected, inventorytimestyle))+cr;
-                        else if(m_mmvar(game::gamemode, game::mutators, timelimit)) cm += drawitemtextx(cx[i], cm, 0, (inventorybg ? TEXT_SKIN : 0)|TEXT_RIGHT_JUSTIFY, inventorytimeskew, "huge", fade, "\fs%s%s\fS", timecorrected > 60000 ? "\fg" : (inventorytimeflash ? "\fzgy" : "\fy"), timestr(timecorrected, inventorytimestyle))+cr;
-                    }
-                }
-                if(texpaneltimer) break;
-                if(m_play(game::gamemode))
-                {
-                    int count = game::player1->state == CS_SPECTATOR ? inventoryscorespec : inventoryscore;
-                    if(count && ((cc = drawscore(cx[i], cm, csr, (h-edge*2)/2, fade, count)) > 0)) cm += cc+cr;
-                }
-                break;
-            }
-            default: break;
+        }
+        if(texpaneltimer) return left;
+        if(m_play(game::gamemode))
+        {
+            int count = game::player1->state == CS_SPECTATOR ? inventoryscorespec : inventoryscore;
+            if(count && ((cc = drawscore(cx, cm, csr, (h-edge*2)/2, fade, count)) > 0)) cm += cc+cr;
         }
         return left;
     }
