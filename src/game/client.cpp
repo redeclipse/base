@@ -203,7 +203,7 @@ namespace client
     vector<demoinfo> demoinfos;
     vector<char *> faildemos;
 
-    int scandemo(const char *name)
+    int scandemo(const char *name, bool quiet = false)
     {
         if(!name || !*name) return -1;
         loopv(demoinfos) if(!strcmp(demoinfos[i].file, name)) return i;
@@ -229,14 +229,14 @@ namespace client
         delete f;
         if(msg[0])
         {
-            conoutft(CON_INFO, "%s", msg);
+            if(!quiet) conoutft(CON_INFO, "%s", msg);
             demoinfos.pop();
             faildemos.add(newstring(name));
             return -1;
         }
         return num;
     }
-    ICOMMAND(0, demoscan, "s", (char *name), intret(scandemo(name)));
+    ICOMMAND(0, demoscan, "si", (char *name, int *quiet), intret(scandemo(name, *quiet)));
 
     void resetdemos(bool all)
     {
