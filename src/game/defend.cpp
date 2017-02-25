@@ -3,10 +3,39 @@ namespace defend
 {
     defendstate st;
 
-    bool insideaffinity(const defendstate::flag &b, gameent *d)
+    bool insideaffinity(defendstate::flag &b, gameent *d, bool lasthad = false)
     {
-        return st.insideaffinity(b, d->feetpos());
+        bool hasflag = st.insideaffinity(b, d->feetpos());
+        if(lasthad && b.hasflag != hasflag) { b.hasflag = hasflag; b.lasthad = lastmillis-max(1000-(lastmillis-b.lasthad), 0); }
+        return hasflag;
     }
+
+    ICOMMAND(0, getdefendowner, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].owner : -1));
+    ICOMMAND(0, getdefendowners, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].owners : 0));
+    ICOMMAND(0, getdefendenemy, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].enemy : -1));
+    ICOMMAND(0, getdefendenemies, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].enemies : 0));
+    ICOMMAND(0, getdefendconverted, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].converted : 0));
+    ICOMMAND(0, getdefendpoints, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].points : 0));
+    ICOMMAND(0, getdefendoccupied, "i", (int *n), floatret(st.flags.inrange(*n) ? (st.flags[*n].enemy ? clamp(st.flags[*n].converted/float(defendcount), 0.f, 1.f) : (st.flags[*n].owner ? 1.f : 0.f)) : 0));
+
+    ICOMMAND(0, getdefendkinship, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].kinship : -1));
+    ICOMMAND(0, getdefendinfo, "i", (int *n), result(st.flags.inrange(*n) ? st.flags[*n].info : ""));
+    ICOMMAND(0, getdefendinside, "isi", (int *n, const char *who, int *h), gameent *d = game::getclient(client::parsewho(who)); intret(d && st.flags.inrange(*n) && insideaffinity(st.flags[*n], d, *h!=0) ? 1 : 0));
+
+    #define LOOPDEFEND(name,op) \
+        ICOMMAND(0, loopdefend##name, "re", (ident *id, uint *body), \
+        { \
+            if(!m_defend(game::gamemode)) return; \
+            loopstart(id, stack); \
+            op(st.flags) \
+            { \
+                loopiter(id, stack, i); \
+                execute(body); \
+            } \
+            loopend(id, stack); \
+        });
+    LOOPDEFEND(,loopv);
+    LOOPDEFEND(rev,loopvrev);
 
     void preload()
     {
