@@ -2066,7 +2066,7 @@ namespace UI
                 case 1: a |= TEXT_RIGHT_JUSTIFY; left += tw*k; break;
                 default: break;
             }
-            if(rescale != 1) top += limit > 0 ? th-(th*rescale) : (th-(th*rescale))*0.5f;
+            if(rescale != 1 && limit >= 0) top += (((th*drawscale())-(th*k))*0.5f)/k;
             pushhudtranslate(0, 0, k);
             draw_text(getstr(), left, top, color.r, color.g, color.b, color.a, a, -1, wlen, 1);
             pophudmatrix();
