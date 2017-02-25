@@ -1405,33 +1405,17 @@ namespace UI
             float iter = progress/part;
             static vector<Color> colorstack;
             colorstack.setsize(0);
-            if(amt > 0)
+            bool rev = amt < 0;
+            loopv(colors)
             {
-                loopv(colors)
-                {
-                    int m = (i+pieces)%cols, n = (m+1)%cols;
-                    colorstack.add(
-                        Color(colors[m].r-int((colors[m].r-colors[n].r)*iter),
-                              colors[m].g-int((colors[m].g-colors[n].g)*iter),
-                              colors[m].b-int((colors[m].b-colors[n].b)*iter),
-                              colors[m].a-int((colors[m].a-colors[n].a)*iter)
-                             )
-                        );
-                }
-            }
-            else
-            {
-                loopv(colors)
-                {
-                    int p = i-pieces, m = p >= 0 ? p : cols+p, q = m-1, n = q >= 0 ? q : cols+q;
-                    colorstack.add(
-                        Color(colors[m].r-int((colors[m].r-colors[n].r)*iter),
-                              colors[m].g-int((colors[m].g-colors[n].g)*iter),
-                              colors[m].b-int((colors[m].b-colors[n].b)*iter),
-                              colors[m].a-int((colors[m].a-colors[n].a)*iter)
-                             )
-                        );
-                }
+                int p = rev ? i-pieces : (i+pieces)%cols, m = p >= 0 ? p : cols+p, q = rev ? m-1 : (m+1)%cols, n = q >= 0 ? q : cols+q;
+                colorstack.add(
+                    Color(colors[m].r-int((colors[m].r-colors[n].r)*iter),
+                          colors[m].g-int((colors[m].g-colors[n].g)*iter),
+                          colors[m].b-int((colors[m].b-colors[n].b)*iter),
+                          colors[m].a-int((colors[m].a-colors[n].a)*iter)
+                         )
+                    );
             }
             colors.setsize(0);
             loopv(colorstack) colors.add(colorstack[i]);
