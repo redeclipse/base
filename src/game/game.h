@@ -1663,14 +1663,11 @@ namespace hud
 {
     extern char *chattex, *insigniatex, *playertex, *deadtex, *waitingtex, *spectatortex, *editingtex, *dominatingtex, *dominatedtex, *inputtex,
         *bliptex, *pointtex, *flagtex, *bombtex, *arrowtex, *arrowrighttex, *arrowdowntex, *arrowlefttex, *alerttex, *questiontex, *flagdroptex,
-        *flagtakentex, *bombdroptex, *bombtakentex, *attacktex, *warningtex, *inventorytex, *indicatortex, *crosshairtex, *hithairtex,
+        *flagtakentex, *bombdroptex, *bombtakentex, *attacktex, *warningtex, *indicatortex, *crosshairtex, *hithairtex,
         *spree1tex, *spree2tex, *spree3tex, *spree4tex, *multi1tex, *multi2tex, *multi3tex, *headshottex, *dominatetex, *revengetex,
         *firstbloodtex, *breakertex;
-    extern int hudwidth, hudheight, hudsize, lastteam, damageresidue, damageresiduefade, shownotices, showevents, radaraffinitynames,
-        inventorygame, inventoryscore, inventoryscorespec, inventoryscorebg, inventoryscoreinfo, inventoryscorename, inventoryscorepos, inventoryscorebreak, inventoryracestyle,
-        teamhurthud, teamhurttime, teamhurtdist;
-    extern float noticescale, eventscale, inventoryblend, inventoryskew, radaraffinityblend, radarblipblend, radaraffinitysize,
-        inventoryglow, inventoryscoresize, inventoryscoreshrink, inventoryscoreshrinkmax, noticepadx, noticepady, eventpadx, eventpady;
+    extern int hudwidth, hudheight, hudsize, lastteam, damageresidue, damageresiduefade, shownotices, showevents, radaraffinitynames, teamhurthud, teamhurttime, teamhurtdist;
+    extern float noticescale, eventscale, radaraffinityblend, radarblipblend, radaraffinitysize, noticepadx, noticepady, eventpadx, eventpady;
     extern bool scoreson, scoresoff, shownscores;
     extern vector<int> teamkills;
     extern const char *icontex(int type, int value);
@@ -1683,11 +1680,6 @@ namespace hud
     extern int radarrange();
     extern void drawblip(const char *tex, float area, int w, int h, float s, float blend, int style, const vec &pos, const vec &colour = vec(1, 1, 1), const char *font = "reduced", const char *text = NULL, ...);
     extern int drawprogress(int x, int y, float start, float length, float size, bool left, float r = 1, float g = 1, float b = 1, float fade = 1, float skew = 1, const char *font = NULL, const char *text = NULL, ...);
-    extern int drawitembar(int x, int y, float size, bool left, float r = 1, float g = 1, float b = 1, float fade = 1, float skew = 1, float amt = 1, int type = 0);
-    extern int drawitem(const char *tex, int x, int y, float size, float sub = 0, bool bg = true, bool left = false, float r = 1, float g = 1, float b = 1, float fade = 1, float skew = 1, const char *font = NULL, const char *text = NULL, ...);
-    extern int drawitemtextx(int x, int y, float size, int flags = TEXT_LEFT_UP, float skew = 1, const char *font = NULL, float blend = 1, const char *text = NULL, ...);
-    extern int drawitemtext(int x, int y, float size, bool left = false, float skew = 1, const char *font = NULL, float blend = 1, const char *text = NULL, ...);
-    extern void drawinventory(int w, int h, int edge, float blend = 1);
     extern void damage(int n, const vec &loc, gameent *v, int weap, int flags);
     extern void hit(int n, const vec &loc, gameent *v, int weap, int flags);
     extern const char *teamtexname(int team = T_NEUTRAL);
@@ -1697,7 +1689,6 @@ namespace hud
     extern void showscores(bool on, bool interm = false, bool onauto = true, bool ispress = false);
     extern score &teamscore(int team);
     extern void resetscores();
-    extern int drawscore(int x, int y, int s, int m, float blend, int count);
     extern void cleanup();
 }
 

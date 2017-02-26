@@ -20,7 +20,6 @@ namespace hud
     VAR(IDF_PERSIST, showhud, 0, 1, 1);
     VAR(IDF_PERSIST, hudsize, 0, 2048, VAR_MAX);
     FVAR(IDF_PERSIST, hudblend, 0, 1, 1);
-    VAR(IDF_PERSIST, hudminimal, 0, 0, 1);
 
     VAR(IDF_PERSIST, showdemoplayback, 0, 1, 1);
     FVAR(IDF_PERSIST, edgesize, 0, 0.005f, 1000);
@@ -103,14 +102,8 @@ namespace hud
     FVAR(IDF_PERSIST, conblend, 0, 0.6f, 1);
     FVAR(IDF_PERSIST, conscale, FVAR_NONZERO, 1, FVAR_MAX);
     SVAR(IDF_PERSIST, condateformat, "%H:%M:%S");
-    VAR(IDF_PERSIST, chatconsize, 1, 5, 100);
-    VAR(IDF_PERSIST, chatcontime, 0, 30000, VAR_MAX);
-    VAR(IDF_PERSIST, chatconfade, 0, 1000, VAR_MAX);
-    VAR(IDF_PERSIST, chatconoverflow, 0, 5, VAR_MAX);
-    VAR(IDF_PERSIST, chatcondate, 0, 0, 1);
-    FVAR(IDF_PERSIST, chatconblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, chatconscale, FVAR_NONZERO, 1, FVAR_MAX);
-    SVAR(IDF_PERSIST, chatcondateformat, "%H:%M:%S");
+    VAR(IDF_PERSIST, conchattime, 0, 30000, VAR_MAX);
+    VAR(IDF_PERSIST, conchatfade, 0, 1000, VAR_MAX);
 
     FVAR(IDF_PERSIST, selfconblend, 0, 1, 1);
     FVAR(IDF_PERSIST, fullconblend, 0, 1, 1);
@@ -157,13 +150,6 @@ namespace hud
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, warningtex, "<grey>textures/warning", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, questiontex, "<grey>textures/question", 3);
 
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, healthtex, "<grey>textures/hud/health", 3);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, healthbgtex, "<grey>textures/hud/healthbg", 3);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, impulsetex, "<grey>textures/hud/impulse", 3);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, impulsebgtex, "<grey>textures/hud/impulsebg", 3);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, inventorytex, "<grey>textures/hud/inventory", 3);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, inventorybigtex, "<grey>textures/hud/inventorybig", 3);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, inventorybartex, "<grey>textures/hud/inventorybar", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, flagtex, "<grey>textures/hud/flag", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, pointtex, "<grey>textures/hud/point", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, bombtex, "<grey>textures/hud/bomb", 3);
@@ -178,7 +164,6 @@ namespace hud
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, bombtakentex, "<grey>textures/hud/bombtaken", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, attacktex, "<grey>textures/hud/attack", 3);
 
-    VAR(IDF_PERSIST|IDF_HEX, inventorytone, -CTONE_MAX, -CTONE_TEAM-1, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, crosshairtone, -CTONE_MAX, 0, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, hitcrosshairtone, -CTONE_MAX, 0, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, noticetone, -CTONE_MAX, 0, 0xFFFFFF);
@@ -277,103 +262,6 @@ namespace hud
     VAR(IDF_PERSIST|IDF_HEX, circlebarammocolour, 0, 1, 1);
     VAR(IDF_PERSIST|IDF_HEX, circlebarammotone, -CTONE_MAX-1, 0xFFAA66, 0xFFFFFF);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, circlebartex, "textures/hud/circlebar", 3);
-
-    VAR(IDF_PERSIST, showinventory, 0, 1, 1);
-    VAR(IDF_PERSIST, inventoryammo, 0, 3, 3);
-    VAR(IDF_PERSIST, inventoryammobar, 0, 2, 2);
-    VAR(IDF_PERSIST, inventoryammostyle, 0, 1, 1);
-    VAR(IDF_PERSIST, inventorygame, 0, 2, 2);
-    VAR(IDF_PERSIST, inventorydate, 0, 0, 1);
-    SVAR(IDF_PERSIST, inventorydateformat, "%H:%M:%S");
-    VAR(IDF_PERSIST, inventorytime, 0, 1, 1);
-    VAR(IDF_PERSIST, inventorytimeflash, 0, 1, 1);
-    VAR(IDF_PERSIST, inventorytimestyle, 0, 3, 4);
-    VAR(IDF_PERSIST, inventoryscore, 0, 1, VAR_MAX);
-    VAR(IDF_PERSIST, inventoryscorespec, 0, 3, VAR_MAX);
-    VAR(IDF_PERSIST, inventoryscorebg, 0, 1, 1);
-    VAR(IDF_PERSIST, inventoryscoreinfo, 0, 1, 1); // shows offset
-    VAR(IDF_PERSIST, inventoryscorepos, 0, 1, 1); // shows position
-    VAR(IDF_PERSIST, inventoryscorename, 0, 2, 2); // 0 = off, 1 = only ffa, 2 = teams as well
-    VAR(IDF_PERSIST, inventoryscorebreak, 0, 0, 2); // breaks up over multiple lines, 2 = center as well
-    VAR(IDF_PERSIST, inventoryweapids, 0, 2, 2);
-    VAR(IDF_PERSIST, inventorycolour, 0, 2, 2);
-    VAR(IDF_PERSIST, inventoryflash, 0, 0, 1);
-    FVAR(IDF_PERSIST, inventoryleft, 0, 0.045f, 1000);
-    FVAR(IDF_PERSIST, inventoryright, 0, 0.05f, 1000);
-    FVAR(IDF_PERSIST, inventoryskew, 1e-4f, 0.65f, 1000);
-    FVAR(IDF_PERSIST, inventorydateskew, 1e-4f, 0.85f, 1000);
-    FVAR(IDF_PERSIST, inventorytimeskew, 1e-4f, 1, 1000);
-    FVAR(IDF_PERSIST, inventoryscoresize, 0, 1, 1);
-    FVAR(IDF_PERSIST, inventoryscoreshrink, 0, 0, 1);
-    FVAR(IDF_PERSIST, inventoryscoreshrinkmax, 0, 0.5f, 1);
-    FVAR(IDF_PERSIST, inventoryblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, inventoryglow, 0, 0.05f, 1);
-    FVAR(IDF_PERSIST, inventorytextoffsetx, -1, -0.3f, 1);
-    FVAR(IDF_PERSIST, inventorytextoffsety, -1, -0.125f, 1);
-
-    VAR(IDF_PERSIST, inventorybg, 0, 1, 2);
-    FVAR(IDF_PERSIST, inventorybgskew, 0, 0.05f, 1); // skew items inside by this much
-    FVAR(IDF_PERSIST, inventorybgblend, 0, 0.25f, 1);
-    FVAR(IDF_PERSIST, inventorybgskin, 0, 1, 1);
-    FVAR(IDF_PERSIST, inventorybgspace, 0, 0.05f, 1); // for aligning diagonals
-
-    FVAR(IDF_PERSIST, inventorybartop, 0, 0.046875f, 1); // starts from this offset
-    FVAR(IDF_PERSIST, inventorybarbottom, 0, 0.28125f, 1); // ends at this offset
-    FVAR(IDF_PERSIST, inventorybaroffset, -1, -0.25f, 1); // starts from this offset
-
-    VAR(IDF_PERSIST, inventoryedit, 0, 1, 1);
-    FVAR(IDF_PERSIST, inventoryeditblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, inventoryeditskew, 1e-4f, 0.5f, 1000);
-
-    VAR(IDF_PERSIST, inventoryhealth, 0, 3, 3); // 0 = off, 1 = text, 2 = bar, 3 = bar + text
-    VAR(IDF_PERSIST, inventoryhealthflash, 0, 2, 2);
-    FVAR(IDF_PERSIST, inventoryhealthblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, inventoryhealththrob, 0, 0.035f, 1);
-    FVAR(IDF_PERSIST, inventoryhealthbartop, 0, 0.09375f, 1); // starts from this offset
-    FVAR(IDF_PERSIST, inventoryhealthbarbottom, 0, 0.0859375f, 1); // ends at this offset
-    FVAR(IDF_PERSIST, inventoryhealthbgglow, 0, 0.05f, 1);
-    FVAR(IDF_PERSIST, inventoryhealthbgblend, 0, 0.5f, 1);
-
-    VAR(IDF_PERSIST, inventoryimpulse, 0, 2, 3); // 0 = off, 1 = text, 2 = bar, 3 = both
-    VAR(IDF_PERSIST, inventoryimpulseflash, 0, 2, 2);
-    FVAR(IDF_PERSIST, inventoryimpulseblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, inventoryimpulsethrob, 0, 0.035f, 1);
-    FVAR(IDF_PERSIST, inventoryimpulsebartop, 0, 0.171875f, 1); // starts from this offset
-    FVAR(IDF_PERSIST, inventoryimpulsebarbottom, 0, 0.0859375f, 1); // ends at this offset
-    FVAR(IDF_PERSIST, inventoryimpulsebgglow, 0, 0.05f, 1);
-    FVAR(IDF_PERSIST, inventoryimpulsebgblend, 0, 0.5f, 1);
-
-    VAR(IDF_PERSIST, inventoryvelocity, 0, 0, 2);
-    FVAR(IDF_PERSIST, inventoryvelocityblend, 0, 1, 1);
-    VAR(IDF_PERSIST, inventoryrace, 0, 2, 2);
-    VAR(IDF_PERSIST, inventoryracestyle, 0, 1, 4);
-    FVAR(IDF_PERSIST, inventoryraceblend, 0, 1, 1);
-    VAR(IDF_PERSIST, inventorystatus, 0, 1, 3); // 0 = off, 1 = text, 2 = icon, 3 = icon + tex
-    FVAR(IDF_PERSIST, inventorystatusblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, inventorystatusiconblend, 0, 0.65f, 1);
-
-    VAR(IDF_PERSIST, inventoryalert, 0, 1, 1);
-    FVAR(IDF_PERSIST, inventoryalertblend, 0, 0.5f, 1);
-    VAR(IDF_PERSIST, inventoryalertflash, 0, 1, 1);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, buffedtex, "<grey>textures/alerts/buff", 3);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, burningtex, "<grey>textures/alerts/burn", 3);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, bleedingtex, "<grey>textures/alerts/bleed", 3);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, shockingtex, "<grey>textures/alerts/shock", 3);
-
-    VAR(IDF_PERSIST, inventorygameinfo, 0, 15, 31); // &1 = mode, &2 = important, &4 = duel/survivor, &8 = non-alive, &16 = force all
-    FVAR(IDF_PERSIST, inventorygameinfoblend, 0, 0.6f, 1);
-    VAR(IDF_PERSIST, inventorygameinfoflash, 0, 3000, VAR_MAX);
-
-    VAR(IDF_PERSIST, inventoryconopen, 0, 1, 1);
-    FVAR(IDF_PERSIST, inventoryconopenblend, 0, 0.5f, 1);
-    VAR(IDF_PERSIST, inventoryconopenflash, 0, 0, 1);
-    VAR(IDF_PERSIST, inventoryinput, 0, 0, 3); // bitwise, 1 = focus=player1, 2 = focus!=player1
-    FVAR(IDF_PERSIST, inventoryinputblend, 0, 0.75f, 1);
-    VAR(IDF_PERSIST, inventoryinputfilter, 0, AC_ALL, AC_ALL);
-    VAR(IDF_PERSIST, inventoryinputlinger, 0, AC_ALL, AC_ALL);
-    VAR(IDF_PERSIST, inventoryinputdelay, 0, 125, VAR_MAX);
-    VAR(IDF_PERSIST, inventoryinputactive, 0, 0x22FF22, 0xFFFFFF);
-    VAR(IDF_PERSIST, inventoryinputcolour, 0, 0x888888, 0xFFFFFF);
 
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, clawtex, "<grey>textures/weapons/claw", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, pistoltex, "<grey>textures/weapons/pistol", 3);
@@ -707,12 +595,6 @@ namespace hud
     {
         if(val == 2 || (val && cond)) return true;
         return false;
-    }
-
-    bool minimal(int val, bool cond = false)
-    {
-        if(cond) return val != 0 && !hudminimal; // is not activated in minimal
-        return val != 0 || hudminimal; // is activated in minimal
     }
 
     bool hasinput(bool pass, bool focus)
@@ -1377,10 +1259,10 @@ namespace hud
             drawpointertex(getpointer(index, game::focus->weapselect), cx-cs/2, cy-cs/2, cs, c.r, c.g, c.b, fade*hudblend);
             if(index > POINTER_GUI)
             {
-                if(minimal(showcirclebar)) drawcirclebar(cx, cy, hudsize);
+                if(showcirclebar) drawcirclebar(cx, cy, hudsize);
                 if(game::focus->state == CS_ALIVE && game::focus->hasweap(game::focus->weapselect, m_weapon(game::focus->actortype, game::gamemode, game::mutators)))
                 {
-                    if(minimal(showclips, true)) drawclip(game::focus->weapselect, cx, cy, hudsize);
+                    if(showclips) drawclip(game::focus->weapselect, cx, cy, hudsize);
                     if(showindicator) drawindicator(game::focus->weapselect, cx, cy, int(indicatorsize*hudsize), physics::secondaryweap(game::focus));
                 }
                 if(crosshairhitspeed && totalmillis-game::focus->lasthit <= crosshairhitspeed)
@@ -1475,7 +1357,7 @@ namespace hud
         pushhudscale(noticescale);
         int ty = int(((hudheight/2)+(hudheight/2*noticeoffset))/noticescale), tx = int((hudwidth/2)/noticescale),
             tf = int(hudblend*noticeblend*255), tr = 255, tg = 255, tb = 255,
-            tw = int((hudwidth-((hudsize*edgesize)*2+(hudsize*inventoryleft)+(hudsize*inventoryright)))/noticescale);
+            tw = int((hudwidth-((hudsize*edgesize)*2))/noticescale);
         if(noticetone) skewcolour(tr, tg, tb, noticetone);
 
         pushfont("emphasis");
@@ -1712,7 +1594,7 @@ namespace hud
         pushhudscale(eventscale);
         int ty = int(((hudheight/2)-(hudheight/2*eventoffset))/eventscale), tx = int((hudwidth/2)/eventscale),
             tf = int(hudblend*eventblend*255), tr = 255, tg = 255, tb = 255,
-            tw = int((hudwidth-((hudsize*edgesize)*2+(hudsize*inventoryleft)+(hudsize*inventoryright)))/eventscale);
+            tw = int((hudwidth-((hudsize*edgesize)*2))/eventscale);
         if(eventtone) skewcolour(tr, tg, tb, eventtone);
         pushfont("emphasis");
         if(!gs_playing(game::gamestate))
@@ -1799,8 +1681,8 @@ namespace hud
             int numl = consize, numo = consize+conoverflow;
             loopvj(conlines) if(conlines[j].type >= (confilter && !full ? CON_INFO : 0))
             {
-                int len = conlines[j].type >= CON_CHAT ? (!full && conlines[j].type > CON_CHAT ? chatcontime/2 : chatcontime) : (!full && conlines[j].type < CON_IMPORTANT ? contime/2 : contime),
-                    fadelen = conlines[j].type >= CON_CHAT ? chatconfade : confade;
+                int len = conlines[j].type >= CON_CHAT ? (!full && conlines[j].type > CON_CHAT ? conchattime/2 : conchattime) : (!full && conlines[j].type < CON_IMPORTANT ? contime/2 : contime),
+                    fadelen = conlines[j].type >= CON_CHAT ? conchatfade : confade;
                 if(conskip ? j>=conskip-1 || j>=conlines.length()-numl : full || totalmillis-conlines[j].reftime <= len+fadelen)
                 {
                     if(refs.length() >= numl)
@@ -1811,7 +1693,7 @@ namespace hud
                             bool found = false;
                             loopvrev(refs)
                             {
-                                int check = conlines[refs[i]].type >= CON_CHAT ? (!full && conlines[refs[i]].type > CON_CHAT ? chatcontime/2 : chatcontime) : (!full && conlines[refs[i]].type < CON_IMPORTANT ? contime/2 : contime);
+                                int check = conlines[refs[i]].type >= CON_CHAT ? (!full && conlines[refs[i]].type > CON_CHAT ? conchattime/2 : conchattime) : (!full && conlines[refs[i]].type < CON_IMPORTANT ? contime/2 : contime);
                                 if(conlines[refs[i]].reftime+check < conlines[j].reftime+len)
                                 {
                                     refs.remove(i);
@@ -2452,236 +2334,6 @@ namespace hud
         return int(s);
     }
 
-    const struct barstep
-    {
-        float amt, r, g, b;
-    } barsteps[4][4] = {
-        { { 0, 1, 1, 1 }, { 0.35f, 0.75f, 0.75f, 0.75f }, { 0.65f, 0.65f, 0.65f, 0.65f }, { 1, 1, 1, 1 } },
-        { { 0, 0.75f, 0, 0 }, { 0.35f, 1, 0.5f, 0 }, { 0.65f, 1, 1, 0 }, { 1, 0, 1, 0 } },
-        { { 0, 1, 0.25f, 0.25f }, { 0.35f, 1, 0, 1 }, { 0.65f, 0.25f, 0.25f, 1 }, { 1, 0, 1, 1 } },
-        { { 0, 0.5f, 0, 0 }, { 0.35f, 0.25f, 0.f, 0.5f }, { 0.65f, 0.25f, 0.25f, 0.75f }, { 1, 0.75f, 0.75f, 1 } }
-    };
-
-    int drawbar(int x, int y, int w, int h, int type, float top, float bottom, float fade, float amt, const char *tex, const char *bgtex, int tone, float bgglow, float blend, float pulse, float throb, float throbscale, int throbcolour = -1, int throbreverse = false)
-    {
-        int offset = int(w*(throb >= 0 ? throb*throbscale : 0.f)), id = clamp(type, 0, 3);
-        if(bgtex && *bgtex)
-        {
-            int glow = 0;
-            float gr = 1, gg = 1, gb = 1, gf = fade*blend;
-            if(tone) skewcolour(gr, gg, gb, tone);
-            if(pulse > 0)
-            {
-                int millis = totalmillis%1000;
-                float skew = (millis <= 500 ? millis/500.f : 1.f-((millis-500)/500.f))*pulse;
-                flashcolourf(gr, gg, gb, gf, id != 1 && (id != 2 || throb < 0) ? 0.5f : 1.f, 0.f, id != 1 && (id != 2 || throb < 0) ? 0.5f : 0.f, 1.f, skew);
-                glow += int(w*bgglow*skew);
-            }
-            settexture(bgtex, 3);
-            gle::colorf(gr, gg, gb, fade*gf);
-            drawtexture(x-offset-glow, y-h-offset-glow, w+glow*2+offset*2, h+glow*2+offset*2);
-        }
-        if(amt <= 0.f) return h;
-        settexture(tex, 3);
-        gle::defvertex(2);
-        gle::deftexcoord0();
-        gle::defcolor(4);
-        gle::begin(GL_TRIANGLE_STRIP);
-        float btoff = 1-bottom, middle = btoff-top;
-        int cx = x-offset, cy = y-h+int(h*top)-offset, cw = w+offset*2, ch = int(h*middle)+offset*2, throbstep = int(roundf(3*(throbreverse ? 1-throb : throb)*amt));
-        const float margin = 0.1f;
-        vec lastbarcolour(0, 0, 0);
-        loopi(4)
-        {
-            const barstep &step = barsteps[id][i];
-            vec colour = throb >= 0 && throbcolour >= 0 && i == throbstep ? vec::hexcolor(throbcolour) : vec(step.r, step.g, step.b);
-            if(i > 0)
-            {
-                if(step.amt > amt && barsteps[id][i-1].amt <= amt)
-                {
-                    float hoff = 1 - amt, hlerp = (amt - barsteps[id][i-1].amt) / (step.amt - barsteps[id][i-1].amt),
-                          r = colour.r*hlerp + lastbarcolour.r*(1-hlerp),
-                          g = colour.g*hlerp + lastbarcolour.g*(1-hlerp),
-                          b = colour.b*hlerp + lastbarcolour.b*(1-hlerp);
-                    gle::attribf(cx, cy + hoff*ch); gle::attribf(0, hoff*middle+top); gle::attribf(r, g, b, fade);
-                    gle::attribf(cx + cw, cy + hoff*ch); gle::attribf(1, hoff*middle+top); gle::attribf(r, g, b, fade);
-                }
-                if(step.amt > amt + margin)
-                {
-                    float hoff = 1 - (amt + margin), hlerp = (amt + margin - barsteps[id][i-1].amt) / (step.amt - barsteps[id][i-1].amt),
-                          r = colour.r*hlerp + lastbarcolour.r*(1-hlerp),
-                          g = colour.g*hlerp + lastbarcolour.g*(1-hlerp),
-                          b = colour.b*hlerp + lastbarcolour.b*(1-hlerp);
-                    gle::attribf(cx, cy + hoff*ch); gle::attribf(0, hoff*middle+top); gle::attribf(r, g, b, 0);
-                    gle::attribf(cx + cw, cy + hoff*ch); gle::attribf(1, hoff*middle+top); gle::attribf(r, g, b, 0);
-                    lastbarcolour = colour;
-                    break;
-                }
-            }
-            float off = 1 - step.amt, hfade = fade, r = colour.r, g = colour.g, b = colour.b;
-            if(step.amt > amt) hfade *= 1 - (step.amt - amt)/margin;
-            gle::attribf(cx, cy + off*ch); gle::attribf(0, off*middle+top); gle::attribf(r, g, b, hfade);
-            gle::attribf(cx + cw, cy + off*ch); gle::attribf(1, off*middle+top); gle::attribf(r, g, b, hfade);
-            lastbarcolour = colour;
-        }
-        gle::end();
-        return h;
-    }
-
-    int drawitembar(int x, int y, float size, bool left, float r, float g, float b, float fade, float skew, float amt, int type)
-    {
-        if(skew <= 0.f || amt <= 0.f) return 0;
-        Texture *t = textureload(inventorybartex, 3);
-        float q = clamp(skew, 0.f, 1.f), cr = left ? r : r*q, cg = left ? g : g*q, cb = left ? b : b*q, s = size*skew,
-              w = float(t->w)/float(t->h)*s, btoff = 1-inventorybarbottom, middle = btoff-inventorybartop;
-        int sx = int(w), sy = int(s), so = int(sx*inventorybaroffset), cx = left ? x-so : x-sx+so, cy = y-sy+int(sy*inventorybartop), cw = sx, ch = int(sy*middle), id = clamp(type, 0, 3);
-        glBindTexture(GL_TEXTURE_2D, t->id);
-        gle::defvertex(2);
-        gle::deftexcoord0();
-        gle::defcolor(4);
-        gle::begin(GL_TRIANGLE_STRIP);
-        const float margin = 0.1f;
-        loopi(4)
-        {
-            const barstep &step = barsteps[id][i];
-            if(i > 0)
-            {
-                if(step.amt > amt && barsteps[id][i-1].amt <= amt)
-                {
-                    float hoff = 1 - amt, hlerp = (amt - barsteps[id][i-1].amt) / (step.amt - barsteps[id][i-1].amt),
-                          hr = cr*step.r*hlerp + cr*barsteps[id][i-1].r*(1-hlerp),
-                          hg = cg*step.g*hlerp + cg*barsteps[id][i-1].g*(1-hlerp),
-                          hb = cb*step.b*hlerp + cb*barsteps[id][i-1].b*(1-hlerp);
-                    gle::attribf(cx, cy + hoff*ch); gle::attribf(0, hoff*middle+inventorybartop); gle::attribf(hr, hg, hb, fade);
-                    gle::attribf(cx + cw, cy + hoff*ch); gle::attribf(1, hoff*middle+inventorybartop); gle::attribf(hr, hg, hb, fade);
-                }
-                if(step.amt > amt + margin)
-                {
-                    float hoff = 1 - (amt + margin), hlerp = (amt + margin - barsteps[id][i-1].amt) / (step.amt - barsteps[id][i-1].amt),
-                          hr = cr*step.r*hlerp + cr*barsteps[id][i-1].r*(1-hlerp),
-                          hg = cg*step.g*hlerp + cg*barsteps[id][i-1].g*(1-hlerp),
-                          hb = cb*step.b*hlerp + cb*barsteps[id][i-1].b*(1-hlerp);
-                    gle::attribf(cx, cy + hoff*ch); gle::attribf(0, hoff*middle+inventorybartop); gle::attribf(hr, hg, hb, 0);
-                    gle::attribf(cx + cw, cy + hoff*ch); gle::attribf(1, hoff*middle+inventorybartop); gle::attribf(hr, hg, hb, 0);
-                    break;
-                }
-            }
-            float off = 1 - step.amt, hfade = fade, hr = cr*step.r, hg = cg*step.g, hb = cb*step.b;
-            if(step.amt > amt) hfade *= 1 - (step.amt - amt)/margin;
-            gle::attribf(cx, cy + off*ch); gle::attribf(0, off*middle+inventorybartop); gle::attribf(hr, hg, hb, hfade);
-            gle::attribf(cx + cw, cy + off*ch); gle::attribf(1, off*middle+inventorybartop); gle::attribf(hr, hg, hb, hfade);
-        }
-        gle::end();
-        return sy;
-    }
-
-    int drawitem(const char *tex, int x, int y, float size, float sub, bool bg, bool left, float r, float g, float b, float fade, float skew, const char *font, const char *text, ...)
-    {
-        if(skew <= 0.f) return 0;
-        Texture *t = tex && *tex ? textureload(tex, 3, true, false) : NULL;
-        if(t == notexture) t = NULL;
-        float q = clamp(skew, 0.f, 1.f), cr = left ? r : r*q, cg = left ? g : g*q, cb = left ? b : b*q, s = size*skew, w = t ? float(t->w)/float(t->h)*s : s;
-        int heal = m_health(game::gamemode, game::mutators, game::focus->actortype), sy = int(s), cx = x, cy = y, cs = int(s), cw = int(w);
-        bool pulse = inventoryflash && game::focus->state == CS_ALIVE && game::focus->health < heal;
-        if(bg && sub == 0 && inventorybg)
-        {
-            Texture *u = textureload(inventorybg == 2 ? inventorybigtex : inventorytex, 3);
-            float gr = 1, gb = 1, gg = 1, gf = fade*inventorybgblend;
-            int glow = 0, bw = int(float(u->w)/float(u->h)*s);
-            if(inventorytone) skewcolour(gr, gg, gb, inventorytone);
-            if(pulse)
-            {
-                int millis = totalmillis%1000;
-                float amt = (millis <= 500 ? millis/500.f : 1.f-((millis-500)/500.f))*clamp(float(heal-game::focus->health)/float(heal), 0.f, 1.f);
-                flashcolourf(gr, gg, gb, gf, 1.f, 0.f, 0.f, 1.f, amt);
-                glow += int(s*inventoryglow*amt);
-            }
-            glBindTexture(GL_TEXTURE_2D, u->id);
-            gle::colorf(gr, gg, gb, fade*gf);
-            drawtexture(left ? cx-glow : cx-bw-glow, cy-cs-glow, bw+glow*2, cs+glow*2, left);
-        }
-        if(bg && inventorybg)
-        {
-            int co = int(cs*inventorybgskew), cp = int(cw*inventorybgskew);
-            if(sub == 0) sy -= int(cs*inventorybgspace*skew);
-            cx += left ? cp/2 : -cp/2;
-            cy -= co/2;
-            cs -= co;
-            cw -= cp;
-        }
-        if(sub > 0)
-        {
-            int co = int(cs*sub);
-            sy -= cs-co;
-            cs = co;
-            cw = int(cw*sub);
-        }
-        if(t)
-        {
-            gle::colorf(cr, cg, cb, fade);
-            glBindTexture(GL_TEXTURE_2D, t->id);
-            drawtexture(left ? cx : cx-cw, cy-cs, cw, cs);
-        }
-        if(text && *text)
-        {
-            pushhudscale(skew);
-            if(font && *font) pushfont(font);
-            int ox = int(cw*inventorytextoffsetx), oy = int(cs*inventorytextoffsety),
-                tx = int((left ? (cx+cw-ox) : (cx-cw+ox))/skew),
-                ty = int((cy-cs/2+oy)/skew), tj = left ? TEXT_LEFT_BAL : TEXT_RIGHT_BAL;
-            defvformatstring(str, text, text);
-            draw_textf("%s", tx, ty, 0, 0, -1, -1, -1, int(fade*255), tj|TEXT_NO_INDENT, -1, -1, 1, str);
-            if(font && *font) popfont();
-            pophudmatrix();
-        }
-        return sy;
-    }
-
-    int drawitemtextx(int x, int y, float size, int flags, float skew, const char *font, float blend, const char *text, ...)
-    {
-        if(skew <= 0.f) return 0;
-        pushhudscale(skew);
-        if(font && *font) pushfont(font);
-        int curflags = flags|TEXT_NO_INDENT, cx = x, cy = y, xpad = 0, ypad = 0;
-        if(inventorybg && size > 0)
-        {
-            int cs = int(size*skew), co = int(cs*inventorybgskew);
-            cx += (flags&TEXT_ALIGN) == TEXT_LEFT_JUSTIFY ? co/2 : -co/2;
-            cy -= co/2;
-        }
-        float gr = 1, gb = 1, gg = 1, gf = blend;
-        if(curflags&TEXT_SKIN)
-        {
-            if(inventorytone) skewcolour(gr, gg, gb, inventorytone);
-            gf *= inventorybgskin;
-            xpad = textskinpad;
-        }
-        defvformatstring(str, text, text);
-        int tx = int(cx/skew), ty = int(cy/skew);
-        switch(curflags&TEXT_ALIGN)
-        {
-            case TEXT_LEFT_JUSTIFY: tx += xpad; break;
-            case TEXT_RIGHT_JUSTIFY: tx -= xpad; break;
-            case TEXT_CENTERED:
-            {
-                int width, height;
-                text_bounds(str, width, height, xpad, ypad, -1, curflags, 1);
-                tx -= width/skew*0.5f;
-                break;
-            }
-        }
-        int sy = draw_textf("%s", tx, ty, 0, 0, int(gr*255), int(gg*255), int(gb*255), int(gf*255), curflags, -1, -1, 1, str)*skew;
-        if(font && *font) popfont();
-        pophudmatrix();
-        return sy;
-    }
-
-    int drawitemtext(int x, int y, float size, bool left, float skew, const char *font, float blend, const char *text, ...)
-    {
-        defvformatstring(str, text, text);
-        return drawitemtextx(x, y, size, left ? TEXT_LEFT_UP : TEXT_RIGHT_UP, skew, font, blend, "%s", str);
-    }
-
     const char *teamtexname(int team)
     {
         const char *teamtexs[T_MAX] = { teamtex, teamalphatex, teamomegatex, teamkappatex, teamsigmatex, teamtex };
@@ -2758,57 +2410,7 @@ namespace hud
         return "";
     }
 
-    int drawentitem(int n, int x, int y, int s, float skew, float fade)
-    {
-        if(entities::ents.inrange(n))
-        {
-            gameentity &e = *(gameentity *)entities::ents[n];
-            string attrstr; attrstr[0] = '\0';
-            loopi(enttype[e.type].numattrs)
-            {
-                defformatstring(s, "%s%d", i ? " " : "", e.attrs[i]);
-                concatstring(attrstr, s);
-            }
-            int ty = drawitem(itemtex(e.type, e.attrs[0]), x, y, s, 0, true, false, 1.f, 1.f, 1.f, fade, skew),
-                qy = drawitemtext(x, y, s, false, skew, "reduced", fade, "%s", attrstr);
-            qy += drawitemtext(x, y-qy, s, false, skew, "reduced", fade, "%s", entities::entinfo(e.type, e.attrs, true));
-            qy += drawitemtext(x, y-qy, s, false, skew, "default", fade, "%s (%d)", enttype[e.type].name, n);
-            return ty;
-        }
-        return 0;
-    }
-
-    int drawinventory(int w, int h, int edge, int top, int bottom, float blend)
-    {
-        if(!minimal(showinventory, true)) return edge;
-        int cx = w-edge, left = edge, csr = int(inventoryright*w), cm = top+edge, cr = edge/2, cc = 0;
-        float fade = blend*inventoryblend;
-        if(!radardisabled && !m_hard(game::gamemode, game::mutators) && radartype() == 3 && !hasinput(true) && (game::focus->state == CS_EDITING ? showeditradar >= 1 : chkcond(showradar, !game::tvmode() || (game::focus != game::player1 && radartype() == 3))))
-            cm += int(max(w, h)/2*radarcorner*2)+cr;
-        if(inventorydate)
-            cm += drawitemtextx(cx, cm, 0, (inventorybg ? TEXT_SKIN : 0)|TEXT_RIGHT_JUSTIFY, inventorydateskew, "huge", fade, "%s", gettime(currenttime, inventorydateformat))+cr;
-        if(inventorytime)
-        {
-            if(paused) cm += drawitemtextx(cx, cm, 0, (inventorybg ? TEXT_SKIN : 0)|TEXT_RIGHT_JUSTIFY, inventorytimeskew, "huge", fade, "\fs\foPaused\fS", colourwhite)+cr;
-            else if(m_edit(game::gamemode)) cm += drawitemtextx(cx, cm, 0, (inventorybg ? TEXT_SKIN : 0)|TEXT_RIGHT_JUSTIFY, inventorytimeskew, "huge", fade, "\fs\fgEditing\fS")+cr;
-            else if(m_play(game::gamemode) || client::demoplayback)
-            {
-                int timecorrected = max(game::timeremaining*1000-((gs_playing(game::gamestate) ? lastmillis : totalmillis)-game::lasttimeremain), 0);
-                if(game::gamestate != G_S_PLAYING)
-                    cm += drawitemtextx(cx, cm, 0, (inventorybg ? TEXT_SKIN : 0)|TEXT_RIGHT_JUSTIFY, inventorytimeskew, "huge", fade, "%s \fs%s%s\fS", gamestates[1][game::gamestate], gs_waiting(game::gamestate) ? "\fr" : (game::gamestate == G_S_OVERTIME ? (inventorytimeflash ? "\fzoy" : "\fo") : "\fg"), timestr(timecorrected, inventorytimestyle))+cr;
-                else if(m_mmvar(game::gamemode, game::mutators, timelimit)) cm += drawitemtextx(cx, cm, 0, (inventorybg ? TEXT_SKIN : 0)|TEXT_RIGHT_JUSTIFY, inventorytimeskew, "huge", fade, "\fs%s%s\fS", timecorrected > 60000 ? "\fg" : (inventorytimeflash ? "\fzgy" : "\fy"), timestr(timecorrected, inventorytimestyle))+cr;
-            }
-        }
-        if(texpaneltimer) return left;
-        if(m_play(game::gamemode))
-        {
-            int count = game::player1->state == CS_SPECTATOR ? inventoryscorespec : inventoryscore;
-            if(count && ((cc = drawscore(cx, cm, csr, (h-edge*2)/2, fade, count)) > 0)) cm += cc+cr;
-        }
-        return left;
-    }
-
-    void drawdamage(int w, int h, int top, int bottom, float blend)
+    void drawdamage(int w, int h, float blend)
     {
         if(*damagetex)
         {
@@ -2820,13 +2422,13 @@ namespace hud
                 {
                     glBindTexture(GL_TEXTURE_2D, t->id);
                     gle::colorf(0.85f, 0.09f, 0.09f, pc*blend*damageblend);
-                    drawtexture(0, top, w, h-top-bottom);
+                    drawtexture(0, 0, w, h);
                 }
             }
         }
     }
 
-    void drawfire(int w, int h, int top, int bottom, float blend)
+    void drawfire(int w, int h, float blend)
     {
         if(*burntex && game::focus->burning(lastmillis, burntime))
         {
@@ -2837,7 +2439,7 @@ namespace hud
                 float pc = interval >= burntime-500 ? 1.f+(interval-(burntime-500))/500.f : (interval%burndelay)/float(burndelay/2); if(pc > 1.f) pc = 2.f-pc;
                 glBindTexture(GL_TEXTURE_2D, t->id);
                 gle::colorf(0.9f*max(pc,0.5f), 0.3f*pc, 0.0625f*max(pc,0.25f), blend*burnblend*(interval >= burntime-(burndelay/2) ? pc : min(pc+0.5f, 1.f)));
-                drawtexture(0, top, w, h-top-bottom);
+                drawtexture(0, 0, w, h);
             }
         }
     }
@@ -2873,7 +2475,7 @@ namespace hud
         drawtexture(x, y, c, c);
     }
 
-    void drawbackground(int w, int h, int &top, int &bottom)
+    void drawbackground(int w, int h)
     {
         gle::colorf(1, 1, 1, 1);
 
@@ -2905,15 +2507,15 @@ namespace hud
 
             t = textureload(logotex, 3);
             glBindTexture(GL_TEXTURE_2D, t->id);
-            drawtexture(w-1024, top, 1024, 256);
+            drawtexture(w-1024, 0, 1024, 256);
 
             t = textureload(badgetex, 3);
             glBindTexture(GL_TEXTURE_2D, t->id);
-            drawtexture(w-336, top, 256, 128);
+            drawtexture(w-336, 0, 256, 128);
         }
 
         pushfont("console");
-        int y = h-bottom-FONTH/2;
+        int y = h-FONTH/2;
         bool p = progressing;
         const char *ptitle = progresstitle, *ptext = progresstext;
         float pamt = progressamt, ppart = progresspart;
@@ -2936,63 +2538,11 @@ namespace hud
             if(*ptext) y -= draw_textf("%s %s [\fs\fa%d%%\fS]", FONTH*7/2, y, 0, 0, -1, -1, -1, 255, TEXT_LEFT_UP, -1, -1, 1, *ptitle ? ptitle : "Please wait...", ptext, int(ppart*100));
             else y -= draw_textf("%s", FONTH*7/2, y, 0, 0, -1, -1, -1, 255, TEXT_LEFT_UP, -1, -1, 1, *ptitle ? ptitle : "Please wait...");
         }
-        y = h-bottom-FONTH;
+        y = h-FONTH;
         if(showloadinggpu) y -= draw_textf("%s (%s v%s)", w-FONTH, y, 0, 0, -1, -1, -1, 255, TEXT_RIGHT_UP, -1, -1, 1, gfxrenderer, gfxvendor, gfxversion);
         if(showloadingversion) y -= draw_textf("%s v%s-%s%d-%s (%s)", w-FONTH, y, 0, 0, -1, -1, -1, 255, TEXT_RIGHT_UP, -1, -1, 1, versionname, versionstring, versionplatname, versionarch, versionbranch, versionrelease);
         if(showloadingurl && *versionurl) y -= draw_textf("%s", w-FONTH, y, 0, 0, -1, -1, -1, 255, TEXT_RIGHT_UP, -1, -1, 1, versionurl);
         popfont();
-    }
-
-    int drawheadsup(int w, int h, int edge, int &top, int &bottom, float fade)
-    {
-        if(underlaydisplay >= 2 || (game::focus->state == CS_ALIVE && (underlaydisplay || !game::thirdpersonview(true))))
-        {
-            Texture *t = *underlaytex ? textureload(underlaytex, 3) : notexture;
-            if(t != notexture)
-            {
-                glBindTexture(GL_TEXTURE_2D, t->id);
-                gle::colorf(1.f, 1.f, 1.f, underlayblend*hudblend);
-                drawtexture(0, top, w, h-top-bottom);
-            }
-        }
-        if(gs_playing(game::gamestate))
-        {
-            bool third = game::thirdpersonview(true) && game::focus != game::player1;
-            if(game::focus->state == CS_ALIVE && game::inzoom()) drawzoom(w, h);
-            if(showdamage && !third)
-            {
-                if(burntime && game::focus->state == CS_ALIVE) drawfire(w, h, top, bottom, fade);
-                drawdamage(w, h, top, bottom, fade);
-            }
-            if(teamhurthud&2 && teamhurttime && m_team(game::gamemode, game::mutators) && game::focus == game::player1 && game::player1->lastteamhit >= 0 && totalmillis-game::player1->lastteamhit <= teamhurttime)
-            {
-                vec targ;
-                bool hasbound = false;
-                int dist = teamhurtdist ? teamhurtdist : getworldsize();
-                loopv(game::players) if(game::players[i] && game::players[i]->team == game::player1->team)
-                {
-                    if(game::players[i]->lastteamhit < 0 || lastmillis-game::players[i]->lastteamhit > teamhurttime) continue;
-                    if(!getsight(camera1->o, camera1->yaw, camera1->pitch, game::players[i]->o, targ, dist, curfov, fovy)) continue;
-                    if(!hasbound)
-                    {
-                        Texture *t = textureload(warningtex, 3);
-                        glBindTexture(GL_TEXTURE_2D, t->id);
-                        float amt = float(totalmillis%250)/250.f, value = (amt > 0.5f ? 1.f-amt : amt)*2.f;
-                        gle::colorf(value, value*0.125f, value*0.125f, value);
-                        hasbound = true;
-                    }
-                    float cx = 0.5f, cy = 0.5f, cz = 1;
-                    if(vectocursor(game::players[i]->o, cx, cy, cz))
-                    {
-                        int s = int(teamhurtsize*w), sx = int(cx*w-s), sy = int(cy*h-s);
-                        drawsized(sx, sy, s*2);
-                    }
-                }
-            }
-            if(!radardisabled && !hasinput(true) && (game::focus->state == CS_EDITING ? showeditradar >= 1 : chkcond(showradar, !game::tvmode() || (game::focus != game::player1 && radartype() == 3))))
-                drawradar(w, h, fade);
-        }
-        return drawinventory(w, h, edge, top, bottom, fade);
     }
 
     void drawhud(bool noview)
@@ -3071,23 +2621,69 @@ namespace hud
             }
         }
 
-        int edge = int(hudsize*edgesize), left = 0, top = 0, bottom = 0;
+        int edge = int(hudsize*edgesize);
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         gle::colorf(1, 1, 1);
 
-        if(noview) drawbackground(hudwidth, hudheight, top, bottom);
+        if(noview) drawbackground(hudwidth, hudheight);
         else if(!client::waiting())
         {
             if(showhud)
             {
-                left += drawheadsup(hudwidth, hudheight, edge, top, bottom, fade);
+                if(underlaydisplay >= 2 || (game::focus->state == CS_ALIVE && (underlaydisplay || !game::thirdpersonview(true))))
+                {
+                    Texture *t = *underlaytex ? textureload(underlaytex, 3) : notexture;
+                    if(t != notexture)
+                    {
+                        glBindTexture(GL_TEXTURE_2D, t->id);
+                        gle::colorf(1.f, 1.f, 1.f, underlayblend*hudblend);
+                        drawtexture(0, 0, hudwidth, hudheight);
+                    }
+                }
+                if(gs_playing(game::gamestate))
+                {
+                    bool third = game::thirdpersonview(true) && game::focus != game::player1;
+                    if(game::focus->state == CS_ALIVE && game::inzoom()) drawzoom(hudwidth, hudheight);
+                    if(showdamage && !third)
+                    {
+                        if(burntime && game::focus->state == CS_ALIVE) drawfire(hudwidth, hudheight, fade);
+                        drawdamage(hudwidth, hudheight, fade);
+                    }
+                    if(teamhurthud&2 && teamhurttime && m_team(game::gamemode, game::mutators) && game::focus == game::player1 && game::player1->lastteamhit >= 0 && totalmillis-game::player1->lastteamhit <= teamhurttime)
+                    {
+                        vec targ;
+                        bool hasbound = false;
+                        int dist = teamhurtdist ? teamhurtdist : getworldsize();
+                        loopv(game::players) if(game::players[i] && game::players[i]->team == game::player1->team)
+                        {
+                            if(game::players[i]->lastteamhit < 0 || lastmillis-game::players[i]->lastteamhit > teamhurttime) continue;
+                            if(!getsight(camera1->o, camera1->yaw, camera1->pitch, game::players[i]->o, targ, dist, curfov, fovy)) continue;
+                            if(!hasbound)
+                            {
+                                Texture *t = textureload(warningtex, 3);
+                                glBindTexture(GL_TEXTURE_2D, t->id);
+                                float amt = float(totalmillis%250)/250.f, value = (amt > 0.5f ? 1.f-amt : amt)*2.f;
+                                gle::colorf(value, value*0.125f, value*0.125f, value);
+                                hasbound = true;
+                            }
+                            float cx = 0.5f, cy = 0.5f, cz = 1;
+                            if(vectocursor(game::players[i]->o, cx, cy, cz))
+                            {
+                                int s = int(teamhurtsize*hudwidth), sx = int(cx*hudwidth-s), sy = int(cy*hudheight-s);
+                                drawsized(sx, sy, s*2);
+                            }
+                        }
+                    }
+                    if(!radardisabled && !hasinput(true) && (game::focus->state == CS_EDITING ? showeditradar >= 1 : chkcond(showradar, !game::tvmode() || (game::focus != game::player1 && radartype() == 3))))
+                        drawradar(hudwidth, hudheight, fade);
+                }
                 if(showevents && !texpaneltimer && !game::tvmode() && !client::waiting() && !hasinput(false)) drawevents(fade);
             }
-            else if(gs_playing(game::gamestate) && game::focus == game::player1 && game::focus->state == CS_ALIVE && game::inzoom())
+            else if(gs_playing(game::gamestate) && game::focus->state == CS_ALIVE && game::inzoom())
                 drawzoom(hudwidth, hudheight);
         }
-        drawconsole(hudwidth, hudheight, edge*2, edge+top, hudwidth-edge*4-FONTW*2, consolefade);
+        drawconsole(hudwidth, hudheight, edge*2, edge, hudwidth-edge*4-FONTW*2, consolefade);
         glDisable(GL_BLEND);
     }
 
