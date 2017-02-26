@@ -3317,6 +3317,78 @@ namespace UI
         }
     };
 
+    struct MiniMap : TargetColor
+    {
+        Texture *tex;
+        int dist;
+        float border;
+
+        void setup(Texture *tex_, const Color &color_, int dist_ = 0.f, float border_ = 0.05f, float minw_ = 0, float minh_ = 0)
+        {
+            TargetColor::setup(color_, minw_, minh_, SOLID, VERTICAL);
+            colors.add(Color(colourwhite));
+            tex = tex_;
+            dist = dist_;
+            border = border_;
+        }
+
+        void setup(Texture *tex_, const Color &color_, const Color &color2_, int dist_ = 0.f, float border_ = 0.05f, float minw_ = 0, float minh_ = 0)
+        {
+            TargetColor::setup(color_, minw_, minh_, SOLID, VERTICAL);
+            colors.add(color2_); // minimap version
+            tex = tex_;
+            dist = dist_;
+            border = border_;
+        }
+
+        static const char *typestr() { return "#MiniMap"; }
+        const char *gettype() const { return typestr(); }
+
+        bool target(float cx, float cy)
+        {
+            return true;
+        }
+
+        void draw(float sx, float sy)
+        {
+            changedraw(CHANGE_COLOR);
+            while(colors.length() < 2) colors.add(Color(colourwhite));
+            if(hud::needminimap())
+            {
+                dynent *d = game::focusedent();
+                vec pos = vec(d->o).sub(minimapcenter).mul(minimapscale).add(0.5f), dir(d->yaw*RAD, 0.f);
+                int limit = hud::radarlimit();
+                float scale = min(dist < 0 ? getworldsize() : dist, limit ? limit : getworldsize()),
+                      qw = w*0.5f*border, qh = h*0.5f*border, rw = w*0.5f-qw, rh = h*0.5f-qh;
+                colors[1].init();
+                gle::defvertex(2);
+                gle::deftexcoord0();
+                gle::begin(GL_TRIANGLE_FAN);
+                bindminimap();
+                loopi(36)
+                {
+                    vec v = vec(0, -1, 0).rotate_around_z(i/36.0f*2*M_PI);
+                    gle::attribf(sx + qw + rw*(1.0f + v.x), sy + qh + rh*(1.0f + v.y));
+                    vec tc = vec(dir).rotate_around_z(i/36.0f*2*M_PI);
+                    gle::attribf(pos.x + tc.x*scale*minimapscale.x, pos.y + tc.y*scale*minimapscale.y);
+                }
+                gle::end();
+            }
+            if(tex != notexture)
+            {
+                colors[0].init();
+                gle::defvertex(2);
+                gle::deftexcoord0();
+                gle::begin(GL_QUADS);
+                glBindTexture(GL_TEXTURE_2D, tex->id);
+                quads(sx, sy, w, h);
+                gle::end();
+            }
+
+            Object::draw(sx, sy);
+        }
+    };
+
     ICOMMAND(0, newui, "ssssi", (char *name, char *contents, char *onshow, char *onhide, int *windowflags),
     {
         Window *window = windows.find(name, NULL);
@@ -3925,6 +3997,12 @@ namespace UI
 
     ICOMMAND(0, uivslotview, "iffe", (int *index, float *minw, float *minh, uint *children),
         BUILD(VSlotViewer, o, o->setup(*index, *minw*uiscale, *minh*uiscale), children));
+
+    ICOMMAND(0, uiminimap, "siifffe", (char *texname, int *c, int *dist, float *border, float *minw, float *minh, uint *children),
+        BUILD(MiniMap, o, o->setup(textureload(texname, 3, true, false), Color(*c), *dist, *border, *minw*uiscale, *minh*uiscale), children));
+
+    ICOMMAND(0, uiminimapcolour, "siiifffe", (char *texname, int *c, int *c2, int *dist, float *border, float *minw, float *minh, uint *children),
+        BUILD(MiniMap, o, o->setup(textureload(texname, 3, true, false), Color(*c), Color(*c2), *dist, *border, *minw*uiscale, *minh*uiscale), children));
 
     bool hasinput()
     {

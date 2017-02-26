@@ -82,6 +82,8 @@ extern void reloadsignal(int signum);
 extern int shutdownwait, maxshutdownwait;
 extern void shutdownsignal(int signum);
 
+enum { CON_DEBUG = 0, CON_EVENT, CON_GAME, CON_MESG, CON_MAX };
+
 #ifndef STANDALONE
 #include "world.h"
 #include "octa.h"
@@ -544,8 +546,6 @@ extern void keyrepeat(bool on, int mask = ~0);
 enum { TI_CONSOLE = 1<<0, TI_GUI = 1<<1 };
 
 extern void textinput(bool on, int mask = ~0);
-
-enum { CON_DEBUG = 0, CON_EVENT, CON_GAME, CON_MESG, CON_MAX };
 
 #define MAXCONLINES 1000
 struct cline { char *cref; int reftime, outtime, realtime; };

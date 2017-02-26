@@ -1725,7 +1725,7 @@ namespace game
                     case 4: if(isme || d->actortype == A_PLAYER || v->actortype == A_PLAYER || anc >= 0 || m_duke(gamemode, mutators)) show = true; break;
                     case 5: default: show = true; break;
                 }
-                announcef(anc, CON_GAME, d, false, "\fw%s", d->obit);
+                if(show) announcef(anc, CON_GAME, d, false, "\fw%s", d->obit);
             }
             else if(anc >= 0) announce(anc, d);
             if(anc >= 0 && d != v) announce(anc, v);

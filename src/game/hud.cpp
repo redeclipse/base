@@ -326,9 +326,8 @@ namespace hud
     VAR(IDF_PERSIST, rocketcliprotate, 0, 12, 15);
 
     VAR(IDF_PERSIST, showradar, 0, 1, 2);
-    VAR(IDF_PERSIST, radarstyle, 0, 1, 3); // 0 = compass-sectional, 1 = compass-distance, 2 = screen-space, 3 = right-corner-positional
+    VAR(IDF_PERSIST, radarstyle, 0, 1, 2); // 0 = compass-sectional, 1 = compass-distance, 2 = screen-space
     FVAR(IDF_PERSIST, radaraspect, 0, 1, 2); // 0 = off, else = (for radarstyle 0/1) radar forms an ellipse
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, radarcornertex, "<grey>textures/hud/radar", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, bliptex, "<grey>textures/hud/blip", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, playerbliptex, "<grey>textures/hud/blip", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, hurttex, "<grey>textures/hud/hurt", 3);
@@ -347,15 +346,7 @@ namespace hud
     FVAR(IDF_PERSIST, radaritemsize, 0, 0.6f, 1000);
     FVAR(IDF_PERSIST, radarsize, 0, 0.05f, 1000);
     FVAR(IDF_PERSIST, radaroffset, 0, 0.07f, 1000);
-    FVAR(IDF_PERSIST, radarcorner, 0, 0.15f, 1000);
-    FVAR(IDF_PERSIST, radarcornersize, 0, 0.04f, 1000);
-    FVAR(IDF_PERSIST, radarcorneroffset, 0, 0.045f, 1);
-    FVAR(IDF_PERSIST, radarcornerblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, radartexblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, radartexbright, 0, 0.65f, 1);
-    FVAR(IDF_PERSIST, radarcornerbright, 0, 0.8f, 1);
     VAR(IDF_PERSIST, radardist, 0, 750, VAR_MAX); // 0 = use world size
-    VAR(IDF_PERSIST, radarcornerdist, 0, 750, VAR_MAX); // 0 = use world size
     VAR(IDF_PERSIST, radaritems, 0, 2, 2);
     VAR(IDF_PERSIST, radaritemspawn, 0, 1, 1);
     VAR(IDF_PERSIST, radaritemtime, 0, 5000, VAR_MAX);
@@ -1871,15 +1862,12 @@ namespace hud
     int radarrange()
     {
         if(game::focus->state == CS_EDITING) return editradardist ? editradardist : getworldsize();
-        int dist = getworldsize();
-        switch(radartype())
-        {
-            case 3: dist = radarcornerdist ? radarcornerdist : getworldsize(); break;
-            case 2: case 1: case 0: case -1: default: dist = radardist ? radardist : getworldsize(); break;
-        }
+        int dist = radardist ? radardist : getworldsize();
         if(radardistlimit) dist = min(radardistlimit, dist);
         return dist;
     }
+
+    int radarlimit() { return radardistlimit; }
 
     void drawblip(const char *tex, float area, int w, int h, float s, float blend, int style, const vec &pos, const vec &colour, const char *font, const char *text, ...)
     {
@@ -1898,7 +1886,7 @@ namespace hud
             else return; // can't render things we can't point at
         }
         float yaw = -atan2(dir.x, dir.y)/RAD, x = sinf(RAD*yaw), y = -cosf(RAD*yaw), size = max(w, h)/2,
-              ts = size*(style != 3 ? radarsize : radarcornersize), tp = ts*s, tq = tp*0.5f;
+              ts = size*radarsize, tp = ts*s, tq = tp*0.5f;
         if(style != 2)
         {
             float tx = 0, ty = 0, tr = 0;
@@ -1906,10 +1894,10 @@ namespace hud
             {
                 case 3:
                 {
-                    ts = size*radarcorner;
+                    ts = size*radarsize;
                     tx = w-ts;
                     ty = ts;
-                    ts -= ts*radarcorneroffset;
+                    ts -= ts*radaroffset*0.5f;
                     tr = ts*dist;
                     break;
                 }
@@ -2235,37 +2223,11 @@ namespace hud
 
     void drawradar(int w, int h, float blend)
     {
-        if(!m_hard(game::gamemode, game::mutators) || G(radarhardaffinity))
+        if((!m_hard(game::gamemode, game::mutators) || G(radarhardaffinity)) && chkcond(radaraffinity, !game::tvmode()))
         {
-            if(radartype() == 3) // right-corner radar
-            {
-                vec pos = vec(camera1->o).sub(minimapcenter).mul(minimapscale).add(0.5f), dir(camera1->yaw*RAD, 0.f);
-                float scale = radarrange(), size = max(w, h)/2, s = size*radarcorner, x = w-s*2, y = 0, q = s*2*radarcorneroffset, r = s-q;
-                bindminimap();
-                gle::colorf(radarcornerbright, radarcornerbright, radarcornerbright, radarcornerblend);
-                gle::defvertex(2);
-                gle::deftexcoord0();
-                gle::begin(GL_TRIANGLE_FAN);
-                loopi(16)
-                {
-                    vec v = vec(0, -1, 0).rotate_around_z(i/16.0f*2*M_PI);
-                    gle::attribf(x + q + r*(1.0f + v.x), y + q + r*(1.0f + v.y));
-                    vec tc = vec(dir).rotate_around_z(i/16.0f*2*M_PI);
-                    gle::attribf(pos.x + tc.x*scale*minimapscale.x, pos.y + tc.y*scale*minimapscale.y);
-                }
-                gle::end();
-                float gr = 1, gg = 1, gb = 1;
-                if(radartone) skewcolour(gr, gg, gb, radartone);
-                settexture(radarcornertex, 3);
-                gle::colorf(gr*radartexbright, gg*radartexbright, gb*radartexbright, radartexblend);
-                drawsized(w-s*2, 0, s*2);
-            }
-            if(chkcond(radaraffinity, !game::tvmode()))
-            {
-                if(m_capture(game::gamemode)) capture::drawblips(w, h, blend*radarblend);
-                else if(m_defend(game::gamemode)) defend::drawblips(w, h, blend*radarblend);
-                else if(m_bomber(game::gamemode)) bomber::drawblips(w, h, blend*radarblend);
-            }
+            if(m_capture(game::gamemode)) capture::drawblips(w, h, blend*radarblend);
+            else if(m_defend(game::gamemode)) defend::drawblips(w, h, blend*radarblend);
+            else if(m_bomber(game::gamemode)) bomber::drawblips(w, h, blend*radarblend);
         }
         if(m_hard(game::gamemode, game::mutators)) return;
         if(chkcond(radarhits, !game::tvmode())) drawhits(w, h, blend);
