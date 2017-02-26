@@ -297,6 +297,12 @@ BIH::BIH(vector<mesh> &buildmeshes)
             ++srctri;
             ++dsttri;
         }
+        loopk(3) if(fabs(mmax[k] - mmin[k]) < 0.125f)
+        {
+            float mid = (mmin[k] + mmax[k]) / 2;
+            mmin[k] = mid - 0.0625f;
+            mmax[k] = mid + 0.0625f;
+        }
         m.bbmin = mmin;
         m.bbmax = mmax;
         bbmin.min(mmin);
