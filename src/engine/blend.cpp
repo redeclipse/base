@@ -605,12 +605,12 @@ bool canpaintblendmap(bool brush = true, bool sel = false, bool msg = true)
     if(noedit(!sel)) return false;
     if(!blendpaintmode)
     {
-        conoutft(CON_MESG, "\frOperation only allowed in blend paint mode");
+        conoutft(CON_DEBUG, "\frOperation only allowed in blend paint mode");
         return false;
     }
     if(brush && !brushes.inrange(curbrush))
     {
-        if(msg) conoutft(CON_MESG, "\frNo blend brush selected");
+        if(msg) conoutft(CON_DEBUG, "\frNo blend brush selected");
         return false;
     }
     return true;

@@ -315,8 +315,8 @@ struct duelservmode : servmode
                         duelqueue.removeobj(playing[i]);
                     }
                     if(gamestate == G_S_OVERTIME && !restricted.empty())
-                        ancmsgft(-1, S_V_FIGHT, CON_SELF, "\fy\fs\fzcgSudden Death\fS, %s", fight);
-                    else ancmsgft(-1, S_V_FIGHT, CON_SELF, "\fy%s", fight);
+                        ancmsgft(-1, S_V_FIGHT, CON_EVENT, "\fy\fs\fzcgSudden Death\fS, %s", fight);
+                    else ancmsgft(-1, S_V_FIGHT, CON_EVENT, "\fy%s", fight);
                     dueltime = dueldeath = -1;
                     duelcheck = gamemillis+5000;
                 }
@@ -360,7 +360,7 @@ struct duelservmode : servmode
                                 {
                                     if(clients[i]->team == alive[0]->team)
                                     {
-                                        ancmsgft(clients[i]->clientnum, S_V_YOUWIN, CON_SELF, "%s", end);
+                                        ancmsgft(clients[i]->clientnum, S_V_YOUWIN, CON_EVENT, "%s", end);
                                         if(alive.find(clients[i]) >= 0)
                                         {
                                             if(!m_affinity(gamemode))
@@ -377,9 +377,9 @@ struct duelservmode : servmode
                                             }
                                         }
                                     }
-                                    else ancmsgft(clients[i]->clientnum, S_V_YOULOSE, CON_SELF, "%s", end);
+                                    else ancmsgft(clients[i]->clientnum, S_V_YOULOSE, CON_EVENT, "%s", end);
                                 }
-                                else ancmsgft(clients[i]->clientnum, S_V_BOMBSCORE, CON_SELF, "%s", end);
+                                else ancmsgft(clients[i]->clientnum, S_V_BOMBSCORE, CON_EVENT, "%s", end);
                             }
                             clear();
                         }
@@ -399,7 +399,7 @@ struct duelservmode : servmode
                         if(!cleanup)
                         {
                             endffaround(alive);
-                            ancmsgft(-1, S_V_DRAW, CON_SELF, "\fyEveryone died, \fzoyEPIC FAIL!");
+                            ancmsgft(-1, S_V_DRAW, CON_EVENT, "\fyEveryone died, \fzoyEPIC FAIL!");
                             duelwinner = -1;
                             duelwins = 0;
                         }
@@ -442,7 +442,7 @@ struct duelservmode : servmode
                                 {
                                     if(clients[i] == alive[0])
                                     {
-                                        ancmsgft(clients[i]->clientnum, S_V_YOUWIN, CON_SELF, "%s", end);
+                                        ancmsgft(clients[i]->clientnum, S_V_YOUWIN, CON_EVENT, "%s", end);
                                         if(!m_affinity(gamemode)) givepoints(clients[i], 1, true, true);
                                         else if(!duelaffin)
                                         {
@@ -451,9 +451,9 @@ struct duelservmode : servmode
                                             sendf(-1, 1, "ri3", N_SCORE, ts.team, ts.total);
                                         }
                                     }
-                                    else ancmsgft(clients[i]->clientnum, S_V_YOULOSE, CON_SELF, "%s", end);
+                                    else ancmsgft(clients[i]->clientnum, S_V_YOULOSE, CON_EVENT, "%s", end);
                                 }
-                                else ancmsgft(clients[i]->clientnum, S_V_BOMBSCORE, CON_SELF, "%s", end);
+                                else ancmsgft(clients[i]->clientnum, S_V_BOMBSCORE, CON_EVENT, "%s", end);
                             }
                         }
                         clear();

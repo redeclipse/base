@@ -591,11 +591,11 @@ namespace game
         if(targ >= 0 && msg && *msg)
         {
             defvformatbigstring(text, msg, msg);
-            conoutft(targ == CON_INFO && d == player1 ? CON_SELF : targ, "%s", text);
+            conoutft(targ, "%s", text);
         }
         announce(idx, d, forced);
     }
-    ICOMMAND(0, announce, "iiisN", (int *idx, int *targ, int *cn, int *forced, char *s, int *numargs), (*numargs >= 5 ? announcef(*numargs >= 1 ? *idx : -1, *numargs >= 2 ? *targ : CON_MESG, *numargs >= 3 ? getclient(*cn) : NULL, *numargs >= 4 ? *forced!=0 : false, "\fw%s", s) : announcef(*numargs >= 1 ? *idx : -1, *numargs >= 2 ? *targ : CON_MESG, *numargs >= 3 ? getclient(*cn) : NULL, *numargs >= 4 ? *forced!=0 : false, NULL)));
+    ICOMMAND(0, announce, "iiisN", (int *idx, int *targ, int *cn, int *forced, char *s, int *numargs), (*numargs >= 5 ? announcef(*numargs >= 1 ? *idx : -1, *numargs >= 2 ? *targ : CON_EVENT, *numargs >= 3 ? getclient(*cn) : NULL, *numargs >= 4 ? *forced!=0 : false, "\fw%s", s) : announcef(*numargs >= 1 ? *idx : -1, *numargs >= 2 ? *targ : CON_DEBUG, *numargs >= 3 ? getclient(*cn) : NULL, *numargs >= 4 ? *forced!=0 : false, NULL)));
 
     void resetfollow()
     {
@@ -1725,8 +1725,7 @@ namespace game
                     case 4: if(isme || d->actortype == A_PLAYER || v->actortype == A_PLAYER || anc >= 0 || m_duke(gamemode, mutators)) show = true; break;
                     case 5: default: show = true; break;
                 }
-                int target = show ? (isme ? CON_SELF : CON_INFO) : -1;
-                announcef(anc, target, d, false, "\fw%s", d->obit);
+                announcef(anc, CON_GAME, d, false, "\fw%s", d->obit);
             }
             else if(anc >= 0) announce(anc, d);
             if(anc >= 0 && d != v) announce(anc, v);

@@ -1305,7 +1305,7 @@ namespace server
         if((ci->local && flag <= PRIV_MAX) || (ci->privilege&PRIV_TYPE) >= flag) return true;
         else if(mastermask()&MM_AUTOAPPROVE && flag <= PRIV_ELEVATED && !numclients(ci->clientnum)) return true;
         else if(msg && *msg)
-            srvmsgft(ci->clientnum, CON_CHAT, "\frAccess denied, you need to be \fs\fc%s\fS to \fs\fc%s\fS", privnamex(flag), msg);
+            srvmsgft(ci->clientnum, CON_MESG, "\frAccess denied, you need to be \fs\fc%s\fS to \fs\fc%s\fS", privnamex(flag), msg);
         return false;
     }
 
@@ -2285,11 +2285,11 @@ namespace server
         defvformatbigstring(str, s, s);
         if(cn < 0 || allowbroadcast(cn))
         {
-            int conlevel = CON_MESG;
+            int conlevel = CON_EVENT;
             switch(cn)
             {
-                case -3: conlevel = CON_CHAT; cn = -1; break;
-                case -2: conlevel = CON_EVENT; cn = -1; break;
+                case -3: conlevel = CON_DEBUG; cn = -1; break;
+                case -2: conlevel = CON_MESG; cn = -1; break;
                 default: break;
             }
             sendf(cn, 1, "ri2s", N_SERVMSG, conlevel, str);
@@ -3561,7 +3561,7 @@ namespace server
                     if(nargs <= 1 || !arg) nformatstring(s, slen+1, "%s", id->name);
                     else nformatstring(s, slen+1, "%s %s", id->name, arg);
                     char *ret = executestr(s);
-                    conoutft(CON_MESG, "\fy\fs\fc%s\fS returned \fs\fc%s\fS", id->name, ret && *ret ? ret : "failed");
+                    conoutft(CON_DEBUG, "\fy\fs\fc%s\fS returned \fs\fc%s\fS", id->name, ret && *ret ? ret : "failed");
                     delete[] s;
                     delete[] ret;
                     return true;
@@ -3570,18 +3570,18 @@ namespace server
                 {
                     if(nargs <= 1 || !arg)
                     {
-                        conoutft(CON_MESG, id->flags&IDF_HEX && *id->storage.i >= 0 ? (id->maxval==0xFFFFFF ? "\fy%s = 0x%.6X" : "\fy%s = 0x%X") : "\fy%s = %d", id->name, *id->storage.i);
+                        conoutft(CON_DEBUG, id->flags&IDF_HEX && *id->storage.i >= 0 ? (id->maxval==0xFFFFFF ? "\fy%s = 0x%.6X" : "\fy%s = 0x%X") : "\fy%s = %d", id->name, *id->storage.i);
                         return true;
                     }
                     if(id->maxval < id->minval || id->flags&IDF_READONLY)
                     {
-                        conoutft(CON_MESG, "\frCannot override variable: %s", id->name);
+                        conoutft(CON_DEBUG, "\frCannot override variable: %s", id->name);
                         return true;
                     }
                     int ret = parseint(arg);
                     if(ret < id->minval || ret > id->maxval)
                     {
-                        conoutft(CON_MESG,
+                        conoutft(CON_DEBUG,
                             id->flags&IDF_HEX ?
                                     (id->minval <= 255 ? "\frValid range for %s is %d..0x%X" : "\frValid range for %s is 0x%X..0x%X") :
                                     "\frValid range for %s is %d..%d", id->name, id->minval, id->maxval);
@@ -3605,18 +3605,18 @@ namespace server
                 {
                     if(nargs <= 1 || !arg)
                     {
-                        conoutft(CON_MESG, "\fy%s = %s", id->name, floatstr(*id->storage.f));
+                        conoutft(CON_DEBUG, "\fy%s = %s", id->name, floatstr(*id->storage.f));
                         return true;
                     }
                     if(id->maxvalf < id->minvalf || id->flags&IDF_READONLY)
                     {
-                        conoutft(CON_MESG, "\frCannot override variable: %s", id->name);
+                        conoutft(CON_DEBUG, "\frCannot override variable: %s", id->name);
                         return true;
                     }
                     float ret = parsefloat(arg);
                     if(ret < id->minvalf || ret > id->maxvalf)
                     {
-                        conoutft(CON_MESG, "\frValid range for %s is %s..%s", id->name, floatstr(id->minvalf), floatstr(id->maxvalf));
+                        conoutft(CON_DEBUG, "\frValid range for %s is %s..%s", id->name, floatstr(id->minvalf), floatstr(id->maxvalf));
                         return true;
                     }
                     if(versioning)
@@ -3637,12 +3637,12 @@ namespace server
                 {
                     if(nargs <= 1 || !arg)
                     {
-                        conoutft(CON_MESG, strchr(*id->storage.s, '"') ? "\fy%s = [%s]" : "\fy%s = \"%s\"", id->name, *id->storage.s);
+                        conoutft(CON_DEBUG, strchr(*id->storage.s, '"') ? "\fy%s = [%s]" : "\fy%s = \"%s\"", id->name, *id->storage.s);
                         return true;
                     }
                     if(id->flags&IDF_READONLY)
                     {
-                        conoutft(CON_MESG, "\frCannot override variable: %s", id->name);
+                        conoutft(CON_DEBUG, "\frCannot override variable: %s", id->name);
                         return true;
                     }
                     if(versioning)
@@ -3707,7 +3707,7 @@ namespace server
                     if(nargs <= 1 || !arg) nformatstring(s, slen+1, "%s", id->name);
                     else nformatstring(s, slen+1, "%s %s", id->name, arg);
                     char *ret = executestr(s);
-                    srvoutf(-3, "\fy%s executed \fs\fc%s\fS (returned: \fs\fc%s\fS)", colourname(ci), name, ret && * ret ? ret : "failed");
+                    srvoutf(3, "\fy%s executed \fs\fc%s\fS (returned: \fs\fc%s\fS)", colourname(ci), name, ret && * ret ? ret : "failed");
                     delete[] s;
                     delete[] ret;
                     return;
@@ -4073,7 +4073,7 @@ namespace server
         {
             putint(p, N_ANNOUNCE);
             putint(p, S_GUIACT);
-            putint(p, CON_CHAT);
+            putint(p, CON_MESG);
             sendstring(G(servermotd), p);
         }
 
@@ -4426,15 +4426,15 @@ namespace server
                             c.flag = ipinfo::INTERNAL;
                             c.time = totalmillis ? totalmillis : 1;
                             c.reason = newstring("team killing is not permitted");
-                            srvoutf(-3, "\fs\fcbanned\fS %s: %s", colourname(v), c.reason);
+                            srvoutf(3, "\fs\fcbanned\fS %s: %s", colourname(v), c.reason);
                             updatecontrols = true;
                         }
                         else if(G(teamkillkick) && v->warnings[WARN_TEAMKILL][0] >= G(teamkillkick))
                         {
-                            srvoutf(-3, "\fs\fckicked\fS %s: team killing is not permitted", colourname(v));
+                            srvoutf(3, "\fs\fckicked\fS %s: team killing is not permitted", colourname(v));
                             v->kicked = updatecontrols = true;
                         }
-                        else srvmsgft(v->clientnum, CON_CHAT, "\fy\fs\fzoyWARNING:\fS team killing is not permitted, action will be taken if you continue");
+                        else srvmsgft(v->clientnum, CON_MESG, "\fy\fs\fzoyWARNING:\fS team killing is not permitted, action will be taken if you continue");
                     }
                 }
             }
@@ -5130,7 +5130,7 @@ namespace server
                 int waituntil = maxshutdownwait*(gs_playing(gamestate) ? 2000 : 1000);
                 if(totalmillis >= shutdownwait+waituntil)
                 {
-                    srvoutf(-3, "Waited \fs\fc%s\fS to shutdown, overriding and exiting...", timestr(totalmillis-shutdownwait, 4));
+                    srvoutf(3, "Waited \fs\fc%s\fS to shutdown, overriding and exiting...", timestr(totalmillis-shutdownwait, 4));
 #ifdef STANDALONE
                     cleanupserver();
                     exit(EXIT_SUCCESS);
@@ -5294,7 +5294,7 @@ namespace server
                     gamewaittime = 0;
                     if(m_team(gamemode, mutators)) doteambalance(true);
                     if(m_play(gamemode) && !m_bomber(gamemode) && !m_duke(gamemode, mutators)) // they do their own "fight"
-                        sendf(-1, 1, "ri3s", N_ANNOUNCE, S_V_FIGHT, CON_SELF, "Match start, fight!");
+                        sendf(-1, 1, "ri3s", N_ANNOUNCE, S_V_FIGHT, CON_EVENT, "Match start, fight!");
                     sendtick();
                 }
             }
@@ -6455,7 +6455,7 @@ namespace server
                                     c.flag = ipinfo::INTERNAL;
                                     c.time = totalmillis ? totalmillis : 1;
                                     c.reason = newstring("exceeded the number of allowed flood warnings");
-                                    srvoutf(-3, "\fs\fcmute\fS added on %s: %s", colourname(fcp), c.reason);
+                                    srvoutf(3, "\fs\fcmute\fS added on %s: %s", colourname(fcp), c.reason);
                                 }
                             }
                             break;
@@ -6856,7 +6856,7 @@ namespace server
                                 allow.reason = newstring("mastermode set private");
                             }
                             sendf(-1, 1, "i3", N_MASTERMODE, ci->clientnum, mastermode);
-                            //srvoutf(-3, "\fyMastermode is now \fs\fc%d\fS (\fs\fc%s\fS)", mastermode, mastermodename(mastermode));
+                            //srvoutf(3, "\fyMastermode is now \fs\fc%d\fS (\fs\fc%s\fS)", mastermode, mastermodename(mastermode));
                         }
                         else srvmsgft(ci->clientnum, CON_EVENT, "\foThe \fs\fcmastermode\fS of \fs\fc%d\fS (\fs\fc%s\fS) is disabled on this server", mm, mastermodename(mm));
                     }
@@ -6872,7 +6872,7 @@ namespace server
                             if(haspriv(ci, G(y##lock), "clear " #y "s")) \
                             { \
                                 reset##y##s(); \
-                                srvoutf(-3, "%s cleared existing \fs\fc" #y "s\fS", colourname(ci)); \
+                                srvoutf(3, "%s cleared existing \fs\fc" #y "s\fS", colourname(ci)); \
                             } \
                             break; \
                         }
@@ -6920,15 +6920,15 @@ namespace server
                                     c.type = value; \
                                     c.time = totalmillis ? totalmillis : 1; \
                                     c.reason = newstring(text); \
-                                    if(text[0]) srvoutf(-3, "%s added \fs\fc" #y "\fS on %s: %s", name, colourname(cp), text); \
-                                    else srvoutf(-3, "%s added \fs\fc" #y "\fS on %s", name, colourname(cp)); \
+                                    if(text[0]) srvoutf(3, "%s added \fs\fc" #y "\fS on %s: %s", name, colourname(cp), text); \
+                                    else srvoutf(3, "%s added \fs\fc" #y "\fS on %s", name, colourname(cp)); \
                                     if(value == ipinfo::BAN) updatecontrols = true; \
                                     else if(value == ipinfo::LIMIT) cp->swapteam = 0; \
                                 } \
                                 else \
                                 { \
-                                    if(text[0]) srvoutf(-3, "%s \fs\fckicked\fS %s: %s", name, colourname(cp), text); \
-                                    else srvoutf(-3, "%s \fs\fckicked\fS %s", name, colourname(cp)); \
+                                    if(text[0]) srvoutf(3, "%s \fs\fckicked\fS %s: %s", name, colourname(cp), text); \
+                                    else srvoutf(3, "%s \fs\fckicked\fS %s", name, colourname(cp)); \
                                     cp->kicked = updatecontrols = true; \
                                 } \
                             } \
@@ -6976,12 +6976,12 @@ namespace server
                     if(quarantine && cp->quarantine)
                     {
                         defformatstring(name, "%s", colourname(ci));
-                        srvoutf(-3, "%s \fs\fcquarantined\fS %s", name, colourname(cp));
+                        srvoutf(3, "%s \fs\fcquarantined\fS %s", name, colourname(cp));
                     }
                     else if(wasq && !cp->quarantine)
                     {
                         defformatstring(name, "%s", colourname(ci));
-                        srvoutf(-3, "%s \fs\fcreleased\fS %s from \fs\fcquarantine\fS", name, colourname(cp));
+                        srvoutf(3, "%s \fs\fcreleased\fS %s from \fs\fcquarantine\fS", name, colourname(cp));
                     }
                     break;
                 }

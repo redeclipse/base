@@ -247,8 +247,8 @@ static void debugalias()
     {
         ident *id = l->id;
         ++depth;
-        if(depth < dbgalias) conoutft(CON_MESG, "  %d) %s", total-depth+1, id->name);
-        else if(l->next == &noalias) conoutft(CON_MESG, depth == dbgalias ? "  %d) %s" : "  ..%d) %s", total-depth+1, id->name);
+        if(depth < dbgalias) conoutft(CON_DEBUG, "  %d) %s", total-depth+1, id->name);
+        else if(l->next == &noalias) conoutft(CON_DEBUG, depth == dbgalias ? "  %d) %s" : "  ..%d) %s", total-depth+1, id->name);
     }
 }
 
@@ -261,7 +261,7 @@ static void debugcode(const char *fmt, ...)
     if(nodebug) return;
 
     defvformatbigstring(msg, fmt, fmt);
-    conoutft(CON_MESG, "%s", msg);
+    conoutft(CON_DEBUG, "%s", msg);
 
     debugalias();
 }
@@ -273,7 +273,7 @@ static void debugcodeline(const char *p, const char *fmt, ...)
     if(nodebug) return;
 
     defvformatbigstring(msg, fmt, debugline(p, fmt));
-    conoutft(CON_MESG, "%s", msg);
+    conoutft(CON_DEBUG, "%s", msg);
 
     debugalias();
 }
@@ -2251,18 +2251,18 @@ void printvar(ident *id)
         case ID_VAR:
         {
             int i = *id->storage.i;
-            if(i < 0) conoutft(CON_MESG, "%s = %d", id->name, i);
+            if(i < 0) conoutft(CON_DEBUG, "%s = %d", id->name, i);
             else if(id->flags&IDF_HEX && id->maxval==0xFFFFFF)
-                conoutft(CON_MESG, "%s = 0x%.6X (%d, %d, %d)", id->name, i, (i>>16)&0xFF, (i>>8)&0xFF, i&0xFF);
+                conoutft(CON_DEBUG, "%s = 0x%.6X (%d, %d, %d)", id->name, i, (i>>16)&0xFF, (i>>8)&0xFF, i&0xFF);
             else
-                conoutft(CON_MESG, id->flags&IDF_HEX ? "%s = 0x%X" : "%s = %d", id->name, i);
+                conoutft(CON_DEBUG, id->flags&IDF_HEX ? "%s = 0x%X" : "%s = %d", id->name, i);
             break;
         }
         case ID_FVAR:
-            conoutft(CON_MESG, "%s = %s", id->name, floatstr(*id->storage.f));
+            conoutft(CON_DEBUG, "%s = %s", id->name, floatstr(*id->storage.f));
             break;
         case ID_SVAR:
-            conoutft(CON_MESG, strchr(*id->storage.s, '"') ? "%s = [%s]" : "%s = \"%s\"", id->name, *id->storage.s);
+            conoutft(CON_DEBUG, strchr(*id->storage.s, '"') ? "%s = [%s]" : "%s = \"%s\"", id->name, *id->storage.s);
             break;
     }
 }

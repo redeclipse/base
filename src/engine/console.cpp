@@ -2,7 +2,7 @@
 
 #include "engine.h"
 
-reversequeue<cline, MAXCONLINES> conlines;
+reversequeue<cline, MAXCONLINES> conlines[CON_MAX];
 
 int commandmillis = -1;
 bigstring commandbuf;
@@ -12,9 +12,9 @@ int commandflags = 0, commandpos = -1, commandcolour = 0;
 
 void conline(int type, const char *sf, int n)
 {
-    char *buf = conlines.length() >= MAXCONLINES ? conlines.remove().cref : newstring("", BIGSTRLEN-1);
-    cline &cl = conlines.add();
-    cl.type = type;
+    if(type < 0 || type >= CON_MAX) type = CON_DEBUG;
+    char *buf = conlines[type].length() >= MAXCONLINES ? conlines[type].remove().cref : newstring("", BIGSTRLEN-1);
+    cline &cl = conlines[type].add();
     cl.cref = buf;
     cl.reftime = cl.outtime = totalmillis;
     cl.realtime = clocktime;
@@ -26,10 +26,10 @@ void conline(int type, const char *sf, int n)
         loopj(2)
         {
             int off = n+j;
-            if(conlines.inrange(off))
+            if(conlines[type].inrange(off))
             {
-                if(j) concatstring(conlines[off].cref, "\fs", BIGSTRLEN);
-                else prependstring(conlines[off].cref, "\fS", BIGSTRLEN);
+                if(j) concatstring(conlines[type][off].cref, "\fs", BIGSTRLEN);
+                else prependstring(conlines[type][off].cref, "\fS", BIGSTRLEN);
             }
         }
     }

@@ -2369,7 +2369,7 @@ int scanmapc(const char *fname)
         failmapcs.add(newstring(fname));
         if(msg[0])
         {
-            conoutft(CON_INFO, "%s", msg);
+            conoutft(CON_DEBUG, "%s", msg);
             return -1;
         }
     }

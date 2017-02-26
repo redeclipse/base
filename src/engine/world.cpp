@@ -271,7 +271,7 @@ VARF(0, entediting, 0, 0, 1, { if(!entediting) { entcancel(); efocus = enthover 
 
 bool noentedit()
 {
-    if(!editmode) { conoutft(CON_MESG, "\frOperation only allowed in edit mode"); return true; }
+    if(!editmode) { conoutft(CON_DEBUG, "\frOperation only allowed in edit mode"); return true; }
     return !entediting;
 }
 
@@ -729,7 +729,7 @@ extentity *newentity(bool local, const vec &o, int type, const attrvector &attrs
     {
         idx = -1;
         for(int i = keepents; i < ents.length(); i++)  if(ents[i]->type == ET_EMPTY) { idx = i; break; }
-        if(idx < 0 && ents.length() >= MAXENTS) { conoutft(CON_MESG, "\frToo many entities"); return NULL; }
+        if(idx < 0 && ents.length() >= MAXENTS) { conoutft(CON_DEBUG, "\frToo many entities"); return NULL; }
     }
     else while(ents.length() < idx) ents.add(entities::newent())->type = ET_EMPTY;
     extentity &e = *entities::newent();
@@ -853,7 +853,7 @@ void entlink()
         }
         else conoutf("\fr%d (%d) is not in range", index, 0);
     }
-    else conoutft(CON_MESG, "\frMore than one entity must be selected to link");
+    else conoutft(CON_DEBUG, "\frMore than one entity must be selected to link");
 }
 COMMAND(0, entlink, "");
 
@@ -863,7 +863,7 @@ void entset(char *what, char *attr)
     int type = entities::findtype(what);
     if(type == ET_EMPTY)
     {
-        conoutft(CON_MESG, "\frUnknown entity type \"%s\"", what);
+        conoutft(CON_DEBUG, "\frUnknown entity type \"%s\"", what);
         return;
     }
     attrvector attrs;
@@ -898,7 +898,7 @@ void enttype(char *what, int *numargs)
         int type = entities::findtype(what);
         if(type == ET_EMPTY)
         {
-            conoutft(CON_MESG, "\frUnknown entity type \"%s\"", what);
+            conoutft(CON_DEBUG, "\frUnknown entity type \"%s\"", what);
             return;
         }
         groupedit(e.type = type);
@@ -1033,7 +1033,7 @@ bool emptymap(int scale, bool force, char *mname, bool nocfg)   // main empty wo
 {
     if(!force && !editmode)
     {
-        conoutft(CON_MESG, "\frNewmap only allowed in edit mode");
+        conoutft(CON_DEBUG, "\frNewmap only allowed in edit mode");
         return false;
     }
 
@@ -1079,7 +1079,7 @@ bool enlargemap(bool split, bool force)
 {
     if(!force && !editmode)
     {
-        conoutft(CON_MESG, "\frMapenlarge only allowed in edit mode");
+        conoutft(CON_DEBUG, "\frMapenlarge only allowed in edit mode");
         return false;
     }
     if(hdr.worldsize >= 1<<16) return false;

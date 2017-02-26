@@ -552,9 +552,9 @@ void ircprocess(ircnet *n, char *user[3], int g, int numargs, char *w[])
                     if(g)
                     {
                         if(!strcasecmp(w[g+1], n->nick))
-                            console(CON_SELF, "\fa[%s] <\fw%s\fa (to you)>\fw %s", n->name, user[0], str);
+                            console(CON_MESG, "\fa[%s] <\fw%s\fa (to you)>\fw %s", n->name, user[0], str);
                         else if(ircnickhighlight && ircmatchnick(n, w[g+2]))
-                            console(CON_SELF, "\fa[%s] <\fw%s\fa (to %s)>\fw %s", n->name, user[0], w[g+1], str);
+                            console(CON_MESG, "\fa[%s] <\fw%s\fa (to %s)>\fw %s", n->name, user[0], w[g+1], str);
                     }
                 }
             }

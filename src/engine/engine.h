@@ -54,8 +54,6 @@ extern void setverinfo(const char *bin);
 #include "irc.h"
 #include "sound.h"
 
-enum { CON_DEBUG = 0, CON_MESG, CON_INFO, CON_SELF, CON_GAMESPECIFIC };
-
 enum { PACKAGEDIR_OCTA = 1<<0 };
 extern const char * const disc_reasons[];
 struct ipinfo
@@ -547,6 +545,13 @@ enum { TI_CONSOLE = 1<<0, TI_GUI = 1<<1 };
 
 extern void textinput(bool on, int mask = ~0);
 
+enum { CON_DEBUG = 0, CON_EVENT, CON_GAME, CON_MESG, CON_MAX };
+
+#define MAXCONLINES 1000
+struct cline { char *cref; int reftime, outtime, realtime; };
+extern reversequeue<cline, MAXCONLINES> conlines[CON_MAX];
+extern void conline(int type, const char *sf, int n);
+
 // physics
 extern bool pointincube(const clipplanes &p, const vec &v);
 extern bool overlapsdynent(const vec &o, float radius);
@@ -658,12 +663,6 @@ extern vector<int> entgroup;
 
 extern int newentity(int type, const attrvector &attrs);
 extern int newentity(const vec &v, int type, const attrvector &attrs);
-
-// console
-#define MAXCONLINES 1000
-struct cline { char *cref; int type, reftime, outtime, realtime; };
-extern reversequeue<cline, MAXCONLINES> conlines;
-extern void conline(int type, const char *sf, int n);
 
 // rendergl
 extern int dynentsize, watercolour, lavacolour, fog, fogcolour;

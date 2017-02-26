@@ -343,7 +343,6 @@ char msgsizelookup(int msg)
 #else
 extern char msgsizelookup(int msg);
 #endif
-enum { CON_CHAT = CON_GAMESPECIFIC, CON_EVENT, CON_MAX, CON_LO = CON_MESG, CON_HI = CON_SELF, CON_IMPORTANT = CON_SELF };
 
 struct demoheader
 {

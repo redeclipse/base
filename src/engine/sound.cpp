@@ -749,7 +749,7 @@ void initmumble()
     #endif
     if(!VALID_MUMBLELINK) closemumble();
 #else
-    conoutft(CON_MESG, "Mumble positional audio is not available on this platform.");
+    conoutft(CON_DEBUG, "Mumble positional audio is not available on this platform.");
 #endif
 }
 

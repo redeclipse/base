@@ -83,32 +83,23 @@ namespace hud
     VAR(IDF_PERSIST, uifade, 0, 250, VAR_MAX);
     FVAR(IDF_PERSIST, uifadeamt, 0, 0.5f, 1);
 
-    int conskip = 0;
-    void setconskip(int *n)
-    {
-        conskip += *n;
-        if(conskip < 0) conskip = 0;
-        else if(conskip >= conlines.length()) conskip = conlines.length()-1;
-    }
-    COMMANDN(0, conskip, setconskip, "i");
-
-    VAR(IDF_PERSIST, consize, 1, 5, 100);
+    VAR(IDF_PERSIST, consize, 1, 3, 100);
     VAR(IDF_PERSIST, contime, 0, 30000, VAR_MAX);
     VAR(IDF_PERSIST, confade, 0, 500, VAR_MAX);
-    VAR(IDF_PERSIST, conoverflow, 0, 5, VAR_MAX);
+    VAR(IDF_PERSIST, conoverflow, 0, 3, VAR_MAX);
     VAR(IDF_PERSIST, concenter, 0, 0, 1);
-    VAR(IDF_PERSIST, confilter, 0, 1, 1);
     VAR(IDF_PERSIST, condate, 0, 0, 1);
     FVAR(IDF_PERSIST, conblend, 0, 0.6f, 1);
     FVAR(IDF_PERSIST, conscale, FVAR_NONZERO, 1, FVAR_MAX);
     SVAR(IDF_PERSIST, condateformat, "%H:%M:%S");
+
+    VAR(IDF_PERSIST, conchatsize, 1, 5, 100);
     VAR(IDF_PERSIST, conchattime, 0, 30000, VAR_MAX);
     VAR(IDF_PERSIST, conchatfade, 0, 1000, VAR_MAX);
+    VAR(IDF_PERSIST, conchatoverflow, 0, 5, VAR_MAX);
 
-    FVAR(IDF_PERSIST, selfconblend, 0, 1, 1);
+    FVAR(IDF_PERSIST, chatconblend, 0, 1, 1);
     FVAR(IDF_PERSIST, fullconblend, 0, 1, 1);
-
-    VAR(IDF_PERSIST, conskipwarn, 0, 1, 1);
     VAR(IDF_PERSIST, capslockwarn, 0, 1, 1);
 
     FVAR(IDF_PERSIST, noticeoffset, -1, 0.35f, 1);
@@ -1670,7 +1661,7 @@ namespace hud
         if(!progressing) drawpointers(hudwidth, hudheight);
     }
 
-    void drawconsole(int w, int h, int x, int y, int s, float fade)
+    int drawconsole(int type, int w, int h, int x, int y, int s, float fade)
     {
         static vector<int> refs; refs.setsize(0);
         bool full = fullconsole || commandmillis > 0;
@@ -1678,12 +1669,12 @@ namespace hud
         pushfont("console");
         if((showconsole && showhud) || commandmillis > 0)
         {
-            int numl = consize, numo = consize+conoverflow;
-            loopvj(conlines) if(conlines[j].type >= (confilter && !full ? CON_INFO : 0))
+            int numl = consize, numo = type == CON_MESG ? conchatsize+conchatoverflow : consize+conoverflow,
+                len = type == CON_MESG ? (!full ? conchattime/2 : conchattime) : (!full && type == CON_DEBUG ? contime/2 : contime),
+                fadelen = type == CON_MESG ? conchatfade : confade;
+            loopvj(conlines[type])
             {
-                int len = conlines[j].type >= CON_CHAT ? (!full && conlines[j].type > CON_CHAT ? conchattime/2 : conchattime) : (!full && conlines[j].type < CON_IMPORTANT ? contime/2 : contime),
-                    fadelen = conlines[j].type >= CON_CHAT ? conchatfade : confade;
-                if(conskip ? j>=conskip-1 || j>=conlines.length()-numl : full || totalmillis-conlines[j].reftime <= len+fadelen)
+                if(full || totalmillis-conlines[type][j].reftime <= len+fadelen)
                 {
                     if(refs.length() >= numl)
                     {
@@ -1691,19 +1682,15 @@ namespace hud
                         {
                             if(full) break;
                             bool found = false;
-                            loopvrev(refs)
+                            loopvrev(refs) if(conlines[type][refs[i]].reftime+len < conlines[type][j].reftime+len)
                             {
-                                int check = conlines[refs[i]].type >= CON_CHAT ? (!full && conlines[refs[i]].type > CON_CHAT ? conchattime/2 : conchattime) : (!full && conlines[refs[i]].type < CON_IMPORTANT ? contime/2 : contime);
-                                if(conlines[refs[i]].reftime+check < conlines[j].reftime+len)
-                                {
-                                    refs.remove(i);
-                                    found = true;
-                                    break;
-                                }
+                                refs.remove(i);
+                                found = true;
+                                break;
                             }
                             if(!found) continue;
                         }
-                        conlines[j].reftime = min(conlines[j].reftime, totalmillis-len);
+                        conlines[type][j].reftime = min(conlines[type][j].reftime, totalmillis-len);
                     }
                     refs.add(j);
                 }
@@ -1714,19 +1701,16 @@ namespace hud
             tz = int(tz/conscale);
             loopvrev(refs)
             {
-                int len = !full && conlines[refs[i]].type < CON_IMPORTANT ? contime/2 : contime;
-                float f = full || !confade ? 1.f : clamp(((len+confade)-(totalmillis-conlines[refs[i]].reftime))/float(confade), 0.f, 1.f),
-                    g = full ? fullconblend  : (conlines[refs[i]].type >= CON_IMPORTANT ? selfconblend : conblend);
+                float f = full || !confade ? 1.f : clamp(((len+confade)-(totalmillis-conlines[type][refs[i]].reftime))/float(confade), 0.f, 1.f),
+                    g = full ? fullconblend  : (type == CON_MESG ? chatconblend : conblend);
                 if(condate && *condateformat)
-                    tz += draw_textf("%s %s", tr, ty+tz, 0, 0, -1, -1, -1, int(fade*f*g*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, ts, 1, gettime(conlines[refs[i]].realtime, condateformat), conlines[refs[i]].cref)*f;
-                else tz += draw_textf("%s", tr, ty+tz, 0, 0, -1, -1, -1, int(fade*f*g*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, ts, 1, conlines[refs[i]].cref)*f;
+                    tz += draw_textf("%s %s", tr, ty+tz, 0, 0, -1, -1, -1, int(fade*f*g*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, ts, 1, gettime(conlines[type][refs[i]].realtime, condateformat), conlines[type][refs[i]].cref)*f;
+                else tz += draw_textf("%s", tr, ty+tz, 0, 0, -1, -1, -1, int(fade*f*g*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, ts, 1, conlines[type][refs[i]].cref)*f;
             }
-            if(conskipwarn && conskip)
-                tz += draw_textf("\fs\fzwy^^^\fS IN BACKLOG: \fs\fy%d\fS \fs\fzwy^^^\fS", tr, ty+tz, 0, 0, -1, -1, -1, int(fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, ts, 1, conskip);
             pophudmatrix();
             tz = int(tz*conscale);
         }
-        if(commandmillis > 0)
+        if(type == CON_MESG && commandmillis > 0)
         {
             pushfont("command");
             Texture *t = textureload(commandicon ? commandicon : inputtex, 3);
@@ -1872,9 +1856,10 @@ namespace hud
                 }
             }
             pophudmatrix();
-            //tz = int(tz*commandscale);
+            tz = int(tz*commandscale);
         }
         popfont();
+        return tz;
     }
 
     int radartype()
@@ -2683,7 +2668,8 @@ namespace hud
             else if(gs_playing(game::gamestate) && game::focus->state == CS_ALIVE && game::inzoom())
                 drawzoom(hudwidth, hudheight);
         }
-        drawconsole(hudwidth, hudheight, edge*2, edge, hudwidth-edge*4-FONTW*2, consolefade);
+        for(int type = fullconsole || commandmillis > 0 ? CON_DEBUG : CON_EVENT, tz = edge; type < CON_MAX; type++)
+            tz += drawconsole(type, hudwidth, hudheight, edge*2, tz, hudwidth/2, consolefade);
         glDisable(GL_BLEND);
     }
 

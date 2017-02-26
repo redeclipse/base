@@ -2137,7 +2137,7 @@ void calclight(int *quality, int *quick)
 {
     if(!setlightmapquality(*quality, *quick!=0))
     {
-        conoutft(CON_MESG, "\frValid range for calclight quality is -1..1");
+        conoutft(CON_DEBUG, "\frValid range for calclight quality is -1..1");
         return;
     }
     progress(-1, "Computing lightmaps...");
@@ -2196,7 +2196,7 @@ void patchlight(int *quality, int *quick)
     if(noedit(true)) return;
     if(!setlightmapquality(*quality, *quick!=0))
     {
-        conoutft(CON_MESG, "\frValid range for patchlight quality is -1..1");
+        conoutft(CON_DEBUG, "\frValid range for patchlight quality is -1..1");
         return;
     }
     progress(-1, "Patching lightmaps...");

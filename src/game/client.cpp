@@ -230,7 +230,7 @@ namespace client
         delete f;
         if(msg[0])
         {
-            conoutft(CON_INFO, "%s", msg);
+            conoutft(CON_DEBUG, "%s", msg);
             demoinfos.pop();
             faildemos.add(newstring(name));
             return -1;
@@ -603,16 +603,16 @@ namespace client
                 int t = teamname(team);
                 if(isteam(game::gamemode, game::mutators, t, T_FIRST)) addmsg(N_SWITCHTEAM, "ri", t);
             }
-            else conoutft(CON_INFO, "\frCan only change teams when actually playing in team games");
+            else conoutft(CON_DEBUG, "\frCan only change teams when actually playing in team games");
         }
-        else conoutft(CON_INFO, "\fgYour team is: %s", game::colourteam(game::player1->team));
+        else conoutft(CON_DEBUG, "\fgYour team is: %s", game::colourteam(game::player1->team));
     }
     ICOMMAND(0, team, "s", (char *s), switchteam(s));
 
     bool allowedittoggle(bool edit)
     {
         bool allow = edit || m_edit(game::gamemode); // && game::player1->state == CS_ALIVE);
-        if(!allow) conoutft(CON_INFO, "\frYou must start an editing game to edit the map");
+        if(!allow) conoutft(CON_DEBUG, "\frYou must start an editing game to edit the map");
         return allow;
     }
 
@@ -1107,7 +1107,7 @@ namespace client
                 if(t) addmsg(N_SETTEAM, "ri2", i, t);
             }
         }
-        else conoutft(CON_INFO, "\frCan only change teams in team games");
+        else conoutft(CON_DEBUG, "\frCan only change teams in team games");
     }
     ICOMMAND(0, setteam, "ss", (char *who, char *team), setteam(who, team));
 
@@ -1141,7 +1141,7 @@ namespace client
     void tryauth()
     {
         if(accountname[0]) addmsg(N_AUTHTRY, "rs", accountname);
-        else conoutft(CON_INFO, "\frNo account set for \fcauth");
+        else conoutft(CON_DEBUG, "\frNo account set for \fcauth");
     }
     ICOMMAND(0, auth, "", (), tryauth());
 
@@ -1295,7 +1295,7 @@ namespace client
         }
         if((!(flags&SAY_TEAM) || f->team == game::player1->team) && (!(flags&SAY_WHISPER) || f == game::player1 || t == game::player1))
         {
-            conoutft(CON_CHAT, "%s", line);
+            conoutft(CON_MESG, "%s", line);
             if(snd >= 0 && !issound(f->cschan)) playsound(snd, f->o, f, snd != S_CHAT ? 0 : SND_DIRECT, -1, -1, -1, &f->cschan);
         }
         ai::scanchat(f, t, flags, text);
@@ -2948,7 +2948,7 @@ namespace client
                 {
                     int lev = getint(p);
                     getstring(text, p);
-                    conoutft(lev >= 0 && lev < CON_MAX ? lev : CON_INFO, "%s", text);
+                    conoutft(lev >= 0 && lev < CON_MAX ? lev : CON_DEBUG, "%s", text);
                     break;
                 }
 
@@ -3180,7 +3180,7 @@ namespace client
                             if(showlaptimes >= (t != game::focus ? (t->actortype > A_PLAYER ? 3 : 2) : 1))
                             {
                                 defformatstring(best, "%s", timestr(t->cptime, 1));
-                                conoutft(t != game::player1 ? CON_INFO : CON_SELF, "%s completed in \fs\fg%s\fS (best: \fs\fy%s\fS, laps: \fs\fc%d\fS)", game::colourname(t), timestr(t->cplast, 1), best, t->points);
+                                conoutft(CON_EVENT, "%s completed in \fs\fg%s\fS (best: \fs\fy%s\fS, laps: \fs\fc%d\fS)", game::colourname(t), timestr(t->cplast, 1), best, t->points);
                             }
                         }
                         else if(!m_ra_endurance(game::gamemode, game::mutators)) t->impulse[IM_METER] = 0;
