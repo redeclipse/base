@@ -77,20 +77,20 @@ int mapbals[T_TOTAL][T_TOTAL] = {
     { T_KAPPA, T_SIGMA, T_ALPHA, T_OMEGA },
     { T_SIGMA, T_KAPPA, T_OMEGA, T_ALPHA }
 };
-SVAR(0, teamname, "neutral alpha omega kappa sigma enemy");
-VAR(0, teamidxneutral, 1, T_NEUTRAL, -1);
-VAR(0, teamidxalpha, 1, T_ALPHA, -1);
-VAR(0, teamidxomega, 1, T_OMEGA, -1);
-VAR(0, teamidxkappa, 1, T_KAPPA, -1);
-VAR(0, teamidxsigma, 1, T_SIGMA, -1);
-VAR(0, teamidxenemy, 1, T_ENEMY, -1);
-VAR(0, teamidxfirst, 1, T_FIRST, -1);
-VAR(0, teamidxlast, 1, T_LAST, -1);
-VAR(0, teamidxmulti, 1, T_MULTI, -1);
-VAR(0, teamidxcount, 1, T_COUNT, -1);
-VAR(0, teamidxall, 1, T_ALL, -1);
-VAR(0, teamidxnum, 1, T_NUM, -1);
-VAR(0, teamidxtotal, 1, T_TOTAL, -1);
+SVAR(IDF_READONLY, teamname, "neutral alpha omega kappa sigma enemy");
+VAR(IDF_READONLY, teamidxneutral, 1, T_NEUTRAL, -1);
+VAR(IDF_READONLY, teamidxalpha, 1, T_ALPHA, -1);
+VAR(IDF_READONLY, teamidxomega, 1, T_OMEGA, -1);
+VAR(IDF_READONLY, teamidxkappa, 1, T_KAPPA, -1);
+VAR(IDF_READONLY, teamidxsigma, 1, T_SIGMA, -1);
+VAR(IDF_READONLY, teamidxenemy, 1, T_ENEMY, -1);
+VAR(IDF_READONLY, teamidxfirst, 1, T_FIRST, -1);
+VAR(IDF_READONLY, teamidxlast, 1, T_LAST, -1);
+VAR(IDF_READONLY, teamidxmulti, 1, T_MULTI, -1);
+VAR(IDF_READONLY, teamidxcount, 1, T_COUNT, -1);
+VAR(IDF_READONLY, teamidxall, 1, T_ALL, -1);
+VAR(IDF_READONLY, teamidxnum, 1, T_NUM, -1);
+VAR(IDF_READONLY, teamidxtotal, 1, T_TOTAL, -1);
 #else
 extern int mapbals[T_TOTAL][T_TOTAL];
 #endif

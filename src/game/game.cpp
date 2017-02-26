@@ -335,9 +335,11 @@ namespace game
     ICOMMAND(0, mutsimplied, "ii", (int *g, int *m), intret(*g >= 0 && *g < G_MAX ? gametype[*g].implied : 0));
     ICOMMAND(0, gspmutname, "ii", (int *g, int *n), result(*g >= 0 && *g < G_MAX && *n >= 0 && *n < G_M_GSN ? gametype[*g].gsp[*n] : ""));
     ICOMMAND(0, getintermission, "", (), intret(gs_intermission(gamestate) ? 1 : 0));
+    ICOMMAND(0, getgameisplay, "b", (int *n), intret(m_play(*n >= 0 ? *n : gamemode) ? 1 :0));
     ICOMMAND(0, getgamestate, "", (), intret(gamestate));
     ICOMMAND(0, getgamestatestr, "ib", (int *n, int *b), result(gamestates[clamp(*n, 0, 3)][clamp(*b >= 0 ? *b : gamestate, 0, int(G_S_MAX))]));
     ICOMMAND(0, getgametimeremain, "", (), intret(max(timeremaining*1000-((gs_playing(gamestate) ? lastmillis : totalmillis)-lasttimeremain), 0)));
+    ICOMMAND(0, getgametimelimit, "bb", (int *g, int *m), intret(m_mmvar(*g >= 0 ? *g : gamemode, *m >= 0 ? *m : mutators, timelimit)));
 
     ICOMMAND(0, getspawnweap, "bbb", (int *at, int *a, int *b), intret(m_weapon((*at >= 0 ? *at : game::focus->actortype), (*a >= 0 ? *a : gamemode), (*b >= 0 ? *b : mutators))));
     ICOMMAND(0, getspawndelay, "bbbb", (int *at, int *a, int *b, int *c), intret(m_delay((*at >= 0 ? *at : game::focus->actortype), (*a >= 0 ? *a : gamemode), (*b >= 0 ? *b : mutators), (*c >= 0 ? *c : game::focus->team))));

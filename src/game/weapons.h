@@ -949,25 +949,25 @@ weaptypes weaptype[] =
             "melee",    "", "", "", "", ""
     }
 };
-SVAR(0, weapname, "claw pistol sword shotgun smg flamer plasma zapper rifle grenade mine rocket melee");
-VAR(0, weapidxclaw, 1, W_CLAW, -1);
-VAR(0, weapidxpistol, 1, W_PISTOL, -1);
-VAR(0, weapidxsword, 1, W_SWORD, -1);
-VAR(0, weapidxshotgun, 1, W_SHOTGUN, -1);
-VAR(0, weapidxsmg, 1, W_SMG, -1);
-VAR(0, weapidxflamer, 1, W_FLAMER, -1);
-VAR(0, weapidxplasma, 1, W_PLASMA, -1);
-VAR(0, weapidxzapper, 1, W_ZAPPER, -1);
-VAR(0, weapidxrifle, 1, W_RIFLE, -1);
-VAR(0, weapidxgrenade, 1, W_GRENADE, -1);
-VAR(0, weapidxmine, 1, W_MINE, -1);
-VAR(0, weapidxrocket, 1, W_ROCKET, -1);
-VAR(0, weapidxmelee, 1, W_MELEE, -1);
-VAR(0, weapidxoffset, 1, W_OFFSET, -1);
-VAR(0, weapidxitem, 1, W_ITEM, -1);
-VAR(0, weapidxhidden, 1, W_ALL, -1);
-VAR(0, weapidxloadout, 1, W_LOADOUT, -1);
-VAR(0, weapidxnum, 1, W_MAX, -1);
+SVAR(IDF_READONLY, weapname, "claw pistol sword shotgun smg flamer plasma zapper rifle grenade mine rocket melee");
+VAR(IDF_READONLY, weapidxclaw, 1, W_CLAW, -1);
+VAR(IDF_READONLY, weapidxpistol, 1, W_PISTOL, -1);
+VAR(IDF_READONLY, weapidxsword, 1, W_SWORD, -1);
+VAR(IDF_READONLY, weapidxshotgun, 1, W_SHOTGUN, -1);
+VAR(IDF_READONLY, weapidxsmg, 1, W_SMG, -1);
+VAR(IDF_READONLY, weapidxflamer, 1, W_FLAMER, -1);
+VAR(IDF_READONLY, weapidxplasma, 1, W_PLASMA, -1);
+VAR(IDF_READONLY, weapidxzapper, 1, W_ZAPPER, -1);
+VAR(IDF_READONLY, weapidxrifle, 1, W_RIFLE, -1);
+VAR(IDF_READONLY, weapidxgrenade, 1, W_GRENADE, -1);
+VAR(IDF_READONLY, weapidxmine, 1, W_MINE, -1);
+VAR(IDF_READONLY, weapidxrocket, 1, W_ROCKET, -1);
+VAR(IDF_READONLY, weapidxmelee, 1, W_MELEE, -1);
+VAR(IDF_READONLY, weapidxoffset, 1, W_OFFSET, -1);
+VAR(IDF_READONLY, weapidxitem, 1, W_ITEM, -1);
+VAR(IDF_READONLY, weapidxhidden, 1, W_ALL, -1);
+VAR(IDF_READONLY, weapidxloadout, 1, W_LOADOUT, -1);
+VAR(IDF_READONLY, weapidxnum, 1, W_MAX, -1);
 #else
 extern weaptypes weaptype[];
 #endif
