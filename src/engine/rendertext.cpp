@@ -6,6 +6,7 @@ FVARF(IDF_PERSIST, textscale, FVAR_NONZERO, 1, FVAR_MAX, curtextscale = textscal
 FVAR(IDF_PERSIST, textlinespacing, FVAR_NONZERO, 1, FVAR_MAX);
 VAR(IDF_PERSIST, textfaded, 0, 1, 1);
 VAR(IDF_PERSIST, textminintensity, 0, 32, 255);
+VAR(IDF_PERSIST, textwraplimit, 0, 12, 255);
 
 VAR(IDF_PERSIST, textkeyimages, 0, 1, 1);
 FVAR(IDF_PERSIST, textkeyimagescale, 0, 1, FVAR_MAX);
@@ -451,7 +452,7 @@ static float icon_width(const char *name, float scale)
 { \
     if(maxwidth > 0 && qx+cw > maxwidth) \
     { \
-        if(qp >= 0) \
+        if(qp >= 0 && qi-qp <= textwraplimit) \
         { \
             wrappos = qp; \
             qx = min(qw, maxwidth); \
@@ -514,7 +515,7 @@ static float icon_width(const char *name, float scale)
             qx += cw; \
         } \
     } \
-    if(flags&TEXT_CENTERED) \
+    if((flags&TEXT_ALIGN) == TEXT_CENTERED) \
     { \
         if(tidx <= 0) maxwidth = qx; \
         else x += (maxwidth-qx)*0.5f; \
@@ -525,10 +526,10 @@ static float icon_width(const char *name, float scale)
 { \
     x = 0; \
     wrappos = -1; \
-    if(!(flags&TEXT_NO_INDENT) && !(flags&TEXT_CENTERED)) \
+    if(!(flags&TEXT_NO_INDENT)) \
     { \
-        if(flags&TEXT_LEFT_JUSTIFY) x += FONTTAB; \
-        else if(!indents && (flags&TEXT_RIGHT_JUSTIFY)) maxwidth -= FONTTAB; \
+        if((flags&TEXT_ALIGN) == TEXT_LEFT_JUSTIFY) x += FONTTAB; \
+        else if(!indents && ((flags&TEXT_ALIGN) == TEXT_RIGHT_JUSTIFY)) maxwidth -= FONTTAB; \
         indents++; \
     } \
     TEXTESTIMATE(aidx) \

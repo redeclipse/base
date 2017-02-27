@@ -3358,7 +3358,7 @@ namespace UI
                 dynent *d = game::focusedent();
                 vec pos = vec(d->o).sub(minimapcenter).mul(minimapscale).add(0.5f), dir(d->yaw*RAD, 0.f);
                 int limit = hud::radarlimit();
-                float scale = min(dist < 0 ? getworldsize() : dist, limit ? limit : getworldsize()),
+                float scale = min(dist > 0 ? dist : getworldsize(), limit > 0 ? limit : getworldsize()),
                       qw = w*0.5f*border, qh = h*0.5f*border, rw = w*0.5f-qw, rh = h*0.5f-qh;
                 colors[1].init();
                 gle::defvertex(2);

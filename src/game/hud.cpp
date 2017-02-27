@@ -1872,9 +1872,6 @@ namespace hud
     void drawblip(const char *tex, float area, int w, int h, float s, float blend, int style, const vec &pos, const vec &colour, const char *font, const char *text, ...)
     {
         if(style < 0) style = radartype();
-        vec dir = vec(pos).sub(camera1->o);
-        float dist = clamp(dir.magnitude()/float(radarrange()), 0.f, 1.f);
-        dir.rotate_around_z(-camera1->yaw*RAD).normalize();
         vec loc(0, 0, 0);
         if(style == 2)
         {
@@ -1885,6 +1882,9 @@ namespace hud
             }
             else return; // can't render things we can't point at
         }
+        vec dir = vec(pos).sub(camera1->o);
+        float dist = clamp(dir.magnitude()/float(radarrange()), 0.f, 1.f);
+        dir.rotate_around_z(-camera1->yaw*RAD).normalize();
         float yaw = -atan2(dir.x, dir.y)/RAD, x = sinf(RAD*yaw), y = -cosf(RAD*yaw), size = max(w, h)/2,
               ts = size*radarsize, tp = ts*s, tq = tp*0.5f;
         if(style != 2)
