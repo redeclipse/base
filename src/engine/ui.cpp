@@ -3355,8 +3355,7 @@ namespace UI
             while(colors.length() < 2) colors.add(Color(colourwhite));
             if(hud::needminimap())
             {
-                dynent *d = game::focusedent();
-                vec pos = vec(d->o).sub(minimapcenter).mul(minimapscale).add(0.5f), dir(d->yaw*RAD, 0.f);
+                vec pos = vec(camera1->o).sub(minimapcenter).mul(minimapscale).add(0.5f), dir(camera1->yaw*RAD, 0.f);
                 int limit = hud::radarlimit();
                 float scale = min(dist > 0 ? dist : getworldsize(), limit > 0 ? limit : getworldsize()),
                       qw = w*0.5f*border, qh = h*0.5f*border, rw = w*0.5f-qw, rh = h*0.5f-qh;

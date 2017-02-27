@@ -1538,7 +1538,7 @@ VAR(0, modelpreviewpitch, -90, -15, 90);
 namespace modelpreview
 {
     physent *oldcamera;
-    physent camera;
+    physent cam;
 
     float oldaspect, oldfovy, oldfov;
     int oldfarplane;
@@ -1560,14 +1560,14 @@ namespace modelpreview
         glEnable(GL_SCISSOR_TEST);
 
         oldcamera = camera1;
-        camera = *camera1;
-        camera.reset();
-        camera.type = ENT_CAMERA;
-        camera.o = vec(0, 0, 0);
-        camera.yaw = 0;
-        camera.pitch = modelpreviewpitch;
-        camera.roll = 0;
-        camera1 = &camera;
+        cam = *camera1;
+        cam.reset();
+        cam.type = ENT_CAMERA;
+        cam.o = vec(0, 0, 0);
+        cam.yaw = 0;
+        cam.pitch = modelpreviewpitch;
+        cam.roll = 0;
+        camera1 = &cam;
 
         oldaspect = aspect;
         oldfovy = fovy;
