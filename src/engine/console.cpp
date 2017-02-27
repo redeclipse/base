@@ -36,6 +36,30 @@ void conline(int type, const char *sf, int n)
     else copystring(cl.cref, sf, BIGSTRLEN);
 }
 
+#define LOOPCONLINES(name,op) \
+    ICOMMAND(0, loopconlines##name, "iiire", (int *type, int *count, int *skip, ident *id, uint *body), \
+    { \
+        if(*type < 0 || *type >= CON_MAX) return; \
+        int iter[2] = {0}; \
+        loopstart(id, stack); \
+        op(conlines[*type]) \
+        { \
+            if(*skip > 0 && ++iter[1] <= *skip) continue; \
+            loopiter(id, stack, i); \
+            execute(body); \
+            if(*count > 0 && ++iter[0] >= *count) break; \
+        } \
+        loopend(id, stack); \
+    });
+LOOPCONLINES(,loopv);
+LOOPCONLINES(rev,loopvrev);
+
+ICOMMAND(0, getconlines, "ib", (int *type), intret(*type >= 0 && *type < CON_MAX ? conlines[*type].length() : 0));
+ICOMMAND(0, getconlinecref, "ib", (int *type, int *n), result(*type >= 0 && *type < CON_MAX && conlines[*type].inrange(*n) ? conlines[*type][*n].cref : ""));
+ICOMMAND(0, getconlinereftime, "ib", (int *type, int *n), intret(*type >= 0 && *type < CON_MAX && conlines[*type].inrange(*n) ? conlines[*type][*n].reftime : 0));
+ICOMMAND(0, getconlineouttime, "ib", (int *type, int *n), intret(*type >= 0 && *type < CON_MAX && conlines[*type].inrange(*n) ? conlines[*type][*n].outtime : 0));
+ICOMMAND(0, getconlinerealtime, "ib", (int *type, int *n), intret(*type >= 0 && *type < CON_MAX && conlines[*type].inrange(*n) ? conlines[*type][*n].realtime : 0));
+
 // keymap is defined externally in keymap.cfg
 struct keym
 {
@@ -299,6 +323,13 @@ void inputcommand(char *init, char *action = NULL, char *icon = NULL, int colour
 
 ICOMMAND(0, saycommand, "C", (char *init), inputcommand(init));
 ICOMMAND(0, inputcommand, "sssis", (char *init, char *action, char *icon, int *colour, char *flags), inputcommand(init, action, icon, *colour, flags));
+
+ICOMMAND(0, getcommandmillis, "", (), intret(commandmillis));
+ICOMMAND(0, getcommandbuf, "", (), result(commandmillis > 0 ? commandbuf : ""));
+ICOMMAND(0, getcommandaction, "", (), result(commandmillis > 0 && commandaction ? commandaction : ""));
+ICOMMAND(0, getcommandicon, "", (), result(commandmillis > 0 && commandicon ? commandicon : ""));
+ICOMMAND(0, getcommandpos, "", (), intret(commandmillis > 0 ? (commandpos >= 0 ? commandpos : strlen(commandbuf)) : -1));
+ICOMMAND(0, getcommandflags, "", (), intret(commandmillis > 0 ? commandflags : 0));
 
 char *pastetext(char *buf, size_t len)
 {

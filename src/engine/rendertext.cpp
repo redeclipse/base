@@ -590,7 +590,7 @@ static float icon_width(const char *name, float scale)
         } \
     }
 
-#define TEXTEND(cursor) if(cursor >= i) { do { TEXTINDEX(cursor); } while(0); }
+#define TEXTEND(csr) if(csr >= i) { do { TEXTINDEX(csr); } while(0); }
 
 int text_visible(const char *str, float hitx, float hity, float maxwidth, int flags, float linespace)
 {

@@ -24,7 +24,6 @@ namespace hud
     VAR(IDF_PERSIST, showdemoplayback, 0, 1, 1);
     FVAR(IDF_PERSIST, edgesize, 0, 0.005f, 1000);
 
-    VAR(IDF_PERSIST, showconsole, 0, 2, 2);
     VAR(IDF_PERSIST, shownotices, 0, 3, 4);
     VAR(IDF_PERSIST, showevents, 0, 3, 4);
     VAR(IDF_PERSIST, showeventicons, 0, 1, 7);
@@ -68,39 +67,14 @@ namespace hud
     LOOPENGSTATS(,loopi)
     LOOPENGSTATS(rev,loopirev)
 
-    bool fullconsole = false;
-    void toggleconsole() { fullconsole = !fullconsole; }
-    COMMAND(0, toggleconsole, "");
-
     VAR(IDF_PERSIST, titlefade, 0, 1000, 10000);
     VAR(IDF_PERSIST, tvmodefade, 0, 250, VAR_MAX);
     VAR(IDF_PERSIST, spawnfade, 0, 250, VAR_MAX);
 
     VAR(IDF_PERSIST, commandfade, 0, 250, VAR_MAX);
     FVAR(IDF_PERSIST, commandfadeamt, 0, 0.75f, 1);
-    FVAR(IDF_PERSIST, commandfadeskew, 0, 0, 1);
-    FVAR(IDF_PERSIST, commandscale, FVAR_NONZERO, 1, FVAR_MAX);
     VAR(IDF_PERSIST, uifade, 0, 250, VAR_MAX);
     FVAR(IDF_PERSIST, uifadeamt, 0, 0.5f, 1);
-
-    VAR(IDF_PERSIST, consize, 1, 3, 100);
-    VAR(IDF_PERSIST, contime, 0, 30000, VAR_MAX);
-    VAR(IDF_PERSIST, confade, 0, 500, VAR_MAX);
-    VAR(IDF_PERSIST, conoverflow, 0, 3, VAR_MAX);
-    VAR(IDF_PERSIST, concenter, 0, 0, 1);
-    VAR(IDF_PERSIST, condate, 0, 0, 1);
-    FVAR(IDF_PERSIST, conblend, 0, 0.6f, 1);
-    FVAR(IDF_PERSIST, conscale, FVAR_NONZERO, 1, FVAR_MAX);
-    SVAR(IDF_PERSIST, condateformat, "%H:%M:%S");
-
-    VAR(IDF_PERSIST, conchatsize, 1, 5, 100);
-    VAR(IDF_PERSIST, conchattime, 0, 30000, VAR_MAX);
-    VAR(IDF_PERSIST, conchatfade, 0, 1000, VAR_MAX);
-    VAR(IDF_PERSIST, conchatoverflow, 0, 5, VAR_MAX);
-
-    FVAR(IDF_PERSIST, chatconblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, fullconblend, 0, 1, 1);
-    VAR(IDF_PERSIST, capslockwarn, 0, 1, 1);
 
     FVAR(IDF_PERSIST, noticeoffset, -1, 0.35f, 1);
     FVAR(IDF_PERSIST, noticeblend, 0, 1, 1);
@@ -611,6 +585,8 @@ namespace hud
 
     void processmenu()
     {
+        if(showhud) UI::showui("hud");
+        else UI::hideui("hud");
         if(connected())
         {
             if(!UI::hasmenu() && (game::needname(game::player1) || game::wantsloadoutmenu))
@@ -623,15 +599,9 @@ namespace hud
                 UI::pressui("scoreboard", scoreson);
                 if(game::player1->state == CS_DEAD) { if(scoreson) shownscores = true; }
                 else shownscores = false;
-                if(showhud) UI::showui("hud");
-                else UI::hideui("hud");
             }
         }
-        else
-        {
-            UI::hideui("hud");
-            if(!UI::hasmenu()) UI::openui(game::needname(game::player1) ? "profile" : "main");
-        }
+        else if(!UI::hasmenu()) UI::openui(game::needname(game::player1) ? "profile" : "main");
     }
 
     float motionblur(float scale)
@@ -1273,7 +1243,7 @@ namespace hud
     void drawpointers(int w, int h)
     {
         int index = POINTER_NONE;
-        if(hasinput()) index = !hasinput(true) || commandmillis > 0 ? POINTER_NONE : POINTER_GUI;
+        if(hasinput()) index = hasinput(true) ? POINTER_GUI : POINTER_NONE;
         else if(!showhud || !showcrosshair || game::focus->state == CS_DEAD || !gs_playing(game::gamestate) || client::waiting() || (game::thirdpersonview(true) && game::focus != game::player1))
             index = POINTER_NONE;
         else if(game::focus->state == CS_EDITING) index = POINTER_EDIT;
@@ -1648,209 +1618,8 @@ namespace hud
             }
             glDisable(GL_BLEND);
         }
-        if(progressing || (commandmillis <= 0 && !curcompass)) UI::render();
+        if(progressing || !curcompass) UI::render();
         if(!progressing) drawpointers(hudwidth, hudheight);
-    }
-
-    int drawconsole(int type, int w, int h, int x, int y, int s, float fade)
-    {
-        static vector<int> refs; refs.setsize(0);
-        bool full = fullconsole || commandmillis > 0;
-        int tz = 0;
-        pushfont("console");
-        if((showconsole && showhud) || commandmillis > 0)
-        {
-            int numl = consize, numo = type == CON_MESG ? conchatsize+conchatoverflow : consize+conoverflow,
-                len = type == CON_MESG ? (!full ? conchattime/2 : conchattime) : (!full && type == CON_DEBUG ? contime/2 : contime),
-                fadelen = type == CON_MESG ? conchatfade : confade;
-            loopvj(conlines[type])
-            {
-                if(full || totalmillis-conlines[type][j].reftime <= len+fadelen)
-                {
-                    if(refs.length() >= numl)
-                    {
-                        if(refs.length() >= numo)
-                        {
-                            if(full) break;
-                            bool found = false;
-                            loopvrev(refs) if(conlines[type][refs[i]].reftime+len < conlines[type][j].reftime+len)
-                            {
-                                refs.remove(i);
-                                found = true;
-                                break;
-                            }
-                            if(!found) continue;
-                        }
-                        conlines[type][j].reftime = min(conlines[type][j].reftime, totalmillis-len);
-                    }
-                    refs.add(j);
-                }
-            }
-            pushhudscale(conscale);
-            int tx = int(x/conscale), ty = int(y/conscale),
-                ts = int(s/conscale), tr = concenter ? tx+ts/2 : tx;
-            tz = int(tz/conscale);
-            loopvrev(refs)
-            {
-                float f = full || !confade ? 1.f : clamp(((len+confade)-(totalmillis-conlines[type][refs[i]].reftime))/float(confade), 0.f, 1.f),
-                    g = full ? fullconblend  : (type == CON_MESG ? chatconblend : conblend);
-                if(condate && *condateformat)
-                    tz += draw_textf("%s %s", tr, ty+tz, 0, 0, -1, -1, -1, int(fade*f*g*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, ts, 1, gettime(conlines[type][refs[i]].realtime, condateformat), conlines[type][refs[i]].cref)*f;
-                else tz += draw_textf("%s", tr, ty+tz, 0, 0, -1, -1, -1, int(fade*f*g*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, ts, 1, conlines[type][refs[i]].cref)*f;
-            }
-            pophudmatrix();
-            tz = int(tz*conscale);
-        }
-        if(type == CON_MESG && commandmillis > 0)
-        {
-            pushfont("command");
-            Texture *t = textureload(commandicon ? commandicon : inputtex, 3);
-            vec c(1, 1, 1);
-            if(commandcolour) c = vec::hexcolor(commandcolour);
-            float f = float(totalmillis%1000)/1000.f;
-            if(f < 0.5f) f = 1.f-f;
-            pushhudscale(commandscale);
-            float th = FONTH, tw = float(t->w)/float(t->h)*th;
-            int tx = int(x/commandscale), ty = int(y/commandscale),
-                ts = int(s/commandscale), tq = (concenter ? tx+ts/2-FONTW*3 : tx), tr = int(tw+FONTW), tt = ts-(FONTH+FONTW);
-            tz = int(tz/commandscale);
-            glBindTexture(GL_TEXTURE_2D, t->id);
-            gle::color(c, fullconblend*fade*f);
-            drawtexture(tx, ty+tz, th, tw);
-            int cp = commandpos >= 0 ? commandpos : strlen(commandbuf);//, fp = completesize && completeoffset >= 0 ? min(pos, completeoffset+completesize) : -1;
-            tz += draw_textf("%s", tq+tr, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, cp, tt, 1, commandbuf);
-            if(capslockwarn && capslockon)
-                tz += draw_textf("\fs\fzoy^\fS \fs\fw\f{CAPSLOCK}\fS is \fs\fcON\fS", tq+tr, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1);
-            popfont();
-            if(commandbuf[0] == '/' && commandbuf[1])
-            {
-                char *start = &commandbuf[1];
-                const char chrlist[7] = { ';', '(', ')', '[', ']', '\"', '$', };
-                loopi(7)
-                {
-                    char *semi = strrchr(start, chrlist[i]);
-                    if(semi) start = semi+1;
-                }
-                while(*start == ' ') start++;
-                if(*start)
-                {
-                    char *end = start;
-                    end += strcspn(start, " \t\0");
-                    if(end)
-                    {
-                        string idname;
-                        copystring(idname, start, min(size_t(end-start+1), sizeof(idname)));
-                        ident *id = idents.access(idname);
-                        if(id)
-                        {
-                            stringz(idtype);
-                            if(id->flags&IDF_CLIENT || id->flags&IDF_SERVER)
-                            {
-                                if(id->flags&IDF_ADMIN) concatstring(idtype, "Admin-only ");
-                                else if(id->flags&IDF_MODERATOR) concatstring(idtype, "Moderator-only ");
-                                concatstring(idtype, id->flags&IDF_CLIENT ? "Game " : "Server ");
-                            }
-                            if(id->type != ID_COMMAND)
-                            {
-                                if(id->flags&IDF_READONLY) concatstring(idtype, "Read-only ");
-                                if(id->flags&IDF_PERSIST) concatstring(idtype, "Persistent ");
-                                if(id->flags&IDF_WORLD) concatstring(idtype, "World ");
-                            }
-                            switch(id->type)
-                            {
-                                case ID_ALIAS:
-                                {
-                                    tz += draw_textf("%s%sAlias", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, idtype, *idtype ? " " : "");
-                                    break;
-                                }
-                                case ID_COMMAND:
-                                {
-                                    tz += draw_textf("%sCommand", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, idtype, *idtype ? " " : "");
-                                    if(strlen(id->args)) tz += draw_textf("\faArgs: \fw%d \fa(\fw%s\fa)", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, strlen(id->args), id->args);
-                                    else tz += draw_textf("\faArgs: \fwnone", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1);
-                                    break;
-                                }
-                                case ID_VAR:
-                                {
-                                    tz += draw_textf("%s%sinteger", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, idtype, *idtype ? " " : "");
-                                    if(id->flags&IDF_HEX)
-                                    {
-                                        if(id->maxval == 0xFFFFFF)
-                                            tz += draw_textf("\faMin: \fw0x%.6X\fa (\fw%d\fa,\fw%d\fa,\fw%d\fa), Max: \fw0x%.6X\fa (\fw%d\fa,\fw%d\fa,\fw%d\fa), Default: \fw0x%.6X\fa (\fw%d\fa,\fw%d\fa,\fw%d\fa), Current: \fw0x%.6X (\fw%d\fa,\fw%d\fa,\fw%d\fa) [\fs\f[%d]#\fS]", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1,
-                                                    id->minval, (id->minval>>16)&0xFF, (id->minval>>8)&0xFF, id->minval&0xFF,
-                                                    id->maxval, (id->maxval>>16)&0xFF, (id->maxval>>8)&0xFF, id->maxval&0xFF,
-                                                    id->def.i, (id->def.i>>16)&0xFF, (id->def.i>>8)&0xFF, id->def.i&0xFF,
-                                                    *id->storage.i, (*id->storage.i>>16)&0xFF, (*id->storage.i>>8)&0xFF, *id->storage.i&0xFF, *id->storage.i);
-                                        else tz += draw_textf("\faMin: \fw0x%X\fa, Max: \fw0x%X\fa, Default: \fw0x%X\fa, Current: \fw0x%X", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->minval, id->maxval, id->def.i, *id->storage.i);
-                                    }
-                                    else tz += draw_textf("\faMin: \fw%d\fa, Max: \fw%d\fa, Default: \fw%d\fa, Current: \fw%d", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->minval, id->maxval, id->def.i, *id->storage.i);
-                                    break;
-                                }
-                                case ID_FVAR:
-                                {
-                                    tz += draw_textf("%s%sfloat", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, idtype, *idtype ? " " : "");
-                                    tz += draw_textf("\faMin: \fw%f\fa, Max: \fw%f\fa, Default: \fw%f\fa, Current: \fw%f", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->minvalf, id->maxvalf, id->def.f, *id->storage.f);
-                                    break;
-                                }
-                                case ID_SVAR:
-                                {
-                                    tz += draw_textf("%s%s%s", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, *idtype ? " " : "", idtype, id->flags&IDF_TEXTURE ? "Texture" : "String");
-                                    tz += draw_textf("\faDefault: \fw%s\fa, Current: \fw%s", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->def.s, *id->storage.s);
-                                    break;
-                                }
-                            }
-
-                            stringz(fields);
-                            if(id->type == ID_VAR && id->fields.length() > 1)
-                            {
-                                concatstring(fields, "<bitfield>");
-                                loopvj(id->fields) if(id->fields[j])
-                                    concformatstring(fields, "\n%d [0x%x] = %s", 1<<j, 1<<j, id->fields[j]);
-                            }
-                            else loopvj(id->fields) if(id->fields[j])
-                                concformatstring(fields, "%s<%s>", j ? " " : "", id->fields[j]);
-                            if(!*fields) switch(id->type)
-                            {
-                                case ID_ALIAS: concatstring(fields, "<arguments>"); break;
-                                case ID_VAR: concatstring(fields, "<integer>"); break;
-                                case ID_FVAR: concatstring(fields, "<float>"); break;
-                                case ID_SVAR: concatstring(fields, "<string>"); break;
-                                case ID_COMMAND:
-                                {
-                                    loopj(strlen(id->args)) switch(id->args[j])
-                                    {
-                                        case 's': concformatstring(fields, "%s<string>", j ? " " : ""); break;
-                                        case 'i': case 'b': case 'N': concformatstring(fields, "%s<%s>", j ? " " : "", id->flags&IDF_HEX ? "bitfield" : "integer"); break;
-                                        case 'f': case 'g': concformatstring(fields, "%s<float>", j ? " " : ""); break;
-                                        case 't': concformatstring(fields, "%s<null>", j ? " " : ""); break;
-                                        case 'e': concformatstring(fields, "%s<commands>", j ? " " : ""); break;
-                                        case 'r': case '$': concformatstring(fields, "%s<ident>", j ? " " : ""); break;
-                                        default: concformatstring(fields, "%s<?>", j ? " " : ""); break;
-                                    }
-                                    break;
-                                }
-                                default: break;
-                            }
-                            tz += draw_textf("Usage: \fa/%s %s", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->name, fields);
-
-                            if(id->desc)
-                                tz += draw_textf("\fa%s", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->desc);
-
-                            if(id->type == ID_ALIAS)
-                            {
-                                pushfont("consub");
-                                tz += draw_textf("\faContents: \fw%s", tq, ty+tz, 0, 0, -1, -1, -1, int(fullconblend*fade*255), concenter ? TEXT_CENTERED : TEXT_LEFT_JUSTIFY, -1, tt, 1, id->getstr());
-                                popfont();
-                            }
-                        }
-                    }
-                }
-            }
-            pophudmatrix();
-            tz = int(tz*commandscale);
-        }
-        popfont();
-        return tz;
     }
 
     int radartype()
@@ -2496,8 +2265,7 @@ namespace hud
     {
         hudmatrix.ortho(0, hudwidth, hudheight, 0, -1, 1);
         flushhudmatrix();
-
-        float fade = hudblend, consolefade = hudblend;
+        float fade = hudblend;
         if(!progressing)
         {
             vec colour = vec(1, 1, 1);
@@ -2561,18 +2329,12 @@ namespace hud
                 usetexturing(false);
                 drawblend(0, 0, hudwidth, hudheight, colour.x, colour.y, colour.z);
                 usetexturing(true);
-                float amt = (colour.x+colour.y+colour.z)/3.f;
-                if(commandfadeskew < 1 && (!commandmillis || (commandmillis < 0 && totalmillis-abs(commandmillis) > commandfade)))
-                    consolefade *= amt+((1.f-amt)*commandfadeskew);
-                fade *= amt;
+                fade *= (colour.x+colour.y+colour.z)/3.f;
             }
         }
-
-        int edge = int(hudsize*edgesize);
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         gle::colorf(1, 1, 1);
-
         if(noview) drawbackground(hudwidth, hudheight);
         else if(!client::waiting())
         {
@@ -2630,8 +2392,6 @@ namespace hud
             else if(gs_playing(game::gamestate) && game::focus->state == CS_ALIVE && game::inzoom())
                 drawzoom(hudwidth, hudheight);
         }
-        for(int type = fullconsole || commandmillis > 0 ? CON_DEBUG : CON_EVENT, tz = edge; type < CON_MAX; type++)
-            tz += drawconsole(type, hudwidth, hudheight, edge*2, tz, hudwidth/2, consolefade);
         glDisable(GL_BLEND);
     }
 
