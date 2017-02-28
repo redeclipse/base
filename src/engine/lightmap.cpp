@@ -1040,9 +1040,8 @@ VARF(0, lightcachesize, 4, 6, 12, clearlightcache());
 void findsunlights()
 {
     sunlights.setsize(0);
-    int numents = entities::lastent(ET_SUNLIGHT);
     const vector<extentity *> &ents = entities::getents();
-    loopi(numents) if(ents[i]->type == ET_SUNLIGHT) sunlights.add(ents[i]);
+    loopenti(ET_SUNLIGHT) if(ents[i]->type == ET_SUNLIGHT) sunlights.add(ents[i]);
 }
 
 void clearlightcache(int id)
@@ -1082,8 +1081,7 @@ const vector<int> &checklightcache(int x, int y)
     lce.lights.setsize(0);
     int csize = 1<<lightcachesize, cx = x<<lightcachesize, cy = y<<lightcachesize;
     const vector<extentity *> &ents = entities::getents();
-    int numents = entities::lastent(ET_LIGHT);
-    loopi(numents)
+    loopenti(ET_LIGHT)
     {
         extentity &light = *ents[i];
         switch(light.type)
@@ -1154,8 +1152,7 @@ static bool findlights(lightmapworker *w, int cx, int cy, int cz, int size, cons
     }
     else
     {
-        int numents = entities::lastent(ET_LIGHT);
-        loopi(numents)
+        loopenti(ET_LIGHT)
         {
             const extentity &light = *ents[i];
             switch(light.type)

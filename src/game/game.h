@@ -1772,7 +1772,6 @@ namespace entities
 {
     extern int showentdescs, simpleitems;
     extern vector<extentity *> ents;
-    extern int lastuse(int type);
     extern bool execitem(int n, dynent *d, vec &pos, float dist);
     extern bool collateitems(dynent *d, vec &pos, float radius, vector<actitem> &actitems);
     extern void checkitems(dynent *d);

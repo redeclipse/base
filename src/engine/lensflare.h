@@ -109,8 +109,7 @@ struct flarerenderer : partrenderer
         if(flarelights)
         {
             const vector<extentity *> &ents = entities::getents();
-            int numents = entities::lastent(ET_SUNLIGHT);
-            loopi(numents)
+            loopenti(ET_SUNLIGHT)
             {
                 extentity &e = *ents[i];
                 bool sun = false, project = false;

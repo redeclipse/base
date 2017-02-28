@@ -21,7 +21,10 @@ namespace entities
     extern void deleteent(extentity *e);
     extern void clearents();
     extern vector<extentity *> &getents();
+    extern int firstent(int type);
+    extern int firstuse(int type);
     extern int lastent(int type);
+    extern int lastuse(int type);
     extern void drawparticles();
 }
 

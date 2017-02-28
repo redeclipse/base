@@ -2,7 +2,8 @@
 namespace entities
 {
     vector<extentity *> ents;
-    int lastenttype[MAXENTTYPES], lastusetype[EU_MAX], numactors = 0, lastroutenode = -1, lastroutefloor = -1, lastroutetime = 0;
+    int firstenttype[MAXENTTYPES], firstusetype[EU_MAX], lastenttype[MAXENTTYPES], lastusetype[EU_MAX],
+        numactors = 0, lastroutenode = -1, lastroutefloor = -1, lastroutetime = 0;
     vector<int> airnodes;
 
     VAR(IDF_PERSIST, showlighting, 0, 0, 1);
@@ -33,6 +34,8 @@ namespace entities
     VAR(0, routemaxdist, 0, 64, VAR_MAX);
 
     vector<extentity *> &getents() { return ents; }
+    int firstent(int type) { return type >= 0 && type < MAXENTTYPES ? clamp(firstenttype[type], 0, ents.length()) : 0; }
+    int firstuse(int type) { return type >= 0 && type < MAXENTTYPES ? clamp(firstusetype[type], 0, ents.length()) : 0; }
     int lastent(int type) { return type >= 0 && type < MAXENTTYPES ? clamp(lastenttype[type], 0, ents.length()) : 0; }
     int lastuse(int type) { return type >= 0 && type < MAXENTTYPES ? clamp(lastusetype[type], 0, ents.length()) : 0; }
 
@@ -604,7 +607,7 @@ namespace entities
 
     void runtriggers(int n, gameent *d)
     {
-        loopi(lastent(TRIGGER)) if(ents[i]->type == TRIGGER && ents[i]->attrs[0] == n && ents[i]->attrs[2] == TA_MANUAL) runtrigger(i, d, false);
+        loopenti(TRIGGER) if(ents[i]->type == TRIGGER && ents[i]->attrs[0] == n && ents[i]->attrs[2] == TA_MANUAL) runtrigger(i, d, false);
     }
     ICOMMAND(0, exectrigger, "i", (int *n), if(identflags&IDF_WORLD) runtriggers(*n, trigger ? trigger : game::player1));
 
@@ -946,6 +949,8 @@ namespace entities
     void clearents()
     {
         while(ents.length()) deleteent(ents.pop());
+        memset(firstenttype, 0, sizeof(firstenttype));
+        memset(firstusetype, 0, sizeof(firstusetype));
         memset(lastenttype, 0, sizeof(lastenttype));
         memset(lastusetype, 0, sizeof(lastusetype));
     }
@@ -1137,8 +1142,9 @@ namespace entities
             gameentity &e = *(gameentity *)ents[index];
             if(e.type == TRIGGER && !cantrigger(index)) return;
             bool commit = false;
-            int numents = max(lastent(MAPMODEL), max(lastent(LIGHTFX), max(lastent(PARTICLES), lastent(MAPSOUND))));
-            loopi(numents) if(ents[i]->links.find(index) >= 0)
+            int frstent = min(firstent(MAPMODEL), min(firstent(LIGHTFX), min(firstent(PARTICLES), firstent(MAPSOUND)))),
+                flstent = max(lastent(MAPMODEL), max(lastent(LIGHTFX), max(lastent(PARTICLES), lastent(MAPSOUND))));
+            for(int i = frstent; i < flstent; ++i) if(ents[i]->links.find(index) >= 0)
             {
                 gameentity &f = *(gameentity *)ents[i];
                 if(ents.inrange(ignore) && ents[ignore]->links.find(index) >= 0) continue;
@@ -1224,14 +1230,14 @@ namespace entities
                 {
                     case 0:
                         if(m_play(game::gamemode) && m_team(game::gamemode, game::mutators))
-                            loopi(lastent(PLAYERSTART)) if(ents[i]->type == PLAYERSTART && ents[i]->attrs[0] == d->team && m_check(ents[i]->attrs[3], ents[i]->attrs[4], game::gamemode, game::mutators))
+                            loopenti(PLAYERSTART) if(ents[i]->type == PLAYERSTART && ents[i]->attrs[0] == d->team && m_check(ents[i]->attrs[3], ents[i]->attrs[4], game::gamemode, game::mutators))
                                 spawns.add(i);
                         break;
                     case 1: case 2:
-                        loopi(lastent(PLAYERSTART)) if(ents[i]->type == PLAYERSTART && (k == 2 || m_check(ents[i]->attrs[3], ents[i]->attrs[4], game::gamemode, game::mutators))) spawns.add(i);
+                        loopenti(PLAYERSTART) if(ents[i]->type == PLAYERSTART && (k == 2 || m_check(ents[i]->attrs[3], ents[i]->attrs[4], game::gamemode, game::mutators))) spawns.add(i);
                         break;
                     case 3:
-                        loopi(lastent(WEAPON)) if(ents[i]->type == WEAPON && m_check(ents[i]->attrs[2], ents[i]->attrs[3], game::gamemode, game::mutators)) spawns.add(i);
+                        loopenti(PLAYERSTART) if(ents[i]->type == WEAPON && m_check(ents[i]->attrs[2], ents[i]->attrs[3], game::gamemode, game::mutators)) spawns.add(i);
                         break;
                     default: break;
                 }
@@ -1260,8 +1266,10 @@ namespace entities
             client::addmsg(N_EDITENT, "ri5iv", i, (int)(e.o.x*DMF), (int)(e.o.y*DMF), (int)(e.o.z*DMF), e.type, e.attrs.length(), e.attrs.length(), e.attrs.getbuf()); // FIXME
         if(e.type < MAXENTTYPES)
         {
-            lastenttype[e.type] = max(lastenttype[e.type], i+1);
-            lastusetype[enttype[e.type].usetype] = max(lastusetype[enttype[e.type].usetype], i+1);
+            firstenttype[e.type] = min(firstenttype[e.type], i);
+            firstusetype[enttype[e.type].usetype] = min(firstusetype[enttype[e.type].usetype], i);
+            lastenttype[e.type] = max(lastenttype[e.type], i);
+            lastusetype[enttype[e.type].usetype] = max(lastusetype[enttype[e.type].usetype], i);
         }
     }
 
@@ -1949,6 +1957,8 @@ namespace entities
                 default: break;
             }
         }
+        memset(firstenttype, 0, sizeof(firstenttype));
+        memset(firstusetype, 0, sizeof(firstusetype));
         memset(lastenttype, 0, sizeof(lastenttype));
         memset(lastusetype, 0, sizeof(lastusetype));
         if(m_onslaught(game::gamemode, game::mutators) && !numactors)
@@ -1994,8 +2004,10 @@ namespace entities
             if(mtype == MAP_MAPZ && gver <= 221 && (e.type == ROUTE || e.type == UNUSEDENT)) e.type = NOTUSED;
             if(e.type < MAXENTTYPES)
             {
-                lastenttype[e.type] = max(lastenttype[e.type], i+1);
-                lastusetype[enttype[e.type].usetype] = max(lastusetype[enttype[e.type].usetype], i+1);
+                firstenttype[e.type] = min(firstenttype[e.type], i);
+                firstusetype[enttype[e.type].usetype] = min(firstusetype[enttype[e.type].usetype], i);
+                lastenttype[e.type] = max(lastenttype[e.type], i);
+                lastusetype[enttype[e.type].usetype] = max(lastusetype[enttype[e.type].usetype], i);
             }
             if(enttype[e.type].usetype == EU_ITEM || e.type == TRIGGER)
             {
@@ -2187,7 +2199,7 @@ namespace entities
             if(ents.inrange(enthover) && islightable(ents[enthover]))
                 renderfocus(enthover, renderentlight(e));
         }
-        loopi(lastent(LIGHTFX)) if(ents[i]->type == LIGHTFX && ents[i]->attrs[0] != LFX_SPOTLIGHT)
+        loopenti(LIGHTFX) if(ents[i]->type == LIGHTFX && ents[i]->attrs[0] != LFX_SPOTLIGHT)
         {
             if(ents[i]->spawned() || ents[i]->lastemit)
             {
@@ -2207,7 +2219,7 @@ namespace entities
 
     void update()
     {
-        loopi(lastent(MAPSOUND))
+        loopenti(MAPSOUND)
         {
             gameentity &e = *(gameentity *)ents[i];
             if(e.type == MAPSOUND && e.links.empty() && mapsounds.inrange(e.attrs[0]) && !issound(e.schan))
@@ -2228,7 +2240,7 @@ namespace entities
                     if(!ents.inrange(curnode) || ents[curnode]->o.dist(o) >= droproutedist)
                     {
                         curnode = -1;
-                        loopi(lastent(ROUTE)) if(ents[i]->type == ROUTE && ents[i]->attrs[0] == routeid)
+                        loopenti(ROUTE) if(ents[i]->type == ROUTE && ents[i]->attrs[0] == routeid)
                         {
                             float dist = ents[i]->o.dist(o);
                             if(dist < droproutedist && (!ents.inrange(curnode) || dist < ents[curnode]->o.dist(o)))
@@ -2248,7 +2260,9 @@ namespace entities
                             attrs[5] |= (1<<i);
                         int n = newentity(o, int(ROUTE), attrs);
                         if(ents.inrange(lastroutenode)) ents[lastroutenode]->links.add(n);
-                        curnode = lastenttype[ROUTE] = n;
+                        curnode = n;
+                        firstenttype[ROUTE] = min(firstenttype[ROUTE], n);
+                        lastenttype[ROUTE] = max(lastenttype[ROUTE], n);
                         if(game::player1->airmillis) airnodes.add(n);
                     }
                     if(!game::player1->airmillis && !airnodes.empty()) airnodes.setsize(0);
@@ -2272,8 +2286,9 @@ namespace entities
             renderfocus(i, renderentshow(e, i, game::player1->state == CS_EDITING ? ((entgroup.find(i) >= 0 || enthover == i) ? 1 : 2) : 3));
         if(!drawtex)
         {
-            int numents = m_edit(game::gamemode) ? ents.length() : lastuse(EU_ITEM);
-            loopi(numents)
+            int frstent = m_edit(game::gamemode) ? 0 : firstuse(EU_ITEM),
+                flstent = m_edit(game::gamemode) ? ents.length() : lastuse(EU_ITEM);
+            for(int i = frstent; i < flstent; i++)
             {
                 gameentity &e = *(gameentity *)ents[i];
                 if(e.type <= NOTUSED || e.type >= MAXENTTYPES || (enttype[e.type].usetype == EU_ITEM && simpleitems)) continue;
@@ -2464,10 +2479,15 @@ namespace entities
     void drawparticles()
     {
         float maxdist = float(maxparticledistance)*float(maxparticledistance);
-        int numents = m_edit(game::gamemode) ? ents.length() : max(lastuse(EU_ITEM), max(lastent(PARTICLES), lastent(TELEPORT)));
+        int frstent = m_edit(game::gamemode) ? ents.length() : min(firstuse(EU_ITEM), min(firstent(PARTICLES), firstent(TELEPORT))),
+            flstent = m_edit(game::gamemode) ? ents.length() : max(lastuse(EU_ITEM), max(lastent(PARTICLES), lastent(TELEPORT)));
         bool hasroute = (m_edit(game::gamemode) || m_race(game::gamemode)) && routeid >= 0;
-        if(hasroute) numents = max(numents, lastent(ROUTE));
-        loopi(numents)
+        if(hasroute)
+        {
+            frstent = min(frstent, firstent(ROUTE));
+            flstent = max(flstent, lastent(ROUTE));
+        }
+        for(int i = frstent; i < flstent; ++i)
         {
             gameentity &e = *(gameentity *)ents[i];
             if(e.type == NOTUSED || e.attrs.empty()) continue;

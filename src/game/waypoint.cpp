@@ -631,7 +631,7 @@ namespace ai
     {
         if(o.dist(v) > CLOSEDIST)
         {
-            loopi(entities::lastent(TELEPORT)) if(entities::ents[i]->type == TELEPORT)
+            loopenti(TELEPORT) if(entities::ents[i]->type == TELEPORT)
             {
                 gameentity &e = *(gameentity *)entities::ents[i];
                 if(o.dist(e.o) < (e.attrs[3] ? e.attrs[3] : enttype[e.type].radius)+CLOSEDIST)

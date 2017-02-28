@@ -1903,7 +1903,7 @@ namespace hud
         }
         else
         {
-            loopi(entities::lastuse(EU_ITEM))
+            loopusei(EU_ITEM)
             {
                 gameentity &e = *(gameentity *)entities::ents[i];
                 drawentblip(w, h, blend, i, e.o, e.type, e.attrs, e.spawned(), e.lastspawn, false);

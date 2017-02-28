@@ -496,7 +496,7 @@ namespace ai
     {
         vec pos = d->feetpos();
         int sweap = m_weapon(d->actortype, game::gamemode, game::mutators);
-        loopj(entities::lastuse(EU_ITEM))
+        loopusej(EU_ITEM)
         {
             gameentity &e = *(gameentity *)entities::ents[j];
             if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON) continue;
@@ -1024,7 +1024,7 @@ namespace ai
             d->o = old;
             if(jump)
             {
-                loopi(entities::lastent(PUSHER)) if(entities::ents[i]->type == PUSHER)
+                loopenti(PUSHER) if(entities::ents[i]->type == PUSHER)
                 {
                     gameentity &e = *(gameentity *)entities::ents[i];
                     float radius = (e.attrs[3] ? e.attrs[3] : enttype[e.type].radius)*1.5f; radius *= radius;
@@ -1488,7 +1488,7 @@ namespace ai
                 if(expl > 0) obstacles.avoidnear(p, p->o.z + expl + 1, p->o, guessradius + expl + 1);
             }
         }
-        loopi(entities::lastent(MAPMODEL)) if(entities::ents[i]->type == MAPMODEL && !entities::ents[i]->spawned())
+        loopenti(MAPMODEL) if(entities::ents[i]->type == MAPMODEL && !entities::ents[i]->spawned())
         {
             gameentity &e = *(gameentity *)entities::ents[i];
             mapmodelinfo *mmi = getmminfo(e.attrs[0]);

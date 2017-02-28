@@ -290,4 +290,11 @@ struct dynent : physent                         // animated characters, or chara
     }
 };
 
-
+#define loopent(v,m) for(int v = entities::firstent(m); v < entities::lastent(m); ++v)
+#define loopenti(m) loopent(i,m)
+#define loopentj(m) loopent(j,m)
+#define loopentk(m) loopent(k,m)
+#define loopuse(v,m) for(int v = entities::firstuse(m); v < entities::lastuse(m); ++v)
+#define loopusei(m) loopuse(i,m)
+#define loopusej(m) loopuse(j,m)
+#define loopusek(m) loopuse(k,m)
