@@ -3461,27 +3461,41 @@ namespace UI
 
         void draw(float sx, float sy)
         {
-            if(tex != notexture)
+            Radar *r = NULL;
+            for(Object *o = parent; o != NULL; o = o->parent)
             {
-                Radar *r = NULL;
-                for(Object *o = parent; o != NULL; o = o->parent)
+                if(o->isradar())
                 {
-                    if(o->isradar())
-                    {
-                        r = (Radar *)o;
-                        break;
-                    }
-                    if(o->iswindow()) break;
+                    r = (Radar *)o;
+                    break;
                 }
-                if(r)
-                {
-                    float rw = r->w*0.5f, rh = r->h*0.5f;
-                    bindtex();
-                    quads(sx+(blipx*(rw-(rw*r->border))*clamp(r->offset+(clamp(dist/max(r->dist, 1.f), 0.f, 1.f)-r->offset), 0.f, 1.f)),
-                          sy+(blipy*(rh-(rh*r->border))*clamp(r->offset+(clamp(dist/max(r->dist, 1.f), 0.f, 1.f)-r->offset), 0.f, 1.f)), w, h);
-                }
+                if(o->iswindow()) break;
             }
-            Object::draw(sx, sy);
+            if(r)
+            {
+                float rw = r->w*0.5f, rh = r->h*0.5f,
+                      rx = sx+(blipx*(rw-(rw*r->border))*clamp(r->offset+(clamp(dist/max(r->dist, 1.f), 0.f, 1.f)-r->offset), 0.f, 1.f)),
+                      ry = sy+(blipy*(rh-(rh*r->border))*clamp(r->offset+(clamp(dist/max(r->dist, 1.f), 0.f, 1.f)-r->offset), 0.f, 1.f));
+                switch(adjust&ALIGN_HMASK)
+                {
+                    case ALIGN_LEFT:    rx += w*0.5f; break;
+                    case ALIGN_HCENTER: break;
+                    case ALIGN_RIGHT:   rx -= w*0.5f; break;
+                }
+
+                switch(adjust&ALIGN_VMASK)
+                {
+                    case ALIGN_TOP:     ry += h*0.5f; break;
+                    case ALIGN_VCENTER: break;
+                    case ALIGN_BOTTOM:  ry -= h*0.5f; break;
+                }
+                if(tex != notexture)
+                {
+                    bindtex();
+                    quads(rx, ry, w, h);
+                }
+                Object::draw(rx, ry); // don't descend unless we process the blip
+            }
         }
     };
 
