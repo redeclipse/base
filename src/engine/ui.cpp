@@ -537,6 +537,7 @@ namespace UI
         virtual bool isimage() const { return false; }
         virtual bool iseditor() const { return false; }
         virtual bool isclipper() const { return false; }
+        virtual bool isradar() const { return false; }
 
         Object *find(const char *name, bool recurse = true, const Object *exclude = NULL) const
         {
@@ -3344,10 +3345,9 @@ namespace UI
     struct MiniMap : TargetColor
     {
         Texture *tex;
-        int dist;
-        float border;
+        float dist, border;
 
-        void setup(Texture *tex_, const Color &color_, int dist_ = 0.f, float border_ = 0.05f, float minw_ = 0, float minh_ = 0)
+        void setup(Texture *tex_, const Color &color_, float dist_ = 0, float border_ = 0.05f, float minw_ = 0, float minh_ = 0)
         {
             TargetColor::setup(color_, minw_, minh_, SOLID, VERTICAL);
             colors.add(Color(colourwhite));
@@ -3356,7 +3356,7 @@ namespace UI
             border = border_;
         }
 
-        void setup(Texture *tex_, const Color &color_, const Color &color2_, int dist_ = 0.f, float border_ = 0.05f, float minw_ = 0, float minh_ = 0)
+        void setup(Texture *tex_, const Color &color_, const Color &color2_, float dist_ = 0, float border_ = 0.05f, float minw_ = 0, float minh_ = 0)
         {
             TargetColor::setup(color_, minw_, minh_, SOLID, VERTICAL);
             colors.add(color2_); // minimap version
@@ -3381,7 +3381,7 @@ namespace UI
             {
                 vec pos = vec(camera1->o).sub(minimapcenter).mul(minimapscale).add(0.5f), dir(camera1->yaw*RAD, 0.f);
                 int limit = hud::radarlimit();
-                float scale = min(dist > 0 ? dist : getworldsize(), limit > 0 ? limit : getworldsize()),
+                float scale = min(dist > 0 ? dist : float(getworldsize()), limit > 0 ? limit : float(getworldsize())),
                       qw = w*0.5f*border, qh = h*0.5f*border, rw = w*0.5f-qw, rh = h*0.5f-qh;
                 colors[1].init();
                 gle::defvertex(2);
@@ -3408,6 +3408,79 @@ namespace UI
                 gle::end();
             }
 
+            Object::draw(sx, sy);
+        }
+    };
+
+    struct Radar : Target
+    {
+        float dist, offset, border;
+
+        void setup(float dist_ = 1, float offset_ = 0, float border_ = 0, float minw_ = 0, float minh_ = 0)
+        {
+            Target::setup(minw_, minh_);
+            dist = dist_;
+            offset = clamp(offset_, 0.f, 1.f);
+            border = clamp(border_, 0.f, 1.f);
+        }
+        bool isradar() const { return true; }
+
+        static const char *typestr() { return "#Radar"; }
+        const char *gettype() const { return typestr(); }
+
+        bool target(float cx, float cy)
+        {
+            return true;
+        }
+
+        void draw(float sx, float sy)
+        {
+            Object::draw(sx, sy);
+        }
+    };
+
+    struct RadarBlip : Image
+    {
+        float blipx, blipy, dist;
+
+        void setup(Texture *tex_, const Color &color_, float blipx_ = 0, float blipy_ = 0, float dist_ = 0, float minw_ = 0, float minh_ = 0)
+        {
+            Image::setup(tex_, color_, true, minw_, minh_);
+            blipx = blipx_;
+            blipy = blipy_;
+            dist = dist_;
+        }
+
+        static const char *typestr() { return "#RadarBlip"; }
+        const char *gettype() const { return typestr(); }
+
+        bool target(float cx, float cy)
+        {
+            return true;
+        }
+
+        void draw(float sx, float sy)
+        {
+            if(tex != notexture)
+            {
+                Radar *r = NULL;
+                for(Object *o = parent; o != NULL; o = o->parent)
+                {
+                    if(o->isradar())
+                    {
+                        r = (Radar *)o;
+                        break;
+                    }
+                    if(o->iswindow()) break;
+                }
+                if(r)
+                {
+                    float rw = r->w*0.5f, rh = r->h*0.5f;
+                    bindtex();
+                    quads(sx+(blipx*(rw-(rw*r->border))*clamp(r->offset+(clamp(dist/max(r->dist, 1.f), 0.f, 1.f)-r->offset), 0.f, 1.f)),
+                          sy+(blipy*(rh-(rh*r->border))*clamp(r->offset+(clamp(dist/max(r->dist, 1.f), 0.f, 1.f)-r->offset), 0.f, 1.f)), w, h);
+                }
+            }
             Object::draw(sx, sy);
         }
     };
@@ -4032,11 +4105,17 @@ namespace UI
     ICOMMAND(0, uivslotview, "iffe", (int *index, float *minw, float *minh, uint *children),
         BUILD(VSlotViewer, o, o->setup(*index, *minw*uiscale, *minh*uiscale), children));
 
-    ICOMMAND(0, uiminimap, "siifffe", (char *texname, int *c, int *dist, float *border, float *minw, float *minh, uint *children),
+    ICOMMAND(0, uiminimap, "siffffe", (char *texname, int *c, float *dist, float *border, float *minw, float *minh, uint *children),
         BUILD(MiniMap, o, o->setup(textureload(texname, 3, true, false), Color(*c), *dist, *border, *minw*uiscale, *minh*uiscale), children));
 
-    ICOMMAND(0, uiminimapcolour, "siiifffe", (char *texname, int *c, int *c2, int *dist, float *border, float *minw, float *minh, uint *children),
+    ICOMMAND(0, uiminimapcolour, "siiffffe", (char *texname, int *c, int *c2, float *dist, float *border, float *minw, float *minh, uint *children),
         BUILD(MiniMap, o, o->setup(textureload(texname, 3, true, false), Color(*c), Color(*c2), *dist, *border, *minw*uiscale, *minh*uiscale), children));
+
+    ICOMMAND(0, uiradar, "fffffe", (float *dist, float *offset, float *border, float *minw, float *minh, uint *children),
+        BUILD(Radar, o, o->setup(*dist, *offset, *border, *minw*uiscale, *minh*uiscale), children));
+
+    ICOMMAND(0, uiradarblip, "sifffffe", (char *texname, int *c, float *x, float *y, float *dist, float *minw, float *minh, uint *children),
+        BUILD(RadarBlip, o, o->setup(textureload(texname, 3, true, false), Color(*c), *x, *y, *dist, *minw*uiscale, *minh*uiscale), children));
 
     bool hasinput()
     {

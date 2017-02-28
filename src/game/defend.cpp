@@ -27,7 +27,7 @@ namespace defend
         vec dir = vec(view ? st.flags[n].o : st.flags[n].above).sub(camera1->o).rotate_around_z(-camera1->yaw*RAD).normalize();
         float yaw = -atan2(dir.x, dir.y)/RAD, x = sinf(RAD*yaw), y = -cosf(RAD*yaw);
         defformatstring(str, "%f %f", x, y);
-        stringret(str);
+        stringret(newstring(str));
     }
     ICOMMAND(0, getdefendradarpos, "ib", (int *n, int *v), if(st.flags.inrange(*n)) getdefendradarpos(*n, *v!=0));
 

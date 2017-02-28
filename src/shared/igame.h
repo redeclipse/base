@@ -57,8 +57,9 @@ namespace client
 namespace hud
 {
     extern char *progresstex, *progringtex;
-    extern int radarrange();
-    extern int radarlimit();
+    extern float radarrange();
+    extern float radarlimit(float dist = -1);
+    extern bool radarlimited(float dist);
     extern bool hasinput(bool pass = false, bool focus = true);
     extern bool textinput(const char *str, int len);
     extern bool keypress(int code, bool isdown);

@@ -320,7 +320,7 @@ namespace hud
     FVAR(IDF_PERSIST, radaritemsize, 0, 0.6f, 1000);
     FVAR(IDF_PERSIST, radarsize, 0, 0.05f, 1000);
     FVAR(IDF_PERSIST, radaroffset, 0, 0.07f, 1000);
-    VAR(IDF_PERSIST, radardist, 0, 750, VAR_MAX); // 0 = use world size
+    FVAR(IDF_PERSIST, radardist, 0, 750, FVAR_MAX); // 0 = use world size
     VAR(IDF_PERSIST, radaritems, 0, 2, 2);
     VAR(IDF_PERSIST, radaritemspawn, 0, 1, 1);
     VAR(IDF_PERSIST, radaritemtime, 0, 5000, VAR_MAX);
@@ -375,7 +375,7 @@ namespace hud
 
     VAR(IDF_PERSIST, showeditradar, 0, 1, 1);
     VAR(IDF_PERSIST, editradarstyle, 0, 2, 3); // 0 = compass-sectional, 1 = compass-distance, 2 = screen-space, 3 = right-corner-positional
-    VAR(IDF_PERSIST, editradardist, 0, 0, VAR_MAX); // 0 = use world size
+    FVAR(IDF_PERSIST, editradardist, 0, 0, FVAR_MAX); // 0 = use world size
 
     VAR(IDF_PERSIST, motionblurfx, 0, 1, 2); // 0 = off, 1 = on, 2 = override
     FVAR(IDF_PERSIST, motionblurmin, 0, 0.0f, 1); // minimum
@@ -1627,15 +1627,17 @@ namespace hud
         return radarstyle;
     }
 
-    int radarrange()
+    float radarrange()
     {
-        if(game::focus->state == CS_EDITING) return editradardist ? editradardist : getworldsize();
-        int dist = radardist ? radardist : getworldsize();
-        if(radardistlimit) dist = min(radardistlimit, dist);
+        if(game::focus->state == CS_EDITING) return editradardist > 0 ? editradardist : float(getworldsize());
+        float dist = radardist > 0 ? radardist : float(getworldsize());
+        if(radardistlimit > 0) dist = min(radardistlimit, dist);
         return dist;
     }
+    ICOMMAND(0, getradarrange, "", (), floatret(radarrange()));
 
-    int radarlimit() { return radardistlimit; }
+    float radarlimit(float dist) { return dist >= 0 && radardistlimit > 0 ? clamp(dist, 0.f, radardistlimit) : radardistlimit; }
+    bool radarlimited(float dist) { return radardistlimit > 0 && dist > radardistlimit; }
 
     void drawblip(const char *tex, float area, int w, int h, float s, float blend, int style, const vec &pos, const vec &colour, const char *font, const char *text, ...)
     {
@@ -1651,7 +1653,7 @@ namespace hud
             else return; // can't render things we can't point at
         }
         vec dir = vec(pos).sub(camera1->o);
-        float dist = clamp(dir.magnitude()/float(radarrange()), 0.f, 1.f);
+        float dist = clamp(dir.magnitude()/radarrange(), 0.f, 1.f);
         dir.rotate_around_z(-camera1->yaw*RAD).normalize();
         float yaw = -atan2(dir.x, dir.y)/RAD, x = sinf(RAD*yaw), y = -cosf(RAD*yaw), size = max(w, h)/2,
               ts = size*radarsize, tp = ts*s, tq = tp*0.5f;
@@ -1802,7 +1804,7 @@ namespace hud
             }
             colour[1] = vec::hexcolor(game::getcolour(d, game::playerovertone, game::playerovertonelevel));
             const char *tex = isdominated ? dominatedtex : (killer || self ? arrowtex : playerbliptex);
-            float fade = (force || killer || self || dominated ? 1.f : clamp(1.f-(dist/float(radarrange())), isdominated ? 0.25f : 0.f, 1.f))*blend, size = killer || self ? 1.5f : (isdominated ? 1.25f : 1.f);
+            float fade = (force || killer || self || dominated ? 1.f : clamp(1.f-(dist/radarrange()), isdominated ? 0.25f : 0.f, 1.f))*blend, size = killer || self ? 1.5f : (isdominated ? 1.25f : 1.f);
             if(!self && (d->state == CS_DEAD || d->state == CS_WAITING))
             {
                 int millis = d->lastdeath ? lastmillis-d->lastdeath : 0;
@@ -1857,7 +1859,7 @@ namespace hud
             }
             const char *tex = bliptex;
             vec colour(1, 1, 1);
-            float fade = insel ? 1.f : clamp(1.f-(dist/float(radarrange())), 0.1f, 1.f), size = radarblipsize;
+            float fade = insel ? 1.f : clamp(1.f-(dist/radarrange()), 0.1f, 1.f), size = radarblipsize;
             if(type == WEAPON)
             {
                 int attr1 = w_attr(game::gamemode, game::mutators, type, attr[0], m_weapon(game::focus->actortype, game::gamemode, game::mutators));

@@ -702,10 +702,8 @@ namespace client
     ICOMMAND(0, getlastclientnum, "", (), getlastclientnum());
 
     #define LOOPCLIENTS(name,op,lp) \
-        ICOMMAND(0, loopclients##name, "siire", (char *who, int *count, int *skip, ident *id, uint *body), \
+        ICOMMAND(0, loopclients##name, "iire", (int *count, int *skip, ident *id, uint *body), \
         { \
-            gameent *d = game::getclient(parsewho(who)); \
-            if(!d) return; \
             loopstart(id, stack); \
             int amt = 1; \
             loopv(game::players) if(game::players[i]) amt++; \
@@ -793,10 +791,12 @@ namespace client
     CLCOMMAND(radardist, floatret(d ? clamp(vec(d->o).sub(camera1->o).magnitude()/float(hud::radarrange()), 0.f, 1.f) : 0.f));
     void getradarpos(gameent *d)
     {
-        vec dir = vec(d->o).sub(camera1->o).rotate_around_z(-camera1->yaw*RAD).normalize();
+        vec dir = vec(d->o).sub(camera1->o);
+        if(hud::radarlimited(dir.magnitude())) return;
+        dir.rotate_around_z(-camera1->yaw*RAD).normalize();
         float yaw = -atan2(dir.x, dir.y)/RAD, x = sinf(RAD*yaw), y = -cosf(RAD*yaw);
         defformatstring(str, "%f %f", x, y);
-        stringret(str);
+        stringret(newstring(str));
     }
     CLCOMMAND(radarpos,
     {

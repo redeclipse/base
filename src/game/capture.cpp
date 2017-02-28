@@ -18,7 +18,7 @@ namespace capture
         vec dir = vec(st.flags[n].pos(view)).sub(camera1->o).rotate_around_z(-camera1->yaw*RAD).normalize();
         float yaw = -atan2(dir.x, dir.y)/RAD, x = sinf(RAD*yaw), y = -cosf(RAD*yaw);
         defformatstring(str, "%f %f", x, y);
-        stringret(str);
+        stringret(newstring(str));
     }
     ICOMMAND(0, getcaptureradarpos, "ib", (int *n, int *v), if(st.flags.inrange(*n)) getcaptureradarpos(*n, *v!=0));
 
