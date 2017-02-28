@@ -12,6 +12,14 @@ namespace bomber
     ICOMMAND(0, getbombertarget, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].target : -1));
     ICOMMAND(0, getbomberowner, "i", (int *n), intret(st.flags.inrange(*n) && st.flags[*n].owner ? st.flags[*n].owner->clientnum : -1));
     ICOMMAND(0, getbomberlastowner, "i", (int *n), intret(st.flags.inrange(*n) && st.flags[*n].lastowner ? st.flags[*n].lastowner->clientnum : -1));
+    void getbomberradarpos(int n, bool view)
+    {
+        vec dir = vec(st.flags[n].pos(view)).sub(camera1->o).rotate_around_z(-camera1->yaw*RAD).normalize();
+        float yaw = -atan2(dir.x, dir.y)/RAD, x = sinf(RAD*yaw), y = -cosf(RAD*yaw);
+        defformatstring(str, "%f %f", x, y);
+        stringret(str);
+    }
+    ICOMMAND(0, getbomberradarpos, "ib", (int *n, int *v), if(st.flags.inrange(*n)) getbomberradarpos(*n, *v!=0));
 
     #define LOOPBOMBER(name,op) \
         ICOMMAND(0, loopbomber##name, "iiire", (int *base, int *count, int *skip, ident *id, uint *body), \

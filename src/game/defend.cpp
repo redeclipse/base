@@ -22,6 +22,14 @@ namespace defend
     ICOMMAND(0, getdefendkinship, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].kinship : -1));
     ICOMMAND(0, getdefendinfo, "i", (int *n), result(st.flags.inrange(*n) ? st.flags[*n].info : ""));
     ICOMMAND(0, getdefendinside, "isi", (int *n, const char *who, int *h), gameent *d = game::getclient(client::parsewho(who)); intret(d && st.flags.inrange(*n) && insideaffinity(st.flags[*n], d, *h!=0) ? 1 : 0));
+    void getdefendradarpos(int n, bool view)
+    {
+        vec dir = vec(view ? st.flags[n].o : st.flags[n].above).sub(camera1->o).rotate_around_z(-camera1->yaw*RAD).normalize();
+        float yaw = -atan2(dir.x, dir.y)/RAD, x = sinf(RAD*yaw), y = -cosf(RAD*yaw);
+        defformatstring(str, "%f %f", x, y);
+        stringret(str);
+    }
+    ICOMMAND(0, getdefendradarpos, "ib", (int *n, int *v), if(st.flags.inrange(*n)) getdefendradarpos(*n, *v!=0));
 
     #define LOOPDEFEND(name,op) \
         ICOMMAND(0, loopdefend##name, "iire", (int *count, int *skip, ident *id, uint *body), \

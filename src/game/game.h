@@ -789,7 +789,7 @@ struct clientstate
         weapreset(true);
     }
 
-    void updatetimeplayed()
+    int updatetimeplayed()
     {
         if(lasttimeplayed)
         {
@@ -798,6 +798,7 @@ struct clientstate
             lasttimeplayed = totalmillis+(secs*1000)-millis;
         }
         else lasttimeplayed = totalmillis ? totalmillis : 1;
+        return timeplayed;
     }
 
     float scoretime(bool update = true)
@@ -1613,7 +1614,6 @@ namespace client
     extern void saytext(gameent *f, gameent *t, int flags, char *text);
     extern void c2sinfo(bool force = false);
     extern bool haspriv(gameent *d, int priv = PRIV_NONE);
-    extern int parsewho(const char *arg);
 }
 
 namespace physics

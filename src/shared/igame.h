@@ -31,6 +31,8 @@ namespace entities
 namespace client
 {
     extern int getcn(physent *d);
+    extern int parseplayer(const char *arg);
+    extern int parsewho(const char *arg);
     extern int maxmsglen();
     extern void gamedisconnect(int clean);
     extern void parsepacketclient(int chan, packetbuf &p);
@@ -55,6 +57,7 @@ namespace client
 namespace hud
 {
     extern char *progresstex, *progringtex;
+    extern int radarrange();
     extern int radarlimit();
     extern bool hasinput(bool pass = false, bool focus = true);
     extern bool textinput(const char *str, int len);

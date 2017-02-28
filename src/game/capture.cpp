@@ -13,6 +13,14 @@ namespace capture
     ICOMMAND(0, getcapturedisptime, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].displaytime : -1));
     ICOMMAND(0, getcaptureowner, "i", (int *n), intret(st.flags.inrange(*n) && st.flags[*n].owner ? st.flags[*n].owner->clientnum : -1));
     ICOMMAND(0, getcapturelastowner, "i", (int *n), intret(st.flags.inrange(*n) && st.flags[*n].lastowner ? st.flags[*n].lastowner->clientnum : -1));
+    void getcaptureradarpos(int n, bool view)
+    {
+        vec dir = vec(st.flags[n].pos(view)).sub(camera1->o).rotate_around_z(-camera1->yaw*RAD).normalize();
+        float yaw = -atan2(dir.x, dir.y)/RAD, x = sinf(RAD*yaw), y = -cosf(RAD*yaw);
+        defformatstring(str, "%f %f", x, y);
+        stringret(str);
+    }
+    ICOMMAND(0, getcaptureradarpos, "ib", (int *n, int *v), if(st.flags.inrange(*n)) getcaptureradarpos(*n, *v!=0));
 
     #define LOOPCAPTURE(name,op) \
         ICOMMAND(0, loopcapture##name, "iire", (int *count, int *skip, ident *id, uint *body), \
