@@ -867,7 +867,10 @@ namespace UI
 
         bool hidetop()
         {
-            loopwindowsrev(w, { if((w->allowinput || w->windowflags&WINDOW_PASS) && !(w->state&STATE_HIDDEN)) { hide(w, i); return true; } });
+            loopwindowsrev(w,
+            {
+                if((w->allowinput || w->windowflags&WINDOW_PASS) && !(w->state&STATE_HIDDEN)) { hide(w, i); return true; }
+            });
             return false;
         }
 
@@ -882,12 +885,38 @@ namespace UI
             return hidden;
         }
 
-        bool allowinput() const { loopwindows(w, { if(w->allowinput && !(w->state&STATE_HIDDEN)) return true; }); return false; }
-        bool hasmenu(bool pass = true) const { loopwindows(w, { if(w->windowflags&WINDOW_MENU && !(w->state&STATE_HIDDEN)) return !pass || !(w->windowflags&WINDOW_PASS); }); return false; }
+        bool hasexclusive() const
+        {
+            loopwindows(w, if(w->exclusive) return true);
+            return false;
+        }
+
+        bool allowinput() const
+        {
+            bool hasexcl = hasexclusive();
+            loopwindows(w,
+            {
+                if(hasexcl && !w->exclusive) continue;
+                if(w->allowinput && !(w->state&STATE_HIDDEN)) return true;
+            });
+            return false;
+        }
+
+        bool hasmenu(bool pass = true) const
+        {
+            loopwindows(w,
+            {
+                if(w->windowflags&WINDOW_MENU && !(w->state&STATE_HIDDEN)) return !pass || !(w->windowflags&WINDOW_PASS);
+            });
+            return false;
+        }
 
         const char *topname()
         {
-            loopwindowsrev(w, { if((w->allowinput || w->windowflags&WINDOW_PASS) && !(w->state&STATE_HIDDEN)) { return w->name; } });
+            loopwindowsrev(w,
+            {
+                if((w->allowinput || w->windowflags&WINDOW_PASS) && !(w->state&STATE_HIDDEN)) { return w->name; }
+            });
             return NULL;
         }
 
@@ -896,10 +925,10 @@ namespace UI
         void draw()
         {
             if(children.empty()) return;
-            bool hasexcl = false;
+            bool hasexcl = hasexclusive();
             loopwindows(w,
             {
-                if(w->exclusive) hasexcl = true;
+                if(hasexcl && !w->exclusive) continue;
                 if(w->windowflags&WINDOW_TIP) // follows cursor
                     w->setpos((cursorx*float(screenw)/float(screenh))-(w->w*cursorx), cursory-w->h-uitipoffset);
                 else if(w->windowflags&WINDOW_POPUP && !w->overridepos)
@@ -907,7 +936,7 @@ namespace UI
             });
             loopwindows(w,
             {
-                if(hasexcl && !w->exclusive && !(w->windowflags&WINDOW_TIP)) continue;
+                if(hasexcl && !w->exclusive) continue;
                 w->draw();
             });
         }
