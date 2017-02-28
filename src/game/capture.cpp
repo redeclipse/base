@@ -6,6 +6,7 @@ namespace capture
     ICOMMAND(0, getcapturedelay, "i", (int *n), intret(capturedelay));
     ICOMMAND(0, getcapturestore, "i", (int *n), intret(capturestore));
 
+    ICOMMAND(0, getcapturenum, "", (), intret(st.flags.length()));
     ICOMMAND(0, getcaptureteam, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].team : -1));
     ICOMMAND(0, getcapturedroptime, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].droptime : -1));
     ICOMMAND(0, getcapturetaketime, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].taketime : -1));
@@ -14,19 +15,19 @@ namespace capture
     ICOMMAND(0, getcapturelastowner, "i", (int *n), intret(st.flags.inrange(*n) && st.flags[*n].lastowner ? st.flags[*n].lastowner->clientnum : -1));
 
     #define LOOPCAPTURE(name,op) \
-        ICOMMAND(0, loopcapture##name, "re", (ident *id, uint *body), \
+        ICOMMAND(0, loopcapture##name, "iire", (int *count, int *skip, ident *id, uint *body), \
         { \
             if(!m_capture(game::gamemode)) return; \
             loopstart(id, stack); \
-            op(st.flags) \
+            op(st.flags, *count, *skip) \
             { \
                 loopiter(id, stack, i); \
                 execute(body); \
             } \
             loopend(id, stack); \
         });
-    LOOPCAPTURE(,loopv);
-    LOOPCAPTURE(rev,loopvrev);
+    LOOPCAPTURE(,loopcsv);
+    LOOPCAPTURE(rev,loopcsvrev);
 
     bool carryaffinity(gameent *d)
     {

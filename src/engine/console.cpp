@@ -36,15 +36,12 @@ void conline(int type, const char *sf, int n)
     else copystring(cl.cref, sf, BIGSTRLEN);
 }
 
-#define LOOPCONLINES(name,head) \
+#define LOOPCONLINES(name,op) \
     ICOMMAND(0, loopconlines##name, "iiire", (int *type, int *count, int *skip, ident *id, uint *body), \
     { \
         if(*type < 0 || *type >= CON_MAX || conlines[*type].empty()) return; \
         loopstart(id, stack); \
-        int limit = conlines[*type].length()-1; \
-        int start = 0; \
-        int end = 0; \
-        head \
+        op(conlines[*type], *count, *skip) \
         { \
             loopiter(id, stack, i); \
             execute(body); \
@@ -52,31 +49,8 @@ void conline(int type, const char *sf, int n)
         loopend(id, stack); \
     });
 
-LOOPCONLINES(,
-    if(*count > 0)
-    {
-        start = clamp(*skip, 0, limit);
-        end = min(start+*count, limit);
-    }
-    else if(*count < 0)
-    {
-        start = clamp(limit-max(*skip, 0)+*count, 0, limit);
-        end = limit;
-    }
-    for(int i = start; i <= end; i++));
-
-LOOPCONLINES(rev,
-    if(*count > 0)
-    {
-        start = limit-clamp(*skip, 0, limit);
-        end = max(start-*count, 0);
-    }
-    else if(*count < 0)
-    {
-        start = clamp(max(*skip, 0)-*count, 0, limit);
-        end = 0;
-    }
-    for(int i = start; i >= end; i--));
+LOOPCONLINES(,loopcsv);
+LOOPCONLINES(rev,loopcsvrev);
 
 ICOMMAND(0, getconlines, "i", (int *type), intret(*type >= 0 && *type < CON_MAX ? conlines[*type].length() : 0));
 ICOMMAND(0, getconlinecref, "ib", (int *type, int *n), result(*type >= 0 && *type < CON_MAX && conlines[*type].inrange(*n) ? conlines[*type][*n].cref : ""));

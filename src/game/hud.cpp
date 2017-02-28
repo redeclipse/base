@@ -54,18 +54,18 @@ namespace hud
     static const char *enginestats[NUMSTATS] = { "wtr", "wtr%", "wvt", "wvt%", "evt", "eva", "ond", "va", "gl" "gb", "oq", "rp", "fps", "best", "worst", "ents", "entsel", "wp", "lm", "pvs", "vel", "mps" };
     ICOMMAND(0, getenginestatname, "i", (int *n), result(*n >= 0 && *n < NUMSTATS ? enginestats[*n]: ""));
     #define LOOPENGSTATS(name,op) \
-        ICOMMAND(0, loopenginestat##name, "re", (ident *id, uint *body), \
+        ICOMMAND(0, loopenginestat##name, "iire", (int *count, int *skip, ident *id, uint *body), \
         { \
             loopstart(id, stack); \
-            op(NUMSTATS) \
+            op(NUMSTATS, *count, *skip) \
             { \
                 loopiter(id, stack, i); \
                 execute(body); \
             } \
             loopend(id, stack); \
         });
-    LOOPENGSTATS(,loopi)
-    LOOPENGSTATS(rev,loopirev)
+    LOOPENGSTATS(,loopcsi)
+    LOOPENGSTATS(rev,loopcsirev)
 
     VAR(IDF_PERSIST, titlefade, 0, 1000, 10000);
     VAR(IDF_PERSIST, tvmodefade, 0, 250, VAR_MAX);

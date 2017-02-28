@@ -10,6 +10,7 @@ namespace defend
         return hasflag;
     }
 
+    ICOMMAND(0, getdefendnum, "", (), intret(st.flags.length()));
     ICOMMAND(0, getdefendowner, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].owner : -1));
     ICOMMAND(0, getdefendowners, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].owners : 0));
     ICOMMAND(0, getdefendenemy, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].enemy : -1));
@@ -23,19 +24,19 @@ namespace defend
     ICOMMAND(0, getdefendinside, "isi", (int *n, const char *who, int *h), gameent *d = game::getclient(client::parsewho(who)); intret(d && st.flags.inrange(*n) && insideaffinity(st.flags[*n], d, *h!=0) ? 1 : 0));
 
     #define LOOPDEFEND(name,op) \
-        ICOMMAND(0, loopdefend##name, "re", (ident *id, uint *body), \
+        ICOMMAND(0, loopdefend##name, "iire", (int *count, int *skip, ident *id, uint *body), \
         { \
             if(!m_defend(game::gamemode)) return; \
             loopstart(id, stack); \
-            op(st.flags) \
+            op(st.flags, *count, *skip) \
             { \
                 loopiter(id, stack, i); \
                 execute(body); \
             } \
             loopend(id, stack); \
         });
-    LOOPDEFEND(,loopv);
-    LOOPDEFEND(rev,loopvrev);
+    LOOPDEFEND(,loopcsv);
+    LOOPDEFEND(rev,loopcsvrev);
 
     void preload()
     {

@@ -603,6 +603,13 @@ struct clientstate
         return weap == weapselect || millis-weaptime[weap] < weapwait[weap] || hasweap(weap, sweap);
     }
 
+    int holdweapcount(int sweap, int millis)
+    {
+        int n = 0;
+        loopi(W_ALL) if(holdweap(i, sweap, millis)) n++;
+        return n;
+    }
+
     void addlastweap(int weap)
     {
         lastweap.add(weap);

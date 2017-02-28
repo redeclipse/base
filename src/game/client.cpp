@@ -817,21 +817,42 @@ namespace client
         intret(d && isweap(*n) && d->holdweap(*n, m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis) ? 1 : 0);
     });
 
-    #define LOOPINVENTORY(name,op) \
-        ICOMMAND(0, loopinventory##name, "sre", (char *who, ident *id, uint *body), \
+    ICOMMAND(0, getclientweapholdnum, "si", (char *who),
+    {
+        gameent *d = game::getclient(parsewho(who));
+        intret(d ? d->holdweapcount(m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis) : 0);
+    });
+
+    #define LOOPINVENTORY(name,op,lp) \
+        ICOMMAND(0, loopinventory##name, "siire", (char *who, int *count, int *skip, ident *id, uint *body), \
         { \
             gameent *d = game::getclient(parsewho(who)); \
             if(!d) return; \
             loopstart(id, stack); \
-            op(W_ALL) if(d->holdweap(i, m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis)) \
+            int amt = d->holdweapcount(m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis); \
+            op(amt, *count, *skip) \
             { \
-                loopiter(id, stack, i); \
-                execute(body); \
+                int r = -1; \
+                int n = 0; \
+                lp(W_ALL) if(d->holdweap(k, m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis)) \
+                { \
+                    if(n >= i) \
+                    { \
+                        r = k; \
+                        break; \
+                    } \
+                    n++; \
+                } \
+                if(r >= 0) \
+                { \
+                    loopiter(id, stack, r); \
+                    execute(body); \
+                } \
             } \
             loopend(id, stack); \
         });
-    LOOPINVENTORY(,loopi);
-    LOOPINVENTORY(rev,loopirev);
+    LOOPINVENTORY(,loopcsi,loopk);
+    LOOPINVENTORY(rev,loopcsirev,loopkrev);
 
     ICOMMAND(0, getclientpoints, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d ? d->points : -1));
     ICOMMAND(0, getclientfrags, "s", (char *who), gameent *d = game::getclient(parsewho(who)); intret(d ? d->frags : -1));

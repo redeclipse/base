@@ -116,11 +116,62 @@ static inline int bitscan(uint mask)
 #define loopj(m) loop(j,m)
 #define loopk(m) loop(k,m)
 #define loopl(m) loop(l,m)
+
 #define looprev(v,m) for(int v = int(m); --v >= 0;)
 #define loopirev(m) looprev(i,m)
 #define loopjrev(m) looprev(j,m)
 #define loopkrev(m) looprev(k,m)
 #define looplrev(m) looprev(l,m)
+
+#define loopcs(v,m,c,s) \
+    int lcs##v##start = 0; \
+    int lcs##v##end = 0; \
+    if(c > 0) \
+    { \
+        lcs##v##start = clamp(s, 0, m-1); \
+        lcs##v##end = clamp(lcs##v##start+c-1, 0, m-1); \
+    } \
+    else if(c < 0) \
+    { \
+        lcs##v##start = clamp(m-1-max(s, 0)+c+1, 0, m-1); \
+        lcs##v##end = clamp(m-1-max(s, 0), 0, m-1); \
+    } \
+    else \
+    { \
+        lcs##v##start = clamp(s, 0, m-1); \
+        lcs##v##end = max(m-1, 0); \
+    } \
+    for(int v = lcs##v##start; v <= lcs##v##end; v++)
+
+#define loopcsi(m,c,s) loopcs(i,m,c,s)
+#define loopcsj(m,c,s) loopcs(j,m,c,s)
+#define loopcsk(m,c,s) loopcs(k,m,c,s)
+#define loopcsl(m,c,s) loopcs(l,m,c,s)
+
+#define loopcsrev(v,m,c,s) \
+    int lcs##v##start = 0; \
+    int lcs##v##end = 0; \
+    if(c > 0) \
+    { \
+        lcs##v##start = m-1-clamp(s, 0, m-1); \
+        lcs##v##end = clamp(lcs##v##start-c+1, 0, m-1); \
+    } \
+    else if(c < 0) \
+    { \
+        lcs##v##start = clamp(max(s, 0)-c-1, 0, m-1); \
+        lcs##v##end = clamp(s, 0, m-1); \
+    } \
+    else \
+    { \
+        lcs##v##start = clamp(m-1-s, 0, m-1); \
+        lcs##v##end = 0; \
+    } \
+    for(int v = lcs##v##start; v >= lcs##v##end; v--)
+
+#define loopcsirev(m,c,s) loopcsrev(i,m,c,s)
+#define loopcsjrev(m,c,s) loopcsrev(j,m,c,s)
+#define loopcskrev(m,c,s) loopcsrev(k,m,c,s)
+#define loopcslrev(m,c,s) loopcsrev(l,m,c,s)
 
 #define DELETEP(p) if(p) { delete   p; p = 0; }
 #define DELETEA(p) if(p) { delete[] p; p = 0; }
@@ -269,6 +320,14 @@ inline char *newconcatstring(const char *s, const char *t)
 #define loopvrev(v) for(int i = (v).length()-1; i>=0; i--)
 #define loopvjrev(v) for(int j = (v).length()-1; j>=0; j--)
 #define loopvkrev(v) for(int k = (v).length()-1; k>=0; k--)
+#define loopcsv(m,c,s) loopcs(i,(m).length(),c,s)
+#define loopcsvj(m,c,s) loopcs(j,(m).length(),c,s)
+#define loopcsvk(m,c,s) loopcs(k,(m).length(),c,s)
+#define loopcsvl(m,c,s) loopcs(l,(m).length(),c,s)
+#define loopcsvrev(m,c,s) loopcsrev(i,(m).length(),c,s)
+#define loopcsvjrev(m,c,s) loopcsrev(j,(m).length(),c,s)
+#define loopcsvkrev(m,c,s) loopcsrev(k,(m).length(),c,s)
+#define loopcsvlrev(m,c,s) loopcsrev(l,(m).length(),c,s)
 
 template <class T>
 struct databuf

@@ -3,6 +3,7 @@ namespace bomber
 {
     bomberstate st;
 
+    ICOMMAND(0, getbombernum, "", (), intret(st.flags.length()));
     ICOMMAND(0, getbomberenabled, "i", (int *n), intret(st.flags.inrange(*n) && st.flags[*n].enabled ? 1 : 0));
     ICOMMAND(0, getbomberteam, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].team : -1));
     ICOMMAND(0, getbomberdroptime, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].droptime : -1));
@@ -13,11 +14,11 @@ namespace bomber
     ICOMMAND(0, getbomberlastowner, "i", (int *n), intret(st.flags.inrange(*n) && st.flags[*n].lastowner ? st.flags[*n].lastowner->clientnum : -1));
 
     #define LOOPBOMBER(name,op) \
-        ICOMMAND(0, loopbomber##name, "ire", (int *base, ident *id, uint *body), \
+        ICOMMAND(0, loopbomber##name, "iiire", (int *base, int *count, int *skip, ident *id, uint *body), \
         { \
             if(!m_bomber(game::gamemode)) return; \
             loopstart(id, stack); \
-            op(st.flags) if(st.flags[i].enabled) \
+            op(st.flags, *count, *skip) \
             { \
                 switch(*base) \
                 { \
@@ -30,8 +31,8 @@ namespace bomber
             } \
             loopend(id, stack); \
         });
-    LOOPBOMBER(,loopv);
-    LOOPBOMBER(rev,loopvrev);
+    LOOPBOMBER(,loopcsv);
+    LOOPBOMBER(rev,loopcsvrev);
 
     void killed(gameent *d, gameent *v)
     {
