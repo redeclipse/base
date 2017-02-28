@@ -701,6 +701,38 @@ namespace client
     }
     ICOMMAND(0, getlastclientnum, "", (), getlastclientnum());
 
+    #define LOOPCLIENTS(name,op,lp) \
+        ICOMMAND(0, loopclients##name, "siire", (char *who, int *count, int *skip, ident *id, uint *body), \
+        { \
+            gameent *d = game::getclient(parsewho(who)); \
+            if(!d) return; \
+            loopstart(id, stack); \
+            int amt = 1; \
+            loopv(game::players) if(game::players[i]) amt++; \
+            op(amt, *count, *skip) \
+            { \
+                int r = -1; \
+                int n = 0; \
+                lp(game::players) if(game::players[k]) \
+                { \
+                    if(n >= i) \
+                    { \
+                        r = k; \
+                        break; \
+                    } \
+                    n++; \
+                } \
+                if(r >= 0) \
+                { \
+                    loopiter(id, stack, r); \
+                    execute(body); \
+                } \
+            } \
+            loopend(id, stack); \
+        });
+    LOOPCLIENTS(,loopcsi,loopvk);
+    LOOPCLIENTS(rev,loopcsirev,loopvkrev);
+
     #define LOOPINVENTORY(name,op,lp) \
         ICOMMAND(0, loopinventory##name, "siire", (char *who, int *count, int *skip, ident *id, uint *body), \
         { \
