@@ -524,16 +524,19 @@ static float icon_width(const char *name, float scale)
 
 #define TEXTALIGN(aidx) \
 { \
-    x = 0; \
-    wrappos = -1; \
-    if(!(flags&TEXT_NO_INDENT)) \
+    if(str[aidx]) \
     { \
-        if((flags&TEXT_ALIGN) == TEXT_LEFT_JUSTIFY) x += FONTTAB; \
-        else if(!indents && ((flags&TEXT_ALIGN) == TEXT_RIGHT_JUSTIFY)) maxwidth -= FONTTAB; \
-        indents++; \
+        x = 0; \
+        wrappos = -1; \
+        if(!(flags&TEXT_NO_INDENT)) \
+        { \
+            if((flags&TEXT_ALIGN) == TEXT_LEFT_JUSTIFY) x += FONTTAB; \
+            else if(!indents && ((flags&TEXT_ALIGN) == TEXT_RIGHT_JUSTIFY)) maxwidth -= FONTTAB; \
+            indents++; \
+        } \
+        TEXTESTIMATE(aidx) \
+        y += TEXTHEIGHT; \
     } \
-    TEXTESTIMATE(aidx) \
-    y += TEXTHEIGHT; \
 }
 
 #define TEXTWIDTH \
@@ -549,9 +552,9 @@ static float icon_width(const char *name, float scale)
 #define TEXTSKELETON \
     float y = 0, x = 0, scale = curfont->scale/float(curfont->defaulth)*curtextscale; \
     int i = 0, wrappos = -1, indents = 0; \
-    TEXTESTIMATE(i) \
     for(i = 0; str[i]; i++) \
     { \
+        if(!i) TEXTESTIMATE(i) \
         int c = uchar(str[i]); \
         TEXTINDEX(i) \
         if(c == '\t') \

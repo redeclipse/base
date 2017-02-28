@@ -585,8 +585,7 @@ namespace hud
 
     void processmenu()
     {
-        if(showhud) UI::showui("hud");
-        else UI::hideui("hud");
+        UI::showui("hud");
         if(connected())
         {
             if(!UI::hasmenu() && (game::needname(game::player1) || game::wantsloadoutmenu))

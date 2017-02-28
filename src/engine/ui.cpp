@@ -634,7 +634,7 @@ namespace UI
     {
         char *name;
         uint *contents, *onshow, *onhide;
-        bool allowinput, abovehud;
+        bool allowinput, exclusive;
         int windowflags;
         float px, py, pw, ph;
         vec2 sscale, soffset;
@@ -644,7 +644,7 @@ namespace UI
             contents(compilecode(contents)),
             onshow(onshow && onshow[0] ? compilecode(onshow) : NULL),
             onhide(onhide && onhide[0] ? compilecode(onhide) : NULL),
-            allowinput(true), abovehud(false),
+            allowinput(true), exclusive(false),
             px(0), py(0), pw(0), ph(0),
             sscale(1, 1), soffset(0, 0)
         {
@@ -683,7 +683,7 @@ namespace UI
         {
             Object::setup();
             allowinput = true;
-            abovehud = false;
+            exclusive = false;
             px = py = pw = ph = 0;
         }
 
@@ -776,11 +776,6 @@ namespace UI
                 sx2 = clamp(sx2, 0, screenw);
                 sy2 = clamp(sy2, 0, screenh);
             }
-        }
-
-        float calcabovehud()
-        {
-            return 1 - (y*sscale.y + soffset.y);
         }
     };
 
@@ -901,9 +896,10 @@ namespace UI
         void draw()
         {
             if(children.empty()) return;
+            bool hasexcl = false;
             loopwindows(w,
             {
-                if(commandmillis > 0 && strcmp(w->name, "hud")) continue;
+                if(w->exclusive) hasexcl = true;
                 if(w->windowflags&WINDOW_TIP) // follows cursor
                     w->setpos((cursorx*float(screenw)/float(screenh))-(w->w*cursorx), cursory-w->h-uitipoffset);
                 else if(w->windowflags&WINDOW_POPUP && !w->overridepos)
@@ -911,16 +907,9 @@ namespace UI
             });
             loopwindows(w,
             {
-                if(commandmillis > 0 && strcmp(w->name, "hud")) continue;
+                if(hasexcl && !w->exclusive && !(w->windowflags&WINDOW_TIP)) continue;
                 w->draw();
             });
-        }
-
-        float abovehud()
-        {
-            float y = 1;
-            loopwindows(w, { if(w->abovehud && !(w->state&STATE_HIDDEN)) y = min(y, w->calcabovehud()); });
-            return y;
         }
     };
 
@@ -3402,6 +3391,7 @@ namespace UI
     });
 
     ICOMMAND(0, uiallowinput, "b", (int *val), { if(window) { if(*val >= 0) window->allowinput = *val!=0; intret(window->allowinput ? 1 : 0); } });
+    ICOMMAND(0, uiexclusive, "b", (int *val), { if(window) { if(*val >= 0) window->exclusive = *val!=0; intret(window->exclusive ? 1 : 0); } });
     ICOMMAND(0, uiwindowflags, "b", (int *val), { if(window) { if(*val >= 0) window->windowflags = clamp(*val, 0, int(WINDOW_ALL)); intret(window->windowflags); } });
 
     ICOMMAND(0, uioverridepos, "", (), { if(window) { intret(window->overridepos ? 1 : 0); } });
@@ -3912,8 +3902,6 @@ namespace UI
     ICOMMAND(0, uifont, "se", (char *name, uint *children),
         BUILD(Font, o, o->setup(name), children));
 
-    ICOMMAND(0, uiabovehud, "", (), { if(window) window->abovehud = true; });
-
     #if 0
     ICOMMAND(0, uiconsole, "ffe", (float *minw, float *minh, uint *children),
         BUILD(Console, o, o->setup(*minw, *minh), children));
@@ -4123,11 +4111,6 @@ namespace UI
         world->draw();
         popfont();
         curtextscale = oldtextscale;
-    }
-
-    float abovehud()
-    {
-        return world->abovehud();
     }
 
     editor *geteditor(const char *name, int mode, const char *init)

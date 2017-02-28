@@ -608,7 +608,6 @@ namespace UI
     extern bool hasmenu(bool pass = true);
     extern bool keypress(int code, bool isdown);
     extern bool textinput(const char *str, int len);
-    extern float abovehud();
 
     extern void setup();
     extern void update();

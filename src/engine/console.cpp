@@ -36,25 +36,49 @@ void conline(int type, const char *sf, int n)
     else copystring(cl.cref, sf, BIGSTRLEN);
 }
 
-#define LOOPCONLINES(name,op) \
+#define LOOPCONLINES(name,head) \
     ICOMMAND(0, loopconlines##name, "iiire", (int *type, int *count, int *skip, ident *id, uint *body), \
     { \
-        if(*type < 0 || *type >= CON_MAX) return; \
-        int iter[2] = {0}; \
+        if(*type < 0 || *type >= CON_MAX || conlines[*type].empty()) return; \
         loopstart(id, stack); \
-        op(conlines[*type]) \
+        int limit = conlines[*type].length()-1; \
+        int start = 0; \
+        int end = 0; \
+        head \
         { \
-            if(*skip > 0 && ++iter[1] <= *skip) continue; \
             loopiter(id, stack, i); \
             execute(body); \
-            if(*count > 0 && ++iter[0] >= *count) break; \
         } \
         loopend(id, stack); \
     });
-LOOPCONLINES(,loopv);
-LOOPCONLINES(rev,loopvrev);
 
-ICOMMAND(0, getconlines, "ib", (int *type), intret(*type >= 0 && *type < CON_MAX ? conlines[*type].length() : 0));
+LOOPCONLINES(,
+    if(*count > 0)
+    {
+        start = clamp(*skip, 0, limit);
+        end = min(start+*count, limit);
+    }
+    else if(*count < 0)
+    {
+        start = clamp(limit-max(*skip, 0)+*count, 0, limit);
+        end = limit;
+    }
+    for(int i = start; i <= end; i++));
+
+LOOPCONLINES(rev,
+    if(*count > 0)
+    {
+        start = limit-clamp(*skip, 0, limit);
+        end = max(start-*count, 0);
+    }
+    else if(*count < 0)
+    {
+        start = clamp(max(*skip, 0)-*count, 0, limit);
+        end = 0;
+    }
+    for(int i = start; i >= end; i--));
+
+ICOMMAND(0, getconlines, "i", (int *type), intret(*type >= 0 && *type < CON_MAX ? conlines[*type].length() : 0));
 ICOMMAND(0, getconlinecref, "ib", (int *type, int *n), result(*type >= 0 && *type < CON_MAX && conlines[*type].inrange(*n) ? conlines[*type][*n].cref : ""));
 ICOMMAND(0, getconlinereftime, "ib", (int *type, int *n), intret(*type >= 0 && *type < CON_MAX && conlines[*type].inrange(*n) ? conlines[*type][*n].reftime : 0));
 ICOMMAND(0, getconlineouttime, "ib", (int *type, int *n), intret(*type >= 0 && *type < CON_MAX && conlines[*type].inrange(*n) ? conlines[*type][*n].outtime : 0));
