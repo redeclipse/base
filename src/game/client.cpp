@@ -791,6 +791,7 @@ namespace client
     CLCOMMAND(posz, floatret(d ? d->o.z : 0.f));
     CLCOMMANDM(pos, "si", (char *who, int *n), floatret(d && *n >= 0 && *n < 3 ? d->o[*n] : 0.f));
     CLCOMMAND(dist, floatret(d ? vec(d->o).sub(camera1->o).magnitude() : 0.f));
+    CLCOMMANDM(velocity, "si", (char *who, int *n), floatret(d ? (*n!=0 ? vec(d->vel).add(d->falling).magnitude()*0.125f : vec(d->vel).add(d->falling).magnitude()) : 0.f));
 
     CLCOMMAND(radardist, floatret(d ? clamp(vec(d->o).sub(camera1->o).magnitude()/float(hud::radarrange()), 0.f, 1.f) : 0.f));
     void getradaryaw(gameent *d)
