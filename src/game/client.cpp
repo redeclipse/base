@@ -573,7 +573,7 @@ namespace client
     ICOMMAND(0, allowedweap, "i", (int *n), intret(isweap(*n) && m_check(W(*n, modes), W(*n, muts), game::gamemode, game::mutators) && !W(*n, disabled) ? 1 : 0));
     ICOMMAND(0, hasloadweap, "bb", (int *g, int *m), intret(m_loadout(m_game(*g) ? *g : game::gamemode, *m >= 0 ? *m : game::mutators) ? 1 : 0));
 
-    int teamname(const char *team)
+    int teamfromname(const char *team)
     {
         if(m_play(game::gamemode) && m_team(game::gamemode, game::mutators))
         {
@@ -600,7 +600,7 @@ namespace client
         {
             if(m_play(game::gamemode) && m_team(game::gamemode, game::mutators))
             {
-                int t = teamname(team);
+                int t = teamfromname(team);
                 if(isteam(game::gamemode, game::mutators, t, T_FIRST)) addmsg(N_SWITCHTEAM, "ri", t);
             }
             else conoutft(CON_DEBUG, "\frCan only change teams when actually playing in team games");
@@ -1086,7 +1086,7 @@ namespace client
             int i = parseplayer(arg1);
             if(i>=0)
             {
-                int t = teamname(arg2);
+                int t = teamfromname(arg2);
                 if(t) addmsg(N_SETTEAM, "ri2", i, t);
             }
         }
