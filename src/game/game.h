@@ -285,6 +285,19 @@ enum {
 const char *sendmaptypes[SENDMAP_MAX] = { "mpz", "cfg", "png", "txt", "wpt" };
 #else
 extern const char *sendmaptypes[SENDMAP_MAX];
+#define CLCOMMAND(name, body) \
+    ICOMMAND(0, getclient##name, "s", (char *who), \
+    { \
+        gameent *d = game::getclient(client::parsewho(who)); \
+        body; \
+    });
+
+#define CLCOMMANDM(name, fmt, args, body) \
+    ICOMMAND(0, getclient##name, fmt, args, \
+    { \
+        gameent *d = game::getclient(client::parsewho(who)); \
+        body; \
+    });
 #endif
 
 #include "gamemode.h"
@@ -1621,7 +1634,7 @@ namespace physics
     extern int smoothmove, smoothdist, physframetime, physinterp, impulsemethod, impulseaction, jumpstyle, dashstyle, crouchstyle, walkstyle, grabstyle, grabplayerstyle, kickoffstyle, kickupstyle;
     extern float floatspeed, floatcoast, impulsekick, impulserolll, kickoffangle, kickupangle;
     extern bool isghost(gameent *d, gameent *e, bool proj = false);
-    extern bool carryaffinity(gameent *d);
+    extern int carryaffinity(gameent *d);
     extern bool dropaffinity(gameent *d);
     extern bool secondaryweap(gameent *d);
     extern bool allowimpulse(physent *d, int level = 0);
@@ -1760,8 +1773,8 @@ namespace game
     extern void damaged(int weap, int flags, int damage, int health, gameent *d, gameent *v, int millis, vec &dir, vec &vel, float dist);
     extern void killed(int weap, int flags, int damage, gameent *d, gameent *v, vector<gameent*> &log, int style, int material);
     extern void timeupdate(int state, int remain);
-    extern vec rescolour(dynent *d, int c = PULSE_BURN);
-    extern int rescolint(dynent *d, int c = PULSE_BURN);
+    extern vec rescolour(dynent *d, int n = PULSE_BURN, int c = 0xFFFFFF);
+    extern int rescolint(dynent *d, int n = PULSE_BURN, int c = 0xFFFFFF);
     extern float rescale(gameent *d);
     extern float opacity(gameent *d, bool third = true);
     extern void footstep(gameent *d, int curfoot = -1);

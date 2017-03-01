@@ -768,20 +768,6 @@ namespace client
 
     ICOMMAND(0, getmodelname, "ib", (int *mdl, int *idx, int *numargs), result(*mdl >= 0 ? playertypes[*mdl%PLAYERTYPES][*idx >= 0 ? clamp(*idx, 0, 5) : 5] : ""));
 
-    #define CLCOMMAND(name, body) \
-        ICOMMAND(0, getclient##name, "s", (char *who), \
-        { \
-            gameent *d = game::getclient(parsewho(who)); \
-            body; \
-        });
-
-    #define CLCOMMANDM(name, fmt, args, body) \
-        ICOMMAND(0, getclient##name, fmt, args, \
-        { \
-            gameent *d = game::getclient(parsewho(who)); \
-            body; \
-        });
-
     CLCOMMAND(presence, intret(d ? 1 : 0));
     CLCOMMAND(yaw, floatret(d ? d->yaw : 0.f));
     CLCOMMAND(pitch, floatret(d ? d->pitch : 0.f));
@@ -869,7 +855,7 @@ namespace client
     CLCOMMAND(regen, intret(d && regentime ? d->lastregen : 0));
     CLCOMMAND(impulseregen, intret(d && game::canregenimpulse(d) && d->impulse[IM_METER] > 0 && d->lastimpulsecollect ? (lastmillis-d->lastimpulsecollect)%1000 : 0));
 
-    CLCOMMANDM(rescolour, "si", (char *who, int *n), intret(d ? game::rescolint(d, *n) : 0));
+    CLCOMMANDM(rescolour, "sib", (char *who, int *n, int *c), intret(d ? game::rescolint(d, *n, *c >= 0 ? *c : 0xFFFFFF) : 0));
     CLCOMMANDM(velocity, "si", (char *who, int *n), floatret(d ? vec(d->vel).add(d->falling).magnitude()*(*n!= 0 ? 1.f : 0.125f) : 0.f));
 
     bool haspriv(gameent *d, int priv)

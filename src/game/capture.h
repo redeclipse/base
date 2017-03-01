@@ -201,7 +201,7 @@ struct capturestate
 namespace capture
 {
     extern capturestate st;
-    extern bool carryaffinity(gameent *d);
+    extern int carryaffinity(gameent *d);
     extern bool dropaffinity(gameent *d);
     extern void sendaffinity(packetbuf &p);
     extern void parseaffinity(ucharbuf &p);

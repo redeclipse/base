@@ -144,12 +144,13 @@ namespace physics
     ICOMMAND(0, drop, "D", (int *n), doaction(AC_DROP, *n!=0));
     ICOMMAND(0, affinity, "D", (int *n), doaction(AC_AFFINITY, *n!=0));
 
-    bool carryaffinity(gameent *d)
+    int carryaffinity(gameent *d)
     {
         if(m_capture(game::gamemode)) return capture::carryaffinity(d);
         if(m_bomber(game::gamemode)) return bomber::carryaffinity(d);
-        return false;
+        return 0;
     }
+    CLCOMMAND(carryaffinity, intret(d ? carryaffinity(d) : 0));
 
     bool dropaffinity(gameent *d)
     {

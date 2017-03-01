@@ -2077,18 +2077,18 @@ namespace game
     }
     ICOMMAND(0, suicide, "",  (), { suicide(player1, 0); });
 
-    vec rescolour(dynent *d, int c)
+    vec rescolour(dynent *d, int n, int c)
     {
         size_t seed = size_t(d) + (lastmillis/50);
-        int n = detrnd(seed, 2*PULSECOLOURS), n2 = detrnd(seed + 1, 2*PULSECOLOURS);
-        return vec::hexcolor(pulsecols[c][n%PULSECOLOURS]).lerp(vec::hexcolor(pulsecols[c][n2%PULSECOLOURS]), (lastmillis%50)/50.0f);
+        int r = detrnd(seed, 2*PULSECOLOURS), r2 = detrnd(seed + 1, 2*PULSECOLOURS);
+        return vec::hexcolor(pulsecols[n][r%PULSECOLOURS]).lerp(vec::hexcolor(pulsecols[n][r2%PULSECOLOURS]), (lastmillis%50)/50.0f).mul(vec::hexcolor(c));
     }
 
-    int rescolint(dynent *d, int c)
+    int rescolint(dynent *d, int n, int c)
     {
         size_t seed = size_t(d) + (lastmillis/50);
-        int n = detrnd(seed, 2*PULSECOLOURS), n2 = detrnd(seed + 1, 2*PULSECOLOURS);
-        return vec::hexcolor(pulsecols[c][n%PULSECOLOURS]).lerp(vec::hexcolor(pulsecols[c][n2%PULSECOLOURS]), (lastmillis%50)/50.0f).tohexcolor();
+        int r = detrnd(seed, 2*PULSECOLOURS), r2 = detrnd(seed + 1, 2*PULSECOLOURS);
+        return vec::hexcolor(pulsecols[n][r%PULSECOLOURS]).lerp(vec::hexcolor(pulsecols[n][r2%PULSECOLOURS]), (lastmillis%50)/50.0f).mul(vec::hexcolor(c)).tohexcolor();
     }
 
     void particletrack(particle *p, uint type, int &ts, bool step)

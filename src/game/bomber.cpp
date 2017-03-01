@@ -50,10 +50,11 @@ namespace bomber
         }
     }
 
-    bool carryaffinity(gameent *d)
+    int carryaffinity(gameent *d)
     {
-        loopv(st.flags) if(st.flags[i].owner == d) return true;
-        return false;
+        int n = 0;
+        loopv(st.flags) if(st.flags[i].owner == d) n++;
+        return n;
     }
 
     float fixrot(float c)
