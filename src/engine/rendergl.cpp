@@ -1172,6 +1172,8 @@ void cleanupmotionblur()
 VARF(IDF_PERSIST, motionblur, 0, 0, 1, { if(!motionblur) cleanupmotionblur(); });
 VAR(IDF_PERSIST, motionblurmillis, 1, 5, 1000);
 FVAR(IDF_PERSIST, motionblurscale, 0, 1, 1);
+FVAR(IDF_PERSIST, motionblurmin, 0, 0.0f, 1); // minimum
+FVAR(IDF_PERSIST, motionblurmax, 0, 0.75f, 1); // maximum
 
 void addmotionblur()
 {
@@ -1186,7 +1188,7 @@ void addmotionblur()
         createtexture(motiontex, motionw, motionh, NULL, 3, 0, GL_RGB);
     }
 
-    float amount = min(hud::motionblur(motionblurscale), 1.0f);
+    float amount = clamp(hud::motionblur(), motionblurmin, motionblurmax)*motionblurscale;
     if(amount <= 0)
     {
         lastmotion = 0;

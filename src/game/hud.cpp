@@ -377,10 +377,7 @@ namespace hud
     VAR(IDF_PERSIST, editradarstyle, 0, 2, 3); // 0 = compass-sectional, 1 = compass-distance, 2 = screen-space, 3 = right-corner-positional
     FVAR(IDF_PERSIST, editradardist, 0, 0, FVAR_MAX); // 0 = use world size
 
-    VAR(IDF_PERSIST, motionblurfx, 0, 1, 2); // 0 = off, 1 = on, 2 = override
-    FVAR(IDF_PERSIST, motionblurmin, 0, 0.0f, 1); // minimum
-    FVAR(IDF_PERSIST, motionblurmax, 0, 0.75f, 1); // maximum
-    FVAR(IDF_PERSIST, motionbluramt, 0, 0.5f, 1); // used for override
+    VAR(IDF_PERSIST, motionblurfx, 0, 1, 1); // 0 = off, 1 = health fx
 
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, spree1tex, "textures/rewards/carnage", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, spree2tex, "textures/rewards/slaughter", 3);
@@ -603,12 +600,11 @@ namespace hud
         else if(!UI::hasmenu()) UI::openui(game::needname(game::player1) ? "profile" : "main");
     }
 
-    float motionblur(float scale)
+    float motionblur()
     {
         float amt = 0;
         switch(motionblurfx)
         {
-            case 0: return scale; // no effects
             case 1:
             {
                 if(game::focus->state >= CS_SPECTATOR || game::focus->state == CS_EDITING) break;
@@ -621,10 +617,9 @@ namespace hud
                     amt += (float((lastmillis-game::focus->lastres[WR_SHOCK])%shockdelay)/float(shockdelay))*0.5f;
                 break;
             }
-            case 2: amt = motionbluramt; break;
-            default: break;
+            case 0: default: amt = 1; // no effects
         }
-        return clamp(amt, motionblurmin, motionblurmax)*scale;
+        return amt;
     }
 
     void damage(int n, const vec &loc, gameent *v, int weap, int flags)
