@@ -2015,6 +2015,7 @@ struct squat
     }
 };
 
+extern void vecfromyaw(float yaw, int move, int strafe, vec2 &m);
 extern void vecfromyawpitch(float yaw, float pitch, int move, int strafe, vec &m);
 extern void vectoyawpitch(const vec &v, float &yaw, float &pitch);
 extern bool raysphereintersect(const vec &center, float radius, const vec &o, const vec &ray, float &dist);

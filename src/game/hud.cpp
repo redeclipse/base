@@ -838,21 +838,6 @@ namespace hud
         drawslice(0, clamp(amt, 0.f, 1.f), x, y, s);
     }
 
-    void vecfromyaw(float yaw, int move, int strafe, vec2 &m)
-    {
-        if(move)
-        {
-            m.x = move*-sinf(RAD*yaw);
-            m.y = move*cosf(RAD*yaw);
-        }
-        else m.x = m.y = 0;
-        if(strafe)
-        {
-            m.x += strafe*cosf(RAD*yaw);
-            m.y += strafe*sinf(RAD*yaw);
-        }
-    }
-
     void drawclipitem(const char *tex, float x, float y, float offset, float size, float blend, float angle, float spin, int rotate, const vec &colour)
     {
         Texture *t = textureload(tex, 3);

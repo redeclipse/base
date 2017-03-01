@@ -710,15 +710,19 @@ namespace client
             op(amt, *count, *skip) \
             { \
                 int r = -1; \
-                int n = 0; \
-                lp(game::players) if(game::players[k]) \
+                if(!i) r = game::player1->clientnum; \
+                else \
                 { \
-                    if(n >= i) \
+                    int n = 1; \
+                    lp(game::players) if(game::players[k]) \
                     { \
-                        r = k; \
-                        break; \
+                        if(n >= i) \
+                        { \
+                            r = game::players[k]->clientnum; \
+                            break; \
+                        } \
+                        n++; \
                     } \
-                    n++; \
                 } \
                 if(r >= 0) \
                 { \
@@ -789,18 +793,17 @@ namespace client
     CLCOMMAND(dist, floatret(d ? vec(d->o).sub(camera1->o).magnitude() : 0.f));
 
     CLCOMMAND(radardist, floatret(d ? clamp(vec(d->o).sub(camera1->o).magnitude()/float(hud::radarrange()), 0.f, 1.f) : 0.f));
-    void getradarpos(gameent *d)
+    void getradaryaw(gameent *d)
     {
+        if(m_hard(game::gamemode, game::mutators)) return;
         vec dir = vec(d->o).sub(camera1->o);
         if(hud::radarlimited(dir.magnitude())) return;
         dir.rotate_around_z(-camera1->yaw*RAD).normalize();
-        float yaw = -atan2(dir.x, dir.y)/RAD, x = sinf(RAD*yaw), y = -cosf(RAD*yaw);
-        defformatstring(str, "%f %f", x, y);
-        stringret(newstring(str));
+        floatret(-atan2(dir.x, dir.y)/RAD);
     }
-    CLCOMMAND(radarpos,
+    CLCOMMAND(radaryaw,
     {
-        if(d) getradarpos(d);
+        if(d) getradaryaw(d);
     });
 
     CLCOMMANDM(name, "sbbb", (char *who, int *colour, int *icon, int *dupname), result(d ? game::colourname(d, NULL, *icon!=0, *dupname!=0, *colour >= 0 ? *colour : 3) : ""));

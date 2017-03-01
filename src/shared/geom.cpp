@@ -1,5 +1,20 @@
 #include "cube.h"
 
+void vecfromyaw(float yaw, int move, int strafe, vec2 &m)
+{
+    if(move)
+    {
+        m.x = move*-sinf(RAD*yaw);
+        m.y = move*cosf(RAD*yaw);
+    }
+    else m.x = m.y = 0;
+    if(strafe)
+    {
+        m.x += strafe*cosf(RAD*yaw);
+        m.y += strafe*sinf(RAD*yaw);
+    }
+}
+
 void vecfromyawpitch(float yaw, float pitch, int move, int strafe, vec &m)
 {
     if(move)
