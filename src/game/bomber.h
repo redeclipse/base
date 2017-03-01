@@ -237,7 +237,7 @@ namespace bomber
     extern void killed(gameent *d, gameent *v);
     extern void drawnotices(int w, int h, int &tx, int &ty, int tr, int tg, int tb, float blend);
     extern void drawevents(int w, int h, int &tx, int &ty, int tr, int tg, int tb, float blend);
-    extern void drawblips(int w, int h, float blend);
+    extern void drawonscreen(int w, int h, float blend);
     extern void preload();
     extern void render();
     extern void adddynlights();

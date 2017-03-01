@@ -140,7 +140,7 @@ namespace bomber
     }
 
     FVAR(IDF_PERSIST, bomberreticlesize, 0, 0.1f, 1.f);
-    void drawblips(int w, int h, float blend)
+    void drawonscreen(int w, int h, float blend)
     {
         static vector<int> hasbombs; hasbombs.setsize(0);
         loopv(st.flags) if(st.flags[i].owner == game::focus) hasbombs.add(i);
@@ -148,43 +148,9 @@ namespace bomber
         {
             bomberstate::flag &f = st.flags[i];
             if(!f.enabled) continue;
-            vec colour = isbomberaffinity(f) ? pulsecolour() : vec::hexcolor(TEAM(f.team, colour));
-            if(hasbombs.find(i) < 0)
+            if(gs_playing(game::gamestate) && m_team(game::gamemode, game::mutators) && bomberlockondelay && f.owner->action[AC_AFFINITY] && lastmillis-f.owner->actiontime[AC_AFFINITY] >= bomberlockondelay)
             {
-                vec pos = f.pos(true);
-                float area = 3, size = hud::radaraffinitysize;
-                if(isbomberaffinity(f))
-                {
-                    area = 2;
-                    if(!f.owner && !f.droptime)
-                    {
-                        int millis = lastmillis-f.displaytime;
-                        if(millis < 1000) size *= 1.f+(1-clamp(float(millis)/1000.f, 0.f, 1.f));
-                    }
-                }
-                else if(!m_bb_hold(game::gamemode, game::mutators))
-                {
-                    area = 3;
-                    if(isbombertarg(f, game::focus->team) && !hasbombs.empty())
-                    {
-                        int interval = lastmillis%500;
-                        float glow = interval >= 250 ? 1.f-((interval-250)/250.f) : interval/250.f;
-                        size *= 1+glow*0.25f;
-                        flashcolour(colour.r, colour.g, colour.b, 1.f, 1.f, 1.f, glow);
-                    }
-                }
-                hud::drawblip(isbomberaffinity(f) ? hud::bombtex : (isbombertarg(f, game::focus->team) ? hud::arrowtex : hud::pointtex), area, w, h, size, blend*hud::radaraffinityblend, isbombertarg(f, game::focus->team) ? 0 : -1, pos, colour);
-                if(m_bb_basket(game::gamemode, game::mutators) && isbombertarg(f, game::focus->team) && !hasbombs.empty() && bomberbasketmindist > 0 && game::focus->o.dist(pos) < bomberbasketmindist)
-                {
-                    vec c(0.25f, 0.25f, 0.25f);
-                    int millis = lastmillis%500;
-                    float amt = millis <= 250 ? 1.f-(millis/250.f) : (millis-250)/250.f;
-                    flashcolour(c.r, c.g, c.b, 1.f, 0.f, 0.f, amt);
-                    hud::drawblip(hud::warningtex, area, w, h, size*1.25f, blend*hud::radaraffinityblend*amt, 0, pos, c);
-                }
-            }
-            else if(gs_playing(game::gamestate) && m_team(game::gamemode, game::mutators) && bomberlockondelay && f.owner->action[AC_AFFINITY] && lastmillis-f.owner->actiontime[AC_AFFINITY] >= bomberlockondelay)
-            {
+                vec colour = isbomberaffinity(f) ? pulsecolour() : vec::hexcolor(TEAM(f.team, colour));
                 gameent *e = game::getclient(findtarget(f.owner));
                 float cx = 0.5f, cy = 0.5f, cz = 1;
                 if(e && vectocursor(e->headpos(), cx, cy, cz))

@@ -86,48 +86,8 @@ namespace capture
         preloadmodel("props/flag");
     }
 
-    void drawblips(int w, int h, float blend)
+    void drawonscreen(int w, int h, float blend)
     {
-        static vector<int> hasflags; hasflags.setsize(0);
-        loopv(st.flags) if(st.flags[i].owner == game::focus) hasflags.add(i);
-        loopv(st.flags)
-        {
-            capturestate::flag &f = st.flags[i];
-            loopk(2)
-            {
-                vec pos, colour = vec::hexcolor(TEAM(f.team, colour));
-                const char *tex = hud::flagtex;
-                bool arrow = false;
-                float fade = blend*hud::radaraffinityblend, size = hud::radaraffinitysize;
-                int millis = lastmillis-f.displaytime;
-                if(millis < 1000) size *= 1.f+(1-clamp(float(millis)/1000.f, 0.f, 1.f));
-                if(f.owner) size *= 0.75f;
-                if(k)
-                {
-                    if(f.owner == game::focus || (!f.owner && !f.droptime)) break;
-                    pos = f.pos(true);
-                    int interval = lastmillis%500;
-                    if(interval >= 300 || interval <= 200)
-                        fade *= clamp(interval >= 300 ? 1.f-((interval-300)/200.f) : interval/200.f, 0.f, 1.f);
-                }
-                else
-                {
-                    pos = f.spawnloc;
-                    if(f.team == game::focus->team && !m_ctf_protect(game::gamemode, game::mutators) && !hasflags.empty())
-                    {
-                        int interval = lastmillis%500;
-                        float glow = interval >= 250 ? 1.f-((interval-250)/250.f) : interval/250.f;
-                        size *= 1+glow*0.25f;
-                        flashcolour(colour.r, colour.g, colour.b, 1.f, 1.f, 1.f, glow);
-                        tex = hud::arrowtex;
-                        arrow = true;
-                    }
-                    else if(f.owner || f.droptime) tex = hud::alerttex;
-                }
-                if(hud::radaraffinitynames > (arrow ? 0 : 1)) hud::drawblip(tex, arrow ? 3 : 2, w, h, size, fade, arrow ? 0 : -1, pos, colour, "little", "\f[%d]%s", TEAM(f.team, colour), k ? "flag" : "base");
-                else hud::drawblip(tex, arrow ? 3 : 2, w, h, size, fade, arrow ? 0 : -1, pos, colour);
-            }
-        }
     }
 
     char *buildflagstr(vector<int> &f, bool named = false)

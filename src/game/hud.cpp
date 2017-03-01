@@ -134,7 +134,6 @@ namespace hud
     VAR(IDF_PERSIST|IDF_HEX, noticetone, -CTONE_MAX, 0, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, eventtone, -CTONE_MAX, -CTONE_TEAM-1, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, clipstone, -CTONE_MAX, 0, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, radartone, -CTONE_MAX, -CTONE_TEAM-1, 0xFFFFFF);
 
     VAR(IDF_PERSIST, teamhurthud, 0, 1, 3); // 0 = off, 1 = full body particle, 2 = fixed position and size
     VAR(IDF_PERSIST, teamhurttime, 0, 2500, VAR_MAX);
@@ -299,83 +298,46 @@ namespace hud
     VAR(IDF_PERSIST, minecliprotate, 0, 11, 15);
     VAR(IDF_PERSIST, rocketcliprotate, 0, 12, 15);
 
-    VAR(IDF_PERSIST, showradar, 0, 1, 2);
-    VAR(IDF_PERSIST, radarstyle, 0, 1, 2); // 0 = compass-sectional, 1 = compass-distance, 2 = screen-space
-    FVAR(IDF_PERSIST, radaraspect, 0, 1, 2); // 0 = off, else = (for radarstyle 0/1) radar forms an ellipse
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, bliptex, "<grey>textures/hud/blip", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, playerbliptex, "<grey>textures/hud/blip", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, hurttex, "<grey>textures/hud/hurt", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, hinttex, "<grey>textures/hint", 3);
-    FVAR(IDF_PERSIST, radarblend, 0, 0.85f, 1);
-    FVAR(IDF_PERSIST, radarplayerblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, radarplayerhintblend, 0, 0.65f, 1);
-    FVAR(IDF_PERSIST, radarplayersize, 0, 0.25f, 1000);
-    FVAR(IDF_PERSIST, radarplayerhintsize, 0, 0.8f, 1);
-    FVAR(IDF_PERSIST, radarblipblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, radarblipsize, 0, 0.3f, 1000);
-    FVAR(IDF_PERSIST, radarbliprotate, 0, 1, 1);
-    FVAR(IDF_PERSIST, radaraffinityblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, radaraffinitysize, 0, 0.85f, 1000);
-    FVAR(IDF_PERSIST, radaritemblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, radaritemsize, 0, 0.6f, 1000);
-    FVAR(IDF_PERSIST, radarsize, 0, 0.05f, 1000);
-    FVAR(IDF_PERSIST, radaroffset, 0, 0.07f, 1000);
-    FVAR(IDF_PERSIST, radardist, 0, 750, FVAR_MAX); // 0 = use world size
-    VAR(IDF_PERSIST, radaritems, 0, 2, 2);
-    VAR(IDF_PERSIST, radaritemspawn, 0, 1, 1);
-    VAR(IDF_PERSIST, radaritemtime, 0, 5000, VAR_MAX);
-    VAR(IDF_PERSIST, radaritemnames, 0, 0, 2);
 
-    VAR(IDF_PERSIST, radarplayers, 0, 2, 2);
-    VAR(IDF_PERSIST, radarplayerfilter, 0, 0, 3); // 0 = off, 1 = non-team, 2 = team, 3 = only in duel/survivor/edit
-    VAR(IDF_PERSIST, radarplayernames, 0, 0, 2);
-    VAR(IDF_PERSIST, radarplayereffects, 0, 1, 1);
-    VAR(IDF_PERSIST, radarplayerdominated, 0, 1, 1); // 0 = off, 1 = always track dominating players
-    VAR(IDF_PERSIST, radarplayerduke, 0, 1, 1); // 0 = off, 1 = track when your side has one player left
-    VAR(IDF_PERSIST, radarplayerkill, 0, 2, 2); // 0 = off, 1 = track killers, 2 = bots too
+    VAR(IDF_PERSIST, onscreendamage, 0, 1, 2); // 0 = off, 1 = basic damage, 2 = verbose
+    VAR(IDF_PERSIST, onscreendamageself, 0, 1, 1);
+    VAR(IDF_PERSIST, onscreendamagemerge, 0, 250, VAR_MAX);
+    VAR(IDF_PERSIST, onscreendamagetime, 1, 250, VAR_MAX);
+    VAR(IDF_PERSIST, onscreendamagefade, 1, 3500, VAR_MAX);
+    FVAR(IDF_PERSIST, onscreendamagesize, 0, 20, 1000);
+    FVAR(IDF_PERSIST, onscreendamageblend, 0, 0.8f, 1);
+    VAR(IDF_PERSIST, onscreendamagemin, 1, 10, VAR_MAX);
+    VAR(IDF_PERSIST, onscreendamagemax, 1, 100, VAR_MAX);
+    VAR(IDF_PERSIST|IDF_HEX, onscreendamagecolour, PC(LAST), 0xFF4444, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, onscreendamageburncolour, PC(LAST), PC(BURN), 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, onscreendamagebleedcolour, PC(LAST), PC(BLEED), 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, onscreendamageshockcolour, PC(LAST), PC(SHOCK), 0xFFFFFF);
 
-    VAR(IDF_PERSIST, radaraffinity, 0, 2, 2);
-    VAR(IDF_PERSIST, radaraffinitynames, 0, 1, 2);
-
-    VAR(IDF_PERSIST, radardamage, 0, 1, 2); // 0 = off, 1 = basic damage, 2 = verbose
-    VAR(IDF_PERSIST, radardamageself, 0, 1, 1);
-    VAR(IDF_PERSIST, radardamagemerge, 0, 250, VAR_MAX);
-    VAR(IDF_PERSIST, radardamagetime, 1, 250, VAR_MAX);
-    VAR(IDF_PERSIST, radardamagefade, 1, 3500, VAR_MAX);
-    FVAR(IDF_PERSIST, radardamagesize, 0, 20, 1000);
-    FVAR(IDF_PERSIST, radardamageblend, 0, 0.8f, 1);
-    VAR(IDF_PERSIST, radardamagemin, 1, 10, VAR_MAX);
-    VAR(IDF_PERSIST, radardamagemax, 1, 100, VAR_MAX);
-    VAR(IDF_PERSIST|IDF_HEX, radardamagecolour, PC(LAST), 0xFF4444, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, radardamageburncolour, PC(LAST), PC(BURN), 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, radardamagebleedcolour, PC(LAST), PC(BLEED), 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, radardamageshockcolour, PC(LAST), PC(SHOCK), 0xFFFFFF);
-
-    VAR(IDF_PERSIST, radarhits, 0, 1, 2);
-    VAR(IDF_PERSIST, radarhitsheal, 0, 1, 1);
-    VAR(IDF_PERSIST, radarhitsself, 0, 0, 1);
-    VAR(IDF_PERSIST, radarhitsfollow, 0, 0, 1);
-    VAR(IDF_PERSIST, radarhitsmerge, 0, 250, VAR_MAX);
-    VAR(IDF_PERSIST, radarhitstime, 1, 250, VAR_MAX);
-    VAR(IDF_PERSIST, radarhitsfade, 1, 3000, VAR_MAX);
-    FVAR(IDF_PERSIST, radarhitsswipe, 0, 6, 1000);
-    FVAR(IDF_PERSIST, radarhitsscale, 0, 1.5f, 1000);
-    FVAR(IDF_PERSIST, radarhitsblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, radarhitsheight, -1000, 0.25f, 1000);
-    FVAR(IDF_PERSIST, radarhitsoffset, -1000, 3, 1000);
-    VAR(IDF_PERSIST, radarhitsglow, 0, 1, 1);
-    FVAR(IDF_PERSIST, radarhitsglowblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, radarhitsglowscale, 0, 2, 1000);
-    FVAR(IDF_PERSIST, radarhitsglowcolour, 0, 0.75f, 5);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, radarhitsglowtex, "textures/guihover", 3);
-    VAR(IDF_PERSIST|IDF_HEX, radarhitscolour, PC(LAST), 0xFF4444, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, radarhitsburncolour, PC(LAST), PC(BURN), 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, radarhitsbleedcolour, PC(LAST), PC(BLEED), 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, radarhitsshockcolour, PC(LAST), PC(SHOCK), 0xFFFFFF);
-
-    VAR(IDF_PERSIST, showeditradar, 0, 1, 1);
-    VAR(IDF_PERSIST, editradarstyle, 0, 2, 3); // 0 = compass-sectional, 1 = compass-distance, 2 = screen-space, 3 = right-corner-positional
-    FVAR(IDF_PERSIST, editradardist, 0, 0, FVAR_MAX); // 0 = use world size
+    VAR(IDF_PERSIST, onscreenhits, 0, 1, 2);
+    VAR(IDF_PERSIST, onscreenhitsheal, 0, 1, 1);
+    VAR(IDF_PERSIST, onscreenhitsself, 0, 0, 1);
+    VAR(IDF_PERSIST, onscreenhitsfollow, 0, 0, 1);
+    VAR(IDF_PERSIST, onscreenhitsmerge, 0, 250, VAR_MAX);
+    VAR(IDF_PERSIST, onscreenhitstime, 1, 250, VAR_MAX);
+    VAR(IDF_PERSIST, onscreenhitsfade, 1, 3000, VAR_MAX);
+    FVAR(IDF_PERSIST, onscreenhitsswipe, 0, 6, 1000);
+    FVAR(IDF_PERSIST, onscreenhitsscale, 0, 1.5f, 1000);
+    FVAR(IDF_PERSIST, onscreenhitsblend, 0, 1, 1);
+    FVAR(IDF_PERSIST, onscreenhitsheight, -1000, 0.25f, 1000);
+    FVAR(IDF_PERSIST, onscreenhitsoffset, -1000, 3, 1000);
+    VAR(IDF_PERSIST, onscreenhitsglow, 0, 1, 1);
+    FVAR(IDF_PERSIST, onscreenhitsglowblend, 0, 1, 1);
+    FVAR(IDF_PERSIST, onscreenhitsglowscale, 0, 2, 1000);
+    FVAR(IDF_PERSIST, onscreenhitsglowcolour, 0, 0.75f, 5);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, onscreenhitsglowtex, "textures/guihover", 3);
+    VAR(IDF_PERSIST|IDF_HEX, onscreenhitscolour, PC(LAST), 0xFF4444, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, onscreenhitsburncolour, PC(LAST), PC(BURN), 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, onscreenhitsbleedcolour, PC(LAST), PC(BLEED), 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, onscreenhitsshockcolour, PC(LAST), PC(SHOCK), 0xFFFFFF);
 
     VAR(IDF_PERSIST, motionblurfx, 0, 1, 1); // 0 = off, 1 = health fx
 
@@ -626,17 +588,17 @@ namespace hud
     {
         if(!n) return;
         damageresidue = clamp(damageresidue+(n*(flags&HIT_BLEED ? 3 : 1)), 0, 200);
-        int colour = radardamagecolour;
+        int colour = onscreendamagecolour;
         if(game::nogore || game::bloodscale <= 0) colour = 0xFF44FF;
-        else if(wr_burns(weap, flags)) colour = radardamageburncolour;
-        else if(wr_bleeds(weap, flags)) colour = radardamagebleedcolour;
-        else if(wr_shocks(weap, flags)) colour = radardamageshockcolour;
+        else if(wr_burns(weap, flags)) colour = onscreendamageburncolour;
+        else if(wr_bleeds(weap, flags)) colour = onscreendamagebleedcolour;
+        else if(wr_shocks(weap, flags)) colour = onscreendamageshockcolour;
         vec dir = vec(loc).sub(camera1->o).normalize();
         loopv(damagelocs)
         {
             dhloc &d = damagelocs[i];
             if(v->clientnum != d.clientnum) continue;
-            if(totalmillis-d.outtime > radardamagemerge) continue;
+            if(totalmillis-d.outtime > onscreendamagemerge) continue;
             if(d.colour != colour) continue;
             d.damage += n;
             d.dir = dir;
@@ -648,16 +610,16 @@ namespace hud
     void hit(int n, const vec &loc, gameent *v, int weap, int flags)
     {
         if(!n) return;
-        int colour = radarhitscolour;
+        int colour = onscreenhitscolour;
         if(game::nogore || game::bloodscale <= 0) colour = 0xFF44FF;
-        else if(wr_burns(weap, flags)) colour = radarhitsburncolour;
-        else if(wr_bleeds(weap, flags)) colour = radarhitsbleedcolour;
-        else if(wr_shocks(weap, flags)) colour = radarhitsshockcolour;
+        else if(wr_burns(weap, flags)) colour = onscreenhitsburncolour;
+        else if(wr_bleeds(weap, flags)) colour = onscreenhitsbleedcolour;
+        else if(wr_shocks(weap, flags)) colour = onscreenhitsshockcolour;
         loopv(hitlocs)
         {
             dhloc &d = hitlocs[i];
             if(v->clientnum != d.clientnum) continue;
-            if(totalmillis-d.outtime > radarhitsmerge) continue;
+            if(totalmillis-d.outtime > onscreenhitsmerge) continue;
             if(d.colour != colour) continue;
             d.damage += n;
             d.dir = v->center();
@@ -1109,9 +1071,9 @@ namespace hud
                     {
                         dhloc &d = damagelocs[i];
                         int millis = totalmillis-d.outtime, delay = min(20, d.damage)*50;
-                        if(millis >= delay || d.dir.iszero()) { if(millis >= radardamagetime+radardamagefade) damagelocs.remove(i--); continue; }
+                        if(millis >= delay || d.dir.iszero()) { if(millis >= onscreendamagetime+onscreendamagefade) damagelocs.remove(i--); continue; }
                         gameent *e = game::getclient(d.clientnum);
-                        if(!radardamageself && e == game::focus) continue;
+                        if(!onscreendamageself && e == game::focus) continue;
                         float dam = d.damage/float(m_health(game::gamemode, game::mutators, game::focus->actortype)),
                               amt = millis/float(delay);
                         total += dam;
@@ -1601,409 +1563,60 @@ namespace hud
         if(!progressing) drawpointers(hudwidth, hudheight);
     }
 
-    int radartype()
-    {
-        if(game::focus->state == CS_EDITING) return editradarstyle;
-        return radarstyle;
-    }
-
-    float radarrange()
-    {
-        if(game::focus->state == CS_EDITING) return editradardist > 0 ? editradardist : float(getworldsize());
-        float dist = radardist > 0 ? radardist : float(getworldsize());
-        if(radardistlimit > 0) dist = min(radardistlimit, dist);
-        return dist;
-    }
-    ICOMMAND(0, getradarrange, "", (), floatret(radarrange()));
-
     float radarlimit(float dist) { return dist >= 0 && radardistlimit > 0 ? clamp(dist, 0.f, radardistlimit) : radardistlimit; }
+    ICOMMAND(0, getradarlimit, "f", (float *n), floatret(radarlimit(*n)));
+
     bool radarlimited(float dist) { return radardistlimit > 0 && dist > radardistlimit; }
-
-    void drawblip(const char *tex, float area, int w, int h, float s, float blend, int style, const vec &pos, const vec &colour, const char *font, const char *text, ...)
-    {
-        if(style < 0) style = radartype();
-        vec loc(0, 0, 0);
-        if(style == 2)
-        {
-            if(vectocursor(pos, loc.x, loc.y, loc.z))
-            {
-                loc.x *= hudwidth;
-                loc.y *= hudsize;
-            }
-            else return; // can't render things we can't point at
-        }
-        vec dir = vec(pos).sub(camera1->o);
-        float dist = clamp(dir.magnitude()/radarrange(), 0.f, 1.f);
-        dir.rotate_around_z(-camera1->yaw*RAD).normalize();
-        float yaw = -atan2(dir.x, dir.y)/RAD, x = sinf(RAD*yaw), y = -cosf(RAD*yaw), size = max(w, h)/2,
-              ts = size*radarsize, tp = ts*s, tq = tp*0.5f;
-        if(style != 2)
-        {
-            float tx = 0, ty = 0, tr = 0;
-            switch(style)
-            {
-                case 3:
-                {
-                    ts = size*radarsize;
-                    tx = w-ts;
-                    ty = ts;
-                    ts -= ts*radaroffset*0.5f;
-                    tr = ts*dist;
-                    break;
-                }
-                case 1:
-                {
-                    tx = w/2;
-                    ty = h/2;
-                    tr = (size*radaroffset)+(ts*4*dist);
-                    break;
-                }
-                case 0: default:
-                {
-                    tx = w/2;
-                    ty = h/2;
-                    tr = (size*radaroffset)+(ts*area);
-                    break;
-                }
-            }
-            loc.x = tr*x;
-            loc.y = tr*y;
-            if(style != 3 && radaraspect != 0 && w != h)
-            {
-                if(w > h) loc.x *= (float(w)/float(h))*radaraspect;
-                else loc.y *= (float(h)/float(w))*radaraspect;
-            }
-            loc.x += tx;
-            loc.y += ty;
-        }
-        gle::color(colour, blend);
-        Texture *t = textureload(tex, 3);
-        if(t)
-        {
-            glBindTexture(GL_TEXTURE_2D, t->id);
-            gle::defvertex(2);
-            gle::deftexcoord0();
-            gle::begin(GL_TRIANGLE_STRIP);
-            if(style != 2 && radarbliprotate)
-            {
-                vec2 o(loc.x, loc.y);
-                loopk(4)
-                {
-                    vec2 norm, tc;
-                    switch(k)
-                    {
-                        case 0: vecfromyaw(yaw, 1, -1, norm);   tc = vec2(0, 1); break;
-                        case 1: vecfromyaw(yaw, 1, 1, norm);    tc = vec2(1, 1); break;
-                        case 2: vecfromyaw(yaw, -1, -1, norm);  tc = vec2(0, 0); break;
-                        case 3: vecfromyaw(yaw, -1, 1, norm);   tc = vec2(1, 0); break;
-                    }
-                    norm.mul(tq).add(o);
-                    gle::attrib(norm);
-                    gle::attrib(tc);
-                }
-            }
-            else
-            {
-                gle::attribf(loc.x - tq, loc.y + tq); gle::attribf(0, 1);
-                gle::attribf(loc.x + tq, loc.y + tq); gle::attribf(1, 1);
-                gle::attribf(loc.x - tq, loc.y - tq); gle::attribf(0, 0);
-                gle::attribf(loc.x + tq, loc.y - tq); gle::attribf(1, 0);
-            }
-            gle::end();
-        }
-        if(text && *text)
-        {
-            if(font && *font) pushfont(font);
-            defvformatstring(str, text, text);
-            loc.x -= x*tq; loc.y -= y*tq*0.75f;
-            if(y > 0)
-            {
-                int width, height;
-                text_bounds(str, width, height, 0, 0, -1, TEXT_CENTERED|TEXT_NO_INDENT, 1);
-                loc.y -= y*height;
-            }
-            draw_textf("%s", int(loc.x), int(loc.y), 0, 0, -1, -1, -1, int(blend*255.f), TEXT_CENTERED|TEXT_NO_INDENT, -1, -1, 1, str);
-            if(font && *font) popfont();
-        }
-    }
-
-    void drawplayerblip(gameent *d, int w, int h, int style, float blend, bool force)
-    {
-        bool killer = false, self = false;
-        if(radarplayerkill && (game::focus->state == CS_DEAD || game::focus->state == CS_WAITING) && game::focus->lastdeath)
-        {
-            if(d->clientnum == game::focus->lastattacker)
-                killer = (radarplayerkill >= 2 || d->actortype == A_PLAYER) && (d->state == CS_ALIVE || d->state == CS_DEAD || d->state == CS_WAITING);
-            if(d == game::focus) self = lastmillis-game::focus->lastdeath <= m_delay(game::focus->actortype, game::gamemode, game::mutators, d->team);
-        }
-        if(d == game::focus && !self) return;
-        vec dir = vec(d->o).sub(camera1->o);
-        float dist = dir.magnitude();
-        bool isdominated = radarplayereffects && (!m_team(game::gamemode, game::mutators) || d->team != game::focus->team) && d->dominated.find(game::focus) >= 0,
-            dominated = radarplayerdominated && isdominated;
-        if(!force && !killer && !self && !dominated) switch(radarplayerfilter)
-        {
-            case 1: if(m_team(game::gamemode, game::mutators) && d->team == game::focus->team) return; break;
-            case 2: if(m_team(game::gamemode, game::mutators) && d->team != game::focus->team) return; break;
-            default: break;
-        }
-        if(force || killer || self || dominated || dist <= radarrange())
-        {
-            bool burning = radarplayereffects && burntime && lastmillis%150 < 50 && d->burning(lastmillis, burntime),
-                 bleeding = radarplayereffects && bleedtime && lastmillis%150 < 50 && d->bleeding(lastmillis, bleedtime),
-                 shocking = radarplayereffects && shocktime && lastmillis%150 < 50 && d->shocking(lastmillis, shocktime);
-            vec colour[2];
-            if(isdominated) colour[0] = game::rescolour(d, PULSE_DISCO);
-            else colour[0] = vec::hexcolor(game::getcolour(d, game::playerundertone, game::playerundertonelevel));
-            if(d->lastbuff)
-            {
-                int millis = totalmillis%1000;
-                float amt = millis <= 500 ? 1.f-(millis/500.f) : (millis-500)/500.f;
-                flashcolour(colour[0].r, colour[0].g, colour[0].b, 1.f, 1.f, 1.f, amt);
-            }
-            if(burning)
-            {
-                int millis = totalmillis%1000;
-                float amt = millis <= 500 ? millis/500.f : 1.f-((millis-500)/500.f);
-                vec c = game::rescolour(d, PULSE_BURN);
-                flashcolour(colour[0].r, colour[0].g, colour[0].b, c.r, c.g, c.b, amt);
-            }
-            if(bleeding)
-            {
-                int millis = totalmillis%1000;
-                float amt = millis <= 500 ? millis/500.f : 1.f-((millis-500)/500.f);
-                vec c = game::rescolour(d, PULSE_SHOCK);
-                flashcolour(colour[0].r, colour[0].g, colour[0].b, c.r, c.g, c.b, amt);
-            }
-            if(shocking)
-            {
-                int millis = totalmillis%1000;
-                float amt = millis <= 500 ? millis/500.f : 1.f-((millis-500)/500.f);
-                vec c = game::rescolour(d, PULSE_SHOCK);
-                flashcolour(colour[0].r, colour[0].g, colour[0].b, c.r, c.g, c.b, amt);
-            }
-            colour[1] = vec::hexcolor(game::getcolour(d, game::playerovertone, game::playerovertonelevel));
-            const char *tex = isdominated ? dominatedtex : (killer || self ? arrowtex : playerbliptex);
-            float fade = (force || killer || self || dominated ? 1.f : clamp(1.f-(dist/radarrange()), isdominated ? 0.25f : 0.f, 1.f))*blend, size = killer || self ? 1.5f : (isdominated ? 1.25f : 1.f);
-            if(!self && (d->state == CS_DEAD || d->state == CS_WAITING))
-            {
-                int millis = d->lastdeath ? lastmillis-d->lastdeath : 0;
-                if(millis > 0)
-                {
-                    int len = min(m_delay(d->actortype, game::gamemode, game::mutators, d->team), 2500);
-                    if(len > 0) fade *= clamp(float(len-millis)/float(len), 0.f, 1.f);
-                    else return;
-                }
-                else return;
-                tex = deadtex;
-            }
-            else if(d->state == CS_ALIVE)
-            {
-                int len = m_protect(game::gamemode, game::mutators), millis = d->protect(lastmillis, len);
-                if(millis > 0) fade *= clamp(float(len-millis)/float(len), 0.f, 1.f);
-                if(!force && !killer && !self && !dominated)
-                    fade *= clamp(vec(d->vel).add(d->falling).magnitude()/movespeed, 0.f, 1.f);
-            }
-            loopi(2)
-            {
-                if(i)
-                {
-                    if(killer && d->state == CS_ALIVE)
-                    {
-                        drawblip(tex, 1, w, h, size*(i ? radarplayersize : radarplayerhintsize), fade*(i ? radarplayerblend : radarplayerhintblend), style, d->o, colour[i], "tiny", "%s (\fs\fc%d\fS)", game::colourname(d), d->health);
-                        continue;
-                    }
-                    if(force || self || chkcond(radarplayernames, !game::tvmode()))
-                    {
-                        drawblip(tex, 1, w, h, size*(i ? radarplayersize : radarplayerhintsize), fade*(i ? radarplayerblend : radarplayerhintblend), style, d->o, colour[i], "tiny", "%s", d != game::player1 ? game::colourname(d) : "you");
-                        continue;
-                    }
-                }
-                drawblip(i ? tex : hinttex, 1, w, h, size*(i ? radarplayersize : radarplayerhintsize), fade*(i ? radarplayerblend : radarplayerhintblend), style, d->o, colour[i]);
-            }
-        }
-    }
-
-    void drawentblip(int w, int h, float blend, int n, vec &o, int type, attrvector &attr, bool spawned, int lastspawn, bool insel)
-    {
-        if(type > NOTUSED && type < MAXENTTYPES && ((enttype[type].usetype == EU_ITEM && spawned) || game::focus->state == CS_EDITING))
-        {
-            float inspawn = radaritemtime && spawned && lastspawn && lastmillis-lastspawn <= radaritemtime ? float(lastmillis-lastspawn)/float(radaritemtime) : 0.f;
-            if(game::focus->state != CS_EDITING && radaritemspawn && (enttype[type].usetype != EU_ITEM || inspawn <= 0.f)) return;
-            vec dir = vec(o).sub(camera1->o);
-            float dist = dir.magnitude();
-            if(dist >= radarrange())
-            {
-                if(insel || inspawn > 0.f) dir.mul(radarrange()/dist);
-                else return;
-            }
-            const char *tex = bliptex;
-            vec colour(1, 1, 1);
-            float fade = insel ? 1.f : clamp(1.f-(dist/radarrange()), 0.1f, 1.f), size = radarblipsize;
-            if(type == WEAPON)
-            {
-                int attr1 = w_attr(game::gamemode, game::mutators, type, attr[0], m_weapon(game::focus->actortype, game::gamemode, game::mutators));
-                if(isweap(attr1))
-                {
-                    tex = itemtex(WEAPON, attr1);
-                    colour = vec::hexcolor(W(attr1, colour));
-                    fade *= radaritemblend;
-                    size = radaritemsize;
-                }
-                else return;
-            }
-            else
-            {
-                tex = itemtex(type, attr[0]);
-                if(!tex || !*tex) tex = bliptex;
-                else size = radaritemsize;
-                fade *= radarblipblend;
-            }
-            if(game::focus->state != CS_EDITING && !insel && inspawn > 0.f)
-                fade = radaritemspawn ? 1.f-inspawn : fade+((1.f-fade)*(1.f-inspawn));
-            if(insel) drawblip(tex, 0, w, h, size, fade*blend, -1, o, colour, "tiny", "%s %s", enttype[type].name, entities::entinfo(type, attr, insel));
-            else if(chkcond(radaritemnames, !game::tvmode())) drawblip(tex, 0, w, h, size, fade*blend, -1, o, colour, "tiny", "%s", entities::entinfo(type, attr, false));
-            else drawblip(tex, 0, w, h, size, fade*blend, -1, o, colour);
-        }
-    }
-
-    void drawentblips(int w, int h, float blend)
-    {
-        if(m_edit(game::gamemode) && game::focus->state == CS_EDITING)
-        {
-            int hover = !entities::ents.inrange(enthover) && !entgroup.empty() ? entgroup[0] : -1;
-            loopv(entgroup) if(entities::ents.inrange(entgroup[i]) && entgroup[i] != hover)
-            {
-                gameentity &e = *(gameentity *)entities::ents[entgroup[i]];
-                drawentblip(w, h, blend, entgroup[i], e.o, e.type, e.attrs, e.spawned(), e.lastspawn, true);
-            }
-            if(entities::ents.inrange(hover))
-            {
-                gameentity &e = *(gameentity *)entities::ents[hover];
-                drawentblip(w, h, blend, hover, e.o, e.type, e.attrs, e.spawned(), e.lastspawn, true);
-            }
-        }
-        else
-        {
-            loopusei(EU_ITEM)
-            {
-                gameentity &e = *(gameentity *)entities::ents[i];
-                drawentblip(w, h, blend, i, e.o, e.type, e.attrs, e.spawned(), e.lastspawn, false);
-            }
-            loopv(projs::projs) if(projs::projs[i]->projtype == PRJ_ENT && projs::projs[i]->ready())
-            {
-                projent &proj = *projs::projs[i];
-                if(entities::ents.inrange(proj.id))
-                    drawentblip(w, h, blend, -1, proj.o, entities::ents[proj.id]->type, entities::ents[proj.id]->attrs, true, proj.spawntime, false);
-            }
-        }
-    }
-
-    void drawdamageblips(int w, int h, float blend)
-    {
-        loopv(damagelocs)
-        {
-            dhloc &d = damagelocs[i];
-            int millis = totalmillis-d.outtime;
-            if(millis >= radardamagetime+radardamagefade || d.dir.iszero()) { if(millis >= min(20, d.damage)*50) damagelocs.remove(i--); continue; }
-            if(game::focus->state == CS_SPECTATOR || game::focus->state == CS_EDITING) continue;
-            gameent *e = game::getclient(d.clientnum);
-            if(!radardamageself && e == game::focus) continue;
-            float amt = millis >= radardamagetime ? 1.f-(float(millis-radardamagetime)/float(radardamagefade)) : float(millis)/float(radardamagetime),
-                range = clamp(max(d.damage, radardamagemin)/float(max(radardamagemax-radardamagemin, 1)), radardamagemin/100.f, 1.f),
-                fade = clamp(radardamageblend*blend, min(radardamageblend*radardamagemin/100.f, 1.f), radardamageblend)*amt,
-                size = clamp(range*radardamagesize, min(radardamagesize*radardamagemin/100.f, 1.f), radardamagesize)*amt;
-            vec dir = d.dir, colour = d.colour < 0 ? game::rescolour(game::focus, INVPULSE(d.colour)) : vec::hexcolor(d.colour);
-            if(e == game::focus) d.dir = vec(e->yaw*RAD, 0.f).neg();
-            vec o = vec(camera1->o).add(vec(dir).mul(radarrange()));
-            if(radardamage >= 5) drawblip(hurttex, 2+size/3, w, h, size, fade, 0, o, colour, "tiny", "%s +%d", e ? game::colourname(e) : "?", d.damage);
-            else drawblip(hurttex, 2+size/3, w, h, size, fade, 0, o, colour);
-        }
-    }
+    ICOMMAND(0, getradarlimited, "f", (float *n), intret(radarlimited(*n) ? 1 : 0));
 
     void drawhits(int w, int h, float blend)
     {
         pushfont("tiny");
-        pushhudscale(radarhitsscale);
+        pushhudscale(onscreenhitsscale);
         float maxy = -1.f;
         loopv(hitlocs)
         {
             dhloc &d = hitlocs[i];
             int millis = totalmillis-d.outtime;
-            if(millis >= radarhitstime+radarhitsfade || d.dir.iszero()) { hitlocs.remove(i--); continue; }
+            if(millis >= onscreenhitstime+onscreenhitsfade || d.dir.iszero()) { hitlocs.remove(i--); continue; }
             if(game::focus->state == CS_SPECTATOR || game::focus->state == CS_EDITING) continue;
             gameent *a = game::getclient(d.clientnum);
-            if((!radarhitsheal && d.damage < 0) || (!radarhitsself && a == game::focus)) continue;
-            vec o = radarhitsfollow && a ? a->center() : d.dir;
-            o.z += actor[a ? a->actortype : A_PLAYER].height*radarhitsheight;
+            if((!onscreenhitsheal && d.damage < 0) || (!onscreenhitsself && a == game::focus)) continue;
+            vec o = onscreenhitsfollow && a ? a->center() : d.dir;
+            o.z += actor[a ? a->actortype : A_PLAYER].height*onscreenhitsheight;
             float cx = 0, cy = 0, cz = 0;
             if(!vectocursor(o, cx, cy, cz)) continue;
-            float hx = cx*w/radarhitsscale, hy = cy*h/radarhitsscale, fade = blend*radarhitsblend;
-            if(radarhitsoffset != 0) hx += FONTW*radarhitsoffset;
-            if(millis <= radarhitstime)
+            float hx = cx*w/onscreenhitsscale, hy = cy*h/onscreenhitsscale, fade = blend*onscreenhitsblend;
+            if(onscreenhitsoffset != 0) hx += FONTW*onscreenhitsoffset;
+            if(millis <= onscreenhitstime)
             {
-                float amt = millis/float(radarhitstime), total = FONTW*radarhitsswipe*(1-amt);
-                if(radarhitsoffset < 0) hx -= total;
+                float amt = millis/float(onscreenhitstime), total = FONTW*onscreenhitsswipe*(1-amt);
+                if(onscreenhitsoffset < 0) hx -= total;
                 else hx += total;
                 fade *= amt;
             }
             else
             {
-                int offset = millis-radarhitstime;
-                hy -= FONTH*offset/float(radarhitstime);
-                fade *= 1-(offset/float(radarhitsfade));
+                int offset = millis-onscreenhitstime;
+                hy -= FONTH*offset/float(onscreenhitstime);
+                fade *= 1-(offset/float(onscreenhitsfade));
             }
             defformatstring(text, "%c%d", d.damage > 0 ? '-' : (d.damage < 0 ? '+' : '~'), d.damage < 0 ? 0-d.damage : d.damage);
             vec colour = d.colour < 0 ? game::rescolour(a, INVPULSE(d.colour)) : vec::hexcolor(d.colour);
             if(maxy >= 0 && hy < maxy) hy = maxy;
-            if(radarhitsglow)
+            if(onscreenhitsglow)
             {
                 float width = 0, height = 0;
                 text_boundsf(text, width, height, 0, 0, -1, TEXT_CENTERED, 1);
-                gle::colorf(colour.r*radarhitsglowcolour, colour.g*radarhitsglowcolour, colour.b*radarhitsglowcolour, fade*radarhitsglowblend);
-                settexture(radarhitsglowtex);
-                drawtexture(hx-(width*radarhitsglowscale*0.5f), hy-(height*radarhitsglowscale*0.25f), width*radarhitsglowscale, height*radarhitsglowscale);
+                gle::colorf(colour.r*onscreenhitsglowcolour, colour.g*onscreenhitsglowcolour, colour.b*onscreenhitsglowcolour, fade*onscreenhitsglowblend);
+                settexture(onscreenhitsglowtex);
+                drawtexture(hx-(width*onscreenhitsglowscale*0.5f), hy-(height*onscreenhitsglowscale*0.25f), width*onscreenhitsglowscale, height*onscreenhitsglowscale);
             }
-            hy += draw_textf("%s", hx, hy, 0, 0, int(colour.r*255), int(colour.g*255), int(colour.b*255), int(fade*255), TEXT_CENTERED, -1, -1, 1, text)/radarhitsscale;
+            hy += draw_textf("%s", hx, hy, 0, 0, int(colour.r*255), int(colour.g*255), int(colour.b*255), int(fade*255), TEXT_CENTERED, -1, -1, 1, text)/onscreenhitsscale;
             if(maxy < 0 || hy > maxy) maxy = hy;
         }
         pophudmatrix();
         popfont();
-    }
-
-    void drawradar(int w, int h, float blend)
-    {
-        if((!m_hard(game::gamemode, game::mutators) || G(radarhardaffinity)) && chkcond(radaraffinity, !game::tvmode()))
-        {
-            if(m_capture(game::gamemode)) capture::drawblips(w, h, blend*radarblend);
-            else if(m_defend(game::gamemode)) defend::drawblips(w, h, blend*radarblend);
-            else if(m_bomber(game::gamemode)) bomber::drawblips(w, h, blend*radarblend);
-        }
-        if(m_hard(game::gamemode, game::mutators)) return;
-        if(chkcond(radarhits, !game::tvmode())) drawhits(w, h, blend);
-        if(chkcond(radaritems, !game::tvmode()) || m_edit(game::gamemode)) drawentblips(w, h, blend*radarblend);
-        if(chkcond(radarplayers, radarplayerfilter != 3 || m_duke(game::gamemode, game::mutators) || m_edit(game::gamemode)))
-        {
-            gameent *d = NULL;
-            int numdyns = game::numdynents(), style = radartype() != 2 ? radartype() : 1, others[T_MAX] = {0};
-            if(radarplayerduke && game::focus->state == CS_ALIVE && m_survivor(game::gamemode, game::mutators))
-            {
-                loopi(numdyns) if((d = (gameent *)game::iterdynents(i)) && d->state == CS_ALIVE && d->actortype < A_ENEMY)
-                    others[d->team]++;
-            }
-            loopi(numdyns) if((d = (gameent *)game::iterdynents(i)) && d->state != CS_SPECTATOR && d->actortype < A_ENEMY)
-            {
-                bool force = false;
-                if(radarplayerduke && game::focus->state == CS_ALIVE)
-                {
-                    if(m_duel(game::gamemode, game::mutators)) force = true;
-                    else if(m_survivor(game::gamemode, game::mutators))
-                        force = (m_team(game::gamemode, game::mutators) ? (d->team != game::focus->team && others[game::focus->team] == 1) : (others[T_NEUTRAL] == 2));
-                }
-                drawplayerblip(d, w, h, style, blend*radarblend, force);
-            }
-        }
-        if(radardamage) drawdamageblips(w, h, blend*radarblend);
     }
 
     int drawprogress(int x, int y, float start, float length, float size, bool left, float r, float g, float b, float fade, float skew, const char *font, const char *text, ...)
@@ -2242,6 +1855,30 @@ namespace hud
         popfont();
     }
 
+    void drawdamageblips(int w, int h, float blend)
+    {
+        #if 0
+        loopv(damagelocs)
+        {
+            dhloc &d = damagelocs[i];
+            int millis = totalmillis-d.outtime;
+            if(millis >= onscreendamagetime+onscreendamagefade || d.dir.iszero()) { if(millis >= min(20, d.damage)*50) damagelocs.remove(i--); continue; }
+            if(game::focus->state == CS_SPECTATOR || game::focus->state == CS_EDITING) continue;
+            gameent *e = game::getclient(d.clientnum);
+            if(!onscreendamageself && e == game::focus) continue;
+            float amt = millis >= onscreendamagetime ? 1.f-(float(millis-onscreendamagetime)/float(onscreendamagefade)) : float(millis)/float(onscreendamagetime),
+                range = clamp(max(d.damage, onscreendamagemin)/float(max(onscreendamagemax-onscreendamagemin, 1)), onscreendamagemin/100.f, 1.f),
+                fade = clamp(onscreendamageblend*blend, min(onscreendamageblend*onscreendamagemin/100.f, 1.f), onscreendamageblend)*amt,
+                size = clamp(range*onscreendamagesize, min(onscreendamagesize*onscreendamagemin/100.f, 1.f), onscreendamagesize)*amt;
+            vec dir = d.dir, colour = d.colour < 0 ? game::rescolour(game::focus, INVPULSE(d.colour)) : vec::hexcolor(d.colour);
+            if(e == game::focus) d.dir = vec(e->yaw*RAD, 0.f).neg();
+            vec o = vec(camera1->o).add(vec(dir).mul(onscreenrange()));
+            if(onscreendamage >= 5) drawblip(hurttex, 2+size/3, w, h, size, fade, 0, o, colour, "tiny", "%s +%d", e ? game::colourname(e) : "?", d.damage);
+            else drawblip(hurttex, 2+size/3, w, h, size, fade, 0, o, colour);
+        }
+        #endif
+    }
+
     void drawhud(bool noview)
     {
         hudmatrix.ortho(0, hudwidth, hudheight, 0, -1, 1);
@@ -2365,8 +2002,14 @@ namespace hud
                             }
                         }
                     }
-                    if(!radardisabled && !hasinput(true) && (game::focus->state == CS_EDITING ? showeditradar >= 1 : chkcond(showradar, !game::tvmode() || (game::focus != game::player1 && radartype() == 3))))
-                        drawradar(hudwidth, hudheight, fade);
+                    if(!hasinput(true))
+                    {
+                        if(onscreenhits) drawhits(hudwidth, hudheight, fade);
+                        if(onscreendamage) drawdamageblips(hudwidth, hudheight, fade);
+                        if(m_capture(game::gamemode)) capture::drawonscreen(hudwidth, hudheight, fade);
+                        else if(m_defend(game::gamemode)) defend::drawonscreen(hudwidth, hudheight, fade);
+                        else if(m_bomber(game::gamemode)) bomber::drawonscreen(hudwidth, hudheight, fade);
+                    }
                 }
                 if(showevents && !texpaneltimer && !game::tvmode() && !client::waiting() && !hasinput(false)) drawevents(fade);
             }

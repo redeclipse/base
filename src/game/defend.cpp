@@ -147,24 +147,8 @@ namespace defend
         }
     }
 
-    void drawblips(int w, int h, float blend)
+    void drawonscreen(int w, int h, float blend)
     {
-        loopv(st.flags)
-        {
-            defendstate::flag &f = st.flags[i];
-            float occupy = f.occupied(m_dac_quick(game::gamemode, game::mutators), defendcount);
-            vec colour = skewcolour(f.owner, f.enemy, occupy);
-            bool attack = f.owner == game::focus->team && f.enemy;
-            const char *tex = f.hasflag ? hud::arrowtex : (attack ? hud::attacktex : hud::pointtex);
-            float size = hud::radaraffinitysize*(f.hasflag ? 1.5f : (attack ? 0.65f : 1.f));
-            if(hud::radaraffinitynames >= (f.hasflag ? 1 : 2))
-            {
-                bool overthrow = f.owner && f.enemy == game::focus->team;
-                if(occupy < 1.f) hud::drawblip(tex, f.hasflag ? 3 : 2, w, h, size, blend*hud::radaraffinityblend, f.hasflag ? 0 : -1, f.o, colour, "little", "\f[%d]%d%%", f.hasflag ? (overthrow ? colourorange : (occupy < 1.f ? colouryellow : colourgreen)) : TEAM(f.owner, colour), int(occupy*100.f));
-                else hud::drawblip(tex, f.hasflag ? 3 : 2, w, h, size, blend*hud::radaraffinityblend, f.hasflag ? 0 : -1, f.o, colour, "little", "\f[%d]%s", f.hasflag ? (overthrow ? colourorange : (occupy < 1.f ? colouryellow : colourgreen)) : TEAM(f.owner, colour), TEAM(f.owner, name));
-            }
-            else hud::drawblip(tex, f.hasflag ? 3 : 2, w, h, size, blend*hud::radaraffinityblend, f.hasflag ? 0 : -1, f.o, colour);
-        }
     }
 
     void drawnotices(int w, int h, int &tx, int &ty, int tr, int tg, int tb, float blend)
