@@ -1188,7 +1188,7 @@ void addmotionblur()
         createtexture(motiontex, motionw, motionh, NULL, 3, 0, GL_RGB);
     }
 
-    float amount = clamp(hud::motionblur(), motionblurmin, motionblurmax)*motionblurscale;
+    float amount = min(clamp(hud::motionblur(), motionblurmin, motionblurmax)*motionblurscale*0.9f, 0.9f);
     if(amount <= 0)
     {
         lastmotion = 0;
