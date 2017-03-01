@@ -3457,6 +3457,14 @@ namespace UI
         static const char *typestr() { return "#RadarBlip"; }
         const char *gettype() const { return typestr(); }
 
+        void layout()
+        {
+            Image::layout();
+            // children don't exceed to the dimensions of a blip if specified
+            if(minw > 0 && w > minw) w = minw;
+            if(minh > 0 && h > minh) h = minh;
+        }
+
         void setalign(int xalign, int yalign)
         {
             adjust = ALIGN_HCENTER | ALIGN_VCENTER; // always align center and use our own adjustment
