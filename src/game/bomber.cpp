@@ -26,18 +26,12 @@ namespace bomber
     });
 
     #define LOOPBOMBER(name,op) \
-        ICOMMAND(0, loopbomber##name, "iiire", (int *base, int *count, int *skip, ident *id, uint *body), \
+        ICOMMAND(0, loopbomber##name, "iire", (int *count, int *skip, ident *id, uint *body), \
         { \
             if(!m_bomber(game::gamemode)) return; \
             loopstart(id, stack); \
             op(st.flags, *count, *skip) \
             { \
-                switch(*base) \
-                { \
-                    case 0: if(st.flags[i].team != T_NEUTRAL) continue; break; \
-                    case 1: if(st.flags[i].team == T_NEUTRAL) continue; break; \
-                    default: break; \
-                } \
                 loopiter(id, stack, i); \
                 execute(body); \
             } \
