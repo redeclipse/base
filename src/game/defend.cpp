@@ -22,13 +22,18 @@ namespace defend
     ICOMMAND(0, getdefendkinship, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].kinship : -1));
     ICOMMAND(0, getdefendinfo, "i", (int *n), result(st.flags.inrange(*n) ? st.flags[*n].info : ""));
     ICOMMAND(0, getdefendinside, "isi", (int *n, const char *who, int *h), gameent *d = game::getclient(client::parsewho(who)); intret(d && st.flags.inrange(*n) && insideaffinity(st.flags[*n], d, *h!=0) ? 1 : 0));
-    void getdefendradaryaw(int n, bool view)
+
+    ICOMMAND(0, getdefendradardist, "ib", (int *n, int *v),
     {
-        if(m_hard(game::gamemode, game::mutators) && !G(radarhardaffinity)) return;
-        vec dir = vec(view ? st.flags[n].o : st.flags[n].above).sub(camera1->o).rotate_around_z(-camera1->yaw*RAD).normalize();
+        if(!st.flags.inrange(*n) || (m_hard(game::gamemode, game::mutators) && !G(radarhardaffinity))) return;
+        floatret(vec(*v > 0 ? st.flags[*n].above : (*v < 0 ? st.flags[*n].render : st.flags[*n].o)).sub(camera1->o).magnitude());
+    });
+    ICOMMAND(0, getdefendradaryaw, "ib", (int *n, int *v),
+    {
+        if(!st.flags.inrange(*n) || (m_hard(game::gamemode, game::mutators) && !G(radarhardaffinity))) return;
+        vec dir = vec(*v > 0 ? st.flags[*n].above : (*v < 0 ? st.flags[*n].render : st.flags[*n].o)).sub(camera1->o).rotate_around_z(-camera1->yaw*RAD).normalize();
         floatret(-atan2(dir.x, dir.y)/RAD);
-    }
-    ICOMMAND(0, getdefendradaryaw, "ib", (int *n, int *v), if(st.flags.inrange(*n)) getdefendradaryaw(*n, *v!=0));
+    });
 
     #define LOOPDEFEND(name,op) \
         ICOMMAND(0, loopdefend##name, "iire", (int *count, int *skip, ident *id, uint *body), \

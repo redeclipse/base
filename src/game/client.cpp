@@ -772,14 +772,17 @@ namespace client
     CLCOMMAND(yaw, floatret(d ? d->yaw : 0.f));
     CLCOMMAND(pitch, floatret(d ? d->pitch : 0.f));
     CLCOMMAND(roll, floatret(d ? d->roll : 0.f));
-    CLCOMMAND(posx, floatret(d ? d->o.x : 0.f));
-    CLCOMMAND(posy, floatret(d ? d->o.y : 0.f));
-    CLCOMMAND(posz, floatret(d ? d->o.z : 0.f));
-    CLCOMMANDM(pos, "si", (char *who, int *n), floatret(d && *n >= 0 && *n < 3 ? d->o[*n] : 0.f));
-    CLCOMMAND(dist, floatret(d ? vec(d->o).sub(camera1->o).magnitude() : 0.f));
+    //CLCOMMAND(posx, floatret(d ? d->o.x : 0.f));
+    //CLCOMMAND(posy, floatret(d ? d->o.y : 0.f));
+    //CLCOMMAND(posz, floatret(d ? d->o.z : 0.f));
+    //CLCOMMANDM(pos, "si", (char *who, int *n), floatret(d && *n >= 0 && *n < 3 ? d->o[*n] : 0.f));
     CLCOMMANDM(velocity, "si", (char *who, int *n), floatret(d ? (*n!=0 ? vec(d->vel).add(d->falling).magnitude()*0.125f : vec(d->vel).add(d->falling).magnitude()) : 0.f));
 
-    CLCOMMAND(radardist, floatret(d ? clamp(vec(d->o).sub(camera1->o).magnitude()/float(hud::radarrange()), 0.f, 1.f) : 0.f));
+    CLCOMMAND(radardist,
+    {
+        if(m_hard(game::gamemode, game::mutators)) return;
+        floatret(d ? vec(d->o).sub(camera1->o).magnitude() : 0.f);
+    });
     void getradaryaw(gameent *d)
     {
         if(m_hard(game::gamemode, game::mutators)) return;

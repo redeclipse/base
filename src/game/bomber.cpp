@@ -12,13 +12,18 @@ namespace bomber
     ICOMMAND(0, getbombertarget, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].target : -1));
     ICOMMAND(0, getbomberowner, "i", (int *n), intret(st.flags.inrange(*n) && st.flags[*n].owner ? st.flags[*n].owner->clientnum : -1));
     ICOMMAND(0, getbomberlastowner, "i", (int *n), intret(st.flags.inrange(*n) && st.flags[*n].lastowner ? st.flags[*n].lastowner->clientnum : -1));
-    void getbomberradaryaw(int n, bool view)
+
+    ICOMMAND(0, getbomberradardist, "ib", (int *n, int *v),
     {
-        if(m_hard(game::gamemode, game::mutators) && !G(radarhardaffinity)) return;
-        vec dir = vec(st.flags[n].pos(view)).sub(camera1->o).rotate_around_z(-camera1->yaw*RAD).normalize();
+        if(!st.flags.inrange(*n) || (m_hard(game::gamemode, game::mutators) && !G(radarhardaffinity))) return;
+        floatret(vec(*v > 0 ? st.flags[*n].spawnloc : st.flags[*n].pos(*v < 0)).sub(camera1->o).magnitude());
+    });
+    ICOMMAND(0, getbomberradaryaw, "ib", (int *n, int *v),
+    {
+        if(!st.flags.inrange(*n) || (m_hard(game::gamemode, game::mutators) && !G(radarhardaffinity))) return;
+        vec dir = vec(*v > 0 ? st.flags[*n].spawnloc : st.flags[*n].pos(*v < 0)).sub(camera1->o).rotate_around_z(-camera1->yaw*RAD).normalize();
         floatret(-atan2(dir.x, dir.y)/RAD);
-    }
-    ICOMMAND(0, getbomberradaryaw, "ib", (int *n, int *v), if(st.flags.inrange(*n)) getbomberradaryaw(*n, *v!=0));
+    });
 
     #define LOOPBOMBER(name,op) \
         ICOMMAND(0, loopbomber##name, "iiire", (int *base, int *count, int *skip, ident *id, uint *body), \
