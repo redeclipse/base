@@ -159,6 +159,7 @@ namespace game
     VAR(IDF_PERSIST, spectvdead, 0, 1, 2); // 0 = never, 1 = in all but duel/survivor, 2 = always
     VAR(IDF_PERSIST, spectvfirstperson, 0, 0, 2); // 0 = aim in direction followed player is facing, 1 = aim in direction determined by spectv when dead, 2 = always aim in direction
     VAR(IDF_PERSIST, spectvthirdperson, 0, 2, 2); // 0 = aim in direction followed player is facing, 1 = aim in direction determined by spectv when dead, 2 = always aim in direction
+    VAR(IDF_PERSIST, spectvplayerbias, 0, 3, VAR_MAX);
 
     VAR(IDF_PERSIST, spectvintertime, 1000, 10000, VAR_MAX);
     VAR(IDF_PERSIST, spectvintermintime, 1000, 6000, VAR_MAX);
@@ -459,7 +460,7 @@ namespace game
         if(d->state == CS_SPECTATOR || ((d->state == CS_DEAD || d->state == CS_WAITING) && !d->lastdeath)) return false;
         if(cn >= 0)
         {
-            if(cn == player1->clientnum && player1->state != CS_ALIVE && d->clientnum == player1->lastattacker) return true;
+            if(cn == focus->clientnum && focus->state != CS_ALIVE && d->clientnum == focus->lastattacker) return true;
             return d->clientnum == cn; // override
         }
         switch(level)
@@ -2469,7 +2470,7 @@ namespace game
             }
             if(count && !dir.iszero())
             {
-                if(c->player) c->inview[cament::PLAYER]++;
+                if(c->player) c->inview[cament::PLAYER] += spectvplayerbias;
                 if(c->inview[cament::PLAYER])
                 {
                     c->dir = vec(vec(dir).div(count)).sub(from).normalize();
