@@ -2097,7 +2097,7 @@ namespace UI
                 case 2: a |= TEXT_NO_INDENT|TEXT_RIGHT_JUSTIFY; left += tw*k; break;
                 default: break;
             }
-            if(rescale != 1 && limit >= 0) top += (((th*drawscale())-(th*k))*0.5f)/k;
+            if(rescale != 1) top += (((th*drawscale())-(th*k))*0.5f)/k;
             pushhudtranslate(0, 0, k);
             draw_text(getstr(), left, top, color.r, color.g, color.b, color.a, a, pos, wlen, 1);
             pophudmatrix();
@@ -2142,7 +2142,12 @@ namespace UI
             }
             text_boundsf(getstr(), tw, th, 0, 0, wlen, a);
             rescale = 1;
-            if(limit != 0)
+            if(limit < 0)
+            {
+                float lw = tw*k, lm = fabs(limit);
+                if(lw > lm) rescale = lm/lw;
+            }
+            else if(limit > 0)
             {
                 float lw = tw*k, lm = fabs(limit), lp = 0;
                 if(lw > 0) for(Object *o = this->parent; o != NULL; o = o->parent)
@@ -2156,12 +2161,13 @@ namespace UI
                     if(ls > 0)
                     {
                         float lo = (ls-lp)*lm;
-                        if(lw > lo) rescale *= lo/lw;
+                        if(lw > lo) rescale = lo/lw;
                         break;
                     }
                     if(o->iswindow()) break;
                 }
             }
+            else rescale = 1;
             w = max(w, tw*k*rescale);
             h = max(h, th*k);
         }
