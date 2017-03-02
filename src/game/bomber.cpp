@@ -150,7 +150,6 @@ namespace bomber
             if(!f.enabled) continue;
             if(gs_playing(game::gamestate) && m_team(game::gamemode, game::mutators) && bomberlockondelay && f.owner->action[AC_AFFINITY] && lastmillis-f.owner->actiontime[AC_AFFINITY] >= bomberlockondelay)
             {
-                vec colour = isbomberaffinity(f) ? pulsecolour() : vec::hexcolor(TEAM(f.team, colour));
                 gameent *e = game::getclient(findtarget(f.owner));
                 float cx = 0.5f, cy = 0.5f, cz = 1;
                 if(e && vectocursor(e->headpos(), cx, cy, cz))
