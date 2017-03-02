@@ -16,12 +16,16 @@ namespace bomber
     ICOMMAND(0, getbomberradardist, "ib", (int *n, int *v),
     {
         if(!st.flags.inrange(*n) || (m_hard(game::gamemode, game::mutators) && !G(radarhardaffinity))) return;
-        floatret(vec(*v > 0 ? st.flags[*n].spawnloc : st.flags[*n].pos(*v < 0)).sub(camera1->o).magnitude());
+        float dist = vec(*v > 0 ? st.flags[*n].spawnloc : st.flags[*n].pos(*v < 0)).sub(camera1->o).magnitude();
+        if(hud::radarlimited(dist)) return;
+        floatret(dist);
     });
     ICOMMAND(0, getbomberradaryaw, "ib", (int *n, int *v),
     {
         if(!st.flags.inrange(*n) || (m_hard(game::gamemode, game::mutators) && !G(radarhardaffinity))) return;
-        vec dir = vec(*v > 0 ? st.flags[*n].spawnloc : st.flags[*n].pos(*v < 0)).sub(camera1->o).rotate_around_z(-camera1->yaw*RAD).normalize();
+        vec dir = vec(*v > 0 ? st.flags[*n].spawnloc : st.flags[*n].pos(*v < 0)).sub(camera1->o);
+        if(hud::radarlimited(dir.magnitude())) return;
+        dir.rotate_around_z(-camera1->yaw*RAD).normalize();
         floatret(-atan2(dir.x, dir.y)/RAD);
     });
 

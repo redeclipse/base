@@ -26,12 +26,16 @@ namespace defend
     ICOMMAND(0, getdefendradardist, "ib", (int *n, int *v),
     {
         if(!st.flags.inrange(*n) || (m_hard(game::gamemode, game::mutators) && !G(radarhardaffinity))) return;
-        floatret(vec(*v > 0 ? st.flags[*n].above : (*v < 0 ? st.flags[*n].render : st.flags[*n].o)).sub(camera1->o).magnitude());
+        float dist = vec(*v > 0 ? st.flags[*n].above : (*v < 0 ? st.flags[*n].render : st.flags[*n].o)).sub(camera1->o).magnitude();
+        if(hud::radarlimited(dist)) return;
+        floatret(dist);
     });
     ICOMMAND(0, getdefendradaryaw, "ib", (int *n, int *v),
     {
         if(!st.flags.inrange(*n) || (m_hard(game::gamemode, game::mutators) && !G(radarhardaffinity))) return;
-        vec dir = vec(*v > 0 ? st.flags[*n].above : (*v < 0 ? st.flags[*n].render : st.flags[*n].o)).sub(camera1->o).rotate_around_z(-camera1->yaw*RAD).normalize();
+        vec dir = vec(*v > 0 ? st.flags[*n].above : (*v < 0 ? st.flags[*n].render : st.flags[*n].o)).sub(camera1->o);
+        if(hud::radarlimited(dir.magnitude())) return;
+        dir.rotate_around_z(-camera1->yaw*RAD).normalize();
         floatret(-atan2(dir.x, dir.y)/RAD);
     });
 

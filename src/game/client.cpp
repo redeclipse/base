@@ -772,28 +772,22 @@ namespace client
     CLCOMMAND(yaw, floatret(d ? d->yaw : 0.f));
     CLCOMMAND(pitch, floatret(d ? d->pitch : 0.f));
     CLCOMMAND(roll, floatret(d ? d->roll : 0.f));
-    //CLCOMMAND(posx, floatret(d ? d->o.x : 0.f));
-    //CLCOMMAND(posy, floatret(d ? d->o.y : 0.f));
-    //CLCOMMAND(posz, floatret(d ? d->o.z : 0.f));
-    //CLCOMMANDM(pos, "si", (char *who, int *n), floatret(d && *n >= 0 && *n < 3 ? d->o[*n] : 0.f));
     CLCOMMANDM(velocity, "si", (char *who, int *n), floatret(d ? (*n!=0 ? vec(d->vel).add(d->falling).magnitude()*0.125f : vec(d->vel).add(d->falling).magnitude()) : 0.f));
 
     CLCOMMAND(radardist,
     {
-        if(m_hard(game::gamemode, game::mutators)) return;
-        floatret(d ? vec(d->o).sub(camera1->o).magnitude() : 0.f);
+        if(m_hard(game::gamemode, game::mutators) || !d) return;
+        float dist = vec(d->o).sub(camera1->o).magnitude();
+        if(hud::radarlimited(dist)) return;
+        floatret(dist);
     });
-    void getradaryaw(gameent *d)
+    CLCOMMAND(radaryaw,
     {
-        if(m_hard(game::gamemode, game::mutators)) return;
+        if(m_hard(game::gamemode, game::mutators) || !d) return;
         vec dir = vec(d->o).sub(camera1->o);
         if(hud::radarlimited(dir.magnitude())) return;
         dir.rotate_around_z(-camera1->yaw*RAD).normalize();
         floatret(-atan2(dir.x, dir.y)/RAD);
-    }
-    CLCOMMAND(radaryaw,
-    {
-        if(d) getradaryaw(d);
     });
 
     CLCOMMANDM(name, "sbbb", (char *who, int *colour, int *icon, int *dupname), result(d ? game::colourname(d, NULL, *icon!=0, *dupname!=0, *colour >= 0 ? *colour : 3) : ""));
