@@ -142,38 +142,35 @@ namespace bomber
     FVAR(IDF_PERSIST, bomberreticlesize, 0, 0.1f, 1.f);
     void drawonscreen(int w, int h, float blend)
     {
-        static vector<int> hasbombs; hasbombs.setsize(0);
-        loopv(st.flags) if(st.flags[i].owner == game::focus) hasbombs.add(i);
+        if(!gs_playing(game::gamestate) || !m_team(game::gamemode, game::mutators) || !bomberlockondelay || game::focus->state != CS_ALIVE || !game::focus->action[AC_AFFINITY] || lastmillis-game::focus->actiontime[AC_AFFINITY] < bomberlockondelay)
+            return;
         loopv(st.flags)
         {
             bomberstate::flag &f = st.flags[i];
-            if(!f.enabled) continue;
-            if(gs_playing(game::gamestate) && m_team(game::gamemode, game::mutators) && bomberlockondelay && f.owner->action[AC_AFFINITY] && lastmillis-f.owner->actiontime[AC_AFFINITY] >= bomberlockondelay)
+            if(!f.enabled || !isbomberaffinity(f) || f.owner != game::focus) continue;
+            gameent *e = game::getclient(findtarget(f.owner));
+            float cx = 0.5f, cy = 0.5f, cz = 1;
+            if(e && vectocursor(e->headpos(), cx, cy, cz))
             {
-                gameent *e = game::getclient(findtarget(f.owner));
-                float cx = 0.5f, cy = 0.5f, cz = 1;
-                if(e && vectocursor(e->headpos(), cx, cy, cz))
+                int interval = lastmillis%500;
+                float rp = 1, gp = 1, bp = 1,
+                      sp = interval >= 250 ? (500-interval)/250.f : interval/250.f,
+                      sq = max(sp, 0.5f), size = bomberreticlesize*min(w, h);
+                hud::colourskew(rp, gp, bp, sp);
+                int sx = int(cx*w-size*sq), sy = int(cy*h-size*sq), ss = int(size*2*sq);
+                Texture *t = textureload(hud::indicatortex, 3);
+                if(t && t != notexture)
                 {
-                    int interval = lastmillis%500;
-                    float rp = 1, gp = 1, bp = 1,
-                          sp = interval >= 250 ? (500-interval)/250.f : interval/250.f,
-                          sq = max(sp, 0.5f), size = bomberreticlesize*min(w, h);
-                    hud::colourskew(rp, gp, bp, sp);
-                    int sx = int(cx*w-size*sq), sy = int(cy*h-size*sq), ss = int(size*2*sq);
-                    Texture *t = textureload(hud::indicatortex, 3);
-                    if(t && t != notexture)
-                    {
-                        glBindTexture(GL_TEXTURE_2D, t->id);
-                        gle::colorf(rp, gp, bp, sq);
-                        hud::drawsized(sx, sy, ss);
-                    }
-                    t = textureload(hud::crosshairtex, 3);
-                    if(t && t != notexture)
-                    {
-                        glBindTexture(GL_TEXTURE_2D, t->id);
-                        gle::colorf(rp, gp, bp, sq*0.5f);
-                        hud::drawsized(sx+ss/4, sy+ss/4, ss/2);
-                    }
+                    glBindTexture(GL_TEXTURE_2D, t->id);
+                    gle::colorf(rp, gp, bp, sq);
+                    hud::drawsized(sx, sy, ss);
+                }
+                t = textureload(hud::crosshairtex, 3);
+                if(t && t != notexture)
+                {
+                    glBindTexture(GL_TEXTURE_2D, t->id);
+                    gle::colorf(rp, gp, bp, sq*0.5f);
+                    hud::drawsized(sx+ss/4, sy+ss/4, ss/2);
                 }
             }
         }
