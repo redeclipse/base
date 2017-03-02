@@ -297,6 +297,9 @@ namespace hud
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, glowtex, "<grey>textures/glow", 3);
 
     VAR(IDF_PERSIST, onscreendamage, 0, 1, 2); // 0 = off, 1 = basic damage, 2 = verbose
+    FVAR(IDF_PERSIST, onscreendamagescale, 0, 0.5f, 1);
+    FVAR(IDF_PERSIST, onscreendamageblipsize, 0, 0.1f, 1);
+    FVAR(IDF_PERSIST, onscreendamageoffset, 0, 0.4f, 1);
     VAR(IDF_PERSIST, onscreendamageself, 0, 1, 1);
     VAR(IDF_PERSIST, onscreendamagemerge, 0, 250, VAR_MAX);
     VAR(IDF_PERSIST, onscreendamagetime, 1, 250, VAR_MAX);
@@ -1827,9 +1830,8 @@ namespace hud
         popfont();
     }
 
-    void drawdamageblips(int w, int h, float blend)
+    void drawonscreendamage(int w, int h, float blend)
     {
-        #if 0
         loopv(damagelocs)
         {
             dhloc &d = damagelocs[i];
@@ -1844,11 +1846,35 @@ namespace hud
                 size = clamp(range*onscreendamagesize, min(onscreendamagesize*onscreendamagemin/100.f, 1.f), onscreendamagesize)*amt;
             vec dir = d.dir, colour = d.colour < 0 ? game::rescolour(game::focus, INVPULSE(d.colour)) : vec::hexcolor(d.colour);
             if(e == game::focus) d.dir = vec(e->yaw*RAD, 0.f).neg();
-            vec o = vec(camera1->o).add(vec(dir).mul(onscreenrange()));
-            if(onscreendamage >= 5) drawblip(hurttex, 2+size/3, w, h, size, fade, 0, o, colour, "tiny", "%s +%d", e ? game::colourname(e) : "?", d.damage);
-            else drawblip(hurttex, 2+size/3, w, h, size, fade, 0, o, colour);
+            dir.rotate_around_z(-camera1->yaw*RAD).normalize();
+            float yaw = -atan2(dir.x, dir.y)/RAD, x = sinf(RAD*yaw), y = -cosf(RAD*yaw), sz = max(w, h)/2,
+                  ts = sz*onscreendamagescale, tp = ts*size, tq = tp*onscreendamageblipsize, tr = ts*onscreendamageoffset, lx = (tr*x)+w/2, ly = (tr*y)+h/2;
+            gle::color(colour, fade);
+            Texture *t = textureload(hurttex, 3);
+            if(t != notexture)
+            {
+                glBindTexture(GL_TEXTURE_2D, t->id);
+                gle::defvertex(2);
+                gle::deftexcoord0();
+                gle::begin(GL_TRIANGLE_STRIP);
+                vec2 o(lx, ly);
+                loopk(4)
+                {
+                    vec2 norm, tc;
+                    switch(k)
+                    {
+                        case 0: vecfromyaw(yaw, 1, -1, norm);   tc = vec2(0, 1); break;
+                        case 1: vecfromyaw(yaw, 1, 1, norm);    tc = vec2(1, 1); break;
+                        case 2: vecfromyaw(yaw, -1, -1, norm);  tc = vec2(0, 0); break;
+                        case 3: vecfromyaw(yaw, -1, 1, norm);   tc = vec2(1, 0); break;
+                    }
+                    norm.mul(tq).add(o);
+                    gle::attrib(norm);
+                    gle::attrib(tc);
+                }
+                gle::end();
+            }
         }
-        #endif
     }
 
     void drawhud(bool noview)
@@ -1967,7 +1993,7 @@ namespace hud
                     if(!hasinput(true))
                     {
                         if(onscreenhits) drawhits(hudwidth, hudheight, fade);
-                        if(onscreendamage) drawdamageblips(hudwidth, hudheight, fade);
+                        if(onscreendamage) drawonscreendamage(hudwidth, hudheight, fade);
                         if(m_capture(game::gamemode)) capture::drawonscreen(hudwidth, hudheight, fade);
                         else if(m_defend(game::gamemode)) defend::drawonscreen(hudwidth, hudheight, fade);
                         else if(m_bomber(game::gamemode)) bomber::drawonscreen(hudwidth, hudheight, fade);
