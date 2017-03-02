@@ -1067,7 +1067,7 @@ namespace ai
         return false;
     }
 
-    void process(gameent *d, aistate &b, bool &occupied, bool &firing, bool &enemyok)
+    void process(gameent *d, aistate &b, bool &occupied, bool &firing)
     {
         int skmod = max(101-d->skill, 1);
         float frame = d->skill <= 100 ? ((lastmillis-d->ai->lastrun)*(100.f/gamespeed))/float(skmod*10) : 1;
@@ -1116,23 +1116,33 @@ namespace ai
         else
         {
             gameent *e = game::getclient(d->ai->enemy);
-            if(!(enemyok = (e && targetable(d, e, true))) || d->skill >= 50 || d->ai->dontmove)
+            bool shootable = e && targetable(d, e, true);
+            if(!shootable || d->skill >= 50 || d->ai->dontmove)
             {
                 gameent *f = game::intersectclosest(d->o, d->ai->target, d);
                 if(f)
                 {
                     if(targetable(d, f, true))
                     {
-                        if(!enemyok) violence(d, b, f, !d->ai->dontmove && (b.type != AI_S_DEFEND || b.targtype != AI_T_AFFINITY) && W2(d->weapselect, aidist, altfire(d, f)) < CLOSEDIST ? 1 : 0);
-                        enemyok = true;
+                        if(!shootable) violence(d, b, f, !d->ai->dontmove && (b.type != AI_S_DEFEND || b.targtype != AI_T_AFFINITY) && W2(d->weapselect, aidist, altfire(d, f)) < CLOSEDIST ? 1 : 0);
+                        shootable = true;
                         e = f;
                     }
-                    else enemyok = false; // would hit non-targetable person
+                    else shootable = false; // would hit non-targetable person
                 }
-                else if((!enemyok || d->ai->dontmove) && target(d, b, 0, d->ai->dontmove && (b.type != AI_S_DEFEND || b.targtype != AI_T_AFFINITY)))
-                    enemyok = (e = game::getclient(d->ai->enemy)) != NULL;
+                else if(!shootable || d->ai->dontmove)
+                {
+                    if(target(d, b, 0, d->ai->dontmove && (b.type != AI_S_DEFEND || b.targtype != AI_T_AFFINITY)))
+                        shootable = (e = game::getclient(d->ai->enemy)) != NULL;
+                    if(!shootable)
+                    {
+                        e = NULL;
+                        d->ai->enemy = -1;
+                        d->ai->enemyseen = d->ai->enemymillis = 0;
+                    }
+                }
             }
-            if(enemyok)
+            if(e)
             {
                 bool alt = altfire(d, e);
                 vec ep = getaimpos(d, e, alt);
@@ -1154,26 +1164,23 @@ namespace ai
                         d->ai->spot = e->feetpos();
                     }
                     game::scaleyawpitch(d->yaw, d->pitch, yaw, pitch, frame, frame*0.75f);
-                    bool shoot = canshoot(d, e, alt);
-                    if(d->action[alt ? AC_SECONDARY : AC_PRIMARY] && W2(d->weapselect, cooktime, alt) && W2(d->weapselect, cooked, alt))
-                    { // TODO: make AI more aware of what they're shooting
-                        int cooked = W2(d->weapselect, cooked, alt);
-                        if(cooked&8) shoot = false; // inverted life
-                    }
-                    if(shoot && hastarget(d, b, e, alt, insight, yaw, pitch))
+                    if(shootable)
                     {
-                        d->action[alt ? AC_SECONDARY : AC_PRIMARY] = true;
-                        d->actiontime[alt ? AC_SECONDARY : AC_PRIMARY] = lastmillis;
-                        firing = true;
+                        bool shoot = canshoot(d, e, alt);
+                        if(d->action[alt ? AC_SECONDARY : AC_PRIMARY] && W2(d->weapselect, cooktime, alt) && W2(d->weapselect, cooked, alt))
+                        { // TODO: make AI more aware of what they're shooting
+                            int cooked = W2(d->weapselect, cooked, alt);
+                            if(cooked&8) shoot = false; // inverted life
+                        }
+                        if(shoot && hastarget(d, b, e, alt, insight, yaw, pitch))
+                        {
+                            d->action[alt ? AC_SECONDARY : AC_PRIMARY] = true;
+                            d->actiontime[alt ? AC_SECONDARY : AC_PRIMARY] = lastmillis;
+                            firing = true;
+                        }
+                        occupied = true;
                     }
-                    occupied = true;
                 }
-                else enemyok = false;
-            }
-            if(!enemyok)
-            {
-                d->ai->enemy = -1;
-                d->ai->enemyseen = d->ai->enemymillis = 0;
             }
         }
         if(!firing) d->action[AC_PRIMARY] = d->action[AC_SECONDARY] = false;
@@ -1235,9 +1242,9 @@ namespace ai
     bool request(gameent *d, aistate &b)
     {
         int sweap = m_weapon(d->actortype, game::gamemode, game::mutators);
-        bool occupied = false, firing = false, enemyok = false,
+        bool occupied = false, firing = false,
              haswaited = d->weapwaited(d->weapselect, lastmillis, (1<<W_S_RELOAD));
-        process(d, b, occupied, firing, enemyok);
+        process(d, b, occupied, firing);
         if(AA(d->actortype, maxcarry))
         {
             if(d->ai->dontmove && haswaited && !firing && d->carry(sweap, 1) > 1)
