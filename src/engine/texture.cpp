@@ -978,13 +978,12 @@ static bool alphaformat(GLenum format)
     }
 }
 
-int texalign(void *data, int w, int bpp)
+int texalign(const void *data, int w, int bpp)
 {
-    size_t address = size_t(data) | (w*bpp);
-    if(address&1) return 1;
-    if(address&2) return 2;
-    if(address&4) return 4;
-    return 8;
+    int stride = w*bpp;
+    if(stride&1) return 1;
+    if(stride&2) return 2;
+    return 4;
 }
 
 static Texture *newtexture(Texture *t, const char *rname, ImageData &s, int clamp = 0, bool mipit = true, bool canreduce = false, bool transient = false, int compress = 0, TextureAnim *anim = NULL)
