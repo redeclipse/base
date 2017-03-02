@@ -77,7 +77,7 @@ int mapbals[T_TOTAL][T_TOTAL] = {
     { T_KAPPA, T_SIGMA, T_ALPHA, T_OMEGA },
     { T_SIGMA, T_KAPPA, T_OMEGA, T_ALPHA }
 };
-SVAR(IDF_READONLY, teamname, "neutral alpha omega kappa sigma enemy");
+SVAR(IDF_READONLY, teamnames, "neutral alpha omega kappa sigma enemy");
 VAR(IDF_READONLY, teamidxneutral, 1, T_NEUTRAL, -1);
 VAR(IDF_READONLY, teamidxalpha, 1, T_ALPHA, -1);
 VAR(IDF_READONLY, teamidxomega, 1, T_OMEGA, -1);

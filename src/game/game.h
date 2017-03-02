@@ -262,6 +262,16 @@ int pulsecols[PULSE_MAX][PULSECOLOURS] = {
     { 0xFFFFFF, 0xDDDDDD, 0xB0B0B0, 0xAAAAAA, 0x888888, 0xAAAAAA, 0xB0B0B0, 0xDDDDDD },
     { 0xFF0000, 0xFF2222, 0xFF4444, 0xFF8888, 0xFFAAAA, 0xFF8888, 0xFF4444, 0xFF2222 }
 };
+SVAR(IDF_READONLY, pulsenames, "fire burn disco shock bleed buff warn");
+VAR(IDF_READONLY, pulseidxfire, 1, PULSE_FIRE, -1);
+VAR(IDF_READONLY, pulseidxburn, 1, PULSE_BURN, -1);
+VAR(IDF_READONLY, pulseidxdisco, 1, PULSE_DISCO, -1);
+VAR(IDF_READONLY, pulseidxshock, 1, PULSE_SHOCK, -1);
+VAR(IDF_READONLY, pulseidxbleed, 1, PULSE_BLEED, -1);
+VAR(IDF_READONLY, pulseidxbuff, 1, PULSE_BUFF, -1);
+VAR(IDF_READONLY, pulseidxwarn, 1, PULSE_WARN, -1);
+VAR(IDF_READONLY, pulseidxmax, 1, PULSE_MAX, -1);
+VAR(IDF_READONLY, pulseidxlast, 1, PULSE_LAST, -1);
 #else
 extern int pulsecols[PULSE_MAX][PULSECOLOURS];
 #endif
