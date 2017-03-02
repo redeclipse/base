@@ -2087,12 +2087,14 @@ namespace UI
             changedraw(CHANGE_COLOR);
 
             float k = drawscale(rescale), left = sx/k, top = sy/k;
-            int a = TEXT_NO_INDENT|TEXT_MODCOL;
+            int a = TEXT_MODCOL;
             switch(align)
             {
+                case -2: a |= TEXT_NO_INDENT|TEXT_LEFT_JUSTIFY; break;
                 case -1: a |= TEXT_LEFT_JUSTIFY; break;
                 case 0: a |= TEXT_CENTERED; left += tw*k*0.5f; break;
                 case 1: a |= TEXT_RIGHT_JUSTIFY; left += tw*k; break;
+                case 2: a |= TEXT_NO_INDENT|TEXT_RIGHT_JUSTIFY; left += tw*k; break;
                 default: break;
             }
             if(rescale != 1 && limit >= 0) top += (((th*drawscale())-(th*k))*0.5f)/k;
