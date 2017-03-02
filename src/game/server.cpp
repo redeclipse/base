@@ -4072,7 +4072,7 @@ namespace server
         if(ci && !ci->online && *G(servermotd))
         {
             putint(p, N_ANNOUNCE);
-            putint(p, S_GUIACT);
+            putint(p, S_ACTION);
             putint(p, CON_MESG);
             sendstring(G(servermotd), p);
         }

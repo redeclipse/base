@@ -1,6 +1,6 @@
 enum
 {
-    S_GUIPRESS = 0, S_GUIBACK, S_GUIACT,
+    S_PRESS = 0, S_BACK, S_ACTION,
     S_GAMESPECIFIC
 };
 

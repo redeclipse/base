@@ -3,6 +3,8 @@
 
 namespace UI
 {
+    int cursortype = CURSOR_DEFAULT;
+
     FVAR(0, uitextscale, 1, 0, 0);
     FVAR(0, uiscale, 0, 1, 100);
 
@@ -2843,8 +2845,8 @@ namespace UI
             if(focus == e) return;
             focus = e;
             bool allowtextinput = focus!=NULL && focus->allowtextinput();
-            ::textinput(allowtextinput, TI_GUI);
-            ::keyrepeat(allowtextinput, KR_GUI);
+            ::textinput(allowtextinput, TI_UI);
+            ::keyrepeat(allowtextinput, KR_UI);
         }
         void setfocus() { setfocus(this); }
         void clearfocus() { if(focus == this) setfocus(NULL); }
@@ -3555,6 +3557,8 @@ namespace UI
     ICOMMAND(0, uicursorx, "", (), floatret(cursorx*float(screenw)/screenh));
     ICOMMAND(0, uicursory, "", (), floatret(cursory));
 
+    ICOMMAND(0, uicursortype, "b", (int *val), { if(*val >= 0) cursortype = clamp(*val, 0, CURSOR_MAX-1); intret(cursortype); });
+
     bool showui(const char *name)
     {
         Window *window = windows.find(name, NULL);
@@ -4244,6 +4248,7 @@ namespace UI
     {
         float oldtextscale = curtextscale;
         curtextscale = 1;
+        cursortype = CURSOR_DEFAULT;
         pushfont("default");
         readyeditors();
 

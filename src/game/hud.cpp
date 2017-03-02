@@ -140,13 +140,6 @@ namespace hud
     VAR(IDF_PERSIST, teamhurtdist, 0, 0, VAR_MAX);
     FVAR(IDF_PERSIST, teamhurtsize, 0, 0.0175f, 1000);
 
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, underlaytex, "", 3);
-    VAR(IDF_PERSIST, underlaydisplay, 0, 0, 2); // 0 = only firstperson and alive, 1 = only when alive, 2 = always
-    VAR(IDF_PERSIST, underlayblend, 0, 1, 1);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, overlaytex, "", 3);
-    VAR(IDF_PERSIST, overlaydisplay, 0, 0, 2); // 0 = only firstperson and alive, 1 = only when alive, 2 = always
-    FVAR(IDF_PERSIST, overlayblend, 0, 1, 1);
-
     VAR(IDF_PERSIST, showdamage, 0, 2, 2); // 1 shows just damage texture, 2 blends as well
     VAR(IDF_PERSIST, damagefade, 0, 0, 1);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, damagetex, "<grey>textures/hud/damage", 3);
@@ -173,9 +166,8 @@ namespace hud
     VAR(IDF_PERSIST, crosshairflash, 0, 1, 1);
     FVAR(IDF_PERSIST, crosshairthrob, 1e-4f, 0.1f, 1000);
     TVAR(IDF_PERSIST|IDF_PRELOAD, pointertex, "textures/hud/pointer", 3);
-    TVAR(IDF_PERSIST|IDF_PRELOAD, guicursortex, "textures/hud/cursor", 3);
-    TVAR(IDF_PERSIST|IDF_PRELOAD, guicursorhovertex, "textures/hud/cursorhover", 3);
-    TVAR(IDF_PERSIST|IDF_PRELOAD, guicursorinputtex, "textures/hud/cursorinput", 3);
+    TVAR(IDF_PERSIST|IDF_PRELOAD, cursortex, "textures/hud/cursor", 3);
+    TVAR(IDF_PERSIST|IDF_PRELOAD, cursorhovertex, "textures/hud/cursorhover", 3);
 
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, crosshairtex, "crosshairs/cross-01", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, hithairtex, "crosshairs/cross-01-hit", 3);
@@ -302,6 +294,7 @@ namespace hud
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, playerbliptex, "<grey>textures/hud/blip", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, hurttex, "<grey>textures/hud/hurt", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, hinttex, "<grey>textures/hint", 3);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, glowtex, "<grey>textures/glow", 3);
 
     VAR(IDF_PERSIST, onscreendamage, 0, 1, 2); // 0 = off, 1 = basic damage, 2 = verbose
     VAR(IDF_PERSIST, onscreendamageself, 0, 1, 1);
@@ -333,7 +326,7 @@ namespace hud
     FVAR(IDF_PERSIST, onscreenhitsglowblend, 0, 1, 1);
     FVAR(IDF_PERSIST, onscreenhitsglowscale, 0, 2, 1000);
     FVAR(IDF_PERSIST, onscreenhitsglowcolour, 0, 0.75f, 5);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, onscreenhitsglowtex, "textures/guihover", 3);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, onscreenhitsglowtex, "<grey>textures/glow", 3);
     VAR(IDF_PERSIST|IDF_HEX, onscreenhitscolour, PC(LAST), 0xFF4444, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, onscreenhitsburncolour, PC(LAST), PC(BURN), 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, onscreenhitsbleedcolour, PC(LAST), PC(BLEED), 0xFFFFFF);
@@ -703,7 +696,7 @@ namespace hud
 
     enum
     {
-        POINTER_NONE = 0, POINTER_RELATIVE, POINTER_GUI, POINTER_EDIT, POINTER_SPEC,
+        POINTER_NONE = 0, POINTER_RELATIVE, POINTER_UI, POINTER_EDIT, POINTER_SPEC,
         POINTER_HAIR, POINTER_TEAM, POINTER_ZOOM, POINTER_HIT, POINTER_MAX
     };
 
@@ -712,17 +705,15 @@ namespace hud
         switch(index)
         {
             case POINTER_RELATIVE: return pointertex;
-            case POINTER_GUI:
+            case POINTER_UI:
             {
-                #if 0
-                switch(guicursortype)
+                switch(UI::cursortype)
                 {
-                    case 2: return guicursorinputtex; break;
-                    case 1: return guicursorhovertex; break;
-                    case 0: default: break;
+                    case CURSOR_HIDDEN: return NULL; break;
+                    case CURSOR_HOVER: return cursorhovertex; break;
+                    case CURSOR_DEFAULT: default: break;
                 }
-                #endif
-                return guicursortex;
+                return cursortex;
             }
             case POINTER_EDIT: return editcursortex;
             case POINTER_SPEC: return game::tvmode() ? tvcursortex : speccursortex;
@@ -1100,8 +1091,9 @@ namespace hud
 
     void drawpointertex(const char *tex, int x, int y, int s, float r, float g, float b, float fade)
     {
-        Texture *t = tex && *tex ? textureload(tex, 3) : NULL;
-        if(t && t != notexture)
+        if(!tex || !*tex) return;
+        Texture *t = textureload(tex, 3);
+        if(t != notexture)
         {
             if(t->type&Texture::ALPHA) glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             else glBlendFunc(GL_ONE, GL_ONE);
@@ -1113,8 +1105,8 @@ namespace hud
 
     void drawpointer(int w, int h, int index)
     {
-        int cs = int((index == POINTER_GUI ? cursorsize : crosshairsize)*hudsize);
-        float fade = index == POINTER_GUI ? cursorblend : crosshairblend;
+        int cs = int((index == POINTER_UI ? cursorsize : crosshairsize)*hudsize);
+        float fade = index == POINTER_UI ? cursorblend : crosshairblend;
         vec c(1, 1, 1);
         if(game::focus->state == CS_ALIVE && index >= POINTER_HAIR)
         {
@@ -1147,10 +1139,10 @@ namespace hud
             }
         }
         int cx = int(hudwidth*cursorx), cy = int(hudheight*cursory);
-        if(index != POINTER_GUI)
+        if(index != POINTER_UI)
         {
             drawpointertex(getpointer(index, game::focus->weapselect), cx-cs/2, cy-cs/2, cs, c.r, c.g, c.b, fade*hudblend);
-            if(index > POINTER_GUI)
+            if(index > POINTER_UI)
             {
                 if(showcirclebar) drawcirclebar(cx, cy, hudsize);
                 if(game::focus->state == CS_ALIVE && game::focus->hasweap(game::focus->weapselect, m_weapon(game::focus->actortype, game::gamemode, game::mutators)))
@@ -1168,23 +1160,13 @@ namespace hud
                 if(crosshairdistance && game::focus->state == CS_EDITING) draw_textf("\fa%.1f\fwm", cx+crosshairdistancex, cy+crosshairdistancey, 0, 0, -1, -1, -1, int(hudblend*255), TEXT_RIGHT_JUSTIFY, -1, -1, 1, game::focus->o.dist(worldpos)/8.f);
             }
         }
-        else
-        {
-            #if 0
-            if(guicursortype == 2)
-            {
-                cy -= cs/2;
-                cx -= cs/2;
-            }
-            #endif
-            drawpointertex(getpointer(index, game::focus->weapselect), cx, cy, cs, c.r, c.g, c.b, fade*hudblend);
-        }
+        else drawpointertex(getpointer(index, game::focus->weapselect), cx, cy, cs, c.r, c.g, c.b, fade*hudblend);
     }
 
     void drawpointers(int w, int h)
     {
         int index = POINTER_NONE;
-        if(hasinput()) index = hasinput(true) ? POINTER_GUI : POINTER_NONE;
+        if(hasinput()) index = hasinput(true) ? POINTER_UI : POINTER_NONE;
         else if(!showhud || !showcrosshair || game::focus->state == CS_DEAD || !gs_playing(game::gamestate) || client::waiting() || (game::thirdpersonview(true) && game::focus != game::player1))
             index = POINTER_NONE;
         else if(game::focus->state == CS_EDITING) index = POINTER_EDIT;
@@ -1547,16 +1529,6 @@ namespace hud
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             if(commandmillis <= 0 && curcompass) rendercmenu();
             else if(shownotices && !client::waiting() && !hasinput(false) && !texpaneltimer) drawnotices();
-            if(overlaydisplay >= 2 || (game::focus->state == CS_ALIVE && (overlaydisplay || !game::thirdpersonview(true))))
-            {
-                Texture *t = *overlaytex ? textureload(overlaytex, 3) : notexture;
-                if(t != notexture)
-                {
-                    glBindTexture(GL_TEXTURE_2D, t->id);
-                    gle::colorf(1.f, 1.f, 1.f, overlayblend*hudblend);
-                    drawtexture(0, 0, hudwidth, hudheight);
-                }
-            }
             glDisable(GL_BLEND);
         }
         if(progressing || !curcompass) UI::render();
@@ -1958,16 +1930,6 @@ namespace hud
         {
             if(showhud)
             {
-                if(underlaydisplay >= 2 || (game::focus->state == CS_ALIVE && (underlaydisplay || !game::thirdpersonview(true))))
-                {
-                    Texture *t = *underlaytex ? textureload(underlaytex, 3) : notexture;
-                    if(t != notexture)
-                    {
-                        glBindTexture(GL_TEXTURE_2D, t->id);
-                        gle::colorf(1.f, 1.f, 1.f, underlayblend*hudblend);
-                        drawtexture(0, 0, hudwidth, hudheight);
-                    }
-                }
                 if(gs_playing(game::gamestate))
                 {
                     bool third = game::thirdpersonview(true) && game::focus != game::player1;

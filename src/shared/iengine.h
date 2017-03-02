@@ -591,8 +591,11 @@ extern bool checkchallenge(const char *answerstr, void *correct);
 enum { EDITORFOCUSED = 1, EDITORUSED, EDITORFOREVER, EDITORREADONLY };
 struct editor;
 
+enum { CURSOR_DEFAULT = 0, CURSOR_HOVER, CURSOR_HIDDEN, CURSOR_MAX };
+
 namespace UI
 {
+    extern int cursortype;
     extern char *uiopencmd, *uiclosecmd;
     extern bool showui(const char *name);
     extern bool hideui(const char *name);

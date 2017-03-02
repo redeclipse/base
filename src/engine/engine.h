@@ -539,11 +539,11 @@ extern void getfps(int &fps, int &bestdiff, int &worstdiff);
 extern void swapbuffers(bool overlay = true);
 extern int getclockmillis();
 
-enum { KR_CONSOLE = 1<<0, KR_GUI = 1<<1, KR_EDITMODE = 1<<2 };
+enum { KR_CONSOLE = 1<<0, KR_UI = 1<<1, KR_EDITMODE = 1<<2 };
 
 extern void keyrepeat(bool on, int mask = ~0);
 
-enum { TI_CONSOLE = 1<<0, TI_GUI = 1<<1 };
+enum { TI_CONSOLE = 1<<0, TI_UI = 1<<1 };
 
 extern void textinput(bool on, int mask = ~0);
 
