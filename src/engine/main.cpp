@@ -843,7 +843,7 @@ SVAR(0, progresstitle, "");
 SVAR(0, progresstext, "");
 FVAR(0, progressamt, 0, 0, 1);
 FVAR(0, progresspart, 0, 0, 1);
-VAR(IDF_PERSIST, progressdelay, 0, 100, VAR_MAX);
+VAR(IDF_PERSIST, progressdelay, 0, 65, VAR_MAX);
 VAR(IDF_PERSIST, progressupdate, 0, 0, 1);
 int lastprogress = 0;
 
@@ -866,7 +866,7 @@ void progress(float bar1, const char *text1, float bar2, const char *text2)
     interceptkey(SDLK_UNKNOWN); // keep the event queue awake to avoid 'beachball' cursor
     #endif
 
-    setsvar("progresstitle", text1 ? text1 : "please wait..");
+    setsvar("progresstitle", text1 ? text1 : "Please wait..");
     setfvar("progressamt", bar1);
     setsvar("progresstext", text2 ? text2 : "");
     setfvar("progresspart", bar2);
@@ -876,11 +876,14 @@ void progress(float bar1, const char *text1, float bar2, const char *text2)
         else if(text1) conoutf("%s [%.2f%%]", text1, bar1*100.f);
         else conoutf("Progressing [%.2f%%]", bar1*100.f);
     }
-
+    int oldflags = identflags;
+    identflags &= ~IDF_WORLD;
     progressing = true;
     UI::update();
-    loopi(2) { drawnoview(); swapbuffers(false); }
+    drawnoview();
+    swapbuffers(false);
     progressing = false;
+    identflags = oldflags;
 }
 
 

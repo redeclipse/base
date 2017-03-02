@@ -1747,37 +1747,17 @@ namespace hud
             glBindTexture(GL_TEXTURE_2D, t->id);
             drawtexture(w-336, 0, 256, 128);
         }
+    }
 
-        pushfont("console");
-        int y = h-FONTH/2;
-        bool p = progressing;
-        const char *ptitle = progresstitle, *ptext = progresstext;
-        float pamt = progressamt, ppart = progresspart;
-        if(!p)
+    ICOMMAND(0, getprogresstitle, "", (),
+    {
+        if(progressing) stringret(newstring(progresstitle));
+        else
         {
             int wait = client::waiting();
-            if(wait > 1)
-            {
-                p = true;
-                ptitle = wait == 2 ? "Requesting map.." : "Downloading map..";
-                pamt = ppart = 0;
-                ptext = "";
-            }
+            if(wait > 1) stringret(newstring(wait == 2 ? "Requesting map.." : "Downloading map.."));
         }
-        if(p)
-        {
-            if(pamt > 0) drawprogress(FONTH, y, 0, pamt, FONTH*2, true, 1, 1, 1, 1, 1, "consub", "\fy%d%%", int(pamt*100));
-            else drawprogress(FONTH, y, 0, pamt, FONTH*2, true, 1, 1, 1, 1, 1, "consub", "\fg...");
-            y -= FONTH/2;
-            if(*ptext) y -= draw_textf("%s %s [\fs\fa%d%%\fS]", FONTH*7/2, y, 0, 0, -1, -1, -1, 255, TEXT_LEFT_UP, -1, -1, 1, *ptitle ? ptitle : "Please wait...", ptext, int(ppart*100));
-            else y -= draw_textf("%s", FONTH*7/2, y, 0, 0, -1, -1, -1, 255, TEXT_LEFT_UP, -1, -1, 1, *ptitle ? ptitle : "Please wait...");
-        }
-        y = h-FONTH;
-        if(showloadinggpu) y -= draw_textf("%s (%s v%s)", w-FONTH, y, 0, 0, -1, -1, -1, 255, TEXT_RIGHT_UP, -1, -1, 1, gfxrenderer, gfxvendor, gfxversion);
-        if(showloadingversion) y -= draw_textf("%s v%s-%s%d-%s (%s)", w-FONTH, y, 0, 0, -1, -1, -1, 255, TEXT_RIGHT_UP, -1, -1, 1, versionname, versionstring, versionplatname, versionarch, versionbranch, versionrelease);
-        if(showloadingurl && *versionurl) y -= draw_textf("%s", w-FONTH, y, 0, 0, -1, -1, -1, 255, TEXT_RIGHT_UP, -1, -1, 1, versionurl);
-        popfont();
-    }
+    });
 
     void drawonscreenhits(int w, int h, float blend)
     {

@@ -629,8 +629,8 @@ namespace UI
     enum
     {
         WINDOW_NONE = 0,
-        WINDOW_MENU = 1<<0, WINDOW_PASS = 1<<1, WINDOW_TIP = 1<<2, WINDOW_POPUP = 1<<3,
-        WINDOW_ALL = WINDOW_MENU|WINDOW_PASS|WINDOW_TIP|WINDOW_POPUP
+        WINDOW_MENU = 1<<0, WINDOW_PASS = 1<<1, WINDOW_TIP = 1<<2, WINDOW_POPUP = 1<<3, WINDOW_PERSIST = 1<<4,
+        WINDOW_ALL = WINDOW_MENU|WINDOW_PASS|WINDOW_TIP|WINDOW_POPUP|WINDOW_PERSIST
     };
 
     struct Window : Object
@@ -872,7 +872,8 @@ namespace UI
         {
             loopwindowsrev(w,
             {
-                if((w->allowinput || w->windowflags&WINDOW_PASS) && !(w->state&STATE_HIDDEN)) { hide(w, i); return true; }
+                if(w->state&STATE_HIDDEN || w->windowflags&WINDOW_PERSIST) continue;
+                if(w->allowinput || w->windowflags&WINDOW_PASS) { hide(w, i); return true; }
             });
             return false;
         }
@@ -882,6 +883,7 @@ namespace UI
             int hidden = 0;
             loopwindowsrev(w,
             {
+                if(w->windowflags&WINDOW_PERSIST) continue;
                 hide(w, i);
                 hidden++;
             });
