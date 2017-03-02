@@ -1,7 +1,7 @@
 #include "game.h"
 namespace hud
 {
-    const int NUMSTATS = 22;
+    const int NUMSTATS = 23;
     int uimillis = 0, damageresidue = 0, hudwidth = 0, hudheight = 0, lastteam = 0, laststats = 0, prevstats[NUMSTATS] = {0}, curstats[NUMSTATS] = {0};
 
     #include "compass.h"
@@ -45,13 +45,13 @@ namespace hud
         int nextstats[NUMSTATS] = {
             wtris/1024, vtris*100/max(wtris, 1), wverts/1024, vverts*100/max(wverts, 1), xtraverts/1024, xtravertsva/1024, allocnodes*8, allocva, glde, gbatches, getnumqueries(), rplanes,
             curfps, bestfpsdiff, worstfpsdiff, entities::ents.length(), entgroup.length(), ai::waypoints.length(), lightmaps.length(), getnumviewcells(),
-            int(vec(game::focus->vel).add(game::focus->falling).magnitude()), int(vec(game::focus->vel).add(game::focus->falling).magnitude()/8)
+            int(vec(game::focus->vel).add(game::focus->falling).magnitude()), int(vec(game::focus->vel).add(game::focus->falling).magnitude()/8.f), int(vec(game::focus->vel).add(game::focus->falling).magnitude()*3.6f/8.f)
         };
         loopi(NUMSTATS) if(prevstats[i] == curstats[i]) curstats[i] = nextstats[i];
     }
     ICOMMAND(0, refreshenginestats, "", (), enginestatrefresh());
     ICOMMAND(0, getenginestat, "ii", (int *n, int *prev), intret(*n >= 0 && *n < NUMSTATS ? (*prev!=0 ? prevstats[*n] : curstats[*n]) : -1));
-    static const char *enginestats[NUMSTATS] = { "wtr", "wtr%", "wvt", "wvt%", "evt", "eva", "ond", "va", "gl" "gb", "oq", "rp", "fps", "best", "worst", "ents", "entsel", "wp", "lm", "pvs", "vel", "mps" };
+    static const char *enginestats[NUMSTATS] = { "wtr", "wtr%", "wvt", "wvt%", "evt", "eva", "ond", "va", "gl" "gb", "oq", "rp", "fps", "best", "worst", "ents", "entsel", "wp", "lm", "pvs", "vel", "mps", "kmh" };
     ICOMMAND(0, getenginestatname, "i", (int *n), result(*n >= 0 && *n < NUMSTATS ? enginestats[*n]: ""));
     #define LOOPENGSTATS(name,op) \
         ICOMMAND(0, loopenginestat##name, "iire", (int *count, int *skip, ident *id, uint *body), \
@@ -99,7 +99,6 @@ namespace hud
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, teamkappatex, "<grey>textures/teamkappa", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, teamsigmatex, "<grey>textures/teamsigma", 3);
 
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, insigniatex, "<grey>textures/action", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, playertex, "<grey>textures/player", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, deadtex, "<grey>textures/dead", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, dominatingtex, "<grey>textures/dominating", 3);
