@@ -1543,56 +1543,6 @@ namespace hud
     bool radarlimited(float dist) { return radardistlimit > 0 && dist > radardistlimit; }
     ICOMMAND(0, getradarlimited, "f", (float *n), intret(radarlimited(*n) ? 1 : 0));
 
-    void drawhits(int w, int h, float blend)
-    {
-        pushfont("tiny");
-        pushhudscale(onscreenhitsscale);
-        float maxy = -1.f;
-        loopv(hitlocs)
-        {
-            dhloc &d = hitlocs[i];
-            int millis = totalmillis-d.outtime;
-            if(millis >= onscreenhitstime+onscreenhitsfade || d.dir.iszero()) { hitlocs.remove(i--); continue; }
-            if(game::focus->state == CS_SPECTATOR || game::focus->state == CS_EDITING) continue;
-            gameent *a = game::getclient(d.clientnum);
-            if((!onscreenhitsheal && d.damage < 0) || (!onscreenhitsself && a == game::focus)) continue;
-            vec o = onscreenhitsfollow && a ? a->center() : d.dir;
-            o.z += actor[a ? a->actortype : A_PLAYER].height*onscreenhitsheight;
-            float cx = 0, cy = 0, cz = 0;
-            if(!vectocursor(o, cx, cy, cz)) continue;
-            float hx = cx*w/onscreenhitsscale, hy = cy*h/onscreenhitsscale, fade = blend*onscreenhitsblend;
-            if(onscreenhitsoffset != 0) hx += FONTW*onscreenhitsoffset;
-            if(millis <= onscreenhitstime)
-            {
-                float amt = millis/float(onscreenhitstime), total = FONTW*onscreenhitsswipe*(1-amt);
-                if(onscreenhitsoffset < 0) hx -= total;
-                else hx += total;
-                fade *= amt;
-            }
-            else
-            {
-                int offset = millis-onscreenhitstime;
-                hy -= FONTH*offset/float(onscreenhitstime);
-                fade *= 1-(offset/float(onscreenhitsfade));
-            }
-            defformatstring(text, "%c%d", d.damage > 0 ? '-' : (d.damage < 0 ? '+' : '~'), d.damage < 0 ? 0-d.damage : d.damage);
-            vec colour = d.colour < 0 ? game::rescolour(a, INVPULSE(d.colour)) : vec::hexcolor(d.colour);
-            if(maxy >= 0 && hy < maxy) hy = maxy;
-            if(onscreenhitsglow)
-            {
-                float width = 0, height = 0;
-                text_boundsf(text, width, height, 0, 0, -1, TEXT_CENTERED, 1);
-                gle::colorf(colour.r*onscreenhitsglowcolour, colour.g*onscreenhitsglowcolour, colour.b*onscreenhitsglowcolour, fade*onscreenhitsglowblend);
-                settexture(onscreenhitsglowtex);
-                drawtexture(hx-(width*onscreenhitsglowscale*0.5f), hy-(height*onscreenhitsglowscale*0.25f), width*onscreenhitsglowscale, height*onscreenhitsglowscale);
-            }
-            hy += draw_textf("%s", hx, hy, 0, 0, int(colour.r*255), int(colour.g*255), int(colour.b*255), int(fade*255), TEXT_CENTERED, -1, -1, 1, text)/onscreenhitsscale;
-            if(maxy < 0 || hy > maxy) maxy = hy;
-        }
-        pophudmatrix();
-        popfont();
-    }
-
     int drawprogress(int x, int y, float start, float length, float size, bool left, float r, float g, float b, float fade, float skew, const char *font, const char *text, ...)
     {
         if(skew <= 0.f) return 0;
@@ -1829,6 +1779,56 @@ namespace hud
         popfont();
     }
 
+    void drawonscreenhits(int w, int h, float blend)
+    {
+        pushfont("tiny");
+        pushhudscale(onscreenhitsscale);
+        float maxy = -1.f;
+        loopv(hitlocs)
+        {
+            dhloc &d = hitlocs[i];
+            int millis = totalmillis-d.outtime;
+            if(millis >= onscreenhitstime+onscreenhitsfade || d.dir.iszero()) { hitlocs.remove(i--); continue; }
+            if(game::focus->state == CS_SPECTATOR || game::focus->state == CS_EDITING) continue;
+            gameent *a = game::getclient(d.clientnum);
+            if((!onscreenhitsheal && d.damage < 0) || (!onscreenhitsself && a == game::focus)) continue;
+            vec o = onscreenhitsfollow && a ? a->center() : d.dir;
+            o.z += actor[a ? a->actortype : A_PLAYER].height*onscreenhitsheight;
+            float cx = 0, cy = 0, cz = 0;
+            if(!vectocursor(o, cx, cy, cz)) continue;
+            float hx = cx*w/onscreenhitsscale, hy = cy*h/onscreenhitsscale, fade = blend*onscreenhitsblend;
+            if(onscreenhitsoffset != 0) hx += FONTW*onscreenhitsoffset;
+            if(millis <= onscreenhitstime)
+            {
+                float amt = millis/float(onscreenhitstime), total = FONTW*onscreenhitsswipe*(1-amt);
+                if(onscreenhitsoffset < 0) hx -= total;
+                else hx += total;
+                fade *= amt;
+            }
+            else
+            {
+                int offset = millis-onscreenhitstime;
+                hy -= FONTH*offset/float(onscreenhitstime);
+                fade *= 1-(offset/float(onscreenhitsfade));
+            }
+            defformatstring(text, "%c%d", d.damage > 0 ? '-' : (d.damage < 0 ? '+' : '~'), d.damage < 0 ? 0-d.damage : d.damage);
+            vec colour = d.colour < 0 ? game::rescolour(a, INVPULSE(d.colour)) : vec::hexcolor(d.colour);
+            if(maxy >= 0 && hy < maxy) hy = maxy;
+            if(onscreenhitsglow)
+            {
+                float width = 0, height = 0;
+                text_boundsf(text, width, height, 0, 0, -1, TEXT_CENTERED, 1);
+                gle::colorf(colour.r*onscreenhitsglowcolour, colour.g*onscreenhitsglowcolour, colour.b*onscreenhitsglowcolour, fade*onscreenhitsglowblend);
+                settexture(onscreenhitsglowtex);
+                drawtexture(hx-(width*onscreenhitsglowscale*0.5f), hy-(height*onscreenhitsglowscale*0.25f), width*onscreenhitsglowscale, height*onscreenhitsglowscale);
+            }
+            hy += draw_textf("%s", hx, hy, 0, 0, int(colour.r*255), int(colour.g*255), int(colour.b*255), int(fade*255), TEXT_CENTERED, -1, -1, 1, text)/onscreenhitsscale;
+            if(maxy < 0 || hy > maxy) maxy = hy;
+        }
+        pophudmatrix();
+        popfont();
+    }
+
     void drawonscreendamage(int w, int h, float blend)
     {
         loopv(damagelocs)
@@ -1991,7 +1991,7 @@ namespace hud
                     }
                     if(!hasinput(true))
                     {
-                        if(onscreenhits) drawhits(hudwidth, hudheight, fade);
+                        if(onscreenhits) drawonscreenhits(hudwidth, hudheight, fade);
                         if(onscreendamage) drawonscreendamage(hudwidth, hudheight, fade);
                         if(m_capture(game::gamemode)) capture::drawonscreen(hudwidth, hudheight, fade);
                         else if(m_defend(game::gamemode)) defend::drawonscreen(hudwidth, hudheight, fade);
