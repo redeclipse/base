@@ -1751,11 +1751,11 @@ namespace hud
 
     ICOMMAND(0, getprogresstitle, "", (),
     {
-        if(progressing) stringret(newstring(progresstitle));
+        if(progressing) result(progresstitle);
         else
         {
             int wait = client::waiting();
-            if(wait > 1) stringret(newstring(wait == 2 ? "Requesting map.." : "Downloading map.."));
+            if(wait > 1) result(wait == 2 ? "Requesting map.." : "Downloading map..");
         }
     });
 
