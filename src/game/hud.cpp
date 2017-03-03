@@ -1745,11 +1745,11 @@ namespace hud
             drawtexture(w-336, 0, 256, 128);
         }
 
-        if(!engineready && progressing)
+        if(!engineready)
         {
-            pushfont("little");
-            if(*progresstext) draw_textf("%s [%s]", FONTH*3/4, h-FONTH*3/4, 0, 0, 255, 255, 255, 255, TEXT_LEFT_UP, -1, -1, 1, *progresstitle ? progresstitle : "Loading, please wait...", progresstext);
-            else draw_textf("%s", FONTH*3/4, h-FONTH*3/4, 0, 0, 255, 255, 255, 255, TEXT_LEFT_UP, -1, -1, 1, *progresstitle ? progresstitle : "Loading, please wait...");
+            pushfont("small");
+            if(*progresstext) draw_textf("%s [%s]", FONTH*3/4, h-FONTH/2, 0, 0, 255, 255, 255, 255, TEXT_LEFT_UP, -1, -1, 1, *progresstitle ? progresstitle : "Loading, please wait...", progresstext);
+            else draw_textf("%s", FONTH*3/4, h-FONTH/2, 0, 0, 255, 255, 255, 255, TEXT_LEFT_UP, -1, -1, 1, *progresstitle ? progresstitle : "Loading, please wait...");
             popfont();
         }
     }
