@@ -160,6 +160,7 @@ namespace game
     VAR(IDF_PERSIST, spectvfirstperson, 0, 0, 2); // 0 = aim in direction followed player is facing, 1 = aim in direction determined by spectv when dead, 2 = always aim in direction
     VAR(IDF_PERSIST, spectvthirdperson, 0, 2, 2); // 0 = aim in direction followed player is facing, 1 = aim in direction determined by spectv when dead, 2 = always aim in direction
     VAR(IDF_PERSIST, spectvplayerbias, 0, 3, VAR_MAX);
+    VAR(IDF_PERSIST, spectvaffinitybias, 0, 3, VAR_MAX);
 
     VAR(IDF_PERSIST, spectvintertime, 1000, 10000, VAR_MAX);
     VAR(IDF_PERSIST, spectvintermintime, 1000, 6000, VAR_MAX);
@@ -2470,8 +2471,9 @@ namespace game
             }
             if(count && !dir.iszero())
             {
-                if(c->player) c->inview[cament::PLAYER] += spectvplayerbias;
-                if(c->inview[cament::PLAYER])
+                if(c->type == cament::PLAYER && c->player) c->inview[cament::PLAYER] += spectvplayerbias;
+                if(c->type == cament::AFFINITY || c->inview[cament::AFFINITY]) c->inview[cament::AFFINITY] += spectvaffinitybias;
+                if(c->inview[cament::PLAYER] || c->inview[cament::AFFINITY])
                 {
                     c->dir = vec(vec(dir).div(count)).sub(from).normalize();
                     return true;

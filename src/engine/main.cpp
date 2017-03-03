@@ -843,22 +843,21 @@ SVAR(0, progresstitle, "");
 SVAR(0, progresstext, "");
 FVAR(0, progressamt, 0, 0, 1);
 FVAR(0, progresspart, 0, 0, 1);
-VAR(IDF_PERSIST, progressdelay, 0, 65, VAR_MAX);
-VAR(IDF_PERSIST, progressupdate, 0, 0, 1);
+VAR(IDF_PERSIST, progressfps, 0, 30, VAR_MAX);
 int lastprogress = 0;
 
 void progress(float bar1, const char *text1, float bar2, const char *text2)
 {
+    if(progressing || !inbetweenframes || drawtex) return;
     if(bar1 < 0)
     {
         UI::hideui(NULL);
         UI::showui("loading");
         bar1 = 0;
     }
-    if(progressing || !inbetweenframes || drawtex) return;
     int ticks = SDL_GetTicks();
     if(lastprogress > 0 && ticks < 0) lastprogress = 1-INT_MAX;
-    if((vsync || !progressupdate || bar1 > 0) && ticks-lastprogress < progressdelay) return;
+    if(progressfps && ticks-lastprogress <= progressfps/1000) return;
     lastprogress = ticks;
     clientkeepalive();
 
@@ -876,6 +875,7 @@ void progress(float bar1, const char *text1, float bar2, const char *text2)
         else if(text1) conoutf("%s [%.2f%%]", text1, bar1*100.f);
         else conoutf("Progressing [%.2f%%]", bar1*100.f);
     }
+
     int oldflags = identflags;
     identflags &= ~IDF_WORLD;
     progressing = true;
