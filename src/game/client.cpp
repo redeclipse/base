@@ -674,7 +674,7 @@ namespace client
                 if(!op(arg, val, len)) return o->clientnum; \
             } \
         }
-        int len = strlen(arg);
+        size_t len = strlen(arg);
         PARSEPLAYERN(strncmp, game::colourname(o, NULL, false, true, 0));
         PARSEPLAYERN(strncasecmp, game::colourname(o, NULL, false, true, 0));
         PARSEPLAYERN(strncmp, o->name);
