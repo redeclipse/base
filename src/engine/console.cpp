@@ -320,7 +320,7 @@ void inputcommand(char *init, char *action = NULL, char *icon = NULL, int colour
 }
 
 ICOMMAND(0, saycommand, "C", (char *init), inputcommand(init));
-ICOMMAND(0, inputcommand, "sssbs", (char *init, char *action, char *icon, int *colour, char *flags), inputcommand(init, action, icon, *colour >= 0 ? *colour : colourwhite, flags));
+ICOMMAND(0, inputcommand, "sssis", (char *init, char *action, char *icon, int *colour, char *flags), inputcommand(init, action, icon, *colour > 0 ? *colour : colourwhite, flags));
 
 ICOMMAND(0, getcommandmillis, "", (), intret(commandmillis));
 ICOMMAND(0, getcommandbuf, "", (), result(commandmillis > 0 ? commandbuf : ""));
@@ -328,7 +328,7 @@ ICOMMAND(0, getcommandaction, "", (), result(commandmillis > 0 && commandaction 
 ICOMMAND(0, getcommandicon, "", (), result(commandmillis > 0 && commandicon ? commandicon : ""));
 ICOMMAND(0, getcommandpos, "", (), intret(commandmillis > 0 ? (commandpos >= 0 ? commandpos : strlen(commandbuf)) : -1));
 ICOMMAND(0, getcommandflags, "", (), intret(commandmillis > 0 ? commandflags : 0));
-ICOMMAND(0, getcommandcolour, "", (), intret(commandmillis > 0 ? commandcolour : colourwhite));
+ICOMMAND(0, getcommandcolour, "", (), intret(commandmillis > 0 && commandcolour > 0 ? commandcolour : colourwhite));
 
 char *pastetext(char *buf, size_t len)
 {
