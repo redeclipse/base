@@ -30,9 +30,6 @@ namespace hud
     VAR(IDF_PERSIST, showloadingaspect, 0, 2, 3);
     VAR(IDF_PERSIST, showloadingmapbg, 0, 1, 1);
     VAR(IDF_PERSIST, showloadinglogos, 0, 0, 1);
-    VAR(IDF_PERSIST, showloadinggpu, 0, 0, 1);
-    VAR(IDF_PERSIST, showloadingversion, 0, 1, 1);
-    VAR(IDF_PERSIST, showloadingurl, 0, 0, 1);
 
     VAR(IDF_PERSIST, statrate, 0, 200, 1000);
     void enginestatrefresh()
@@ -1746,6 +1743,14 @@ namespace hud
             t = textureload(badgetex, 3);
             glBindTexture(GL_TEXTURE_2D, t->id);
             drawtexture(w-336, 0, 256, 128);
+        }
+
+        if(!engineready && progressing)
+        {
+            pushfont("little");
+            if(*progresstext) draw_textf("%s [%s]", FONTH*3/4, h-FONTH*3/4, 0, 0, 255, 255, 255, 255, TEXT_LEFT_UP, -1, -1, 1, *progresstitle ? progresstitle : "Loading, please wait...", progresstext);
+            else draw_textf("%s", FONTH*3/4, h-FONTH*3/4, 0, 0, 255, 255, 255, 255, TEXT_LEFT_UP, -1, -1, 1, *progresstitle ? progresstitle : "Loading, please wait...");
+            popfont();
         }
     }
 

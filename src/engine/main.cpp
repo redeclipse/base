@@ -828,7 +828,12 @@ void updatefps(int frames, int millis)
     worstfpsdiff = worstdiff;
 }
 
-bool inbetweenframes = false, renderedframe = true;
+#define ENGINEBOOL(name,val) \
+    bool name = val; \
+    ICOMMAND(0, get##name, "", (), intret(name ? 1 : 0));
+ENGINEBOOL(engineready, false);
+ENGINEBOOL(inbetweenframes, false);
+ENGINEBOOL(renderedframe, true);
 
 static bool findarg(int argc, char **argv, const char *str)
 {
@@ -851,8 +856,11 @@ void progress(float bar1, const char *text1, float bar2, const char *text2)
     if(progressing || !inbetweenframes || drawtex) return;
     if(bar1 < 0)
     {
-        UI::hideui(NULL);
-        UI::showui("loading");
+        if(engineready)
+        {
+            UI::hideui(NULL);
+            UI::showui("loading");
+        }
         bar1 = 0;
     }
     int ticks = SDL_GetTicks();
@@ -1048,7 +1056,7 @@ int main(int argc, char **argv)
     if(SDL_Init(SDL_INIT_TIMER|SDL_INIT_VIDEO|SDL_INIT_AUDIO) < 0) fatal("error initialising SDL: %s", SDL_GetError());
 
     conoutf("Loading video..");
-    setcaption("please wait..");
+    setcaption("Loading, please wait..");
     SDL_SetHint(SDL_HINT_GRAB_KEYBOARD, "0");
     SDL_SetHint(SDL_HINT_VIDEO_ALLOW_SCREENSAVER, "0");
     #if !defined(WIN32) && !defined(__APPLE__)
@@ -1072,7 +1080,7 @@ int main(int argc, char **argv)
     signal(SIGALRM, fatalsignal);
 #endif
 
-    conoutf("Loading gl..");
+    conoutf("Loading GL..");
     gl_checkextensions();
     gl_init();
     if(!(notexture = textureload(notexturetex)) || !(blanktexture = textureload(blanktex)))
@@ -1139,7 +1147,7 @@ int main(int argc, char **argv)
         delete[] reprotoarg;
         reprotoarg = NULL;
     }
-
+    engineready = true;
     for(int frameloops = 0; ; frameloops = frameloops >= INT_MAX-1 ? MAXFPSHISTORY+1 : frameloops+1)
     {
         curtextscale = textscale;

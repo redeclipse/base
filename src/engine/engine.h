@@ -102,7 +102,7 @@ extern const ivec facecoords[6][4];
 extern const uchar fv[6][4];
 extern const uchar fvmasks[64];
 extern const uchar faceedgesidx[6][4];
-extern bool inbetweenframes, renderedframe;
+extern bool engineready, inbetweenframes, renderedframe;
 
 extern SDL_Window *screen;
 extern int screenw, screenh;
