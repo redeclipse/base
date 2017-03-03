@@ -296,7 +296,7 @@ ICOMMAND(0, searchwaitbinds, "sissssb", (char *action, int *limit, char *s1, cha
 
 ICOMMAND(0, keyspressed, "issss", (int *limit, char *s1, char *s2, char *sep1, char *sep2), { vector<char> list; getkeypressed(max(*limit, 0), s1, s2, sep1, sep2, list); result(list.getbuf()); });
 
-void inputcommand(char *init, char *action = NULL, char *icon = NULL, int colour = 0, char *flags = NULL) // turns input to the command line on or off
+void inputcommand(char *init, char *action = NULL, char *icon = NULL, int colour = colourwhite, char *flags = NULL) // turns input to the command line on or off
 {
     commandmillis = init ? totalmillis : -totalmillis;
     textinput(commandmillis >= 0, TI_CONSOLE);
@@ -320,7 +320,7 @@ void inputcommand(char *init, char *action = NULL, char *icon = NULL, int colour
 }
 
 ICOMMAND(0, saycommand, "C", (char *init), inputcommand(init));
-ICOMMAND(0, inputcommand, "sssis", (char *init, char *action, char *icon, int *colour, char *flags), inputcommand(init, action, icon, *colour, flags));
+ICOMMAND(0, inputcommand, "sssbs", (char *init, char *action, char *icon, int *colour, char *flags), inputcommand(init, action, icon, *colour >= 0 ? *colour : colourwhite, flags));
 
 ICOMMAND(0, getcommandmillis, "", (), intret(commandmillis));
 ICOMMAND(0, getcommandbuf, "", (), result(commandmillis > 0 ? commandbuf : ""));
@@ -328,6 +328,7 @@ ICOMMAND(0, getcommandaction, "", (), result(commandmillis > 0 && commandaction 
 ICOMMAND(0, getcommandicon, "", (), result(commandmillis > 0 && commandicon ? commandicon : ""));
 ICOMMAND(0, getcommandpos, "", (), intret(commandmillis > 0 ? (commandpos >= 0 ? commandpos : strlen(commandbuf)) : -1));
 ICOMMAND(0, getcommandflags, "", (), intret(commandmillis > 0 ? commandflags : 0));
+ICOMMAND(0, getcommandcolour, "", (), intret(commandmillis > 0 ? commandcolour : colourwhite));
 
 char *pastetext(char *buf, size_t len)
 {
