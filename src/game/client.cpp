@@ -849,7 +849,7 @@ namespace client
     CLCOMMAND(regen, intret(regentime ? d->lastregen : 0));
     CLCOMMAND(impulseregen, intret(game::canregenimpulse(d) && d->impulse[IM_METER] > 0 && d->lastimpulsecollect ? (lastmillis-d->lastimpulsecollect)%1000 : 0));
 
-    CLCOMMANDM(rescolour, "sib", (char *who, int *n, int *c), intret(d ? game::rescolint(d, *n, *c >= 0 ? *c : 0xFFFFFF) : 0));
+    CLCOMMANDM(rescolour, "sib", (char *who, int *n, int *c), intret(game::rescolint(d, *n, *c >= 0 ? *c : 0xFFFFFF)));
     CLCOMMANDM(velocity, "si", (char *who, int *n), floatret(vec(d->vel).add(d->falling).magnitude()*(*n!=0 ? (*n > 0 ? 3.6f/8.f : 0.125f) : 1.f)));
 
     #define CLDOMCMD(dtype) \

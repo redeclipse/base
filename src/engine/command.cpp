@@ -4707,7 +4707,7 @@ void clearsleep(bool clearworlds)
 
 ICOMMAND(0, clearsleep, "i", (int *worlds), clearsleep(*worlds!=0 || identflags&IDF_WORLD));
 ICOMMAND(0, exists, "ss", (char *a, char *b), intret(fileexists(a, *b ? b : "r")));
-ICOMMAND(0, getmillis, "i", (int *total), intret(*total ? totalmillis : lastmillis));
+ICOMMAND(0, getmillis, "i", (int *total), intret(*total > 0 ? totalmillis : (*total < 0 ? SDL_GetTicks() : lastmillis)));
 
 void getvariable(int num)
 {
