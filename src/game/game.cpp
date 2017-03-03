@@ -3128,8 +3128,23 @@ namespace game
         if(e->light.millis != lastmillis)
         {
             e->light.effect = playerlightmix > 0 ? vec::hexcolor(getcolour(d, playerlighttone, playerlighttonelevel)).mul(playerlightmix) : vec(0, 0, 0);
+            if(d->state == CS_ALIVE && d->lastbuff)
+            {
+                int millis = lastmillis%1000;
+                float amt = millis <= 500 ? 1.f-(millis/500.f) : (millis-500)/500.f;
+                vec pc = game::rescolour(d, PULSE_BUFF);
+                flashcolour(e->light.effect.r, e->light.effect.g, e->light.effect.b, pc.r, pc.g, pc.b, amt);
+            }
             e->light.material[0] = bvec(getcolour(d, playerovertone, playerovertonelevel));
             e->light.material[1] = bvec(getcolour(d, playerundertone, playerundertonelevel));
+            if(burntime && d->burning(lastmillis, burntime))
+                e->light.material[1].max(bvec::fromcolor(e->light.material[1].div(2).tocolor().max(rescolour(d, PULSE_BURN))));
+            if(burntime && d->bleeding(lastmillis, bleedtime))
+                e->light.material[1].max(bvec::fromcolor(e->light.material[1].div(2).tocolor().max(rescolour(d, PULSE_BLEED))));
+            if(shocktime && d->shocking(lastmillis, shocktime))
+                e->light.material[1].max(bvec::fromcolor(e->light.material[1].div(2).tocolor().max(rescolour(d, PULSE_SHOCK))));
+            if(m_bomber(gamemode) && bomber::carryaffinity(d))
+                e->light.material[1].max(bvec::fromcolor(e->light.material[1].div(2).tocolor().max(rescolour(d, PULSE_DISCO))));
             if(isweap(d->weapselect))
             {
                 if(d->weapselect == W_GRENADE)
@@ -3166,14 +3181,6 @@ namespace game
                 if(W(d->weapselect, lightpersist)&2) e->light.material[1].max(bvec::fromcolor(WPCOL(d, d->weapselect, lightcol, physics::secondaryweap(d))));
             }
             else e->light.material[2] = bvec(colourwhite);
-            if(burntime && d->burning(lastmillis, burntime))
-                e->light.material[1].max(bvec::fromcolor(e->light.material[1].div(2).tocolor().max(rescolour(d, PULSE_BURN))));
-            if(burntime && d->bleeding(lastmillis, bleedtime))
-                e->light.material[1].max(bvec::fromcolor(e->light.material[1].div(2).tocolor().max(rescolour(d, PULSE_BLEED))));
-            if(shocktime && d->shocking(lastmillis, shocktime))
-                e->light.material[1].max(bvec::fromcolor(e->light.material[1].div(2).tocolor().max(rescolour(d, PULSE_SHOCK))));
-            if(m_bomber(gamemode) && bomber::carryaffinity(d))
-                e->light.material[1].max(bvec::fromcolor(e->light.material[1].div(2).tocolor().max(rescolour(d, PULSE_DISCO))));
         }
         rendermodel(NULL, mdl, anim, o, yaw, third == 2 && firstpersonbodypitch >= 0 ? pitch*firstpersonbodypitch : pitch, third == 2 ? 0.f : roll, flags, e, attachments, basetime, basetime2, trans, size);
     }
