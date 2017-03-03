@@ -295,19 +295,22 @@ enum {
 const char *sendmaptypes[SENDMAP_MAX] = { "mpz", "cfg", "png", "txt", "wpt" };
 #else
 extern const char *sendmaptypes[SENDMAP_MAX];
-#define CLCOMMAND(name, body) \
+#define CLCOMMANDK(name, body, fail) \
     ICOMMAND(0, getclient##name, "s", (char *who), \
     { \
-        gameent *d = game::getclient(client::parsewho(who)); \
+        gameent *d = game::getclient(client::parseplayer(who)); \
+        if(!d) { fail; return; } \
         body; \
     });
-
-#define CLCOMMANDM(name, fmt, args, body) \
+#define CLCOMMAND(name, body) CLCOMMANDK(name, body,)
+#define CLCOMMANDMK(name, fmt, args, body, fail) \
     ICOMMAND(0, getclient##name, fmt, args, \
     { \
-        gameent *d = game::getclient(client::parsewho(who)); \
+        gameent *d = game::getclient(client::parseplayer(who)); \
+        if(!d) { fail; return; } \
         body; \
     });
+#define CLCOMMANDM(name, fmt, args, body) CLCOMMANDMK(name, fmt, args, body,)
 #endif
 
 #include "gamemode.h"

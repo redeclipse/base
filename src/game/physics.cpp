@@ -150,7 +150,7 @@ namespace physics
         if(m_bomber(game::gamemode)) return bomber::carryaffinity(d);
         return 0;
     }
-    CLCOMMAND(carryaffinity, intret(d ? carryaffinity(d) : 0));
+    CLCOMMAND(carryaffinity, intret(carryaffinity(d)));
 
     bool dropaffinity(gameent *d)
     {
