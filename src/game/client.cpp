@@ -650,20 +650,35 @@ namespace client
             if(n != game::player1->clientnum && !game::players.inrange(n)) return -1;
             return n;
         }
-        // try case sensitive first
-        if(!strcmp(arg, game::player1->name)) return game::player1->clientnum;
-        loopv(game::players) if(game::players[i])
-        {
-            gameent *o = game::players[i];
-            if(!strcmp(arg, o->name)) return o->clientnum;
+        #define PARSEPLAYER(op,val) \
+        { \
+            gameent *o = game::player1; \
+            if(!op(arg, val)) return o->clientnum; \
+            loopv(game::players) if(game::players[i]) \
+            { \
+                o = game::players[i]; \
+                if(!op(arg, val)) return o->clientnum; \
+            } \
         }
-        // nothing found, try case insensitive
-        if(!strcasecmp(arg, game::player1->name)) return game::player1->clientnum;
-        loopv(game::players) if(game::players[i])
-        {
-            gameent *o = game::players[i];
-            if(!strcasecmp(arg, o->name)) return o->clientnum;
+        PARSEPLAYER(strcmp, game::colourname(o, NULL, false, true, 0));
+        PARSEPLAYER(strcasecmp, game::colourname(o, NULL, false, true, 0));
+        PARSEPLAYER(strcmp, o->name);
+        PARSEPLAYER(strcasecmp, o->name);
+        #define PARSEPLAYERN(op,val) \
+        { \
+            gameent *o = game::player1; \
+            if(!op(arg, val, len)) return o->clientnum; \
+            loopv(game::players) if(game::players[i]) \
+            { \
+                o = game::players[i]; \
+                if(!op(arg, val, len)) return o->clientnum; \
+            } \
         }
+        int len = strlen(arg);
+        PARSEPLAYERN(strncmp, game::colourname(o, NULL, false, true, 0));
+        PARSEPLAYERN(strncasecmp, game::colourname(o, NULL, false, true, 0));
+        PARSEPLAYERN(strncmp, o->name);
+        PARSEPLAYERN(strncasecmp, o->name);
         return -1;
     }
     ICOMMAND(0, getclientnum, "s", (char *who), intret(parseplayer(who)));
