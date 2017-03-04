@@ -2168,7 +2168,7 @@ namespace UI
                     if(o->iswindow()) break;
                 }
             }
-            if(growth > 0) th *= growth;
+            if(growth >= 0) th *= growth;
             w = max(w, tw*k*rescale);
             h = max(h, th*k);
         }
