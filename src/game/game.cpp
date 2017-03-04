@@ -211,6 +211,7 @@ namespace game
 
     VAR(IDF_PERSIST, aboveheaddead, 0, 1, 1);
     VAR(IDF_PERSIST, aboveheadnames, 0, 1, 1);
+    VAR(IDF_PERSIST, aboveheadhealth, 0, 1, 1);
     VAR(IDF_PERSIST, aboveheadinventory, 0, 0, 2); // 0 = off, 1 = weapselect only, 2 = all weapons
     VAR(IDF_PERSIST, aboveheadstatus, 0, 1, 1);
     VAR(IDF_PERSIST, aboveheadteam, 0, 3, 3);
@@ -3168,8 +3169,21 @@ namespace game
         float blend = aboveheadblend*trans;
         if(aboveheadnames && d != player1)
         {
+	    const char *name = colourname(d);
+	    char name_health[strlen(name)+100];
+	    strcpy(name_health, name);
+	    if (aboveheadhealth && (d->health > 0)) {
+		char health[100];
+		int health_colour = 0x45db1c; /* green */
+		if (d->health < 30)
+		    health_colour = 0xe03a1d; /* red */
+	        else if (d->health < 70)
+		    health_colour = 0xe09f1d; /* yellow */	
+		sprintf(health, "\fs\f[%d]%d%%\fS", health_colour, d->health);
+	        strcat(name_health, health);
+            }
             pos.z += aboveheadnamessize/2;
-            part_textcopy(pos, colourname(d), PART_TEXT, 1, 0xFFFFFF, aboveheadnamessize, blend*aboveheadnamesblend);
+            part_textcopy(pos, name_health, PART_TEXT, 1, 0xFFFFFF, aboveheadnamessize, blend*aboveheadnamesblend);
         }
         if(aboveheadinventory && d != player1)
         {
