@@ -2099,6 +2099,7 @@ namespace UI
                 default: break;
             }
             if(rescale != 1) top += (((th*drawscale())-(th*k))*0.5f)/k;
+            if(growth < 0) top += th-(th/(0-growth));
             pushhudtranslate(0, 0, k);
             draw_text(getstr(), left, top, color.r, color.g, color.b, color.a, a, pos, wlen, 1);
             pophudmatrix();
@@ -2145,12 +2146,12 @@ namespace UI
             rescale = 1;
             if(limit < 0)
             {
-                float lw = tw*k, lm = fabs(limit);
+                float lw = tw*k, lm = 0-limit;
                 if(lw > lm) rescale = lm/lw;
             }
             else if(limit > 0)
             {
-                float lw = tw*k, lm = fabs(limit), lp = 0;
+                float lw = tw*k, lm = limit, lp = 0;
                 if(lw > 0) for(Object *o = this->parent; o != NULL; o = o->parent)
                 {
                     if(o->isspacer())
@@ -2168,7 +2169,7 @@ namespace UI
                     if(o->iswindow()) break;
                 }
             }
-            if(growth != 1) th *= growth;
+            if(growth != 1) th *= growth > 0 ? growth : 0-growth;
             w = max(w, tw*k*rescale);
             h = max(h, th*k);
         }
@@ -4077,7 +4078,7 @@ namespace UI
     UITEXTSET(scale, "f", float, 0.f, FVAR_MAX);
     UITEXTSET(wrap, "f", float, FVAR_MIN, FVAR_MAX);
     UITEXTSET(limit, "f", float, FVAR_MIN, FVAR_MAX);
-    UITEXTSET(growth, "f", float, 0.f, FVAR_MAX);
+    UITEXTSET(growth, "f", float, FVAR_MIN, FVAR_MAX);
     UITEXTSET(align, "i", int, -2, 2);
     UITEXTSET(pos, "i", int, -1, VAR_MAX);
 
