@@ -3184,8 +3184,8 @@ namespace game
 		    health_colour = 0xe03a1d; /* red */
                 else if (d->health < 70)
 		    health_colour = 0xe09f1d; /* yellow */	
-		    sprintf(health, "\fs\f[%d]%d%%\fS", health_colour, d->health);
-	            strcat(name_health, health);
+		sprintf(health, "\fs\f[%d]%d%%\fS", health_colour, d->health);
+	        strcat(name_health, health);
             }
             pos.z += aboveheadnamessize/2;
             part_textcopy(pos, name_health, PART_TEXT, 1, 0xFFFFFF, aboveheadnamessize, blend*aboveheadnamesblend);
