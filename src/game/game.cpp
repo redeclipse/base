@@ -3170,6 +3170,7 @@ namespace game
         float blend = aboveheadblend*trans;
         if(aboveheadnames && d != player1)
         {
+        {
 	    const char *name = colourname(d);
 	    static int health_length = MAXINTDIGITS + 18;
             static const int name_health_length = MAXNAMELEN + health_length;
@@ -3178,11 +3179,10 @@ namespace game
 	    if (aboveheadhealth && (d->health > 0))
 	    {
 	        char health[health_length];
-		int health_colour = 0x45db1c; /* green */
-		if (d->health < 30)
-		    health_colour = 0xe03a1d; /* red */
-                else if (d->health < 70)
-		    health_colour = 0xe09f1d; /* yellow */	
+                float h = d->health/100. * 2;
+                float x = 1 - fabsf(fmod(h,2) - 1);
+                int health_colour = 0;
+                (h > 1) ? health_colour = createRGB(255*x,255,0) : health_colour = createRGB(255,255*x,0);
 		sprintf(health, "\fs\f[%d]%d%%\fS", health_colour, d->health);
 	        strcat(name_health, health);
             }
