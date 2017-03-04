@@ -2,6 +2,7 @@
 #include "game.h"
 namespace game
 {
+    static const int MAXINTDIGITS = log10(INT_MAX);
     int nextmode = G_EDITMODE, nextmuts = 0, gamestate = G_S_WAITING, gamemode = G_EDITMODE, mutators = 0, maptime = 0, timeremaining = 0, lasttimeremain = 0,
         lastcamera = 0, lasttvcam = 0, lasttvchg = 0, lastzoom = 0, spectvfollowing = -1, starttvcamdyn = -1, lastcamcn = -1;
     bool zooming = false, inputmouse = false, inputview = false, inputmode = false;
@@ -3170,7 +3171,7 @@ namespace game
         if(aboveheadnames && d != player1)
         {
 	    const char *name = colourname(d);
-	    int health_length = log10(INT_MAX) + 18;
+	    int health_length = MAXINTDIGITS + 18;
 	    char name_health[MAXNAMELEN+health_length];
 	    strcpy(name_health, name);
 	    if (aboveheadhealth && (d->health > 0))
