@@ -780,6 +780,10 @@ namespace client
 
     ICOMMAND(0, getmodelname, "ib", (int *mdl, int *idx, int *numargs), result(*mdl >= 0 ? playertypes[*mdl%PLAYERTYPES][*idx >= 0 ? clamp(*idx, 0, 5) : 5] : ""));
 
+    ICOMMAND(0, getcamerayaw, "", (), floatret(camera1->yaw));
+    ICOMMAND(0, getcamerapitch, "", (), floatret(camera1->pitch));
+    ICOMMAND(0, getcameraroll, "", (), floatret(camera1->roll));
+
     CLCOMMANDK(presence, intret(1), intret(0));
     CLCOMMAND(yaw, floatret(d->yaw));
     CLCOMMAND(pitch, floatret(d->pitch));
@@ -794,7 +798,7 @@ namespace client
         if(hud::radarlimited(dist) && game::focus->dominated.find(d) < 0) return;
         floatret(dist);
     });
-    CLCOMMAND(radaryaw,
+    CLCOMMAND(radardir,
     {
         if(m_hard(game::gamemode, game::mutators)) return;
         if(d->state != CS_ALIVE && d->state != CS_EDITING && (!d->lastdeath || (d->state != CS_DEAD && d->state != CS_WAITING))) return;
@@ -802,6 +806,13 @@ namespace client
         if(hud::radarlimited(dir.magnitude()) && game::focus->dominated.find(d) < 0) return;
         dir.rotate_around_z(-camera1->yaw*RAD).normalize();
         floatret(-atan2(dir.x, dir.y)/RAD);
+    });
+    CLCOMMAND(radaryaw,
+    {
+        if(m_hard(game::gamemode, game::mutators)) return;
+        if(d->state != CS_ALIVE && d->state != CS_EDITING && (!d->lastdeath || (d->state != CS_DEAD && d->state != CS_WAITING))) return;
+        if(hud::radarlimited(vec(d->o).sub(camera1->o).magnitude()) && game::focus->dominated.find(d) < 0) return;
+        floatret(d->yaw-camera1->yaw);
     });
 
     CLCOMMANDM(name, "sbbb", (char *who, int *colour, int *icon, int *dupname), result(game::colourname(d, NULL, *icon!=0, *dupname!=0, *colour >= 0 ? *colour : 3)));

@@ -287,7 +287,7 @@ namespace hud
     VAR(IDF_PERSIST, rocketcliprotate, 0, 12, 15);
 
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, bliptex, "<grey>textures/hud/blip", 3);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, playerbliptex, "<grey>textures/hud/blip", 3);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, playerbliptex, "<grey>textures/hud/playerblip", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, hurttex, "<grey>textures/hud/hurt", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, hinttex, "<grey>textures/hint", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, glowtex, "<grey>textures/glow", 3);

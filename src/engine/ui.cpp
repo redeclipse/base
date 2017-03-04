@@ -3455,13 +3455,14 @@ namespace UI
 
     struct RadarBlip : Image
     {
-        float yaw, blipx, blipy, dist;
+        float yaw, blipx, blipy, dist, blipyaw;
         uchar blipadjust;
 
-        void setup(Texture *tex_, const Color &color_, float yaw_ = 0, float dist_ = 0, float minw_ = 0, float minh_ = 0)
+        void setup(Texture *tex_, const Color &color_, float yaw_ = 0, float blipyaw_ = 0, float dist_ = 0, float minw_ = 0, float minh_ = 0)
         {
             Image::setup(tex_, color_, true, minw_, minh_);
             yaw = yaw_;
+            blipyaw = blipyaw_;
             blipx = sinf(RAD*yaw);
             blipy = -cosf(RAD*yaw);
             dist = dist_;
@@ -3528,26 +3529,29 @@ namespace UI
                     case ALIGN_VCENTER: break;
                     case ALIGN_BOTTOM:  ry += blipy*h*0.5f; break;
                 }
+                float bbx = blipx, bby = blipy;
                 if(tex != notexture)
                 {
                     bindtex();
+                    bbx = sinf(RAD*blipyaw);
+                    bby = -cosf(RAD*blipyaw);
                     loopk(4)
                     {
                         vec2 norm;
                         float tx = 0, ty = 0;
                         switch(k)
                         {
-                            case 0: vecfromyaw(yaw, -1, -1, norm);  tx = 0; ty = 0; break;
-                            case 1: vecfromyaw(yaw, -1, 1, norm);   tx = 1; ty = 0; break;
-                            case 2: vecfromyaw(yaw, 1, 1, norm);    tx = 1; ty = 1; break;
-                            case 3: vecfromyaw(yaw, 1, -1, norm);   tx = 0; ty = 1; break;
+                            case 0: vecfromyaw(blipyaw, -1, -1, norm);  tx = 0; ty = 0; break;
+                            case 1: vecfromyaw(blipyaw, -1, 1, norm);   tx = 1; ty = 0; break;
+                            case 2: vecfromyaw(blipyaw, 1, 1, norm);    tx = 1; ty = 1; break;
+                            case 3: vecfromyaw(blipyaw, 1, -1, norm);   tx = 0; ty = 1; break;
                         }
                         norm.mul(vec2(w*0.5f, h*0.5f)).add(vec2(rx+w*0.5f, ry+h*0.5f));
                         gle::attrib(norm); gle::attribf(tx, ty);
 
                     }
                 }
-                Object::draw(rx+blipx*w*RAD, ry+blipy*h*RAD); // don't descend unless we process the blip
+                Object::draw(rx+bbx*w*RAD, ry+bby*h*RAD); // don't descend unless we process the blip
             }
         }
     };
@@ -4187,8 +4191,8 @@ namespace UI
     ICOMMAND(0, uiradar, "fffffe", (float *dist, float *offset, float *border, float *minw, float *minh, uint *children),
         BUILD(Radar, o, o->setup(*dist, *offset, *border, *minw*uiscale, *minh*uiscale), children));
 
-    ICOMMAND(0, uiradarblip, "siffffe", (char *texname, int *c, float *yaw, float *dist, float *minw, float *minh, uint *children),
-        BUILD(RadarBlip, o, o->setup(textureload(texname, 3, true, false), Color(*c), *yaw, *dist, *minw*uiscale, *minh*uiscale), children));
+    ICOMMAND(0, uiradarblip, "sifffffe", (char *texname, int *c, float *yaw, float *blipyaw, float *dist, float *minw, float *minh, uint *children),
+        BUILD(RadarBlip, o, o->setup(textureload(texname, 3, true, false), Color(*c), *yaw, *blipyaw, *dist, *minw*uiscale, *minh*uiscale), children));
 
     bool hasinput()
     {

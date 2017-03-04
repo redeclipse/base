@@ -20,7 +20,7 @@ namespace bomber
         if(hud::radarlimited(dist)) return;
         floatret(dist);
     });
-    ICOMMAND(0, getbomberradaryaw, "ib", (int *n, int *v),
+    ICOMMAND(0, getbomberradardir, "ib", (int *n, int *v),
     {
         if(!st.flags.inrange(*n) || (m_hard(game::gamemode, game::mutators) && !G(radarhardaffinity))) return;
         vec dir = vec(*v > 0 ? st.flags[*n].spawnloc : st.flags[*n].pos(*v < 0)).sub(camera1->o);

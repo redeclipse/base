@@ -30,7 +30,7 @@ namespace defend
         if(hud::radarlimited(dist)) return;
         floatret(dist);
     });
-    ICOMMAND(0, getdefendradaryaw, "ib", (int *n, int *v),
+    ICOMMAND(0, getdefendradardir, "ib", (int *n, int *v),
     {
         if(!st.flags.inrange(*n) || (m_hard(game::gamemode, game::mutators) && !G(radarhardaffinity))) return;
         vec dir = vec(*v > 0 ? st.flags[*n].above : (*v < 0 ? st.flags[*n].render : st.flags[*n].o)).sub(camera1->o);
