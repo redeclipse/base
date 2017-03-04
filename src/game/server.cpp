@@ -5465,8 +5465,8 @@ namespace server
         if(type != N_SENDMAPFILE) return -1;
         if(n < 0 || n >= SENDMAP_MAX) return -1;
         if(ci->clientnum != mapsending) return -1;
-        if(!len) return n; // zero len is no file
         if(mapdata[n]) DELETEP(mapdata[n]);
+        if(!len) return n; // zero len is no file
         defformatstring(fname, "backups/tempfile.%s", sendmaptypes[n]);
         mapdata[n] = opentempfile(fname, "w+b");
         if(!mapdata[n])
