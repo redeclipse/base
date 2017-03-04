@@ -3171,8 +3171,9 @@ namespace game
         if(aboveheadnames && d != player1)
         {
 	    const char *name = colourname(d);
-	    int health_length = MAXINTDIGITS + 18;
-	    char name_health[MAXNAMELEN+health_length];
+	    static int health_length = MAXINTDIGITS + 18;
+            static const int name_health_length = MAXNAMELEN + health_length;
+	    char name_health[name_health_length];
 	    strcpy(name_health, name);
 	    if (aboveheadhealth && (d->health > 0))
 	    {
