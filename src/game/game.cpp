@@ -3169,21 +3169,22 @@ namespace game
         float blend = aboveheadblend*trans;
         if(aboveheadnames && d != player1)
         {
-	        const char *name = colourname(d);
-	        int health_length;
-	        int h = d->health;
-	        for (health_length=0; h!=0; health_length++, h=h/10){}
-	        health_length += 17; /* Fixed amount of extra-characters manually calculated */
-	        char name_health[strlen(name)+health_length];
-	        strcpy(name_health, name);
-	        if (aboveheadhealth && (d->health > 0)) {
-		        char health[health_length];
-		        int health_colour = 0x45db1c; /* green */
-		        if (d->health < 30)
-		            health_colour = 0xe03a1d; /* red */
-	            else if (d->health < 70)
-		            health_colour = 0xe09f1d; /* yellow */	
-		        sprintf(health, "\fs\f[%d]%d%%\fS", health_colour, d->health);
+	    const char *name = colourname(d);
+	    int health_length;
+	    int h = d->health;
+	    for (health_length=0; h!=0; health_length++, h=h/10);
+	    health_length += 17;
+	    char name_health[MAXNAMELEN+health_length];
+	    strcpy(name_health, name);
+	    if (aboveheadhealth && (d->health > 0))
+	    {
+	        char health[health_length];
+		int health_colour = 0x45db1c; /* green */
+		if (d->health < 30)
+		    health_colour = 0xe03a1d; /* red */
+                else if (d->health < 70)
+		    health_colour = 0xe09f1d; /* yellow */	
+		    sprintf(health, "\fs\f[%d]%d%%\fS", health_colour, d->health);
 	            strcat(name_health, health);
             }
             pos.z += aboveheadnamessize/2;
