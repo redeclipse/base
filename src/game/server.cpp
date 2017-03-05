@@ -4573,7 +4573,7 @@ namespace server
             clientinfo *m = target >= 0 ? (clientinfo *)getinfo(target) : NULL;
             if(target < 0 || (m && m->state == CS_ALIVE && !m->protect(gamemillis, m_protect(gamemode, mutators))))
                 sendf(-1, 1, "ri9ix", N_STICKY, ci->clientnum, target, id, norm.x, norm.y, norm.z, pos.x, pos.y, pos.z, ci->clientnum);
-            else srvmsgft(ci->clientnum, CON_DEBUG, "sync error: sticky [%d (%d)] failed - state disallows it", weap, id);
+            //else srvmsgft(ci->clientnum, CON_DEBUG, "sync error: sticky [%d (%d)] failed - state disallows it", weap, id);
         }
     }
 
@@ -4610,16 +4610,12 @@ namespace server
             }
             else loopv(hits)
             {
-                bool first = true;
                 hitset &h = hits[i];
                 clientinfo *m = (clientinfo *)getinfo(h.target);
+                if(!m) continue;
+                bool first = true;
                 loopvj(hitclients) if(hitclients[j] == m) first = false;
                 hitclients.add(m);
-                if(!m)
-                {
-                    srvmsgft(ci->clientnum, CON_DEBUG, "sync error: destroy [%d (%d)] failed - hit %d [%d] not found", weap, id, i, h.target);
-                    continue;
-                }
                 if(h.proj)
                 {
                     loopj(W_MAX) loopk(2) if(m->weapshots[j][k].find(h.proj))
@@ -4637,7 +4633,7 @@ namespace server
                     {
                         int damage = calcdamage(ci, m, weap, hflags, rad, size, dist, skew, ci == m);
                         if(damage) dodamage(m, ci, damage, weap, fromweap, fromflags, hflags, 0, h.dir, h.vel, dist, first);
-                        else srvmsgft(ci->clientnum, CON_DEBUG, "sync error: destroy [%d (%d)] failed - hit %d [%d] determined zero damage", weap, id, i, h.target);
+                        //else srvmsgft(ci->clientnum, CON_DEBUG, "sync error: destroy [%d (%d)] failed - hit %d [%d] determined zero damage", weap, id, i, h.target);
                     }
                     //else srvmsgft(ci->clientnum, CON_DEBUG, "sync error: destroy [%d (%d)] failed - hit %d [%d] state disallows it", weap, id, i, h.target);
                 }
