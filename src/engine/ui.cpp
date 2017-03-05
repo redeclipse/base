@@ -3532,9 +3532,9 @@ namespace UI
                 }
                 if(!anrm.iszero())
                 {
-                    anrm.normalize().rotate_around_z(yaw*RAD);
-                    rx += anrm.x*w*0.5f;
-                    ry += anrm.y*h*0.5f;
+                    anrm.normalize().mul(vec2(w*0.5f, h*0.5f)).rotate_around_z(yaw*RAD);
+                    rx += anrm.x;
+                    ry += anrm.y;
                 }
 
                 float bbx = blipx, bby = blipy;
