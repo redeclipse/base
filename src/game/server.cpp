@@ -3716,7 +3716,7 @@ namespace server
                 {
                     if(nargs <= 1 || !arg)
                     {
-                        srvmsgf(ci->clientnum, id->flags&IDF_HEX && *id->storage.i >= 0 ? (id->maxval==0xFFFFFF ? "\fy%s = 0x%.6X" : "\fy%s = 0x%X") : "\fy%s = %d", name, *id->storage.i);
+                        srvmsgft(ci->clientnum, CON_DEBUG, id->flags&IDF_HEX && *id->storage.i >= 0 ? (id->maxval==0xFFFFFF ? "\fy%s = 0x%.6X" : "\fy%s = 0x%X") : "\fy%s = %d", name, *id->storage.i);
                         return;
                     }
                     else if(locked && !haspriv(ci, locked, "change that variable"))
@@ -3727,7 +3727,7 @@ namespace server
                     }
                     if(id->maxval < id->minval || id->flags&IDF_READONLY)
                     {
-                        srvmsgf(ci->clientnum, "\frCannot override variable: %s", name);
+                        srvmsgft(ci->clientnum, CON_DEBUG, "\frCannot override variable: %s", name);
                         return;
                     }
                     int ret = parseint(arg);
@@ -3750,7 +3750,7 @@ namespace server
                 {
                     if(nargs <= 1 || !arg)
                     {
-                        srvmsgf(ci->clientnum, "\fy%s = %s", name, floatstr(*id->storage.f));
+                        srvmsgft(ci->clientnum, CON_DEBUG, "\fy%s = %s", name, floatstr(*id->storage.f));
                         return;
                     }
                     else if(locked && !haspriv(ci, locked, "change that variable"))
@@ -3761,13 +3761,13 @@ namespace server
                     }
                     if(id->maxvalf < id->minvalf || id->flags&IDF_READONLY)
                     {
-                        srvmsgf(ci->clientnum, "\frCannot override variable: %s", name);
+                        srvmsgft(ci->clientnum, CON_DEBUG, "\frCannot override variable: %s", name);
                         return;
                     }
                     float ret = parsefloat(arg);
                     if(ret < id->minvalf || ret > id->maxvalf)
                     {
-                        srvmsgf(ci->clientnum, "\frValid range for %s is %s..%s", name, floatstr(id->minvalf), floatstr(id->maxvalf));
+                        srvmsgft(ci->clientnum, CON_DEBUG, "\frValid range for %s is %s..%s", name, floatstr(id->minvalf), floatstr(id->maxvalf));
                         return;
                     }
                     checkvar(id, arg);
@@ -3781,7 +3781,7 @@ namespace server
                 {
                     if(nargs <= 1 || !arg)
                     {
-                        srvmsgf(ci->clientnum, strchr(*id->storage.s, '"') ? "\fy%s = [%s]" : "\fy%s = \"%s\"", name, *id->storage.s);
+                        srvmsgft(ci->clientnum, CON_DEBUG, strchr(*id->storage.s, '"') ? "\fy%s = [%s]" : "\fy%s = \"%s\"", name, *id->storage.s);
                         return;
                     }
                     else if(locked && !haspriv(ci, locked, "change that variable"))
@@ -3792,7 +3792,7 @@ namespace server
                     }
                     if(id->flags&IDF_READONLY)
                     {
-                        srvmsgf(ci->clientnum, "\frCannot override variable: %s", name);
+                        srvmsgft(ci->clientnum, CON_DEBUG, "\frCannot override variable: %s", name);
                         return;
                     }
                     checkvar(id, arg);
@@ -3817,7 +3817,7 @@ namespace server
                 else relayf(3, "\fy%s set %s to %s", colourname(ci), name, val);
             }
         }
-        else srvmsgf(ci->clientnum, "\frUnknown command: %s", cmd);
+        else srvmsgft(ci->clientnum, CON_DEBUG, "\frUnknown command: %s", cmd);
     }
 
     bool rewritecommand(ident *id, tagval *args, int numargs)
@@ -4567,13 +4567,13 @@ namespace server
         {
             if(!ci->weapshots[weap][WS(flags) ? 1 : 0].find(id))
             {
-                if(G(serverdebug) >= 2) srvmsgf(ci->clientnum, "sync error: sticky [%d (%d)] failed - not found", weap, id);
+                srvmsgft(ci->clientnum, CON_DEBUG, "sync error: sticky [%d (%d)] failed - not found", weap, id);
                 return;
             }
             clientinfo *m = target >= 0 ? (clientinfo *)getinfo(target) : NULL;
             if(target < 0 || (m && m->state == CS_ALIVE && !m->protect(gamemillis, m_protect(gamemode, mutators))))
                 sendf(-1, 1, "ri9ix", N_STICKY, ci->clientnum, target, id, norm.x, norm.y, norm.z, pos.x, pos.y, pos.z, ci->clientnum);
-            else if(G(serverdebug) >= 2) srvmsgf(ci->clientnum, "sync error: sticky [%d (%d)] failed - state disallows it", weap, id);
+            else srvmsgft(ci->clientnum, CON_DEBUG, "sync error: sticky [%d (%d)] failed - state disallows it", weap, id);
         }
     }
 
@@ -4588,7 +4588,7 @@ namespace server
         {
             if(!ci->weapshots[weap][WS(flags) ? 1 : 0].find(id))
             {
-                if(G(serverdebug) >= 2) srvmsgf(ci->clientnum, "sync error: destroy [%d:%d (%d)] failed - not found", weap, WS(flags) ? 1 : 0, id);
+                srvmsgft(ci->clientnum, CON_DEBUG, "sync error: destroy [%d:%d (%d)] failed - not found", weap, WS(flags) ? 1 : 0, id);
                 return;
             }
             vector<clientinfo *> hitclients;
@@ -4617,7 +4617,7 @@ namespace server
                 hitclients.add(m);
                 if(!m)
                 {
-                    if(G(serverdebug) >= 2) srvmsgf(ci->clientnum, "sync error: destroy [%d (%d)] failed - hit %d [%d] not found", weap, id, i, h.target);
+                    srvmsgft(ci->clientnum, CON_DEBUG, "sync error: destroy [%d (%d)] failed - hit %d [%d] not found", weap, id, i, h.target);
                     continue;
                 }
                 if(h.proj)
@@ -4637,11 +4637,9 @@ namespace server
                     {
                         int damage = calcdamage(ci, m, weap, hflags, rad, size, dist, skew, ci == m);
                         if(damage) dodamage(m, ci, damage, weap, fromweap, fromflags, hflags, 0, h.dir, h.vel, dist, first);
-                        else if(G(serverdebug) >= 2)
-                            srvmsgf(ci->clientnum, "sync error: destroy [%d (%d)] failed - hit %d [%d] determined zero damage", weap, id, i, h.target);
+                        else srvmsgft(ci->clientnum, CON_DEBUG, "sync error: destroy [%d (%d)] failed - hit %d [%d] determined zero damage", weap, id, i, h.target);
                     }
-                    else if(G(serverdebug) >= 2)
-                        srvmsgf(ci->clientnum, "sync error: destroy [%d (%d)] failed - hit %d [%d] state disallows it", weap, id, i, h.target);
+                    else srvmsgft(ci->clientnum, CON_DEBUG, "sync error: destroy [%d (%d)] failed - hit %d [%d] state disallows it", weap, id, i, h.target);
                 }
             }
         }
@@ -4651,7 +4649,7 @@ namespace server
     {
         if(!ci->isalive(gamemillis) || !isweap(weap))
         {
-            if(G(serverdebug) >= 3) srvmsgf(ci->clientnum, "sync error: shoot [%d] failed - unexpected message", weap);
+            srvmsgft(ci->clientnum, CON_DEBUG, "sync error: shoot [%d] failed - unexpected message", weap);
             return;
         }
         int sub = W2(weap, ammosub, WS(flags));
@@ -4670,7 +4668,7 @@ namespace server
             {
                 if(sub && W(weap, ammomax)) ci->ammo[weap] = max(ci->ammo[weap]-sub, 0);
                 if(!ci->hasweap(weap, m_weapon(ci->actortype, gamemode, mutators))) ci->entid[weap] = -1; // its gone..
-                if(G(serverdebug)) srvmsgf(ci->clientnum, "sync error: shoot [%d] failed - current state disallows it", weap);
+                srvmsgft(ci->clientnum, CON_DEBUG, "sync error: shoot [%d] failed - current state disallows it", weap);
                 return;
             }
             if(ci->weapload[ci->weapselect] > 0)
@@ -4700,7 +4698,7 @@ namespace server
     {
         if(!ci->isalive(gamemillis) || !isweap(weap))
         {
-            if(G(serverdebug) >= 3) srvmsgf(ci->clientnum, "sync error: switch [%d] failed - unexpected message", weap);
+            srvmsgft(ci->clientnum, CON_DEBUG, "sync error: switch [%d] failed - unexpected message", weap);
             sendf(ci->clientnum, 1, "ri3", N_WSELECT, ci->clientnum, ci->weapselect);
             return;
         }
@@ -4708,7 +4706,7 @@ namespace server
         {
             if(!ci->canswitch(weap, m_weapon(ci->actortype, gamemode, mutators), millis, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
             {
-                if(G(serverdebug)) srvmsgf(ci->clientnum, "sync error: switch [%d] failed - current state disallows it", weap);
+                srvmsgft(ci->clientnum, CON_DEBUG, "sync error: switch [%d] failed - current state disallows it", weap);
                 sendf(-1, 1, "ri3", N_WSELECT, ci->clientnum, ci->weapselect);
                 return;
             }
@@ -4728,7 +4726,7 @@ namespace server
     {
         if(!ci->isalive(gamemillis) || !isweap(weap))
         {
-            if(G(serverdebug) >= 3) srvmsgf(ci->clientnum, "sync error: drop [%d] failed - unexpected message", weap);
+            srvmsgft(ci->clientnum, CON_DEBUG, "sync error: drop [%d] failed - unexpected message", weap);
             return;
         }
         int sweap = m_weapon(ci->actortype, gamemode, mutators);
@@ -4736,7 +4734,7 @@ namespace server
         {
             if(!ci->candrop(weap, sweap, millis, m_loadout(gamemode, mutators), (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
             {
-                if(G(serverdebug)) srvmsgf(ci->clientnum, "sync error: drop [%d] failed - current state disallows it", weap);
+                srvmsgft(ci->clientnum, CON_DEBUG, "sync error: drop [%d] failed - current state disallows it", weap);
                 return;
             }
             if(ci->weapload[ci->weapselect] > 0)
@@ -4763,12 +4761,12 @@ namespace server
     {
         if(!ci->isalive(gamemillis) || !isweap(weap))
         {
-            if(G(serverdebug) >= 3) srvmsgf(ci->clientnum, "sync error: reload [%d] failed - unexpected message", weap);
+            srvmsgft(ci->clientnum, CON_DEBUG, "sync error: reload [%d] failed - unexpected message", weap);
             return;
         }
         if(!ci->canreload(weap, m_weapon(ci->actortype, gamemode, mutators), false, millis))
         {
-            if(G(serverdebug)) srvmsgf(ci->clientnum, "sync error: reload [%d] failed - current state disallows it", weap);
+            srvmsgft(ci->clientnum, CON_DEBUG, "sync error: reload [%d] failed - current state disallows it", weap);
             return;
         }
         ci->setweapstate(weap, W_S_RELOAD, W(weap, delayreload), millis);
@@ -4782,12 +4780,12 @@ namespace server
     {
         if(ci->state != CS_ALIVE || !sents.inrange(ent) || sents[ent].type != WEAPON)
         {
-            if(G(serverdebug) >= 3) srvmsgf(ci->clientnum, "sync error: use [%d] failed - unexpected message", ent);
+            srvmsgft(ci->clientnum, CON_DEBUG, "sync error: use [%d] failed - unexpected message", ent);
             return;
         }
         if(!finditem(ent))
         {
-            if(G(serverdebug)) srvmsgf(ci->clientnum, "sync error: use [%d] failed - doesn't seem to be spawned anywhere", ent);
+            srvmsgft(ci->clientnum, CON_DEBUG, "sync error: use [%d] failed - doesn't seem to be spawned anywhere", ent);
             return;
         }
         ci->updateweaptime();
@@ -4797,7 +4795,7 @@ namespace server
         {
             if(!ci->canuse(sents[ent].type, attr, sents[ent].attrs, sweap, millis, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
             {
-                if(G(serverdebug)) srvmsgf(ci->clientnum, "sync error: use [%d] failed - current state disallows it", ent);
+                srvmsgft(ci->clientnum, CON_DEBUG, "sync error: use [%d] failed - current state disallows it", ent);
                 return;
             }
             if(ci->weapload[ci->weapselect] > 0)
@@ -5988,7 +5986,7 @@ namespace server
                             if(!proceed) break;
                             if(!cp->isalive(gamemillis) || !isweap(cp->weapselect) || (wstate != W_S_IDLE && wstate != W_S_ZOOM && wstate != W_S_POWER))
                             {
-                                if(G(serverdebug)) srvmsgf(cp->clientnum, "sync error: power [%d] failed - unexpected message", cp->weapselect);
+                                srvmsgft(cp->clientnum, CON_DEBUG, "sync error: power [%d] failed - unexpected message", cp->weapselect);
                                 break;
                             }
                             if(cp->weapstate[cp->weapselect] == W_S_RELOAD && !cp->weapwaited(cp->weapselect, gamemillis))
@@ -5996,7 +5994,7 @@ namespace server
                                 if(!cp->weapwaited(cp->weapselect, gamemillis, (1<<W_S_RELOAD)))
                                 {
                                     if(!cp->hasweap(cp->weapselect, m_weapon(cp->actortype, gamemode, mutators))) cp->entid[cp->weapselect] = -1; // its gone..
-                                    if(G(serverdebug)) srvmsgf(cp->clientnum, "sync error: power [%d] failed - current state disallows it", cp->weapselect);
+                                    srvmsgft(cp->clientnum, CON_DEBUG, "sync error: power [%d] failed - current state disallows it", cp->weapselect);
                                     break;
                                 }
                                 else if(cp->weapload[cp->weapselect] > 0)
@@ -6045,7 +6043,7 @@ namespace server
                     if(!ci || ci->actortype > A_PLAYER) break;
                     if(!allowstate(ci, val ? ALST_EDIT : ALST_WALK, G(editlock)))
                     {
-                        if(G(serverdebug)) srvmsgf(ci->clientnum, "sync error: unable to switch state %s - %d [%d, %d]", colourname(ci), ci->state, ci->lastdeath, gamemillis);
+                        srvmsgft(ci->clientnum, CON_DEBUG, "sync error: unable to switch state %s - %d [%d, %d]", colourname(ci), ci->state, ci->lastdeath, gamemillis);
                         spectator(ci);
                         break;
                     }
@@ -6093,7 +6091,7 @@ namespace server
                     if(!hasclient(cp, ci)) break;
                     if(!allowstate(cp, ALST_TRY, m_edit(gamemode) ? G(spawneditlock) : G(spawnlock)))
                     {
-                        if(G(serverdebug)) srvmsgf(cp->clientnum, "sync error: unable to spawn %s - %d [%d, %d]", colourname(cp), cp->state, cp->lastdeath, gamemillis);
+                        srvmsgft(cp->clientnum, CON_DEBUG, "sync error: unable to spawn %s - %d [%d, %d]", colourname(cp), cp->state, cp->lastdeath, gamemillis);
                         //spectator(cp);
                         break;
                     }
@@ -6128,7 +6126,7 @@ namespace server
                     if(!hasclient(cp, ci)) break;
                     if(!allowstate(cp, ALST_SPAWN))
                     {
-                        if(G(serverdebug)) srvmsgf(cp->clientnum, "sync error: unable to spawn %s - %d [%d, %d]", colourname(cp), cp->state, cp->lastdeath, gamemillis);
+                        srvmsgft(cp->clientnum, CON_DEBUG, "sync error: unable to spawn %s - %d [%d, %d]", colourname(cp), cp->state, cp->lastdeath, gamemillis);
                         //spectator(cp);
                         break;
                     }
@@ -6418,7 +6416,7 @@ namespace server
                             }
                         }
                     }
-                    else if(G(serverdebug)) srvmsgf(cp->clientnum, "sync error: cannot trigger %d - not a trigger", ent);
+                    else srvmsgft(cp->clientnum, CON_DEBUG, "sync error: cannot trigger %d - not a trigger", ent);
                     break;
                 }
 
@@ -6619,7 +6617,7 @@ namespace server
                     {
                         if(!allowstate(ci, ALST_TRY, m_edit(gamemode) ? G(spawneditlock) : G(spawnlock)))
                         {
-                            if(G(serverdebug)) srvmsgf(ci->clientnum, "sync error: unable to spawn %s - %d [%d, %d]", colourname(ci), ci->state, ci->lastdeath, gamemillis);
+                            srvmsgft(ci->clientnum, CON_DEBUG, "sync error: unable to spawn %s - %d [%d, %d]", colourname(ci), ci->state, ci->lastdeath, gamemillis);
                             spectator(ci);
                             break;
                         }
@@ -6954,23 +6952,23 @@ namespace server
                     clientinfo *cp = (clientinfo *)getinfo(sn);
                     if(!cp || cp->actortype > A_PLAYER || (val ? cp->state == CS_SPECTATOR : cp->state != CS_SPECTATOR))
                     {
-                        if(G(serverdebug)) srvmsgf(ci->clientnum, "sync error: unable to modify spectator %s - %d [%d, %d] - invalid", colourname(cp), cp->state, cp->lastdeath, gamemillis);
+                        srvmsgft(ci->clientnum, CON_DEBUG, "sync error: unable to modify spectator %s - %d [%d, %d] - invalid", colourname(cp), cp->state, cp->lastdeath, gamemillis);
                         break;
                     }
                     if(sn != sender ? !haspriv(ci, max(m_edit(gamemode) ? G(spawneditlock) : G(spawnlock), G(speclock)), "control other players") : (!haspriv(ci, max(m_edit(gamemode) ? G(spawneditlock) : G(spawnlock), G(speclock))) && !allowstate(cp, val ? ALST_SPEC : ALST_TRY, m_edit(gamemode) ? G(spawneditlock) : G(spawnlock))))
                     {
-                        if(G(serverdebug)) srvmsgf(ci->clientnum, "sync error: unable to modify spectator %s - %d [%d, %d] - restricted", colourname(cp), cp->state, cp->lastdeath, gamemillis);
+                        srvmsgft(ci->clientnum, CON_DEBUG, "sync error: unable to modify spectator %s - %d [%d, %d] - restricted", colourname(cp), cp->state, cp->lastdeath, gamemillis);
                         break;
                     }
                     bool spec = val != 0, quarantine = cp != ci && val == 2, wasq = cp->quarantine;
                     if(quarantine && (ci->privilege&PRIV_TYPE) <= (cp->privilege&PRIV_TYPE))
                     {
-                        srvmsgf(ci->clientnum, "\frAccess denied, you may not quarantine higher or equally privileged player %s", colourname(cp));
+                        srvmsgft(ci->clientnum, CON_EVENT, "\frAccess denied, you may not quarantine higher or equally privileged player %s", colourname(cp));
                         break;
                     }
                     if(!spectate(cp, spec, quarantine))
                     {
-                        if(G(serverdebug)) srvmsgf(ci->clientnum, "sync error: unable to modify spectator %s - %d [%d, %d] - failed", colourname(cp), cp->state, cp->lastdeath, gamemillis);
+                        srvmsgft(ci->clientnum, CON_DEBUG, "sync error: unable to modify spectator %s - %d [%d, %d] - failed", colourname(cp), cp->state, cp->lastdeath, gamemillis);
                         break;
                     }
                     if(quarantine && cp->quarantine)

@@ -25,7 +25,6 @@ GFVAR(IDF_WORLD, liquidextinguish, 0, 0.25f, 1);
 GFVAR(IDF_GAMEMOD, liquidextinguishscale, 0, 1, FVAR_MAX);
 
 GVAR(IDF_ADMIN, serverstats, 0, 1, 1);
-GVAR(IDF_ADMIN, serverdebug, 0, 0, 3);
 GVAR(IDF_ADMIN, serverclients, 1, 16, MAXCLIENTS);
 GVAR(IDF_ADMIN, serverspectators, 0, 0, MAXCLIENTS); // 0 = copy serverclients, 1+ = spectator slots
 GVARF(IDF_ADMIN, serverdupclients, 0, 0, MAXCLIENTS, limitdupclients(), );
