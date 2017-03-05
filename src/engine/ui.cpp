@@ -3513,7 +3513,7 @@ namespace UI
             Radar *r = getradar();
             if(r)
             {
-                float rw = r->w*0.5f, rh = r->h*0.5f,
+                float bw = w*0.5f, bh = h*0.5f, rw = r->w*0.5f, rh = r->h*0.5f,
                       rx = sx+(blipx*(rw-(rw*r->border))*clamp(dist/max(r->dist, 1.f), r->offset, 1.f)),
                       ry = sy+(blipy*(rh-(rh*r->border))*clamp(dist/max(r->dist, 1.f), r->offset, 1.f));
 
@@ -3532,7 +3532,7 @@ namespace UI
                 }
                 if(!anrm.iszero())
                 {
-                    anrm.normalize().mul(vec2(w*0.5f, h*0.5f)).rotate_around_z(yaw*RAD);
+                    anrm.normalize().mul(vec2(bw, bh)).rotate_around_z(yaw*RAD);
                     rx += anrm.x;
                     ry += anrm.y;
                 }
@@ -3554,7 +3554,7 @@ namespace UI
                             case 2: vecfromyaw(blipyaw, 1, 1, norm);    tx = 1; ty = 1; break;
                             case 3: vecfromyaw(blipyaw, 1, -1, norm);   tx = 0; ty = 1; break;
                         }
-                        norm.mul(vec2(w*0.5f, h*0.5f)).add(vec2(rx+w*0.5f, ry+h*0.5f));
+                        norm.mul(vec2(bw, bh)).add(vec2(rx+bw, ry+bh));
                         gle::attrib(norm); gle::attribf(tx, ty);
 
                     }
