@@ -1954,7 +1954,6 @@ namespace ai
                             e->ai->clear();
                             e->ai->addstate(AI_S_OVERRIDE, AI_T_ACTOR, f->clientnum, act, d->clientnum, state);
                             botsay(e, d, "%s, will %s next to %s", affirm[rnd(4)], cmd, f->name);
-                            break;
                         }
                     }
                 }
