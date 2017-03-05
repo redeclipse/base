@@ -6,6 +6,7 @@ enum
     W_MELEE = W_ALL, W_MAX, W_LOADOUT = W_ITEM-W_OFFSET // if you add to this at all, check all arrays with W_MAX
 };
 #define isweap(a)           (a >= 0 && a < W_MAX)
+#define itemweap(a)         (a >= W_ITEM && a < W_ALL)
 
 enum { W_F_NONE = 0, W_F_FORCED = 1<<0 };
 enum {

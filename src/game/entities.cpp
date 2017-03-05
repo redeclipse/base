@@ -34,10 +34,10 @@ namespace entities
     VAR(0, routemaxdist, 0, 64, VAR_MAX);
 
     vector<extentity *> &getents() { return ents; }
-    int firstent(int type) { return type >= 0 && type < MAXENTTYPES ? clamp(firstenttype[type], 0, ents.length()) : 0; }
-    int firstuse(int type) { return type >= 0 && type < MAXENTTYPES ? clamp(firstusetype[type], 0, ents.length()) : 0; }
+    int firstent(int type) { return type >= 0 && type < MAXENTTYPES ? clamp(firstenttype[type], 0, ents.length()-1) : 0; }
+    int firstuse(int type) { return type >= 0 && type < EU_MAX ? clamp(firstusetype[type], 0, ents.length()-1) : 0; }
     int lastent(int type) { return type >= 0 && type < MAXENTTYPES ? clamp(lastenttype[type], 0, ents.length()) : 0; }
-    int lastuse(int type) { return type >= 0 && type < MAXENTTYPES ? clamp(lastusetype[type], 0, ents.length()) : 0; }
+    int lastuse(int type) { return type >= 0 && type < EU_MAX ? clamp(lastusetype[type], 0, ents.length()) : 0; }
 
     int numattrs(int type) { return type >= 0 && type < MAXENTTYPES ? enttype[type].numattrs : 0; }
     ICOMMAND(0, entityattrs, "b", (int *n), intret(numattrs(*n)));
@@ -1268,8 +1268,8 @@ namespace entities
         {
             firstenttype[e.type] = min(firstenttype[e.type], i);
             firstusetype[enttype[e.type].usetype] = min(firstusetype[enttype[e.type].usetype], i);
-            lastenttype[e.type] = max(lastenttype[e.type], i);
-            lastusetype[enttype[e.type].usetype] = max(lastusetype[enttype[e.type].usetype], i);
+            lastenttype[e.type] = max(lastenttype[e.type], i+1);
+            lastusetype[enttype[e.type].usetype] = max(lastusetype[enttype[e.type].usetype], i+1);
         }
     }
 
@@ -2006,8 +2006,8 @@ namespace entities
             {
                 firstenttype[e.type] = min(firstenttype[e.type], i);
                 firstusetype[enttype[e.type].usetype] = min(firstusetype[enttype[e.type].usetype], i);
-                lastenttype[e.type] = max(lastenttype[e.type], i);
-                lastusetype[enttype[e.type].usetype] = max(lastusetype[enttype[e.type].usetype], i);
+                lastenttype[e.type] = max(lastenttype[e.type], i+1);
+                lastusetype[enttype[e.type].usetype] = max(lastusetype[enttype[e.type].usetype], i+1);
             }
             if(enttype[e.type].usetype == EU_ITEM || e.type == TRIGGER)
             {
@@ -2319,7 +2319,6 @@ namespace entities
                                 if(isweap(weap)) colour = W(weap, colour);
                                 size = e.attrs[9] > 0 ? e.attrs[9]/100.f : AA(e.attrs[0], scale);
                             }
-                            //fade = 0.5f;
                         }
                         else if(e.spawned())
                         {

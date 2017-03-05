@@ -158,10 +158,10 @@ namespace ai
         return d->ammo[weap] >= W(weap, ammomax);
     }
 
-    bool wantsweap(gameent *d, int weap)
+    bool wantsweap(gameent *d, int weap, bool usepref = true)
     {
         if(!isweap(weap) || hasweap(d, weap) || !AA(d->actortype, maxcarry)) return false;
-        if(d->carry(m_weapon(d->actortype, game::gamemode, game::mutators)) >= AA(d->actortype, maxcarry) && (hasweap(d, weappref(d)) || weap == weappref(d)))
+        if(d->carry(m_weapon(d->actortype, game::gamemode, game::mutators)) >= AA(d->actortype, maxcarry) && ((!usepref && itemweap(weap)) || hasweap(d, weappref(d)) || weap == weappref(d)))
             return false;
         return true;
     }
@@ -501,7 +501,7 @@ namespace ai
             gameentity &e = *(gameentity *)entities::ents[j];
             if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON) continue;
             int attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap);
-            if(e.spawned() && isweap(attr) && wantsweap(d, attr))
+            if(e.spawned() && isweap(attr) && wantsweap(d, attr, !force))
             { // go get a weapon upgrade
                 interest &n = interests.add();
                 n.state = AI_S_INTEREST;
@@ -520,7 +520,7 @@ namespace ai
             gameentity &e = *(gameentity *)entities::ents[proj.id];
             if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON) continue;
             int attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap);
-            if(isweap(attr) && wantsweap(d, attr) && proj.owner != d)
+            if(isweap(attr) && wantsweap(d, attr, !force) && proj.owner != d)
             { // go get a weapon upgrade
                 interest &n = interests.add();
                 n.state = AI_S_INTEREST;
@@ -536,9 +536,9 @@ namespace ai
     bool find(gameent *d, aistate &b)
     {
         static vector<interest> interests; interests.setsize(0);
+        int sweap = m_weapon(d->actortype, game::gamemode, game::mutators);
         if(AA(d->actortype, abilities)&(1<<A_A_MOVE))
         {
-            int sweap = m_weapon(d->actortype, game::gamemode, game::mutators);
             if((AA(d->actortype, abilities)&(1<<A_A_PRIMARY) || AA(d->actortype, abilities)&(1<<A_A_SECONDARY)) && (!hasweap(d, weappref(d)) || d->carry(sweap) == 0))
                 items(d, b, interests, d->carry(sweap) == 0);
             if(m_team(game::gamemode, game::mutators) && !m_duke(game::gamemode, game::mutators))
@@ -562,24 +562,29 @@ namespace ai
             else if(m_defend(game::gamemode)) defend::aifind(d, b, interests);
             else if(m_bomber(game::gamemode)) bomber::aifind(d, b, interests);
         }
-        while(!interests.empty())
+        loopk(2)
         {
-            int q = interests.length()-1;
-            loopi(interests.length()-1) if(interests[i].score < interests[q].score) q = i;
-            interest n = interests.removeunordered(q);
-            if(d->actortype == A_BOT && m_play(game::gamemode) && m_team(game::gamemode, game::mutators))
+            while(!interests.empty())
             {
-                int members = 0;
-                static vector<int> targets; targets.setsize(0);
-                int others = checkothers(targets, d, n.state, n.targtype, n.target, n.team, &members);
-                if(d->actortype == A_BOT && n.state == AI_S_DEFEND && members == 1) continue;
-                if(others >= int(ceilf(members*n.tolerance))) continue;
+                int q = interests.length()-1;
+                loopi(interests.length()-1) if(interests[i].score < interests[q].score) q = i;
+                interest n = interests.removeunordered(q);
+                if(d->actortype == A_BOT && m_play(game::gamemode) && m_team(game::gamemode, game::mutators))
+                {
+                    int members = 0;
+                    static vector<int> targets; targets.setsize(0);
+                    int others = checkothers(targets, d, n.state, n.targtype, n.target, n.team, &members);
+                    if(d->actortype == A_BOT && n.state == AI_S_DEFEND && members == 1) continue;
+                    if(others >= int(ceilf(members*n.tolerance))) continue;
+                }
+                if(!(AA(d->actortype, abilities)&(1<<A_A_MOVE)) || makeroute(d, b, n.node))
+                {
+                    d->ai->switchstate(b, n.state, n.targtype, n.target, n.acttype);
+                    return true;
+                }
             }
-            if(!(AA(d->actortype, abilities)&(1<<A_A_MOVE)) || makeroute(d, b, n.node))
-            {
-                d->ai->switchstate(b, n.state, n.targtype, n.target, n.acttype);
-                return true;
-            }
+            if(AA(d->actortype, abilities)&(1<<A_A_MOVE) && (AA(d->actortype, abilities)&(1<<A_A_PRIMARY) || AA(d->actortype, abilities)&(1<<A_A_SECONDARY)))
+                items(d, b, interests, true);
         }
         return false;
     }
@@ -666,7 +671,6 @@ namespace ai
 
     bool dowait(gameent *d, aistate &b)
     {
-        //d->ai->clear(true); // ensure they're clean
         if(check(d, b) || find(d, b)) return true;
         if(target(d, b, 4, false)) return true;
         if(target(d, b, 4, true)) return true;
@@ -675,7 +679,7 @@ namespace ai
             d->ai->switchstate(b, AI_S_INTEREST, AI_T_NODE, d->ai->route[0]);
             return true;
         }
-        return false; // but don't pop the state
+        return false;
     }
 
     bool dodefense(gameent *d, aistate &b)
@@ -729,7 +733,7 @@ namespace ai
                     gameentity &e = *(gameentity *)entities::ents[b.target];
                     if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON) return false;
                     int sweap = m_weapon(d->actortype, game::gamemode, game::mutators), attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap);
-                    if(!isweap(attr) || !e.spawned() || !wantsweap(d, attr)) return false;
+                    if(!isweap(attr) || !e.spawned() || !wantsweap(d, attr, false)) return false;
                     return makeroute(d, b, e.o);
                 }
                 break;
@@ -743,7 +747,7 @@ namespace ai
                     gameentity &e = *(gameentity *)entities::ents[proj.id];
                     if(enttype[entities::ents[proj.id]->type].usetype != EU_ITEM || e.type != WEAPON) return false;
                     int sweap = m_weapon(d->actortype, game::gamemode, game::mutators), attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap);
-                    if(!isweap(attr) || !wantsweap(d, attr)) return false;
+                    if(!isweap(attr) || !wantsweap(d, attr, false)) return false;
                     return makeroute(d, b, proj.o);
                 }
                 break;
@@ -926,7 +930,6 @@ namespace ai
     {
         if(iswaypoint(d->lastnode)) loopk(2)
         {
-            //d->ai->clear(k ? true : false);
             int n = randomlink(d, d->lastnode);
             if(wpspot(d, n))
             {
@@ -1116,29 +1119,66 @@ namespace ai
         else
         {
             gameent *e = game::getclient(d->ai->enemy);
-            bool shootable = e && targetable(d, e, true);
-            if(!shootable || d->skill >= 50 || d->ai->dontmove)
+            bool shootable = false, inrange = false;
+            if(b.type == AI_S_INTEREST && (b.targtype == AI_T_ENTITY || b.targtype == AI_T_DROP))
             {
-                gameent *f = game::intersectclosest(d->o, d->ai->target, d);
-                if(f)
+                switch(b.targtype)
                 {
-                    if(targetable(d, f, true))
+                    case AI_T_ENTITY:
                     {
-                        if(!shootable) violence(d, b, f, !d->ai->dontmove && (b.type != AI_S_DEFEND || b.targtype != AI_T_AFFINITY) && W2(d->weapselect, aidist, altfire(d, f)) < CLOSEDIST ? 1 : 0);
-                        shootable = true;
-                        e = f;
+                        if(entities::ents.inrange(b.target))
+                        {
+                            gameentity &e = *(gameentity *)entities::ents[b.target];
+                            if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON) break;
+                            int sweap = m_weapon(d->actortype, game::gamemode, game::mutators), attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap);
+                            if(!isweap(attr) || !e.spawned() || !wantsweap(d, attr, false)) break;
+                            if(e.o.squaredist(d->o) <= WAYPOINTRADIUS*WAYPOINTRADIUS) inrange = true;
+                        }
+                        break;
                     }
-                    else shootable = false; // would hit non-targetable person
-                }
-                else if(!shootable || d->ai->dontmove)
-                {
-                    if(target(d, b, 0, d->ai->dontmove && (b.type != AI_S_DEFEND || b.targtype != AI_T_AFFINITY)))
-                        shootable = (e = game::getclient(d->ai->enemy)) != NULL;
-                    if(!shootable)
+                    case AI_T_DROP:
                     {
-                        e = NULL;
-                        d->ai->enemy = -1;
-                        d->ai->enemyseen = d->ai->enemymillis = 0;
+                        loopvj(projs::projs) if(projs::projs[j]->projtype == PRJ_ENT && projs::projs[j]->ready() && projs::projs[j]->id == b.target)
+                        {
+                            projent &proj = *projs::projs[j];
+                            if(!entities::ents.inrange(proj.id) || proj.owner == d) break;
+                            gameentity &e = *(gameentity *)entities::ents[proj.id];
+                            if(enttype[entities::ents[proj.id]->type].usetype != EU_ITEM || e.type != WEAPON) break;
+                            int sweap = m_weapon(d->actortype, game::gamemode, game::mutators), attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap);
+                            if(!isweap(attr) || !wantsweap(d, attr, false)) break;
+                            if(proj.o.squaredist(d->o) <= WAYPOINTRADIUS*WAYPOINTRADIUS) inrange = true;
+                            break;
+                        }
+                        break;
+                    }
+                }
+            }
+            if(!inrange)
+            {
+                shootable = e && targetable(d, e, true);
+                if(!shootable || d->skill >= 50 || d->ai->dontmove)
+                {
+                    gameent *f = game::intersectclosest(d->o, d->ai->target, d);
+                    if(f)
+                    {
+                        if(targetable(d, f, true))
+                        {
+                            if(!shootable) violence(d, b, f, !d->ai->dontmove && (b.type != AI_S_DEFEND || b.targtype != AI_T_AFFINITY) && W2(d->weapselect, aidist, altfire(d, f)) < CLOSEDIST ? 1 : 0);
+                            shootable = true;
+                            e = f;
+                        }
+                        else shootable = false; // would hit non-targetable person
+                    }
+                    else if(!shootable || d->ai->dontmove)
+                    {
+                        if(target(d, b, 0, d->ai->dontmove && (b.type != AI_S_DEFEND || b.targtype != AI_T_AFFINITY)))
+                            shootable = (e = game::getclient(d->ai->enemy)) != NULL;
+                        if(!shootable)
+                        {
+                            e = NULL;
+                            d->ai->enemy = -1;
+                            d->ai->enemyseen = d->ai->enemymillis = 0;
+                        }
                     }
                 }
             }
@@ -1297,7 +1337,7 @@ namespace ai
                             int attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap);
                             if(isweap(attr) && d->canuse(e.type, attr, e.attrs, sweap, lastmillis, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
                             {
-                                if(!wantsweap(d, attr)) break;
+                                if(!wantsweap(d, attr, false)) break;
                                 d->action[AC_USE] = true;
                                 d->ai->lastaction = d->actiontime[AC_USE] = lastmillis;
                                 return true;

@@ -4773,7 +4773,6 @@ void hexcolour(int *n)
     defformatstring(s, *n >= 0 && *n <= 0xFFFFFF ? "0x%.6X" : "%d", *n);
     result(s);
 }
-
 COMMAND(0, hexcolour, "i");
 
 void genkey(char *s)
