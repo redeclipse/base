@@ -583,8 +583,9 @@ namespace ai
                     return true;
                 }
             }
-            if(AA(d->actortype, abilities)&(1<<A_A_MOVE) && (AA(d->actortype, abilities)&(1<<A_A_PRIMARY) || AA(d->actortype, abilities)&(1<<A_A_SECONDARY)))
+            if(!k && AA(d->actortype, abilities)&(1<<A_A_MOVE) && (AA(d->actortype, abilities)&(1<<A_A_PRIMARY) || AA(d->actortype, abilities)&(1<<A_A_SECONDARY)))
                 items(d, b, interests, true);
+            else break;
         }
         return false;
     }
@@ -1120,38 +1121,36 @@ namespace ai
         {
             gameent *e = game::getclient(d->ai->enemy);
             bool shootable = false, inrange = false;
-            if(b.type == AI_S_INTEREST && (b.targtype == AI_T_ENTITY || b.targtype == AI_T_DROP))
+            if(b.type == AI_S_INTEREST) switch(b.targtype)
             {
-                switch(b.targtype)
+                case AI_T_ENTITY:
                 {
-                    case AI_T_ENTITY:
+                    if(entities::ents.inrange(b.target))
                     {
-                        if(entities::ents.inrange(b.target))
-                        {
-                            gameentity &e = *(gameentity *)entities::ents[b.target];
-                            if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON) break;
-                            int sweap = m_weapon(d->actortype, game::gamemode, game::mutators), attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap);
-                            if(!isweap(attr) || !e.spawned() || !wantsweap(d, attr, false)) break;
-                            if(e.o.squaredist(d->o) <= WAYPOINTRADIUS*WAYPOINTRADIUS) inrange = true;
-                        }
-                        break;
+                        gameentity &e = *(gameentity *)entities::ents[b.target];
+                        if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON) break;
+                        int sweap = m_weapon(d->actortype, game::gamemode, game::mutators), attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap);
+                        if(!isweap(attr) || !e.spawned() || !wantsweap(d, attr, false)) break;
+                        if(e.o.squaredist(d->o) <= (WAYPOINTRADIUS*WAYPOINTRADIUS)*2) inrange = true;
                     }
-                    case AI_T_DROP:
-                    {
-                        loopvj(projs::projs) if(projs::projs[j]->projtype == PRJ_ENT && projs::projs[j]->ready() && projs::projs[j]->id == b.target)
-                        {
-                            projent &proj = *projs::projs[j];
-                            if(!entities::ents.inrange(proj.id) || proj.owner == d) break;
-                            gameentity &e = *(gameentity *)entities::ents[proj.id];
-                            if(enttype[entities::ents[proj.id]->type].usetype != EU_ITEM || e.type != WEAPON) break;
-                            int sweap = m_weapon(d->actortype, game::gamemode, game::mutators), attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap);
-                            if(!isweap(attr) || !wantsweap(d, attr, false)) break;
-                            if(proj.o.squaredist(d->o) <= WAYPOINTRADIUS*WAYPOINTRADIUS) inrange = true;
-                            break;
-                        }
-                        break;
-                    }
+                    break;
                 }
+                case AI_T_DROP:
+                {
+                    loopvj(projs::projs) if(projs::projs[j]->projtype == PRJ_ENT && projs::projs[j]->ready() && projs::projs[j]->id == b.target)
+                    {
+                        projent &proj = *projs::projs[j];
+                        if(!entities::ents.inrange(proj.id) || proj.owner == d) break;
+                        gameentity &e = *(gameentity *)entities::ents[proj.id];
+                        if(enttype[entities::ents[proj.id]->type].usetype != EU_ITEM || e.type != WEAPON) break;
+                        int sweap = m_weapon(d->actortype, game::gamemode, game::mutators), attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap);
+                        if(!isweap(attr) || !wantsweap(d, attr, false)) break;
+                        if(proj.o.squaredist(d->o) <= (WAYPOINTRADIUS*WAYPOINTRADIUS)*2) inrange = true;
+                        break;
+                    }
+                    break;
+                }
+                default: break;
             }
             if(!inrange)
             {
