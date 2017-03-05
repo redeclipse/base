@@ -3516,19 +3516,27 @@ namespace UI
                 float rw = r->w*0.5f, rh = r->h*0.5f,
                       rx = sx+(blipx*(rw-(rw*r->border))*clamp(dist/max(r->dist, 1.f), r->offset, 1.f)),
                       ry = sy+(blipy*(rh-(rh*r->border))*clamp(dist/max(r->dist, 1.f), r->offset, 1.f));
+
+                vec2 anrm(0, 0);
                 switch(blipadjust&ALIGN_HMASK)
                 {
-                    case ALIGN_LEFT:    rx -= blipx*w*0.5f; break;
+                    case ALIGN_LEFT:    anrm.x = -1; break;
                     case ALIGN_HCENTER: break;
-                    case ALIGN_RIGHT:   rx += blipx*w*0.5f; break;
+                    case ALIGN_RIGHT:   anrm.x = 1; break;
                 }
-
                 switch(blipadjust&ALIGN_VMASK)
                 {
-                    case ALIGN_TOP:     ry -= blipy*h*0.5f; break;
+                    case ALIGN_TOP:     anrm.y = 1; break;
                     case ALIGN_VCENTER: break;
-                    case ALIGN_BOTTOM:  ry += blipy*h*0.5f; break;
+                    case ALIGN_BOTTOM:  anrm.y = -1; break;
                 }
+                if(!anrm.iszero())
+                {
+                    anrm.normalize().rotate_around_z(yaw*RAD);
+                    rx += anrm.x*w*0.5f;
+                    ry += anrm.y*h*0.5f;
+                }
+
                 float bbx = blipx, bby = blipy;
                 if(tex != notexture)
                 {
