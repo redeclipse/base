@@ -1495,7 +1495,7 @@ namespace ai
                 if(expl > 0) obstacles.avoidnear(p, p->o.z + expl + 1, p->o, guessradius + expl + 1);
             }
         }
-        loopenti(MAPMODEL) if(entities::ents[i]->type == MAPMODEL && !entities::ents[i]->spawned())
+        loopenti(MAPMODEL) if(entities::ents[i]->type == MAPMODEL && !entities::ents[i]->spawned() && !(entities::ents[i]->attrs[6]&MMT_NOCLIP))
         {
             gameentity &e = *(gameentity *)entities::ents[i];
             mapmodelinfo *mmi = getmminfo(e.attrs[0]);
@@ -1508,9 +1508,13 @@ namespace ai
                 radius.mul(e.attrs[5]/100.f);
             }
             if(!mmi->m->ellipsecollide) rotatebb(center, radius, int(e.attrs[1]), int(e.attrs[2]));
-            float xy = max(radius.x, max(radius.y, radius.z));
-            if(e.attrs[6]&MMT_HIDE) xy += WAYPOINTRADIUS + 1;
-            obstacles.avoidnear(NULL, e.o.z + radius.z + 1, e.o, xy);
+            float xy = max(radius.x, radius.y), z = radius.z;
+            if(e.attrs[6]&MMT_HIDE)
+            {
+                xy += WAYPOINTRADIUS;
+                z += WAYPOINTRADIUS;
+            }
+            obstacles.avoidnear(NULL, e.o.z + z + 1, e.o, xy + 1);
         }
     }
 
@@ -1790,18 +1794,14 @@ namespace ai
                 }
                 else
                 {
-                    bool defend = false;
-                    gameent *f = NULL;
-                    int numdyns = game::numdynents();
-                    loopi(numdyns) if((f = (gameent *)game::iterdynents(i)) && f != e && f->team == e->team && !strcmp(w[pos], f->name))
+                    gameent *f = game::getclient(client::parseplayer(w[pos]));
+                    if(f && f != e && f->team == e->team)
                     {
                         e->ai->clear();
                         e->ai->addstate(AI_S_DEFEND, AI_T_ACTOR, f->clientnum, AI_A_PROTECT, d->clientnum);
                         botsay(e, d, "%s, defending %s", affirm[rnd(4)], f->name);
-                        defend = true;
-                        break;
                     }
-                    if(!defend)
+                    else
                     {
                         if(!strcasecmp(w[pos], "the")) pos++;
                         switch(game::gamemode)
@@ -1948,9 +1948,8 @@ namespace ai
                     }
                     else
                     {
-                        gameent *f = NULL;
-                        int numdyns = game::numdynents();
-                        loopi(numdyns) if((f = (gameent *)game::iterdynents(i)) && f != e && f->team == e->team && !strcmp(w[pos], f->name))
+                        gameent *f = game::getclient(client::parseplayer(w[pos]));
+                        if(f && f != e)
                         {
                             e->ai->clear();
                             e->ai->addstate(AI_S_OVERRIDE, AI_T_ACTOR, f->clientnum, act, d->clientnum, state);

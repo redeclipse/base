@@ -2479,7 +2479,7 @@ namespace entities
     void drawparticles()
     {
         float maxdist = float(maxparticledistance)*float(maxparticledistance);
-        int frstent = m_edit(game::gamemode) ? ents.length() : min(firstuse(EU_ITEM), min(firstent(PARTICLES), firstent(TELEPORT))),
+        int frstent = m_edit(game::gamemode) ? 0 : min(firstuse(EU_ITEM), min(firstent(PARTICLES), firstent(TELEPORT))),
             flstent = m_edit(game::gamemode) ? ents.length() : max(lastuse(EU_ITEM), max(lastent(PARTICLES), lastent(TELEPORT)));
         bool hasroute = (m_edit(game::gamemode) || m_race(game::gamemode)) && routeid >= 0;
         if(hasroute)
