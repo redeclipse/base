@@ -4639,7 +4639,7 @@ namespace server
                         if(damage) dodamage(m, ci, damage, weap, fromweap, fromflags, hflags, 0, h.dir, h.vel, dist, first);
                         else srvmsgft(ci->clientnum, CON_DEBUG, "sync error: destroy [%d (%d)] failed - hit %d [%d] determined zero damage", weap, id, i, h.target);
                     }
-                    else srvmsgft(ci->clientnum, CON_DEBUG, "sync error: destroy [%d (%d)] failed - hit %d [%d] state disallows it", weap, id, i, h.target);
+                    //else srvmsgft(ci->clientnum, CON_DEBUG, "sync error: destroy [%d (%d)] failed - hit %d [%d] state disallows it", weap, id, i, h.target);
                 }
             }
         }
