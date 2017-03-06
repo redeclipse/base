@@ -713,7 +713,7 @@ namespace client
     }
     ICOMMAND(0, getlastclientnum, "", (), getlastclientnum());
 
-    #define LOOPCLIENTS(name,op,lp) \
+    #define LOOPCLIENTS(name,op,lp,nop) \
         ICOMMAND(0, loopclients##name, "iire", (int *count, int *skip, ident *id, uint *body), \
         { \
             loopstart(id, stack); \
@@ -722,18 +722,24 @@ namespace client
             op(amt, *count, *skip) \
             { \
                 int r = -1; \
-                if(!i) r = game::player1->clientnum; \
+                int n = nop ? amt-1 : 0; \
+                if(!i) \
+                { \
+                    if(nop ? n <= i : n >= i) r = game::player1->clientnum; \
+                    if(nop) n--; \
+                    else n++; \
+                } \
                 else \
                 { \
-                    int n = 1; \
                     lp(game::players) if(game::players[k]) \
                     { \
-                        if(n >= i) \
+                        if(nop ? n <= i : n >= i) \
                         { \
                             r = game::players[k]->clientnum; \
                             break; \
                         } \
-                        n++; \
+                        if(nop) n--; \
+                        else n++; \
                     } \
                 } \
                 if(r >= 0) \
@@ -744,10 +750,10 @@ namespace client
             } \
             loopend(id, stack); \
         });
-    LOOPCLIENTS(,loopcsi,loopvk);
-    LOOPCLIENTS(rev,loopcsirev,loopvkrev);
+    LOOPCLIENTS(,loopcsi,loopvk,false);
+    LOOPCLIENTS(rev,loopcsirev,loopvkrev,true);
 
-    #define LOOPINVENTORY(name,op,lp) \
+    #define LOOPINVENTORY(name,op,lp,nop) \
         ICOMMAND(0, loopinventory##name, "siire", (char *who, int *count, int *skip, ident *id, uint *body), \
         { \
             gameent *d = game::getclient(parseplayer(who)); \
@@ -757,15 +763,16 @@ namespace client
             op(amt, *count, *skip) \
             { \
                 int r = -1; \
-                int n = 0; \
+                int n = nop ? amt-1 : 0; \
                 lp(W_ALL) if(d->holdweap(k, m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis)) \
                 { \
-                    if(n >= i) \
+                    if(nop ? n <= i : n >= i) \
                     { \
                         r = k; \
                         break; \
                     } \
-                    n++; \
+                    if(nop) n--; \
+                    else n++; \
                 } \
                 if(r >= 0) \
                 { \
@@ -775,8 +782,8 @@ namespace client
             } \
             loopend(id, stack); \
         });
-    LOOPINVENTORY(,loopcsi,loopk);
-    LOOPINVENTORY(rev,loopcsirev,loopkrev);
+    LOOPINVENTORY(,loopcsi,loopk,false);
+    LOOPINVENTORY(rev,loopcsirev,loopkrev,true);
 
     ICOMMAND(0, getmodelname, "ib", (int *mdl, int *idx, int *numargs), result(*mdl >= 0 ? playertypes[*mdl%PLAYERTYPES][*idx >= 0 ? clamp(*idx, 0, 5) : 5] : ""));
 

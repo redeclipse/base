@@ -531,10 +531,8 @@ namespace UI
         template<class T> bool istype() const { return T::typestr() == gettype(); }
         bool isnamed(const char *name) const { return name[0] == '#' ? name == gettypename() : !strcmp(name, getname()); }
 
-        virtual bool iswindow() const { return false; }
-        virtual bool isfiller() const { return false; }
-        virtual bool isspacer() const { return false; }
-        virtual bool iscolor() const { return false; }
+        virtual bool isfill() const { return false; }
+        virtual bool iscolour() const { return false; }
         virtual bool istext() const { return false; }
         virtual bool isimage() const { return false; }
         virtual bool iseditor() const { return false; }
@@ -667,7 +665,6 @@ namespace UI
         static const char *typestr() { return "#Window"; }
         const char *gettype() const { return typestr(); }
         const char *getname() const { return name; }
-        bool iswindow() const { return true; }
 
         void build();
 
@@ -789,11 +786,11 @@ namespace UI
     {
         if(o)
         {
-            if(o->iswindow()) return (Window *)o;
-            if(o && !o->iswindow()) while(o->parent)
+            if(o->istype<Window>()) return (Window *)o;
+            if(o && !o->istype<Window>()) while(o->parent)
             {
                 o = o->parent;
-                if(o->iswindow()) return (Window *)o;
+                if(o->istype<Window>()) return (Window *)o;
             }
         }
         return NULL;
@@ -813,7 +810,7 @@ namespace UI
             for(Object *o = buildparent; o != NULL; o = o->parent) \
             { \
                 body; \
-                if(o->iswindow()) break; \
+                if(o->istype<Window>()) break; \
             } \
         });
 
@@ -822,9 +819,51 @@ namespace UI
         { \
             for(Object *o = buildparent; o != NULL; o = o->parent) \
             { \
-                if(o->iswindow()) break; \
+                if(o->istype<Window>()) break; \
                 body; \
             } \
+        });
+
+    #define UICMD(uitype, uiname, vname, valtype, args, body) \
+        ICOMMAND(0, ui##uiname##vname, valtype, args, { \
+            if(buildparent && buildparent->istype<uitype>()) \
+            { \
+                uitype *o = (uitype *)buildparent; \
+                body; \
+            } \
+        });
+
+    #define UISETCMDS(uitype, uiname, vname, valtype, type, cmin, cmax) \
+        UICMD(uitype, uiname, vname, valtype, (type *val), { \
+            o->vname = type(clamp(*val, cmin, cmax)*uiscale); \
+            type##ret(o->vname); \
+        });
+
+    #define UISETCMD(uitype, uiname, vname, valtype, type, cmin, cmax) \
+        UICMD(uitype, uiname, vname, valtype, (type *val), { \
+            o->vname = type(clamp(*val, cmin, cmax)); \
+            type##ret(o->vname); \
+        });
+
+    #define UICMDT(uitype, uiname, vname, valtype, args, body) \
+        ICOMMAND(0, ui##uiname##vname, valtype, args, { \
+            if(buildparent && buildparent->is##uiname()) \
+            { \
+                uitype *o = (uitype *)buildparent; \
+                body; \
+            } \
+        });
+
+    #define UISETCMDTS(uitype, uiname, vname, valtype, type, cmin, cmax) \
+        UICMDT(uitype, uiname, vname, valtype, (type *val), { \
+            o->vname = type(clamp(*val, cmin, cmax)*uiscale); \
+            type##ret(o->vname); \
+        });
+
+    #define UISETCMDT(uitype, uiname, vname, valtype, type, cmin, cmax) \
+        UICMDT(uitype, uiname, vname, valtype, (type *val), { \
+            o->vname = type(clamp(*val, cmin, cmax)); \
+            type##ret(o->vname); \
         });
 
     static hashnameset<Window *> windows;
@@ -1139,6 +1178,8 @@ namespace UI
     ICOMMAND(0, uihlist, "fe", (float *space, uint *children),
         BUILD(HorizontalList, o, o->setup(*space*uiscale), children));
 
+    UISETCMDS(HorizontalList, hlist, space, "f", float, 0.f, FVAR_MAX);
+
     struct VerticalList : Object
     {
         float space, subh;
@@ -1186,6 +1227,8 @@ namespace UI
 
     ICOMMAND(0, uivlist, "fe", (float *space, uint *children),
         BUILD(VerticalList, o, o->setup(*space*uiscale), children));
+
+    UISETCMDS(VerticalList, vlist, space, "f", float, 0.f, FVAR_MAX);
 
     ICOMMAND(0, uilist, "fe", (float *space, uint *children),
     {
@@ -1274,6 +1317,10 @@ namespace UI
 
     ICOMMAND(0, uigrid, "iffe", (int *columns, float *spacew, float *spaceh, uint *children),
         BUILD(Grid, o, o->setup(*columns, *spacew*uiscale, *spaceh*uiscale), children));
+
+    UISETCMDS(Grid, grid, spacew, "f", float, 0.f, FVAR_MAX);
+    UISETCMDS(Grid, grid, spaceh, "f", float, 0.f, FVAR_MAX);
+    UISETCMD(Grid, grid, columns, "i", int, 0, VAR_MAX);
 
     struct TableHeader : Object
     {
@@ -1429,6 +1476,9 @@ namespace UI
     ICOMMAND(0, uitable, "ffe", (float *spacew, float *spaceh, uint *children),
         BUILD(Table, o, o->setup(*spacew*uiscale, *spaceh*uiscale), children));
 
+    UISETCMDS(Table, table, spacew, "f", float, 0.f, FVAR_MAX);
+    UISETCMDS(Table, table, spaceh, "f", float, 0.f, FVAR_MAX);
+
     struct Spacer : Object
     {
         float spacew, spaceh;
@@ -1442,7 +1492,6 @@ namespace UI
 
         static const char *typestr() { return "#Spacer"; }
         const char *gettype() const { return typestr(); }
-        bool isspacer() const { return true; }
 
         void layout()
         {
@@ -1469,6 +1518,9 @@ namespace UI
     ICOMMAND(0, uispace, "ffe", (float *spacew, float *spaceh, uint *children),
         BUILD(Spacer, o, o->setup(*spacew*uiscale, *spaceh*uiscale), children));
 
+    UISETCMDS(Spacer, space, spacew, "f", float, 0.f, FVAR_MAX);
+    UISETCMDS(Spacer, space, spaceh, "f", float, 0.f, FVAR_MAX);
+
     struct Offsetter : Object
     {
         float offsetx, offsety;
@@ -1482,7 +1534,6 @@ namespace UI
 
         static const char *typestr() { return "#Offsetter"; }
         const char *gettype() const { return typestr(); }
-        bool isspacer() const { return true; }
 
         void layout()
         {
@@ -1506,6 +1557,9 @@ namespace UI
 
     ICOMMAND(0, uioffset, "ffe", (float *offsetx, float *offsety, uint *children),
         BUILD(Offsetter, o, o->setup(*offsetx*uiscale, *offsety*uiscale), children));
+
+    UISETCMDS(Offsetter, offset, x, "f", float, FVAR_MIN, FVAR_MAX);
+    UISETCMDS(Offsetter, offset, y, "f", float, FVAR_MIN, FVAR_MAX);
 
     struct Color
     {
@@ -1549,7 +1603,7 @@ namespace UI
 
         static const char *typestr() { return "#Filler"; }
         const char *gettype() const { return typestr(); }
-        bool isfiller() const { return true; }
+        bool isfill() const { return true; }
 
         void layout()
         {
@@ -1562,6 +1616,9 @@ namespace UI
 
     ICOMMAND(0, uifill, "ffe", (float *minw, float *minh, uint *children),
         BUILD(Filler, o, o->setup(*minw*uiscale, *minh*uiscale), children));
+
+    UISETCMDTS(Filler, fill, minw, "f", float, 0.f, FVAR_MAX);
+    UISETCMDTS(Filler, fill, minh, "f", float, 0.f, FVAR_MAX);
 
     struct Target : Filler
     {
@@ -1625,44 +1682,18 @@ namespace UI
 
         static const char *typestr() { return "#TargetColor"; }
         const char *gettype() const { return typestr(); }
-        bool iscolor() const { return true; }
+        bool iscolour() const { return true; }
     };
 
-    UIREVCMDW(addcolour, "i", (int *c),
-    {
-        if(!o->iscolor()) continue;
-        ((TargetColor *)o)->colors.add(Color(*c));
-        break;
-    });
+    UISETCMDTS(TargetColor, colour, type, "i", int, int(TargetColor::SOLID), int(TargetColor::OUTLINE));
+    UISETCMDTS(TargetColor, colour, dir, "i", int, int(TargetColor::VERTICAL), int(TargetColor::HORIZONTAL));
 
-    UIREVCMDW(delcolour, "i", (int *c),
-    {
-        if(!o->iscolor()) continue;
-        loopvrev(((TargetColor *)o)->colors) if(((TargetColor *)o)->colors[i] == Color(*c)) ((TargetColor *)o)->colors.remove(i);
-        if(((TargetColor *)o)->colors.empty()) ((TargetColor *)o)->colors.add(Color(255, 255, 255));
-        break;
+    UICMDT(TargetColor, colour, add, "i", (int *c), o->colors.add(Color(*c)));
+    UICMDT(TargetColor, colour, del, "i", (int *c), {
+        loopvrev(o->colors) if(o->colors[i] == Color(*c)) o->colors.remove(i);
+        if(o->colors.empty()) o->colors.add(Color(255, 255, 255));
     });
-
-    UIREVCMDW(setgradient, "i", (int *c),
-    {
-        if(!o->iscolor()) continue;
-        ((TargetColor *)o)->dir = clamp(*c, TargetColor::VERTICAL, TargetColor::HORIZONTAL);
-        break;
-    });
-
-    UIREVCMDW(setgradmod, "i", (int *c),
-    {
-        if(!o->iscolor()) continue;
-        ((TargetColor *)o)->type = clamp(*c, TargetColor::SOLID, TargetColor::MODULATE);
-        break;
-    });
-
-    UIREVCMDW(rotategrad, "f", (float *amt),
-    {
-        if(!o->iscolor()) continue;
-        ((TargetColor *)o)->rotatecolors(*amt);
-        break;
-    });
+    UICMDT(TargetColor, colour, rotate, "f", (float *amt), o->rotatecolors(*amt));
 
     struct FillColor : TargetColor
     {
@@ -2443,18 +2474,18 @@ namespace UI
                 wlen = 0-wrap;
                 for(Object *o = this->parent; o != NULL; o = o->parent)
                 {
-                    if(o->isspacer())
+                    if(o->istype<Spacer>())
                     {
                         wp += ((Spacer *)o)->spacew*2;
                         continue;
                     }
-                    float ww = o->w > 0 || !o->isfiller() ? o->w : ((Filler *)o)->minw;
+                    float ww = o->w > 0 || !o->isfill() ? o->w : ((Filler *)o)->minw;
                     if(ww > 0)
                     {
                         wlen *= (ww-wp)/k;
                         break;
                     }
-                    if(o->iswindow()) break;
+                    if(o->istype<Window>()) break;
                 }
             }
             else wlen = 0;
@@ -2479,19 +2510,19 @@ namespace UI
                 float lw = tw*k, lm = limit, lp = 0;
                 if(lw > 0) for(Object *o = this->parent; o != NULL; o = o->parent)
                 {
-                    if(o->isspacer())
+                    if(o->istype<Spacer>())
                     {
                         lp += ((Spacer *)o)->spacew*2;
                         continue;
                     }
-                    float ls = o->w > 0 || !o->isfiller() ? o->w : ((Filler *)o)->minw;
+                    float ls = o->w > 0 || !o->isfill() ? o->w : ((Filler *)o)->minw;
                     if(ls > 0)
                     {
                         float lo = (ls-lp)*lm;
                         if(lw > lo) rescale = lo/lw;
                         break;
                     }
-                    if(o->iswindow()) break;
+                    if(o->istype<Window>()) break;
                 }
             }
             if(growth != 1) th *= growth > 0 ? growth : 0-growth;
@@ -2499,6 +2530,13 @@ namespace UI
             h = max(h, th*k);
         }
     };
+
+    UISETCMDT(Text, text, scale, "f", float, 0.f, FVAR_MAX);
+    UISETCMDT(Text, text, wrap, "f", float, FVAR_MIN, FVAR_MAX);
+    UISETCMDT(Text, text, limit, "f", float, FVAR_MIN, FVAR_MAX);
+    UISETCMDT(Text, text, growth, "f", float, FVAR_MIN, FVAR_MAX);
+    UISETCMDT(Text, text, align, "i", int, -2, 2);
+    UISETCMDT(Text, text, pos, "i", int, -1, VAR_MAX);
 
     struct TextString : Text
     {
@@ -2631,15 +2669,6 @@ namespace UI
 
     ICOMMAND(0, uiwrapcolourpostext, "tfifibe", (tagval *text, float *wrap, int *c, float *scale, int *align, int *pos, uint *children),
         buildtext(*text, *scale*uiscale, uitextscale, Color(*c), *wrap*uiscale, 0, *align, *pos, 1, children));
-
-    #define UITEXTSET(name, valtype, type, cmin, cmax) \
-        ICOMMAND(0, uisettext##name, valtype, (type *val), if(buildparent && buildparent->istext()) { ((Text *)buildparent)->name = clamp(*val, cmin, cmax); type##ret(((Text *)buildparent)->name); });
-    UITEXTSET(scale, "f", float, 0.f, FVAR_MAX);
-    UITEXTSET(wrap, "f", float, FVAR_MIN, FVAR_MAX);
-    UITEXTSET(limit, "f", float, FVAR_MIN, FVAR_MAX);
-    UITEXTSET(growth, "f", float, FVAR_MIN, FVAR_MAX);
-    UITEXTSET(align, "i", int, -2, 2);
-    UITEXTSET(pos, "i", int, -1, VAR_MAX);
 
     struct Font : Object
     {
@@ -3913,7 +3942,7 @@ namespace UI
 
     struct RadarBlip : Image
     {
-        float yaw, blipx, blipy, dist, blipyaw;
+        float yaw, blipx, blipy, texx, texy, dist, blipyaw;
         uchar blipadjust;
 
         void setup(Texture *tex_, const Color &color_, float yaw_ = 0, float blipyaw_ = 0, float dist_ = 0, float minw_ = 0, float minh_ = 0)
@@ -3921,9 +3950,8 @@ namespace UI
             Image::setup(tex_, color_, true, minw_, minh_);
             yaw = yaw_; // direction in which the blip is
             blipyaw = blipyaw_; // rotation of the blip itself
-            blipx = sinf(RAD*yaw);
-            blipy = -cosf(RAD*yaw);
             dist = dist_; // how far away the blip is
+            blipx = blipy = texx = texy = 0;
             blipadjust = ALIGN_HCENTER | ALIGN_VCENTER;
         }
 
@@ -3935,13 +3963,17 @@ namespace UI
             for(Object *o = parent; o != NULL; o = o->parent)
             {
                 if(o->isradar()) return (Radar *)o;
-                if(o->iswindow()) break;
+                if(o->istype<Window>()) break;
             }
             return NULL;
         }
 
         void layout()
         {
+            blipx = sinf(RAD*yaw);
+            blipy = -cosf(RAD*yaw);
+            texx = sinf(RAD*blipyaw);
+            texy = -cosf(RAD*blipyaw);
             Image::layout();
             // children don't increase the dimensions of a blip if specified
             if(minw > 0 && w > minw) w = minw;
@@ -3997,8 +4029,8 @@ namespace UI
                 if(tex != notexture)
                 {
                     bindtex();
-                    bbx = sinf(RAD*blipyaw);
-                    bby = -cosf(RAD*blipyaw);
+                    bbx = texx;
+                    bby = texy;
                     loopk(4)
                     {
                         vec2 norm;
@@ -4093,7 +4125,7 @@ namespace UI
     });
 
     #define UICOLOURCMDS(t) \
-        if(o->iscolor()) \
+        if(o->iscolour()) \
         { \
             loopvk(((TargetColor *)o)->colors) ((TargetColor *)o)->colors[k] = Color(*c); \
             t; \
@@ -4110,7 +4142,7 @@ namespace UI
     UIWINCMDC(setcolours, "i", (int *c), setchildcolours(o, c));
 
     #define UIBLENDCMDS(t) \
-        if(o->iscolor()) \
+        if(o->iscolour()) \
         { \
             loopvk(((TargetColor *)o)->colors) ((TargetColor *)o)->colors[k].a = clamp(int(*c * ((TargetColor *)o)->colors[k].a), 0, 255); \
             t; \
@@ -4127,7 +4159,7 @@ namespace UI
     UIWINCMDC(changeblends, "f", (float *c), changechildblends(o, c));
 
     #define UICHGCOLCMDS(t) \
-        if(o->iscolor()) \
+        if(o->iscolour()) \
         { \
             loopvk(((TargetColor *)o)->colors) \
             { \
