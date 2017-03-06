@@ -833,6 +833,18 @@ namespace UI
             } \
         });
 
+    #define UISETCMDB(uitype, uiname, vname) \
+        UICMD(uitype, uiname, vname, "i", (int *val), { \
+            o->vname = *val!=0; \
+            intret(o->vname ? 1 : 0); \
+        });
+
+    #define UISETCMDK(uitype, uiname, vname, valtype, type, cmin, cmax, valdef) \
+        UICMD(uitype, uiname, vname, valtype, (type *val), { \
+            o->vname = type(clamp(valdef, cmin, cmax)); \
+            type##ret(o->vname); \
+        });
+
     #define UISETCMDS(uitype, uiname, vname, valtype, type, cmin, cmax) \
         UICMD(uitype, uiname, vname, valtype, (type *val), { \
             o->vname = type(clamp(*val, cmin, cmax)*uiscale); \
@@ -1983,9 +1995,11 @@ namespace UI
             Object::draw(sx, sy);
         }
     };
+
     Texture *Image::lasttex = NULL;
     Color Image::lastcolor(255, 255, 255);
     GLenum Image::lastmode = GL_POINTS; // something we don't use
+
     ICOMMAND(0, uiimage, "siiffse", (char *texname, int *c, int *a, float *minw, float *minh, char *alttex, uint *children),
         BUILD(Image, o, {
             Texture *tex = textureload(texname, 3, true, false);
@@ -2006,12 +2020,10 @@ namespace UI
             if(tex == notexture && *alttex) tex = textureload(alttex, 3, true, false);
             o->setup(tex, Color(*c), Color(*c2), *a!=0, *minw*uiscale, *minh*uiscale, Image::HORIZONTAL);
         }, children));
-    ICOMMAND(0, uialtimage, "s", (char *texname),
-    {
-        if(!buildparent || !buildparent->isimage()) return;
-        Image *o = (Image *)buildparent;
-        if(o && o->tex == notexture) o->tex = textureload(texname, 3, true, false);
-    });
+
+    UICMDT(Image, image, tex, "s", (char *texname),  if(texname && *texname) o->tex = textureload(texname, 3, true, false));
+    UICMDT(Image, image, alttex, "s", (char *texname),  if(texname && *texname && o->tex == notexture) o->tex = textureload(texname, 3, true, false));
+    UISETCMDB(Image, image, alphatarget);
 
     struct CroppedImage : Image
     {
@@ -2069,6 +2081,11 @@ namespace UI
                 parsepixeloffset(cropx, tex->xs), parsepixeloffset(cropy, tex->ys),
                 parsepixeloffset(cropw, tex->xs), parsepixeloffset(croph, tex->ys));
         }, children));
+
+    UISETCMDS(CroppedImage, image, cropx, "f", float, 0.f, FVAR_MAX);
+    UISETCMDS(CroppedImage, image, cropy, "f", float, 0.f, FVAR_MAX);
+    UISETCMDS(CroppedImage, image, cropw, "f", float, 0.f, FVAR_MAX);
+    UISETCMDS(CroppedImage, image, croph, "f", float, 0.f, FVAR_MAX);
 
     struct StretchedImage : Image
     {
@@ -2213,8 +2230,11 @@ namespace UI
             Texture *tex = textureload(texname, 3, true, false);
             o->setup(tex, Color(*c), *a!=0,
                 parsepixeloffset(texborder, tex->xs),
-                *screenborder, *minw, *minh);
+                *screenborder*uiscale, *minw*uiscale, *minh*uiscale);
         }, children));
+
+    UISETCMDS(BorderedImage, image, texborder, "f", float, 0.f, FVAR_MAX);
+    UISETCMDS(BorderedImage, image, screenborder, "f", float, 0.f, FVAR_MAX);
 
     struct TiledImage : Image
     {
@@ -2264,8 +2284,11 @@ namespace UI
         BUILD(TiledImage, o, {
             Texture *tex = textureload(texname, 3, true, false);
             if(tex == notexture && *alttex) tex = textureload(alttex, 3, true, false);
-            o->setup(tex, Color(*c), *a!=0, *minw*uiscale, *minh*uiscale, *tilew <= 0 ? 1 : *tilew, *tileh <= 0 ? 1 : *tileh);
+            o->setup(tex, Color(*c), *a!=0, *minw*uiscale, *minh*uiscale, (*tilew <= 0 ? 1 : *tilew)*uiscale, (*tileh <= 0 ? 1 : *tileh)*uiscale);
         }, children));
+
+    UISETCMDS(TiledImage, image, tilew, "f", float, FVAR_NONZERO, FVAR_MAX);
+    UISETCMDS(TiledImage, image, tileh, "f", float, FVAR_NONZERO, FVAR_MAX);
 
     struct Shape : TargetColor
     {
@@ -2531,9 +2554,9 @@ namespace UI
         }
     };
 
-    UISETCMDT(Text, text, scale, "f", float, 0.f, FVAR_MAX);
-    UISETCMDT(Text, text, wrap, "f", float, FVAR_MIN, FVAR_MAX);
-    UISETCMDT(Text, text, limit, "f", float, FVAR_MIN, FVAR_MAX);
+    UISETCMDK(Text, text, scale, "f", float, 0.f, FVAR_MAX, *val*uiscale*uitextscale);
+    UISETCMDK(Text, text, wrap, "f", float, FVAR_MIN, FVAR_MAX, (*val >= 0 ? *val : *val*uiscale));
+    UISETCMDK(Text, text, limit, "f", float, FVAR_MIN, FVAR_MAX, (*val >= 0 ? *val : *val*uiscale));
     UISETCMDT(Text, text, growth, "f", float, FVAR_MIN, FVAR_MAX);
     UISETCMDT(Text, text, align, "i", int, -2, 2);
     UISETCMDT(Text, text, pos, "i", int, -1, VAR_MAX);
@@ -2600,27 +2623,27 @@ namespace UI
 
     static inline void buildtext(tagval &t, float scale, float scalemod, const Color &color, float wrap, float limit, int align, int pos, float growth, uint *children)
     {
-        if(scale <= 0) scale = uiscale;
-        scale *= scalemod;
+        if(scale <= 0) scale = 1;
+        scale *= scalemod*uiscale;
         switch(t.type)
         {
             case VAL_INT:
-                BUILD(TextInt, o, o->setup(t.i, scale, color, wrap, limit, align, pos, growth), children);
+                BUILD(TextInt, o, o->setup(t.i, scale, color, wrap >= 0 ? wrap : wrap*uiscale, limit >= 0 ? limit : limit*uiscale, align, pos, growth), children);
                 break;
             case VAL_FLOAT:
-                BUILD(TextFloat, o, o->setup(t.f, scale, color, wrap, limit, align, pos, growth), children);
+                BUILD(TextFloat, o, o->setup(t.f, scale, color, wrap >= 0 ? wrap : wrap*uiscale, limit >= 0 ? limit : limit*uiscale, align, pos, growth), children);
                 break;
             case VAL_CSTR:
             case VAL_MACRO:
             case VAL_STR:
                 if(t.s[0])
                 {
-                    BUILD(TextString, o, o->setup(t.s, scale, color, wrap, limit, align, pos, growth), children);
+                    BUILD(TextString, o, o->setup(t.s, scale, color, wrap >= 0 ? wrap : wrap*uiscale, limit >= 0 ? limit : limit*uiscale, align, pos, growth), children);
                     break;
                 }
                 // fall-through
             default:
-                BUILD(TextString, o, o->setup("", scale, color, wrap, limit, align, pos, growth), children);
+                BUILD(TextString, o, o->setup("", scale, color, wrap >= 0 ? wrap : wrap*uiscale, limit >= 0 ? limit : limit*uiscale, align, pos, growth), children);
                 break;
         }
     }
@@ -2629,46 +2652,46 @@ namespace UI
         BUILD(Filler, o, o->setup(*minw*uiscale * uitextscale*0.5f, *minh*uiscale * uitextscale), children));
 
     ICOMMAND(0, uitext, "tfie", (tagval *text, float *scale, int *align, uint *children),
-        buildtext(*text, *scale*uiscale, uitextscale, Color(colourwhite), 0, 0, *align, -1, 1, children));
+        buildtext(*text, *scale, uitextscale, Color(colourwhite), 0, 0, *align, -1, 1, children));
 
     ICOMMAND(0, uicolourtext, "tifie", (tagval *text, int *c, float *scale, int *align, uint *children),
-        buildtext(*text, *scale*uiscale, uitextscale, Color(*c), 0, 0, *align, -1, 1, children));
+        buildtext(*text, *scale, uitextscale, Color(*c), 0, 0, *align, -1, 1, children));
 
     ICOMMAND(0, uiwraptext, "tffie", (tagval *text, float *wrap, float *scale, int *align, uint *children),
-        buildtext(*text, *scale*uiscale, uitextscale, Color(colourwhite), *wrap*uiscale, 0, *align, -1, 1, children));
+        buildtext(*text, *scale, uitextscale, Color(colourwhite), *wrap, 0, *align, -1, 1, children));
 
     ICOMMAND(0, uiwrapcolourtext, "tfifie", (tagval *text, float *wrap, int *c, float *scale, int *align, uint *children),
-        buildtext(*text, *scale*uiscale, uitextscale, Color(*c), *wrap*uiscale, 0, *align, -1, 1, children));
+        buildtext(*text, *scale, uitextscale, Color(*c), *wrap, 0, *align, -1, 1, children));
 
     ICOMMAND(0, uilimittext, "tffie", (tagval *text, float *limit, float *scale, int *align, uint *children),
-        buildtext(*text, *scale*uiscale, uitextscale, Color(colourwhite), 0, *limit, *align, -1, 1, children));
+        buildtext(*text, *scale, uitextscale, Color(colourwhite), 0, *limit, *align, -1, 1, children));
 
     ICOMMAND(0, uilimitcolourtext, "tfifie", (tagval *text, float *limit, int *c, float *scale, int *align, uint *children),
-        buildtext(*text, *scale*uiscale, uitextscale, Color(*c), 0, *limit, *align, -1, 1, children));
+        buildtext(*text, *scale, uitextscale, Color(*c), 0, *limit, *align, -1, 1, children));
 
     ICOMMAND(0, uiwrapcolourtext, "tfifie", (tagval *text, float *wrap, int *c, float *scale, int *align, uint *children),
-        buildtext(*text, *scale*uiscale, uitextscale, Color(*c), *wrap*uiscale, 0, *align, -1, 1, children));
+        buildtext(*text, *scale, uitextscale, Color(*c), *wrap, 0, *align, -1, 1, children));
 
     ICOMMAND(0, uipostext, "tfibe", (tagval *text, float *scale, int *align, int *pos, uint *children),
-        buildtext(*text, *scale*uiscale, uitextscale, Color(colourwhite), 0, 0, *align, *pos, 1, children));
+        buildtext(*text, *scale, uitextscale, Color(colourwhite), 0, 0, *align, *pos, 1, children));
 
     ICOMMAND(0, uicolourpostext, "tifibe", (tagval *text, int *c, float *scale, int *align, int *pos, uint *children),
-        buildtext(*text, *scale*uiscale, uitextscale, Color(*c), 0, 0, *align, *pos, 1, children));
+        buildtext(*text, *scale, uitextscale, Color(*c), 0, 0, *align, *pos, 1, children));
 
     ICOMMAND(0, uiwrappostext, "tffibe", (tagval *text, float *wrap, float *scale, int *align, int *pos, uint *children),
-        buildtext(*text, *scale*uiscale, uitextscale, Color(colourwhite), *wrap*uiscale, 0, *align, *pos, 1, children));
+        buildtext(*text, *scale, uitextscale, Color(colourwhite), *wrap, 0, *align, *pos, 1, children));
 
     ICOMMAND(0, uiwrapcolourpostext, "tfifibe", (tagval *text, float *wrap, int *c, float *scale, int *align, int *pos, uint *children),
-        buildtext(*text, *scale*uiscale, uitextscale, Color(*c), *wrap*uiscale, 0, *align, *pos, 1, children));
+        buildtext(*text, *scale, uitextscale, Color(*c), *wrap, 0, *align, *pos, 1, children));
 
     ICOMMAND(0, uilimitpostext, "tffibe", (tagval *text, float *limit, float *scale, int *align, int *pos, uint *children),
-        buildtext(*text, *scale*uiscale, uitextscale, Color(colourwhite), 0, *limit, *align, *pos, 1, children));
+        buildtext(*text, *scale, uitextscale, Color(colourwhite), 0, *limit, *align, *pos, 1, children));
 
     ICOMMAND(0, uilimitcolourpostext, "tfifibe", (tagval *text, float *limit, int *c, float *scale, int *align, int *pos, uint *children),
-        buildtext(*text, *scale*uiscale, uitextscale, Color(*c), 0, *limit, *align, *pos, 1, children));
+        buildtext(*text, *scale, uitextscale, Color(*c), 0, *limit, *align, *pos, 1, children));
 
     ICOMMAND(0, uiwrapcolourpostext, "tfifibe", (tagval *text, float *wrap, int *c, float *scale, int *align, int *pos, uint *children),
-        buildtext(*text, *scale*uiscale, uitextscale, Color(*c), *wrap*uiscale, 0, *align, *pos, 1, children));
+        buildtext(*text, *scale, uitextscale, Color(*c), *wrap, 0, *align, *pos, 1, children));
 
     struct Font : Object
     {
