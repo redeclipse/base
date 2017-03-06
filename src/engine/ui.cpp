@@ -2000,26 +2000,14 @@ namespace UI
     Color Image::lastcolor(255, 255, 255);
     GLenum Image::lastmode = GL_POINTS; // something we don't use
 
-    ICOMMAND(0, uiimage, "siiffse", (char *texname, int *c, int *a, float *minw, float *minh, char *alttex, uint *children),
-        BUILD(Image, o, {
-            Texture *tex = textureload(texname, 3, true, false);
-            if(tex == notexture && *alttex) tex = textureload(alttex, 3, true, false);
-            o->setup(tex, Color(*c), *a!=0, *minw*uiscale, *minh*uiscale);
-        }, children));
+    ICOMMAND(0, uiimage, "siiffe", (char *texname, int *c, int *a, float *minw, float *minh, uint *children),
+        BUILD(Image, o, o->setup(textureload(texname, 3, true, false), Color(*c), *a!=0, *minw*uiscale, *minh*uiscale), children));
 
-    ICOMMAND(0, uiimagevgradient, "siiiffse", (char *texname, int *c, int *c2, int *a, float *minw, float *minh, char *alttex, uint *children),
-        BUILD(Image, o, {
-            Texture *tex = textureload(texname, 3, true, false);
-            if(tex == notexture && *alttex) tex = textureload(alttex, 3, true, false);
-            o->setup(tex, Color(*c), Color(*c2), *a!=0, *minw*uiscale, *minh*uiscale, Image::VERTICAL);
-        }, children));
+    ICOMMAND(0, uiimagevgradient, "siiiffe", (char *texname, int *c, int *c2, int *a, float *minw, float *minh, uint *children),
+        BUILD(Image, o, o->setup(textureload(texname, 3, true, false), Color(*c), Color(*c2), *a!=0, *minw*uiscale, *minh*uiscale, Image::VERTICAL), children));
 
-    ICOMMAND(0, uiimagehgradient, "siiiffse", (char *texname, int *c, int *c2, int *a, float *minw, float *minh, char *alttex, uint *children),
-        BUILD(Image, o, {
-            Texture *tex = textureload(texname, 3, true, false);
-            if(tex == notexture && *alttex) tex = textureload(alttex, 3, true, false);
-            o->setup(tex, Color(*c), Color(*c2), *a!=0, *minw*uiscale, *minh*uiscale, Image::HORIZONTAL);
-        }, children));
+    ICOMMAND(0, uiimagehgradient, "siiiffe", (char *texname, int *c, int *c2, int *a, float *minw, float *minh, uint *children),
+        BUILD(Image, o, o->setup(textureload(texname, 3, true, false), Color(*c), Color(*c2), *a!=0, *minw*uiscale, *minh*uiscale, Image::HORIZONTAL), children));
 
     UICMDT(Image, image, tex, "s", (char *texname),  if(texname && *texname) o->tex = textureload(texname, 3, true, false));
     UICMDT(Image, image, alttex, "s", (char *texname),  if(texname && *texname && o->tex == notexture) o->tex = textureload(texname, 3, true, false));
@@ -2151,12 +2139,8 @@ namespace UI
         }
     };
 
-    ICOMMAND(0, uistretchedimage, "siiffse", (char *texname, int *c, int *a, float *minw, float *minh, char *alttex, uint *children),
-        BUILD(StretchedImage, o, {
-            Texture *tex = textureload(texname, 3, true, false);
-            if(tex == notexture && *alttex) tex = textureload(alttex, 3, true, false);
-            o->setup(tex, Color(*c), *a!=0, *minw*uiscale, *minh*uiscale);
-        }, children));
+    ICOMMAND(0, uistretchedimage, "siiffe", (char *texname, int *c, int *a, float *minw, float *minh, uint *children),
+        BUILD(StretchedImage, o, o->setup(textureload(texname, 3, true, false), Color(*c), *a!=0, *minw*uiscale, *minh*uiscale), children));
 
     struct BorderedImage : Image
     {
@@ -2280,12 +2264,8 @@ namespace UI
         }
     };
 
-    ICOMMAND(0, uitiledimage, "siiffffse", (char *texname, int *c, int *a, float *tilew, float *tileh, float *minw, float *minh, char *alttex, uint *children),
-        BUILD(TiledImage, o, {
-            Texture *tex = textureload(texname, 3, true, false);
-            if(tex == notexture && *alttex) tex = textureload(alttex, 3, true, false);
-            o->setup(tex, Color(*c), *a!=0, *minw*uiscale, *minh*uiscale, (*tilew <= 0 ? 1 : *tilew)*uiscale, (*tileh <= 0 ? 1 : *tileh)*uiscale);
-        }, children));
+    ICOMMAND(0, uitiledimage, "siiffffe", (char *texname, int *c, int *a, float *tilew, float *tileh, float *minw, float *minh, uint *children),
+        BUILD(TiledImage, o, o->setup(textureload(texname, 3, true, false), Color(*c), *a!=0, *minw*uiscale, *minh*uiscale, (*tilew <= 0 ? 1 : *tilew)*uiscale, (*tileh <= 0 ? 1 : *tileh)*uiscale), children));
 
     UISETCMDS(TiledImage, image, tilew, "f", float, FVAR_NONZERO, FVAR_MAX);
     UISETCMDS(TiledImage, image, tileh, "f", float, FVAR_NONZERO, FVAR_MAX);
