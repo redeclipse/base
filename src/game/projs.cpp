@@ -874,7 +874,7 @@ namespace projs
                     proj.vel.add(vec(rnd(21)-10, rnd(21)-10, proj.owner && proj.owner->headless ? rnd(61)+10 : rnd(21)-10));
                     proj.projcollide = BOUNCE_GEOM|BOUNCE_PLAYER;
                     proj.escaped = !proj.owner || proj.owner->state != CS_ALIVE;
-                    proj.fadetime = rnd(50)+50;
+                    proj.fadetime = rnd(250)+250;
                     proj.extinguish = 6;
                     proj.interacts = 3;
                     break;
@@ -926,7 +926,7 @@ namespace projs
                 proj.weight = (ejectweight+(proj.speed*2))*proj.lifesize; // so they fall better in relation to their speed
                 proj.projcollide = BOUNCE_GEOM;
                 proj.escaped = true;
-                proj.fadetime = rnd(300)+300;
+                proj.fadetime = rnd(250)+250;
                 proj.extinguish = 6;
                 proj.interacts = 3;
                 if(proj.owner == game::focus && !game::thirdpersonview())
