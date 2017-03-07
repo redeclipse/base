@@ -963,8 +963,8 @@ namespace game
 
     float spawnfade(gameent *d)
     {
-        int len = min(m_delay(d->actortype, gamemode, mutators, d->team), AA(d->actortype, abilities)&(1<<A_A_MOVE) ? 5000 : 1000);
-        if(len <= 0 || len > deathmaxfade) len = deathmaxfade;
+        int len = min(m_delay(d->actortype, gamemode, mutators, d->team), AA(d->actortype, abilities)&(1<<A_A_MOVE) ? 5000 : 2500);
+        if(deathmaxfade && (len <= 0 || len > deathmaxfade)) len = deathmaxfade;
         if(len > 0)
         {
             int interval = min(len/3, ragdolleffect), over = max(len-interval, 1), millis = lastmillis-d->lastdeath;
