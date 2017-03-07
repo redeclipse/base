@@ -651,7 +651,7 @@ namespace game
             else if(maptime > 0 && gameent::is(d) && d->actortype < A_ENEMY)
             {
                 cament *c = cameras.add(new cament(cameras.length(), cament::PLAYER, d->clientnum));
-                c->o = d->headpos();
+                c->o = d->center();
                 c->player = d;
             }
         }
@@ -2194,7 +2194,7 @@ namespace game
         if(input != inputmouse || (view != inputview || mode != inputmode || focus != lastfocus))
         {
             if(input != inputmouse) resetcursor();
-            else resetcamera(true);
+            else resetcamera();
             inputmouse = input;
             inputview = view;
             inputmode = mode;
@@ -2569,10 +2569,10 @@ namespace game
             {
                 gameent *d = players[i];
                 if(d->actortype >= A_ENEMY) continue;
-                vec pos = d->headpos();
+                vec pos = d->center();
                 cameras.add(new cament(cameras.length(), cament::PLAYER, d->clientnum, pos, d));
             }
-            vec pos = player1->headpos();
+            vec pos = player1->center();
             cameras.add(new cament(cameras.length(), cament::PLAYER, player1->clientnum, pos, player1));
             if(m_capture(gamemode)) capture::checkcams(cameras);
             else if(m_defend(gamemode)) defend::checkcams(cameras);
@@ -2589,7 +2589,7 @@ namespace game
             if(c->type == cament::PLAYER && (c->player || ((c->player = getclient(c->id)) != NULL)))
             {
                 if(!found && c->id == spectvfollowing && c->player->state != CS_SPECTATOR) found = true;
-                c->o = c->player->headpos();
+                c->o = c->player->center();
                 if(forced && c->player == focus) cam = c;
             }
             else if(c->type != cament::PLAYER && c->player) c->player = NULL;
@@ -2727,8 +2727,11 @@ namespace game
                 camera1->roll = focus->roll;
             }
         }
-        camera1->o = camvec(cam, amt, camera1->yaw, camera1->pitch);
-        camera1->resetinterp(); // because this just sets position directly
+        if(!cam->player || cam->player->state == CS_ALIVE)
+        {
+            camera1->o = camvec(cam, amt, camera1->yaw, camera1->pitch);
+            camera1->resetinterp(); // because this just sets position directly
+        }
         return true;
     }
 
