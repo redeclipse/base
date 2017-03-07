@@ -2049,15 +2049,15 @@ namespace UI
     {
         switch(t->type)
         {
-            case VAL_INT: return t->i*uiscale;
-            case VAL_FLOAT: return t->f*uiscale;
+            case VAL_INT: return t->i;
+            case VAL_FLOAT: return t->f;
             case VAL_NULL: return 0;
             default:
             {
                 const char *s = t->getstr();
                 char *end;
                 float val = strtod(s, &end);
-                return (*end == 'p' ? val/size : val)*uiscale;
+                return *end == 'p' ? val/size : val;
             }
         }
     }
@@ -2070,10 +2070,10 @@ namespace UI
                 parsepixeloffset(cropw, tex->xs), parsepixeloffset(croph, tex->ys));
         }, children));
 
-    UISETCMDS(CroppedImage, image, cropx, "f", float, 0.f, FVAR_MAX);
-    UISETCMDS(CroppedImage, image, cropy, "f", float, 0.f, FVAR_MAX);
-    UISETCMDS(CroppedImage, image, cropw, "f", float, 0.f, FVAR_MAX);
-    UISETCMDS(CroppedImage, image, croph, "f", float, 0.f, FVAR_MAX);
+    UISETCMD(CroppedImage, image, cropx, "f", float, 0.f, 1.f);
+    UISETCMD(CroppedImage, image, cropy, "f", float, 0.f, 1.f);
+    UISETCMD(CroppedImage, image, cropw, "f", float, 0.f, 1.f);
+    UISETCMD(CroppedImage, image, croph, "f", float, 0.f, 1.f);
 
     struct StretchedImage : Image
     {
@@ -2217,7 +2217,7 @@ namespace UI
                 *screenborder*uiscale, *minw*uiscale, *minh*uiscale);
         }, children));
 
-    UISETCMDS(BorderedImage, image, texborder, "f", float, 0.f, FVAR_MAX);
+    UISETCMD(BorderedImage, image, texborder, "f", float, 0.f, FVAR_MAX);
     UISETCMDS(BorderedImage, image, screenborder, "f", float, 0.f, FVAR_MAX);
 
     struct TiledImage : Image
@@ -2265,10 +2265,10 @@ namespace UI
     };
 
     ICOMMAND(0, uitiledimage, "siiffffe", (char *texname, int *c, int *a, float *tilew, float *tileh, float *minw, float *minh, uint *children),
-        BUILD(TiledImage, o, o->setup(textureload(texname, 3, true, false), Color(*c), *a!=0, *minw*uiscale, *minh*uiscale, (*tilew <= 0 ? 1 : *tilew)*uiscale, (*tileh <= 0 ? 1 : *tileh)*uiscale), children));
+        BUILD(TiledImage, o, o->setup(textureload(texname, 3, true, false), Color(*c), *a!=0, *minw*uiscale, *minh*uiscale, *tilew <= 0 ? 1 : *tilew, *tileh <= 0 ? 1 : *tileh), children));
 
-    UISETCMDS(TiledImage, image, tilew, "f", float, FVAR_NONZERO, FVAR_MAX);
-    UISETCMDS(TiledImage, image, tileh, "f", float, FVAR_NONZERO, FVAR_MAX);
+    UISETCMD(TiledImage, image, tilew, "f", float, FVAR_NONZERO, FVAR_MAX);
+    UISETCMD(TiledImage, image, tileh, "f", float, FVAR_NONZERO, FVAR_MAX);
 
     struct Shape : TargetColor
     {
@@ -2535,7 +2535,7 @@ namespace UI
     };
 
     UISETCMDK(Text, text, scale, "f", float, 0.f, FVAR_MAX, *val*uiscale*uitextscale);
-    UISETCMDK(Text, text, wrap, "f", float, FVAR_MIN, FVAR_MAX, (*val >= 0 ? *val : *val*uiscale));
+    UISETCMDK(Text, text, wrap, "f", float, FVAR_MIN, FVAR_MAX, (*val >= 0 ? *val*uiscale : *val));
     UISETCMDK(Text, text, limit, "f", float, FVAR_MIN, FVAR_MAX, (*val >= 0 ? *val : *val*uiscale));
     UISETCMDT(Text, text, growth, "f", float, FVAR_MIN, FVAR_MAX);
     UISETCMDT(Text, text, align, "i", int, -2, 2);
@@ -2608,22 +2608,22 @@ namespace UI
         switch(t.type)
         {
             case VAL_INT:
-                BUILD(TextInt, o, o->setup(t.i, scale, color, wrap >= 0 ? wrap : wrap*uiscale, limit >= 0 ? limit : limit*uiscale, align, pos, growth), children);
+                BUILD(TextInt, o, o->setup(t.i, scale, color, wrap >= 0 ? wrap*uiscale : wrap, limit >= 0 ? limit : limit*uiscale, align, pos, growth), children);
                 break;
             case VAL_FLOAT:
-                BUILD(TextFloat, o, o->setup(t.f, scale, color, wrap >= 0 ? wrap : wrap*uiscale, limit >= 0 ? limit : limit*uiscale, align, pos, growth), children);
+                BUILD(TextFloat, o, o->setup(t.f, scale, color, wrap >= 0 ? wrap*uiscale : wrap, limit >= 0 ? limit : limit*uiscale, align, pos, growth), children);
                 break;
             case VAL_CSTR:
             case VAL_MACRO:
             case VAL_STR:
                 if(t.s[0])
                 {
-                    BUILD(TextString, o, o->setup(t.s, scale, color, wrap >= 0 ? wrap : wrap*uiscale, limit >= 0 ? limit : limit*uiscale, align, pos, growth), children);
+                    BUILD(TextString, o, o->setup(t.s, scale, color, wrap >= 0 ? wrap*uiscale : wrap, limit >= 0 ? limit : limit*uiscale, align, pos, growth), children);
                     break;
                 }
                 // fall-through
             default:
-                BUILD(TextString, o, o->setup("", scale, color, wrap >= 0 ? wrap : wrap*uiscale, limit >= 0 ? limit : limit*uiscale, align, pos, growth), children);
+                BUILD(TextString, o, o->setup("", scale, color, wrap >= 0 ? wrap*uiscale : wrap, limit >= 0 ? limit : limit*uiscale, align, pos, growth), children);
                 break;
         }
     }
@@ -3443,6 +3443,7 @@ namespace UI
             return true;
         }
     };
+
     TextEditor *TextEditor::focus = NULL;
     ICOMMAND(0, uitexteditor, "siifsie", (char *name, int *length, int *height, float *scale, char *initval, int *mode, uint *children),
         BUILD(TextEditor, o, o->setup(name, *length, *height, (*scale <= 0 ? 1 : *scale)*uiscale * uitextscale, initval, *mode <= 0 ? EDITORFOREVER : *mode, NULL), children));
