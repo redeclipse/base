@@ -211,6 +211,7 @@ namespace game
     VAR(IDF_PERSIST, zoomoffset, 0, 2, 10); // if zoomdefault = -1, then offset from zoomlevels this much for initial default
     VAR(IDF_PERSIST, zoomscroll, 0, 0, 1); // 0 = stop at min/max, 1 = go to opposite end
 
+    VAR(IDF_PERSIST, aboveheadaffinity, 0, 0, 1);
     VAR(IDF_PERSIST, aboveheaddead, 0, 1, 1);
     VAR(IDF_PERSIST, aboveheadnames, 0, 1, 1);
     VAR(IDF_PERSIST, aboveheadinventory, 0, 0, 2); // 0 = off, 1 = weapselect only, 2 = all weapons

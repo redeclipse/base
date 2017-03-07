@@ -1728,7 +1728,7 @@ namespace game
 {
     extern int gamestate, gamemode, mutators, nextmode, nextmuts, timeremaining, lasttimeremain, maptime, mapstart, lastzoom, lasttvcam, lasttvchg, spectvtime, waittvtime,
             bloodfade, bloodsize, bloodsparks, debrisfade, eventiconfade, eventiconshort,
-            announcefilter, dynlighteffects, aboveheadnames, followthirdperson, nogore, forceplayermodel,
+            announcefilter, dynlighteffects, aboveheadaffinity, aboveheadnames, followthirdperson, nogore, forceplayermodel,
             playerovertone, playerundertone, playerdisplaytone, playereffecttone, playerteamtone, follow, specmode, spectvfollow, spectvfollowing, clientcrc;
     extern float bloodscale, debrisscale, aboveitemiconsize, playerovertonelevel, playerundertonelevel, playerdisplaytonelevel, playereffecttonelevel, playerteamtonelevel;
     extern bool zooming, wantsloadoutmenu;

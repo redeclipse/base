@@ -422,7 +422,7 @@ namespace capture
     {
         if(from.x >= 0)
         {
-            if(effect&1)
+            if(effect&1 && game::aboveheadaffinity)
             {
                 defformatstring(text, "<huge>\fzuw%s", str);
                 part_textcopy(vec(from).add(vec(0, 0, enttype[AFFINITY].radius)), text, PART_TEXT, game::eventiconfade, TEAM(team, colour), 3, 1, -10);
@@ -431,7 +431,7 @@ namespace capture
         }
         if(to.x >= 0)
         {
-            if(effect&2)
+            if(effect&2 && game::aboveheadaffinity)
             {
                 defformatstring(text, "<huge>\fzuw%s",str);
                 part_textcopy(vec(to).add(vec(0, 0, enttype[AFFINITY].radius)), text, PART_TEXT, game::eventiconfade, TEAM(team, colour), 3, 1, -10);
