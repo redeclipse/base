@@ -179,7 +179,7 @@ namespace hud
                 {
                     int anc = sg.players.find(game::player1) >= 0 ? S_V_YOUWIN : (game::player1->state != CS_SPECTATOR ? S_V_YOULOSE : -1);
                     if(m_defend(game::gamemode) && sg.total == INT_MAX)
-                        game::announcef(anc, CON_EVENT, NULL, true, "\fwTeam %s secured all flags", game::colourteam(sg.team));
+                        game::announcef(anc, CON_EVENT, NULL, true, "\fwTeam %s secured all points", game::colourteam(sg.team));
                     else
                     {
                         if(numgroups > 1 && sg.total == groups[1]->total)
