@@ -536,7 +536,7 @@ namespace UI
         virtual bool istext() const { return false; }
         virtual bool isimage() const { return false; }
         virtual bool iseditor() const { return false; }
-        virtual bool isclipper() const { return false; }
+        virtual bool isclip() const { return false; }
         virtual bool isradar() const { return false; }
 
         Object *find(const char *name, bool recurse = true, const Object *exclude = NULL) const
@@ -833,29 +833,42 @@ namespace UI
             } \
         });
 
-    #define UISETCMDB(uitype, uiname, vname) \
+    #define UIGETCMD(uitype, uiname, vname, type) \
+        ICOMMAND(0, uiget##uiname##vname, "", (), { \
+            if(buildparent && buildparent->istype<uitype>()) \
+            { \
+                uitype *o = (uitype *)buildparent; \
+                type##ret(o->vname); \
+            } \
+        });
+
+    #define UIARGB(uitype, uiname, vname) \
         UICMD(uitype, uiname, vname, "i", (int *val), { \
             o->vname = *val!=0; \
             intret(o->vname ? 1 : 0); \
-        });
+        }); \
+        UIGETCMD(uitype, uiname, vname, int);
 
-    #define UISETCMDK(uitype, uiname, vname, valtype, type, cmin, cmax, valdef) \
+    #define UIARGK(uitype, uiname, vname, valtype, type, cmin, cmax, valdef) \
         UICMD(uitype, uiname, vname, valtype, (type *val), { \
             o->vname = type(clamp(valdef, cmin, cmax)); \
             type##ret(o->vname); \
-        });
+        }); \
+        UIGETCMD(uitype, uiname, vname, type);
 
-    #define UISETCMDS(uitype, uiname, vname, valtype, type, cmin, cmax) \
+    #define UIARGSCALED(uitype, uiname, vname, valtype, type, cmin, cmax) \
         UICMD(uitype, uiname, vname, valtype, (type *val), { \
             o->vname = type(clamp(*val, cmin, cmax)*uiscale); \
             type##ret(o->vname); \
-        });
+        }); \
+        UIGETCMD(uitype, uiname, vname, type);
 
-    #define UISETCMD(uitype, uiname, vname, valtype, type, cmin, cmax) \
+    #define UIARG(uitype, uiname, vname, valtype, type, cmin, cmax) \
         UICMD(uitype, uiname, vname, valtype, (type *val), { \
             o->vname = type(clamp(*val, cmin, cmax)); \
             type##ret(o->vname); \
-        });
+        }); \
+        UIGETCMD(uitype, uiname, vname, type);
 
     #define UICMDT(uitype, uiname, vname, valtype, args, body) \
         ICOMMAND(0, ui##uiname##vname, valtype, args, { \
@@ -866,17 +879,28 @@ namespace UI
             } \
         });
 
-    #define UISETCMDTS(uitype, uiname, vname, valtype, type, cmin, cmax) \
+    #define UIGETCMDT(uitype, uiname, vname, type) \
+        ICOMMAND(0, uiget##uiname##vname, "", (), { \
+            if(buildparent && buildparent->is##uiname()) \
+            { \
+                uitype *o = (uitype *)buildparent; \
+                type##ret(o->vname); \
+            } \
+        });
+
+    #define UIARGSCALEDT(uitype, uiname, vname, valtype, type, cmin, cmax) \
         UICMDT(uitype, uiname, vname, valtype, (type *val), { \
             o->vname = type(clamp(*val, cmin, cmax)*uiscale); \
             type##ret(o->vname); \
-        });
+        }); \
+        UIGETCMDT(uitype, uiname, vname, type);
 
-    #define UISETCMDT(uitype, uiname, vname, valtype, type, cmin, cmax) \
+    #define UIARGT(uitype, uiname, vname, valtype, type, cmin, cmax) \
         UICMDT(uitype, uiname, vname, valtype, (type *val), { \
             o->vname = type(clamp(*val, cmin, cmax)); \
             type##ret(o->vname); \
-        });
+        }); \
+        UIGETCMDT(uitype, uiname, vname, type);
 
     static hashnameset<Window *> windows;
 
@@ -1190,7 +1214,7 @@ namespace UI
     ICOMMAND(0, uihlist, "fe", (float *space, uint *children),
         BUILD(HorizontalList, o, o->setup(*space*uiscale), children));
 
-    UISETCMDS(HorizontalList, hlist, space, "f", float, 0.f, FVAR_MAX);
+    UIARGSCALED(HorizontalList, hlist, space, "f", float, 0.f, FVAR_MAX);
 
     struct VerticalList : Object
     {
@@ -1240,7 +1264,7 @@ namespace UI
     ICOMMAND(0, uivlist, "fe", (float *space, uint *children),
         BUILD(VerticalList, o, o->setup(*space*uiscale), children));
 
-    UISETCMDS(VerticalList, vlist, space, "f", float, 0.f, FVAR_MAX);
+    UIARGSCALED(VerticalList, vlist, space, "f", float, 0.f, FVAR_MAX);
 
     ICOMMAND(0, uilist, "fe", (float *space, uint *children),
     {
@@ -1330,9 +1354,9 @@ namespace UI
     ICOMMAND(0, uigrid, "iffe", (int *columns, float *spacew, float *spaceh, uint *children),
         BUILD(Grid, o, o->setup(*columns, *spacew*uiscale, *spaceh*uiscale), children));
 
-    UISETCMDS(Grid, grid, spacew, "f", float, 0.f, FVAR_MAX);
-    UISETCMDS(Grid, grid, spaceh, "f", float, 0.f, FVAR_MAX);
-    UISETCMD(Grid, grid, columns, "i", int, 0, VAR_MAX);
+    UIARGSCALED(Grid, grid, spacew, "f", float, 0.f, FVAR_MAX);
+    UIARGSCALED(Grid, grid, spaceh, "f", float, 0.f, FVAR_MAX);
+    UIARG(Grid, grid, columns, "i", int, 0, VAR_MAX);
 
     struct TableHeader : Object
     {
@@ -1488,8 +1512,8 @@ namespace UI
     ICOMMAND(0, uitable, "ffe", (float *spacew, float *spaceh, uint *children),
         BUILD(Table, o, o->setup(*spacew*uiscale, *spaceh*uiscale), children));
 
-    UISETCMDS(Table, table, spacew, "f", float, 0.f, FVAR_MAX);
-    UISETCMDS(Table, table, spaceh, "f", float, 0.f, FVAR_MAX);
+    UIARGSCALED(Table, table, spacew, "f", float, 0.f, FVAR_MAX);
+    UIARGSCALED(Table, table, spaceh, "f", float, 0.f, FVAR_MAX);
 
     struct Spacer : Object
     {
@@ -1530,8 +1554,8 @@ namespace UI
     ICOMMAND(0, uispace, "ffe", (float *spacew, float *spaceh, uint *children),
         BUILD(Spacer, o, o->setup(*spacew*uiscale, *spaceh*uiscale), children));
 
-    UISETCMDS(Spacer, space, spacew, "f", float, 0.f, FVAR_MAX);
-    UISETCMDS(Spacer, space, spaceh, "f", float, 0.f, FVAR_MAX);
+    UIARGSCALED(Spacer, space, spacew, "f", float, 0.f, FVAR_MAX);
+    UIARGSCALED(Spacer, space, spaceh, "f", float, 0.f, FVAR_MAX);
 
     struct Offsetter : Object
     {
@@ -1570,8 +1594,8 @@ namespace UI
     ICOMMAND(0, uioffset, "ffe", (float *offsetx, float *offsety, uint *children),
         BUILD(Offsetter, o, o->setup(*offsetx*uiscale, *offsety*uiscale), children));
 
-    UISETCMDS(Offsetter, offset, x, "f", float, FVAR_MIN, FVAR_MAX);
-    UISETCMDS(Offsetter, offset, y, "f", float, FVAR_MIN, FVAR_MAX);
+    UIARGSCALED(Offsetter, offset, x, "f", float, FVAR_MIN, FVAR_MAX);
+    UIARGSCALED(Offsetter, offset, y, "f", float, FVAR_MIN, FVAR_MAX);
 
     struct Color
     {
@@ -1629,8 +1653,8 @@ namespace UI
     ICOMMAND(0, uifill, "ffe", (float *minw, float *minh, uint *children),
         BUILD(Filler, o, o->setup(*minw*uiscale, *minh*uiscale), children));
 
-    UISETCMDTS(Filler, fill, minw, "f", float, 0.f, FVAR_MAX);
-    UISETCMDTS(Filler, fill, minh, "f", float, 0.f, FVAR_MAX);
+    UIARGSCALEDT(Filler, fill, minw, "f", float, 0.f, FVAR_MAX);
+    UIARGSCALEDT(Filler, fill, minh, "f", float, 0.f, FVAR_MAX);
 
     struct Target : Filler
     {
@@ -1697,8 +1721,8 @@ namespace UI
         bool iscolour() const { return true; }
     };
 
-    UISETCMDTS(TargetColor, colour, type, "i", int, int(TargetColor::SOLID), int(TargetColor::OUTLINE));
-    UISETCMDTS(TargetColor, colour, dir, "i", int, int(TargetColor::VERTICAL), int(TargetColor::HORIZONTAL));
+    UIARGSCALEDT(TargetColor, colour, type, "i", int, int(TargetColor::SOLID), int(TargetColor::OUTLINE));
+    UIARGSCALEDT(TargetColor, colour, dir, "i", int, int(TargetColor::VERTICAL), int(TargetColor::HORIZONTAL));
 
     UICMDT(TargetColor, colour, add, "i", (int *c), o->colors.add(Color(*c)));
     UICMDT(TargetColor, colour, del, "i", (int *c), {
@@ -2011,7 +2035,7 @@ namespace UI
 
     UICMDT(Image, image, tex, "s", (char *texname),  if(texname && *texname) o->tex = textureload(texname, 3, true, false));
     UICMDT(Image, image, alttex, "s", (char *texname),  if(texname && *texname && o->tex == notexture) o->tex = textureload(texname, 3, true, false));
-    UISETCMDB(Image, image, alphatarget);
+    UIARGB(Image, image, alphatarget);
 
     struct CroppedImage : Image
     {
@@ -2070,10 +2094,10 @@ namespace UI
                 parsepixeloffset(cropw, tex->xs), parsepixeloffset(croph, tex->ys));
         }, children));
 
-    UISETCMD(CroppedImage, image, cropx, "f", float, 0.f, 1.f);
-    UISETCMD(CroppedImage, image, cropy, "f", float, 0.f, 1.f);
-    UISETCMD(CroppedImage, image, cropw, "f", float, 0.f, 1.f);
-    UISETCMD(CroppedImage, image, croph, "f", float, 0.f, 1.f);
+    UIARG(CroppedImage, image, cropx, "f", float, 0.f, 1.f);
+    UIARG(CroppedImage, image, cropy, "f", float, 0.f, 1.f);
+    UIARG(CroppedImage, image, cropw, "f", float, 0.f, 1.f);
+    UIARG(CroppedImage, image, croph, "f", float, 0.f, 1.f);
 
     struct StretchedImage : Image
     {
@@ -2217,8 +2241,8 @@ namespace UI
                 *screenborder*uiscale, *minw*uiscale, *minh*uiscale);
         }, children));
 
-    UISETCMD(BorderedImage, image, texborder, "f", float, 0.f, FVAR_MAX);
-    UISETCMDS(BorderedImage, image, screenborder, "f", float, 0.f, FVAR_MAX);
+    UIARG(BorderedImage, image, texborder, "f", float, 0.f, FVAR_MAX);
+    UIARGSCALED(BorderedImage, image, screenborder, "f", float, 0.f, FVAR_MAX);
 
     struct TiledImage : Image
     {
@@ -2267,8 +2291,8 @@ namespace UI
     ICOMMAND(0, uitiledimage, "siiffffe", (char *texname, int *c, int *a, float *tilew, float *tileh, float *minw, float *minh, uint *children),
         BUILD(TiledImage, o, o->setup(textureload(texname, 3, true, false), Color(*c), *a!=0, *minw*uiscale, *minh*uiscale, *tilew <= 0 ? 1 : *tilew, *tileh <= 0 ? 1 : *tileh), children));
 
-    UISETCMD(TiledImage, image, tilew, "f", float, FVAR_NONZERO, FVAR_MAX);
-    UISETCMD(TiledImage, image, tileh, "f", float, FVAR_NONZERO, FVAR_MAX);
+    UIARG(TiledImage, image, tilew, "f", float, FVAR_NONZERO, FVAR_MAX);
+    UIARG(TiledImage, image, tileh, "f", float, FVAR_NONZERO, FVAR_MAX);
 
     struct Shape : TargetColor
     {
@@ -2534,12 +2558,12 @@ namespace UI
         }
     };
 
-    UISETCMDK(Text, text, scale, "f", float, 0.f, FVAR_MAX, *val*uiscale*uitextscale);
-    UISETCMDK(Text, text, wrap, "f", float, FVAR_MIN, FVAR_MAX, (*val >= 0 ? *val*uiscale : *val));
-    UISETCMDK(Text, text, limit, "f", float, FVAR_MIN, FVAR_MAX, (*val >= 0 ? *val : *val*uiscale));
-    UISETCMDT(Text, text, growth, "f", float, FVAR_MIN, FVAR_MAX);
-    UISETCMDT(Text, text, align, "i", int, -2, 2);
-    UISETCMDT(Text, text, pos, "i", int, -1, VAR_MAX);
+    UIARGK(Text, text, scale, "f", float, 0.f, FVAR_MAX, *val*uiscale*uitextscale);
+    UIARGK(Text, text, wrap, "f", float, FVAR_MIN, FVAR_MAX, (*val >= 0 ? *val*uiscale : *val));
+    UIARGK(Text, text, limit, "f", float, FVAR_MIN, FVAR_MAX, (*val >= 0 ? *val : *val*uiscale));
+    UIARGT(Text, text, growth, "f", float, FVAR_MIN, FVAR_MAX);
+    UIARGT(Text, text, align, "i", int, -2, 2);
+    UIARGT(Text, text, pos, "i", int, -1, VAR_MAX);
 
     struct TextString : Text
     {
@@ -2604,26 +2628,26 @@ namespace UI
     static inline void buildtext(tagval &t, float scale, float scalemod, const Color &color, float wrap, float limit, int align, int pos, float growth, uint *children)
     {
         if(scale <= 0) scale = 1;
-        scale *= scalemod*uiscale;
+        scale *= scalemod;
         switch(t.type)
         {
             case VAL_INT:
-                BUILD(TextInt, o, o->setup(t.i, scale, color, wrap >= 0 ? wrap*uiscale : wrap, limit >= 0 ? limit : limit*uiscale, align, pos, growth), children);
+                BUILD(TextInt, o, o->setup(t.i, scale*uiscale, color, wrap >= 0 ? wrap*uiscale : wrap, limit >= 0 ? limit : limit*uiscale, align, pos, growth), children);
                 break;
             case VAL_FLOAT:
-                BUILD(TextFloat, o, o->setup(t.f, scale, color, wrap >= 0 ? wrap*uiscale : wrap, limit >= 0 ? limit : limit*uiscale, align, pos, growth), children);
+                BUILD(TextFloat, o, o->setup(t.f, scale*uiscale, color, wrap >= 0 ? wrap*uiscale : wrap, limit >= 0 ? limit : limit*uiscale, align, pos, growth), children);
                 break;
             case VAL_CSTR:
             case VAL_MACRO:
             case VAL_STR:
                 if(t.s[0])
                 {
-                    BUILD(TextString, o, o->setup(t.s, scale, color, wrap >= 0 ? wrap*uiscale : wrap, limit >= 0 ? limit : limit*uiscale, align, pos, growth), children);
+                    BUILD(TextString, o, o->setup(t.s, scale*uiscale, color, wrap >= 0 ? wrap*uiscale : wrap, limit >= 0 ? limit : limit*uiscale, align, pos, growth), children);
                     break;
                 }
                 // fall-through
             default:
-                BUILD(TextString, o, o->setup("", scale, color, wrap >= 0 ? wrap*uiscale : wrap, limit >= 0 ? limit : limit*uiscale, align, pos, growth), children);
+                BUILD(TextString, o, o->setup("", scale*uiscale, color, wrap >= 0 ? wrap*uiscale : wrap, limit >= 0 ? limit : limit*uiscale, align, pos, growth), children);
                 break;
         }
     }
@@ -2747,15 +2771,15 @@ namespace UI
 
     struct Clipper : Object
     {
-        float clipw, cliph, virtw, virth, offsetx, offsety;
+        float sizew, sizeh, virtw, virth, offsetx, offsety;
 
         Clipper() : offsetx(0), offsety(0) {}
 
-        void setup(float clipw_ = 0, float cliph_ = 0, float offsetx_ = -1, float offsety_ = -1)
+        void setup(float sizew_ = 0, float sizeh_ = 0, float offsetx_ = -1, float offsety_ = -1)
         {
             Object::setup();
-            clipw = clipw_;
-            cliph = cliph_;
+            sizew = sizew_;
+            sizeh = sizeh_;
             if(offsetx_ >= 0) offsetx = offsetx_;
             if(offsety_ >= 0) offsety = offsety_;
             virtw = virth = 0;
@@ -2763,15 +2787,15 @@ namespace UI
 
         static const char *typestr() { return "#Clipper"; }
         const char *gettype() const { return typestr(); }
-        bool isclipper() const { return true; }
+        bool isclip() const { return true; }
 
         void layout()
         {
             Object::layout();
             virtw = w;
             virth = h;
-            if(clipw) w = min(w, clipw);
-            if(cliph) h = min(h, cliph);
+            if(sizew) w = min(w, sizew);
+            if(sizeh) h = min(h, sizeh);
             offsetx = min(offsetx, hlimit());
             offsety = min(offsety, vlimit());
         }
@@ -2793,7 +2817,7 @@ namespace UI
 
         void draw(float sx, float sy)
         {
-            if((clipw && virtw > clipw) || (cliph && virth > cliph))
+            if((sizew && virtw > sizew) || (sizeh && virth > sizeh))
             {
                 stopdrawing();
                 pushclip(sx, sy, w, h);
@@ -2817,14 +2841,19 @@ namespace UI
         void setvscroll(float vscroll) { offsety = clamp(vscroll, 0.0f, vlimit()); }
     };
 
-    ICOMMAND(0, uiclip, "ffgge", (float *clipw, float *cliph, float *offsetx, float *offsety, uint *children),
-        BUILD(Clipper, o, o->setup(*clipw*uiscale, *cliph*uiscale, *offsetx*uiscale, *offsety*uiscale), children));
+    ICOMMAND(0, uiclip, "ffgge", (float *sizew, float *sizeh, float *offsetx, float *offsety, uint *children),
+        BUILD(Clipper, o, o->setup(*sizew*uiscale, *sizeh*uiscale, *offsetx*uiscale, *offsety*uiscale), children));
+
+    UIARGSCALEDT(Clipper, clip, sizew, "f", float, 0.f, FVAR_MAX);
+    UIARGSCALEDT(Clipper, clip, sizeh, "f", float, 0.f, FVAR_MAX);
+    UIARGSCALEDT(Clipper, clip, offsetx, "f", float, FVAR_MIN, FVAR_MAX);
+    UIARGSCALEDT(Clipper, clip, offsety, "f", float, FVAR_MIN, FVAR_MAX);
 
     struct Scroller : Clipper
     {
-        void setup(float clipw_ = 0, float cliph_ = 0)
+        void setup(float sizew_ = 0, float sizeh_ = 0)
         {
-            Clipper::setup(clipw_, cliph_);
+            Clipper::setup(sizew_, sizeh_);
         }
 
         static const char *typestr() { return "#Scroller"; }
@@ -2834,26 +2863,8 @@ namespace UI
         void scrolldown(float cx, float cy);
     };
 
-    ICOMMAND(0, uiscroll, "ffe", (float *clipw, float *cliph, uint *children),
-        BUILD(Scroller, o, o->setup(*clipw*uiscale, *cliph*uiscale), children));
-
-    ICOMMAND(0, uihscrolloffset, "", (),
-    {
-        if(buildparent && buildparent->isclipper())
-        {
-            Clipper *clipper = (Clipper *)buildparent;
-            floatret(clipper->offsetx);
-        }
-    });
-
-    ICOMMAND(0, uivscrolloffset, "", (),
-    {
-        if(buildparent && buildparent->isclipper())
-        {
-            Clipper *clipper = (Clipper *)buildparent;
-            floatret(clipper->offsety);
-        }
-    });
+    ICOMMAND(0, uiscroll, "ffe", (float *sizew, float *sizeh, uint *children),
+        BUILD(Scroller, o, o->setup(*sizew*uiscale, *sizeh*uiscale), children));
 
     struct ScrollButton : Object
     {
@@ -2926,12 +2937,12 @@ namespace UI
 
     struct ScrollArrow : Object
     {
-        float arrowspeed;
+        float speed;
 
-        void setup(float arrowspeed_ = 0)
+        void setup(float speed_ = 0)
         {
             Object::setup();
-            arrowspeed = arrowspeed_;
+            speed = speed_;
         }
 
         static const char *typestr() { return "#ScrollArrow"; }
@@ -2940,17 +2951,19 @@ namespace UI
         void hold(float cx, float cy)
         {
             ScrollBar *scrollbar = (ScrollBar *)findsibling(ScrollBar::typestr());
-            if(scrollbar) scrollbar->arrowscroll(arrowspeed);
+            if(scrollbar) scrollbar->arrowscroll(speed);
         }
     };
 
     ICOMMAND(0, uiscrollarrow, "fe", (float *dir, uint *children),
         BUILD(ScrollArrow, o, o->setup(*dir), children));
 
+    UIARG(ScrollArrow, scrollarrow, speed, "f", float, FVAR_MIN, FVAR_MAX);
+
     void ScrollBar::wheelscroll(float step)
     {
         ScrollArrow *arrow = (ScrollArrow *)findsibling(ScrollArrow::typestr());
-        if(arrow) addscroll(arrow->arrowspeed*step*uiscrollsteptime/1000.0f);
+        if(arrow) addscroll(arrow->speed*step*uiscrollsteptime/1000.0f);
     }
 
     struct HorizontalScrollBar : ScrollBar
