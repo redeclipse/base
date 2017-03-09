@@ -626,6 +626,38 @@ static void drawglass(const materialsurface &m, float offset, const vec *normal 
 
 VARF(IDF_PERSIST, waterfallenv, 0, 1, 1, preloadwatershaders());
 
+#define LAVAVARS(name) \
+    VAR(IDF_WORLD, name##pulse, 0, 2000, VAR_MAX); \
+    FVAR(IDF_WORLD, name##brightness, 0, 1, 100);
+LAVAVARS(lava);
+LAVAVARS(lava2);
+LAVAVARS(lava3);
+LAVAVARS(lava4);
+
+int getlavapulse(int type)
+{
+    switch(type)
+    {
+        case 0: return lavapulse;
+        case 1: return lava2pulse;
+        case 2: return lava3pulse;
+        case 3: return lava4pulse;
+    }
+    return lavapulse;
+}
+
+float getlavabrightness(int type)
+{
+    switch(type)
+    {
+        case 0: return lavabrightness;
+        case 1: return lava2brightness;
+        case 2: return lava3brightness;
+        case 3: return lava4brightness;
+    }
+    return lavabrightness;
+}
+
 void rendermaterials()
 {
     vector<materialsurface *> vismats;
@@ -812,12 +844,16 @@ void rendermaterials()
                     {
                         if(!depth) { glDepthMask(GL_TRUE); depth = true; }
                         if(blended) { glDisable(GL_BLEND); blended = false; }
-                        float t = lastmillis/2000.0f;
-                        t -= floor(t);
-                        t = 1.0f - 2*fabs(t-0.5f);
-                        extern int glare;
-                        if(glare) t = 0.625f + 0.075f*t;
-                        else t = 0.5f + 0.5f*t;
+                        int pulse = getlavapulse(m.material&MATF_INDEX);
+                        float bright = getlavabrightness(m.material&MATF_INDEX), t = pulse ? lastmillis/float(pulse)*bright : bright*0.75f;
+                        if(pulse)
+                        {
+                            t -= floor(t);
+                            t = 1.0f - 2*fabs(t-0.5f);
+                            extern int glare;
+                            if(glare) t = 0.625f + 0.075f*t;
+                            else t = 0.5f + 0.5f*t;
+                        }
                         gle::colorf(t, t, t);
                         if(glaring) SETSHADER(lavaglare); else SETSHADER(lava);
                         fogtype = 1;

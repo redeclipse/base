@@ -891,7 +891,7 @@ static bool calcscissorbox(Reflection &ref, int size, vec &clipmin, vec &clipmax
     }
     sx = int(floor((sx1+1)*0.5f*size));
     sy = int(floor((sy1+1)*0.5f*size));
-    sw = max(int(ceil((sx2+1)*0.5f*size)) - sx, 0); 
+    sw = max(int(ceil((sx2+1)*0.5f*size)) - sx, 0);
     sh = max(int(ceil((sy2+1)*0.5f*size)) - sy, 0);
     return true;
 }
