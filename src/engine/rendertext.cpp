@@ -6,6 +6,7 @@ FVARF(IDF_PERSIST, textscale, FVAR_NONZERO, 1, FVAR_MAX, curtextscale = textscal
 FVAR(IDF_PERSIST, textlinespacing, FVAR_NONZERO, 1, FVAR_MAX);
 VAR(IDF_PERSIST, textfaded, 0, 1, 1);
 VAR(IDF_PERSIST, textminintensity, 0, 32, 255);
+VAR(IDF_PERSIST, textwrapmin, 0, 10, VAR_MAX);
 FVAR(IDF_PERSIST, textwraplimit, 0, 0.3f, 1);
 
 VAR(IDF_PERSIST, textkeyimages, 0, 1, 1);
@@ -452,7 +453,7 @@ static float icon_width(const char *name, float scale)
 { \
     if(maxwidth > 0 && qx+cw > maxwidth) \
     { \
-        if(qp >= 0 && qi-qp <= int(qi*textwraplimit)) \
+        if(qp >= 0 && qi-qp <= max(textwrapmin, int(qi*textwraplimit))) \
         { \
             wrappos = qp; \
             qx = min(qw, maxwidth); \

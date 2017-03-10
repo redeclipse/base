@@ -20,6 +20,7 @@ namespace defend
     ICOMMAND(0, getdefendoccupied, "i", (int *n), floatret(st.flags.inrange(*n) ? (st.flags[*n].enemy ? clamp(st.flags[*n].converted/float(defendcount), 0.f, 1.f) : (st.flags[*n].owner ? 1.f : 0.f)) : 0));
 
     ICOMMAND(0, getdefendkinship, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].kinship : -1));
+    ICOMMAND(0, getdefendname, "i", (int *n), result(st.flags.inrange(*n) ? st.flags[*n].name : ""));
     ICOMMAND(0, getdefendinfo, "i", (int *n), result(st.flags.inrange(*n) ? st.flags[*n].info : ""));
     ICOMMAND(0, getdefendinside, "isi", (int *n, const char *who, int *h), gameent *d = game::getclient(client::parseplayer(who)); intret(d && st.flags.inrange(*n) && insideaffinity(st.flags[*n], d, *h!=0) ? 1 : 0));
 
@@ -116,17 +117,19 @@ namespace defend
             if(b.enemy && b.owner)
             {
                 defformatstring(bowner, "%s", game::colourteam(b.owner));
-                formatstring(b.info, "%s - %s v %s", b.name, bowner, game::colourteam(b.enemy));
+                formatstring(b.info, "%s v %s", bowner, game::colourteam(b.enemy));
             }
             else
             {
                 int defend = b.owner ? b.owner : b.enemy;
-                formatstring(b.info, "%s - %s", b.name, game::colourteam(defend));
+                formatstring(b.info, "%s", game::colourteam(defend));
             }
             vec above = b.above;
             float blend = camera1->o.distrange(above, defendhintfadeat, defendhintfadecut);
             part_explosion(above, 3, PART_SHOCKBALL, 1, colour, 1, blend*0.5f);
             part_create(PART_HINT_SOFT, 1, above, colour, 6, blend*0.5f);
+            above.z += 4;
+            part_text(above, b.name, PART_TEXT, 1, colourwhite, 2, blend);
             above.z += 4;
             part_text(above, b.info, PART_TEXT, 1, colourwhite, 2, blend);
             above.z += 4;
