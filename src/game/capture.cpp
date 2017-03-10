@@ -766,6 +766,10 @@ namespace capture
         return false;
     }
 
+    bool aicheckpos(gameent *d, ai::aistate &b)
+    {
+    }
+
     bool aipursue(gameent *d, ai::aistate &b)
     {
         if(st.flags.inrange(b.target) && d->actortype == A_BOT)

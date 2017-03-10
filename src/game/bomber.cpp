@@ -789,6 +789,17 @@ namespace bomber
         return false;
     }
 
+    bool aicheckpos(gameent *d, ai::aistate &b)
+    {
+        if(!st.flags.inrange(b.target)) return false;
+        bomberstate::flag &f = st.flags[b.target];
+        if(!f.enabled || !isbomberaffinity(f)) return false;
+        if(f.pos().dist(d->feetpos()) > ai::WAYPOINTRADIUS*2) return false;
+        d->ai->spot = f.pos();
+        d->ai->targnode = -1;
+        return true;
+    }
+
     bool aipursue(gameent *d, ai::aistate &b)
     {
         if(st.flags.inrange(b.target) && d->actortype == A_BOT)

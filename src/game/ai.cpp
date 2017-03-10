@@ -1008,6 +1008,20 @@ namespace ai
                 }
             }
         }
+        if(b.type == AI_S_PURSUE && b.targtype == AI_T_AFFINITY)
+        {
+            if(m_capture(game::gamemode)) { if(capture::aicheckpos(d, b)) return true; }
+            else if(m_defend(game::gamemode)) { if(defend::aicheckpos(d, b)) return true; }
+            else if(m_bomber(game::gamemode)) { if(bomber::aicheckpos(d, b)) return true; }
+        }
+        else if(b.type == AI_S_INTEREST && b.targtype == AI_T_ENTITY)
+        {
+            if(entities::ents.inrange(b.target) && entities::ents[b.target]->o.dist(d->feetpos()) <= WAYPOINTRADIUS*2)
+            {
+                d->ai->spot = entities::ents[b.target]->o;
+                d->ai->targnode = -1;
+            }
+        }
         b.override = false;
         return allowrnd ? anynode(d, b) : false;
     }

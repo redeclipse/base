@@ -416,6 +416,10 @@ namespace defend
         return false;
     }
 
+    bool aicheckpos(gameent *d, ai::aistate &b)
+    {
+    }
+
     bool aipursue(gameent *d, ai::aistate &b)
     {
         b.type = ai::AI_S_DEFEND;
