@@ -847,7 +847,7 @@ namespace UI
 
     #define UIARGK(uitype, uiname, vname, valtype, type, cmin, cmax, valdef) \
         UICMD(uitype, uiname, vname, valtype, (type *val), { \
-            o->vname = type(clamp(valdef, cmin, cmax)); \
+            o->vname = type(clamp((valdef), cmin, cmax)); \
             type##ret(o->vname); \
         }); \
         UIGETCMD(uitype, uiname, vname, type);
@@ -883,6 +883,20 @@ namespace UI
                 type##ret(o->vname); \
             } \
         });
+
+    #define UIARGTB(uitype, uiname, vname) \
+        UICMDT(uitype, uiname, vname, "i", (int *val), { \
+            o->vname = *val!=0; \
+            intret(o->vname ? 1 : 0); \
+        }); \
+        UIGETCMDT(uitype, uiname, vname, int);
+
+    #define UIARGTK(uitype, uiname, vname, valtype, type, cmin, cmax, valdef) \
+        UICMDT(uitype, uiname, vname, valtype, (type *val), { \
+            o->vname = type(clamp((valdef), cmin, cmax)); \
+            type##ret(o->vname); \
+        }); \
+        UIGETCMDT(uitype, uiname, vname, type);
 
     #define UIARGSCALEDT(uitype, uiname, vname, valtype, type, cmin, cmax) \
         UICMDT(uitype, uiname, vname, valtype, (type *val), { \
@@ -2554,9 +2568,9 @@ namespace UI
         }
     };
 
-    UIARGK(Text, text, scale, "f", float, 0.f, FVAR_MAX, *val*uiscale*uitextscale);
-    UIARGK(Text, text, wrap, "f", float, FVAR_MIN, FVAR_MAX, (*val >= 0 ? *val*uiscale : *val));
-    UIARGK(Text, text, limit, "f", float, FVAR_MIN, FVAR_MAX, (*val >= 0 ? *val : *val*uiscale));
+    UIARGTK(Text, text, scale, "f", float, 0.f, FVAR_MAX, *val*uiscale*uitextscale);
+    UIARGTK(Text, text, wrap, "f", float, FVAR_MIN, FVAR_MAX, *val >= 0 ? *val*uiscale : *val);
+    UIARGTK(Text, text, limit, "f", float, FVAR_MIN, FVAR_MAX, *val >= 0 ? *val : *val*uiscale);
     UIARGT(Text, text, growth, "f", float, FVAR_MIN, FVAR_MAX);
     UIARGT(Text, text, align, "i", int, -2, 2);
     UIARGT(Text, text, pos, "i", int, -1, VAR_MAX);
