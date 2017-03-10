@@ -784,14 +784,10 @@ namespace UI
 
     Window *uirootwindow(Object *o)
     {
-        if(o)
+        while(o != NULL)
         {
             if(o->istype<Window>()) return (Window *)o;
-            if(o && !o->istype<Window>()) while(o->parent)
-            {
-                o = o->parent;
-                if(o->istype<Window>()) return (Window *)o;
-            }
+            o = o->parent;
         }
         return NULL;
     }

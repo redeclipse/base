@@ -842,7 +842,7 @@ static bool findarg(int argc, char **argv, const char *str)
 }
 
 bool progressing = false;
-
+ICOMMAND(0, getprogressing, "", (), intret(progressing ? 1 : 0));
 FVAR(0, loadprogress, 0, 0, 1);
 SVAR(0, progresstitle, "");
 SVAR(0, progresstext, "");
@@ -854,13 +854,9 @@ int lastprogress = 0;
 void progress(float bar1, const char *text1, float bar2, const char *text2)
 {
     if(progressing || !inbetweenframes || drawtex) return;
-    if(bar1 < 0)
+    if(bar1 < 0) // signals the start of a long process, hide the UI
     {
-        if(engineready)
-        {
-            UI::hideui(NULL);
-            UI::showui("loading");
-        }
+        if(engineready) UI::hideui(NULL);
         bar1 = 0;
     }
     int ticks = SDL_GetTicks();
@@ -887,7 +883,7 @@ void progress(float bar1, const char *text1, float bar2, const char *text2)
     int oldflags = identflags;
     identflags &= ~IDF_WORLD;
     progressing = true;
-    UI::update();
+    if(engineready) UI::update();
     drawnoview();
     swapbuffers(false);
     progressing = false;
