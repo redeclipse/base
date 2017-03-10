@@ -843,6 +843,7 @@ static bool findarg(int argc, char **argv, const char *str)
 
 bool progressing = false;
 ICOMMAND(0, getprogressing, "", (), intret(progressing ? 1 : 0));
+ICOMMAND(0, getprogresstype, "", (), intret(lightmapping ? 2 : (maploading ? 1 : 0)));
 FVAR(0, loadprogress, 0, 0, 1);
 SVAR(0, progresstitle, "");
 SVAR(0, progresstext, "");

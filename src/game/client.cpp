@@ -24,7 +24,6 @@ namespace client
 
     int state() { return game::player1->state; }
     ICOMMAND(0, getplayerstate, "", (), intret(state()));
-    ICOMMAND(0, isloadingmap, "", (), intret(lightmapping ? 2 : (game::maptime <= 0 ? 1 : 0)));
 
     int maxmsglen() { return G(messagelength); }
 
