@@ -2454,7 +2454,7 @@ namespace UI
         int align, pos;
         Color color;
 
-        void setup(float scale_ = 1, const Color &color_ = Color(colourwhite), float wrap_ = 0, float limit_ = 0, int align_ = -1, int pos_ = -1, float growth_ = 1)
+        void setup(float scale_ = 1, const Color &color_ = Color(colourwhite), float wrap_ = 0, float limit_ = 0, int align_ = 0, int pos_ = -1, float growth_ = 1)
         {
             Object::setup();
             tw = th = wlen = 0;
