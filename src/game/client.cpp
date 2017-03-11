@@ -798,26 +798,32 @@ namespace client
 
     CLCOMMAND(radardist,
     {
-        if(m_hard(game::gamemode, game::mutators) || vec(d->vel).add(d->falling).magnitude() <= 0) return;
+        if(m_hard(game::gamemode, game::mutators)) return;
         if(d->state != CS_ALIVE && d->state != CS_EDITING && d->state != CS_DEAD && (!d->lastdeath || d->state != CS_WAITING)) return;
+        bool dominated = game::focus->dominated.find(d) >= 0;
+        if(!dominated && vec(d->vel).add(d->falling).magnitude() <= 0) return;
         float dist = vec(d->center()).sub(camera1->o).magnitude();
-        if(hud::radarlimited(dist) && game::focus->dominated.find(d) < 0) return;
+        if(!dominated && hud::radarlimited(dist)) return;
         floatret(dist);
     });
     CLCOMMAND(radardir,
     {
-        if(m_hard(game::gamemode, game::mutators) || vec(d->vel).add(d->falling).magnitude() <= 0) return;
+        if(m_hard(game::gamemode, game::mutators)) return;
         if(d->state != CS_ALIVE && d->state != CS_EDITING && d->state != CS_DEAD && (!d->lastdeath || d->state != CS_WAITING)) return;
+        bool dominated = game::focus->dominated.find(d) >= 0;
+        if(!dominated && vec(d->vel).add(d->falling).magnitude() <= 0) return;
         vec dir = vec(d->center()).sub(camera1->o);
-        if(hud::radarlimited(dir.magnitude()) && game::focus->dominated.find(d) < 0) return;
+        if(!dominated && hud::radarlimited(dir.magnitude())) return;
         dir.rotate_around_z(-camera1->yaw*RAD).normalize();
         floatret(-atan2(dir.x, dir.y)/RAD);
     });
     CLCOMMAND(radaryaw,
     {
-        if(m_hard(game::gamemode, game::mutators) || vec(d->vel).add(d->falling).magnitude() <= 0) return;
+        if(m_hard(game::gamemode, game::mutators)) return;
         if(d->state != CS_ALIVE && d->state != CS_EDITING && d->state != CS_DEAD && (!d->lastdeath || d->state != CS_WAITING)) return;
-        if(hud::radarlimited(vec(d->center()).sub(camera1->o).magnitude()) && game::focus->dominated.find(d) < 0) return;
+        bool dominated = game::focus->dominated.find(d) >= 0;
+        if(!dominated && vec(d->vel).add(d->falling).magnitude() <= 0) return;
+        if(!dominated && hud::radarlimited(vec(d->center()).sub(camera1->o).magnitude())) return;
         floatret(d->yaw-camera1->yaw);
     });
 
