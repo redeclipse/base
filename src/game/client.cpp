@@ -863,9 +863,6 @@ namespace client
     CLCOMMAND(totalfrags, intret(d->totalfrags));
     CLCOMMAND(totaldeaths, intret(d->totaldeaths));
     CLCOMMAND(timeplayed, intret(d->updatetimeplayed()));
-    CLCOMMAND(privilege, intret(d->privilege&PRIV_TYPE));
-    CLCOMMAND(privlocal, intret(d->privilege&PRIV_LOCAL ? 1 : 0));
-    CLCOMMAND(privtex, result(hud::privtex(d->privilege, d->actortype)));
 
     CLCOMMAND(scoretime, floatret(d->scoretime()));
     CLCOMMANDM(kdratio, "si", (char *who, int *n), intret(d->kdratio(*n!=0)));
@@ -917,18 +914,25 @@ namespace client
     CLISDOMCMD(dominating);
     CLISDOMCMD(dominated);
 
+    CLCOMMAND(privilege, intret(d->privilege&PRIV_TYPE));
+    CLCOMMAND(privlocal, intret(d->privilege&PRIV_LOCAL ? 1 : 0));
+    CLCOMMAND(privtex, result(hud::privtex(d->privilege, d->actortype)));
     bool haspriv(gameent *d, int priv)
     {
         if(!d) return false;
         if(!priv || (d == game::player1 && !remote)) return true;
         return (d->privilege&PRIV_TYPE) >= priv;
     }
-    ICOMMAND(0, issupporter, "s", (char *who), intret(haspriv(game::getclient(parseplayer(who)), PRIV_SUPPORTER) ? 1 : 0));
-    ICOMMAND(0, ismoderator, "s", (char *who), intret(haspriv(game::getclient(parseplayer(who)), PRIV_MODERATOR) ? 1 : 0));
-    ICOMMAND(0, isadministrator, "s", (char *who), intret(haspriv(game::getclient(parseplayer(who)), PRIV_ADMINISTRATOR) ? 1 : 0));
-    ICOMMAND(0, isdeveloper, "s", (char *who), intret(haspriv(game::getclient(parseplayer(who)), PRIV_DEVELOPER) ? 1 : 0));
-    ICOMMAND(0, isfounder, "s", (char *who), intret(haspriv(game::getclient(parseplayer(who)), PRIV_CREATOR) ? 1 : 0));
-    ICOMMAND(0, getclientpriv, "si", (char *who, int *priv), intret(haspriv(game::getclient(parseplayer(who)), *priv) ? 1 : 0));
+    #define CLPRIVCMD(pname,pval) CLCOMMAND(priv##pname, intret(haspriv(d, pval) ? 1 : 0));
+    CLPRIVCMD(none, PRIV_NONE);
+    CLPRIVCMD(player, PRIV_PLAYER);
+    CLPRIVCMD(supporter, PRIV_SUPPORTER);
+    CLPRIVCMD(moderator, PRIV_MODERATOR);
+    CLPRIVCMD(operator, PRIV_OPERATOR);
+    CLPRIVCMD(administrator, PRIV_ADMINISTRATOR);
+    CLPRIVCMD(developer, PRIV_DEVELOPER);
+    CLPRIVCMD(founder, PRIV_CREATOR);
+    CLCOMMANDM(haspriv, "si", (char *who, int *priv), intret(haspriv(d, clamp(*priv, 0, PRIV_MAX-1)) ? 1 : 0));
 
     void getclientversion(int cn, int prop)
     {
