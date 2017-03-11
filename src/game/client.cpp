@@ -932,7 +932,7 @@ namespace client
     CLPRIVCMD(administrator, PRIV_ADMINISTRATOR);
     CLPRIVCMD(developer, PRIV_DEVELOPER);
     CLPRIVCMD(founder, PRIV_CREATOR);
-    CLCOMMANDM(haspriv, "si", (char *who, int *priv), intret(haspriv(d, clamp(*priv, 0, PRIV_MAX-1)) ? 1 : 0));
+    CLCOMMANDM(priv, "si", (char *who, int *priv), intret(haspriv(d, clamp(*priv, 0, PRIV_MAX-1)) ? 1 : 0));
 
     void getclientversion(int cn, int prop)
     {
