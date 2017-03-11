@@ -2584,7 +2584,7 @@ namespace UI
         TextString() : str(NULL) {}
         ~TextString() { delete[] str; }
 
-        void setup(const char *str_, float scale_ = 1, const Color &color_ = Color(colourwhite), float wrap_ = 0, float limit_ = 0, int align_ = -1, int pos_ = -1, float growth_ = 1)
+        void setup(const char *str_, float scale_ = 1, const Color &color_ = Color(colourwhite), float wrap_ = 0, float limit_ = 0, int align_ = 0, int pos_ = -1, float growth_ = 1)
         {
             Text::setup(scale_, color_, wrap_, limit_, align_, pos_, growth_);
 
@@ -2604,7 +2604,7 @@ namespace UI
 
         TextInt() : val(0) { str[0] = '0'; str[1] = '\0'; }
 
-        void setup(int val_, float scale_ = 1, const Color &color_ = Color(colourwhite), float wrap_ = 0, float limit_ = 0, int align_ = -1, int pos_ = -1, float growth_ = 1)
+        void setup(int val_, float scale_ = 1, const Color &color_ = Color(colourwhite), float wrap_ = 0, float limit_ = 0, int align_ = 0, int pos_ = -1, float growth_ = 1)
         {
             Text::setup(scale_, color_, wrap_, limit_, align_, pos_, growth_);
 
@@ -2624,7 +2624,7 @@ namespace UI
 
         TextFloat() : val(0) { memcpy(str, "0.0", 4); }
 
-        void setup(float val_, float scale_ = 1, const Color &color_ = Color(colourwhite), float wrap_ = 0, float limit_ = 0, int align_ = -1, int pos_ = -1, float growth_ = 1)
+        void setup(float val_, float scale_ = 1, const Color &color_ = Color(colourwhite), float wrap_ = 0, float limit_ = 0, int align_ = 0, int pos_ = -1, float growth_ = 1)
         {
             Text::setup(scale_, color_, wrap_, limit_, align_, pos_, growth_);
 
