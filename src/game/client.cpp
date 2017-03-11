@@ -789,6 +789,7 @@ namespace client
     ICOMMAND(0, getcamerayaw, "", (), floatret(camera1->yaw));
     ICOMMAND(0, getcamerapitch, "", (), floatret(camera1->pitch));
     ICOMMAND(0, getcameraroll, "", (), floatret(camera1->roll));
+    ICOMMAND(0, getcameraoffyaw, "f", (float *yaw), floatret(*yaw-camera1->yaw));
 
     CLCOMMANDK(presence, intret(1), intret(0));
     CLCOMMAND(yaw, floatret(d->yaw));
