@@ -209,7 +209,8 @@ struct ragdolldata
         center = vec(0, 0, 0);
         loopv(skel->verts) center.add(verts[i].pos);
         center.div(skel->verts.length());
-        radius = ztop = zbottom = 0;
+        radius = ztop = 0;
+        zbottom = 1e16f;
         loopv(skel->verts)
         {
             radius = max(radius, verts[i].pos.dist(center));
@@ -601,4 +602,14 @@ vec rdcenter(dynent *d)
 {
     if((d->type != ENT_PLAYER && d->type != ENT_AI) || !d->ragdoll || (d->state != CS_DEAD && d->state != CS_WAITING)) return d->physent::center();
     return d->ragdoll->center;
+}
+float rdradius(dynent *d)
+{
+    if((d->type != ENT_PLAYER && d->type != ENT_AI) || !d->ragdoll || (d->state != CS_DEAD && d->state != CS_WAITING)) return d->physent::getradius();
+    return d->ragdoll->radius;
+}
+float rdheight(dynent *d)
+{
+    if((d->type != ENT_PLAYER && d->type != ENT_AI) || !d->ragdoll || (d->state != CS_DEAD && d->state != CS_WAITING)) return d->physent::getheight();
+    return d->ragdoll->ztop-d->ragdoll->zbottom;
 }

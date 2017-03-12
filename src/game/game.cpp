@@ -322,7 +322,7 @@ namespace game
     VAR(IDF_PERSIST, forceplayermodel, -1, -1, PLAYERTYPES-1);
     VAR(IDF_PERSIST, vanitymodels, 0, 1, 1);
     VAR(IDF_PERSIST, headlessmodels, 0, 1, 1);
-    FVAR(IDF_PERSIST, twitchspeed, 0, 3, FVAR_MAX);
+    FVAR(IDF_PERSIST, twitchspeed, 0, 2.5f, FVAR_MAX);
 
     ICOMMAND(0, gamemode, "", (), intret(gamemode));
     ICOMMAND(0, mutators, "", (), intret(mutators));
@@ -344,15 +344,8 @@ namespace game
     ICOMMAND(0, getgametimeremain, "", (), intret(max(timeremaining*1000-((gs_playing(gamestate) ? lastmillis : totalmillis)-lasttimeremain), 0)));
     ICOMMAND(0, getgametimelimit, "bb", (int *g, int *m), intret(m_mmvar(*g >= 0 ? *g : gamemode, *m >= 0 ? *m : mutators, timelimit)));
 
-    ICOMMAND(0, getspawnweap, "bbb", (int *at, int *a, int *b), intret(m_weapon((*at >= 0 ? *at : game::focus->actortype), (*a >= 0 ? *a : gamemode), (*b >= 0 ? *b : mutators))));
-    ICOMMAND(0, getspawndelay, "bbbb", (int *at, int *a, int *b, int *c), intret(m_delay((*at >= 0 ? *at : game::focus->actortype), (*a >= 0 ? *a : gamemode), (*b >= 0 ? *b : mutators), (*c >= 0 ? *c : game::focus->team))));
-    ICOMMAND(0, getspawnprotect, "bb", (int *a, int *b), intret(m_protect((*a >= 0 ? *a : gamemode), (*b >= 0 ? *b : mutators))));
-    ICOMMAND(0, getspawnhealth, "bbb", (int *at, int *a, int *b), intret(m_health((*a >= 0 ? *a : gamemode), (*b >= 0 ? *b : mutators), (*at >= 0 ? *at : game::focus->actortype))));
-    ICOMMAND(0, getmaxhealth, "bbb", (int *at, int *a, int *b), intret(m_maxhealth((*a >= 0 ? *a : gamemode), (*b >= 0 ? *b : mutators), (*at >= 0 ? *at : game::focus->actortype))));
-    ICOMMAND(0, getimpulsemeter, "bb", (int *a, int *b), intret(m_impulsemeter((*a >= 0 ? *a : gamemode), (*b >= 0 ? *b : mutators))));
-
-    const char *gametitle() { return connected() ? server::gamename(gamemode, mutators) : "ready"; }
-    const char *gametext() { return connected() ? mapname : "not connected"; }
+    const char *gametitle() { return connected() ? server::gamename(gamemode, mutators) : "Ready"; }
+    const char *gametext() { return connected() ? mapname : "Not connected"; }
 
     void vanityreset()
     {
@@ -3602,8 +3595,13 @@ namespace game
         }
         if(shocktime && d->shocking(lastmillis, shocktime))
         {
-            vec origin = d->center(), col = rescolour(d, PULSE_SHOCK),
-                rad = vec((d->state == CS_ALIVE ? d->xradius : d->xradius*0.5f), (d->state == CS_ALIVE ? d->yradius : d->yradius*0.5f), (d->state == CS_ALIVE ? d->height*0.5f : d->height*0.25f)).mul(blend);
+            float radius = d->getradius(), height = d->getheight();
+            if(d->ragdoll)
+            {
+                radius *= 0.5f;
+                height *= 1.35f;
+            }
+            vec origin = d->center(), col = rescolour(d, PULSE_SHOCK), rad = vec(radius, radius, height*0.5f).mul(blend);
             int colour = (int(col.x*255)<<16)|(int(col.y*255)<<8)|(int(col.z*255));
             float fade = blend*(d != focus || d->state != CS_ALIVE ? 1.f : 0.65f);
             loopi(4+rnd(8))

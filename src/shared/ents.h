@@ -165,6 +165,8 @@ struct physent : baseent                        // can be affected by physics
     vec feetpos(float offset = 0) const { return vec(o).add(vec(0, 0, offset-height)); }
     vec headpos(float offset = 0) const { return vec(o).add(vec(0, 0, offset)); }
     vec center() const { return vec(o).sub(vec(0, 0, height*0.5f)); }
+    float getradius() const { return radius; }
+    float getheight() const { return height; }
 };
 
 enum
@@ -227,6 +229,8 @@ extern vec rdabove(dynent *d, float offset = 1);
 extern vec rdbottom(dynent *d, float offset = 0);
 extern vec rdtop(dynent *d, float offset = 0);
 extern vec rdcenter(dynent *d);
+extern float rdradius(dynent *d);
+extern float rdheight(dynent *d);
 
 struct usedent
 {
@@ -274,6 +278,8 @@ struct dynent : physent                         // animated characters, or chara
     vec feetpos(float offset = 0) { return rdbottom(this, offset); }
     vec headpos(float offset = 0) { return rdtop(this, offset); }
     vec center() { return rdcenter(this); }
+    float getradius() { return rdradius(this); }
+    float getheight() { return rdheight(this); }
 
     int lastused(int n, bool millis = false)
     {
