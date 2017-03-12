@@ -430,10 +430,7 @@ namespace bomber
             f.yaw = yaw;
             f.pitch = pitch;
             f.enabled = enabled != 0;
-            f.spawnloc = f.render = f.above = spawnloc;
-            f.render.z += 2;
-            physics::droptofloor(f.render);
-            if(f.render.z >= f.above.z-1) f.above.z += f.render.z-(f.above.z-1);
+            f.setposition(spawnloc);
             if(owner >= 0) st.takeaffinity(i, game::newclient(owner), lastmillis);
             else if(dropped) st.dropaffinity(i, droploc, inertia, lastmillis, target);
         }

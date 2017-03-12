@@ -1253,31 +1253,6 @@ namespace physics
         }
     }
 
-    void avoidcollision(physent *d, const vec &dir, physent *obstacle, float space)
-    {
-        float rad = obstacle->radius+d->radius;
-        vec bbmin(obstacle->o);
-        bbmin.x -= rad;
-        bbmin.y -= rad;
-        bbmin.z -= obstacle->height+d->aboveeye;
-        bbmin.sub(space);
-        vec bbmax(obstacle->o);
-        bbmax.x += rad;
-        bbmax.y += rad;
-        bbmax.z += obstacle->aboveeye+d->height;
-        bbmax.add(space);
-
-        loopi(3) if(d->o[i] <= bbmin[i] || d->o[i] >= bbmax[i]) return;
-
-        float mindist = 1e16f;
-        loopi(3) if(dir[i] != 0)
-        {
-            float dist = ((dir[i] > 0 ? bbmax[i] : bbmin[i]) - d->o[i]) / dir[i];
-            mindist = min(mindist, dist);
-        }
-        if(mindist >= 0.0f && mindist < 1e15f) d->o.add(vec(dir).mul(mindist));
-    }
-
     void updatephysstate(physent *d)
     {
         if(d->physstate == PHYS_FALL && !d->onladder) return;

@@ -418,6 +418,7 @@ namespace defend
 
     bool aicheckpos(gameent *d, ai::aistate &b)
     {
+        return false;
     }
 
     bool aipursue(gameent *d, ai::aistate &b)

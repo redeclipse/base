@@ -392,10 +392,7 @@ namespace capture
             f.team = team;
             f.yaw = yaw;
             f.pitch = pitch;
-            f.spawnloc = f.render = f.above = spawnloc;
-            f.render.z += 2;
-            physics::droptofloor(f.render);
-            if(f.render.z >= f.above.z-1) f.above.z += f.render.z-(f.above.z-1);
+            f.setposition(spawnloc);
             if(owner >= 0) st.takeaffinity(i, game::newclient(owner), lastmillis);
             else if(dropped) st.dropaffinity(i, droploc, inertia, lastmillis, dropoffset);
         }
@@ -768,6 +765,7 @@ namespace capture
 
     bool aicheckpos(gameent *d, ai::aistate &b)
     {
+        return false;
     }
 
     bool aipursue(gameent *d, ai::aistate &b)

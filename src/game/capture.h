@@ -69,6 +69,14 @@ struct capturestate
             }
             return position();
         }
+
+        void setposition(const vec &pos)
+        {
+            spawnloc = render = above = pos;
+            render.z += 2;
+            physics::droptofloor(render);
+            if(render.z >= above.z-1) above.z += 1+render.z-above.z;
+        }
 #endif
 
         int dropleft(int t, bool b)
@@ -88,14 +96,12 @@ struct capturestate
         flag &f = flags.add();
         f.reset();
         f.team = team;
-        f.spawnloc = o;
         f.yaw = yaw;
         f.pitch = pitch;
-#ifndef GAMESERVER
-        f.render = f.above = o;
-        f.render.z += 2;
-        physics::droptofloor(f.render);
-        if(f.render.z >= f.above.z-1) f.above.z += f.render.z-(f.above.z-1);
+#ifdef GAMESERVER
+        f.spawnloc = o;
+#else
+        f.setposition(o);
 #endif
     }
 

@@ -117,6 +117,15 @@ struct defendstate
         {
             return (enemy ? enemy : owner) ? (!owner || enemy ? clamp(converted/amt, 0.f, 1.f) : 1.f) : 0.f;
         }
+#ifndef GAMESERVER
+        void setposition(const vec &pos)
+        {
+            o = render = above = pos;
+            render.z += 2;
+            physics::droptofloor(render);
+            if(render.z >= above.z-1) above.z += 1+render.z-above.z;
+        }
+#endif
     };
 
     vector<flag> flags;
@@ -133,15 +142,13 @@ struct defendstate
         flag &b = flags.add();
         b.kinship = team;
         b.reset();
-        b.o = o;
-#ifndef GAMESERVER
-        b.render = b.above = o;
-        b.render.z += 2;
-        physics::droptofloor(b.render);
-        if(b.render.z >= b.above.z-1) b.above.z += (b.render.z-(b.above.z-1))+2;
-#endif
         b.yaw = yaw;
         b.pitch = pitch;
+#ifdef GAMESERVER
+        b.o = o;
+#else
+        b.setposition(o);
+#endif
         copystring(b.name, name);
     }
 
@@ -153,12 +160,10 @@ struct defendstate
         b.reset();
         b.yaw = yaw;
         b.pitch = pitch;
+#ifdef GAMESERVER
         b.o = o;
-#ifndef GAMESERVER
-        b.render = b.above = o;
-        b.render.z += 2;
-        physics::droptofloor(b.render);
-        if(b.render.z >= b.above.z-1) b.above.z += (b.render.z-(b.above.z-1))+2;
+#else
+        b.setposition(o);
 #endif
         b.owner = owner;
         b.enemy = enemy;
