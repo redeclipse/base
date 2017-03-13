@@ -498,12 +498,6 @@ namespace hud
 
     bool needminimap() { return true; }
 
-    bool chkcond(int val, bool cond)
-    {
-        if(val == 2 || (val && cond)) return true;
-        return false;
-    }
-
     bool hasinput(bool pass, bool focus)
     {
         if(focus && (commandmillis > 0 || curcompass)) return true;
@@ -1539,31 +1533,6 @@ namespace hud
 
     bool radarlimited(float dist) { return radardistlimit > 0 && dist > radardistlimit; }
     ICOMMAND(0, getradarlimited, "f", (float *n), intret(radarlimited(*n) ? 1 : 0));
-
-    int drawprogress(int x, int y, float start, float length, float size, bool left, float r, float g, float b, float fade, float skew, const char *font, const char *text, ...)
-    {
-        if(skew <= 0.f) return 0;
-        float q = clamp(skew, 0.f, 1.f), cr = r*q, cg = g*q, cb = b*q, s = size*skew, cs = s/2, cx = left ? x+cs : x-cs, cy = y-cs;
-        gle::colorf(cr, cg, cb, fade);
-        settexture(progringtex, 3);
-        drawslice((SDL_GetTicks()%1000)/1000.f, 0.1f, cx, cy, cs);
-        settexture(progresstex, 3);
-        gle::colorf(cr, cg, cb, fade*0.25f);
-        drawslice(0, 1, cx, cy, cs);
-        gle::colorf(cr, cg, cb, fade);
-        drawslice(start, length, cx, cy, cs);
-        if(text && *text)
-        {
-            pushhudscale(skew);
-            if(font && *font) pushfont(font);
-            int tx = int(cx/skew), ty = int((cy-FONTH/2*skew)/skew), ti = int(255.f*fade);
-            defvformatstring(str, text, text);
-            draw_textf("%s", tx, ty, 0, 0, -1, -1, -1, ti, TEXT_CENTERED, -1, -1, 1, str);
-            if(font && *font) popfont();
-            pophudmatrix();
-        }
-        return int(s);
-    }
 
     const char *teamtexname(int team)
     {

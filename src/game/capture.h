@@ -226,7 +226,6 @@ namespace capture
     extern void preload();
     extern void render();
     extern void adddynlights();
-    extern int aiowner(gameent *d);
     extern bool aihomerun(gameent *d, ai::aistate &b);
     extern void aifind(gameent *d, ai::aistate &b, vector<ai::interest> &interests);
     extern bool aicheck(gameent *d, ai::aistate &b);

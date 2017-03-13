@@ -556,7 +556,6 @@ namespace server
         extern bool delai(int type, bool skip = true);
         extern void removeai(clientinfo *ci, bool complete = false);
         extern bool reassignai(clientinfo *exclude = NULL);
-        extern void checkskills();
         extern void clearai(int type = 0);
         extern void checkai();
         extern void poke();

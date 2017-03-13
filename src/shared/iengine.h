@@ -126,7 +126,6 @@ extern int changedkeys;
 
 extern void processtextinput(const char *str, int len);
 extern void processkey(int code, bool isdown);
-extern char *getcurcommand();
 extern void resetcomplete();
 extern void complete(char *s, const char *cmdprefix);
 extern const char *searchbind(const char *action, int type);
@@ -444,7 +443,6 @@ extern void startmodelbatches();
 extern void endmodelbatches();
 extern void rendermodel(entitylight *light, const char *mdl, int anim, const vec &o, float yaw = 0, float pitch = 0, float roll = 0, int cull = MDL_CULL_VFC | MDL_CULL_DIST | MDL_CULL_OCCLUDED | MDL_LIGHT, dynent *d = NULL, modelattach *a = NULL, int basetime = 0, int basetime2 = 0, float trans = 1, float size = 1);
 extern void abovemodel(vec &o, const char *mdl);
-extern void rendershadow(dynent *d);
 extern void setbbfrommodel(dynent *d, const char *mdl, float size = 1);
 
 // ragdoll
@@ -616,11 +614,6 @@ namespace UI
     extern void update();
     extern void render();
     extern void cleanup();
-
-    extern editor *geteditor(const char *name, int mode, const char *init = NULL, const char *parent = NULL);
-    extern void editorline(editor *e, const char *str, int limit = -1);
-    extern void editorclear(editor *e, const char *init = "");
-    extern void editoredit(editor *e, const char *init = "");
 }
 
 // menus
@@ -641,7 +634,6 @@ struct clientdata
 };
 
 extern void process(ENetPacket *packet, int sender, int chan);
-extern void send_welcome(int n);
 extern void delclient(int n);
 extern int addclient(int type = ST_EMPTY);
 extern ENetHost *serverhost;

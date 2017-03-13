@@ -1703,14 +1703,11 @@ namespace hud
     extern bool scoreson, scoresoff, shownscores;
     extern vector<int> teamkills;
     extern const char *icontex(int type, int value);
-    extern bool chkcond(int val, bool cond);
     extern void drawindicator(int weap, int x, int y, int s);
     extern void drawclip(int weap, int x, int y, float s);
     extern void drawpointertex(const char *tex, int x, int y, int s, float r = 1, float g = 1, float b = 1, float fade = 1);
     extern void drawpointer(int w, int h, int index);
     extern int numteamkills();
-    extern void drawblip(const char *tex, float area, int w, int h, float s, float blend, int style, const vec &pos, const vec &colour = vec(1, 1, 1), const char *font = "reduced", const char *text = NULL, ...);
-    extern int drawprogress(int x, int y, float start, float length, float size, bool left, float r = 1, float g = 1, float b = 1, float fade = 1, float skew = 1, const char *font = NULL, const char *text = NULL, ...);
     extern void damage(int n, const vec &loc, gameent *v, int weap, int flags);
     extern void hit(int n, const vec &loc, gameent *v, int weap, int flags);
     extern const char *teamtexname(int team = T_NEUTRAL);
@@ -1774,10 +1771,8 @@ namespace game
     extern void getyawpitch(const vec &from, const vec &pos, float &yaw, float &pitch);
     extern void scaleyawpitch(float &yaw, float &pitch, float targyaw, float targpitch, float yawspeed = 1, float pitchspeed = 1, float rotate = 0);
     extern bool allowmove(physent *d);
-    extern int deadzone();
     extern void checkzoom();
     extern bool inzoom();
-    extern void zoomview(bool down);
     extern bool tvmode(bool check = true, bool force = true);
     extern void resetcamera(bool cam = true, bool input = true);
     extern void resetworld();

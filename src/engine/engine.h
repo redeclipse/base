@@ -116,7 +116,6 @@ extern int texalign(const void *data, int w, int bpp);
 extern void cleanuptexture(Texture *t);
 extern uchar *loadalphamask(Texture *t);
 extern void loadlayermasks();
-extern GLuint cubemapfromsky(int size);
 extern Texture *cubemapload(const char *name, bool mipit = true, bool msg = true, bool transient = false);
 extern void drawcubemap(int level, const vec &o, float yaw, float pitch, bool flipx, bool flipy, bool swapxy);
 extern void loadshaders();
@@ -398,7 +397,6 @@ extern void updatedynlights();
 extern int finddynlights();
 extern void calcdynlightmask(vtxarray *va);
 extern int setdynlights(vtxarray *va);
-extern bool getdynlight(int n, vec &o, float &radius, vec &color);
 
 // material
 
@@ -408,7 +406,6 @@ extern const char *findmaterialname(int type);
 extern int findmaterial(const char *name, bool tryint = false);
 extern const char *getmaterialdesc(int mat, const char *prefix = "");
 extern void genmatsurfs(const cube &c, const ivec &co, int size, vector<materialsurface> &matsurfs);
-extern void rendermatsurfs(materialsurface *matbuf, int matsurfs);
 extern void rendermatgrid(materialsurface *matbuf, int matsurfs);
 extern int optimizematsurfs(materialsurface *matbuf, int matsurfs);
 extern void setupmaterials(int start = 0, int len = 0);
@@ -462,7 +459,6 @@ extern void drawdepthfxtex();
 // server
 extern void retrieveservers(vector<char> &data);
 extern void localclienttoserver(int chan, ENetPacket *);
-extern void lanconnect();
 extern bool serveroption(char *opt);
 extern void localconnect(bool force = true);
 extern void localdisconnect();
@@ -494,7 +490,6 @@ extern ENetPeer *curpeer, *connpeer;
 
 extern char *pastetext(char *buf = NULL, size_t len = 0);
 extern void writebinds(stream *f);
-extern void writecompletions(stream *f);
 extern const char *addreleaseaction(char *s);
 extern tagval *addreleaseaction(ident *id, int numargs);
 extern const char *getkeyname(int code);
@@ -576,7 +571,6 @@ extern vector<int> outsideents;
 
 extern void entcancel();
 extern void entitiesinoctanodes();
-extern void attachentities();
 extern void freeoctaentities(cube &c);
 extern bool pointinsel(const selinfo &sel, const vec &o);
 
@@ -657,7 +651,6 @@ extern void setcaption(const char *text = "", const char *text2 = "");
 extern int colorpos, curfps, bestfps, worstfps, bestfpsdiff, worstfpsdiff, maxfps;
 
 // editing
-extern int getmatvec(vec v);
 extern int fullbright, fullbrightlevel;
 extern vector<int> entgroup;
 
@@ -678,8 +671,6 @@ extern void usetexturing(bool on);
 extern void renderplayerpreview(int model, int color, int team, int weap, const char *vanity, bool background, float scale, float blend);
 extern void drawslice(float start, float length, float x, float y, float size);
 extern void drawfadedslice(float start, float length, float x, float y, float size, float alpha, float r = 1.f, float g = 1.f, float b = 1.f, float minsize = 0.25f);
-extern void polyhue(dynent *d, vec &colour, int flags = 0);
-extern void polybox(vec o, float tofloor, float toceil, float xradius, float yradius);
 
 // grass
 extern void generategrass();

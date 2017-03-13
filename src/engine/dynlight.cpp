@@ -122,16 +122,6 @@ int finddynlights()
     return closedynlights.length();
 }
 
-bool getdynlight(int n, vec &o, float &radius, vec &color)
-{
-    if(!closedynlights.inrange(n)) return false;
-    dynlight &d = *closedynlights[n];
-    o = d.o;
-    radius = d.curradius;
-    color = d.curcolor;
-    return true;
-}
-
 void dynlightreaching(const vec &target, vec &color, vec &dir)
 {
     vec dyncolor(0, 0, 0);//, dyndir(0, 0, 0);

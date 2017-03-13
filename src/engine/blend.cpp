@@ -698,10 +698,6 @@ void invertblendmapsel()
 
 COMMAND(0, invertblendmapsel, "");
 
-void invertblendmap()
-{
-}
-
 ICOMMAND(0, invertblendmap, "", (),
 {
     if(noedit(false)) return;

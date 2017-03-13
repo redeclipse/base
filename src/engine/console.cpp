@@ -689,11 +689,6 @@ void processkey(int code, bool isdown)
     else if(!consolekey(code, isdown) && !hud::keypress(code, isdown) && haskey) execbind(*haskey, isdown);
 }
 
-char *getcurcommand()
-{
-    return commandmillis > 0 ? commandbuf : (char *)NULL;
-}
-
 void clear_console()
 {
     keyms.clear();
@@ -932,24 +927,6 @@ void setiddesc(const char *s, const char *v, const char *f)
     if(f && *f) explodelist(f, id->fields);
 }
 ICOMMAND(0, setdesc, "sss", (char *s, char *t, char *f), setiddesc(s, t, f));
-
-void writecompletions(stream *f)
-{
-    vector<char *> cmds;
-    enumeratekt(completions, char *, k, filesval *, v, { if(v) cmds.add(k); });
-    cmds.sort();
-    loopv(cmds)
-    {
-        char *k = cmds[i];
-        filesval *v = completions[k];
-        if(v->type==FILES_LIST)
-        {
-            if(validateblock(v->dir)) f->printf("    listcomplete %s [%s]\n", escapeid(k), v->dir);
-            else f->printf("    listcomplete %s %s\n", escapeid(k), escapestring(v->dir));
-        }
-        else f->printf("    complete %s %s %s\n", escapeid(k), escapestring(v->dir), escapestring(v->ext ? v->ext : "*"));
-    }
-}
 
 #ifdef __APPLE__
 extern bool mac_capslock();
