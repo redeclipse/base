@@ -158,11 +158,15 @@ namespace ai
         return d->ammo[weap] >= W(weap, ammomax);
     }
 
-    bool wantsweap(gameent *d, int weap, bool usepref = true)
+    bool wantsweap(gameent *d, int weap, bool noitems = true)
     {
         if(!isweap(weap) || hasweap(d, weap) || !AA(d->actortype, maxcarry)) return false;
-        if(d->carry(m_weapon(d->actortype, game::gamemode, game::mutators)) >= AA(d->actortype, maxcarry) && ((!usepref && itemweap(weap)) || hasweap(d, weappref(d)) || weap == weappref(d)))
-            return false;
+        if(itemweap(weap)) { if(noitems) return false; }
+        else
+        {
+            if(d->carry(m_weapon(d->actortype, game::gamemode, game::mutators)) >= AA(d->actortype, maxcarry)) return false;
+            if(hasweap(d, weappref(d))) return false;
+        }
         return true;
     }
 
@@ -1085,7 +1089,7 @@ namespace ai
         return false;
     }
 
-    void process(gameent *d, aistate &b, bool &occupied, bool &firing)
+    void process(gameent *d, aistate &b, bool &occupied, bool &firing, vector<actitem> &items)
     {
         int skmod = max(101-d->skill, 1);
         float frame = d->skill <= 100 ? ((lastmillis-d->ai->lastrun)*(100.f/gamespeed))/float(skmod*10) : 1;
@@ -1134,39 +1138,8 @@ namespace ai
         else
         {
             gameent *e = game::getclient(d->ai->enemy);
-            bool shootable = false, inrange = false;
-            if(b.type == AI_S_INTEREST) switch(b.targtype)
-            {
-                case AI_T_ENTITY:
-                {
-                    if(entities::ents.inrange(b.target))
-                    {
-                        gameentity &e = *(gameentity *)entities::ents[b.target];
-                        if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON) break;
-                        int sweap = m_weapon(d->actortype, game::gamemode, game::mutators), attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap);
-                        if(!isweap(attr) || !e.spawned() || !wantsweap(d, attr, false)) break;
-                        if(e.o.squaredist(d->o) <= (WAYPOINTRADIUS*WAYPOINTRADIUS)*2) inrange = true;
-                    }
-                    break;
-                }
-                case AI_T_DROP:
-                {
-                    loopvj(projs::projs) if(projs::projs[j]->projtype == PRJ_ENT && projs::projs[j]->ready() && projs::projs[j]->id == b.target)
-                    {
-                        projent &proj = *projs::projs[j];
-                        if(!entities::ents.inrange(proj.id) || proj.owner == d) break;
-                        gameentity &e = *(gameentity *)entities::ents[proj.id];
-                        if(enttype[entities::ents[proj.id]->type].usetype != EU_ITEM || e.type != WEAPON) break;
-                        int sweap = m_weapon(d->actortype, game::gamemode, game::mutators), attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap);
-                        if(!isweap(attr) || !wantsweap(d, attr, false)) break;
-                        if(proj.o.squaredist(d->o) <= (WAYPOINTRADIUS*WAYPOINTRADIUS)*2) inrange = true;
-                        break;
-                    }
-                    break;
-                }
-                default: break;
-            }
-            if(!inrange)
+            bool shootable = false;
+            if(items.empty())
             {
                 shootable = e && targetable(d, e, true);
                 if(!shootable || d->skill >= 50 || d->ai->dontmove)
@@ -1297,79 +1270,106 @@ namespace ai
         int sweap = m_weapon(d->actortype, game::gamemode, game::mutators);
         bool occupied = false, firing = false,
              haswaited = d->weapwaited(d->weapselect, lastmillis, (1<<W_S_RELOAD));
-        process(d, b, occupied, firing);
+        static vector<actitem> items; items.setsize(0);
         if(AA(d->actortype, maxcarry))
         {
-            if(d->ai->dontmove && haswaited && !firing && d->carry(sweap, 1) > 1)
+            static vector<actitem> actitems;
+            actitems.setsize(0);
+            vec pos = d->center();
+            float radius = max(d->height*0.5f, max(d->xradius, d->yradius));
+            if(entities::collateitems(d, pos, radius, actitems))
             {
-                loopirev(W_ITEM) if(i != weappref(d) && d->candrop(i, sweap, lastmillis, m_loadout(game::gamemode, game::mutators), (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
+                while(!actitems.empty())
                 {
-                    client::addmsg(N_DROP, "ri3", d->clientnum, lastmillis-game::maptime, i);
-                    d->setweapstate(d->weapselect, W_S_WAIT, weaponswitchdelay, lastmillis);
-                    d->ai->lastaction = lastmillis;
-                    return true;
-                }
-            }
-            if(haswaited && !firing && !d->action[AC_USE])
-            {
-                static vector<actitem> actitems;
-                actitems.setsize(0);
-                vec pos = d->center();
-                float radius = max(d->height*0.5f, max(d->xradius, d->yradius));
-                if(entities::collateitems(d, pos, radius, actitems))
-                {
-                    while(!actitems.empty())
+                    actitem &t = actitems.last();
+                    int ent = -1;
+                    switch(t.type)
                     {
-                        actitem &t = actitems.last();
-                        int ent = -1;
-                        switch(t.type)
+                        case actitem::ENT:
                         {
-                            case actitem::ENT:
-                            {
-                                if(!entities::ents.inrange(t.target)) break;
-                                extentity &e = *entities::ents[t.target];
-                                if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON) break;
-                                ent = t.target;
-                                break;
-                            }
-                            case actitem::PROJ:
-                            {
-                                if(!projs::projs.inrange(t.target)) break;
-                                projent &proj = *projs::projs[t.target];
-                                if(!entities::ents.inrange(proj.id)) break;
-                                extentity &e = *entities::ents[proj.id];
-                                if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON || proj.owner == d) break;
-                                ent = proj.id;
-                                break;
-                            }
-                            default: break;
+                            if(!entities::ents.inrange(t.target)) break;
+                            extentity &e = *entities::ents[t.target];
+                            if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON) break;
+                            ent = t.target;
+                            break;
                         }
-                        if(entities::ents.inrange(ent))
+                        case actitem::PROJ:
                         {
-                            extentity &e = *entities::ents[ent];
-                            int attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap);
-                            if(isweap(attr) && d->canuse(e.type, attr, e.attrs, sweap, lastmillis, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
-                            {
-                                if(!wantsweap(d, attr, false)) break;
-                                d->action[AC_USE] = true;
-                                d->ai->lastaction = d->actiontime[AC_USE] = lastmillis;
-                                return true;
-                            }
+                            if(!projs::projs.inrange(t.target)) break;
+                            projent &proj = *projs::projs[t.target];
+                            if(!entities::ents.inrange(proj.id)) break;
+                            extentity &e = *entities::ents[proj.id];
+                            if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON || proj.owner == d) break;
+                            ent = proj.id;
+                            break;
                         }
-                        actitems.pop();
+                        default: break;
                     }
+                    if(entities::ents.inrange(ent))
+                    {
+                        extentity &e = *entities::ents[ent];
+                        int attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap);
+                        if(isweap(attr) && d->canuse(e.type, attr, e.attrs, sweap, lastmillis, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
+                        {
+                            if(!wantsweap(d, attr, false)) break;
+                            actitem &s = items.add();
+                            s.type = t.type;
+                            s.target = t.target;
+                            s.score = t.score;
+                        }
+                    }
+                    actitems.pop();
                 }
             }
         }
+        process(d, b, occupied, firing, items);
+        if(AA(d->actortype, maxcarry) && haswaited && !firing && !d->action[AC_USE]) while(!items.empty())
+        {
+            actitem &t = items.last();
+            int ent = -1;
+            switch(t.type)
+            {
+                case actitem::ENT:
+                {
+                    if(!entities::ents.inrange(t.target)) break;
+                    extentity &e = *entities::ents[t.target];
+                    if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON) break;
+                    ent = t.target;
+                    break;
+                }
+                case actitem::PROJ:
+                {
+                    if(!projs::projs.inrange(t.target)) break;
+                    projent &proj = *projs::projs[t.target];
+                    if(!entities::ents.inrange(proj.id)) break;
+                    extentity &e = *entities::ents[proj.id];
+                    if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON || proj.owner == d) break;
+                    ent = proj.id;
+                    break;
+                }
+                default: break;
+            }
+            if(entities::ents.inrange(ent))
+            {
+                extentity &e = *entities::ents[ent];
+                int attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap);
+                if(isweap(attr) && d->canuse(e.type, attr, e.attrs, sweap, lastmillis, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
+                {
+                    if(!wantsweap(d, attr, false)) break;
+                    d->action[AC_USE] = true;
+                    d->ai->lastaction = d->actiontime[AC_USE] = lastmillis;
+                    return true;
+                }
+            }
+            items.pop();
+        }
 
         bool timepassed = d->weapstate[d->weapselect] == W_S_IDLE && (d->ammo[d->weapselect] <= 0 || lastmillis-d->weaptime[d->weapselect] >= max(6000-(d->skill*50), weaponswitchdelay));
-
         if(!firing && (!occupied || d->ammo[d->weapselect] <= 0) && timepassed && d->hasweap(d->weapselect, sweap) && weapons::weapreload(d, d->weapselect))
         {
             d->ai->lastaction = lastmillis;
             return true;
         }
-
         if(!firing && timepassed)
         {
             int weap = weappref(d);
