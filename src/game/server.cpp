@@ -702,8 +702,7 @@ namespace server
             d.ent = ci->entid[weap];
             d.ammo = ci->ammo[weap];
             ci->dropped.add(d.ent, d.ammo);
-            ci->entid[weap] = -1;
-            if(flags&DROP_WCLR) ci->ammo[weap] = -1;
+            if(flags&DROP_WCLR) ci->entid[weap] = ci->ammo[weap] = -1;
         }
     }
 
@@ -4681,9 +4680,18 @@ namespace server
         loopv(shots) ci->weapshots[weap][WS(flags) ? 1 : 0].add(shots[i].id);
         if(WS(flags)) ci->weapstats[weap].shots2++;
         else ci->weapstats[weap].shots1++;
-        if(!ci->hasweap(weap, m_weapon(ci->actortype, gamemode, mutators)))
+        if(ci->state != CS_ALIVE)
         {
-            //if(sents.inrange(ci->entid[weap])) setspawn(ci->entid[weap], false);
+            if(sents.inrange(ci->entid[weap])) loopv(ci->dropped.projs)
+            {
+                if(ci->dropped.projs[i].id != ci->entid[weap]) continue;
+                ci->dropped.projs[i].ammo -= sub;
+                if(ci->dropped.projs[i].ammo <= 0) setspawn(ci->entid[weap], false, true, true);
+                break;
+            }
+        }
+        else if(!ci->hasweap(weap, m_weapon(ci->actortype, gamemode, mutators)))
+        {
             sendf(-1, 1, "ri7", N_DROP, ci->clientnum, -1, 1, weap, -1, 0);
             ci->ammo[weap] = ci->entid[weap] = -1; // its gone..
         }
@@ -4908,7 +4916,7 @@ namespace server
         if(exclude) sendf(-1, 1, "ri2x", N_WAITING, ci->clientnum, ci->clientnum);
         else sendf(-1, 1, "ri2", N_WAITING, ci->clientnum);
         ci->state = CS_WAITING;
-        ci->weapreset(false);
+        ci->weapreset(true);
         if(doteam && !allowteam(ci, ci->team, T_FIRST, false)) setteam(ci, chooseteam(ci), TT_INFO);
     }
 
