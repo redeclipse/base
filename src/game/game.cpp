@@ -3641,7 +3641,7 @@ namespace game
     {
         bool third = thirdpersonview();
         if(rendernormally && early) focus->cleartags();
-        if(project && !third) setavatarscale(firstpersondepth);
+        if(project) setavatarscale(third || focus->state != CS_ALIVE ? 1.f : firstpersondepth);
         if(third || !rendernormally) renderplayer(focus, 1, opacity(focus, thirdpersonview(true)), focus->curscale, early);
         else if(!third && focus->state == CS_ALIVE) renderplayer(focus, 0, opacity(focus, false), focus->curscale, early);
         if(!third && focus->state == CS_ALIVE && firstpersonmodel == 2)
