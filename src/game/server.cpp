@@ -2777,18 +2777,11 @@ namespace server
     bool scorecmp(clientinfo *ci, uint ip, const char *name, const char *handle, uint clientip)
     {
         if(ci->handle[0] && !strcmp(handle, ci->handle)) return true;
-        if(ip && clientip == ip && !strcmp(name, ci->name)) return true;
+        if(!ci->handle[0] && ip && clientip == ip && !strcmp(name, ci->name)) return true;
         return false;
     }
 
-    bool statsscorecmp(clientinfo *ci, uint ip, const char *name, const char *handle, uint clientip)
-    {
-        if(ci->handle[0] && !strcmp(handle, ci->handle)) return true;
-        else if(!ci->handle[0] && ip && clientip == ip && !strcmp(name, ci->name)) return true;
-        return false;
-    }
-
-    savedscore *findscore(clientinfo *ci, bool insert)
+    savedscore *findscore(vector<savedscore>& scores, clientinfo *ci, bool insert)
     {
         uint ip = getclientip(ci->clientnum);
         if(!ip && !ci->handle[0]) return NULL;
@@ -2803,41 +2796,13 @@ namespace server
                 return &curscore;
             }
         }
-        loopv(savedscores)
+        loopv(scores)
         {
-            savedscore &sc = savedscores[i];
+            savedscore &sc = scores[i];
             if(scorecmp(ci, ip, sc.name, sc.handle, sc.ip)) return &sc;
         }
         if(!insert) return NULL;
-        savedscore &sc = savedscores.add();
-        copystring(sc.name, ci->name);
-        copystring(sc.handle, ci->handle);
-        sc.ip = ip;
-        return &sc;
-    }
-
-    savedscore *findstatsscore(clientinfo *ci, bool insert)
-    {
-        uint ip = getclientip(ci->clientnum);
-        if(!ip && !ci->handle[0]) return NULL;
-        if(!insert) loopv(clients)
-        {
-            clientinfo *oi = clients[i];
-            if(oi->clientnum != ci->clientnum && statsscorecmp(ci, ip, oi->name, oi->handle, getclientip(oi->clientnum)))
-            {
-                oi->updatetimeplayed();
-                static savedscore curscore;
-                curscore.save(oi);
-                return &curscore;
-            }
-        }
-        loopv(savedstatsscores)
-        {
-            savedscore &sc = savedstatsscores[i];
-            if(statsscorecmp(ci, ip, sc.name, sc.handle, sc.ip)) return &sc;
-        }
-        if(!insert) return NULL;
-        savedscore &sc = savedstatsscores.add();
+        savedscore &sc = scores.add();
         copystring(sc.name, ci->name);
         copystring(sc.handle, ci->handle);
         sc.ip = ip;
@@ -2865,7 +2830,7 @@ namespace server
     void savescore(clientinfo *ci)
     {
         ci->updatetimeplayed();
-        savedscore *sc = findscore(ci, true);
+        savedscore *sc = findscore(savedscores, ci, true);
         if(sc)
         {
             if(ci->actortype == A_PLAYER && m_dm(gamemode) && m_team(gamemode, mutators) && !m_nopoints(gamemode, mutators) && G(teamkillrestore) && canplay())
@@ -2886,7 +2851,7 @@ namespace server
     void savestatsscore(clientinfo *ci)
     {
         ci->updatetimeplayed();
-        savedscore *sc = findstatsscore(ci, true);
+        savedscore *sc = findscore(savedstatsscores, ci, true);
         if(sc) sc->save(ci);
     }
 
@@ -3847,7 +3812,7 @@ namespace server
 
     bool restorescore(clientinfo *ci)
     {
-        savedscore *sc = findscore(ci, false);
+        savedscore *sc = findscore(savedscores, ci, false);
         if(sc)
         {
             sc->restore(ci);
