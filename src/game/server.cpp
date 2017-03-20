@@ -600,6 +600,7 @@ namespace server
     {
         servmode() {}
         virtual ~servmode() {}
+        virtual bool spawnitems() const { return true; }
 
         virtual void entergame(clientinfo *ci) {}
         virtual void leavegame(clientinfo *ci, bool disconnecting = false) {}
@@ -1917,6 +1918,9 @@ namespace server
     {
         vector<int> items, enemies;
         int sweap = m_weapon(A_PLAYER, gamemode, mutators);
+        bool dospawn = true;
+        if(smode && !smode->spawnitems()) dospawn = false;
+        mutate(smuts, if(!mut->spawnitems()) dospawn = false);
         loopv(sents)
         {
             if(sents[i].type == ACTOR && sents[i].attrs[0] >= 0 && sents[i].attrs[0] < A_TOTAL && (sents[i].attrs[5] == triggerid || !sents[i].attrs[5]) && m_check(sents[i].attrs[3], sents[i].attrs[4], gamemode, mutators))
@@ -1931,21 +1935,26 @@ namespace server
             }
             else if(m_play(gamemode) && enttype[sents[i].type].usetype == EU_ITEM && hasitem(i))
             {
-                sents[i].millis = gamemillis+G(itemspawndelay);
-                switch(G(itemspawnstyle) == 3 ? rnd(2)+1 : G(itemspawnstyle))
+                sents[i].millis = gamemillis;
+                if(dospawn)
                 {
-                    case 1: items.add(i); break;
-                    case 2:
+                    sents[i].millis += G(itemspawndelay);
+                    switch(G(itemspawnstyle) == 3 ? rnd(2)+1 : G(itemspawnstyle))
                     {
-                        int attr = w_attr(gamemode, mutators, sents[i].type, sents[i].attrs[0], sweap), delay = sents[i].type == WEAPON && isweap(attr) ? w_spawn(attr) : G(itemspawntime);
-                        if(delay > 1) sents[i].millis += (delay+rnd(delay))/2;
-                        break;
+                        case 1: items.add(i); break;
+                        case 2:
+                        {
+                            int attr = w_attr(gamemode, mutators, sents[i].type, sents[i].attrs[0], sweap), delay = sents[i].type == WEAPON && isweap(attr) ? w_spawn(attr) : G(itemspawntime);
+                            if(delay > 1) sents[i].millis += (delay+rnd(delay))/2;
+                            break;
+                        }
+                        default: break;
                     }
-                    default: break;
                 }
+                else sents[i].millis += 60000;
             }
         }
-        if(!items.empty())
+        if(dospawn && !items.empty())
         {
             sortrandomly(items);
             loopv(items) sents[items[i]].millis += G(itemspawndelay)*i;

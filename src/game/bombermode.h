@@ -5,6 +5,8 @@ struct bomberservmode : bomberstate, servmode
 
     bomberservmode() : hasflaginfo(false), hasstarted(false), bombertime(-1) {}
 
+    bool spawnitems() const { return false; }
+
     void reset()
     {
         bomberstate::reset();

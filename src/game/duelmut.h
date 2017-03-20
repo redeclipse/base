@@ -9,6 +9,8 @@ struct duelservmode : servmode
 
     #define DSGS(x) DSG(gamemode, mutators, x)
 
+    bool spawnitems() const { return false; }
+
     void shrink()
     {
         allowed.shrink(0);
