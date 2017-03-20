@@ -259,6 +259,7 @@ SVAR(0, limitidxname, "duel survivor gladiator capture defend defendking bomber 
 GVAR(IDF_GAMEMOD, intermlimit, 0, 10000, VAR_MAX); // .. before vote menu comes up
 GVAR(IDF_GAMEMOD, votelimit, 0, 40000, VAR_MAX); // .. before vote passes by default
 
+GVAR(IDF_GAMEMOD, duelrandom, 0, 1, 1); // randomise queue before first round
 GVAR(IDF_GAMEMOD, duelreset, 0, 1, 1); // reset winner in duel
 GVAR(IDF_GAMEMOD, duelclear, 0, 1, 1); // clear items in duel
 GVAR(IDF_GAMEMOD, duelregen, 0, 0, 1); // allow regen in duel

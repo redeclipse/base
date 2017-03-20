@@ -267,6 +267,22 @@ struct duelservmode : servmode
                         }
                     }
                 }
+                if(m_duel(gamemode, mutators) && !duelround && G(duelrandom))
+                {
+                    vector<clientinfo *> duelrand;
+                    while(!duelqueue.empty())
+                    {
+                        int r = rnd(duelqueue.length());
+                        duelrand.add(duelqueue[r]);
+                        duelqueue.remove(r);
+                    }
+                    while(!duelrand.empty())
+                    {
+                        int r = rnd(duelrand.length());
+                        duelqueue.add(duelrand[r]);
+                        duelrand.remove(r);
+                    }
+                }
                 loopv(duelqueue)
                 {
                     if(m_duel(gamemode, mutators) && playing.length() >= wants) break;
