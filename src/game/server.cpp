@@ -2781,7 +2781,7 @@ namespace server
         return false;
     }
 
-    savedscore *findscore(vector<savedscore>& scores, clientinfo *ci, bool insert)
+    savedscore *findscore(vector<savedscore> &scores, clientinfo *ci, bool insert)
     {
         uint ip = getclientip(ci->clientnum);
         if(!ip && !ci->handle[0]) return NULL;
