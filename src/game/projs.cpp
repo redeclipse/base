@@ -319,7 +319,11 @@ namespace projs
             {
                 if(projs[i]->projtype == PRJ_SHOT)
                 {
-                    if(projs[i]->projcollide&COLLIDE_PROJ) collideprojs.removeobj(projs[i]);
+                    if(projs[i]->projcollide&COLLIDE_PROJ)
+                    {
+                        collideprojs.removeobj(projs[i]);
+                        cleardynentcache();
+                    }
                     delete projs[i];
                     projs.removeunordered(i--);
                 }
@@ -479,6 +483,7 @@ namespace projs
     void reset()
     {
         collideprojs.setsize(0);
+        cleardynentcache();
         projs.deletecontents();
         projs.shrink(0);
         teleports.shrink(0);
@@ -1610,12 +1615,16 @@ namespace projs
     void destroy(projent &proj)
     {
         proj.lifespan = clamp((proj.lifemillis-proj.lifetime)/float(max(proj.lifemillis, 1)), 0.f, 1.f);
+        if(proj.projcollide&COLLIDE_PROJ)
+        {
+            collideprojs.removeobj(&proj);
+            cleardynentcache();
+        }
         switch(proj.projtype)
         {
             case PRJ_SHOT:
             {
                 updatetargets(proj, 2);
-                if(proj.projcollide&COLLIDE_PROJ) collideprojs.removeobj(&proj);
                 int vol = clamp(int(255*proj.curscale), 0, 255), type = WF(WK(proj.flags), proj.weap, parttype, WS(proj.flags)), len = W2(proj.weap, partfade, WS(proj.flags));
                 if(!proj.limited) switch(type)
                 {
