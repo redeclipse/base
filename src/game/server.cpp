@@ -3334,8 +3334,8 @@ namespace server
             {
                 int tp = m_team(gamemode, mutators) ? T_FIRST : T_NEUTRAL;
                 requestmasterf("stats team %d %d %s\n", i + tp, teamscore(i + tp).total, escapestring(TEAM(i + tp, name)));
+                flushmasteroutput();
             }
-            flushmasteroutput();
             loopv(savedstatsscores) if(savedstatsscores[i].actortype == A_PLAYER)
             {
                 requestmasterf("stats player %s %s %d %d %d %d %d %d\n",
