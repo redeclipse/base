@@ -96,10 +96,10 @@ redeclipse_update_branch() {
             echo "Unable to find curl or wget, are you sure you have one installed?"
             return 1
         else
-            REDECLIPSE_DOWNLOADER="wget --no-check-certificate -U \"redeclipse-${REDECLIPSE_UPDATE}\" -O"
+            REDECLIPSE_DOWNLOADER="wget --connect-timeout=30 --no-check-certificate -U \"redeclipse-${REDECLIPSE_UPDATE}\" -O"
         fi
     else
-        REDECLIPSE_DOWNLOADER="curl -L -k -f -A \"redeclipse-${REDECLIPSE_UPDATE}\" -o"
+        REDECLIPSE_DOWNLOADER="curl --connect-timeout 30 -L -k -f -A \"redeclipse-${REDECLIPSE_UPDATE}\" -o"
     fi
     if [ "${REDECLIPSE_BLOB}" = "zipball" ]; then
         if [ -z `which unzip` ]; then
