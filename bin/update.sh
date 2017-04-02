@@ -8,7 +8,7 @@ redeclipse_update_path() {
 }
 
 redeclipse_update_init() {
-    if [ -z "${REDECLIPSE_SOURCE+isset}" ]; then REDECLIPSE_SOURCE="http://redeclipse.net/files"; fi
+    if [ -z "${REDECLIPSE_SOURCE+isset}" ]; then REDECLIPSE_SOURCE="https://raw.githubusercontent.com/red-eclipse/deploy/master"; fi
     if [ -z "${REDECLIPSE_GITHUB+isset}" ]; then REDECLIPSE_GITHUB="https://github.com/red-eclipse"; fi
     if [ -z "${REDECLIPSE_CACHE+isset}" ]; then
         if [ "${REDECLIPSE_TARGET}" = "windows" ]; then
@@ -60,7 +60,8 @@ redeclipse_update_setup() {
             REDECLIPSE_BRANCH="stable"
         fi
     fi
-    REDECLIPSE_UPDATE="${REDECLIPSE_BRANCH}"
+    REDECLIPSE_UPDATE="stable"
+    if [ "${REDECLIPSE_BRANCH}" != "stable" ]; then REDECLIPSE_UPDATE="master"; fi
     REDECLIPSE_TEMP="${REDECLIPSE_CACHE}/${REDECLIPSE_BRANCH}"
     case "${REDECLIPSE_TARGET}" in
         windows)

@@ -4,7 +4,7 @@ SEMABUILD_BUILD="${HOME}/deploy"
 SEMABUILD_SCP='scp -BC -o StrictHostKeyChecking=no'
 SEMABUILD_TARGET='qreeves@icculus.org:/webspace/redeclipse.net/files'
 SEMABUILD_APT='DEBIAN_FRONTEND=noninteractive apt-get'
-SEMABUILD_MODULES=`curl --silent --fail http://redeclipse.net/files/stable/mods.txt` || exit 1
+SEMABUILD_MODULES=`curl --connect-timeout 30 -L -k -f https://raw.githubusercontent.com/red-eclipse/deploy/master/stable/mods.txt` || exit 1
 SEMABUILD_ALLMODS="base ${SEMABUILD_MODULES}"
 SEMABUILD_DIST="bz2 combined win zip mac"
 
