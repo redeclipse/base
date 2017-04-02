@@ -8,7 +8,7 @@ setlocal enableextensions enabledelayedexpansion
 :redeclipse_update_init
     if NOT "%REDECLIPSE_DEPLOY%" == "true" set REDECLIPSE_DEPLOY=false
     if NOT DEFINED REDECLIPSE_UPDATER set REDECLIPSE_UPDATER=%~dp0\%~0
-    if NOT DEFINED REDECLIPSE_SOURCE set REDECLIPSE_SOURCE=http://redeclipse.net/files
+    if NOT DEFINED REDECLIPSE_SOURCE set REDECLIPSE_SOURCE=https://raw.githubusercontent.com/red-eclipse/deploy/master
     if NOT DEFINED REDECLIPSE_GITHUB set REDECLIPSE_GITHUB=https://github.com/red-eclipse
     if DEFINED REDECLIPSE_CACHE goto redeclipse_update_setup
     for /f "tokens=3* delims= " %%a in ('reg query "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders" /v "Personal"') do set REDECLIPSE_WINDOCS=%%a
@@ -30,7 +30,8 @@ setlocal enableextensions enabledelayedexpansion
             set REDECLIPSE_BRANCH=stable
         )
     )
-    set REDECLIPSE_UPDATE=%REDECLIPSE_BRANCH%
+    set REDECLIPSE_UPDATE=stable
+    if NOT "%REDECLIPSE_BRANCH%" == "stable" set REDECLIPSE_UPDATE=master
     set REDECLIPSE_TEMP=%REDECLIPSE_CACHE%\%REDECLIPSE_BRANCH%
 :redeclipse_update_branch
     echo branch: %REDECLIPSE_UPDATE%

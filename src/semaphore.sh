@@ -2,10 +2,9 @@
 SEMABUILD_PWD=`pwd`
 SEMABUILD_BUILD="${HOME}/build"
 SEMABUILD_DIR="${SEMABUILD_BUILD}/${BRANCH_NAME}"
-SEMABUILD_SCP='scp -BC -o StrictHostKeyChecking=no'
-SEMABUILD_TARGET='qreeves@icculus.org:/webspace/redeclipse.net/files'
 SEMABUILD_APT='DEBIAN_FRONTEND=noninteractive apt-get'
-SEMABUILD_SOURCE="http://redeclipse.net/files"
+SEMABUILD_DEST="https://${GITHUB_TOKEN}@github.com/red-eclipse/deploy.git"
+SEMABUILD_SOURCE="https://raw.githubusercontent.com/red-eclipse/deploy/master"
 SEMABUILD_MODULES=`cat "${SEMABUILD_PWD}/.gitmodules" | grep '\[submodule "[^.]' | sed -e 's/^.submodule..//;s/..$//' | tr "\n" " " | sed -e 's/ $//'`
 SEMABUILD_ALLMODS="base ${SEMABUILD_MODULES}"
 SEMABUILD_DEPLOY="false"
@@ -14,6 +13,10 @@ semabuild_setup() {
     echo "setting up ${BRANCH_NAME}..."
     rm -rf "${SEMABUILD_DIR}"
     rm -rf "${SEMABUILD_PWD}/data"
+    pushd "${SEMABUILD_BUILD}" || return 1
+    git init || return 1
+    git pull "${SEMABUILD_DEST}"
+    popd
     mkdir -pv "${SEMABUILD_DIR}" || return 1
     return 0
 }
@@ -98,7 +101,9 @@ semabuild_deploy() {
     echo "deploying ${BRANCH_NAME}..."
     echo "${SEMABUILD_ALLMODS}" > "${SEMABUILD_DIR}/mods.txt"
     pushd "${SEMABUILD_BUILD}" || return 1
-    ${SEMABUILD_SCP} -r "${BRANCH_NAME}" "${SEMABUILD_TARGET}" || return 1
+    git commit -a -m "Build ${BRANCH_NAME}:${SEMAPHORE_BUILD_NUMBER}" || return 1
+    git push -u origin master || return 1
+    popd || return 1
     return 0
 }
 
