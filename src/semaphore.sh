@@ -1,6 +1,6 @@
 #!/bin/sh
 SEMABUILD_PWD=`pwd`
-SEMABUILD_BUILD="${HOME}/build"
+SEMABUILD_BUILD="${HOME}/deploy"
 SEMABUILD_DIR="${SEMABUILD_BUILD}/${BRANCH_NAME}"
 SEMABUILD_APT='DEBIAN_FRONTEND=noninteractive apt-get'
 SEMABUILD_DEST="https://${GITHUB_TOKEN}@github.com/red-eclipse/deploy.git"
@@ -11,13 +11,13 @@ SEMABUILD_DEPLOY="false"
 
 semabuild_setup() {
     echo "setting up ${BRANCH_NAME}..."
-    rm -rf "${SEMABUILD_DIR}"
-    rm -rf "${SEMABUILD_PWD}/data"
-    mkdir -pv "${SEMABUILD_BUILD}" || return 1
-    pushd "${SEMABUILD_BUILD}" || return 1
-    git init || return 1
-    git pull "${SEMABUILD_DEST}"
-    popd
+    git config --global user.email "noreply@redeclipse.net" || return 1
+    git config --global user.name "${GITHUB_TOKEN}" || return 1
+    rm -rf "${SEMABUILD_BUILD}" || return 1
+    rm -rf "${SEMABUILD_PWD}/data" || return 1
+    pushd "${HOME}" || return 1
+    git clone "${SEMABUILD_DEST}" || return 1
+    popd || return 1
     mkdir -pv "${SEMABUILD_DIR}" || return 1
     return 0
 }
