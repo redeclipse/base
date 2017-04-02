@@ -3,7 +3,7 @@ SEMABUILD_PWD=`pwd`
 SEMABUILD_BUILD="${HOME}/deploy"
 SEMABUILD_DIR="${SEMABUILD_BUILD}/${BRANCH_NAME}"
 SEMABUILD_APT='DEBIAN_FRONTEND=noninteractive apt-get'
-SEMABUILD_DEST="https://${GITHUB_TOKEN}@github.com/red-eclipse/deploy.git"
+SEMABUILD_DEST="https://${GITHUB_TOKEN}:x-oauth-basic@github.com/red-eclipse/deploy.git"
 SEMABUILD_SOURCE="https://raw.githubusercontent.com/red-eclipse/deploy/master"
 SEMABUILD_MODULES=`cat "${SEMABUILD_PWD}/.gitmodules" | grep '\[submodule "[^.]' | sed -e 's/^.submodule..//;s/..$//' | tr "\n" " " | sed -e 's/ $//'`
 SEMABUILD_ALLMODS="base ${SEMABUILD_MODULES}"
@@ -12,7 +12,9 @@ SEMABUILD_DEPLOY="false"
 semabuild_setup() {
     echo "setting up ${BRANCH_NAME}..."
     git config --global user.email "noreply@redeclipse.net" || return 1
-    git config --global user.name "${GITHUB_TOKEN}" || return 1
+    git config --global user.name "Red Eclipse" || return 1
+    git config --global credential.helper store || return 1
+    echo "https://${GITHUB_TOKEN}:x-oauth-basic@github.com" > "${HOME}/.git-credentials"
     rm -rf "${SEMABUILD_BUILD}" || return 1
     rm -rf "${SEMABUILD_PWD}/data" || return 1
     pushd "${HOME}" || return 1
