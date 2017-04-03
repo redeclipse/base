@@ -106,11 +106,7 @@ semabuild_appimage() {
     echo "building AppImage..."
     git clone https://github.com/TheAssassin/redeclipse-appimage.git
     cd redeclipse-appimage
-    git_rev=$(git rev-parse --short HEAD)
-    export VERSION=1.5.9-alpha-$git_rev
-    export BRANCH=$git_rev
-    docker-compose up || return 1
-    docker-compose down || return 1
+    bash build-with-docker.sh
     return 0
 }
 
