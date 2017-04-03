@@ -105,8 +105,9 @@ semabuild_deploy() {
 semabuild_appimage() {
     echo "building AppImage..."
     git clone https://github.com/TheAssassin/redeclipse-appimage.git
-    cd redeclipse-appimage
-    bash build-with-docker.sh
+    export BRANCH=${BRANCH_NAME}
+    export COMMIT=$(git rev-parse HEAD)
+    (cd redeclipse-appimage && bash build-with-docker.sh)
     return 0
 }
 
