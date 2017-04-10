@@ -761,6 +761,7 @@ namespace entities
                 else if(e.type == PUSHER)
                 {
                     int millis = d->lastused(n, true);
+                    if(millis && lastmillis-millis < triggertime(e)) break;
                     e.lastemit = lastmillis;
                     d->setused(n, lastmillis);
                     float mag = max(e.attrs[2], 1), maxrad = e.attrs[3] ? e.attrs[3] : enttype[PUSHER].radius, minrad = e.attrs[4];
@@ -788,7 +789,7 @@ namespace entities
                         if(gameent::is(d))
                         {
                             gameent *g = (gameent *)d;
-                            if(!millis || lastmillis-millis >= triggertime(e)) execlink(g, n, true);
+                            execlink(g, n, true);
                             g->resetair();
                         }
                         else if(projent::is(d))
