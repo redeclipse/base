@@ -1815,7 +1815,7 @@ namespace game
             stringz(formattedreason);
             stringz(ipaddr);
             if(reason >= 0) formatstring(formattedreason, " (%s)", disc_reasons[reason]);
-            if(client::haspriv(game::player1, G(iphostlock))) formatstring(ipaddr, " (%s)", d->hostname);
+            if(client::showpresencehostinfo && client::haspriv(game::player1, G(iphostlock))) formatstring(ipaddr, " (%s)", d->hostname);
             if(d->actortype == A_PLAYER)
             {
                 int amt = client::otherclients(); // not including self to disclude this player
