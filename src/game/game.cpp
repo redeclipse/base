@@ -2,6 +2,7 @@
 #include "game.h"
 namespace game
 {
+    static const int MAXINTDIGITS = log10(INT_MAX);
     int nextmode = G_EDITMODE, nextmuts = 0, gamestate = G_S_WAITING, gamemode = G_EDITMODE, mutators = 0, maptime = 0, timeremaining = 0, lasttimeremain = 0,
         lastcamera = 0, lasttvcam = 0, lasttvchg = 0, lastzoom = 0, spectvfollowing = -1, starttvcamdyn = -1, lastcamcn = -1;
     bool zooming = false, inputmouse = false, inputview = false, inputmode = false;
@@ -211,6 +212,7 @@ namespace game
 
     VAR(IDF_PERSIST, aboveheaddead, 0, 1, 1);
     VAR(IDF_PERSIST, aboveheadnames, 0, 1, 1);
+    VAR(IDF_PERSIST, aboveheadhealth, 0, 1, 1);
     VAR(IDF_PERSIST, aboveheadinventory, 0, 0, 2); // 0 = off, 1 = weapselect only, 2 = all weapons
     VAR(IDF_PERSIST, aboveheadstatus, 0, 1, 1);
     VAR(IDF_PERSIST, aboveheadteam, 0, 3, 3);
@@ -3172,8 +3174,24 @@ namespace game
         float blend = aboveheadblend*trans;
         if(aboveheadnames && d != player1)
         {
+        {
+	    const char *name = colourname(d);
+	    static int health_length = MAXINTDIGITS + 18;
+            static const int name_health_length = MAXNAMELEN + health_length;
+	    char name_health[name_health_length];
+	    strcpy(name_health, name);
+	    if (aboveheadhealth && (d->health > 0))
+	    {
+	        char health[health_length];
+                float h = d->health/100. * 2;
+                float x = 1 - fabsf(fmod(h,2) - 1);
+                int health_colour = 0;
+                (h > 1) ? health_colour = createRGB(255*x,255,0) : health_colour = createRGB(255,255*x,0);
+		sprintf(health, "\fs\f[%d]%d%%\fS", health_colour, d->health);
+	        strcat(name_health, health);
+            }
             pos.z += aboveheadnamessize/2;
-            part_textcopy(pos, colourname(d), PART_TEXT, 1, 0xFFFFFF, aboveheadnamessize, blend*aboveheadnamesblend);
+            part_textcopy(pos, name_health, PART_TEXT, 1, 0xFFFFFF, aboveheadnamessize, blend*aboveheadnamesblend);
         }
         if(aboveheadinventory && d != player1)
         {
