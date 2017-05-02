@@ -1500,6 +1500,7 @@ namespace game
         d->lastattacker = v->clientnum;
         if(d == v)
         {
+            concatstring(d->obit, "\fs");
             if(!actor[d->actortype].living) concatstring(d->obit, obitdestroyed);
             else if(!obitverbose) concatstring(d->obit, obitdied);
             else if(flags&HIT_SPAWN) concatstring(d->obit, obitspawn);
@@ -1516,10 +1517,11 @@ namespace game
             else if(d->obliterated) concatstring(d->obit, obitobliterated);
             else if(d->headless) concatstring(d->obit, obitheadless);
             else concatstring(d->obit, obitsuicide);
+            concatstring(d->obit, "\fS");
         }
         else
         {
-            concatstring(d->obit, "was ");
+            concatstring(d->obit, "was \fs");
             if(!actor[d->actortype].living) concatstring(d->obit, obitdestroyed);
             else if(!obitverbose) concatstring(d->obit, obitfragged);
             else if(burning) concatstring(d->obit, obitburn);
@@ -1532,7 +1534,7 @@ namespace game
                 else concatstring(d->obit, WF(WK(flags), weap, obituary, WS(flags)));
             }
             else concatstring(d->obit, obitkilled);
-            concatstring(d->obit, " by");
+            concatstring(d->obit, "\fS by");
             bool override = false;
             if(d->headless)
             {
