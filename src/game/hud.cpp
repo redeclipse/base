@@ -31,7 +31,8 @@ namespace hud
     VAR(IDF_PERSIST, showloadingmapbg, 0, 1, 1);
     VAR(IDF_PERSIST, showloadinglogos, 0, 0, 1);
 
-    VAR(IDF_PERSIST, statrate, 0, 200, 1000);
+    VAR(IDF_PERSIST, statrate, 1, 50, 1000);
+
     void enginestatrefresh()
     {
         if(totalmillis-laststats >= statrate)
