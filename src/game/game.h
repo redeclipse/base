@@ -902,7 +902,7 @@ struct clientstate
             {
                 if(!aweap[j]) // specifically asking for random
                 {
-                    vector<int>& randsrc = rand.length() > 0 ? rand : forcerand;
+                    vector<int> &randsrc = rand.length() > 0 ? rand : forcerand;
                     if(randsrc.length() > 0)
                     {
                         int i = rnd(randsrc.length());
