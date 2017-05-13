@@ -894,32 +894,20 @@ struct clientstate
         {
             vector<int> aweap;
             loopj(AA(actortype, maxcarry)) aweap.add(loadweap.inrange(j) ? loadweap[j] : 0);
-            vector<bool> used;
-            loopj(W_LOADOUT) used.add(false);
-            loopj(AA(actortype, maxcarry)) if(aweap[j] > 0) used[aweap[j] - W_OFFSET] = true;
-            int nused = 0;
-            loopj(W_LOADOUT) if(used[j]) nused++;
-            vector<int> rand;
+            vector<int> rand, forcerand;
             for(int t = W_OFFSET; t < W_ITEM; t++)
-                if (canrandweap(t) && !hasweap(t, sweap) && m_check(W(t, modes), W(t, muts), gamemode, mutators) && !W(t, disabled))
-                    rand.add(t);
+                if(!hasweap(t, sweap) && m_check(W(t, modes), W(t, muts), gamemode, mutators) && !W(t, disabled) && aweap.find(t) == -1)
+                    (canrandweap(t) ? rand : forcerand).add(t);
             loopj(AA(actortype, maxcarry))
             {
                 if(!aweap[j]) // specifically asking for random
                 {
-                    if(rand.length() > 0)
+                    vector<int>& randsrc = rand.length() > 0 ? rand : forcerand;
+                    if(randsrc.length() > 0)
                     {
-                        int i = rnd(rand.length());
-                        aweap[j] = rand.remove(i);
+                        int i = rnd(randsrc.length());
+                        aweap[j] = randsrc.remove(i);
                     }
-                    else
-                    {
-                        int i = 0, t = rnd(W_LOADOUT-nused);
-                        while(t >= 0) { if(!used[i]) t--; i++; }
-                        aweap[j] = i - 1 + W_OFFSET;
-                    }
-                    used[aweap[j] - W_OFFSET] = true;
-                    nused++;
                 }
                 ammo[aweap[j]] = max(1, W(aweap[j], ammomax));
             }
