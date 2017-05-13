@@ -304,7 +304,7 @@ GVAR(IDF_GAMEMOD, teambalancehighest, 0, 1, 1); // when moving players, move hig
 GVAR(IDF_GAMEMOD, racegauntletwinner, 0, 1, 1); // declare the winner when the final team exceeds best score
 
 GVAR(IDF_GAMEMOD, capturelimit, 0, 0, VAR_MAX); // finish when score is this or more
-GVAR(IDF_GAMEMOD, captureresetfloor, 0, 2, 2); // if tossed, reset to last floor pos
+GVAR(IDF_GAMEMOD, captureresetfloor, 0, 1, 2); // if tossed, reset to last floor pos. 1 = team tosses own flag, 2 = any flag
 GVAR(IDF_GAMEMOD, captureresetstore, 0, 2, 15);
 GVAR(IDF_GAMEMOD, captureresetdelay, 0, 30000, VAR_MAX);
 GVAR(IDF_GAMEMOD, capturedefenddelay, 0, 10000, VAR_MAX);
