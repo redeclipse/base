@@ -857,40 +857,26 @@ struct clientstate
         }
         if(AA(actortype, maxcarry) && m_loadout(gamemode, mutators))
         {
-            int n = 0, musthave = AA(actortype, maxcarry);
-            loopj(W_LOADOUT) if(canrandweap(j + W_OFFSET)) musthave--;
-            vector<bool> forced;
-            loopj(W_LOADOUT) forced.add(false);
             vector<int> aweap;
-            loopj(W_LOADOUT) aweap.add(loadweap.inrange(j) ? loadweap[j] : 0);
-            loopvj(aweap)
+            loopj(AA(actortype, maxcarry)) aweap.add(loadweap.inrange(j) ? loadweap[j] : 0);
+            vector<int> rand, forcerand;
+            for(int t = W_OFFSET; t < W_ITEM; t++)
+                if(!hasweap(t, sweap) && m_check(W(t, modes), W(t, muts), gamemode, mutators) && !W(t, disabled) && aweap.find(t) < 0)
+                    (canrandweap(t) ? rand : forcerand).add(t);
+            loopj(AA(actortype, maxcarry))
             {
-                if(!aweap[j]) // specifically asking for random
+                if(aweap[j] <= 0) // specifically asking for random
                 {
-                    for(int t = rnd(W_ITEM-W_OFFSET)+W_OFFSET, r = 0; r < W_LOADOUT; r++)
+                    vector<int> &randsrc = rand.empty() ? forcerand : rand;
+                    if(!randsrc.empty())
                     {
-                        bool canuse = canrandweap(t);
-                        if(!canuse && musthave > 0 && !forced[t - W_OFFSET])
-                        {
-                            canuse = true;
-                            musthave--;
-                            forced[t - W_OFFSET] = true;
-                        }
-                        if(t >= W_OFFSET && t < W_ITEM && !hasweap(t, sweap) && m_check(W(t, modes), W(t, muts), gamemode, mutators) && !W(t, disabled) && canuse)
-                        {
-                            aweap[j] = t;
-                            break;
-                        }
-                        else if(++t >= W_ITEM) t = W_OFFSET;
+                        int i = rnd(randsrc.length());
+                        aweap[j] = randsrc.remove(i);
                     }
                 }
-                if(aweap[j] >= W_OFFSET && aweap[j] < W_ITEM && !hasweap(aweap[j], sweap) && m_check(W(aweap[j], modes), W(aweap[j], muts), gamemode, mutators) && !W(aweap[j], disabled))
-                {
-                    ammo[aweap[j]] = max(1, W(aweap[j], ammomax));
-                    if(!n) weapselect = aweap[j];
-                    if(++n >= AA(actortype, maxcarry)) break;
-                }
+                ammo[aweap[j]] = max(1, W(aweap[j], ammomax));
             }
+            weapselect = aweap[0];
         }
     }
 
