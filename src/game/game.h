@@ -896,14 +896,14 @@ struct clientstate
             loopj(AA(actortype, maxcarry)) aweap.add(loadweap.inrange(j) ? loadweap[j] : 0);
             vector<int> rand, forcerand;
             for(int t = W_OFFSET; t < W_ITEM; t++)
-                if(!hasweap(t, sweap) && m_check(W(t, modes), W(t, muts), gamemode, mutators) && !W(t, disabled) && aweap.find(t) == -1)
+                if(!hasweap(t, sweap) && m_check(W(t, modes), W(t, muts), gamemode, mutators) && !W(t, disabled) && aweap.find(t) < 0)
                     (canrandweap(t) ? rand : forcerand).add(t);
             loopj(AA(actortype, maxcarry))
             {
-                if(!aweap[j]) // specifically asking for random
+                if(aweap[j] <= 0) // specifically asking for random
                 {
-                    vector<int> &randsrc = rand.length() > 0 ? rand : forcerand;
-                    if(randsrc.length() > 0)
+                    vector<int> &randsrc = rand.empty() ? forcerand : rand;
+                    if(!randsrc.empty())
                     {
                         int i = rnd(randsrc.length());
                         aweap[j] = randsrc.remove(i);
