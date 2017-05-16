@@ -650,6 +650,7 @@ void checkinput()
 
             case SDL_MOUSEBUTTONDOWN:
             case SDL_MOUSEBUTTONUP:
+            {
                 //if(lasttype==event.type && lastbut==event.button.button) break; // why?? get event twice without it
                 //switch(event.button.button)
                 //{
@@ -665,7 +666,7 @@ void checkinput()
                 if(button >= 4) button += 2;
                 processkey(-button, event.button.state==SDL_PRESSED);
                 break;
-
+            }
             case SDL_MOUSEWHEEL:
                 if(event.wheel.y > 0) { processkey(-4, true); processkey(-4, false); }
                 else if(event.wheel.y < 0) { processkey(-5, true); processkey(-5, false); }
