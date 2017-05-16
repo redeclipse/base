@@ -661,7 +661,9 @@ void checkinput()
                 //}
                 //lasttype = event.type;
                 //lastbut = event.button.button;
-                processkey(-event.button.button, event.button.state==SDL_PRESSED);
+                int button = event.button.button;
+                if(button >= 4) button += 2;
+                processkey(-button, event.button.state==SDL_PRESSED);
                 break;
 
             case SDL_MOUSEWHEEL:
