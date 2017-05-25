@@ -732,6 +732,7 @@ namespace game
                     else
                     {
                         focus = d;
+                        resetcamera();
                         return true;
                     }
                 }
