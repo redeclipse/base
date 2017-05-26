@@ -278,12 +278,12 @@ namespace game
     VAR(IDF_PERSIST, playerlighttone, -1, CTONE_TEAMED, CTONE_MAX-1);
     VAR(IDF_PERSIST, playerteamtone, -1, CTONE_TEAM, CTONE_MAX-1);
 
-    FVAR(IDF_PERSIST, playerovertonelevel, 0.f, 1.f, 10.f);
-    FVAR(IDF_PERSIST, playerundertonelevel, 0.f, 1.f, 10.f);
-    FVAR(IDF_PERSIST, playerdisplaytonelevel, 0.f, 1.f, 10.f);
-    FVAR(IDF_PERSIST, playereffecttonelevel, 0.f, 1.f, 10.f);
-    FVAR(IDF_PERSIST, playerlighttonelevel, 0.f, 1.f, 10.f);
-    FVAR(IDF_PERSIST, playerteamtonelevel, 0.f, 1.f, 10.f);
+    FVAR(IDF_PERSIST, playerovertonelevel, -1.f, 0.f, 1.f);
+    FVAR(IDF_PERSIST, playerundertonelevel, -1.f, 0.f, 1.f);
+    FVAR(IDF_PERSIST, playerdisplaytonelevel, -1.f, 0.f, 1.f);
+    FVAR(IDF_PERSIST, playereffecttonelevel, -1.f, 0.f, 1.f);
+    FVAR(IDF_PERSIST, playerlighttonelevel, -1.f, 0.f, 1.f);
+    FVAR(IDF_PERSIST, playerteamtonelevel, -1.f, 0.f, 1.f);
 
     FVAR(IDF_PERSIST, playerlightmix, 0, 0.4f, 100);
     FVAR(IDF_PERSIST, playertonemix, 0, 0.5f, 1);
@@ -295,7 +295,7 @@ namespace game
     VAR(IDF_PERSIST, playerhinthurt, 0, 1, 1);
     VAR(IDF_PERSIST, playerhinthurtthrob, 0, 1, 1);
     VAR(IDF_PERSIST, playerhinttone, -1, CTONE_TEAMED, CTONE_MAX-1);
-    FVAR(IDF_PERSIST, playerhinttonelevel, 0.f, 1.f, 10.f);
+    FVAR(IDF_PERSIST, playerhinttonelevel, -1.f, 0.f, 1.f);
     FVAR(IDF_PERSIST, playerhintblend, 0, 0.3f, 1);
     FVAR(IDF_PERSIST, playerhintscale, 0, 0.7f, 1); // scale blend depending on health
     FVAR(IDF_PERSIST, playerhintlight, 0, 0.3f, 1); // override for light effect
@@ -1950,7 +1950,24 @@ namespace game
 
     int levelcolour(int colour, float level)
     {
-        return (clamp(int((colour>>16)*level), 0, 255)<<16)|(clamp(int(((colour>>8)&0xFF)*level), 0, 255)<<8)|(clamp(int((colour&0xFF)*level), 0, 255));
+        if(level==0.0)
+        {
+            return colour;
+        }
+        int r1 = (colour>>16), g1 = ((colour>>8)&0xFF), b1 = (colour&0xFF);
+        if(level<0.0)
+        {
+            int r2 = clamp(int(-r1*level), 0, 255),
+                g2 = clamp(int(-g1*level), 0, 255),
+                b2 = clamp(int(-b1*level), 0, 255);
+        }
+        else
+        {
+            int r2 = clamp(int(r1*(1.0-level)+(255*level)), 0, 255),
+                g2 = clamp(int(g1*(1.0-level)+(255*level)), 0, 255),
+                b2 = clamp(int(b1*(1.0-level)+(255*level)), 0, 255);
+        }
+        return ((r2<<16)|(g2<<8)|b2);
     }
 
     int findcolour(gameent *d, bool tone, bool mix, float level)
