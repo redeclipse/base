@@ -50,3 +50,6 @@ src/build/
 GPATH
 GTAGS
 GRTAGS
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
