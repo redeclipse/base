@@ -9,8 +9,6 @@ message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 # set compile options
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fsigned-char -ffast-math -fno-exceptions -fno-rtti")
-set(CMAKE_CXX_FLAGS_DEBUG "-g")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -fomit-frame-pointer")
 
 # Use pkg-config to configure dependencies later
 find_package(PkgConfig REQUIRED)
