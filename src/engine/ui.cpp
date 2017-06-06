@@ -19,6 +19,8 @@ namespace UI
 
     FVAR(IDF_PERSIST, uitipoffset, 0, 0.005f, 1);
 
+    VAR(IDF_PERSIST, uimouse3esc, 0, 1, 1);
+
     static void quads(float x, float y, float w, float h, float tx = 0, float ty = 0, float tw = 1, float th = 1)
     {
         gle::attribf(x,   y);   gle::attribf(tx,    ty);
@@ -4200,7 +4202,7 @@ namespace UI
         {
             case SDLK_ESCAPE: action = isdown ? STATE_ESC_PRESS : STATE_ESC_RELEASE; hold = STATE_ESC_HOLD; break;
             case -1: action = isdown ? STATE_PRESS : STATE_RELEASE; hold = STATE_HOLD; break;
-            case -2: action = isdown ? STATE_ESC_PRESS : STATE_ESC_RELEASE; hold = STATE_ESC_HOLD; break;
+            case -2: if(uimouse3esc) { action = isdown ? STATE_ESC_PRESS : STATE_ESC_RELEASE; hold = STATE_ESC_HOLD; } break;
             case -3: action = isdown ? STATE_ALT_PRESS : STATE_ALT_RELEASE; hold = STATE_ALT_HOLD; break;
             case -4: action = STATE_SCROLL_UP; break;
             case -5: action = STATE_SCROLL_DOWN; break;
