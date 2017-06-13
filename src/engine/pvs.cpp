@@ -333,7 +333,7 @@ struct pvsworker
             levels[curlevel] = cur;
         }
 
-        origin = ivec(p.x&(~0<<curlevel), p.y&(~0<<curlevel), p.z&(~0<<curlevel));
+        origin = ivec(p.x&(~0U<<curlevel), p.y&(~0U<<curlevel), p.z&(~0U<<curlevel));
 
         if(cur->flags&PVS_HIDE_BB || cur->edges==bvec(0x80, 0x80, 0x80))
         {

@@ -2947,7 +2947,7 @@ static const uint *runcode(const uint *code, tagval &result)
                     identflags = oldflags; \
                     for(int i = 0; i < callargs; i++) \
                         poparg(*identmap[i]); \
-                    for(int argmask = aliaslink.usedargs&(~0<<callargs), i = callargs; argmask; i++) \
+                    for(int argmask = aliaslink.usedargs&(~0U<<callargs), i = callargs; argmask; i++) \
                         if(argmask&(1<<i)) { poparg(*identmap[i]); argmask &= ~(1<<i); } \
                     forcearg(result, op&CODE_RET_MASK); \
                     _numargs = oldargs; \

@@ -325,9 +325,9 @@ float raycube(const vec &o, const vec &ray, float radius, int mode, int size, ex
             {
                 if(closest < 0)
                 {
-                    float dx = ((x&(~0<<lshift))+(invray.x>0 ? 0 : 1<<lshift)-v.x)*invray.x,
-                          dy = ((y&(~0<<lshift))+(invray.y>0 ? 0 : 1<<lshift)-v.y)*invray.y,
-                          dz = ((z&(~0<<lshift))+(invray.z>0 ? 0 : 1<<lshift)-v.z)*invray.z;
+                    float dx = ((x&(~0U<<lshift))+(invray.x>0 ? 0 : 1<<lshift)-v.x)*invray.x,
+                          dy = ((y&(~0U<<lshift))+(invray.y>0 ? 0 : 1<<lshift)-v.y)*invray.y,
+                          dz = ((z&(~0U<<lshift))+(invray.z>0 ? 0 : 1<<lshift)-v.z)*invray.z;
                     closest = dx > dy ? (dx > dz ? 0 : 2) : (dy > dz ? 1 : 2);
                 }
                 hitsurface = vec(0, 0, 0);
@@ -336,7 +336,7 @@ float raycube(const vec &o, const vec &ray, float radius, int mode, int size, ex
             return min(dent, dist);
         }
 
-        ivec lo(x&(~0<<lshift), y&(~0<<lshift), z&(~0<<lshift));
+        ivec lo(x&(~0U<<lshift), y&(~0U<<lshift), z&(~0U<<lshift));
 
         if(!isempty(c))
         {
@@ -366,7 +366,7 @@ float shadowray(const vec &o, const vec &ray, float radius, int mode, extentity 
         DOWNOCTREE(shadowent, );
 
         cube &c = *lc;
-        ivec lo(x&(~0<<lshift), y&(~0<<lshift), z&(~0<<lshift));
+        ivec lo(x&(~0U<<lshift), y&(~0U<<lshift), z&(~0U<<lshift));
 
         if(!isempty(c) && !(c.material&MAT_ALPHA))
         {
@@ -421,7 +421,7 @@ float shadowray(ShadowRayCache *cache, const vec &o, const vec &ray, float radiu
         DOWNOCTREE(shadowent, );
 
         cube &c = *lc;
-        ivec lo(x&(~0<<lshift), y&(~0<<lshift), z&(~0<<lshift));
+        ivec lo(x&(~0U<<lshift), y&(~0U<<lshift), z&(~0U<<lshift));
 
         if(!isempty(c) && !(c.material&MAT_ALPHA))
         {

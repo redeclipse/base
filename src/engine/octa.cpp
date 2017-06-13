@@ -240,7 +240,7 @@ cube &lookupcube(const ivec &to, int tsize, ivec &ro, int &rsize)
         scale--;
         c = &c->children[octastep(tx, ty, tz, scale)];
     } while(!(csize>>scale));
-    ro = ivec(tx, ty, tz).mask(~0<<scale);
+    ro = ivec(tx, ty, tz).mask(~0U<<scale);
     rsize = 1<<scale;
     return *c;
 }
@@ -286,7 +286,7 @@ const cube &neighbourcube(const cube &c, int orient, const ivec &co, int size, i
         scale--;
         nc = &nc->children[octastep(n.x, n.y, n.z, scale)];
     } while(!(size>>scale) && nc->children);
-    ro = n.mask(~0<<scale);
+    ro = n.mask(~0U<<scale);
     rsize = 1<<scale;
     return *nc;
 }
