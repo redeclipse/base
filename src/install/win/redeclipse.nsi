@@ -74,13 +74,13 @@
 Section "Red Eclipse (required)" GameFiles
 
   SectionIn RO
-  
+
   SetOutPath $INSTDIR
-  
+
   File /r /x "redeclipse.app" /x "readme.md" /x ".git" /x ".gitattributes" /x ".gitignore" /x ".gitmodules" /x "redeclipse*win*.exe" "..\..\..\*.*"
-  
+
   WriteRegStr HKLM "SOFTWARE\Red Eclipse" "Install_Dir" "$INSTDIR"
-  
+
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Red Eclipse" "DisplayName" "Red Eclipse"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Red Eclipse" "DisplayVersion" ${MajorMinorVer}
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Red Eclipse" "DisplayIcon" "$INSTDIR\src\redeclipse.ico"
@@ -104,25 +104,22 @@ Section "Red Eclipse (required)" GameFiles
 
 SectionEnd
 
-Section "Start Menu Shortcuts" StartMenu
+Section "Start Menu Shortcut" StartMenu
 
-  CreateDirectory "$SMPROGRAMS\Red Eclipse"
-  
   SetOutPath "$INSTDIR"
-  
+
   CreateShortCut "$INSTDIR\Red Eclipse.lnk" "$INSTDIR\redeclipse.bat" "" "$INSTDIR\src\redeclipse.ico" 0 SW_SHOWMINIMIZED
-  CreateShortCut "$SMPROGRAMS\Red Eclipse\Red Eclipse.lnk" "$INSTDIR\redeclipse.bat" "" "$INSTDIR\src\redeclipse.ico" 0 SW_SHOWMINIMIZED
-  CreateShortCut "$SMPROGRAMS\Red Eclipse\Uninstall Red Eclipse.lnk" "$INSTDIR\uninstall.exe" "" "$INSTDIR\uninstall.exe" 0
-  
+  CreateShortCut "$SMPROGRAMS\Red Eclipse.lnk" "$INSTDIR\redeclipse.bat" "" "$INSTDIR\src\redeclipse.ico" 0 SW_SHOWMINIMIZED
+
 SectionEnd
 ; --------------------------------
 ; Uninstaller Section
 Section "Uninstall"
-  
+
   DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Red Eclipse"
   DeleteRegKey HKLM "Software\Red Eclipse"
 
-  RMDir /r "$SMPROGRAMS\Red Eclipse"
+  Delete "$SMPROGRAMS\Red Eclipse.lnk"
   RMDir /r "$INSTDIR"
 
 SectionEnd
@@ -130,7 +127,7 @@ SectionEnd
 ; Languages
   !insertmacro MUI_LANGUAGE "English"
   LangString DESC_GameFiles ${LANG_ENGLISH} "The Red Eclipse game files. Required to play the game."
-  LangString DESC_StartMenu ${LANG_ENGLISH} "Add shortcuts to your Start Menu"
+  LangString DESC_StartMenu ${LANG_ENGLISH} "Add a shortcut to your Start Menu"
 
   !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
     !insertmacro MUI_DESCRIPTION_TEXT ${GameFiles} $(DESC_GameFiles)
