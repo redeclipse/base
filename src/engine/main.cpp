@@ -846,17 +846,21 @@ static bool findarg(int argc, char **argv, const char *str)
 }
 
 bool progressing = false;
-ICOMMAND(0, getprogressing, "", (), intret(progressing ? 1 : 0));
-ICOMMAND(0, getprogresstype, "", (), intret(lightmapping ? 2 : (maploading ? 1 : 0)));
+bool checkconn()
+{
+    if(!curpeer) return connpeer != NULL;
+    else return client::waiting() > 0;
+    return false;
+}
+ICOMMAND(0, getprogressing, "", (), intret(progressing || checkconn() ? 1 : 0));
+ICOMMAND(0, getprogresstype, "", (), intret(checkconn() ? 3 : (lightmapping ? 2 : (maploading ? 1 : 0))));
 FVAR(0, loadprogress, 0, 0, 1);
 SVAR(0, progresstitle, "");
-SVAR(0, progresstext, "");
-FVAR(0, progressamt, 0, 0, 1);
-FVAR(0, progresspart, 0, 0, 1);
+FVAR(0, progressamt, -1, 0, 1);
 VAR(IDF_PERSIST, progressfps, 0, 30, VAR_MAX);
 int lastprogress = 0;
 
-void progress(float bar1, const char *text1, float bar2, const char *text2)
+void progress(float bar1, const char *text1)
 {
     if(progressing || !inbetweenframes || drawtex) return;
     if(bar1 < 0) // signals the start of a long process, hide the UI
@@ -874,14 +878,11 @@ void progress(float bar1, const char *text1, float bar2, const char *text2)
     interceptkey(SDLK_UNKNOWN); // keep the event queue awake to avoid 'beachball' cursor
     #endif
 
-    setsvar("progresstitle", text1 ? text1 : "Please wait..");
+    setsvar("progresstitle", text1 ? text1 : "Loading..");
     setfvar("progressamt", bar1);
-    setsvar("progresstext", text2 ? text2 : "");
-    setfvar("progresspart", bar2);
     if(verbose >= 4)
     {
-        if(text2) conoutf("%s [%.2f%%], %s [%.2f%%]", text1, bar1*100.f, text2, bar2*100.f);
-        else if(text1) conoutf("%s [%.2f%%]", text1, bar1*100.f);
+        if(text1) conoutf("%s [%.2f%%]", text1, bar1*100.f);
         else conoutf("Progressing [%.2f%%]", bar1*100.f);
     }
 
@@ -1193,12 +1194,10 @@ int main(int argc, char **argv)
                 pixelact = NULL;
                 pixeling = false;
             }
-            if(*progresstitle || progressamt > 0)
+            if(*progresstitle || progressamt >= 0)
             {
                 setsvar("progresstitle", "");
-                setsvar("progresstext", "");
-                setfvar("progressamt", 0.f);
-                setfvar("progresspart", 0.f);
+                setfvar("progressamt", -1.f);
             }
             setcaption(game::gametitle(), game::gametext());
         }

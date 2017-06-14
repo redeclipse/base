@@ -2,12 +2,14 @@
 
 namespace client
 {
-    bool sendplayerinfo = false, sendgameinfo = false, sendcrcinfo = false, isready = false, remote = false, demoplayback = false;
+    bool sendplayerinfo = false, sendgameinfo = false, sendcrcinfo = false, loadedmap = false, isready = false, remote = false, demoplayback = false;
     int needsmap = 0, gettingmap = 0, lastping = 0, sessionid = 0, sessionver = 0, lastplayerinfo = 0, mastermode = 0, needclipboard = -1, demonameid = 0;
     string connectpass = "";
     hashtable<int, const char *>demonames;
 
     VAR(0, debugmessages, 0, 0, 1);
+    ICOMMAND(0, getready, "", (), intret(isready ? 1 : 0));
+    ICOMMAND(0, getloadedmap, "", (), intret(maploading || loadedmap ? 1 : 0));
 
     SVAR(IDF_PERSIST, demolist, "");
     VAR(0, demoendless, 0, 0, 1);
@@ -1216,7 +1218,7 @@ namespace client
     void gamedisconnect(int clean)
     {
         if(editmode) toggleedit();
-        remote = isready = sendplayerinfo = sendgameinfo = sendcrcinfo = false;
+        remote = isready = sendplayerinfo = sendgameinfo = sendcrcinfo = loadedmap = false;
         gettingmap = needsmap = sessionid = sessionver = lastplayerinfo = mastermode = 0;
         messages.shrink(0);
         mapvotes.shrink(0);
@@ -1487,7 +1489,7 @@ namespace client
             case -1:
                 if(!mapcrc) emptymap(0, true, name);
                 needsmap = gettingmap = 0;
-                sendcrcinfo = true; // the server wants us to start
+                loadedmap = sendcrcinfo = true; // the server wants us to start
                 break;
             case -2:
                 conoutf("Waiting for server to request the map..");
@@ -1497,7 +1499,7 @@ namespace client
                 if(crc > 0) addmsg(N_GETMAP, "r");
                 break;
         }
-        else sendcrcinfo = true;
+        else loadedmap = sendcrcinfo = true;
         if(m_capture(game::gamemode)) capture::setup();
         else if(m_defend(game::gamemode)) defend::setup();
         else if(m_bomber(game::gamemode)) bomber::setup();

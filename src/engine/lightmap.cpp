@@ -233,7 +233,7 @@ void show_calclight_lmprog()
         glPixelStorei(GL_UNPACK_ALIGNMENT, texalign(data, LM_PACKW, bpp));
         glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, LM_PACKW, LM_PACKH, bpp > 3 ? GL_RGBA : GL_RGB, GL_UNSIGNED_BYTE, data);
     }
-    progress(bar1, "Computing lightmaps..", bar1, text);//, lmprogtexticks ? lmprogtex : 0);
+    progress(bar1, text);//, lmprogtexticks ? lmprogtex : 0);
 }
 
 #define CHECK_PROGRESS_LOCKED(exit, before, after) CHECK_CALCLIGHT_PROGRESS_LOCKED(exit, show_calclight_lmprog, before, after)

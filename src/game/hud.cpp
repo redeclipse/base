@@ -1718,8 +1718,7 @@ namespace hud
         if(!engineready)
         {
             pushfont("small");
-            if(*progresstext) draw_textf("%s [%s]", FONTH*3/4, h-FONTH/2, 0, 0, 255, 255, 255, 255, TEXT_LEFT_UP, -1, -1, 1, *progresstitle ? progresstitle : "Loading, please wait...", progresstext);
-            else draw_textf("%s", FONTH*3/4, h-FONTH/2, 0, 0, 255, 255, 255, 255, TEXT_LEFT_UP, -1, -1, 1, *progresstitle ? progresstitle : "Loading, please wait...");
+            draw_textf("%s", FONTH*3/4, h-FONTH/2, 0, 0, 255, 255, 255, 255, TEXT_LEFT_UP, -1, -1, 1, *progresstitle ? progresstitle : "Loading, please wait..");
             popfont();
         }
     }
@@ -1730,7 +1729,27 @@ namespace hud
         else
         {
             int wait = client::waiting();
-            if(wait > 1) result(wait == 2 ? "Requesting map.." : "Downloading map..");
+            switch(wait)
+            {
+                case 0: break;
+                case 1:
+                    if(curpeer || haslocalclients())
+                    {
+                        if(!client::isready) result("Negotiating with server..");
+                        else if(!client::loadedmap) result("Getting game information..");
+                        else result("Loading game state..");
+                    }
+                    else if(connpeer != NULL) result("Connecting to server..");
+                    else result("Loading game state..");
+                    break;
+                case 2:
+                    result("Requesting map..");
+                    break;
+                case 3:
+                    result("Downloading map..");
+                    break;
+                default: break;
+            }
         }
     });
 
