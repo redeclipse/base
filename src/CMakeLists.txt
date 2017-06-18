@@ -13,7 +13,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fsigned-char -ffast-math -fno-exc
 # Use pkg-config to configure dependencies later
 find_package(PkgConfig REQUIRED)
 # the dependencies required by all platforms
-set(client_deps zlib sdl2 SDL2_image SDL2_mixer gl)
+set(common_deps zlib)
+set(client_deps sdl2 SDL2_image SDL2_mixer gl)
 # will be set to false if the client dependencies are not installed
 set(build_client true)
 
@@ -83,6 +84,24 @@ foreach(dep IN LISTS client_deps)
     if(NOT ${dep}_${FOUND} OR NOT ${build_client})
         set(build_client false)
     endif()
+
+    # add the necessary includes
+    foreach(include_dir IN LISTS ${dep}_INCLUDE_DIRS)
+        include_directories(${include_dir})
+    endforeach(include_dir)
+
+    # link to the libraries
+    foreach(lib IN LISTS ${dep}_LIBRARIES)
+        link_libraries(${lib})
+    endforeach(lib)
+
+    # tell the compiler where to find the libraries' binaries
+    foreach(lib_dir IN LISTS ${dep}_LIBRARY_DIRS)
+        link_directories(${lib_dir})
+    endforeach(lib_dir)
+endforeach(dep)
+foreach(dep IN LISTS common_deps)
+    pkg_check_modules(${dep} REQUIRED ${dep})
 
     # add the necessary includes
     foreach(include_dir IN LISTS ${dep}_INCLUDE_DIRS)
