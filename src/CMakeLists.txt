@@ -16,7 +16,10 @@ find_package(PkgConfig REQUIRED)
 set(common_deps zlib)
 set(client_deps sdl2 SDL2_image SDL2_mixer gl)
 # will be set to false if the client dependencies are not installed
-set(build_client true)
+set(BUILD_CLIENT true CACHE BOOL "Build client?")
+if(NOT ${BUILD_CLIENT})
+    message(STATUS "Will not build client as requested")
+endif()
 
 # the client depends on almost all the source files
 file(GLOB client_sources engine/*.cpp game/*.cpp shared/*.cpp support/sqlite3.c)
@@ -79,27 +82,30 @@ else()
 endif()
 
 # configure dependencies with pkg-config
-foreach(dep IN LISTS client_deps)
-    pkg_check_modules(${dep} ${dep})
-    if(NOT ${dep}_FOUND)
-        set(build_client false)
-    endif()
+if(${BUILD_CLIENT})
+    foreach(dep IN LISTS client_deps)
+        pkg_check_modules(${dep} ${dep})
+        if(NOT ${dep}_FOUND)
+            message(FATAL_ERROR "Could not find required packages for the client. You can run cmake with -DBUILD_CLIENT=0 to exclude the client.")
+        endif()
 
-    # add the necessary includes
-    foreach(include_dir IN LISTS ${dep}_INCLUDE_DIRS)
-        include_directories(${include_dir})
-    endforeach(include_dir)
+        # add the necessary includes
+        foreach(include_dir IN LISTS ${dep}_INCLUDE_DIRS)
+            include_directories(${include_dir})
+        endforeach(include_dir)
 
-    # link to the libraries
-    foreach(lib IN LISTS ${dep}_LIBRARIES)
-        link_libraries(${lib})
-    endforeach(lib)
+        # link to the libraries
+        foreach(lib IN LISTS ${dep}_LIBRARIES)
+            link_libraries(${lib})
+        endforeach(lib)
 
-    # tell the compiler where to find the libraries' binaries
-    foreach(lib_dir IN LISTS ${dep}_LIBRARY_DIRS)
-        link_directories(${lib_dir})
-    endforeach(lib_dir)
-endforeach(dep)
+        # tell the compiler where to find the libraries' binaries
+        foreach(lib_dir IN LISTS ${dep}_LIBRARY_DIRS)
+            link_directories(${lib_dir})
+        endforeach(lib_dir)
+    endforeach(dep)
+endif()
+
 foreach(dep IN LISTS common_deps)
     pkg_check_modules(${dep} REQUIRED ${dep})
 
@@ -119,10 +125,6 @@ foreach(dep IN LISTS common_deps)
     endforeach(lib_dir)
 endforeach(dep)
 
-if(NOT ${build_client})
-    message(WARNING "Will not build client because some dependencies were not found.")
-endif()
-
 # configure enet
 set(ENET_SOURCE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/enet)
 add_subdirectory(${ENET_SOURCE_DIRECTORY})
@@ -141,7 +143,7 @@ if(MINGW)
     include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 endif()
 
-if(${build_client})
+if(${BUILD_CLIENT})
     # add the client executable and link it to enet
     add_executable(redeclipse${BIN_SUFFIX} ${client_sources})
     target_link_libraries(redeclipse${BIN_SUFFIX} enet)
@@ -158,7 +160,7 @@ set_target_properties(redeclipse_server${BIN_SUFFIX} PROPERTIES
 if(APPLE)
     # include framework required in xcode/ code
     find_library(COCOA_LIBRARY Cocoa)
-    if(${build_client})
+    if(${BUILD_CLIENT})
         target_link_libraries(redeclipse${BIN_SUFFIX} ${COCOA_LIBRARY})
     endif()
     target_link_libraries(redeclipse_server${BIN_SUFFIX} ${COCOA_LIBRARY})
@@ -180,7 +182,7 @@ else()
 endif()
 
 set(targets redeclipse_server${BIN_SUFFIX} genkey${BIN_SUFFIX})
-if(${build_client})
+if(${BUILD_CLIENT})
     set(targets redeclipse${BIN_SUFFIX} ${targets})
 endif()
 
