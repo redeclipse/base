@@ -81,7 +81,7 @@ endif()
 # configure dependencies with pkg-config
 foreach(dep IN LISTS client_deps)
     pkg_check_modules(${dep} ${dep})
-    if(NOT ${dep}_${FOUND} OR NOT ${build_client})
+    if(NOT ${dep}_FOUND)
         set(build_client false)
     endif()
 
