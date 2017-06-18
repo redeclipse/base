@@ -14,6 +14,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fsigned-char -ffast-math -fno-exc
 find_package(PkgConfig REQUIRED)
 # the dependencies required by all platforms
 set(client_deps zlib sdl2 SDL2_image SDL2_mixer gl)
+# will be set to false if the client dependencies are not installed
+set(build_client true)
 
 # the client depends on almost all the source files
 file(GLOB client_sources engine/*.cpp game/*.cpp shared/*.cpp support/sqlite3.c)
@@ -77,7 +79,10 @@ endif()
 
 # configure dependencies with pkg-config
 foreach(dep IN LISTS client_deps)
-    pkg_check_modules(${dep} REQUIRED ${dep})
+    pkg_check_modules(${dep} ${dep})
+    if(NOT ${dep}_${FOUND} OR NOT ${build_client})
+        set(build_client false)
+    endif()
 
     # add the necessary includes
     foreach(include_dir IN LISTS ${dep}_INCLUDE_DIRS)
@@ -94,6 +99,10 @@ foreach(dep IN LISTS client_deps)
         link_directories(${lib_dir})
     endforeach(lib_dir)
 endforeach(dep)
+
+if(NOT ${build_client})
+    message(WARNING "Will not build client because some dependencies were not found.")
+endif()
 
 # configure enet
 set(ENET_SOURCE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/enet)
@@ -113,9 +122,11 @@ if(MINGW)
     include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 endif()
 
-# add the client executable and link it to enet
-add_executable(redeclipse${BIN_SUFFIX} ${client_sources})
-target_link_libraries(redeclipse${BIN_SUFFIX} enet)
+if(${build_client})
+    # add the client executable and link it to enet
+    add_executable(redeclipse${BIN_SUFFIX} ${client_sources})
+    target_link_libraries(redeclipse${BIN_SUFFIX} enet)
+endif()
 
 # add the server executable and link it to enet
 # (define STANDALONE to "notify" the preprocessor that the server is built this time)
@@ -128,7 +139,9 @@ set_target_properties(redeclipse_server${BIN_SUFFIX} PROPERTIES
 if(APPLE)
     # include framework required in xcode/ code
     find_library(COCOA_LIBRARY Cocoa)
-    target_link_libraries(redeclipse${BIN_SUFFIX} ${COCOA_LIBRARY})
+    if(${build_client})
+        target_link_libraries(redeclipse${BIN_SUFFIX} ${COCOA_LIBRARY})
+    endif()
     target_link_libraries(redeclipse_server${BIN_SUFFIX} ${COCOA_LIBRARY})
 else(APPLE)
     # add the genkey executable
@@ -143,7 +156,12 @@ elseif(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "x86_64")
 else()
     set(ARCHITECTURE "native")
 endif()
-set(targets redeclipse${BIN_SUFFIX} redeclipse_server${BIN_SUFFIX} genkey${BIN_SUFFIX})
+
+set(targets redeclipse_server${BIN_SUFFIX} genkey${BIN_SUFFIX})
+if(${build_client})
+    set(targets redeclipse${BIN_SUFFIX} ${targets})
+endif()
+
 foreach(target IN LISTS targets)
     install(
         TARGETS ${target}
