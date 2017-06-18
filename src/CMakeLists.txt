@@ -15,7 +15,7 @@ find_package(PkgConfig REQUIRED)
 # the dependencies required by all platforms
 set(common_deps zlib)
 set(client_deps sdl2 SDL2_image SDL2_mixer gl)
-# will be set to false if the client dependencies are not installed
+
 set(BUILD_CLIENT true CACHE BOOL "Build client?")
 if(NOT ${BUILD_CLIENT})
     message(STATUS "Will not build client as requested")
