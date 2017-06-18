@@ -146,6 +146,9 @@ if(APPLE)
 else(APPLE)
     # add the genkey executable
     add_executable(genkey${BIN_SUFFIX} ${genkey_sources})
+    set_target_properties(genkey${BIN_SUFFIX} PROPERTIES
+        COMPILE_FLAGS "-DSTANDALONE"
+    )
 endif(APPLE)
 
 # install to ../bin/
