@@ -1,5 +1,39 @@
 cmake_minimum_required(VERSION 2.8.11)
 
+# configure_deps(TARGET <target> [FATAL] DEPS <deps>...)
+# Configures dependencies for <target>. <deps> is a list of dependencies.
+# If FATAL is specified then it exits on failure. Otherwise it returns
+# and sets configure_deps_failed.
+function(configure_deps)
+    cmake_parse_arguments(configure_deps "FATAL" "TARGET" "DEPS" "${ARGN}")
+    foreach(dep IN LISTS configure_deps_DEPS)
+        if(${configure_deps_FATAL})
+            pkg_check_modules(${dep} REQUIRED ${dep})
+        else()
+            pkg_check_modules(${dep} ${dep})
+        endif()
+        if(NOT ${dep}_FOUND)
+            set(configure_deps_failed true PARENT_SCOPE)
+            return()
+        endif()
+
+        # add the necessary includes
+        foreach(include_dir IN LISTS ${dep}_INCLUDE_DIRS)
+            include_directories(${include_dir})
+        endforeach(include_dir)
+
+        # link to the libraries
+        foreach(lib IN LISTS ${dep}_LIBRARIES)
+            target_link_libraries(${configure_deps_TARGET} ${lib})
+        endforeach(lib)
+
+        # tell the compiler where to find the libraries' binaries
+        foreach(lib_dir IN LISTS ${dep}_LIBRARY_DIRS)
+            link_directories(${lib_dir})
+        endforeach(lib_dir)
+    endforeach(dep)
+endfunction(configure_deps)
+
 # set default build type
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type (release or debug)" FORCE)
@@ -13,8 +47,9 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fsigned-char -ffast-math -fno-exc
 # Use pkg-config to configure dependencies later
 find_package(PkgConfig REQUIRED)
 # the dependencies required by all platforms
-set(common_deps zlib)
-set(client_deps sdl2 SDL2_image SDL2_mixer gl)
+set(client_deps zlib sdl2 SDL2_image SDL2_mixer gl)
+set(server_deps zlib)
+set(genkey_deps zlib)
 
 set(BUILD_CLIENT true CACHE BOOL "Build client?")
 if(NOT ${BUILD_CLIENT})
@@ -81,68 +116,6 @@ else()
     set(BIN_SUFFIX "_native")
 endif()
 
-# configure dependencies with pkg-config
-if(${BUILD_CLIENT})
-    foreach(dep IN LISTS client_deps)
-        pkg_check_modules(${dep} ${dep})
-        if(NOT ${dep}_FOUND)
-            message(FATAL_ERROR "Could not find required packages for the client. You can run cmake with -DBUILD_CLIENT=0 to exclude the client.")
-        endif()
-
-        # add the necessary includes
-        foreach(include_dir IN LISTS ${dep}_INCLUDE_DIRS)
-            include_directories(${include_dir})
-        endforeach(include_dir)
-
-        # link to the libraries
-        foreach(lib IN LISTS ${dep}_LIBRARIES)
-            link_libraries(${lib})
-        endforeach(lib)
-
-        # tell the compiler where to find the libraries' binaries
-        foreach(lib_dir IN LISTS ${dep}_LIBRARY_DIRS)
-            link_directories(${lib_dir})
-        endforeach(lib_dir)
-    endforeach(dep)
-endif()
-
-foreach(dep IN LISTS common_deps)
-    pkg_check_modules(${dep} REQUIRED ${dep})
-
-    # add the necessary includes
-    foreach(include_dir IN LISTS ${dep}_INCLUDE_DIRS)
-        include_directories(${include_dir})
-    endforeach(include_dir)
-
-    # link to the libraries
-    foreach(lib IN LISTS ${dep}_LIBRARIES)
-        link_libraries(${lib})
-    endforeach(lib)
-
-    # tell the compiler where to find the libraries' binaries
-    foreach(lib_dir IN LISTS ${dep}_LIBRARY_DIRS)
-        link_directories(${lib_dir})
-    endforeach(lib_dir)
-endforeach(dep)
-
-# configure enet
-set(ENET_SOURCE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/enet)
-add_subdirectory(${ENET_SOURCE_DIRECTORY})
-
-# configure local includes
-include_directories(
-    ${ENET_SOURCE_DIRECTORY}/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/engine
-    ${CMAKE_CURRENT_SOURCE_DIR}/game
-    ${CMAKE_CURRENT_SOURCE_DIR}/shared
-    ${CMAKE_CURRENT_SOURCE_DIR}/support
-)
-
-# include the headers for the libraries bundled in ../bin
-if(MINGW)
-    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-endif()
-
 if(${BUILD_CLIENT})
     # add the client executable and link it to enet
     add_executable(redeclipse${BIN_SUFFIX} ${client_sources})
@@ -171,6 +144,34 @@ else(APPLE)
         COMPILE_FLAGS "-DSTANDALONE"
     )
 endif(APPLE)
+
+# configure dependencies
+if(${BUILD_CLIENT})
+    configure_deps(TARGET redeclipse${BIN_SUFFIX} DEPS ${client_deps})
+    if(configure_deps_failed)
+        message(FATAL_ERROR "Could not find required packages for the client. You can run cmake with -DBUILD_CLIENT=0 to exclude the client.")
+    endif()
+endif()
+configure_deps(TARGET redeclipse_server${BIN_SUFFIX} FATAL DEPS ${server_deps})
+configure_deps(TARGET genkey${BIN_SUFFIX} FATAL DEPS ${genkey_deps})
+
+# configure enet
+set(ENET_SOURCE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/enet)
+add_subdirectory(${ENET_SOURCE_DIRECTORY})
+
+# configure local includes
+include_directories(
+    ${ENET_SOURCE_DIRECTORY}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/engine
+    ${CMAKE_CURRENT_SOURCE_DIR}/game
+    ${CMAKE_CURRENT_SOURCE_DIR}/shared
+    ${CMAKE_CURRENT_SOURCE_DIR}/support
+)
+
+# include the headers for the libraries bundled in ../bin
+if(MINGW)
+    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+endif()
 
 # install to ../bin/
 if(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "i[3-6]86")
