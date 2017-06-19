@@ -1270,7 +1270,7 @@ bool load_world(const char *mname, int crc)       // still supports all map form
             #undef MAPZCOMPAT
             if(newhdr.version > MAPVERSION)
             {
-                conoutf("\frError loading %s: requires a newer version of %s", mapname, versionname);
+                conoutf("\frError loading %s: requires a newer version of %s (with map format version %d)", mapname, versionname, newhdr.version);
                 delete f;
                 maskpackagedirs(mask);
                 return false;
@@ -1466,7 +1466,7 @@ bool load_world(const char *mname, int crc)       // still supports all map form
             #undef OCTAVARS
             if(ohdr.version > OCTAVERSION)
             {
-                conoutf("\frError loading %s: requires a newer version of Cube 2 support", mapname);
+                conoutf("\frError loading %s: requires a newer version of Cube 2 support (version %d)", mapname, ohdr.version);
                 delete f;
                 maskpackagedirs(mask);
                 return false;
@@ -2083,7 +2083,7 @@ int scanmapc(const char *fname)
             #undef MAPZCOMPAT
             if(d.maphdr.version > MAPVERSION)
             {
-                formatstring(msg, "Error loading %s: requires a newer version of %s", d.fileext, versionname);
+                formatstring(msg, "Error loading %s: requires a newer version of %s (with map format version %d)", d.fileext, versionname, d.maphdr.version);
                 delete f;
                 maskpackagedirs(mask);
                 mapcinfos.pop();
@@ -2245,7 +2245,7 @@ int scanmapc(const char *fname)
             #undef OCTACOMPAT
             if(ohdr.version > OCTAVERSION)
             {
-                formatstring(msg, "\frError loading %s: requires a newer version of Cube 2 support", d.fileext);
+                formatstring(msg, "\frError loading %s: requires a newer version of Cube 2 support (version %d)", d.fileext, ohdr.version);
                 delete f;
                 maploading = 0;
                 maskpackagedirs(mask);
