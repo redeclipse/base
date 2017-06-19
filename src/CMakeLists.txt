@@ -1,5 +1,39 @@
 cmake_minimum_required(VERSION 2.8.11)
 
+# configure_deps(TARGET <target> [FATAL] DEPS <deps>...)
+# Configures dependencies for <target>. <deps> is a list of dependencies.
+# If FATAL is specified then it exits on failure. Otherwise it returns
+# and sets configure_deps_failed.
+function(configure_deps)
+    cmake_parse_arguments(configure_deps "FATAL" "TARGET" "DEPS" "${ARGN}")
+    foreach(dep IN LISTS configure_deps_DEPS)
+        if(${configure_deps_FATAL})
+            pkg_check_modules(${dep} REQUIRED ${dep})
+        else()
+            pkg_check_modules(${dep} ${dep})
+        endif()
+        if(NOT ${dep}_FOUND)
+            set(configure_deps_failed true PARENT_SCOPE)
+            return()
+        endif()
+
+        # add the necessary includes
+        foreach(include_dir IN LISTS ${dep}_INCLUDE_DIRS)
+            include_directories(${include_dir})
+        endforeach(include_dir)
+
+        # link to the libraries
+        foreach(lib IN LISTS ${dep}_LIBRARIES)
+            target_link_libraries(${configure_deps_TARGET} ${lib})
+        endforeach(lib)
+
+        # tell the compiler where to find the libraries' binaries
+        foreach(lib_dir IN LISTS ${dep}_LIBRARY_DIRS)
+            link_directories(${lib_dir})
+        endforeach(lib_dir)
+    endforeach(dep)
+endfunction(configure_deps)
+
 # set default build type
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type (release or debug)" FORCE)
@@ -14,6 +48,13 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fsigned-char -ffast-math -fno-exc
 find_package(PkgConfig REQUIRED)
 # the dependencies required by all platforms
 set(client_deps zlib sdl2 SDL2_image SDL2_mixer gl)
+set(server_deps zlib)
+set(genkey_deps zlib)
+
+set(BUILD_CLIENT true CACHE BOOL "Build client?")
+if(NOT ${BUILD_CLIENT})
+    message(STATUS "Will not build client as requested")
+endif()
 
 # the client depends on almost all the source files
 file(GLOB client_sources engine/*.cpp game/*.cpp shared/*.cpp support/sqlite3.c)
@@ -75,25 +116,44 @@ else()
     set(BIN_SUFFIX "_native")
 endif()
 
-# configure dependencies with pkg-config
-foreach(dep IN LISTS client_deps)
-    pkg_check_modules(${dep} REQUIRED ${dep})
+if(${BUILD_CLIENT})
+    # add the client executable and link it to enet
+    add_executable(redeclipse${BIN_SUFFIX} ${client_sources})
+    target_link_libraries(redeclipse${BIN_SUFFIX} enet)
+endif()
 
-    # add the necessary includes
-    foreach(include_dir IN LISTS ${dep}_INCLUDE_DIRS)
-        include_directories(${include_dir})
-    endforeach(include_dir)
+# add the server executable and link it to enet
+# (define STANDALONE to "notify" the preprocessor that the server is built this time)
+add_executable(redeclipse_server${BIN_SUFFIX} ${server_sources})
+target_link_libraries(redeclipse_server${BIN_SUFFIX} enet)
+set_target_properties(redeclipse_server${BIN_SUFFIX} PROPERTIES
+    COMPILE_FLAGS "-DSTANDALONE"
+)
 
-    # link to the libraries
-    foreach(lib IN LISTS ${dep}_LIBRARIES)
-        link_libraries(${lib})
-    endforeach(lib)
+if(APPLE)
+    # include framework required in xcode/ code
+    find_library(COCOA_LIBRARY Cocoa)
+    if(${BUILD_CLIENT})
+        target_link_libraries(redeclipse${BIN_SUFFIX} ${COCOA_LIBRARY})
+    endif()
+    target_link_libraries(redeclipse_server${BIN_SUFFIX} ${COCOA_LIBRARY})
+else(APPLE)
+    # add the genkey executable
+    add_executable(genkey${BIN_SUFFIX} ${genkey_sources})
+    set_target_properties(genkey${BIN_SUFFIX} PROPERTIES
+        COMPILE_FLAGS "-DSTANDALONE"
+    )
+endif(APPLE)
 
-    # tell the compiler where to find the libraries' binaries
-    foreach(lib_dir IN LISTS ${dep}_LIBRARY_DIRS)
-        link_directories(${lib_dir})
-    endforeach(lib_dir)
-endforeach(dep)
+# configure dependencies
+if(${BUILD_CLIENT})
+    configure_deps(TARGET redeclipse${BIN_SUFFIX} DEPS ${client_deps})
+    if(configure_deps_failed)
+        message(FATAL_ERROR "Could not find required packages for the client. You can run cmake with -DBUILD_CLIENT=0 to exclude the client.")
+    endif()
+endif()
+configure_deps(TARGET redeclipse_server${BIN_SUFFIX} FATAL DEPS ${server_deps})
+configure_deps(TARGET genkey${BIN_SUFFIX} FATAL DEPS ${genkey_deps})
 
 # configure enet
 set(ENET_SOURCE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/enet)
@@ -113,28 +173,6 @@ if(MINGW)
     include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 endif()
 
-# add the client executable and link it to enet
-add_executable(redeclipse${BIN_SUFFIX} ${client_sources})
-target_link_libraries(redeclipse${BIN_SUFFIX} enet)
-
-# add the server executable and link it to enet
-# (define STANDALONE to "notify" the preprocessor that the server is built this time)
-add_executable(redeclipse_server${BIN_SUFFIX} ${server_sources})
-target_link_libraries(redeclipse_server${BIN_SUFFIX} enet)
-set_target_properties(redeclipse_server${BIN_SUFFIX} PROPERTIES
-    COMPILE_FLAGS "-DSTANDALONE"
-)
-
-if(APPLE)
-    # include framework required in xcode/ code
-    find_library(COCOA_LIBRARY Cocoa)
-    target_link_libraries(redeclipse${BIN_SUFFIX} ${COCOA_LIBRARY})
-    target_link_libraries(redeclipse_server${BIN_SUFFIX} ${COCOA_LIBRARY})
-else(APPLE)
-    # add the genkey executable
-    add_executable(genkey${BIN_SUFFIX} ${genkey_sources})
-endif(APPLE)
-
 # install to ../bin/
 if(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "i[3-6]86")
 	set(ARCHITECTURE "x86")
@@ -143,7 +181,12 @@ elseif(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "x86_64")
 else()
     set(ARCHITECTURE "native")
 endif()
-set(targets redeclipse${BIN_SUFFIX} redeclipse_server${BIN_SUFFIX} genkey${BIN_SUFFIX})
+
+set(targets redeclipse_server${BIN_SUFFIX} genkey${BIN_SUFFIX})
+if(${BUILD_CLIENT})
+    set(targets redeclipse${BIN_SUFFIX} ${targets})
+endif()
+
 foreach(target IN LISTS targets)
     install(
         TARGETS ${target}
