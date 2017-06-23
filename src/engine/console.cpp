@@ -616,9 +616,11 @@ void processkey(int code, bool isdown)
         case SDLK_RETURN:
             keyintercept(fullscreen, setfullscreen(!(SDL_GetWindowFlags(screen) & SDL_WINDOW_FULLSCREEN)));
             break;
+#if defined(WIN32) || defined(__APPLE__)
         case SDLK_TAB:
             keyintercept(iconify, SDL_MinimizeWindow(screen));
             break;
+#endif
         case SDLK_CAPSLOCK:
             if(!isdown) capslockon = capslocked();
             break;
