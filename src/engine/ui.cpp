@@ -2516,7 +2516,7 @@ namespace UI
                         wp += ((Spacer *)o)->spacew*2;
                         continue;
                     }
-                    float ww = o->w > 0 || !o->isfill() ? o->w : ((Filler *)o)->minw;
+                    float ww = !o->isfill() && o->w > 0 ? o->w : ((Filler *)o)->minw;
                     if(ww > 0)
                     {
                         wlen *= (ww-wp)/k;

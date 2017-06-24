@@ -24,8 +24,8 @@ FVAR(IDF_PERSIST, textskinbright, 0, 0.6f, 10);
 FVAR(IDF_PERSIST, textskinfbright, 0, 1, 10);
 FVAR(IDF_PERSIST, textskinborderbright, 0, 1, 10);
 FVAR(IDF_PERSIST, textskinborderblend, 0, 0.4f, 1);
-TVARN(IDF_PERSIST|IDF_PRELOAD, textskintex, "textures/textskin", tbgtex, 0);
-TVARN(IDF_PERSIST|IDF_PRELOAD, textskinbordertex, "textures/textskinborder", tbgbordertex, 0);
+TVARN(IDF_PERSIST|IDF_PRELOAD, textskintex, "textures/hud/textskin", tbgtex, 0);
+TVARN(IDF_PERSIST|IDF_PRELOAD, textskinbordertex, "textures/hud/textskinborder", tbgbordertex, 0);
 
 static hashnameset<font> fonts;
 static font *fontdef = NULL;
