@@ -13,13 +13,16 @@ connect to the play.redeclipse.net master server, or any servers which are
 connected to it. These guidelines are not designed to limit your opinion or
 freedoms granted to you by the open source licenses employed by the project,
 nor do they cover usage of the game in either offline play or on servers
-which are not connected to the Red Eclipse master.
+which are not connected to the Red Eclipse master. If you don't agree to
+these terms you are still able to run the game without the use of the master
+server.
 
 If you have questions or comments regarding these guidelines please contact
 the Red Eclipse Team. Any person seeking to modify their game or server for
 use on the master server should first seek permission from the Red Eclipse
 Team, each modification must be approved and will be done on a case-by-case
-basis.
+basis. It is advised you create a topic in the "General Discussion" section
+of the Red Eclipse forums located at https://redeclipse.net/forum
 
 == Guidelines for Servers ==
 
@@ -41,10 +44,12 @@ basis.
     as by setting its damage output to 0), is not allowed.
 
 * If the source code of the server is modified substantially you must contact
-  the Red Eclipse Team to check that the changes are permitted.
+  the Red Eclipse Team to check that the changes are permitted by creating a
+  a topic in the "General Discussion" section of the Red Eclipse forums located
+  at https://redeclipse.net/forum
 
-* The server must honour the auth system, allowing global bans and grant the
-  correct access by the Red Eclipse Team, or moderators assigned by them.
+* The server must honour the "auth" system, allowing global bans and granting
+  the correct access by the Red Eclipse Team, or moderators assigned by them.
 
 * The server must not advertise or otherwise spam messages excessively.
 
@@ -70,7 +75,9 @@ basis.
     kind of language is not permitted.
   - Intentionally killing team mates or scoring for an opposing team is not
     permitted. This includes "kamikaze" tactics that result in negative scores.
-  - Cheating, flooding and/or spamming is not permitted.
+  - Cheating, flooding and/or spamming is not permitted. This includes sending
+    too many messages or being excessively abusive via in-game communication
+    over a short amount of time.
 
 * The owner of a server may outline their own rules, specific to their server.
   - Players on a server with additional rules must follow said rules unless the
@@ -79,24 +86,38 @@ basis.
     all rules supplied by the server are considered to be null and void.
 
 * Failure to adhere to a request by a moderator to follow the rules can result
-  in an immediate ban, without warning, possibly from the master server and
-  all Red Eclipse servers listed on it.
+  in an immediate mute, kick, and/or ban, without warning, possibly from the
+  master server and all Red Eclipse servers listed on it. It is important to
+  note that moderators are considered to be official representatives of the
+  Red Eclipse community and should be treated with respect when performing
+  their duties.
+
+* If a player believes that the behaviour of any moderator is not supported by
+  this document it is advised that the player lodges an official complaint in
+  the "General Discussion" section of the Red Eclipse forums located at
+  https://redeclipse.net/forum - Note that arguing with moderators or being
+  otherwise antagonistic via in-game communication is not allowed.
 
 == Guidelines for Moderators ==
 
 * Moderators must act in a fair and impartial manner, employing the "warn, then
-  kick, then ban" approach, unless there is an emergency or immediate need.
+  kick, then ban" approach, unless there is an emergency or immediate need. It
+  is important to remember moderators are considered to be official
+  representatives of the Red Eclipse community and they should approach each
+  situation in a professional manner.
 
-* The use of kick and/or ban should only be used when a user violates sections
-  of this document. If in doubt, moderators should seek the advice of their
-  peers (other players and/or moderators) before proceeding with disciplinary
-  action. A moderator may kick and/or ban for other reasons if there is due
-  cause to do so.
+* The use of mute, kick, and/or ban should only be used when a user violates
+  sections of this document. If in doubt, moderators should seek the advice of
+  their peers (other players and/or moderators) before proceeding with
+  disciplinary action. A moderator may mute, kick, and/or ban for other reasons
+  if there is due cause to do so, but may not use it as a way to silence a
+  player who is simply being offensive without violating this document.
 
-* If a moderator believes that any behaviour not covered by this document
-  should result in disciplinary action, and they have the support of their
-  peers, they should contact the Red Eclipse Team immediately to propose an
-  amendment.
+* If a moderator believes that any player behaviour not covered by this
+  document should result in disciplinary action, they should create a topic in
+  the "General Discussion" section of the Red Eclipse forums located at
+  https://redeclipse.net/forum - Note that arguing or being otherwise
+  antagonistic with players is not advised.
 
 * Failure by a moderator to follow or uphold the rules may result in their
   access being immediately revoked, without warning.
