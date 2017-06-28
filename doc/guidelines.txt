@@ -1,28 +1,28 @@
 GUIDELINES FOR CONNECTING TO THE RED ECLIPSE MASTER SERVER
 
 The Red Eclipse Team provides the play.redeclipse.net master server for the
-benefit of the Red Eclipse Community. We impose a general set of guidelines
-for any server/user which connects to the play.redeclipse.net master server.
-The team reserves the right to block any attempt to connect to the master
-server at their discretion. Access to services provided by the project are
-considered to be a privilege, not a right.
+benefit of the Red Eclipse Community. We impose a general set of guidelines for
+any server/user which connects to the play.redeclipse.net master server. The
+team reserves the right to block any attempt to connect to the master server at
+their discretion. Access to services provided by the project are considered to
+be a privilege, not a right.
 
 These guidelines are imposed to ensure the integrity of both the Red Eclipse
-game, and its community. If you do not agree to these terms, you should not
-connect to the play.redeclipse.net master server, or any servers which are
-connected to it. These guidelines are not designed to limit your opinion or
-freedoms granted to you by the open source licenses employed by the project,
-nor do they cover usage of the game in either offline play or on servers
-which are not connected to the Red Eclipse master. If you don't agree to
+game and the surrounding community. If you do not agree to these terms, you
+should not connect to the play.redeclipse.net master server, or any servers
+which are connected to it. These guidelines are not designed to limit your
+opinions or freedoms granted to you by the open source licenses employed by the
+project, nor do they cover usage of the game in either offline play or on
+servers which are not connected to the Red Eclipse master. If you don't agree to
 these terms you are still able to run the game without the use of the master
 server.
 
-If you have questions or comments regarding these guidelines please contact
-the Red Eclipse Team. Any person seeking to modify their game or server for
-use on the master server should first seek permission from the Red Eclipse
-Team, each modification must be approved and will be done on a case-by-case
-basis. It is advised you create a topic in the "General Discussion" section
-of the Red Eclipse forums located at https://redeclipse.net/forum
+If you have questions or comments regarding these guidelines please contact the
+Red Eclipse Team. Any person seeking to modify their game or server for use on
+the master server should first seek permission from the Red Eclipse Team, each
+modification must be approved and will be done on a case-by-case basis. It is
+advised you create a topic in the "General Discussion" section of the official
+Red Eclipse forums located at https://redeclipse.net/forum
 
 == Guidelines for Servers ==
 
@@ -36,22 +36,28 @@ of the Red Eclipse forums located at https://redeclipse.net/forum
   - Game variables may not be set in such a way that makes it impossible to
     avoid harming yourself or teammates (i.e. no suicide weapons).
 
-* If the gameplay of the server is modified substantially this must be
-  indicated clearly, preferably through the use of "servermotd".
+* If the gameplay of the server is modified substantially this must be indicated
+  clearly, preferably using the "serverdesc" and "servermotd" variables.
   - If you wish to disable one or more weapons on the server, use the
-    "sv_<weapon>disabled" variable. Letting players wield a
-    weapon, but changing variables so that weapon doesn't actually work (such
-    as by setting its damage output to 0), is not allowed.
+    "sv_<weapon>disabled" variable. Letting players wield a weapon, but changing
+    variables so that weapon doesn't actually work (such as by setting its
+    damage output to 0), is not allowed.
 
 * If the source code of the server is modified substantially you must contact
   the Red Eclipse Team to check that the changes are permitted by creating a
-  a topic in the "General Discussion" section of the Red Eclipse forums located
-  at https://redeclipse.net/forum
+  a topic in the "General Discussion" section of the official Red Eclipse forums
+  located at https://redeclipse.net/forum
 
-* The server must honour the "auth" system, allowing global bans and granting
-  the correct access by the Red Eclipse Team, or moderators assigned by them.
+* The server must honour the master server system, allowing global bans and
+  granting the correct access by the Red Eclipse Team, or moderators assigned by
+  them. Red Eclipse has a global authority system in place which is enforced for
+  all servers that wish to be listed on the official master server to ensure the
+  integrity of the project and surrounding community.
 
 * The server must not advertise or otherwise spam messages excessively.
+  - Sending periodic messages regarding announcements, events, or sponsors
+    is fine, so long as the messages aren't sent more than once every three
+    minutes.
 
 * The server must not have a name that is offensive or send any messages that
   could be interpreted as offensive.
@@ -76,8 +82,7 @@ of the Red Eclipse forums located at https://redeclipse.net/forum
   - Intentionally killing team mates or scoring for an opposing team is not
     permitted. This includes "kamikaze" tactics that result in negative scores.
   - Cheating, flooding and/or spamming is not permitted. This includes sending
-    too many messages or being excessively abusive via in-game communication
-    over a short amount of time.
+    too many messages via in-game communication over a short amount of time.
 
 * The owner of a server may outline their own rules, specific to their server.
   - Players on a server with additional rules must follow said rules unless the
@@ -86,17 +91,19 @@ of the Red Eclipse forums located at https://redeclipse.net/forum
     all rules supplied by the server are considered to be null and void.
 
 * Failure to adhere to a request by a moderator to follow the rules can result
-  in an immediate mute, kick, and/or ban, without warning, possibly from the
-  master server and all Red Eclipse servers listed on it. It is important to
-  note that moderators are considered to be official representatives of the
-  Red Eclipse community and should be treated with respect when performing
-  their duties.
+  in an immediate mute, quarantine, kick, and/or ban, without warning, possibly
+  from the master server and all Red Eclipse servers listed on it. It is
+  important to note that moderators are considered to be representatives of the
+  Red Eclipse community and should be treated with respect when performing their
+  official duties. This does not include personal interactions with moderators
+  outside the scope of the rules outlined in this document.
 
-* If a player believes that the behaviour of any moderator is not supported by
-  this document it is advised that the player lodges an official complaint in
-  the "General Discussion" section of the Red Eclipse forums located at
-  https://redeclipse.net/forum - Note that arguing with moderators or being
-  otherwise antagonistic via in-game communication is not allowed.
+* If a player or moderator believes that the behaviour of any moderator is not
+  supported by this document, it is advised that they lodge an official
+  complaint in the "General Discussion" section of the official Red Eclipse
+  forums located at https://redeclipse.net/forum - Arguing or being otherwise
+  antagonistic about official moderator decisions via in-game communication
+  is not allowed.
 
 == Guidelines for Moderators ==
 
@@ -104,20 +111,30 @@ of the Red Eclipse forums located at https://redeclipse.net/forum
   kick, then ban" approach, unless there is an emergency or immediate need. It
   is important to remember moderators are considered to be official
   representatives of the Red Eclipse community and they should approach each
-  situation in a professional manner.
+  situation in a professional manner. The powers of a moderator should be not be
+  used for personal disputes with another player or moderator.
 
-* The use of mute, kick, and/or ban should only be used when a user violates
-  sections of this document. If in doubt, moderators should seek the advice of
-  their peers (other players and/or moderators) before proceeding with
-  disciplinary action. A moderator may mute, kick, and/or ban for other reasons
-  if there is due cause to do so, but may not use it as a way to silence a
-  player who is simply being offensive without violating this document.
+* The use of mute, quarantine, kick, and/or ban should only be used when a user
+  violates sections of this document. If in doubt, moderators should seek the
+  advice of their peers (other players and/or moderators) before proceeding
+  with disciplinary action. A moderator may mute, quarantine, kick, and/or ban
+  for other reasons if there is due cause to do so, but may not use it as a way
+  to silence a player who is simply being offensive or otherwise acting in a way
+  that the moderator simply finds undesirable without violating this document.
+
+* Moderators should try to maintain a unified front when it comes to decision
+  making in-game. If one moderator disagrees with the actions taken by another
+  moderator it is advised that they discuss the situation before taking any
+  further action, this includes undoing any disciplinary actions that have been
+  carried out.
 
 * If a moderator believes that any player behaviour not covered by this
   document should result in disciplinary action, they should create a topic in
-  the "General Discussion" section of the Red Eclipse forums located at
-  https://redeclipse.net/forum - Note that arguing or being otherwise
-  antagonistic with players is not advised.
+  the "General Discussion" section of the official Red Eclipse forums located at
+  https://redeclipse.net/forum - Moderators should remember that it is important
+  to maintain a professional attitude when dealing with other players and
+  arguing or being otherwise antagonistic outside of carrying out disciplinary
+  actions is not advised.
 
 * Failure by a moderator to follow or uphold the rules may result in their
   access being immediately revoked, without warning.
