@@ -91,14 +91,22 @@ Red Eclipse forums located at https://redeclipse.net/forum
   - If any part of the rules supplied by a server violate this document, then
     all rules supplied by the server are considered to be null and void.
 
-* Failure to adhere to a request by a moderator to follow the rules can result
-  in an immediate mute, quarantine, kick, and/or ban, without warning, possibly
-  from the Red Eclipse master server and all servers listed on it.
+* Failure to adhere to follow these guidelines or a request by a moderator to
+  follow them can result in an immediate mute, quarantine, kick, and/or ban,
+  without warning, possibly from the Red Eclipse master server and all servers
+  listed on it.
   - It is important to note that moderators are considered to be representatives
     of the Red Eclipse community and should be treated with respect when
     performing their official duties.
   - This does not include personal interactions with moderators outside the
     scope of the rules outlined in this document.
+  - Moderators are not obliged to disclose any information or provide an
+    explanation regarding any disciplinary actions.
+
+* Players may not circumvent any disciplinary action taken against them.
+  - This includes changing IP addresses to avoid the use of mute, quarantine,
+    kick and/or ban applied either locally or globally by the Red Eclipse master
+    server.
 
 * If a player or moderator believes that the behaviour of any moderator is not
   supported by this document, it is advised that they lodge an official
@@ -106,6 +114,8 @@ Red Eclipse forums located at https://redeclipse.net/forum
   forums located at https://redeclipse.net/forum
   - Arguing or being otherwise antagonistic about official moderator decisions
     via in-game communication is not allowed.
+  - Attempting to mislead or otherwise deceive in a complaint is grounds for
+    disciplinary action and may result in an immediate closing of the complaint.
   - Lodging a complaint does not guarantee that action will be taken.
   - The Red Eclipse Team is not obliged to disclose to the complainant what
     actions have or have not been taken.
@@ -138,6 +148,9 @@ Red Eclipse forums located at https://redeclipse.net/forum
   making in-game. If one moderator disagrees with the actions taken by another
   moderator it is advised that they discuss the situation before taking any
   further action.
+  - If there are multiple moderators online, they may opt work together to come
+    to a concensus by a majority vote regarding whether to take further action.
+    Any moderators who do not vote or remain silent are said to abstain.
   - Further action includes undoing any disciplinary actions that have been
     carried out already. Moderator in-fighting is unprofessional behaviour.
   - If a resolution can not be found then efforts should be made to find a more
@@ -154,6 +167,8 @@ Red Eclipse forums located at https://redeclipse.net/forum
   - Moderators should remember that it is important to maintain a professional
     attitude when dealing with other players and arguing or being otherwise
     antagonistic outside of executing disciplinary actions is not advised.
+  - Attempting to mislead or otherwise deceive in a report is grounds for
+    disciplinary action and may result in an immediate closing of the report.
 
 * Failure by a moderator to follow or uphold the rules may result in their
   access being immediately restricted or revoked, without warning.
