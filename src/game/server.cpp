@@ -4354,9 +4354,9 @@ namespace server
                 if(v != m && v->actortype >= A_ENEMY && m->actortype < A_ENEMY)
                 {
                     pointvalue = -pointvalue;
-                    givepoints(m, pointvalue, m_points(gamemode, mutators), true);
+                    givepoints(m, pointvalue, m_points(gamemode, mutators) || m_dm_oldschool(gamemode, mutators), true);
                 }
-                else if(v->actortype < A_ENEMY) givepoints(v, pointvalue, m_points(gamemode, mutators), true);
+                else if(v->actortype < A_ENEMY) givepoints(v, pointvalue, m_points(gamemode, mutators) || m_dm_oldschool(gamemode, mutators), true);
             }
             m->deaths++;
             m->totaldeaths++;
@@ -4440,7 +4440,7 @@ namespace server
                 pointvalue = (smode ? smode->points(ci, ci) : -1)*G(fragbonus);
                 if(kamikaze) pointvalue *= G(teamkillpenalty);
             }
-            givepoints(ci, pointvalue, m_points(gamemode, mutators), true);
+            givepoints(ci, pointvalue, m_points(gamemode, mutators) || m_dm_oldschool(gamemode, mutators), true);
         }
         if(G(burntime) && flags&HIT_BURN)
         {
