@@ -47,7 +47,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fsigned-char -ffast-math -fno-exc
 # Use pkg-config to configure dependencies later
 find_package(PkgConfig REQUIRED)
 # the dependencies required by all platforms
-set(client_deps zlib sdl2 SDL2_image SDL2_mixer gl)
+set(client_deps zlib sdl2 SDL2_image SDL2_mixer)
 set(server_deps zlib)
 set(genkey_deps zlib)
 
@@ -100,7 +100,7 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 elseif(APPLE)
     # build OS X specific Objective-C code
     file(GLOB mac_client_sources
-        xcode/main.m xcode/macutils.mm
+        xcode/macutils.mm
         xcode/SDLmain.m xcode/ConsoleView.m
     )
     file(GLOB mac_server_sources
@@ -118,8 +118,10 @@ endif()
 
 if(${BUILD_CLIENT})
     # add the client executable and link it to enet
+	find_package(OpenGL REQUIRED)
+    include_directories(${OPENGL_INCLUDE_DIR})
     add_executable(redeclipse${BIN_SUFFIX} ${client_sources})
-    target_link_libraries(redeclipse${BIN_SUFFIX} enet)
+    target_link_libraries(redeclipse${BIN_SUFFIX} enet ${OPENGL_LIBRARIES})
 endif()
 
 # add the server executable and link it to enet
@@ -137,13 +139,12 @@ if(APPLE)
         target_link_libraries(redeclipse${BIN_SUFFIX} ${COCOA_LIBRARY})
     endif()
     target_link_libraries(redeclipse_server${BIN_SUFFIX} ${COCOA_LIBRARY})
-else(APPLE)
-    # add the genkey executable
-    add_executable(genkey${BIN_SUFFIX} ${genkey_sources})
-    set_target_properties(genkey${BIN_SUFFIX} PROPERTIES
-        COMPILE_FLAGS "-DSTANDALONE"
-    )
 endif(APPLE)
+# add the genkey executable
+add_executable(genkey${BIN_SUFFIX} ${genkey_sources})
+set_target_properties(genkey${BIN_SUFFIX} PROPERTIES
+    COMPILE_FLAGS "-DSTANDALONE"
+)
 
 # configure dependencies
 if(${BUILD_CLIENT})
