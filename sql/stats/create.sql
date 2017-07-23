@@ -14,14 +14,17 @@ CREATE TABLE games (
 );
 
 CREATE TABLE game_servers (
-    game INTEGER,
-    handle TEXT,
-    flags TEXT,
-    desc TEXT,
-    version TEXT,
-    host TEXT,
-    port INTEGER
+    game INTEGER PRIMARY KEY,
+    handle TEXT NOT NULL,
+    flags TEXT NOT NULL,
+    desc TEXT NOT NULL,
+    version TEXT NOT NULL,
+    host TEXT NOT NULL,
+    port INTEGER NOT NULL,
+    CHECK (handle <> ''),
+    FOREIGN KEY (game) REFERENCES games(id)
 );
+CREATE INDEX game_servers_handle ON game_servers(handle);
 
 CREATE TABLE game_teams (
     game INTEGER,
@@ -31,40 +34,56 @@ CREATE TABLE game_teams (
 );
 
 CREATE TABLE game_players (
-    game INTEGER,
-    name TEXT,
+    game INTEGER NOT NULL,
+    name TEXT NOT NULL,
     handle TEXT,
-    score INTEGER,
-    timealive INTEGER,
-    frags INTEGER,
-    deaths INTEGER,
-    wid INTEGER,
-    timeactive INTEGER
+    score INTEGER NOT NULL,
+    timealive INTEGER NOT NULL,
+    timeactive INTEGER NOT NULL,
+    frags INTEGER NOT NULL,
+    deaths INTEGER NOT NULL,
+    wid INTEGER NOT NULL,
+    CHECK (name <> ''),
+    CHECK (handle <> ''),
+    UNIQUE (game, wid),
+    UNIQUE (game, handle), -- nulls are distinct from each other
+    FOREIGN KEY (game) REFERENCES games(id)
 );
+CREATE INDEX game_players_game ON game_players(game);
+CREATE INDEX game_players_handle ON game_players(handle);
 
 CREATE TABLE game_weapons (
-    game INTEGER,
-    player INTEGER,
+    game INTEGER NOT NULL,
+    player INTEGER NOT NULL,
     playerhandle TEXT,
-    weapon TEXT,
+    weapon TEXT NOT NULL,
 
-    timewielded INTEGER,
-    timeloadout INTEGER,
+    timewielded INTEGER NOT NULL,
+    timeloadout INTEGER NOT NULL,
 
-    damage1 INTEGER,
-    frags1 INTEGER,
-    hits1 INTEGER,
-    flakhits1 INTEGER,
-    shots1 INTEGER,
-    flakshots1 INTEGER,
+    damage1 INTEGER NOT NULL,
+    frags1 INTEGER NOT NULL,
+    hits1 INTEGER NOT NULL,
+    flakhits1 INTEGER NOT NULL,
+    shots1 INTEGER NOT NULL,
+    flakshots1 INTEGER NOT NULL,
 
-    damage2 INTEGER,
-    frags2 INTEGER,
-    hits2 INTEGER,
-    flakhits2 INTEGER,
-    shots2 INTEGER,
-    flakshots2 INTEGER
+    damage2 INTEGER NOT NULL,
+    frags2 INTEGER NOT NULL,
+    hits2 INTEGER NOT NULL,
+    flakhits2 INTEGER NOT NULL,
+    shots2 INTEGER NOT NULL,
+    flakshots2 INTEGER NOT NULL,
+
+    CHECK (timewielded > 0 OR timeloadout > 0),
+    CHECK (playerhandle <> ''),
+    CHECK (weapon IN ('melee', 'pistol', 'sword', 'shotgun', 'smg', 'flamer', 'plasma', 'zapper', 'rifle', 'grenade', 'mine', 'rocket', 'claw')),
+    FOREIGN KEY (game) REFERENCES games(id)
+    FOREIGN KEY (game, player) REFERENCES game_players(game, wid)
 );
+CREATE INDEX game_weapons_game ON game_weapons(game);
+CREATE INDEX game_weapons_playerhandle ON game_weapons(playerhandle);
+CREATE INDEX game_weapons_weapon ON game_weapons(weapon);
 
 CREATE TABLE game_ffarounds (
     game INTEGER,

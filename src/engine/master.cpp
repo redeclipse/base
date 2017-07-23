@@ -10,7 +10,7 @@
 #include <enet/time.h>
 #include <sqlite3.h>
 
-#define STATSDB_VERSION 5
+#define STATSDB_VERSION 6
 #define STATSDB_RETRYTIME (5*1000)
 #define MASTER_LIMIT 4096
 #define CLIENT_TIME (60*1000)
@@ -395,7 +395,7 @@ void savestats(masterclient &c)
     );
     c.stats.id = (ulong)sqlite3_last_insert_rowid(statsdb);
 
-    statsdbexecf("INSERT INTO game_servers VALUES (%d, %Q, %Q, %Q, %Q, %Q, %d)",
+    statsdbexecf("INSERT OR ROLLBACK INTO game_servers VALUES (%d, %Q, %Q, %Q, %Q, %Q, %d)",
         c.stats.id,
         c.authhandle,
         c.flags,
@@ -417,10 +417,10 @@ void savestats(masterclient &c)
 
     loopv(c.stats.players)
     {
-        statsdbexecf("INSERT INTO game_players VALUES (%d, %Q, %Q, %d, %d, %d, %d, %d, %d)",
+        statsdbexecf("INSERT OR ROLLBACK INTO game_players VALUES (%d, %Q, %Q, %d, %d, %d, %d, %d, %d)",
             c.stats.id,
             c.stats.players[i].name,
-            c.stats.players[i].handle,
+            c.stats.players[i].handle[0] ? c.stats.players[i].handle : NULL,
             c.stats.players[i].score,
             c.stats.players[i].timealive,
             c.stats.players[i].frags,
@@ -432,10 +432,10 @@ void savestats(masterclient &c)
 
     loopv(c.stats.weapstats)
     {
-        statsdbexecf("INSERT INTO game_weapons VALUES (%d, %d, %Q, %Q, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d)",
+        statsdbexecf("INSERT OR ROLLBACK INTO game_weapons VALUES (%d, %d, %Q, %Q, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d)",
             c.stats.id,
             c.stats.weapstats[i].playerid,
-            c.stats.weapstats[i].playerhandle,
+            c.stats.weapstats[i].playerhandle[0] ? c.stats.weapstats[i].playerhandle : NULL,
             c.stats.weapstats[i].name,
 
             c.stats.weapstats[i].timewielded,
