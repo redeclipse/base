@@ -1,5 +1,3 @@
-BEGIN EXCLUSIVE;
-
 -- game weapons
 
 DELETE FROM game_weapons WHERE
@@ -119,5 +117,3 @@ FROM gs_old;
 DROP TABLE gs_old;
 
 DELETE FROM games WHERE id IN (SELECT g.id from games as g left join game_players as gp on g.id=gp.game WHERE name IS NULL);
-
-COMMIT;
