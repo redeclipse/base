@@ -3336,7 +3336,7 @@ namespace server
                 requestmasterf("stats team %d %d %s\n", i + tp, teamscore(i + tp).total, escapestring(TEAM(i + tp, name)));
                 flushmasteroutput();
             }
-            loopv(savedstatsscores) if(savedstatsscores[i].actortype == A_PLAYER)
+            loopv(savedstatsscores) if(savedstatsscores[i].actortype == A_PLAYER && (savedstatsscores[i].timealive > 0 || savedstatsscores[i].timeactive > 0))
             {
                 requestmasterf("stats player %s %s %d %d %d %d %d %d\n",
                     escapestring(savedstatsscores[i].name), escapestring(savedstatsscores[i].handle),
@@ -3348,6 +3348,7 @@ namespace server
                 loopj(W_MAX)
                 {
                     weaponstats w = savedstatsscores[i].weapstats[j];
+                    if (w.timewielded == 0 && w.timeloadout == 0) continue;
                     requestmasterf("stats weapon %d %s %s %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
                         i, escapestring(savedstatsscores[i].handle), weaptype[j].name, w.timewielded, w.timeloadout,
                         w.damage1, w.frags1, w.hits1, w.flakhits1, w.shots1, w.flakshots1,
