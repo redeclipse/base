@@ -423,10 +423,10 @@ void savestats(masterclient &c)
             c.stats.players[i].handle[0] ? c.stats.players[i].handle : NULL,
             c.stats.players[i].score,
             c.stats.players[i].timealive,
+            c.stats.players[i].timeactive,
             c.stats.players[i].frags,
             c.stats.players[i].deaths,
-            c.stats.players[i].wid,
-            c.stats.players[i].timeactive
+            c.stats.players[i].wid
         );
     }
 
