@@ -483,7 +483,7 @@ void savestats(masterclient &c)
     c.instats = false;
     c.wantstats = false;
 
-    if (c.stats.players.length() == 0)
+    if(c.stats.players.length() == 0)
     {
         statsdb_warn("game with 0 players");
         statsdb_rollback();
@@ -493,7 +493,8 @@ void savestats(masterclient &c)
 #define TRY(call) if((call) != SQLITE_OK) { statsdb_warn(); statsdb_rollback(); return; }
 
     int mode_id = statsdb_modes.inrange(c.stats.mode) ? statsdb_modes[c.stats.mode] : -1;
-    if (mode_id < 0) {
+    if(mode_id < 0)
+    {
         statsdb_warn("unknown mode %d", c.stats.mode);
         statsdb_rollback();
         return;
@@ -507,10 +508,12 @@ void savestats(masterclient &c)
         c.stats.normalweapons));
     c.stats.id = (ulong)sqlite3_last_insert_rowid(statsdb);
 
-    loopi(G_M_NUM) if (c.stats.mutators & (1 << i)) {
+    loopi(G_M_NUM) if(c.stats.mutators & (1 << i))
+    {
         int idx = i < G_M_GSP ? i : i + c.stats.mode * (G_M_NUM - G_M_GSP);
         int mut_id = statsdb_mutators.inrange(idx) ? statsdb_mutators[idx] : -1;
-        if (mut_id < 0) {
+        if(mut_id < 0)
+        {
             statsdb_warn("unknown mutator %d (%d) mode %d", i, c.stats.mutators, c.stats.mode);
             statsdb_rollback();
             return;
