@@ -1046,7 +1046,7 @@ bool checkmasterclientinput(masterclient &c)
                     c.stats.mode = atoi(w[3]);
                     c.stats.mutators = atoi(w[4]);
                     c.stats.timeplayed = atoi(w[5]);
-                    c.stats.time = clocktime;
+                    c.stats.time = currenttime;
                     c.stats.unique = atoi(w[6]);
                     c.stats.normalweapons = atoi(w[7]);
                 }
