@@ -3326,7 +3326,7 @@ namespace server
                     }
                 }
             }
-            requestmasterf("stats game %s %d %d %d %d %d\n", escapestring(smapname), gamemode, mutators, gamemillis/1000, unique, m_usetotals(gamemode, mutators) ? 1 : 0);
+            requestmasterf("stats game %s %d %d %d %d %d\n", escapestring(smapname), gamemode, mutators, gamemillis/1000, unique, m_normalweapons(gamemode, mutators) ? 1 : 0);
             flushmasteroutput();
             requestmasterf("stats server %s %s %d\n", escapestring(G(serverdesc)), versionstring, serverport);
             flushmasteroutput();

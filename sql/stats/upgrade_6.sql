@@ -1,12 +1,9 @@
-/*
-    SQL Database Layout
-*/
 CREATE TABLE modes (
-    id INTEGER PRIMARY KEY,
-    name TEXT UNIQUE NOT NULL,
-    longname TEXT UNIQUE NOT NULL,
-    CHECK (name <> ''),
-    CHECK (longname <> '')
+  id INTEGER PRIMARY KEY,
+  name TEXT UNIQUE NOT NULL,
+  longname TEXT UNIQUE NOT NULL,
+  CHECK (name <> ''),
+  CHECK (longname <> '')
 );
 
 INSERT INTO modes (id, name, longname) VALUES (1, 'bb', 'Bomber Ball');
@@ -18,12 +15,12 @@ INSERT INTO modes (id, name, longname) VALUES (6, 'edit', 'Editing');
 INSERT INTO modes (id, name, longname) VALUES (7, 'race', 'Race');
 
 CREATE TABLE proto_modes (
-    version INTEGER NOT NULL, -- RE protocol version
-    value INTEGER NOT NULL, -- RE mode number
-    mode_id INTEGER NOT NULL, -- DB mode id
-    UNIQUE (version, value),
-    UNIQUE (version, mode_id),
-    FOREIGN KEY (mode_id) REFERENCES modes(id)
+  version INTEGER NOT NULL, -- RE protocol version
+  value INTEGER NOT NULL, -- RE mode number
+  mode_id INTEGER NOT NULL, -- DB mode id
+  UNIQUE (version, value),
+  UNIQUE (version, mode_id),
+  FOREIGN KEY (mode_id) REFERENCES modes(id)
 );
 
 INSERT INTO proto_modes (version, value, mode_id) VALUES (230, 0, 4); -- demo
@@ -35,14 +32,14 @@ INSERT INTO proto_modes (version, value, mode_id) VALUES (230, 5, 1); -- bb
 INSERT INTO proto_modes (version, value, mode_id) VALUES (230, 6, 7); -- race
 
 CREATE TABLE mutators (
-    id INTEGER PRIMARY KEY,
-    mode_id INTEGER,
-    name TEXT NOT NULL,
-    shortname TEXT NOT NULL,
-    CHECK (name <> ''),
-    CHECK (shortname <> ''),
-    UNIQUE (mode_id, name),
-    FOREIGN KEY (mode_id) REFERENCES modes(id)
+  id INTEGER PRIMARY KEY,
+  mode_id INTEGER,
+  name TEXT NOT NULL,
+  shortname TEXT NOT NULL,
+  CHECK (name <> ''),
+  CHECK (shortname <> ''),
+  UNIQUE (mode_id, name),
+  FOREIGN KEY (mode_id) REFERENCES modes(id)
 );
 
 -- base
@@ -82,13 +79,13 @@ INSERT INTO mutators (id, mode_id, name, shortname) VALUES (27, 7, 'endurance', 
 INSERT INTO mutators (id, mode_id, name, shortname) VALUES (28, 7, 'gauntlet', 'ga');
 
 CREATE TABLE proto_mutators (
-    version INTEGER NOT NULL,
-    mode INTEGER, -- RE mode number
-    bit INTEGER NOT NULL, -- RE mutator bit
-    mutator_id INTEGER NOT NULL, -- DB mutator id
-    UNIQUE (version, mode, bit),
-    UNIQUE (version, mode, mutator_id),
-    FOREIGN KEY (mutator_id) REFERENCES mutators(id)
+  version INTEGER NOT NULL,
+  mode INTEGER, -- RE mode number
+  bit INTEGER NOT NULL, -- RE mutator bit
+  mutator_id INTEGER NOT NULL, -- DB mutator id
+  UNIQUE (version, mode, bit),
+  UNIQUE (version, mode, mutator_id),
+  FOREIGN KEY (mutator_id) REFERENCES mutators(id)
 );
 
 -- base
@@ -127,125 +124,49 @@ INSERT INTO proto_mutators (version, mode, bit, mutator_id) VALUES (230, 6, 15, 
 INSERT INTO proto_mutators (version, mode, bit, mutator_id) VALUES (230, 6, 16, 27); -- endurance
 INSERT INTO proto_mutators (version, mode, bit, mutator_id) VALUES (230, 6, 17, 28); -- gauntlet
 
+ALTER TABLE games RENAME TO g_old;
+
 CREATE TABLE games (
-    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-    time INTEGER NOT NULL,
-    map TEXT NOT NULL,
-    mode_id INTEGER NOT NULL,
-    timeplayed INTEGER NOT NULL,
-    uniqueplayers INTEGER NOT NULL,
-    normalweapons INTEGER NOT NULL,
-    CHECK (map <> ''),
-    FOREIGN KEY (mode_id) REFERENCES modes(id)
+  id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+  time INTEGER NOT NULL,
+  map TEXT NOT NULL,
+  mode_id INTEGER NOT NULL,
+  timeplayed INTEGER NOT NULL,
+  uniqueplayers INTEGER NOT NULL,
+  normalweapons INTEGER NOT NULL,
+  CHECK (map <> ''),
+  FOREIGN KEY (mode_id) REFERENCES modes(id)
 );
 CREATE INDEX games_map ON games(map);
 CREATE INDEX games_mode_id ON games(mode_id);
 CREATE INDEX games_normalweapons ON games(normalweapons);
 
+INSERT INTO games (id, time, map, mode_id, timeplayed, uniqueplayers, normalweapons)
+SELECT go.id, go.time, go.map, pm.mode_id, go.timeplayed, go.uniqueplayers, 1
+FROM g_old AS go
+JOIN proto_modes AS pm ON go.mode = pm.value;
+
 CREATE TABLE game_mutators (
-    game_id INTEGER NOT NULL,
-    mutator_id INTEGER NOT NULL,
-    UNIQUE (game_id, mutator_id),
-    FOREIGN KEY (game_id) REFERENCES games(id),
-    FOREIGN KEY (mutator_id) REFERENCES mutators(id)
+  game_id INTEGER NOT NULL,
+  mutator_id INTEGER NOT NULL,
+  UNIQUE (game_id, mutator_id),
+  FOREIGN KEY (game_id) REFERENCES games(id),
+  FOREIGN KEY (mutator_id) REFERENCES mutators(id)
 );
 CREATE INDEX game_mutators_game_id ON game_mutators(game_id);
 CREATE INDEX game_mutators_mutator_id ON game_mutators(mutator_id);
 
-CREATE TABLE game_servers (
-    game INTEGER PRIMARY KEY,
-    handle TEXT NOT NULL,
-    flags TEXT NOT NULL,
-    desc TEXT NOT NULL,
-    version TEXT NOT NULL,
-    host TEXT NOT NULL,
-    port INTEGER NOT NULL,
-    CHECK (handle <> ''),
-    FOREIGN KEY (game) REFERENCES games(id)
-);
-CREATE INDEX game_servers_handle ON game_servers(handle);
+INSERT INTO game_mutators (game_id, mutator_id)
+SELECT go.id, m.mutator_id
+FROM g_old AS go,
+     proto_mutators AS m
+WHERE (m.mode IS NULL OR m.mode = go.mode)
+      AND (go.mutators & (1 << m.bit)) > 0;
 
-CREATE TABLE game_teams (
-    game INTEGER,
-    team INTEGER,
-    score INTEGER,
-    name TEXT
-);
+DROP TABLE g_old;
 
-CREATE TABLE game_players (
-    game INTEGER NOT NULL,
-    name TEXT NOT NULL,
-    handle TEXT,
-    score INTEGER NOT NULL,
-    timealive INTEGER NOT NULL,
-    timeactive INTEGER NOT NULL,
-    frags INTEGER NOT NULL,
-    deaths INTEGER NOT NULL,
-    wid INTEGER NOT NULL,
-    CHECK (name <> ''),
-    CHECK (handle <> ''),
-    UNIQUE (game, wid),
-    UNIQUE (game, handle), -- nulls are distinct from each other
-    FOREIGN KEY (game) REFERENCES games(id)
-);
-CREATE INDEX game_players_game ON game_players(game);
-CREATE INDEX game_players_handle ON game_players(handle);
-
-CREATE TABLE game_weapons (
-    game INTEGER NOT NULL,
-    player INTEGER NOT NULL,
-    playerhandle TEXT,
-    weapon TEXT NOT NULL,
-
-    timewielded INTEGER NOT NULL,
-    timeloadout INTEGER NOT NULL,
-
-    damage1 INTEGER NOT NULL,
-    frags1 INTEGER NOT NULL,
-    hits1 INTEGER NOT NULL,
-    flakhits1 INTEGER NOT NULL,
-    shots1 INTEGER NOT NULL,
-    flakshots1 INTEGER NOT NULL,
-
-    damage2 INTEGER NOT NULL,
-    frags2 INTEGER NOT NULL,
-    hits2 INTEGER NOT NULL,
-    flakhits2 INTEGER NOT NULL,
-    shots2 INTEGER NOT NULL,
-    flakshots2 INTEGER NOT NULL,
-
-    CHECK (timewielded > 0 OR timeloadout > 0),
-    CHECK (playerhandle <> ''),
-    CHECK (weapon IN ('melee', 'pistol', 'sword', 'shotgun', 'smg', 'flamer', 'plasma', 'zapper', 'rifle', 'grenade', 'mine', 'rocket', 'claw')),
-    FOREIGN KEY (game) REFERENCES games(id),
-    FOREIGN KEY (game, player) REFERENCES game_players(game, wid)
-);
-CREATE INDEX game_weapons_game ON game_weapons(game);
-CREATE INDEX game_weapons_playerhandle ON game_weapons(playerhandle);
-CREATE INDEX game_weapons_weapon ON game_weapons(weapon);
-
-CREATE TABLE game_ffarounds (
-    game INTEGER,
-    player INTEGER,
-    playerhandle TEXT,
-    round INTEGER,
-    winner BOOL
-);
-
-/* Affinities */
-
-CREATE TABLE game_captures (
-    game INTEGER,
-    player INTEGER,
-    playerhandle TEXT,
-    capturing INTEGER,
-    captured INTEGER
-);
-
-CREATE TABLE game_bombings (
-    game INTEGER,
-    player INTEGER,
-    playerhandle TEXT,
-    bombing INTEGER,
-    bombed INTEGER
-);
+UPDATE games SET normalweapons = 0
+WHERE mode_id = 7 -- race
+      OR id IN (SELECT DISTINCT game_id
+                FROM game_mutators
+                WHERE mutator_id IN (8, 9, 10, 24)); -- insta, kaboom, medieval, gladiator
