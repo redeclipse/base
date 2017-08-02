@@ -1246,7 +1246,7 @@ namespace game
 
     bool burn(gameent *d, int weap, int flags)
     {
-        if(wr_burns(weap, flags))
+        if(wr_burns(weap, flags) && (d->submerged < G(liquidextinguish) || (d->inmaterial&MATF_VOLUME) != MAT_WATER))
         {
             d->lastrestime[WR_BURN] = lastmillis;
             if(isweap(weap) || flags&HIT_MATERIAL) d->lastres[WR_BURN] = lastmillis;
