@@ -1394,7 +1394,7 @@ bool mincubeface(const cube &cu, int orient, const ivec &co, int size, facebound
 }
 
 VAR(IDF_WORLD, maxmerge, 0, 6, 12);
-VAR(0, minface, 0, 4, 12);
+VAR(IDF_WORLD, minface, 0, 4, 12);
 
 struct pvert
 {
