@@ -6,6 +6,22 @@ GVAR(IDF_WORLD, hurtdelay, 0, 1000, VAR_MAX);
 GVAR(IDF_WORLD, hurtdamage, 0, 3, VAR_MAX);
 GVAR(IDF_WORLD, hurtresidual, 0, 0, WR_ALL);
 
+GVAR(IDF_WORLD, hurtburntime, 0, 5500, VAR_MAX);
+GVAR(IDF_WORLD, hurtburndelay, 0, 1000, VAR_MAX);
+GVAR(IDF_WORLD, hurtburndamage, 0, 3, VAR_MAX);
+GVAR(IDF_WORLD, hurtbleedtime, 0, 5500, VAR_MAX);
+GVAR(IDF_WORLD, hurtbleeddelay, 0, 1000, VAR_MAX);
+GVAR(IDF_WORLD, hurtbleeddamage, 0, 3, VAR_MAX);
+GVAR(IDF_WORLD, hurtshocktime, 0, 5500, VAR_MAX);
+GVAR(IDF_WORLD, hurtshockdelay, 0, 1000, VAR_MAX);
+GVAR(IDF_WORLD, hurtshockdamage, 0, 2, VAR_MAX);
+GVAR(IDF_WORLD, hurtshockstun, 0, W_N_ST, W_N_ALL);
+GFVAR(IDF_WORLD, hurtshockstunscale, 0, 0.5f, FVAR_MAX);
+GFVAR(IDF_WORLD, hurtshockstunfall, 0, 0.01f, FVAR_MAX);
+GVAR(IDF_WORLD, hurtshockstuntime, 0, 500, VAR_MAX);
+
+GVAR(IDF_WORLD, lavaburntime, 0, 5500, VAR_MAX);
+
 GFVAR(IDF_WORLD, gravity, 0, 50.f, 1000); // gravity
 GFVAR(IDF_GAMEMOD, gravityscale, 0, 1, FVAR_MAX);
 GFVAR(IDF_WORLD, floorcoast, 0, 5.f, 1000);
@@ -209,24 +225,14 @@ GFVAR(IDF_GAMEMOD, maxresizescale, 1, 2, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, minresizescale, FVAR_NONZERO, 0.5f, 1);
 GFVAR(IDF_GAMEMOD, instaresizeamt, FVAR_NONZERO, 0.1f, 1); // each kill adds this much size in insta-resize
 
-GVAR(IDF_GAMEMOD, burntime, 0, 5500, VAR_MAX);
-GVAR(IDF_GAMEMOD, burndelay, 0, 1000, VAR_MAX);
-GVAR(IDF_GAMEMOD, burndamage, 0, 3, VAR_MAX);
-GVAR(IDF_GAMEMOD, bleedtime, 0, 5500, VAR_MAX);
-GVAR(IDF_GAMEMOD, bleeddelay, 0, 1000, VAR_MAX);
-GVAR(IDF_GAMEMOD, bleeddamage, 0, 3, VAR_MAX);
-GVAR(IDF_GAMEMOD, shocktime, 0, 5500, VAR_MAX);
-GVAR(IDF_GAMEMOD, shockdelay, 0, 1000, VAR_MAX);
-GVAR(IDF_GAMEMOD, shockdamage, 0, 2, VAR_MAX);
-GVAR(IDF_GAMEMOD, shockstun, 0, W_N_ST, W_N_ALL);
-GFVAR(IDF_GAMEMOD, shockstunscale, 0, 0.5f, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, shockstunfall, 0, 0.01f, FVAR_MAX);
-GVAR(IDF_GAMEMOD, shockstuntime, 0, 500, VAR_MAX);
-
 GVAR(IDF_GAMEMOD, regendelay, 0, 3000, VAR_MAX); // regen after no damage for this long
 GVAR(IDF_GAMEMOD, regentime, 0, 1000, VAR_MAX); // regen this often when regenerating normally
 GVAR(IDF_GAMEMOD, regenhealth, 0, 5, VAR_MAX); // regen this amount each regen
 GVAR(IDF_GAMEMOD, regendecay, 0, 3, VAR_MAX); // if over maxhealth, decay this amount each regen
+
+GVAR(IDF_GAMEMOD, noweapburn, 0, 1, 1);
+GVAR(IDF_GAMEMOD, noweapbleed, 0, 1, 1);
+GVAR(IDF_GAMEMOD, noweapshock, 0, 1, 1);
 
 GVAR(IDF_GAMEMOD, kamikaze, 0, 1, 3); // 0 = never, 1 = holding grenade, 2 = have grenade, 3 = always
 GVAR(IDF_GAMEMOD, itemspawntime, 1, 15000, VAR_MAX); // when items respawn

@@ -903,9 +903,9 @@ namespace client
     CLCOMMANDM(impulse, "si", (char *who, int *n), intret(*n >= 0 && *n < IM_MAX ? d->impulse[*n] : 0));
 
     CLCOMMAND(buffing, intret(d->lastbuff));
-    CLCOMMAND(burning, intret(burntime ? d->burning(lastmillis, burntime) : 0));
-    CLCOMMAND(bleeding, intret(bleedtime ? d->bleeding(lastmillis, burntime) : 0));
-    CLCOMMAND(shocking, intret(shocktime ? d->shocking(lastmillis, burntime) : 0));
+    CLCOMMAND(burning, intret(d->burntime ? d->burning(lastmillis, d->burntime) : 0));
+    CLCOMMAND(bleeding, intret(d->bleedtime ? d->bleeding(lastmillis, d->burntime) : 0));
+    CLCOMMAND(shocking, intret(d->shocktime ? d->shocking(lastmillis, d->burntime) : 0));
     CLCOMMAND(regen, intret(regentime ? d->lastregen : 0));
     CLCOMMAND(impulselast, intret(game::canregenimpulse(d) && d->impulse[IM_METER] > 0 && d->lastimpulsecollect ? (lastmillis-d->lastimpulsecollect)%1000 : 0));
 
@@ -2625,6 +2625,43 @@ namespace client
                     gameent *m = game::getclient(tcn), *v = game::getclient(acn);
                     if(!m || !v) break;
                     game::damaged(weap, flags, damage, health, m, v, lastmillis, dir, vel, dist);
+                    break;
+                }
+
+                case N_BURNRES:
+                {
+                    int cn = getint(p);
+                    gameent *m = game::getclient(cn);
+                    if(!m) break;
+                    m->burntime = getint(p);
+                    m->burndelay = getint(p);
+                    m->burndamage = getint(p);
+                    break;
+                }
+
+                case N_BLEEDRES:
+                {
+                    int cn = getint(p);
+                    gameent *m = game::getclient(cn);
+                    if(!m) break;
+                    m->bleedtime = getint(p);
+                    m->bleeddelay = getint(p);
+                    m->bleeddamage = getint(p);
+                    break;
+                }
+
+                case N_SHOCKRES:
+                {
+                    int cn = getint(p);
+                    gameent *m = game::getclient(cn);
+                    if(!m) break;
+                    m->shocktime = getint(p);
+                    m->shockdelay = getint(p);
+                    m->shockdamage = getint(p);
+                    m->shockstun = getint(p);
+                    m->shockstunscale = getint(p);
+                    m->shockstunfall = getint(p);
+                    m->shockstuntime = getint(p);
                     break;
                 }
 

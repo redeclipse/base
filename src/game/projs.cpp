@@ -48,6 +48,9 @@ namespace projs
     FVAR(IDF_PERSIST, projhintsize, 0, 1.45f, FVAR_MAX);
     FVAR(IDF_PERSIST, projfirehintsize, 0, 1.85f, FVAR_MAX);
 
+    VAR(IDF_PERSIST, projburntime, 0, 5500, VAR_MAX);
+    VAR(IDF_PERSIST, projburndelay, 0, 1000, VAR_MAX);
+
     VAR(0, projdebug, 0, 0, 1);
 
     #define projhint(a,b)   (projhints >= 2 ? game::getcolour(a, projhints-2) : b)
@@ -2401,7 +2404,7 @@ namespace projs
                 {
                     mdl.size *= proj.lifesize;
                     fadeproj(proj, mdl.color.a, mdl.size);
-                    if(!proj.limited) game::getburneffect(&proj, mdl, burntime, lastmillis-proj.spawntime, burndelay);
+                    if(!proj.limited) game::getburneffect(&proj, mdl, projburntime, lastmillis-proj.spawntime, projburndelay);
                     break;
                 }
                 case PRJ_VANITY:

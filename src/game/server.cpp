@@ -478,6 +478,21 @@ namespace server
                 totalavgpos = localtotalavgpossum / max(1, localtotalavgposnum);
             }
         }
+        
+        void sendburn()
+        {
+            sendf(-1, 1, "ri5", N_BURNRES, clientnum, burntime, burndelay, burndamage);
+        }
+
+        void sendbleed()
+        {
+            sendf(-1, 1, "ri5", N_BLEEDRES, clientnum, bleedtime, bleeddelay, bleeddamage);
+        }
+
+        void sendshock()
+        {
+            sendf(-1, 1, "ri6f2i", N_SHOCKRES, clientnum, shocktime, shockdelay, shockdamage, shockstun, shockstunscale, shockstunfall, shockstuntime);
+        }
     };
 
     struct savedscore
@@ -4207,7 +4222,12 @@ namespace server
     {
         int realdamage = damage, realflags = flags, nodamage = 0, hurt = 0, statweap = fromweap, statalt = WS(fromflags);
         realflags &= ~HIT_SFLAGS;
-        if(realflags&HIT_MATERIAL && (material&MATF_VOLUME) == MAT_LAVA) realflags |= HIT_BURN;
+        if(realflags&HIT_MATERIAL && (material&MATF_VOLUME) == MAT_LAVA)
+        {
+            realflags |= HIT_BURN;
+            m->burntime = G(lavaburntime);
+            m->sendburn();
+        }
 
         if(smode && !smode->damage(m, v, realdamage, weap, realflags, material, hitpush, hitvel, dist)) { nodamage++; }
         mutate(smuts, if(!mut->damage(m, v, realdamage, weap, realflags, material, hitpush, hitvel, dist)) { nodamage++; });
@@ -4219,14 +4239,14 @@ namespace server
 
         if(isweap(weap) && WF(WK(flags), weap, residualundo, WS(flags)) != 0)
         {
-            if(WF(WK(flags), weap, residualundo, WS(flags))&WR(BURN) && m->burning(gamemillis, G(burntime)))
+            if(WF(WK(flags), weap, residualundo, WS(flags))&WR(BURN) && m->burning(gamemillis, m->burntime))
             {
                 m->lastres[WR_BURN] = m->lastrestime[WR_BURN] = 0;
                 sendf(-1, 1, "ri3", N_SPHY, m->clientnum, SPHY_EXTINGUISH);
             }
-            if(WF(WK(flags), weap, residualundo, WS(flags))&WR(BLEED) && m->bleeding(gamemillis, G(bleedtime)))
+            if(WF(WK(flags), weap, residualundo, WS(flags))&WR(BLEED) && m->bleeding(gamemillis, m->bleedtime))
                 m->lastres[WR_BLEED] = m->lastrestime[WR_BLEED] = 0;
-            if(WF(WK(flags), weap, residualundo, WS(flags))&WR(SHOCK) && m->shocking(gamemillis, G(shocktime)))
+            if(WF(WK(flags), weap, residualundo, WS(flags))&WR(SHOCK) && m->shocking(gamemillis, m->shocktime))
                 m->lastres[WR_SHOCK] = m->lastrestime[WR_SHOCK] = 0;
         }
 
@@ -4286,6 +4306,34 @@ namespace server
                     }
                 }
                 if(m->health <= 0) realflags |= HIT_KILL;
+                if(weap >= 0)
+                {
+                    if(wr_burning(weap, flags))
+                    {
+                        m->burntime = WF(WK(flags), weap, burntime, WS(flags));
+                        m->burndelay = WF(WK(flags), weap, burndelay, WS(flags));
+                        m->burndamage = WF(WK(flags), weap, burndamage, WS(flags));
+                        m->sendburn();
+                    }
+                    if(wr_bleeding(weap, flags))
+                    {
+                        m->bleedtime = WF(WK(flags), weap, bleedtime, WS(flags));
+                        m->bleeddelay = WF(WK(flags), weap, bleeddelay, WS(flags));
+                        m->bleeddamage = WF(WK(flags), weap, bleeddamage, WS(flags));
+                        m->sendbleed();
+                    }
+                    if(wr_shocking(weap, flags))
+                    {
+                        m->shocktime = WF(WK(flags), weap, shocktime, WS(flags));
+                        m->shockdelay = WF(WK(flags), weap, shockdelay, WS(flags));
+                        m->shockdamage = WF(WK(flags), weap, shockdamage, WS(flags));
+                        m->shockstun = WF(WK(flags), weap, shockstun, WS(flags));
+                        m->shockstunscale = WF(WK(flags), weap, shockstunscale, WS(flags));
+                        m->shockstunfall = WF(WK(flags), weap, shockstunfall, WS(flags));
+                        m->shockstuntime = WF(WK(flags), weap, shockstuntime, WS(flags));
+                        m->sendshock();
+                    }
+                }
                 if(wr_burning(weap, flags) && (m->submerged < G(liquidextinguish) || (m->inmaterial&MATF_VOLUME) != MAT_WATER))
                 {
                     m->lastres[WR_BURN] = m->lastrestime[WR_BURN] = gamemillis;
@@ -4504,7 +4552,12 @@ namespace server
     void suicideevent::process(clientinfo *ci)
     {
         if(ci->state != CS_ALIVE) return;
-        if(flags&HIT_MATERIAL && (material&MATF_VOLUME) == MAT_LAVA) flags |= HIT_BURN;
+        if(flags&HIT_MATERIAL && (material&MATF_VOLUME) == MAT_LAVA)
+        {
+            flags |= HIT_BURN;
+            ci->burntime = G(lavaburntime);
+            ci->sendburn();
+        }
         if(!(flags&HIT_MATERIAL) && !(flags&HIT_LOST) && !(flags&HIT_SPEC))
         {
             if(smode && !smode->damage(ci, ci, ci->health, -1, flags, material)) { return; }
@@ -4530,17 +4583,17 @@ namespace server
             }
             givepoints(ci, pointvalue, m_points(gamemode, mutators) || m_dm_oldschool(gamemode, mutators), true);
         }
-        if(G(burntime) && flags&HIT_BURN)
+        if(ci->burntime && flags&HIT_BURN)
         {
             ci->lastres[WR_BURN] = ci->lastrestime[WR_BURN] = gamemillis;
             ci->lastresowner[WR_BURN] = ci->clientnum;
         }
-        if(G(bleedtime) && flags&HIT_BLEED)
+        if(ci->bleedtime && flags&HIT_BLEED)
         {
             ci->lastres[WR_BLEED] = ci->lastrestime[WR_BLEED] = gamemillis;
             ci->lastresowner[WR_BLEED] = ci->clientnum;
         }
-        if(G(shocktime) && flags&HIT_SHOCK)
+        if(ci->shocktime && flags&HIT_SHOCK)
         {
             ci->lastres[WR_SHOCK] = ci->lastrestime[WR_SHOCK] = gamemillis;
             ci->lastresowner[WR_SHOCK] = ci->clientnum;
@@ -5059,9 +5112,34 @@ namespace server
                     if(!ci->lasthurt || gamemillis-ci->lasthurt >= G(hurtdelay))
                     {
                         int flags = HIT_MATERIAL;
-                        if(G(hurtresidual)&WR(BURN)) flags |= HIT_BURN;
-                        if(G(hurtresidual)&WR(BLEED)) flags |= HIT_BLEED;
-                        if(G(hurtresidual)&WR(SHOCK)) flags |= HIT_SHOCK;
+                        if(G(hurtresidual)&WR(BURN))
+                        {
+                            flags |= HIT_BURN;
+                            ci->burntime = G(hurtburntime);
+                            ci->burndelay = G(hurtburndelay);
+                            ci->burndamage = G(hurtburndamage);
+                            ci->sendburn();
+                        }
+                        if(G(hurtresidual)&WR(BLEED))
+                        {
+                            flags |= HIT_BLEED;
+                            ci->bleedtime = G(hurtbleedtime);
+                            ci->bleeddelay = G(hurtbleeddelay);
+                            ci->bleeddamage = G(hurtbleeddamage);
+                            ci->sendbleed();
+                        }
+                        if(G(hurtresidual)&WR(SHOCK))
+                        {
+                            flags |= HIT_SHOCK;
+                            ci->shocktime = G(hurtshocktime);
+                            ci->shockdelay = G(hurtshockdelay);
+                            ci->shockdamage = G(hurtshockdamage);
+                            ci->shockstun = G(hurtshockstun);
+                            ci->shockstunscale = G(hurtshockstunscale);
+                            ci->shockstunfall = G(hurtshockstunfall);
+                            ci->shockstuntime = G(hurtshockstuntime);
+                            ci->sendshock();
+                        }
                         dodamage(ci, ci, G(hurtdamage), -1, -1, HIT_NONE, flags, ci->inmaterial);
                         if(!ci->lasthurt) ci->lasthurt = gamemillis;
                         else ci->lasthurt += G(hurtdelay);
@@ -5070,37 +5148,37 @@ namespace server
                 }
                 else if(ci->lasthurt && gamemillis-ci->lasthurt >= G(hurtdelay)) ci->lasthurt = 0;
                 // burning residual
-                if(ci->burning(gamemillis, G(burntime)))
+                if(ci->burning(gamemillis, ci->burntime))
                 {
-                    if(gamemillis-ci->lastrestime[WR_BURN] >= G(burndelay))
+                    if(gamemillis-ci->lastrestime[WR_BURN] >= ci->burndelay)
                     {
                         clientinfo *co = (clientinfo *)getinfo(ci->lastresowner[WR_BURN]);
-                        dodamage(ci, co ? co : ci, G(burndamage), -1, -1, HIT_NONE, HIT_BURN, 0);
-                        ci->lastrestime[WR_BURN] += G(burndelay);
+                        dodamage(ci, co ? co : ci, ci->burndamage, -1, -1, HIT_NONE, HIT_BURN, 0);
+                        ci->lastrestime[WR_BURN] += ci->burndelay;
                         if(ci->state != CS_ALIVE) continue;
                     }
                 }
                 else if(ci->lastres[WR_BURN]) ci->lastres[WR_BURN] = ci->lastrestime[WR_BURN] = 0;
                 // bleeding residual
-                if(ci->bleeding(gamemillis, G(bleedtime)))
+                if(ci->bleeding(gamemillis, ci->bleedtime))
                 {
-                    if(gamemillis-ci->lastrestime[WR_BLEED] >= G(bleeddelay))
+                    if(gamemillis-ci->lastrestime[WR_BLEED] >= ci->bleeddelay)
                     {
                         clientinfo *co = (clientinfo *)getinfo(ci->lastresowner[WR_BLEED]);
-                        dodamage(ci, co ? co : ci, G(bleeddamage), -1, -1, HIT_NONE, HIT_BLEED, 0);
-                        ci->lastrestime[WR_BLEED] += G(bleeddelay);
+                        dodamage(ci, co ? co : ci, ci->bleeddamage, -1, -1, HIT_NONE, HIT_BLEED, 0);
+                        ci->lastrestime[WR_BLEED] += ci->bleeddelay;
                         if(ci->state != CS_ALIVE) continue;
                     }
                 }
                 else if(ci->lastres[WR_BLEED]) ci->lastres[WR_BLEED] = ci->lastrestime[WR_BLEED] = 0;
                 // shocking residual
-                if(ci->shocking(gamemillis, G(shocktime)))
+                if(ci->shocking(gamemillis, ci->shocktime))
                 {
-                    if(gamemillis-ci->lastrestime[WR_SHOCK] >= G(shockdelay))
+                    if(gamemillis-ci->lastrestime[WR_SHOCK] >= ci->shockdelay)
                     {
                         clientinfo *co = (clientinfo *)getinfo(ci->lastresowner[WR_SHOCK]);
-                        dodamage(ci, co ? co : ci, G(shockdamage), -1, -1, HIT_NONE, HIT_SHOCK, 0);
-                        ci->lastrestime[WR_SHOCK] += G(shockdelay);
+                        dodamage(ci, co ? co : ci, ci->shockdamage, -1, -1, HIT_NONE, HIT_SHOCK, 0);
+                        ci->lastrestime[WR_SHOCK] += ci->shockdelay;
                         if(ci->state != CS_ALIVE) continue;
                     }
                 }
@@ -6112,7 +6190,7 @@ namespace server
                                 ev.material = cp->inmaterial;
                                 ev.process(cp); // process death immediately
                             }
-                            else if((cp->inmaterial&MATF_VOLUME) == MAT_WATER && cp->burning(gamemillis, G(burntime)) && cp->submerged >= G(liquidextinguish))
+                            else if((cp->inmaterial&MATF_VOLUME) == MAT_WATER && cp->burning(gamemillis, ci->burntime) && cp->submerged >= G(liquidextinguish))
                             {
                                 cp->lastres[WR_BURN] = cp->lastrestime[WR_BURN] = 0;
                                 sendf(-1, 1, "ri3", N_SPHY, cp->clientnum, SPHY_EXTINGUISH);
