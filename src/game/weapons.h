@@ -762,7 +762,7 @@ WPVARK(IDF_GAMEMOD, shockdamage, 0, VAR_MAX,
     3,          3,          3,          3,          3,          3,          3,          3,          3,          3,          3,          3,          3,
     3,          3,          3,          3,          3,          3,          3,          3,          3,          3,          3,          3,          3
 );
-WPVARK(IDF_GAMEMOD, shockstun, 0, VAR_MAX,
+WPVARK(IDF_GAMEMOD, shockstun, 0, W_N_ALL,
     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,
     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,
     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,     W_N_ST,

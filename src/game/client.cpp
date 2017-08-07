@@ -904,8 +904,8 @@ namespace client
 
     CLCOMMAND(buffing, intret(d->lastbuff));
     CLCOMMAND(burning, intret(d->burntime ? d->burning(lastmillis, d->burntime) : 0));
-    CLCOMMAND(bleeding, intret(d->bleedtime ? d->bleeding(lastmillis, d->burntime) : 0));
-    CLCOMMAND(shocking, intret(d->shocktime ? d->shocking(lastmillis, d->burntime) : 0));
+    CLCOMMAND(bleeding, intret(d->bleedtime ? d->bleeding(lastmillis, d->bleedtime) : 0));
+    CLCOMMAND(shocking, intret(d->shocktime ? d->shocking(lastmillis, d->shocktime) : 0));
     CLCOMMAND(regen, intret(regentime ? d->lastregen : 0));
     CLCOMMAND(impulselast, intret(game::canregenimpulse(d) && d->impulse[IM_METER] > 0 && d->lastimpulsecollect ? (lastmillis-d->lastimpulsecollect)%1000 : 0));
 
@@ -2659,8 +2659,8 @@ namespace client
                     m->shockdelay = getint(p);
                     m->shockdamage = getint(p);
                     m->shockstun = getint(p);
-                    m->shockstunscale = getint(p);
-                    m->shockstunfall = getint(p);
+                    m->shockstunscale = getfloat(p);
+                    m->shockstunfall = getfloat(p);
                     m->shockstuntime = getint(p);
                     break;
                 }
