@@ -43,7 +43,7 @@ semabuild_archive() {
 semabuild_build() {
     echo "building ${BRANCH_NAME}..."
     sudo dpkg --add-architecture i386 || return 1
-    sudo add-apt-repository ppa:openjdk-r/ppa
+    sudo add-apt-repository -y ppa:openjdk-r/ppa
     sudo ${SEMABUILD_APT} update || return 1
     sudo ${SEMABUILD_APT} -fy install build-essential multiarch-support gcc-multilib g++-multilib zlib1g-dev libsdl2-dev libsdl2-mixer-dev libsdl2-image-dev binutils-mingw-w64 g++-mingw-w64 || return 1
     make PLATFORM=crossmingw64 PLATFORM_BIN=amd64 INSTDIR=${SEMABUILD_DIR}/windows/bin/amd64 CFLAGS=-m64 CXXFLAGS=-m64 LDFLAGS=-m64 -C src clean install || return 1
