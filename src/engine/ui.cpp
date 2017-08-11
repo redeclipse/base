@@ -1661,6 +1661,18 @@ namespace UI
             w = max(w, minw);
             h = max(h, minh);
         }
+
+        float getcoord(int num, int axis)
+        {
+            if(num < 0 || num > 3 || axis < 0 || axis > 1) return 0.f;
+            if(coords[num][axis] < 0)
+            {
+                float sz = axis ? (h != 0 ? h : minh) : (w != 0 ? w : minw);
+                if(sz != 0) return clamp((0-coords[num][axis])/sz, 0.f, 1.f);
+                return defcoords[num][axis];
+            }
+            return coords[num][axis];
+        }
     };
 
     ICOMMAND(0, uifill, "ffe", (float *minw, float *minh, uint *children),
@@ -1672,8 +1684,8 @@ namespace UI
     UICMDT(Filler, fill, coord, "iff", (int *pos, float *x, float *y),
     {
         if(*pos < 0 || *pos >= 4) return;
-        o->coords[*pos][0] = clamp(*x, 0.f, 1.f);
-        o->coords[*pos][1] = clamp(*y, 0.f, 1.f);
+        o->coords[*pos][0] = min(*x, 1.f);
+        o->coords[*pos][1] = min(*y, 1.f);
     });
 
     struct Target : Filler
@@ -1778,12 +1790,12 @@ namespace UI
             if(cols >= 2)
             {
                 float vr = 1/float(cols-1), vcx1 = 0, vcx2 = 0, vcy1 = 0, vcy2 = 0, ts = 0,
-                      vw1 = w*(coords[1][0]-coords[0][0]), vx1 = w*coords[0][0],
-                      vw2 = w*(coords[2][0]-coords[3][0]), vx2 = w*coords[3][0],
-                      vdw1 = w*(coords[3][0]-coords[0][0]), vdw2 = w*(coords[2][0]-coords[1][0]),
-                      vh1 = h*(coords[3][1]-coords[0][1]), vy1 = h*coords[0][1],
-                      vh2 = h*(coords[2][1]-coords[1][1]), vy2 = h*coords[1][1],
-                      vdh1 = h*(coords[1][1]-coords[0][1]), vdh2 = h*(coords[2][1]-coords[3][1]);
+                      vw1 = w*(getcoord(1, 0)-getcoord(0, 0)), vx1 = w*getcoord(0, 0),
+                      vw2 = w*(getcoord(2, 0)-getcoord(3, 0)), vx2 = w*getcoord(3, 0),
+                      vdw1 = w*(getcoord(3, 0)-getcoord(0, 0)), vdw2 = w*(getcoord(2, 0)-getcoord(1, 0)),
+                      vh1 = h*(getcoord(3, 1)-getcoord(0, 1)), vy1 = h*getcoord(0, 1),
+                      vh2 = h*(getcoord(2, 1)-getcoord(1, 1)), vy2 = h*getcoord(1, 1),
+                      vdh1 = h*(getcoord(1, 1)-getcoord(0, 1)), vdh2 = h*(getcoord(2, 1)-getcoord(3, 1));
                 loopi(cols-1)
                 {
                     float left = 1-(ts+vr);
@@ -1820,10 +1832,10 @@ namespace UI
             }
             else
             {
-                gle::attribf(sx+(w*coords[1][0]), sy+(h*coords[1][1])); colors[0].attrib(); // 1
-                gle::attribf(sx+(w*coords[0][0]), sy+(h*coords[0][1])); colors[0].attrib(); // 0
-                gle::attribf(sx+(w*coords[2][0]), sy+(h*coords[2][1])); colors[0].attrib(); // 2
-                gle::attribf(sx+(w*coords[3][0]), sy+(h*coords[3][1])); colors[0].attrib(); // 3
+                gle::attribf(sx+(w*getcoord(1, 0)), sy+(h*getcoord(1, 1))); colors[0].attrib(); // 1
+                gle::attribf(sx+(w*getcoord(0, 0)), sy+(h*getcoord(0, 1))); colors[0].attrib(); // 0
+                gle::attribf(sx+(w*getcoord(2, 0)), sy+(h*getcoord(2, 1))); colors[0].attrib(); // 2
+                gle::attribf(sx+(w*getcoord(3, 0)), sy+(h*getcoord(3, 1))); colors[0].attrib(); // 3
             }
             gle::end();
 
@@ -1909,10 +1921,10 @@ namespace UI
 
             colors[0].init();
             gle::begin(GL_LINE_LOOP);
-            gle::attribf(sx+(w*coords[0][0]), sy+(h*coords[0][1])); // 0
-            gle::attribf(sx+(w*coords[1][0]), sy+(h*coords[1][1])); // 1
-            gle::attribf(sx+(w*coords[2][0]), sy+(h*coords[2][1])); // 2
-            gle::attribf(sx+(w*coords[3][0]), sy+(h*coords[3][1])); // 3
+            gle::attribf(sx+(w*getcoord(0, 0)), sy+(h*getcoord(0, 1))); // 0
+            gle::attribf(sx+(w*getcoord(1, 0)), sy+(h*getcoord(1, 1))); // 1
+            gle::attribf(sx+(w*getcoord(2, 0)), sy+(h*getcoord(2, 1))); // 2
+            gle::attribf(sx+(w*getcoord(3, 0)), sy+(h*getcoord(3, 1))); // 3
             gle::end();
 
             Object::draw(sx, sy);
@@ -2027,12 +2039,12 @@ namespace UI
             if(cols >= 2)
             {
                 float vr = 1/float(cols-1), vcx1 = 0, vcx2 = 0, vcy1 = 0, vcy2 = 0, ts = 0,
-                      vw1 = w*(coords[1][0]-coords[0][0]), vx1 = w*coords[0][0],
-                      vw2 = w*(coords[2][0]-coords[3][0]), vx2 = w*coords[3][0],
-                      vdw1 = w*(coords[3][0]-coords[0][0]), vdw2 = w*(coords[2][0]-coords[1][0]),
-                      vh1 = h*(coords[3][1]-coords[0][1]), vy1 = h*coords[0][1],
-                      vh2 = h*(coords[2][1]-coords[1][1]), vy2 = h*coords[1][1],
-                      vdh1 = h*(coords[1][1]-coords[0][1]), vdh2 = h*(coords[2][1]-coords[3][1]);
+                      vw1 = w*(getcoord(1, 0)-getcoord(0, 0)), vx1 = w*getcoord(0, 0),
+                      vw2 = w*(getcoord(2, 0)-getcoord(3, 0)), vx2 = w*getcoord(3, 0),
+                      vdw1 = w*(getcoord(3, 0)-getcoord(0, 0)), vdw2 = w*(getcoord(2, 0)-getcoord(1, 0)),
+                      vh1 = h*(getcoord(3, 1)-getcoord(0, 1)), vy1 = h*getcoord(0, 1),
+                      vh2 = h*(getcoord(2, 1)-getcoord(1, 1)), vy2 = h*getcoord(1, 1),
+                      vdh1 = h*(getcoord(1, 1)-getcoord(0, 1)), vdh2 = h*(getcoord(2, 1)-getcoord(3, 1));
                 loopi(cols-1)
                 {
                     float left = 1-(ts+vr);
@@ -2070,10 +2082,10 @@ namespace UI
             }
             else
             {
-                gle::attribf(sx+(w*coords[0][0]), sy+(h*coords[0][1])); gle::attribf(0.f, 0.f); // 0
-                gle::attribf(sx+(w*coords[1][0]), sy+(h*coords[1][1])); gle::attribf(1.f, 0.f); // 1
-                gle::attribf(sx+(w*coords[2][0]), sy+(h*coords[2][1])); gle::attribf(1.f, 1.f); // 2
-                gle::attribf(sx+(w*coords[3][0]), sy+(h*coords[3][1])); gle::attribf(0.f, 1.f); // 3
+                gle::attribf(sx+(w*getcoord(0, 0)), sy+(h*getcoord(0, 1))); gle::attribf(0.f, 0.f); // 0
+                gle::attribf(sx+(w*getcoord(1, 0)), sy+(h*getcoord(1, 1))); gle::attribf(1.f, 0.f); // 1
+                gle::attribf(sx+(w*getcoord(2, 0)), sy+(h*getcoord(2, 1))); gle::attribf(1.f, 1.f); // 2
+                gle::attribf(sx+(w*getcoord(3, 0)), sy+(h*getcoord(3, 1))); gle::attribf(0.f, 1.f); // 3
             }
 
             Object::draw(sx, sy);
