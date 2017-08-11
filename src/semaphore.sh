@@ -1,4 +1,5 @@
 #! /bin/bash
+
 SEMABUILD_PWD=`pwd`
 SEMABUILD_BUILD="${HOME}/deploy"
 SEMABUILD_DIR="${SEMABUILD_BUILD}/${BRANCH_NAME}"
@@ -48,7 +49,7 @@ semabuild_build() {
     make PLATFORM=crossmingw64 PLATFORM_BIN=amd64 INSTDIR=${SEMABUILD_DIR}/windows/bin/amd64 CFLAGS=-m64 CXXFLAGS=-m64 LDFLAGS=-m64 -C src clean install || return 1
     make PLATFORM=crossmingw32 PLATFORM_BIN=x86 INSTDIR=${SEMABUILD_DIR}/windows/bin/x86 CFLAGS=-m32 CXXFLAGS=-m32 LDFLAGS=-m32 -C src clean install || return 1
     make PLATFORM=linux64 PLATFORM_BIN=amd64 INSTDIR=${SEMABUILD_DIR}/linux/bin/amd64 CFLAGS=-m64 CXXFLAGS=-m64 LDFLAGS=-m64 -C src clean install || return 1
-    sudo update-alternatives --get-selections  | grep java-8 | grep -E '^java' | head -n1 | awk '{ print $3 }' | xargs update-alternatives --config java
+    sudo apt-get purge -fy sbt || return 1
     sudo apt-get -o Dpkg::Options::="--force-overwrite" -fy --no-install-recommends install gcc:i386 g++:i386 cpp:i386 g++-4.8:i386 gcc-4.8:i386 cpp-4.8:i386 binutils:i386 zlib1g-dev:i386 libsdl2-dev:i386 libsdl2-mixer-dev:i386 libsdl2-image-dev:i386 libpng12-dev:i386 || return 1
     make PLATFORM=linux32 PLATFORM_BIN=x86 INSTDIR=${SEMABUILD_DIR}/linux/bin/x86 CFLAGS=-m32 CXXFLAGS=-m32 LDFLAGS=-m32 -C src clean install || return 1
     return 0
