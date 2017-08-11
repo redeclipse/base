@@ -1,4 +1,4 @@
-#!/bin/sh
+#! /bin/bash
 SEMABUILD_PWD=`pwd`
 SEMABUILD_BUILD="${HOME}/deploy"
 SEMABUILD_DIR="${SEMABUILD_BUILD}/${BRANCH_NAME}"
