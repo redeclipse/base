@@ -3326,7 +3326,7 @@ namespace server
                     }
                 }
             }
-            requestmasterf("stats game %s %d %d %d %d %d\n", escapestring(smapname), gamemode, mutators, gamemillis/1000, unique, m_usetotals(gamemode, mutators) ? 1 : 0);
+            requestmasterf("stats game %s %d %d %d %d %d\n", escapestring(smapname), gamemode, mutators, gamemillis/1000, unique, m_normalweapons(gamemode, mutators) ? 1 : 0);
             flushmasteroutput();
             requestmasterf("stats server %s %s %d\n", escapestring(G(serverdesc)), versionstring, serverport);
             flushmasteroutput();
@@ -4199,7 +4199,7 @@ namespace server
                     }
                 }
                 if(m->health <= 0) realflags |= HIT_KILL;
-                if(wr_burning(weap, flags))
+                if(wr_burning(weap, flags) && (m->submerged < G(liquidextinguish) || (m->inmaterial&MATF_VOLUME) != MAT_WATER))
                 {
                     m->lastres[WR_BURN] = m->lastrestime[WR_BURN] = gamemillis;
                     m->lastresowner[WR_BURN] = v->clientnum;

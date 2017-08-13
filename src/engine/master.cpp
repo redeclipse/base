@@ -10,8 +10,15 @@
 #include <enet/time.h>
 #include <sqlite3.h>
 
-#define STATSDB_VERSION 6
+#define STATSDB_VERSION 7
 #define STATSDB_RETRYTIME (5*1000)
+// last protocol version in which modes/muts were changed
+#define STATSDB_VERSION_GAME 230
+// redefining some game.h constants
+#define G_MAX 7
+#define G_M_GSP 15
+#define G_M_NUM 18
+
 #define MASTER_LIMIT 4096
 #define CLIENT_TIME (60*1000)
 #define SERVER_TIME (35*60*1000)
@@ -79,7 +86,7 @@ struct masterclient
     {
         ulong id;
         statstring map;
-        int mode, mutators, timeplayed, usetotals;
+        int mode, mutators, timeplayed, normalweapons;
         time_t time;
 
         statstring desc, version;
@@ -209,7 +216,7 @@ struct masterclient
             map[0] = desc[0] = version[0] = '\0';
             mode = mutators = -1;
             timeplayed = 0;
-            unique = time = usetotals = 0;
+            unique = time = normalweapons = 0;
             port = 0;
             teams.shrink(0);
             players.shrink(0);
@@ -264,7 +271,7 @@ static ENetSocket mastersocket = ENET_SOCKET_NULL, pingsocket = ENET_SOCKET_NULL
 static time_t starttime;
 static sqlite3 *statsdb = NULL;
 
-void closestatsdb()
+void statsdb_close()
 {
     if(statsdb)
     {
@@ -273,71 +280,152 @@ void closestatsdb()
     }
 }
 
-static inline bool checkstatsdb(int rc, char *errmsg = NULL)
+void statsdb_rollback()
 {
-    if(rc == SQLITE_OK) return true;
-    defformatbigstring(message, "%s", errmsg ? errmsg : sqlite3_errmsg(statsdb));
-    sqlite3_free(errmsg);
-    closestatsdb();
-    fatal("statistics database error: %s", message);
-    return false;
+    sqlite3_exec(statsdb, "ROLLBACK", 0, 0, NULL);
 }
 
-void statsdbexecf(const char *fmt, ...)
+void statsdb_warn(const char *fmt, ...)
 {
-    char *errmsg = NULL;
-    va_list al;
-    va_start(al, fmt);
-    char *sql = sqlite3_vmprintf(fmt, al);
-    int rc = sqlite3_exec(statsdb, sql, 0, 0, &errmsg);
+    defvformatbigstring(errmsg, fmt, fmt);
+    if(logfile) logoutf("statistics database error: %s", errmsg);
+    #ifndef WIN32
+    fprintf(stderr, "statistics database error: %s\n", errmsg);
+    #endif
+}
+
+inline void statsdb_warn()
+{
+    statsdb_warn(sqlite3_errmsg(statsdb));
+}
+
+void statsdb_die()
+{
+    statsdb_close();
+    fatal("statistics database error");
+}
+
+int statsdb_execv(const char *fmt, va_list args)
+{
+    char *sql = sqlite3_vmprintf(fmt, args);
+    int rc = sqlite3_exec(statsdb, sql, 0, 0, NULL);
     sqlite3_free(sql);
-    va_end(al);
-    checkstatsdb(rc, errmsg);
+    return rc;
 }
 
-void statsdbexecfile(const char *path)
+int statsdb_exec(const char *fmt, ...)
 {
-    char *errmsg = NULL;
+    va_list args;
+    va_start(args, fmt);
+    int rc = statsdb_execv(fmt, args);
+    va_end(args);
+    return rc;
+}
+
+inline void statsdb_do_or_die(int rc)
+{
+    if(rc == SQLITE_OK) return;
+    statsdb_warn();
+    statsdb_die();
+}
+
+void statsdb_exec_or_die(const char *fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    int rc = statsdb_execv(fmt, args);
+    va_end(args);
+    statsdb_do_or_die(rc);
+}
+
+void statsdb_exec_file_or_die(const char *path)
+{
     char *buf = loadfile(path, NULL);
     if(!buf)
     {
-        fatal("cannot find %s", path);
-        closestatsdb();
+        statsdb_warn("cannot find %s", path);
+        statsdb_die();
     }
-    int rc = sqlite3_exec(statsdb, buf, 0, 0, &errmsg);
-    checkstatsdb(rc, errmsg);
+    int rc = statsdb_exec(buf);
     DELETEA(buf);
+    statsdb_do_or_die(rc);
 }
 
-int statsdbversion()
+int statsdb_version()
 {
     int version = 0;
     sqlite3_stmt *res;
-    checkstatsdb(sqlite3_prepare_v2(statsdb, "PRAGMA user_version;", -1, &res, 0));
+    statsdb_do_or_die(sqlite3_prepare_v2(statsdb, "PRAGMA user_version;", -1, &res, 0));
     while(sqlite3_step(res) == SQLITE_ROW) version = sqlite3_column_int(res, 0);
     sqlite3_finalize(res);
     return version;
 }
 
-void loadstatsdb()
+vector<int> statsdb_modes;
+vector<int> statsdb_mutators;
+
+void statsdb_load_mappings()
 {
-    checkstatsdb(sqlite3_open(findfile("stats.sqlite", "w"), &statsdb));
-    statsdbexecf("BEGIN");
-    if(statsdbversion() < 1)
+    sqlite3_stmt *stmt;
+    statsdb_modes.add(-1, G_MAX);
+    statsdb_do_or_die(sqlite3_prepare_v2(statsdb, "SELECT value, mode_id FROM proto_modes WHERE version = ?", -1, &stmt, 0));
+    statsdb_do_or_die(sqlite3_bind_int(stmt, 1, STATSDB_VERSION_GAME));
+    int count = 0;
+    while(sqlite3_step(stmt) == SQLITE_ROW)
     {
-        statsdbexecfile("sql/stats/create.sql");
-        statsdbexecf("PRAGMA user_version = %d;", STATSDB_VERSION);
+        int value = sqlite3_column_int(stmt, 0);
+        int mode_id = sqlite3_column_int(stmt, 1);
+        statsdb_modes[value] = mode_id;
+        count++;
+    }
+    sqlite3_finalize(stmt);
+    if(count != G_MAX)
+    {
+        statsdb_warn("wrong number of modes %d, need %d", count, G_MAX);
+        statsdb_die();
+    }
+
+    statsdb_mutators.add(-1, G_M_GSP + (G_M_NUM - G_M_GSP) * G_MAX);
+    statsdb_do_or_die(sqlite3_prepare_v2(statsdb, "SELECT mode, bit, mutator_id FROM proto_mutators WHERE version = ?", -1, &stmt, 0));
+    statsdb_do_or_die(sqlite3_bind_int(stmt, 1, STATSDB_VERSION_GAME));
+    count = 0;
+    while(sqlite3_step(stmt) == SQLITE_ROW)
+    {
+        int mode = sqlite3_column_int(stmt, 0);
+        int bit = sqlite3_column_int(stmt, 1);
+        int mutator_id = sqlite3_column_int(stmt, 2);
+        if(sqlite3_column_type(stmt, 0) == SQLITE_NULL) statsdb_mutators[bit] = mutator_id;
+        else statsdb_mutators[bit + 3 * mode] = mutator_id;
+        count++;
+    }
+    sqlite3_finalize(stmt);
+    if(count < G_M_NUM - G_M_GSP)
+    {
+        statsdb_warn("not enough mutators %d, should be at least %d", count, G_M_NUM - G_M_GSP);
+        statsdb_die();
+    }
+}
+
+void statsdb_load()
+{
+    statsdb_do_or_die(sqlite3_open(findfile("stats.sqlite", "w"), &statsdb));
+    statsdb_exec_or_die("BEGIN");
+    if(statsdb_version() < 1)
+    {
+        statsdb_exec_file_or_die("sql/stats/create.sql");
+        statsdb_exec_or_die("PRAGMA user_version = %d;", STATSDB_VERSION);
         conoutf("Created statistics database");
     }
-    while(statsdbversion() < STATSDB_VERSION)
+    while(statsdb_version() < STATSDB_VERSION)
     {
-        int ver = statsdbversion();
+        int ver = statsdb_version();
         defformatstring(path, "sql/stats/upgrade_%d.sql", ver);
-        statsdbexecfile(path);
-        statsdbexecf("PRAGMA user_version = %d;", ver + 1);
-        conoutf("Upgraded database from %d to %d", ver, statsdbversion());
+        statsdb_exec_file_or_die(path);
+        statsdb_exec_or_die("PRAGMA user_version = %d;", ver + 1);
+        conoutf("Upgraded database from %d to %d", ver, statsdb_version());
     }
-    statsdbexecf("COMMIT");
+    statsdb_exec_or_die("COMMIT");
+    statsdb_load_mappings();
     conoutf("Statistics database loaded");
 }
 
@@ -345,12 +433,21 @@ int playertotalstat(const char *handle, const char *stat)
 {
     int ret = 0;
     sqlite3_stmt *stmt;
-    defformatstring(sql, "SELECT SUM(%s) FROM (SELECT %s FROM game_players WHERE handle = ? AND game IN (SELECT id FROM games WHERE usetotals = 1))", stat, stat);
 
-    checkstatsdb(sqlite3_prepare_v2(statsdb, sql, -1, &stmt, 0));
-    checkstatsdb(sqlite3_bind_text(stmt, 1, handle, strlen(handle), SQLITE_TRANSIENT));
+    char *sql = sqlite3_mprintf(
+            "SELECT SUM(%w) "
+            "FROM game_players AS gp JOIN games AS g on g.id = gp.game "
+            "WHERE g.normalweapons = 1 AND gp.handle = %Q", stat, handle);
+    int rc = sqlite3_prepare_v2(statsdb, sql, -1, &stmt, 0);
+    sqlite3_free(sql);
+    if(rc != SQLITE_OK)
+    {
+        statsdb_warn();
+        return 0;
+    }
 
-    if (sqlite3_step(stmt) == SQLITE_ROW) {
+    if(sqlite3_step(stmt) == SQLITE_ROW)
+    {
         ret = sqlite3_column_int(stmt, 0);
     }
 
@@ -379,45 +476,74 @@ void savestats(masterclient &c)
 {
     c.wantstats = true;
     c.laststats = totalmillis ? totalmillis : 1;
-    char *errmsg = NULL;
-    int rc = sqlite3_exec(statsdb, "BEGIN EXCLUSIVE", 0, 0, &errmsg);
+    int rc = statsdb_exec("BEGIN EXCLUSIVE");
     if(rc == SQLITE_BUSY) return;
-    else checkstatsdb(rc, errmsg);
+    statsdb_do_or_die(rc);
 
-    statsdbexecf("INSERT INTO games VALUES (NULL, %d, %Q, %d, %d, %d, %d, %d)",
+    c.instats = false;
+    c.wantstats = false;
+
+    if(c.stats.players.length() == 0)
+    {
+        statsdb_warn("game with 0 players");
+        statsdb_rollback();
+        return;
+    }
+
+#define TRY(call) if((call) != SQLITE_OK) { statsdb_warn(); statsdb_rollback(); return; }
+
+    int mode_id = statsdb_modes.inrange(c.stats.mode) ? statsdb_modes[c.stats.mode] : -1;
+    if(mode_id < 0)
+    {
+        statsdb_warn("unknown mode %d", c.stats.mode);
+        statsdb_rollback();
+        return;
+    }
+    TRY(statsdb_exec("INSERT INTO games VALUES (NULL, %d, %Q, %d, %d, %d, %d)",
         c.stats.time,
         c.stats.map,
-        c.stats.mode,
-        c.stats.mutators,
+        mode_id,
         c.stats.timeplayed,
         c.stats.unique,
-        c.stats.usetotals
-    );
+        c.stats.normalweapons));
     c.stats.id = (ulong)sqlite3_last_insert_rowid(statsdb);
 
-    statsdbexecf("INSERT OR ROLLBACK INTO game_servers VALUES (%d, %Q, %Q, %Q, %Q, %Q, %d)",
+    loopi(G_M_NUM) if(c.stats.mutators & (1 << i))
+    {
+        int idx = i < G_M_GSP ? i : i + c.stats.mode * (G_M_NUM - G_M_GSP);
+        int mut_id = statsdb_mutators.inrange(idx) ? statsdb_mutators[idx] : -1;
+        if(mut_id < 0)
+        {
+            statsdb_warn("unknown mutator %d (%d) mode %d", i, c.stats.mutators, c.stats.mode);
+            statsdb_rollback();
+            return;
+        }
+        TRY(statsdb_exec("INSERT INTO game_mutators (game_id, mutator_id) VALUES (%d, %d)",
+            c.stats.id,
+            mut_id));
+    }
+
+    TRY(statsdb_exec("INSERT INTO game_servers (game, handle, flags, desc, version, host, port) VALUES (%d, %Q, %Q, %Q, %Q, %Q, %d)",
         c.stats.id,
         c.authhandle,
         c.flags,
         c.stats.desc,
         c.stats.version,
         c.name,
-        c.stats.port
-    );
+        c.stats.port));
 
     loopv(c.stats.teams)
     {
-        statsdbexecf("INSERT INTO game_teams VALUES (%d, %d, %d, %Q)",
+        TRY(statsdb_exec("INSERT INTO game_teams (game, team, score, name) VALUES (%d, %d, %d, %Q)",
             c.stats.id,
             c.stats.teams[i].index,
             c.stats.teams[i].score,
-            c.stats.teams[i].name
-        );
+            c.stats.teams[i].name));
     }
 
     loopv(c.stats.players)
     {
-        statsdbexecf("INSERT OR ROLLBACK INTO game_players VALUES (%d, %Q, %Q, %d, %d, %d, %d, %d, %d)",
+        TRY(statsdb_exec("INSERT INTO game_players (game, name, handle, score, timealive, timeactive, frags, deaths, wid) VALUES (%d, %Q, %Q, %d, %d, %d, %d, %d, %d)",
             c.stats.id,
             c.stats.players[i].name,
             c.stats.players[i].handle[0] ? c.stats.players[i].handle : NULL,
@@ -426,13 +552,15 @@ void savestats(masterclient &c)
             c.stats.players[i].timeactive,
             c.stats.players[i].frags,
             c.stats.players[i].deaths,
-            c.stats.players[i].wid
-        );
+            c.stats.players[i].wid));
     }
 
     loopv(c.stats.weapstats)
     {
-        statsdbexecf("INSERT OR ROLLBACK INTO game_weapons VALUES (%d, %d, %Q, %Q, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d)",
+        TRY(statsdb_exec("INSERT INTO game_weapons (game, player, playerhandle, weapon, timewielded, timeloadout, "
+                                                   "damage1, frags1, hits1, flakhits1, shots1, flakshots1, "
+                                                   "damage2, frags2, hits2, flakhits2, shots2, flakshots2) "
+                         "VALUES (%d, %d, %Q, %Q, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d)",
             c.stats.id,
             c.stats.weapstats[i].playerid,
             c.stats.weapstats[i].playerhandle[0] ? c.stats.weapstats[i].playerhandle : NULL,
@@ -454,47 +582,48 @@ void savestats(masterclient &c)
             c.stats.weapstats[i].flakhits2,
             c.stats.weapstats[i].shots2,
             c.stats.weapstats[i].flakshots2
-        );
+        ));
     }
 
     loopv(c.stats.ffarounds)
     {
-        statsdbexecf("INSERT INTO game_ffarounds VALUES (%d, %d, %Q, %d, %d)",
+        TRY(statsdb_exec("INSERT INTO game_ffarounds (game, player, playerhandle, round, winner) VALUES (%d, %d, %Q, %d, %d)",
             c.stats.id,
             c.stats.ffarounds[i].playerid,
             c.stats.ffarounds[i].playerhandle,
             c.stats.ffarounds[i].round,
             c.stats.ffarounds[i].winner
-        );
+        ));
     }
 
     loopv(c.stats.captures)
     {
-        statsdbexecf("INSERT INTO game_captures VALUES (%d, %d, %Q, %d, %d)",
+        TRY(statsdb_exec("INSERT INTO game_captures (game, player, playerhandle, capturing, captured) VALUES (%d, %d, %Q, %d, %d)",
             c.stats.id,
             c.stats.captures[i].playerid,
             c.stats.captures[i].playerhandle,
             c.stats.captures[i].capturing,
             c.stats.captures[i].captured
-        );
+        ));
     }
 
     loopv(c.stats.bombings)
     {
-        statsdbexecf("INSERT INTO game_bombings VALUES (%d, %d, %Q, %d, %d)",
+        TRY(statsdb_exec("INSERT INTO game_bombings (game, player, playerhandle, bombing, bombed) VALUES (%d, %d, %Q, %d, %d)",
             c.stats.id,
             c.stats.bombings[i].playerid,
             c.stats.bombings[i].playerhandle,
             c.stats.bombings[i].bombing,
             c.stats.bombings[i].bombed
-        );
+        ));
     }
 
-    statsdbexecf("COMMIT");
+    TRY(statsdb_exec("COMMIT"));
+
+#undef TRY
+
     conoutf("Master peer %s commited stats, game id %lu", c.name, c.stats.id);
     masteroutf(c, "stats success \"game statistics recorded (\fs\fy%lu\fS) \fs\fc%sstats/game/%lu\fS\"\n", c.stats.id, versionurl, c.stats.id);
-    c.instats = false;
-    c.wantstats = false;
 }
 
 void sendauthstats(masterclient &c, const char *name)
@@ -532,7 +661,7 @@ void setupmaster()
         if(enet_socket_set_option(mastersocket, ENET_SOCKOPT_NONBLOCK, 1) < 0) fatal("failed to make master server socket non-blocking");
         if(!setuppingsocket(&address)) fatal("failed to create ping socket");
         starttime = clocktime;
-        loadstatsdb();
+        statsdb_load();
         conoutf("Master server started on %s:[%d]", *masterip ? masterip : "localhost", masterport);
     }
 }
@@ -919,7 +1048,7 @@ bool checkmasterclientinput(masterclient &c)
                     c.stats.timeplayed = atoi(w[5]);
                     c.stats.time = currenttime;
                     c.stats.unique = atoi(w[6]);
-                    c.stats.usetotals = atoi(w[7]);
+                    c.stats.normalweapons = atoi(w[7]);
                 }
                 else if(!strcmp(w[1], "server"))
                 {
@@ -1154,7 +1283,7 @@ void checkmaster()
 void cleanupmaster()
 {
     if(mastersocket != ENET_SOCKET_NULL) enet_socket_destroy(mastersocket);
-    closestatsdb();
+    statsdb_close();
 }
 
 void reloadmaster()

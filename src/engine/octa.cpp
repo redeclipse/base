@@ -31,7 +31,7 @@ void setcubeext(cube &c, cubeext *ext)
     c.ext = ext;
     if(old) delete[] (uchar *)old;
 }
-  
+
 cubeext *newcubeext(cube &c, int maxverts, bool init)
 {
     if(c.ext && c.ext->maxverts >= maxverts) return c.ext;
@@ -43,7 +43,7 @@ cubeext *newcubeext(cube &c, int maxverts, bool init)
             memcpy(ext->surfaces, c.ext->surfaces, sizeof(ext->surfaces));
             memcpy(ext->verts(), c.ext->verts(), c.ext->maxverts*sizeof(vertinfo));
         }
-        else memset(ext->surfaces, 0, sizeof(ext->surfaces)); 
+        else memset(ext->surfaces, 0, sizeof(ext->surfaces));
     }
     setcubeext(c, ext);
     return ext;
@@ -107,12 +107,12 @@ void discardchildren(cube &c, bool fixtex, int depth)
     if(c.children)
     {
         uint filled = F_EMPTY;
-        loopi(8) 
+        loopi(8)
         {
             discardchildren(c.children[i], fixtex, depth+1);
             filled |= c.children[i].faces[0];
         }
-        if(fixtex) 
+        if(fixtex)
         {
             loopi(6) c.texture[i] = getmippedtexture(c, i);
             if(depth > 0 && filled != F_EMPTY) c.faces[0] = F_SOLID;
@@ -394,7 +394,7 @@ bool subdividecube(cube &c, bool fullcheck, bool brighten)
                    &v01 = v[octaindex(d, 0, 1, z)],
                    &v11 = v[octaindex(d, 1, 1, z)];
         int e[3][3];
-        // corners   
+        // corners
         e[0][0] = v00[d];
         e[0][2] = v01[d];
         e[2][0] = v10[d];
@@ -651,7 +651,7 @@ const ivec cubecoords[8] = // verts of bounding cube
 {
 #define GENCUBEVERT(n, x, y, z) ivec(x, y, z),
     GENCUBEVERTS(0, 8, 0, 8, 0, 8)
-#undef GENCUBEVERT 
+#undef GENCUBEVERT
 };
 
 template<class T>
@@ -760,7 +760,7 @@ bool notouchingface(const cube &c, int orient)
 {
     uint face = c.faces[dimension(orient)];
     return dimcoord(orient) ? (face&0x80808080)==0 : ((0x88888888-face)&0x08080808) == 0;
-}   
+}
 
 int faceconvexity(const ivec v[4])
 {
@@ -798,13 +798,13 @@ int faceconvexity(const ivec v[4], int &vis)
         return 0;
     }
     return convex;
-} 
+}
 
 int faceconvexity(const cube &c, int orient)
 {
     if(flataxisface(c, orient)) return 0;
     ivec v[4];
-    genfaceverts(c, orient, v); 
+    genfaceverts(c, orient, v);
     return faceconvexity(v);
 }
 
@@ -863,7 +863,7 @@ static inline int genfacevecs(const cube &cu, int orient, const ivec &pos, int s
                 f = ivec2(ef.x*size + (pf.x<<3), ef.y*size + (pf.y<<3)); \
                 if(f != prev) { prev = f; i++; } \
             } \
-        } 
+        }
         GENFACEVERTS(x, x, y, y, z, z, x, x, y, y, z, z)
     #undef GENFACEORIENT
     #undef GENFACEVERT
@@ -1087,7 +1087,7 @@ int classifyface(const cube &c, int orient, const ivec &co, int size)
     int numc = genfacevecs(c, orient, vo, size, false, cf);
     if(!occludesface(o, opp, no, nsize, vo, size, MAT_AIR, (c.material&MAT_ALPHA)^MAT_ALPHA, MAT_ALPHA, cf, numc)) vis |= 1;
     if(vismask&2 && !occludesface(o, opp, no, nsize, vo, size, MAT_AIR, MAT_NOCLIP, MATF_CLIP, cf, numc)) vis |= 2;
-    return vis; 
+    return vis;
 }
 
 // more expensive version that checks both triangles of a face independently
@@ -1123,7 +1123,7 @@ int visibletris(const cube &c, int orient, const ivec &co, int size, ushort nmat
     int nsize;
     const cube &o = neighbourcube(c, orient, co, size, no, nsize);
     if(&o==&c) return 0;
-    
+
     if((c.material&matmask) == nmat) nmat = MAT_AIR;
 
     ivec vo = ivec(co).mask(0xFFF);
@@ -1393,8 +1393,8 @@ bool mincubeface(const cube &cu, int orient, const ivec &co, int size, facebound
     return smaller;
 }
 
-VAR(0, maxmerge, 0, 6, 12);
-VAR(0, minface, 0, 4, 12);
+VAR(IDF_WORLD, maxmerge, 0, 6, 12);
+VAR(IDF_WORLD, minface, 0, 4, 12);
 
 struct pvert
 {
@@ -1684,8 +1684,8 @@ void addmerge(cube &cu, int orient, const ivec &co, const ivec &n, int offset, p
         {
             ivec v0 = verts[0].getxyz();
             const vertinfo *oldverts = cu.ext->verts() + oldsurf.verts;
-            loopj(numverts) if(v0 == oldverts[j].getxyz()) 
-            { 
+            loopj(numverts) if(v0 == oldverts[j].getxyz())
+            {
                 for(int k = 1; k < numverts; k++)
                 {
                     if(++j >= numverts) j = 0;
@@ -1695,7 +1695,7 @@ void addmerge(cube &cu, int orient, const ivec &co, const ivec &n, int offset, p
             }
         nomatch:;
         }
-    }     
+    }
     setsurface(cu, orient, surf, verts, p.numverts);
 }
 
@@ -1877,4 +1877,3 @@ void calcmerges()
     genmergeprogress = 0;
     genmerges();
 }
-

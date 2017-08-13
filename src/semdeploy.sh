@@ -1,4 +1,5 @@
-#!/bin/sh
+#! /bin/bash
+
 SEMABUILD_PWD=`pwd`
 SEMABUILD_BUILD="${HOME}/deploy"
 SEMABUILD_SCP='scp -BC -o StrictHostKeyChecking=no'

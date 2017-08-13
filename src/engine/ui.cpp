@@ -1636,15 +1636,18 @@ namespace UI
         bool operator!=(const Color &o) const { return mask != o.mask; }
     };
 
+    static const float defcoords[4][2] = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
     struct Filler : Object
     {
         float minw, minh;
+        float coords[4][2];
 
         void setup(float minw_, float minh_)
         {
             Object::setup();
             minw = minw_;
             minh = minh_;
+            loopi(4) loopj(2) coords[i][j] = defcoords[i][j];
         }
 
         static const char *typestr() { return "#Filler"; }
@@ -1658,6 +1661,18 @@ namespace UI
             w = max(w, minw);
             h = max(h, minh);
         }
+
+        float getcoord(int num, int axis)
+        {
+            if(num < 0 || num > 3 || axis < 0 || axis > 1) return 0.f;
+            if(coords[num][axis] < 0)
+            {
+                float sz = axis ? (h != 0 ? h : minh) : (w != 0 ? w : minw);
+                if(sz != 0) return clamp((0-coords[num][axis])/sz, 0.f, 1.f);
+                return defcoords[num][axis];
+            }
+            return coords[num][axis];
+        }
     };
 
     ICOMMAND(0, uifill, "ffe", (float *minw, float *minh, uint *children),
@@ -1665,6 +1680,13 @@ namespace UI
 
     UIARGSCALEDT(Filler, fill, minw, "f", float, 0.f, FVAR_MAX);
     UIARGSCALEDT(Filler, fill, minh, "f", float, 0.f, FVAR_MAX);
+
+    UICMDT(Filler, fill, coord, "iff", (int *pos, float *x, float *y),
+    {
+        if(*pos < 0 || *pos >= 4) return;
+        o->coords[*pos][0] = min(*x, 1.f);
+        o->coords[*pos][1] = min(*y, 1.f);
+    });
 
     struct Target : Filler
     {
@@ -1767,33 +1789,53 @@ namespace UI
             gle::begin(GL_TRIANGLE_STRIP);
             if(cols >= 2)
             {
-                float gw = dir == HORIZONTAL ? w/float(cols-1) : w,
-                      gh = dir == VERTICAL ? h/float(cols-1) : h,
-                      vx = sx, vy = sy;
-                loopi(cols-1) switch(dir)
+                float vr = 1/float(cols-1), vcx1 = 0, vcx2 = 0, vcy1 = 0, vcy2 = 0, ts = 0,
+                      vw1 = w*(getcoord(1, 0)-getcoord(0, 0)), vx1 = w*getcoord(0, 0),
+                      vw2 = w*(getcoord(2, 0)-getcoord(3, 0)), vx2 = w*getcoord(3, 0),
+                      vdw1 = w*(getcoord(3, 0)-getcoord(0, 0)), vdw2 = w*(getcoord(2, 0)-getcoord(1, 0)),
+                      vh1 = h*(getcoord(3, 1)-getcoord(0, 1)), vy1 = h*getcoord(0, 1),
+                      vh2 = h*(getcoord(2, 1)-getcoord(1, 1)), vy2 = h*getcoord(1, 1),
+                      vdh1 = h*(getcoord(1, 1)-getcoord(0, 1)), vdh2 = h*(getcoord(2, 1)-getcoord(3, 1));
+                loopi(cols-1)
                 {
-                    case HORIZONTAL:
-                        gle::attribf(vx,    vy);    colors[i].attrib();
-                        gle::attribf(vx+gw, vy);    colors[i+1].attrib();
-                        gle::attribf(vx,    vy+gh); colors[i].attrib();
-                        gle::attribf(vx+gw, vy+gh); colors[i+1].attrib();
-                        vx += gw;
-                        break;
-                    case VERTICAL:
-                        gle::attribf(vx+gw, vy);    colors[i].attrib();
-                        gle::attribf(vx+gw, vy+gh); colors[i+1].attrib();
-                        gle::attribf(vx,    vy);    colors[i].attrib();
-                        gle::attribf(vx,    vy+gh); colors[i+1].attrib();
-                        vy += gh;
-                        break;
+                    float left = 1-(ts+vr);
+                    if(left < vr) vr += left;
+                    switch(dir)
+                    {
+                        case HORIZONTAL:
+                        {
+                            gle::attribf(sx+vx1+vcx1, sy+vy1+vcy1); colors[i].attrib(); // 0
+                            gle::attribf(sx+vx1+vcx1+(vw1*vr), sy+vy1+vcy1+(vdh1*vr)); colors[i+1].attrib(); // 1
+                            gle::attribf(sx+vx2+vcx2, sy+vy1+vcy2+vh1); colors[i].attrib(); // 3
+                            gle::attribf(sx+vx2+vcx2+(vw2*vr), sy+vy1+vcy2+vh1+(vdh2*vr)); colors[i+1].attrib(); // 2
+                            vcx1 += vw1*vr;
+                            vcx2 += vw2*vr;
+                            vcy1 += vdh1*vr;
+                            vcy2 += vdh2*vr;
+                            break;
+                        }
+                        case VERTICAL:
+                        {
+                            gle::attribf(sx+vx1+vcx2+vw1, sy+vy2+vcy2); colors[i].attrib(); // 1
+                            gle::attribf(sx+vx1+vcx2+vw1+(vdw2*vr), sy+vy2+vcy2+(vh2*vr)); colors[i+1].attrib(); // 2
+                            gle::attribf(sx+vx1+vcx1, sy+vy1+vcy1); colors[i].attrib(); // 0
+                            gle::attribf(sx+vx1+vcx1+(vdw1*vr), sy+vy1+vcy1+(vh1*vr)); colors[i+1].attrib(); // 3
+                            vcy1 += vh1*vr;
+                            vcy2 += vh2*vr;
+                            vcx1 += vdw1*vr;
+                            vcx2 += vdw2*vr;
+                            break;
+                        }
+                    }
+                    ts += vr;
                 }
             }
             else
             {
-                gle::attribf(sx+w, sy);   colors[0].attrib();
-                gle::attribf(sx,   sy);   colors[0].attrib();
-                gle::attribf(sx+w, sy+h); colors[0].attrib();
-                gle::attribf(sx,   sy+h); colors[0].attrib();
+                gle::attribf(sx+(w*getcoord(1, 0)), sy+(h*getcoord(1, 1))); colors[0].attrib(); // 1
+                gle::attribf(sx+(w*getcoord(0, 0)), sy+(h*getcoord(0, 1))); colors[0].attrib(); // 0
+                gle::attribf(sx+(w*getcoord(2, 0)), sy+(h*getcoord(2, 1))); colors[0].attrib(); // 2
+                gle::attribf(sx+(w*getcoord(3, 0)), sy+(h*getcoord(3, 1))); colors[0].attrib(); // 3
             }
             gle::end();
 
@@ -1879,10 +1921,10 @@ namespace UI
 
             colors[0].init();
             gle::begin(GL_LINE_LOOP);
-            gle::attribf(sx,   sy);
-            gle::attribf(sx+w, sy);
-            gle::attribf(sx+w, sy+h);
-            gle::attribf(sx,   sy+h);
+            gle::attribf(sx+(w*getcoord(0, 0)), sy+(h*getcoord(0, 1))); // 0
+            gle::attribf(sx+(w*getcoord(1, 0)), sy+(h*getcoord(1, 1))); // 1
+            gle::attribf(sx+(w*getcoord(2, 0)), sy+(h*getcoord(2, 1))); // 2
+            gle::attribf(sx+(w*getcoord(3, 0)), sy+(h*getcoord(3, 1))); // 3
             gle::end();
 
             Object::draw(sx, sy);
@@ -1972,7 +2014,7 @@ namespace UI
                 glBindTexture(GL_TEXTURE_2D, tex->id);
                 goto changecolor;
             }
-            if(mode == GL_QUADS && lastcolor != colors[0])
+            if(lastcolor != colors[0])
             {
                 gle::end();
             changecolor:
@@ -1996,35 +2038,55 @@ namespace UI
             bindtex(cols >= 2 ? GL_TRIANGLE_STRIP : GL_QUADS);
             if(cols >= 2)
             {
-                float gw = dir == HORIZONTAL ? w/float(cols-1) : w,
-                      gh = dir == VERTICAL ? h/float(cols-1) : h,
-                      part = 1/float(cols-1),
-                      vx = sx, vy = sy, ts = 0;
+                float vr = 1/float(cols-1), vcx1 = 0, vcx2 = 0, vcy1 = 0, vcy2 = 0, ts = 0,
+                      vw1 = w*(getcoord(1, 0)-getcoord(0, 0)), vx1 = w*getcoord(0, 0),
+                      vw2 = w*(getcoord(2, 0)-getcoord(3, 0)), vx2 = w*getcoord(3, 0),
+                      vdw1 = w*(getcoord(3, 0)-getcoord(0, 0)), vdw2 = w*(getcoord(2, 0)-getcoord(1, 0)),
+                      vh1 = h*(getcoord(3, 1)-getcoord(0, 1)), vy1 = h*getcoord(0, 1),
+                      vh2 = h*(getcoord(2, 1)-getcoord(1, 1)), vy2 = h*getcoord(1, 1),
+                      vdh1 = h*(getcoord(1, 1)-getcoord(0, 1)), vdh2 = h*(getcoord(2, 1)-getcoord(3, 1));
                 loopi(cols-1)
                 {
-                    float left = 1-(ts+part);
-                    if(left < part) part += left;
+                    float left = 1-(ts+vr);
+                    if(left < vr) vr += left;
                     switch(dir)
                     {
                         case HORIZONTAL:
-                            gle::attribf(vx, vy);       gle::attribf(ts, 0.f);      colors[i].attrib();
-                            gle::attribf(vx+gw, vy);    gle::attribf(ts+part, 0.f); colors[i+1].attrib();
-                            gle::attribf(vx, vy+gh);    gle::attribf(ts, 1.f);      colors[i].attrib();
-                            gle::attribf(vx+gw, vy+gh); gle::attribf(ts+part, 1.f); colors[i+1].attrib();
-                            vx += gw;
+                        {
+                            gle::attribf(sx+vx1+vcx1, sy+vy1+vcy1); gle::attribf(ts, 0.f); colors[i].attrib(); // 0
+                            gle::attribf(sx+vx1+vcx1+(vw1*vr), sy+vy1+vcy1+(vdh1*vr)); gle::attribf(ts+vr, 0.f); colors[i+1].attrib(); // 1
+                            gle::attribf(sx+vx2+vcx2, sy+vy1+vcy2+vh1); gle::attribf(ts, 1.f); colors[i].attrib(); // 3
+                            gle::attribf(sx+vx2+vcx2+(vw2*vr), sy+vy1+vcy2+vh1+(vdh2*vr));  gle::attribf(ts+vr, 1.f); colors[i+1].attrib(); // 2
+                            vcx1 += vw1*vr;
+                            vcx2 += vw2*vr;
+                            vcy1 += vdh1*vr;
+                            vcy2 += vdh2*vr;
                             break;
+                        }
                         case VERTICAL:
-                            gle::attribf(vx+gw, vy);    gle::attribf(1.f, ts);      colors[i].attrib();
-                            gle::attribf(vx+gw, vy+gh); gle::attribf(1.f, ts+part); colors[i+1].attrib();
-                            gle::attribf(vx, vy);       gle::attribf(0.f, ts);      colors[i].attrib();
-                            gle::attribf(vx, vy+gh);    gle::attribf(0.f, ts+part); colors[i+1].attrib();
-                            vy += gh;
+                        {
+                            gle::attribf(sx+vx1+vcx2+vw1, sy+vy2+vcy2); gle::attribf(1.f, ts); colors[i].attrib(); // 1
+                            gle::attribf(sx+vx1+vcx2+vw1+(vdw2*vr), sy+vy2+vcy2+(vh2*vr)); gle::attribf(1.f, ts+vr); colors[i+1].attrib(); // 2
+                            gle::attribf(sx+vx1+vcx1, sy+vy1+vcy1); gle::attribf(0.f, ts); colors[i].attrib(); // 0
+                            gle::attribf(sx+vx1+vcx1+(vdw1*vr), sy+vy1+vcy1+(vh1*vr)); gle::attribf(0.f, ts+vr); colors[i+1].attrib(); // 3
+                            vcy1 += vh1*vr;
+                            vcy2 += vh2*vr;
+                            vcx1 += vdw1*vr;
+                            vcx2 += vdw2*vr;
                             break;
+                        }
                     }
-                    ts += part;
+                    lastcolor = colors[i+1];
+                    ts += vr;
                 }
             }
-            else quads(sx, sy, w, h);
+            else
+            {
+                gle::attribf(sx+(w*getcoord(0, 0)), sy+(h*getcoord(0, 1))); gle::attribf(0.f, 0.f); // 0
+                gle::attribf(sx+(w*getcoord(1, 0)), sy+(h*getcoord(1, 1))); gle::attribf(1.f, 0.f); // 1
+                gle::attribf(sx+(w*getcoord(2, 0)), sy+(h*getcoord(2, 1))); gle::attribf(1.f, 1.f); // 2
+                gle::attribf(sx+(w*getcoord(3, 0)), sy+(h*getcoord(3, 1))); gle::attribf(0.f, 1.f); // 3
+            }
 
             Object::draw(sx, sy);
         }
