@@ -1,5 +1,30 @@
 cmake_minimum_required(VERSION 2.8.11)
 
+# link_deps([FATAL] DEPS <deps>...)
+# Calls link_directories for <deps>. <deps> is a list of dependencies.
+# If FATAL is specified then it exits on failure. Otherwise it returns
+# and sets link_deps_failed.
+function(link_deps_dirs)
+    cmake_parse_arguments(link_deps_dirs "FATAL" "TARGET" "DEPS" "${ARGN}")
+    foreach(dep IN LISTS link_deps_dirs_DEPS)
+        if(${link_deps_dirs_FATAL})
+            pkg_check_modules(${dep} REQUIRED ${dep})
+        else()
+            pkg_check_modules(${dep} ${dep})
+        endif()
+        if(NOT ${dep}_FOUND)
+            set(link_deps_dirs_failed true PARENT_SCOPE)
+            return()
+        endif()
+
+        # tell the compiler where to find the libraries' binaries
+        foreach(lib_dir IN LISTS ${dep}_LIBRARY_DIRS)
+            message("library dir: ${lib_dir}")
+            link_directories(${lib_dir})
+        endforeach(lib_dir)
+    endforeach(dep)
+endfunction(link_deps_dirs)
+
 # configure_deps(TARGET <target> [FATAL] DEPS <deps>...)
 # Configures dependencies for <target>. <deps> is a list of dependencies.
 # If FATAL is specified then it exits on failure. Otherwise it returns
@@ -26,11 +51,6 @@ function(configure_deps)
         foreach(lib IN LISTS ${dep}_LIBRARIES)
             target_link_libraries(${configure_deps_TARGET} ${lib})
         endforeach(lib)
-
-        # tell the compiler where to find the libraries' binaries
-        foreach(lib_dir IN LISTS ${dep}_LIBRARY_DIRS)
-            link_directories(${lib_dir})
-        endforeach(lib_dir)
     endforeach(dep)
 endfunction(configure_deps)
 
@@ -117,11 +137,15 @@ else()
 endif()
 
 if(${BUILD_CLIENT})
+    # set up library directories
+    link_deps_dirs(FATAL DEPS ${client_deps})
     # add the client executable and link it to enet
     add_executable(redeclipse${BIN_SUFFIX} ${client_sources})
     target_link_libraries(redeclipse${BIN_SUFFIX} enet)
 endif()
 
+# set up library directories
+link_deps_dirs(FATAL DEPS ${server_deps})
 # add the server executable and link it to enet
 # (define STANDALONE to "notify" the preprocessor that the server is built this time)
 add_executable(redeclipse_server${BIN_SUFFIX} ${server_sources})
