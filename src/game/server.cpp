@@ -5334,6 +5334,7 @@ namespace server
         ci->sessionid = (rnd(0x1000000)*((totalmillis%10000)+1))&0xFFFFFF;
         ci->local = local;
         connects.add(ci);
+        conoutf("%s peer connection attempt from %s [%d]", ci->local ? "Local" : "Remove", gethostip(ci->clientnum), ci->clientnum);
         if(!local && (m_local(gamemode) || servertype <= 0)) return DISC_PRIVATE;
         sendservinit(ci);
         return DISC_NONE;
