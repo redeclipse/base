@@ -460,7 +460,6 @@ extern void twitchragdoll(dynent *d, float vel);
 enum { DISC_NONE = 0, DISC_EOP, DISC_CN, DISC_KICK, DISC_MSGERR, DISC_IPBAN, DISC_PRIVATE, DISC_PASSWORD, DISC_PURE, DISC_MAXCLIENTS, DISC_INCOMPATIBLE, DISC_TIMEOUT, DISC_OVERFLOW, DISC_SHUTDOWN, DISC_HOSTFAIL, DISC_AUTH, DISC_NUM };
 
 extern void *getinfo(int i);
-extern const char *gethostname(int i);
 extern const char *gethostip(int i);
 extern void sendf(int cn, int chan, const char *format, ...);
 extern void sendfile(int cn, int chan, stream *file, const char *format = "", ...);
@@ -629,7 +628,7 @@ struct clientdata
     int type;
     int num;
     ENetPeer *peer;
-    string hostname, hostip;
+    string hostip;
     void *info;
 };
 

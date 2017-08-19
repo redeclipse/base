@@ -1048,7 +1048,7 @@ struct gameent : dynent, clientstate
     float deltayaw, deltapitch, newyaw, newpitch, turnyaw, turnroll;
     vec head, torso, muzzle, origin, eject[2], waist, jet[3], legs, hrad, trad, lrad, toe[2];
     bool action[AC_MAX], conopen, k_up, k_down, k_left, k_right, obliterated, headless;
-    string hostname, hostip, name, handle, info, obit;
+    string hostip, name, handle, info, obit;
     vector<gameent *> dominating, dominated;
     vector<eventicon> icons;
     vector<stunevent> stuns;
@@ -1060,7 +1060,6 @@ struct gameent : dynent, clientstate
     {
         state = CS_DEAD;
         type = ENT_PLAYER;
-        copystring(hostname, "0.0.0.0");
         copystring(hostip, "0.0.0.0");
         name[0] = handle[0] = info[0] = obit[0] = '\0';
         removesounds();

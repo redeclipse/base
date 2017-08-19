@@ -190,7 +190,6 @@ namespace ai
         gameent *o = game::getclient(d->ownernum);
         if(o)
         {
-            copystring(d->hostname, o->hostname);
             copystring(d->hostip, o->hostip);
             d->version.grab(o->version);
         }

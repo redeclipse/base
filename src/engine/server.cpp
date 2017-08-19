@@ -428,7 +428,6 @@ void process(ENetPacket *packet, int sender, int chan);
 
 int getservermtu() { return serverhost ? serverhost->mtu : -1; }
 void *getinfo(int i)            { return !clients.inrange(i) || clients[i]->type==ST_EMPTY ? NULL : clients[i]->info; }
-const char *gethostname(int i)  { int o = server::peerowner(i); return !clients.inrange(o) || clients[o]->type==ST_EMPTY ? "unknown" : clients[o]->hostname; }
 const char *gethostip(int i)    { int o = server::peerowner(i); return !clients.inrange(o) || clients[o]->type==ST_EMPTY ? "0.0.0.0" : clients[o]->hostip; }
 int getnumclients()             { return clients.length(); }
 uint getclientip(int n)         { int o = server::peerowner(n); return clients.inrange(o) && clients[o]->type==ST_TCPIP ? clients[o]->peer->address.host : 0; }
@@ -624,7 +623,6 @@ void localconnect(bool force)
         int cn = addclient(ST_LOCAL);
         clientdata &c = *clients[cn];
         c.peer = NULL;
-        copystring(c.hostname, "localhost");
         copystring(c.hostip, "127.0.0.1");
         conoutf("\fgLocal client %d connected", c.num);
         client::gameconnect(false);
@@ -921,22 +919,6 @@ void serverslice(uint timeout)  // main server update, called from main loop in 
                 c.peer->data = &c;
                 if(enet_address_get_host_ip(&c.peer->address, c.hostip, sizeof(c.hostip)) >= 0)
                 {
-                    if(enet_address_get_host(&c.peer->address, c.hostname, sizeof(c.hostname)) >= 0)
-                    {
-                        ENetAddress address;
-                        string ip;
-                        conoutf("Checking reverse lookup of %s (%s)", c.hostip, c.hostname);
-                        if(enet_address_set_host(&address, c.hostname) < 0 || enet_address_get_host_ip(&address, ip, sizeof(ip)) < 0 || strcmp(ip, c.hostip))
-                        {
-                            conoutf("Reverse lookup of %s (%s) failed (%s), using ip address", c.hostip, c.hostname, ip);
-                            copystring(c.hostname, c.hostip);
-                        }
-                    }
-                    else
-                    {
-                        conoutf("Reverse lookup of %s failed, using ip address", c.hostip);
-                        copystring(c.hostname, c.hostip);
-                    }
                     int reason = server::clientconnect(c.num, c.peer->address.host);
                     if(reason) disconnect_client(c.num, reason);
                 }
