@@ -125,7 +125,7 @@ namespace auth
         }
         if(!ci->connectauth)
             srvmsgftforce(ci->clientnum, CON_EVENT, "\fyplease wait, requesting credential match from master server..");
-        requestmasterf("reqauth %u %s %s\n", ci->authreq, ci->authname, gethostname(ci->clientnum));
+        requestmasterf("reqauth %u %s %s\n", ci->authreq, ci->authname, gethostip(ci->clientnum));
     }
 
     bool tryauth(clientinfo *ci, const char *authname = "")

@@ -276,7 +276,7 @@ namespace hud
             concatstring(hoststr, owner);
             return hoststr;
         }
-        return hostname ? d->hostname : d->hostip;
+        return d->hostip;
     }
 
     const char *scoreversion(gameent *d)

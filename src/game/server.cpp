@@ -3836,7 +3836,7 @@ namespace server
 
     void sendservinit(clientinfo *ci)
     {
-        sendf(ci->clientnum, 1, "ri3ssi", N_SERVERINIT, ci->clientnum, VERSION_GAME, gethostname(ci->clientnum), gethostip(ci->clientnum), ci->sessionid);
+        sendf(ci->clientnum, 1, "ri3ssi", N_SERVERINIT, ci->clientnum, VERSION_GAME, gethostip(ci->clientnum), gethostip(ci->clientnum), ci->sessionid); // TODO proto 231
     }
 
     bool restorescore(clientinfo *ci)
@@ -3904,7 +3904,7 @@ namespace server
             putint(p, ci->randweap.length());
             loopv(ci->randweap) putint(p, ci->randweap[i]);
             sendstring(ci->handle, p);
-            sendstring(allow ? gethostname(ci->clientnum) : "*", p);
+            sendstring(allow ? gethostip(ci->clientnum) : "*", p); // TODO proto 231
             sendstring(allow ? gethostip(ci->clientnum) : "*", p);
             ci->version.put(p);
         }

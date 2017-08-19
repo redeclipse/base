@@ -695,7 +695,7 @@ namespace client
     const char *getclienthost(int cn)
     {
         gameent *d = game::getclient(cn);
-        return d ? d->hostname : "";
+        return d ? d->hostip : "";
     }
     ICOMMAND(0, getclienthost, "s", (char *who), result(getclienthost(parsewho(who))));
 
@@ -2079,7 +2079,7 @@ namespace client
                 {
                     game::player1->clientnum = getint(p);
                     sessionver = getint(p);
-                    getstring(game::player1->hostname, p);
+                    getstring(text, p); // TODO proto 231
                     getstring(game::player1->hostip, p);
                     sessionid = getint(p);
                     if(sessionver != VERSION_GAME)
@@ -2286,7 +2286,7 @@ namespace client
                     vector<int> rweaps;
                     loopk(rw) rweaps.add(getint(p));
                     getstring(d->handle, p);
-                    getstring(d->hostname, p);
+                    getstring(text, p); // TODO proto 231
                     getstring(d->hostip, p);
                     if(d != game::player1) d->version.get(p);
                     else dummy.get(p);
@@ -2302,7 +2302,7 @@ namespace client
                         {
                             int amt = otherclients(true);
                             string ipaddr = "";
-                            if(showpresencehostinfo && client::haspriv(game::player1, G(iphostlock))) formatstring(ipaddr, " (%s)", d->hostname);
+                            if(showpresencehostinfo && client::haspriv(game::player1, G(iphostlock))) formatstring(ipaddr, " (%s)", d->hostip);
                             if(priv > PRIV_NONE)
                             {
                                 if(d->handle[0]) conoutft(CON_EVENT, "\fg%s%s joined the game (\fs\fy%s\fS: \fs\fc%s\fS) [%d.%d.%d-%s%d-%s] (%d %s)", game::colourname(d), ipaddr, server::privname(d->privilege), d->handle, d->version.major, d->version.minor, d->version.patch, plat_name(d->version.platform), d->version.arch, d->version.branch, amt, amt != 1 ? "players" : "player");
