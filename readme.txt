@@ -46,6 +46,7 @@ The project is Free and Open Source, meaning that you can both use it for free a
 * Derek "JoJo" Stegall - Maps, Models, Textures, HUD, Sound FX, Design/Testing
 * Eddie "skedz4u" Webb
 * Henrik "ahven" Pihl
+* Isaac "Zelec" Towns
 * Jacinta "cinta" Hall - Design/Testing, Support, and making babies.
 * Jeff "Architect" Cope - Design/Testing
 * Jeroen "appleflap" Boukens - Textures, Design/Testing
