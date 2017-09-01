@@ -138,7 +138,10 @@ endif()
 
 if(${BUILD_CLIENT})
     # set up library directories
-    link_deps_dirs(FATAL DEPS ${client_deps})
+    link_deps_dirs(DEPS ${client_deps})
+    if(link_deps_dirs_failed)
+        message(FATAL_ERROR "Could not find required packages for the client. You can run cmake with -DBUILD_CLIENT=0 to exclude the client.")
+    endif()
     # add the client executable and link it to enet
     add_executable(redeclipse${BIN_SUFFIX} ${client_sources})
     target_link_libraries(redeclipse${BIN_SUFFIX} enet)
