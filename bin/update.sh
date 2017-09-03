@@ -97,10 +97,29 @@ redeclipse_update_branch() {
             echo "Unable to find curl or wget, are you sure you have one installed?"
             return 1
         else
-            REDECLIPSE_DOWNLOADER="wget --connect-timeout=30 --no-check-certificate -U \"redeclipse-${REDECLIPSE_UPDATE}\" -O"
+            REDECLIPSE_DOWNLOADER()
+            {
+                if [ -n "$1" ]; then
+                    wget --connect-timeout=30 --no-check-certificate -U "redeclipse-${REDECLIPSE_UPDATE}" -O "$1" "$2"
+                else
+                    wget --connect-timeout=30 --no-check-certificate -U "redeclipse-${REDECLIPSE_UPDATE}" -P ${REDECLIPSE_TEMP} $2
+                fi
+            }
         fi
     else
-        REDECLIPSE_DOWNLOADER="curl --connect-timeout 30 -L -k -f -A \"redeclipse-${REDECLIPSE_UPDATE}\" -o"
+        REDECLIPSE_DOWNLOADER()
+        {
+            if [ -n "$1" ]; then
+                curl --connect-timeout 30 -L -k -f -A "redeclipse-${REDECLIPSE_UPDATE}" -o "$1" "$2"
+            else
+                REDECLIPSE_DOWNLOADER_CURL_BULK=""
+                for f in $2; do
+                    F_BASE=$(basename "$f")
+                    REDECLIPSE_DOWNLOADER_CURL_BULK="${REDECLIPSE_DOWNLOADER_CURL_BULK} -o ${REDECLIPSE_TEMP}/$F_BASE $f"
+                done
+                curl --connect-timeout 30 -L -k -f -A "redeclipse-${REDECLIPSE_UPDATE}" $REDECLIPSE_DOWNLOADER_CURL_BULK
+            fi
+        }
     fi
     if [ "${REDECLIPSE_BLOB}" = "zipball" ]; then
         if [ -z `which unzip` ]; then
@@ -126,7 +145,7 @@ redeclipse_update_branch() {
 
 redeclipse_update_module() {
     echo "modules: Updating.."
-    ${REDECLIPSE_DOWNLOADER} "${REDECLIPSE_TEMP}/mods.txt" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/mods.txt"
+    REDECLIPSE_DOWNLOADER "${REDECLIPSE_TEMP}/mods.txt" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/mods.txt"
     if ! [ -e "${REDECLIPSE_TEMP}/mods.txt" ]; then
         echo "modules: Failed to retrieve update information."
         return 1
@@ -144,7 +163,7 @@ redeclipse_update_module() {
         for a in ${REDECLIPSE_MODULE_LIST}; do
             rm -f "${REDECLIPSE_TEMP}/${a}.txt"
             if [ "${a}" = "base" ]; then
-                ${REDECLIPSE_DOWNLOADER} "${REDECLIPSE_TEMP}/${a}.txt" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/${a}.txt"
+                REDECLIPSE_DOWNLOADER "${REDECLIPSE_TEMP}/${a}.txt" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/${a}.txt"
                 REDECLIPSE_MODULE_RUN="${a}"
                 if [ -n "${REDECLIPSE_MODULE_RUN}" ]; then
                     redeclipse_update_module_run
@@ -157,14 +176,12 @@ redeclipse_update_module() {
                         return $?
                     fi
                 fi
-            elif [ -n "${REDECLIPSE_MODULE_PREFETCH}" ]; then
-                REDECLIPSE_MODULE_PREFETCH="${REDECLIPSE_MODULE_PREFETCH},${a}"
             else
-                REDECLIPSE_MODULE_PREFETCH="${a}"
+                REDECLIPSE_MODULE_PREFETCH="${REDECLIPSE_MODULE_PREFETCH} ${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/${a}.txt"
             fi
         done
         if [ -n "${REDECLIPSE_MODULE_PREFETCH}" ]; then
-            ${REDECLIPSE_DOWNLOADER} "${REDECLIPSE_TEMP}/#1.txt" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/{${REDECLIPSE_MODULE_PREFETCH}}.txt"
+            REDECLIPSE_DOWNLOADER "" "${REDECLIPSE_MODULE_PREFETCH}"
             for a in ${REDECLIPSE_MODULE_LIST}; do
                 if [ "${a}" != "base" ]; then
                     REDECLIPSE_MODULE_RUN="${a}"
@@ -235,7 +252,7 @@ redeclipse_update_module_blob() {
         rm -f "${REDECLIPSE_TEMP}/${REDECLIPSE_MODULE_RUN}.${REDECLIPSE_ARCHEXT}"
     fi
     echo "${REDECLIPSE_MODULE_RUN}: Downloading ${REDECLIPSE_GITHUB}/${REDECLIPSE_MODULE_RUN}/${REDECLIPSE_BLOB}/${REDECLIPSE_MODULE_REMOTE}"
-    ${REDECLIPSE_DOWNLOADER} "${REDECLIPSE_TEMP}/${REDECLIPSE_MODULE_RUN}.${REDECLIPSE_ARCHEXT}" "${REDECLIPSE_GITHUB}/${REDECLIPSE_MODULE_RUN}/${REDECLIPSE_BLOB}/${REDECLIPSE_MODULE_REMOTE}"
+    REDECLIPSE_DOWNLOADER "${REDECLIPSE_TEMP}/${REDECLIPSE_MODULE_RUN}.${REDECLIPSE_ARCHEXT}" "${REDECLIPSE_GITHUB}/${REDECLIPSE_MODULE_RUN}/${REDECLIPSE_BLOB}/${REDECLIPSE_MODULE_REMOTE}"
     if ! [ -e "${REDECLIPSE_TEMP}/${REDECLIPSE_MODULE_RUN}.${REDECLIPSE_ARCHEXT}" ]; then
         echo "${REDECLIPSE_MODULE_RUN}: Failed to retrieve update package."
         return 1
@@ -269,7 +286,7 @@ redeclipse_update_module_blob_deploy() {
 redeclipse_update_bins_run() {
     echo "bins: Updating.."
     rm -f "${REDECLIPSE_TEMP}/bins.txt"
-    ${REDECLIPSE_DOWNLOADER} "${REDECLIPSE_TEMP}/bins.txt" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/bins.txt"
+    REDECLIPSE_DOWNLOADER "${REDECLIPSE_TEMP}/bins.txt" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/bins.txt"
     if [ -e "${REDECLIPSE_PATH}/bin/version.txt" ]; then REDECLIPSE_BINS=`cat "${REDECLIPSE_PATH}/bin/version.txt"`; fi
     if [ -z "${REDECLIPSE_BINS}" ]; then REDECLIPSE_BINS="none"; fi
     echo "bins: ${REDECLIPSE_BINS} is installed."
@@ -302,7 +319,7 @@ redeclipse_update_bins_blob() {
         rm -f "${REDECLIPSE_TEMP}/${REDECLIPSE_ARCHIVE}"
     fi
     echo "bins: Downloading ${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/${REDECLIPSE_ARCHIVE}"
-    ${REDECLIPSE_DOWNLOADER} "${REDECLIPSE_TEMP}/${REDECLIPSE_ARCHIVE}" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/${REDECLIPSE_ARCHIVE}"
+    REDECLIPSE_DOWNLOADER "${REDECLIPSE_TEMP}/${REDECLIPSE_ARCHIVE}" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/${REDECLIPSE_ARCHIVE}"
     if ! [ -e "${REDECLIPSE_TEMP}/${REDECLIPSE_ARCHIVE}" ]; then
         echo "bins: Failed to retrieve bins update package."
         return 1
