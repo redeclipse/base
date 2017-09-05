@@ -1670,12 +1670,9 @@ namespace UI
             if(coords[num][axis] < 0)
             {
                 float len = axis ? h : w;
-                if(len != 0)
-                {
-                    float ret = clamp((0-coords[num][axis])/len, 0.f, 1.f);
-                    return defcoords[num][axis] == 1 ? 1.f-ret : ret;
-                }
-                return 0.f;
+                if(len == 0) return 0.f;
+                float ret = clamp((0-coords[num][axis])/len, 0.f, 1.f);
+                coords[num][axis] = (defcoords[num][axis] == 1 ? 1.f-ret : ret);
             }
             return coords[num][axis];
         }
@@ -2279,31 +2276,40 @@ namespace UI
 
             bindtex();
 
-            float vy = sy, ty = 0;
+            float vcx1 = 0, vcx2 = 0, vcy1 = 0, vcy2 = 0, ty = 0,
+                  vw1 = w*(getcoord(1, 0)-getcoord(0, 0)), vx1 = w*getcoord(0, 0),
+                  vdw1 = w*(getcoord(3, 0)-getcoord(0, 0)), vdw2 = w*(getcoord(2, 0)-getcoord(1, 0)),
+                  vh1 = h*(getcoord(3, 1)-getcoord(0, 1)), vy1 = h*getcoord(0, 1),
+                  vh2 = h*(getcoord(2, 1)-getcoord(1, 1)), vy2 = h*getcoord(1, 1);
             loopi(3)
             {
-                float vh = 0, th = 0;
+                float vh = 0, th = 0, tx = 0, vx = 0;
                 switch(i)
                 {
-                    case 0: vh = screenborder; th = texborder; break;
-                    case 1: vh = h - 2*screenborder; th = 1 - 2*texborder; break;
-                    case 2: vh = screenborder; th = texborder; break;
+                    case 0: vh = screenborder/h; th = texborder; break;
+                    case 1: vh = (h - 2*screenborder)/h; th = 1 - 2*texborder; break;
+                    case 2: vh = screenborder/h; th = texborder; break;
                 }
-                float vx = sx, tx = 0;
                 loopj(3)
                 {
                     float vw = 0, tw = 0;
                     switch(j)
                     {
-                        case 0: vw = screenborder; tw = texborder; break;
-                        case 1: vw = w - 2*screenborder; tw = 1 - 2*texborder; break;
-                        case 2: vw = screenborder; tw = texborder; break;
+                        case 0: vw = screenborder/w; tw = texborder; break;
+                        case 1: vw = (w - 2*screenborder)/w; tw = 1 - 2*texborder; break;
+                        case 2: vw = screenborder/w; tw = texborder; break;
                     }
-                    quads(vx, vy, vw, vh, tx, ty, tw, th);
-                    vx += vw;
+                    gle::attribf(sx+vx1+vx+vcx1, sy+vy1+vcy1); gle::attribf(tx, ty); // 0
+                    gle::attribf(sx+vx1+vx+vcx2+(vw1*vw), sy+vy2+vcy2); gle::attribf(tx+tw, ty); // 1
+                    gle::attribf(sx+vx1+vx+vcx2+(vw1*vw)+(vdw2*vh), sy+vy2+vcy2+(vh2*vh)); gle::attribf(tx+tw, ty+th); // 2
+                    gle::attribf(sx+vx1+vx+vcx1+(vdw1*vh), sy+vy1+vcy1+(vh1*vh)); gle::attribf(tx, ty+th); // 3
+                    vx += vw1*vw;
                     tx += tw;
                 }
-                vy += vh;
+                vcy1 += vh1*vh;
+                vcy2 += vh2*vh;
+                vcx1 += vdw1*vh;
+                vcx2 += vdw2*vh;
                 ty += th;
             }
 
