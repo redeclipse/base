@@ -1637,6 +1637,8 @@ namespace UI
     };
 
     static const float defcoords[4][2] = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
+    static const int oppcoord[4][2] = { { 1, 3 }, { 0, 2 }, { 3, 1 }, { 2, 0 } };
+
     struct Filler : Object
     {
         float minw, minh;
@@ -1667,11 +1669,11 @@ namespace UI
             if(num < 0 || num > 3 || axis < 0 || axis > 1) return 0.f;
             if(coords[num][axis] < 0)
             {
-                float sz = axis ? (h != 0 ? h : minh) : (w != 0 ? w : minw);
-                if(sz != 0)
+                float len = axis ? h : w;
+                if(len != 0)
                 {
-                    float sw = clamp((0-coords[num][axis])/sz, 0.f, 1.f);
-                    return defcoords[num][axis] == 1 ? 1.f-sw : sw;
+                    float ret = clamp((0-coords[num][axis])/len, 0.f, 1.f);
+                    return defcoords[num][axis] == 1 ? 1.f-ret : ret;
                 }
                 return 0.f;
             }
