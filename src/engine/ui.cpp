@@ -1668,8 +1668,12 @@ namespace UI
             if(coords[num][axis] < 0)
             {
                 float sz = axis ? (h != 0 ? h : minh) : (w != 0 ? w : minw);
-                if(sz != 0) return clamp((0-coords[num][axis])/sz, 0.f, 1.f);
-                return defcoords[num][axis];
+                if(sz != 0)
+                {
+                    float sw = clamp((0-coords[num][axis])/sz, 0.f, 1.f);
+                    return defcoords[num][axis] == 1 ? 1.f-sw : sw;
+                }
+                return 0.f;
             }
             return coords[num][axis];
         }
