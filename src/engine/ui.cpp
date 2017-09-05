@@ -1757,8 +1757,8 @@ namespace UI
         bool iscolour() const { return true; }
     };
 
-    UIARGSCALEDT(TargetColor, colour, type, "i", int, int(TargetColor::SOLID), int(TargetColor::OUTLINE));
-    UIARGSCALEDT(TargetColor, colour, dir, "i", int, int(TargetColor::VERTICAL), int(TargetColor::HORIZONTAL));
+    UIARGT(TargetColor, colour, type, "i", int, int(TargetColor::SOLID), int(TargetColor::OUTLINE));
+    UIARGT(TargetColor, colour, dir, "i", int, int(TargetColor::VERTICAL), int(TargetColor::HORIZONTAL));
 
     UICMDT(TargetColor, colour, add, "i", (int *c), o->colors.add(Color(*c)));
     UICMDT(TargetColor, colour, del, "i", (int *c), {
