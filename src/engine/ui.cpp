@@ -6,7 +6,7 @@ namespace UI
     int cursortype = CURSOR_DEFAULT;
 
     FVAR(0, uitextscale, 1, 0, 0);
-    FVAR(0, uiscale, 0, 1, 100);
+    FVAR(0, uiscale, FVAR_NONZERO, 1, 100);
 
     SVAR(0, uiopencmd, "showui");
     SVAR(0, uiclosecmd, "hideui");
@@ -1065,7 +1065,7 @@ namespace UI
             {
                 if(hasexcl && !w->exclusive) continue;
                 if(w->windowflags&WINDOW_TIP) // follows cursor
-                    w->setpos((cursorx*float(screenw)/float(screenh))-(w->w*cursorx), cursory-w->h-uitipoffset);
+                    w->setpos((cursorx*float(screenw)/float(screenh))-(w->w*cursorx), cursory-w->h-uitipoffset*uiscale);
                 else if(w->windowflags&WINDOW_POPUP && !w->overridepos)
                     w->setpos((cursorx*float(screenw)/float(screenh))-(w->w*cursorx), cursory-w->h*0.5f);
             });
