@@ -2304,10 +2304,10 @@ namespace UI
             coordmap[1][0] = vec2(coordmap[1][1]).add(vec2(dir[0]).mul(screenborder));
             coordmap[1][2] = vec2(coordmap[1][1]).add(vec2(dir[1]).mul(screenborder));
             coordmap[1][3] = vec2(coordmap[1][2]).add(vec2(dir[0]).mul(screenborder));
-            tcoordmap[1][0] = vec2(1-texborder, 1);
-            tcoordmap[1][1] = vec2(1, 1);
-            tcoordmap[1][2] = vec2(1, 1-texborder);
-            tcoordmap[1][3] = vec2(1-texborder, 1-texborder);
+            tcoordmap[1][0] = vec2(1-texborder, 0);
+            tcoordmap[1][1] = vec2(1, 0);
+            tcoordmap[1][2] = vec2(1, texborder);
+            tcoordmap[1][3] = vec2(1-texborder, texborder);
 
             // top center
             coordmap[2][0] = coordmap[0][1];
