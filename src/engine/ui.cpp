@@ -2205,41 +2205,34 @@ namespace UI
 
             bindtex();
 
-            float splitw = (minw ? min(minw, w) : w) / 2, splith = (minh ? min(minh, h) : h) / 2,
-                  vcx1 = 0, vcx2 = 0, vcy1 = 0, vcy2 = 0, ty = 0,
-                  vw1 = w*(getcoord(1, 0)-getcoord(0, 0)), vx1 = w*getcoord(0, 0),
-                  vdw1 = w*(getcoord(3, 0)-getcoord(0, 0)), vdw2 = w*(getcoord(2, 0)-getcoord(1, 0)),
-                  vh1 = h*(getcoord(3, 1)-getcoord(0, 1)), vy1 = h*getcoord(0, 1),
-                  vh2 = h*(getcoord(2, 1)-getcoord(1, 1)), vy2 = h*getcoord(1, 1);
+            float splitw = (minw ? min(minw, w) : w) / 2,
+                  splith = (minh ? min(minh, h) : h) / 2,
+                  vy = sy, ty = 0;
             loopi(3)
             {
-                float vh = 0, th = 0, tx = 0, vx = 0;
+                float vh = 0, th = 0;
                 switch(i)
                 {
-                    case 0: if(splith < h - splith) { vh = splith/h; th = 0.5f; } else { vh = 1; th = 1; } break;
-                    case 1: vh = (h - 2*splith)/h; th = 0; break;
-                    case 2: vh = splith/h; th = 0.5f; break;
+                    case 0: if(splith < h - splith) { vh = splith; th = 0.5f; } else { vh = h; th = 1; } break;
+                    case 1: vh = h - 2*splith; th = 0; break;
+                    case 2: vh = splith; th = 0.5f; break;
                 }
+                float vx = sx, tx = 0;
                 loopj(3)
                 {
                     float vw = 0, tw = 0;
                     switch(j)
                     {
-                        case 0: if(splitw < w - splitw) { vw = splitw/w; tw = 0.5f; } else { vw = 1; tw = 1; } break;
-                        case 1: vw = (w - 2*splitw)/w; tw = 0; break;
-                        case 2: vw = splitw/w; tw = 0.5f; break;
+                        case 0: if(splitw < w - splitw) { vw = splitw; tw = 0.5f; } else { vw = w; tw = 1; } break;
+                        case 1: vw = w - 2*splitw; tw = 0; break;
+                        case 2: vw = splitw; tw = 0.5f; break;
                     }
-                    gle::attribf(sx+vx1+vx+vcx1, sy+vy1+vcy1); gle::attribf(tx, ty); // 0
-                    gle::attribf(sx+vx1+vx+vcx2+(vw1*vw), sy+vy2+vcy2); gle::attribf(tx+tw, ty); // 1
-                    gle::attribf(sx+vx1+vx+vcx2+(vw1*vw)+(vdw2*vh), sy+vy2+vcy2+(vh2*vh)); gle::attribf(tx+tw, ty+th); // 2
-                    gle::attribf(sx+vx1+vx+vcx1+(vdw1*vh), sy+vy1+vcy1+(vh1*vh)); gle::attribf(tx, ty+th); // 3
-                    vx += vw1*vw;
+                    quads(vx, vy, vw, vh, tx, ty, tw, th);
+                    vx += vw;
                     tx += tw;
+                    if(tx >= 1) break;
                 }
-                vcy1 += vh1*vh;
-                vcy2 += vh2*vh;
-                vcx1 += vdw1*vh;
-                vcx2 += vdw2*vh;
+                vy += vh;
                 ty += th;
                 if(ty >= 1) break;
             }
@@ -2286,41 +2279,114 @@ namespace UI
 
             bindtex();
 
-            float vcx1 = 0, vcx2 = 0, vcy1 = 0, vcy2 = 0, ty = 0,
-                  vw1 = w*(getcoord(1, 0)-getcoord(0, 0)), vx1 = w*getcoord(0, 0),
-                  vdw1 = w*(getcoord(3, 0)-getcoord(0, 0)), vdw2 = w*(getcoord(2, 0)-getcoord(1, 0)),
-                  vh1 = h*(getcoord(3, 1)-getcoord(0, 1)), vy1 = h*getcoord(0, 1),
-                  vh2 = h*(getcoord(2, 1)-getcoord(1, 1)), vy2 = h*getcoord(1, 1);
-            loopi(3)
+            vec2 outline[4];
+            loopi(4) loopj(2) outline[i].v[j] = getcoord(i, j)*(j ? h : w);
+            vec2 coordmap[9][4];
+            vec2 tcoordmap[9][4];
+            vec2 dir[2];
+
+            // top left
+            dir[0] = vec2(outline[1]).sub(outline[0]).normalize();
+            dir[1] = vec2(outline[3]).sub(outline[0]).normalize();
+            coordmap[0][0] = outline[0];
+            coordmap[0][1] = vec2(coordmap[0][0]).add(vec2(dir[0]).mul(screenborder));
+            coordmap[0][3] = vec2(coordmap[0][0]).add(vec2(dir[1]).mul(screenborder));
+            coordmap[0][2] = vec2(coordmap[0][3]).add(vec2(dir[0]).mul(screenborder));
+            tcoordmap[0][0] = vec2(0, 0);
+            tcoordmap[0][1] = vec2(texborder, 0);
+            tcoordmap[0][2] = vec2(texborder, texborder);
+            tcoordmap[0][3] = vec2(0, texborder);
+
+            // top right
+            dir[0] = vec2(outline[0]).sub(outline[1]).normalize();
+            dir[1] = vec2(outline[2]).sub(outline[1]).normalize();
+            coordmap[1][1] = outline[1];
+            coordmap[1][0] = vec2(coordmap[1][1]).add(vec2(dir[0]).mul(screenborder));
+            coordmap[1][2] = vec2(coordmap[1][1]).add(vec2(dir[1]).mul(screenborder));
+            coordmap[1][3] = vec2(coordmap[1][2]).add(vec2(dir[0]).mul(screenborder));
+            tcoordmap[1][0] = vec2(1-texborder, 1);
+            tcoordmap[1][1] = vec2(1, 1);
+            tcoordmap[1][2] = vec2(1, 1-texborder);
+            tcoordmap[1][3] = vec2(1-texborder, 1-texborder);
+
+            // top center
+            coordmap[2][0] = coordmap[0][1];
+            coordmap[2][1] = coordmap[1][0];
+            coordmap[2][2] = coordmap[1][3];
+            coordmap[2][3] = coordmap[0][2];
+            tcoordmap[2][0] = vec2(texborder, 0);
+            tcoordmap[2][1] = vec2(1-texborder, 0);
+            tcoordmap[2][2] = vec2(1-texborder, texborder);
+            tcoordmap[2][3] = vec2(texborder, texborder);
+
+            // bottom left
+            dir[0] = vec2(outline[2]).sub(outline[3]).normalize();
+            dir[1] = vec2(outline[0]).sub(outline[3]).normalize();
+            coordmap[3][3] = outline[3];
+            coordmap[3][0] = vec2(coordmap[3][3]).add(vec2(dir[1]).mul(screenborder));
+            coordmap[3][2] = vec2(coordmap[3][3]).add(vec2(dir[0]).mul(screenborder));
+            coordmap[3][1] = vec2(coordmap[3][2]).add(vec2(dir[1]).mul(screenborder));
+            tcoordmap[3][0] = vec2(0, 1-texborder);
+            tcoordmap[3][1] = vec2(texborder, 1-texborder);
+            tcoordmap[3][2] = vec2(texborder, 1);
+            tcoordmap[3][3] = vec2(0, 1);
+
+            // bottom right
+            dir[0] = vec2(outline[3]).sub(outline[2]).normalize();
+            dir[1] = vec2(outline[1]).sub(outline[2]).normalize();
+            coordmap[4][2] = outline[2];
+            coordmap[4][1] = vec2(coordmap[4][2]).add(vec2(dir[1]).mul(screenborder));
+            coordmap[4][3] = vec2(coordmap[4][2]).add(vec2(dir[0]).mul(screenborder));
+            coordmap[4][0] = vec2(coordmap[4][3]).add(vec2(dir[1]).mul(screenborder));
+            tcoordmap[4][0] = vec2(1-texborder, 1-texborder);
+            tcoordmap[4][1] = vec2(1, 1-texborder);
+            tcoordmap[4][2] = vec2(1, 1);
+            tcoordmap[4][3] = vec2(1-texborder, 1);
+
+            // bottom center
+            coordmap[5][0] = coordmap[3][1];
+            coordmap[5][1] = coordmap[4][0];
+            coordmap[5][2] = coordmap[4][3];
+            coordmap[5][3] = coordmap[3][2];
+            tcoordmap[5][0] = vec2(texborder, 1-texborder);
+            tcoordmap[5][1] = vec2(1-texborder, 1-texborder);
+            tcoordmap[5][2] = vec2(1-texborder, 1);
+            tcoordmap[5][3] = vec2(texborder, 1);
+
+            // middle left
+            coordmap[6][0] = coordmap[0][3];
+            coordmap[6][1] = coordmap[0][2];
+            coordmap[6][2] = coordmap[3][1];
+            coordmap[6][3] = coordmap[3][0];
+            tcoordmap[6][0] = vec2(0, texborder);
+            tcoordmap[6][1] = vec2(texborder, texborder);
+            tcoordmap[6][2] = vec2(texborder, 1-texborder);
+            tcoordmap[6][3] = vec2(0, 1-texborder);
+
+            // middle right
+            coordmap[7][0] = coordmap[1][3];
+            coordmap[7][1] = coordmap[1][2];
+            coordmap[7][2] = coordmap[4][1];
+            coordmap[7][3] = coordmap[4][0];
+            tcoordmap[7][0] = vec2(1-texborder, texborder);
+            tcoordmap[7][1] = vec2(1, texborder);
+            tcoordmap[7][2] = vec2(1, 1-texborder);
+            tcoordmap[7][3] = vec2(1-texborder, 1-texborder);
+
+            // middle center
+            coordmap[8][0] = coordmap[0][2];
+            coordmap[8][1] = coordmap[1][3];
+            coordmap[8][2] = coordmap[4][0];
+            coordmap[8][3] = coordmap[3][1];
+            tcoordmap[8][0] = vec2(texborder, texborder);
+            tcoordmap[8][1] = vec2(1-texborder, texborder);
+            tcoordmap[8][2] = vec2(1-texborder, 1-texborder);
+            tcoordmap[8][3] = vec2(1-texborder, texborder);
+
+            loopi(9) loopj(4)
             {
-                float vh = 0, th = 0, tx = 0, vx = 0;
-                switch(i)
-                {
-                    case 0: vh = screenborder/h; th = texborder; break;
-                    case 1: vh = (h - 2*screenborder)/h; th = 1 - 2*texborder; break;
-                    case 2: vh = screenborder/h; th = texborder; break;
-                }
-                loopj(3)
-                {
-                    float vw = 0, tw = 0;
-                    switch(j)
-                    {
-                        case 0: vw = screenborder/w; tw = texborder; break;
-                        case 1: vw = (w - 2*screenborder)/w; tw = 1 - 2*texborder; break;
-                        case 2: vw = screenborder/w; tw = texborder; break;
-                    }
-                    gle::attribf(sx+vx1+vx+vcx1, sy+vy1+vcy1); gle::attribf(tx, ty); // 0
-                    gle::attribf(sx+vx1+vx+vcx2+(vw1*vw), sy+vy2+vcy2); gle::attribf(tx+tw, ty); // 1
-                    gle::attribf(sx+vx1+vx+vcx2+(vw1*vw)+(vdw2*vh), sy+vy2+vcy2+(vh2*vh)); gle::attribf(tx+tw, ty+th); // 2
-                    gle::attribf(sx+vx1+vx+vcx1+(vdw1*vh), sy+vy1+vcy1+(vh1*vh)); gle::attribf(tx, ty+th); // 3
-                    vx += vw1*vw;
-                    tx += tw;
-                }
-                vcy1 += vh1*vh;
-                vcy2 += vh2*vh;
-                vcx1 += vdw1*vh;
-                vcx2 += vdw2*vh;
-                ty += th;
+                gle::attribf(sx+coordmap[i][j].x, sy+coordmap[i][j].y);
+                gle::attribf(tcoordmap[i][j].x, tcoordmap[i][j].y);
             }
 
             Object::draw(sx, sy);
