@@ -17,7 +17,7 @@ namespace UI
     VAR(IDF_PERSIST, uislidersteptime, 0, 50, VAR_MAX);
     VAR(IDF_PERSIST, uislotviewtime, 0, 25, VAR_MAX);
 
-    FVAR(IDF_PERSIST, uitipoffset, 0, 0.005f, 1);
+    FVAR(IDF_PERSIST, uitipoffset, -1, -0.05f, 1);
 
     static void quads(float x, float y, float w, float h, float tx = 0, float ty = 0, float tw = 1, float th = 1)
     {
@@ -1566,6 +1566,52 @@ namespace UI
 
     UIARGSCALED(Spacer, space, spacew, "f", float, 0.f, FVAR_MAX);
     UIARGSCALED(Spacer, space, spaceh, "f", float, 0.f, FVAR_MAX);
+
+    struct Padder : Object
+    {
+        float left, right, top, bottom;
+
+        void setup(float left_, float right_, float top_, float bottom_)
+        {
+            Object::setup();
+            left = left_;
+            right = right_;
+            top = top_;
+            bottom = bottom_;
+        }
+
+        static const char *typestr() { return "#Padder"; }
+        const char *gettype() const { return typestr(); }
+
+        void layout()
+        {
+            w = left;
+            h = top;
+            loopchildren(o,
+            {
+                o->x = left;
+                o->y = top;
+                o->layout();
+                w = max(w, o->x + o->w);
+                h = max(h, o->y + o->h);
+            });
+            w += right;
+            h += bottom;
+        }
+
+        void adjustchildren()
+        {
+            adjustchildrento(left, top, w - (left+right), h - (top+bottom));
+        }
+    };
+
+    ICOMMAND(0, uipad, "ffffe", (float *left, float *right, float *top, float *bottom, uint *children),
+        BUILD(Padder, o, o->setup(*left*uiscale, *right*uiscale, *top*uiscale, *bottom*uiscale), children));
+
+    UIARGSCALED(Padder, pad, left, "f", float, 0.f, FVAR_MAX);
+    UIARGSCALED(Padder, pad, right, "f", float, 0.f, FVAR_MAX);
+    UIARGSCALED(Padder, pad, top, "f", float, 0.f, FVAR_MAX);
+    UIARGSCALED(Padder, pad, bottom, "f", float, 0.f, FVAR_MAX);
 
     struct Offsetter : Object
     {
