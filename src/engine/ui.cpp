@@ -17,7 +17,7 @@ namespace UI
     VAR(IDF_PERSIST, uislidersteptime, 0, 50, VAR_MAX);
     VAR(IDF_PERSIST, uislotviewtime, 0, 25, VAR_MAX);
 
-    FVAR(IDF_PERSIST, uitipoffset, -1, -0.05f, 1);
+    FVAR(IDF_PERSIST, uitipoffset, -1, -0.03f, 1);
 
     static void quads(float x, float y, float w, float h, float tx = 0, float ty = 0, float tw = 1, float th = 1)
     {
@@ -1065,7 +1065,7 @@ namespace UI
             {
                 if(hasexcl && !w->exclusive) continue;
                 if(w->windowflags&WINDOW_TIP) // follows cursor
-                    w->setpos((cursorx*float(screenw)/float(screenh))-(w->w*cursorx), cursory-w->h-uitipoffset*uiscale);
+                    w->setpos((cursorx*float(screenw)/float(screenh))-(w->w*cursorx), uitipoffset >= 0 ? cursory-w->h-uitipoffset : cursory-uitipoffset);
                 else if(w->windowflags&WINDOW_POPUP && !w->overridepos)
                     w->setpos((cursorx*float(screenw)/float(screenh))-(w->w*cursorx), cursory-w->h*0.5f);
             });
@@ -1525,48 +1525,6 @@ namespace UI
     UIARGSCALED(Table, table, spacew, "f", float, 0.f, FVAR_MAX);
     UIARGSCALED(Table, table, spaceh, "f", float, 0.f, FVAR_MAX);
 
-    struct Spacer : Object
-    {
-        float spacew, spaceh;
-
-        void setup(float spacew_, float spaceh_)
-        {
-            Object::setup();
-            spacew = spacew_;
-            spaceh = spaceh_;
-        }
-
-        static const char *typestr() { return "#Spacer"; }
-        const char *gettype() const { return typestr(); }
-
-        void layout()
-        {
-            w = spacew;
-            h = spaceh;
-            loopchildren(o,
-            {
-                o->x = spacew;
-                o->y = spaceh;
-                o->layout();
-                w = max(w, o->x + o->w);
-                h = max(h, o->y + o->h);
-            });
-            w += spacew;
-            h += spaceh;
-        }
-
-        void adjustchildren()
-        {
-            adjustchildrento(spacew, spaceh, w - 2*spacew, h - 2*spaceh);
-        }
-    };
-
-    ICOMMAND(0, uispace, "ffe", (float *spacew, float *spaceh, uint *children),
-        BUILD(Spacer, o, o->setup(*spacew*uiscale, *spaceh*uiscale), children));
-
-    UIARGSCALED(Spacer, space, spacew, "f", float, 0.f, FVAR_MAX);
-    UIARGSCALED(Spacer, space, spaceh, "f", float, 0.f, FVAR_MAX);
-
     struct Padder : Object
     {
         float left, right, top, bottom;
@@ -1607,6 +1565,9 @@ namespace UI
 
     ICOMMAND(0, uipad, "ffffe", (float *left, float *right, float *top, float *bottom, uint *children),
         BUILD(Padder, o, o->setup(*left*uiscale, *right*uiscale, *top*uiscale, *bottom*uiscale), children));
+
+    ICOMMAND(0, uispace, "ffe", (float *spacew, float *spaceh, uint *children),
+        BUILD(Padder, o, o->setup(*spacew*uiscale, *spacew*uiscale, *spaceh*uiscale, *spaceh*uiscale), children));
 
     UIARGSCALED(Padder, pad, left, "f", float, 0.f, FVAR_MAX);
     UIARGSCALED(Padder, pad, right, "f", float, 0.f, FVAR_MAX);
@@ -2707,9 +2668,9 @@ namespace UI
                 wlen = 0-wrap;
                 for(Object *o = this->parent; o != NULL; o = o->parent)
                 {
-                    if(o->istype<Spacer>())
+                    if(o->istype<Padder>())
                     {
-                        wp += ((Spacer *)o)->spacew*2;
+                        wp += ((Padder *)o)->left+((Padder *)o)->right;
                         continue;
                     }
                     float ww = !o->isfill() && o->w > 0 ? o->w : ((Filler *)o)->minw;
@@ -2743,9 +2704,9 @@ namespace UI
                 float lw = tw*k, lm = limit, lp = 0;
                 if(lw > 0) for(Object *o = this->parent; o != NULL; o = o->parent)
                 {
-                    if(o->istype<Spacer>())
+                    if(o->istype<Padder>())
                     {
-                        lp += ((Spacer *)o)->spacew*2;
+                        lp += ((Padder *)o)->left+((Padder *)o)->right;
                         continue;
                     }
                     float ls = o->w > 0 || !o->isfill() ? o->w : ((Filler *)o)->minw;
