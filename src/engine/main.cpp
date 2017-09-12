@@ -278,10 +278,10 @@ static void setgamma(int val)
 }
 
 static int curgamma = 100;
-VARF(IDF_PERSIST, gamma, 30, 100, 300,
+VARFN(IDF_PERSIST, gamma, reqgamma, 30, 100, 300,
 {
-    if(initing || gamma == curgamma) return;
-    curgamma = gamma;
+    if(initing || reqgamma == curgamma) return;
+    curgamma = reqgamma;
     setgamma(curgamma);
 });
 

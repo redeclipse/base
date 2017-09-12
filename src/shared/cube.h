@@ -3,18 +3,10 @@
 
 #define _FILE_OFFSET_BITS 64
 
-#ifdef __GNUC__
-#define gamma __gamma
-#endif
-
 #ifdef WIN32
 #define _USE_MATH_DEFINES
 #endif
 #include <math.h>
-
-#ifdef __GNUC__
-#undef gamma
-#endif
 
 #include <string.h>
 #include <stdio.h>
