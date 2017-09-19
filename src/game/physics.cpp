@@ -19,7 +19,7 @@ namespace physics
     FVAR(IDF_PERSIST, impulseroll, 0, 15, 89);
 
     VAR(IDF_PERSIST, jumpstyle, 0, 1, 1); // 0 = unpressed on action, 1 = remains pressed
-    VAR(IDF_PERSIST, dashstyle, 0, 1, 1); // 0 = only with impulse, 1 = double tap
+    VAR(IDF_PERSIST, dashstyle, 0, 1, 2); // 0 = only with impulse, 1 = double tap, 2 = double tap when not falling
     VAR(IDF_PERSIST, crouchstyle, 0, 0, 2); // 0 = press and hold, 1 = double-tap toggle, 2 = toggle
     VAR(IDF_PERSIST, walkstyle, 0, 0, 2); // 0 = press and hold, 1 = double-tap toggle, 2 = toggle
     VAR(IDF_PERSIST, grabstyle, 0, 2, 2); // 0 = up=up down=down, 1 = up=down down=up, 2 = up=up, down=up
@@ -65,7 +65,7 @@ namespace physics
             game::player1->v = dir; \
             if(down) \
             { \
-                if(allowimpulse(game::player1, A_A_DASH) && dashstyle && impulseaction&2 && last##v && lastdir##v && dir == lastdir##v && lastmillis-last##v < PHYSMILLIS) \
+                if(allowimpulse(game::player1, A_A_DASH) && dashstyle && (dashstyle == 1 || game::player1->physstate != PHYS_FALL) && impulseaction&2 && last##v && lastdir##v && dir == lastdir##v && lastmillis-last##v < PHYSMILLIS) \
                 { \
                     game::player1->action[AC_DASH] = true; \
                     game::player1->actiontime[AC_DASH] = lastmillis; \
