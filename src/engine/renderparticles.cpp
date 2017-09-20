@@ -1081,6 +1081,16 @@ static partrenderer *parts[] =
     &flares // must be done last!
 };
 
+int partsorder[sizeof(parts)/sizeof(parts[0])];
+bool partsordered = false;
+
+void orderparts() {
+    int j = 0, n = sizeof(parts)/sizeof(parts[0]);
+    loopi(n) if(!(parts[i]->type&PT_LERP)) partsorder[j++] = i;
+    loopi(n) if(parts[i]->type&PT_LERP) partsorder[j++] = i;
+    partsordered = true;
+}
+
 void finddepthfxranges()
 {
     depthfxmin = vec(1e16f, 1e16f, 1e16f);
@@ -1174,9 +1184,11 @@ void renderparticles(bool mainpass)
 
     if(binddepthfxtex()) flagmask |= PT_SOFT;
 
+    if(!partsordered) orderparts();
+
     loopi(sizeof(parts)/sizeof(parts[0]))
     {
-        partrenderer *p = parts[i];
+        partrenderer *p = parts[partsorder[i]];
         if(glaring && !(p->type&PT_GLARE)) continue;
         if(!p->haswork()) continue;
 
