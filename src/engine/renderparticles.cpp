@@ -1083,7 +1083,8 @@ static partrenderer *parts[] =
 
 int partsorder[sizeof(parts)/sizeof(parts[0])];
 
-void orderparts() {
+void orderparts()
+{
     int j = 0, n = sizeof(parts)/sizeof(parts[0]);
     loopi(n) if(!(parts[i]->type&PT_LERP)) partsorder[j++] = i;
     loopi(n) if(parts[i]->type&PT_LERP) partsorder[j++] = i;
