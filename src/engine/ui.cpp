@@ -1644,7 +1644,6 @@ namespace UI
     };
 
     static const float defcoords[4][2] = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
-    static const int oppcoord[4][2] = { { 1, 3 }, { 0, 2 }, { 3, 1 }, { 2, 0 } };
 
     struct Filler : Object
     {
