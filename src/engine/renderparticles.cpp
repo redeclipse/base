@@ -1081,6 +1081,15 @@ static partrenderer *parts[] =
     &flares // must be done last!
 };
 
+int partsorder[sizeof(parts)/sizeof(parts[0])];
+
+void orderparts()
+{
+    int j = 0, n = sizeof(parts)/sizeof(parts[0]);
+    loopi(n) if(!(parts[i]->type&PT_LERP)) partsorder[j++] = i;
+    loopi(n) if(parts[i]->type&PT_LERP) partsorder[j++] = i;
+}
+
 void finddepthfxranges()
 {
     depthfxmin = vec(1e16f, 1e16f, 1e16f);
@@ -1121,6 +1130,7 @@ void initparticles()
         parts[i]->init(parts[i]->type&PT_FEW ? min(fewparticles, maxparticles) : maxparticles);
         parts[i]->preload();
     }
+    orderparts();
 }
 
 void clearparticles()
@@ -1176,7 +1186,7 @@ void renderparticles(bool mainpass)
 
     loopi(sizeof(parts)/sizeof(parts[0]))
     {
-        partrenderer *p = parts[i];
+        partrenderer *p = parts[partsorder[i]];
         if(glaring && !(p->type&PT_GLARE)) continue;
         if(!p->haswork()) continue;
 
