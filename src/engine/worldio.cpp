@@ -2490,3 +2490,49 @@ ICOMMAND(0, loopmapcs, "rrrre", (ident *id, ident *id2, ident *id3, ident *id4, 
     loopend(id3, stack3);
     loopend(id4, stack4);
 });
+
+
+struct sortmapc
+{
+    string name, title;
+
+    sortmapc() { name[0] = title[0] = 0; }
+    sortmapc(const char *_name) { copystring(name, _name); title[0] = 0; }
+
+    static bool compare(sortmapc &a, sortmapc &b)
+    {
+        int alen = strlen(a.title), blen = strlen(b.title);
+        loopi(alen)
+        {
+            if(i >= blen) return false;
+            if(a.title[i] > b.title[i]) return false;
+            if(a.title[i] < b.title[i]) return true;
+        }
+        return true;
+    }
+};
+
+char *sortmaplist(const char *names)
+{
+    static bigstring result;
+    result[0] = 0;
+    if(!names || !*names) return result;
+    vector<char *> mapnames;
+    vector<sortmapc> maplist;
+    explodelist(names, mapnames);
+    loopv(mapnames) if(mapnames[i] && *mapnames[i])
+    {
+        sortmapc &s = maplist.add(sortmapc(mapnames[i]));
+        int num = scanmapc(s.name);
+        char *title = mapcinfos.inrange(num) ? mapcinfos[num].title : s.name;
+        if(!strncasecmp(title, "A ", 2)) title += 2;
+        if(!strncasecmp(title, "The ", 4)) title += 4;
+        copystring(s.title, title);
+        if(iscubelower(s.title[0])) s.title[0] = cubeupper(s.title[0]);
+    }
+    mapnames.deletearrays();
+    maplist.sort(sortmapc::compare);
+    loopv(maplist) concformatstring(result, "%s%s", result[0] ? " " : "", maplist[i].name);
+    return result;
+}
+ICOMMAND(0, sortmaps, "s", (char *s), result(sortmaplist(s)));
