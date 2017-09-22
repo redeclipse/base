@@ -106,6 +106,9 @@ semabuild_deploy() {
     echo "deploying ${BRANCH_NAME}..."
     echo "${SEMABUILD_ALLMODS}" > "${SEMABUILD_DIR}/mods.txt"
     pushd "${SEMABUILD_BUILD}" || return 1
+    git stash || return 1
+    git pull || return 1
+    git stash apply || return 1
     git commit -a -m "Build ${BRANCH_NAME}:${SEMAPHORE_BUILD_NUMBER}" || return 1
     git push -u origin master || return 1
     popd || return 1
