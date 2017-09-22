@@ -750,10 +750,10 @@ int nextcontrolversion()
     return controlversion;
 }
 
-template<size_t N> static inline void statfilterstring(uchar (&dst)[N], const char *src)
+template<size_t N> static inline void statfilterstring(uchar (&dst)[N], const char *src, size_t len = 0)
 {
     char tmp[N];
-    filterstring(tmp, src);
+    filterstring(tmp, src, true, true, true, false, len ? len : N);
     encodeutf8(dst, N-1, (uchar*)tmp, N-1);
 }
 
@@ -820,7 +820,7 @@ bool checkmasterclientinput(masterclient &c)
                 if(w[1] && *w[1]) c.port = clamp(atoi(w[1]), 1, VAR_MAX);
                 ENetAddress address = { ENET_HOST_ANY, enet_uint16(c.port) };
                 c.version = w[3] && *w[3] ? atoi(w[3]) : (w[2] && *w[2] ? 150 : 0);
-                if(w[4] && *w[4]) copystring(c.desc, w[4]);
+                if(w[4] && *w[4]) copystring(c.desc, w[4], MAXSDESCLEN+1);
                 else formatstring(c.desc, "%s:[%d]", c.name, c.port);
                 if(w[5] && *w[5]) c.sendstats = atoi(w[5]) != 0;
                 copystring(c.branch, w[6] && *w[6] ? w[6] : "?", MAXBRANCHLEN+1);
@@ -923,7 +923,7 @@ bool checkmasterclientinput(masterclient &c)
                 }
                 else if(!strcmp(w[1], "server"))
                 {
-                    statfilterstring(c.stats.desc, w[2]);
+                    statfilterstring(c.stats.desc, w[2], MAXSDESCLEN+1);
                     statfilterstring(c.stats.version, w[3]);
                     c.stats.port = atoi(w[4]);
                 }
