@@ -383,10 +383,10 @@ struct duelservmode : servmode
                                         {
                                             if(!m_affinity(gamemode))
                                             {
-                                                givepoints(clients[i], 1, true, teampoints);
+                                                givepoints(clients[i], 1, !m_dm_oldschool(gamemode, mutators), teampoints);
                                                 teampoints = false;
                                             }
-                                            else if(!duelaffin && teampoints)
+                                            else if(!duelaffin && teampoints && !m_dm_oldschool(gamemode, mutators))
                                             {
                                                 score &ts = teamscore(clients[i]->team);
                                                 ts.total++;
@@ -461,12 +461,15 @@ struct duelservmode : servmode
                                     if(clients[i] == alive[0])
                                     {
                                         ancmsgft(clients[i]->clientnum, S_V_YOUWIN, CON_EVENT, "%s", end);
-                                        if(!m_affinity(gamemode)) givepoints(clients[i], 1, true, true);
-                                        else if(!duelaffin)
+                                        if(!m_dm_oldschool(gamemode, mutators))
                                         {
-                                            score &ts = teamscore(clients[i]->team);
-                                            ts.total++;
-                                            sendf(-1, 1, "ri3", N_SCORE, ts.team, ts.total);
+                                            if(!m_affinity(gamemode)) givepoints(clients[i], 1, true, true);
+                                            else if(!duelaffin)
+                                            {
+                                                score &ts = teamscore(clients[i]->team);
+                                                ts.total++;
+                                                sendf(-1, 1, "ri3", N_SCORE, ts.team, ts.total);
+                                            }
                                         }
                                     }
                                     else ancmsgft(clients[i]->clientnum, S_V_YOULOSE, CON_EVENT, "%s", end);
