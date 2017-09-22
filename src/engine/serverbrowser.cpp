@@ -230,7 +230,7 @@ static serverinfo *newserver(const char *name, int port = SERVER_PORT, int prior
         delete si;
         return NULL;
     }
-    if(desc && *desc) copystring(si->sdesc, desc);
+    if(desc && *desc) copystring(si->sdesc, desc, MAXSDESCLEN+1);
     if(handle && *handle) copystring(si->authhandle, handle);
     if(flags && *flags) copystring(si->flags, flags);
     if(branch && *branch) copystring(si->branch, branch, MAXBRANCHLEN+1);
@@ -364,7 +364,7 @@ void checkpings()
         getstring(text, p);
         filterstring(si->map, text, false);
         getstring(text, p);
-        filterstring(si->sdesc, text);
+        filterstring(si->sdesc, text, true, true, true, false, MAXSDESCLEN+1);
         si->players.deletearrays();
         si->handles.deletearrays();
         if(gver >= 227)

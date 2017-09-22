@@ -3357,7 +3357,7 @@ namespace server
             }
             requestmasterf("stats game %s %d %d %d %d %d\n", escapestring(smapname), gamemode, mutators, gamemillis/1000, unique, m_usetotals(gamemode, mutators) ? 1 : 0);
             flushmasteroutput();
-            requestmasterf("stats server %s %s %d\n", escapestring(G(serverdesc)), versionstring, serverport);
+            requestmasterf("stats server %s %s %d\n", escapestring(limitstring(G(serverdesc), MAXSDESCLEN+1)), versionstring, serverport);
             flushmasteroutput();
             loopi(numteams(gamemode, mutators))
             {
@@ -5422,7 +5422,7 @@ namespace server
         putint(p, gamestate); // 14
         putint(p, timeleft()); // 15
         sendstring(smapname, p);
-        if(*G(serverdesc)) sendstring(G(serverdesc), p);
+        if(*G(serverdesc)) sendstring(limitstring(G(serverdesc), MAXSDESCLEN+1), p);
         else
         {
             #ifdef STANDALONE

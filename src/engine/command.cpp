@@ -3580,3 +3580,11 @@ bool hasflag(const char *flags, char f)
     return false;
 }
 ICOMMAND(0, hasflag, "ss", (char *s, char *f), intret(*s && *f && hasflag(s, *f) ? 1 : 0));
+
+char *limitstring(const char *str, size_t len)
+{
+    static bigstring limitstrtext;
+    copystring(limitstrtext, str, len);
+    return limitstrtext;
+}
+ICOMMAND(0, limitstring, "si", (char *s, int *n), result(limitstring(s, *n)));
