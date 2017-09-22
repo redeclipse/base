@@ -753,7 +753,7 @@ int nextcontrolversion()
 template<size_t N> static inline void statfilterstring(uchar (&dst)[N], const char *src, size_t len = 0)
 {
     char tmp[N];
-    filterstring(tmp, src, true, true, true, false, len ? len : N);
+    filterstring(tmp, src, true, true, true, false, len ? len : N-1);
     encodeutf8(dst, N-1, (uchar*)tmp, N-1);
 }
 
