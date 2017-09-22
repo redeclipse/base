@@ -1823,7 +1823,9 @@ namespace ai
                 }
             }
             else aimed = true;
-            if(!m_edit(game::gamemode) && d->team != e->team && (!aimed || !client::haspriv(d, botoverridelock)))
+            if(aimed && t != e)
+                continue;
+            else if(!m_edit(game::gamemode) && d->team != e->team && (!aimed || !client::haspriv(d, botoverridelock)))
             {
                 if(aimed) botsay(e, d, "sorry, can't obey you");
                 continue;
