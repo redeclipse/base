@@ -414,6 +414,7 @@ extern void clearsleep(bool clearworlds = true);
 extern char *logtimeformat, *filetimeformat;
 extern int filetimelocal;
 extern const char *gettime(time_t ctime = 0, const char *format = NULL);
+extern char *limitstring(const char *str, size_t len);
 
 // nasty macros for registering script functions, abuses globals to avoid excessive infrastructure
 #define KEYWORD(flags, name, type) UNUSED static bool __dummy_##type = addcommand(#name, (identfun)NULL, NULL, type, flags|IDF_COMPLETE)

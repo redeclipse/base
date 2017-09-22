@@ -4803,3 +4803,11 @@ int modcolour(int c, float m)
     return (r<<16)|(g<<8)|b;
 }
 ICOMMAND(0, modcolour, "if", (int *c, float *m), intret(modcolour(*c, *m)));
+
+char *limitstring(const char *str, size_t len)
+{
+    static bigstring limitstrtext;
+    copystring(limitstrtext, str, len);
+    return limitstrtext;
+}
+ICOMMAND(0, limitstring, "si", (char *s, int *n), result(limitstring(s, *n)));

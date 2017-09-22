@@ -449,7 +449,7 @@ namespace auth
         else
         {
             conoutf("Updating master server");
-            requestmasterf("server %d %s %d %s %d %s\n", serverport, *serverip ? serverip : "*", CUR_VERSION, escapestring(G(serverdesc)), G(serverstats), escapestring(versionbranch));
+            requestmasterf("server %d %s %d %s %d %s\n", serverport, *serverip ? serverip : "*", CUR_VERSION, escapestring(limitstring(G(serverdesc), MAXSDESCLEN+1)), G(serverstats), escapestring(versionbranch));
         }
         reqserverauth();
     }
