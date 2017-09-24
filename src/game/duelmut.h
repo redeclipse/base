@@ -441,7 +441,7 @@ struct duelservmode : servmode
                                 {
                                     if(clients[i] == alive[0])
                                     {
-                                        ancmsgft(clients[i]->clientnum, S_V_YOUWIN, CON_EVENT, "%s", end);
+                                        ancmsgft(clients[i]->clientnum, S_V_YOUWIN, CON_SELF, "%s", end);
                                         if(!m_dm_oldschool(gamemode, mutators))
                                         {
                                             if(!m_affinity(gamemode)) givepoints(clients[i], 1, true, true);
