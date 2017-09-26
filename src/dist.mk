@@ -6,7 +6,7 @@ appvermin=$(shell sed -n 's/.define VERSION_MINOR \([0-9]\)/\1/p' engine/version
 appverpat=$(shell sed -n 's/.define VERSION_PATCH \([0-9]\)/\1/p' engine/version.h)
 appversion=$(appvermaj).$(appvermin).$(appverpat)
 appseries=$(appvermaj).$(appvermin).x
-appfiles=http://redeclipse.net/files/stable
+appfiles=https://redeclipse.net/files/stable
 
 dirname=$(appname)-$(appversion)
 dirname-mac=$(appname).app
@@ -19,7 +19,7 @@ tarname-mac=$(appname)_$(appversion)_mac.tar
 tarname-combined=$(appname)_$(appversion)_combined.tar
 
 torrent-trackers-url="udp://tracker.openbittorrent.com:80,udp://tracker.publicbt.com:80,udp://open.demonii.com:1337,udp://tracker.coppersurfer.tk:6969,udp://tracker.leechers-paradise.org:6969"
-torrent-webseed-baseurl="http://redeclipse.net/files/releases"
+torrent-webseed-baseurl="https://redeclipse.net/files/releases"
 
 MAC_APP=
 ifeq ($(APPNAME),redeclipse)

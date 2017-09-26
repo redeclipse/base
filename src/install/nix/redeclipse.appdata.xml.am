@@ -17,24 +17,24 @@
       <li>Builtin editor lets you create your own maps cooperatively online</li>
     </ul>
   </description>
-  <url type="homepage">http://redeclipse.net/</url>
+  <url type="homepage">https://redeclipse.net/</url>
   <screenshots>
     <screenshot type="default">
-      <image>http://redeclipse.net/bits/images/053.jpg</image>
+      <image>https://redeclipse.net/bits/images/053.jpg</image>
       <caption>Posing with fire on the map venus</caption>
     </screenshot>
     <screenshot>
-      <image>http://redeclipse.net/bits/images/045.jpg</image>
+      <image>https://redeclipse.net/bits/images/045.jpg</image>
       <caption>Mine fireworks on the map vault</caption>
     </screenshot>
     <screenshot>
-      <image>http://redeclipse.net/bits/images/019.jpg</image>
+      <image>https://redeclipse.net/bits/images/019.jpg</image>
       <caption>Overlooking friendly fire on the map cutec</caption>
     </screenshot>
   </screenshots>
-  <updatecontact>http://redeclipse.net/forum/</updatecontact>
+  <updatecontact>https://redeclipse.net/forum/</updatecontact>
   <developer_name>Red Eclipse Team</developer_name>
   <url type="bugtracker">https://github.com/red-eclipse/base/issues</url>
-  <url type="donation">http://redeclipse.net/donate</url>
-  <url type="help">http://redeclipse.net/faq</url>
+  <url type="donation">https://redeclipse.net/donate</url>
+  <url type="help">https://redeclipse.net/faq</url>
 </component>

@@ -308,7 +308,7 @@ Comment:
  .
  We are currently using your typeface "Akashi" for several pieces of
  "word art" and in the logo of the Free and Open Source FPS game Red
- Eclipse <http://redeclipse.net>.
+ Eclipse <https://redeclipse.net>.
  .
  It's an awesome font which we really like! :)
  .
@@ -1695,7 +1695,7 @@ License: Mark-Policy
  2. Modify this policy to preserve the rights of Red Eclipse, the public, the
     community, and the users.
     The latest version of the Red Eclipse Mark Policy should be available at
-    <http://redeclipse.net/wiki/Trademark_Policy>
+    <https://redeclipse.net/wiki/Trademark_Policy>
  .
  3. Grant exceptions to this policy, of any kind and for any reason whatsoever,
     other clauses notwithstanding.

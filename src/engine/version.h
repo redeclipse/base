@@ -8,7 +8,7 @@
 #define VERSION_UNAME "redeclipse"
 #define VERSION_VNAME "REDECLIPSE"
 #define VERSION_RELEASE "Development Build"
-#define VERSION_URL "http://redeclipse.net/"
+#define VERSION_URL "https://redeclipse.net/"
 #define VERSION_COPY "2010-2017"
 #define VERSION_DESC "A fun-filled new take on the first-person arena shooter."
 

@@ -3,14 +3,14 @@
 The Red Eclipse IRC (Internet Relay Chat) channel is located in #redeclipse on
 the Freenode Network (irc.freenode.net). If you don't have an IRC client
 installed, you may access the channel from your web browser at
-http://redeclipse.net/chat
+https://redeclipse.net/chat
 
 The channel is primarily a development and social environment for those
 who are working on or with others on the project. Please be mindful of how
 you approach the people in there, as for most of us this is our home and you
 are our guest. You may ask help and support questions, but the preferred
 mechanism for getting assistance is our forums, located at:
-http://redeclipse.net/forum
+https://redeclipse.net/forum
 
 Please be patient when asking questions or seeking other support, not everyone
 on the channel is able to answer your question, and others may not actually

@@ -23,7 +23,7 @@ the above revision date.
   - Are small enough to not warrant a note in any of the other sections
 
 * For purely numerical changes to variables it can be convenient to use the
-  instructions given at http://redeclipse.net/wiki/Vars_Changes to get a
+  instructions given at https://redeclipse.net/wiki/Vars_Changes to get a
   before-after view
 
 * This and all the above changelog hints should be removed prior to release
