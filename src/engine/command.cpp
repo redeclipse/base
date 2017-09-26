@@ -2262,6 +2262,8 @@ void printvar(ident *id)
             if(i < 0) conoutft(CON_DEBUG, "%s = %d", id->name, i);
             else if(id->flags&IDF_HEX && id->maxval==0xFFFFFF)
                 conoutft(CON_DEBUG, "%s = 0x%.6X (%d, %d, %d)", id->name, i, (i>>16)&0xFF, (i>>8)&0xFF, i&0xFF);
+            else if(id->flags&IDF_HEX && uint(id->maxval)==0xFFFFFFFF)
+                conoutft(CON_DEBUG, "%s = 0x%.8X (%d, %d, %d, %d)", id->name, i, i>>24, (i>>16)&0xFF, (i>>8)&0xFF, i&0xFF);
             else
                 conoutft(CON_DEBUG, id->flags&IDF_HEX ? "%s = 0x%X" : "%s = %d", id->name, i);
             break;
@@ -3362,7 +3364,7 @@ const char *intstr(int v)
 const char *intstr(ident *id)
 {
     retidx = (retidx + 1)%4;
-    formatstring(retbuf[retidx], id->flags&IDF_HEX && *id->storage.i >= 0 ? (id->maxval==0xFFFFFF ? "0x%.6X" : "0x%X") : "%d", *id->storage.i);
+    formatstring(retbuf[retidx], id->flags&IDF_HEX && *id->storage.i >= 0 ? (id->maxval==0xFFFFFF ? "0x%.6X" : (uint(id->maxval)==0xFFFFFFFF ? "0x%.8X" : "0x%X")) : "%d", *id->storage.i);
     return retbuf[retidx];
 }
 
@@ -4772,7 +4774,7 @@ ICOMMAND(0, getvarinfo, "biiiis", (int *n, int *w, int *x, int *t, int *o, char 
 
 void hexcolour(int *n)
 {
-    defformatstring(s, *n >= 0 && *n <= 0xFFFFFF ? "0x%.6X" : "%d", *n);
+    defformatstring(s, *n >= 0 && uint(*n) <= 0xFFFFFFFF ? (*n <= 0xFFFFFF ? "0x%.6X" : "0x%.8X") : "%d", *n);
     result(s);
 }
 COMMAND(0, hexcolour, "i");

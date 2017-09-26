@@ -3543,7 +3543,7 @@ namespace server
                 {
                     if(nargs <= 1 || !arg)
                     {
-                        conoutft(CON_DEBUG, id->flags&IDF_HEX && *id->storage.i >= 0 ? (id->maxval==0xFFFFFF ? "\fy%s = 0x%.6X" : "\fy%s = 0x%X") : "\fy%s = %d", id->name, *id->storage.i);
+                        conoutft(CON_DEBUG, id->flags&IDF_HEX && *id->storage.i >= 0 ? (id->maxval==0xFFFFFF ? "\fy%s = 0x%.6X" : (uint(id->maxval)==0xFFFFFFFF ? "\fy%s = 0x%.8X" : "\fy%s = 0x%X")) : "\fy%s = %d", id->name, *id->storage.i);
                         return true;
                     }
                     if(id->maxval < id->minval || id->flags&IDF_READONLY)
@@ -3689,7 +3689,7 @@ namespace server
                 {
                     if(nargs <= 1 || !arg)
                     {
-                        srvmsgft(ci->clientnum, CON_DEBUG, id->flags&IDF_HEX && *id->storage.i >= 0 ? (id->maxval==0xFFFFFF ? "\fy%s = 0x%.6X" : "\fy%s = 0x%X") : "\fy%s = %d", name, *id->storage.i);
+                        srvmsgft(ci->clientnum, CON_DEBUG, id->flags&IDF_HEX && *id->storage.i >= 0 ? (id->maxval==0xFFFFFF ? "\fy%s = 0x%.6X" : (uint(id->maxval)==0xFFFFFFFF ? "\fy%s = 0x%.8X" : "\fy%s = 0x%X")) : "\fy%s = %d", name, *id->storage.i);
                         return;
                     }
                     else if(locked && !haspriv(ci, locked, "change that variable"))

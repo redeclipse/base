@@ -367,6 +367,8 @@ namespace client
                         {
                             if(id.maxval==0xFFFFFF)
                                 f->printf("\t0x%.6X\t0x%.6X\t0x%.6X", id.def.i, id.minval, id.maxval);
+                            else if(uint(id.maxval)==0xFFFFFFFF)
+                                f->printf("\t0x%.8X\t0x%.8X\t0x%.8X", id.def.i, id.minval, id.maxval);
                             else
                                 f->printf("\t0x%X\t0x%X\t0x%X", id.def.i, id.minval, id.maxval);
                         }
