@@ -916,7 +916,7 @@ static bool fuzzycollidesolid(physent *d, const vec &dir, float cutoff, const cu
     collidewall = vec(0, 0, 0);
     float bestdist = -1e10f;
     int visible = isentirelysolid(c) ? c.visible : 0xFF;
-    #define CHECKSIDE(side, distval, dotval, margin, normal) if(visible&(1<<side)) do \
+    #define CHECKSIDE(side, distval, dotval, margin, normal) if(visible&(1<<side) && collidesolidface(c, side, co, size)) do \
     { \
         float dist = distval; \
         if(dist > 0) return false; \
@@ -1181,7 +1181,11 @@ bool collide(physent *d, const vec &dir, float cutoff, bool playercol, bool insi
     ivec bo(int(d->o.x-d->radius), int(d->o.y-d->radius), int(d->o.z-d->height)),
          bs(int(d->o.x+d->radius), int(d->o.y+d->radius), int(d->o.z+d->aboveeye));
     bo.sub(1); bs.add(1);  // guard space for rounding errors
+<<<<<<< HEAD
     return octacollide(d, dir, cutoff, bo, bs) || (playercol && plcollide(d, dir, insideplayercol)); // collide with world
+=======
+    return octacollide(d, dir, cutoff, bo, bs) || (playercol && plcollide(d, dir, insideplayercol));
+>>>>>>> ab0663fe... Collide less with occluded faces. Fixes #221.
 }
 
 float pltracecollide(physent *d, const vec &from, const vec &ray, float maxdist)
