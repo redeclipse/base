@@ -1643,18 +1643,89 @@ namespace UI
         bool operator!=(const Color &o) const { return mask != o.mask; }
     };
 
+    struct Colored : Object
+    {
+        enum { SOLID = 0, MODULATE, OUTLINE };
+        enum { VERTICAL, HORIZONTAL };
+
+        int type, dir;
+        vector<Color> colors;
+
+        static const char *typestr() { return "#Colored"; }
+        const char *gettype() const { return typestr(); }
+        bool iscolour() const { return true; }
+
+        void setup(const Color &color_, int type_ = SOLID, int dir_ = VERTICAL)
+        {
+            Object::setup();
+            colors.setsize(0);
+            colors.add(color_);
+            type = type_;
+            dir = dir_;
+        }
+
+        void rotatecolors(float amt)
+        {
+            if(amt == 0 || colors.length() <= 1) return;
+            int cols = colors.length(), pieces = 0;
+            float progress = clamp(fabs(amt), 0.f, 1.f), part = 1.f/cols;
+            while(progress >= part)
+            {
+                progress -= part;
+                pieces++;
+            }
+            float iter = progress/part;
+            static vector<Color> colorstack;
+            colorstack.setsize(0);
+            bool rev = amt < 0;
+            loopv(colors)
+            {
+                int p = rev ? i-pieces : (i+pieces)%cols, m = p >= 0 ? p : cols+p, q = rev ? m-1 : (m+1)%cols, n = q >= 0 ? q : cols+q;
+                colorstack.add(
+                    Color(colors[m].r-int((colors[m].r-colors[n].r)*iter),
+                          colors[m].g-int((colors[m].g-colors[n].g)*iter),
+                          colors[m].b-int((colors[m].b-colors[n].b)*iter),
+                          colors[m].a-int((colors[m].a-colors[n].a)*iter)
+                         )
+                    );
+            }
+            colors.setsize(0);
+            loopv(colorstack) colors.add(colorstack[i]);
+        }
+    };
+    UIARGT(Colored, colour, type, "i", int, int(Colored::SOLID), int(Colored::OUTLINE));
+    UIARGT(Colored, colour, dir, "i", int, int(Colored::VERTICAL), int(Colored::HORIZONTAL));
+
+    UICMDT(Colored, colour, set, "ii", (int *c, int *pos), {
+        if(*pos >= 0 && *pos < o->colors.length()) o->colors[*pos] = Color(*c);
+    });
+    UICMDT(Colored, colour, get, "i", (int *pos), intret(o->colors[clamp(*pos, 0, o->colors.length()-1)].mask));
+    UICMDT(Colored, colour, add, "i", (int *c), o->colors.add(Color(*c)));
+    UICMDT(Colored, colour, del, "i", (int *c), {
+        loopvrev(o->colors) if(o->colors[i] == Color(*c)) o->colors.remove(i);
+        if(o->colors.empty()) o->colors.add(Color(colourwhite));
+    });
+    UICMDT(Colored, colour, rotate, "f", (float *amt), o->rotatecolors(*amt));
+
     static const float defcoords[4][2] = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
 
-    struct Filler : Object
+    struct Filler : Colored
     {
         float minw, minh;
         float coords[4][2];
 
-        void setup(float minw_, float minh_)
+        void setup(float minw_, float minh_, const Color &color_ = Color(colourwhite), int type_ = SOLID, int dir_ = VERTICAL)
         {
-            Object::setup();
+            Colored::setup(color_, type_, dir_);
             minw = minw_;
             minh = minh_;
+            loopi(4) loopj(2) coords[i][j] = defcoords[i][j];
+        }
+
+        void setup(const Color &color_, int type_ = SOLID, int dir_ = VERTICAL)
+        {
+            Colored::setup(color_, type_, dir_);
+            minw = minh = 0;
             loopi(4) loopj(2) coords[i][j] = defcoords[i][j];
         }
 
@@ -1711,72 +1782,11 @@ namespace UI
     ICOMMAND(0, uitarget, "ffe", (float *minw, float *minh, uint *children),
         BUILD(Target, o, o->setup(*minw*uiscale, *minh*uiscale), children));
 
-    struct TargetColor : Target
-    {
-        enum { SOLID = 0, MODULATE, OUTLINE };
-        enum { VERTICAL, HORIZONTAL };
-
-        int type, dir;
-        vector<Color> colors;
-
-        void setup(const Color &color_, float minw_ = 0, float minh_ = 0, int type_ = SOLID, int dir_ = VERTICAL)
-        {
-            Target::setup(minw_, minh_);
-            colors.setsize(0);
-            colors.add(color_);
-            type = type_;
-            dir = dir_;
-        }
-
-        void rotatecolors(float amt)
-        {
-            if(amt == 0 || colors.length() <= 1) return;
-            int cols = colors.length(), pieces = 0;
-            float progress = clamp(fabs(amt), 0.f, 1.f), part = 1.f/cols;
-            while(progress >= part)
-            {
-                progress -= part;
-                pieces++;
-            }
-            float iter = progress/part;
-            static vector<Color> colorstack;
-            colorstack.setsize(0);
-            bool rev = amt < 0;
-            loopv(colors)
-            {
-                int p = rev ? i-pieces : (i+pieces)%cols, m = p >= 0 ? p : cols+p, q = rev ? m-1 : (m+1)%cols, n = q >= 0 ? q : cols+q;
-                colorstack.add(
-                    Color(colors[m].r-int((colors[m].r-colors[n].r)*iter),
-                          colors[m].g-int((colors[m].g-colors[n].g)*iter),
-                          colors[m].b-int((colors[m].b-colors[n].b)*iter),
-                          colors[m].a-int((colors[m].a-colors[n].a)*iter)
-                         )
-                    );
-            }
-            colors.setsize(0);
-            loopv(colorstack) colors.add(colorstack[i]);
-        }
-
-        static const char *typestr() { return "#TargetColor"; }
-        const char *gettype() const { return typestr(); }
-        bool iscolour() const { return true; }
-    };
-
-    UIARGT(TargetColor, colour, type, "i", int, int(TargetColor::SOLID), int(TargetColor::OUTLINE));
-    UIARGT(TargetColor, colour, dir, "i", int, int(TargetColor::VERTICAL), int(TargetColor::HORIZONTAL));
-
-    UICMDT(TargetColor, colour, add, "i", (int *c), o->colors.add(Color(*c)));
-    UICMDT(TargetColor, colour, del, "i", (int *c), {
-        loopvrev(o->colors) if(o->colors[i] == Color(*c)) o->colors.remove(i);
-        if(o->colors.empty()) o->colors.add(Color(255, 255, 255));
-    });
-    UICMDT(TargetColor, colour, rotate, "f", (float *amt), o->rotatecolors(*amt));
-
-    struct FillColor : TargetColor
+    struct FillColor : Target
     {
         void setup(const Color &color_, float minw_ = 0, float minh_ = 0, int type_ = SOLID, int dir_ = VERTICAL)
         {
-            TargetColor::setup(color_, minw_, minh_, type_, dir_);
+            Target::setup(minw_, minh_, color_, type_, dir_);
         }
 
         static const char *typestr() { return "#FillColor"; }
@@ -1853,10 +1863,10 @@ namespace UI
     };
 
     ICOMMAND(0, uicolour, "iffe", (int *c, float *minw, float *minh, uint *children),
-        BUILD(FillColor, o, o->setup(Color(*c), *minw*uiscale, *minh*uiscale, TargetColor::SOLID), children));
+        BUILD(FillColor, o, o->setup(Color(*c), *minw*uiscale, *minh*uiscale, Colored::SOLID), children));
 
     ICOMMAND(0, uimodcolour, "iffe", (int *c, float *minw, float *minh, uint *children),
-        BUILD(FillColor, o, o->setup(Color(*c), *minw*uiscale, *minh*uiscale, TargetColor::MODULATE), children));
+        BUILD(FillColor, o, o->setup(Color(*c), *minw*uiscale, *minh*uiscale, Colored::MODULATE), children));
 
 
     struct Gradient : FillColor
@@ -1883,7 +1893,7 @@ namespace UI
     ICOMMAND(0, uimodhgradient, "iiffe", (int *c, int *c2, float *minw, float *minh, uint *children),
         BUILD(Gradient, o, o->setup(Color(*c), Color(*c2), *minw*uiscale, *minh*uiscale, Gradient::MODULATE, Gradient::HORIZONTAL), children));
 
-    struct Line : TargetColor
+    struct Line : Target
     {
         static const char *typestr() { return "#Line"; }
         const char *gettype() const { return typestr(); }
@@ -1912,7 +1922,7 @@ namespace UI
     ICOMMAND(0, uiline, "iffe", (int *c, float *minw, float *minh, uint *children),
         BUILD(Line, o, o->setup(Color(*c), *minw*uiscale, *minh*uiscale), children));
 
-    struct Outline : TargetColor
+    struct Outline : Target
     {
         static const char *typestr() { return "#Outline"; }
         const char *gettype() const { return typestr(); }
@@ -1956,7 +1966,7 @@ namespace UI
         return false;
     }
 
-    struct Image : TargetColor
+    struct Image : Target
     {
         static Texture *lasttex;
         static Color lastcolor;
@@ -1967,14 +1977,14 @@ namespace UI
 
         void setup(Texture *tex_, const Color &color_, bool alphatarget_ = false, float minw_ = 0, float minh_ = 0)
         {
-            TargetColor::setup(color_, minw_, minh_, SOLID, VERTICAL);
+            Target::setup(minw_, minh_, color_, SOLID, VERTICAL);
             tex = tex_;
             alphatarget = alphatarget_;
         }
 
         void setup(Texture *tex_, const Color &color_, const Color &color2_, bool alphatarget_ = false, float minw_ = 0, float minh_ = 0, int dir_ = VERTICAL)
         {
-            TargetColor::setup(color_, minw_, minh_, SOLID, dir_);
+            Target::setup(minw_, minh_, color_, SOLID, dir_);
             colors.add(color2_); // gradient version
             tex = tex_;
             alphatarget = alphatarget_;
@@ -2460,11 +2470,11 @@ namespace UI
     UIARG(TiledImage, image, tilew, "f", float, FVAR_NONZERO, FVAR_MAX);
     UIARG(TiledImage, image, tileh, "f", float, FVAR_NONZERO, FVAR_MAX);
 
-    struct Shape : TargetColor
+    struct Shape : Target
     {
         void setup(const Color &color_, int type_ = SOLID, float minw_ = 0, float minh_ = 0)
         {
-            TargetColor::setup(color_, minw_, minh_, type_);
+            Target::setup(minw_, minh_, color_, type_);
         }
 
         void startdraw()
@@ -2604,19 +2614,17 @@ namespace UI
         else dst = newstring(src); \
     } while(0)
 
-    struct Text : Object
+    struct Text : Colored
     {
         float scale, wrap, tw, th, wlen, limit, rescale, growth;
         int align, pos;
-        Color color;
 
         void setup(float scale_ = 1, const Color &color_ = Color(colourwhite), float wrap_ = 0, float limit_ = 0, int align_ = 0, int pos_ = -1, float growth_ = 1)
         {
-            Object::setup();
+            Colored::setup(color_);
             tw = th = wlen = 0;
             rescale = 1;
             scale = scale_;
-            color = color_;
             wrap = wrap_;
             limit = limit_;
             align = align_;
@@ -2649,7 +2657,7 @@ namespace UI
             if(rescale != 1) top += (((th*drawscale())-(th*k))*0.5f)/k;
             if(growth < 0) top += th-(th/(0-growth));
             pushhudtranslate(0, 0, k);
-            draw_text(getstr(), left, top, color.r, color.g, color.b, color.a, a, pos, wlen, 1);
+            draw_text(getstr(), left, top, colors[0].r, colors[0].g, colors[0].b, colors[0].a, a, pos, wlen, 1);
             pophudmatrix();
 
             Object::draw(sx, sy);
@@ -2730,8 +2738,6 @@ namespace UI
     UIARGT(Text, text, growth, "f", float, FVAR_MIN, FVAR_MAX);
     UIARGT(Text, text, align, "i", int, -2, 2);
     UIARGT(Text, text, pos, "i", int, -1, VAR_MAX);
-    UICMDT(Text, text, colour, "i", (int *c), o->color = Color(*c));
-    UICMDT(Text, text, getcolour, "", (), intret(o->color.mask));
 
     struct TextString : Text
     {
@@ -2793,29 +2799,29 @@ namespace UI
         const char *getstr() const { return str; }
     };
 
-    static inline void buildtext(tagval &t, float scale, float scalemod, uint *children)
+    static inline void buildtext(tagval &t, float scale, float scalemod, const Color &color, uint *children)
     {
         if(scale <= 0) scale = 1;
         scale *= scalemod;
         switch(t.type)
         {
             case VAL_INT:
-                BUILD(TextInt, o, o->setup(t.i, scale*uiscale), children);
+                BUILD(TextInt, o, o->setup(t.i, scale*uiscale, color), children);
                 break;
             case VAL_FLOAT:
-                BUILD(TextFloat, o, o->setup(t.f, scale*uiscale), children);
+                BUILD(TextFloat, o, o->setup(t.f, scale*uiscale, color), children);
                 break;
             case VAL_CSTR:
             case VAL_MACRO:
             case VAL_STR:
                 if(t.s[0])
                 {
-                    BUILD(TextString, o, o->setup(t.s, scale*uiscale), children);
+                    BUILD(TextString, o, o->setup(t.s, scale*uiscale, color), children);
                     break;
                 }
                 // fall-through
             default:
-                BUILD(TextString, o, o->setup("", scale*uiscale), children);
+                BUILD(TextString, o, o->setup("", scale*uiscale, color), children);
                 break;
         }
     }
@@ -2824,7 +2830,10 @@ namespace UI
         BUILD(Filler, o, o->setup(*minw*uiscale * uitextscale*0.5f, *minh*uiscale * uitextscale), children));
 
     ICOMMAND(0, uitext, "tfe", (tagval *text, float *scale, uint *children),
-        buildtext(*text, *scale, uitextscale, children));
+        buildtext(*text, *scale, uitextscale, Color(colourwhite), children));
+
+    ICOMMAND(0, uicolourtext, "tife", (tagval *text, int *c, float *scale, uint *children),
+        buildtext(*text, *scale, uitextscale, Color(*c), children));
 
     struct Font : Object
     {
@@ -3411,14 +3420,13 @@ namespace UI
     ICOMMAND(0, uivslider, "rfffee", (ident *var, float *vmin, float *vmax, float *vstep, uint *onchange, uint *children),
         BUILD(VerticalSlider, o, o->setup(var, *vmin, *vmax, *vstep, onchange), children));
 
-    struct TextEditor : Object
+    struct TextEditor : Colored
     {
         static TextEditor *focus;
 
         float scale, offsetx, offsety;
         editor *edit;
         char *keyfilter;
-        Color color;
 
         TextEditor() : edit(NULL), keyfilter(NULL) {}
 
@@ -3426,7 +3434,7 @@ namespace UI
 
         void setup(const char *name, int length, int height, float scale_ = 1, const char *initval = NULL, int mode = EDITORUSED, const char *keyfilter_ = NULL)
         {
-            Object::setup();
+            Colored::setup(Color(colourwhite));
             editor *edit_ = useeditor(name, mode, false, initval);
             if(edit_ != edit)
             {
@@ -3442,7 +3450,6 @@ namespace UI
             edit->pixelwidth = abs(length)*FONTW;
             if(edit->linewrap && edit->maxy == 1) edit->updateheight();
             else edit->pixelheight = FONTH*max(height, 1);
-            color = Color(colourwhite);
             scale = scale_;
             if(keyfilter_) SETSTR(keyfilter, keyfilter_);
             else DELETEA(keyfilter);
@@ -3484,7 +3491,7 @@ namespace UI
             float k = drawscale();
             pushhudtranslate(sx, sy, k);
 
-            edit->draw(FONTW/2, 0, color.tohexcolor(), color.a, isfocus());
+            edit->draw(FONTW/2, 0, colors[0].tohexcolor(), colors[0].a, isfocus());
 
             pophudmatrix();
 
@@ -3706,7 +3713,7 @@ namespace UI
     ICOMMAND(0, uikeyfield, "riefe", (ident *var, int *length, uint *onchange, float *scale, uint *children),
         BUILD(KeyField, o, o->setup(var, *length, onchange, (*scale <= 0 ? 1 : *scale)*uiscale * uitextscale), children));
 
-    struct Preview : TargetColor
+    struct Preview : Target
     {
         void startdraw()
         {
@@ -3734,7 +3741,7 @@ namespace UI
 
         void setup(const char *name_, const char *animspec, float scale_, float blend_, float minw_, float minh_)
         {
-            Preview::setup(Color(colourwhite), minw_, minh_);
+            Preview::setup(minw_, minh_, Color(colourwhite));
             SETSTR(name, name_);
 
             anim = ANIM_ALL;
@@ -3802,7 +3809,7 @@ namespace UI
 
         void setup(int model_, const Color &pcol_, int team_, int weapon_, char *vanity_, float scale_, float blend_, float minw_, float minh_)
         {
-            Preview::setup(Color(colourwhite), minw_, minh_);
+            Preview::setup(minw_, minh_, Color(colourwhite));
             model = model_;
             pcol = pcol_;
             team = team_;
@@ -3844,7 +3851,7 @@ namespace UI
 
         void setup(const char *name_, const Color &color_, float blend, float minw_, float minh_)
         {
-            Preview::setup(color_, minw_, minh_);
+            Preview::setup(minw_, minh_, color_);
             SETSTR(name, name_);
         }
 
@@ -3871,13 +3878,13 @@ namespace UI
 
     static int lastthumbnail = 0;
 
-    struct SlotViewer : TargetColor
+    struct SlotViewer : Target
     {
         int index;
 
         void setup(int index_, float minw_ = 0, float minh_ = 0)
         {
-            TargetColor::setup(Color(colourwhite), minw_, minh_);
+            Target::setup(minw_, minh_, Color(colourwhite));
             index = index_;
         }
 
@@ -3981,14 +3988,14 @@ namespace UI
     ICOMMAND(0, uivslotview, "iffe", (int *index, float *minw, float *minh, uint *children),
         BUILD(VSlotViewer, o, o->setup(*index, *minw*uiscale, *minh*uiscale), children));
 
-    struct MiniMap : TargetColor
+    struct MiniMap : Target
     {
         Texture *tex;
         float dist, border;
 
         void setup(Texture *tex_, const Color &color_, float dist_ = 0, float border_ = 0.05f, float minw_ = 0, float minh_ = 0)
         {
-            TargetColor::setup(color_, minw_, minh_, SOLID, VERTICAL);
+            Target::setup(minw_, minh_, color_, SOLID, VERTICAL);
             colors.add(Color(colourwhite));
             tex = tex_;
             dist = dist_;
@@ -3997,7 +4004,7 @@ namespace UI
 
         void setup(Texture *tex_, const Color &color_, const Color &color2_, float dist_ = 0, float border_ = 0.05f, float minw_ = 0, float minh_ = 0)
         {
-            TargetColor::setup(color_, minw_, minh_, SOLID, VERTICAL);
+            Target::setup(minw_, minh_, color_, SOLID, VERTICAL);
             colors.add(color2_); // minimap version
             tex = tex_;
             dist = dist_;
@@ -4274,11 +4281,9 @@ namespace UI
     #define UICOLOURCMDS(t) \
         if(o->iscolour()) \
         { \
-            loopvk(((TargetColor *)o)->colors) ((TargetColor *)o)->colors[k] = Color(*c); \
+            loopvk(((Colored *)o)->colors) ((Colored *)o)->colors[k] = Color(*c); \
             t; \
         } \
-        else if(o->istext()) { ((Text *)o)->color = Color(*c); t; } \
-        else if(o->iseditor()) { ((TextEditor *)o)->color = Color(*c); t; }
 
     UIREVCMDC(setcolour, "i", (int *c), UICOLOURCMDS(break));
     void setchildcolours(Object *o, int *c)
@@ -4291,11 +4296,9 @@ namespace UI
     #define UIBLENDCMDS(t) \
         if(o->iscolour()) \
         { \
-            loopvk(((TargetColor *)o)->colors) ((TargetColor *)o)->colors[k].a = clamp(int(*c * ((TargetColor *)o)->colors[k].a), 0, 255); \
+            loopvk(((Colored *)o)->colors) ((Colored *)o)->colors[k].a = clamp(int(*c * ((Colored *)o)->colors[k].a), 0, 255); \
             t; \
         } \
-        else if(o->istext()) { ((Text *)o)->color.a = clamp(int(*c * ((Text *)o)->color.a), 0, 255); t; } \
-        else if(o->iseditor()) { ((TextEditor *)o)->color.a = clamp(int(*c * ((TextEditor *)o)->color.a), 0, 255); t; }
 
     UIREVCMDC(changeblend, "f", (float *c), UIBLENDCMDS(break));
     void changechildblends(Object *o, float *c)
@@ -4308,28 +4311,14 @@ namespace UI
     #define UICHGCOLCMDS(t) \
         if(o->iscolour()) \
         { \
-            loopvk(((TargetColor *)o)->colors) \
+            loopvk(((Colored *)o)->colors) \
             { \
-                ((TargetColor *)o)->colors[k].r = clamp(int(*c * ((TargetColor *)o)->colors[k].r), 0, 255); \
-                ((TargetColor *)o)->colors[k].g = clamp(int(*c * ((TargetColor *)o)->colors[k].g), 0, 255); \
-                ((TargetColor *)o)->colors[k].b = clamp(int(*c * ((TargetColor *)o)->colors[k].b), 0, 255); \
+                ((Colored *)o)->colors[k].r = clamp(int(*c * ((Colored *)o)->colors[k].r), 0, 255); \
+                ((Colored *)o)->colors[k].g = clamp(int(*c * ((Colored *)o)->colors[k].g), 0, 255); \
+                ((Colored *)o)->colors[k].b = clamp(int(*c * ((Colored *)o)->colors[k].b), 0, 255); \
             } \
             t; \
         } \
-        else if(o->istext()) \
-        { \
-            ((Text *)o)->color.r = clamp(int(*c * ((Text *)o)->color.r), 0, 255); \
-            ((Text *)o)->color.g = clamp(int(*c * ((Text *)o)->color.g), 0, 255); \
-            ((Text *)o)->color.b = clamp(int(*c * ((Text *)o)->color.b), 0, 255); \
-            t; \
-        } \
-        else if(o->iseditor()) \
-        { \
-            ((TextEditor *)o)->color.r = clamp(int(*c * ((TextEditor *)o)->color.r), 0, 255); \
-            ((TextEditor *)o)->color.g = clamp(int(*c * ((TextEditor *)o)->color.g), 0, 255); \
-            ((TextEditor *)o)->color.b = clamp(int(*c * ((TextEditor *)o)->color.b), 0, 255); \
-            t; \
-        }
 
     UIREVCMDC(changecolour, "f", (float *c), UICHGCOLCMDS(break));
     void changechildcolours(Object *o, float *c)
@@ -4338,6 +4327,21 @@ namespace UI
         loopv(o->children) changechildcolours(o->children[i], c);
     }
     UIWINCMDC(changecolours, "f", (float *c), changechildcolours(o, c));
+
+    #define UIROTCOLCMDS(t) \
+        if(o->iscolour()) \
+        { \
+            ((Colored *)o)->rotatecolors(*c); \
+            t; \
+        } \
+
+    UIREVCMDC(rotatecolour, "f", (float *c), UIROTCOLCMDS(break));
+    void rotchildcolours(Object *o, float *c)
+    {
+        UIROTCOLCMDS();
+        loopv(o->children) rotchildcolours(o->children[i], c);
+    }
+    UIWINCMDC(rotatecolours, "i", (float *c), rotchildcolours(o, c));
 
     bool hasinput()
     {
