@@ -1664,10 +1664,12 @@ namespace UI
             dir = dir_;
         }
 
-        void rotatecolors(float amt)
+        void rotatecolors(float amt, int colstart = 0)
         {
-            if(amt == 0 || colors.length() <= 1) return;
-            int cols = colors.length(), pieces = 0;
+            if(amt == 0) return;
+            int cols = colors.length()-colstart;
+            if(cols <= 1) return;
+            int pieces = 0;
             float progress = clamp(fabs(amt), 0.f, 1.f), part = 1.f/cols;
             while(progress >= part)
             {
@@ -1677,6 +1679,11 @@ namespace UI
             float iter = progress/part;
             static vector<Color> colorstack;
             colorstack.setsize(0);
+            loopirev(colstart)
+            {
+                colorstack.insert(0, colors[i]);
+                colors.remove(i);
+            }
             bool rev = amt < 0;
             loopv(colors)
             {
@@ -1705,14 +1712,14 @@ namespace UI
         loopvrev(o->colors) if(o->colors[i] == Color(*c)) o->colors.remove(i);
         if(o->colors.empty()) o->colors.add(Color(colourwhite));
     });
-    UICMDT(Colored, colour, rotate, "f", (float *amt), o->rotatecolors(*amt));
+    UICMDT(Colored, colour, rotate, "fi", (float *amt, int *start), o->rotatecolors(*amt, *start));
 
     static const float defcoords[4][2] = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
 
     struct Filler : Colored
     {
         float minw, minh;
-        float coords[4][2];
+        vec2 coords[4];
 
         void setup(float minw_, float minh_, const Color &color_ = Color(colourwhite), int type_ = SOLID, int dir_ = VERTICAL)
         {
@@ -1763,7 +1770,7 @@ namespace UI
 
     UICMDT(Filler, fill, coord, "iff", (int *pos, float *x, float *y),
     {
-        if(*pos < 0 || *pos >= 4) return;
+        if(*pos < 0 || *pos > 3) return;
         o->coords[*pos][0] = min(*x, 1.f);
         o->coords[*pos][1] = min(*y, 1.f);
     });
@@ -1920,7 +1927,7 @@ namespace UI
     };
 
     ICOMMAND(0, uiline, "iffe", (int *c, float *minw, float *minh, uint *children),
-        BUILD(Line, o, o->setup(Color(*c), *minw*uiscale, *minh*uiscale), children));
+        BUILD(Line, o, o->setup(*minw*uiscale, *minh*uiscale, Color(*c)), children));
 
     struct Outline : Target
     {
@@ -1951,7 +1958,7 @@ namespace UI
     };
 
     ICOMMAND(0, uioutline, "iffe", (int *c, float *minw, float *minh, uint *children),
-        BUILD(Outline, o, o->setup(Color(*c), *minw*uiscale, *minh*uiscale), children));
+        BUILD(Outline, o, o->setup(*minw*uiscale, *minh*uiscale, Color(*c)), children));
 
     static inline bool checkalphamask(Texture *tex, float x, float y)
     {
@@ -2049,63 +2056,91 @@ namespace UI
             }
         }
 
-        void draw(float sx, float sy)
+        bool drawmapped(float sx, float sy, vec2 coordmap[4], vec2 tcoordmap[4], int colstart = 0)
         {
-            if(tex == notexture) { Object::draw(sx, sy); return; }
-
-            int cols = colors.length();
-            bindtex(cols >= 2 ? GL_TRIANGLE_STRIP : GL_QUADS);
+            int cols = colors.length()-colstart;
             if(cols >= 2)
             {
-                float vr = 1/float(cols-1), vcx1 = 0, vcx2 = 0, vcy1 = 0, vcy2 = 0, ts = 0,
-                      vw1 = w*(getcoord(1, 0)-getcoord(0, 0)), vx1 = w*getcoord(0, 0),
-                      vw2 = w*(getcoord(2, 0)-getcoord(3, 0)), vx2 = w*getcoord(3, 0),
-                      vdw1 = w*(getcoord(3, 0)-getcoord(0, 0)), vdw2 = w*(getcoord(2, 0)-getcoord(1, 0)),
-                      vh1 = h*(getcoord(3, 1)-getcoord(0, 1)), vy1 = h*getcoord(0, 1),
-                      vh2 = h*(getcoord(2, 1)-getcoord(1, 1)), vy2 = h*getcoord(1, 1),
-                      vdh1 = h*(getcoord(1, 1)-getcoord(0, 1)), vdh2 = h*(getcoord(2, 1)-getcoord(3, 1));
+                bindtex(GL_TRIANGLE_STRIP);
+                float vr = 1/float(cols-1), vs = 0, vcx1 = 0, vcx2 = 0, vcy1 = 0, vcy2 = 0,
+                      vw1 = coordmap[1][0]-coordmap[0][0], vx1 = coordmap[0][0],
+                      vw2 = coordmap[2][0]-coordmap[3][0], vx2 = coordmap[3][0],
+                      vdw1 = coordmap[3][0]-coordmap[0][0], vdw2 = coordmap[2][0]-coordmap[1][0],
+                      vh1 = coordmap[3][1]-coordmap[0][1], vy1 = coordmap[0][1],
+                      vh2 = coordmap[2][1]-coordmap[1][1], vy2 = coordmap[1][1],
+                      vdh1 = coordmap[1][1]-coordmap[0][1], vdh2 = coordmap[2][1]-coordmap[3][1],
+                      tcx1 = 0, tcx2 = 0, tcy1 = 0, tcy2 = 0,
+                      tw1 = tcoordmap[1][0]-tcoordmap[0][0], tx1 = tcoordmap[0][0],
+                      tw2 = tcoordmap[2][0]-tcoordmap[3][0], tx2 = tcoordmap[3][0],
+                      tdw1 = tcoordmap[3][0]-tcoordmap[0][0], tdw2 = tcoordmap[2][0]-tcoordmap[1][0],
+                      th1 = tcoordmap[3][1]-tcoordmap[0][1], ty1 = tcoordmap[0][1],
+                      th2 = tcoordmap[2][1]-tcoordmap[1][1], ty2 = tcoordmap[1][1],
+                      tdh1 = tcoordmap[1][1]-tcoordmap[0][1], tdh2 = tcoordmap[2][1]-tcoordmap[3][1];
                 loopi(cols-1)
                 {
-                    float left = 1-(ts+vr);
+                    float left = 1-(vs+vr);
                     if(left < vr) vr += left;
                     switch(dir)
                     {
                         case HORIZONTAL:
                         {
-                            gle::attribf(sx+vx1+vcx1, sy+vy1+vcy1); gle::attribf(ts, 0.f); colors[i].attrib(); // 0
-                            gle::attribf(sx+vx1+vcx1+(vw1*vr), sy+vy1+vcy1+(vdh1*vr)); gle::attribf(ts+vr, 0.f); colors[i+1].attrib(); // 1
-                            gle::attribf(sx+vx2+vcx2, sy+vy1+vcy2+vh1); gle::attribf(ts, 1.f); colors[i].attrib(); // 3
-                            gle::attribf(sx+vx2+vcx2+(vw2*vr), sy+vy1+vcy2+vh1+(vdh2*vr));  gle::attribf(ts+vr, 1.f); colors[i+1].attrib(); // 2
+                            gle::attribf(sx+vx1+vcx1, sy+vy1+vcy1); gle::attribf(tx1+tcx1, ty1+tcy1); colors[i+colstart].attrib(); // 0
+                            gle::attribf(sx+vx1+vcx1+(vw1*vr), sy+vy1+vcy1+(vdh1*vr)); gle::attribf(tx1+tcx1+(tw1*vr), ty1+tcy1+(tdh1*vr)); colors[i+colstart+1].attrib(); // 1
+                            gle::attribf(sx+vx2+vcx2, sy+vy1+vcy2+vh1); gle::attribf(tx2+tcx2, ty1+tcy2+th1); colors[i+colstart].attrib(); // 3
+                            gle::attribf(sx+vx2+vcx2+(vw2*vr), sy+vy1+vcy2+vh1+(vdh2*vr)); gle::attribf(tx2+tcx2+(tw2*vr), ty1+tcy2+th1+(tdh2*vr)); colors[i+colstart+1].attrib(); // 2
                             vcx1 += vw1*vr;
                             vcx2 += vw2*vr;
                             vcy1 += vdh1*vr;
                             vcy2 += vdh2*vr;
+                            tcx1 += tw1*vr;
+                            tcx2 += tw2*vr;
+                            tcy1 += tdh1*vr;
+                            tcy2 += tdh2*vr;
                             break;
                         }
                         case VERTICAL:
                         {
-                            gle::attribf(sx+vx1+vcx2+vw1, sy+vy2+vcy2); gle::attribf(1.f, ts); colors[i].attrib(); // 1
-                            gle::attribf(sx+vx1+vcx2+vw1+(vdw2*vr), sy+vy2+vcy2+(vh2*vr)); gle::attribf(1.f, ts+vr); colors[i+1].attrib(); // 2
-                            gle::attribf(sx+vx1+vcx1, sy+vy1+vcy1); gle::attribf(0.f, ts); colors[i].attrib(); // 0
-                            gle::attribf(sx+vx1+vcx1+(vdw1*vr), sy+vy1+vcy1+(vh1*vr)); gle::attribf(0.f, ts+vr); colors[i+1].attrib(); // 3
+                            gle::attribf(sx+vx1+vcx2+vw1, sy+vy2+vcy2); gle::attribf(tx1+tcx2+tw1, ty2+tcy2); colors[i+colstart].attrib(); // 1
+                            gle::attribf(sx+vx1+vcx2+vw1+(vdw2*vr), sy+vy2+vcy2+(vh2*vr)); gle::attribf(tx1+tcx2+tw1+(tdw2*vr), ty2+tcy2+(th2*vr)); colors[i+colstart+1].attrib(); // 2
+                            gle::attribf(sx+vx1+vcx1, sy+vy1+vcy1); gle::attribf(tx1+tcx1, ty1+tcy1); colors[i+colstart].attrib(); // 0
+                            gle::attribf(sx+vx1+vcx1+(vdw1*vr), sy+vy1+vcy1+(vh1*vr)); gle::attribf(tx1+tcx1+(tdw1*vr), ty1+tcy1+(th1*vr)); colors[i+colstart+1].attrib(); // 3
                             vcy1 += vh1*vr;
                             vcy2 += vh2*vr;
                             vcx1 += vdw1*vr;
                             vcx2 += vdw2*vr;
+                            tcy1 += th1*vr;
+                            tcy2 += th2*vr;
+                            tcx1 += tdw1*vr;
+                            tcx2 += tdw2*vr;
                             break;
                         }
                     }
-                    lastcolor = colors[i+1];
-                    ts += vr;
+                    lastcolor = colors[i+colstart+1];
+                    vs += vr;
                 }
             }
             else
             {
-                gle::attribf(sx+(w*getcoord(0, 0)), sy+(h*getcoord(0, 1))); gle::attribf(0.f, 0.f); // 0
-                gle::attribf(sx+(w*getcoord(1, 0)), sy+(h*getcoord(1, 1))); gle::attribf(1.f, 0.f); // 1
-                gle::attribf(sx+(w*getcoord(2, 0)), sy+(h*getcoord(2, 1))); gle::attribf(1.f, 1.f); // 2
-                gle::attribf(sx+(w*getcoord(3, 0)), sy+(h*getcoord(3, 1))); gle::attribf(0.f, 1.f); // 3
+                bindtex(GL_QUADS);
+                gle::attribf(sx+coordmap[0][0], sy+coordmap[0][1]); gle::attribf(tcoordmap[0][0], tcoordmap[0][1]); // 0
+                gle::attribf(sx+coordmap[1][0], sy+coordmap[1][1]); gle::attribf(tcoordmap[1][0], tcoordmap[1][1]); // 1
+                gle::attribf(sx+coordmap[2][0], sy+coordmap[2][1]); gle::attribf(tcoordmap[2][0], tcoordmap[2][1]); // 2
+                gle::attribf(sx+coordmap[3][0], sy+coordmap[3][1]); gle::attribf(tcoordmap[3][0], tcoordmap[3][1]); // 3
             }
+            return false;
+        }
+
+        void draw(float sx, float sy)
+        {
+            if(tex == notexture) { Object::draw(sx, sy); return; }
+
+            vec2 coordmap[4], tcoordmap[4];
+            loopi(4) loopj(2)
+            {
+                coordmap[i][j] = getcoord(i, j)*(j ? h : w);
+                tcoordmap[i][j] = defcoords[i][j];
+            }
+            drawmapped(sx, sy, coordmap, tcoordmap);
 
             Object::draw(sx, sy);
         }
@@ -2153,11 +2188,14 @@ namespace UI
         {
             if(tex == notexture) { Object::draw(sx, sy); return; }
 
-            bindtex();
-            gle::attribf(sx+(w*getcoord(0, 0)), sy+(h*getcoord(0, 1))); gle::attribf(cropx, cropy); // 0
-            gle::attribf(sx+(w*getcoord(1, 0)), sy+(h*getcoord(1, 1))); gle::attribf(cropx+cropw, cropy); // 1
-            gle::attribf(sx+(w*getcoord(2, 0)), sy+(h*getcoord(2, 1))); gle::attribf(cropx+cropw, cropy+croph); // 2
-            gle::attribf(sx+(w*getcoord(3, 0)), sy+(h*getcoord(3, 1))); gle::attribf(cropx, cropy+croph); // 3
+            float texmap[4][2] = { { cropx, cropy }, { cropx+cropw, cropy }, { cropx+cropw, cropy+croph }, { cropx, cropy+croph } };
+            vec2 coordmap[4], tcoordmap[4];
+            loopi(4) loopj(2)
+            {
+                coordmap[i][j] = getcoord(i, j)*(j ? h : w);
+                tcoordmap[i][j] = texmap[i][j];
+            }
+            drawmapped(sx, sy, coordmap, tcoordmap);
 
             Object::draw(sx, sy);
         }
@@ -2295,11 +2333,8 @@ namespace UI
 
             bindtex();
 
-            vec2 outline[4];
+            vec2 outline[4], dir[2], coordmap[9][4], tcoordmap[9][4];
             loopi(4) loopj(2) outline[i].v[j] = getcoord(i, j)*(j ? h : w);
-            vec2 coordmap[9][4];
-            vec2 tcoordmap[9][4];
-            vec2 dir[2];
 
             // top left
             dir[0] = vec2(outline[1]).sub(outline[0]).normalize();
@@ -2399,11 +2434,13 @@ namespace UI
             tcoordmap[8][2] = vec2(1-texborder, 1-texborder);
             tcoordmap[8][3] = vec2(1-texborder, texborder);
 
-            loopi(9) loopj(4)
+            loopi(8) loopj(4)
             {
                 gle::attribf(sx+coordmap[i][j].x, sy+coordmap[i][j].y);
                 gle::attribf(tcoordmap[i][j].x, tcoordmap[i][j].y);
             }
+
+            drawmapped(sx, sy, coordmap[8], tcoordmap[8], 1);
 
             Object::draw(sx, sy);
         }
@@ -4331,17 +4368,17 @@ namespace UI
     #define UIROTCOLCMDS(t) \
         if(o->iscolour()) \
         { \
-            ((Colored *)o)->rotatecolors(*c); \
+            ((Colored *)o)->rotatecolors(*amt, *start); \
             t; \
         } \
 
-    UIREVCMDC(rotatecolour, "f", (float *c), UIROTCOLCMDS(break));
-    void rotchildcolours(Object *o, float *c)
+    UIREVCMDC(rotatecolour, "fi", (float *amt, int *start), UIROTCOLCMDS(break));
+    void rotchildcolours(Object *o, float *amt, int *start)
     {
         UIROTCOLCMDS();
-        loopv(o->children) rotchildcolours(o->children[i], c);
+        loopv(o->children) rotchildcolours(o->children[i], amt, start);
     }
-    UIWINCMDC(rotatecolours, "i", (float *c), rotchildcolours(o, c));
+    UIWINCMDC(rotatecolours, "fi", (float *amt, int *start), rotchildcolours(o, amt, start));
 
     bool hasinput()
     {
