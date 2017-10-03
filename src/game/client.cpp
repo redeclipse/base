@@ -889,7 +889,7 @@ namespace client
     CLCOMMAND(bleeding, intret(bleedtime ? d->bleeding(lastmillis, burntime) : 0));
     CLCOMMAND(shocking, intret(shocktime ? d->shocking(lastmillis, burntime) : 0));
     CLCOMMAND(regen, intret(regentime ? d->lastregen : 0));
-    CLCOMMAND(impulseregen, intret(game::canregenimpulse(d) && d->impulse[IM_METER] > 0 && d->lastimpulsecollect ? (lastmillis-d->lastimpulsecollect)%1000 : 0));
+    CLCOMMAND(impulselast, intret(game::canregenimpulse(d) && d->impulse[IM_METER] > 0 && d->lastimpulsecollect ? (lastmillis-d->lastimpulsecollect)%1000 : 0));
 
     CLCOMMAND(spawnweap, intret(m_weapon(d->actortype, game::gamemode, game::mutators)));
     CLCOMMAND(spawndelay, intret(m_delay(d->actortype, game::gamemode, game::mutators, d->team)));

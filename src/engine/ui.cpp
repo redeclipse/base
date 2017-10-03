@@ -1664,10 +1664,10 @@ namespace UI
             dir = dir_;
         }
 
-        void rotatecolors(float amt, int colstart = 0)
+        void rotatecolors(float amt, int colstart = 0, int colcount = 0)
         {
             if(amt == 0) return;
-            int cols = colors.length()-colstart;
+            int cols = clamp(colcount ? colcount : colors.length()-colstart, min(colstart, colors.length()-1), colors.length());
             if(cols <= 1) return;
             int pieces = 0;
             float progress = clamp(fabs(amt), 0.f, 1.f), part = 1.f/cols;
@@ -1679,22 +1679,23 @@ namespace UI
             float iter = progress/part;
             static vector<Color> colorstack;
             colorstack.setsize(0);
-            loopirev(colstart)
-            {
-                colorstack.insert(0, colors[i]);
-                colors.remove(i);
-            }
+            loopi(colstart) colorstack.add(colors[i]);
+            loopirev(colstart) colors.remove(i);
             bool rev = amt < 0;
+            int over = colors.length()-cols, index = rev ? 0 : colorstack.length();
+            loopi(over) colorstack.add(colors[cols+i]);
+            loopirev(over) colors.remove(cols+i);
             loopv(colors)
             {
                 int p = rev ? i-pieces : (i+pieces)%cols, m = p >= 0 ? p : cols+p, q = rev ? m-1 : (m+1)%cols, n = q >= 0 ? q : cols+q;
-                colorstack.add(
+                colorstack.insert(index,
                     Color(colors[m].r-int((colors[m].r-colors[n].r)*iter),
                           colors[m].g-int((colors[m].g-colors[n].g)*iter),
                           colors[m].b-int((colors[m].b-colors[n].b)*iter),
                           colors[m].a-int((colors[m].a-colors[n].a)*iter)
                          )
                     );
+                if(!rev) index++;
             }
             colors.setsize(0);
             loopv(colorstack) colors.add(colorstack[i]);
@@ -1712,28 +1713,30 @@ namespace UI
         loopvrev(o->colors) if(o->colors[i] == Color(*c)) o->colors.remove(i);
         if(o->colors.empty()) o->colors.add(Color(colourwhite));
     });
-    UICMDT(Colored, colour, rotate, "fi", (float *amt, int *start), o->rotatecolors(*amt, *start));
+    UICMDT(Colored, colour, rotate, "fii", (float *amt, int *start, int *count), o->rotatecolors(*amt, *start, *count));
 
     static const float defcoords[4][2] = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
 
     struct Filler : Colored
     {
+        enum { FC_TL = 0, FC_TR, FC_BR, FC_BL, FC_MAX };
+
         float minw, minh;
-        vec2 coords[4];
+        vec2 coords[FC_MAX];
 
         void setup(float minw_, float minh_, const Color &color_ = Color(colourwhite), int type_ = SOLID, int dir_ = VERTICAL)
         {
             Colored::setup(color_, type_, dir_);
             minw = minw_;
             minh = minh_;
-            loopi(4) loopj(2) coords[i][j] = defcoords[i][j];
+            loopi(FC_MAX) loopj(2) coords[i][j] = defcoords[i][j];
         }
 
         void setup(const Color &color_, int type_ = SOLID, int dir_ = VERTICAL)
         {
             Colored::setup(color_, type_, dir_);
             minw = minh = 0;
-            loopi(4) loopj(2) coords[i][j] = defcoords[i][j];
+            loopi(FC_MAX) loopj(2) coords[i][j] = defcoords[i][j];
         }
 
         static const char *typestr() { return "#Filler"; }
@@ -1750,7 +1753,7 @@ namespace UI
 
         float getcoord(int num, int axis)
         {
-            if(num < 0 || num > 3 || axis < 0 || axis > 1) return 0.f;
+            if(num < 0 || num >= FC_MAX || axis < 0 || axis > 1) return 0.f;
             if(coords[num][axis] < 0)
             {
                 float len = axis ? h : w;
@@ -1770,7 +1773,7 @@ namespace UI
 
     UICMDT(Filler, fill, coord, "iff", (int *pos, float *x, float *y),
     {
-        if(*pos < 0 || *pos > 3) return;
+        if(*pos < 0 || *pos >= Filler::FC_MAX) return;
         o->coords[*pos][0] = min(*x, 1.f);
         o->coords[*pos][1] = min(*y, 1.f);
     });
@@ -1816,16 +1819,14 @@ namespace UI
             if(cols >= 2)
             {
                 float vr = 1/float(cols-1), vcx1 = 0, vcx2 = 0, vcy1 = 0, vcy2 = 0, ts = 0,
-                      vw1 = w*(getcoord(1, 0)-getcoord(0, 0)), vx1 = w*getcoord(0, 0),
-                      vw2 = w*(getcoord(2, 0)-getcoord(3, 0)), vx2 = w*getcoord(3, 0),
-                      vdw1 = w*(getcoord(3, 0)-getcoord(0, 0)), vdw2 = w*(getcoord(2, 0)-getcoord(1, 0)),
-                      vh1 = h*(getcoord(3, 1)-getcoord(0, 1)), vy1 = h*getcoord(0, 1),
-                      vh2 = h*(getcoord(2, 1)-getcoord(1, 1)), vy2 = h*getcoord(1, 1),
-                      vdh1 = h*(getcoord(1, 1)-getcoord(0, 1)), vdh2 = h*(getcoord(2, 1)-getcoord(3, 1));
+                      vw1 = w*(getcoord(FC_TR, 0)-getcoord(FC_TL, 0)), vx1 = w*getcoord(FC_TL, 0),
+                      vw2 = w*(getcoord(FC_BR, 0)-getcoord(FC_BL, 0)), vx2 = w*getcoord(FC_BL, 0),
+                      vdw1 = w*(getcoord(FC_BL, 0)-getcoord(FC_TL, 0)), vdw2 = w*(getcoord(FC_BR, 0)-getcoord(FC_TR, 0)),
+                      vh1 = h*(getcoord(FC_BL, 1)-getcoord(FC_TL, 1)), vy1 = h*getcoord(FC_TL, 1),
+                      vh2 = h*(getcoord(FC_BR, 1)-getcoord(FC_TR, 1)), vy2 = h*getcoord(FC_TR, 1),
+                      vdh1 = h*(getcoord(FC_TR, 1)-getcoord(FC_TL, 1)), vdh2 = h*(getcoord(FC_BR, 1)-getcoord(FC_BL, 1));
                 loopi(cols-1)
                 {
-                    float left = 1-(ts+vr);
-                    if(left < vr) vr += left;
                     switch(dir)
                     {
                         case HORIZONTAL:
@@ -1858,10 +1859,10 @@ namespace UI
             }
             else
             {
-                gle::attribf(sx+(w*getcoord(1, 0)), sy+(h*getcoord(1, 1))); colors[0].attrib(); // 1
-                gle::attribf(sx+(w*getcoord(0, 0)), sy+(h*getcoord(0, 1))); colors[0].attrib(); // 0
-                gle::attribf(sx+(w*getcoord(2, 0)), sy+(h*getcoord(2, 1))); colors[0].attrib(); // 2
-                gle::attribf(sx+(w*getcoord(3, 0)), sy+(h*getcoord(3, 1))); colors[0].attrib(); // 3
+                gle::attribf(sx+(w*getcoord(FC_TR, 0)), sy+(h*getcoord(FC_TR, 1))); colors[0].attrib(); // 1
+                gle::attribf(sx+(w*getcoord(FC_TL, 0)), sy+(h*getcoord(FC_TL, 1))); colors[0].attrib(); // 0
+                gle::attribf(sx+(w*getcoord(FC_BR, 0)), sy+(h*getcoord(FC_BR, 1))); colors[0].attrib(); // 2
+                gle::attribf(sx+(w*getcoord(FC_BL, 0)), sy+(h*getcoord(FC_BL, 1))); colors[0].attrib(); // 3
             }
             gle::end();
 
@@ -1947,10 +1948,10 @@ namespace UI
 
             colors[0].init();
             gle::begin(GL_LINE_LOOP);
-            gle::attribf(sx+(w*getcoord(0, 0)), sy+(h*getcoord(0, 1))); // 0
-            gle::attribf(sx+(w*getcoord(1, 0)), sy+(h*getcoord(1, 1))); // 1
-            gle::attribf(sx+(w*getcoord(2, 0)), sy+(h*getcoord(2, 1))); // 2
-            gle::attribf(sx+(w*getcoord(3, 0)), sy+(h*getcoord(3, 1))); // 3
+            gle::attribf(sx+(w*getcoord(FC_TL, 0)), sy+(h*getcoord(FC_TL, 1))); // 0
+            gle::attribf(sx+(w*getcoord(FC_TR, 0)), sy+(h*getcoord(FC_TR, 1))); // 1
+            gle::attribf(sx+(w*getcoord(FC_BR, 0)), sy+(h*getcoord(FC_BR, 1))); // 2
+            gle::attribf(sx+(w*getcoord(FC_BL, 0)), sy+(h*getcoord(FC_BL, 1))); // 3
             gle::end();
 
             Object::draw(sx, sy);
@@ -1978,6 +1979,8 @@ namespace UI
         static Texture *lasttex;
         static Color lastcolor;
         static GLenum lastmode;
+
+        enum { CO_TL = 0, CO_TR, CO_TC, CO_BL, CO_BR, CO_BC, CO_ML, CO_MR, CO_MC, CO_MAX };
 
         Texture *tex;
         bool alphatarget;
@@ -2018,11 +2021,12 @@ namespace UI
             gle::end();
         }
 
-        void bindtex(GLenum mode = GL_QUADS)
+        void bindtex(GLenum mode = GL_QUADS, int colstart = 0, bool forced = false)
         {
             changedraw(CHANGE_COLOR | CHANGE_BLEND);
             if(type==MODULATE) modblend(); else resetblend();
-            if(lastmode != mode)
+            int col = clamp(colstart, 0, colors.length()-1);
+            if(forced || lastmode != mode)
             {
                 if(lastmode != GL_POINTS) gle::end();
                 gle::defvertex(2);
@@ -2040,7 +2044,7 @@ namespace UI
                 glBindTexture(GL_TEXTURE_2D, tex->id);
                 goto changecolor;
             }
-            if(lastcolor != colors[0])
+            if(lastcolor != colors[col])
             {
                 gle::end();
             changecolor:
@@ -2049,37 +2053,35 @@ namespace UI
                     case GL_TRIANGLE_STRIP:
                         lastcolor = Color(0, 0, 0, 0);
                     case GL_QUADS:
-                        lastcolor = colors[0];
-                        colors[0].init();
+                        lastcolor = colors[col];
+                        colors[col].init();
                         break;
                 }
             }
         }
 
-        bool drawmapped(float sx, float sy, vec2 coordmap[4], vec2 tcoordmap[4], int colstart = 0)
+        bool drawmapped(float sx, float sy, vec2 coordmap[FC_MAX], vec2 tcoordmap[FC_MAX], int colstart = 0, int colcount = 0, bool forced = false)
         {
-            int cols = colors.length()-colstart;
+            int cols = clamp(colcount ? colcount : colors.length()-colstart, min(colstart, colors.length()-1), colors.length());
             if(cols >= 2)
             {
-                bindtex(GL_TRIANGLE_STRIP);
+                bindtex(GL_TRIANGLE_STRIP, colstart, forced);
                 float vr = 1/float(cols-1), vs = 0, vcx1 = 0, vcx2 = 0, vcy1 = 0, vcy2 = 0,
-                      vw1 = coordmap[1][0]-coordmap[0][0], vx1 = coordmap[0][0],
-                      vw2 = coordmap[2][0]-coordmap[3][0], vx2 = coordmap[3][0],
-                      vdw1 = coordmap[3][0]-coordmap[0][0], vdw2 = coordmap[2][0]-coordmap[1][0],
-                      vh1 = coordmap[3][1]-coordmap[0][1], vy1 = coordmap[0][1],
-                      vh2 = coordmap[2][1]-coordmap[1][1], vy2 = coordmap[1][1],
-                      vdh1 = coordmap[1][1]-coordmap[0][1], vdh2 = coordmap[2][1]-coordmap[3][1],
+                      vw1 = coordmap[FC_TR][0]-coordmap[FC_TL][0], vx1 = coordmap[FC_TL][0],
+                      vw2 = coordmap[FC_BR][0]-coordmap[FC_BL][0], vx2 = coordmap[FC_BL][0],
+                      vdw1 = coordmap[FC_BL][0]-coordmap[FC_TL][0], vdw2 = coordmap[FC_BR][0]-coordmap[FC_TR][0],
+                      vh1 = coordmap[FC_BL][1]-coordmap[FC_TL][1], vy1 = coordmap[FC_TL][1],
+                      vh2 = coordmap[FC_BR][1]-coordmap[FC_TR][1], vy2 = coordmap[FC_TR][1],
+                      vdh1 = coordmap[FC_TR][1]-coordmap[FC_TL][1], vdh2 = coordmap[FC_BR][1]-coordmap[FC_BL][1],
                       tcx1 = 0, tcx2 = 0, tcy1 = 0, tcy2 = 0,
-                      tw1 = tcoordmap[1][0]-tcoordmap[0][0], tx1 = tcoordmap[0][0],
-                      tw2 = tcoordmap[2][0]-tcoordmap[3][0], tx2 = tcoordmap[3][0],
-                      tdw1 = tcoordmap[3][0]-tcoordmap[0][0], tdw2 = tcoordmap[2][0]-tcoordmap[1][0],
-                      th1 = tcoordmap[3][1]-tcoordmap[0][1], ty1 = tcoordmap[0][1],
-                      th2 = tcoordmap[2][1]-tcoordmap[1][1], ty2 = tcoordmap[1][1],
-                      tdh1 = tcoordmap[1][1]-tcoordmap[0][1], tdh2 = tcoordmap[2][1]-tcoordmap[3][1];
+                      tw1 = tcoordmap[FC_TR][0]-tcoordmap[FC_TL][0], tx1 = tcoordmap[FC_TL][0],
+                      tw2 = tcoordmap[FC_BR][0]-tcoordmap[FC_BL][0], tx2 = tcoordmap[FC_BL][0],
+                      tdw1 = tcoordmap[FC_BL][0]-tcoordmap[FC_TL][0], tdw2 = tcoordmap[FC_BR][0]-tcoordmap[FC_TR][0],
+                      th1 = tcoordmap[FC_BL][1]-tcoordmap[FC_TL][1], ty1 = tcoordmap[FC_TL][1],
+                      th2 = tcoordmap[FC_BR][1]-tcoordmap[FC_TR][1], ty2 = tcoordmap[FC_TR][1],
+                      tdh1 = tcoordmap[FC_TR][1]-tcoordmap[FC_TL][1], tdh2 = tcoordmap[FC_BR][1]-tcoordmap[FC_BL][1];
                 loopi(cols-1)
                 {
-                    float left = 1-(vs+vr);
-                    if(left < vr) vr += left;
                     switch(dir)
                     {
                         case HORIZONTAL:
@@ -2121,11 +2123,11 @@ namespace UI
             }
             else
             {
-                bindtex(GL_QUADS);
-                gle::attribf(sx+coordmap[0][0], sy+coordmap[0][1]); gle::attribf(tcoordmap[0][0], tcoordmap[0][1]); // 0
-                gle::attribf(sx+coordmap[1][0], sy+coordmap[1][1]); gle::attribf(tcoordmap[1][0], tcoordmap[1][1]); // 1
-                gle::attribf(sx+coordmap[2][0], sy+coordmap[2][1]); gle::attribf(tcoordmap[2][0], tcoordmap[2][1]); // 2
-                gle::attribf(sx+coordmap[3][0], sy+coordmap[3][1]); gle::attribf(tcoordmap[3][0], tcoordmap[3][1]); // 3
+                bindtex(GL_QUADS, colstart, forced);
+                gle::attribf(sx+coordmap[FC_TL][0], sy+coordmap[FC_TL][1]); gle::attribf(tcoordmap[FC_TL][0], tcoordmap[FC_TL][1]); // 0
+                gle::attribf(sx+coordmap[FC_TR][0], sy+coordmap[FC_TR][1]); gle::attribf(tcoordmap[FC_TR][0], tcoordmap[FC_TR][1]); // 1
+                gle::attribf(sx+coordmap[FC_BR][0], sy+coordmap[FC_BR][1]); gle::attribf(tcoordmap[FC_BR][0], tcoordmap[FC_BR][1]); // 2
+                gle::attribf(sx+coordmap[FC_BL][0], sy+coordmap[FC_BL][1]); gle::attribf(tcoordmap[FC_BL][0], tcoordmap[FC_BL][1]); // 3
             }
             return false;
         }
@@ -2134,8 +2136,8 @@ namespace UI
         {
             if(tex == notexture) { Object::draw(sx, sy); return; }
 
-            vec2 coordmap[4], tcoordmap[4];
-            loopi(4) loopj(2)
+            vec2 coordmap[FC_MAX], tcoordmap[FC_MAX];
+            loopi(FC_MAX) loopj(2)
             {
                 coordmap[i][j] = getcoord(i, j)*(j ? h : w);
                 tcoordmap[i][j] = defcoords[i][j];
@@ -2188,9 +2190,9 @@ namespace UI
         {
             if(tex == notexture) { Object::draw(sx, sy); return; }
 
-            float texmap[4][2] = { { cropx, cropy }, { cropx+cropw, cropy }, { cropx+cropw, cropy+croph }, { cropx, cropy+croph } };
-            vec2 coordmap[4], tcoordmap[4];
-            loopi(4) loopj(2)
+            float texmap[FC_MAX][2] = { { cropx, cropy }, { cropx+cropw, cropy }, { cropx+cropw, cropy+croph }, { cropx, cropy+croph } };
+            vec2 coordmap[FC_MAX], tcoordmap[FC_MAX];
+            loopi(FC_MAX) loopj(2)
             {
                 coordmap[i][j] = getcoord(i, j)*(j ? h : w);
                 tcoordmap[i][j] = texmap[i][j];
@@ -2331,116 +2333,126 @@ namespace UI
         {
             if(tex == notexture) { Object::draw(sx, sy); return; }
 
-            bindtex();
-
-            vec2 outline[4], dir[2], coordmap[9][4], tcoordmap[9][4];
-            loopi(4) loopj(2) outline[i].v[j] = getcoord(i, j)*(j ? h : w);
+            vec2 outline[FC_MAX], projdir[2], coordmap[CO_MAX][FC_MAX], tcoordmap[CO_MAX][FC_MAX];
+            loopi(FC_MAX) loopj(2) outline[i].v[j] = getcoord(i, j)*(j ? h : w);
 
             // top left
-            dir[0] = vec2(outline[1]).sub(outline[0]).normalize();
-            dir[1] = vec2(outline[3]).sub(outline[0]).normalize();
-            coordmap[0][0] = outline[0];
-            coordmap[0][1] = vec2(coordmap[0][0]).add(vec2(dir[0]).mul(screenborder));
-            coordmap[0][3] = vec2(coordmap[0][0]).add(vec2(dir[1]).mul(screenborder));
-            coordmap[0][2] = vec2(coordmap[0][3]).add(vec2(dir[0]).mul(screenborder));
-            tcoordmap[0][0] = vec2(0, 0);
-            tcoordmap[0][1] = vec2(texborder, 0);
-            tcoordmap[0][2] = vec2(texborder, texborder);
-            tcoordmap[0][3] = vec2(0, texborder);
+            projdir[0] = vec2(outline[1]).sub(outline[0]).normalize();
+            projdir[1] = vec2(outline[3]).sub(outline[0]).normalize();
+            coordmap[CO_TL][FC_TL] = outline[0];
+            coordmap[CO_TL][FC_TR] = vec2(coordmap[CO_TL][FC_TL]).add(vec2(projdir[0]).mul(screenborder));
+            coordmap[CO_TL][FC_BL] = vec2(coordmap[CO_TL][FC_TL]).add(vec2(projdir[1]).mul(screenborder));
+            coordmap[CO_TL][FC_BR] = vec2(coordmap[CO_TL][FC_BL]).add(vec2(projdir[0]).mul(screenborder));
+            tcoordmap[CO_TL][FC_TL] = vec2(0, 0);
+            tcoordmap[CO_TL][FC_TR] = vec2(texborder, 0);
+            tcoordmap[CO_TL][FC_BR] = vec2(texborder, texborder);
+            tcoordmap[CO_TL][FC_BL] = vec2(0, texborder);
 
             // top right
-            dir[0] = vec2(outline[0]).sub(outline[1]).normalize();
-            dir[1] = vec2(outline[2]).sub(outline[1]).normalize();
-            coordmap[1][1] = outline[1];
-            coordmap[1][0] = vec2(coordmap[1][1]).add(vec2(dir[0]).mul(screenborder));
-            coordmap[1][2] = vec2(coordmap[1][1]).add(vec2(dir[1]).mul(screenborder));
-            coordmap[1][3] = vec2(coordmap[1][2]).add(vec2(dir[0]).mul(screenborder));
-            tcoordmap[1][0] = vec2(1-texborder, 0);
-            tcoordmap[1][1] = vec2(1, 0);
-            tcoordmap[1][2] = vec2(1, texborder);
-            tcoordmap[1][3] = vec2(1-texborder, texborder);
+            projdir[0] = vec2(outline[0]).sub(outline[1]).normalize();
+            projdir[1] = vec2(outline[2]).sub(outline[1]).normalize();
+            coordmap[CO_TR][FC_TR] = outline[1];
+            coordmap[CO_TR][FC_TL] = vec2(coordmap[CO_TR][FC_TR]).add(vec2(projdir[0]).mul(screenborder));
+            coordmap[CO_TR][FC_BR] = vec2(coordmap[CO_TR][FC_TR]).add(vec2(projdir[1]).mul(screenborder));
+            coordmap[CO_TR][FC_BL] = vec2(coordmap[CO_TR][FC_BR]).add(vec2(projdir[0]).mul(screenborder));
+            tcoordmap[CO_TR][FC_TL] = vec2(1-texborder, 0);
+            tcoordmap[CO_TR][FC_TR] = vec2(1, 0);
+            tcoordmap[CO_TR][FC_BR] = vec2(1, texborder);
+            tcoordmap[CO_TR][FC_BL] = vec2(1-texborder, texborder);
 
             // top center
-            coordmap[2][0] = coordmap[0][1];
-            coordmap[2][1] = coordmap[1][0];
-            coordmap[2][2] = coordmap[1][3];
-            coordmap[2][3] = coordmap[0][2];
-            tcoordmap[2][0] = vec2(texborder, 0);
-            tcoordmap[2][1] = vec2(1-texborder, 0);
-            tcoordmap[2][2] = vec2(1-texborder, texborder);
-            tcoordmap[2][3] = vec2(texborder, texborder);
+            coordmap[CO_TC][FC_TL] = coordmap[CO_TL][FC_TR];
+            coordmap[CO_TC][FC_TR] = coordmap[CO_TR][FC_TL];
+            coordmap[CO_TC][FC_BR] = coordmap[CO_TR][FC_BL];
+            coordmap[CO_TC][FC_BL] = coordmap[CO_TL][FC_BR];
+            tcoordmap[CO_TC][FC_TL] = vec2(texborder, 0);
+            tcoordmap[CO_TC][FC_TR] = vec2(1-texborder, 0);
+            tcoordmap[CO_TC][FC_BR] = vec2(1-texborder, texborder);
+            tcoordmap[CO_TC][FC_BL] = vec2(texborder, texborder);
 
             // bottom left
-            dir[0] = vec2(outline[2]).sub(outline[3]).normalize();
-            dir[1] = vec2(outline[0]).sub(outline[3]).normalize();
-            coordmap[3][3] = outline[3];
-            coordmap[3][0] = vec2(coordmap[3][3]).add(vec2(dir[1]).mul(screenborder));
-            coordmap[3][2] = vec2(coordmap[3][3]).add(vec2(dir[0]).mul(screenborder));
-            coordmap[3][1] = vec2(coordmap[3][2]).add(vec2(dir[1]).mul(screenborder));
-            tcoordmap[3][0] = vec2(0, 1-texborder);
-            tcoordmap[3][1] = vec2(texborder, 1-texborder);
-            tcoordmap[3][2] = vec2(texborder, 1);
-            tcoordmap[3][3] = vec2(0, 1);
+            projdir[0] = vec2(outline[2]).sub(outline[3]).normalize();
+            projdir[1] = vec2(outline[0]).sub(outline[3]).normalize();
+            coordmap[CO_BL][FC_BL] = outline[3];
+            coordmap[CO_BL][FC_TL] = vec2(coordmap[CO_BL][FC_BL]).add(vec2(projdir[1]).mul(screenborder));
+            coordmap[CO_BL][FC_BR] = vec2(coordmap[CO_BL][FC_BL]).add(vec2(projdir[0]).mul(screenborder));
+            coordmap[CO_BL][FC_TR] = vec2(coordmap[CO_BL][FC_BR]).add(vec2(projdir[1]).mul(screenborder));
+            tcoordmap[CO_BL][FC_TL] = vec2(0, 1-texborder);
+            tcoordmap[CO_BL][FC_TR] = vec2(texborder, 1-texborder);
+            tcoordmap[CO_BL][FC_BR] = vec2(texborder, 1);
+            tcoordmap[CO_BL][FC_BL] = vec2(0, 1);
 
             // bottom right
-            dir[0] = vec2(outline[3]).sub(outline[2]).normalize();
-            dir[1] = vec2(outline[1]).sub(outline[2]).normalize();
-            coordmap[4][2] = outline[2];
-            coordmap[4][1] = vec2(coordmap[4][2]).add(vec2(dir[1]).mul(screenborder));
-            coordmap[4][3] = vec2(coordmap[4][2]).add(vec2(dir[0]).mul(screenborder));
-            coordmap[4][0] = vec2(coordmap[4][3]).add(vec2(dir[1]).mul(screenborder));
-            tcoordmap[4][0] = vec2(1-texborder, 1-texborder);
-            tcoordmap[4][1] = vec2(1, 1-texborder);
-            tcoordmap[4][2] = vec2(1, 1);
-            tcoordmap[4][3] = vec2(1-texborder, 1);
+            projdir[0] = vec2(outline[3]).sub(outline[2]).normalize();
+            projdir[1] = vec2(outline[1]).sub(outline[2]).normalize();
+            coordmap[CO_BR][FC_BR] = outline[2];
+            coordmap[CO_BR][FC_TR] = vec2(coordmap[CO_BR][FC_BR]).add(vec2(projdir[1]).mul(screenborder));
+            coordmap[CO_BR][FC_BL] = vec2(coordmap[CO_BR][FC_BR]).add(vec2(projdir[0]).mul(screenborder));
+            coordmap[CO_BR][FC_TL] = vec2(coordmap[CO_BR][FC_BL]).add(vec2(projdir[1]).mul(screenborder));
+            tcoordmap[CO_BR][FC_TL] = vec2(1-texborder, 1-texborder);
+            tcoordmap[CO_BR][FC_TR] = vec2(1, 1-texborder);
+            tcoordmap[CO_BR][FC_BR] = vec2(1, 1);
+            tcoordmap[CO_BR][FC_BL] = vec2(1-texborder, 1);
 
             // bottom center
-            coordmap[5][0] = coordmap[3][1];
-            coordmap[5][1] = coordmap[4][0];
-            coordmap[5][2] = coordmap[4][3];
-            coordmap[5][3] = coordmap[3][2];
-            tcoordmap[5][0] = vec2(texborder, 1-texborder);
-            tcoordmap[5][1] = vec2(1-texborder, 1-texborder);
-            tcoordmap[5][2] = vec2(1-texborder, 1);
-            tcoordmap[5][3] = vec2(texborder, 1);
+            coordmap[CO_BC][FC_TL] = coordmap[CO_BL][FC_TR];
+            coordmap[CO_BC][FC_TR] = coordmap[CO_BR][FC_TL];
+            coordmap[CO_BC][FC_BR] = coordmap[CO_BR][FC_BL];
+            coordmap[CO_BC][FC_BL] = coordmap[CO_BL][FC_BR];
+            tcoordmap[CO_BC][FC_TL] = vec2(texborder, 1-texborder);
+            tcoordmap[CO_BC][FC_TR] = vec2(1-texborder, 1-texborder);
+            tcoordmap[CO_BC][FC_BR] = vec2(1-texborder, 1);
+            tcoordmap[CO_BC][FC_BL] = vec2(texborder, 1);
 
             // middle left
-            coordmap[6][0] = coordmap[0][3];
-            coordmap[6][1] = coordmap[0][2];
-            coordmap[6][2] = coordmap[3][1];
-            coordmap[6][3] = coordmap[3][0];
-            tcoordmap[6][0] = vec2(0, texborder);
-            tcoordmap[6][1] = vec2(texborder, texborder);
-            tcoordmap[6][2] = vec2(texborder, 1-texborder);
-            tcoordmap[6][3] = vec2(0, 1-texborder);
+            coordmap[CO_ML][FC_TL] = coordmap[CO_TL][FC_BL];
+            coordmap[CO_ML][FC_TR] = coordmap[CO_TL][FC_BR];
+            coordmap[CO_ML][FC_BR] = coordmap[CO_BL][FC_TR];
+            coordmap[CO_ML][FC_BL] = coordmap[CO_BL][FC_TL];
+            tcoordmap[CO_ML][FC_TL] = vec2(0, texborder);
+            tcoordmap[CO_ML][FC_TR] = vec2(texborder, texborder);
+            tcoordmap[CO_ML][FC_BR] = vec2(texborder, 1-texborder);
+            tcoordmap[CO_ML][FC_BL] = vec2(0, 1-texborder);
 
             // middle right
-            coordmap[7][0] = coordmap[1][3];
-            coordmap[7][1] = coordmap[1][2];
-            coordmap[7][2] = coordmap[4][1];
-            coordmap[7][3] = coordmap[4][0];
-            tcoordmap[7][0] = vec2(1-texborder, texborder);
-            tcoordmap[7][1] = vec2(1, texborder);
-            tcoordmap[7][2] = vec2(1, 1-texborder);
-            tcoordmap[7][3] = vec2(1-texborder, 1-texborder);
+            coordmap[CO_MR][FC_TL] = coordmap[CO_TR][FC_BL];
+            coordmap[CO_MR][FC_TR] = coordmap[CO_TR][FC_BR];
+            coordmap[CO_MR][FC_BR] = coordmap[CO_BR][FC_TR];
+            coordmap[CO_MR][FC_BL] = coordmap[CO_BR][FC_TL];
+            tcoordmap[CO_MR][FC_TL] = vec2(1-texborder, texborder);
+            tcoordmap[CO_MR][FC_TR] = vec2(1, texborder);
+            tcoordmap[CO_MR][FC_BR] = vec2(1, 1-texborder);
+            tcoordmap[CO_MR][FC_BL] = vec2(1-texborder, 1-texborder);
 
             // middle center
-            coordmap[8][0] = coordmap[0][2];
-            coordmap[8][1] = coordmap[1][3];
-            coordmap[8][2] = coordmap[4][0];
-            coordmap[8][3] = coordmap[3][1];
-            tcoordmap[8][0] = vec2(texborder, texborder);
-            tcoordmap[8][1] = vec2(1-texborder, texborder);
-            tcoordmap[8][2] = vec2(1-texborder, 1-texborder);
-            tcoordmap[8][3] = vec2(1-texborder, texborder);
+            coordmap[CO_MC][FC_TL] = coordmap[CO_TL][FC_BR];
+            coordmap[CO_MC][FC_TR] = coordmap[CO_TR][FC_BL];
+            coordmap[CO_MC][FC_BR] = coordmap[CO_BR][FC_TL];
+            coordmap[CO_MC][FC_BL] = coordmap[CO_BL][FC_TR];
+            tcoordmap[CO_MC][FC_TL] = vec2(texborder, texborder);
+            tcoordmap[CO_MC][FC_TR] = vec2(1-texborder, texborder);
+            tcoordmap[CO_MC][FC_BR] = vec2(1-texborder, 1-texborder);
+            tcoordmap[CO_MC][FC_BL] = vec2(1-texborder, texborder);
 
-            loopi(8) loopj(4)
+            if(colors.length() >= 2)
             {
-                gle::attribf(sx+coordmap[i][j].x, sy+coordmap[i][j].y);
-                gle::attribf(tcoordmap[i][j].x, tcoordmap[i][j].y);
+                static const int drawmap[2][CO_MAX] = {
+                    { CO_TL, CO_ML, CO_BL, CO_TC, CO_MC, CO_BC, CO_TR, CO_MR, CO_BR }, // VERTICAL
+                    { CO_TL, CO_TC, CO_TR, CO_ML, CO_MC, CO_MR, CO_BL, CO_BC, CO_BR }  // HORIZONTAL
+                };
+                loopi(3) loopj(3)
+                {
+                    int index = (i*3)+j, target = drawmap[dir][index], colstart = 0, colcount = 0;
+                    switch(j)
+                    {
+                        case 0: colstart = 0; colcount = 1; break;
+                        case 1: colstart = 0; colcount = colors.length(); break;
+                        case 2: colstart = colors.length()-1; colcount = 1; break;
+                    }
+                    drawmapped(sx, sy, coordmap[target], tcoordmap[target], colstart, colcount, j == 0);
+                }
             }
-
-            drawmapped(sx, sy, coordmap[8], tcoordmap[8], 1);
+            else loopi(CO_MAX) drawmapped(sx, sy, coordmap[i], tcoordmap[i]);
 
             Object::draw(sx, sy);
         }
@@ -4368,17 +4380,17 @@ namespace UI
     #define UIROTCOLCMDS(t) \
         if(o->iscolour()) \
         { \
-            ((Colored *)o)->rotatecolors(*amt, *start); \
+            ((Colored *)o)->rotatecolors(*amt, *start, *count); \
             t; \
         } \
 
-    UIREVCMDC(rotatecolour, "fi", (float *amt, int *start), UIROTCOLCMDS(break));
-    void rotchildcolours(Object *o, float *amt, int *start)
+    UIREVCMDC(rotatecolour, "fii", (float *amt, int *start, int *count), UIROTCOLCMDS(break));
+    void rotchildcolours(Object *o, float *amt, int *start, int *count)
     {
         UIROTCOLCMDS();
-        loopv(o->children) rotchildcolours(o->children[i], amt, start);
+        loopv(o->children) rotchildcolours(o->children[i], amt, start, count);
     }
-    UIWINCMDC(rotatecolours, "fi", (float *amt, int *start), rotchildcolours(o, amt, start));
+    UIWINCMDC(rotatecolours, "fii", (float *amt, int *start, int *count), rotchildcolours(o, amt, start, count));
 
     bool hasinput()
     {
