@@ -2466,7 +2466,7 @@ namespace UI
                 *screenborder*uiscale, *minw*uiscale, *minh*uiscale);
         }, children));
 
-    UIARG(BorderedImage, image, texborder, "f", float, 0.f, FVAR_MAX);
+    UIARG(BorderedImage, image, texborder, "f", float, 0.f, 1.f);
     UIARGSCALED(BorderedImage, image, screenborder, "f", float, 0.f, FVAR_MAX);
 
     struct TiledImage : Image
