@@ -945,7 +945,9 @@ namespace server
             ident *id = getident(#a); \
             if(id && id->type == ID_VAR && id->flags&IDF_SERVER) \
             { \
-                *id->storage.i = clamp(b, id->minval, id->maxval); \
+                if(id->flags&IDF_HEX && uint(id->maxval) == 0xFFFFFFFFU) \
+                    *id->storage.i = clamp(uint(b), uint(id->minval), uint(id->maxval)); \
+                else *id->storage.i = clamp(b, id->minval, id->maxval); \
                 id->changed(); \
                 const char *sval = intstr(id); \
                 sendf(-1, 1, "ri2sis", N_COMMAND, -1, &id->name[3], strlen(sval), sval); \
@@ -3543,16 +3545,24 @@ namespace server
                 {
                     if(nargs <= 1 || !arg)
                     {
-                        conoutft(CON_DEBUG, id->flags&IDF_HEX && *id->storage.i >= 0 ? (id->maxval==0xFFFFFF ? "\fy%s = 0x%.6X" : (uint(id->maxval)==0xFFFFFFFF ? "\fy%s = 0x%.8X" : "\fy%s = 0x%X")) : "\fy%s = %d", id->name, *id->storage.i);
+                        conoutft(CON_DEBUG, id->flags&IDF_HEX && *id->storage.i >= 0 ? (id->maxval==0xFFFFFF ? "\fy%s = 0x%.6X" : (uint(id->maxval)==0xFFFFFFFFU ? "\fy%s = 0x%.8X" : "\fy%s = 0x%X")) : "\fy%s = %d", id->name, id->flags&IDF_HEX && uint(id->maxval) == 0xFFFFFFFFU ? uint(*id->storage.i) : *id->storage.i);
                         return true;
                     }
-                    if(id->maxval < id->minval || id->flags&IDF_READONLY)
+                    if(id->flags&IDF_READONLY)
                     {
                         conoutft(CON_DEBUG, "\frCannot override variable: %s", id->name);
                         return true;
                     }
                     int ret = parseint(arg);
-                    if(ret < id->minval || ret > id->maxval)
+                    if(id->flags&IDF_HEX && uint(id->maxval) == 0xFFFFFFFFU)
+                    {
+                        if(uint(ret) < uint(id->minval) || uint(ret) > uint(id->maxval))
+                        {
+                            conoutft(CON_DEBUG, "\frValid range for %s is 0x%X..0x%X", id->name, uint(id->minval), uint(id->maxval));
+                            return true;
+                        }
+                    }
+                    else if(ret < id->minval || ret > id->maxval)
                     {
                         conoutft(CON_DEBUG,
                             id->flags&IDF_HEX ?
@@ -3689,7 +3699,7 @@ namespace server
                 {
                     if(nargs <= 1 || !arg)
                     {
-                        srvmsgft(ci->clientnum, CON_DEBUG, id->flags&IDF_HEX && *id->storage.i >= 0 ? (id->maxval==0xFFFFFF ? "\fy%s = 0x%.6X" : (uint(id->maxval)==0xFFFFFFFF ? "\fy%s = 0x%.8X" : "\fy%s = 0x%X")) : "\fy%s = %d", name, *id->storage.i);
+                        srvmsgft(ci->clientnum, CON_DEBUG, id->flags&IDF_HEX && *id->storage.i >= 0 ? (id->maxval==0xFFFFFF ? "\fy%s = 0x%.6X" : (uint(id->maxval)==0xFFFFFFFFU ? "\fy%s = 0x%.8X" : "\fy%s = 0x%X")) : "\fy%s = %d", name, id->flags&IDF_HEX && uint(id->maxval) == 0xFFFFFFFFU ? uint(*id->storage.i) : *id->storage.i);
                         return;
                     }
                     else if(locked && !haspriv(ci, locked, "change that variable"))
@@ -3698,13 +3708,21 @@ namespace server
                         sendf(ci->clientnum, 1, "ri2sis", N_COMMAND, -1, name, strlen(val), val);
                         return;
                     }
-                    if(id->maxval < id->minval || id->flags&IDF_READONLY)
+                    if(id->flags&IDF_READONLY)
                     {
                         srvmsgft(ci->clientnum, CON_DEBUG, "\frCannot override variable: %s", name);
                         return;
                     }
                     int ret = parseint(arg);
-                    if(ret < id->minval || ret > id->maxval)
+                    if(id->flags&IDF_HEX && uint(id->maxval) == 0xFFFFFFFFU)
+                    {
+                        if(uint(ret) < uint(id->minval) || uint(ret) > uint(id->maxval))
+                        {
+                            srvmsgf(ci->clientnum, "\frValid range for %s is 0x%X..0x%X", id->name, uint(id->minval), uint(id->maxval));
+                            return;
+                        }
+                    }
+                    else if(ret < id->minval || ret > id->maxval)
                     {
                         srvmsgf(ci->clientnum,
                             id->flags&IDF_HEX ?
@@ -4394,7 +4412,7 @@ namespace server
                         {
                             ipinfo &c = control.add();
                             c.ip = ip;
-                            c.mask = 0xFFFFFFFF;
+                            c.mask = 0xFFFFFFFFU;
                             c.type = ipinfo::BAN;
                             c.flag = ipinfo::INTERNAL;
                             c.time = totalmillis ? totalmillis : 1;
@@ -6427,7 +6445,7 @@ namespace server
                                 {
                                     ipinfo &c = control.add();
                                     c.ip = ip;
-                                    c.mask = 0xFFFFFFFF;
+                                    c.mask = 0xFFFFFFFFU;
                                     c.type = ipinfo::MUTE;
                                     c.flag = ipinfo::INTERNAL;
                                     c.time = totalmillis ? totalmillis : 1;
@@ -6646,7 +6664,11 @@ namespace server
                                 case ID_VAR:
                                 {
                                     int ret = getint(p);
-                                    if(ret < id->minval || ret > id->maxval) break;
+                                    if(id->flags&IDF_HEX && uint(id->maxval) == 0xFFFFFFFFU)
+                                    {
+                                         if(uint(ret) < uint(id->minval) || uint(ret) > uint(id->maxval)) break;
+                                    }
+                                    else if(ret < id->minval || ret > id->maxval) break;
                                     *id->storage.i = ret;
                                     id->changed();
                                     break;
@@ -6827,7 +6849,7 @@ namespace server
                             {
                                 ipinfo &allow = control.add();
                                 allow.ip = getclientip(clients[i]->clientnum);
-                                allow.mask = 0xFFFFFFFF;
+                                allow.mask = 0xFFFFFFFFU;
                                 allow.type = ipinfo::ALLOW;
                                 allow.time = totalmillis ? totalmillis : 1;
                                 allow.reason = newstring("mastermode set private");
@@ -6893,7 +6915,7 @@ namespace server
                                 { \
                                     ipinfo &c = control.add(); \
                                     c.ip = ip; \
-                                    c.mask = 0xFFFFFFFF; \
+                                    c.mask = 0xFFFFFFFFU; \
                                     c.type = value; \
                                     c.time = totalmillis ? totalmillis : 1; \
                                     c.reason = newstring(text); \

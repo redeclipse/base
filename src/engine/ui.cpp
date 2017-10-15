@@ -3306,7 +3306,20 @@ namespace UI
             Object::setup();
             if(!vmin_ && !vmax_) switch(id_->type)
             {
-                case ID_VAR: vmin_ = id_->minval; vmax_ = id_->maxval; break;
+                case ID_VAR:
+                {
+                    if(id->flags&IDF_HEX && uint(id_->maxval) == 0xFFFFFFFFU)
+                    {
+                        vmin_ = uint(id_->minval);
+                        vmax_ = uint(id_->maxval);
+                    }
+                    else
+                    {
+                        vmin_ = id_->minval;
+                        vmax_ = id_->maxval;
+                    }
+                    break;
+                }
                 case ID_FVAR: vmin_ = id_->minvalf; vmax_ = id_->maxvalf; break;
             }
             if(id != id_) changed = false;

@@ -367,8 +367,8 @@ namespace client
                         {
                             if(id.maxval==0xFFFFFF)
                                 f->printf("\t0x%.6X\t0x%.6X\t0x%.6X", id.def.i, id.minval, id.maxval);
-                            else if(uint(id.maxval)==0xFFFFFFFF)
-                                f->printf("\t0x%.8X\t0x%.8X\t0x%.8X", id.def.i, id.minval, id.maxval);
+                            else if(uint(id.maxval)==0xFFFFFFFFU)
+                                f->printf("\t0x%.8X\t0x%.8X\t0x%.8X", uint(id.def.i), uint(id.minval), uint(id.maxval));
                             else
                                 f->printf("\t0x%X\t0x%X\t0x%X", id.def.i, id.minval, id.maxval);
                         }
@@ -2789,7 +2789,12 @@ namespace client
                             int val = getint(p);
                             if(commit)
                             {
-                                if(val > id->maxval) val = id->maxval;
+                                if(id->flags&IDF_HEX && uint(id->maxval) == 0xFFFFFFFFU)
+                                {
+                                    if(uint(val) > uint(id->maxval)) val = uint(id->maxval);
+                                    else if(uint(val) < uint(id->minval)) val = uint(id->minval);
+                                }
+                                else if(val > id->maxval) val = id->maxval;
                                 else if(val < id->minval) val = id->minval;
                                 setvar(text, val, true);
                                 conoutft(CON_EVENT, "\fy%s set worldvar \fs\fc%s\fS to \fs\fc%s\fS", game::colourname(d), id->name, intstr(id));

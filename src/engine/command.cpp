@@ -624,12 +624,13 @@ struct defvar : identval
 
 hashnameset<defvar> defvars;
 
-#define DEFVAR(cmdname, fmt, args, body) \
+#define DEFVAR(cmdname, fmt, args, typebody, body) \
     ICOMMAND(0, cmdname, fmt, args, \
     { \
         if(idents.access(name)) \
         { \
             if(!defvars.access(name)) debugcode("cannot redefine %s as a variable", name); \
+            else { typebody; } \
             return; \
         } \
         name = newstring(name); \
@@ -638,14 +639,18 @@ hashnameset<defvar> defvars;
         def.onchange = onchange[0] ? compilecode(onchange) : NULL; \
         body; \
     });
+
 #define DEFIVAR(cmdname, flags) \
     DEFVAR(cmdname, "siiis", (char *name, int *min, int *cur, int *max, char *onchange), \
+        setvar(name, *cur, true, true), \
         def.i = variable(name, *min, *cur, *max, &def.i, def.onchange ? defvar::changed : NULL, flags))
 #define DEFFVAR(cmdname, flags) \
     DEFVAR(cmdname, "sfffs", (char *name, float *min, float *cur, float *max, char *onchange), \
+        setfvar(name, *cur, true, true), \
         def.f = fvariable(name, *min, *cur, *max, &def.f, def.onchange ? defvar::changed : NULL, flags))
 #define DEFSVAR(cmdname, flags) \
     DEFVAR(cmdname, "sss", (char *name, char *cur, char *onchange), \
+        setsvar(name, cur, true, true), \
         def.s = svariable(name, cur, &def.s, def.onchange ? defvar::changed : NULL, flags))
 
 DEFIVAR(defvar, IDF_COMPLETE);
@@ -664,31 +669,35 @@ DEFSVAR(defsvarp, IDF_COMPLETE|IDF_PERSIST);
 void setvar(const char *name, int i, bool dofunc, bool def)
 {
     GETVAR(id, ID_VAR, name, );
-    *id->storage.i = clamp(i, id->minval, id->maxval);
+    if(id->flags&IDF_HEX && uint(id->maxval) == 0xFFFFFFFFU)
+        *id->storage.i = int(clamp(uint(i), uint(id->minval), uint(id->maxval)));
+    else *id->storage.i = clamp(i, id->minval, id->maxval);
     if(def || versioning)
     {
-        id->def.i = i;
-        if(versioning == 2) id->bin.i = i;
+        id->def.i = *id->storage.i;
+        if(versioning == 2) id->bin.i = *id->storage.i;
     }
     if(dofunc) id->changed();
 #ifndef STANDALONE
     if(versioning && id->flags&IDF_SERVER) setvar(&id->name[3], i, dofunc, def);
 #endif
 }
+
 void setfvar(const char *name, float f, bool dofunc, bool def)
 {
     GETVAR(id, ID_FVAR, name, );
     *id->storage.f = clamp(f, id->minvalf, id->maxvalf);
     if(def || versioning)
     {
-        id->def.f = f;
-        if(versioning == 2) id->bin.f = f;
+        id->def.f = *id->storage.f;
+        if(versioning == 2) id->bin.f = *id->storage.f;
     }
     if(dofunc) id->changed();
 #ifndef STANDALONE
     if(versioning && id->flags&IDF_SERVER) setfvar(&id->name[3], f, dofunc, def);
 #endif
 }
+
 void setsvar(const char *name, const char *str, bool dofunc, bool def)
 {
     GETVAR(id, ID_SVAR, name, );
@@ -697,11 +706,11 @@ void setsvar(const char *name, const char *str, bool dofunc, bool def)
     if(def || versioning)
     {
         delete[] id->def.s;
-        id->def.s = newstring(str);
+        id->def.s = newstring(*id->storage.s);
         if(versioning == 2)
         {
             delete[] id->bin.s;
-            id->bin.s = newstring(str);
+            id->bin.s = newstring(*id->storage.s);
         }
     }
     if(dofunc) id->changed();
@@ -709,6 +718,7 @@ void setsvar(const char *name, const char *str, bool dofunc, bool def)
     if(versioning && id->flags&IDF_SERVER) setsvar(&id->name[3], str, dofunc, def);
 #endif
 }
+
 int getvar(const char *name)
 {
     GETVAR(id, ID_VAR, name, 0);
@@ -722,18 +732,21 @@ int getvar(const char *name)
     }
     return 0;
 }
+
 int getvartype(const char *name)
 {
     ident *id = idents.access(name);
     if(!id) return -1;
     return id->type;
 }
+
 int getvarflags(const char *name)
 {
     ident *id = idents.access(name);
     if(!id) return -1;
     return id->flags;
 }
+
 int getvarmin(const char *name)
 {
     ident *id = idents.access(name);
@@ -745,6 +758,7 @@ int getvarmin(const char *name)
     }
     return 0;
 }
+
 int getvarmax(const char *name)
 {
     ident *id = idents.access(name);
@@ -756,6 +770,7 @@ int getvarmax(const char *name)
     }
     return 0;
 }
+
 float getfvarmin(const char *name)
 {
     ident *id = idents.access(name);
@@ -766,6 +781,7 @@ float getfvarmin(const char *name)
     }
     return 0;
 }
+
 float getfvarmax(const char *name)
 {
     ident *id = idents.access(name);
@@ -776,6 +792,7 @@ float getfvarmax(const char *name)
     }
     return 0;
 }
+
 int getvardef(const char *name, bool rb)
 {
     ident *id = getident(name);
@@ -876,9 +893,15 @@ ICOMMAND(0, getalias, "s", (char *s), result(getalias(s)));
 
 int clampvar(ident *id, int val, int minval, int maxval)
 {
-    if(val < minval) val = minval;
+    if(id->flags&IDF_HEX && uint(maxval) == 0xFFFFFFFFU)
+    {
+        if(uint(val) < uint(minval)) val = uint(minval);
+        else if(uint(val) > uint(maxval)) val = uint(maxval);
+        debugcode("\frValid range for %s is 0x%X..0x%X", id->name, uint(minval), uint(maxval));
+        return val;
+    }
+    else if(val < minval) val = minval;
     else if(val > maxval) val = maxval;
-    else return val;
     debugcode(id->flags&IDF_HEX ?
             (minval <= 255 ? "\frValid range for %s is %d..0x%X" : "\frValid range for %s is 0x%X..0x%X") :
             "\frValid range for %s is %d..%d",
@@ -915,7 +938,15 @@ void setvarchecked(ident *id, int val)
 #ifndef STANDALONE
         CHECKVAR(intstr(val))
 #endif
-        if(val<id->minval || val>id->maxval)
+        if(id->flags&IDF_HEX && uint(id->maxval) == 0xFFFFFFFFU)
+        {
+            if(uint(val)<uint(id->minval) || uint(val)>uint(id->maxval))
+            {
+                val = uint(val)<uint(id->minval) ? uint(id->minval) : uint(id->maxval);                // clamp to valid range
+                debugcode("\frValid range for %s is 0x%X..0x%X", id->name, uint(id->minval), uint(id->maxval));
+            }
+        }
+        else if(val<id->minval || val>id->maxval)
         {
             val = val<id->minval ? id->minval : id->maxval;                // clamp to valid range
             debugcode(
@@ -2262,7 +2293,7 @@ void printvar(ident *id)
             if(i < 0) conoutft(CON_DEBUG, "%s = %d", id->name, i);
             else if(id->flags&IDF_HEX && id->maxval==0xFFFFFF)
                 conoutft(CON_DEBUG, "%s = 0x%.6X (%d, %d, %d)", id->name, i, (i>>16)&0xFF, (i>>8)&0xFF, i&0xFF);
-            else if(id->flags&IDF_HEX && uint(id->maxval)==0xFFFFFFFF)
+            else if(id->flags&IDF_HEX && uint(id->maxval)==0xFFFFFFFFU)
                 conoutft(CON_DEBUG, "%s = 0x%.8X (%d, %d, %d, %d)", id->name, i, i>>24, (i>>16)&0xFF, (i>>8)&0xFF, i&0xFF);
             else
                 conoutft(CON_DEBUG, id->flags&IDF_HEX ? "%s = 0x%X" : "%s = %d", id->name, i);
@@ -3364,7 +3395,7 @@ const char *intstr(int v)
 const char *intstr(ident *id)
 {
     retidx = (retidx + 1)%4;
-    formatstring(retbuf[retidx], id->flags&IDF_HEX && *id->storage.i >= 0 ? (id->maxval==0xFFFFFF ? "0x%.6X" : (uint(id->maxval)==0xFFFFFFFF ? "0x%.8X" : "0x%X")) : "%d", *id->storage.i);
+    formatstring(retbuf[retidx], id->flags&IDF_HEX && *id->storage.i >= 0 ? (id->maxval==0xFFFFFF ? "0x%.6X" : (uint(id->maxval)==0xFFFFFFFFU ? "0x%.8X" : "0x%X")) : "%d", id->flags&IDF_HEX && uint(id->maxval)==0xFFFFFFFFU ? uint(*id->storage.i) : *id->storage.i);
     return retbuf[retidx];
 }
 
@@ -4774,7 +4805,7 @@ ICOMMAND(0, getvarinfo, "biiiis", (int *n, int *w, int *x, int *t, int *o, char 
 
 void hexcolour(int *n)
 {
-    defformatstring(s, *n >= 0 && uint(*n) <= 0xFFFFFFFF ? (*n <= 0xFFFFFF ? "0x%.6X" : "0x%.8X") : "%d", *n);
+    defformatstring(s, *n >= 0 && uint(*n) <= 0xFFFFFFFFU ? (*n <= 0xFFFFFF ? "0x%.6X" : "0x%.8X") : "%d", *n);
     result(s);
 }
 COMMAND(0, hexcolour, "i");

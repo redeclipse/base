@@ -1330,7 +1330,12 @@ bool load_world(const char *mname, int crc)       // still supports all map form
                                 int val = hdr.version >= 25 ? f->getlil<int>() : f->getchar();
                                 if(proceed)
                                 {
-                                    if(val > id->maxval) val = id->maxval;
+                                    if(id->flags&IDF_HEX && uint(id->maxval) == 0xFFFFFFFFU)
+                                    {
+                                        if(uint(val) > uint(id->maxval)) val = uint(id->maxval);
+                                        else if(uint(val) < uint(id->minval)) val = uint(id->minval);
+                                    }
+                                    else if(val > id->maxval) val = id->maxval;
                                     else if(val < id->minval) val = id->minval;
                                     setvar(name, val, true);
                                 }

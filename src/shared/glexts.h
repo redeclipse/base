@@ -301,7 +301,7 @@ extern PFNGLDRAWBUFFERSPROC glDrawBuffers_;
 #define GL_COMPRESSED_RGBA_S3TC_DXT1_EXT  0x83F1
 #define GL_COMPRESSED_RGBA_S3TC_DXT3_EXT  0x83F2
 #define GL_COMPRESSED_RGBA_S3TC_DXT5_EXT  0x83F3
-#endif 
+#endif
 
 #ifndef GL_ARB_framebuffer_object
 #define GL_ARB_framebuffer_object 1
@@ -421,7 +421,7 @@ extern PFNGLFLUSHMAPPEDBUFFERRANGEPROC glFlushMappedBufferRange_;
 #define GL_UNIFORM_BLOCK_REFERENCED_BY_VERTEX_SHADER 0x8A44
 #define GL_UNIFORM_BLOCK_REFERENCED_BY_GEOMETRY_SHADER 0x8A45
 #define GL_UNIFORM_BLOCK_REFERENCED_BY_FRAGMENT_SHADER 0x8A46
-#define GL_INVALID_INDEX                  0xFFFFFFFFu
+#define GL_INVALID_INDEX                  0xFFFFFFFFUu
 typedef void (APIENTRYP PFNGLGETUNIFORMINDICESPROC) (GLuint program, GLsizei uniformCount, const GLchar* *uniformNames, GLuint *uniformIndices);
 typedef void (APIENTRYP PFNGLGETACTIVEUNIFORMSIVPROC) (GLuint program, GLsizei uniformCount, const GLuint *uniformIndices, GLenum pname, GLint *params);
 typedef GLuint (APIENTRYP PFNGLGETUNIFORMBLOCKINDEXPROC) (GLuint program, const GLchar *uniformBlockName);
@@ -429,7 +429,7 @@ typedef void (APIENTRYP PFNGLGETACTIVEUNIFORMBLOCKIVPROC) (GLuint program, GLuin
 typedef void (APIENTRYP PFNGLUNIFORMBLOCKBINDINGPROC) (GLuint program, GLuint uniformBlockIndex, GLuint uniformBlockBinding);
 #endif
 #ifndef GL_INVALID_INDEX
-#define GL_INVALID_INDEX                  0xFFFFFFFFu
+#define GL_INVALID_INDEX                  0xFFFFFFFFUu
 #endif
 extern PFNGLGETUNIFORMINDICESPROC       glGetUniformIndices_;
 extern PFNGLGETACTIVEUNIFORMSIVPROC     glGetActiveUniformsiv_;
@@ -465,7 +465,7 @@ extern PFNGLBINDBUFFERRANGEPROC      glBindBufferRange_;
 #ifndef GL_VERSION_3_1
 #define GL_VERSION_3_1 1
 #define GL_TEXTURE_RECTANGLE              0x84F5
-#endif 
+#endif
 
 #ifndef GL_ARB_vertex_array_object
 #define GL_ARB_vertex_array_object 1

@@ -152,11 +152,11 @@ struct ident
     ident() {}
     // ID_VAR
     ident(int t, const char *n, int m, int c, int x, int *s, void *f = NULL, int flags = IDF_COMPLETE)
-        : type(t), flags(flags | (m > x ? IDF_READONLY : 0)), name(n), minval(m), maxval(x), fun((identfun)f), desc(NULL)
+        : type(t), flags(flags | ((flags&IDF_HEX && uint(x) == 0xFFFFFFFFU ? uint(m) > uint(x) : m > x) ? IDF_READONLY : 0)), name(n), minval(m), maxval(x), fun((identfun)f), desc(NULL)
     { fields.shrink(0); def.i = c; bin.i = c; storage.i = s; }
     // ID_FVAR
     ident(int t, const char *n, float m, float c, float x, float *s, void *f = NULL, int flags = IDF_COMPLETE)
-        : type(t), flags(flags | (m > x ? IDF_READONLY : 0)), name(n), minvalf(m), maxvalf(x), fun((identfun)f), desc(NULL)
+        : type(t), flags(flags | ((flags&IDF_HEX && uint(x) == 0xFFFFFFFFU ? uint(m) > uint(x) : m > x) ? IDF_READONLY : 0)), name(n), minvalf(m), maxvalf(x), fun((identfun)f), desc(NULL)
     { fields.shrink(0); def.f = c; bin.f = c; storage.f = s; }
     // ID_SVAR
     ident(int t, const char *n, char *c, char **s, void *f = NULL, int flags = IDF_COMPLETE)
