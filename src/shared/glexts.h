@@ -421,7 +421,7 @@ extern PFNGLFLUSHMAPPEDBUFFERRANGEPROC glFlushMappedBufferRange_;
 #define GL_UNIFORM_BLOCK_REFERENCED_BY_VERTEX_SHADER 0x8A44
 #define GL_UNIFORM_BLOCK_REFERENCED_BY_GEOMETRY_SHADER 0x8A45
 #define GL_UNIFORM_BLOCK_REFERENCED_BY_FRAGMENT_SHADER 0x8A46
-#define GL_INVALID_INDEX                  0xFFFFFFFFUu
+#define GL_INVALID_INDEX                  0xFFFFFFFFu
 typedef void (APIENTRYP PFNGLGETUNIFORMINDICESPROC) (GLuint program, GLsizei uniformCount, const GLchar* *uniformNames, GLuint *uniformIndices);
 typedef void (APIENTRYP PFNGLGETACTIVEUNIFORMSIVPROC) (GLuint program, GLsizei uniformCount, const GLuint *uniformIndices, GLenum pname, GLint *params);
 typedef GLuint (APIENTRYP PFNGLGETUNIFORMBLOCKINDEXPROC) (GLuint program, const GLchar *uniformBlockName);
@@ -429,7 +429,7 @@ typedef void (APIENTRYP PFNGLGETACTIVEUNIFORMBLOCKIVPROC) (GLuint program, GLuin
 typedef void (APIENTRYP PFNGLUNIFORMBLOCKBINDINGPROC) (GLuint program, GLuint uniformBlockIndex, GLuint uniformBlockBinding);
 #endif
 #ifndef GL_INVALID_INDEX
-#define GL_INVALID_INDEX                  0xFFFFFFFFUu
+#define GL_INVALID_INDEX                  0xFFFFFFFFu
 #endif
 extern PFNGLGETUNIFORMINDICESPROC       glGetUniformIndices_;
 extern PFNGLGETACTIVEUNIFORMSIVPROC     glGetActiveUniformsiv_;
