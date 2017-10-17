@@ -3865,7 +3865,7 @@ namespace server
     {
         ci->updatetimeplayed();
         if(reset) ci->weapreset(false);
-        sendf(-1, 1, "ri9i4vi", N_RESUME, ci->clientnum, reset ? -1 : ci->state, ci->points, ci->frags, ci->deaths, ci->totalpoints, ci->totalfrags, ci->totaldeaths, ci->timeplayed, ci->health, ci->cptime, ci->weapselect, W_MAX, &ci->ammo[0], -1);
+        sendf(reset ? ci->clientnum : -1, 1, "ri9i4vi", N_RESUME, ci->clientnum, reset ? -1 : ci->state, ci->points, ci->frags, ci->deaths, ci->totalpoints, ci->totalfrags, ci->totaldeaths, ci->timeplayed, ci->health, ci->cptime, ci->weapselect, W_MAX, &ci->ammo[0], -1);
     }
 
     void putinitclient(clientinfo *ci, packetbuf &p, bool allow)
