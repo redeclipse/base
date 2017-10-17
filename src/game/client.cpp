@@ -1903,7 +1903,6 @@ namespace client
             d->weapreset(false);
             getint(p);
             loopi(W_MAX) getint(p);
-            loopi(W_MAX) getint(p);
         }
         else
         {
