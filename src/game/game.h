@@ -655,7 +655,7 @@ struct clientstate
             weapwait[i] = weaptime[i] = weapload[i] = weapshot[i] = prevtime[0] = 0;
             if(full) ammo[i] = entid[i] = -1;
         }
-        lastweap.shrink(0);
+        if(full) lastweap.shrink(0);
     }
 
     void setweapstate(int weap, int state, int delay, int millis, int offtime = 0, bool blank = false)

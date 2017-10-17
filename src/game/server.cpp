@@ -3861,10 +3861,11 @@ namespace server
         return false;
     }
 
-    void sendresume(clientinfo *ci)
+    void sendresume(clientinfo *ci, bool reset = false)
     {
         ci->updatetimeplayed();
-        sendf(-1, 1, "ri9i4vi", N_RESUME, ci->clientnum, ci->state, ci->points, ci->frags, ci->deaths, ci->totalpoints, ci->totalfrags, ci->totaldeaths, ci->timeplayed, ci->health, ci->cptime, ci->weapselect, W_MAX, &ci->ammo[0], -1);
+        if(reset) ci->weapreset(false);
+        sendf(-1, 1, "ri9i4vi", N_RESUME, ci->clientnum, reset ? -1 : ci->state, ci->points, ci->frags, ci->deaths, ci->totalpoints, ci->totalfrags, ci->totaldeaths, ci->timeplayed, ci->health, ci->cptime, ci->weapselect, W_MAX, &ci->ammo[0], -1);
     }
 
     void putinitclient(clientinfo *ci, packetbuf &p, bool allow)
@@ -4657,6 +4658,7 @@ namespace server
                 if(sub && W(weap, ammomax)) ci->ammo[weap] = max(ci->ammo[weap]-sub, 0);
                 if(!ci->hasweap(weap, m_weapon(ci->actortype, gamemode, mutators))) ci->entid[weap] = -1; // its gone..
                 if(G(serverdebug)) srvmsgf(ci->clientnum, "sync error: shoot [%d] failed - current state disallows it", weap);
+                sendresume(ci, true);
                 return;
             }
             if(ci->weapload[ci->weapselect] > 0)
@@ -4695,7 +4697,7 @@ namespace server
             if(!ci->canswitch(weap, m_weapon(ci->actortype, gamemode, mutators), millis, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
             {
                 if(G(serverdebug)) srvmsgf(ci->clientnum, "sync error: switch [%d] failed - current state disallows it", weap);
-                sendf(-1, 1, "ri3", N_WSELECT, ci->clientnum, ci->weapselect);
+                sendresume(ci, true);
                 return;
             }
             if(ci->weapload[ci->weapselect] > 0)
@@ -4723,6 +4725,7 @@ namespace server
             if(!ci->candrop(weap, sweap, millis, m_loadout(gamemode, mutators), (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
             {
                 if(G(serverdebug)) srvmsgf(ci->clientnum, "sync error: drop [%d] failed - current state disallows it", weap);
+                sendresume(ci, true);
                 return;
             }
             if(ci->weapload[ci->weapselect] > 0)
@@ -4755,6 +4758,7 @@ namespace server
         if(!ci->canreload(weap, m_weapon(ci->actortype, gamemode, mutators), false, millis))
         {
             if(G(serverdebug)) srvmsgf(ci->clientnum, "sync error: reload [%d] failed - current state disallows it", weap);
+            sendresume(ci, true);
             return;
         }
         ci->setweapstate(weap, W_S_RELOAD, W(weap, delayreload), millis);
@@ -4784,6 +4788,7 @@ namespace server
             if(!ci->canuse(sents[ent].type, attr, sents[ent].attrs, sweap, millis, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
             {
                 if(G(serverdebug)) srvmsgf(ci->clientnum, "sync error: use [%d] failed - current state disallows it", ent);
+                sendresume(ci, true);
                 return;
             }
             if(ci->weapload[ci->weapselect] > 0)
@@ -5983,6 +5988,7 @@ namespace server
                                 {
                                     if(!cp->hasweap(cp->weapselect, m_weapon(cp->actortype, gamemode, mutators))) cp->entid[cp->weapselect] = -1; // its gone..
                                     if(G(serverdebug)) srvmsgf(cp->clientnum, "sync error: power [%d] failed - current state disallows it", cp->weapselect);
+                                    sendresume(ci, true);
                                     break;
                                 }
                                 else if(cp->weapload[cp->weapselect] > 0)

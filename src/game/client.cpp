@@ -1882,8 +1882,12 @@ namespace client
     void parsestate(gameent *d, ucharbuf &p, bool resume = false)
     {
         if(!d) { static gameent dummy; d = &dummy; }
-        if(d == game::player1 || d->ai) getint(p);
-        else d->state = getint(p);
+        bool local = d == game::player1 || d->ai, reset = false;
+        if(!local || !resume)
+            d->respawn(lastmillis, game::gamemode, game::mutators);
+        int state = getint(p);
+        if(state == -1) reset = true;
+        else if(!local) d->state = state;
         d->points = getint(p);
         d->frags = getint(p);
         d->deaths = getint(p);
@@ -1894,7 +1898,7 @@ namespace client
         d->lasttimeplayed = totalmillis ? totalmillis : 1;
         d->health = getint(p);
         d->cptime = getint(p);
-        if(resume && (d == game::player1 || d->ai))
+        if(local && resume && !reset)
         {
             d->weapreset(false);
             getint(p);
@@ -1903,11 +1907,12 @@ namespace client
         }
         else
         {
-            d->weapreset(true);
+            d->weapreset(!resume);
             int weap = getint(p);
             d->weapselect = isweap(weap) ? weap : W_CLAW;
             loopi(W_MAX) d->ammo[i] = getint(p);
         }
+        if(resume) d->setscale(game::rescale(d), 0, true);
     }
 
     void updatepos(gameent *d)
@@ -2340,7 +2345,6 @@ namespace client
                         parsestate(NULL, p);
                         break;
                     }
-                    f->respawn(lastmillis, game::gamemode, game::mutators);
                     parsestate(f, p);
                     break;
                 }
@@ -2355,7 +2359,6 @@ namespace client
                         break;
                     }
                     if(f == game::player1 && editmode) toggleedit();
-                    f->respawn(lastmillis, game::gamemode, game::mutators);
                     parsestate(f, p);
                     game::respawned(f, true, ent);
                     break;
@@ -2536,9 +2539,7 @@ namespace client
                             parsestate(NULL, p);
                             break;
                         }
-                        if(f && f != game::player1 && !f->ai) f->respawn(lastmillis, game::gamemode, game::mutators);
                         parsestate(f, p, true);
-                        f->setscale(game::rescale(f), 0, true);
                     }
                     break;
                 }
