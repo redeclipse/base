@@ -1,7 +1,5 @@
 #include "engine.h"
 
-editinfo *localedit = NULL;
-
 VAR(0, showpastegrid, 0, 0, 1);
 VAR(0, showcursorgrid, 0, 0, 1);
 VAR(0, showselgrid, 0, 0, 1);
@@ -132,7 +130,7 @@ VARF(0, gridpower, 0, 3, 12,
 {
     if(dragging) return;
     gridsize = 1<<gridpower;
-    if(gridsize>=hdr.worldsize) gridsize = hdr.worldsize/2;
+    if(gridsize>=worldsize) gridsize = worldsize/2;
     cancelsel();
 });
 
@@ -143,14 +141,14 @@ VARF(0, hmapedit, 0, 0, 1, horient = sel.orient);
 
 void forcenextundo() { lastsel.orient = -1; }
 
-extern void hmapcancel();
+namespace hmap { void cancel(); }
 
 void cubecancel()
 {
     havesel = false;
     moving = dragging = hmapedit = passthroughsel = 0;
     forcenextundo();
-    hmapcancel();
+    hmap::cancel();
 }
 
 void cancelsel()
@@ -166,21 +164,20 @@ void toggleedit(bool force)
     editing = entediting = (editmode ? 1 : 0);
     client::edittoggled(editmode);
     cancelsel();
-    efocus = enthover = -1;
+    stoppaintblendmap();
     //keyrepeat(editmode);
 }
 
-bool noedit(bool view)
+bool noedit(bool view, bool msg)
 {
     if(!editmode) { conoutf("\frOperation only allowed in edit mode"); return true; }
     if(view || haveselent()) return false;
-    float r = 1.0f;
     vec o(sel.o), s(sel.s);
-    s.mul(float(sel.grid) / 2.0f);
+    s.mul(sel.grid / 2.0f);
     o.add(s);
-    r = float(max(s.x, max(s.y, s.z)));
+    float r = max(s.x, s.y, s.z);
     bool viewable = (isvisiblesphere(r, o) != VFC_NOT_VISIBLE);
-    if(!viewable) conoutf("\frSelection not in view");
+    if(!viewable && msg) conoutf("\frSelection not in view");
     return !viewable;
 }
 
@@ -233,9 +230,9 @@ cube &blockcube(int x, int y, int z, const block3 &b, int rgrid) // looks up a w
     return lookupcube(s, rgrid);
 }
 
-#define loopxy(b)       loop(y,(b).s[C[dimension((b).orient)]]) loop(x,(b).s[R[dimension((b).orient)]])
+#define loopxy(b)        loop(y,(b).s[C[dimension((b).orient)]]) loop(x,(b).s[R[dimension((b).orient)]])
 #define loopxyz(b, r, f) { loop(z,(b).s[D[dimension((b).orient)]]) loopxy((b)) { cube &c = blockcube(x,y,z,b,r); f; } }
-#define loopselxyz(f)   { if(local) makeundo(); loopxyz(sel, sel.grid, f); changed(sel); }
+#define loopselxyz(f)    { if(local) makeundo(); loopxyz(sel, sel.grid, f); changed(sel); }
 #define selcube(x, y, z) blockcube(x, y, z, sel, sel.grid)
 
 ////////////// cursor ///////////////
@@ -243,6 +240,8 @@ cube &blockcube(int x, int y, int z, const block3 &b, int rgrid) // looks up a w
 int selchildcount = 0, selchildmat = -1;
 
 ICOMMAND(0, havesel, "", (), intret(havesel ? selchildcount : 0));
+ICOMMAND(0, selchildcount, "", (), { if(selchildcount < 0) result(tempformatstring("1/%d", -selchildcount)); else intret(selchildcount); });
+ICOMMAND(0, selchildmat, "s", (char *prefix), { if(selchildmat > 0) result(getmaterialdesc(selchildmat, prefix)); });
 
 void countselchild(cube *c, const ivec &cor, int size)
 {
@@ -305,7 +304,7 @@ bool editmoveplane(const vec &o, const vec &ray, int d, float off, vec &handle, 
     return true;
 }
 
-inline bool isheightmap(int orient, int d, bool empty, cube *c);
+namespace hmap { inline bool isheightmap(int orient, int d, bool empty, cube *c); }
 extern void entdrag(const vec &ray);
 extern bool hoveringonent(int ent, int orient);
 extern void renderentselection(const vec &o, const vec &ray, bool entmoving);
@@ -316,19 +315,15 @@ VAR(0, passthroughcube, 0, 1, 1);
 
 void rendereditcursor()
 {
-    vec target(worldpos);
-    if(!insideworld(target)) loopi(3)
-        target[i] = max(min(target[i], float(hdr.worldsize)), 0.0f);
-    vec ray(target);
-    physent *player = (physent *)game::focusedent(true);
-    if(!player) player = camera1;
-    ray.sub(player->o).normalize();
     int d   = dimension(sel.orient),
         od  = dimension(orient),
         odc = dimcoord(orient);
 
-    bool hidecursor = hud::hasinput(), hovering = false;
+    bool hidecursor = hud::hasinput() || blendpaintmode, hovering = false;
     hmapsel = false;
+
+    physent *player = (physent *)game::focusedent(true);
+    if(!player) player = camera1;
 
     if(moving)
     {
@@ -349,7 +344,7 @@ void rendereditcursor()
     }
     else if(entmoving)
     {
-        entdrag(ray);
+        entdrag(camdir);
     }
     else
     {
@@ -357,19 +352,19 @@ void rendereditcursor()
         float sdist = 0, wdist = 0, t;
         int entorient = 0, ent = -1;
 
-        wdist = rayent(player->o, ray, 1e16f,
+        wdist = rayent(player->o, camdir, 1e16f,
                        (editmode && showmat ? RAY_EDITMAT : 0)   // select cubes first
-                                            | (!dragging && entediting ? RAY_ENTS : 0)
-                                            | RAY_SKIPFIRST
-                                            | (passthroughcube==1 ? RAY_PASS : 0), gridsize, entorient, ent);
+                       | (!dragging && entediting ? RAY_ENTS : 0)
+                       | RAY_SKIPFIRST
+                       | (passthroughcube==1 ? RAY_PASS : 0), gridsize, entorient, ent);
 
         if((havesel || dragging) && !passthroughsel && !hmapedit)     // now try selecting the selection
-            if(rayboxintersect(vec(sel.o), vec(sel.s).mul(sel.grid), player->o, ray, sdist, orient))
+            if(rayboxintersect(vec(sel.o), vec(sel.s).mul(sel.grid), player->o, camdir, sdist, orient))
             {   // and choose the nearest of the two
                 if(sdist < wdist)
                 {
                     wdist = sdist;
-                    ent = -1;
+                    ent   = -1;
                 }
             }
 
@@ -384,30 +379,30 @@ void rendereditcursor()
         }
         else
         {
-            vec w = vec(ray).mul(wdist+0.05f).add(player->o);
+            vec w = vec(camdir).mul(wdist+0.05f).add(player->o);
             if(!insideworld(w))
             {
-                loopi(3) wdist = min(wdist, ((ray[i] > 0 ? hdr.worldsize : 0) - player->o[i]) / ray[i]);
-                w = vec(ray).mul(wdist-0.05f).add(player->o);
+                loopi(3) wdist = min(wdist, ((camdir[i] > 0 ? worldsize : 0) - player->o[i]) / camdir[i]);
+                w = vec(camdir).mul(wdist-0.05f).add(player->o);
                 if(!insideworld(w))
                 {
                     wdist = 0;
-                    loopi(3) w[i] = clamp(player->o[i], 0.0f, float(hdr.worldsize));
+                    loopi(3) w[i] = clamp(player->o[i], 0.0f, float(worldsize));
                 }
             }
             cube *c = &lookupcube(ivec(w));
             if(gridlookup && !dragging && !moving && !havesel && hmapedit!=1) gridsize = lusize;
             int mag = gridsize && lusize ? lusize / gridsize : 0;
             normalizelookupcube(ivec(w));
-            if(sdist == 0 || sdist > wdist) rayboxintersect(vec(lu), vec(gridsize), player->o, ray, t=0, orient); // just getting orient
+            if(sdist == 0 || sdist > wdist) rayboxintersect(vec(lu), vec(gridsize), player->o, camdir, t=0, orient); // just getting orient
             cur = lu;
             cor = ivec(vec(w).mul(2).div(gridsize));
             od = dimension(orient);
             d = dimension(sel.orient);
 
-            if(hmapedit==1 && dimcoord(horient) == (ray[dimension(horient)]<0))
+            if(hmapedit==1 && dimcoord(horient) == (camdir[dimension(horient)]<0))
             {
-                hmapsel = isheightmap(horient, dimension(horient), false, c);
+                hmapsel = hmap::isheightmap(horient, dimension(horient), false, c);
                 if(hmapsel)
                     od = dimension(orient = horient);
             }
@@ -415,8 +410,8 @@ void rendereditcursor()
             if(dragging)
             {
                 updateselection();
-                sel.cx  = min(cor[R[d]], lastcor[R[d]]);
-                sel.cy  = min(cor[C[d]], lastcor[C[d]]);
+                sel.cx   = min(cor[R[d]], lastcor[R[d]]);
+                sel.cy   = min(cor[C[d]], lastcor[C[d]]);
                 sel.cxs  = max(cor[R[d]], lastcor[R[d]]);
                 sel.cys  = max(cor[C[d]], lastcor[C[d]]);
 
@@ -453,7 +448,7 @@ void rendereditcursor()
             sel.corner = (cor[R[d]]-(lu[R[d]]*2)/gridsize)+(cor[C[d]]-(lu[C[d]]*2)/gridsize)*2;
             selchildcount = 0;
             selchildmat = -1;
-            countselchild(worldroot, ivec(0, 0, 0), hdr.worldsize/2);
+            countselchild(worldroot, ivec(0, 0, 0), worldsize/2);
             if(mag>=1 && selchildcount==1)
             {
                 selchildmat = c->material;
@@ -462,14 +457,15 @@ void rendereditcursor()
         }
     }
 
+    glDisable(GL_CULL_FACE);
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE);
 
     // cursors
 
-    notextureshader->set();
+    ldrnotextureshader->set();
 
-    renderentselection(player->o, ray, entmoving!=0);
+    renderentselection(player->o, camdir, entmoving!=0);
 
     boxoutline = outline || (fullbright && blankgeom);
 
@@ -477,7 +473,7 @@ void rendereditcursor()
 
     #define planargrid(q,r,s) \
     { \
-        for (float v = 0.f; v < (hdr.worldsize-s); v += s) \
+        for (float v = 0.f; v < (worldsize-s); v += s) \
         { \
             vec a; \
             a = q; a.x = v; boxs3D(a, r, s); \
@@ -488,7 +484,7 @@ void rendereditcursor()
 
     if(!moving && !hovering && !hidecursor)
     {
-        bool ishmap = hmapedit==1 && hmapsel;
+        bool ishmap = hmapedit == 1 && hmapsel;
         if(showcursorgrid)
         {
             gle::colorub(ishmap ? 0 : 30, 30, ishmap ? 0 : 30);
@@ -535,6 +531,13 @@ void rendereditcursor()
     boxoutline = false;
 
     glDisable(GL_BLEND);
+    glEnable(GL_CULL_FACE);
+}
+
+void tryedit()
+{
+    if(!editmode) return;
+    if(blendpaintmode) trypaintblendmap();
 }
 
 //////////// ready changes to vertex arrays ////////////
@@ -584,15 +587,22 @@ void commitchanges(bool force)
     octarender();
     inbetweenframes = true;
     setupmaterials(oldlen);
-    invalidatepostfx();
+    clearshadowcache();
     updatevabbs();
-    resetblobs();
 }
 
-void changed(const block3 &sel, bool commit = true)
+void changed(const ivec &bbmin, const ivec &bbmax, bool commit)
+{
+    readychanges(bbmin, bbmax, worldroot, ivec(0, 0, 0), worldsize/2);
+    haschanged = true;
+
+    if(commit) commitchanges();
+}
+
+void changed(const block3 &sel, bool commit)
 {
     if(sel.s.iszero()) return;
-    readychanges(ivec(sel.o).sub(1), ivec(sel.s).mul(sel.grid).add(sel.o).add(1), worldroot, ivec(0, 0, 0), hdr.worldsize/2);
+    readychanges(ivec(sel.o).sub(1), ivec(sel.s).mul(sel.grid).add(sel.o).add(1), worldroot, ivec(0, 0, 0), worldsize/2);
     haschanged = true;
 
     if(commit) commitchanges();
@@ -630,8 +640,7 @@ block3 *blockcopy(const block3 &s, int rgrid)
     int bsize = sizeof(block3)+sizeof(cube)*s.size();
     if(bsize <= 0 || bsize > (100<<20)) return NULL;
     block3 *b = (block3 *)new (false) uchar[bsize];
-    if(!b) return NULL;
-    blockcopy(s, rgrid, b);
+    if(b) blockcopy(s, rgrid, b);
     return b;
 }
 
@@ -642,7 +651,7 @@ void freeblock(block3 *b, bool alloced = true)
     if(alloced) delete[] b;
 }
 
-void selgridmap(selinfo &sel, uchar *g)                           // generates a map of the cube sizes at each grid point
+void selgridmap(const selinfo &sel, uchar *g)                           // generates a map of the cube sizes at each grid point
 {
     loopxyz(sel, -sel.grid, (*g++ = bitscan(lusize), (void)c));
 }
@@ -748,7 +757,7 @@ void clearundos() { pruneundos(0); }
 
 COMMAND(0, clearundos, "");
 
-undoblock *newundocube(selinfo &s)
+undoblock *newundocube(const selinfo &s)
 {
     int ssize = s.size(),
         selgridsize = ssize,
@@ -767,11 +776,13 @@ undoblock *newundocube(selinfo &s)
 void addundo(undoblock *u)
 {
     u->size = undosize(u);
-    u->timestamp = lastmillis;
+    u->timestamp = totalmillis;
     undos.add(u);
     totalundos += u->size;
     pruneundos(undomegs<<20);
 }
+
+VAR(IDF_PERSIST, nompedit, 0, 1, 1);
 
 void makeundo(selinfo &s)
 {
@@ -809,8 +820,9 @@ void swapundo(undolist &a, undolist &b, int op)
             n += u->numents ? u->numents : countblock(u->block());
             if(ops > 10 || n > 500)
             {
-                multiplayer();
-                return;
+                if(nompedit) { multiplayer(); return; }
+                op = -1;
+                break;
             }
         }
     }
@@ -855,6 +867,7 @@ void editredo() { swapundo(redos, undos, EDIT_REDO); }
 #define protectsel(f) { undoblock *_u = newundocube(sel); f; if(_u) { pasteundo(_u); freeundo(_u); } }
 
 vector<editinfo *> editinfos;
+editinfo *localedit = NULL;
 
 template<class B>
 static void packcube(cube &c, B &buf)
@@ -1076,8 +1089,8 @@ void freeeditinfo(editinfo *&e)
 struct undoenthdr
 {
     ushort i;
-    uchar type, numattrs;
-    vec o;
+    entbase e;
+    uchar numattrs;
 };
 
 bool packundo(undoblock *u, int &inlen, uchar *&outbuf, int &outlen)
@@ -1093,10 +1106,8 @@ bool packundo(undoblock *u, int &inlen, uchar *&outbuf, int &outlen)
         loopi(u->numents)
         {
             hdr[i].i = lilswap(ushort(ue[i].i));
-            hdr[i].type = ue[i].type;
+            hdr[i].e = ue[i].e;
             hdr[i].numattrs = ue[i].numattrs;
-            hdr[i].o = ue[i].o;
-            lilswap(&hdr[i].o.x, 3);
             numattrs += ue[i].numattrs;
         }
         int *attrs = (int *)buf.pad(numattrs*sizeof(int));
@@ -1138,7 +1149,6 @@ bool unpackundo(const uchar *inbuf, int inlen, int outlen)
         loopi(numents)
         {
             lilswap(&hdr[i].i);
-            lilswap(&hdr[i].o.x, 3);
             numattrs += hdr[i].numattrs;
         }
         if(buf.remaining() < numattrs*int(sizeof(int)))
@@ -1150,14 +1160,14 @@ bool unpackundo(const uchar *inbuf, int inlen, int outlen)
         lilswap(attrs, numattrs);
         loopi(numents)
         {
-            pasteundoent(hdr[i].i, hdr[i].o, hdr[i].type, attrs, hdr[i].numattrs);
+            pasteundoent(hdr[i].i, hdr[i].e, attrs, hdr[i].numattrs);
             attrs += hdr[i].numattrs;
         }
     }
     else
     {
         block3 *b = NULL;
-        if(!unpackblock(b, buf) || b->grid >= hdr.worldsize || buf.remaining() < b->size())
+        if(!unpackblock(b, buf) || b->grid >= worldsize || buf.remaining() < b->size())
         {
             freeblock(b);
             delete[] outbuf;
@@ -1228,7 +1238,7 @@ COMMAND(0, delprefab, "s");
 
 void saveprefab(char *name)
 {
-    if(!name[0] || noedit(true) || multiplayer()) return;
+    if(!name[0] || noedit(true) || (nompedit && multiplayer())) return;
     prefab *b = prefabs.access(name);
     if(!b)
     {
@@ -1268,6 +1278,7 @@ prefab *loadprefab(const char *name, bool msg = true)
 {
    prefab *b = prefabs.access(name);
    if(b) return b;
+
    defformatstring(filename, strpbrk(name, "/\\") ? "%s.obr" : "prefab/%s.obr", name);
    path(filename);
    stream *f = opengzfile(filename, "rb");
@@ -1414,15 +1425,15 @@ void genprefabmesh(prefab &p)
     b.o = ivec(0, 0, 0);
 
     cube *oldworldroot = worldroot;
-    int oldworldscale = worldscale, oldworldsize = hdr.worldsize;
+    int oldworldscale = worldscale, oldworldsize = worldsize;
 
     worldroot = newcubes();
     worldscale = 1;
-    hdr.worldsize = 2;
-    while(hdr.worldsize < max(max(b.s.x, b.s.y), b.s.z)*b.grid)
+    worldsize = 2;
+    while(worldsize < max(max(b.s.x, b.s.y), b.s.z)*b.grid)
     {
         worldscale++;
-        hdr.worldsize *= 2;
+        worldsize *= 2;
     }
 
     cube *s = p.copy->c();
@@ -1430,7 +1441,7 @@ void genprefabmesh(prefab &p)
 
     prefabmesh r;
     neighbourstack[++neighbourdepth] = worldroot;
-    loopi(8) genprefabmesh(r, worldroot[i], ivec(i, ivec(0, 0, 0), hdr.worldsize/2), hdr.worldsize/2);
+    loopi(8) genprefabmesh(r, worldroot[i], ivec(i, ivec(0, 0, 0), worldsize/2), worldsize/2);
     --neighbourdepth;
     r.setup(p);
 
@@ -1438,12 +1449,10 @@ void genprefabmesh(prefab &p)
 
     worldroot = oldworldroot;
     worldscale = oldworldscale;
-    hdr.worldsize = oldworldsize;
+    worldsize = oldworldsize;
 
     useshaderbyname("prefab");
 }
-
-extern int outlinecolour;
 
 static void renderprefab(prefab &p, const vec &o, float yaw, float pitch, float roll, float size, const vec &color, float blend)
 {
@@ -1478,7 +1487,7 @@ static void renderprefab(prefab &p, const vec &o, float yaw, float pitch, float 
     GLOBALPARAM(prefabmatrix, pm);
     GLOBALPARAM(prefabworld, w);
     SETSHADER(prefab);
-    gle::colorf(color.x, color.y, color.z, blend);
+    gle::colorf(color.x*ldrscale, color.y*ldrscale, color.z*ldrscale, blend);
     glDrawRangeElements_(GL_TRIANGLES, 0, p.numverts-1, p.numtris*3, GL_UNSIGNED_SHORT, (ushort *)0);
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -1487,8 +1496,7 @@ static void renderprefab(prefab &p, const vec &o, float yaw, float pitch, float 
     pm.mul(camprojmatrix, m);
     GLOBALPARAM(prefabmatrix, pm);
     SETSHADER(prefab);
-    vec ocolor = vec::hexcolor(outlinecolour);
-    gle::colorf(ocolor.x, ocolor.y, ocolor.z, blend);
+    gle::colorf(outlinecolour.x*ldrscale, outlinecolour.y*ldrscale, outlinecolour.z*ldrscale, blend);
     glDrawRangeElements_(GL_TRIANGLES, 0, p.numverts-1, p.numtris*3, GL_UNSIGNED_SHORT, (ushort *)0);
 
     disablepolygonoffset(GL_POLYGON_OFFSET_LINE);
@@ -1555,14 +1563,16 @@ void pastehilight()
     havesel = true;
 }
 
-COMMAND(0, copy, "");
-COMMAND(0, pasteclear, "");
-COMMAND(0, pastehilight, "");
-ICOMMAND(0, paste, "", (),
+void paste()
 {
     if(noedit() || !localedit) return;
     mppaste(localedit, sel, true);
-});
+}
+
+COMMAND(0, copy, "");
+COMMAND(0, pasteclear, "");
+COMMAND(0, pastehilight, "");
+COMMAND(0, paste, "");
 COMMANDN(0, undo, editundo, "");
 COMMANDN(0, redo, editredo, "");
 
@@ -1593,104 +1603,105 @@ void compacteditvslots()
 
 ///////////// height maps ////////////////
 
-#define MAXBRUSH    64
-#define MAXBRUSHC   63
-#define MAXBRUSH2   32
-int brush[MAXBRUSH][MAXBRUSH];
-VAR(0, brushx, 0, MAXBRUSH2, MAXBRUSH);
-VAR(0, brushy, 0, MAXBRUSH2, MAXBRUSH);
-bool paintbrush = 0;
-int brushmaxx = 0, brushminx = MAXBRUSH;
-int brushmaxy = 0, brushminy = MAXBRUSH;
-
-void clearbrush()
-{
-    memset(brush, 0, sizeof brush);
-    brushmaxx = brushmaxy = 0;
-    brushminx = brushminy = MAXBRUSH;
-    paintbrush = false;
-}
-
-void brushvert(int *x, int *y, int *v)
-{
-    *x += MAXBRUSH2 - brushx + 1; // +1 for automatic padding
-    *y += MAXBRUSH2 - brushy + 1;
-    if(*x<0 || *y<0 || *x>=MAXBRUSH || *y>=MAXBRUSH) return;
-    brush[*x][*y] = clamp(*v, 0, 8);
-    paintbrush = paintbrush || (brush[*x][*y] > 0);
-    brushmaxx = min(MAXBRUSH-1, max(brushmaxx, *x+1));
-    brushmaxy = min(MAXBRUSH-1, max(brushmaxy, *y+1));
-    brushminx = max(0,          min(brushminx, *x-1));
-    brushminy = max(0,          min(brushminy, *y-1));
-}
-
-void brushimport(char *name)
-{
-    ImageData s;
-    if(loadimage(name, s))
-    {
-        if(s.w > MAXBRUSH || s.h > MAXBRUSH) // only use max size
-            scaleimage(s, MAXBRUSH, MAXBRUSH);
-
-        uchar *pixel = s.data;
-        int value, x, y;
-
-        clearbrush();
-        brushx = brushy = MAXBRUSH2; // set real coords to 0,0
-
-        loopi(s.w)
-        {
-            x = i;
-            loopj(s.h)
-            {
-                y = j;
-                value = 0;
-
-                loopk(s.bpp) // add the entire pixel together
-                {
-                    value += pixel[0];
-                    pixel++;
-                }
-
-                value /= s.bpp; // average the entire pixel
-                value /= 32; // scale to cube shapes (256 / 8)
-                brushvert(&x, &y, &value);
-            }
-        }
-    }
-    else conoutf("\frCould not load: %s", name);
-}
-
-COMMAND(0, brushimport, "s");
-
-vector<int> htextures;
-
-COMMAND(0, clearbrush, "");
-COMMAND(0, brushvert, "iii");
-void hmapcancel() { htextures.setsize(0); }
-COMMAND(0, hmapcancel, "");
-ICOMMAND(0, hmapselect, "", (),
-    int t = lookupcube(cur).texture[orient];
-    int i = htextures.find(t);
-    if(i<0)
-        htextures.add(t);
-    else
-        htextures.remove(i);
-);
-
-inline bool isheightmap(int o, int d, bool empty, cube *c)
-{
-    return havesel ||
-           (empty && isempty(*c)) ||
-           htextures.empty() ||
-           htextures.find(c->texture[o]) >= 0;
-}
-
 namespace hmap
 {
-#   define PAINTED     1
-#   define NOTHMAP     2
-#   define MAPPED      16
+    vector<int> textures;
+
+    void cancel() { textures.setsize(0); }
+
+    ICOMMAND(0, hmapcancel, "", (), cancel());
+    ICOMMAND(0, hmapselect, "", (),
+        int t = lookupcube(cur).texture[orient];
+        int i = textures.find(t);
+        if(i<0)
+            textures.add(t);
+        else
+            textures.remove(i);
+    );
+
+    inline bool isheightmap(int o, int d, bool empty, cube *c)
+    {
+        return havesel ||
+            (empty && isempty(*c)) ||
+            textures.empty() ||
+            textures.find(c->texture[o]) >= 0;
+    }
+
+    #define MAXBRUSH    64
+    #define MAXBRUSHC   63
+    #define MAXBRUSH2   32
+    int brush[MAXBRUSH][MAXBRUSH];
+    VAR(0, brushx, 0, MAXBRUSH2, MAXBRUSH);
+    VAR(0, brushy, 0, MAXBRUSH2, MAXBRUSH);
+    bool paintbrush = 0;
+    int brushmaxx = 0, brushminx = MAXBRUSH;
+    int brushmaxy = 0, brushminy = MAXBRUSH;
+
+    void clearbrush()
+    {
+        memset(brush, 0, sizeof brush);
+        brushmaxx = brushmaxy = 0;
+        brushminx = brushminy = MAXBRUSH;
+        paintbrush = false;
+    }
+    COMMAND(0, clearbrush, "");
+
+    void brushvert(int *x, int *y, int *v)
+    {
+        *x += MAXBRUSH2 - brushx + 1; // +1 for automatic padding
+        *y += MAXBRUSH2 - brushy + 1;
+        if(*x<0 || *y<0 || *x>=MAXBRUSH || *y>=MAXBRUSH) return;
+        brush[*x][*y] = clamp(*v, 0, 8);
+        paintbrush = paintbrush || (brush[*x][*y] > 0);
+        brushmaxx = min(MAXBRUSH-1, max(brushmaxx, *x+1));
+        brushmaxy = min(MAXBRUSH-1, max(brushmaxy, *y+1));
+        brushminx = max(0,          min(brushminx, *x-1));
+        brushminy = max(0,          min(brushminy, *y-1));
+    }
+    COMMAND(0, brushvert, "iii");
+
+    void brushimport(char *name)
+    {
+        ImageData s;
+        if(loadimage(name, s))
+        {
+            if(s.w > MAXBRUSH || s.h > MAXBRUSH) // only use max size
+                scaleimage(s, MAXBRUSH, MAXBRUSH);
+
+            uchar *pixel = s.data;
+            int value, x, y;
+
+            clearbrush();
+            brushx = brushy = MAXBRUSH2; // set real coords to 0,0
+
+            loopi(s.w)
+            {
+                x = i;
+                loopj(s.h)
+                {
+                    y = j;
+                    value = 0;
+
+                    loopk(s.bpp) // add the entire pixel together
+                    {
+                        value += pixel[0];
+                        pixel++;
+                    }
+
+                    value /= s.bpp; // average the entire pixel
+                    value /= 32; // scale to cube shapes (256 / 8)
+                    brushvert(&x, &y, &value);
+                }
+            }
+        }
+        else conoutf("\frCould not load: %s", name);
+    }
+
+    COMMAND(0, brushimport, "s");
+
+    #define PAINTED     1
+    #define NOTHMAP     2
+    #define MAPPED      16
     uchar  flags[MAXBRUSH][MAXBRUSH];
     cube   *cmap[MAXBRUSHC][MAXBRUSHC][4];
     int    mpz[MAXBRUSHC][MAXBRUSHC];
@@ -1833,14 +1844,16 @@ namespace hmap
         if(biasup)
             pullhmap(0, >, <, 1, 0, -);
         else
-            pullhmap(hdr.worldsize*8, <, >, 0, 8, +);
+            pullhmap(worldsize*8, <, >, 0, 8, +);
 
         cube **c  = cmap[x][y];
         int e[2][2];
         int notempty = 0;
 
-        loopk(4) if(c[k]) {
-            loopi(2) loopj(2) {
+        loopk(4) if(c[k])
+        {
+            loopi(2) loopj(2)
+            {
                 e[i][j] = min(8, map[x+i][y+j] - (mpz[x][y]+3-k)*8);
                 notempty |= e[i][j] > 0;
             }
@@ -1881,7 +1894,7 @@ namespace hmap
         DIAGONAL_RIPPLE(-1, +1, (x>mx && y<ny)); //    won't unless changed
         DIAGONAL_RIPPLE(+1, +1, (x<nx && y<ny));
         DIAGONAL_RIPPLE(+1, -1, (x<nx && y>my));
-        }
+    }
 
 #define loopbrush(i) for(int x=bmx; x<=bnx+i; x++) for(int y=bmy; y<=bny+i; y++)
 
@@ -1925,13 +1938,13 @@ namespace hmap
         bool paintme = paintbrush;
         int cx = (sel.corner&1 ? 0 : -1);
         int cy = (sel.corner&2 ? 0 : -1);
-        hws= (hdr.worldsize>>gridpower);
+        hws= (worldsize>>gridpower);
         gx = (cur[R[d]] >> gridpower) + cx - MAXBRUSH2;
         gy = (cur[C[d]] >> gridpower) + cy - MAXBRUSH2;
         gz = (cur[D[d]] >> gridpower);
         fs = dc ? 4 : 0;
         fg = dc ? gridsize : -gridsize;
-        mx = max(0, -gx);                   // ripple range
+        mx = max(0, -gx); // ripple range
         my = max(0, -gy);
         nx = min(MAXBRUSH-1, hws-gx) - 1;
         ny = min(MAXBRUSH-1, hws-gy) - 1;
@@ -1951,7 +1964,7 @@ namespace hmap
             bnx = min(nx, brushmaxx-1);
             bny = min(ny, brushmaxy-1);
         }
-        nz = hdr.worldsize-gridsize;
+        nz = worldsize-gridsize;
         mz = 0;
         hundo.s = ivec(d,1,1,5);
         hundo.orient = sel.orient;
@@ -1966,7 +1979,7 @@ namespace hmap
         selecting = true;
         select(clamp(MAXBRUSH2-cx, bmx, bnx),
                clamp(MAXBRUSH2-cy, bmy, bny),
-              dc ? gz : hws - gz);
+               dc ? gz : hws - gz);
         selecting = false;
         if(paintme)
             paint();
@@ -1978,8 +1991,9 @@ namespace hmap
     }
 }
 
-void edithmap(int dir, int mode) {
-    if(multiplayer() || !hmapsel) return;
+void edithmap(int dir, int mode)
+{
+    if((nompedit && multiplayer()) || !hmapsel) return;
     hmap::run(dir, mode);
 }
 
@@ -2034,7 +2048,7 @@ void mpeditface(int dir, int mode, selinfo &sel, bool local)
     if(mode==1)
     {
         int h = sel.o[d]+dc*sel.grid;
-        if(((dir>0) == dc && h<=0) || ((dir<0) == dc && h>=hdr.worldsize)) return;
+        if(((dir>0) == dc && h<=0) || ((dir<0) == dc && h>=worldsize)) return;
         if(dir<0) sel.o[d] += sel.grid * seldir;
     }
 
@@ -2163,8 +2177,6 @@ int reptex = -1;
 
 static vector<vslotmap> remappedvslots;
 
-VAR(0, usevdelta, 1, 0, 0);
-
 static VSlot *remapvslot(int index, bool delta, const VSlot &ds)
 {
     loopv(remappedvslots) if(remappedvslots[i].index == index) return remappedvslots[i].vslot;
@@ -2233,8 +2245,6 @@ void edittexcube(cube &c, int tex, int orient, bool &findrep)
     if(c.children) loopi(8) edittexcube(c.children[i], tex, orient, findrep);
 }
 
-VAR(0, allfaces, 0, 0, 1);
-
 void mpeditvslot(int delta, VSlot &ds, int allfaces, selinfo &sel, bool local)
 {
     if(local)
@@ -2265,19 +2275,22 @@ bool mpeditvslot(int delta, int allfaces, selinfo &sel, ucharbuf &buf)
 {
     VSlot ds;
     if(!unpackvslot(buf, ds, delta != 0)) return false;
-    editingvslot(ds.layer);
+    editingvslot(ds.layer, ds.detail);
     mpeditvslot(delta, ds, allfaces, sel, false);
     return true;
 }
 
-void vdelta(char *body)
+VAR(0, allfaces, 0, 0, 1);
+VAR(0, usevdelta, 1, 0, 0);
+
+void vdelta(uint *body)
 {
     if(noedit()) return;
     usevdelta++;
     execute(body);
     usevdelta--;
 }
-COMMAND(0, vdelta, "s");
+COMMAND(0, vdelta, "e");
 
 void vrotate(int *n)
 {
@@ -2291,7 +2304,7 @@ COMMAND(0, vrotate, "i");
 
 void voffset(int *x, int *y)
 {
-    if(noedit() || multiplayer()) return;
+    if(noedit()) return;
     VSlot ds;
     ds.changed = 1<<VSLOT_OFFSET;
     ds.offset = usevdelta ? ivec2(*x, *y) : ivec2(*x, *y).max(0);
@@ -2304,7 +2317,7 @@ void vscroll(float *s, float *t)
     if(noedit()) return;
     VSlot ds;
     ds.changed = 1<<VSLOT_SCROLL;
-    ds.scroll = vec2(*s, *t).div(1000);
+    ds.scroll = vec2(*s/1000.0f, *t/1000.0f);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vscroll, "ff");
@@ -2324,16 +2337,30 @@ void vlayer(int *n)
     if(noedit()) return;
     VSlot ds;
     ds.changed = 1<<VSLOT_LAYER;
-    ds.layer = vslots.inrange(*n) ? *n : 0;
     if(vslots.inrange(*n))
     {
         ds.layer = *n;
-        if(vslots[ds.layer]->changed && multiplayer()) return;
+        if(vslots[ds.layer]->changed && nompedit && multiplayer()) return;
     }
     editingvslot(ds.layer);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vlayer, "i");
+
+void vdetail(int *n)
+{
+    if(noedit()) return;
+    VSlot ds;
+    ds.changed = 1<<VSLOT_DETAIL;
+    if(vslots.inrange(*n))
+    {
+        ds.detail = *n;
+        if(vslots[ds.detail]->changed && nompedit && multiplayer()) return;
+    }
+    editingvslot(ds.detail);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vdetail, "i");
 
 void valpha(float *front, float *back)
 {
@@ -2367,6 +2394,21 @@ void vpalette(int *p, int *x)
 }
 COMMAND(0, vpalette, "ii");
 
+void vrefract(float *k, float *r, float *g, float *b)
+{
+    if(noedit()) return;
+    VSlot ds;
+    ds.changed = 1<<VSLOT_REFRACT;
+    ds.refractscale = clamp(*k, 0.0f, 1.0f);
+    if(ds.refractscale > 0 && (*r > 0 || *g > 0 || *b > 0))
+        ds.refractcolor = vec(clamp(*r, 0.0f, 1.0f), clamp(*g, 0.0f, 1.0f), clamp(*b, 0.0f, 1.0f));
+    else
+        ds.refractcolor = vec(1, 1, 1);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+
+}
+COMMAND(0, vrefract, "ffff");
+
 void vcoastscale(float *value)
 {
     if(noedit()) return;
@@ -2392,7 +2434,8 @@ void vshaderparam(const char *name, float *x, float *y, float *z, float *w, int 
     ds.changed = 1<<VSLOT_SHPARAM;
     if(name[0])
     {
-        ds.params.add(SlotShaderParam(getshaderparamname(name), *palette, *palindex, *x, *y, *z, *w));
+        SlotShaderParam p = { getshaderparamname(name), -1, 0, *palette, *palindex, {*x, *y, *z, *w} };
+        ds.params.add(p);
     }
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
@@ -2440,7 +2483,7 @@ bool mpedittex(int tex, int allfaces, selinfo &sel, ucharbuf &buf)
     return true;
 }
 
-void filltexlist()
+static void filltexlist()
 {
     if(texmru.length()!=vslots.length())
     {
@@ -2491,7 +2534,6 @@ void edittex(int i, bool save = true, bool edit = true)
     }
     if(edit) mpedittex(i, allfaces, sel, true);
 }
-ICOMMAND(0, settex, "i", (int *slot), edittex(*slot));
 
 VAR(IDF_PERSIST, texpaneltime, 0, 5000, VAR_MAX);
 void edittex_(int *dir)
@@ -2538,19 +2580,38 @@ void getseltex()
 
 void gettexname(int *tex, int *subslot)
 {
-    if(noedit(true) || *tex<0) return;
+    if(*tex<0) return;
     VSlot &vslot = lookupvslot(*tex, false);
     Slot &slot = *vslot.slot;
     if(!slot.sts.inrange(*subslot)) return;
     result(slot.sts[*subslot].name);
 }
 
+void getslottex(int *idx)
+{
+    if(*idx < 0 || !slots.inrange(*idx)) { intret(-1); return; }
+    Slot &slot = lookupslot(*idx, false);
+    intret(slot.variants->index);
+}
+
 COMMANDN(0, edittex, edittex_, "i");
+ICOMMAND(0, settex, "i", (int *tex), { if(!vslots.inrange(*tex) || noedit()) return; filltexlist(); edittex(*tex); });
 COMMAND(0, gettex, "");
 COMMAND(0, getcurtex, "");
 COMMAND(0, getseltex, "");
 ICOMMAND(0, getreptex, "", (), { if(!noedit()) intret(vslots.inrange(reptex) ? reptex : -1); });
 COMMAND(0, gettexname, "ii");
+ICOMMAND(0, texmru, "b", (int *idx), { filltexlist(); intret(texmru.inrange(*idx) ? texmru[*idx] : texmru.length()); });
+ICOMMAND(0, looptexmru, "re", (ident *id, uint *body),
+{
+    loopstart(id, stack);
+    filltexlist();
+    loopv(texmru) { loopiter(id, stack, texmru[i]); execute(body); }
+    loopend(id, stack);
+});
+ICOMMAND(0, numvslots, "", (), intret(vslots.length()));
+ICOMMAND(0, numslots, "", (), intret(slots.length()));
+COMMAND(0, getslottex, "i");
 
 void replacetexcube(cube &c, int oldtex, int newtex)
 {
@@ -2610,10 +2671,10 @@ void resettexmru()
 ICOMMAND(0, resettexmru, "", (void), resettexmru());
 
 ////////// flip and rotate ///////////////
-uint dflip(uint face) { return face==F_EMPTY ? face : 0x88888888 - (((face&0xF0F0F0F0)>>4) | ((face&0x0F0F0F0F)<<4)); }
-uint cflip(uint face) { return ((face&0xFF00FF00)>>8) | ((face&0x00FF00FF)<<8); }
-uint rflip(uint face) { return ((face&0xFFFF0000)>>16)| ((face&0x0000FFFF)<<16); }
-uint mflip(uint face) { return (face&0xFF0000FF) | ((face&0x00FF0000)>>8) | ((face&0x0000FF00)<<8); }
+static inline uint dflip(uint face) { return face==F_EMPTY ? face : 0x88888888 - (((face&0xF0F0F0F0)>>4) | ((face&0x0F0F0F0F)<<4)); }
+static inline uint cflip(uint face) { return ((face&0xFF00FF00)>>8) | ((face&0x00FF00FF)<<8); }
+static inline uint rflip(uint face) { return ((face&0xFFFF0000)>>16)| ((face&0x0000FFFF)<<16); }
+static inline uint mflip(uint face) { return (face&0xFF0000FF) | ((face&0x00FF0000)>>8) | ((face&0x0000FF00)<<8); }
 
 void flipcube(cube &c, int d)
 {
@@ -2628,16 +2689,16 @@ void flipcube(cube &c, int d)
     }
 }
 
-void rotatequad(cube &a, cube &b, cube &c, cube &d)
+static inline void rotatequad(cube &a, cube &b, cube &c, cube &d)
 {
     cube t = a; a = b; b = c; c = d; d = t;
 }
 
 void rotatecube(cube &c, int d) // rotates cube clockwise. see pics in cvs for help.
 {
-    c.faces[D[d]] = cflip (mflip(c.faces[D[d]]));
-    c.faces[C[d]] = dflip (mflip(c.faces[C[d]]));
-    c.faces[R[d]] = rflip (mflip(c.faces[R[d]]));
+    c.faces[D[d]] = cflip(mflip(c.faces[D[d]]));
+    c.faces[C[d]] = dflip(mflip(c.faces[C[d]]));
+    c.faces[R[d]] = rflip(mflip(c.faces[R[d]]));
     swap(c.faces[R[d]], c.faces[C[d]]);
 
     swap(c.texture[2*R[d]], c.texture[2*C[d]+1]);
@@ -2756,9 +2817,9 @@ void mpeditmat(int matid, int filter, int style, selinfo &sel, bool local)
     int filtergeom = 0;
     if(filter >= 0)
     {
-        filtermat = filter&0xFFFF;
+        filtermat = filter&0xFF;
         filtermask = filtermat&(MATF_VOLUME|MATF_INDEX) ? MATF_VOLUME|MATF_INDEX : (filtermat&MATF_CLIP ? MATF_CLIP : filtermat);
-        filtergeom = filter&~0xFFFF;
+        filtergeom = filter&~0xFF;
     }
     switch(style)
     {
@@ -2807,9 +2868,10 @@ void rendertexturepanel(int w, int h)
 {
     if((texpaneltimer -= curtime)>0 && editmode)
     {
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
         pushhudmatrix();
-        float width = w*1800.0f/h;
-        hudmatrix.ortho(0, width, 1800, 0, -1, 1);
+        hudmatrix.scale(h/1800.0f, h/1800.0f, 1);
         flushhudmatrix(false);
         SETSHADER(hudrgb);
 
@@ -2823,9 +2885,9 @@ void rendertexturepanel(int w, int h)
             int s = (i == 3 ? 285 : 220), ti = curtexindex+i-3;
             if(texmru.inrange(ti))
             {
-                VSlot &vslot = lookupvslot(texmru[ti]), *layer = NULL;
+                VSlot &vslot = lookupvslot(texmru[ti]), *layer = NULL, *detail = NULL;
                 Slot &slot = *vslot.slot;
-                Texture *tex = slot.sts.empty() ? notexture : slot.sts[0].t, *glowtex = NULL, *layertex = NULL;
+                Texture *tex = slot.sts.empty() ? notexture : slot.sts[0].t, *glowtex = NULL, *layertex = NULL, *detailtex = NULL;
                 if(slot.texmask&(1<<TEX_GLOW))
                 {
                     loopvj(slot.sts) if(slot.sts[j].type==TEX_GLOW) { glowtex = slot.sts[j].t; break; }
@@ -2835,8 +2897,13 @@ void rendertexturepanel(int w, int h)
                     layer = &lookupvslot(vslot.layer);
                     layertex = layer->slot->sts.empty() ? notexture : layer->slot->sts[0].t;
                 }
+                if(vslot.detail)
+                {
+                    detail = &lookupvslot(vslot.detail);
+                    detailtex = detail->slot->sts.empty() ? notexture : detail->slot->sts[0].t;
+                }
                 float sx = min(1.0f, tex->xs/(float)tex->ys), sy = min(1.0f, tex->ys/(float)tex->xs);
-                int x = width-s-50, r = s;
+                int x = hudw-s-50, r = s;
                 vec2 tc[4] = { vec2(0, 0), vec2(1, 0), vec2(1, 1), vec2(0, 1) };
                 float xoff = vslot.offset.x, yoff = vslot.offset.y;
                 if(vslot.rotation)
@@ -2864,6 +2931,16 @@ void rendertexturepanel(int w, int h)
                     gle::attribf(x,   y+r); gle::attrib(tc[3]);
                     gle::attribf(x+r, y+r); gle::attrib(tc[2]);
                     xtraverts += gle::end();
+                    if(j==1 && detailtex)
+                    {
+                        glBindTexture(GL_TEXTURE_2D, detailtex->id);
+                        gle::begin(GL_TRIANGLE_STRIP);
+                        gle::attribf(x,     y);     gle::attrib(tc[0]);
+                        gle::attribf(x+r/2, y);     gle::attrib(tc[1]);
+                        gle::attribf(x,     y+r/2); gle::attrib(tc[3]);
+                        gle::attribf(x+r/2, y+r/2); gle::attrib(tc[2]);
+                        xtraverts += gle::end();
+                    }
                     if(j==1 && layertex)
                     {
                         vec layerscale = layer->getcolorscale();
@@ -2889,7 +2966,35 @@ void rendertexturepanel(int w, int h)
         }
 
         pophudmatrix(true, false);
-        hudshader->set();
+        resethudshader();
     }
     else texpaneltimer = 0;
 }
+
+#define EDITSTAT(name, type, val) \
+    ICOMMAND(0, editstat##name, "", (), \
+    { \
+        static int laststat = 0; \
+        static type prevstat = 0; \
+        static type curstat = 0; \
+        if(totalmillis - laststat >= hud::statrate) \
+        { \
+            prevstat = curstat; \
+            laststat = totalmillis - (totalmillis%hud::statrate); \
+        } \
+        if(prevstat == curstat) curstat = (val); \
+        type##ret(curstat); \
+    });
+EDITSTAT(wtr, int, wtris/1024);
+EDITSTAT(vtr, int, (vtris*100)/max(wtris, 1));
+EDITSTAT(wvt, int, wverts/1024);
+EDITSTAT(vvt, int, (vverts*100)/max(wverts, 1));
+EDITSTAT(evt, int, xtraverts/1024);
+EDITSTAT(eva, int, xtravertsva/1024);
+EDITSTAT(octa, int, allocnodes*8);
+EDITSTAT(va, int, allocva);
+EDITSTAT(glde, int, glde);
+EDITSTAT(geombatch, int, gbatches);
+EDITSTAT(oq, int, getnumqueries());
+EDITSTAT(pvs, int, getnumviewcells());
+

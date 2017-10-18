@@ -3,7 +3,7 @@
 
 // ET_*: the only static entity types dictated by the engine... rest are gamecode dependent
 
-enum { ET_EMPTY=0, ET_LIGHT, ET_MAPMODEL, ET_PLAYERSTART, ET_ENVMAP, ET_PARTICLES, ET_SOUND, ET_LIGHTFX, ET_SUNLIGHT, ET_GAMESPECIFIC };
+enum { ET_EMPTY=0, ET_LIGHT, ET_MAPMODEL, ET_PLAYERSTART, ET_ENVMAP, ET_PARTICLES, ET_SOUND, ET_LIGHTFX, ET_DECAL, ET_GAMESPECIFIC };
 enum { LFX_SPOTLIGHT = 0, LFX_DYNLIGHT, LFX_FLICKER, LFX_PULSE, LFX_GLOW, LFX_MAX };
 enum { LFX_S_NONE = 0, LFX_S_RAND1 = 1<<0, LFX_S_RAND2 = 1<<1, LFX_S_MAX = 2 };
 
@@ -14,8 +14,8 @@ struct entbase                                   // persistent map entity
     uchar reserved[3];                          // left-over space due to struct alignment
 };
 
+#if 0
 enum { MAXLIGHTMATERIALS = 3 };
-
 struct entitylight
 {
     vec color, dir, effect;
@@ -23,6 +23,19 @@ struct entitylight
     bvec material[MAXLIGHTMATERIALS];
 
     entitylight() : color(1, 1, 1), dir(0, 0, 1), effect(0, 0, 0), millis(-1) { loopi(MAXLIGHTMATERIALS) material[i] = bvec(255, 255, 255); }
+};
+#endif
+
+enum
+{
+    EF_NOVIS      = 1<<0,
+    EF_NOSHADOW   = 1<<1,
+    EF_NOCOLLIDE  = 1<<2,
+    EF_SHADOWMESH = 1<<3,
+    EF_OCTA       = 1<<4,
+    EF_RENDER     = 1<<5,
+    EF_SPAWNED    = 1<<6
+
 };
 
 enum
@@ -43,17 +56,10 @@ struct entity : entbase
     linkvector links;
 };
 
-enum
-{
-    EF_OCTA      = 1<<0,
-    EF_RENDER    = 1<<1,
-    EF_SPAWNED   = 1<<2
-};
-
 struct extentity : entity                       // part of the entity that doesn't get saved to disk
 {
     int flags;        // the only dynamic state of a map entity
-    entitylight light;
+    //entitylight light;
     int lastemit, emit[3];
 
     extentity() : flags(0), lastemit(0) { emit[0] = emit[1] = emit[2] = 0; }
@@ -75,7 +81,7 @@ extern int efocus, enthover, entorient;
 enum { CS_ALIVE = 0, CS_DEAD, CS_EDITING, CS_SPECTATOR, CS_WAITING }; // beware, some stuff uses >= CS_SPECTATOR
 enum { PHYS_FLOAT = 0, PHYS_FALL, PHYS_SLIDE, PHYS_SLOPE, PHYS_FLOOR, PHYS_STEP_UP, PHYS_STEP_DOWN };
 enum { ENT_PLAYER = 0, ENT_AI, ENT_INANIMATE, ENT_CAMERA, ENT_PROJ, ENT_RAGDOLL, ENT_DUMMY };
-enum { COLLIDE_NONE = 0, COLLIDE_ELLIPSE, COLLIDE_OBB, COLLIDE_ELLIPSE_PRECISE };
+enum { COLLIDE_NONE = 0, COLLIDE_ELLIPSE, COLLIDE_OBB, COLLIDE_TRI };
 
 struct baseent
 {
@@ -239,7 +245,7 @@ struct usedent
 
 struct dynent : physent                         // animated characters, or characters that can receive input
 {
-    entitylight light;
+    //entitylight light;
     animinterpinfo animinterp[MAXANIMPARTS];
     ragdolldata *ragdoll;
     occludequery *query;

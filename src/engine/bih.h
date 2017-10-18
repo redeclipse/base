@@ -1,3 +1,5 @@
+struct stainrenderer;
+
 struct BIH
 {
     struct node
@@ -27,7 +29,7 @@ struct BIH
         }
     };
 
-    enum { MESH_NOCLIP = 1<<0, MESH_ALPHA = 1<<1, MESH_CULLFACE = 1<<2 };
+    enum { MESH_RENDER = 1<<1, MESH_NOCLIP = 1<<2, MESH_ALPHA = 1<<3, MESH_COLLIDE = 1<<4, MESH_CULLFACE = 1<<5 };
 
     struct mesh
     {
@@ -70,6 +72,18 @@ struct BIH
     bool traverse(const mesh &m, const vec &o, const vec &ray, const vec &invray, float maxdist, float &dist, int mode, node *curnode, float tmin, float tmax);
     bool triintersect(const mesh &m, int tidx, const vec &mo, const vec &mray, float maxdist, float &dist, int mode);
 
+    bool boxcollide(physent *d, const vec &dir, float cutoff, const vec &o, int yaw, int pitch, int roll, float scale = 1);
+    bool ellipsecollide(physent *d, const vec &dir, float cutoff, const vec &o, int yaw, int pitch, int roll, float scale = 1);
+
+    template<int C>
+    void collide(const mesh &m, physent *d, const vec &dir, float cutoff, const vec &center, const vec &radius, const matrix4x3 &orient, float &dist, node *curnode, const ivec &bo, const ivec &br);
+    template<int C>
+    void tricollide(const mesh &m, int tidx, physent *d, const vec &dir, float cutoff, const vec &center, const vec &radius, const matrix4x3 &orient, float &dist, const ivec &bo, const ivec &br);
+
+    void genstaintris(stainrenderer *s, const vec &staincenter, float stainradius, const vec &o, int yaw, int pitch, int roll, float scale = 1);
+    void genstaintris(stainrenderer *s, const mesh &m, const vec &center, float radius, const matrix4x3 &orient, node *curnode, const ivec &bo, const ivec &br);
+    void genstaintris(stainrenderer *s, const mesh &m, int tidx, const vec &center, float radius, const matrix4x3 &orient, const ivec &bo, const ivec &br);
+ 
     void preload();
 };
 

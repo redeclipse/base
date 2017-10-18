@@ -1,7 +1,7 @@
 #include "game.h"
 namespace hud
 {
-    const int NUMSTATS = 23;
+    const int NUMSTATS = 21;
     int uimillis = 0, damageresidue = 0, hudwidth = 0, hudheight = 0, lastteam = 0, laststats = 0, prevstats[NUMSTATS] = {0}, curstats[NUMSTATS] = {0};
 
     #include "compass.h"
@@ -41,15 +41,15 @@ namespace hud
             laststats = totalmillis-(totalmillis%statrate);
         }
         int nextstats[NUMSTATS] = {
-            wtris/1024, vtris*100/max(wtris, 1), wverts/1024, vverts*100/max(wverts, 1), xtraverts/1024, xtravertsva/1024, allocnodes*8, allocva, glde, gbatches, getnumqueries(), rplanes,
-            curfps, bestfpsdiff, worstfpsdiff, entities::ents.length(), entgroup.length(), ai::waypoints.length(), lightmaps.length(), getnumviewcells(),
-            int(vec(game::focus->vel).add(game::focus->falling).magnitude()), int(vec(game::focus->vel).add(game::focus->falling).magnitude()/8.f), int(vec(game::focus->vel).add(game::focus->falling).magnitude()*3.6f/8.f)
+            wtris/1024, vtris*100/max(wtris, 1), wverts/1024, vverts*100/max(wverts, 1), xtraverts/1024, xtravertsva/1024, allocnodes*8, allocva, glde, gbatches, getnumqueries(),
+            curfps, bestfpsdiff, worstfpsdiff, entities::ents.length(), entgroup.length(), ai::waypoints.length(), getnumviewcells(),
+            int(vec(game::focus->vel).add(game::focus->falling).magnitude()), int(vec(game::focus->vel).add(game::focus->falling).magnitude()/8.f), int(vec(game::focus->vel).add(game::focus->falling).magnitude()*0.45f)
         };
         loopi(NUMSTATS) if(prevstats[i] == curstats[i]) curstats[i] = nextstats[i];
     }
     ICOMMAND(0, refreshenginestats, "", (), enginestatrefresh());
     ICOMMAND(0, getenginestat, "ii", (int *n, int *prev), intret(*n >= 0 && *n < NUMSTATS ? (*prev!=0 ? prevstats[*n] : curstats[*n]) : -1));
-    static const char *enginestats[NUMSTATS] = { "wtr", "wtr%", "wvt", "wvt%", "evt", "eva", "ond", "va", "gl" "gb", "oq", "rp", "fps", "best", "worst", "ents", "entsel", "wp", "lm", "pvs", "vel", "mps", "kmh" };
+    static const char *enginestats[NUMSTATS] = { "wtr", "wtr%", "wvt", "wvt%", "evt", "eva", "ond", "va", "gl" "gb", "oq", "fps", "best", "worst", "ents", "entsel", "wp", "pvs", "vel", "mps", "kmh" };
     ICOMMAND(0, getenginestatname, "i", (int *n), result(*n >= 0 && *n < NUMSTATS ? enginestats[*n]: ""));
     #define LOOPENGSTATS(name,op) \
         ICOMMAND(0, loopenginestat##name, "iire", (int *count, int *skip, ident *id, uint *body), \
@@ -1475,10 +1475,10 @@ namespace hud
             if(tkwarn || tinfo)
             {
                 const char *col = teamnotices >= 2 ? "\fs\fzyS" : "";
-                if(tkwarn) ty -= draw_textf("\fzryDo NOT shoot team-mates", tx, ty, int(FONTW*eventpadx)+FONTW/4, int(FONTH*eventpady), tr, tg, tb, tf, TEXT_SKIN|TEXT_CENTERED, -1, tw, 1)+FONTH/4;
-                if(m_race(game::gamemode)) ty -= draw_textf("%sRace", tx, ty, int(FONTW*eventpadx)+FONTW/4, int(FONTH*eventpady), tr, tg, tb, tf, TEXT_SKIN|TEXT_CENTERED, -1, tw, 1, col)+FONTH/4;
-                else if(!m_team(game::gamemode, game::mutators)) ty -= draw_textf("%sFree-for-all %s", tx, ty, int(FONTW*eventpadx)+FONTW/4, int(FONTH*eventpady), tr, tg, tb, tf, TEXT_SKIN|TEXT_CENTERED, -1, tw, 1, col, m_bomber(game::gamemode) ? "Bomber-ball" : "Deathmatch")+FONTH/4;
-                else ty -= draw_textf("%sYou are on team %s", tx, ty, int(FONTW*eventpadx)+FONTW/4, int(FONTH*eventpady), tr, tg, tb, tf, TEXT_SKIN|TEXT_CENTERED, -1, tw, 1, col, game::colourteam(game::focus->team))+FONTH/4;
+                if(tkwarn) ty -= draw_textf("\fzryDo NOT shoot team-mates", tx, ty, int(FONTW*eventpadx)+FONTW/4, int(FONTH*eventpady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1)+FONTH/4;
+                if(m_race(game::gamemode)) ty -= draw_textf("%sRace", tx, ty, int(FONTW*eventpadx)+FONTW/4, int(FONTH*eventpady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1, col)+FONTH/4;
+                else if(!m_team(game::gamemode, game::mutators)) ty -= draw_textf("%sFree-for-all %s", tx, ty, int(FONTW*eventpadx)+FONTW/4, int(FONTH*eventpady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1, col, m_bomber(game::gamemode) ? "Bomber-ball" : "Deathmatch")+FONTH/4;
+                else ty -= draw_textf("%sYou are on team %s", tx, ty, int(FONTW*eventpadx)+FONTW/4, int(FONTH*eventpady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1, col, game::colourteam(game::focus->team))+FONTH/4;
             }
         }
         if(m_capture(game::gamemode)) capture::drawevents(hudwidth, hudheight, tx, ty, tr, tg, tb, tf/255.f);
@@ -1943,7 +1943,7 @@ namespace hud
                     {
                         vec targ;
                         bool hasbound = false;
-                        int dist = teamhurtdist ? teamhurtdist : getworldsize();
+                        int dist = teamhurtdist ? teamhurtdist : worldsize;
                         loopv(game::players) if(game::players[i] && game::players[i]->team == game::player1->team)
                         {
                             if(game::players[i]->lastteamhit < 0 || lastmillis-game::players[i]->lastteamhit > teamhurttime) continue;

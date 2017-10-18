@@ -511,7 +511,7 @@ static void setalias(const char *name, tagval &v)
         switch(id->type)
         {
             case ID_ALIAS:
-            	if(id->index < MAXARGS) setarg(*id, v); else setalias(*id, v);
+                if(id->index < MAXARGS) setarg(*id, v); else setalias(*id, v);
                 return;
             case ID_VAR:
                 setvarchecked(id, v.getint());
@@ -1410,7 +1410,7 @@ static inline bool getbool(const char *s)
             }
             // fall-through
         case '0':
-		{
+        {
             char *end;
             int val = int(strtoul((char *)s, &end, 0));
             if(val) return true;
@@ -1568,15 +1568,15 @@ static void compilelookup(vector<uint> &code, const char *&p, int ltype, int pre
     }
     switch(ltype)
     {
-	    case VAL_CANY: case VAL_COND:
-	        code.add(CODE_LOOKUPMU);
-	        break;
-	    case VAL_CSTR: case VAL_CODE: case VAL_IDENT:
-	        code.add(CODE_LOOKUPMU|RET_STR);
-	        break;
-	    default:
-	        code.add(CODE_LOOKUPU|retcodeany(ltype));
-	        break;
+        case VAL_CANY: case VAL_COND:
+            code.add(CODE_LOOKUPMU);
+            break;
+        case VAL_CSTR: case VAL_CODE: case VAL_IDENT:
+            code.add(CODE_LOOKUPMU|RET_STR);
+            break;
+        default:
+            code.add(CODE_LOOKUPU|retcodeany(ltype));
+            break;
     }
 done:
     switch(ltype)
@@ -1671,10 +1671,10 @@ static bool compileblocksub(vector<uint> &code, const char *&p, int prevargs)
             ident *id = newident(lookup, IDF_UNKNOWN);
             if(id) switch(id->type)
             {
-	            case ID_VAR: code.add(CODE_IVAR|(id->index<<8)); goto done;
-	            case ID_FVAR: code.add(CODE_FVAR|(id->index<<8)); goto done;
-	            case ID_SVAR: code.add(CODE_SVARM|(id->index<<8)); goto done;
-	            case ID_ALIAS: code.add((id->index < MAXARGS ? CODE_LOOKUPMARG : CODE_LOOKUPM)|(id->index<<8)); goto done;
+                case ID_VAR: code.add(CODE_IVAR|(id->index<<8)); goto done;
+                case ID_FVAR: code.add(CODE_FVAR|(id->index<<8)); goto done;
+                case ID_SVAR: code.add(CODE_SVARM|(id->index<<8)); goto done;
+                case ID_ALIAS: code.add((id->index < MAXARGS ? CODE_LOOKUPMARG : CODE_LOOKUPM)|(id->index<<8)); goto done;
             }
             compilestr(code, lookup, true);
             code.add(CODE_LOOKUPMU);
@@ -1837,7 +1837,7 @@ static bool compilearg(vector<uint> &code, const char *&p, int wordtype, int pre
             p++;
             if(prevargs >= MAXRESULTS)
             {
-	            code.add(CODE_ENTER);
+                code.add(CODE_ENTER);
                 compilestatements(code, p, wordtype > VAL_ANY ? VAL_CANY : VAL_ANY, ')');
                 code.add(CODE_EXIT|retcodeany(wordtype));
             }
@@ -1868,7 +1868,7 @@ static bool compilearg(vector<uint> &code, const char *&p, int wordtype, int pre
                     const char *s = p;
                     p = parseword(p);
                     return p != s;
-			    }
+                }
                 case VAL_COND:
                 {
                     char *s = cutword(p);
@@ -1876,9 +1876,9 @@ static bool compilearg(vector<uint> &code, const char *&p, int wordtype, int pre
                     compileblock(code, s);
                     delete[] s;
                     return true;
-				}
+                }
                 case VAL_CODE:
-				{
+                {
                     char *s = cutword(p);
                     if(!s) return false;
                     compileblock(code, s);
@@ -1889,7 +1889,7 @@ static bool compilearg(vector<uint> &code, const char *&p, int wordtype, int pre
                     cutword(p, word);
                     return word.len!=0;
                 default:
-    			{
+                {
                     stringslice s;
                     cutword(p, s);
                     if(!s.len) return false;
@@ -1897,7 +1897,7 @@ static bool compilearg(vector<uint> &code, const char *&p, int wordtype, int pre
                     return true;
                 }
 
-	    }
+        }
     }
 }
 
@@ -1962,18 +1962,18 @@ static void compilestatements(vector<uint> &code, const char *&p, int rettype, i
                 if(!checknumber(idname)) { compilestr(code, idname, true); goto noid; }
                 switch(rettype)
                 {
-	                case VAL_ANY:
-	                case VAL_CANY:
-	                {
-	                    char *end = (char *)idname.str;
-	                    int val = int(strtoul(idname.str, &end, 0));
-	                    if(end < idname.end()) compilestr(code, idname, rettype==VAL_CANY);
-		                else compileint(code, val);
-	                    break;
-	                }
-	                default:
-	                    compileval(code, rettype, idname);
-	                    break;
+                    case VAL_ANY:
+                    case VAL_CANY:
+                    {
+                        char *end = (char *)idname.str;
+                        int val = int(strtoul(idname.str, &end, 0));
+                        if(end < idname.end()) compilestr(code, idname, rettype==VAL_CANY);
+                        else compileint(code, val);
+                        break;
+                    }
+                    default:
+                        compileval(code, rettype, idname);
+                        break;
                 }
                 code.add(CODE_RESULT);
             }
@@ -3010,7 +3010,7 @@ static const uint *runcode(const uint *code, tagval &result)
 
             #define SKIPARGS(offset) offset-1
             case CODE_CALLU|RET_NULL: case CODE_CALLU|RET_STR: case CODE_CALLU|RET_FLOAT: case CODE_CALLU|RET_INT:
-			{
+            {
                 int callargs = op>>8, offset = numargs-callargs;
                 tagval &idarg = args[offset-1];
                 if(idarg.type != VAL_STR && idarg.type != VAL_MACRO && idarg.type != VAL_CSTR)
@@ -3072,7 +3072,7 @@ static const uint *runcode(const uint *code, tagval &result)
                         CALLALIAS;
                         continue;
                 }
-	        }
+            }
             #undef SKIPARGS
         }
     }

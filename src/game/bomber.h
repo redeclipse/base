@@ -24,7 +24,7 @@ struct bomberstate
         projent *proj;
         int displaytime, movetime, inittime, viewtime, rendertime, interptime;
         vec viewpos, renderpos, interppos, render, above;
-        entitylight light, baselight;
+        //entitylight light, baselight;
 #endif
 
         flag() { reset(); }

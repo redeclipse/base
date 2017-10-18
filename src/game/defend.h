@@ -17,7 +17,7 @@ struct defendstate
         bool hasflag;
         int lasthad;
         vec render, above;
-        entitylight baselight;
+        //entitylight baselight;
 #endif
         int owners, enemies, converted, points;
 

@@ -1,4 +1,4 @@
-static struct flaretype
+static const struct flaretype
 {
     int type;             /* flaretex index, 0..5, -1 for 6+random shine */
     float loc;            /* postion on axis */
@@ -42,8 +42,8 @@ struct flarerenderer : partrenderer
     unsigned int shinetime;
     flare *flares;
 
-    flarerenderer(const char *texname, int maxflares)
-        : partrenderer(texname, 3, PT_FLARE|PT_SHADER), maxflares(maxflares), numflares(0), shinetime(0)
+    flarerenderer(const char *texname, int maxflares, int flags = 0)
+        : partrenderer(texname, 3, PT_FLARE|PT_SHADER|flags), maxflares(maxflares), numflares(0), shinetime(0)
     {
         flares = new flare[maxflares];
     }
@@ -57,11 +57,20 @@ struct flarerenderer : partrenderer
         numflares = 0;
     }
 
+    void setupflares()
+    {
+        reset(); //regenerate flarelist each frame
+        shinetime = lastmillis/flareshine;
+    }
+
     void newflare(const vec &o,  const vec &center, uchar r, uchar g, uchar b, float mod, float size, bool sun, int sparkle)
     {
         if(numflares >= maxflares) return;
-        vec target; //occlusion check (neccessary as depth testing is turned off)
-        if(!raycubelos(o, camera1->o, target)) return;
+        //occlusion check (neccessary as depth testing is turned off)
+        vec dir = vec(camera1->o).sub(o);
+        float dist = dir.magnitude();
+        dir.mul(1/dist);
+        if(raycube(o, dir, dist, RAY_CLIPMAT|RAY_POLY) < dist) return;
         flare &f = flares[numflares++];
         f.o = o;
         f.center = center;
@@ -98,7 +107,7 @@ struct flarerenderer : partrenderer
             newflare(o, vec(camdir).mul(flaredir.dot(camdir)).add(camera1->o), r, g, b, mod, size, sun, sparkle);
     }
 
-    void setupflares()
+    void update()
     {
         numflares = 0; //regenerate flarelist each frame
         shinetime = lastmillis/flareshine;
@@ -109,7 +118,7 @@ struct flarerenderer : partrenderer
         if(flarelights)
         {
             const vector<extentity *> &ents = entities::getents();
-            loopenti(ET_SUNLIGHT)
+            loopenti(ET_LIGHT)
             {
                 extentity &e = *ents[i];
                 bool sun = false, project = false;
@@ -131,6 +140,7 @@ struct flarerenderer : partrenderer
                             break;
                         }
                         else continue;
+                    #if 0
                     case ET_SUNLIGHT:
                         if(flarelights&4 || (flarelights&1 && e.attrs[6]))
                         {
@@ -139,12 +149,13 @@ struct flarerenderer : partrenderer
                             r = e.attrs[2];
                             g = e.attrs[3];
                             b = e.attrs[4];
-                            o = vec(camera1->o).add(vec(e.attrs[0]*RAD, (e.attrs[1]+90)*RAD).mul(getworldsize()*2));
+                            o = vec(camera1->o).add(vec(e.attrs[0]*RAD, (e.attrs[1]+90)*RAD).mul(worldsize*2));
                             project = true;
                             if(e.attrs[7] > 0) scale = e.attrs[7]/100.f;
                             break;
                         }
                         else continue;
+                    #endif
                     default: continue;
                 }
                 vec flaredir;
@@ -162,15 +173,13 @@ struct flarerenderer : partrenderer
 
     bool haswork()
     {
-        return (numflares != 0) && !glaring && !reflecting  && !refracting;
+        return (numflares != 0);
     }
 
     void render()
     {
-        textureshader->set();
         glDisable(GL_DEPTH_TEST);
-        preload();
-        if(tex) glBindTexture(GL_TEXTURE_2D, tex->id);
+        glBindTexture(GL_TEXTURE_2D, tex->id);
         gle::defattrib(gle::ATTRIB_VERTEX, 3, GL_FLOAT);
         gle::defattrib(gle::ATTRIB_TEXCOORD0, 2, GL_FLOAT);
         gle::defattrib(gle::ATTRIB_COLOR, 4, GL_UNSIGNED_BYTE);

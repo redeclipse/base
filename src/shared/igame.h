@@ -4,7 +4,7 @@ namespace entities
 {
     extern int numattrs(int type);
     extern int triggertime(extentity &e);
-    extern void editent(int i);
+    extern void editent(int i, bool local);
     extern void readent(stream *g, int mtype, int mver, char *gid, int gver, int id);
     extern void writeent(stream *g, int id);
     extern void remapents(vector<int> &idxs);
@@ -12,6 +12,9 @@ namespace entities
     extern float dropheight(extentity &e);
     extern void fixentity(int n, bool recurse = true, bool create = false);
     extern bool cansee(int n);
+    extern const char *entinfo(int type, attrvector &attr, bool full = false, bool icon = false);
+    extern const char *entinfo(entity &e, bool full = false, bool icon = false);
+    extern const char *entmdlname(int type, attrvector &attr);
     extern const char *findname(int type);
     extern int findtype(char *type);
     extern bool maylink(int type, int ver = 0);
@@ -55,6 +58,7 @@ namespace client
 
 namespace hud
 {
+    extern int statrate;
     extern char *progresstex, *progringtex;
     extern float radarlimit(float dist = -1);
     extern bool radarlimited(float dist);
@@ -116,6 +120,7 @@ namespace game
     extern vec getpalette(int palette, int index);
     extern void adddynlights();
     extern void particletrack(particle *p, uint type, int &ts, bool step);
+    extern void dynlighttrack(physent *owner, vec &o, vec &hud);
     extern bool mousemove(int dx, int dy, int x, int y, int w, int h);
     extern void project(int w, int h);
     extern void recomputecamera(int w, int h);

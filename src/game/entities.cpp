@@ -274,10 +274,10 @@ namespace entities
             }
             case WEAPON:
             {
-                int sweap = m_weapon(game::focus->actortype, game::gamemode, game::mutators), attr1 = w_attr(game::gamemode, game::mutators, type, attr[0], sweap);
-                if(isweap(attr1))
+                int sweap = m_weapon(game::focus->actortype, game::gamemode, game::mutators), wattr = w_attr(game::gamemode, game::mutators, type, attr[0], sweap);
+                if(isweap(wattr))
                 {
-                    defformatstring(str, "\fs\f[%d]%s%s%s%s\fS", W(attr1, colour), icon ? "\f(" : "", icon ? hud::itemtex(type, attr1) : W(attr1, name), icon ? ")" : "", icon ? W(attr1, longname) : "");
+                    defformatstring(str, "\fs\f[%d]%s%s%s%s\fS", W(wattr, colour), icon ? "\f(" : "", icon ? hud::itemtex(type, wattr) : W(wattr, name), icon ? ")" : "", icon ? W(wattr, longname) : "");
                     addentinfo(str);
                     if(full)
                     {
@@ -367,6 +367,12 @@ namespace entities
             default: break;
         }
         return entinfostr[0] ? entinfostr : "";
+    }
+
+    const char *entinfo(entity &e, bool full, bool icon)
+    {
+        gameentity &f = (gameentity &)e;
+        return entinfo(f.type, f.attrs, full, icon);
     }
 
     const char *entmdlname(int type, attrvector &attr)
@@ -477,7 +483,7 @@ namespace entities
              br = vec(pos).add(vec(xyrad, xyrad, zrad)).add(1);
         int diff = (bo.x^br.x) | (bo.y^br.y) | (bo.z^br.z) | octaentsize,
             scale = worldscale-1;
-        if(diff&~((1<<scale)-1) || uint(bo.x|bo.y|bo.z|br.x|br.y|br.z) >= uint(hdr.worldsize))
+        if(diff&~((1<<scale)-1) || uint(bo.x|bo.y|bo.z|br.x|br.y|br.z) >= uint(worldsize))
         {
             collateents(worldroot, ivec(0, 0, 0), 1<<scale, bo, br, pos, xyrad, zrad, alive, actitems);
             return;
@@ -1029,17 +1035,6 @@ namespace entities
                 if(e.attrs[4] > 3) e.attrs[4] = 0;
                 break;
             }
-            case SUNLIGHT:
-            {
-                while(e.attrs[0] < 0) e.attrs[0] += 360;
-                while(e.attrs[0] >= 360) e.attrs[0] -= 360;
-                while(e.attrs[1] < -180) e.attrs[1] += 360;
-                while(e.attrs[1] >= 180) e.attrs[1] -= 360;
-                if(e.attrs[5] < -1) e.attrs[5] = 0;
-                if(e.attrs[6] < 0) e.attrs[6] = 3;
-                if(e.attrs[6] > 3) e.attrs[6] = 0;
-                break;
-            }
             case PUSHER:
             {
                 while(e.attrs[0] < 0) e.attrs[0] += 360;
@@ -1252,18 +1247,18 @@ namespace entities
                 }
             }
             d->yaw = d->pitch = d->roll = 0;
-            d->o.x = d->o.y = d->o.z = getworldsize();
+            d->o.x = d->o.y = d->o.z = worldsize;
             d->o.x *= 0.5f; d->o.y *= 0.5f;
             if(physics::entinmap(d, true)) return;
         }
         if(!m_edit(game::gamemode) && suicide) game::suicide(d, HIT_SPAWN);
     }
 
-    void editent(int i)
+    void editent(int i, bool local)
     {
         extentity &e = *ents[i];
         fixentity(i, true);
-        if(m_edit(game::gamemode) && game::player1->state == CS_EDITING)
+        if(local && m_edit(game::gamemode) && game::player1->state == CS_EDITING)
             client::addmsg(N_EDITENT, "ri5iv", i, (int)(e.o.x*DMF), (int)(e.o.y*DMF), (int)(e.o.z*DMF), e.type, e.attrs.length(), e.attrs.length(), e.attrs.getbuf()); // FIXME
         if(e.type < MAXENTTYPES)
         {
@@ -1387,7 +1382,7 @@ namespace entities
                 // PARTICLES        -   PARTICLES
                 // MAPSOUND         -   MAPSOUND
                 // SPOTLIGHT        -   LIGHTFX
-                //                  -   SUNLIGHT
+                //                  -   DECAL
                 case 1: case 2: case 3: case 4: case 5: case 6: case 7: case 8: break;
 
                 // I_SHELLS         -   WEAPON      W_SHOTGUN
@@ -2087,7 +2082,7 @@ namespace entities
                 }
                 case LIGHT:
                 {
-                    int s = e.attrs[0] ? e.attrs[0] : hdr.worldsize,
+                    int s = e.attrs[0] ? e.attrs[0] : worldsize,
                         colour = ((e.attrs[1])<<16)|((e.attrs[2])<<8)|(e.attrs[3]);
                     part_radius(e.o, vec(s, s, s), showentsize, 1, 1, colour);
                     break;
@@ -2104,22 +2099,6 @@ namespace entities
                         int colour = ((f.attrs[1]/2)<<16)|((f.attrs[2]/2)<<8)|(f.attrs[3]/2);
                         part_cone(f.o, dir, radius, angle, showentsize, 1, 1, colour);
                         break;
-                    }
-                    break;
-                }
-                case SUNLIGHT:
-                {
-                    int colour = ((e.attrs[2]/2)<<16)|((e.attrs[3]/2)<<8)|(e.attrs[4]/2),
-                        offset = e.attrs[5] ? (e.attrs[5] > 0 ? e.attrs[5] : 0) : 10, yaw = e.attrs[0], pitch = e.attrs[1]+90;
-                    vec dir(yaw*RAD, pitch*RAD);
-                    static const float offsets[9][2] = { { 0, 0 }, { 0, 1 }, { 90, 1 }, { 180, 1 }, { 270, 1 }, { 45, 0.5f }, { 135, 0.5f }, { 225, 0.5f }, { 315, 0.5f } };
-                    loopk(offset ? 9 : 1)
-                    {
-                        vec spoke(yaw*RAD, (pitch + offset*offsets[k][1])*RAD);
-                        spoke.rotate(offsets[k][0]*RAD, dir);
-                        float syaw, spitch;
-                        vectoyawpitch(spoke, syaw, spitch);
-                        entdirpart(e.o, syaw, spitch, getworldsize()*2, 1, colour);
                     }
                     break;
                 }
@@ -2183,7 +2162,7 @@ namespace entities
     void renderentlight(gameentity &e)
     {
         if(e.o.squaredist(camera1->o) > showentdist*showentdist) return;
-        adddynlight(vec(e.o), float(e.attrs[0] ? e.attrs[0] : hdr.worldsize)*0.75f, vec(e.attrs[1], e.attrs[2], e.attrs[3]).div(383.f), 0, 0, DL_KEEP);
+        adddynlight(vec(e.o), float(e.attrs[0] ? e.attrs[0] : worldsize)*0.75f, vec(e.attrs[1], e.attrs[2], e.attrs[3]).div(383.f), 0, 0);
     }
 
     void adddynlights()
@@ -2283,7 +2262,7 @@ namespace entities
 
     void render()
     {
-        if(rendermainview && shouldshowents(game::player1->state == CS_EDITING ? 1 : (!entgroup.empty() || ents.inrange(enthover) ? 2 : 3))) loopv(ents) // important, don't render lines and stuff otherwise!
+        if(shouldshowents(game::player1->state == CS_EDITING ? 1 : (!entgroup.empty() || ents.inrange(enthover) ? 2 : 3))) loopv(ents) // important, don't render lines and stuff otherwise!
             renderfocus(i, renderentshow(e, i, game::player1->state == CS_EDITING ? ((entgroup.find(i) >= 0 || enthover == i) ? 1 : 2) : 3));
         if(!drawtex)
         {
@@ -2294,14 +2273,13 @@ namespace entities
                 gameentity &e = *(gameentity *)ents[i];
                 if(e.type <= NOTUSED || e.type >= MAXENTTYPES || (enttype[e.type].usetype == EU_ITEM && simpleitems)) continue;
                 bool active = enttype[e.type].usetype == EU_ITEM && (e.spawned() || (e.lastemit && lastmillis-e.lastemit < 500));
-                if((m_edit(game::gamemode) && rendermainview) || active)
+                if(m_edit(game::gamemode) || active)
                 {
                     const char *mdlname = entmdlname(e.type, e.attrs);
                     vec pos = e.o;
                     if(mdlname && *mdlname)
                     {
-                        int flags = MDL_SHADOW|MDL_CULL_VFC|MDL_CULL_DIST|MDL_CULL_OCCLUDED,
-                            colour = -1;
+                        int flags = MDL_CULL_VFC|MDL_CULL_DIST|MDL_CULL_OCCLUDED, colour = -1;
                         float fade = 1, yaw = 0, pitch = 0, size = 1;
                         if(!active)
                         {
@@ -2336,16 +2314,15 @@ namespace entities
                             int attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], m_weapon(game::focus->actortype, game::gamemode, game::mutators));
                             if(isweap(attr))
                             {
-                                flags |= MDL_LIGHTFX;
-                                int col = W(attr, colour), interval = lastmillis%1000;
-                                e.light.effect = vec::hexcolor(col).mul(interval >= 500 ? (1000-interval)/500.f : interval/500.f);
-                                if(attr == W_GRENADE) colour = col;
+                                //int col = W(attr, colour), interval = lastmillis%1000;
+                                //e.light.effect = vec::hexcolor(col).mul(interval >= 500 ? (1000-interval)/500.f : interval/500.f);
+                                //if(attr == W_GRENADE) colour = col;
                             }
                             else continue;
                         }
-                        else e.light.effect = vec(0, 0, 0);
-                        e.light.material[0] = colour >= 0 ? bvec(colour) : bvec(colourwhite);
-                        rendermodel(&e.light, mdlname, ANIM_MAPMODEL|ANIM_LOOP, pos, yaw, pitch, 0.f, flags, NULL, NULL, 0, 0, fade, size);
+                        //else e.light.effect = vec(0, 0, 0);
+                        //e.light.material[0] = colour >= 0 ? bvec(colour) : bvec(colourwhite);
+                        rendermodel(mdlname, ANIM_MAPMODEL|ANIM_LOOP, pos, yaw, pitch, 0.f, flags, NULL, NULL, 0, 0, size, vec4(1, 1, 1, fade));
                     }
                 }
             }
@@ -2369,6 +2346,7 @@ namespace entities
         switch(e.type)
         {
             case PARTICLES:
+                #if 0
                 if(idx >= 0 && e.attrs[11])
                 {
                     if((e.nextemit -= curtime) <= 0) e.nextemit = 0;
@@ -2376,6 +2354,7 @@ namespace entities
                 }
                 if(idx < 0 || e.links.empty() || e.spawned() || (e.lastemit > 0 && lastmillis-e.lastemit <= triggertime(e)/2)) makeparticle(o, e.attrs);
                 if(idx >= 0 && e.attrs[11]) e.nextemit += e.attrs[11];
+                #endif
                 break;
             case TELEPORT:
                 if(e.attrs[4]) maketeleport(e);

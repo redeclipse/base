@@ -251,6 +251,7 @@ struct md5 : skelmodel, skelloader<md5>
                 m.buildverts(basejoints);
                 if(smooth <= 1) m.smoothnorms(smooth);
                 else m.buildnorms();
+                m.calctangents();
                 m.cleanup();
             }
 
@@ -363,11 +364,14 @@ struct md5 : skelmodel, skelloader<md5>
                             if(h.flags&32) j.orient.z = -*jdata++;
                             j.orient.restorew();
                         }
-                        frame[i] = dualquat(j.orient, j.pos);
-                        if(adjustments.inrange(i)) adjustments[i].adjust(frame[i]);
-                        frame[i].mul(skel->bones[i].invbase);
-                        if(h.parent >= 0) frame[i].mul(skel->bones[h.parent].base, dualquat(frame[i]));
-                        frame[i].fixantipodal(skel->framebones[i]);
+                        dualquat dq(j.orient, j.pos);
+                        if(adjustments.inrange(i)) adjustments[i].adjust(dq);
+                        boneinfo &b = skel->bones[i];
+                        dq.mul(b.invbase);
+                        dualquat &dst = frame[i];
+                        if(h.parent < 0) dst = dq;
+                        else dst.mul(skel->bones[h.parent].base, dq);
+                        dst.fixantipodal(skel->framebones[i]);
                     }
                 }
             }
@@ -388,24 +392,17 @@ struct md5 : skelmodel, skelloader<md5>
         }
     };
 
-    meshgroup *loadmeshes(const char *name, va_list args)
-    {
-        md5meshgroup *group = new md5meshgroup;
-        group->shareskeleton(va_arg(args, char *));
-        if(!group->load(name, va_arg(args, double))) { delete group; return NULL; }
-        return group;
-    }
+    skelmeshgroup *newmeshes() { return new md5meshgroup; }
 
     bool loaddefaultparts()
     {
         skelpart &mdl = addpart();
-        mdl.pitchscale = mdl.pitchoffset = mdl.pitchmin = mdl.pitchmax = 0;
         adjustments.setsize(0);
         const char *fname = name + strlen(name);
         do --fname; while(fname >= name && *fname!='/' && *fname!='\\');
         fname++;
         defformatstring(meshname, "%s/%s.md5mesh", name, fname);
-        mdl.meshes = sharemeshes(path(meshname), NULL, 2.0);
+        mdl.meshes = sharemeshes(path(meshname));
         if(!mdl.meshes) return false;
         mdl.initanimparts();
         mdl.initskins();

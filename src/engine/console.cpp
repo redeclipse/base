@@ -6,7 +6,7 @@ reversequeue<cline, MAXCONLINES> conlines[CON_MAX];
 
 int commandmillis = -1;
 bigstring commandbuf;
-char *commandaction = NULL, *commandicon = NULL;
+char *commandaction = NULL, *commandprompt = NULL, *commandicon = NULL;
 enum { CF_COMPLETE = 1<<0, CF_EXECUTE = 1<<1, CF_MESSAGE = 1<<2 };
 int commandflags = 0, commandpos = -1, commandcolour = 0;
 
@@ -77,6 +77,9 @@ struct keym
 
     keym() : code(-1), name(NULL), pressed(false) { loopi(NUMACTIONS) { actions[i] = newstring(""); persist[i] = false; } }
     ~keym() { DELETEA(name); loopi(NUMACTIONS) { DELETEA(actions[i]); persist[i] = false; } }
+
+    void clear(int type);
+    void clear() { loopi(NUMACTIONS) clear(i); }
 };
 
 hashtable<int, keym> keyms(128);
@@ -294,18 +297,36 @@ ICOMMAND(0, searchspecbinds, "sissssb", (char *action, int *limit, char *s1, cha
 ICOMMAND(0, searcheditbinds, "sissssb", (char *action, int *limit, char *s1, char *s2, char *sep1, char *sep2, int *force), { vector<char> list; searchbindlist(action, keym::ACTION_EDITING, max(*limit, 0), s1, s2, sep1, sep2, list, *force!=0); result(list.getbuf()); });
 ICOMMAND(0, searchwaitbinds, "sissssb", (char *action, int *limit, char *s1, char *s2, char *sep1, char *sep2, int *force), { vector<char> list; searchbindlist(action, keym::ACTION_WAITING, max(*limit, 0), s1, s2, sep1, sep2, list, *force!=0); result(list.getbuf()); });
 
+void keym::clear(int type)
+{
+    char *&binding = actions[type];
+    if(binding[0])
+    {
+        if(!keypressed || keyaction!=binding) delete[] binding;
+        binding = newstring("");
+    }
+}
+
+ICOMMAND(0, clearbinds, "", (), enumerate(keyms, keym, km, km.clear(keym::ACTION_DEFAULT)));
+ICOMMAND(0, clearspecbinds, "", (), enumerate(keyms, keym, km, km.clear(keym::ACTION_SPECTATOR)));
+ICOMMAND(0, cleareditbinds, "", (), enumerate(keyms, keym, km, km.clear(keym::ACTION_EDITING)));
+ICOMMAND(0, clearwaitbinds, "", (), enumerate(keyms, keym, km, km.clear(keym::ACTION_WAITING)));
+ICOMMAND(0, clearallbinds, "", (), enumerate(keyms, keym, km, km.clear()));
+
 ICOMMAND(0, keyspressed, "issss", (int *limit, char *s1, char *s2, char *sep1, char *sep2), { vector<char> list; getkeypressed(max(*limit, 0), s1, s2, sep1, sep2, list); result(list.getbuf()); });
 
-void inputcommand(char *init, char *action = NULL, char *icon = NULL, int colour = colourwhite, char *flags = NULL) // turns input to the command line on or off
+void inputcommand(char *init, char *action = NULL, char *prompt = NULL, char *icon = NULL, int colour = colourwhite, char *flags = NULL) // turns input to the command line on or off
 {
     commandmillis = init ? totalmillis : -totalmillis;
     textinput(commandmillis >= 0, TI_CONSOLE);
     keyrepeat(commandmillis >= 0, KR_CONSOLE);
     copystring(commandbuf, init ? init : "", BIGSTRLEN);
     DELETEA(commandaction);
+    DELETEA(commandprompt);
     DELETEA(commandicon);
     commandpos = -1;
     if(action && action[0]) commandaction = newstring(action);
+    if(prompt && prompt[0]) commandprompt = newstring(prompt);
     if(icon && icon[0]) commandicon = newstring(icon);
     commandcolour = colour;
     commandflags = 0;
@@ -320,11 +341,12 @@ void inputcommand(char *init, char *action = NULL, char *icon = NULL, int colour
 }
 
 ICOMMAND(0, saycommand, "C", (char *init), inputcommand(init));
-ICOMMAND(0, inputcommand, "sssis", (char *init, char *action, char *icon, int *colour, char *flags), inputcommand(init, action, icon, *colour > 0 ? *colour : colourwhite, flags));
+ICOMMAND(0, inputcommand, "ssssis", (char *init, char *action, char *prompt, char *icon, int *colour, char *flags), inputcommand(init, action, prompt, icon, *colour > 0 ? *colour : colourwhite, flags));
 
 ICOMMAND(0, getcommandmillis, "", (), intret(commandmillis));
 ICOMMAND(0, getcommandbuf, "", (), result(commandmillis > 0 ? commandbuf : ""));
 ICOMMAND(0, getcommandaction, "", (), result(commandmillis > 0 && commandaction ? commandaction : ""));
+ICOMMAND(0, getcommandprompt, "", (), result(commandmillis > 0 && commandprompt ? commandprompt : ""));
 ICOMMAND(0, getcommandicon, "", (), result(commandmillis > 0 && commandicon ? commandicon : ""));
 ICOMMAND(0, getcommandpos, "", (), intret(commandmillis > 0 ? (commandpos >= 0 ? commandpos : strlen(commandbuf)) : -1));
 ICOMMAND(0, getcommandflags, "", (), intret(commandmillis > 0 ? commandflags : 0));
@@ -353,14 +375,15 @@ SVAR(0, commandbuffer, "");
 
 struct hline
 {
-    char *buf, *action, *icon;
+    char *buf, *action, *prompt, *icon;
     int colour, flags;
 
-    hline() : buf(NULL), action(NULL), icon(NULL), colour(0), flags(0) {}
+    hline() : buf(NULL), action(NULL), prompt(NULL), icon(NULL), colour(0), flags(0) {}
     ~hline()
     {
         DELETEA(buf);
         DELETEA(action);
+        DELETEA(prompt);
         DELETEA(icon);
     }
 
@@ -369,8 +392,10 @@ struct hline
         copystring(commandbuf, buf);
         if(commandpos >= (int)strlen(commandbuf)) commandpos = -1;
         DELETEA(commandaction);
+        DELETEA(commandprompt);
         DELETEA(commandicon);
         if(action) commandaction = newstring(action);
+        if(prompt) commandprompt = newstring(prompt);
         if(icon) commandicon = newstring(icon);
         commandcolour = colour;
         commandflags = flags;
@@ -380,6 +405,7 @@ struct hline
     {
         return strcmp(commandbuf, buf) ||
                (commandaction ? !action || strcmp(commandaction, action) : action!=NULL) ||
+               (commandprompt ? !prompt || strcmp(commandprompt, prompt) : prompt!=NULL) ||
                (commandicon ? !icon || strcmp(commandicon, icon) : icon!=NULL) ||
                commandcolour != colour ||
                commandflags != flags;
@@ -389,6 +415,7 @@ struct hline
     {
         buf = newstring(commandbuf);
         if(commandaction) action = newstring(commandaction);
+        if(commandprompt) prompt = newstring(commandprompt);
         if(commandicon) icon = newstring(commandicon);
         colour = commandcolour;
         flags = commandflags;
@@ -472,8 +499,8 @@ void execbind(keym &k, bool isdown)
         {
             if(ra.numargs < 0)
             {
-            	if(!isdown) execute(ra.action);
-            	delete[] ra.action;
+                if(!isdown) execute(ra.action);
+                delete[] ra.action;
             }
             else execute(isdown ? NULL : ra.id, ra.args, ra.numargs);
             releaseactions.remove(i--);
@@ -702,7 +729,7 @@ void writebinds(stream *f)
     vector<keym *> binds;
     enumerate(keyms, keym, km, binds.add(&km));
     binds.sortname();
-    loopj(4)
+    loopj(keym::NUMACTIONS)
     {
         bool found = false;
         loopv(binds)
@@ -788,7 +815,8 @@ void addcomplete(char *command, int type, char *dir, char *ext)
     if(type==FILES_DIR)
     {
         int dirlen = (int)strlen(dir);
-        while(dirlen > 0 && (dir[dirlen-1] == '/' || dir[dirlen-1] == '\\')) dir[--dirlen] = '\0';
+        while(dirlen > 0 && (dir[dirlen-1] == '/' || dir[dirlen-1] == '\\'))
+            dir[--dirlen] = '\0';
         if(ext)
         {
             if(strchr(ext, '*')) ext[0] = '\0';

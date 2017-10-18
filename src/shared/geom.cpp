@@ -190,6 +190,40 @@ vec closestpointcylinder(const vec &center, const vec &start, const vec &end, fl
     return dir.mul(clamp(height, 0.0f, 1.0f)).add(start).add(raddir);
 }
 
+int polyclip(const vec *in, int numin, const vec &dir, float below, float above, vec *out)
+{
+    int numout = 0;
+    const vec *p = &in[numin-1];
+    float pc = dir.dot(*p);
+    loopi(numin)
+    {
+        const vec &v = in[i];
+        float c = dir.dot(v);
+        if(c < below)
+        {
+            if(pc > above) out[numout++] = vec(*p).sub(v).mul((above - c)/(pc - c)).add(v);
+            if(pc > below) out[numout++] = vec(*p).sub(v).mul((below - c)/(pc - c)).add(v);
+        }
+        else if(c > above)
+        {
+            if(pc < below) out[numout++] = vec(*p).sub(v).mul((below - c)/(pc - c)).add(v);
+            if(pc < above) out[numout++] = vec(*p).sub(v).mul((above - c)/(pc - c)).add(v);
+        }
+        else
+        {
+            if(pc < below)
+            {
+                if(c > below) out[numout++] = vec(*p).sub(v).mul((below - c)/(pc - c)).add(v);
+            }
+            else if(pc > above && c < above) out[numout++] = vec(*p).sub(v).mul((above - c)/(pc - c)).add(v);
+            out[numout++] = v;
+        }
+        p = &v;
+        pc = c;
+    }
+    return numout;
+}
+
 extern const vec2 sincos360[721] =
 {
     vec2(1.00000000, 0.00000000), vec2(0.99984770, 0.01745241), vec2(0.99939083, 0.03489950), vec2(0.99862953, 0.05233596), vec2(0.99756405, 0.06975647), vec2(0.99619470, 0.08715574), // 0

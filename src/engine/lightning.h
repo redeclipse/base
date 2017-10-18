@@ -98,11 +98,12 @@ static void renderlightning(Texture *tex, const vec &o, const vec &d, float sz, 
 struct lightningrenderer : sharedlistrenderer
 {
     lightningrenderer(const char *texname)
-        : sharedlistrenderer(texname, 2, PT_LIGHTNING|PT_GLARE)
+        : sharedlistrenderer(texname, 2, PT_LIGHTNING|PT_BRIGHT|PT_TRACK)
     {}
 
     void startrender()
     {
+        setuplightning();
         glDisable(GL_CULL_FACE);
         gle::defattrib(gle::ATTRIB_VERTEX, 3, GL_FLOAT);
         gle::defattrib(gle::ATTRIB_TEXCOORD0, 2, GL_FLOAT);
@@ -114,9 +115,11 @@ struct lightningrenderer : sharedlistrenderer
         glEnable(GL_CULL_FACE);
     }
 
-    void update()
+    void seedemitter(particleemitter &pe, const vec &o, const vec &d, int fade, float size, int gravity)
     {
-        setuplightning();
+        pe.maxfade = max(pe.maxfade, fade);
+        pe.extendbb(o, size);
+        pe.extendbb(d, size);
     }
 
     void renderpart(sharedlistparticle *p, int blend, int ts, float size)

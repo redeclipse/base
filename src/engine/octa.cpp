@@ -2,6 +2,20 @@
 
 #include "engine.h"
 
+static struct emptycube : cube
+{
+    emptycube()
+    {
+        children = NULL;
+        ext = NULL;
+        visible = 0;
+        merged = 0;
+        material = MAT_AIR;
+        setfaces(*this, F_EMPTY);
+        loopi(6) texture[i] = DEFAULT_SKY;
+    }
+} emptycube;
+
 cube *worldroot = newcubes(F_SOLID);
 int allocnodes = 0;
 
@@ -161,7 +175,7 @@ void optiface(uchar *p, cube &c)
 void printcube()
 {
     cube &c = lookupcube(lu); // assume this is cube being pointed at
-    conoutf("\fa= %p = (%d, %d, %d) @ %d", &c, lu.x, lu.y, lu.z, lusize);
+    conoutf("\fa= %p = (%d, %d, %d) @ %d", (void *)&c, lu.x, lu.y, lu.z, lusize);
     conoutf("\fa x  %.8x", c.faces[0]);
     conoutf("\fa y  %.8x", c.faces[1]);
     conoutf("\fa z  %.8x", c.faces[2]);
@@ -220,9 +234,9 @@ ivec lu;
 int lusize;
 cube &lookupcube(const ivec &to, int tsize, ivec &ro, int &rsize)
 {
-    int tx = clamp(to.x, 0, hdr.worldsize-1),
-        ty = clamp(to.y, 0, hdr.worldsize-1),
-        tz = clamp(to.z, 0, hdr.worldsize-1);
+    int tx = clamp(to.x, 0, worldsize-1),
+        ty = clamp(to.y, 0, worldsize-1),
+        tz = clamp(to.z, 0, worldsize-1);
     int scale = worldscale-1, csize = abs(tsize);
     cube *c = &worldroot[octastep(tx, ty, tz, scale)];
     if(!(csize>>scale)) do
@@ -269,7 +283,7 @@ const cube &neighbourcube(const cube &c, int orient, const ivec &co, int size, i
     uint diff = n[dim];
     if(dimcoord(orient)) n[dim] += size; else n[dim] -= size;
     diff ^= n[dim];
-    if(diff >= uint(hdr.worldsize)) { ro = n; rsize = size; return c; }
+    if(diff >= uint(worldsize)) { ro = n; rsize = size; return emptycube; }
     int scale = worldscale;
     const cube *nc = worldroot;
     if(neighbourdepth >= 0)
@@ -471,7 +485,7 @@ bool remip(cube &c, const ivec &co, int size)
         subdividecube(c);
         ch = c.children;
     }
-    else if((remipprogress++&0x7FF)==1) progress(float(remipprogress)/remiptotal, "Remipping...");
+    else if((remipprogress++&0xFFF)==1) progress(float(remipprogress)/remiptotal, "Remipping...");
 
     bool perfect = true;
     loopi(8)
@@ -520,8 +534,8 @@ bool remip(cube &c, const ivec &co, int size)
     loopi(8)
     {
         if(ch[i].faces[0] != nh[i].faces[0] ||
-            ch[i].faces[1] != nh[i].faces[1] ||
-            ch[i].faces[2] != nh[i].faces[2])
+           ch[i].faces[1] != nh[i].faces[1] ||
+           ch[i].faces[2] != nh[i].faces[2])
             { freeocta(nh); return false; }
 
         if(isempty(ch[i]) && isempty(nh[i])) continue;
@@ -551,101 +565,26 @@ bool remip(cube &c, const ivec &co, int size)
     return true;
 }
 
-void mpremip(bool local)
+void remip()
 {
-    if(local) client::edittrigger(sel, EDIT_REMIP);
     remipprogress = 1;
     remiptotal = allocnodes;
     loopi(8)
     {
-        ivec o(i, ivec(0, 0, 0), hdr.worldsize>>1);
-        remip(worldroot[i], o, hdr.worldsize>>2);
+        ivec o(i, ivec(0, 0, 0), worldsize>>1);
+        remip(worldroot[i], o, worldsize>>2);
     }
     calcmerges();
-    if(!local) allchanged();
 }
 
-void remip_()
+void mpremip(bool local)
 {
-    mpremip(true);
+    if(local) client::edittrigger(sel, EDIT_REMIP);
+    remip();
     allchanged();
 }
 
-COMMANDN(0, remip, remip_, "");
-
-static inline int edgeval(cube &c, const ivec &p, int dim, int coord)
-{
-    return edgeget(cubeedge(c, dim, p[R[dim]]>>3, p[C[dim]]>>3), coord);
-}
-
-static void genvertp(cube &c, ivec &p1, ivec &p2, ivec &p3, plane &pl, bool solid = false)
-{
-    int dim = 0;
-    if(p1.y==p2.y && p2.y==p3.y) dim = 1;
-    else if(p1.z==p2.z && p2.z==p3.z) dim = 2;
-
-    int coord = p1[dim];
-    ivec v1(p1), v2(p2), v3(p3);
-    v1[dim] = solid ? coord*8 : edgeval(c, p1, dim, coord);
-    v2[dim] = solid ? coord*8 : edgeval(c, p2, dim, coord);
-    v3[dim] = solid ? coord*8 : edgeval(c, p3, dim, coord);
-
-    pl.toplane(vec(v1), vec(v2), vec(v3));
-}
-
-static bool threeplaneintersect(plane &pl1, plane &pl2, plane &pl3, vec &dest)
-{
-    vec &t1 = dest, t2, t3, t4;
-    t1.cross(pl1, pl2); t4 = t1; t1.mul(pl3.offset);
-    t2.cross(pl3, pl1);       t2.mul(pl2.offset);
-    t3.cross(pl2, pl3);       t3.mul(pl1.offset);
-    t1.add(t2);
-    t1.add(t3);
-    t1.mul(-1);
-    float d = t4.dot(pl3);
-    if(d==0) return false;
-    t1.div(d);
-    return true;
-}
-
-static void genedgespanvert(ivec &p, cube &c, vec &v)
-{
-    ivec p1(8-p.x, p.y, p.z);
-    ivec p2(p.x, 8-p.y, p.z);
-    ivec p3(p.x, p.y, 8-p.z);
-
-    plane plane1, plane2, plane3;
-    genvertp(c, p, p1, p2, plane1);
-    genvertp(c, p, p2, p3, plane2);
-    genvertp(c, p, p3, p1, plane3);
-    if(plane1==plane2) genvertp(c, p, p1, p2, plane1, true);
-    if(plane1==plane3) genvertp(c, p, p1, p2, plane1, true);
-    if(plane2==plane3) genvertp(c, p, p2, p3, plane2, true);
-
-    ASSERT(threeplaneintersect(plane1, plane2, plane3, v));
-    //ASSERT(v.x>=0 && v.x<=8);
-    //ASSERT(v.y>=0 && v.y<=8);
-    //ASSERT(v.z>=0 && v.z<=8);
-    v.x = max(0.0f, min(8.0f, v.x));
-    v.y = max(0.0f, min(8.0f, v.y));
-    v.z = max(0.0f, min(8.0f, v.z));
-}
-
-void edgespan2vectorcube(cube &c)
-{
-    if(isentirelysolid(c) || isempty(c)) return;
-    cube o = c;
-    loop(x, 2) loop(y, 2) loop(z, 2)
-    {
-        ivec p(8*x, 8*y, 8*z);
-        vec v;
-        genedgespanvert(p, o, v);
-
-        edgeset(cubeedge(c, 0, y, z), x, int(v.x+0.49f));
-        edgeset(cubeedge(c, 1, z, x), y, int(v.y+0.49f));
-        edgeset(cubeedge(c, 2, x, y), z, int(v.z+0.49f));
-    }
-}
+ICOMMAND(0, remip, "", (), mpremip(true));
 
 const ivec cubecoords[8] = // verts of bounding cube
 {
@@ -909,11 +848,10 @@ static inline int clipfacevec(const ivec2 &o, const ivec2 &dir, int cx, int cy, 
     int r = 0;
 
     if(o.x >= cx && o.x <= cx+size &&
-        o.y >= cy && o.y <= cy+size &&
-        ((o.x != cx && o.x != cx+size) || (o.y != cy && o.y != cy+size)))
+       o.y >= cy && o.y <= cy+size &&
+       ((o.x != cx && o.x != cx+size) || (o.y != cy && o.y != cy+size)))
     {
-        rvecs[0].x = o.x;
-        rvecs[0].y = o.y;
+        rvecs[0] = o;
         r++;
     }
 
@@ -933,9 +871,9 @@ static inline bool insideface(const ivec2 *p, int nump, const ivec2 *o, int numo
     loopi(numo)
     {
         const ivec2 &cur = o[i];
-        ivec2 dir(cur.x-prev.x, cur.y-prev.y);
-        int offset = dir.x*prev.y - dir.y*prev.x;
-        loopj(nump) if(dir.x*p[j].y - dir.y*p[j].x > offset) return false;
+        ivec2 dir = ivec2(cur).sub(prev);
+        int offset = dir.cross(prev);
+        loopj(nump) if(dir.cross(p[j]) > offset) return false;
         bounds++;
         prev = cur;
     }
@@ -953,7 +891,7 @@ static inline int clipfacevecs(const ivec2 *o, int numo, int cx, int cy, int siz
     loopi(numo)
     {
         const ivec2 &cur = o[i];
-        r += clipfacevec(prev, ivec2(cur.x-prev.x, cur.y-prev.y), cx, cy, size, &rvecs[r]);
+        r += clipfacevec(prev, ivec2(cur).sub(prev), cx, cy, size, &rvecs[r]);
         prev = cur;
     }
     ivec2 corner[4] = {ivec2(cx, cy), ivec2(cx+size, cy), ivec2(cx+size, cy+size), ivec2(cx, cy+size)};
@@ -1026,7 +964,6 @@ bool visibleface(const cube &c, int orient, const ivec &co, int size, ushort mat
     ivec no;
     int nsize;
     const cube &o = neighbourcube(c, orient, co, size, no, nsize);
-    if(&o==&c) return false;
 
     int opp = opposite(orient);
     if(nsize > size || (nsize == size && !o.children))
@@ -1122,7 +1059,6 @@ int visibletris(const cube &c, int orient, const ivec &co, int size, ushort nmat
     ivec no;
     int nsize;
     const cube &o = neighbourcube(c, orient, co, size, no, nsize);
-    if(&o==&c) return 0;
 
     if((c.material&matmask) == nmat) nmat = MAT_AIR;
 
@@ -1762,9 +1698,9 @@ struct cfpolys
 
 static hashtable<cfkey, cfpolys> cpolys;
 
-void genmerges(cube *c = worldroot, const ivec &o = ivec(0, 0, 0), int size = hdr.worldsize>>1)
+void genmerges(cube *c = worldroot, const ivec &o = ivec(0, 0, 0), int size = worldsize>>1)
 {
-    if((genmergeprogress++&0x7FF)==0) progress(float(genmergeprogress)/allocnodes, "Merging surfaces...");
+    if((genmergeprogress++&0xFFF)==0) progress(float(genmergeprogress)/allocnodes, "Merging surfaces...");
     neighbourstack[++neighbourdepth] = c;
     loopi(8)
     {

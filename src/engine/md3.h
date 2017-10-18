@@ -53,7 +53,7 @@ struct md3 : vertmodel, vertloader<md3>
 
     struct md3meshgroup : vertmeshgroup
     {
-        bool load(const char *path)
+        bool load(const char *path, float smooth)
         {
             stream *f = openfile(path, "rb");
             if(!f) return false;
@@ -118,6 +118,8 @@ struct md3 : vertmodel, vertloader<md3>
                     m.verts[j].norm = vec(cosf(lat)*sinf(lng), -sinf(lat)*sinf(lng), cosf(lng));
                 }
 
+                m.calctangents();
+
                 mesh_offset += mheader.meshsize;
             }
 
@@ -133,7 +135,7 @@ struct md3 : vertmodel, vertloader<md3>
                     f->read(&tag, sizeof(md3tag));
                     lilswap(tag.translation, 12);
                     if(tag.name[0] && i<header.numtags) tags[i].name = newstring(tag.name);
-                    matrix4x3 &m = tags[i].transform;
+                    matrix4x3 &m = tags[i].matrix;
                     tag.translation[1] *= -1;
                     // undo the -y
                     loopj(3) tag.rotation[1][j] *= -1;
@@ -151,12 +153,7 @@ struct md3 : vertmodel, vertloader<md3>
         }
     };
 
-    meshgroup *loadmeshes(const char *name, va_list args)
-    {
-        md3meshgroup *group = new md3meshgroup;
-        if(!group->load(name)) { delete group; return NULL; }
-        return group;
-    }
+    vertmeshgroup *newmeshes() { return new md3meshgroup; }
 
     bool loaddefaultparts()
     {

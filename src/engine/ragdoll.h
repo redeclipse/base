@@ -31,7 +31,7 @@ struct ragdollskel
     struct rotlimit
     {
         int tri[2];
-        float maxangle;
+        float maxangle, maxtrace;
         matrix3 middle;
     };
 
@@ -128,11 +128,11 @@ struct ragdolldata
 {
     struct vert
     {
-        vec oldpos, pos, newpos;
+        vec oldpos, pos, newpos, undo;
         float weight;
         bool collided, stuck;
 
-        vert() : pos(0, 0, 0), newpos(0, 0, 0), weight(0), collided(false), stuck(true) {}
+        vert() : oldpos(0, 0, 0), pos(0, 0, 0), newpos(0, 0, 0), undo(0, 0, 0), weight(0), collided(false), stuck(true) {}
     };
 
     ragdollskel *skel;
@@ -152,6 +152,7 @@ struct ragdolldata
           floating(0),
           lastmove(lastmillis),
           unsticks(INT_MAX),
+          radius(0),
           timestep(0),
           scale(scale),
           verts(new vert[skel->verts.length()]),
@@ -323,6 +324,7 @@ inline void ragdolldata::applyrotlimit(ragdollskel::tri &t1, ragdollskel::tri &t
 
 void ragdolldata::constrainrot()
 {
+    calctris();
     loopv(skel->rotlimits)
     {
         ragdollskel::rotlimit &r = skel->rotlimits[i];
@@ -331,12 +333,10 @@ void ragdolldata::constrainrot()
         rot.multranspose(tris[r.tri[1]]);
 
         vec axis;
-        float angle;
-        if(!rot.calcangleaxis(angle, axis)) continue;
-        angle = r.maxangle - fabs(angle);
-        if(angle >= 0) continue;
-        angle += 1e-3f;
+        float angle, tr = rot.trace();
+        if(tr >= r.maxtrace || !rot.calcangleaxis(tr, angle, axis)) continue;
 
+        angle = r.maxangle - angle + 1e-3f;
         applyrotlimit(skel->tris[r.tri[0]], skel->tris[r.tri[1]], angle, axis);
     }
 }
@@ -363,16 +363,16 @@ void ragdolldata::applyrotfriction(float ts)
 
         vec axis;
         float angle;
-        if(rot.calcangleaxis(angle, axis))
-        {
-            angle *= -(fabs(angle) >= stopangle ? rotfric : 1.0f);
-            applyrotlimit(skel->tris[r.tri[0]], skel->tris[r.tri[1]], angle, axis);
-        }
+        if(!rot.calcangleaxis(angle, axis)) continue;
+
+        angle *= -(fabs(angle) >= stopangle ? rotfric : 1.0f);
+        applyrotlimit(skel->tris[r.tri[0]], skel->tris[r.tri[1]], angle, axis);
     }
     loopv(skel->verts)
     {
         vert &v = verts[i];
-        if(v.weight) v.pos = v.newpos.div(v.weight);
+        if(!v.weight) continue;
+        v.pos = v.newpos.div(v.weight);
         v.newpos = vec(0, 0, 0);
         v.weight = 0;
     }
@@ -402,6 +402,46 @@ void ragdolldata::tryunstick(float speed)
         {
             v.pos.add(vec(unstuck).sub(v.pos).rescale(speed));
             unsticks++;
+        }
+    }
+}
+
+VAR(0, ragdollconstrain, 1, 7, 100);
+void ragdolldata::constrain()
+{
+    loopi(ragdollconstrain)
+    {
+        constraindist();
+        loopvj(skel->verts)
+        {
+            vert &v = verts[j];
+            v.undo = v.pos;
+            if(v.weight)
+            {
+                v.pos = v.newpos.div(v.weight);
+                v.newpos = vec(0, 0, 0);
+                v.weight = 0;
+            }
+        }
+
+        constrainrot();
+        loopvj(skel->verts)
+        {
+            vert &v = verts[j];
+            if(v.weight)
+            {
+                v.pos = v.newpos.div(v.weight);
+                v.newpos = vec(0, 0, 0);
+                v.weight = 0;
+            }
+            if(v.pos != v.undo && collidevert(v.pos, vec(v.pos).sub(v.undo), skel->verts[j].radius))
+            {
+                vec dir = vec(v.pos).sub(v.oldpos);
+                float facing = dir.dot(collidewall);
+                if(facing < 0) v.oldpos = vec(v.undo).sub(dir.msub(collidewall, 2*facing));
+                v.pos = v.undo;
+                v.collided = true;
+            }
         }
     }
 }
@@ -448,21 +488,6 @@ void ragdolldata::updatepos()
         }
         v.newpos = vec(0, 0, 0);
         v.weight = 0;
-    }
-}
-
-VAR(0, ragdollconstrain, 1, 5, 100);
-
-void ragdolldata::constrain()
-{
-    loopi(ragdollconstrain)
-    {
-        constraindist();
-        updatepos();
-
-        calctris();
-        constrainrot();
-        updatepos();
     }
 }
 
@@ -530,14 +555,14 @@ void ragdolldata::move(dynent *pl, float ts)
 }
 
 FVAR(0, ragdolleyesmooth, 0, 0.5f, 1);
-VAR(0, ragdolleyesmoothmillis, 1, 50, 10000);
+VAR(0, ragdolleyesmoothmillis, 1, 250, 10000);
 
 bool validragdoll(dynent *d, int millis)
 {
     return d->ragdoll && d->ragdoll->millis >= millis;
 }
 
-void moveragdoll(dynent *d, bool smooth)
+void moveragdoll(dynent *d)
 {
     if(!curtime || !d->ragdoll || (d->state != CS_DEAD && d->state != CS_WAITING)) return;
 
@@ -556,12 +581,8 @@ void moveragdoll(dynent *d, bool smooth)
     {
         vec eye = d->ragdoll->skel->eye >= 0 ? d->ragdoll->verts[d->ragdoll->skel->eye].pos : d->ragdoll->center;
         eye.add(d->ragdoll->offset);
-        if(smooth)
-        {
-            float k = pow(ragdolleyesmooth, float(curtime)/ragdolleyesmoothmillis);
-            d->o.mul(k).add(eye.mul(1-k));
-        }
-        else d->o = eye;
+        float k = pow(ragdolleyesmooth, float(curtime)/ragdolleyesmoothmillis);
+        d->o.lerp(eye, 1-k);
     }
     #endif
 }

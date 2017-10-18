@@ -112,8 +112,8 @@ namespace defend
             float occupy = b.occupied(m_dac_quick(game::gamemode, game::mutators), defendcount);
             vec effect = skewcolour(b.owner, b.enemy, occupy);
             int colour = effect.tohexcolor();
-            b.baselight.material[0] = bvec::fromcolor(effect);
-            rendermodel(&b.baselight, "props/point", ANIM_MAPMODEL|ANIM_LOOP, b.render, b.yaw, 0, 0, MDL_DYNSHADOW|MDL_CULL_VFC|MDL_CULL_OCCLUDED, NULL, NULL, 0, 0, 1);
+            //b.baselight.material[0] = bvec::fromcolor(effect);
+            rendermodel("props/point", ANIM_MAPMODEL|ANIM_LOOP, b.render, b.yaw, 0, 0, MDL_CULL_VFC|MDL_CULL_OCCLUDED);
             if(b.enemy && b.owner)
             {
                 defformatstring(bowner, "%s", game::colourteam(b.owner));
@@ -150,7 +150,7 @@ namespace defend
         {
             defendstate::flag &f = st.flags[i];
             float occupy = f.occupied(m_dac_quick(game::gamemode, game::mutators), defendcount);
-            adddynlight(vec(f.o).add(vec(0, 0, enttype[AFFINITY].radius)), enttype[AFFINITY].radius*2, skewcolour(f.owner, f.enemy, occupy), 0, 0, DL_KEEP);
+            adddynlight(vec(f.o).add(vec(0, 0, enttype[AFFINITY].radius)), enttype[AFFINITY].radius*2, skewcolour(f.owner, f.enemy, occupy), 0, 0);
         }
     }
 
@@ -179,7 +179,7 @@ namespace defend
                 defendstate::flag &f = st.flags[i];
                 float occupy = !f.owner || f.enemy ? clamp(f.converted/float(defendcount), 0.f, 1.f) : 1.f;
                 bool overthrow = f.owner && f.enemy == game::focus->team;
-                ty -= draw_textf("You are %s: %s \fs\f[%d]\f(%s)\f(%s)\fS \fs%s%d%%\fS", tx, ty, int(FONTW*hud::eventpadx), int(FONTH*hud::eventpady), tr, tg, tb, int(255*blend), TEXT_SKIN|TEXT_CENTERED, -1, -1, 1, overthrow ? "overthrowing" : "securing", f.name, TEAM(f.owner, colour), hud::teamtexname(f.owner), hud::pointtex, overthrow ? "\fy" : (occupy < 1.f ? "\fc" : "\fg"), int(occupy*100.f))+FONTH/4;
+                ty -= draw_textf("You are %s: %s \fs\f[%d]\f(%s)\f(%s)\fS \fs%s%d%%\fS", tx, ty, int(FONTW*hud::eventpadx), int(FONTH*hud::eventpady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, overthrow ? "overthrowing" : "securing", f.name, TEAM(f.owner, colour), hud::teamtexname(f.owner), hud::pointtex, overthrow ? "\fy" : (occupy < 1.f ? "\fc" : "\fg"), int(occupy*100.f))+FONTH/4;
                 break;
             }
         }

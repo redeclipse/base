@@ -5,7 +5,7 @@ struct obj : vertmodel, vertloader<obj>
     obj(const char *name) : vertmodel(name) {}
 
     static const char *formatname() { return "obj"; }
-    static bool animated() { return false; }
+    static bool cananimate() { return false; }
     int type() const { return MDL_OBJ; }
 
     struct objmeshgroup : vertmeshgroup
@@ -37,7 +37,7 @@ struct obj : vertmodel, vertloader<obj>
             vector<vec> attrib[3];
             char buf[512];
 
-            hashtable<ivec, int> verthash;
+            hashtable<ivec, int> verthash(1<<11);
             vector<vert> verts;
             vector<tcvert> tcverts;
             vector<tri> tris;
@@ -74,9 +74,10 @@ struct obj : vertmodel, vertloader<obj>
                     if(smooth <= 1) curmesh->smoothnorms(smooth); \
                     else curmesh->buildnorms(); \
                 } \
+                curmesh->calctangents(); \
             } while(0)
 
-            stringz(meshname);
+            string meshname = "";
             vertmesh *curmesh = NULL;
             while(file->getline(buf, sizeof(buf)))
             {
@@ -159,23 +160,18 @@ struct obj : vertmodel, vertloader<obj>
         }
     };
 
-    meshgroup *loadmeshes(const char *name, va_list args)
-    {
-        objmeshgroup *group = new objmeshgroup;
-        if(!group->load(name, va_arg(args, double))) { delete group; return NULL; }
-        return group;
-    }
+    vertmeshgroup *newmeshes() { return new objmeshgroup; }
 
     bool loaddefaultparts()
     {
         part &mdl = addpart();
         const char *pname = parentdir(name);
         defformatstring(name1, "%s/tris.obj", name);
-        mdl.meshes = sharemeshes(path(name1), 2.0);
+        mdl.meshes = sharemeshes(path(name1));
         if(!mdl.meshes)
         {
             defformatstring(name2, "%s/tris.obj", pname);    // try obj in parent folder (vert sharing)
-            mdl.meshes = sharemeshes(path(name2), 2.0);
+            mdl.meshes = sharemeshes(path(name2));
             if(!mdl.meshes) return false;
         }
         Texture *tex, *masks;
