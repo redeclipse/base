@@ -1178,9 +1178,9 @@ bool emptymap(int scale, bool force, const char *mname, bool usecfg)    // main 
 
     resetmap(!usecfg);
     setnames(mname, MAP_MAPZ);
-    setvar("mapscale", scale<10 ? 10 : (scale>16 ? 16 : scale), true, false);
-    setvar("mapsize", 1<<worldscale, true, false);
-    setvar("emptymap", 1, true, false);
+    setvar("mapscale", scale<10 ? 10 : (scale>16 ? 16 : scale), true, false, true);
+    setvar("mapsize", 1<<worldscale, true, false, true);
+    setvar("emptymap", 1, true, false, true);
 
     memcpy(hdr.head, "MAPZ", 4);
     hdr.version = MAPVERSION;

@@ -334,8 +334,8 @@ inline void ident::getcval(tagval &v) const
 extern int variable(const char *name, int min, int cur, int max, int *storage, identfun fun, int flags);
 extern float fvariable(const char *name, float min, float cur, float max, float *storage, identfun fun, int flags);
 extern char *svariable(const char *name, const char *cur, char **storage, identfun fun, int flags);
-extern void setvar(const char *name, int i, bool dofunc = false, bool def = false);
-extern void setfvar(const char *name, float f, bool dofunc = false, bool def = false);
+extern void setvar(const char *name, int i, bool dofunc = false, bool def = false, bool force = false);
+extern void setfvar(const char *name, float f, bool dofunc = false, bool def = false, bool force = false);
 extern void setsvar(const char *name, const char *str, bool dofunc = false, bool def = false);
 extern void setvarchecked(ident *id, int val);
 extern void setfvarchecked(ident *id, float val);

@@ -666,10 +666,11 @@ DEFSVAR(defsvarp, IDF_COMPLETE|IDF_PERSIST);
     ident *id = idents.access(name); \
     if(!id || id->type!=vartype) return retval;
 
-void setvar(const char *name, int i, bool dofunc, bool def)
+void setvar(const char *name, int i, bool dofunc, bool def, bool force)
 {
     GETVAR(id, ID_VAR, name, );
-    if(id->flags&IDF_HEX && uint(id->maxval) == 0xFFFFFFFFU)
+    if(force) *id->storage.i = i;
+    else if(id->flags&IDF_HEX && uint(id->maxval) == 0xFFFFFFFFU)
         *id->storage.i = int(clamp(uint(i), uint(id->minval), uint(id->maxval)));
     else *id->storage.i = clamp(i, id->minval, id->maxval);
     if(def || versioning)
@@ -683,10 +684,11 @@ void setvar(const char *name, int i, bool dofunc, bool def)
 #endif
 }
 
-void setfvar(const char *name, float f, bool dofunc, bool def)
+void setfvar(const char *name, float f, bool dofunc, bool def, bool force)
 {
     GETVAR(id, ID_FVAR, name, );
-    *id->storage.f = clamp(f, id->minvalf, id->maxvalf);
+    if(force) *id->storage.f = f;
+    else *id->storage.f = clamp(f, id->minvalf, id->maxvalf);
     if(def || versioning)
     {
         id->def.f = *id->storage.f;

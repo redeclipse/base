@@ -94,7 +94,7 @@ enum { CON_DEBUG = 0, CON_EVENT, CON_GAME, CON_MESG, CON_MAX };
 
 extern physent *camera1, camera;
 extern mapz hdr;
-extern int worldscale, octaentsize;
+extern int octaentsize;
 extern vector<ushort> texmru;
 extern int xtraverts, xtravertsva;
 extern const ivec cubecoords[8];

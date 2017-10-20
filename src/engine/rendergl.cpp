@@ -2278,8 +2278,8 @@ void gl_drawview()
     GLERROR;
 
     // render avatar after AO to avoid weird contact shadows
-    renderavatar();
-    GLERROR;
+    //renderavatar();
+    //GLERROR;
 
     // render grass after AO to avoid disturbing shimmering patterns
     generategrass();
@@ -2410,24 +2410,27 @@ void gl_drawhud(bool noview = false)
 void gl_drawnoview()
 {
     gl_setupframe(true);
+    vieww = hudw;
+    viewh = hudh;
     gl_drawhud(true);
 }
 
 void gl_drawframe()
 {
+    bool noview = hasnoview();
     synctimers();
     xtravertsva = xtraverts = glde = gbatches = vtris = vverts = 0;
     flipqueries();
     aspect = forceaspect ? forceaspect : hudw/float(hudh);
     fovy = 2*atan2(tan(curfov/2*RAD), aspect)/RAD;
+
+    gl_setupframe(noview);
     vieww = hudw;
     viewh = hudh;
 
-    bool noview = hasnoview();
     if(noview) gl_drawnoview();
     else
     {
-        gl_setupframe(false);
         gl_drawview();
         gl_drawhud();
     }

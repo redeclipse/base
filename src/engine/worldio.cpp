@@ -943,6 +943,7 @@ bool load_world(const char *mname, int crc)       // still supports all map form
                 lightmaps = chdr.lightmaps;
                 memcpy(&newhdr.worldsize, &chdr.worldsize, sizeof(int)*3);
                 memcpy(&newhdr.blendmap, &chdr.blendmap, sizeof(int)*4);
+                memcpy(&newhdr.gameid, &chdr.gameid, 4);
             }
             else
             {
@@ -964,13 +965,15 @@ bool load_world(const char *mname, int crc)       // still supports all map form
             maptype = MAP_MAPZ;
             mapcrc = filecrc;
 
-            if(verbose) conoutf("Loading v%d map from %s game v%d", hdr.version, hdr.gameid, hdr.gamever);
+            if(verbose) conoutf("Loading v%d map from %s game v%d [%d]", hdr.version, hdr.gameid, hdr.gamever, hdr.worldsize);
 
             int numvars = f->getlil<int>(), vars = 0;
             identflags |= IDF_WORLD;
             progress(0, "Loading variables...");
+            if(verbose) conoutf("Loading variables %d", numvars);
             loopi(numvars)
             {
+                if(verbose) conoutf("Loading variable %d", i);
                 progress(i/float(numvars), "Loading variables...");
                 int len = f->getlil<int>();
                 if(len)
@@ -1038,7 +1041,7 @@ bool load_world(const char *mname, int crc)       // still supports all map form
                 }
             }
             identflags &= ~IDF_WORLD;
-            if(verbose) conoutf("Loaded %d variables", vars);
+            if(verbose) conoutf("Loaded %d/%d variables", vars, numvars);
             sanevars();
 
             if(!server::canload(hdr.gameid))
@@ -1157,14 +1160,17 @@ bool load_world(const char *mname, int crc)       // still supports all map form
         texmru.shrink(0);
         ushort nummru = f->getlil<ushort>();
         loopi(nummru) texmru.add(f->getlil<ushort>());
+        conoutf("Loaded %d texture MRU", nummru);
 
         freeocta(worldroot);
         worldroot = NULL;
+        conoutf("Freed World");
 
-        int worldscale = 0;
-        while(1<<worldscale < hdr.worldsize) worldscale++;
-        setvar("mapsize", 1<<worldscale, true, false);
-        setvar("mapscale", worldscale, true, false);
+        int ws = 0;
+        while(1<<ws < hdr.worldsize) ws++;
+        setvar("mapsize", 1<<ws, true, false, true);
+        setvar("mapscale", ws, true, false, true);
+        conoutf("worldscale %d %d [%d, %d]", worldsize, worldscale, ws, hdr.worldsize);
 
         progress(0, "Loading entities...");
         vector<extentity *> &ents = entities::getents();
@@ -1209,13 +1215,6 @@ bool load_world(const char *mname, int crc)       // still supports all map form
                 e.type = ET_EMPTY;
                 continue;
             }
-            if(maptype == MAP_MAPZ && hdr.version <= 43)
-            {
-                int links = f->getlil<int>();
-                f->seek(sizeof(int)*links, SEEK_CUR);
-                e.type = ET_EMPTY;
-                continue;
-            }
             entities::readent(f, maptype, hdr.version, hdr.gameid, hdr.gamever, i);
             if(maptype == MAP_MAPZ && entities::maylink(e.type, hdr.gamever))
             {
@@ -1241,7 +1240,7 @@ bool load_world(const char *mname, int crc)       // still supports all map form
                 }
             }
             if(verbose && !insideworld(e.o) && e.type != ET_LIGHT && e.type != ET_LIGHTFX)
-                conoutf("\frWARNING: ent outside of world: enttype[%s] index %d (%f, %f, %f)", entities::findname(e.type), i, e.o.x, e.o.y, e.o.z);
+                conoutf("\frWARNING: ent outside of world: enttype[%s] index %d (%f, %f, %f) [%d, %d]", entities::findname(e.type), i, e.o.x, e.o.y, e.o.z, worldsize, worldscale);
         }
         if(verbose) conoutf("Loaded %d entities", hdr.numents);
         #if 0 // FIXME: want to do the opposite now
@@ -1265,14 +1264,11 @@ bool load_world(const char *mname, int crc)       // still supports all map form
 
         progress(0, "Loading octree...");
         bool failed = false;
-        worldroot = loadchildren(f, ivec(0, 0, 0), worldsize>>1, failed);
+        worldroot = loadchildren(f, ivec(0, 0, 0), hdr.worldsize>>1, failed);
         if(failed) conoutf("\frGarbage in map");
 
         progress(0, "Validating...");
-        validatec(worldroot, worldsize>>1);
-
-        worldscale = 0;
-        while(1<<worldscale < worldsize) worldscale++;
+        validatec(worldroot, hdr.worldsize>>1);
 
         if(!failed)
         {

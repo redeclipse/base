@@ -245,6 +245,7 @@ static void writelog(FILE *file, const char *buf)
         if(carry >= len) ubuf[numu++] = '\n';
         fwrite(ubuf, 1, numu, file);
     }
+    fflush(file);
 }
 
 static void writelogv(FILE *file, const char *fmt, va_list args)
