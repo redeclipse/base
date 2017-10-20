@@ -2428,12 +2428,8 @@ void gl_drawframe()
     vieww = hudw;
     viewh = hudh;
 
-    if(noview) gl_drawnoview();
-    else
-    {
-        gl_drawview();
-        gl_drawhud();
-    }
+    if(!noview) gl_drawview();
+    gl_drawhud(noview);
 
     if(frametimer)
     {

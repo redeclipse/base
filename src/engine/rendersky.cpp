@@ -472,8 +472,8 @@ void drawskybox(bool clear)
 
     if(clear || (!skybox[0] && (!atmo || atmoblend < 1)))
     {
-        vec color = skybgcolour.tocolor().mul(ldrscale);
-        glClearColor(color.x, color.y, color.z, 0);
+        vec skyboxcolor = skycolour.tocolor().mul(ldrscale);
+        glClearColor(skyboxcolor.x, skyboxcolor.y, skyboxcolor.z, 0);
         glClear(GL_COLOR_BUFFER_BIT);
     }
 

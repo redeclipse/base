@@ -908,6 +908,9 @@ bool load_world(const char *mname, int crc)       // still supports all map form
         lilswap(&newhdr.version, 2);
 
         clearworldvars();
+        setvar("mapscale", 0, true, false, true);
+        setvar("mapsize", 0, true, false, true);
+        setvar("emptymap", 0, true, false, true);
         if(memcmp(newhdr.head, "MAPZ", 4) == 0 || memcmp(newhdr.head, "BFGZ", 4) == 0)
         {
             if(newhdr.version > MAPVERSION)
@@ -970,10 +973,8 @@ bool load_world(const char *mname, int crc)       // still supports all map form
             int numvars = f->getlil<int>(), vars = 0;
             identflags |= IDF_WORLD;
             progress(0, "Loading variables...");
-            if(verbose) conoutf("Loading variables %d", numvars);
             loopi(numvars)
             {
-                if(verbose) conoutf("Loading variable %d", i);
                 progress(i/float(numvars), "Loading variables...");
                 int len = f->getlil<int>();
                 if(len)
@@ -1160,17 +1161,14 @@ bool load_world(const char *mname, int crc)       // still supports all map form
         texmru.shrink(0);
         ushort nummru = f->getlil<ushort>();
         loopi(nummru) texmru.add(f->getlil<ushort>());
-        conoutf("Loaded %d texture MRU", nummru);
 
         freeocta(worldroot);
         worldroot = NULL;
-        conoutf("Freed World");
 
         int ws = 0;
         while(1<<ws < hdr.worldsize) ws++;
         setvar("mapsize", 1<<ws, true, false, true);
         setvar("mapscale", ws, true, false, true);
-        conoutf("worldscale %d %d [%d, %d]", worldsize, worldscale, ws, hdr.worldsize);
 
         progress(0, "Loading entities...");
         vector<extentity *> &ents = entities::getents();
@@ -1205,9 +1203,10 @@ bool load_world(const char *mname, int crc)       // still supports all map form
 
             // version increments
             if(maptype == MAP_OCTA && e.type >= ET_DECAL) e.type++;
+            bool eatlinks = maptype == MAP_MAPZ && hdr.version == 43 && e.type == ET_DECAL;
             if(!samegame && e.type >= ET_GAMESPECIFIC)
             {
-                if(maptype == MAP_MAPZ && entities::maylink(e.type, hdr.gamever))
+                if(eatlinks || (maptype == MAP_MAPZ && entities::maylink(e.type, hdr.gamever)))
                 {
                     int links = f->getlil<int>();
                     f->seek(sizeof(int)*links, SEEK_CUR);
@@ -1216,7 +1215,7 @@ bool load_world(const char *mname, int crc)       // still supports all map form
                 continue;
             }
             entities::readent(f, maptype, hdr.version, hdr.gameid, hdr.gamever, i);
-            if(maptype == MAP_MAPZ && entities::maylink(e.type, hdr.gamever))
+            if(eatlinks || (maptype == MAP_MAPZ && entities::maylink(e.type, hdr.gamever)))
             {
                 int links = f->getlil<int>();
                 e.links.add(0, links);
@@ -1240,7 +1239,7 @@ bool load_world(const char *mname, int crc)       // still supports all map form
                 }
             }
             if(verbose && !insideworld(e.o) && e.type != ET_LIGHT && e.type != ET_LIGHTFX)
-                conoutf("\frWARNING: ent outside of world: enttype[%s] index %d (%f, %f, %f) [%d, %d]", entities::findname(e.type), i, e.o.x, e.o.y, e.o.z, worldsize, worldscale);
+                conoutf("\frWARNING: ent outside of world: enttype[%d](%s) index %d (%f, %f, %f) [%d, %d]", e.type, entities::findname(e.type), i, e.o.x, e.o.y, e.o.z, worldsize, worldscale);
         }
         if(verbose) conoutf("Loaded %d entities", hdr.numents);
         #if 0 // FIXME: want to do the opposite now

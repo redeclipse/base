@@ -3,9 +3,9 @@
 #include "engine.h"
 
 mapz hdr;
-VARN(IDF_WORLD, mapscale, worldscale, 1, 0, 0);
-VARN(IDF_WORLD, mapsize, worldsize, 1, 0, 0);
-VARN(IDF_WORLD, emptymap, _emptymap, 1, 0, 0);
+VARN(0, mapscale, worldscale, 1, 0, 0);
+VARN(0, mapsize, worldsize, 1, 0, 0);
+VARN(0, emptymap, _emptymap, 1, 0, 0);
 
 VAR(0, octaentsize, 0, 64, 1024);
 VAR(0, entselradius, 0, 2, 10);
@@ -1176,6 +1176,7 @@ bool emptymap(int scale, bool force, const char *mname, bool usecfg)    // main 
         return false;
     }
 
+    clearworldvars();
     resetmap(!usecfg);
     setnames(mname, MAP_MAPZ);
     setvar("mapscale", scale<10 ? 10 : (scale>16 ? 16 : scale), true, false, true);
