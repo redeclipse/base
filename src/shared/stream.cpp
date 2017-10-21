@@ -190,6 +190,11 @@ size_t encodeutf8(uchar *dstbuf, size_t dstlen, const uchar *srcbuf, size_t srcl
             const uchar *end = min(srcend, &src[dstend-dst]);
             do
             {
+                if(uni == '\f')
+                {
+                    if(++src >= srcend) goto done;
+                    goto uni1;
+                }
                 *dst++ = uni;
                 if(++src >= end) goto done;
                 uni = cube2uni(*src);

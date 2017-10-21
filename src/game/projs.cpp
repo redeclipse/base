@@ -14,12 +14,6 @@ namespace projs
     };
     vector<toolent> teleports, pushers;
 
-    VAR(IDF_PERSIST, shadowdebris, 0, 0, 1);
-    VAR(IDF_PERSIST, shadowgibs, 0, 1, 1);
-    VAR(IDF_PERSIST, shadoweject, 0, 0, 1);
-    VAR(IDF_PERSIST, shadowents, 0, 1, 1);
-    VAR(IDF_PERSIST, shadowvanity, 0, 1, 1);
-
     VAR(IDF_PERSIST, maxprojectiles, 1, 128, VAR_MAX);
 
     VAR(IDF_PERSIST, ejectfade, 0, 2500, VAR_MAX);
@@ -259,7 +253,7 @@ namespace projs
         {
             bool drill = proj.projcollide&(d->type == ENT_PROJ ? DRILL_SHOTS : DRILL_PLAYER);
             proj.hit = d;
-            proj.hitflags = flags;
+            proj.collideflags = flags;
             float expl = WX(WK(proj.flags), proj.weap, explode, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize);
             if(!proj.limited && proj.local)
             {
@@ -275,9 +269,9 @@ namespace projs
                 else if(gameent::is(d))
                 {
                     int flags = 0;
-                    if(proj.hitflags&HITFLAG_LEGS) flags |= HIT_LEGS;
-                    if(proj.hitflags&HITFLAG_TORSO) flags |= HIT_TORSO;
-                    if(proj.hitflags&HITFLAG_HEAD) flags |= HIT_HEAD;
+                    if(proj.collideflags&COLFLAG_LEGS) flags |= HIT_LEGS;
+                    if(proj.collideflags&COLFLAG_TORSO) flags |= HIT_TORSO;
+                    if(proj.collideflags&COLFLAG_HEAD) flags |= HIT_HEAD;
                     if(flags) hitpush((gameent *)d, proj, flags|HIT_PROJ, 0, proj.lifesize, proj.curscale);
                 }
                 else if(d->type == ENT_PROJ) projpush((projent *)d);
@@ -405,7 +399,7 @@ namespace projs
             if(!fwd.iszero()) loopi(20)
             {
                 proj.o.sub(fwd);
-                if(!collide(&proj, vec(0, 0, 0), 0.f, proj.projcollide&COLLIDE_DYNENT) && !collideinside && (proj.stick ? hitplayer != proj.stick : !hitplayer))
+                if(!collide(&proj, vec(0, 0, 0), 0.f, proj.projcollide&COLLIDE_DYNENT) && !collideinside && (proj.stick ? collideplayer != proj.stick : !collideplayer))
                     break;
             }
             proj.stickpos = proj.o;
@@ -609,12 +603,12 @@ namespace projs
                     case W_SHOTGUN: case W_SMG:
                     {
                         part_splash(PART_SPARK, 5, 350, proj.o, FWCOL(H, partcol, proj), 0.35f, 1, 1, 0, 16, 15);
-                        adddecal(DECAL_BULLET, proj.o, proj.norm, max(WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags)), 0.25f)*4*proj.curscale);
+                        addstain(STAIN_BULLET, proj.o, proj.norm, max(WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags)), 0.25f)*4*proj.curscale);
                         break;
                     }
                     case W_FLAMER:
                     {
-                        adddecal(DECAL_SCORCH_SHORT, proj.o, proj.norm, WX(WK(proj.flags), proj.weap, explode, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize));
+                        addstain(STAIN_SCORCH_SHORT, proj.o, proj.norm, WX(WK(proj.flags), proj.weap, explode, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize));
                         break;
                     }
                     default: break;
@@ -631,7 +625,7 @@ namespace projs
                 if(game::nogore == 2) break;
                 if(game::nogore || game::bloodscale > 0)
                 {
-                    adddecal(DECAL_BLOOD, proj.o, proj.norm, proj.radius*clamp(proj.vel.magnitude()/2, 1.f, 4.f), bvec(125, 255, 255));
+                    addstain(STAIN_BLOOD, proj.o, proj.norm, proj.radius*clamp(proj.vel.magnitude()/2, 1.f, 4.f), bvec(125, 255, 255));
                     int vol = clamp(int(proj.vel.magnitude()*proj.curscale)*2, 0, 255);
                     if(vol > 0) playsound(S_SPLOSH, proj.o, NULL, 0, vol);
                     break;
@@ -917,7 +911,7 @@ namespace projs
                 {
                     proj.mdl = weaptype[proj.weap].eject && *weaptype[proj.weap].eprj ? weaptype[proj.weap].eprj : "projectiles/catridge";
                     proj.lifesize = weaptype[proj.weap].esize;
-                    proj.light.material[0] = bvec(W(proj.weap, colour));
+                    //proj.light.material[0] = bvec(W(proj.weap, colour));
                 }
                 else
                 {
@@ -1042,7 +1036,7 @@ namespace projs
         if(proj.projtype != PRJ_SHOT) updatebb(proj, true);
         proj.spawntime = lastmillis;
         proj.hit = NULL;
-        proj.hitflags = HITFLAG_NONE;
+        proj.collideflags = COLFLAG_NONE;
         proj.movement = 1;
         if(proj.owner && (proj.projtype != PRJ_SHOT || (!proj.child && !(WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_HITSCAN))))
         {
@@ -1568,7 +1562,7 @@ namespace projs
                 {
                     if(proj.movement >= 1 && lastmillis-proj.lasteffect >= 1000 && proj.lifetime >= min(proj.lifemillis, proj.fadetime))
                     {
-                        part_splash(PART_BLOOD, 1, game::bloodfade, proj.o, 0x229999, (rnd(game::bloodsize/2)+(game::bloodsize/2))/10.f, 1, 100, DECAL_BLOOD, int(proj.radius), 15);
+                        part_splash(PART_BLOOD, 1, game::bloodfade, proj.o, 0x229999, (rnd(game::bloodsize/2)+(game::bloodsize/2))/10.f, 1, 100, STAIN_BLOOD, int(proj.radius), 15);
                         proj.lasteffect = lastmillis - (lastmillis%1000);
                     }
                     if(!game::bloodsparks) break;
@@ -1639,10 +1633,10 @@ namespace projs
                             part_splash(PART_SPARK, 5, 250, proj.o, FWCOL(H, partcol, proj), 0.5f*WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)), 1, 1, 0, expl, 15);
                             if(WF(WK(proj.flags), proj.weap, wavepush, WS(proj.flags)) >= 1)
                                 part_explosion(proj.o, expl*0.5f*WF(WK(proj.flags), proj.weap, wavepush, WS(proj.flags)), PART_SHOCKWAVE, halflen, projhint(proj.owner, FWCOL(H, explcol, proj)), 1.f, 0.5f*WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags))*projhintblend);
-                            adddecal(DECAL_SCORCH_SHORT, proj.o, proj.norm, expl*0.5f);
+                            addstain(STAIN_SCORCH_SHORT, proj.o, proj.norm, expl*0.5f);
                             adddynlight(proj.o, expl, FWCOL(P, explcol, proj), len, 10);
                         }
-                        else adddecal(DECAL_BULLET, proj.o, proj.norm, max(WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags)), 0.25f)*4);
+                        else addstain(STAIN_BULLET, proj.o, proj.norm, max(WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags)), 0.25f)*4);
                         break;
                     }
                     case W_FLAMER: case W_GRENADE: case W_MINE: case W_ROCKET:
@@ -1663,14 +1657,14 @@ namespace projs
                             int debris = rnd(type != W_ROCKET ? 5 : 10)+5, amt = int((rnd(debris)+debris+1)*game::debrisscale);
                             loopi(amt) create(proj.o, vec(proj.o).add(proj.vel), true, NULL, PRJ_DEBRIS, -1, HIT_NONE, rnd(game::debrisfade)+game::debrisfade, 0, rnd(501), rnd(101)+50, 0, proj.weap, 0, proj.flags);
                         }
-                        adddecal(DECAL_ENERGY, proj.o, proj.norm, expl*0.75f, bvec::fromcolor(FWCOL(P, explcol, proj)));
+                        addstain(STAIN_ENERGY, proj.o, proj.norm, expl*0.75f, bvec::fromcolor(FWCOL(P, explcol, proj)));
                         if(type != W_FLAMER || WK(proj.flags) || W2(proj.weap, fragweap, WS(proj.flags))%W_MAX != W_FLAMER) loopi(type != W_ROCKET ? 5 : 10)
                         {
                             vec to(proj.o);
                             loopk(3) to.v[k] += expl*(rnd(201)-100)/200.f;
                             part_create(PART_FIREBALL_SOFT, len*2, to, FWCOL(H, explcol, proj), expl*1.25f, (0.5f+(rnd(50)/100.f))*WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)), -10);
                         }
-                        adddecal(type == W_FLAMER ? DECAL_SCORCH_SHORT : DECAL_SCORCH, proj.o, proj.norm, expl*0.5f);
+                        addstain(type == W_FLAMER ? STAIN_SCORCH_SHORT : STAIN_SCORCH, proj.o, proj.norm, expl*0.5f);
                         adddynlight(proj.o, expl, FWCOL(P, explcol, proj), len, 10);
                         break;
                     }
@@ -1684,10 +1678,10 @@ namespace projs
                             part_explosion(proj.o, expl*0.5f, PART_EXPLOSION, len, FWCOL(H, explcol, proj), 1.f, WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)));
                             if(WF(WK(proj.flags), proj.weap, wavepush, WS(proj.flags)) >= 1)
                                 part_explosion(proj.o, expl*0.5f*WF(WK(proj.flags), proj.weap, wavepush, WS(proj.flags)), PART_SHOCKWAVE, halflen, projhint(proj.owner, FWCOL(H, explcol, proj)), 1.f, 0.5f*WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags))*projhintblend);
-                            adddecal(DECAL_SCORCH_SHORT, proj.o, proj.norm, expl*0.5f);
+                            addstain(STAIN_SCORCH_SHORT, proj.o, proj.norm, expl*0.5f);
                             adddynlight(proj.o, expl, FWCOL(P, explcol, proj), len, 10);
                         }
-                        else adddecal(DECAL_BULLET, proj.o, proj.norm, max(WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags)), 0.25f)*4);
+                        else addstain(STAIN_BULLET, proj.o, proj.norm, max(WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags)), 0.25f)*4);
                         break;
                     }
                     case W_PLASMA:
@@ -1704,7 +1698,7 @@ namespace projs
                         part_create(PART_PLASMA_SOFT, len, proj.o, FWCOL(H, partcol, proj), expl*0.75f, 0.5f*WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)));
                         part_create(PART_ELECTRIC_SOFT, halflen, proj.o, FWCOL(H, partcol, proj), expl*0.375f, WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)));
                         part_create(PART_SMOKE, len, proj.o, FWCOL(H, partcol, proj), expl*0.35f, 0.35f*WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)), -30);
-                        adddecal(DECAL_ENERGY, proj.o, proj.norm, expl*0.75f, bvec::fromcolor(FWCOL(P, explcol, proj)));
+                        addstain(STAIN_ENERGY, proj.o, proj.norm, expl*0.75f, bvec::fromcolor(FWCOL(P, explcol, proj)));
                         adddynlight(proj.o, 1.1f*expl, FWCOL(P, explcol, proj), len, 10);
                         break;
                     }
@@ -1730,8 +1724,8 @@ namespace projs
                         }
                         part_flare(proj.to, proj.o, len, type != W_ZAPPER ? PART_FLARE : PART_LIGHTZAP_FLARE, FWCOL(H, partcol, proj), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*proj.curscale, 0.85f*WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)));
                         if(projhints) part_flare(proj.to, proj.o, len, type != W_ZAPPER ? PART_FLARE : PART_LIGHTZAP_FLARE, projhint(proj.owner, FWCOL(H, partcol, proj)), WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags))*projhintsize*proj.curscale, projhintblend*WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)));
-                        adddecal(DECAL_SCORCH, proj.o, proj.norm, max(expl, 2.f));
-                        adddecal(DECAL_ENERGY, proj.o, proj.norm, max(expl*0.5f, 1.f), bvec::fromcolor(FWCOL(P, explcol, proj)));
+                        addstain(STAIN_SCORCH, proj.o, proj.norm, max(expl, 2.f));
+                        addstain(STAIN_ENERGY, proj.o, proj.norm, max(expl*0.5f, 1.f), bvec::fromcolor(FWCOL(P, explcol, proj)));
                         adddynlight(proj.o, 1.1f*expl, FWCOL(P, explcol, proj), len, 10);
                         break;
                     }
@@ -1791,7 +1785,7 @@ namespace projs
 
     int check(projent &proj, const vec &dir, int mat = -1)
     {
-        if(proj.projtype == PRJ_SHOT ? proj.o.z < 0 : !insideworld(proj.o, false)) return 0; // remove, always..
+        if(proj.projtype == PRJ_SHOT ? proj.o.z < 0 : !insideworld(proj.o)) return 0; // remove, always..
         int chk = 0;
         if(proj.extinguish&1 || proj.extinguish&2)
         {
@@ -1817,7 +1811,7 @@ namespace projs
                 if(vol > 0) playsound(snd, proj.o, NULL, 0, vol);
                 part_create(PART_SMOKE, 500, proj.o, 0xAAAAAA, max(size, 1.5f), 1, -10);
                 proj.limited = true;
-                if(proj.projtype == PRJ_DEBRIS) proj.light.material[0] = bvec(colourwhite);
+                //if(proj.projtype == PRJ_DEBRIS) proj.light.material[0] = bvec(colourwhite);
             }
             proj.norm = dir;
             if(proj.extinguish&4) return 0;
@@ -1855,7 +1849,7 @@ namespace projs
                     loopi(WF(WK(proj.flags), proj.weap, drill, WS(proj.flags)))
                     {
                         proj.o.add(vec(dir).normalize());
-                        if(!collide(&proj, dir, 0.f, proj.projcollide&COLLIDE_DYNENT) && !collideinside && !hitplayer) return 1;
+                        if(!collide(&proj, dir, 0.f, proj.projcollide&COLLIDE_DYNENT) && !collideinside && !collideplayer) return 1;
                     }
                     proj.o = orig; // continues below
                 }
@@ -1916,7 +1910,7 @@ namespace projs
         if(!skip && proj.interacts && checkitems(proj)) return -1;
         if(proj.projtype == PRJ_SHOT) updatetaper(proj, proj.distance+proj.o.dist(oldpos));
         if(ret == 1 && (collide(&proj, dir, 0.f, proj.projcollide&COLLIDE_DYNENT) || collideinside))
-            ret = impact(proj, dir, hitplayer, hitflags, collidewall);
+            ret = impact(proj, dir, collideplayer, collideflags, collidewall);
         return ret;
     }
 
@@ -1935,7 +1929,7 @@ namespace projs
             if(!skip && proj.interacts && checkitems(proj, ray, total)) return -1;
             proj.o.add(vec(ray).mul(total));
             if(proj.projtype == PRJ_SHOT) updatetaper(proj, proj.distance+proj.o.dist(oldpos));
-            if(dist >= 0) ret = impact(proj, dir, hitplayer, hitflags, hitsurface);
+            if(dist >= 0) ret = impact(proj, dir, collideplayer, collideflags, hitsurface);
         }
         return ret;
     }
@@ -2209,7 +2203,7 @@ namespace projs
         {
             vec dir = vec(proj.to).sub(proj.from).safenormalize();
             proj.o = vec(proj.from).add(vec(dir).mul(dist));
-            switch(impact(proj, dir, hitplayer, hitflags, hitsurface))
+            switch(impact(proj, dir, collideplayer, collideflags, hitsurface))
             {
                 case 1: case 2: return true;
                 case 0: default: return false;
@@ -2261,7 +2255,7 @@ namespace projs
             if(proj.projtype == PRJ_SHOT && WF(WK(proj.flags), proj.weap, radial, WS(proj.flags)))
             {
                 proj.hit = NULL;
-                proj.hitflags = HITFLAG_NONE;
+                proj.collideflags = COLFLAG_NONE;
             }
             hits.setsize(0);
             if((proj.projtype != PRJ_SHOT || proj.owner) && proj.state != CS_DEAD)
@@ -2351,7 +2345,7 @@ namespace projs
                             {
                                 dir.div(mag);
                                 float blocked = tracecollide(&proj, from, dir, mag, RAY_CLIPMAT|RAY_ALPHAPOLY, true);
-                                if(blocked >= 0 && hitplayer && hitplayer->state == CS_ALIVE && physics::issolid(hitplayer, &proj, true, false))
+                                if(blocked >= 0 && collideplayer && collideplayer->state == CS_ALIVE && physics::issolid(collideplayer, &proj, true, false))
                                 {
                                     proj.beenused = 1;
                                     proj.lifetime = min(proj.lifetime, WF(WK(proj.flags), proj.weap, proxtime, WS(proj.flags)));
@@ -2423,49 +2417,47 @@ namespace projs
             projent &proj = *projs[i];
             if((proj.projtype == PRJ_ENT && !entities::ents.inrange(proj.id)) || !projs[i]->mdl || !*projs[i]->mdl) continue;
             float trans = 1, size = projs[i]->curscale, yaw = proj.yaw, pitch = proj.pitch, roll = proj.roll;
-            int flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_LIGHT|MDL_CULL_DIST;
+            int flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_CULL_DIST;
             switch(proj.projtype)
             {
                 case PRJ_DEBRIS:
                 {
-                    if(shadowdebris) flags |= MDL_DYNSHADOW;
                     size *= proj.lifesize;
                     fadeproj(proj, trans, size);
+                    #if 0
                     if(!proj.limited)
                     {
-                        flags |= MDL_LIGHTFX;
                         vec burncol = !proj.id && isweap(proj.weap) ? FWCOL(P, explcol, proj) : game::rescolour(&proj, PULSE_BURN);
                         burncol.lerp(proj.light.effect, clamp((proj.lifespan - 0.3f)/0.5f, 0.0f, 1.0f));
                         proj.light.effect.max(burncol);
                     }
+                    #endif
                     break;
                 }
                 case PRJ_GIBS: case PRJ_VANITY:
                 {
-                    if(proj.projtype == PRJ_GIBS ? shadowgibs : shadowvanity) flags |= MDL_DYNSHADOW;
                     size *= proj.lifesize;
-                    flags |= MDL_LIGHT_FAST;
                     fadeproj(proj, trans, size);
+                    #if 0
                     if(proj.projtype == PRJ_VANITY && proj.owner)
                     {
                         loopi(3) proj.light.material[i] = proj.owner->light.material[i];
                         proj.light.effect = proj.owner->light.effect;
                     }
+                    #endif
                     break;
                 }
                 case PRJ_EJECT:
                 {
-                    if(shadoweject) flags |= MDL_DYNSHADOW;
                     size *= proj.lifesize;
-                    flags |= MDL_LIGHT_FAST;
                     fadeproj(proj, trans, size);
                     yaw += 90;
                     break;
                 }
                 case PRJ_SHOT:
                 {
-                    if(shadowents) flags |= MDL_DYNSHADOW;
                     trans *= fadeweap(proj);
+                    #if 0
                     if(proj.weap == W_GRENADE)
                     {
                         float amt = clamp(proj.lifespan, 0.f, 1.f);
@@ -2476,18 +2468,17 @@ namespace projs
                     }
                     if(WF(WK(proj.flags), proj.weap, partcol, WS(proj.flags)))
                     {
-                        flags |= MDL_LIGHTFX;
                         proj.light.material[0] = bvec::fromcolor(FWCOL(P, partcol, proj));
                         if(WF(WK(proj.flags), proj.weap, proxtype, WS(proj.flags)) && (!proj.stuck || proj.lifetime%500 >= 300))
                             proj.light.material[0] = bvec(0, 0, 0);
                     }
+                    #endif
                     yaw += 90;
                     break;
                 }
                 case PRJ_ENT:
                 {
                     if(entities::simpleitems) continue;
-                    if(shadowents) flags |= MDL_DYNSHADOW;
                     fadeproj(proj, trans, size);
                     if(entities::ents.inrange(proj.id))
                     {
@@ -2497,10 +2488,9 @@ namespace projs
                             int attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], m_weapon(game::focus->actortype, game::gamemode, game::mutators));
                             if(isweap(attr))
                             {
-                                flags |= MDL_LIGHTFX;
-                                int col = W(attr, colour), interval = lastmillis%1000;
-                                proj.light.effect = vec::hexcolor(col).mul(interval >= 500 ? (1000-interval)/500.f : interval/500.f);
-                                if(attr == W_GRENADE) proj.light.material[0] = bvec::fromcolor(col);
+                                //int col = W(attr, colour), interval = lastmillis%1000;
+                                //proj.light.effect = vec::hexcolor(col).mul(interval >= 500 ? (1000-interval)/500.f : interval/500.f);
+                                //if(attr == W_GRENADE) proj.light.material[0] = bvec::fromcolor(col);
                             }
                             else continue;
                         }
@@ -2509,7 +2499,7 @@ namespace projs
                 }
                 default: break;
             }
-            rendermodel(&proj.light, proj.mdl, ANIM_MAPMODEL|ANIM_LOOP, proj.o, yaw, pitch, roll, flags, &proj, NULL, proj.spawntime, 0, trans, size);
+            rendermodel(proj.mdl, ANIM_MAPMODEL|ANIM_LOOP, proj.o, yaw, pitch, roll, flags, &proj, NULL, proj.spawntime, 0, size, vec4(1, 1, 1, trans));
         }
     }
 

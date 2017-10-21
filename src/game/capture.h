@@ -21,7 +21,7 @@ struct capturestate
         projent *proj;
         int displaytime, movetime, viewtime, interptime;
         vec viewpos, interppos, render, above;
-        entitylight light, baselight;
+        //entitylight light, baselight;
 #endif
 
         flag() { reset(); }

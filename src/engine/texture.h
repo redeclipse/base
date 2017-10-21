@@ -50,6 +50,10 @@ struct GlobalShaderParamUse : ShaderParamBinding
             case GL_INT_VEC2:   glUniform2iv_(loc, size, param->ival); break;
             case GL_INT_VEC3:   glUniform3iv_(loc, size, param->ival); break;
             case GL_INT_VEC4:   glUniform4iv_(loc, size, param->ival); break;
+            case GL_UNSIGNED_INT:      glUniform1uiv_(loc, size, param->uval); break;
+            case GL_UNSIGNED_INT_VEC2: glUniform2uiv_(loc, size, param->uval); break;
+            case GL_UNSIGNED_INT_VEC3: glUniform3uiv_(loc, size, param->uval); break;
+            case GL_UNSIGNED_INT_VEC4: glUniform4uiv_(loc, size, param->uval); break;
             case GL_FLOAT_MAT2: glUniformMatrix2fv_(loc, 1, GL_FALSE, param->fval); break;
             case GL_FLOAT_MAT3: glUniformMatrix3fv_(loc, 1, GL_FALSE, param->fval); break;
             case GL_FLOAT_MAT4: glUniformMatrix4fv_(loc, 1, GL_FALSE, param->fval); break;
@@ -63,37 +67,23 @@ struct LocalShaderParamState : ShaderParamBinding
     const char *name;
 };
 
-struct SlotShaderParamValue
+struct SlotShaderParam
 {
-    int palette, palindex;
+    enum
+    {
+        REUSE = 1<<0
+    };
+
+    const char *name;
+    int loc, flags, palette, palindex;
+    float val[4];
+};
+
+struct SlotShaderParamState : LocalShaderParamState
+{
+    int flags, palette, palindex;
     float val[4];
 
-    SlotShaderParamValue() {}
-    SlotShaderParamValue(int palette, int palindex, float x, float y, float z, float w)
-      : palette(palette), palindex(palindex)
-    {
-        val[0] = x;
-        val[1] = y;
-        val[2] = z;
-        val[3] = w;
-    }
-};
-
-struct SlotShaderParam : SlotShaderParamValue
-{
-    const char *name;
-    int loc;
-
-    SlotShaderParam() {}
-    SlotShaderParam(const char *name, int palette, int palindex, float x, float y, float z, float w)
-      : SlotShaderParamValue(palette, palindex, x, y, z, w),
-        name(name), loc(-1)
-    {
-    }
-};
-
-struct SlotShaderParamState : LocalShaderParamState, SlotShaderParamValue
-{
     SlotShaderParamState() {}
     SlotShaderParamState(const SlotShaderParam &p)
     {
@@ -101,6 +91,7 @@ struct SlotShaderParamState : LocalShaderParamState, SlotShaderParamValue
         loc = -1;
         size = 1;
         format = GL_FLOAT_VEC4;
+        flags = p.flags;
         palette = p.palette;
         palindex = p.palindex;
         memcpy(val, p.val, sizeof(val));
@@ -110,18 +101,18 @@ struct SlotShaderParamState : LocalShaderParamState, SlotShaderParamValue
 enum
 {
     SHADER_DEFAULT    = 0,
-    SHADER_NORMALSLMS = 1<<0,
+    SHADER_WORLD      = 1<<0,
     SHADER_ENVMAP     = 1<<1,
+    SHADER_REFRACT    = 1<<2,
     SHADER_OPTION     = 1<<3,
+    SHADER_DYNAMIC    = 1<<4,
+    SHADER_TRIPLANAR  = 1<<5,
 
     SHADER_INVALID    = 1<<8,
     SHADER_DEFERRED   = 1<<9
 };
 
-#define MAXSHADERDETAIL 3
-#define MAXVARIANTROWS 5
-
-extern int shaderdetail;
+#define MAXVARIANTROWS 32
 
 struct Slot;
 struct VSlot;
@@ -141,6 +132,15 @@ struct AttribLoc
     AttribLoc(const char *name = NULL, int loc = -1) : name(name), loc(loc) {}
 };
 
+struct FragDataLoc
+{
+    const char *name;
+    int loc;
+    GLenum format;
+    int index;
+    FragDataLoc(const char *name = NULL, int loc = -1, GLenum format = GL_FALSE, int index = 0) : name(name), loc(loc), format(format), index(index) {}
+};
+
 struct Shader
 {
     static Shader *lastshader;
@@ -152,18 +152,18 @@ struct Shader
     vector<GlobalShaderParamUse> globalparams;
     vector<LocalShaderParamState> localparams;
     vector<uchar> localparamremap;
-    Shader *detailshader, *variantshader, *altshader, *fastshader[MAXSHADERDETAIL];
+    Shader *variantshader;
     vector<Shader *> variants;
     ushort *variantrows;
     bool standard, forced, used;
     Shader *reusevs, *reuseps;
     vector<UniformLoc> uniformlocs;
     vector<AttribLoc> attriblocs;
+    vector<FragDataLoc> fragdatalocs;
     const void *owner;
 
-    Shader() : name(NULL), vsstr(NULL), psstr(NULL), defer(NULL), type(SHADER_DEFAULT), program(0), vsobj(0), psobj(0), detailshader(NULL), variantshader(NULL), altshader(NULL), variantrows(NULL), standard(false), forced(false), used(false), reusevs(NULL), reuseps(NULL), owner(NULL)
+    Shader() : name(NULL), vsstr(NULL), psstr(NULL), defer(NULL), type(SHADER_DEFAULT), program(0), vsobj(0), psobj(0), variantshader(NULL), variantrows(NULL), standard(false), forced(false), used(false), reusevs(NULL), reuseps(NULL), owner(NULL)
     {
-        loopi(MAXSHADERDETAIL) fastshader[i] = this;
     }
 
     ~Shader()
@@ -175,7 +175,6 @@ struct Shader
         DELETEA(variantrows);
     }
 
-    void fixdetailshader(bool force = true, bool recurse = true);
     void allocparams(Slot *slot = NULL);
     void setslotparams(Slot &slot);
     void setslotparams(Slot &slot, VSlot &vslot);
@@ -191,7 +190,11 @@ struct Shader
 
     bool invalid() const { return (type&SHADER_INVALID)!=0; }
     bool deferred() const { return (type&SHADER_DEFERRED)!=0; }
-    bool loaded() const { return detailshader!=NULL; }
+    bool loaded() const { return !(type&(SHADER_DEFERRED|SHADER_INVALID)); }
+
+    bool hasoption() const { return (type&SHADER_OPTION)!=0; }
+
+    bool isdynamic() const { return (type&SHADER_DYNAMIC)!=0; }
 
     static inline bool isnull(const Shader *s) { return !s; }
 
@@ -210,16 +213,6 @@ struct Shader
         return col < end - start ? variants[start + col] : NULL;
     }
 
-    bool hasoption(int row)
-    {
-        if(detailshader)
-        {
-            Shader *s = getvariant(0, row);
-            if(s) return (s->type&SHADER_OPTION)!=0;
-        }
-        return false;
-    }
-
     void addvariant(int row, Shader *s)
     {
         if(row < 0 || row >= MAXVARIANTROWS || variants.length() >= USHRT_MAX) return;
@@ -228,53 +221,43 @@ struct Shader
         for(int i = row+1; i <= MAXVARIANTROWS; ++i) ++variantrows[i];
     }
 
-    void setvariant_(int col, int row, Shader *fallbackshader)
+    void setvariant_(int col, int row)
     {
-        Shader *s = fallbackshader;
-        if(detailshader->variantrows)
+        Shader *s = this;
+        if(variantrows)
         {
-            int start = detailshader->variantrows[row], end = detailshader->variantrows[row+1];
-            for(col = min(start + col, end-1); col >= start; --col)
-            {
-                if(!detailshader->variants[col]->invalid()) { s = detailshader->variants[col]; break; }
-            }
+            int start = variantrows[row], end = variantrows[row+1];
+            for(col = min(start + col, end-1); col >= start; --col) if(!variants[col]->invalid()) { s = variants[col]; break; }
         }
         if(lastshader!=s) s->bindprograms();
-    }
-
-    void setvariant(int col, int row, Shader *fallbackshader)
-    {
-        if(isnull() || !detailshader) return;
-        setvariant_(col, row, fallbackshader);
-        lastshader->flushparams();
     }
 
     void setvariant(int col, int row)
     {
         if(isnull() || !loaded()) return;
-        setvariant_(col, row, detailshader);
+        setvariant_(col, row);
         lastshader->flushparams();
     }
 
-    void setvariant(int col, int row, Slot &slot, VSlot &vslot, Shader *fallbackshader)
+    void setvariant(int col, int row, Slot &slot)
     {
         if(isnull() || !loaded()) return;
-        setvariant_(col, row, fallbackshader);
+        setvariant_(col, row);
         lastshader->flushparams(&slot);
-        lastshader->setslotparams(slot, vslot);
+        lastshader->setslotparams(slot);
     }
 
     void setvariant(int col, int row, Slot &slot, VSlot &vslot)
     {
         if(isnull() || !loaded()) return;
-        setvariant_(col, row, detailshader);
+        setvariant_(col, row);
         lastshader->flushparams(&slot);
         lastshader->setslotparams(slot, vslot);
     }
 
     void set_()
     {
-        if(lastshader!=detailshader) detailshader->bindprograms();
+        if(lastshader!=this) bindprograms();
     }
 
     void set()
@@ -282,6 +265,14 @@ struct Shader
         if(isnull() || !loaded()) return;
         set_();
         lastshader->flushparams();
+    }
+
+    void set(Slot &slot)
+    {
+        if(isnull() || !loaded()) return;
+        set_();
+        lastshader->flushparams(&slot);
+        lastshader->setslotparams(slot);
     }
 
     void set(Slot &slot, VSlot &vslot)
@@ -293,7 +284,7 @@ struct Shader
     }
 
     bool compile();
-    void cleanup(bool invalid = false);
+    void cleanup(bool full = false);
 
     static int uniformlocversion();
 };
@@ -395,6 +386,10 @@ struct LocalShaderParam
             case GL_INT_VEC2:   glUniform2i_(b->loc, int(x), int(y)); break;
             case GL_INT_VEC3:   glUniform3i_(b->loc, int(x), int(y), int(z)); break;
             case GL_INT_VEC4:   glUniform4i_(b->loc, int(x), int(y), int(z), int(w)); break;
+            case GL_UNSIGNED_INT:      glUniform1ui_(b->loc, uint(x)); break;
+            case GL_UNSIGNED_INT_VEC2: glUniform2ui_(b->loc, uint(x), uint(y)); break;
+            case GL_UNSIGNED_INT_VEC3: glUniform3ui_(b->loc, uint(x), uint(y), uint(z)); break;
+            case GL_UNSIGNED_INT_VEC4: glUniform4ui_(b->loc, uint(x), uint(y), uint(z), uint(w)); break;
         }
     }
     void set(const vec &v, float w = 0) { setf(v.x, v.y, v.z, w); }
@@ -431,6 +426,10 @@ struct LocalShaderParam
             case GL_INT_VEC3:   glUniform3i_(b->loc, x, y, z); break;
             case GL_BOOL_VEC4:
             case GL_INT_VEC4:   glUniform4i_(b->loc, x, y, z, w); break;
+            case GL_UNSIGNED_INT:      glUniform1ui_(b->loc, x); break;
+            case GL_UNSIGNED_INT_VEC2: glUniform2ui_(b->loc, x, y); break;
+            case GL_UNSIGNED_INT_VEC3: glUniform3ui_(b->loc, x, y, z); break;
+            case GL_UNSIGNED_INT_VEC4: glUniform4ui_(b->loc, x, y, z, w); break;
         }
     }
     void seti(int x = 0, int y = 0, int z = 0, int w = 0) { sett<int>(x, y, z, w); }
@@ -441,6 +440,9 @@ struct LocalShaderParam
     void setv(const ivec *v, int n = 1) { ShaderParamBinding *b = resolve(); if(b) glUniform3iv_(b->loc, n, v->v); }
     void setv(const ivec2 *v, int n = 1) { ShaderParamBinding *b = resolve(); if(b) glUniform2iv_(b->loc, n, v->v); }
     void setv(const ivec4 *v, int n = 1) { ShaderParamBinding *b = resolve(); if(b) glUniform4iv_(b->loc, n, v->v); }
+
+    void setu(uint x = 0, uint y = 0, uint z = 0, uint w = 0) { sett<uint>(x, y, z, w); }
+    void setv(const uint *u, int n = 1) { ShaderParamBinding *b = resolve(); if(b) glUniform1uiv_(b->loc, n, u); }
 };
 
 #define LOCALPARAM(name, vals) do { static LocalShaderParam param( #name ); param.set(vals); } while(0)
@@ -621,14 +623,14 @@ struct Texture
 enum
 {
     TEX_DIFFUSE = 0,
-    TEX_UNKNOWN,
-    TEX_DECAL,
     TEX_NORMAL,
     TEX_GLOW,
+    TEX_ENVMAP,
     TEX_SPEC,
     TEX_DEPTH,
-    TEX_ENVMAP,
-    TEX_MAX
+    TEX_UNKNOWN,
+    TEX_MAX,
+    TEX_DETAIL = TEX_SPEC
 };
 
 enum
@@ -643,6 +645,8 @@ enum
     VSLOT_COLOR,
     VSLOT_PALETTE,
     VSLOT_COAST,
+    VSLOT_REFRACT,
+    VSLOT_DETAIL,
     VSLOT_NUM
 };
 
@@ -660,12 +664,15 @@ struct VSlot
     int rotation;
     ivec2 offset;
     vec2 scroll;
-    int layer;
-    int palette, palindex;
+    int layer, detail, palette, palindex;
     float alphafront, alphaback;
     vec colorscale;
-    SlotShaderParamValue *glowcolor;
+    vec glowcolor;
     float coastscale;
+    float refractscale;
+    vec refractcolor;
+
+    Texture *loadthumbnail();
 
     VSlot(Slot *slot = NULL, int index = -1) : slot(slot), next(NULL), index(index), changed(0)
     {
@@ -677,87 +684,92 @@ struct VSlot
 
     void reset()
     {
-        params.shrink(0);
+        params.setsize(0);
         linked = false;
         scale = 1;
         rotation = 0;
         offset = ivec2(0, 0);
         scroll = vec2(0, 0);
-        layer = palette = palindex = 0;
+        layer = detail = 0;
         alphafront = DEFAULT_ALPHA_FRONT;
         alphaback = DEFAULT_ALPHA_BACK;
         colorscale = vec(1, 1, 1);
-        glowcolor = NULL;
+        glowcolor = vec(1, 1, 1);
         coastscale = 1;
+        refractscale = 0;
+        refractcolor = vec(1, 1, 1);
     }
 
     vec getcolorscale() const { return palette || palindex ? vec(colorscale).mul(game::getpalette(palette, palindex)) : colorscale; }
-    vec getglowcolor() const
-    {
-        if(glowcolor)
-        {
-            vec c(glowcolor->val);
-            if(glowcolor->palette || glowcolor->palindex) c.mul(game::getpalette(glowcolor->palette, glowcolor->palindex));
-            else if(palette || palindex) c.mul(game::getpalette(palette, palindex));
-            return c.clamp(0.0f, 1.0f);
-        }
-        if(palette || palindex) return game::getpalette(palette, palindex);
-        return vec(1, 1, 1);
-    }
+    vec getglowcolor() const { return vec(palette || palindex ? vec(glowcolor).mul(game::getpalette(palette, palindex)) : glowcolor).clamp(0.f, 1.f); }
 
     void cleanup()
     {
         linked = false;
-        glowcolor = NULL;
     }
+
+    bool isdynamic() const;
 };
 
 struct Slot
 {
+    enum { OCTA, MATERIAL, DECAL };
+
     struct Tex
     {
         int type;
         Texture *t;
         string name;
         int combined;
+
+        Tex() : t(NULL), combined(-1) {}
     };
 
-    int index;
+    int index, smooth;
     vector<Tex> sts;
     Shader *shader;
     vector<SlotShaderParam> params;
     VSlot *variants;
     bool loaded;
     uint texmask;
-    char *texgrass;
+    char *grass;
     vec grasscolor;
     float grassblend;
     int grassscale, grassheight;
     Texture *grasstex, *thumbnail;
-    char *layermaskname;
-    int layermaskmode;
-    float layermaskscale;
-    ImageData *layermask;
 
-    Slot(int index = -1) : index(index), variants(NULL), texgrass(NULL), layermaskname(NULL), layermask(NULL) { reset(); }
+    Slot(int index = -1) : index(index), variants(NULL), grass(NULL) { reset(); }
+    virtual ~Slot() {}
+
+    virtual int type() const { return OCTA; }
+    virtual const char *name() const;
+    virtual const char *texturedir() const { return "media/texture"; }
+
+    virtual VSlot &emptyvslot();
+
+    virtual int cancombine(int type) const;
+
+    int findtextype(int type, int last = -1) const;
+
+    void load(int index, Slot::Tex &t);
+    void load();
+
+    Texture *loadthumbnail();
 
     void reset()
     {
-        sts.shrink(0);
+        smooth = -1;
+        sts.setsize(0);
         shader = NULL;
-        params.shrink(0);
+        params.setsize(0);
         loaded = false;
         texmask = 0;
-        DELETEA(texgrass);
+        DELETEA(grass);
         grasscolor = vec(0, 0, 0);
         grassblend = 0;
         grassscale = grassheight = 0;
         grasstex = NULL;
         thumbnail = NULL;
-        DELETEA(layermaskname);
-        layermaskmode = 0;
-        layermaskscale = 1;
-        if(layermask) DELETEP(layermask);
     }
 
     void cleanup()
@@ -785,9 +797,21 @@ inline void VSlot::addvariant(Slot *slot)
     }
 }
 
-struct MSlot : Slot, VSlot
+inline bool VSlot::isdynamic() const
 {
-    MSlot() : VSlot(this) {}
+    return !scroll.iszero() || slot->shader->isdynamic();
+}
+
+struct MatSlot : Slot, VSlot
+{
+    MatSlot();
+
+    int type() const { return MATERIAL; }
+    const char *name() const;
+
+    VSlot &emptyvslot() { return *this; }
+
+    int cancombine(int type) const { return -1; }
 
     void reset()
     {
@@ -802,9 +826,72 @@ struct MSlot : Slot, VSlot
     }
 };
 
+struct DecalSlot : Slot, VSlot
+{
+    float depth, fade;
+
+    DecalSlot(int index = -1) : Slot(index), VSlot(this), depth(1), fade(0.5f) {}
+
+    int type() const { return DECAL; }
+    const char *name() const;
+    const char *texturedir() const { return "media/decal"; }
+
+    VSlot &emptyvslot() { return *this; }
+
+    int cancombine(int type) const;
+
+    void reset()
+    {
+        Slot::reset();
+        VSlot::reset();
+        depth = 1;
+        fade = 0.5f;
+    }
+
+    void cleanup()
+    {
+        Slot::cleanup();
+        VSlot::cleanup();
+    }
+};
+
 extern void scaleimage(ImageData &s, int w, int h);
 extern void texcrop(ImageData &s, ImageData &d, int x, int y, int w, int h);
 extern void texcrop(ImageData &s, int x, int y, int w, int h);
+extern void updatetextures();
+extern void preloadtextures(int flags = IDF_PRELOAD);
+
+struct cubemapside
+{
+    GLenum target;
+    const char *name;
+    bool flipx, flipy, swapxy;
+};
+
+extern const cubemapside cubemapsides[6];
+extern Texture *notexture, *blanktexture;
+extern Shader *nullshader, *hudshader, *hudtextshader, *hudnotextureshader, *nocolorshader, *foggedshader, *foggednotextureshader, *ldrshader, *ldrnotextureshader, *stdworldshader;
+extern int maxvsuniforms, maxfsuniforms;
+
+extern Shader *lookupshaderbyname(const char *name);
+extern Shader *useshaderbyname(const char *name);
+extern Shader *generateshader(const char *name, const char *cmd, ...);
+extern void resetslotshader();
+extern void setslotshader(Slot &s);
+extern void linkslotshader(Slot &s, bool load = true);
+extern void linkvslotshader(VSlot &s, bool load = true);
+extern void linkslotshaders();
+extern const char *getshaderparamname(const char *name, bool insert = true);
+extern bool shouldreuseparams(Slot &s, VSlot &p);
+extern void setupshaders();
+extern void reloadshaders();
+extern void cleanupshaders();
+
+#define MAXBLURRADIUS 7
+extern float blursigma;
+extern void setupblurkernel(int radius, float *weights, float *offsets);
+extern void setblurshader(int pass, int size, int radius, float *weights, float *offsets, GLenum target = GL_TEXTURE_2D);
+
 enum
 {
     IFMT_NONE = 0,
@@ -823,46 +910,13 @@ extern void saveimage(const char *name, ImageData &image, int format = IFMT_NONE
 extern SDL_Surface *loadsurface(const char *name, bool noload = false);
 extern bool loadimage(const char *name, ImageData &image);
 extern bool loaddds(const char *filename, ImageData &image, int force = 0);
+extern bool loadimage(const char *filename, ImageData &image);
 
-extern void resetmaterials();
-extern void resettextures(int n = 0);
-extern void setshader(char *name);
-extern void setshaderparam(const char *name, int type, int n, float x, float y, float z, float w);
-extern int findtexturetype(char *name, bool tryint = false);
-extern const char *findtexturetypename(int type);
-extern void texture(char *type, char *name, int *rot, int *xoffet, int *yoffset, float *scale);
-extern void updatetextures();
-extern void preloadtextures(int flags = IDF_PRELOAD);
-
-struct cubemapside
-{
-    GLenum target;
-    const char *name;
-    bool flipx, flipy, swapxy;
-};
-
-extern cubemapside cubemapsides[6];
-extern Texture *notexture, *blanktexture;
-extern Shader *nullshader, *hudshader, *hudnotextureshader, *textureshader, *notextureshader, *nocolorshader, *foggedshader, *foggednotextureshader, *stdworldshader;
-extern int reservevpparams, maxvsuniforms, maxfsuniforms;
-
-extern Shader *lookupshaderbyname(const char *name);
-extern Shader *useshaderbyname(const char *name);
-extern Shader *generateshader(const char *name, const char *cmd, ...);
-extern Texture *loadthumbnail(Slot &slot);
-extern void resetslotshader();
-extern void setslotshader(Slot &s);
-extern void linkslotshader(Slot &s, bool load = true);
-extern void linkvslotshader(VSlot &s, bool load = true);
-extern void linkslotshaders();
-extern const char *getshaderparamname(const char *name, bool insert = true);
-extern void setupshaders();
-extern void reloadshaders();
-extern void cleanupshaders();
-
-extern MSlot &lookupmaterialslot(int slot, bool load = true);
+extern MatSlot materialslots[(MATF_VOLUME|MATF_INDEX)+1];
+extern MatSlot &lookupmaterialslot(int slot, bool load = true);
 extern Slot &lookupslot(int slot, bool load = true);
 extern VSlot &lookupvslot(int slot, bool load = true);
+extern DecalSlot &lookupdecalslot(int slot, bool load = true);
 extern VSlot *findvslot(Slot &slot, const VSlot &src, const VSlot &delta);
 extern VSlot *editvslot(const VSlot &src, const VSlot &delta);
 extern void mergevslot(VSlot &dst, const VSlot &src, const VSlot &delta);
@@ -873,20 +927,9 @@ extern Slot dummyslot;
 extern VSlot dummyvslot;
 extern vector<Slot *> slots;
 extern vector<VSlot *> vslots;
-extern MSlot materialslots[(MATF_VOLUME|MATF_INDEX)+1];
-
-#define MAXDYNLIGHTS 5
-#define DYNLIGHTBITS 6
-#define DYNLIGHTMASK ((1<<DYNLIGHTBITS)-1)
-
-#define MAXBLURRADIUS 7
-
-extern void setupblurkernel(int radius, float sigma, float *weights, float *offsets);
-extern void setblurshader(int pass, int size, int radius, float *weights, float *offsets);
 
 #define _TVAR(f, n, c, m) _SVARF(n, n, c, { if(initing==NOT_INITING && n[0]) textureload(n, m, true); }, f|IDF_TEXTURE)
 #define TVAR(f, n, c, m)  _TVAR(f, n, c, m)
 #define _TVARN(f, n, c, t, m) _SVARF(n, n, c, { if(initing==NOT_INITING) t = n[0] ? textureload(n, m, true) : notexture; }, f|IDF_TEXTURE)
 #define TVARN(f, n, c, t, m) _TVARN(f, n, c, t, m)
 #define TVARC(f, n, c, t, m) Texture *##t; _TVARN(f, n, c, t, m)
-

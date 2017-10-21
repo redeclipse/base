@@ -592,7 +592,7 @@
 			<Option target="redeclipse-amd64-dbg" />
 			<Option target="redeclipse-amd64-prof" />
 		</Unit>
-		<Unit filename="engine/blob.cpp">
+		<Unit filename="engine/aa.cpp">
 			<Option target="redeclipse-x86" />
 			<Option target="redeclipse-x86-dbg" />
 			<Option target="redeclipse-x86-prof" />
@@ -621,22 +621,6 @@
 			<Option target="redeclipse_server-amd64-dbg" />
 		</Unit>
 		<Unit filename="engine/console.cpp">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
-		<Unit filename="engine/decal.cpp">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
-		<Unit filename="engine/depthfx.h">
 			<Option target="redeclipse-x86" />
 			<Option target="redeclipse-x86-dbg" />
 			<Option target="redeclipse-x86-prof" />
@@ -673,7 +657,7 @@
 		<Unit filename="engine/genkey.cpp">
 			<Option target="genkey" />
 		</Unit>
-		<Unit filename="engine/glare.cpp">
+		<Unit filename="engine/grass.cpp">
 			<Option target="redeclipse-x86" />
 			<Option target="redeclipse-x86-dbg" />
 			<Option target="redeclipse-x86-prof" />
@@ -681,7 +665,7 @@
 			<Option target="redeclipse-amd64-dbg" />
 			<Option target="redeclipse-amd64-prof" />
 		</Unit>
-		<Unit filename="engine/grass.cpp">
+		<Unit filename="engine/hitzone.h">
 			<Option target="redeclipse-x86" />
 			<Option target="redeclipse-x86-dbg" />
 			<Option target="redeclipse-x86-prof" />
@@ -729,7 +713,7 @@
 			<Option target="redeclipse-amd64-dbg" />
 			<Option target="redeclipse-amd64-prof" />
 		</Unit>
-		<Unit filename="engine/lightmap.cpp">
+		<Unit filename="engine/light.cpp">
 			<Option target="redeclipse-x86" />
 			<Option target="redeclipse-x86-dbg" />
 			<Option target="redeclipse-x86-prof" />
@@ -737,7 +721,7 @@
 			<Option target="redeclipse-amd64-dbg" />
 			<Option target="redeclipse-amd64-prof" />
 		</Unit>
-		<Unit filename="engine/lightmap.h">
+		<Unit filename="engine/light.h">
 			<Option target="redeclipse-x86" />
 			<Option target="redeclipse-x86-dbg" />
 			<Option target="redeclipse-x86-prof" />
@@ -917,6 +901,14 @@
 			<Option target="redeclipse-amd64-dbg" />
 			<Option target="redeclipse-amd64-prof" />
 		</Unit>
+		<Unit filename="engine/renderlights.cpp">
+			<Option target="redeclipse-x86" />
+			<Option target="redeclipse-x86-dbg" />
+			<Option target="redeclipse-x86-prof" />
+			<Option target="redeclipse-amd64" />
+			<Option target="redeclipse-amd64-dbg" />
+			<Option target="redeclipse-amd64-prof" />
+		</Unit>
 		<Unit filename="engine/rendermodel.cpp">
 			<Option target="redeclipse-x86" />
 			<Option target="redeclipse-x86-dbg" />
@@ -934,14 +926,6 @@
 			<Option target="redeclipse-amd64-prof" />
 		</Unit>
 		<Unit filename="engine/rendersky.cpp">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
-		<Unit filename="engine/rendertarget.h">
 			<Option target="redeclipse-x86" />
 			<Option target="redeclipse-x86-dbg" />
 			<Option target="redeclipse-x86-prof" />
@@ -1001,14 +985,6 @@
 			<Option target="redeclipse-amd64-dbg" />
 			<Option target="redeclipse-amd64-prof" />
 		</Unit>
-		<Unit filename="engine/shadowmap.cpp">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
 		<Unit filename="engine/skelmodel.h">
 			<Option target="redeclipse-x86" />
 			<Option target="redeclipse-x86-dbg" />
@@ -1034,6 +1010,14 @@
 			<Option target="redeclipse-amd64-prof" />
 		</Unit>
 		<Unit filename="engine/sound.h">
+			<Option target="redeclipse-x86" />
+			<Option target="redeclipse-x86-dbg" />
+			<Option target="redeclipse-x86-prof" />
+			<Option target="redeclipse-amd64" />
+			<Option target="redeclipse-amd64-dbg" />
+			<Option target="redeclipse-amd64-prof" />
+		</Unit>
+		<Unit filename="engine/stain.cpp">
 			<Option target="redeclipse-x86" />
 			<Option target="redeclipse-x86-dbg" />
 			<Option target="redeclipse-x86-prof" />

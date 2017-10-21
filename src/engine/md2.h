@@ -1,6 +1,6 @@
 struct md2;
 
-float md2normaltable[256][3] =
+static const float md2normaltable[256][3] =
 {
     { -0.525731f,  0.000000f,  0.850651f },     { -0.442863f,  0.238856f,  0.864188f },     { -0.295242f,  0.000000f,  0.955423f },     { -0.309017f,  0.500000f,  0.809017f },
     { -0.162460f,  0.262866f,  0.951056f },     {  0.000000f,  0.000000f,  1.000000f },     {  0.000000f,  0.850651f,  0.525731f },     { -0.147621f,  0.716567f,  0.681718f },
@@ -78,7 +78,7 @@ struct md2 : vertmodel, vertloader<md2>
     static bool multimeshed() { return false; }
     int type() const { return MDL_MD2; }
 
-    int linktype(animmodel *m) const { return LINK_COOP; }
+    int linktype(animmodel *m, part *p) const { return LINK_COOP; }
 
     struct md2meshgroup : vertmeshgroup
     {
@@ -124,7 +124,7 @@ struct md2 : vertmodel, vertloader<md2>
             }
         }
 
-        bool load(const char *filename)
+        bool load(const char *filename, float smooth)
         {
             stream *file = openfile(filename, "rb");
             if(!file) return false;
@@ -191,11 +191,13 @@ struct md2 : vertmodel, vertloader<md2>
                                        v.vertex[2]*frame.scale[2]+frame.translate[2]);
                     const float *norm = md2normaltable[v.normalindex];
                     curvert->norm = vec(norm[0], -norm[1], norm[2]);
-                    curvert++;
+                    ++curvert;
                 }
                 frame_offset += header.framesize;
             }
             delete[] tmpverts;
+
+            m.calctangents();
 
             delete file;
 
@@ -203,12 +205,7 @@ struct md2 : vertmodel, vertloader<md2>
         }
     };
 
-    meshgroup *loadmeshes(const char *name, va_list args)
-    {
-        md2meshgroup *group = new md2meshgroup;
-        if(!group->load(name)) { delete group; return NULL; }
-        return group;
-    }
+    vertmeshgroup *newmeshes() { return new md2meshgroup; }
 
     bool load()
     {

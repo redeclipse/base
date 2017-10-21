@@ -1236,7 +1236,7 @@ namespace client
         loopv(game::players) if(game::players[i]) game::clientdisconnected(i);
         game::waiting.setsize(0);
         hud::cleanup();
-        emptymap(0, true, NULL, true);
+        emptymap(0, true, NULL, false);
         smartmusic(true);
         enumerate(idents, ident, id, {
             if(id.flags&IDF_CLIENT) switch(id.type)
@@ -1801,6 +1801,7 @@ namespace client
                 }
                 break;
             }
+            case EDIT_CALCLIGHT:
             case EDIT_REMIP:
             {
                 addmsg(N_EDITF + op, "r");
@@ -3352,7 +3353,7 @@ namespace client
                     if(d)
                     {
                         int newsize = 0;
-                        while(1<<newsize < getworldsize()) newsize++;
+                        while(1<<newsize < worldsize) newsize++;
                         conoutf(size>=0 ? "\fy%s started new map \fs\fc%s\fS of size \fs\fc%d\fS" : "\fy%s enlarged the map \fs\fc%s\fS to size \fs\fc%d\fS", game::colourname(d), mapname, newsize);
                     }
                     break;

@@ -1,22 +1,19 @@
 VAR(IDF_PERSIST, gpuskel, 0, 1, 1);
 
 VAR(0, maxskelanimdata, 1, 192, 0);
-VAR(0, testtags, 0, 0, 1);
 
 #define BONEMASK_NOT  0x8000
 #define BONEMASK_END  0xFFFF
 #define BONEMASK_BONE 0x7FFF
 
+struct skelhitdata;
+
 struct skelmodel : animmodel
 {
-    struct vert { vec pos, norm; vec2 tc; int blend, interpindex; };
-    struct vvert { vec pos; vec2 tc; };
-    struct vvertn : vvert { vec norm; };
-    struct vvertbump : vvert { squat tangent; };
-    struct vvertw { uchar weights[4]; uchar bones[4]; };
-    struct vvertnw : vvertn, vvertw {};
-    struct vvertbumpw : vvertbump, vvertw {}; 
-    struct bumpvert { quat tangent; };
+    struct vert { vec pos, norm; vec2 tc; quat tangent; int blend, interpindex; };
+    struct vvert { vec pos; hvec2 tc; squat tangent; };
+    struct vvertg { hvec4 pos; hvec2 tc; squat tangent; };
+    struct vvertgw : vvertg { uchar weights[4]; uchar bones[4]; };
     struct tri { ushort vert[3]; };
 
     struct blendcombo
@@ -87,7 +84,8 @@ struct skelmodel : animmodel
             loopj(sorted) weights[j] *= total;
         }
 
-        void serialize(vvertw &v)
+        template<class T>
+        void serialize(T &v)
         {
             if(interpindex >= 0)
             {
@@ -132,6 +130,11 @@ struct skelmodel : animmodel
             loopi(MAXANIMPARTS) if(as[i]!=c.as[i]) return false;
             return pitch==c.pitch && partmask==c.partmask && ragdoll==c.ragdoll && (!ragdoll || min(millis, c.millis) >= ragdoll->lastmove);
         }
+
+        bool operator!=(const animcacheentry &c) const
+        {
+            return !operator==(c);
+        }
     };
 
     struct vbocacheentry : animcacheentry
@@ -146,14 +149,12 @@ struct skelmodel : animmodel
     {
         dualquat *bdata;
         int version;
-        bool dirty;
 
-        skelcacheentry() : bdata(NULL), version(-1), dirty(false) {}
+        skelcacheentry() : bdata(NULL), version(-1) {}
 
         void nextversion()
         {
             version = Shader::uniformlocversion();
-            dirty = true;
         }
     };
 
@@ -169,21 +170,19 @@ struct skelmodel : animmodel
     struct skelmesh : mesh
     {
         vert *verts;
-        bumpvert *bumpverts;
         tri *tris;
         int numverts, numtris, maxweights;
 
         int voffset, eoffset, elen;
         ushort minvert, maxvert;
 
-        skelmesh() : verts(NULL), bumpverts(NULL), tris(NULL), numverts(0), numtris(0), maxweights(0)
+        skelmesh() : verts(NULL), tris(NULL), numverts(0), numtris(0), maxweights(0)
         {
         }
 
         virtual ~skelmesh()
         {
             DELETEA(verts);
-            DELETEA(bumpverts);
             DELETEA(tris);
         }
 
@@ -205,9 +204,7 @@ struct skelmodel : animmodel
 
         void calctangents(bool areaweight = true)
         {
-            if(bumpverts) return;
-            bumpverts = new bumpvert[numverts];
-            mesh::calctangents(bumpverts, verts, verts, numverts, tris, numtris, areaweight);
+            mesh::calctangents(verts, verts, numverts, tris, numtris, areaweight);
         }
 
         void calcbb(vec &bbmin, vec &bbmax, const matrix4x3 &m)
@@ -215,11 +212,8 @@ struct skelmodel : animmodel
             loopj(numverts)
             {
                 vec v = m.transform(verts[j].pos);
-                loopi(3)
-                {
-                    bbmin[i] = min(bbmin[i], v[i]);
-                    bbmax[i] = max(bbmax[i], v[i]);
-                }
+                bbmin.min(v);
+                bbmax.max(v);
             }
         }
 
@@ -233,33 +227,29 @@ struct skelmodel : animmodel
             m.tcstride = sizeof(vert);
         }
 
-        static inline void assignvert(vvertn &vv, int j, vert &v, blendcombo &c)
+        void genshadowmesh(vector<triangle> &out, const matrix4x3 &m)
         {
-            vv.pos = v.pos;
-            vv.norm = v.norm;
-            vv.tc = v.tc;
+            loopj(numtris)
+            {
+                triangle &t = out.add();
+                t.a = m.transform(verts[tris[j].vert[0]].pos);
+                t.b = m.transform(verts[tris[j].vert[1]].pos);
+                t.c = m.transform(verts[tris[j].vert[2]].pos);
+            }
         }
 
-        inline void assignvert(vvertbump &vv, int j, vert &v, blendcombo &c)
+        static inline void assignvert(vvertg &vv, int j, vert &v, blendcombo &c)
         {
-            vv.pos = v.pos;
+            vv.pos = hvec4(v.pos, 1);
             vv.tc = v.tc;
-            vv.tangent = bumpverts[j].tangent;
+            vv.tangent = v.tangent;
         }
 
-        static inline void assignvert(vvertnw &vv, int j, vert &v, blendcombo &c)
+        static inline void assignvert(vvertgw &vv, int j, vert &v, blendcombo &c)
         {
-            vv.pos = v.pos;
-            vv.norm = v.norm;
+            vv.pos = hvec4(v.pos, 1);
             vv.tc = v.tc;
-            c.serialize(vv);
-        }
-
-        inline void assignvert(vvertbumpw &vv, int j, vert &v, blendcombo &c)
-        {
-            vv.pos = v.pos;
-            vv.tc = v.tc;
-            vv.tangent = bumpverts[j].tangent;
+            vv.tangent = v.tangent;
             c.serialize(vv);
         }
 
@@ -340,52 +330,30 @@ struct skelmodel : animmodel
             loopi(numverts) fillvert(vdata[i], i, verts[i]);
         }
 
-        void interpverts(const dualquat * RESTRICT bdata1, const dualquat * RESTRICT bdata2, bool tangents, void * RESTRICT vdata, skin &s)
+        template<class T>
+        void interpverts(const dualquat * RESTRICT bdata1, const dualquat * RESTRICT bdata2, T * RESTRICT vdata, skin &s)
         {
             const int blendoffset = ((skelmeshgroup *)group)->skel->numgpubones;
             bdata2 -= blendoffset;
-
-            #define IPLOOP(type, dosetup, dotransform) \
-                loopi(numverts) \
-                { \
-                    const vert &src = verts[i]; \
-                    type &dst = ((type * RESTRICT)vdata)[i]; \
-                    dosetup; \
-                    const dualquat &b = (src.interpindex < blendoffset ? bdata1 : bdata2)[src.interpindex]; \
-                    dst.pos = b.transform(src.pos); \
-                    dotransform; \
-                }
-
-            if(tangents)
+            vdata += voffset;
+            loopi(numverts)
             {
-                IPLOOP(vvertbump, bumpvert &bsrc = bumpverts[i],
-                {
-                    quat q = b.transform(bsrc.tangent);
-                    fixqtangent(q, bsrc.tangent.w);
-                    dst.tangent = q;
-                });
+                const vert &src = verts[i];
+                T &dst = vdata[i];
+                const dualquat &b = (src.interpindex < blendoffset ? bdata1 : bdata2)[src.interpindex];
+                dst.pos = b.transform(src.pos);
+                quat q = b.transform(src.tangent);
+                fixqtangent(q, src.tangent.w);
+                dst.tangent = q;
             }
-            else
-            {
-                IPLOOP(vvertn, ,
-                {
-                    dst.norm = b.transformnormal(src.norm);
-                });
-            }
-
-            #undef IPLOOP
         }
 
-        void setshader(Shader *s)
+        void setshader(Shader *s, int row)
         {
             skelmeshgroup *g = (skelmeshgroup *)group;
-            if(glaring)
-            {
-                if(!g->skel->usegpuskel) s->setvariant(0, 1);
-                else s->setvariant(min(maxweights, g->vweights), 1);
-            }
-            else if(!g->skel->usegpuskel) s->set();
-            else s->setvariant(min(maxweights, g->vweights)-1, 0);
+            if(row) s->setvariant(g->skel->usegpuskel ? min(maxweights, g->vweights) : 0, row);
+            else if(g->skel->usegpuskel) s->setvariant(min(maxweights, g->vweights)-1, 0);
+            else s->set();
         }
 
         void render(const animstate *as, skin &s, vbocacheentry &vc)
@@ -803,7 +771,7 @@ struct skelmodel : animmodel
             }
         }
 
-        int availgpubones() const { return min(maxvsuniforms - reservevpparams - 10, maxskelanimdata) / 2; }
+        int availgpubones() const { return min(maxvsuniforms, maxskelanimdata) / 2; }
         bool gpuaccelerate() const { return numframes && gpuskel && numgpubones<=availgpubones(); }
 
         float calcdeviation(const vec &axis, const vec &forward, const dualquat &pose1, const dualquat &pose2)
@@ -897,8 +865,8 @@ struct skelmodel : animmodel
             loopi(numbones) if(bones[i].interpindex>=0)
             {
                 INTERPBONE(i);
-                const boneinfo &b = bones[i];
                 d.normalize();
+                const boneinfo &b = bones[i];
                 if(b.interpparent<0) sc.bdata[b.interpindex] = d;
                 else sc.bdata[b.interpindex].mul(sc.bdata[b.interpparent], d);
                 float angle;
@@ -937,7 +905,7 @@ struct skelmodel : animmodel
             loopv(ragdoll->verts)
             {
                 ragdolldata::vert &dv = d.verts[i];
-                matrixstack[matrixpos].transform(vec(dv.pos).add(p->translate).mul(p->model->scale), dv.pos);
+                matrixstack[matrixpos].transform(vec(dv.pos).mul(p->model->scale), dv.pos);
             }
             loopv(ragdoll->reljoints)
             {
@@ -952,7 +920,7 @@ struct skelmodel : animmodel
         {
             if(!sc.bdata) sc.bdata = new dualquat[numinterpbones];
             sc.nextversion();
-            vec trans = vec(d.center).div(p->model->scale).add(p->translate);
+            vec trans = vec(d.center).div(p->model->scale).add(p->model->translate);
             loopv(ragdoll->joints)
             {
                 const ragdollskel::joint &j = ragdoll->joints[i];
@@ -978,11 +946,10 @@ struct skelmodel : animmodel
         {
             matrix4x3 t;
             t.mul(bones[tags[i].bone].base, tags[i].matrix);
-            t.translate(vec(p->translate).mul(p->model->scale));
             n.mul(m, t);
         }
 
-        void calctags(part *p, modelattach *attached, skelcacheentry *sc = NULL)
+        void calctags(part *p, skelcacheentry *sc = NULL)
         {
             loopv(p->links)
             {
@@ -993,8 +960,7 @@ struct skelmodel : animmodel
                 else q = bones[t.bone].base;
                 matrix4x3 m;
                 m.mul(q, t.matrix);
-                float resize = p->model->scale * (attached && attached->sizescale >= 0 ? attached->sizescale : sizescale);
-                m.d.add(p->translate).mul(resize);
+                m.d.mul(p->model->scale * sizescale);
                 l.matrix = m;
             }
         }
@@ -1097,6 +1063,8 @@ struct skelmodel : animmodel
         }
     };
 
+    static hashnameset<skeleton *> skeletons;
+
     struct skelmeshgroup : meshgroup
     {
         skeleton *skel;
@@ -1112,11 +1080,12 @@ struct skelmodel : animmodel
 
         ushort *edata;
         GLuint ebuf;
-        bool vtangents;
         int vlen, vertsize, vblends, vweights;
         uchar *vdata;
 
-        skelmeshgroup() : skel(NULL), edata(NULL), ebuf(0), vtangents(false), vlen(0), vertsize(0), vblends(0), vweights(0), vdata(NULL)
+        skelhitdata *hitdata;
+
+        skelmeshgroup() : skel(NULL), edata(NULL), ebuf(0), vlen(0), vertsize(0), vblends(0), vweights(0), vdata(NULL), hitdata(NULL)
         {
             memset(numblends, 0, sizeof(numblends));
         }
@@ -1138,9 +1107,10 @@ struct skelmodel : animmodel
                 if(vbocache[i].vbuf) glDeleteBuffers_(1, &vbocache[i].vbuf);
             }
             DELETEA(vdata);
+            deletehitdata();
         }
 
-        void shareskeleton(char *name)
+        void shareskeleton(const char *name)
         {
             if(!name)
             {
@@ -1149,7 +1119,6 @@ struct skelmodel : animmodel
                 return;
             }
 
-            static hashnameset<skeleton *> skeletons;
             if(skeletons.access(name)) skel = skeletons[name];
             else
             {
@@ -1171,16 +1140,13 @@ struct skelmodel : animmodel
 
         virtual skelanimspec *loadanim(const char *filename) { return NULL; }
 
-        void genvbo(bool tangents, vbocacheentry &vc)
+        void genvbo(vbocacheentry &vc)
         {
             if(!vc.vbuf) glGenBuffers_(1, &vc.vbuf);
             if(ebuf) return;
 
             vector<ushort> idxs;
 
-            if(tangents) loopv(meshes) ((skelmesh *)meshes[i])->calctangents();
-
-            vtangents = tangents;
             vlen = 0;
             vblends = 0;
             if(skel->numframes && !skel->usegpuskel)
@@ -1192,16 +1158,14 @@ struct skelmodel : animmodel
                     c.interpindex = c.weights[1] ? skel->numgpubones + vblends++ : -1;
                 }
 
-                vertsize = tangents ? sizeof(vvertbump) : sizeof(vvertn);
-                loopv(meshes) vlen += ((skelmesh *)meshes[i])->genvbo(idxs, vlen);
+                vertsize = sizeof(vvert);
+                looprendermeshes(skelmesh, m, vlen += m.genvbo(idxs, vlen));
                 DELETEA(vdata);
                 vdata = new uchar[vlen*vertsize];
-                #define FILLVDATA(type) do { \
-                    loopv(meshes) ((skelmesh *)meshes[i])->fillverts((type *)vdata); \
-                } while(0)
-                if(tangents) FILLVDATA(vvertbump);
-                else FILLVDATA(vvertn);
-                #undef FILLVDATA
+                looprendermeshes(skelmesh, m,
+                {
+                    m.fillverts((vvert *)vdata);
+                });
             }
             else
             {
@@ -1223,29 +1187,26 @@ struct skelmodel : animmodel
                 }
 
                 gle::bindvbo(vc.vbuf);
-                #define GENVBO(type, args) do { \
-                    vertsize = sizeof(type); \
-                    vector<type> vverts; \
-                    loopv(meshes) vlen += ((skelmesh *)meshes[i])->genvbo args; \
-                    glBufferData_(GL_ARRAY_BUFFER, vverts.length()*sizeof(type), vverts.getbuf(), GL_STATIC_DRAW); \
-                } while(0)
+                #define GENVBO(type, args) \
+                    do \
+                    { \
+                        vertsize = sizeof(type); \
+                        vector<type> vverts; \
+                        looprendermeshes(skelmesh, m, vlen += m.genvbo args); \
+                        glBufferData_(GL_ARRAY_BUFFER, vverts.length()*sizeof(type), vverts.getbuf(), GL_STATIC_DRAW); \
+                    } while(0)
                 #define GENVBOANIM(type) GENVBO(type, (idxs, vlen, vverts))
                 #define GENVBOSTAT(type) GENVBO(type, (idxs, vlen, vverts, htdata, htlen))
-                if(skel->numframes)
-                {
-                    if(tangents) GENVBOANIM(vvertbumpw);
-                    else GENVBOANIM(vvertnw);
-                }
+                if(skel->numframes) GENVBOANIM(vvertgw);
                 else
                 {
                     int numverts = 0, htlen = 128;
-                    loopv(meshes) numverts += ((skelmesh *)meshes[i])->numverts;
+                    looprendermeshes(skelmesh, m, numverts += m.numverts);
                     while(htlen < numverts) htlen *= 2;
                     if(numverts*4 > htlen*3) htlen *= 2;
                     int *htdata = new int[htlen];
                     memset(htdata, -1, htlen*sizeof(int));
-                    if(tangents) GENVBOSTAT(vvertbump);
-                    else GENVBOSTAT(vvertn);
+                    GENVBOSTAT(vvertg);
                     delete[] htdata;
                 }
                 #undef GENVBO
@@ -1260,50 +1221,36 @@ struct skelmodel : animmodel
             gle::clearebo();
         }
 
-        void bindvbo(const animstate *as, vbocacheentry &vc, skelcacheentry *sc = NULL, blendcacheentry *bc = NULL)
+        template<class T>
+        void bindbones(T *vverts) { if(enablebones) disablebones(); }
+        void bindbones(vvertgw *vverts) { meshgroup::bindbones(vverts->weights, vverts->bones, vertsize); }
+
+        template<class T>
+        void bindvbo(const animstate *as, part *p, vbocacheentry &vc)
         {
-            vvert *vverts = 0;
+            T *vverts = 0;
             bindpos(ebuf, vc.vbuf, &vverts->pos, vertsize);
             if(as->cur.anim&ANIM_NOSKIN)
             {
-                if(enabletc) disabletc();
-                if(enablenormals) disablenormals();
                 if(enabletangents) disabletangents();
+
+                if(p->alphatested()) bindtc(&vverts->tc, vertsize);
+                else if(enabletc) disabletc();
             }
             else
             {
-                if(vtangents)
-                {
-                    if(enablenormals) disablenormals();
-                    vvertbump *vvertbumps = 0;
-                    bindtangents(&vvertbumps->tangent, vertsize);
-                }
-                else
-                {
-                    if(enabletangents) disabletangents();
-                    vvertn *vvertns = 0;
-                    bindnormals(&vvertns->norm, vertsize);
-                }
+                bindtangents(&vverts->tangent, vertsize);
 
                 bindtc(&vverts->tc, vertsize);
             }
-            if(!sc || !skel->usegpuskel)
-            {   
-                if(enablebones) disablebones();
-            }
-            else
-            {
-                if(vtangents) 
-                {
-                    vvertbumpw *vvertbumpws = 0;
-                    bindbones(vvertbumpws->weights, vvertbumpws->bones, vertsize);
-                }
-                else
-                {
-                    vvertnw *vvertnws = 0;
-                    bindbones(vvertnws->weights, vvertnws->bones, vertsize);
-                }
-            }
+            bindbones(vverts);
+        }
+
+        void bindvbo(const animstate *as, part *p, vbocacheentry &vc, skelcacheentry *sc = NULL, blendcacheentry *bc = NULL)
+        {
+            if(!skel->numframes) bindvbo<vvertg>(as, p, vc);
+            else if(skel->usegpuskel) bindvbo<vvertgw>(as, p, vc);
+            else bindvbo<vvert>(as, p, vc);
         }
 
         void concattagtransform(part *p, int i, const matrix4x3 &m, matrix4x3 &n)
@@ -1328,15 +1275,14 @@ struct skelmodel : animmodel
             blendcombos.sort(blendcombo::sortcmp);
             int *remap = new int[blendcombos.length()];
             loopv(blendcombos) remap[blendcombos[i].interpindex] = i;
-            loopv(meshes)
+            looprendermeshes(skelmesh, m,
             {
-                skelmesh *m = (skelmesh *)meshes[i];
-                loopj(m->numverts)
+                loopj(m.numverts)
                 {
-                    vert &v = m->verts[j];
+                    vert &v = m.verts[j];
                     v.blend = remap[v.blend];
                 }
-            }
+            });
             delete[] remap;
         }
 
@@ -1374,6 +1320,16 @@ struct skelmodel : animmodel
             }
         }
 
+        static inline void blendbones(const dualquat *bdata, dualquat *dst, const blendcombo *c, int numblends)
+        {
+            loopi(numblends)
+            {
+                dualquat &d = dst[i];
+                blendbones(d, bdata, c[i]);
+                d.normalize();
+            }
+        }
+
         void cleanup()
         {
             loopi(MAXBLENDCACHE)
@@ -1390,6 +1346,7 @@ struct skelmodel : animmodel
             }
             if(ebuf) { glDeleteBuffers_(1, &ebuf); ebuf = 0; }
             if(skel) skel->cleanup(false);
+            cleanuphitdata();
         }
 
         #define SEARCHCACHE(cachesize, cacheentry, cache, reusecheck) \
@@ -1421,48 +1378,59 @@ struct skelmodel : animmodel
             SEARCHCACHE(MAXBLENDCACHE, blendcacheentry, blendcache, )
         }
 
+        void cleanuphitdata();
+        void deletehitdata();
+        void buildhitdata(const uchar *hitzones);
+        void intersect(skelhitdata *z, part *p, const skelmodel::skelcacheentry &sc, const vec &o, const vec &ray);
+
+        void intersect(const animstate *as, float pitch, const vec &axis, const vec &forward, dynent *d, part *p, const vec &o, const vec &ray)
+        {
+            if(!hitdata) return;
+
+            if(skel->shouldcleanup()) skel->cleanup();
+
+            skelcacheentry &sc = skel->checkskelcache(p, as, pitch, axis, forward, !d || !d->ragdoll || d->ragdoll->skel != skel->ragdoll || d->ragdoll->millis == lastmillis ? NULL : d->ragdoll);
+
+            intersect(hitdata, p, sc, o, ray);
+
+            skel->calctags(p, &sc);
+        }
+
         void preload(part *p)
         {
             if(!skel->canpreload()) return;
-            bool tangents = false;
-            loopv(p->skins) if(p->skins[i].tangents()) tangents = true;
             if(skel->shouldcleanup()) skel->cleanup();
-            else if(tangents!=vtangents) cleanup();
             skel->preload();
-            if(!vbocache->vbuf) genvbo(tangents, *vbocache);
+            if(!vbocache->vbuf) genvbo(*vbocache);
         }
 
-        void render(const animstate *as, float pitch, const vec &axis, const vec &forward, dynent *d, part *p, modelattach *attached)
+        void render(const animstate *as, float pitch, const vec &axis, const vec &forward, dynent *d, part *p)
         {
-            bool tangents = false;
-            loopv(p->skins) if(p->skins[i].tangents()) tangents = true;
             if(skel->shouldcleanup()) { skel->cleanup(); disablevbo(); }
-            else if(tangents!=vtangents) { cleanup(); disablevbo(); }
 
             if(!skel->numframes)
             {
                 if(!(as->cur.anim&ANIM_NORENDER))
                 {
-                    if(!vbocache->vbuf) genvbo(tangents, *vbocache);
-                    bindvbo(as, *vbocache);
-                    loopv(meshes)
+                    if(!vbocache->vbuf) genvbo(*vbocache);
+                    bindvbo(as, p, *vbocache);
+                    looprendermeshes(skelmesh, m,
                     {
-                        skelmesh *m = (skelmesh *)meshes[i];
-                        p->skins[i].bind(m, as, attached);
-                        m->render(as, p->skins[i], *vbocache);
-                    }
+                        p->skins[i].bind(m, as);
+                        m.render(as, p->skins[i], *vbocache);
+                    });
                 }
-                skel->calctags(p, attached);
+                skel->calctags(p);
                 return;
             }
 
-            skelcacheentry &sc = skel->checkskelcache(p, as, pitch, axis, forward, as->cur.anim&ANIM_RAGDOLL || !d || !d->ragdoll || d->ragdoll->skel != skel->ragdoll ? NULL : d->ragdoll);
+            skelcacheentry &sc = skel->checkskelcache(p, as, pitch, axis, forward, !d || !d->ragdoll || d->ragdoll->skel != skel->ragdoll || d->ragdoll->millis == lastmillis ? NULL : d->ragdoll);
             if(!(as->cur.anim&ANIM_NORENDER))
             {
                 int owner = &sc-&skel->skelcache[0];
                 vbocacheentry &vc = skel->usegpuskel ? *vbocache : checkvbocache(sc, owner);
                 vc.millis = lastmillis;
-                if(!vc.vbuf) genvbo(tangents, vc);
+                if(!vc.vbuf) genvbo(vc);
                 blendcacheentry *bc = NULL;
                 if(vblends)
                 {
@@ -1475,30 +1443,29 @@ struct skelmodel : animmodel
                         blendbones(sc, *bc);
                     }
                 }
-                if(!skel->usegpuskel && vc.owner!=owner)
+                if(!skel->usegpuskel && vc.owner != owner)
                 {
                     vc.owner = owner;
                     (animcacheentry &)vc = sc;
-                    loopv(meshes)
+                    looprendermeshes(skelmesh, m,
                     {
-                        skelmesh &m = *(skelmesh *)meshes[i];
-                        m.interpverts(sc.bdata, bc ? bc->bdata : NULL, tangents, vdata + m.voffset*vertsize, p->skins[i]);
-                    }
+                        m.interpverts(sc.bdata, bc ? bc->bdata : NULL, (vvert *)vdata, p->skins[i]);
+                    });
                     gle::bindvbo(vc.vbuf);
                     glBufferData_(GL_ARRAY_BUFFER, vlen*vertsize, vdata, GL_STREAM_DRAW);
                 }
 
-                bindvbo(as, vc, &sc, bc);
-                loopv(meshes)
+                bindvbo(as, p, vc, &sc, bc);
+
+                looprendermeshes(skelmesh, m,
                 {
-                    skelmesh *m = (skelmesh *)meshes[i];
-                    p->skins[i].bind(m, as, attached);
+                    p->skins[i].bind(m, as);
                     if(skel->usegpuskel) skel->setgpubones(sc, bc, vblends);
-                    m->render(as, p->skins[i], vc);
-                }
+                    m.render(as, p->skins[i], vc);
+                });
             }
 
-            skel->calctags(p, attached, &sc);
+            skel->calctags(p, &sc);
 
             if(as->cur.anim&ANIM_RAGDOLL && skel->ragdoll && !d->ragdoll)
             {
@@ -1507,7 +1474,30 @@ struct skelmodel : animmodel
                 d->ragdoll->init(d);
             }
         }
+
+        virtual bool load(const char *name, float smooth) = 0;
     };
+
+    virtual skelmeshgroup *newmeshes() = 0;
+
+    meshgroup *loadmeshes(const char *name, const char *skelname = NULL, float smooth = 2)
+    {
+        skelmeshgroup *group = newmeshes();
+        group->shareskeleton(skelname);
+        if(!group->load(name, smooth)) { delete group; return NULL; }
+        return group;
+    }
+
+    meshgroup *sharemeshes(const char *name, const char *skelname = NULL, float smooth = 2)
+    {
+        if(!meshgroups.access(name))
+        {
+            meshgroup *group = loadmeshes(name, skelname, smooth);
+            if(!group) return NULL;
+            meshgroups.add(group);
+        }
+        return meshgroups[name];
+    }
 
     struct animpartmask
     {
@@ -1590,10 +1580,10 @@ struct skelmodel : animmodel
     {
     }
 
-    int linktype(animmodel *m) const
+    int linktype(animmodel *m, part *p) const
     {
         return type()==m->type() &&
-            ((skelmeshgroup *)parts[0]->meshes)->skel == ((skelmeshgroup *)m->parts[0]->meshes)->skel ?
+            ((skelmeshgroup *)parts[0]->meshes)->skel == ((skelmeshgroup *)p->meshes)->skel ?
                 LINK_REUSE :
                 LINK_TAG;
     }
@@ -1607,6 +1597,8 @@ struct skelmodel : animmodel
         return *p;
     }
 };
+
+hashnameset<skelmodel::skeleton *> skelmodel::skeletons;
 
 struct skeladjustment
 {
@@ -1627,9 +1619,23 @@ struct skeladjustment
 template<class MDL> struct skelloader : modelloader<MDL>
 {
     static vector<skeladjustment> adjustments;
+    static vector<uchar> hitzones;
+
+    void flushpart()
+    {
+        if(MDL::loading && MDL::loading->parts.length())
+        {
+            skelmodel::skelpart *p = (skelmodel::skelpart *)MDL::loading->parts.last();
+            skelmodel::skelmeshgroup *m = (skelmodel::skelmeshgroup *)p->meshes;
+            if(hitzones.length() && m) m->buildhitdata(hitzones.getbuf());
+        }
+        adjustments.setsize(0);
+        hitzones.setsize(0);
+    }
 };
 
 template<class MDL> vector<skeladjustment> skelloader<MDL>::adjustments;
+template<class MDL> vector<uchar> skelloader<MDL>::hitzones;
 
 template<class MDL> struct skelcommands : modelcommands<MDL, struct MDL::skelmesh>
 {
@@ -1649,12 +1655,12 @@ template<class MDL> struct skelcommands : modelcommands<MDL, struct MDL::skelmes
         if(!MDL::loading) { conoutf("\frNot loading an %s", MDL::formatname()); return; }
         defformatstring(filename, "%s/%s", MDL::dir, meshfile);
         part &mdl = MDL::loading->addpart();
-        mdl.pitchscale = mdl.pitchoffset = mdl.pitchmin = mdl.pitchmax = 0;
         MDL::adjustments.setsize(0);
-        mdl.meshes = MDL::loading->sharemeshes(path(filename), skelname[0] ? skelname : NULL, double(*smooth > 0 ? cos(clamp(*smooth, 0.0f, 180.0f)*RAD) : 2));
+        mdl.meshes = MDL::loading->sharemeshes(path(filename), skelname[0] ? skelname : NULL, *smooth > 0 ? cosf(clamp(*smooth, 0.0f, 180.0f)*RAD) : 2);
         if(!mdl.meshes) conoutf("\frCould not load %s", filename);
         else
         {
+            if(mdl.meshes && ((meshgroup *)mdl.meshes)->skel->numbones > 0) mdl.disablepitch();  
             mdl.initanimparts();
             mdl.initskins();
         }
@@ -1837,6 +1843,34 @@ template<class MDL> struct skelcommands : modelcommands<MDL, struct MDL::skelmes
         MDL::adjustments[i] = skeladjustment(*yaw, *pitch, *roll, vec(*tx/4, *ty/4, *tz/4));
     }
 
+    static void sethitzone(int *id, char *maskstr)
+    {
+        if(!MDL::loading || MDL::loading->parts.empty()) { conoutf("\frNot loading an %s", MDL::formatname()); return; }
+        if(*id >= 0x80) { conoutf("\frInvalid hit zone id %d", *id); return; }
+
+        part *p = (part *)MDL::loading->parts.last();
+        meshgroup *m = (meshgroup *)p->meshes;
+        if(!m || m->hitdata) return;
+
+        vector<char *> bonestrs;
+        explodelist(maskstr, bonestrs);
+        vector<ushort> bonemask;
+        loopv(bonestrs)
+        {
+            char *bonestr = bonestrs[i];
+            int bone = p->meshes ? ((meshgroup *)p->meshes)->skel->findbone(bonestr[0]=='!' ? bonestr+1 : bonestr) : -1;
+            if(bone<0) { conoutf("\frCould not find bone %s for hit zone mask [%s]", bonestr, maskstr); bonestrs.deletearrays(); return; }
+            bonemask.add(bone | (bonestr[0]=='!' ? BONEMASK_NOT : 0));
+        }
+        bonestrs.deletearrays();
+        if(bonemask.empty()) return;
+        bonemask.sort();
+        bonemask.add(BONEMASK_END);
+
+        while(MDL::hitzones.length() < m->skel->numbones) MDL::hitzones.add(0xFF);
+        m->skel->applybonemask(bonemask.getbuf(), MDL::hitzones.getbuf(), *id < 0 ? 0xFF : *id);
+    }
+
     skelcommands()
     {
         if(MDL::multiparted()) this->modelcommand(loadpart, "load", "ssf");
@@ -1844,7 +1878,8 @@ template<class MDL> struct skelcommands : modelcommands<MDL, struct MDL::skelmes
         this->modelcommand(setpitch, "pitch", "sffff");
         this->modelcommand(setpitchtarget, "pitchtarget", "ssiff");
         this->modelcommand(setpitchcorrect, "pitchcorrect", "ssfff");
-        if(MDL::animated())
+        this->modelcommand(sethitzone, "hitzone", "is");
+        if(MDL::cananimate())
         {
             this->modelcommand(setanim, "anim", "ssfiii");
             this->modelcommand(setanimpart, "animpart", "s");

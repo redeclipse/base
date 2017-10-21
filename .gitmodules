@@ -22,6 +22,10 @@
 	path = data/crosshairs
 	url = https://github.com/red-eclipse/crosshairs.git
 	branch = master
+[submodule "decals"]
+	path = data/decals
+	url = https://github.com/red-eclipse/decals.git
+	branch = master
 [submodule "dziq"]
 	path = data/dziq
 	url = https://github.com/red-eclipse/dziq.git

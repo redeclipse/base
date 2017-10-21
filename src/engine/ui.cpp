@@ -738,7 +738,7 @@ namespace UI
 
         void adjustlayout()
         {
-            float aspect = float(screenw)/screenh;
+            float aspect = float(hudw)/hudh;
             ph = max(max(h, w/aspect), 1.0f);
             pw = aspect*ph;
             Object::adjustlayout(0, 0, pw, ph);
@@ -768,16 +768,16 @@ namespace UI
         {
             vec2 s1 = vec2(x1, y2).mul(sscale).add(soffset),
                  s2 = vec2(x2, y1).mul(sscale).add(soffset);
-            sx1 = int(floor(s1.x*screenw + 0.5f));
-            sy1 = int(floor(s1.y*screenh + 0.5f));
-            sx2 = int(floor(s2.x*screenw + 0.5f));
-            sy2 = int(floor(s2.y*screenh + 0.5f));
+            sx1 = int(floor(s1.x*hudw + 0.5f));
+            sy1 = int(floor(s1.y*hudh + 0.5f));
+            sx2 = int(floor(s2.x*hudw + 0.5f));
+            sy2 = int(floor(s2.y*hudh + 0.5f));
             if(clip)
             {
-                sx1 = clamp(sx1, 0, screenw);
-                sy1 = clamp(sy1, 0, screenh);
-                sx2 = clamp(sx2, 0, screenw);
-                sy2 = clamp(sy2, 0, screenh);
+                sx1 = clamp(sx1, 0, hudw);
+                sy1 = clamp(sy1, 0, hudh);
+                sx2 = clamp(sx2, 0, hudw);
+                sy2 = clamp(sy2, 0, hudh);
             }
         }
     };
@@ -971,6 +971,7 @@ namespace UI
                 if(!children.inrange(i)) break;
                 if(children[i] != w) i--;
             });
+            resetstate(); // IMPORTED
         }
 
         bool show(Window *w)
@@ -1065,9 +1066,9 @@ namespace UI
             {
                 if(hasexcl && !w->exclusive) continue;
                 if(w->windowflags&WINDOW_TIP) // follows cursor
-                    w->setpos((cursorx*float(screenw)/float(screenh))-(w->w*cursorx), uitipoffset >= 0 ? cursory-w->h-uitipoffset : cursory-uitipoffset);
+                    w->setpos((cursorx*float(hudw)/float(hudh))-(w->w*cursorx), uitipoffset >= 0 ? cursory-w->h-uitipoffset : cursory-uitipoffset);
                 else if(w->windowflags&WINDOW_POPUP && !w->overridepos)
-                    w->setpos((cursorx*float(screenw)/float(screenh))-(w->w*cursorx), cursory-w->h*0.5f);
+                    w->setpos((cursorx*float(hudw)/float(hudh))-(w->w*cursorx), cursory-w->h*0.5f);
             });
             loopwindows(w,
             {
@@ -1103,7 +1104,7 @@ namespace UI
     ICOMMAND(0, uisetpos, "ff", (float *xpos, float *ypos), { if(window) { window->setpos(*xpos, *ypos); } });
     ICOMMAND(0, uiresetpos, "", (), { if(window) { window->resetpos(); } });
 
-    ICOMMAND(0, uicursorx, "", (), floatret(cursorx*float(screenw)/screenh));
+    ICOMMAND(0, uicursorx, "", (), floatret(cursorx*float(hudw)/hudh));
     ICOMMAND(0, uicursory, "", (), floatret(cursory));
 
     ICOMMAND(0, uicursortype, "b", (int *val), { if(*val >= 0) cursortype = clamp(*val, 0, CURSOR_MAX-1); intret(cursortype); });
@@ -3842,14 +3843,16 @@ namespace UI
             model *m = loadmodel(name);
             if(m)
             {
-                entitylight light;
-                light.color = colors[0].tocolor();
-                light.dir = vec(0, -1, 2).normalize();
+                //entitylight light;
+                //light.color = colors[0].tocolor();
+                //light.dir = vec(0, -1, 2).normalize();
+                vec4 colorscale = colors[0].tocolor4();
+                colorscale.a *= blend;
                 vec center, radius;
                 m->boundbox(center, radius);
                 float yaw;
                 vec o = calcmodelpreviewpos(radius, yaw).sub(center);
-                rendermodel(&light, name, anim|ANIM_NOTRANS, o, yaw, 0, 0, 0, NULL, NULL, 0, 0, blend*(colors[0].a/255.f), scale);
+                rendermodel(name, anim, o, yaw, 0, 0, 0, NULL, NULL, 0, 0, scale, colorscale);
             }
             if(clipstack.length()) clipstack.last().scissor();
             modelpreview::end();
@@ -3975,7 +3978,7 @@ namespace UI
                 if(!slot.thumbnail)
                 {
                     if(totalmillis - lastthumbnail < uislotviewtime) return;
-                    loadthumbnail(slot);
+                    slot.loadthumbnail();
                     lastthumbnail = totalmillis;
                 }
                 if(slot.thumbnail != notexture) t = slot.thumbnail;
@@ -3996,7 +3999,8 @@ namespace UI
             float xt = min(1.0f, t->xs/float(t->ys)), yt = min(1.0f, t->ys/float(t->xs));
             loopk(4) { tc[k].x = tc[k].x/xt - float(xoff)/t->xs; tc[k].y = tc[k].y/yt - float(yoff)/t->ys; }
             glBindTexture(GL_TEXTURE_2D, t->id);
-            if(slot.loaded) gle::colorf(vslot.colorscale.x*colors[0].r/255.f, vslot.colorscale.y*colors[0].g/255.f, vslot.colorscale.z*colors[0].b/255.f, colors[0].a/255.f);
+            vec colorscale = vslot.getcolorscale();
+            if(slot.loaded) gle::colorf(colorscale.x*colors[0].r/255.f, colorscale.y*colors[0].g/255.f, colorscale.z*colors[0].b/255.f, colors[0].a/255.f);
             else gle::colorf(1, 1, 1);
             quad(x, y, w, h, tc);
             if(detailtex)
@@ -4015,8 +4019,9 @@ namespace UI
             }
             if(layertex)
             {
+                vec layerscale = layer->getcolorscale();
                 glBindTexture(GL_TEXTURE_2D, layertex->id);
-                gle::colorf(layer->colorscale.x*colors[0].r/255.f, layer->colorscale.y*colors[0].g/255.f, layer->colorscale.z*colors[0].g/255.f, colors[0].a/255.f);
+                gle::colorf(layerscale.x*colors[0].r/255.f, layerscale.y*colors[0].g/255.f, layerscale.z*colors[0].g/255.f, colors[0].a/255.f);
                 quad(x, y, w/2, h/2, tc);
             }
         }
@@ -4089,7 +4094,7 @@ namespace UI
             {
                 vec pos = vec(camera1->o).sub(minimapcenter).mul(minimapscale).add(0.5f), dir(camera1->yaw*RAD, 0.f);
                 int limit = hud::radarlimit();
-                float scale = min(dist > 0 ? dist : float(getworldsize()), limit > 0 ? limit : float(getworldsize())),
+                float scale = min(dist > 0 ? dist : float(worldsize), limit > 0 ? limit : float(worldsize)),
                       qw = w*0.5f*border, qh = h*0.5f*border, rw = w*0.5f-qw, rh = h*0.5f-qh;
                 colors[1].init();
                 gle::defvertex(2);
@@ -4470,7 +4475,7 @@ namespace UI
     {
         uitextscale = 1.0f/uitextrows;
 
-        int tw = screenw, th = screenh;
+        int tw = hudw, th = hudh;
         if(forceaspect) tw = int(ceil(th*forceaspect));
         gettextres(tw, th);
     }

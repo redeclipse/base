@@ -90,19 +90,19 @@ namespace mpr
             return orient.transposedtransform(localsupportpoint(orient.transform(n))).add(ent->o);
         }
 
-        float supportcoordneg(float a, float b, float c) const
+        float supportcoordneg(const vec &p) const
         {
-            return localsupportpoint(vec(-a, -b, -c)).dot(vec(a, b, c));
+            return localsupportpoint(vec(p).neg()).dot(p);
         }
-        float supportcoord(float a, float b, float c) const
+        float supportcoord(const vec &p) const
         {
-            return localsupportpoint(vec(a, b, c)).dot(vec(a, b, c));
+            return localsupportpoint(p).dot(p);
         }
 
-        float left() const { return supportcoordneg(orient.a.x, orient.b.x, orient.c.x) + ent->o.x; }
-        float right() const { return supportcoord(orient.a.x, orient.b.x, orient.c.x) + ent->o.x; }
-        float back() const { return supportcoordneg(orient.a.y, orient.b.y, orient.c.y) + ent->o.y; }
-        float front() const { return supportcoord(orient.a.y, orient.b.y, orient.c.y) + ent->o.y; }
+        float left() const { return supportcoordneg(orient.a) + ent->o.x; }
+        float right() const { return supportcoord(orient.a) + ent->o.x; }
+        float back() const { return supportcoordneg(orient.b) + ent->o.y; }
+        float front() const { return supportcoord(orient.b) + ent->o.y; }
         float bottom() const { return ent->o.z - ent->height; }
         float top() const { return ent->o.z + ent->aboveeye; }
     };
@@ -188,8 +188,8 @@ namespace mpr
         Model(const vec &ent, const vec &center, const vec &radius, int yaw, int pitch, int roll) : o(ent), radius(radius)
         {
             orient.identity();
-            if(pitch) orient.rotate_around_y(sincosmod360(pitch));
-            if(roll) orient.rotate_around_x(sincosmod360(roll));
+            if(roll) orient.rotate_around_y(sincosmod360(roll));
+            if(pitch) orient.rotate_around_x(sincosmod360(-pitch));
             if(yaw) orient.rotate_around_z(sincosmod360(-yaw));
             o.add(orient.transposedtransform(center));
         }

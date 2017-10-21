@@ -83,7 +83,7 @@ namespace tiger
         chunk state[3] = { 0x0123456789ABCDEFULL, 0xFEDCBA9876543210ULL, 0xF096A5B4C3B2E187ULL };
         uchar temp[64];
 
-        if(!*(const uchar *)&islittleendian) loopj(64) temp[j^7] = str[j];
+        if(!islittleendian()) loopj(64) temp[j^7] = str[j];
         else loopj(64) temp[j] = str[j];
         loopi(1024) loop(col, 8) ((uchar *)&sboxes[i])[col] = i&0xFF;
 
@@ -115,7 +115,7 @@ namespace tiger
         int i = length;
         for(; i >= 64; i -= 64, str += 64)
         {
-            if(!*(const uchar *)&islittleendian)
+            if(!islittleendian())
             {
                 loopj(64) temp[j^7] = str[j];
                 compress((chunk *)temp, val.chunks);
@@ -124,7 +124,7 @@ namespace tiger
         }
 
         int j;
-        if(!*(const uchar *)&islittleendian)
+        if(!islittleendian())
         {
             for(j = 0; j < i; j++) temp[j^7] = str[j];
             temp[j^7] = 0x01;
@@ -146,7 +146,7 @@ namespace tiger
         while(j < 56) temp[j++] = 0;
         *(chunk *)(temp+56) = (chunk)length<<3;
         compress((chunk *)temp, val.chunks);
-        if(!*(const uchar *)&islittleendian)
+        if(!islittleendian())
         {
             loopk(3)
             {
@@ -299,7 +299,7 @@ template<int BI_DIGITS> struct bigint
     {
         copyshrinkdigits(y, n/BI_DIGIT_BITS);
     }
-    
+
     template<int X_DIGITS, int Y_DIGITS> bigint &mul(const bigint<X_DIGITS> &x, const bigint<Y_DIGITS> &y)
     {
         if(!x.len || !y.len) { len = 0; return *this; }
@@ -363,9 +363,9 @@ template<int BI_DIGITS> struct bigint
     }
     void zerobits(int i, int n)
     {
-        zerodigits(i/BI_DIGIT_BITS, n/BI_DIGIT_BITS); 
+        zerodigits(i/BI_DIGIT_BITS, n/BI_DIGIT_BITS);
     }
-    
+
     template<int Y_DIGITS> void copydigits(int to, const bigint<Y_DIGITS> &y, int from, int n)
     {
         int avail = min(y.len-from, n);
@@ -529,7 +529,7 @@ struct gfield : gfint
                 s.copybits(96, result, 352, 160);
                 s.shrinkdigits(GF_DIGITS);
                 add(s); add(s); // S1
-            
+
                 if(result.morebits(384))
                 {
                     //s.zerobits(0, 96);
@@ -544,11 +544,11 @@ struct gfield : gfint
             s.copybits(192, result, 448, 64);
             s.shrinkdigits(GF_DIGITS);
             add(s); // S3
-           
+
             s.copybits(0, result, 288, 96);
             s.copybits(96, result, 416, 96);
             s.dupbits(192, 96, 32);
-            s.copybits(224, result, 256, 32); 
+            s.copybits(224, result, 256, 32);
             s.shrinkdigits(GF_DIGITS);
             add(s); // S4
 
