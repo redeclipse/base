@@ -6,49 +6,59 @@ APPSERVER=$(APPNAME)_server
 CXXFLAGS?= -O3 -fomit-frame-pointer -ffast-math
 override CXXFLAGS+= -Wall -fsigned-char -fno-exceptions -fno-rtti
 
+ifneq (,$(TOOLSET_PREFIX))
+	# The user has supplied us with the exact toolset, so let's use it
+
+	override CXX=$(TOOLSET_PREFIX)g++
+	override CC=$(TOOLSET_PREFIX)gcc
+endif
+
 PLATFORM= $(shell $(CC) -dumpmachine)
 
 RMFLAGS= -fv
 
 ifeq (,$(PLATFORM_BIN))
-ifneq (,$(findstring arm,$(PLATFORM)))
-PLATFORM_BIN=arm
-else
-ifneq (,$(findstring 64,$(PLATFORM)))
-PLATFORM_BIN=amd64
-else
-PLATFORM_BIN=x86
-endif
-endif
+	ifneq (,$(findstring arm,$(PLATFORM)))
+		PLATFORM_BIN=arm
+	else
+		ifneq (,$(findstring 64,$(PLATFORM)))
+			PLATFORM_BIN=amd64
+		else
+			PLATFORM_BIN=x86
+		endif
+	endif
 endif
 
 ifeq (,$(INSTDIR))
-INSTDIR=../bin/$(PLATFORM_BIN)
+	INSTDIR=../bin/$(PLATFORM_BIN)
 endif
 
-TOOLSET_PREFIX=
-ifneq (,$(findstring cross,$(PLATFORM)))
-ifneq (,$(findstring 64,$(PLATFORM)))
-TOOLSET_PREFIX=x86_64-w64-mingw32-
-else
-TOOLSET_PREFIX=i686-w64-mingw32-
-endif
-CXX=g++
-CC=gcc
-endif
+ifeq (,$(TOOLSET_PREFIX))
+	# Try to figure out the toolset prefix on our own, if we haven't received it from the user
 
-CXX_TEMP:=$(CXX)
-CC_TEMP:=$(CC)
-override CXX=$(TOOLSET_PREFIX)$(CXX_TEMP)
-override CC=$(TOOLSET_PREFIX)$(CC_TEMP)
+	ifneq (,$(findstring cross,$(PLATFORM)))
+		ifneq (,$(findstring 64,$(PLATFORM)))
+			TOOLSET_PREFIX=x86_64-w64-mingw32-
+		else
+			TOOLSET_PREFIX=i686-w64-mingw32-
+		endif
+		CXX=g++
+		CC=gcc
+	endif
+
+	CXX_TEMP:=$(CXX)
+	CC_TEMP:=$(CC)
+	override CXX=$(TOOLSET_PREFIX)$(CXX_TEMP)
+	override CC=$(TOOLSET_PREFIX)$(CC_TEMP)
+endif
 
 INCLUDES= -I. -Ishared -Iengine -Igame -Ienet/include -Isupport
 
 STRIP=
 ifeq (,$(findstring -g,$(CXXFLAGS)))
-ifeq (,$(findstring -pg,$(CXXFLAGS)))
-	STRIP=strip
-endif
+	ifeq (,$(findstring -pg,$(CXXFLAGS)))
+		STRIP=strip
+	endif
 endif
 STRIP_TEMP:=$(STRIP)
 override STRIP=$(TOOLSET_PREFIX)$(STRIP_TEMP)
@@ -58,45 +68,47 @@ CP=cp
 MKDIR=mkdir -p
 
 ifneq (,$(findstring mingw,$(PLATFORM)))
-APPMODIFIER=_windows
-BIN_SUFFIX=.exe
-WINDRES=windres
-WINDRES_TEMP:=$(WINDRES)
-WINLIB=lib/$(PLATFORM_BIN)
-WINDLL=../bin/$(PLATFORM_BIN)
-override WINDRES=$(TOOLSET_PREFIX)$(WINDRES_TEMP)
-ifneq (,$(findstring 64,$(PLATFORM)))
-override WINDRES+= -F pe-x86-64
+	APPMODIFIER=_windows
+	BIN_SUFFIX=.exe
+	WINDRES=windres
+	WINDRES_TEMP:=$(WINDRES)
+	WINLIB=lib/$(PLATFORM_BIN)
+	WINDLL=../bin/$(PLATFORM_BIN)
+	override WINDRES=$(TOOLSET_PREFIX)$(WINDRES_TEMP)
+	ifneq (,$(findstring 64,$(PLATFORM)))
+		override WINDRES+= -F pe-x86-64
+	else
+		override WINDRES+= -F pe-i386
+	endif
+	STD_LIBS= -static-libgcc -static-libstdc++
+	CLIENT_INCLUDES= $(INCLUDES) -Iinclude
+	CLIENT_LIBS= -mwindows $(STD_LIBS) -L$(WINDLL) -L$(WINLIB) -lSDL2 -lSDL2_image -lSDL2_mixer -lzlib1 -lopengl32 -lenet -lws2_32 -lwinmm
 else
-override WINDRES+= -F pe-i386
+	APPMODIFIER=
+	ifneq (,$(findstring linux,$(PLATFORM)))
+		BIN_SUFFIX=_linux
+	else
+		ifneq (,$(findstring bsd,$(PLATFORM)))
+			BIN_SUFFIX=_bsd
+			ifneq (,$(findstring openbsd,$(PLATFORM)))
+				RMFLAGS= -f
+			endif
+		else
+			BIN_SUFFIX=_native
+		endif
+	endif
+	CLIENT_INCLUDES= $(INCLUDES) -I/usr/X11R6/include `sdl2-config --cflags`
+	CLIENT_LIBS= -Lenet -lenet -L/usr/X11R6/lib -lX11 `sdl2-config --libs` -lSDL2_image -lSDL2_mixer -lz -lGL
 endif
-STD_LIBS= -static-libgcc -static-libstdc++
-CLIENT_INCLUDES= $(INCLUDES) -Iinclude
-CLIENT_LIBS= -mwindows $(STD_LIBS) -L$(WINDLL) -L$(WINLIB) -lSDL2 -lSDL2_image -lSDL2_mixer -lzlib1 -lopengl32 -lenet -lws2_32 -lwinmm
-else
-APPMODIFIER=
+
 ifneq (,$(findstring linux,$(PLATFORM)))
-BIN_SUFFIX=_linux
+	CLIENT_LIBS+= -lrt
 else
-ifneq (,$(findstring bsd,$(PLATFORM)))
-BIN_SUFFIX=_bsd
-ifneq (,$(findstring openbsd,$(PLATFORM)))
-RMFLAGS= -f
+	ifneq (,$(findstring gnu,$(PLATFORM)))
+		CLIENT_LIBS+= -lrt
+	endif
 endif
-else
-BIN_SUFFIX=_native
-endif
-endif
-CLIENT_INCLUDES= $(INCLUDES) -I/usr/X11R6/include `sdl2-config --cflags`
-CLIENT_LIBS= -Lenet -lenet -L/usr/X11R6/lib -lX11 `sdl2-config --libs` -lSDL2_image -lSDL2_mixer -lz -lGL
-endif
-ifneq (,$(findstring linux,$(PLATFORM)))
-CLIENT_LIBS+= -lrt
-else
-ifneq (,$(findstring gnu,$(PLATFORM)))
-CLIENT_LIBS+= -lrt
-endif
-endif
+
 CLIENT_OBJS= \
 	shared/crypto.o \
 	shared/geom.o \
@@ -161,12 +173,13 @@ CLIENT_OBJS= \
 CLIENT_PCH= shared/cube.h.gch engine/engine.h.gch
 
 ifneq (,$(findstring mingw,$(PLATFORM)))
-SERVER_INCLUDES= -DSTANDALONE $(INCLUDES) -Iinclude
-SERVER_LIBS= -mwindows $(STD_LIBS) -L$(WINDLL) -L$(WINLIB) -lzlib1 -lenet -lws2_32 -lwinmm
+	SERVER_INCLUDES= -DSTANDALONE $(INCLUDES) -Iinclude
+	SERVER_LIBS= -mwindows $(STD_LIBS) -L$(WINDLL) -L$(WINLIB) -lzlib1 -lenet -lws2_32 -lwinmm
 else
-SERVER_INCLUDES= -DSTANDALONE $(INCLUDES)
-SERVER_LIBS= -Lenet -lenet -lz
+	SERVER_INCLUDES= -DSTANDALONE $(INCLUDES)
+	SERVER_LIBS= -Lenet -lenet -lz
 endif
+
 SERVER_OBJS= \
 	shared/crypto-standalone.o \
 	shared/geom-standalone.o \
