@@ -1409,7 +1409,7 @@ matrix4 cammatrix, projmatrix, camprojmatrix, invcammatrix, invcamprojmatrix, in
 FVAR(0, nearplane, 0.01f, 0.54f, 2.0f);
 
 FVAR(0, avatardepth, 0, 0.7f, 1);
-void renderavatar(bool early)
+void renderavatar()
 {
     matrix4 oldprojmatrix = nojittermatrix;
     projmatrix.perspective(curfov, aspect, nearplane, farplane);
@@ -1417,7 +1417,7 @@ void renderavatar(bool early)
     setcamprojmatrix(false);
 
     enableavatarmask();
-    game::renderavatar(early);
+    game::renderavatar();
     disableavatarmask();
 
     projmatrix = oldprojmatrix;
@@ -2278,8 +2278,8 @@ void gl_drawview()
     GLERROR;
 
     // render avatar after AO to avoid weird contact shadows
-    //renderavatar();
-    //GLERROR;
+    renderavatar();
+    GLERROR;
 
     // render grass after AO to avoid disturbing shimmering patterns
     generategrass();

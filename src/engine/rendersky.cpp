@@ -470,15 +470,23 @@ void drawskybox(bool clear)
 
     if(clampsky) glDepthRange(1, 1);
 
+    #if 0 // BROKEN
     if(clear || (!skybox[0] && (!atmo || atmoblend < 1)))
     {
-        vec skyboxcolor = skycolour.tocolor().mul(ldrscale);
-        glClearColor(skyboxcolor.x, skyboxcolor.y, skyboxcolor.z, 0);
+        vec color = skybgcolour.tocolor().mul(ldrscale);
+        glClearColor(color.x, color.y, color.z, 0);
         glClear(GL_COLOR_BUFFER_BIT);
     }
 
     if(skybox[0])
     {
+        bool blendsky = !skybox[0] || !sky[0] || sky[0]->type&Texture::ALPHA;
+        if(blendsky)
+        {
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        }
+
         if(ldrscale < 1 && (skyoverbrightmin != 1 || (skyoverbright > 1 && skyoverbrightthreshold < 1)))
         {
             SETSHADER(skyoverbright);
@@ -486,7 +494,7 @@ void drawskybox(bool clear)
         }
         else SETSHADER(skybox);
 
-        gle::color(skycolour);
+        gle::color(skycolour.tocolor(), skyblend);
 
         matrix4 skymatrix = cammatrix, skyprojmatrix;
         skymatrix.settranslation(0, 0, 0);
@@ -495,6 +503,8 @@ void drawskybox(bool clear)
         LOCALPARAM(skymatrix, skyprojmatrix);
 
         drawenvbox(sky);
+
+        if(blendsky) glDisable(GL_BLEND);
     }
 
     if(atmo && (!skybox[0] || atmoblend < 1))
@@ -583,6 +593,11 @@ void drawskybox(bool clear)
     {
         drawfogdome();
     }
+    #else
+    vec color = skybgcolour.tocolor().mul(ldrscale);
+    glClearColor(color.x, color.y, color.z, 0);
+    glClear(GL_COLOR_BUFFER_BIT);
+    #endif
 
     if(clampsky) glDepthRange(0, 1);
 
@@ -599,6 +614,6 @@ void drawskybox(bool clear)
 
 bool hasskybox()
 {
-    return skybox[0] || atmo || fogdomemax || cloudbox[0] || cloudlayer[0];
+    return skybox[0] || atmo || fogdomemax || cloudbox[0] || cloudlayer[0] || envlayer[0];
 }
 

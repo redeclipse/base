@@ -3005,7 +3005,7 @@ namespace game
                 anims.add(i);
     }
 
-    void renderclient(gameent *d, int third, float trans, float size, modelattach *attachments, bool secondary, int animflags, int animdelay, int lastaction, bool early)
+    void renderclient(gameent *d, int third, float trans, float size, modelattach *attachments, bool secondary, int animflags, int animdelay, int lastaction)
     {
         int idx = third == 1 && d->headless && !nogore && headlessmodels ? 3 : third;
         const char *mdl = playertypes[forceplayermodel >= 0 ? forceplayermodel : 0][idx];
@@ -3120,7 +3120,7 @@ namespace game
             }
         }
 
-        if(third == 1 && testanims && d == focus) yaw = 0; else yaw += 90;
+        if(third == 1 && testanims && d == focus) yaw = 0;
         if(d->ragdoll && (deathanim < 2 || (anim&ANIM_INDEX)!=ANIM_DYING)) cleanragdoll(d);
         if(!((anim>>ANIM_SECONDARY)&ANIM_INDEX)) anim |= (ANIM_IDLE|ANIM_LOOP)<<ANIM_SECONDARY;
 
@@ -3128,7 +3128,6 @@ namespace game
         if(d->actortype >= A_ENEMY) flags |= MDL_CULL_DIST;
         if(d != focus || (d != player1 ? fullbrightfocus&1 : fullbrightfocus&2)) flags |= MDL_FULLBRIGHT;
         if(d != focus && !(anim&ANIM_RAGDOLL)) flags |= MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_CULL_QUERY;
-        if(early) flags |= MDL_NORENDER;
         if(drawtex == DRAWTEX_MODELPREVIEW) flags &= ~(MDL_FULLBRIGHT|MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_CULL_QUERY|MDL_CULL_DIST);
         dynent *e = third ? (third != 2 ? (dynent *)d : (dynent *)&bodymodel) : (dynent *)&avatarmodel;
         #if 0
@@ -3287,15 +3286,10 @@ namespace game
         }
     }
 
-    void renderplayer(gameent *d, int third, float trans, float size, bool early = false)
+    void renderplayer(gameent *d, int third, float trans, float size)
     {
         if(d->state == CS_SPECTATOR) return;
-        if(trans <= 0.f || (d == focus && !(third == 1 ? thirdpersonmodel : firstpersonmodel)))
-        {
-            if(d->state == CS_ALIVE && (early || d != focus))
-                trans = 1e-16f; // we need tag_muzzle/tag_waist
-            else return; // screw it, don't render them
-        }
+        if(trans <= 0.f || (d == focus && !(third == 1 ? thirdpersonmodel : firstpersonmodel))) trans = 1e-16f; // we need tag_muzzle/tag_waist
         int weap = d->weapselect, lastaction = 0, animflags = ANIM_IDLE|ANIM_LOOP, weapflags = animflags, weapaction = 0, animdelay = 0;
         bool secondary = false, showweap = third != 2 && isweap(weap) && weap < W_ALL && actor[d->actortype].useweap;
         float weapscale = 1.f;
@@ -3392,7 +3386,7 @@ namespace game
                 animdelay = 300;
             }
         }
-        if(!early && third == 1 && d->actortype < A_ENEMY && !shadowmapping && !drawtex && (aboveheaddead || d->state == CS_ALIVE))
+        if(third == 1 && d->actortype < A_ENEMY && !shadowmapping && !drawtex && (aboveheaddead || d->state == CS_ALIVE))
             renderabovehead(d, trans);
         const char *weapmdl = showweap && isweap(weap) ? (third ? weaptype[weap].vwep : weaptype[weap].hwep) : "";
         int ai = 0;
@@ -3425,31 +3419,28 @@ namespace game
         }
         bool hasweapon = showweap && *weapmdl;
         if(hasweapon) a[ai++] = modelattach("tag_weapon", weapmdl, weapflags, weapaction, trans, weapscale*size);
-        if(early || d != focus)
+        if(third != 2)
         {
-            if(third != 2)
+            a[ai++] = modelattach(hasweapon ? "tag_muzzle" : "tag_weapon", &d->muzzle);
+            a[ai++] = modelattach("tag_weapon", &d->origin);
+            if(weaptype[weap].eject || weaptype[weap].tape)
             {
-                a[ai++] = modelattach(hasweapon ? "tag_muzzle" : "tag_weapon", &d->muzzle);
-                a[ai++] = modelattach("tag_weapon", &d->origin);
-                if(weaptype[weap].eject || weaptype[weap].tape)
-                {
-                    a[ai++] = modelattach("tag_eject", &d->eject[0]);
-                    a[ai++] = modelattach("tag_eject2", &d->eject[1]);
-                }
-            }
-            if(third && d->wantshitbox())
-            {
-                a[ai++] = modelattach("tag_head", &d->head);
-                a[ai++] = modelattach("tag_torso", &d->torso);
-                a[ai++] = modelattach("tag_waist", &d->waist);
-                a[ai++] = modelattach("tag_ljet", &d->jet[0]);
-                a[ai++] = modelattach("tag_rjet", &d->jet[1]);
-                a[ai++] = modelattach("tag_bjet", &d->jet[2]);
-                a[ai++] = modelattach("tag_ltoe", &d->toe[0]);
-                a[ai++] = modelattach("tag_rtoe", &d->toe[1]);
+                a[ai++] = modelattach("tag_eject", &d->eject[0]);
+                a[ai++] = modelattach("tag_eject2", &d->eject[1]);
             }
         }
-        renderclient(d, third, trans, size, a[0].tag ? a : NULL, secondary, animflags, animdelay, lastaction, early);
+        if(third && d->wantshitbox())
+        {
+            a[ai++] = modelattach("tag_head", &d->head);
+            a[ai++] = modelattach("tag_torso", &d->torso);
+            a[ai++] = modelattach("tag_waist", &d->waist);
+            a[ai++] = modelattach("tag_ljet", &d->jet[0]);
+            a[ai++] = modelattach("tag_rjet", &d->jet[1]);
+            a[ai++] = modelattach("tag_bjet", &d->jet[2]);
+            a[ai++] = modelattach("tag_ltoe", &d->toe[0]);
+            a[ai++] = modelattach("tag_rtoe", &d->toe[1]);
+        }
+        renderclient(d, third, trans, size, a[0].tag ? a : NULL, secondary, animflags, animdelay, lastaction);
     }
 
     void rendercheck(gameent *d, bool third = false)
@@ -3633,32 +3624,35 @@ namespace game
 
     void render()
     {
-        gameent *d;
-        int numdyns = numdynents();
-        loopi(numdyns) if((d = (gameent *)iterdynents(i)) && d != focus) renderplayer(d, 1, opacity(d, true), d->curscale);
+        ai::render();
         entities::render();
         projs::render();
         if(m_capture(gamemode)) capture::render();
         else if(m_defend(gamemode)) defend::render();
         else if(m_bomber(gamemode)) bomber::render();
-        ai::render();
-        loopi(numdyns) if((d = (gameent *)iterdynents(i)) && d != focus) d->cleartags();
-        loopi(numdyns) if((d = (gameent *)iterdynents(i)) && d != focus) rendercheck(d);
+        gameent *d;
+        int numdyns = numdynents();
+        loopi(numdyns) if((d = (gameent *)iterdynents(i)) && d != focus)
+        {
+            d->cleartags();
+            renderplayer(d, 1, opacity(d, true), d->curscale);
+            rendercheck(d);
+        }
     }
 
-    void renderavatar(bool early, bool project)
+    void renderavatar()
     {
         bool third = thirdpersonview();
-        if(early) focus->cleartags();
+        focus->cleartags();
         //if(project) setavatarscale(third || focus->state != CS_ALIVE ? 1.f : firstpersondepth);
-        if(third) renderplayer(focus, 1, opacity(focus, thirdpersonview(true)), focus->curscale, early);
-        else if(!third && focus->state == CS_ALIVE) renderplayer(focus, 0, opacity(focus, false), focus->curscale, early);
+        if(third) renderplayer(focus, 1, opacity(focus, thirdpersonview(true)), focus->curscale);
+        else if(!third && focus->state == CS_ALIVE) renderplayer(focus, 0, opacity(focus, false), focus->curscale);
         if(!third && focus->state == CS_ALIVE && firstpersonmodel == 2)
         {
             //if(project) setavatarscale(firstpersonbodydepth);
-            renderplayer(focus, 2, opacity(focus, false), focus->curscale, early);
+            renderplayer(focus, 2, opacity(focus, false), focus->curscale);
         }
-        if(early) rendercheck(focus, third);
+        rendercheck(focus, third);
     }
 
     void renderplayerpreview(int model, int color, int team, int weap, const char *vanity, float scale, float blend, const vec &lightcolor, const vec &lightdir)

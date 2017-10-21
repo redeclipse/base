@@ -129,7 +129,7 @@ namespace game
     extern int numanims();
     extern void findanims(const char *pattern, vector<int> &anims);
     extern void render();
-    extern void renderavatar(bool early = false, bool project = false);
+    extern void renderavatar();
     extern void renderplayerpreview(int model = 0, int color = 0xA0A0A0, int team = 0, int weap = 0, const char *vanity = "", float scale = 1, float blend = 1, const vec &lightcolor = vec(1, 1, 1), const vec &lightdir = vec(0, -1, 2));
     extern bool thirdpersonview(bool viewonly = false, physent *d = NULL);
     extern vec thirdpos(const vec &pos, float yaw, float pitch, float dist = 1, float side = 0);

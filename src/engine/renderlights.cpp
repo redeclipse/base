@@ -4513,7 +4513,9 @@ void rendershadowatlas()
 
 void workinoq()
 {
+    #if 0 // BROKEN
     collectlights();
+    #endif
 
     if(drawtex) return;
 
@@ -4850,8 +4852,8 @@ void rendergbuffer(bool depthclear)
         renderstains(STAINBUF_OPAQUE, true);
         renderstains(STAINBUF_MAPMODEL, true);
         GLERROR;
-        //renderavatar();
-        //GLERROR;
+        renderavatar();
+        GLERROR;
     }
 
     endtimer(gtimer);
