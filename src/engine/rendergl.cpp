@@ -2356,6 +2356,8 @@ void usetexturing(bool on)
     else hudnotextureshader->set();
 }
 
+#define MINRESW 640
+#define MINRESH 480
 void gettextres(int &w, int &h)
 {
     if(w < MINRESW || h < MINRESH)

@@ -4852,8 +4852,8 @@ void rendergbuffer(bool depthclear)
         renderstains(STAINBUF_OPAQUE, true);
         renderstains(STAINBUF_MAPMODEL, true);
         GLERROR;
-        renderavatar();
-        GLERROR;
+        //renderavatar();
+        //GLERROR;
     }
 
     endtimer(gtimer);

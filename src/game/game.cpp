@@ -3005,7 +3005,7 @@ namespace game
                 anims.add(i);
     }
 
-    void renderclient(gameent *d, int third, float trans, float size, modelattach *attachments, bool secondary, int animflags, int animdelay, int lastaction)
+    void renderclient(gameent *d, int third, float trans, float size, modelattach *attachments, bool secondary, int animflags, int animdelay, int lastaction, int flags = 0)
     {
         int idx = third == 1 && d->headless && !nogore && headlessmodels ? 3 : third;
         const char *mdl = playertypes[forceplayermodel >= 0 ? forceplayermodel : 0][idx];
@@ -3124,11 +3124,11 @@ namespace game
         if(d->ragdoll && (deathanim < 2 || (anim&ANIM_INDEX)!=ANIM_DYING)) cleanragdoll(d);
         if(!((anim>>ANIM_SECONDARY)&ANIM_INDEX)) anim |= (ANIM_IDLE|ANIM_LOOP)<<ANIM_SECONDARY;
 
-        int flags = 0;
+        if(d != focus && !(anim&ANIM_RAGDOLL)) flags |= MDL_CULL_VFC | MDL_CULL_OCCLUDED | MDL_CULL_QUERY;
         if(d->actortype >= A_ENEMY) flags |= MDL_CULL_DIST;
-        if(d != focus || (d != player1 ? fullbrightfocus&1 : fullbrightfocus&2)) flags |= MDL_FULLBRIGHT;
-        if(d != focus && !(anim&ANIM_RAGDOLL)) flags |= MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_CULL_QUERY;
-        if(drawtex == DRAWTEX_MODELPREVIEW) flags &= ~(MDL_FULLBRIGHT|MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_CULL_QUERY|MDL_CULL_DIST);
+        else if(d != focus || (d != player1 ? fullbrightfocus&1 : fullbrightfocus&2)) flags |= MDL_FULLBRIGHT;
+        if(drawtex) flags &= ~(MDL_FULLBRIGHT | MDL_CULL_VFC | MDL_CULL_OCCLUDED | MDL_CULL_QUERY | MDL_CULL_DIST);
+
         dynent *e = third ? (third != 2 ? (dynent *)d : (dynent *)&bodymodel) : (dynent *)&avatarmodel;
         #if 0
         if(e->light.millis != lastmillis)
@@ -3286,7 +3286,7 @@ namespace game
         }
     }
 
-    void renderplayer(gameent *d, int third, float trans, float size)
+    void renderplayer(gameent *d, int third, float trans, float size, int flags = 0)
     {
         if(d->state == CS_SPECTATOR) return;
         if(trans <= 0.f || (d == focus && !(third == 1 ? thirdpersonmodel : firstpersonmodel))) trans = 1e-16f; // we need tag_muzzle/tag_waist
@@ -3440,7 +3440,7 @@ namespace game
             a[ai++] = modelattach("tag_ltoe", &d->toe[0]);
             a[ai++] = modelattach("tag_rtoe", &d->toe[1]);
         }
-        renderclient(d, third, trans, size, a[0].tag ? a : NULL, secondary, animflags, animdelay, lastaction);
+        renderclient(d, third, trans, size, a[0].tag ? a : NULL, secondary, animflags, animdelay, lastaction, flags);
     }
 
     void rendercheck(gameent *d, bool third = false)
@@ -3645,12 +3645,12 @@ namespace game
         bool third = thirdpersonview();
         focus->cleartags();
         //if(project) setavatarscale(third || focus->state != CS_ALIVE ? 1.f : firstpersondepth);
-        if(third) renderplayer(focus, 1, opacity(focus, thirdpersonview(true)), focus->curscale);
-        else if(!third && focus->state == CS_ALIVE) renderplayer(focus, 0, opacity(focus, false), focus->curscale);
+        if(third) renderplayer(focus, 1, opacity(focus, thirdpersonview(true)), focus->curscale, MDL_NOBATCH);
+        else if(!third && focus->state == CS_ALIVE) renderplayer(focus, 0, opacity(focus, false), focus->curscale, MDL_NOBATCH);
         if(!third && focus->state == CS_ALIVE && firstpersonmodel == 2)
         {
             //if(project) setavatarscale(firstpersonbodydepth);
-            renderplayer(focus, 2, opacity(focus, false), focus->curscale);
+            renderplayer(focus, 2, opacity(focus, false), focus->curscale, MDL_NOBATCH);
         }
         rendercheck(focus, third);
     }

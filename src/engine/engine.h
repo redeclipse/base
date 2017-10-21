@@ -128,8 +128,6 @@ extern float textscale, curtextscale;
 #define FONTH (curfont->scale*curtextscale)
 #define FONTW (FONTH*0.5f)
 #define FONTTAB (FONTW*4)
-#define MINRESW 640
-#define MINRESH 480
 
 extern font *curfont;
 extern Shader *textshader;

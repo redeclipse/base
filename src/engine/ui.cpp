@@ -3852,7 +3852,7 @@ namespace UI
                 m->boundbox(center, radius);
                 float yaw;
                 vec o = calcmodelpreviewpos(radius, yaw).sub(center);
-                rendermodel(name, anim|ANIM_NOTRANS, o, yaw, 0, 0, 0, NULL, NULL, 0, 0, scale, colorscale);
+                rendermodel(name, anim, o, yaw, 0, 0, 0, NULL, NULL, 0, 0, scale, colorscale);
             }
             if(clipstack.length()) clipstack.last().scissor();
             modelpreview::end();

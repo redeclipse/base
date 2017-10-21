@@ -1128,8 +1128,8 @@ int main(int argc, char **argv)
         if(frameloops)
         {
             game::recomputecamera(screenw, screenh);
-            hud::update(screenw, screenh);
             setviewcell(camera1->o);
+            hud::update(screenw, screenh);
             updatetextures();
             updateparticles();
             updatesounds();
