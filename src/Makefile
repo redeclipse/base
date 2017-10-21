@@ -6,6 +6,31 @@ APPSERVER=$(APPNAME)_server
 CXXFLAGS?= -O3 -fomit-frame-pointer -ffast-math
 override CXXFLAGS+= -Wall -fsigned-char -fno-exceptions -fno-rtti
 
+ifneq (,$(TOOLSET_PREFIX))
+# The user has supplied us with the exact toolset, so let's use it
+
+ifeq ($(origin CC),default)
+# Default to gcc
+CC=gcc
+endif
+
+CXX_TEMP:=$(CXX)
+CC_TEMP:=$(CC)
+override CXX=$(TOOLSET_PREFIX)$(CXX_TEMP)
+override CC=$(TOOLSET_PREFIX)$(CC_TEMP)
+
+HAS_CC = $(shell command -v $(CC) 2> /dev/null)
+HAS_CXX = $(shell command -v $(CXX) 2> /dev/null)
+
+ifeq (,$(HAS_CC))
+$(error $(CC) not found)
+endif
+
+ifeq (,$(HAS_CXX))
+$(error $(CXX) not found)
+endif
+endif
+
 PLATFORM= $(shell $(CC) -dumpmachine)
 
 RMFLAGS= -fv
@@ -26,7 +51,9 @@ ifeq (,$(INSTDIR))
 INSTDIR=../bin/$(PLATFORM_BIN)
 endif
 
-TOOLSET_PREFIX=
+ifeq (,$(TOOLSET_PREFIX))
+# Try to figure out the toolset prefix on our own, if we haven't received it from the user
+
 ifneq (,$(findstring cross,$(PLATFORM)))
 ifneq (,$(findstring 64,$(PLATFORM)))
 TOOLSET_PREFIX=x86_64-w64-mingw32-
@@ -41,6 +68,7 @@ CXX_TEMP:=$(CXX)
 CC_TEMP:=$(CC)
 override CXX=$(TOOLSET_PREFIX)$(CXX_TEMP)
 override CC=$(TOOLSET_PREFIX)$(CC_TEMP)
+endif
 
 INCLUDES= -I. -Ishared -Iengine -Igame -Ienet/include -Isupport
 
