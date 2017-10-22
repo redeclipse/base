@@ -132,7 +132,6 @@ extern float textscale, curtextscale;
 extern font *curfont;
 extern Shader *textshader;
 extern const matrix4x3 *textmatrix;
-extern int textskinsize, textskinpad;
 extern void reloadfonts();
 
 enum
