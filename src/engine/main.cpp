@@ -1129,7 +1129,6 @@ int main(int argc, char **argv)
         {
             game::recomputecamera(screenw, screenh);
             setviewcell(camera1->o);
-            hud::update(screenw, screenh);
             updatetextures();
             updateparticles();
             updatesounds();

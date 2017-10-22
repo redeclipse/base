@@ -2419,6 +2419,7 @@ void gl_drawnoview()
     gl_setupframe(true);
     vieww = hudw;
     viewh = hudh;
+    hud::update(vieww, viewh);
     gl_drawhud(true);
 }
 
@@ -2428,12 +2429,11 @@ void gl_drawframe()
     synctimers();
     xtravertsva = xtraverts = glde = gbatches = vtris = vverts = 0;
     flipqueries();
-    aspect = forceaspect ? forceaspect : hudw/float(hudh);
-    fovy = 2*atan2(tan(curfov/2*RAD), aspect)/RAD;
 
     gl_setupframe(noview);
     vieww = hudw;
     viewh = hudh;
+    hud::update(vieww, viewh);
 
     if(!noview) gl_drawview();
     gl_drawhud(noview);

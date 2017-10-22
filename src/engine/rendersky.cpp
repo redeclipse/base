@@ -97,6 +97,19 @@ void drawenvboxface(float s0, float t0, int x0, int y0, int z0,
     xtraverts += gle::end();
 }
 
+void drawenvboxbgface(int x0, int y0, int z0,
+                      int x1, int y1, int z1,
+                      int x2, int y2, int z2,
+                      int x3, int y3, int z3)
+{
+    gle::begin(GL_TRIANGLE_STRIP);
+    gle::attribf(x3, y3, z3);
+    gle::attribf(x2, y2, z2);
+    gle::attribf(x0, y0, z0);
+    gle::attribf(x1, y1, z1);
+    xtraverts += gle::end();
+}
+
 void drawenvbox(Texture **sky = NULL, float z1clip = 0.0f, float z2clip = 1.0f, int faces = 0x3F)
 {
     if(z1clip >= z2clip) return;
@@ -144,13 +157,28 @@ void drawenvbox(Texture **sky = NULL, float z1clip = 0.0f, float z2clip = 1.0f, 
                        0.0f, 1.0f,  w, -w, w, sky[5]);
 }
 
-void drawenvoverlay(Texture *overlay, float height, int subdiv, float fade, float scale, bvec &col, float a = 1.f, float tx = 0, float ty = 0)
+void drawenvboxbg(float z1clip = 0.0f, float z2clip = 1.0f)
+{
+    if(z1clip >= z2clip) return;
+
+    int w = farplane/2, z1 = int(ceil(2*w*(z1clip-0.5f))), z2 = int(ceil(2*w*(z2clip-0.5f)));
+
+    gle::defvertex();
+
+    drawenvboxbgface(-w, -w, z2, -w,  w, z2, -w,  w, z1, -w, -w, z1);
+    drawenvboxbgface( w, -w, z1,  w,  w, z1,  w,  w, z2,  w, -w, z2);
+    drawenvboxbgface(-w, -w, z1,  w, -w, z1,  w, -w, z2, -w, -w, z2);
+    drawenvboxbgface( w,  w, z1, -w,  w, z1, -w,  w, z2,  w,  w, z2);
+    if(z1clip <= 0) drawenvboxbgface(-w,  w, -w,  w,  w, -w,  w, -w, -w, -w, -w, -w);
+    if(z2clip >= 1) drawenvboxbgface( w,  w,  w, -w,  w,  w, -w, -w,  w,  w, -w,  w);
+}
+
+void drawenvoverlay(Texture *overlay, float height, int subdiv, float fade, float scale, bvec &colour, float a = 1.f, float tx = 0, float ty = 0)
 {
     int w = farplane/2;
     float z = w*height, tsz = 0.5f*(1-fade)/scale, psz = w*(1-fade);
     glBindTexture(GL_TEXTURE_2D, overlay ? overlay->id : notexture->id);
-    vec colour = col.tocolor();
-    gle::color(colour, a);
+    gle::color(colour.tocolor(), a);
     gle::defvertex();
     gle::deftexcoord0();
     gle::begin(GL_TRIANGLE_FAN);
@@ -470,7 +498,6 @@ void drawskybox(bool clear)
 
     if(clampsky) glDepthRange(1, 1);
 
-    #if 0 // BROKEN
     if(clear || (!skybox[0] && (!atmo || atmoblend < 1)))
     {
         vec color = skybgcolour.tocolor().mul(ldrscale);
@@ -478,9 +505,23 @@ void drawskybox(bool clear)
         glClear(GL_COLOR_BUFFER_BIT);
     }
 
+    bool blendsky = !skybox[0] || !sky[0] || sky[0]->type&Texture::ALPHA;
+
+    if(blendsky || skyblend < 1)
+    {
+        SETSHADER(skyfog);
+
+        matrix4 skymatrix = cammatrix, skyprojmatrix;
+        skymatrix.settranslation(0, 0, 0);
+        skyprojmatrix.mul(projmatrix, skymatrix);
+        LOCALPARAM(skymatrix, skyprojmatrix);
+
+        gle::color(skybgcolour);
+        drawenvboxbg();
+    }
+
     if(skybox[0])
     {
-        bool blendsky = !skybox[0] || !sky[0] || sky[0]->type&Texture::ALPHA;
         if(blendsky)
         {
             glEnable(GL_BLEND);
@@ -593,11 +634,6 @@ void drawskybox(bool clear)
     {
         drawfogdome();
     }
-    #else
-    vec color = skybgcolour.tocolor().mul(ldrscale);
-    glClearColor(color.x, color.y, color.z, 0);
-    glClear(GL_COLOR_BUFFER_BIT);
-    #endif
 
     if(clampsky) glDepthRange(0, 1);
 
