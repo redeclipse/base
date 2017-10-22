@@ -1422,7 +1422,7 @@ void part_trail(int type, int fade, const vec &s, const vec &e, int color, float
 }
 
 VAR(IDF_PERSIST, particletext, 0, 1, 1);
-VAR(IDF_PERSIST, maxparticletextdistance, 0, 128, 10000);
+VAR(IDF_PERSIST, maxparticletextdistance, 0, 512, 10000);
 
 void part_text(const vec &s, const char *t, int type, int fade, int color, float size, float blend, int grav, int collide, physent *pl)
 {
@@ -1494,9 +1494,13 @@ void part_portal(const vec &o, float size, float blend, float yaw, float pitch, 
     p->addportal(o, fade, color, size, blend, yaw, pitch);
 }
 
+VAR(IDF_PERSIST, particleicon, 0, 1, 1);
+VAR(IDF_PERSIST, maxparticleicondistance, 0, 512, 10000);
+
 void part_icon(const vec &o, Texture *tex, float size, float blend, int grav, int collide, int fade, int color, float start, float length, physent *pl)
 {
     if(!canaddparticles() || (parts[PART_ICON]->type&PT_TYPE) != PT_ICON) return;
+    if(!particleicon || camera1->o.dist(o) > maxparticleicondistance) return;
     iconrenderer *p = (iconrenderer *)parts[PART_ICON];
     p->addicon(o, tex, fade, color, size, blend, grav, collide, start, length, pl);
 }
