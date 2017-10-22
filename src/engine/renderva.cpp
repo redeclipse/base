@@ -2703,7 +2703,6 @@ VARF(0, smmesh, 0, 1, 1, { if(!smmesh) clearshadowmeshes(); });
 void genshadowmeshes()
 {
     clearshadowmeshes();
-    #if 0 // BROKEN
     if(!smmesh) return;
 
     progress(0, "generating shadow meshes..");
@@ -2715,7 +2714,6 @@ void genshadowmeshes()
         if(e.type != ET_LIGHT) continue;
         genshadowmesh(i, e);
     }
-    #endif
 }
 
 shadowmesh *findshadowmesh(int idx, extentity &e)

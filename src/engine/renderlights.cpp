@@ -4513,9 +4513,7 @@ void rendershadowatlas()
 
 void workinoq()
 {
-    #if 0 // BROKEN
     collectlights();
-    #endif
 
     if(drawtex) return;
 
