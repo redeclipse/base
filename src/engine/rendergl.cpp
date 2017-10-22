@@ -2395,11 +2395,7 @@ void gl_setupframe(bool force)
 
 void gl_drawhud(bool noview = false)
 {
-    int w = hudw, h = hudh;
-    if(forceaspect) w = int(ceil(h*forceaspect));
-    gettextres(w, h);
-
-    hudmatrix.ortho(0, w, h, 0, -1, 1);
+    hudmatrix.ortho(0, hudw, hudh, 0, -1, 1);
     resethudmatrix();
     resethudshader();
 
@@ -2407,7 +2403,6 @@ void gl_drawhud(bool noview = false)
 
     glEnable(GL_BLEND);
 
-    hud::update(w, h);
     hud::drawhud(noview);
     hud::drawlast();
 
@@ -2433,7 +2428,7 @@ void gl_drawframe()
     gl_setupframe(noview);
     vieww = hudw;
     viewh = hudh;
-    hud::update(vieww, viewh);
+    hud::update(hudw, hudh);
 
     if(!noview) gl_drawview();
     gl_drawhud(noview);
