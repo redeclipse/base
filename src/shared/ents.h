@@ -91,7 +91,7 @@ struct baseent
     int inmaterial;
     float submerged;
 
-    baseent() : state(CS_SPECTATOR) { reset(); }
+    baseent() : o(0, 0, 0), yaw(0), pitch(0), roll(0), state(CS_SPECTATOR) { reset(); }
 
     void reset()
     {
@@ -120,13 +120,14 @@ struct physent : baseent                        // can be affected by physics
     uchar type;                                 // one of ENT_* above
     uchar collidetype;                          // one of COLLIDE_* above
 
-    physent() : speed(100), weight(100), radius(3), aboveeye(1),
-        xradius(3), yradius(3), zradius(14), zmargin(0), curscale(1), speedscale(1),
+    physent() : deltapos(0, 0, 0), newpos(0, 0, 0), speed(100), weight(100),
+        radius(3), height(14), aboveeye(1),
+        xradius(3), yradius(3), zradius(14), zmargin(0),
+        curscale(1), speedscale(1),
         type(ENT_INANIMATE),
         collidetype(COLLIDE_ELLIPSE)
     {
         reset();
-        height = zradius;
     }
 
     void resetinterp(bool force = false)
