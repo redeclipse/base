@@ -309,6 +309,7 @@ struct vec4
     explicit vec4(const vec2 &p, float z = 0, float w = 0) : x(p.x), y(p.y), z(z), w(w) {}
     vec4(float x, float y, float z, float w) : x(x), y(y), z(z), w(w) {}
     explicit vec4(const float *v) : x(v[0]), y(v[1]), z(v[2]), w(v[3]) {}
+    explicit vec4(int color, float trans = 1) : x(((color>>16)&0xFF)/255.f), y(((color>>8)&0xFF)/255.f), z((color&0xFF)/255.f), w(trans) {}
 
     float &operator[](int i)       { return v[i]; }
     float  operator[](int i) const { return v[i]; }
@@ -387,6 +388,10 @@ struct vec4
     vec4 &rotate_around_z(const vec2 &sc) { return rotate_around_z(sc.x, sc.y); }
     vec4 &rotate_around_x(const vec2 &sc) { return rotate_around_x(sc.x, sc.y); }
     vec4 &rotate_around_y(const vec2 &sc) { return rotate_around_y(sc.x, sc.y); }
+
+    static vec4 fromcolor(const vec &v, float trans) { return vec4(v.x, v.y, v.z, trans); }
+    static vec4 fromcolor(const vec &v) { return fromcolor(v, 1); }
+    static vec4 fromcolor(int color) { return vec4(((color>>16)&0xFF)/255.f, ((color>>8)&0xFF)/255.f, (color&0xFF)/255.f, 1); }
 };
 
 inline vec2::vec2(const vec4 &v) : x(v.x), y(v.y) {}

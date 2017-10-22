@@ -3120,7 +3120,7 @@ namespace game
             }
         }
 
-        if(third == 1 && testanims && d == focus) yaw = 0;
+        if(third == 1 && testanims && d == focus) yaw = 0; else yaw += 90;
         if(d->ragdoll && (deathanim < 2 || (anim&ANIM_INDEX)!=ANIM_DYING)) cleanragdoll(d);
         if(!((anim>>ANIM_SECONDARY)&ANIM_INDEX)) anim |= (ANIM_IDLE|ANIM_LOOP)<<ANIM_SECONDARY;
 
@@ -3130,6 +3130,7 @@ namespace game
         if(drawtex) flags &= ~(MDL_FULLBRIGHT | MDL_CULL_VFC | MDL_CULL_OCCLUDED | MDL_CULL_QUERY | MDL_CULL_DIST);
 
         dynent *e = third ? (third != 2 ? (dynent *)d : (dynent *)&bodymodel) : (dynent *)&avatarmodel;
+        vec4 color = vec4(getcolour(d, playerovertone, playerovertonelevel), trans);
         #if 0
         if(e->light.millis != lastmillis)
         {
@@ -3189,7 +3190,7 @@ namespace game
             else e->light.material[2] = bvec(colourwhite);
         }
         #endif
-        rendermodel(mdl, anim, o, yaw, third == 2 && firstpersonbodypitch >= 0 ? pitch*firstpersonbodypitch : pitch, third == 2 ? 0.f : roll, flags, e, attachments, basetime, basetime2, size, vec4(1, 1, 1, trans));
+        rendermodel(mdl, anim, o, yaw, third == 2 && firstpersonbodypitch >= 0 ? pitch*firstpersonbodypitch : pitch, third == 2 ? 0.f : roll, flags, e, attachments, basetime, basetime2, size, color);
     }
 
     void renderabovehead(gameent *d, float trans)

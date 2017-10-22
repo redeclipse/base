@@ -1409,10 +1409,11 @@ matrix4 cammatrix, projmatrix, camprojmatrix, invcammatrix, invcamprojmatrix, in
 FVAR(0, nearplane, 0.01f, 0.54f, 2.0f);
 
 FVAR(0, avatardepth, 0, 0.7f, 1);
+FVAR(0, avatarfov, 1, 90, 110);
 void renderavatar()
 {
     matrix4 oldprojmatrix = nojittermatrix;
-    projmatrix.perspective(curfov, aspect, nearplane, farplane);
+    projmatrix.perspective(avatarfov, aspect, nearplane, farplane);
     projmatrix.scalez(avatardepth);
     setcamprojmatrix(false);
 

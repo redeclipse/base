@@ -71,7 +71,6 @@ void mdlcollide(int *collide)
     checkmdl;
     loadingmodel->collide = *collide!=0 ? (loadingmodel->collide ? loadingmodel->collide : COLLIDE_OBB) : COLLIDE_NONE;
 }
-
 COMMAND(0, mdlcollide, "i");
 
 void mdlellipsecollide(int *collide)
@@ -92,13 +91,13 @@ void mdltricollide(char *collide)
 }
 COMMAND(0, mdltricollide, "s");
 
-void mdlspec(int *percent)
+void mdlspec(float *percent)
 {
     checkmdl;
     float spec = *percent > 0 ? *percent/100.0f : 0.0f;
     loadingmodel->setspec(spec);
 }
-COMMAND(0, mdlspec, "i");
+COMMAND(0, mdlspec, "f");
 
 void mdlgloss(int *gloss)
 {
@@ -130,7 +129,7 @@ void mdlglow(float *percent, float *delta, float *pulse)
 }
 COMMAND(0, mdlglow, "fff");
 
-void mdlenvmap(float *envmapmax, float *envmapmin, const char *envmap)
+void mdlenvmap(float *envmapmax, float *envmapmin, char *envmap)
 {
     checkmdl;
     loadingmodel->setenvmap(*envmapmin, *envmapmax, envmap[0] ? cubemapload(envmap) : NULL);
@@ -144,7 +143,7 @@ void mdlfullbright(float *fullbright)
 }
 COMMAND(0, mdlfullbright, "f");
 
-void mdlshader(const char *shader)
+void mdlshader(char *shader)
 {
     checkmdl;
     loadingmodel->setshader(lookupshaderbyname(shader));
@@ -164,14 +163,14 @@ void mdlscale(float *percent)
 {
     checkmdl;
     float scale = *percent > 0 ? *percent/100.0f : 1.0f;
-    loadingmodel->scale = scale;
+    loadingmodel->scale = MDLSCALE(scale);
 }
-COMMAND(0, mdlscale, "i");
+COMMAND(0, mdlscale, "f");
 
 void mdlscalef(float *amt)
 {
     checkmdl;
-    loadingmodel->scale = *amt;
+    loadingmodel->scale = MDLSCALE(*amt);
 }
 COMMAND(0, mdlscalef, "f");
 
@@ -573,7 +572,7 @@ void addbatchedmodel(model *m, batchedmodel &bm, int idx)
         if(b->m == m && (b->flags & MDL_MAPMODEL) == (bm.flags & MDL_MAPMODEL))
             goto foundbatch;
     }
-
+    
     m->batch = batches.length();
     b = &batches.add();
     b->m = m;
@@ -892,7 +891,7 @@ void rendertransparentmodelbatches(int stencil)
 
 static occludequery *modelquery = NULL;
 static int modelquerybatches = -1, modelquerymodels = -1, modelqueryattached = -1;
-
+ 
 void startmodelquery(occludequery *query)
 {
     modelquery = query;
