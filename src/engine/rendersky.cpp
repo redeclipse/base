@@ -530,7 +530,7 @@ void drawskybox(bool clear)
 
         if(ldrscale < 1 && (skyoverbrightmin != 1 || (skyoverbright > 1 && skyoverbrightthreshold < 1)))
         {
-            SETSHADER(skyoverbright);
+            SETSHADER(skyboxoverbright);
             LOCALPARAMF(overbrightparams, skyoverbrightmin, max(skyoverbright, skyoverbrightmin), skyoverbrightthreshold);
         }
         else SETSHADER(skybox);
