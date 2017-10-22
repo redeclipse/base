@@ -1408,14 +1408,18 @@ matrix4 cammatrix, projmatrix, camprojmatrix, invcammatrix, invcamprojmatrix, in
 
 FVAR(0, nearplane, 0.01f, 0.54f, 2.0f);
 
-FVAR(0, avatardepth, 0, 0.7f, 1);
-FVAR(0, avatarfov, 1, 90, 110);
+matrix4 oldprojmatrix;
+void setavatarscale(float fov, float zscale)
+{
+    projmatrix = oldprojmatrix;
+    projmatrix.perspective(fov, aspect, nearplane, farplane);
+    projmatrix.scalez(zscale);
+    setcamprojmatrix(false);
+}
+
 void renderavatar()
 {
-    matrix4 oldprojmatrix = nojittermatrix;
-    projmatrix.perspective(avatarfov, aspect, nearplane, farplane);
-    projmatrix.scalez(avatardepth);
-    setcamprojmatrix(false);
+    oldprojmatrix = projmatrix;
 
     enableavatarmask();
     game::renderavatar();

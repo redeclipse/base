@@ -89,6 +89,8 @@ namespace game
     FVAR(IDF_PERSIST, firstpersonblend, 0, 1, 1);
     FVAR(IDF_PERSIST, firstpersondepth, 0, 0.25f, 1);
     FVAR(IDF_PERSIST, firstpersonbodydepth, 0, 0.65f, 1);
+    FVAR(IDF_PERSIST, firstpersondepthfov, 0, 70, 150);
+    FVAR(IDF_PERSIST, firstpersonbodydepthfov, 0, 0, 150);
 
     FVAR(IDF_PERSIST, firstpersonbodydist, -10, 0, 10);
     FVAR(IDF_PERSIST, firstpersonbodyside, -10, 0, 10);
@@ -3387,7 +3389,7 @@ namespace game
                 animdelay = 300;
             }
         }
-        if(third == 1 && d->actortype < A_ENEMY && !shadowmapping && !drawtex && (aboveheaddead || d->state == CS_ALIVE))
+        if(!(flags&MDL_ONLYSHADOW) && third == 1 && d->actortype < A_ENEMY && !shadowmapping && !drawtex && (aboveheaddead || d->state == CS_ALIVE))
             renderabovehead(d, trans);
         const char *weapmdl = showweap && isweap(weap) ? (third ? weaptype[weap].vwep : weaptype[weap].hwep) : "";
         int ai = 0;
@@ -3420,26 +3422,29 @@ namespace game
         }
         bool hasweapon = showweap && *weapmdl;
         if(hasweapon) a[ai++] = modelattach("tag_weapon", weapmdl, weapflags, weapaction, trans, weapscale*size);
-        if(third != 2)
+        if(!(flags&MDL_ONLYSHADOW))
         {
-            a[ai++] = modelattach(hasweapon ? "tag_muzzle" : "tag_weapon", &d->muzzle);
-            a[ai++] = modelattach("tag_weapon", &d->origin);
-            if(weaptype[weap].eject || weaptype[weap].tape)
+            if(third != 2)
             {
-                a[ai++] = modelattach("tag_eject", &d->eject[0]);
-                a[ai++] = modelattach("tag_eject2", &d->eject[1]);
+                a[ai++] = modelattach(hasweapon ? "tag_muzzle" : "tag_weapon", &d->muzzle);
+                a[ai++] = modelattach("tag_weapon", &d->origin);
+                if(weaptype[weap].eject || weaptype[weap].tape)
+                {
+                    a[ai++] = modelattach("tag_eject", &d->eject[0]);
+                    a[ai++] = modelattach("tag_eject2", &d->eject[1]);
+                }
             }
-        }
-        if(third && d->wantshitbox())
-        {
-            a[ai++] = modelattach("tag_head", &d->head);
-            a[ai++] = modelattach("tag_torso", &d->torso);
-            a[ai++] = modelattach("tag_waist", &d->waist);
-            a[ai++] = modelattach("tag_ljet", &d->jet[0]);
-            a[ai++] = modelattach("tag_rjet", &d->jet[1]);
-            a[ai++] = modelattach("tag_bjet", &d->jet[2]);
-            a[ai++] = modelattach("tag_ltoe", &d->toe[0]);
-            a[ai++] = modelattach("tag_rtoe", &d->toe[1]);
+            if(third && d->wantshitbox())
+            {
+                a[ai++] = modelattach("tag_head", &d->head);
+                a[ai++] = modelattach("tag_torso", &d->torso);
+                a[ai++] = modelattach("tag_waist", &d->waist);
+                a[ai++] = modelattach("tag_ljet", &d->jet[0]);
+                a[ai++] = modelattach("tag_rjet", &d->jet[1]);
+                a[ai++] = modelattach("tag_bjet", &d->jet[2]);
+                a[ai++] = modelattach("tag_ltoe", &d->toe[0]);
+                a[ai++] = modelattach("tag_rtoe", &d->toe[1]);
+            }
         }
         renderclient(d, third, trans, size, a[0].tag ? a : NULL, secondary, animflags, animdelay, lastaction, flags);
     }
@@ -3633,11 +3638,11 @@ namespace game
         else if(m_bomber(gamemode)) bomber::render();
         gameent *d;
         int numdyns = numdynents();
-        loopi(numdyns) if((d = (gameent *)iterdynents(i)) && d != focus)
+        loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL)
         {
-            d->cleartags();
-            renderplayer(d, 1, opacity(d, true), d->curscale);
-            rendercheck(d);
+            if(d != focus) d->cleartags();
+            renderplayer(d, 1, opacity(d, true), d->curscale, d != focus ? 0 : MDL_ONLYSHADOW);
+            if(d != focus) rendercheck(d);
         }
     }
 
@@ -3645,12 +3650,12 @@ namespace game
     {
         bool third = thirdpersonview();
         focus->cleartags();
-        //if(project) setavatarscale(third || focus->state != CS_ALIVE ? 1.f : firstpersondepth);
-        if(third) renderplayer(focus, 1, opacity(focus, thirdpersonview(true)), focus->curscale, MDL_NOBATCH);
-        else if(!third && focus->state == CS_ALIVE) renderplayer(focus, 0, opacity(focus, false), focus->curscale, MDL_NOBATCH);
+        setavatarscale(firstpersondepthfov != 0 ? firstpersondepthfov : curfov, third || focus->state != CS_ALIVE ? 1.f : firstpersondepth);
+        if(third || focus->state == CS_ALIVE)
+            renderplayer(focus, third ? 1 : 0, opacity(focus, third ? thirdpersonview(true) : false), focus->curscale, MDL_NOBATCH);
         if(!third && focus->state == CS_ALIVE && firstpersonmodel == 2)
         {
-            //if(project) setavatarscale(firstpersonbodydepth);
+            setavatarscale(firstpersonbodydepthfov != 0 ? firstpersonbodydepthfov : curfov, firstpersonbodydepth);
             renderplayer(focus, 2, opacity(focus, false), focus->curscale, MDL_NOBATCH);
         }
         rendercheck(focus, third);

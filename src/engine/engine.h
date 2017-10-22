@@ -285,6 +285,7 @@ extern void cleanupgl();
 extern void vecfromcursor(float x, float y, float z, vec &dir);
 extern bool vectocursor(const vec &v, float &x, float &y, float &z, float clampxy = -1);
 extern void findorientation(vec &o, float yaw, float pitch, vec &pos);
+extern void setavatarscale(float fov, float zscale);
 extern void renderavatar();
 extern bool hasnoview();
 extern void drawminimap();
