@@ -7,7 +7,7 @@ CVAR1(IDF_WORLD, skylight, 0);
 FVAR(IDF_WORLD, skylightscale, 0, 1, 16);
 
 extern void setupsunlight();
-CVAR1F(IDF_WORLD, sunlight, 0xFFFFFF,
+CVAR1F(IDF_WORLD, sunlight, 0,
 {
     setupsunlight();
     cleardeferredlightshaders();
