@@ -1127,7 +1127,7 @@ int main(int argc, char **argv)
         ircslice();
         if(frameloops)
         {
-            game::recomputecamera(screenw, screenh);
+            game::recomputecamera();
             setviewcell(camera1->o);
             updatetextures();
             updateparticles();
@@ -1139,17 +1139,17 @@ int main(int argc, char **argv)
                 renderedframe = true;
                 swapbuffers();
                 inbetweenframes = true;
-            }
-            if(pixeling)
-            {
-                if(editmode)
+                if(pixeling)
                 {
-                    glReadPixels(screenw/2, screenh/2, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, &pixel.v[0]);
-                    if(pixelact) execute(pixelact);
+                    if(editmode)
+                    {
+                        glReadPixels(screenw/2, screenh/2, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, &pixel.v[0]);
+                        if(pixelact) execute(pixelact);
+                    }
+                    if(pixelact) delete[] pixelact;
+                    pixelact = NULL;
+                    pixeling = false;
                 }
-                if(pixelact) delete[] pixelact;
-                pixelact = NULL;
-                pixeling = false;
             }
             if(*progresstitle || progressamt >= 0)
             {

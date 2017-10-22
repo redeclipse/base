@@ -1256,12 +1256,13 @@ void setcammatrix()
     cammatrix.transposedtransformnormal(vec(viewmatrix.b), camdir);
     cammatrix.transposedtransformnormal(vec(viewmatrix.a).neg(), camright);
     cammatrix.transposedtransformnormal(vec(viewmatrix.c), camup);
-
+    #if 0
     if(!drawtex)
     {
         if(raycubepos(camera1->o, camdir, worldpos, 0, RAY_CLIPMAT|RAY_SKIPFIRST) == -1)
             worldpos = vec(camdir).mul(2*worldsize).add(camera1->o); // if nothing is hit, just far away in the view direction
     }
+    #endif
 }
 
 void setcamprojmatrix(bool init = true, bool flush = false)
@@ -1411,7 +1412,6 @@ FVAR(0, nearplane, 0.01f, 0.54f, 2.0f);
 matrix4 oldprojmatrix;
 void setavatarscale(float fov, float zscale)
 {
-    projmatrix = oldprojmatrix;
     projmatrix.perspective(fov, aspect, nearplane, farplane);
     projmatrix.scalez(zscale);
     setcamprojmatrix(false);
@@ -1419,7 +1419,7 @@ void setavatarscale(float fov, float zscale)
 
 void renderavatar()
 {
-    oldprojmatrix = projmatrix;
+    matrix4 oldprojmatrix = nojittermatrix;
 
     enableavatarmask();
     game::renderavatar();
@@ -2262,7 +2262,7 @@ void gl_drawview()
 
     projmatrix.perspective(fovy, aspect, nearplane, farplane);
     setcamprojmatrix();
-    game::project(vieww, viewh);
+    game::project();
 
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);

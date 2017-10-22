@@ -2156,7 +2156,7 @@ namespace game
         fixfullrange(yaw, pitch, r, false);
     }
 
-    void fixview(int w, int h)
+    void fixview()
     {
         if(inzoom())
         {
@@ -2194,7 +2194,7 @@ namespace game
         return false;
     }
 
-    void project(int w, int h)
+    void project()
     {
         bool input = hud::hasinput(true), view = thirdpersonview(true, focus), mode = tvmode();
         if(input != inputmouse || (view != inputview || mode != inputmode || focus != lastfocus))
@@ -2938,9 +2938,9 @@ namespace game
         if(player1->clientnum >= 0) client::c2sinfo();
     }
 
-    void recomputecamera(int w, int h)
+    void recomputecamera()
     {
-        fixview(w, h);
+        fixview();
         if(!client::waiting())
         {
             checkcamera();
