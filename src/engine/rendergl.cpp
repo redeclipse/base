@@ -2411,7 +2411,7 @@ void gl_drawhud(bool noview = false)
 
 void gl_drawnoview()
 {
-    gl_setupframe(true);
+    gl_setupframe();
     vieww = hudw;
     viewh = hudh;
     hud::update(vieww, viewh);
@@ -2425,7 +2425,7 @@ void gl_drawframe()
     xtravertsva = xtraverts = glde = gbatches = vtris = vverts = 0;
     flipqueries();
 
-    gl_setupframe(noview);
+    gl_setupframe(!noview);
     vieww = hudw;
     viewh = hudh;
     hud::update(hudw, hudh);
