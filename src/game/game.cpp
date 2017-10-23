@@ -3132,7 +3132,7 @@ namespace game
         if(drawtex) flags &= ~(MDL_FULLBRIGHT | MDL_CULL_VFC | MDL_CULL_OCCLUDED | MDL_CULL_QUERY | MDL_CULL_DIST);
 
         dynent *e = third ? (third != 2 ? (dynent *)d : (dynent *)&bodymodel) : (dynent *)&avatarmodel;
-        vec4 color = vec4(getcolour(d, playerovertone, playerovertonelevel), 1);
+        vec4 color = vec4(getcolour(d, playerovertone, playerovertonelevel), trans);
         #if 0
         if(e->light.millis != lastmillis)
         {
@@ -3641,8 +3641,12 @@ namespace game
         loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL)
         {
             if(d != focus) d->cleartags();
-            renderplayer(d, 1, opacity(d, true), d->curscale, d != focus ? 0 : MDL_ONLYSHADOW);
-            if(d != focus) rendercheck(d);
+            renderplayer(d, 1, 1, d->curscale, MDL_ONLYSHADOW);
+            if(d != focus)
+            {
+                renderplayer(d, 1, opacity(d, true), d->curscale);
+                rendercheck(d);
+            }
         }
     }
 

@@ -173,12 +173,13 @@ void drawenvboxbg(float z1clip = 0.0f, float z2clip = 1.0f)
     if(z2clip >= 1) drawenvboxbgface( w,  w,  w, -w,  w,  w, -w, -w,  w,  w, -w,  w);
 }
 
-void drawenvoverlay(Texture *overlay, float height, int subdiv, float fade, float scale, bvec &colour, float a = 1.f, float tx = 0, float ty = 0)
+void drawenvoverlay(Texture *overlay, float height, int subdiv, float fade, float scale, bvec &colour, float blend, float tx = 0, float ty = 0)
 {
     int w = farplane/2;
     float z = w*height, tsz = 0.5f*(1-fade)/scale, psz = w*(1-fade);
-    glBindTexture(GL_TEXTURE_2D, overlay ? overlay->id : notexture->id);
-    gle::color(colour.tocolor(), a);
+    glBindTexture(GL_TEXTURE_2D, (overlay ? overlay : notexture)->id);
+    vec color = colour.tocolor();
+    gle::color(color, blend);
     gle::defvertex();
     gle::deftexcoord0();
     gle::begin(GL_TRIANGLE_FAN);
@@ -201,10 +202,10 @@ void drawenvoverlay(Texture *overlay, float height, int subdiv, float fade, floa
         p.rotate_around_z((-2.0f*M_PI*i)/subdiv);
         gle::attribf(p.x*psz, p.y*psz, z);
             gle::attribf(tx - p.x*tsz, ty + p.y*tsz);
-            gle::attrib(colour, a);
+            gle::attrib(color, blend);
         gle::attribf(p.x*w, p.y*w, z);
             gle::attribf(tx - p.x*tsz2, ty + p.y*tsz2);
-            gle::attrib(colour, 0.0f);
+            gle::attrib(color, 0.0f);
     }
     xtraverts += gle::end();
 }
