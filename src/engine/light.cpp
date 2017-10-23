@@ -20,6 +20,9 @@ extern void setsunlightdir();
 FVARF(IDF_WORLD, sunlightyaw, 0, 0, 360, setsunlightdir());
 FVARF(IDF_WORLD, sunlightpitch, -90, 90, 90, setsunlightdir());
 
+VAR(IDF_WORLD, sunlightflare, 0, 0, 3);
+FVAR(IDF_WORLD, sunlightflarescale, FVAR_NONZERO, 1, FVAR_MAX);
+
 void setsunlightdir()
 {
     sunlightdir = vec(sunlightyaw*RAD, sunlightpitch*RAD);

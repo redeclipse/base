@@ -44,10 +44,10 @@ struct PackNode
 };
 
 extern bvec ambient, skylight, sunlight;
-extern float ambientscale, skylightscale, sunlightscale;
+extern float ambientscale, skylightscale, sunlightscale, sunlightflarescale;
 extern float sunlightyaw, sunlightpitch;
 extern vec sunlightdir;
-extern int fullbright, fullbrightlevel;
+extern int fullbright, fullbrightlevel, sunlightflare;
 
 extern void clearlights();
 extern void initlights();

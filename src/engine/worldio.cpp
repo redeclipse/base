@@ -1172,6 +1172,9 @@ bool load_world(const char *mname, int crc)       // still supports all map form
 
         progress(0, "Loading entities...");
         vector<extentity *> &ents = entities::getents();
+        int importedsuns = 0, importedsunflare = 0;
+        float importedsunyaw = 0, importedsunpitch = 0, importedsunflarescale = 0;
+        vec importedsuncolor(0, 0, 0);
         loopi(hdr.numents)
         {
             progress(i/float(hdr.numents), "Loading entities...");
@@ -1203,10 +1206,10 @@ bool load_world(const char *mname, int crc)       // still supports all map form
 
             // version increments
             if(maptype == MAP_OCTA && e.type >= ET_DECAL) e.type++;
-            bool eatlinks = maptype == MAP_MAPZ && hdr.version == 43 && e.type == ET_DECAL;
+            bool oldsun = maptype == MAP_MAPZ && hdr.version == 43 && e.type == ET_DECAL;
             if(!samegame && e.type >= ET_GAMESPECIFIC)
             {
-                if(eatlinks || (maptype == MAP_MAPZ && entities::maylink(e.type, hdr.gamever)))
+                if(oldsun || (maptype == MAP_MAPZ && entities::maylink(e.type, hdr.gamever)))
                 {
                     int links = f->getlil<int>();
                     f->seek(sizeof(int)*links, SEEK_CUR);
@@ -1214,8 +1217,23 @@ bool load_world(const char *mname, int crc)       // still supports all map form
                 e.type = ET_EMPTY;
                 continue;
             }
+            else if(oldsun)
+            {
+                int links = f->getlil<int>();
+                loopk(links) f->getlil<int>(); //f->seek(sizeof(int)*links, SEEK_CUR);
+                importedsuns++;
+                importedsunyaw += e.attrs[1];
+                importedsunpitch += e.attrs[2];
+                importedsuncolor.add(vec(e.attrs[2], e.attrs[3], e.attrs[4]).div(255));
+                loopk(2) if(e.attrs[6]&(1<<k) && !(importedsunflare&(1<<k))) importedsunflare |= 1<<k;
+                importedsunflarescale += e.attrs[7] ? e.attrs[7]/100.f : 1.f;
+                e.type = ET_EMPTY;
+                continue;
+            }
+
             entities::readent(f, maptype, hdr.version, hdr.gameid, hdr.gamever, i);
-            if(eatlinks || (maptype == MAP_MAPZ && entities::maylink(e.type, hdr.gamever)))
+
+            if(maptype == MAP_MAPZ && entities::maylink(e.type, hdr.gamever))
             {
                 int links = f->getlil<int>();
                 e.links.add(0, links);
@@ -1228,35 +1246,33 @@ bool load_world(const char *mname, int crc)       // still supports all map form
                 if(e.attrs[0] <= 12) e.attrs[0] += 3;
                 else e.attrs[0] = 0; // bork it up
             }
-            if(e.type == ET_MAPMODEL)
+            if(maptype == MAP_OCTA && e.type == ET_MAPMODEL)
             {
-                if(maptype == MAP_OCTA)
-                {
-                    int angle = e.attrs[0];
-                    e.attrs[0] = e.attrs[1];
-                    e.attrs[1] = angle;
-                    loopk(e.attrs.length()-2) e.attrs[k+2] = 0;
-                }
+                int angle = e.attrs[0];
+                e.attrs[0] = e.attrs[1];
+                e.attrs[1] = angle;
+                loopk(e.attrs.length()-2) e.attrs[k+2] = 0;
             }
             if(verbose && !insideworld(e.o) && e.type != ET_LIGHT && e.type != ET_LIGHTFX)
                 conoutf("\frWARNING: ent outside of world: enttype[%d](%s) index %d (%f, %f, %f) [%d, %d]", e.type, entities::findname(e.type), i, e.o.x, e.o.y, e.o.z, worldsize, worldscale);
         }
-        if(verbose) conoutf("Loaded %d entities", hdr.numents);
-        #if 0 // FIXME: want to do the opposite now
-        if(maptype == MAP_OCTA && sunlight)
+        if(importedsuns)
         {
-            extentity &e = *ents.add(entities::newent());
-            e.attrs.add(0, 6);
-            e.type = ET_SUNLIGHT;
-            e.o = vec(worldsize/2, worldsize/2, worldsize*3/4);
-            e.attrs[0] = sunlightyaw;
-            e.attrs[1] = sunlightpitch-90;
-            e.attrs[2] = int(((sunlight>>16)&0xFF)*sunlightscale*5/8);
-            e.attrs[3] = int(((sunlight>>8)&0xFF)*sunlightscale*5/8);
-            e.attrs[4] = int((sunlight&0xFF)*sunlightscale*5/8);
-            e.attrs[5] = -1;
+            if(importedsuns > 1)
+            {
+                importedsunyaw /= importedsuns;
+                importedsunpitch /= importedsuns;
+                importedsuncolor.div(importedsuns);
+                importedsunflarescale /= importedsuns;
+            }
+            importedsuncolor.normalize();
+            setvar("sunlight", importedsuncolor.tohexcolor(), true, false, true);
+            setfvar("sunlightyaw", importedsunyaw, true, false, true);
+            setfvar("sunlightpitch", importedsunpitch+90, true, false, true);
+            setvar("sunlightflare", importedsunflare, true, false, true);
+            setfvar("sunlightflarescale", importedsunflarescale, true, false, true);
         }
-        #endif // 0
+        if(verbose) conoutf("Loaded %d entities", hdr.numents);
 
         progress(0, "Loading slots...");
         loadvslots(f, hdr.numvslots);

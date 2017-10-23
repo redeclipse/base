@@ -121,47 +121,32 @@ struct flarerenderer : partrenderer
             loopenti(ET_LIGHT)
             {
                 extentity &e = *ents[i];
-                bool sun = false, project = false;
+                if(e.type != ET_LIGHT || (!(flarelights&8) && !(flarelights&2 && e.attrs[4]))) continue;
+                bool sun = false;
                 int sparkle = 0;
-                vec o = e.o;
                 uchar r = 255, g = 255, b = 255;
                 float scale = 1.f;
-                switch(e.type)
-                {
-                    case ET_LIGHT:
-                        if(flarelights&8 || (flarelights&2 && e.attrs[4]))
-                        {
-                            if(!e.attrs[0] || e.attrs[4]&1) sun = true;
-                            if(!e.attrs[0] || e.attrs[4]&2) sparkle = sun ? 1 : 2;
-                            r = e.attrs[1];
-                            g = e.attrs[2];
-                            b = e.attrs[3];
-                            if(e.attrs[5] > 0) scale = e.attrs[5]/100.f;
-                            break;
-                        }
-                        else continue;
-                    #if 0
-                    case ET_SUNLIGHT:
-                        if(flarelights&4 || (flarelights&1 && e.attrs[6]))
-                        {
-                            if(!e.attrs[6] || e.attrs[6]&1) sun = true;
-                            if(!e.attrs[6] || e.attrs[6]&2) sparkle = sun ? 1 : 2;
-                            r = e.attrs[2];
-                            g = e.attrs[3];
-                            b = e.attrs[4];
-                            o = vec(camera1->o).add(vec(e.attrs[0]*RAD, (e.attrs[1]+90)*RAD).mul(worldsize*2));
-                            project = true;
-                            if(e.attrs[7] > 0) scale = e.attrs[7]/100.f;
-                            break;
-                        }
-                        else continue;
-                    #endif
-                    default: continue;
-                }
+                if(!e.attrs[0] || e.attrs[4]&1) sun = true;
+                if(!e.attrs[0] || e.attrs[4]&2) sparkle = sun ? 1 : 2;
+                r = e.attrs[1];
+                g = e.attrs[2];
+                b = e.attrs[3];
+                if(e.attrs[5] > 0) scale = e.attrs[5]/100.f;
                 vec flaredir;
-                float mod = 0, size = 0, radius = project ? 0.f : e.attrs[0]*flaresize/100.f;
-                if(generate(o, flaredir, mod, size, sun || project, radius))
-                    newflare(o, vec(camdir).mul(flaredir.dot(camdir)).add(camera1->o), r, g, b, mod, size*scale, sun, sparkle);
+                float mod = 0, size = 0;
+                if(generate(e.o, flaredir, mod, size, sun, e.attrs[0]*flaresize/100.f))
+                    newflare(e.o, vec(camdir).mul(flaredir.dot(camdir)).add(camera1->o), r, g, b, mod, size*scale, sun, sparkle);
+            }
+            if(!sunlight.iszero() && (flarelights&4 || (flarelights&1 && sunlightflare)))
+            {
+                bool sun = !sunlightflare || sunlightflare&1;
+                int sparkle = !sunlightflare || sunlightflare&2 ? 1 : 2;
+                float scale = sunlightflarescale > 0 ? sunlightflarescale : 1.f;
+                vec o = vec(camera1->o).add(vec(sunlightyaw*RAD, sunlightpitch*RAD).mul(worldsize*2));
+                vec flaredir;
+                float mod = 0, size = 0;
+                if(generate(o, flaredir, mod, size, sun, 0.f))
+                    newflare(o, vec(camdir).mul(flaredir.dot(camdir)).add(camera1->o), sunlight.r, sunlight.g, sunlight.b, mod, size*scale, sun, sparkle);
             }
         }
     }
