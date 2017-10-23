@@ -3132,7 +3132,7 @@ namespace game
         if(drawtex) flags &= ~(MDL_FULLBRIGHT | MDL_CULL_VFC | MDL_CULL_OCCLUDED | MDL_CULL_QUERY | MDL_CULL_DIST);
 
         dynent *e = third ? (third != 2 ? (dynent *)d : (dynent *)&bodymodel) : (dynent *)&avatarmodel;
-        vec4 color = vec4(getcolour(d, playerovertone, playerovertonelevel), trans);
+        vec4 color = vec4(getcolour(d, playerovertone, playerovertonelevel), 1);
         #if 0
         if(e->light.millis != lastmillis)
         {
