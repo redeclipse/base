@@ -998,6 +998,7 @@ namespace game
 
     float opacity(gameent *d, bool third)
     {
+        #if 0
         float total = d == focus ? (third ? (d != player1 ? followblend : thirdpersonblend) : firstpersonblend) : playerblend;
         if(physics::isghost(d, focus)) total *= playerghostblend;
         if(deathfade && (d->state == CS_DEAD || d->state == CS_WAITING)) total *= spawnfade(d);
@@ -1015,6 +1016,8 @@ namespace game
         }
         else if(d->state == CS_EDITING) total *= playereditblend;
         return total;
+        #endif
+        return 1.f;
     }
 
     void footstep(gameent *d, int curfoot)
@@ -3640,13 +3643,13 @@ namespace game
         int numdyns = numdynents();
         loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL)
         {
-            if(d != focus) d->cleartags();
-            renderplayer(d, 1, 1, d->curscale, MDL_ONLYSHADOW);
             if(d != focus)
             {
+                d->cleartags();
                 renderplayer(d, 1, opacity(d, true), d->curscale);
                 rendercheck(d);
             }
+            else renderplayer(d, 1, 1, d->curscale, MDL_ONLYSHADOW);
         }
     }
 
