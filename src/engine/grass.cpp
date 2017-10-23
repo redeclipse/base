@@ -23,7 +23,7 @@ struct grasswedge
       across.div(-across.dot(bound1));
     }
 };
-grasswedge *grasswedges = NULL;
+static grasswedge *grasswedges = NULL;
 void resetgrasswedges(int n)
 {
     DELETEA(grasswedges);
@@ -64,12 +64,6 @@ void resetgrassoffsets(int n)
 }
 VARFN(IDF_PERSIST, grassoffsets, numgrassoffsets, 8, 32, 1024, resetgrassoffsets(numgrassoffsets));
 
-void initgrass()
-{
-    if(!grasswedges) resetgrasswedges(numgrasswedges);
-    if(!grassoffsets) resetgrassoffsets(numgrassoffsets);
-}
-
 static int lastgrassanim = -1;
 
 VAR(IDF_WORLD, grassanimmillis, 0, 3000, 60000);
@@ -82,12 +76,7 @@ static void animategrass()
 }
 
 VAR(IDF_WORLD, grassscale, 1, 2, 64);
-bvec grasscolor(255, 255, 255);
-VARF(IDF_HEX|IDF_WORLD, grasscolour, 0, 0xFFFFFF, 0xFFFFFF,
-{
-    if(!grasscolour) grasscolour = 0xFFFFFF;
-    grasscolor = bvec((grasscolour>>16)&0xFF, (grasscolour>>8)&0xFF, grasscolour&0xFF);
-});
+CVAR0(IDF_WORLD, grasscolour, 0xFFFFFF);
 FVAR(IDF_WORLD, grassblend, 0, 1, 1);
 FVAR(IDF_WORLD, grasstest, 0, 0.6f, 1);
 
@@ -128,8 +117,6 @@ static void gengrassquads(grassgroup *&group, const grasswedge &w, const grasstr
           taperscale = 1.0f / (grassdist - taperdist),
           dist = maxstep*grassstep + tstart,
           leftb = 0, rightb = 0, leftdb = 0, rightdb = 0;
-    bvec gcol = col.iszero() ? grasscolor : bvec(uchar(col.x*255), uchar(col.y*255), uchar(col.z*255));
-    if(blend <= 0) blend = grassblend;
     for(int i = maxstep; i >= minstep; i--, offset--, leftp.add(leftdir), rightp.add(rightdir), leftb += leftdb, rightb += rightdb, dist -= grassstep)
     {
         if(dist <= leftdist)
@@ -203,6 +190,8 @@ static void gengrassquads(grassgroup *&group, const grasswedge &w, const grasstr
               tc1 = tc.dot(p1) + tcoffset, tc2 = tc.dot(p2) + tcoffset,
               fade = dist - t > taperdist ? (grassdist - (dist - t))*taperscale : 1,
               height = gh * fade;
+        bvec gcol = col.iszero() ? grasscolour : bvec(uchar(col.x*255), uchar(col.y*255), uchar(col.z*255));
+        if(blend <= 0) blend = grassblend;
         bvec4 color(gcol, uchar(fade*blend*255));
 
         #define GRASSVERT(n, tcv, modify) { \
@@ -253,8 +242,8 @@ void generategrass()
     grassgroups.setsize(0);
     grassverts.setsize(0);
 
-    resetgrasswedges(numgrasswedges);
-    resetgrassoffsets(numgrassoffsets);
+    if(!grasswedges) resetgrasswedges(numgrasswedges);
+    if(!grassoffsets) resetgrassoffsets(numgrassoffsets);
 
     loopi(numgrasswedges)
     {

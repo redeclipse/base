@@ -545,17 +545,15 @@ void saveslotconfig(stream *h, Slot &s, int index)
             h->printf("texcolor %f %f %f\n", s.variants->colorscale.x, s.variants->colorscale.y, s.variants->colorscale.z);
         if(s.variants->palette || s.variants->palindex) h->printf("texpalette %d %d\n", s.variants->palette, s.variants->palindex);
         if(s.variants->coastscale != 1) h->printf("texcoastscale %f\n", s.variants->coastscale);
-        #if 0
-        if(s.texgrass)
+        if(s.grass && s.grass[0])
         {
-            h->printf("texgrass %s\n", escapestring(s.texgrass));
+            h->printf("texgrass %s\n", escapestring(s.grass));
             if(s.grasscolor != vec(0, 0, 0))
                 h->printf("texgrasscolor %f %f %f\n", s.grasscolor.x, s.grasscolor.y, s.grasscolor.z);
             if(s.grassblend > 0) h->printf("texgrassblend %f\n", s.grassblend);
             if(s.grassscale > 0) h->printf("texgrassscale %d\n", s.grassscale);
             if(s.grassheight > 0) h->printf("texgrassheight %d\n", s.grassheight);
         }
-        #endif
     }
     h->printf("\n");
 }
@@ -1294,7 +1292,7 @@ bool load_world(const char *mname, int crc)       // still supports all map form
 
         if(!failed)
         {
-            if(hdr.version <= 43) loopi(lightmaps)
+            if(lightmaps > 0) loopi(lightmaps)
             {
                 int type = f->getchar();
                 if(type&0x80) loopi(2) f->getlil<ushort>();
