@@ -85,7 +85,7 @@ void setnames(const char *fname, int type, int crc)
     formatstring(mf, "%s%s", mapname, mapexts[maptype].name);
     setsvar("mapfile", mf);
 
-    if(verbose >= 1) conoutf("Set map name to %s (%s)", mapname, mapfile);
+    if(verbose) conoutf("Set map name to %s (%s)", mapname, mapfile);
 }
 
 enum { OCTSAV_CHILDREN = 0, OCTSAV_EMPTY, OCTSAV_SOLID, OCTSAV_NORMAL };
@@ -596,7 +596,7 @@ void save_config(char *mname)
         }
     }
     if(vars) h->printf("\n");
-    if(verbose >= 2) conoutf("Wrote %d variable values", vars);
+    if(verbose) conoutf("Wrote %d variable values", vars);
 
     int aliases = 0;
     loopv(ids)
@@ -614,7 +614,7 @@ void save_config(char *mname)
         }
     }
     if(aliases) h->printf("\n");
-    if(verbose >= 2) conoutf("Saved %d aliases", aliases);
+    if(verbose) conoutf("Saved %d aliases", aliases);
 
     // texture slots
     int nummats = sizeof(materialslots)/sizeof(materialslots[0]);
@@ -1034,10 +1034,7 @@ bool load_world(const char *mname, int crc)       // still supports all map form
                             break;
                         }
                     }
-                    if(!proceed)
-                    {
-                        if(verbose) conoutf("\frWARNING: ignoring variable %s stored in map", name);
-                    }
+                    if(!proceed) conoutf("\frWARNING: ignoring variable %s stored in map", name);
                     else vars++;
                 }
             }
@@ -1253,24 +1250,34 @@ bool load_world(const char *mname, int crc)       // still supports all map form
                 e.attrs[1] = angle;
                 loopk(e.attrs.length()-2) e.attrs[k+2] = 0;
             }
-            if(verbose && !insideworld(e.o) && e.type != ET_LIGHT && e.type != ET_LIGHTFX)
+            if(!insideworld(e.o) && e.type != ET_LIGHT && e.type != ET_LIGHTFX)
                 conoutf("\frWARNING: ent outside of world: enttype[%d](%s) index %d (%f, %f, %f) [%d, %d]", e.type, entities::findname(e.type), i, e.o.x, e.o.y, e.o.z, worldsize, worldscale);
         }
-        if(importedsuns)
+        if(maptype == MAP_MAPZ && hdr.version == 43)
         {
-            if(importedsuns > 1)
+            if(importedsuns)
             {
-                importedsunyaw /= importedsuns;
-                importedsunpitch /= importedsuns;
-                importedsuncolor.div(importedsuns);
-                importedsunflarescale /= importedsuns;
+                if(importedsuns > 1)
+                {
+                    importedsunyaw /= importedsuns;
+                    importedsunpitch /= importedsuns;
+                    importedsuncolor.div(importedsuns);
+                    importedsunflarescale /= importedsuns;
+                }
+                importedsuncolor.normalize();
+                setvar("sunlight", importedsuncolor.tohexcolor(), true, false, true);
+                setfvar("sunlightyaw", importedsunyaw, true, false, true);
+                setfvar("sunlightpitch", importedsunpitch+90, true, false, true);
+                setvar("sunlightflare", importedsunflare, true, false, true);
+                setfvar("sunlightflarescale", importedsunflarescale, true, false, true);
             }
-            importedsuncolor.normalize();
-            setvar("sunlight", importedsuncolor.tohexcolor(), true, false, true);
-            setfvar("sunlightyaw", importedsunyaw, true, false, true);
-            setfvar("sunlightpitch", importedsunpitch+90, true, false, true);
-            setvar("sunlightflare", importedsunflare, true, false, true);
-            setfvar("sunlightflarescale", importedsunflarescale, true, false, true);
+            else if(!skylight.iszero())
+            {
+                setvar("sunlight", 0x010101, true, false, true);
+                setfvar("sunlightyaw", 0, true, false, true);
+                setfvar("sunlightpitch", 90, true, false, true);
+                setfvar("sunlightscale", FVAR_NONZERO, true, false, true);
+            }
         }
         if(verbose) conoutf("Loaded %d entities", hdr.numents);
 

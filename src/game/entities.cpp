@@ -1677,7 +1677,7 @@ namespace entities
 
     void checkyawmode(gameentity &e, int mtype, int mver, int gver, int y, int m)
     {
-        if((y >= 0) && ((mtype == MAP_OCTA && mver <= 30) || (mtype == MAP_MAPZ && mver <= 39)))
+        if(y >= 0 && ((mtype == MAP_OCTA && mver <= 30) || (mtype == MAP_MAPZ && mver <= 39)))
             e.attrs[y] = (e.attrs[y] + 180)%360;
         if(m >= 0 && mtype == MAP_MAPZ && gver <= 201)
         {
@@ -1751,7 +1751,7 @@ namespace entities
                 }
                 case PARTICLES:
                 {
-                    if(mtype == MAP_OCTA || (mtype == MAP_MAPZ && mver <= 36))
+                    if(mtype == MAP_OCTA)
                     {
                         switch(e.attrs[0])
                         {
