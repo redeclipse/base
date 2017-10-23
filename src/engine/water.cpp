@@ -13,7 +13,7 @@ void loadcaustics(bool force)
     if(caustictex[0]) return;
     loopi(NUMCAUSTICS)
     {
-        defformatstring(name, "<grey><noswizzle>media/texture/mat_water/caustic/caust%.2d.png", i);
+        defformatstring(name, "<grey><noswizzle>caustics/caust%.2d.png", i);
         caustictex[i] = textureload(name);
     }
 }
