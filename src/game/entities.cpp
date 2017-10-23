@@ -2341,21 +2341,23 @@ namespace entities
         part_portal(e.o, radius, 1, yaw, e.attrs[1], PART_TELEPORT, 0, colour);
     }
 
+    bool checkparticle(extentity &e)
+    {
+        gameentity &f = (gameentity &)e;
+        if(f.attrs[11])
+        {
+            if((f.nextemit -= curtime) <= 0) f.nextemit = 0;
+            if(f.nextemit) return false;
+            f.nextemit += f.attrs[11];
+        }
+        if(f.links.empty() || f.spawned() || (f.lastemit > 0 && lastmillis-f.lastemit <= triggertime(e)/2)) return true;
+        return false;
+    }
+
     void drawparticle(gameentity &e, const vec &o, int idx, bool spawned, bool active, float skew)
     {
         switch(e.type)
         {
-            case PARTICLES:
-                #if 0
-                if(idx >= 0 && e.attrs[11])
-                {
-                    if((e.nextemit -= curtime) <= 0) e.nextemit = 0;
-                    if(e.nextemit) break;
-                }
-                if(idx < 0 || e.links.empty() || e.spawned() || (e.lastemit > 0 && lastmillis-e.lastemit <= triggertime(e)/2)) makeparticle(o, e.attrs);
-                if(idx >= 0 && e.attrs[11]) e.nextemit += e.attrs[11];
-                #endif
-                break;
             case TELEPORT:
                 if(e.attrs[4]) maketeleport(e);
                 break;
@@ -2458,8 +2460,8 @@ namespace entities
     void drawparticles()
     {
         float maxdist = float(maxparticledistance)*float(maxparticledistance);
-        int frstent = m_edit(game::gamemode) ? 0 : min(firstuse(EU_ITEM), min(firstent(PARTICLES), firstent(TELEPORT))),
-            flstent = m_edit(game::gamemode) ? ents.length() : max(lastuse(EU_ITEM), max(lastent(PARTICLES), lastent(TELEPORT)));
+        int frstent = m_edit(game::gamemode) ? 0 : min(firstuse(EU_ITEM), firstent(TELEPORT)),
+            flstent = m_edit(game::gamemode) ? ents.length() : max(lastuse(EU_ITEM),lastent(TELEPORT));
         bool hasroute = (m_edit(game::gamemode) || m_race(game::gamemode)) && routeid >= 0;
         if(hasroute)
         {
@@ -2470,7 +2472,7 @@ namespace entities
         {
             gameentity &e = *(gameentity *)ents[i];
             if(e.type == NOTUSED || e.attrs.empty()) continue;
-            if(e.type != PARTICLES && e.type != TELEPORT && e.type != ROUTE && !m_edit(game::gamemode) && enttype[e.type].usetype != EU_ITEM) continue;
+            if(e.type != TELEPORT && e.type != ROUTE && !m_edit(game::gamemode) && enttype[e.type].usetype != EU_ITEM) continue;
             else if(e.o.squaredist(camera1->o) > maxdist) continue;
             float skew = 1;
             bool active = false;

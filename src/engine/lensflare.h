@@ -33,8 +33,8 @@ VAR(IDF_PERSIST, flarecutoff, 0, 1000, VAR_MAX);
 VAR(IDF_PERSIST, flaresize, 1, 100, VAR_MAX);
 VAR(IDF_PERSIST, flaresundist, 1, 4096, VAR_MAX);
 VAR(IDF_PERSIST, flareshine, 1, 50, VAR_MAX);
-FVAR(IDF_PERSIST, flareblend, 0, 0.5f, 1);
-FVAR(IDF_PERSIST, flareadjust, 0, 0.7f, 1);
+FVAR(IDF_PERSIST, flareblend, 0, 1, 1);
+//FVAR(IDF_PERSIST, flareadjust, 0, 0.7f, 1);
 
 struct flarerenderer : partrenderer
 {
@@ -43,7 +43,7 @@ struct flarerenderer : partrenderer
     flare *flares;
 
     flarerenderer(const char *texname, int maxflares, int flags = 0)
-        : partrenderer(texname, 3, PT_FLARE|PT_SHADER|flags), maxflares(maxflares), numflares(0), shinetime(0)
+        : partrenderer(texname, 3, PT_FLARE|PT_NOLAYER|flags), maxflares(maxflares), numflares(0), shinetime(0)
     {
         flares = new flare[maxflares];
     }
@@ -57,20 +57,11 @@ struct flarerenderer : partrenderer
         numflares = 0;
     }
 
-    void setupflares()
-    {
-        reset(); //regenerate flarelist each frame
-        shinetime = lastmillis/flareshine;
-    }
-
     void newflare(const vec &o,  const vec &center, uchar r, uchar g, uchar b, float mod, float size, bool sun, int sparkle)
     {
         if(numflares >= maxflares) return;
-        //occlusion check (neccessary as depth testing is turned off)
-        vec dir = vec(camera1->o).sub(o);
-        float dist = dir.magnitude();
-        dir.mul(1/dist);
-        if(raycube(o, dir, dist, RAY_CLIPMAT|RAY_POLY) < dist) return;
+        vec target; //occlusion check (neccessary as depth testing is turned off)
+        if(!raycubelos(o, camera1->o, target)) return;
         flare &f = flares[numflares++];
         f.o = o;
         f.center = center;
@@ -79,9 +70,10 @@ struct flarerenderer : partrenderer
         f.sparkle = sparkle;
     }
 
-    bool generate(const vec &o, vec &flaredir, float &mod, float &size, bool sun, float radius)
+    bool generate(const vec &o, vec &center, vec &flaredir, float &mod, float &size, bool sun, float radius)
     {
         flaredir = vec(o).sub(camera1->o);
+        center = vec(camdir).mul(flaredir.dot(camdir)).add(camera1->o);
         if(sun) //fixed size
         {
             mod = 1.0f;
@@ -99,12 +91,10 @@ struct flarerenderer : partrenderer
 
     void addflare(const vec &o, uchar r, uchar g, uchar b, bool sun, bool project, int sparkle)
     {
-        //frustrum + fog check
-        //find closest point between camera line of sight and flare pos
-        vec flaredir;
+        vec flaredir, center;
         float mod = 0, size = 0;
-        if(generate(o, flaredir, mod, size, sun || project, flarecutoff))
-            newflare(o, vec(camdir).mul(flaredir.dot(camdir)).add(camera1->o), r, g, b, mod, size, sun, sparkle);
+        if(generate(o, center, flaredir, mod, size, sun || project, flarecutoff))
+            newflare(o, center, r, g, b, mod, size, sun, sparkle);
     }
 
     void update()
@@ -124,29 +114,25 @@ struct flarerenderer : partrenderer
                 if(e.type != ET_LIGHT || (!(flarelights&8) && !(flarelights&2 && e.attrs[4]))) continue;
                 bool sun = false;
                 int sparkle = 0;
-                uchar r = 255, g = 255, b = 255;
+                uchar r = e.attrs[1], g = e.attrs[2], b = e.attrs[3];
                 float scale = 1.f;
                 if(!e.attrs[0] || e.attrs[4]&1) sun = true;
                 if(!e.attrs[0] || e.attrs[4]&2) sparkle = sun ? 1 : 2;
-                r = e.attrs[1];
-                g = e.attrs[2];
-                b = e.attrs[3];
                 if(e.attrs[5] > 0) scale = e.attrs[5]/100.f;
-                vec flaredir;
+                vec flaredir, center;
                 float mod = 0, size = 0;
-                if(generate(e.o, flaredir, mod, size, sun, e.attrs[0]*flaresize/100.f))
-                    newflare(e.o, vec(camdir).mul(flaredir.dot(camdir)).add(camera1->o), r, g, b, mod, size*scale, sun, sparkle);
+                if(generate(e.o, center, flaredir, mod, size, sun, e.attrs[0]*flaresize/100.f))
+                    newflare(e.o, center, r, g, b, mod, size*scale, sun, sparkle);
             }
             if(!sunlight.iszero() && (flarelights&4 || (flarelights&1 && sunlightflare)))
             {
                 bool sun = !sunlightflare || sunlightflare&1;
                 int sparkle = !sunlightflare || sunlightflare&2 ? 1 : 2;
                 float scale = sunlightflarescale > 0 ? sunlightflarescale : 1.f;
-                vec o = vec(camera1->o).add(vec(sunlightyaw*RAD, sunlightpitch*RAD).mul(worldsize*2));
-                vec flaredir;
+                vec flaredir, center, o = vec(camera1->o).sub(vec(sunlightyaw*RAD, sunlightpitch*RAD).mul(flaresundist));
                 float mod = 0, size = 0;
-                if(generate(o, flaredir, mod, size, sun, 0.f))
-                    newflare(o, vec(camdir).mul(flaredir.dot(camdir)).add(camera1->o), sunlight.r, sunlight.g, sunlight.b, mod, size*scale, sun, sparkle);
+                if(generate(o, center, flaredir, mod, size, sun, 0.f))
+                    newflare(o, center, sunlight.r, sunlight.g, sunlight.b, mod, size*scale, sun, sparkle);
             }
         }
     }
@@ -174,6 +160,7 @@ struct flarerenderer : partrenderer
             const flare &f = flares[i];
             float blend = flareblend;
             vec center = f.center, axis = vec(f.o).sub(center);
+            #if 0
             if(flareadjust > 0)
             {
                 float yaw, pitch;
@@ -190,6 +177,7 @@ struct flarerenderer : partrenderer
                 if(pitch < 0) pitch = -pitch;
                 blend *= 1-min(pitch/(fovy*0.5f)*flareadjust, 1.f);
             }
+            #endif
             bvec4 color(f.color, 255);
             loopj(f.sparkle ? (f.sparkle != 2 ? 12 : 3) : 9)
             {
@@ -200,7 +188,8 @@ struct flarerenderer : partrenderer
                 int tex = ft.type;
                 if(ft.type < 0) //sparkles - always done last
                 {
-                    tex = 6+((shinetime+1)%10);
+                    shinetime = (shinetime + 1) % 10;
+                    tex = 6+shinetime;
                     color.r = 0;
                     color.g = 0;
                     color.b = 0;

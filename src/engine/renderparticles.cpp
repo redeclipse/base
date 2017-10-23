@@ -1845,7 +1845,8 @@ void seedparticles()
         extentity &e = *pe.ent;
         seedemitter = &pe;
         for(int millis = 0; millis < seedmillis; millis += min(emitmillis, seedmillis/10))
-            makeparticles(e);
+            if(entities::checkparticle(e))
+                makeparticles(e);
         seedemitter = NULL;
         pe.lastemit = -seedmillis;
         pe.finalize();
@@ -1865,12 +1866,8 @@ void updateparticles()
     }
     else canemit = false;
 
-    loopi(sizeof(parts)/sizeof(parts[0]))
-    {
-        parts[i]->update();
-    }
+    loopi(sizeof(parts)/sizeof(parts[0])) parts[i]->update();
 
-    flares.setupflares();
     entities::drawparticles();
     flares.drawflares(); // do after drawparticles so that we can make flares for them too
 
@@ -1882,7 +1879,8 @@ void updateparticles()
         {
             particleemitter &pe = emitters[i];
             extentity &e = *pe.ent;
-            if(e.o.dist(camera1->o) > maxparticledistance) { pe.lastemit = lastmillis; continue; }
+            if(!entities::checkparticle(e) || e.o.dist(camera1->o) > maxparticledistance) { pe.lastemit = lastmillis; continue; }
+
             if(cullparticles && pe.maxfade >= 0)
             {
                 if(isfoggedsphere(pe.radius, pe.center)) { pe.lastcull = lastmillis; continue; }

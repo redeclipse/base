@@ -28,6 +28,7 @@ namespace entities
     extern int firstuse(int type);
     extern int lastent(int type);
     extern int lastuse(int type);
+    extern bool checkparticle(extentity &e);
     extern void drawparticles();
 }
 
