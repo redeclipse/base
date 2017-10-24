@@ -2451,7 +2451,6 @@ namespace projs
                 {
                     size *= proj.lifesize;
                     fadeproj(proj, trans, size);
-                    yaw += 90;
                     break;
                 }
                 case PRJ_SHOT:
@@ -2473,7 +2472,6 @@ namespace projs
                             proj.light.material[0] = bvec(0, 0, 0);
                     }
                     #endif
-                    yaw += 90;
                     break;
                 }
                 case PRJ_ENT:

@@ -3125,7 +3125,7 @@ namespace game
             }
         }
 
-        if(third == 1 && testanims && d == focus) yaw = 0; else yaw += 90;
+        if(third == 1 && testanims && d == focus) yaw = 0;
         if(d->ragdoll && (deathanim < 2 || (anim&ANIM_INDEX)!=ANIM_DYING)) cleanragdoll(d);
         if(!((anim>>ANIM_SECONDARY)&ANIM_INDEX)) anim |= (ANIM_IDLE|ANIM_LOOP)<<ANIM_SECONDARY;
 

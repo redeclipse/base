@@ -163,14 +163,14 @@ void mdlscale(float *percent)
 {
     checkmdl;
     float scale = *percent > 0 ? *percent/100.0f : 1.0f;
-    loadingmodel->scale = MDLSCALE(scale);
+    loadingmodel->scale = scale;
 }
 COMMAND(0, mdlscale, "f");
 
 void mdlscalef(float *amt)
 {
     checkmdl;
-    loadingmodel->scale = MDLSCALE(*amt);
+    loadingmodel->scale = *amt;
 }
 COMMAND(0, mdlscalef, "f");
 
@@ -528,7 +528,7 @@ void renderellipse(vec &o, float xradius, float yradius, float yaw)
     loopi(15)
     {
         const vec2 &sc = sincos360[i*(360/15)];
-        gle::attrib(vec(xradius*sc.x, yradius*sc.y, 0).rotate_around_z((yaw+90)*RAD).add(o));
+        gle::attrib(vec(xradius*sc.x, yradius*sc.y, 0).rotate_around_z(yaw*RAD).add(o));
     }
     xtraverts += gle::end();
 }
