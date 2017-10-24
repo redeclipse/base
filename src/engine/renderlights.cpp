@@ -4850,6 +4850,7 @@ void rendergbuffer(bool depthclear)
         renderstains(STAINBUF_OPAQUE, true);
         renderstains(STAINBUF_MAPMODEL, true);
         GLERROR;
+        game::renderpost();
         //renderavatar();
         //GLERROR;
     }

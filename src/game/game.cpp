@@ -1112,8 +1112,6 @@ namespace game
         }
         d->o.z += d->airmillis ? offset : d->height;
 
-        d->checktags();
-
         if(m_impulsemeter(gamemode, mutators) && canregenimpulse(d) && d->impulse[IM_METER] > 0)
         {
             bool onfloor = d->physstate >= PHYS_SLOPE || d->onladder || physics::liquidcheck(d),
@@ -3635,24 +3633,26 @@ namespace game
 
     void render()
     {
+        gameent *d;
+        int numdyns = numdynents();
+        loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL && d != focus)
+            d->cleartags();
         ai::render();
         entities::render();
         projs::render();
         if(m_capture(gamemode)) capture::render();
         else if(m_defend(gamemode)) defend::render();
         else if(m_bomber(gamemode)) bomber::render();
+        loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL)
+            renderplayer(d, 1, d != focus ? 1 : opacity(d, true), d->curscale, d != focus ? 0 : MDL_ONLYSHADOW);
+    }
+
+    void renderpost()
+    {
         gameent *d;
         int numdyns = numdynents();
-        loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL)
-        {
-            if(d != focus)
-            {
-                d->cleartags();
-                renderplayer(d, 1, opacity(d, true), d->curscale);
-                rendercheck(d);
-            }
-            else renderplayer(d, 1, 1, d->curscale, MDL_ONLYSHADOW);
-        }
+        loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL && d != focus)
+            rendercheck(d);
     }
 
     void renderavatar()
