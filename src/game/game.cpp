@@ -74,6 +74,8 @@ namespace game
     VAR(IDF_PERSIST, thirdpersonmodel, 0, 1, 1);
     VAR(IDF_PERSIST, thirdpersonfov, 90, 120, 150);
     FVAR(IDF_PERSIST, thirdpersonblend, 0, 1, 1);
+    FVAR(IDF_PERSIST, thirdpersondepth, 0, 0.65f, 1);
+    FVAR(IDF_PERSIST, thirdpersondepthfov, 0, 90, 150);
     VAR(IDF_PERSIST, thirdpersoninterp, 0, 100, VAR_MAX);
     FVAR(IDF_PERSIST, thirdpersondist, FVAR_NONZERO, 14, 20);
     FVAR(IDF_PERSIST, thirdpersonside, -20, 7, 20);
@@ -3657,7 +3659,9 @@ namespace game
     {
         bool third = thirdpersonview();
         focus->cleartags();
-        setavatarscale(firstpersondepthfov != 0 ? firstpersondepthfov : curfov, third || focus->state != CS_ALIVE ? 1.f : firstpersondepth);
+        float depthfov = third ? (thirdpersondepthfov != 0 ? thirdpersondepthfov : curfov) : (firstpersondepthfov != 0 ? firstpersondepthfov : curfov),
+              depthscale = third || focus->state != CS_ALIVE ? thirdpersondepth : firstpersondepth;
+        setavatarscale(depthfov, depthscale);
         if(third || focus->state == CS_ALIVE)
             renderplayer(focus, third ? 1 : 0, opacity(focus, third ? thirdpersonview(true) : false), focus->curscale, MDL_NOBATCH);
         if(!third && focus->state == CS_ALIVE && firstpersonmodel == 2)
