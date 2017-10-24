@@ -1870,8 +1870,8 @@ namespace client
         putint(q, N_POS);
         putuint(q, d->clientnum);
         // 3 bits phys state, 2 bits move, 2 bits strafe, 2 bits turnside
-        uchar physstate = d->physstate | ((d->move&3)<<3) | ((d->strafe&3)<<5) | ((d->turnside&3)<<7);
-        q.put(physstate);
+        uint physstate = d->physstate | ((d->move&3)<<3) | ((d->strafe&3)<<5) | ((d->turnside&3)<<7);
+        putuint(q, physstate);
         putuint(q, d->impulse[IM_METER]);
         ivec o = ivec(vec(d->o.x, d->o.y, d->o.z-d->height).mul(DMF)), f = ivec(vec(d->floorpos.x, d->floorpos.y, d->floorpos.z).mul(DMF));
         uint vel = min(int(d->vel.magnitude()*DVELF), 0xFFFF), fall = min(int(d->falling.magnitude()*DVELF), 0xFFFF);
@@ -2127,7 +2127,7 @@ namespace client
         {
             case N_POS:                        // position of another client
             {
-                int lcn = getuint(p), physstate = p.get(), meter = getuint(p), flags = getuint(p);
+                int lcn = getuint(p), physstate = getuint(p), meter = getuint(p), flags = getuint(p);
                 vec o, f, vel, falling;
                 float yaw, pitch, roll;
                 loopk(3)
@@ -2264,7 +2264,6 @@ namespace client
                 {
                     game::player1->clientnum = getint(p);
                     sessionver = getint(p);
-                    getstring(text, p); // TODO proto 231
                     getstring(game::player1->hostip, p);
                     sessionid = getint(p);
                     if(sessionver != VERSION_GAME)
@@ -2471,7 +2470,6 @@ namespace client
                     vector<int> rweaps;
                     loopk(rw) rweaps.add(getint(p));
                     getstring(d->handle, p);
-                    getstring(text, p); // TODO proto 231
                     getstring(d->hostip, p);
                     if(d != game::player1) d->version.get(p);
                     else dummy.get(p);
