@@ -2279,7 +2279,7 @@ namespace entities
                     vec pos = e.o;
                     if(mdlname && *mdlname)
                     {
-                        int flags = MDL_CULL_VFC|MDL_CULL_DIST|MDL_CULL_OCCLUDED;//, colour = -1;
+                        int flags = MDL_CULL_VFC|MDL_CULL_DIST|MDL_CULL_OCCLUDED, colour = -1;
                         float fade = 1, yaw = 0, pitch = 0, size = 1;
                         if(!active)
                         {
@@ -2287,15 +2287,15 @@ namespace entities
                             if(e.type == AFFINITY || e.type == PLAYERSTART)
                             {
                                 yaw = e.attrs[1]+(e.type == PLAYERSTART ? 90 : 0);
-                                //colour = TEAM(e.attrs[0], colour);
+                                colour = TEAM(e.attrs[0], colour);
                                 pitch = e.attrs[2];
                             }
                             else if(e.type == ACTOR)
                             {
                                 yaw = e.attrs[1]+90;
                                 pitch = e.attrs[2];
-                                //int weap = e.attrs[6] > 0 ? e.attrs[6]-1 : AA(e.attrs[0], weaponspawn);
-                                //if(isweap(weap)) colour = W(weap, colour);
+                                int weap = e.attrs[6] > 0 ? e.attrs[6]-1 : AA(e.attrs[0], weaponspawn);
+                                if(isweap(weap)) colour = W(weap, colour);
                                 size = e.attrs[9] > 0 ? e.attrs[9]/100.f : AA(e.attrs[0], scale);
                             }
                         }
@@ -2312,17 +2312,11 @@ namespace entities
                         if(e.type == WEAPON)
                         {
                             int attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], m_weapon(game::focus->actortype, game::gamemode, game::mutators));
-                            if(isweap(attr))
-                            {
-                                //int col = W(attr, colour), interval = lastmillis%1000;
-                                //e.light.effect = vec::hexcolor(col).mul(interval >= 500 ? (1000-interval)/500.f : interval/500.f);
-                                //if(attr == W_GRENADE) colour = col;
-                            }
+                            if(isweap(attr)) colour = W(attr, colour);
                             else continue;
                         }
-                        //else e.light.effect = vec(0, 0, 0);
-                        //e.light.material[0] = colour >= 0 ? bvec(colour) : bvec(colourwhite);
-                        rendermodel(mdlname, ANIM_MAPMODEL|ANIM_LOOP, pos, yaw, pitch, 0.f, flags, NULL, NULL, 0, 0, size, vec4(1, 1, 1, fade));
+                        e.material[0] = colour >= 0 ? bvec(colour) : bvec(colourwhite);
+                        rendermodel(mdlname, ANIM_MAPMODEL|ANIM_LOOP, pos, yaw, pitch, 0.f, flags, NULL, NULL, 0, 0, size, vec4(1, 1, 1, fade), &e.material[0]);
                     }
                 }
             }

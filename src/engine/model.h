@@ -18,7 +18,7 @@ struct model
     virtual void calcbb(vec &center, vec &radius) = 0;
     virtual void calctransform(matrix4x3 &m) = 0;
     virtual int intersect(int anim, int basetime, int basetime2, const vec &pos, float yaw, float pitch, float roll, dynent *d, modelattach *a, float size, const vec &o, const vec &ray, float &dist, int mode) = 0;
-    virtual void render(int anim, int basetime, int basetime2, const vec &o, float yaw, float pitch, float roll, dynent *d, modelattach *a = NULL, float size = 1, const vec4 &color = vec4(1, 1, 1, 1)) = 0;
+    virtual void render(int anim, int basetime, int basetime2, const vec &o, float yaw, float pitch, float roll, dynent *d, modelattach *a = NULL, float size = 1, const vec4 &color = vec4(1, 1, 1, 1), const bvec *material = NULL) = 0;
     virtual bool load() = 0;
     virtual int type() const = 0;
     virtual BIH *setBIH() { return NULL; }
@@ -37,7 +37,7 @@ struct model
     virtual void setfullbright(float fullbright) {}
     virtual void setcullface(int cullface) {}
     virtual void setcolor(const vec &color) {}
-    virtual void setmaterial(int material, int material2) {}
+    virtual void setmaterial(int material1, int material2) {}
 
     virtual void genshadowmesh(vector<triangle> &tris, const matrix4x3 &orient) {}
     virtual void preloadBIH() { if(!bih) setBIH(); }

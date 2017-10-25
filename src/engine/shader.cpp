@@ -272,6 +272,9 @@ static void compileglslshader(Shader &s, GLenum type, GLuint &obj, const char *d
                     case GL_UNSIGNED_INT_VEC3:
                     case GL_INT_VEC3:
                     case GL_FLOAT_VEC3: swizzle = ".rgb"; break;
+                    case GL_UNSIGNED_INT_VEC4:
+                    case GL_INT_VEC4:
+                    case GL_FLOAT_VEC4: swizzle = ".rgba"; break;
                     case GL_UNSIGNED_INT:
                     case GL_INT:
                     case GL_FLOAT: swizzle = ".r"; break;
@@ -415,7 +418,8 @@ static void findfragdatalocs(Shader &s, char *ps, const char *macroname, int ind
         switch(type[0])
         {
             case 'v':
-                if(matchstring(type, ps-type, "vec3")) format = GL_FLOAT_VEC3;
+                if(matchstring(type, ps-type, "vec4")) format = GL_FLOAT_VEC4;
+                else if(matchstring(type, ps-type, "vec3")) format = GL_FLOAT_VEC3;
                 else if(matchstring(type, ps-type, "vec2")) format = GL_FLOAT_VEC2;
                 break;
             case 'f':

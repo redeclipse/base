@@ -42,12 +42,10 @@ MODELTYPE(MDL_IQM, iqm);
 
 #define checkmdl if(!loadingmodel) { conoutf("\frNot loading a model"); return; }
 
-void mdlmaterial(int *material, int *material2)
+void mdlmaterial(int *material1, int *material2)
 {
-    #if 0
     checkmdl;
-    loadingmodel->setmaterial(clamp(*material, 0, int(MAXLIGHTMATERIALS)), clamp(*material2, 0, int(MAXLIGHTMATERIALS)));
-    #endif
+    loadingmodel->setmaterial(clamp(*material1, 0, int(MAXENTMATERIALS)), clamp(*material2, 0, int(MAXENTMATERIALS)));
 }
 
 COMMAND(0, mdlmaterial, "ii");
@@ -539,6 +537,7 @@ struct batchedmodel
     float radius, yaw, pitch, roll, sizescale;
     vec4 colorscale;
     int anim, basetime, basetime2, flags, attached;
+    const bvec *material;
     union
     {
         int visible;
@@ -600,7 +599,7 @@ static inline void renderbatchedmodel(model *m, const batchedmodel &b)
         if(b.flags&MDL_FULLBRIGHT) anim |= ANIM_FULLBRIGHT;
     }
 
-    m->render(anim, b.basetime, b.basetime2, b.pos, b.yaw, b.pitch, b.roll, b.d, a, b.sizescale, b.colorscale);
+    m->render(anim, b.basetime, b.basetime2, b.pos, b.yaw, b.pitch, b.roll, b.d, a, b.sizescale, b.colorscale, b.material);
 }
 
 VAR(0, maxmodelradiusdistance, 10, 200, 1000);
@@ -949,7 +948,7 @@ void clearbatchedmapmodels()
     }
 }
 
-void rendermapmodel(int idx, int anim, const vec &o, float yaw, float pitch, float roll, int flags, int basetime, float size, const vec4 &colorscale)
+void rendermapmodel(int idx, int anim, const vec &o, float yaw, float pitch, float roll, int flags, int basetime, float size, const vec4 &colorscale, const bvec *material)
 {
     if(!mapmodels.inrange(idx)) return;
     mapmodelinfo &mmi = mapmodels[idx];
@@ -989,13 +988,14 @@ void rendermapmodel(int idx, int anim, const vec &o, float yaw, float pitch, flo
     b.sizescale = size;
     b.colorscale = colorscale;
     b.flags = flags | MDL_MAPMODEL;
+    b.material = material;
     b.visible = visible;
     b.d = NULL;
     b.attached = -1;
     addbatchedmodel(m, b, batchedmodels.length()-1);
 }
 
-void rendermodel(const char *mdl, int anim, const vec &o, float yaw, float pitch, float roll, int flags, dynent *d, modelattach *a, int basetime, int basetime2, float size, const vec4 &color)
+void rendermodel(const char *mdl, int anim, const vec &o, float yaw, float pitch, float roll, int flags, dynent *d, modelattach *a, int basetime, int basetime2, float size, const vec4 &color, const bvec *material)
 {
     model *m = loadmodel(mdl);
     if(!m) return;
@@ -1059,7 +1059,7 @@ hasboundbox:
         m->startrender();
         setaamask(true);
         if(flags&MDL_FULLBRIGHT) anim |= ANIM_FULLBRIGHT;
-        m->render(anim, basetime, basetime2, o, yaw, pitch, roll, d, a, size, color);
+        m->render(anim, basetime, basetime2, o, yaw, pitch, roll, d, a, size, color, material);
         m->endrender();
         if(flags&MDL_CULL_QUERY && d->query) endquery(d->query);
         disableaamask();
@@ -1079,6 +1079,7 @@ hasboundbox:
     b.sizescale = size;
     b.colorscale = color;
     b.flags = flags;
+    b.material = material;
     b.visible = 0;
     b.d = d;
     b.attached = a ? modelattached.length() : -1;

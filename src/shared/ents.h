@@ -14,18 +14,6 @@ struct entbase                                   // persistent map entity
     uchar reserved[3];                          // left-over space due to struct alignment
 };
 
-#if 0
-enum { MAXLIGHTMATERIALS = 3 };
-struct entitylight
-{
-    vec color, dir, effect;
-    int millis;
-    bvec material[MAXLIGHTMATERIALS];
-
-    entitylight() : color(1, 1, 1), dir(0, 0, 1), effect(0, 0, 0), millis(-1) { loopi(MAXLIGHTMATERIALS) material[i] = bvec(255, 255, 255); }
-};
-#endif
-
 enum
 {
     EF_NOVIS      = 1<<0,
@@ -56,13 +44,19 @@ struct entity : entbase
     linkvector links;
 };
 
+enum { MAXENTMATERIALS = 3 };
+
 struct extentity : entity                       // part of the entity that doesn't get saved to disk
 {
     int flags;        // the only dynamic state of a map entity
-    //entitylight light;
     int lastemit, emit[3];
+    bvec material[MAXENTMATERIALS];
 
-    extentity() : flags(0), lastemit(0) { emit[0] = emit[1] = emit[2] = 0; }
+    extentity() : flags(0), lastemit(0)
+    {
+        emit[0] = emit[1] = emit[2] = 0;
+        loopi(MAXENTMATERIALS) material[i] = bvec(255, 255, 255);
+    }
 
     bool spawned() const { return (flags&EF_SPAWNED) != 0; }
     void setspawned(bool val) { if(val) flags |= EF_SPAWNED; else flags &= ~EF_SPAWNED; }
@@ -90,8 +84,13 @@ struct baseent
     uchar state;                                // one of CS_* above
     int inmaterial;
     float submerged;
+    bvec material[MAXENTMATERIALS];
 
-    baseent() : o(0, 0, 0), yaw(0), pitch(0), roll(0), state(CS_SPECTATOR) { reset(); }
+    baseent() : o(0, 0, 0), yaw(0), pitch(0), roll(0), state(CS_SPECTATOR)
+    {
+        reset();
+        loopi(MAXENTMATERIALS) material[i] = bvec(255, 255, 255);
+    }
 
     void reset()
     {

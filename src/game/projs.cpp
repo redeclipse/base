@@ -911,7 +911,7 @@ namespace projs
                 {
                     proj.mdl = weaptype[proj.weap].eject && *weaptype[proj.weap].eprj ? weaptype[proj.weap].eprj : "projectiles/catridge";
                     proj.lifesize = weaptype[proj.weap].esize;
-                    //proj.light.material[0] = bvec(W(proj.weap, colour));
+                    proj.material[0] = bvec(W(proj.weap, colour));
                 }
                 else
                 {
@@ -1811,7 +1811,7 @@ namespace projs
                 if(vol > 0) playsound(snd, proj.o, NULL, 0, vol);
                 part_create(PART_SMOKE, 500, proj.o, 0xAAAAAA, max(size, 1.5f), 1, -10);
                 proj.limited = true;
-                //if(proj.projtype == PRJ_DEBRIS) proj.light.material[0] = bvec(colourwhite);
+                if(proj.projtype == PRJ_DEBRIS) proj.material[0] = bvec(colourwhite);
             }
             proj.norm = dir;
             if(proj.extinguish&4) return 0;
@@ -2438,13 +2438,8 @@ namespace projs
                 {
                     size *= proj.lifesize;
                     fadeproj(proj, trans, size);
-                    #if 0
                     if(proj.projtype == PRJ_VANITY && proj.owner)
-                    {
-                        loopi(3) proj.light.material[i] = proj.owner->light.material[i];
-                        proj.light.effect = proj.owner->light.effect;
-                    }
-                    #endif
+                        loopi(3) proj.material[i] = proj.owner->material[i];
                     break;
                 }
                 case PRJ_EJECT:
@@ -2456,22 +2451,20 @@ namespace projs
                 case PRJ_SHOT:
                 {
                     trans *= fadeweap(proj);
-                    #if 0
                     if(proj.weap == W_GRENADE)
                     {
                         float amt = clamp(proj.lifespan, 0.f, 1.f);
-                        proj.light.material[0] = bvec::fromcolor(W(proj.weap, colour));
-                        proj.light.material[0].r += int((255-proj.light.material[0].r)*amt);
-                        proj.light.material[0].g -= int(proj.light.material[0].g*amt);
-                        proj.light.material[0].b -= int(proj.light.material[0].b*amt);
+                        proj.material[0] = bvec::fromcolor(W(proj.weap, colour));
+                        proj.material[0].r += int((255-proj.material[0].r)*amt);
+                        proj.material[0].g -= int(proj.material[0].g*amt);
+                        proj.material[0].b -= int(proj.material[0].b*amt);
                     }
                     if(WF(WK(proj.flags), proj.weap, partcol, WS(proj.flags)))
                     {
-                        proj.light.material[0] = bvec::fromcolor(FWCOL(P, partcol, proj));
+                        proj.material[0] = bvec::fromcolor(FWCOL(P, partcol, proj));
                         if(WF(WK(proj.flags), proj.weap, proxtype, WS(proj.flags)) && (!proj.stuck || proj.lifetime%500 >= 300))
-                            proj.light.material[0] = bvec(0, 0, 0);
+                            proj.material[0] = bvec(0, 0, 0);
                     }
-                    #endif
                     break;
                 }
                 case PRJ_ENT:
@@ -2486,9 +2479,8 @@ namespace projs
                             int attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], m_weapon(game::focus->actortype, game::gamemode, game::mutators));
                             if(isweap(attr))
                             {
-                                //int col = W(attr, colour), interval = lastmillis%1000;
-                                //proj.light.effect = vec::hexcolor(col).mul(interval >= 500 ? (1000-interval)/500.f : interval/500.f);
-                                //if(attr == W_GRENADE) proj.light.material[0] = bvec::fromcolor(col);
+                                int col = W(attr, colour), interval = lastmillis%1000;
+                                proj.material[0] = bvec::fromcolor(col);
                             }
                             else continue;
                         }
@@ -2497,7 +2489,7 @@ namespace projs
                 }
                 default: break;
             }
-            rendermodel(proj.mdl, ANIM_MAPMODEL|ANIM_LOOP, proj.o, yaw, pitch, roll, flags, &proj, NULL, proj.spawntime, 0, size, vec4(1, 1, 1, trans));
+            rendermodel(proj.mdl, ANIM_MAPMODEL|ANIM_LOOP, proj.o, yaw, pitch, roll, flags, &proj, NULL, proj.spawntime, 0, size, vec4(1, 1, 1, trans), &proj.material[0]);
         }
     }
 

@@ -519,8 +519,15 @@ static inline void rendermapmodel(extentity &e)
     if(e.attrs[10]) yaw += e.attrs[10]*lastmillis/1000.0f;
     if(e.attrs[11]) pitch += e.attrs[11]*lastmillis/1000.0f;
     if(e.attrs[12]) roll += e.attrs[12]*lastmillis/1000.0f;
-    vec4 colorscale = vec4(color.x, color.y, color.z, e.attrs[4] ? min(e.attrs[4]/100.f, 1.f) : 1.f);
-    rendermapmodel(e.attrs[0], anim, e.o, yaw, pitch, roll, MDL_CULL_VFC | MDL_CULL_DIST, basetime, e.attrs[5] ? max(e.attrs[5]/100.f, 1e-3f) : 1.f, colorscale);
+    if(e.attrs[8] || e.attrs[9])
+    {
+        vec r = game::getpalette(e.attrs[8], e.attrs[9]);
+        if(e.attrs[7]) r.mul(vec::hexcolor(e.attrs[7]));
+        e.material[0] = bvec::fromcolor(r);
+    }
+    else e.material[0] = e.attrs[7] ? bvec(e.attrs[7]) : bvec(255, 255, 255);
+    vec4 colorscale = vec4(1, 1, 1, e.attrs[4] ? min(e.attrs[4]/100.f, 1.f) : 1.f);
+    rendermapmodel(e.attrs[0], anim, e.o, yaw, pitch, roll, MDL_CULL_VFC | MDL_CULL_DIST, basetime, e.attrs[5] ? max(e.attrs[5]/100.f, 1e-3f) : 1.f, colorscale, &e.material[0]);
 }
 
 void rendermapmodels()

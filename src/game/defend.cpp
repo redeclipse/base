@@ -112,8 +112,8 @@ namespace defend
             float occupy = b.occupied(m_dac_quick(game::gamemode, game::mutators), defendcount);
             vec effect = skewcolour(b.owner, b.enemy, occupy);
             int colour = effect.tohexcolor();
-            //b.baselight.material[0] = bvec::fromcolor(effect);
-            rendermodel("props/point", ANIM_MAPMODEL|ANIM_LOOP, b.render, b.yaw, 0, 0, MDL_CULL_VFC|MDL_CULL_OCCLUDED);
+            b.basematerial[0] = bvec::fromcolor(effect);
+            rendermodel("props/point", ANIM_MAPMODEL|ANIM_LOOP, b.render, b.yaw, 0, 0, MDL_CULL_VFC|MDL_CULL_OCCLUDED, NULL, NULL, 0, 0, 1, vec4(1, 1, 1, 1), &b.basematerial[0]);
             if(b.enemy && b.owner)
             {
                 defformatstring(bowner, "%s", game::colourteam(b.owner));

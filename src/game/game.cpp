@@ -3136,66 +3136,65 @@ namespace game
 
         dynent *e = third ? (third != 2 ? (dynent *)d : (dynent *)&bodymodel) : (dynent *)&avatarmodel;
         vec4 color = vec4(getcolour(d, playerovertone, playerovertonelevel), trans);
+
         #if 0
-        if(e->light.millis != lastmillis)
+        e->light.effect = playerlightmix > 0 ? vec::hexcolor(getcolour(d, playerlighttone, playerlighttonelevel)).mul(playerlightmix) : vec(0, 0, 0);
+        if(d->state == CS_ALIVE && d->lastbuff)
         {
-            e->light.effect = playerlightmix > 0 ? vec::hexcolor(getcolour(d, playerlighttone, playerlighttonelevel)).mul(playerlightmix) : vec(0, 0, 0);
-            if(d->state == CS_ALIVE && d->lastbuff)
-            {
-                int millis = lastmillis%1000;
-                float amt = millis <= 500 ? 1.f-(millis/500.f) : (millis-500)/500.f;
-                vec pc = game::rescolour(d, PULSE_BUFF);
-                flashcolour(e->light.effect.r, e->light.effect.g, e->light.effect.b, pc.r, pc.g, pc.b, amt);
-            }
-            e->light.material[0] = bvec(getcolour(d, playerovertone, playerovertonelevel));
-            e->light.material[1] = bvec(getcolour(d, playerundertone, playerundertonelevel));
-            if(burntime && d->burning(lastmillis, burntime))
-                e->light.material[1].max(bvec::fromcolor(e->light.material[1].div(2).tocolor().max(rescolour(d, PULSE_BURN))));
-            if(burntime && d->bleeding(lastmillis, bleedtime))
-                e->light.material[1].max(bvec::fromcolor(e->light.material[1].div(2).tocolor().max(rescolour(d, PULSE_BLEED))));
-            if(shocktime && d->shocking(lastmillis, shocktime))
-                e->light.material[1].max(bvec::fromcolor(e->light.material[1].div(2).tocolor().max(rescolour(d, PULSE_SHOCK))));
-            if(m_bomber(gamemode) && bomber::carryaffinity(d))
-                e->light.material[1].max(bvec::fromcolor(e->light.material[1].div(2).tocolor().max(rescolour(d, PULSE_DISCO))));
-            if(isweap(d->weapselect))
-            {
-                if(d->weapselect == W_GRENADE)
-                {
-                    e->light.material[2] = bvec::fromcolor(W(d->weapselect, colour));
-                    if(lastmillis-d->weaptime[d->weapselect] > 0 && d->weapstate[d->weapselect] == W_S_POWER)
-                    {
-                        float amt = clamp(float(lastmillis-d->weaptime[d->weapselect])/d->weapwait[d->weapselect], 0.f, 1.f);
-                        e->light.material[2].r += int((255-e->light.material[2].r)*amt);
-                        e->light.material[2].g -= int(e->light.material[2].g*amt);
-                        e->light.material[2].b -= int(e->light.material[2].b*amt);
-                    }
-                }
-                else if((W2(d->weapselect, ammosub, false) || W2(d->weapselect, ammosub, true)) && W(d->weapselect, ammomax) > 1)
-                {
-                    int ammo = d->ammo[d->weapselect], maxammo = W(d->weapselect, ammomax);
-                    float scale = 1;
-                    switch(d->weapstate[d->weapselect])
-                    {
-                        case W_S_RELOAD:
-                        {
-                            int millis = lastmillis-d->weaptime[d->weapselect], check = d->weapwait[d->weapselect]/2;
-                            scale = millis >= check ? float(millis-check)/check : 0.f;
-                            if(d->weapload[d->weapselect] > 0)
-                                scale = max(scale, float(ammo - d->weapload[d->weapselect])/maxammo);
-                            break;
-                        }
-                        default: scale = float(ammo)/maxammo; break;
-                    }
-                    uchar wepmat = uchar(255*scale);
-                    e->light.material[2] = bvec(wepmat, wepmat, wepmat);
-                }
-                else e->light.material[2] = bvec(colourwhite);
-                if(W(d->weapselect, lightpersist)&2) e->light.material[1].max(bvec::fromcolor(WPCOL(d, d->weapselect, lightcol, physics::secondaryweap(d))));
-            }
-            else e->light.material[2] = bvec(colourwhite);
+            int millis = lastmillis%1000;
+            float amt = millis <= 500 ? 1.f-(millis/500.f) : (millis-500)/500.f;
+            vec pc = game::rescolour(d, PULSE_BUFF);
+            flashcolour(e->light.effect.r, e->light.effect.g, e->light.effect.b, pc.r, pc.g, pc.b, amt);
         }
         #endif
-        rendermodel(mdl, anim, o, yaw, third == 2 && firstpersonbodypitch >= 0 ? pitch*firstpersonbodypitch : pitch, third == 2 ? 0.f : roll, flags, e, attachments, basetime, basetime2, size, color);
+        e->material[0] = bvec(getcolour(d, playerovertone, playerovertonelevel));
+        e->material[1] = bvec(getcolour(d, playerundertone, playerundertonelevel));
+        if(burntime && d->burning(lastmillis, burntime))
+            e->material[1].max(bvec::fromcolor(e->material[1].div(2).tocolor().max(rescolour(d, PULSE_BURN))));
+        if(burntime && d->bleeding(lastmillis, bleedtime))
+            e->material[1].max(bvec::fromcolor(e->material[1].div(2).tocolor().max(rescolour(d, PULSE_BLEED))));
+        if(shocktime && d->shocking(lastmillis, shocktime))
+            e->material[1].max(bvec::fromcolor(e->material[1].div(2).tocolor().max(rescolour(d, PULSE_SHOCK))));
+        if(m_bomber(gamemode) && bomber::carryaffinity(d))
+            e->material[1].max(bvec::fromcolor(e->material[1].div(2).tocolor().max(rescolour(d, PULSE_DISCO))));
+        if(isweap(d->weapselect))
+        {
+            if(d->weapselect == W_GRENADE)
+            {
+                e->material[2] = bvec::fromcolor(W(d->weapselect, colour));
+                if(lastmillis-d->weaptime[d->weapselect] > 0 && d->weapstate[d->weapselect] == W_S_POWER)
+                {
+                    float amt = clamp(float(lastmillis-d->weaptime[d->weapselect])/d->weapwait[d->weapselect], 0.f, 1.f);
+                    e->material[2].r += int((255-e->material[2].r)*amt);
+                    e->material[2].g -= int(e->material[2].g*amt);
+                    e->material[2].b -= int(e->material[2].b*amt);
+                }
+            }
+            else if((W2(d->weapselect, ammosub, false) || W2(d->weapselect, ammosub, true)) && W(d->weapselect, ammomax) > 1)
+            {
+                int ammo = d->ammo[d->weapselect], maxammo = W(d->weapselect, ammomax);
+                float scale = 1;
+                switch(d->weapstate[d->weapselect])
+                {
+                    case W_S_RELOAD:
+                    {
+                        int millis = lastmillis-d->weaptime[d->weapselect], check = d->weapwait[d->weapselect]/2;
+                        scale = millis >= check ? float(millis-check)/check : 0.f;
+                        if(d->weapload[d->weapselect] > 0)
+                            scale = max(scale, float(ammo - d->weapload[d->weapselect])/maxammo);
+                        break;
+                    }
+                    default: scale = float(ammo)/maxammo; break;
+                }
+                uchar wepmat = uchar(255*scale);
+                e->material[2] = bvec(wepmat, wepmat, wepmat);
+            }
+            else e->material[2] = bvec(colourwhite);
+            if(W(d->weapselect, lightpersist)&2) e->material[1].max(bvec::fromcolor(WPCOL(d, d->weapselect, lightcol, physics::secondaryweap(d))));
+        }
+        else e->material[2] = bvec(colourwhite);
+
+        rendermodel(mdl, anim, o, yaw, third == 2 && firstpersonbodypitch >= 0 ? pitch*firstpersonbodypitch : pitch, third == 2 ? 0.f : roll, flags, e, attachments, basetime, basetime2, size, color, &e->material[0]);
     }
 
     void renderabovehead(gameent *d, float trans)

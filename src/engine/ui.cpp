@@ -3843,16 +3843,14 @@ namespace UI
             model *m = loadmodel(name);
             if(m)
             {
-                //entitylight light;
-                //light.color = colors[0].tocolor();
-                //light.dir = vec(0, -1, 2).normalize();
-                vec4 colorscale = colors[0].tocolor4();
-                colorscale.a *= blend;
+                bvec material[MAXENTMATERIALS];
+                loopv(colors) material[i] = bvec(colors[i].r, colors[i].g, colors[i].b);
+                vec4 colorscale = vec4(1, 1, 1, blend);
                 vec center, radius;
                 m->boundbox(center, radius);
                 float yaw;
                 vec o = calcmodelpreviewpos(radius, yaw).sub(center);
-                rendermodel(name, anim, o, yaw, 0, 0, 0, NULL, NULL, 0, 0, scale, colorscale);
+                rendermodel(name, anim, o, yaw, 0, 0, 0, NULL, NULL, 0, 0, scale, colorscale, &material[0]);
             }
             if(clipstack.length()) clipstack.last().scissor();
             modelpreview::end();

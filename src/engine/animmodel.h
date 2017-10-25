@@ -75,8 +75,9 @@ struct animmodel : model
     {
         float spec, gloss, glow, glowdelta, glowpulse, fullbright, envmapmin, envmapmax, scrollu, scrollv, alphatest;
         vec color;
+        int material1, material2;
 
-        shaderparams() : spec(1.0f), gloss(1), glow(3.0f), glowdelta(0), glowpulse(0), fullbright(0), envmapmin(0), envmapmax(0), scrollu(0), scrollv(0), alphatest(0.9f), color(1, 1, 1) {}
+        shaderparams() : spec(1.0f), gloss(1), glow(3.0f), glowdelta(0), glowpulse(0), fullbright(0), envmapmin(0), envmapmax(0), scrollu(0), scrollv(0), alphatest(0.9f), color(1, 1, 1), material1(1), material2(0) {}
     };
 
     struct shaderparamskey
@@ -145,6 +146,9 @@ struct animmodel : model
             if(fullbright) LOCALPARAMF(fullbright, 0.0f, fullbright);
             else LOCALPARAMF(fullbright, 1.0f, as->cur.anim&ANIM_FULLBRIGHT ? 0.5f*fullbrightmodels/100.0f : 0.0f);
 
+            if(material1 > 0 && modelmaterial) LOCALPARAM(material1, modelmaterial[min(material1, int(MAXENTMATERIALS))-1].tocolor());
+            if(material2 > 0 && modelmaterial) LOCALPARAM(material2, modelmaterial[min(material2, int(MAXENTMATERIALS))-1].tocolor());
+
             float curglow = glow;
             if(glowpulse > 0)
             {
@@ -152,6 +156,10 @@ struct animmodel : model
                 curpulse -= floor(curpulse);
                 curglow += glowdelta*2*fabs(curpulse - 0.5f);
             }
+
+            if(material1 <= 0 || !modelmaterial) LOCALPARAMF(material1, 1, 1, 1);
+            if(material2 <= 0 || !modelmaterial) LOCALPARAMF(material2, 1, 1, 1);
+
             LOCALPARAMF(maskscale, spec, gloss, curglow);
             if(envmapped()) LOCALPARAMF(envmapscale, envmapmin-envmapmax, envmapmax);
         }
@@ -1284,7 +1292,7 @@ struct animmodel : model
         }
     }
 
-    void render(int anim, int basetime, int basetime2, const vec &o, float yaw, float pitch, float roll, dynent *d, modelattach *a, float size, const vec4 &color)
+    void render(int anim, int basetime, int basetime2, const vec &o, float yaw, float pitch, float roll, dynent *d, modelattach *a, float size, const vec4 &color, const bvec *material)
     {
         vec axis(1, 0, 0), forward(0, 1, 0);
 
@@ -1330,6 +1338,7 @@ struct animmodel : model
                 colorscale = color;
                 shaderparamskey::invalidate();
             }
+            modelmaterial = material;
 
             if(envmapped()) closestenvmaptex = lookupenvmap(closestenvmap(o));
             else if(a) for(int i = 0; a[i].tag; i++) if(a[i].m && a[i].m->envmapped())
@@ -1556,17 +1565,15 @@ struct animmodel : model
         loopv(parts) loopvj(parts[i]->skins) parts[i]->skins[j].color = color;
     }
 
-    void setmaterial(int material, int material2)
+    void setmaterial(int material1, int material2)
     {
-        #if 0
         if(parts.empty()) loaddefaultparts();
         loopv(parts) loopvj(parts[i]->skins)
         {
             skin &s = parts[i]->skins[j];
-            s.material = material;
+            s.material1 = material1;
             s.material2 = material2;
         }
-        #endif
     }
 
     void calcbb(vec &center, vec &radius)
@@ -1608,6 +1615,7 @@ struct animmodel : model
     static bool enabletc, enablecullface, enabletangents, enablebones, enabledepthoffset;
     static float sizescale;
     static vec4 colorscale;
+    static const bvec *modelmaterial;
     static GLuint lastvbuf, lasttcbuf, lastxbuf, lastbbuf, lastebuf, lastenvmaptex, closestenvmaptex;
     static Texture *lasttex, *lastdecal, *lastmasks, *lastnormalmap;
     static int matrixpos;
@@ -1670,6 +1678,7 @@ bool animmodel::enabletc = false, animmodel::enabletangents = false, animmodel::
      animmodel::enablecullface = true, animmodel::enabledepthoffset = false;
 float animmodel::sizescale = 1;
 vec4 animmodel::colorscale(1, 1, 1, 1);
+const bvec *animmodel::modelmaterial = NULL;
 GLuint animmodel::lastvbuf = 0, animmodel::lasttcbuf = 0, animmodel::lastxbuf = 0, animmodel::lastbbuf = 0, animmodel::lastebuf = 0,
        animmodel::lastenvmaptex = 0, animmodel::closestenvmaptex = 0;
 Texture *animmodel::lasttex = NULL, *animmodel::lastdecal = NULL, *animmodel::lastmasks = NULL, *animmodel::lastnormalmap = NULL;
@@ -1823,11 +1832,9 @@ template<class MDL, class MESH> struct modelcommands
         MDL::loading->collide = COLLIDE_TRI;
     }
 
-    static void setmaterial(char *meshname, int *material, int *material2)
+    static void setmaterial(char *meshname, int *material1, int *material2)
     {
-        #if 0
-        loopskins(meshname, s, { s.material = clamp(*material, 0, int(MAXLIGHTMATERIALS)); s.material2 = clamp(*material2, 0, int(MAXLIGHTMATERIALS)); });
-        #endif
+        loopskins(meshname, s, { s.material1 = clamp(*material1, 0, int(MAXENTMATERIALS)); s.material2 = clamp(*material2, 0, int(MAXENTMATERIALS)); });
     }
 
     static void setlink(int *parent, int *child, char *tagname, float *x, float *y, float *z, float *yaw, float *pitch, float *roll)
