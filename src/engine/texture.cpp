@@ -2283,7 +2283,7 @@ void texpalette(int *p, int *x)
     s.variants->palindex = max(*x, 0);
     propagatevslot(s.variants, 1<<VSLOT_PALETTE);
 }
-COMMAND(0, texpalette, "i");
+COMMAND(0, texpalette, "ii");
 
 static int findtextype(Slot &s, int type, int last = -1)
 {
