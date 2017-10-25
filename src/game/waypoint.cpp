@@ -1,7 +1,5 @@
 #include "game.h"
 
-extern selinfo sel;
-
 namespace ai
 {
     using namespace game;
@@ -18,7 +16,7 @@ namespace ai
     int getpull(const vec &o)
     {
         vec pos = o; pos.z += JUMPMIN;
-        if(!insideworld(vec(pos.x, pos.y, min(pos.z, getworldsize() - 1e-3f)))) return -2;
+        if(!insideworld(vec(pos.x, pos.y, min(pos.z, worldsize - 1e-3f)))) return -2;
         float dist = raycube(pos, vec(0, 0, -1), 0, RAY_CLIPMAT);
         int posmat = lookupmaterial(pos), pull = 1;
         if(isliquid(posmat&MATF_VOLUME)) pull *= 5;

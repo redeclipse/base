@@ -309,6 +309,7 @@ struct vec4
     explicit vec4(const vec2 &p, float z = 0, float w = 0) : x(p.x), y(p.y), z(z), w(w) {}
     vec4(float x, float y, float z, float w) : x(x), y(y), z(z), w(w) {}
     explicit vec4(const float *v) : x(v[0]), y(v[1]), z(v[2]), w(v[3]) {}
+    explicit vec4(int color, float trans = 1) : x(((color>>16)&0xFF)/255.f), y(((color>>8)&0xFF)/255.f), z((color&0xFF)/255.f), w(trans) {}
 
     float &operator[](int i)       { return v[i]; }
     float  operator[](int i) const { return v[i]; }
@@ -387,6 +388,10 @@ struct vec4
     vec4 &rotate_around_z(const vec2 &sc) { return rotate_around_z(sc.x, sc.y); }
     vec4 &rotate_around_x(const vec2 &sc) { return rotate_around_x(sc.x, sc.y); }
     vec4 &rotate_around_y(const vec2 &sc) { return rotate_around_y(sc.x, sc.y); }
+
+    static vec4 fromcolor(const vec &v, float trans) { return vec4(v.x, v.y, v.z, trans); }
+    static vec4 fromcolor(const vec &v) { return fromcolor(v, 1); }
+    static vec4 fromcolor(int color) { return vec4(((color>>16)&0xFF)/255.f, ((color>>8)&0xFF)/255.f, (color&0xFF)/255.f, 1); }
 };
 
 inline vec2::vec2(const vec4 &v) : x(v.x), y(v.y) {}
@@ -1926,6 +1931,72 @@ struct matrix2
     explicit matrix2(const matrix3 &m) : a(m.a), b(m.b) {}
 };
 
+struct half
+{
+    ushort val;
+
+    half() {}
+    half(float f)
+    {
+        union { int i; float f; } conv;
+        conv.f = f;
+        ushort signbit = (conv.i>>(31-15)) & (1<<15), mantissa = (conv.i>>(23-10)) & 0x3FF;
+        int exponent = ((conv.i>>23)&0xFF) - 127 + 15;
+        if(exponent <= 0)
+        {
+            mantissa |= 0x400;
+            mantissa >>= min(1-exponent, 10+1);
+            exponent = 0;
+        }
+        else if(exponent >= 0x1F)
+        {
+            mantissa = 0;
+            exponent = 0x1F;
+        }
+        val = signbit | (ushort(exponent)<<10) | mantissa;
+    }
+
+    bool operator==(const half &h) const { return val == h.val; }
+    bool operator!=(const half &h) const { return val != h.val; }
+};
+
+struct hvec2
+{
+    half x, y;
+
+    hvec2() {}
+    hvec2(float x, float y) : x(x), y(y) {}
+    hvec2(const vec2 &v) : x(v.x), y(v.y) {}
+
+    bool operator==(const hvec2 &h) const { return x == h.x && y == h.y; }
+    bool operator!=(const hvec2 &h) const { return x != h.x || y != h.y; }
+};
+
+struct hvec
+{
+    half x, y, z;
+
+    hvec() {}
+    hvec(float x, float y, float z) : x(x), y(y), z(z) {}
+    hvec(const vec &v) : x(v.x), y(v.y), z(v.z) {}
+
+    bool operator==(const hvec &h) const { return x == h.x && y == h.y && z == h.z; }
+    bool operator!=(const hvec &h) const { return x != h.x || y != h.y || z != h.z; }
+};
+
+struct hvec4
+{
+    half x, y, z, w;
+
+    hvec4() {}
+    hvec4(float x, float y, float z, float w) : x(x), y(y), z(z), w(w) {}
+    hvec4(const vec &v, float w) : x(v.x), y(v.y), z(v.z), w(w) {}
+    hvec4(const vec4 &v) : x(v.x), y(v.y), z(v.z), w(v.w) {}
+
+    bool operator==(const hvec4 &h) const { return x == h.x && y == h.y && z == h.z && w == h.w; }
+    bool operator!=(const hvec4 &h) const { return x != h.x || y != h.y || z != h.z || w != h.w; }
+};
+
 struct squat
 {
     short x, y, z, w;
@@ -1956,6 +2027,7 @@ extern bool raysphereintersect(const vec &center, float radius, const vec &o, co
 extern bool rayboxintersect(const vec &b, const vec &s, const vec &o, const vec &ray, float &dist, int &orient);
 extern bool linecylinderintersect(const vec &from, const vec &to, const vec &start, const vec &end, float radius, float &dist);
 extern vec closestpointcylinder(const vec &center, const vec &start, const vec &end, float radius);
+extern int polyclip(const vec *in, int numin, const vec &dir, float below, float above, vec *out);
 
 extern const vec2 sincos360[];
 static inline int mod360(int angle)

@@ -821,7 +821,7 @@ namespace physics
                 d->o.add(dir);
                 bool collided = collide(d, dir);
                 d->o = oldpos;
-                if(collided && hitplayer && gameent::is(hitplayer))
+                if(collided && collideplayer && gameent::is(collideplayer))
                 {
                     //d->action[AC_SPECIAL] = false;
                     d->resetjump();
@@ -836,7 +836,7 @@ namespace physics
                     {
                         projent *p = projs::projs[i];
                         if(p->owner != d || p->projtype != PRJ_SHOT || p->weap != W_MELEE) continue;
-                        p->target = (gameent *)hitplayer;
+                        p->target = (gameent *)collideplayer;
                     }
                 }
             }
@@ -856,7 +856,7 @@ namespace physics
                 d->o.add(dir);
                 bool collided = collide(d);
                 d->o = oldpos;
-                if(!collided || hitplayer || collidewall.iszero()) continue;
+                if(!collided || collideplayer || collidewall.iszero()) continue;
                 vec face = vec(collidewall).normalize();
                 if(fabs(face.z) <= impulseparkournorm)
                 {
@@ -877,13 +877,13 @@ namespace physics
                             if(collide(d))
                             {
                                 d->o.z += space*n-space*m;
-                                if(!collide(d) || hitplayer) vault = true;
+                                if(!collide(d) || collideplayer) vault = true;
                             }
                         }
                         else
                         {
                             d->o.z += space*n;
-                            if(!collide(d) || hitplayer) vault = true;
+                            if(!collide(d) || collideplayer) vault = true;
                         }
                         d->o = oldpos;
                     }
@@ -1055,12 +1055,12 @@ namespace physics
             }
             if(curmat == MAT_WATER || oldmat == MAT_WATER)
             {
-                const bvec &watercol = getwatercol((curmat == MAT_WATER ? matid : pl->inmaterial) & MATF_INDEX);
+                const bvec &watercol = getwatercolour((curmat == MAT_WATER ? matid : pl->inmaterial) & MATF_INDEX);
                 mattrig(bottom, watercol, 0.5f, int(radius), PHYSMILLIS, 0.25f, PART_SPARK, curmat != MAT_WATER ? S_SPLASH2 : S_SPLASH1);
             }
             if(curmat == MAT_LAVA)
             {
-                const bvec &lavacol = getlavacol(matid & MATF_INDEX);
+                const bvec &lavacol = getlavacolour(matid & MATF_INDEX);
                 mattrig(center, lavacol, 2.f, int(radius), PHYSMILLIS*2, 1.f, PART_FIREBALL, S_BURNLAVA);
             }
         }
@@ -1300,24 +1300,24 @@ namespace physics
 
     bool xcollide(physent *d, const vec &dir, physent *o)
     {
-        hitflags = HITFLAG_NONE;
+        collideflags = COLFLAG_NONE;
         if(d->type == ENT_PROJ && gameent::is(o))
         {
             gameent *e = (gameent *)o;
             if(e->wantshitbox())
             {
                 if(!d->o.reject(e->legs, d->radius+max(e->lrad.x, e->lrad.y)) && ellipsecollide(d, dir, e->legs, vec(0, 0, 0), e->yaw, e->lrad.x, e->lrad.y, e->lrad.z, e->lrad.z))
-                    hitflags |= HITFLAG_LEGS;
+                    collideflags |= COLFLAG_LEGS;
                 if(!d->o.reject(e->torso, d->radius+max(e->trad.x, e->trad.y)) && ellipsecollide(d, dir, e->torso, vec(0, 0, 0), e->yaw, e->trad.x, e->trad.y, e->trad.z, e->trad.z))
-                    hitflags |= HITFLAG_TORSO;
+                    collideflags |= COLFLAG_TORSO;
                 if(!d->o.reject(e->head, d->radius+max(e->hrad.x, e->hrad.y)) && ellipsecollide(d, dir, e->head, vec(0, 0, 0), e->yaw, e->hrad.x, e->hrad.y, e->hrad.z, e->hrad.z))
-                    hitflags |= HITFLAG_HEAD;
-                return hitflags != HITFLAG_NONE;
+                    collideflags |= COLFLAG_HEAD;
+                return collideflags != COLFLAG_NONE;
             }
         }
         if(plcollide(d, dir, o))
         {
-            hitflags |= HITFLAG_TORSO;
+            collideflags |= COLFLAG_TORSO;
             return true;
         }
         return false;
@@ -1325,7 +1325,7 @@ namespace physics
 
     bool xtracecollide(physent *d, const vec &from, const vec &to, float x1, float x2, float y1, float y2, float maxdist, float &dist, physent *o)
     {
-        hitflags = HITFLAG_NONE;
+        collideflags = COLFLAG_NONE;
         if(d && d->type == ENT_PROJ && gameent::is(o))
         {
             gameent *e = (gameent *)o;
@@ -1335,26 +1335,26 @@ namespace physics
                 if(e->legs.x+e->lrad.x >= x1 && e->legs.y+e->lrad.y >= y1 && e->legs.x-e->lrad.x <= x2 && e->legs.y-e->lrad.y <= y2)
                 {
                     vec bottom(e->legs), top(e->legs); bottom.z -= e->lrad.z; top.z += e->lrad.z; float t = 1e16f;
-                    if(linecylinderintersect(from, to, bottom, top, max(e->lrad.x, e->lrad.y), t)) { hitflags |= HITFLAG_LEGS; bestdist = min(bestdist, t); }
+                    if(linecylinderintersect(from, to, bottom, top, max(e->lrad.x, e->lrad.y), t)) { collideflags |= COLFLAG_LEGS; bestdist = min(bestdist, t); }
                 }
                 if(e->torso.x+e->trad.x >= x1 && e->torso.y+e->trad.y >= y1 && e->torso.x-e->trad.x <= x2 && e->torso.y-e->trad.y <= y2)
                 {
                     vec bottom(e->torso), top(e->torso); bottom.z -= e->trad.z; top.z += e->trad.z; float t = 1e16f;
-                    if(linecylinderintersect(from, to, bottom, top, max(e->trad.x, e->trad.y), t)) { hitflags |= HITFLAG_TORSO; bestdist = min(bestdist, t); }
+                    if(linecylinderintersect(from, to, bottom, top, max(e->trad.x, e->trad.y), t)) { collideflags |= COLFLAG_TORSO; bestdist = min(bestdist, t); }
                 }
                 if(e->head.x+e->hrad.x >= x1 && e->head.y+e->hrad.y >= y1 && e->head.x-e->hrad.x <= x2 && e->head.y-e->hrad.y <= y2)
                 {
                     vec bottom(e->head), top(e->head); bottom.z -= e->hrad.z; top.z += e->hrad.z; float t = 1e16f;
-                    if(linecylinderintersect(from, to, bottom, top, max(e->hrad.x, e->hrad.y), t)) { hitflags |= HITFLAG_HEAD; bestdist = min(bestdist, t); }
+                    if(linecylinderintersect(from, to, bottom, top, max(e->hrad.x, e->hrad.y), t)) { collideflags |= COLFLAG_HEAD; bestdist = min(bestdist, t); }
                 }
-                if(hitflags == HITFLAG_NONE) return false;
+                if(collideflags == COLFLAG_NONE) return false;
                 dist = bestdist*from.dist(to);
                 return true;
             }
         }
         if(o->o.x+o->radius >= x1 && o->o.y+o->radius >= y1 && o->o.x-o->radius <= x2 && o->o.y-o->radius <= y2 && intersect(o, from, to, dist))
         {
-            hitflags |= HITFLAG_TORSO;
+            collideflags |= COLFLAG_TORSO;
             return true;
         }
         return false;
@@ -1459,7 +1459,7 @@ namespace physics
         }
         else if(d->state==CS_DEAD || d->state == CS_WAITING)
         {
-            if(d->ragdoll) moveragdoll(d, true);
+            if(d->ragdoll) moveragdoll(d);
             else if(lastmillis-d->lastpain<2000) move(d, res, local);
         }
     }
@@ -1480,17 +1480,17 @@ namespace physics
         d.type = type;
         if(!insideworld(d.o))
         {
-            if(d.o.z < hdr.worldsize) return false;
-            d.o.z = hdr.worldsize - 1e-3f;
+            if(d.o.z < worldsize) return false;
+            d.o.z = worldsize - 1e-3f;
             if(!insideworld(d.o)) return false;
         }
         vec v(0.0001f, 0.0001f, -1);
         v.normalize();
-        if(raycube(d.o, v, hdr.worldsize) >= hdr.worldsize) return false;
+        if(raycube(d.o, v, worldsize) >= worldsize) return false;
         d.radius = d.xradius = d.yradius = radius;
         d.height = height;
         d.aboveeye = radius;
-        if(!movecamera(&d, vec(0, 0, -1), hdr.worldsize, 1))
+        if(!movecamera(&d, vec(0, 0, -1), worldsize, 1))
         {
             o = d.o;
             return true;

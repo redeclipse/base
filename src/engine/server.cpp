@@ -245,6 +245,7 @@ static void writelog(FILE *file, const char *buf)
         if(carry >= len) ubuf[numu++] = '\n';
         fwrite(ubuf, 1, numu, file);
     }
+    fflush(file);
 }
 
 static void writelogv(FILE *file, const char *fmt, va_list args)
@@ -525,7 +526,7 @@ void sendfile(int cn, int chan, stream *file, const char *format, ...)
     else if(!clients.inrange(cn)) return;
 
     int len = file ? (int)min(file->size(), stream::offset(INT_MAX)) : 0;
-    if(len > 16<<20) return;
+    if(len <= 0 || len > 16<<20) return;
 
     packetbuf p(MAXTRANS+len, ENET_PACKET_FLAG_RELIABLE);
     va_list args;
@@ -567,11 +568,10 @@ void sendfile(int cn, int chan, stream *file, const char *format, ...)
         }
     }
     va_end(args);
-    if(file && len > 0)
-    {
-        file->seek(0, SEEK_SET);
-        file->read(p.subbuf(len).buf, len);
-    }
+
+    file->seek(0, SEEK_SET);
+    file->read(p.subbuf(len).buf, len);
+
     ENetPacket *packet = p.finalize();
     if(cn >= 0) sendpacket(cn, chan, packet);
 #ifndef STANDALONE
@@ -1232,7 +1232,7 @@ static char *parsecommandline(const char *src, vector<char *> &args)
         while(isspace(*src)) src++;
         if(!*src) break;
         args.add(dst);
-         for(bool quoted = false; *src && (quoted || !isspace(*src)); src++)
+        for(bool quoted = false; *src && (quoted || !isspace(*src)); src++)
         {
             if(*src != '"') *dst++ = *src;
             else if(dst > buf && src[-1] == '\\') dst[-1] = '"';
@@ -1794,6 +1794,6 @@ int main(int argc, char **argv)
     if(initscript) execute(initscript);
     serverloop();
     cleanupserver();
-    return 0;
+    return EXIT_SUCCESS;
 }
 #endif

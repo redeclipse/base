@@ -1,28 +1,93 @@
 // renderparticles.cpp
 
 #include "engine.h"
-#include "rendertarget.h"
 
-Shader *particleshader = NULL, *particlenotextureshader = NULL;
+Shader *particleshader = NULL, *particlenotextureshader = NULL, *particlesoftshader = NULL, *particletextshader = NULL;
 
-VARF(IDF_PERSIST, maxparticles, 10, 512, 40000, initparticles());
-VARF(IDF_PERSIST, fewparticles, 10, 64, 40000, initparticles());
-VAR(IDF_PERSIST, maxparticledistance, 256, 512, VAR_MAX);
-VAR(IDF_PERSIST, maxparticletrail, 256, 512, VAR_MAX);
+VAR(IDF_PERSIST, particlelayers, 0, 1, 1);
+FVAR(IDF_PERSIST, particlebright, 0, 2, 100);
+VAR(IDF_PERSIST, particlesize, 20, 100, 500);
 
-VAR(IDF_PERSIST, particletext, 0, 1, 1);
-VAR(IDF_PERSIST, particleglare, 0, 1, 100);
+VAR(IDF_PERSIST, softparticles, 0, 1, 1);
+VAR(IDF_PERSIST, softparticleblend, 1, 8, 64);
 
 // Check canemitparticles() to limit the rate that paricles can be emitted for models/sparklies
 // Automatically stops particles being emitted when paused or in reflective drawing
-VAR(IDF_PERSIST, emitmillis, 1, 20, VAR_MAX);
-static int lastemitframe = 0;
-static bool emit = false, canstep = false;
+VAR(IDF_PERSIST, emitmillis, 1, 17, VAR_MAX);
+static int lastemitframe = 0, emitoffset = 0;
+static bool canemit = false, regenemitters = false, canstep = false;
 
 static bool canemitparticles()
 {
-    if(reflecting || refracting) return false;
-    return emit;
+    return canemit || emitoffset;
+}
+
+VAR(IDF_PERSIST, showparticles, 0, 1, 1);
+VAR(0, cullparticles, 0, 1, 1);
+VAR(0, replayparticles, 0, 1, 1);
+VARN(0, seedparticles, seedmillis, 0, 3000, 10000);
+VAR(0, dbgpcull, 0, 0, 1);
+VAR(0, dbgpseed, 0, 0, 1);
+
+struct particleemitter
+{
+    extentity *ent;
+    vec bbmin, bbmax;
+    vec center;
+    float radius;
+    ivec cullmin, cullmax;
+    int maxfade, lastemit, lastcull;
+
+    particleemitter(extentity *ent)
+        : ent(ent), bbmin(ent->o), bbmax(ent->o), maxfade(-1), lastemit(0), lastcull(0)
+    {}
+
+    void finalize()
+    {
+        center = vec(bbmin).add(bbmax).mul(0.5f);
+        radius = bbmin.dist(bbmax)/2;
+        cullmin = ivec::floor(bbmin);
+        cullmax = ivec::ceil(bbmax);
+        if(dbgpseed) conoutf("radius: %f, maxfade: %d", radius, maxfade);
+    }
+
+    void extendbb(const vec &o, float size = 0)
+    {
+        bbmin.x = min(bbmin.x, o.x - size);
+        bbmin.y = min(bbmin.y, o.y - size);
+        bbmin.z = min(bbmin.z, o.z - size);
+        bbmax.x = max(bbmax.x, o.x + size);
+        bbmax.y = max(bbmax.y, o.y + size);
+        bbmax.z = max(bbmax.z, o.z + size);
+    }
+
+    void extendbb(float z, float size = 0)
+    {
+        bbmin.z = min(bbmin.z, z - size);
+        bbmax.z = max(bbmax.z, z + size);
+    }
+};
+
+static vector<particleemitter> emitters;
+static particleemitter *seedemitter = NULL;
+
+void clearparticleemitters()
+{
+    emitters.setsize(0);
+    regenemitters = true;
+}
+
+void addparticleemitters()
+{
+    emitters.setsize(0);
+    const vector<extentity *> &ents = entities::getents();
+    loopv(ents)
+    {
+        extentity &e = *ents[i];
+        if(e.type != ET_PARTICLES) continue;
+        emitters.add(particleemitter(&e));
+    }
+    regenemitters = false;
 }
 
 const char *partnames[] = { "part", "tape", "trail", "text", "explosion", "lightning", "flare", "portal", "icon", "line", "triangle", "ellipse", "cone" };
@@ -56,17 +121,19 @@ struct partrenderer
     virtual void reset() = 0;
     virtual void resettracked(physent *owner) { }
     virtual particle *addpart(const vec &o, const vec &d, int fade, int color, float size, float blend = 1, int grav = 0, int collide = 0, physent *pl = NULL) = 0;
-    virtual int adddepthfx(vec &bbmin, vec &bbmax) { return 0; }
     virtual void update() { }
     virtual void render() = 0;
     virtual bool haswork() = 0;
     virtual int count() = 0; //for debug
     virtual void cleanup() {}
 
-    void preload()
+    virtual void seedemitter(particleemitter &pe, const vec &o, const vec &d, int fade, float size, int gravity)
     {
-        if(texname && (!tex || tex == notexture))
-            tex = textureload(texname, texclamp);
+    }
+
+    virtual void preload()
+    {
+        if(texname && !tex) tex = textureload(texname, texclamp);
     }
 
     //blend = 0 => remove it
@@ -124,7 +191,7 @@ struct partrenderer
                     if(p->o.z >= collidez+COLLIDEERROR) p->val = collidez+COLLIDEERROR;
                     else
                     {
-                        adddecal(p->collide, vec(p->o.x, p->o.y, collidez), vec(o).sub(p->o).normalize(), 2*size, p->color, type&PT_RND4 ? (p->flags>>5)&3 : 0);
+                        addstain(p->collide, vec(p->o.x, p->o.y, collidez), vec(p->o).sub(o).normalize(), 2*p->size, p->color, type&PT_RND4 ? (p->flags>>5)&3 : 0);
                         blend = 0;
                     }
                 }
@@ -132,19 +199,17 @@ struct partrenderer
             }
             else p->m.add(vec(p->o).sub(o));
         }
-        game::particletrack(p, type, ts, step);
+        if(type&PT_TRACK && p->owner) game::particletrack(p, type, ts, step);
     }
 
-    const char *debuginfo()
+    void debuginfo()
     {
         formatstring(info, "%d\t%s(", count(), partnames[type&0xFF]);
-        if(type&PT_GLARE) concatstring(info, "g,");
-        if(type&PT_SOFT) concatstring(info, "s,");
         if(type&PT_LERP) concatstring(info, "l,");
         if(type&PT_MOD) concatstring(info, "m,");
         if(type&PT_RND4) concatstring(info, "r,");
+        if(type&PT_TRACK) concatstring(info, "t,");
         if(type&PT_FLIP) concatstring(info, "f,");
-        if(type&PT_ONTOP) concatstring(info, "o,");
         int len = strlen(info);
         info[len-1] = info[len-1] == ',' ? ')' : '\0';
         if(texname)
@@ -152,12 +217,8 @@ struct partrenderer
             const char *title = strrchr(texname, '/');
             if(title) concformatstring(info, ": %s", title+1);
         }
-        return info;
     }
 };
-
-#include "depthfx.h"
-#include "lensflare.h"
 
 template<class T>
 struct listparticle : particle
@@ -205,11 +266,12 @@ struct listrenderer : partrenderer
         list = NULL;
     }
 
-    void resettracked(physent *pl)
+    void resettracked(physent *owner)
     {
+        if(!(type&PT_TRACK)) return;
         for(T **prev = &list, *cur = list; cur; cur = *prev)
         {
-            if(cur->owner == pl)
+            if(!owner || cur->owner==owner)
             {
                 *prev = cur->next;
                 cur->next = parempty;
@@ -223,9 +285,9 @@ struct listrenderer : partrenderer
     {
         if(!parempty)
         {
-            T *ps = new T[32];
-            loopi(31) ps[i].next = &ps[i+1];
-            ps[31].next = parempty;
+            T *ps = new T[256];
+            loopi(255) ps[i].next = &ps[i+1];
+            ps[255].next = parempty;
             parempty = ps;
         }
         T *p = parempty;
@@ -268,33 +330,32 @@ struct listrenderer : partrenderer
     virtual void endrender() = 0;
     virtual void renderpart(T *p, int blend, int ts, float size) = 0;
 
+    bool renderpart(T *p)
+    {
+        int blend, ts;
+        float size;
+        calc(p, blend, ts, size, canstep);
+        if(blend <= 0) return false;
+        renderpart(p, blend, ts, size);
+        return p->fade > 5;
+    }
+
     void render()
     {
-        preload();
         startrender();
         if(tex) glBindTexture(GL_TEXTURE_2D, tex->id);
-        for(T **prev = &list, *p = list; p; p = *prev)
+        if(canstep) for(T **prev = &list, *p = list; p; p = *prev)
         {
-            int blend = 255, ts = 1;
-            float size = 1;
-            calc(p, blend, ts, size, canstep);
-            if(blend > 0)
-            {
-                renderpart(p, blend, ts, size);
-
-                if(p->fade > 5 || !canstep)
-                {
-                    prev = &p->next;
-                    continue;
-                }
+            if(renderpart(p)) prev = &p->next;
+            else
+            { // remove
+                *prev = p->next;
+                p->next = parempty;
+                killpart(p);
+                parempty = p;
             }
-            //remove
-            *prev = p->next;
-            p->next = parempty;
-            killpart(p);
-            parempty = p;
         }
-
+        else for(T *p = list; p; p = p->next) renderpart(p);
         endrender();
     }
 };
@@ -303,21 +364,24 @@ template<class T> T *listrenderer<T>::parempty = NULL;
 
 typedef listrenderer<sharedlistparticle> sharedlistrenderer;
 
-#include "explosion.h"
-#include "lightning.h"
-
 struct textrenderer : sharedlistrenderer
 {
     textrenderer(int type = 0)
-        : sharedlistrenderer(type|PT_TEXT|PT_LERP)
+        : sharedlistrenderer(type|PT_TEXT|PT_LERP|PT_SHADER|PT_NOLAYER)
     {}
 
     void startrender()
     {
+        textshader = particletextshader;
+
+        pushfont("default");
     }
 
     void endrender()
     {
+        textshader = NULL;
+
+        popfont();
     }
 
     void killpart(sharedlistparticle *p)
@@ -359,7 +423,7 @@ struct portal : listparticle<portal>
 struct portalrenderer : listrenderer<portal>
 {
     portalrenderer(const char *texname)
-        : listrenderer<portal>(texname, 3, PT_PORTAL|PT_GLARE|PT_LERP)
+        : listrenderer<portal>(texname, 3, PT_PORTAL|PT_LERP)
     {}
 
     void startrender()
@@ -523,9 +587,7 @@ static inline void genpos(const vec &o, const vec &d, float size, int grav, int 
 template<>
 inline void genpos<PT_TAPE>(const vec &o, const vec &d, float size, int ts, int grav, partvert *vs)
 {
-    vec dir1 = d, dir2 = d, c;
-    dir1.sub(o);
-    dir2.sub(camera1->o);
+    vec dir1 = vec(d).sub(o), dir2 = vec(d).sub(camera1->o), c;
     c.cross(dir2, dir1).normalize().mul(size);
     vs[0].pos = vec(d.x-c.x, d.y-c.y, d.z-c.z);
     vs[1].pos = vec(o.x-c.x, o.y-c.y, o.z-c.z);
@@ -538,8 +600,7 @@ inline void genpos<PT_TRAIL>(const vec &o, const vec &d, float size, int ts, int
 {
     vec e = d;
     if(grav) e.z -= float(ts)/grav;
-    e.div(-75.0f);
-    e.add(o);
+    e.div(-75.0f).add(o);
     genpos<PT_TAPE>(o, e, size, ts, grav, vs);
 }
 
@@ -550,12 +611,12 @@ static inline void genrotpos(const vec &o, const vec &d, float size, int grav, i
 }
 
 #define ROTCOEFFS(n) { \
-    vec(-1,  1, 0).rotate_around_z(n*2*M_PI/32.0f), \
-    vec( 1,  1, 0).rotate_around_z(n*2*M_PI/32.0f), \
-    vec( 1, -1, 0).rotate_around_z(n*2*M_PI/32.0f), \
-    vec(-1, -1, 0).rotate_around_z(n*2*M_PI/32.0f) \
+    vec2(-1,  1).rotate_around_z(n*2*M_PI/32.0f), \
+    vec2( 1,  1).rotate_around_z(n*2*M_PI/32.0f), \
+    vec2( 1, -1).rotate_around_z(n*2*M_PI/32.0f), \
+    vec2(-1, -1).rotate_around_z(n*2*M_PI/32.0f) \
 }
-static const vec rotcoeffs[32][4] =
+static const vec2 rotcoeffs[32][4] =
 {
     ROTCOEFFS(0),  ROTCOEFFS(1),  ROTCOEFFS(2),  ROTCOEFFS(3),  ROTCOEFFS(4),  ROTCOEFFS(5),  ROTCOEFFS(6),  ROTCOEFFS(7),
     ROTCOEFFS(8),  ROTCOEFFS(9),  ROTCOEFFS(10), ROTCOEFFS(11), ROTCOEFFS(12), ROTCOEFFS(13), ROTCOEFFS(14), ROTCOEFFS(15),
@@ -566,11 +627,41 @@ static const vec rotcoeffs[32][4] =
 template<>
 inline void genrotpos<PT_PART>(const vec &o, const vec &d, float size, int grav, int ts, partvert *vs, int rot)
 {
-    const vec *coeffs = rotcoeffs[rot];
-    (vs[0].pos = o).add(vec(camright).mul(coeffs[0].x*size)).add(vec(camup).mul(coeffs[0].y*size));
-    (vs[1].pos = o).add(vec(camright).mul(coeffs[1].x*size)).add(vec(camup).mul(coeffs[1].y*size));
-    (vs[2].pos = o).add(vec(camright).mul(coeffs[2].x*size)).add(vec(camup).mul(coeffs[2].y*size));
-    (vs[3].pos = o).add(vec(camright).mul(coeffs[3].x*size)).add(vec(camup).mul(coeffs[3].y*size));
+    const vec2 *coeffs = rotcoeffs[rot];
+    vs[0].pos = vec(o).madd(camright, coeffs[0].x*size).madd(camup, coeffs[0].y*size);
+    vs[1].pos = vec(o).madd(camright, coeffs[1].x*size).madd(camup, coeffs[1].y*size);
+    vs[2].pos = vec(o).madd(camright, coeffs[2].x*size).madd(camup, coeffs[2].y*size);
+    vs[3].pos = vec(o).madd(camright, coeffs[3].x*size).madd(camup, coeffs[3].y*size);
+}
+
+template<int T>
+static inline void seedpos(particleemitter &pe, const vec &o, const vec &d, int fade, float size, int grav)
+{
+    if(grav)
+    {
+        float t = fade;
+        vec end = vec(o).madd(d, t/5000.0f);
+        end.z -= t*t/(2.0f * 5000.0f * grav);
+        pe.extendbb(end, size);
+
+        float tpeak = d.z*grav;
+        if(tpeak > 0 && tpeak < fade) pe.extendbb(o.z + 1.5f*d.z*tpeak/5000.0f, size);
+    }
+}
+
+template<>
+inline void seedpos<PT_TAPE>(particleemitter &pe, const vec &o, const vec &d, int fade, float size, int grav)
+{
+    pe.extendbb(d, size);
+}
+
+template<>
+inline void seedpos<PT_TRAIL>(particleemitter &pe, const vec &o, const vec &d, int fade, float size, int grav)
+{
+    vec e = d;
+    if(grav) e.z -= float(fade)/grav;
+    e.div(-75.0f).add(o);
+    pe.extendbb(e, size);
 }
 
 template<int T>
@@ -613,12 +704,13 @@ struct varenderer : partrenderer
         lastupdate = -1;
     }
 
-    void resettracked(physent *pl)
+    void resettracked(physent *owner)
     {
+        if(!(type&PT_TRACK)) return;
         loopi(numparts)
         {
             particle *p = parts+i;
-            if(p->owner == pl) p->fade = -1;
+            if(!owner || (p->owner == owner)) p->fade = -1;
         }
         lastupdate = -1;
     }
@@ -640,7 +732,7 @@ struct varenderer : partrenderer
         p->d = d;
         p->m = vec(0, 0, 0);
         p->fade = fade;
-        p->millis = lastmillis;
+        p->millis = lastmillis + emitoffset;
         p->color = bvec(color>>16, (color>>8)&0xFF, color&0xFF);
         p->blend = blend;
         p->size = size;
@@ -650,6 +742,25 @@ struct varenderer : partrenderer
         p->flags = 0x80 | (rndmask ? rnd(0x80) & rndmask : 0);
         lastupdate = -1;
         return p;
+    }
+
+    void seedemitter(particleemitter &pe, const vec &o, const vec &d, int fade, float size, int gravity)
+    {
+        pe.maxfade = max(pe.maxfade, fade);
+        size *= SQRT2;
+        pe.extendbb(o, size);
+
+        seedpos<T>(pe, o, d, fade, size, gravity);
+        if(!gravity) return;
+
+        vec end(o);
+        float t = fade;
+        end.add(vec(d).mul(t/5000.0f));
+        end.z -= t*t/(2.0f * 5000.0f * gravity);
+        pe.extendbb(end, size);
+
+        float tpeak = d.z*gravity;
+        if(tpeak > 0 && tpeak < fade) pe.extendbb(o.z + 1.5f*d.z*tpeak/5000.0f, size);
     }
 
     void genverts(particle *p, partvert *vs, bool regen)
@@ -665,11 +776,10 @@ struct varenderer : partrenderer
         {
             p->flags &= ~0x80;
 
-            #define SETTEXCOORDS(u1c, u2c, v1c, v2c) \
+            #define SETTEXCOORDS(u1c, u2c, v1c, v2c, body) \
             { \
                 float u1 = u1c, u2 = u2c, v1 = v1c, v2 = v2c; \
-                if(p->flags&0x01) swap(u1, u2); \
-                if(p->flags&0x02) swap(v1, v2); \
+                body; \
                 vs[0].tc = vec2(u1, v1); \
                 vs[1].tc = vec2(u2, v1); \
                 vs[2].tc = vec2(u2, v2); \
@@ -677,11 +787,20 @@ struct varenderer : partrenderer
             }
             if(type&PT_RND4)
             {
-                float tx = 0.5f*((p->flags>>5)&1);
-                float ty = 0.5f*((p->flags>>6)&1);
-                SETTEXCOORDS(tx, tx+0.5f, ty, ty+0.5f);
+                float tx = 0.5f*((p->flags>>5)&1), ty = 0.5f*((p->flags>>6)&1);
+                SETTEXCOORDS(tx, tx + 0.5f, ty, ty + 0.5f,
+                {
+                    if(p->flags&0x01) swap(u1, u2);
+                    if(p->flags&0x02) swap(v1, v2);
+                });
+
             }
-            else SETTEXCOORDS(0.f, 1.f, 0, 1);
+            else if(type&PT_ICON)
+            {
+                float tx = 0.25f*(p->flags&3), ty = 0.25f*((p->flags>>2)&3);
+                SETTEXCOORDS(tx, tx + 0.25f, ty, ty + 0.25f, {});
+            }
+            else SETTEXCOORDS(0, 1, 0, 1, {});
 
             #define SETCOLOR(r, g, b, a) \
             do { \
@@ -720,7 +839,7 @@ struct varenderer : partrenderer
         }
     }
 
-    void update()
+    void genvbo()
     {
         if(lastmillis == lastupdate && vbo) return;
         lastupdate = lastmillis;
@@ -736,8 +855,9 @@ struct varenderer : partrenderer
 
     void render()
     {
-        preload();
-        if(tex) glBindTexture(GL_TEXTURE_2D, tex->id);
+        genvbo();
+
+        glBindTexture(GL_TEXTURE_2D, tex->id);
 
         gle::bindvbo(vbo);
         const partvert *ptr = 0;
@@ -763,35 +883,15 @@ typedef varenderer<PT_PART> quadrenderer;
 typedef varenderer<PT_TAPE> taperenderer;
 typedef varenderer<PT_TRAIL> trailrenderer;
 
+#include "explosion.h"
+#include "lensflare.h"
+#include "lightning.h"
+
 struct softquadrenderer : quadrenderer
 {
     softquadrenderer(const char *texname, int type)
         : quadrenderer(texname, type|PT_SOFT)
     {
-    }
-
-    int adddepthfx(vec &bbmin, vec &bbmax)
-    {
-        if(!numparts || (!depthfxtex.highprecision() && !depthfxtex.emulatehighprecision())) return 0;
-        int numsoft = 0;
-        loopi(numparts)
-        {
-            particle &p = parts[i];
-            int blend = 255, ts = 1;
-            float size = 1;
-            calc(&p, blend, ts, size, false);
-            float radius = size*SQRT2;
-            if(!isfoggedsphere(radius, p.o) && (depthfxscissor!=2 || depthfxtex.addscissorbox(p.o, radius)))
-            {
-                numsoft++;
-                loopk(3)
-                {
-                    bbmin[k] = min(bbmin[k], p.o[k] - radius);
-                    bbmax[k] = max(bbmax[k], p.o[k] + radius);
-                }
-            }
-        }
-        return numsoft;
     }
 };
 
@@ -1033,53 +1133,56 @@ static partrenderer *parts[] =
     new portalrenderer("<grey>particles/teleport"), &icons,
     &lineprimitives, &lineontopprimitives, &trisprimitives, &trisontopprimitives,
     &loopprimitives, &loopontopprimitives, &coneprimitives, &coneontopprimitives,
-    new softquadrenderer("<grey>particles/fire", PT_PART|PT_GLARE|PT_RND4|PT_FLIP|PT_LERP|PT_SHRINK),
-    new softquadrenderer("<grey>particles/plasma", PT_PART|PT_GLARE|PT_FLIP|PT_LERP|PT_SHRINK),
-    new taperenderer("<grey>particles/sflare", PT_TAPE|PT_GLARE|PT_LERP),
-    new taperenderer("<grey>particles/mflare", PT_TAPE|PT_GLARE|PT_RND4|PT_VFLIP|PT_LERP),
+    new softquadrenderer("<grey>particles/fire", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK),
+    new softquadrenderer("<grey>particles/plasma", PT_PART|PT_BRIGHT|PT_FLIP|PT_SHRINK),
+    new taperenderer("<grey>particles/sflare", PT_TAPE|PT_BRIGHT|PT_FEW),
+    new taperenderer("<grey>particles/mflare", PT_TAPE|PT_BRIGHT|PT_RND4|PT_VFLIP|PT_FEW),
     new softquadrenderer("<grey>particles/smoke", PT_PART|PT_LERP|PT_FLIP|PT_SHRINK),
     new quadrenderer("<grey>particles/smoke", PT_PART|PT_LERP|PT_FLIP|PT_SHRINK),
-    new softquadrenderer("<grey>particles/hint", PT_PART|PT_GLARE|PT_LERP),
-    new quadrenderer("<grey>particles/hint", PT_PART|PT_GLARE|PT_LERP),
-    new softquadrenderer("<grey>particles/hint_bold", PT_PART|PT_GLARE|PT_LERP),
-    new quadrenderer("<grey>particles/hint_bold", PT_PART|PT_GLARE|PT_LERP),
-    new softquadrenderer("<grey>particles/hint_vert", PT_PART|PT_GLARE|PT_LERP),
-    new quadrenderer("<grey><rotate:1>particles/hint_vert", PT_PART|PT_GLARE|PT_LERP),
-    new softquadrenderer("<grey><rotate:1>particles/hint_vert", PT_PART|PT_GLARE|PT_LERP),
-    new quadrenderer("<grey>particles/hint_vert", PT_PART|PT_GLARE|PT_LERP),
+    new softquadrenderer("<grey>particles/hint", PT_PART|PT_BRIGHT),
+    new quadrenderer("<grey>particles/hint", PT_PART|PT_BRIGHT),
+    new softquadrenderer("<grey>particles/hint_bold", PT_PART|PT_BRIGHT),
+    new quadrenderer("<grey>particles/hint_bold", PT_PART|PT_BRIGHT),
+    new softquadrenderer("<grey>particles/hint_vert", PT_PART|PT_BRIGHT),
+    new quadrenderer("<grey><rotate:1>particles/hint_vert", PT_PART|PT_BRIGHT),
+    new softquadrenderer("<grey><rotate:1>particles/hint_vert", PT_PART|PT_BRIGHT),
+    new quadrenderer("<grey>particles/hint_vert", PT_PART|PT_BRIGHT),
     new softquadrenderer("<grey>particles/smoke", PT_PART|PT_FLIP|PT_SHRINK),
     new quadrenderer("<grey>particles/smoke", PT_PART|PT_FLIP|PT_SHRINK),
-    new softquadrenderer("<grey>particles/hint", PT_PART|PT_GLARE),
-    new quadrenderer("<grey>particles/hint", PT_PART|PT_GLARE),
-    new softquadrenderer("<grey>particles/hint_bold", PT_PART|PT_GLARE),
-    new quadrenderer("<grey>particles/hint_bold", PT_PART|PT_GLARE),
-    new softquadrenderer("<grey>particles/hint_vert", PT_PART|PT_GLARE),
-    new quadrenderer("<grey>particles/hint_vert", PT_PART|PT_GLARE),
-    new softquadrenderer("<grey><rotate:1>particles/hint_vert", PT_PART|PT_GLARE),
-    new quadrenderer("<grey><rotate:1>particles/hint_vert", PT_PART|PT_GLARE),
+    new softquadrenderer("<grey>particles/hint", PT_PART|PT_BRIGHT),
+    new quadrenderer("<grey>particles/hint", PT_PART|PT_BRIGHT),
+    new softquadrenderer("<grey>particles/hint_bold", PT_PART|PT_BRIGHT),
+    new quadrenderer("<grey>particles/hint_bold", PT_PART|PT_BRIGHT),
+    new softquadrenderer("<grey>particles/hint_vert", PT_PART|PT_BRIGHT),
+    new quadrenderer("<grey>particles/hint_vert", PT_PART|PT_BRIGHT),
+    new softquadrenderer("<grey><rotate:1>particles/hint_vert", PT_PART|PT_BRIGHT),
+    new quadrenderer("<grey><rotate:1>particles/hint_vert", PT_PART|PT_BRIGHT),
     new quadrenderer("<grey>particles/blood", PT_PART|PT_MOD|PT_RND4|PT_FLIP),
-    new quadrenderer("<grey>particles/entity", PT_PART|PT_GLARE),
-    new quadrenderer("<grey>particles/entity", PT_PART|PT_GLARE|PT_ONTOP),
-    new quadrenderer("<grey>particles/spark", PT_PART|PT_GLARE|PT_FLIP|PT_SHRINK|PT_GROW),
-    new softquadrenderer("<grey>particles/fire", PT_PART|PT_GLARE|PT_RND4|PT_FLIP|PT_SHRINK),
-    new quadrenderer("<grey>particles/fire", PT_PART|PT_GLARE|PT_RND4|PT_FLIP|PT_SHRINK),
-    new softquadrenderer("<grey>particles/plasma", PT_PART|PT_GLARE|PT_FLIP|PT_SHRINK),
-    new quadrenderer("<grey>particles/plasma", PT_PART|PT_GLARE|PT_FLIP|PT_SHRINK),
-    new softquadrenderer("<grey>particles/electric", PT_PART|PT_GLARE|PT_RND4|PT_FLIP|PT_SHRINK),
-    new quadrenderer("<grey>particles/electric", PT_PART|PT_GLARE|PT_RND4|PT_FLIP|PT_SHRINK),
-    new softquadrenderer("<grey>particles/eleczap", PT_PART|PT_GLARE|PT_RND4|PT_FLIP|PT_SHRINK),
-    new quadrenderer("<grey>particles/eleczap", PT_PART|PT_GLARE|PT_RND4|PT_FLIP|PT_SHRINK),
-    new quadrenderer("<grey>particles/fire", PT_PART|PT_GLARE|PT_FLIP|PT_RND4|PT_GLARE|PT_SHRINK),
-    new taperenderer("<grey>particles/sflare", PT_TAPE|PT_GLARE),
-    new taperenderer("<grey>particles/mflare", PT_TAPE|PT_GLARE|PT_RND4|PT_VFLIP|PT_GLARE),
-    new taperenderer("<grey>particles/lightning", PT_TAPE|PT_GLARE|PT_HFLIP|PT_VFLIP, 2), // uses same clamp setting as normal lightning to avoid conflict
-    new taperenderer("<grey>particles/lightzap", PT_TAPE|PT_GLARE|PT_HFLIP|PT_VFLIP, 2),
-    new quadrenderer("<grey>particles/muzzle", PT_PART|PT_GLARE|PT_RND4|PT_FLIP),
-    new quadrenderer("<grey>particles/snow", PT_PART|PT_GLARE|PT_FLIP),
+    new quadrenderer("<grey>particles/entity", PT_PART|PT_BRIGHT),
+    new quadrenderer("<grey>particles/entity", PT_PART|PT_BRIGHT|PT_ONTOP),
+    new quadrenderer("<grey>particles/spark", PT_PART|PT_BRIGHT|PT_FLIP|PT_SHRINK|PT_GROW),
+    new softquadrenderer("<grey>particles/fire", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK),
+    new quadrenderer("<grey>particles/fire", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK),
+    new softquadrenderer("<grey>particles/plasma", PT_PART|PT_BRIGHT|PT_FLIP|PT_SHRINK),
+    new quadrenderer("<grey>particles/plasma", PT_PART|PT_BRIGHT|PT_FLIP|PT_SHRINK),
+    new softquadrenderer("<grey>particles/electric", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK),
+    new quadrenderer("<grey>particles/electric", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK),
+    new softquadrenderer("<grey>particles/eleczap", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK),
+    new quadrenderer("<grey>particles/eleczap", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK),
+    new quadrenderer("<grey>particles/fire", PT_PART|PT_BRIGHT|PT_FLIP|PT_RND4|PT_BRIGHT|PT_SHRINK),
+    new taperenderer("<grey>particles/sflare", PT_TAPE|PT_BRIGHT),
+    new taperenderer("<grey>particles/mflare", PT_TAPE|PT_BRIGHT|PT_RND4|PT_VFLIP|PT_BRIGHT),
+    new taperenderer("<grey>particles/lightning", PT_TAPE|PT_BRIGHT|PT_HFLIP|PT_VFLIP, 2), // uses same clamp setting as normal lightning to avoid conflict
+    new taperenderer("<grey>particles/lightzap", PT_TAPE|PT_BRIGHT|PT_HFLIP|PT_VFLIP, 2),
+    new quadrenderer("<grey>particles/muzzle", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP),
+    new quadrenderer("<grey>particles/snow", PT_PART|PT_BRIGHT|PT_FLIP),
     &texts, &textontop,
     &explosions, &shockwaves, &shockballs, &lightnings, &lightzaps,
     &flares // must be done last!
 };
+
+VARF(IDF_PERSIST, maxparticles, 10, 4000, 10000, initparticles());
+VARF(IDF_PERSIST, fewparticles, 10, 100, 10000, initparticles());
 
 int partsorder[sizeof(parts)/sizeof(parts[0])];
 
@@ -1090,52 +1193,27 @@ void orderparts()
     loopi(n) if(parts[i]->type&PT_LERP) partsorder[j++] = i;
 }
 
-void finddepthfxranges()
-{
-    depthfxmin = vec(1e16f, 1e16f, 1e16f);
-    depthfxmax = vec(0, 0, 0);
-    numdepthfxranges = explosions.finddepthfxranges(depthfxowners, depthfxranges, 0, MAXDFXRANGES, depthfxmin, depthfxmax);
-    numdepthfxranges = shockwaves.finddepthfxranges(depthfxowners, depthfxranges, numdepthfxranges, MAXDFXRANGES, depthfxmin, depthfxmax);
-    numdepthfxranges = shockballs.finddepthfxranges(depthfxowners, depthfxranges, numdepthfxranges, MAXDFXRANGES, depthfxmin, depthfxmax);
-    loopk(3)
-    {
-        depthfxmin[k] -= depthfxmargin;
-        depthfxmax[k] += depthfxmargin;
-    }
-    if(depthfxparts)
-    {
-        loopi(sizeof(parts)/sizeof(parts[0]))
-        {
-            partrenderer *p = parts[i];
-            if(p->type&PT_SOFT && p->adddepthfx(depthfxmin, depthfxmax))
-            {
-                if(!numdepthfxranges)
-                {
-                    numdepthfxranges = 1;
-                    depthfxowners[0] = NULL;
-                    depthfxranges[0] = 0;
-                }
-            }
-        }
-    }
-    if(depthfxscissor<2 && numdepthfxranges>0) depthfxtex.addscissorbox(depthfxmin, depthfxmax);
-}
-
 void initparticles()
 {
+    if(initing) return;
     if(!particleshader) particleshader = lookupshaderbyname("particle");
     if(!particlenotextureshader) particlenotextureshader = lookupshaderbyname("particlenotexture");
+    if(!particlesoftshader) particlesoftshader = lookupshaderbyname("particlesoft");
+    if(!particletextshader) particletextshader = lookupshaderbyname("particletext");
+    loopi(sizeof(parts)/sizeof(parts[0])) parts[i]->init(parts[i]->type&PT_FEW ? min(fewparticles, maxparticles) : maxparticles);
     loopi(sizeof(parts)/sizeof(parts[0]))
     {
-        parts[i]->init(parts[i]->type&PT_FEW ? min(fewparticles, maxparticles) : maxparticles);
+        loadprogress = float(i+1)/(sizeof(parts)/sizeof(parts[0]));
         parts[i]->preload();
     }
+    loadprogress = 0;
     orderparts();
 }
 
 void clearparticles()
 {
     loopi(sizeof(parts)/sizeof(parts[0])) parts[i]->reset();
+    clearparticleemitters();
 }
 
 void cleanupparticles()
@@ -1143,9 +1221,9 @@ void cleanupparticles()
     loopi(sizeof(parts)/sizeof(parts[0])) parts[i]->cleanup();
 }
 
-void removetrackedparticles(physent *pl)
+void removetrackedparticles(physent *owner)
 {
-    loopi(sizeof(parts)/sizeof(parts[0])) parts[i]->resettracked(pl);
+    loopi(sizeof(parts)/sizeof(parts[0])) parts[i]->resettracked(owner);
 }
 
 VARN(0, debugparticles, dbgparts, 0, 0, 1);
@@ -1154,41 +1232,29 @@ void debugparticles()
 {
     if(!dbgparts) return;
     int n = sizeof(parts)/sizeof(parts[0]);
-    glEnable(GL_BLEND);
     pushhudmatrix();
-    hudmatrix.ortho(0, FONTH*n*2*screenw/float(screenh), FONTH*n*2, 0, -1, 1); //squeeze into top-left corner
+    hudmatrix.ortho(0, FONTH*n*2*vieww/float(viewh), FONTH*n*2, 0, -1, 1); // squeeze into top-left corner
     flushhudmatrix();
-    hudshader->set();
     loopi(n) draw_text(parts[i]->info, FONTH, (i+n/2)*FONTH);
     pophudmatrix();
-    glDisable(GL_BLEND);
 }
 
-void renderparticles(bool mainpass)
+void renderparticles(int layer)
 {
-    canstep = mainpass;
+    canstep = layer != PL_UNDER;
+
     //want to debug BEFORE the lastpass render (that would delete particles)
-    if(dbgparts && mainpass) loopi(sizeof(parts)/sizeof(parts[0])) parts[i]->debuginfo();
-
-    if(glaring && !particleglare) return;
-
-    loopi(sizeof(parts)/sizeof(parts[0]))
-    {
-        if(glaring && !(parts[i]->type&PT_GLARE)) continue;
-        parts[i]->update();
-    }
+    if(dbgparts && (layer == PL_ALL || layer == PL_UNDER)) loopi(sizeof(parts)/sizeof(parts[0])) parts[i]->debuginfo();
 
     bool rendered = false;
     uint lastflags = PT_LERP|PT_SHADER,
-         flagmask = PT_LERP|PT_MOD|PT_ONTOP|PT_SHADER;
-
-    if(binddepthfxtex()) flagmask |= PT_SOFT;
+         flagmask = PT_LERP|PT_MOD|PT_ONTOP|PT_BRIGHT|PT_NOTEX|PT_SOFT|PT_SHADER,
+         excludemask = layer == PL_ALL ? ~0 : (layer != PL_NOLAYER ? PT_NOLAYER : 0);
 
     loopi(sizeof(parts)/sizeof(parts[0]))
     {
         partrenderer *p = parts[partsorder[i]];
-        if(glaring && !(p->type&PT_GLARE)) continue;
-        if(!p->haswork()) continue;
+        if((p->type&PT_NOLAYER) == excludemask || !p->haswork()) continue;
 
         if(!rendered)
         {
@@ -1197,18 +1263,16 @@ void renderparticles(bool mainpass)
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-            if(glaring) GLOBALPARAMF(colorscale, particleglare, particleglare, particleglare, 1);
-            else GLOBALPARAMF(colorscale, 1, 1, 1, 1);
+            glActiveTexture_(GL_TEXTURE2);
+            if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msdepthtex);
+            else glBindTexture(GL_TEXTURE_RECTANGLE, gdepthtex);
+            glActiveTexture_(GL_TEXTURE0);
         }
 
         uint flags = p->type & flagmask, changedbits = (flags ^ lastflags);
         if(changedbits)
         {
-            if(changedbits&PT_LERP)
-            {
-                if(flags&PT_LERP) resetfogcolor();
-                else zerofogcolor();
-            }
+            if(changedbits&PT_LERP) { if(flags&PT_LERP) resetfogcolor(); else zerofogcolor(); }
             if(changedbits&(PT_LERP|PT_MOD))
             {
                 if(flags&PT_LERP) glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -1217,16 +1281,21 @@ void renderparticles(bool mainpass)
             }
             if(!(flags&PT_SHADER))
             {
-                if(changedbits&(PT_SOFT|PT_SHADER))
+                if(changedbits&(PT_LERP|PT_SOFT|PT_NOTEX|PT_SHADER))
                 {
-                    if(flags&PT_SOFT)
+                    if(flags&PT_SOFT && softparticles)
                     {
-                        if(!depthfxtex.highprecision()) SETSHADER(particlesoft8);
-                        else SETSHADER(particlesoft);
-
-                        binddepthfxparams(depthfxpartblend);
+                        particlesoftshader->set();
+                        LOCALPARAMF(softparams, -1.0f/softparticleblend, 0, 0);
                     }
+                    else if(flags&PT_NOTEX) particlenotextureshader->set();
                     else particleshader->set();
+                }
+                if(changedbits&(PT_MOD|PT_BRIGHT|PT_SOFT|PT_NOTEX|PT_SHADER))
+                {
+                    float colorscale = flags&PT_MOD ? 1 : ldrscale;
+                    if(flags&PT_BRIGHT) colorscale *= particlebright;
+                    LOCALPARAMF(colorscale, colorscale, colorscale, colorscale, 1);
                 }
             }
             if(changedbits&PT_ONTOP)
@@ -1249,8 +1318,18 @@ void renderparticles(bool mainpass)
     }
 }
 
+static int addedparticles = 0;
+
 particle *newparticle(const vec &o, const vec &d, int fade, int type, int color, float size, float blend, int grav, int collide, physent *pl)
 {
+    static particle dummy;
+    if(seedemitter)
+    {
+        parts[type]->seedemitter(*seedemitter, o, d, fade, size, grav);
+        return &dummy;
+    }
+    if(fade + emitoffset < 0) return &dummy;
+    addedparticles++;
     return parts[type]->addpart(o, d, fade, color, size, blend, grav, collide, pl);
 }
 
@@ -1270,9 +1349,11 @@ void regularcreate(int type, int color, int fade, const vec &p, float size, floa
     create(type, color, fade, p, size, blend, grav, collide, pl);
 }
 
+VAR(IDF_PERSIST, maxparticledistance, 256, 1024, 4096);
+
 void splash(int type, int color, float radius, int num, int fade, const vec &p, float size, float blend, int grav, int collide, float vel)
 {
-    if(camera1->o.dist(p) > maxparticledistance) return;
+    if(camera1->o.dist(p) > maxparticledistance && !seedemitter) return;
 #if 0
     float collidez = collide ? p.z - raycube(p, vec(0, 0, -1), COLLIDERADIUS, RAY_CLIPMAT) + (collide >= 0 ? COLLIDEERROR : 0) : -1;
     int fmin = 1;
@@ -1295,7 +1376,7 @@ void regularsplash(int type, int color, float radius, int num, int fade, const v
 
 bool canaddparticles()
 {
-    return !renderedgame && !shadowmapping && !minimized;
+    return !minimized;
 }
 
 void regular_part_create(int type, int fade, const vec &p, int color, float size, float blend, int grav, int collide, physent *pl, int delay)
@@ -1322,7 +1403,9 @@ void part_splash(int type, int num, int fade, const vec &p, int color, float siz
     splash(type, color, radius, num, fade, p, size, blend, grav, collide, vel);
 }
 
-void part_trail(int ptype, int fade, const vec &s, const vec &e, int color, float size, float blend, int grav, int collide)
+VAR(IDF_PERSIST, maxparticletrail, 256, 512, VAR_MAX);
+
+void part_trail(int type, int fade, const vec &s, const vec &e, int color, float size, float blend, int grav, int collide)
 {
     if(!canaddparticles()) return;
     vec v;
@@ -1334,14 +1417,17 @@ void part_trail(int ptype, int fade, const vec &s, const vec &e, int color, floa
     {
         p.add(v);
         vec tmp = vec(float(rnd(11)-5), float(rnd(11)-5), float(rnd(11)-5));
-        newparticle(p, tmp, rnd(fade)+fade, ptype, color, size, blend, grav, collide);
+        newparticle(p, tmp, rnd(fade)+fade, type, color, size, blend, grav, collide);
     }
 }
+
+VAR(IDF_PERSIST, particletext, 0, 1, 1);
+VAR(IDF_PERSIST, maxparticletextdistance, 0, 512, 10000);
 
 void part_text(const vec &s, const char *t, int type, int fade, int color, float size, float blend, int grav, int collide, physent *pl)
 {
     if(!canaddparticles() || !t[0]) return;
-    if(!particletext || camera1->o.dist(s) > maxparticledistance) return;
+    if(!particletext || camera1->o.dist(s) > maxparticletextdistance) return;
     particle *p = newparticle(s, vec(0, 0, 1), fade, type, color, size, blend, grav, collide, pl);
     p->text = t;
 }
@@ -1349,7 +1435,7 @@ void part_text(const vec &s, const char *t, int type, int fade, int color, float
 void part_textcopy(const vec &s, const char *t, int type, int fade, int color, float size, float blend, int grav, int collide, physent *pl)
 {
     if(!canaddparticles() || !t[0]) return;
-    if(!particletext || camera1->o.dist(s) > maxparticledistance) return;
+    if(!particletext || camera1->o.dist(s) > maxparticletextdistance) return;
     particle *p = newparticle(s, vec(0, 0, 1), fade, type, color, size, blend, grav, collide, pl);
     p->text = newstring(t);
     p->flags = 1;
@@ -1408,9 +1494,13 @@ void part_portal(const vec &o, float size, float blend, float yaw, float pitch, 
     p->addportal(o, fade, color, size, blend, yaw, pitch);
 }
 
+VAR(IDF_PERSIST, particleicon, 0, 1, 1);
+VAR(IDF_PERSIST, maxparticleicondistance, 0, 512, 10000);
+
 void part_icon(const vec &o, Texture *tex, float size, float blend, int grav, int collide, int fade, int color, float start, float length, physent *pl)
 {
     if(!canaddparticles() || (parts[PART_ICON]->type&PT_TYPE) != PT_ICON) return;
+    if(!particleicon || camera1->o.dist(o) > maxparticleicondistance) return;
     iconrenderer *p = (iconrenderer *)parts[PART_ICON];
     p->addicon(o, tex, fade, color, size, blend, grav, collide, start, length, pl);
 }
@@ -1511,9 +1601,11 @@ static inline vec offsetvec(vec o, int dir, int dist)
  */
  void createshape(int type, float radius, int color, int dir, int num, int fade, const vec &p, float size, float blend, int grav, int collide, float vel)
 {
+    if(!canemitparticles()) return;
+
     int basetype = parts[type]->type&PT_TYPE;
     bool flare = (basetype == PT_TAPE) || (basetype == PT_LIGHTNING),
-         inv = (dir&0x20)!=0, taper = (dir&0x40)!=0;
+         inv = (dir&0x20)!=0, taper = (dir&0x40)!=0 && !seedemitter;
     dir &= 0x1F;
     loopi(num)
     {
@@ -1585,7 +1677,7 @@ static inline vec offsetvec(vec o, int dir, int dist)
 
         if(taper)
         {
-            float dist = clamp(from.dist2(camera1->o) / maxparticledistance, 0.0f, 1.0f);
+            float dist = clamp(from.dist2(camera1->o)/maxparticledistance, 0.0f, 1.0f);
             if(dist > 0.2f)
             {
                 dist = 1 - (dist - 0.2f)/0.8f;
@@ -1636,10 +1728,11 @@ static int partcolour(int c, int p, int x)
     }
     return c;
 }
+
 void makeparticle(const vec &o, attrvector &attr)
 {
-    bool oldemit = emit;
-    if(attr[11]) emit = true;
+    bool oldemit = canemit;
+    if(attr[11]) canemit = true;
     switch(attr[0])
     {
         case 0: //fire
@@ -1660,11 +1753,11 @@ void makeparticle(const vec &o, attrvector &attr)
         case 2: //water fountain - <dir>
         {
             int mat = MAT_WATER + clamp(-attr[2], 0, 3);
-            const bvec &wfcol = getwaterfallcol(mat);
+            const bvec &wfcol = getwaterfallcolour(mat);
             int color = (int(wfcol[0])<<16) | (int(wfcol[1])<<8) | int(wfcol[2]);
             if(!color)
             {
-                const bvec &wcol = getwatercol(mat);
+                const bvec &wcol = getwatercolour(mat);
                 color = (int(wcol[0])<<16) | (int(wcol[1])<<8) | int(wcol[2]);
             }
             regularsplash(PART_SPARK, color, 10, 4, 200, offsetvec(o, attr[1], rnd(10)), 0.6f, 1, 20);
@@ -1692,12 +1785,12 @@ void makeparticle(const vec &o, attrvector &attr)
             const float sizemap[] = { 0.28f, 0.0f, 0.0f, 0.25f, 4.f, 2.f, 0.6f, 4.f, 0.5f, 0.2f }, velmap[] = { 0, 0, 0, 0, 30, 30, 50, 20, 10, 20 };
             int type = typemap[attr[0]-4], fade = attr[4] > 0 ? attr[4] : 250,
                 grav = attr[0] > 7 && attr[7] != 0 ? attr[7] : gravmap[attr[0]-4],
-                decal = attr[0] > 7 && attr[6] > 0 && attr[6] <= DECAL_MAX ? attr[6]-1 : -1,
+                stain = attr[0] > 7 && attr[6] > 0 && attr[6] <= STAIN_MAX ? attr[6]-1 : -1,
                 colour = attr[0] > 7 ? partcolour(attr[3], attr[9], attr[10]) : partcolour(attr[3], attr[6], attr[7]);
             float size = attr[5] != 0 ? attr[5]/100.f : sizemap[attr[0]-4],
                   vel = attr[0] > 7 && attr[8] != 0 ? attr[8] : velmap[attr[0]-4];
-            if(attr[1] >= 256) regularshape(type, max(1+attr[2], 1), colour, attr[1]-256, 5, fade, o, size, 1, grav, decal, vel);
-            else newparticle(o, offsetvec(o, attr[1], max(1+attr[2], 0)), fade, type, colour, size, 1, grav, decal);
+            if(attr[1] >= 256) regularshape(type, max(1+attr[2], 1), colour, attr[1]-256, 5, fade, o, size, 1, grav, stain, vel);
+            else newparticle(o, offsetvec(o, attr[1], max(1+attr[2], 0)), fade, type, colour, size, 1, grav, stain);
             break;
         }
         case 14: // flames <radius> <height> <rgb>
@@ -1733,21 +1826,79 @@ void makeparticle(const vec &o, attrvector &attr)
             part_textcopy(o, ds);
             break;
     }
-    emit = oldemit;
+    canemit = oldemit;
+}
+
+static inline void makeparticles(extentity &e)
+{
+    makeparticle(e.o, e.attrs);
+}
+
+void seedparticles()
+{
+    progress(0, "seeding particles");
+    addparticleemitters();
+    canemit = true;
+    loopv(emitters)
+    {
+        particleemitter &pe = emitters[i];
+        extentity &e = *pe.ent;
+        seedemitter = &pe;
+        for(int millis = 0; millis < seedmillis; millis += min(emitmillis, seedmillis/10))
+            if(entities::checkparticle(e))
+                makeparticles(e);
+        seedemitter = NULL;
+        pe.lastemit = -seedmillis;
+        pe.finalize();
+    }
 }
 
 void updateparticles()
 {
-    if(minimized) { emit = false; return; }
+    if(regenemitters) addparticleemitters();
 
-    if(lastmillis-lastemitframe >= emitmillis)
+    if(minimized) { canemit = false; return; }
+
+    if(lastmillis - lastemitframe >= emitmillis)
     {
-        emit = true;
-        lastemitframe = lastmillis-(lastmillis%emitmillis);
+        canemit = true;
+        lastemitframe = lastmillis - (lastmillis%emitmillis);
     }
-    else emit = false;
+    else canemit = false;
 
-    flares.setupflares();
+    loopi(sizeof(parts)/sizeof(parts[0])) parts[i]->update();
+
     entities::drawparticles();
     flares.drawflares(); // do after drawparticles so that we can make flares for them too
+
+    if(!editmode || showparticles)
+    {
+        int emitted = 0, replayed = 0;
+        addedparticles = 0;
+        loopv(emitters)
+        {
+            particleemitter &pe = emitters[i];
+            extentity &e = *pe.ent;
+            if(!entities::checkparticle(e) || e.o.dist(camera1->o) > maxparticledistance) { pe.lastemit = lastmillis; continue; }
+
+            if(cullparticles && pe.maxfade >= 0)
+            {
+                if(isfoggedsphere(pe.radius, pe.center)) { pe.lastcull = lastmillis; continue; }
+                if(pvsoccluded(pe.cullmin, pe.cullmax)) { pe.lastcull = lastmillis; continue; }
+            }
+            makeparticles(e);
+            emitted++;
+            if(replayparticles && pe.maxfade > 5 && pe.lastcull > pe.lastemit)
+            {
+                for(emitoffset = max(pe.lastemit + emitmillis - lastmillis, -pe.maxfade); emitoffset < 0; emitoffset += emitmillis)
+                {
+                    makeparticles(e);
+                    replayed++;
+                }
+                emitoffset = 0;
+            }
+            pe.lastemit = lastmillis;
+        }
+        if(dbgpcull && (canemit || replayed) && addedparticles) conoutf("\fr%d emitters, %d particles", emitted, addedparticles);
+    }
 }

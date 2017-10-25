@@ -251,7 +251,7 @@ static inline int parseint(const char *s)
         char *end; \
         double val = strtod(s, &end); \
         return val || end==s || (*end!='x' && *end!='X') ? type(val) : type(parseint(s)); \
-}
+    }
 PARSEFLOAT(float, float)
 PARSEFLOAT(number, double)
 
@@ -334,8 +334,8 @@ inline void ident::getcval(tagval &v) const
 extern int variable(const char *name, int min, int cur, int max, int *storage, identfun fun, int flags);
 extern float fvariable(const char *name, float min, float cur, float max, float *storage, identfun fun, int flags);
 extern char *svariable(const char *name, const char *cur, char **storage, identfun fun, int flags);
-extern void setvar(const char *name, int i, bool dofunc = false, bool def = false);
-extern void setfvar(const char *name, float f, bool dofunc = false, bool def = false);
+extern void setvar(const char *name, int i, bool dofunc = false, bool def = false, bool force = false);
+extern void setfvar(const char *name, float f, bool dofunc = false, bool def = false, bool force = false);
 extern void setsvar(const char *name, const char *str, bool dofunc = false, bool def = false);
 extern void setvarchecked(ident *id, int val);
 extern void setfvarchecked(ident *id, float val);
@@ -456,6 +456,14 @@ extern char *limitstring(const char *str, size_t len);
 #define _SVARF(name, global, cur, body, flags) void var_##name(ident *id); char *global = svariable(#name, cur, &global, var_##name, flags|IDF_COMPLETE); void var_##name(ident *id) { body; }
 #define SVARFN(flags, name, global, cur, body) _SVARF(name, global, cur, body, flags)
 #define SVARF(flags, name, cur, body) _SVARF(name, name, cur, body, flags)
+
+#define _CVAR(name, cur, init, body, flags) bvec name = bvec::hexcolor(cur); _VARF(name, _##name, 0, cur, 0xFFFFFF, { init; name = bvec::hexcolor(_##name); body; }, IDF_HEX|flags)
+#define CVARF(flags, name, cur, body) _CVAR(name, cur, , body, flags)
+#define CVAR(flags, name, cur) _CVAR(name, cur, , , flags)
+#define CVAR0F(flags, name, cur, body) _CVAR(name, cur, { if(!_##name) _##name = cur; }, body, flags)
+#define CVAR1F(flags, name, cur, body) _CVAR(name, cur, { if(_##name <= 255) _##name |= (_##name<<8) | (_##name<<16); }, body, flags)
+#define CVAR0(flags, name, cur) CVAR0F(flags, name, cur, )
+#define CVAR1(flags, name, cur) CVAR1F(flags, name, cur, )
 
 // game world controlling stuff
 #define WITHWORLD(body) { int _oldflags = identflags; identflags |= IDF_WORLD; body; identflags = _oldflags; }

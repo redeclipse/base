@@ -3,7 +3,7 @@
 
 // ET_*: the only static entity types dictated by the engine... rest are gamecode dependent
 
-enum { ET_EMPTY=0, ET_LIGHT, ET_MAPMODEL, ET_PLAYERSTART, ET_ENVMAP, ET_PARTICLES, ET_SOUND, ET_LIGHTFX, ET_SUNLIGHT, ET_GAMESPECIFIC };
+enum { ET_EMPTY=0, ET_LIGHT, ET_MAPMODEL, ET_PLAYERSTART, ET_ENVMAP, ET_PARTICLES, ET_SOUND, ET_LIGHTFX, ET_DECAL, ET_GAMESPECIFIC };
 enum { LFX_SPOTLIGHT = 0, LFX_DYNLIGHT, LFX_FLICKER, LFX_PULSE, LFX_GLOW, LFX_MAX };
 enum { LFX_S_NONE = 0, LFX_S_RAND1 = 1<<0, LFX_S_RAND2 = 1<<1, LFX_S_MAX = 2 };
 
@@ -14,15 +14,16 @@ struct entbase                                   // persistent map entity
     uchar reserved[3];                          // left-over space due to struct alignment
 };
 
-enum { MAXLIGHTMATERIALS = 3 };
-
-struct entitylight
+enum
 {
-    vec color, dir, effect;
-    int millis;
-    bvec material[MAXLIGHTMATERIALS];
+    EF_NOVIS      = 1<<0,
+    EF_NOSHADOW   = 1<<1,
+    EF_NOCOLLIDE  = 1<<2,
+    EF_SHADOWMESH = 1<<3,
+    EF_OCTA       = 1<<4,
+    EF_RENDER     = 1<<5,
+    EF_SPAWNED    = 1<<6
 
-    entitylight() : color(1, 1, 1), dir(0, 0, 1), effect(0, 0, 0), millis(-1) { loopi(MAXLIGHTMATERIALS) material[i] = bvec(255, 255, 255); }
 };
 
 enum
@@ -43,20 +44,19 @@ struct entity : entbase
     linkvector links;
 };
 
-enum
-{
-    EF_OCTA      = 1<<0,
-    EF_RENDER    = 1<<1,
-    EF_SPAWNED   = 1<<2
-};
+enum { MAXENTMATERIALS = 3 };
 
 struct extentity : entity                       // part of the entity that doesn't get saved to disk
 {
     int flags;        // the only dynamic state of a map entity
-    entitylight light;
     int lastemit, emit[3];
+    bvec material[MAXENTMATERIALS];
 
-    extentity() : flags(0), lastemit(0) { emit[0] = emit[1] = emit[2] = 0; }
+    extentity() : flags(0), lastemit(0)
+    {
+        emit[0] = emit[1] = emit[2] = 0;
+        loopi(MAXENTMATERIALS) material[i] = bvec(255, 255, 255);
+    }
 
     bool spawned() const { return (flags&EF_SPAWNED) != 0; }
     void setspawned(bool val) { if(val) flags |= EF_SPAWNED; else flags &= ~EF_SPAWNED; }
@@ -75,7 +75,7 @@ extern int efocus, enthover, entorient;
 enum { CS_ALIVE = 0, CS_DEAD, CS_EDITING, CS_SPECTATOR, CS_WAITING }; // beware, some stuff uses >= CS_SPECTATOR
 enum { PHYS_FLOAT = 0, PHYS_FALL, PHYS_SLIDE, PHYS_SLOPE, PHYS_FLOOR, PHYS_STEP_UP, PHYS_STEP_DOWN };
 enum { ENT_PLAYER = 0, ENT_AI, ENT_INANIMATE, ENT_CAMERA, ENT_PROJ, ENT_RAGDOLL, ENT_DUMMY };
-enum { COLLIDE_NONE = 0, COLLIDE_ELLIPSE, COLLIDE_OBB, COLLIDE_ELLIPSE_PRECISE };
+enum { COLLIDE_NONE = 0, COLLIDE_ELLIPSE, COLLIDE_OBB, COLLIDE_TRI };
 
 struct baseent
 {
@@ -84,8 +84,13 @@ struct baseent
     uchar state;                                // one of CS_* above
     int inmaterial;
     float submerged;
+    bvec material[MAXENTMATERIALS];
 
-    baseent() : state(CS_SPECTATOR) { reset(); }
+    baseent() : o(0, 0, 0), yaw(0), pitch(0), roll(0), state(CS_SPECTATOR)
+    {
+        reset();
+        loopi(MAXENTMATERIALS) material[i] = bvec(255, 255, 255);
+    }
 
     void reset()
     {
@@ -114,13 +119,14 @@ struct physent : baseent                        // can be affected by physics
     uchar type;                                 // one of ENT_* above
     uchar collidetype;                          // one of COLLIDE_* above
 
-    physent() : speed(100), weight(100), radius(3), aboveeye(1),
-        xradius(3), yradius(3), zradius(14), zmargin(0), curscale(1), speedscale(1),
+    physent() : deltapos(0, 0, 0), newpos(0, 0, 0), speed(100), weight(100),
+        radius(3), height(14), aboveeye(1),
+        xradius(3), yradius(3), zradius(14), zmargin(0),
+        curscale(1), speedscale(1),
         type(ENT_INANIMATE),
         collidetype(COLLIDE_ELLIPSE)
     {
         reset();
-        height = zradius;
     }
 
     void resetinterp(bool force = false)
@@ -176,25 +182,24 @@ enum
     ANIM_GAMESPECIFIC
 };
 
-#define ANIM_ALL         0x7F
-#define ANIM_INDEX       0x7F
-#define ANIM_LOOP        (1<<7)
-#define ANIM_START       (1<<8)
-#define ANIM_END         (1<<9)
-#define ANIM_REVERSE     (1<<10)
-#define ANIM_CLAMP       (ANIM_START|ANIM_END)
-#define ANIM_DIR         0x780
-#define ANIM_SECONDARY   11
-#define ANIM_NOSKIN      (1<<22)
-#define ANIM_SETTIME     (1<<23)
-#define ANIM_FULLBRIGHT  (1<<24)
-#define ANIM_REUSE       (1<<25)
-#define ANIM_NORENDER    (1<<26)
-#define ANIM_RAGDOLL     (1<<27)
-#define ANIM_SETSPEED    (1<<28)
-#define ANIM_NOPITCH     (1<<29)
-#define ANIM_NOTRANS     (1<<30)
-#define ANIM_FLAGS       (0x1FF<<22)
+#define ANIM_ALL         0x1FF
+#define ANIM_INDEX       0x1FF
+#define ANIM_LOOP        (1<<9)
+#define ANIM_CLAMP       (1<<10)
+#define ANIM_REVERSE     (1<<11)
+#define ANIM_START       (ANIM_LOOP|ANIM_CLAMP)
+#define ANIM_END         (ANIM_LOOP|ANIM_CLAMP|ANIM_REVERSE)
+#define ANIM_DIR         0xE00
+#define ANIM_SECONDARY   12
+#define ANIM_REUSE       0xFFFFFF
+#define ANIM_NOSKIN      (1<<24)
+#define ANIM_SETTIME     (1<<25)
+#define ANIM_FULLBRIGHT  (1<<26)
+#define ANIM_NORENDER    (1<<27)
+#define ANIM_RAGDOLL     (1<<28)
+#define ANIM_SETSPEED    (1<<29)
+#define ANIM_NOPITCH     (1<<30)
+#define ANIM_FLAGS       0xFF000000
 
 struct animinfo // description of a character's animation
 {
@@ -239,7 +244,7 @@ struct usedent
 
 struct dynent : physent                         // animated characters, or characters that can receive input
 {
-    entitylight light;
+    //entitylight light;
     animinterpinfo animinterp[MAXANIMPARTS];
     ragdolldata *ragdoll;
     occludequery *query;

@@ -4,7 +4,7 @@
 #include "engine.h"
 
 #define VERSION_GAMEID "fps"
-#define VERSION_GAME 230
+#define VERSION_GAME 231
 #define VERSION_DEMOMAGIC "RED_ECLIPSE_DEMO"
 
 #define MAXAI 256
@@ -35,7 +35,7 @@ enum
 enum                                // entity types
 {
     NOTUSED = ET_EMPTY, LIGHT = ET_LIGHT, MAPMODEL = ET_MAPMODEL, PLAYERSTART = ET_PLAYERSTART, ENVMAP = ET_ENVMAP, PARTICLES = ET_PARTICLES,
-    MAPSOUND = ET_SOUND, LIGHTFX = ET_LIGHTFX, SUNLIGHT = ET_SUNLIGHT, WEAPON = ET_GAMESPECIFIC,
+    MAPSOUND = ET_SOUND, LIGHTFX = ET_LIGHTFX, DECAL = ET_DECAL, WEAPON = ET_GAMESPECIFIC,
     TELEPORT, ACTOR, TRIGGER, PUSHER, AFFINITY, CHECKPOINT,
     ROUTE, UNUSEDENT,
     MAXENTTYPES
@@ -68,10 +68,10 @@ enttypes enttype[] = {
                 "none",         { "" }
     },
     {
-        LIGHT,          1,          59,     0,      EU_NONE,    6,          -1,         -1,
+        LIGHT,          1,          59,     0,      EU_NONE,    7,          -1,         -1,
             (1<<LIGHTFX), (1<<LIGHTFX), 0,
             false,  false,  false,      false,      false,
-                "light",        { "radius", "red",      "green",    "blue",     "flare",    "flarescale"  }
+                "light",        { "radius", "red",      "green",    "blue",     "flare",    "flarescale", "flags"  }
     },
     {
         MAPMODEL,       1,          58,     0,      EU_NONE,    13,         -1,         -1,
@@ -118,10 +118,10 @@ enttypes enttype[] = {
                 "lightfx",      { "type",   "mod",      "min",      "max",      "flags" }
     },
     {
-        SUNLIGHT,       1,          160,    0,      EU_NONE,    8,          -1,         -1,
+        DECAL,       1,          0,    0,      EU_NONE,    5,          -1,         -1,
             0, 0, 0,
             false,  false,  false,      false,      false,
-                "sunlight",     { "yaw",    "pitch",    "red",      "green",    "blue",     "offset",   "flare",    "flarescale" }
+                "decal",        { "type",   "yaw",      "pitch",    "roll",     "scale" }
     },
     {
         WEAPON,         2,          59,     24,     EU_ITEM,    5,          2,          4,
@@ -341,7 +341,7 @@ char msgsizelookup(int msg)
 {
     static const int msgsizes[] =               // size inclusive message token, 0 for variable or not-checked sizes
     {
-        N_CONNECT, 0, N_SERVERINIT, 5, N_WELCOME, 2, N_CLIENTINIT, 0, N_POS, 0, N_SPHY, 0, N_TEXT, 0, N_COMMAND, 0, N_ANNOUNCE, 0, N_DISCONNECT, 3,
+        N_CONNECT, 0, N_SERVERINIT, 4, N_WELCOME, 2, N_CLIENTINIT, 0, N_POS, 0, N_SPHY, 0, N_TEXT, 0, N_COMMAND, 0, N_ANNOUNCE, 0, N_DISCONNECT, 3,
         N_SHOOT, 0, N_DESTROY, 0, N_STICKY, 0, N_SUICIDE, 4, N_DIED, 0, N_POINTS, 4, N_TOTALS, 0, N_DAMAGE, 14, N_SHOTFX, 0,
         N_LOADW, 0, N_TRYSPAWN, 2, N_SPAWNSTATE, 0, N_SPAWN, 0, N_DROP, 0, N_WSELECT, 0,
         N_MAPCHANGE, 0, N_MAPVOTE, 0, N_CLEARVOTE, 0, N_CHECKPOINT, 0, N_ITEMSPAWN, 3, N_ITEMUSE, 0, N_TRIGGER, 0, N_EXECLINK, 3,
@@ -1504,13 +1504,13 @@ struct projent : dynent
     bool local, limited, escaped, child;
     int projtype, projcollide, interacts;
     float elasticity, reflectivity, relativity, liquidcoast;
-    int schan, id, weap, fromweap, fromflags, value, flags, hitflags;
-    entitylight light;
+    int schan, id, weap, fromweap, fromflags, value, flags, collideflags;
+    //entitylight light;
     gameent *owner, *target, *stick;
     physent *hit;
     const char *mdl;
 
-    projent() : projtype(PRJ_SHOT), id(-1), hitflags(HITFLAG_NONE), owner(NULL), target(NULL), stick(NULL), hit(NULL), mdl(NULL) { reset(); }
+    projent() : projtype(PRJ_SHOT), id(-1), collideflags(COLFLAG_NONE), owner(NULL), target(NULL), stick(NULL), hit(NULL), mdl(NULL) { reset(); }
     ~projent()
     {
         removetrackedparticles(this);
@@ -1769,7 +1769,7 @@ namespace game
     extern vec rescolour(dynent *d, int n = PULSE_BURN, int c = 0xFFFFFF);
     extern int rescolint(dynent *d, int n = PULSE_BURN, int c = 0xFFFFFF);
     extern float rescale(gameent *d);
-    extern float opacity(gameent *d, bool third = true);
+    extern float opacity(gameent *d);
     extern void footstep(gameent *d, int curfoot = -1);
     extern bool canregenimpulse(gameent *d);
 }
@@ -1786,10 +1786,7 @@ namespace entities
     extern void setspawn(int n, int m);
     extern bool tryspawn(dynent *d, const vec &o, float yaw = 0, float pitch = 0);
     extern void spawnplayer(gameent *d, int ent = -1, bool suicide = false);
-    extern const char *entinfo(int type, attrvector &attr, bool full = false, bool icon = false);
     extern void useeffects(gameent *d, int ent, int ammoamt, bool spawn, int weap, int drop, int ammo = -1);
-    extern const char *entmdlname(int type, attrvector &attr);
-    extern const char *findname(int type);
     extern void adddynlights();
     extern void render();
     extern void update();

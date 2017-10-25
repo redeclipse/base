@@ -46,19 +46,32 @@ extern bool  raycubelos(const vec &o, const vec &dest, vec &hitpos);
 
 struct Texture;
 
-extern void settexture(const char *name, int clamp = 0);
+extern bool settexture(const char *name, int clamp = 0);
 
 // world
-extern bool emptymap(int factor, bool force = false, char *mname = NULL, bool nocfg = false);
+extern bool emptymap(int scale, bool force = false, const char *mname = NULL, bool usecfg = true);
 extern bool enlargemap(bool split = false, bool force = false);
 extern int findentity(int type, int index, vector<int> &attr);
 extern void mpeditent(int i, const vec &o, int type, attrvector &attr, bool local = true);
-extern int getworldsize();
-extern int getmapversion();
+
+// octa
+extern int lookupmaterial(const vec &o);
+
+static inline bool insideworld(const vec &o)
+{
+    extern int worldsize;
+    return o.x>=0 && o.x<worldsize && o.y>=0 && o.y<worldsize && o.z>=0 && o.z<worldsize;
+}
+
+static inline bool insideworld(const ivec &o)
+{
+    extern int worldsize;
+    return uint(o.x)<uint(worldsize) && uint(o.y)<uint(worldsize) && uint(o.z)<uint(worldsize);
+}
 
 // octaedit
 
-enum { EDIT_FACE = 0, EDIT_TEX, EDIT_MAT, EDIT_FLIP, EDIT_COPY, EDIT_PASTE, EDIT_ROTATE, EDIT_REPLACE, EDIT_DELCUBE, EDIT_REMIP, EDIT_VSLOT, EDIT_UNDO, EDIT_REDO };
+enum { EDIT_FACE = 0, EDIT_TEX, EDIT_MAT, EDIT_FLIP, EDIT_COPY, EDIT_PASTE, EDIT_ROTATE, EDIT_REPLACE, EDIT_DELCUBE, EDIT_CALCLIGHT, EDIT_REMIP, EDIT_VSLOT, EDIT_UNDO, EDIT_REDO };
 
 struct selinfo
 {
@@ -72,7 +85,7 @@ struct selinfo
     bool operator==(const selinfo &sel) const { return o==sel.o && s==sel.s && grid==sel.grid && orient==sel.orient; }
     bool validate()
     {
-        int worldsize = getworldsize();
+        extern int worldsize;
         if(grid <= 0 || grid >= worldsize) return false;
         if(o.x >= worldsize || o.y >= worldsize || o.z >= worldsize) return false;
         if(o.x < 0) { s.x -= (grid - 1 - o.x)/grid; o.x = 0; }
@@ -85,6 +98,7 @@ struct selinfo
     }
 };
 extern selinfo sel;
+extern bool havesel;
 
 struct editinfo;
 
@@ -98,7 +112,7 @@ extern void rendereditcursor();
 extern void pruneundos(int maxremain = 0);
 extern bool packundo(int op, int &inlen, uchar *&outbuf, int &outlen);
 extern bool unpackundo(const uchar *inbuf, int inlen, int outlen);
-extern bool noedit(bool view = false);
+extern bool noedit(bool view = false, bool msg = true);
 extern void toggleedit(bool force = true);
 extern void mpeditface(int dir, int mode, selinfo &sel, bool local);
 extern void mpedittex(int tex, int allfaces, selinfo &sel, bool local);
@@ -111,15 +125,9 @@ extern void mprotate(int cw, selinfo &sel, bool local);
 extern void mpreplacetex(int oldtex, int newtex, bool insel, selinfo &sel, bool local);
 extern bool mpreplacetex(int oldtex, int newtex, bool insel, selinfo &sel, ucharbuf &buf);
 extern void mpdelcube(selinfo &sel, bool local);
-extern bool mpeditvslot(int delta, int allfaces, selinfo &sel, ucharbuf &buf);
 extern void mpremip(bool local);
-
-// texture
-
-struct VSlot;
-
-extern void packvslot(vector<uchar> &buf, int index);
-extern void packvslot(vector<uchar> &buf, const VSlot *vs);
+extern bool mpeditvslot(int delta, int allfaces, selinfo &sel, ucharbuf &buf);
+extern void mpcalclight(bool local);
 
 // console
 extern int changedkeys;
@@ -155,107 +163,35 @@ struct bindlist
 };
 
 // rendertext
-struct font
-{
-    struct charinfo
-    {
-        short x, y, w, h, offsetx, offsety, advance, tex;
-    };
-
-    char *name;
-    vector<Texture *> texs;
-    vector<charinfo> chars;
-    int charoffset, defaultw, defaulth, maxw, maxh, scale;
-
-    font() : name(NULL) {}
-    ~font() { DELETEA(name); }
-};
-extern float textscale, curtextscale;
-#define FONTH (curfont->scale*curtextscale)
-#define FONTW (FONTH*0.5f)
-#define FONTTAB (FONTW*4)
-
-extern font *curfont;
-extern const matrix4x3 *textmatrix;
-
-extern void reloadfonts();
-
-extern char *savecolour, *restorecolour, *green, *blue, *yellow, *red, *gray, *magenta, *orange, *white, *black, *cyan;
-extern int textskinsize, textskinpad;
-
-enum
-{
-    TEXT_SHADOW         = 1<<0,
-    TEXT_NO_INDENT      = 1<<1,
-    TEXT_UPWARD         = 1<<2,
-    TEXT_BALLOON        = 1<<3,
-    TEXT_SKIN           = 1<<4,
-    TEXT_MODCOL         = 1<<5,
-
-    TEXT_ALIGN          = 3<<8,
-    TEXT_LEFT_JUSTIFY   = 0<<8,
-    TEXT_CENTERED       = 1<<8,
-    TEXT_RIGHT_JUSTIFY  = 2<<8,
-
-    TEXT_LEFT_UP        = TEXT_UPWARD|TEXT_LEFT_JUSTIFY,
-    TEXT_CENTER_UP      = TEXT_UPWARD|TEXT_CENTERED,
-    TEXT_RIGHT_UP       = TEXT_UPWARD|TEXT_RIGHT_JUSTIFY,
-
-    TEXT_LEFT_BAL       = TEXT_BALLOON|TEXT_LEFT_JUSTIFY,
-    TEXT_CENTER_BAL     = TEXT_BALLOON|TEXT_CENTERED,
-    TEXT_RIGHT_BAL      = TEXT_BALLOON|TEXT_RIGHT_JUSTIFY
-};
-
 extern int colourblack, colourwhite,
     colourgreen, colourblue, colouryellow, colourred, colourgrey, colourmagenta, colourorange, colourcyan, colourpink, colourviolet, colourpurple, colourbrown,
     colourdarkgreen, colourdarkblue, colourdarkyellow, colourdarkred, colourdarkgrey, colourdarkmagenta, colourdarkorange, colourdarkcyan, colourdarkpink, colourdarkviolet, colourdarkpurple, colourdarkbrown;
 
-extern font *findfont(const char *name);
-extern bool setfont(font *id);
-extern bool setfont(const char *name);
-extern bool pushfont(font *id);
-extern bool pushfont(const char *name);
-extern bool popfont(int num = 1);
-extern float draw_text(const char *str, float rleft, float rtop, int r = -1, int g = -1, int b = -1, int a = 255, int flags = 0, int cursor = -1, float maxwidth = 0, float linespace = 0);
-extern float draw_textf(const char *fstr, float left, float top, float xpad = 0, float ypad = 0, int r = -1, int g = -1, int b = -1, int a = 255, int flags = 0, int cursor = -1, float maxwidth = 0, float linespace = 0, ...);
-extern float text_widthf(const char *str, float xpad = 0, float ypad = 0, int flags = 0, float linespace = 0);
-extern void text_boundsf(const char *str, float &width, float &height, float xpad = 0, float ypad = 0, float maxwidth = 0, int flags = 0, float linespace = 0);
-extern int text_visible(const char *str, float hitx, float hity, float maxwidth = 0, int flags = 0, float linespace =1);
-extern void text_posf(const char *str, int cursor, float &cx, float &cy, float maxwidth = 0, int flags = 0, float linespace = 0);
-extern float key_widthf(const char *str);
+// texture
 
-static inline void text_bounds(const char *str, int &width, int &height, float xpad = 0, float ypad = 0, float maxwidth = 0, int flags = 0, float linespace = 0)
-{
-    float widthf, heightf;
-    text_boundsf(str, widthf, heightf, xpad, ypad, maxwidth, flags, linespace);
-    width = int(ceil(widthf));
-    height = int(ceil(heightf));
-}
+struct VSlot;
 
-static inline void text_pos(const char *str, int cursor, int &cx, int &cy, float maxwidth = 0, int flags = 0, float linespace = 0)
-{
-    float cxf, cyf;
-    text_posf(str, cursor, cxf, cyf, maxwidth, flags, linespace);
-    cx = int(cxf);
-    cy = int(cyf);
-}
+extern void packvslot(vector<uchar> &buf, int index);
+extern void packvslot(vector<uchar> &buf, const VSlot *vs);
 
-// renderva
+// renderlights
+
+enum { L_NOSHADOW = 1<<0, L_NODYNSHADOW = 1<<1, L_VOLUMETRIC = 1<<2 };
+
+// dynlight
 enum
 {
-    DL_SHRINK = 1<<0,
-    DL_EXPAND = 1<<1,
-    DL_FLASH  = 1<<2,
-    DL_KEEP   = 1<<3
+    DL_SHRINK = 1<<8,
+    DL_EXPAND = 1<<9,
+    DL_FLASH  = 1<<10
 };
 
-extern void adddynlight(const vec &o, float radius, const vec &color, int fade = 0, int peak = 0, int flags = 0, float initradius = 0, const vec &initcolor = vec(0, 0, 0));
-extern void dynlightreaching(const vec &target, vec &color, vec &dir);
+extern void adddynlight(const vec &o, float radius, const vec &color, int fade = 0, int peak = 0, int flags = 0, float initradius = 0, const vec &initcolor = vec(0, 0, 0), physent *owner = NULL, const vec &dir = vec(0, 0, 0), int spot = 0);
+extern void dynlightreaching(const vec &target, vec &color, vec &dir, bool hud = false);
 extern void makelightfx(extentity &e, extentity &f);
 
 // rendergl
 extern vec worldpos, camdir, camright, camup;
-extern void getscreenres(int &w, int &h);
 extern void gettextres(int &w, int &h);
 
 extern vec calcmodelpreviewpos(const vec &radius, float &yaw);
@@ -270,6 +206,7 @@ extern void flushhudmatrix(bool flushparams = true);
 extern void pophudmatrix(bool flush = true, bool flushparams = true);
 extern void pushhudscale(float sx, float sy = 0);
 extern void pushhudtranslate(float tx, float ty, float sx = 0, float sy = 0);
+extern void resethudshader();
 
 // renderparticles
 enum
@@ -278,7 +215,7 @@ enum
     PT_TAPE,
     PT_TRAIL,
     PT_TEXT,
-    PT_FIREBALL,
+    PT_EXPLOSION,
     PT_LIGHTNING,
     PT_FLARE,
     PT_PORTAL,
@@ -291,17 +228,21 @@ enum
 
     PT_MOD      = 1<<8,
     PT_RND4     = 1<<9,     // uses random image quarters
-    PT_HFLIP    = 1<<10,    // uses random horizontal flipping
-    PT_VFLIP    = 1<<11,    // uses random vertical flipping
-    PT_ROT      = 1<<12,    // uses random rotation
-    PT_LERP     = 1<<13,    // use very sparingly - order of blending issues
-    PT_GLARE    = 1<<14,    // use glare when available
-    PT_SOFT     = 1<<15,    // use soft quad rendering when available
-    PT_ONTOP    = 1<<16,    // render on top of everything else, remove depth testing
-    PT_FEW      = 1<<17,    // allocate smaller number of particles
-    PT_SHRINK   = 1<<18,    // shrink particle as it fades
-    PT_GROW     = 1<<19,    // grow particle as it fades
-    PT_SHADER   = 1<<20,
+    PT_LERP     = 1<<10,    // use very sparingly - order of blending issues
+    PT_TRACK    = 1<<11,
+    PT_BRIGHT   = 1<<12,
+    PT_SOFT     = 1<<13,    // use soft quad rendering when available
+    PT_HFLIP    = 1<<14,    // uses random horizontal flipping
+    PT_VFLIP    = 1<<15,    // uses random vertical flipping
+    PT_ROT      = 1<<16,    // uses random rotation
+    PT_CULL     = 1<<17,
+    PT_FEW      = 1<<18,    // allocate smaller number of particles
+    PT_ONTOP    = 1<<19,    // render on top of everything else, remove depth testing
+    PT_NOTEX    = 1<<20,
+    PT_SHADER   = 1<<21,
+    PT_NOLAYER  = 1<<22,
+    PT_SHRINK   = 1<<23,    // shrink particle as it fades
+    PT_GROW     = 1<<24,    // grow particle as it fades
     PT_FLIP     = PT_HFLIP | PT_VFLIP | PT_ROT
 };
 
@@ -342,7 +283,7 @@ struct particle
     float size, blend;
     union
     {
-        const char *text;         // will call delete[] on this only if it starts with an @
+        const char *text;
         float val;
         struct
         {
@@ -357,7 +298,7 @@ extern void regular_part_create(int type, int fade, const vec &p, int color = co
 extern void part_create(int type, int fade, const vec &p, int color = colourwhite, float size = 4, float blend = 1, int grav = 0, int collide = 0, physent *pl = NULL);
 extern void regular_part_splash(int type, int num, int fade, const vec &p, int color = colourwhite, float size = 4, float blend = 1, int grav = 0, int collide = 0, float radius = 150, float vel = 1, int delay = 0);
 extern void part_splash(int type, int num, int fade, const vec &p, int color = colourwhite, float size = 4, float blend = 1, int grav = 0, int collide = 0, float radius = 4, float vel = 1);
-extern void part_trail(int ptype, int fade, const vec &s, const vec &e, int color = colourwhite, float size = .8f, float blend = 1, int grav = 0, int collide = 0);
+extern void part_trail(int type, int fade, const vec &s, const vec &e, int color = colourwhite, float size = .8f, float blend = 1, int grav = 0, int collide = 0);
 extern void part_text(const vec &s, const char *t, int type = PART_TEXT, int fade = 1, int color = colourwhite, float size = 2, float blend = 1, int grav = 0, int collide = 0, physent *pl = NULL);
 extern void part_textcopy(const vec &s, const char *t, int type = PART_TEXT, int fade = 1, int color = colourwhite, float size = 2, float blend = 1, int grav = 0, int collide = 0, physent *pl = NULL);
 extern void part_flare(const vec &p, const vec &dest, int fade, int type, int color = colourwhite, float size = 2, float blend = 1, int grav = 0, int collide = 0, physent *pl = NULL);
@@ -387,19 +328,24 @@ extern void createshape(int type, float radius, int color, int dir, int num, int
 extern void regularshape(int type, float radius, int color, int dir, int num, int fade, const vec &p, float size = 2, float blend = 1, int grav = 0, int collide = 0, float vel = 1);
 extern void regularflame(int type, const vec &p, float radius, float height, int color, int density = 3, int fade = 500, float size = 2, float blend = 1, int grav = -1, int collide = 0, float vel = 1);
 
-// decal
+// stain
 enum
 {
-    DECAL_SMOKE = 0,
-    DECAL_SCORCH, DECAL_SCORCH_SHORT,
-    DECAL_BLOOD,
-    DECAL_BULLET,
-    DECAL_ENERGY,
-    DECAL_STAIN,
-    DECAL_MAX
+    STAIN_SMOKE = 0,
+    STAIN_SCORCH, STAIN_SCORCH_SHORT,
+    STAIN_BLOOD,
+    STAIN_BULLET,
+    STAIN_ENERGY,
+    STAIN_STAIN,
+    STAIN_MAX
 };
 
-extern void adddecal(int type, const vec &center, const vec &surface, float radius, const bvec &color = bvec(0xFF, 0xFF, 0xFF), int info = 0);
+extern void addstain(int type, const vec &center, const vec &surface, float radius, const bvec &color = bvec(0xFF, 0xFF, 0xFF), int info = 0);
+
+static inline void addstain(int type, const vec &center, const vec &surface, float radius, int color, int info = 0)
+{
+    addstain(type, center, surface, radius, bvec::hexcolor(color), info);
+}
 
 // worldio
 extern void setnames(const char *fname, int type, int crc = 0);
@@ -423,7 +369,7 @@ extern void updatedynentcache(physent *d);
 extern void cleardynentcache();
 
 // rendermodel
-enum { MDL_CULL_VFC = 1<<0, MDL_CULL_DIST = 1<<1, MDL_CULL_OCCLUDED = 1<<2, MDL_CULL_QUERY = 1<<3, MDL_SHADOW = 1<<4, MDL_DYNSHADOW = 1<<5, MDL_LIGHT = 1<<6, MDL_DYNLIGHT = 1<<7, MDL_FULLBRIGHT = 1<<8, MDL_NORENDER = 1<<9, MDL_LIGHT_FAST = 1<<10, MDL_LIGHTFX = 1<<11 };
+enum { MDL_CULL_VFC = 1<<0, MDL_CULL_DIST = 1<<1, MDL_CULL_OCCLUDED = 1<<2, MDL_CULL_QUERY = 1<<3, MDL_FULLBRIGHT = 1<<4, MDL_NORENDER = 1<<5, MDL_MAPMODEL = 1<<6, MDL_NOBATCH = 1<<7, MDL_ONLYSHADOW = 1<<8 };
 
 struct model;
 struct modelattach
@@ -439,16 +385,22 @@ struct modelattach
     modelattach(const char *tag, vec *pos) : tag(tag), name(NULL), anim(-1), basetime(0), transparent(-1), sizescale(-1), pos(pos), m(NULL) {}
 };
 
-extern void startmodelbatches();
-extern void endmodelbatches();
-extern void rendermodel(entitylight *light, const char *mdl, int anim, const vec &o, float yaw = 0, float pitch = 0, float roll = 0, int cull = MDL_CULL_VFC | MDL_CULL_DIST | MDL_CULL_OCCLUDED | MDL_LIGHT, dynent *d = NULL, modelattach *a = NULL, int basetime = 0, int basetime2 = 0, float trans = 1, float size = 1);
+extern void rendermodel(const char *mdl, int anim, const vec &o, float yaw = 0, float pitch = 0, float roll = 0, int cull = MDL_CULL_VFC | MDL_CULL_DIST | MDL_CULL_OCCLUDED, dynent *d = NULL, modelattach *a = NULL, int basetime = 0, int basetime2 = 0, float size = 1, const vec4 &color = vec4(1, 1, 1, 1), const bvec *material = NULL);
+extern int intersectmodel(const char *mdl, int anim, const vec &pos, float yaw, float pitch, float roll, const vec &o, const vec &ray, float &dist, int mode = 0, dynent *d = NULL, modelattach *a = NULL, int basetime = 0, int basetime2 = 0, float size = 1);
 extern void abovemodel(vec &o, const char *mdl);
+extern void interpolateorientation(dynent *d, float &interpyaw, float &interppitch);
 extern void setbbfrommodel(dynent *d, const char *mdl, float size = 1);
+extern const char *mapmodelname(int i);
+extern model *loadmodel(const char *name, int i = -1, bool msg = false);
+extern void preloadmodel(const char *name);
+extern void flushpreloadedmodels(bool msg = true);
+extern bool matchanim(const char *name, const char *pattern);
+extern void resetmapmodels(int n = 0);
 
 // ragdoll
 
 extern bool validragdoll(dynent *d, int millis);
-extern void moveragdoll(dynent *d, bool smooth);
+extern void moveragdoll(dynent *d);
 extern void cleanragdoll(dynent *d);
 extern void warpragdoll(dynent *d, const vec &vel, const vec &offset = vec(0, 0, 0));
 extern void twitchragdoll(dynent *d, float vel);
@@ -584,7 +536,7 @@ extern void *genchallenge(void *pubkey, const void *seed, int seedlen, vector<ch
 extern void freechallenge(void *answer);
 extern bool checkchallenge(const char *answerstr, void *correct);
 
-// ui
+// UI
 enum { EDITORFOCUSED = 1, EDITORUSED, EDITORFOREVER, EDITORREADONLY };
 struct editor;
 
@@ -640,11 +592,11 @@ extern ENetHost *serverhost;
 // world
 
 extern int collideinside;
-extern physent *hitplayer;
-extern int hitflags;
+extern physent *collideplayer;
+extern int collideflags;
 extern vec collidewall, hitsurface;
 
-enum { HITFLAG_NONE = 0, HITFLAG_LEGS = 1<<0, HITFLAG_TORSO = 1<<1, HITFLAG_HEAD = 1<<2, HITFLAG_FULL = 1<<4 };
+enum { COLFLAG_NONE = 0, COLFLAG_LEGS = 1<<0, COLFLAG_TORSO = 1<<1, COLFLAG_HEAD = 1<<2, COLFLAG_FULL = 1<<4 };
 
 enum
 {
@@ -680,5 +632,6 @@ enum // cube empty-space materials
     MAT_DEATH  = 1 << MATF_FLAG_SHIFT,  // force player suicide
     MAT_LADDER = 2 << MATF_FLAG_SHIFT,  // acts as ladder (move up/down)
     MAT_ALPHA  = 4 << MATF_FLAG_SHIFT,  // alpha blended
-    MAT_HURT   = 8 << MATF_FLAG_SHIFT   // hurt at intervals
+    MAT_HURT   = 8 << MATF_FLAG_SHIFT,  // hurt at intervals
+    MAT_NOGI   = 16 << MATF_FLAG_SHIFT  // disable global illumination FIXME
 };

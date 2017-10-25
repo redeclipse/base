@@ -1500,7 +1500,7 @@ namespace ai
         }
         if(d->state == CS_DEAD || d->state == CS_WAITING)
         {
-            if(d->ragdoll) moveragdoll(d, true);
+            if(d->ragdoll) moveragdoll(d);
             else if(lastmillis-d->lastpain < 5000)
                 physics::move(d, 1, false);
         }
@@ -1559,7 +1559,7 @@ namespace ai
                 center.mul(e.attrs[5]/100.f);
                 radius.mul(e.attrs[5]/100.f);
             }
-            if(!mmi->m->ellipsecollide) rotatebb(center, radius, int(e.attrs[1]), int(e.attrs[2]));
+            rotatebb(center, radius, int(e.attrs[1]), int(e.attrs[2]));
             float xy = max(radius.x, radius.y), z = radius.z;
             if(e.attrs[6]&MMT_HIDE)
             {

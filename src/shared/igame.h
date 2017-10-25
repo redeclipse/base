@@ -4,7 +4,7 @@ namespace entities
 {
     extern int numattrs(int type);
     extern int triggertime(extentity &e);
-    extern void editent(int i);
+    extern void editent(int i, bool local);
     extern void readent(stream *g, int mtype, int mver, char *gid, int gver, int id);
     extern void writeent(stream *g, int id);
     extern void remapents(vector<int> &idxs);
@@ -12,6 +12,9 @@ namespace entities
     extern float dropheight(extentity &e);
     extern void fixentity(int n, bool recurse = true, bool create = false);
     extern bool cansee(int n);
+    extern const char *entinfo(int type, attrvector &attr, bool full = false, bool icon = false);
+    extern const char *entinfo(entity &e, bool full = false, bool icon = false);
+    extern const char *entmdlname(int type, attrvector &attr);
     extern const char *findname(int type);
     extern int findtype(char *type);
     extern bool maylink(int type, int ver = 0);
@@ -25,6 +28,7 @@ namespace entities
     extern int firstuse(int type);
     extern int lastent(int type);
     extern int lastuse(int type);
+    extern bool checkparticle(extentity &e);
     extern void drawparticles();
 }
 
@@ -55,6 +59,7 @@ namespace client
 
 namespace hud
 {
+    extern int statrate;
     extern char *progresstex, *progringtex;
     extern float radarlimit(float dist = -1);
     extern bool radarlimited(float dist);
@@ -116,16 +121,18 @@ namespace game
     extern vec getpalette(int palette, int index);
     extern void adddynlights();
     extern void particletrack(particle *p, uint type, int &ts, bool step);
+    extern void dynlighttrack(physent *owner, vec &o, vec &hud);
     extern bool mousemove(int dx, int dy, int x, int y, int w, int h);
-    extern void project(int w, int h);
-    extern void recomputecamera(int w, int h);
+    extern void project();
+    extern void recomputecamera();
     extern const char *gametitle();
     extern const char *gametext();
     extern int numanims();
     extern void findanims(const char *pattern, vector<int> &anims);
     extern void render();
-    extern void renderavatar(bool early = false, bool project = false);
-    extern void renderplayerpreview(int model = 0, int color = 0xA0A0A0, int team = 0, int weap = 0, const char *vanity = "", float scale = 1, float blend = 1, const vec &lightcolor = vec(1, 1, 1), const vec &lightdir = vec(0, -1, 2));
+    extern void renderpost();
+    extern void renderavatar();
+    extern void renderplayerpreview(int model = 0, int color = 0xA0A0A0, int team = 0, int weap = 0, const char *vanity = "", float scale = 1, const vec4 &mcolor = vec4(1, 1, 1, 1));
     extern bool thirdpersonview(bool viewonly = false, physent *d = NULL);
     extern vec thirdpos(const vec &pos, float yaw, float pitch, float dist = 1, float side = 0);
     extern vec camerapos(physent *d, bool hasfoc = false, bool hasyp = false, float yaw = 0, float pitch = 0);

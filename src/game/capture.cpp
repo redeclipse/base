@@ -189,7 +189,7 @@ namespace capture
             if(!hasflags.empty())
             {
                 char *str = buildflagstr(hasflags, hasflags.length() <= 3);
-                ty -= draw_textf("You are holding the %s %s", tx, ty, int(FONTW*hud::eventpadx), int(FONTH*hud::eventpady), tr, tg, tb, int(255*blend), TEXT_SKIN|TEXT_CENTERED, -1, -1, 1, str, hasflags.length() == 1 ? "flag" : "flags")+FONTH/4;
+                ty -= draw_textf("You are holding the %s %s", tx, ty, int(FONTW*hud::eventpadx), int(FONTH*hud::eventpady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, str, hasflags.length() == 1 ? "flag" : "flags")+FONTH/4;
             }
         }
     }
@@ -262,15 +262,15 @@ namespace capture
                 float amt = (millis <= delay ? millis/float(delay) : 1.f-((millis-delay)/float(delay)));
                 flashcolour(effect.r, effect.g, effect.b, 0.65f, 0.65f, 0.65f, amt);
             }
-            f.baselight.material[0] = f.light.material[0] = bvec::fromcolor(effect);
+            f.basematerial[0] = f.material[0] = bvec::fromcolor(effect);
             if(!f.owner && !f.droptime)
             {
                 vec flagpos = pos;
-                rendermodel(&f.light, "props/flag", ANIM_MAPMODEL|ANIM_LOOP, flagpos, f.yaw, f.pitch, 0, MDL_DYNSHADOW|MDL_CULL_VFC|MDL_CULL_OCCLUDED, NULL, NULL, 0, 0, blend);
+                rendermodel("props/flag", ANIM_MAPMODEL|ANIM_LOOP, flagpos, f.yaw, f.pitch, 0, MDL_CULL_VFC|MDL_CULL_OCCLUDED, NULL, NULL, 0, 0, 1, vec4(1, 1, 1, blend), &f.material[0]);
                 flagpos.z += enttype[AFFINITY].radius/3;
                 part_create(PART_HINT_VERT_SOFT, 1, flagpos, effect.tohexcolor(), enttype[AFFINITY].radius/2+1, blend*0.5f*camera1->o.distrange(flagpos, capturehintfadeat, capturehintfadecut));
             }
-            else if(!f.owner || f.owner != game::focus || game::thirdpersonview(true) || !(rendernormally))
+            else if(!f.owner || f.owner != game::focus || game::thirdpersonview(true))
             {
                 vec flagpos = pos;
                 float yaw = 0, pitch = 0, roll = 0;
@@ -281,7 +281,7 @@ namespace capture
                     if(f.proj) flagpos.z -= f.proj->height;
                 }
                 while(yaw >= 360.f) yaw -= 360.f;
-                rendermodel(&f.light, "props/flag", ANIM_MAPMODEL|ANIM_LOOP, flagpos, yaw, pitch, roll, MDL_DYNSHADOW|MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_LIGHT|MDL_LIGHTFX, NULL, NULL, 0, 0, blend);
+                rendermodel("props/flag", ANIM_MAPMODEL|ANIM_LOOP, flagpos, yaw, pitch, roll, MDL_CULL_VFC|MDL_CULL_OCCLUDED, NULL, NULL, 0, 0, 1, vec4(1, 1, 1, blend), &f.material[0]);
                 flagpos.z += enttype[AFFINITY].radius/3;
                 part_create(PART_HINT_VERT_SOFT, 1, flagpos, effect.tohexcolor(), enttype[AFFINITY].radius/2+1, blend*0.5f*camera1->o.distrange(flagpos, capturehintfadeat, capturehintfadecut));
                 flagpos.z += enttype[AFFINITY].radius/2;
@@ -298,7 +298,7 @@ namespace capture
                     part_icon(flagpos, textureload(hud::progresstex, 3), 5, blend, 0, 0, 1, colour, 0, wait);
                 }
             }
-            rendermodel(&f.baselight, "props/point", ANIM_MAPMODEL|ANIM_LOOP, f.render, f.yaw, 0, 0, MDL_DYNSHADOW|MDL_CULL_VFC|MDL_CULL_OCCLUDED, NULL, NULL, 0, 0, 1);
+            rendermodel("props/point", ANIM_MAPMODEL|ANIM_LOOP, f.render, f.yaw, 0, 0, MDL_CULL_VFC|MDL_CULL_OCCLUDED, NULL, NULL, 0, 0, 1, vec4(1, 1, 1, 1), &f.basematerial[0]);
             vec above = f.above;
             above.z += !f.owner && !f.droptime ? enttype[AFFINITY].radius*2/3 : 3;
             blend = camera1->o.distrange(above, enttype[AFFINITY].radius, enttype[AFFINITY].radius/8);
@@ -324,8 +324,8 @@ namespace capture
         {
             capturestate::flag &f = st.flags[i];
             if(f.owner || f.droptime)
-                adddynlight(vec(f.above).add(vec(0, 0, enttype[AFFINITY].radius/2)), enttype[AFFINITY].radius, vec::hexcolor(TEAM(f.team, colour)), 0, 0, DL_KEEP);
-            adddynlight(vec(f.pos(true)).add(vec(0, 0, enttype[AFFINITY].radius/2)), enttype[AFFINITY].radius, vec::hexcolor(TEAM(f.team, colour)), 0, 0, DL_KEEP);
+                adddynlight(vec(f.above).add(vec(0, 0, enttype[AFFINITY].radius/2)), enttype[AFFINITY].radius, vec::hexcolor(TEAM(f.team, colour)), 0, 0);
+            adddynlight(vec(f.pos(true)).add(vec(0, 0, enttype[AFFINITY].radius/2)), enttype[AFFINITY].radius, vec::hexcolor(TEAM(f.team, colour)), 0, 0);
         }
     }
 

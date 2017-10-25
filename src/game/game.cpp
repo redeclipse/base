@@ -73,7 +73,8 @@ namespace game
 
     VAR(IDF_PERSIST, thirdpersonmodel, 0, 1, 1);
     VAR(IDF_PERSIST, thirdpersonfov, 90, 120, 150);
-    FVAR(IDF_PERSIST, thirdpersonblend, 0, 1, 1);
+    FVAR(IDF_PERSIST, thirdpersondepth, 0, 0.65f, 1);
+    FVAR(IDF_PERSIST, thirdpersondepthfov, 0, 90, 150);
     VAR(IDF_PERSIST, thirdpersoninterp, 0, 100, VAR_MAX);
     FVAR(IDF_PERSIST, thirdpersondist, FVAR_NONZERO, 14, 20);
     FVAR(IDF_PERSIST, thirdpersonside, -20, 7, 20);
@@ -86,9 +87,10 @@ namespace game
 
     VAR(IDF_PERSIST, firstpersonmodel, 0, 2, 2);
     VAR(IDF_PERSIST, firstpersonfov, 90, 100, 150);
-    FVAR(IDF_PERSIST, firstpersonblend, 0, 1, 1);
     FVAR(IDF_PERSIST, firstpersondepth, 0, 0.25f, 1);
     FVAR(IDF_PERSIST, firstpersonbodydepth, 0, 0.65f, 1);
+    FVAR(IDF_PERSIST, firstpersondepthfov, 0, 70, 150);
+    FVAR(IDF_PERSIST, firstpersonbodydepthfov, 0, 0, 150);
 
     FVAR(IDF_PERSIST, firstpersonbodydist, -10, 0, 10);
     FVAR(IDF_PERSIST, firstpersonbodyside, -10, 0, 10);
@@ -130,7 +132,6 @@ namespace game
     VAR(IDF_PERSIST, followdead, 0, 1, 2); // 0 = never, 1 = in all but duel/survivor, 2 = always
     VAR(IDF_PERSIST, followthirdperson, 0, 1, 1);
     VAR(IDF_PERSIST, followaiming, 0, 1, 3); // 0 = don't aim, &1 = aim in thirdperson, &2 = aim in first person
-    FVAR(IDF_PERSIST, followblend, 0, 1, 1);
     FVAR(IDF_PERSIST, followdist, FVAR_NONZERO, 10, FVAR_MAX);
     FVAR(IDF_PERSIST, followside, FVAR_MIN, 8, FVAR_MAX);
 
@@ -256,7 +257,6 @@ namespace game
 
     VAR(IDF_PERSIST, deathanim, 0, 2, 3); // 0 = hide player when dead, 1 = old death animation, 2 = ragdolls, 3 = ragdolls, but hide in duke
     VAR(IDF_PERSIST, deathfade, 0, 1, 1); // 0 = don't fade out dead players, 1 = fade them out
-    VAR(IDF_PERSIST, deathscale, 0, 0, 1); // 0 = don't scale out dead players, 1 = scale them out
     VAR(IDF_PERSIST, deathmaxfade, 0, 0, VAR_MAX);
     VAR(IDF_PERSIST, deathbuttonmash, 0, 1000, VAR_MAX);
     FVAR(IDF_PERSIST, bloodscale, 0, 1, 1000);
@@ -270,26 +270,20 @@ namespace game
     FVAR(IDF_PERSIST, impulsescale, 0, 1, 1000);
     VAR(IDF_PERSIST, impulsefade, 0, 250, VAR_MAX);
     VAR(IDF_PERSIST, ragdolleffect, 2, 500, VAR_MAX);
+    VAR(IDF_PERSIST, deathscale, 0, 1, 1); // 0 = don't scale out dead players, 1 = scale them out
 
     VAR(IDF_PERSIST, playerovertone, -1, CTONE_TEAM, CTONE_MAX-1);
     VAR(IDF_PERSIST, playerundertone, -1, CTONE_TONE, CTONE_MAX-1);
     VAR(IDF_PERSIST, playerdisplaytone, -1, CTONE_TONE, CTONE_MAX-1);
     VAR(IDF_PERSIST, playereffecttone, -1, CTONE_TEAMED, CTONE_MAX-1);
-    VAR(IDF_PERSIST, playerlighttone, -1, CTONE_TEAMED, CTONE_MAX-1);
     VAR(IDF_PERSIST, playerteamtone, -1, CTONE_TEAM, CTONE_MAX-1);
 
     FVAR(IDF_PERSIST, playerovertonelevel, 0.f, 1.f, 10.f);
     FVAR(IDF_PERSIST, playerundertonelevel, 0.f, 1.f, 10.f);
     FVAR(IDF_PERSIST, playerdisplaytonelevel, 0.f, 1.f, 10.f);
     FVAR(IDF_PERSIST, playereffecttonelevel, 0.f, 1.f, 10.f);
-    FVAR(IDF_PERSIST, playerlighttonelevel, 0.f, 1.f, 10.f);
     FVAR(IDF_PERSIST, playerteamtonelevel, 0.f, 1.f, 10.f);
-
-    FVAR(IDF_PERSIST, playerlightmix, 0, 0.4f, 100);
     FVAR(IDF_PERSIST, playertonemix, 0, 0.5f, 1);
-    FVAR(IDF_PERSIST, playerblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, playereditblend, 0, 0.5f, 1);
-    FVAR(IDF_PERSIST, playerghostblend, 0, 0.5f, 1);
 
     VAR(IDF_PERSIST, playerhint, 0, 15, 15);
     VAR(IDF_PERSIST, playerhinthurt, 0, 1, 1);
@@ -890,14 +884,14 @@ namespace game
                     if(d->weapselect == W_FLAMER && (!reloading || amt > 0.5f) && !physics::liquidcheck(d))
                     {
                         float scale = powering ? 1.f+(amt*1.5f) : (d->weapstate[d->weapselect] == W_S_IDLE ? 1.f : (reloading ? (amt-0.5f)*2 : amt));
-                        adddynlight(d->ejectpos(d->weapselect), 16*scale, col, 0, 0, DL_KEEP);
+                        adddynlight(d->ejectpos(d->weapselect), 16*scale, col, 0, 0);
                     }
                     if((W(d->weapselect, lightpersist)&1 || powering) && W(d->weapselect, lightradius) > 0)
                     {
                         float thresh = max(amt, 0.25f), size = W(d->weapselect, lightradius)*thresh;
                         int span = max(W2(d->weapselect, cooktime, physics::secondaryweap(d))/4, 500), interval = lastmillis%span, part = span/2;
                         if(interval) size += size*0.5f*(interval <= part ? interval/float(part) : (span-interval)/float(part));
-                        adddynlight(d->muzzlepos(d->weapselect), size, vec(col).mul(thresh), 0, 0, DL_KEEP);
+                        adddynlight(d->muzzlepos(d->weapselect), size, vec(col).mul(thresh), 0, 0);
                     }
                 }
                 if(burntime && d->burning(lastmillis, burntime))
@@ -912,7 +906,7 @@ namespace game
                         if(fluc >= 0.25f) fluc = (0.25f+0.03f-fluc)*(0.25f/0.03f);
                         pc *= 0.75f+fluc;
                     }
-                    adddynlight(d->center(), d->height*intensity*pc, pulsecolour(d).mul(pc), 0, 0, DL_KEEP);
+                    adddynlight(d->center(), d->height*intensity*pc, pulsecolour(d).mul(pc), 0, 0);
                 }
                 if(shocktime && d->shocking(lastmillis, shocktime))
                 {
@@ -926,10 +920,10 @@ namespace game
                         if(fluc >= 0.25f) fluc = (0.25f+0.03f-fluc)*(0.25f/0.03f);
                         pc *= 0.75f+fluc;
                     }
-                    adddynlight(d->center(), d->height*intensity*pc, rescolour(d, PULSE_SHOCK).mul(pc), 0, 0, DL_KEEP);
+                    adddynlight(d->center(), d->height*intensity*pc, rescolour(d, PULSE_SHOCK).mul(pc), 0, 0);
                 }
                 if(d->actortype < A_ENEMY && illumlevel > 0 && illumradius > 0)
-                    adddynlight(d->center(), illumradius, vec::hexcolor(getcolour(d, playereffecttone, illumlevel)), 0, 0, DL_KEEP);
+                    adddynlight(d->center(), illumradius, vec::hexcolor(getcolour(d, playereffecttone, illumlevel)), 0, 0);
             }
         }
     }
@@ -994,24 +988,15 @@ namespace game
         return total;
     }
 
-    float opacity(gameent *d, bool third)
+    float opacity(gameent *d)
     {
-        float total = d == focus ? (third ? (d != player1 ? followblend : thirdpersonblend) : firstpersonblend) : playerblend;
-        if(physics::isghost(d, focus)) total *= playerghostblend;
+        float total = 1.f;
         if(deathfade && (d->state == CS_DEAD || d->state == CS_WAITING)) total *= spawnfade(d);
         else if(d->state == CS_ALIVE)
         {
-            if(d == focus && third) total *= camera1->o.dist(d->o)/(d != player1 ? followdist : thirdpersondist);
             int prot = m_protect(gamemode, mutators), millis = d->protect(lastmillis, prot); // protect returns time left
             if(millis > 0) total *= 1.f-(float(millis)/float(prot));
-            if(d == focus && inzoom())
-            {
-                int frame = lastmillis-lastzoom;
-                float pc = frame <= W(d->weapselect, cookzoom) ? (frame)/float(W(d->weapselect, cookzoom)) : 1.f;
-                total *= zooming ? 1.f-pc : pc;
-            }
         }
-        else if(d->state == CS_EDITING) total *= playereditblend;
         return total;
     }
 
@@ -1104,8 +1089,6 @@ namespace game
             d->actiontime[AC_CROUCH] = 0;
         }
         d->o.z += d->airmillis ? offset : d->height;
-
-        d->checktags();
 
         if(m_impulsemeter(gamemode, mutators) && canregenimpulse(d) && d->impulse[IM_METER] > 0)
         {
@@ -1363,9 +1346,9 @@ namespace game
                 {
                     vec p = d->headpos(-d->height/4);
                     if(!nogore && bloodscale > 0)
-                        part_splash(PART_BLOOD, int(clamp(damage/20, 1, 5)*bloodscale)*(bleeding || material ? 2 : 1), bloodfade, p, 0x229999, (rnd(bloodsize/2)+(bloodsize/2))/10.f, 1, 100, DECAL_BLOOD, int(d->radius), 10);
+                        part_splash(PART_BLOOD, int(clamp(damage/20, 1, 5)*bloodscale)*(bleeding || material ? 2 : 1), bloodfade, p, 0x229999, (rnd(bloodsize/2)+(bloodsize/2))/10.f, 1, 100, STAIN_BLOOD, int(d->radius), 10);
                     if(nogore != 2 && (bloodscale <= 0 || bloodsparks))
-                        part_splash(PART_PLASMA, int(clamp(damage/20, 1, 5))*(bleeding || material ? 2: 1), bloodfade, p, 0x882222, 1, 0.5f, 50, DECAL_STAIN, int(d->radius));
+                        part_splash(PART_PLASMA, int(clamp(damage/20, 1, 5))*(bleeding || material ? 2: 1), bloodfade, p, 0x882222, 1, 0.5f, 50, STAIN_STAIN, int(d->radius));
                 }
                 if(d != v)
                 {
@@ -2110,13 +2093,20 @@ namespace game
                 p->d.add(vec(d->yaw*RAD, d->pitch*RAD).mul(dist));
                 break;
             }
-            case PT_PART: case PT_FIREBALL: case PT_FLARE:
+            case PT_PART: case PT_EXPLOSION: case PT_FLARE:
             {
                 p->o = d->muzzlepos(d->weapselect);
                 break;
             }
             default: break;
         }
+    }
+
+    void dynlighttrack(physent *owner, vec &o, vec &hud)
+    {
+        if(owner->type!=ENT_PLAYER) return;
+        o = owner->o;
+        hud = owner == focus ? vec(owner->o).add(vec(0, 0, 2)) : owner->o;
     }
 
     void newmap(int size, const char *mname) { client::addmsg(N_NEWMAP, "ris", size, mname); }
@@ -2147,7 +2137,7 @@ namespace game
         fixfullrange(yaw, pitch, r, false);
     }
 
-    void fixview(int w, int h)
+    void fixview()
     {
         if(inzoom())
         {
@@ -2185,7 +2175,7 @@ namespace game
         return false;
     }
 
-    void project(int w, int h)
+    void project()
     {
         bool input = hud::hasinput(true), view = thirdpersonview(true, focus), mode = tvmode();
         if(input != inputmouse || (view != inputview || mode != inputmode || focus != lastfocus))
@@ -2897,7 +2887,7 @@ namespace game
             checkcamera();
             if(player1->state == CS_DEAD || player1->state == CS_WAITING)
             {
-                if(player1->ragdoll) moveragdoll(player1, true);
+                if(player1->ragdoll) moveragdoll(player1);
                 else if(lastmillis-player1->lastpain < 5000)
                     physics::move(player1, 10, true);
             }
@@ -2929,9 +2919,9 @@ namespace game
         if(player1->clientnum >= 0) client::c2sinfo();
     }
 
-    void recomputecamera(int w, int h)
+    void recomputecamera()
     {
-        fixview(w, h);
+        fixview();
         if(!client::waiting())
         {
             checkcamera();
@@ -2998,7 +2988,7 @@ namespace game
                 anims.add(i);
     }
 
-    void renderclient(gameent *d, int third, float trans, float size, modelattach *attachments, bool secondary, int animflags, int animdelay, int lastaction, bool early)
+    void renderclient(gameent *d, int third, float size, modelattach *attachments, bool secondary, int animflags, int animdelay, int lastaction, int flags = 0, const vec4 &color = vec4(1, 1, 1, 1))
     {
         int idx = third == 1 && d->headless && !nogore && headlessmodels ? 3 : third;
         const char *mdl = playertypes[forceplayermodel >= 0 ? forceplayermodel : 0][idx];
@@ -3113,82 +3103,70 @@ namespace game
             }
         }
 
-        if(third == 1 && testanims && d == focus) yaw = 0; else yaw += 90;
-        if(d->ragdoll && (deathanim < 2 || (anim&ANIM_INDEX)!=ANIM_DYING)) cleanragdoll(d);
+        if(third == 1 && testanims && d == focus) yaw = 0;
         if(!((anim>>ANIM_SECONDARY)&ANIM_INDEX)) anim |= (ANIM_IDLE|ANIM_LOOP)<<ANIM_SECONDARY;
 
-        int flags = MDL_LIGHT|MDL_LIGHTFX;
+        if(d != focus && !(anim&ANIM_RAGDOLL)) flags |= MDL_CULL_VFC | MDL_CULL_OCCLUDED | MDL_CULL_QUERY;
         if(d->actortype >= A_ENEMY) flags |= MDL_CULL_DIST;
-        if(d != focus || (d != player1 ? fullbrightfocus&1 : fullbrightfocus&2)) flags |= MDL_FULLBRIGHT;
-        if(d != focus && !(anim&ANIM_RAGDOLL)) flags |= MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_CULL_QUERY;
-        if(early) flags |= MDL_NORENDER;
-        else if(third && (anim&ANIM_INDEX)!=ANIM_DEAD) flags |= MDL_DYNSHADOW;
-        if(drawtex == DRAWTEX_MODELPREVIEW) flags &= ~(MDL_LIGHT|MDL_FULLBRIGHT|MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_CULL_QUERY|MDL_CULL_DIST|MDL_DYNSHADOW);
+        else if(d != focus || (d != player1 ? fullbrightfocus&1 : fullbrightfocus&2)) flags |= MDL_FULLBRIGHT;
+        if(drawtex) flags &= ~(MDL_FULLBRIGHT | MDL_CULL_VFC | MDL_CULL_OCCLUDED | MDL_CULL_QUERY | MDL_CULL_DIST);
+
         dynent *e = third ? (third != 2 ? (dynent *)d : (dynent *)&bodymodel) : (dynent *)&avatarmodel;
-        if(e->light.millis != lastmillis)
+
+        e->material[0] = bvec(getcolour(d, playerovertone, playerovertonelevel));
+        e->material[1] = bvec(getcolour(d, playerundertone, playerundertonelevel));
+        if(burntime && d->burning(lastmillis, burntime))
+            e->material[1].max(bvec::fromcolor(e->material[1].div(2).tocolor().max(rescolour(d, PULSE_BURN))));
+        if(burntime && d->bleeding(lastmillis, bleedtime))
+            e->material[1].max(bvec::fromcolor(e->material[1].div(2).tocolor().max(rescolour(d, PULSE_BLEED))));
+        if(shocktime && d->shocking(lastmillis, shocktime))
+            e->material[1].max(bvec::fromcolor(e->material[1].div(2).tocolor().max(rescolour(d, PULSE_SHOCK))));
+        if(m_bomber(gamemode) && bomber::carryaffinity(d))
+            e->material[1].max(bvec::fromcolor(e->material[1].div(2).tocolor().max(rescolour(d, PULSE_DISCO))));
+        if(isweap(d->weapselect))
         {
-            e->light.effect = playerlightmix > 0 ? vec::hexcolor(getcolour(d, playerlighttone, playerlighttonelevel)).mul(playerlightmix) : vec(0, 0, 0);
-            if(d->state == CS_ALIVE && d->lastbuff)
+            if(d->weapselect == W_GRENADE)
             {
-                int millis = lastmillis%1000;
-                float amt = millis <= 500 ? 1.f-(millis/500.f) : (millis-500)/500.f;
-                vec pc = game::rescolour(d, PULSE_BUFF);
-                flashcolour(e->light.effect.r, e->light.effect.g, e->light.effect.b, pc.r, pc.g, pc.b, amt);
+                e->material[2] = bvec::fromcolor(W(d->weapselect, colour));
+                if(lastmillis-d->weaptime[d->weapselect] > 0 && d->weapstate[d->weapselect] == W_S_POWER)
+                {
+                    float amt = clamp(float(lastmillis-d->weaptime[d->weapselect])/d->weapwait[d->weapselect], 0.f, 1.f);
+                    e->material[2].r += int((255-e->material[2].r)*amt);
+                    e->material[2].g -= int(e->material[2].g*amt);
+                    e->material[2].b -= int(e->material[2].b*amt);
+                }
             }
-            e->light.material[0] = bvec(getcolour(d, playerovertone, playerovertonelevel));
-            e->light.material[1] = bvec(getcolour(d, playerundertone, playerundertonelevel));
-            if(burntime && d->burning(lastmillis, burntime))
-                e->light.material[1].max(bvec::fromcolor(e->light.material[1].div(2).tocolor().max(rescolour(d, PULSE_BURN))));
-            if(burntime && d->bleeding(lastmillis, bleedtime))
-                e->light.material[1].max(bvec::fromcolor(e->light.material[1].div(2).tocolor().max(rescolour(d, PULSE_BLEED))));
-            if(shocktime && d->shocking(lastmillis, shocktime))
-                e->light.material[1].max(bvec::fromcolor(e->light.material[1].div(2).tocolor().max(rescolour(d, PULSE_SHOCK))));
-            if(m_bomber(gamemode) && bomber::carryaffinity(d))
-                e->light.material[1].max(bvec::fromcolor(e->light.material[1].div(2).tocolor().max(rescolour(d, PULSE_DISCO))));
-            if(isweap(d->weapselect))
+            else if((W2(d->weapselect, ammosub, false) || W2(d->weapselect, ammosub, true)) && W(d->weapselect, ammomax) > 1)
             {
-                if(d->weapselect == W_GRENADE)
+                int ammo = d->ammo[d->weapselect], maxammo = W(d->weapselect, ammomax);
+                float scale = 1;
+                switch(d->weapstate[d->weapselect])
                 {
-                    e->light.material[2] = bvec::fromcolor(W(d->weapselect, colour));
-                    if(lastmillis-d->weaptime[d->weapselect] > 0 && d->weapstate[d->weapselect] == W_S_POWER)
+                    case W_S_RELOAD:
                     {
-                        float amt = clamp(float(lastmillis-d->weaptime[d->weapselect])/d->weapwait[d->weapselect], 0.f, 1.f);
-                        e->light.material[2].r += int((255-e->light.material[2].r)*amt);
-                        e->light.material[2].g -= int(e->light.material[2].g*amt);
-                        e->light.material[2].b -= int(e->light.material[2].b*amt);
+                        int millis = lastmillis-d->weaptime[d->weapselect], check = d->weapwait[d->weapselect]/2;
+                        scale = millis >= check ? float(millis-check)/check : 0.f;
+                        if(d->weapload[d->weapselect] > 0)
+                            scale = max(scale, float(ammo - d->weapload[d->weapselect])/maxammo);
+                        break;
                     }
+                    default: scale = float(ammo)/maxammo; break;
                 }
-                else if((W2(d->weapselect, ammosub, false) || W2(d->weapselect, ammosub, true)) && W(d->weapselect, ammomax) > 1)
-                {
-                    int ammo = d->ammo[d->weapselect], maxammo = W(d->weapselect, ammomax);
-                    float scale = 1;
-                    switch(d->weapstate[d->weapselect])
-                    {
-                        case W_S_RELOAD:
-                        {
-                            int millis = lastmillis-d->weaptime[d->weapselect], check = d->weapwait[d->weapselect]/2;
-                            scale = millis >= check ? float(millis-check)/check : 0.f;
-                            if(d->weapload[d->weapselect] > 0)
-                                scale = max(scale, float(ammo - d->weapload[d->weapselect])/maxammo);
-                            break;
-                        }
-                        default: scale = float(ammo)/maxammo; break;
-                    }
-                    uchar wepmat = uchar(255*scale);
-                    e->light.material[2] = bvec(wepmat, wepmat, wepmat);
-                }
-                else e->light.material[2] = bvec(colourwhite);
-                if(W(d->weapselect, lightpersist)&2) e->light.material[1].max(bvec::fromcolor(WPCOL(d, d->weapselect, lightcol, physics::secondaryweap(d))));
+                uchar wepmat = uchar(255*scale);
+                e->material[2] = bvec(wepmat, wepmat, wepmat);
             }
-            else e->light.material[2] = bvec(colourwhite);
+            else e->material[2] = bvec(colourwhite);
+            if(W(d->weapselect, lightpersist)&2) e->material[1].max(bvec::fromcolor(WPCOL(d, d->weapselect, lightcol, physics::secondaryweap(d))));
         }
-        rendermodel(NULL, mdl, anim, o, yaw, third == 2 && firstpersonbodypitch >= 0 ? pitch*firstpersonbodypitch : pitch, third == 2 ? 0.f : roll, flags, e, attachments, basetime, basetime2, trans, size);
+        else e->material[2] = bvec(colourwhite);
+
+        rendermodel(mdl, anim, o, yaw, third == 2 && firstpersonbodypitch >= 0 ? pitch*firstpersonbodypitch : pitch, third == 2 ? 0.f : roll, flags, e, attachments, basetime, basetime2, size, color, &e->material[0]);
     }
 
-    void renderabovehead(gameent *d, float trans)
+    void renderabovehead(gameent *d)
     {
         vec pos = d->abovehead(d->state != CS_DEAD && d->state != CS_WAITING ? 1 : 0);
-        float blend = aboveheadblend*trans;
+        float blend = aboveheadblend*opacity(d);
         if(aboveheadnames && d != player1)
         {
             pos.z += aboveheadnamessize/2;
@@ -3279,15 +3257,9 @@ namespace game
         }
     }
 
-    void renderplayer(gameent *d, int third, float trans, float size, bool early = false)
+    void renderplayer(gameent *d, int third, float size, int flags = 0, const vec4 &color = vec4(1, 1, 1, 1))
     {
         if(d->state == CS_SPECTATOR) return;
-        if(trans <= 0.f || (d == focus && !(third == 1 ? thirdpersonmodel : firstpersonmodel)))
-        {
-            if(d->state == CS_ALIVE && rendernormally && (early || d != focus))
-                trans = 1e-16f; // we need tag_muzzle/tag_waist
-            else return; // screw it, don't render them
-        }
         int weap = d->weapselect, lastaction = 0, animflags = ANIM_IDLE|ANIM_LOOP, weapflags = animflags, weapaction = 0, animdelay = 0;
         bool secondary = false, showweap = third != 2 && isweap(weap) && weap < W_ALL && actor[d->actortype].useweap;
         float weapscale = 1.f;
@@ -3298,20 +3270,23 @@ namespace game
             lastaction = d->lastpain;
             switch(deathanim)
             {
-                case 0: return;
+                case 0:
+                    if(d->ragdoll) cleanragdoll(d);
+                    return;
                 case 1:
                 {
+                    if(d->ragdoll) cleanragdoll(d);
                     int t = lastmillis-lastaction;
                     if(t < 0) return;
                     if(t > 1000) animflags = ANIM_DEAD|ANIM_LOOP|ANIM_NOPITCH;
                     break;
                 }
-                case 3: if(m_duke(gamemode, mutators)) return;
-                case 2:
+                case 3: if(m_duke(gamemode, mutators))
                 {
-                    if(!validragdoll(d, lastaction)) animflags |= ANIM_RAGDOLL;
-                    break;
+                    if(d->ragdoll) cleanragdoll(d);
+                    return;
                 }
+                case 2: animflags |= ANIM_RAGDOLL; break;
             }
         }
         else if(d->state == CS_EDITING)
@@ -3384,8 +3359,8 @@ namespace game
                 animdelay = 300;
             }
         }
-        if(!early && third == 1 && d->actortype < A_ENEMY && !shadowmapping && !drawtex && (aboveheaddead || d->state == CS_ALIVE))
-            renderabovehead(d, trans);
+        if(!(flags&MDL_ONLYSHADOW) && third == 1 && d->actortype < A_ENEMY && !shadowmapping && !drawtex && (aboveheaddead || d->state == CS_ALIVE))
+            renderabovehead(d);
         const char *weapmdl = showweap && isweap(weap) ? (third ? weaptype[weap].vwep : weaptype[weap].hwep) : "";
         int ai = 0;
         modelattach a[1+VANITYMAX+12];
@@ -3416,8 +3391,8 @@ namespace game
             }
         }
         bool hasweapon = showweap && *weapmdl;
-        if(hasweapon) a[ai++] = modelattach("tag_weapon", weapmdl, weapflags, weapaction, trans, weapscale*size);
-        if(rendernormally && (early || d != focus))
+        if(hasweapon) a[ai++] = modelattach("tag_weapon", weapmdl, weapflags, weapaction, 1, weapscale*size);
+        if(!(flags&MDL_ONLYSHADOW))
         {
             if(third != 2)
             {
@@ -3441,13 +3416,13 @@ namespace game
                 a[ai++] = modelattach("tag_rtoe", &d->toe[1]);
             }
         }
-        renderclient(d, third, trans, size, a[0].tag ? a : NULL, secondary, animflags, animdelay, lastaction, early);
+        renderclient(d, third, size, a[0].tag ? a : NULL, secondary, animflags, animdelay, lastaction, flags, color);
     }
 
     void rendercheck(gameent *d, bool third = false)
     {
         d->checktags();
-        float blend = opacity(d, third);
+        float blend = opacity(d);
         if(d->state == CS_ALIVE)
         {
             bool useth = hud::teamhurthud&1 && hud::teamhurttime && m_team(gamemode, mutators) && focus == player1 &&
@@ -3619,43 +3594,52 @@ namespace game
                     q *= 0.8f;
                 }
             }
-            if(rendernormally && d->ragdoll && twitchspeed > 0) twitchragdoll(d, twitchspeed*blend*rnd(100)/80.f);
+            if(d->ragdoll && twitchspeed > 0) twitchragdoll(d, twitchspeed*blend*rnd(100)/80.f);
         }
     }
 
     void render()
     {
-        startmodelbatches();
         gameent *d;
         int numdyns = numdynents();
-        loopi(numdyns) if((d = (gameent *)iterdynents(i)) && d != focus) renderplayer(d, 1, opacity(d, true), d->curscale);
+        loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL && d != focus)
+            d->cleartags();
+        ai::render();
         entities::render();
         projs::render();
         if(m_capture(gamemode)) capture::render();
         else if(m_defend(gamemode)) defend::render();
         else if(m_bomber(gamemode)) bomber::render();
-        ai::render();
-        if(rendernormally) loopi(numdyns) if((d = (gameent *)iterdynents(i)) && d != focus) d->cleartags();
-        endmodelbatches();
-        if(rendernormally) loopi(numdyns) if((d = (gameent *)iterdynents(i)) && d != focus) rendercheck(d);
+        loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL)
+            renderplayer(d, 1, d->curscale, d != focus ? 0 : MDL_ONLYSHADOW);
     }
 
-    void renderavatar(bool early, bool project)
+    void renderpost()
+    {
+        gameent *d;
+        int numdyns = numdynents();
+        loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL && d != focus)
+            rendercheck(d);
+    }
+
+    void renderavatar()
     {
         bool third = thirdpersonview();
-        if(rendernormally && early) focus->cleartags();
-        if(project) setavatarscale(third || focus->state != CS_ALIVE ? 1.f : firstpersondepth);
-        if(third || !rendernormally) renderplayer(focus, 1, opacity(focus, thirdpersonview(true)), focus->curscale, early);
-        else if(!third && focus->state == CS_ALIVE) renderplayer(focus, 0, opacity(focus, false), focus->curscale, early);
+        focus->cleartags();
+        float depthfov = third ? (thirdpersondepthfov != 0 && focus->state == CS_ALIVE ? thirdpersondepthfov : curfov) : (firstpersondepthfov != 0 ? firstpersondepthfov : curfov),
+              depthscale = third || focus->state != CS_ALIVE ? thirdpersondepth : firstpersondepth;
+        setavatarscale(depthfov, depthscale);
+        if(third || focus->state == CS_ALIVE)
+            renderplayer(focus, third ? 1 : 0, focus->curscale, MDL_NOBATCH);
         if(!third && focus->state == CS_ALIVE && firstpersonmodel == 2)
         {
-            if(project) setavatarscale(firstpersonbodydepth);
-            renderplayer(focus, 2, opacity(focus, false), focus->curscale, early);
+            setavatarscale(firstpersonbodydepthfov != 0 ? firstpersonbodydepthfov : curfov, firstpersonbodydepth);
+            renderplayer(focus, 2, focus->curscale, MDL_NOBATCH);
         }
-        if(rendernormally && early) rendercheck(focus, third);
+        rendercheck(focus, third);
     }
 
-    void renderplayerpreview(int model, int color, int team, int weap, const char *vanity, float scale, float blend, const vec &lightcolor, const vec &lightdir)
+    void renderplayerpreview(int model, int color, int team, int weap, const char *vanity, float scale, const vec4 &mcolor)
     {
         static gameent *previewent = NULL;
         if(!previewent)
@@ -3675,10 +3659,7 @@ namespace game
         previewent->team = clamp(team, 0, int(T_MULTI));
         previewent->weapselect = clamp(weap, 0, W_ALL-1);
         previewent->setvanity(vanity);
-        previewent->light.color = lightcolor;
-        (previewent->light.dir = lightdir).normalize();
-        previewent->light.millis = -1;
-        renderplayer(previewent, 1, blend, scale);
+        renderplayer(previewent, 1, scale, 0, mcolor);
     }
 
     bool clientoption(char *arg) { return false; }

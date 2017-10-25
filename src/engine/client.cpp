@@ -17,7 +17,7 @@ bool multiplayer(bool msg)
 void setrate(int rate)
 {
    if(!curpeer) return;
-    enet_host_bandwidth_limit(clienthost, rate*1024, rate*1024);
+   enet_host_bandwidth_limit(clienthost, rate*1024, rate*1024);
 }
 
 VARF(0, rate, 0, 0, 1024, setrate(rate));
@@ -289,7 +289,12 @@ void gets2c()           // get updates from the server
             }
             else
             {
-                if(!discmillis || event.data) conoutft(CON_DEBUG, "\frServer disconnected (%s) ...", disc_reasons[event.data]);
+                if(!discmillis || event.data)
+                {
+                    const char *msg = disc_reasons[event.data];
+                    if(msg) conoutf("\frServer network error, disconnecting (%s) ...", msg);
+                    else conoutf("\frServer network error, disconnecting...");
+                }
                 disconnect();
             }
             return;

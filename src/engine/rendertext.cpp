@@ -14,19 +14,6 @@ FVAR(IDF_PERSIST, textkeyimagescale, 0, 1, FVAR_MAX);
 VAR(IDF_PERSIST, textkeyseps, 0, 1, 1);
 VAR(IDF_PERSIST|IDF_HEX, textkeycolour, 0, 0x00FFFF, 0xFFFFFF);
 
-Texture *tbgbordertex = NULL, *tbgtex = NULL;
-VAR(IDF_PERSIST, textskin, 0, 2, 2);
-VAR(IDF_PERSIST, textskinsize, 0, 48, VAR_MAX);
-VAR(IDF_PERSIST, textskinpad, 0, 16, VAR_MAX);
-FVAR(IDF_PERSIST, textskinblend, 0, 0.3f, 1);
-FVAR(IDF_PERSIST, textskinfblend, 0, 1, 1);
-FVAR(IDF_PERSIST, textskinbright, 0, 0.6f, 10);
-FVAR(IDF_PERSIST, textskinfbright, 0, 1, 10);
-FVAR(IDF_PERSIST, textskinborderbright, 0, 1, 10);
-FVAR(IDF_PERSIST, textskinborderblend, 0, 0.4f, 1);
-TVARN(IDF_PERSIST|IDF_PRELOAD, textskintex, "textures/hud/textskin", tbgtex, 0);
-TVARN(IDF_PERSIST|IDF_PRELOAD, textskinbordertex, "textures/hud/textskinborder", tbgbordertex, 0);
-
 static hashnameset<font> fonts;
 static font *fontdef = NULL;
 static int fontdeftex = 0;
@@ -75,7 +62,7 @@ void fonttex(char *s)
     fontdef->texs.add(t);
 }
 
-void fontchar(int *x, int *y, int *w, int *h, int *offsetx, int *offsety, int *advance)
+void fontchar(float *x, float *y, float *w, float *h, float *offsetx, float *offsety, float *advance)
 {
     if(!fontdef) return;
 
@@ -106,7 +93,7 @@ COMMANDN(0, font, newfont, "ssii");
 COMMAND(0, fontoffset, "s");
 COMMAND(0, fontscale, "i");
 COMMAND(0, fonttex, "s");
-COMMAND(0, fontchar, "iiiiiii");
+COMMAND(0, fontchar, "fffffff");
 COMMAND(0, fontskip, "i");
 
 font *loadfont(const char *name)
@@ -825,6 +812,8 @@ static float draw_key(Texture *&tex, const char *str, float sx, float sy, bvec4 
     return width;
 }
 
+Shader *textshader = NULL;
+
 float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, int a, int flags, int cursor, float maxwidth, float linespace)
 {
     if(linespace <= 0) linespace = textlinespacing;
@@ -864,8 +853,9 @@ float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, i
     if(b < 0) b = colourwhite&0xFF;
     bvec4 colorstack[16], color = TVECX(r, g, b, fade);
     loopi(16) colorstack[i] = color;
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     Texture *tex = curfont->texs[0];
+    (textshader ? textshader : hudtextshader)->set();
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glBindTexture(GL_TEXTURE_2D, tex->id);
     gle::color(color);
     gle::defvertex(textmatrix ? 3 : 2);
@@ -911,32 +901,6 @@ float draw_textf(const char *fstr, float left, float top, float xpad, float ypad
     }
     if(flags&TEXT_BALLOON) top -= height*0.5f;
     else if(flags&TEXT_UPWARD) top -= height;
-    if(flags&TEXT_SKIN && textskin)
-    {
-        loopk(textskin)
-        {
-            Texture *t = NULL;
-            float blend = a/255.f, bright = 1;
-            switch(k)
-            {
-                case 1:
-                    bright *= textskinborderbright;
-                    blend *= textskinborderblend;
-                    if(!tbgbordertex) tbgbordertex = textureload(textskinbordertex, 0, true, false);
-                    t = tbgbordertex;
-                    break;
-                case 0: default:
-                    bright *= textskinbright;
-                    blend *= textskinblend;
-                    if(!tbgtex) tbgtex = textureload(textskintex, 0, true, false);
-                    t = tbgtex;
-                    break;
-            }
-            drawskin(t, left-textskinpad, top, left+width+textskinpad, top+height, bvec(int(r*bright), int(g*bright), int(b*bright)).min(255).tohexcolor(), blend, textskinsize);
-        }
-        r = g = b = int(textskinfbright*255);
-        a = int(255*textskinfblend);
-    }
     if(xpad) left += xpad;
     if(ypad) top += ypad;
     if(flags&TEXT_SHADOW) draw_text(str, left+2, top+2, 0, 0, 0, a, flags, cursor, maxwidth, linespace);

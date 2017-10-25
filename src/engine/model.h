@@ -4,38 +4,44 @@ struct model
 {
     char *name;
     float spinyaw, spinpitch, spinroll, offsetyaw, offsetpitch, offsetroll;
-    bool collide, ellipsecollide, shadow, alphadepth, depthoffset;
+    bool shadow, alphashadow, depthoffset;
     float scale;
     vec translate;
     BIH *bih;
     vec bbcenter, bbradius, bbextend, collidecenter, collideradius;
     float rejectradius, height, collidexyradius, collideheight;
-    int batch;
+    char *collidemodel;
+    int collide, batch;
 
-    model(const char *name) : name(name ? newstring(name) : NULL), spinyaw(0), spinpitch(0), spinroll(0), offsetyaw(0), offsetpitch(0), offsetroll(0), collide(true), ellipsecollide(false), shadow(true), alphadepth(true), depthoffset(false), scale(1.0f), translate(0, 0, 0), bih(0), bbcenter(0, 0, 0), bbradius(-1, -1, -1), bbextend(0, 0, 0), collidecenter(0, 0, 0), collideradius(-1, -1, -1), rejectradius(-1), height(0.45f), collidexyradius(0), collideheight(0), batch(-1) {}
+    model(const char *name) : name(name ? newstring(name) : NULL), spinyaw(0), spinpitch(0), spinroll(0), offsetyaw(0), offsetpitch(0), offsetroll(0), shadow(true), alphashadow(true), depthoffset(false), scale(1.0f), translate(0, 0, 0), bih(0), bbcenter(0, 0, 0), bbradius(-1, -1, -1), bbextend(0, 0, 0), collidecenter(0, 0, 0), collideradius(-1, -1, -1), rejectradius(-1), height(0.9f), collidexyradius(0), collideheight(0), collidemodel(NULL), collide(COLLIDE_OBB), batch(-1) {}
     virtual ~model() { DELETEA(name); DELETEP(bih); }
     virtual void calcbb(vec &center, vec &radius) = 0;
-    virtual void render(int anim, int basetime, int basetime2, const vec &o, float yaw, float pitch, float roll, dynent *d, modelattach *a = NULL, const vec &color = vec(0, 0, 0), const vec &dir = vec(0, 0, 0), const bvec *material = NULL, float transparent = 1, float size = 1) = 0;
+    virtual void calctransform(matrix4x3 &m) = 0;
+    virtual int intersect(int anim, int basetime, int basetime2, const vec &pos, float yaw, float pitch, float roll, dynent *d, modelattach *a, float size, const vec &o, const vec &ray, float &dist, int mode) = 0;
+    virtual void render(int anim, int basetime, int basetime2, const vec &o, float yaw, float pitch, float roll, dynent *d, modelattach *a = NULL, float size = 1, const vec4 &color = vec4(1, 1, 1, 1), const bvec *material = NULL) = 0;
     virtual bool load() = 0;
     virtual int type() const = 0;
-    virtual BIH *setBIH() { return 0; }
-    virtual bool envmapped() { return false; }
+    virtual BIH *setBIH() { return NULL; }
+    virtual bool envmapped() const { return false; }
     virtual bool skeletal() const { return false; }
+    virtual bool animated() const { return false; }
+    virtual bool pitched() const { return true; }
+    virtual bool alphatested() const { return false; }
 
     virtual void setshader(Shader *shader) {}
     virtual void setenvmap(float envmapmin, float envmapmax, Texture *envmap) {}
     virtual void setspec(float spec) {}
-    virtual void setambient(float ambient) {}
+    virtual void setgloss(int gloss) {}
     virtual void setglow(float glow, float glowdelta, float glowpulse) {}
-    virtual void setglare(float specglare, float glowglare) {}
     virtual void setalphatest(float alpha) {}
-    virtual void setalphablend(bool blend) {}
     virtual void setfullbright(float fullbright) {}
-    virtual void setcullface(bool cullface) {}
-    virtual void setmaterial(int material, int material2) {}
+    virtual void setcullface(int cullface) {}
+    virtual void setcolor(const vec &color) {}
+    virtual void setmaterial(int material1, int material2) {}
 
+    virtual void genshadowmesh(vector<triangle> &tris, const matrix4x3 &orient) {}
     virtual void preloadBIH() { if(!bih) setBIH(); }
-    virtual void preloadshaders(bool force = false) {}
+    virtual void preloadshaders() {}
     virtual void preloadmeshes() {}
     virtual void cleanup() {}
 

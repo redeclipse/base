@@ -1,11 +1,10 @@
 #include "engine.h"
 
-VAR(IDF_PERSIST, grass, 0, 0, 1);
-FVAR(IDF_PERSIST, grassstep, 0.5, 2, 8);
-FVAR(IDF_PERSIST, grasstaper, 0, 0.1, 1);
-
+VAR(IDF_PERSIST, grass, 0, 1, 1);
 VAR(0, dbggrass, 0, 0, 1);
 VAR(IDF_PERSIST, grassdist, 0, 256, 10000);
+FVAR(IDF_PERSIST, grasstaper, 0, 0.2f, 1);
+FVAR(IDF_PERSIST, grassstep, 0.5f, 2, 8);
 VAR(IDF_WORLD, grassheight, 1, 4, 64);
 
 struct grasswedge
@@ -24,7 +23,7 @@ struct grasswedge
       across.div(-across.dot(bound1));
     }
 };
-grasswedge *grasswedges = NULL;
+static grasswedge *grasswedges = NULL;
 void resetgrasswedges(int n)
 {
     DELETEA(grasswedges);
@@ -37,18 +36,19 @@ struct grassvert
 {
     vec pos;
     bvec4 color;
-    vec2 tc, lm;
+    vec2 tc;
 };
 
 static vector<grassvert> grassverts;
 static GLuint grassvbo = 0;
 static int grassvbosize = 0;
 
+VAR(0, maxgrass, 10, 10000, 10000);
+
 struct grassgroup
 {
     const grasstri *tri;
-    float dist;
-    int tex, lmtex, offset, numquads, scale, height;
+    int tex, offset, numquads, scale, height;
 };
 
 static vector<grassgroup> grassgroups;
@@ -64,12 +64,6 @@ void resetgrassoffsets(int n)
 }
 VARFN(IDF_PERSIST, grassoffsets, numgrassoffsets, 8, 32, 1024, resetgrassoffsets(numgrassoffsets));
 
-void initgrass()
-{
-    if(!grasswedges) resetgrasswedges(numgrasswedges);
-    if(!grassoffsets) resetgrassoffsets(numgrassoffsets);
-}
-
 static int lastgrassanim = -1;
 
 VAR(IDF_WORLD, grassanimmillis, 0, 3000, 60000);
@@ -82,13 +76,9 @@ static void animategrass()
 }
 
 VAR(IDF_WORLD, grassscale, 1, 2, 64);
-bvec grasscolor(255, 255, 255);
-VARF(IDF_HEX|IDF_WORLD, grasscolour, 0, 0xFFFFFF, 0xFFFFFF,
-{
-    if(!grasscolour) grasscolour = 0xFFFFFF;
-    grasscolor = bvec((grasscolour>>16)&0xFF, (grasscolour>>8)&0xFF, grasscolour&0xFF);
-});
+CVAR0(IDF_WORLD, grasscolour, 0xFFFFFF);
 FVAR(IDF_WORLD, grassblend, 0, 1, 1);
+FVAR(IDF_WORLD, grasstest, 0, 0.6f, 1);
 
 static void gengrassquads(grassgroup *&group, const grasswedge &w, const grasstri &g, Texture *tex, const vec &col, float blend, int scale, int height)
 {
@@ -127,8 +117,6 @@ static void gengrassquads(grassgroup *&group, const grasswedge &w, const grasstr
           taperscale = 1.0f / (grassdist - taperdist),
           dist = maxstep*grassstep + tstart,
           leftb = 0, rightb = 0, leftdb = 0, rightdb = 0;
-    bvec gcol = col.iszero() ? grasscolor : bvec(uchar(col.x*255), uchar(col.y*255), uchar(col.z*255));
-    if(blend <= 0) blend = grassblend;
     for(int i = maxstep; i >= minstep; i--, offset--, leftp.add(leftdir), rightp.add(rightdir), leftb += leftdb, rightb += rightdb, dist -= grassstep)
     {
         if(dist <= leftdist)
@@ -181,14 +169,13 @@ static void gengrassquads(grassgroup *&group, const grasswedge &w, const grasstr
             p2.sub(vec(across).mul(rightb));
         }
 
+        if(grassverts.length() >= 4*maxgrass) break;
+
         if(!group)
         {
             group = &grassgroups.add();
             group->tri = &g;
             group->tex = tex->id;
-            extern bool brightengeom;
-            int lmid = brightengeom && (g.lmid < LMID_RESERVED || (fullbright && editmode)) ? LMID_BRIGHT : g.lmid;
-            group->lmtex = lightmaptexs.inrange(lmid) ? lightmaptexs[lmid].id : notexture->id;
             group->offset = grassverts.length()/4;
             group->numquads = 0;
             group->scale = gs;
@@ -203,8 +190,8 @@ static void gengrassquads(grassgroup *&group, const grasswedge &w, const grasstr
               tc1 = tc.dot(p1) + tcoffset, tc2 = tc.dot(p2) + tcoffset,
               fade = dist - t > taperdist ? (grassdist - (dist - t))*taperscale : 1,
               height = gh * fade;
-        vec2 lm1(g.tcu.dot(p1), g.tcv.dot(p1)),
-             lm2(g.tcu.dot(p2), g.tcv.dot(p2));
+        bvec gcol = col.iszero() ? grasscolour : bvec(uchar(col.x*255), uchar(col.y*255), uchar(col.z*255));
+        if(blend <= 0) blend = grassblend;
         bvec4 color(gcol, uchar(fade*blend*255));
 
         #define GRASSVERT(n, tcv, modify) { \
@@ -212,7 +199,6 @@ static void gengrassquads(grassgroup *&group, const grasswedge &w, const grasstr
             gv.pos = p##n; \
             gv.color = color; \
             gv.tc = vec2(tc##n, tcv); \
-            gv.lm = lm##n; \
             modify; \
         }
 
@@ -235,8 +221,8 @@ static void gengrassquads(vtxarray *va)
         Slot &s = *lookupvslot(g.texture, false).slot;
         if(!s.grasstex)
         {
-            if(!s.texgrass) continue;
-            s.grasstex = textureload(makerelpath(NULL, s.texgrass, NULL, "<premul>"), 2);
+            if(!s.grass) continue;
+            s.grasstex = textureload(s.grass, 2);
         }
 
         grassgroup *group = NULL;
@@ -246,23 +232,18 @@ static void gengrassquads(vtxarray *va)
             if(w.bound1.dist(g.center) > g.radius || w.bound2.dist(g.center) > g.radius) continue;
             gengrassquads(group, w, g, s.grasstex, s.grasscolor, s.grassblend, s.grassscale, s.grassheight);
         }
-        if(group) group->dist = dist;
     }
-}
-
-static inline bool comparegrassgroups(const grassgroup &x, const grassgroup &y)
-{
-    return x.dist > y.dist;
 }
 
 void generategrass()
 {
     if(!grass || !grassdist) return;
 
-    initgrass();
-
     grassgroups.setsize(0);
     grassverts.setsize(0);
+
+    if(!grasswedges) resetgrasswedges(numgrasswedges);
+    if(!grassoffsets) resetgrassoffsets(numgrassoffsets);
 
     loopi(numgrasswedges)
     {
@@ -275,13 +256,10 @@ void generategrass()
     {
         if(va->grasstris.empty() || va->occluded >= OCCLUDE_GEOM) continue;
         if(va->distance > grassdist) continue;
-        if(reflecting || refracting>0 ? va->o.z+va->size<reflectz : va->o.z>=reflectz) continue;
         gengrassquads(va);
     }
 
     if(grassgroups.empty()) return;
-
-    grassgroups.sort(comparegrassgroups);
 
     if(!grassvbo) glGenBuffers_(1, &grassvbo);
     gle::bindvbo(grassvbo);
@@ -292,16 +270,35 @@ void generategrass()
     gle::clearvbo();
 }
 
+static Shader *grassshader = NULL;
+
+Shader *loadgrassshader()
+{
+    string opts;
+    int optslen = 0;
+
+    opts[optslen] = '\0';
+
+    defformatstring(name, "grass%s", opts);
+    return generateshader(name, "grassshader \"%s\"", opts);
+
+}
+
+void loadgrassshaders()
+{
+    grassshader = loadgrassshader();
+}
+
+void cleargrassshaders()
+{
+    grassshader = NULL;
+}
+
 void rendergrass()
 {
-    if(!grass || !grassdist || grassgroups.empty() || dbggrass) return;
+    if(!grass || !grassdist || grassgroups.empty() || dbggrass || !grassshader) return;
 
     glDisable(GL_CULL_FACE);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-    glDepthMask(GL_FALSE);
-
-    SETSHADER(grass);
 
     gle::bindvbo(grassvbo);
 
@@ -309,35 +306,35 @@ void rendergrass()
     gle::vertexpointer(sizeof(grassvert), ptr->pos.v);
     gle::colorpointer(sizeof(grassvert), ptr->color.v);
     gle::texcoord0pointer(sizeof(grassvert), ptr->tc.v);
-    gle::texcoord1pointer(sizeof(grassvert), ptr->lm.v);
     gle::enablevertex();
     gle::enablecolor();
     gle::enabletexcoord0();
-    gle::enabletexcoord1();
     gle::enablequads();
 
-    int texid = -1, lmtexid = -1;
+    GLOBALPARAMF(grasstest, grasstest);
+
+    int texid = -1, blend = -1;
     loopv(grassgroups)
     {
         grassgroup &g = grassgroups[i];
-
-        if(reflecting || refracting)
-        {
-            if(refracting < 0 ? g.tri->minz > reflectz : g.tri->maxz + grassheight < reflectz) continue;
-            if(isfoggedsphere(g.tri->radius, g.tri->center)) continue;
-        }
 
         if(texid != g.tex)
         {
             glBindTexture(GL_TEXTURE_2D, g.tex);
             texid = g.tex;
         }
-        if(lmtexid != g.lmtex)
+
+        if(blend != g.tri->blend)
         {
-            glActiveTexture_(GL_TEXTURE1);
-            glBindTexture(GL_TEXTURE_2D, g.lmtex);
-            glActiveTexture_(GL_TEXTURE0);
-            lmtexid = g.lmtex;
+            if(g.tri->blend)
+            {
+                glActiveTexture_(GL_TEXTURE1);
+                bindblendtexture(ivec(g.tri->center));
+                glActiveTexture_(GL_TEXTURE0);
+                grassshader->setvariant(0, 0);
+            }
+            else grassshader->set();
+            blend = g.tri->blend;
         }
 
         gle::drawquads(g.offset, g.numquads);
@@ -348,12 +345,9 @@ void rendergrass()
     gle::disablevertex();
     gle::disablecolor();
     gle::disabletexcoord0();
-    gle::disabletexcoord1();
-    
+
     gle::clearvbo();
 
-    glDisable(GL_BLEND);
-    glDepthMask(GL_TRUE);
     glEnable(GL_CULL_FACE);
 }
 
@@ -361,6 +355,6 @@ void cleanupgrass()
 {
     if(grassvbo) { glDeleteBuffers_(1, &grassvbo); grassvbo = 0; }
     grassvbosize = 0;
+
+    cleargrassshaders();
 }
-
-

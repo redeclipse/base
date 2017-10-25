@@ -31,6 +31,8 @@ struct avisegmentinfo
     avisegmentinfo(stream::offset offset, int firstindex) : offset(offset), videoindexoffset(0), soundindexoffset(0), firstindex(firstindex), videoindexsize(0), soundindexsize(0), indexframes(0), videoframes(0), soundframes(0) {}
 };
 
+SVAR(IDF_PERSIST, moviedir, "movie");
+
 struct aviwriter
 {
     stream *f;
@@ -175,7 +177,16 @@ struct aviwriter
 
     aviwriter(const char *name, uint w, uint h, uint fps, bool sound) : f(NULL), yuv(NULL), videoframes(0), totalsize(0), videow(w&~1), videoh(h&~1), videofps(fps), soundfrequency(0),soundchannels(0),soundformat(0)
     {
-        copystring(filename, name);
+        copystring(filename, moviedir);
+        if(moviedir[0])
+        {
+            int dirlen = strlen(filename);
+            if(filename[dirlen] != '/' && filename[dirlen] != '\\' && dirlen+1 < (int)sizeof(filename)) { filename[dirlen++] = '/'; filename[dirlen] = '\0'; }
+            const char *dir = findfile(filename, "w");
+            if(!fileexists(dir, "w")) createdir(dir);
+        }
+
+        concatstring(filename, name);
         path(filename);
         if(!strrchr(filename, '.')) concatstring(filename, ".avi");
 
@@ -183,7 +194,7 @@ struct aviwriter
         {
             Mix_QuerySpec(&soundfrequency, &soundformat, &soundchannels);
             const char *desc;
-            switch (soundformat)
+            switch(soundformat)
             {
                 case AUDIO_U8:     desc = "u8"; break;
                 case AUDIO_S8:     desc = "s8"; break;
@@ -391,7 +402,7 @@ struct aviwriter
     {
         const uchar *end = &src[w<<2];
         uint bt = 0, gt = 0, rt = 0;
-        for (const uchar *cur = &src[4]; cur < end; cur += 4)
+        for(const uchar *cur = &src[4]; cur < end; cur += 4)
         {
             bt += cur[0];
             gt += cur[1];
@@ -402,10 +413,10 @@ struct aviwriter
         rt = ylow*(rt + ((src[2]*xlow + end[2]*xhigh)>>12));
         if(h)
         {
-            for (src += stride, end += stride; --h; src += stride, end += stride)
+            for(src += stride, end += stride; --h; src += stride, end += stride)
             {
                 uint b = 0, g = 0, r = 0;
-                for (const uchar *cur = &src[4]; cur < end; cur += 4)
+                for(const uchar *cur = &src[4]; cur < end; cur += 4)
                 {
                     b += cur[0];
                     g += cur[1];
@@ -416,7 +427,7 @@ struct aviwriter
                 rt += (r<<12) + src[2]*xlow + end[2]*xhigh;
             }
             uint b = 0, g = 0, r = 0;
-            for (const uchar *cur = &src[4]; cur < end; cur += 4)
+            for(const uchar *cur = &src[4]; cur < end; cur += 4)
             {
                 b += cur[0];
                 g += cur[1];
@@ -444,10 +455,10 @@ struct aviwriter
         srcw &= ~1;
         srch &= ~1;
         const uint wfrac = (srcw<<12)/videow, hfrac = (srch<<12)/videoh,
-                           area = ((ullong)planesize<<12)/(srcw*srch + 1),
-                                  dw = videow*wfrac, dh = videoh*hfrac;
+                   area = ((ullong)planesize<<12)/(srcw*srch + 1),
+                   dw = videow*wfrac, dh = videoh*hfrac;
 
-        for (uint y = 0; y < dh;)
+        for(uint y = 0; y < dh;)
         {
             uint yn = y + hfrac - 1, yi = y>>12, h = (yn>>12) - yi, ylow = ((yn|(-int(h)>>24))&0xFFFU) + 1 - (y&0xFFFU), yhigh = (yn&0xFFFU) + 1;
             y += hfrac;
@@ -456,7 +467,7 @@ struct aviwriter
 
             const uchar *src = &pixels[yi*stride], *src2 = &pixels[y2i*stride];
             uchar *ydst = yplane, *ydst2 = yplane + ystride, *udst = uplane, *vdst = vplane;
-            for (uint x = 0; x < dw;)
+            for(uint x = 0; x < dw;)
             {
                 uint xn = x + wfrac - 1, xi = x>>12, w = (xn>>12) - xi, xlow = ((w+0xFFFU)&0x1000U) - (x&0xFFFU), xhigh = (xn&0xFFFU) + 1;
                 x += wfrac;
@@ -502,11 +513,11 @@ struct aviwriter
 
         const uint stride = videow<<2;
         const uchar *src = pixels, *yend = src + videoh*stride;
-        while (src < yend)
+        while(src < yend)
         {
             const uchar *src2 = src + stride, *xend = src2;
             uchar *ydst = yplane, *ydst2 = yplane + ystride, *udst = uplane, *vdst = vplane;
-            while (src < xend)
+            while(src < xend)
             {
                 const uint b1 = src[0], g1 = src[1], r1 = src[2],
                            b2 = src[4], g2 = src[5], r2 = src[6],
@@ -549,11 +560,11 @@ struct aviwriter
 
         const uint stride = videow<<2;
         const uchar *src = pixels, *yend = src + videoh*stride;
-        while (src < yend)
+        while(src < yend)
         {
             const uchar *src2 = src + stride, *xend = src2;
             uchar *ydst = yplane, *ydst2 = yplane + ystride, *udst = uplane, *vdst = vplane;
-            while (src < xend)
+            while(src < xend)
             {
                 *ydst++ = src[0];
                 *ydst++ = src[4];
@@ -580,27 +591,27 @@ struct aviwriter
         // ... so can toggle signedness just by xoring the high byte with 0x80
         switch(soundformat)
         {
-        case AUDIO_U8:
+            case AUDIO_U8:
                 for(uchar *dst = data, *end = &data[framesize]; dst < end; dst++) *dst ^= 0x80;
-            break;
-        case AUDIO_S8:
-            break;
-        case AUDIO_U16LSB:
+                break;
+            case AUDIO_S8:
+                break;
+            case AUDIO_U16LSB:
                 for(uchar *dst = &data[1], *end = &data[framesize]; dst < end; dst += 2) *dst ^= 0x80;
-            break;
-        case AUDIO_U16MSB:
+                break;
+            case AUDIO_U16MSB:
                 for(ushort *dst = (ushort *)data, *end = (ushort *)&data[framesize]; dst < end; dst++)
 #if SDL_BYTEORDER == SDL_BIG_ENDIAN
                     *dst = endianswap(*dst) ^ 0x0080;
 #else
                     *dst = endianswap(*dst) ^ 0x8000;
 #endif
-            break;
-        case AUDIO_S16LSB:
-            break;
-        case AUDIO_S16MSB:
+                break;
+            case AUDIO_S16LSB:
+                break;
+            case AUDIO_S16MSB:
                 endianswap((short *)data, framesize/2);
-            break;
+                break;
         }
 
         if(totalsize - segments.last().offset + framesize > 1000*1000*1000 && !nextsegment()) return false;
@@ -770,8 +781,8 @@ namespace recorder
         void load(uchar *stream, uint len, uint fnum)
         {
             if(len > maxsize)
-        {
-            DELETEA(sound);
+            {
+                DELETEA(sound);
                 sound = new uchar[len];
                 maxsize = len;
             }
@@ -825,19 +836,19 @@ namespace recorder
         return 1.0f - float(dps)/float(dps+file->videofps); // strictly speaking should lock to read dps - 1.0=perfect, 0.5=half of frames are beingdropped
     }
 
-    int gettimet()
+    int gettime()
     {
         return inbetweenframes ? getclockmillis() : totalmillis;
     }
 
     int videoencoder(void *data) // runs on a separate thread
     {
-        for (int numvid = 0, numsound = 0;;)
+        for(int numvid = 0, numsound = 0;;)
         {
             SDL_LockMutex(videolock);
-            for (; numvid > 0; numvid--) videobuffers.remove();
+            for(; numvid > 0; numvid--) videobuffers.remove();
             SDL_CondSignal(shouldread);
-            while (videobuffers.empty() && state == REC_OK) SDL_CondWait(shouldencode, videolock);
+            while(videobuffers.empty() && state == REC_OK) SDL_CondWait(shouldencode, videolock);
             if(state != REC_OK) { SDL_UnlockMutex(videolock); break; }
             videobuffer &m = videobuffers.removing();
             numvid++;
@@ -847,8 +858,8 @@ namespace recorder
             {
                 // chug data from lock protected buffer to avoid holding lock while writing to file
                 SDL_LockMutex(soundlock);
-                for (; numsound > 0; numsound--) soundbuffers.remove();
-                for (; numsound < soundbuffers.length(); numsound++)
+                for(; numsound > 0; numsound--) soundbuffers.remove();
+                for(; numsound < soundbuffers.length(); numsound++)
                 {
                     soundbuffer &s = soundbuffers.removing(numsound);
                     if(s.frame > m.frame) break; // sync with video
@@ -888,7 +899,7 @@ namespace recorder
         }
         else if(state == REC_OK)
         {
-            uint nextframe = (max(gettimet() - starttime, 0)*file->videofps)/1000;
+            uint nextframe = (max(gettime() - starttime, 0)*file->videofps)/1000;
             soundbuffer &s = soundbuffers.add();
             s.load((uchar *)stream, len, nextframe);
         }
@@ -915,13 +926,13 @@ namespace recorder
         file = new aviwriter(filename, videow, videoh, videofps, sound);
         if(!file->open())
         {
-            conoutf("Unable to create file %s", filename);
+            conoutf("Unable to create file %s", file->filename);
             DELETEP(file);
             return;
         }
         conoutf("Movie recording to: %s %dx%d @ %dfps%s", file->filename, file->videow, file->videoh, file->videofps, (file->soundfrequency>0)?" + sound":"");
 
-        starttime = gettimet();
+        starttime = gettime();
         loopi(file->videofps) stats[i] = 0;
         statsindex = 0;
         dps = 0;
@@ -1008,7 +1019,7 @@ namespace recorder
                 loopi(2)
                 {
                     if(!scaletex[i]) glGenTextures(1, &scaletex[i]);
-                    createtexture(scaletex[i], tw, th, NULL, 3, 1, GL_RGB);
+                    createtexture(scaletex[i], tw, th, NULL, 3, 1, GL_RGB, GL_TEXTURE_RECTANGLE);
                 }
                 scalew = tw;
                 scaleh = th;
@@ -1029,29 +1040,28 @@ namespace recorder
             {
                 glBindFramebuffer_(GL_READ_FRAMEBUFFER, 0);
                 glBindFramebuffer_(GL_DRAW_FRAMEBUFFER, scalefb);
-                glFramebufferTexture2D_(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, scaletex[0], 0);
+                glFramebufferTexture2D_(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, scaletex[0], 0);
                 glBlitFramebuffer_(0, 0, screenw, screenh, 0, 0, tw, th, GL_COLOR_BUFFER_BIT, GL_LINEAR);
                 glBindFramebuffer_(GL_DRAW_FRAMEBUFFER, 0);
             }
             else
             {
-                glBindTexture(GL_TEXTURE_2D, scaletex[0]);
-                glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, screenw, screenh);
+                glBindTexture(GL_TEXTURE_RECTANGLE, scaletex[0]);
+                glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE, 0, 0, 0, 0, 0, screenw, screenh);
             }
 
-            GLOBALPARAMF(moviescale, 1.0f/scalew, 1.0f/scaleh);
             if(tw > m.w || th > m.h || (!accelyuv && tw >= m.w && th >= m.h))
             {
                 glBindFramebuffer_(GL_FRAMEBUFFER, scalefb);
                 do
                 {
                     uint dw = max(tw/2, m.w), dh = max(th/2, m.h);
-                    glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, scaletex[1], 0);
+                    glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, scaletex[1], 0);
                     glViewport(0, 0, dw, dh);
-                    glBindTexture(GL_TEXTURE_2D, scaletex[0]);
+                    glBindTexture(GL_TEXTURE_RECTANGLE, scaletex[0]);
                     if(dw == m.w && dh == m.h && !accelyuv) { SETSHADER(movieyuv); m.format = aviwriter::VID_YUV; }
                     else SETSHADER(moviergb);
-                    screenquad(tw/float(scalew), th/float(scaleh));
+                    screenquad(tw, th);
                     tw = dw;
                     th = dh;
                     swap(scaletex[0], scaletex[1]);
@@ -1060,11 +1070,10 @@ namespace recorder
             if(accelyuv)
             {
                 glBindFramebuffer_(GL_FRAMEBUFFER, encodefb);
-                glBindTexture(GL_TEXTURE_2D, scaletex[0]);
-                GLOBALPARAMF(moviescale, 1.0f/scalew, 1.0f/scaleh);
-                glViewport(0, 0, m.w/4, m.h); SETSHADER(moviey); screenquadflipped(m.w/float(scalew), m.h/float(scaleh));
-                glViewport(m.w/4, 0, m.w/8, m.h/2); SETSHADER(movieu); screenquadflipped(m.w/float(scalew), m.h/float(scaleh));
-                glViewport(m.w/4, m.h/2, m.w/8, m.h/2); SETSHADER(moviev); screenquadflipped(m.w/float(scalew), m.h/float(scaleh));
+                glBindTexture(GL_TEXTURE_RECTANGLE, scaletex[0]);
+                glViewport(0, 0, m.w/4, m.h); SETSHADER(moviey); screenquadflipped(m.w, m.h);
+                glViewport(m.w/4, 0, m.w/8, m.h/2); SETSHADER(movieu); screenquadflipped(m.w, m.h);
+                glViewport(m.w/4, m.h/2, m.w/8, m.h/2); SETSHADER(moviev); screenquadflipped(m.w, m.h);
                 const uint planesize = m.w * m.h;
                 glPixelStorei(GL_PACK_ALIGNMENT, texalign(m.video, m.w/4, 4));
                 glReadPixels(0, 0, m.w/4, m.h, GL_BGRA, GL_UNSIGNED_BYTE, m.video);
@@ -1080,7 +1089,7 @@ namespace recorder
                 glReadPixels(0, 0, m.w, m.h, GL_BGRA, GL_UNSIGNED_BYTE, m.video);
             }
             glBindFramebuffer_(GL_FRAMEBUFFER, 0);
-            glViewport(0, 0, screenw, screenh);
+            glViewport(0, 0, hudw, hudh);
 
         }
         else glReadPixels(0, 0, m.w, m.h, GL_BGRA, GL_UNSIGNED_BYTE, m.video);
@@ -1096,7 +1105,7 @@ namespace recorder
         }
         SDL_LockMutex(videolock);
         if(moviesync && videobuffers.full()) SDL_CondWait(shouldread, videolock);
-        uint nextframe = (max(gettimet() - starttime, 0)*file->videofps)/1000;
+        uint nextframe = (max(gettime() - starttime, 0)*file->videofps)/1000;
         if(!videobuffers.full() && (lastframe == ~0U || nextframe > lastframe))
         {
             videobuffer &m = videobuffers.adding();
@@ -1113,14 +1122,13 @@ namespace recorder
 
     void drawhud()
     {
-        int w = screenw, h = screenh;
+        int w = hudw, h = hudh;
         if(forceaspect) w = int(ceil(h*forceaspect));
         gettextres(w, h);
 
         hudmatrix.ortho(0, w, h, 0, -1, 1);
         hudmatrix.scale(1/3.0f, 1/3.0f, 1);
         resethudmatrix();
-        hudshader->set();
 
         glEnable(GL_BLEND);
 

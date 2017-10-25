@@ -27,7 +27,7 @@ struct iqmmesh
 };
 
 enum
-{        
+{
     IQM_POSITION     = 0,
     IQM_TEXCOORD     = 1,
     IQM_NORMAL       = 2,
@@ -36,7 +36,7 @@ enum
     IQM_BLENDWEIGHTS = 5,
     IQM_COLOR        = 6,
     IQM_CUSTOM       = 0x10
-};  
+};
 
 enum
 {
@@ -69,11 +69,11 @@ struct iqmpose
 {
     int parent;
     uint mask;
-    vec offsetpos; 
-    vec4 offsetorient; 
+    vec offsetpos;
+    vec4 offsetorient;
     vec offsetsize;
     vec scalepos;
-    vec4 scaleorient; 
+    vec4 scaleorient;
     vec scalesize;
 };
 
@@ -103,7 +103,7 @@ struct iqm : skelmodel, skelloader<iqm>
 
     struct iqmmeshgroup : skelmeshgroup
     {
-        iqmmeshgroup() 
+        iqmmeshgroup()
         {
         }
 
@@ -142,10 +142,10 @@ struct iqm : skelmodel, skelloader<iqm>
                 if(skel->numbones <= 0)
                 {
                     skel->numbones = hdr.num_joints;
-                    skel->bones = new boneinfo[skel->numbones]; 
+                    skel->bones = new boneinfo[skel->numbones];
                     loopi(hdr.num_joints)
                     {
-                        iqmjoint &j = joints[i]; 
+                        iqmjoint &j = joints[i];
                         boneinfo &b = skel->bones[i];
                         if(!b.name) b.name = newstring(&str[j.name]);
                         b.parent = j.parent;
@@ -155,7 +155,7 @@ struct iqm : skelmodel, skelloader<iqm>
                             j.orient.x = -j.orient.x;
                             j.orient.z = -j.orient.z;
                             j.orient.normalize();
-                            b.base = dualquat(j.orient, j.pos);     
+                            b.base = dualquat(j.orient, j.pos);
                             if(b.parent >= 0) b.base.mul(skel->bones[b.parent].base, dualquat(b.base));
                             (b.invbase = b.base).invert();
                         }
@@ -170,7 +170,7 @@ struct iqm : skelmodel, skelloader<iqm>
             {
                 iqmmesh &im = imeshes[i];
                 skelmesh *m = new skelmesh;
-                m->group = this;   
+                m->group = this;
                 meshes.add(m);
                 m->name = newstring(&str[im.name]);
                 m->numverts = im.num_vertexes;
@@ -178,7 +178,6 @@ struct iqm : skelmodel, skelloader<iqm>
                 if(m->numverts)
                 {
                     m->verts = new vert[m->numverts];
-                    if(vtan) m->bumpverts = new bumpvert[m->numverts];
                     if(!vindex || !vweight)
                     {
                         blendcombo c;
@@ -209,11 +208,11 @@ struct iqm : skelmodel, skelloader<iqm>
                         mnorm += 3;
                         if(mtan)
                         {
-                            m->calctangent(m->bumpverts[j], v.norm, vec(mtan[0], -mtan[1], mtan[2]), mtan[3]);
+                            m->calctangent(v, v.norm, vec(mtan[0], -mtan[1], mtan[2]), mtan[3]);
                             mtan += 4;
                         }
                     }
-                    else v.norm = vec(0, 0, 0);
+                    else { v.norm = vec(0, 0, 0); v.tangent = quat(0, 0, 0, 1); }
                     if(noblend < 0)
                     {
                         blendcombo c;
@@ -227,7 +226,7 @@ struct iqm : skelmodel, skelloader<iqm>
                     else v.blend = noblend;
                 }
                 m->numtris = im.num_triangles;
-                if(m->numtris) m->tris = new tri[m->numtris]; 
+                if(m->numtris) m->tris = new tri[m->numtris];
                 iqmtriangle *mtris = tris + im.first_triangle;
                 loopj(im.num_triangles)
                 {
@@ -242,11 +241,13 @@ struct iqm : skelmodel, skelloader<iqm>
                     conoutf("Empty mesh in %s", filename);
                     meshes.removeobj(m);
                     delete m;
+                    continue;
                 }
+                if(vnorm && !vtan) m->calctangents();
             }
 
             sortblendcombos();
-                
+
             return true;
         }
 
@@ -304,16 +305,18 @@ struct iqm : skelmodel, skelloader<iqm>
                             if(p.mask&0x100) animdata++;
                             if(p.mask&0x200) animdata++;
                         }
-                        frame[k] = dualquat(orient, pos);
-                        if(adjustments.inrange(k)) adjustments[k].adjust(frame[k]);
+                        dualquat dq(orient, pos);
+                        if(adjustments.inrange(k)) adjustments[k].adjust(dq);
                         boneinfo &b = skel->bones[k];
-                        frame[k].mul(b.invbase);
-                        if(b.parent >= 0) frame[k].mul(skel->bones[b.parent].base, dualquat(frame[k]));
-                        frame[k].fixantipodal(skel->framebones[k]);
+                        dq.mul(b.invbase);
+                        dualquat &dst = frame[k];
+                        if(p.parent < 0) dst = dq;
+                        else dst.mul(skel->bones[p.parent].base, dq);
+                        dst.fixantipodal(skel->framebones[k]);
                     }
-                } 
+                }
             }
-     
+
             return true;
         }
 
@@ -344,7 +347,7 @@ struct iqm : skelmodel, skelloader<iqm>
             return false;
         }
 
-        bool loadmesh(const char *filename)
+        bool load(const char *filename, float smooth)
         {
             name = newstring(filename);
 
@@ -365,26 +368,19 @@ struct iqm : skelmodel, skelloader<iqm>
             }
             return sa;
         }
-    };            
+    };
 
-    meshgroup *loadmeshes(const char *name, va_list args)
-    {
-        iqmmeshgroup *group = new iqmmeshgroup;
-        group->shareskeleton(va_arg(args, char *));
-        if(!group->loadmesh(name)) { delete group; return NULL; }
-        return group;
-    }
+    skelmeshgroup *newmeshes() { return new iqmmeshgroup; }
 
     bool loaddefaultparts()
     {
         skelpart &mdl = addpart();
-        mdl.pitchscale = mdl.pitchoffset = mdl.pitchmin = mdl.pitchmax = 0;
         adjustments.setsize(0);
         const char *fname = name + strlen(name);
         do --fname; while(fname >= name && *fname!='/' && *fname!='\\');
         fname++;
         defformatstring(meshname, "%s/%s.iqm", name, fname);
-        mdl.meshes = sharemeshes(path(meshname), NULL);
+        mdl.meshes = sharemeshes(path(meshname));
         if(!mdl.meshes) return false;
         mdl.initanimparts();
         mdl.initskins();
@@ -402,9 +398,9 @@ struct iqm : skelmodel, skelloader<iqm>
             loading = NULL;
             loopv(parts) if(!parts[i]->meshes) return false;
         }
-        else // iqm without configuration, try default tris and skin 
+        else // iqm without configuration, try default tris and skin
         {
-            if(!loaddefaultparts()) 
+            if(!loaddefaultparts())
             {
                 loading = NULL;
                 return false;

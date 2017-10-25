@@ -1,3 +1,6 @@
+VAR(IDF_PERSIST, softexplosion, 0, 1, 1);
+VAR(IDF_PERSIST, softexplosionblend, 1, 16, 64);
+
 namespace sphere
 {
     struct vert
@@ -21,7 +24,7 @@ namespace sphere
             {
                 float theta = j==slices ? 0 : 2*M_PI*s;
                 vert &v = verts[i*(slices+1) + j];
-                v.pos = vec(-sin(theta)*sinrho, cos(theta)*sinrho, cosrho);
+                v.pos = vec(sin(theta)*sinrho, cos(theta)*sinrho, -cosrho);
                 v.s = ushort(s*0xFFFF);
                 v.t = ushort(t*0xFFFF);
                 s += ds;
@@ -63,6 +66,11 @@ namespace sphere
         DELETEA(indices);
     }
 
+    void cleanup()
+    {
+        if(vbuf) { glDeleteBuffers_(1, &vbuf); vbuf = 0; }
+        if(ebuf) { glDeleteBuffers_(1, &ebuf); ebuf = 0; }
+    }
     void enable()
     {
         if(!vbuf) init(12, 6);
@@ -91,12 +99,6 @@ namespace sphere
         gle::clearvbo();
         gle::clearebo();
     }
-
-    void cleanup()
-    {
-        if(vbuf) { glDeleteBuffers_(1, &vbuf); vbuf = 0; }
-        if(ebuf) { glDeleteBuffers_(1, &ebuf); ebuf = 0; }
-    }
 }
 
 static const float WOBBLE = 1.25f;
@@ -104,17 +106,12 @@ static const float WOBBLE = 1.25f;
 struct explosionrenderer : sharedlistrenderer
 {
     explosionrenderer(const char *texname)
-        : sharedlistrenderer(texname, 0, PT_FIREBALL|PT_GLARE|PT_SHADER)
+        : sharedlistrenderer(texname, 0, PT_EXPLOSION|PT_SHADER)
     {}
 
     void startrender()
     {
-        if(glaring) SETSHADER(explosionglare);
-        else if(!reflecting && !refracting && depthfx && depthfxtex.rendertex && numdepthfxranges>0)
-        {
-            if(!depthfxtex.highprecision()) SETSHADER(explosionsoft8);
-            else SETSHADER(explosionsoft);
-        }
+        if(softparticles && softexplosion) SETSHADER(explosionsoft);
         else SETSHADER(explosion);
 
         sphere::enable();
@@ -130,69 +127,18 @@ struct explosionrenderer : sharedlistrenderer
         sphere::cleanup();
     }
 
-    int finddepthfxranges(void **owners, float *ranges, int numranges, int maxranges, vec &bbmin, vec &bbmax)
+    void seedemitter(particleemitter &pe, const vec &o, const vec &d, int fade, float size, int gravity)
     {
-        static struct explosionent : physent
-        {
-            explosionent()
-            {
-                type = ENT_CAMERA;
-            }
-        } e;
-
-        for(sharedlistparticle *p = list; p; p = p->next)
-        {
-            int ts = p->fade <= 5 ? 1 : lastmillis-p->millis;
-            float pmax = p->val,
-                  size = p->fade ? float(ts)/p->fade : 1,
-                  psize = (p->size + pmax * size)*WOBBLE;
-            if(2*(p->size + pmax)*WOBBLE < depthfxblend ||
-               (!depthfxtex.highprecision() && !depthfxtex.emulatehighprecision() && psize > depthfxscale - depthfxbias) ||
-               isfoggedsphere(psize, p->o)) continue;
-
-            e.o = p->o;
-            e.radius = e.xradius = e.yradius = e.height = e.aboveeye = psize;
-            if(!::collide(&e, vec(0, 0, 0), 0, false)) continue;
-
-            if(depthfxscissor==2 && !depthfxtex.addscissorbox(p->o, psize)) continue;
-
-            vec dir = camera1->o;
-            dir.sub(p->o);
-            float dist = dir.magnitude();
-            dir.mul(psize/dist).add(p->o);
-            float depth = depthfxtex.eyedepth(dir);
-
-            loopk(3)
-            {
-                bbmin[k] = min(bbmin[k], p->o[k] - psize);
-                bbmax[k] = max(bbmax[k], p->o[k] + psize);
-            }
-
-            int pos = numranges;
-            loopi(numranges) if(depth < ranges[i]) { pos = i; break; }
-            if(pos >= maxranges) continue;
-
-            if(numranges > pos)
-            {
-                int moved = min(numranges-pos, maxranges-(pos+1));
-                memmove(&ranges[pos+1], &ranges[pos], moved*sizeof(float));
-                memmove(&owners[pos+1], &owners[pos], moved*sizeof(void *));
-            }
-            if(numranges < maxranges) numranges++;
-
-            ranges[pos] = depth;
-            owners[pos] = p;
-        }
-
-        return numranges;
+        pe.maxfade = max(pe.maxfade, fade);
+        pe.extendbb(o, (size+1+pe.ent->attrs[1])*WOBBLE);
     }
 
     void renderpart(sharedlistparticle *p, int blend, int ts, float size)
     {
         float pmax = p->val,
               fsize = p->fade ? float(ts)/p->fade : 1,
-              psize = size + pmax * fsize;
-        int pblend = int(blend*p->blend);
+              psize = p->size + pmax * fsize;
+
         if(isfoggedsphere(psize*WOBBLE, p->o)) return;
 
         vec dir = vec(p->o).sub(camera1->o), s, t;
@@ -205,7 +151,6 @@ struct explosionrenderer : sharedlistrenderer
         }
         else
         {
-            if(reflecting) { dir.z = p->o.z - reflectz; dist = dir.magnitude(); }
             float mag2 = dir.magnitude2();
             dir.x /= mag2;
             dir.y /= mag2;
@@ -223,16 +168,23 @@ struct explosionrenderer : sharedlistrenderer
         m.mul(camprojmatrix, m);
         LOCALPARAM(explosionmatrix, m);
 
-        vec center = vec(p->o).mul(0.015f);
-        LOCALPARAM(center, center);
-        LOCALPARAMF(millis, lastmillis/1000.0f);
+        LOCALPARAM(center, p->o);
         LOCALPARAMF(blendparams, inside ? 0.5f : 4, inside ? 0.25f : 0);
-        binddepthfxparams(depthfxblend, inside ? pblend/512.f : 0, 2*(size + pmax)*WOBBLE >= depthfxblend, p);
-
-        int passes = !reflecting && !refracting && inside ? 2 : 1;
-        loopi(passes)
+        if(2*(p->size + pmax)*WOBBLE >= softexplosionblend)
         {
-            gle::color(p->color, i ? pblend/2 : pblend);
+            LOCALPARAMF(softparams, -1.0f/softexplosionblend, 0, inside ? blend/(2*255.0f) : 0);
+        }
+        else
+        {
+            LOCALPARAMF(softparams, 0, -1, inside ? blend/(2*255.0f) : 0);
+        }
+
+        vec color = p->color.tocolor().mul(ldrscale);
+        float alpha = blend/255.0f;
+
+        loopi(inside ? 2 : 1)
+        {
+            gle::color(color, i ? alpha/2 : alpha);
             if(i) glDepthFunc(GL_GEQUAL);
             sphere::draw();
             if(i) glDepthFunc(GL_LESS);

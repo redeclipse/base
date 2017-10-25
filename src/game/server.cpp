@@ -3826,7 +3826,7 @@ namespace server
 
     void sendservinit(clientinfo *ci)
     {
-        sendf(ci->clientnum, 1, "ri3ssi", N_SERVERINIT, ci->clientnum, VERSION_GAME, gethostip(ci->clientnum), gethostip(ci->clientnum), ci->sessionid); // TODO proto 231
+        sendf(ci->clientnum, 1, "ri3si", N_SERVERINIT, ci->clientnum, VERSION_GAME, gethostip(ci->clientnum), ci->sessionid);
     }
 
     bool restorescore(clientinfo *ci)
@@ -3895,7 +3895,6 @@ namespace server
             putint(p, ci->randweap.length());
             loopv(ci->randweap) putint(p, ci->randweap[i]);
             sendstring(ci->handle, p);
-            sendstring(allow ? gethostip(ci->clientnum) : "*", p); // TODO proto 231
             sendstring(allow ? gethostip(ci->clientnum) : "*", p);
             ci->version.put(p);
         }
@@ -5892,8 +5891,7 @@ namespace server
                     bool havecn = true;
                     clientinfo *cp = (clientinfo *)getinfo(lcn);
                     if(!hasclient(cp, ci)) havecn = false;
-
-                    p.get();
+                    getuint(p);
                     getuint(p);
                     uint flags = getuint(p);
                     vec pos, floorpos, vel, falling;
