@@ -882,7 +882,6 @@ extern int newentity(int type, const attrvector &attrs, bool fix = true);
 // rendergl
 extern void usetexturing(bool on);
 
-extern void renderplayerpreview(int model, int color, int team, int weap, const char *vanity, bool background, float scale, float blend);
 extern void drawslice(float start, float length, float x, float y, float size);
 extern void drawfadedslice(float start, float length, float x, float y, float size, float alpha, float r = 1.f, float g = 1.f, float b = 1.f, float minsize = 0.25f);
 

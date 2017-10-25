@@ -77,7 +77,7 @@ struct animmodel : model
         vec color;
         int material1, material2;
 
-        shaderparams() : spec(1.0f), gloss(1), glow(3.0f), glowdelta(0), glowpulse(0), fullbright(0), envmapmin(0), envmapmax(0), scrollu(0), scrollv(0), alphatest(0.9f), color(1, 1, 1), material1(1), material2(0) {}
+        shaderparams() : spec(1.0f), gloss(1), glow(3.0f), glowdelta(0), glowpulse(0), fullbright(0), envmapmin(0), envmapmax(0), scrollu(0), scrollv(0), alphatest(0.9f), color(-1, -1, -1), material1(1), material2(0) {}
     };
 
     struct shaderparamskey
@@ -1333,12 +1333,18 @@ struct animmodel : model
 
         if(!(anim&ANIM_NOSKIN))
         {
-            modelmaterial = material;
+            bool invalidate = false;
             if(colorscale != color)
             {
                 colorscale = color;
-                shaderparamskey::invalidate();
+                invalidate = true;
             }
+            if(modelmaterial != material)
+            {
+                modelmaterial = material;
+                invalidate = true;
+            }
+            if(invalidate) shaderparamskey::invalidate();
 
             if(envmapped()) closestenvmaptex = lookupenvmap(closestenvmap(o));
             else if(a) for(int i = 0; a[i].tag; i++) if(a[i].m && a[i].m->envmapped())

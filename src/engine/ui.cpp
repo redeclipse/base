@@ -3895,7 +3895,8 @@ namespace UI
             int sx1, sy1, sx2, sy2;
             window->calcscissor(sx, sy, sx+w, sy+h, sx1, sy1, sx2, sy2, false);
             modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, false, clipstack.length() > 0);
-            game::renderplayerpreview(model, pcol.tohexcolor(), team, weapon, vanity, scale, blend*(colors[0].a/255.f), colors[0].tocolor());
+            colors[0].a = uchar(colors[0].a*blend);
+            game::renderplayerpreview(model, pcol.tohexcolor(), team, weapon, vanity, scale, colors[0].tocolor4());
             if(clipstack.length()) clipstack.last().scissor();
             modelpreview::end();
         }

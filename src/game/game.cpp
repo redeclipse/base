@@ -2988,7 +2988,7 @@ namespace game
                 anims.add(i);
     }
 
-    void renderclient(gameent *d, int third, float trans, float size, modelattach *attachments, bool secondary, int animflags, int animdelay, int lastaction, int flags = 0)
+    void renderclient(gameent *d, int third, float size, modelattach *attachments, bool secondary, int animflags, int animdelay, int lastaction, int flags = 0, const vec4 &color = vec4(1, 1, 1, 1))
     {
         int idx = third == 1 && d->headless && !nogore && headlessmodels ? 3 : third;
         const char *mdl = playertypes[forceplayermodel >= 0 ? forceplayermodel : 0][idx];
@@ -3112,7 +3112,6 @@ namespace game
         if(drawtex) flags &= ~(MDL_FULLBRIGHT | MDL_CULL_VFC | MDL_CULL_OCCLUDED | MDL_CULL_QUERY | MDL_CULL_DIST);
 
         dynent *e = third ? (third != 2 ? (dynent *)d : (dynent *)&bodymodel) : (dynent *)&avatarmodel;
-        vec4 color = vec4(getcolour(d, playerovertone, playerovertonelevel), trans);
 
         e->material[0] = bvec(getcolour(d, playerovertone, playerovertonelevel));
         e->material[1] = bvec(getcolour(d, playerundertone, playerundertonelevel));
@@ -3164,10 +3163,10 @@ namespace game
         rendermodel(mdl, anim, o, yaw, third == 2 && firstpersonbodypitch >= 0 ? pitch*firstpersonbodypitch : pitch, third == 2 ? 0.f : roll, flags, e, attachments, basetime, basetime2, size, color, &e->material[0]);
     }
 
-    void renderabovehead(gameent *d, float trans)
+    void renderabovehead(gameent *d)
     {
         vec pos = d->abovehead(d->state != CS_DEAD && d->state != CS_WAITING ? 1 : 0);
-        float blend = aboveheadblend*trans;
+        float blend = aboveheadblend*opacity(d);
         if(aboveheadnames && d != player1)
         {
             pos.z += aboveheadnamessize/2;
@@ -3258,10 +3257,9 @@ namespace game
         }
     }
 
-    void renderplayer(gameent *d, int third, float trans, float size, int flags = 0)
+    void renderplayer(gameent *d, int third, float size, int flags = 0, const vec4 &color = vec4(1, 1, 1, 1))
     {
         if(d->state == CS_SPECTATOR) return;
-        if(trans <= 0.f || (d == focus && !(third == 1 ? thirdpersonmodel : firstpersonmodel))) trans = 1e-16f; // we need tag_muzzle/tag_waist
         int weap = d->weapselect, lastaction = 0, animflags = ANIM_IDLE|ANIM_LOOP, weapflags = animflags, weapaction = 0, animdelay = 0;
         bool secondary = false, showweap = third != 2 && isweap(weap) && weap < W_ALL && actor[d->actortype].useweap;
         float weapscale = 1.f;
@@ -3362,7 +3360,7 @@ namespace game
             }
         }
         if(!(flags&MDL_ONLYSHADOW) && third == 1 && d->actortype < A_ENEMY && !shadowmapping && !drawtex && (aboveheaddead || d->state == CS_ALIVE))
-            renderabovehead(d, trans);
+            renderabovehead(d);
         const char *weapmdl = showweap && isweap(weap) ? (third ? weaptype[weap].vwep : weaptype[weap].hwep) : "";
         int ai = 0;
         modelattach a[1+VANITYMAX+12];
@@ -3393,7 +3391,7 @@ namespace game
             }
         }
         bool hasweapon = showweap && *weapmdl;
-        if(hasweapon) a[ai++] = modelattach("tag_weapon", weapmdl, weapflags, weapaction, trans, weapscale*size);
+        if(hasweapon) a[ai++] = modelattach("tag_weapon", weapmdl, weapflags, weapaction, 1, weapscale*size);
         if(!(flags&MDL_ONLYSHADOW))
         {
             if(third != 2)
@@ -3418,7 +3416,7 @@ namespace game
                 a[ai++] = modelattach("tag_rtoe", &d->toe[1]);
             }
         }
-        renderclient(d, third, trans, size, a[0].tag ? a : NULL, secondary, animflags, animdelay, lastaction, flags);
+        renderclient(d, third, size, a[0].tag ? a : NULL, secondary, animflags, animdelay, lastaction, flags, color);
     }
 
     void rendercheck(gameent *d, bool third = false)
@@ -3613,7 +3611,7 @@ namespace game
         else if(m_defend(gamemode)) defend::render();
         else if(m_bomber(gamemode)) bomber::render();
         loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL)
-            renderplayer(d, 1, 1, d->curscale, d != focus ? 0 : MDL_ONLYSHADOW);
+            renderplayer(d, 1, d->curscale, d != focus ? 0 : MDL_ONLYSHADOW);
     }
 
     void renderpost()
@@ -3632,16 +3630,16 @@ namespace game
               depthscale = third || focus->state != CS_ALIVE ? thirdpersondepth : firstpersondepth;
         setavatarscale(depthfov, depthscale);
         if(third || focus->state == CS_ALIVE)
-            renderplayer(focus, third ? 1 : 0, 1, focus->curscale, MDL_NOBATCH);
+            renderplayer(focus, third ? 1 : 0, focus->curscale, MDL_NOBATCH);
         if(!third && focus->state == CS_ALIVE && firstpersonmodel == 2)
         {
             setavatarscale(firstpersonbodydepthfov != 0 ? firstpersonbodydepthfov : curfov, firstpersonbodydepth);
-            renderplayer(focus, 2, 1, focus->curscale, MDL_NOBATCH);
+            renderplayer(focus, 2, focus->curscale, MDL_NOBATCH);
         }
         rendercheck(focus, third);
     }
 
-    void renderplayerpreview(int model, int color, int team, int weap, const char *vanity, float scale, float blend, const vec &lightcolor, const vec &lightdir)
+    void renderplayerpreview(int model, int color, int team, int weap, const char *vanity, float scale, const vec4 &mcolor)
     {
         static gameent *previewent = NULL;
         if(!previewent)
@@ -3661,10 +3659,7 @@ namespace game
         previewent->team = clamp(team, 0, int(T_MULTI));
         previewent->weapselect = clamp(weap, 0, W_ALL-1);
         previewent->setvanity(vanity);
-        //previewent->light.color = lightcolor;
-        //(previewent->light.dir = lightdir).normalize();
-        //previewent->light.millis = -1;
-        renderplayer(previewent, 1, blend, scale);
+        renderplayer(previewent, 1, scale, 0, mcolor);
     }
 
     bool clientoption(char *arg) { return false; }
