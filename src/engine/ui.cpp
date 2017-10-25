@@ -4472,10 +4472,6 @@ namespace UI
     void calctextscale()
     {
         uitextscale = 1.0f/uitextrows;
-
-        int tw = hudw, th = hudh;
-        if(forceaspect) tw = int(ceil(th*forceaspect));
-        gettextres(tw, th);
     }
 
     void update()

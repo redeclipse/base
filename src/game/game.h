@@ -1769,7 +1769,7 @@ namespace game
     extern vec rescolour(dynent *d, int n = PULSE_BURN, int c = 0xFFFFFF);
     extern int rescolint(dynent *d, int n = PULSE_BURN, int c = 0xFFFFFF);
     extern float rescale(gameent *d);
-    extern float opacity(gameent *d, bool third = true);
+    extern float opacity(gameent *d);
     extern void footstep(gameent *d, int curfoot = -1);
     extern bool canregenimpulse(gameent *d);
 }

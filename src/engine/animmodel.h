@@ -766,7 +766,7 @@ struct animmodel : model
             if(meshes) meshes->preload(this);
         }
 
-        virtual void getdefaultanim(animinfo &info, int anim, int basetime, int basetime2, uint varseed, dynent *d)
+        virtual void getdefaultanim(animinfo &info, int anim, uint varseed, dynent *d)
         {
             info.frame = 0;
             info.range = 1;
@@ -812,7 +812,7 @@ struct animmodel : model
                     info.range = spec->range;
                     if(spec->speed>0) info.speed = 1000.0f/spec->speed;
                 }
-                else getdefaultanim(info, anim, basetime, basetime2, uint(varseed + info.basetime), d);
+                else getdefaultanim(info, anim, uint(varseed + info.basetime), d);
             }
 
             info.anim &= (1<<ANIM_SECONDARY)-1;
@@ -1060,7 +1060,7 @@ struct animmodel : model
 
         void setanim(int animpart, int num, int frame, int range, float speed, int priority = 0)
         {
-            if(animpart<0 || animpart>=MAXANIMPARTS) return;
+            if(animpart<0 || animpart>=MAXANIMPARTS || num<0 || num>=game::numanims()) return;
             if(frame<0 || range<=0 || !meshes || !meshes->hasframes(frame, range))
             {
                 conoutf("Invalid frame %d, range %d in model %s", frame, range, model->name);
@@ -1333,12 +1333,12 @@ struct animmodel : model
 
         if(!(anim&ANIM_NOSKIN))
         {
+            modelmaterial = material;
             if(colorscale != color)
             {
                 colorscale = color;
                 shaderparamskey::invalidate();
             }
-            modelmaterial = material;
 
             if(envmapped()) closestenvmaptex = lookupenvmap(closestenvmap(o));
             else if(a) for(int i = 0; a[i].tag; i++) if(a[i].m && a[i].m->envmapped())
