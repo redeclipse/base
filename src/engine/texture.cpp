@@ -2322,10 +2322,11 @@ const char *findtexturetypename(int type)
     return NULL;
 }
 
+static bool declaremats = false, materialskip = false;
 void texture(char *type, char *name, int *rot, int *xoffset, int *yoffset, float *scale)
 {
     int tnum = findslottex(type), matslot = -1;
-    if(tnum==TEX_DIFFUSE)
+    if(tnum == TEX_DIFFUSE)
     {
         if(slots.length() >= 0x10000) return;
         defslot = slots.add(new Slot(slots.length()));
@@ -2336,14 +2337,23 @@ void texture(char *type, char *name, int *rot, int *xoffset, int *yoffset, float
         tnum = TEX_DIFFUSE;
         defslot = decalslots.add(new DecalSlot(decalslots.length()));
     }
+    else if(!declaremats && materialskip) return;
     else if((matslot = findmaterial(type)) >= 0)
     {
+        if(!declaremats && hdr.version <= 43)
+        {
+            materialskip = declaremats = true;
+            execfile("config/map/material.cfg");
+            declaremats = false;
+            return;
+        }
         tnum = TEX_DIFFUSE;
         defslot = &materialslots[matslot];
         defslot->reset();
     }
     else if(!defslot) return;
     else if(tnum < 0) tnum = TEX_UNKNOWN;
+    if(!declaremats) materialskip = false;
     Slot &s = *defslot;
     s.loaded = false;
     s.texmask |= 1<<tnum;
@@ -2352,7 +2362,7 @@ void texture(char *type, char *name, int *rot, int *xoffset, int *yoffset, float
     st.type = tnum;
     copystring(st.name, name);
     path(st.name);
-    if(tnum==TEX_DIFFUSE)
+    if(tnum == TEX_DIFFUSE)
     {
         setslotshader(s);
         VSlot &vs = s.emptyvslot();
