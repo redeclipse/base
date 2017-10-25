@@ -6094,6 +6094,7 @@ namespace server
                                 else break;
                             }
                             cp->setweapstate(cp->weapselect, wstate, wlen, lastmillis, wtime, wstate == W_S_IDLE);
+                            cp->lastcook = gamemillis;
                             qmsg = true;
                             break;
                         }
@@ -6889,6 +6890,7 @@ namespace server
                     int lcn = getint(p), flag = getint(p);
                     clientinfo *cp = (clientinfo *)getinfo(lcn);
                     if(!hasclient(cp, ci) || cp->state == CS_SPECTATOR) break;
+                    cp->lastaffinity = gamemillis;
                     if(smode==&capturemode) capturemode.takeaffinity(cp, flag);
                     else if(smode==&bombermode) bombermode.takeaffinity(cp, flag);
                     break;

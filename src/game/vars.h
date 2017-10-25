@@ -189,7 +189,9 @@ GVAR(IDF_GAMEMOD, spawnprotect, 0, 3000, VAR_MAX); // delay before damage can be
 GVAR(IDF_GAMEMOD, duelprotect, 0, 3000, VAR_MAX); // .. in duel/survivor matches
 GVAR(IDF_GAMEMOD, survivorprotect, 0, 5000, VAR_MAX); // .. in duel/survivor matches
 GVAR(IDF_GAMEMOD, instaprotect, 0, 3000, VAR_MAX); // .. in instagib matches
-GVAR(IDF_GAMEMOD, protectbreak, 0, 1, 1); // 0 = off, 1 = protection is broken when player starts firing
+GVAR(IDF_GAMEMOD, protectbreakshoot, 0, 1, 1); // 0 = off, 1 = protection is broken when player starts firing
+GVAR(IDF_GAMEMOD, protectbreakcook, 0, 1, 1); // 0 = off, 1 = protection is broken when player starts cooking
+GVAR(IDF_GAMEMOD, protectbreakaffinity, 0, 1, 1); // 0 = off, 1 = protection is broken when player takes an affinity
 
 GVAR(IDF_GAMEMOD, radarhardaffinity, 0, 1, 1); // 0 = do not allow showing affinities with hard mutator, 1 = allow it
 GVAR(IDF_GAMEMOD, radardisabled, 0, 0, 1); // forces the radar to be off

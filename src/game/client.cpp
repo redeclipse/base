@@ -3339,6 +3339,7 @@ namespace client
                     gameent *o = game::newclient(ocn);
                     if(o)
                     {
+                        o->lastaffinity = lastmillis;
                         if(m_capture(game::gamemode)) capture::takeaffinity(o, flag);
                         else if(m_bomber(game::gamemode)) bomber::takeaffinity(o, flag);
                     }
