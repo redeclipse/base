@@ -1262,10 +1262,23 @@ bool load_world(const char *mname, int crc)       // still supports all map form
                     importedsuncolor.div(importedsuns);
                     importedsunflarescale /= importedsuns;
                 }
+                importedsunpitch += 90.f;
+                while(importedsunpitch > 90.f)
+                {
+                    importedsunpitch -= 90.f;
+                    importedsunyaw += 180.f;
+                }
+                while(importedsunpitch < -90.f)
+                {
+                    importedsunpitch += 90.f;
+                    importedsunyaw += 180.f;
+                }
+                while(importedsunyaw > 360.f) importedsunyaw -= 360.f;
+                while(importedsunyaw < 0.f) importedsunyaw += 360.f;
                 importedsuncolor.normalize();
                 setvar("sunlight", importedsuncolor.tohexcolor(), true, false, true);
                 setfvar("sunlightyaw", importedsunyaw, true, false, true);
-                setfvar("sunlightpitch", importedsunpitch+90, true, false, true);
+                setfvar("sunlightpitch", importedsunpitch, true, false, true);
                 setvar("sunlightflare", importedsunflare, true, false, true);
                 setfvar("sunlightflarescale", importedsunflarescale, true, false, true);
             }
