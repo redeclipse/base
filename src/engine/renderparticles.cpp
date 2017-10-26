@@ -199,7 +199,7 @@ struct partrenderer
             }
             else p->m.add(vec(p->o).sub(o));
         }
-        if(type&PT_TRACK && p->owner) game::particletrack(p, type, ts, step);
+        game::particletrack(p, type, ts, step);
     }
 
     void debuginfo()
@@ -208,7 +208,6 @@ struct partrenderer
         if(type&PT_LERP) concatstring(info, "l,");
         if(type&PT_MOD) concatstring(info, "m,");
         if(type&PT_RND4) concatstring(info, "r,");
-        if(type&PT_TRACK) concatstring(info, "t,");
         if(type&PT_FLIP) concatstring(info, "f,");
         int len = strlen(info);
         info[len-1] = info[len-1] == ',' ? ')' : '\0';
@@ -268,7 +267,6 @@ struct listrenderer : partrenderer
 
     void resettracked(physent *owner)
     {
-        if(!(type&PT_TRACK)) return;
         for(T **prev = &list, *cur = list; cur; cur = *prev)
         {
             if(!owner || cur->owner==owner)
@@ -706,7 +704,6 @@ struct varenderer : partrenderer
 
     void resettracked(physent *owner)
     {
-        if(!(type&PT_TRACK)) return;
         loopi(numparts)
         {
             particle *p = parts+i;

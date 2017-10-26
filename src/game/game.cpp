@@ -100,7 +100,6 @@ namespace game
     FVAR(IDF_PERSIST, firstpersonpitchmin, 0, 90, 90);
     FVAR(IDF_PERSIST, firstpersonpitchmax, 0, 45, 90);
     FVAR(IDF_PERSIST, firstpersonpitchscale, -1, 1, 1);
-    FVAR(IDF_PERSIST, firstpersonbodyfeet, -1, 4.75f, 20);
 
     VAR(IDF_PERSIST, firstpersonsway, 0, 1, 1);
     FVAR(IDF_PERSIST, firstpersonswaymin, 0, 0.15f, 1);
@@ -3002,11 +3001,6 @@ namespace game
         {
             o.sub(vec(yaw*RAD, 0.f).mul(firstpersonbodydist+firstpersonspineoffset));
             o.sub(vec(yaw*RAD, 0.f).rotate_around_z(90*RAD).mul(firstpersonbodyside));
-            if(firstpersonbodyfeet >= 0 && d->wantshitbox())
-            {
-                float minz = max(d->toe[0].z, d->toe[1].z)+(firstpersonbodyfeet*size);
-                if(minz > camera1->o.z) o.z -= minz-camera1->o.z;
-            }
         }
         else if(gs_playing(gamestate))
         {
@@ -3489,13 +3483,10 @@ namespace game
                     part_icon(offset, textureload(hud::warningtex, 3, true, false), height*playerhinthurtsize, amt*blend*playerhinthurtblend, 0, 0, 1, c.tohexcolor());
                 }
             }
-            float minz = d == focus && !third && firstpersonbodyfeet >= 0 && d->wantshitbox() ? camera1->o.z-firstpersonbodyfeet : 0.f;
             if(d->hasmelee(lastmillis, true, d->sliding(true), d->physstate >= PHYS_SLOPE || d->onladder || physics::liquidcheck(d))) loopi(2)
             {
-                vec pos = d->footpos(i);
-                if(minz > 0 && pos.z > minz) pos.z -= pos.z-minz;
                 float amt = 1-((lastmillis-d->weaptime[W_MELEE])/float(d->weapwait[W_MELEE]));
-                part_create(PART_HINT_SOFT, 1, pos, TEAM(d->team, colour), 2.f, amt*blend, 0, 0);
+                part_create(PART_HINT_SOFT, 1, d->footpos(i), TEAM(d->team, colour), 2.f, amt*blend, 0, 0);
             }
             int millis = lastmillis-d->weaptime[d->weapselect];
             bool last = millis > 0 && millis < d->weapwait[d->weapselect],

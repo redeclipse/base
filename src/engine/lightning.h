@@ -98,7 +98,7 @@ static void renderlightning(Texture *tex, const vec &o, const vec &d, float sz, 
 struct lightningrenderer : sharedlistrenderer
 {
     lightningrenderer(const char *texname)
-        : sharedlistrenderer(texname, 2, PT_LIGHTNING|PT_BRIGHT|PT_TRACK)
+        : sharedlistrenderer(texname, 2, PT_LIGHTNING|PT_BRIGHT)
     {}
 
     void startrender()

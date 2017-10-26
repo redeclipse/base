@@ -1323,6 +1323,7 @@ struct gameent : dynent, clientstate
         muzzlepos();
         loopi(2) ejectpos(i!=0);
         if(wantshitbox()) hitboxes();
+        loopi(2) if(toe[i] == vec(-1, -1, -1)) toe[i] = feetpos();
     }
 
 

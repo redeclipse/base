@@ -2416,14 +2416,15 @@ namespace projs
         {
             projent &proj = *projs[i];
             if((proj.projtype == PRJ_ENT && !entities::ents.inrange(proj.id)) || !projs[i]->mdl || !*projs[i]->mdl) continue;
-            float trans = 1, size = projs[i]->curscale, yaw = proj.yaw, pitch = proj.pitch, roll = proj.roll;
+            vec4 color = vec4(1, 1, 1, 1);
+            float size = projs[i]->curscale, yaw = proj.yaw, pitch = proj.pitch, roll = proj.roll;
             int flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_CULL_DIST;
             switch(proj.projtype)
             {
                 case PRJ_DEBRIS:
                 {
                     size *= proj.lifesize;
-                    fadeproj(proj, trans, size);
+                    fadeproj(proj, color.a, size);
                     #if 0
                     if(!proj.limited)
                     {
@@ -2437,7 +2438,7 @@ namespace projs
                 case PRJ_GIBS: case PRJ_VANITY:
                 {
                     size *= proj.lifesize;
-                    fadeproj(proj, trans, size);
+                    fadeproj(proj, color.a, size);
                     if(proj.projtype == PRJ_VANITY && proj.owner)
                         loopi(3) proj.material[i] = proj.owner->material[i];
                     break;
@@ -2445,12 +2446,12 @@ namespace projs
                 case PRJ_EJECT:
                 {
                     size *= proj.lifesize;
-                    fadeproj(proj, trans, size);
+                    fadeproj(proj, color.a, size);
                     break;
                 }
                 case PRJ_SHOT:
                 {
-                    trans *= fadeweap(proj);
+                    color.a *= fadeweap(proj);
                     if(proj.weap == W_GRENADE)
                     {
                         float amt = clamp(proj.lifespan, 0.f, 1.f);
@@ -2470,18 +2471,14 @@ namespace projs
                 case PRJ_ENT:
                 {
                     if(entities::simpleitems) continue;
-                    fadeproj(proj, trans, size);
+                    fadeproj(proj, color.a, size);
                     if(entities::ents.inrange(proj.id))
                     {
                         gameentity &e = *(gameentity *)entities::ents[proj.id];
                         if(e.type == WEAPON)
                         {
                             int attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], m_weapon(game::focus->actortype, game::gamemode, game::mutators));
-                            if(isweap(attr))
-                            {
-                                int col = W(attr, colour), interval = lastmillis%1000;
-                                proj.material[0] = bvec::fromcolor(col);
-                            }
+                            if(isweap(attr)) proj.material[0] = bvec::fromcolor(W(attr, colour));
                             else continue;
                         }
                     }
@@ -2489,7 +2486,7 @@ namespace projs
                 }
                 default: break;
             }
-            rendermodel(proj.mdl, ANIM_MAPMODEL|ANIM_LOOP, proj.o, yaw, pitch, roll, flags, &proj, NULL, proj.spawntime, 0, size, vec4(1, 1, 1, trans), &proj.material[0]);
+            rendermodel(proj.mdl, ANIM_MAPMODEL|ANIM_LOOP, proj.o, yaw, pitch, roll, flags, &proj, NULL, proj.spawntime, 0, size, color, &proj.material[0]);
         }
     }
 

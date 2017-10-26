@@ -229,20 +229,19 @@ enum
     PT_MOD      = 1<<8,
     PT_RND4     = 1<<9,     // uses random image quarters
     PT_LERP     = 1<<10,    // use very sparingly - order of blending issues
-    PT_TRACK    = 1<<11,
-    PT_BRIGHT   = 1<<12,
-    PT_SOFT     = 1<<13,    // use soft quad rendering when available
-    PT_HFLIP    = 1<<14,    // uses random horizontal flipping
-    PT_VFLIP    = 1<<15,    // uses random vertical flipping
-    PT_ROT      = 1<<16,    // uses random rotation
-    PT_CULL     = 1<<17,
-    PT_FEW      = 1<<18,    // allocate smaller number of particles
-    PT_ONTOP    = 1<<19,    // render on top of everything else, remove depth testing
-    PT_NOTEX    = 1<<20,
-    PT_SHADER   = 1<<21,
-    PT_NOLAYER  = 1<<22,
-    PT_SHRINK   = 1<<23,    // shrink particle as it fades
-    PT_GROW     = 1<<24,    // grow particle as it fades
+    PT_BRIGHT   = 1<<11,
+    PT_SOFT     = 1<<12,    // use soft quad rendering when available
+    PT_HFLIP    = 1<<13,    // uses random horizontal flipping
+    PT_VFLIP    = 1<<14,    // uses random vertical flipping
+    PT_ROT      = 1<<15,    // uses random rotation
+    PT_CULL     = 1<<16,
+    PT_FEW      = 1<<17,    // allocate smaller number of particles
+    PT_ONTOP    = 1<<18,    // render on top of everything else, remove depth testing
+    PT_NOTEX    = 1<<19,
+    PT_SHADER   = 1<<20,
+    PT_NOLAYER  = 1<<21,
+    PT_SHRINK   = 1<<22,    // shrink particle as it fades
+    PT_GROW     = 1<<23,    // grow particle as it fades
     PT_FLIP     = PT_HFLIP | PT_VFLIP | PT_ROT
 };
 
