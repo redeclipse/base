@@ -1352,6 +1352,13 @@ bool load_world(const char *mname, int crc)       // still supports all map form
             execfile(cfgname);
         }
         else if(!execfile(cfgname, false)) execfile("config/map/default.cfg");
+        if(maptype == MAP_OCTA || (maptype == MAP_MAPZ && hdr.version <= 43))
+        {
+            resetmaterials();
+            execfile("config/map/material.cfg");
+            resetdecals();
+            execfile("config/map/decals.cfg");
+        }
         identflags &= ~IDF_WORLD;
 
         progress(0, "Preloading models...");
