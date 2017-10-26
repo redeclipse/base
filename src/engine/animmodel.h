@@ -904,7 +904,7 @@ struct animmodel : model
                 matrixstack[matrixpos] = matrixstack[matrixpos-1];
                 matrixstack[matrixpos].rotate(pitchamount*RAD, oaxis);
             }
-            if(!index && !model->translate.iszero())
+            if(this == model->parts[0] && !model->translate.iszero())
             {
                 if(oldpos == matrixpos)
                 {
@@ -990,7 +990,7 @@ struct animmodel : model
                 matrixstack[matrixpos] = matrixstack[matrixpos-1];
                 matrixstack[matrixpos].rotate(pitchamount*RAD, oaxis);
             }
-            if(!index && !model->translate.iszero())
+            if(this == model->parts[0] && !model->translate.iszero())
             {
                 if(oldpos == matrixpos)
                 {
