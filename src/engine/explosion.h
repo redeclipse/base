@@ -137,8 +137,8 @@ struct explosionrenderer : sharedlistrenderer
     {
         float pmax = p->val,
               fsize = p->fade ? float(ts)/p->fade : 1,
-              psize = p->size + pmax * fsize;
-
+              psize = size + pmax * fsize;
+        int pblend = int(blend*p->blend);
         if(isfoggedsphere(psize*WOBBLE, p->o)) return;
 
         vec dir = vec(p->o).sub(camera1->o), s, t;
@@ -172,15 +172,15 @@ struct explosionrenderer : sharedlistrenderer
         LOCALPARAMF(blendparams, inside ? 0.5f : 4, inside ? 0.25f : 0);
         if(2*(p->size + pmax)*WOBBLE >= softexplosionblend)
         {
-            LOCALPARAMF(softparams, -1.0f/softexplosionblend, 0, inside ? blend/(2*255.0f) : 0);
+            LOCALPARAMF(softparams, -1.0f/softexplosionblend, 0, inside ? pblend/(2*255.0f) : 0);
         }
         else
         {
-            LOCALPARAMF(softparams, 0, -1, inside ? blend/(2*255.0f) : 0);
+            LOCALPARAMF(softparams, 0, -1, inside ? pblend/(2*255.0f) : 0);
         }
 
         vec color = p->color.tocolor().mul(ldrscale);
-        float alpha = blend/255.0f;
+        float alpha = pblend/255.0f;
 
         loopi(inside ? 2 : 1)
         {
