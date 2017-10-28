@@ -203,8 +203,9 @@ static inline int bitscan(uint mask)
 #define strcasecmp _stricmp
 #define strncasecmp _strnicmp
 #define PATHDIV '\\'
-#endif
+#else
 #define PATHDIV '/'
+#endif
 #else
 #define __cdecl
 #define _vsnprintf vsnprintf
