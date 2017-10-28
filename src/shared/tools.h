@@ -208,6 +208,7 @@ static inline int bitscan(uint mask)
 #else
 #define __cdecl
 #define _vsnprintf vsnprintf
+#define PATHDIV '/'
 #endif
 
 #ifdef __GNUC__
