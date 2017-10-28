@@ -585,6 +585,7 @@ void save_config(char *mname)
     // config
     h->printf("// %s by %s (%s)\n", title, author, mapname);
     if(*desc) h->printf("// %s\n", desc);
+    h->printf("\n");
 
     int aliases = 0;
     enumerate(idents, ident, id,
@@ -939,7 +940,7 @@ bool load_world(const char *mname, int crc)       // still supports all map form
                     maskpackagedirs(mask); \
                     return false; \
                 }
-            if(newhdr.version == 43)
+            if(newhdr.version <= 43)
             {
                 MAPZCOMPAT(43);
                 lilswap(&chdr.worldsize, 8);
@@ -1203,7 +1204,7 @@ bool load_world(const char *mname, int crc)       // still supports all map form
 
             // version increments
             if(maptype == MAP_OCTA && e.type >= ET_DECAL) e.type++;
-            bool oldsun = maptype == MAP_MAPZ && hdr.version == 43 && e.type == ET_DECAL;
+            bool oldsun = maptype == MAP_MAPZ && hdr.version <= 43 && e.type == ET_DECAL;
             if(!samegame && e.type >= ET_GAMESPECIFIC)
             {
                 if(oldsun || (maptype == MAP_MAPZ && entities::maylink(e.type, hdr.gamever)))
@@ -1250,10 +1251,15 @@ bool load_world(const char *mname, int crc)       // still supports all map form
                 e.attrs[1] = angle;
                 loopk(e.attrs.length()-2) e.attrs[k+2] = 0;
             }
+            if((maptype == MAP_OCTA || (maptype == MAP_MAPZ && hdr.version <= 43)) && e.type == ET_MAPMODEL)
+            {
+                e.attrs[1] -= 90;
+                while(e.attrs[1] < 0) e.attrs[1] += 360;
+            }
             if(!insideworld(e.o) && e.type != ET_LIGHT && e.type != ET_LIGHTFX)
                 conoutf("\frWARNING: ent outside of world: enttype[%d](%s) index %d (%f, %f, %f) [%d, %d]", e.type, entities::findname(e.type), i, e.o.x, e.o.y, e.o.z, worldsize, worldscale);
         }
-        if(maptype == MAP_MAPZ && hdr.version == 43)
+        if(maptype == MAP_MAPZ && hdr.version <= 43)
         {
             if(importedsuns)
             {
@@ -1714,7 +1720,7 @@ int scanmapc(const char *fname)
                     mapcinfos.pop(); \
                     return false; \
                 }
-            if(d.maphdr.version == 43)
+            if(d.maphdr.version <= 43)
             {
                 MAPZCOMPAT(43);
                 lilswap(&chdr.worldsize, 8);
