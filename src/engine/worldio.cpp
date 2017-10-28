@@ -503,14 +503,11 @@ void loadvslots(stream *f, int numvslots)
     delete[] prev;
 }
 
-void saveslotconfig(stream *h, Slot &s, int index)
+void saveslotconfig(stream *h, Slot &s, int index, bool decal)
 {
-    if(index >= 0)
+    if(index >= 0 && s.shader)
     {
-        if(s.shader)
-        {
-            h->printf("setshader %s\n", escapeid(s.shader->name));
-        }
+        h->printf("setshader %s\n", escapeid(s.shader->name));
         loopvj(s.params)
         {
             h->printf("setshaderparam %s", escapeid(s.params[j].name));
@@ -522,30 +519,40 @@ void saveslotconfig(stream *h, Slot &s, int index)
     loopvj(s.sts)
     {
         h->printf("texture");
-        if(index >= 0) h->printf(" %s", findtexturetypename(s.sts[j].type));
+        if(decal && !j) h->printf(" decal");
+        else if(index >= 0) h->printf(" %s", findtexturetypename(s.sts[j].type));
         else if(!j) h->printf(" %s", findmaterialname(-index));
         else h->printf(" 1");
         h->printf(" %s", escapestring(s.sts[j].name));
         if(!j && index >= 0) h->printf(" // %d", index);
         h->printf("\n");
     }
+
+    if(s.variants->offset.x || s.variants->offset.y) h->printf("texoffset %d %d\n", s.variants->offset.x, s.variants->offset.y);
+    if(s.variants->rotation) h->printf("texrotate %d\n", s.variants->rotation);
+    if(s.variants->scale != 1) h->printf("texscale %g\n", s.variants->scale);
+    if(s.variants->colorscale != vec(1, 1, 1))
+        h->printf("texcolor %f %f %f\n", s.variants->colorscale.x, s.variants->colorscale.y, s.variants->colorscale.z);
+    if(s.variants->palette || s.variants->palindex) h->printf("texpalette %d %d\n", s.variants->palette, s.variants->palindex);
+    if(s.variants->refractscale > 0)
+        h->printf("texrefract %g %g %g %g", s.variants->refractscale, s.variants->refractcolor.x,  s.variants->refractcolor.y, s.variants->refractcolor.z);
+    if(!s.variants->scroll.iszero())
+        h->printf("texscroll %f %f\n", s.variants->scroll.x * 1000.0f, s.variants->scroll.y * 1000.0f);
+
+    if(decal)
+    {
+        DecalSlot &d = (DecalSlot &)s;
+        if(d.depth != DEFAULTDECALDEPTH || d.fade != DEFAULTDECALFADE)
+            h->printf("decaldepth %f %f", d.depth, d.fade);
+    }
     if(index >= 0)
     {
-        if(s.variants->offset.x || s.variants->offset.y) h->printf("texoffset %d %d\n", s.variants->offset.x, s.variants->offset.y);
-        if(s.variants->rotation) h->printf("texrotate %d\n", s.variants->rotation);
-        if(s.variants->scale != 1) h->printf("texscale %g\n", s.variants->scale);
-
         if(s.variants->layer != 0) h->printf("texlayer %d\n", s.variants->layer);
         if(s.variants->detail != 0) h->printf("texdetail %d\n", s.variants->detail);
         if(s.smooth >= 0) h->printf("texsmooth %i -1\n", s.smooth);
 
         if(s.variants->alphafront != DEFAULT_ALPHA_FRONT || s.variants->alphaback != DEFAULT_ALPHA_BACK)
             h->printf("texalpha %f %f\n", s.variants->alphafront, s.variants->alphaback);
-        if(s.variants->colorscale != vec(1, 1, 1))
-            h->printf("texcolor %f %f %f\n", s.variants->colorscale.x, s.variants->colorscale.y, s.variants->colorscale.z);
-        if(s.variants->palette || s.variants->palindex) h->printf("texpalette %d %d\n", s.variants->palette, s.variants->palindex);
-        if(s.variants->refractscale > 0)
-            h->printf("texrefract %g %g %g %g", s.variants->refractscale, s.variants->refractcolor.x,  s.variants->refractcolor.y, s.variants->refractcolor.z);
 
         if(s.grass && s.grass[0])
         {
@@ -556,8 +563,6 @@ void saveslotconfig(stream *h, Slot &s, int index)
             if(s.grassscale > 0) h->printf("texgrassscale %d\n", s.grassscale);
             if(s.grassheight > 0) h->printf("texgrassheight %d\n", s.grassheight);
         }
-        if(!s.variants->scroll.iszero())
-            h->printf("texscroll %f %f\n", s.variants->scroll.x * 1000.0f, s.variants->scroll.y * 1000.0f);
         if(s.variants->coastscale != 1) h->printf("texcoastscale %f\n", s.variants->coastscale);
     }
     h->printf("\n");
@@ -607,7 +612,7 @@ void save_config(char *mname)
         switch(i&MATF_VOLUME)
         {
             case MAT_WATER: case MAT_GLASS: case MAT_LAVA:
-                saveslotconfig(h, materialslots[i], -i);
+                saveslotconfig(h, materialslots[i], -i, false);
                 break;
         }
     }
@@ -622,9 +627,16 @@ void save_config(char *mname)
     loopv(slots)
     {
         progress(i/float(slots.length()), "Saving texture slots...");
-        saveslotconfig(h, *slots[i], i);
+        saveslotconfig(h, *slots[i], i, false);
     }
     if(verbose) conoutf("Saved %d texture slots", slots.length());
+
+    loopv(decalslots)
+    {
+        progress(i/float(decalslots.length()), "Saving decal slots...");
+        saveslotconfig(h, *decalslots[i], i, true);
+    }
+    if(verbose) conoutf("Saved %d decal slots", decalslots.length());
 
     loopv(mapmodels)
     {

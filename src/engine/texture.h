@@ -743,7 +743,6 @@ struct Slot
 
     virtual int type() const { return OCTA; }
     virtual const char *name() const;
-    virtual const char *texturedir() const { return "media/texture"; }
 
     virtual VSlot &emptyvslot();
 
@@ -826,15 +825,17 @@ struct MatSlot : Slot, VSlot
     }
 };
 
+#define DEFAULTDECALDEPTH 1.f
+#define DEFAULTDECALFADE  0.5f
+
 struct DecalSlot : Slot, VSlot
 {
     float depth, fade;
 
-    DecalSlot(int index = -1) : Slot(index), VSlot(this), depth(1), fade(0.5f) {}
+    DecalSlot(int index = -1) : Slot(index), VSlot(this), depth(DEFAULTDECALDEPTH), fade(DEFAULTDECALFADE) {}
 
     int type() const { return DECAL; }
     const char *name() const;
-    const char *texturedir() const { return "media/decal"; }
 
     VSlot &emptyvslot() { return *this; }
 
@@ -844,8 +845,8 @@ struct DecalSlot : Slot, VSlot
     {
         Slot::reset();
         VSlot::reset();
-        depth = 1;
-        fade = 0.5f;
+        depth = DEFAULTDECALDEPTH;
+        fade = DEFAULTDECALFADE;
     }
 
     void cleanup()
