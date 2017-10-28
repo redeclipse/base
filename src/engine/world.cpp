@@ -1207,7 +1207,7 @@ bool emptymap(int scale, bool force, const char *mname, bool usecfg)    // main 
         identflags &= ~IDF_WORLD;
     }
 
-    allchanged(true);
+    allchanged(initing != INIT_QUIT);
     entities::initents(MAP_MAPZ, hdr.version, hdr.gameid, hdr.gamever);
     game::startmap(true);
 

@@ -110,6 +110,7 @@ void quit()                  // normal exit
     extern void writeinitcfg();
     extern void writeservercfg();
     inbetweenframes = false;
+    initing = INIT_QUIT;
     writeinitcfg();
     writeservercfg();
     writecfg();
@@ -122,6 +123,7 @@ void quit()                  // normal exit
 volatile int errors = 0;
 void fatal(const char *s, ...)    // failure exit
 {
+    if(!errors) initing = INIT_QUIT;
     if(++errors <= 2) // print up to one extra recursive error
     {
         defvformatbigstring(msg, s, s);

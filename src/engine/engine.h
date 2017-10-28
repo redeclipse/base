@@ -722,7 +722,8 @@ enum
     INIT_GAME,
     INIT_LOAD,
     INIT_RESET,
-    INIT_DEFAULTS
+    INIT_DEFAULTS,
+    INIT_QUIT
 };
 extern int initing, fullscreen, numcpus;
 void setfullscreen(bool enable);
