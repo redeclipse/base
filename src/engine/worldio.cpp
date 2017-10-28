@@ -606,7 +606,7 @@ void save_config(char *mname)
 
         switch(i&MATF_VOLUME)
         {
-            case MAT_WATER: case MAT_LAVA:
+            case MAT_WATER: case MAT_GLASS: case MAT_LAVA:
                 saveslotconfig(h, materialslots[i], -i);
                 break;
         }
