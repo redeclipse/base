@@ -3353,7 +3353,7 @@ namespace game
                 animdelay = 300;
             }
         }
-        if(!(flags&MDL_ONLYSHADOW) && third == 1 && d->actortype < A_ENEMY && !shadowmapping && !drawtex && (aboveheaddead || d->state == CS_ALIVE))
+        if(d != focus && !(flags&MDL_ONLYSHADOW) && third == 1 && d->actortype < A_ENEMY && !shadowmapping && !drawtex && (aboveheaddead || d->state == CS_ALIVE))
             renderabovehead(d);
         const char *weapmdl = showweap && isweap(weap) ? (third ? weaptype[weap].vwep : weaptype[weap].hwep) : "";
         int ai = 0;
@@ -3591,18 +3591,20 @@ namespace game
 
     void render()
     {
-        gameent *d;
-        int numdyns = numdynents();
-        loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL && d != focus)
-            d->cleartags();
         ai::render();
         entities::render();
         projs::render();
         if(m_capture(gamemode)) capture::render();
         else if(m_defend(gamemode)) defend::render();
         else if(m_bomber(gamemode)) bomber::render();
+
+        gameent *d;
+        int numdyns = numdynents();
         loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL)
+        {
+            if(d != focus) d->cleartags();
             renderplayer(d, 1, d->curscale, d != focus ? 0 : MDL_ONLYSHADOW);
+        }
     }
 
     void renderpost()
