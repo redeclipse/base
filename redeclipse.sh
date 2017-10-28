@@ -147,18 +147,10 @@ redeclipse_runit() {
         REDECLIPSE_PWD=`pwd`
         export REDECLIPSE_PWD
         cd "${REDECLIPSE_PATH}" || return 1
-        # If we're on linux, we need to load the included libraries due to a broken SDL 2.0.6.
-        if [ "${REDECLIPSE_TARGET}" = "linux" ] && [ "${REDECLIPSE_ARCH}" = "amd64" ]; then
-            LD_LIBRARY_PATH="$(readlink -f "${REDECLIPSE_PATH}/bin/${REDECLIPSE_ARCH}/sdlfixlibs")" exec "${REDECLIPSE_PATH}/bin/${REDECLIPSE_ARCH}/${REDECLIPSE_BINARY}${REDECLIPSE_SUFFIX}" ${REDECLIPSE_OPTIONS} ${REDECLIPSE_ARGS} || (
-                cd "${REDECLIPSE_PWD}"
-                return 1
-            )
-        else
-            exec "${REDECLIPSE_PATH}/bin/${REDECLIPSE_ARCH}/${REDECLIPSE_BINARY}${REDECLIPSE_SUFFIX}" ${REDECLIPSE_OPTIONS} ${REDECLIPSE_ARGS} || (
-                cd "${REDECLIPSE_PWD}"
-                return 1
-            )
-        fi
+        exec "${REDECLIPSE_PATH}/bin/${REDECLIPSE_ARCH}/${REDECLIPSE_BINARY}${REDECLIPSE_SUFFIX}" ${REDECLIPSE_OPTIONS} ${REDECLIPSE_ARGS} || (
+            cd "${REDECLIPSE_PWD}"
+            return 1
+        )
         cd "${REDECLIPSE_PWD}"
         return 0
     else
