@@ -365,16 +365,13 @@ int addsound(const char *name, int vol, int maxrad, int minrad, int value, vecto
         } \
     }
     string sam;
-    loopi(value > 1 ? 2 : 1)
+    if(!nosound) loopi(value > 1 ? 2 : 1)
     {
         if(value > 1 && !i) formatstring(sam, "%s1", name);
         else copystring(sam, name);
         loadsound(sam);
-        if(!sample->sound)
-        {
-            if(value < 2 || i) conoutf("\frFailed to load sample: %s", name);
-        }
-        else break;
+        if(sample->sound) break;
+        if(value < 2 || i) conoutf("\frFailed to load sample: %s", name);
     }
     soundslot &slot = soundset.add();
     slot.name = newstring(name);
@@ -382,12 +379,12 @@ int addsound(const char *name, int vol, int maxrad, int minrad, int value, vecto
     slot.maxrad = maxrad; // use these values if none are supplied when playing
     slot.minrad = minrad;
     slot.samples.add(sample);
-    if(value > 1) loopi(value-1)
+    if(!nosound && value > 1) loopi(value-1)
     {
         formatstring(sam, "%s%d", name, i+2);
         loadsound(sam);
-        if(!sample->sound) conoutf("\frFailed to load sample: %s", sam);
-        else slot.samples.add(sample);
+        if(sample->sound) slot.samples.add(sample);
+        else conoutf("\frFailed to load sample: %s", sam);
     }
     return soundset.length()-1;
 }
