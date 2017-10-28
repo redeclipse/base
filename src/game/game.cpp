@@ -3353,7 +3353,7 @@ namespace game
                 animdelay = 300;
             }
         }
-        if(d != focus && !(flags&MDL_ONLYSHADOW) && third == 1 && d->actortype < A_ENEMY && !shadowmapping && !drawtex && (aboveheaddead || d->state == CS_ALIVE))
+        if((d != focus || d->state == CS_DEAD || d->state == CS_WAITING) && !(flags&MDL_ONLYSHADOW) && third == 1 && d->actortype < A_ENEMY && !shadowmapping && !drawtex && (aboveheaddead || d->state == CS_ALIVE))
             renderabovehead(d);
         const char *weapmdl = showweap && isweap(weap) ? (third ? weaptype[weap].vwep : weaptype[weap].hwep) : "";
         int ai = 0;
@@ -3602,8 +3602,8 @@ namespace game
         int numdyns = numdynents();
         loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL)
         {
-            if(d != focus) d->cleartags();
-            renderplayer(d, 1, d->curscale, d != focus ? 0 : MDL_ONLYSHADOW);
+            if(d != focus || d->state == CS_DEAD || d->state == CS_WAITING) d->cleartags();
+            renderplayer(d, 1, d->curscale, d != focus || d->state == CS_DEAD || d->state == CS_WAITING ? 0 : MDL_ONLYSHADOW);
         }
     }
 
@@ -3611,12 +3611,13 @@ namespace game
     {
         gameent *d;
         int numdyns = numdynents();
-        loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL && d != focus)
+        loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL && (d != focus || d->state == CS_DEAD || d->state == CS_WAITING))
             rendercheck(d);
     }
 
     void renderavatar()
     {
+        if(focus->state == CS_DEAD || focus->state == CS_WAITING) return;
         bool third = thirdpersonview();
         focus->cleartags();
         float depthfov = third ? (thirdpersondepthfov != 0 && focus->state == CS_ALIVE ? thirdpersondepthfov : curfov) : (firstpersondepthfov != 0 ? firstpersondepthfov : curfov),
