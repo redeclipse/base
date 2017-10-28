@@ -71,6 +71,13 @@ void initsound()
 {
     if(nosound)
     {
+        SDL_version version;
+        SDL_GetVersion(&version);
+        if(version.major == 2 && version.minor == 0 && version.patch == 6)
+        {
+            conoutf("\frSound is broken in SDL 2.0.6");
+            return;
+        }
         if(Mix_OpenAudio(soundfreq, MIX_DEFAULT_FORMAT, soundmono ? 1 : 2, soundbuflen) == -1)
         {
             conoutf("\frSound initialisation failed: %s", Mix_GetError());
