@@ -62,6 +62,7 @@ extern void clearnormals();
 extern void resetsmoothgroups();
 extern int smoothangle(int id, int angle);
 extern void findnormal(const vec &key, int smooth, const vec &surface, vec &v);
+extern vector<int> smoothgroups;
 
 #define CHECK_CALCLIGHT_PROGRESS_LOCKED(exit, show_calclight_progress, before, after) \
     if(check_calclight_progress) \

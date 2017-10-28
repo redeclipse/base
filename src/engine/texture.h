@@ -84,7 +84,7 @@ struct SlotShaderParamState : LocalShaderParamState
     int flags, palette, palindex;
     float val[4];
 
-    SlotShaderParamState() {}
+    SlotShaderParamState() : palette(0), palindex(0) {}
     SlotShaderParamState(const SlotShaderParam &p)
     {
         name = p.name;
@@ -674,7 +674,7 @@ struct VSlot
 
     Texture *loadthumbnail();
 
-    VSlot(Slot *slot = NULL, int index = -1) : slot(slot), next(NULL), index(index), changed(0)
+    VSlot(Slot *slot = NULL, int index = -1) : slot(slot), next(NULL), index(index), changed(0), palette(0), palindex(0)
     {
         reset();
         if(slot) addvariant(slot);
@@ -690,7 +690,7 @@ struct VSlot
         rotation = 0;
         offset = ivec2(0, 0);
         scroll = vec2(0, 0);
-        layer = detail = 0;
+        layer = detail = palette = palindex = 0;
         alphafront = DEFAULT_ALPHA_FRONT;
         alphaback = DEFAULT_ALPHA_BACK;
         colorscale = vec(1, 1, 1);
@@ -927,6 +927,7 @@ extern Slot dummyslot;
 extern VSlot dummyvslot;
 extern vector<Slot *> slots;
 extern vector<VSlot *> vslots;
+extern vector<DecalSlot *> decalslots;
 
 #define _TVAR(f, n, c, m) _SVARF(n, n, c, { if(initing==NOT_INITING && n[0]) textureload(n, m, true); }, f|IDF_TEXTURE)
 #define TVAR(f, n, c, m)  _TVAR(f, n, c, m)

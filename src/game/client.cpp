@@ -2935,6 +2935,11 @@ namespace client
                     mpremip(false);
                     break;
                 }
+                case N_CALCLIGHT:
+                    if(!d) return;
+                    conoutf("\fy%s calced lights", game::colourname(d));
+                    mpcalclight(false);
+                    break;
                 case N_EDITENT:            // coop edit of ent
                 {
                     if(!d) return;

@@ -1672,7 +1672,8 @@ Texture *textureload(const char *name, int clamp, bool mipit, bool msg)
 {
     string tname;
     copystring(tname, name);
-    Texture *t = textures.access(path(tname));
+    path(tname);
+    Texture *t = textures.access(tname);
     if(t) return t;
     int compress = 0;
     ImageData s;

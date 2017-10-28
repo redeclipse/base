@@ -1789,12 +1789,11 @@ namespace hud
             defformatstring(text, "%c%d", d.damage > 0 ? '-' : (d.damage < 0 ? '+' : '~'), d.damage < 0 ? 0-d.damage : d.damage);
             vec colour = d.colour < 0 ? game::rescolour(a, INVPULSE(d.colour)) : vec::hexcolor(d.colour);
             if(maxy >= 0 && hy < maxy) hy = maxy;
-            if(onscreenhitsglow)
+            if(onscreenhitsglow && settexture(onscreenhitsglowtex))
             {
                 float width = 0, height = 0;
                 text_boundsf(text, width, height, 0, 0, -1, TEXT_CENTERED, 1);
                 gle::colorf(colour.r*onscreenhitsglowcolour, colour.g*onscreenhitsglowcolour, colour.b*onscreenhitsglowcolour, fade*onscreenhitsglowblend);
-                settexture(onscreenhitsglowtex);
                 drawtexture(hx-(width*onscreenhitsglowscale*0.5f), hy-(height*onscreenhitsglowscale*0.25f), width*onscreenhitsglowscale, height*onscreenhitsglowscale);
             }
             hy += draw_textf("%s", hx, hy, 0, 0, int(colour.r*255), int(colour.g*255), int(colour.b*255), int(fade*255), TEXT_CENTERED, -1, -1, 1, text)/onscreenhitsscale;
