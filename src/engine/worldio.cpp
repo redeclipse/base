@@ -715,9 +715,9 @@ void save_world(const char *mname, bool nodata, bool forcesave)
 
     if(autosavemapshot || forcesave) save_mapshot(mapname);
     if(autosaveconfigs || forcesave) save_config(mapname);
-    if(*maptext && (autosavetexts || forcesave))
+    if(maptext[0] && (autosavetexts || forcesave))
     {
-        defformatstring(fname, "%s.txt", mname);
+        defformatstring(fname, "%s.txt", mapname);
         stream *h = openutf8file(fname, "w");
         if(!h) conoutf("\frCould not write text to %s", fname);
         else
@@ -1360,7 +1360,7 @@ bool load_world(const char *mname, int crc)       // still supports all map form
         char *buf = loadfile(fname, NULL);
         if(buf)
         {
-            setsvar("maptext", buf, false);
+            if(buf[0]) setsvar("maptext", buf, false);
             delete[] buf;
         }
 
