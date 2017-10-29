@@ -6,15 +6,15 @@ static const struct flaretype
     uchar alpha;          /* color alpha */
 } flaretypes[] =
 {
-    {2,  1.30f, 0.04f, 153}, //flares
-    {3,  1.00f, 0.10f, 102},
-    {1,  0.50f, 0.20f, 77},
-    {3,  0.20f, 0.05f, 77},
-    {0,  0.00f, 0.04f, 77},
-    {5, -0.25f, 0.07f, 127},
-    {5, -0.40f, 0.02f, 153},
-    {5, -0.60f, 0.04f, 102},
-    {5, -1.00f, 0.03f, 51},
+    {2,  1.30f, 0.04f, 255}, //flares
+    {3,  1.00f, 0.10f, 192},
+    {1,  0.50f, 0.20f, 128},
+    {3,  0.20f, 0.05f, 128},
+    {0,  0.00f, 0.04f, 128},
+    {5, -0.25f, 0.07f, 192},
+    {5, -0.40f, 0.02f, 224},
+    {5, -0.60f, 0.04f, 192},
+    {5, -1.00f, 0.03f, 64},
     {-1, 1.00f, 0.30f, 255}, //shine - red, green, blue
     {-2, 1.00f, 0.20f, 255},
     {-3, 1.00f, 0.25f, 255}
@@ -28,13 +28,12 @@ struct flare
     int sparkle; // 0 = off, 1 = sparkles and flares, 2 = only sparkles
 };
 
-VAR(IDF_PERSIST, flarelights, 0, 3, 15); // 0 = off, &1 = defined suns, &2 = defined lights, &4 = all suns, &8 = all lights
+VAR(IDF_PERSIST, flarelights, 0, 1, 7); // 0 = off, &1 = defined lights, &2 = all lights, &4 = all sparkle
 VAR(IDF_PERSIST, flarecutoff, 0, 1000, VAR_MAX);
 VAR(IDF_PERSIST, flaresize, 1, 100, VAR_MAX);
-VAR(IDF_PERSIST, flaresundist, 1, 4096, VAR_MAX);
-VAR(IDF_PERSIST, flareshine, 1, 50, VAR_MAX);
-FVAR(IDF_PERSIST, flareblend, 0, 1, 1);
-//FVAR(IDF_PERSIST, flareadjust, 0, 0.7f, 1);
+VAR(IDF_PERSIST, flareshine, 1, 10, VAR_MAX);
+FVAR(IDF_PERSIST, flareblend, 0, 0.5f, 1);
+FVAR(IDF_PERSIST, flareadjust, 0, 0.7f, 1);
 
 struct flarerenderer : partrenderer
 {
@@ -60,8 +59,11 @@ struct flarerenderer : partrenderer
     void newflare(const vec &o,  const vec &center, uchar r, uchar g, uchar b, float mod, float size, bool sun, int sparkle)
     {
         if(numflares >= maxflares) return;
-        vec target; //occlusion check (neccessary as depth testing is turned off)
-        if(!raycubelos(o, camera1->o, target)) return;
+        //occlusion check (neccessary as depth testing is turned off)
+        vec dir = vec(camera1->o).sub(o);
+        float dist = dir.magnitude();
+        dir.mul(1/dist);
+        if(raycube(o, dir, dist, RAY_CLIPMAT|RAY_POLY) < dist) return;
         flare &f = flares[numflares++];
         f.o = o;
         f.center = center;
@@ -72,28 +74,30 @@ struct flarerenderer : partrenderer
 
     bool generate(const vec &o, vec &center, vec &flaredir, float &mod, float &size, bool sun, float radius)
     {
+        //frustrum + fog check
+        if(isvisiblesphere(0.0f, o) > (sun?VFC_FOGGED:VFC_FULL_VISIBLE)) return false;
+        //find closest point between camera line of sight and flare pos
         flaredir = vec(o).sub(camera1->o);
         center = vec(camdir).mul(flaredir.dot(camdir)).add(camera1->o);
         if(sun) //fixed size
         {
-            mod = 1.0f;
-            size = flaresundist*flaresize/100.0f;
+            mod = 1.0;
+            size = flaredir.magnitude() * flaresize / 100.0f;
         }
         else
         {
-            float len = flaredir.magnitude();
-            if(len > radius) return false;
-            mod = (radius-len)/radius;
-            size = flaresize/10.0f;
+            mod = (flarecutoff-vec(o).sub(center).squaredlen())/flarecutoff;
+            if(mod < 0.0f) return false;
+            size = flaresize / 5.0f;
         }
-        return isvisiblesphere(size, o) <= (sun ? VFC_FOGGED : VFC_FULL_VISIBLE);
+        return true;
     }
 
-    void addflare(const vec &o, uchar r, uchar g, uchar b, bool sun, bool project, int sparkle)
+    void addflare(const vec &o, uchar r, uchar g, uchar b, bool sun, int sparkle)
     {
         vec flaredir, center;
         float mod = 0, size = 0;
-        if(generate(o, center, flaredir, mod, size, sun || project, flarecutoff))
+        if(generate(o, center, flaredir, mod, size, sun, sun ? 0.f : flarecutoff))
             newflare(o, center, r, g, b, mod, size, sun, sparkle);
     }
 
@@ -111,28 +115,18 @@ struct flarerenderer : partrenderer
             loopenti(ET_LIGHT)
             {
                 extentity &e = *ents[i];
-                if(e.type != ET_LIGHT || (!(flarelights&8) && !(flarelights&2 && e.attrs[4]))) continue;
+                if(e.type != ET_LIGHT || (!(flarelights&2) && !(flarelights&1 && e.attrs[4]))) continue;
                 bool sun = false;
                 int sparkle = 0;
                 uchar r = e.attrs[1], g = e.attrs[2], b = e.attrs[3];
                 float scale = 1.f;
                 if(!e.attrs[0] || e.attrs[4]&1) sun = true;
-                if(!e.attrs[0] || e.attrs[4]&2) sparkle = sun ? 1 : 2;
+                if(!e.attrs[0] || e.attrs[4]&2 || flarelights&4) sparkle = sun ? 1 : 2;
                 if(e.attrs[5] > 0) scale = e.attrs[5]/100.f;
                 vec flaredir, center;
                 float mod = 0, size = 0;
-                if(generate(e.o, center, flaredir, mod, size, sun, e.attrs[0]*flaresize/100.f))
+                if(generate(e.o, center, flaredir, mod, size, sun, sun ? 0.f : e.attrs[0]*flaresize/100.f))
                     newflare(e.o, center, r, g, b, mod, size*scale, sun, sparkle);
-            }
-            if(!sunlight.iszero() && (flarelights&4 || (flarelights&1 && sunlightflare)))
-            {
-                bool sun = !sunlightflare || sunlightflare&1;
-                int sparkle = !sunlightflare || sunlightflare&2 ? 1 : 2;
-                float scale = sunlightflarescale > 0 ? sunlightflarescale : 1.f;
-                vec flaredir, center, o = vec(camera1->o).sub(vec(sunlightyaw*RAD, sunlightpitch*RAD).mul(flaresundist));
-                float mod = 0, size = 0;
-                if(generate(o, center, flaredir, mod, size, sun, 0.f))
-                    newflare(o, center, sunlight.r, sunlight.g, sunlight.b, mod, size*scale, sun, sparkle);
             }
         }
     }
@@ -159,8 +153,7 @@ struct flarerenderer : partrenderer
         {
             const flare &f = flares[i];
             float blend = flareblend;
-            vec center = f.center, axis = vec(f.o).sub(center);
-            #if 0
+            vec axis = vec(f.o).sub(f.center);
             if(flareadjust > 0)
             {
                 float yaw, pitch;
@@ -177,14 +170,13 @@ struct flarerenderer : partrenderer
                 if(pitch < 0) pitch = -pitch;
                 blend *= 1-min(pitch/(fovy*0.5f)*flareadjust, 1.f);
             }
-            #endif
             bvec4 color(f.color, 255);
             loopj(f.sparkle ? (f.sparkle != 2 ? 12 : 3) : 9)
             {
                 int q = f.sparkle != 2 ? j : j+9;
                 const flaretype &ft = flaretypes[q];
-                vec o = vec(axis).mul(ft.loc).add(center);
-                float sz = ft.scale*f.size;
+                vec o = vec(axis).mul(ft.loc).add(f.center);
+                float sz = ft.scale * f.size;
                 int tex = ft.type;
                 if(ft.type < 0) //sparkles - always done last
                 {

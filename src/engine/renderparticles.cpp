@@ -1816,7 +1816,7 @@ void makeparticle(const vec &o, attrvector &attr)
         case 33:
         case 34:
         case 35:
-            flares.addflare(o, attr[1], attr[2], attr[3], (attr[0]&2)!=0, false, (attr[0]&1)!=0 ? ((attr[0]&2)!=0 ? 1 : 2) : 0);
+            flares.addflare(o, attr[1], attr[2], attr[3], (attr[0]&2)!=0, (attr[0]&1)!=0 ? ((attr[0]&2)!=0 ? 1 : 2) : 0);
             break;
         default:
             defformatstring(ds, "%d?", attr[0]);

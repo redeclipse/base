@@ -1170,8 +1170,8 @@ bool load_world(const char *mname, int crc)       // still supports all map form
 
         progress(0, "Loading entities...");
         vector<extentity *> &ents = entities::getents();
-        int importedsuns = 0, importedsunflare = 0;
-        float importedsunyaw = 0, importedsunpitch = 0, importedsunflarescale = 0;
+        int importedsuns = 0;
+        float importedsunyaw = 0, importedsunpitch = 0;
         vec importedsuncolor(0, 0, 0);
         loopi(hdr.numents)
         {
@@ -1223,8 +1223,6 @@ bool load_world(const char *mname, int crc)       // still supports all map form
                 importedsunyaw += e.attrs[1];
                 importedsunpitch += e.attrs[2];
                 importedsuncolor.add(vec(e.attrs[2], e.attrs[3], e.attrs[4]).div(255));
-                loopk(2) if(e.attrs[6]&(1<<k) && !(importedsunflare&(1<<k))) importedsunflare |= 1<<k;
-                importedsunflarescale += e.attrs[7] ? e.attrs[7]/100.f : 1.f;
                 e.type = ET_EMPTY;
                 continue;
             }
@@ -1268,7 +1266,6 @@ bool load_world(const char *mname, int crc)       // still supports all map form
                     importedsunyaw /= importedsuns;
                     importedsunpitch /= importedsuns;
                     importedsuncolor.div(importedsuns);
-                    importedsunflarescale /= importedsuns;
                 }
                 importedsunpitch += 90.f;
                 while(importedsunpitch > 90.f)
@@ -1287,8 +1284,6 @@ bool load_world(const char *mname, int crc)       // still supports all map form
                 setvar("sunlight", importedsuncolor.tohexcolor(), true, false, true);
                 setfvar("sunlightyaw", importedsunyaw, true, false, true);
                 setfvar("sunlightpitch", importedsunpitch, true, false, true);
-                setvar("sunlightflare", importedsunflare, true, false, true);
-                setfvar("sunlightflarescale", importedsunflarescale, true, false, true);
             }
             else if(!skylight.iszero())
             {
