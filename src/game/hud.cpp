@@ -1177,8 +1177,6 @@ namespace hud
         else index = POINTER_HAIR;
         if(index > POINTER_NONE)
         {
-            hudmatrix.ortho(0, hudwidth, hudheight, 0, -1, 1);
-            flushhudmatrix();
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             drawpointer(w, h, index);
@@ -1512,22 +1510,6 @@ namespace hud
             }
         }
         pophudmatrix();
-    }
-
-    void drawlast()
-    {
-        if(!progressing && showhud)
-        {
-            hudmatrix.ortho(0, hudwidth, hudheight, 0, -1, 1);
-            flushhudmatrix();
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-            if(commandmillis <= 0 && curcompass) rendercmenu();
-            else if(shownotices && !client::waiting() && !hasinput(false) && !texpaneltimer) drawnotices();
-            glDisable(GL_BLEND);
-        }
-        if(progressing || !curcompass) UI::render();
-        if(!progressing) drawpointers(hudwidth, hudheight);
     }
 
     float radarlimit(float dist) { return dist >= 0 && radardistlimit > 0 ? clamp(dist, 0.f, radardistlimit) : max(dist, 0.f); }
@@ -1921,9 +1903,6 @@ namespace hud
                 fade *= (colour.x+colour.y+colour.z)/3.f;
             }
         }
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        gle::colorf(1, 1, 1);
         if(noview) drawbackground(hudwidth, hudheight);
         else if(!client::waiting())
         {
@@ -1977,7 +1956,25 @@ namespace hud
             else if(gs_playing(game::gamestate) && game::focus->state == CS_ALIVE && game::inzoom())
                 drawzoom(hudwidth, hudheight);
         }
-        glDisable(GL_BLEND);
+    }
+
+    void drawlast()
+    {
+        if(!progressing && showhud)
+        {
+            hudmatrix.ortho(0, hudwidth, hudheight, 0, -1, 1);
+            flushhudmatrix();
+            if(commandmillis <= 0 && curcompass) rendercmenu();
+            else if(shownotices && !client::waiting() && !hasinput(false) && !texpaneltimer) drawnotices();
+        }
+        if(progressing || !curcompass) UI::render();
+        if(!progressing)
+        {
+            hudmatrix.ortho(0, hudwidth, hudheight, 0, -1, 1);
+            flushhudmatrix();
+            drawpointers(hudwidth, hudheight);
+            rendertexturepanel(hudwidth, hudheight);
+        }
     }
 
     void update(int w, int h)

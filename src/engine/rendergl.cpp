@@ -2404,6 +2404,7 @@ void gl_drawhud(bool noview = false)
     debuglights();
 
     glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     hud::drawhud(noview);
     hud::drawlast();

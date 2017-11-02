@@ -2868,14 +2868,11 @@ void rendertexturepanel(int w, int h)
 {
     if((texpaneltimer -= curtime)>0 && editmode)
     {
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
         pushhudmatrix();
-        hudmatrix.scale(h/1800.0f, h/1800.0f, 1);
         flushhudmatrix(false);
         SETSHADER(hudrgb);
 
-        int y = 50, gap = 10;
+        int y = 340, gap = 10;
 
         gle::defvertex(2);
         gle::deftexcoord0();
@@ -2903,7 +2900,7 @@ void rendertexturepanel(int w, int h)
                     detailtex = detail->slot->sts.empty() ? notexture : detail->slot->sts[0].t;
                 }
                 float sx = min(1.0f, tex->xs/(float)tex->ys), sy = min(1.0f, tex->ys/(float)tex->xs);
-                int x = hudw-s-50, r = s;
+                int x = w-s-gap, r = s;
                 vec2 tc[4] = { vec2(0, 0), vec2(1, 0), vec2(1, 1), vec2(0, 1) };
                 float xoff = vslot.offset.x, yoff = vslot.offset.y;
                 if(vslot.rotation)
