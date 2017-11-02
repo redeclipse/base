@@ -2730,9 +2730,18 @@ shadowmesh *findshadowmesh(int idx, extentity &e)
     switch(m->type)
     {
         case SM_SPOT:
-            //if(!e.attached || e.attached->type != ET_SPOTLIGHT || m->spotloc != e.attached->o || m->spotangle < clamp(int(e.attached->attrs[0]), 1, 89))
-                return NULL;
+        {
+            bool spotlight = false;
+            const vector<extentity *> &ents = entities::getents();
+            if(!e.links.empty()) loopvk(e.links) if(ents.inrange(e.links[k]) && ents[e.links[k]]->type == ET_LIGHTFX && ents[e.links[k]]->attrs[0] == LFX_SPOTLIGHT)
+            {
+                if(m->spotloc != ents[e.links[k]]->o || m->spotangle < clamp(int(ents[e.links[k]]->attrs[1]), 1, 89)) continue;
+                spotlight = true;
+                break;
+            }
+            if(!spotlight) return NULL;
             break;
+        }
     }
     return m;
 }

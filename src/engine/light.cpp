@@ -313,6 +313,20 @@ const vector<int> &checklightcache(int x, int y)
         {
             case ET_LIGHT:
             {
+                if(!light.links.empty())
+                {
+                    bool lightfx = false, spotlight = false;
+                    loopvk(light.links) if(ents.inrange(light.links[k]) && ents[light.links[k]]->type == ET_LIGHTFX)
+                    {
+                        lightfx = true;
+                        if(ents[light.links[k]]->attrs[0] == LFX_SPOTLIGHT)
+                        {
+                            spotlight = true;
+                            break;
+                        }
+                    }
+                    if(lightfx && !spotlight) continue;
+                }
                 int radius = light.attrs[0];
                 if(radius <= 0 ||
                    light.o.x + radius < cx || light.o.x - radius > cx + csize ||
@@ -651,6 +665,31 @@ void lightreaching(const vec &target, vec &color, vec &dir, bool fast, extentity
         if(mag >= float(e.attrs[0]))
             continue;
 
+        float intensity = 1 - mag / float(e.attrs[0]);
+        if(!e.links.empty())
+        {
+            int slight = -1;
+            bool lightfx = false;
+            loopvk(e.links) if(ents.inrange(e.links[k]) && ents[e.links[k]]->type == ET_LIGHTFX)
+            {
+                lightfx = true;
+                if(ents[e.links[k]]->attrs[0] == LFX_SPOTLIGHT)
+                {
+                    slight = e.links[k];
+                    break;
+                }
+            }
+            if(ents.inrange(slight))
+            {
+                extentity &spotlight = *ents[slight];
+                vec spot = vec(spotlight.o).sub(e.o).normalize();
+                float spotatten = 1 - (1 - ray.dot(spot)) / (1 - cos360(clamp(int(spotlight.attrs[1]), 1, 89)));
+                if(spotatten <= 0) continue;
+                intensity *= spotatten;
+            }
+            else if(lightfx) continue;
+        }
+
         if(mag < 1e-4f) ray = vec(0, 0, -1);
         else
         {
@@ -659,16 +698,6 @@ void lightreaching(const vec &target, vec &color, vec &dir, bool fast, extentity
                 continue;
         }
 
-        float intensity = 1 - mag / float(e.attrs[0]);
-        #if 0 // FIXME - used linked ents
-        if(e.attached && e.attached->type==ET_SPOTLIGHT)
-        {
-            vec spot = vec(e.attached->o).sub(e.o).normalize();
-            float spotatten = 1 - (1 - ray.dot(spot)) / (1 - cos360(clamp(int(e.attached->attr1), 1, 89)));
-            if(spotatten <= 0) continue;
-            intensity *= spotatten;
-        }
-        #endif
         vec lightcol = vec(e.attrs[1], e.attrs[2], e.attrs[4]).mul(1.0f/255).max(0);
         color.add(vec(lightcol).mul(intensity));
         dir.add(vec(ray).mul(-intensity*lightcol.x*lightcol.y*lightcol.z));

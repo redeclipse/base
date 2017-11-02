@@ -1569,19 +1569,17 @@ struct lightinfo
         if(spot > 0) calcspot();
         calcscissor();
     }
-    lightinfo(int i, const extentity &e)
-      : ent(i), shadowmap(-1), flags(e.attrs[6]),
-        o(e.o), color(vec(e.attrs[1], e.attrs[2], e.attrs[3]).max(0)), radius(e.attrs[0]), dist(camera1->o.dist(e.o)),
+    lightinfo(int i, const extentity *e, const extentity *s = NULL)
+      : ent(i), shadowmap(-1), flags(e->attrs[6]),
+        o(e->o), color(vec(e->attrs[1], e->attrs[2], e->attrs[3]).max(0)), radius(e->attrs[0]), dist(camera1->o.dist(e->o)),
         dir(0, 0, 0), spot(0), query(NULL)
     {
-        #if 0
-        if(e.attached && e.attached->type == ET_SPOTLIGHT)
+        if(s && s->type == ET_LIGHTFX && s->attrs[0] == LFX_SPOTLIGHT)
         {
-            dir = vec(e.attached->o).sub(e.o).normalize();
-            spot = clamp(int(e.attached->attr1), 1, 89);
+            dir = vec(s->o).sub(e->o).normalize();
+            spot = clamp(int(s->attrs[1]), 1, 89);
             calcspot();
         }
-        #endif
         calcscissor();
     }
 
@@ -3448,8 +3446,22 @@ void collectlights()
     const vector<extentity *> &ents = entities::getents();
     if(!editmode || !fullbright) loopv(ents)
     {
-        const extentity *e = ents[i];
+        const extentity *e = ents[i], *f = NULL;
         if(e->type != ET_LIGHT || e->attrs[0] <= 0) continue;
+        if(!e->links.empty())
+        {
+            bool lightfx = false;
+            loopvk(e->links) if(ents.inrange(e->links[k]) && ents[e->links[k]]->type == ET_LIGHTFX)
+            {
+                lightfx = true;
+                if(ents[e->links[k]]->attrs[0] == LFX_SPOTLIGHT)
+                {
+                    f = ents[e->links[k]];
+                    break;
+                }
+            }
+            if(lightfx && !f) continue;
+        }
 
         if(smviscull)
         {
@@ -3457,7 +3469,7 @@ void collectlights()
             if(pvsoccludedsphere(e->o, e->attrs[0])) continue;
         }
 
-        lightinfo &l = lights.add(lightinfo(i, *e));
+        lightinfo &l = lights.add(lightinfo(i, e, f));
         if(l.validscissor()) lightorder.add(lights.length()-1);
     }
 
@@ -4294,18 +4306,29 @@ int calcshadowinfo(const extentity &e, vec &origin, float &radius, vec &spotloc,
     radius = e.attrs[0];
     int type, w, border;
     float lod;
-    #if 0
-    if(e.attached && e.attached->type == ET_SPOTLIGHT)
+    bool spotlight = false;
+    const vector<extentity *> &ents = entities::getents();
+    if(!e.links.empty())
     {
-        type = SM_SPOT;
-        w = 1;
-        border = 0;
-        lod = smspotprec;
-        spotloc = e.attached->o;
-        spotangle = clamp(int(e.attached->attrs[0]), 1, 89);
+        bool lightfx = false;
+        loopvk(e.links) if(ents.inrange(e.links[k]) && ents[e.links[k]]->type == ET_LIGHTFX)
+        {
+            lightfx = true;
+            if(ents[e.links[k]]->attrs[0] == LFX_SPOTLIGHT)
+            {
+                spotlight = true;
+                type = SM_SPOT;
+                w = 1;
+                border = 0;
+                lod = smspotprec;
+                spotloc = ents[e.links[k]]->o;
+                spotangle = clamp(int(ents[e.links[k]]->attrs[1]), 1, 89);
+                break;
+            }
+        }
+        if(lightfx && !spotlight) return SM_NONE;
     }
-    else
-    #endif
+    if(!spotlight)
     {
         type = SM_CUBEMAP;
         w = 3;
