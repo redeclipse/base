@@ -760,6 +760,7 @@ void delent()
     groupedit(e.type = ET_EMPTY;);
     entcancel();
 }
+COMMAND(0, delent, "");
 
 VAR(0, entdrop, 0, 2, 3);
 
@@ -831,6 +832,7 @@ void dropent()
     if(noentedit()) return;
     groupedit(dropentity(e));
 }
+COMMAND(0, dropent, "");
 
 static int keepents = 0;
 
@@ -899,6 +901,7 @@ void newent(char *what, char *attr)
     entattrs(attr, attrs);
     if(type != ET_EMPTY) newentity(type, attrs);
 }
+COMMAND(0, newent, "ss");
 
 int entcopygrid;
 vector<entity> entcopybuf;
@@ -912,6 +915,7 @@ void entcopy()
         loopv(entgroup) entfocus(entgroup[i], entcopybuf.add(e).o.sub(vec(sel.o)));
     });
 }
+COMMAND(0, entcopy, "");
 
 void entpaste()
 {
@@ -933,6 +937,7 @@ void entpaste()
     int j = 0;
     groupeditundo(e.type = entcopybuf[j++].type;);
 }
+COMMAND(0, entpaste, "");
 
 void entreplace()
 {
@@ -955,12 +960,6 @@ void entreplace()
         newentity(c.type, c.attrs, false);
     }
 }
-
-COMMAND(0, newent, "siiiii");
-COMMAND(0, delent, "");
-COMMAND(0, dropent, "");
-COMMAND(0, entcopy, "");
-COMMAND(0, entpaste, "");
 COMMAND(0, entreplace, "");
 
 void entset(char *what, char *attr)
@@ -980,6 +979,7 @@ void entset(char *what, char *attr)
         loopk(min(attrs.length(), e.attrs.length())) e.attrs[k] = attrs[k];
     });
 }
+COMMAND(0, entset, "ss");
 
 void entlink()
 {
@@ -1029,6 +1029,7 @@ void nearestent()
     }
     if(closest >= 0) entadd(closest);
 }
+COMMAND(0, nearestent, "");
 
 ICOMMAND(0, enthavesel,"", (), addimplicit(intret(entgroup.length())));
 ICOMMAND(0, entselect, "e", (uint *body), if(!noentedit()) addgroup(e.type != ET_EMPTY && entgroup.find(n)<0 && executebool(body)));
@@ -1044,8 +1045,6 @@ ICOMMAND(0, entget, "", (), entfocus(efocus, {
     result(s);
 }));
 ICOMMAND(0, entindex, "", (), intret(efocus));
-COMMAND(0, entset, "ss");
-COMMAND(0, nearestent, "");
 
 void enttype(char *type, int *numargs)
 {
