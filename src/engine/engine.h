@@ -871,6 +871,7 @@ extern void loadsky(char *basename);
 
 // main
 extern void setcaption(const char *text = "", const char *text2 = "");
+extern bool checkconn();
 extern int colorpos, curfps, bestfps, worstfps, bestfpsdiff, worstfpsdiff, maxfps;
 
 // editing

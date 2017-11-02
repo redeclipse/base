@@ -2350,10 +2350,12 @@ void resethudshader()
     gle::colorf(1, 1, 1);
 }
 
+VAR(0, forcenoview, 0, 0, 1);
 bool hasnoview()
 {
-    return progressing || client::waiting() > 0;
+    return forcenoview || progressing || client::waiting() > 0;
 }
+ICOMMAND(0, getnoview, "", (), intret(hasnoview() ? 1 : 0));
 
 void usetexturing(bool on)
 {
