@@ -1144,9 +1144,9 @@ namespace entities
             gameentity &e = *(gameentity *)ents[index];
             if(e.type == TRIGGER && !cantrigger(index)) return;
             bool commit = false;
-            int frstent = min(firstent(MAPMODEL), min(firstent(LIGHTFX), min(firstent(PARTICLES), firstent(MAPSOUND)))),
-                flstent = max(lastent(MAPMODEL), max(lastent(LIGHTFX), max(lastent(PARTICLES), lastent(MAPSOUND))));
-            for(int i = frstent; i < flstent; ++i) if(ents[i]->links.find(index) >= 0)
+            int fstent = min(firstent(MAPMODEL), min(firstent(LIGHTFX), min(firstent(PARTICLES), firstent(MAPSOUND)))),
+                lstent = max(lastent(MAPMODEL), max(lastent(LIGHTFX), max(lastent(PARTICLES), lastent(MAPSOUND))));
+            for(int i = fstent; i < lstent; ++i) if(ents[i]->links.find(index) >= 0)
             {
                 gameentity &f = *(gameentity *)ents[i];
                 if(ents.inrange(ignore) && ents[ignore]->links.find(index) >= 0) continue;
@@ -2272,9 +2272,9 @@ namespace entities
             renderfocus(i, renderentshow(e, i, game::player1->state == CS_EDITING ? ((entgroup.find(i) >= 0 || enthover == i) ? 1 : 2) : 3));
         if(!drawtex)
         {
-            int frstent = m_edit(game::gamemode) ? 0 : firstuse(EU_ITEM),
-                flstent = m_edit(game::gamemode) ? ents.length() : lastuse(EU_ITEM);
-            for(int i = frstent; i < flstent; i++)
+            int fstent = m_edit(game::gamemode) ? 0 : firstuse(EU_ITEM),
+                lstent = m_edit(game::gamemode) ? ents.length() : lastuse(EU_ITEM);
+            for(int i = fstent; i < lstent; i++)
             {
                 gameentity &e = *(gameentity *)ents[i];
                 if(e.type <= NOTUSED || e.type >= MAXENTTYPES || (enttype[e.type].usetype == EU_ITEM && simpleitems)) continue;
@@ -2338,7 +2338,7 @@ namespace entities
             vec r = vec::hexcolor(colour).mul(game::getpalette(e.attrs[6], e.attrs[7]));
             colour = (int(r.x*255)<<16)|(int(r.y*255)<<8)|(int(r.z*255));
         }
-        part_portal(e.o, radius, 1, yaw, e.attrs[1], PART_TELEPORT, 0, colour);
+        part_portal(e.o, radius, 1, yaw, e.attrs[1], PART_TELEPORT, 1, colour);
     }
 
     bool checkparticle(extentity &e)
@@ -2460,15 +2460,10 @@ namespace entities
     void drawparticles()
     {
         float maxdist = float(maxparticledistance)*float(maxparticledistance);
-        int frstent = m_edit(game::gamemode) ? 0 : min(firstuse(EU_ITEM), firstent(TELEPORT)),
-            flstent = m_edit(game::gamemode) ? ents.length() : max(lastuse(EU_ITEM),lastent(TELEPORT));
         bool hasroute = (m_edit(game::gamemode) || m_race(game::gamemode)) && routeid >= 0;
-        if(hasroute)
-        {
-            frstent = min(frstent, firstent(ROUTE));
-            flstent = max(flstent, lastent(ROUTE));
-        }
-        for(int i = frstent; i < flstent; ++i)
+        int fstent = m_edit(game::gamemode) ? 0 : min(firstuse(EU_ITEM), firstent(hasroute ? ROUTE : TELEPORT)),
+            lstent = m_edit(game::gamemode) ? ents.length() : max(lastuse(EU_ITEM), lastent(hasroute ? ROUTE : TELEPORT));
+        for(int i = fstent; i < lstent; ++i)
         {
             gameentity &e = *(gameentity *)ents[i];
             if(e.type == NOTUSED || e.attrs.empty()) continue;
