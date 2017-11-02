@@ -120,26 +120,6 @@ extern void entselectionbox(extentity &e, vec &eo, vec &es);
 float hitentdist;
 int hitent, hitorient;
 
-#define mapmodelskip \
-    { \
-            if(e.attrs[6]&MMT_NOCLIP) continue; \
-            if(e.lastemit) \
-            { \
-                if(e.attrs[6]&MMT_HIDE) \
-                { \
-                    if(e.spawned()) continue; \
-                } \
-                else if(e.lastemit > 0) \
-                { \
-                    int millis = lastmillis-e.lastemit, delay = entities::triggertime(e); \
-                    if(!e.spawned() && millis < delay/2) continue; \
-                    if(e.spawned() && millis > delay/2) continue; \
-                } \
-                else if(e.spawned()) continue; \
-            } \
-    }
-
-
 static float disttoent(octaentities *oc, const vec &o, const vec &ray, float radius, int mode, extentity *t)
 {
     vec eo, es;
@@ -164,7 +144,25 @@ static float disttoent(octaentities *oc, const vec &o, const vec &ray, float rad
     } while(0)
 
     entintersect(RAY_POLY, mapmodels, {
-        if((mode&RAY_ENTS)!=RAY_ENTS) mapmodelskip
+        if((mode&RAY_ENTS)!=RAY_ENTS)
+        {
+            if(e.flags&EF_NOCOLLIDE) continue;
+            if(e.lastemit)
+            {
+                if(e.flags&EF_HIDE)
+                {
+                    if(e.spawned()) continue;
+                }
+                else if(e.lastemit > 0)
+                {
+                    int millis = lastmillis-e.lastemit;
+                    int delay = entities::triggertime(e, true);
+                    if(!e.spawned() && millis < delay) continue;
+                    if(e.spawned() && millis > delay) continue;
+                }
+                else if(e.spawned()) continue;
+            }
+        }
         else if(!entities::cansee(n)) continue;
         if(!mmintersect(e, o, ray, radius, mode, f)) continue;
     });
@@ -216,7 +214,15 @@ static float shadowent(octaentities *oc, const vec &o, const vec &ray, float rad
     {
         extentity &e = *ents[oc->mapmodels[i]];
         if(!(e.flags&EF_OCTA) || &e==t) continue;
-        if(e.attrs[6]&MMT_NOSHADOW) continue;
+        if(e.flags&EF_NOSHADOW) continue;
+        if(e.lastemit)
+        {
+            if(e.flags&EF_HIDE)
+            {
+                if(e.spawned()) continue;
+            }
+            else if(e.lastemit < 0 && e.spawned()) continue;
+        }
         if(!mmintersect(e, o, ray, radius, mode, f)) continue;
         if(f>0 && f<dist) dist = f;
     }
@@ -817,8 +823,22 @@ bool mmcollide(physent *d, const vec &dir, float cutoff, octaentities &oc) // co
     loopv(oc.mapmodels)
     {
         extentity &e = *ents[oc.mapmodels[i]];
-        if(e.flags&EF_NOCOLLIDE || !mapmodels.inrange(e.attrs[0])) continue;
-        mapmodelskip;
+        if(!mapmodels.inrange(e.attrs[0])) continue;
+        if(e.flags&EF_NOCOLLIDE) continue;
+        if(e.lastemit)
+        {
+            if(e.flags&EF_HIDE)
+            {
+                if(e.spawned()) continue;
+            }
+            else if(e.lastemit > 0)
+            {
+                int millis = lastmillis-e.lastemit, delay = entities::triggertime(e, true);
+                if(!e.spawned() && millis < delay) continue;
+                if(e.spawned() && millis > delay) continue;
+            }
+            else if(e.spawned()) continue;
+        }
         mapmodelinfo &mmi = mapmodels[e.attrs[0]];
         model *m = mmi.collide;
         if(!m)

@@ -482,6 +482,14 @@ void findvisiblemms(const vector<extentity *> &ents, bool doquery)
             {
                 extentity &e = *ents[oe->mapmodels[i]];
                 if(e.flags&EF_NOVIS) continue;
+                if(e.lastemit)
+                {
+                    if(e.flags&EF_HIDE)
+                    {
+                        if(e.spawned()) continue;
+                    }
+                    else if(e.lastemit < 0 && e.spawned()) continue;
+                }
                 e.flags |= EF_RENDER;
                 ++visible;
             }
@@ -504,10 +512,23 @@ void findvisiblemms(const vector<extentity *> &ents, bool doquery)
 }
 
 VAR(0, oqmm, 0, 4, 8);
+VAR(0, mmanimoverride, -1, 0, ANIM_ALL);
 
 static inline void rendermapmodel(extentity &e)
 {
     int anim = ANIM_MAPMODEL|ANIM_LOOP, basetime = 0;
+    if(e.lastemit)
+    {
+        if(e.flags&EF_HIDE && e.spawned()) return;
+        anim = e.spawned() ? ANIM_TRIGGER_ON : ANIM_TRIGGER_OFF;
+        if(e.lastemit > 0 && lastmillis-e.lastemit < entities::triggertime(e)) basetime = e.lastemit;
+        else anim |= ANIM_END;
+    }
+    if(mmanimoverride)
+    {
+        anim = (mmanimoverride<0 ? ANIM_ALL : mmanimoverride)|ANIM_LOOP;
+        basetime = 0;
+    }
     vec color = e.attrs[7] ? vec::hexcolor(e.attrs[7]) : vec::hexcolor(colourwhite);
     if(e.attrs[8] || e.attrs[9])
     {
@@ -1111,6 +1132,14 @@ void batchshadowmapmodels(bool skipmesh)
     {
         extentity &e = *ents[oe->mapmodels[k]];
         if(e.flags&nflags) continue;
+        if(e.lastemit)
+        {
+            if(e.flags&EF_HIDE)
+            {
+                if(e.spawned()) continue;
+            }
+            else if(e.lastemit < 0 && e.spawned()) continue;
+        }
         e.flags |= EF_RENDER;
     }
     for(octaentities *oe = shadowmms; oe; oe = oe->rnext) loopvj(oe->mapmodels)
@@ -2625,6 +2654,14 @@ static void genshadowmeshmapmodels(shadowmesh &m, int sides, shadowdrawinfo draw
     {
         extentity &e = *ents[oe->mapmodels[k]];
         if(e.flags&(EF_NOVIS|EF_NOSHADOW)) continue;
+        if(e.lastemit)
+        {
+            if(e.flags&EF_HIDE)
+            {
+                if(e.spawned()) continue;
+            }
+            else if(e.lastemit < 0 && e.spawned()) continue;
+        }
         e.flags |= EF_RENDER;
     }
     vector<triangle> tris;

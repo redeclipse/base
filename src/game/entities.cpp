@@ -82,22 +82,22 @@ namespace entities
         }
     });
 
-    int triggertime(extentity &e)
+    int triggertime(extentity &e, bool delay)
     {
         switch(e.type)
         {
-            case TRIGGER: case MAPMODEL: case PARTICLES: case MAPSOUND: case LIGHTFX: case TELEPORT: case PUSHER: return 1000; break;
+            case TRIGGER: case MAPMODEL: case PARTICLES: case MAPSOUND: case LIGHTFX: case TELEPORT: case PUSHER: return delay ? triggerdelay : triggermillis; break;
             default: break;
         }
         return 0;
     }
 
-    int triggertime(int n)
+    int triggertime(int n, bool delay)
     {
-        if(ents.inrange(n)) return triggertime(*ents[n]);
+        if(ents.inrange(n)) return triggertime(*ents[n], delay);
         return 0;
     }
-    ICOMMAND(0, entitytriggertime, "b", (int *n), intret(triggertime(*n)));
+    ICOMMAND(0, entitytriggertime, "bi", (int *n, int *d), intret(triggertime(*n, *d!=0)));
 
     void getentity(int id, int val, int ex)
     {
@@ -294,10 +294,9 @@ namespace entities
                 addentinfo(mmi->name);
                 if(full)
                 {
-                    if(attr[6]&MMT_HIDE) addentinfo("hide");
-                    if(attr[6]&MMT_NOCLIP) addentinfo("no-clip");
-                    if(attr[6]&MMT_NOSHADOW) addentinfo("no-shadow");
-                    if(attr[6]&MMT_NODYNSHADOW) addentinfo("no-dynshadow");
+                    if(attr[6]&(1<<MDLF_HIDE)) addentinfo("hide");
+                    if(attr[6]&(1<<MDLF_NOCLIP)) addentinfo("no-clip");
+                    if(attr[6]&(1<<MDLF_NOSHADOW)) addentinfo("no-shadow");
                 }
                 break;
             }
@@ -570,7 +569,7 @@ namespace entities
                 if(d)
                 {
                     int millis = d->lastused(n, true);
-                    if(millis && lastmillis-millis < triggertime(e)/2) return false;
+                    if(millis && lastmillis-millis < triggertime(e, true)) return false;
                 }
                 return true;
                 break;
@@ -666,7 +665,7 @@ namespace entities
                         if(projent::is(d) && ((projent *)d)->type == PRJ_AFFINITY) break;
                     }
                     int millis = d->lastused(n, true);
-                    if(millis && lastmillis-millis < triggertime(e)) break;
+                    if(millis && lastmillis-millis < triggertime(e, true)) break;
                     e.lastemit = lastmillis;
                     static vector<int> teleports;
                     teleports.shrink(0);
@@ -767,7 +766,7 @@ namespace entities
                 else if(e.type == PUSHER)
                 {
                     int millis = d->lastused(n, true);
-                    if(millis && lastmillis-millis < triggertime(e)) break;
+                    if(millis && lastmillis-millis < triggertime(e, true)) break;
                     e.lastemit = lastmillis;
                     d->setused(n, lastmillis);
                     float mag = max(e.attrs[2], 1), maxrad = e.attrs[3] ? e.attrs[3] : enttype[PUSHER].radius, minrad = e.attrs[4];
@@ -1001,6 +1000,7 @@ namespace entities
         switch(e.type)
         {
             case MAPMODEL:
+            {
                 while(e.attrs[1] < 0) e.attrs[1] += 360;
                 while(e.attrs[1] >= 360) e.attrs[1] -= 360; // yaw
                 while(e.attrs[2] < -180) e.attrs[2] += 360;
@@ -1010,6 +1010,12 @@ namespace entities
                 while(e.attrs[4] < 0) e.attrs[4] += 101;
                 while(e.attrs[4] > 100) e.attrs[4] -= 101; // blend
                 if(e.attrs[5] < 0) e.attrs[5] = 0;
+                loopj(MDLF_MAX)
+                {
+                    if(e.flags&(1<<j) && !(e.attrs[6]&(1<<j))) e.flags &= ~(1<<j);
+                    else if(!(e.flags&(1<<j)) && e.attrs[6]&(1<<j)) e.flags |= (1<<j);
+                }
+            }
             case PARTICLES:
             case MAPSOUND:
             case LIGHTFX:

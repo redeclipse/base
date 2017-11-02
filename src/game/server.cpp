@@ -3134,6 +3134,11 @@ namespace server
 
     bool hasmapdata()
     {
+        if(m_edit(gamemode))
+        {
+            loopi(SENDMAP_EDIT) if(!mapdata[i]) return false;
+            return true;
+        }
         if(!smapcrc) return false;
         loopi(SENDMAP_HAS) if(!mapdata[i]) return false;
         return true;
@@ -4917,11 +4922,11 @@ namespace server
         if(doteam && !allowteam(ci, ci->team, T_FIRST, false)) setteam(ci, chooseteam(ci), TT_INFO);
     }
 
-    int triggertime(int i)
+    int triggertime(int i, bool delay = false)
     {
         if(sents.inrange(i)) switch(sents[i].type)
         {
-            case TRIGGER: case MAPMODEL: case PARTICLES: case MAPSOUND: case TELEPORT: case PUSHER: return 1000; break;
+            case TRIGGER: case MAPMODEL: case PARTICLES: case MAPSOUND: case TELEPORT: case PUSHER: return delay ? G(triggerdelay) : G(triggermillis); break;
             default: break;
         }
         return 0;
@@ -6417,7 +6422,7 @@ namespace server
                             }
                         }
                     }
-                    else srvmsgft(cp->clientnum, CON_DEBUG, "sync error: cannot trigger %d - not a trigger", ent);
+                    else srvmsgft(cp->clientnum, CON_DEBUG, "sync error: cannot trigger %d - entity does not exist (max: %d)", ent, sents.length());
                     break;
                 }
 

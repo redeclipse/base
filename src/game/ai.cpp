@@ -1547,7 +1547,7 @@ namespace ai
                 if(expl > 0) obstacles.avoidnear(p, p->o.z + expl + 1, p->o, guessradius + expl + 1);
             }
         }
-        loopenti(MAPMODEL) if(entities::ents[i]->type == MAPMODEL && !entities::ents[i]->spawned() && !(entities::ents[i]->attrs[6]&MMT_NOCLIP))
+        loopenti(MAPMODEL) if(entities::ents[i]->type == MAPMODEL && !entities::ents[i]->spawned() && !(entities::ents[i]->flags&EF_NOCOLLIDE))
         {
             gameentity &e = *(gameentity *)entities::ents[i];
             mapmodelinfo *mmi = getmminfo(e.attrs[0]);
@@ -1561,7 +1561,7 @@ namespace ai
             }
             rotatebb(center, radius, int(e.attrs[1]), int(e.attrs[2]));
             float xy = max(radius.x, radius.y), z = radius.z;
-            if(e.attrs[6]&MMT_HIDE)
+            if(e.flags&EF_HIDE)
             {
                 xy += WAYPOINTRADIUS;
                 z += WAYPOINTRADIUS;

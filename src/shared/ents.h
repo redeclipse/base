@@ -16,23 +16,15 @@ struct entbase                                   // persistent map entity
 
 enum
 {
-    EF_NOVIS      = 1<<0,
+    EF_HIDE       = 1<<0,
     EF_NOSHADOW   = 1<<1,
     EF_NOCOLLIDE  = 1<<2,
-    EF_SHADOWMESH = 1<<3,
-    EF_OCTA       = 1<<4,
-    EF_RENDER     = 1<<5,
-    EF_SPAWNED    = 1<<6
+    EF_NOVIS      = 1<<3,
+    EF_SHADOWMESH = 1<<4,
+    EF_OCTA       = 1<<5,
+    EF_RENDER     = 1<<6,
+    EF_SPAWNED    = 1<<7
 
-};
-
-enum
-{
-    MMT_NONE = 0,
-    MMT_HIDE = 1<<0, // hide when triggered (trigger)
-    MMT_NOCLIP = 1<<1, // always not collide
-    MMT_NOSHADOW = 1<<2, // doesn't cast a lightmap shadow
-    MMT_NODYNSHADOW = 1<<3, // doesn't cast a shadow map (trigger)
 };
 
 typedef smallvector<int> attrvector;
