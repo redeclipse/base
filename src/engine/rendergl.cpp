@@ -1409,7 +1409,6 @@ matrix4 cammatrix, projmatrix, camprojmatrix, invcammatrix, invcamprojmatrix, in
 
 FVAR(0, nearplane, 0.01f, 0.54f, 2.0f);
 
-matrix4 oldprojmatrix;
 void setavatarscale(float fov, float zscale)
 {
     projmatrix.perspective(fov, aspect, nearplane, farplane);
