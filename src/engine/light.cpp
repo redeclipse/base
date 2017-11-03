@@ -40,6 +40,7 @@ bool getlightfx(const extentity &e, int *radius, int *spotlight, vec *color, boo
     if(color)
     {
         *color = vec(e.attrs[1], e.attrs[2], e.attrs[3]);
+        if(e.attrs[7] || e.attrs[8]) color->mul(game::getpalette(e.attrs[7], e.attrs[8]));
         if(normalize) color->div(255.f);
         color->max(0);
     }

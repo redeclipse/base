@@ -70,10 +70,10 @@ enttypes enttype[] = {
                 "none",         { "" }
     },
     {
-        LIGHT,          1,          59,     0,      EU_NONE,    7,          -1,         -1,
+        LIGHT,          1,          59,     0,      EU_NONE,    9,          -1,         -1,
             (1<<LIGHTFX), (1<<LIGHTFX), 0,
             false,  false,  false,      false,      false,
-                "light",        { "radius", "red",      "green",    "blue",     "flare",    "flarescale", "flags"  }
+                "light",        { "radius", "red",      "green",    "blue",     "flare",    "flarescale", "flags",  "palette",  "palindex"  }
     },
     {
         MAPMODEL,       1,          58,     0,      EU_NONE,    13,         -1,         -1,
