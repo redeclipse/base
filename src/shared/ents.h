@@ -36,18 +36,57 @@ struct entity : entbase
     linkvector links;
 };
 
-enum { MAXENTMATERIALS = 3 };
+enum { MAXENTMATERIALS = 3, MAXENTATTACHED = 32 };
+enum { MDL_CULL_VFC = 1<<0, MDL_CULL_DIST = 1<<1, MDL_CULL_OCCLUDED = 1<<2, MDL_CULL_QUERY = 1<<3, MDL_FULLBRIGHT = 1<<4, MDL_NORENDER = 1<<5, MDL_MAPMODEL = 1<<6, MDL_NOBATCH = 1<<7, MDL_ONLYSHADOW = 1<<8 };
+
+struct model;
+struct modelattach
+{
+    const char *tag, *name;
+    int anim, basetime;
+    float transparent, sizescale;
+    vec *pos;
+    model *m;
+
+    modelattach() : tag(NULL), name(NULL), anim(-1), basetime(0), transparent(-1), sizescale(-1), pos(NULL), m(NULL) {}
+    modelattach(const char *tag, const char *name, int anim = -1, int basetime = 0, float transparent = -1, float sizescale = -1) : tag(tag), name(name), anim(anim), basetime(basetime), transparent(transparent), sizescale(sizescale), pos(NULL), m(NULL) {}
+    modelattach(const char *tag, vec *pos) : tag(tag), name(NULL), anim(-1), basetime(0), transparent(-1), sizescale(-1), pos(pos), m(NULL) {}
+};
+
+struct modelstate
+{
+    float yaw, pitch, roll, size, radius;
+    int anim, flags, basetime, basetime2, lastspin;
+    vec o, center, material[MAXENTMATERIALS];
+    vec4 color;
+    modelattach attached[MAXENTATTACHED];
+
+    modelstate()
+    {
+        reset();
+    }
+
+    void reset(bool skipmat = false)
+    {
+        yaw = pitch = roll = radius = 0;
+        size = 1;
+        anim = flags = basetime = basetime2 = lastspin = 0;
+        o = center = vec(0, 0, 0);
+        color = vec4(1, 1, 1, 1);
+        if(skipmat) loopi(MAXENTMATERIALS) material[i] = vec(1, 1, 1);
+        loopi(MAXENTATTACHED) attached[i] = modelattach();
+    }
+};
 
 struct extentity : entity                       // part of the entity that doesn't get saved to disk
 {
     int flags;        // the only dynamic state of a map entity
     int lastemit, emit[3];
-    bvec material[MAXENTMATERIALS];
+    modelstate mdl;
 
     extentity() : flags(0), lastemit(0)
     {
         emit[0] = emit[1] = emit[2] = 0;
-        loopi(MAXENTMATERIALS) material[i] = bvec(255, 255, 255);
     }
 
     bool spawned() const { return (flags&EF_SPAWNED) != 0; }
@@ -76,12 +115,11 @@ struct baseent
     uchar state;                                // one of CS_* above
     int inmaterial;
     float submerged;
-    bvec material[MAXENTMATERIALS];
+    modelstate mdl;
 
     baseent() : o(0, 0, 0), yaw(0), pitch(0), roll(0), state(CS_SPECTATOR)
     {
         reset();
-        loopi(MAXENTMATERIALS) material[i] = bvec(255, 255, 255);
     }
 
     void reset()
@@ -236,7 +274,6 @@ struct usedent
 
 struct dynent : physent                         // animated characters, or characters that can receive input
 {
-    //entitylight light;
     animinterpinfo animinterp[MAXANIMPARTS];
     ragdolldata *ragdoll;
     occludequery *query;

@@ -1513,9 +1513,9 @@ struct projent : dynent
     //entitylight light;
     gameent *owner, *target, *stick;
     physent *hit;
-    const char *mdl;
+    const char *mdlname;
 
-    projent() : projtype(PRJ_SHOT), id(-1), collideflags(COLFLAG_NONE), owner(NULL), target(NULL), stick(NULL), hit(NULL), mdl(NULL) { reset(); }
+    projent() : projtype(PRJ_SHOT), id(-1), collideflags(COLFLAG_NONE), owner(NULL), target(NULL), stick(NULL), hit(NULL), mdlname(NULL) { reset(); }
     ~projent()
     {
         removetrackedparticles(this);

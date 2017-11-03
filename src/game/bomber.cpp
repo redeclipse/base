@@ -140,7 +140,7 @@ namespace bomber
     vec pulsecolour()
     {
         uint n = lastmillis/100;
-        return vec::hexcolor(pulsecols[PULSE_DISCO][n%PULSECOLOURS]).lerp(vec::hexcolor(pulsecols[PULSE_DISCO][(n+1)%PULSECOLOURS]), (lastmillis%100)/100.0f);
+        return vec::fromcolor(pulsecols[PULSE_DISCO][n%PULSECOLOURS]).lerp(vec::fromcolor(pulsecols[PULSE_DISCO][(n+1)%PULSECOLOURS]), (lastmillis%100)/100.0f);
     }
 
     FVAR(IDF_PERSIST, bomberreticlesize, 0, 0.1f, 1.f);
@@ -279,17 +279,24 @@ namespace bomber
         loopv(st.flags) // flags/bases
         {
             bomberstate::flag &f = st.flags[i];
+            f.mdl.reset();
+            f.basemdl.reset();
             float trans = 1;
             int millis = lastmillis-f.displaytime;
             if(millis <= 1000) trans *= float(millis)/1000.f;
-            if(!f.enabled) f.basematerial[0] = f.material[0] = bvec(0, 0, 0);
+            if(!f.enabled) f.basemdl.material[0] = f.mdl.material[0] = vec(0, 0, 0);
             else if(isbomberaffinity(f))
             {
                 vec above(f.pos(true, true));
-                float blend = camera1->o.distrange(above, bomberhintfadeat, bomberhintfadecut);
                 if(!f.owner && !f.droptime) above.z += enttype[AFFINITY].radius/4*trans;
-                float size = trans, yaw = !f.owner && f.proj ? f.proj->yaw : (lastmillis/4)%360, pitch = !f.owner && f.proj ? f.proj->pitch : 0, roll = !f.owner && f.proj ? f.proj->roll : 0,
-                      wait = f.droptime ? clamp((lastmillis-f.droptime)/float(bomberresetdelay), 0.f, 1.f) : ((f.owner && carrytime) ? clamp((lastmillis-f.taketime)/float(carrytime), 0.f, 1.f) : 0.f);
+                f.mdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
+                f.mdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED;
+                f.mdl.o = above;
+                f.mdl.size = trans;
+                f.mdl.yaw = !f.owner && f.proj ? f.proj->yaw : (lastmillis/4)%360;
+                f.mdl.pitch = !f.owner && f.proj ? f.proj->pitch : 0;
+                f.mdl.roll = !f.owner && f.proj ? f.proj->roll : 0;
+                float wait = f.droptime ? clamp((lastmillis-f.droptime)/float(bomberresetdelay), 0.f, 1.f) : ((f.owner && carrytime) ? clamp((lastmillis-f.taketime)/float(carrytime), 0.f, 1.f) : 0.f);
                 int interval = lastmillis%1000;
                 vec effect = pulsecolour();
                 if(wait > 0.5f)
@@ -298,14 +305,15 @@ namespace bomber
                     float amt = (millis <= delay ? millis/float(delay) : 1.f-((millis-delay)/float(delay)));
                     flashcolour(effect.r, effect.g, effect.b, 1.f, 0.f, 0.f, amt);
                 }
-                f.basematerial[0] = f.material[0] = bvec::fromcolor(effect);
+                f.basemdl.material[0] = f.mdl.material[0] = effect;
                 if(f.owner != game::focus || game::thirdpersonview(true))
                 {
                     if(f.owner == game::focus) trans *= 0.25f;
-                    rendermodel("props/ball", ANIM_MAPMODEL|ANIM_LOOP, above, yaw, pitch, roll, MDL_CULL_VFC|MDL_CULL_OCCLUDED, NULL, NULL, 0, 0, size, vec4(1, 1, 1, trans), &f.material[0]);
+                    f.mdl.color.a *= trans;
+                    rendermodel("props/ball", &f.mdl);
                     float fluc = interval >= 500 ? (1500-interval)/1000.f : (500+interval)/1000.f;
                     int pcolour = effect.tohexcolor();
-                    part_create(PART_HINT_SOFT, 1, above, pcolour, enttype[AFFINITY].radius/4*trans+(2*fluc), fluc*trans*blend);
+                    part_create(PART_HINT_SOFT, 1, above, pcolour, enttype[AFFINITY].radius/4*trans+(2*fluc), fluc*trans*camera1->o.distrange(above, bomberhintfadeat, bomberhintfadecut));
                     if(gs_playing(game::gamestate) && f.droptime)
                     {
                         above.z += enttype[AFFINITY].radius/4*trans+1.5f;
@@ -317,9 +325,9 @@ namespace bomber
             }
             else if(!m_bb_hold(game::gamemode, game::mutators))
             {
-                vec above = f.above, effect = vec::hexcolor(TEAM(f.team, colour)).mul(trans);
+                vec above = f.above, effect = vec::fromcolor(TEAM(f.team, colour)).mul(trans);
                 float blend = camera1->o.distrange(above, bomberhintfadeat, bomberhintfadecut);
-                f.basematerial[0] = f.material[0] = bvec::fromcolor(effect);
+                f.basemdl.material[0] = f.mdl.material[0] = effect;
                 int pcolour = effect.tohexcolor();
                 part_explosion(above, 3, PART_SHOCKBALL, 1, pcolour, 1, trans*blend*0.5f);
                 part_create(PART_HINT_SOFT, 1, above, pcolour, 6, trans*blend*0.5f);
@@ -341,7 +349,13 @@ namespace bomber
                 part_icon(above, textureload(hud::teamtexname(f.team), 3), 4, trans*blend, 0, 0, 1, TEAM(f.team, colour));
             }
             if(!m_bb_hold(game::gamemode, game::mutators))
-                rendermodel("props/point", ANIM_MAPMODEL|ANIM_LOOP, f.render, f.yaw, 0, 0, MDL_CULL_VFC|MDL_CULL_OCCLUDED, NULL, NULL, 0, 0, 1, vec4(1, 1, 1, 1), &f.basematerial[0]);
+            {
+                f.basemdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
+                f.basemdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED;
+                f.basemdl.o = f.render;
+                f.basemdl.yaw = f.yaw;
+                rendermodel("props/point", &f.basemdl);
+            }
         }
     }
 
@@ -354,7 +368,7 @@ namespace bomber
             float trans = 1.f;
             int millis = lastmillis-f.displaytime;
             if(millis <= 1000) trans = float(millis)/1000.f;
-            vec colour = isbomberaffinity(f) ? pulsecolour() : vec::hexcolor(TEAM(f.team, colour));
+            vec colour = isbomberaffinity(f) ? pulsecolour() : vec::fromcolor(TEAM(f.team, colour));
             adddynlight(f.pos(true, true), enttype[AFFINITY].radius*trans, colour, 0, 0);
         }
     }
@@ -460,7 +474,7 @@ namespace bomber
                 defformatstring(text, "<huge>\fzuw%s", str);
                 part_textcopy(vec(from).add(vec(0, 0, enttype[AFFINITY].radius)), text, PART_TEXT, game::eventiconfade, TEAM(team, colour), 3, 1, -10);
             }
-            if(game::dynlighteffects) adddynlight(vec(from).add(vec(0, 0, enttype[AFFINITY].radius)), enttype[AFFINITY].radius*2, vec::hexcolor(TEAM(team, colour)).mul(2.f), 500, 250);
+            if(game::dynlighteffects) adddynlight(vec(from).add(vec(0, 0, enttype[AFFINITY].radius)), enttype[AFFINITY].radius*2, vec::fromcolor(TEAM(team, colour)).mul(2.f), 500, 250);
         }
         if(to.x >= 0)
         {
@@ -469,7 +483,7 @@ namespace bomber
                 defformatstring(text, "<huge>\fzuw%s", str);
                 part_textcopy(vec(to).add(vec(0, 0, enttype[AFFINITY].radius)), text, PART_TEXT, game::eventiconfade, TEAM(team, colour), 3, 1, -10);
             }
-            if(game::dynlighteffects) adddynlight(vec(to).add(vec(0, 0, enttype[AFFINITY].radius)), enttype[AFFINITY].radius*2, vec::hexcolor(TEAM(team, colour)).mul(2.f), 500, 250);
+            if(game::dynlighteffects) adddynlight(vec(to).add(vec(0, 0, enttype[AFFINITY].radius)), enttype[AFFINITY].radius*2, vec::fromcolor(TEAM(team, colour)).mul(2.f), 500, 250);
         }
         if(from.x >= 0 && to.x >= 0 && from != to) part_trail(PART_SPARK, 500, from, to, TEAM(team, colour), 1, 1, -10);
     }

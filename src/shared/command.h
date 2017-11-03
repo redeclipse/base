@@ -457,7 +457,7 @@ extern char *limitstring(const char *str, size_t len);
 #define SVARFN(flags, name, global, cur, body) _SVARF(name, global, cur, body, flags)
 #define SVARF(flags, name, cur, body) _SVARF(name, name, cur, body, flags)
 
-#define _CVAR(name, cur, init, body, flags) bvec name = bvec::hexcolor(cur); _VARF(name, _##name, 0, cur, 0xFFFFFF, { init; name = bvec::hexcolor(_##name); body; }, IDF_HEX|flags)
+#define _CVAR(name, cur, init, body, flags) bvec name = bvec::fromcolor(cur); _VARF(name, _##name, 0, cur, 0xFFFFFF, { init; name = bvec::fromcolor(_##name); body; }, IDF_HEX|flags)
 #define CVARF(flags, name, cur, body) _CVAR(name, cur, , body, flags)
 #define CVAR(flags, name, cur) _CVAR(name, cur, , , flags)
 #define CVAR0F(flags, name, cur, body) _CVAR(name, cur, { if(!_##name) _##name = cur; }, body, flags)

@@ -654,7 +654,7 @@ namespace hud
     void skewcolour(T &r, T &g, T &b, int colour = 0, bool faded = false)
     {
         if(colour < 0) colour = game::getcolour(game::focus, INVPULSE(colour));
-        vec c = vec::hexcolor(colour);
+        vec c = vec::fromcolor(colour);
         r = T(r*c.r);
         g = T(g*c.g);
         b = T(b*c.b);
@@ -1083,7 +1083,7 @@ namespace hud
         vec c(1, 1, 1);
         if(game::focus->state == CS_ALIVE && index >= POINTER_HAIR)
         {
-            if(crosshairweapons&2) c = vec::hexcolor(W(game::focus->weapselect, colour));
+            if(crosshairweapons&2) c = vec::fromcolor(W(game::focus->weapselect, colour));
             if(index == POINTER_ZOOM && game::inzoom())
             {
                 int frame = lastmillis-game::lastzoom, off = int(zoomcrosshairsize*hudsize)-cs;
@@ -1481,7 +1481,7 @@ namespace hud
                         default: break;
                     }
                     glBindTexture(GL_TEXTURE_2D, t->id);
-                    gle::color(vec::hexcolor(colour), fade);
+                    gle::color(vec::fromcolor(colour), fade);
                     drawtexture(tx-width/2, ty-rsize/2, width, size);
                     ty -= rsize;
                 }
@@ -1747,7 +1747,7 @@ namespace hud
                 fade *= 1-(offset/float(onscreenhitsfade));
             }
             defformatstring(text, "%c%d", d.damage > 0 ? '-' : (d.damage < 0 ? '+' : '~'), d.damage < 0 ? 0-d.damage : d.damage);
-            vec colour = d.colour < 0 ? game::rescolour(a, INVPULSE(d.colour)) : vec::hexcolor(d.colour);
+            vec colour = d.colour < 0 ? game::rescolour(a, INVPULSE(d.colour)) : vec::fromcolor(d.colour);
             if(maxy >= 0 && hy < maxy) hy = maxy;
             if(onscreenhitsglow && settexture(onscreenhitsglowtex))
             {
@@ -1777,7 +1777,7 @@ namespace hud
                 range = clamp(max(d.damage, onscreendamagemin)/float(max(onscreendamagemax-onscreendamagemin, 1)), onscreendamagemin/100.f, 1.f),
                 fade = clamp(onscreendamageblend*blend, min(onscreendamageblend*onscreendamagemin/100.f, 1.f), onscreendamageblend)*amt,
                 size = clamp(range*onscreendamagesize, min(onscreendamagesize*onscreendamagemin/100.f, 1.f), onscreendamagesize)*amt;
-            vec dir = d.dir, colour = d.colour < 0 ? game::rescolour(game::focus, INVPULSE(d.colour)) : vec::hexcolor(d.colour);
+            vec dir = d.dir, colour = d.colour < 0 ? game::rescolour(game::focus, INVPULSE(d.colour)) : vec::fromcolor(d.colour);
             if(e == game::focus) d.dir = vec(e->yaw*RAD, 0.f).neg();
             dir.rotate_around_z(-camera1->yaw*RAD).normalize();
             float yaw = -atan2(dir.x, dir.y)/RAD, x = sinf(RAD*yaw), y = -cosf(RAD*yaw), sz = max(w, h)/2,

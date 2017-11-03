@@ -421,7 +421,7 @@ namespace entities
         }
         d->useitem(ent, e.type, attr, ammoamt, sweap, lastmillis, weaponswitchdelay);
         playsound(e.type == WEAPON && attr >= W_OFFSET && attr < W_ALL ? WSND(attr, S_W_USE) : S_ITEMUSE, d->o, d, 0, -1, -1, -1, &d->wschan);
-        if(game::dynlighteffects) adddynlight(d->center(), enttype[e.type].radius*2, vec::hexcolor(colour).mul(2.f), 250, 250);
+        if(game::dynlighteffects) adddynlight(d->center(), enttype[e.type].radius*2, vec::fromcolor(colour).mul(2.f), 250, 250);
         if(ents.inrange(drop) && ents[drop]->type == WEAPON)
         {
             gameentity &f = *(gameentity *)ents[drop];
@@ -2284,38 +2284,40 @@ namespace entities
                 if(m_edit(game::gamemode) || active)
                 {
                     const char *mdlname = entmdlname(e.type, e.attrs);
-                    vec pos = e.o;
                     if(mdlname && *mdlname)
                     {
-                        int flags = MDL_CULL_VFC|MDL_CULL_DIST|MDL_CULL_OCCLUDED, colour = -1;
-                        float fade = 1, yaw = 0, pitch = 0, size = 1;
+                        e.mdl.reset();
+                        e.mdl.o = e.o;
+                        e.mdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
+                        e.mdl.flags = MDL_CULL_VFC|MDL_CULL_DIST|MDL_CULL_OCCLUDED;
+                        int colour = -1;
                         if(!active)
                         {
                             if(showentmodels <= (e.type == PLAYERSTART || e.type == ACTOR ? 1 : 0)) continue;
                             if(e.type == AFFINITY || e.type == PLAYERSTART)
                             {
-                                yaw = e.attrs[1]+(e.type == PLAYERSTART ? 90 : 0);
+                                e.mdl.yaw = e.attrs[1]+(e.type == PLAYERSTART ? 90 : 0);
+                                e.mdl.pitch = e.attrs[2];
                                 colour = TEAM(e.attrs[0], colour);
-                                pitch = e.attrs[2];
                             }
                             else if(e.type == ACTOR)
                             {
-                                yaw = e.attrs[1]+90;
-                                pitch = e.attrs[2];
+                                e.mdl.yaw = e.attrs[1]+90;
+                                e.mdl.pitch = e.attrs[2];
                                 int weap = e.attrs[6] > 0 ? e.attrs[6]-1 : AA(e.attrs[0], weaponspawn);
+                                e.mdl.size = e.attrs[9] > 0 ? e.attrs[9]/100.f : AA(e.attrs[0], scale);
                                 if(isweap(weap)) colour = W(weap, colour);
-                                size = e.attrs[9] > 0 ? e.attrs[9]/100.f : AA(e.attrs[0], scale);
                             }
                         }
                         else if(e.spawned())
                         {
                             int millis = lastmillis-e.lastspawn;
-                            if(millis < 500) size = fade = float(millis)/500.f;
+                            if(millis < 500) e.mdl.size = e.mdl.color.a = float(millis)/500.f;
                         }
                         else if(e.lastemit)
                         {
                             int millis = lastmillis-e.lastemit;
-                            if(millis < 500) size = fade = 1.f-(float(millis)/500.f);
+                            if(millis < 500) e.mdl.size = e.mdl.color.a = 1.f-(float(millis)/500.f);
                         }
                         if(e.type == WEAPON)
                         {
@@ -2323,8 +2325,8 @@ namespace entities
                             if(isweap(attr)) colour = W(attr, colour);
                             else continue;
                         }
-                        e.material[0] = colour >= 0 ? bvec(colour) : bvec(colourwhite);
-                        rendermodel(mdlname, ANIM_MAPMODEL|ANIM_LOOP, pos, yaw, pitch, 0.f, flags, NULL, NULL, 0, 0, size, vec4(1, 1, 1, fade), &e.material[0]);
+                        e.mdl.material[0] = colour >= 0 ? vec::fromcolor(colour) : vec::fromcolor(colourwhite);
+                        rendermodel(mdlname, &e.mdl);
                     }
                 }
             }
@@ -2337,7 +2339,7 @@ namespace entities
         int attr = int(e.attrs[4]), colour = (((attr&0xF)<<4)|((attr&0xF0)<<8)|((attr&0xF00)<<12))+0x0F0F0F;
         if(e.attrs[6] || e.attrs[7])
         {
-            vec r = vec::hexcolor(colour).mul(game::getpalette(e.attrs[6], e.attrs[7]));
+            vec r = vec::fromcolor(colour).mul(game::getpalette(e.attrs[6], e.attrs[7]));
             colour = (int(r.x*255)<<16)|(int(r.y*255)<<8)|(int(r.z*255));
         }
         part_portal(e.o, radius, 1, yaw, e.attrs[1], PART_TELEPORT, 1, colour);

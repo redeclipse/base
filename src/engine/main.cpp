@@ -244,7 +244,7 @@ void resetfullscreen()
     setfullscreen(true);
 }
 
-VARF(0, fullscreendesktop, 0, 0, 1, if(!(identflags&IDF_WORLD) && fullscreen) resetfullscreen());
+VARF(0, fullscreendesktop, 0, 1, 1, if(!(identflags&IDF_WORLD) && fullscreen) resetfullscreen());
 
 void screenres(int w, int h)
 {

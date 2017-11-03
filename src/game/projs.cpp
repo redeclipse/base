@@ -743,7 +743,7 @@ namespace projs
         }
         size = clamp(size*proj.curscale, 0.1f, 1.f);
         model *m = NULL;
-        if(proj.mdl && *proj.mdl && ((m = loadmodel(proj.mdl)) != NULL))
+        if(proj.mdlname && *proj.mdlname && ((m = loadmodel(proj.mdlname)) != NULL))
         {
             vec center, radius;
             m->boundbox(center, radius);
@@ -821,7 +821,7 @@ namespace projs
                 proj.speedmax = WF(WK(proj.flags), proj.weap, speedmax, WS(proj.flags));
                 proj.extinguish = WF(WK(proj.flags), proj.weap, extinguish, WS(proj.flags))|4;
                 proj.interacts = WF(WK(proj.flags), proj.weap, interacts, WS(proj.flags));
-                proj.mdl = weaptype[proj.weap].proj;
+                proj.mdlname = weaptype[proj.weap].proj;
                 proj.escaped = !proj.owner || proj.child || WK(proj.flags) || WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_HITSCAN || proj.weap == W_MELEE;
                 updatetargets(proj, waited ? 1 : 0);
                 if(WF(WK(proj.flags), proj.weap, guided, WS(proj.flags)) != 0 && proj.owner)
@@ -861,9 +861,9 @@ namespace projs
                     }
                     switch(rnd(3))
                     {
-                        case 2: proj.mdl = "projectiles/gibs/gib03"; break;
-                        case 1: proj.mdl = "projectiles/gibs/gib02"; break;
-                        case 0: default: proj.mdl = "projectiles/gibs/gib01"; break;
+                        case 2: proj.mdlname = "projectiles/gibs/gib03"; break;
+                        case 1: proj.mdlname = "projectiles/gibs/gib02"; break;
+                        case 0: default: proj.mdlname = "projectiles/gibs/gib01"; break;
                     }
                     proj.reflectivity = 0.f;
                     proj.elasticity = gibselasticity;
@@ -885,10 +885,10 @@ namespace projs
                 proj.lifesize = 1.5f-(rnd(100)/100.f);
                 switch(rnd(4))
                 {
-                    case 3: proj.mdl = "projectiles/debris/debris04"; break;
-                    case 2: proj.mdl = "projectiles/debris/debris03"; break;
-                    case 1: proj.mdl = "projectiles/debris/debris02"; break;
-                    case 0: default: proj.mdl = "projectiles/debris/debris01"; break;
+                    case 3: proj.mdlname = "projectiles/debris/debris04"; break;
+                    case 2: proj.mdlname = "projectiles/debris/debris03"; break;
+                    case 1: proj.mdlname = "projectiles/debris/debris02"; break;
+                    case 0: default: proj.mdlname = "projectiles/debris/debris01"; break;
                 }
                 proj.relativity = proj.reflectivity = 0.f;
                 proj.elasticity = debriselasticity;
@@ -909,13 +909,13 @@ namespace projs
                 if(proj.owner) proj.o = proj.from = proj.owner->ejectpos(proj.weap);
                 if(isweap(proj.weap))
                 {
-                    proj.mdl = weaptype[proj.weap].eject && *weaptype[proj.weap].eprj ? weaptype[proj.weap].eprj : "projectiles/catridge";
+                    proj.mdlname = weaptype[proj.weap].eject && *weaptype[proj.weap].eprj ? weaptype[proj.weap].eprj : "projectiles/catridge";
                     proj.lifesize = weaptype[proj.weap].esize;
-                    proj.material[0] = bvec(W(proj.weap, colour));
+                    proj.mdl.material[0] = vec::fromcolor(W(proj.weap, colour));
                 }
                 else
                 {
-                    proj.mdl = "projectiles/catridge";
+                    proj.mdlname = "projectiles/catridge";
                     proj.lifesize = 1;
                 }
                 proj.reflectivity = 0.f;
@@ -937,7 +937,7 @@ namespace projs
             case PRJ_ENT:
             {
                 proj.height = proj.aboveeye = proj.radius = proj.xradius = proj.yradius = 4;
-                proj.mdl = entities::entmdlname(entities::ents[proj.id]->type, entities::ents[proj.id]->attrs);
+                proj.mdlname = entities::entmdlname(entities::ents[proj.id]->type, entities::ents[proj.id]->attrs);
                 proj.reflectivity = 0.f;
                 proj.elasticity = itemelasticity;
                 proj.relativity = itemrelativity;
@@ -972,7 +972,7 @@ namespace projs
                 switch(game::gamemode)
                 {
                     case G_BOMBER:
-                        proj.mdl = "props/ball";
+                        proj.mdlname = "props/ball";
                         proj.projcollide = bombercollide;
                         proj.extinguish = bomberextinguish;
                         proj.interacts = bomberinteracts;
@@ -984,7 +984,7 @@ namespace projs
                         proj.speedmax = bomberspeedmax;
                         break;
                     case G_CAPTURE: default:
-                        proj.mdl = "props/flag";
+                        proj.mdlname = "props/flag";
                         proj.projcollide = capturecollide;
                         proj.extinguish = captureextinguish;
                         proj.interacts = captureinteracts;
@@ -1017,7 +1017,7 @@ namespace projs
                         return;
                     }
                 }
-                proj.mdl = game::vanityfname(proj.owner, proj.weap, true);
+                proj.mdlname = game::vanityfname(proj.owner, proj.weap, true);
                 proj.reflectivity = 0.f;
                 proj.elasticity = vanityelasticity;
                 proj.relativity = vanityrelativity;
@@ -1220,7 +1220,7 @@ namespace projs
                 part_flare(from, targ, delayattack/2, PART_MUZZLE_FLARE, colour, weapfx[weap].flaresize, muz, 0, 0, d);
             }
             int peak = delayattack/4, fade = min(peak/2, 75);
-            adddynlight(from, 32, vec::hexcolor(colour).mul(0.5f), fade, peak - fade, DL_FLASH);
+            adddynlight(from, 32, vec::fromcolor(colour).mul(0.5f), fade, peak - fade, DL_FLASH);
         }
         loopv(shots)
             create(from, vec(shots[i].pos).div(DMF), local, d, PRJ_SHOT, weap, flags, max(life, 1), W2(weap, time, WS(flags)), delay+(iter*i), speed, shots[i].id, weap, -1, flags, skew);
@@ -1811,7 +1811,7 @@ namespace projs
                 if(vol > 0) playsound(snd, proj.o, NULL, 0, vol);
                 part_create(PART_SMOKE, 500, proj.o, 0xAAAAAA, max(size, 1.5f), 1, -10);
                 proj.limited = true;
-                if(proj.projtype == PRJ_DEBRIS) proj.material[0] = bvec(colourwhite);
+                if(proj.projtype == PRJ_DEBRIS) proj.mdl.material[0] = vec::fromcolor(colourwhite);
             }
             proj.norm = dir;
             if(proj.extinguish&4) return 0;
@@ -2261,7 +2261,7 @@ namespace projs
             if((proj.projtype != PRJ_SHOT || proj.owner) && proj.state != CS_DEAD)
             {
                 if(proj.projtype == PRJ_ENT && entities::ents.inrange(proj.id) && !entities::simpleitems) // in case spawnweapon changes
-                    proj.mdl = entities::entmdlname(entities::ents[proj.id]->type, entities::ents[proj.id]->attrs);
+                    proj.mdlname = entities::entmdlname(entities::ents[proj.id]->type, entities::ents[proj.id]->attrs);
                 if(proj.waittime > 0)
                 {
                     if((proj.waittime -= curtime) <= 0)
@@ -2415,16 +2415,22 @@ namespace projs
         loopv(projs) if(projs[i]->ready(false) && projs[i]->projtype != PRJ_AFFINITY)
         {
             projent &proj = *projs[i];
-            if((proj.projtype == PRJ_ENT && !entities::ents.inrange(proj.id)) || !projs[i]->mdl || !*projs[i]->mdl) continue;
-            vec4 color = vec4(1, 1, 1, 1);
-            float size = projs[i]->curscale, yaw = proj.yaw, pitch = proj.pitch, roll = proj.roll;
-            int flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_CULL_DIST;
+            if((proj.projtype == PRJ_ENT && !entities::ents.inrange(proj.id)) || !projs[i]->mdlname || !*projs[i]->mdlname) continue;
+            proj.mdl.reset(true);
+            proj.mdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
+            proj.mdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_CULL_DIST;
+            proj.mdl.basetime = proj.spawntime;
+            proj.mdl.size = proj.curscale;
+            proj.mdl.yaw = proj.yaw;
+            proj.mdl.pitch = proj.pitch;
+            proj.mdl.roll = proj.roll;
+            proj.mdl.o = proj.o;
             switch(proj.projtype)
             {
                 case PRJ_DEBRIS:
                 {
-                    size *= proj.lifesize;
-                    fadeproj(proj, color.a, size);
+                    proj.mdl.size *= proj.lifesize;
+                    fadeproj(proj, proj.mdl.color.a, proj.mdl.size);
                     #if 0
                     if(!proj.limited)
                     {
@@ -2437,48 +2443,48 @@ namespace projs
                 }
                 case PRJ_GIBS: case PRJ_VANITY:
                 {
-                    size *= proj.lifesize;
-                    fadeproj(proj, color.a, size);
+                    proj.mdl.size *= proj.lifesize;
+                    fadeproj(proj, proj.mdl.color.a, proj.mdl.size);
                     if(proj.projtype == PRJ_VANITY && proj.owner)
-                        loopi(3) proj.material[i] = proj.owner->material[i];
+                        loopi(MAXENTMATERIALS) proj.mdl.material[i] = proj.owner->mdl.material[i];
                     break;
                 }
                 case PRJ_EJECT:
                 {
-                    size *= proj.lifesize;
-                    fadeproj(proj, color.a, size);
+                    proj.mdl.size *= proj.lifesize;
+                    fadeproj(proj, proj.mdl.color.a, proj.mdl.size);
                     break;
                 }
                 case PRJ_SHOT:
                 {
-                    color.a *= fadeweap(proj);
+                    proj.mdl.color.a *= fadeweap(proj);
                     if(proj.weap == W_GRENADE)
                     {
                         float amt = clamp(proj.lifespan, 0.f, 1.f);
-                        proj.material[0] = bvec::fromcolor(W(proj.weap, colour));
-                        proj.material[0].r += int((255-proj.material[0].r)*amt);
-                        proj.material[0].g -= int(proj.material[0].g*amt);
-                        proj.material[0].b -= int(proj.material[0].b*amt);
+                        proj.mdl.material[0] = vec::fromcolor(W(proj.weap, colour));
+                        proj.mdl.material[0].r += int((1.f-proj.mdl.material[0].r)*amt);
+                        proj.mdl.material[0].g -= int(proj.mdl.material[0].g*amt);
+                        proj.mdl.material[0].b -= int(proj.mdl.material[0].b*amt);
                     }
                     if(WF(WK(proj.flags), proj.weap, partcol, WS(proj.flags)))
                     {
-                        proj.material[0] = bvec::fromcolor(FWCOL(P, partcol, proj));
+                        proj.mdl.material[0] = FWCOL(P, partcol, proj);
                         if(WF(WK(proj.flags), proj.weap, proxtype, WS(proj.flags)) && (!proj.stuck || proj.lifetime%500 >= 300))
-                            proj.material[0] = bvec(0, 0, 0);
+                            proj.mdl.material[0] = vec(0, 0, 0);
                     }
                     break;
                 }
                 case PRJ_ENT:
                 {
                     if(entities::simpleitems) continue;
-                    fadeproj(proj, color.a, size);
+                    fadeproj(proj, proj.mdl.color.a, proj.mdl.size);
                     if(entities::ents.inrange(proj.id))
                     {
                         gameentity &e = *(gameentity *)entities::ents[proj.id];
                         if(e.type == WEAPON)
                         {
                             int attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], m_weapon(game::focus->actortype, game::gamemode, game::mutators));
-                            if(isweap(attr)) proj.material[0] = bvec::fromcolor(W(attr, colour));
+                            if(isweap(attr)) proj.mdl.material[0] = vec::fromcolor(W(attr, colour));
                             else continue;
                         }
                     }
@@ -2486,7 +2492,7 @@ namespace projs
                 }
                 default: break;
             }
-            rendermodel(proj.mdl, ANIM_MAPMODEL|ANIM_LOOP, proj.o, yaw, pitch, roll, flags, &proj, NULL, proj.spawntime, 0, size, color, &proj.material[0]);
+            rendermodel(proj.mdlname, &proj.mdl, &proj);
         }
     }
 

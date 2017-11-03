@@ -491,53 +491,9 @@ bool modeloccluded(const vec &center, float radius)
     return pvsoccluded(bbmin, bbmax) || bboccluded(bbmin, bbmax);
 }
 
-VAR(0, showboundingbox, 0, 0, 2);
-
-void render2dbox(vec &o, float x, float y, float z, const matrix4x3 *m)
-{
-    vec v[4] = { o, vec(o.x, o.y, o.z+z), vec(o.x+x, o.y+y, o.z+z), vec(o.x+x, o.y+y, o.z) };
-    gle::begin(GL_LINE_LOOP);
-    if(m) loopk(4) gle::attrib(m->transform(v[k]));
-    else loopk(4) gle::attrib(v[k]);
-    xtraverts += gle::end();
-}
-
-void render3dbox(vec &o, float tofloor, float toceil, float xradius, float yradius, const matrix4x3 *m)
-{
-    if(yradius<=0) yradius = xradius;
-    vec c = o;
-    c.sub(vec(xradius, yradius, tofloor));
-    float xsz = xradius*2, ysz = yradius*2;
-    float h = tofloor+toceil;
-    gle::colorf(1, 1, 1);
-    gle::defvertex();
-    render2dbox(c, xsz, 0, h, m);
-    render2dbox(c, 0, ysz, h, m);
-    c.add(vec(xsz, ysz, 0));
-    render2dbox(c, -xsz, 0, h, m);
-    render2dbox(c, 0, -ysz, h, m);
-}
-
-void renderellipse(vec &o, float xradius, float yradius, float yaw)
-{
-    gle::colorf(0.5f, 0.5f, 0.5f);
-    gle::defvertex();
-    gle::begin(GL_LINE_LOOP);
-    loopi(15)
-    {
-        const vec2 &sc = sincos360[i*(360/15)];
-        gle::attrib(vec(xradius*sc.x, yradius*sc.y, 0).rotate_around_z(yaw*RAD).add(o));
-    }
-    xtraverts += gle::end();
-}
-
 struct batchedmodel
 {
-    vec pos, center;
-    float radius, yaw, pitch, roll, sizescale;
-    vec4 colorscale;
-    int anim, basetime, basetime2, flags, attached;
-    const bvec *material;
+    modelstate *state;
     union
     {
         int visible;
@@ -553,13 +509,11 @@ struct modelbatch
 };
 static vector<batchedmodel> batchedmodels;
 static vector<modelbatch> batches;
-static vector<modelattach> modelattached;
 
 void resetmodelbatches()
 {
     batchedmodels.setsize(0);
     batches.setsize(0);
-    modelattached.setsize(0);
 }
 
 void addbatchedmodel(model *m, batchedmodel &bm, int idx)
@@ -568,7 +522,7 @@ void addbatchedmodel(model *m, batchedmodel &bm, int idx)
     if(batches.inrange(m->batch))
     {
         b = &batches[m->batch];
-        if(b->m == m && (b->flags & MDL_MAPMODEL) == (bm.flags & MDL_MAPMODEL))
+        if(b->m == m && (b->flags & MDL_MAPMODEL) == (bm.state->flags & MDL_MAPMODEL))
             goto foundbatch;
     }
 
@@ -579,27 +533,24 @@ void addbatchedmodel(model *m, batchedmodel &bm, int idx)
     b->batched = -1;
 
 foundbatch:
-    b->flags |= bm.flags;
+    b->flags |= bm.state->flags;
     bm.next = b->batched;
     b->batched = idx;
 }
 
 static inline void renderbatchedmodel(model *m, const batchedmodel &b)
 {
-    modelattach *a = NULL;
-    if(b.attached>=0) a = &modelattached[b.attached];
-
-    int anim = b.anim;
+    int anim = b.state->anim;
     if(shadowmapping > SM_REFLECT)
     {
         anim |= ANIM_NOSKIN;
     }
     else
     {
-        if(b.flags&MDL_FULLBRIGHT) anim |= ANIM_FULLBRIGHT;
+        if(b.state->flags&MDL_FULLBRIGHT) anim |= ANIM_FULLBRIGHT;
     }
 
-    m->render(anim, b.basetime, b.basetime2, b.pos, b.yaw, b.pitch, b.roll, b.d, a, b.sizescale, b.colorscale, b.material);
+    m->render(anim, b.state, b.d);
 }
 
 VAR(0, maxmodelradiusdistance, 10, 200, 1000);
@@ -671,8 +622,8 @@ void shadowmaskbatchedmodels(bool dynshadow)
     loopv(batchedmodels)
     {
         batchedmodel &b = batchedmodels[i];
-        if(b.flags&MDL_MAPMODEL) break;
-        b.visible = dynshadow && b.colorscale.a >= 1 ? shadowmaskmodel(b.center, b.radius) : 0;
+        if(b.state->flags&MDL_MAPMODEL) break;
+        b.visible = dynshadow && b.state->color.a >= 1 ? shadowmaskmodel(b.state->center, b.state->radius) : 0;
     }
 }
 
@@ -682,7 +633,7 @@ int batcheddynamicmodels()
     loopv(batchedmodels)
     {
         batchedmodel &b = batchedmodels[i];
-        if(b.flags&MDL_MAPMODEL) break;
+        if(b.state->flags&MDL_MAPMODEL) break;
         visible |= b.visible;
     }
     loopv(batches)
@@ -705,11 +656,11 @@ int batcheddynamicmodelbounds(int mask, vec &bbmin, vec &bbmax)
     loopv(batchedmodels)
     {
         batchedmodel &b = batchedmodels[i];
-        if(b.flags&MDL_MAPMODEL) break;
+        if(b.state->flags&MDL_MAPMODEL) break;
         if(b.visible&mask)
         {
-            bbmin.min(vec(b.center).sub(b.radius));
-            bbmax.max(vec(b.center).add(b.radius));
+            bbmin.min(vec(b.state->center).sub(b.state->radius));
+            bbmax.max(vec(b.state->center).add(b.state->radius));
             ++vis;
         }
     }
@@ -723,8 +674,8 @@ int batcheddynamicmodelbounds(int mask, vec &bbmin, vec &bbmax)
             j = bm.next;
             if(bm.visible&mask)
             {
-                bbmin.min(vec(bm.center).sub(bm.radius));
-                bbmax.max(vec(bm.center).add(bm.radius));
+                bbmin.min(vec(bm.state->center).sub(bm.state->radius));
+                bbmax.max(vec(bm.state->center).add(bm.state->radius));
                 ++vis;
             }
         }
@@ -790,12 +741,12 @@ void rendermodelbatches()
         {
             batchedmodel &bm = batchedmodels[j];
             j = bm.next;
-            bm.culled = cullmodel(b.m, bm.center, bm.radius, bm.flags, bm.d);
-            if(bm.culled || bm.flags&MDL_ONLYSHADOW) continue;
-            if(bm.colorscale.a < 1)
+            bm.culled = cullmodel(b.m, bm.state->center, bm.state->radius, bm.state->flags, bm.d);
+            if(bm.culled || bm.state->flags&MDL_ONLYSHADOW) continue;
+            if(bm.state->color.a < 1)
             {
                 float sx1, sy1, sx2, sy2;
-                ivec bbmin(vec(bm.center).sub(bm.radius)), bbmax(vec(bm.center).add(bm.radius+1));
+                ivec bbmin(vec(bm.state->center).sub(bm.state->radius)), bbmax(vec(bm.state->center).add(bm.state->radius+1));
                 if(calcbbscissor(bbmin, bbmax, sx1, sy1, sx2, sy2))
                 {
                     transmdlsx1 = min(transmdlsx1, sx1);
@@ -812,7 +763,7 @@ void rendermodelbatches()
                 rendered = true;
                 setaamask(true);
             }
-            if(bm.flags&MDL_CULL_QUERY)
+            if(bm.state->flags&MDL_CULL_QUERY)
             {
                 bm.d->query = newquery(bm.d);
                 if(bm.d->query)
@@ -833,7 +784,7 @@ void rendermodelbatches()
             {
                 batchedmodel &bm = batchedmodels[j];
                 j = bm.next;
-                if(bm.culled&(MDL_CULL_OCCLUDED|MDL_CULL_QUERY) && bm.flags&MDL_CULL_QUERY)
+                if(bm.culled&(MDL_CULL_OCCLUDED|MDL_CULL_QUERY) && bm.state->flags&MDL_CULL_QUERY)
                 {
                     if(!queried)
                     {
@@ -841,7 +792,7 @@ void rendermodelbatches()
                         enablecullmodelquery();
                         queried = true;
                     }
-                    rendercullmodelquery(b.m, bm.d, bm.center, bm.radius);
+                    rendercullmodelquery(b.m, bm.d, bm.state->center, bm.state->radius);
                 }
             }
             if(queried) disablecullmodelquery();
@@ -862,15 +813,15 @@ void rendertransparentmodelbatches(int stencil)
         {
             batchedmodel &bm = batchedmodels[j];
             j = bm.next;
-            bm.culled = cullmodel(b.m, bm.center, bm.radius, bm.flags, bm.d);
-            if(bm.culled || bm.colorscale.a >= 1 || bm.flags&MDL_ONLYSHADOW) continue;
+            bm.culled = cullmodel(b.m, bm.state->center, bm.state->radius, bm.state->flags, bm.d);
+            if(bm.culled || bm.state->color.a >= 1 || bm.state->flags&MDL_ONLYSHADOW) continue;
             if(!rendered)
             {
                 b.m->startrender();
                 rendered = true;
                 setaamask(true);
             }
-            if(bm.flags&MDL_CULL_QUERY)
+            if(bm.state->flags&MDL_CULL_QUERY)
             {
                 bm.d->query = newquery(bm.d);
                 if(bm.d->query)
@@ -889,14 +840,13 @@ void rendertransparentmodelbatches(int stencil)
 }
 
 static occludequery *modelquery = NULL;
-static int modelquerybatches = -1, modelquerymodels = -1, modelqueryattached = -1;
+static int modelquerybatches = -1, modelquerymodels = -1;
 
 void startmodelquery(occludequery *query)
 {
     modelquery = query;
     modelquerybatches = batches.length();
     modelquerymodels = batchedmodels.length();
-    modelqueryattached = modelattached.length();
 }
 
 void endmodelquery()
@@ -930,7 +880,6 @@ void endmodelquery()
     modelquery = NULL;
     batches.setsize(modelquerybatches);
     batchedmodels.setsize(modelquerymodels);
-    modelattached.setsize(modelqueryattached);
     disableaamask();
 }
 
@@ -948,155 +897,129 @@ void clearbatchedmapmodels()
     }
 }
 
-void rendermapmodel(int idx, int anim, const vec &o, float yaw, float pitch, float roll, int flags, int basetime, float size, const vec4 &colorscale, const bvec *material)
+void rendermapmodel(int idx, modelstate *state)
 {
     if(!mapmodels.inrange(idx)) return;
     mapmodelinfo &mmi = mapmodels[idx];
     model *m = mmi.m ? mmi.m : loadmodel(mmi.name);
     if(!m) return;
 
-    vec center, bbradius;
-    m->boundbox(center, bbradius);
-    float radius = bbradius.magnitude();
-    center.mul(size);
-    if(roll) center.rotate_around_y(-roll*RAD);
-    if(pitch && m->pitched()) center.rotate_around_x(pitch*RAD);
-    center.rotate_around_z(yaw*RAD);
-    center.add(o);
-    radius *= size;
+    vec bbradius;
+    m->boundbox(state->center, bbradius);
+    state->radius = bbradius.magnitude();
+    state->center.mul(state->size);
+    if(state->roll) state->center.rotate_around_y(-state->roll*RAD);
+    if(state->pitch && m->pitched()) state->center.rotate_around_x(state->pitch*RAD);
+    state->center.rotate_around_z(state->yaw*RAD);
+    state->center.add(state->o);
+    state->radius *= state->size;
 
     int visible = 0;
     if(shadowmapping)
     {
         if(!m->shadow) return;
-        visible = shadowmaskmodel(center, radius);
+        visible = shadowmaskmodel(state->center, state->radius);
         if(!visible) return;
     }
-    else if(flags&(MDL_CULL_VFC|MDL_CULL_DIST|MDL_CULL_OCCLUDED) && cullmodel(m, center, radius, flags))
+    else if(state->flags&(MDL_CULL_VFC|MDL_CULL_DIST|MDL_CULL_OCCLUDED) && cullmodel(m, state->center, state->radius, state->flags))
         return;
 
     batchedmodel &b = batchedmodels.add();
-    b.pos = o;
-    b.center = center;
-    b.radius = radius;
-    b.anim = anim;
-    b.yaw = yaw;
-    b.pitch = pitch;
-    b.roll = roll;
-    b.basetime = basetime;
-    b.basetime2 = 0;
-    b.sizescale = size;
-    b.colorscale = colorscale;
-    b.flags = flags | MDL_MAPMODEL;
-    b.material = material;
+    b.state = state;
+    b.state->flags |= MDL_MAPMODEL;
     b.visible = visible;
     b.d = NULL;
-    b.attached = -1;
     addbatchedmodel(m, b, batchedmodels.length()-1);
 }
 
-void rendermodel(const char *mdl, int anim, const vec &o, float yaw, float pitch, float roll, int flags, dynent *d, modelattach *a, int basetime, int basetime2, float size, const vec4 &color, const bvec *material)
+void rendermodel(const char *mdl, modelstate *state, dynent *d)
 {
     model *m = loadmodel(mdl);
     if(!m) return;
 
-    vec center, bbradius;
-    m->boundbox(center, bbradius);
-    float radius = bbradius.magnitude();
+    vec bbradius;
+    m->boundbox(state->center, bbradius);
+    state->radius = bbradius.magnitude();
     if(d)
     {
         if(d->ragdoll)
         {
-            if(anim&ANIM_RAGDOLL && d->ragdoll->millis >= basetime)
+            if(state->anim&ANIM_RAGDOLL && d->ragdoll->millis >= state->basetime)
             {
-                radius = max(radius, d->ragdoll->radius);
-                center = d->ragdoll->center;
+                state->radius = max(state->radius, d->ragdoll->radius);
+                state->center = d->ragdoll->center;
                 goto hasboundbox;
             }
             DELETEP(d->ragdoll);
         }
-        if(anim&ANIM_RAGDOLL) flags &= ~(MDL_CULL_VFC | MDL_CULL_OCCLUDED | MDL_CULL_QUERY);
+        if(state->anim&ANIM_RAGDOLL) state->flags &= ~(MDL_CULL_VFC | MDL_CULL_OCCLUDED | MDL_CULL_QUERY);
     }
-    center.mul(size);
-    if(roll) center.rotate_around_y(-roll*RAD);
-    if(pitch && m->pitched()) center.rotate_around_x(pitch*RAD);
-    center.rotate_around_z(yaw*RAD);
-    center.add(o);
+    state->center.mul(state->size);
+    if(state->roll) state->center.rotate_around_y(-state->roll*RAD);
+    if(state->pitch && m->pitched()) state->center.rotate_around_x(state->pitch*RAD);
+    state->center.rotate_around_z(state->yaw*RAD);
+    state->center.add(state->o);
 hasboundbox:
-    radius *= size;
+    state->radius *= state->size;
 
-    if(flags&MDL_NORENDER) anim |= ANIM_NORENDER;
+    if(state->flags&MDL_NORENDER) state->anim |= ANIM_NORENDER;
 
-    if(a) for(int i = 0; a[i].tag; i++)
+    for(int i = 0; state->attached[i].tag; i++)
     {
-        if(a[i].name) a[i].m = loadmodel(a[i].name);
+        if(state->attached[i].name) state->attached[i].m = loadmodel(state->attached[i].name);
     }
 
-    if(flags&MDL_CULL_QUERY)
+    if(state->flags&MDL_CULL_QUERY)
     {
-        if(!oqfrags || !oqdynent || !d) flags &= ~MDL_CULL_QUERY;
+        if(!oqfrags || !oqdynent || !d) state->flags &= ~MDL_CULL_QUERY;
     }
 
-    if(flags&MDL_NOBATCH)
+    if(state->flags&MDL_NOBATCH)
     {
-        int culled = cullmodel(m, center, radius, flags, d);
+        int culled = cullmodel(m, state->center, state->radius, state->flags, d);
         if(culled)
         {
-            if(culled&(MDL_CULL_OCCLUDED|MDL_CULL_QUERY) && flags&MDL_CULL_QUERY)
+            if(culled&(MDL_CULL_OCCLUDED|MDL_CULL_QUERY) && state->flags&MDL_CULL_QUERY)
             {
                 enablecullmodelquery();
-                rendercullmodelquery(m, d, center, radius);
+                rendercullmodelquery(m, d, state->center, state->radius);
                 disablecullmodelquery();
             }
             return;
         }
         enableaamask();
-        if(flags&MDL_CULL_QUERY)
+        if(state->flags&MDL_CULL_QUERY)
         {
             d->query = newquery(d);
             if(d->query) startquery(d->query);
         }
         m->startrender();
         setaamask(true);
-        if(flags&MDL_FULLBRIGHT) anim |= ANIM_FULLBRIGHT;
-        m->render(anim, basetime, basetime2, o, yaw, pitch, roll, d, a, size, color, material);
+        if(state->flags&MDL_FULLBRIGHT) state->anim |= ANIM_FULLBRIGHT;
+        m->render(state->anim, state, d);
         m->endrender();
-        if(flags&MDL_CULL_QUERY && d->query) endquery(d->query);
+        if(state->flags&MDL_CULL_QUERY && d->query) endquery(d->query);
         disableaamask();
         return;
     }
 
     batchedmodel &b = batchedmodels.add();
-    b.pos = o;
-    b.center = center;
-    b.radius = radius;
-    b.anim = anim;
-    b.yaw = yaw;
-    b.pitch = pitch;
-    b.roll = roll;
-    b.basetime = basetime;
-    b.basetime2 = basetime2;
-    b.sizescale = size;
-    b.colorscale = color;
-    b.flags = flags;
-    b.material = material;
+    b.state = state;
     b.visible = 0;
     b.d = d;
-    b.attached = a ? modelattached.length() : -1;
-    if(a) for(int i = 0;; i++) { modelattached.add(a[i]); if(!a[i].tag) break; }
     addbatchedmodel(m, b, batchedmodels.length()-1);
 }
 
-int intersectmodel(const char *mdl, int anim, const vec &pos, float yaw, float pitch, float roll, const vec &o, const vec &ray, float &dist, int mode, dynent *d, modelattach *a, int basetime, int basetime2, float size)
+int intersectmodel(const char *mdl, modelstate *state, const vec &o, const vec &ray, float &dist, int mode, dynent *d)
 {
     model *m = loadmodel(mdl);
     if(!m) return -1;
-    if(d && d->ragdoll && (!(anim&ANIM_RAGDOLL) || d->ragdoll->millis < basetime)) DELETEP(d->ragdoll);
-    if(a) for(int i = 0; a[i].tag; i++)
+    if(d && d->ragdoll && (!(state->anim&ANIM_RAGDOLL) || d->ragdoll->millis < state->basetime)) DELETEP(d->ragdoll);
+    for(int i = 0; state->attached[i].tag; i++)
     {
-        if(a[i].name) a[i].m = loadmodel(a[i].name);
+        if(state->attached[i].name) state->attached[i].m = loadmodel(state->attached[i].name);
     }
-    return m->intersect(anim, basetime, basetime2, pos, yaw, pitch, roll, d, a, size, o, ray, dist, mode);
+    return m->intersect(state->anim, state, d, o, ray, dist, mode);
 }
 
 void abovemodel(vec &o, const char *mdl)

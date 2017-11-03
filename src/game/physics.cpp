@@ -1360,25 +1360,6 @@ namespace physics
         return false;
     }
 
-    void complexboundbox(physent *d)
-    {
-        render3dbox(d->o, d->height, d->aboveeye, d->xradius, d->yradius);
-        renderellipse(d->o, d->xradius, d->yradius, d->yaw);
-        if(gameent::is(d))
-        {
-            gameent *e = (gameent *)d;
-            if(e->wantshitbox())
-            {
-                render3dbox(e->head, e->hrad.z, e->hrad.z, e->hrad.x, e->hrad.y);
-                renderellipse(e->head, e->hrad.x, e->hrad.y, e->yaw);
-                render3dbox(e->torso, e->trad.z, e->trad.z, e->trad.x, e->trad.y);
-                renderellipse(e->torso, e->trad.x, e->trad.y, e->yaw);
-                render3dbox(e->legs, e->lrad.z, e->lrad.z, e->lrad.x, e->lrad.y);
-                renderellipse(e->legs, e->lrad.x, e->lrad.y, e->yaw);
-            }
-        }
-    }
-
     bool entinmap(physent *d, bool avoidplayers)
     {
         if(d->state != CS_ALIVE)

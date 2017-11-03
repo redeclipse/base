@@ -21,7 +21,7 @@ struct capturestate
         projent *proj;
         int displaytime, movetime, viewtime, interptime;
         vec viewpos, interppos, render, above;
-        bvec material[MAXENTMATERIALS], basematerial[MAXENTMATERIALS];
+        modelstate mdl, basemdl;
 #endif
 
         flag() { reset(); }
@@ -73,8 +73,9 @@ struct capturestate
         void setposition(const vec &pos)
         {
             spawnloc = render = above = pos;
-            render.z += 2;
+            render.z += 4;
             physics::droptofloor(render);
+            render.z -= 1.5f;
             if(render.z >= above.z-1) above.z += 1+render.z-above.z;
         }
 #endif

@@ -793,7 +793,7 @@ namespace game
             playsound(S_RESPAWN, d->o, d);
             spawneffect(PART_SPARK, center, d->height*0.5f, getcolour(d, playerovertone, playerovertonelevel), 1.5f);
             spawneffect(PART_SPARK, center, d->height*0.5f, getcolour(d, playerundertone, playerundertonelevel), 1.5f);
-            if(dynlighteffects) adddynlight(center, d->height*2, vec::hexcolor(getcolour(d, playereffecttone, playereffecttonelevel)).mul(2.f), 250, 250);
+            if(dynlighteffects) adddynlight(center, d->height*2, vec::fromcolor(getcolour(d, playereffecttone, playereffecttonelevel)).mul(2.f), 250, 250);
             if(entities::ents.inrange(ent) && entities::ents[ent]->type == PLAYERSTART) entities::execlink(d, ent, false);
         }
         ai::respawned(d, local, ent);
@@ -803,7 +803,7 @@ namespace game
     {
         size_t seed = size_t(d) + (lastmillis/cycle);
         int n = detrnd(seed, PULSECOLOURS), n2 = detrnd(seed + 1, PULSECOLOURS), q = clamp(i, 0, int(PULSE_LAST));
-        return vec::hexcolor(pulsecols[q][n]).lerp(vec::hexcolor(pulsecols[q][n2]), (lastmillis%cycle)/float(cycle));
+        return vec::fromcolor(pulsecols[q][n]).lerp(vec::fromcolor(pulsecols[q][n2]), (lastmillis%cycle)/float(cycle));
     }
 
     int hexpulsecolour(physent *d, int i, int cycle)
@@ -822,7 +822,7 @@ namespace game
                 {
                     case 0: break; // off
                     case 1: case 2: case 3: case 4:
-                        return vec::hexcolor(pulsecols[index-1][clamp((lastmillis/100)%PULSECOLOURS, 0, PULSECOLOURS-1)]);
+                        return vec::fromcolor(pulsecols[index-1][clamp((lastmillis/100)%PULSECOLOURS, 0, PULSECOLOURS-1)]);
                         break;
                     default: break;
                 }
@@ -836,7 +836,7 @@ namespace game
                     if(!m_team(gamemode, mutators) || team > (m_multi(gamemode, mutators) ? T_MULTI : T_LAST))
                         team = T_NEUTRAL; // abstract team coloured levels to neutral
                 }
-                return vec::hexcolor(TEAM(team, colour));
+                return vec::fromcolor(TEAM(team, colour));
                 break;
             }
             case 2: // weapons
@@ -848,7 +848,7 @@ namespace game
                     if(!isweap(weap) || W(weap, disabled) || (m_loadout(gamemode, mutators) && weap < W_ITEM) || !m_check(W(weap, modes), W(weap, muts), gamemode, mutators))
                         weap = -1;
                 }
-                if(isweap(weap)) return vec::hexcolor(W(weap, colour));
+                if(isweap(weap)) return vec::fromcolor(W(weap, colour));
                 break;
             }
             default: break;
@@ -922,7 +922,7 @@ namespace game
                     adddynlight(d->center(), d->height*intensity*pc, rescolour(d, PULSE_SHOCK).mul(pc), 0, 0);
                 }
                 if(d->actortype < A_ENEMY && illumlevel > 0 && illumradius > 0)
-                    adddynlight(d->center(), illumradius, vec::hexcolor(getcolour(d, playereffecttone, illumlevel)), 0, 0);
+                    adddynlight(d->center(), illumradius, vec::fromcolor(getcolour(d, playereffecttone, illumlevel)), 0, 0);
             }
         }
     }
@@ -2062,14 +2062,14 @@ namespace game
     {
         size_t seed = size_t(d) + (lastmillis/50);
         int r = detrnd(seed, 2*PULSECOLOURS), r2 = detrnd(seed + 1, 2*PULSECOLOURS);
-        return vec::hexcolor(pulsecols[n][r%PULSECOLOURS]).lerp(vec::hexcolor(pulsecols[n][r2%PULSECOLOURS]), (lastmillis%50)/50.0f).mul(vec::hexcolor(c));
+        return vec::fromcolor(pulsecols[n][r%PULSECOLOURS]).lerp(vec::fromcolor(pulsecols[n][r2%PULSECOLOURS]), (lastmillis%50)/50.0f).mul(vec::fromcolor(c));
     }
 
     int rescolint(dynent *d, int n, int c)
     {
         size_t seed = size_t(d) + (lastmillis/50);
         int r = detrnd(seed, 2*PULSECOLOURS), r2 = detrnd(seed + 1, 2*PULSECOLOURS);
-        return vec::hexcolor(pulsecols[n][r%PULSECOLOURS]).lerp(vec::hexcolor(pulsecols[n][r2%PULSECOLOURS]), (lastmillis%50)/50.0f).mul(vec::hexcolor(c)).tohexcolor();
+        return vec::fromcolor(pulsecols[n][r%PULSECOLOURS]).lerp(vec::fromcolor(pulsecols[n][r2%PULSECOLOURS]), (lastmillis%50)/50.0f).mul(vec::fromcolor(c)).tohexcolor();
     }
 
     void particletrack(particle *p, uint type, int &ts, bool step)
@@ -2987,12 +2987,265 @@ namespace game
                 anims.add(i);
     }
 
-    void renderclient(gameent *d, int third, float size, modelattach *attachments, bool secondary, int animflags, int animdelay, int lastaction, int flags = 0, const vec4 &color = vec4(1, 1, 1, 1))
+    void renderabovehead(gameent *d)
     {
+        vec pos = d->abovehead(d->state != CS_DEAD && d->state != CS_WAITING ? 1 : 0);
+        float blend = aboveheadblend*opacity(d);
+        if(aboveheadnames && d != player1)
+        {
+            pos.z += aboveheadnamessize/2;
+            part_textcopy(pos, colourname(d), PART_TEXT, 1, colourwhite, aboveheadnamessize, blend*aboveheadnamesblend);
+        }
+        if(aboveheadinventory && d != player1)
+        {
+            stringz(weapons);
+            #define printweapon(q) \
+                if(d->hasweap(q, m_weapon(d->actortype, gamemode, mutators))) \
+                { \
+                    vec colour = vec::fromcolor(W(q, colour)); \
+                    if(q != d->weapselect) colour.mul(aboveheadinventoryfade); \
+                    defformatstring(str, "\fs\f[%d]%s\f(%s)\fS", colour.tohexcolor(), q != d->weapselect ? "\fE" : "", hud::itemtex(WEAPON, q)); \
+                    concatstring(weapons, str); \
+                }
+            if(aboveheadinventory >= 2) { loopi(W_ALL) printweapon(i); }
+            else { printweapon(d->weapselect); }
+            pos.z += aboveheadinventorysize/2;
+            part_textcopy(pos, weapons, PART_TEXT, 1, colourwhite, aboveheadinventorysize, blend*aboveheadinventoryblend);
+        }
+        if(aboveheadstatus)
+        {
+            Texture *t = NULL;
+            int colour = getcolour(d, playerteamtone, playerteamtonelevel);
+            if(d->state == CS_DEAD || d->state == CS_WAITING) t = textureload(hud::deadtex, 3);
+            else if(d->state == CS_ALIVE)
+            {
+                if(d->conopen) t = textureload(hud::chattex, 3);
+                else if(m_team(gamemode, mutators) && (hud::numteamkills() >= teamkillwarn || aboveheadteam&(d->team != focus->team ? 2 : 1)))
+                    t = textureload(hud::teamtexname(d->team), 3);
+                if(!m_team(gamemode, mutators) || d->team != focus->team)
+                {
+                    if(d->dominating.find(focus) >= 0)
+                    {
+                        t = textureload(hud::dominatingtex, 3);
+                        colour = pulsecols[PULSE_DISCO][clamp((lastmillis/100)%PULSECOLOURS, 0, PULSECOLOURS-1)];
+                    }
+                    else if(d->dominated.find(focus) >= 0)
+                    {
+                        t = textureload(hud::dominatedtex, 3);
+                        colour = pulsecols[PULSE_DISCO][clamp((lastmillis/100)%PULSECOLOURS, 0, PULSECOLOURS-1)];
+                    }
+                }
+            }
+            if(t && t != notexture)
+            {
+                pos.z += aboveheadstatussize;
+                part_icon(pos, t, aboveheadstatussize, blend*aboveheadstatusblend, 0, 0, 1, colour);
+            }
+        }
+        if(aboveheadicons && d->state != CS_EDITING && d->state != CS_SPECTATOR) loopv(d->icons)
+        {
+            if(d->icons[i].type == eventicon::AFFINITY && !(aboveheadicons&2)) continue;
+            if(d->icons[i].type == eventicon::WEAPON && !(aboveheadicons&4)) continue;
+            int millis = totalmillis-d->icons[i].millis;
+            if(millis <= d->icons[i].fade)
+            {
+                Texture *t = textureload(hud::icontex(d->icons[i].type, d->icons[i].value));
+                if(t && t != notexture)
+                {
+                    int olen = min(d->icons[i].length/5, 1000), ilen = olen/2, colour = colourwhite;
+                    float skew = millis < ilen ? millis/float(ilen) : (millis > d->icons[i].fade-olen ? (d->icons[i].fade-millis)/float(olen) : 1.f),
+                          size = skew, fade = blend*skew;
+                    if(d->icons[i].type >= eventicon::SORTED)
+                    {
+                        size *= aboveheadiconssize;
+                        switch(d->icons[i].type)
+                        {
+                            case eventicon::WEAPON: colour = W(d->icons[i].value, colour); break;
+                            case eventicon::AFFINITY:
+                                if(m_bomber(gamemode))
+                                {
+                                    bvec pcol = bvec::fromcolor(bomber::pulsecolour());
+                                    colour = (pcol.x<<16)|(pcol.y<<8)|pcol.z;
+                                }
+                                else colour = TEAM(d->icons[i].value, colour);
+                                break;
+                            default: break;
+                        }
+                    }
+                    else size *= aboveheadeventsize;
+                    pos.z += size;
+                    part_icon(pos, t, size, fade*aboveheadiconsblend, 0, 0, 1, colour);
+                    //if(d->icons[i].type >= eventicon::SORTED) pos.z += 1.5f;
+                }
+            }
+        }
+    }
+
+    void renderplayer(gameent *d, int third, float size, int flags = 0, const vec4 &color = vec4(1, 1, 1, 1))
+    {
+        if(d->state == CS_SPECTATOR) return;
+        int weap = d->weapselect, lastaction = 0, animflags = ANIM_IDLE|ANIM_LOOP, weapflags = animflags, weapaction = 0;
+        bool secondary = false, showweap = third != 2 && isweap(weap) && weap < W_ALL && actor[d->actortype].useweap;
+        float weapscale = 1.f;
+        if(d->state == CS_DEAD || d->state == CS_WAITING)
+        {
+            showweap = false;
+            animflags = ANIM_DYING|ANIM_NOPITCH;
+            lastaction = d->lastpain;
+            switch(deathanim)
+            {
+                case 0:
+                    if(d->ragdoll) cleanragdoll(d);
+                    return;
+                case 1:
+                {
+                    if(d->ragdoll) cleanragdoll(d);
+                    int t = lastmillis-lastaction;
+                    if(t < 0) return;
+                    if(t > 1000) animflags = ANIM_DEAD|ANIM_LOOP|ANIM_NOPITCH;
+                    break;
+                }
+                case 3: if(m_duke(gamemode, mutators))
+                {
+                    if(d->ragdoll) cleanragdoll(d);
+                    return;
+                }
+                case 2: animflags |= ANIM_RAGDOLL; break;
+            }
+        }
+        else if(d->state == CS_EDITING)
+        {
+            animflags = ANIM_EDIT|ANIM_LOOP;
+            showweap = false;
+        }
+        else
+        {
+            secondary = third;
+            if(showweap && isweap(weap))
+            {
+                weapaction = lastaction = d->weaptime[weap];
+                switch(d->weapstate[weap])
+                {
+                    case W_S_SWITCH: case W_S_USE:
+                    {
+                        int millis = lastmillis-d->weaptime[weap], off = d->weapwait[weap]/3, lastweap = d->getlastweap(m_weapon(d->actortype, gamemode, mutators));
+                        if(isweap(lastweap) && millis <= off)
+                        {
+                            weap = lastweap;
+                            weapscale = 1-(millis/float(off));
+                        }
+                        else if(!d->hasweap(weap, m_weapon(d->actortype, gamemode, mutators))) showweap = false;
+                        else if(millis <= off*2) weapscale = (millis-off)/float(off);
+                        weapflags = animflags = d->weapstate[weap] == W_S_SWITCH ? ANIM_SWITCH : ANIM_USE;
+                        break;
+                    }
+                    case W_S_POWER: case W_S_ZOOM:
+                    {
+                        switch(weaptype[weap].anim)
+                        {
+                            case ANIM_GRENADE: weapflags = animflags = ANIM_GRENADE_POWER; break;
+                            default: weapflags = animflags = weaptype[weap].anim|ANIM_LOOP; break;
+                        }
+                        break;
+                    }
+                    case W_S_PRIMARY: case W_S_SECONDARY:
+                    {
+                        if(weaptype[weap].thrown[d->weapstate[weap]-W_S_PRIMARY] > 0)
+                        {
+                            int millis = lastmillis-d->weaptime[weap], off = d->weapwait[weap]/2;
+                            if(millis <= off || !d->hasweap(weap, m_weapon(d->actortype, gamemode, mutators)))
+                                showweap = false;
+                            else weapscale = (millis-off)/float(off);
+                        }
+                        weapflags = animflags = (weaptype[weap].anim+d->weapstate[weap])|ANIM_CLAMP;
+                        break;
+                    }
+                    case W_S_RELOAD:
+                    {
+                        if(!d->hasweap(weap, m_weapon(d->actortype, gamemode, mutators))) showweap = false;
+                        weapflags = animflags = weaptype[weap].anim+d->weapstate[weap];
+                        break;
+                    }
+                    case W_S_IDLE: case W_S_WAIT: default:
+                    {
+                        if(!d->hasweap(weap, m_weapon(d->actortype, gamemode, mutators))) showweap = false;
+                        weapflags = animflags = weaptype[weap].anim|ANIM_LOOP;
+                        break;
+                    }
+                }
+            }
+            if(third && (animflags&ANIM_IDLE) && lastmillis-d->lastpain <= 300)
+            {
+                secondary = true;
+                lastaction = d->lastpain;
+                animflags = ANIM_PAIN;
+            }
+        }
+
+        if((d != focus || d->state == CS_DEAD || d->state == CS_WAITING) && !(flags&MDL_ONLYSHADOW) && third == 1 && d->actortype < A_ENEMY && !shadowmapping && !drawtex && (aboveheaddead || d->state == CS_ALIVE))
+            renderabovehead(d);
+
+        const char *weapmdl = showweap && isweap(weap) ? (third ? weaptype[weap].vwep : weaptype[weap].hwep) : "";
+        int ai = 0;
+        modelattach a[VANITYMAX+13]; // value = numtags+1
+        if(vanitymodels && third && *d->vanity)
+        {
+            int idx = third == 1 && (d->state == CS_DEAD || d->state == CS_WAITING) && d->headless && !nogore && headlessmodels ? 3 : third;
+            if(d->vitems.empty())
+            {
+                vector<char *> vanitylist;
+                explodelist(d->vanity, vanitylist);
+                loopv(vanitylist) if(vanitylist[i] && *vanitylist[i])
+                    loopvk(vanities) if(!strcmp(vanities[k].ref, vanitylist[i]))
+                        d->vitems.add(k);
+                vanitylist.deletearrays();
+            }
+            int found[VANITYMAX] = {0};
+            loopvk(d->vitems) if(vanities.inrange(d->vitems[k]))
+            {
+                if(found[vanities[d->vitems[k]].type]) continue;
+                if(vanities[d->vitems[k]].cond&1 && idx == 2) continue;
+                if(vanities[d->vitems[k]].cond&2 && idx == 3) continue;
+                const char *file = vanityfname(d, d->vitems[k]);
+                if(file)
+                {
+                    a[ai++] = modelattach(vanities[d->vitems[k]].tag, file);
+                    found[vanities[d->vitems[k]].type]++;
+                    if(ai >= VANITYMAX) break;
+                }
+            }
+        }
+        bool hasweapon = showweap && *weapmdl;
+        if(hasweapon) a[ai++] = modelattach("tag_weapon", weapmdl, weapflags, weapaction, 1, weapscale*size); // 0
+        if(!(flags&MDL_ONLYSHADOW))
+        {
+            if(third != 2)
+            {
+                a[ai++] = modelattach(hasweapon ? "tag_muzzle" : "tag_weapon", &d->muzzle); // 1
+                a[ai++] = modelattach("tag_weapon", &d->origin); // 2
+                if(weaptype[weap].eject || weaptype[weap].tape)
+                {
+                    a[ai++] = modelattach("tag_eject", &d->eject[0]); // 3
+                    a[ai++] = modelattach("tag_eject2", &d->eject[1]); // 4
+                }
+            }
+            if(third && d->wantshitbox())
+            {
+                a[ai++] = modelattach("tag_head", &d->head); // 5
+                a[ai++] = modelattach("tag_torso", &d->torso); // 6
+                a[ai++] = modelattach("tag_waist", &d->waist); // 7
+                a[ai++] = modelattach("tag_ljet", &d->jet[0]); // 8
+                a[ai++] = modelattach("tag_rjet", &d->jet[1]); // 9
+                a[ai++] = modelattach("tag_bjet", &d->jet[2]); // 10
+                a[ai++] = modelattach("tag_ltoe", &d->toe[0]); // 11
+                a[ai++] = modelattach("tag_rtoe", &d->toe[1]); // 12
+            }
+        }
+
         int idx = third == 1 && d->headless && !nogore && headlessmodels ? 3 : third;
-        const char *mdl = playertypes[forceplayermodel >= 0 ? forceplayermodel : 0][idx];
-        if(d->actortype >= A_ENEMY && d->actortype != A_GRUNT) mdl = actor[d->actortype%A_MAX].playermodel[idx];
-        else if(forceplayermodel < 0) mdl = playertypes[d->model%PLAYERTYPES][idx];
+        const char *mdlname = playertypes[forceplayermodel >= 0 ? forceplayermodel : 0][idx];
+        if(d->actortype >= A_ENEMY && d->actortype != A_GRUNT) mdlname = actor[d->actortype%A_MAX].playermodel[idx];
+        else if(forceplayermodel < 0) mdlname = playertypes[d->model%PLAYERTYPES][idx];
 
         bool onfloor = d->physstate >= PHYS_SLOPE || d->onladder || physics::liquidcheck(d);
         float yaw = d->yaw, pitch = d->pitch, roll = calcroll(focus);
@@ -3106,28 +3359,38 @@ namespace game
         if(drawtex) flags &= ~(MDL_FULLBRIGHT | MDL_CULL_VFC | MDL_CULL_OCCLUDED | MDL_CULL_QUERY | MDL_CULL_DIST);
 
         dynent *e = third ? (third != 2 ? (dynent *)d : (dynent *)&bodymodel) : (dynent *)&avatarmodel;
-
-        e->material[0] = bvec(getcolour(d, playerovertone, playerovertonelevel));
-        e->material[1] = bvec(getcolour(d, playerundertone, playerundertonelevel));
+        e->mdl.reset();
+        e->mdl.anim = anim;
+        e->mdl.flags = flags;
+        e->mdl.basetime = basetime;
+        e->mdl.basetime2 = basetime2;
+        e->mdl.size = size;
+        e->mdl.yaw = yaw;
+        e->mdl.pitch = third == 2 && firstpersonbodypitch >= 0 ? pitch*firstpersonbodypitch : pitch;
+        e->mdl.roll = third == 2 ? 0.f : roll;
+        e->mdl.o = o;
+        e->mdl.color = color;
+        e->mdl.material[0] = vec::fromcolor(getcolour(d, playerovertone, playerovertonelevel));
+        e->mdl.material[1] = vec::fromcolor(getcolour(d, playerundertone, playerundertonelevel));
         if(burntime && d->burning(lastmillis, burntime))
-            e->material[1].max(bvec::fromcolor(e->material[1].div(2).tocolor().max(rescolour(d, PULSE_BURN))));
+            e->mdl.material[1].max(vec(e->mdl.material[1]).div(2).max(rescolour(d, PULSE_BURN)));
         if(burntime && d->bleeding(lastmillis, bleedtime))
-            e->material[1].max(bvec::fromcolor(e->material[1].div(2).tocolor().max(rescolour(d, PULSE_BLEED))));
+            e->mdl.material[1].max(vec(e->mdl.material[1]).div(2).max(rescolour(d, PULSE_BLEED)));
         if(shocktime && d->shocking(lastmillis, shocktime))
-            e->material[1].max(bvec::fromcolor(e->material[1].div(2).tocolor().max(rescolour(d, PULSE_SHOCK))));
+            e->mdl.material[1].max(vec(e->mdl.material[1]).div(2).max(rescolour(d, PULSE_SHOCK)));
         if(m_bomber(gamemode) && bomber::carryaffinity(d))
-            e->material[1].max(bvec::fromcolor(e->material[1].div(2).tocolor().max(rescolour(d, PULSE_DISCO))));
+            e->mdl.material[1].max(vec(e->mdl.material[1]).div(2).max(rescolour(d, PULSE_DISCO)));
         if(isweap(d->weapselect))
         {
             if(d->weapselect == W_GRENADE)
             {
-                e->material[2] = bvec::fromcolor(W(d->weapselect, colour));
+                e->mdl.material[2] = vec::fromcolor(W(d->weapselect, colour));
                 if(lastmillis-d->weaptime[d->weapselect] > 0 && d->weapstate[d->weapselect] == W_S_POWER)
                 {
                     float amt = clamp(float(lastmillis-d->weaptime[d->weapselect])/d->weapwait[d->weapselect], 0.f, 1.f);
-                    e->material[2].r += int((255-e->material[2].r)*amt);
-                    e->material[2].g -= int(e->material[2].g*amt);
-                    e->material[2].b -= int(e->material[2].b*amt);
+                    e->mdl.material[2].r += int((1.f-e->mdl.material[2].r)*amt);
+                    e->mdl.material[2].g -= int(e->mdl.material[2].g*amt);
+                    e->mdl.material[2].b -= int(e->mdl.material[2].b*amt);
                 }
             }
             else if((W2(d->weapselect, ammosub, false) || W2(d->weapselect, ammosub, true)) && W(d->weapselect, ammomax) > 1)
@@ -3146,271 +3409,14 @@ namespace game
                     }
                     default: scale = float(ammo)/maxammo; break;
                 }
-                uchar wepmat = uchar(255*scale);
-                e->material[2] = bvec(wepmat, wepmat, wepmat);
+                e->mdl.material[2] = vec(scale, scale, scale);
             }
-            else e->material[2] = bvec(colourwhite);
-            if(W(d->weapselect, lightpersist)&2) e->material[1].max(bvec::fromcolor(WPCOL(d, d->weapselect, lightcol, physics::secondaryweap(d))));
+            else e->mdl.material[2] = vec::fromcolor(colourwhite);
+            if(W(d->weapselect, lightpersist)&2) e->mdl.material[1].max(WPCOL(d, d->weapselect, lightcol, physics::secondaryweap(d)));
         }
-        else e->material[2] = bvec(colourwhite);
-
-        rendermodel(mdl, anim, o, yaw, third == 2 && firstpersonbodypitch >= 0 ? pitch*firstpersonbodypitch : pitch, third == 2 ? 0.f : roll, flags, e, attachments, basetime, basetime2, size, color, &e->material[0]);
-    }
-
-    void renderabovehead(gameent *d)
-    {
-        vec pos = d->abovehead(d->state != CS_DEAD && d->state != CS_WAITING ? 1 : 0);
-        float blend = aboveheadblend*opacity(d);
-        if(aboveheadnames && d != player1)
-        {
-            pos.z += aboveheadnamessize/2;
-            part_textcopy(pos, colourname(d), PART_TEXT, 1, colourwhite, aboveheadnamessize, blend*aboveheadnamesblend);
-        }
-        if(aboveheadinventory && d != player1)
-        {
-            stringz(weapons);
-            #define printweapon(q) \
-                if(d->hasweap(q, m_weapon(d->actortype, gamemode, mutators))) \
-                { \
-                    vec colour = vec::hexcolor(W(q, colour)); \
-                    if(q != d->weapselect) colour.mul(aboveheadinventoryfade); \
-                    defformatstring(str, "\fs\f[%d]%s\f(%s)\fS", colour.tohexcolor(), q != d->weapselect ? "\fE" : "", hud::itemtex(WEAPON, q)); \
-                    concatstring(weapons, str); \
-                }
-            if(aboveheadinventory >= 2) { loopi(W_ALL) printweapon(i); }
-            else { printweapon(d->weapselect); }
-            pos.z += aboveheadinventorysize/2;
-            part_textcopy(pos, weapons, PART_TEXT, 1, colourwhite, aboveheadinventorysize, blend*aboveheadinventoryblend);
-        }
-        if(aboveheadstatus)
-        {
-            Texture *t = NULL;
-            int colour = getcolour(d, playerteamtone, playerteamtonelevel);
-            if(d->state == CS_DEAD || d->state == CS_WAITING) t = textureload(hud::deadtex, 3);
-            else if(d->state == CS_ALIVE)
-            {
-                if(d->conopen) t = textureload(hud::chattex, 3);
-                else if(m_team(gamemode, mutators) && (hud::numteamkills() >= teamkillwarn || aboveheadteam&(d->team != focus->team ? 2 : 1)))
-                    t = textureload(hud::teamtexname(d->team), 3);
-                if(!m_team(gamemode, mutators) || d->team != focus->team)
-                {
-                    if(d->dominating.find(focus) >= 0)
-                    {
-                        t = textureload(hud::dominatingtex, 3);
-                        colour = pulsecols[PULSE_DISCO][clamp((lastmillis/100)%PULSECOLOURS, 0, PULSECOLOURS-1)];
-                    }
-                    else if(d->dominated.find(focus) >= 0)
-                    {
-                        t = textureload(hud::dominatedtex, 3);
-                        colour = pulsecols[PULSE_DISCO][clamp((lastmillis/100)%PULSECOLOURS, 0, PULSECOLOURS-1)];
-                    }
-                }
-            }
-            if(t && t != notexture)
-            {
-                pos.z += aboveheadstatussize;
-                part_icon(pos, t, aboveheadstatussize, blend*aboveheadstatusblend, 0, 0, 1, colour);
-            }
-        }
-        if(aboveheadicons && d->state != CS_EDITING && d->state != CS_SPECTATOR) loopv(d->icons)
-        {
-            if(d->icons[i].type == eventicon::AFFINITY && !(aboveheadicons&2)) continue;
-            if(d->icons[i].type == eventicon::WEAPON && !(aboveheadicons&4)) continue;
-            int millis = totalmillis-d->icons[i].millis;
-            if(millis <= d->icons[i].fade)
-            {
-                Texture *t = textureload(hud::icontex(d->icons[i].type, d->icons[i].value));
-                if(t && t != notexture)
-                {
-                    int olen = min(d->icons[i].length/5, 1000), ilen = olen/2, colour = colourwhite;
-                    float skew = millis < ilen ? millis/float(ilen) : (millis > d->icons[i].fade-olen ? (d->icons[i].fade-millis)/float(olen) : 1.f),
-                          size = skew, fade = blend*skew;
-                    if(d->icons[i].type >= eventicon::SORTED)
-                    {
-                        size *= aboveheadiconssize;
-                        switch(d->icons[i].type)
-                        {
-                            case eventicon::WEAPON: colour = W(d->icons[i].value, colour); break;
-                            case eventicon::AFFINITY:
-                                if(m_bomber(gamemode))
-                                {
-                                    bvec pcol = bvec::fromcolor(bomber::pulsecolour());
-                                    colour = (pcol.x<<16)|(pcol.y<<8)|pcol.z;
-                                }
-                                else colour = TEAM(d->icons[i].value, colour);
-                                break;
-                            default: break;
-                        }
-                    }
-                    else size *= aboveheadeventsize;
-                    pos.z += size;
-                    part_icon(pos, t, size, fade*aboveheadiconsblend, 0, 0, 1, colour);
-                    //if(d->icons[i].type >= eventicon::SORTED) pos.z += 1.5f;
-                }
-            }
-        }
-    }
-
-    void renderplayer(gameent *d, int third, float size, int flags = 0, const vec4 &color = vec4(1, 1, 1, 1))
-    {
-        if(d->state == CS_SPECTATOR) return;
-        int weap = d->weapselect, lastaction = 0, animflags = ANIM_IDLE|ANIM_LOOP, weapflags = animflags, weapaction = 0, animdelay = 0;
-        bool secondary = false, showweap = third != 2 && isweap(weap) && weap < W_ALL && actor[d->actortype].useweap;
-        float weapscale = 1.f;
-        if(d->state == CS_DEAD || d->state == CS_WAITING)
-        {
-            showweap = false;
-            animflags = ANIM_DYING|ANIM_NOPITCH;
-            lastaction = d->lastpain;
-            switch(deathanim)
-            {
-                case 0:
-                    if(d->ragdoll) cleanragdoll(d);
-                    return;
-                case 1:
-                {
-                    if(d->ragdoll) cleanragdoll(d);
-                    int t = lastmillis-lastaction;
-                    if(t < 0) return;
-                    if(t > 1000) animflags = ANIM_DEAD|ANIM_LOOP|ANIM_NOPITCH;
-                    break;
-                }
-                case 3: if(m_duke(gamemode, mutators))
-                {
-                    if(d->ragdoll) cleanragdoll(d);
-                    return;
-                }
-                case 2: animflags |= ANIM_RAGDOLL; break;
-            }
-        }
-        else if(d->state == CS_EDITING)
-        {
-            animflags = ANIM_EDIT|ANIM_LOOP;
-            showweap = false;
-        }
-        else
-        {
-            secondary = third;
-            if(showweap && isweap(weap))
-            {
-                weapaction = lastaction = d->weaptime[weap];
-                animdelay = d->weapwait[weap];
-                switch(d->weapstate[weap])
-                {
-                    case W_S_SWITCH: case W_S_USE:
-                    {
-                        int millis = lastmillis-d->weaptime[weap], off = d->weapwait[weap]/3, lastweap = d->getlastweap(m_weapon(d->actortype, gamemode, mutators));
-                        if(isweap(lastweap) && millis <= off)
-                        {
-                            weap = lastweap;
-                            weapscale = 1-(millis/float(off));
-                        }
-                        else if(!d->hasweap(weap, m_weapon(d->actortype, gamemode, mutators))) showweap = false;
-                        else if(millis <= off*2) weapscale = (millis-off)/float(off);
-                        weapflags = animflags = d->weapstate[weap] == W_S_SWITCH ? ANIM_SWITCH : ANIM_USE;
-                        break;
-                    }
-                    case W_S_POWER: case W_S_ZOOM:
-                    {
-                        switch(weaptype[weap].anim)
-                        {
-                            case ANIM_GRENADE: weapflags = animflags = ANIM_GRENADE_POWER; break;
-                            default: weapflags = animflags = weaptype[weap].anim|ANIM_LOOP; break;
-                        }
-                        break;
-                    }
-                    case W_S_PRIMARY: case W_S_SECONDARY:
-                    {
-                        if(weaptype[weap].thrown[d->weapstate[weap]-W_S_PRIMARY] > 0)
-                        {
-                            int millis = lastmillis-d->weaptime[weap], off = d->weapwait[weap]/2;
-                            if(millis <= off || !d->hasweap(weap, m_weapon(d->actortype, gamemode, mutators)))
-                                showweap = false;
-                            else weapscale = (millis-off)/float(off);
-                        }
-                        weapflags = animflags = (weaptype[weap].anim+d->weapstate[weap])|ANIM_CLAMP;
-                        break;
-                    }
-                    case W_S_RELOAD:
-                    {
-                        if(!d->hasweap(weap, m_weapon(d->actortype, gamemode, mutators))) showweap = false;
-                        weapflags = animflags = weaptype[weap].anim+d->weapstate[weap];
-                        break;
-                    }
-                    case W_S_IDLE: case W_S_WAIT: default:
-                    {
-                        if(!d->hasweap(weap, m_weapon(d->actortype, gamemode, mutators))) showweap = false;
-                        weapflags = animflags = weaptype[weap].anim|ANIM_LOOP;
-                        break;
-                    }
-                }
-            }
-            if(third && (animflags&ANIM_IDLE) && lastmillis-d->lastpain <= 300)
-            {
-                secondary = true;
-                lastaction = d->lastpain;
-                animflags = ANIM_PAIN;
-                animdelay = 300;
-            }
-        }
-        if((d != focus || d->state == CS_DEAD || d->state == CS_WAITING) && !(flags&MDL_ONLYSHADOW) && third == 1 && d->actortype < A_ENEMY && !shadowmapping && !drawtex && (aboveheaddead || d->state == CS_ALIVE))
-            renderabovehead(d);
-        const char *weapmdl = showweap && isweap(weap) ? (third ? weaptype[weap].vwep : weaptype[weap].hwep) : "";
-        int ai = 0;
-        modelattach a[1+VANITYMAX+12];
-        if(vanitymodels && third && *d->vanity)
-        {
-            int idx = third == 1 && (d->state == CS_DEAD || d->state == CS_WAITING) && d->headless && !nogore && headlessmodels ? 3 : third;
-            if(d->vitems.empty())
-            {
-                vector<char *> vanitylist;
-                explodelist(d->vanity, vanitylist);
-                loopv(vanitylist) if(vanitylist[i] && *vanitylist[i])
-                    loopvk(vanities) if(!strcmp(vanities[k].ref, vanitylist[i]))
-                        d->vitems.add(k);
-                vanitylist.deletearrays();
-            }
-            int found[VANITYMAX] = {0};
-            loopvk(d->vitems) if(vanities.inrange(d->vitems[k]))
-            {
-                if(found[vanities[d->vitems[k]].type]) continue;
-                if(vanities[d->vitems[k]].cond&1 && idx == 2) continue;
-                if(vanities[d->vitems[k]].cond&2 && idx == 3) continue;
-                const char *file = vanityfname(d, d->vitems[k]);
-                if(file)
-                {
-                    a[ai++] = modelattach(vanities[d->vitems[k]].tag, file);
-                    found[vanities[d->vitems[k]].type]++;
-                }
-            }
-        }
-        bool hasweapon = showweap && *weapmdl;
-        if(hasweapon) a[ai++] = modelattach("tag_weapon", weapmdl, weapflags, weapaction, 1, weapscale*size);
-        if(!(flags&MDL_ONLYSHADOW))
-        {
-            if(third != 2)
-            {
-                a[ai++] = modelattach(hasweapon ? "tag_muzzle" : "tag_weapon", &d->muzzle);
-                a[ai++] = modelattach("tag_weapon", &d->origin);
-                if(weaptype[weap].eject || weaptype[weap].tape)
-                {
-                    a[ai++] = modelattach("tag_eject", &d->eject[0]);
-                    a[ai++] = modelattach("tag_eject2", &d->eject[1]);
-                }
-            }
-            if(third && d->wantshitbox())
-            {
-                a[ai++] = modelattach("tag_head", &d->head);
-                a[ai++] = modelattach("tag_torso", &d->torso);
-                a[ai++] = modelattach("tag_waist", &d->waist);
-                a[ai++] = modelattach("tag_ljet", &d->jet[0]);
-                a[ai++] = modelattach("tag_rjet", &d->jet[1]);
-                a[ai++] = modelattach("tag_bjet", &d->jet[2]);
-                a[ai++] = modelattach("tag_ltoe", &d->toe[0]);
-                a[ai++] = modelattach("tag_rtoe", &d->toe[1]);
-            }
-        }
-        renderclient(d, third, size, a[0].tag ? a : NULL, secondary, animflags, animdelay, lastaction, flags, color);
+        else e->mdl.material[2] = vec::fromcolor(colourwhite);
+        for(int i = 0; a[i].tag && i < MAXENTATTACHED; i++) e->mdl.attached[i] = a[i];
+        rendermodel(mdlname, &e->mdl, e);
     }
 
     void rendercheck(gameent *d, bool third = false)
@@ -3433,7 +3439,7 @@ namespace game
             {
                 if(hashint || haslight || haspower || hasdom)
                 {
-                    vec c = vec::hexcolor(hasdom ? pulsecols[PULSE_DISCO][clamp((lastmillis/100)%PULSECOLOURS, 0, PULSECOLOURS-1)] : (haslight ? WHCOL(d, d->weapselect, lightcol, physics::secondaryweap(d)) : getcolour(d, playerhinttone, playerhinttonelevel)));
+                    vec c = vec::fromcolor(hasdom ? pulsecols[PULSE_DISCO][clamp((lastmillis/100)%PULSECOLOURS, 0, PULSECOLOURS-1)] : (haslight ? WHCOL(d, d->weapselect, lightcol, physics::secondaryweap(d)) : getcolour(d, playerhinttone, playerhinttonelevel)));
                     float height = d->height, fade = blend;
                     if(hasdom) fade *= playerhintdom;
                     else if(haslight || haspower)

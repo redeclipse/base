@@ -62,13 +62,13 @@ namespace defend
 
     static vec skewcolour(int owner, int enemy, float occupy)
     {
-        vec colour = vec::hexcolor(TEAM(owner, colour));
+        vec colour = vec::fromcolor(TEAM(owner, colour));
         if(enemy)
         {
             int team = owner && enemy && !m_dac_quick(game::gamemode, game::mutators) ? T_NEUTRAL : enemy;
             int timestep = totalmillis%1000;
             float amt = clamp((timestep <= 500 ? timestep/500.f : (1000-timestep)/500.f)*occupy, 0.f, 1.f);
-            colour.lerp(vec::hexcolor(TEAM(team, colour)), amt);
+            colour.lerp(vec::fromcolor(TEAM(team, colour)), amt);
         }
         return colour;
     }
@@ -109,11 +109,16 @@ namespace defend
         loopv(st.flags)
         {
             defendstate::flag &b = st.flags[i];
+            b.mdl.reset();
             float occupy = b.occupied(m_dac_quick(game::gamemode, game::mutators), defendcount);
             vec effect = skewcolour(b.owner, b.enemy, occupy);
             int colour = effect.tohexcolor();
-            b.basematerial[0] = bvec::fromcolor(effect);
-            rendermodel("props/point", ANIM_MAPMODEL|ANIM_LOOP, b.render, b.yaw, 0, 0, MDL_CULL_VFC|MDL_CULL_OCCLUDED, NULL, NULL, 0, 0, 1, vec4(1, 1, 1, 1), &b.basematerial[0]);
+            b.mdl.material[0] = effect;
+            b.mdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
+            b.mdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED;
+            b.mdl.yaw = b.yaw;
+            b.mdl.o = b.render;
+            rendermodel("props/point", &b.mdl);
             if(b.enemy && b.owner)
             {
                 defformatstring(bowner, "%s", game::colourteam(b.owner));
@@ -312,7 +317,7 @@ namespace defend
                         if((d = e) == game::focus) break;
                     game::announcef(S_V_FLAGSECURED, CON_EVENT, d, true, "\faTeam %s secured \fw\f($pointtex)%s", game::colourteam(owner), b.name);
                     if(game::aboveheadaffinity) part_textcopy(vec(b.o).add(vec(0, 0, enttype[AFFINITY].radius)), "<huge>\fzuwSECURED", PART_TEXT, game::eventiconfade, TEAM(owner, colour), 3, 1, -10);
-                    if(game::dynlighteffects) adddynlight(b.o, enttype[AFFINITY].radius*2, vec::hexcolor(TEAM(owner, colour)).mul(2.f), 500, 250);
+                    if(game::dynlighteffects) adddynlight(b.o, enttype[AFFINITY].radius*2, vec::fromcolor(TEAM(owner, colour)).mul(2.f), 500, 250);
                 }
             }
             else if(b.owner)
@@ -323,7 +328,7 @@ namespace defend
                     if((d = e) == game::focus) break;
                 game::announcef(S_V_FLAGOVERTHROWN, CON_EVENT, d, true, "\faTeam %s overthrew \fw\f($pointtex)%s", game::colourteam(enemy), b.name);
                 if(game::aboveheadaffinity) part_textcopy(vec(b.o).add(vec(0, 0, enttype[AFFINITY].radius)), "<huge>\fzuwOVERTHROWN", PART_TEXT, game::eventiconfade, TEAM(enemy, colour), 3, 1, -10);
-                if(game::dynlighteffects) adddynlight(b.o, enttype[AFFINITY].radius*2, vec::hexcolor(TEAM(enemy, colour)).mul(2.f), 500, 250);
+                if(game::dynlighteffects) adddynlight(b.o, enttype[AFFINITY].radius*2, vec::fromcolor(TEAM(enemy, colour)).mul(2.f), 500, 250);
             }
             b.converted = converted;
         }

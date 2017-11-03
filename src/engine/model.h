@@ -17,8 +17,8 @@ struct model
     virtual ~model() { DELETEA(name); DELETEP(bih); }
     virtual void calcbb(vec &center, vec &radius) = 0;
     virtual void calctransform(matrix4x3 &m) = 0;
-    virtual int intersect(int anim, int basetime, int basetime2, const vec &pos, float yaw, float pitch, float roll, dynent *d, modelattach *a, float size, const vec &o, const vec &ray, float &dist, int mode) = 0;
-    virtual void render(int anim, int basetime, int basetime2, const vec &o, float yaw, float pitch, float roll, dynent *d, modelattach *a = NULL, float size = 1, const vec4 &color = vec4(1, 1, 1, 1), const bvec *material = NULL) = 0;
+    virtual int intersect(int anim, modelstate *state, dynent *d, const vec &o, const vec &ray, float &dist, int mode = 0) = 0;
+    virtual void render(int anim, modelstate *state, dynent *d = NULL) = 0;
     virtual bool load() = 0;
     virtual int type() const = 0;
     virtual BIH *setBIH() { return NULL; }

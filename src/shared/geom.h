@@ -263,7 +263,7 @@ struct vec
         return x*(x < 0 ? max.x : min.x) + y*(y < 0 ? max.y : min.y) + z*(z < 0 ? max.z : min.z);
     }
 
-    static vec hexcolor(int color)
+    static vec fromcolor(int color)
     {
         return vec(((color>>16)&0xFF)*(1.0f/255.0f), ((color>>8)&0xFF)*(1.0f/255.0f), (color&0xFF)*(1.0f/255.0f));
     }

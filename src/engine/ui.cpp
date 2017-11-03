@@ -3795,36 +3795,37 @@ namespace UI
     struct ModelPreview : Preview
     {
         char *name;
-        int anim;
-        float scale, blend;
+        modelstate mdl;
 
         ModelPreview() : name(NULL) {}
         ~ModelPreview() { delete[] name; }
 
         void setup(const char *name_, const char *animspec, float scale_, float blend_, float minw_, float minh_)
         {
+            mdl.reset();
+
             Preview::setup(minw_, minh_, Color(colourwhite));
             SETSTR(name, name_);
 
-            anim = ANIM_ALL;
+            mdl.anim = ANIM_ALL;
             if(animspec[0])
             {
                 if(isdigit(animspec[0]))
                 {
-                    anim = parseint(animspec);
-                    if(anim >= 0) anim %= ANIM_INDEX;
-                    else anim = ANIM_ALL;
+                    mdl.anim = parseint(animspec);
+                    if(mdl.anim >= 0) mdl.anim %= ANIM_INDEX;
+                    else mdl.anim = ANIM_ALL;
                 }
                 else
                 {
                     vector<int> anims;
                     game::findanims(animspec, anims);
-                    if(anims.length()) anim = anims[0];
+                    if(anims.length()) mdl.anim = anims[0];
                 }
             }
-            anim |= ANIM_LOOP;
-            scale = scale_;
-            blend = blend_;
+            mdl.anim |= ANIM_LOOP;
+            mdl.size = scale_;
+            mdl.color = vec4(1, 1, 1, blend_);
         }
 
         static const char *typestr() { return "#ModelPreview"; }
@@ -3842,14 +3843,11 @@ namespace UI
             model *m = loadmodel(name);
             if(m)
             {
-                bvec material[MAXENTMATERIALS];
-                loopv(colors) material[i] = bvec(colors[i].r, colors[i].g, colors[i].b);
-                vec4 colorscale = vec4(1, 1, 1, blend);
+                loopi(min(colors.length(), int(MAXENTMATERIALS))) mdl.material[i] = vec(colors[i].r/255.f, colors[i].g/255.f, colors[i].b/255.f);
                 vec center, radius;
                 m->boundbox(center, radius);
-                float yaw;
-                vec o = calcmodelpreviewpos(radius, yaw).sub(center);
-                rendermodel(name, anim, o, yaw, 0, 0, 0, NULL, NULL, 0, 0, scale, colorscale, &material[0]);
+                mdl.o = calcmodelpreviewpos(radius, mdl.yaw).sub(center);
+                rendermodel(name, &mdl);
             }
             if(clipstack.length()) clipstack.last().scissor();
             modelpreview::end();

@@ -1744,7 +1744,7 @@ namespace ai
         if(showwaypoints || (dropwaypoints && showwaypointsdrop) || aidebug >= 7)
         {
             vector<int> close;
-            int len = waypoints.length(), col = vec::hexcolor(showwaypointscolour).mul(0.5f).tohexcolor();
+            int len = waypoints.length(), col = vec::fromcolor(showwaypointscolour).mul(0.5f).tohexcolor();
             if(showwaypointsradius)
             {
                 findwaypointswithin(camera1->o, 0, showwaypointsradius, close);

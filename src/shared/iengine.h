@@ -342,7 +342,7 @@ extern void addstain(int type, const vec &center, const vec &surface, float radi
 
 static inline void addstain(int type, const vec &center, const vec &surface, float radius, int color, int info = 0)
 {
-    addstain(type, center, surface, radius, bvec::hexcolor(color), info);
+    addstain(type, center, surface, radius, bvec::fromcolor(color), info);
 }
 
 // worldio
@@ -367,24 +367,8 @@ extern void updatedynentcache(physent *d);
 extern void cleardynentcache();
 
 // rendermodel
-enum { MDL_CULL_VFC = 1<<0, MDL_CULL_DIST = 1<<1, MDL_CULL_OCCLUDED = 1<<2, MDL_CULL_QUERY = 1<<3, MDL_FULLBRIGHT = 1<<4, MDL_NORENDER = 1<<5, MDL_MAPMODEL = 1<<6, MDL_NOBATCH = 1<<7, MDL_ONLYSHADOW = 1<<8 };
-
-struct model;
-struct modelattach
-{
-    const char *tag, *name;
-    int anim, basetime;
-    float transparent, sizescale;
-    vec *pos;
-    model *m;
-
-    modelattach() : tag(NULL), name(NULL), anim(-1), basetime(0), transparent(-1), sizescale(-1), pos(NULL), m(NULL) {}
-    modelattach(const char *tag, const char *name, int anim = -1, int basetime = 0, float transparent = -1, float sizescale = -1) : tag(tag), name(name), anim(anim), basetime(basetime), transparent(transparent), sizescale(sizescale), pos(NULL), m(NULL) {}
-    modelattach(const char *tag, vec *pos) : tag(tag), name(NULL), anim(-1), basetime(0), transparent(-1), sizescale(-1), pos(pos), m(NULL) {}
-};
-
-extern void rendermodel(const char *mdl, int anim, const vec &o, float yaw = 0, float pitch = 0, float roll = 0, int cull = MDL_CULL_VFC | MDL_CULL_DIST | MDL_CULL_OCCLUDED, dynent *d = NULL, modelattach *a = NULL, int basetime = 0, int basetime2 = 0, float size = 1, const vec4 &color = vec4(1, 1, 1, 1), const bvec *material = NULL);
-extern int intersectmodel(const char *mdl, int anim, const vec &pos, float yaw, float pitch, float roll, const vec &o, const vec &ray, float &dist, int mode = 0, dynent *d = NULL, modelattach *a = NULL, int basetime = 0, int basetime2 = 0, float size = 1);
+extern void rendermodel(const char *mdl, modelstate *state, dynent *d = NULL);
+extern int intersectmodel(const char *mdl, modelstate *state, const vec &o, const vec &ray, float &dist, int mode = 0, dynent *d = NULL);
 extern void abovemodel(vec &o, const char *mdl);
 extern void interpolateorientation(dynent *d, float &interpyaw, float &interppitch);
 extern void setbbfrommodel(dynent *d, const char *mdl, float size = 1);
@@ -396,7 +380,6 @@ extern bool matchanim(const char *name, const char *pattern);
 extern void resetmapmodels(int n = 0);
 
 // ragdoll
-
 extern bool validragdoll(dynent *d, int millis);
 extern void moveragdoll(dynent *d);
 extern void cleanragdoll(dynent *d);

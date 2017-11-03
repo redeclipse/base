@@ -516,39 +516,37 @@ VAR(0, mmanimoverride, -1, 0, ANIM_ALL);
 
 static inline void rendermapmodel(extentity &e)
 {
-    int anim = ANIM_MAPMODEL|ANIM_LOOP, basetime = 0;
+    e.mdl.reset();
+    e.mdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
+    e.mdl.flags = MDL_CULL_VFC | MDL_CULL_DIST;
     if(e.lastemit)
     {
         if(e.flags&EF_HIDE && e.spawned()) return;
-        anim = e.spawned() ? ANIM_TRIGGER_ON : ANIM_TRIGGER_OFF;
-        if(e.lastemit > 0 && lastmillis-e.lastemit < entities::triggertime(e)) basetime = e.lastemit;
-        else anim |= ANIM_END;
+        e.mdl.anim = e.spawned() ? ANIM_TRIGGER_ON : ANIM_TRIGGER_OFF;
+        if(e.lastemit > 0 && lastmillis-e.lastemit < entities::triggertime(e)) e.mdl.basetime = e.lastemit;
+        else e.mdl.anim |= ANIM_END;
     }
     if(mmanimoverride)
     {
-        anim = (mmanimoverride<0 ? ANIM_ALL : mmanimoverride)|ANIM_LOOP;
-        basetime = 0;
+        e.mdl.anim = (mmanimoverride<0 ? ANIM_ALL : mmanimoverride)|ANIM_LOOP;
+        e.mdl.basetime = 0;
     }
-    vec color = e.attrs[7] ? vec::hexcolor(e.attrs[7]) : vec::hexcolor(colourwhite);
+    e.mdl.yaw = e.attrs[1];
+    e.mdl.pitch = e.attrs[2];
+    e.mdl.roll = e.attrs[3];
+    e.mdl.o = e.o;
+    e.mdl.color = vec4(1, 1, 1, e.attrs[4] ? min(e.attrs[4]/100.f, 1.f) : 1.f);
+    e.mdl.size = e.attrs[5] ? max(e.attrs[5]/100.f, 1e-3f) : 1.f;
     if(e.attrs[8] || e.attrs[9])
     {
-        vec r = game::getpalette(e.attrs[8], e.attrs[9]);
-        if(e.attrs[7]) r.mul(vec::hexcolor(e.attrs[7]));
-        color = r;
+        e.mdl.material[0] = game::getpalette(e.attrs[8], e.attrs[9]);
+        if(e.attrs[7]) e.mdl.material[0].mul(vec::fromcolor(e.attrs[7]));
     }
-    float yaw = e.attrs[1], pitch = e.attrs[2], roll = e.attrs[3];
-    if(e.attrs[10]) yaw += e.attrs[10]*lastmillis/1000.0f;
-    if(e.attrs[11]) pitch += e.attrs[11]*lastmillis/1000.0f;
-    if(e.attrs[12]) roll += e.attrs[12]*lastmillis/1000.0f;
-    if(e.attrs[8] || e.attrs[9])
-    {
-        vec r = game::getpalette(e.attrs[8], e.attrs[9]);
-        if(e.attrs[7]) r.mul(vec::hexcolor(e.attrs[7]));
-        e.material[0] = bvec::fromcolor(r);
-    }
-    else e.material[0] = e.attrs[7] ? bvec(e.attrs[7]) : bvec(255, 255, 255);
-    vec4 colorscale = vec4(1, 1, 1, e.attrs[4] ? min(e.attrs[4]/100.f, 1.f) : 1.f);
-    rendermapmodel(e.attrs[0], anim, e.o, yaw, pitch, roll, MDL_CULL_VFC | MDL_CULL_DIST, basetime, e.attrs[5] ? max(e.attrs[5]/100.f, 1e-3f) : 1.f, colorscale, &e.material[0]);
+    else if(e.attrs[7]) e.mdl.material[0] = vec::fromcolor(e.attrs[7]);
+    if(e.attrs[10]) e.mdl.yaw += e.attrs[10]*lastmillis/1000.0f;
+    if(e.attrs[11]) e.mdl.pitch += e.attrs[11]*lastmillis/1000.0f;
+    if(e.attrs[12]) e.mdl.roll += e.attrs[12]*lastmillis/1000.0f;
+    rendermapmodel(e.attrs[0], &e.mdl);
 }
 
 void rendermapmodels()

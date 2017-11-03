@@ -3441,7 +3441,7 @@ void collectlights()
     const vector<extentity *> &ents = entities::getents();
     if(!editmode || !fullbright) loopv(ents)
     {
-        const extentity &e = *ents[i], *f = NULL;
+        const extentity &e = *ents[i];
         if(e.type != ET_LIGHT || e.attrs[0] <= 0) continue;
 
         int radius = 0, spotlight = -1;

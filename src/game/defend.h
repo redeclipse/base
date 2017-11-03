@@ -17,7 +17,7 @@ struct defendstate
         bool hasflag;
         int lasthad;
         vec render, above;
-        bvec basematerial[MAXENTMATERIALS];
+        modelstate mdl;
 #endif
         int owners, enemies, converted, points;
 
@@ -121,8 +121,9 @@ struct defendstate
         void setposition(const vec &pos)
         {
             o = render = above = pos;
-            render.z += 2;
+            render.z += 4;
             physics::droptofloor(render);
+            render.z -= 1.5f;
             if(render.z >= above.z-1) above.z += 1+render.z-above.z;
         }
 #endif

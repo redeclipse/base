@@ -1719,7 +1719,7 @@ static int partcolour(int c, int p, int x)
     if(p || x)
     {
         vec r(1, 1, 1);
-        if(c > 0) r = vec::hexcolor(c);
+        if(c > 0) r = vec::fromcolor(c);
         r.mul(game::getpalette(p, x));
         return (int(r.x*255)<<16)|(int(r.y*255)<<8)|(int(r.z*255));
     }
