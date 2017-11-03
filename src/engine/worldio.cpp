@@ -1254,6 +1254,11 @@ bool load_world(const char *mname, int crc)       // still supports all map form
                 e.attrs[1] -= 90;
                 while(e.attrs[1] < 0) e.attrs[1] += 360;
             }
+            if(maptype == MAP_MAPZ && hdr.version <= 43 && e.type == ET_LIGHTFX)
+            {
+                if(e.attrs[0] == LFX_FLICKER) e.type = ET_EMPTY;
+                else if(e.attrs[0] > LFX_FLICKER) e.attrs[0] -= 1;
+            }
             if(!insideworld(e.o) && e.type != ET_LIGHT && e.type != ET_LIGHTFX)
                 conoutf("\frWARNING: ent outside of world: enttype[%d](%s) index %d (%f, %f, %f) [%d, %d]", e.type, entities::findname(e.type), i, e.o.x, e.o.y, e.o.z, worldsize, worldscale);
         }

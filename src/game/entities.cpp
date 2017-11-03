@@ -254,7 +254,7 @@ namespace entities
             {
                 if(full)
                 {
-                    const char *lfxnames[LFX_MAX+1] = { "spotlight", "dynlight", "flicker", "pulse", "glow", "" };
+                    const char *lfxnames[LFX_MAX+1] = { "spotlight", "flicker", "pulse", "glow", "normal" };
                     addentinfo(lfxnames[attr[0] < 0 || attr[0] >= LFX_MAX ? LFX_MAX : attr[0]]);
                     loopi(LFX_MAX-1) if(attr[4]&(1<<(LFX_S_MAX+i))) { defformatstring(ds, "+%s", lfxnames[i+1]); addentinfo(ds); break; }
                     if(attr[4]&LFX_S_RAND1) addentinfo("rnd-min");
@@ -2185,6 +2185,7 @@ namespace entities
             if(ents.inrange(enthover) && islightable(ents[enthover]))
                 renderfocus(enthover, renderentlight(e));
         }
+        #if 0
         loopenti(LIGHTFX) if(ents[i]->type == LIGHTFX && ents[i]->attrs[0] != LFX_SPOTLIGHT)
         {
             if(ents[i]->spawned() || ents[i]->lastemit)
@@ -2201,6 +2202,7 @@ namespace entities
             loopvk(ents[i]->links) if(ents.inrange(ents[i]->links[k]) && ents[ents[i]->links[k]]->type == LIGHT)
                 makelightfx(*ents[i], *ents[ents[i]->links[k]]);
         }
+        #endif
     }
 
     void update()

@@ -242,13 +242,10 @@ static bool modifyoctaent(int flags, int id, extentity &e)
         {
             clearlightcache(id);
             if(e.attrs[6]&L_VOLUMETRIC) { if(flags&MODOE_ADD) volumetriclights++; else --volumetriclights; }
-
-            const vector<extentity *> &ents = entities::getents();
-            if(!e.links.empty()) loopvk(e.links) if(ents.inrange(e.links[k]) && ents[e.links[k]]->type == ET_LIGHTFX && ents[e.links[k]]->attrs[0] == LFX_SPOTLIGHT)
-            {
-                if(!(flags&MODOE_ADD ? spotlights++ : --spotlights)) { cleardeferredlightshaders(); cleanupvolumetric(); }
-                break;
-            }
+        }
+        case ET_LIGHTFX:
+        {
+            if(e.attrs[0] == LFX_SPOTLIGHT && !(flags&MODOE_ADD ? spotlights++ : --spotlights)) { cleardeferredlightshaders(); cleanupvolumetric(); }
             break;
         }
         case ET_PARTICLES: clearparticleemitters(); break;

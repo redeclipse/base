@@ -3155,9 +3155,13 @@ namespace server
         }
         if(ci)
         {
-            if(mapsending == ci->clientnum) resetmapdata();
             ci->clientcrc = 0;
             ci->wantsmap = true;
+            if(mapsending == ci->clientnum)
+            {
+                resetmapdata();
+                return false;
+            }
             if(mapsending >= 0)
             {
                 srvmsgft(ci->clientnum, CON_EVENT, "\fyThe map is being uploaded, please wait..");

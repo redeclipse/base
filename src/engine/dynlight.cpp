@@ -183,39 +183,3 @@ void dynlightreaching(const vec &target, vec &color, vec &dir, bool hud)
 #endif
     color.add(dyncolor);
 }
-
-void makelightfx(extentity &e, extentity &f)
-{
-    if(!f.attrs[0] || e.attrs[0] == LFX_SPOTLIGHT) return;
-
-    vec colour = vec(f.attrs[1], f.attrs[2], f.attrs[3]).div(255.f);
-    float radius = f.attrs[0]; int millis = lastmillis-e.emit[2], effect = e.attrs[0], interval = e.emit[0]+e.emit[1];
-    if(!e.emit[2] || millis >= interval) loopi(2)
-    {
-        e.emit[i] = e.attrs[i+2] ? e.attrs[i+2] : 750;
-        if(e.attrs[4]&(1<<i)) e.emit[i] = rnd(e.emit[i]);
-        millis -= interval; e.emit[2] = lastmillis-millis;
-    }
-    if(millis >= e.emit[0]) loopi(LFX_MAX-1) if(e.attrs[4]&(1<<(LFX_S_MAX+i))) { effect = i+1; break; }
-    #define lightskew float skew = clamp(millis < e.emit[0] ? 1.f-(float(millis)/float(e.emit[0])) : float(millis-e.emit[0])/float(e.emit[1]), 0.f, 1.f);
-    switch(effect)
-    {
-        case LFX_FLICKER:
-        {
-            if(millis >= e.emit[0]) radius -= (e.attrs[1] ? e.attrs[1] : radius);
-            break;
-        }
-        case LFX_PULSE:
-        {
-            lightskew; radius -= (e.attrs[1] ? e.attrs[1] : radius)*skew;
-            break;
-        }
-        case LFX_GLOW:
-        {
-            lightskew; colour.mul(skew); radius -= e.attrs[1]*skew;
-            break;
-        }
-        default: break;
-    }
-    if(radius > 0) adddynlight(f.o, radius, colour, 0, 0);
-}

@@ -33,6 +33,69 @@ void setupsunlight()
     clearradiancehintscache();
 }
 
+bool getlightfx(const extentity &e, int *radius, int *spotlight, vec *color, bool normalize)
+{
+    if(e.attrs[0] <= 0) return false;
+
+    if(color)
+    {
+        *color = vec(e.attrs[1], e.attrs[2], e.attrs[3]);
+        if(normalize) color->div(255.f);
+        color->max(0);
+    }
+    static int tempradius;
+    if(!radius) radius = &tempradius;
+    *radius = e.attrs[0];
+
+    const vector<extentity *> &ents = entities::getents();
+    loopv(e.links) if(ents.inrange(e.links[i]) && ents[e.links[i]]->type == ET_LIGHTFX)
+    {
+        extentity &f = *ents[e.links[i]];
+
+        if(f.attrs[0] < 0 || f.attrs[0] >= LFX_MAX) continue;
+        if(f.attrs[0] == LFX_SPOTLIGHT)
+        {
+            if(spotlight && *spotlight <= 0) *spotlight = e.links[i];
+            continue;
+        }
+
+        int millis = lastmillis-f.emit[2], effect = f.attrs[0], interval = f.emit[0]+f.emit[1];
+        if(!f.emit[2] || millis >= interval) loopi(2)
+        {
+            f.emit[i] = f.attrs[i+2] ? f.attrs[i+2] : 750;
+            if(f.attrs[4]&(1<<i)) f.emit[i] = rnd(f.emit[i]);
+            millis -= interval; f.emit[2] = lastmillis-millis;
+        }
+        if(millis >= f.emit[0]) loopi(LFX_MAX-1) if(f.attrs[4]&(1<<(LFX_S_MAX+i))) { effect = i+1; break; }
+
+        float skew = clamp(millis < f.emit[0] ? 1.f-(float(millis)/float(f.emit[0])) : float(millis-f.emit[0])/float(f.emit[1]), 0.f, 1.f);
+        switch(effect)
+        {
+            case LFX_FLICKER:
+            {
+                if(millis >= f.emit[0])
+                    *radius -= (f.attrs[1] ? f.attrs[1] : *radius);
+                break;
+            }
+            case LFX_PULSE:
+            {
+                *radius -= (f.attrs[1] ? f.attrs[1] : *radius)*skew;
+                break;
+            }
+            case LFX_GLOW:
+            {
+                if(color) color->mul(skew);
+                *radius -= f.attrs[1]*skew;
+                break;
+            }
+            default: break;
+        }
+    }
+    if(*radius <= 0) return false;
+    return true;
+}
+
+
 static const surfaceinfo brightsurfaces[6] =
 {
     brightsurface,
@@ -313,22 +376,8 @@ const vector<int> &checklightcache(int x, int y)
         {
             case ET_LIGHT:
             {
-                if(!light.links.empty())
-                {
-                    bool lightfx = false, spotlight = false;
-                    loopvk(light.links) if(ents.inrange(light.links[k]) && ents[light.links[k]]->type == ET_LIGHTFX)
-                    {
-                        lightfx = true;
-                        if(ents[light.links[k]]->attrs[0] == LFX_SPOTLIGHT)
-                        {
-                            spotlight = true;
-                            break;
-                        }
-                    }
-                    if(lightfx && !spotlight) continue;
-                }
                 int radius = light.attrs[0];
-                if(radius <= 0 ||
+                if(!getlightfx(light, &radius) ||
                    light.o.x + radius < cx || light.o.x - radius > cx + csize ||
                    light.o.y + radius < cy || light.o.y - radius > cy + csize)
                     continue;
@@ -656,39 +705,27 @@ void lightreaching(const vec &target, vec &color, vec &dir, bool fast, extentity
     loopv(lights)
     {
         extentity &e = *ents[lights[i]];
-        if(e.type != ET_LIGHT || e.attrs[0] <= 0)
-            continue;
+        if(e.type != ET_LIGHT || e.attrs[0] <= 0) continue;
+
+        float intensity = 1;
+        int radius = e.attrs[0], slight = -1;
+        vec lightcol(1, 1, 1);
+        if(!getlightfx(e, &radius, &slight, &lightcol)) continue;
 
         vec ray(target);
         ray.sub(e.o);
-        float mag = ray.magnitude();
-        if(mag >= float(e.attrs[0]))
-            continue;
-
-        float intensity = 1 - mag / float(e.attrs[0]);
-        if(!e.links.empty())
+        if(ents.inrange(slight))
         {
-            int slight = -1;
-            bool lightfx = false;
-            loopvk(e.links) if(ents.inrange(e.links[k]) && ents[e.links[k]]->type == ET_LIGHTFX)
-            {
-                lightfx = true;
-                if(ents[e.links[k]]->attrs[0] == LFX_SPOTLIGHT)
-                {
-                    slight = e.links[k];
-                    break;
-                }
-            }
-            if(ents.inrange(slight))
-            {
-                extentity &spotlight = *ents[slight];
-                vec spot = vec(spotlight.o).sub(e.o).normalize();
-                float spotatten = 1 - (1 - ray.dot(spot)) / (1 - cos360(clamp(int(spotlight.attrs[1]), 1, 89)));
-                if(spotatten <= 0) continue;
-                intensity *= spotatten;
-            }
-            else if(lightfx) continue;
+            extentity &spotlight = *ents[slight];
+            vec spot = vec(spotlight.o).sub(e.o).normalize();
+            float spotatten = 1 - (1 - ray.dot(spot)) / (1 - cos360(clamp(int(spotlight.attrs[1]), 1, 89)));
+            if(spotatten <= 0) continue;
+            intensity *= spotatten;
         }
+        float mag = ray.magnitude();
+        if(mag >= float(radius)) continue;
+
+        intensity *= 1 - mag / float(radius);
 
         if(mag < 1e-4f) ray = vec(0, 0, -1);
         else
@@ -698,7 +735,6 @@ void lightreaching(const vec &target, vec &color, vec &dir, bool fast, extentity
                 continue;
         }
 
-        vec lightcol = vec(e.attrs[1], e.attrs[2], e.attrs[4]).mul(1.0f/255).max(0);
         color.add(vec(lightcol).mul(intensity));
         dir.add(vec(ray).mul(-intensity*lightcol.x*lightcol.y*lightcol.z));
     }
