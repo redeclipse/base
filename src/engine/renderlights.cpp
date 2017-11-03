@@ -1473,8 +1473,8 @@ VARF(0, rhrect, 0, 0, 1, cleanupradiancehints());
 VARF(0, rhsplits, 1, 2, RH_MAXSPLITS, { cleardeferredlightshaders(); cleanupradiancehints(); });
 VARF(0, rhborder, 0, 1, 1, cleanupradiancehints());
 VARF(0, rsmsize, 64, 384, 2048, cleanupradiancehints());
-VARF(0, rhnearplane, 1, 16, 16, clearradiancehintscache());
-VARF(0, rhfarplane, 64, 4096, 16384, clearradiancehintscache());
+VARF(0, rhnearplane, 1, 1, 16, clearradiancehintscache());
+VARF(0, rhfarplane, 64, 1024, 16384, clearradiancehintscache());
 FVARF(0, rsmpradiustweak, 1e-3f, 1, 1e3f, clearradiancehintscache());
 FVARF(0, rhpradiustweak, 1e-3f, 1, 1e3f, clearradiancehintscache());
 FVARF(0, rsmdepthrange, 0, 1024, 1e6f, clearradiancehintscache());
@@ -2473,13 +2473,13 @@ void cleanupvolumetric()
 }
 
 VARF(IDF_PERSIST, volumetric, 0, 1, 1, cleanupvolumetric());
-VARF(IDF_PERSIST, volreduce, 0, 0, 2, cleanupvolumetric());
+VARF(IDF_PERSIST, volreduce, 0, 1, 2, cleanupvolumetric());
 VARF(IDF_PERSIST, volbilateral, 0, 1, 3, cleanupvolumetric());
 FVAR(0, volbilateraldepth, 0, 4, 1e3f);
 VARF(IDF_PERSIST, volblur, 0, 1, 3, cleanupvolumetric());
-VARF(IDF_PERSIST, volsteps, 1, 64, 64, cleanupvolumetric());
+VARF(IDF_PERSIST, volsteps, 1, 12, 64, cleanupvolumetric());
 FVAR(0, volminstep, 0, 0.0625f, 1e3f);
-FVAR(0, volprefilter, 0, 0.125f, 1e3f);
+FVAR(0, volprefilter, 0, 4, 1e3f);
 FVAR(0, voldistclamp, 0, 0.99f, 2);
 CVAR1(IDF_WORLD, volcolour, 0x808080);
 FVAR(IDF_WORLD, volscale, 0, 1, 16);
