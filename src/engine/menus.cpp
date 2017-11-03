@@ -45,10 +45,3 @@ void applychanges()
 
 COMMAND(0, applychanges, "");
 ICOMMAND(0, pendingchanges, "b", (int *idx), { if(needsapply.inrange(*idx)) result(needsapply[*idx].desc); else if(*idx < 0) intret(needsapply.length()); });
-
-void menuprocess()
-{
-    UI::hideui("loading");
-    hud::processmenu();
-    UI::update();
-}

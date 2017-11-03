@@ -569,7 +569,6 @@ namespace UI
 // menus
 extern void addchange(const char *desc, int type);
 extern void clearchanges(int type);
-extern void menuprocess();
 
 // client
 enum { ST_EMPTY, ST_LOCAL, ST_TCPIP, ST_REMOTE };

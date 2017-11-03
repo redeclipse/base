@@ -66,10 +66,9 @@ namespace hud
     extern bool hasinput(bool pass = false, bool focus = true);
     extern bool textinput(const char *str, int len);
     extern bool keypress(int code, bool isdown);
-    extern void drawhud(bool noview = false);
-    extern void drawlast();
+    extern void render(bool noview = false);
     extern bool getcolour(vec &colour);
-    extern void processmenu();
+    extern void checkui();
     extern void update(int w, int h);
     extern bool needminimap();
     extern void drawquad(float x, float y, float w, float h, float tx1 = 0, float ty1 = 0, float tx2 = 1, float ty2 = 1, bool flipx = false, bool flipy = false);

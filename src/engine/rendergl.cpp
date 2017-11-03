@@ -2402,8 +2402,7 @@ void gl_drawhud(bool noview = false)
 
     debuglights();
 
-    hud::drawhud(noview);
-    hud::drawlast();
+    hud::render(noview);
 }
 
 void gl_drawnoview()

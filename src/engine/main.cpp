@@ -1116,7 +1116,7 @@ int main(int argc, char **argv)
         int elapsed = updatetimer(true);
         updatefps(frameloops, elapsed);
         checkinput();
-        menuprocess();
+        hud::checkui();
 
         if(frameloops)
         {

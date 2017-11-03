@@ -528,8 +528,10 @@ namespace hud
         return UI::keypress(code, isdown); // ignore UI if compass is open
     }
 
-    void processmenu()
+    void checkui()
     {
+        UI::update();
+        UI::hideui("loading");
         UI::showui("hud");
         if(connected())
         {
@@ -1808,7 +1810,7 @@ namespace hud
         }
     }
 
-    void drawhud(bool noview)
+    void render(bool noview)
     {
         hudmatrix.ortho(0, hudwidth, hudheight, 0, -1, 1);
         flushhudmatrix();
@@ -1935,15 +1937,6 @@ namespace hud
             else if(gs_playing(game::gamestate) && game::focus->state == CS_ALIVE && game::inzoom())
                 drawzoom(hudwidth, hudheight);
         }
-    }
-
-    void drawlast()
-    {
-        hudmatrix.ortho(0, hudwidth, hudheight, 0, -1, 1);
-        flushhudmatrix();
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        resethudshader();
         if(!progressing && showhud)
         {
             if(commandmillis <= 0 && curcompass) rendercmenu();
