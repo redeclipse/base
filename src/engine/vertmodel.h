@@ -408,7 +408,7 @@ struct vertmodel : animmodel
 
             looprendermeshes(vertmesh, m,
             {
-                p->skins[i].bind(m, as);
+                p->skins[i].bind(m, as, state);
                 m.render(as, p->skins[i], *vc);
             });
 

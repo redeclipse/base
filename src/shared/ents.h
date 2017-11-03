@@ -53,13 +53,15 @@ struct modelattach
     modelattach(const char *tag, vec *pos) : tag(tag), name(NULL), anim(-1), basetime(0), transparent(-1), sizescale(-1), pos(pos), m(NULL) {}
 };
 
+struct Texture;
 struct modelstate
 {
     float yaw, pitch, roll, size, radius;
     int anim, flags, basetime, basetime2, lastspin;
     vec o, center, material[MAXENTMATERIALS];
-    vec4 color;
+    vec4 color, decalcolor;
     modelattach attached[MAXENTATTACHED];
+    Texture *decal;
 
     modelstate()
     {
@@ -72,9 +74,10 @@ struct modelstate
         size = 1;
         anim = flags = basetime = basetime2 = lastspin = 0;
         o = center = vec(0, 0, 0);
-        color = vec4(1, 1, 1, 1);
-        if(skipmat) loopi(MAXENTMATERIALS) material[i] = vec(1, 1, 1);
+        color = decalcolor = vec4(1, 1, 1, 1);
+        if(!skipmat) loopi(MAXENTMATERIALS) material[i] = vec(1, 1, 1);
         loopi(MAXENTATTACHED) attached[i] = modelattach();
+        decal = NULL;
     }
 };
 

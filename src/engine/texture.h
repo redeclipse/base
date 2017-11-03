@@ -934,4 +934,4 @@ extern vector<DecalSlot *> decalslots;
 #define TVAR(f, n, c, m)  _TVAR(f, n, c, m)
 #define _TVARN(f, n, c, t, m) _SVARF(n, n, c, { if(initing==NOT_INITING) t = n[0] ? textureload(n, m, true) : notexture; }, f|IDF_TEXTURE)
 #define TVARN(f, n, c, t, m) _TVARN(f, n, c, t, m)
-#define TVARC(f, n, c, t, m) Texture *##t; _TVARN(f, n, c, t, m)
+#define TVART(f, n, c, m) Texture *tex##n; _TVARN(f, n, c, tex##n, m)

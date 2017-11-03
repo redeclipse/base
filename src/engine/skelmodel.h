@@ -1416,7 +1416,7 @@ struct skelmodel : animmodel
                     bindvbo(as, p, *vbocache);
                     looprendermeshes(skelmesh, m,
                     {
-                        p->skins[i].bind(m, as);
+                        p->skins[i].bind(m, as, state);
                         m.render(as, p->skins[i], *vbocache);
                     });
                 }
@@ -1459,7 +1459,7 @@ struct skelmodel : animmodel
 
                 looprendermeshes(skelmesh, m,
                 {
-                    p->skins[i].bind(m, as);
+                    p->skins[i].bind(m, as, state);
                     if(skel->usegpuskel) skel->setgpubones(sc, bc, vblends);
                     m.render(as, p->skins[i], vc);
                 });

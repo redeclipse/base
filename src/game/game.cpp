@@ -317,6 +317,11 @@ namespace game
     VAR(IDF_PERSIST, headlessmodels, 0, 1, 1);
     FVAR(IDF_PERSIST, twitchspeed, 0, 2.5f, FVAR_MAX);
 
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, decalburn, "textures/residuals/burn", 0);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, decalbleed, "textures/residuals/bleed", 0);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, decalshock, "textures/residuals/shock", 0);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, decalbuff, "textures/residuals/buff", 0);
+
     ICOMMAND(0, gamemode, "", (), intret(gamemode));
     ICOMMAND(0, mutators, "", (), intret(mutators));
 
@@ -3372,14 +3377,19 @@ namespace game
         e->mdl.color = color;
         e->mdl.material[0] = vec::fromcolor(getcolour(d, playerovertone, playerovertonelevel));
         e->mdl.material[1] = vec::fromcolor(getcolour(d, playerundertone, playerundertonelevel));
-        if(burntime && d->burning(lastmillis, burntime))
-            e->mdl.material[1].max(vec(e->mdl.material[1]).div(2).max(rescolour(d, PULSE_BURN)));
-        if(burntime && d->bleeding(lastmillis, bleedtime))
-            e->mdl.material[1].max(vec(e->mdl.material[1]).div(2).max(rescolour(d, PULSE_BLEED)));
-        if(shocktime && d->shocking(lastmillis, shocktime))
-            e->mdl.material[1].max(vec(e->mdl.material[1]).div(2).max(rescolour(d, PULSE_SHOCK)));
-        if(m_bomber(gamemode) && bomber::carryaffinity(d))
-            e->mdl.material[1].max(vec(e->mdl.material[1]).div(2).max(rescolour(d, PULSE_DISCO)));
+        #define PLAYERRES(a, b) \
+            if(a##time && d->a##ing(lastmillis, a##time)) \
+            { \
+                float pc = 1; \
+                int millis = lastmillis-d->lastres[WR_##b]; \
+                if(a##time-millis < a##delay) pc *= float(a##time-millis)/float(a##delay); \
+                e->mdl.decal = textureload(decal##a, 0, true); \
+                e->mdl.decalcolor = vec4(rescolour(d, PULSE_##b), pc); \
+            }
+        PLAYERRES(burn, BURN);
+        PLAYERRES(bleed, BLEED);
+        PLAYERRES(shock, SHOCK);
+        #undef PLAYERRES
         if(isweap(d->weapselect))
         {
             if(d->weapselect == W_GRENADE)

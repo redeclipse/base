@@ -112,12 +112,12 @@ struct animmodel : model
     struct skin : shaderparams
     {
         part *owner;
-        Texture *tex, *decal, *masks, *envmap, *normalmap;
+        Texture *tex, *decal, *masks, *envmap, *normalmap, *origdecal;
         Shader *shader, *rsmshader;
         int cullface;
         shaderparamskey *key;
 
-        skin() : owner(0), tex(notexture), decal(NULL), masks(notexture), envmap(NULL), normalmap(NULL), shader(NULL), rsmshader(NULL), cullface(1), key(NULL) {}
+        skin() : owner(0), tex(notexture), decal(NULL), masks(notexture), envmap(NULL), normalmap(NULL), origdecal(NULL), shader(NULL), rsmshader(NULL), cullface(1), key(NULL) {}
 
         bool masked() const { return masks != notexture; }
         bool envmapped() const { return envmapmax>0; }
@@ -143,11 +143,17 @@ struct animmodel : model
             if(color.r < 0) LOCALPARAM(colorscale, colorscale);
             else LOCALPARAMF(colorscale, color.r, color.g, color.b, colorscale.a);
 
+            if(decaled()) LOCALPARAM(decalcolor, decalcolor);
+
+            if(material1 > 0 && modelmaterial)
+                LOCALPARAM(material1, modelmaterial[min(material1, int(MAXENTMATERIALS))-1]);
+            else LOCALPARAMF(material1, 1, 1, 1);
+            if(material2 > 0 && modelmaterial)
+                LOCALPARAM(material2, modelmaterial[min(material2, int(MAXENTMATERIALS))-1]);
+            else LOCALPARAMF(material2, 1, 1, 1);
+
             if(fullbright) LOCALPARAMF(fullbright, 0.0f, fullbright);
             else LOCALPARAMF(fullbright, 1.0f, as->cur.anim&ANIM_FULLBRIGHT ? 0.5f*fullbrightmodels/100.0f : 0.0f);
-
-            if(material1 > 0 && modelmaterial) LOCALPARAM(material1, modelmaterial[min(material1, int(MAXENTMATERIALS))-1]);
-            if(material2 > 0 && modelmaterial) LOCALPARAM(material2, modelmaterial[min(material2, int(MAXENTMATERIALS))-1]);
 
             float curglow = glow;
             if(glowpulse > 0)
@@ -157,14 +163,11 @@ struct animmodel : model
                 curglow += glowdelta*2*fabs(curpulse - 0.5f);
             }
 
-            if(material1 <= 0 || !modelmaterial) LOCALPARAMF(material1, 1, 1, 1);
-            if(material2 <= 0 || !modelmaterial) LOCALPARAMF(material2, 1, 1, 1);
-
             LOCALPARAMF(maskscale, spec, gloss, curglow);
             if(envmapped()) LOCALPARAMF(envmapscale, envmapmin-envmapmax, envmapmax);
         }
 
-        Shader *loadshader()
+        Shader *loadshader(bool force = false)
         {
             #define DOMODELSHADER(name, body) \
                 do { \
@@ -190,12 +193,12 @@ struct animmodel : model
                 return rsmshader;
             }
 
-            if(shader) return shader;
+            if(!force && shader) return shader;
 
             string opts;
             int optslen = 0;
             if(alphatested()) opts[optslen++] = 'a';
-            if(decaled()) opts[optslen++] = decal->type&Texture::ALPHA ? 'D' : 'd';
+            if(decaled()) opts[optslen++] = 'd';
             if(bumpmapped()) opts[optslen++] = 'n';
             if(envmapped()) { opts[optslen++] = 'm'; opts[optslen++] = 'e'; }
             else if(masked()) opts[optslen++] = 'm';
@@ -224,12 +227,12 @@ struct animmodel : model
             if(useradiancehints()) useshaderbyname(alphatested() ? "rsmalphamodel" : "rsmmodel");
         }
 
-        void setshader(mesh &m, const animstate *as)
+        void setshader(mesh &m, const animstate *as, bool force = false)
         {
-            m.setshader(loadshader(), !shadowmapping && colorscale.a < 1 ? 1 : 0);
+            m.setshader(loadshader(force), !shadowmapping && colorscale.a < 1 ? 1 : 0);
         }
 
-        void bind(mesh &b, const animstate *as)
+        void bind(mesh &b, const animstate *as, modelstate *state)
         {
             if(cullface > 0)
             {
@@ -268,6 +271,9 @@ struct animmodel : model
                 glBindTexture(GL_TEXTURE_2D, normalmap->id);
                 lastnormalmap = normalmap;
             }
+            bool forceshader = false, wasdecaled = decaled();
+            decal = state->decal ? state->decal : origdecal;
+            if(decaled() != wasdecaled) forceshader = true;
             if(decaled() && decal!=lastdecal)
             {
                 glActiveTexture_(GL_TEXTURE4);
@@ -294,7 +300,7 @@ struct animmodel : model
                 }
             }
             if(activetmu != 0) glActiveTexture_(GL_TEXTURE0);
-            setshader(b, as);
+            setshader(b, as, forceshader);
             setshaderparams(b, as);
         }
     };
@@ -1349,6 +1355,11 @@ struct animmodel : model
                 colorscale = state->color;
                 invalidate = true;
             }
+            if(decalcolor != state->decalcolor)
+            {
+                decalcolor = state->decalcolor;
+                invalidate = true;
+            }
             if(modelmaterial != &state->material[0])
             {
                 modelmaterial = &state->material[0];
@@ -1630,7 +1641,7 @@ struct animmodel : model
 
     static bool enabletc, enablecullface, enabletangents, enablebones, enabledepthoffset;
     static float sizescale;
-    static vec4 colorscale;
+    static vec4 colorscale, decalcolor;
     static const vec *modelmaterial;
     static GLuint lastvbuf, lasttcbuf, lastxbuf, lastbbuf, lastebuf, lastenvmaptex, closestenvmaptex;
     static Texture *lasttex, *lastdecal, *lastmasks, *lastnormalmap;
@@ -1693,7 +1704,7 @@ float animmodel::intersectdist = 0, animmodel::intersectscale = 1;
 bool animmodel::enabletc = false, animmodel::enabletangents = false, animmodel::enablebones = false,
      animmodel::enablecullface = true, animmodel::enabledepthoffset = false;
 float animmodel::sizescale = 1;
-vec4 animmodel::colorscale(1, 1, 1, 1);
+vec4 animmodel::colorscale(1, 1, 1, 1), animmodel::decalcolor(1, 1, 1, 1);
 const vec *animmodel::modelmaterial = NULL;
 GLuint animmodel::lastvbuf = 0, animmodel::lasttcbuf = 0, animmodel::lastxbuf = 0, animmodel::lastbbuf = 0, animmodel::lastebuf = 0,
        animmodel::lastenvmaptex = 0, animmodel::closestenvmaptex = 0;
@@ -1815,7 +1826,7 @@ template<class MDL, class MESH> struct modelcommands
     static void setdecal(char *meshname, char *decal)
     {
         loopskins(meshname, s,
-            s.decal = textureload(makerelpath(MDL::dir, decal), 0, true, false);
+            s.decal = s.origdecal = textureload(makerelpath(MDL::dir, decal), 0, true, false);
         );
     }
 

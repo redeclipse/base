@@ -333,7 +333,8 @@ char *makerelpath(const char *dir, const char *file, const char *prefix, const c
         }
     }
     if(cmd) concatstring(tmp, cmd);
-    if(dir)
+    if(file[0] == '/') concatstring(tmp, file+1);
+    else if(dir)
     {
         defformatstring(pname, "%s/%s", dir, file);
         concatstring(tmp, pname);
