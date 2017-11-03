@@ -145,11 +145,9 @@ struct animmodel : model
 
             if(decaled()) LOCALPARAM(decalcolor, decalcolor);
 
-            if(material1 > 0 && modelmaterial)
-                LOCALPARAM(material1, modelmaterial[min(material1, int(MAXENTMATERIALS))-1]);
+            if(material1 > 0) LOCALPARAM(material1, modelmaterial[min(material1, int(MAXMDLMATERIALS))-1].tocolor());
             else LOCALPARAMF(material1, 1, 1, 1);
-            if(material2 > 0 && modelmaterial)
-                LOCALPARAM(material2, modelmaterial[min(material2, int(MAXENTMATERIALS))-1]);
+            if(material2 > 0) LOCALPARAM(material2, modelmaterial[min(material2, int(MAXMDLMATERIALS))-1].tocolor());
             else LOCALPARAMF(material2, 1, 1, 1);
 
             if(fullbright) LOCALPARAMF(fullbright, 0.0f, fullbright);
@@ -1105,7 +1103,7 @@ struct animmodel : model
     void intersect(int anim, int basetime, int basetime2, float pitch, const vec &axis, const vec &forward, modelstate *state, dynent *d, const vec &o, const vec &ray)
     {
         int numtags = 0;
-        if(state->attached[0].tag)
+        if(state->attached)
         {
             int index = parts.last()->index + parts.last()->numanimparts;
             for(int i = 0; state->attached[i].tag; i++)
@@ -1150,7 +1148,7 @@ struct animmodel : model
             }
         }
 
-        if(state->attached[0].tag) for(int i = numtags-1; i >= 0; i--)
+        if(state->attached) for(int i = numtags-1; i >= 0; i--)
         {
             animmodel *m = (animmodel *)state->attached[i].m;
             if(!m) continue;
@@ -1225,7 +1223,7 @@ struct animmodel : model
     void render(int anim, int basetime, int basetime2, float pitch, const vec &axis, const vec &forward, modelstate *state, dynent *d)
     {
         int numtags = 0;
-        if(state->attached[0].tag)
+        if(state->attached)
         {
             int index = parts.last()->index + parts.last()->numanimparts;
             for(int i = 0; state->attached[i].tag; i++)
@@ -1276,7 +1274,7 @@ struct animmodel : model
             }
         }
 
-        if(state->attached[0].tag) for(int i = numtags-1; i >= 0; i--)
+        if(state->attached) for(int i = numtags-1; i >= 0; i--)
         {
             animmodel *m = (animmodel *)state->attached[i].m;
             if(!m)
@@ -1360,15 +1358,15 @@ struct animmodel : model
                 decalcolor = state->decalcolor;
                 invalidate = true;
             }
-            if(modelmaterial != &state->material[0])
+            if(memcmp(modelmaterial, state->material, sizeof(state->material)))
             {
-                modelmaterial = &state->material[0];
+                memcpy(modelmaterial, state->material, sizeof(state->material));
                 invalidate = true;
             }
             if(invalidate) shaderparamskey::invalidate();
 
             if(envmapped()) closestenvmaptex = lookupenvmap(closestenvmap(state->o));
-            else if(state->attached[0].tag) for(int i = 0; state->attached[i].tag; i++) if(state->attached[i].m && state->attached[i].m->envmapped())
+            else if(state->attached) for(int i = 0; state->attached[i].tag; i++) if(state->attached[i].m && state->attached[i].m->envmapped())
             {
                 closestenvmaptex = lookupenvmap(closestenvmap(state->o));
                 break;
@@ -1642,7 +1640,7 @@ struct animmodel : model
     static bool enabletc, enablecullface, enabletangents, enablebones, enabledepthoffset;
     static float sizescale;
     static vec4 colorscale, decalcolor;
-    static const vec *modelmaterial;
+    static bvec modelmaterial[MAXMDLMATERIALS];
     static GLuint lastvbuf, lasttcbuf, lastxbuf, lastbbuf, lastebuf, lastenvmaptex, closestenvmaptex;
     static Texture *lasttex, *lastdecal, *lastmasks, *lastnormalmap;
     static int matrixpos;
@@ -1705,7 +1703,7 @@ bool animmodel::enabletc = false, animmodel::enabletangents = false, animmodel::
      animmodel::enablecullface = true, animmodel::enabledepthoffset = false;
 float animmodel::sizescale = 1;
 vec4 animmodel::colorscale(1, 1, 1, 1), animmodel::decalcolor(1, 1, 1, 1);
-const vec *animmodel::modelmaterial = NULL;
+bvec animmodel::modelmaterial[MAXMDLMATERIALS] = { bvec(255, 255, 255), bvec(255, 255, 255), bvec(255, 255, 255) };
 GLuint animmodel::lastvbuf = 0, animmodel::lasttcbuf = 0, animmodel::lastxbuf = 0, animmodel::lastbbuf = 0, animmodel::lastebuf = 0,
        animmodel::lastenvmaptex = 0, animmodel::closestenvmaptex = 0;
 Texture *animmodel::lasttex = NULL, *animmodel::lastdecal = NULL, *animmodel::lastmasks = NULL, *animmodel::lastnormalmap = NULL;
@@ -1861,7 +1859,7 @@ template<class MDL, class MESH> struct modelcommands
 
     static void setmaterial(char *meshname, int *material1, int *material2)
     {
-        loopskins(meshname, s, { s.material1 = clamp(*material1, 0, int(MAXENTMATERIALS)); s.material2 = clamp(*material2, 0, int(MAXENTMATERIALS)); });
+        loopskins(meshname, s, { s.material1 = clamp(*material1, 0, int(MAXMDLMATERIALS)); s.material2 = clamp(*material2, 0, int(MAXMDLMATERIALS)); });
     }
 
     static void setlink(int *parent, int *child, char *tagname, float *x, float *y, float *z, float *yaw, float *pitch, float *roll)

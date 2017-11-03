@@ -36,7 +36,7 @@ struct entity : entbase
     linkvector links;
 };
 
-enum { MAXENTMATERIALS = 3, MAXENTATTACHED = 32 };
+enum { MAXMDLMATERIALS = 3 };
 enum { MDL_CULL_VFC = 1<<0, MDL_CULL_DIST = 1<<1, MDL_CULL_OCCLUDED = 1<<2, MDL_CULL_QUERY = 1<<3, MDL_FULLBRIGHT = 1<<4, MDL_NORENDER = 1<<5, MDL_MAPMODEL = 1<<6, MDL_NOBATCH = 1<<7, MDL_ONLYSHADOW = 1<<8 };
 
 struct model;
@@ -54,30 +54,41 @@ struct modelattach
 };
 
 struct Texture;
-struct modelstate
+
+struct entmodelstate
 {
     float yaw, pitch, roll, size, radius;
     int anim, flags, basetime, basetime2, lastspin;
-    vec o, center, material[MAXENTMATERIALS];
-    vec4 color, decalcolor;
-    modelattach attached[MAXENTATTACHED];
-    Texture *decal;
+    vec o, center;
+    vec4 color;
+    bvec material[MAXMDLMATERIALS];
 
-    modelstate()
-    {
-        reset();
-    }
+    entmodelstate() { reset(); }
 
-    void reset(bool skipmat = false)
+    void reset()
     {
         yaw = pitch = roll = radius = 0;
         size = 1;
         anim = flags = basetime = basetime2 = lastspin = 0;
         o = center = vec(0, 0, 0);
-        color = decalcolor = vec4(1, 1, 1, 1);
-        if(!skipmat) loopi(MAXENTMATERIALS) material[i] = vec(1, 1, 1);
-        loopi(MAXENTATTACHED) attached[i] = modelattach();
+        color = vec4(1, 1, 1, 1);
+        loopi(MAXMDLMATERIALS) material[i] = bvec(255, 255, 255);
+    }
+};
+
+struct modelstate : entmodelstate
+{
+    vec4 decalcolor;
+    Texture *decal;
+    modelattach *attached;
+
+    modelstate() { reset(); }
+
+    void reset()
+    {
+        decalcolor = vec4(1, 1, 1, 1);
         decal = NULL;
+        attached = NULL;
     }
 };
 
@@ -85,7 +96,6 @@ struct extentity : entity                       // part of the entity that doesn
 {
     int flags;        // the only dynamic state of a map entity
     int lastemit, emit[3];
-    modelstate mdl;
 
     extentity() : flags(0), lastemit(0)
     {
@@ -118,7 +128,6 @@ struct baseent
     uchar state;                                // one of CS_* above
     int inmaterial;
     float submerged;
-    modelstate mdl;
 
     baseent() : o(0, 0, 0), yaw(0), pitch(0), roll(0), state(CS_SPECTATOR)
     {

@@ -2286,38 +2286,38 @@ namespace entities
                     const char *mdlname = entmdlname(e.type, e.attrs);
                     if(mdlname && *mdlname)
                     {
-                        e.mdl.reset();
-                        e.mdl.o = e.o;
-                        e.mdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
-                        e.mdl.flags = MDL_CULL_VFC|MDL_CULL_DIST|MDL_CULL_OCCLUDED;
+                        modelstate mdl;
+                        mdl.o = e.o;
+                        mdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
+                        mdl.flags = MDL_CULL_VFC|MDL_CULL_DIST|MDL_CULL_OCCLUDED;
                         int colour = -1;
                         if(!active)
                         {
                             if(showentmodels <= (e.type == PLAYERSTART || e.type == ACTOR ? 1 : 0)) continue;
                             if(e.type == AFFINITY || e.type == PLAYERSTART)
                             {
-                                e.mdl.yaw = e.attrs[1]+(e.type == PLAYERSTART ? 90 : 0);
-                                e.mdl.pitch = e.attrs[2];
+                                mdl.yaw = e.attrs[1]+(e.type == PLAYERSTART ? 90 : 0);
+                                mdl.pitch = e.attrs[2];
                                 colour = TEAM(e.attrs[0], colour);
                             }
                             else if(e.type == ACTOR)
                             {
-                                e.mdl.yaw = e.attrs[1]+90;
-                                e.mdl.pitch = e.attrs[2];
+                                mdl.yaw = e.attrs[1]+90;
+                                mdl.pitch = e.attrs[2];
                                 int weap = e.attrs[6] > 0 ? e.attrs[6]-1 : AA(e.attrs[0], weaponspawn);
-                                e.mdl.size = e.attrs[9] > 0 ? e.attrs[9]/100.f : AA(e.attrs[0], scale);
+                                mdl.size = e.attrs[9] > 0 ? e.attrs[9]/100.f : AA(e.attrs[0], scale);
                                 if(isweap(weap)) colour = W(weap, colour);
                             }
                         }
                         else if(e.spawned())
                         {
                             int millis = lastmillis-e.lastspawn;
-                            if(millis < 500) e.mdl.size = e.mdl.color.a = float(millis)/500.f;
+                            if(millis < 500) mdl.size = mdl.color.a = float(millis)/500.f;
                         }
                         else if(e.lastemit)
                         {
                             int millis = lastmillis-e.lastemit;
-                            if(millis < 500) e.mdl.size = e.mdl.color.a = 1.f-(float(millis)/500.f);
+                            if(millis < 500) mdl.size = mdl.color.a = 1.f-(float(millis)/500.f);
                         }
                         if(e.type == WEAPON)
                         {
@@ -2325,8 +2325,8 @@ namespace entities
                             if(isweap(attr)) colour = W(attr, colour);
                             else continue;
                         }
-                        e.mdl.material[0] = colour >= 0 ? vec::fromcolor(colour) : vec::fromcolor(colourwhite);
-                        rendermodel(mdlname, &e.mdl);
+                        if(colour >= 0) mdl.material[0] = bvec::fromcolor(colour);
+                        rendermodel(mdlname, mdl);
                     }
                 }
             }

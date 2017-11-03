@@ -911,7 +911,7 @@ namespace projs
                 {
                     proj.mdlname = weaptype[proj.weap].eject && *weaptype[proj.weap].eprj ? weaptype[proj.weap].eprj : "projectiles/catridge";
                     proj.lifesize = weaptype[proj.weap].esize;
-                    proj.mdl.material[0] = vec::fromcolor(W(proj.weap, colour));
+                    proj.material = bvec::fromcolor(W(proj.weap, colour));
                 }
                 else
                 {
@@ -1811,7 +1811,7 @@ namespace projs
                 if(vol > 0) playsound(snd, proj.o, NULL, 0, vol);
                 part_create(PART_SMOKE, 500, proj.o, 0xAAAAAA, max(size, 1.5f), 1, -10);
                 proj.limited = true;
-                if(proj.projtype == PRJ_DEBRIS) proj.mdl.material[0] = vec::fromcolor(colourwhite);
+                if(proj.projtype == PRJ_DEBRIS) proj.material = bvec::fromcolor(colourwhite);
             }
             proj.norm = dir;
             if(proj.extinguish&4) return 0;
@@ -2416,21 +2416,22 @@ namespace projs
         {
             projent &proj = *projs[i];
             if((proj.projtype == PRJ_ENT && !entities::ents.inrange(proj.id)) || !projs[i]->mdlname || !*projs[i]->mdlname) continue;
-            proj.mdl.reset(true);
-            proj.mdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
-            proj.mdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_CULL_DIST;
-            proj.mdl.basetime = proj.spawntime;
-            proj.mdl.size = proj.curscale;
-            proj.mdl.yaw = proj.yaw;
-            proj.mdl.pitch = proj.pitch;
-            proj.mdl.roll = proj.roll;
-            proj.mdl.o = proj.o;
+            modelstate mdl;
+            mdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
+            mdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_CULL_DIST;
+            mdl.basetime = proj.spawntime;
+            mdl.size = proj.curscale;
+            mdl.yaw = proj.yaw;
+            mdl.pitch = proj.pitch;
+            mdl.roll = proj.roll;
+            mdl.o = proj.o;
+            mdl.material[0] = proj.material;
             switch(proj.projtype)
             {
                 case PRJ_DEBRIS:
                 {
-                    proj.mdl.size *= proj.lifesize;
-                    fadeproj(proj, proj.mdl.color.a, proj.mdl.size);
+                    mdl.size *= proj.lifesize;
+                    fadeproj(proj, mdl.color.a, mdl.size);
                     #if 0
                     if(!proj.limited)
                     {
@@ -2443,48 +2444,49 @@ namespace projs
                 }
                 case PRJ_GIBS: case PRJ_VANITY:
                 {
-                    proj.mdl.size *= proj.lifesize;
-                    fadeproj(proj, proj.mdl.color.a, proj.mdl.size);
+                    mdl.size *= proj.lifesize;
+                    fadeproj(proj, mdl.color.a, mdl.size);
                     if(proj.projtype == PRJ_VANITY && proj.owner)
-                        loopi(MAXENTMATERIALS) proj.mdl.material[i] = proj.owner->mdl.material[i];
+                        game::getplayermaterials(proj.owner, mdl);
                     break;
                 }
                 case PRJ_EJECT:
                 {
-                    proj.mdl.size *= proj.lifesize;
-                    fadeproj(proj, proj.mdl.color.a, proj.mdl.size);
+                    mdl.size *= proj.lifesize;
+                    fadeproj(proj, mdl.color.a, mdl.size);
                     break;
                 }
                 case PRJ_SHOT:
                 {
-                    proj.mdl.color.a *= fadeweap(proj);
+                    mdl.color.a *= fadeweap(proj);
                     if(proj.weap == W_GRENADE)
                     {
                         float amt = clamp(proj.lifespan, 0.f, 1.f);
-                        proj.mdl.material[0] = vec::fromcolor(W(proj.weap, colour));
-                        proj.mdl.material[0].r += int((1.f-proj.mdl.material[0].r)*amt);
-                        proj.mdl.material[0].g -= int(proj.mdl.material[0].g*amt);
-                        proj.mdl.material[0].b -= int(proj.mdl.material[0].b*amt);
+                        vec color = vec::fromcolor(W(proj.weap, colour));
+                        color.r += (1 - color.r) * amt;
+                        color.g *= 1 - amt;
+                        color.b *= 1 - amt;
+                        mdl.material[0] = bvec::fromcolor(color);
                     }
                     if(WF(WK(proj.flags), proj.weap, partcol, WS(proj.flags)))
                     {
-                        proj.mdl.material[0] = FWCOL(P, partcol, proj);
+                        mdl.material[0] = bvec::fromcolor(FWCOL(P, partcol, proj));
                         if(WF(WK(proj.flags), proj.weap, proxtype, WS(proj.flags)) && (!proj.stuck || proj.lifetime%500 >= 300))
-                            proj.mdl.material[0] = vec(0, 0, 0);
+                            mdl.material[0] = bvec(0, 0, 0);
                     }
                     break;
                 }
                 case PRJ_ENT:
                 {
                     if(entities::simpleitems) continue;
-                    fadeproj(proj, proj.mdl.color.a, proj.mdl.size);
+                    fadeproj(proj, mdl.color.a, mdl.size);
                     if(entities::ents.inrange(proj.id))
                     {
                         gameentity &e = *(gameentity *)entities::ents[proj.id];
                         if(e.type == WEAPON)
                         {
                             int attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], m_weapon(game::focus->actortype, game::gamemode, game::mutators));
-                            if(isweap(attr)) proj.mdl.material[0] = vec::fromcolor(W(attr, colour));
+                            if(isweap(attr)) mdl.material[0] = bvec::fromcolor(W(attr, colour));
                             else continue;
                         }
                     }
@@ -2492,7 +2494,7 @@ namespace projs
                 }
                 default: break;
             }
-            rendermodel(proj.mdlname, &proj.mdl, &proj);
+            rendermodel(proj.mdlname, mdl, &proj);
         }
     }
 

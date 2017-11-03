@@ -109,16 +109,16 @@ namespace defend
         loopv(st.flags)
         {
             defendstate::flag &b = st.flags[i];
-            b.mdl.reset();
+            modelstate mdl;
             float occupy = b.occupied(m_dac_quick(game::gamemode, game::mutators), defendcount);
             vec effect = skewcolour(b.owner, b.enemy, occupy);
             int colour = effect.tohexcolor();
-            b.mdl.material[0] = effect;
-            b.mdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
-            b.mdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED;
-            b.mdl.yaw = b.yaw;
-            b.mdl.o = b.render;
-            rendermodel("props/point", &b.mdl);
+            mdl.material[0] = bvec::fromcolor(effect);
+            mdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
+            mdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED;
+            mdl.yaw = b.yaw;
+            mdl.o = b.render;
+            rendermodel("props/point", mdl);
             if(b.enemy && b.owner)
             {
                 defformatstring(bowner, "%s", game::colourteam(b.owner));

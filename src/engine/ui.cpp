@@ -3843,11 +3843,11 @@ namespace UI
             model *m = loadmodel(name);
             if(m)
             {
-                loopi(min(colors.length(), int(MAXENTMATERIALS))) mdl.material[i] = vec(colors[i].r/255.f, colors[i].g/255.f, colors[i].b/255.f);
+                loopi(min(colors.length(), int(MAXMDLMATERIALS))) mdl.material[i] = bvec(colors[i].r, colors[i].g, colors[i].b);
                 vec center, radius;
                 m->boundbox(center, radius);
                 mdl.o = calcmodelpreviewpos(radius, mdl.yaw).sub(center);
-                rendermodel(name, &mdl);
+                rendermodel(name, mdl);
             }
             if(clipstack.length()) clipstack.last().scissor();
             modelpreview::end();

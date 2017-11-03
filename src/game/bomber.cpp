@@ -279,23 +279,22 @@ namespace bomber
         loopv(st.flags) // flags/bases
         {
             bomberstate::flag &f = st.flags[i];
-            f.mdl.reset();
-            f.basemdl.reset();
+            modelstate mdl, basemdl;
             float trans = 1;
             int millis = lastmillis-f.displaytime;
             if(millis <= 1000) trans *= float(millis)/1000.f;
-            if(!f.enabled) f.basemdl.material[0] = f.mdl.material[0] = vec(0, 0, 0);
+            if(!f.enabled) basemdl.material[0] = mdl.material[0] = bvec(0, 0, 0);
             else if(isbomberaffinity(f))
             {
                 vec above(f.pos(true, true));
                 if(!f.owner && !f.droptime) above.z += enttype[AFFINITY].radius/4*trans;
-                f.mdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
-                f.mdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED;
-                f.mdl.o = above;
-                f.mdl.size = trans;
-                f.mdl.yaw = !f.owner && f.proj ? f.proj->yaw : (lastmillis/4)%360;
-                f.mdl.pitch = !f.owner && f.proj ? f.proj->pitch : 0;
-                f.mdl.roll = !f.owner && f.proj ? f.proj->roll : 0;
+                mdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
+                mdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED;
+                mdl.o = above;
+                mdl.size = trans;
+                mdl.yaw = !f.owner && f.proj ? f.proj->yaw : (lastmillis/4)%360;
+                mdl.pitch = !f.owner && f.proj ? f.proj->pitch : 0;
+                mdl.roll = !f.owner && f.proj ? f.proj->roll : 0;
                 float wait = f.droptime ? clamp((lastmillis-f.droptime)/float(bomberresetdelay), 0.f, 1.f) : ((f.owner && carrytime) ? clamp((lastmillis-f.taketime)/float(carrytime), 0.f, 1.f) : 0.f);
                 int interval = lastmillis%1000;
                 vec effect = pulsecolour();
@@ -305,12 +304,12 @@ namespace bomber
                     float amt = (millis <= delay ? millis/float(delay) : 1.f-((millis-delay)/float(delay)));
                     flashcolour(effect.r, effect.g, effect.b, 1.f, 0.f, 0.f, amt);
                 }
-                f.basemdl.material[0] = f.mdl.material[0] = effect;
+                basemdl.material[0] = mdl.material[0] = bvec::fromcolor(effect);
                 if(f.owner != game::focus || game::thirdpersonview(true))
                 {
                     if(f.owner == game::focus) trans *= 0.25f;
-                    f.mdl.color.a *= trans;
-                    rendermodel("props/ball", &f.mdl);
+                    mdl.color.a *= trans;
+                    rendermodel("props/ball", mdl);
                     float fluc = interval >= 500 ? (1500-interval)/1000.f : (500+interval)/1000.f;
                     int pcolour = effect.tohexcolor();
                     part_create(PART_HINT_SOFT, 1, above, pcolour, enttype[AFFINITY].radius/4*trans+(2*fluc), fluc*trans*camera1->o.distrange(above, bomberhintfadeat, bomberhintfadecut));
@@ -327,7 +326,7 @@ namespace bomber
             {
                 vec above = f.above, effect = vec::fromcolor(TEAM(f.team, colour)).mul(trans);
                 float blend = camera1->o.distrange(above, bomberhintfadeat, bomberhintfadecut);
-                f.basemdl.material[0] = f.mdl.material[0] = effect;
+                basemdl.material[0] = mdl.material[0] = bvec::fromcolor(effect);
                 int pcolour = effect.tohexcolor();
                 part_explosion(above, 3, PART_SHOCKBALL, 1, pcolour, 1, trans*blend*0.5f);
                 part_create(PART_HINT_SOFT, 1, above, pcolour, 6, trans*blend*0.5f);
@@ -350,11 +349,11 @@ namespace bomber
             }
             if(!m_bb_hold(game::gamemode, game::mutators))
             {
-                f.basemdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
-                f.basemdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED;
-                f.basemdl.o = f.render;
-                f.basemdl.yaw = f.yaw;
-                rendermodel("props/point", &f.basemdl);
+                basemdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
+                basemdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED;
+                basemdl.o = f.render;
+                basemdl.yaw = f.yaw;
+                rendermodel("props/point", basemdl);
             }
         }
     }

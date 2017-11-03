@@ -367,8 +367,8 @@ extern void updatedynentcache(physent *d);
 extern void cleardynentcache();
 
 // rendermodel
-extern void rendermodel(const char *mdl, modelstate *state, dynent *d = NULL);
-extern int intersectmodel(const char *mdl, modelstate *state, const vec &o, const vec &ray, float &dist, int mode = 0, dynent *d = NULL);
+extern void rendermodel(const char *mdl, modelstate &state, dynent *d = NULL);
+extern int intersectmodel(const char *mdl, modelstate &state, const vec &o, const vec &ray, float &dist, int mode = 0, dynent *d = NULL);
 extern void abovemodel(vec &o, const char *mdl);
 extern void interpolateorientation(dynent *d, float &interpyaw, float &interppitch);
 extern void setbbfrommodel(dynent *d, const char *mdl, float size = 1);

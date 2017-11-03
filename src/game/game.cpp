@@ -3086,6 +3086,46 @@ namespace game
         }
     }
 
+    void getplayermaterials(gameent *d, modelstate &mdl)
+    {
+        mdl.material[0] = bvec::fromcolor(getcolour(d, playerovertone, playerovertonelevel));
+        mdl.material[1] = bvec::fromcolor(getcolour(d, playerundertone, playerundertonelevel));
+        if(isweap(d->weapselect))
+        {
+            if(d->weapselect == W_GRENADE)
+            {
+                vec color = vec::fromcolor(W(d->weapselect, colour));
+                if(lastmillis-d->weaptime[d->weapselect] > 0 && d->weapstate[d->weapselect] == W_S_POWER)
+                {
+                    float amt = clamp(float(lastmillis-d->weaptime[d->weapselect])/d->weapwait[d->weapselect], 0.f, 1.f);
+                    color.r += (1 - color.r) * amt;
+                    color.g *= 1 - amt;
+                    color.b *= 1 - amt;
+                }
+                mdl.material[2] = bvec::fromcolor(color);
+            }
+            else if((W2(d->weapselect, ammosub, false) || W2(d->weapselect, ammosub, true)) && W(d->weapselect, ammomax) > 1)
+            {
+                int ammo = d->ammo[d->weapselect], maxammo = W(d->weapselect, ammomax);
+                float scale = 1;
+                switch(d->weapstate[d->weapselect])
+                {
+                    case W_S_RELOAD:
+                    {
+                        int millis = lastmillis-d->weaptime[d->weapselect], check = d->weapwait[d->weapselect]/2;
+                        scale = millis >= check ? float(millis-check)/check : 0.f;
+                        if(d->weapload[d->weapselect] > 0)
+                            scale = max(scale, float(ammo - d->weapload[d->weapselect])/maxammo);
+                        break;
+                    }
+                    default: scale = float(ammo)/maxammo; break;
+                }
+                mdl.material[2] = bvec::fromcolor(vec(scale, scale, scale));
+            }
+            if(W(d->weapselect, lightpersist)&2) mdl.material[1].max(bvec::fromcolor(WPCOL(d, d->weapselect, lightcol, physics::secondaryweap(d))));
+        }
+    }
+
     void renderplayer(gameent *d, int third, float size, int flags = 0, const vec4 &color = vec4(1, 1, 1, 1))
     {
         if(d->state == CS_SPECTATOR) return;
@@ -3364,69 +3404,33 @@ namespace game
         if(drawtex) flags &= ~(MDL_FULLBRIGHT | MDL_CULL_VFC | MDL_CULL_OCCLUDED | MDL_CULL_QUERY | MDL_CULL_DIST);
 
         dynent *e = third ? (third != 2 ? (dynent *)d : (dynent *)&bodymodel) : (dynent *)&avatarmodel;
-        e->mdl.reset();
-        e->mdl.anim = anim;
-        e->mdl.flags = flags;
-        e->mdl.basetime = basetime;
-        e->mdl.basetime2 = basetime2;
-        e->mdl.size = size;
-        e->mdl.yaw = yaw;
-        e->mdl.pitch = third == 2 && firstpersonbodypitch >= 0 ? pitch*firstpersonbodypitch : pitch;
-        e->mdl.roll = third == 2 ? 0.f : roll;
-        e->mdl.o = o;
-        e->mdl.color = color;
-        e->mdl.material[0] = vec::fromcolor(getcolour(d, playerovertone, playerovertonelevel));
-        e->mdl.material[1] = vec::fromcolor(getcolour(d, playerundertone, playerundertonelevel));
+        modelstate mdl;
+        mdl.anim = anim;
+        mdl.flags = flags;
+        mdl.basetime = basetime;
+        mdl.basetime2 = basetime2;
+        mdl.size = size;
+        mdl.yaw = yaw;
+        mdl.pitch = third == 2 && firstpersonbodypitch >= 0 ? pitch*firstpersonbodypitch : pitch;
+        mdl.roll = third == 2 ? 0.f : roll;
+        mdl.o = o;
+        mdl.color = color;
+        getplayermaterials(d, mdl);
         #define PLAYERRES(a, b) \
             if(a##time && d->a##ing(lastmillis, a##time)) \
             { \
                 float pc = 1; \
                 int millis = lastmillis-d->lastres[WR_##b]; \
                 if(a##time-millis < a##delay) pc *= float(a##time-millis)/float(a##delay); \
-                e->mdl.decal = textureload(decal##a, 0, true); \
-                e->mdl.decalcolor = vec4(rescolour(d, PULSE_##b), pc); \
+                mdl.decal = textureload(decal##a, 0, true); \
+                mdl.decalcolor = vec4(rescolour(d, PULSE_##b), pc); \
             }
         PLAYERRES(burn, BURN);
         PLAYERRES(bleed, BLEED);
         PLAYERRES(shock, SHOCK);
         #undef PLAYERRES
-        if(isweap(d->weapselect))
-        {
-            if(d->weapselect == W_GRENADE)
-            {
-                e->mdl.material[2] = vec::fromcolor(W(d->weapselect, colour));
-                if(lastmillis-d->weaptime[d->weapselect] > 0 && d->weapstate[d->weapselect] == W_S_POWER)
-                {
-                    float amt = clamp(float(lastmillis-d->weaptime[d->weapselect])/d->weapwait[d->weapselect], 0.f, 1.f);
-                    e->mdl.material[2].r += int((1.f-e->mdl.material[2].r)*amt);
-                    e->mdl.material[2].g -= int(e->mdl.material[2].g*amt);
-                    e->mdl.material[2].b -= int(e->mdl.material[2].b*amt);
-                }
-            }
-            else if((W2(d->weapselect, ammosub, false) || W2(d->weapselect, ammosub, true)) && W(d->weapselect, ammomax) > 1)
-            {
-                int ammo = d->ammo[d->weapselect], maxammo = W(d->weapselect, ammomax);
-                float scale = 1;
-                switch(d->weapstate[d->weapselect])
-                {
-                    case W_S_RELOAD:
-                    {
-                        int millis = lastmillis-d->weaptime[d->weapselect], check = d->weapwait[d->weapselect]/2;
-                        scale = millis >= check ? float(millis-check)/check : 0.f;
-                        if(d->weapload[d->weapselect] > 0)
-                            scale = max(scale, float(ammo - d->weapload[d->weapselect])/maxammo);
-                        break;
-                    }
-                    default: scale = float(ammo)/maxammo; break;
-                }
-                e->mdl.material[2] = vec(scale, scale, scale);
-            }
-            else e->mdl.material[2] = vec::fromcolor(colourwhite);
-            if(W(d->weapselect, lightpersist)&2) e->mdl.material[1].max(WPCOL(d, d->weapselect, lightcol, physics::secondaryweap(d)));
-        }
-        else e->mdl.material[2] = vec::fromcolor(colourwhite);
-        for(int i = 0; a[i].tag && i < MAXENTATTACHED; i++) e->mdl.attached[i] = a[i];
-        rendermodel(mdlname, &e->mdl, e);
+        if(a[0].tag) mdl.attached = a;
+        rendermodel(mdlname, mdl, e);
     }
 
     void rendercheck(gameent *d, bool third = false)

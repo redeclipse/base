@@ -62,7 +62,7 @@ struct enttypes
     const char *name,           *attrs[13];
 };
 #ifdef GAMESERVER
-enttypes enttype[] = {
+extern const enttypes enttype[] = {
     {
         NOTUSED,        -1,         0,      0,      EU_NONE,    0,          -1,         -1,
             0, 0, 0,
@@ -190,7 +190,7 @@ enttypes enttype[] = {
     }
 };
 #else
-extern enttypes enttype[];
+extern const enttypes enttype[];
 #endif
 
 #define MAXNAMELEN 24
@@ -255,7 +255,7 @@ enum { PULSE_FIRE = 0, PULSE_BURN, PULSE_DISCO, PULSE_SHOCK, PULSE_BLEED, PULSE_
 #define INVPULSE(x) (-1-(x))
 #define PC(x) (INVPULSE(PULSE(x)))
 #ifdef GAMESERVER
-int pulsecols[PULSE_MAX][PULSECOLOURS] = {
+extern const int pulsecols[PULSE_MAX][PULSECOLOURS] = {
     { 0xFF5808, 0x981808, 0x782808, 0x481808, 0x983818, 0x681808, 0xC81808, 0x381808 },
     { 0xFFC848, 0xF86838, 0xA85828, 0xA84838, 0xF8A858, 0xC84828, 0xF86848, 0xA89858 },
     { 0xFF8888, 0xFFAA88, 0xFFFF88, 0x88FF88, 0x88FFFF, 0x8888FF, 0xFF88FF, 0xFFFFFF },
@@ -275,7 +275,7 @@ VAR(IDF_READONLY, pulseidxwarn, 1, PULSE_WARN, -1);
 VAR(IDF_READONLY, pulseidxmax, 1, PULSE_MAX, -1);
 VAR(IDF_READONLY, pulseidxlast, 1, PULSE_LAST, -1);
 #else
-extern int pulsecols[PULSE_MAX][PULSECOLOURS];
+extern const int pulsecols[PULSE_MAX][PULSECOLOURS];
 #endif
 
 enum
@@ -294,9 +294,9 @@ enum {
     SENDMAP_MIN = SENDMAP_PNG, SENDMAP_HAS = SENDMAP_MIN+1, SENDMAP_EDIT = SENDMAP_CFG+1, SENDMAP_ALL = SENDMAP_MAX-1
 };
 #ifdef GAMESERVER
-const char *sendmaptypes[SENDMAP_MAX] = { "mpz", "cfg", "png", "txt", "wpt" };
+extern const char * const sendmaptypes[SENDMAP_MAX] = { "mpz", "cfg", "png", "txt", "wpt" };
 #else
-extern const char *sendmaptypes[SENDMAP_MAX];
+extern const char * const sendmaptypes[SENDMAP_MAX];
 #define CLCOMMANDK(name, body, fail) \
     ICOMMAND(0, getclient##name, "s", (char *who), \
     { \
@@ -1514,6 +1514,7 @@ struct projent : dynent
     gameent *owner, *target, *stick;
     physent *hit;
     const char *mdlname;
+    bvec material;
 
     projent() : projtype(PRJ_SHOT), id(-1), collideflags(COLFLAG_NONE), owner(NULL), target(NULL), stick(NULL), hit(NULL), mdlname(NULL) { reset(); }
     ~projent()
@@ -1542,6 +1543,7 @@ struct projent : dynent
         extinguish = stuck = interacts = 0;
         limited = escaped = child = false;
         projcollide = BOUNCE_GEOM|BOUNCE_PLAYER;
+        material = bvec(255, 255, 255);
     }
 
     bool ready(bool used = true)
@@ -1745,6 +1747,7 @@ namespace game
     extern const char *colourteam(int team, const char *icon = "");
     extern int findcolour(gameent *d, bool tone = true, bool mix = false, float level = 1);
     extern int getcolour(gameent *d, int type = 0, float level = 1.f);
+    extern void getplayermaterials(gameent *d, modelstate &mdl);
     extern void errorsnd(gameent *d);
     extern void announce(int idx, gameent *d = NULL, bool forced = false);
     extern void announcef(int idx, int targ, gameent *d, bool forced, const char *msg, ...);
