@@ -417,6 +417,11 @@ FVAR(IDF_WORLD, atmoblend, 0, 1, 1);
 
 static void drawatmosphere()
 {
+    if(atmoblend < 1)
+    {
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    }
     SETSHADER(atmosphere);
 
     matrix4 sunmatrix = invcammatrix;
@@ -460,17 +465,6 @@ static void drawatmosphere()
     gle::attribf(-1, -1, 1);
     gle::attribf(1, -1, 1);
     xtraverts += gle::end();
-}
-
-void doatmosphere()
-{
-    if(atmoblend < 1)
-    {
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    }
-
-    drawatmosphere();
 
     if(atmoblend < 1) glDisable(GL_BLEND);
 }
@@ -512,16 +506,14 @@ void drawskybox(bool clear)
 
     if(clampsky) glDepthRange(1, 1);
 
+    bool blendsky = !skybox[0] || !sky[0] || sky[0]->type&Texture::ALPHA || skyblend < 1;
     if(clear)
     {
         vec color = skybgcolour.tocolor().mul(ldrscale);
         glClearColor(color.x, color.y, color.z, 0);
         glClear(GL_COLOR_BUFFER_BIT);
     }
-
-    bool blendsky = !skybox[0] || !sky[0] || sky[0]->type&Texture::ALPHA || skyblend < 1;
-
-    if(blendsky)
+    else if(blendsky && (!atmo || atmoblend < 1))
     {
         SETSHADER(skyfog);
 
@@ -534,7 +526,7 @@ void drawskybox(bool clear)
         drawenvboxbg();
     }
 
-    if(atmo == 2) doatmosphere();
+    if(atmo == 2) drawatmosphere();
 
     if(skybox[0])
     {
@@ -564,7 +556,7 @@ void drawskybox(bool clear)
         if(blendsky) glDisable(GL_BLEND);
     }
 
-    if(atmo == 1) doatmosphere();
+    if(atmo == 1) drawatmosphere();
 
     if(fogdomemax && !fogdomeclouds) drawfogdome();
 
