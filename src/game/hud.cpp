@@ -530,7 +530,6 @@ namespace hud
 
     void checkui()
     {
-        UI::update();
         UI::hideui("loading");
         UI::showui("hud");
         if(connected())
@@ -548,6 +547,7 @@ namespace hud
             }
         }
         else if(!UI::hasmenu()) UI::openui(game::needname(game::player1) ? "profile" : "main");
+        UI::update();
     }
 
     void damage(int n, const vec &loc, gameent *v, int weap, int flags)
