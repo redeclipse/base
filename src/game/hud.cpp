@@ -333,8 +333,6 @@ namespace hud
     VAR(IDF_PERSIST|IDF_HEX, onscreenhitsbleedcolour, PC(LAST), PC(BLEED), 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, onscreenhitsshockcolour, PC(LAST), PC(SHOCK), 0xFFFFFF);
 
-    VAR(IDF_PERSIST, motionblurfx, 0, 1, 1); // 0 = off, 1 = health fx
-
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, spree1tex, "textures/rewards/carnage", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, spree2tex, "textures/rewards/slaughter", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, spree3tex, "textures/rewards/massacre", 3);
@@ -548,28 +546,6 @@ namespace hud
             }
         }
         else if(!UI::hasmenu()) UI::openui(game::needname(game::player1) ? "profile" : "main");
-    }
-
-    float motionblur()
-    {
-        float amt = 0;
-        switch(motionblurfx)
-        {
-            case 1:
-            {
-                if(game::focus->state >= CS_SPECTATOR || game::focus->state == CS_EDITING) break;
-                if(game::focus->state == CS_ALIVE) amt += min(damageresidue, 100)/100.f*0.5f;
-                if(burntime && game::focus->burning(lastmillis, burntime))
-                    amt += (float((lastmillis-game::focus->lastres[WR_BURN])%burndelay)/float(burndelay))*0.5f;
-                if(bleedtime && game::focus->bleeding(lastmillis, bleedtime))
-                    amt += (float((lastmillis-game::focus->lastres[WR_BLEED])%bleeddelay)/float(bleeddelay))*0.5f;
-                if(shocktime && game::focus->shocking(lastmillis, shocktime))
-                    amt += (float((lastmillis-game::focus->lastres[WR_SHOCK])%shockdelay)/float(shockdelay))*0.5f;
-                break;
-            }
-            case 0: default: amt = 1; // no effects
-        }
-        return amt;
     }
 
     void damage(int n, const vec &loc, gameent *v, int weap, int flags)

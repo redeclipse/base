@@ -68,7 +68,6 @@ namespace hud
     extern bool keypress(int code, bool isdown);
     extern void drawhud(bool noview = false);
     extern void drawlast();
-    extern float motionblur();
     extern bool getcolour(vec &colour);
     extern void processmenu();
     extern void update(int w, int h);
