@@ -1879,6 +1879,9 @@ namespace hud
                 fade *= (colour.x+colour.y+colour.z)/3.f;
             }
         }
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        resethudshader();
         if(noview) drawbackground(hudwidth, hudheight);
         else if(!client::waiting())
         {
@@ -1936,10 +1939,13 @@ namespace hud
 
     void drawlast()
     {
+        hudmatrix.ortho(0, hudwidth, hudheight, 0, -1, 1);
+        flushhudmatrix();
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        resethudshader();
         if(!progressing && showhud)
         {
-            hudmatrix.ortho(0, hudwidth, hudheight, 0, -1, 1);
-            flushhudmatrix();
             if(commandmillis <= 0 && curcompass) rendercmenu();
             else if(shownotices && !client::waiting() && !hasinput(false) && !texpaneltimer) drawnotices();
         }
@@ -1951,6 +1957,7 @@ namespace hud
             drawpointers(hudwidth, hudheight);
             rendertexturepanel(hudwidth, hudheight);
         }
+        glDisable(GL_BLEND);
     }
 
     void update(int w, int h)

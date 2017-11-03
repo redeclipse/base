@@ -704,12 +704,11 @@ namespace UI
             window = this;
 
             projection();
-            hudshader->set();
 
             glEnable(GL_BLEND);
             blendtype = BLEND_ALPHA;
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-            gle::colorf(1, 1, 1);
+            resethudshader();
 
             changed = 0;
             drawing = NULL;

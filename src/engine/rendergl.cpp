@@ -2358,7 +2358,7 @@ ICOMMAND(0, getnoview, "", (), intret(hasnoview() ? 1 : 0));
 
 void usetexturing(bool on)
 {
-    if(on) hudshader->set();
+    if(on) resethudshader();
     else hudnotextureshader->set();
 }
 
@@ -2402,13 +2402,8 @@ void gl_drawhud(bool noview = false)
 
     debuglights();
 
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
     hud::drawhud(noview);
     hud::drawlast();
-
-    glDisable(GL_BLEND);
 }
 
 void gl_drawnoview()
