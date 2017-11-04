@@ -3,30 +3,6 @@
 #include "engine.h"
 #include "SDL_image.h"
 
-#define FUNCNAME(name) name##1
-#define DEFPIXEL uint OP(r, 0);
-#define PIXELOP OP(r, 0);
-#define BPP 1
-#include "scale.h"
-
-#define FUNCNAME(name) name##2
-#define DEFPIXEL uint OP(r, 0), OP(g, 1);
-#define PIXELOP OP(r, 0); OP(g, 1);
-#define BPP 2
-#include "scale.h"
-
-#define FUNCNAME(name) name##3
-#define DEFPIXEL uint OP(r, 0), OP(g, 1), OP(b, 2);
-#define PIXELOP OP(r, 0); OP(g, 1); OP(b, 2);
-#define BPP 3
-#include "scale.h"
-
-#define FUNCNAME(name) name##4
-#define DEFPIXEL uint OP(r, 0), OP(g, 1), OP(b, 2), OP(a, 3);
-#define PIXELOP OP(r, 0); OP(g, 1); OP(b, 2); OP(a, 3);
-#define BPP 4
-#include "scale.h"
-
 TVAR(IDF_PERSIST|IDF_PRELOAD, notexturetex, "textures/notexture", 3);
 TVAR(IDF_PERSIST|IDF_PRELOAD, blanktex, "textures/blank", 3);
 TVAR(IDF_PERSIST|IDF_PRELOAD, logotex, "textures/logo", 3);
@@ -35,36 +11,117 @@ TVAR(IDF_PERSIST|IDF_PRELOAD, emblemtex, "textures/emblem", 3);
 TVAR(IDF_PERSIST|IDF_PRELOAD, nothumbtex, "textures/nothumb", 3);
 TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundtex, "textures/background", 3);
 
+template<int BPP> static void halvetexture(uchar * RESTRICT src, uint sw, uint sh, uint stride, uchar * RESTRICT dst)
+{
+    for(uchar *yend = &src[sh*stride]; src < yend;)
+    {
+        for(uchar *xend = &src[sw*BPP], *xsrc = src; xsrc < xend; xsrc += 2*BPP, dst += BPP)
+        {
+            loopi(BPP) dst[i] = (uint(xsrc[i]) + uint(xsrc[i+BPP]) + uint(xsrc[stride+i]) + uint(xsrc[stride+i+BPP]))>>2;
+        }
+        src += 2*stride;
+    }
+}
+
+template<int BPP> static void shifttexture(uchar * RESTRICT src, uint sw, uint sh, uint stride, uchar * RESTRICT dst, uint dw, uint dh)
+{
+    uint wfrac = sw/dw, hfrac = sh/dh, wshift = 0, hshift = 0;
+    while(dw<<wshift < sw) wshift++;
+    while(dh<<hshift < sh) hshift++;
+    uint tshift = wshift + hshift;
+    for(uchar *yend = &src[sh*stride]; src < yend;)
+    {
+        for(uchar *xend = &src[sw*BPP], *xsrc = src; xsrc < xend; xsrc += wfrac*BPP, dst += BPP)
+        {
+            uint t[BPP] = {0};
+            for(uchar *ycur = xsrc, *xend = &ycur[wfrac*BPP], *yend = &src[hfrac*stride];
+                ycur < yend;
+                ycur += stride, xend += stride)
+            {
+                for(uchar *xcur = ycur; xcur < xend; xcur += BPP)
+                    loopi(BPP) t[i] += xcur[i];
+            }
+            loopi(BPP) dst[i] = t[i] >> tshift;
+        }
+        src += hfrac*stride;
+    }
+}
+
+template<int BPP> static void scaletexture(uchar * RESTRICT src, uint sw, uint sh, uint stride, uchar * RESTRICT dst, uint dw, uint dh)
+{
+    uint wfrac = (sw<<12)/dw, hfrac = (sh<<12)/dh, darea = dw*dh, sarea = sw*sh;
+    int over, under;
+    for(over = 0; (darea>>over) > sarea; over++);
+    for(under = 0; (darea<<under) < sarea; under++);
+    uint cscale = clamp(under, over - 12, 12),
+         ascale = clamp(12 + under - over, 0, 24),
+         dscale = ascale + 12 - cscale,
+         area = ((ullong)darea<<ascale)/sarea;
+    dw *= wfrac;
+    dh *= hfrac;
+    for(uint y = 0; y < dh; y += hfrac)
+    {
+        const uint yn = y + hfrac - 1, yi = y>>12, h = (yn>>12) - yi, ylow = ((yn|(-int(h)>>24))&0xFFFU) + 1 - (y&0xFFFU), yhigh = (yn&0xFFFU) + 1;
+        const uchar *ysrc = &src[yi*stride];
+        for(uint x = 0; x < dw; x += wfrac, dst += BPP)
+        {
+            const uint xn = x + wfrac - 1, xi = x>>12, w = (xn>>12) - xi, xlow = ((w+0xFFFU)&0x1000U) - (x&0xFFFU), xhigh = (xn&0xFFFU) + 1;
+            const uchar *xsrc = &ysrc[xi*BPP], *xend = &xsrc[w*BPP];
+            uint t[BPP] = {0};
+            for(const uchar *xcur = &xsrc[BPP]; xcur < xend; xcur += BPP)
+                loopi(BPP) t[i] += xcur[i];
+            loopi(BPP) t[i] = (ylow*(t[i] + ((xsrc[i]*xlow + xend[i]*xhigh)>>12)))>>cscale;
+            if(h)
+            {
+                xsrc += stride;
+                xend += stride;
+                for(uint hcur = h; --hcur; xsrc += stride, xend += stride)
+                {
+                    uint c[BPP] = {0};
+                    for(const uchar *xcur = &xsrc[BPP]; xcur < xend; xcur += BPP)
+                        loopi(BPP) c[i] += xcur[i];
+                    loopi(BPP) t[i] += ((c[i]<<12) + xsrc[i]*xlow + xend[i]*xhigh)>>cscale;
+                }
+                uint c[BPP] = {0};
+                for(const uchar *xcur = &xsrc[BPP]; xcur < xend; xcur += BPP)
+                    loopi(BPP) c[i] += xcur[i];
+                loopi(BPP) t[i] += (yhigh*(c[i] + ((xsrc[i]*xlow + xend[i]*xhigh)>>12)))>>cscale;
+            }
+            loopi(BPP) dst[i] = (t[i] * area)>>dscale;
+        }
+    }
+}
+
 static void scaletexture(uchar * RESTRICT src, uint sw, uint sh, uint bpp, uint pitch, uchar * RESTRICT dst, uint dw, uint dh)
 {
     if(sw == dw*2 && sh == dh*2)
     {
         switch(bpp)
         {
-            case 1: return halvetexture1(src, sw, sh, pitch, dst);
-            case 2: return halvetexture2(src, sw, sh, pitch, dst);
-            case 3: return halvetexture3(src, sw, sh, pitch, dst);
-            case 4: return halvetexture4(src, sw, sh, pitch, dst);
+            case 1: return halvetexture<1>(src, sw, sh, pitch, dst);
+            case 2: return halvetexture<2>(src, sw, sh, pitch, dst);
+            case 3: return halvetexture<3>(src, sw, sh, pitch, dst);
+            case 4: return halvetexture<4>(src, sw, sh, pitch, dst);
         }
     }
     else if(sw < dw || sh < dh || sw&(sw-1) || sh&(sh-1) || dw&(dw-1) || dh&(dh-1))
     {
         switch(bpp)
         {
-            case 1: return scaletexture1(src, sw, sh, pitch, dst, dw, dh);
-            case 2: return scaletexture2(src, sw, sh, pitch, dst, dw, dh);
-            case 3: return scaletexture3(src, sw, sh, pitch, dst, dw, dh);
-            case 4: return scaletexture4(src, sw, sh, pitch, dst, dw, dh);
+            case 1: return scaletexture<1>(src, sw, sh, pitch, dst, dw, dh);
+            case 2: return scaletexture<2>(src, sw, sh, pitch, dst, dw, dh);
+            case 3: return scaletexture<3>(src, sw, sh, pitch, dst, dw, dh);
+            case 4: return scaletexture<4>(src, sw, sh, pitch, dst, dw, dh);
         }
     }
     else
     {
         switch(bpp)
         {
-            case 1: return shifttexture1(src, sw, sh, pitch, dst, dw, dh);
-            case 2: return shifttexture2(src, sw, sh, pitch, dst, dw, dh);
-            case 3: return shifttexture3(src, sw, sh, pitch, dst, dw, dh);
-            case 4: return shifttexture4(src, sw, sh, pitch, dst, dw, dh);
+            case 1: return shifttexture<1>(src, sw, sh, pitch, dst, dw, dh);
+            case 2: return shifttexture<2>(src, sw, sh, pitch, dst, dw, dh);
+            case 3: return shifttexture<3>(src, sw, sh, pitch, dst, dw, dh);
+            case 4: return shifttexture<4>(src, sw, sh, pitch, dst, dw, dh);
         }
     }
 }

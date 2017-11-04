@@ -315,144 +315,141 @@ shared/tools.o: shared/igame.h
 shared/zip.o: shared/cube.h shared/tools.h shared/command.h shared/geom.h
 shared/zip.o: shared/ents.h shared/glexts.h shared/glemu.h shared/iengine.h
 shared/zip.o: shared/igame.h
-engine/aa.o: engine/engine.h engine/version.h shared/cube.h shared/tools.h shared/geom.h
-engine/aa.o: shared/ents.h shared/command.h shared/glexts.h shared/glemu.h
-engine/aa.o: shared/iengine.h shared/igame.h engine/world.h engine/octa.h
-engine/aa.o: engine/light.h engine/texture.h engine/bih.h engine/model.h
+engine/aa.o: engine/engine.h engine/version.h shared/cube.h shared/tools.h
+engine/aa.o: shared/command.h shared/geom.h shared/ents.h shared/glexts.h
+engine/aa.o: shared/glemu.h shared/iengine.h shared/igame.h engine/irc.h
+engine/aa.o: engine/sound.h engine/world.h engine/octa.h engine/light.h
+engine/aa.o: engine/texture.h engine/bih.h engine/model.h
 engine/bih.o: engine/engine.h engine/version.h shared/cube.h shared/tools.h
 engine/bih.o: shared/command.h shared/geom.h shared/ents.h shared/glexts.h
 engine/bih.o: shared/glemu.h shared/iengine.h shared/igame.h engine/irc.h
 engine/bih.o: engine/sound.h engine/world.h engine/octa.h engine/light.h
-engine/bih.o: engine/bih.h engine/texture.h engine/model.h
+engine/bih.o: engine/texture.h engine/bih.h engine/model.h
 engine/blend.o: engine/engine.h engine/version.h shared/cube.h shared/tools.h
 engine/blend.o: shared/command.h shared/geom.h shared/ents.h shared/glexts.h
 engine/blend.o: shared/glemu.h shared/iengine.h shared/igame.h engine/irc.h
 engine/blend.o: engine/sound.h engine/world.h engine/octa.h engine/light.h
-engine/blend.o: engine/bih.h engine/texture.h engine/model.h
+engine/blend.o: engine/texture.h engine/bih.h engine/model.h
 engine/client.o: engine/engine.h engine/version.h shared/cube.h
 engine/client.o: shared/tools.h shared/command.h shared/geom.h shared/ents.h
 engine/client.o: shared/glexts.h shared/glemu.h shared/iengine.h
 engine/client.o: shared/igame.h engine/irc.h engine/sound.h engine/world.h
-engine/client.o: engine/octa.h engine/light.h engine/bih.h
-engine/client.o: engine/texture.h engine/model.h
+engine/client.o: engine/octa.h engine/light.h engine/texture.h engine/bih.h
+engine/client.o: engine/model.h
 engine/command.o: engine/engine.h engine/version.h shared/cube.h
 engine/command.o: shared/tools.h shared/command.h shared/geom.h shared/ents.h
 engine/command.o: shared/glexts.h shared/glemu.h shared/iengine.h
 engine/command.o: shared/igame.h engine/irc.h engine/sound.h engine/world.h
-engine/command.o: engine/octa.h engine/light.h engine/bih.h
-engine/command.o: engine/texture.h engine/model.h
+engine/command.o: engine/octa.h engine/light.h engine/texture.h engine/bih.h
+engine/command.o: engine/model.h
 engine/console.o: engine/engine.h engine/version.h shared/cube.h
 engine/console.o: shared/tools.h shared/command.h shared/geom.h shared/ents.h
 engine/console.o: shared/glexts.h shared/glemu.h shared/iengine.h
 engine/console.o: shared/igame.h engine/irc.h engine/sound.h engine/world.h
-engine/console.o: engine/octa.h engine/light.h engine/bih.h
-engine/console.o: engine/texture.h engine/model.h
+engine/console.o: engine/octa.h engine/light.h engine/texture.h engine/bih.h
+engine/console.o: engine/model.h
 engine/dynlight.o: engine/engine.h engine/version.h shared/cube.h
 engine/dynlight.o: shared/tools.h shared/command.h shared/geom.h
 engine/dynlight.o: shared/ents.h shared/glexts.h shared/glemu.h
 engine/dynlight.o: shared/iengine.h shared/igame.h engine/irc.h
-engine/dynlight.o: engine/sound.h engine/world.h engine/octa.h
-engine/dynlight.o: engine/light.h engine/bih.h engine/texture.h
-engine/dynlight.o: engine/model.h
+engine/dynlight.o: engine/sound.h engine/world.h engine/octa.h engine/light.h
+engine/dynlight.o: engine/texture.h engine/bih.h engine/model.h
 engine/grass.o: engine/engine.h engine/version.h shared/cube.h shared/tools.h
 engine/grass.o: shared/command.h shared/geom.h shared/ents.h shared/glexts.h
 engine/grass.o: shared/glemu.h shared/iengine.h shared/igame.h engine/irc.h
 engine/grass.o: engine/sound.h engine/world.h engine/octa.h engine/light.h
-engine/grass.o: engine/bih.h engine/texture.h engine/model.h
+engine/grass.o: engine/texture.h engine/bih.h engine/model.h
 engine/irc.o: engine/engine.h engine/version.h shared/cube.h shared/tools.h
 engine/irc.o: shared/command.h shared/geom.h shared/ents.h shared/glexts.h
 engine/irc.o: shared/glemu.h shared/iengine.h shared/igame.h engine/irc.h
 engine/irc.o: engine/sound.h engine/world.h engine/octa.h engine/light.h
-engine/irc.o: engine/bih.h engine/texture.h engine/model.h
-engine/light.o: engine/engine.h engine/version.h shared/cube.h
-engine/light.o: shared/tools.h shared/command.h shared/geom.h
-engine/light.o: shared/ents.h shared/glexts.h shared/glemu.h
-engine/light.o: shared/iengine.h shared/igame.h engine/irc.h
-engine/light.o: engine/sound.h engine/world.h engine/octa.h
-engine/light.o: engine/light.h engine/bih.h engine/texture.h
-engine/light.o: engine/model.h
+engine/irc.o: engine/texture.h engine/bih.h engine/model.h
+engine/light.o: engine/engine.h engine/version.h shared/cube.h shared/tools.h
+engine/light.o: shared/command.h shared/geom.h shared/ents.h shared/glexts.h
+engine/light.o: shared/glemu.h shared/iengine.h shared/igame.h engine/irc.h
+engine/light.o: engine/sound.h engine/world.h engine/octa.h engine/light.h
+engine/light.o: engine/texture.h engine/bih.h engine/model.h
 engine/main.o: engine/engine.h engine/version.h shared/cube.h shared/tools.h
 engine/main.o: shared/command.h shared/geom.h shared/ents.h shared/glexts.h
 engine/main.o: shared/glemu.h shared/iengine.h shared/igame.h engine/irc.h
 engine/main.o: engine/sound.h engine/world.h engine/octa.h engine/light.h
-engine/main.o: engine/bih.h engine/texture.h engine/model.h
+engine/main.o: engine/texture.h engine/bih.h engine/model.h
 engine/master.o: engine/engine.h engine/version.h shared/cube.h
 engine/master.o: shared/tools.h shared/command.h shared/geom.h shared/ents.h
 engine/master.o: shared/glexts.h shared/glemu.h shared/iengine.h
 engine/master.o: shared/igame.h engine/irc.h engine/sound.h engine/world.h
-engine/master.o: engine/octa.h engine/light.h engine/bih.h
-engine/master.o: engine/texture.h engine/model.h support/sqlite3.h
+engine/master.o: engine/octa.h engine/light.h engine/texture.h engine/bih.h
+engine/master.o: engine/model.h support/sqlite3.h
 engine/material.o: engine/engine.h engine/version.h shared/cube.h
 engine/material.o: shared/tools.h shared/command.h shared/geom.h
 engine/material.o: shared/ents.h shared/glexts.h shared/glemu.h
 engine/material.o: shared/iengine.h shared/igame.h engine/irc.h
-engine/material.o: engine/sound.h engine/world.h engine/octa.h
-engine/material.o: engine/light.h engine/bih.h engine/texture.h
-engine/material.o: engine/model.h
+engine/material.o: engine/sound.h engine/world.h engine/octa.h engine/light.h
+engine/material.o: engine/texture.h engine/bih.h engine/model.h
 engine/menus.o: engine/engine.h engine/version.h shared/cube.h shared/tools.h
 engine/menus.o: shared/command.h shared/geom.h shared/ents.h shared/glexts.h
 engine/menus.o: shared/glemu.h shared/iengine.h shared/igame.h engine/irc.h
 engine/menus.o: engine/sound.h engine/world.h engine/octa.h engine/light.h
-engine/menus.o: engine/bih.h engine/texture.h engine/model.h
+engine/menus.o: engine/texture.h engine/bih.h engine/model.h
 engine/movie.o: engine/engine.h engine/version.h shared/cube.h shared/tools.h
 engine/movie.o: shared/command.h shared/geom.h shared/ents.h shared/glexts.h
 engine/movie.o: shared/glemu.h shared/iengine.h shared/igame.h engine/irc.h
 engine/movie.o: engine/sound.h engine/world.h engine/octa.h engine/light.h
-engine/movie.o: engine/bih.h engine/texture.h engine/model.h
+engine/movie.o: engine/texture.h engine/bih.h engine/model.h
 engine/normal.o: engine/engine.h engine/version.h shared/cube.h
 engine/normal.o: shared/tools.h shared/command.h shared/geom.h shared/ents.h
 engine/normal.o: shared/glexts.h shared/glemu.h shared/iengine.h
 engine/normal.o: shared/igame.h engine/irc.h engine/sound.h engine/world.h
-engine/normal.o: engine/octa.h engine/light.h engine/bih.h
-engine/normal.o: engine/texture.h engine/model.h
+engine/normal.o: engine/octa.h engine/light.h engine/texture.h engine/bih.h
+engine/normal.o: engine/model.h
 engine/octa.o: engine/engine.h engine/version.h shared/cube.h shared/tools.h
 engine/octa.o: shared/command.h shared/geom.h shared/ents.h shared/glexts.h
 engine/octa.o: shared/glemu.h shared/iengine.h shared/igame.h engine/irc.h
 engine/octa.o: engine/sound.h engine/world.h engine/octa.h engine/light.h
-engine/octa.o: engine/bih.h engine/texture.h engine/model.h
+engine/octa.o: engine/texture.h engine/bih.h engine/model.h
 engine/octaedit.o: engine/engine.h engine/version.h shared/cube.h
 engine/octaedit.o: shared/tools.h shared/command.h shared/geom.h
 engine/octaedit.o: shared/ents.h shared/glexts.h shared/glemu.h
 engine/octaedit.o: shared/iengine.h shared/igame.h engine/irc.h
-engine/octaedit.o: engine/sound.h engine/world.h engine/octa.h
-engine/octaedit.o: engine/light.h engine/bih.h engine/texture.h
-engine/octaedit.o: engine/model.h
+engine/octaedit.o: engine/sound.h engine/world.h engine/octa.h engine/light.h
+engine/octaedit.o: engine/texture.h engine/bih.h engine/model.h
 engine/octarender.o: engine/engine.h engine/version.h shared/cube.h
 engine/octarender.o: shared/tools.h shared/command.h shared/geom.h
 engine/octarender.o: shared/ents.h shared/glexts.h shared/glemu.h
 engine/octarender.o: shared/iengine.h shared/igame.h engine/irc.h
 engine/octarender.o: engine/sound.h engine/world.h engine/octa.h
-engine/octarender.o: engine/light.h engine/bih.h engine/texture.h
+engine/octarender.o: engine/light.h engine/texture.h engine/bih.h
 engine/octarender.o: engine/model.h
 engine/physics.o: engine/engine.h engine/version.h shared/cube.h
 engine/physics.o: shared/tools.h shared/command.h shared/geom.h shared/ents.h
 engine/physics.o: shared/glexts.h shared/glemu.h shared/iengine.h
 engine/physics.o: shared/igame.h engine/irc.h engine/sound.h engine/world.h
-engine/physics.o: engine/octa.h engine/light.h engine/bih.h
-engine/physics.o: engine/texture.h engine/model.h engine/mpr.h
+engine/physics.o: engine/octa.h engine/light.h engine/texture.h engine/bih.h
+engine/physics.o: engine/model.h engine/mpr.h
 engine/pvs.o: engine/engine.h engine/version.h shared/cube.h shared/tools.h
 engine/pvs.o: shared/command.h shared/geom.h shared/ents.h shared/glexts.h
 engine/pvs.o: shared/glemu.h shared/iengine.h shared/igame.h engine/irc.h
 engine/pvs.o: engine/sound.h engine/world.h engine/octa.h engine/light.h
-engine/pvs.o: engine/bih.h engine/texture.h engine/model.h
+engine/pvs.o: engine/texture.h engine/bih.h engine/model.h
 engine/rendergl.o: engine/engine.h engine/version.h shared/cube.h
 engine/rendergl.o: shared/tools.h shared/command.h shared/geom.h
 engine/rendergl.o: shared/ents.h shared/glexts.h shared/glemu.h
 engine/rendergl.o: shared/iengine.h shared/igame.h engine/irc.h
-engine/rendergl.o: engine/sound.h engine/world.h engine/octa.h
-engine/rendergl.o: engine/light.h engine/bih.h engine/texture.h
-engine/rendergl.o: engine/model.h
-engine/renderlights.o: engine/engine.h engine/version.h shared/cube.h shared/tools.h
-engine/renderlights.o: shared/command.h shared/geom.h shared/ents.h shared/glexts.h
-engine/renderlights.o: shared/glemu.h shared/iengine.h shared/igame.h engine/irc.h
-engine/renderlights.o: engine/sound.h engine/world.h engine/octa.h engine/light.h
-engine/renderlights.o: engine/bih.h engine/texture.h engine/model.h
+engine/rendergl.o: engine/sound.h engine/world.h engine/octa.h engine/light.h
+engine/rendergl.o: engine/texture.h engine/bih.h engine/model.h
+engine/renderlights.o: engine/engine.h engine/version.h shared/cube.h
+engine/renderlights.o: shared/tools.h shared/command.h shared/geom.h
+engine/renderlights.o: shared/ents.h shared/glexts.h shared/glemu.h
+engine/renderlights.o: shared/iengine.h shared/igame.h engine/irc.h
+engine/renderlights.o: engine/sound.h engine/world.h engine/octa.h
+engine/renderlights.o: engine/light.h engine/texture.h engine/bih.h
+engine/renderlights.o: engine/model.h
 engine/rendermodel.o: engine/engine.h engine/version.h shared/cube.h
 engine/rendermodel.o: shared/tools.h shared/command.h shared/geom.h
 engine/rendermodel.o: shared/ents.h shared/glexts.h shared/glemu.h
 engine/rendermodel.o: shared/iengine.h shared/igame.h engine/irc.h
 engine/rendermodel.o: engine/sound.h engine/world.h engine/octa.h
-engine/rendermodel.o: engine/light.h engine/bih.h engine/texture.h
+engine/rendermodel.o: engine/light.h engine/texture.h engine/bih.h
 engine/rendermodel.o: engine/model.h engine/ragdoll.h engine/animmodel.h
 engine/rendermodel.o: engine/vertmodel.h engine/skelmodel.h engine/hitzone.h
 engine/rendermodel.o: engine/md2.h engine/md3.h engine/md5.h engine/obj.h
@@ -462,90 +459,90 @@ engine/renderparticles.o: shared/tools.h shared/command.h shared/geom.h
 engine/renderparticles.o: shared/ents.h shared/glexts.h shared/glemu.h
 engine/renderparticles.o: shared/iengine.h shared/igame.h engine/irc.h
 engine/renderparticles.o: engine/sound.h engine/world.h engine/octa.h
-engine/renderparticles.o: engine/light.h engine/bih.h engine/texture.h
-engine/renderparticles.o: engine/model.h engine/lensflare.h engine/explosion.h 
-engine/renderparticles.o: engine/lightning.h
+engine/renderparticles.o: engine/light.h engine/texture.h engine/bih.h
+engine/renderparticles.o: engine/model.h engine/explosion.h
+engine/renderparticles.o: engine/lensflare.h engine/lightning.h
 engine/rendersky.o: engine/engine.h engine/version.h shared/cube.h
 engine/rendersky.o: shared/tools.h shared/command.h shared/geom.h
 engine/rendersky.o: shared/ents.h shared/glexts.h shared/glemu.h
 engine/rendersky.o: shared/iengine.h shared/igame.h engine/irc.h
 engine/rendersky.o: engine/sound.h engine/world.h engine/octa.h
-engine/rendersky.o: engine/light.h engine/bih.h engine/texture.h
+engine/rendersky.o: engine/light.h engine/texture.h engine/bih.h
 engine/rendersky.o: engine/model.h
 engine/rendertext.o: engine/engine.h engine/version.h shared/cube.h
 engine/rendertext.o: shared/tools.h shared/command.h shared/geom.h
 engine/rendertext.o: shared/ents.h shared/glexts.h shared/glemu.h
 engine/rendertext.o: shared/iengine.h shared/igame.h engine/irc.h
 engine/rendertext.o: engine/sound.h engine/world.h engine/octa.h
-engine/rendertext.o: engine/light.h engine/bih.h engine/texture.h
+engine/rendertext.o: engine/light.h engine/texture.h engine/bih.h
 engine/rendertext.o: engine/model.h
 engine/renderva.o: engine/engine.h engine/version.h shared/cube.h
 engine/renderva.o: shared/tools.h shared/command.h shared/geom.h
 engine/renderva.o: shared/ents.h shared/glexts.h shared/glemu.h
 engine/renderva.o: shared/iengine.h shared/igame.h engine/irc.h
-engine/renderva.o: engine/sound.h engine/world.h engine/octa.h
-engine/renderva.o: engine/light.h engine/bih.h engine/texture.h
-engine/renderva.o: engine/model.h
+engine/renderva.o: engine/sound.h engine/world.h engine/octa.h engine/light.h
+engine/renderva.o: engine/texture.h engine/bih.h engine/model.h
 engine/server.o: engine/engine.h engine/version.h shared/cube.h
 engine/server.o: shared/tools.h shared/command.h shared/geom.h shared/ents.h
 engine/server.o: shared/glexts.h shared/glemu.h shared/iengine.h
 engine/server.o: shared/igame.h engine/irc.h engine/sound.h engine/world.h
-engine/server.o: engine/octa.h engine/light.h engine/bih.h
-engine/server.o: engine/texture.h engine/model.h
+engine/server.o: engine/octa.h engine/light.h engine/texture.h engine/bih.h
+engine/server.o: engine/model.h
 engine/serverbrowser.o: engine/engine.h engine/version.h shared/cube.h
 engine/serverbrowser.o: shared/tools.h shared/command.h shared/geom.h
 engine/serverbrowser.o: shared/ents.h shared/glexts.h shared/glemu.h
 engine/serverbrowser.o: shared/iengine.h shared/igame.h engine/irc.h
 engine/serverbrowser.o: engine/sound.h engine/world.h engine/octa.h
-engine/serverbrowser.o: engine/light.h engine/bih.h engine/texture.h
+engine/serverbrowser.o: engine/light.h engine/texture.h engine/bih.h
 engine/serverbrowser.o: engine/model.h
 engine/shader.o: engine/engine.h engine/version.h shared/cube.h
 engine/shader.o: shared/tools.h shared/command.h shared/geom.h shared/ents.h
 engine/shader.o: shared/glexts.h shared/glemu.h shared/iengine.h
 engine/shader.o: shared/igame.h engine/irc.h engine/sound.h engine/world.h
-engine/shader.o: engine/octa.h engine/light.h engine/bih.h
-engine/shader.o: engine/texture.h engine/model.h
+engine/shader.o: engine/octa.h engine/light.h engine/texture.h engine/bih.h
+engine/shader.o: engine/model.h
 engine/sound.o: engine/engine.h engine/version.h shared/cube.h shared/tools.h
 engine/sound.o: shared/command.h shared/geom.h shared/ents.h shared/glexts.h
 engine/sound.o: shared/glemu.h shared/iengine.h shared/igame.h engine/irc.h
 engine/sound.o: engine/sound.h engine/world.h engine/octa.h engine/light.h
-engine/sound.o: engine/bih.h engine/texture.h engine/model.h
-engine/stain.o: engine/engine.h engine/version.h shared/cube.h shared/tools.h shared/geom.h
-engine/stain.o: shared/ents.h shared/command.h shared/glexts.h shared/glemu.h
-engine/stain.o: shared/iengine.h shared/igame.h engine/world.h engine/octa.h
-engine/stain.o: engine/light.h engine/texture.h engine/bih.h engine/model.h
+engine/sound.o: engine/texture.h engine/bih.h engine/model.h
+engine/stain.o: engine/engine.h engine/version.h shared/cube.h shared/tools.h
+engine/stain.o: shared/command.h shared/geom.h shared/ents.h shared/glexts.h
+engine/stain.o: shared/glemu.h shared/iengine.h shared/igame.h engine/irc.h
+engine/stain.o: engine/sound.h engine/world.h engine/octa.h engine/light.h
+engine/stain.o: engine/texture.h engine/bih.h engine/model.h
 engine/texture.o: engine/engine.h engine/version.h shared/cube.h
 engine/texture.o: shared/tools.h shared/command.h shared/geom.h shared/ents.h
 engine/texture.o: shared/glexts.h shared/glemu.h shared/iengine.h
 engine/texture.o: shared/igame.h engine/irc.h engine/sound.h engine/world.h
-engine/texture.o: engine/octa.h engine/light.h engine/bih.h
-engine/texture.o: engine/texture.h engine/model.h engine/scale.h
+engine/texture.o: engine/octa.h engine/light.h engine/texture.h engine/bih.h
+engine/texture.o: engine/model.h
 engine/ui.o: engine/engine.h engine/version.h shared/cube.h shared/tools.h
 engine/ui.o: shared/command.h shared/geom.h shared/ents.h shared/glexts.h
 engine/ui.o: shared/glemu.h shared/iengine.h shared/igame.h engine/irc.h
 engine/ui.o: engine/sound.h engine/world.h engine/octa.h engine/light.h
-engine/ui.o: engine/bih.h engine/texture.h engine/model.h engine/textedit.h
+engine/ui.o: engine/texture.h engine/bih.h engine/model.h engine/textedit.h
 engine/water.o: engine/engine.h engine/version.h shared/cube.h shared/tools.h
 engine/water.o: shared/command.h shared/geom.h shared/ents.h shared/glexts.h
 engine/water.o: shared/glemu.h shared/iengine.h shared/igame.h engine/irc.h
 engine/water.o: engine/sound.h engine/world.h engine/octa.h engine/light.h
-engine/water.o: engine/bih.h engine/texture.h engine/model.h
+engine/water.o: engine/texture.h engine/bih.h engine/model.h
 engine/world.o: engine/engine.h engine/version.h shared/cube.h shared/tools.h
 engine/world.o: shared/command.h shared/geom.h shared/ents.h shared/glexts.h
 engine/world.o: shared/glemu.h shared/iengine.h shared/igame.h engine/irc.h
 engine/world.o: engine/sound.h engine/world.h engine/octa.h engine/light.h
-engine/world.o: engine/bih.h engine/texture.h engine/model.h
+engine/world.o: engine/texture.h engine/bih.h engine/model.h
 engine/worldio.o: engine/engine.h engine/version.h shared/cube.h
 engine/worldio.o: shared/tools.h shared/command.h shared/geom.h shared/ents.h
 engine/worldio.o: shared/glexts.h shared/glemu.h shared/iengine.h
 engine/worldio.o: shared/igame.h engine/irc.h engine/sound.h engine/world.h
-engine/worldio.o: engine/octa.h engine/light.h engine/bih.h
-engine/worldio.o: engine/texture.h engine/model.h
+engine/worldio.o: engine/octa.h engine/light.h engine/texture.h engine/bih.h
+engine/worldio.o: engine/model.h
 game/ai.o: game/game.h engine/engine.h engine/version.h shared/cube.h
 game/ai.o: shared/tools.h shared/command.h shared/geom.h shared/ents.h
 game/ai.o: shared/glexts.h shared/glemu.h shared/iengine.h shared/igame.h
 game/ai.o: engine/irc.h engine/sound.h engine/world.h engine/octa.h
-game/ai.o: engine/light.h engine/bih.h engine/texture.h engine/model.h
+game/ai.o: engine/light.h engine/texture.h engine/bih.h engine/model.h
 game/ai.o: game/gamemode.h game/weapons.h game/weapdef.h game/player.h
 game/ai.o: game/teamdef.h game/playerdef.h game/vars.h game/ai.h
 game/ai.o: game/capture.h game/defend.h game/bomber.h
@@ -553,7 +550,7 @@ game/client.o: game/game.h engine/engine.h engine/version.h shared/cube.h
 game/client.o: shared/tools.h shared/command.h shared/geom.h shared/ents.h
 game/client.o: shared/glexts.h shared/glemu.h shared/iengine.h shared/igame.h
 game/client.o: engine/irc.h engine/sound.h engine/world.h engine/octa.h
-game/client.o: engine/light.h engine/bih.h engine/texture.h engine/model.h
+game/client.o: engine/light.h engine/texture.h engine/bih.h engine/model.h
 game/client.o: game/gamemode.h game/weapons.h game/weapdef.h game/player.h
 game/client.o: game/teamdef.h game/playerdef.h game/vars.h game/ai.h
 game/client.o: game/capture.h game/defend.h game/bomber.h
@@ -561,7 +558,7 @@ game/capture.o: game/game.h engine/engine.h engine/version.h shared/cube.h
 game/capture.o: shared/tools.h shared/command.h shared/geom.h shared/ents.h
 game/capture.o: shared/glexts.h shared/glemu.h shared/iengine.h
 game/capture.o: shared/igame.h engine/irc.h engine/sound.h engine/world.h
-game/capture.o: engine/octa.h engine/light.h engine/bih.h engine/texture.h
+game/capture.o: engine/octa.h engine/light.h engine/texture.h engine/bih.h
 game/capture.o: engine/model.h game/gamemode.h game/weapons.h game/weapdef.h
 game/capture.o: game/player.h game/teamdef.h game/playerdef.h game/vars.h
 game/capture.o: game/ai.h game/capture.h game/defend.h game/bomber.h
@@ -569,7 +566,7 @@ game/defend.o: game/game.h engine/engine.h engine/version.h shared/cube.h
 game/defend.o: shared/tools.h shared/command.h shared/geom.h shared/ents.h
 game/defend.o: shared/glexts.h shared/glemu.h shared/iengine.h shared/igame.h
 game/defend.o: engine/irc.h engine/sound.h engine/world.h engine/octa.h
-game/defend.o: engine/light.h engine/bih.h engine/texture.h engine/model.h
+game/defend.o: engine/light.h engine/texture.h engine/bih.h engine/model.h
 game/defend.o: game/gamemode.h game/weapons.h game/weapdef.h game/player.h
 game/defend.o: game/teamdef.h game/playerdef.h game/vars.h game/ai.h
 game/defend.o: game/capture.h game/defend.h game/bomber.h
@@ -577,7 +574,7 @@ game/bomber.o: game/game.h engine/engine.h engine/version.h shared/cube.h
 game/bomber.o: shared/tools.h shared/command.h shared/geom.h shared/ents.h
 game/bomber.o: shared/glexts.h shared/glemu.h shared/iengine.h shared/igame.h
 game/bomber.o: engine/irc.h engine/sound.h engine/world.h engine/octa.h
-game/bomber.o: engine/light.h engine/bih.h engine/texture.h engine/model.h
+game/bomber.o: engine/light.h engine/texture.h engine/bih.h engine/model.h
 game/bomber.o: game/gamemode.h game/weapons.h game/weapdef.h game/player.h
 game/bomber.o: game/teamdef.h game/playerdef.h game/vars.h game/ai.h
 game/bomber.o: game/capture.h game/defend.h game/bomber.h
@@ -585,16 +582,15 @@ game/entities.o: game/game.h engine/engine.h engine/version.h shared/cube.h
 game/entities.o: shared/tools.h shared/command.h shared/geom.h shared/ents.h
 game/entities.o: shared/glexts.h shared/glemu.h shared/iengine.h
 game/entities.o: shared/igame.h engine/irc.h engine/sound.h engine/world.h
-game/entities.o: engine/octa.h engine/light.h engine/bih.h
-game/entities.o: engine/texture.h engine/model.h game/gamemode.h
-game/entities.o: game/weapons.h game/weapdef.h game/player.h game/teamdef.h
-game/entities.o: game/playerdef.h game/vars.h game/ai.h game/capture.h
-game/entities.o: game/defend.h game/bomber.h
+game/entities.o: engine/octa.h engine/light.h engine/texture.h engine/bih.h
+game/entities.o: engine/model.h game/gamemode.h game/weapons.h game/weapdef.h
+game/entities.o: game/player.h game/teamdef.h game/playerdef.h game/vars.h
+game/entities.o: game/ai.h game/capture.h game/defend.h game/bomber.h
 game/game.o: game/game.h engine/engine.h engine/version.h shared/cube.h
 game/game.o: shared/tools.h shared/command.h shared/geom.h shared/ents.h
 game/game.o: shared/glexts.h shared/glemu.h shared/iengine.h shared/igame.h
 game/game.o: engine/irc.h engine/sound.h engine/world.h engine/octa.h
-game/game.o: engine/light.h engine/bih.h engine/texture.h engine/model.h
+game/game.o: engine/light.h engine/texture.h engine/bih.h engine/model.h
 game/game.o: game/gamemode.h game/weapons.h game/weapdef.h game/player.h
 game/game.o: game/teamdef.h game/playerdef.h game/vars.h game/ai.h
 game/game.o: game/capture.h game/defend.h game/bomber.h
@@ -602,7 +598,7 @@ game/hud.o: game/game.h engine/engine.h engine/version.h shared/cube.h
 game/hud.o: shared/tools.h shared/command.h shared/geom.h shared/ents.h
 game/hud.o: shared/glexts.h shared/glemu.h shared/iengine.h shared/igame.h
 game/hud.o: engine/irc.h engine/sound.h engine/world.h engine/octa.h
-game/hud.o: engine/light.h engine/bih.h engine/texture.h engine/model.h
+game/hud.o: engine/light.h engine/texture.h engine/bih.h engine/model.h
 game/hud.o: game/gamemode.h game/weapons.h game/weapdef.h game/player.h
 game/hud.o: game/teamdef.h game/playerdef.h game/vars.h game/ai.h
 game/hud.o: game/capture.h game/defend.h game/bomber.h game/compass.h
@@ -610,7 +606,7 @@ game/physics.o: game/game.h engine/engine.h engine/version.h shared/cube.h
 game/physics.o: shared/tools.h shared/command.h shared/geom.h shared/ents.h
 game/physics.o: shared/glexts.h shared/glemu.h shared/iengine.h
 game/physics.o: shared/igame.h engine/irc.h engine/sound.h engine/world.h
-game/physics.o: engine/octa.h engine/light.h engine/bih.h engine/texture.h
+game/physics.o: engine/octa.h engine/light.h engine/texture.h engine/bih.h
 game/physics.o: engine/model.h game/gamemode.h game/weapons.h game/weapdef.h
 game/physics.o: game/player.h game/teamdef.h game/playerdef.h game/vars.h
 game/physics.o: game/ai.h game/capture.h game/defend.h game/bomber.h
@@ -618,7 +614,7 @@ game/projs.o: game/game.h engine/engine.h engine/version.h shared/cube.h
 game/projs.o: shared/tools.h shared/command.h shared/geom.h shared/ents.h
 game/projs.o: shared/glexts.h shared/glemu.h shared/iengine.h shared/igame.h
 game/projs.o: engine/irc.h engine/sound.h engine/world.h engine/octa.h
-game/projs.o: engine/light.h engine/bih.h engine/texture.h engine/model.h
+game/projs.o: engine/light.h engine/texture.h engine/bih.h engine/model.h
 game/projs.o: game/gamemode.h game/weapons.h game/weapdef.h game/player.h
 game/projs.o: game/teamdef.h game/playerdef.h game/vars.h game/ai.h
 game/projs.o: game/capture.h game/defend.h game/bomber.h
@@ -626,17 +622,16 @@ game/scoreboard.o: game/game.h engine/engine.h engine/version.h shared/cube.h
 game/scoreboard.o: shared/tools.h shared/command.h shared/geom.h
 game/scoreboard.o: shared/ents.h shared/glexts.h shared/glemu.h
 game/scoreboard.o: shared/iengine.h shared/igame.h engine/irc.h
-game/scoreboard.o: engine/sound.h engine/world.h engine/octa.h
-game/scoreboard.o: engine/light.h engine/bih.h engine/texture.h
-game/scoreboard.o: engine/model.h game/gamemode.h game/weapons.h
-game/scoreboard.o: game/weapdef.h game/player.h game/teamdef.h
-game/scoreboard.o: game/playerdef.h game/vars.h game/ai.h game/capture.h
-game/scoreboard.o: game/defend.h game/bomber.h
+game/scoreboard.o: engine/sound.h engine/world.h engine/octa.h engine/light.h
+game/scoreboard.o: engine/texture.h engine/bih.h engine/model.h
+game/scoreboard.o: game/gamemode.h game/weapons.h game/weapdef.h
+game/scoreboard.o: game/player.h game/teamdef.h game/playerdef.h game/vars.h
+game/scoreboard.o: game/ai.h game/capture.h game/defend.h game/bomber.h
 game/server.o: game/game.h engine/engine.h engine/version.h shared/cube.h
 game/server.o: shared/tools.h shared/command.h shared/geom.h shared/ents.h
 game/server.o: shared/glexts.h shared/glemu.h shared/iengine.h shared/igame.h
 game/server.o: engine/irc.h engine/sound.h engine/world.h engine/octa.h
-game/server.o: engine/light.h engine/bih.h engine/texture.h engine/model.h
+game/server.o: engine/light.h engine/texture.h engine/bih.h engine/model.h
 game/server.o: game/gamemode.h game/weapons.h game/weapdef.h game/player.h
 game/server.o: game/teamdef.h game/playerdef.h game/vars.h game/ai.h
 game/server.o: game/capture.h game/defend.h game/bomber.h game/auth.h
@@ -646,16 +641,15 @@ game/waypoint.o: game/game.h engine/engine.h engine/version.h shared/cube.h
 game/waypoint.o: shared/tools.h shared/command.h shared/geom.h shared/ents.h
 game/waypoint.o: shared/glexts.h shared/glemu.h shared/iengine.h
 game/waypoint.o: shared/igame.h engine/irc.h engine/sound.h engine/world.h
-game/waypoint.o: engine/octa.h engine/light.h engine/bih.h
-game/waypoint.o: engine/texture.h engine/model.h game/gamemode.h
-game/waypoint.o: game/weapons.h game/weapdef.h game/player.h game/teamdef.h
-game/waypoint.o: game/playerdef.h game/vars.h game/ai.h game/capture.h
-game/waypoint.o: game/defend.h game/bomber.h
+game/waypoint.o: engine/octa.h engine/light.h engine/texture.h engine/bih.h
+game/waypoint.o: engine/model.h game/gamemode.h game/weapons.h game/weapdef.h
+game/waypoint.o: game/player.h game/teamdef.h game/playerdef.h game/vars.h
+game/waypoint.o: game/ai.h game/capture.h game/defend.h game/bomber.h
 game/weapons.o: game/game.h engine/engine.h engine/version.h shared/cube.h
 game/weapons.o: shared/tools.h shared/command.h shared/geom.h shared/ents.h
 game/weapons.o: shared/glexts.h shared/glemu.h shared/iengine.h
 game/weapons.o: shared/igame.h engine/irc.h engine/sound.h engine/world.h
-game/weapons.o: engine/octa.h engine/light.h engine/bih.h engine/texture.h
+game/weapons.o: engine/octa.h engine/light.h engine/texture.h engine/bih.h
 game/weapons.o: engine/model.h game/gamemode.h game/weapons.h game/weapdef.h
 game/weapons.o: game/player.h game/teamdef.h game/playerdef.h game/vars.h
 game/weapons.o: game/ai.h game/capture.h game/defend.h game/bomber.h
@@ -710,4 +704,4 @@ engine/engine.h.gch: shared/command.h shared/geom.h shared/ents.h
 engine/engine.h.gch: shared/glexts.h shared/glemu.h shared/iengine.h
 engine/engine.h.gch: shared/igame.h engine/irc.h engine/sound.h
 engine/engine.h.gch: engine/world.h engine/octa.h engine/light.h
-engine/engine.h.gch: engine/bih.h engine/texture.h engine/model.h
+engine/engine.h.gch: engine/texture.h engine/bih.h engine/model.h

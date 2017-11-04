@@ -106,7 +106,6 @@
 		D16A83580F130E9500EABB1F /* weapons.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D16A83460F130E9500EABB1F /* weapons.cpp */; };
 		D16A83710F130EBC00EABB1F /* blend.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D16A836A0F130EBC00EABB1F /* blend.cpp */; };
 		D16A83720F130EBC00EABB1F /* aa.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D16A836B0F130EBC00EABB1F /* aa.cpp */; };
-		D16A83760F130EBC00EABB1F /* scale.h in Headers */ = {isa = PBXBuildFile; fileRef = D16A836F0F130EBC00EABB1F /* scale.h */; };
 		D16A83770F130EBC00EABB1F /* ui.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D16A83700F130EBC00EABB1F /* ui.cpp */; };
 		D16BD00D0D7000EA0053CECE /* dynlight.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D16BD00C0D7000EA0053CECE /* dynlight.cpp */; };
 		D16C16920E04812500A522EB /* obj.h in Headers */ = {isa = PBXBuildFile; fileRef = D16C16900E04812500A522EB /* obj.h */; };
@@ -248,7 +247,6 @@
 		D16A83460F130E9500EABB1F /* weapons.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = weapons.cpp; sourceTree = "<group>"; };
 		D16A836A0F130EBC00EABB1F /* blend.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = blend.cpp; sourceTree = "<group>"; };
 		D16A836B0F130EBC00EABB1F /* aa.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = aa.cpp; sourceTree = "<group>"; };
-		D16A836F0F130EBC00EABB1F /* scale.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = scale.h; sourceTree = "<group>"; };
 		D16A83700F130EBC00EABB1F /* ui.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ui.cpp; sourceTree = "<group>"; };
 		D16BD00C0D7000EA0053CECE /* dynlight.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = dynlight.cpp; sourceTree = "<group>"; };
 		D16C16900E04812500A522EB /* obj.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = obj.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
@@ -452,7 +450,6 @@
 				B9AC7A9E0D06DB44005506F8 /* rendersky.cpp */,
 				B9AC7A9F0D06DB44005506F8 /* rendertext.cpp */,
 				B9AC7AA00D06DB44005506F8 /* renderva.cpp */,
-				D16A836F0F130EBC00EABB1F /* scale.h */,
 				B9AC7AA10D06DB44005506F8 /* server.cpp */,
 				B9AC7AA20D06DB44005506F8 /* serverbrowser.cpp */,
 				B9AC7AA30D06DB44005506F8 /* shader.cpp */,
@@ -596,7 +593,6 @@
 				D16A83570F130E9500EABB1F /* vars.h in Headers */,
 				FD05F1471ADD1BBA0046F323 /* player.h in Headers */,
 				FDCF1C031B6C84E10035CD3C /* glemu.h in Headers */,
-				D16A83760F130EBC00EABB1F /* scale.h in Headers */,
 				D1D88A8B0F350DFE000680E4 /* auth.h in Headers */,
 				2AB901D11AC1B8E900A5F378 /* version.h in Headers */,
 				D1D88A8D0F350E31000680E4 /* ragdoll.h in Headers */,
