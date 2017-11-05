@@ -79,6 +79,7 @@ struct entmodelstate
 struct modelstate : entmodelstate
 {
     vec4 decalcolor;
+    vec2 decalglow;
     Texture *decal;
     modelattach *attached;
 
@@ -87,6 +88,7 @@ struct modelstate : entmodelstate
     void reset()
     {
         decalcolor = vec4(1, 1, 1, 1);
+        decalglow = vec2(0, 0);
         decal = NULL;
         attached = NULL;
     }

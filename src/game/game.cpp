@@ -317,10 +317,22 @@ namespace game
     VAR(IDF_PERSIST, headlessmodels, 0, 1, 1);
     FVAR(IDF_PERSIST, twitchspeed, 0, 2.5f, FVAR_MAX);
 
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, decalburn, "textures/residuals/burn", 0);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, decalbleed, "textures/residuals/bleed", 0);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, decalshock, "textures/residuals/shock", 0);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, decalbuff, "textures/residuals/buff", 0);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, decalburntex, "textures/residuals/burn", 0);
+    FVAR(IDF_PERSIST, decalburnblend, 0.f, 1.f, 1.f);
+    FVAR(IDF_PERSIST, decalburnglowblend, 0.f, 0.125f, 1.f);
+    FVAR(IDF_PERSIST, decalburnglowintensity, 0.f, 1.f, 1.f);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, decalbleedtex, "textures/residuals/bleed", 0);
+    FVAR(IDF_PERSIST, decalbleedblend, 0.f, 0.5f, 1.f);
+    FVAR(IDF_PERSIST, decalbleedglowblend, 0.f, 0.125f, 1.f);
+    FVAR(IDF_PERSIST, decalbleedglowintensity, 0.f, 1.f, 1.f);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, decalshocktex, "textures/residuals/shock", 0);
+    FVAR(IDF_PERSIST, decalshockblend, 0.f, 1.f, 1.f);
+    FVAR(IDF_PERSIST, decalshockglowblend, 0.f, 0.125f, 1.f);
+    FVAR(IDF_PERSIST, decalshockglowintensity, 0.f, 1.f, 1.f);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, decalbufftex, "textures/residuals/buff", 0);
+    FVAR(IDF_PERSIST, decalbuffblend, 0.f, 0.5f, 1.f);
+    FVAR(IDF_PERSIST, decalbuffglowblend, 0.f, 0.125f, 1.f);
+    FVAR(IDF_PERSIST, decalbuffglowintensity, 0.f, 1.f, 1.f);
 
     ICOMMAND(0, gamemode, "", (), intret(gamemode));
     ICOMMAND(0, mutators, "", (), intret(mutators));
@@ -3416,19 +3428,40 @@ namespace game
         mdl.o = o;
         mdl.color = color;
         getplayermaterials(d, mdl);
-        #define PLAYERRES(a, b) \
-            if(a##time && d->a##ing(lastmillis, a##time)) \
+        #define PLAYERRES(name, type) \
+            if(name##time && d->name##ing(lastmillis, name##time)) \
             { \
                 float pc = 1; \
-                int millis = lastmillis-d->lastres[WR_##b]; \
-                if(a##time-millis < a##delay) pc *= float(a##time-millis)/float(a##delay); \
-                mdl.decal = textureload(decal##a, 0, true); \
-                mdl.decalcolor = vec4(rescolour(d, PULSE_##b), pc); \
+                int millis = lastmillis-d->lastres[WR_##type]; \
+                if(name##time-millis < name##delay) pc *= float(name##time-millis)/float(name##delay); \
+                vec4 decalcolor = vec4(rescolour(d, PULSE_##type), pc*decal##name##blend); \
+                vec2 decalglow = vec2((mdl.decalcolor.r + mdl.decalcolor.g + mdl.decalcolor.b) / 3.f * decal##name##glowintensity, pc*decal##name##glowblend); \
+                if(mdl.decal && mdl.decal != notexture) \
+                { \
+                    mdl.decalcolor.add(decalcolor).mul(0.5f); \
+                    mdl.decalglow.add(decalglow).mul(0.5f); \
+                } \
+                else \
+                { \
+                    mdl.decal = textureload(decal##name##tex, 0, true); \
+                    mdl.decalcolor = decalcolor; \
+                    mdl.decalglow = decalglow; \
+                } \
             }
-        PLAYERRES(burn, BURN);
+        PLAYERRES(burn, BURN)
         PLAYERRES(bleed, BLEED);
         PLAYERRES(shock, SHOCK);
         #undef PLAYERRES
+        if((!mdl.decal || mdl.decal == notexture) && d->state == CS_ALIVE && d->lastbuff)
+        {
+            int millis = lastmillis%1000;
+            float pc = millis <= 500 ? 1.f-(millis/500.f) : (millis-500)/500.f;
+            vec4 decalcolor = vec4(rescolour(d, PULSE_BUFF), pc*decalbuffblend);
+            vec2 decalglow = vec2((mdl.decalcolor.r+mdl.decalcolor.g+mdl.decalcolor.b)/3.f*decalbuffglowintensity, pc*decalbuffglowblend);
+            mdl.decal = textureload(decalbufftex, 0, true);
+            mdl.decalcolor = decalcolor;
+            mdl.decalglow = decalglow;
+        }
         if(a[0].tag) mdl.attached = a;
         rendermodel(mdlname, mdl, e);
     }
