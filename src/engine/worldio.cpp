@@ -1323,10 +1323,6 @@ bool load_world(const char *mname, int crc, int variant)
                     setfvar("sunlightyaw", 0, true, false, true);
                     setfvar("sunlightpitch", 90, true, false, true);
                     setfvar("sunlightscale", FVAR_NONZERO, true, false, true);
-                    setvar("moonlight", 0x010101, true, false, true);
-                    setfvar("moonlightyaw", 0, true, false, true);
-                    setfvar("moonlightpitch", 90, true, false, true);
-                    setfvar("moonlightscale", FVAR_NONZERO, true, false, true);
                 }
             }
         }
@@ -1340,7 +1336,7 @@ bool load_world(const char *mname, int crc, int variant)
                 {
                     case ID_VAR: setvar(newvar, *id->storage.i, true, false, true); break;
                     case ID_FVAR: setfvar(newvar, *id->storage.f, true, false, true); break;
-                    case ID_SVAR: setsvar(newvar, *id->storage.s, true, false); break;
+                    case ID_SVAR: setsvar(newvar, !strcmp(newvar, "skyboxnight") ? "skyboxes/stars" : *id->storage.s, true, false); break;
                     default: break;
                 }
             }
@@ -1351,7 +1347,7 @@ bool load_world(const char *mname, int crc, int variant)
                 ident *id = idents.access(sunvar);
                 if(id) switch(id->type)
                 {
-                    case ID_VAR: setvar(moonvar, *id->storage.i, true, false, true); break;
+                    case ID_VAR: setvar(moonvar, !strcmp(moonvar, "moonlight") ? 0 : *id->storage.i, true, false, true); break;
                     case ID_FVAR: setfvar(moonvar, *id->storage.f, true, false, true); break;
                     case ID_SVAR: setsvar(moonvar, *id->storage.s, true, false); break;
                     default: break;
