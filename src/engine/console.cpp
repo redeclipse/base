@@ -615,7 +615,7 @@ bool consolekey(int code, bool isdown)
             case SDLK_TAB:
                 if(commandflags&CF_COMPLETE)
                 {
-                    complete(commandbuf, commandflags&CF_EXECUTE ? "/" : NULL);
+                    complete(commandbuf, commandflags&CF_EXECUTE ? "/" : NULL, SDL_GetModState()&KMOD_SHIFT);
                     if(commandpos>=0 && commandpos>=(int)strlen(commandbuf)) commandpos = -1;
                 }
                 break;
@@ -850,7 +850,7 @@ void addlistcomplete(char *command, char *list)
 COMMANDN(0, complete, addfilecomplete, "sss");
 COMMANDN(0, listcomplete, addlistcomplete, "ss");
 
-void complete(char *s, const char *cmdprefix)
+void complete(char *s, const char *cmdprefix, bool reverse)
 {
     char *start = s;
     if(cmdprefix)
@@ -894,7 +894,7 @@ void complete(char *s, const char *cmdprefix)
         loopv(f->files)
         {
             if(strncmp(f->files[i], &start[commandsize], completesize-commandsize)==0 &&
-                strcmp(f->files[i], lastcomplete) > 0 && (!nextcomplete || strcmp(f->files[i], nextcomplete) < 0))
+                strcmp(f->files[i], lastcomplete) * (reverse ? -1 : 1) > 0 && (!nextcomplete || strcmp(f->files[i], nextcomplete) * (reverse ? -1 : 1) < 0))
                 nextcomplete = f->files[i];
         }
     }
@@ -902,7 +902,7 @@ void complete(char *s, const char *cmdprefix)
     {
         enumerate(idents, ident, id,
             if((variable ? id.type == ID_VAR || id.type == ID_SVAR || id.type == ID_FVAR || id.type == ID_ALIAS: id.flags&IDF_COMPLETE) && strncmp(id.name, start, completesize)==0 &&
-               strcmp(id.name, lastcomplete) > 0 && (!nextcomplete || strcmp(id.name, nextcomplete) < 0))
+               strcmp(id.name, lastcomplete) * (reverse ? -1 : 1) > 0 && (!nextcomplete || strcmp(id.name, nextcomplete) * (reverse ? -1 : 1) < 0))
                 nextcomplete = id.name;
         );
     }
