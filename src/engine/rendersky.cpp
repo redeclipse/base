@@ -36,51 +36,158 @@ Texture *loadskyoverlay(const char *basename)
     return t;
 }
 
-CVAR(IDF_WORLD, skybgcolour, 0x000000);
+#define DAYNIGHTVARS(name, type) \
+    CVAR1(IDF_WORLD, ambient##name, 0x191919); \
+    FVAR(IDF_WORLD, ambientscale##name, 0, 1, 16); \
+    CVAR1(IDF_WORLD, skylight##name, 0); \
+    FVAR(IDF_WORLD, skylightscale##name, 0, 1, 16); \
+    VAR(IDF_WORLD, fog##name, 16, 4000, 1000024); \
+    CVAR0(IDF_WORLD, fogcolour##name, 0x8099B3); \
+    CVAR(IDF_WORLD, skybgcolour##name, 0x000000); \
+    SVARF(IDF_WORLD, skybox##name, "", { if(skybox##name[0] && game::checkmapvariant(type)) loadsky(skybox##name, sky); }); \
+    CVAR(IDF_WORLD, skycolour##name, 0xFFFFFF); \
+    FVAR(IDF_WORLD, skyblend##name, 0, 1.0f, 1); \
+    FVAR(IDF_WORLD, skyoverbright##name, 1, 2, 16); \
+    FVAR(IDF_WORLD, skyoverbrightmin##name, 0, 1, 16); \
+    FVAR(IDF_WORLD, skyoverbrightthreshold##name, 0, 0.7f, 1); \
+    FVAR(IDF_WORLD, spinsky##name, -720, 0, 720); \
+    VAR(IDF_WORLD, yawsky##name, 0, 0, 360); \
+    SVARF(IDF_WORLD, cloudbox##name, "", { if(cloudbox##name[0] && game::checkmapvariant(type)) loadsky(cloudbox##name, clouds); }); \
+    CVAR(IDF_WORLD, cloudcolour##name, 0xFFFFFF); \
+    FVAR(IDF_WORLD, cloudblend##name, 0, 1.0f, 1); \
+    FVAR(IDF_WORLD, spinclouds##name, -720, 0, 720); \
+    VAR(IDF_WORLD, yawclouds##name, 0, 0, 360); \
+    FVAR(IDF_WORLD, cloudclip##name, 0, 0.5f, 1); \
+    SVARF(IDF_WORLD, cloudlayer##name, "", { if(cloudlayer##name[0] && game::checkmapvariant(type)) cloudoverlay = loadskyoverlay(cloudlayer##name); }); \
+    CVAR(IDF_WORLD, cloudlayercolour##name, 0xFFFFFF); \
+    FVAR(IDF_WORLD, cloudlayerblend##name, 0, 1.0f, 1); \
+    FVAR(IDF_WORLD, cloudoffsetx##name, 0, 0, 1); \
+    FVAR(IDF_WORLD, cloudoffsety##name, 0, 0, 1); \
+    FVAR(IDF_WORLD, cloudscrollx##name, -16, 0, 16); \
+    FVAR(IDF_WORLD, cloudscrolly##name, -16, 0, 16); \
+    FVAR(IDF_WORLD, cloudscale##name, FVAR_NONZERO, 1, 64); \
+    FVAR(IDF_WORLD, spincloudlayer##name, -720, 0, 720); \
+    VAR(IDF_WORLD, yawcloudlayer##name, 0, 0, 360); \
+    FVAR(IDF_WORLD, cloudheight##name, -1, 0.2f, 1); \
+    FVAR(IDF_WORLD, cloudfade##name, 0, 0.2f, 1); \
+    VAR(IDF_WORLD, cloudsubdiv##name, 4, 16, 64); \
+    SVARF(IDF_WORLD, envlayer##name, "", { if(envlayer##name[0] && game::checkmapvariant(type)) envoverlay = loadskyoverlay(envlayer##name); }); \
+    CVAR(IDF_WORLD, envlayercolour##name, 0xFFFFFF); \
+    FVAR(IDF_WORLD, envlayerblend##name, 0, 1.0f, 1); \
+    FVAR(IDF_WORLD, envoffsetx##name, 0, 0, 1); \
+    FVAR(IDF_WORLD, envoffsety##name, 0, 0, 1); \
+    FVAR(IDF_WORLD, envscrollx##name, -16, 0, 16); \
+    FVAR(IDF_WORLD, envscrolly##name, -16, 0, 16); \
+    FVAR(IDF_WORLD, envscale##name, FVAR_NONZERO, 1, 64); \
+    FVAR(IDF_WORLD, spinenvlayer##name, -720, 0, 720); \
+    VAR(IDF_WORLD, yawenvlayer##name, 0, 0, 360); \
+    FVAR(IDF_WORLD, envheight##name, -1, 0.2f, 1); \
+    FVAR(IDF_WORLD, envfade##name, 0, 0.2f, 1); \
+    VAR(IDF_WORLD, envsubdiv##name, 4, 16, 64); \
+    VAR(IDF_WORLD, atmo##name, 0, 0, 2); \
+    FVAR(IDF_WORLD, atmoplanetsize##name, 1e-3f, 8, 1e3f); \
+    FVAR(IDF_WORLD, atmoheight##name, 1e-3f, 1, 1e3f); \
+    FVAR(IDF_WORLD, atmobright##name, 0, 4, 16); \
+    CVAR1(IDF_WORLD, atmolight##name, 0); \
+    FVAR(IDF_WORLD, atmolightscale##name, 0, 1, 16); \
+    FVAR(IDF_WORLD, atmodisksize##name, 0, 1, 10); \
+    FVAR(IDF_WORLD, atmodiskbright##name, 0, 1, 16); \
+    FVAR(IDF_WORLD, atmohaze##name, 0, 0.03f, 1); \
+    CVAR0(IDF_WORLD, atmohazefade##name, 0xAEACA9); \
+    FVAR(IDF_WORLD, atmohazefadescale##name, 0, 1, 1); \
+    FVAR(IDF_WORLD, atmoclarity##name, 0, 0.2f, 10); \
+    FVAR(IDF_WORLD, atmodensity##name, 1e-3f, 0.99f, 10); \
+    FVAR(IDF_WORLD, atmoblend##name, 0, 1, 1); \
+    FVAR(IDF_WORLD, fogdomeheight##name, -1, -0.5f, 1); \
+    FVAR(IDF_WORLD, fogdomemin##name, 0, 0, 1); \
+    FVAR(IDF_WORLD, fogdomemax##name, 0, 0, 1); \
+    VAR(IDF_WORLD, fogdomecap##name, 0, 1, 1); \
+    FVAR(IDF_WORLD, fogdomeclip##name, 0, 1, 1); \
+    CVAR(IDF_WORLD, fogdomecolour##name, 0xFFFFFF); \
+    VAR(IDF_WORLD, fogdomeclouds##name, 0, 1, 1); \
+    VAR(IDF_WORLD, skytexture##name, 0, 0, 1); \
+    VARF(IDF_WORLD, skyshadow##name, 0, 0, 1, if(game::checkmapvariant(type)) clearshadowcache());
 
-SVARF(IDF_WORLD, skybox, "", { if(skybox[0]) loadsky(skybox, sky); });
-CVAR(IDF_WORLD, skycolour, 0xFFFFFF);
-FVAR(IDF_WORLD, skyblend, 0, 1.0f, 1);
-FVAR(IDF_WORLD, skyoverbright, 1, 2, 16);
-FVAR(IDF_WORLD, skyoverbrightmin, 0, 1, 16);
-FVAR(IDF_WORLD, skyoverbrightthreshold, 0, 0.7f, 1);
-FVAR(IDF_WORLD, spinsky, -720, 0, 720);
-VAR(IDF_WORLD, yawsky, 0, 0, 360);
+DAYNIGHTVARS(, 0);
+DAYNIGHTVARS(night, MPV_NIGHT);
 
-SVARF(IDF_WORLD, cloudbox, "", { if(cloudbox[0]) loadsky(cloudbox, clouds); });
-CVAR(IDF_WORLD, cloudcolour, 0xFFFFFF);
-FVAR(IDF_WORLD, cloudblend, 0, 1.0f, 1);
-FVAR(IDF_WORLD, spinclouds, -720, 0, 720);
-VAR(IDF_WORLD, yawclouds, 0, 0, 360);
+#define GETDAYNIGHT(name, type) \
+    type get##name() \
+    { \
+        if(game::checkmapvariant(MPV_NIGHT)) return name##night; \
+        return name; \
+    }
 
-FVAR(IDF_WORLD, cloudclip, 0, 0.5f, 1);
-SVARF(IDF_WORLD, cloudlayer, "", { if(cloudlayer[0]) cloudoverlay = loadskyoverlay(cloudlayer); });
-CVAR(IDF_WORLD, cloudlayercolour, 0xFFFFFF);
-FVAR(IDF_WORLD, cloudlayerblend, 0, 1.0f, 1);
-FVAR(IDF_WORLD, cloudoffsetx, 0, 0, 1);
-FVAR(IDF_WORLD, cloudoffsety, 0, 0, 1);
-FVAR(IDF_WORLD, cloudscrollx, -16, 0, 16);
-FVAR(IDF_WORLD, cloudscrolly, -16, 0, 16);
-FVAR(IDF_WORLD, cloudscale, FVAR_NONZERO, 1, 64);
-FVAR(IDF_WORLD, spincloudlayer, -720, 0, 720);
-VAR(IDF_WORLD, yawcloudlayer, 0, 0, 360);
-FVAR(IDF_WORLD, cloudheight, -1, 0.2f, 1);
-FVAR(IDF_WORLD, cloudfade, 0, 0.2f, 1);
-VAR(IDF_WORLD, cloudsubdiv, 4, 16, 64);
-
-SVARF(IDF_WORLD, envlayer, "", { if(envlayer[0]) envoverlay = loadskyoverlay(envlayer); });
-CVAR(IDF_WORLD, envlayercolour, 0xFFFFFF);
-FVAR(IDF_WORLD, envlayerblend, 0, 1.0f, 1);
-FVAR(IDF_WORLD, envoffsetx, 0, 0, 1);
-FVAR(IDF_WORLD, envoffsety, 0, 0, 1);
-FVAR(IDF_WORLD, envscrollx, -16, 0, 16);
-FVAR(IDF_WORLD, envscrolly, -16, 0, 16);
-FVAR(IDF_WORLD, envscale, FVAR_NONZERO, 1, 64);
-FVAR(IDF_WORLD, spinenvlayer, -720, 0, 720);
-VAR(IDF_WORLD, yawenvlayer, 0, 0, 360);
-FVAR(IDF_WORLD, envheight, -1, 0.2f, 1);
-FVAR(IDF_WORLD, envfade, 0, 0.2f, 1);
-VAR(IDF_WORLD, envsubdiv, 4, 16, 64);
+GETDAYNIGHT(ambient, bvec &);
+GETDAYNIGHT(ambientscale, float);
+GETDAYNIGHT(skylight, bvec &);
+GETDAYNIGHT(skylightscale, float);
+GETDAYNIGHT(fog, int);
+GETDAYNIGHT(fogcolour, bvec &);
+GETDAYNIGHT(skybgcolour, bvec &);
+GETDAYNIGHT(skybox, const char *);
+GETDAYNIGHT(skycolour, bvec &);
+GETDAYNIGHT(skyblend, float);
+GETDAYNIGHT(skyoverbright, float);
+GETDAYNIGHT(skyoverbrightmin, float);
+GETDAYNIGHT(skyoverbrightthreshold, float);
+GETDAYNIGHT(spinsky, float);
+GETDAYNIGHT(yawsky, int);
+GETDAYNIGHT(cloudbox, const char *);
+GETDAYNIGHT(cloudcolour, bvec &);
+GETDAYNIGHT(cloudblend, float);
+GETDAYNIGHT(spinclouds, float);
+GETDAYNIGHT(yawclouds, int);
+GETDAYNIGHT(cloudclip, float);
+GETDAYNIGHT(cloudlayer, const char *);
+GETDAYNIGHT(cloudlayercolour, bvec &);
+GETDAYNIGHT(cloudlayerblend, float);
+GETDAYNIGHT(cloudoffsetx, float);
+GETDAYNIGHT(cloudoffsety, float);
+GETDAYNIGHT(cloudscrollx, float);
+GETDAYNIGHT(cloudscrolly, float);
+GETDAYNIGHT(cloudscale, float);
+GETDAYNIGHT(spincloudlayer, float);
+GETDAYNIGHT(yawcloudlayer, int);
+GETDAYNIGHT(cloudheight, float);
+GETDAYNIGHT(cloudfade, float);
+GETDAYNIGHT(cloudsubdiv, int);
+GETDAYNIGHT(envlayer, const char *);
+GETDAYNIGHT(envlayercolour, bvec &);
+GETDAYNIGHT(envlayerblend, float);
+GETDAYNIGHT(envoffsetx, float);
+GETDAYNIGHT(envoffsety, float);
+GETDAYNIGHT(envscrollx, float);
+GETDAYNIGHT(envscrolly, float);
+GETDAYNIGHT(envscale, float);
+GETDAYNIGHT(spinenvlayer, float);
+GETDAYNIGHT(yawenvlayer, int);
+GETDAYNIGHT(envheight, float);
+GETDAYNIGHT(envfade, float);
+GETDAYNIGHT(envsubdiv, int);
+GETDAYNIGHT(atmo, int);
+GETDAYNIGHT(atmoplanetsize, float);
+GETDAYNIGHT(atmoheight, float);
+GETDAYNIGHT(atmobright, float);
+GETDAYNIGHT(atmolight, bvec &);
+GETDAYNIGHT(atmolightscale, float);
+GETDAYNIGHT(atmodisksize, float);
+GETDAYNIGHT(atmodiskbright, float);
+GETDAYNIGHT(atmohaze, float);
+GETDAYNIGHT(atmohazefade, bvec &);
+GETDAYNIGHT(atmohazefadescale, float);
+GETDAYNIGHT(atmoclarity, float);
+GETDAYNIGHT(atmodensity, float);
+GETDAYNIGHT(atmoblend, float);
+GETDAYNIGHT(fogdomeheight, float);
+GETDAYNIGHT(fogdomemin, float);
+GETDAYNIGHT(fogdomemax, float);
+GETDAYNIGHT(fogdomecap, int);
+GETDAYNIGHT(fogdomeclip, float);
+GETDAYNIGHT(fogdomecolour, bvec &);
+GETDAYNIGHT(fogdomeclouds, int);
+GETDAYNIGHT(skytexture, int);
+GETDAYNIGHT(skyshadow, int);
 
 void drawenvboxface(float s0, float t0, int x0, int y0, int z0,
                     float s1, float t1, int x1, int y1, int z1,
@@ -210,14 +317,6 @@ void drawenvoverlay(Texture *overlay, float height, int subdiv, float fade, floa
     xtraverts += gle::end();
 }
 
-FVAR(IDF_WORLD, fogdomeheight, -1, -0.5f, 1);
-FVAR(IDF_WORLD, fogdomemin, 0, 0, 1);
-FVAR(IDF_WORLD, fogdomemax, 0, 0, 1);
-VAR(IDF_WORLD, fogdomecap, 0, 1, 1);
-FVAR(IDF_WORLD, fogdomeclip, 0, 1, 1);
-CVAR(IDF_WORLD, fogdomecolour, 0xFFFFFF);
-VAR(IDF_WORLD, fogdomeclouds, 0, 1, 1);
-
 namespace fogdome
 {
     struct vert
@@ -345,16 +444,16 @@ namespace fogdome
 
     void draw()
     {
-        float capsize = fogdomecap && fogdomeheight < 1 ? (1 + fogdomeheight) / (1 - fogdomeheight) : -1;
-        bvec color = !fogdomecolour.iszero() ? fogdomecolour : fogcolour;
-        if(!numverts || lastcolor != color || lastminalpha != fogdomemin || lastmaxalpha != fogdomemax || lastcapsize != capsize || lastclipz != fogdomeclip)
+        float capsize = getfogdomecap() && getfogdomeheight() < 1 ? (1 + getfogdomeheight()) / (1 - getfogdomeheight()) : -1;
+        bvec color = !getfogdomecolour().iszero() ? getfogdomecolour() : fogcolour;
+        if(!numverts || lastcolor != color || lastminalpha != getfogdomemin() || lastmaxalpha != getfogdomemax() || lastcapsize != capsize || lastclipz != getfogdomeclip())
         {
-            init(color, min(fogdomemin, fogdomemax), fogdomemax, capsize, fogdomeclip);
+            init(color, min(getfogdomemin(), getfogdomemax()), getfogdomemax(), capsize, getfogdomeclip());
             lastcolor = color;
-            lastminalpha = fogdomemin;
-            lastmaxalpha = fogdomemax;
+            lastminalpha = getfogdomemin();
+            lastmaxalpha = getfogdomemax();
             lastcapsize = capsize;
-            lastclipz = fogdomeclip;
+            lastclipz = getfogdomeclip();
         }
 
         gle::bindvbo(vbuf);
@@ -365,7 +464,7 @@ namespace fogdome
         gle::enablevertex();
         gle::enablecolor();
 
-        glDrawRangeElements_(GL_TRIANGLES, 0, numverts-1, numindices + fogdomecap*capindices, GL_UNSIGNED_SHORT, indices);
+        glDrawRangeElements_(GL_TRIANGLES, 0, numverts-1, numindices + getfogdomecap()*capindices, GL_UNSIGNED_SHORT, indices);
         xtraverts += numverts;
         glde++;
 
@@ -385,8 +484,8 @@ static void drawfogdome()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     matrix4 skymatrix = cammatrix, skyprojmatrix;
-    skymatrix.settranslation(vec(cammatrix.c).mul(farplane*fogdomeheight*0.5f));
-    skymatrix.scale(farplane/2, farplane/2, farplane*(0.5f - fogdomeheight*0.5f));
+    skymatrix.settranslation(vec(cammatrix.c).mul(farplane*getfogdomeheight()*0.5f));
+    skymatrix.scale(farplane/2, farplane/2, farplane*(0.5f - getfogdomeheight()*0.5f));
     skyprojmatrix.mul(projmatrix, skymatrix);
     LOCALPARAM(skymatrix, skyprojmatrix);
 
@@ -400,24 +499,9 @@ void cleanupsky()
     fogdome::cleanup();
 }
 
-VAR(IDF_WORLD, atmo, 0, 0, 2);
-FVAR(IDF_WORLD, atmoplanetsize, 1e-3f, 8, 1e3f);
-FVAR(IDF_WORLD, atmoheight, 1e-3f, 1, 1e3f);
-FVAR(IDF_WORLD, atmobright, 0, 4, 16);
-CVAR1(IDF_WORLD, atmosunlight, 0);
-FVAR(IDF_WORLD, atmosunlightscale, 0, 1, 16);
-FVAR(IDF_WORLD, atmosundisksize, 0, 1, 10);
-FVAR(IDF_WORLD, atmosundiskbright, 0, 1, 16);
-FVAR(IDF_WORLD, atmohaze, 0, 0.03f, 1);
-CVAR0(IDF_WORLD, atmohazefade, 0xAEACA9);
-FVAR(IDF_WORLD, atmohazefadescale, 0, 1, 1);
-FVAR(IDF_WORLD, atmoclarity, 0, 0.2f, 10);
-FVAR(IDF_WORLD, atmodensity, 1e-3f, 0.99f, 10);
-FVAR(IDF_WORLD, atmoblend, 0, 1, 1);
-
 static void drawatmosphere()
 {
-    if(atmoblend < 1)
+    if(getatmoblend() < 1)
     {
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -429,34 +513,35 @@ static void drawatmosphere()
     sunmatrix.mul(invprojmatrix);
     LOCALPARAM(sunmatrix, sunmatrix);
 
-    LOCALPARAM(sunlight, (!atmosunlight.iszero() ? atmosunlight.tocolor().mul(atmosunlightscale) : sunlight.tocolor().mul(sunlightscale)).mul(atmobright*ldrscale));
-    LOCALPARAM(sundir, sunlightdir);
+    bvec curatmolight = getatmolight();
+    LOCALPARAM(sunlight, (!curatmolight.iszero() ? curatmolight.tocolor().mul(getatmolightscale()) : getpielight().tocolor().mul(getpielightscale())).mul(getatmobright()*ldrscale));
+    LOCALPARAM(sundir, getpielightdir());
 
     vec sundiskparams;
-    sundiskparams.y = -(1 - 0.0075f * atmosundisksize);
+    sundiskparams.y = -(1 - 0.0075f * getatmodisksize());
     sundiskparams.x = 1/(1 + sundiskparams.y);
     sundiskparams.y *= sundiskparams.x;
-    sundiskparams.z = atmosundiskbright;
+    sundiskparams.z = getatmodiskbright();
     LOCALPARAM(sundiskparams, sundiskparams);
 
     const float earthradius = 6.371e6f, earthatmoheight = 0.1e6f;
-    float planetradius = earthradius*atmoplanetsize, atmoradius = planetradius + earthatmoheight*atmoheight;
+    float planetradius = earthradius*getatmoplanetsize(), atmoradius = planetradius + earthatmoheight*getatmoheight();
     LOCALPARAMF(atmoradius, planetradius, atmoradius*atmoradius, atmoradius*atmoradius - planetradius*planetradius);
 
-    float gm = (1 - atmohaze)*0.2f + 0.75f;
+    float gm = (1 - getatmohaze())*0.2f + 0.75f;
     LOCALPARAMF(gm, gm);
 
     vec lambda(680e-9f, 550e-9f, 450e-9f),
-        betar = vec(lambda).square().square().recip().mul(1.86e-31f / atmodensity),
-        betam = vec(lambda).recip().mul(2*M_PI).square().mul(atmohazefade.tocolor().mul(atmohazefadescale)).mul(1.36e-19f * max(atmohaze, 1e-3f)),
-        betarm = vec(betar).div(1+atmoclarity).add(betam);
+        betar = vec(lambda).square().square().recip().mul(1.86e-31f / getatmodensity()),
+        betam = vec(lambda).recip().mul(2*M_PI).square().mul(getatmohazefade().tocolor().mul(getatmohazefadescale())).mul(1.36e-19f * max(getatmohaze(), 1e-3f)),
+        betarm = vec(betar).div(1+getatmoclarity()).add(betam);
     betar.div(betarm).mul(3/(16*M_PI));
     betam.div(betarm).mul((1-gm)*(1-gm)/(4*M_PI));
     LOCALPARAM(betar, betar);
     LOCALPARAM(betam, betam);
     LOCALPARAM(betarm, betarm.div(M_LN2));
 
-    LOCALPARAMF(atmoblend, atmoblend);
+    LOCALPARAMF(atmoblend, getatmoblend());
 
     gle::defvertex();
     gle::begin(GL_TRIANGLE_STRIP);
@@ -466,19 +551,17 @@ static void drawatmosphere()
     gle::attribf(1, -1, 1);
     xtraverts += gle::end();
 
-    if(atmoblend < 1) glDisable(GL_BLEND);
+    if(getatmoblend() < 1) glDisable(GL_BLEND);
 }
 
 VAR(0, showsky, 0, 1, 1);
 VAR(0, clampsky, 0, 1, 1);
-VARN(IDF_WORLD, skytexture, useskytexture, 0, 0, 1);
-VARF(IDF_WORLD, skyshadow, 0, 0, 1, clearshadowcache());
 
 int explicitsky = 0;
 
 bool limitsky()
 {
-    return explicitsky && (useskytexture || editmode);
+    return explicitsky && (getskytexture() || editmode);
 }
 
 void drawskybox(bool clear)
@@ -506,14 +589,15 @@ void drawskybox(bool clear)
 
     if(clampsky) glDepthRange(1, 1);
 
-    bool blendsky = !skybox[0] || !sky[0] || sky[0]->type&Texture::ALPHA || skyblend < 1;
+    const char *curskybox = getskybox();
+    bool blendsky = !curskybox[0] || !sky[0] || sky[0]->type&Texture::ALPHA || getskyblend() < 1;
     if(clear)
     {
-        vec color = skybgcolour.tocolor().mul(ldrscale);
+        vec color = getskybgcolour().tocolor().mul(ldrscale);
         glClearColor(color.x, color.y, color.z, 0);
         glClear(GL_COLOR_BUFFER_BIT);
     }
-    else if(blendsky && (!atmo || atmoblend < 1))
+    else if(blendsky && (!getatmo() || getatmoblend() < 1))
     {
         SETSHADER(skyfog);
 
@@ -522,32 +606,32 @@ void drawskybox(bool clear)
         skyprojmatrix.mul(projmatrix, skymatrix);
         LOCALPARAM(skymatrix, skyprojmatrix);
 
-        gle::color(skybgcolour);
+        gle::color(getskybgcolour());
         drawenvboxbg();
     }
 
-    if(atmo == 2) drawatmosphere();
+    if(getatmo() == 2) drawatmosphere();
 
-    if(skybox[0])
+    if(curskybox[0])
     {
         if(blendsky)
         {
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         }
-
-        if(ldrscale < 1 && (skyoverbrightmin != 1 || (skyoverbright > 1 && skyoverbrightthreshold < 1)))
+        float overbright = getskyoverbright(), overbrightmin = getskyoverbrightmin(), overbrightthreshold = getskyoverbrightthreshold();
+        if(ldrscale < 1 && (overbrightmin != 1 || (overbright > 1 && overbrightthreshold < 1)))
         {
             SETSHADER(skyboxoverbright);
-            LOCALPARAMF(overbrightparams, skyoverbrightmin, max(skyoverbright, skyoverbrightmin), skyoverbrightthreshold);
+            LOCALPARAMF(overbrightparams, overbrightmin, max(overbright, overbrightmin), overbrightthreshold);
         }
         else SETSHADER(skybox);
 
-        gle::color(skycolour.tocolor(), skyblend);
+        gle::color(getskycolour().tocolor(), getskyblend());
 
         matrix4 skymatrix = cammatrix, skyprojmatrix;
         skymatrix.settranslation(0, 0, 0);
-        skymatrix.rotate_around_z((spinsky*lastmillis/1000.0f+yawsky)*-RAD);
+        skymatrix.rotate_around_z((getspinsky()*lastmillis/1000.0f+getyawsky())*-RAD);
         skyprojmatrix.mul(projmatrix, skymatrix);
         LOCALPARAM(skymatrix, skyprojmatrix);
 
@@ -556,53 +640,33 @@ void drawskybox(bool clear)
         if(blendsky) glDisable(GL_BLEND);
     }
 
-    if(atmo == 1) drawatmosphere();
+    if(getatmo() == 1) drawatmosphere();
 
-    if(fogdomemax && !fogdomeclouds) drawfogdome();
+    if(getfogdomemax() && !getfogdomeclouds()) drawfogdome();
 
-    if(cloudbox[0])
+    const char *curcloudbox = getcloudbox();
+    if(curcloudbox[0])
     {
         SETSHADER(skybox);
 
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-        gle::color(cloudcolour.tocolor(), cloudblend);
+        gle::color(getcloudcolour().tocolor(), getcloudblend());
 
         matrix4 skymatrix = cammatrix, skyprojmatrix;
         skymatrix.settranslation(0, 0, 0);
-        skymatrix.rotate_around_z((spinclouds*lastmillis/1000.0f+yawclouds)*-RAD);
+        skymatrix.rotate_around_z((getspinclouds()*lastmillis/1000.0f+getyawclouds())*-RAD);
         skyprojmatrix.mul(projmatrix, skymatrix);
         LOCALPARAM(skymatrix, skyprojmatrix);
 
-        drawenvbox(clouds, cloudclip);
+        drawenvbox(clouds, getcloudclip());
 
         glDisable(GL_BLEND);
     }
 
-    if(cloudlayer[0] && cloudheight)
-    {
-        SETSHADER(skybox);
-
-        glDisable(GL_CULL_FACE);
-
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-        matrix4 skymatrix = cammatrix, skyprojmatrix;
-        skymatrix.settranslation(0, 0, 0);
-        skymatrix.rotate_around_z((spincloudlayer*lastmillis/1000.0f+yawcloudlayer)*-RAD);
-        skyprojmatrix.mul(projmatrix, skymatrix);
-        LOCALPARAM(skymatrix, skyprojmatrix);
-
-        drawenvoverlay(cloudoverlay, cloudheight, cloudsubdiv, cloudfade, cloudscale, cloudlayercolour, cloudlayerblend, cloudoffsetx + cloudscrollx * lastmillis/1000.0f, cloudoffsety + cloudscrolly * lastmillis/1000.0f);
-
-        glDisable(GL_BLEND);
-
-        glEnable(GL_CULL_FACE);
-    }
-
-    if(envlayer[0] && envheight)
+    const char *curcloudlayer = getcloudlayer();
+    if(curcloudlayer[0] && getcloudheight())
     {
         SETSHADER(skybox);
 
@@ -613,21 +677,41 @@ void drawskybox(bool clear)
 
         matrix4 skymatrix = cammatrix, skyprojmatrix;
         skymatrix.settranslation(0, 0, 0);
-        skymatrix.rotate_around_z((spinenvlayer*lastmillis/1000.0f+yawenvlayer)*-RAD);
+        skymatrix.rotate_around_z((getspincloudlayer()*lastmillis/1000.0f+getyawcloudlayer())*-RAD);
         skyprojmatrix.mul(projmatrix, skymatrix);
         LOCALPARAM(skymatrix, skyprojmatrix);
 
-        drawenvoverlay(envoverlay, envheight, envsubdiv, envfade, envscale, envlayercolour, envlayerblend, envoffsetx + envscrollx * lastmillis/1000.0f, envoffsety + envscrolly * lastmillis/1000.0f);
+        drawenvoverlay(cloudoverlay, getcloudheight(), getcloudsubdiv(), getcloudfade(), getcloudscale(), getcloudlayercolour(), getcloudlayerblend(), getcloudoffsetx() + getcloudscrollx() * lastmillis/1000.0f, getcloudoffsety() + getcloudscrolly() * lastmillis/1000.0f);
 
         glDisable(GL_BLEND);
 
         glEnable(GL_CULL_FACE);
     }
 
-    if(fogdomemax && fogdomeclouds)
+    const char *curenvlayer = getenvlayer();
+    if(curenvlayer[0] && getenvheight())
     {
-        drawfogdome();
+        SETSHADER(skybox);
+
+        glDisable(GL_CULL_FACE);
+
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        matrix4 skymatrix = cammatrix, skyprojmatrix;
+        skymatrix.settranslation(0, 0, 0);
+        skymatrix.rotate_around_z((getspinenvlayer()*lastmillis/1000.0f+getyawenvlayer())*-RAD);
+        skyprojmatrix.mul(projmatrix, skymatrix);
+        LOCALPARAM(skymatrix, skyprojmatrix);
+
+        drawenvoverlay(envoverlay, getenvheight(), getenvsubdiv(), getenvfade(), getenvscale(), getenvlayercolour(), getenvlayerblend(), getenvoffsetx() + getenvscrollx() * lastmillis/1000.0f, getenvoffsety() + getenvscrolly() * lastmillis/1000.0f);
+
+        glDisable(GL_BLEND);
+
+        glEnable(GL_CULL_FACE);
     }
+
+    if(getfogdomemax() && getfogdomeclouds()) drawfogdome();
 
     if(clampsky) glDepthRange(0, 1);
 
@@ -644,6 +728,17 @@ void drawskybox(bool clear)
 
 bool hasskybox()
 {
-    return skybox[0] || atmo || fogdomemax || cloudbox[0] || cloudlayer[0] || envlayer[0];
+    return getskybox()[0] || getatmo() || getfogdomemax() || getcloudbox()[0] || getcloudlayer()[0] || getenvlayer()[0];
 }
 
+void initskybox()
+{
+    const char *curskybox = getskybox();
+    if(curskybox[0]) loadsky(curskybox, sky);
+    const char *curcloudbox = getcloudbox();
+    if(curcloudbox[0]) loadsky(curskybox, sky);
+    const char *curcloudlayer = getcloudlayer();
+    if(curcloudlayer[0]) cloudoverlay = loadskyoverlay(curcloudlayer);
+    const char *curenvlayer = getenvlayer();
+    if(curenvlayer[0]) envoverlay = loadskyoverlay(curenvlayer);
+}

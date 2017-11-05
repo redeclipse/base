@@ -19,6 +19,19 @@ SVAR(0, mapfile, "");
 SVAR(0, mapname, "");
 SVAR(0, maptext, "");
 
+const char *mapvariants[MPV_MAX] = { "all", "day", "night" };
+VAR(0, mapvariant, 1, 0, -1);
+void changemapvariant(int variant)
+{
+    if(variant != mapvariant)
+    {
+        mapvariant = variant;
+        initskybox();
+        initlights(true);
+        allchanged(true);
+    }
+}
+
 VAR(IDF_PERSIST, autosavebackups, 0, 2, 4); // make backups; 0 = off, 1 = single backup, 2 = named backup, 3/4 = same as 1/2 with move to "backups/"
 VAR(IDF_PERSIST, autosavemapshot, 0, 1, 1);
 VAR(IDF_PERSIST, autosaveconfigs, 0, 1, 1);
@@ -871,7 +884,18 @@ static void sanevars()
     setvar("blankgeom", 0, false);
 }
 
-bool load_world(const char *mname, int crc)       // still supports all map formats that have existed since the earliest cube betas!
+const char *variantvars[] = {
+    "ambient", "ambientscale", "skylight", "skylightscale", "fog", "fogcolour", "skybgcolour", "skybox", "skycolour", "skyblend", "skyoverbright", "skyoverbrightmin",
+    "skyoverbrightthreshold", "spinsky", "yawsky", "cloudbox", "cloudcolour", "cloudblend", "spinclouds", "yawclouds", "cloudclip", "cloudlayer", "cloudlayercolour",
+    "cloudlayerblend", "cloudoffsetx", "cloudoffsety", "cloudscrollx", "cloudscrolly", "cloudscale", "spincloudlayer", "yawcloudlayer", "cloudheight", "cloudfade",
+    "cloudsubdiv", "envlayer", "envlayercolour", "envlayerblend", "envoffsetx", "envoffsety", "envscrollx", "envscrolly", "envscale", "spinenvlayer", "yawenvlayer",
+    "envheight", "envfade", "envsubdiv", "atmo", "atmoplanetsize", "atmoheight", "atmobright", "atmolight", "atmolightscale", "atmodisksize", "atmodiskbright",
+    "atmohaze", "atmohazefade", "atmohazefadescale", "atmoclarity", "atmodensity", "atmoblend", "fogdomeheight", "fogdomemin", "fogdomemax", "fogdomecap", "fogdomeclip",
+    "fogdomecolour", "fogdomeclouds", "skytexture", "skyshadow", NULL
+};
+const char *skypievars[] = { "light", "lightscale", "lightyaw", "lightpitch", NULL };
+
+bool load_world(const char *mname, int crc, int variant)
 {
     int loadingstart = SDL_GetTicks();
     mapcrc = 0;
@@ -962,7 +986,7 @@ bool load_world(const char *mname, int crc)       // still supports all map form
             }
             #undef MAPZCOMPAT
 
-            resetmap(false);
+            resetmap(false, variant);
             hdr = newhdr;
             maploading = 1;
             progress(-1, "Please wait...");
@@ -1069,7 +1093,7 @@ bool load_world(const char *mname, int crc)       // still supports all map form
             }
             lilswap(&ohdr.worldsize, 7);
 
-            resetmap(false);
+            resetmap(false, variant);
             hdr = newhdr;
             maploading = 1;
             progress(-1, "Please wait..");
@@ -1290,14 +1314,51 @@ bool load_world(const char *mname, int crc)       // still supports all map form
                 setfvar("sunlightyaw", importedsunyaw, true, false, true);
                 setfvar("sunlightpitch", importedsunpitch, true, false, true);
             }
-            else if(!skylight.iszero())
+            else
             {
-                setvar("sunlight", 0x010101, true, false, true);
-                setfvar("sunlightyaw", 0, true, false, true);
-                setfvar("sunlightpitch", 90, true, false, true);
-                setfvar("sunlightscale", FVAR_NONZERO, true, false, true);
+                extern bvec skylight;
+                if(!skylight.iszero())
+                {
+                    setvar("sunlight", 0x010101, true, false, true);
+                    setfvar("sunlightyaw", 0, true, false, true);
+                    setfvar("sunlightpitch", 90, true, false, true);
+                    setfvar("sunlightscale", FVAR_NONZERO, true, false, true);
+                    setvar("moonlight", 0x010101, true, false, true);
+                    setfvar("moonlightyaw", 0, true, false, true);
+                    setfvar("moonlightpitch", 90, true, false, true);
+                    setfvar("moonlightscale", FVAR_NONZERO, true, false, true);
+                }
             }
         }
+        if(maptype == MAP_MAPZ && hdr.version <= 44)
+        {
+            for(int v = 0; variantvars[v]; v++)
+            {
+                defformatstring(newvar, "%snight", variantvars[v]);
+                ident *id = idents.access(variantvars[v]);
+                if(id) switch(id->type)
+                {
+                    case ID_VAR: setvar(newvar, *id->storage.i, true, false, true); break;
+                    case ID_FVAR: setfvar(newvar, *id->storage.f, true, false, true); break;
+                    case ID_SVAR: setsvar(newvar, *id->storage.s, true, false); break;
+                    default: break;
+                }
+            }
+            for(int v = 0; skypievars[v]; v++)
+            {
+                defformatstring(sunvar, "sun%s", skypievars[v]);
+                defformatstring(moonvar, "moon%s", skypievars[v]);
+                ident *id = idents.access(sunvar);
+                if(id) switch(id->type)
+                {
+                    case ID_VAR: setvar(moonvar, *id->storage.i, true, false, true); break;
+                    case ID_FVAR: setfvar(moonvar, *id->storage.f, true, false, true); break;
+                    case ID_SVAR: setsvar(moonvar, *id->storage.s, true, false); break;
+                    default: break;
+                }
+            }
+        }
+
         if(verbose) conoutf("Loaded %d entities", hdr.numents);
 
         progress(0, "Loading slots...");

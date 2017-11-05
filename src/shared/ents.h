@@ -6,12 +6,13 @@
 enum { ET_EMPTY=0, ET_LIGHT, ET_MAPMODEL, ET_PLAYERSTART, ET_ENVMAP, ET_PARTICLES, ET_SOUND, ET_LIGHTFX, ET_DECAL, ET_GAMESPECIFIC };
 enum { LFX_SPOTLIGHT = 0, LFX_FLICKER, LFX_PULSE, LFX_GLOW, LFX_MAX };
 enum { LFX_S_NONE = 0, LFX_S_RAND1 = 1<<0, LFX_S_RAND2 = 1<<1, LFX_S_MAX = 2 };
+enum { MPV_ALL = 0, MPV_DAY, MPV_NIGHT, MPV_MAX, MPV_DEFAULT = MPV_DAY };
 
-struct entbase                                   // persistent map entity
+struct entbase          // persistent map entity
 {
-    vec o;                                      // position
-    uchar type;                                 // type is one of the above
-    uchar reserved[3];                          // left-over space due to struct alignment
+    vec o;              // position
+    uchar type;         // type is one of the above
+    uchar reserved[3];  // left-over space due to struct alignment
 };
 
 enum

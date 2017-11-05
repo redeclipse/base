@@ -1733,8 +1733,6 @@ void debugquad(float x, float y, float w, float h, float tx, float ty, float tw,
     HUDQUAD(x, y, x+w, y+h, tx, ty+th, tx+tw, ty);
 }
 
-VAR(IDF_WORLD, fog, 16, 4000, 1000024);
-CVAR0(IDF_WORLD, fogcolour, 0x8099B3);
 VAR(0, fogoverlay, 0, 1, 1);
 
 static float findsurface(int fogmat, const vec &v, int &abovemat)
@@ -1770,7 +1768,7 @@ static void blendfog(int fogmat, float below, float blend, float logblend, float
             vec color;
             color.lerp(wcol.tocolor(), wdeepcol.tocolor(), deepfade);
             fogc.add(vec(color).mul(blend));
-            end += logblend*min(fog, max(wfog*2, 16));
+            end += logblend*min(getfog(), max(wfog*2, 16));
             break;
         }
 
@@ -1779,14 +1777,14 @@ static void blendfog(int fogmat, float below, float blend, float logblend, float
             const bvec &lcol = getlavacolour(fogmat);
             int lfog = getlavafog(fogmat);
             fogc.add(lcol.tocolor().mul(blend));
-            end += logblend*min(fog, max(lfog*2, 16));
+            end += logblend*min(getfog(), max(lfog*2, 16));
             break;
         }
 
         default:
-            fogc.add(fogcolour.tocolor().mul(blend));
-            start += logblend*(fog+64)/8;
-            end += logblend*fog;
+            fogc.add(getfogcolour().tocolor().mul(blend));
+            start += logblend*(getfog()+64)/8;
+            end += logblend*getfog();
             break;
     }
 }
@@ -1819,7 +1817,7 @@ FVAR(0, fogcullintensity, 0, 1e-3f, 1);
 
 float calcfogcull()
 {
-    return log(fogcullintensity) / (M_LN2*calcfogdensity(fog - (fog+64)/8));
+    return log(fogcullintensity) / (M_LN2*calcfogdensity(getfog() - (getfog()+64)/8));
 }
 
 static void setfog(int fogmat, float below = 0, float blend = 1, int abovemat = MAT_AIR)

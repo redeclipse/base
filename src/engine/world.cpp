@@ -1149,7 +1149,7 @@ void clearworldvars(bool msg)
 
 ICOMMAND(0, resetworldvars, "", (), if(editmode || identflags&IDF_WORLD) clearworldvars(true));
 
-void resetmap(bool empty)
+void resetmap(bool empty, int variant)
 {
     progress(-1, "Resetting map...");
     resetdecals();
@@ -1167,6 +1167,7 @@ void resetmap(bool empty)
     pruneundos();
     setsvar("maptext", "", false);
     mapcrc = 0;
+    mapvariant = variant;
 
     entities::clearents();
     outsideents.setsize(0);

@@ -2431,7 +2431,7 @@ namespace game
     bool camupdate(cament *c, float amt, bool renew = false, bool force = false)
     {
         if(c->player && !allowspec(c->player, spectvdead, spectvfollowing)) return false;
-        float foglevel = float(fog*2/3);
+        float foglevel = float(getfog()*2/3);
         c->reset();
         bool aim = !c->player || spectvaiming(c->player);
         float yaw = c->player ? c->player->yaw : camera1->yaw, pitch = c->player ? c->player->pitch : camera1->pitch,
@@ -3710,5 +3710,11 @@ namespace game
     }
 
     bool clientoption(char *arg) { return false; }
+
+    bool checkmapvariant(int variant)
+    {
+        if(variant > 0 && mapvariant > 0 && mapvariant != variant) return false;
+        return true;
+    }
 }
 #undef GAMEWORLD

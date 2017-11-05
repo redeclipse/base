@@ -260,8 +260,6 @@ extern float ldrscale, ldrscaleb;
 extern int drawtex;
 extern const matrix4 viewmatrix, invviewmatrix;
 extern matrix4 cammatrix, projmatrix, camprojmatrix, invcammatrix, invcamprojmatrix, invprojmatrix;
-extern int fog;
-extern bvec fogcolour;
 extern vec curfogcolor;
 extern int wireframe;
 
@@ -771,7 +769,9 @@ extern bool getsight(vec &o, float yaw, float pitch, vec &q, vec &v, float mdist
 
 // worldio
 extern char *maptitle, *mapauthor, *mapname, *maptext, *mapdesc;
-extern int mapcrc, maptype, maploading;
+extern int mapcrc, maptype, maploading, mapvariant;
+extern const char *mapvariants[MPV_MAX];
+extern void changemapvariant(int variant);
 
 // world
 extern vector<int> outsideents;
@@ -782,7 +782,7 @@ extern void entitiesinoctanodes();
 extern void freeoctaentities(cube &c);
 extern bool pointinsel(const selinfo &sel, const vec &o);
 extern void clearworldvars(bool msg = false);
-extern void resetmap(bool empty);
+extern void resetmap(bool empty, int variant = MPV_DEFAULT);
 
 // rendermodel
 struct mapmodelinfo { string name; model *m, *collide; };
@@ -848,13 +848,19 @@ extern void cleanupstains();
 extern void genstainmmtri(stainrenderer *s, const vec v[3]);
 
 // rendersky
-extern int skytexture, skyshadow, explicitsky;
+extern int explicitsky;
+
+extern int getfog();
+extern bvec &getfogcolour(), &getambient(), &getskylight();
+extern int getskytexture(), getskyshadow();
+extern float getambientscale(), getskylightscale();
 
 extern void drawskybox(bool clear = false);
 extern bool hasskybox();
 extern bool limitsky();
 extern bool renderexplicitsky(bool outline = false);
 extern void cleanupsky();
+extern void initskybox();
 
 // octaedit
 extern int outline, nompedit;

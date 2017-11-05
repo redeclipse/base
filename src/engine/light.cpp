@@ -1,41 +1,46 @@
 #include "engine.h"
 
-CVAR1(IDF_WORLD, ambient, 0x191919);
-FVAR(IDF_WORLD, ambientscale, 0, 1, 16);
-
-CVAR1(IDF_WORLD, skylight, 0);
-FVAR(IDF_WORLD, skylightscale, 0, 1, 16);
-
-extern void setupsunlight();
-CVAR1F(IDF_WORLD, sunlight, 0,
+void setlightdir(vec &dir, float yaw, float pitch)
 {
-    setupsunlight();
-    cleardeferredlightshaders();
-    clearshadowcache();
-});
-FVARF(IDF_WORLD, sunlightscale, 0, 1, 16, setupsunlight());
-
-vec sunlightdir(0, 0, 1);
-extern void setsunlightdir();
-FVARF(IDF_WORLD, sunlightyaw, 0, 0, 360, setsunlightdir());
-FVARF(IDF_WORLD, sunlightpitch, -90, 90, 90, setsunlightdir());
-
-void setsunlightdir()
-{
-    sunlightdir = vec(sunlightyaw*RAD, sunlightpitch*RAD);
-    loopk(3) if(fabs(sunlightdir[k]) < 1e-5f) sunlightdir[k] = 0;
-    sunlightdir.normalize();
-    setupsunlight();
-}
-
-void setupsunlight()
-{
+    dir = vec(yaw*RAD, pitch*RAD);
+    loopk(3) if(fabs(dir[k]) < 1e-5f) dir[k] = 0;
+    dir.normalize();
     clearradiancehintscache();
 }
 
+#define PIESKYVARS(name, type) \
+    CVAR1F(IDF_WORLD, name##light, 0, \
+    { \
+        if(!game::checkmapvariant(type)) return; \
+        clearradiancehintscache(); \
+        cleardeferredlightshaders(); \
+        clearshadowcache(); \
+    }); \
+    FVARF(IDF_WORLD, name##lightscale, 0, 1, 16, if(game::checkmapvariant(type)) clearradiancehintscache()); \
+    vec name##lightdir(0, 0, 1); \
+    extern float name##lightpitch; \
+    FVARF(IDF_WORLD, name##lightyaw, 0, 0, 360, setlightdir(name##lightdir, name##lightyaw, name##lightpitch)); \
+    FVARF(IDF_WORLD, name##lightpitch, -90, 90, 90, setlightdir(name##lightdir, name##lightyaw, name##lightpitch)); \
+
+PIESKYVARS(sun, 0);
+PIESKYVARS(moon, MPV_NIGHT);
+
+#define GETSKYPIE(name, type) \
+    type getpie##name() \
+    { \
+        if(game::checkmapvariant(MPV_NIGHT)) return moon##name; \
+        return sun##name; \
+    }
+
+GETSKYPIE(light, bvec &);
+GETSKYPIE(lightscale, float);
+GETSKYPIE(lightdir, vec &);
+GETSKYPIE(lightyaw, float);
+GETSKYPIE(lightpitch, float);
+
 bool getlightfx(const extentity &e, int *radius, int *spotlight, vec *color, bool normalize)
 {
-    if(e.attrs[0] <= 0) return false;
+    if(e.attrs[0] <= 0 || !game::checkmapvariant(e.attrs[9])) return false;
 
     if(color)
     {
@@ -53,7 +58,7 @@ bool getlightfx(const extentity &e, int *radius, int *spotlight, vec *color, boo
     {
         extentity &f = *ents[e.links[i]];
 
-        if(f.attrs[0] < 0 || f.attrs[0] >= LFX_MAX) continue;
+        if(f.attrs[0] < 0 || f.attrs[0] >= LFX_MAX || !game::checkmapvariant(f.attrs[5])) continue;
         if(f.attrs[0] == LFX_SPOTLIGHT)
         {
             if(spotlight && *spotlight <= 0) *spotlight = e.links[i];
@@ -684,10 +689,11 @@ void clearlights()
     resetsmoothgroups();
 }
 
-void initlights()
+void initlights(bool clear)
 {
     clearlightcache();
     clearshadowcache();
+    if(clear) cleardeferredlightshaders();
     loaddeferredlightshaders();
 }
 
@@ -739,13 +745,15 @@ void lightreaching(const vec &target, vec &color, vec &dir, bool fast, extentity
         color.add(vec(lightcol).mul(intensity));
         dir.add(vec(ray).mul(-intensity*lightcol.x*lightcol.y*lightcol.z));
     }
-    if(!sunlight.iszero() && shadowray(target, sunlightdir, 1e16f, RAY_SHADOW | RAY_POLY, t) > 1e15f)
+    bvec pie = getpielight();
+    vec piedir = getpielightdir();
+    if(!pie.iszero() && shadowray(target, piedir, 1e16f, RAY_SHADOW | RAY_POLY, t) > 1e15f)
     {
-        vec lightcol = sunlight.tocolor().mul(sunlightscale);
+        vec lightcol = pie.tocolor().mul(getpielightscale());
         color.add(lightcol);
-        dir.add(vec(sunlightdir).mul(lightcol.x*lightcol.y*lightcol.z));
+        dir.add(vec(piedir).mul(lightcol.x*lightcol.y*lightcol.z));
     }
-    color.max(ambient.tocolor().max(minambient)).min(1.5f);
+    color.max(getambient().tocolor().max(minambient)).min(1.5f);
     if(dir.iszero()) dir = vec(0, 0, 1);
     else dir.normalize();
 }

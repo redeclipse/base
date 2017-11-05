@@ -362,8 +362,9 @@ namespace capture
         loopv(entities::ents) if(entities::ents[i]->type == AFFINITY)
         {
             gameentity &e = *(gameentity *)entities::ents[i];
-            if(!m_check(e.attrs[3], e.attrs[4], game::gamemode, game::mutators) || !isteam(game::gamemode, game::mutators, e.attrs[0], T_FIRST))
-                continue;
+            if(!game::checkmapvariant(e.attrs[enttype[e.type].mvattr])) continue;
+            if(!m_check(e.attrs[3], e.attrs[4], game::gamemode, game::mutators)) continue;
+            if(!isteam(game::gamemode, game::mutators, e.attrs[0], T_FIRST)) continue;
             st.addaffinity(e.o, e.attrs[0], e.attrs[1], e.attrs[2]);
             if(st.flags.length() >= MAXPARAMS) break;
         }

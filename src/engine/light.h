@@ -43,16 +43,12 @@ struct PackNode
     void reserve(ushort tx, ushort ty, ushort tw, ushort th);
 };
 
-extern bvec ambient, skylight, sunlight;
-extern float ambientscale, skylightscale, sunlightscale;
-extern float sunlightyaw, sunlightpitch;
-extern vec sunlightdir;
 extern int fullbright, fullbrightlevel;
 
 extern bool getlightfx(const extentity &e, int *radius = NULL, int *spotlight = NULL, vec *color = NULL, bool normalize = true);
 
 extern void clearlights();
-extern void initlights();
+extern void initlights(bool clear = false);
 extern void clearlightcache(int id = -1);
 extern void brightencube(cube &c);
 extern void setsurfaces(cube &c, const surfaceinfo *surfs, const vertinfo *verts, int numverts);
@@ -87,3 +83,6 @@ extern void check_calclight_canceled();
 
 extern const vector<int> &checklightcache(int x, int y);
 
+extern bvec &getpielight();
+extern vec &getpielightdir();
+extern float getpielightscale(), getpielightyaw(), getpielightpitch();

@@ -198,11 +198,12 @@ namespace defend
     void setup()
     {
         int df = m_dac_king(game::gamemode, game::mutators) ? 0 : defendflags;
-        loopv(entities::ents)
+        loopv(entities::ents) if(entities::ents[i]->type == AFFINITY)
         {
-            extentity *e = entities::ents[i];
-            if(e->type != AFFINITY || !m_check(e->attrs[3], e->attrs[4], game::gamemode, game::mutators)) continue;
-            int team = e->attrs[0];
+            extentity &e = *entities::ents[i];
+            if(!game::checkmapvariant(e.attrs[enttype[e.type].mvattr])) continue;
+            if(!m_check(e.attrs[3], e.attrs[4], game::gamemode, game::mutators)) continue;
+            int team = e.attrs[0];
             switch(df)
             {
                 case 3:
@@ -216,14 +217,14 @@ namespace defend
                     break;
                 case 0: team = T_NEUTRAL; break;
             }
-            defformatstring(alias, "point_%d", e->attrs[5]);
+            defformatstring(alias, "point_%d", e.attrs[5]);
             const char *name = getalias(alias);
             if(!name || !*name)
             {
                 formatstring(alias, "point #%d", st.flags.length()+1);
                 name = alias;
             }
-            st.addaffinity(e->o, team, e->attrs[1], e->attrs[2], name);
+            st.addaffinity(e.o, team, e.attrs[1], e.attrs[2], name);
         }
         if(!st.flags.length()) return; // map doesn't seem to support this mode at all..
         bool hasteams = df != 0;

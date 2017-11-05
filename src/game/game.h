@@ -56,7 +56,7 @@ enum { MDLF_HIDE = 0, MDLF_NOCLIP, MDLF_NOSHADOW, MDLF_MAX };
 
 struct enttypes
 {
-    int type,           priority, links,    radius, usetype,    numattrs,   modesattr,  idattr,
+    int type,           priority, links,    radius, usetype,    numattrs,   modesattr,  idattr, mvattr,
             canlink, reclink, canuse;
     bool    noisy,  syncs,  resyncs,    syncpos,    synckin;
     const char *name,           *attrs[13];
@@ -64,126 +64,126 @@ struct enttypes
 #ifdef GAMESERVER
 extern const enttypes enttype[] = {
     {
-        NOTUSED,        -1,         0,      0,      EU_NONE,    0,          -1,         -1,
+        NOTUSED,        -1,         0,      0,      EU_NONE,    0,          -1,         -1,     -1,
             0, 0, 0,
             true,   false,  false,      false,      false,
                 "none",         { "" }
     },
     {
-        LIGHT,          1,          59,     0,      EU_NONE,    9,          -1,         -1,
+        LIGHT,          1,          59,     0,      EU_NONE,    10,         -1,         -1,     9,
             (1<<LIGHTFX), (1<<LIGHTFX), 0,
             false,  false,  false,      false,      false,
-                "light",        { "radius", "red",      "green",    "blue",     "flare",    "flarescale", "flags",  "palette",  "palindex"  }
+                "light",        { "radius", "red",      "green",    "blue",     "flare",    "flarescale", "flags",  "palette",  "palindex", "variant"  }
     },
     {
-        MAPMODEL,       1,          58,     0,      EU_NONE,    13,         -1,         -1,
+        MAPMODEL,       1,          58,     0,      EU_NONE,    13,         -1,         -1,     -1,
             (1<<TRIGGER), (1<<TRIGGER), 0,
             false,  false,  false,      false,      false,
                 "mapmodel",     { "type",   "yaw",      "pitch",    "roll",     "blend",    "scale",    "flags",    "colour",   "palette",  "palindex", "spinyaw",  "spinpitch", "spinroll" }
     },
     {
-        PLAYERSTART,    1,          59,     0,      EU_NONE,    6,          3,          5,
+        PLAYERSTART,    1,          59,     0,      EU_NONE,    7,          3,          5,      6,
             (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
             (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
             0,
             false,  true,  false,      false,      false,
-                "playerstart",  { "team",   "yaw",      "pitch",    "modes",    "muts",     "id" }
+                "playerstart",  { "team",   "yaw",      "pitch",    "modes",    "muts",     "id",       "variant" }
     },
     {
-        ENVMAP,         1,          0,      0,      EU_NONE,    3,          -1,         -1,
+        ENVMAP,         1,          0,      0,      EU_NONE,    3,          -1,         -1,     -1,
             0, 0, 0,
             false,  false,  false,      false,      false,
                 "envmap",       { "radius", "size", "blur" }
     },
     {
-        PARTICLES,      1,          59,     0,      EU_NONE,    12,         -1,         -1,
+        PARTICLES,      1,          59,     0,      EU_NONE,    13,         -1,         -1,     12,
             (1<<TELEPORT)|(1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT),
             (1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT),
             0,
             false,  false,  false,      false,      false,
-                "particles",    { "type",   "a",        "b",        "c",        "d",        "e",        "f",        "g",        "i",        "j",        "k",        "j" }
+                "particles",    { "type",   "a",        "b",        "c",        "d",        "e",        "f",        "g",        "i",        "j",        "k",        "millis",       "variant" }
     },
     {
-        MAPSOUND,       1,          58,     0,      EU_NONE,    5,          -1,         -1,
+        MAPSOUND,       1,          58,     0,      EU_NONE,    6,          -1,         -1,     5,
             (1<<TELEPORT)|(1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT),
             (1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT),
             0,
             false,  false,  false,      false,      false,
-                "sound",        { "type",   "maxrad",   "minrad",   "volume",   "flags" }
+                "sound",        { "type",   "maxrad",   "minrad",   "volume",   "flags",    "variant" }
     },
     {
-        LIGHTFX,        1,          1,      0,      EU_NONE,    5,          -1,         -1,
+        LIGHTFX,        1,          1,      0,      EU_NONE,    6,          -1,         -1,     5,
             (1<<LIGHT)|(1<<TELEPORT)|(1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT),
             (1<<LIGHT)|(1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT),
             0,
             false,  false,  false,      false,      false,
-                "lightfx",      { "type",   "mod",      "min",      "max",      "flags" }
+                "lightfx",      { "type",   "mod",      "min",      "max",      "flags",    "variant" }
     },
     {
-        DECAL,       1,          0,    0,      EU_NONE,    5,          -1,         -1,
+        DECAL,       1,             0,      0,      EU_NONE,    6,          -1,         -1,     7,
             0, 0, 0,
             false,  false,  false,      false,      false,
-                "decal",        { "type",   "yaw",      "pitch",    "roll",     "scale" }
+                "decal",        { "type",   "yaw",      "pitch",    "roll",     "scale",    "variant" }
     },
     {
-        WEAPON,         2,          59,     24,     EU_ITEM,    5,          2,          4,
+        WEAPON,         2,          59,     24,     EU_ITEM,    6,          2,          4,      5,
             0, 0,
             (1<<ENT_PLAYER)|(1<<ENT_AI),
             false,  true,   true,      false,      false,
-                "weapon",       { "type",   "flags",    "modes",    "muts",     "id" }
+                "weapon",       { "type",   "flags",    "modes",    "muts",     "id",       "variant" }
     },
     {
-        TELEPORT,       1,          50,     12,     EU_AUTO,    9,          -1,         -1,
+        TELEPORT,       1,          50,     12,     EU_AUTO,    10,         -1,         -1,     9,
             (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX)|(1<<TELEPORT),
             (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
             (1<<ENT_PLAYER)|(1<<ENT_AI)|(1<<ENT_PROJ),
             false,  false,  false,      false,      false,
-                "teleport",     { "yaw",    "pitch",    "push",     "radius",   "colour",   "type",     "palette",  "palindex", "flags" }
+                "teleport",     { "yaw",    "pitch",    "push",     "radius",   "colour",   "type",     "palette",  "palindex", "flags",    "variant" }
     },
     {
-        ACTOR,          1,          59,     0,      EU_NONE,    10,         3,          5,
+        ACTOR,          1,          59,     0,      EU_NONE,    11,         3,          5,      10,
             0, 0, 0,
             false,  true,   false,      true,       false,
-                "actor",        { "type",   "yaw",      "pitch",    "modes",    "muts",     "id",       "weap",     "health",   "speed",    "scale" }
+                "actor",        { "type",   "yaw",      "pitch",    "modes",    "muts",     "id",       "weap",     "health",   "speed",    "scale",    "variant" }
     },
     {
-        TRIGGER,        1,          58,     16,     EU_AUTO,    7,          5,          -1,
+        TRIGGER,        1,          58,     16,     EU_AUTO,    7,          6,          -1,     6,
             (1<<MAPMODEL)|(1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
             (1<<MAPMODEL)|(1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
             (1<<ENT_PLAYER)|(1<<ENT_AI),
             false,  true,   true,       false,      true,
-                "trigger",      { "id",     "type",     "action",   "radius",   "state",    "modes",    "muts" }
+                "trigger",      { "id",     "type",     "action",   "radius",   "state",    "modes",    "muts",     "variant" }
     },
     {
-        PUSHER,         1,          58,     12,     EU_AUTO,    6,          -1,         -1,
+        PUSHER,         1,          58,     12,     EU_AUTO,    10,         -1,         -1,     9,
             (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
             (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
             (1<<ENT_PLAYER)|(1<<ENT_AI)|(1<<ENT_PROJ),
             false,  false,  false,      false,      false,
-                "pusher",       { "yaw",    "pitch",    "force",    "maxrad",   "minrad",   "type" }
+                "pusher",       { "yaw",    "pitch",    "force",    "maxrad",   "minrad",   "type",     "modes",    "muts",     "id",       "variant" }
     },
     {
-        AFFINITY,       1,          48,     32,     EU_NONE,    6,          3,          5,
+        AFFINITY,       1,          48,     32,     EU_NONE,    7,          3,          5,      6,
             0, 0, 0,
             false,  false,  false,      false,      false,
-                "affinity",     { "team",   "yaw",      "pitch",    "modes",    "muts",     "id" }
+                "affinity",     { "team",   "yaw",      "pitch",    "modes",    "muts",     "id",       "variant" }
     },
     {
-        CHECKPOINT,     1,          48,     16,     EU_AUTO,    7,          3,          5,
+        CHECKPOINT,     1,          48,     16,     EU_AUTO,    8,          3,          5,      7,
             (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
             (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
             (1<<ENT_PLAYER)|(1<<ENT_AI),
             false,  true,   false,      true,       false,
-                "checkpoint",   { "radius", "yaw",      "pitch",    "modes",    "muts",     "id",       "type" }
+                "checkpoint",   { "radius", "yaw",      "pitch",    "modes",    "muts",     "id",       "type",     "variant" }
     },
     {
-        ROUTE,          1,         224,      16,    EU_NONE,    6,          -1,         -1,
+        ROUTE,          1,         224,      16,    EU_NONE,    6,          -1,         -1,     -1,
             (1<<ROUTE), 0, 0,
             false,   false,  false,      false,      false,
                 "route",         { "num",   "yaw",      "pitch",    "move",     "strafe",   "action" }
     },
     {
-        UNUSEDENT,      -1,          0,      0,     EU_NONE,    0,          -1,         -1,
+        UNUSEDENT,      -1,          0,      0,     EU_NONE,    0,          -1,         -1,     -1,
             0, 0, 0,
             true,   false,  false,      false,      false,
                 "unused",         { "" }

@@ -1461,7 +1461,7 @@ namespace client
         return false;
     }
 
-    void changemapserv(char *name, int gamemode, int mutators, int crc)
+    void changemapserv(char *name, int gamemode, int mutators, int crc, int variant)
     {
         game::gamestate = G_S_WAITING;
         game::gamemode = gamemode;
@@ -1486,7 +1486,7 @@ namespace client
         else if(m_bomber(game::gamemode)) bomber::reset();
         needsmap = gettingmap = 0;
         smartmusic(true);
-        if(crc < -1 || !name || !*name || !load_world(name, crc)) switch(crc)
+        if(crc < -1 || !name || !*name || !load_world(name, crc, variant)) switch(crc)
         {
             case -1:
                 if(!mapcrc) emptymap(0, true, name);
@@ -2389,10 +2389,10 @@ namespace client
                 case N_MAPCHANGE:
                 {
                     getstring(text, p);
-                    int mode = getint(p), muts = getint(p), crc = getint(p);
-                    if(crc >= 0) conoutf("Map change: %s (%d:%d) [0x%.8x]", text, mode, muts, crc);
-                    else conoutf("Map change: %s (%d:%d) [%d]", text, mode, muts, crc);
-                    changemapserv(text, mode, muts, crc);
+                    int mode = getint(p), muts = getint(p), crc = getint(p), variant = clamp(getint(p), int(MPV_DEFAULT), int(MPV_MAX-1));
+                    if(crc >= 0) conoutf("Map change: %s (%d:%d) [0x%.8x] (%s)", text, mode, muts, crc, mapvariants[variant]);
+                    else conoutf("Map change: %s (%d:%d) [%d] (%s)", text, mode, muts, crc, mapvariants[variant]);
+                    changemapserv(text, mode, muts, crc, variant);
                     break;
                 }
 

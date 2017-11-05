@@ -7,7 +7,7 @@ enum                            // hardcoded texture numbers
 };
 
 #define OCTAVERSION 33          // diverged at ver 25
-#define MAPVERSION 44           // bump if map format changes, see worldio.cpp
+#define MAPVERSION 45           // bump if map format changes, see worldio.cpp
 
 struct binary
 {

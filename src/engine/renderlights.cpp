@@ -2011,13 +2011,13 @@ void cascadedshadowmap::updatesplitdist()
 void cascadedshadowmap::getmodelmatrix()
 {
     model = viewmatrix;
-    model.rotate_around_x(sunlightpitch*RAD);
-    model.rotate_around_z((180-sunlightyaw)*RAD);
+    model.rotate_around_x(getpielightpitch()*RAD);
+    model.rotate_around_z((180-getpielightyaw())*RAD);
 }
 
 void cascadedshadowmap::getprojmatrix()
 {
-    lightview = vec(sunlightdir).neg();
+    lightview = vec(getpielightdir()).neg();
 
     // compute the split frustums
     updatesplitdist();
@@ -2181,13 +2181,13 @@ void reflectiveshadowmap::setup()
 void reflectiveshadowmap::getmodelmatrix()
 {
     model = viewmatrix;
-    model.rotate_around_x(sunlightpitch*RAD);
-    model.rotate_around_z((180-sunlightyaw)*RAD);
+    model.rotate_around_x(getpielightpitch()*RAD);
+    model.rotate_around_z((180-getpielightyaw())*RAD);
 }
 
 void reflectiveshadowmap::getprojmatrix()
 {
-    lightview = vec(sunlightdir).neg();
+    lightview = vec(getpielightdir()).neg();
 
     // find z extent
     float minz = lightview.project_bb(worldmin, worldmax), maxz = lightview.project_bb(worldmax, worldmin),
@@ -2356,7 +2356,7 @@ void radiancehints::bindparams()
 
 bool useradiancehints()
 {
-    return !sunlight.iszero() && csmshadowmap && gi && giscale && gidist;
+    return !getpielight().iszero() && csmshadowmap && gi && giscale && gidist;
 }
 
 FVAR(0, avatarshadowdist, 0, 12, 100);
@@ -2522,7 +2522,7 @@ Shader *loaddeferredlightshader(const char *type = NULL)
     shadow[shadowlen] = '\0';
 
     int usecsm = 0, userh = 0;
-    if(!sunlight.iszero() && csmshadowmap)
+    if(!getpielight().iszero() && csmshadowmap)
     {
         usecsm = csmsplits;
         sun[sunlen++] = 'c';
@@ -2829,9 +2829,14 @@ static inline void setlightglobals(bool transparent = false)
     if(!drawtex && editmode && fullbright)
         GLOBALPARAMF(lightscale, fullbrightlevel*lightscale, fullbrightlevel*lightscale, fullbrightlevel*lightscale, 255*lightscale);
     else
-        GLOBALPARAMF(lightscale, ambient.x*lightscale*ambientscale, ambient.y*lightscale*ambientscale, ambient.z*lightscale*ambientscale, 255*lightscale);
+    {
+        bvec curambient = getambient();
+        float curambientscale = getambientscale();
+        GLOBALPARAMF(lightscale, curambient.x*lightscale*curambientscale, curambient.y*lightscale*curambientscale, curambient.z*lightscale*curambientscale, 255*lightscale);
+    }
 
-    if(!sunlight.iszero() && csmshadowmap)
+    bvec pie = getpielight();
+    if(!pie.iszero() && csmshadowmap)
     {
         csm.bindparams();
         rh.bindparams();
@@ -2844,10 +2849,13 @@ static inline void setlightglobals(bool transparent = false)
         }
         else
         {
-            GLOBALPARAM(sunlightdir, sunlightdir);
-            GLOBALPARAMF(sunlightcolor, sunlight.x*lightscale*sunlightscale, sunlight.y*lightscale*sunlightscale, sunlight.z*lightscale*sunlightscale);
+            bvec piesky = getskylight();
+            vec piedir = getpielightdir();
+            float piescale = getpielightscale(), pieskyscale = getskylightscale();
+            GLOBALPARAM(sunlightdir, piedir);
+            GLOBALPARAMF(sunlightcolor, pie.x*lightscale*piescale, pie.y*lightscale*piescale, pie.z*lightscale*piescale);
             GLOBALPARAMF(giscale, 2*giscale);
-            GLOBALPARAMF(skylightcolor, 2*giaoscale*skylight.x*lightscale*skylightscale, 2*giaoscale*skylight.y*lightscale*skylightscale, 2*giaoscale*skylight.z*lightscale*skylightscale);
+            GLOBALPARAMF(skylightcolor, 2*giaoscale*piesky.x*lightscale*pieskyscale, 2*giaoscale*piesky.y*lightscale*pieskyscale, 2*giaoscale*piesky.z*lightscale*pieskyscale);
         }
     }
 
@@ -3002,7 +3010,7 @@ static void renderlightsnobatch(Shader *s, int stencilref, bool transparent, flo
 
 static void renderlightbatches(Shader *s, int stencilref, bool transparent, float bsx1, float bsy1, float bsx2, float bsy2, const uint *tilemask)
 {
-    bool sunpass = !sunlight.iszero() && csmshadowmap && batchsunlight <= (gi && giscale && gidist ? 1 : 0);
+    bool sunpass = !getpielight().iszero() && csmshadowmap && batchsunlight <= (gi && giscale && gidist ? 1 : 0);
     int btx1, bty1, btx2, bty2;
     calctilebounds(bsx1, bsy1, bsx2, bsy2, btx1, bty1, btx2, bty2);
     loopv(lightbatches)
@@ -3148,7 +3156,7 @@ void renderlights(float bsx1 = -1, float bsy1 = -1, float bsx2 = 1, float bsy2 =
 
     if(hasDBT && depthtestlights > 1) glEnable(GL_DEPTH_BOUNDS_TEST_EXT);
 
-    bool sunpass = !lighttilebatch || drawtex == DRAWTEX_MINIMAP || (!sunlight.iszero() && csmshadowmap && batchsunlight <= (gi && giscale && gidist ? 1 : 0));
+    bool sunpass = !lighttilebatch || drawtex == DRAWTEX_MINIMAP || (!getpielight().iszero() && csmshadowmap && batchsunlight <= (gi && giscale && gidist ? 1 : 0));
     if(sunpass)
     {
         if(depthtestlights && depth) { glDisable(GL_DEPTH_TEST); depth = false; }
@@ -4225,7 +4233,7 @@ void renderradiancehints()
 void rendercsmshadowmaps()
 {
     if(csminoq && !debugshadowatlas && !inoq && shouldworkinoq()) return;
-    if(sunlight.iszero() || !csmshadowmap) return;
+    if(getpielight().iszero() || !csmshadowmap) return;
 
     if(inoq)
     {

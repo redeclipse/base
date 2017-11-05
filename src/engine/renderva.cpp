@@ -1062,7 +1062,7 @@ void rendershadowmapworld()
         prev = va;
     }
 
-    if(skyshadow)
+    if(getskyshadow())
     {
         prev = NULL;
         for(vtxarray *va = shadowva; va; va = va->rnext) if(va->sky && va->shadowmask&(1<<shadowside))
@@ -1931,7 +1931,7 @@ void renderrsmgeom(bool dyntex)
 
     setupgeom(cur);
 
-    if(skyshadow)
+    if(getskyshadow())
     {
         enablevattribs(cur, false);
         SETSHADER(rsmsky);
@@ -2715,7 +2715,7 @@ static void genshadowmesh(int idx, extentity &e)
     for(vtxarray *va = shadowva; va; va = va->rnext) if(va->shadowmask)
     {
         if(va->tris) genshadowmeshtris(m, sides, draws, va->edata + va->eoffset, va->tris, va->vdata);
-        if(skyshadow && va->sky) genshadowmeshtris(m, sides, draws, va->skydata + va->skyoffset, va->sky/3, va->vdata);
+        if(getskyshadow() && va->sky) genshadowmeshtris(m, sides, draws, va->skydata + va->skyoffset, va->sky/3, va->vdata);
     }
     if(shadowmms) genshadowmeshmapmodels(m, sides, draws);
     flushshadowmeshdraws(m, sides, draws);
