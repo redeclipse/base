@@ -3428,7 +3428,7 @@ namespace server
     {
         hasgameinfo = shouldcheckvotes = firstblood = sentstats = false;
         mapgameinfo = -1;
-        smapvariant = m_edit(mode) ? MPV_DEFAULT : 1+rnd(MPV_MAX-1);
+        smapvariant = G(forcemapvariant) ? G(forcemapvariant) : (m_edit(mode) ? MPV_DEFAULT : 1+rnd(MPV_MAX-1));
         stopdemo();
         resetmapdata();
         changemode(gamemode = mode, mutators = muts);
@@ -5429,10 +5429,7 @@ namespace server
             queryplayers.removeobj(ci);
         }
         else connects.removeobj(ci);
-        if(complete)
-        {
-            cleanup();
-        }
+        if(complete) cleanup();
         else shouldcheckvotes = true;
         if(n == mapsending)
         {
