@@ -3428,7 +3428,7 @@ namespace server
     {
         hasgameinfo = shouldcheckvotes = firstblood = sentstats = false;
         mapgameinfo = -1;
-        smapvariant = m_edit(gamemode) ? 0 : 1+rnd(MPV_MAX-1);
+        smapvariant = m_edit(mode) ? MPV_DEFAULT : 1+rnd(MPV_MAX-1);
         stopdemo();
         resetmapdata();
         changemode(gamemode = mode, mutators = muts);
