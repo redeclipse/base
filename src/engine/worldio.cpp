@@ -895,6 +895,36 @@ const char *variantvars[] = {
 };
 const char *skypievars[] = { "light", "lightscale", "lightyaw", "lightpitch", NULL };
 
+void copydayvariables()
+{
+    for(int v = 0; variantvars[v]; v++)
+    {
+        defformatstring(newvar, "%snight", variantvars[v]);
+        ident *id = idents.access(variantvars[v]);
+        if(id) switch(id->type)
+        {
+            case ID_VAR: setvar(newvar, *id->storage.i, true, false, true); break;
+            case ID_FVAR: setfvar(newvar, *id->storage.f, true, false, true); break;
+            case ID_SVAR: setsvar(newvar, !strcmp(newvar, "skyboxnight") ? "skyboxes/stars" : *id->storage.s, true, false); break;
+            default: break;
+        }
+    }
+    for(int v = 0; skypievars[v]; v++)
+    {
+        defformatstring(sunvar, "sun%s", skypievars[v]);
+        defformatstring(moonvar, "moon%s", skypievars[v]);
+        ident *id = idents.access(sunvar);
+        if(id) switch(id->type)
+        {
+            case ID_VAR: setvar(moonvar, !strcmp(moonvar, "moonlight") ? 0 : *id->storage.i, true, false, true); break;
+            case ID_FVAR: setfvar(moonvar, *id->storage.f, true, false, true); break;
+            case ID_SVAR: setsvar(moonvar, *id->storage.s, true, false); break;
+            default: break;
+        }
+    }
+}
+ICOMMAND(0, copydayvars, "", (), if(editmode) { copydayvariables(); conoutf("\fyDay variables copied to night."); });
+
 bool load_world(const char *mname, int crc, int variant)
 {
     int loadingstart = SDL_GetTicks();
@@ -1326,34 +1356,8 @@ bool load_world(const char *mname, int crc, int variant)
                 }
             }
         }
-        if(maptype == MAP_MAPZ && hdr.version <= 44)
-        {
-            for(int v = 0; variantvars[v]; v++)
-            {
-                defformatstring(newvar, "%snight", variantvars[v]);
-                ident *id = idents.access(variantvars[v]);
-                if(id) switch(id->type)
-                {
-                    case ID_VAR: setvar(newvar, *id->storage.i, true, false, true); break;
-                    case ID_FVAR: setfvar(newvar, *id->storage.f, true, false, true); break;
-                    case ID_SVAR: setsvar(newvar, !strcmp(newvar, "skyboxnight") ? "skyboxes/stars" : *id->storage.s, true, false); break;
-                    default: break;
-                }
-            }
-            for(int v = 0; skypievars[v]; v++)
-            {
-                defformatstring(sunvar, "sun%s", skypievars[v]);
-                defformatstring(moonvar, "moon%s", skypievars[v]);
-                ident *id = idents.access(sunvar);
-                if(id) switch(id->type)
-                {
-                    case ID_VAR: setvar(moonvar, !strcmp(moonvar, "moonlight") ? 0 : *id->storage.i, true, false, true); break;
-                    case ID_FVAR: setfvar(moonvar, *id->storage.f, true, false, true); break;
-                    case ID_SVAR: setsvar(moonvar, *id->storage.s, true, false); break;
-                    default: break;
-                }
-            }
-        }
+        if(maptype == MAP_OCTA || (maptype == MAP_MAPZ && hdr.version <= 44))
+            copydayvariables();
 
         if(verbose) conoutf("Loaded %d entities", hdr.numents);
 
