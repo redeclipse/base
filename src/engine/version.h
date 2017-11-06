@@ -1,5 +1,5 @@
 #define VERSION_MAJOR 1
-#define VERSION_MINOR 5
+#define VERSION_MINOR 9
 #define VERSION_PATCH 9
 #define VERSION_HLP(x,y,z,r) #x#r#y#r#z
 #define VERSION_STR(x,y,z,r) VERSION_HLP(x,y,z,r)
