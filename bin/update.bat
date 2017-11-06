@@ -131,6 +131,18 @@ setlocal enableextensions enabledelayedexpansion
         exit /b 0
     )
 :redeclipse_update_module_blob
+    set REDECLIPSE_MODULE_CACHEDVER=0
+    if EXIST "%REDECLIPSE_TEMP%/%REDECLIPSE_MODULE_RUN%.cacheversion.txt" (
+        set /p REDECLIPSE_MODULE_CACHEDVER=< "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.cacheversion.txt"
+    )
+    if EXIST "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.zip" (
+        if EXIST "%REDECLIPSE_TEMP%/%REDECLIPSE_MODULE_RUN%.cacheversion.txt" (
+            if "%REDECLIPSE_MODULE_CACHEDVER%" == "%REDECLIPSE_MODULE_REMOTE%" (
+                echo %REDECLIPSE_MODULE_RUN%: Cached version up-to-date.
+                goto redeclipse_update_module_blob_deploy
+            )
+        )
+    )
     if EXIST "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.zip" (
         del /f /q "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.zip"
     )
@@ -140,6 +152,7 @@ setlocal enableextensions enabledelayedexpansion
         echo %REDECLIPSE_MODULE_RUN%: Failed to retrieve update package.
         exit /b 1
     )
+    echo %REDECLIPSE_MODULE_REMOTE%>"%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.cacheversion.txt"
 :redeclipse_update_module_blob_deploy
     echo echo %REDECLIPSE_MODULE_RUN%: deploying blob.>> "%REDECLIPSE_TEMP%\install.bat"
     echo %REDECLIPSE_UNZIP% "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.zip" -d "%REDECLIPSE_TEMP%" ^&^& ^(>> "%REDECLIPSE_TEMP%\install.bat"
