@@ -48,7 +48,7 @@ extern int fullbright, fullbrightlevel;
 extern bool getlightfx(const extentity &e, int *radius = NULL, int *spotlight = NULL, vec *color = NULL, bool normalize = true);
 
 extern void clearlights();
-extern void initlights(bool clear = false);
+extern void initlights();
 extern void clearlightcache(int id = -1);
 extern void brightencube(cube &c);
 extern void setsurfaces(cube &c, const surfaceinfo *surfs, const vertinfo *verts, int numverts);

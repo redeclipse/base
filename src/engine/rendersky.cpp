@@ -44,7 +44,7 @@ Texture *loadskyoverlay(const char *basename)
     VAR(IDF_WORLD, fog##name, 16, 4000, 1000024); \
     CVAR0(IDF_WORLD, fogcolour##name, 0x8099B3); \
     CVAR(IDF_WORLD, skybgcolour##name, 0x000000); \
-    SVARF(IDF_WORLD, skybox##name, "", { if(skybox##name[0] && game::checkmapvariant(type)) loadsky(skybox##name, sky); }); \
+    SVARF(IDF_WORLD, skybox##name, "", { if(skybox##name[0] && checkmapvariant(type)) loadsky(skybox##name, sky); }); \
     CVAR(IDF_WORLD, skycolour##name, 0xFFFFFF); \
     FVAR(IDF_WORLD, skyblend##name, 0, 1.0f, 1); \
     FVAR(IDF_WORLD, skyoverbright##name, 1, 2, 16); \
@@ -52,13 +52,13 @@ Texture *loadskyoverlay(const char *basename)
     FVAR(IDF_WORLD, skyoverbrightthreshold##name, 0, 0.7f, 1); \
     FVAR(IDF_WORLD, spinsky##name, -720, 0, 720); \
     VAR(IDF_WORLD, yawsky##name, 0, 0, 360); \
-    SVARF(IDF_WORLD, cloudbox##name, "", { if(cloudbox##name[0] && game::checkmapvariant(type)) loadsky(cloudbox##name, clouds); }); \
+    SVARF(IDF_WORLD, cloudbox##name, "", { if(cloudbox##name[0] && checkmapvariant(type)) loadsky(cloudbox##name, clouds); }); \
     CVAR(IDF_WORLD, cloudcolour##name, 0xFFFFFF); \
     FVAR(IDF_WORLD, cloudblend##name, 0, 1.0f, 1); \
     FVAR(IDF_WORLD, spinclouds##name, -720, 0, 720); \
     VAR(IDF_WORLD, yawclouds##name, 0, 0, 360); \
     FVAR(IDF_WORLD, cloudclip##name, 0, 0.5f, 1); \
-    SVARF(IDF_WORLD, cloudlayer##name, "", { if(cloudlayer##name[0] && game::checkmapvariant(type)) cloudoverlay = loadskyoverlay(cloudlayer##name); }); \
+    SVARF(IDF_WORLD, cloudlayer##name, "", { if(cloudlayer##name[0] && checkmapvariant(type)) cloudoverlay = loadskyoverlay(cloudlayer##name); }); \
     CVAR(IDF_WORLD, cloudlayercolour##name, 0xFFFFFF); \
     FVAR(IDF_WORLD, cloudlayerblend##name, 0, 1.0f, 1); \
     FVAR(IDF_WORLD, cloudoffsetx##name, 0, 0, 1); \
@@ -71,7 +71,7 @@ Texture *loadskyoverlay(const char *basename)
     FVAR(IDF_WORLD, cloudheight##name, -1, 0.2f, 1); \
     FVAR(IDF_WORLD, cloudfade##name, 0, 0.2f, 1); \
     VAR(IDF_WORLD, cloudsubdiv##name, 4, 16, 64); \
-    SVARF(IDF_WORLD, envlayer##name, "", { if(envlayer##name[0] && game::checkmapvariant(type)) envoverlay = loadskyoverlay(envlayer##name); }); \
+    SVARF(IDF_WORLD, envlayer##name, "", { if(envlayer##name[0] && checkmapvariant(type)) envoverlay = loadskyoverlay(envlayer##name); }); \
     CVAR(IDF_WORLD, envlayercolour##name, 0xFFFFFF); \
     FVAR(IDF_WORLD, envlayerblend##name, 0, 1.0f, 1); \
     FVAR(IDF_WORLD, envoffsetx##name, 0, 0, 1); \
@@ -106,7 +106,7 @@ Texture *loadskyoverlay(const char *basename)
     CVAR(IDF_WORLD, fogdomecolour##name, 0xFFFFFF); \
     VAR(IDF_WORLD, fogdomeclouds##name, 0, 1, 1); \
     VAR(IDF_WORLD, skytexture##name, 0, 0, 1); \
-    VARF(IDF_WORLD, skyshadow##name, 0, 0, 1, if(game::checkmapvariant(type)) clearshadowcache());
+    VARF(IDF_WORLD, skyshadow##name, 0, 0, 1, if(checkmapvariant(type)) clearshadowcache());
 
 DAYNIGHTVARS(, 0);
 DAYNIGHTVARS(night, MPV_NIGHT);
@@ -114,7 +114,7 @@ DAYNIGHTVARS(night, MPV_NIGHT);
 #define GETDAYNIGHT(name, type) \
     type get##name() \
     { \
-        if(game::checkmapvariant(MPV_NIGHT)) return name##night; \
+        if(checkmapvariant(MPV_NIGHT)) return name##night; \
         return name; \
     }
 

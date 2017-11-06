@@ -3704,11 +3704,5 @@ namespace game
     }
 
     bool clientoption(char *arg) { return false; }
-
-    bool checkmapvariant(int variant)
-    {
-        if(variant > 0 && mapvariant > 0 && mapvariant != variant) return false;
-        return true;
-    }
 }
 #undef GAMEWORLD

@@ -21,13 +21,19 @@ SVAR(0, maptext, "");
 
 const char *mapvariants[MPV_MAX] = { "all", "day", "night" };
 VAR(0, mapvariant, 1, 0, -1);
+
+bool checkmapvariant(int variant)
+{
+    if(variant > 0 && mapvariant > 0 && mapvariant != variant) return false;
+    return true;
+}
+
 void changemapvariant(int variant)
 {
     if(variant != mapvariant)
     {
         mapvariant = variant;
         initskybox();
-        initlights(true);
         allchanged(true);
     }
 }

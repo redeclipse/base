@@ -11,12 +11,12 @@ void setlightdir(vec &dir, float yaw, float pitch)
 #define PIESKYVARS(name, type) \
     CVAR1F(IDF_WORLD, name##light, 0, \
     { \
-        if(!game::checkmapvariant(type)) return; \
+        if(!checkmapvariant(type)) return; \
         clearradiancehintscache(); \
         cleardeferredlightshaders(); \
         clearshadowcache(); \
     }); \
-    FVARF(IDF_WORLD, name##lightscale, 0, 1, 16, if(game::checkmapvariant(type)) clearradiancehintscache()); \
+    FVARF(IDF_WORLD, name##lightscale, 0, 1, 16, if(checkmapvariant(type)) clearradiancehintscache()); \
     vec name##lightdir(0, 0, 1); \
     extern float name##lightpitch; \
     FVARF(IDF_WORLD, name##lightyaw, 0, 0, 360, setlightdir(name##lightdir, name##lightyaw, name##lightpitch)); \
@@ -28,7 +28,7 @@ PIESKYVARS(moon, MPV_NIGHT);
 #define GETSKYPIE(name, type) \
     type getpie##name() \
     { \
-        if(game::checkmapvariant(MPV_NIGHT)) return moon##name; \
+        if(checkmapvariant(MPV_NIGHT)) return moon##name; \
         return sun##name; \
     }
 
@@ -40,7 +40,7 @@ GETSKYPIE(lightpitch, float);
 
 bool getlightfx(const extentity &e, int *radius, int *spotlight, vec *color, bool normalize)
 {
-    if(e.attrs[0] <= 0 || !game::checkmapvariant(e.attrs[9])) return false;
+    if(e.attrs[0] <= 0 || !checkmapvariant(e.attrs[9])) return false;
 
     if(color)
     {
@@ -58,7 +58,7 @@ bool getlightfx(const extentity &e, int *radius, int *spotlight, vec *color, boo
     {
         extentity &f = *ents[e.links[i]];
 
-        if(f.attrs[0] < 0 || f.attrs[0] >= LFX_MAX || !game::checkmapvariant(f.attrs[5])) continue;
+        if(f.attrs[0] < 0 || f.attrs[0] >= LFX_MAX || !checkmapvariant(f.attrs[5])) continue;
         if(f.attrs[0] == LFX_SPOTLIGHT)
         {
             if(spotlight && *spotlight <= 0) *spotlight = e.links[i];
@@ -689,11 +689,10 @@ void clearlights()
     resetsmoothgroups();
 }
 
-void initlights(bool clear)
+void initlights()
 {
     clearlightcache();
     clearshadowcache();
-    if(clear) cleardeferredlightshaders();
     loaddeferredlightshaders();
 }
 

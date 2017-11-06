@@ -515,7 +515,7 @@ namespace entities
             extentity &e = *ents[i];
             if(enttype[e.type].usetype != EU_NONE && (enttype[e.type].usetype != EU_ITEM || (d->state == CS_ALIVE && e.spawned())))
             {
-                if(enttype[e.type].mvattr >= 0 && !game::checkmapvariant(e.attrs[enttype[e.type].mvattr])) continue;
+                if(enttype[e.type].mvattr >= 0 && !checkmapvariant(e.attrs[enttype[e.type].mvattr])) continue;
                 float eradius = enttype[e.type].radius, edist = pos.dist(e.o);
                 switch(e.type)
                 {
@@ -535,7 +535,7 @@ namespace entities
             projent &proj = *projs::projs[i];
             if(proj.projtype != PRJ_ENT || !proj.ready()) continue;
             if(!ents.inrange(proj.id) || enttype[ents[proj.id]->type].usetype != EU_ITEM) continue;
-            if(enttype[ents[proj.id]->type].mvattr >= 0 && !game::checkmapvariant(ents[proj.id]->attrs[enttype[ents[proj.id]->type].mvattr])) continue;
+            if(enttype[ents[proj.id]->type].mvattr >= 0 && !checkmapvariant(ents[proj.id]->attrs[enttype[ents[proj.id]->type].mvattr])) continue;
             if(!(enttype[ents[proj.id]->type].canuse&(1<<d->type))) continue;
             //if(!overlapsbox(m, eye, d->radius, proj.o, enttype[ents[proj.id]->type].radius, enttype[ents[proj.id]->type].radius))
             //    continue;
@@ -570,7 +570,7 @@ namespace entities
         {
             case TRIGGER:
             {
-                if(!game::checkmapvariant(e.attrs[enttype[e.type].mvattr])) return false;
+                if(!checkmapvariant(e.attrs[enttype[e.type].mvattr])) return false;
                 if(!m_check(e.attrs[5], e.attrs[6], game::gamemode, game::mutators)) return false;
                 if(d)
                 {
@@ -580,7 +580,7 @@ namespace entities
                 return true;
                 break;
             }
-            default: if(enttype[e.type].mvattr < 0 || game::checkmapvariant(e.attrs[enttype[e.type].mvattr])) return true; break;
+            default: if(enttype[e.type].mvattr < 0 || checkmapvariant(e.attrs[enttype[e.type].mvattr])) return true; break;
         }
         return false;
     }
@@ -665,7 +665,7 @@ namespace entities
             {
                 if(e.type == TELEPORT)
                 {
-                    if(!game::checkmapvariant(e.attrs[enttype[e.type].mvattr])) break;
+                    if(!checkmapvariant(e.attrs[enttype[e.type].mvattr])) break;
                     if(e.attrs[8]&(1<<TELE_NOAFFIN))
                     {
                         if(gameent::is(d) && physics::carryaffinity((gameent *)d)) break;
@@ -772,7 +772,7 @@ namespace entities
                 }
                 else if(e.type == PUSHER)
                 {
-                    if(!game::checkmapvariant(e.attrs[enttype[e.type].mvattr])) break;
+                    if(!checkmapvariant(e.attrs[enttype[e.type].mvattr])) break;
                     int millis = d->lastused(n, true);
                     if(millis && lastmillis-millis < triggertime(e, true)) break;
                     e.lastemit = lastmillis;
@@ -819,13 +819,13 @@ namespace entities
                 else if(e.type == TRIGGER)
                 {
                     if(d->state != CS_ALIVE || !gameent::is(d)) break;
-                    if(!game::checkmapvariant(e.attrs[enttype[e.type].mvattr])) break;
+                    if(!checkmapvariant(e.attrs[enttype[e.type].mvattr])) break;
                     gameent *g = (gameent *)d;
                     if((e.attrs[2] == TA_ACTION && g->action[AC_USE] && g == game::player1) || e.attrs[2] == TA_AUTO) runtrigger(n, g);
                 }
                 else if(e.type == CHECKPOINT)
                 {
-                    if(!game::checkmapvariant(e.attrs[enttype[e.type].mvattr])) break;
+                    if(!checkmapvariant(e.attrs[enttype[e.type].mvattr])) break;
                     if(d->state != CS_ALIVE || !gameent::is(d) || !m_race(game::gamemode)) break;
                     if(!m_check(e.attrs[3], e.attrs[4], game::gamemode, game::mutators)) break;
                     gameent *g = (gameent *)d;
@@ -1246,7 +1246,7 @@ namespace entities
                             loopenti(PLAYERSTART) if(ents[i]->type == PLAYERSTART)
                             {
                                 gameentity &e = *(gameentity *)ents[i];
-                                if(!game::checkmapvariant(e.attrs[enttype[e.type].mvattr])) continue;
+                                if(!checkmapvariant(e.attrs[enttype[e.type].mvattr])) continue;
                                 if(e.attrs[0] != d->team || !m_check(e.attrs[3], e.attrs[4], game::gamemode, game::mutators)) continue;
                                 spawns.add(i);
                             }
@@ -1256,7 +1256,7 @@ namespace entities
                         loopenti(PLAYERSTART) if(ents[i]->type == PLAYERSTART)
                         {
                             gameentity &e = *(gameentity *)ents[i];
-                            if(!game::checkmapvariant(e.attrs[enttype[e.type].mvattr])) continue;
+                            if(!checkmapvariant(e.attrs[enttype[e.type].mvattr])) continue;
                             if(e.attrs[0] != d->team || (k != 2 && !m_check(e.attrs[3], e.attrs[4], game::gamemode, game::mutators))) continue;
                             spawns.add(i);
                         }
@@ -2233,7 +2233,7 @@ namespace entities
         loopenti(MAPSOUND)
         {
             gameentity &e = *(gameentity *)ents[i];
-            if(e.type == MAPSOUND && game::checkmapvariant(e.attrs[enttype[e.type].mvattr]) && e.links.empty() && mapsounds.inrange(e.attrs[0]) && !issound(e.schan))
+            if(e.type == MAPSOUND && checkmapvariant(e.attrs[enttype[e.type].mvattr]) && e.links.empty() && mapsounds.inrange(e.attrs[0]) && !issound(e.schan))
             {
                 int flags = SND_MAP|SND_LOOP; // ambient sounds loop
                 loopk(SND_LAST)  if(e.attrs[4]&(1<<k)) flags |= 1<<k;

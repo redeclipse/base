@@ -134,7 +134,6 @@ namespace game
     extern vec thirdpos(const vec &pos, float yaw, float pitch, float dist = 1, float side = 0);
     extern vec camerapos(physent *d, bool hasfoc = false, bool hasyp = false, float yaw = 0, float pitch = 0);
     extern void start();
-    extern bool checkmapvariant(int variant);
 }
 #endif
 namespace server
