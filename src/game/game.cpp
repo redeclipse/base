@@ -835,14 +835,8 @@ namespace game
         {
             case 0: // misc
             {
-                switch(index)
-                {
-                    case 0: break; // off
-                    case 1: case 2: case 3: case 4:
-                        return vec::fromcolor(pulsecols[index-1][clamp((lastmillis/100)%PULSECOLOURS, 0, PULSECOLOURS-1)]);
-                        break;
-                    default: break;
-                }
+                if(index <= 0 || index > PULSE_MAX) break;
+                return vec::fromcolor(pulsecols[index-1][clamp((lastmillis/100)%PULSECOLOURS, 0, PULSECOLOURS-1)]);
                 break;
             }
             case 1: // teams
