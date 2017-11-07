@@ -7,9 +7,9 @@
 * Download for free at https://redeclipse.net/
 
 ## About
-Red Eclipse is a fun-filled new take on the first-person arena shooter, built as a total conversion of Cube Engine 2, which lends itself towards a balanced gameplay, with a general theme of agility in a variety of environments. For more information, visit our [Wiki](https://redeclipse.net/wiki) or [Forums](https://redeclipse.net/forum).
+Red Eclipse is a fun-filled new take on the first-person arena shooter, built using the technology found in [Tesseract](http://tesseract.gg/), which lends itself towards a balanced gameplay, with a general theme of agility in a variety of environments. For more information, visit our [Wiki](https://redeclipse.net/wiki) or [Forums](https://redeclipse.net/forum).
 
-The project is a free and open source game built on the Cube Engine 2 using SDL and OpenGL which allows it to be ported to many platforms; you can [download a package](https://redeclipse.net/download) for Windows, GNU/Linux, BSD, and macOS; or grab a development copy from our [Git repository](https://redeclipse.net/devel) and live on the bleeding edge.
+The project is a free and open source game built using SDL and OpenGL which allows it to be ported to many platforms; you can [download a package](https://redeclipse.net/download) for Windows, GNU/Linux, BSD, and macOS; or grab a development copy from our [Git repository](https://redeclipse.net/devel) and live on the bleeding edge.
 
 
 In a true open source by the people for the people nature, we try to work closely with the gaming and open source communities to provide a better overall experience, aiming to create a game environment that is fun and easy to play, while still having elements to master.
@@ -28,8 +28,8 @@ The project is Free and Open Source, meaning that you can both use it for free a
 * Quinton "Quin" Reeves - Lead Developer - YouTube channel @ http://youtube.com/qreeves
     - Gameplay and AI Design, Community Management
 
-* Lee "Eihrul" Salzman - Lead Programmer / Advisor - Check out Tesseract @ http://tesseract.gg/
-    - Cube 2 Engine and Backports/Support, Speed Improvements
+* Lee "Eihrul" Salzman - Lead Programmer - Check out Tesseract @ http://tesseract.gg/
+    - Engine Designer, Programming Support (there'd be no game without this guy!)
 
 ### Contributors, Developers and Supporters
 * Adam "lycanfox" Hobson
