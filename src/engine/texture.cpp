@@ -8,7 +8,6 @@ TVAR(IDF_PERSIST|IDF_PRELOAD, blanktex, "textures/blank", 3);
 TVAR(IDF_PERSIST|IDF_PRELOAD, logotex, "textures/logo", 3);
 TVAR(IDF_PERSIST|IDF_PRELOAD, emblemtex, "textures/emblem", 3);
 TVAR(IDF_PERSIST|IDF_PRELOAD, nothumbtex, "textures/nothumb", 3);
-TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundtex, "textures/background", 3);
 
 template<int BPP> static void halvetexture(uchar * RESTRICT src, uint sw, uint sh, uint stride, uchar * RESTRICT dst)
 {
