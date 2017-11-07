@@ -6,7 +6,6 @@
 TVAR(IDF_PERSIST|IDF_PRELOAD, notexturetex, "textures/notexture", 3);
 TVAR(IDF_PERSIST|IDF_PRELOAD, blanktex, "textures/blank", 3);
 TVAR(IDF_PERSIST|IDF_PRELOAD, logotex, "textures/logo", 3);
-TVAR(IDF_PERSIST|IDF_PRELOAD, badgetex, "textures/cube2badge", 3);
 TVAR(IDF_PERSIST|IDF_PRELOAD, emblemtex, "textures/emblem", 3);
 TVAR(IDF_PERSIST|IDF_PRELOAD, nothumbtex, "textures/nothumb", 3);
 TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundtex, "textures/background", 3);

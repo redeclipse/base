@@ -1669,11 +1669,7 @@ namespace hud
 
             t = textureload(logotex, 3);
             glBindTexture(GL_TEXTURE_2D, t->id);
-            drawtexture(w-1024, 0, 1024, 256);
-
-            t = textureload(badgetex, 3);
-            glBindTexture(GL_TEXTURE_2D, t->id);
-            drawtexture(w-336, 0, 256, 128);
+            drawtexture(w-1024, 0, 1024, 512);
         }
 
         if(!engineready)
