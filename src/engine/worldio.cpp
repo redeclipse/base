@@ -1358,7 +1358,6 @@ bool load_world(const char *mname, int crc, int variant)
                     setvar("sunlight", 0x010101, true, false, true);
                     setfvar("sunlightyaw", 0, true, false, true);
                     setfvar("sunlightpitch", 90, true, false, true);
-                    setfvar("sunlightscale", FVAR_NONZERO, true, false, true);
                 }
             }
         }
