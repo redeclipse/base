@@ -6,7 +6,6 @@ namespace entities
         numactors = 0, lastroutenode = -1, lastroutefloor = -1, lastroutetime = 0;
     vector<int> airnodes;
 
-    VAR(IDF_PERSIST, showlighting, 0, 0, 1);
     VAR(IDF_PERSIST, showentmodels, 0, 1, 2);
     VAR(IDF_PERSIST, showentdescs, 0, 2, 3);
     VAR(IDF_PERSIST, showentinfo, 0, 21, 127);
@@ -1403,126 +1402,124 @@ namespace entities
 
     void readent(stream *g, int mtype, int mver, char *gid, int gver, int id)
     {
+        if(mtype != MAP_OCTA) return;
         gameentity &f = *(gameentity *)ents[id];
-        if(mtype == MAP_OCTA)
+        // translate into our format
+        switch(f.type)
         {
-            // translate into our format
-            switch(f.type)
+            // LIGHT            -   LIGHT
+            // MAPMODEL         -   MAPMODEL
+            // PLAYERSTART      -   PLAYERSTART
+            // ENVMAP           -   ENVMAP
+            // PARTICLES        -   PARTICLES
+            // MAPSOUND         -   MAPSOUND
+            // SPOTLIGHT        -   LIGHTFX
+            //                  -   DECAL
+            case 1: case 2: case 3: case 4: case 5: case 6: case 7: case 8: break;
+
+            // I_SHELLS         -   WEAPON      W_SHOTGUN
+            // I_BULLETS        -   WEAPON      W_SMG
+            // I_ROCKETS        -   WEAPON      W_FLAMER
+            // I_ROUNDS         -   WEAPON      W_RIFLE
+            // I_GL             -   WEAPON      W_GRENADE
+            // I_CARTRIDGES     -   WEAPON      W_PLASMA
+            case 9: case 10: case 11: case 12: case 13: case 14:
             {
-                // LIGHT            -   LIGHT
-                // MAPMODEL         -   MAPMODEL
-                // PLAYERSTART      -   PLAYERSTART
-                // ENVMAP           -   ENVMAP
-                // PARTICLES        -   PARTICLES
-                // MAPSOUND         -   MAPSOUND
-                // SPOTLIGHT        -   LIGHTFX
-                //                  -   DECAL
-                case 1: case 2: case 3: case 4: case 5: case 6: case 7: case 8: break;
-
-                // I_SHELLS         -   WEAPON      W_SHOTGUN
-                // I_BULLETS        -   WEAPON      W_SMG
-                // I_ROCKETS        -   WEAPON      W_FLAMER
-                // I_ROUNDS         -   WEAPON      W_RIFLE
-                // I_GL             -   WEAPON      W_GRENADE
-                // I_CARTRIDGES     -   WEAPON      W_PLASMA
-                case 9: case 10: case 11: case 12: case 13: case 14:
+                int weap = f.type-8;
+                if(weap >= 0 && weap <= 5)
                 {
-                    int weap = f.type-8;
-                    if(weap >= 0 && weap <= 5)
-                    {
-                        const int weapmap[6] = { W_SHOTGUN, W_SMG, W_FLAMER, W_RIFLE, W_GRENADE, W_PLASMA };
-                        f.type = WEAPON;
-                        f.attrs[0] = weapmap[weap];
-                        f.attrs[1] = 0;
-                    }
-                    else f.type = NOTUSED;
-                    break;
-                }
-                // I_QUAD           -   WEAPON      W_ROCKET
-                case 19:
-                {
+                    const int weapmap[6] = { W_SHOTGUN, W_SMG, W_FLAMER, W_RIFLE, W_GRENADE, W_PLASMA };
                     f.type = WEAPON;
-                    f.attrs[0] = W_ROCKET;
+                    f.attrs[0] = weapmap[weap];
                     f.attrs[1] = 0;
-                    break;
                 }
+                else f.type = NOTUSED;
+                break;
+            }
+            // I_QUAD           -   WEAPON      W_ROCKET
+            case 19:
+            {
+                f.type = WEAPON;
+                f.attrs[0] = W_ROCKET;
+                f.attrs[1] = 0;
+                break;
+            }
 
-                // TELEPORT         -   TELEPORT
-                // TELEDEST         -   TELEPORT (linked)
-                case 20: case 21:
+            // TELEPORT         -   TELEPORT
+            // TELEDEST         -   TELEPORT (linked)
+            case 20: case 21:
+            {
+                octatele &t = octateles.add();
+                t.ent = id;
+                if(f.type == 21)
                 {
-                    octatele &t = octateles.add();
-                    t.ent = id;
-                    if(f.type == 21)
-                    {
-                        t.tag = f.attrs[1]+1; // needs translating later
-                        f.attrs[1] = -1;
-                    }
-                    else
-                    {
-                        t.tag = -(f.attrs[0]+1);
-                        f.attrs[0] = -1;
-                    }
-                    f.attrs[2] = f.attrs[3] = f.attrs[4] = 0;
-                    f.type = TELEPORT;
-                    break;
+                    t.tag = f.attrs[1]+1; // needs translating later
+                    f.attrs[1] = -1;
                 }
-                // MONSTER          -   NOTUSED
-                case 22:
+                else
                 {
-                    f.type = NOTUSED;
-                    break;
+                    t.tag = -(f.attrs[0]+1);
+                    f.attrs[0] = -1;
                 }
-                // CARROT           -   TRIGGER     0
-                case 23:
-                {
-                    f.type = NOTUSED;
-                    f.attrs[0] = f.attrs[1] = f.attrs[2] = f.attrs[3] = f.attrs[4] = 0;
-                    break;
-                }
-                // JUMPPAD          -   PUSHER
-                case 24:
-                {
-                    f.type = PUSHER;
-                    break;
-                }
-                // BASE             -   AFFINITY    1:idx       T_NEUTRAL
-                case 25:
-                {
-                    f.type = AFFINITY;
-                    if(f.attrs[0] < 0) f.attrs[0] = 0;
-                    f.attrs[1] = T_NEUTRAL; // spawn as neutrals
-                    break;
-                }
-                // RESPAWNPOINT     -   CHECKPOINT
-                case 26:
-                {
-                    f.type = CHECKPOINT;
-                    break;
-                }
-                // FLAG             -   AFFINITY        #           2:team
-                case 31:
-                {
-                    f.type = AFFINITY;
-                    f.attrs[0] = 0;
-                    if(f.attrs[1] <= 0) f.attrs[1] = -1; // needs a team
-                    break;
-                }
+                f.attrs[2] = f.attrs[3] = f.attrs[4] = 0;
+                f.type = TELEPORT;
+                break;
+            }
+            // MONSTER          -   NOTUSED
+            case 22:
+            {
+                f.type = NOTUSED;
+                break;
+            }
+            // CARROT           -   TRIGGER     0
+            case 23:
+            {
+                f.type = NOTUSED;
+                f.attrs[0] = f.attrs[1] = f.attrs[2] = f.attrs[3] = f.attrs[4] = 0;
+                break;
+            }
+            // JUMPPAD          -   PUSHER
+            case 24:
+            {
+                f.type = PUSHER;
+                break;
+            }
+            // BASE             -   AFFINITY    1:idx       T_NEUTRAL
+            case 25:
+            {
+                f.type = AFFINITY;
+                if(f.attrs[0] < 0) f.attrs[0] = 0;
+                f.attrs[1] = T_NEUTRAL; // spawn as neutrals
+                break;
+            }
+            // RESPAWNPOINT     -   CHECKPOINT
+            case 26:
+            {
+                f.type = CHECKPOINT;
+                break;
+            }
+            // FLAG             -   AFFINITY        #           2:team
+            case 31:
+            {
+                f.type = AFFINITY;
+                f.attrs[0] = 0;
+                if(f.attrs[1] <= 0) f.attrs[1] = -1; // needs a team
+                break;
+            }
 
-                // I_HEALTH         -   NOTUSED
-                // I_BOOST          -   NOTUSED
-                // I_GREENARMOUR    -   NOTUSED
-                // I_YELLOWARMOUR   -   NOTUSED
-                // BOX              -   NOTUSED
-                // BARREL           -   NOTUSED
-                // PLATFORM         -   NOTUSED
-                // ELEVATOR         -   NOTUSED
-                default:
-                {
-                    if(verbose) conoutf("\frWARNING: ignoring entity %d type %d", id, f.type);
-                    f.type = NOTUSED;
-                    break;
-                }
+            // I_HEALTH         -   NOTUSED
+            // I_BOOST          -   NOTUSED
+            // I_GREENARMOUR    -   NOTUSED
+            // I_YELLOWARMOUR   -   NOTUSED
+            // BOX              -   NOTUSED
+            // BARREL           -   NOTUSED
+            // PLATFORM         -   NOTUSED
+            // ELEVATOR         -   NOTUSED
+            default:
+            {
+                if(verbose) conoutf("\frWARNING: ignoring entity %d type %d", id, f.type);
+                f.type = NOTUSED;
+                break;
             }
         }
     }
@@ -1687,7 +1684,6 @@ namespace entities
                 }
             }
         }
-
         loopv(ents)
         {
             gameentity &e = *(gameentity *)ents[i];
@@ -1709,31 +1705,6 @@ namespace entities
         }
     }
 
-    void checkyawmode(gameentity &e, int mtype, int mver, int gver, int y, int m)
-    {
-        if(y >= 0 && ((mtype == MAP_OCTA && mver <= 30) || (mtype == MAP_MAPZ && mver <= 39)))
-            e.attrs[y] = (e.attrs[y] + 180)%360;
-        if(m >= 0 && mtype == MAP_MAPZ && gver <= 201)
-        {
-            if(e.attrs[m] > 3)
-            {
-                if(e.attrs[m] != 5) e.attrs[m]++;
-                else e.attrs[m]--;
-            }
-            else if(e.attrs[m] < -3)
-            {
-                if(e.attrs[m] != -5) e.attrs[m]--;
-                else e.attrs[m]++;
-            }
-        }
-    }
-
-    void checkmodes(int &attr)
-    {
-        if(attr > 0) attr = (1<<(attr-G_PLAY));
-        else if(attr < 0) attr = 0-(1<<((0-attr)-G_PLAY));
-    }
-
     void updateoldentities(int mtype, int mver, int gver)
     {
         loopvj(ents)
@@ -1744,219 +1715,74 @@ namespace entities
             {
                 case LIGHTFX:
                 {
-                    if(mtype == MAP_OCTA || (mtype == MAP_MAPZ && gver <= 159))
-                    {
-                        e.attrs[1] = e.attrs[0];
-                        e.attrs[0] = LFX_SPOTLIGHT;
-                        e.attrs[2] = e.attrs[3] = e.attrs[4] = 0;
-                    }
+                    if(mtype != MAP_OCTA) break;
+                    e.attrs[1] = e.attrs[0];
+                    e.attrs[0] = LFX_SPOTLIGHT;
+                    e.attrs[2] = e.attrs[3] = e.attrs[4] = 0;
                     break;
                 }
                 case PLAYERSTART:
                 {
-                    if(mtype == MAP_OCTA || (mtype == MAP_MAPZ && gver <= 158))
-                    {
-                        short yaw = e.attrs[0];
-                        e.attrs[0] = e.attrs[1];
-                        e.attrs[1] = yaw;
-                        e.attrs[2] = e.attrs[3] = e.attrs[4] = 0;
-                    }
-                    if(mtype == MAP_MAPZ && gver <= 164 && e.attrs[0] > T_MULTI) e.attrs[0] = T_NEUTRAL;
-                    if(mtype == MAP_MAPZ && gver <= 201)
-                    {
-                        if(e.attrs[3] > 3)
-                        {
-                            if(e.attrs[3] != 5) e.attrs[3]++;
-                            else e.attrs[3]--;
-                        }
-                        else if(e.attrs[3] < -3)
-                        {
-                            if(e.attrs[3] != -5) e.attrs[3]--;
-                            else e.attrs[3]++;
-                        }
-                    }
-                    if(mtype == MAP_MAPZ && gver <= 213)
-                    {
-                        e.attrs[5] = e.attrs[4];
-                        e.attrs[4] = 0;
-                        checkmodes(e.attrs[3]);
-                    }
+                    if(mtype != MAP_OCTA) break;
+                    short yaw = e.attrs[0];
+                    e.attrs[0] = e.attrs[1];
+                    e.attrs[1] = yaw;
+                    e.attrs[2] = e.attrs[3] = e.attrs[4] = 0;
                     break;
                 }
                 case PARTICLES:
                 {
-                    if(mtype == MAP_OCTA)
+                    if(mtype != MAP_OCTA) break;
+                    switch(e.attrs[0])
                     {
-                        switch(e.attrs[0])
-                        {
-                            case 0: if(e.attrs[3] <= 0) break;
-                            case 4: case 7: case 8: case 9: case 10: case 11: case 12: case 13: case 14: case 15: case 5: case 6:
-                                e.attrs[3] = (((e.attrs[3]&0xF)<<4)|((e.attrs[3]&0xF0)<<8)|((e.attrs[3]&0xF00)<<12))+0x0F0F0F;
-                                if(e.attrs[0] != 5 && e.attrs[0] != 6) break;
-                            case 3:
-                                e.attrs[2] = (((e.attrs[2]&0xF)<<4)|((e.attrs[2]&0xF0)<<8)|((e.attrs[2]&0xF00)<<12))+0x0F0F0F; break;
-                            default: break;
-                        }
+                        case 0: if(e.attrs[3] <= 0) break;
+                        case 4: case 7: case 8: case 9: case 10: case 11: case 12: case 13: case 14: case 15: case 5: case 6:
+                            e.attrs[3] = (((e.attrs[3]&0xF)<<4)|((e.attrs[3]&0xF0)<<8)|((e.attrs[3]&0xF00)<<12))+0x0F0F0F;
+                            if(e.attrs[0] != 5 && e.attrs[0] != 6) break;
+                        case 3:
+                            e.attrs[2] = (((e.attrs[2]&0xF)<<4)|((e.attrs[2]&0xF0)<<8)|((e.attrs[2]&0xF00)<<12))+0x0F0F0F; break;
+                        default: break;
                     }
                     break;
                 }
                 case TELEPORT:
                 {
-                    if(mtype == MAP_OCTA)
+                    if(mtype != MAP_OCTA) break;
+                    e.attrs[2] = 100; // give a push
+                    e.attrs[4] = e.attrs[1] >= 0 ? 0x2CE : 0;
+                    e.attrs[1] = e.attrs[3] = 0;
+                    e.o.z += 8; // teleport here is at middle
+                    if(e.attrs[0] >= 0)
                     {
-                        e.attrs[2] = 100; // give a push
-                        e.attrs[4] = e.attrs[1] >= 0 ? 0x2CE : 0;
-                        e.attrs[1] = e.attrs[3] = 0;
-                        e.o.z += 8; // teleport here is at middle
-                        if(e.attrs[0] >= 0)
-                        {
-                            int material = lookupmaterial(e.o), clipmat = material&MATF_CLIP;
-                            if(clipmat == MAT_CLIP || (material&MAT_DEATH) || (material&MATF_VOLUME) == MAT_LAVA)
-                                e.o.add(vec(e.attrs[0]*RAD, e.attrs[1]*RAD));
-                        }
+                        int material = lookupmaterial(e.o), clipmat = material&MATF_CLIP;
+                        if(clipmat == MAT_CLIP || (material&MAT_DEATH) || (material&MATF_VOLUME) == MAT_LAVA)
+                            e.o.add(vec(e.attrs[0]*RAD, e.attrs[1]*RAD));
                     }
-                    if(e.attrs[0] >= 0) checkyawmode(e, mtype, mver, gver, 0, -1);
                     break;
                 }
                 case WEAPON:
                 {
-                    if(mtype == MAP_MAPZ && gver <= 90)
-                    { // move grenade to the end of the weapon array
-                        if(e.attrs[0] >= 4) e.attrs[0]--;
-                        else if(e.attrs[0] == 3) e.attrs[0] = 7;
-                    }
-                    if(mtype == MAP_MAPZ && gver <= 97) e.attrs[0]++; // add in pistol
-                    if(mtype != MAP_MAPZ || gver <= 112) e.attrs[1] = 0;
-                    if(mtype == MAP_MAPZ && gver <= 160)
-                    {
-                        e.attrs[0]++; // add in claw
-                        if(e.attrs[0] < W_OFFSET) e.attrs[0] = 8; // cleanup for fixentity
-                    }
-                    if(mtype == MAP_MAPZ && gver <= 163) e.attrs[0]++; // add in sword
-                    if(mtype == MAP_MAPZ && gver <= 213)
-                    {
-                        e.attrs[4] = e.attrs[3];
-                        e.attrs[3] = 0;
-                        checkmodes(e.attrs[2]);
-                    }
-                    if(mtype == MAP_MAPZ && gver <= 218)
+                    if(mtype != MAP_MAPZ) break; // readent and importentities take care of MAP_OCTA
+                    if(gver <= 218)
                     { // insert mine before rockets (9 -> 10) after grenades (8)
                         if(e.attrs[0] >= 9) e.attrs[0]++;
                     }
-                    if(mtype == MAP_MAPZ && gver <= 221)
+                    if(gver <= 221)
                     { // insert zapper before rifle (7 -> 8) after plasma (6)
                         if(e.attrs[0] >= 7) e.attrs[0]++;
                     }
                     break;
                 }
-                case TRIGGER:
-                {
-                    if(mtype == MAP_MAPZ && gver <= 158) e.attrs[4] = 0;
-                    if(mtype == MAP_MAPZ && gver <= 213) checkmodes(e.attrs[5]);
-                    break;
-                }
-                case PUSHER:
-                {
-                    if(mtype == MAP_OCTA || (mtype == MAP_MAPZ && gver <= 95)) e.attrs[0] = int(e.attrs[0]*1.25f);
-                    if(mtype == MAP_OCTA || (mtype == MAP_MAPZ && gver <= 162))
-                    {
-                        vec dir = vec(e.attrs[2], e.attrs[1], e.attrs[0]).mul(10);
-                        float yaw = 0, pitch = 0;
-                        vectoyawpitch(vec(dir).normalize(), yaw, pitch);
-                        e.attrs[0] = int(yaw);
-                        e.attrs[1] = int(pitch);
-                        e.attrs[2] = int(dir.magnitude());
-                        e.attrs[5] = 0;
-                    }
-                    else checkyawmode(e, mtype, mver, gver, 0, -1);
-                    break;
-                }
                 case AFFINITY:
                 {
-                    if(mtype == MAP_OCTA || (mtype == MAP_MAPZ && gver <= 158))
-                    {
-                        e.attrs[0] = e.attrs[1];
-                        e.attrs[1] = e.attrs[2];
-                        e.attrs[2] = e.attrs[3];
-                        e.attrs[3] = e.attrs[4] = 0;
-                    }
-                    if(mtype == MAP_MAPZ && gver <= 164 && e.attrs[0] > T_MULTI) e.attrs[0] = T_NEUTRAL;
-                    checkyawmode(e, mtype, mver, gver, 1, 3);
-                    if(mtype == MAP_MAPZ && gver <= 213)
-                    {
-                        e.attrs[5] = e.attrs[4];
-                        e.attrs[4] = 0;
-                        checkmodes(e.attrs[3]);
-                    }
-                    break;
-                }
-                case ACTOR:
-                {
-                    if(mtype == MAP_MAPZ && gver <= 200) e.attrs[0] -= 1; // remoe A_BOT from array
-                    if(mtype == MAP_MAPZ && gver <= 207 && e.attrs[0] > 1) // combine into one type
-                    {
-                        switch(e.attrs[0])
-                        {
-                            case 5: default: e.attrs[5] = 8; e.attrs[6] = 100; e.attrs[7] = 40; break;
-                            case 4: e.attrs[5] = 6; e.attrs[6] = 150; e.attrs[7] = 40; break;
-                            case 3: e.attrs[5] = 4; e.attrs[6] = 200; e.attrs[7] = 35; break;
-                            case 2: e.attrs[5] = 2; e.attrs[6] = 50; e.attrs[7] = 50; break;
-                        }
-                    }
-                    checkyawmode(e, mtype, mver, gver, 1, 3);
-                    if(mtype == MAP_MAPZ && gver <= 213)
-                    {
-                        e.attrs[9] = e.attrs[8];
-                        e.attrs[8] = e.attrs[7];
-                        e.attrs[7] = e.attrs[6];
-                        e.attrs[6] = e.attrs[5];
-                        e.attrs[5] = e.attrs[4];
-                        e.attrs[4] = 0;
-                        checkmodes(e.attrs[4]);
-                    }
-                    break;
-                }
-                case CHECKPOINT:
-                {
-                    checkyawmode(e, mtype, mver, gver, 1, 3);
-                    if(mtype == MAP_MAPZ && gver <= 213)
-                    {
-                        e.attrs[6] = e.attrs[5];
-                        e.attrs[5] = e.attrs[4];
-                        e.attrs[4] = 0;
-                        checkmodes(e.attrs[3]);
-                    }
+                    if(mtype != MAP_OCTA) break;
+                    e.attrs[0] = e.attrs[1];
+                    e.attrs[1] = e.attrs[2];
+                    e.attrs[2] = e.attrs[3];
+                    e.attrs[3] = e.attrs[4] = 0;
                     break;
                 }
                 default: break;
-            }
-            if(gver <= 216 && enttype[e.type].modesattr > 0) // mode/mutator array updates
-            {
-                int attr = enttype[e.type].modesattr;
-                if(e.attrs[attr])
-                {
-                    bool neg = e.attrs[attr] < 0;
-                    int value = neg ? 0-e.attrs[attr] : e.attrs[attr];
-                    value &= ~(1<<2);
-                    loopi(5)
-                    {
-                        int mode = i+3, bit = 1<<mode, next = 1<<(mode-1);
-                        if(value&bit) { value &= ~bit; value |= next; }
-                    }
-                    e.attrs[attr] = neg ? 0-value : value;
-                }
-                attr++; // mutators
-                if(e.attrs[attr])
-                {
-                    bool neg = e.attrs[attr] < 0;
-                    int value = neg ? 0-e.attrs[attr] : e.attrs[attr];
-                    loopirev(14)
-                    {
-                        int mut = i+2, bit = 1<<mut, next = 1<<(mut+1);
-                        if(value&bit) { value &= ~bit; value |= next; }
-                    }
-                    e.attrs[attr] = neg ? 0-value : value;
-                }
             }
         }
     }
@@ -1975,7 +1801,7 @@ namespace entities
             if(e.attrs.length() < num) e.attrs.add(0, num - e.attrs.length());
             else if(e.attrs.length() > num) e.attrs.setsize(num);
         }
-        if(mtype == MAP_OCTA || (mtype == MAP_MAPZ && gver <= 49)) importentities(mtype, mver, gver);
+        if(mtype == MAP_OCTA) importentities(mtype, mver, gver);
         if(mtype == MAP_OCTA || (mtype == MAP_MAPZ && gver < VERSION_GAME)) updateoldentities(mtype, mver, gver);
         loopv(ents)
         {
@@ -2019,20 +1845,8 @@ namespace entities
         {
             gameentity &e = *(gameentity *)ents[i];
             progress(i/float(ents.length()), "Updating entities...");
-            if(mtype == MAP_MAPZ && gver <= 212)
-            {
-                if(e.type == ROUTE) e.type = NOTUSED;
-                else if(e.type == UNUSEDENT)
-                {
-                    ai::oldwaypoint &o = ai::oldwaypoints.add();
-                    o.o = e.o;
-                    o.ent = i;
-                    loopvj(e.links) o.links.add(e.links[j]);
-                    e.type = NOTUSED;
-                }
-            }
             if(mtype == MAP_MAPZ && gver <= 221 && (e.type == ROUTE || e.type == UNUSEDENT)) e.type = NOTUSED;
-            if(e.type < MAXENTTYPES)
+            if(e.type >= 0 && e.type < MAXENTTYPES)
             {
                 firstenttype[e.type] = min(firstenttype[e.type], i);
                 firstusetype[enttype[e.type].usetype] = min(firstusetype[enttype[e.type].usetype], i);
@@ -2193,44 +2007,8 @@ namespace entities
         if(enttype[e.type].links && showentlinks >= level) renderlinked(e, idx);
     }
 
-    void renderentlight(gameentity &e)
-    {
-        if(e.o.squaredist(camera1->o) > showentdist*showentdist) return;
-        adddynlight(vec(e.o), float(e.attrs[0] ? e.attrs[0] : worldsize)*0.75f, vec(e.attrs[1], e.attrs[2], e.attrs[3]).div(383.f), 0, 0);
-    }
-
     void adddynlights()
     {
-        if(game::player1->state == CS_EDITING && showlighting)
-        {
-            #define islightable(q) ((q)->type == LIGHT && (q)->attrs[0] > 0 && !(q)->links.length())
-            loopv(entgroup)
-            {
-                int n = entgroup[i];
-                if(ents.inrange(n) && islightable(ents[n]) && n != enthover)
-                    renderfocus(n, renderentlight(e));
-            }
-            if(ents.inrange(enthover) && islightable(ents[enthover]))
-                renderfocus(enthover, renderentlight(e));
-        }
-        #if 0
-        loopenti(LIGHTFX) if(ents[i]->type == LIGHTFX && ents[i]->attrs[0] != LFX_SPOTLIGHT)
-        {
-            if(ents[i]->spawned() || ents[i]->lastemit)
-            {
-                if(!ents[i]->spawned() && ents[i]->lastemit > 0 && lastmillis-ents[i]->lastemit > triggertime(*ents[i])/2)
-                    continue;
-            }
-            else
-            {
-                bool lonely = true;
-                loopvk(ents[i]->links) if(ents.inrange(ents[i]->links[k]) && ents[ents[i]->links[k]]->type != LIGHT) { lonely = false; break; }
-                if(!lonely) continue;
-            }
-            loopvk(ents[i]->links) if(ents.inrange(ents[i]->links[k]) && ents[ents[i]->links[k]]->type == LIGHT)
-                makelightfx(*ents[i], *ents[ents[i]->links[k]]);
-        }
-        #endif
     }
 
     void update()
