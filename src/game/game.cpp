@@ -3132,7 +3132,7 @@ namespace game
         }
     }
 
-    void renderplayer(gameent *d, int third, float size, int flags = 0, const vec4 &color = vec4(1, 1, 1, 1))
+    void renderplayer(gameent *d, int third, float size, int flags = 0, const vec4 &color = vec4(1, 1, 1, 1), int *lastoffset = NULL)
     {
         if(d->state == CS_SPECTATOR) return;
         int weap = d->weapselect, lastaction = 0, animflags = ANIM_IDLE|ANIM_LOOP, weapflags = animflags, weapaction = 0;
@@ -3298,13 +3298,29 @@ namespace game
         if(d->actortype >= A_ENEMY && d->actortype != A_GRUNT) mdlname = actor[d->actortype%A_MAX].playermodel[idx];
         else if(forceplayermodel < 0) mdlname = playertypes[d->model%PLAYERTYPES][idx];
 
-        bool onfloor = d->physstate >= PHYS_SLOPE || d->onladder || physics::liquidcheck(d);
+        bool onfloor = d->physstate >= PHYS_SLOPE || d->onladder || physics::liquidcheck(d), melee = d->hasmelee(lastmillis, true, d->sliding(true), onfloor);
         float yaw = d->yaw, pitch = d->pitch, roll = calcroll(focus);
         vec o = third ? d->feetpos() : camerapos(d);
         if(third == 2)
         {
             o.sub(vec(yaw*RAD, 0.f).mul(firstpersonbodydist+firstpersonspineoffset));
             o.sub(vec(yaw*RAD, 0.f).rotate_around_z(90*RAD).mul(firstpersonbodyside));
+            if(lastoffset && d->height < d->zradius)
+            {
+                float zoffset = max(d->zradius-d->height, 0.f);
+                if(!onfloor && (melee || d->sliding(true) || d->impulse[IM_TYPE] == IM_T_KICK || d->impulse[IM_TYPE] == IM_T_VAULT || d->impulse[IM_TYPE] == IM_T_GRAB))
+                {
+                    int lmillis = d->airtime(lastmillis);
+                    if(lmillis < 100) zoffset *= lmillis/100.f;
+                    o.z -= zoffset;
+                    *lastoffset = lastmillis;
+                }
+                else
+                {
+                    int lmillis = lastmillis-(*lastoffset);
+                    if(lmillis < 100) o.z -= zoffset*((100-lmillis)/100.f);
+                }
+            }
         }
         else if(gs_playing(gamestate))
         {
@@ -3327,7 +3343,6 @@ namespace game
         }
         else
         {
-            bool melee = d->hasmelee(lastmillis, true, d->sliding(true), onfloor);
             if(secondary && allowmove(d) && AA(d->actortype, abilities)&(1<<A_A_MOVE))
             {
                 if(physics::liquidcheck(d) && d->physstate <= PHYS_FALL)
@@ -3675,7 +3690,8 @@ namespace game
         if(!third && focus->state == CS_ALIVE && firstpersonmodel == 2)
         {
             setavatarscale(firstpersonbodydepthfov != 0 ? firstpersonbodydepthfov : curfov, firstpersonbodydepth);
-            renderplayer(focus, 2, focus->curscale, MDL_NOBATCH);
+            static int lastoffset = 0;
+            renderplayer(focus, 2, focus->curscale, MDL_NOBATCH, vec4(1, 1, 1, 1), &lastoffset);
         }
         rendercheck(focus, third);
     }
