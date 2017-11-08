@@ -1637,6 +1637,10 @@ namespace hud
         drawtexture(x, y, c, c);
     }
 
+    TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundwatertex, "<grey><noswizzle>textures/water", 0x300);
+    TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundcausttex, "<grey><noswizzle>caustics/caust00", 0x300);
+    TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundcloudtex, "<grey><noswizzle>torley/desat/cloudyformations_z", 0x300);
+
     void drawbackground(int w, int h)
     {
         gle::colorf(1, 1, 1, 1);
@@ -1651,17 +1655,36 @@ namespace hud
         }
         if(!t || t == notexture)
         {
-            t = textureload(backgroundtex, 3);
+            (hudbackgroundshader ? hudbackgroundshader : nullshader)->set();
+
+            pushhudmatrix();
+            hudmatrix.ortho(-1, 1, -1, 1, -1, 1);
+            flushhudmatrix();
+
+            LOCALPARAMF(time, lastmillis / 1000.0f);
+            glActiveTexture_(GL_TEXTURE0);
+            settexture(backgroundwatertex, 0x300);
+            glActiveTexture_(GL_TEXTURE1);
+            settexture(backgroundcausttex, 0x300);
+            glActiveTexture_(GL_TEXTURE2);
+            settexture(backgroundcloudtex, 0x300);
+            glActiveTexture_(GL_TEXTURE0);
+            drawquad(-1, -1, 2, 2, 0, 0, 1, 1);
+            pophudmatrix();
+
             mapbg = 0;
         }
-        glBindTexture(GL_TEXTURE_2D, t->id);
-        float offsetx = 0, offsety = 0;
-        if(showloadingaspect&(1<<mapbg))
+        else
         {
-            if(w > h) offsety = ((w-h)/float(w))*0.5f;
-            else if(h > w) offsetx = ((h-w)/float(h))*0.5f;
+            glBindTexture(GL_TEXTURE_2D, t->id);
+            float offsetx = 0, offsety = 0;
+            if(showloadingaspect&(1<<mapbg))
+            {
+                if(w > h) offsety = ((w-h)/float(w))*0.5f;
+                else if(h > w) offsetx = ((h-w)/float(h))*0.5f;
+            }
+            drawquad(0, 0, w, h, offsetx, offsety, 1-offsetx, 1-offsety);
         }
-        drawquad(0, 0, w, h, offsetx, offsety, 1-offsetx, 1-offsety);
 
         if(showloadinglogos)
         {

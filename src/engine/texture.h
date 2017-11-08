@@ -871,7 +871,7 @@ struct cubemapside
 
 extern const cubemapside cubemapsides[6];
 extern Texture *notexture, *blanktexture;
-extern Shader *nullshader, *hudshader, *hudtextshader, *hudnotextureshader, *nocolorshader, *foggedshader, *foggednotextureshader, *ldrshader, *ldrnotextureshader, *stdworldshader;
+extern Shader *nullshader, *hudshader, *hudtextshader, *hudnotextureshader, *hudbackgroundshader, *nocolorshader, *foggedshader, *foggednotextureshader, *ldrshader, *ldrnotextureshader, *stdworldshader;
 extern int maxvsuniforms, maxfsuniforms;
 
 extern Shader *lookupshaderbyname(const char *name);
@@ -902,7 +902,7 @@ enum
     IFMT_MAX,
 };
 extern const char *ifmtexts[IFMT_MAX];
-extern char *notexturetex, *blanktex, *logotex, *emblemtex, *nothumbtex, *backgroundtex;
+extern char *notexturetex, *blanktex, *logotex, *emblemtex, *nothumbtex;
 extern int imageformat;
 
 extern void savepng(const char *filename, ImageData &image, int compress = 9, bool flip = false);

@@ -4,7 +4,7 @@
 
 Shader *Shader::lastshader = NULL;
 
-Shader *nullshader = NULL, *hudshader = NULL, *hudtextshader = NULL, *hudnotextureshader = NULL, *nocolorshader = NULL, *foggedshader = NULL, *foggednotextureshader = NULL, *ldrshader = NULL, *ldrnotextureshader = NULL, *stdworldshader = NULL;
+Shader *nullshader = NULL, *hudshader = NULL, *hudtextshader = NULL, *hudnotextureshader = NULL, *hudbackgroundshader = NULL, *nocolorshader = NULL, *foggedshader = NULL, *foggednotextureshader = NULL, *ldrshader = NULL, *ldrnotextureshader = NULL, *stdworldshader = NULL;
 
 static hashnameset<GlobalShaderParamState> globalparams(256);
 static hashtable<const char *, int> localparams(256);
@@ -32,6 +32,7 @@ void loadshaders()
     hudshader = lookupshaderbyname("hud");
     hudtextshader = lookupshaderbyname("hudtext");
     hudnotextureshader = lookupshaderbyname("hudnotexture");
+    hudbackgroundshader = lookupshaderbyname("hudbackground");
     stdworldshader = lookupshaderbyname("stdworld");
     if(!nullshader || !hudshader || !hudtextshader || !hudnotextureshader || !stdworldshader) fatal("cannot find shader definitions");
 
@@ -1056,6 +1057,46 @@ void setupshaders()
         "fragdata(0) vec4 fragcolor;\n"
         "void main(void) {\n"
         "    fragcolor = color;\n"
+        "}\n");
+    hudbackgroundshader = newshader(0, "<init>hudbackground",
+        "uniform mat4 hudmatrix;\n"
+        "attribute vec4 vvertex;\n"
+        "varying vec2 pos;\n"
+        "void main() {\n"
+        "    gl_Position = hudmatrix * vvertex;\n"
+        "    pos = vec2(vvertex.x, vvertex.y);\n"
+        "}\n",
+        "const vec3 foreground = vec3(1.0, 0.0, 0.0);\n"
+        "const vec2 center = vec2(0.0, 1.5);\n"
+        "const float maxdist = distance(center, vec2(-1, -1));\n"
+        "const float waterweight = 1.2;\n"
+        "const float caustweight = 0.9;\n"
+        "const float cloudweight = 0.5;\n"
+        "const float timescale = 1.0 / 200.0;\n"
+        "const float totalweight = caustweight + waterweight + cloudweight;\n"
+        "const float caustw = caustweight / totalweight;\n"
+        "const float waterw = waterweight / totalweight;\n"
+        "const float cloudw = cloudweight / totalweight;\n"
+        "uniform float time;\n"
+        "uniform sampler2D tex0; // water\n"
+        "uniform sampler2D tex1; // caustic\n"
+        "uniform sampler2D tex2; // cloud\n"
+        "varying vec2 pos;\n"
+        "fragdata(0) vec4 fragcolor;\n"
+        "void main() {\n"
+        "    vec2 dir = pos - center;\n"
+        "    float dist = length(dir);\n"
+        "    dir = dir / dist;\n"
+        "    float angle = (dot(dir, vec2(1.0, 0.0)) + 1.0) / 2.0;\n"
+        "    vec2 uv = vec2(angle, time * timescale);\n"
+        "    float ray = waterw * -log(-log(texture2D(tex0, uv / 3.0).r)) + caustw * texture2D(tex1, uv).r;\n"
+        "    ray = clamp(ray, 0.0, 1.0);\n"
+        "    vec3 fg = foreground * ray;\n"
+        "    vec2 cuv = (pos + 1.0) / 2.0;\n"
+        "    float cloud = cloudw * texture2D(tex2, cuv).r;\n"
+        "    vec3 bg = foreground * cloud;\n"
+        "    float k = log(dist) / log(maxdist);\n"
+        "    fragcolor = vec4(mix(fg, bg, k), 1);\n"
         "}\n");
     standardshaders = false;
 
