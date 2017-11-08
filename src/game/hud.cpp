@@ -1646,12 +1646,10 @@ namespace hud
         gle::colorf(1, 1, 1, 1);
 
         Texture *t = NULL;
-        int mapbg = 0;
         if(showloadingmapbg && *mapname && strcmp(mapname, "maps/untitled"))
         {
             defformatstring(tex, "<blur:2>%s", mapname);
             t = textureload(tex, 3, true, false);
-            mapbg = showloadingmapbg;
         }
         if(!t || t == notexture)
         {
@@ -1663,22 +1661,20 @@ namespace hud
 
             LOCALPARAMF(time, lastmillis / 1000.0f);
             glActiveTexture_(GL_TEXTURE0);
-            settexture(backgroundwatertex, 0x300);
+            settexture(backgroundwatertex, 3);
             glActiveTexture_(GL_TEXTURE1);
-            settexture(backgroundcausttex, 0x300);
+            settexture(backgroundcausttex, 3);
             glActiveTexture_(GL_TEXTURE2);
-            settexture(backgroundcloudtex, 0x300);
+            settexture(backgroundcloudtex, 3);
             glActiveTexture_(GL_TEXTURE0);
             drawquad(-1, -1, 2, 2, 0, 0, 1, 1);
             pophudmatrix();
-
-            mapbg = 0;
         }
         else
         {
             glBindTexture(GL_TEXTURE_2D, t->id);
             float offsetx = 0, offsety = 0;
-            if(showloadingaspect&(1<<mapbg))
+            if(showloadingaspect&(1<<showloadingmapbg))
             {
                 if(w > h) offsety = ((w-h)/float(w))*0.5f;
                 else if(h > w) offsetx = ((h-w)/float(h))*0.5f;
