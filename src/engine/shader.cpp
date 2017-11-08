@@ -28,16 +28,6 @@ void loadshaders()
     execfile("config/glsl.cfg");
     standardshaders = false;
 
-    nullshader = lookupshaderbyname("null");
-    hudshader = lookupshaderbyname("hud");
-    hudtextshader = lookupshaderbyname("hudtext");
-    hudnotextureshader = lookupshaderbyname("hudnotexture");
-    hudbackgroundshader = lookupshaderbyname("hudbackground");
-    stdworldshader = lookupshaderbyname("stdworld");
-    if(!nullshader || !hudshader || !hudtextshader || !hudnotextureshader || !stdworldshader) fatal("cannot find shader definitions");
-
-    dummyslot.shader = stdworldshader;
-
     nocolorshader = lookupshaderbyname("nocolor");
     foggedshader = lookupshaderbyname("fogged");
     foggednotextureshader = lookupshaderbyname("foggednotexture");
@@ -971,6 +961,8 @@ static void genuniformdefs(vector<char> &vsbuf, vector<char> &psbuf, const char 
     psbuf.put(psmain, strlen(psmain)+1);
 }
 
+bool updateprogress = true;
+
 void setupshaders()
 {
     GLint val;
@@ -993,119 +985,17 @@ void setupshaders()
     }
     else mintexrectoffset = maxtexrectoffset = 0;
 
+    updateprogress = false;
     standardshaders = true;
-    nullshader = newshader(0, "<init>null",
-        "attribute vec4 vvertex;\n"
-        "void main(void) {\n"
-        "   gl_Position = vvertex;\n"
-        "}\n",
-        "fragdata(0) vec4 fragcolor;\n"
-        "void main(void) {\n"
-        "   fragcolor = vec4(1.0, 0.0, 1.0, 1.0);\n"
-        "}\n");
-    hudshader = newshader(0, "<init>hud",
-        "attribute vec4 vvertex, vcolor;\n"
-        "attribute vec2 vtexcoord0;\n"
-        "uniform mat4 hudmatrix;\n"
-        "varying vec2 texcoord0;\n"
-        "varying vec4 colorscale;\n"
-        "void main(void) {\n"
-        "    gl_Position = hudmatrix * vvertex;\n"
-        "    texcoord0 = vtexcoord0;\n"
-        "    colorscale = vcolor;\n"
-        "}\n",
-        "uniform sampler2D tex0;\n"
-        "varying vec2 texcoord0;\n"
-        "varying vec4 colorscale;\n"
-        "fragdata(0) vec4 fragcolor;\n"
-        "void main(void) {\n"
-        "    vec4 color = texture2D(tex0, texcoord0);\n"
-        "    fragcolor = colorscale * color;\n"
-        "}\n");
-    hudtextshader = newshader(0, "<init>hudtext",
-        "attribute vec4 vvertex, vcolor;\n"
-        "attribute vec2 vtexcoord0;\n"
-        "uniform mat4 hudmatrix;\n"
-        "varying vec2 texcoord0;\n"
-        "varying vec4 colorscale;\n"
-        "void main(void) {\n"
-        "    gl_Position = hudmatrix * vvertex;\n"
-        "    texcoord0 = vtexcoord0;\n"
-        "    colorscale = vcolor;\n"
-        "}\n",
-        "uniform sampler2D tex0;\n"
-        "uniform vec4 textparams;\n"
-        "varying vec2 texcoord0;\n"
-        "varying vec4 colorscale;\n"
-        "fragdata(0) vec4 fragcolor;\n"
-        "void main(void) {\n"
-        "    vec4 color = texture2D(tex0, texcoord0);\n"
-        "    fragcolor = colorscale * color;\n"
-        "}\n");
-    hudnotextureshader = newshader(0, "<init>hudnotexture",
-        "attribute vec4 vvertex, vcolor;\n"
-        "uniform mat4 hudmatrix;"
-        "varying vec4 color;\n"
-        "void main(void) {\n"
-        "    gl_Position = hudmatrix * vvertex;\n"
-        "    color = vcolor;\n"
-        "}\n",
-        "varying vec4 color;\n"
-        "fragdata(0) vec4 fragcolor;\n"
-        "void main(void) {\n"
-        "    fragcolor = color;\n"
-        "}\n");
-    hudbackgroundshader = newshader(0, "<init>hudbackground",
-        "uniform mat4 hudmatrix;\n"
-        "attribute vec4 vvertex;\n"
-        "varying vec2 pos;\n"
-        "void main() {\n"
-        "    gl_Position = hudmatrix * vvertex;\n"
-        "    pos = vvertex.xy;\n"
-        "}\n",
-        "const vec2 center = vec2(0.0, 1.5);\n"
-        "const float maxdist = 2.69258;\n"
-        "const float waterweight = 1.2;\n"
-        "const float caustweight = 0.9;\n"
-        "const float cloudweight = 0.5;\n"
-        "const float totalweight = caustweight + waterweight + cloudweight;\n"
-        "const float caustw = caustweight / totalweight;\n"
-        "const float waterw = waterweight / totalweight;\n"
-        "const float cloudw = cloudweight / totalweight;\n"
-        "uniform float time;\n"
-        "uniform vec3 colour;\n"
-        "uniform vec4 scale;\n"
-        "uniform vec4 blend;\n"
-        "uniform vec4 speed;\n"
-        "uniform sampler2D tex0; // water\n"
-        "uniform sampler2D tex1; // caustic\n"
-        "uniform sampler2D tex2; // cloud\n"
-        "uniform sampler2D tex3; // aura\n"
-        "uniform sampler2D tex4; // haze\n"
-        "uniform sampler2D tex5; // glimmer\n"
-        "varying vec2 pos;\n"
-        "fragdata(0) vec4 fragcolor;\n"
-        "void main() {\n"
-        "    vec2 dir = pos - center;\n"
-        "    float dist = length(dir);\n"
-        "    dir /= dist;\n"
-        "    float k = log(dist) / log(maxdist);\n"
-        "    float angle = (dot(dir, vec2(1.0, 0.0)) + 1.0) / 2.0;\n"
-        "    vec2 uv = vec2(angle, time / 200.0);\n"
-        "    vec3 fg = colour * clamp(waterw * -log(-log(texture2D(tex0, uv / 3.0).r)) + caustw * texture2D(tex1, uv).r, 0.0, 1.0);\n"
-        "    vec3 bg = cloudw * texture2D(tex2, (pos + 1.0) / 2.0).r * colour;\n"
-        "    vec2 guv0 = vec2(pos.x, pos.y - time * speed.x);\n"
-        "    vec2 guv1 = vec2(pos.x, pos.y - time * speed.z);\n"
-        "    vec2 guv2 = vec2(pos.x, pos.y - time * speed.y);\n"
-        "    vec2 guv3 = vec2(pos.x + 0.3, pos.y - time * speed.w);\n"
-        "    float gpf = (1.0 - mod((1.0 + pos.y) / 2.0, 1.0)) * k;\n"
-        "    vec4 glim = texture2D(tex3, guv0).r * vec4(colour, gpf) * scale.x;\n"
-        "    glim += texture2D(tex5, guv1).r * vec4(colour, gpf) * scale.z;\n"
-        "    glim += texture2D(tex4, guv2).r * vec4(colour, gpf) * scale.y;\n"
-        "    glim += texture2D(tex5, guv3).r * vec4(colour, gpf) * scale.w;\n"
-        "    fragcolor = vec4(mix(fg, mix(bg, glim.rgb, glim.a), k), 1.0);\n"
-        "}\n");
+    execfile("config/glsl/early.cfg");
     standardshaders = false;
+    updateprogress = true;
+
+    nullshader = lookupshaderbyname("null");
+    hudshader = lookupshaderbyname("hud");
+    hudtextshader = lookupshaderbyname("hudtext");
+    hudnotextureshader = lookupshaderbyname("hudnotexture");
+    hudbackgroundshader = lookupshaderbyname("hudbackground");
 
     if(!nullshader || !hudshader || !hudtextshader || !hudnotextureshader) fatal("failed to setup shaders");
 
@@ -1175,7 +1065,7 @@ void shader(int *type, char *name, char *vs, char *ps)
     if(lookupshaderbyname(name)) return;
 
     defformatstring(info, "Loading shader: %s", name);
-    progress(loadprogress, info);
+    if(updateprogress) progress(loadprogress, info);
     vector<char> vsbuf, psbuf, vsbak, psbak;
 #define GENSHADER(cond, body) \
     if(cond) \
