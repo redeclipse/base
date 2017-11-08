@@ -1637,6 +1637,8 @@ namespace hud
         drawtexture(x, y, c, c);
     }
 
+    CVAR(IDF_PERSIST, backgroundcolour, 0xE00000);
+    FVAR(IDF_PERSIST, backgroundcoloursafe, 0, 0.45f, 1);
     TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundwatertex, "<grey><noswizzle>textures/water", 0x300);
     TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundcausttex, "<grey><noswizzle>caustics/caust00", 0x300);
     TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundcloudtex, "<grey><noswizzle>torley/desat/cloudyformations_z", 0x300);
@@ -1654,22 +1656,33 @@ namespace hud
         }
         if(!t || t == notexture)
         {
-            (hudbackgroundshader ? hudbackgroundshader : nullshader)->set();
-
             pushhudmatrix();
             hudmatrix.ortho(-1, 1, -1, 1, -1, 1);
             flushhudmatrix();
 
-            LOCALPARAMF(time, lastmillis / 1000.0f);
-            glActiveTexture_(GL_TEXTURE0);
-            settexture(backgroundwatertex, 0x300);
-            glActiveTexture_(GL_TEXTURE1);
-            settexture(backgroundcausttex, 0x300);
-            glActiveTexture_(GL_TEXTURE2);
-            settexture(backgroundcloudtex, 0x300);
-            glActiveTexture_(GL_TEXTURE3);
-            settexture(backgroundglimmertex, 0);
-            glActiveTexture_(GL_TEXTURE0);
+            if(hudbackgroundshader)
+            {
+                hudbackgroundshader->set();
+                LOCALPARAMF(time, lastmillis / 1000.0f);
+                LOCALPARAM(colour, backgroundcolour.tocolor());
+
+                glActiveTexture_(GL_TEXTURE0);
+                settexture(backgroundwatertex, 0x300);
+                glActiveTexture_(GL_TEXTURE1);
+                settexture(backgroundcausttex, 0x300);
+                glActiveTexture_(GL_TEXTURE2);
+                settexture(backgroundcloudtex, 0x300);
+                glActiveTexture_(GL_TEXTURE3);
+                settexture(backgroundglimmertex, 0);
+                glActiveTexture_(GL_TEXTURE0);
+            }
+            else if(hudnotextureshader)
+            {
+                hudnotextureshader->set();
+                gle::color(backgroundcolour.tocolor().mul(backgroundcoloursafe), 1.f);
+            }
+            else nullshader->set();
+
             drawquad(-1, -1, 2, 2, 0, 0, 1, 1);
             pophudmatrix();
         }
