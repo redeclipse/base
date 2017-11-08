@@ -1637,8 +1637,8 @@ namespace hud
         drawtexture(x, y, c, c);
     }
 
-    CVAR(IDF_PERSIST, backgroundcolour, 0xE00000);
-    FVAR(IDF_PERSIST, backgroundcoloursafe, 0, 0.45f, 1);
+    CVAR(IDF_PERSIST, backgroundcolour, 0x900000);
+    FVAR(IDF_PERSIST, backgroundcoloursafe, 0, 0.5f, 1);
     TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundwatertex, "<grey><noswizzle>textures/water", 0x300);
     TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundcausttex, "<grey><noswizzle>caustics/caust00", 0x300);
     TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundcloudtex, "<grey><noswizzle>torley/desat/cloudyformations_z", 0x300);
