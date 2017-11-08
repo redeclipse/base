@@ -1661,11 +1661,11 @@ namespace hud
 
             LOCALPARAMF(time, lastmillis / 1000.0f);
             glActiveTexture_(GL_TEXTURE0);
-            settexture(backgroundwatertex, 3);
+            settexture(backgroundwatertex, 0x300);
             glActiveTexture_(GL_TEXTURE1);
-            settexture(backgroundcausttex, 3);
+            settexture(backgroundcausttex, 0x300);
             glActiveTexture_(GL_TEXTURE2);
-            settexture(backgroundcloudtex, 3);
+            settexture(backgroundcloudtex, 0x300);
             glActiveTexture_(GL_TEXTURE0);
             drawquad(-1, -1, 2, 2, 0, 0, 1, 1);
             pophudmatrix();
