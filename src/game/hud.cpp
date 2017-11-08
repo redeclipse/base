@@ -27,7 +27,7 @@ namespace hud
     VAR(IDF_PERSIST, shownotices, 0, 3, 4);
     VAR(IDF_PERSIST, showevents, 0, 3, 4);
     VAR(IDF_PERSIST, showeventicons, 0, 1, 7);
-    VAR(IDF_PERSIST, showloadingaspect, 0, 2, 3);
+    VAR(IDF_PERSIST, showloadingaspect, 0, 1, 1);
     VAR(IDF_PERSIST, showloadingmapbg, 0, 1, 1);
     VAR(IDF_PERSIST, showloadinglogos, 0, 0, 1);
 
@@ -1712,7 +1712,7 @@ namespace hud
         {
             glBindTexture(GL_TEXTURE_2D, t->id);
             float offsetx = 0, offsety = 0;
-            if(showloadingaspect&(1<<showloadingmapbg))
+            if(showloadingaspect)
             {
                 if(w > h) offsety = ((w-h)/float(w))*0.5f;
                 else if(h > w) offsetx = ((h-w)/float(h))*0.5f;

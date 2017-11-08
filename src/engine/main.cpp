@@ -812,7 +812,7 @@ bool checkconn()
 }
 ICOMMAND(0, getprogresswait, "", (), intret(client::waiting()));
 ICOMMAND(0, getprogressing, "", (), intret(progressing || checkconn() ? 1 : 0));
-ICOMMAND(0, getprogresstype, "", (), intret(checkconn() ? 2 : (maploading ? 1 : 0)));
+ICOMMAND(0, getprogresstype, "", (), intret(maploading ? 1 : (checkconn() ? 2 : 0)));
 FVAR(0, loadprogress, 0, 0, 1);
 SVAR(0, progresstitle, "");
 FVAR(0, progressamt, -1, 0, 1);
