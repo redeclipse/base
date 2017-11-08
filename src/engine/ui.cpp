@@ -3835,6 +3835,8 @@ namespace UI
         {
             Object::draw(sx, sy);
 
+            if (!loadedshaders) return;
+
             changedraw(CHANGE_SHADER);
 
             int sx1, sy1, sx2, sy2;
@@ -3887,6 +3889,8 @@ namespace UI
         {
             Object::draw(sx, sy);
 
+            if(!loadedshaders) return;
+
             changedraw(CHANGE_SHADER);
 
             int sx1, sy1, sx2, sy2;
@@ -3923,6 +3927,8 @@ namespace UI
         {
             Object::draw(sx, sy);
 
+            if(!loadedshaders) return;
+
             changedraw(CHANGE_SHADER);
 
             int sx1, sy1, sx2, sy2;
@@ -3954,7 +3960,7 @@ namespace UI
 
         void previewslot(Slot &slot, VSlot &vslot, float x, float y)
         {
-            if(slot.sts.empty()) return;
+            if(!loadedshaders || slot.sts.empty()) return;
             VSlot *layer = NULL;
             Texture *t = NULL, *glowtex = NULL, *layertex = NULL, *detailtex = NULL;
             if(slot.loaded)

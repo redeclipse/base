@@ -11,7 +11,8 @@ static hashtable<const char *, int> localparams(256);
 static hashnameset<Shader> shaders(256);
 static Shader *slotshader = NULL;
 static vector<SlotShaderParam> slotparams;
-static bool standardshaders = false, initshaders = false, forceshaders = true, loadedshaders = false;
+static bool standardshaders = false, initshaders = false, forceshaders = true;
+bool loadedshaders = false;
 
 VAR(0, maxvsuniforms, 1, 0, 0);
 VAR(0, maxfsuniforms, 1, 0, 0);
@@ -1021,7 +1022,7 @@ COMMAND(0, defershader, "iss");
 
 void Shader::force()
 {
-    if(!deferred()) return;
+    if(!deferred() || !defer) return;
 
     char *cmd = defer;
     defer = NULL;
