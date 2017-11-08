@@ -1067,7 +1067,6 @@ void setupshaders()
         "    pos = vec2(vvertex.x, vvertex.y);\n"
         "}\n",
         "const vec3 foreground = vec3(1.0, 0.0, 0.0);\n"
-        "const vec3 background = vec3(0.07, 0.0, 0.0);\n"
         "const vec2 center = vec2(0.0, 1.5);\n"
         "const float maxdist = distance(center, vec2(-1, -1));\n"
         "const float waterweight = 1.2;\n"
@@ -1079,7 +1078,6 @@ void setupshaders()
         "const float waterw = waterweight / totalweight;\n"
         "const float cloudw = cloudweight / totalweight;\n"
         "uniform float time;\n"
-        "uniform float millis;\n"
         "uniform sampler2D tex0; // water\n"
         "uniform sampler2D tex1; // caustic\n"
         "uniform sampler2D tex2; // cloud\n"

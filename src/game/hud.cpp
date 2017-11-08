@@ -1669,11 +1669,12 @@ namespace hud
             glActiveTexture_(GL_TEXTURE2);
             settexture(backgroundcloudtex, 0x300);
             glActiveTexture_(GL_TEXTURE0);
+            drawquad(-1, -1, 2, 2, 0, 0, 1, 1);
+            pophudmatrix();
 
-            t = NULL;
             mapbg = 0;
         }
-        if(t)
+        else
         {
             glBindTexture(GL_TEXTURE_2D, t->id);
             float offsetx = 0, offsety = 0;
@@ -1683,11 +1684,6 @@ namespace hud
                 else if(h > w) offsetx = ((h-w)/float(h))*0.5f;
             }
             drawquad(0, 0, w, h, offsetx, offsety, 1-offsetx, 1-offsety);
-        }
-        else
-        {
-            drawquad(-1, -1, 2, 2, 0, 0, 1, 1);
-            pophudmatrix();
         }
 
         if(showloadinglogos)
