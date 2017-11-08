@@ -1642,7 +1642,22 @@ namespace hud
     TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundwatertex, "<grey><noswizzle>textures/water", 0x300);
     TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundcausttex, "<grey><noswizzle>caustics/caust00", 0x300);
     TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundcloudtex, "<grey><noswizzle>torley/desat/cloudyformations_z", 0x300);
+
+    TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundauratex, "<grey><noswizzle>textures/lava", 0);
+    FVAR(IDF_PERSIST, backgroundaurascale, 0, 0.65f, 1);
+    FVAR(IDF_PERSIST, backgroundaurablend, 0, 0.65f, 1);
+    FVAR(IDF_PERSIST, backgroundauraspeed, 0, 0.0125f, FVAR_MAX);
+    TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundhazetex, "<grey><noswizzle>textures/water", 0);
+    FVAR(IDF_PERSIST, backgroundhazescale, 0, 0.5f, 1);
+    FVAR(IDF_PERSIST, backgroundhazeblend, 0, 0.75f, 1);
+    FVAR(IDF_PERSIST, backgroundhazespeed, 0, 0.0175f, FVAR_MAX);
     TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundglimmertex, "<grey><noswizzle>particles/glimmer", 0);
+    FVAR(IDF_PERSIST, backgroundglimmerscale1, 0, 1, 1);
+    FVAR(IDF_PERSIST, backgroundglimmerscale2, 0, 0.5f, 1);
+    FVAR(IDF_PERSIST, backgroundglimmerblend1, 0, 1, 1);
+    FVAR(IDF_PERSIST, backgroundglimmerblend2, 0, 0.4f, 1);
+    FVAR(IDF_PERSIST, backgroundglimmerspeed1, 0, 0.05f, FVAR_MAX);
+    FVAR(IDF_PERSIST, backgroundglimmerspeed2, 0, 0.03f, FVAR_MAX);
 
     void drawbackground(int w, int h)
     {
@@ -1665,6 +1680,9 @@ namespace hud
                 hudbackgroundshader->set();
                 LOCALPARAMF(time, lastmillis / 1000.0f);
                 LOCALPARAM(colour, backgroundcolour.tocolor());
+                LOCALPARAM(scale, vec4(backgroundaurascale, backgroundhazescale, backgroundglimmerscale1, backgroundglimmerscale2));
+                LOCALPARAM(blend, vec4(backgroundaurablend, backgroundhazeblend, backgroundglimmerblend1, backgroundglimmerblend2));
+                LOCALPARAM(speed, vec4(backgroundauraspeed, backgroundhazespeed, backgroundglimmerspeed1, backgroundglimmerspeed2));
 
                 glActiveTexture_(GL_TEXTURE0);
                 settexture(backgroundwatertex, 0x300);
@@ -1673,6 +1691,10 @@ namespace hud
                 glActiveTexture_(GL_TEXTURE2);
                 settexture(backgroundcloudtex, 0x300);
                 glActiveTexture_(GL_TEXTURE3);
+                settexture(backgroundauratex, 0);
+                glActiveTexture_(GL_TEXTURE4);
+                settexture(backgroundhazetex, 0);
+                glActiveTexture_(GL_TEXTURE5);
                 settexture(backgroundglimmertex, 0);
                 glActiveTexture_(GL_TEXTURE0);
             }
