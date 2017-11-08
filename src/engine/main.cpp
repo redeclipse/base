@@ -415,9 +415,9 @@ void resetgl()
     progress(0, "Initializing...");
     restoregamma();
     restorevsync();
+    initgbuffer();
     reloadshaders();
     reloadtextures();
-    initlights();
     allchanged(true);
 }
 

@@ -62,9 +62,10 @@ Shader *generateshader(const char *name, const char *fmt, ...)
     if(!s)
     {
         defvformatstring(cmd, fmt, fmt);
+        bool wasstandard = standardshaders;
         standardshaders = true;
         execute(cmd, true);
-        standardshaders = false;
+        standardshaders = wasstandard;
         s = name ? lookupshaderbyname(name) : NULL;
         if(!s) s = nullshader;
     }
@@ -273,9 +274,6 @@ static void compileglslshader(Shader &s, GLenum type, GLuint &obj, const char *d
                     case GL_UNSIGNED_INT_VEC3:
                     case GL_INT_VEC3:
                     case GL_FLOAT_VEC3: swizzle = ".rgb"; break;
-                    case GL_UNSIGNED_INT_VEC4:
-                    case GL_INT_VEC4:
-                    case GL_FLOAT_VEC4: swizzle = ".rgba"; break;
                     case GL_UNSIGNED_INT:
                     case GL_INT:
                     case GL_FLOAT: swizzle = ".r"; break;
@@ -419,8 +417,7 @@ static void findfragdatalocs(Shader &s, char *ps, const char *macroname, int ind
         switch(type[0])
         {
             case 'v':
-                if(matchstring(type, ps-type, "vec4")) format = GL_FLOAT_VEC4;
-                else if(matchstring(type, ps-type, "vec3")) format = GL_FLOAT_VEC3;
+                if(matchstring(type, ps-type, "vec3")) format = GL_FLOAT_VEC3;
                 else if(matchstring(type, ps-type, "vec2")) format = GL_FLOAT_VEC2;
                 break;
             case 'f':
@@ -1064,7 +1061,7 @@ void setupshaders()
         "varying vec2 pos;\n"
         "void main() {\n"
         "    gl_Position = hudmatrix * vvertex;\n"
-        "    pos = vec2(vvertex.x, vvertex.y);\n"
+        "    pos = vvertex.xy;\n"
         "}\n",
         "const vec3 foreground = vec3(1.0, 0.0, 0.0);\n"
         "const vec2 center = vec2(0.0, 1.5);\n"
@@ -1086,7 +1083,7 @@ void setupshaders()
         "void main() {\n"
         "    vec2 dir = pos - center;\n"
         "    float dist = length(dir);\n"
-        "    dir = dir / dist;\n"
+        "    dir /= dist;\n"
         "    float angle = (dot(dir, vec2(1.0, 0.0)) + 1.0) / 2.0;\n"
         "    vec2 uv = vec2(angle, time * timescale);\n"
         "    float ray = waterw * -log(-log(texture2D(tex0, uv / 3.0).r)) + caustw * texture2D(tex1, uv).r;\n"
@@ -1096,7 +1093,7 @@ void setupshaders()
         "    float cloud = cloudw * texture2D(tex2, cuv).r;\n"
         "    vec3 bg = foreground * cloud;\n"
         "    float k = log(dist) / log(maxdist);\n"
-        "    fragcolor = vec4(mix(fg, bg, k), 1);\n"
+        "    fragcolor = vec4(mix(fg, bg, k), 1.0);\n"
         "}\n");
     standardshaders = false;
 
