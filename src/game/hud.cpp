@@ -1640,6 +1640,7 @@ namespace hud
     TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundwatertex, "<grey><noswizzle>textures/water", 0x300);
     TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundcausttex, "<grey><noswizzle>caustics/caust00", 0x300);
     TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundcloudtex, "<grey><noswizzle>torley/desat/cloudyformations_z", 0x300);
+    TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundglimmertex, "<grey><noswizzle>particles/glimmer", 0);
 
     void drawbackground(int w, int h)
     {
@@ -1666,6 +1667,8 @@ namespace hud
             settexture(backgroundcausttex, 0x300);
             glActiveTexture_(GL_TEXTURE2);
             settexture(backgroundcloudtex, 0x300);
+            glActiveTexture_(GL_TEXTURE3);
+            settexture(backgroundglimmertex, 0);
             glActiveTexture_(GL_TEXTURE0);
             drawquad(-1, -1, 2, 2, 0, 0, 1, 1);
             pophudmatrix();
