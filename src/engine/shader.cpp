@@ -1064,7 +1064,7 @@ void setupshaders()
         "    pos = vvertex.xy;\n"
         "}\n",
         "const vec2 center = vec2(0.0, 1.5);\n"
-        "const float maxdist = distance(center, vec2(-1, -1));\n"
+        "const float maxdist = 2.69258;\n"
         "const float waterweight = 1.2;\n"
         "const float caustweight = 0.9;\n"
         "const float cloudweight = 0.5;\n"
