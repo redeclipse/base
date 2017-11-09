@@ -1462,7 +1462,7 @@ static void changeslottmus(renderstate &cur, int pass, Slot &slot, VSlot &vslot)
     }
 
     vec colorscale = vslot.getcolorscale();
-    if(_lightcolour) colorscale = lightcolour.tocolor();
+    if(!lightcolour.iszero()) colorscale = lightcolour.tocolor();
     if(lightintensity != 1.f) colorscale.mul(lightintensity);
 
     if(cur.alphaing)

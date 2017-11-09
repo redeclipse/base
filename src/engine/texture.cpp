@@ -2398,7 +2398,7 @@ void texture(char *type, char *name, int *rot, int *xoffset, int *yoffset, float
         defslot = &materialslots[matslot];
         defslot->reset();
     }
-    else if(!defslot) return;
+    else if(!defslot) { conoutf("\frNo default slot set for texture (%s)", name); return; }
     else if(tnum < 0) tnum = TEX_UNKNOWN;
     Slot &s = *defslot;
     s.loaded = false;
@@ -2420,71 +2420,47 @@ void texture(char *type, char *name, int *rot, int *xoffset, int *yoffset, float
 }
 COMMAND(0, texture, "ssiiif");
 
-void texgrass(Slot &s, char *name)
+void texgrass(char *name)
 {
+    if(!defslot) return;
+    Slot &s = *defslot;
     DELETEA(s.grass);
     s.grass = name[0] ? newstring(path(name)) : NULL;
 }
-ICOMMAND(0, autograss, "s", (char *name), if(!slots.empty()) texgrass(*slots.last(), name));
-ICOMMAND(0, texgrass, "s", (char *name), if(!slots.empty()) texgrass(*slots.last(), name));
-ICOMMAND(0, setgrass, "s", (char *name), {
-    if(noedit() || multiplayer() || slots.empty()) return;
-    cube &c = lookupcube(sel.o, -sel.grid);
-    int tex = !isempty(c) ? c.texture[sel.orient] : texmru[0];
-    if(slots.inrange(tex))
-    {
-        texgrass(*slots[tex], name);
-        allchanged();
-    }
-});
+ICOMMAND(0, texgrass, "s", (char *name), texgrass(name));
+ICOMMAND(0, autograss, "s", (char *name), texgrass(name));
 
-void texgrasscolor(Slot &s, float r, float g, float b)
+void texgrasscolor(float r, float g, float b)
 {
+    if(!defslot) return;
+    Slot &s = *defslot;
     s.grasscolor = vec(max(r, 0.f), max(g, 0.f), max(b, 0.f));
 }
-ICOMMAND(0, texgrasscolor, "fff", (float *r, float *g, float *b), if(!slots.empty()) texgrasscolor(*slots.last(), *r, *g, *b));
-ICOMMAND(0, setgrasscolor, "fff", (float *r, float *g, float *b), {
-    if(noedit() || multiplayer() || slots.empty()) return;
-    cube &c = lookupcube(sel.o, -sel.grid);
-    int tex = !isempty(c) ? c.texture[sel.orient] : texmru[0];
-    if(slots.inrange(tex)) texgrasscolor(*slots[tex], *r, *g, *b);
-});
+ICOMMAND(0, texgrasscolor, "fff", (float *r, float *g, float *b), texgrasscolor(*r, *g, *b));
 
-void texgrassblend(Slot &s, float blend)
+void texgrassblend(float blend)
 {
+    if(!defslot) return;
+    Slot &s = *defslot;
     s.grassblend = clamp(blend, 0.f, 1.f);
 }
-ICOMMAND(0, texgrassblend, "f", (float *blend), if(!slots.empty()) texgrassblend(*slots.last(), *blend));
-ICOMMAND(0, setgrassblend, "f", (float *blend), {
-    if(noedit() || multiplayer() || slots.empty()) return;
-    cube &c = lookupcube(sel.o, -sel.grid);
-    int tex = !isempty(c) ? c.texture[sel.orient] : texmru[0];
-    if(slots.inrange(tex)) texgrassblend(*slots[tex], *blend);
-});
+ICOMMAND(0, texgrassblend, "f", (float *blend), texgrassblend(*blend));
 
-void texgrassscale(Slot &s, int scale)
+void texgrassscale(int scale)
 {
+    if(!defslot) return;
+    Slot &s = *defslot;
     s.grassscale = clamp(scale, 0, 64);
 }
-ICOMMAND(0, texgrassscale, "i", (int *scale), if(!slots.empty()) texgrassscale(*slots.last(), *scale));
-ICOMMAND(0, setgrassscale, "i", (int *scale), {
-    if(noedit() || multiplayer() || slots.empty()) return;
-    cube &c = lookupcube(sel.o, -sel.grid);
-    int tex = !isempty(c) ? c.texture[sel.orient] : texmru[0];
-    if(slots.inrange(tex)) texgrassscale(*slots[tex], *scale);
-});
+ICOMMAND(0, texgrassscale, "i", (int *scale), texgrassscale(*scale));
 
-void texgrassheight(Slot &s, int height)
+void texgrassheight(int height)
 {
+    if(!defslot) return;
+    Slot &s = *defslot;
     s.grassheight = clamp(height, 0, 64);
 }
-ICOMMAND(0, texgrassheight, "i", (int *height), if(!slots.empty()) texgrassheight(*slots.last(), *height));
-ICOMMAND(0, setgrassheight, "i", (int *height), {
-    if(noedit() || multiplayer() || slots.empty()) return;
-    cube &c = lookupcube(sel.o, -sel.grid);
-    int tex = !isempty(c) ? c.texture[sel.orient] : texmru[0];
-    if(slots.inrange(tex)) texgrassheight(*slots[tex], *height);
-});
+ICOMMAND(0, texgrassheight, "i", (int *height), texgrassheight(*height));
 
 void texscroll(float *scrollS, float *scrollT)
 {
@@ -2561,8 +2537,8 @@ COMMAND(0, texcolor, "fff");
 
 void texcoastscale(float *value)
 {
-    if(slots.empty()) return;
-    Slot &s = *slots.last();
+    if(!defslot) return;
+    Slot &s = *defslot;
     s.variants->coastscale = clamp(*value, 0.f, 1000.f);
     propagatevslot(s.variants, 1<<VSLOT_COAST);
 }
@@ -2570,8 +2546,8 @@ COMMAND(0, texcoastscale, "f");
 
 void texpalette(int *p, int *x)
 {
-    if(slots.empty()) return;
-    Slot &s = *slots.last();
+    if(!defslot) return;
+    Slot &s = *defslot;
     s.variants->palette = max(*p, 0);
     s.variants->palindex = max(*x, 0);
     propagatevslot(s.variants, 1<<VSLOT_PALETTE);
