@@ -845,9 +845,10 @@ extentity *newentity(bool local, const vec &o, int type, const attrvector &attrs
     else while(ents.length() < idx) ents.add(entities::newent())->type = ET_EMPTY;
     extentity &e = *entities::newent();
     e.o = o;
-    e.attrs.add(0, min(attrs.length(), MAXENTATTRS) - e.attrs.length());
-    loopi(min(attrs.length(), e.attrs.length())) e.attrs[i] = attrs[i];
     e.type = type;
+    int numattrs = min(attrs.length(), MAXENTATTRS);
+    while(e.attrs.length() < numattrs) e.attrs.add(0);
+    loopi(numattrs) e.attrs[i] = attrs[i];
     loopi(3) e.reserved[i] = 0;
     if(ents.inrange(idx)) { entities::deleteent(ents[idx]); ents[idx] = &e; }
     else { idx = ents.length(); ents.add(&e); }
@@ -924,9 +925,8 @@ void entpaste()
         const entity &c = entcopybuf[i];
         vec o = vec(c.o).mul(m).add(vec(sel.o));
         int idx;
-        extentity *e = newentity(true, o, ET_EMPTY, c.attrs, idx);
+        extentity *e = newentity(true, o, c.type, c.attrs, idx);
         if(!e) continue;
-        loopvk(c.links) e->links.add(c.links[k]);
         entadd(idx);
         keepents = max(keepents, idx+1);
     }
