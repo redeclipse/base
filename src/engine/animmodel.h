@@ -112,18 +112,18 @@ struct animmodel : model
     struct skin : shaderparams
     {
         part *owner;
-        Texture *tex, *decal, *masks, *envmap, *normalmap, *curdecal;
+        Texture *tex, *decal, *masks, *envmap, *normalmap, *origdecal;
         Shader *shader, *rsmshader;
         int cullface;
         shaderparamskey *key;
 
-        skin() : owner(0), tex(notexture), decal(NULL), masks(notexture), envmap(NULL), normalmap(NULL), curdecal(NULL), shader(NULL), rsmshader(NULL), cullface(1), key(NULL) {}
+        skin() : owner(0), tex(notexture), decal(NULL), masks(notexture), envmap(NULL), normalmap(NULL), origdecal(NULL), shader(NULL), rsmshader(NULL), cullface(1), key(NULL) {}
 
         bool masked() const { return masks != notexture; }
         bool envmapped() const { return envmapmax>0; }
         bool bumpmapped() const { return normalmap != NULL; }
         bool alphatested() const { return alphatest > 0 && tex->type&Texture::ALPHA; }
-        bool decaled() const { return curdecal != NULL; }
+        bool decaled() const { return decal != NULL; }
 
         void setkey()
         {
@@ -275,16 +275,14 @@ struct animmodel : model
                 lastnormalmap = normalmap;
             }
             bool forceshader = false, wasdecaled = decaled();
-            int index = owner->model->parts[0]->index;
-            bool firstmodel = index >= 0 && index < owner->numanimparts && owner->model == as->owner->model;
-            curdecal = state->decal && firstmodel ? state->decal : decal;
+            decal = state->decal ? state->decal : origdecal;
             if(decaled() != wasdecaled) forceshader = true;
-            if(decaled() && curdecal!=lastdecal)
+            if(decaled() && decal!=lastdecal)
             {
                 glActiveTexture_(GL_TEXTURE4);
                 activetmu = 4;
-                glBindTexture(GL_TEXTURE_2D, curdecal->id);
-                lastdecal = curdecal;
+                glBindTexture(GL_TEXTURE_2D, decal->id);
+                lastdecal = decal;
             }
             if(masked() && masks!=lastmasks)
             {
@@ -1838,7 +1836,7 @@ template<class MDL, class MESH> struct modelcommands
     static void setdecal(char *meshname, char *decal)
     {
         loopskins(meshname, s,
-            s.decal = s.curdecal = textureload(makerelpath(MDL::dir, decal), 0, true, false);
+            s.decal = s.origdecal = textureload(makerelpath(MDL::dir, decal), 0, true, false);
         );
     }
 
