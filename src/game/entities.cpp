@@ -671,7 +671,7 @@ namespace entities
                         if(projent::is(d) && ((projent *)d)->type == PRJ_AFFINITY) break;
                     }
                     int millis = d->lastused(n, true);
-                    if(millis && lastmillis-millis < triggertime(e, true)) break;
+                    if(millis && lastmillis-millis < triggertime(e)) break;
                     e.lastemit = lastmillis;
                     static vector<int> teleports;
                     teleports.shrink(0);
@@ -773,7 +773,7 @@ namespace entities
                 {
                     if(!checkmapvariant(e.attrs[enttype[e.type].mvattr])) break;
                     int millis = d->lastused(n, true);
-                    if(millis && lastmillis-millis < triggertime(e, true)) break;
+                    if(millis && lastmillis-millis < triggertime(e)) break;
                     e.lastemit = lastmillis;
                     d->setused(n, lastmillis);
                     float mag = max(e.attrs[2], 1), maxrad = e.attrs[3] ? e.attrs[3] : enttype[PUSHER].radius, minrad = e.attrs[4];
@@ -938,7 +938,7 @@ namespace entities
                     if(m >= 2) e.lastemit = -1;
                     else if(e.lastemit > 0)
                     {
-                        int last = lastmillis-e.lastemit, trig = triggertime(e);
+                        int last = lastmillis-e.lastemit, trig = triggertime(e, true);
                         if(last > 0 && last < trig) e.lastemit = lastmillis-(trig-last);
                         else e.lastemit = lastmillis;
                     }
@@ -2160,7 +2160,7 @@ namespace entities
             if(f.nextemit) return false;
             f.nextemit += f.attrs[11];
         }
-        if(f.links.empty() || f.spawned() || (f.lastemit > 0 && lastmillis-f.lastemit <= triggertime(e)/2)) return true;
+        if(f.links.empty() || f.spawned() || (f.lastemit > 0 && lastmillis-f.lastemit <= triggertime(e, true))) return true;
         return false;
     }
 
