@@ -1563,10 +1563,17 @@ void setlocations(bool wanthome)
         if(!i || chdir("..") < 0) fatal("could not find config directory");
     }
     if(!execfile("config/version.cfg", false, EXEC_VERSION|EXEC_BUILTIN)) fatal("cannot exec 'config/version.cfg'");
+
     // pseudo directory with game content
     const char *dir = getenv(sup_var("DATADIR"));
     if(dir && *dir) addpackagedir(dir);
     else addpackagedir("data");
+
+    // pseudo directory with bonus content
+    dir = getenv(sup_var("BONUSDIR"));
+    if(dir && *dir) addpackagedir(dir);
+    else addpackagedir("bonus");
+
     if(!fileexists(findfile("maps/readme.txt", "r"), "r")) fatal("could not find game data");
     if(wanthome)
     {
