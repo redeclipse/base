@@ -1099,11 +1099,13 @@ void setbbfrommodel(dynent *d, const char *mdl, float size)
     if(!m) return;
     vec center, radius;
     m->collisionbox(center, radius);
+    center.mul(size);
+    radius.mul(size);
     if(m->collide != COLLIDE_ELLIPSE) d->collidetype = COLLIDE_OBB;
-    d->xradius  = (radius.x + fabs(center.x))*size;
-    d->yradius  = (radius.y + fabs(center.y))*size;
+    d->xradius  = radius.x + fabs(center.x);
+    d->yradius  = radius.y + fabs(center.y);
     d->radius   = d->collidetype==COLLIDE_OBB ? sqrtf(d->xradius*d->xradius + d->yradius*d->yradius) : max(d->xradius, d->yradius);
-    d->height   = (d->zradius = (center.z-radius.z) + radius.z*2*m->height)*size;
+    d->height   = d->zradius = (center.z-radius.z) + radius.z*2*m->height;
     d->aboveeye = radius.z*2*(1.0f-m->height);
 }
 

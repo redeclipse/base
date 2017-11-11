@@ -19,24 +19,12 @@ static inline void transformbb(const entity &e, vec &center, vec &radius)
 static inline void mmboundbox(const entity &e, model *m, vec &center, vec &radius)
 {
     m->boundbox(center, radius);
-    if(e.attrs[5])
-    {
-       float scale = max(e.attrs[5]/100.0f, 1e-3f);
-       center.mul(scale);
-       radius.mul(scale);
-    }
     transformbb(e, center, radius);
 }
 
 static inline void mmcollisionbox(const entity &e, model *m, vec &center, vec &radius)
 {
     m->collisionbox(center, radius);
-    if(e.attrs[5])
-    {
-       float scale = max(e.attrs[5]/100.0f, 1e-3f);
-       center.mul(scale);
-       radius.mul(scale);
-    }
     transformbb(e, center, radius);
 }
 
@@ -525,6 +513,7 @@ void entselectionbox(extentity &e, vec &eo, vec &es)
     if(mname && (m = loadmodel(mname)))
     {
         m->collisionbox(eo, es);
+        transformbb(e, eo, es);
         if(es.x > es.y) es.y = es.x; else es.x = es.y; // square
         es.z = (es.z + eo.z + 1 + entselradius)/2; // enclose ent radius box and model box
         eo.x += e.o.x;

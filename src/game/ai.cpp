@@ -1558,8 +1558,9 @@ namespace ai
             mmi->m->collisionbox(center, radius);
             if(e.attrs[5])
             {
-                center.mul(e.attrs[5]/100.f);
-                radius.mul(e.attrs[5]/100.f);
+                float scale = e.attrs[5]/100.f;
+                center.mul(scale);
+                radius.mul(scale);
             }
             rotatebb(center, radius, int(e.attrs[1]), int(e.attrs[2]));
             float xy = max(radius.x, radius.y), z = radius.z;
