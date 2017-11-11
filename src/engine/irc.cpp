@@ -35,7 +35,7 @@ void ircprintf(ircnet *n, int relay, const char *target, const char *msg, ...)
             c->updated |= IRCUP_MSG;
             #endif
             if(n->type == IRCT_RELAY && c->relay >= relay)
-                server::srvmsgf(relay > 1 ? -2 : -3, "\fs\fa[%s]\fS %s", c->friendly, str);
+                server::srvmsgft(relay > 1 ? -2 : -3, CON_MESG, "\fs\fa[%s]\fS %s", c->friendly, str);
         }
         else
         {
