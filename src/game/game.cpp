@@ -95,6 +95,8 @@ namespace game
     FVAR(IDF_PERSIST, firstpersonbodydist, -10, 0, 10);
     FVAR(IDF_PERSIST, firstpersonbodyside, -10, 0, 10);
     FVAR(IDF_PERSIST, firstpersonbodypitch, -1, 1, 1);
+    FVAR(IDF_PERSIST, firstpersonbodyzoffset, 0, 1, 10);
+    FVAR(IDF_PERSIST, firstpersonbodypitchadjust, 0, 0.75f, 10);
 
     FVAR(IDF_PERSIST, firstpersonspine, 0, 0.45f, 1);
     FVAR(IDF_PERSIST, firstpersonpitchmin, 0, 90, 90);
@@ -2851,7 +2853,7 @@ namespace game
                 else
                 {
                     defformatstring(musicfile, "%s", mapmusic);
-                    if(*musicdir && (type == 2 || type == 5 || ((type == 1 || type == 4) && (!*musicfile || !fileexists(findfile(musicfile, "r"), "r")))))
+                    if(musicdir[0] && (type == 2 || type == 5 || ((type == 1 || type == 4) && (!musicfile[0] || !fileexists(findfile(musicfile, "r"), "r")))))
                     {
                         vector<char *> files;
                         listfiles(musicdir, NULL, files);
@@ -2863,7 +2865,7 @@ namespace game
                             else files.remove(r);
                         }
                     }
-                    else if(*musicfile) playmusic(musicfile, type >= 4 ? "music" : NULL);
+                    else if(musicfile[0]) playmusic(musicfile, type >= 4 ? "music" : NULL);
                 }
             }
             player1->conopen = commandmillis > 0 || hud::hasinput(true);
@@ -3306,9 +3308,9 @@ namespace game
         {
             o.sub(vec(yaw*RAD, 0.f).mul(firstpersonbodydist+firstpersonspineoffset));
             o.sub(vec(yaw*RAD, 0.f).rotate_around_z(90*RAD).mul(firstpersonbodyside));
-            if(lastoffset && d->height < d->zradius)
+            if(lastoffset)
             {
-                float zoffset = max(d->zradius-d->height, 0.f);
+                float zoffset = (max(d->zradius-d->height, 0.f)+(d->radius*0.5f))*firstpersonbodyzoffset;
                 if(!onfloor && (melee || d->sliding(true) || d->impulse[IM_TYPE] == IM_T_KICK || d->impulse[IM_TYPE] == IM_T_VAULT || d->impulse[IM_TYPE] == IM_T_GRAB))
                 {
                     int lmillis = d->airtime(lastmillis);
@@ -3316,12 +3318,13 @@ namespace game
                     o.z -= zoffset;
                     *lastoffset = lastmillis;
                 }
-                else
+                else if(*lastoffset)
                 {
                     int lmillis = lastmillis-(*lastoffset);
                     if(lmillis < 100) o.z -= zoffset*((100-lmillis)/100.f);
                 }
             }
+            if(firstpersonbodypitchadjust > 0 && pitch < 0) o.sub(vec(yaw*RAD, 0.f).mul(d->radius*(0-pitch)/90.f*firstpersonbodypitchadjust));
         }
         else if(gs_playing(gamestate))
         {
