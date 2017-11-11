@@ -112,18 +112,19 @@ struct animmodel : model
     struct skin : shaderparams
     {
         part *owner;
-        Texture *tex, *decal, *masks, *envmap, *normalmap, *curdecal;
+        Texture *tex, *decal, *masks, *envmap, *normalmap, *mixer;
         Shader *shader, *rsmshader;
         int cullface;
         shaderparamskey *key;
 
-        skin() : owner(0), tex(notexture), decal(NULL), masks(notexture), envmap(NULL), normalmap(NULL), curdecal(NULL), shader(NULL), rsmshader(NULL), cullface(1), key(NULL) {}
+        skin() : owner(0), tex(notexture), decal(NULL), masks(notexture), envmap(NULL), normalmap(NULL), mixer(NULL), shader(NULL), rsmshader(NULL), cullface(1), key(NULL) {}
 
         bool masked() const { return masks != notexture; }
         bool envmapped() const { return envmapmax>0; }
         bool bumpmapped() const { return normalmap != NULL; }
         bool alphatested() const { return alphatest > 0 && tex->type&Texture::ALPHA; }
-        bool decaled() const { return curdecal != NULL; }
+        bool decaled() const { return decal != NULL; }
+        bool mixed() const { return mixer != NULL; }
 
         void setkey()
         {
@@ -144,10 +145,10 @@ struct animmodel : model
             if(color.r < 0) LOCALPARAM(colorscale, colorscale);
             else LOCALPARAMF(colorscale, color.r, color.g, color.b, colorscale.a);
 
-            if(decaled())
+            if(mixed())
             {
-                LOCALPARAM(decalcolor, decalcolor);
-                LOCALPARAM(decalglow, decalglow);
+                LOCALPARAM(mixercolor, mixercolor);
+                LOCALPARAM(mixerglow, mixerglow);
             }
 
             if(material1 > 0) LOCALPARAM(material1, modelmaterial[min(material1, int(MAXMDLMATERIALS))-1].tocolor());
@@ -201,10 +202,11 @@ struct animmodel : model
             string opts;
             int optslen = 0;
             if(alphatested()) opts[optslen++] = 'a';
-            if(decaled()) opts[optslen++] = 'd';
+            if(decaled()) opts[optslen++] = decal->type&Texture::ALPHA ? 'D' : 'd';
             if(bumpmapped()) opts[optslen++] = 'n';
             if(envmapped()) { opts[optslen++] = 'm'; opts[optslen++] = 'e'; }
             else if(masked()) opts[optslen++] = 'm';
+            if(mixed()) opts[optslen++] = 'x';
             if(!cullface) opts[optslen++] = 'c';
             opts[optslen++] = '\0';
 
@@ -274,17 +276,12 @@ struct animmodel : model
                 glBindTexture(GL_TEXTURE_2D, normalmap->id);
                 lastnormalmap = normalmap;
             }
-            bool forceshader = false, wasdecaled = decaled();
-            int index = owner->model->parts[0]->index;
-            bool firstmodel = index >= 0 && index < owner->numanimparts && owner->model == as->owner->model;
-            curdecal = state->decal && firstmodel ? state->decal : decal;
-            if(decaled() != wasdecaled) forceshader = true;
-            if(decaled() && curdecal!=lastdecal)
+            if(decaled() && decal!=lastdecal)
             {
                 glActiveTexture_(GL_TEXTURE4);
                 activetmu = 4;
-                glBindTexture(GL_TEXTURE_2D, curdecal->id);
-                lastdecal = curdecal;
+                glBindTexture(GL_TEXTURE_2D, decal->id);
+                lastdecal = decal;
             }
             if(masked() && masks!=lastmasks)
             {
@@ -292,6 +289,18 @@ struct animmodel : model
                 activetmu = 1;
                 glBindTexture(GL_TEXTURE_2D, masks->id);
                 lastmasks = masks;
+            }
+            bool forceshader = false, wasmixed = mixed();
+            int index = owner->model->parts[0]->index;
+            bool firstmodel = index >= 0 && index < owner->numanimparts && owner->model == as->owner->model;
+            mixer = state->mixer && firstmodel ? state->mixer : NULL;
+            if(mixed() != wasmixed) forceshader = true;
+            if(mixed() && mixer!=lastmixer)
+            {
+                glActiveTexture_(GL_TEXTURE5);
+                activetmu = 5;
+                glBindTexture(GL_TEXTURE_2D, mixer->id);
+                lastmixer = mixer;
             }
             if(envmapped())
             {
@@ -1360,14 +1369,14 @@ struct animmodel : model
                 colorscale = state->color;
                 invalidate = true;
             }
-            if(decalcolor != state->decalcolor)
+            if(mixercolor != state->mixercolor)
             {
-                decalcolor = state->decalcolor;
+                mixercolor = state->mixercolor;
                 invalidate = true;
             }
-            if(decalglow != state->decalglow)
+            if(mixerglow != state->mixerglow)
             {
-                decalglow = state->decalglow;
+                mixerglow = state->mixerglow;
                 invalidate = true;
             }
             if(memcmp(modelmaterial, state->material, sizeof(state->material)))
@@ -1651,11 +1660,11 @@ struct animmodel : model
 
     static bool enabletc, enablecullface, enabletangents, enablebones, enabledepthoffset;
     static float sizescale;
-    static vec4 colorscale, decalcolor;
-    static vec2 decalglow;
+    static vec4 colorscale, mixercolor;
+    static vec2 mixerglow;
     static bvec modelmaterial[MAXMDLMATERIALS];
     static GLuint lastvbuf, lasttcbuf, lastxbuf, lastbbuf, lastebuf, lastenvmaptex, closestenvmaptex;
-    static Texture *lasttex, *lastdecal, *lastmasks, *lastnormalmap;
+    static Texture *lasttex, *lastdecal, *lastmasks, *lastmixer, *lastnormalmap;
     static int matrixpos;
     static matrix4 matrixstack[64];
 
@@ -1664,7 +1673,7 @@ struct animmodel : model
         enabletc = enabletangents = enablebones = enabledepthoffset = false;
         enablecullface = true;
         lastvbuf = lasttcbuf = lastxbuf = lastbbuf = lastebuf = lastenvmaptex = closestenvmaptex = 0;
-        lasttex = lastdecal = lastmasks = lastnormalmap = NULL;
+        lasttex = lastdecal = lastmasks = lastmixer = lastnormalmap = NULL;
         shaderparamskey::invalidate();
     }
 
@@ -1715,12 +1724,12 @@ float animmodel::intersectdist = 0, animmodel::intersectscale = 1;
 bool animmodel::enabletc = false, animmodel::enabletangents = false, animmodel::enablebones = false,
      animmodel::enablecullface = true, animmodel::enabledepthoffset = false;
 float animmodel::sizescale = 1;
-vec4 animmodel::colorscale(1, 1, 1, 1), animmodel::decalcolor(1, 1, 1, 1);
-vec2 animmodel::decalglow(0, 0);
+vec4 animmodel::colorscale(1, 1, 1, 1), animmodel::mixercolor(1, 1, 1, 1);
+vec2 animmodel::mixerglow(0, 0);
 bvec animmodel::modelmaterial[MAXMDLMATERIALS] = { bvec(255, 255, 255), bvec(255, 255, 255), bvec(255, 255, 255) };
 GLuint animmodel::lastvbuf = 0, animmodel::lasttcbuf = 0, animmodel::lastxbuf = 0, animmodel::lastbbuf = 0, animmodel::lastebuf = 0,
        animmodel::lastenvmaptex = 0, animmodel::closestenvmaptex = 0;
-Texture *animmodel::lasttex = NULL, *animmodel::lastdecal = NULL, *animmodel::lastmasks = NULL, *animmodel::lastnormalmap = NULL;
+Texture *animmodel::lasttex = NULL, *animmodel::lastdecal = NULL, *animmodel::lastmasks = NULL, *animmodel::lastmixer = NULL, *animmodel::lastnormalmap = NULL;
 int animmodel::matrixpos = 0;
 matrix4 animmodel::matrixstack[64];
 
@@ -1838,7 +1847,7 @@ template<class MDL, class MESH> struct modelcommands
     static void setdecal(char *meshname, char *decal)
     {
         loopskins(meshname, s,
-            s.decal = s.curdecal = textureload(makerelpath(MDL::dir, decal), 0, true, false);
+            s.decal = textureload(makerelpath(MDL::dir, decal), 0, true, false);
         );
     }
 
