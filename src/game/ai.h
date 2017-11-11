@@ -332,7 +332,7 @@ namespace ai
     extern bool altfire(gameent *d, gameent *e);
     extern int weappref(gameent *d);
 
-    extern void init(gameent *d, int at, int et, int on, int sk, int bn, char *name, int tm, int cl, int md, const char *vn, vector<int> &lweaps);
+    extern void init(gameent *d, int at, int et, int on, int sk, int bn, char *name, int tm, int cl, int md, int pt, const char *vn, vector<int> &lweaps);
 
     extern bool badhealth(gameent *d);
     extern int checkothers(vector<int> &targets, gameent *d = NULL, int state = -1, int targtype = -1, int target = -1, bool teams = false, int *members = NULL);

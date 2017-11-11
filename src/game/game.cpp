@@ -313,23 +313,24 @@ namespace game
 
     VAR(IDF_PERSIST, nogore, 0 , 0, 2); // turns off all gore, 0 = off, 1 = replace, 2 = remove
     VAR(IDF_PERSIST, forceplayermodel, -1, -1, PLAYERTYPES-1);
+    VAR(IDF_PERSIST, forceplayerpattern, -1, -1, PLAYERPATTERN_MAX-1);
     VAR(IDF_PERSIST, vanitymodels, 0, 1, 1);
     VAR(IDF_PERSIST, headlessmodels, 0, 1, 1);
     FVAR(IDF_PERSIST, twitchspeed, 0, 2.5f, FVAR_MAX);
 
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, mixerburntex, "textures/residuals/burn", 0);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, mixerburntex, "<grey>textures/residuals/burn", 0);
     FVAR(IDF_PERSIST, mixerburnblend, 0.f, 1.f, 1.f);
     FVAR(IDF_PERSIST, mixerburnglowblend, 0.f, 0.125f, 1.f);
     FVAR(IDF_PERSIST, mixerburnglowintensity, 0.f, 1.f, 1.f);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, mixerbleedtex, "textures/residuals/bleed", 0);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, mixerbleedtex, "<grey>textures/residuals/bleed", 0);
     FVAR(IDF_PERSIST, mixerbleedblend, 0.f, 0.5f, 1.f);
     FVAR(IDF_PERSIST, mixerbleedglowblend, 0.f, 0.125f, 1.f);
     FVAR(IDF_PERSIST, mixerbleedglowintensity, 0.f, 1.f, 1.f);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, mixershocktex, "textures/residuals/shock", 0);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, mixershocktex, "<grey>textures/residuals/shock", 0);
     FVAR(IDF_PERSIST, mixershockblend, 0.f, 1.f, 1.f);
     FVAR(IDF_PERSIST, mixershockglowblend, 0.f, 0.125f, 1.f);
     FVAR(IDF_PERSIST, mixershockglowintensity, 0.f, 1.f, 1.f);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, mixerbufftex, "textures/residuals/buff", 0);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, mixerbufftex, "<grey>textures/residuals/buff", 0);
     FVAR(IDF_PERSIST, mixerbuffblend, 0.f, 0.5f, 1.f);
     FVAR(IDF_PERSIST, mixerbuffglowblend, 0.f, 0.125f, 1.f);
     FVAR(IDF_PERSIST, mixerbuffglowintensity, 0.f, 1.f, 1.f);
@@ -3471,6 +3472,8 @@ namespace game
             mdl.mixercolor = mixercolor;
             mdl.mixerglow = mixerglow;
         }
+        if(d->actortype < A_ENEMY)
+            mdl.pattern = textureload(playerpatterns[d->pattern%PLAYERPATTERN_MAX][0], 0, true);
         if(a[0].tag) mdl.attached = a;
         rendermodel(mdlname, mdl, e);
     }
@@ -3696,7 +3699,7 @@ namespace game
         rendercheck(focus, third);
     }
 
-    void renderplayerpreview(int model, int color, int team, int weap, const char *vanity, float scale, const vec4 &mcolor)
+    void renderplayerpreview(int model, int pattern, int color, int team, int weap, const char *vanity, float scale, const vec4 &mcolor)
     {
         static gameent *previewent = NULL;
         if(!previewent)
@@ -3713,6 +3716,7 @@ namespace game
         previewent->o = calcmodelpreviewpos(vec(xyrad, zrad), previewent->yaw).addz(previewent->height - zrad);
         previewent->colour = color;
         previewent->model = model;
+        previewent->pattern = pattern;
         previewent->team = clamp(team, 0, int(T_MULTI));
         previewent->weapselect = clamp(weap, 0, W_ALL-1);
         previewent->setvanity(vanity);

@@ -478,6 +478,7 @@ namespace client
     ICOMMAND(0, getplayername, "", (), result(game::player1->name));
     ICOMMAND(0, getplayercolour, "bg", (int *m, int *f), intret(game::getcolour(game::player1, *m, *f >= 0 && *f <= 10 ? *f : 1.f)));
     ICOMMAND(0, getplayermodel, "", (), intret(game::player1->model));
+    ICOMMAND(0, getplayerpattern, "", (), intret(game::player1->pattern));
     ICOMMAND(0, getplayerteam, "i", (int *p), *p ? intret(game::player1->team) : result(TEAM(game::player1->team, name)));
     ICOMMAND(0, getplayerteamicon, "", (), result(hud::teamtexname(game::player1->team)));
     ICOMMAND(0, getplayerteamcolour, "", (), intret(TEAM(game::player1->team, colour)));
@@ -520,6 +521,17 @@ namespace client
         }
     }
     VARF(IDF_PERSIST, playermodel, 0, 0, PLAYERTYPES-1, setplayermodel(playermodel));
+
+    void setplayerpattern(int pattern)
+    {
+        if(pattern >= 0 && game::player1->pattern != pattern)
+        {
+            game::player1->pattern = pattern;
+            sendplayerinfo = true;
+        }
+    }
+    VARF(IDF_PERSIST, playerpattern, 0, 0, PLAYERPATTERN_MAX-1, setplayerpattern(playerpattern));
+
     SVARF(IDF_PERSIST, playervanity, "", if(game::player1->setvanity(playervanity)) sendplayerinfo = true;);
 
     void setloadweap(const char *list)
@@ -789,7 +801,8 @@ namespace client
     LOOPINVENTORY(,loopcsi,loopk,false);
     LOOPINVENTORY(rev,loopcsirev,loopkrev,true);
 
-    ICOMMAND(0, getmodelname, "ib", (int *mdl, int *idx, int *numargs), result(*mdl >= 0 ? playertypes[*mdl%PLAYERTYPES][*idx >= 0 ? clamp(*idx, 0, 5) : 5] : ""));
+    ICOMMAND(0, getmodelname, "ib", (int *mdl, int *idx, int *numargs), result(*mdl >= 0 ? playertypes[*mdl%PLAYERTYPES][*idx >= 0 ? clamp(*idx, 0, 6) : 6] : ""));
+    ICOMMAND(0, getpatternname, "ib", (int *pattern, int *idx, int *numargs), result(*pattern >= 0 ? playerpatterns[*pattern%PLAYERPATTERN_MAX][*idx >= 0 ? clamp(*idx, 0, 2) : 2] : ""));
 
     ICOMMAND(0, getcamerayaw, "", (), floatret(camera1->yaw));
     ICOMMAND(0, getcamerapitch, "", (), floatret(camera1->pitch));
@@ -849,6 +862,7 @@ namespace client
     CLCOMMAND(actortype, intret(d->actortype));
     CLCOMMAND(pcolour, intret(d->colour));
     CLCOMMAND(model, intret(d->model%PLAYERTYPES));
+    CLCOMMAND(pattern, intret(d->pattern%PLAYERPATTERN_MAX));
     CLCOMMAND(vanity, result(d->vanity));
     CLCOMMAND(handle, result(d->handle));
     CLCOMMAND(host, result(d->hostip));
@@ -1845,6 +1859,7 @@ namespace client
         sendstring(game::player1->name, p);
         putint(p, game::player1->colour);
         putint(p, game::player1->model);
+        putint(p, game::player1->pattern);
         sendstring(game::player1->vanity, p);
         putint(p, game::player1->loadweap.length());
         loopv(game::player1->loadweap) putint(p, game::player1->loadweap[i]);
@@ -1978,6 +1993,7 @@ namespace client
                 sendstring(game::player1->name, p);
                 putint(p, game::player1->colour);
                 putint(p, game::player1->model);
+                putint(p, game::player1->pattern);
                 putint(p, game::player1->checkpointspawn);
                 sendstring(game::player1->vanity, p);
                 putint(p, game::player1->loadweap.length());
@@ -2411,10 +2427,10 @@ namespace client
                     break;
                 }
 
-                case N_SETPLAYERINFO: // name colour model checkpoint vanity count <loadweaps> count <randweaps>
+                case N_SETPLAYERINFO: // name colour model pattern checkpoint vanity count <loadweaps> count <randweaps>
                 {
                     getstring(text, p);
-                    int colour = getint(p), model = getint(p), cps = getint(p);
+                    int colour = getint(p), model = getint(p), pattern = getint(p), cps = getint(p);
                     stringz(vanity);
                     getstring(vanity, p);
                     int lw = getint(p);
@@ -2431,24 +2447,24 @@ namespace client
                     {
                         string oldname, newname;
                         copystring(oldname, game::colourname(d));
-                        d->setinfo(namestr, colour, model, vanity, lweaps, rweaps);
+                        d->setinfo(namestr, colour, model, pattern, vanity, lweaps, rweaps);
                         copystring(newname, game::colourname(d));
                         if(showpresence >= (waiting(false) ? 2 : 1) && !isignored(d->clientnum))
                             conoutft(CON_EVENT, "\fm%s is now known as %s", oldname, newname);
                     }
-                    else d->setinfo(namestr, colour, model, vanity, lweaps, rweaps);
+                    else d->setinfo(namestr, colour, model, pattern, vanity, lweaps, rweaps);
                     d->checkpointspawn = cps;
                     break;
                 }
 
-                case N_CLIENTINIT: // cn colour model checkpoint team priv name vanity count <loadweaps> count <randweaps> handle hostname hostip <version>
+                case N_CLIENTINIT: // cn colour model pattern checkpoint team priv name vanity count <loadweaps> count <randweaps> handle hostname hostip <version>
                 {
                     int tcn = getint(p);
                     verinfo dummy;
                     gameent *d = game::newclient(tcn);
                     if(!d)
                     {
-                        loopk(5) getint(p);
+                        loopk(6) getint(p);
                         getstring(text, p);
                         int w = getint(p);
                         loopk(w) getint(p);
@@ -2456,7 +2472,7 @@ namespace client
                         dummy.get(p);
                         break;
                     }
-                    int colour = getint(p), model = getint(p), cps = getint(p), team = clamp(getint(p), int(T_NEUTRAL), int(T_ENEMY)), priv = getint(p);
+                    int colour = getint(p), model = getint(p), pattern = getint(p), cps = getint(p), team = clamp(getint(p), int(T_NEUTRAL), int(T_ENEMY)), priv = getint(p);
                     getstring(text, p);
                     stringz(namestr);
                     filterstring(namestr, text, true, true, true, true, MAXNAMELEN);
@@ -2477,10 +2493,10 @@ namespace client
                     if(d == game::focus && d->team != team) hud::lastteam = 0;
                     d->team = team;
                     d->privilege = priv;
-                    if(d->name[0]) d->setinfo(namestr, colour, model, vanity, lweaps, rweaps); // already connected
+                    if(d->name[0]) d->setinfo(namestr, colour, model, pattern, vanity, lweaps, rweaps); // already connected
                     else // new client
                     {
-                        d->setinfo(namestr, colour, model, vanity, lweaps, rweaps);
+                        d->setinfo(namestr, colour, model, pattern, vanity, lweaps, rweaps);
                         if(showpresence >= (waiting(false) ? 2 : 1))
                         {
                             int amt = otherclients(true);
@@ -3366,7 +3382,7 @@ namespace client
                 {
                     int bn = getint(p), on = getint(p), at = getint(p), et = getint(p), sk = clamp(getint(p), 1, 101);
                     getstring(text, p);
-                    int tm = getint(p), cl = getint(p), md = getint(p);
+                    int tm = getint(p), cl = getint(p), md = getint(p), pt = getint(p);
                     string vanity;
                     getstring(vanity, p);
                     int lw = getint(p);
@@ -3374,7 +3390,7 @@ namespace client
                     loopk(lw) lweaps.add(getint(p));
                     gameent *b = game::newclient(bn);
                     if(!b) break;
-                    ai::init(b, at, et, on, sk, bn, text, tm, cl, md, vanity, lweaps);
+                    ai::init(b, at, et, on, sk, bn, text, tm, cl, md, pt, vanity, lweaps);
                     break;
                 }
 

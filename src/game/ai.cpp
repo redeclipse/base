@@ -195,7 +195,7 @@ namespace ai
         }
     }
 
-    void init(gameent *d, int at, int et, int on, int sk, int bn, char *name, int tm, int cl, int md, const char *vn, vector<int> &lweaps)
+    void init(gameent *d, int at, int et, int on, int sk, int bn, char *name, int tm, int cl, int md, int pt, const char *vn, vector<int> &lweaps)
     {
         getwaypoints();
 
@@ -239,6 +239,7 @@ namespace ai
         d->team = tm;
         d->colour = cl;
         d->model = md;
+        d->pattern = pt;
         d->setvanity(vn);
 
         if(resetthisguy) projs::remove(d);

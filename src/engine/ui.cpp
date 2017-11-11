@@ -3861,7 +3861,7 @@ namespace UI
 
     struct PlayerPreview : Preview
     {
-        int model, team, weapon;
+        int model, pattern, team, weapon;
         float scale, blend;
         char *vanity;
         Color pcol;
@@ -3869,10 +3869,11 @@ namespace UI
         PlayerPreview() : vanity(NULL) {}
         ~PlayerPreview() { DELETEA(vanity); }
 
-        void setup(int model_, const Color &pcol_, int team_, int weapon_, char *vanity_, float scale_, float blend_, float minw_, float minh_)
+        void setup(int model_, int pattern_, const Color &pcol_, int team_, int weapon_, char *vanity_, float scale_, float blend_, float minw_, float minh_)
         {
             Preview::setup(minw_, minh_, Color(colourwhite));
             model = model_;
+            pattern = pattern_;
             pcol = pcol_;
             team = team_;
             weapon = weapon_;
@@ -3897,14 +3898,14 @@ namespace UI
             window->calcscissor(sx, sy, sx+w, sy+h, sx1, sy1, sx2, sy2, false);
             modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, false, clipstack.length() > 0);
             colors[0].a = uchar(colors[0].a*blend);
-            game::renderplayerpreview(model, pcol.tohexcolor(), team, weapon, vanity, scale, colors[0].tocolor4());
+            game::renderplayerpreview(model, pattern, pcol.tohexcolor(), team, weapon, vanity, scale, colors[0].tocolor4());
             if(clipstack.length()) clipstack.last().scissor();
             modelpreview::end();
         }
     };
 
-    ICOMMAND(0, uiplayerpreview, "iiiisffffe", (int *model, int *colour, int *team, int *weapon, char *vanity, float *scale, float *blend, float *minw, float *minh, uint *children),
-        BUILD(PlayerPreview, o, o->setup(*model, Color(*colour), *team, *weapon, vanity, *scale, *blend, *minw*uiscale, *minh*uiscale), children));
+    ICOMMAND(0, uiplayerpreview, "iiiiisffffe", (int *model, int *pattern, int *colour, int *team, int *weapon, char *vanity, float *scale, float *blend, float *minw, float *minh, uint *children),
+        BUILD(PlayerPreview, o, o->setup(*model, *pattern, Color(*colour), *team, *weapon, vanity, *scale, *blend, *minw*uiscale, *minh*uiscale), children));
 
     struct PrefabPreview : Preview
     {

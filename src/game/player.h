@@ -117,13 +117,26 @@ struct score
 #define valteam(a,b)    (a >= b && a <= T_TOTAL)
 
 #define PLAYERTYPES 2
+enum { PLAYERPATTERN_DEFAULT = 0, PLAYERPATTERN_SOFT, PLAYERPATTERN_CAMO, PLAYERPATTERN_MAX };
+
 #ifdef GAMESERVER
-const char *playertypes[PLAYERTYPES][6] = {
-    { "actors/player/male/hwep",      "actors/player/male",     "actors/player/male/body",      "actors/player/male/headless",      "player",   "male" },
-    { "actors/player/female/hwep",    "actors/player/female",   "actors/player/male/body",      "actors/player/female/headless",    "player",   "female" }
+const char *playertypes[PLAYERTYPES][7] = {
+    { "actors/player/male/hwep",        "actors/player/male",       "actors/player/male/body",      "actors/player/male/headless",      "player",   "male",     "Male" },
+    { "actors/player/female/hwep",      "actors/player/female",     "actors/player/male/body",      "actors/player/female/headless",    "player",   "female",   "Female" }
 };
+const char *playerpatterns[PLAYERPATTERN_MAX][3] = {
+    { "<grey>actors/player/pattern/default",    "default",          "Default" },
+    { "<grey>actors/player/pattern/soft",       "soft",             "Soft" },
+    { "<grey>actors/player/pattern/camo",       "camo",             "Camo" }
+};
+SVAR(IDF_READONLY, patternnames, "default soft camo");
+VAR(IDF_READONLY, patternidxdefault, 1, PLAYERPATTERN_DEFAULT, -1);
+VAR(IDF_READONLY, patternidxsoft, 1, PLAYERPATTERN_SOFT, -1);
+VAR(IDF_READONLY, patternidxcamo, 1, PLAYERPATTERN_CAMO, -1);
+VAR(IDF_READONLY, patternidxnum, 1, PLAYERPATTERN_MAX, -1);
 #else
-extern const char *playertypes[PLAYERTYPES][6];
+extern const char *playertypes[PLAYERTYPES][7];
+extern const char *playerpatterns[PLAYERPATTERN_MAX][3];
 #endif
 
 #include "playerdef.h"

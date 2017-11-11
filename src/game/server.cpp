@@ -3908,6 +3908,7 @@ namespace server
                 putint(p, ci->team);
                 putint(p, ci->colour);
                 putint(p, ci->model);
+                putint(p, ci->pattern);
                 sendstring(ci->vanity, p);
                 putint(p, ci->loadweap.length());
                 loopv(ci->loadweap) putint(p, ci->loadweap[i]);
@@ -3919,6 +3920,7 @@ namespace server
             putint(p, ci->clientnum);
             putint(p, ci->colour);
             putint(p, ci->model);
+            putint(p, ci->pattern);
             putint(p, ci->checkpointspawn);
             putint(p, ci->team);
             putint(p, ci->privilege);
@@ -5808,6 +5810,7 @@ namespace server
                         copystring(ci->name, namestr, MAXNAMELEN+1);
                         ci->colour = max(getint(p), 0);
                         ci->model = max(getint(p), 0);
+                        ci->pattern = max(getint(p), 0);
                         getstring(text, p);
                         ci->setvanity(text);
                         int lw = getint(p);
@@ -6599,6 +6602,7 @@ namespace server
                     }
                     ci->colour = max(getint(p), 0);
                     ci->model = max(getint(p), 0);
+                    ci->pattern = max(getint(p), 0);
                     ci->checkpointspawn = max(getint(p), 0);
                     getstring(text, p);
                     ci->setvanity(text);

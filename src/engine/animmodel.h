@@ -112,12 +112,12 @@ struct animmodel : model
     struct skin : shaderparams
     {
         part *owner;
-        Texture *tex, *decal, *masks, *envmap, *normalmap, *mixer;
+        Texture *tex, *decal, *masks, *envmap, *normalmap, *mixer, *pattern;
         Shader *shader, *rsmshader;
         int cullface;
         shaderparamskey *key;
 
-        skin() : owner(0), tex(notexture), decal(NULL), masks(notexture), envmap(NULL), normalmap(NULL), mixer(NULL), shader(NULL), rsmshader(NULL), cullface(1), key(NULL) {}
+        skin() : owner(0), tex(notexture), decal(NULL), masks(notexture), envmap(NULL), normalmap(NULL), mixer(NULL), pattern(NULL), shader(NULL), rsmshader(NULL), cullface(1), key(NULL) {}
 
         bool masked() const { return masks != notexture; }
         bool envmapped() const { return envmapmax>0; }
@@ -125,6 +125,7 @@ struct animmodel : model
         bool alphatested() const { return alphatest > 0 && tex->type&Texture::ALPHA; }
         bool decaled() const { return decal != NULL; }
         bool mixed() const { return mixer != NULL; }
+        bool patterned() const { return pattern != NULL; }
 
         void setkey()
         {
@@ -207,6 +208,7 @@ struct animmodel : model
             if(envmapped()) { opts[optslen++] = 'm'; opts[optslen++] = 'e'; }
             else if(masked()) opts[optslen++] = 'm';
             if(mixed()) opts[optslen++] = 'x';
+            if(patterned()) opts[optslen++] = 'p';
             if(!cullface) opts[optslen++] = 'c';
             opts[optslen++] = '\0';
 
@@ -264,6 +266,9 @@ struct animmodel : model
                 return;
             }
             int activetmu = 0;
+            bool forceshader = false;
+            int index = owner->model->parts[0]->index;
+            bool firstmodel = index >= 0 && index < owner->numanimparts && owner->model == as->owner->model;
             if(tex!=lasttex)
             {
                 glBindTexture(GL_TEXTURE_2D, tex->id);
@@ -290,9 +295,7 @@ struct animmodel : model
                 glBindTexture(GL_TEXTURE_2D, masks->id);
                 lastmasks = masks;
             }
-            bool forceshader = false, wasmixed = mixed();
-            int index = owner->model->parts[0]->index;
-            bool firstmodel = index >= 0 && index < owner->numanimparts && owner->model == as->owner->model;
+            bool wasmixed = mixed();
             mixer = state->mixer && firstmodel ? state->mixer : NULL;
             if(mixed() != wasmixed) forceshader = true;
             if(mixed() && mixer!=lastmixer)
@@ -301,6 +304,16 @@ struct animmodel : model
                 activetmu = 5;
                 glBindTexture(GL_TEXTURE_2D, mixer->id);
                 lastmixer = mixer;
+            }
+            bool waspattern = patterned();
+            pattern = state->pattern && firstmodel ? state->pattern : NULL;
+            if(patterned() != waspattern) forceshader = true;
+            if(patterned() && pattern!=lastpattern)
+            {
+                glActiveTexture_(GL_TEXTURE6);
+                activetmu = 6;
+                glBindTexture(GL_TEXTURE_2D, pattern->id);
+                lastpattern = pattern;
             }
             if(envmapped())
             {
@@ -1664,7 +1677,7 @@ struct animmodel : model
     static vec2 mixerglow;
     static bvec modelmaterial[MAXMDLMATERIALS];
     static GLuint lastvbuf, lasttcbuf, lastxbuf, lastbbuf, lastebuf, lastenvmaptex, closestenvmaptex;
-    static Texture *lasttex, *lastdecal, *lastmasks, *lastmixer, *lastnormalmap;
+    static Texture *lasttex, *lastdecal, *lastmasks, *lastmixer, *lastpattern, *lastnormalmap;
     static int matrixpos;
     static matrix4 matrixstack[64];
 
@@ -1673,7 +1686,7 @@ struct animmodel : model
         enabletc = enabletangents = enablebones = enabledepthoffset = false;
         enablecullface = true;
         lastvbuf = lasttcbuf = lastxbuf = lastbbuf = lastebuf = lastenvmaptex = closestenvmaptex = 0;
-        lasttex = lastdecal = lastmasks = lastmixer = lastnormalmap = NULL;
+        lasttex = lastdecal = lastmasks = lastmixer = lastpattern = lastnormalmap = NULL;
         shaderparamskey::invalidate();
     }
 
@@ -1729,7 +1742,7 @@ vec2 animmodel::mixerglow(0, 0);
 bvec animmodel::modelmaterial[MAXMDLMATERIALS] = { bvec(255, 255, 255), bvec(255, 255, 255), bvec(255, 255, 255) };
 GLuint animmodel::lastvbuf = 0, animmodel::lasttcbuf = 0, animmodel::lastxbuf = 0, animmodel::lastbbuf = 0, animmodel::lastebuf = 0,
        animmodel::lastenvmaptex = 0, animmodel::closestenvmaptex = 0;
-Texture *animmodel::lasttex = NULL, *animmodel::lastdecal = NULL, *animmodel::lastmasks = NULL, *animmodel::lastmixer = NULL, *animmodel::lastnormalmap = NULL;
+Texture *animmodel::lasttex = NULL, *animmodel::lastdecal = NULL, *animmodel::lastmasks = NULL, *animmodel::lastmixer = NULL, *animmodel::lastpattern = NULL, *animmodel::lastnormalmap = NULL;
 int animmodel::matrixpos = 0;
 matrix4 animmodel::matrixstack[64];
 
