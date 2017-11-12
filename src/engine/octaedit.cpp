@@ -129,8 +129,8 @@ ICOMMAND(0, moving, "b", (int *n),
 VARF(0, gridpower, 0, 3, 12,
 {
     if(dragging) return;
+    while((1<<gridpower) >= worldsize) gridpower--;
     gridsize = 1<<gridpower;
-    if(gridsize>=worldsize) gridsize = worldsize/2;
     cancelsel();
 });
 
