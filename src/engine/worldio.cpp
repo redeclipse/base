@@ -686,11 +686,9 @@ ICOMMAND(0, savemapconfig, "s", (char *mname), if(!(identflags&IDF_WORLD)) save_
 
 VARF(IDF_PERSIST, mapshotsize, 0, 512, INT_MAX-1, mapshotsize -= mapshotsize%2);
 
-extern void gl_drawview();
 void save_mapshot(char *mname)
 {
     if(autosavebackups) backup(mname, ifmtexts[imageformat], hdr.revision, autosavebackups > 2, !(autosavebackups%2));
-
     GLuint tex;
     glGenTextures(1, &tex);
     glPixelStorei(GL_PACK_ALIGNMENT, 1);
@@ -699,25 +697,15 @@ void save_mapshot(char *mname)
     drawtex = DRAWTEX_MAPSHOT;
     gl_drawview();
     drawtex = 0;
-    //drawcubemap(2, camera1->o, camera1->yaw, camera1->pitch, cubemapsides[0]);
     glReadPixels(0, 0, vieww, viewh, GL_RGB, GL_UNSIGNED_BYTE, image.data);
     #if 0 // generates better images without this
     int x = 0, y = 0, w = vieww, h = viewh;
-    if(w > h)
-    {
-        x += (w-h)/2;
-        w = h;
-    }
-    else if(h > w)
-    {
-        y += (h-w)/2;
-        h = w;
-    }
+    if(w > h) { x += (w-h)/2; w = h; }
+    else if(h > w) { y += (h-w)/2; h = w; }
     if(x || y) texcrop(image, x, y, w, h);
     #endif
     if(vieww > mapshotsize || viewh > mapshotsize) scaleimage(image, mapshotsize, mapshotsize);
     saveimage(mname, image, imageformat, compresslevel, true);
-
     glDeleteTextures(1, &tex);
     defformatstring(texname, "%s", mname);
     reloadtexture(texname);
