@@ -466,6 +466,19 @@ void sorteditmaterials()
     editsurfs.sort(editmatcmp);
 }
 
+#define EDITMATCOLOR(value) \
+    case MAT_WATER:  value = bvec::fromcolor(colourblue); break; \
+    case MAT_CLIP:   value = bvec::fromcolor(colourred); break; \
+    case MAT_GLASS:  value = bvec::fromcolor(colourcyan); break; \
+    case MAT_NOCLIP: value = bvec::fromcolor(colourgreen); break; \
+    case MAT_LAVA:   value = bvec::fromcolor(colourorange); break; \
+    case MAT_AICLIP: value = bvec::fromcolor(colouryellow); break; \
+    case MAT_DEATH:  value = bvec::fromcolor(colourdarkgrey); break; \
+    case MAT_LADDER: value = bvec::fromcolor(colourviolet); break; \
+    case MAT_ALPHA:  value = bvec::fromcolor(colourpink); break; \
+    case MAT_HURT:   value = bvec::fromcolor(colourgrey); break; \
+    case MAT_NOGI:   value = bvec::fromcolor(colourbrown); break;
+
 void rendermatgrid()
 {
     enablepolygonoffset(GL_POLYGON_OFFSET_LINE);
@@ -480,17 +493,7 @@ void rendermatgrid()
             bvec color;
             switch(m.material&~MATF_INDEX)
             {
-                case MAT_WATER:  color = bvec(  0,   0,  85); break; // blue
-                case MAT_CLIP:   color = bvec( 85,   0,   0); break; // red
-                case MAT_GLASS:  color = bvec(  0,  85,  85); break; // cyan
-                case MAT_NOCLIP: color = bvec(  0,  85,   0); break; // green
-                case MAT_LAVA:   color = bvec( 85,  40,   0); break; // orange
-                case MAT_AICLIP: color = bvec( 85,  85,   0); break; // yellow
-                case MAT_DEATH:  color = bvec( 40,  40,  40); break; // black
-                case MAT_LADDER: color = bvec(128,  64, 224); break; // violet
-                case MAT_ALPHA:  color = bvec( 85,   0,  85); break; // pink
-                case MAT_HURT:   color = bvec(128, 128, 128); break; // grey
-                case MAT_NOGI:     color = bvec(40, 30,  0); break; // brown
+                EDITMATCOLOR(color)
                 default: continue;
             }
             gle::colorf(color.x*ldrscaleb, color.y*ldrscaleb, color.z*ldrscaleb);
@@ -753,6 +756,9 @@ void rendersolidmaterials()
     glEnable(GL_CULL_FACE);
 }
 
+FVAR(IDF_PERSIST, editmatscale, 0, 0.125f, 1);
+FVAR(IDF_PERSIST, editmatblend, 0, 0.5f, 1);
+
 void rendereditmaterials()
 {
     if(editsurfs.empty()) return;
@@ -765,7 +771,7 @@ void rendereditmaterials()
 
     foggednotextureshader->set();
 
-    glBlendFunc(GL_ZERO, GL_ONE_MINUS_SRC_COLOR);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_BLEND);
 
     int lastmat = -1;
@@ -778,20 +784,10 @@ void rendereditmaterials()
             bvec color;
             switch(m.material&~MATF_INDEX)
             {
-                case MAT_WATER:  color = bvec(  0,   0,  85); break; // blue
-                case MAT_CLIP:   color = bvec( 85,   0,   0); break; // red
-                case MAT_GLASS:  color = bvec(  0,  85,  85); break; // cyan
-                case MAT_NOCLIP: color = bvec(  0,  85,   0); break; // green
-                case MAT_LAVA:   color = bvec( 85,  40,   0); break; // orange
-                case MAT_AICLIP: color = bvec( 85,  85,   0); break; // yellow
-                case MAT_DEATH:  color = bvec( 40,  40,  40); break; // black
-                case MAT_LADDER: color = bvec(128,  64, 224); break; // violet
-                case MAT_ALPHA:  color = bvec( 85,   0,  85); break; // pink
-                case MAT_HURT:   color = bvec(128, 128, 128); break; // grey
-                case MAT_NOGI:   color = bvec(40, 30,  0); break; // brown
+                EDITMATCOLOR(color)
                 default: continue;
             }
-            gle::color(color);
+            gle::color(color.tocolor().mul(editmatscale), editmatblend);
             lastmat = m.material;
         }
         drawmaterial(m, -0.1f);
