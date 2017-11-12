@@ -2481,7 +2481,7 @@ void vshaderparam(const char *name, float *x, float *y, float *z, float *w, int 
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vshaderparam, "sffffii");
-ICOMMAND(0, getvshaderparam, "i", (int *tex, const char *name),
+ICOMMAND(0, getvshaderparam, "is", (int *tex, const char *name),
 {
     VSlot &vslot = lookupvslot(*tex, false);
     loopv(vslot.params)
