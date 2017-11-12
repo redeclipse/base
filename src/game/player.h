@@ -121,7 +121,7 @@ enum
 {
     PLAYERPATTERN_DEFAULT = 0, PLAYERPATTERN_SOFT, PLAYERPATTERN_CAMO,
     PLAYERPATTERN_HEART, PLAYERPATTERN_CROWN, PLAYERPATTERN_ZEBRA,
-    PLAYERPATTERN_CHECKER,
+    PLAYERPATTERN_CHECKER, PLAYERPATTERN_STAR,
     PLAYERPATTERN_MAX
 };
 #ifdef GAMESERVER
@@ -137,6 +137,7 @@ const char *playerpatterns[PLAYERPATTERN_MAX][3] = {
     { "<grey>textures/patterns/crown",     "crown",            "Crown" },
     { "<grey>textures/patterns/zebra",     "zebra",            "Zebra" },
     { "<grey>textures/patterns/checker",   "checker",          "Checker" },
+    { "<grey>textures/patterns/star",      "star",             "Star" },
 };
 #else
 extern const char *playertypes[PLAYERTYPES][7];
