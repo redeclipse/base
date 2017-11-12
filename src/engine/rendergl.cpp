@@ -2280,8 +2280,11 @@ void gl_drawview()
     GLERROR;
 
     // render avatar after AO to avoid weird contact shadows
-    renderavatar();
-    GLERROR;
+    if(drawtex != DRAWTEX_MAPSHOT)
+    {
+        renderavatar();
+        GLERROR;
+    }
 
     // render grass after AO to avoid disturbing shimmering patterns
     generategrass();
@@ -2316,7 +2319,7 @@ void gl_drawview()
     rendervolumetric();
     GLERROR;
 
-    if(editmode)
+    if(drawtex != DRAWTEX_MAPSHOT && editmode)
     {
         if(!wireframe && outline) renderoutline();
         GLERROR;

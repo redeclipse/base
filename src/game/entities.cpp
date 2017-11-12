@@ -2078,62 +2078,59 @@ namespace entities
     {
         if(shouldshowents(game::player1->state == CS_EDITING ? 1 : (!entgroup.empty() || ents.inrange(enthover) ? 2 : 3))) loopv(ents) // important, don't render lines and stuff otherwise!
             renderfocus(i, renderentshow(e, i, game::player1->state == CS_EDITING ? ((entgroup.find(i) >= 0 || enthover == i) ? 1 : 2) : 3));
-        if(!drawtex)
+        int fstent = m_edit(game::gamemode) ? 0 : firstuse(EU_ITEM),
+            lstent = m_edit(game::gamemode) ? ents.length() : lastuse(EU_ITEM);
+        for(int i = fstent; i < lstent; i++)
         {
-            int fstent = m_edit(game::gamemode) ? 0 : firstuse(EU_ITEM),
-                lstent = m_edit(game::gamemode) ? ents.length() : lastuse(EU_ITEM);
-            for(int i = fstent; i < lstent; i++)
+            gameentity &e = *(gameentity *)ents[i];
+            if(e.type <= NOTUSED || e.type >= MAXENTTYPES || (enttype[e.type].usetype == EU_ITEM && simpleitems)) continue;
+            bool active = enttype[e.type].usetype == EU_ITEM && (e.spawned() || (e.lastemit && lastmillis-e.lastemit < 500));
+            if(m_edit(game::gamemode) || active)
             {
-                gameentity &e = *(gameentity *)ents[i];
-                if(e.type <= NOTUSED || e.type >= MAXENTTYPES || (enttype[e.type].usetype == EU_ITEM && simpleitems)) continue;
-                bool active = enttype[e.type].usetype == EU_ITEM && (e.spawned() || (e.lastemit && lastmillis-e.lastemit < 500));
-                if(m_edit(game::gamemode) || active)
+                const char *mdlname = entmdlname(e.type, e.attrs);
+                if(mdlname && *mdlname)
                 {
-                    const char *mdlname = entmdlname(e.type, e.attrs);
-                    if(mdlname && *mdlname)
+                    modelstate mdl;
+                    mdl.o = e.o;
+                    mdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
+                    mdl.flags = MDL_CULL_VFC|MDL_CULL_DIST|MDL_CULL_OCCLUDED;
+                    int colour = -1;
+                    if(!active)
                     {
-                        modelstate mdl;
-                        mdl.o = e.o;
-                        mdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
-                        mdl.flags = MDL_CULL_VFC|MDL_CULL_DIST|MDL_CULL_OCCLUDED;
-                        int colour = -1;
-                        if(!active)
+                        if(showentmodels <= (e.type == PLAYERSTART || e.type == ACTOR ? 1 : 0)) continue;
+                        if(e.type == AFFINITY || e.type == PLAYERSTART)
                         {
-                            if(showentmodels <= (e.type == PLAYERSTART || e.type == ACTOR ? 1 : 0)) continue;
-                            if(e.type == AFFINITY || e.type == PLAYERSTART)
-                            {
-                                mdl.yaw = e.attrs[1]+(e.type == PLAYERSTART ? 90 : 0);
-                                mdl.pitch = e.attrs[2];
-                                colour = TEAM(e.attrs[0], colour);
-                            }
-                            else if(e.type == ACTOR)
-                            {
-                                mdl.yaw = e.attrs[1]+90;
-                                mdl.pitch = e.attrs[2];
-                                int weap = e.attrs[6] > 0 ? e.attrs[6]-1 : AA(e.attrs[0], weaponspawn);
-                                mdl.size = e.attrs[9] > 0 ? e.attrs[9]/100.f : AA(e.attrs[0], scale);
-                                if(isweap(weap)) colour = W(weap, colour);
-                            }
+                            mdl.yaw = e.attrs[1]+(e.type == PLAYERSTART ? 90 : 0);
+                            mdl.pitch = e.attrs[2];
+                            colour = TEAM(e.attrs[0], colour);
                         }
-                        else if(e.spawned())
+                        else if(e.type == ACTOR)
                         {
-                            int millis = lastmillis-e.lastspawn;
-                            if(millis < 500) mdl.size = mdl.color.a = float(millis)/500.f;
+                            mdl.yaw = e.attrs[1]+90;
+                            mdl.pitch = e.attrs[2];
+                            int weap = e.attrs[6] > 0 ? e.attrs[6]-1 : AA(e.attrs[0], weaponspawn);
+                            mdl.size = e.attrs[9] > 0 ? e.attrs[9]/100.f : AA(e.attrs[0], scale);
+                            if(isweap(weap)) colour = W(weap, colour);
                         }
-                        else if(e.lastemit)
-                        {
-                            int millis = lastmillis-e.lastemit;
-                            if(millis < 500) mdl.size = mdl.color.a = 1.f-(float(millis)/500.f);
-                        }
-                        if(e.type == WEAPON)
-                        {
-                            int attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], m_weapon(game::focus->actortype, game::gamemode, game::mutators));
-                            if(isweap(attr)) colour = W(attr, colour);
-                            else continue;
-                        }
-                        if(colour >= 0) mdl.material[0] = bvec::fromcolor(colour);
-                        rendermodel(mdlname, mdl);
                     }
+                    else if(e.spawned())
+                    {
+                        int millis = lastmillis-e.lastspawn;
+                        if(millis < 500) mdl.size = mdl.color.a = float(millis)/500.f;
+                    }
+                    else if(e.lastemit)
+                    {
+                        int millis = lastmillis-e.lastemit;
+                        if(millis < 500) mdl.size = mdl.color.a = 1.f-(float(millis)/500.f);
+                    }
+                    if(e.type == WEAPON)
+                    {
+                        int attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], m_weapon(game::focus->actortype, game::gamemode, game::mutators));
+                        if(isweap(attr)) colour = W(attr, colour);
+                        else continue;
+                    }
+                    if(colour >= 0) mdl.material[0] = bvec::fromcolor(colour);
+                    rendermodel(mdlname, mdl);
                 }
             }
         }
