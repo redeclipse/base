@@ -1673,7 +1673,7 @@ namespace client
         }
         if(savedtype >= 0) setnames(mapname, savedtype, 0);
     }
-    //ICOMMAND(0, sendmap, "", (), sendmap());
+    ICOMMAND(0, sendmap, "", (), if(multiplayer(false)) sendmap());
 
     void gotoplayer(const char *arg)
     {

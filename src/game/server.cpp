@@ -5505,14 +5505,14 @@ namespace server
         mapdata[n] = opentempfile(fname, "w+b");
         if(!mapdata[n])
         {
-            srvmsgf(-1, "failed to open temporary file for map");
+            srvmsgf(-1, "Failed to open temporary file for map");
             return n;
         }
         mapdata[n]->write(data, len);
         if(n == SENDMAP_MPZ)
         {
             smapcrc = crcstream(mapdata[n]);
-            if(crc != smapcrc) srvmsgf(-1, "warning: new crc 0x%.8x doesn't match client 0x%.8x [0x%.8x]", smapcrc, crc, ci->clientcrc);
+            if(crc != smapcrc) srvmsgf(-1, "Warning: new crc 0x%.8x doesn't match client 0x%.8x [0x%.8x]", smapcrc, crc, ci->clientcrc);
         }
         return n;
     }
