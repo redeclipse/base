@@ -121,6 +121,7 @@ enum
 {
     PLAYERPATTERN_DEFAULT = 0, PLAYERPATTERN_SOFT, PLAYERPATTERN_CAMO,
     PLAYERPATTERN_HEART, PLAYERPATTERN_CROWN, PLAYERPATTERN_ZEBRA,
+    PLAYERPATTERN_CHECKER,
     PLAYERPATTERN_MAX
 };
 #ifdef GAMESERVER
@@ -129,12 +130,13 @@ const char *playertypes[PLAYERTYPES][7] = {
     { "actors/player/female/hwep",      "actors/player/female",     "actors/player/male/body",      "actors/player/female/headless",    "player",   "female",   "Female" }
 };
 const char *playerpatterns[PLAYERPATTERN_MAX][3] = {
-    { "<grey>textures/pattern/default",    "default",          "Default" },
-    { "<grey>textures/pattern/soft",       "soft",             "Soft" },
-    { "<grey>textures/pattern/camo",       "camo",             "Camo" },
-    { "<grey>textures/pattern/heart",      "heart",            "Heart" },
-    { "<grey>textures/pattern/crown",      "crown",            "Crown" },
-    { "<grey>textures/pattern/zebra",      "zebra",            "Zebra" }
+    { "<grey>textures/patterns/default",   "default",          "Default" },
+    { "<grey>textures/patterns/soft",      "soft",             "Soft" },
+    { "<grey>textures/patterns/camo",      "camo",             "Camo" },
+    { "<grey>textures/patterns/heart",     "heart",            "Heart" },
+    { "<grey>textures/patterns/crown",     "crown",            "Crown" },
+    { "<grey>textures/patterns/zebra",     "zebra",            "Zebra" },
+    { "<grey>textures/patterns/checker",   "checker",          "Checker" },
 };
 #else
 extern const char *playertypes[PLAYERTYPES][7];
