@@ -2301,6 +2301,7 @@ void vrotate(int *n)
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vrotate, "i");
+ICOMMAND(0, getvrotate, "i", (int *tex), intret(lookupvslot(*tex, false).rotation));
 
 void voffset(int *x, int *y)
 {
@@ -2311,6 +2312,12 @@ void voffset(int *x, int *y)
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, voffset, "ii");
+ICOMMAND(0, getvoffset, "i", (int *tex),
+{
+    VSlot &vslot = lookupvslot(*tex, false);
+    defformatstring(str, "%d %d", vslot.offset.x, vslot.offset.y);
+    result(str);
+});
 
 void vscroll(float *s, float *t)
 {
@@ -2321,6 +2328,12 @@ void vscroll(float *s, float *t)
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vscroll, "ff");
+ICOMMAND(0, getvscroll, "i", (int *tex),
+{
+    VSlot &vslot = lookupvslot(*tex, false);
+    defformatstring(str, "%s %s", floatstr(vslot.scroll.x), floatstr(vslot.scroll.y));
+    result(str);
+});
 
 void vscale(float *scale)
 {
@@ -2331,6 +2344,7 @@ void vscale(float *scale)
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vscale, "f");
+ICOMMAND(0, getvscale, "i", (int *tex), floatret(lookupvslot(*tex, false).scale));
 
 void vlayer(int *n)
 {
@@ -2346,6 +2360,7 @@ void vlayer(int *n)
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vlayer, "i");
+ICOMMAND(0, getvlayer, "i", (int *tex), intret(lookupvslot(*tex, false).layer));
 
 void vdetail(int *n)
 {
@@ -2361,6 +2376,7 @@ void vdetail(int *n)
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vdetail, "i");
+ICOMMAND(0, getvdetail, "i", (int *tex), intret(lookupvslot(*tex, false).detail));
 
 void valpha(float *front, float *back)
 {
@@ -2372,6 +2388,12 @@ void valpha(float *front, float *back)
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, valpha, "ff");
+ICOMMAND(0, getvalpha, "i", (int *tex),
+{
+    VSlot &vslot = lookupvslot(*tex, false);
+    defformatstring(str, "%s %s", floatstr(vslot.alphafront), floatstr(vslot.alphaback));
+    result(str);
+});
 
 void vcolour(float *r, float *g, float *b)
 {
@@ -2382,6 +2404,12 @@ void vcolour(float *r, float *g, float *b)
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vcolour, "fff");
+ICOMMAND(0, getvcolour, "i", (int *tex),
+{
+    VSlot &vslot = lookupvslot(*tex, false);
+    defformatstring(str, "%s %s %s", floatstr(vslot.colorscale.r), floatstr(vslot.colorscale.g), floatstr(vslot.colorscale.b));
+    result(str);
+});
 
 void vpalette(int *p, int *x)
 {
@@ -2393,6 +2421,12 @@ void vpalette(int *p, int *x)
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vpalette, "ii");
+ICOMMAND(0, getvpalette, "i", (int *tex),
+{
+    VSlot &vslot = lookupvslot(*tex, false);
+    defformatstring(str, "%d %d", vslot.palette, vslot.palindex);
+    result(str);
+});
 
 void vrefract(float *k, float *r, float *g, float *b)
 {
@@ -2408,6 +2442,12 @@ void vrefract(float *k, float *r, float *g, float *b)
 
 }
 COMMAND(0, vrefract, "ffff");
+ICOMMAND(0, getvrefract, "i", (int *tex),
+{
+    VSlot &vslot = lookupvslot(*tex, false);
+    defformatstring(str, "%s %s %s %s", floatstr(vslot.refractscale), floatstr(vslot.refractcolor.r), floatstr(vslot.refractcolor.g), floatstr(vslot.refractcolor.b));
+    result(str);
+});
 
 void vcoastscale(float *value)
 {
@@ -2418,6 +2458,7 @@ void vcoastscale(float *value)
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vcoastscale, "f");
+ICOMMAND(0, getvcoastscale, "i", (int *tex), floatret(lookupvslot(*tex, false).coastscale));
 
 void vreset()
 {
@@ -2440,6 +2481,34 @@ void vshaderparam(const char *name, float *x, float *y, float *z, float *w, int 
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vshaderparam, "sffffii");
+ICOMMAND(0, getvshaderparam, "i", (int *tex, const char *name),
+{
+    VSlot &vslot = lookupvslot(*tex, false);
+    loopv(vslot.params)
+    {
+        SlotShaderParam &p = vslot.params[i];
+        if(!strcmp(p.name, name))
+        {
+            defformatstring(str, "%s %s %s %s", floatstr(p.val[0]), floatstr(p.val[1]), floatstr(p.val[2]), floatstr(p.val[3]));
+            if(p.palette || p.palindex) concformatstring(str, " %d %d", p.palette, p.palindex);
+            result(str);
+            return;
+        }
+    }
+});
+ICOMMAND(0, getvshaderparamnames, "i", (int *tex),
+{
+    VSlot &vslot = lookupvslot(*tex, false);
+    vector<char> str;
+    loopv(vslot.params)
+    {
+        SlotShaderParam &p = vslot.params[i];
+        if(i) str.put(' ');
+        str.put(p.name, strlen(p.name));
+    }
+    str.add('\0');
+    stringret(newstring(str.getbuf(), str.length()-1));
+});
 
 void mpedittex(int tex, int allfaces, selinfo &sel, bool local)
 {
