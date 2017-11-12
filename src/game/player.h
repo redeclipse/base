@@ -117,19 +117,24 @@ struct score
 #define valteam(a,b)    (a >= b && a <= T_TOTAL)
 
 #define PLAYERTYPES 2
-enum { PLAYERPATTERN_DEFAULT = 0, PLAYERPATTERN_SOFT, PLAYERPATTERN_CAMO, PLAYERPATTERN_HEART, PLAYERPATTERN_CROWN, PLAYERPATTERN_MAX };
-
+enum
+{
+    PLAYERPATTERN_DEFAULT = 0, PLAYERPATTERN_SOFT, PLAYERPATTERN_CAMO,
+    PLAYERPATTERN_HEART, PLAYERPATTERN_CROWN, PLAYERPATTERN_ZEBRA,
+    PLAYERPATTERN_MAX
+};
 #ifdef GAMESERVER
 const char *playertypes[PLAYERTYPES][7] = {
     { "actors/player/male/hwep",        "actors/player/male",       "actors/player/male/body",      "actors/player/male/headless",      "player",   "male",     "Male" },
     { "actors/player/female/hwep",      "actors/player/female",     "actors/player/male/body",      "actors/player/female/headless",    "player",   "female",   "Female" }
 };
 const char *playerpatterns[PLAYERPATTERN_MAX][3] = {
-    { "<grey>actors/player/pattern/default",    "default",          "Default" },
-    { "<grey>actors/player/pattern/soft",       "soft",             "Soft" },
-    { "<grey>actors/player/pattern/camo",       "camo",             "Camo" },
-    { "<grey>actors/player/pattern/heart",      "heart",            "Heart" },
-    { "<grey>actors/player/pattern/crown",      "crown",            "Crown" }
+    { "<grey>textures/pattern/default",    "default",          "Default" },
+    { "<grey>textures/pattern/soft",       "soft",             "Soft" },
+    { "<grey>textures/pattern/camo",       "camo",             "Camo" },
+    { "<grey>textures/pattern/heart",      "heart",            "Heart" },
+    { "<grey>textures/pattern/crown",      "crown",            "Crown" },
+    { "<grey>textures/pattern/zebra",      "zebra",            "Zebra" }
 };
 #else
 extern const char *playertypes[PLAYERTYPES][7];
