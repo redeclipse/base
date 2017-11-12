@@ -131,14 +131,6 @@ const char *playerpatterns[PLAYERPATTERN_MAX][3] = {
     { "<grey>actors/player/pattern/heart",      "heart",            "Heart" },
     { "<grey>actors/player/pattern/crown",      "crown",            "Crown" }
 };
-SVAR(IDF_READONLY, patternnames, "default soft camo heart crown");
-SVAR(IDF_READONLY, patternlongnames, "Default Soft Camo Heart Crown");
-VAR(IDF_READONLY, patternidxdefault, 1, PLAYERPATTERN_DEFAULT, -1);
-VAR(IDF_READONLY, patternidxsoft, 1, PLAYERPATTERN_SOFT, -1);
-VAR(IDF_READONLY, patternidxcamo, 1, PLAYERPATTERN_CAMO, -1);
-VAR(IDF_READONLY, patternidxheart, 1, PLAYERPATTERN_HEART, -1);
-VAR(IDF_READONLY, patternidxcrown, 1, PLAYERPATTERN_CROWN, -1);
-VAR(IDF_READONLY, patternidxnum, 1, PLAYERPATTERN_MAX, -1);
 #else
 extern const char *playertypes[PLAYERTYPES][7];
 extern const char *playerpatterns[PLAYERPATTERN_MAX][3];

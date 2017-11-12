@@ -801,8 +801,10 @@ namespace client
     LOOPINVENTORY(,loopcsi,loopk,false);
     LOOPINVENTORY(rev,loopcsirev,loopkrev,true);
 
-    ICOMMAND(0, getmodelname, "ib", (int *mdl, int *idx, int *numargs), result(*mdl >= 0 ? playertypes[*mdl%PLAYERTYPES][*idx >= 0 ? clamp(*idx, 0, 6) : 6] : ""));
-    ICOMMAND(0, getpatternname, "ib", (int *pattern, int *idx, int *numargs), result(*pattern >= 0 ? playerpatterns[*pattern%PLAYERPATTERN_MAX][*idx >= 0 ? clamp(*idx, 0, 2) : 2] : ""));
+    VAR(0, numplayertypes, 1, PLAYERTYPES, -1);
+    ICOMMAND(0, getmodelname, "ib", (int *mdl, int *idx), result(*mdl >= 0 ? playertypes[*mdl%PLAYERTYPES][*idx >= 0 ? clamp(*idx, 0, 6) : 6] : ""));
+    VAR(0, numpatterns, 1, PLAYERPATTERN_MAX, -1);
+    ICOMMAND(0, getpattern, "ib", (int *pattern, int *idx), result(*pattern >= 0 ? playerpatterns[*pattern%PLAYERPATTERN_MAX][*idx >= 0 ? clamp(*idx, 0, 2) : 2] : ""));
 
     ICOMMAND(0, getcamerayaw, "", (), floatret(camera1->yaw));
     ICOMMAND(0, getcamerapitch, "", (), floatret(camera1->pitch));
