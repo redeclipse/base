@@ -117,7 +117,7 @@ struct score
 #define valteam(a,b)    (a >= b && a <= T_TOTAL)
 
 #define PLAYERTYPES 2
-#define PLAYERPATTERNS 10
+#define PLAYERPATTERNS 11
 #ifdef GAMESERVER
 const char *playertypes[PLAYERTYPES][7] = {
     { "actors/player/male/hwep",        "actors/player/male",       "actors/player/male/body",      "actors/player/male/headless",      "player",   "male",     "Male" },
@@ -134,6 +134,7 @@ const char *playerpatterns[PLAYERPATTERNS][3] = {
     { "<grey>textures/patterns/star",      "star",             "Star" },
     { "<grey>textures/patterns/flower",    "flower",           "Flower" },
     { "<grey>textures/patterns/leopard",   "leopard",          "Leopard" },
+    { "<grey>textures/patterns/zigzag",    "zigzag" ,          "Zigzag" },
 };
 #else
 extern const char *playertypes[PLAYERTYPES][7];
