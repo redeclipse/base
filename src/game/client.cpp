@@ -530,7 +530,7 @@ namespace client
             sendplayerinfo = true;
         }
     }
-    VARF(IDF_PERSIST, playerpattern, 0, 0, PLAYERPATTERN_MAX-1, setplayerpattern(playerpattern));
+    VARF(IDF_PERSIST, playerpattern, 0, 0, PLAYERPATTERNS-1, setplayerpattern(playerpattern));
 
     SVARF(IDF_PERSIST, playervanity, "", if(game::player1->setvanity(playervanity)) sendplayerinfo = true;);
 
@@ -803,8 +803,8 @@ namespace client
 
     VAR(0, numplayertypes, 1, PLAYERTYPES, -1);
     ICOMMAND(0, getmodelname, "ib", (int *mdl, int *idx), result(*mdl >= 0 ? playertypes[*mdl%PLAYERTYPES][*idx >= 0 ? clamp(*idx, 0, 6) : 6] : ""));
-    VAR(0, numpatterns, 1, PLAYERPATTERN_MAX, -1);
-    ICOMMAND(0, getpattern, "ib", (int *pattern, int *idx), result(*pattern >= 0 ? playerpatterns[*pattern%PLAYERPATTERN_MAX][*idx >= 0 ? clamp(*idx, 0, 2) : 2] : ""));
+    VAR(0, numpatterns, 1, PLAYERPATTERNS, -1);
+    ICOMMAND(0, getpattern, "ib", (int *pattern, int *idx), result(*pattern >= 0 ? playerpatterns[*pattern%PLAYERPATTERNS][*idx >= 0 ? clamp(*idx, 0, 2) : 2] : ""));
 
     ICOMMAND(0, getcamerayaw, "", (), floatret(camera1->yaw));
     ICOMMAND(0, getcamerapitch, "", (), floatret(camera1->pitch));
@@ -864,7 +864,7 @@ namespace client
     CLCOMMAND(actortype, intret(d->actortype));
     CLCOMMAND(pcolour, intret(d->colour));
     CLCOMMAND(model, intret(d->model%PLAYERTYPES));
-    CLCOMMAND(pattern, intret(d->pattern%PLAYERPATTERN_MAX));
+    CLCOMMAND(pattern, intret(d->pattern%PLAYERPATTERNS));
     CLCOMMAND(vanity, result(d->vanity));
     CLCOMMAND(handle, result(d->handle));
     CLCOMMAND(host, result(d->hostip));

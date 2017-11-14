@@ -117,19 +117,13 @@ struct score
 #define valteam(a,b)    (a >= b && a <= T_TOTAL)
 
 #define PLAYERTYPES 2
-enum
-{
-    PLAYERPATTERN_DEFAULT = 0, PLAYERPATTERN_SOFT, PLAYERPATTERN_CAMO,
-    PLAYERPATTERN_HEART, PLAYERPATTERN_CROWN, PLAYERPATTERN_ZEBRA,
-    PLAYERPATTERN_CHECKER, PLAYERPATTERN_STAR,
-    PLAYERPATTERN_MAX
-};
+#define PLAYERPATTERNS 10
 #ifdef GAMESERVER
 const char *playertypes[PLAYERTYPES][7] = {
     { "actors/player/male/hwep",        "actors/player/male",       "actors/player/male/body",      "actors/player/male/headless",      "player",   "male",     "Male" },
     { "actors/player/female/hwep",      "actors/player/female",     "actors/player/male/body",      "actors/player/female/headless",    "player",   "female",   "Female" }
 };
-const char *playerpatterns[PLAYERPATTERN_MAX][3] = {
+const char *playerpatterns[PLAYERPATTERNS][3] = {
     { "<grey>textures/patterns/default",   "default",          "Default" },
     { "<grey>textures/patterns/soft",      "soft",             "Soft" },
     { "<grey>textures/patterns/camo",      "camo",             "Camo" },
@@ -138,10 +132,12 @@ const char *playerpatterns[PLAYERPATTERN_MAX][3] = {
     { "<grey>textures/patterns/zebra",     "zebra",            "Zebra" },
     { "<grey>textures/patterns/checker",   "checker",          "Checker" },
     { "<grey>textures/patterns/star",      "star",             "Star" },
+    { "<grey>textures/patterns/flower",    "flower",           "Flower" },
+    { "<grey>textures/patterns/leopard",   "leopard",          "Leopard" },
 };
 #else
 extern const char *playertypes[PLAYERTYPES][7];
-extern const char *playerpatterns[PLAYERPATTERN_MAX][3];
+extern const char *playerpatterns[PLAYERPATTERNS][3];
 #endif
 
 #include "playerdef.h"

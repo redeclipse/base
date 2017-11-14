@@ -136,7 +136,7 @@ namespace aiman
                 ci->lasttimeplayed = totalmillis;
                 ci->colour = rnd(0xFFFFFF);
                 ci->model = botrnd(ci, 4, PLAYERTYPES);
-                ci->pattern = botrnd(ci, 4, PLAYERPATTERN_MAX);
+                ci->pattern = botrnd(ci, 4, PLAYERPATTERNS);
                 int s = skill, n = 1, m = 100;
                 getskillrange(type, n, m);
                 if(skill > m || skill < n) s = (m != n ? botrnd(ci, 2, m-n) + n + 1 : m);

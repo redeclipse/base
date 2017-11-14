@@ -315,7 +315,7 @@ namespace game
 
     VAR(IDF_PERSIST, nogore, 0 , 0, 2); // turns off all gore, 0 = off, 1 = replace, 2 = remove
     VAR(IDF_PERSIST, forceplayermodel, -1, -1, PLAYERTYPES-1);
-    VAR(IDF_PERSIST, forceplayerpattern, -1, -1, PLAYERPATTERN_MAX-1);
+    VAR(IDF_PERSIST, forceplayerpattern, -1, -1, PLAYERPATTERNS-1);
     VAR(IDF_PERSIST, vanitymodels, 0, 1, 1);
     VAR(IDF_PERSIST, headlessmodels, 0, 1, 1);
     FVAR(IDF_PERSIST, twitchspeed, 0, 2.5f, FVAR_MAX);
@@ -3475,8 +3475,8 @@ namespace game
             mdl.mixercolor = mixercolor;
             mdl.mixerglow = mixerglow;
         }
-        if(d->actortype < A_ENEMY)
-            mdl.pattern = textureload(playerpatterns[d->pattern%PLAYERPATTERN_MAX][0], 0, true);
+        if(d->actortype < A_ENEMY && d->pattern >= 0)
+            mdl.pattern = textureload(playerpatterns[d->pattern%PLAYERPATTERNS][0], 0, true);
         if(a[0].tag) mdl.attached = a;
         rendermodel(mdlname, mdl, e);
     }
