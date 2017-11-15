@@ -150,7 +150,7 @@ struct animmodel : model
             {
                 LOCALPARAM(mixercolor, mixercolor);
                 LOCALPARAM(mixerglow, mixerglow);
-                LOCALPARAMF(mixerscroll, mixerscroll.x*lastmillis/1000.0f, mixerscroll.y*lastmillis/1000.0f);
+                LOCALPARAMF(mixerscroll, mixerscroll*lastmillis/1000.0f);
             }
 
             if(material1 > 0) LOCALPARAM(material1, modelmaterial[min(material1, int(MAXMDLMATERIALS))-1].tocolor());
@@ -1684,9 +1684,9 @@ struct animmodel : model
     }
 
     static bool enabletc, enablecullface, enabletangents, enablebones, enabledepthoffset;
-    static float sizescale;
+    static float sizescale, mixerscroll;
     static vec4 colorscale, mixercolor;
-    static vec2 matbright, mixerglow, mixerscroll;
+    static vec2 matbright, mixerglow;
     static bvec modelmaterial[MAXMDLMATERIALS];
     static GLuint lastvbuf, lasttcbuf, lastxbuf, lastbbuf, lastebuf, lastenvmaptex, closestenvmaptex;
     static Texture *lasttex, *lastdecal, *lastmasks, *lastmixer, *lastpattern, *lastnormalmap;
@@ -1748,9 +1748,9 @@ int animmodel::intersectresult = -1, animmodel::intersectmode = 0;
 float animmodel::intersectdist = 0, animmodel::intersectscale = 1;
 bool animmodel::enabletc = false, animmodel::enabletangents = false, animmodel::enablebones = false,
      animmodel::enablecullface = true, animmodel::enabledepthoffset = false;
-float animmodel::sizescale = 1;
+float animmodel::sizescale = 1, animmodel::mixerscroll = 0;
 vec4 animmodel::colorscale(1, 1, 1, 1), animmodel::mixercolor(1, 1, 1, 1);
-vec2 animmodel::matbright(1, 1), animmodel::mixerglow(0, 0), animmodel::mixerscroll(0, 0);
+vec2 animmodel::matbright(1, 1), animmodel::mixerglow(0, 0);
 bvec animmodel::modelmaterial[MAXMDLMATERIALS] = { bvec(255, 255, 255), bvec(255, 255, 255), bvec(255, 255, 255) };
 GLuint animmodel::lastvbuf = 0, animmodel::lasttcbuf = 0, animmodel::lastxbuf = 0, animmodel::lastbbuf = 0, animmodel::lastebuf = 0,
        animmodel::lastenvmaptex = 0, animmodel::closestenvmaptex = 0;
