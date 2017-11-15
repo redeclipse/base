@@ -329,22 +329,22 @@ namespace game
     FVAR(IDF_PERSIST, mixerburnblend, 0.f, 1.f, 1.f);
     FVAR(IDF_PERSIST, mixerburnglowblend, 0.f, 0.125f, 1.f);
     FVAR(IDF_PERSIST, mixerburnglowintensity, 0.f, 1.f, 1.f);
-    FVAR(IDF_PERSIST, mixerburnscroll, 0.f, 0.125f, FVAR_MAX);
+    FVAR(IDF_PERSIST, mixerburnscroll, 0.f, 0.15f, FVAR_MAX);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, mixerbleedtex, "textures/residuals/bleed", 0);
     FVAR(IDF_PERSIST, mixerbleedblend, 0.f, 0.75f, 1.f);
     FVAR(IDF_PERSIST, mixerbleedglowblend, 0.f, 0.125f, 1.f);
     FVAR(IDF_PERSIST, mixerbleedglowintensity, 0.f, 1.f, 1.f);
-    FVAR(IDF_PERSIST, mixerbleedscroll, 0.f, 0.0625f, FVAR_MAX);
+    FVAR(IDF_PERSIST, mixerbleedscroll, 0.f, 0.065f, FVAR_MAX);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, mixershocktex, "textures/residuals/shock", 0);
-    FVAR(IDF_PERSIST, mixershockblend, 0.f, 1.f, 1.f);
-    FVAR(IDF_PERSIST, mixershockglowblend, 0.f, 0.125f, 1.f);
+    FVAR(IDF_PERSIST, mixershockblend, 0.f, 0.75f, 1.f);
+    FVAR(IDF_PERSIST, mixershockglowblend, 0.f, 0.0625f, 1.f);
     FVAR(IDF_PERSIST, mixershockglowintensity, 0.f, 1.f, 1.f);
-    FVAR(IDF_PERSIST, mixershockscroll, 0.f, 0.125f, FVAR_MAX);
+    FVAR(IDF_PERSIST, mixershockscroll, 0.f, 0.25f, FVAR_MAX);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, mixerbufftex, "textures/residuals/buff", 0);
     FVAR(IDF_PERSIST, mixerbuffblend, 0.f, 0.9f, 1.f);
     FVAR(IDF_PERSIST, mixerbuffglowblend, 0.f, 0.125f, 1.f);
     FVAR(IDF_PERSIST, mixerbuffglowintensity, 0.f, 1.f, 1.f);
-    FVAR(IDF_PERSIST, mixerbuffscroll, 0.f, 0.25f, FVAR_MAX);
+    FVAR(IDF_PERSIST, mixerbuffscroll, 0.f, 0.125f, FVAR_MAX);
 
     ICOMMAND(0, gamemode, "", (), intret(gamemode));
     ICOMMAND(0, mutators, "", (), intret(mutators));
@@ -3463,7 +3463,7 @@ namespace game
                 int millis = lastmillis-d->lastres[WR_##type]; \
                 if(name##time-millis < name##delay) pc *= float(name##time-millis)/float(name##delay); \
                 vec4 mixercolor = vec4(rescolour(d, PULSE_##type), pc*mixer##name##blend); \
-                vec2 mixerglow = vec2((mdl.mixercolor.r + mdl.mixercolor.g + mdl.mixercolor.b) / 3.f * mixer##name##glowintensity, pc*mixer##name##glowblend); \
+                vec2 mixerglow = vec2((mdl.mixercolor.r+mdl.mixercolor.g+mdl.mixercolor.b)/3.f*mixer##name##glowintensity, pc*mixer##name##glowblend); \
                 if(mdl.mixer && mdl.mixer != notexture) \
                 { \
                     mdl.mixercolor.add(mixercolor).mul(0.5f); \

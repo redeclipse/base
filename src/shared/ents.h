@@ -92,7 +92,7 @@ struct modelstate : entmodelstate
         mixercolor = vec4(1, 1, 1, 1);
         matbright = vec2(1, 1);
         mixerglow = vec2(0, 0);
-        mixerscroll = 0 ;
+        mixerscroll = 0;
         mixer = pattern = NULL;
         attached = NULL;
     }
