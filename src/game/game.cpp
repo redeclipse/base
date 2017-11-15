@@ -3501,8 +3501,13 @@ namespace game
             mdl.mixercolor = mixercolor;
             mdl.mixerglow = mixerglow;
         }
-        if(d->actortype < A_ENEMY && d->pattern >= 0)
-            mdl.pattern = textureload(playerpatterns[d->pattern%PLAYERPATTERNS][0], 0, true);
+        int pattern = forceplayerpattern >= 0 ? forceplayerpattern : d->pattern;
+        if(pattern >= 0)
+        {
+            pattern %= PLAYERPATTERNS;
+            if(d->actortype < A_ENEMY || pattern >= 2)
+                mdl.pattern = textureload(playerpatterns[pattern][0], 0, true);
+        }
         if(a[0].tag) mdl.attached = a;
         rendermodel(mdlname, mdl, e);
     }
