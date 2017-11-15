@@ -55,6 +55,7 @@ namespace client
     extern int servercompare(serverinfo *a, serverinfo *b);
     extern const char *getname();
     extern bool sendcmd(int nargs, const char *cmd, const char *arg);
+    extern void completeplayers(const char **nextcomplete, const char *start, int commandsize, const char *lastcomplete, bool reverse);
 }
 
 namespace hud
