@@ -157,6 +157,7 @@ struct animmodel : model
             else LOCALPARAMF(material1, 1, 1, 1);
             if(material2 > 0) LOCALPARAM(material2, modelmaterial[min(material2, int(MAXMDLMATERIALS))-1].tocolor());
             else LOCALPARAMF(material2, 1, 1, 1);
+            LOCALPARAM(matbright, matbright);
 
             if(fullbright) LOCALPARAMF(fullbright, 0.0f, fullbright);
             else LOCALPARAMF(fullbright, 1.0f, as->cur.anim&ANIM_FULLBRIGHT ? 0.5f*fullbrightmodels/100.0f : 0.0f);
@@ -1403,6 +1404,11 @@ struct animmodel : model
                 memcpy(modelmaterial, state->material, sizeof(state->material));
                 invalidate = true;
             }
+            if(matbright != state->matbright)
+            {
+                matbright = state->matbright;
+                invalidate = true;
+            }
             if(invalidate) shaderparamskey::invalidate();
 
             if(envmapped()) closestenvmaptex = lookupenvmap(closestenvmap(state->o));
@@ -1680,7 +1686,7 @@ struct animmodel : model
     static bool enabletc, enablecullface, enabletangents, enablebones, enabledepthoffset;
     static float sizescale;
     static vec4 colorscale, mixercolor;
-    static vec2 mixerglow, mixerscroll;
+    static vec2 matbright, mixerglow, mixerscroll;
     static bvec modelmaterial[MAXMDLMATERIALS];
     static GLuint lastvbuf, lasttcbuf, lastxbuf, lastbbuf, lastebuf, lastenvmaptex, closestenvmaptex;
     static Texture *lasttex, *lastdecal, *lastmasks, *lastmixer, *lastpattern, *lastnormalmap;
@@ -1744,7 +1750,7 @@ bool animmodel::enabletc = false, animmodel::enabletangents = false, animmodel::
      animmodel::enablecullface = true, animmodel::enabledepthoffset = false;
 float animmodel::sizescale = 1;
 vec4 animmodel::colorscale(1, 1, 1, 1), animmodel::mixercolor(1, 1, 1, 1);
-vec2 animmodel::mixerglow(0, 0), animmodel::mixerscroll(0, 0);
+vec2 animmodel::matbright(1, 1), animmodel::mixerglow(0, 0), animmodel::mixerscroll(0, 0);
 bvec animmodel::modelmaterial[MAXMDLMATERIALS] = { bvec(255, 255, 255), bvec(255, 255, 255), bvec(255, 255, 255) };
 GLuint animmodel::lastvbuf = 0, animmodel::lasttcbuf = 0, animmodel::lastxbuf = 0, animmodel::lastbbuf = 0, animmodel::lastebuf = 0,
        animmodel::lastenvmaptex = 0, animmodel::closestenvmaptex = 0;

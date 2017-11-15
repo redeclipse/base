@@ -284,7 +284,12 @@ namespace game
     FVAR(IDF_PERSIST, playerdisplaytonelevel, 0.f, 1.f, 10.f);
     FVAR(IDF_PERSIST, playereffecttonelevel, 0.f, 1.f, 10.f);
     FVAR(IDF_PERSIST, playerteamtonelevel, 0.f, 1.f, 10.f);
-    FVAR(IDF_PERSIST, playertonemix, 0, 0.5f, 1);
+    FVAR(IDF_PERSIST, playertonemix, 0, 0, 1);
+
+    FVAR(IDF_PERSIST, playerovertoneinterp, 0, 0.5f, 1); // interpolate this much brightness from the opposing tone
+    FVAR(IDF_PERSIST, playerovertonebright, 0.f, 1.f, 10.f);
+    FVAR(IDF_PERSIST, playerundertoneinterp, 0, 0, 1); // interpolate this much brightness from the opposing tone
+    FVAR(IDF_PERSIST, playerundertonebright, 0.f, 1.f, 10.f);
 
     VAR(IDF_PERSIST, playerhint, 0, 15, 15);
     VAR(IDF_PERSIST, playerhinthurt, 0, 1, 1);
@@ -1979,7 +1984,7 @@ namespace game
             }
             if(col)
             {
-                if(mix)
+                if(mix && playertonemix > 0)
                 {
                     int r1 = (col>>16), g1 = ((col>>8)&0xFF), b1 = (col&0xFF),
                         c = TEAM(d->team, colour), r2 = (c>>16), g2 = ((c>>8)&0xFF), b2 = (c&0xFF),
@@ -3107,6 +3112,18 @@ namespace game
     {
         mdl.material[0] = bvec::fromcolor(getcolour(d, playerovertone, playerovertonelevel));
         mdl.material[1] = bvec::fromcolor(getcolour(d, playerundertone, playerundertonelevel));
+        if(playerovertoneinterp > 0)
+        {
+            float intensity = (mdl.material[1].r+mdl.material[1].g+mdl.material[1].b)/765.f;
+            mdl.matbright.x = playerovertonebright+((1-intensity)*playerovertoneinterp);
+        }
+        else mdl.matbright.x = playerovertonebright;
+        if(playerundertoneinterp > 0)
+        {
+            float intensity = (mdl.material[0].r+mdl.material[0].g+mdl.material[0].b)/765.f;
+            mdl.matbright.y = playerundertonebright+((1-intensity)*playerundertoneinterp);
+        }
+        else mdl.matbright.y = playerundertonebright;
         if(isweap(d->weapselect))
         {
             if(d->weapselect == W_GRENADE)
