@@ -799,7 +799,8 @@ int completeoffset = -1, completesize = 0;
 bigstring completeescaped = "";
 bigstring lastcomplete;
 
-void resetcomplete() {
+void resetcomplete()
+{
     completesize = 0;
     completeescaped[0] = '\0';
 }
@@ -855,10 +856,8 @@ void addlistcomplete(char *command, char *list)
 void addplayercomplete(char *command, int *remove)
 {
     bool *current = playercompletions.access(command);
-    if(current)
-        *current = !*remove;
-    else if(!*remove)
-        playercompletions[newstring(command)] = true;
+    if(current) *current = !*remove;
+    else if(!*remove) playercompletions[newstring(command)] = true;
 }
 
 COMMANDN(0, complete, addfilecomplete, "sss");
@@ -899,7 +898,8 @@ void complete(char *s, const char *cmdprefix, bool reverse)
     if(completesize)
     {
         char *end = strchr(start, ' ');
-        if(end) {
+        if(end)
+        {
             f = filecompletions.find(stringslice(start, end), NULL);
             p = playercompletions.find(stringslice(start, end), false);
         }
