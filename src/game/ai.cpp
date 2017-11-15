@@ -1226,7 +1226,7 @@ namespace ai
         }
 
         if(AA(d->actortype, abilities)&(1<<A_A_JUMP)) jumpto(d, b, d->ai->spot);
-        if((d->actortype == A_BOT || d->actortype == A_GRUNT) && d->action[AC_CROUCH] != (d->ai->dontmove && (b.type != AI_S_OVERRIDE || b.overridetype == AI_O_CROUCH)))
+        if(d->action[AC_CROUCH] != (d->actortype == A_TURRET || (d->ai->dontmove && (b.type != AI_S_OVERRIDE || b.overridetype == AI_O_CROUCH))))
             if((d->action[AC_CROUCH] = !d->action[AC_CROUCH]) == true) d->actiontime[AC_CROUCH] = lastmillis;
 
         if(d->ai->dontmove || !(AA(d->actortype, abilities)&(1<<A_A_MOVE)) || (AA(d->actortype, hurtstop) && lastmillis-d->lastpain <= AA(d->actortype, hurtstop)))
@@ -1528,7 +1528,6 @@ namespace ai
 
     void avoid()
     {
-        float guessradius = max(actor[A_PLAYER].xradius, actor[A_PLAYER].yradius);
         obstacles.clear();
         obstacles.add(wpavoid);
         int numdyns = game::numdynents();
@@ -1537,7 +1536,7 @@ namespace ai
             gameent *d = (gameent *)game::iterdynents(i);
             if(!d) continue; // || d->actortype >= A_ENEMY) continue;
             if(d->state != CS_ALIVE || !physics::issolid(d)) continue;
-            obstacles.avoidnear(d, d->o.z + d->aboveeye + 1, d->feetpos(), guessradius + d->radius + 1);
+            obstacles.avoidnear(d, d->o.z + d->aboveeye + 1, d->feetpos(), PLAYERRADIUS + d->radius + 1);
         }
         loopv(projs::projs)
         {
@@ -1545,7 +1544,7 @@ namespace ai
             if(p && p->state == CS_ALIVE && p->projtype == PRJ_SHOT)
             {
                 float expl = WX(WK(p->flags), p->weap, explode, WS(p->flags), game::gamemode, game::mutators, p->curscale);
-                if(expl > 0) obstacles.avoidnear(p, p->o.z + expl + 1, p->o, guessradius + expl + 1);
+                if(expl > 0) obstacles.avoidnear(p, p->o.z + expl + 1, p->o, PLAYERRADIUS + expl + 1);
             }
         }
         loopenti(MAPMODEL) if(entities::ents[i]->type == MAPMODEL)
@@ -1775,7 +1774,6 @@ namespace ai
 
     void preload()
     {
-        loopi(A_TOTAL) loopk(3) preloadmodel(actor[i+A_ENEMY].playermodel[1]);
     }
 
     void botsay(gameent *d, gameent *t, const char *fmt, ...)

@@ -387,7 +387,7 @@ namespace entities
                 int weap = w_attr(game::gamemode, game::mutators, type, attr[0], m_weapon(game::focus->actortype, game::gamemode, game::mutators));
                 return isweap(weap) && *weaptype[weap].item ? weaptype[weap].item : "projectiles/cartridge";
             }
-            case ACTOR: return actor[clamp(attr[0]+A_ENEMY, int(A_ENEMY), int(A_MAX-1))].playermodel[1];
+            case ACTOR: return playertypes[0][1];
             default: break;
         }
         return "";
@@ -1907,12 +1907,12 @@ namespace entities
             {
                 case PLAYERSTART:
                 {
-                    part_radius(vec(e.o).add(vec(0, 0, game::player1->zradius/2)), vec(game::player1->xradius, game::player1->yradius, game::player1->zradius/2), showentsize, 1, 1, TEAM(e.attrs[0], colour));
+                    part_radius(vec(e.o).add(vec(0, 0, PLAYERHEIGHT/2)), vec(PLAYERRADIUS, PLAYERRADIUS, PLAYERHEIGHT/2), showentsize, 1, 1, TEAM(e.attrs[0], colour));
                     break;
                 }
                 case ACTOR:
                 {
-                    part_radius(vec(e.o).add(vec(0, 0, actor[e.attrs[0]].height/2)), vec(actor[e.attrs[0]].xradius, actor[e.attrs[0]].height/2), showentsize, 1, 1, TEAM(T_ENEMY, colour));
+                    part_radius(vec(e.o).add(vec(0, 0, PLAYERHEIGHT/2)), vec(PLAYERRADIUS, PLAYERRADIUS, PLAYERHEIGHT/2), showentsize, 1, 1, TEAM(T_ENEMY, colour));
                     part_radius(e.o, vec(ai::ALERTMAX, ai::ALERTMAX, ai::ALERTMAX), showentsize, 1, 1, TEAM(T_ENEMY, colour));
                     break;
                 }

@@ -1086,9 +1086,8 @@ struct gameent : dynent, clientstate
     void setparams(bool reset)
     {
         int type = clamp(actortype, 0, int(A_MAX-1));
-        xradius = actor[type].xradius*curscale;
-        yradius = actor[type].yradius*curscale;
-        zradius = actor[type].height*curscale;
+        xradius = yradius = PLAYERRADIUS*curscale;
+        zradius = PLAYERHEIGHT*curscale;
         if(reset) height = zradius;
         speed = AA(type, speed);
         weight = AA(type, weight)*curscale;
@@ -1319,14 +1318,12 @@ struct gameent : dynent, clientstate
         }
     }
 
-    bool wantshitbox() { return type == ENT_PLAYER || (type == ENT_AI && actor[actortype].hitbox); }
-
     void checktags()
     {
         originpos();
         muzzlepos();
         loopi(2) ejectpos(i!=0);
-        if(wantshitbox()) hitboxes();
+        hitboxes();
         loopi(2) if(toe[i] == vec(-1, -1, -1)) toe[i] = feetpos();
     }
 

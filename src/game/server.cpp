@@ -370,8 +370,8 @@ namespace server
         }
 
         vec feetpos(float offset = 0) const { return vec(o).add(vec(0, 0, offset)); }
-        vec headpos(float offset = 0) const { return vec(o).add(vec(0, 0, offset+actor[actortype].height)); }
-        vec center() const { return vec(o).add(vec(0, 0, actor[actortype].height*0.5f)); }
+        vec headpos(float offset = 0) const { return vec(o).add(vec(0, 0, offset+PLAYERHEIGHT)); }
+        vec center() const { return vec(o).add(vec(0, 0, PLAYERHEIGHT*0.5f)); }
     };
 
     struct votecount
@@ -4418,7 +4418,7 @@ namespace server
             m->totaldeaths++;
             m->localtotaldeaths++;
             m->rewards[1] = 0;
-            dropitems(m, actor[m->actortype].living ? DROP_DEATH : DROP_EXPIRE);
+            dropitems(m, DROP_DEATH);
             static vector<int> dmglog;
             dmglog.setsize(0);
             gethistory(m, v, gamemillis, dmglog, true, m_dm_oldschool(gamemode, mutators) ? 0 : 1);
@@ -4481,7 +4481,7 @@ namespace server
         ci->spree = 0;
         ci->deaths++;
         ci->totaldeaths++;
-        bool kamikaze = dropitems(ci, actor[ci->actortype].living ? DROP_DEATH : DROP_EXPIRE);
+        bool kamikaze = dropitems(ci, DROP_DEATH);
         if(ci->actortype < A_ENEMY && m_race(gamemode) && (!m_ra_gauntlet(gamemode, mutators) || ci->team == T_ALPHA) && !(flags&HIT_SPEC) && (!flags || ci->cpnodes.length() == 1 || !ci->checkpointspawn))
         { // reset if suicided, hasn't reached another checkpoint yet
             ci->cpmillis = 0;

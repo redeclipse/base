@@ -1368,14 +1368,11 @@ namespace game
             if(hitdealt(flags) && damage > 0)
             {
                 if(d == focus) hud::damage(damage, v->o, v, weap, flags);
-                if(actor[d->actortype].living)
-                {
-                    vec p = d->headpos(-d->height/4);
-                    if(!nogore && bloodscale > 0)
-                        part_splash(PART_BLOOD, int(clamp(damage/20, 1, 5)*bloodscale)*(bleeding || material ? 2 : 1), bloodfade, p, 0x229999, (rnd(bloodsize/2)+(bloodsize/2))/10.f, 1, 100, STAIN_BLOOD, int(d->radius), 10);
-                    if(nogore != 2 && (bloodscale <= 0 || bloodsparks))
-                        part_splash(PART_PLASMA, int(clamp(damage/20, 1, 5))*(bleeding || material ? 2: 1), bloodfade, p, 0x882222, 1, 0.5f, 50, STAIN_STAIN, int(d->radius));
-                }
+                vec p = d->headpos(-d->height/4);
+                if(!nogore && bloodscale > 0)
+                    part_splash(PART_BLOOD, int(clamp(damage/20, 1, 5)*bloodscale)*(bleeding || material ? 2 : 1), bloodfade, p, 0x229999, (rnd(bloodsize/2)+(bloodsize/2))/10.f, 1, 100, STAIN_BLOOD, int(d->radius), 10);
+                if(nogore != 2 && (bloodscale <= 0 || bloodsparks))
+                    part_splash(PART_PLASMA, int(clamp(damage/20, 1, 5))*(bleeding || material ? 2: 1), bloodfade, p, 0x882222, 1, 0.5f, 50, STAIN_STAIN, int(d->radius));
                 if(d != v)
                 {
                     bool sameteam = m_team(gamemode, mutators) && d->team == v->team;
@@ -1511,8 +1508,7 @@ namespace game
         if(d == v)
         {
             concatstring(d->obit, "\fs");
-            if(!actor[d->actortype].living) concatstring(d->obit, obitdestroyed);
-            else if(!obitverbose) concatstring(d->obit, obitdied);
+            if(!obitverbose) concatstring(d->obit, obitdied);
             else if(flags&HIT_SPAWN) concatstring(d->obit, obitspawn);
             else if(flags&HIT_SPEC) concatstring(d->obit, obitspectator);
             else if(flags&HIT_MATERIAL && curmat&MAT_WATER) concatstring(d->obit, getobitwater(material, obitdrowned));
@@ -1532,8 +1528,7 @@ namespace game
         else
         {
             concatstring(d->obit, "was \fs");
-            if(!actor[d->actortype].living) concatstring(d->obit, obitdestroyed);
-            else if(!obitverbose) concatstring(d->obit, obitfragged);
+            if(!obitverbose) concatstring(d->obit, obitfragged);
             else if(burning) concatstring(d->obit, obitburn);
             else if(bleeding) concatstring(d->obit, obitbleed);
             else if(shocking) concatstring(d->obit, obitshock);
@@ -1738,7 +1733,7 @@ namespace game
             else if(anc >= 0) announce(anc, d);
             if(anc >= 0 && d != v) announce(anc, v);
         }
-        vec pos = d->wantshitbox() ? d->head : d->headpos();
+        vec pos = d->head;
         pos.z -= d->zradius*0.125f;
 
         if(vanitymodels && d->headless && !nogore && headlessmodels && *d->vanity)
@@ -1754,7 +1749,7 @@ namespace game
             }
         }
 
-        if(actor[d->actortype].living && nogore != 2 && gibscale > 0 && !(flags&HIT_LOST))
+        if(nogore != 2 && gibscale > 0 && !(flags&HIT_LOST))
         {
             int gib = clamp(max(damage, 10)/(d->obliterated ? 10 : 20), 2, 10), amt = int((rnd(gib)+gib)*(1+gibscale));
             loopi(amt) projs::create(pos, pos, true, d, nogore ? PRJ_DEBRIS : PRJ_GIBS, -1, HIT_NONE, rnd(gibfade)+gibfade, 0, rnd(250)+1, rnd(d->obliterated ? 80 : 40)+10);
@@ -1966,7 +1961,7 @@ namespace game
     {
         if(tone)
         {
-            int col = d->actortype >= A_ENEMY ? TEAM(T_ENEMY, colour) : d->colour;
+            int col = d->colour;
             if(!col && isweap(d->weapselect))
             {
                 col = W(d->weapselect, colour);
@@ -2566,7 +2561,7 @@ namespace game
                 gameentity &e = *(gameentity *)entities::ents[i];
                 if(e.type == MAPSOUND || e.type == MAPMODEL) continue;
                 vec pos = e.o;
-                if(!camcheck(pos, (e.type == PLAYERSTART ? actor[A_PLAYER].height : enttype[e.type].radius)+2)) continue;
+                if(!camcheck(pos, (e.type == PLAYERSTART ? PLAYERHEIGHT : enttype[e.type].radius)+2)) continue;
                 cameras.add(new cament(cameras.length(), cament::ENTITY, i, pos));
             }
             ai::getwaypoints();
@@ -2574,7 +2569,7 @@ namespace game
             {
                 ai::waypoint &w = ai::waypoints[i];
                 vec pos = w.o;
-                if(!camcheck(pos, actor[A_PLAYER].height+2)) continue;
+                if(!camcheck(pos, PLAYERHEIGHT+2)) continue;
                 cameras.add(new cament(cameras.length(), cament::WAYPOINT, i, pos));
             }
             starttvcamdyn = cameras.length();
@@ -3164,7 +3159,7 @@ namespace game
     {
         if(d->state == CS_SPECTATOR) return;
         int weap = d->weapselect, lastaction = 0, animflags = ANIM_IDLE|ANIM_LOOP, weapflags = animflags, weapaction = 0;
-        bool secondary = false, showweap = third != 2 && isweap(weap) && weap < W_ALL && actor[d->actortype].useweap;
+        bool secondary = false, showweap = third != 2 && isweap(weap) && weap < W_ALL;
         float weapscale = 1.f;
         if(d->state == CS_DEAD || d->state == CS_WAITING)
         {
@@ -3308,7 +3303,7 @@ namespace game
                     a[ai++] = modelattach("tag_eject2", &d->eject[1]); // 4
                 }
             }
-            if(third && d->wantshitbox())
+            if(third)
             {
                 a[ai++] = modelattach("tag_head", &d->head); // 5
                 a[ai++] = modelattach("tag_torso", &d->torso); // 6
@@ -3323,8 +3318,7 @@ namespace game
 
         int idx = third == 1 && d->headless && !nogore && headlessmodels ? 3 : third;
         const char *mdlname = playertypes[forceplayermodel >= 0 ? forceplayermodel : 0][idx];
-        if(d->actortype >= A_ENEMY && d->actortype != A_GRUNT) mdlname = actor[d->actortype%A_MAX].playermodel[idx];
-        else if(forceplayermodel < 0) mdlname = playertypes[d->model%PLAYERTYPES][idx];
+        if(forceplayermodel < 0) mdlname = playertypes[d->model%PLAYERTYPES][idx];
 
         bool onfloor = d->physstate >= PHYS_SLOPE || d->onladder || physics::liquidcheck(d), melee = d->hasmelee(lastmillis, true, d->sliding(true), onfloor);
         float yaw = d->yaw, pitch = d->pitch, roll = calcroll(focus);

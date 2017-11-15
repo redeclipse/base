@@ -1,13 +1,19 @@
-struct actors
-{
-    int type;
-    float xradius, yradius, height;
-    bool useweap, living, hitbox;
-    const char *name, *playermodel[4];
-};
-
 enum { A_PLAYER = 0, A_BOT, A_TURRET, A_GRUNT, A_DRONE, A_MAX, A_ENEMY = A_TURRET, A_TOTAL = A_MAX-A_ENEMY };
-enum {
+
+#ifdef GAMESERVER
+namemap actor[] = {
+    { "player", A_PLAYER },
+    { "bot",    A_BOT },
+    { "turret", A_TURRET },
+    { "grunt",  A_GRUNT },
+    { "drone",  A_DRONE },
+};
+#else
+extern namemap actor[];
+#endif
+
+enum
+{
     A_A_MOVE = 0, A_A_JUMP, A_A_CROUCH, A_A_DASH, A_A_BOOST, A_A_PARKOUR, A_A_MELEE, A_A_PRIMARY, A_A_SECONDARY, A_A_PUSHABLE, A_A_AFFINITY, A_A_REGEN, A_A_CLAW, A_A_MAX,
     A_A_IMFIRST = A_A_DASH, A_A_IMLAST = A_A_PARKOUR, A_A_IMPULSE = A_A_IMLAST-A_A_IMFIRST, A_A_IMCOUNT = A_A_IMPULSE+1,
     A_A_IMOFFSET = (1<<(A_A_DASH-A_A_IMFIRST))|(1<<(A_A_BOOST-A_A_IMFIRST))|(1<<(A_A_PARKOUR-A_A_IMFIRST)), A_A_IMRELAX = (1<<(A_A_PARKOUR-A_A_IMFIRST)),
@@ -17,42 +23,20 @@ enum {
     A_A_LESSAI = (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_MELEE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_PUSHABLE),
     A_A_FIXEDAI = (1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)
 };
-enum {
+
+enum
+{
     A_C_PLAYERS = 0, A_C_BOTS, A_C_ENEMIES, A_C_MAX,
     A_C_ALL = (1<<A_C_PLAYERS)|(1<<A_C_BOTS)|(1<<A_C_ENEMIES)
 };
-enum {
+
+enum
+{
     A_T_PLAYERS = 0, A_T_BOTS, A_T_ENEMIES, A_T_GHOST, A_T_MAX,
     A_T_ALL = (1<<A_T_PLAYERS)|(1<<A_T_BOTS)|(1<<A_T_ENEMIES)|(1<<A_T_GHOST),
     A_T_PLAYER = (1<<A_T_PLAYERS)|(1<<A_T_BOTS)|(1<<A_T_ENEMIES),
     A_T_AI = (1<<A_T_BOTS)|(1<<A_T_ENEMIES)
 };
-#ifdef GAMESERVER
-actors actor[] = {
-    {
-        A_PLAYER, 3, 3, 14, true, true, true,
-        "player",   { "actors/player/male/hwep",      "actors/player/male",     "actors/player/male/body",      "actors/player/male/headless" }
-    },
-    {
-        A_BOT, 3, 3, 14, true, true, true,
-        "bot",      { "actors/player/male/hwep",      "actors/player/male",     "actors/player/male/body",      "actors/player/male/headless" }
-    },
-    {
-        A_TURRET, 4.75f, 4.75f, 8.75f, false, false, false,
-        "turret",   { "actors/player/male/hwep",      "actors/turret",          "actors/player/male/body",      "actors/turret" }
-    },
-    {
-        A_GRUNT, 3, 3, 14, true, true, true,
-        "grunt",   { "actors/player/male/hwep",      "actors/player/male",      "actors/player/male/body",      "actors/player/male/headless" }
-    },
-    {
-        A_DRONE, 3, 3, 14, true, true, true,
-        "drone",    { "actors/player/male/hwep",      "actors/drone",           "actors/player/male/body",      "actors/drone" }
-    },
-};
-#else
-extern actors actor[];
-#endif
 
 enum
 {
@@ -101,7 +85,7 @@ TPSVAR(IDF_GAMEMOD,  name,
     "Neutral",  "Alpha",    "Omega",    "Kappa",    "Sigma",    "Enemy"
 );
 TPVAR(IDF_GAMEMOD|IDF_HEX, colour, 0, 0xFFFFFF,
-    0x90A090,   0x5F66FF,   0xFF4F44,   0xFFD022,   0x22FF22,   0xB0B0B0
+    0x90A090,   0x5F66FF,   0xFF4F44,   0xFFD022,   0x22FF22,   0x229090
 );
 
 struct score
@@ -116,6 +100,8 @@ struct score
 #define isteam(a,b,c,d) (m_play(a) && m_team(a,b) ? (c >= d && c <= numteams(a,b)) : c == T_NEUTRAL)
 #define valteam(a,b)    (a >= b && a <= T_TOTAL)
 
+#define PLAYERRADIUS 3
+#define PLAYERHEIGHT 14
 #define PLAYERTYPES 2
 #define PLAYERPATTERNS 14
 #ifdef GAMESERVER
@@ -180,7 +166,7 @@ APVAR(IDF_GAMEMOD, weaponmedieval, 0, W_ALL-1,
     W_SWORD,        W_SWORD,        W_RIFLE,        W_SWORD,        W_CLAW
 );
 APVAR(IDF_GAMEMOD, weaponrace, 0, W_ALL-1,
-    W_CLAW,        W_CLAW,          W_SMG,          W_PISTOL,       W_CLAW
+    W_CLAW,         W_CLAW,         W_SMG,          W_PISTOL,       W_CLAW
 );
 APVAR(IDF_GAMEMOD, weaponspawn, 0, W_ALL-1,
     W_PISTOL,       W_PISTOL,       W_SMG,          W_PISTOL,       W_CLAW
@@ -189,7 +175,7 @@ APFVAR(IDF_GAMEMOD, weight, 0, FVAR_MAX,
     200,            200,            150,            200,            150
 );
 APFVAR(IDF_GAMEMOD, scale, FVAR_NONZERO, FVAR_MAX,
-    1,              1,              1,              1,              1
+    1,              1,              0.5f,           0.85f,          0.7f
 );
 APVAR(IDF_GAMEMOD, spawndelay, 0, VAR_MAX,
     5000,          5000,            30000,          30000,          30000
@@ -219,7 +205,7 @@ APVAR(IDF_GAMEMOD, spawnmines, 0, 2,
     0,              0,              0,              0,              0
 );
 APFVAR(IDF_GAMEMOD, speed, 0, FVAR_MAX,
-    50,             50,             0,              50,             40
+    50,             50,             0,              50,             100
 );
 
 #define VANITYMAX 16

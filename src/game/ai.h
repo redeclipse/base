@@ -1,5 +1,4 @@
 struct gameent;
-extern actors actor[];
 
 namespace ai
 {

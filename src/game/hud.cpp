@@ -1781,7 +1781,7 @@ namespace hud
             gameent *a = game::getclient(d.clientnum);
             if((!onscreenhitsheal && d.damage < 0) || (!onscreenhitsself && a == game::focus)) continue;
             vec o = onscreenhitsfollow && a ? a->center() : d.dir;
-            o.z += actor[a ? a->actortype : A_PLAYER].height*onscreenhitsheight;
+            o.z += PLAYERHEIGHT*onscreenhitsheight;
             float cx = 0, cy = 0, cz = 0;
             if(!vectocursor(o, cx, cy, cz)) continue;
             float hx = cx*w/onscreenhitsscale, hy = cy*h/onscreenhitsscale, fade = blend*onscreenhitsblend;

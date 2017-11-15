@@ -187,51 +187,30 @@ namespace projs
         if(gameent::is(d))
         {
             gameent *e = (gameent *)d;
-            if(e->wantshitbox())
+            float rdist[3] = { -1, -1, -1 };
+            radialpush(e->legs, e->lrad.x, e->lrad.y, e->lrad.z, e->lrad.z, rdist[0]);
+            radialpush(e->torso, e->trad.x, e->trad.y, e->trad.z, e->trad.z, rdist[1]);
+            radialpush(e->head, e->hrad.x, e->hrad.y, e->hrad.z, e->hrad.z, rdist[2]);
+            int closest = -1;
+            loopi(3) if(rdist[i] >= 0 && (closest < 0 || rdist[i] <= rdist[closest])) closest = i;
+            loopi(3) if(rdist[i] >= 0)
             {
-                float rdist[3] = { -1, -1, -1 };
-                radialpush(e->legs, e->lrad.x, e->lrad.y, e->lrad.z, e->lrad.z, rdist[0]);
-                radialpush(e->torso, e->trad.x, e->trad.y, e->trad.z, e->trad.z, rdist[1]);
-                radialpush(e->head, e->hrad.x, e->hrad.y, e->hrad.z, e->hrad.z, rdist[2]);
-                int closest = -1;
-                loopi(3) if(rdist[i] >= 0 && (closest < 0 || rdist[i] <= rdist[closest])) closest = i;
-                loopi(3) if(rdist[i] >= 0)
+                int flag = 0;
+                switch(i)
                 {
-                    int flag = 0;
-                    switch(i)
-                    {
-                        case 2: flag = closest != i || rdist[i] > WF(WK(proj.flags), proj.weap, headmin, WS(proj.flags)) ? HIT_WHIPLASH : HIT_HEAD; break;
-                        case 1: flag = HIT_TORSO; break;
-                        case 0: default: flag = HIT_LEGS; break;
-                    }
-                    if(rdist[i] <= radius)
-                    {
-                        hitpush(e, proj, flag|flags, radius, rdist[i], proj.curscale);
-                        radiated = true;
-                    }
-                    else if(push && rdist[i] <= maxdist)
-                    {
-                        hitpush(e, proj, flag|HIT_WAVE, maxdist, rdist[i], proj.curscale);
-                        radiated = true;
-                    }
+                    case 2: flag = closest != i || rdist[i] > WF(WK(proj.flags), proj.weap, headmin, WS(proj.flags)) ? HIT_WHIPLASH : HIT_HEAD; break;
+                    case 1: flag = HIT_TORSO; break;
+                    case 0: default: flag = HIT_LEGS; break;
                 }
-            }
-            else
-            {
-                float dist = -1;
-                radialpush(e->o, e->xradius, e->yradius, e->height, e->aboveeye, dist);
-                if(dist >= 0)
+                if(rdist[i] <= radius)
                 {
-                    if(dist <= radius)
-                    {
-                        hitpush(e, proj, HIT_TORSO|flags, radius, dist, proj.curscale);
-                        radiated = true;
-                    }
-                    else if(push && dist <= maxdist)
-                    {
-                        hitpush(e, proj, HIT_TORSO|HIT_WAVE, maxdist, dist, proj.curscale);
-                        radiated = true;
-                    }
+                    hitpush(e, proj, flag|flags, radius, rdist[i], proj.curscale);
+                    radiated = true;
+                }
+                else if(push && rdist[i] <= maxdist)
+                {
+                    hitpush(e, proj, flag|HIT_WAVE, maxdist, rdist[i], proj.curscale);
+                    radiated = true;
                 }
             }
         }
@@ -847,7 +826,7 @@ namespace projs
                     {
                         if(proj.owner->state == CS_DEAD || proj.owner->state == CS_WAITING)
                         {
-                            proj.o = proj.owner->wantshitbox() ? proj.owner->head : proj.owner->headpos();
+                            proj.o = proj.owner->head;
                             proj.o.z -= proj.owner->zradius*0.125f;
                         }
                         else
