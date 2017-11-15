@@ -80,7 +80,7 @@ struct entmodelstate
 struct modelstate : entmodelstate
 {
     vec4 mixercolor;
-    vec2 mixerglow;
+    vec2 mixerglow, mixerscroll;
     Texture *mixer, *pattern;
     modelattach *attached;
 
@@ -89,7 +89,7 @@ struct modelstate : entmodelstate
     void reset()
     {
         mixercolor = vec4(1, 1, 1, 1);
-        mixerglow = vec2(0, 0);
+        mixerglow = mixerscroll = vec2(0, 0);
         mixer = pattern = NULL;
         attached = NULL;
     }

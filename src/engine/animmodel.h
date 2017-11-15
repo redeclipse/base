@@ -150,6 +150,7 @@ struct animmodel : model
             {
                 LOCALPARAM(mixercolor, mixercolor);
                 LOCALPARAM(mixerglow, mixerglow);
+                LOCALPARAMF(mixerscroll, mixerscroll.x*lastmillis/1000.0f, mixerscroll.y*lastmillis/1000.0f);
             }
 
             if(material1 > 0) LOCALPARAM(material1, modelmaterial[min(material1, int(MAXMDLMATERIALS))-1].tocolor());
@@ -1392,6 +1393,11 @@ struct animmodel : model
                 mixerglow = state->mixerglow;
                 invalidate = true;
             }
+            if(mixerscroll != state->mixerscroll)
+            {
+                mixerscroll = state->mixerscroll;
+                invalidate = true;
+            }
             if(memcmp(modelmaterial, state->material, sizeof(state->material)))
             {
                 memcpy(modelmaterial, state->material, sizeof(state->material));
@@ -1674,7 +1680,7 @@ struct animmodel : model
     static bool enabletc, enablecullface, enabletangents, enablebones, enabledepthoffset;
     static float sizescale;
     static vec4 colorscale, mixercolor;
-    static vec2 mixerglow;
+    static vec2 mixerglow, mixerscroll;
     static bvec modelmaterial[MAXMDLMATERIALS];
     static GLuint lastvbuf, lasttcbuf, lastxbuf, lastbbuf, lastebuf, lastenvmaptex, closestenvmaptex;
     static Texture *lasttex, *lastdecal, *lastmasks, *lastmixer, *lastpattern, *lastnormalmap;
@@ -1738,7 +1744,7 @@ bool animmodel::enabletc = false, animmodel::enabletangents = false, animmodel::
      animmodel::enablecullface = true, animmodel::enabledepthoffset = false;
 float animmodel::sizescale = 1;
 vec4 animmodel::colorscale(1, 1, 1, 1), animmodel::mixercolor(1, 1, 1, 1);
-vec2 animmodel::mixerglow(0, 0);
+vec2 animmodel::mixerglow(0, 0), animmodel::mixerscroll(0, 0);
 bvec animmodel::modelmaterial[MAXMDLMATERIALS] = { bvec(255, 255, 255), bvec(255, 255, 255), bvec(255, 255, 255) };
 GLuint animmodel::lastvbuf = 0, animmodel::lasttcbuf = 0, animmodel::lastxbuf = 0, animmodel::lastbbuf = 0, animmodel::lastebuf = 0,
        animmodel::lastenvmaptex = 0, animmodel::closestenvmaptex = 0;
