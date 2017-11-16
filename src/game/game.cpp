@@ -3645,7 +3645,7 @@ namespace game
             if(burntime-millis < burndelay) pc *= float(burntime-millis)/float(burndelay);
             else pc *= 0.75f+(float(millis%burndelay)/float(burndelay*4));
             vec pos = vec(d->center()).sub(vec(rnd(11)-5, rnd(11)-5, rnd(5)-2).mul(pc));
-            regular_part_create(PART_FIREBALL, 50, pos, pulsecols[PULSE_FIRE][rnd(PULSECOLOURS)], d->height*0.75f*intensity*blend*pc, fade*blend*pc, -10, 0);
+            regular_part_create(PART_FIREBALL, 200, pos, pulsecols[PULSE_FIRE][rnd(PULSECOLOURS)], d->height*0.75f*intensity*blend*pc, fade*blend*pc*0.65f, -20, 0);
         }
         if(shocktime && d->shocking(lastmillis, shocktime))
         {
