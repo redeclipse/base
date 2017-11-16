@@ -3662,4 +3662,34 @@ namespace client
         }
         loopend(id, stack);
     });
+
+    void completeplayers(const char **nextcomplete, const char *start, int commandsize, const char *lastcomplete, bool reverse)
+    {
+        vector<char *> names;
+        gameent *d;
+        names.add(game::player1->name);
+        loopv(game::players) if((d = game::players[i]) && d->actortype == A_PLAYER)
+        {
+            bool found = false;
+            loopvj(names) if(!strcmp(d->name, names[j])) found = true;
+            if(!found) names.add(d->name);
+        }
+        bool starts = false;
+        loopv(names)
+        {
+            if(strncmp(names[i], &start[commandsize], completesize-commandsize) == 0)
+            {
+                starts = true;
+                break;
+            }
+        }
+        bigstring check = "";
+        if(!starts) copystring(check, &start[commandsize], min(completesize-commandsize+1, BIGSTRLEN));
+        loopv(names)
+        {
+            if((starts ? (strncmp(names[i], &start[commandsize], completesize-commandsize) == 0) : (strstr(names[i], check) != NULL)) &&
+                strcmp(names[i], lastcomplete) * (reverse ? -1 : 1) > 0 && (!*nextcomplete || strcmp(names[i], *nextcomplete) * (reverse ? -1 : 1) < 0))
+                *nextcomplete = names[i];
+        }
+    }
 }

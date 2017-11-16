@@ -792,12 +792,18 @@ static inline uint hthash(const fileskey &k)
 }
 
 static hashtable<fileskey, filesval *> completefiles;
-static hashtable<char *, filesval *> completions;
+static hashtable<char *, filesval *> filecompletions;
+static hashtable<char *, bool> playercompletions;
 
 int completeoffset = -1, completesize = 0;
+bigstring completeescaped = "";
 bigstring lastcomplete;
 
-void resetcomplete() { completesize = 0; }
+void resetcomplete()
+{
+    completesize = 0;
+    completeescaped[0] = '\0';
+}
 
 void addcomplete(char *command, int type, char *dir, char *ext)
 {
@@ -808,7 +814,7 @@ void addcomplete(char *command, int type, char *dir, char *ext)
     }
     if(!dir[0])
     {
-        filesval **hasfiles = completions.access(command);
+        filesval **hasfiles = filecompletions.access(command);
         if(hasfiles) *hasfiles = NULL;
         return;
     }
@@ -832,9 +838,9 @@ void addcomplete(char *command, int type, char *dir, char *ext)
         val = &completefiles[fileskey(type, f->dir, f->ext)];
         *val = f;
     }
-    filesval **hasfiles = completions.access(command);
+    filesval **hasfiles = filecompletions.access(command);
     if(hasfiles) *hasfiles = *val;
-    else completions[newstring(command)] = *val;
+    else filecompletions[newstring(command)] = *val;
 }
 
 void addfilecomplete(char *command, char *dir, char *ext)
@@ -847,11 +853,20 @@ void addlistcomplete(char *command, char *list)
     addcomplete(command, FILES_LIST, list, NULL);
 }
 
+void addplayercomplete(char *command, int *remove)
+{
+    bool *current = playercompletions.access(command);
+    if(current) *current = !*remove;
+    else if(!*remove) playercompletions[newstring(command)] = true;
+}
+
 COMMANDN(0, complete, addfilecomplete, "sss");
 COMMANDN(0, listcomplete, addlistcomplete, "ss");
+COMMANDN(0, playercomplete, addplayercomplete, "si");
 
 void complete(char *s, const char *cmdprefix, bool reverse)
 {
+    if(completeescaped[0]) copystring(s, completeescaped, BIGSTRLEN);
     char *start = s;
     if(cmdprefix)
     {
@@ -879,10 +894,15 @@ void complete(char *s, const char *cmdprefix, bool reverse)
         lastcomplete[0] = '\0';
     }
     filesval *f = NULL;
+    bool p = false;
     if(completesize)
     {
         char *end = strchr(start, ' ');
-        if(end) f = completions.find(stringslice(start, end), NULL);
+        if(end)
+        {
+            f = filecompletions.find(stringslice(start, end), NULL);
+            p = playercompletions.find(stringslice(start, end), false);
+        }
     }
     const char *nextcomplete = NULL;
     int prefixlen = start-s;
@@ -898,6 +918,12 @@ void complete(char *s, const char *cmdprefix, bool reverse)
                 nextcomplete = f->files[i];
         }
     }
+    else if(p) // complete using player names
+    {
+        int commandsize = strchr(start, ' ')+1-start;
+        prefixlen += commandsize;
+        client::completeplayers(&nextcomplete, start, commandsize, lastcomplete, reverse);
+    }
     else // complete using command names
     {
         enumerate(idents, ident, id,
@@ -908,7 +934,8 @@ void complete(char *s, const char *cmdprefix, bool reverse)
     }
     if(nextcomplete)
     {
-        copystring(&s[prefixlen], nextcomplete, BIGSTRLEN-prefixlen);
+        if(p) copystring(completeescaped, s);
+        copystring(&s[prefixlen], p ? escapestring(nextcomplete) : nextcomplete, BIGSTRLEN-prefixlen);
         copystring(lastcomplete, nextcomplete, BIGSTRLEN);
     }
     else
