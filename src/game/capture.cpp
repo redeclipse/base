@@ -290,7 +290,7 @@ namespace capture
                 rendermodel("props/flag", mdl);
                 flagpos.z += enttype[AFFINITY].radius/3;
                 if(game::affinityhint)
-                    part_create(PART_HINT_VERT_SOFT, 1, flagpos, effect.tohexcolor(), enttype[AFFINITY].radius/2*game::affinityhintsize, blend*game::affinityhintblend*camera1->o.distrange(flagpos, game::affinityhintfadeat, game::affinityhintfadecut));
+                    part_create(PART_HINT_SOFT, 1, flagpos, effect.tohexcolor(), enttype[AFFINITY].radius/2*game::affinityhintsize, blend*game::affinityhintblend*camera1->o.distrange(flagpos, game::affinityhintfadeat, game::affinityhintfadecut));
                 flagpos.z += enttype[AFFINITY].radius/2;
                 if(f.owner)
                 {
