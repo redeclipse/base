@@ -1016,6 +1016,13 @@ namespace entities
                 e.setspawned(TRIGSTATE(f.spawned(), f.attrs[4])); \
                 break; \
             }
+        #define FIXYPR(a,b,c) \
+            while(e.attrs[a] < 0) e.attrs[a] += 360; \
+            while(e.attrs[a] >= 360) e.attrs[a] -= 360; \
+            while(e.attrs[b] < -180) e.attrs[b] += 360; \
+            while(e.attrs[b] > 180) e.attrs[b] -= 360; \
+            while(e.attrs[c] < -180) e.attrs[c] += 360; \
+            while(e.attrs[c] > 180) e.attrs[c] -= 360;
         switch(e.type)
         {
             case LIGHT:
@@ -1025,12 +1032,7 @@ namespace entities
             }
             case MAPMODEL:
             {
-                while(e.attrs[1] < 0) e.attrs[1] += 360;
-                while(e.attrs[1] >= 360) e.attrs[1] -= 360; // yaw
-                while(e.attrs[2] < -180) e.attrs[2] += 360;
-                while(e.attrs[2] > 180) e.attrs[2] -= 360; // pitch
-                while(e.attrs[3] < -180) e.attrs[3] += 360;
-                while(e.attrs[3] > 180) e.attrs[3] -= 360; // roll
+                FIXYPR(1, 2, 3);
                 while(e.attrs[4] < 0) e.attrs[4] += 101;
                 while(e.attrs[4] > 100) e.attrs[4] -= 101; // blend
                 if(e.attrs[5] < 0) e.attrs[5] = 0;
@@ -1083,6 +1085,12 @@ namespace entities
                 if(e.attrs[3] < 0) e.attrs[3] = 0;
                 FIXEMIT;
                 break;
+            }
+            case DECAL:
+            {
+                if(e.attrs[0] < 0) e.attrs[0] = 0;
+                FIXYPR(1, 2, 3);
+                if(e.attrs[4] <= 0) e.attrs[4] = 1;
             }
             case PUSHER:
             {
@@ -1160,6 +1168,7 @@ namespace entities
             default: break;
         }
         #undef FIXEMIT
+        #undef FIXYPR
         if(enttype[e.type].mvattr >= 0)
         {
             while(e.attrs[enttype[e.type].mvattr] < 0) e.attrs[enttype[e.type].mvattr] += MPV_MAX;
@@ -1959,23 +1968,16 @@ namespace entities
                 }
                 case LIGHT:
                 {
-                    int s = e.attrs[0] ? e.attrs[0] : worldsize,
-                        colour = ((e.attrs[1])<<16)|((e.attrs[2])<<8)|(e.attrs[3]);
-                    part_radius(e.o, vec(s, s, s), showentsize, 1, 1, colour);
-                    break;
-                }
-                case LIGHTFX:
-                {
-                    if(e.attrs[0] == LFX_SPOTLIGHT) loopv(e.links) if(ents.inrange(e.links[i]) && ents[e.links[i]]->type == LIGHT)
+                    int radius = 0, spotlight = -1;
+                    vec color;
+                    getlightfx(e, &radius, &spotlight, &color);
+                    if(e.attrs[0] && e.attrs[0] != radius)
+                        part_radius(e.o, vec(float(e.attrs[0])), showentsize, 1, 1, color.tohexcolor());
+                    part_radius(e.o, vec(float(radius)), showentsize, 1, 1, color.tohexcolor());
+                    if(ents.inrange(spotlight))
                     {
-                        gameentity &f = *(gameentity *)ents[e.links[i]];
-                        float radius = f.attrs[0];
-                        if(!radius) radius = 2*e.o.dist(f.o);
-                        vec dir = vec(e.o).sub(f.o).normalize();
-                        float angle = clamp(int(e.attrs[1]), 1, 89);
-                        int colour = ((f.attrs[1]/2)<<16)|((f.attrs[2]/2)<<8)|(f.attrs[3]/2);
-                        part_cone(f.o, dir, radius, angle, showentsize, 1, 1, colour);
-                        break;
+                        gameentity &f = *(gameentity *)ents[spotlight];
+                        part_cone(e.o, vec(f.o).sub(e.o).normalize(), radius, clamp(int(f.attrs[1]), 1, 89), showentsize, 1, 1, color.tohexcolor());
                     }
                     break;
                 }
