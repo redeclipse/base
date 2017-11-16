@@ -226,18 +226,11 @@ static bool modifyoctaent(int flags, int id, extentity &e)
     e.flags ^= EF_OCTA;
     switch(e.type)
     {
-        case ET_LIGHT:
-        {
-            clearlightcache(id);
-            if(e.attrs[6]&L_VOLUMETRIC) { if(flags&MODOE_ADD) volumetriclights++; else --volumetriclights; }
-        }
-        case ET_LIGHTFX:
-        {
-            if(e.attrs[0] == LFX_SPOTLIGHT && !(flags&MODOE_ADD ? spotlights++ : --spotlights)) { cleardeferredlightshaders(); cleanupvolumetric(); }
-            break;
-        }
+        case ET_LIGHT: clearlightcache(id); if(e.attrs[6]&L_VOLUMETRIC) { if(flags&MODOE_ADD) volumetriclights++; else --volumetriclights; } break;
+        case ET_LIGHTFX: if(!(flags&MODOE_ADD ? spotlights++ : --spotlights)) { cleardeferredlightshaders(); cleanupvolumetric(); } break;
         case ET_PARTICLES: clearparticleemitters(); break;
         case ET_DECAL: if(flags&MODOE_CHANGED) changed(o, r, false); break;
+        default: break;
     }
     return true;
 }
