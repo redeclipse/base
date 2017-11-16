@@ -1106,6 +1106,8 @@ namespace UI
     ICOMMAND(0, uicursorx, "", (), floatret(cursorx*float(hudw)/hudh));
     ICOMMAND(0, uicursory, "", (), floatret(cursory));
 
+    ICOMMAND(0, uiaspect, "", (), floatret(float(hudw)/hudh));
+
     ICOMMAND(0, uicursortype, "b", (int *val), { if(*val >= 0) cursortype = clamp(*val, 0, CURSOR_MAX-1); intret(cursortype); });
 
     bool showui(const char *name)
@@ -2729,7 +2731,8 @@ namespace UI
                         wp += ((Padder *)o)->left+((Padder *)o)->right;
                         continue;
                     }
-                    float ww = !o->isfill() && o->w > 0 ? o->w : ((Filler *)o)->minw;
+                    float ww = o->w;
+                    if(o->isfill()) ww = max(ww, ((Filler *)o)->minw);
                     if(ww > 0)
                     {
                         wlen *= (ww-wp)/k;
@@ -2765,7 +2768,8 @@ namespace UI
                         lp += ((Padder *)o)->left+((Padder *)o)->right;
                         continue;
                     }
-                    float ls = o->w > 0 || !o->isfill() ? o->w : ((Filler *)o)->minw;
+                    float ls = o->w;
+                    if(o->isfill()) ls = max(ls, ((Filler *)o)->minw);
                     if(ls > 0)
                     {
                         float lo = (ls-lp)*lm;
