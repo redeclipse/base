@@ -566,7 +566,8 @@ namespace ai
             else if(m_defend(game::gamemode)) defend::aifind(d, b, interests);
             else if(m_bomber(game::gamemode)) bomber::aifind(d, b, interests);
         }
-        loopk(2)
+        bool canretry = AA(d->actortype, abilities)&(1<<A_A_MOVE) && (AA(d->actortype, abilities)&(1<<A_A_PRIMARY) || AA(d->actortype, abilities)&(1<<A_A_SECONDARY));
+        loopk(canretry ? 2 : 1)
         {
             while(!interests.empty())
             {
@@ -587,9 +588,7 @@ namespace ai
                     return true;
                 }
             }
-            if(!k && AA(d->actortype, abilities)&(1<<A_A_MOVE) && (AA(d->actortype, abilities)&(1<<A_A_PRIMARY) || AA(d->actortype, abilities)&(1<<A_A_SECONDARY)))
-                items(d, b, interests, true);
-            else break;
+            if(!k && canretry) items(d, b, interests, true);
         }
         return false;
     }
