@@ -85,18 +85,18 @@ Texture *loadskyoverlay(const char *basename)
     FVAR(IDF_WORLD, envfade##name, 0, 0.2f, 1); \
     VAR(IDF_WORLD, envsubdiv##name, 4, 16, 64); \
     VAR(IDF_WORLD, atmo##name, 0, 0, 2); \
-    FVAR(IDF_WORLD, atmoplanetsize##name, 1e-3f, 8, 1e3f); \
-    FVAR(IDF_WORLD, atmoheight##name, 1e-3f, 1, 1e3f); \
+    FVAR(IDF_WORLD, atmoplanetsize##name, FVAR_NONZERO, 8, FVAR_MAX); \
+    FVAR(IDF_WORLD, atmoheight##name, FVAR_NONZERO, 1, FVAR_MAX); \
     FVAR(IDF_WORLD, atmobright##name, 0, 4, 16); \
     CVAR1(IDF_WORLD, atmolight##name, 0); \
     FVAR(IDF_WORLD, atmolightscale##name, 0, 1, 16); \
-    FVAR(IDF_WORLD, atmodisksize##name, 0, 1, 10); \
+    FVAR(IDF_WORLD, atmodisksize##name, 0, 1, 1000); \
     FVAR(IDF_WORLD, atmodiskbright##name, 0, 1, 16); \
     FVAR(IDF_WORLD, atmohaze##name, 0, 0.03f, 1); \
     CVAR0(IDF_WORLD, atmohazefade##name, 0xAEACA9); \
     FVAR(IDF_WORLD, atmohazefadescale##name, 0, 1, 1); \
     FVAR(IDF_WORLD, atmoclarity##name, 0, 0.2f, 10); \
-    FVAR(IDF_WORLD, atmodensity##name, 1e-3f, 0.99f, 10); \
+    FVAR(IDF_WORLD, atmodensity##name, FVAR_NONZERO, 0.99f, 100); \
     FVAR(IDF_WORLD, atmoblend##name, 0, 1, 1); \
     FVAR(IDF_WORLD, fogdomeheight##name, -1, -0.5f, 1); \
     FVAR(IDF_WORLD, fogdomemin##name, 0, 0, 1); \
@@ -533,7 +533,7 @@ static void drawatmosphere()
 
     vec lambda(680e-9f, 550e-9f, 450e-9f),
         betar = vec(lambda).square().square().recip().mul(1.86e-31f / getatmodensity()),
-        betam = vec(lambda).recip().mul(2*M_PI).square().mul(getatmohazefade().tocolor().mul(getatmohazefadescale())).mul(1.36e-19f * max(getatmohaze(), 1e-3f)),
+        betam = vec(lambda).recip().mul(2*M_PI).square().mul(getatmohazefade().tocolor().mul(getatmohazefadescale())).mul(1.36e-19f * max(getatmohaze(), FVAR_NONZERO)),
         betarm = vec(betar).div(1+getatmoclarity()).add(betam);
     betar.div(betarm).mul(3/(16*M_PI));
     betam.div(betarm).mul((1-gm)*(1-gm)/(4*M_PI));

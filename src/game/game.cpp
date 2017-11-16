@@ -337,22 +337,22 @@ namespace game
     FVAR(IDF_PERSIST, mixerburnblend, 0.f, 1.f, 1.f);
     FVAR(IDF_PERSIST, mixerburnglowblend, 0.f, 0.25f, 1.f);
     FVAR(IDF_PERSIST, mixerburnglowintensity, 0.f, 1.f, 20);
-    FVAR(IDF_PERSIST, mixerburnscroll, 0.f, 0.15f, 100);
+    FVAR(IDF_PERSIST, mixerburnscroll, -16, 0.15f, 16);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, mixerbleedtex, "textures/residuals/bleed", 0);
     FVAR(IDF_PERSIST, mixerbleedblend, 0.f, 0.8f, 1.f);
     FVAR(IDF_PERSIST, mixerbleedglowblend, 0.f, 0.25f, 1.f);
     FVAR(IDF_PERSIST, mixerbleedglowintensity, 0.f, 1.f, 20);
-    FVAR(IDF_PERSIST, mixerbleedscroll, 0.f, 0.065f, 100);
+    FVAR(IDF_PERSIST, mixerbleedscroll, -16, 0.065f, 16);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, mixershocktex, "textures/residuals/shock", 0);
     FVAR(IDF_PERSIST, mixershockblend, 0.f, 0.9f, 1.f);
     FVAR(IDF_PERSIST, mixershockglowblend, 0.f, 0.125f, 1.f);
     FVAR(IDF_PERSIST, mixershockglowintensity, 0.f, 1.f, 20);
-    FVAR(IDF_PERSIST, mixershockscroll, 0.f, 0.25f, 100);
+    FVAR(IDF_PERSIST, mixershockscroll, -16, 0.25f, 16);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, mixerbufftex, "textures/residuals/buff", 0);
     FVAR(IDF_PERSIST, mixerbuffblend, 0.f, 0.9f, 1.f);
     FVAR(IDF_PERSIST, mixerbuffglowblend, 0.f, 0.25f, 1.f);
     FVAR(IDF_PERSIST, mixerbuffglowintensity, 0.f, 1.f, 20);
-    FVAR(IDF_PERSIST, mixerbuffscroll, 0.f, 0.125f, 100);
+    FVAR(IDF_PERSIST, mixerbuffscroll, -16, 0.125f, 16);
 
     ICOMMAND(0, gamemode, "", (), intret(gamemode));
     ICOMMAND(0, mutators, "", (), intret(mutators));

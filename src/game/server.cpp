@@ -5512,7 +5512,11 @@ namespace server
         if(n == SENDMAP_MPZ)
         {
             smapcrc = crcstream(mapdata[n]);
-            if(crc != smapcrc) srvmsgf(-1, "Warning: new crc 0x%.8x doesn't match client 0x%.8x [0x%.8x]", smapcrc, crc, ci->clientcrc);
+            if(crc != smapcrc)
+            {
+                if(m_edit(gamemode)) ci->clientcrc = smapcrc;
+                else srvmsgf(-1, "Warning: new crc 0x%.8x doesn't match client 0x%.8x [0x%.8x]", smapcrc, crc, ci->clientcrc);
+            }
         }
         return n;
     }

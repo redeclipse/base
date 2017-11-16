@@ -1041,6 +1041,7 @@ namespace entities
                     if(e.flags&(1<<j) && !(e.attrs[6]&(1<<j))) e.flags &= ~(1<<j);
                     else if(!(e.flags&(1<<j)) && e.attrs[6]&(1<<j)) e.flags |= (1<<j);
                 }
+                break;
             }
             case PLAYERSTART:
                 while(e.attrs[0] < 0) e.attrs[0] += T_ALL;
@@ -1091,6 +1092,7 @@ namespace entities
                 if(e.attrs[0] < 0) e.attrs[0] = 0;
                 FIXYPR(1, 2, 3);
                 if(e.attrs[4] <= 0) e.attrs[4] = 1;
+                break;
             }
             case PUSHER:
             {
