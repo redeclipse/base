@@ -307,6 +307,14 @@ namespace game
     FVAR(IDF_PERSIST, playerhinthurtblend, 0, 0.9f, 1);
     FVAR(IDF_PERSIST, playerhinthurtsize, 0, 1.3f, 2);
 
+    VAR(IDF_PERSIST, affinityhint, 0, 1, 1);
+    FVAR(IDF_PERSIST, affinityhintblend, 0, 0.15f, 1);
+    FVAR(IDF_PERSIST, affinityhintsize, 0, 1.1f, 2);
+    FVAR(IDF_PERSIST, affinityhintfadeat, 0, 32, FVAR_MAX);
+    FVAR(IDF_PERSIST, affinityhintfadecut, 0, 4, FVAR_MAX);
+    FVAR(IDF_PERSIST, affinityfollowblend, 0, 0.5f, 1);
+    FVAR(IDF_PERSIST, affinitythirdblend, 0, 0.5f, 1);
+
     VAR(IDF_PERSIST, footstepsounds, 0, 3, 3); // 0 = off, &1 = focus, &2 = everyone else
     FVAR(IDF_PERSIST, footstepsoundmin, 0, 0, FVAR_MAX); // minimum velocity magnitude
     FVAR(IDF_PERSIST, footstepsoundmax, 0, 150, FVAR_MAX); // maximum velocity magnitude

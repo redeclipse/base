@@ -225,14 +225,6 @@ namespace capture
         }
     }
 
-    FVAR(IDF_PERSIST, followflagblend, 0, 0.5f, 1);
-    FVAR(IDF_PERSIST, thirdflagblend, 0, 0.5f, 1);
-    FVAR(IDF_PERSIST, firstflagblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, freeflagblend, 0, 1, 1);
-
-    FVAR(IDF_PERSIST, capturehintfadeat, 0, 64, FVAR_MAX);
-    FVAR(IDF_PERSIST, capturehintfadecut, 0, 8, FVAR_MAX);
-
     void render()
     {
         static vector<int> numflags, iterflags; // dropped/owned
@@ -272,30 +264,24 @@ namespace capture
             {
                 vec flagpos = pos;
                 mdl.o = flagpos;
-                blend *= freeflagblend;
                 mdl.color = vec4(1, 1, 1, blend);
                 rendermodel("props/flag", mdl);
                 flagpos.z += enttype[AFFINITY].radius/3;
-                part_create(PART_HINT_VERT_SOFT, 1, flagpos, effect.tohexcolor(), enttype[AFFINITY].radius/2+1, blend*0.5f*camera1->o.distrange(flagpos, capturehintfadeat, capturehintfadecut));
+                if(game::affinityhint)
+                    part_create(PART_HINT_SOFT, 1, flagpos, effect.tohexcolor(), enttype[AFFINITY].radius/2*game::affinityhintsize, blend*game::affinityhintblend*camera1->o.distrange(flagpos, game::affinityhintfadeat, game::affinityhintfadecut));
             }
             else if(!f.owner || f.owner != game::focus || game::thirdpersonview(true))
             {
                 vec flagpos = pos;
                 if(f.owner)
                 {
-                    if(f.owner == game::focus)
-                    {
-                        if(game::thirdpersonview(true))
-                            blend *= f.owner != game::player1 ? followflagblend : thirdflagblend;
-                        else blend *= firstflagblend;
-                    }
-                    else blend *= freeflagblend;
+                    if(f.owner == game::focus && game::thirdpersonview(true))
+                        blend *= f.owner != game::player1 ? game::affinityfollowblend : game::affinitythirdblend;
                     mdl.yaw = f.owner->yaw-45.f+(90/float(numflags[f.owner->clientnum]+1)*(iterflags[f.owner->clientnum]+1));
                 }
                 else
                 {
                     mdl.yaw = ((lastmillis/8)+(360/st.flags.length()*i))%360;
-                    blend *= freeflagblend;
                     if(f.proj) flagpos.z -= f.proj->height;
                 }
                 while(mdl.yaw >= 360.f) mdl.yaw -= 360.f;
@@ -303,7 +289,8 @@ namespace capture
                 mdl.color = vec4(1, 1, 1, blend);
                 rendermodel("props/flag", mdl);
                 flagpos.z += enttype[AFFINITY].radius/3;
-                part_create(PART_HINT_VERT_SOFT, 1, flagpos, effect.tohexcolor(), enttype[AFFINITY].radius/2+1, blend*0.5f*camera1->o.distrange(flagpos, capturehintfadeat, capturehintfadecut));
+                if(game::affinityhint)
+                    part_create(PART_HINT_VERT_SOFT, 1, flagpos, effect.tohexcolor(), enttype[AFFINITY].radius/2*game::affinityhintsize, blend*game::affinityhintblend*camera1->o.distrange(flagpos, game::affinityhintfadeat, game::affinityhintfadecut));
                 flagpos.z += enttype[AFFINITY].radius/2;
                 if(f.owner)
                 {

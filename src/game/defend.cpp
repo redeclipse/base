@@ -101,9 +101,6 @@ namespace defend
         }
     }
 
-    FVAR(IDF_PERSIST, defendhintfadeat, 0, 64, FVAR_MAX);
-    FVAR(IDF_PERSIST, defendhintfadecut, 0, 8, FVAR_MAX);
-
     void render()
     {
         loopv(st.flags)
@@ -130,7 +127,7 @@ namespace defend
                 formatstring(b.info, "%s", game::colourteam(defend));
             }
             vec above = b.above;
-            float blend = camera1->o.distrange(above, defendhintfadeat, defendhintfadecut);
+            float blend = camera1->o.distrange(above, game::affinityhintfadeat, game::affinityhintfadecut);
             part_explosion(above, 3, PART_SHOCKBALL, 1, colour, 1, blend*0.5f);
             part_create(PART_HINT_SOFT, 1, above, colour, 6, blend*0.5f);
             above.z += 4;

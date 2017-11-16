@@ -271,9 +271,6 @@ namespace bomber
         }
     }
 
-    FVAR(IDF_PERSIST, bomberhintfadeat, 0, 64, FVAR_MAX);
-    FVAR(IDF_PERSIST, bomberhintfadecut, 0, 8, FVAR_MAX);
-
     void render()
     {
         loopv(st.flags) // flags/bases
@@ -307,12 +304,14 @@ namespace bomber
                 basemdl.material[0] = mdl.material[0] = bvec::fromcolor(effect);
                 if(f.owner != game::focus || game::thirdpersonview(true))
                 {
-                    if(f.owner == game::focus) trans *= 0.25f;
+                    if(f.owner == game::focus)
+                        trans *= game::focus != game::player1 ? game::affinityfollowblend : game::affinitythirdblend;
                     mdl.color.a *= trans;
                     rendermodel("props/ball", mdl);
                     float fluc = interval >= 500 ? (1500-interval)/1000.f : (500+interval)/1000.f;
                     int pcolour = effect.tohexcolor();
-                    part_create(PART_HINT_SOFT, 1, above, pcolour, enttype[AFFINITY].radius/4*trans+(2*fluc), fluc*trans*camera1->o.distrange(above, bomberhintfadeat, bomberhintfadecut));
+                    if(game::affinityhint)
+                        part_create(PART_HINT_SOFT, 1, above, pcolour, enttype[AFFINITY].radius/4*game::affinityhintsize+(2*fluc), fluc*trans*game::affinityhintblend*camera1->o.distrange(above, game::affinityhintfadeat, game::affinityhintfadecut));
                     if(gs_playing(game::gamestate) && f.droptime)
                     {
                         above.z += enttype[AFFINITY].radius/4*trans+1.5f;
@@ -325,7 +324,7 @@ namespace bomber
             else if(!m_bb_hold(game::gamemode, game::mutators))
             {
                 vec above = f.above, effect = vec::fromcolor(TEAM(f.team, colour)).mul(trans);
-                float blend = camera1->o.distrange(above, bomberhintfadeat, bomberhintfadecut);
+                float blend = camera1->o.distrange(above, game::affinityhintfadeat, game::affinityhintfadecut);
                 basemdl.material[0] = mdl.material[0] = bvec::fromcolor(effect);
                 int pcolour = effect.tohexcolor();
                 part_explosion(above, 3, PART_SHOCKBALL, 1, pcolour, 1, trans*blend*0.5f);
