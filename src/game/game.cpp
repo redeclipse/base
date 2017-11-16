@@ -327,24 +327,24 @@ namespace game
 
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, mixerburntex, "textures/residuals/burn", 0);
     FVAR(IDF_PERSIST, mixerburnblend, 0.f, 1.f, 1.f);
-    FVAR(IDF_PERSIST, mixerburnglowblend, 0.f, 0.125f, 1.f);
-    FVAR(IDF_PERSIST, mixerburnglowintensity, 0.f, 1.f, 1.f);
-    FVAR(IDF_PERSIST, mixerburnscroll, 0.f, 0.15f, FVAR_MAX);
+    FVAR(IDF_PERSIST, mixerburnglowblend, 0.f, 0.25f, 1.f);
+    FVAR(IDF_PERSIST, mixerburnglowintensity, 0.f, 1.f, 20);
+    FVAR(IDF_PERSIST, mixerburnscroll, 0.f, 0.15f, 100);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, mixerbleedtex, "textures/residuals/bleed", 0);
-    FVAR(IDF_PERSIST, mixerbleedblend, 0.f, 0.75f, 1.f);
-    FVAR(IDF_PERSIST, mixerbleedglowblend, 0.f, 0.125f, 1.f);
-    FVAR(IDF_PERSIST, mixerbleedglowintensity, 0.f, 1.f, 1.f);
-    FVAR(IDF_PERSIST, mixerbleedscroll, 0.f, 0.065f, FVAR_MAX);
+    FVAR(IDF_PERSIST, mixerbleedblend, 0.f, 0.8f, 1.f);
+    FVAR(IDF_PERSIST, mixerbleedglowblend, 0.f, 0.25f, 1.f);
+    FVAR(IDF_PERSIST, mixerbleedglowintensity, 0.f, 1.f, 20);
+    FVAR(IDF_PERSIST, mixerbleedscroll, 0.f, 0.065f, 100);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, mixershocktex, "textures/residuals/shock", 0);
-    FVAR(IDF_PERSIST, mixershockblend, 0.f, 0.75f, 1.f);
-    FVAR(IDF_PERSIST, mixershockglowblend, 0.f, 0.0625f, 1.f);
-    FVAR(IDF_PERSIST, mixershockglowintensity, 0.f, 1.f, 1.f);
-    FVAR(IDF_PERSIST, mixershockscroll, 0.f, 0.25f, FVAR_MAX);
+    FVAR(IDF_PERSIST, mixershockblend, 0.f, 0.9f, 1.f);
+    FVAR(IDF_PERSIST, mixershockglowblend, 0.f, 0.125f, 1.f);
+    FVAR(IDF_PERSIST, mixershockglowintensity, 0.f, 1.f, 20);
+    FVAR(IDF_PERSIST, mixershockscroll, 0.f, 0.25f, 100);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, mixerbufftex, "textures/residuals/buff", 0);
     FVAR(IDF_PERSIST, mixerbuffblend, 0.f, 0.9f, 1.f);
-    FVAR(IDF_PERSIST, mixerbuffglowblend, 0.f, 0.125f, 1.f);
-    FVAR(IDF_PERSIST, mixerbuffglowintensity, 0.f, 1.f, 1.f);
-    FVAR(IDF_PERSIST, mixerbuffscroll, 0.f, 0.125f, FVAR_MAX);
+    FVAR(IDF_PERSIST, mixerbuffglowblend, 0.f, 0.25f, 1.f);
+    FVAR(IDF_PERSIST, mixerbuffglowintensity, 0.f, 1.f, 20);
+    FVAR(IDF_PERSIST, mixerbuffscroll, 0.f, 0.125f, 100);
 
     ICOMMAND(0, gamemode, "", (), intret(gamemode));
     ICOMMAND(0, mutators, "", (), intret(mutators));
@@ -3484,7 +3484,7 @@ namespace game
         if((!mdl.mixer || mdl.mixer == notexture) && d->state == CS_ALIVE && d->lastbuff)
         {
             int millis = lastmillis%1000;
-            float pc = millis <= 500 ? 1.f-(millis/500.f) : (millis-500)/500.f;
+            float pc = max(millis <= 500 ? 1.f-(millis/500.f) : (millis-500)/500.f, 0.1f);
             vec4 mixercolor = vec4(rescolour(d, PULSE_BUFF), pc*mixerbuffblend);
             vec2 mixerglow = vec2((mdl.mixercolor.r+mdl.mixercolor.g+mdl.mixercolor.b)/3.f*mixerbuffglowintensity, pc*mixerbuffglowblend);
             mdl.mixer = textureload(mixerbufftex, 0, true);
