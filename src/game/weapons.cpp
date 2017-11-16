@@ -143,7 +143,7 @@ namespace weapons
             {
                 if(a >= 0) s = a;
                 else s += b;
-                while(s > W_ALL-1) s -= W_ALL;
+                while(s >= W_ALL) s -= W_ALL;
                 while(s < 0) s += W_ALL;
 
                 int n = slot(d, s, true);

@@ -218,7 +218,7 @@ namespace game
     VAR(IDF_PERSIST, aboveheadnames, 0, 1, 1);
     VAR(IDF_PERSIST, aboveheadinventory, 0, 0, 2); // 0 = off, 1 = weapselect only, 2 = all weapons
     VAR(IDF_PERSIST, aboveheadstatus, 0, 1, 1);
-    VAR(IDF_PERSIST, aboveheadteam, 0, 3, 3);
+    VAR(IDF_PERSIST, aboveheadteam, 0, 0, 3);
     VAR(IDF_PERSIST, aboveheaddamage, 0, 0, 1);
     VAR(IDF_PERSIST, aboveheadicons, 0, 5, 7);
     FVAR(IDF_PERSIST, aboveheadblend, 0.f, 1, 1.f);
@@ -296,7 +296,7 @@ namespace game
     VAR(IDF_PERSIST, playerhinthurtthrob, 0, 1, 1);
     VAR(IDF_PERSIST, playerhinttone, -1, CTONE_TEAMED, CTONE_MAX-1);
     FVAR(IDF_PERSIST, playerhinttonelevel, 0.f, 1.f, 10.f);
-    FVAR(IDF_PERSIST, playerhintblend, 0, 0.3f, 1);
+    FVAR(IDF_PERSIST, playerhintblend, 0, 0.1f, 1);
     FVAR(IDF_PERSIST, playerhintscale, 0, 0.7f, 1); // scale blend depending on health
     FVAR(IDF_PERSIST, playerhintlight, 0, 0.3f, 1); // override for light effect
     FVAR(IDF_PERSIST, playerhintdom, 0, 0.3f, 1); // override for dominate effect

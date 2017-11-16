@@ -1006,8 +1006,23 @@ namespace entities
             removesound(e.schan); e.schan = -1; // prevent clipping when moving around
             if(e.type == MAPSOUND) e.lastemit = lastmillis+1000;
         }
+        #define FIXEMIT \
+            e.nextemit = 0; \
+            loopv(e.links) if(ents.inrange(e.links[i])) \
+            { \
+                gameentity &f = *(gameentity *)ents[e.links[i]]; \
+                if(f.type != TRIGGER || !cantrigger(e.links[i])) continue; \
+                e.lastemit = f.lastemit; \
+                e.setspawned(TRIGSTATE(f.spawned(), f.attrs[4])); \
+                break; \
+            }
         switch(e.type)
         {
+            case LIGHT:
+            {
+                loopk(7) if(e.attrs[k] < 0) e.attrs[k] = 0;
+                break;
+            }
             case MAPMODEL:
             {
                 while(e.attrs[1] < 0) e.attrs[1] += 360;
@@ -1025,29 +1040,48 @@ namespace entities
                     else if(!(e.flags&(1<<j)) && e.attrs[6]&(1<<j)) e.flags |= (1<<j);
                 }
             }
-            case PARTICLES:
-            case MAPSOUND:
-            case LIGHTFX:
-            {
-                e.nextemit = 0;
-                loopv(e.links) if(ents.inrange(e.links[i]))
+            case PLAYERSTART:
+                while(e.attrs[0] < 0) e.attrs[0] += T_ALL;
+                while(e.attrs[0] >= T_ALL) e.attrs[0] -= T_ALL;
+            case CHECKPOINT: // keeps going
+                while(e.attrs[1] < 0) e.attrs[1] += 360;
+                while(e.attrs[1] >= 360) e.attrs[1] -= 360;
+                while(e.attrs[2] < -90) e.attrs[2] += 181;
+                while(e.attrs[2] > 90) e.attrs[2] -= 181;
+                if(e.type == CHECKPOINT)
                 {
-                    gameentity &f = *(gameentity *)ents[e.links[i]];
-                    if(f.type != TRIGGER || !cantrigger(e.links[i])) continue;
-                    e.lastemit = f.lastemit;
-                    e.setspawned(TRIGSTATE(f.spawned(), f.attrs[4]));
-                    break;
+                    while(e.attrs[6] < 0) e.attrs[6] += CP_MAX;
+                    while(e.attrs[6] >= CP_MAX) e.attrs[6] -= CP_MAX;
                 }
                 break;
-            }
-            case LIGHT:
+            case PARTICLES:
             {
-                if(e.attrs[0] < 0) e.attrs[0] = 0;
-                //if(e.attrs[1] < 0) e.attrs[1] = 0;
-                //if(e.attrs[2] < 0) e.attrs[2] = 0;
-                //if(e.attrs[3] < 0) e.attrs[3] = 0;
-                if(e.attrs[4] < 0) e.attrs[4] = 3;
-                if(e.attrs[4] > 3) e.attrs[4] = 0;
+                while(e.attrs[0] < 0) e.attrs[0] += PART_MAX;
+                while(e.attrs[0] >= PART_MAX) e.attrs[0] -= PART_MAX;
+                FIXEMIT;
+                break;
+            }
+            case MAPSOUND:
+            {
+                int numsounds = mapsounds.length();
+                if(numsounds)
+                {
+                    while(e.attrs[0] < 0) e.attrs[0] += numsounds;
+                    while(e.attrs[0] >= numsounds) e.attrs[0] -= numsounds;
+                }
+                while(e.attrs[3] < 0) e.attrs[3] += 256;
+                while(e.attrs[3] > 255) e.attrs[3] -= 256;
+                FIXEMIT;
+                break;
+            }
+            case LIGHTFX:
+            {
+                while(e.attrs[0] < 0) e.attrs[0] += LFX_MAX;
+                while(e.attrs[0] >= LFX_MAX) e.attrs[0] -= LFX_MAX;
+                if(e.attrs[1] < 0) e.attrs[1] = 0;
+                if(e.attrs[2] < 0) e.attrs[2] = 0;
+                if(e.attrs[3] < 0) e.attrs[3] = 0;
+                FIXEMIT;
                 break;
             }
             case PUSHER:
@@ -1079,25 +1113,14 @@ namespace entities
                 break;
             }
             case WEAPON:
+            {
                 if(create && (e.attrs[0] < W_OFFSET || e.attrs[0] >= W_ALL)) e.attrs[0] = W_OFFSET; // don't be stupid when creating the entity
                 while(e.attrs[0] < W_OFFSET) e.attrs[0] += W_ALL-W_OFFSET; // don't allow superimposed weaps
                 while(e.attrs[0] >= W_ALL) e.attrs[0] -= W_ALL-W_OFFSET;
                 break;
-            case PLAYERSTART:
-                while(e.attrs[0] < 0) e.attrs[0] += T_ALL;
-                while(e.attrs[0] >= T_ALL) e.attrs[0] -= T_ALL;
-            case CHECKPOINT:
-                while(e.attrs[1] < 0) e.attrs[1] += 360;
-                while(e.attrs[1] >= 360) e.attrs[1] -= 360;
-                while(e.attrs[2] < -90) e.attrs[2] += 180;
-                while(e.attrs[2] > 90) e.attrs[2] -= 180;
-                if(e.type == CHECKPOINT)
-                {
-                    while(e.attrs[6] < 0) e.attrs[6] += CP_MAX;
-                    while(e.attrs[6] >= CP_MAX) e.attrs[6] -= CP_MAX;
-                }
-                break;
+            }
             case ACTOR:
+            {
                 while(e.attrs[0] < 0) e.attrs[0] += A_TOTAL;
                 while(e.attrs[0] >= A_TOTAL) e.attrs[0] -= A_TOTAL;
                 while(e.attrs[1] < 0) e.attrs[1] += 360;
@@ -1111,7 +1134,9 @@ namespace entities
                 if(e.attrs[9] < 0) e.attrs[9] = 0;
                 if(create) numactors++;
                 break;
+            }
             case AFFINITY:
+            {
                 while(e.attrs[0] < 0) e.attrs[0] += T_ALL;
                 while(e.attrs[0] >= T_ALL) e.attrs[0] -= T_ALL;
                 while(e.attrs[1] < 0) e.attrs[1] += 360;
@@ -1119,7 +1144,9 @@ namespace entities
                 while(e.attrs[2] < -90) e.attrs[2] += 180;
                 while(e.attrs[2] > 90) e.attrs[2] -= 180;
                 break;
+            }
             case TELEPORT:
+            {
                 while(e.attrs[0] < -1) e.attrs[0] += 361;
                 while(e.attrs[0] >= 360) e.attrs[0] -= 360;
                 while(e.attrs[1] < -90) e.attrs[1] += 180;
@@ -1129,8 +1156,10 @@ namespace entities
                 if(e.attrs[6] < 0) e.attrs[6] = 0;
                 if(e.attrs[7] < 0) e.attrs[7] = 0;
                 break;
+            }
             default: break;
         }
+        #undef FIXEMIT
         if(enttype[e.type].mvattr >= 0)
         {
             while(e.attrs[enttype[e.type].mvattr] < 0) e.attrs[enttype[e.type].mvattr] += MPV_MAX;
