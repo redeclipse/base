@@ -85,7 +85,7 @@ TPSVAR(IDF_GAMEMOD,  name,
     "Neutral",  "Alpha",    "Omega",    "Kappa",    "Sigma",    "Enemy"
 );
 TPVAR(IDF_GAMEMOD|IDF_HEX, colour, 0, 0xFFFFFF,
-    0x90A090,   0x5F66FF,   0xFF4F44,   0xFFD022,   0x22FF22,   0x229090
+    0xA0A0A0,   0x6060FF,   0xFF4040,   0xFFFF40,   0x40FF40,   0xFF40FF
 );
 
 struct score

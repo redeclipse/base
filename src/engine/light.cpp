@@ -40,7 +40,7 @@ GETSKYPIE(lightpitch, float);
 
 bool getlightfx(const extentity &e, int *radius, int *spotlight, vec *color, bool normalize)
 {
-    if(e.attrs[0] <= 0 || !checkmapvariant(e.attrs[9])) return false;
+    if(!checkmapvariant(e.attrs[9])) return false;
 
     if(color)
     {
@@ -51,7 +51,7 @@ bool getlightfx(const extentity &e, int *radius, int *spotlight, vec *color, boo
     }
     static int tempradius;
     if(!radius) radius = &tempradius;
-    *radius = e.attrs[0];
+    *radius = e.attrs[0] ? e.attrs[0] : worldsize; // after this, "0" becomes "off"
 
     const vector<extentity *> &ents = entities::getents();
     loopv(e.links) if(ents.inrange(e.links[i]) && ents[e.links[i]]->type == ET_LIGHTFX)
@@ -97,8 +97,7 @@ bool getlightfx(const extentity &e, int *radius, int *spotlight, vec *color, boo
             default: break;
         }
     }
-    if(*radius <= 0) return false;
-    return true;
+    return *radius > 0;
 }
 
 
@@ -711,7 +710,7 @@ void lightreaching(const vec &target, vec &color, vec &dir, bool fast, extentity
     loopv(lights)
     {
         extentity &e = *ents[lights[i]];
-        if(e.type != ET_LIGHT || e.attrs[0] <= 0) continue;
+        if(e.type != ET_LIGHT) continue;
 
         float intensity = 1;
         int radius = e.attrs[0], slight = -1;

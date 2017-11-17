@@ -3450,24 +3450,24 @@ void collectlights()
     if(!editmode || !fullbright) loopv(ents)
     {
         const extentity &e = *ents[i];
-        if(e.type != ET_LIGHT || e.attrs[0] <= 0) continue;
+        if(e.type != ET_LIGHT) continue;
 
-        int radius = 0, spotlight = -1;
+        int radius = e.attrs[0], spotlight = -1;
         vec color(255, 255, 255);
         if(!getlightfx(e, &radius, &spotlight, &color, false)) continue;
         vec dir(0, 0, 0);
         int spot = 0;
         if(ents.inrange(spotlight))
         {
-            const extentity *f = ents[spotlight];
-            dir = vec(f->o).sub(e.o).normalize();
-            spot = clamp(int(f->attrs[1]), 1, 89);
+            const extentity &f = *ents[spotlight];
+            dir = vec(f.o).sub(e.o).normalize();
+            spot = clamp(int(f.attrs[1]), 1, 89);
         }
 
         if(smviscull)
         {
-            if(isfoggedsphere(e.attrs[0], e.o)) continue;
-            if(pvsoccludedsphere(e.o, e.attrs[0])) continue;
+            if(isfoggedsphere(radius, e.o)) continue;
+            if(pvsoccludedsphere(e.o, radius)) continue;
         }
 
         lightinfo &l = lights.add(lightinfo(i, e.o, color, float(radius), e.attrs[6], dir, spot));
@@ -4302,7 +4302,7 @@ void rendercsmshadowmaps()
 int calcshadowinfo(const extentity &e, vec &origin, float &radius, vec &spotloc, int &spotangle, float &bias)
 {
     if(e.attrs[6]&L_NOSHADOW) return SM_NONE;
-    int rad = 0, slight = -1;
+    int rad = e.attrs[0], slight = -1;
     if(!getlightfx(e, &rad, &slight) || rad <= smminradius) return SM_NONE;
     origin = e.o;
     radius = float(rad);

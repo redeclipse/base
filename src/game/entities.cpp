@@ -1003,7 +1003,8 @@ namespace entities
         }
         if(issound(e.schan))
         {
-            removesound(e.schan); e.schan = -1; // prevent clipping when moving around
+            removesound(e.schan);
+            e.schan = -1; // prevent clipping when moving around
             if(e.type == MAPSOUND) e.lastemit = lastmillis+1000;
         }
         #define FIXEMIT \
@@ -1016,13 +1017,26 @@ namespace entities
                 e.setspawned(TRIGSTATE(f.spawned(), f.attrs[4])); \
                 break; \
             }
-        #define FIXYPR(a,b,c) \
+        #define FIXDIRY(a) \
             while(e.attrs[a] < 0) e.attrs[a] += 360; \
-            while(e.attrs[a] >= 360) e.attrs[a] -= 360; \
-            while(e.attrs[b] < -180) e.attrs[b] += 360; \
-            while(e.attrs[b] > 180) e.attrs[b] -= 360; \
-            while(e.attrs[c] < -180) e.attrs[c] += 360; \
-            while(e.attrs[c] > 180) e.attrs[c] -= 360;
+            while(e.attrs[a] >= 360) e.attrs[a] -= 360;
+        #define FIXDIRYP(a,b) \
+            FIXDIRY(a) \
+            while(e.attrs[b] < -180) e.attrs[b] += 361; \
+            while(e.attrs[b] > 180) e.attrs[b] -= 361;
+        #define FIXDIRYPL(a,b) \
+            FIXDIRY(a) \
+            while(e.attrs[b] < -90) e.attrs[b] += 181; \
+            while(e.attrs[b] > 90) e.attrs[b] -= 181;
+        #define FIXDIRR(c) \
+            while(e.attrs[c] < -180) e.attrs[c] += 361; \
+            while(e.attrs[c] > 180) e.attrs[c] -= 361;
+        #define FIXDIRYPR(a,b,c) \
+            FIXDIRYP(a,b) \
+            FIXDIRR(c)
+        #define FIXDIRYPRL(a,b,c) \
+            FIXDIRYPL(a,b) \
+            FIXDIRR(c)
         switch(e.type)
         {
             case LIGHT:
@@ -1032,10 +1046,10 @@ namespace entities
             }
             case MAPMODEL:
             {
-                FIXYPR(1, 2, 3);
-                while(e.attrs[4] < 0) e.attrs[4] += 101;
-                while(e.attrs[4] > 100) e.attrs[4] -= 101; // blend
-                if(e.attrs[5] < 0) e.attrs[5] = 0;
+                FIXDIRYPR(1, 2, 3);
+                while(e.attrs[4] < 0) e.attrs[4] += 101; // blend
+                while(e.attrs[4] > 100) e.attrs[4] -= 101; // wraps both ways
+                if(e.attrs[5] < 0) e.attrs[5] += 101; // scale, wrap around
                 loopj(MDLF_MAX)
                 {
                     if(e.flags&(1<<j) && !(e.attrs[6]&(1<<j))) e.flags &= ~(1<<j);
@@ -1047,10 +1061,7 @@ namespace entities
                 while(e.attrs[0] < 0) e.attrs[0] += T_ALL;
                 while(e.attrs[0] >= T_ALL) e.attrs[0] -= T_ALL;
             case CHECKPOINT: // keeps going
-                while(e.attrs[1] < 0) e.attrs[1] += 360;
-                while(e.attrs[1] >= 360) e.attrs[1] -= 360;
-                while(e.attrs[2] < -90) e.attrs[2] += 181;
-                while(e.attrs[2] > 90) e.attrs[2] -= 181;
+                FIXDIRYPL(1, 2);
                 if(e.type == CHECKPOINT)
                 {
                     while(e.attrs[6] < 0) e.attrs[6] += CP_MAX;
@@ -1089,17 +1100,14 @@ namespace entities
             }
             case DECAL:
             {
-                if(e.attrs[0] < 0) e.attrs[0] = 0;
-                FIXYPR(1, 2, 3);
+                if(e.attrs[0] < 0) e.attrs[0] += 101; // scale, wrap around
+                FIXDIRYPR(1, 2, 3);
                 if(e.attrs[4] <= 0) e.attrs[4] = 1;
                 break;
             }
             case PUSHER:
             {
-                while(e.attrs[0] < 0) e.attrs[0] += 360;
-                while(e.attrs[0] >= 360) e.attrs[0] -= 360;
-                while(e.attrs[1] < -90) e.attrs[1] += 181;
-                while(e.attrs[1] > 90) e.attrs[1] -= 181;
+                FIXDIRYPL(0, 1);
                 if(e.attrs[2] < 1) e.attrs[2] = 1;
                 if(e.attrs[3] < 0) e.attrs[3] = 0;
                 if(e.attrs[4] < 0 || e.attrs[4] >= (e.attrs[3] ? e.attrs[3] : enttype[PUSHER].radius)) e.attrs[4] = 0;
@@ -1133,15 +1141,12 @@ namespace entities
             {
                 while(e.attrs[0] < 0) e.attrs[0] += A_TOTAL;
                 while(e.attrs[0] >= A_TOTAL) e.attrs[0] -= A_TOTAL;
-                while(e.attrs[1] < 0) e.attrs[1] += 360;
-                while(e.attrs[1] >= 360) e.attrs[1] -= 360;
-                while(e.attrs[2] < -90) e.attrs[2] += 180;
-                while(e.attrs[2] > 90) e.attrs[2] -= 180;
+                FIXDIRYPL(1, 2);
                 while(e.attrs[6] < 0) e.attrs[6] += W_ALL+1; // allow any weapon
                 while(e.attrs[6] > W_ALL) e.attrs[6] -= W_ALL+1;
-                if(e.attrs[7] < 0) e.attrs[7] = 0;
-                if(e.attrs[8] < 0) e.attrs[8] = 0;
-                if(e.attrs[9] < 0) e.attrs[9] = 0;
+                if(e.attrs[7] < 0) e.attrs[7] += 101; // health, wrap around
+                if(e.attrs[8] < 0) e.attrs[8] += 101; // speed, wrap around
+                if(e.attrs[9] < 0) e.attrs[9] += 101; // scale, wrap around
                 if(create) numactors++;
                 break;
             }
@@ -1149,18 +1154,15 @@ namespace entities
             {
                 while(e.attrs[0] < 0) e.attrs[0] += T_ALL;
                 while(e.attrs[0] >= T_ALL) e.attrs[0] -= T_ALL;
-                while(e.attrs[1] < 0) e.attrs[1] += 360;
-                while(e.attrs[1] >= 360) e.attrs[1] -= 360;
-                while(e.attrs[2] < -90) e.attrs[2] += 180;
-                while(e.attrs[2] > 90) e.attrs[2] -= 180;
+                FIXDIRYPL(1, 2);
                 break;
             }
             case TELEPORT:
             {
-                while(e.attrs[0] < -1) e.attrs[0] += 361;
-                while(e.attrs[0] >= 360) e.attrs[0] -= 360;
-                while(e.attrs[1] < -90) e.attrs[1] += 180;
-                while(e.attrs[1] > 90) e.attrs[1] -= 180;
+                while(e.attrs[0] < -1) e.attrs[0] += 361; // has -1
+                while(e.attrs[0] >= 360) e.attrs[0] -= 361;
+                while(e.attrs[1] < -90) e.attrs[1] += 181;
+                while(e.attrs[1] > 90) e.attrs[1] -= 181;
                 while(e.attrs[5] < 0) e.attrs[5] += 6;
                 while(e.attrs[5] >= 6) e.attrs[5] -= 6;
                 if(e.attrs[6] < 0) e.attrs[6] = 0;
@@ -1170,7 +1172,12 @@ namespace entities
             default: break;
         }
         #undef FIXEMIT
-        #undef FIXYPR
+        #undef FIXDIRYPRL
+        #undef FIXDIRYPL
+        #undef FIXDIRYPR
+        #undef FIXDIRYP
+        #undef FIXDIRR
+        #undef FIXDIRY
         if(enttype[e.type].mvattr >= 0)
         {
             while(e.attrs[enttype[e.type].mvattr] < 0) e.attrs[enttype[e.type].mvattr] += MPV_MAX;
@@ -1953,24 +1960,24 @@ namespace entities
                 case ACTOR:
                 {
                     part_radius(vec(e.o).add(vec(0, 0, PLAYERHEIGHT/2)), vec(PLAYERRADIUS, PLAYERRADIUS, PLAYERHEIGHT/2), showentsize, 1, 1, TEAM(T_ENEMY, colour));
-                    part_radius(e.o, vec(ai::ALERTMAX, ai::ALERTMAX, ai::ALERTMAX), showentsize, 1, 1, TEAM(T_ENEMY, colour));
+                    part_radius(e.o, vec(ai::ALERTMAX), showentsize, 1, 1, TEAM(T_ENEMY, colour));
                     break;
                 }
                 case MAPSOUND:
                 {
-                    part_radius(e.o, vec(e.attrs[1], e.attrs[1], e.attrs[1]), showentsize, 1, 1, colourcyan);
-                    part_radius(e.o, vec(e.attrs[2], e.attrs[2], e.attrs[2]), showentsize, 1, 1, colourcyan);
+                    part_radius(e.o, vec(float(e.attrs[1])), showentsize, 1, 1, colourcyan);
+                    part_radius(e.o, vec(float(e.attrs[2])), showentsize, 1, 1, colourcyan);
                     break;
                 }
                 case ENVMAP:
                 {
                     int s = e.attrs[0] ? clamp(e.attrs[0], 0, 10000) : envmapradius;
-                    part_radius(e.o, vec(s, s, s), showentsize, 1, 1, colourcyan);
+                    part_radius(e.o, vec(float(s)), showentsize, 1, 1, colourcyan);
                     break;
                 }
                 case LIGHT:
                 {
-                    int radius = 0, spotlight = -1;
+                    int radius = e.attrs[0], spotlight = -1;
                     vec color;
                     getlightfx(e, &radius, &spotlight, &color);
                     if(e.attrs[0] && e.attrs[0] != radius)
@@ -1986,9 +1993,9 @@ namespace entities
                 case AFFINITY:
                 {
                     float radius = enttype[e.type].radius;
-                    part_radius(e.o, vec(radius, radius, radius), showentsize, 1, 1, TEAM(e.attrs[0], colour));
+                    part_radius(e.o, vec(radius), showentsize, 1, 1, TEAM(e.attrs[0], colour));
                     radius = radius*2/3; // capture pickup dist
-                    part_radius(e.o, vec(radius, radius, radius), showentsize, 1, 1, TEAM(e.attrs[0], colour));
+                    part_radius(e.o, vec(radius), showentsize, 1, 1, TEAM(e.attrs[0], colour));
                     break;
                 }
                 default:
@@ -1996,9 +2003,9 @@ namespace entities
                     float radius = enttype[e.type].radius;
                     if((e.type == TRIGGER || e.type == TELEPORT || e.type == PUSHER || e.type == CHECKPOINT) && e.attrs[e.type == CHECKPOINT ? 0 : 3])
                         radius = e.attrs[e.type == CHECKPOINT ? 0 : 3];
-                    if(radius > 0) part_radius(e.o, vec(radius, radius, radius), showentsize, 1, 1, colourcyan);
+                    if(radius > 0) part_radius(e.o, vec(radius), showentsize, 1, 1, colourcyan);
                     if(e.type == PUSHER && e.attrs[4] > 0 && e.attrs[4] < radius)
-                        part_radius(e.o, vec(e.attrs[4], e.attrs[4], e.attrs[4]), showentsize, 1, 1, colourcyan);
+                        part_radius(e.o, vec(float(e.attrs[4])), showentsize, 1, 1, colourcyan);
                     break;
                 }
             }

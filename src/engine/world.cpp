@@ -499,14 +499,14 @@ void entrotate(int *cw)
     );
 }
 
+VAR(IDF_PERSIST, entselmdlbox, 0, 0, 1); // wanted this off in RE
 void entselectionbox(extentity &e, vec &eo, vec &es)
 {
     model *m = NULL;
-    const char *mname = entities::entmdlname(e.type, e.attrs);
+    const char *mname = entselmdlbox ? entities::entmdlname(e.type, e.attrs) : NULL;
     if(mname && (m = loadmodel(mname)))
     {
         m->collisionbox(eo, es);
-        transformbb(e, eo, es);
         if(es.x > es.y) es.y = es.x; else es.x = es.y; // square
         es.z = (es.z + eo.z + 1 + entselradius)/2; // enclose ent radius box and model box
         eo.x += e.o.x;
