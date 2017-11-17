@@ -1041,37 +1041,56 @@ namespace entities
         {
             case LIGHT:
             {
-                loopk(7) if(e.attrs[k] < 0) e.attrs[k] = 0;
+                if(e.attrs[0] < 0) e.attrs[0] = 0; // radius, clamp
+                while(e.attrs[1] < 0) e.attrs[1] += 256; // red, wrap around
+                while(e.attrs[2] < 0) e.attrs[2] += 256; // green, wrap around
+                while(e.attrs[3] < 0) e.attrs[3] += 256; // blue, wrap around
+                if(e.attrs[4] < 0) e.attrs[4] = 0; // flare, clamp
+                while(e.attrs[5] < 0) e.attrs[5] += 101; // flarescale, wrap around
+                if(e.attrs[6] < 0) e.attrs[6] = 0; // flags, clamp
+                if(e.attrs[7] < 0) e.attrs[7] = 0; // palette, clamp
+                if(e.attrs[8] < 0) e.attrs[8] = 0; // palindex, clamp
                 break;
             }
             case MAPMODEL:
             {
-                FIXDIRYPR(1, 2, 3);
+                int nummapmodels = mapmodels.length();
+                if(nummapmodels)
+                {
+                    while(e.attrs[0] < 0) e.attrs[0] += nummapmodels;
+                    while(e.attrs[0] >= nummapmodels) e.attrs[0] -= nummapmodels;
+                }
+                FIXDIRYPR(1, 2, 3); // yaw, pitch, roll
                 while(e.attrs[4] < 0) e.attrs[4] += 101; // blend
-                while(e.attrs[4] > 100) e.attrs[4] -= 101; // wraps both ways
+                while(e.attrs[4] > 100) e.attrs[4] -= 101; // wrap both ways
                 if(e.attrs[5] < 0) e.attrs[5] += 101; // scale, wrap around
+                if(e.attrs[6] < 0) e.attrs[6] = 0; // flags, clamp
                 loopj(MDLF_MAX)
                 {
                     if(e.flags&(1<<j) && !(e.attrs[6]&(1<<j))) e.flags &= ~(1<<j);
                     else if(!(e.flags&(1<<j)) && e.attrs[6]&(1<<j)) e.flags |= (1<<j);
                 }
+                while(e.attrs[7] < 0) e.attrs[7] += 0x1000000; // colour
+                while(e.attrs[7] > 0xFFFFFF) e.attrs[7] -= 0x1000000; // wrap both ways
+                if(e.attrs[8] < 0) e.attrs[8] = 0; // palette, clamp
+                if(e.attrs[9] < 0) e.attrs[9] = 0; // palindex, clamp
                 break;
             }
             case PLAYERSTART:
-                while(e.attrs[0] < 0) e.attrs[0] += T_ALL;
-                while(e.attrs[0] >= T_ALL) e.attrs[0] -= T_ALL;
+                while(e.attrs[0] < 0) e.attrs[0] += T_ALL; // team
+                while(e.attrs[0] >= T_ALL) e.attrs[0] -= T_ALL; // wrap both ways
             case CHECKPOINT: // keeps going
-                FIXDIRYPL(1, 2);
+                FIXDIRYPL(1, 2); // yaw, pitch
                 if(e.type == CHECKPOINT)
                 {
-                    while(e.attrs[6] < 0) e.attrs[6] += CP_MAX;
-                    while(e.attrs[6] >= CP_MAX) e.attrs[6] -= CP_MAX;
+                    while(e.attrs[6] < 0) e.attrs[6] += CP_MAX; // cpid
+                    while(e.attrs[6] >= CP_MAX) e.attrs[6] -= CP_MAX; // wrap both ways
                 }
                 break;
             case PARTICLES:
             {
-                while(e.attrs[0] < 0) e.attrs[0] += PART_MAX;
-                while(e.attrs[0] >= PART_MAX) e.attrs[0] -= PART_MAX;
+                while(e.attrs[0] < 0) e.attrs[0] += 36; // particle types
+                while(e.attrs[0] >= 36) e.attrs[0] -= 36; // wrap both ways
                 FIXEMIT;
                 break;
             }
@@ -1083,46 +1102,51 @@ namespace entities
                     while(e.attrs[0] < 0) e.attrs[0] += numsounds;
                     while(e.attrs[0] >= numsounds) e.attrs[0] -= numsounds;
                 }
-                while(e.attrs[3] < 0) e.attrs[3] += 256;
-                while(e.attrs[3] > 255) e.attrs[3] -= 256;
+                if(e.attrs[1] < 0) e.attrs[1] = 0; // minrad, clamp
+                if(e.attrs[2] < 0) e.attrs[2] = 0; // maxrad, clamp
+                while(e.attrs[3] < 0) e.attrs[3] += 256; // volume
+                while(e.attrs[3] > 255) e.attrs[3] -= 256; // wrap both ways
+                if(e.attrs[4] < 0) e.attrs[4] = 0; // flags, clamp
                 FIXEMIT;
                 break;
             }
             case LIGHTFX:
             {
-                while(e.attrs[0] < 0) e.attrs[0] += LFX_MAX;
-                while(e.attrs[0] >= LFX_MAX) e.attrs[0] -= LFX_MAX;
-                if(e.attrs[1] < 0) e.attrs[1] = 0;
-                if(e.attrs[2] < 0) e.attrs[2] = 0;
-                if(e.attrs[3] < 0) e.attrs[3] = 0;
+                while(e.attrs[0] < 0) e.attrs[0] += LFX_MAX; // type
+                while(e.attrs[0] >= LFX_MAX) e.attrs[0] -= LFX_MAX; // wrap both ways
+                if(e.attrs[1] < 0) e.attrs[1] = 0; // mod, clamp
+                if(e.attrs[2] < 0) e.attrs[2] = 0; // min, clamp
+                if(e.attrs[3] < 0) e.attrs[3] = 0; // max, clamp
+                if(e.attrs[4] < 0) e.attrs[4] = 0; // flags, clamp
                 FIXEMIT;
                 break;
             }
             case DECAL:
             {
-                if(e.attrs[0] < 0) e.attrs[0] += 101; // scale, wrap around
-                FIXDIRYPR(1, 2, 3);
-                if(e.attrs[4] <= 0) e.attrs[4] = 1;
+                if(e.attrs[0] < 0) e.attrs[0] = 0; // type, clamp
+                FIXDIRYPR(1, 2, 3); // yaw, pitch, roll
+                if(e.attrs[4] <= 0) e.attrs[4] = 1; // size (>= 1)
                 break;
             }
             case PUSHER:
             {
-                FIXDIRYPL(0, 1);
-                if(e.attrs[2] < 1) e.attrs[2] = 1;
-                if(e.attrs[3] < 0) e.attrs[3] = 0;
-                if(e.attrs[4] < 0 || e.attrs[4] >= (e.attrs[3] ? e.attrs[3] : enttype[PUSHER].radius)) e.attrs[4] = 0;
-                if(e.attrs[5] < 0) e.attrs[5] += 4;
-                if(e.attrs[5] >= 4) e.attrs[5] -= 4;
+                FIXDIRYPL(0, 1); // yaw, pitch
+                if(e.attrs[2] < 1) e.attrs[2] = 1; // force, zero is useless
+                if(e.attrs[3] < 0) e.attrs[3] = 0; // maxrad, clamp
+                if(e.attrs[4] < 0) e.attrs[4] = 0; // minrad, clamp
+                if(e.attrs[5] < 0) e.attrs[5] += 4; // type
+                if(e.attrs[5] >= 4) e.attrs[5] -= 4; // wrap both ways
                 break;
             }
             case TRIGGER:
             {
-                while(e.attrs[1] < 0) e.attrs[1] += TR_MAX;
-                while(e.attrs[1] >= TR_MAX) e.attrs[1] -= TR_MAX;
-                while(e.attrs[2] < 0) e.attrs[2] += TA_MAX;
-                while(e.attrs[2] >= TA_MAX) e.attrs[2] -= TA_MAX;
-                while(e.attrs[4] < 0) e.attrs[4] += 4;
-                while(e.attrs[4] >= 4) e.attrs[4] -= 4;
+                while(e.attrs[1] < 0) e.attrs[1] += TR_MAX; // type
+                while(e.attrs[1] >= TR_MAX) e.attrs[1] -= TR_MAX; // wrap both ways
+                while(e.attrs[2] < 0) e.attrs[2] += TA_MAX; // action
+                while(e.attrs[2] >= TA_MAX) e.attrs[2] -= TA_MAX; // wrap both ways
+                if(e.attrs[3] < 0) e.attrs[3] = 1; // radius, clamp
+                while(e.attrs[4] < 0) e.attrs[4] += 4; // state
+                while(e.attrs[4] >= 4) e.attrs[4] -= 4; // wrap both ways
                 if(cantrigger(n)) loopv(e.links) if(ents.inrange(e.links[i]) && (ents[e.links[i]]->type == MAPMODEL || ents[e.links[i]]->type == PARTICLES || ents[e.links[i]]->type == MAPSOUND || ents[e.links[i]]->type == LIGHTFX))
                 {
                     ents[e.links[i]]->lastemit = e.lastemit;
@@ -1134,16 +1158,16 @@ namespace entities
             {
                 if(create && (e.attrs[0] < W_OFFSET || e.attrs[0] >= W_ALL)) e.attrs[0] = W_OFFSET; // don't be stupid when creating the entity
                 while(e.attrs[0] < W_OFFSET) e.attrs[0] += W_ALL-W_OFFSET; // don't allow superimposed weaps
-                while(e.attrs[0] >= W_ALL) e.attrs[0] -= W_ALL-W_OFFSET;
+                while(e.attrs[0] >= W_ALL) e.attrs[0] -= W_ALL-W_OFFSET; // wrap both ways
                 break;
             }
             case ACTOR:
             {
-                while(e.attrs[0] < 0) e.attrs[0] += A_TOTAL;
-                while(e.attrs[0] >= A_TOTAL) e.attrs[0] -= A_TOTAL;
-                FIXDIRYPL(1, 2);
+                while(e.attrs[0] < 0) e.attrs[0] += A_TOTAL; // type
+                while(e.attrs[0] >= A_TOTAL) e.attrs[0] -= A_TOTAL; // wrap both ways
+                FIXDIRYPL(1, 2); // yaw, pitch
                 while(e.attrs[6] < 0) e.attrs[6] += W_ALL+1; // allow any weapon
-                while(e.attrs[6] > W_ALL) e.attrs[6] -= W_ALL+1;
+                while(e.attrs[6] > W_ALL) e.attrs[6] -= W_ALL+1; // wrap both ways
                 if(e.attrs[7] < 0) e.attrs[7] += 101; // health, wrap around
                 if(e.attrs[8] < 0) e.attrs[8] += 101; // speed, wrap around
                 if(e.attrs[9] < 0) e.attrs[9] += 101; // scale, wrap around
@@ -1152,21 +1176,26 @@ namespace entities
             }
             case AFFINITY:
             {
-                while(e.attrs[0] < 0) e.attrs[0] += T_ALL;
-                while(e.attrs[0] >= T_ALL) e.attrs[0] -= T_ALL;
-                FIXDIRYPL(1, 2);
+                while(e.attrs[0] < 0) e.attrs[0] += T_ALL; // team
+                while(e.attrs[0] >= T_ALL) e.attrs[0] -= T_ALL; // wrap both ways
+                FIXDIRYPL(1, 2); // yaw, pitch
                 break;
             }
             case TELEPORT:
             {
-                while(e.attrs[0] < -1) e.attrs[0] += 361; // has -1
-                while(e.attrs[0] >= 360) e.attrs[0] -= 361;
-                while(e.attrs[1] < -90) e.attrs[1] += 181;
-                while(e.attrs[1] > 90) e.attrs[1] -= 181;
-                while(e.attrs[5] < 0) e.attrs[5] += 6;
-                while(e.attrs[5] >= 6) e.attrs[5] -= 6;
-                if(e.attrs[6] < 0) e.attrs[6] = 0;
-                if(e.attrs[7] < 0) e.attrs[7] = 0;
+                while(e.attrs[0] < -1) e.attrs[0] += 361; // yaw
+                while(e.attrs[0] >= 360) e.attrs[0] -= 361; // has -1 for rotating effect
+                while(e.attrs[1] < -90) e.attrs[1] += 181; // pitch
+                while(e.attrs[1] > 90) e.attrs[1] -= 181; // wrap both ways
+                if(e.attrs[2] < 0) e.attrs[2] = 0; // push, clamp
+                if(e.attrs[3] < 0) e.attrs[3] = 0; // radius, clamp
+                while(e.attrs[4] < 0) e.attrs[4] += 0x1000000; // colour
+                while(e.attrs[4] > 0xFFFFFF) e.attrs[4] -= 0x1000000; // wrap both ways
+                while(e.attrs[5] < 0) e.attrs[5] += 6; // type
+                while(e.attrs[5] >= 6) e.attrs[5] -= 6; // wrap both ways
+                if(e.attrs[6] < 0) e.attrs[6] = 0; // palette, clamp
+                if(e.attrs[7] < 0) e.attrs[7] = 0; // palindex, clamp
+                if(e.attrs[8] < 0) e.attrs[8] = 0; // flags, clamp
                 break;
             }
             default: break;
