@@ -32,7 +32,7 @@
       <caption>Overlooking friendly fire on the map cutec</caption>
     </screenshot>
   </screenshots>
-  <updatecontact>https://redeclipse.net/forum/</updatecontact>
+  <update_contact>https://redeclipse.net/forum/</update_contact>
   <developer_name>Red Eclipse Team</developer_name>
   <url type="bugtracker">https://github.com/red-eclipse/base/issues</url>
   <url type="donation">https://redeclipse.net/donate</url>
