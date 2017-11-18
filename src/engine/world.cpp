@@ -229,7 +229,7 @@ static bool modifyoctaent(int flags, int id, extentity &e)
         case ET_LIGHT:
             clearlightcache(id);
             if(e.attrs[6]&L_VOLUMETRIC) { if(flags&MODOE_ADD) volumetriclights++; else --volumetriclights; }
-            if(e.attrs[6]&L_NOSPEC) { if(flags&MODOE_ADD) nospeclights++; else --nospeclights; }
+            if(e.attrs[6]&L_NOSPEC) { if(!(flags&MODOE_ADD ? nospeclights++ : --nospeclights)) cleardeferredlightshaders(); }
             break;
         case ET_LIGHTFX: if(!(flags&MODOE_ADD ? spotlights++ : --spotlights)) { cleardeferredlightshaders(); cleanupvolumetric(); } break;
         case ET_PARTICLES: clearparticleemitters(); break;

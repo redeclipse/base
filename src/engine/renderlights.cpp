@@ -2520,7 +2520,7 @@ Shader *loaddeferredlightshader(const char *type = NULL)
     if(usegatherforsm()) common[commonlen++] = smfilter > 2 ? 'G' : 'g';
     else if(smfilter) common[commonlen++] = smfilter > 2 ? 'E' : (smfilter > 1 ? 'F' : 'f');
     if(spotlights || forcespotlights) common[commonlen++] = 's';
-    if(nospeclights) common[commonlen++] = 'n';
+    if(nospeclights) common[commonlen++] = 'z';
     common[commonlen] = '\0';
 
     shadow[shadowlen++] = 'p';
