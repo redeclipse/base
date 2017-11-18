@@ -38,6 +38,8 @@ struct model
     virtual void setcullface(int cullface) {}
     virtual void setcolor(const vec &color) {}
     virtual void setmaterial(int material1, int material2) {}
+    virtual void setmixer(bool) {}
+    virtual void setpattern(bool) {}
 
     virtual void genshadowmesh(vector<triangle> &tris, const matrix4x3 &orient) {}
     virtual void preloadBIH() { if(!bih) setBIH(); }

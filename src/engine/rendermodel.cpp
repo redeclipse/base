@@ -47,8 +47,21 @@ void mdlmaterial(int *material1, int *material2)
     checkmdl;
     loadingmodel->setmaterial(clamp(*material1, 0, int(MAXMDLMATERIALS)), clamp(*material2, 0, int(MAXMDLMATERIALS)));
 }
-
 COMMAND(0, mdlmaterial, "ii");
+
+void mdlmixer(int *mixer)
+{
+    checkmdl;
+    loadingmodel->setmixer(*mixer != 0);
+}
+COMMAND(0, mdlmixer, "i");
+
+void mdlpattern(int *pattern)
+{
+    checkmdl;
+    loadingmodel->setpattern(*pattern != 0);
+}
+COMMAND(0, mdlpattern, "i");
 
 void mdlcullface(int *cullface)
 {

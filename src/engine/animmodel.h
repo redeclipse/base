@@ -111,21 +111,29 @@ struct animmodel : model
 
     struct skin : shaderparams
     {
+        enum
+        {
+            ALLOW_MIXER    = 1<<0,
+            ENABLE_MIXER   = 1<<1,
+            ALLOW_PATTERN  = 1<<2,
+            ENABLE_PATTERN = 1<<3
+        };
+
         part *owner;
-        Texture *tex, *decal, *masks, *envmap, *normalmap, *mixer, *pattern;
+        Texture *tex, *decal, *masks, *envmap, *normalmap;
         Shader *shader, *rsmshader;
-        int cullface;
+        int cullface, flags;
         shaderparamskey *key;
 
-        skin() : owner(0), tex(notexture), decal(NULL), masks(notexture), envmap(NULL), normalmap(NULL), mixer(NULL), pattern(NULL), shader(NULL), rsmshader(NULL), cullface(1), key(NULL) {}
+        skin() : owner(0), tex(notexture), decal(NULL), masks(notexture), envmap(NULL), normalmap(NULL), shader(NULL), rsmshader(NULL), cullface(1), flags(0), key(NULL) {}
 
         bool masked() const { return masks != notexture; }
         bool envmapped() const { return envmapmax>0; }
         bool bumpmapped() const { return normalmap != NULL; }
         bool alphatested() const { return alphatest > 0 && tex->type&Texture::ALPHA; }
         bool decaled() const { return decal != NULL; }
-        bool mixed() const { return mixer != NULL; }
-        bool patterned() const { return pattern != NULL; }
+        bool mixed() const { return (flags&ENABLE_MIXER) != 0; }
+        bool patterned() const { return (flags&ENABLE_PATTERN) != 0; }
 
         void setkey()
         {
@@ -268,9 +276,6 @@ struct animmodel : model
                 return;
             }
             int activetmu = 0;
-            bool forceshader = false;
-            int index = owner->model->parts[0]->index;
-            bool firstmodel = index >= 0 && index < owner->numanimparts && owner->model == as->owner->model;
             if(tex!=lasttex)
             {
                 glBindTexture(GL_TEXTURE_2D, tex->id);
@@ -297,25 +302,36 @@ struct animmodel : model
                 glBindTexture(GL_TEXTURE_2D, masks->id);
                 lastmasks = masks;
             }
-            bool wasmixed = mixed();
-            mixer = state->mixer && firstmodel ? state->mixer : NULL;
-            if(mixed() != wasmixed) forceshader = true;
-            if(mixed() && mixer!=lastmixer)
+            int oldflags = flags;
+            if(flags&ALLOW_MIXER)
             {
-                glActiveTexture_(GL_TEXTURE5);
-                activetmu = 5;
-                glBindTexture(GL_TEXTURE_2D, mixer->id);
-                lastmixer = mixer;
+                if(state->mixer)
+                {
+                    flags |= ENABLE_MIXER;
+                    if(state->mixer != lastmixer)
+                    {
+                        glActiveTexture_(GL_TEXTURE5);
+                        activetmu = 5;
+                        glBindTexture(GL_TEXTURE_2D, state->mixer->id);
+                        lastmixer = state->mixer;
+                    }
+                }
+                else flags &= ~ENABLE_MIXER;
             }
-            bool waspattern = patterned();
-            pattern = state->pattern && firstmodel ? state->pattern : NULL;
-            if(patterned() != waspattern) forceshader = true;
-            if(patterned() && pattern!=lastpattern)
+            if(flags&ALLOW_PATTERN)
             {
-                glActiveTexture_(GL_TEXTURE6);
-                activetmu = 6;
-                glBindTexture(GL_TEXTURE_2D, pattern->id);
-                lastpattern = pattern;
+                if(state->pattern)
+                {
+                    flags |= ENABLE_PATTERN;
+                    if(state->pattern != lastpattern)
+                    {
+                        glActiveTexture_(GL_TEXTURE6);
+                        activetmu = 6;
+                        glBindTexture(GL_TEXTURE_2D, state->pattern->id);
+                        lastpattern = state->pattern;
+                    }
+                }
+                else flags &= ~ENABLE_PATTERN;
             }
             if(envmapped())
             {
@@ -329,7 +345,7 @@ struct animmodel : model
                 }
             }
             if(activetmu != 0) glActiveTexture_(GL_TEXTURE0);
-            setshader(b, as, forceshader);
+            setshader(b, as, flags != oldflags);
             setshaderparams(b, as);
         }
     };
@@ -1647,6 +1663,28 @@ struct animmodel : model
         }
     }
 
+    void setmixer(bool val)
+    {
+        if(parts.empty()) loaddefaultparts();
+        loopv(parts) loopvj(parts[i]->skins)
+        {
+            skin &s = parts[i]->skins[j];
+            if(val) s.flags |= skin::ALLOW_MIXER;
+            else s.flags &= ~skin::ALLOW_MIXER;
+        }
+    }
+
+    void setpattern(bool val)
+    {
+        if(parts.empty()) loaddefaultparts();
+        loopv(parts) loopvj(parts[i]->skins)
+        {
+            skin &s = parts[i]->skins[j];
+            if(val) s.flags |= skin::ALLOW_PATTERN;
+            else s.flags &= ~skin::ALLOW_PATTERN;
+        }
+    }
+
     void calcbb(vec &center, vec &radius)
     {
         if(parts.empty()) return;
@@ -1910,6 +1948,16 @@ template<class MDL, class MESH> struct modelcommands
         loopskins(meshname, s, { s.material1 = clamp(*material1, 0, int(MAXMDLMATERIALS)); s.material2 = clamp(*material2, 0, int(MAXMDLMATERIALS)); });
     }
 
+    static void setmixer(char *meshname, int *mixer)
+    {
+        loopskins(meshname, s, { if(*mixer) s.flags |= skin::ALLOW_MIXER; else s.flags &= ~skin::ALLOW_MIXER; });
+    }
+
+    static void setpattern(char *meshname, int *pattern)
+    {
+        loopskins(meshname, s, { if(*pattern) s.flags |= skin::ALLOW_PATTERN; else s.flags &= ~skin::ALLOW_PATTERN; });
+    }
+
     static void setlink(int *parent, int *child, char *tagname, float *x, float *y, float *z, float *yaw, float *pitch, float *roll)
     {
         if(!MDL::loading) { conoutf("\frNot loading an %s", MDL::formatname()); return; }
@@ -1944,6 +1992,8 @@ template<class MDL, class MESH> struct modelcommands
             modelcommand(setnoclip, "noclip", "si");
             modelcommand(settricollide, "tricollide", "s");
             modelcommand(setmaterial, "material", "sii");
+            modelcommand(setmixer, "mixer", "si");
+            modelcommand(setpattern, "pattern", "si");
         }
         if(MDL::multiparted()) modelcommand(setlink, "link", "iisffffff");
     }
