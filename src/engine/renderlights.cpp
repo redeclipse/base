@@ -1586,6 +1586,8 @@ struct lightinfo
     }
 
     bool noshadow() const { return flags&L_NOSHADOW || radius <= smminradius; }
+    bool nospec() const { return (flags&L_NOSPEC) != 0; }
+    bool volumetric() const { return (flags&L_VOLUMETRIC) != 0; }
 
     void addscissor(float &dx1, float &dy1, float &dx2, float &dy2) const
     {
@@ -2489,6 +2491,8 @@ void cleardeferredlightshaders()
     deferredmsaasampleshader = NULL;
 }
 
+extern int nospeclights;
+
 Shader *loaddeferredlightshader(const char *type = NULL)
 {
     string common, shadow, sun;
@@ -2516,6 +2520,7 @@ Shader *loaddeferredlightshader(const char *type = NULL)
     if(usegatherforsm()) common[commonlen++] = smfilter > 2 ? 'G' : 'g';
     else if(smfilter) common[commonlen++] = smfilter > 2 ? 'E' : (smfilter > 1 ? 'F' : 'f');
     if(spotlights || forcespotlights) common[commonlen++] = 's';
+    if(nospeclights) common[commonlen++] = 'n';
     common[commonlen] = '\0';
 
     shadow[shadowlen++] = 'p';
@@ -2865,14 +2870,13 @@ static inline void setlightglobals(bool transparent = false)
 }
 
 static LocalShaderParam lightpos("lightpos"), lightcolor("lightcolor"), spotparams("spotparams"), shadowparams("shadowparams"), shadowoffset("shadowoffset");
-static vec4 lightposv[8], spotparamsv[8], shadowparamsv[8];
-static vec lightcolorv[8];
+static vec4 lightposv[8], lightcolorv[8], spotparamsv[8], shadowparamsv[8];
 static vec2 shadowoffsetv[8];
 
 static inline void setlightparams(int i, const lightinfo &l)
 {
     lightposv[i] = vec4(l.o, 1).div(l.radius);
-    lightcolorv[i] = vec(l.color).mul(2*ldrscaleb);
+    lightcolorv[i] = vec4(vec(l.color).mul(2*ldrscaleb), l.nospec() ? 0 : 1);
     if(l.spot > 0) spotparamsv[i] = vec4(vec(l.dir).neg(), 1/(1 - cos360(l.spot)));
     if(l.shadowmap >= 0)
     {
@@ -3205,7 +3209,7 @@ void rendervolumetric()
     loopv(lightorder)
     {
         const lightinfo &l = lights[lightorder[i]];
-        if(!(l.flags&L_VOLUMETRIC) || l.checkquery()) continue;
+        if(!l.volumetric() || l.checkquery()) continue;
 
         l.addscissor(bsx1, bsy1, bsx2, bsy2);
     }
@@ -3247,7 +3251,7 @@ void rendervolumetric()
     loopv(lightorder)
     {
         const lightinfo &l = lights[lightorder[i]];
-        if(!(l.flags&L_VOLUMETRIC) || l.checkquery()) continue;
+        if(!l.volumetric() || l.checkquery()) continue;
 
         matrix4 lightmatrix = camprojmatrix;
         lightmatrix.translate(l.o);
@@ -3498,7 +3502,7 @@ void collectlights()
     {
         int idx = lightorder[i];
         lightinfo &l = lights[idx];
-        if((l.noshadow() && (!oqvol || !(l.flags&L_VOLUMETRIC))) || l.radius >= worldsize) continue;
+        if((l.noshadow() && (!oqvol || !l.volumetric())) || l.radius >= worldsize) continue;
         vec bbmin, bbmax;
         l.calcbb(bbmin, bbmax);
         if(!camera1->o.insidebb(bbmin, bbmax, 2))
