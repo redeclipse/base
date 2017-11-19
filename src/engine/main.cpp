@@ -47,13 +47,12 @@ void textinput(bool on, int mask)
 
 VARN(IDF_PERSIST, relativemouse, userelativemouse, 0, 1, 1);
 
-bool shouldgrab = false, grabinput = false, canrelativemouse = true, relativemouse = false;
+bool grabinput = false, canrelativemouse = true, relativemouse = false;
 
 void inputgrab(bool on)
 {
     if(on)
     {
-        SDL_ShowCursor(SDL_FALSE);
         if(canrelativemouse && userelativemouse)
         {
             if(SDL_SetRelativeMouseMode(SDL_TRUE) >= 0)
@@ -71,7 +70,6 @@ void inputgrab(bool on)
     }
     else
     {
-        SDL_ShowCursor(SDL_TRUE);
         if(relativemouse)
         {
             SDL_SetRelativeMouseMode(SDL_FALSE);
@@ -79,7 +77,6 @@ void inputgrab(bool on)
             relativemouse = false;
         }
     }
-    shouldgrab = false;
 }
 
 extern void cleargamma();
@@ -437,6 +434,7 @@ static bool filterevent(const SDL_Event &event)
     switch(event.type)
     {
         case SDL_MOUSEMOTION:
+            if(!grabinput && warping) return false;
             if(grabinput && !relativemouse && !(SDL_GetWindowFlags(screen) & SDL_WINDOW_FULLSCREEN))
             {
                 if(warping && event.motion.x == screenw / 2 && event.motion.y == screenh / 2)
@@ -484,7 +482,7 @@ static void ignoremousemotion()
 
 void resetcursor(bool warp, bool reset)
 {
-    if(warp && grabinput && !relativemouse && !(SDL_GetWindowFlags(screen) & SDL_WINDOW_FULLSCREEN))
+    if(warp)
     {
         SDL_WarpMouseInWindow(screen, screenw/2, screenh/2);
         warping = true;
@@ -521,9 +519,10 @@ static void checkmousemotion(int &dx, int &dy)
 
 void checkinput()
 {
+    static bool shouldsync = true, shouldgrab = false;
     SDL_Event event;
     //int lasttype = 0, lastbut = 0;
-    bool mousemoved = false, shouldwarp = false;
+    bool mousemoved = false;
     while(events.length() || pollevent(event))
     {
         if(events.length()) event = events.remove(0);
@@ -556,18 +555,6 @@ void checkinput()
                         quit();
                         break;
 
-                    case SDL_WINDOWEVENT_FOCUS_GAINED:
-                        shouldgrab = true;
-                        break;
-                    case SDL_WINDOWEVENT_ENTER:
-                        inputgrab(grabinput = true);
-                        break;
-
-                    case SDL_WINDOWEVENT_LEAVE:
-                    case SDL_WINDOWEVENT_FOCUS_LOST:
-                        inputgrab(grabinput = false);
-                        break;
-
                     case SDL_WINDOWEVENT_MINIMIZED:
                         minimized = true;
                         break;
@@ -575,9 +562,6 @@ void checkinput()
                     case SDL_WINDOWEVENT_MAXIMIZED:
                     case SDL_WINDOWEVENT_RESTORED:
                         minimized = false;
-                        break;
-
-                    case SDL_WINDOWEVENT_RESIZED:
                         break;
 
                     case SDL_WINDOWEVENT_SIZE_CHANGED:
@@ -592,17 +576,16 @@ void checkinput()
                         break;
                     }
                 }
+                shouldsync = true;
                 break;
 
             case SDL_MOUSEMOTION:
-                if(grabinput)
                 {
                     int dx = event.motion.xrel, dy = event.motion.yrel;
                     checkmousemotion(dx, dy);
-                    shouldwarp = game::mousemove(dx, dy, event.motion.x, event.motion.y, screenw, screenh); // whether game controls engine cursor
+                    shouldgrab = game::mousemove(dx, dy, event.motion.x, event.motion.y, screenw, screenh); // whether game controls engine cursor
                     mousemoved = true;
                 }
-                else if(shouldgrab) inputgrab(grabinput = true);
                 break;
 
             case SDL_MOUSEBUTTONDOWN:
@@ -630,10 +613,31 @@ void checkinput()
                 break;
         }
     }
+
+    warping = false;
+    if(grabinput != shouldgrab)
+    {
+        inputgrab(grabinput = shouldgrab);
+        if(!grabinput)
+        {
+            resetcursor(true, true);
+            shouldsync = false;
+        }
+    }
     if(mousemoved)
     {
-        warping = false;
-        if(grabinput && shouldwarp) resetcursor(true, false);
+        if(grabinput)
+        {
+            if(!relativemouse) resetcursor(true, false);
+        }
+        else if(shouldsync)
+        {
+            int x = 0, y = 0;
+            SDL_GetMouseState(&x, &y);
+            cursorx = clamp(float(x) / screenw, 0.f, 1.f);
+            cursory = clamp(float(y) / screenh, 0.f, 1.f);
+            shouldsync = false;
+        }
     }
 }
 
