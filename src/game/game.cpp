@@ -73,8 +73,6 @@ namespace game
 
     VAR(IDF_PERSIST, thirdpersonmodel, 0, 1, 1);
     VAR(IDF_PERSIST, thirdpersonfov, 90, 120, 150);
-    FVAR(IDF_PERSIST, thirdpersondepth, 0, 0.65f, 1);
-    FVAR(IDF_PERSIST, thirdpersondepthfov, 0, 90, 150);
     VAR(IDF_PERSIST, thirdpersoninterp, 0, 100, VAR_MAX);
     FVAR(IDF_PERSIST, thirdpersondist, FVAR_NONZERO, 14, 20);
     FVAR(IDF_PERSIST, thirdpersonside, -20, 7, 20);
@@ -3522,7 +3520,7 @@ namespace game
         rendermodel(mdlname, mdl, e);
     }
 
-    void rendercheck(gameent *d, bool third = false)
+    void rendercheck(gameent *d)
     {
         d->checktags();
         float blend = opacity(d);
@@ -3709,10 +3707,11 @@ namespace game
 
         gameent *d;
         int numdyns = numdynents();
+        bool third = thirdpersonview();
         loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL)
         {
-            if(d != focus || d->state == CS_DEAD || d->state == CS_WAITING) d->cleartags();
-            renderplayer(d, 1, d->curscale, d != focus || d->state == CS_DEAD || d->state == CS_WAITING ? 0 : MDL_ONLYSHADOW);
+            if(d != focus || third) d->cleartags();
+            renderplayer(d, 1, d->curscale, d != focus || third ? 0 : MDL_ONLYSHADOW);
         }
     }
 
@@ -3720,27 +3719,27 @@ namespace game
     {
         gameent *d;
         int numdyns = numdynents();
-        loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL && (d != focus || d->state == CS_DEAD || d->state == CS_WAITING))
+        bool third = thirdpersonview();
+        loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL && (d != focus || third))
             rendercheck(d);
     }
 
     void renderavatar()
     {
-        if(focus->state == CS_DEAD || focus->state == CS_WAITING) return;
-        bool third = thirdpersonview();
+        if(thirdpersonview()) return;
         focus->cleartags();
-        float depthfov = third ? (thirdpersondepthfov != 0 && focus->state == CS_ALIVE ? thirdpersondepthfov : curfov) : (firstpersondepthfov != 0 ? firstpersondepthfov : curfov),
-              depthscale = third || focus->state != CS_ALIVE ? thirdpersondepth : firstpersondepth;
+        float depthfov = firstpersondepthfov != 0 ? firstpersondepthfov : curfov,
+              depthscale = firstpersondepth;
         setavatarscale(depthfov, depthscale);
-        if(third || focus->state == CS_ALIVE)
-            renderplayer(focus, third ? 1 : 0, focus->curscale, MDL_NOBATCH);
-        if(!third && focus->state == CS_ALIVE && firstpersonmodel == 2)
+        if(focus->state == CS_ALIVE)
+            renderplayer(focus, 0, focus->curscale, MDL_NOBATCH);
+        if(focus->state == CS_ALIVE && firstpersonmodel == 2)
         {
             setavatarscale(firstpersonbodydepthfov != 0 ? firstpersonbodydepthfov : curfov, firstpersonbodydepth);
             static int lastoffset = 0;
             renderplayer(focus, 2, focus->curscale, MDL_NOBATCH, vec4(1, 1, 1, 1), &lastoffset);
         }
-        rendercheck(focus, third);
+        rendercheck(focus);
     }
 
     void renderplayerpreview(int model, int pattern, int color, int team, int weap, const char *vanity, float scale, const vec4 &mcolor)
