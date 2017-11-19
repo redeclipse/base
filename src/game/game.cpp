@@ -1968,6 +1968,7 @@ namespace game
 
     int levelcolour(int colour, float level)
     {
+        if(level == 1) return colour;
         return (clamp(int((colour>>16)*level), 0, 255)<<16)|(clamp(int(((colour>>8)&0xFF)*level), 0, 255)<<8)|(clamp(int((colour&0xFF)*level), 0, 255));
     }
 
