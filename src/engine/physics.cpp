@@ -444,7 +444,7 @@ float rayfloor(const vec &o, vec &floor, int mode, float radius)
 // info about collisions
 int collideinside; // whether an internal collision happened
 physent *collideplayer; // whether the collection hit a player
-int collideflags = COLFLAG_NONE;
+int collidezones = CLZ_NONE;
 vec collidewall; // just the normal vectors.
 
 bool ellipseboxcollide(physent *d, const vec &dir, const vec &o, const vec &center, float yaw, float xr, float yr, float hi, float lo)
@@ -1176,7 +1176,7 @@ bool collide(physent *d, const vec &dir, float cutoff, bool playercol, bool insi
 {
     collideinside = 0;
     collideplayer = NULL;
-    collideflags = COLFLAG_NONE;
+    collidezones = CLZ_NONE;
     collidewall = vec(0, 0, 0);
     ivec bo(int(d->o.x-d->radius), int(d->o.y-d->radius), int(d->o.z-d->height)),
          bs(int(d->o.x+d->radius), int(d->o.y+d->radius), int(d->o.z+d->aboveeye));
@@ -1189,7 +1189,7 @@ float pltracecollide(physent *d, const vec &from, const vec &ray, float maxdist)
     vec to = vec(ray).mul(maxdist).add(from);
     float x1 = floor(min(from.x, to.x)), y1 = floor(min(from.y, to.y)),
           x2 = ceil(max(from.x, to.x)), y2 = ceil(max(from.y, to.y));
-    float bestdist = 1e16f; int bestflags = COLFLAG_NONE;
+    float bestdist = 1e16f; int bestflags = CLZ_NONE;
     loopdynentcachebb(x, y, x1, y1, x2, y2)
     {
         const vector<physent *> &dynents = checkdynentcache(x, y);
@@ -1201,11 +1201,11 @@ float pltracecollide(physent *d, const vec &from, const vec &ray, float maxdist)
             if(physics::xtracecollide(d, from, to, x1, x2, y1, y2, maxdist, dist, o) && dist < bestdist)
             {
                 bestdist = dist;
-                if(dist <= maxdist) { collideplayer = o; bestflags = collideflags; }
+                if(dist <= maxdist) { collideplayer = o; bestflags = collidezones; }
             }
         }
     }
-    collideflags = bestflags;
+    collidezones = bestflags;
     return bestdist <= maxdist ? bestdist : -1;
 }
 
@@ -1213,7 +1213,7 @@ float tracecollide(physent *d, const vec &o, const vec &ray, float maxdist, int 
 {
     hitsurface = vec(0, 0, 0);
     collideplayer = NULL;
-    collideflags = COLFLAG_NONE;
+    collidezones = CLZ_NONE;
     float dist = raycube(o, ray, maxdist+1e-3f, mode);
     if(playercol)
     {

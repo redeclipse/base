@@ -79,7 +79,7 @@ namespace projs
         if(flags&HIT_WHIPLASH) skew *= WF(WK(flags), weap, damagewhiplash, WS(flags));
         else if(flags&HIT_HEAD) skew *= WF(WK(flags), weap, damagehead, WS(flags));
         else if(flags&HIT_TORSO) skew *= WF(WK(flags), weap, damagetorso, WS(flags));
-        else if(flags&HIT_LEGS) skew *= WF(WK(flags), weap, damagelegs, WS(flags));
+        else if(flags&HIT_LIMB) skew *= WF(WK(flags), weap, damagelimb, WS(flags));
         else return 0;
 
         if(radial > 0) skew *= clamp(1.f-dist/size, 1e-6f, 1.f);
@@ -200,7 +200,7 @@ namespace projs
                 {
                     case 2: flag = closest != i || rdist[i] > WF(WK(proj.flags), proj.weap, headmin, WS(proj.flags)) ? HIT_WHIPLASH : HIT_HEAD; break;
                     case 1: flag = HIT_TORSO; break;
-                    case 0: default: flag = HIT_LEGS; break;
+                    case 0: default: flag = HIT_LIMB; break;
                 }
                 if(rdist[i] <= radius)
                 {
@@ -232,7 +232,7 @@ namespace projs
         {
             bool drill = proj.projcollide&(d->type == ENT_PROJ ? DRILL_SHOTS : DRILL_PLAYER);
             proj.hit = d;
-            proj.collideflags = flags;
+            proj.collidezones = flags;
             float expl = WX(WK(proj.flags), proj.weap, explode, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize);
             if(!proj.limited && proj.local)
             {
@@ -248,9 +248,9 @@ namespace projs
                 else if(gameent::is(d))
                 {
                     int flags = 0;
-                    if(proj.collideflags&COLFLAG_LEGS) flags |= HIT_LEGS;
-                    if(proj.collideflags&COLFLAG_TORSO) flags |= HIT_TORSO;
-                    if(proj.collideflags&COLFLAG_HEAD) flags |= HIT_HEAD;
+                    if(proj.collidezones&CLZ_LIMB) flags |= HIT_LIMB;
+                    if(proj.collidezones&CLZ_TORSO) flags |= HIT_TORSO;
+                    if(proj.collidezones&CLZ_HEAD) flags |= HIT_HEAD;
                     if(flags) hitpush((gameent *)d, proj, flags|HIT_PROJ, 0, proj.lifesize, proj.curscale);
                 }
                 else if(d->type == ENT_PROJ) projpush((projent *)d);
@@ -1015,7 +1015,7 @@ namespace projs
         if(proj.projtype != PRJ_SHOT) updatebb(proj, true);
         proj.spawntime = lastmillis;
         proj.hit = NULL;
-        proj.collideflags = COLFLAG_NONE;
+        proj.collidezones = CLZ_NONE;
         proj.movement = 1;
         if(proj.owner && (proj.projtype != PRJ_SHOT || (!proj.child && !(WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_HITSCAN))))
         {
@@ -1889,7 +1889,7 @@ namespace projs
         if(!skip && proj.interacts && checkitems(proj)) return -1;
         if(proj.projtype == PRJ_SHOT) updatetaper(proj, proj.distance+proj.o.dist(oldpos));
         if(ret == 1 && (collide(&proj, dir, 0.f, proj.projcollide&COLLIDE_DYNENT) || collideinside))
-            ret = impact(proj, dir, collideplayer, collideflags, collidewall);
+            ret = impact(proj, dir, collideplayer, collidezones, collidewall);
         return ret;
     }
 
@@ -1908,7 +1908,7 @@ namespace projs
             if(!skip && proj.interacts && checkitems(proj, ray, total)) return -1;
             proj.o.add(vec(ray).mul(total));
             if(proj.projtype == PRJ_SHOT) updatetaper(proj, proj.distance+proj.o.dist(oldpos));
-            if(dist >= 0) ret = impact(proj, dir, collideplayer, collideflags, hitsurface);
+            if(dist >= 0) ret = impact(proj, dir, collideplayer, collidezones, hitsurface);
         }
         return ret;
     }
@@ -2182,7 +2182,7 @@ namespace projs
         {
             vec dir = vec(proj.to).sub(proj.from).safenormalize();
             proj.o = vec(proj.from).add(vec(dir).mul(dist));
-            switch(impact(proj, dir, collideplayer, collideflags, hitsurface))
+            switch(impact(proj, dir, collideplayer, collidezones, hitsurface))
             {
                 case 1: case 2: return true;
                 case 0: default: return false;
@@ -2234,7 +2234,7 @@ namespace projs
             if(proj.projtype == PRJ_SHOT && WF(WK(proj.flags), proj.weap, radial, WS(proj.flags)))
             {
                 proj.hit = NULL;
-                proj.collideflags = COLFLAG_NONE;
+                proj.collidezones = CLZ_NONE;
             }
             hits.setsize(0);
             if((proj.projtype != PRJ_SHOT || proj.owner) && proj.state != CS_DEAD)

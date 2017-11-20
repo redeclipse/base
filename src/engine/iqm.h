@@ -395,6 +395,7 @@ struct iqm : skelmodel, skelloader<iqm>
         loading = this;
         if(execfile(cfgname, false) && parts.length()) // configured iqm, will call the iqm* commands below
         {
+            flushpart();
             loading = NULL;
             loopv(parts) if(!parts[i]->meshes) return false;
         }
@@ -405,6 +406,7 @@ struct iqm : skelmodel, skelloader<iqm>
                 loading = NULL;
                 return false;
             }
+            flushpart();
             loading = NULL;
         }
         loaded();

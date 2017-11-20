@@ -1507,14 +1507,14 @@ struct projent : dynent
     bool local, limited, escaped, child;
     int projtype, projcollide, interacts;
     float elasticity, reflectivity, relativity, liquidcoast;
-    int schan, id, weap, fromweap, fromflags, value, flags, collideflags;
+    int schan, id, weap, fromweap, fromflags, value, flags, collidezones;
     //entitylight light;
     gameent *owner, *target, *stick;
     physent *hit;
     const char *mdlname;
     bvec material;
 
-    projent() : projtype(PRJ_SHOT), id(-1), collideflags(COLFLAG_NONE), owner(NULL), target(NULL), stick(NULL), hit(NULL), mdlname(NULL) { reset(); }
+    projent() : projtype(PRJ_SHOT), id(-1), collidezones(CLZ_NONE), owner(NULL), target(NULL), stick(NULL), hit(NULL), mdlname(NULL) { reset(); }
     ~projent()
     {
         removetrackedparticles(this);

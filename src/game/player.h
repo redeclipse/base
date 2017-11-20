@@ -209,6 +209,8 @@ APFVAR(IDF_GAMEMOD, speed, 0, FVAR_MAX,
 );
 
 #define VANITYMAX 16
+#define ATTACHMENTMAX VANITYMAX+13
+
 struct vanityfile
 {
     char *id, *name;

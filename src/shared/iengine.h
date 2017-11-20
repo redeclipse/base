@@ -573,10 +573,10 @@ extern ENetHost *serverhost;
 
 extern int collideinside;
 extern physent *collideplayer;
-extern int collideflags;
+extern int collidezones;
 extern vec collidewall, hitsurface;
 
-enum { COLFLAG_NONE = 0, COLFLAG_LEGS = 1<<0, COLFLAG_TORSO = 1<<1, COLFLAG_HEAD = 1<<2, COLFLAG_FULL = 1<<4 };
+enum { CLZ_NONE = 0, CLZ_HEAD = 1<<0, CLZ_TORSO = 1<<1, CLZ_LIMB = 1<<2 };
 
 enum
 {

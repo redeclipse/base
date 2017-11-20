@@ -432,6 +432,7 @@ struct smd : skelmodel, skelloader<smd>
         loading = this;
         if(execfile(cfgname, false) && parts.length()) // configured smd, will call the smd* commands below
         {
+            flushpart();
             loading = NULL;
             loopv(parts) if(!parts[i]->meshes) return false;
         }
@@ -442,6 +443,7 @@ struct smd : skelmodel, skelloader<smd>
                 loading = NULL;
                 return false;
             }
+            flushpart();
             loading = NULL;
         }
         loaded();

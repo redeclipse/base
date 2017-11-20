@@ -3217,7 +3217,7 @@ namespace game
         else
         {
             float weapscale = 1.f;
-            bool showweap = mdlattach && third != 2 && isweap(weap) && weap < W_ALL;
+            bool showweap = third != 2 && isweap(weap) && weap < W_ALL;
             secondary = third;
             if(showweap)
             {
@@ -3278,9 +3278,9 @@ namespace game
                 mdl.basetime = d->lastpain;
                 mdl.anim = ANIM_PAIN;
             }
-            if(showweap)
+            if(mdlattach && showweap)
             {
-                const char *weapmdl = showweap && isweap(weap) ? (third ? weaptype[weap].vwep : weaptype[weap].hwep) : "";
+                const char *weapmdl = third ? weaptype[weap].vwep : weaptype[weap].hwep;
                 if(weapmdl && *weapmdl)
                 {
                     mdlattach[ai++] = modelattach("tag_weapon", weapmdl, mdl.anim, mdl.basetime, 1, weapscale*mdl.size); // 0
@@ -3519,7 +3519,7 @@ namespace game
     {
         if(d->state == CS_SPECTATOR) return;
         modelstate mdl;
-        modelattach mdlattach[VANITYMAX+13];
+        modelattach mdlattach[ATTACHMENTMAX];
         dynent *e = third ? (third != 2 ? (dynent *)d : (dynent *)&bodymodel) : (dynent *)&avatarmodel;
         const char *mdlname = getplayerstate(d, mdl, third, size, flags, mdlattach, lastoffset);
         if(mdlattach[0].tag) mdl.attached = mdlattach;

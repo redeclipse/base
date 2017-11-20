@@ -419,6 +419,7 @@ struct md5 : skelmodel, skelloader<md5>
         loading = this;
         if(execfile(cfgname, false) && parts.length()) // configured md5, will call the md5* commands below
         {
+            flushpart();
             loading = NULL;
             loopv(parts) if(!parts[i]->meshes) return false;
         }
@@ -429,6 +430,7 @@ struct md5 : skelmodel, skelloader<md5>
                 loading = NULL;
                 return false;
             }
+            flushpart();
             loading = NULL;
         }
         loaded();

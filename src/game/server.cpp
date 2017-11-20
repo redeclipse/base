@@ -4539,7 +4539,7 @@ namespace server
         if(flags&HIT_WHIPLASH) skew *= WF(WK(flags), weap, damagewhiplash, WS(flags));
         else if(flags&HIT_HEAD) skew *= WF(WK(flags), weap, damagehead, WS(flags));
         else if(flags&HIT_TORSO) skew *= WF(WK(flags), weap, damagetorso, WS(flags));
-        else if(flags&HIT_LEGS) skew *= WF(WK(flags), weap, damagelegs, WS(flags));
+        else if(flags&HIT_LIMB) skew *= WF(WK(flags), weap, damagelimb, WS(flags));
         else return 0;
 
         if(radial > 0) skew *= clamp(1.f-dist/size, 1e-6f, 1.f);

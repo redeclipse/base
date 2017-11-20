@@ -114,7 +114,7 @@ inline void skelbih::intersect(skelmodel::skelmeshgroup *m, skelmodel::skin *s, 
                     continue;
                 }
                 else if(triintersect(m, s, curnode->childindex(faridx), o, ray))
-                    smax = min(smax, skelmodel::intersectdist/skelmodel::intersectscale); 
+                    smax = min(smax, skelmodel::intersectdist/skelmodel::intersectscale);
             }
         }
         else if(curnode->isleaf(nearidx))
