@@ -306,6 +306,10 @@ namespace server
             captures.shrink(0);
             bombings.shrink(0);
             ffarounds.shrink(0);
+            // Condense localtotalavgpos so old games don't count as much as the current match.
+            int div = max(localtotalavgposnum / 2, 1);
+            localtotalavgpossum /= (float)div;
+            localtotalavgposnum = ceil((float)localtotalavgposnum / div);
             respawn(0);
         }
 
