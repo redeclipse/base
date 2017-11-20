@@ -374,8 +374,8 @@ struct iqm : skelmodel, skelloader<iqm>
 
     bool loaddefaultparts()
     {
+        flushpart();
         skelpart &mdl = addpart();
-        adjustments.setsize(0);
         const char *fname = name + strlen(name);
         do --fname; while(fname >= name && *fname!='/' && *fname!='\\');
         fname++;
@@ -406,7 +406,6 @@ struct iqm : skelmodel, skelloader<iqm>
                 loading = NULL;
                 return false;
             }
-            flushpart();
             loading = NULL;
         }
         loaded();

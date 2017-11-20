@@ -411,8 +411,8 @@ struct smd : skelmodel, skelloader<smd>
 
     bool loaddefaultparts()
     {
+        flushpart();
         skelpart &mdl = addpart();
-        adjustments.setsize(0);
         const char *fname = name + strlen(name);
         do --fname; while(fname >= name && *fname!='/' && *fname!='\\');
         fname++;
@@ -443,7 +443,6 @@ struct smd : skelmodel, skelloader<smd>
                 loading = NULL;
                 return false;
             }
-            flushpart();
             loading = NULL;
         }
         loaded();
