@@ -987,6 +987,7 @@ hasboundbox:
 
     if(state.attached) for(int i = 0; state.attached[i].tag; i++)
     {
+        conoutf("%d %s %s", i, state.attached[i].tag, state.attached[i].name);
         if(state.attached[i].name) state.attached[i].m = loadmodel(state.attached[i].name);
     }
 

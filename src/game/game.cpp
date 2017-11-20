@@ -3169,49 +3169,59 @@ namespace game
         }
     }
 
-    void renderplayer(gameent *d, int third, float size, int flags = 0, const vec4 &color = vec4(1, 1, 1, 1), int *lastoffset = NULL)
+    const char *getplayerstate(gameent *d, modelstate &mdl, int third, float size, int flags, modelattach *mdlattach, int *lastoffset)
     {
-        if(d->state == CS_SPECTATOR) return;
-        int weap = d->weapselect, lastaction = 0, animflags = ANIM_IDLE|ANIM_LOOP, weapflags = animflags, weapaction = 0;
-        bool secondary = false, showweap = third != 2 && isweap(weap) && weap < W_ALL;
-        float weapscale = 1.f;
+        int weap = d->weapselect, ai = 0,
+            mdltype = forceplayermodel >= 0 ? forceplayermodel : d->model%PLAYERTYPES,
+            mdlidx = third == 1 && d->headless && !nogore && headlessmodels ? 3 : third;
+        const char *mdlname = playertypes[mdltype][mdlidx];
+        bool hasweapon = false, secondary = false,
+             onfloor = d->physstate >= PHYS_SLOPE || d->onladder || physics::liquidcheck(d),
+             melee = d->hasmelee(lastmillis, true, d->sliding(true), onfloor);
+
+        mdl.anim = ANIM_IDLE|ANIM_LOOP;
+        mdl.flags = flags;
+        mdl.basetime = mdl.basetime2 = 0;
+        mdl.size = size;
+        mdl.yaw = d->yaw;
+        mdl.pitch = d->pitch;
+        mdl.roll = calcroll(d);
+        mdl.o = third ? d->feetpos() : camerapos(d);
+
         if(d->state == CS_DEAD || d->state == CS_WAITING)
         {
-            showweap = false;
-            animflags = ANIM_DYING|ANIM_NOPITCH;
-            lastaction = d->lastpain;
+            mdl.anim = ANIM_DYING|ANIM_NOPITCH;
+            mdl.basetime = d->lastpain;
             switch(deathanim)
             {
                 case 0:
                     if(d->ragdoll) cleanragdoll(d);
-                    return;
+                    return mdlname;
                 case 1:
                 {
                     if(d->ragdoll) cleanragdoll(d);
-                    int t = lastmillis-lastaction;
-                    if(t < 0) return;
-                    if(t > 1000) animflags = ANIM_DEAD|ANIM_LOOP|ANIM_NOPITCH;
+                    int t = lastmillis-mdl.basetime;
+                    if(t < 0) return mdlname;
+                    if(t > 1000) mdl.anim = ANIM_DEAD|ANIM_LOOP|ANIM_NOPITCH;
                     break;
                 }
                 case 3: if(m_duke(gamemode, mutators))
                 {
                     if(d->ragdoll) cleanragdoll(d);
-                    return;
+                    return mdlname;
                 }
-                case 2: animflags |= ANIM_RAGDOLL; break;
+                case 2: mdl.anim |= ANIM_RAGDOLL; break;
             }
         }
-        else if(d->state == CS_EDITING)
-        {
-            animflags = ANIM_EDIT|ANIM_LOOP;
-            showweap = false;
-        }
+        else if(d->state == CS_EDITING) mdl.anim = ANIM_EDIT|ANIM_LOOP;
         else
         {
+            float weapscale = 1.f;
+            bool showweap = mdlattach && third != 2 && isweap(weap) && weap < W_ALL;
             secondary = third;
-            if(showweap && isweap(weap))
+            if(showweap)
             {
-                weapaction = lastaction = d->weaptime[weap];
+                mdl.basetime = d->weaptime[weap];
                 switch(d->weapstate[weap])
                 {
                     case W_S_SWITCH: case W_S_USE:
@@ -3224,15 +3234,15 @@ namespace game
                         }
                         else if(!d->hasweap(weap, m_weapon(d->actortype, gamemode, mutators))) showweap = false;
                         else if(millis <= off*2) weapscale = (millis-off)/float(off);
-                        weapflags = animflags = d->weapstate[weap] == W_S_SWITCH ? ANIM_SWITCH : ANIM_USE;
+                        mdl.anim = d->weapstate[weap] == W_S_SWITCH ? ANIM_SWITCH : ANIM_USE;
                         break;
                     }
                     case W_S_POWER: case W_S_ZOOM:
                     {
                         switch(weaptype[weap].anim)
                         {
-                            case ANIM_GRENADE: weapflags = animflags = ANIM_GRENADE_POWER; break;
-                            default: weapflags = animflags = weaptype[weap].anim|ANIM_LOOP; break;
+                            case ANIM_GRENADE: mdl.anim = ANIM_GRENADE_POWER; break;
+                            default: mdl.anim = weaptype[weap].anim|ANIM_LOOP; break;
                         }
                         break;
                     }
@@ -3245,102 +3255,97 @@ namespace game
                                 showweap = false;
                             else weapscale = (millis-off)/float(off);
                         }
-                        weapflags = animflags = (weaptype[weap].anim+d->weapstate[weap])|ANIM_CLAMP;
+                        mdl.anim = (weaptype[weap].anim+d->weapstate[weap])|ANIM_CLAMP;
                         break;
                     }
                     case W_S_RELOAD:
                     {
                         if(!d->hasweap(weap, m_weapon(d->actortype, gamemode, mutators))) showweap = false;
-                        weapflags = animflags = weaptype[weap].anim+d->weapstate[weap];
+                        mdl.anim = weaptype[weap].anim+d->weapstate[weap];
                         break;
                     }
                     case W_S_IDLE: case W_S_WAIT: default:
                     {
                         if(!d->hasweap(weap, m_weapon(d->actortype, gamemode, mutators))) showweap = false;
-                        weapflags = animflags = weaptype[weap].anim|ANIM_LOOP;
+                        mdl.anim = weaptype[weap].anim|ANIM_LOOP;
                         break;
                     }
                 }
             }
-            if(third && (animflags&ANIM_IDLE) && lastmillis-d->lastpain <= 300)
+            if(third && (mdl.anim&ANIM_IDLE) && lastmillis-d->lastpain <= 300)
             {
                 secondary = true;
-                lastaction = d->lastpain;
-                animflags = ANIM_PAIN;
+                mdl.basetime = d->lastpain;
+                mdl.anim = ANIM_PAIN;
             }
-        }
-
-        if((d != focus || d->state == CS_DEAD || d->state == CS_WAITING) && !(flags&MDL_ONLYSHADOW) && third == 1 && d->actortype < A_ENEMY && !shadowmapping && !drawtex && (aboveheaddead || d->state == CS_ALIVE))
-            renderabovehead(d);
-
-        const char *weapmdl = showweap && isweap(weap) ? (third ? weaptype[weap].vwep : weaptype[weap].hwep) : "";
-        int ai = 0;
-        modelattach a[VANITYMAX+13]; // value = numtags+1
-        if(vanitymodels && third && *d->vanity)
-        {
-            int idx = third == 1 && (d->state == CS_DEAD || d->state == CS_WAITING) && d->headless && !nogore && headlessmodels ? 3 : third;
-            if(d->vitems.empty())
+            if(showweap)
             {
-                vector<char *> vanitylist;
-                explodelist(d->vanity, vanitylist);
-                loopv(vanitylist) if(vanitylist[i] && *vanitylist[i])
-                    loopvk(vanities) if(!strcmp(vanities[k].ref, vanitylist[i]))
-                        d->vitems.add(k);
-                vanitylist.deletearrays();
-            }
-            int found[VANITYMAX] = {0};
-            loopvk(d->vitems) if(vanities.inrange(d->vitems[k]))
-            {
-                if(found[vanities[d->vitems[k]].type]) continue;
-                if(vanities[d->vitems[k]].cond&1 && idx == 2) continue;
-                if(vanities[d->vitems[k]].cond&2 && idx == 3) continue;
-                const char *file = vanityfname(d, d->vitems[k]);
-                if(file)
+                const char *weapmdl = showweap && isweap(weap) ? (third ? weaptype[weap].vwep : weaptype[weap].hwep) : "";
+                if(weapmdl && *weapmdl)
                 {
-                    a[ai++] = modelattach(vanities[d->vitems[k]].tag, file);
-                    found[vanities[d->vitems[k]].type]++;
-                    if(ai >= VANITYMAX) break;
+                    mdlattach[ai++] = modelattach("tag_weapon", weapmdl, mdl.anim, mdl.basetime, 1, weapscale*mdl.size); // 0
+                    hasweapon = true;
                 }
             }
         }
-        bool hasweapon = showweap && *weapmdl;
-        if(hasweapon) a[ai++] = modelattach("tag_weapon", weapmdl, weapflags, weapaction, 1, weapscale*size); // 0
-        if(!(flags&MDL_ONLYSHADOW))
+        if(mdlattach)
         {
-            if(third != 2)
+            if(!(mdl.flags&MDL_ONLYSHADOW))
             {
-                a[ai++] = modelattach(hasweapon ? "tag_muzzle" : "tag_weapon", &d->muzzle); // 1
-                a[ai++] = modelattach("tag_weapon", &d->origin); // 2
-                if(weaptype[weap].eject || weaptype[weap].tape)
+                if(third != 2)
                 {
-                    a[ai++] = modelattach("tag_eject", &d->eject[0]); // 3
-                    a[ai++] = modelattach("tag_eject2", &d->eject[1]); // 4
+                    mdlattach[ai++] = modelattach(hasweapon ? "tag_muzzle" : "tag_weapon", &d->muzzle); // 1
+                    mdlattach[ai++] = modelattach("tag_weapon", &d->origin); // 2
+                    if(weaptype[weap].eject || weaptype[weap].tape)
+                    {
+                        mdlattach[ai++] = modelattach("tag_eject", &d->eject[0]); // 3
+                        mdlattach[ai++] = modelattach("tag_eject2", &d->eject[1]); // 4
+                    }
+                }
+                if(third)
+                {
+                    mdlattach[ai++] = modelattach("tag_head", &d->head); // 5
+                    mdlattach[ai++] = modelattach("tag_torso", &d->torso); // 6
+                    mdlattach[ai++] = modelattach("tag_waist", &d->waist); // 7
+                    mdlattach[ai++] = modelattach("tag_ljet", &d->jet[0]); // 8
+                    mdlattach[ai++] = modelattach("tag_rjet", &d->jet[1]); // 9
+                    mdlattach[ai++] = modelattach("tag_bjet", &d->jet[2]); // 10
+                    mdlattach[ai++] = modelattach("tag_ltoe", &d->toe[0]); // 11
+                    mdlattach[ai++] = modelattach("tag_rtoe", &d->toe[1]); // 12
                 }
             }
-            if(third)
+            if(vanitymodels && third && d->vanity[0])
             {
-                a[ai++] = modelattach("tag_head", &d->head); // 5
-                a[ai++] = modelattach("tag_torso", &d->torso); // 6
-                a[ai++] = modelattach("tag_waist", &d->waist); // 7
-                a[ai++] = modelattach("tag_ljet", &d->jet[0]); // 8
-                a[ai++] = modelattach("tag_rjet", &d->jet[1]); // 9
-                a[ai++] = modelattach("tag_bjet", &d->jet[2]); // 10
-                a[ai++] = modelattach("tag_ltoe", &d->toe[0]); // 11
-                a[ai++] = modelattach("tag_rtoe", &d->toe[1]); // 12
+                int idx = third == 1 && (d->state == CS_DEAD || d->state == CS_WAITING) && d->headless && !nogore && headlessmodels ? 3 : third;
+                if(d->vitems.empty())
+                {
+                    vector<char *> vanitylist;
+                    explodelist(d->vanity, vanitylist);
+                    loopv(vanitylist) if(vanitylist[i] && *vanitylist[i])
+                        loopvk(vanities) if(!strcmp(vanities[k].ref, vanitylist[i]))
+                            d->vitems.add(k);
+                    vanitylist.deletearrays();
+                }
+                int count = 0, found[VANITYMAX] = {0};
+                loopvk(d->vitems) if(vanities.inrange(d->vitems[k]))
+                {
+                    if(found[vanities[d->vitems[k]].type]) continue;
+                    if(vanities[d->vitems[k]].cond&1 && idx == 2) continue;
+                    if(vanities[d->vitems[k]].cond&2 && idx == 3) continue;
+                    const char *file = vanityfname(d, d->vitems[k]);
+                    if(file)
+                    {
+                        mdlattach[ai++] = modelattach(vanities[d->vitems[k]].tag, file);
+                        found[vanities[d->vitems[k]].type]++;
+                        if(++count >= VANITYMAX) break;
+                    }
+                }
             }
         }
-
-        int idx = third == 1 && d->headless && !nogore && headlessmodels ? 3 : third;
-        const char *mdlname = playertypes[forceplayermodel >= 0 ? forceplayermodel : 0][idx];
-        if(forceplayermodel < 0) mdlname = playertypes[d->model%PLAYERTYPES][idx];
-
-        bool onfloor = d->physstate >= PHYS_SLOPE || d->onladder || physics::liquidcheck(d), melee = d->hasmelee(lastmillis, true, d->sliding(true), onfloor);
-        float yaw = d->yaw, pitch = d->pitch, roll = calcroll(focus);
-        vec o = third ? d->feetpos() : camerapos(d);
         if(third == 2)
         {
-            o.sub(vec(yaw*RAD, 0.f).mul(firstpersonbodydist+firstpersonspineoffset));
-            o.sub(vec(yaw*RAD, 0.f).rotate_around_z(90*RAD).mul(firstpersonbodyside));
+            mdl.o.sub(vec(mdl.yaw*RAD, 0.f).mul(firstpersonbodydist+firstpersonspineoffset));
+            mdl.o.sub(vec(mdl.yaw*RAD, 0.f).rotate_around_z(90*RAD).mul(firstpersonbodyside));
             if(lastoffset)
             {
                 float zoffset = (max(d->zradius-d->height, 0.f)+(d->radius*0.5f))*firstpersonbodyzoffset;
@@ -3348,130 +3353,117 @@ namespace game
                 {
                     int lmillis = d->airtime(lastmillis);
                     if(lmillis < 100) zoffset *= lmillis/100.f;
-                    o.z -= zoffset;
+                    mdl.o.z -= zoffset;
                     *lastoffset = lastmillis;
                 }
                 else if(*lastoffset)
                 {
                     int lmillis = lastmillis-(*lastoffset);
-                    if(lmillis < 100) o.z -= zoffset*((100-lmillis)/100.f);
+                    if(lmillis < 100) mdl.o.z -= zoffset*((100-lmillis)/100.f);
                 }
             }
-            if(firstpersonbodypitchadjust > 0 && pitch < 0) o.sub(vec(yaw*RAD, 0.f).mul(d->radius*(0-pitch)/90.f*firstpersonbodypitchadjust));
+            if(firstpersonbodypitchadjust > 0 && mdl.pitch < 0) mdl.o.sub(vec(mdl.yaw*RAD, 0.f).mul(d->radius*(0-mdl.pitch)/90.f*firstpersonbodypitchadjust));
+            mdl.pitch = firstpersonbodypitch >= 0 ? mdl.pitch*firstpersonbodypitch : mdl.pitch;
+            mdl.roll = 0.f;
         }
         else if(gs_playing(gamestate))
         {
             if(third == 1 && d == focus && d == player1 && thirdpersonview(true, d))
-                vectoyawpitch(vec(worldpos).sub(d->headpos()).normalize(), yaw, pitch);
+                vectoyawpitch(vec(worldpos).sub(d->headpos()).normalize(), mdl.yaw, mdl.pitch);
             else if(!third && firstpersonsway)
             {
                 float steps = swaydist/(firstpersonbob ? firstpersonbobstep : firstpersonswaystep)*M_PI;
-                vec dir = vec(d->yaw*RAD, 0.f).mul(firstpersonswayside*cosf(steps));
+                vec dir = vec(mdl.yaw*RAD, 0.f).mul(firstpersonswayside*cosf(steps));
                 dir.z = firstpersonswayup*(fabs(sinf(steps)) - 1);
-                o.add(dir).add(swaydir).add(swaypush);
+                mdl.o.add(dir).add(swaydir).add(swaypush);
             }
         }
-
-        int anim = animflags, basetime = lastaction, basetime2 = 0;
-        if(animoverride)
+        if(animoverride && d == focus)
         {
-            anim = (animoverride<0 ? ANIM_ALL : animoverride)|ANIM_LOOP;
-            basetime = 0;
+            mdl.anim = (animoverride<0 ? ANIM_ALL : animoverride)|ANIM_LOOP;
+            mdl.basetime = 0;
         }
         else
         {
             if(secondary && allowmove(d) && AA(d->actortype, abilities)&(1<<A_A_MOVE))
             {
                 if(physics::liquidcheck(d) && d->physstate <= PHYS_FALL)
-                    anim |= ((d->move || d->strafe || d->vel.z+d->falling.z>0 ? int(ANIM_SWIM) : int(ANIM_SINK))|ANIM_LOOP)<<ANIM_SECONDARY;
-                else if(d->turnside) anim |= ((d->turnside>0 ? ANIM_WALL_RUN_LEFT : ANIM_WALL_RUN_RIGHT)|ANIM_LOOP)<<ANIM_SECONDARY;
+                    mdl.anim |= ((d->move || d->strafe || d->vel.z+d->falling.z>0 ? int(ANIM_SWIM) : int(ANIM_SINK))|ANIM_LOOP)<<ANIM_SECONDARY;
+                else if(d->turnside) mdl.anim |= ((d->turnside>0 ? ANIM_WALL_RUN_LEFT : ANIM_WALL_RUN_RIGHT)|ANIM_LOOP)<<ANIM_SECONDARY;
                 else if(d->physstate == PHYS_FALL && !d->onladder && d->impulse[IM_TYPE] != IM_T_NONE && lastmillis-d->impulse[IM_TIME] <= 1000)
                 {
-                    basetime2 = d->impulse[IM_TIME];
-                    if(d->impulse[IM_TYPE] == IM_T_KICK || d->impulse[IM_TYPE] == IM_T_VAULT || d->impulse[IM_TYPE] == IM_T_GRAB) anim |= ANIM_WALL_JUMP<<ANIM_SECONDARY;
+                    mdl.basetime2 = d->impulse[IM_TIME];
+                    if(d->impulse[IM_TYPE] == IM_T_KICK || d->impulse[IM_TYPE] == IM_T_VAULT || d->impulse[IM_TYPE] == IM_T_GRAB) mdl.anim |= ANIM_WALL_JUMP<<ANIM_SECONDARY;
                     else if(melee)
                     {
-                        anim |= ANIM_FLYKICK<<ANIM_SECONDARY;
-                        basetime2 = d->weaptime[W_MELEE];
+                        mdl.anim |= ANIM_FLYKICK<<ANIM_SECONDARY;
+                        mdl.basetime2 = d->weaptime[W_MELEE];
                     }
-                    else if(d->strafe) anim |= (d->strafe>0 ? ANIM_DASH_LEFT : ANIM_DASH_RIGHT)<<ANIM_SECONDARY;
-                    else if(d->move>0) anim |= ANIM_DASH_FORWARD<<ANIM_SECONDARY;
-                    else if(d->move<0) anim |= ANIM_DASH_BACKWARD<<ANIM_SECONDARY;
-                    else anim |= ANIM_DASH_UP<<ANIM_SECONDARY;
+                    else if(d->strafe) mdl.anim |= (d->strafe>0 ? ANIM_DASH_LEFT : ANIM_DASH_RIGHT)<<ANIM_SECONDARY;
+                    else if(d->move>0) mdl.anim |= ANIM_DASH_FORWARD<<ANIM_SECONDARY;
+                    else if(d->move<0) mdl.anim |= ANIM_DASH_BACKWARD<<ANIM_SECONDARY;
+                    else mdl.anim |= ANIM_DASH_UP<<ANIM_SECONDARY;
                 }
                 else if(d->physstate == PHYS_FALL && !d->onladder && d->airtime(lastmillis) >= 50)
                 {
-                    basetime2 = max(d->airmillis, d->impulse[IM_JUMP]);
+                    mdl.basetime2 = max(d->airmillis, d->impulse[IM_JUMP]);
                     if(melee)
                     {
-                        anim |= ANIM_FLYKICK<<ANIM_SECONDARY;
-                        basetime2 = d->weaptime[W_MELEE];
+                        mdl.anim |= ANIM_FLYKICK<<ANIM_SECONDARY;
+                        mdl.basetime2 = d->weaptime[W_MELEE];
                     }
                     else if(d->crouching(true))
                     {
-                        if(d->strafe) anim |= (d->strafe>0 ? ANIM_CROUCH_JUMP_LEFT : ANIM_CROUCH_JUMP_RIGHT)<<ANIM_SECONDARY;
-                        else if(d->move>0) anim |= ANIM_CROUCH_JUMP_FORWARD<<ANIM_SECONDARY;
-                        else if(d->move<0) anim |= ANIM_CROUCH_JUMP_BACKWARD<<ANIM_SECONDARY;
-                        else anim |= ANIM_CROUCH_JUMP<<ANIM_SECONDARY;
+                        if(d->strafe) mdl.anim |= (d->strafe>0 ? ANIM_CROUCH_JUMP_LEFT : ANIM_CROUCH_JUMP_RIGHT)<<ANIM_SECONDARY;
+                        else if(d->move>0) mdl.anim |= ANIM_CROUCH_JUMP_FORWARD<<ANIM_SECONDARY;
+                        else if(d->move<0) mdl.anim |= ANIM_CROUCH_JUMP_BACKWARD<<ANIM_SECONDARY;
+                        else mdl.anim |= ANIM_CROUCH_JUMP<<ANIM_SECONDARY;
                     }
-                    else if(d->strafe) anim |= (d->strafe>0 ? ANIM_JUMP_LEFT : ANIM_JUMP_RIGHT)<<ANIM_SECONDARY;
-                    else if(d->move>0) anim |= ANIM_JUMP_FORWARD<<ANIM_SECONDARY;
-                    else if(d->move<0) anim |= ANIM_JUMP_BACKWARD<<ANIM_SECONDARY;
-                    else anim |= ANIM_JUMP<<ANIM_SECONDARY;
-                    if(!basetime2) anim |= ANIM_END<<ANIM_SECONDARY;
+                    else if(d->strafe) mdl.anim |= (d->strafe>0 ? ANIM_JUMP_LEFT : ANIM_JUMP_RIGHT)<<ANIM_SECONDARY;
+                    else if(d->move>0) mdl.anim |= ANIM_JUMP_FORWARD<<ANIM_SECONDARY;
+                    else if(d->move<0) mdl.anim |= ANIM_JUMP_BACKWARD<<ANIM_SECONDARY;
+                    else mdl.anim |= ANIM_JUMP<<ANIM_SECONDARY;
+                    if(!mdl.basetime2) mdl.anim |= ANIM_END<<ANIM_SECONDARY;
                 }
-                else if(d->sliding(true)) anim |= (ANIM_POWERSLIDE|ANIM_LOOP)<<ANIM_SECONDARY;
+                else if(d->sliding(true)) mdl.anim |= (ANIM_POWERSLIDE|ANIM_LOOP)<<ANIM_SECONDARY;
                 else if(d->crouching(true))
                 {
-                    if(d->strafe) anim |= ((d->strafe>0 ? ANIM_CRAWL_LEFT : ANIM_CRAWL_RIGHT)|ANIM_LOOP)<<ANIM_SECONDARY;
-                    else if(d->move>0) anim |= (ANIM_CRAWL_FORWARD|ANIM_LOOP)<<ANIM_SECONDARY;
-                    else if(d->move<0) anim |= (ANIM_CRAWL_BACKWARD|ANIM_LOOP)<<ANIM_SECONDARY;
-                    else anim |= (ANIM_CROUCH|ANIM_LOOP)<<ANIM_SECONDARY;
+                    if(d->strafe) mdl.anim |= ((d->strafe>0 ? ANIM_CRAWL_LEFT : ANIM_CRAWL_RIGHT)|ANIM_LOOP)<<ANIM_SECONDARY;
+                    else if(d->move>0) mdl.anim |= (ANIM_CRAWL_FORWARD|ANIM_LOOP)<<ANIM_SECONDARY;
+                    else if(d->move<0) mdl.anim |= (ANIM_CRAWL_BACKWARD|ANIM_LOOP)<<ANIM_SECONDARY;
+                    else mdl.anim |= (ANIM_CROUCH|ANIM_LOOP)<<ANIM_SECONDARY;
                 }
                 else if(d->running(moveslow))
                 {
-                    if(d->strafe) anim |= ((d->strafe>0 ? ANIM_IMPULSE_LEFT : ANIM_IMPULSE_RIGHT)|ANIM_LOOP)<<ANIM_SECONDARY;
-                    else if(d->move>0) anim |= (ANIM_IMPULSE_FORWARD|ANIM_LOOP)<<ANIM_SECONDARY;
-                    else if(d->move<0) anim |= (ANIM_IMPULSE_BACKWARD|ANIM_LOOP)<<ANIM_SECONDARY;
+                    if(d->strafe) mdl.anim |= ((d->strafe>0 ? ANIM_IMPULSE_LEFT : ANIM_IMPULSE_RIGHT)|ANIM_LOOP)<<ANIM_SECONDARY;
+                    else if(d->move>0) mdl.anim |= (ANIM_IMPULSE_FORWARD|ANIM_LOOP)<<ANIM_SECONDARY;
+                    else if(d->move<0) mdl.anim |= (ANIM_IMPULSE_BACKWARD|ANIM_LOOP)<<ANIM_SECONDARY;
                 }
-                else if(d->strafe) anim |= ((d->strafe>0 ? ANIM_LEFT : ANIM_RIGHT)|ANIM_LOOP)<<ANIM_SECONDARY;
-                else if(d->move>0) anim |= (ANIM_FORWARD|ANIM_LOOP)<<ANIM_SECONDARY;
-                else if(d->move<0) anim |= (ANIM_BACKWARD|ANIM_LOOP)<<ANIM_SECONDARY;
+                else if(d->strafe) mdl.anim |= ((d->strafe>0 ? ANIM_LEFT : ANIM_RIGHT)|ANIM_LOOP)<<ANIM_SECONDARY;
+                else if(d->move>0) mdl.anim |= (ANIM_FORWARD|ANIM_LOOP)<<ANIM_SECONDARY;
+                else if(d->move<0) mdl.anim |= (ANIM_BACKWARD|ANIM_LOOP)<<ANIM_SECONDARY;
             }
 
-            if((anim>>ANIM_SECONDARY)&ANIM_INDEX) switch(anim&ANIM_INDEX)
+            if((mdl.anim>>ANIM_SECONDARY)&ANIM_INDEX) switch(mdl.anim&ANIM_INDEX)
             {
                 case ANIM_IDLE: case ANIM_CLAW: case ANIM_PISTOL: case ANIM_SWORD:
                 case ANIM_SHOTGUN: case ANIM_SMG: case ANIM_FLAMER: case ANIM_PLASMA: case ANIM_ZAPPER:
                 case ANIM_RIFLE: case ANIM_GRENADE: case ANIM_MINE: case ANIM_ROCKET:
                 {
-                    anim = (anim>>ANIM_SECONDARY) | ((anim&((1<<ANIM_SECONDARY)-1))<<ANIM_SECONDARY);
-                    swap(basetime, basetime2);
+                    mdl.anim = (mdl.anim>>ANIM_SECONDARY) | ((mdl.anim&((1<<ANIM_SECONDARY)-1))<<ANIM_SECONDARY);
+                    swap(mdl.basetime, mdl.basetime2);
                     break;
                 }
                 default: break;
             }
         }
+        if(third == 1 && testanims && d == focus) mdl.yaw = 0;
+        if(!((mdl.anim>>ANIM_SECONDARY)&ANIM_INDEX)) mdl.anim |= (ANIM_IDLE|ANIM_LOOP)<<ANIM_SECONDARY;
+        return mdlname;
+    }
 
-        if(third == 1 && testanims && d == focus) yaw = 0;
-        if(!((anim>>ANIM_SECONDARY)&ANIM_INDEX)) anim |= (ANIM_IDLE|ANIM_LOOP)<<ANIM_SECONDARY;
-
-        if(d != focus && !(anim&ANIM_RAGDOLL)) flags |= MDL_CULL_VFC | MDL_CULL_OCCLUDED | MDL_CULL_QUERY;
-        if(d->actortype >= A_ENEMY) flags |= MDL_CULL_DIST;
-        else if(d != focus || (d != player1 ? fullbrightfocus&1 : fullbrightfocus&2)) flags |= MDL_FULLBRIGHT;
-        if(drawtex) flags &= ~(MDL_FULLBRIGHT | MDL_CULL_VFC | MDL_CULL_OCCLUDED | MDL_CULL_QUERY | MDL_CULL_DIST);
-
-        dynent *e = third ? (third != 2 ? (dynent *)d : (dynent *)&bodymodel) : (dynent *)&avatarmodel;
-        modelstate mdl;
-        mdl.anim = anim;
-        mdl.flags = flags;
-        mdl.basetime = basetime;
-        mdl.basetime2 = basetime2;
-        mdl.size = size;
-        mdl.yaw = yaw;
-        mdl.pitch = third == 2 && firstpersonbodypitch >= 0 ? pitch*firstpersonbodypitch : pitch;
-        mdl.roll = third == 2 ? 0.f : roll;
-        mdl.o = o;
+    void getplayereffects(gameent *d, modelstate &mdl, const vec4 &color)
+    {
         mdl.color = color;
         getplayermaterials(d, mdl);
         #define PLAYERRES(name, type) \
@@ -3516,8 +3508,25 @@ namespace game
         }
         int pattern = forceplayerpattern >= 0 ? forceplayerpattern : d->pattern;
         if(pattern >= 0) mdl.pattern = textureload(playerpatterns[pattern%PLAYERPATTERNS][0], 0, true);
-        if(a[0].tag) mdl.attached = a;
+
+        if(d != focus && !(mdl.anim&ANIM_RAGDOLL)) mdl.flags |= MDL_CULL_VFC | MDL_CULL_OCCLUDED | MDL_CULL_QUERY;
+        if(d->actortype >= A_ENEMY) mdl.flags |= MDL_CULL_DIST;
+        else if(d != focus || (d != player1 ? fullbrightfocus&1 : fullbrightfocus&2)) mdl.flags |= MDL_FULLBRIGHT;
+        if(drawtex) mdl.flags &= ~(MDL_FULLBRIGHT | MDL_CULL_VFC | MDL_CULL_OCCLUDED | MDL_CULL_QUERY | MDL_CULL_DIST);
+    }
+
+    void renderplayer(gameent *d, int third, float size, int flags = 0, const vec4 &color = vec4(1, 1, 1, 1), int *lastoffset = NULL)
+    {
+        if(d->state == CS_SPECTATOR) return;
+        modelstate mdl;
+        modelattach mdlattach[VANITYMAX+13];
+        dynent *e = third ? (third != 2 ? (dynent *)d : (dynent *)&bodymodel) : (dynent *)&avatarmodel;
+        const char *mdlname = getplayerstate(d, mdl, third, size, flags, mdlattach, lastoffset);
+        if(mdlattach[0].tag) mdl.attached = mdlattach;
+        getplayereffects(d, mdl, color);
         rendermodel(mdlname, mdl, e);
+        if((d != focus || d->state == CS_DEAD || d->state == CS_WAITING) && !(mdl.flags&MDL_ONLYSHADOW) && third == 1 && d->actortype < A_ENEMY && !shadowmapping && !drawtex && (aboveheaddead || d->state == CS_ALIVE))
+            renderabovehead(d);
     }
 
     void rendercheck(gameent *d)

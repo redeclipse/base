@@ -1747,6 +1747,8 @@ namespace game
     extern int findcolour(gameent *d, bool tone = true, bool mix = false, float level = 1);
     extern int getcolour(gameent *d, int type = 0, float level = 1.f);
     extern void getplayermaterials(gameent *d, modelstate &mdl);
+    extern const char *getplayerstate(gameent *d, modelstate &mdl, int third = 1, float size = 1, int flags = 0, modelattach *mdlattach = NULL, int *lastoffset = NULL);
+    extern void getplayereffects(gameent *d, modelstate &mdl, const vec4 &color = vec4(1, 1, 1, 1));
     extern void errorsnd(gameent *d);
     extern void announce(int idx, gameent *d = NULL, bool forced = false);
     extern void announcef(int idx, int targ, gameent *d, bool forced, const char *msg, ...);
