@@ -39,6 +39,10 @@ VAR(0, masterduplimit, 0, 3, VAR_MAX);
 VAR(0, masterpingdelay, 1000, 3000, VAR_MAX);
 VAR(0, masterpingtries, 1, 5, VAR_MAX);
 
+VAR(0, masterstatsavgposlastgames, 0, 50, VAR_MAX);
+VAR(0, masterstatavgposnumplayers, 0, 4, VAR_MAX);
+FVAR(0, masterstatsavgposdefault, 0, 0.25, FVAR_MAX);
+
 struct authuser
 {
     char *name, *flags, *email;
@@ -455,6 +459,37 @@ int playertotalstat(const char *handle, const char *stat)
     return ret;
 }
 
+double playeravgpos(const char *handle)
+{
+    double ret = masterstatsavgposdefault;
+    sqlite3_stmt *stmt;
+    char *gamessql = sqlite3_mprintf("game_players AS gp JOIN games AS g ON gp.game = g.id WHERE g.uniqueplayers >= %d AND g.normalweapons = 1 AND gp.handle = %Q ORDER BY gp.game DESC LIMIT %d", masterstatavgposnumplayers, handle, masterstatsavgposlastgames);
+    char *sql = sqlite3_mprintf(
+        "SELECT SUM(thisscore.score*1.0/maxscore.score) / COUNT(*), COUNT(*)"
+        "FROM "
+            "(SELECT MAX(gp.score) AS score, gp.game AS game FROM game_players AS gp WHERE gp.game IN "
+                "(SELECT game FROM %s) GROUP BY gp.game ORDER BY gp.game DESC) "
+            "maxscore "
+        "LEFT JOIN "
+            "(SELECT gp.score AS score, gp.game AS game FROM %s) thisscore ON maxscore.game = thisscore.game",
+        gamessql, gamessql);
+    sqlite3_free(gamessql);
+    int rc = sqlite3_prepare_v2(statsdb, sql, -1, &stmt, 0);
+    sqlite3_free(sql);
+    if(rc != SQLITE_OK)
+    {
+        statsdb_warn();
+        return ret;
+    }
+
+    if(sqlite3_step(stmt) == SQLITE_ROW)
+    {
+        ret = sqlite3_column_int(stmt, 1) ? sqlite3_column_double(stmt, 0) : ret;
+    }
+
+    sqlite3_finalize(stmt);
+    return ret;
+}
 
 void masterout(masterclient &c, const char *msg, int len = 0)
 {
