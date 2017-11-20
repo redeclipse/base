@@ -1968,7 +1968,6 @@ namespace game
 
     int levelcolour(int colour, float level)
     {
-        if(level == 1) return colour;
         return (clamp(int((colour>>16)*level), 0, 255)<<16)|(clamp(int(((colour>>8)&0xFF)*level), 0, 255)<<8)|(clamp(int((colour&0xFF)*level), 0, 255));
     }
 
@@ -3729,11 +3728,8 @@ namespace game
     {
         if(thirdpersonview()) return;
         focus->cleartags();
-        float depthfov = firstpersondepthfov != 0 ? firstpersondepthfov : curfov,
-              depthscale = firstpersondepth;
-        setavatarscale(depthfov, depthscale);
-        if(focus->state == CS_ALIVE)
-            renderplayer(focus, 0, focus->curscale, MDL_NOBATCH);
+        setavatarscale(firstpersondepthfov != 0 ? firstpersondepthfov : curfov, firstpersondepth);
+        if(focus->state == CS_ALIVE) renderplayer(focus, 0, focus->curscale, MDL_NOBATCH);
         if(focus->state == CS_ALIVE && firstpersonmodel == 2)
         {
             setavatarscale(firstpersonbodydepthfov != 0 ? firstpersonbodydepthfov : curfov, firstpersonbodydepth);

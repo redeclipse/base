@@ -1647,7 +1647,7 @@ namespace client
         const char *reqmap = mapname;
         if(!reqmap || !*reqmap) reqmap = "maps/untitled";
         int savedtype = -1;
-        if((gs_playing(game::gamestate) && m_edit(game::gamemode)) || maptype != MAP_MAPZ)
+        if(m_edit(game::gamemode) || maptype != MAP_MAPZ)
         {
             save_world(mapname, m_edit(game::gamemode), true);
             ai::savewaypoints(true, mapname);

@@ -2754,7 +2754,7 @@ namespace server
                 case 2: if((!((1<<reqmode)&G(modelockfilter)) || !mutscmp(reqmuts, G(mutslockfilter))) && !haspriv(ci, G(modelock), "change to a locked game mode")) return; break;
                 case 0: default: break;
             }
-            if(reqmode != G_EDITMODE && G(mapslock))
+            if(!m_edit(reqmode) && G(mapslock))
             {
                 char *list = NULL;
                 switch(G(mapslocktype))

@@ -22,7 +22,7 @@ void setlightdir(vec &dir, float yaw, float pitch)
     FVARF(IDF_WORLD, name##lightyaw, 0, 0, 360, setlightdir(name##lightdir, name##lightyaw, name##lightpitch)); \
     FVARF(IDF_WORLD, name##lightpitch, -90, 90, 90, setlightdir(name##lightdir, name##lightyaw, name##lightpitch)); \
 
-PIESKYVARS(sun, 0);
+PIESKYVARS(sun, MPV_DAY);
 PIESKYVARS(moon, MPV_NIGHT);
 
 #define GETSKYPIE(name, type) \
