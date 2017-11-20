@@ -459,9 +459,9 @@ int playertotalstat(const char *handle, const char *stat)
     return ret;
 }
 
-double playeravgpos(const char *handle)
+float playeravgpos(const char *handle)
 {
-    double ret = masterstatsavgposdefault;
+    float ret = masterstatsavgposdefault;
     sqlite3_stmt *stmt;
     char *gamessql = sqlite3_mprintf("game_players AS gp JOIN games AS g ON gp.game = g.id WHERE g.uniqueplayers >= %d AND g.normalweapons = 1 AND gp.handle = %Q ORDER BY gp.game DESC LIMIT %d", masterstatavgposnumplayers, handle, masterstatsavgposlastgames);
     char *sql = sqlite3_mprintf(
@@ -484,7 +484,7 @@ double playeravgpos(const char *handle)
 
     if(sqlite3_step(stmt) == SQLITE_ROW)
     {
-        ret = sqlite3_column_int(stmt, 1) ? sqlite3_column_double(stmt, 0) : ret;
+        ret = sqlite3_column_int(stmt, 1) ? max(sqlite3_column_double(stmt, 0), (double)0) : ret;
     }
 
     sqlite3_finalize(stmt);
@@ -663,12 +663,13 @@ void savestats(masterclient &c)
 
 void sendauthstats(masterclient &c, const char *name)
 {
-    masteroutf(c, "authstats \"%s\" %d %d %d %d %d\n", name,
+    masteroutf(c, "authstats \"%s\" %d %d %d %d %d %f\n", name,
         playertotalstat(name, "score"),
         playertotalstat(name, "frags"),
         playertotalstat(name, "deaths"),
         playertotalstat(name, "timealive"),
-        playertotalstat(name, "timeactive")
+        playertotalstat(name, "timeactive"),
+        playeravgpos(name)
     );
 }
 

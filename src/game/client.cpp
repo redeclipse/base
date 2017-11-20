@@ -2093,6 +2093,7 @@ namespace client
         d->totalpoints = getint(p);
         d->totalfrags = getint(p);
         d->totaldeaths = getint(p);
+        d->totalavgpos = getfloat(p);
         d->timeplayed = getint(p);
         d->lasttimeplayed = totalmillis ? totalmillis : 1;
         d->health = getint(p);
@@ -2688,11 +2689,23 @@ namespace client
                 case N_TOTALS:
                 {
                     int acn = getint(p), totalp = getint(p), totalf = getint(p), totald = getint(p);
+                    float totalap = getfloat(p);
                     gameent *v = game::getclient(acn);
                     if(!v) break;
                     v->totalpoints = totalp;
                     v->totalfrags = totalf;
                     v->totaldeaths = totald;
+                    v->totalavgpos = totalap;
+                    break;
+                }
+
+                case N_AVGPOS:
+                {
+                    int acn = getint(p);
+                    float totalap = getfloat(p);
+                    gameent *v = game::getclient(acn);
+                    if(!v) break;
+                    v->totalavgpos = totalap;
                     break;
                 }
 
