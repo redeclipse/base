@@ -77,8 +77,11 @@ struct entmodelstate
     }
 };
 
+enum { TEXF_NOMIXER = 1<<0, TEXF_NOPATTERN = 1<<1 };
+
 struct modelstate : entmodelstate
 {
+    int texflags;
     vec4 mixercolor;
     vec2 matbright, mixerglow, mixerscroll;
     Texture *mixer, *pattern;
@@ -88,6 +91,7 @@ struct modelstate : entmodelstate
 
     void reset()
     {
+        flags = 0;
         mixercolor = vec4(1, 1, 1, 1);
         matbright = vec2(1, 1);
         mixerglow = mixerscroll = vec2(0, 0);

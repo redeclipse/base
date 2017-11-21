@@ -135,6 +135,13 @@ struct animmodel : model
         bool mixed() const { return (flags&ENABLE_MIXER) != 0; }
         bool patterned() const { return (flags&ENABLE_PATTERN) != 0; }
 
+        bool allowedtex(int texflag, Texture *t, const modelstate *state, const animstate *as)
+        {
+            if(!t || t == notexture) return false;
+            if(!(state->texflags&texflag)) return true;
+            return owner->model->parts[0]->index >= 0 && owner->model->parts[0]->index < owner->numanimparts && owner->model == as->owner->model;
+        }
+
         void setkey()
         {
             key = &shaderparamskey::keys[*this];
@@ -305,7 +312,7 @@ struct animmodel : model
             int oldflags = flags;
             if(flags&ALLOW_MIXER)
             {
-                if(state->mixer)
+                if(allowedtex(TEXF_NOMIXER, state->mixer, state, as))
                 {
                     flags |= ENABLE_MIXER;
                     if(state->mixer != lastmixer)
@@ -320,7 +327,7 @@ struct animmodel : model
             }
             if(flags&ALLOW_PATTERN)
             {
-                if(state->pattern)
+                if(allowedtex(TEXF_NOPATTERN, state->pattern, state, as))
                 {
                     flags |= ENABLE_PATTERN;
                     if(state->pattern != lastpattern)

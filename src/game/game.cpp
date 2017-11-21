@@ -3507,12 +3507,11 @@ namespace game
             mdl.mixerscroll = vec2(mixerbuffscroll1, mixerbuffscroll2);
         }
         int pattern = forceplayerpattern >= 0 ? forceplayerpattern : d->pattern;
-        if(pattern >= 0) mdl.pattern = textureload(playerpatterns[pattern%PLAYERPATTERNS][0], 0, true);
-
-        if(d != focus && !(mdl.anim&ANIM_RAGDOLL)) mdl.flags |= MDL_CULL_VFC | MDL_CULL_OCCLUDED | MDL_CULL_QUERY;
-        if(d->actortype >= A_ENEMY) mdl.flags |= MDL_CULL_DIST;
-        else if(d != focus || (d != player1 ? fullbrightfocus&1 : fullbrightfocus&2)) mdl.flags |= MDL_FULLBRIGHT;
-        if(drawtex) mdl.flags &= ~(MDL_FULLBRIGHT | MDL_CULL_VFC | MDL_CULL_OCCLUDED | MDL_CULL_QUERY | MDL_CULL_DIST);
+        if(pattern >= 0)
+        {
+            mdl.pattern = textureload(playerpatterns[pattern%PLAYERPATTERNS][0], 0, true);
+            if(pattern < 2) mdl.texflags |= TEXF_NOPATTERN; // first two shouldn't recurse
+        }
     }
 
     void renderplayer(gameent *d, int third, float size, int flags = 0, const vec4 &color = vec4(1, 1, 1, 1), int *lastoffset = NULL)
@@ -3524,6 +3523,12 @@ namespace game
         const char *mdlname = getplayerstate(d, mdl, third, size, flags, mdlattach, lastoffset);
         if(mdlattach[0].tag) mdl.attached = mdlattach;
         getplayereffects(d, mdl, color);
+
+        if(d != focus && !(mdl.anim&ANIM_RAGDOLL)) mdl.flags |= MDL_CULL_VFC | MDL_CULL_OCCLUDED | MDL_CULL_QUERY;
+        if(d->actortype >= A_ENEMY) mdl.flags |= MDL_CULL_DIST;
+        else if(d != focus || (d != player1 ? fullbrightfocus&1 : fullbrightfocus&2)) mdl.flags |= MDL_FULLBRIGHT;
+        if(drawtex) mdl.flags &= ~(MDL_FULLBRIGHT | MDL_CULL_VFC | MDL_CULL_OCCLUDED | MDL_CULL_QUERY | MDL_CULL_DIST);
+
         rendermodel(mdlname, mdl, e);
         if((d != focus || d->state == CS_DEAD || d->state == CS_WAITING) && !(mdl.flags&MDL_ONLYSHADOW) && third == 1 && d->actortype < A_ENEMY && !shadowmapping && !drawtex && (aboveheaddead || d->state == CS_ALIVE))
             renderabovehead(d);

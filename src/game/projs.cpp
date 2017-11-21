@@ -2421,12 +2421,13 @@ namespace projs
                     #endif
                     break;
                 }
-                case PRJ_GIBS: case PRJ_VANITY:
+                case PRJ_VANITY:
+                    if(proj.owner) game::getplayereffects(proj.owner, mdl);
+                    // continue
+                case PRJ_GIBS:
                 {
                     mdl.size *= proj.lifesize;
                     fadeproj(proj, mdl.color.a, mdl.size);
-                    if(proj.projtype == PRJ_VANITY && proj.owner)
-                        game::getplayermaterials(proj.owner, mdl);
                     break;
                 }
                 case PRJ_EJECT:
