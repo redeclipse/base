@@ -38,7 +38,7 @@ struct entity : entbase
 };
 
 enum { MAXMDLMATERIALS = 3 };
-enum { MDL_CULL_VFC = 1<<0, MDL_CULL_DIST = 1<<1, MDL_CULL_OCCLUDED = 1<<2, MDL_CULL_QUERY = 1<<3, MDL_FULLBRIGHT = 1<<4, MDL_NORENDER = 1<<5, MDL_MAPMODEL = 1<<6, MDL_NOBATCH = 1<<7, MDL_ONLYSHADOW = 1<<8 };
+enum { MDL_CULL_VFC = 1<<0, MDL_CULL_DIST = 1<<1, MDL_CULL_OCCLUDED = 1<<2, MDL_CULL_QUERY = 1<<3, MDL_FULLBRIGHT = 1<<4, MDL_NORENDER = 1<<5, MDL_MAPMODEL = 1<<6, MDL_NOBATCH = 1<<7, MDL_ONLYSHADOW = 1<<8, MDL_NOMIXER = 1<<9, MDL_NOPATTERN = 1<<10 };
 
 struct model;
 struct modelattach
@@ -77,11 +77,8 @@ struct entmodelstate
     }
 };
 
-enum { TEXF_NOMIXER = 1<<0, TEXF_NOPATTERN = 1<<1 };
-
 struct modelstate : entmodelstate
 {
-    int texflags;
     vec4 mixercolor;
     vec2 matbright, mixerglow, mixerscroll;
     Texture *mixer, *pattern;
@@ -91,7 +88,6 @@ struct modelstate : entmodelstate
 
     void reset()
     {
-        flags = 0;
         mixercolor = vec4(1, 1, 1, 1);
         matbright = vec2(1, 1);
         mixerglow = mixerscroll = vec2(0, 0);

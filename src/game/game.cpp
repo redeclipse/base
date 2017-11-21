@@ -3511,7 +3511,7 @@ namespace game
         if(pattern >= 0)
         {
             mdl.pattern = textureload(playerpatterns[pattern%PLAYERPATTERNS][0], 0, true);
-            if(pattern < 2) mdl.texflags |= TEXF_NOPATTERN; // first two shouldn't recurse
+            if(pattern < 2) mdl.flags |= MDL_NOPATTERN; // first two shouldn't recurse
         }
     }
 

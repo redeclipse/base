@@ -142,14 +142,14 @@ struct animmodel : model
         bool canmix(const modelstate *state, const animstate *as) const
         {
             if(!state->mixer || state->mixer == notexture) return false;
-            return !(state->texflags&TEXF_NOMIXER) || firstmodel(as);
+            return !(state->flags&MDL_NOMIXER) || firstmodel(as);
         }
 
         bool patterned() const { return (flags&ENABLE_PATTERN) != 0; }
         bool canpattern(const modelstate *state, const animstate *as) const
         {
             if(!state->pattern || state->pattern == notexture) return false;
-            return !(state->texflags&TEXF_NOPATTERN) || firstmodel(as);
+            return !(state->flags&MDL_NOPATTERN) || firstmodel(as);
         }
 
         void setkey()
