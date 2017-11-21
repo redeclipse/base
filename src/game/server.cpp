@@ -263,7 +263,8 @@ namespace server
     {
         int rewards[2], shotdamage, damage, lasttimewielded, lasttimeloadout[W_MAX], aireinit,
             lastresowner[WR_MAX], lasttimealive, timealive, lasttimeactive, timeactive, lastresweapon[WR_MAX], lasthurt,
-            localtotalpoints, localtotalfrags, localtotaldeaths;
+            localtotalpoints, localtotalfrags, localtotaldeaths, localtotalavgposnum;
+        float localtotalavgpossum, totalavgpos, globaltotalavgpos;
         bool lastresalt[W_MAX];
         projectilestate dropped, weapshots[W_MAX][2];
         vector<int> fraglog, fragmillis, cpnodes, chatmillis;
@@ -277,7 +278,7 @@ namespace server
 
         int warnings[WARN_MAX][2];
 
-        servstate() : lasttimewielded(0), aireinit(0), lasttimealive(0), timealive(0), lasttimeactive(0), timeactive(0), lasthurt(0), localtotalpoints(0), localtotalfrags(0), localtotaldeaths(0)
+        servstate() : lasttimewielded(0), aireinit(0), lasttimealive(0), timealive(0), lasttimeactive(0), timeactive(0), lasthurt(0), localtotalpoints(0), localtotalfrags(0), localtotaldeaths(0), localtotalavgposnum(0), localtotalavgpossum(0), totalavgpos(0), globaltotalavgpos(-1)
         {
             loopi(WARN_MAX) loopj(2) warnings[i][j] = 0;
             loopi(W_MAX) lasttimeloadout[i] = 0;
@@ -305,6 +306,10 @@ namespace server
             captures.shrink(0);
             bombings.shrink(0);
             ffarounds.shrink(0);
+            // Condense localtotalavgpos so old games don't count as much as the current match.
+            int div = max(localtotalavgposnum / 2, 1);
+            localtotalavgpossum /= (float)div;
+            localtotalavgposnum = ceil((float)localtotalavgposnum / div);
             respawn(0);
         }
 
@@ -460,6 +465,19 @@ namespace server
         {
             return ready && !wantsmap;
         }
+
+        void updateavgpos()
+        {
+            if(handle[0] && globaltotalavgpos >= 0)
+            {
+                float localweight = localtotalavgposnum ? G(teambalanceavgposlocalweight) : 0;
+                totalavgpos = (localtotalavgpossum / max(1, localtotalavgposnum)) * localweight + globaltotalavgpos * (1.0 - localweight);
+            }
+            else
+            {
+                totalavgpos = localtotalavgpossum / max(1, localtotalavgposnum);
+            }
+        }
     };
 
     struct savedscore
@@ -467,6 +485,7 @@ namespace server
         uint ip;
         string name, handle;
         int points, frags, deaths, localtotalpoints, localtotalfrags, localtotaldeaths, spree, rewards, timeplayed, timealive, timeactive, shotdamage, damage, cptime, actortype;
+        float localtotalavgposnum, localtotalavgpossum;
         int warnings[WARN_MAX][2];
         bool quarantine;
         weaponstats weapstats[W_MAX];
@@ -483,6 +502,8 @@ namespace server
             localtotalpoints = ci->localtotalpoints;
             localtotalfrags = ci->localtotalfrags;
             localtotaldeaths = ci->localtotaldeaths;
+            localtotalavgposnum = ci->localtotalavgposnum;
+            localtotalavgpossum = ci->localtotalavgpossum;
             spree = ci->spree;
             rewards = ci->rewards[0];
             timeplayed = ci->timeplayed;
@@ -513,6 +534,8 @@ namespace server
             ci->localtotalpoints = localtotalpoints;
             ci->localtotalfrags = localtotalfrags;
             ci->localtotaldeaths = localtotaldeaths;
+            ci->localtotalavgposnum = localtotalavgposnum;
+            ci->localtotalavgpossum = localtotalavgpossum;
             ci->totalpoints = localtotalpoints;
             ci->totalfrags = localtotalfrags;
             ci->totaldeaths = localtotaldeaths;
@@ -563,7 +586,7 @@ namespace server
 
     string smapname = "";
     int smapcrc = 0, smapvariant = MPV_DEFAULT, mapsending = -1, mapgameinfo = -1, gamestate = G_S_WAITING, gamemode = G_EDITMODE, mutators = 0, gamemillis = 0, gamelimit = 0,
-        mastermode = MM_OPEN, timeremaining = -1, oldtimelimit = -1, gamewaittime = 0, lastteambalance = 0, nextteambalance = 0, lastrotatecycle = 0;
+        mastermode = MM_OPEN, timeremaining = -1, oldtimelimit = -1, gamewaittime = 0, lastteambalance = 0, nextteambalance = 0, lastavgposcalc = 0, lastrotatecycle = 0;
     bool hasgameinfo = false, updatecontrols = false, shouldcheckvotes = false, firstblood = false, sentstats = false;
     enet_uint32 lastsend = 0;
     stream *mapdata[SENDMAP_MAX] = { NULL };
@@ -2261,7 +2284,7 @@ namespace server
         int spawn = pickspawn(ci);
         ci->spawnstate(gamemode, mutators, weap, health);
         ci->updatetimeplayed();
-        sendf(ci->clientnum, 1, "ri9i5v", N_SPAWNSTATE, ci->clientnum, spawn, ci->state, ci->points, ci->frags, ci->deaths, ci->totalpoints, ci->totalfrags, ci->totaldeaths, ci->timeplayed, ci->health, ci->cptime, ci->weapselect, W_MAX, &ci->ammo[0]);
+        sendf(ci->clientnum, 1, "ri9ifi4v", N_SPAWNSTATE, ci->clientnum, spawn, ci->state, ci->points, ci->frags, ci->deaths, ci->totalpoints, ci->totalfrags, ci->totaldeaths, ci->totalavgpos, ci->timeplayed, ci->health, ci->cptime, ci->weapselect, W_MAX, &ci->ammo[0]);
         ci->lastspawn = gamemillis;
     }
 
@@ -2276,6 +2299,7 @@ namespace server
         putint(p, ci->totalpoints);
         putint(p, ci->totalfrags);
         putint(p, ci->totaldeaths);
+        putfloat(p, ci->totalavgpos);
         putint(p, ci->timeplayed);
         putint(p, ci->health);
         putint(p, ci->cptime);
@@ -3432,7 +3456,7 @@ namespace server
         stopdemo();
         resetmapdata();
         changemode(gamemode = mode, mutators = muts);
-        curbalance = nextbalance = lastteambalance = nextteambalance = gamemillis = 0;
+        curbalance = nextbalance = lastteambalance = nextteambalance = lastavgposcalc = gamemillis = 0;
         gamestate = G_S_WAITING;
         gamewaittime = 0;
         bool hastime = m_play(gamemode) && m_mmvar(gamemode, mutators, timelimit);
@@ -4999,6 +5023,21 @@ namespace server
 
     void checkclients()
     {
+        bool avgposcalc = (m_normalweapons(gamemode, mutators) && gamemillis-lastavgposcalc >= G(teambalanceavgposdelay));
+        int maxpoints = 0;
+        if(avgposcalc)
+        {
+            lastavgposcalc = gamemillis;
+            loopv(clients) if(clients[i]->state == CS_ALIVE || clients[i]->state == CS_DEAD) maxpoints = max(maxpoints, clients[i]->points);
+            if(maxpoints) loopv(clients) if(clients[i]->state == CS_ALIVE || clients[i]->state == CS_DEAD)
+            {
+                clientinfo *ci = clients[i];
+                ci->localtotalavgpossum += (float)max(ci->points, 0) / maxpoints;
+                ci->localtotalavgposnum++;
+                ci->updateavgpos();
+                sendf(-1, 1, "ri2f", N_AVGPOS, ci->clientnum, ci->totalavgpos);
+            }
+        }
         loopv(clients) if(clients[i]->name[0] && clients[i]->online)
         {
             clientinfo *ci = clients[i];

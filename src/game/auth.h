@@ -403,7 +403,11 @@ namespace auth
                 ci->totalpoints = ci->localtotalpoints + atoi(w[2]);
                 ci->totalfrags = ci->localtotalfrags + atoi(w[3]);
                 ci->totaldeaths = ci->localtotaldeaths + atoi(w[4]);
-                sendf(-1, 1, "ri5", N_TOTALS, ci->clientnum, ci->totalpoints, ci->totalfrags, ci->totaldeaths);
+                // w[5] is totaltimealive
+                // w[6] is totaltimeactive
+                ci->globaltotalavgpos = atof(w[7]);
+                ci->updateavgpos();
+                sendf(-1, 1, "ri5f", N_TOTALS, ci->clientnum, ci->totalpoints, ci->totalfrags, ci->totaldeaths, ci->totalavgpos);
             }
         }
         else if(!strcmp(w[0], "failserverauth")) serverauthfailed();
