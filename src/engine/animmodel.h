@@ -127,19 +127,29 @@ struct animmodel : model
 
         skin() : owner(0), tex(notexture), decal(NULL), masks(notexture), envmap(NULL), normalmap(NULL), shader(NULL), rsmshader(NULL), cullface(1), flags(0), key(NULL) {}
 
+        bool firstmodel(const animstate *as) const
+        {
+            return owner->model->parts[0]->index >= 0 && owner->model->parts[0]->index < owner->numanimparts && owner->model == as->owner->model;
+        }
+
         bool masked() const { return masks != notexture; }
         bool envmapped() const { return envmapmax>0; }
         bool bumpmapped() const { return normalmap != NULL; }
         bool alphatested() const { return alphatest > 0 && tex->type&Texture::ALPHA; }
         bool decaled() const { return decal != NULL; }
-        bool mixed() const { return (flags&ENABLE_MIXER) != 0; }
-        bool patterned() const { return (flags&ENABLE_PATTERN) != 0; }
 
-        bool allowedtex(int texflag, Texture *t, const modelstate *state, const animstate *as)
+        bool mixed() const { return (flags&ENABLE_MIXER) != 0; }
+        bool canmix(const modelstate *state, const animstate *as) const
         {
-            if(!t || t == notexture) return false;
-            if(!(state->texflags&texflag)) return true;
-            return owner->model->parts[0]->index >= 0 && owner->model->parts[0]->index < owner->numanimparts && owner->model == as->owner->model;
+            if(!state->mixer || state->mixer == notexture) return false;
+            return !(state->texflags&TEXF_NOMIXER) || firstmodel(as);
+        }
+
+        bool patterned() const { return (flags&ENABLE_PATTERN) != 0; }
+        bool canpattern(const modelstate *state, const animstate *as) const
+        {
+            if(!state->pattern || state->pattern == notexture) return false;
+            return !(state->texflags&TEXF_NOPATTERN) || firstmodel(as);
         }
 
         void setkey()
@@ -312,7 +322,7 @@ struct animmodel : model
             int oldflags = flags;
             if(flags&ALLOW_MIXER)
             {
-                if(allowedtex(TEXF_NOMIXER, state->mixer, state, as))
+                if(canmix(state, as))
                 {
                     flags |= ENABLE_MIXER;
                     if(state->mixer != lastmixer)
@@ -327,7 +337,7 @@ struct animmodel : model
             }
             if(flags&ALLOW_PATTERN)
             {
-                if(allowedtex(TEXF_NOPATTERN, state->pattern, state, as))
+                if(canpattern(state, as))
                 {
                     flags |= ENABLE_PATTERN;
                     if(state->pattern != lastpattern)
