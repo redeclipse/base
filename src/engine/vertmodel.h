@@ -444,8 +444,9 @@ struct vertmodel : animmodel
     }
 };
 
-template<class MDL> struct vertloader : modelloader<MDL>
+template<class MDL> struct vertloader : modelloader<MDL, vertmodel>
 {
+    vertloader(const char *name) : modelloader<MDL, vertmodel>(name) {}
 };
 
 template<class MDL> struct vertcommands : modelcommands<MDL, struct MDL::vertmesh>

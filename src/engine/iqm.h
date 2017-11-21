@@ -94,9 +94,9 @@ struct iqmvertexarray
     uint offset;
 };
 
-struct iqm : skelmodel, skelloader<iqm>
+struct iqm : skelloader<iqm>
 {
-    iqm(const char *name) : skelmodel(name) {}
+    iqm(const char *name) : skelloader(name) {}
 
     static const char *formatname() { return "iqm"; }
     int type() const { return MDL_IQM; }
@@ -374,7 +374,6 @@ struct iqm : skelmodel, skelloader<iqm>
 
     bool loaddefaultparts()
     {
-        flushpart();
         skelpart &mdl = addpart();
         const char *fname = name + strlen(name);
         do --fname; while(fname >= name && *fname!='/' && *fname!='\\');
@@ -384,31 +383,6 @@ struct iqm : skelmodel, skelloader<iqm>
         if(!mdl.meshes) return false;
         mdl.initanimparts();
         mdl.initskins();
-        return true;
-    }
-
-    bool load()
-    {
-        formatstring(dir, "%s", name);
-        defformatstring(cfgname, "%s/iqm.cfg", name);
-
-        loading = this;
-        if(execfile(cfgname, false) && parts.length()) // configured iqm, will call the iqm* commands below
-        {
-            flushpart();
-            loading = NULL;
-            loopv(parts) if(!parts[i]->meshes) return false;
-        }
-        else // iqm without configuration, try default tris and skin
-        {
-            if(!loaddefaultparts())
-            {
-                loading = NULL;
-                return false;
-            }
-            loading = NULL;
-        }
-        loaded();
         return true;
     }
 };

@@ -1593,6 +1593,7 @@ struct skelmodel : animmodel
 
     skelpart &addpart()
     {
+        flushpart();
         skelpart *p = new skelpart(this, parts.length());
         parts.add(p);
         return *p;
@@ -1617,19 +1618,22 @@ struct skeladjustment
     }
 };
 
-template<class MDL> struct skelloader : modelloader<MDL>
+template<class MDL> struct skelloader : modelloader<MDL, skelmodel>
 {
     static vector<skeladjustment> adjustments;
     static vector<uchar> hitzones;
 
+    skelloader(const char *name) : modelloader<MDL, skelmodel>(name) {}
+
     void flushpart()
     {
-        if(MDL::loading && MDL::loading->parts.length())
+        if(hitzones.length() && skelmodel::parts.length())
         {
-            skelmodel::skelpart *p = (skelmodel::skelpart *)MDL::loading->parts.last();
+            skelmodel::skelpart *p = (skelmodel::skelpart *)skelmodel::parts.last();
             skelmodel::skelmeshgroup *m = (skelmodel::skelmeshgroup *)p->meshes;
-            if(hitzones.length() && m) m->buildhitdata(hitzones.getbuf());
+            if(m) m->buildhitdata(hitzones.getbuf());
         }
+
         adjustments.setsize(0);
         hitzones.setsize(0);
     }
@@ -1656,7 +1660,6 @@ template<class MDL> struct skelcommands : modelcommands<MDL, struct MDL::skelmes
         if(!MDL::loading) { conoutf("\frNot loading an %s", MDL::formatname()); return; }
         defformatstring(filename, "%s/%s", MDL::dir, meshfile);
         part &mdl = MDL::loading->addpart();
-        MDL::adjustments.setsize(0);
         mdl.meshes = MDL::loading->sharemeshes(path(filename), skelname[0] ? skelname : NULL, *smooth > 0 ? cosf(clamp(*smooth, 0.0f, 180.0f)*RAD) : 2);
         if(!mdl.meshes) conoutf("\frCould not load %s", filename);
         else

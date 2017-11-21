@@ -1462,8 +1462,11 @@ struct animmodel : model
         loopv(parts) parts[i]->cleanup();
     }
 
+    virtual void flushpart() {}
+
     part &addpart()
     {
+        flushpart();
         part *p = new part(this, parts.length());
         parts.add(p);
         return *p;
@@ -1568,8 +1571,26 @@ struct animmodel : model
         return false;
     }
 
-    virtual bool loaddefaultparts()
+    virtual bool flipy() const { return false; }
+    virtual bool loadconfig() { return false; }
+    virtual bool loaddefaultparts() { return false; }
+    virtual void startload() {}
+    virtual void endload() {}
+
+    bool load()
     {
+        startload();
+        bool success = loadconfig() && parts.length(); // configured model, will call the model commands below
+        if(!success)
+            success = loaddefaultparts(); // model without configuration, try default tris and skin
+        flushpart();
+        endload();
+        if(flipy()) translate.y = -translate.y;
+
+        if(!success) return false;
+        loopv(parts) if(!parts[i]->meshes) return false;
+
+        loaded();
         return true;
     }
 
@@ -1809,18 +1830,37 @@ static inline bool htcmp(const animmodel::shaderparams &x, const animmodel::shad
 hashtable<animmodel::shaderparams, animmodel::shaderparamskey> animmodel::shaderparamskey::keys;
 int animmodel::shaderparamskey::firstversion = 0, animmodel::shaderparamskey::lastversion = 1;
 
-template<class MDL> struct modelloader
+template<class MDL, class BASE> struct modelloader : BASE
 {
     static MDL *loading;
     static string dir;
 
+    modelloader(const char *name) : BASE(name) {}
+
     static bool cananimate() { return true; }
     static bool multiparted() { return true; }
     static bool multimeshed() { return true; }
+
+    void startload()
+    {
+        loading = (MDL *)this;
+    }
+
+    void endload()
+    {
+        loading = NULL;
+    }
+
+    bool loadconfig()
+    {
+        formatstring(dir, "%s", BASE::name);
+        defformatstring(cfgname, "%s/%s.cfg", BASE::name, MDL::formatname());
+        return execfile(cfgname, false);
+    }
 };
 
-template<class MDL> MDL *modelloader<MDL>::loading = NULL;
-template<class MDL> string modelloader<MDL>::dir = {'\0'}; // crashes clang if "" is used here
+template<class MDL, class BASE> MDL *modelloader<MDL, BASE>::loading = NULL;
+template<class MDL, class BASE> string modelloader<MDL, BASE>::dir = {'\0'}; // crashes clang if "" is used here
 
 template<class MDL, class MESH> struct modelcommands
 {

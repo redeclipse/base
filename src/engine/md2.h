@@ -45,7 +45,7 @@ static const float md2normaltable[256][3] =
     { -0.587785f, -0.425325f, -0.688191f },     { -0.688191f, -0.587785f, -0.425325f }
 };
 
-struct md2 : vertmodel, vertloader<md2>
+struct md2 : vertloader<md2>
 {
     struct md2_header
     {
@@ -71,11 +71,12 @@ struct md2 : vertmodel, vertloader<md2>
         char       name[16];
     };
 
-    md2(const char *name) : vertmodel(name) {}
+    md2(const char *name) : vertloader(name) {}
 
     static const char *formatname() { return "md2"; }
     static bool multiparted() { return false; }
     static bool multimeshed() { return false; }
+    bool flipy() const { return true; }
     int type() const { return MDL_MD2; }
 
     int linktype(animmodel *m, part *p) const { return LINK_COOP; }
@@ -207,7 +208,9 @@ struct md2 : vertmodel, vertloader<md2>
 
     vertmeshgroup *newmeshes() { return new md2meshgroup; }
 
-    bool load()
+    bool loadconfig() { return false; }
+
+    bool loaddefaultparts()
     {
         part &mdl = addpart();
         const char *pname = parentdir(name);
@@ -223,16 +226,12 @@ struct md2 : vertmodel, vertloader<md2>
         loadskin(name, pname, tex, masks);
         mdl.initskins(tex, masks);
         if(tex==notexture) conoutf("\frCould not load model skin for %s", name1);
-        loading = this;
         defformatstring(name3, "%s/md2.cfg", name);
         if(!execfile(name3, false))
         {
             formatstring(name3, "%s/md2.cfg", pname);
             execfile(name3, false);
         }
-        loading = 0;
-        translate.y = -translate.y;
-        loaded();
         return true;
     }
 };

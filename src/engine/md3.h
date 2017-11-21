@@ -44,11 +44,12 @@ struct md3meshheader
     int ofs_triangles, ofs_shaders, ofs_uv, ofs_vertices, meshsize; // offsets
 };
 
-struct md3 : vertmodel, vertloader<md3>
+struct md3 : vertloader<md3>
 {
-    md3(const char *name) : vertmodel(name) {}
+    md3(const char *name) : vertloader(name) {}
 
     static const char *formatname() { return "md3"; }
+    bool flipy() const { return true; }
     int type() const { return MDL_MD3; }
 
     struct md3meshgroup : vertmeshgroup
@@ -171,27 +172,6 @@ struct md3 : vertmodel, vertloader<md3>
         loadskin(name, pname, tex, masks);
         mdl.initskins(tex, masks);
         if(tex==notexture) conoutf("\frCould not load model skin for %s", name1);
-        return true;
-    }
-
-    bool load()
-    {
-        formatstring(dir, "%s", name);
-        defformatstring(cfgname, "%s/md3.cfg", name);
-
-        loading = this;
-        if(execfile(cfgname, false) && parts.length()) // configured md3, will call the md3* commands below
-        {
-            loading = NULL;
-            loopv(parts) if(!parts[i]->meshes) return false;
-        }
-        else // md3 without configuration, try default tris and skin
-        {
-            loading = NULL;
-            if(!loaddefaultparts()) return false;
-        }
-        translate.y = -translate.y;
-        loaded();
         return true;
     }
 };
