@@ -884,6 +884,7 @@ namespace client
     CLCOMMAND(totalfrags, intret(d->totalfrags));
     CLCOMMAND(totaldeaths, intret(d->totaldeaths));
     CLCOMMAND(totalavgpos, floatret(d->totalavgpos));
+    CLCOMMAND(balancescore, floatret(d->balancescore()));
     CLCOMMAND(timeplayed, intret(d->updatetimeplayed()));
 
     CLCOMMAND(scoretime, floatret(d->scoretime()));
