@@ -463,17 +463,19 @@ float playeravgpos(const char *handle)
 {
     float ret = masterstatsavgposdefault;
     sqlite3_stmt *stmt;
-    char *gamessql = sqlite3_mprintf("game_players AS gp JOIN games AS g ON gp.game = g.id WHERE g.uniqueplayers >= %d AND g.normalweapons = 1 AND gp.handle = %Q ORDER BY gp.game DESC LIMIT %d", masterstatavgposnumplayers, handle, masterstatsavgposlastgames);
     char *sql = sqlite3_mprintf(
-        "SELECT SUM(thisscore.score*1.0/maxscore.score) / COUNT(*), COUNT(*)"
-        "FROM "
-            "(SELECT MAX(gp.score) AS score, gp.game AS game FROM game_players AS gp WHERE gp.game IN "
-                "(SELECT game FROM %s) GROUP BY gp.game ORDER BY gp.game DESC) "
-            "maxscore "
-        "LEFT JOIN "
-            "(SELECT gp.score AS score, gp.game AS game FROM %s) thisscore ON maxscore.game = thisscore.game",
-        gamessql, gamessql);
-    sqlite3_free(gamessql);
+        "SELECT SUM(CAST(thisscore AS FLOAT) / maxscore) / COUNT(*), COUNT(*) "
+            "FROM "
+            "(SELECT thisscore, MAX(gp.score) AS maxscore "
+            "FROM "
+                "(SELECT g.id AS gid, gp1.score AS thisscore "
+                "FROM games AS g "
+                "JOIN game_players AS gp1 ON g.id = gp1.game "
+                "WHERE g.uniqueplayers >= %d AND g.normalweapons = 1 AND gp1.handle = %Q "
+                "ORDER BY g.id DESC LIMIT %d) "
+            "JOIN game_players AS gp ON gid = gp.game "
+            "GROUP BY gid) ",
+        masterstatavgposnumplayers, handle, masterstatsavgposlastgames);
     int rc = sqlite3_prepare_v2(statsdb, sql, -1, &stmt, 0);
     sqlite3_free(sql);
     if(rc != SQLITE_OK)
