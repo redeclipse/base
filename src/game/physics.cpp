@@ -1321,7 +1321,7 @@ namespace physics
         static float dist = 1e16f;
         collidezones = CLZ_NONE;
         if(!plcollide(d, dir, o)) return false;
-        if(d && projent::is(d) && gameent::is(o)) return hitzonecollide((gameent *)o, d->o, vec(dir).mul(d->radius), dist);
+        if(d && projent::is(d) && gameent::is(o)) return hitzonecollide((gameent *)o, d->o, dir, dist);
         collidezones = CLZ_TORSO;
         return true;
     }

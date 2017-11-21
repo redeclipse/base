@@ -374,17 +374,19 @@ namespace projs
             proj.stick = d;
             proj.sticknrm = proj.norm;
             proj.stuck = proj.lastbounce = lastmillis ? lastmillis : 1;
+            #if 0
             vec fwd = dir.iszero() ? vec(proj.vel).normalize() : dir;
             if(!fwd.iszero()) loopi(20)
             {
                 proj.o.sub(fwd);
-                if(!collide(&proj, vec(0, 0, 0), 0.f, proj.projcollide&COLLIDE_DYNENT) && !collideinside && (proj.stick ? collideplayer != proj.stick : !collideplayer))
+                if(!collide(&proj, vec(0, 0, 0), 0.f, proj.projcollide&COLLIDE_DYNENT, true) && (proj.stick ? collideplayer != proj.stick : !collideplayer))
                     break;
             }
+            #endif
             proj.stickpos = proj.o;
             if(proj.stick)
             {
-                proj.stickpos.sub(proj.stick->center()).normalize().mul(vec(proj.stick->xradius*1.1f, proj.stick->yradius*1.1f, proj.stick->height*0.6f));
+                proj.stickpos.sub(proj.stick->center());
                 proj.stickpos.rotate_around_z(-proj.stick->yaw*RAD);
                 proj.sticknrm.rotate_around_z(-proj.stick->yaw*RAD);
             }
@@ -1797,7 +1799,7 @@ namespace projs
             proj.norm = norm;
             if(d)
             {
-                /*if(proj.norm.iszero())*/ proj.norm = vec(proj.o).sub(d->center()).normalize();
+                if(proj.norm.iszero()) proj.norm = vec(proj.o).sub(d->center()).normalize();
                 if(proj.norm.iszero()) proj.norm = vec(proj.vel).normalize().neg();
                 if(gameent::is(d) && proj.projcollide&IMPACT_PLAYER && proj.projcollide&STICK_PLAYER)
                 {
