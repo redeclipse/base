@@ -408,7 +408,7 @@ namespace projs
         }
     }
 
-    bool checkitems(projent &proj, vector<toolent> &list, const vec &ray = vec(0, 0, 0), float dist = 0.f, bool teleport = false)
+    bool checkitems(projent &proj, vector<toolent> &list, const vec &o, const vec &dir, float maxdist, bool teleport = false)
     {
         float closedist = 1e16f;
         int closeent = -1;
@@ -419,23 +419,13 @@ namespace projs
                 if(proj.projtype == PRJ_AFFINITY && entities::ents[list[i].ent]->attrs[8]&(1<<TELE_NOAFFIN))
                     continue;
                 int millis = proj.lastused(list[i].ent, true);
-                if(millis && lastmillis-millis < 1000) continue;
+                if(millis && lastmillis-millis <= 100) continue;
             }
-            float test = 1e16f;
-            if(ray.iszero())
-            {
-                if(!raysphereintersect(list[i].o, list[i].radius, proj.o, ray, test) || test > dist) continue;
-            }
-            else
-            {
-                test = proj.o.dist(list[i].o);
-                if(test > list[i].radius) continue;
-            }
-
-            if(closeent < 0 || test <= closedist)
+            float dist = 1e16f;
+            if(raysphereintersect(list[i].o, list[i].radius, o, dir, dist) && dist <= maxdist && (closeent < 0 || dist < closedist))
             {
                 closeent = list[i].ent;
-                closedist = test;
+                closedist = dist;
             }
         }
         if(entities::ents.inrange(closeent))
@@ -446,10 +436,10 @@ namespace projs
         return false;
     }
 
-    bool checkitems(projent &proj, const vec &ray = vec(0, 0, 0), float dist = 0.f)
+    bool checkitems(projent &proj, const vec &o, const vec &dir, float maxdist)
     {
-        if(proj.interacts&1) if(checkitems(proj, teleports, ray, dist, true)) return true;
-        if(proj.interacts&2) if(checkitems(proj, pushers, ray, dist)) return true;
+        if(proj.interacts&1) if(checkitems(proj, teleports, o, dir, maxdist, true)) return true;
+        if(proj.interacts&2) if(checkitems(proj, pushers, o, dir, maxdist)) return true;
         return false;
     }
 
@@ -465,9 +455,11 @@ namespace projs
         {
             case TELEPORT: case PUSHER:
             {
-                toolent &t = entities::ents[i]->type == TELEPORT ? teleports.add() : pushers.add();
+                bool teleport = entities::ents[i]->type == TELEPORT;
+                toolent &t = teleport ? teleports.add() : pushers.add();
                 t.ent = i;
                 t.radius = entities::ents[i]->attrs[3] > 0 ? entities::ents[i]->attrs[3] : enttype[entities::ents[i]->type].radius;
+                if(teleport) t.radius *= 1.5f;
                 t.o = entities::ents[i]->o;
                 break;
             }
@@ -1886,7 +1878,7 @@ namespace projs
     {
         int ret = check(proj, dir);
         if(!ret) return 0;
-        if(!skip && proj.interacts && checkitems(proj)) return -1;
+        if(!skip && proj.interacts && checkitems(proj, oldpos, dir, proj.o.dist(oldpos))) return -1;
         if(proj.projtype == PRJ_SHOT) updatetaper(proj, proj.distance+proj.o.dist(oldpos));
         if(ret == 1 && (collide(&proj, dir, 0.f, proj.projcollide&COLLIDE_DYNENT) || collideinside))
             ret = impact(proj, dir, collideplayer, collidezones, collidewall);
@@ -1897,17 +1889,16 @@ namespace projs
     {
         int ret = check(proj, dir, mat);
         if(!ret) return 0;
-        vec to(proj.o), ray = dir;
-        to.add(dir);
+        vec ray = dir;
         float maxdist = ray.magnitude();
         if(maxdist > 0)
         {
             ray.mul(1/maxdist);
+            if(!skip && proj.interacts && checkitems(proj, oldpos, ray, maxdist)) return -1;
             float dist = tracecollide(&proj, proj.o, ray, maxdist, RAY_CLIPMAT|RAY_ALPHAPOLY, proj.projcollide&COLLIDE_DYNENT),
                   total = dist >= 0 ? dist : maxdist;
-            if(!skip && proj.interacts && checkitems(proj, ray, total)) return -1;
             proj.o.add(vec(ray).mul(total));
-            if(proj.projtype == PRJ_SHOT) updatetaper(proj, proj.distance+proj.o.dist(oldpos));
+            if(proj.projtype == PRJ_SHOT) updatetaper(proj, proj.distance+total);
             if(dist >= 0) ret = impact(proj, dir, collideplayer, collidezones, hitsurface);
         }
         return ret;
