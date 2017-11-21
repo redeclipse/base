@@ -1298,12 +1298,11 @@ namespace physics
         d->o = old;
     }
 
-    bool hitzonecollide(physent *d, gameent *e, const vec &o, const vec &ray)
+    bool hitzonecollide(physent *d, gameent *e, const vec &o, const vec &ray, float &dist)
     {
         modelstate mdl;
         modelattach mdlattach[ATTACHMENTMAX];
         const char *mdlname = game::getplayerstate(e, mdl, 1, d->curscale, 0, mdlattach);
-        float dist = 1e16f;
         int zone = intersectmodel(mdlname, mdl, o, ray, dist, 0, e);
         switch(zone)
         {
@@ -1315,22 +1314,24 @@ namespace physics
         return true;
     }
 
-    bool xcollide(physent *d, const vec &dir, physent *o)
+    bool checkcollide(physent *d, const vec &dir, physent *o)
     {
         collidezones = CLZ_NONE;
         if(!plcollide(d, dir, o)) return false;
-        if(d && d->type == ENT_PROJ && gameent::is(o))
-            return hitzonecollide(d, (gameent *)o, d->o, dir);
+        if(d && projent::is(d) && gameent::is(o))
+        {
+            float dist = 1e16f;
+            return hitzonecollide(d, (gameent *)o, d->o, dir, dist);
+        }
         collidezones = CLZ_TORSO;
         return true;
     }
 
-    bool xtracecollide(physent *d, const vec &from, const vec &to, float x1, float x2, float y1, float y2, float maxdist, float &dist, physent *o)
+    bool checktracecollide(physent *d, const vec &from, const vec &to, float x1, float x2, float y1, float y2, float maxdist, float &dist, physent *o)
     {
         collidezones = CLZ_NONE;
         if(o->o.x+o->radius < x1 || o->o.y+o->radius < y1 || o->o.x-o->radius > x2 || o->o.y-o->radius > y2 || !intersect(o, from, to, dist)) return false;
-        if(d && d->type == ENT_PROJ && gameent::is(o))
-            return hitzonecollide(d, (gameent *)o, from, vec(to).sub(from));
+        if(d && projent::is(d) && gameent::is(o)) return hitzonecollide(d, (gameent *)o, from, vec(to).sub(from), dist);
         collidezones = CLZ_TORSO;
         return true;
     }

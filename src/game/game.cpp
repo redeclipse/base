@@ -3218,7 +3218,7 @@ namespace game
         {
             float weapscale = 1.f;
             bool showweap = third != 2 && isweap(weap) && weap < W_ALL;
-            secondary = third;
+            secondary = third != 0;
             if(showweap)
             {
                 mdl.basetime = d->weaptime[weap];
@@ -3459,6 +3459,7 @@ namespace game
         }
         if(third == 1 && testanims && d == focus) mdl.yaw = 0;
         if(!((mdl.anim>>ANIM_SECONDARY)&ANIM_INDEX)) mdl.anim |= (ANIM_IDLE|ANIM_LOOP)<<ANIM_SECONDARY;
+        if(mdlattach && mdlattach[0].tag) mdl.attached = mdlattach;
         return mdlname;
     }
 
@@ -3521,7 +3522,6 @@ namespace game
         modelattach mdlattach[ATTACHMENTMAX];
         dynent *e = third ? (third != 2 ? (dynent *)d : (dynent *)&bodymodel) : (dynent *)&avatarmodel;
         const char *mdlname = getplayerstate(d, mdl, third, size, flags, mdlattach, lastoffset);
-        if(mdlattach[0].tag) mdl.attached = mdlattach;
         getplayereffects(d, mdl, color);
 
         if(d != focus && !(mdl.anim&ANIM_RAGDOLL)) mdl.flags |= MDL_CULL_VFC | MDL_CULL_OCCLUDED | MDL_CULL_QUERY;

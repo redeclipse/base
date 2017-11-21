@@ -98,8 +98,8 @@ namespace physics
     extern bool moveplayer(physent *pl, int moveres, bool local, int millis);
     extern void interppos(physent *d);
     extern void updatematerial(physent *pl, const vec &center, const vec &bottom, bool local = false);
-    extern bool xcollide(physent *d, const vec &dir, physent *o);
-    extern bool xtracecollide(physent *d, const vec &from, const vec &to, float x1, float x2, float y1, float y2, float maxdist, float &dist, physent *o);
+    extern bool checkcollide(physent *d, const vec &dir, physent *o);
+    extern bool checktracecollide(physent *d, const vec &from, const vec &to, float x1, float x2, float y1, float y2, float maxdist, float &dist, physent *o);
 }
 
 namespace game

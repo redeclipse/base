@@ -1928,9 +1928,9 @@ namespace projs
                     float x1 = floor(min(pos.x, to.x)), y1 = floor(min(pos.y, to.y)),
                           x2 = ceil(max(pos.x, to.x)), y2 = ceil(max(pos.y, to.y)),
                           maxdist = dir.magnitude(), dist = 1e16f;
-                    if(!physics::xtracecollide(&proj, pos, to, x1, x2, y1, y2, maxdist, dist, proj.owner) || dist > maxdist) proj.escaped = true;
+                    if(!physics::checktracecollide(&proj, pos, to, x1, x2, y1, y2, maxdist, dist, proj.owner) || dist > maxdist) proj.escaped = true;
                 }
-                else if(!physics::xcollide(&proj, dir, proj.owner)) proj.escaped = true;
+                else if(!physics::checkcollide(&proj, dir, proj.owner)) proj.escaped = true;
             }
         }
     }
