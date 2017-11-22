@@ -3742,7 +3742,14 @@ namespace game
     {
         if(thirdpersonview()) return;
         focus->cleartags();
-        setavatarscale(firstpersondepthfov != 0 ? firstpersondepthfov : curfov, firstpersondepth);
+        float depthfov = firstpersondepthfov != 0 ? firstpersondepthfov : curfov;
+        if(inzoom())
+        {
+            int frame = lastmillis-lastzoom;
+            float pc = frame <= W(focus->weapselect, cookzoom) ? (frame)/float(W(focus->weapselect, cookzoom)) : 1.f;
+            depthfov *= zooming ? 1.f-pc : pc;
+        }
+        setavatarscale(depthfov, firstpersondepth);
         if(focus->state == CS_ALIVE) renderplayer(focus, 0, focus->curscale, MDL_NOBATCH);
         if(focus->state == CS_ALIVE && firstpersonmodel == 2)
         {
