@@ -276,7 +276,7 @@ void renderao()
 {
     if(!ao) return;
 
-    timer *aotimer = begintimer("ambient obscurance");
+    timer *aotimer = begintimer("Ambient Obscurance");
 
     if(msaasamples) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msdepthtex);
     else glBindTexture(GL_TEXTURE_RECTANGLE, gdepthtex);
@@ -418,7 +418,7 @@ void doscale(GLuint outfbo)
 {
     if(!scaletex[0]) return;
 
-    timer *scaletimer = begintimer("scaling");
+    timer *scaletimer = begintimer("Scaling");
 
     if(gscalecubic)
     {
@@ -877,7 +877,7 @@ void resolvemsaadepth(int w = vieww, int h = viewh)
 {
     if(!msaasamples || msaalight) return;
 
-    timer *resolvetimer = drawtex ? NULL : begintimer("msaa depth resolve");
+    timer *resolvetimer = drawtex ? NULL : begintimer("MSAA Depth");
 
     if(msaadepthblit)
     {
@@ -925,7 +925,7 @@ void resolvemsaacolor(int w = vieww, int h = viewh)
 {
     if(!msaalight) return;
 
-    timer *resolvetimer = drawtex ? NULL : begintimer("msaa resolve");
+    timer *resolvetimer = drawtex ? NULL : begintimer("MSAA Resolve");
 
     glBindFramebuffer_(GL_READ_FRAMEBUFFER, mshdrfbo);
     glBindFramebuffer_(GL_DRAW_FRAMEBUFFER, hdrfbo);
@@ -1016,7 +1016,7 @@ void loadhdrshaders(int aa)
 
 void processhdr(GLuint outfbo, int aa)
 {
-    timer *hdrtimer = begintimer("hdr processing");
+    timer *hdrtimer = begintimer("HDR Processing");
 
     GLOBALPARAMF(hdrparams, hdrbright, hdrsaturate, bloomthreshold, bloomscale);
 
@@ -3215,7 +3215,7 @@ void rendervolumetric()
     }
     if(bsx1 >= bsx2 || bsy1 >= bsy2) return;
 
-    timer *voltimer = begintimer("volumetric lights");
+    timer *voltimer = begintimer("Volumetric Lights");
 
     glBindFramebuffer_(GL_FRAMEBUFFER, volfbo[0]);
     glViewport(0, 0, volw, volh);
@@ -4168,8 +4168,8 @@ void renderradiancehints()
     if(rhinoq && !inoq && shouldworkinoq()) return;
     if(!useradiancehints()) return;
 
-    timer *rhcputimer = begintimer("radiance hints", false);
-    timer *rhtimer = begintimer("radiance hints");
+    timer *rhcputimer = begintimer("Radiance Hints", false);
+    timer *rhtimer = begintimer("Radiance Hints");
 
     rh.setup();
     rsm.setup();
@@ -4499,8 +4499,8 @@ void rendershadowmaps(int offset = 0)
 
 void rendershadowatlas()
 {
-    timer *smcputimer = begintimer("shadow map", false);
-    timer *smtimer = begintimer("shadow map");
+    timer *smcputimer = begintimer("Shadow Map", false);
+    timer *smtimer = begintimer("Shadow Map");
 
     glBindFramebuffer_(GL_FRAMEBUFFER, shadowatlasfbo);
     glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
@@ -4564,7 +4564,7 @@ void rendertransparent()
 
     if(!editmode && particlelayers && ghasstencil) renderparticles(PL_UNDER);
 
-    timer *transtimer = begintimer("transparent");
+    timer *transtimer = begintimer("Transparent");
 
     if(hasalphavas&4 || hasmats&4)
     {
@@ -4837,8 +4837,8 @@ void preparegbuffer(bool depthclear)
 
 void rendergbuffer(bool depthclear)
 {
-    timer *gcputimer = drawtex ? NULL : begintimer("g-buffer", false);
-    timer *gtimer = drawtex ? NULL : begintimer("g-buffer");
+    timer *gcputimer = drawtex ? NULL : begintimer("G-Buffer", false);
+    timer *gtimer = drawtex ? NULL : begintimer("G-Buffer");
 
     preparegbuffer(depthclear);
 
@@ -4944,8 +4944,8 @@ void shadegbuffer()
     if(msaasamples && !msaalight && !drawtex) resolvemsaadepth();
     GLERROR;
 
-    timer *shcputimer = begintimer("deferred shading", false);
-    timer *shtimer = begintimer("deferred shading");
+    timer *shcputimer = begintimer("Deferred Shading", false);
+    timer *shtimer = begintimer("Deferred Shading");
 
     shadesky();
 

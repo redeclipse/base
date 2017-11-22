@@ -1161,31 +1161,58 @@ void cleanuptimers()
 
 VARFN(0, timer, usetimers, 0, 0, 1, cleanuptimers());
 VAR(0, frametimer, 0, 0, 1);
-int framemillis = 0; // frame time (ie does not take into account the swap)
+int framemillis = 0, lastprint = 0, printmillis = 0; // frame time (ie does not take into account the swap)
 
-void printtimers(int conw, int conh)
+int updatetimers()
 {
-    if(!frametimer && !usetimers) return;
-
-    static int lastprint = 0;
-    int offset = 0;
-    if(frametimer)
-    {
-        static int printmillis = 0;
-        if(totalmillis - lastprint >= 200) printmillis = framemillis;
-        draw_textf("frame time %i ms", conw-20*FONTH, conh-FONTH*3/2-offset*9*FONTH/8, 0, 0, 255, 255, 255, 255, 0, -1, -1, 1, printmillis);
-        offset++;
-    }
+    if(!frametimer && !usetimers) return 0;
+    if(frametimer && totalmillis-lastprint >= 200) printmillis = framemillis;
     if(usetimers) loopv(timerorder)
     {
         timer &t = timers[timerorder[i]];
-        if(t.print < 0 ? t.result >= 0 : totalmillis - lastprint >= 200) t.print = t.result;
-        if(t.print < 0 || (t.gpu && !(t.waiting&(1<<timercycle)))) continue;
-        draw_textf("%s%s %5.2f ms", conw-20*FONTH, conh-FONTH*3/2-offset*9*FONTH/8, 0, 0, 255, 255, 255, 255, 0, -1, -1, 1, t.name, t.gpu ? "" : " (cpu)", t.print);
-        offset++;
+        if(t.print < 0 ? t.result >= 0 : totalmillis-lastprint >= 200) t.print = t.result;
     }
-    if(totalmillis - lastprint >= 200) lastprint = totalmillis;
+    return usetimers ? 2 : 1;
 }
+ICOMMAND(0, updatetimers, "", (), intret(updatetimers()));
+
+void gettimers(int timenum, int prop, int idx)
+{
+    if(timenum < 0)
+    {
+        switch(prop)
+        {
+            case -1: intret(usetimers ? timerorder.length() : 0); break;
+            case 0: intret(lastprint); break;
+            case 1: intret(printmillis); break;
+            default: intret(-1); break;
+        }
+    }
+    else if(!usetimers) intret(-1);
+    else if(timerorder.inrange(timenum))
+    {
+        timer &t = timers[timerorder[timenum]];
+        switch(prop)
+        {
+            case -2: intret(t.print < 0 || (t.gpu && !(t.waiting&(1<<timercycle))) ? 1 : 0); break; // skip
+            case -1: intret(7); break;
+            case 0: result(t.name); break;
+            case 1: intret(t.gpu ? 1 : 0); break;
+            case 2:
+            {
+                if(idx < 0) intret(timer::MAXQUERY);
+                else if(idx < timer::MAXQUERY) intret(t.query[idx]);
+                break;
+            }
+            case 3: intret(t.waiting); break;
+            case 4: intret(t.starttime); break;
+            case 5: floatret(t.result); break;
+            case 6: floatret(t.print); break;
+            default: intret(-1); break;
+        }
+    }
+}
+ICOMMAND(0, gettimer, "bbb", (int *timenum, int *prop, int *idx), gettimers(*timenum, *prop, *idx));
 
 void gl_resize()
 {

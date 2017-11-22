@@ -111,7 +111,7 @@ void resolvetqaa(GLuint outfbo)
 
 void dotqaa(GLuint outfbo = 0)
 {
-    timer *tqaatimer = begintimer("tqaa");
+    timer *tqaatimer = begintimer("TQAA");
 
     resolvetqaa(outfbo);
 
@@ -174,7 +174,7 @@ VARF(IDF_PERSIST, fxaagreenluma, 0, 0, 1, cleanupfxaa());
 
 void dofxaa(GLuint outfbo = 0)
 {
-    timer *fxaatimer = begintimer("fxaa");
+    timer *fxaatimer = begintimer("FXAA");
 
     glBindFramebuffer_(GL_FRAMEBUFFER, tqaa ? tqaafbo[0] : outfbo);
     fxaashader->set();
@@ -582,7 +582,7 @@ void viewsmaa()
 
 void dosmaa(GLuint outfbo = 0, bool split = false)
 {
-    timer *smaatimer = begintimer("smaa");
+    timer *smaatimer = begintimer("SMAA");
 
     int cleardepth = msaalight ? GL_DEPTH_BUFFER_BIT | (ghasstencil > 1 ? GL_STENCIL_BUFFER_BIT : 0) : 0;
     bool depthmask = smaadepthmask && (!tqaa || msaalight),

@@ -3165,7 +3165,7 @@ namespace game
                 }
                 mdl.material[2] = bvec::fromcolor(vec(scale, scale, scale));
             }
-            if(W(d->weapselect, lightpersist)&2) mdl.material[1].max(bvec::fromcolor(WPCOL(d, d->weapselect, lightcol, physics::secondaryweap(d))));
+            if(W(d->weapselect, lightpersist)&2) mdl.material[2].max(bvec::fromcolor(WPCOL(d, d->weapselect, lightcol, physics::secondaryweap(d))));
         }
     }
 

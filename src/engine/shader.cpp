@@ -1352,7 +1352,7 @@ void renderpostfx(GLuint outfbo)
 {
     if(postfxpasses.empty()) return;
 
-    timer *postfxtimer = begintimer("postfx");
+    timer *postfxtimer = begintimer("Post FX");
     loopv(postfxpasses)
     {
         postfxpass &p = postfxpasses[i];
