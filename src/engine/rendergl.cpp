@@ -1172,6 +1172,7 @@ int updatetimers()
         timer &t = timers[timerorder[i]];
         if(t.print < 0 ? t.result >= 0 : totalmillis-lastprint >= 200) t.print = t.result;
     }
+    if(totalmillis - lastprint >= 200) lastprint = totalmillis;
     return usetimers ? 2 : 1;
 }
 ICOMMAND(0, updatetimers, "", (), intret(updatetimers()));
