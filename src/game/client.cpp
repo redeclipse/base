@@ -2080,7 +2080,7 @@ namespace client
         flushclient();
     }
 
-    void parsestate(gameent *d, ucharbuf &p, bool resume = false)
+    bool parsestate(gameent *d, ucharbuf &p, bool resume = false)
     {
         if(!d) { static gameent dummy; d = &dummy; }
         bool local = d == game::player1 || d->ai, reset = false;
@@ -2114,6 +2114,7 @@ namespace client
             loopi(W_MAX) d->ammo[i] = getint(p);
         }
         if(resume) d->setscale(game::rescale(d), 0, true);
+        return reset;
     }
 
     void updatepos(gameent *d)
@@ -2750,7 +2751,7 @@ namespace client
                             parsestate(NULL, p);
                             break;
                         }
-                        parsestate(f, p, true);
+                        if(parsestate(f, p, true)) addmsg(N_RESUME, "ri", f->clientnum);
                     }
                     break;
                 }

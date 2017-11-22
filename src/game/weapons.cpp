@@ -307,11 +307,12 @@ namespace weapons
             {
                 if(d->weapstate[weap] != type)
                 {
-                    if(pressed)
+                    int curammo = d->ammo[weap]-offset;
+                    if(pressed && curammo > 0)
                     {
                         if(offset > 0)
                         {
-                            d->ammo[weap] = max(d->ammo[weap]-offset, 0);
+                            d->ammo[weap] = max(curammo, 0);
                             d->weapload[weap] = -offset;
                         }
                         int offtime = hadcook && d->prevstate[weap] == type ? lastmillis-d->prevtime[weap] : 0;

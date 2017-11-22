@@ -392,7 +392,7 @@ namespace server
         string name, handle, mapvote, authname, clientmap;
         int clientnum, connectmillis, sessionid, overflow, ping, team, lastteam, lastplayerinfo,
             modevote, mutsvote, lastvote, privilege, oldprivilege, gameoffset, lastevent, wslen, swapteam, clientcrc;
-        bool connected, ready, local, timesync, online, wantsmap, gettingmap, connectauth, kicked;
+        bool connected, ready, local, timesync, online, wantsmap, gettingmap, connectauth, kicked, needsresume;
         vector<gameevent *> events;
         vector<uchar> position, messages;
         uchar *wsdata;
@@ -417,7 +417,7 @@ namespace server
             servstate::mapchange(change);
             events.deletecontents();
             overflow = 0;
-            ready = timesync = wantsmap = gettingmap = false;
+            ready = timesync = wantsmap = gettingmap = needsresume = false;
             lastevent = gameoffset = lastvote = clientcrc = 0;
             if(!change) lastteam = T_NEUTRAL;
             team = swapteam = T_NEUTRAL;
@@ -3911,9 +3911,17 @@ namespace server
 
     void sendresume(clientinfo *ci, bool reset = false)
     {
+        int target = -1, state = ci->state;
+        if(reset)
+        {
+            if(ci->needsresume) return; // waiting for ack
+            target = ci->clientnum;
+            state = -1;
+            ci->needsresume = true;
+            ci->weapreset(false);
+        }
         ci->updatetimeplayed();
-        if(reset) ci->weapreset(false);
-        sendf(reset ? ci->clientnum : -1, 1, "ri9i4vi", N_RESUME, ci->clientnum, reset ? -1 : ci->state, ci->points, ci->frags, ci->deaths, ci->totalpoints, ci->totalfrags, ci->totaldeaths, ci->timeplayed, ci->health, ci->cptime, ci->weapselect, W_MAX, &ci->ammo[0], -1);
+        sendf(target, 1, "ri9fi4vi", N_RESUME, ci->clientnum, state, ci->points, ci->frags, ci->deaths, ci->totalpoints, ci->totalfrags, ci->totaldeaths, ci->totalavgpos, ci->timeplayed, ci->health, ci->cptime, ci->weapselect, W_MAX, &ci->ammo[0], -1);
     }
 
     void putinitclient(clientinfo *ci, packetbuf &p, bool allow)
@@ -5578,7 +5586,7 @@ namespace server
         }
 
         uchar operator[](int msg) const { return msg >= 0 && msg < NUMMSG ? msgmask[msg] : 0; }
-    } msgfilter(-1, N_CONNECT, N_SERVERINIT, N_CLIENTINIT, N_WELCOME, N_MAPCHANGE, N_SERVMSG, N_DAMAGE, N_SHOTFX, N_LOADW, N_DIED, N_POINTS, N_SPAWNSTATE, N_ITEMACC, N_ITEMSPAWN, N_TICK, N_DISCONNECT, N_CURRENTPRIV, N_PONG, N_RESUME, N_SCOREAFFIN, N_SCORE, N_ANNOUNCE, N_SENDDEMOLIST, N_SENDDEMO, N_DEMOPLAYBACK, N_SENDMAP, N_REGEN, N_CLIENT, N_AUTHCHAL, N_QUEUEPOS, -2, N_REMIP, N_NEWMAP, N_CLIPBOARD, -3, N_EDITENT, N_EDITLINK, N_EDITVAR, N_EDITF, N_EDITT, N_EDITM, N_FLIP, N_COPY, N_PASTE, N_ROTATE, N_REPLACE, N_DELCUBE, N_EDITVSLOT, N_UNDO, N_REDO, -4, N_POS, N_SPAWN, N_DESTROY, NUMMSG),
+    } msgfilter(-1, N_CONNECT, N_SERVERINIT, N_CLIENTINIT, N_WELCOME, N_MAPCHANGE, N_SERVMSG, N_DAMAGE, N_SHOTFX, N_LOADW, N_DIED, N_POINTS, N_SPAWNSTATE, N_ITEMACC, N_ITEMSPAWN, N_TICK, N_DISCONNECT, N_CURRENTPRIV, N_PONG, N_SCOREAFFIN, N_SCORE, N_ANNOUNCE, N_SENDDEMOLIST, N_SENDDEMO, N_DEMOPLAYBACK, N_SENDMAP, N_REGEN, N_CLIENT, N_AUTHCHAL, N_QUEUEPOS, -2, N_REMIP, N_NEWMAP, N_CLIPBOARD, -3, N_EDITENT, N_EDITLINK, N_EDITVAR, N_EDITF, N_EDITT, N_EDITM, N_FLIP, N_COPY, N_PASTE, N_ROTATE, N_REPLACE, N_DELCUBE, N_EDITVSLOT, N_UNDO, N_REDO, -4, N_POS, N_SPAWN, N_DESTROY, NUMMSG),
       connectfilter(-1, N_CONNECT, -2, N_AUTHANS, -3, N_PING, NUMMSG);
 
     int checktype(int type, clientinfo *ci)
@@ -6190,7 +6198,7 @@ namespace server
                 {
                     int lcn = getint(p), id = getint(p), weap = getint(p);
                     clientinfo *cp = (clientinfo *)getinfo(lcn);
-                    if(!hasclient(cp, ci) || !isweap(weap) || weap >= W_ALL) break;
+                    if(!hasclient(cp, ci) || !isweap(weap) || weap >= W_ALL || cp->needsresume) break;
                     switchevent *ev = new switchevent;
                     ev->id = id;
                     ev->weap = weap;
@@ -6222,6 +6230,15 @@ namespace server
                     break;
                 }
 
+                case N_RESUME:
+                {
+                    int lcn = getint(p);
+                    clientinfo *cp = (clientinfo *)getinfo(lcn);
+                    if(!hasclient(cp, ci) || !cp->needsresume) break;
+                    cp->needsresume = false;
+                    break;
+                }
+
                 case N_SUICIDE:
                 {
                     int lcn = getint(p), flags = getint(p), material = getint(p);
@@ -6238,7 +6255,7 @@ namespace server
                 {
                     int lcn = getint(p);
                     clientinfo *cp = (clientinfo *)getinfo(lcn);
-                    bool havecn = hasclient(cp, ci);
+                    bool havecn = hasclient(cp, ci) && !cp->needsresume;
                     shotevent *ev = new shotevent;
                     ev->id = getint(p);
                     ev->weap = getint(p);
@@ -6280,7 +6297,7 @@ namespace server
                 {
                     int lcn = getint(p), id = getint(p), weap = getint(p);
                     clientinfo *cp = (clientinfo *)getinfo(lcn);
-                    if(!hasclient(cp, ci)) break;
+                    if(!hasclient(cp, ci) || cp->needsresume) break;
                     dropevent *ev = new dropevent;
                     ev->id = id;
                     ev->weap = weap;
@@ -6293,7 +6310,7 @@ namespace server
                 {
                     int lcn = getint(p), id = getint(p), weap = getint(p);
                     clientinfo *cp = (clientinfo *)getinfo(lcn);
-                    if(!hasclient(cp, ci)) break;
+                    if(!hasclient(cp, ci) || cp->needsresume) break;
                     reloadevent *ev = new reloadevent;
                     ev->id = id;
                     ev->weap = weap;
@@ -6356,7 +6373,7 @@ namespace server
                 {
                     int lcn = getint(p), id = getint(p), ent = getint(p);
                     clientinfo *cp = (clientinfo *)getinfo(lcn);
-                    if(!hasclient(cp, ci)) break;
+                    if(!hasclient(cp, ci) || cp->needsresume) break;
                     useevent *ev = new useevent;
                     ev->id = id;
                     ev->ent = ent;
