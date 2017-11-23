@@ -10,6 +10,16 @@ PLATFORM= $(shell $(CC) -dumpmachine)
 
 RMFLAGS= -fv
 
+ifeq (,$(PLATFORM_BUILD))
+PLATFORM_BUILD=0
+endif
+ifeq (,$(PLATFORM_BRANCH))
+PLATFORM_BRANCH="none"
+endif
+ifeq (,$(PLATFORM_REVISION))
+PLATFORM_REVISION=""
+endif
+
 ifeq (,$(PLATFORM_BIN))
 ifneq (,$(findstring arm,$(PLATFORM)))
 PLATFORM_BIN=arm
@@ -42,7 +52,7 @@ CC_TEMP:=$(CC)
 override CXX=$(TOOLSET_PREFIX)$(CXX_TEMP)
 override CC=$(TOOLSET_PREFIX)$(CC_TEMP)
 
-INCLUDES= -I. -Ishared -Iengine -Igame -Ienet/include -Isupport
+INCLUDES= -DVERSION_BUILD=$(PLATFORM_BUILD) -DVERSION_BRANCH=$(PLATFORM_BRANCH) -DVERSION_REVISION=$(PLATFORM_REVISION) -I. -Ishared -Iengine -Igame -Ienet/include -Isupport
 
 STRIP=
 ifeq (,$(findstring -g,$(CXXFLAGS)))

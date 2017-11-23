@@ -12,6 +12,16 @@
 #define VERSION_COPY "2010-2017"
 #define VERSION_DESC "A fun-filled new take on the first-person arena shooter."
 
+#ifndef VERSION_BUILD
+#define VERSION_BUILD 0
+#endif
+#ifndef VERSION_BRANCH
+#define VERSION_BRANCH "none"
+#endif
+#ifndef VERSION_REVISION
+#define VERSION_REVISION ""
+#endif
+
 #define LAN_PORT 28799
 #define MASTER_PORT 28800
 #define SERVER_PORT 28801

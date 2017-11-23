@@ -39,10 +39,12 @@ SVAR(IDF_READONLY, versioncopy, VERSION_COPY);
 SVAR(IDF_READONLY, versiondesc, VERSION_DESC);
 SVAR(IDF_READONLY, versionplatname, plat_name(CUR_PLATFORM));
 SVAR(IDF_READONLY, versionplatlongname, plat_longname(CUR_PLATFORM));
+VAR(IDF_READONLY, versionbuild, 0, VERSION_BUILD, VAR_MAX);
 VAR(IDF_READONLY, versionplatform, 0, CUR_PLATFORM, VAR_MAX);
 VAR(IDF_READONLY, versionarch, 0, CUR_ARCH, VAR_MAX);
 VAR(IDF_READONLY, versioncrc, 0, 0, VAR_MAX);
-SVARF(IDF_READONLY, versionbranch, "none", versionbranch[MAXBRANCHLEN+1] = 0);
+SVARF(IDF_READONLY, versionbranch, VERSION_BRANCH, versionbranch[MAXBRANCHLEN+1] = 0);
+SVARF(IDF_READONLY, versionrevision, VERSION_REVISION, versionrevision[MAXREVISIONLEN+1] = 0);
 #ifdef STANDALONE
 VAR(IDF_READONLY, versionisserver, 0, 1, 1);
 #else
@@ -1221,7 +1223,9 @@ static void setupwindow(const char *title)
     atexit(cleanupwindow);
 
     if(!setupsystemtray(WM_APP)) fatal("failed adding to system tray");
-    conoutf("Version: %s-%s%d-%s %s (%s) [0x%.8x]", versionstring, versionplatname, versionarch, versionbranch, versionisserver ? "server" : "client", versionrelease, versioncrc);
+    defformatstring(branch, "%s", versionbranch);
+    if(versionbuild > 0) concformatstring(branch, "-%d", versionbuild);
+    conoutf("Version: %s-%s%d-%s %s (%s) [0x%.8x]", versionstring, versionplatname, versionarch, branch, versionisserver ? "server" : "client", versionrelease, versioncrc);
 }
 
 static char *parsecommandline(const char *src, vector<char *> &args)
@@ -1417,7 +1421,9 @@ void setupserver()
 
 void initgame()
 {
-    conoutf("Version: %s-%s%d-%s %s (%s) [0x%.8x]", versionstring, versionplatname, versionarch, versionbranch, versionisserver ? "server" : "client", versionrelease, versioncrc);
+    defformatstring(branch, "%s", versionbranch);
+    if(versionbuild > 0) concformatstring(branch, "-%d", versionbuild);
+    conoutf("Version: %s-%s%d-%s %s (%s) [0x%.8x]", versionstring, versionplatname, versionarch, branch, versionisserver ? "server" : "client", versionrelease, versioncrc);
     server::start();
     loopv(gameargs)
     {
@@ -1687,8 +1693,11 @@ ICOMMAND(0, rehash, "i", (int *nosave), if(!(identflags&IDF_WORLD)) rehash(*nosa
 void setverinfo(const char *bin)
 {
     setvar("versioncrc", crcfile(bin));
-    const char *vbranch = getenv(sup_var("BRANCH"));
-    setsvar("versionbranch", vbranch && *vbranch ? vbranch : "none");
+    if(!*versionbranch || !strcmp(versionbranch, "none"))
+    {
+        const char *vbranch = getenv(sup_var("BRANCH"));
+        setsvar("versionbranch", vbranch && *vbranch ? vbranch : "none");
+    }
 }
 
 volatile bool fatalsig = false;

@@ -12,7 +12,9 @@ void setcaption(const char *text, const char *text2)
     {
         copystring(prevtext, text);
         copystring(prevtext2, text2);
-        formatstring(caption, "%s v%s-%s%d-%s (%s)%s%s%s%s", versionname, versionstring, versionplatname, versionarch, versionbranch, versionrelease, text[0] ? ": " : "", text, text2[0] ? " - " : "", text2);
+        defformatstring(branch, "%s", versionbranch);
+        if(versionbuild > 0) concformatstring(branch, "-%d", versionbuild);
+        formatstring(caption, "%s v%s-%s%d-%s (%s)%s%s%s%s", versionname, versionstring, versionplatname, versionarch, branch, versionrelease, text[0] ? ": " : "", text, text2[0] ? " - " : "", text2);
         if(screen) SDL_SetWindowTitle(screen, caption);
     }
 }

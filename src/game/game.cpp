@@ -19,6 +19,7 @@ namespace game
         player1->version.minor = VERSION_MINOR;
         player1->version.patch = VERSION_PATCH;
         player1->version.game = VERSION_GAME;
+        player1->version.build = versionbuild;
         player1->version.platform = versionplatform;
         player1->version.arch = versionarch;
         player1->version.gpuglver = glversion;
@@ -26,6 +27,8 @@ namespace game
         player1->version.crc = versioncrc;
         if(player1->version.branch) delete[] player1->version.branch;
         player1->version.branch = newstring(versionbranch, MAXBRANCHLEN);
+        if(player1->version.revision) delete[] player1->version.branch;
+        player1->version.revision = newstring(versionrevision, MAXREVISIONLEN);
         if(player1->version.gpuvendor) delete[] player1->version.gpuvendor;
         player1->version.gpuvendor = newstring(gfxvendor);
         if(player1->version.gpurenderer) delete[] player1->version.gpurenderer;

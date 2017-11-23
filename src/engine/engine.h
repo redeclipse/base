@@ -4,8 +4,8 @@
 #include "version.h"
 #include "cube.h"
 
-extern int version, versioning, versionmajor, versionminor, versionpatch, versionplatform, versionarch, versionisserver, versioncrc;
-extern char *versionstring, *versionname, *versionuname, *versionvname, *versionrelease, *versionurl, *versionmaster, *versionplatname, *versionplatlongname, *versionbranch;
+extern int version, versioning, versionmajor, versionminor, versionpatch, versionbuild, versionplatform, versionarch, versionisserver, versioncrc;
+extern char *versionstring, *versionname, *versionuname, *versionvname, *versionrelease, *versionurl, *versionmaster, *versionplatname, *versionplatlongname, *versionbranch, *versionrevision;
 #define CUR_VER_MAKE(a,b,c) (((a)<<16) | ((b)<<8) | (c))
 #define CUR_VER CUR_VER_MAKE(VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH)
 #define CUR_VERSION (VERSION_MAJOR*100)+(VERSION_MINOR*10)+VERSION_PATCH
@@ -31,6 +31,7 @@ extern const char *platnames[MAX_PLATFORMS], *platlongnames[MAX_PLATFORMS];
 #define plat_longname(a) (sup_platform(a) ? platlongnames[a] : "unknown")
 
 #define MAXBRANCHLEN 16
+#define MAXREVISIONLEN 48
 
 extern const char *timestr(int dur, int style = 0);
 

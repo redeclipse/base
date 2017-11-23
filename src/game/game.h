@@ -4,7 +4,7 @@
 #include "engine.h"
 
 #define VERSION_GAMEID "fps"
-#define VERSION_GAME 233
+#define VERSION_GAME 234
 #define VERSION_DEMOMAGIC "RED_ECLIPSE_DEMO"
 
 #define MAXAI 256
@@ -490,20 +490,21 @@ static inline const char *mastermodename(int type)
 
 struct verinfo
 {
-    int type, flag, version, major, minor, patch, game, platform, arch, gpuglver, gpuglslver, crc;
-    char *branch, *gpuvendor, *gpurenderer, *gpuversion;
+    int type, flag, version, major, minor, patch, game, build, platform, arch, gpuglver, gpuglslver, crc;
+    char *branch, *revision, *gpuvendor, *gpurenderer, *gpuversion;
 
-    verinfo() : branch(NULL), gpuvendor(NULL), gpurenderer(NULL), gpuversion(NULL) { reset(); }
+    verinfo() : branch(NULL), revision(NULL), gpuvendor(NULL), gpurenderer(NULL), gpuversion(NULL) { reset(); }
     ~verinfo() { reset(); }
 
     void reset()
     {
         if(branch) delete[] branch;
+        if(revision) delete[] revision;
         if(gpuvendor) delete[] gpuvendor;
         if(gpurenderer) delete[] gpurenderer;
         if(gpuversion) delete[] gpuversion;
-        branch = gpuvendor = gpurenderer = gpuversion = NULL;
-        type = flag = version = major = minor = patch = game = arch = gpuglver = gpuglslver = crc = 0;
+        branch = revision = gpuvendor = gpurenderer = gpuversion = NULL;
+        type = flag = version = major = minor = patch = game = arch = gpuglver = gpuglslver = crc = build = 0;
         platform = -1;
     }
 
@@ -515,6 +516,7 @@ struct verinfo
         minor = getint(p);
         patch = getint(p);
         game = getint(p);
+        build = getint(p);
         platform = getint(p);
         arch = getint(p);
         gpuglver = getint(p);
@@ -522,6 +524,8 @@ struct verinfo
         crc = getint(p);
         if(branch) delete[] branch;
         getstring(text, p); branch = newstring(text, MAXBRANCHLEN);
+        if(revision) delete[] revision;
+        getstring(text, p); revision = newstring(text, MAXREVISIONLEN);
         if(gpuvendor) delete[] gpuvendor;
         getstring(text, p); gpuvendor = newstring(text);
         if(gpurenderer) delete[] gpurenderer;
@@ -537,12 +541,14 @@ struct verinfo
         putint(p, minor);
         putint(p, patch);
         putint(p, game);
+        putint(p, build);
         putint(p, platform);
         putint(p, arch);
         putint(p, gpuglver);
         putint(p, gpuglslver);
         putint(p, crc);
         sendstring(branch ? branch : "", p);
+        sendstring(revision ? revision : "", p);
         sendstring(gpuvendor ? gpuvendor : "", p);
         sendstring(gpurenderer ? gpurenderer : "", p);
         sendstring(gpuversion ? gpuversion : "", p);
@@ -554,6 +560,7 @@ struct verinfo
         minor = v.minor;
         patch = v.patch;
         game = v.game;
+        build = v.build;
         platform = v.platform;
         arch = v.arch;
         gpuglver = v.gpuglver;
@@ -561,6 +568,8 @@ struct verinfo
         crc = v.crc;
         if(branch) delete[] branch;
         branch = newstring(v.branch ? v.branch : "", MAXBRANCHLEN);
+        if(revision) delete[] revision;
+        revision = newstring(v.revision ? v.revision : "", MAXREVISIONLEN);
         if(gpuvendor) delete[] gpuvendor;
         gpuvendor = newstring(v.gpuvendor ? v.gpuvendor : "");
         if(gpurenderer) delete[] gpurenderer;

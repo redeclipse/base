@@ -971,11 +971,13 @@ namespace client
         {
             case -3:
             {
-                defformatstring(str, "%d.%d.%d-%s%d-%s", d->version.major, d->version.minor, d->version.patch, plat_name(d->version.platform), d->version.arch, d->version.branch);
+                defformatstring(branch, "%s", d->version.branch);
+                if(d->version.build > 0) concformatstring(branch, "-%d", d->version.build);
+                defformatstring(str, "%d.%d.%d-%s%d-%s", d->version.major, d->version.minor, d->version.patch, plat_name(d->version.platform), d->version.arch, branch);
                 result(str);
             }
             case -2: result(plat_name(d->version.platform)); break;
-            case -1: intret(14);
+            case -1: intret(16);
             case 0: intret(d->version.major); break;
             case 1: intret(d->version.minor); break;
             case 2: intret(d->version.patch); break;
@@ -989,6 +991,8 @@ namespace client
             case 10: result(d->version.gpurenderer); break;
             case 11: result(d->version.gpuversion); break;
             case 13: result(d->version.branch); break;
+            case 14: intret(d->version.build); break;
+            case 15: result(d->version.revision); break;
             default: break;
         }
     }

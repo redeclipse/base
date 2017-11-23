@@ -5508,9 +5508,9 @@ namespace server
         putint(p, serverpass[0] || G(connectlock) ? MM_PASSWORD : (m_local(gamemode) ? MM_PRIVATE : mastermode)); // 6
         putint(p, numgamevars); // 7
         putint(p, numgamemods); // 8
-        putint(p, VERSION_MAJOR); // 9
-        putint(p, VERSION_MINOR); // 10
-        putint(p, VERSION_PATCH); // 11
+        putint(p, versionmajor); // 9
+        putint(p, versionminor); // 10
+        putint(p, versionpatch); // 11
         putint(p, versionplatform); // 12
         putint(p, versionarch); // 13
         putint(p, gamestate); // 14
