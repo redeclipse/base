@@ -139,9 +139,10 @@ namespace hud
     FVAR(IDF_PERSIST, teamhurtsize, 0, 0.0175f, 1000);
 
     VAR(IDF_PERSIST, showdamage, 0, 2, 2); // 1 shows just damage texture, 2 blends as well
-    VAR(IDF_PERSIST, damagefade, 0, 0, 1);
+    CVAR(IDF_PERSIST, damagecolour, 0x800000);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, damagetex, "<grey>textures/hud/damage", 3);
-    FVAR(IDF_PERSIST, damageblend, 0, 1, 1);
+    FVAR(IDF_PERSIST, damageblend, 0, 0.5f, 1);
+    FVAR(IDF_PERSIST, damageblenddead, 0, 0.5f, 1);
     FVAR(IDF_PERSIST, damageskew, 0, 0.25f, 1);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, burntex, "<grey>textures/hud/burn", 3);
     FVAR(IDF_PERSIST, burnblend, 0, 1, 1);
@@ -553,9 +554,9 @@ namespace hud
     void damage(int n, const vec &loc, gameent *v, int weap, int flags)
     {
         if(!n) return;
-        damageresidue = clamp(damageresidue+(n*(flags&HIT_BLEED ? 3 : 1)), 0, 200);
+        damageresidue = clamp(damageresidue+(n*(flags&HIT_BLEED ? 10 : 5)), 0, 200);
         int colour = onscreendamagecolour;
-        if(game::nogore || game::bloodscale <= 0) colour = 0xFF44FF;
+        if(game::nogore || game::bloodscale <= 0) colour = damagecolour.tohexcolor();
         else if(wr_burns(weap, flags)) colour = onscreendamageburncolour;
         else if(wr_bleeds(weap, flags)) colour = onscreendamagebleedcolour;
         else if(wr_shocks(weap, flags)) colour = onscreendamageshockcolour;
@@ -577,7 +578,7 @@ namespace hud
     {
         if(!n) return;
         int colour = onscreenhitscolour;
-        if(game::nogore || game::bloodscale <= 0) colour = 0xFF44FF;
+        if(game::nogore || game::bloodscale <= 0) colour = damagecolour.tohexcolor();
         else if(wr_burns(weap, flags)) colour = onscreenhitsburncolour;
         else if(wr_bleeds(weap, flags)) colour = onscreenhitsbleedcolour;
         else if(wr_shocks(weap, flags)) colour = onscreenhitsshockcolour;
@@ -1574,20 +1575,31 @@ namespace hud
 
     void drawdamage(int w, int h, float blend)
     {
-        if(*damagetex)
-        {
-            float pc = game::focus->state == CS_DEAD ? 0.5f : (game::focus->state == CS_ALIVE ? min(damageresidue, 100)/100.f : 0.f);
-            if(pc > 0)
-            {
-                Texture *t = textureload(damagetex, 3);
-                if(t && t != notexture)
-                {
-                    glBindTexture(GL_TEXTURE_2D, t->id);
-                    gle::colorf(0.85f, 0.09f, 0.09f, pc*blend*damageblend);
-                    drawtexture(0, 0, w, h);
-                }
-            }
-        }
+        if(!*damagetex) return;
+        float fade = game::focus->state == CS_DEAD ? damageblenddead : (game::focus->state == CS_ALIVE ? min(damageresidue, 100)/100.f : 0.f);
+        if(fade <= 0) return;
+        pushhudmatrix();
+        hudmatrix.ortho(0, 1, 1, 0, -1, 1);
+        flushhudmatrix();
+        SETSHADER(huddamage);
+        float skew = lastmillis/1000.f;
+        LOCALPARAMF(time, skew);
+        skew = fmod(skew*1.5f, 2.0f);
+        LOCALPARAMF(skew, skew > 1.0f ? 2.0f-skew : skew);
+        LOCALPARAMF(blend, fade*blend*damageblend);
+        LOCALPARAM(colour, damagecolour.tocolor());
+        glActiveTexture_(GL_TEXTURE0);
+        settexture(damagetex, 3);
+        drawquad(0, 0, 1, 1);
+        pophudmatrix();
+        resethudshader();
+        #if 0
+        Texture *t = textureload(damagetex, 3);
+        if(!t || t == notexture) return;
+        glBindTexture(GL_TEXTURE_2D, t->id);
+        gle::color(damagecolour.tocolor(), pc*blend*damageblend*0.5f);
+        drawtexture(0, 0, w, h);
+        #endif
     }
 
     void drawfire(int w, int h, float blend)
