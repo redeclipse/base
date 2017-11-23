@@ -110,7 +110,9 @@ semabuild_appimage() {
     export PLATFORM_BUILD=${SEMAPHORE_BUILD_NUMBER}
     export PLATFORM_BRANCH="${BRANCH_NAME}"
     export PLATFORM_REVISION="${REVISION}"
-    bash build-with-docker.sh "${SEMABUILD_PWD}" || return 1
+    export NO_UPDATE=true
+    export BUILD="${SEMABUILD_PWD}"
+    bash build-appimages.sh || return 1
     export GITHUB_TOKEN="${GITHUB_TOKEN}"
     bash github-release.sh || return 1
     popd || return 1
