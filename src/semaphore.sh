@@ -137,7 +137,7 @@ if [ "${SEMABUILD_DEPLOY}" = "true" ]; then
     if [ "${BRANCH_NAME}" = master ] || [ "${BRANCH_NAME}" = stable ]; then
         sudo ${SEMABUILD_APT} -fy install jq zsync || exit 1
         pushd "${HOME}" || return 1
-        semabuild_appimage || exit 1
+        #semabuild_appimage || exit 1
         popd || return 1
     fi
 fi
