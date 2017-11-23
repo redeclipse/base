@@ -6,6 +6,7 @@ SEMABUILD_DIR="${SEMABUILD_BUILD}/${BRANCH_NAME}"
 SEMABUILD_APT='DEBIAN_FRONTEND=noninteractive apt-get'
 SEMABUILD_DEST="https://${GITHUB_TOKEN}:x-oauth-basic@github.com/red-eclipse/deploy.git"
 SEMABUILD_SOURCE="https://raw.githubusercontent.com/red-eclipse/deploy/master"
+SEMABUILD_APPIMAGE="https://github.com/red-eclipse/appimage-builder.git"
 SEMABUILD_MODULES=`cat "${SEMABUILD_PWD}/.gitmodules" | grep '\[submodule "[^.]' | sed -e 's/^.submodule..//;s/..$//' | tr "\n" " " | sed -e 's/ $//'`
 SEMABUILD_ALLMODS="base ${SEMABUILD_MODULES}"
 SEMABUILD_DEPLOY="false"
@@ -27,15 +28,12 @@ semabuild_setup() {
 
 semabuild_archive() {
     echo "archiving ${BRANCH_NAME}..."
-    # windows
     pushd "${SEMABUILD_DIR}/windows" || return 1
     zip -r "${SEMABUILD_DIR}/windows.zip" . || return 1
-    popd
-    # linux
+    popd || return 1
     pushd "${SEMABUILD_DIR}/linux" || return 1
     tar -zcvf "${SEMABUILD_DIR}/linux.tar.gz" . || return 1
-    popd
-    # cleanup
+    popd || return 1
     rm -rf "${SEMABUILD_DIR}/windows" "${SEMABUILD_DIR}/linux" || return 1
     SEMABUILD_DEPLOY="true"
     return 0
@@ -62,8 +60,7 @@ semabuild_integrate() {
         else
             SEMABUILD_MODDIR="${SEMABUILD_PWD}/data/${i}"
             echo "module ${i} updating.."
-            git submodule init "data/${i}"
-            git submodule update "data/${i}"
+            git submodule update --init "data/${i}"
         fi
         pushd "${SEMABUILD_MODDIR}" || return 1
         echo "module ${i} processing.."
@@ -88,7 +85,7 @@ semabuild_integrate() {
                 fi
             fi
         fi
-        popd
+        popd || return 1
     done
     return 0
 }
@@ -99,6 +96,24 @@ semabuild_process() {
     else
         semabuild_build || return 1
     fi
+    return 0
+}
+
+semabuild_appimage() {
+    git clone "${SEMABUILD_APPIMAGE}" appimage || return 1
+    pushd appimage || return 1
+    export BRANCH="${BRANCH_NAME}"
+    export ARCH=x86_64
+    export COMMIT=${REVISION}
+    export BUILD_SERVER=1
+    export BUILD_CLIENT=1
+    export PLATFORM_BUILD=${SEMAPHORE_BUILD_NUMBER}
+    export PLATFORM_BRANCH="${BRANCH_NAME}"
+    export PLATFORM_REVISION="${REVISION}"
+    bash build-with-docker.sh "${SEMABUILD_PWD}" || return 1
+    export GITHUB_TOKEN="${GITHUB_TOKEN}"
+    bash github-release.sh || return 1
+    popd || return 1
     return 0
 }
 
@@ -119,5 +134,11 @@ semabuild_setup || exit 1
 semabuild_process || exit 1
 if [ "${SEMABUILD_DEPLOY}" = "true" ]; then
     semabuild_deploy || exit 1
+    if [ "${BRANCH_NAME}" = master ] || [ "${BRANCH_NAME}" = stable ]; then
+        sudo ${SEMABUILD_APT} -fy install jq zsync || exit 1
+        pushd "${HOME}" || return 1
+        semabuild_appimage || exit 1
+        popd || return 1
+    fi
 fi
 echo "done."
