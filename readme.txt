@@ -88,7 +88,7 @@ The project is Free and Open Source, meaning that you can both use it for free a
 * Zachery "freezurbern" Slocum - Skyboxes
 * "Gaming Tilt"
 * "4rson" - Maps and Support
-* "Beha" - Stats system, bug fixes and other improvements
+* "Beha" - Stats system, appimage building, bug fixes and other improvements
 * "Bobbo" - Bug fixes and other improvements
 * "bonifarz"
 * "Boognish" - Maps
