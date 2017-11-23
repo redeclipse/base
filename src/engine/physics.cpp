@@ -656,7 +656,7 @@ bool plcollide(physent *d, const vec &dir, bool insideplayercol)    // collide w
         loopv(dynents)
         {
             physent *o = dynents[i];
-            if(o==d || !physics::issolid(o, d) || d->o.reject(o->o, d->radius+o->radius)) continue;
+            if(o==d || !physics::issolid(o, d) || d->o.reject(o->o, d->radius+o->radius) || !plcollide(d, dir, o)) continue;
             if(physics::checkcollide(d, dir, o))
             {
                 collideplayer = o;
@@ -1197,12 +1197,13 @@ float pltracecollide(physent *d, const vec &from, const vec &ray, float maxdist)
         loopv(dynents)
         {
             physent *o = dynents[i];
-            if(!physics::issolid(o, d)) continue;
             float dist = 1e16f;
-            if(physics::checktracecollide(d, from, to, x1, x2, y1, y2, dist, o) && dist < bestdist)
+            if(!physics::issolid(o, d) || o->o.x+o->radius < x1 || o->o.y+o->radius < y1 || o->o.x-o->radius > x2 || o->o.y-o->radius > y2 || !intersect(o, from, to, dist)) continue;
+            if(physics::checktracecollide(d, from, to, dist, o) && dist <= maxdist && dist < bestdist)
             {
+                collideplayer = o;
                 bestdist = dist;
-                if(dist <= maxdist) { collideplayer = o; bestzones = collidezones; }
+                bestzones = collidezones;
             }
         }
     }

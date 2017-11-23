@@ -1320,16 +1320,14 @@ namespace physics
     {
         static float dist = 1e16f;
         collidezones = CLZ_NONE;
-        if(!plcollide(d, dir, o)) return false;
-        if(d && projent::is(d) && gameent::is(o)) return hitzonecollide((gameent *)o, d->o, dir, dist);
+        if(d && projent::is(d) && gameent::is(o)) return hitzonecollide((gameent *)o, d->o, vec(dir).mul(d->radius), dist);
         collidezones = CLZ_TORSO;
         return true;
     }
 
-    bool checktracecollide(physent *d, const vec &from, const vec &to, float x1, float x2, float y1, float y2, float &dist, physent *o)
+    bool checktracecollide(physent *d, const vec &from, const vec &to, float &dist, physent *o)
     {
         collidezones = CLZ_NONE;
-        if(o->o.x+o->radius < x1 || o->o.y+o->radius < y1 || o->o.x-o->radius > x2 || o->o.y-o->radius > y2 || !intersect(o, from, to, dist)) return false;
         if(d && projent::is(d) && gameent::is(o)) return hitzonecollide((gameent *)o, from, vec(to).sub(from), dist);
         collidezones = CLZ_TORSO;
         return true;

@@ -2954,6 +2954,24 @@ namespace game
         if(player1->clientnum >= 0) client::c2sinfo();
     }
 
+    void adjustorientation(vec &pos)
+    {
+        gameent *best = NULL, *o = NULL;
+        float bestdist = 1e16f;
+        int numdyns = numdynents();
+        loopi(numdyns) if((o = (gameent *)iterdynents(i)))
+        {
+            if(!o || o==focus || o->state!=CS_ALIVE || !physics::issolid(o, focus)) continue;
+            float dist = 1e16f;
+            if(intersect(o, camera1->o, pos, dist) && dist < bestdist)
+            {
+                best = o;
+                bestdist = dist;
+            }
+        }
+        if(best) pos = vec(pos).sub(camera1->o).normalize().mul(bestdist+best->radius).add(camera1->o);
+    }
+
     void recomputecamera()
     {
         fixview();
@@ -2979,32 +2997,14 @@ namespace game
                 if(player1->state >= CS_SPECTATOR && focus != player1) camera1->resetinterp();
             }
             calcangles(camera1, focus);
-            bool pthird = focus == player1 && thirdpersonview(true, focus);
-            if(thirdpersoncursor != 1 && pthird)
+            if(thirdpersoncursor != 1 && focus == player1 && thirdpersonview(true, focus))
             {
                 float yaw = camera1->yaw, pitch = camera1->pitch;
                 vectoyawpitch(cursordir, yaw, pitch);
                 findorientation(camera1->o, yaw, pitch, worldpos);
             }
             else findorientation(focus->o, focus->yaw, focus->pitch, worldpos);
-            if(pthird)
-            {
-                gameent *best = NULL, *o;
-                float bestdist = 1e16f;
-                int numdyns = numdynents();
-                loopi(numdyns) if((o = (gameent *)iterdynents(i)))
-                {
-                    if(!o || o==focus || o->state!=CS_ALIVE || !physics::issolid(o, focus)) continue;
-                    float dist;
-                    if(intersect(o, camera1->o, worldpos, dist) && dist < bestdist)
-                    {
-                        best = o;
-                        bestdist = dist;
-                    }
-                }
-                if(best) worldpos = vec(worldpos).sub(camera1->o).normalize().mul(bestdist+best->radius).add(camera1->o);
-            }
-
+            adjustorientation(worldpos);
             camera1->inmaterial = lookupmaterial(camera1->o);
             camera1->inliquid = isliquid(camera1->inmaterial&MATF_VOLUME);
             lastcamera = totalmillis;

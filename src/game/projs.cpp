@@ -1914,16 +1914,13 @@ namespace projs
             int delay = proj.projtype == PRJ_SHOT ? W2(proj.weap, escapedelay, WS(proj.flags)) : PHYSMILLIS;
             if(lastmillis-proj.spawntime >= delay)
             {
+                vec ray = vec(dir).safenormalize();
                 if(proj.spawntime && lastmillis-proj.spawntime >= delay*2) proj.escaped = true;
                 else if(proj.projcollide&COLLIDE_TRACE)
                 {
-                    vec to = vec(pos).add(dir);
-                    float x1 = floor(min(pos.x, to.x)), y1 = floor(min(pos.y, to.y)),
-                          x2 = ceil(max(pos.x, to.x)), y2 = ceil(max(pos.y, to.y)),
-                          maxdist = dir.magnitude(), dist = 1e16f;
-                    if(!physics::checktracecollide(&proj, pos, to, x1, x2, y1, y2, dist, proj.owner) || dist > maxdist) proj.escaped = true;
+                    if(!pltracecollide(&proj, pos, ray, dir.magnitude()) || collideplayer != proj.owner) proj.escaped = true;
                 }
-                else if(!physics::checkcollide(&proj, dir, proj.owner)) proj.escaped = true;
+                else if(!plcollide(&proj, ray, true) || collideplayer != proj.owner) proj.escaped = true;
             }
         }
     }
