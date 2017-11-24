@@ -1633,7 +1633,7 @@ namespace hud
         Texture *t = textureload(zoomtex, 3);
         if(!t || t == notexture) return;
         glBindTexture(GL_TEXTURE_2D, t->id);
-        gle::colorf(0, 0, 0, pc);
+        gle::colorf(1, 1, 1, pc);
         drawtexture(x, y, c, c);
     }
 
