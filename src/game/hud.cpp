@@ -1562,12 +1562,12 @@ namespace hud
 
     VAR(IDF_PERSIST, showdamage, 0, 2, 2); // 1 shows just damage texture, 2 blends as well
     CVAR(IDF_PERSIST, damagecolour, 0x800000);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, overlaytex, "<grey><noswizzle>textures/hud/overlay", 0);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, overlaytex, "<grey>textures/hud/overlay", 0);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, damagetex, "<grey><noswizzle>textures/lava", 0);
-    FVAR(IDF_PERSIST, damageblend, 0, 0.5f, 1);
+    FVAR(IDF_PERSIST, damageblend, 0, 0.9f, 1);
     FVAR(IDF_PERSIST, damageblenddead, 0, 0.5f, 1);
-    FVAR(IDF_PERSIST, damagespeed1, 0, 0.0125f, FVAR_MAX);
-    FVAR(IDF_PERSIST, damagespeed2, 0, 0.025f, FVAR_MAX);
+    FVAR(IDF_PERSIST, damagespeed1, 0, 0.025f, FVAR_MAX);
+    FVAR(IDF_PERSIST, damagespeed2, 0, 0.05f, FVAR_MAX);
     FVAR(IDF_PERSIST, damageskew, 0, 0.25f, 1);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, burntex, "<grey><noswizzle>textures/hud/burn", 0);
     FVAR(IDF_PERSIST, burnblend, 0, 1, 1);
