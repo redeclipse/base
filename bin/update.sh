@@ -2,6 +2,7 @@
 if [ "${REDECLIPSE_CALLED}" = "true" ]; then REDECLIPSE_EXITU="return"; else REDECLIPSE_EXITU="exit"; fi
 if [ "${REDECLIPSE_DEPLOY}" != "true" ]; then REDECLIPSE_DEPLOY="false"; fi
 REDECLIPSE_SCRIPT="$0"
+REDECLIPSE_BINTXT="bins.txt"
 
 redeclipse_update_path() {
     if [ -z "${REDECLIPSE_PATH+isset}" ]; then REDECLIPSE_PATH="$(cd "$(dirname "$0")" && cd .. && pwd)"; fi
@@ -19,6 +20,7 @@ redeclipse_update_init() {
             fi
         elif [ "${REDECLIPSE_TARGET}" = "macos" ]; then
             REDECLIPSE_CACHE="${HOME}/Library/Application Support/Red Eclipse/cache"
+            REDECLIPSE_BINTXT="macos.txt"
         else
             REDECLIPSE_CACHE="${HOME}/.redeclipse/cache"
         fi
@@ -294,8 +296,8 @@ redeclipse_update_module_blob_deploy() {
 
 redeclipse_update_bins_run() {
     echo "bins: Updating.."
-    rm -f "${REDECLIPSE_TEMP}/bins.txt"
-    REDECLIPSE_DOWNLOADER "${REDECLIPSE_TEMP}/bins.txt" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/bins.txt"
+    rm -f "${REDECLIPSE_TEMP}/${REDECLIPSE_BINTXT}"
+    REDECLIPSE_DOWNLOADER "${REDECLIPSE_TEMP}/${REDECLIPSE_BINTXT}" "${REDECLIPSE_SOURCE}/${REDECLIPSE_UPDATE}/${REDECLIPSE_BINTXT}"
     if [ -e "${REDECLIPSE_PATH}/bin/version.txt" ]; then REDECLIPSE_BINS=`cat "${REDECLIPSE_PATH}/bin/version.txt"`; fi
     if [ -z "${REDECLIPSE_BINS}" ]; then REDECLIPSE_BINS="none"; fi
     echo "bins: ${REDECLIPSE_BINS} is installed."
@@ -304,11 +306,11 @@ redeclipse_update_bins_run() {
 }
 
 redeclipse_update_bins_get() {
-    if ! [ -e "${REDECLIPSE_TEMP}/bins.txt" ]; then
+    if ! [ -e "${REDECLIPSE_TEMP}/${REDECLIPSE_BINTXT}" ]; then
         echo "bins: Failed to retrieve update information."
         return 1
     fi
-    REDECLIPSE_BINS_REMOTE=`cat "${REDECLIPSE_TEMP}/bins.txt"`
+    REDECLIPSE_BINS_REMOTE=`cat "${REDECLIPSE_TEMP}/${REDECLIPSE_BINTXT}"`
     if [ -z "${REDECLIPSE_BINS_REMOTE}" ]; then
         echo "bins: Failed to read update information."
         return 1
@@ -346,7 +348,7 @@ redeclipse_update_bins_deploy() {
     fi
     echo "    echo \"${REDECLIPSE_BINS_REMOTE}\" > \"${REDECLIPSE_PATH}/bin/version.txt\"" >> "${REDECLIPSE_TEMP}/install.sh"
     echo ") || (" >> "${REDECLIPSE_TEMP}/install.sh"
-    echo "    rm -f \"${REDECLIPSE_TEMP}/bins.txt\"" >> "${REDECLIPSE_TEMP}/install.sh"
+    echo "    rm -f \"${REDECLIPSE_TEMP}/${REDECLIPSE_BINTXT}\"" >> "${REDECLIPSE_TEMP}/install.sh"
     echo "    exit 1" >> "${REDECLIPSE_TEMP}/install.sh"
     echo ")" >> "${REDECLIPSE_TEMP}/install.sh"
     REDECLIPSE_DEPLOY="true"
