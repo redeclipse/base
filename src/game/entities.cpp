@@ -1125,6 +1125,13 @@ namespace entities
             case DECAL:
             {
                 if(e.attrs[0] < 0) e.attrs[0] = 0; // type, clamp
+                if(create && !e.attrs[1] && !e.attrs[2] && !e.attrs[3])
+                {
+                    e.attrs[1] = (int)camera1->yaw;
+                    e.attrs[2] = (int)camera1->pitch;
+                    e.attrs[3] = (int)camera1->roll;
+                }
+
                 FIXDIRYPR(1, 2, 3); // yaw, pitch, roll
                 if(e.attrs[4] <= 0) e.attrs[4] = 1; // size (>= 1)
                 break;

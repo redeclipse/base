@@ -851,6 +851,7 @@ int newentity(const vec &v, int type, const attrvector &attrs, bool fix)
     enttoggle(idx);
     makeundoent();
     entedit(idx, e.type = type);
+    commitchanges();
     return idx;
 }
 
@@ -864,6 +865,7 @@ int newentity(int type, const attrvector &attrs, bool fix)
     enttoggle(idx);
     makeundoent();
     entedit(idx, e.type = type);
+    commitchanges();
     return idx;
 }
 
