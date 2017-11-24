@@ -3864,26 +3864,18 @@ namespace UI
 
     struct PlayerPreview : Preview
     {
-        int model, pattern, team, weapon;
         float scale, blend;
-        char *vanity;
-        Color pcol;
+        char *actions;
 
-        PlayerPreview() : vanity(NULL) {}
-        ~PlayerPreview() { DELETEA(vanity); }
+        PlayerPreview() : actions(NULL) {}
+        ~PlayerPreview() { delete[] actions; }
 
-        void setup(int model_, int pattern_, const Color &pcol_, int team_, int weapon_, char *vanity_, float scale_, float blend_, float minw_, float minh_)
+        void setup(float scale_, float blend_, float minw_, float minh_, const char *actions_)
         {
             Preview::setup(minw_, minh_, Color(colourwhite));
-            model = model_;
-            pattern = pattern_;
-            pcol = pcol_;
-            team = team_;
-            weapon = weapon_;
             scale = scale_;
             blend = blend_;
-            if(vanity_) SETSTR(vanity, vanity_);
-            else DELETEA(vanity);
+            SETSTR(actions, actions_);
         }
 
         static const char *typestr() { return "#PlayerPreview"; }
@@ -3901,14 +3893,14 @@ namespace UI
             window->calcscissor(sx, sy, sx+w, sy+h, sx1, sy1, sx2, sy2, false);
             modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, false, clipstack.length() > 0);
             colors[0].a = uchar(colors[0].a*blend);
-            game::renderplayerpreview(model, pattern, pcol.tohexcolor(), team, weapon, vanity, scale, colors[0].tocolor4());
+            game::renderplayerpreview(scale, colors[0].tocolor4(), actions);
             if(clipstack.length()) clipstack.last().scissor();
             modelpreview::end();
         }
     };
 
-    ICOMMAND(0, uiplayerpreview, "iiiiisffffe", (int *model, int *pattern, int *colour, int *team, int *weapon, char *vanity, float *scale, float *blend, float *minw, float *minh, uint *children),
-        BUILD(PlayerPreview, o, o->setup(*model, *pattern, Color(*colour), *team, *weapon, vanity, *scale, *blend, *minw*uiscale, *minh*uiscale), children));
+    ICOMMAND(0, uiplayerpreview, "ffffse", (float *scale, float *blend, float *minw, float *minh, char *actions, uint *children),
+        BUILD(PlayerPreview, o, o->setup(*scale, *blend, *minw*uiscale, *minh*uiscale, actions), children));
 
     struct PrefabPreview : Preview
     {

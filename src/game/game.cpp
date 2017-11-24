@@ -3752,29 +3752,35 @@ namespace game
         rendercheck(focus);
     }
 
-    void renderplayerpreview(int model, int pattern, int color, int team, int weap, const char *vanity, float scale, const vec4 &mcolor)
+    static gameent *previewent = NULL;
+    void initplayerpreview()
     {
-        static gameent *previewent = NULL;
-        if(!previewent)
-        {
-            previewent = new gameent;
-            previewent->state = CS_ALIVE;
-            previewent->physstate = PHYS_FLOOR;
-            previewent->spawnstate(G_DEATHMATCH, 0, -1, m_health(G_DEATHMATCH, 0, 0));
-            loopi(W_MAX) previewent->ammo[i] = W(i, ammomax);
-        }
-        float height = previewent->height + previewent->aboveeye,
-              zrad = height/2;
+        previewent = new gameent;
+        previewent->state = CS_ALIVE;
+        previewent->physstate = PHYS_FLOOR;
+        previewent->spawnstate(G_DEATHMATCH, 0, -1, m_health(G_DEATHMATCH, 0, 0));
+        loopi(W_MAX) previewent->ammo[i] = W(i, ammomax);
+    }
+
+    void renderplayerpreview(float scale, const vec4 &mcolor, const char *actions)
+    {
+        if(!previewent) initplayerpreview();
+        float height = previewent->height + previewent->aboveeye, zrad = height/2;
         vec2 xyrad = vec2(previewent->xradius, previewent->yradius).max(height/4);
         previewent->o = calcmodelpreviewpos(vec(xyrad, zrad), previewent->yaw).addz(previewent->height - zrad);
-        previewent->colour = color;
-        previewent->model = model;
-        previewent->pattern = pattern;
-        previewent->team = clamp(team, 0, int(T_MULTI));
-        previewent->weapselect = clamp(weap, 0, W_ALL-1);
-        previewent->setvanity(vanity);
+        if(actions && *actions) execute(actions);
         renderplayer(previewent, 1, scale, 0, mcolor);
     }
+
+    #define PLAYERPREV(name, arglist, argexpr, body) ICOMMAND(0, playerpreview##name, arglist, argexpr, if(previewent) { body; });
+    PLAYERPREV(model, "i", (int *n), previewent->model = clamp(*n, 0, PLAYERTYPES-1));
+    PLAYERPREV(colour, "i", (int *n), previewent->colour = clamp(*n, 0, 0xFFFFFF));
+    PLAYERPREV(pattern, "i", (int *n), previewent->pattern = clamp(*n, 0, PLAYERPATTERNS-1));
+    PLAYERPREV(team, "i", (int *n), previewent->team = clamp(*n, 0, int(T_MULTI)));
+    PLAYERPREV(weap, "i", (int *n), previewent->weapselect = clamp(*n, 0, W_ALL-1));
+    PLAYERPREV(weapstate, "ii", (int *n, int *o), previewent->weapstate[clamp(*n, 0, W_ALL-1)] = clamp(*o, 0, W_ALL-1));
+    PLAYERPREV(vanity, "s", (char *n), previewent->setvanity(n));
+    #undef PLAYERPREV
 
     bool clientoption(char *arg) { return false; }
 }
