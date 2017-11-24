@@ -196,7 +196,8 @@ extern const enttypes enttype[];
 #define MAXNAMELEN 24
 enum { SAY_NONE = 0, SAY_ACTION = 1<<0, SAY_TEAM = 1<<1, SAY_WHISPER = 1<<2, SAY_NUM = 3 };
 
-enum {
+enum
+{
     PRIV_NONE = 0, PRIV_PLAYER, PRIV_SUPPORTER, PRIV_MODERATOR, PRIV_OPERATOR, PRIV_ADMINISTRATOR, PRIV_DEVELOPER, PRIV_CREATOR, PRIV_MAX,
     PRIV_START = PRIV_PLAYER, PRIV_ELEVATED = PRIV_MODERATOR, PRIV_LAST = PRIV_CREATOR, PRIV_TYPE = 0xFF, PRIV_LOCAL = 1<<8
 };
@@ -212,7 +213,8 @@ enum { MM_OPEN = 0, MM_VETO, MM_LOCKED, MM_PRIVATE, MM_PASSWORD };
 enum { SINFO_NONE = 0, SINFO_STATUS, SINFO_NAME, SINFO_PORT, SINFO_QPORT, SINFO_DESC, SINFO_MODE, SINFO_MUTS, SINFO_MAP, SINFO_TIME, SINFO_NUMPLRS, SINFO_MAXPLRS, SINFO_PING, SINFO_PRIO, SINFO_MAX };
 enum { SSTAT_OPEN = 0, SSTAT_LOCKED, SSTAT_PRIVATE, SSTAT_FULL, SSTAT_UNKNOWN, SSTAT_MAX };
 
-enum {
+enum
+{
     AC_PRIMARY = 0, AC_SECONDARY, AC_RELOAD, AC_USE, AC_JUMP, AC_WALK, AC_CROUCH, AC_SPECIAL, AC_DROP, AC_AFFINITY, AC_TOTAL, AC_DASH = AC_TOTAL, AC_MAX,
     AC_ALL = (1<<AC_PRIMARY)|(1<<AC_SECONDARY)|(1<<AC_RELOAD)|(1<<AC_USE)|(1<<AC_JUMP)|(1<<AC_WALK)|(1<<AC_CROUCH)|(1<<AC_SPECIAL)|(1<<AC_DROP)|(1<<AC_AFFINITY)
 };
@@ -278,6 +280,11 @@ VAR(IDF_READONLY, pulseidxlast, 1, PULSE_LAST, -1);
 extern const int pulsecols[PULSE_MAX][PULSECOLOURS];
 #endif
 
+#define RESIDUALS \
+    RESIDUAL(burn, BURN); \
+    RESIDUAL(bleed, BLEED); \
+    RESIDUAL(shock, SHOCK);
+
 enum
 {
     FRAG_NONE = 0, FRAG_HEADSHOT = 1<<1, FRAG_OBLITERATE = 1<<2,
@@ -289,7 +296,8 @@ enum
     FRAG_MULTI = FRAG_MKILL1|FRAG_MKILL2|FRAG_MKILL3,
 };
 
-enum {
+enum
+{
     SENDMAP_MPZ = 0, SENDMAP_CFG, SENDMAP_PNG, SENDMAP_TXT, SENDMAP_GAME, SENDMAP_WPT = SENDMAP_GAME, SENDMAP_MAX,
     SENDMAP_MIN = SENDMAP_PNG, SENDMAP_HAS = SENDMAP_MIN+1, SENDMAP_EDIT = SENDMAP_CFG+1, SENDMAP_ALL = SENDMAP_MAX-1
 };
@@ -1070,8 +1078,7 @@ struct gameent : dynent, clientstate
     vector<int> vitems;
 
     gameent() : edit(NULL), ai(NULL), team(T_NEUTRAL), clientnum(-1), privilege(PRIV_NONE), projid(0), checkpoint(-1), cplast(0), lastupdate(0), lastpredict(0), plag(0), ping(0),
-        totaldamage(0), smoothmillis(-1), turnmillis(0), lastattacker(-1), lastpoints(0), quake(0),
-        conopen(false), k_up(false), k_down(false), k_left(false), k_right(false), obliterated(false)
+        totaldamage(0), smoothmillis(-1), turnmillis(0), lastattacker(-1), lastpoints(0), quake(0), conopen(false), k_up(false), k_down(false), k_left(false), k_right(false), obliterated(false)
     {
         state = CS_DEAD;
         type = ENT_PLAYER;

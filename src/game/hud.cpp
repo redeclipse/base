@@ -1615,7 +1615,7 @@ namespace hud
 
     void drawdamages(float blend)
     {
-        #define DAMAGERES(name, type) \
+        #define RESIDUAL(name, type) \
             if(showdamage##name && game::focus->name##ing(lastmillis, name##time)) \
             { \
                 int interval = lastmillis-game::focus->lastres[WR_##type]; \
@@ -1624,10 +1624,8 @@ namespace hud
                 if(interval < name##time-(name##delay/2)) pc = min(pc+0.5f, 1.f); \
                 if(pc > 0) drawdamage(damage##name##tex, game::rescolour(game::focus, PULSE_##type), pc*blend*damage##name##blend, damage##name##speed1, damage##name##speed2, 0.f, damage##name##bright); \
             }
-        DAMAGERES(burn, BURN)
-        DAMAGERES(bleed, BLEED);
-        DAMAGERES(shock, SHOCK);
-        #undef DAMAGERES
+        RESIDUALS;
+        #undef RESIDUAL
         if(showdamage)
         {
             float pc = game::focus->state == CS_DEAD ? damageblenddead : (game::focus->state == CS_ALIVE ? min(damageresidue, 100)/100.f : 0.f);

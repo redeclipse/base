@@ -3470,7 +3470,7 @@ namespace game
     {
         mdl.color = color;
         getplayermaterials(d, mdl);
-        #define PLAYERRES(name, type) \
+        #define RESIDUAL(name, type) \
             if(name##time && d->name##ing(lastmillis, name##time)) \
             { \
                 float pc = 1; \
@@ -3491,10 +3491,8 @@ namespace game
                 } \
                 mdl.mixerscroll = vec2(mixer##name##scroll1, mixer##name##scroll2); \
             }
-        PLAYERRES(burn, BURN)
-        PLAYERRES(bleed, BLEED);
-        PLAYERRES(shock, SHOCK);
-        #undef PLAYERRES
+        RESIDUALS;
+        #undef RESIDUAL
         if((!mdl.mixer || mdl.mixer == notexture) && d->state == CS_ALIVE && d->lastbuff)
         {
             float pc = 1;
