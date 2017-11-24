@@ -233,7 +233,7 @@ namespace bomber
                 bomberstate::flag &f = st.flags[i];
                 if(f.owner == game::focus)
                 {
-                    ty -= draw_textf("You are holding the \fs\f[%d]\f(%s)bomb\fS", tx, ty, int(FONTW*hud::eventpadx), int(FONTH*hud::eventpady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, pulsecols[PULSE_DISCO][clamp((lastmillis/100)%PULSECOLOURS, 0, PULSECOLOURS-1)], hud::bombtex);
+                    ty -= draw_textf("You are holding the \fs\f[%d]\f(%s)bomb\fS", tx, ty, int(FONTW*hud::eventpadx), int(FONTH*hud::eventpady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, game::pulsehexcol(game::focus, PULSE_DISCO), hud::bombtex);
                     ty -= FONTH/4;
                     break;
                 }
@@ -333,7 +333,7 @@ namespace bomber
                 {
                     int millis = lastmillis%500;
                     float amt = millis <= 250 ? 1.f-(millis/250.f) : (millis-250)/250.f, height = enttype[AFFINITY].radius*0.75f;
-                    vec c = game::rescolour(game::focus, PULSE_WARN),
+                    vec c = game::pulsecolour(game::focus, PULSE_WARN),
                         offset = vec(above).sub(camera1->o).rescale(-enttype[AFFINITY].radius*0.5f);
                     height += height*amt*0.1f;
                     offset.z = max(offset.z, -1.0f);

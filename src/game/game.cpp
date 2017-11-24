@@ -262,11 +262,11 @@ namespace game
     VAR(IDF_PERSIST, deathmaxfade, 0, 0, VAR_MAX);
     VAR(IDF_PERSIST, deathbuttonmash, 0, 1000, VAR_MAX);
     FVAR(IDF_PERSIST, bloodscale, 0, 1, 1000);
-    VAR(IDF_PERSIST, bloodfade, 1, 3000, VAR_MAX);
+    VAR(IDF_PERSIST, bloodfade, 1, 5000, VAR_MAX);
     VAR(IDF_PERSIST, bloodsize, 1, 50, 1000);
     VAR(IDF_PERSIST, bloodsparks, 0, 0, 1);
     FVAR(IDF_PERSIST, debrisscale, 0, 1, 1000);
-    VAR(IDF_PERSIST, debrisfade, 1, 3500, VAR_MAX);
+    VAR(IDF_PERSIST, debrisfade, 1, 5000, VAR_MAX);
     FVAR(IDF_PERSIST, gibscale, 0, 1, 1000);
     VAR(IDF_PERSIST, gibfade, 1, 5000, VAR_MAX);
     FVAR(IDF_PERSIST, impulsescale, 0, 1, 1000);
@@ -849,19 +849,6 @@ namespace game
         ai::respawned(d, local, ent);
     }
 
-    vec pulsecolour(physent *d, int i, int cycle)
-    {
-        size_t seed = size_t(d) + (lastmillis/cycle);
-        int n = detrnd(seed, PULSECOLOURS), n2 = detrnd(seed + 1, PULSECOLOURS), q = clamp(i, 0, int(PULSE_LAST));
-        return vec::fromcolor(pulsecols[q][n]).lerp(vec::fromcolor(pulsecols[q][n2]), (lastmillis%cycle)/float(cycle));
-    }
-
-    int hexpulsecolour(physent *d, int i, int cycle)
-    {
-        bvec h = bvec::fromcolor(pulsecolour(d, i, cycle));
-        return (h.r<<16)|(h.g<<8)|h.b;
-    }
-
     vec getpalette(int palette, int index)
     { // colour palette abstractions for textures, etc.
         if(palette >= 0 && index >= 0) switch(palette)
@@ -963,7 +950,7 @@ namespace game
                         if(fluc >= 0.25f) fluc = (0.25f+0.03f-fluc)*(0.25f/0.03f);
                         pc *= 0.75f+fluc;
                     }
-                    adddynlight(d->center(), d->height*intensity*pc, rescolour(d, PULSE_SHOCK).mul(pc), 0, 0);
+                    adddynlight(d->center(), d->height*intensity*pc, pulsecolour(d, PULSE_SHOCK).mul(pc), 0, 0);
                 }
                 if(d->actortype < A_ENEMY && illumlevel > 0 && illumradius > 0)
                     adddynlight(d->center(), illumradius, vec::fromcolor(getcolour(d, playereffecttone, illumlevel)), 0, 0);
@@ -975,8 +962,8 @@ namespace game
     {
         float scale = 0.4f+(rnd(40)/100.f);
         part_create(PART_HINT_BOLD_SOFT, shape ? len/2 : len/10, pos, getcolour(d, playereffecttone, playereffecttonelevel), scale*1.5f, scale*0.75f, 0, 0);
-        part_create(PART_FIREBALL_SOFT, shape ? len/2 : len/10, pos, pulsecols[PULSE_FIRE][rnd(PULSECOLOURS)], scale*1.25f, scale*0.75f, 0, 0);
-        if(shape) loopi(num) createshape(PART_FIREBALL, int(d->radius)*2, pulsecols[PULSE_FIRE][rnd(PULSECOLOURS)], 21, 1, len, pos, scale*1.25f, 0.75f, -5, 0, 10);
+        part_create(PART_FIREBALL_SOFT, shape ? len/2 : len/10, pos, pulsehexcol(d, PULSE_FIRE), scale*1.25f, scale*0.75f, 0, 0);
+        if(shape) loopi(num) createshape(PART_FIREBALL, int(d->radius)*2, pulsehexcol(d, PULSE_FIRE), 21, 1, len, pos, scale*1.25f, 0.75f, -5, 0, 10);
     }
 
     void impulseeffect(gameent *d, int effect)
@@ -2097,18 +2084,17 @@ namespace game
     }
     ICOMMAND(0, suicide, "",  (), { suicide(player1, 0); });
 
-    vec rescolour(dynent *d, int n, int c)
+    vec pulsecolour(physent *d, int i, int cycle)
     {
-        size_t seed = size_t(d) + (lastmillis/50);
-        int r = detrnd(seed, 2*PULSECOLOURS), r2 = detrnd(seed + 1, 2*PULSECOLOURS);
-        return vec::fromcolor(pulsecols[n][r%PULSECOLOURS]).lerp(vec::fromcolor(pulsecols[n][r2%PULSECOLOURS]), (lastmillis%50)/50.0f).mul(vec::fromcolor(c));
+        size_t seed = size_t(d) + (lastmillis/cycle);
+        int n = detrnd(seed, 2*PULSECOLOURS), n2 = detrnd(seed + 1, 2*PULSECOLOURS), q = clamp(i, 0, int(PULSE_LAST));
+        return vec::fromcolor(pulsecols[q][n%PULSECOLOURS]).lerp(vec::fromcolor(pulsecols[q][n2%PULSECOLOURS]), (lastmillis%cycle)/float(cycle));
     }
 
-    int rescolint(dynent *d, int n, int c)
+    int pulsehexcol(physent *d, int i, int cycle)
     {
-        size_t seed = size_t(d) + (lastmillis/50);
-        int r = detrnd(seed, 2*PULSECOLOURS), r2 = detrnd(seed + 1, 2*PULSECOLOURS);
-        return vec::fromcolor(pulsecols[n][r%PULSECOLOURS]).lerp(vec::fromcolor(pulsecols[n][r2%PULSECOLOURS]), (lastmillis%50)/50.0f).mul(vec::fromcolor(c)).tohexcolor();
+        bvec h = bvec::fromcolor(pulsecolour(d, i, cycle));
+        return (h.r<<16)|(h.g<<8)|h.b;
     }
 
     void particletrack(particle *p, uint type, int &ts, bool step)
@@ -3066,12 +3052,12 @@ namespace game
                     if(d->dominating.find(focus) >= 0)
                     {
                         t = textureload(hud::dominatingtex, 3);
-                        colour = pulsecols[PULSE_DISCO][clamp((lastmillis/100)%PULSECOLOURS, 0, PULSECOLOURS-1)];
+                        colour = pulsehexcol(d, PULSE_DISCO);
                     }
                     else if(d->dominated.find(focus) >= 0)
                     {
                         t = textureload(hud::dominatedtex, 3);
-                        colour = pulsecols[PULSE_DISCO][clamp((lastmillis/100)%PULSECOLOURS, 0, PULSECOLOURS-1)];
+                        colour = pulsehexcol(d, PULSE_DISCO);
                     }
                 }
             }
@@ -3466,32 +3452,35 @@ namespace game
         return mdlname;
     }
 
-    void getplayereffects(gameent *d, modelstate &mdl, const vec4 &color)
+    #define RESIDUAL(name, type) \
+        void get##name##effect(physent *d, modelstate &mdl, int length, int millis, int delay) \
+        { \
+            int offset = length-millis; \
+            float pc = offset >= delay ? 1.f : float(offset)/float(delay); \
+            vec4 mixercolor = vec4(vec(pulsecolour(d, PULSE_##type)).mul(mixer##name##intensity), pc*mixer##name##blend); \
+            vec2 mixerglow = vec2((mdl.mixercolor.r+mdl.mixercolor.g+mdl.mixercolor.b)/3.f*mixer##name##glowintensity, pc*mixer##name##glowblend); \
+            if(mdl.mixer && mdl.mixer != notexture) \
+            { \
+                mdl.mixercolor.add(mixercolor).mul(0.5f); \
+                mdl.mixerglow.add(mixerglow).mul(0.5f); \
+            } \
+            else \
+            { \
+                mdl.mixer = textureload(mixer##name##tex, 0, true); \
+                mdl.mixercolor = mixercolor; \
+                mdl.mixerglow = mixerglow; \
+            } \
+            mdl.mixerscroll = vec2(mixer##name##scroll1, mixer##name##scroll2); \
+        }
+    RESIDUALS
+    #undef RESIDUAL
+
+    void getplayereffects(gameent *d, modelstate &mdl)
     {
-        mdl.color = color;
-        getplayermaterials(d, mdl);
         #define RESIDUAL(name, type) \
             if(name##time && d->name##ing(lastmillis, name##time)) \
-            { \
-                float pc = 1; \
-                int millis = lastmillis-d->lastres[WR_##type]; \
-                if(name##time-millis < name##delay) pc *= float(name##time-millis)/float(name##delay); \
-                vec4 mixercolor = vec4(vec(rescolour(d, PULSE_##type)).mul(mixer##name##intensity), pc*mixer##name##blend); \
-                vec2 mixerglow = vec2((mdl.mixercolor.r+mdl.mixercolor.g+mdl.mixercolor.b)/3.f*mixer##name##glowintensity, pc*mixer##name##glowblend); \
-                if(mdl.mixer && mdl.mixer != notexture) \
-                { \
-                    mdl.mixercolor.add(mixercolor).mul(0.5f); \
-                    mdl.mixerglow.add(mixerglow).mul(0.5f); \
-                } \
-                else \
-                { \
-                    mdl.mixer = textureload(mixer##name##tex, 0, true); \
-                    mdl.mixercolor = mixercolor; \
-                    mdl.mixerglow = mixerglow; \
-                } \
-                mdl.mixerscroll = vec2(mixer##name##scroll1, mixer##name##scroll2); \
-            }
-        RESIDUALS;
+                get##name##effect(d, mdl, name##time, lastmillis-d->lastres[WR_##type], name##delay);
+        RESIDUALS
         #undef RESIDUAL
         if((!mdl.mixer || mdl.mixer == notexture) && d->state == CS_ALIVE && d->lastbuff)
         {
@@ -3501,7 +3490,7 @@ namespace game
                 int millis = lastmillis%mixerbuffpulse, part = max(mixerbuffpulse/2, 1);
                 pc *= clamp(millis <= part ? 1.f-(millis/float(part)) : (millis-part)/float(part), min(mixerbuffpulsemin, mixerbuffpulsemax), max(mixerbuffpulsemax, mixerbuffpulsemin));
             }
-            vec4 mixercolor = vec4(vec(mixerbufftone >= 0 ? vec::fromcolor(getcolour(d, mixerbufftone)) : rescolour(d, PULSE_BUFF)).mul(mixerbuffintensity), pc*mixerbuffblend);
+            vec4 mixercolor = vec4(vec(mixerbufftone >= 0 ? vec::fromcolor(getcolour(d, mixerbufftone)) : pulsecolour(d, PULSE_BUFF)).mul(mixerbuffintensity), pc*mixerbuffblend);
             vec2 mixerglow = vec2((mdl.mixercolor.r+mdl.mixercolor.g+mdl.mixercolor.b)/3.f*mixerbuffglowintensity, pc*mixerbuffglowblend);
             mdl.mixer = textureload(mixerbufftex, 0, true);
             mdl.mixercolor = mixercolor;
@@ -3523,7 +3512,9 @@ namespace game
         modelattach mdlattach[ATTACHMENTMAX];
         dynent *e = third ? (third != 2 ? (dynent *)d : (dynent *)&bodymodel) : (dynent *)&avatarmodel;
         const char *mdlname = getplayerstate(d, mdl, third, size, flags, mdlattach, lastoffset);
-        getplayereffects(d, mdl, color);
+        mdl.color = color;
+        getplayermaterials(d, mdl);
+        getplayereffects(d, mdl);
 
         if(d != focus && !(mdl.anim&ANIM_RAGDOLL)) mdl.flags |= MDL_CULL_VFC | MDL_CULL_OCCLUDED | MDL_CULL_QUERY;
         if(d->actortype >= A_ENEMY) mdl.flags |= MDL_CULL_DIST;
@@ -3555,7 +3546,7 @@ namespace game
             {
                 if(hashint || haslight || haspower || hasdom)
                 {
-                    vec c = vec::fromcolor(hasdom ? pulsecols[PULSE_DISCO][clamp((lastmillis/100)%PULSECOLOURS, 0, PULSECOLOURS-1)] : (haslight ? WHCOL(d, d->weapselect, lightcol, physics::secondaryweap(d)) : getcolour(d, playerhinttone, playerhinttonelevel)));
+                    vec c = vec::fromcolor(hasdom ? pulsehexcol(d, PULSE_DISCO) : (haslight ? WHCOL(d, d->weapselect, lightcol, physics::secondaryweap(d)) : getcolour(d, playerhinttone, playerhinttonelevel)));
                     float height = d->height, fade = blend;
                     if(hasdom) fade *= playerhintdom;
                     else if(haslight || haspower)
@@ -3584,7 +3575,7 @@ namespace game
                     {
                         int millis = lastmillis%1000;
                         float amt = millis <= 500 ? 1.f-(millis/500.f) : (millis-500)/500.f;
-                        vec pc = game::rescolour(d, PULSE_BUFF);
+                        vec pc = game::pulsecolour(d, PULSE_BUFF);
                         flashcolour(c.r, c.g, c.b, pc.r, pc.g, pc.b, amt);
                         height += height*amt*0.1f;
                     }
@@ -3598,7 +3589,7 @@ namespace game
                     int millis = lastmillis%500;
                     float amt = millis <= 250 ? 1.f-(millis/250.f) : (millis-250)/250.f, height = d->height*0.5f;
                     if(playerhinthurtthrob) height += height*amt*0.1f;
-                    vec c = rescolour(d, PULSE_WARN),
+                    vec c = pulsecolour(d, PULSE_WARN),
                         o = d->center(), offset = vec(o).sub(camera1->o).rescale(-d->radius);
                     offset.z = max(offset.z, -1.0f);
                     offset.add(o);
@@ -3678,11 +3669,11 @@ namespace game
         if(burntime && d->burning(lastmillis, burntime))
         {
             int millis = lastmillis-d->lastres[WR_BURN];
-            float pc = 1, intensity = 0.5f+(rnd(50)/100.f), fade = (d != focus ? 0.5f : 0.f)+(rnd(50)/100.f);
+            float pc = 1, intensity = 0.5f+(rnd(50)/100.f), fade = (d != focus ? 0.75f : 0.f)+(rnd(25)/100.f);
             if(burntime-millis < burndelay) pc *= float(burntime-millis)/float(burndelay);
             else pc *= 0.75f+(float(millis%burndelay)/float(burndelay*4));
             vec pos = vec(d->center()).sub(vec(rnd(11)-5, rnd(11)-5, rnd(5)-2).mul(pc));
-            regular_part_create(PART_FIREBALL, 200, pos, pulsecols[PULSE_FIRE][rnd(PULSECOLOURS)], d->height*0.75f*intensity*blend*pc, fade*blend*pc*0.65f, -20, 0);
+            regular_part_create(PART_FIREBALL, 200, pos, pulsehexcol(d, PULSE_FIRE), d->height*0.75f*intensity*blend*pc, fade*blend*pc*0.65f, -20, 0);
         }
         if(shocktime && d->shocking(lastmillis, shocktime))
         {
@@ -3692,7 +3683,7 @@ namespace game
                 radius *= 0.5f;
                 height *= 1.35f;
             }
-            vec origin = d->center(), col = rescolour(d, PULSE_SHOCK), rad = vec(radius, radius, height*0.5f).mul(blend);
+            vec origin = d->center(), col = pulsecolour(d, PULSE_SHOCK), rad = vec(radius, radius, height*0.5f).mul(blend);
             int colour = (int(col.x*255)<<16)|(int(col.y*255)<<8)|(int(col.z*255));
             float fade = blend*(d != focus || d->state != CS_ALIVE ? 1.f : 0.65f);
             loopi(4+rnd(8))

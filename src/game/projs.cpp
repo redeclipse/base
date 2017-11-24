@@ -1546,7 +1546,7 @@ namespace projs
                     float radius = (proj.radius+0.5f)*(clamp(1.f-proj.lifespan, 0.1f, 1.f)+0.25f), blend = clamp(1.25f-proj.lifespan, 0.25f, 1.f)*(0.75f+(rnd(25)/100.f)); // gets smaller as it gets older
                     if(projtrails && lastmillis-proj.lasteffect >= projtraildelay) { effect = true; proj.lasteffect = lastmillis - (lastmillis%projtraildelay); }
                     int len = effect ? max(int(projtraillength*0.5f*max(1.f-proj.lifespan, 0.1f)), 1) : 1,
-                        colour = !proj.id && isweap(proj.weap) ? FWCOL(H, explcol, proj) : pulsecols[PULSE_FIRE][rnd(PULSECOLOURS)];
+                        colour = !proj.id && isweap(proj.weap) ? FWCOL(H, explcol, proj) : game::pulsehexcol(&proj, PULSE_FIRE);
                     part_create(proj.projtype == PRJ_GIBS || (!proj.id && isweap(proj.weap) && WF(WK(proj.flags), proj.weap, explcol, WS(proj.flags)) <= PC(DISCO)) ? PART_SPARK : PART_FIREBALL, len, proj.o, colour, radius, blend, -5);
                 }
                 break;
@@ -2401,29 +2401,16 @@ namespace projs
                 {
                     mdl.size *= proj.lifesize;
                     fadeproj(proj, mdl.color.a, mdl.size);
-                    #if 0
-                    if(!proj.limited)
-                    {
-                        vec burncol = !proj.id && isweap(proj.weap) ? FWCOL(P, explcol, proj) : game::rescolour(&proj, PULSE_BURN);
-                        burncol.lerp(proj.light.effect, clamp((proj.lifespan - 0.3f)/0.5f, 0.0f, 1.0f));
-                        proj.light.effect.max(burncol);
-                    }
-                    #endif
+                    if(!proj.limited) game::getburneffect(&proj, mdl, burntime, lastmillis-proj.spawntime, burndelay);
                     break;
                 }
                 case PRJ_VANITY:
-                    if(proj.owner) game::getplayereffects(proj.owner, mdl);
-                    // continue
-                case PRJ_GIBS:
+                    if(proj.owner) game::getplayermaterials(proj.owner, mdl);
+                case PRJ_GIBS: case PRJ_EJECT:
                 {
                     mdl.size *= proj.lifesize;
                     fadeproj(proj, mdl.color.a, mdl.size);
-                    break;
-                }
-                case PRJ_EJECT:
-                {
-                    mdl.size *= proj.lifesize;
-                    fadeproj(proj, mdl.color.a, mdl.size);
+                    if(proj.owner && !proj.limited) game::getplayereffects(proj.owner, mdl);
                     break;
                 }
                 case PRJ_SHOT:

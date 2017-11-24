@@ -958,9 +958,9 @@ struct clientstate
         return delay-len;
     }
 
-    bool burning(int millis, int len) { return len && lastres[WR_BURN] && millis-lastres[WR_BURN] <= len; }
-    bool bleeding(int millis, int len) { return len && lastres[WR_BLEED] && millis-lastres[WR_BLEED] <= len; }
-    bool shocking(int millis, int len) { return len && lastres[WR_SHOCK] && millis-lastres[WR_SHOCK] <= len; }
+    #define RESIDUAL(name, type) bool name##ing(int millis, int len) { return len && lastres[WR_##type] && millis-lastres[WR_##type] <= len; }
+    RESIDUALS
+    #undef RESIDUAL
 };
 
 namespace server
@@ -1764,9 +1764,6 @@ namespace game
     extern const char *colourteam(int team, const char *icon = "");
     extern int findcolour(gameent *d, bool tone = true, bool mix = false, float level = 1);
     extern int getcolour(gameent *d, int type = 0, float level = 1.f);
-    extern void getplayermaterials(gameent *d, modelstate &mdl);
-    extern const char *getplayerstate(gameent *d, modelstate &mdl, int third = 1, float size = 1, int flags = 0, modelattach *mdlattach = NULL, int *lastoffset = NULL);
-    extern void getplayereffects(gameent *d, modelstate &mdl, const vec4 &color = vec4(1, 1, 1, 1));
     extern void errorsnd(gameent *d);
     extern void announce(int idx, gameent *d = NULL, bool forced = false);
     extern void announcef(int idx, int targ, gameent *d, bool forced, const char *msg, ...);
@@ -1774,7 +1771,7 @@ namespace game
     extern void respawn(gameent *d);
     extern void respawned(gameent *d, bool local, int ent = -1);
     extern vec pulsecolour(physent *d, int i = 0, int cycle = 50);
-    extern int hexpulsecolour(physent *d, int i = 0, int cycle = 50);
+    extern int pulsehexcol(physent *d, int i = 0, int cycle = 50);
     extern void spawneffect(int type, const vec &pos, float radius, int colour, float size);
     extern void impulseeffect(gameent *d, int effect = 0);
     extern void suicide(gameent *d, int flags);
@@ -1793,12 +1790,16 @@ namespace game
     extern void damaged(int weap, int flags, int damage, int health, gameent *d, gameent *v, int millis, vec &dir, vec &vel, float dist);
     extern void killed(int weap, int flags, int damage, gameent *d, gameent *v, vector<gameent*> &log, int style, int material);
     extern void timeupdate(int state, int remain);
-    extern vec rescolour(dynent *d, int n = PULSE_BURN, int c = 0xFFFFFF);
-    extern int rescolint(dynent *d, int n = PULSE_BURN, int c = 0xFFFFFF);
     extern float rescale(gameent *d);
     extern float opacity(gameent *d);
     extern void footstep(gameent *d, int curfoot = -1);
     extern bool canregenimpulse(gameent *d);
+    #define RESIDUAL(name, type) extern void get##name##effect(physent *d, modelstate &mdl, int length, int millis, int delay);
+    RESIDUALS
+    #undef RESIDUAL
+    extern void getplayermaterials(gameent *d, modelstate &mdl);
+    extern void getplayereffects(gameent *d, modelstate &mdl);
+    extern const char *getplayerstate(gameent *d, modelstate &mdl, int third = 1, float size = 1, int flags = 0, modelattach *mdlattach = NULL, int *lastoffset = NULL);
 }
 
 namespace entities

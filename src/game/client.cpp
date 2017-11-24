@@ -916,7 +916,7 @@ namespace client
     CLCOMMAND(maxhealth, intret(m_maxhealth(game::gamemode, game::mutators, d->actortype)));
     CLCOMMAND(impulsemeter, intret(m_impulsemeter(game::gamemode, game::mutators)));
 
-    CLCOMMANDM(rescolour, "sib", (char *who, int *n, int *c), intret(game::rescolint(d, *n, *c >= 0 ? *c : 0xFFFFFF)));
+    CLCOMMANDM(rescolour, "sib", (char *who, int *n, int *c), intret(game::pulsehexcol(d, *n, *c > 0 ? *c : 50)));
     CLCOMMANDM(velocity, "si", (char *who, int *n), floatret(vec(d->vel).add(d->falling).magnitude()*(*n!=0 ? (*n > 0 ? 3.6f/8.f : 0.125f) : 1.f)));
 
     #define CLDOMCMD(dtype) \

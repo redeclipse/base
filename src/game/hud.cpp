@@ -1465,7 +1465,7 @@ namespace hud
                     switch(game::focus->icons[i].type)
                     {
                         case eventicon::WEAPON: colour = W(game::focus->icons[i].value, colour); break;
-                        case eventicon::AFFINITY: colour = m_bomber(game::gamemode) ? pulsecols[PULSE_DISCO][clamp((totalmillis/100)%PULSECOLOURS, 0, PULSECOLOURS-1)] : TEAM(game::focus->icons[i].value, colour); break;
+                        case eventicon::AFFINITY: colour = m_bomber(game::gamemode) ? game::pulsehexcol(game::focus, PULSE_DISCO) : TEAM(game::focus->icons[i].value, colour); break;
                         default: break;
                     }
                     glBindTexture(GL_TEXTURE_2D, t->id);
@@ -1595,10 +1595,6 @@ namespace hud
     void drawdamage(const char *tex, const vec &color, float fade, float speed1, float speed2, float distort = 0.f, float bright = 1.f)
     {
         if(!*overlaytex || !*tex) return;
-        pushhudmatrix();
-        hudmatrix.ortho(0, 1, 1, 0, -1, 1);
-        flushhudmatrix();
-        SETSHADER(huddamage);
         LOCALPARAMF(time, lastmillis/1000.f);
         LOCALPARAM(speed, vec(speed1, speed2, distort));
         LOCALPARAM(colour, vec(color).mul(bright));
@@ -1609,12 +1605,14 @@ namespace hud
         glActiveTexture_(GL_TEXTURE0);
         gle::colorf(1, 1, 1, fade);
         drawquad(0, 0, 1, 1);
-        pophudmatrix();
-        resethudshader();
     }
 
     void drawdamages(float blend)
     {
+        pushhudmatrix();
+        hudmatrix.ortho(0, 1, 1, 0, -1, 1);
+        flushhudmatrix();
+        SETSHADER(huddamage);
         #define RESIDUAL(name, type) \
             if(showdamage##name && game::focus->name##ing(lastmillis, name##time)) \
             { \
@@ -1622,15 +1620,17 @@ namespace hud
                 float pc = interval >= name##time-500 ? 1.f+(interval-(name##time-500))/500.f : (interval%name##delay)/float(name##delay/2); \
                 if(pc > 1.f) pc = 2.f-pc; \
                 if(interval < name##time-(name##delay/2)) pc = min(pc+0.5f, 1.f); \
-                if(pc > 0) drawdamage(damage##name##tex, game::rescolour(game::focus, PULSE_##type), pc*blend*damage##name##blend, damage##name##speed1, damage##name##speed2, 0.f, damage##name##bright); \
+                if(pc > 0) drawdamage(damage##name##tex, game::pulsecolour(game::focus, PULSE_##type), pc*blend*damage##name##blend, damage##name##speed1, damage##name##speed2, 0.f, damage##name##bright); \
             }
-        RESIDUALS;
+        RESIDUALS
         #undef RESIDUAL
         if(showdamage)
         {
             float pc = game::focus->state == CS_DEAD ? damageblenddead : (game::focus->state == CS_ALIVE ? min(damageresidue, 100)/100.f : 0.f);
             if(pc > 0) drawdamage(damagetex, damagecolour.tocolor(), pc*blend*damageblend, damagespeed1, damagespeed2, damagedistort);
         }
+        pophudmatrix();
+        resethudshader();
     }
 
     void drawzoom(int w, int h)
@@ -1827,7 +1827,7 @@ namespace hud
                 fade *= 1-(offset/float(onscreenhitsfade));
             }
             defformatstring(text, "%c%d", d.damage > 0 ? '-' : (d.damage < 0 ? '+' : '~'), d.damage < 0 ? 0-d.damage : d.damage);
-            vec colour = d.colour < 0 ? game::rescolour(a, INVPULSE(d.colour)) : vec::fromcolor(d.colour);
+            vec colour = d.colour < 0 ? game::pulsecolour(a, INVPULSE(d.colour)) : vec::fromcolor(d.colour);
             if(maxy >= 0 && hy < maxy) hy = maxy;
             if(onscreenhitsglow && settexture(onscreenhitsglowtex))
             {
@@ -1857,7 +1857,7 @@ namespace hud
                 range = clamp(max(d.damage, onscreendamagemin)/float(max(onscreendamagemax-onscreendamagemin, 1)), onscreendamagemin/100.f, 1.f),
                 fade = clamp(onscreendamageblend*blend, min(onscreendamageblend*onscreendamagemin/100.f, 1.f), onscreendamageblend)*amt,
                 size = clamp(range*onscreendamagesize, min(onscreendamagesize*onscreendamagemin/100.f, 1.f), onscreendamagesize)*amt;
-            vec dir = d.dir, colour = d.colour < 0 ? game::rescolour(game::focus, INVPULSE(d.colour)) : vec::fromcolor(d.colour);
+            vec dir = d.dir, colour = d.colour < 0 ? game::pulsecolour(game::focus, INVPULSE(d.colour)) : vec::fromcolor(d.colour);
             if(e == game::focus) d.dir = vec(e->yaw*RAD, 0.f).neg();
             dir.rotate_around_z(-camera1->yaw*RAD).normalize();
             float yaw = -atan2(dir.x, dir.y)/RAD, x = sinf(RAD*yaw), y = -cosf(RAD*yaw), sz = max(w, h)/2,
