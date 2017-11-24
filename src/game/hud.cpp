@@ -768,42 +768,40 @@ namespace hud
     void drawclipitem(const char *tex, float x, float y, float offset, float size, float blend, float angle, float spin, int rotate, const vec &colour)
     {
         Texture *t = textureload(tex, 3);
-        if(t)
+        if(!t || t == notexture) return;
+        while(angle < 0.0f) angle += 360.0f;
+        while(angle >= 360.0f) angle -= 360.0f;
+        bool flipx = false, flipy = false;
+        float rot = 0;
+        if(rotate&8) rot += spin;
+        if(rotate&4) rot += angle;
+        if(rotate&2) flipy= angle > 90.f && angle <= 180.f;
+        if(rotate&1) flipx = angle >= 180.f;
+        while(rot < 0.0f) rot += 360.0f;
+        while(rot >= 360.0f) rot -= 360.0f;
+        vec2 loc(x+offset*sinf(RAD*angle), y+offset*-cosf(RAD*angle));
+        gle::color(colour, blend);
+        glBindTexture(GL_TEXTURE_2D, t->id);
+        gle::defvertex(2);
+        gle::deftexcoord0();
+        gle::begin(GL_TRIANGLE_STRIP);
+        loopk(4)
         {
-            while(angle < 0.0f) angle += 360.0f;
-            while(angle >= 360.0f) angle -= 360.0f;
-            bool flipx = false, flipy = false;
-            float rot = 0;
-            if(rotate&8) rot += spin;
-            if(rotate&4) rot += angle;
-            if(rotate&2) flipy= angle > 90.f && angle <= 180.f;
-            if(rotate&1) flipx = angle >= 180.f;
-            while(rot < 0.0f) rot += 360.0f;
-            while(rot >= 360.0f) rot -= 360.0f;
-            vec2 loc(x+offset*sinf(RAD*angle), y+offset*-cosf(RAD*angle));
-            gle::color(colour, blend);
-            glBindTexture(GL_TEXTURE_2D, t->id);
-            gle::defvertex(2);
-            gle::deftexcoord0();
-            gle::begin(GL_TRIANGLE_STRIP);
-            loopk(4)
+            vec2 norm, tc;
+            switch(k)
             {
-                vec2 norm, tc;
-                switch(k)
-                {
-                    case 0: vecfromyaw(rot, 1, -1, norm);   tc = vec2(0, 1); break;
-                    case 1: vecfromyaw(rot, 1, 1, norm);    tc = vec2(1, 1); break;
-                    case 2: vecfromyaw(rot, -1, -1, norm);  tc = vec2(0, 0); break;
-                    case 3: vecfromyaw(rot, -1, 1, norm);   tc = vec2(1, 0); break;
-                }
-                norm.mul(size*0.5f).add(loc);
-                gle::attrib(norm);
-                if(flipx) tc.x = 1 - tc.x;
-                if(flipy) tc.y = 1 - tc.y;
-                gle::attrib(tc);
+                case 0: vecfromyaw(rot, 1, -1, norm);   tc = vec2(0, 1); break;
+                case 1: vecfromyaw(rot, 1, 1, norm);    tc = vec2(1, 1); break;
+                case 2: vecfromyaw(rot, -1, -1, norm);  tc = vec2(0, 0); break;
+                case 3: vecfromyaw(rot, -1, 1, norm);   tc = vec2(1, 0); break;
             }
-            gle::end();
+            norm.mul(size*0.5f).add(loc);
+            gle::attrib(norm);
+            if(flipx) tc.x = 1 - tc.x;
+            if(flipy) tc.y = 1 - tc.y;
+            gle::attrib(tc);
         }
+        gle::end();
     }
 
     void drawsimpleclipitem(float x, float y, float start, float length, float size, float blend, const vec &colour)
@@ -1067,14 +1065,12 @@ namespace hud
     {
         if(!tex || !*tex) return;
         Texture *t = textureload(tex, 3);
-        if(t != notexture)
-        {
-            if(t->type&Texture::ALPHA) glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-            else glBlendFunc(GL_ONE, GL_ONE);
-            gle::colorf(r, g, b, fade);
-            glBindTexture(GL_TEXTURE_2D, t->id);
-            drawsized(x, y, s);
-        }
+        if(!t || t == notexture) return;
+        if(t->type&Texture::ALPHA) glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        else glBlendFunc(GL_ONE, GL_ONE);
+        gle::colorf(r, g, b, fade);
+        glBindTexture(GL_TEXTURE_2D, t->id);
+        drawsized(x, y, s);
     }
 
     void drawpointer(int w, int h, int index)
@@ -1593,34 +1589,22 @@ namespace hud
         drawquad(0, 0, 1, 1);
         pophudmatrix();
         resethudshader();
-        #if 0
-        Texture *t = textureload(damagetex, 3);
-        if(!t || t == notexture) return;
-        glBindTexture(GL_TEXTURE_2D, t->id);
-        gle::color(damagecolour.tocolor(), pc*blend*damageblend*0.5f);
-        drawtexture(0, 0, w, h);
-        #endif
     }
 
     void drawfire(int w, int h, float blend)
     {
-        if(*burntex && game::focus->burning(lastmillis, burntime))
-        {
-            Texture *t = textureload(burntex, 3);
-            if(t && t != notexture)
-            {
-                int interval = lastmillis-game::focus->lastres[WR_BURN];
-                float pc = interval >= burntime-500 ? 1.f+(interval-(burntime-500))/500.f : (interval%burndelay)/float(burndelay/2); if(pc > 1.f) pc = 2.f-pc;
-                glBindTexture(GL_TEXTURE_2D, t->id);
-                gle::colorf(0.9f*max(pc,0.5f), 0.3f*pc, 0.0625f*max(pc,0.25f), blend*burnblend*(interval >= burntime-(burndelay/2) ? pc : min(pc+0.5f, 1.f)));
-                drawtexture(0, 0, w, h);
-            }
-        }
+        if(!*burntex || !game::focus->burning(lastmillis, burntime)) return;
+        Texture *t = textureload(burntex, 3);
+        if(!t || t == notexture) return;
+        int interval = lastmillis-game::focus->lastres[WR_BURN];
+        float pc = interval >= burntime-500 ? 1.f+(interval-(burntime-500))/500.f : (interval%burndelay)/float(burndelay/2); if(pc > 1.f) pc = 2.f-pc;
+        glBindTexture(GL_TEXTURE_2D, t->id);
+        gle::colorf(0.9f*max(pc,0.5f), 0.3f*pc, 0.0625f*max(pc,0.25f), blend*burnblend*(interval >= burntime-(burndelay/2) ? pc : min(pc+0.5f, 1.f)));
+        drawtexture(0, 0, w, h);
     }
 
     void drawzoom(int w, int h)
     {
-        Texture *t = textureload(zoomtex, 3);
         int frame = lastmillis-game::lastzoom;
         float pc = frame <= W(game::focus->weapselect, cookzoom) ? float(frame)/float(W(game::focus->weapselect, cookzoom)) : 1.f;
         if(!game::zooming) pc = 1.f-pc;
@@ -1628,7 +1612,8 @@ namespace hud
         if(w > h)
         {
             float rc = 1.f-pc;
-            c = h; x += (w-h)/2;
+            c = h;
+            x += (w-h)/2;
             usetexturing(false);
             drawblend(0, 0, x, c, rc, rc, rc, true);
             drawblend(x+c, 0, x+1, c, rc, rc, rc, true);
@@ -1637,15 +1622,18 @@ namespace hud
         else if(h > w)
         {
             float rc = 1.f-pc;
-            c = w; y += (h-w)/2;
+            c = w;
+            y += (h-w)/2;
             usetexturing(false);
             drawblend(0, 0, c, y, rc, rc, rc, true);
             drawblend(0, y+c, c, y, rc, rc, rc, true);
             usetexturing(true);
         }
         else c = h;
+        Texture *t = textureload(zoomtex, 3);
+        if(!t || t == notexture) return;
         glBindTexture(GL_TEXTURE_2D, t->id);
-        gle::colorf(1.f, 1.f, 1.f, pc);
+        gle::colorf(0, 0, 0, pc);
         drawtexture(x, y, c, c);
     }
 
