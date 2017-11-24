@@ -50,7 +50,6 @@ semabuild_build() {
     sudo apt-get purge -fy sbt || return 1
     sudo apt-get -o Dpkg::Options::="--force-overwrite" -fy --no-install-recommends install gcc:i386 g++:i386 cpp:i386 g++-4.8:i386 gcc-4.8:i386 cpp-4.8:i386 binutils:i386 zlib1g-dev:i386 libsdl2-dev:i386 libsdl2-mixer-dev:i386 libsdl2-image-dev:i386 libpng12-dev:i386 || return 1
     make PLATFORM=linux32 PLATFORM_BIN=x86 PLATFORM_BUILD=${SEMAPHORE_BUILD_NUMBER} PLATFORM_BRANCH=${BRANCH_NAME} PLATFORM_REVISION=${REVISION} INSTDIR=${SEMABUILD_DIR}/linux/bin/x86 CFLAGS=-m32 CXXFLAGS=-m32 LDFLAGS=-m32 -C src clean install || return 1
-    sudo apt-get -o Dpkg::Options::="--force-overwrite" -fy --no-install-recommends install build-essential multiarch-support gcc-multilib g++-multilib zlib1g-dev libsdl2-dev libsdl2-mixer-dev libsdl2-image-dev binutils-mingw-w64 g++-mingw-w64 || return 1
     return 0
 }
 
@@ -138,7 +137,7 @@ semabuild_process || exit 1
 if [ "${SEMABUILD_DEPLOY}" = "true" ]; then
     semabuild_deploy || exit 1
     if [ "${BRANCH_NAME}" = master ] || [ "${BRANCH_NAME}" = stable ]; then
-        sudo ${SEMABUILD_APT} -fy install jq zsync || exit 1
+        sudo ${SEMABUILD_APT} -fy install build-essential multiarch-support gcc-multilib g++-multilib zlib1g-dev libsdl2-dev libsdl2-mixer-dev libsdl2-image-dev jq zsync || exit 1
         pushd "${HOME}" || return 1
         semabuild_appimage || exit 1
         popd || return 1
