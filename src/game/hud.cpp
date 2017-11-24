@@ -138,15 +138,6 @@ namespace hud
     VAR(IDF_PERSIST, teamhurtdist, 0, 0, VAR_MAX);
     FVAR(IDF_PERSIST, teamhurtsize, 0, 0.0175f, 1000);
 
-    VAR(IDF_PERSIST, showdamage, 0, 2, 2); // 1 shows just damage texture, 2 blends as well
-    CVAR(IDF_PERSIST, damagecolour, 0x800000);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, damagetex, "<grey>textures/hud/damage", 3);
-    FVAR(IDF_PERSIST, damageblend, 0, 0.5f, 1);
-    FVAR(IDF_PERSIST, damageblenddead, 0, 0.5f, 1);
-    FVAR(IDF_PERSIST, damageskew, 0, 0.25f, 1);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, burntex, "<grey>textures/hud/burn", 3);
-    FVAR(IDF_PERSIST, burnblend, 0, 1, 1);
-
     VAR(IDF_PERSIST, showindicator, 0, 4, 4);
     FVAR(IDF_PERSIST, indicatorsize, 0, 0.03f, 1000);
     FVAR(IDF_PERSIST, indicatorblend, 0, 0.5f, 1);
@@ -556,7 +547,7 @@ namespace hud
         if(!n) return;
         damageresidue = clamp(damageresidue+(n*(flags&HIT_BLEED ? 10 : 5)), 0, 200);
         int colour = onscreendamagecolour;
-        if(game::nogore || game::bloodscale <= 0) colour = damagecolour.tohexcolor();
+        if(game::nogore || game::bloodscale <= 0) colour = 0xFF00FF;
         else if(wr_burns(weap, flags)) colour = onscreendamageburncolour;
         else if(wr_bleeds(weap, flags)) colour = onscreendamagebleedcolour;
         else if(wr_shocks(weap, flags)) colour = onscreendamageshockcolour;
@@ -578,7 +569,7 @@ namespace hud
     {
         if(!n) return;
         int colour = onscreenhitscolour;
-        if(game::nogore || game::bloodscale <= 0) colour = damagecolour.tohexcolor();
+        if(game::nogore || game::bloodscale <= 0) colour = 0xFF00FF;
         else if(wr_burns(weap, flags)) colour = onscreenhitsburncolour;
         else if(wr_bleeds(weap, flags)) colour = onscreenhitsbleedcolour;
         else if(wr_shocks(weap, flags)) colour = onscreenhitsshockcolour;
@@ -1569,22 +1560,35 @@ namespace hud
         return "";
     }
 
+    VAR(IDF_PERSIST, showdamage, 0, 2, 2); // 1 shows just damage texture, 2 blends as well
+    CVAR(IDF_PERSIST, damagecolour, 0x800000);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, overlaytex, "<grey><noswizzle>textures/hud/overlay", 0);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, damagetex, "<grey><noswizzle>textures/lava", 0);
+    FVAR(IDF_PERSIST, damageblend, 0, 0.5f, 1);
+    FVAR(IDF_PERSIST, damageblenddead, 0, 0.5f, 1);
+    FVAR(IDF_PERSIST, damagespeed1, 0, 0.0125f, FVAR_MAX);
+    FVAR(IDF_PERSIST, damagespeed2, 0, 0.025f, FVAR_MAX);
+    FVAR(IDF_PERSIST, damageskew, 0, 0.25f, 1);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, burntex, "<grey><noswizzle>textures/hud/burn", 0);
+    FVAR(IDF_PERSIST, burnblend, 0, 1, 1);
+
     void drawdamage(int w, int h, float blend)
     {
-        if(!*damagetex) return;
+        if(!*overlaytex || !*damagetex) return;
         float fade = game::focus->state == CS_DEAD ? damageblenddead : (game::focus->state == CS_ALIVE ? min(damageresidue, 100)/100.f : 0.f);
         if(fade <= 0) return;
         pushhudmatrix();
         hudmatrix.ortho(0, 1, 1, 0, -1, 1);
         flushhudmatrix();
         SETSHADER(huddamage);
-        float skew = lastmillis/1000.f;
-        LOCALPARAMF(time, skew);
-        skew = fmod(skew*1.5f, 2.0f);
-        LOCALPARAMF(skew, skew > 1.0f ? 2.0f-skew : skew);
+        LOCALPARAMF(time, lastmillis/1000.f);
+        LOCALPARAM(speed, vec2(damagespeed1, damagespeed2));
         LOCALPARAM(colour, damagecolour.tocolor());
         glActiveTexture_(GL_TEXTURE0);
-        settexture(damagetex, 3);
+        settexture(overlaytex, 0);
+        glActiveTexture_(GL_TEXTURE1);
+        settexture(damagetex, 0);
+        glActiveTexture_(GL_TEXTURE0);
         gle::colorf(1, 1, 1, fade*blend*damageblend);
         drawquad(0, 0, 1, 1);
         pophudmatrix();
@@ -1676,7 +1680,7 @@ namespace hud
             if(hudbackgroundshader)
             {
                 hudbackgroundshader->set();
-                LOCALPARAMF(time, lastmillis / 1000.0f);
+                LOCALPARAMF(time, lastmillis/1000.0f);
                 LOCALPARAM(colour, backgroundcolour.tocolor());
                 LOCALPARAM(scale, vec4(backgroundaurascale, backgroundhazescale, backgroundglimmerscale1, backgroundglimmerscale2));
                 LOCALPARAM(blend, vec4(backgroundaurablend, backgroundhazeblend, backgroundglimmerblend1, backgroundglimmerblend2));
