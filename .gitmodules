@@ -103,7 +103,6 @@
 	branch = master
 [submodule "snipergoth"]
 	path = data/snipergoth
-
 	url = https://github.com/red-eclipse/snipergoth.git
 	branch = master
 [submodule "sounds"]

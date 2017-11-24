@@ -1586,10 +1586,10 @@ namespace hud
         LOCALPARAMF(time, skew);
         skew = fmod(skew*1.5f, 2.0f);
         LOCALPARAMF(skew, skew > 1.0f ? 2.0f-skew : skew);
-        LOCALPARAMF(blend, fade*blend*damageblend);
         LOCALPARAM(colour, damagecolour.tocolor());
         glActiveTexture_(GL_TEXTURE0);
         settexture(damagetex, 3);
+        gle::colorf(1, 1, 1, fade*blend*damageblend);
         drawquad(0, 0, 1, 1);
         pophudmatrix();
         resethudshader();
