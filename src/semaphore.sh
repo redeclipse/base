@@ -82,6 +82,7 @@ semabuild_integrate() {
                     semabuild_archive || return 1
                     echo "binary archive updated, syncing: ${SEMABUILD_HASH} -> ${SEMABUILD_BINS}"
                     echo "${SEMABUILD_HASH}" > "${SEMABUILD_DIR}/bins.txt"
+                    echo "${SEMAPHORE_BUILD_NUMBER}" > "${SEMABUILD_DIR}/build.txt"
                 fi
             fi
         fi
