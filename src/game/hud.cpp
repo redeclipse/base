@@ -1560,55 +1560,84 @@ namespace hud
         return "";
     }
 
-    VAR(IDF_PERSIST, showdamage, 0, 2, 2); // 1 shows just damage texture, 2 blends as well
-    CVAR(IDF_PERSIST, damagecolour, 0x800000);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, overlaytex, "<grey>textures/hud/overlay", 0);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, damagetex, "<grey><noswizzle>textures/lava", 0);
+
+    VAR(IDF_PERSIST, showdamage, 0, 1, 1);
+    CVAR(IDF_PERSIST, damagecolour, 0x600000);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, damagetex, "<grey><noswizzle>textures/water", 0);
+    FVAR(IDF_PERSIST, damagedistort, 0, 16, FVAR_MAX);
     FVAR(IDF_PERSIST, damageblend, 0, 0.9f, 1);
     FVAR(IDF_PERSIST, damageblenddead, 0, 0.5f, 1);
-    FVAR(IDF_PERSIST, damagespeed1, 0, 0.025f, FVAR_MAX);
-    FVAR(IDF_PERSIST, damagespeed2, 0, 0.05f, FVAR_MAX);
-    FVAR(IDF_PERSIST, damageskew, 0, 0.25f, 1);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, burntex, "<grey><noswizzle>textures/hud/burn", 0);
-    FVAR(IDF_PERSIST, burnblend, 0, 1, 1);
+    FVAR(IDF_PERSIST, damagespeed1, FVAR_MIN, -0.025f, FVAR_MAX);
+    FVAR(IDF_PERSIST, damagespeed2, FVAR_MIN, 0.05f, FVAR_MAX);
 
-    void drawdamage(int w, int h, float blend)
+    VAR(IDF_PERSIST, showdamageburn, 0, 1, 1);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, damageburntex, "<grey><noswizzle>particles/explosion", 0);
+    FVAR(IDF_PERSIST, damageburnbright, 0, 1, 10);
+    FVAR(IDF_PERSIST, damageburnblend, 0, 0.9f, 1);
+    FVAR(IDF_PERSIST, damageburnspeed1, FVAR_MIN, -0.5f, FVAR_MAX);
+    FVAR(IDF_PERSIST, damageburnspeed2, FVAR_MIN, 0.75f, FVAR_MAX);
+
+    VAR(IDF_PERSIST, showdamagebleed, 0, 1, 1);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, damagebleedtex, "<grey><noswizzle>particles/glimmer", 0);
+    FVAR(IDF_PERSIST, damagebleedbright, 0, 1, 10);
+    FVAR(IDF_PERSIST, damagebleedblend, 0, 0.9f, 1);
+    FVAR(IDF_PERSIST, damagebleedspeed1, FVAR_MIN, -0.025f, FVAR_MAX);
+    FVAR(IDF_PERSIST, damagebleedspeed2, FVAR_MIN, 0.05f, FVAR_MAX);
+
+    VAR(IDF_PERSIST, showdamageshock, 0, 1, 1);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, damageshocktex, "<grey><noswizzle>particles/shockball", 0);
+    FVAR(IDF_PERSIST, damageshockbright, 0, 1, 10);
+    FVAR(IDF_PERSIST, damageshockblend, 0, 0.9f, 1);
+    FVAR(IDF_PERSIST, damageshockspeed1, FVAR_MIN, -0.5f, FVAR_MAX);
+    FVAR(IDF_PERSIST, damageshockspeed2, FVAR_MIN, 0.75f, FVAR_MAX);
+
+    void drawdamage(const char *tex, const vec &color, float fade, float speed1, float speed2, float distort = 0.f, float bright = 1.f)
     {
-        if(!*overlaytex || !*damagetex) return;
-        float fade = game::focus->state == CS_DEAD ? damageblenddead : (game::focus->state == CS_ALIVE ? min(damageresidue, 100)/100.f : 0.f);
-        if(fade <= 0) return;
+        if(!*overlaytex || !*tex) return;
         pushhudmatrix();
         hudmatrix.ortho(0, 1, 1, 0, -1, 1);
         flushhudmatrix();
         SETSHADER(huddamage);
         LOCALPARAMF(time, lastmillis/1000.f);
-        LOCALPARAM(speed, vec2(damagespeed1, damagespeed2));
-        LOCALPARAM(colour, damagecolour.tocolor());
+        LOCALPARAM(speed, vec(speed1, speed2, distort));
+        LOCALPARAM(colour, vec(color).mul(bright));
         glActiveTexture_(GL_TEXTURE0);
         settexture(overlaytex, 0);
         glActiveTexture_(GL_TEXTURE1);
-        settexture(damagetex, 0);
+        settexture(tex, 0);
         glActiveTexture_(GL_TEXTURE0);
-        gle::colorf(1, 1, 1, fade*blend*damageblend);
+        gle::colorf(1, 1, 1, fade);
         drawquad(0, 0, 1, 1);
         pophudmatrix();
         resethudshader();
     }
 
-    void drawfire(int w, int h, float blend)
+    void drawdamages(float blend)
     {
-        if(!*burntex || !game::focus->burning(lastmillis, burntime)) return;
-        Texture *t = textureload(burntex, 3);
-        if(!t || t == notexture) return;
-        int interval = lastmillis-game::focus->lastres[WR_BURN];
-        float pc = interval >= burntime-500 ? 1.f+(interval-(burntime-500))/500.f : (interval%burndelay)/float(burndelay/2); if(pc > 1.f) pc = 2.f-pc;
-        glBindTexture(GL_TEXTURE_2D, t->id);
-        gle::colorf(0.9f*max(pc,0.5f), 0.3f*pc, 0.0625f*max(pc,0.25f), blend*burnblend*(interval >= burntime-(burndelay/2) ? pc : min(pc+0.5f, 1.f)));
-        drawtexture(0, 0, w, h);
+        #define DAMAGERES(name, type) \
+            if(showdamage##name && game::focus->name##ing(lastmillis, name##time)) \
+            { \
+                int interval = lastmillis-game::focus->lastres[WR_##type]; \
+                float pc = interval >= name##time-500 ? 1.f+(interval-(name##time-500))/500.f : (interval%name##delay)/float(name##delay/2); \
+                if(pc > 1.f) pc = 2.f-pc; \
+                if(interval < name##time-(name##delay/2)) pc = min(pc+0.5f, 1.f); \
+                if(pc > 0) drawdamage(damage##name##tex, game::rescolour(game::focus, PULSE_##type), pc*blend*damage##name##blend, damage##name##speed1, damage##name##speed2, 0.f, damage##name##bright); \
+            }
+        DAMAGERES(burn, BURN)
+        DAMAGERES(bleed, BLEED);
+        DAMAGERES(shock, SHOCK);
+        #undef DAMAGERES
+        if(showdamage)
+        {
+            float pc = game::focus->state == CS_DEAD ? damageblenddead : (game::focus->state == CS_ALIVE ? min(damageresidue, 100)/100.f : 0.f);
+            if(pc > 0) drawdamage(damagetex, damagecolour.tocolor(), pc*blend*damageblend, damagespeed1, damagespeed2, damagedistort);
+        }
     }
 
     void drawzoom(int w, int h)
     {
+        if(!gs_playing(game::gamestate) || game::focus->state != CS_ALIVE || !game::inzoom()) return;
         int frame = lastmillis-game::lastzoom;
         float pc = frame <= W(game::focus->weapselect, cookzoom) ? float(frame)/float(W(game::focus->weapselect, cookzoom)) : 1.f;
         if(!game::zooming) pc = 1.f-pc;
@@ -1905,24 +1934,16 @@ namespace hud
                     float a = game::lasttvchg ? (totalmillis-game::lasttvchg <= tvmodefade ? float(totalmillis-game::lasttvchg)/float(tvmodefade) : 1.f) : 0.f;
                     loopi(3) if(a < colour[i]) colour[i] *= a;
                 }
-                if(game::focus == game::player1 || !game::thirdpersonview(true))
+                if((game::focus == game::player1 || !game::thirdpersonview(true)) && (spawnfade && game::focus->state == CS_ALIVE && game::focus->lastspawn && lastmillis-game::focus->lastspawn <= spawnfade))
                 {
-                    if(spawnfade && game::focus->state == CS_ALIVE && game::focus->lastspawn && lastmillis-game::focus->lastspawn <= spawnfade)
+                    float a = (lastmillis-game::focus->lastspawn)/float(spawnfade/3);
+                    if(a < 3.f)
                     {
-                        float a = (lastmillis-game::focus->lastspawn)/float(spawnfade/3);
-                        if(a < 3.f)
-                        {
-                            vec col = vec(1, 1, 1);
-                            skewcolour(col.x, col.y, col.z, game::getcolour(game::focus, game::playereffecttone, game::playereffecttonelevel));
-                            if(a < 1.f) { loopi(3) col[i] *= a; }
-                            else { a = (a-1.f)*0.5f; loopi(3) col[i] += (1.f-col[i])*a; }
-                            loopi(3) if(col[i] < colour[i]) colour[i] *= col[i];
-                        }
-                    }
-                    if(showdamage >= 2 && damageresidue > 0)
-                    {
-                        float pc = min(damageresidue, 100)/100.f*damageskew;
-                        loopi(2) if(colour[i+1] > 0) colour[i+1] -= colour[i+1]*pc;
+                        vec col = vec(1, 1, 1);
+                        skewcolour(col.x, col.y, col.z, game::getcolour(game::focus, game::playereffecttone, game::playereffecttonelevel));
+                        if(a < 1.f) { loopi(3) col[i] *= a; }
+                        else { a = (a-1.f)*0.5f; loopi(3) col[i] += (1.f-col[i])*a; }
+                        loopi(3) if(col[i] < colour[i]) colour[i] *= col[i];
                     }
                 }
             }
@@ -1944,13 +1965,8 @@ namespace hud
             {
                 if(gs_playing(game::gamestate))
                 {
-                    bool third = game::thirdpersonview(true) && game::focus != game::player1;
-                    if(game::focus->state == CS_ALIVE && game::inzoom()) drawzoom(hudwidth, hudheight);
-                    if(showdamage && !third)
-                    {
-                        if(burntime && game::focus->state == CS_ALIVE) drawfire(hudwidth, hudheight, fade);
-                        drawdamage(hudwidth, hudheight, fade);
-                    }
+                    drawzoom(hudwidth, hudheight);
+                    drawdamages(fade);
                     if(teamhurthud&2 && teamhurttime && m_team(game::gamemode, game::mutators) && game::focus == game::player1 && game::player1->lastteamhit >= 0 && totalmillis-game::player1->lastteamhit <= teamhurttime)
                     {
                         vec targ;
@@ -1987,8 +2003,7 @@ namespace hud
                 }
                 if(showevents && !texpaneltimer && !game::tvmode() && !client::waiting() && !hasinput(false)) drawevents(fade);
             }
-            else if(gs_playing(game::gamestate) && game::focus->state == CS_ALIVE && game::inzoom())
-                drawzoom(hudwidth, hudheight);
+            else drawzoom(hudwidth, hudheight);
         }
         if(!progressing && showhud)
         {
