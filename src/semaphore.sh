@@ -20,7 +20,7 @@ semabuild_setup() {
     rm -rf "${SEMABUILD_BUILD}" || return 1
     rm -rf "${SEMABUILD_PWD}/data" || return 1
     pushd "${HOME}" || return 1
-    git clone --depth 1 --recurse-submodules --shallow-submodules "${SEMABUILD_DEST}" || return 1
+    git clone --depth 1 "${SEMABUILD_DEST}" || return 1
     popd || return 1
     mkdir -pv "${SEMABUILD_DIR}" || return 1
     return 0
@@ -54,14 +54,13 @@ semabuild_build() {
 }
 
 semabuild_integrate() {
-    git submodule init || return 1
     for i in ${SEMABUILD_ALLMODS}; do
         if [ "${i}" = "base" ]; then
             SEMABUILD_MODDIR="${SEMABUILD_PWD}"
         else
             SEMABUILD_MODDIR="${SEMABUILD_PWD}/data/${i}"
             echo "module ${i} updating.."
-            git submodule update --depth 1 "data/${i}"
+            git submodule update --init --depth 1 "data/${i}" || return 1
         fi
         pushd "${SEMABUILD_MODDIR}" || return 1
         echo "module ${i} processing.."
