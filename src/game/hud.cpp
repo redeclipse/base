@@ -14,6 +14,9 @@ namespace hud
     };
     vector<dhloc> damagelocs, hitlocs;
     VAR(IDF_PERSIST, damageresiduefade, 0, 500, VAR_MAX);
+    VAR(IDF_PERSIST, damageresiduemax, 1, 200, VAR_MAX);
+    VAR(IDF_PERSIST, damageresiduemul, 1, 4, VAR_MAX);
+    VAR(IDF_PERSIST, damageresiduemulresidual, 1, 10, VAR_MAX);
 
     ICOMMAND(0, conout, "is", (int *n, char *s), conoutft(clamp(*n, 0, CON_MAX-1), "%s", s));
 
@@ -545,7 +548,8 @@ namespace hud
     void damage(int n, const vec &loc, gameent *v, int weap, int flags)
     {
         if(!n) return;
-        damageresidue = clamp(damageresidue+(n*(flags&HIT_BLEED ? 10 : 5)), 0, 200);
+        int m = flags&HIT_BURN || flags&HIT_BLEED || flags&HIT_SHOCK ? damageresiduemulresidual : damageresiduemul;
+        damageresidue = clamp(damageresidue+(n*m), 0, damageresiduemax);
         int colour = onscreendamagecolour;
         if(game::nogore || game::bloodscale <= 0) colour = 0xFF00FF;
         else if(wr_burns(weap, flags)) colour = onscreendamageburncolour;
@@ -1573,22 +1577,22 @@ namespace hud
 
     VAR(IDF_PERSIST, showdamageburn, 0, 1, 1);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, damageburntex, "<grey><noswizzle>textures/damage/burn", 0x300);
-    FVAR(IDF_PERSIST, damageburnbright, 0, 0.6f, 10);
-    FVAR(IDF_PERSIST, damageburnblend, 0, 0.75f, 1);
+    FVAR(IDF_PERSIST, damageburnbright, 0, 0.9f, 10);
+    FVAR(IDF_PERSIST, damageburnblend, 0, 0.7f, 1);
     FVAR(IDF_PERSIST, damageburnspeed1, FVAR_MIN, -0.3f, FVAR_MAX);
     FVAR(IDF_PERSIST, damageburnspeed2, FVAR_MIN, 0.4f, FVAR_MAX);
 
     VAR(IDF_PERSIST, showdamagebleed, 0, 1, 1);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, damagebleedtex, "<grey><noswizzle>textures/damage/bleed", 0x300);
-    FVAR(IDF_PERSIST, damagebleedbright, 0, 0.6f, 10);
+    FVAR(IDF_PERSIST, damagebleedbright, 0, 0.5f, 10);
     FVAR(IDF_PERSIST, damagebleedblend, 0, 0.6f, 1);
     FVAR(IDF_PERSIST, damagebleedspeed1, FVAR_MIN, -0.025f, FVAR_MAX);
     FVAR(IDF_PERSIST, damagebleedspeed2, FVAR_MIN, 0.05f, FVAR_MAX);
 
     VAR(IDF_PERSIST, showdamageshock, 0, 1, 1);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, damageshocktex, "<grey><noswizzle>textures/damage/shock", 0x300);
-    FVAR(IDF_PERSIST, damageshockbright, 0, 0.9f, 10);
-    FVAR(IDF_PERSIST, damageshockblend, 0, 0.75f, 1);
+    FVAR(IDF_PERSIST, damageshockbright, 0, 0.8f, 10);
+    FVAR(IDF_PERSIST, damageshockblend, 0, 0.7f, 1);
     FVAR(IDF_PERSIST, damageshockspeed1, FVAR_MIN, -0.4f, FVAR_MAX);
     FVAR(IDF_PERSIST, damageshockspeed2, FVAR_MIN, 0.3f, FVAR_MAX);
 
@@ -1618,16 +1622,16 @@ namespace hud
             float pc = game::focus->state == CS_DEAD ? damageblenddead : (game::focus->state == CS_ALIVE ? min(damageresidue, 100)/100.f*damageblend : 0.f);
             if(pc > 0) drawdamage(damagetex, damagecolour.tocolor(), pc*blend, damagespeed1, damagespeed2, damagedistort);
         }
-        #define RESIDUAL(name, type) \
+        #define RESIDUAL(name, type, pulse) \
             if(showdamage##name && game::focus->name##ing(lastmillis, name##time)) \
             { \
                 int interval = lastmillis-game::focus->lastres[WR_##type]; \
                 float pc = interval >= name##time-500 ? 1.f+(interval-(name##time-500))/500.f : (interval%name##delay)/float(name##delay/2); \
                 if(pc > 1.f) pc = 2.f-pc; \
                 if(interval < name##time-(name##delay/2)) pc = min(pc+0.5f, 1.f); \
-                if(pc > 0) drawdamage(damage##name##tex, game::pulsecolour(game::focus, PULSE_##type), pc*blend*damage##name##blend, damage##name##speed1, damage##name##speed2, 0.f, damage##name##bright); \
+                if(pc > 0) drawdamage(damage##name##tex, game::pulsecolour(game::focus, PULSE_##pulse), pc*blend*damage##name##blend, damage##name##speed1, damage##name##speed2, 0.f, damage##name##bright); \
             }
-        RESIDUALS
+        RESIDUALSF
         #undef RESIDUAL
         pophudmatrix();
         resethudshader();

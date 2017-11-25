@@ -3452,12 +3452,12 @@ namespace game
         return mdlname;
     }
 
-    #define RESIDUAL(name, type) \
+    #define RESIDUAL(name, type, pulse) \
         void get##name##effect(physent *d, modelstate &mdl, int length, int millis, int delay) \
         { \
             int offset = length-millis; \
             float pc = offset >= delay ? 1.f : float(offset)/float(delay); \
-            vec4 mixercolor = vec4(vec(pulsecolour(d, PULSE_##type)).mul(mixer##name##intensity), pc*mixer##name##blend); \
+            vec4 mixercolor = vec4(vec(pulsecolour(d, PULSE_##pulse)).mul(mixer##name##intensity), pc*mixer##name##blend); \
             vec2 mixerglow = vec2((mdl.mixercolor.r+mdl.mixercolor.g+mdl.mixercolor.b)/3.f*mixer##name##glowintensity, pc*mixer##name##glowblend); \
             if(mdl.mixer && mdl.mixer != notexture) \
             { \
@@ -3472,12 +3472,12 @@ namespace game
             } \
             mdl.mixerscroll = vec2(mixer##name##scroll1, mixer##name##scroll2); \
         }
-    RESIDUALS
+    RESIDUALSF
     #undef RESIDUAL
 
     void getplayereffects(gameent *d, modelstate &mdl)
     {
-        #define RESIDUAL(name, type) \
+        #define RESIDUAL(name, type, pulse) \
             if(name##time && d->name##ing(lastmillis, name##time)) \
                 get##name##effect(d, mdl, name##time, lastmillis-d->lastres[WR_##type], name##delay);
         RESIDUALS

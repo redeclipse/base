@@ -281,9 +281,13 @@ extern const int pulsecols[PULSE_MAX][PULSECOLOURS];
 #endif
 
 #define RESIDUALS \
-    RESIDUAL(burn, BURN); \
-    RESIDUAL(bleed, BLEED); \
-    RESIDUAL(shock, SHOCK);
+    RESIDUAL(burn, BURN, BURN); \
+    RESIDUAL(bleed, BLEED, BLEED); \
+    RESIDUAL(shock, SHOCK, SHOCK);
+#define RESIDUALSF \
+    RESIDUAL(burn, BURN, FIRE); \
+    RESIDUAL(bleed, BLEED, BLEED); \
+    RESIDUAL(shock, SHOCK, SHOCK);
 
 enum
 {
@@ -958,7 +962,7 @@ struct clientstate
         return delay-len;
     }
 
-    #define RESIDUAL(name, type) bool name##ing(int millis, int len) { return len && lastres[WR_##type] && millis-lastres[WR_##type] <= len; }
+    #define RESIDUAL(name, type, pulse) bool name##ing(int millis, int len) { return len && lastres[WR_##type] && millis-lastres[WR_##type] <= len; }
     RESIDUALS
     #undef RESIDUAL
 };
@@ -1794,7 +1798,7 @@ namespace game
     extern float opacity(gameent *d);
     extern void footstep(gameent *d, int curfoot = -1);
     extern bool canregenimpulse(gameent *d);
-    #define RESIDUAL(name, type) extern void get##name##effect(physent *d, modelstate &mdl, int length, int millis, int delay);
+    #define RESIDUAL(name, type, pulse) extern void get##name##effect(physent *d, modelstate &mdl, int length, int millis, int delay);
     RESIDUALS
     #undef RESIDUAL
     extern void getplayermaterials(gameent *d, modelstate &mdl);
