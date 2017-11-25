@@ -368,48 +368,46 @@ namespace ai
 
     int avoidset::remap(gameent *d, int n, vec &pos, bool retry)
     {
-        if(!obstacles.empty())
+        if(obstacles.empty()) return n;
+        int cur = 0;
+        loopv(obstacles)
         {
-            int cur = 0;
-            loopv(obstacles)
+            obstacle &ob = obstacles[i];
+            int next = cur + ob.numwaypoints;
+            if(ob.owner != d)
             {
-                obstacle &ob = obstacles[i];
-                int next = cur + ob.numwaypoints;
-                if(ob.owner != d)
+                for(; cur < next; cur++) if(waypoints[cur] == n)
                 {
-                    for(; cur < next; cur++) if(waypoints[cur] == n)
-                    {
-                        if(ob.above < 0) return retry ? n : -1;
-                        vec above(pos.x, pos.y, ob.above);
-                        if(above.z-d->o.z >= ai::JUMPMAX)
-                            return retry ? n : -1; // too much scotty
-                        int node = closestwaypoint(above, ai::CLOSEDIST, true);
-                        if(ai::iswaypoint(node) && node != n)
-                        { // try to reroute above their head?
-                            if(!find(node, d))
-                            {
-                                pos = ai::waypoints[node].o;
-                                return node;
-                            }
-                            else return retry ? n : -1;
-                        }
-                        else
+                    if(ob.above < 0) return retry ? n : -1;
+                    vec above(pos.x, pos.y, ob.above);
+                    if(above.z-d->o.z >= ai::JUMPMAX)
+                        return retry ? n : -1; // too much scotty
+                    int node = closestwaypoint(above, ai::CLOSEDIST, true);
+                    if(ai::iswaypoint(node) && node != n)
+                    { // try to reroute above their head?
+                        if(!find(node, d))
                         {
-                            vec old = d->o;
-                            d->o = vec(above).add(vec(0, 0, d->height));
-                            bool col = collide(d, vec(0, 0, 1));
-                            d->o = old;
-                            if(!col)
-                            {
-                                pos = above;
-                                return n;
-                            }
-                            else return retry ? n : -1;
+                            pos = ai::waypoints[node].o;
+                            return node;
                         }
+                        else return retry ? n : -1;
+                    }
+                    else
+                    {
+                        vec old = d->o;
+                        d->o = vec(above).add(vec(0, 0, d->height));
+                        bool col = collide(d, vec(0, 0, 1));
+                        d->o = old;
+                        if(!col)
+                        {
+                            pos = above;
+                            return n;
+                        }
+                        else return retry ? n : -1;
                     }
                 }
-                cur = next;
             }
+            cur = next;
         }
         return n;
     }
@@ -540,21 +538,22 @@ namespace ai
     void inferwaypoints(gameent *d, const vec &o, const vec &v, float mindist)
     {
         if(!shouldnavigate()) return;
-        if(shoulddrop(d) && !clipped(o) && !clipped(v))
+        if(!shoulddrop(d) || clipped(o) || clipped(v))
         {
-            int from = closestwaypoint(o, mindist, false), to = closestwaypoint(v, mindist, false);
-            if(!iswaypoint(from)) from = addwaypoint(o);
-            if(!iswaypoint(to)) to = addwaypoint(v);
-            if(d->lastnode != from && iswaypoint(d->lastnode) && iswaypoint(from))
-                linkwaypoint(waypoints[d->lastnode], from);
-            if(iswaypoint(to))
-            {
-                if(from != to && iswaypoint(from) && iswaypoint(to))
-                    linkwaypoint(waypoints[from], to);
-                d->lastnode = to;
-            }
+            d->lastnode = closestwaypoint(v, CLOSEDIST, false);
+            return;
         }
-        else d->lastnode = closestwaypoint(v, CLOSEDIST, false);
+        int from = closestwaypoint(o, mindist, false), to = closestwaypoint(v, mindist, false);
+        if(!iswaypoint(from)) from = addwaypoint(o);
+        if(!iswaypoint(to)) to = addwaypoint(v);
+        if(d->lastnode != from && iswaypoint(d->lastnode) && iswaypoint(from))
+            linkwaypoint(waypoints[d->lastnode], from);
+        if(iswaypoint(to))
+        {
+            if(from != to && iswaypoint(from) && iswaypoint(to))
+                linkwaypoint(waypoints[from], to);
+            d->lastnode = to;
+        }
     }
 
     void navigate(gameent *d)
@@ -627,23 +626,19 @@ namespace ai
 
     bool checkteleport(const vec &o, const vec &v)
     {
-        if(o.dist(v) > CLOSEDIST)
+        if(o.dist(v) <= CLOSEDIST) return true;
+        loopenti(TELEPORT) if(entities::ents[i]->type == TELEPORT)
         {
-            loopenti(TELEPORT) if(entities::ents[i]->type == TELEPORT)
+            gameentity &e = *(gameentity *)entities::ents[i];
+            if(o.dist(e.o) > (e.attrs[3] ? e.attrs[3] : enttype[e.type].radius)+CLOSEDIST) continue;
+            loopvj(e.links) if(entities::ents.inrange(e.links[j]) && entities::ents[e.links[j]]->type == TELEPORT)
             {
-                gameentity &e = *(gameentity *)entities::ents[i];
-                if(o.dist(e.o) < (e.attrs[3] ? e.attrs[3] : enttype[e.type].radius)+CLOSEDIST)
-                {
-                    loopvj(e.links) if(entities::ents.inrange(e.links[j]) && entities::ents[e.links[j]]->type == TELEPORT)
-                    {
-                        gameentity &f = *(gameentity *)entities::ents[e.links[j]];
-                        if(v.dist(f.o) < (f.attrs[3] ? f.attrs[3] : enttype[f.type].radius)+CLOSEDIST) return true;
-                    }
-                }
+                gameentity &f = *(gameentity *)entities::ents[e.links[j]];
+                if(v.dist(f.o) > (f.attrs[3] ? f.attrs[3] : enttype[f.type].radius)+CLOSEDIST) continue;
+                return true;
             }
-            return false;
         }
-        return true;
+        return false;
     }
 
     bool cleanwaypoints()

@@ -3914,7 +3914,7 @@ namespace server
         int target = -1, state = ci->state;
         if(reset)
         {
-            if(ci->needsresume) return; // waiting for ack
+            if(ci->state != CS_ALIVE || ci->needsresume) return; // useless / waiting for ack
             target = ci->clientnum;
             state = -1;
             ci->needsresume = true;

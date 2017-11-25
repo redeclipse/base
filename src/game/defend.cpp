@@ -90,14 +90,13 @@ namespace defend
         {
             case cament::AFFINITY:
             {
-                if(st.flags.inrange(c->id))
-                {
-                    defendstate::flag &f = st.flags[c->id];
-                    c->o = f.o;
-                    c->o.z += enttype[AFFINITY].radius*2/3;
-                }
+                if(!st.flags.inrange(c->id)) break;
+                defendstate::flag &f = st.flags[c->id];
+                c->o = f.o;
+                c->o.z += enttype[AFFINITY].radius*2/3;
                 break;
             }
+            default: break;
         }
     }
 
@@ -346,77 +345,72 @@ namespace defend
 
     void aifind(gameent *d, ai::aistate &b, vector<ai::interest> &interests)
     {
-        if(d->actortype == A_BOT)
+        if(d->actortype != A_BOT) return;
+        vec pos = d->feetpos();
+        loopvj(st.flags)
         {
-            vec pos = d->feetpos();
-            loopvj(st.flags)
+            defendstate::flag &f = st.flags[j];
+            static vector<int> targets; // build a list of others who are interested in this
+            targets.setsize(0);
+            ai::checkothers(targets, d, ai::AI_S_DEFEND, ai::AI_T_AFFINITY, j, true);
+            gameent *e = NULL;
+            bool regen = !m_regen(game::gamemode, game::mutators) || d->health >= m_health(game::gamemode, game::mutators, d->actortype);
+            int numdyns = game::numdynents();
+            loopi(numdyns) if((e = (gameent *)game::iterdynents(i)) && !e->ai && e->state == CS_ALIVE && d->team == e->team)
             {
-                defendstate::flag &f = st.flags[j];
-                static vector<int> targets; // build a list of others who are interested in this
-                targets.setsize(0);
-                ai::checkothers(targets, d, ai::AI_S_DEFEND, ai::AI_T_AFFINITY, j, true);
-                gameent *e = NULL;
-                bool regen = !m_regen(game::gamemode, game::mutators) || d->health >= m_health(game::gamemode, game::mutators, d->actortype);
-                int numdyns = game::numdynents();
-                loopi(numdyns) if((e = (gameent *)game::iterdynents(i)) && !e->ai && e->state == CS_ALIVE && d->team == e->team)
-                {
-                    if(targets.find(e->clientnum) < 0 && e->feetpos().squaredist(f.o) <= (enttype[AFFINITY].radius*enttype[AFFINITY].radius))
-                        targets.add(e->clientnum);
-                }
-                if((!regen && f.owner == d->team) || (targets.empty() && (f.owner != d->team || f.enemy)))
-                {
-                    ai::interest &n = interests.add();
-                    n.state = ai::AI_S_DEFEND;
-                    n.node = ai::closestwaypoint(f.o, ai::CLOSEDIST, false);
-                    n.target = j;
-                    n.targtype = ai::AI_T_AFFINITY;
-                    n.score = pos.squaredist(f.o)/(!regen ? 100.f : 10.f);
-                    n.tolerance = 0.5f;
-                    n.team = true;
-                    n.acttype = ai::AI_A_PROTECT;
-                }
+                if(targets.find(e->clientnum) < 0 && e->feetpos().squaredist(f.o) <= (enttype[AFFINITY].radius*enttype[AFFINITY].radius))
+                    targets.add(e->clientnum);
+            }
+            if((!regen && f.owner == d->team) || (targets.empty() && (f.owner != d->team || f.enemy)))
+            {
+                ai::interest &n = interests.add();
+                n.state = ai::AI_S_DEFEND;
+                n.node = ai::closestwaypoint(f.o, ai::CLOSEDIST, false);
+                n.target = j;
+                n.targtype = ai::AI_T_AFFINITY;
+                n.score = pos.squaredist(f.o)/(!regen ? 100.f : 10.f);
+                n.tolerance = 0.5f;
+                n.team = true;
+                n.acttype = ai::AI_A_PROTECT;
             }
         }
     }
 
     bool aidefense(gameent *d, ai::aistate &b)
     {
-        if(st.flags.inrange(b.target))
+        if(!st.flags.inrange(b.target)) return false;
+        defendstate::flag &f = st.flags[b.target];
+        bool regen = d->actortype != A_BOT || !m_regen(game::gamemode, game::mutators) || d->health >= m_health(game::gamemode, game::mutators, d->actortype);
+        int walk = regen && f.owner == d->team && !f.enemy ? 1 : 0;
+        if(walk)
         {
-            defendstate::flag &f = st.flags[b.target];
-            bool regen = d->actortype != A_BOT || !m_regen(game::gamemode, game::mutators) || d->health >= m_health(game::gamemode, game::mutators, d->actortype);
-            int walk = regen && f.owner == d->team && !f.enemy ? 1 : 0;
-            if(walk)
+            int teammembers = 1;
+            static vector<int> targets; // build a list of others who are interested in this
+            targets.setsize(0);
+            ai::checkothers(targets, d, ai::AI_S_DEFEND, ai::AI_T_AFFINITY, b.target, true);
+            if(d->actortype == A_BOT)
             {
-                int teammembers = 1;
-                static vector<int> targets; // build a list of others who are interested in this
-                targets.setsize(0);
-                ai::checkothers(targets, d, ai::AI_S_DEFEND, ai::AI_T_AFFINITY, b.target, true);
-                if(d->actortype == A_BOT)
+                gameent *e = NULL;
+                int numdyns = game::numdynents();
+                float mindist = enttype[AFFINITY].radius*2; mindist *= mindist;
+                loopi(numdyns) if((e = (gameent *)game::iterdynents(i)) && d->team == e->team)
                 {
-                    gameent *e = NULL;
-                    int numdyns = game::numdynents();
-                    float mindist = enttype[AFFINITY].radius*2; mindist *= mindist;
-                    loopi(numdyns) if((e = (gameent *)game::iterdynents(i)) && d->team == e->team)
-                    {
-                        teammembers++;
-                        if(e->state != CS_ALIVE || e->ai || targets.find(e->clientnum) < 0) continue;
-                        if(e->feetpos().squaredist(f.o) <= mindist) targets.add(e->clientnum);
-                    }
-                }
-                if(targets.length() >= teammembers*0.5f)
-                {
-                    if(lastmillis-b.millis >= (201-d->skill)*33)
-                    {
-                        d->ai->tryreset = true; // re-evaluate so as not to herd
-                        return true;
-                    }
-                    else walk = 2;
+                    teammembers++;
+                    if(e->state != CS_ALIVE || e->ai || targets.find(e->clientnum) < 0) continue;
+                    if(e->feetpos().squaredist(f.o) <= mindist) targets.add(e->clientnum);
                 }
             }
-            return ai::defense(d, b, f.o, enttype[AFFINITY].radius, enttype[AFFINITY].radius*(walk+2), m_dac_king(game::gamemode, game::mutators) ? 0 : walk);
+            if(targets.length() >= teammembers*0.5f)
+            {
+                if(lastmillis-b.millis >= (201-d->skill)*33)
+                {
+                    d->ai->tryreset = true; // re-evaluate so as not to herd
+                    return true;
+                }
+                else walk = 2;
+            }
         }
-        return false;
+        return ai::defense(d, b, f.o, enttype[AFFINITY].radius, enttype[AFFINITY].radius*(walk+2), m_dac_king(game::gamemode, game::mutators) ? 0 : walk);
     }
 
     bool aicheckpos(gameent *d, ai::aistate &b)

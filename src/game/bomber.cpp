@@ -119,17 +119,14 @@ namespace bomber
 
     bool dropaffinity(gameent *d)
     {
-        if(carryaffinity(d) && (d->action[AC_AFFINITY] || d->actiontime[AC_AFFINITY] > 0))
-        {
-            if(d->action[AC_AFFINITY]) return true;
-            vec o = d->headpos(), inertia = vec(d->yaw*RAD, d->pitch*RAD).mul(bomberspeed).add(vec(d->vel).add(d->falling).mul(bomberrelativity));
-            bool guided = m_team(game::gamemode, game::mutators) && bomberlockondelay && lastmillis-d->actiontime[AC_AFFINITY] >= bomberlockondelay;
-            client::addmsg(N_DROPAFFIN, "ri8", d->clientnum, guided ? findtarget(d) : -1, int(o.x*DMF), int(o.y*DMF), int(o.z*DMF), int(inertia.x*DMF), int(inertia.y*DMF), int(inertia.z*DMF));
-            d->action[AC_AFFINITY] = false;
-            d->actiontime[AC_AFFINITY] = 0;
-            return true;
-        }
-        return false;
+        if(!carryaffinity(d) || (!d->action[AC_AFFINITY] && d->actiontime[AC_AFFINITY] <= 0)) return false;
+        if(d->action[AC_AFFINITY]) return true;
+        vec o = d->headpos(), inertia = vec(d->yaw*RAD, d->pitch*RAD).mul(bomberspeed).add(vec(d->vel).add(d->falling).mul(bomberrelativity));
+        bool guided = m_team(game::gamemode, game::mutators) && bomberlockondelay && lastmillis-d->actiontime[AC_AFFINITY] >= bomberlockondelay;
+        client::addmsg(N_DROPAFFIN, "ri8", d->clientnum, guided ? findtarget(d) : -1, int(o.x*DMF), int(o.y*DMF), int(o.z*DMF), int(inertia.x*DMF), int(inertia.y*DMF), int(inertia.z*DMF));
+        d->action[AC_AFFINITY] = false;
+        d->actiontime[AC_AFFINITY] = 0;
+        return true;
     }
 
     void preload()
@@ -182,61 +179,57 @@ namespace bomber
 
     void drawnotices(int w, int h, int &tx, int &ty, int tr, int tg, int tb, float blend)
     {
-        if(game::focus->state == CS_ALIVE && hud::shownotices >= 2)
+        if(game::focus->state != CS_ALIVE || hud::shownotices < 2) return;
+        if(game::focus->lastbuff && hud::shownotices >= 3)
         {
-            if(game::focus->lastbuff && hud::shownotices >= 3)
+            pushfont("reduced");
+            if(m_regen(game::gamemode, game::mutators) && bomberregenbuff && bomberregenextra)
+                ty += draw_textf("Buffing: \fs\fo%d%%\fS damage, \fs\fg%d%%\fS shield, +\fs\fy%d\fS regen", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, int(bomberbuffdamage*100), int(bomberbuffshield*100), bomberregenextra);
+            else ty += draw_textf("Buffing: \fs\fo%d%%\fS damage, \fs\fg%d%%\fS shield", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, int(bomberbuffdamage*100), int(bomberbuffshield*100));
+            popfont();
+        }
+        loopv(st.flags)
+        {
+            bomberstate::flag &f = st.flags[i];
+            if(f.owner == game::focus)
             {
-                pushfont("reduced");
-                if(m_regen(game::gamemode, game::mutators) && bomberregenbuff && bomberregenextra)
-                    ty += draw_textf("Buffing: \fs\fo%d%%\fS damage, \fs\fg%d%%\fS shield, +\fs\fy%d\fS regen", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, int(bomberbuffdamage*100), int(bomberbuffshield*100), bomberregenextra);
-                else ty += draw_textf("Buffing: \fs\fo%d%%\fS damage, \fs\fg%d%%\fS shield", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, int(bomberbuffdamage*100), int(bomberbuffshield*100));
-                popfont();
-            }
-            loopv(st.flags)
-            {
-                bomberstate::flag &f = st.flags[i];
-                if(f.owner == game::focus)
+                bool important = false;
+                if(carrytime)
                 {
-                    bool important = false;
-                    if(carrytime)
+                    int delay = carrytime-(lastmillis-f.taketime);
+                    pushfont("default");
+                    ty += draw_textf("Bomb explodes in \fs\fzgy%s\fS", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, timestr(delay));
+                    popfont();
+                    if(m_bb_hold(game::gamemode, game::mutators))
                     {
-                        int delay = carrytime-(lastmillis-f.taketime);
-                        pushfont("default");
-                        ty += draw_textf("Bomb explodes in \fs\fzgy%s\fS", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, timestr(delay));
-                        popfont();
-                        if(m_bb_hold(game::gamemode, game::mutators))
-                        {
-                            pushfont("reduced");
-                            ty += draw_textf("Killing enemies resets fuse timer", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED);
-                            popfont();
-                        }
-                        if(delay <= carrytime/4) important = true;
-                    }
-                    if(game::focus == game::player1)
-                    {
-                        pushfont(important ? "emphasis" : "reduced");
-                        ty += draw_textf(important ? "\fs\fzuyPress \fs\fw\f{=affinity}\fS to throw the bomb\fS" : "Press \fs\fw\f{=affinity}\fS to throw the bomb", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED);
+                        pushfont("reduced");
+                        ty += draw_textf("Killing enemies resets fuse timer", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED);
                         popfont();
                     }
-                    break;
+                    if(delay <= carrytime/4) important = true;
                 }
+                if(game::focus == game::player1)
+                {
+                    pushfont(important ? "emphasis" : "reduced");
+                    ty += draw_textf(important ? "\fs\fzuyPress \fs\fw\f{=affinity}\fS to throw the bomb\fS" : "Press \fs\fw\f{=affinity}\fS to throw the bomb", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED);
+                    popfont();
+                }
+                break;
             }
         }
     }
 
     void drawevents(int w, int h, int &tx, int &ty, int tr, int tg, int tb, float blend)
     {
-        if(game::focus->state == CS_ALIVE && hud::showevents >= 2)
+        if(game::focus->state != CS_ALIVE || hud::showevents < 2) return;
+        loopv(st.flags)
         {
-            loopv(st.flags)
+            bomberstate::flag &f = st.flags[i];
+            if(f.owner == game::focus)
             {
-                bomberstate::flag &f = st.flags[i];
-                if(f.owner == game::focus)
-                {
-                    ty -= draw_textf("You are holding the \fs\f[%d]\f(%s)bomb\fS", tx, ty, int(FONTW*hud::eventpadx), int(FONTH*hud::eventpady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, game::pulsehexcol(game::focus, PULSE_DISCO), hud::bombtex);
-                    ty -= FONTH/4;
-                    break;
-                }
+                ty -= draw_textf("You are holding the \fs\f[%d]\f(%s)bomb\fS", tx, ty, int(FONTW*hud::eventpadx), int(FONTH*hud::eventpady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, game::pulsehexcol(game::focus, PULSE_DISCO), hud::bombtex);
+                ty -= FONTH/4;
+                break;
             }
         }
     }
@@ -259,15 +252,14 @@ namespace bomber
         {
             case cament::AFFINITY:
             {
-                if(st.flags.inrange(c->id))
-                {
-                    bomberstate::flag &f = st.flags[c->id];
-                    c->o = f.pos(true);
-                    c->o.z += enttype[AFFINITY].radius/2;
-                    c->player = f.owner;
-                }
+                if(!st.flags.inrange(c->id)) break;
+                bomberstate::flag &f = st.flags[c->id];
+                c->o = f.pos(true);
+                c->o.z += enttype[AFFINITY].radius/2;
+                c->player = f.owner;
                 break;
             }
+            default: break;
         }
     }
 
@@ -636,25 +628,23 @@ namespace bomber
 
     bool aicheck(gameent *d, ai::aistate &b)
     {
-        if(d->actortype == A_BOT)
+        if(d->actortype != A_BOT) return false;
+        static vector<int> taken; taken.setsize(0);
+        loopv(st.flags)
         {
-            static vector<int> taken; taken.setsize(0);
-            loopv(st.flags)
+            bomberstate::flag &g = st.flags[i];
+            if(g.owner == d) return aihomerun(d, b);
+            else if((g.owner && g.owner->team != d->team) || g.droptime) taken.add(i);
+        }
+        if(!ai::badhealth(d)) while(!taken.empty())
+        {
+            int flag = taken.length() > 2 ? rnd(taken.length()) : 0;
+            if(ai::makeroute(d, b, st.flags[taken[flag]].pos()))
             {
-                bomberstate::flag &g = st.flags[i];
-                if(g.owner == d) return aihomerun(d, b);
-                else if((g.owner && g.owner->team != d->team) || g.droptime) taken.add(i);
+                d->ai->switchstate(b, ai::AI_S_PURSUE, ai::AI_T_AFFINITY, taken[flag], ai::AI_A_HASTE);
+                return true;
             }
-            if(!ai::badhealth(d)) while(!taken.empty())
-            {
-                int flag = taken.length() > 2 ? rnd(taken.length()) : 0;
-                if(ai::makeroute(d, b, st.flags[taken[flag]].pos()))
-                {
-                    d->ai->switchstate(b, ai::AI_S_PURSUE, ai::AI_T_AFFINITY, taken[flag], ai::AI_A_HASTE);
-                    return true;
-                }
-                else taken.remove(flag);
-            }
+            else taken.remove(flag);
         }
         return false;
     }
@@ -812,30 +802,28 @@ namespace bomber
 
     bool aipursue(gameent *d, ai::aistate &b)
     {
-        if(st.flags.inrange(b.target) && d->actortype == A_BOT)
+        if(!st.flags.inrange(b.target) || d->actortype != A_BOT) return false;
+        bomberstate::flag &f = st.flags[b.target];
+        if(!f.enabled) return false;
+        if(isbomberaffinity(f))
         {
-            bomberstate::flag &f = st.flags[b.target];
-            if(!f.enabled) return false;
-            if(isbomberaffinity(f))
+            if(f.owner)
             {
-                if(f.owner)
-                {
-                    if(d == f.owner) return aihomerun(d, b);
-                    else if(d->team != f.owner->team) return ai::violence(d, b, f.owner, 4);
-                    else return ai::defense(d, b, f.pos());
-                }
-                return ai::makeroute(d, b, f.pos());
+                if(d == f.owner) return aihomerun(d, b);
+                else if(d->team != f.owner->team) return ai::violence(d, b, f.owner, 4);
+                else return ai::defense(d, b, f.pos());
             }
-            if(isbombertarg(f, d->team))
-            {
-                loopv(st.flags) if(st.flags[i].owner == d && ai::makeroute(d, b, f.pos()))
-                {
-                    b.acttype = ai::AI_A_HASTE;
-                    return true;
-                }
-            }
-            if(b.owner >= 0) return ai::makeroute(d, b, f.pos());
+            return ai::makeroute(d, b, f.pos());
         }
+        if(isbombertarg(f, d->team))
+        {
+            loopv(st.flags) if(st.flags[i].owner == d && ai::makeroute(d, b, f.pos()))
+            {
+                b.acttype = ai::AI_A_HASTE;
+                return true;
+            }
+        }
+        if(b.owner >= 0) return ai::makeroute(d, b, f.pos());
         return false;
     }
 }

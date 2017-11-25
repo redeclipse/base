@@ -54,14 +54,11 @@ namespace capture
 
     bool dropaffinity(gameent *d)
     {
-        if(carryaffinity(d) && d->action[AC_AFFINITY])
-        {
-            vec o = d->feetpos(capturedropheight), inertia = vec(d->vel).add(d->falling);
-            client::addmsg(N_DROPAFFIN, "ri8", d->clientnum, -1, int(o.x*DMF), int(o.y*DMF), int(o.z*DMF), int(inertia.x*DMF), int(inertia.y*DMF), int(inertia.z*DMF));
-            d->action[AC_AFFINITY] = false;
-            return true;
-        }
-        return false;
+        if(!carryaffinity(d) || !d->action[AC_AFFINITY]) return false;
+        vec o = d->feetpos(capturedropheight), inertia = vec(d->vel).add(d->falling);
+        client::addmsg(N_DROPAFFIN, "ri8", d->clientnum, -1, int(o.x*DMF), int(o.y*DMF), int(o.z*DMF), int(inertia.x*DMF), int(inertia.y*DMF), int(inertia.z*DMF));
+        d->action[AC_AFFINITY] = false;
+        return true;
     }
 
     bool canpickup(gameent *d, int n, bool check = false)
@@ -107,90 +104,86 @@ namespace capture
 
     void drawnotices(int w, int h, int &tx, int &ty, int tr, int tg, int tb, float blend)
     {
-        if(game::focus->state == CS_ALIVE && hud::shownotices >= 2)
+        if(game::focus->state != CS_ALIVE || hud::shownotices < 2) return;
+        if(game::focus->lastbuff && hud::shownotices >= 3)
         {
-            if(game::focus->lastbuff && hud::shownotices >= 3)
+            pushfont("reduced");
+            if(m_regen(game::gamemode, game::mutators) && captureregenbuff && captureregenextra)
+                ty += draw_textf("Buffing: \fs\fo%d%%\fS damage, \fs\fg%d%%\fS shield, +\fs\fy%d\fS regen", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, int(capturebuffdamage*100), int(capturebuffshield*100), captureregenextra);
+            else ty += draw_textf("Buffing: \fs\fo%d%%\fS damage, \fs\fg%d%%\fS shield", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, int(capturebuffdamage*100), int(capturebuffshield*100));
+            popfont();
+        }
+        bool ownflag = false;
+        static vector<int> pickup, hasflags, taken, droppedflags;
+        pickup.setsize(0); hasflags.setsize(0); taken.setsize(0); droppedflags.setsize(0);
+        loopv(st.flags)
+        {
+            capturestate::flag &f = st.flags[i];
+            if(f.owner == game::focus)
+            {
+                hasflags.add(i);
+                if(f.team == game::focus->team) ownflag = true;
+            }
+            if(canpickup(game::focus, i, true)) pickup.add(i);
+            if(f.team == game::focus->team)
+            {
+                if(f.owner && f.owner->team != game::focus->team) taken.add(i);
+                else if(f.droptime) droppedflags.add(i);
+            }
+        }
+        if(!hasflags.empty())
+        {
+            if(capturebuffing&(ownflag ? 8 : 32))
             {
                 pushfont("reduced");
-                if(m_regen(game::gamemode, game::mutators) && captureregenbuff && captureregenextra)
-                    ty += draw_textf("Buffing: \fs\fo%d%%\fS damage, \fs\fg%d%%\fS shield, +\fs\fy%d\fS regen", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, int(capturebuffdamage*100), int(capturebuffshield*100), captureregenextra);
-                else ty += draw_textf("Buffing: \fs\fo%d%%\fS damage, \fs\fg%d%%\fS shield", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, int(capturebuffdamage*100), int(capturebuffshield*100));
+                if(capturebuffarea > 0) ty += draw_textf("Buffing team-mates within \fs\fy%.2f\fom\fS", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, capturebuffarea/8.f);
+                else ty += draw_textf("Buffing \fs\fyALL\fS team-mates", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED);
                 popfont();
             }
-            bool ownflag = false;
-            static vector<int> pickup, hasflags, taken, droppedflags;
-            pickup.setsize(0); hasflags.setsize(0); taken.setsize(0); droppedflags.setsize(0);
-            loopv(st.flags)
-            {
-                capturestate::flag &f = st.flags[i];
-                if(f.owner == game::focus)
-                {
-                    hasflags.add(i);
-                    if(f.team == game::focus->team) ownflag = true;
-                }
-                if(canpickup(game::focus, i, true)) pickup.add(i);
-                if(f.team == game::focus->team)
-                {
-                    if(f.owner && f.owner->team != game::focus->team) taken.add(i);
-                    else if(f.droptime) droppedflags.add(i);
-                }
-            }
-            if(!hasflags.empty())
-            {
-                if(capturebuffing&(ownflag ? 8 : 32))
-                {
-                    pushfont("reduced");
-                    if(capturebuffarea > 0) ty += draw_textf("Buffing team-mates within \fs\fy%.2f\fom\fS", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, capturebuffarea/8.f);
-                    else ty += draw_textf("Buffing \fs\fyALL\fS team-mates", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED);
-                    popfont();
-                }
-            }
-            if(!pickup.empty())
-            {
-                pushfont("emphasis");
-                char *str = buildflagstr(pickup, pickup.length() <= 3);
-                ty += draw_textf("Nearby: %s", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, str);
-                popfont();
-            }
-            if(game::focus == game::player1 && (!hasflags.empty() || !pickup.empty()))
-            {
-                pushfont("reduced");
-                ty += draw_textf("Press \fs\fw\f{=affinity}\fS to %s", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, !hasflags.empty() ? "drop flags" : "pick up flags");
-                popfont();
-            }
-            if(!taken.empty())
-            {
-                pushfont("default");
-                char *str = buildflagstr(taken, taken.length() <= 3);
-                ty += draw_textf("%s taken: %s", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, taken.length() == 1 ? "Flag" : "Flags", str);
-                popfont();
-            }
-            if(!droppedflags.empty())
-            {
-                pushfont("default");
-                char *str = buildflagstr(droppedflags, droppedflags.length() <= 3);
-                ty += draw_textf("%s dropped: %s", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, droppedflags.length() == 1 ? "Flag" : "Flags", str);
-                popfont();
-            }
+        }
+        if(!pickup.empty())
+        {
+            pushfont("emphasis");
+            char *str = buildflagstr(pickup, pickup.length() <= 3);
+            ty += draw_textf("Nearby: %s", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, str);
+            popfont();
+        }
+        if(game::focus == game::player1 && (!hasflags.empty() || !pickup.empty()))
+        {
+            pushfont("reduced");
+            ty += draw_textf("Press \fs\fw\f{=affinity}\fS to %s", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, !hasflags.empty() ? "drop flags" : "pick up flags");
+            popfont();
+        }
+        if(!taken.empty())
+        {
+            pushfont("default");
+            char *str = buildflagstr(taken, taken.length() <= 3);
+            ty += draw_textf("%s taken: %s", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, taken.length() == 1 ? "Flag" : "Flags", str);
+            popfont();
+        }
+        if(!droppedflags.empty())
+        {
+            pushfont("default");
+            char *str = buildflagstr(droppedflags, droppedflags.length() <= 3);
+            ty += draw_textf("%s dropped: %s", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, droppedflags.length() == 1 ? "Flag" : "Flags", str);
+            popfont();
         }
     }
 
     void drawevents(int w, int h, int &tx, int &ty, int tr, int tg, int tb, float blend)
     {
-        if(game::focus->state == CS_ALIVE && hud::showevents >= 2)
+        if(game::focus->state != CS_ALIVE || hud::showevents < 2) return;
+        static vector<int> hasflags;
+        hasflags.setsize(0);
+        loopv(st.flags)
         {
-            static vector<int> hasflags;
-            hasflags.setsize(0);
-            loopv(st.flags)
-            {
-                capturestate::flag &f = st.flags[i];
-                if(f.owner == game::focus) hasflags.add(i);
-            }
-            if(!hasflags.empty())
-            {
-                char *str = buildflagstr(hasflags, hasflags.length() <= 3);
-                ty -= draw_textf("You are holding the %s %s", tx, ty, int(FONTW*hud::eventpadx), int(FONTH*hud::eventpady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, str, hasflags.length() == 1 ? "flag" : "flags")+FONTH/4;
-            }
+            capturestate::flag &f = st.flags[i];
+            if(f.owner == game::focus) hasflags.add(i);
+        }
+        if(!hasflags.empty())
+        {
+            char *str = buildflagstr(hasflags, hasflags.length() <= 3);
+            ty -= draw_textf("You are holding the %s %s", tx, ty, int(FONTW*hud::eventpadx), int(FONTH*hud::eventpady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, str, hasflags.length() == 1 ? "flag" : "flags")+FONTH/4;
         }
     }
 
@@ -212,13 +205,11 @@ namespace capture
         {
             case cament::AFFINITY:
             {
-                if(st.flags.inrange(c->id))
-                {
-                    capturestate::flag &f = st.flags[c->id];
-                    c->o = f.pos(true);
-                    c->o.z += enttype[AFFINITY].radius*2/3;
-                    c->player = f.owner;
-                }
+                if(!st.flags.inrange(c->id)) break;
+                capturestate::flag &f = st.flags[c->id];
+                c->o = f.pos(true);
+                c->o.z += enttype[AFFINITY].radius*2/3;
+                c->player = f.owner;
                 break;
             }
             default: break;
@@ -522,11 +513,9 @@ namespace capture
 
     void checkaffinity(gameent *d, int i)
     {
-        if(canpickup(d, i))
-        {
-            client::addmsg(N_TAKEAFFIN, "ri2", d->clientnum, i);
-            d->action[AC_AFFINITY] = false;
-        }
+        if(!canpickup(d, i)) return;
+        client::addmsg(N_TAKEAFFIN, "ri2", d->clientnum, i);
+        d->action[AC_AFFINITY] = false;
     }
 
     void update()
@@ -598,29 +587,27 @@ namespace capture
 
     bool aicheck(gameent *d, ai::aistate &b)
     {
-        if(d->actortype == A_BOT)
+        if(d->actortype != A_BOT) return false;
+        static vector<int> taken; taken.setsize(0);
+        loopv(st.flags)
         {
-            static vector<int> taken; taken.setsize(0);
-            loopv(st.flags)
+            capturestate::flag &g = st.flags[i];
+            if(g.owner == d)
             {
-                capturestate::flag &g = st.flags[i];
-                if(g.owner == d)
-                {
-                    if(!m_ctf_protect(game::gamemode, game::mutators)) return aihomerun(d, b);
-                }
-                else if(g.team == d->team && (m_ctf_protect(game::gamemode, game::mutators) || (g.owner && g.owner->team != d->team) || g.droptime))
-                    taken.add(i);
+                if(!m_ctf_protect(game::gamemode, game::mutators)) return aihomerun(d, b);
             }
-            if(!ai::badhealth(d)) while(!taken.empty())
+            else if(g.team == d->team && (m_ctf_protect(game::gamemode, game::mutators) || (g.owner && g.owner->team != d->team) || g.droptime))
+                taken.add(i);
+        }
+        if(!ai::badhealth(d)) while(!taken.empty())
+        {
+            int flag = taken.length() > 2 ? rnd(taken.length()) : 0;
+            if(ai::makeroute(d, b, aiflagpos(d, st.flags[taken[flag]])))
             {
-                int flag = taken.length() > 2 ? rnd(taken.length()) : 0;
-                if(ai::makeroute(d, b, aiflagpos(d, st.flags[taken[flag]])))
-                {
-                    d->ai->switchstate(b, ai::AI_S_PURSUE, ai::AI_T_AFFINITY, taken[flag], ai::AI_A_HASTE);
-                    return true;
-                }
-                else taken.remove(flag);
+                d->ai->switchstate(b, ai::AI_S_PURSUE, ai::AI_T_AFFINITY, taken[flag], ai::AI_A_HASTE);
+                return true;
             }
+            else taken.remove(flag);
         }
         return false;
     }
@@ -781,26 +768,24 @@ namespace capture
 
     bool aipursue(gameent *d, ai::aistate &b)
     {
-        if(st.flags.inrange(b.target) && d->actortype == A_BOT)
+        if(!st.flags.inrange(b.target) || d->actortype != A_BOT) return false;
+        capturestate::flag &f = st.flags[b.target];
+        if(f.team != d->team)
         {
-            capturestate::flag &f = st.flags[b.target];
-            if(f.team != d->team)
+            if(f.owner)
             {
-                if(f.owner)
-                {
-                    if(d == f.owner) return aihomerun(d, b);
-                    else if(d->team != f.owner->team) return ai::violence(d, b, f.owner, 4);
-                    else return ai::defense(d, b, aiflagpos(d, f));
-                }
-                return ai::makeroute(d, b, aiflagpos(d, f));
+                if(d == f.owner) return aihomerun(d, b);
+                else if(d->team != f.owner->team) return ai::violence(d, b, f.owner, 4);
+                else return ai::defense(d, b, aiflagpos(d, f));
             }
-            else loopv(st.flags) if(st.flags[i].owner == d && ai::makeroute(d, b, aiflagpos(d, f)))
-            {
-                b.acttype = ai::AI_A_HASTE;
-                return true;
-            }
-            else if(b.owner >= 0) return ai::makeroute(d, b, aiflagpos(d, f));
+            return ai::makeroute(d, b, aiflagpos(d, f));
         }
+        else loopv(st.flags) if(st.flags[i].owner == d && ai::makeroute(d, b, aiflagpos(d, st.flags[i])))
+        {
+            b.acttype = ai::AI_A_HASTE;
+            return true;
+        }
+        if(b.owner >= 0) return ai::makeroute(d, b, aiflagpos(d, f));
         return false;
     }
 }

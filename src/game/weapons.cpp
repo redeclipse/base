@@ -43,22 +43,19 @@ namespace weapons
 
     int slot(gameent *d, int n, bool back)
     {
-        if(d && weapselectslot)
+        if(!d || !weapselectslot) return n;
+        if(weapselectslot == 2 && weaplist.empty()) buildweaplist(weapselectlist);
+        int p = m_weapon(d->actortype, game::gamemode, game::mutators), w = 0;
+        loopi(W_ALL)
         {
-            if(weapselectslot == 2 && weaplist.empty()) buildweaplist(weapselectlist);
-            int p = m_weapon(d->actortype, game::gamemode, game::mutators), w = 0;
-            loopi(W_ALL)
+            int weap = weapselectslot == 2 ? weaplist[i] : i;
+            if(d->holdweap(weap, p, lastmillis))
             {
-                int weap = weapselectslot == 2 ? weaplist[i] : i;
-                if(d->holdweap(weap, p, lastmillis))
-                {
-                    if(n == (back ? w : weap)) return back ? weap : w;
-                    w++;
-                }
+                if(n == (back ? w : weap)) return back ? weap : w;
+                w++;
             }
-            return -1;
         }
-        return n;
+        return -1;
     }
 
     ICOMMAND(0, weapslot, "i", (int *o), intret(slot(game::player1, *o >= 0 ? *o : game::player1->weapselect))); // -1 = weapselect slot
@@ -92,22 +89,19 @@ namespace weapons
                 else newoff = true;
             }
         }
-        if(d->weapswitch(weap, lastmillis, weaponswitchdelay))
+        if(!d->weapswitch(weap, lastmillis, weaponswitchdelay)) return false;
+        if(local)
         {
-            if(local)
+            if(newoff)
             {
-                if(newoff)
-                {
-                    int offset = d->weapload[oldweap];
-                    d->ammo[oldweap] = max(d->ammo[oldweap]-offset, 0);
-                    d->weapload[oldweap] = -d->weapload[oldweap];
-                }
-                client::addmsg(N_WSELECT, "ri3", d->clientnum, lastmillis-game::maptime, weap);
+                int offset = d->weapload[oldweap];
+                d->ammo[oldweap] = max(d->ammo[oldweap]-offset, 0);
+                d->weapload[oldweap] = -d->weapload[oldweap];
             }
-            playsound(WSND(weap, S_W_SWITCH), d->o, d, 0, -1, -1, -1, &d->wschan);
-            return true;
+            client::addmsg(N_WSELECT, "ri3", d->clientnum, lastmillis-game::maptime, weap);
         }
-        return false;
+        playsound(WSND(weap, S_W_SWITCH), d->o, d, 0, -1, -1, -1, &d->wschan);
+        return true;
     }
 
     bool weapreload(gameent *d, int weap, int load, int ammo, bool local)
