@@ -20,7 +20,7 @@ semabuild_setup() {
     rm -rf "${SEMABUILD_BUILD}" || return 1
     rm -rf "${SEMABUILD_PWD}/data" || return 1
     pushd "${HOME}" || return 1
-    git clone "${SEMABUILD_DEST}" || return 1
+    git clone --depth 1 --recurse-submodules --shallow-submodules "${SEMABUILD_DEST}" || return 1
     popd || return 1
     mkdir -pv "${SEMABUILD_DIR}" || return 1
     return 0
@@ -59,8 +59,6 @@ semabuild_integrate() {
             SEMABUILD_MODDIR="${SEMABUILD_PWD}"
         else
             SEMABUILD_MODDIR="${SEMABUILD_PWD}/data/${i}"
-            echo "module ${i} updating.."
-            git submodule update --init "data/${i}"
         fi
         pushd "${SEMABUILD_MODDIR}" || return 1
         echo "module ${i} processing.."
@@ -101,7 +99,7 @@ semabuild_process() {
 }
 
 semabuild_appimage() {
-    git clone "${SEMABUILD_APPIMAGE}" appimage || return 1
+    git clone --depth 1 "${SEMABUILD_APPIMAGE}" appimage || return 1
     pushd appimage || return 1
     export BRANCH="${BRANCH_NAME}"
     export ARCH=x86_64
