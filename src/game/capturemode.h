@@ -275,22 +275,20 @@ struct captureservmode : capturestate, servmode
     void parseaffinity(ucharbuf &p)
     {
         int numflags = getint(p);
-        if(numflags)
+        if(numflags <= 0) return;
+        loopi(numflags)
         {
-            loopi(numflags)
-            {
-                int team = getint(p), yaw = getint(p), pitch = getint(p);
-                vec o;
-                loopj(3) o[j] = getint(p)/DMF;
-                if(p.overread()) break;
-                if(!hasflaginfo && i < MAXPARAMS) addaffinity(o, team, yaw, pitch);
-            }
-            if(!hasflaginfo)
-            {
-                hasflaginfo = true;
-                sendaffinity();
-                loopv(clients) if(clients[i]->state == CS_ALIVE) entergame(clients[i]);
-            }
+            int team = getint(p), yaw = getint(p), pitch = getint(p);
+            vec o;
+            loopj(3) o[j] = getint(p)/DMF;
+            if(p.overread()) break;
+            if(!hasflaginfo && i < MAXPARAMS) addaffinity(o, team, yaw, pitch);
+        }
+        if(!hasflaginfo)
+        {
+            hasflaginfo = true;
+            sendaffinity();
+            loopv(clients) if(clients[i]->state == CS_ALIVE) entergame(clients[i]);
         }
     }
 

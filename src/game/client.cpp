@@ -2544,11 +2544,7 @@ namespace client
                 {
                     int lcn = getint(p);
                     gameent *f = game::newclient(lcn);
-                    if(!f || f == game::player1 || f->ai)
-                    {
-                        parsestate(NULL, p);
-                        break;
-                    }
+                    if(!f || f == game::player1 || f->ai) f = NULL;
                     parsestate(f, p);
                     break;
                 }
@@ -2750,12 +2746,9 @@ namespace client
                         int lcn = getint(p);
                         if(p.overread() || lcn < 0) break;
                         gameent *f = game::newclient(lcn);
-                        if(!f)
-                        {
-                            parsestate(NULL, p);
-                            break;
-                        }
-                        if(parsestate(f, p, true)) addmsg(N_RESUME, "ri", f->clientnum);
+                        if(!f) parsestate(NULL, p);
+                        else if(parsestate(f, p, true))
+                            addmsg(N_RESUME, "ri", f->clientnum);
                     }
                     break;
                 }

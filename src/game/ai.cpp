@@ -1003,7 +1003,7 @@ namespace ai
                         case 0: default: break;
                     }
                 }
-                else
+                else if(n >= 0)
                 {
                     while(d->ai->route.length() > n+1) d->ai->route.pop(); // waka-waka-waka-waka
                     int m = n-1; // next, please!

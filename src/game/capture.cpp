@@ -224,7 +224,7 @@ namespace capture
         {
             capturestate::flag &f = st.flags[i];
             if(!f.owner) continue;
-            while(numflags.length() <= f.owner->clientnum)
+            while(f.owner->clientnum > numflags.length())
             {
                 numflags.add(0);
                 iterflags.add(0);
@@ -370,6 +370,7 @@ namespace capture
     void parseaffinity(ucharbuf &p)
     {
         int numflags = getint(p);
+        if(numflags < 0) return;
         while(st.flags.length() > numflags) st.flags.pop();
         loopi(numflags)
         {

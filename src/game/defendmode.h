@@ -198,24 +198,22 @@ struct defendservmode : defendstate, servmode
     void parseaffinity(ucharbuf &p)
     {
         int numflags = getint(p);
-        if(numflags)
+        if(numflags <= 0) return;
+        loopi(numflags)
         {
-            loopi(numflags)
-            {
-                int kin = getint(p), yaw = getint(p), pitch = getint(p);
-                vec o;
-                loopj(3) o[j] = getint(p)/DMF;
-                string name;
-                getstring(name, p);
-                if(p.overread()) break;
-                if(!hasflaginfo && i < MAXPARAMS) addaffinity(o, kin, yaw, pitch, name);
-            }
-            if(!hasflaginfo)
-            {
-                hasflaginfo = true;
-                sendaffinity();
-                loopv(clients) if(clients[i]->state == CS_ALIVE) entergame(clients[i]);
-            }
+            int kin = getint(p), yaw = getint(p), pitch = getint(p);
+            vec o;
+            loopj(3) o[j] = getint(p)/DMF;
+            string name;
+            getstring(name, p);
+            if(p.overread()) break;
+            if(!hasflaginfo && i < MAXPARAMS) addaffinity(o, kin, yaw, pitch, name);
+        }
+        if(!hasflaginfo)
+        {
+            hasflaginfo = true;
+            sendaffinity();
+            loopv(clients) if(clients[i]->state == CS_ALIVE) entergame(clients[i]);
         }
     }
 

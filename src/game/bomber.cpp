@@ -410,6 +410,7 @@ namespace bomber
     void parseaffinity(ucharbuf &p)
     {
         int numflags = getint(p);
+        if(numflags < 0) return;
         while(st.flags.length() > numflags) st.flags.pop();
         loopi(numflags)
         {
