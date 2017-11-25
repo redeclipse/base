@@ -54,11 +54,14 @@ semabuild_build() {
 }
 
 semabuild_integrate() {
+    git submodule init || return 1
     for i in ${SEMABUILD_ALLMODS}; do
         if [ "${i}" = "base" ]; then
             SEMABUILD_MODDIR="${SEMABUILD_PWD}"
         else
             SEMABUILD_MODDIR="${SEMABUILD_PWD}/data/${i}"
+            echo "module ${i} updating.."
+            git submodule update --depth 1 "data/${i}"
         fi
         pushd "${SEMABUILD_MODDIR}" || return 1
         echo "module ${i} processing.."
