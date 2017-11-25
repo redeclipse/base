@@ -854,8 +854,8 @@ bool mmcollide(physent *d, const vec &dir, float cutoff, octaentities &oc) // co
         vec center, radius;
         float rejectradius = m->collisionbox(center, radius), scale = e.attrs[5] ? max(e.attrs[5]/100.0f, 1e-3f) : 1;
         center.mul(scale);
-        radius.mul(scale);
         if(d->o.reject(vec(e.o).add(center), d->radius + rejectradius*scale)) continue;
+
         int yaw = e.attrs[1], pitch = e.attrs[2], roll = e.attrs[3];
         if(mcol == COLLIDE_TRI || testtricol)
         {
