@@ -1560,48 +1560,48 @@ namespace hud
         return "";
     }
 
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, overlaytex, "<grey>textures/hud/overlay", 0);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, damagemasktex, "<grey>textures/damage/mask", 0);
 
     VAR(IDF_PERSIST, showdamage, 0, 1, 1);
     CVAR(IDF_PERSIST, damagecolour, 0x600000);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, damagetex, "<grey><noswizzle>textures/water", 0);
-    FVAR(IDF_PERSIST, damagedistort, 0, 16, FVAR_MAX);
-    FVAR(IDF_PERSIST, damageblend, 0, 0.9f, 1);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, damagetex, "<grey><noswizzle>textures/damage/hurt", 0x300);
+    FVAR(IDF_PERSIST, damagedistort, 0, 2.35f, 16);
+    FVAR(IDF_PERSIST, damageblend, 0, 0.75f, 1);
     FVAR(IDF_PERSIST, damageblenddead, 0, 0.5f, 1);
-    FVAR(IDF_PERSIST, damagespeed1, FVAR_MIN, -0.025f, FVAR_MAX);
-    FVAR(IDF_PERSIST, damagespeed2, FVAR_MIN, 0.05f, FVAR_MAX);
+    FVAR(IDF_PERSIST, damagespeed1, FVAR_MIN, -0.05f, FVAR_MAX);
+    FVAR(IDF_PERSIST, damagespeed2, FVAR_MIN, 0.1f, FVAR_MAX);
 
     VAR(IDF_PERSIST, showdamageburn, 0, 1, 1);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, damageburntex, "<grey><noswizzle>particles/explosion", 0);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, damageburntex, "<grey><noswizzle>textures/damage/burn", 0x300);
     FVAR(IDF_PERSIST, damageburnbright, 0, 1, 10);
-    FVAR(IDF_PERSIST, damageburnblend, 0, 0.9f, 1);
-    FVAR(IDF_PERSIST, damageburnspeed1, FVAR_MIN, -0.5f, FVAR_MAX);
-    FVAR(IDF_PERSIST, damageburnspeed2, FVAR_MIN, 0.75f, FVAR_MAX);
+    FVAR(IDF_PERSIST, damageburnblend, 0, 0.75f, 1);
+    FVAR(IDF_PERSIST, damageburnspeed1, FVAR_MIN, -0.3f, FVAR_MAX);
+    FVAR(IDF_PERSIST, damageburnspeed2, FVAR_MIN, 0.4f, FVAR_MAX);
 
     VAR(IDF_PERSIST, showdamagebleed, 0, 1, 1);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, damagebleedtex, "<grey><noswizzle>particles/glimmer", 0);
-    FVAR(IDF_PERSIST, damagebleedbright, 0, 1, 10);
-    FVAR(IDF_PERSIST, damagebleedblend, 0, 0.9f, 1);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, damagebleedtex, "<grey><noswizzle>textures/damage/bleed", 0x300);
+    FVAR(IDF_PERSIST, damagebleedbright, 0, 0.7f, 10);
+    FVAR(IDF_PERSIST, damagebleedblend, 0, 0.7f, 1);
     FVAR(IDF_PERSIST, damagebleedspeed1, FVAR_MIN, -0.025f, FVAR_MAX);
     FVAR(IDF_PERSIST, damagebleedspeed2, FVAR_MIN, 0.05f, FVAR_MAX);
 
     VAR(IDF_PERSIST, showdamageshock, 0, 1, 1);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, damageshocktex, "<grey><noswizzle>particles/shockball", 0);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, damageshocktex, "<grey><noswizzle>textures/damage/shock", 0x300);
     FVAR(IDF_PERSIST, damageshockbright, 0, 1, 10);
-    FVAR(IDF_PERSIST, damageshockblend, 0, 0.9f, 1);
-    FVAR(IDF_PERSIST, damageshockspeed1, FVAR_MIN, -0.5f, FVAR_MAX);
-    FVAR(IDF_PERSIST, damageshockspeed2, FVAR_MIN, 0.75f, FVAR_MAX);
+    FVAR(IDF_PERSIST, damageshockblend, 0, 0.75f, 1);
+    FVAR(IDF_PERSIST, damageshockspeed1, FVAR_MIN, -0.4f, FVAR_MAX);
+    FVAR(IDF_PERSIST, damageshockspeed2, FVAR_MIN, 0.3f, FVAR_MAX);
 
     void drawdamage(const char *tex, const vec &color, float fade, float speed1, float speed2, float distort = 0.f, float bright = 1.f)
     {
-        if(!*overlaytex || !*tex) return;
+        if(!*damagemasktex || !*tex) return;
         LOCALPARAMF(time, lastmillis/1000.f);
         LOCALPARAM(speed, vec(speed1, speed2, distort));
         LOCALPARAM(colour, vec(color).mul(bright));
         glActiveTexture_(GL_TEXTURE0);
-        settexture(overlaytex, 0);
+        settexture(damagemasktex, 0);
         glActiveTexture_(GL_TEXTURE1);
-        settexture(tex, 0);
+        settexture(tex, 0x300);
         glActiveTexture_(GL_TEXTURE0);
         gle::colorf(1, 1, 1, fade);
         drawquad(0, 0, 1, 1);
@@ -1613,6 +1613,11 @@ namespace hud
         hudmatrix.ortho(0, 1, 1, 0, -1, 1);
         flushhudmatrix();
         SETSHADER(huddamage);
+        if(showdamage)
+        {
+            float pc = game::focus->state == CS_DEAD ? damageblenddead : (game::focus->state == CS_ALIVE ? min(damageresidue, 100)/100.f*damageblend : 0.f);
+            if(pc > 0) drawdamage(damagetex, damagecolour.tocolor(), pc*blend, damagespeed1, damagespeed2, damagedistort);
+        }
         #define RESIDUAL(name, type) \
             if(showdamage##name && game::focus->name##ing(lastmillis, name##time)) \
             { \
@@ -1624,11 +1629,6 @@ namespace hud
             }
         RESIDUALS
         #undef RESIDUAL
-        if(showdamage)
-        {
-            float pc = game::focus->state == CS_DEAD ? damageblenddead : (game::focus->state == CS_ALIVE ? min(damageresidue, 100)/100.f : 0.f);
-            if(pc > 0) drawdamage(damagetex, damagecolour.tocolor(), pc*blend*damageblend, damagespeed1, damagespeed2, damagedistort);
-        }
         pophudmatrix();
         resethudshader();
     }
@@ -1673,8 +1673,8 @@ namespace hud
     TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundwatertex, "<grey><noswizzle>textures/water", 0x300);
     TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundcausttex, "<grey><noswizzle>caustics/caust00", 0x300);
     TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundcloudtex, "<grey><noswizzle>torley/desat/cloudyformations_z", 0x300);
-    TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundauratex, "<grey><noswizzle>textures/lava", 0);
-    TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundglimmertex, "<grey><noswizzle>particles/glimmer", 0);
+    TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundauratex, "<grey>textures/lava", 0);
+    TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundglimmertex, "<grey>particles/glimmer", 0);
     FVAR(IDF_PERSIST, backgroundaurascale, 0, 0.65f, 1);
     FVAR(IDF_PERSIST, backgroundaurablend, 0, 0.65f, 1);
     FVAR(IDF_PERSIST, backgroundauraspeed, 0, 0.0125f, FVAR_MAX);
