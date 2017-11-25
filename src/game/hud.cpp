@@ -1598,7 +1598,7 @@ namespace hud
 
     void drawdamage(const char *tex, const vec &color, float fade, float speed1, float speed2, float distort = 0.f, float bright = 1.f)
     {
-        if(!*damagemasktex || !*tex) return;
+        if(!*damagemasktex || !*tex || !fade) return;
         LOCALPARAMF(time, lastmillis/1000.f);
         LOCALPARAM(speed, vec(speed1, speed2, distort));
         LOCALPARAM(colour, vec(color).mul(bright));
