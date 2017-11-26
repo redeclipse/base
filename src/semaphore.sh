@@ -115,6 +115,7 @@ semabuild_appimage() {
     export BUILD="${SEMABUILD_PWD}"
     bash build-appimages.sh || return 1
     export GITHUB_TOKEN="${GITHUB_TOKEN}"
+    export REPO_SLUG=red-eclipse/deploy
     bash github-release.sh || return 1
     popd || return 1
     return 0
