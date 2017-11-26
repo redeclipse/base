@@ -7,6 +7,7 @@ SEMABUILD_APT='DEBIAN_FRONTEND=noninteractive apt-get'
 SEMABUILD_DEST="https://${GITHUB_TOKEN}:x-oauth-basic@github.com/red-eclipse/deploy.git"
 SEMABUILD_SOURCE="https://raw.githubusercontent.com/red-eclipse/deploy/master"
 SEMABUILD_APPIMAGE="https://github.com/red-eclipse/appimage-builder.git"
+SEMABUILD_APPIMAGE_GH_DEST="red-eclipse/deploy"
 SEMABUILD_MODULES=`cat "${SEMABUILD_PWD}/.gitmodules" | grep '\[submodule "[^.]' | sed -e 's/^.submodule..//;s/..$//' | tr "\n" " " | sed -e 's/ $//'`
 SEMABUILD_ALLMODS="base ${SEMABUILD_MODULES}"
 SEMABUILD_DEPLOY="false"
@@ -115,7 +116,7 @@ semabuild_appimage() {
     export BUILD="${SEMABUILD_PWD}"
     bash build-appimages.sh || return 1
     export GITHUB_TOKEN="${GITHUB_TOKEN}"
-    export REPO_SLUG=red-eclipse/deploy
+    export REPO_SLUG="${SEMABUILD_APPIMAGE_GH_DEST}"
     bash github-release.sh || return 1
     popd || return 1
     return 0
