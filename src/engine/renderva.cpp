@@ -2467,7 +2467,7 @@ void renderdecals()
 
     if(maxdualdrawbufs)
     {
-        glBlendFunc(GL_SRC1_ALPHA, GL_ONE_MINUS_SRC1_ALPHA);
+        glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC1_ALPHA);
         maskgbuffer("c");
         for(vtxarray *va = decalva; va; va = va->next) if(va->decaltris && va->occluded < OCCLUDE_BB)
         {
@@ -2481,6 +2481,7 @@ void renderdecals()
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_FALSE);
         }
+        else glBlendFunc(GL_SRC1_ALPHA, GL_ONE_MINUS_SRC1_ALPHA);
         maskgbuffer("n");
         cur.vbuf = 0;
         for(vtxarray *va = decalva; va; va = va->next) if(va->decaltris && va->occluded < OCCLUDE_BB)
@@ -2492,7 +2493,7 @@ void renderdecals()
     }
     else
     {
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
         glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_FALSE);
         maskgbuffer("cn");
         for(vtxarray *va = decalva; va; va = va->next) if(va->decaltris && va->occluded < OCCLUDE_BB)

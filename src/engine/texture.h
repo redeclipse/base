@@ -747,6 +747,7 @@ struct Slot
     virtual VSlot &emptyvslot();
 
     virtual int cancombine(int type) const;
+    virtual bool shouldpremul(int type) const { return false; }
 
     int findtextype(int type, int last = -1) const;
 
@@ -840,6 +841,7 @@ struct DecalSlot : Slot, VSlot
     VSlot &emptyvslot() { return *this; }
 
     int cancombine(int type) const;
+    bool shouldpremul(int type) const;
 
     void reset()
     {

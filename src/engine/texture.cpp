@@ -2673,6 +2673,15 @@ int DecalSlot::cancombine(int type) const
     }
 }
 
+bool DecalSlot::shouldpremul(int type) const
+{
+    switch(type)
+    {
+        case TEX_DIFFUSE: return true;
+        default: return false;
+    }
+}
+
 static void addname(vector<char> &key, Slot &slot, Slot::Tex &t, bool combined = false, const char *prefix = NULL)
 {
     if(combined) key.add('&');
@@ -2684,7 +2693,7 @@ static void addname(vector<char> &key, Slot &slot, Slot::Tex &t, bool combined =
 void Slot::load(int index, Slot::Tex &t)
 {
     vector<char> key;
-    addname(key, *this, t);
+    addname(key, *this, t, false, shouldpremul(t.type) ? "<premul>" : NULL);
     Slot::Tex *combine = NULL;
     loopv(sts)
     {
@@ -2727,6 +2736,7 @@ void Slot::load(int index, Slot::Tex &t)
             if(ts.bpp < 3) swizzleimage(ts);
             break;
     }
+    if(!ts.compressed && shouldpremul(t.type)) texpremul(ts);
     t.t = newtexture(NULL, key.getbuf(), ts, wrap, true, true, true, compress, &anim);
 }
 
@@ -2734,7 +2744,6 @@ void Slot::load()
 {
     linkslotshader(*this);
     loopv(sts)
-
     {
         Slot::Tex &t = sts[i];
         if(t.combined >= 0) continue;
