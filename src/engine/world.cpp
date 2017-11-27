@@ -458,7 +458,7 @@ void pasteundoent(int idx, const entbase &ue, int *attrs, int numattrs)
     int efocus = -1, minattrs = entities::numattrs(ue.type);
     entedit(idx,
     {
-        entity &e = (entity &)ue;
+        (entbase &)e = ue;
         if(e.attrs.length() < numattrs) e.attrs.add(0, numattrs - e.attrs.length());
         else if(e.attrs.length() > numattrs) e.attrs.setsize(numattrs);
         if(numattrs < minattrs) e.attrs.add(0, minattrs - numattrs);
@@ -471,13 +471,10 @@ void pasteundoents(undoblock *u)
     undoent *ue = u->ents();
     int *attrs = u->attrs();
     loopi(u->numents)
-        entedit(ue[i].i,
-        {
-            (entbase &)e = ue[i].e;
-            if(e.attrs.length() < ue[i].numattrs) e.attrs.add(0, ue[i].numattrs - e.attrs.length());
-            else if(e.attrs.length() > ue[i].numattrs) e.attrs.setsize(ue[i].numattrs);
-            loopk(ue[i].numattrs) e.attrs[k] = *attrs++;
-        });
+    {
+        pasteundoent(ue[i].i, ue[i].e, attrs, ue[i].numattrs);
+        attrs += ue[i].numattrs;
+    }
 }
 
 void entflip()
