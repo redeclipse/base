@@ -528,7 +528,7 @@ void sendfile(int cn, int chan, stream *file, const char *format, ...)
     else if(!clients.inrange(cn)) return;
 
     int len = file ? (int)min(file->size(), stream::offset(INT_MAX)) : 0;
-    if(len <= 0 || len > 16<<20) return;
+    if(len < 0 || len > 16<<20) return;
 
     packetbuf p(MAXTRANS+len, ENET_PACKET_FLAG_RELIABLE);
     va_list args;
@@ -571,8 +571,11 @@ void sendfile(int cn, int chan, stream *file, const char *format, ...)
     }
     va_end(args);
 
-    file->seek(0, SEEK_SET);
-    file->read(p.subbuf(len).buf, len);
+    if(file)
+    {
+        file->seek(0, SEEK_SET);
+        file->read(p.subbuf(len).buf, len);
+    }
 
     ENetPacket *packet = p.finalize();
     if(cn >= 0) sendpacket(cn, chan, packet);
