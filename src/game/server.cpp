@@ -6814,7 +6814,7 @@ namespace server
                             sents[n].type = type;
                             sents[n].spawned = false; // wait a bit then load 'em up
                             sents[n].millis = gamemillis;
-                            sents[n].attrs.add(0, clamp(numattr, type >= 0 && type < MAXENTTYPES ? enttype[type].numattrs : 0, MAXENTATTRS));
+                            sents[n].attrs.add(0, clamp(numattr, max(type >= 0 && type < MAXENTTYPES ? enttype[type].numattrs : 0, 5), MAXENTATTRS));
                             loopk(numattr)
                             {
                                 if(p.overread()) break;

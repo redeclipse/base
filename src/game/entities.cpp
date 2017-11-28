@@ -38,7 +38,7 @@ namespace entities
     int lastent(int type) { return type >= 0 && type < MAXENTTYPES ? clamp(lastenttype[type], 0, ents.length()) : 0; }
     int lastuse(int type) { return type >= 0 && type < EU_MAX ? clamp(lastusetype[type], 0, ents.length()) : 0; }
 
-    int numattrs(int type) { return type >= 0 && type < MAXENTTYPES ? enttype[type].numattrs : 0; }
+    int numattrs(int type) { return clamp(type >= 0 && type < MAXENTTYPES ? enttype[type].numattrs : 0, 5, MAXENTATTRS); }
     ICOMMAND(0, entityattrs, "b", (int *n), intret(numattrs(*n)));
 
     ICOMMAND(0, getentinfo, "b", (int *n), {
@@ -79,8 +79,8 @@ namespace entities
         if(*n < 0) intret(MAXENTTYPES);
         else if(*n < MAXENTTYPES)
         {
-            if(*p < 0) intret(enttype[*n].numattrs);
-            else if(*p < enttype[*n].numattrs) result(getentattribute(*n, *p, *a));
+            if(*p < 0) intret(numattrs(*n));
+            else if(*p < numattrs(*n)) result(getentattribute(*n, *p, *a));
         }
     });
 
@@ -982,7 +982,7 @@ namespace entities
     void fixentity(int n, bool recurse, bool create)
     {
         gameentity &e = *(gameentity *)ents[n];
-        int num = max(5, enttype[e.type].numattrs);
+        int num = numattrs(e.type);
         if(e.attrs.length() < num) e.attrs.add(0, num - e.attrs.length());
         else if(e.attrs.length() > num) e.attrs.setsize(num);
         loopvrev(e.links)
@@ -1881,7 +1881,7 @@ namespace entities
         {
             gameentity &e = *(gameentity *)ents[i];
             progress(i/float(ents.length()), "Setting entity attributes...");
-            int num = max(5, enttype[e.type].numattrs);
+            int num = numattrs(e.type);
             if(e.attrs.length() < num) e.attrs.add(0, num - e.attrs.length());
             else if(e.attrs.length() > num) e.attrs.setsize(num);
         }
@@ -1909,7 +1909,7 @@ namespace entities
                 ents.add(&e);
                 e.type = ACTOR;
                 e.o = ents[i]->o;
-                e.attrs.add(0, max(5, enttype[ACTOR].numattrs));
+                e.attrs.add(0, numattrs(ACTOR));
                 e.attrs[0] = (i%5 != 4 || ents[i]->type == WEAPON ? A_GRUNT : A_TURRET)-1;
                 switch(ents[i]->type)
                 {
@@ -2299,7 +2299,7 @@ namespace entities
                 part_textcopy(pos.add(off), ds, hastop ? PART_TEXT_ONTOP : PART_TEXT, 1, colourwhite);
             }
         }
-        if(edit && showentinfo&(hasent ? 16 : 32)) loopk(enttype[e.type].numattrs)
+        if(edit && showentinfo&(hasent ? 16 : 32)) loopk(numattrs(e.type))
         {
             const char *attrname = getentattribute(e.type, k, e.attrs[0]);
             if(attrname && *attrname)
