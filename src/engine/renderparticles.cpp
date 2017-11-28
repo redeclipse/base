@@ -1174,7 +1174,7 @@ static partrenderer *parts[] =
     new quadrenderer("<grey>particles/muzzle", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP),
     new quadrenderer("<grey>particles/snow", PT_PART|PT_BRIGHT|PT_FLIP),
     &texts, &textontop,
-    &explosions, &shockwaves, &shockballs, &lightnings, &lightzaps,
+    &explosions, &shockwaves, &shockballs, &glimmerballs, &lightnings, &lightzaps,
     &flares // must be done last!
 };
 
@@ -1762,8 +1762,8 @@ void makeparticle(const vec &o, attrvector &attr)
         }
         case 3: //fire ball - <size> <rgb> <type> <blend>
         {
-            int types[3] = { PART_EXPLOSION, PART_SHOCKWAVE, PART_SHOCKBALL },
-                type = types[attr[3] >= 0 && attr[3] <= 2 ? attr[3] : 0];
+            int types[4] = { PART_EXPLOSION, PART_SHOCKWAVE, PART_SHOCKBALL, PART_GLIMMERY },
+                type = types[attr[3] >= 0 && attr[3] <= 3 ? attr[3] : 0];
             float blend = attr[4] > 0 && attr[4] < 100 ? attr[4]/100.f : 1.f;
             newparticle(o, vec(0, 0, 1), 1, type, partcolour(attr[2], attr[3], attr[4]), 4.f, blend)->val = 1+attr[1];
             break;

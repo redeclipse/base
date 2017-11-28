@@ -1691,7 +1691,7 @@ namespace projs
                         {
                             part_create(type != W_ZAPPER ? PART_PLASMA_SOFT : PART_ELECZAP_SOFT, len, proj.o, FWCOL(H, partcol, proj), expl*0.5f, 0.5f*WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags))); // corona
                             part_splash(PART_SPARK, 10, len*2, proj.o, FWCOL(H, partcol, proj), 0.25f, WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)), 1, 0, expl, 15);
-                            part_explosion(proj.o, expl, PART_SHOCKBALL, len, FWCOL(H, explcol, proj), 1.f, WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)));
+                            part_explosion(proj.o, expl, PART_GLIMMERY, len, FWCOL(H, explcol, proj), 1.f, WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)));
                             if(WF(WK(proj.flags), proj.weap, wavepush, WS(proj.flags)) >= 1)
                                 part_explosion(proj.o, expl*WF(WK(proj.flags), proj.weap, wavepush, WS(proj.flags)), PART_SHOCKWAVE, halflen, projhint(proj.owner, FWCOL(H, explcol, proj)), 1.f, 0.5f*WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags))*projhintblend);
                         }
