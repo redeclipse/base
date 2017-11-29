@@ -830,7 +830,7 @@ extentity *newentity(bool local, const vec &o, int type, const attrvector &attrs
     e.o = o;
     e.type = type;
     int numattrs = min(attrs.length(), MAXENTATTRS);
-    while(e.attrs.length() < numattrs) e.attrs.add(0);
+    e.attrs.add(0, numattrs - e.attrs.length());
     loopi(numattrs) e.attrs[i] = attrs[i];
     loopi(3) e.reserved[i] = 0;
     if(ents.inrange(idx)) { entities::deleteent(ents[idx]); ents[idx] = &e; }
