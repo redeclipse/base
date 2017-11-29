@@ -478,7 +478,7 @@ namespace server
                 totalavgpos = localtotalavgpossum / max(1, localtotalavgposnum);
             }
         }
-        
+
         void sendburn()
         {
             sendf(-1, 1, "ri5", N_BURNRES, clientnum, burntime, burndelay, burndamage);
