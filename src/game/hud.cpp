@@ -1,8 +1,7 @@
 #include "game.h"
 namespace hud
 {
-    const int NUMSTATS = 21;
-    int uimillis = 0, damageresidue = 0, hudwidth = 0, hudheight = 0, lastteam = 0, laststats = 0, prevstats[NUMSTATS] = {0}, curstats[NUMSTATS] = {0};
+    int uimillis = 0, damageresidue = 0, hudwidth = 0, hudheight = 0, lastteam = 0, laststats = 0;
 
     #include "compass.h"
     vector<int> teamkills;
@@ -34,6 +33,8 @@ namespace hud
     VAR(IDF_PERSIST, showloadingmapbg, 0, 1, 1);
     VAR(IDF_PERSIST, showloadinglogos, 0, 0, 1);
 
+    const int NUMSTATS = 42;
+    int prevstats[NUMSTATS] = {0}, curstats[NUMSTATS] = {0};
     VAR(IDF_PERSIST, statrate, 1, 100, 1000);
 
     void enginestatrefresh()
@@ -44,15 +45,27 @@ namespace hud
             laststats = totalmillis-(totalmillis%statrate);
         }
         int nextstats[NUMSTATS] = {
-            wtris/1024, vtris*100/max(wtris, 1), wverts/1024, vverts*100/max(wverts, 1), xtraverts/1024, xtravertsva/1024, allocnodes*8, allocva, glde, gbatches, getnumqueries(),
+            wtris/1024, vtris*100/max(wtris, 1), wverts/1024, vverts*100/max(wverts, 1), xtraverts/1024, xtravertsva/1024,
+            allocnodes*8, allocva, glde, gbatches, getnumqueries(),
             curfps, bestfpsdiff, worstfpsdiff, entities::ents.length(), entgroup.length(), ai::waypoints.length(), getnumviewcells(),
-            int(vec(game::focus->vel).add(game::focus->falling).magnitude()), int(vec(game::focus->vel).add(game::focus->falling).magnitude()/8.f), int(vec(game::focus->vel).add(game::focus->falling).magnitude()*0.45f)
+            int(vec(game::focus->vel).add(game::focus->falling).magnitude()),
+            int(vec(game::focus->vel).add(game::focus->falling).magnitude()/8.f),
+            int(vec(game::focus->vel).add(game::focus->falling).magnitude()*0.45f),
+            int(camera1->o.x), int(camera1->o.y), int(camera1->o.z), int(camera1->yaw), int(camera1->pitch), int(camera1->roll),
+            sel.o.x, sel.o.y, sel.o.z, sel.s.x, sel.s.y, sel.s.z, sel.cx, sel.cxs, sel.cy, sel.cys,
+            selchildcount, selchildmat, sel.corner, sel.orient, sel.grid
         };
         loopi(NUMSTATS) if(prevstats[i] == curstats[i]) curstats[i] = nextstats[i];
     }
     ICOMMAND(0, refreshenginestats, "", (), enginestatrefresh());
     ICOMMAND(0, getenginestat, "ii", (int *n, int *prev), intret(*n >= 0 && *n < NUMSTATS ? (*prev!=0 ? prevstats[*n] : curstats[*n]) : -1));
-    static const char *enginestats[NUMSTATS] = { "wtr", "wtr%", "wvt", "wvt%", "evt", "eva", "ond", "va", "gl" "gb", "oq", "fps", "best", "worst", "ents", "entsel", "wp", "pvs", "vel", "mps", "kmh" };
+    static const char *enginestats[NUMSTATS] = {
+        "wtr", "wtr%", "wvt", "wvt%", "evt", "eva", "ond", "va", "gl" "gb", "oq",
+        "fps", "best", "worst", "ents", "entsel", "wp", "pvs", "vel", "mps", "kmh",
+        "posx", "posy", "posz", "yaw", "pitch", "roll",
+        "selox", "seloy", "seloz", "selsx", "selsy", "selsz", "selcx", "selcxs", "selcy", "selcys",
+        "cube", "mat", "corner", "orient", "grid"
+    };
     ICOMMAND(0, getenginestatname, "i", (int *n), result(*n >= 0 && *n < NUMSTATS ? enginestats[*n]: ""));
     #define LOOPENGSTATS(name,op) \
         ICOMMAND(0, loopenginestat##name, "iire", (int *count, int *skip, ident *id, uint *body), \
