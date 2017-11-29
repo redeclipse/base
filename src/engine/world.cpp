@@ -929,11 +929,8 @@ void entreplace()
     {
         groupedit({
             e.type = c.type;
-            loopvk(c.attrs)
-            {
-                while(e.attrs.length() <= k) e.attrs.add(0);
-                e.attrs[k] = c.attrs[k];
-            }
+            e.attrs.add(0, c.attrs.length() - e.attrs.length());
+            loopvk(c.attrs) e.attrs[k] = c.attrs[k];
             loopvk(c.links) e.links.add(c.links[k]);
         });
     }
