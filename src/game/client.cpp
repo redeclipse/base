@@ -904,8 +904,8 @@ namespace client
 
     CLCOMMAND(buffing, intret(d->lastbuff));
     CLCOMMAND(burning, intret(burntime ? d->burning(lastmillis, burntime) : 0));
-    CLCOMMAND(bleeding, intret(bleedtime ? d->bleeding(lastmillis, burntime) : 0));
-    CLCOMMAND(shocking, intret(shocktime ? d->shocking(lastmillis, burntime) : 0));
+    CLCOMMAND(bleeding, intret(bleedtime ? d->bleeding(lastmillis, bleedtime) : 0));
+    CLCOMMAND(shocking, intret(shocktime ? d->shocking(lastmillis, shocktime) : 0));
     CLCOMMAND(regen, intret(regentime ? d->lastregen : 0));
     CLCOMMAND(impulselast, intret(game::canregenimpulse(d) && d->impulse[IM_METER] > 0 && d->lastimpulsecollect ? (lastmillis-d->lastimpulsecollect)%1000 : 0));
 
