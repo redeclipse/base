@@ -312,6 +312,7 @@ namespace weapons
                         int offtime = hadcook && d->prevstate[weap] == type ? lastmillis-d->prevtime[weap] : 0;
                         client::addmsg(N_SPHY, "ri5", d->clientnum, SPHY_COOK, type, len, offtime);
                         d->setweapstate(weap, type, len, lastmillis, offtime);
+                        d->lastcook = lastmillis;
                     }
                     else return false;
                 }
