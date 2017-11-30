@@ -334,7 +334,7 @@ extern const char * const sendmaptypes[SENDMAP_MAX];
 enum
 {
     N_CONNECT = 0, N_SERVERINIT, N_WELCOME, N_CLIENTINIT, N_POS, N_SPHY, N_TEXT, N_COMMAND, N_ANNOUNCE, N_DISCONNECT,
-    N_SHOOT, N_DESTROY, N_STICKY, N_SUICIDE, N_DIED, N_POINTS, N_TOTALS, N_AVGPOS, N_DAMAGE, N_SHOTFX,
+    N_SHOOT, N_DESTROY, N_STICKY, N_SUICIDE, N_DIED, N_POINTS, N_TOTALS, N_AVGPOS, N_DAMAGE, N_BURNRES, N_BLEEDRES, N_SHOCKRES, N_SHOTFX,
     N_LOADW, N_TRYSPAWN, N_SPAWNSTATE, N_SPAWN, N_DROP, N_WSELECT,
     N_MAPCHANGE, N_MAPVOTE, N_CLEARVOTE, N_CHECKPOINT, N_ITEMSPAWN, N_ITEMUSE, N_TRIGGER, N_EXECLINK,
     N_PING, N_PONG, N_CLIENTPING, N_TICK, N_ITEMACC, N_SERVMSG, N_GETGAMEINFO, N_GAMEINFO, N_RESUME,
@@ -597,6 +597,8 @@ struct clientstate
     int health, ammo[W_MAX], entid[W_MAX], colour, model, pattern, checkpointspawn;
     int weapselect, weapload[W_MAX], weapshot[W_MAX], weapstate[W_MAX], weapwait[W_MAX], weaptime[W_MAX], prevstate[W_MAX], prevtime[W_MAX];
     int lastdeath, lastspawn, lastpain, lastregen, lastregenamt, lastbuff, lastshoot, lastcook, lastaffinity, lastres[WR_MAX], lastrestime[WR_MAX];
+    int burntime, burndelay, burndamage, bleedtime, bleeddelay, bleeddamage, shocktime, shockdelay, shockdamage, shockstun, shockstuntime;
+    float shockstunscale, shockstunfall;
     int actortype, spawnpoint, ownernum, skill, points, frags, deaths, totalpoints, totalfrags, totaldeaths, spree, lasttimeplayed, timeplayed, cpmillis, cptime, queuepos;
     float totalavgpos;
     bool quarantine;
@@ -820,6 +822,8 @@ struct clientstate
     {
         if(n >= 0 && n < WR_MAX) lastres[n] = lastrestime[n] = 0;
         else loopi(WR_MAX) lastres[i] = lastrestime[i] = 0;
+        burntime = burndelay = burndamage = bleedtime = bleeddelay = bleeddamage = shocktime = shockdelay = shockdamage = shockstun = shockstuntime = 0;
+        shockstunscale = shockstunfall = 0.f;
     }
 
     void clearstate()
