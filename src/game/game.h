@@ -120,7 +120,7 @@ extern const enttypes enttype[] = {
                 "lightfx",      { "type",   "mod",      "min",      "max",      "flags",    "variant" }
     },
     {
-        DECAL,       1,             0,      0,      EU_NONE,    6,          -1,         -1,     7,
+        DECAL,       1,             0,      0,      EU_NONE,    6,          -1,         -1,     5,
             0, 0, 0,
             false,  false,  false,      false,      false,
                 "decal",        { "type",   "yaw",      "pitch",    "roll",     "scale",    "variant" }
