@@ -982,9 +982,7 @@ namespace entities
     void fixentity(int n, bool recurse, bool create)
     {
         gameentity &e = *(gameentity *)ents[n];
-        int num = numattrs(e.type);
-        if(e.attrs.length() < num) e.attrs.add(0, num - e.attrs.length());
-        else if(e.attrs.length() > num) e.attrs.setsize(num);
+        e.attrs.setsize(numattrs(e.type), 0);
         loopvrev(e.links)
         {
             int ent = e.links[i];
@@ -1881,9 +1879,7 @@ namespace entities
         {
             gameentity &e = *(gameentity *)ents[i];
             progress(i/float(ents.length()), "Setting entity attributes...");
-            int num = numattrs(e.type);
-            if(e.attrs.length() < num) e.attrs.add(0, num - e.attrs.length());
-            else if(e.attrs.length() > num) e.attrs.setsize(num);
+            e.attrs.setsize(numattrs(e.type), 0);
         }
         if(mtype == MAP_OCTA) importentities(mtype, mver, gver);
         if(mtype == MAP_OCTA || (mtype == MAP_MAPZ && gver < VERSION_GAME)) updateoldentities(mtype, mver, gver);

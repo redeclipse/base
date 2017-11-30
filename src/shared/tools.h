@@ -1059,6 +1059,29 @@ template <class T> struct smallvector
         memcpy(&buf[len-n], v, n*sizeof(T));
     }
 
+    void write(int i, const T *v, int n)
+    {
+        if(i < 0)
+        {
+            n += i;
+            v -= i;
+            i = 0;
+        }
+        if(n <= 0 || i > len) return;
+        if(i + n > len) growbuf(i + n);
+        memcpy(&buf[i], v, n*sizeof(T));
+    }
+
+    void write(int i, const smallvector<T>& v)
+    {
+        write(i, v.getbuf(), v.length());
+    }
+
+    void write(int i, const smallvector<T>& v, int n)
+    {
+        write(i, v.getbuf(), min(v.length(), n));
+    }
+
     void shrink(int i)
     {
         ASSERT(i<=len);

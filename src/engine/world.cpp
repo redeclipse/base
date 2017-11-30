@@ -828,10 +828,8 @@ extentity *newentity(bool local, const vec &o, int type, const attrvector &attrs
     extentity &e = *entities::newent();
     e.o = o;
     e.type = type;
-    int numattrs = min(attrs.length(), MAXENTATTRS);
-    e.attrs.add(0, numattrs - e.attrs.length());
-    loopi(numattrs) e.attrs[i] = attrs[i];
-    loopi(3) e.reserved[i] = 0;
+    e.attrs.write(0, attrs, MAXENTATTRS);
+    memset(e.reserved, 0, sizeof(e.reserved));
     if(ents.inrange(idx)) { entities::deleteent(ents[idx]); ents[idx] = &e; }
     else { idx = ents.length(); ents.add(&e); }
     if(local && fix) entities::fixentity(idx, true, true);
@@ -927,8 +925,7 @@ void entreplace()
     {
         groupedit({
             e.type = c.type;
-            e.attrs.add(0, c.attrs.length() - e.attrs.length());
-            loopvk(c.attrs) e.attrs[k] = c.attrs[k];
+            e.attrs.write(0, c.attrs);
             loopvk(c.links) e.links.add(c.links[k]);
         });
     }
@@ -1306,7 +1303,7 @@ void mpeditent(int i, const vec &o, int type, attrvector &attr, bool local)
 
         e.type = type;
         e.o = o;
-        e.attrs.add(0, max(entities::numattrs(e.type), min(attr.length(), MAXENTATTRS)) - e.attrs.length());
+        e.attrs.add(0, clamp(attr.length(), entities::numattrs(e.type), MAXENTATTRS) - e.attrs.length());
         loopk(min(attr.length(), e.attrs.length())) e.attrs[k] = attr[k];
         addentityedit(i);
 
