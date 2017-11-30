@@ -1074,6 +1074,12 @@ template <class T> struct smallvector
         growbuf(i);
     }
 
+    void setsize(int i, const T &x)
+    {
+        if(i >= len) add(x, i - len);
+        else growbuf(i);
+    }
+
     void deletecontents()
     {
         for(int i = 0; i < len; i++) delete buf[i];

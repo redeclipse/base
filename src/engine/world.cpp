@@ -459,10 +459,9 @@ void pasteundoent(int idx, const entbase &ue, int *attrs, int numattrs)
     entedit(idx,
     {
         (entbase &)e = ue;
-        if(e.attrs.length() < numattrs) e.attrs.add(0, numattrs - e.attrs.length());
-        else if(e.attrs.length() > numattrs) e.attrs.setsize(numattrs);
-        if(numattrs < minattrs) e.attrs.add(0, minattrs - numattrs);
+        e.attrs.setsize(max(numattrs, minattrs), 0);
         loopk(numattrs) e.attrs[k] = *attrs++;
+        for(int k = numattrs; k < minattrs; k++) e.attrs[k] = 0;
     });
 }
 
@@ -870,8 +869,7 @@ void entattrs(const char *str, attrvector &attrs)
 {
     static vector<char *> buf;
     explodelist(str, buf, MAXENTATTRS);
-    attrs.setsize(0);
-    attrs.add(0, buf.length());
+    attrs.setsize(buf.length(), 0);
     loopv(buf) attrs[i] = parseint(buf[i]);
     buf.deletearrays();
 }
@@ -1045,7 +1043,7 @@ void entattr(int *attr, int *val, int *numargs)
     {
         if(*attr >= 0 && *attr < MAXENTATTRS)
             groupedit({
-                if(e.attrs.length() <= *attr) e.attrs.add(0, *attr + 1 - e.attrs.length());
+                e.attrs.add(0, *attr + 1 - e.attrs.length());
                 e.attrs[*attr] = *val;
             });
     }
@@ -1059,7 +1057,7 @@ void entprop(int *attr, int *val)
 {
     if(*attr >= 0 && *attr < MAXENTATTRS)
         groupedit({
-            if(e.attrs.length() <= *attr) e.attrs.add(0, *attr + 1 - e.attrs.length());
+            e.attrs.add(0, *attr + 1 - e.attrs.length());
             e.attrs[*attr] += *val;
         });
 }
