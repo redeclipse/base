@@ -117,6 +117,7 @@ semabuild_appimage() {
     bash build-appimages.sh || return 1
     export GITHUB_TOKEN="${GITHUB_TOKEN}"
     export REPO_SLUG="${SEMABUILD_APPIMAGE_GH_DEST}"
+    export COMMIT=$(git rev-parse ${REVISION})
     bash github-release.sh || return 1
     popd || return 1
     return 0
