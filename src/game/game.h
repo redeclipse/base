@@ -596,9 +596,9 @@ struct clientstate
 {
     int health, ammo[W_MAX], entid[W_MAX], colour, model, pattern, checkpointspawn;
     int weapselect, weapload[W_MAX], weapshot[W_MAX], weapstate[W_MAX], weapwait[W_MAX], weaptime[W_MAX], prevstate[W_MAX], prevtime[W_MAX];
-    int lastdeath, lastspawn, lastpain, lastregen, lastregenamt, lastbuff, lastshoot, lastres[WR_MAX], lastrestime[WR_MAX];
+    int lastdeath, lastspawn, lastpain, lastregen, lastregenamt, lastbuff, lastshoot, lastcook, lastaffinity, lastres[WR_MAX], lastrestime[WR_MAX];
     int burntime, burndelay, burndamage, bleedtime, bleeddelay, bleeddamage, shocktime, shockdelay, shockdamage, shockstun, shockstuntime;
-    double shockstunscale, shockstunfall;
+    float shockstunscale, shockstunfall;
     int actortype, spawnpoint, ownernum, skill, points, frags, deaths, totalpoints, totalfrags, totaldeaths, spree, lasttimeplayed, timeplayed, cpmillis, cptime, queuepos;
     float totalavgpos;
     bool quarantine;
@@ -606,7 +606,7 @@ struct clientstate
     vector<int> loadweap, lastweap, randweap;
     verinfo version;
 
-    clientstate() : colour(0), model(0), pattern(0), checkpointspawn(1), weapselect(W_CLAW), lastdeath(0), lastspawn(0), lastpain(0), lastregen(0), lastregenamt(0), lastbuff(0), lastshoot(0),
+    clientstate() : colour(0), model(0), pattern(0), checkpointspawn(1), weapselect(W_CLAW), lastdeath(0), lastspawn(0), lastpain(0), lastregen(0), lastregenamt(0), lastbuff(0), lastshoot(0), lastcook(0), lastaffinity(0),
         actortype(A_PLAYER), spawnpoint(-1), ownernum(-1), skill(0), points(0), frags(0), deaths(0), totalpoints(0), totalfrags(0), totaldeaths(0), spree(0), lasttimeplayed(0), timeplayed(0),
         cpmillis(0), cptime(0), queuepos(-1), totalavgpos(0), quarantine(false)
     {
@@ -828,7 +828,7 @@ struct clientstate
 
     void clearstate()
     {
-        spree = lastdeath = lastpain = lastregen = lastregenamt = lastbuff = lastshoot = 0;
+        spree = lastdeath = lastpain = lastregen = lastregenamt = lastbuff = lastshoot = lastcook = lastaffinity = 0;
         queuepos = -1;
         resetresidual();
     }
@@ -960,7 +960,9 @@ struct clientstate
     int protect(int millis, int delay)
     {
         if(actortype >= A_ENEMY || !lastspawn || !delay) return 0;
-        if(G(protectbreak) && lastshoot) return 0;
+        if(G(protectbreakshoot) && lastshoot) return 0;
+        if(G(protectbreakcook) && lastcook) return 0;
+        if(G(protectbreakaffinity) && lastaffinity) return 0;
         int len = millis-lastspawn;
         if(len > delay) return 0;
         return delay-len;
