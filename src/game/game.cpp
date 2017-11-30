@@ -76,6 +76,7 @@ namespace game
 
     VAR(IDF_PERSIST, thirdpersonmodel, 0, 1, 1);
     VAR(IDF_PERSIST, thirdpersonfov, 90, 120, 150);
+    FVAR(IDF_PERSIST, thirdpersonblend, 0, 1, 1);
     VAR(IDF_PERSIST, thirdpersoninterp, 0, 100, VAR_MAX);
     FVAR(IDF_PERSIST, thirdpersondist, FVAR_NONZERO, 14, 20);
     FVAR(IDF_PERSIST, thirdpersonside, -20, 7, 20);
@@ -88,6 +89,7 @@ namespace game
 
     VAR(IDF_PERSIST, firstpersonmodel, 0, 2, 2);
     VAR(IDF_PERSIST, firstpersonfov, 90, 100, 150);
+    FVAR(IDF_PERSIST, firstpersonblend, 0, 1, 1);
     FVAR(IDF_PERSIST, firstpersondepth, 0, 0.25f, 1);
     FVAR(IDF_PERSIST, firstpersonbodydepth, 0, 0.65f, 1);
     FVAR(IDF_PERSIST, firstpersondepthfov, 0, 70, 150);
@@ -136,6 +138,7 @@ namespace game
     VAR(IDF_PERSIST, followaiming, 0, 1, 3); // 0 = don't aim, &1 = aim in thirdperson, &2 = aim in first person
     FVAR(IDF_PERSIST, followdist, FVAR_NONZERO, 10, FVAR_MAX);
     FVAR(IDF_PERSIST, followside, FVAR_MIN, 8, FVAR_MAX);
+    FVAR(IDF_PERSIST, followblend, 0, 1, 1);
 
     VAR(IDF_PERSIST, followtvspeed, 1, 350, VAR_MAX);
     VAR(IDF_PERSIST, followtvyawspeed, 1, 350, VAR_MAX);
@@ -273,6 +276,10 @@ namespace game
     VAR(IDF_PERSIST, impulsefade, 0, 250, VAR_MAX);
     VAR(IDF_PERSIST, ragdolleffect, 2, 500, VAR_MAX);
     VAR(IDF_PERSIST, deathscale, 0, 1, 1); // 0 = don't scale out dead players, 1 = scale them out
+
+    FVAR(IDF_PERSIST, playerblend, 0, 1, 1);
+    FVAR(IDF_PERSIST, playereditblend, 0, 0.5f, 1);
+    FVAR(IDF_PERSIST, playerghostblend, 0, 0.5f, 1);
 
     VAR(IDF_PERSIST, playerovertone, -1, CTONE_TEAM, CTONE_MAX-1);
     VAR(IDF_PERSIST, playerundertone, -1, CTONE_TONE, CTONE_MAX-1);
@@ -1018,15 +1025,21 @@ namespace game
         return total;
     }
 
-    float opacity(gameent *d)
+    float opacity(gameent *d, bool third)
     {
-        float total = 1.f;
-        if(deathfade && (d->state == CS_DEAD || d->state == CS_WAITING)) total *= spawnfade(d);
+        float total = d == focus ? (third ? (d != player1 ? followblend : thirdpersonblend) : firstpersonblend) : playerblend;
+        if(physics::isghost(d, focus)) total *= playerghostblend;
+        if(d->state == CS_DEAD || d->state == CS_WAITING)
+        {
+            if(deathfade) total *= spawnfade(d);
+        }
         else if(d->state == CS_ALIVE)
         {
+            if(d == focus && third) total *= camera1->o.dist(d->o)/(d != player1 ? followdist : thirdpersondist);
             int prot = m_protect(gamemode, mutators), millis = d->protect(lastmillis, prot); // protect returns time left
             if(millis > 0) total *= 1.f-(float(millis)/float(prot));
         }
+        else if(d->state == CS_EDITING) total *= playereditblend;
         return total;
     }
 
@@ -3015,7 +3028,7 @@ namespace game
     void renderabovehead(gameent *d)
     {
         vec pos = d->abovehead(d->state != CS_DEAD && d->state != CS_WAITING ? 1 : 0);
-        float blend = aboveheadblend*opacity(d);
+        float blend = aboveheadblend*opacity(d, true);
         if(aboveheadnames && d != player1)
         {
             pos.z += aboveheadnamessize/2;
@@ -3526,10 +3539,10 @@ namespace game
             renderabovehead(d);
     }
 
-    void rendercheck(gameent *d)
+    void rendercheck(gameent *d, bool third)
     {
         d->checktags();
-        float blend = opacity(d);
+        float blend = opacity(d, third);
         if(d->state == CS_ALIVE)
         {
             bool useth = hud::teamhurthud&1 && hud::teamhurttime && m_team(gamemode, mutators) && focus == player1 &&
@@ -3717,7 +3730,7 @@ namespace game
         loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL)
         {
             if(d != focus || third) d->cleartags();
-            renderplayer(d, 1, d->curscale, d != focus || third ? 0 : MDL_ONLYSHADOW);
+            renderplayer(d, 1, d->curscale, d != focus || third ? 0 : MDL_ONLYSHADOW, vec4(1, 1, 1, opacity(d, true)));
         }
     }
 
@@ -3727,7 +3740,7 @@ namespace game
         int numdyns = numdynents();
         bool third = thirdpersonview();
         loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL && (d != focus || third))
-            rendercheck(d);
+            rendercheck(d, true);
     }
 
     void renderavatar()
@@ -3742,14 +3755,15 @@ namespace game
             depthfov *= zooming ? 1.f-pc : pc;
         }
         setavatarscale(depthfov, firstpersondepth);
-        if(focus->state == CS_ALIVE) renderplayer(focus, 0, focus->curscale, MDL_NOBATCH);
+        vec4 color = vec4(1, 1, 1, opacity(focus, false));
+        if(focus->state == CS_ALIVE) renderplayer(focus, 0, focus->curscale, MDL_NOBATCH, color);
         if(focus->state == CS_ALIVE && firstpersonmodel == 2)
         {
             setavatarscale(firstpersonbodydepthfov != 0 ? firstpersonbodydepthfov : curfov, firstpersonbodydepth);
             static int lastoffset = 0;
-            renderplayer(focus, 2, focus->curscale, MDL_NOBATCH, vec4(1, 1, 1, 1), &lastoffset);
+            renderplayer(focus, 2, focus->curscale, MDL_NOBATCH, color, &lastoffset);
         }
-        rendercheck(focus);
+        rendercheck(focus, false);
     }
 
     static gameent *previewent = NULL;

@@ -192,5 +192,5 @@ struct explosionrenderer : sharedlistrenderer
     }
 };
 static explosionrenderer explosions("<grey>particles/explosion"),
-    shockwaves("<grey>particles/solid"), shockballs("<grey>particles/shockball");
+    shockwaves("<grey>particles/solid"), shockballs("<grey>particles/shockball"), glimmerballs("<grey>particles/glimmer");
 
