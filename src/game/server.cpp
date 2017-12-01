@@ -5057,7 +5057,7 @@ namespace server
                     sendspawn(ci);
                 }
             }
-            if(G(autospectate) && ci->state == CS_DEAD && ci->lastdeath && gamemillis-ci->lastdeath >= G(autospecdelay))
+            if(G(autospectate) && !m_duke(gamemode, mutators) && ci->state == CS_DEAD && ci->lastdeath && gamemillis-ci->lastdeath >= G(autospecdelay))
                 spectate(ci, true);
         }
     }
