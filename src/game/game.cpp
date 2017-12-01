@@ -3492,7 +3492,7 @@ namespace game
     {
         #define RESIDUAL(name, type, pulse) \
             if(game::focus->name##time && d->name##ing(lastmillis, game::focus->name##time)) \
-                get##name##effect(d, mdl, game::focus->name##time, lastmillis-d->lastres[WR_##type], game::focus->name##delay);
+                get##name##effect(d, mdl, game::focus->name##time, lastmillis-d->lastres[WR_##type], max(game::focus->name##delay, 1));
         RESIDUALS
         #undef RESIDUAL
         if((!mdl.mixer || mdl.mixer == notexture) && d->state == CS_ALIVE && d->lastbuff)
