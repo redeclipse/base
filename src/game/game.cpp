@@ -3730,7 +3730,7 @@ namespace game
         loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL)
         {
             if(d != focus || third) d->cleartags();
-            renderplayer(d, 1, d->curscale, d != focus || third ? 0 : MDL_ONLYSHADOW, vec4(1, 1, 1, opacity(d, true)));
+            renderplayer(d, 1, d->curscale, d != focus || third ? MDL_FORCESHADOW : MDL_ONLYSHADOW, vec4(1, 1, 1, opacity(d, true)));
         }
     }
 

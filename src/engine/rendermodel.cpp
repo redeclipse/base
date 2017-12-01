@@ -640,8 +640,8 @@ void shadowmaskbatchedmodels(bool dynshadow)
     loopv(batchedmodels)
     {
         batchedmodel &b = batchedmodels[i];
-        if(b.state.flags&MDL_MAPMODEL) break;
-        b.visible = dynshadow && b.state.color.a >= 1 ? shadowmaskmodel(b.state.center, b.state.radius) : 0;
+        if(b.state.flags&(MDL_MAPMODEL | MDL_NOSHADOW)) break;
+        b.visible = dynshadow && (b.state.color.a >= 1 || b.state.flags & (MDL_ONLYSHADOW | MDL_FORCESHADOW)) ? shadowmaskmodel(b.state.center, b.state.radius) : 0;
     }
 }
 
