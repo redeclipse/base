@@ -51,7 +51,7 @@ int musictime = -1, musicdonetime = -1;
 VARF(IDF_PERSIST, mastervol, 0, 255, 255, changedvol = true; if(!music && musicvol > 0 && mastervol > 0) smartmusic(true));
 VAR(IDF_PERSIST, soundvol, 0, 255, 255);
 VARF(0, soundmono, 0, 0, 1, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
-VARF(0, soundmixchans, 16, 32, 1024, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
+VARF(0, soundmixchans, 16, 256, 1024, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
 VARF(0, soundfreq, 0, 44100, 48000, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
 VARF(0, soundbuflen, 128, 4096, VAR_MAX, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
 VAR(IDF_PERSIST, soundmaxrad, 0, 512, VAR_MAX);
@@ -221,36 +221,27 @@ Mix_Music *loadmusic(const char *name)
 bool playmusic(const char *name, const char *cmd)
 {
     if(nosound) return false;
-
     stopmusic(false);
-
-    if(*name)
+    if(!*name) return false;
+    string buf;
+    const char *dirs[] = { "", "sounds/" }, *exts[] = { "", ".wav", ".ogg" };
+    bool found = false;
+    loopi(sizeof(dirs)/sizeof(dirs[0])) loopk(sizeof(exts)/sizeof(exts[0]))
     {
-        string buf;
-        const char *dirs[] = { "", "sounds/" }, *exts[] = { "", ".wav", ".ogg" };
-        bool found = false;
-        loopi(sizeof(dirs)/sizeof(dirs[0]))
-        {
-            loopk(sizeof(exts)/sizeof(exts[0]))
-            {
-                formatstring(buf, "%s%s%s", dirs[i], name, exts[k]);
-                if(loadmusic(buf))
-                {
-                    DELETEA(musicfile);
-                    DELETEA(musicdonecmd);
-                    musicfile = newstring(name);
-                    if(cmd && *cmd) musicdonecmd = newstring(cmd);
-                    musicdonetime = -1;
-                    if(musicfadein) Mix_FadeInMusic(music, cmd && *cmd ? 0 : -1, musicfadein);
-                    else Mix_PlayMusic(music, cmd && *cmd ? 0 : -1);
-                    Mix_VolumeMusic(int((mastervol/255.f)*(musicvol/255.f)*MIX_MAX_VOLUME));
-                    changedvol = found = true;
-                    return true;
-                }
-            }
-        }
-        if(!music) conoutf("\frCould not play music: %s", name);
+        formatstring(buf, "%s%s%s", dirs[i], name, exts[k]);
+        if(!loadmusic(buf)) continue;
+        DELETEA(musicfile);
+        DELETEA(musicdonecmd);
+        musicfile = newstring(name);
+        if(cmd && *cmd) musicdonecmd = newstring(cmd);
+        musicdonetime = -1;
+        if(musicfadein) Mix_FadeInMusic(music, cmd && *cmd ? 0 : -1, musicfadein);
+        else Mix_PlayMusic(music, cmd && *cmd ? 0 : -1);
+        Mix_VolumeMusic(int((mastervol/255.f)*(musicvol/255.f)*MIX_MAX_VOLUME));
+        changedvol = found = true;
+        return true;
     }
+    if(!music) conoutf("\frCould not play music: %s", name);
     return false;
 }
 
@@ -258,23 +249,19 @@ COMMANDN(0, music, playmusic, "ss");
 
 bool playingmusic(bool check)
 {
-    if(music)
+    if(!music) return false;
+    if(Mix_PlayingMusic())
     {
-        if(Mix_PlayingMusic())
-        {
-            if(musicdonetime >= 0) musicdonetime = -1;
-            return true;
-        }
-        if(check)
-        {
-            if(musicdonetime < 0)
-            {
-                musicdonetime = totalmillis;
-                return true;
-            }
-            if(totalmillis-musicdonetime < 500) return true;
-        }
+        if(musicdonetime >= 0) musicdonetime = -1;
+        return true;
     }
+    if(!check) return false;
+    if(musicdonetime < 0)
+    {
+        musicdonetime = totalmillis;
+        return true;
+    }
+    if(totalmillis-musicdonetime < 500) return true;
     return false;
 }
 

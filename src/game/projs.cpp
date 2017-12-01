@@ -161,18 +161,16 @@ namespace projs
 
     void projpush(projent *p)
     {
-        if(p->projtype == PRJ_SHOT && p->owner)
+        if(p->projtype != PRJ_SHOT || !p->owner) return;
+        if(p->local) p->state = CS_DEAD;
+        else
         {
-            if(p->local) p->state = CS_DEAD;
-            else
-            {
-                hitmsg &h = hits.add();
-                h.flags = HIT_PROJ|HIT_TORSO;
-                h.proj = p->id;
-                h.target = p->owner->clientnum;
-                h.dist = 0;
-                h.dir = h.vel = ivec(0, 0, 0);
-            }
+            hitmsg &h = hits.add();
+            h.flags = HIT_PROJ|HIT_TORSO;
+            h.proj = p->id;
+            h.target = p->owner->clientnum;
+            h.dist = 0;
+            h.dir = h.vel = ivec(0, 0, 0);
         }
     }
 
@@ -327,45 +325,43 @@ namespace projs
 
     bool updatesticky(projent &proj, bool init = false)
     {
-        if(proj.stuck)
+        if(!proj.stuck) return false;
+        if(init)
         {
-            if(init)
+            int lifetime = WF(WK(proj.flags), proj.weap, timestick, WS(proj.flags));
+            if(lifetime > 0)
             {
-                int lifetime = WF(WK(proj.flags), proj.weap, timestick, WS(proj.flags));
-                if(lifetime > 0)
-                {
-                    proj.lifetime = lifetime;
-                    proj.lifemillis = lifetime;
-                }
-                proj.vel = vec(0, 0, 0);
+                proj.lifetime = lifetime;
+                proj.lifemillis = lifetime;
             }
-            if(proj.stick)
+            proj.vel = vec(0, 0, 0);
+        }
+        if(proj.stick)
+        {
+            if(proj.stick->state != CS_ALIVE)
             {
-                if(proj.stick->state != CS_ALIVE)
-                {
-                    proj.stuck = 0;
-                    proj.stick = NULL;
-                    proj.lastbounce = lastmillis;
-                    proj.resetinterp();
-                }
-                else
-                {
-                    proj.o = proj.stickpos;
-                    proj.o.rotate_around_z(proj.stick->yaw*RAD);
-                    proj.o.add(proj.stick->center());
-                    proj.norm = proj.sticknrm;
-                    proj.norm.rotate_around_z(proj.stick->yaw*RAD);
-                    proj.vel = vec(proj.stick->vel).add(proj.stick->falling);
-                    updatenormal(proj);
-                    return true;
-                }
-                return false;
+                proj.stuck = 0;
+                proj.stick = NULL;
+                proj.lastbounce = lastmillis;
+                proj.resetinterp();
             }
-            if(init)
+            else
             {
+                proj.o = proj.stickpos;
+                proj.o.rotate_around_z(proj.stick->yaw*RAD);
+                proj.o.add(proj.stick->center());
                 proj.norm = proj.sticknrm;
+                proj.norm.rotate_around_z(proj.stick->yaw*RAD);
+                proj.vel = vec(proj.stick->vel).add(proj.stick->falling);
                 updatenormal(proj);
+                return true;
             }
+            return false;
+        }
+        if(init)
+        {
+            proj.norm = proj.sticknrm;
+            updatenormal(proj);
         }
         return proj.stuck != 0;
     }
@@ -495,71 +491,72 @@ namespace projs
     void reflect(projent &proj, vec &pos)
     {
         bool speed = proj.vel.magnitude() > 0.01f;
-        float elasticity = speed ? proj.elasticity : 1.f, reflectivity = speed ? proj.reflectivity : 0.f;
-        if(elasticity > 0.f)
+        float elasticity = speed ? proj.elasticity : 1.f;
+        if(elasticity <= 0.f)
         {
-            vec dir[2]; dir[0] = dir[1] = vec(proj.vel).normalize();
-            float mag = proj.vel.magnitude()*elasticity; // conservation of energy
-            dir[1].reflect(pos);
-            if(!proj.lastbounce && reflectivity > 0.f)
-            { // if projectile returns at 180 degrees [+/-]reflectivity, skew the reflection
-                float aim[2][2] = { { 0.f, 0.f }, { 0.f, 0.f } };
-                loopi(2) vectoyawpitch(dir[i], aim[0][i], aim[1][i]);
-                loopi(2)
+            proj.vel = vec(0, 0, 0);
+            return;
+        }
+        vec dir[2]; dir[0] = dir[1] = vec(proj.vel).normalize();
+        float mag = proj.vel.magnitude()*elasticity, reflectivity = speed ? proj.reflectivity : 0.f; // conservation of energy
+        dir[1].reflect(pos);
+        if(!proj.lastbounce && reflectivity > 0.f)
+        { // if projectile returns at 180 degrees [+/-]reflectivity, skew the reflection
+            float aim[2][2] = { { 0.f, 0.f }, { 0.f, 0.f } };
+            loopi(2) vectoyawpitch(dir[i], aim[0][i], aim[1][i]);
+            loopi(2)
+            {
+                float rmax = 180.f+reflectivity, rmin = 180.f-reflectivity,
+                    off = aim[i][1]-aim[i][0];
+                if(fabs(off) <= rmax && fabs(off) >= rmin)
                 {
-                    float rmax = 180.f+reflectivity, rmin = 180.f-reflectivity,
-                        off = aim[i][1]-aim[i][0];
-                    if(fabs(off) <= rmax && fabs(off) >= rmin)
-                    {
-                        if(off > 0.f ? off > 180.f : off < -180.f)
-                            aim[i][1] += rmax-off;
-                        else aim[i][1] -= off-rmin;
-                    }
-                    while(aim[i][1] < 0.f) aim[i][1] += 360.f;
-                    while(aim[i][1] >= 360.f) aim[i][1] -= 360.f;
+                    if(off > 0.f ? off > 180.f : off < -180.f)
+                        aim[i][1] += rmax-off;
+                    else aim[i][1] -= off-rmin;
                 }
-                vecfromyawpitch(aim[0][1], aim[1][1], 1, 0, dir[1]);
+                while(aim[i][1] < 0.f) aim[i][1] += 360.f;
+                while(aim[i][1] >= 360.f) aim[i][1] -= 360.f;
             }
-            #define repel(x,r,z) \
+            vecfromyawpitch(aim[0][1], aim[1][1], 1, 0, dir[1]);
+        }
+        #define repel(x,r,z) \
+        { \
+            if(overlapsbox(proj.o, r, r, x, r, r)) \
             { \
-                if(overlapsbox(proj.o, r, r, x, r, r)) \
-                { \
-                    vec nrm = vec(proj.o).sub(x).normalize(); \
-                    dir[1].add(nrm).normalize(); \
-                    break; \
-                } \
-            }
-            switch(proj.projtype)
+                vec nrm = vec(proj.o).sub(x).normalize(); \
+                dir[1].add(nrm).normalize(); \
+                break; \
+            } \
+        }
+        switch(proj.projtype)
+        {
+            case PRJ_ENT:
             {
-                case PRJ_ENT:
+                if(itemrepulsion > 0 && entities::ents.inrange(proj.id) && enttype[entities::ents[proj.id]->type].usetype == EU_ITEM)
                 {
-                    if(itemrepulsion > 0 && entities::ents.inrange(proj.id) && enttype[entities::ents[proj.id]->type].usetype == EU_ITEM)
-                    {
-                        loopv(projs) if(projs[i]->projtype == PRJ_ENT && projs[i] != &proj && entities::ents.inrange(projs[i]->id) && enttype[entities::ents[projs[i]->id]->type].usetype == EU_ITEM)
-                            repel(projs[i]->o, itemrepulsion, itemrepelspeed);
-                        loopusei(EU_ITEM) if(enttype[entities::ents[i]->type].usetype == EU_ITEM && entities::ents[i]->spawned())
-                            repel(entities::ents[i]->o, itemrepulsion, itemrepelspeed);
-                    }
-                    break;
+                    loopv(projs) if(projs[i]->projtype == PRJ_ENT && projs[i] != &proj && entities::ents.inrange(projs[i]->id) && enttype[entities::ents[projs[i]->id]->type].usetype == EU_ITEM)
+                        repel(projs[i]->o, itemrepulsion, itemrepelspeed);
+                    loopusei(EU_ITEM) if(enttype[entities::ents[i]->type].usetype == EU_ITEM && entities::ents[i]->spawned())
+                        repel(entities::ents[i]->o, itemrepulsion, itemrepelspeed);
                 }
-                case PRJ_AFFINITY:
-                {
-                    if(m_capture(game::gamemode) && capturerepulsion > 0)
-                    {
-                        loopv(projs) if(projs[i]->projtype == PRJ_AFFINITY && projs[i] != &proj)
-                            repel(projs[i]->o, capturerepulsion, capturerepelspeed);
-                    }
-                    break;
-                }
+                break;
             }
-            if(!dir[1].iszero())
+            case PRJ_AFFINITY:
             {
-                mag = max(mag, proj.speedmin);
-                if(proj.speedmax > 0) mag = min(mag, proj.speedmax);
-                proj.vel = vec(dir[1]).mul(mag);
+                if(m_capture(game::gamemode) && capturerepulsion > 0)
+                {
+                    loopv(projs) if(projs[i]->projtype == PRJ_AFFINITY && projs[i] != &proj)
+                        repel(projs[i]->o, capturerepulsion, capturerepelspeed);
+                }
+                break;
             }
         }
-        else proj.vel = vec(0, 0, 0);
+        if(!dir[1].iszero())
+        {
+            mag = max(mag, proj.speedmin);
+            if(proj.speedmax > 0) mag = min(mag, proj.speedmax);
+            proj.vel = vec(dir[1]).mul(mag);
+        }
     }
 
     void bounce(projent &proj, bool ricochet)
