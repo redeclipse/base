@@ -820,10 +820,13 @@ struct clientstate
 
     void resetresidual(int n = -1)
     {
-        if(n >= 0 && n < WR_MAX) lastres[n] = lastrestime[n] = 0;
-        else loopi(WR_MAX) lastres[i] = lastrestime[i] = 0;
-        burntime = burndelay = burndamage = bleedtime = bleeddelay = bleeddamage = shocktime = shockdelay = shockdamage = shockstun = shockstuntime = 0;
-        shockstunscale = shockstunfall = 0.f;
+        if(n < 0 || n == WR_BURN) lastres[WR_BURN] = lastrestime[WR_BURN] = burntime = burndelay = burndamage = 0;
+        if(n < 0 || n == WR_BLEED) lastres[WR_BLEED] = lastrestime[WR_BLEED] = bleedtime = bleeddelay = bleeddamage = 0;
+        if(n < 0 || n == WR_SHOCK)
+        {
+            lastres[WR_SHOCK] = lastrestime[WR_SHOCK] = shocktime = shockdelay = shockdamage = shockstun = shockstuntime = 0;
+            shockstunscale = shockstunfall = 0.f;
+        }
     }
 
     void clearstate()

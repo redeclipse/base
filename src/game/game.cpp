@@ -933,13 +933,13 @@ namespace game
                 }
                 if(d->burntime && d->burning(lastmillis, d->burntime))
                 {
-                    int millis = lastmillis-d->lastres[WR_BURN];
+                    int millis = lastmillis-d->lastres[WR_BURN], delay = max(d->burndelay, 1);
                     size_t seed = size_t(d) + (millis/50);
                     float pc = 1, amt = (millis%50)/50.0f, intensity = 0.75f+(detrnd(seed, 25)*(1-amt) + detrnd(seed + 1, 25)*amt)/100.f;
-                    if(d->burntime-millis < d->burndelay) pc *= float(d->burntime-millis)/float(d->burndelay);
+                    if(d->burntime-millis < delay) pc *= float(d->burntime-millis)/float(delay);
                     else
                     {
-                        float fluc = float(millis%d->burndelay)*(0.25f+0.03f)/d->burndelay;
+                        float fluc = float(millis%delay)*(0.25f+0.03f)/delay;
                         if(fluc >= 0.25f) fluc = (0.25f+0.03f-fluc)*(0.25f/0.03f);
                         pc *= 0.75f+fluc;
                     }
@@ -947,13 +947,13 @@ namespace game
                 }
                 if(d->shocktime && d->shocking(lastmillis, d->shocktime))
                 {
-                    int millis = lastmillis-d->lastres[WR_SHOCK];
+                    int millis = lastmillis-d->lastres[WR_SHOCK], delay = max(d->shockdelay, 1);
                     size_t seed = size_t(d) + (millis/50);
                     float pc = 1, amt = (millis%50)/50.0f, intensity = 0.75f+(detrnd(seed, 25)*(1-amt) + detrnd(seed + 1, 25)*amt)/100.f;
-                    if(d->shocktime-millis < d->shockdelay) pc *= float(d->shocktime-millis)/float(d->shockdelay);
+                    if(d->shocktime-millis < delay) pc *= float(d->shocktime-millis)/float(delay);
                     else
                     {
-                        float fluc = float(millis%d->shockdelay)*(0.25f+0.03f)/d->shockdelay;
+                        float fluc = float(millis%delay)*(0.25f+0.03f)/delay;
                         if(fluc >= 0.25f) fluc = (0.25f+0.03f-fluc)*(0.25f/0.03f);
                         pc *= 0.75f+fluc;
                     }
@@ -3681,10 +3681,10 @@ namespace game
         }
         if(d->burntime && d->burning(lastmillis, d->burntime))
         {
-            int millis = lastmillis-d->lastres[WR_BURN];
+            int millis = lastmillis-d->lastres[WR_BURN], delay = max(d->burndelay, 1);
             float pc = 1, intensity = 0.5f+(rnd(50)/100.f), fade = (d != focus ? 0.75f : 0.f)+(rnd(25)/100.f);
-            if(d->burntime-millis < d->burndelay) pc *= float(d->burntime-millis)/float(d->burndelay);
-            else pc *= 0.75f+(float(millis%d->burndelay)/float(d->burndelay*4));
+            if(d->burntime-millis < delay) pc *= float(d->burntime-millis)/float(delay);
+            else pc *= 0.75f+(float(millis%delay)/float(delay*4));
             vec pos = vec(d->center()).sub(vec(rnd(11)-5, rnd(11)-5, rnd(5)-2).mul(pc));
             regular_part_create(PART_FIREBALL, 200, pos, pulsehexcol(d, PULSE_FIRE), d->height*0.75f*intensity*blend*pc, fade*blend*pc*0.65f, -20, 0);
         }

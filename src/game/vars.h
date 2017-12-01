@@ -7,7 +7,7 @@ GVAR(IDF_WORLD, hurtdamage, 0, 3, VAR_MAX);
 GVAR(IDF_WORLD, hurtresidual, 0, 0, WR_ALL);
 
 GVAR(IDF_WORLD, hurtburntime, 0, 5500, VAR_MAX);
-GVAR(IDF_WORLD, hurtburndelay, 0, 1000, VAR_MAX);
+GVAR(IDF_WORLD, hurtburndelay, 1, 1000, VAR_MAX);
 GVAR(IDF_WORLD, hurtburndamage, 0, 3, VAR_MAX);
 GVAR(IDF_WORLD, hurtbleedtime, 0, 5500, VAR_MAX);
 GVAR(IDF_WORLD, hurtbleeddelay, 0, 1000, VAR_MAX);
@@ -21,6 +21,7 @@ GFVAR(IDF_WORLD, hurtshockstunfall, 0, 0.01f, FVAR_MAX);
 GVAR(IDF_WORLD, hurtshockstuntime, 0, 500, VAR_MAX);
 
 GVAR(IDF_WORLD, lavaburntime, 0, 5500, VAR_MAX);
+GVAR(IDF_WORLD, lavaburndelay, 1, 1000, VAR_MAX);
 
 GFVAR(IDF_WORLD, gravity, 0, 50.f, 1000); // gravity
 GFVAR(IDF_GAMEMOD, gravityscale, 0, 1, FVAR_MAX);

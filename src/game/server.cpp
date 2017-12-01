@@ -4226,6 +4226,7 @@ namespace server
         {
             realflags |= HIT_BURN;
             m->burntime = G(lavaburntime);
+            m->burndelay = G(lavaburndelay);
             m->sendburn();
         }
 
@@ -4556,6 +4557,7 @@ namespace server
         {
             flags |= HIT_BURN;
             ci->burntime = G(lavaburntime);
+            ci->burndelay = G(lavaburndelay);
             ci->sendburn();
         }
         if(!(flags&HIT_MATERIAL) && !(flags&HIT_LOST) && !(flags&HIT_SPEC))
