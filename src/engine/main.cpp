@@ -829,10 +829,12 @@ void progress(float bar1, const char *text1)
         if(engineready) UI::hideui(NULL);
         bar1 = 0;
     }
-    int ticks = SDL_GetTicks();
-    if(lastprogress > 0 && ticks < 0) lastprogress = 1-INT_MAX;
-    if(progressfps && ticks-lastprogress <= progressfps/1000) return;
-    lastprogress = ticks;
+    if(progressfps)
+    {
+        int ticks = SDL_GetTicks(), diff = ticks - lastprogress;
+        if(diff >= 0 && diff < (1000 + progressfps-1)/progressfps) return;
+        lastprogress = ticks;
+    }
     clientkeepalive();
 
     #ifdef __APPLE__
