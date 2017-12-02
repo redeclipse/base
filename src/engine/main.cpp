@@ -832,7 +832,7 @@ void progress(float bar1, const char *text1)
     if(progressfps)
     {
         int ticks = SDL_GetTicks(), diff = ticks - lastprogress;
-        if(diff >= 0 && diff < (1000 + progressfps-1)/progressfps) return;
+        if(bar1 > 0 && diff >= 0 && diff < (1000 + progressfps-1)/progressfps) return;
         lastprogress = ticks;
     }
     clientkeepalive();
