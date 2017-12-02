@@ -1098,8 +1098,7 @@ struct gameent : dynent, clientstate
         copystring(hostip, "0.0.0.0");
         name[0] = handle[0] = info[0] = obit[0] = '\0';
         removesounds();
-        cleartags();
-        checktags();
+        inittags();
         respawn(-1, 0, 0);
     }
     ~gameent()
@@ -1180,6 +1179,7 @@ struct gameent : dynent, clientstate
         icons.shrink(0);
         stuns.shrink(0);
         used.shrink(0);
+        inittags();
     }
 
     void respawn(int millis, int gamemode, int mutators)
@@ -1358,6 +1358,11 @@ struct gameent : dynent, clientstate
         loopi(2) if(toe[i] == vec(-1, -1, -1)) toe[i] = feetpos();
     }
 
+    void inittags()
+    {
+        cleartags();
+        checktags();
+    }
 
     void doimpulse(int cost, int type, int millis)
     {

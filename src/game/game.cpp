@@ -2344,7 +2344,7 @@ namespace game
             {
                 gameent *e = (gameent *)d;
                 int frame = lastmillis-lastzoom;
-                float pc = frame <= W(e->weapselect, cookzoom) ? (frame)/float(W(e->weapselect, cookzoom)) : 1.f;
+                float pc = frame <= W(e->weapselect, cookzoom) ? frame/float(W(e->weapselect, cookzoom)) : 1.f;
                 scale *= zooming ? 1.f-pc : pc;
             }
             if(firstpersonbobtopspeed) scale *= clamp(d->vel.magnitude()/firstpersonbobtopspeed, firstpersonbobmin, 1.f);
@@ -2800,7 +2800,7 @@ namespace game
             if(d == focus && inzoom())
             {
                 int frame = lastmillis-lastzoom;
-                float pc = frame <= W(d->weapselect, cookzoom) ? (frame)/float(W(d->weapselect, cookzoom)) : 1.f;
+                float pc = frame <= W(d->weapselect, cookzoom) ? frame/float(W(d->weapselect, cookzoom)) : 1.f;
                 scale *= zooming ? 1.f-pc : pc;
             }
             if(firstpersonbobtopspeed) scale *= clamp(d->vel.magnitude()/firstpersonbobtopspeed, firstpersonbobmin, 1.f);
@@ -3728,10 +3728,7 @@ namespace game
         int numdyns = numdynents();
         bool third = thirdpersonview();
         loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL)
-        {
-            if(d != focus || third) d->cleartags();
             renderplayer(d, 1, d->curscale, d != focus || third ? MDL_FORCESHADOW : MDL_ONLYSHADOW, vec4(1, 1, 1, opacity(d, true)));
-        }
     }
 
     void renderpost()
@@ -3746,12 +3743,11 @@ namespace game
     void renderavatar()
     {
         if(thirdpersonview()) return;
-        focus->cleartags();
         float depthfov = firstpersondepthfov != 0 ? firstpersondepthfov : curfov;
         if(inzoom())
         {
             int frame = lastmillis-lastzoom;
-            float pc = frame <= W(focus->weapselect, cookzoom) ? (frame)/float(W(focus->weapselect, cookzoom)) : 1.f;
+            float pc = frame <= W(focus->weapselect, cookzoom) ? frame/float(W(focus->weapselect, cookzoom)) : 1.f;
             depthfov *= zooming ? 1.f-pc : pc;
         }
         setavatarscale(depthfov, firstpersondepth);

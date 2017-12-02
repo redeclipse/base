@@ -4863,11 +4863,11 @@ void rendergbuffer(bool depthclear)
     else if(!drawtex)
     {
         rendermodelbatches();
+        game::renderpost();
         GLERROR;
         renderstains(STAINBUF_OPAQUE, true);
         renderstains(STAINBUF_MAPMODEL, true);
         GLERROR;
-        game::renderpost();
         //renderavatar();
         //GLERROR;
     }
