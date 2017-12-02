@@ -3123,18 +3123,16 @@ namespace game
     {
         mdl.material[0] = bvec::fromcolor(getcolour(d, playerovertone, playerovertonelevel));
         mdl.material[1] = bvec::fromcolor(getcolour(d, playerundertone, playerundertonelevel));
-        if(playerovertoneinterp > 0)
-        {
-            float intensity = (mdl.material[1].r+mdl.material[1].g+mdl.material[1].b)/765.f;
-            mdl.matbright.x = playerovertonebright+((1-intensity)*playerovertoneinterp);
-        }
-        else mdl.matbright.x = playerovertonebright;
-        if(playerundertoneinterp > 0)
-        {
-            float intensity = (mdl.material[0].r+mdl.material[0].g+mdl.material[0].b)/765.f;
-            mdl.matbright.y = playerundertonebright+((1-intensity)*playerundertoneinterp);
-        }
-        else mdl.matbright.y = playerundertonebright;
+        #define TONEINTERP(name, mat, var) \
+            mdl.matbright[var] = player##name##tonebright; \
+            if(player##name##toneinterp > 0) \
+            { \
+                float intensity = 1.f-((mdl.material[mat].r+mdl.material[mat].g+mdl.material[mat].b)/765.f); \
+                mdl.matbright[var] += intensity*player##name##toneinterp; \
+            }
+        TONEINTERP(over, 1, 0);
+        TONEINTERP(under, 0, 1);
+        #undef TONEINTERP
         if(isweap(d->weapselect))
         {
             if(d->weapselect == W_GRENADE)
