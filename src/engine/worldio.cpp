@@ -893,17 +893,17 @@ const char *variantvars[] = {
 };
 const char *skypievars[] = { "light", "lightscale", "lightyaw", "lightpitch", NULL };
 
-void copydayvariables()
+void copydayvariables(bool rev = false)
 {
     for(int v = 0; variantvars[v]; v++)
     {
         defformatstring(newvar, "%snight", variantvars[v]);
-        ident *id = idents.access(variantvars[v]);
+        ident *id = idents.access(rev ? newvar : variantvars[v]);
         if(id) switch(id->type)
         {
-            case ID_VAR: setvar(newvar, *id->storage.i, true, false, true); break;
-            case ID_FVAR: setfvar(newvar, *id->storage.f, true, false, true); break;
-            case ID_SVAR: setsvar(newvar, *id->storage.s, true, false); break;
+            case ID_VAR: setvar(rev ? variantvars[v] : newvar, *id->storage.i, true, false, true); break;
+            case ID_FVAR: setfvar(rev ? variantvars[v] : newvar, *id->storage.f, true, false, true); break;
+            case ID_SVAR: setsvar(rev ? variantvars[v] : newvar, *id->storage.s, true, false); break;
             default: break;
         }
     }
@@ -911,17 +911,18 @@ void copydayvariables()
     {
         defformatstring(sunvar, "sun%s", skypievars[v]);
         defformatstring(moonvar, "moon%s", skypievars[v]);
-        ident *id = idents.access(sunvar);
+        ident *id = idents.access(rev ? moonvar : sunvar);
         if(id) switch(id->type)
         {
-            case ID_VAR: setvar(moonvar, *id->storage.i, true, false, true); break;
-            case ID_FVAR: setfvar(moonvar, *id->storage.f, true, false, true); break;
-            case ID_SVAR: setsvar(moonvar, *id->storage.s, true, false); break;
+            case ID_VAR: setvar(rev ? sunvar : moonvar, *id->storage.i, true, false, true); break;
+            case ID_FVAR: setfvar(rev ? sunvar : moonvar, *id->storage.f, true, false, true); break;
+            case ID_SVAR: setsvar(rev ? sunvar : moonvar, *id->storage.s, true, false); break;
             default: break;
         }
     }
+    conoutf(rev ? "\fyNight variables copied to Day." : "\fyDay variables copied to Night.");
 }
-ICOMMAND(0, copydayvars, "", (), if(editmode) { copydayvariables(); conoutf("\fyDay variables copied to night."); });
+ICOMMAND(0, copydayvars, "i", (int *n), if(editmode) copydayvariables(*n != 0));
 
 bool load_world(const char *mname, int crc, int variant)
 {
