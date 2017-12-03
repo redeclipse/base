@@ -761,7 +761,7 @@ void rendermodelbatches()
             j = bm.next;
             bm.culled = cullmodel(b.m, bm.state.center, bm.state.radius, bm.state.flags, bm.d);
             if(bm.culled || bm.state.flags&MDL_ONLYSHADOW) continue;
-            if(bm.state.color.a < 1 | bm.state.flags&MDL_FORCETRANSPARENT)
+            if(bm.state.color.a < 1 || bm.state.flags&MDL_FORCETRANSPARENT)
             {
                 float sx1, sy1, sx2, sy2;
                 ivec bbmin(vec(bm.state.center).sub(bm.state.radius)), bbmax(vec(bm.state.center).add(bm.state.radius+1));
