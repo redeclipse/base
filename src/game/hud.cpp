@@ -1581,7 +1581,7 @@ namespace hud
 
     VAR(IDF_PERSIST, showdamage, 0, 1, 1);
     CVAR(IDF_PERSIST, damagecolour, 0x600000);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, damagetex, "<grey><noswizzle>textures/damage/hurt", 0x300);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, damagetex, "<grey>textures/damage/hurt", 0x300);
     FVAR(IDF_PERSIST, damagedistort, 0, 1.85f, 16);
     FVAR(IDF_PERSIST, damageblend, 0, 0.5f, 1);
     FVAR(IDF_PERSIST, damageblenddead, 0, 0.5f, 1);
@@ -1589,21 +1589,21 @@ namespace hud
     FVAR(IDF_PERSIST, damagespeed2, FVAR_MIN, 0.1f, FVAR_MAX);
 
     VAR(IDF_PERSIST, showdamageburn, 0, 1, 1);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, damageburntex, "<grey><noswizzle>textures/damage/burn", 0x300);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, damageburntex, "<grey>textures/damage/burn", 0x300);
     FVAR(IDF_PERSIST, damageburnbright, 0, 0.9f, 10);
     FVAR(IDF_PERSIST, damageburnblend, 0, 0.6f, 1);
     FVAR(IDF_PERSIST, damageburnspeed1, FVAR_MIN, -0.3f, FVAR_MAX);
     FVAR(IDF_PERSIST, damageburnspeed2, FVAR_MIN, 0.4f, FVAR_MAX);
 
     VAR(IDF_PERSIST, showdamagebleed, 0, 1, 1);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, damagebleedtex, "<grey><noswizzle>textures/damage/bleed", 0x300);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, damagebleedtex, "<grey>textures/damage/bleed", 0x300);
     FVAR(IDF_PERSIST, damagebleedbright, 0, 0.6f, 10);
     FVAR(IDF_PERSIST, damagebleedblend, 0, 0.6f, 1);
     FVAR(IDF_PERSIST, damagebleedspeed1, FVAR_MIN, -0.025f, FVAR_MAX);
     FVAR(IDF_PERSIST, damagebleedspeed2, FVAR_MIN, 0.05f, FVAR_MAX);
 
     VAR(IDF_PERSIST, showdamageshock, 0, 1, 1);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, damageshocktex, "<grey><noswizzle>textures/damage/shock", 0x300);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, damageshocktex, "<grey>textures/damage/shock", 0x300);
     FVAR(IDF_PERSIST, damageshockbright, 0, 0.9f, 10);
     FVAR(IDF_PERSIST, damageshockblend, 0, 0.5f, 1);
     FVAR(IDF_PERSIST, damageshockspeed1, FVAR_MIN, -0.4f, FVAR_MAX);
