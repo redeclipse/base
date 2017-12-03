@@ -456,6 +456,8 @@ static inline bool bbinsidespot(const vec &origin, const vec &dir, int spot, con
 
 extern matrix4 worldmatrix, screenmatrix;
 
+extern int transparentlayer;
+
 extern int gw, gh, gdepthformat, ghasstencil;
 extern GLuint gdepthtex, gcolortex, gnormaltex, gglowtex, gdepthrb, gstencilrb;
 extern int msaasamples, msaalight;

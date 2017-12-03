@@ -267,7 +267,7 @@ struct animmodel : model
 
         void setshader(mesh &m, const animstate *as, bool force = false)
         {
-            m.setshader(loadshader(force), !shadowmapping && colorscale.a < 1 ? 1 : 0);
+            m.setshader(loadshader(force), transparentlayer ? 1 : 0);
         }
 
         void bind(mesh &b, const animstate *as, modelstate *state)

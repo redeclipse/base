@@ -40,6 +40,7 @@ void applychanges()
     int changetypes = 0;
     loopv(needsapply) changetypes |= needsapply[i].type;
     if(changetypes&CHANGE_GFX) execute("resetgl");
+    else if(changetypes&CHANGE_SHADERS) execident("resetshaders");
     if(changetypes&CHANGE_SOUND) execute("resetsound");
 }
 
