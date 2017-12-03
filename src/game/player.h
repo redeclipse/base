@@ -104,30 +104,40 @@ struct score
 #define PLAYERHEIGHT 14
 #define PLAYERTYPES 2
 #define PLAYERPATTERNS 14
+
+struct playerpattern
+{
+    const char *filename;
+    const char *id;
+    const char *name;
+    int clamp;
+    float scale;
+};
+
 #ifdef GAMESERVER
-const char *playertypes[PLAYERTYPES][7] = {
+extern const char * const playertypes[PLAYERTYPES][7] = {
     { "actors/player/male/hwep",        "actors/player/male",       "actors/player/male/body",      "actors/player/male/headless",      "player",   "male",     "Male" },
     { "actors/player/female/hwep",      "actors/player/female",     "actors/player/male/body",      "actors/player/female/headless",    "player",   "female",   "Female" }
 };
-const char *playerpatterns[PLAYERPATTERNS][3] = {
-    { "<grey>textures/patterns/default",         "default",          "Default" },
-    { "<grey>textures/patterns/soft",            "soft",             "Soft" },
-    { "<grey>textures/patterns/camo",            "camo",             "Camo" },
-    { "<grey><mirror>textures/patterns/heart",   "heart",            "Heart" },
-    { "<grey><mirror>textures/patterns/crown",   "crown",            "Crown" },
-    { "<grey><mirror>textures/patterns/zebra",   "zebra",            "Zebra" },
-    { "<grey><mirror>textures/patterns/checker", "checker",          "Checker" },
-    { "<grey><mirror>textures/patterns/star",    "star",             "Star" },
-    { "<grey><mirror>textures/patterns/flower",  "flower",           "Flower" },
-    { "<grey><mirror>textures/patterns/leopard", "leopard",          "Leopard" },
-    { "<grey><mirror>textures/patterns/zigzag",  "zigzag" ,          "Zigzag" },
-    { "<grey><mirror>textures/patterns/pixel",   "pixel" ,           "Pixel" },
-    { "<grey><mirror>textures/patterns/circle",  "circle" ,          "Circle" },
-    { "<grey>textures/patterns/ninja",           "ninja" ,           "Ninja" },
+extern const playerpattern playerpatterns[PLAYERPATTERNS] = {
+    { "<grey>textures/patterns/default", "default", "Default", 0,     1 },
+    { "<grey>textures/patterns/soft",    "soft",    "Soft",    0,     1 },
+    { "<grey>textures/patterns/camo",    "camo",    "Camo",    0,     1 },
+    { "<grey>textures/patterns/heart",   "heart",   "Heart",   0x300, 2 },
+    { "<grey>textures/patterns/crown",   "crown",   "Crown",   0x300, 2 },
+    { "<grey>textures/patterns/zebra",   "zebra",   "Zebra",   0x300, 2 },
+    { "<grey>textures/patterns/checker", "checker", "Checker", 0x300, 2 },
+    { "<grey>textures/patterns/star",    "star",    "Star",    0x300, 2 },
+    { "<grey>textures/patterns/flower",  "flower",  "Flower",  0x300, 2 },
+    { "<grey>textures/patterns/leopard", "leopard", "Leopard", 0x300, 2 },
+    { "<grey>textures/patterns/zigzag",  "zigzag",  "Zigzag",  0x300, 2 },
+    { "<grey>textures/patterns/pixel",   "pixel",   "Pixel",   0x300, 2 },
+    { "<grey>textures/patterns/circle",  "circle",  "Circle",  0x300, 2 },
+    { "<grey>textures/patterns/ninja",   "ninja",   "Ninja",   0,     2 },
 };
 #else
-extern const char *playertypes[PLAYERTYPES][7];
-extern const char *playerpatterns[PLAYERPATTERNS][3];
+extern const char * const playertypes[PLAYERTYPES][7];
+extern const playerpattern playerpatterns[PLAYERPATTERNS];
 #endif
 
 #include "playerdef.h"

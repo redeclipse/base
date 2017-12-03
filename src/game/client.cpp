@@ -804,7 +804,21 @@ namespace client
     VAR(0, numplayertypes, 1, PLAYERTYPES, -1);
     ICOMMAND(0, getmodelname, "ib", (int *mdl, int *idx), result(*mdl >= 0 ? playertypes[*mdl%PLAYERTYPES][*idx >= 0 ? clamp(*idx, 0, 6) : 6] : ""));
     VAR(0, numpatterns, 1, PLAYERPATTERNS, -1);
-    ICOMMAND(0, getpattern, "ib", (int *pattern, int *idx), result(*pattern >= 0 ? playerpatterns[*pattern%PLAYERPATTERNS][*idx >= 0 ? clamp(*idx, 0, 2) : 2] : ""));
+    ICOMMAND(0, getpattern, "ib", (int *pattern, int *idx),
+        if(*pattern >= 0)
+        {
+            const ::playerpattern &p = playerpatterns[*pattern%PLAYERPATTERNS];
+            switch(*idx)
+            {
+                case 0: result(p.filename); break;
+                case 1: result(p.id); break;
+                case 2: result(p.name); break;
+                case 3: intret(p.clamp); break;
+                case 4: intret(p.scale); break;
+                default: break;
+            }
+        }
+    );
 
     ICOMMAND(0, getcamerayaw, "", (), floatret(camera1->yaw));
     ICOMMAND(0, getcamerapitch, "", (), floatret(camera1->pitch));

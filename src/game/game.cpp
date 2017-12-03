@@ -3511,7 +3511,9 @@ namespace game
         int pattern = forceplayerpattern >= 0 ? forceplayerpattern : d->pattern;
         if(pattern >= 0)
         {
-            mdl.pattern = textureload(playerpatterns[pattern%PLAYERPATTERNS][0], 0, true);
+            const playerpattern &p = playerpatterns[pattern%PLAYERPATTERNS];
+            mdl.pattern = textureload(p.filename, p.clamp, true);
+            mdl.patternscale = p.scale;
             if(pattern < 2) mdl.flags |= MDL_NOPATTERN; // first two shouldn't recurse
         }
     }
