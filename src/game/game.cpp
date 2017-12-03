@@ -3489,8 +3489,8 @@ namespace game
     void getplayereffects(gameent *d, modelstate &mdl)
     {
         #define RESIDUAL(name, type, pulse) \
-            if(game::focus->name##time && d->name##ing(lastmillis, game::focus->name##time)) \
-                get##name##effect(d, mdl, game::focus->name##time, lastmillis-d->lastres[WR_##type], max(game::focus->name##delay, 1));
+            if(d->name##time && d->name##ing(lastmillis, d->name##time)) \
+                get##name##effect(d, mdl, d->name##time, lastmillis-d->lastres[WR_##type], max(d->name##delay, 1));
         RESIDUALS
         #undef RESIDUAL
         if((!mdl.mixer || mdl.mixer == notexture) && d->state == CS_ALIVE && d->lastbuff)
@@ -3790,6 +3790,17 @@ namespace game
     PLAYERPREV(weap, "i", (int *n), previewent->weapselect = clamp(*n, 0, W_ALL-1));
     PLAYERPREV(weapstate, "ii", (int *n, int *o), previewent->weapstate[clamp(*n, 0, W_ALL-1)] = clamp(*o, 0, W_ALL-1));
     PLAYERPREV(vanity, "s", (char *n), previewent->setvanity(n));
+    void setplayerprevresidual(int n, int q, int r, int s)
+    {
+        if(n < 0 || n >= WR_MAX) return;
+        previewent->lastres[n] = previewent->lastrestime[n] = q >= 0 ? q : lastmillis;
+        #define RESIDUAL(name, type, pulse) \
+            previewent->name##time = r >= 0 ? r : lavaburntime; \
+            previewent->name##delay = s >= 0 ? s : lavaburndelay;
+        RESIDUALS
+        #undef RESIDUAL
+    }
+    PLAYERPREV(residual, "ibbb", (int *n, int *q, int *r, int *s), setplayerprevresidual(*n, *q, *r, *s));
     #undef PLAYERPREV
 
     bool clientoption(char *arg) { return false; }
