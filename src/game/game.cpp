@@ -3795,9 +3795,17 @@ namespace game
         if(n < 0 || n >= WR_MAX) return;
         previewent->lastres[n] = previewent->lastrestime[n] = q >= 0 ? q : lastmillis;
         #define RESIDUAL(name, type, pulse) \
-            previewent->name##time = r >= 0 ? r : lavaburntime; \
-            previewent->name##delay = s >= 0 ? s : lavaburndelay;
-        RESIDUALS
+            case WR_##type: \
+            { \
+                previewent->name##time = r >= 0 ? r : lavaburntime; \
+                previewent->name##delay = s >= 0 ? s : lavaburndelay; \
+                break; \
+            }
+        switch(n)
+        {
+            RESIDUALS
+            default: break;
+        }
         #undef RESIDUAL
     }
     PLAYERPREV(residual, "ibbb", (int *n, int *q, int *r, int *s), setplayerprevresidual(*n, *q, *r, *s));
