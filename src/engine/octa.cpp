@@ -1137,6 +1137,8 @@ int genclipplane(const cube &c, int orient, vec *v, plane *clip)
     return planes;
 }
 
+bool collideface(const cube &c, const int orient, const ivec &co, const int size);
+
 void genclipplanes(const cube &c, const ivec &co, int size, clipplanes &p, bool collide)
 {
     // generate tight bounding box
@@ -1159,7 +1161,15 @@ void genclipplanes(const cube &c, const ivec &co, int size, clipplanes &p, bool 
         loopi(6) if(c.visible&(1<<i))
         {
             int vis;
-            if(flataxisface(c, i)) p.visible |= 1<<i;
+            if(flataxisface(c, i))
+            {
+                if(touchingface(c, i))
+                {
+                    if(faceedges(c, i)==F_SOLID) p.visible |= collidesolidface(c, i, co, size)<<i;
+                    else p.visible |= collideface(c, i, co, size)<<i;
+                }
+                else p.visible |= 1<<i;
+            }
             else if((vis = visibletris(c, i, co, size, MAT_NOCLIP, MATF_CLIP)))
             {
                 int convex = faceconvexity(c, i), order = vis&4 || convex < 0 ? 1 : 0;
@@ -1812,4 +1822,103 @@ void calcmerges()
 {
     genmergeprogress = 0;
     genmerges();
+}
+
+inline bool solidmat(const int mat)
+{
+    return ((mat&MATF_CLIP) == MAT_CLIP) || ((mat&MATF_VOLUME) == MAT_GLASS);
+}
+
+inline bool solidface(const cube &c, int orient)
+{
+    return (solidmat(c.material) || ((faceedges(c, orient) == F_SOLID) && touchingface(c, orient))) && (c.material&MATF_CLIP) != MAT_NOCLIP;
+}
+
+inline bool occludescollide(const cube &o, const int norient, const ivec &no, int nsize, const ivec &co, const int size, const ivec2 *cf, const int numc)
+{
+    int dim = dimension(norient);
+    if(!o.children)
+    {
+         if(solidface(o, norient)) return true;
+         ivec2 vf[8];
+         int numv = clipfacevecs(cf, numc, no[C[dim]], no[R[dim]], nsize, vf);
+         if(numv < 3) return true;
+         if(isempty(o) || notouchingface(o, norient)) return false;
+         ivec2 of[4];
+         int numo = genfacevecs(o, norient, no, nsize, false, of);
+         return numo >= 3 && insideface(vf, numv, of, numo);
+    }
+
+    nsize >>= 1;
+    int coord = dimcoord(norient);
+    loopi(8) if(octacoord(dim, i) == coord)
+    {
+        if(!occludescollide(o.children[i], norient, ivec(i, no, nsize), nsize, co, size, cf, numc)) return false;
+    }
+
+    return true;
+}
+
+bool collideface(const cube &c, const int orient, const ivec &co, const int size)
+{
+    if(!solidmat(c.material) && !touchingface(c, orient)) return true;
+    ivec no;
+    int nsize;
+    const cube &o = neighbourcube(c, orient, co, size, no, nsize);
+    if(&o==&c) return false;
+    const int norient = opposite(orient);
+    if(nsize > size || (nsize == size && !o.children))
+    {
+        if((isempty(o) && !solidmat(o.material)) || (o.material&MATF_CLIP)==MAT_NOCLIP) return true;
+        if(!solidmat(o.material) && notouchingface(o, norient)) return true;
+        const bool solid = solidface(c, orient);
+        const bool nsolid = solidface(o, norient);
+        if(nsolid && (solid || touchingface(c, orient))) return false;
+
+        ivec vo = ivec(co).mask(0xFFF);
+        no.mask(0xFFF);
+        ivec2 cf[4], of[4];
+        int numc = genfacevecs(c, orient, vo, size, solid, cf),
+            numo = genfacevecs(o, norient, no, nsize, nsolid, of);
+        return numo < 3 || !insideface(cf, numc, of, numo);
+    }
+    ivec vo = ivec(co).mask(0xFFF);
+    no.mask(0xFFF);
+    ivec2 cf[4];
+    int numc = genfacevecs(c, orient, vo, size, solidface(c, orient), cf);
+    return !occludescollide(o, norient, no, nsize, vo, size, cf, numc);
+}
+
+inline bool occludescollidesolid(const cube &c, const int orient, const ivec &co, int size)
+{
+    if(!c.children) return solidface(c, orient);
+    size >>= 1;
+    int dim = dimension(orient), coord = dimcoord(orient);
+    loopi(8) if(octacoord(dim, i) == coord)
+    {
+        if(!occludescollidesolid(c.children[i], orient, ivec(i, co, size), size)) return false;
+    }
+    return true;
+}
+
+bool collidesolidface(const cube &c, const int orient, const ivec &co, const int size)
+{
+    ivec no;
+    int nsize;
+    const cube &o = neighbourcube(c, orient, co, size, no, nsize);
+    if(&o == &c) return false;
+    const int norient = opposite(orient);
+    if(nsize > size || (nsize == size && !o.children))
+    {
+        if(solidface(o, norient)) return false;
+        else if(nsize == size && !o.children) return true;
+        if((o.material&MATF_CLIP) == MAT_NOCLIP) return true;
+        ivec vo = ivec(co).mask(0xFFF);
+        no.mask(0xFFF);
+        ivec2 cf[4] = {{0,0},{0,0},{0,0},{0,0}}, of[4];
+        int numc = genfacevecs(c, orient, vo, size, true, cf),
+            numo = genfacevecs(o, norient, no, nsize, false, of);
+        return numo < 3 || !insideface(cf, numc, of, numo);
+    }
+    return !occludescollidesolid(o, opposite(orient), no, nsize);
 }

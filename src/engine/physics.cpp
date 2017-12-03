@@ -916,6 +916,12 @@ static bool fuzzycollidesolid(physent *d, const vec &dir, float cutoff, const cu
     collidewall = vec(0, 0, 0);
     float bestdist = -1e10f;
     int visible = isentirelysolid(c) ? c.visible : 0xFF;
+    if(d->type<ENT_CAMERA)
+    {
+        int collide = 0;
+        loopi(6) if((visible>>i)&1) collide |= collidesolidface(c, i, co, size) << i;
+        visible = collide;
+    }
     #define CHECKSIDE(side, distval, dotval, margin, normal) if(visible&(1<<side)) do \
     { \
         float dist = distval; \
@@ -1037,6 +1043,12 @@ static bool cubecollidesolid(physent *d, const vec &dir, float cutoff, const cub
     collidewall = vec(0, 0, 0);
     float bestdist = -1e10f;
     int visible = isentirelysolid(c) ? c.visible : 0xFF;
+    if(d->type<ENT_CAMERA)
+    {
+        int collide = 0;
+        loopi(6) if((visible>>i)&1) collide |= collidesolidface(c, i, co, size) << i;
+        visible = collide;
+    }
     CHECKSIDE(O_LEFT, co.x - entvol.right(), -dir.x, -d->radius, vec(-1, 0, 0));
     CHECKSIDE(O_RIGHT, entvol.left() - (co.x + size), dir.x, -d->radius, vec(1, 0, 0));
     CHECKSIDE(O_BACK, co.y - entvol.front(), -dir.y, -d->radius, vec(0, -1, 0));
