@@ -110,20 +110,20 @@ const char *playertypes[PLAYERTYPES][7] = {
     { "actors/player/female/hwep",      "actors/player/female",     "actors/player/male/body",      "actors/player/female/headless",    "player",   "female",   "Female" }
 };
 const char *playerpatterns[PLAYERPATTERNS][3] = {
-    { "<grey>textures/patterns/default",   "default",          "Default" },
-    { "<grey>textures/patterns/soft",      "soft",             "Soft" },
-    { "<grey>textures/patterns/camo",      "camo",             "Camo" },
-    { "<grey>textures/patterns/heart",     "heart",            "Heart" },
-    { "<grey>textures/patterns/crown",     "crown",            "Crown" },
-    { "<grey>textures/patterns/zebra",     "zebra",            "Zebra" },
-    { "<grey>textures/patterns/checker",   "checker",          "Checker" },
-    { "<grey>textures/patterns/star",      "star",             "Star" },
-    { "<grey>textures/patterns/flower",    "flower",           "Flower" },
-    { "<grey>textures/patterns/leopard",   "leopard",          "Leopard" },
-    { "<grey>textures/patterns/zigzag",    "zigzag" ,          "Zigzag" },
-    { "<grey>textures/patterns/pixel",     "pixel" ,           "Pixel" },
-    { "<grey>textures/patterns/circle",    "circle" ,          "Circle" },
-    { "<grey>textures/patterns/ninja",     "ninja" ,           "Ninja" },
+    { "<grey>textures/patterns/default",         "default",          "Default" },
+    { "<grey>textures/patterns/soft",            "soft",             "Soft" },
+    { "<grey>textures/patterns/camo",            "camo",             "Camo" },
+    { "<grey><mirror>textures/patterns/heart",   "heart",            "Heart" },
+    { "<grey><mirror>textures/patterns/crown",   "crown",            "Crown" },
+    { "<grey><mirror>textures/patterns/zebra",   "zebra",            "Zebra" },
+    { "<grey><mirror>textures/patterns/checker", "checker",          "Checker" },
+    { "<grey><mirror>textures/patterns/star",    "star",             "Star" },
+    { "<grey><mirror>textures/patterns/flower",  "flower",           "Flower" },
+    { "<grey><mirror>textures/patterns/leopard", "leopard",          "Leopard" },
+    { "<grey><mirror>textures/patterns/zigzag",  "zigzag" ,          "Zigzag" },
+    { "<grey><mirror>textures/patterns/pixel",   "pixel" ,           "Pixel" },
+    { "<grey><mirror>textures/patterns/circle",  "circle" ,          "Circle" },
+    { "<grey>textures/patterns/ninja",           "ninja" ,           "Ninja" },
 };
 #else
 extern const char *playertypes[PLAYERTYPES][7];
