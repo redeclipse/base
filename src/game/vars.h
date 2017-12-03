@@ -4,7 +4,7 @@ GVAR(IDF_WORLD, mapbalance, 0, 0, 3); // switches teams for asymmetrical maps, 0
 
 GVAR(IDF_WORLD, hurtdelay, 0, 1000, VAR_MAX);
 GVAR(IDF_WORLD, hurtdamage, 0, 3, VAR_MAX);
-GVAR(IDF_WORLD, hurtresidual, 0, 0, WR_ALL);
+GVAR(IDF_WORLD, hurtresidual, 0, 0, W_R_ALL);
 
 GVAR(IDF_WORLD, hurtburntime, 0, 5500, VAR_MAX);
 GVAR(IDF_WORLD, hurtburndelay, 1, 1000, VAR_MAX);

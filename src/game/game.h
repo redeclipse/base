@@ -310,7 +310,7 @@ extern const char * const sendmaptypes[SENDMAP_MAX] = { "mpz", "cfg", "png", "tx
 #else
 extern const char * const sendmaptypes[SENDMAP_MAX];
 #define CLCOMMANDK(name, body, fail) \
-    ICOMMAND(0, getclient##name, "s", (char *who), \
+    ICOMMAND(IDF_NAMECOMPLETE, getclient##name, "s", (char *who), \
     { \
         gameent *d = game::getclient(client::parseplayer(who)); \
         if(!d) { fail; return; } \
@@ -318,7 +318,7 @@ extern const char * const sendmaptypes[SENDMAP_MAX];
     });
 #define CLCOMMAND(name, body) CLCOMMANDK(name, body,)
 #define CLCOMMANDMK(name, fmt, args, body, fail) \
-    ICOMMAND(0, getclient##name, fmt, args, \
+    ICOMMAND(IDF_NAMECOMPLETE, getclient##name, fmt, args, \
     { \
         gameent *d = game::getclient(client::parseplayer(who)); \
         if(!d) { fail; return; } \
@@ -596,7 +596,7 @@ struct clientstate
 {
     int health, ammo[W_MAX], entid[W_MAX], colour, model, pattern, checkpointspawn;
     int weapselect, weapload[W_MAX], weapshot[W_MAX], weapstate[W_MAX], weapwait[W_MAX], weaptime[W_MAX], prevstate[W_MAX], prevtime[W_MAX];
-    int lastdeath, lastspawn, lastpain, lastregen, lastregenamt, lastbuff, lastshoot, lastcook, lastaffinity, lastres[WR_MAX], lastrestime[WR_MAX];
+    int lastdeath, lastspawn, lastpain, lastregen, lastregenamt, lastbuff, lastshoot, lastcook, lastaffinity, lastres[W_R_MAX], lastrestime[W_R_MAX];
     int burntime, burndelay, burndamage, bleedtime, bleeddelay, bleeddamage, shocktime, shockdelay, shockdamage, shockstun, shockstuntime;
     float shockstunscale, shockstunfall;
     int actortype, spawnpoint, ownernum, skill, points, frags, deaths, totalpoints, totalfrags, totaldeaths, spree, lasttimeplayed, timeplayed, cpmillis, cptime, queuepos;
@@ -820,11 +820,11 @@ struct clientstate
 
     void resetresidual(int n = -1)
     {
-        if(n < 0 || n == WR_BURN) lastres[WR_BURN] = lastrestime[WR_BURN] = burntime = burndelay = burndamage = 0;
-        if(n < 0 || n == WR_BLEED) lastres[WR_BLEED] = lastrestime[WR_BLEED] = bleedtime = bleeddelay = bleeddamage = 0;
-        if(n < 0 || n == WR_SHOCK)
+        if(n < 0 || n == W_R_BURN) lastres[W_R_BURN] = lastrestime[W_R_BURN] = burntime = burndelay = burndamage = 0;
+        if(n < 0 || n == W_R_BLEED) lastres[W_R_BLEED] = lastrestime[W_R_BLEED] = bleedtime = bleeddelay = bleeddamage = 0;
+        if(n < 0 || n == W_R_SHOCK)
         {
-            lastres[WR_SHOCK] = lastrestime[WR_SHOCK] = shocktime = shockdelay = shockdamage = shockstun = shockstuntime = 0;
+            lastres[W_R_SHOCK] = lastrestime[W_R_SHOCK] = shocktime = shockdelay = shockdamage = shockstun = shockstuntime = 0;
             shockstunscale = shockstunfall = 0.f;
         }
     }
@@ -971,7 +971,7 @@ struct clientstate
         return delay-len;
     }
 
-    #define RESIDUAL(name, type, pulse) bool name##ing(int millis, int len) { return len && lastres[WR_##type] && millis-lastres[WR_##type] <= len; }
+    #define RESIDUAL(name, type, pulse) bool name##ing(int millis, int len) { return len && lastres[W_R_##type] && millis-lastres[W_R_##type] <= len; }
     RESIDUALS
     #undef RESIDUAL
 };

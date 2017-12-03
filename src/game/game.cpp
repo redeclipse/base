@@ -933,7 +933,7 @@ namespace game
                 }
                 if(d->burntime && d->burning(lastmillis, d->burntime))
                 {
-                    int millis = lastmillis-d->lastres[WR_BURN], delay = max(d->burndelay, 1);
+                    int millis = lastmillis-d->lastres[W_R_BURN], delay = max(d->burndelay, 1);
                     size_t seed = size_t(d) + (millis/50);
                     float pc = 1, amt = (millis%50)/50.0f, intensity = 0.75f+(detrnd(seed, 25)*(1-amt) + detrnd(seed + 1, 25)*amt)/100.f;
                     if(d->burntime-millis < delay) pc *= float(d->burntime-millis)/float(delay);
@@ -947,7 +947,7 @@ namespace game
                 }
                 if(d->shocktime && d->shocking(lastmillis, d->shocktime))
                 {
-                    int millis = lastmillis-d->lastres[WR_SHOCK], delay = max(d->shockdelay, 1);
+                    int millis = lastmillis-d->lastres[W_R_SHOCK], delay = max(d->shockdelay, 1);
                     size_t seed = size_t(d) + (millis/50);
                     float pc = 1, amt = (millis%50)/50.0f, intensity = 0.75f+(detrnd(seed, 25)*(1-amt) + detrnd(seed + 1, 25)*amt)/100.f;
                     if(d->shocktime-millis < delay) pc *= float(d->shocktime-millis)/float(delay);
@@ -1215,8 +1215,8 @@ namespace game
             if(d->respawned > 0 && lastmillis-d->respawned >= 2500) d->respawned = -1;
             if(d->suicided > 0 && lastmillis-d->suicided >= 2500) d->suicided = -1;
         }
-        int restime[WR_MAX] = { d->burntime, d->bleedtime, d->shocktime };
-        loopi(WR_MAX) if(d->lastres[i] > 0 && lastmillis-d->lastres[i] >= restime[i]) d->resetresidual(i);
+        int restime[W_R_MAX] = { d->burntime, d->bleedtime, d->shocktime };
+        loopi(W_R_MAX) if(d->lastres[i] > 0 && lastmillis-d->lastres[i] >= restime[i]) d->resetresidual(i);
         if(gs_playing(gamestate) && d->state == CS_ALIVE)
         {
             int curfoot = d->curfoot();
@@ -1274,8 +1274,8 @@ namespace game
     {
         if(wr_burns(weap, flags) && (d->submerged < G(liquidextinguish) || (d->inmaterial&MATF_VOLUME) != MAT_WATER))
         {
-            d->lastrestime[WR_BURN] = lastmillis;
-            if(isweap(weap) || flags&HIT_MATERIAL) d->lastres[WR_BURN] = lastmillis;
+            d->lastrestime[W_R_BURN] = lastmillis;
+            if(isweap(weap) || flags&HIT_MATERIAL) d->lastres[W_R_BURN] = lastmillis;
             else return true;
         }
         return false;
@@ -1285,8 +1285,8 @@ namespace game
     {
         if(wr_bleeds(weap, flags))
         {
-            d->lastrestime[WR_BLEED] = lastmillis;
-            if(isweap(weap) || flags&HIT_MATERIAL) d->lastres[WR_BLEED] = lastmillis;
+            d->lastrestime[W_R_BLEED] = lastmillis;
+            if(isweap(weap) || flags&HIT_MATERIAL) d->lastres[W_R_BLEED] = lastmillis;
             else return true;
         }
         return false;
@@ -1296,8 +1296,8 @@ namespace game
     {
         if(wr_shocks(weap, flags))
         {
-            d->lastrestime[WR_SHOCK] = lastmillis;
-            if(isweap(weap) || flags&HIT_MATERIAL) d->lastres[WR_SHOCK] = lastmillis;
+            d->lastrestime[W_R_SHOCK] = lastmillis;
+            if(isweap(weap) || flags&HIT_MATERIAL) d->lastres[W_R_SHOCK] = lastmillis;
             else return true;
         }
         return false;
@@ -3490,7 +3490,7 @@ namespace game
     {
         #define RESIDUAL(name, type, pulse) \
             if(d->name##time && d->name##ing(lastmillis, d->name##time)) \
-                get##name##effect(d, mdl, d->name##time, lastmillis-d->lastres[WR_##type], max(d->name##delay, 1));
+                get##name##effect(d, mdl, d->name##time, lastmillis-d->lastres[W_R_##type], max(d->name##delay, 1));
         RESIDUALS
         #undef RESIDUAL
         if((!mdl.mixer || mdl.mixer == notexture) && d->state == CS_ALIVE && d->lastbuff)
@@ -3681,7 +3681,7 @@ namespace game
         }
         if(d->burntime && d->burning(lastmillis, d->burntime))
         {
-            int millis = lastmillis-d->lastres[WR_BURN], delay = max(d->burndelay, 1);
+            int millis = lastmillis-d->lastres[W_R_BURN], delay = max(d->burndelay, 1);
             float pc = 1, intensity = 0.5f+(rnd(50)/100.f), fade = (d != focus ? 0.75f : 0.f)+(rnd(25)/100.f);
             if(d->burntime-millis < delay) pc *= float(d->burntime-millis)/float(delay);
             else pc *= 0.75f+(float(millis%delay)/float(delay*4));
@@ -3783,21 +3783,56 @@ namespace game
     }
 
     #define PLAYERPREV(name, arglist, argexpr, body) ICOMMAND(0, playerpreview##name, arglist, argexpr, if(previewent) { body; });
+    PLAYERPREV(state, "b", (int *n), previewent->state = *n >= 0 ? clamp(*n, 0, int(CS_MAX-1)) : int(CS_ALIVE));
+    PLAYERPREV(move, "i", (int *n), previewent->move = *n != 0 ? (*n > 0 ? 1 : -1) : 0);
+    PLAYERPREV(strafe, "i", (int *n), previewent->strafe = *n != 0 ? (*n > 0 ? 1 : -1) : 0);
+    PLAYERPREV(turnside, "i", (int *n), previewent->turnside = *n != 0 ? (*n > 0 ? 1 : -1) : 0);
+    PLAYERPREV(physstate, "b", (int *n), previewent->physstate = *n >= 0 ? clamp(*n, 0, int(PHYS_MAX-1)) : int(PHYS_FLOOR));
+    PLAYERPREV(actortype, "b", (int *n), previewent->actortype = *n >= 0 ? clamp(*n, 0, int(A_MAX-1)) : int(A_PLAYER));
+    PLAYERPREV(health, "bbbb", (int *n, int *m, int *o, int *t), previewent->health = *n >= 0 ? *n : m_health(*m >= 0 ? *m : G_DEATHMATCH, *o >= 0 ? *o : 0, *t >= 0 ? *t : previewent->actortype));
     PLAYERPREV(model, "i", (int *n), previewent->model = clamp(*n, 0, PLAYERTYPES-1));
     PLAYERPREV(colour, "i", (int *n), previewent->colour = clamp(*n, 0, 0xFFFFFF));
     PLAYERPREV(pattern, "i", (int *n), previewent->pattern = clamp(*n, 0, PLAYERPATTERNS-1));
     PLAYERPREV(team, "i", (int *n), previewent->team = clamp(*n, 0, int(T_MULTI)));
-    PLAYERPREV(weap, "i", (int *n), previewent->weapselect = clamp(*n, 0, W_ALL-1));
+    PLAYERPREV(privilege, "i", (int *n), previewent->privilege = clamp(*n, 0, int(PRIV_MAX-1)));
+    PLAYERPREV(weapselect, "i", (int *n), previewent->weapselect = clamp(*n, 0, W_ALL-1));
+    PLAYERPREV(weapammo, "ii", (int *n, int *o), previewent->ammo[clamp(*n, 0, W_ALL-1)] = *o);
     PLAYERPREV(weapstate, "ii", (int *n, int *o), previewent->weapstate[clamp(*n, 0, W_ALL-1)] = clamp(*o, 0, W_S_MAX-1));
     PLAYERPREV(weapwait, "ii", (int *n, int *o), previewent->weapwait[clamp(*n, 0, W_ALL-1)] = *o);
     PLAYERPREV(weaptime, "ii", (int *n, int *o), previewent->weaptime[clamp(*n, 0, W_ALL-1)] = *o);
+    PLAYERPREV(lastdeath, "i", (int *n), previewent->lastdeath = *n);
+    PLAYERPREV(lastspawn, "i", (int *n), previewent->lastspawn = *n);
+    PLAYERPREV(lastbuff, "i", (int *n), previewent->lastbuff = *n);
+    PLAYERPREV(lastshoot, "i", (int *n), previewent->lastshoot = *n);
+    PLAYERPREV(airmillis, "i", (int *n), previewent->airmillis = *n);
+    PLAYERPREV(floormillis, "i", (int *n), previewent->floormillis = *n);
+    PLAYERPREV(action, "ii", (int *n, int *o), previewent->action[clamp(*n, 0, int(AC_MAX-1))] = *o != 0);
+    PLAYERPREV(actiontime, "ii", (int *n, int *o), previewent->actiontime[clamp(*n, 0, int(AC_MAX-1))] = *o);
+    PLAYERPREV(impulse, "ii", (int *n, int *o), previewent->impulse[clamp(*n, 0, int(IM_MAX-1))] = *o);
+    PLAYERPREV(headless, "i", (int *n), previewent->headless = *n != 0);
+    PLAYERPREV(inliquid, "i", (int *n), {
+        if((previewent->inliquid = *n != 0) != false)
+        {
+            previewent->physstate = PHYS_FALL;
+            previewent->airmillis = *n;
+            previewent->floormillis = 0;
+            previewent->submerged = 1;
+        }
+        else
+        {
+            previewent->physstate = PHYS_FLOOR;
+            previewent->floormillis = *n;
+            previewent->airmillis = 0;
+            previewent->submerged = 0;
+        }
+    });
     PLAYERPREV(vanity, "s", (char *n), previewent->setvanity(n));
     void setplayerprevresidual(int n, int q, int r, int s)
     {
-        if(n < 0 || n >= WR_MAX) return;
+        if(n < 0 || n >= W_R_MAX) return;
         previewent->lastres[n] = previewent->lastrestime[n] = q >= 0 ? q : lastmillis;
         #define RESIDUAL(name, type, pulse) \
-            case WR_##type: \
+            case W_R_##type: \
             { \
                 previewent->name##time = r >= 0 ? r : lavaburntime; \
                 previewent->name##delay = s >= 0 ? s : lavaburndelay; \

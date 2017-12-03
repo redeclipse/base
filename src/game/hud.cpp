@@ -1638,7 +1638,7 @@ namespace hud
         #define RESIDUAL(name, type, pulse) \
             if(showdamage##name && game::focus->name##ing(lastmillis, game::focus->name##time)) \
             { \
-                int interval = lastmillis-game::focus->lastres[WR_##type], delay = max(game::focus->name##delay, 1); \
+                int interval = lastmillis-game::focus->lastres[W_R_##type], delay = max(game::focus->name##delay, 1); \
                 float pc = interval >= game::focus->name##time-500 ? 1.f+(interval-(game::focus->name##time-500))/500.f : (interval%delay)/float(delay/2); \
                 if(pc > 1.f) pc = 2.f-pc; \
                 if(interval < game::focus->name##time-(delay/2)) pc = min(pc+0.5f, 1.f); \

@@ -900,8 +900,16 @@ void complete(char *s, const char *cmdprefix, bool reverse)
         char *end = strchr(start, ' ');
         if(end)
         {
-            f = filecompletions.find(stringslice(start, end), NULL);
-            p = playercompletions.find(stringslice(start, end), false);
+            stringslice slice = stringslice(start, end);
+            f = filecompletions.find(slice, NULL);
+            p = playercompletions.find(slice, false);
+            if(!p) enumerate(idents, ident, id,
+                if((id.flags&IDF_NAMECOMPLETE) && !strncmp(id.name, start, end-start))
+                {
+                    p = true;
+                    break;
+                }
+            );
         }
     }
     const char *nextcomplete = NULL;
@@ -915,7 +923,7 @@ void complete(char *s, const char *cmdprefix, bool reverse)
         {
             if(strncmp(f->files[i], &start[commandsize], completesize-commandsize)==0 &&
                 strcmp(f->files[i], lastcomplete) * (reverse ? -1 : 1) > 0 && (!nextcomplete || strcmp(f->files[i], nextcomplete) * (reverse ? -1 : 1) < 0))
-                nextcomplete = f->files[i];
+                    nextcomplete = f->files[i];
         }
     }
     else if(p) // complete using player names
@@ -928,8 +936,8 @@ void complete(char *s, const char *cmdprefix, bool reverse)
     {
         enumerate(idents, ident, id,
             if((variable ? id.type == ID_VAR || id.type == ID_SVAR || id.type == ID_FVAR || id.type == ID_ALIAS: id.flags&IDF_COMPLETE) && strncmp(id.name, start, completesize)==0 &&
-               strcmp(id.name, lastcomplete) * (reverse ? -1 : 1) > 0 && (!nextcomplete || strcmp(id.name, nextcomplete) * (reverse ? -1 : 1) < 0))
-                nextcomplete = id.name;
+                strcmp(id.name, lastcomplete) * (reverse ? -1 : 1) > 0 && (!nextcomplete || strcmp(id.name, nextcomplete) * (reverse ? -1 : 1) < 0))
+                    nextcomplete = id.name;
         );
     }
     if(nextcomplete)

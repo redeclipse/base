@@ -697,7 +697,7 @@ namespace client
         PARSEPLAYERN(strncasecmp, o->name);
         return -1;
     }
-    ICOMMAND(0, getclientnum, "s", (char *who), intret(parseplayer(who)));
+    ICOMMAND(IDF_NAMECOMPLETE, getclientnum, "s", (char *who), intret(parseplayer(who)));
 
     void listclients(bool local, int noai)
     {
@@ -770,7 +770,7 @@ namespace client
     LOOPCLIENTS(rev,loopcsirev,loopvkrev,true);
 
     #define LOOPINVENTORY(name,op,lp,nop) \
-        ICOMMAND(0, loopinventory##name, "siire", (char *who, int *count, int *skip, ident *id, uint *body), \
+        ICOMMAND(IDF_NAMECOMPLETE, loopinventory##name, "siire", (char *who, int *count, int *skip, ident *id, uint *body), \
         { \
             gameent *d = game::getclient(parseplayer(who)); \
             if(!d) return; \
@@ -874,7 +874,23 @@ namespace client
     CLCOMMANDM(weapload, "si", (char *who, int *n), intret(isweap(*n) ? d->weapload[*n] : 0));
     CLCOMMANDM(weaphold, "si", (char *who, int *n), intret(isweap(*n) && d->holdweap(*n, m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis) ? 1 : 0));
     CLCOMMAND(weapholdnum, intret(d->holdweapcount(m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis)));
+    CLCOMMANDM(action, "sb", (char *who, int *n), intret(d->action[clamp(*n, 0, int(AC_MAX-1))] ? 1 : 0));
+    CLCOMMANDM(actiontime, "sb", (char *who, int *n), intret(d->actiontime[clamp(*n, 0, int(AC_MAX-1))]));
 
+    CLCOMMAND(move, intret(d->move));
+    CLCOMMAND(strafe, intret(d->strafe));
+    CLCOMMAND(turnside, intret(d->turnside));
+    CLCOMMAND(physstate, intret(d->physstate));
+    CLCOMMAND(lastdeath, intret(d->lastdeath));
+    CLCOMMAND(lastspawn, intret(d->lastspawn));
+    CLCOMMAND(lastbuff, intret(d->lastbuff));
+    CLCOMMAND(lastshoot, intret(d->lastshoot));
+    CLCOMMAND(airmillis, intret(d->airmillis));
+    CLCOMMAND(floormillis, intret(d->floormillis));
+    CLCOMMAND(inliquid, intret(d->inliquid ? 1 : 0));
+    CLCOMMAND(onladder, intret(d->onladder ? 1 : 0));
+    CLCOMMAND(headless, intret(d->headless ? 1 : 0));
+    CLCOMMAND(obliterated, intret(d->obliterated ? 1 : 0));
     CLCOMMAND(actortype, intret(d->actortype));
     CLCOMMAND(pcolour, intret(d->colour));
     CLCOMMAND(model, intret(d->model%PLAYERTYPES));
@@ -1010,21 +1026,21 @@ namespace client
             default: break;
         }
     }
-    ICOMMAND(0, getclientversion, "si", (char *who, int *prop), getclientversion(parseplayer(who), *prop));
+    ICOMMAND(IDF_NAMECOMPLETE, getclientversion, "si", (char *who, int *prop), getclientversion(parseplayer(who), *prop));
 
     bool isspectator(int cn)
     {
         gameent *d = game::getclient(cn);
         return d && d->state == CS_SPECTATOR;
     }
-    ICOMMAND(0, isspectator, "s", (char *who), intret(isspectator(parseplayer(who)) ? 1 : 0));
+    ICOMMAND(IDF_NAMECOMPLETE, isspectator, "s", (char *who), intret(isspectator(parseplayer(who)) ? 1 : 0));
 
     bool isquarantine(int cn)
     {
         gameent *d = game::getclient(cn);
         return d && d->quarantine;
     }
-    ICOMMAND(0, isquarantine, "s", (char *who), intret(isquarantine(parseplayer(who)) ? 1 : 0));
+    ICOMMAND(IDF_NAMECOMPLETE, isquarantine, "s", (char *who), intret(isquarantine(parseplayer(who)) ? 1 : 0));
 
     bool isai(int cn, int type)
     {
@@ -1032,7 +1048,7 @@ namespace client
         int actortype = type > 0 && type < A_MAX ? type : A_BOT;
         return d && d->actortype == actortype;
     }
-    ICOMMAND(0, isai, "si", (char *who, int *type), intret(isai(parseplayer(who), *type) ? 1 : 0));
+    ICOMMAND(IDF_NAMECOMPLETE, isai, "si", (char *who, int *type), intret(isai(parseplayer(who), *type) ? 1 : 0));
 
     bool mutscmp(int req, int limit)
     {
@@ -1119,12 +1135,12 @@ namespace client
         int i = parseplayer(arg);
         if(i >= 0) addmsg(N_ADDCONTROL, "ri2s", i, type, msg);
     }
-    ICOMMAND(0, kick, "ss", (char *s, char *m), addcontrol(s, -1, m));
-    ICOMMAND(0, allow, "ss", (char *s, char *m), addcontrol(s, ipinfo::ALLOW, m));
-    ICOMMAND(0, ban, "ss", (char *s, char *m), addcontrol(s, ipinfo::BAN, m));
-    ICOMMAND(0, mute, "ss", (char *s, char *m), addcontrol(s, ipinfo::MUTE, m));
-    ICOMMAND(0, limit, "ss", (char *s, char *m), addcontrol(s, ipinfo::LIMIT, m));
-    ICOMMAND(0, except, "ss", (char *s, char *m), addcontrol(s, ipinfo::EXCEPT, m));
+    ICOMMAND(IDF_NAMECOMPLETE, kick, "ss", (char *s, char *m), addcontrol(s, -1, m));
+    ICOMMAND(IDF_NAMECOMPLETE, allow, "ss", (char *s, char *m), addcontrol(s, ipinfo::ALLOW, m));
+    ICOMMAND(IDF_NAMECOMPLETE, ban, "ss", (char *s, char *m), addcontrol(s, ipinfo::BAN, m));
+    ICOMMAND(IDF_NAMECOMPLETE, mute, "ss", (char *s, char *m), addcontrol(s, ipinfo::MUTE, m));
+    ICOMMAND(IDF_NAMECOMPLETE, limit, "ss", (char *s, char *m), addcontrol(s, ipinfo::LIMIT, m));
+    ICOMMAND(IDF_NAMECOMPLETE, except, "ss", (char *s, char *m), addcontrol(s, ipinfo::EXCEPT, m));
 
     ICOMMAND(0, clearallows, "", (), addmsg(N_CLRCONTROL, "ri", ipinfo::ALLOW));
     ICOMMAND(0, clearbans, "", (), addmsg(N_CLRCONTROL, "ri", ipinfo::BAN));
@@ -1176,9 +1192,9 @@ namespace client
         return ignores.find(d->hostip) >= 0;
     }
 
-    ICOMMAND(0, ignore, "s", (char *arg), ignore(parseplayer(arg)));
-    ICOMMAND(0, unignore, "s", (char *arg), unignore(parseplayer(arg)));
-    ICOMMAND(0, isignored, "s", (char *arg), intret(isignored(parseplayer(arg)) ? 1 : 0));
+    ICOMMAND(IDF_NAMECOMPLETE, ignore, "s", (char *arg), ignore(parseplayer(arg)));
+    ICOMMAND(IDF_NAMECOMPLETE, unignore, "s", (char *arg), unignore(parseplayer(arg)));
+    ICOMMAND(IDF_NAMECOMPLETE, isignored, "s", (char *arg), intret(isignored(parseplayer(arg)) ? 1 : 0));
 
     void setteam(const char *arg1, const char *arg2)
     {
@@ -1193,7 +1209,7 @@ namespace client
         }
         else conoutft(CON_DEBUG, "\frCan only change teams in team games");
     }
-    ICOMMAND(0, setteam, "ss", (char *who, char *team), setteam(who, team));
+    ICOMMAND(IDF_NAMECOMPLETE, setteam, "ss", (char *who, char *team), setteam(who, team));
 
     void hashpwd(const char *pwd)
     {
@@ -1219,8 +1235,8 @@ namespace client
     {
         addmsg(N_ADDPRIV, "ii", cn, priv);
     }
-    ICOMMAND(0, addpriv, "si", (char *who, int *priv), addpriv(parseplayer(who), *priv));
-    ICOMMAND(0, resetpriv, "s", (char *who), addpriv(parseplayer(who), -1));
+    ICOMMAND(IDF_NAMECOMPLETE, addpriv, "si", (char *who, int *priv), addpriv(parseplayer(who), *priv));
+    ICOMMAND(IDF_NAMECOMPLETE, resetpriv, "s", (char *who), addpriv(parseplayer(who), -1));
 
     void tryauth()
     {
@@ -1233,7 +1249,7 @@ namespace client
     {
         if(cn >= 0) addmsg(N_SPECTATOR, "rii", cn, val);
     }
-    ICOMMAND(0, spectator, "si", (char *who, int *val), togglespectator(parseplayer(who), *val));
+    ICOMMAND(IDF_NAMECOMPLETE, spectator, "si", (char *who, int *val), togglespectator(parseplayer(who), *val));
     ICOMMAND(0, spectate, "i", (int *val), togglespectator(game::player1->clientnum, *val));
 
     void connectattempt(const char *name, int port, const char *password, const ENetAddress &address)
@@ -1409,8 +1425,8 @@ namespace client
     ICOMMAND(0, me, "C", (char *s), toserver(SAY_ACTION, s));
     ICOMMAND(0, sayteam, "C", (char *s), toserver(SAY_TEAM, s));
     ICOMMAND(0, meteam, "C", (char *s), toserver(SAY_ACTION|SAY_TEAM, s));
-    ICOMMAND(0, whisper, "ss", (char *t, char *s), toserver(SAY_WHISPER, s, t));
-    ICOMMAND(0, mewhisper, "ss", (char *t, char *s), toserver(SAY_ACTION|SAY_WHISPER, s, t));
+    ICOMMAND(IDF_NAMECOMPLETE, whisper, "ss", (char *t, char *s), toserver(SAY_WHISPER, s, t));
+    ICOMMAND(IDF_NAMECOMPLETE, mewhisper, "ss", (char *t, char *s), toserver(SAY_ACTION|SAY_WHISPER, s, t));
 
     void parsecommand(gameent *d, const char *cmd, const char *arg)
     {
@@ -1710,7 +1726,7 @@ namespace client
             game::resetcamera();
         }
     }
-    ICOMMAND(0, goto, "s", (char *s), gotoplayer(s));
+    ICOMMAND(IDF_NAMECOMPLETE, goto, "s", (char *s), gotoplayer(s));
 
     void editvar(ident *id, bool local)
     {
@@ -2366,7 +2382,7 @@ namespace client
                         case SPHY_EXTINGUISH:
                         {
                             if(!proceed) break;
-                            t->resetresidual(WR_BURN);
+                            t->resetresidual(W_R_BURN);
                             playsound(S_EXTINGUISH, t->o, t);
                             part_create(PART_SMOKE, 500, t->feetpos(t->height/2), 0xAAAAAA, t->radius*4, 1, -10);
                             break;
@@ -3732,29 +3748,21 @@ namespace client
     {
         vector<char *> names;
         gameent *d;
-        names.add(game::player1->name);
-        loopv(game::players) if((d = game::players[i]) && d->actortype == A_PLAYER)
+        int size = completesize-commandsize;
+        const char *name = game::colourname(game::player1, NULL, false, true, 0);
+        if(!size || !strncmp(name, &start[commandsize], size))
+            names.add(newstring(name));
+        loopv(game::players) if((d = game::players[i]) != NULL)
         {
-            bool found = false;
-            loopvj(names) if(!strcmp(d->name, names[j])) found = true;
-            if(!found) names.add(d->name);
+            name = game::colourname(d, NULL, false, true, 0);
+            if(!size || !strncmp(name, &start[commandsize], size))
+                names.add(newstring(name));
         }
-        bool starts = false;
         loopv(names)
         {
-            if(strncmp(names[i], &start[commandsize], completesize-commandsize) == 0)
-            {
-                starts = true;
-                break;
-            }
-        }
-        bigstring check = "";
-        if(!starts) copystring(check, &start[commandsize], min(completesize-commandsize+1, BIGSTRLEN));
-        loopv(names)
-        {
-            if((starts ? (strncmp(names[i], &start[commandsize], completesize-commandsize) == 0) : (strstr(names[i], check) != NULL)) &&
-                strcmp(names[i], lastcomplete) * (reverse ? -1 : 1) > 0 && (!*nextcomplete || strcmp(names[i], *nextcomplete) * (reverse ? -1 : 1) < 0))
+            if((!size || !strncmp(names[i], &start[commandsize], size)) && strcmp(names[i], lastcomplete) * (reverse ? -1 : 1) > 0 && (!*nextcomplete || strcmp(names[i], *nextcomplete) * (reverse ? -1 : 1) < 0))
                 *nextcomplete = names[i];
         }
+        names.deletearrays();
     }
 }

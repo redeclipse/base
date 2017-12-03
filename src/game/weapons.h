@@ -84,14 +84,14 @@ enum
     HIT_SFLAGS = HIT_KILL
 };
 
-enum { WR_BURN = 0, WR_BLEED, WR_SHOCK, WR_MAX, WR_ALL = (1<<WR_BURN)|(1<<WR_BLEED)|(1<<WR_SHOCK) };
+enum { W_R_BURN = 0, W_R_BLEED, W_R_SHOCK, W_R_MAX, W_R_ALL = (1<<W_R_BURN)|(1<<W_R_BLEED)|(1<<W_R_SHOCK) };
 
 struct shotmsg { int id; ivec pos; };
 struct hitmsg { int flags, proj, target, dist; ivec dir, vel; };
 
 #define hithead(x)       (x&HIT_WHIPLASH || x&HIT_HEAD)
 #define hitdealt(x)      (x&HIT_BURN || x&HIT_BLEED || x&HIT_SHOCK || x&HIT_EXPLODE || x&HIT_PROJ || x&HIT_MATERIAL)
-#define WR(x)            (1<<(WR_##x))
+#define WR(x)            (1<<(W_R_##x))
 #define wr_burn(x,y)     (isweap(x) && (WF(WK(y), x, residual, WS(y))&WR(BURN)))
 #define wr_burns(x,y)    (G(noweapburn) && hitdealt(y) && ((x == -1 && y&HIT_BURN) || wr_burn(x, y)))
 #define wr_burning(x,y)  (G(noweapburn) && hitdealt(y) && ((x == -1 && y&HIT_MATERIAL && y&HIT_BURN) || wr_burn(x, y)))
@@ -732,13 +732,13 @@ WPFVARM(IDF_GAMEMOD,  relativity, 0, FVAR_MAX,
     0.0f,       0.05f,      0.0f,       0.15f,      0.15f,      0.95f,      0.15f,      0.0f,       0.5f,       0.75f,      0.5f,       0.0f,       0.0f,
     0.0f,       0.05f,      0.0f,       0.35f,      0.25f,      0.15f,      0.15f,      0.0f,       0.1f,       0.75f,      0.5f,       0.0f,       0.0f
 );
-WPVARK(IDF_GAMEMOD,  residual, 0, WR_ALL,
+WPVARK(IDF_GAMEMOD,  residual, 0, W_R_ALL,
     0,          0,          WR(BLEED),  0,          0,          WR(BURN),   0,          0,          0,          WR(BURN),   WR(SHOCK),  WR(BURN),   0,
     0,          0,          WR(BLEED),  WR(BLEED),  0,          0,          0,          WR(SHOCK),  0,          WR(BURN),   WR(SHOCK),  WR(BURN),   0,
     0,          0,          WR(BLEED),  0,          0,          WR(BURN),   0,          0,          0,          WR(BURN),   WR(SHOCK),  WR(BURN),   0,
     0,          0,          WR(BLEED),  WR(BLEED),  0,          0,          0,          WR(SHOCK),  0,          WR(BURN),   WR(SHOCK),  WR(BURN),   0
 );
-WPVARK(IDF_GAMEMOD, residualundo, 0, WR_ALL,
+WPVARK(IDF_GAMEMOD, residualundo, 0, W_R_ALL,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,
     0,          0,          0,          0,          0,          WR(BURN),   0,          0,          0,          0,          0,          0,          0,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,
@@ -1047,6 +1047,21 @@ VAR(IDF_READONLY, weapidxitem, 1, W_ITEM, -1);
 VAR(IDF_READONLY, weapidxhidden, 1, W_ALL, -1);
 VAR(IDF_READONLY, weapidxloadout, 1, W_LOADOUT, -1);
 VAR(IDF_READONLY, weapidxnum, 1, W_MAX, -1);
+VAR(IDF_READONLY, weapstateidle, 1, W_S_IDLE, -1);
+VAR(IDF_READONLY, weapstateprimary, 1, W_S_PRIMARY, -1);
+VAR(IDF_READONLY, weapstatesecondary, 1, W_S_SECONDARY, -1);
+VAR(IDF_READONLY, weapstatereload, 1, W_S_RELOAD, -1);
+VAR(IDF_READONLY, weapstateswitch, 1, W_S_SWITCH, -1);
+VAR(IDF_READONLY, weapstateuse, 1, W_S_USE, -1);
+VAR(IDF_READONLY, weapstatepower, 1, W_S_POWER, -1);
+VAR(IDF_READONLY, weapstatezoom, 1, W_S_ZOOM, -1);
+VAR(IDF_READONLY, weapstatewait, 1, W_S_WAIT, -1);
+VAR(IDF_READONLY, weapstatemax, 1, W_S_MAX, -1);
+VAR(IDF_READONLY, weapstateexclude, 1, W_S_EXCLUDE, -1);
+VAR(IDF_READONLY, weapresidualburn, 1, W_R_BURN, -1);
+VAR(IDF_READONLY, weapresidualbleed, 1, W_R_BLEED, -1);
+VAR(IDF_READONLY, weapresidualshock, 1, W_R_SHOCK, -1);
+VAR(IDF_READONLY, weapresidualmax, 1, W_R_MAX, -1);
 #else
 extern weaptypes weaptype[];
 #endif
