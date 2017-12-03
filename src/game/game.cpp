@@ -1035,9 +1035,9 @@ namespace game
         }
         else if(d->state == CS_ALIVE)
         {
-            if(d == focus && third) total *= camera1->o.dist(d->o)/(d != player1 ? followdist : thirdpersondist);
+            if(d == focus && third) total *= min(camera1->o.dist(d->o)/(d != player1 ? followdist : thirdpersondist), 1.0f);
             int prot = m_protect(gamemode, mutators), millis = d->protect(lastmillis, prot); // protect returns time left
-            if(millis > 0) total *= 1.f-(float(millis)/float(prot));
+            if(millis > 0) total *= 1.f-min(float(millis)/float(prot), 1.0f);
         }
         else if(d->state == CS_EDITING) total *= playereditblend;
         return total;
