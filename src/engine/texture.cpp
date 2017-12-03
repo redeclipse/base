@@ -537,19 +537,12 @@ void texcolormask(ImageData &s, const vec &color1, const vec &color2)
     s.replace(d);
 }
 
-void texinvert(ImageData &s)
+void texinvert(ImageData &d)
 {
-    ImageData d(s.w, s.h, s.bpp);
-    readwritetex(d, s,
-        switch(s.bpp)
-        {
-            case 4: dst[3] = src[3]; // fall
-            case 3: loopk(3) dst[k] = uchar(255-src[k]); break;
-            case 2: dst[1] = src[1]; // fall
-            case 1: dst[0] = uchar(255-src[0]); break;
-        }
+    writetex(d,
+        if(d.bpp >= 3) loopk(3) dst[k] = 255-dst[k];
+        else dst[0] = 255-dst[0];
     );
-    s.replace(d);
 }
 
 void texdup(ImageData &s, int srcchan, int dstchan)
@@ -566,10 +559,10 @@ void texmix(ImageData &s, int c1, int c2, int c3, int c4)
     readwritetex(d, s,
         switch(numchans)
         {
-            case 4: dst[3] = src[c4];
-            case 3: dst[2] = src[c3];
-            case 2: dst[1] = src[c2];
-            case 1: dst[0] = src[c1];
+            case 4: dst[3] = c4 != 255 ? src[c4] : 255;
+            case 3: dst[2] = c3 != 255 ? src[c3] : 255;
+            case 2: dst[1] = c2 != 255 ? src[c2] : 255;
+            case 1: dst[0] = c1 != 255 ? src[c1] : 255;
         }
     );
     s.replace(d);
