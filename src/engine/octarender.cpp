@@ -1509,6 +1509,7 @@ void setva(cube &c, const ivec &co, int size, int csi)
 
 static inline int setcubevisibility(cube &c, const ivec &co, int size)
 {
+    if(isempty(c) && (c.material&MATF_CLIP) != MAT_CLIP) return 0;
     int numvis = 0, vismask = 0, collidemask = 0, checkmask = 0;
     loopi(6)
     {
@@ -1526,7 +1527,7 @@ static inline int setcubevisibility(cube &c, const ivec &co, int size)
                 if(c.texture[i] != DEFAULT_SKY && !(c.ext && c.ext->surfaces[i].numverts&MAXFACEVERTS)) checkmask |= 1<<i;
             }
         }
-        if(facemask&2 && collideface(c, i)) collidemask |= 1<<i;
+        if(facemask&2) collidemask |= 1<<i;
     }
     c.visible = collidemask | (vismask ? (vismask != collidemask ? (checkmask ? 0x80|0x40 : 0x80) : 0x40) : 0);
     return numvis;
@@ -1560,7 +1561,7 @@ int updateva(cube *c, const ivec &co, int size, int csi)
                 count += updateva(c[i].children, o, size/2, csi-1);
                 if(c[i].ext && c[i].ext->ents) --entdepth;
             }
-            else if(!isempty(c[i])) count += setcubevisibility(c[i], o, size);
+            else count += setcubevisibility(c[i], o, size);
             int tcount = count + (csi <= MAXMERGELEVEL ? vamerges[csi].length() : 0);
             if(tcount > vafacemax || (tcount >= vafacemin && size >= vacubesize) || size == min(0x1000, worldsize/2))
             {

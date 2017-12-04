@@ -186,13 +186,12 @@ COMMAND(0, printcube, "");
 bool isvalidcube(const cube &c)
 {
     clipplanes p;
+    genclipbounds(c, ivec(0, 0, 0), 256, p);
     genclipplanes(c, ivec(0, 0, 0), 256, p);
     loopi(8) // test that cube is convex
     {
-        vec v;
-        calcvert(c, ivec(0, 0, 0), 256, v, i);
-        if(!pointincube(p, v))
-            return false;
+        vec v = p.v[i];
+        loopj(p.size) if(p.p[j].dist(v)>1e-3f) return false;
     }
     return true;
 }
@@ -922,21 +921,24 @@ static inline bool occludesface(const cube &c, int orient, const ivec &o, int si
     int dim = dimension(orient);
     if(!c.children)
     {
-         if(nmat != MAT_AIR && (c.material&matmask) == nmat)
-         {
-            ivec2 nf[8];
-            return clipfacevecs(vf, numv, o[C[dim]], o[R[dim]], size, nf) < 3;
-         }
-         if(isentirelysolid(c)) return true;
-         if(vmat != MAT_AIR && ((c.material&matmask) == vmat || (isliquid(vmat) && isclipped(c.material&MATF_VOLUME)))) return true;
-         if(touchingface(c, orient) && faceedges(c, orient) == F_SOLID) return true;
-         ivec2 cf[8];
-         int numc = clipfacevecs(vf, numv, o[C[dim]], o[R[dim]], size, cf);
-         if(numc < 3) return true;
-         if(isempty(c) || notouchingface(c, orient)) return false;
-         ivec2 of[4];
-         int numo = genfacevecs(c, orient, o, size, false, of);
-         return numo >= 3 && insideface(cf, numc, of, numo);
+        if(c.material)
+        {
+            if(nmat != MAT_AIR && (c.material&matmask) == nmat)
+            {
+                ivec2 nf[8];
+                return clipfacevecs(vf, numv, o[C[dim]], o[R[dim]], size, nf) < 3;
+            }
+            if(vmat != MAT_AIR && ((c.material&matmask) == vmat || (isliquid(vmat) && isclipped(c.material&MATF_VOLUME)))) return true;
+        }
+        if(isentirelysolid(c)) return true;
+        if(touchingface(c, orient) && faceedges(c, orient) == F_SOLID) return true;
+        ivec2 cf[8];
+        int numc = clipfacevecs(vf, numv, o[C[dim]], o[R[dim]], size, cf);
+        if(numc < 3) return true;
+        if(isempty(c) || notouchingface(c, orient)) return false;
+        ivec2 of[4];
+        int numo = genfacevecs(c, orient, o, size, false, of);
+        return numo >= 3 && insideface(cf, numc, of, numo);
     }
 
     size >>= 1;
@@ -953,7 +955,7 @@ bool visibleface(const cube &c, int orient, const ivec &co, int size, ushort mat
 {
     if(mat != MAT_AIR)
     {
-        if(faceedges(c, orient)==F_SOLID && touchingface(c, orient)) return false;
+        if(mat != MAT_CLIP && faceedges(c, orient)==F_SOLID && touchingface(c, orient)) return false;
     }
     else
     {
@@ -968,9 +970,12 @@ bool visibleface(const cube &c, int orient, const ivec &co, int size, ushort mat
     int opp = opposite(orient);
     if(nsize > size || (nsize == size && !o.children))
     {
-        if(nmat != MAT_AIR && (o.material&matmask) == nmat) return true;
+        if(o.material)
+        {
+            if(nmat != MAT_AIR && (o.material&matmask) == nmat) return true;
+            if(mat != MAT_AIR && ((o.material&matmask) == mat || (isliquid(mat) && isclipped(o.material&MATF_VOLUME)))) return false;
+        }
         if(isentirelysolid(o)) return false;
-        if(mat != MAT_AIR && ((o.material&matmask) == mat || (isliquid(mat) && (o.material&MATF_VOLUME) == MAT_GLASS))) return false;
         if(isempty(o) || notouchingface(o, opp)) return true;
         if(touchingface(o, opp) && faceedges(o, opp) == F_SOLID) return false;
 
@@ -991,44 +996,83 @@ bool visibleface(const cube &c, int orient, const ivec &co, int size, ushort mat
 
 int classifyface(const cube &c, int orient, const ivec &co, int size)
 {
-    if(collapsedface(c, orient)) return 0;
-    int vismask = (c.material&MATF_CLIP) == MAT_NOCLIP ? 1 : 3;
-    if(!touchingface(c, orient)) return vismask;
+    int vismask = 2, forcevis = 0;
+    bool solid = false;
+    switch(c.material&MATF_CLIP)
+    {
+    case MAT_NOCLIP: vismask = 0; break;
+    case MAT_CLIP: solid = true; break;
+    }
+    if(isempty(c) || collapsedface(c, orient))
+    {
+        if(!vismask) return 0;
+    }
+    else if(!touchingface(c, orient))
+    {
+        forcevis = 1;
+        if(!solid)
+        {
+            if(vismask && collideface(c, orient)) forcevis |= 2;
+            return forcevis;
+        }
+    }
+    else vismask |= 1;
 
     ivec no;
     int nsize;
     const cube &o = neighbourcube(c, orient, co, size, no, nsize);
     if(&o==&c) return 0;
 
-    int vis = 0, opp = opposite(orient);
+    int opp = opposite(orient);
     if(nsize > size || (nsize == size && !o.children))
     {
-        if((~c.material & o.material) & MAT_ALPHA) vis |= 1;
-        if((o.material&MATF_CLIP) == MAT_NOCLIP) vis |= vismask&2;
-        if(vis == vismask || isentirelysolid(o)) return vis;
-        if(isempty(o) || notouchingface(o, opp)) return vismask;
-        if(touchingface(o, opp) && faceedges(o, opp) == F_SOLID) return vis;
-
+        if(o.material)
+        {
+            if((~c.material & o.material) & MAT_ALPHA) { forcevis |= vismask&1; vismask &= ~1; }
+            switch(o.material&MATF_CLIP)
+            {
+                case MAT_CLIP: vismask &= ~2; break;
+                case MAT_NOCLIP: forcevis |= vismask&2; vismask &= ~2; break;
+            }
+        }
+        if(vismask && !isentirelysolid(o))
+        {
+            if(isempty(o) || notouchingface(o, opp)) forcevis |= vismask;
+            else if(!touchingface(o, opp) || faceedges(o, opp) != F_SOLID)
+            {
+                ivec vo = ivec(co).mask(0xFFF);
+                no.mask(0xFFF);
+                ivec2 cf[4], of[4];
+                int numc = genfacevecs(c, orient, vo, size, false, cf),
+                numo = genfacevecs(o, opp, no, nsize, false, of);
+                if(numo < 3 || !insideface(cf, numc, of, numo)) forcevis |= vismask;
+            }
+        }
+    }
+    else
+    {
         ivec vo = ivec(co).mask(0xFFF);
         no.mask(0xFFF);
-        ivec2 cf[4], of[4];
-        int numc = genfacevecs(c, orient, vo, size, false, cf),
-            numo = genfacevecs(o, opp, no, nsize, false, of);
-        if(numo < 3 || !insideface(cf, numc, of, numo)) return vismask;
-        return vis;
+        ivec2 cf[4];
+        int numc = 0;
+        if(vismask&1)
+        {
+            numc = genfacevecs(c, orient, vo, size, false, cf);
+            if(!occludesface(o, opp, no, nsize, vo, size, MAT_AIR, (c.material&MAT_ALPHA)^MAT_ALPHA, MAT_ALPHA, cf, numc)) forcevis |= 1;
+        }
+        if(vismask&2)
+        {
+            if(!numc || solid) numc = genfacevecs(c, orient, vo, size, solid, cf);
+            if(!occludesface(o, opp, no, nsize, vo, size, MAT_CLIP, MAT_NOCLIP, MATF_CLIP, cf, numc)) forcevis |= 2;
+        }
     }
 
-    ivec vo = ivec(co).mask(0xFFF);
-    no.mask(0xFFF);
-    ivec2 cf[4];
-    int numc = genfacevecs(c, orient, vo, size, false, cf);
-    if(!occludesface(o, opp, no, nsize, vo, size, MAT_AIR, (c.material&MAT_ALPHA)^MAT_ALPHA, MAT_ALPHA, cf, numc)) vis |= 1;
-    if(vismask&2 && !occludesface(o, opp, no, nsize, vo, size, MAT_AIR, MAT_NOCLIP, MATF_CLIP, cf, numc)) vis |= 2;
-    return vis;
+    if(forcevis&2 && !solid && !collideface(c, orient)) forcevis &= ~2;
+    return forcevis;
 }
 
 // more expensive version that checks both triangles of a face independently
-int visibletris(const cube &c, int orient, const ivec &co, int size, ushort nmat, ushort matmask)
+int visibletris(const cube &c, int orient, const ivec &co, int size, ushort vmat, ushort nmat, ushort matmask)
 {
     int vis = 3, touching = 0xF;
     ivec v[4], e1, e2, e3, n;
@@ -1068,8 +1112,12 @@ int visibletris(const cube &c, int orient, const ivec &co, int size, ushort nmat
     int opp = opposite(orient), numo = 0, numc;
     if(nsize > size || (nsize == size && !o.children))
     {
+        if(o.material)
+        {
+            if(vmat != MAT_AIR && (o.material&matmask) == vmat) return vis&notouch;
+            if(nmat != MAT_AIR && (o.material&matmask) == nmat) return vis;
+        }
         if(isempty(o) || notouchingface(o, opp)) return vis;
-        if(nmat != MAT_AIR && (o.material&matmask) == nmat) return vis;
         if(isentirelysolid(o) || (touchingface(o, opp) && faceedges(o, opp) == F_SOLID)) return vis&notouch;
 
         numc = genfacevecs(c, orient, vo, size, false, cf, v);
@@ -1080,7 +1128,7 @@ int visibletris(const cube &c, int orient, const ivec &co, int size, ushort nmat
     else
     {
         numc = genfacevecs(c, orient, vo, size, false, cf, v);
-        if(occludesface(o, opp, no, nsize, vo, size, MAT_AIR, nmat, matmask, cf, numc)) return vis&notouch;
+        if(occludesface(o, opp, no, nsize, vo, size, vmat, nmat, matmask, cf, numc)) return vis&notouch;
     }
     if(vis != 3 || notouch) return vis;
 
@@ -1103,7 +1151,7 @@ int visibletris(const cube &c, int orient, const ivec &co, int size, ushort nmat
             const int *verts = triverts[order][coord][i];
             ivec2 tf[3] = { cf[verts[0]], cf[verts[1]], cf[verts[2]] };
             if(numo > 0) { if(!insideface(tf, 3, of, numo)) continue; }
-            else if(!occludesface(o, opp, no, nsize, vo, size, MAT_AIR, nmat, matmask, tf, 3)) continue;
+            else if(!occludesface(o, opp, no, nsize, vo, size, vmat, nmat, matmask, tf, 3)) continue;
             return vis & ~(1<<i);
         }
         vis |= 4;
@@ -1127,17 +1175,7 @@ void calcvert(const cube &c, const ivec &co, int size, vec &v, int i, bool solid
     v.mul(size/8.0f).add(vec(co));
 }
 
-int genclipplane(const cube &c, int orient, vec *v, plane *clip)
-{
-    int planes = 0, convex = faceconvexity(c, orient), order = convex < 0 ? 1 : 0;
-    const vec &v0 = v[fv[orient][order]], &v1 = v[fv[orient][order+1]], &v2 = v[fv[orient][order+2]], &v3 = v[fv[orient][(order+3)&3]];
-    if(v0==v2) return 0;
-    if(v0!=v1 && v1!=v2) clip[planes++].toplane(v0, v1, v2);
-    if(v0!=v3 && v2!=v3 && (!planes || convex)) clip[planes++].toplane(v0, v2, v3);
-    return planes;
-}
-
-void genclipplanes(const cube &c, const ivec &co, int size, clipplanes &p, bool collide)
+void genclipbounds(const cube &c, const ivec &co, int size, clipplanes &p)
 {
     // generate tight bounding box
     calcvert(c, co, size, p.v[0], 0);
@@ -1153,14 +1191,29 @@ void genclipplanes(const cube &c, const ivec &co, int size, clipplanes &p, bool 
     p.o = mn.add(p.r);
 
     p.size = 0;
-    p.visible = 0;
+    p.visible = 0x80;
+}
+
+int genclipplane(const cube &c, int orient, vec *v, plane *clip)
+{
+    int planes = 0, convex = faceconvexity(c, orient), order = convex < 0 ? 1 : 0;
+    const vec &v0 = v[fv[orient][order]], &v1 = v[fv[orient][order+1]], &v2 = v[fv[orient][order+2]], &v3 = v[fv[orient][(order+3)&3]];
+    if(v0==v2) return 0;
+    if(v0!=v1 && v1!=v2) clip[planes++].toplane(v0, v1, v2);
+    if(v0!=v3 && v2!=v3 && (!planes || convex)) clip[planes++].toplane(v0, v2, v3);
+    return planes;
+}
+
+void genclipplanes(const cube &c, const ivec &co, int size, clipplanes &p, bool collide, bool noclip)
+{
+    p.visible &= ~0x80;
     if(collide || (c.visible&0xC0) == 0x40)
     {
         loopi(6) if(c.visible&(1<<i))
         {
             int vis;
             if(flataxisface(c, i)) p.visible |= 1<<i;
-            else if((vis = visibletris(c, i, co, size, MAT_NOCLIP, MATF_CLIP)))
+            else if((vis = visibletris(c, i, co, size, MAT_CLIP, MAT_NOCLIP, MATF_CLIP)))
             {
                 int convex = faceconvexity(c, i), order = vis&4 || convex < 0 ? 1 : 0;
                 const vec &v0 = p.v[fv[i][order]], &v1 = p.v[fv[i][order+1]], &v2 = p.v[fv[i][order+2]], &v3 = p.v[fv[i][(order+3)&3]];
@@ -1171,8 +1224,10 @@ void genclipplanes(const cube &c, const ivec &co, int size, clipplanes &p, bool 
     }
     else if(c.visible&0x80)
     {
+        ushort nmat = MAT_ALPHA, matmask = MAT_ALPHA;
+        if(noclip) { nmat = MAT_NOCLIP; matmask = MATF_CLIP; }
         int vis;
-        loopi(6) if((vis = visibletris(c, i, co, size)))
+        loopi(6) if((vis = visibletris(c, i, co, size, MAT_AIR, nmat, matmask)))
         {
             if(flataxisface(c, i)) p.visible |= 1<<i;
             else
