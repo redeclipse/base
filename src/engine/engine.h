@@ -767,7 +767,6 @@ extern void conline(int type, const char *sf, int n);
 
 // physics
 extern int dynentsize;
-extern bool pointincube(const clipplanes &p, const vec &v);
 extern bool overlapsdynent(const vec &o, float radius);
 extern void rotatebb(vec &center, vec &radius, int yaw, int pitch, int roll = 0);
 extern float shadowray(const vec &o, const vec &ray, float radius, int mode, extentity *t = NULL);
