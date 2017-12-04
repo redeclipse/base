@@ -1043,9 +1043,23 @@ int classifyface(const cube &c, int orient, const ivec &co, int size)
                 ivec vo = ivec(co).mask(0xFFF);
                 no.mask(0xFFF);
                 ivec2 cf[4], of[4];
-                int numc = genfacevecs(c, orient, vo, size, false, cf),
-                numo = genfacevecs(o, opp, no, nsize, false, of);
-                if(numo < 3 || !insideface(cf, numc, of, numo)) forcevis |= vismask;
+                int numo = genfacevecs(o, opp, no, nsize, false, of);
+                if(numo < 3) forcevis |= vismask;
+                else
+                {
+                    int numc = 0;
+                    if(vismask&2 && solid)
+                    {
+                        numc = genfacevecs(c, orient, vo, size, true, cf);
+                        if(!insideface(cf, numc, of, numo)) forcevis |= 2;
+                        vismask &= ~2;
+                    }
+                    if(vismask)
+                    {
+                        numc = genfacevecs(c, orient, vo, size, false, cf);
+                        if(!insideface(cf, numc, of, numo)) forcevis |= vismask;
+                    }
+                }
             }
         }
     }
