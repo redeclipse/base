@@ -922,7 +922,7 @@ void complete(char *s, const char *cmdprefix, bool reverse)
         loopv(f->files)
         {
             if(strncmp(f->files[i], &start[commandsize], completesize-commandsize)==0 &&
-                strcmp(f->files[i], lastcomplete) * (reverse ? -1 : 1) > 0 && (!nextcomplete || strcmp(f->files[i], nextcomplete) * (reverse ? -1 : 1) < 0))
+                strcmp(f->files[i], lastcomplete)*(reverse ? -1 : 1) > 0 && (!nextcomplete || strcmp(f->files[i], nextcomplete)*(reverse ? -1 : 1) < 0))
                     nextcomplete = f->files[i];
         }
     }
@@ -936,7 +936,7 @@ void complete(char *s, const char *cmdprefix, bool reverse)
     {
         enumerate(idents, ident, id,
             if((variable ? id.type == ID_VAR || id.type == ID_SVAR || id.type == ID_FVAR || id.type == ID_ALIAS: id.flags&IDF_COMPLETE) && strncmp(id.name, start, completesize)==0 &&
-                strcmp(id.name, lastcomplete) * (reverse ? -1 : 1) > 0 && (!nextcomplete || strcmp(id.name, nextcomplete) * (reverse ? -1 : 1) < 0))
+                strcmp(id.name, lastcomplete)*(reverse ? -1 : 1) > 0 && (!nextcomplete || strcmp(id.name, nextcomplete)*(reverse ? -1 : 1) < 0))
                     nextcomplete = id.name;
         );
     }

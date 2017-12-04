@@ -3746,8 +3746,9 @@ namespace client
 
     void completeplayers(const char **nextcomplete, const char *start, int commandsize, const char *lastcomplete, bool reverse)
     {
-        vector<char *> names;
-        gameent *d;
+        static vector<char *> names;
+        if(!names.empty()) names.deletearrays();
+        gameent *d = NULL;
         int size = completesize-commandsize;
         const char *name = game::colourname(game::player1, NULL, false, true, 0);
         if(!size || !strncmp(name, &start[commandsize], size))
@@ -3760,9 +3761,8 @@ namespace client
         }
         loopv(names)
         {
-            if((!size || !strncmp(names[i], &start[commandsize], size)) && strcmp(names[i], lastcomplete) * (reverse ? -1 : 1) > 0 && (!*nextcomplete || strcmp(names[i], *nextcomplete) * (reverse ? -1 : 1) < 0))
+            if(strcmp(names[i], lastcomplete)*(reverse ? -1 : 1) > 0 && (!*nextcomplete || strcmp(names[i], *nextcomplete)*(reverse ? -1 : 1) < 0))
                 *nextcomplete = names[i];
         }
-        names.deletearrays();
     }
 }
