@@ -57,14 +57,7 @@ bool getlightfx(const extentity &e, int *radius, int *spotlight, vec *color, boo
     loopv(e.links) if(ents.inrange(e.links[i]) && ents[e.links[i]]->type == ET_LIGHTFX)
     {
         extentity &f = *ents[e.links[i]];
-
         if(f.attrs[0] < 0 || f.attrs[0] >= LFX_MAX || !checkmapvariant(f.attrs[5])) continue;
-        if(f.attrs[0] == LFX_SPOTLIGHT)
-        {
-            if(spotlight && *spotlight <= 0) *spotlight = e.links[i];
-            continue;
-        }
-
         int millis = lastmillis-f.emit[2], effect = f.attrs[0], interval = f.emit[0]+f.emit[1];
         if(!f.emit[2] || millis >= interval) loopi(2)
         {
@@ -73,7 +66,6 @@ bool getlightfx(const extentity &e, int *radius, int *spotlight, vec *color, boo
             millis -= interval; f.emit[2] = lastmillis-millis;
         }
         if(millis >= f.emit[0]) loopi(LFX_MAX-1) if(f.attrs[4]&(1<<(LFX_S_MAX+i))) { effect = i+1; break; }
-
         float skew = clamp(millis < f.emit[0] ? 1.f-(float(millis)/float(f.emit[0])) : float(millis-f.emit[0])/float(f.emit[1]), 0.f, 1.f);
         switch(effect)
         {
@@ -96,6 +88,7 @@ bool getlightfx(const extentity &e, int *radius, int *spotlight, vec *color, boo
             }
             default: break;
         }
+        if(*radius > 0 && f.attrs[0] == LFX_SPOTLIGHT && spotlight && *spotlight <= 0) *spotlight = e.links[i];
     }
     return *radius > 0;
 }
