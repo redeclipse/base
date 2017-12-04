@@ -2195,7 +2195,7 @@ namespace game
         {
             cursorx = clamp(cursorx+mousesens(dx, w, mousesensitivity), 0.f, 1.f);
             cursory = clamp(cursory+mousesens(dy, h, mousesensitivity), 0.f, 1.f);
-            return true;
+            return false;
         }
         else if(!tvmode())
         {
