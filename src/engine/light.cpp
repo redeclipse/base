@@ -94,17 +94,20 @@ bool getlightfx(const extentity &e, int *radius, int *spotlight, vec *color, boo
                 if(spotlight && *spotlight <= 0) *spotlight = e.links[i];
                 break;
             }
+            case LFX_INVFLICKER: skew = 1-skew;
             case LFX_FLICKER:
             {
                 if(millis >= f.emit[0])
                     *radius -= (f.attrs[1] ? f.attrs[1] : *radius);
                 break;
             }
+            case LFX_INVPULSE: skew = 1-skew;
             case LFX_PULSE:
             {
                 *radius -= (f.attrs[1] ? f.attrs[1] : *radius)*skew;
                 break;
             }
+            case LFX_INVGLOW: skew = 1-skew;
             case LFX_GLOW:
             {
                 if(color) color->mul(skew);

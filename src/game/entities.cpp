@@ -256,7 +256,7 @@ namespace entities
             {
                 if(full)
                 {
-                    const char *lfxnames[LFX_MAX+1] = { "spotlight", "flicker", "pulse", "glow", "normal" };
+                    const char *lfxnames[LFX_MAX+1] = { "spotlight", "flicker", "pulse", "glow", "inv-flicker", "inv-pulse", "inv-glow", "normal" };
                     addentinfo(lfxnames[attr[0] < 0 || attr[0] >= LFX_MAX ? LFX_MAX : attr[0]]);
                     loopi(LFX_MAX-1) if(attr[4]&(1<<(LFX_S_MAX+i))) { defformatstring(ds, "+%s", lfxnames[i+1]); addentinfo(ds); break; }
                     if(attr[4]&LFX_S_RAND1) addentinfo("rnd-min");
