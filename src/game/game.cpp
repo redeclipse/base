@@ -2306,8 +2306,13 @@ namespace game
             vec dir[3] = { vec(0, 0, 0), vec(0, 0, 0), vec(0, 0, 0) };
             if(dist) vecfromyawpitch(yaw, pitch, -1, 0, dir[0]);
             if(side) vecfromyawpitch(yaw, pitch, 0, -1, dir[1]);
-            dir[2] = dir[0].mul(dist).add(dir[1].mul(side)).normalize();
-            physics::movecamera(&c, dir[2], dist, 0.1f);
+            dir[2] = dir[0].mul(dist).add(dir[1].mul(side));
+            float mag = dir[2].magnitude();
+            if(mag > 0)
+            {
+                dir[2].mul(1/mag);
+                physics::movecamera(&c, dir[2], mag, 0.1f);
+            }
         }
         return c.o;
     }
@@ -2358,9 +2363,9 @@ namespace game
         }
         c.o.z = to.z; // assume inside ourselves is safe
         vec dir = vec(to).sub(c.o), old = c.o;
-        if(dir.iszero()) return c.o;
         float dist = dir.magnitude();
-        dir.normalize();
+        if(dist <= 0) return c.o;
+        dir.mul(1/dist);
         physics::movecamera(&c, dir, dist, 0.1f);
         firstpersonspineoffset = max(dist-old.dist(c.o), 0.f);
         return c.o;

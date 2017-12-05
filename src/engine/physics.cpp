@@ -826,7 +826,6 @@ VAR(0, testtricol, 0, 0, 2);
 
 bool mmcollide(physent *d, const vec &dir, float cutoff, octaentities &oc) // collide with a mapmodel
 {
-    if(d->type == ENT_CAMERA) return false;
     const vector<extentity *> &ents = entities::getents();
     loopv(oc.mapmodels)
     {
