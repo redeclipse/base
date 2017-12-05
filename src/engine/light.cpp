@@ -54,10 +54,21 @@ bool getlightfx(const extentity &e, int *radius, int *spotlight, vec *color, boo
     *radius = e.attrs[0] ? e.attrs[0] : worldsize; // after this, "0" becomes "off"
 
     const vector<extentity *> &ents = entities::getents();
-    loopv(e.links) if(ents.inrange(e.links[i]) && ents[e.links[i]]->type == ET_LIGHTFX)
+    loopv(e.links) if(ents.inrange(e.links[i]))
     {
         extentity &f = *ents[e.links[i]];
-        if(f.attrs[0] < 0 || f.attrs[0] >= LFX_MAX || !checkmapvariant(f.attrs[5])) continue;
+        if(f.type != ET_LIGHTFX || f.attrs[0] < 0 || f.attrs[0] >= LFX_MAX || !checkmapvariant(f.attrs[5])) continue;
+        bool hastrigger = false;
+        loopvk(f.links) if(ents.inrange(f.links[k]) && ents[f.links[k]]->type != ET_LIGHT)
+        {
+            hastrigger = true;
+            break;
+        }
+        if(hastrigger && !f.spawned())
+        {
+            *radius = 0;
+            break;
+        }
         int effect = f.attrs[0], millis = lastmillis-f.emit[2], interval = f.emit[0]+f.emit[1];
         bool hasemit = f.emit[0] && f.emit[1] && f.emit[2], expired = millis >= interval;
         if(!hasemit || expired)

@@ -3240,6 +3240,7 @@ namespace server
                 ci->needclipboard = 0;
                 return true;
             }
+            else srvmsgft(ci->clientnum, CON_EVENT, "\fyAttempting to download the map, please wait..");
         }
         if((!force && gs_waiting(gamestate)) || mapsending >= 0 || hasmapdata()) return false;
         clientinfo *best = NULL;
@@ -5041,14 +5042,9 @@ namespace server
         if(doteam && !allowteam(ci, ci->team, T_FIRST, false)) setteam(ci, chooseteam(ci), TT_INFO);
     }
 
-    int triggertime(int i, bool delay = false)
+    int triggertime(bool delay = false)
     {
-        if(sents.inrange(i)) switch(sents[i].type)
-        {
-            case TRIGGER: case MAPMODEL: case PARTICLES: case MAPSOUND: case TELEPORT: case PUSHER: return delay ? G(triggerdelay) : G(triggermillis); break;
-            default: break;
-        }
-        return 0;
+        return delay ? G(triggerdelay) : G(triggermillis);
     }
 
     void checkents()
@@ -5057,11 +5053,12 @@ namespace server
         {
             case TRIGGER:
             {
-                if(!checkmapvariant(sents[i].attrs[enttype[sents[i].type].mvattr])) continue;
-                if(sents[i].attrs[1] == TR_LINK && sents[i].spawned && gamemillis >= sents[i].millis && (sents[i].attrs[4] == triggerid || !sents[i].attrs[4]) && m_check(sents[i].attrs[5], sents[i].attrs[6], gamemode, mutators))
+                if(sents[i].attrs[1] != TR_LINK || !checkmapvariant(sents[i].attrs[enttype[sents[i].type].mvattr])) continue;
+                bool spawn = sents[i].attrs[4]%2;
+                if(spawn != sents[i].spawned && gamemillis >= sents[i].millis && (sents[i].attrs[0] == triggerid || !sents[i].attrs[0]) && m_check(sents[i].attrs[5], sents[i].attrs[6], gamemode, mutators))
                 {
-                    sents[i].spawned = false;
-                    sents[i].millis = gamemillis+(triggertime(i)*2);
+                    sents[i].spawned = spawn;
+                    sents[i].millis = gamemillis+(triggertime()*2);
                     sendf(-1, 1, "ri3", N_TRIGGER, i, 0);
                     loopvj(sents[i].kin) if(sents.inrange(sents[i].kin[j]))
                     {
@@ -5327,7 +5324,7 @@ namespace server
                         }
                         if(!gamewaittime)
                         {
-                            gamewaittime = totalmillis+max(m_play(gamemode) ? G(waitforplayerload) : 1, 1);
+                            gamewaittime = totalmillis+max(G(waitforplayerload), 1);
                             sendtick();
                         }
                         if(numnotready && gamewaittime > totalmillis) break;
@@ -6468,135 +6465,136 @@ namespace server
                     int lcn = getint(p), ent = getint(p);
                     clientinfo *cp = (clientinfo *)getinfo(lcn);
                     if(!hasclient(cp, ci) || cp->state != CS_ALIVE) break;
-                    if(sents.inrange(ent))
+                    if(!sents.inrange(ent))
                     {
-                        if(sents[ent].type == CHECKPOINT)
+                        srvmsgft(cp->clientnum, CON_DEBUG, "sync error: cannot trigger %d - entity does not exist (max: %d)", ent, sents.length());
+                        break;
+                    }
+                    if(sents[ent].type == CHECKPOINT)
+                    {
+                        if(sents[ent].attrs[5] && sents[ent].attrs[5] != triggerid) break;
+                        if(!checkmapvariant(sents[ent].attrs[enttype[sents[ent].type].mvattr])) break;
+                        if(!m_check(sents[ent].attrs[3], sents[ent].attrs[4], gamemode, mutators)) break;
+                        if(!m_race(gamemode) || (m_ra_gauntlet(gamemode, mutators) && cp->team != T_ALPHA)) break;
+                        if(cp->cpnodes.find(ent) >= 0) break;
+                        switch(sents[ent].attrs[6])
                         {
-                            if(sents[ent].attrs[5] && sents[ent].attrs[5] != triggerid) break;
-                            if(!checkmapvariant(sents[ent].attrs[enttype[sents[ent].type].mvattr])) break;
-                            if(!m_check(sents[ent].attrs[3], sents[ent].attrs[4], gamemode, mutators)) break;
-                            if(!m_race(gamemode) || (m_ra_gauntlet(gamemode, mutators) && cp->team != T_ALPHA)) break;
-                            if(cp->cpnodes.find(ent) >= 0) break;
-                            switch(sents[ent].attrs[6])
+                            case CP_LAST: case CP_FINISH:
                             {
-                                case CP_LAST: case CP_FINISH:
+                                if(cp->cpmillis)
                                 {
-                                    if(cp->cpmillis)
+                                    int laptime = gamemillis-cp->cpmillis, total = 0;
+                                    if(cp->cptime <= 0 || laptime < cp->cptime) cp->cptime = laptime;
+                                    cp->points++;
+                                    sendf(-1, 1, "ri6", N_CHECKPOINT, cp->clientnum, ent, laptime, cp->cptime, cp->points);
+                                    if(m_team(gamemode, mutators))
                                     {
-                                        int laptime = gamemillis-cp->cpmillis, total = 0;
-                                        if(cp->cptime <= 0 || laptime < cp->cptime) cp->cptime = laptime;
-                                        cp->points++;
-                                        sendf(-1, 1, "ri6", N_CHECKPOINT, cp->clientnum, ent, laptime, cp->cptime, cp->points);
-                                        if(m_team(gamemode, mutators))
+                                        if(m_laptime(gamemode, mutators))
                                         {
-                                            if(m_laptime(gamemode, mutators))
+                                            score &ts = teamscore(cp->team);
+                                            if(!ts.total || ts.total > cp->cptime)
                                             {
-                                                score &ts = teamscore(cp->team);
-                                                if(!ts.total || ts.total > cp->cptime)
-                                                {
-                                                    total = ts.total = cp->cptime;
-                                                    sendf(-1, 1, "ri3", N_SCORE, ts.team, ts.total);
-                                                }
-                                            }
-                                            else
-                                            {
-                                                score &ts = teamscore(cp->team);
-                                                total = ++ts.total;
+                                                total = ts.total = cp->cptime;
                                                 sendf(-1, 1, "ri3", N_SCORE, ts.team, ts.total);
                                             }
-                                            if(total && m_ra_gauntlet(gamemode, mutators) && G(racegauntletwinner))
+                                        }
+                                        else
+                                        {
+                                            score &ts = teamscore(cp->team);
+                                            total = ++ts.total;
+                                            sendf(-1, 1, "ri3", N_SCORE, ts.team, ts.total);
+                                        }
+                                        if(total && m_ra_gauntlet(gamemode, mutators) && G(racegauntletwinner))
+                                        {
+                                            int numt = numteams(gamemode, mutators);
+                                            if(curbalance == numt-1)
                                             {
-                                                int numt = numteams(gamemode, mutators);
-                                                if(curbalance == numt-1)
+                                                bool found = false;
+                                                loopi(numt)
                                                 {
-                                                    bool found = false;
-                                                    loopi(numt)
+                                                    int t = i+T_FIRST, s = teamscore(t).total;
+                                                    if(t != T_OMEGA && (m_laptime(gamemode, mutators) ? s <= total : s >= total))
                                                     {
-                                                        int t = i+T_FIRST, s = teamscore(t).total;
-                                                        if(t != T_OMEGA && (m_laptime(gamemode, mutators) ? s <= total : s >= total))
-                                                        {
-                                                            found = true;
-                                                            break;
-                                                        }
+                                                        found = true;
+                                                        break;
                                                     }
-                                                    if(!found)
-                                                    {
-                                                        ancmsgft(-1, S_V_NOTIFY, CON_EVENT, "\fyBest score has been reached");
-                                                        startintermission();
-                                                    }
+                                                }
+                                                if(!found)
+                                                {
+                                                    ancmsgft(-1, S_V_NOTIFY, CON_EVENT, "\fyBest score has been reached");
+                                                    startintermission();
                                                 }
                                             }
                                         }
                                     }
-                                    else waiting(cp);
-                                    cp->cpmillis = 0;
-                                    cp->cpnodes.shrink(0);
-                                    if(sents[ent].attrs[6] == CP_FINISH) waiting(cp);
-                                    break;
                                 }
-                                case CP_START: case CP_RESPAWN:
-                                {
-                                    if(cp->cpnodes.find(ent) >= 0) break;
-                                    if(sents[ent].attrs[6] == CP_START)
-                                    {
-                                        if(cp->cpmillis) break;
-                                        cp->cpmillis = gamemillis;
-                                    }
-                                    else if(!cp->cpmillis)
-                                    {
-                                        waiting(cp);
-                                        break;
-                                    }
-                                    sendf(-1, 1, "ri4", N_CHECKPOINT, cp->clientnum, ent, -1);
-                                    cp->cpnodes.add(ent);
-                                }
-                                default: break;
+                                else waiting(cp);
+                                cp->cpmillis = 0;
+                                cp->cpnodes.shrink(0);
+                                if(sents[ent].attrs[6] == CP_FINISH) waiting(cp);
+                                break;
                             }
-                        }
-                        else if(sents[ent].type == TRIGGER)
-                        {
-                            if(!checkmapvariant(sents[ent].attrs[enttype[sents[ent].type].mvattr])) break;
-                            if(sents[ent].attrs[4] && sents[ent].attrs[4] != triggerid) break;
-                            if(!m_check(sents[ent].attrs[5], sents[ent].attrs[6], gamemode, mutators)) break;
-                            bool commit = false, kin = false;
-                            switch(sents[ent].attrs[1])
+                            case CP_START: case CP_RESPAWN:
                             {
-                                case TR_TOGGLE:
+                                if(cp->cpnodes.find(ent) >= 0) break;
+                                if(sents[ent].attrs[6] == CP_START)
                                 {
-                                    sents[ent].millis = gamemillis+(triggertime(ent)*2);
-                                    sents[ent].spawned = !sents[ent].spawned;
-                                    commit = kin = true;
+                                    if(cp->cpmillis) break;
+                                    cp->cpmillis = gamemillis;
+                                }
+                                else if(!cp->cpmillis)
+                                {
+                                    waiting(cp);
                                     break;
                                 }
-                                case TR_ONCE: if(sents[ent].spawned) break;
-                                case TR_LINK:
-                                {
-                                    sents[ent].millis = gamemillis+(triggertime(ent)*2);
-                                    kin = true;
-                                    if(!sents[ent].spawned)
-                                    {
-                                        sents[ent].spawned = true;
-                                        commit = true;
-                                    }
-                                    break;
-                                }
-                                case TR_EXIT:
-                                {
-                                    if(sents[ent].spawned) break;
-                                    sents[ent].spawned = true;
-                                }
+                                sendf(-1, 1, "ri4", N_CHECKPOINT, cp->clientnum, ent, -1);
+                                cp->cpnodes.add(ent);
                             }
-                            if(commit) sendf(-1, 1, "ri3x", N_TRIGGER, ent, sents[ent].spawned ? 1 : 0, cp->clientnum);
-                            if(kin) loopvj(sents[ent].kin) if(sents.inrange(sents[ent].kin[j]))
-                            {
-                                if(sents[sents[ent].kin[j]].type == TRIGGER && !checkmapvariant(sents[sents[ent].kin[j]].attrs[enttype[sents[sents[ent].kin[j]].type].mvattr]) && !m_check(sents[sents[ent].kin[j]].attrs[5], sents[sents[ent].kin[j]].attrs[6], gamemode, mutators))
-                                    continue;
-                                sents[sents[ent].kin[j]].spawned = sents[ent].spawned;
-                                sents[sents[ent].kin[j]].millis = sents[ent].millis;
-                            }
+                            default: break;
                         }
                     }
-                    else srvmsgft(cp->clientnum, CON_DEBUG, "sync error: cannot trigger %d - entity does not exist (max: %d)", ent, sents.length());
+                    else if(sents[ent].type == TRIGGER)
+                    {
+                        if(!checkmapvariant(sents[ent].attrs[enttype[sents[ent].type].mvattr])) break;
+                        if(sents[ent].attrs[0] && sents[ent].attrs[0] != triggerid) break;
+                        if(!m_check(sents[ent].attrs[5], sents[ent].attrs[6], gamemode, mutators)) break;
+                        bool commit = false, kin = false, spawn = sents[ent].attrs[4]%2;
+                        switch(sents[ent].attrs[1])
+                        {
+                            case TR_TOGGLE:
+                            {
+                                sents[ent].millis = gamemillis+(triggertime()*2);
+                                sents[ent].spawned = !sents[ent].spawned;
+                                commit = kin = true;
+                                break;
+                            }
+                            case TR_ONCE: if(sents[ent].spawned != spawn) break;
+                            case TR_LINK:
+                            {
+                                sents[ent].millis = gamemillis+(triggertime()*2);
+                                kin = true;
+                                if(sents[ent].spawned == spawn)
+                                {
+                                    sents[ent].spawned = !spawn;
+                                    commit = true;
+                                }
+                                break;
+                            }
+                            case TR_EXIT:
+                            {
+                                if(sents[ent].spawned) break;
+                                sents[ent].spawned = true;
+                            }
+                        }
+                        if(commit) sendf(-1, 1, "ri3x", N_TRIGGER, ent, sents[ent].spawned ? 1 : 0, cp->clientnum);
+                        if(kin) loopvj(sents[ent].kin) if(sents.inrange(sents[ent].kin[j]))
+                        {
+                            if(sents[sents[ent].kin[j]].type == TRIGGER && !checkmapvariant(sents[sents[ent].kin[j]].attrs[enttype[sents[sents[ent].kin[j]].type].mvattr]) && !m_check(sents[sents[ent].kin[j]].attrs[5], sents[sents[ent].kin[j]].attrs[6], gamemode, mutators))
+                                continue;
+                            sents[sents[ent].kin[j]].spawned = sents[ent].spawned;
+                            sents[sents[ent].kin[j]].millis = sents[ent].millis;
+                        }
+                    }
                     break;
                 }
 

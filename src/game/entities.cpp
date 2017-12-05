@@ -926,37 +926,24 @@ namespace entities
 
     void setspawn(int n, int m)
     {
-        if(ents.inrange(n))
+        if(!ents.inrange(n)) return;
+        gameentity &e = *(gameentity *)ents[n];
+        bool on = m%2, spawned = e.spawned();
+        e.setspawned(on);
+        if(on) e.lastspawn = lastmillis;
+        if(e.type == TRIGGER && cantrigger(n) && (e.attrs[1] == TR_TOGGLE || e.attrs[1] == TR_LINK || e.attrs[1] == TR_ONCE) && (m >= 2 || e.lastemit <= 0 || e.spawned() != spawned))
         {
-            gameentity &e = *(gameentity *)ents[n];
-            bool on = m%2, spawned = e.spawned();
-            e.setspawned(on);
-            if(on) e.lastspawn = lastmillis;
-            if(e.type == TRIGGER && cantrigger(n) && (e.attrs[1] == TR_TOGGLE || e.attrs[1] == TR_LINK || e.attrs[1] == TR_ONCE))
+            if(m >= 2) e.lastemit = -1;
+            else if(e.lastemit > 0)
             {
-                if(m >= 2 || e.lastemit <= 0 || e.spawned() != spawned)
-                {
-                    if(m >= 2) e.lastemit = -1;
-                    else if(e.lastemit > 0)
-                    {
-                        int last = lastmillis-e.lastemit, trig = triggertime(e, true);
-                        if(last > 0 && last < trig) e.lastemit = lastmillis-(trig-last);
-                        else e.lastemit = lastmillis;
-                    }
-                    else e.lastemit = lastmillis;
-                    execlink(NULL, n, false);
-                    loopv(e.kin) if(ents.inrange(e.kin[i]))
-                    {
-                        gameentity &f = *(gameentity *)ents[e.kin[i]];
-                        if(!cantrigger(e.kin[i])) continue;
-                        f.setspawned(e.spawned());
-                        f.lastemit = e.lastemit;
-                        execlink(NULL, e.kin[i], false, n);
-                    }
-                }
+                int last = lastmillis-e.lastemit, trig = triggertime(e, true);
+                if(last > 0 && last < trig) e.lastemit = lastmillis-(trig-last);
+                else e.lastemit = lastmillis;
             }
-            checkspawns(n);
+            else e.lastemit = lastmillis;
+            execlink(NULL, n, false);
         }
+        checkspawns(n);
     }
 
     extentity *newent() { return new gameentity; }
@@ -1235,52 +1222,50 @@ namespace entities
     // these functions are called when the client touches the item
     void execlink(gameent *d, int index, bool local, int ignore)
     {
-        if(ents.inrange(index) && maylink(ents[index]->type))
+        if(!ents.inrange(index) || !maylink(ents[index]->type)) return;
+        gameentity &e = *(gameentity *)ents[index];
+        if(e.type == TRIGGER && !cantrigger(index)) return;
+        bool commit = false;
+        int fstent = min(firstent(MAPMODEL), min(firstent(LIGHTFX), min(firstent(PARTICLES), firstent(MAPSOUND)))),
+            lstent = max(lastent(MAPMODEL), max(lastent(LIGHTFX), max(lastent(PARTICLES), lastent(MAPSOUND))));
+        for(int i = fstent; i < lstent; ++i) if(ents[i]->links.find(index) >= 0)
         {
-            gameentity &e = *(gameentity *)ents[index];
-            if(e.type == TRIGGER && !cantrigger(index)) return;
-            bool commit = false;
-            int fstent = min(firstent(MAPMODEL), min(firstent(LIGHTFX), min(firstent(PARTICLES), firstent(MAPSOUND)))),
-                lstent = max(lastent(MAPMODEL), max(lastent(LIGHTFX), max(lastent(PARTICLES), lastent(MAPSOUND))));
-            for(int i = fstent; i < lstent; ++i) if(ents[i]->links.find(index) >= 0)
+            gameentity &f = *(gameentity *)ents[i];
+            if(ents.inrange(ignore) && ents[ignore]->links.find(index) >= 0) continue;
+            bool both = e.links.find(i) >= 0;
+            switch(f.type)
             {
-                gameentity &f = *(gameentity *)ents[i];
-                if(ents.inrange(ignore) && ents[ignore]->links.find(index) >= 0) continue;
-                bool both = e.links.find(i) >= 0;
-                switch(f.type)
+                case MAPMODEL:
                 {
-                    case MAPMODEL:
-                    {
-                        f.lastemit = e.lastemit;
-                        if(e.type == TRIGGER) f.setspawned(TRIGSTATE(e.spawned(), e.attrs[4]));
-                        break;
-                    }
-                    case LIGHTFX:
-                    case PARTICLES:
-                    {
-                        f.lastemit = e.lastemit;
-                        if(e.type == TRIGGER) f.setspawned(TRIGSTATE(e.spawned(), e.attrs[4]));
-                        else if(local) commit = true;
-                        break;
-                    }
-                    case MAPSOUND:
-                    {
-                        f.lastemit = e.lastemit;
-                        if(e.type == TRIGGER) f.setspawned(TRIGSTATE(e.spawned(), e.attrs[4]));
-                        else if(local) commit = true;
-                        if(mapsounds.inrange(f.attrs[0]) && !issound(f.schan))
-                        {
-                            int flags = SND_MAP;
-                            loopk(SND_LAST) if(f.attrs[4]&(1<<k)) flags |= 1<<k;
-                            playsound(f.attrs[0], both ? f.o : e.o, NULL, flags, f.attrs[3] ? f.attrs[3] : -1, f.attrs[1] || f.attrs[2] ? f.attrs[1] : -1, f.attrs[2] ? f.attrs[2] : -1, &f.schan);
-                        }
-                        break;
-                    }
-                    default: break;
+                    f.lastemit = e.lastemit;
+                    if(e.type == TRIGGER) f.setspawned(TRIGSTATE(e.spawned(), e.attrs[4]));
+                    break;
                 }
+                case LIGHTFX:
+                case PARTICLES:
+                {
+                    f.lastemit = e.lastemit;
+                    if(e.type == TRIGGER) f.setspawned(TRIGSTATE(e.spawned(), e.attrs[4]));
+                    else if(local) commit = true;
+                    break;
+                }
+                case MAPSOUND:
+                {
+                    f.lastemit = e.lastemit;
+                    if(e.type == TRIGGER) f.setspawned(TRIGSTATE(e.spawned(), e.attrs[4]));
+                    else if(local) commit = true;
+                    if(mapsounds.inrange(f.attrs[0]) && !issound(f.schan))
+                    {
+                        int flags = SND_MAP;
+                        loopk(SND_LAST) if(f.attrs[4]&(1<<k)) flags |= 1<<k;
+                        playsound(f.attrs[0], both ? f.o : e.o, NULL, flags, f.attrs[3] ? f.attrs[3] : -1, f.attrs[1] || f.attrs[2] ? f.attrs[1] : -1, f.attrs[2] ? f.attrs[2] : -1, &f.schan);
+                    }
+                    break;
+                }
+                default: break;
             }
-            if(d && commit) client::addmsg(N_EXECLINK, "ri2", d->clientnum, index);
         }
+        if(d && commit) client::addmsg(N_EXECLINK, "ri2", d->clientnum, index);
     }
 
     bool tryspawn(dynent *d, const vec &o, float yaw, float pitch)
@@ -1933,19 +1918,16 @@ namespace entities
                 lastenttype[e.type] = max(lastenttype[e.type], i+1);
                 lastusetype[enttype[e.type].usetype] = max(lastusetype[enttype[e.type].usetype], i+1);
             }
-            if(enttype[e.type].usetype == EU_ITEM || e.type == TRIGGER)
+            if(enttype[e.type].usetype == EU_ITEM || e.type == TRIGGER) setspawn(i, 0);
+            if(enttype[e.type].syncs && enttype[e.type].synckin) // find shared kin
             {
-                setspawn(i, 0);
-                if(enttype[e.type].synckin) // find shared kin
+                loopvj(e.links) if(ents.inrange(e.links[j]))
                 {
-                    loopvj(e.links) if(ents.inrange(e.links[j]))
+                    loopvk(ents) if(ents[k]->type == e.type && ents[k]->links.find(e.links[j]) >= 0)
                     {
-                        loopvk(ents) if(ents[k]->type == e.type && ents[k]->links.find(e.links[j]) >= 0)
-                        {
-                            gameentity &f = *(gameentity *)ents[k];
-                            if(e.kin.find(k) < 0) e.kin.add(k);
-                            if(f.kin.find(i) < 0) f.kin.add(i);
-                        }
+                        gameentity &f = *(gameentity *)ents[k];
+                        if(e.kin.find(k) < 0) e.kin.add(k);
+                        if(f.kin.find(i) < 0) f.kin.add(i);
                     }
                 }
             }
