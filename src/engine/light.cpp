@@ -58,16 +58,28 @@ bool getlightfx(const extentity &e, int *radius, int *spotlight, vec *color, boo
     {
         extentity &f = *ents[e.links[i]];
         if(f.attrs[0] < 0 || f.attrs[0] >= LFX_MAX || !checkmapvariant(f.attrs[5])) continue;
-        int millis = lastmillis-f.emit[2], effect = f.attrs[0], interval = f.emit[0]+f.emit[1];
-        if(!f.emit[2] || millis >= interval)
+        int effect = f.attrs[0], millis = lastmillis-f.emit[2], interval = f.emit[0]+f.emit[1];
+        bool hasemit = f.emit[0] && f.emit[1] && f.emit[2], expired = millis >= interval;
+        if(!hasemit || expired)
         {
+            bool israndom = false;
             loopk(2)
             {
-                int val = f.attrs[k+2] > 0 ? f.attrs[k+2] : 750;
-                f.emit[k] = f.attrs[4]&(1<<k) ? rnd(val) : val;
+                int val = f.attrs[k+2] > 0 ? f.attrs[k+2] : 500;
+                if(f.attrs[4]&(1<<k))
+                {
+                    f.emit[k] = 1+(val >= 2 ? rnd(val-1) : 0);
+                    israndom = true;
+                }
+                else f.emit[k] = val;
             }
-            millis -= interval;
-            f.emit[2] = lastmillis-millis;
+            int oldinterval = interval;
+            interval = f.emit[0]+f.emit[1];
+            if(israndom && interval == oldinterval) israndom = false;
+            f.emit[2] = lastmillis;
+            if(israndom) f.emit[2] -= millis-oldinterval;
+            else f.emit[2] -= f.emit[2]%interval;
+            millis = lastmillis-f.emit[2];
         }
         if(millis >= f.emit[0]) loopi(LFX_MAX-1) if(f.attrs[4]&(1<<(LFX_S_MAX+i)))
         {
