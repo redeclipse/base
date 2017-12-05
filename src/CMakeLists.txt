@@ -120,7 +120,7 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 elseif(APPLE)
     # build OS X specific Objective-C code
     file(GLOB mac_client_sources
-        xcode/main.m xcode/macutils.mm
+        xcode/macutils.mm
         xcode/SDLmain.m xcode/ConsoleView.m
     )
     file(GLOB mac_server_sources
@@ -164,13 +164,12 @@ if(APPLE)
         target_link_libraries(redeclipse${BIN_SUFFIX} ${COCOA_LIBRARY})
     endif()
     target_link_libraries(redeclipse_server${BIN_SUFFIX} ${COCOA_LIBRARY})
-else(APPLE)
-    # add the genkey executable
-    add_executable(genkey${BIN_SUFFIX} ${genkey_sources})
-    set_target_properties(genkey${BIN_SUFFIX} PROPERTIES
-        COMPILE_FLAGS "-DSTANDALONE"
-    )
 endif(APPLE)
+# add the genkey executable
+add_executable(genkey${BIN_SUFFIX} ${genkey_sources})
+set_target_properties(genkey${BIN_SUFFIX} PROPERTIES
+    COMPILE_FLAGS "-DSTANDALONE"
+)
 
 # configure dependencies
 if(${BUILD_CLIENT})
