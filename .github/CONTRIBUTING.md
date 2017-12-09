@@ -18,7 +18,7 @@ Here's a rundown of how to setup a new repository:
 ## Content/Idea/Proposal Guidelines
 
 * Create a piece of content, come up with an idea, or decide to propose a change you want included in Red Eclipse.
-* Then, create a discussion for it at http://redeclipse.net/world/issues
+* Then, create a discussion for it at http://redeclipse.net/discuss
 * Give the community a chance to provide feedback (minimum time should be about 2 weeks).
 * When you feel you have come up with a finished work, idea, or proposal, submit it to the appropriate git module as a pull request.
 * Provide a good description along with a link to your original forum topic.
@@ -44,17 +44,13 @@ If you are unsure about how to license your work, Creative Commons provides a ha
 
 ## Rules
 
-* Behave: You are a guest in our community.
-* Patience: Don't expect everyone to give you what you want immediately.
-* Thoughtful: Try to answer your own questions before asking us.
-* On Topic: Ask questions related to Red Eclipse only, we won't help you create a game.
-* Speak English: One language unifies us, multiple languages creates chaos.
-* Politically Correct: Do NOT engage in blatant racism, political or religious debates, or engage in slander over the sex and/or orientation of anyone else.
+* **Behave**: You are a guest in our community.
+* **Patience**: Don't expect everyone to give you what you want immediately.
+* **Thoughtful**: Try to answer your own questions before asking us.
+* **On Topic**: Ask questions related to Red Eclipse only, we won't help you create a game.
+* **Speak English**: One language unifies us, multiple languages creates chaos.
+* **No Slander**: Do NOT engage in blatant racism, political or religious debates, or engage in slander over the sex and/or orientation of anyone else.
 
 ### A Note on Commit Messages
 
-As of yet, there are no strict rules for formatting of commit messages. However, it is good practice to keep commit messages clean and simple while providing a relatively clear idea of what the commit entails. The following is a well-formatted commit message template that is widely used and well regarded. This template is merely a ''suggestion'', it need not be strictly adhered to or followed at all.
-
-[Commit Message Template by Tim Pope](http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html)
-
-Beyond that, [here is a helpful section](http://git-scm.com/book/ch5-2.html#Commit-Guidelines) in the ''Pro Git'' book that briefly covers creating good commits.
+As of yet, there are no strict rules for formatting of commit messages. However, it is good practice to keep commit messages clean and simple while providing a relatively clear idea of what the commit entails.
