@@ -53,7 +53,7 @@ setlocal enableextensions enabledelayedexpansion
     if "%REDECLIPSE_BRANCH%" == "devel" goto redeclipse_update_bins_run
 :redeclipse_update_module
     echo modules: Updating..
-    %REDECLIPSE_DOWNLOADER% "%REDECLIPSE_TEMP%\mods.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/mods.txt"
+    %REDECLIPSE_DOWNLOADER% "%REDECLIPSE_TEMP%\mods.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/mods.txt" || del /f /q "%REDECLIPSE_TEMP%\mods.txt"
     if NOT EXIST "%REDECLIPSE_TEMP%\mods.txt" (
         echo modules: Failed to retrieve update information.
         exit /b 1
@@ -69,7 +69,7 @@ setlocal enableextensions enabledelayedexpansion
     for %%a in (%REDECLIPSE_MODULE_LIST%) do (
         del /f /q "%REDECLIPSE_TEMP%\%%a.txt"
         if "%%a" == "base" (
-            %REDECLIPSE_DOWNLOADER% "%REDECLIPSE_TEMP%\%%a.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/%%a.txt"
+            %REDECLIPSE_DOWNLOADER% "%REDECLIPSE_TEMP%\%%a.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/%%a.txt" || del /f /q "%REDECLIPSE_TEMP%\%%a.txt"
             set REDECLIPSE_MODULE_RUN=%%a
             if NOT "!REDECLIPSE_MODULE_RUN!" == "" (
                 call :redeclipse_update_module_run "%REDECLIPSE_UPDATER%"
@@ -147,7 +147,7 @@ setlocal enableextensions enabledelayedexpansion
         del /f /q "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.zip"
     )
     echo %REDECLIPSE_MODULE_RUN%: Downloading %REDECLIPSE_GITHUB%/%REDECLIPSE_MODULE_RUN%/zipball/%REDECLIPSE_MODULE_REMOTE%
-    %REDECLIPSE_DOWNLOADER% "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.zip" "%REDECLIPSE_GITHUB%/%REDECLIPSE_MODULE_RUN%/zipball/%REDECLIPSE_MODULE_REMOTE%"
+    %REDECLIPSE_DOWNLOADER% "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.zip" "%REDECLIPSE_GITHUB%/%REDECLIPSE_MODULE_RUN%/zipball/%REDECLIPSE_MODULE_REMOTE%" || del /f /q "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.zip"
     if NOT EXIST "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.zip" (
         echo %REDECLIPSE_MODULE_RUN%: Failed to retrieve update package.
         exit /b 1
@@ -172,7 +172,7 @@ setlocal enableextensions enabledelayedexpansion
 :redeclipse_update_bins_run
     echo bins: Updating..
     del /f /q "%REDECLIPSE_TEMP%\bins.txt"
-    %REDECLIPSE_DOWNLOADER% "%REDECLIPSE_TEMP%\bins.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/bins.txt"
+    %REDECLIPSE_DOWNLOADER% "%REDECLIPSE_TEMP%\bins.txt" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/bins.txt" || del /f /q "%REDECLIPSE_TEMP%\bins.txt"
     if EXIST "%REDECLIPSE_PATH%\bin\version.txt" set /p REDECLIPSE_BINS=< "%REDECLIPSE_PATH%\bin\version.txt"
     if "%REDECLIPSE_BINS%" == "" set REDECLIPSE_BINS=none
     echo bins: %REDECLIPSE_BINS% is installed.
@@ -196,7 +196,7 @@ setlocal enableextensions enabledelayedexpansion
         del /f /q "%REDECLIPSE_TEMP%\windows.zip"
     )
     echo bins: Downloading %REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/windows.zip
-    %REDECLIPSE_DOWNLOADER% "%REDECLIPSE_TEMP%\windows.zip" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/windows.zip"
+    %REDECLIPSE_DOWNLOADER% "%REDECLIPSE_TEMP%\windows.zip" "%REDECLIPSE_SOURCE%/%REDECLIPSE_UPDATE%/windows.zip" || del /f /q "%REDECLIPSE_TEMP%\windows.zip"
     if NOT EXIST "%REDECLIPSE_TEMP%\windows.zip" (
         echo bins: Failed to retrieve update package.
         exit /b 1

@@ -102,7 +102,7 @@ redeclipse_update_branch() {
             REDECLIPSE_DOWNLOADER()
             {
                 if [ -n "$1" ]; then
-                    wget --connect-timeout=30 --no-check-certificate -U "redeclipse-${REDECLIPSE_UPDATE}" -O "$1" "$2"
+                    wget --connect-timeout=30 --no-check-certificate -U "redeclipse-${REDECLIPSE_UPDATE}" -O "$1" "$2" || rm -f "$1"
                 else
                     wget --connect-timeout=30 --no-check-certificate -U "redeclipse-${REDECLIPSE_UPDATE}" -P ${REDECLIPSE_TEMP} $2
                 fi
@@ -112,7 +112,7 @@ redeclipse_update_branch() {
         REDECLIPSE_DOWNLOADER()
         {
             if [ -n "$1" ]; then
-                curl --connect-timeout 30 -L -k -f -A "redeclipse-${REDECLIPSE_UPDATE}" -o "$1" "$2"
+                curl --connect-timeout 30 -L -k -f -A "redeclipse-${REDECLIPSE_UPDATE}" -o "$1" "$2" || rm -f "$1"
             else
                 REDECLIPSE_DOWNLOADER_CURL_BULK=""
                 for f in $2; do
