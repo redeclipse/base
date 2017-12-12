@@ -17,6 +17,7 @@
 ; General
   ; Include Modern UI
   !include "MUI2.nsh"
+  !addplugindir "."
 
   SetCompressor lzma
   SetCompressorDictSize 96
@@ -48,7 +49,7 @@
     !define MUI_WELCOMEFINISHPAGE_BITMAP "finish.bmp"
     ; Auth application link
 ; 	!define MUI_FINISHPAGE_LINK "Click here to apply for an optional player account."
-;     !define MUI_FINISHPAGE_LINK_LOCATION "http://redeclipse.net/apply"
+;     !define MUI_FINISHPAGE_LINK_LOCATION "https://redeclipse.net/apply"
    ; Run game after install checkbox
     !define MUI_FINISHPAGE_RUN "$INSTDIR\redeclipse.bat"
     !define MUI_FINISHPAGE_RUN_TEXT "Run Red Eclipse"
@@ -74,23 +75,23 @@
 Section "Red Eclipse (required)" GameFiles
 
   SectionIn RO
-  
+
   SetOutPath $INSTDIR
-  
+
   File /r /x "redeclipse.app" /x "readme.md" /x ".git" /x ".gitattributes" /x ".gitignore" /x ".gitmodules" /x "redeclipse*win*.exe" "..\..\..\*.*"
-  
+
   WriteRegStr HKLM "SOFTWARE\Red Eclipse" "Install_Dir" "$INSTDIR"
-  
+
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Red Eclipse" "DisplayName" "Red Eclipse"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Red Eclipse" "DisplayVersion" ${MajorMinorVer}
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Red Eclipse" "DisplayIcon" "$INSTDIR\src\redeclipse.ico"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Red Eclipse" "Publisher" "Red Eclipse Team"
 
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Red Eclipse" "InstallSource" "http://redeclipse.net/download"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Red Eclipse" "InstallSource" "https://redeclipse.net/download"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Red Eclipse" "InstallLocation" "$INSTDIR"
 
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Red Eclipse" "HelpLink" "http://redeclipse.net/wiki"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Red Eclipse" "URLInfoAbout" "http://redeclipse.net/"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Red Eclipse" "HelpLink" "https://redeclipse.net/wiki"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Red Eclipse" "URLInfoAbout" "https://redeclipse.net/"
 
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Red Eclipse" "UninstallString" '"$INSTDIR\uninstall.exe"'
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Red Eclipse" "NoModify" 1
@@ -102,27 +103,28 @@ Section "Red Eclipse (required)" GameFiles
   IntFmt $0 "0x%08X" $0
   WriteRegDWORD HKLM "${ARP}" "EstimatedSize" "$0"
 
+  ; Prevents issues while updating
+  AccessControl::GrantOnFile "$INSTDIR" "(BU)" "FullAccess"
+  Pop $0
+
 SectionEnd
 
-Section "Start Menu Shortcuts" StartMenu
+Section "Start Menu Shortcut" StartMenu
 
-  CreateDirectory "$SMPROGRAMS\Red Eclipse"
-  
   SetOutPath "$INSTDIR"
-  
+
   CreateShortCut "$INSTDIR\Red Eclipse.lnk" "$INSTDIR\redeclipse.bat" "" "$INSTDIR\src\redeclipse.ico" 0 SW_SHOWMINIMIZED
-  CreateShortCut "$SMPROGRAMS\Red Eclipse\Red Eclipse.lnk" "$INSTDIR\redeclipse.bat" "" "$INSTDIR\src\redeclipse.ico" 0 SW_SHOWMINIMIZED
-  CreateShortCut "$SMPROGRAMS\Red Eclipse\Uninstall Red Eclipse.lnk" "$INSTDIR\uninstall.exe" "" "$INSTDIR\uninstall.exe" 0
-  
+  CreateShortCut "$SMPROGRAMS\Red Eclipse.lnk" "$INSTDIR\redeclipse.bat" "" "$INSTDIR\src\redeclipse.ico" 0 SW_SHOWMINIMIZED
+
 SectionEnd
 ; --------------------------------
 ; Uninstaller Section
 Section "Uninstall"
-  
+
   DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Red Eclipse"
   DeleteRegKey HKLM "Software\Red Eclipse"
 
-  RMDir /r "$SMPROGRAMS\Red Eclipse"
+  Delete "$SMPROGRAMS\Red Eclipse.lnk"
   RMDir /r "$INSTDIR"
 
 SectionEnd
@@ -130,7 +132,7 @@ SectionEnd
 ; Languages
   !insertmacro MUI_LANGUAGE "English"
   LangString DESC_GameFiles ${LANG_ENGLISH} "The Red Eclipse game files. Required to play the game."
-  LangString DESC_StartMenu ${LANG_ENGLISH} "Add shortcuts to your Start Menu"
+  LangString DESC_StartMenu ${LANG_ENGLISH} "Add a shortcut to your Start Menu"
 
   !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
     !insertmacro MUI_DESCRIPTION_TEXT ${GameFiles} $(DESC_GameFiles)
