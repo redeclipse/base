@@ -17,6 +17,7 @@
 ; General
   ; Include Modern UI
   !include "MUI2.nsh"
+  !addplugindir "."
 
   SetCompressor lzma
   SetCompressorDictSize 96
@@ -101,6 +102,10 @@ Section "Red Eclipse (required)" GameFiles
   ${GetSize} "$INSTDIR" "/S=0K" $0 $1 $2
   IntFmt $0 "0x%08X" $0
   WriteRegDWORD HKLM "${ARP}" "EstimatedSize" "$0"
+
+  ; Prevents issues while updating
+  AccessControl::GrantOnFile "$INSTDIR" "(BU)" "FullAccess"
+  Pop $0
 
 SectionEnd
 
