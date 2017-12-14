@@ -1,6 +1,8 @@
 #!/bin/sh
 SEMABUILD_PWD=`pwd`
 SEMABUILD_BUILD="${HOME}/deploy"
+SEMABUILD_SCP='scp -BC -o StrictHostKeyChecking=no'
+SEMABUILD_TARGET='qreeves@icculus.org:/webspace/redeclipse.net/files'
 SEMABUILD_APT='DEBIAN_FRONTEND=noninteractive apt-get'
 SEMABUILD_MODULES=`curl --connect-timeout 30 -L -k -f https://raw.githubusercontent.com/red-eclipse/deploy/master/stable/mods.txt` || exit 1
 SEMABUILD_ALLMODS="base ${SEMABUILD_MODULES}"
@@ -75,6 +77,7 @@ for i in ${SEMABUILD_DIST}; do
         md5sum "releases/${q}" > "releases/${q}.md5sum"
         ${SEMABUILD_GHR} --verbose upload --user "red-eclipse" --repo "base" --tag "v${SEMABUILD_VERSION}" --name "${q}" --file "releases/${q}"
     done
+    ${SEMABUILD_SCP} -r "releases" "${SEMABUILD_TARGET}" || exit 1
     rm -rfv releases
     popd
 done
