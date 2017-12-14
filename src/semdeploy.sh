@@ -2,8 +2,6 @@
 
 SEMABUILD_PWD=`pwd`
 SEMABUILD_BUILD="${HOME}/deploy"
-SEMABUILD_SCP='scp -BC -o StrictHostKeyChecking=no'
-SEMABUILD_TARGET='qreeves@icculus.org:/webspace/redeclipse.net/files'
 SEMABUILD_APT='DEBIAN_FRONTEND=noninteractive apt-get'
 SEMABUILD_MODULES=`curl --connect-timeout 30 -L -k -f https://raw.githubusercontent.com/red-eclipse/deploy/master/stable/mods.txt` || exit 1
 SEMABUILD_ALLMODS="base ${SEMABUILD_MODULES}"
@@ -16,8 +14,8 @@ export GOPATH="${HOME}/gofiles"
 go get "github.com/itchio/gothub"
 SEMABUILD_GHR="${GOPATH}/bin/gothub"
 
-rm -rf "${SEMABUILD_BUILD}"
-rm -rf "${SEMABUILD_PWD}/data"
+rm -rfv "${SEMABUILD_BUILD}"
+rm -rfv "${SEMABUILD_PWD}/data"
 mkdir -pv "${SEMABUILD_BUILD}" || exit 1
 
 for i in ${SEMABUILD_ALLMODS}; do
@@ -38,7 +36,7 @@ for i in ${SEMABUILD_ALLMODS}; do
     popd
 done
 
-rm -rf "${SEMABUILD_PWD}/data" "${SEMABUILD_PWD}/.git"
+rm -rfv "${SEMABUILD_PWD}/data" "${SEMABUILD_PWD}/.git"
 
 SEMABUILD_NAME=`sed -n 's/.define VERSION_NAME *"\([^"]*\)"/\1/p' "${SEMABUILD_PWD}/src/engine/version.h"`
 SEMABUILD_UNAME=`sed -n 's/.define VERSION_UNAME *"\([^"]*\)"/\1/p' "${SEMABUILD_PWD}/src/engine/version.h"`
@@ -78,7 +76,6 @@ for i in ${SEMABUILD_DIST}; do
         md5sum "releases/${q}" > "releases/${q}.md5sum"
         ${SEMABUILD_GHR} --verbose upload --user "red-eclipse" --repo "base" --tag "v${SEMABUILD_VERSION}" --name "${q}" --file "releases/${q}"
     done
-    ${SEMABUILD_SCP} -r "releases" "${SEMABUILD_TARGET}" || exit 1
-    rm -rf releases
+    rm -rfv releases
     popd
 done
