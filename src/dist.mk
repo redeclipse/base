@@ -72,9 +72,9 @@ dist-tar: ../$(tarname)
 
 ../$(tarname-mac): ../$(dirname-mac)
 	tar -cf $@ $<
+	rm -rfv ../$(dirname-mac)
 
 dist-tar-mac: ../$(tarname-mac)
-	rm -rfv ../$(dirname-mac)
 
 ../$(tarname-combined): ../$(dirname)
 	tar -cf $@ $<
@@ -93,11 +93,13 @@ distdir-win: ../$(dirname-win)
 
 ../$(tarname).gz: ../$(tarname)
 	gzip -c < $< > $@
+	rm -rfv ../$(tarname)
 
 dist-gz: ../$(tarname).gz
 
 ../$(tarname).bz2: ../$(tarname)
 	bzip2 -c < $< > $@
+	rm -rfv ../$(tarname)
 
 dist-bz2: ../$(tarname).bz2
 
@@ -105,36 +107,39 @@ dist-nix: ../$(tarname).bz2
 
 ../$(tarname).xz: ../$(tarname)
 	xz -c < $< > $@
+	rm -rfv ../$(tarname)
 
 dist-xz: ../$(tarname).xz
 
 ../$(tarname-mac).gz: ../$(tarname-mac)
 	gzip -c < $< > $@
+	rm -rfv ../$(tarname-mac)
 
 dist-gz-mac: ../$(tarname-mac).gz
-	rm -rfv ../$(dirname-mac)
 
 ../$(tarname-mac).bz2: ../$(tarname-mac)
 	bzip2 -c < $< > $@
+	rm -rfv ../$(tarname-mac)
 
 dist-bz2-mac: ../$(tarname-mac).bz2
-	rm -rfv ../$(dirname-mac)
 
 dist-mac: ../$(tarname-mac).bz2
-	rm -rfv ../$(dirname-mac)
 
 ../$(tarname-mac).xz: ../$(tarname-mac)
 	xz -c < $< > $@
+	rm -rfv ../$(tarname-mac)
 
 dist-xz-mac: ../$(tarname-mac).xz
 
 ../$(tarname-combined).gz: ../$(tarname-combined)
 	gzip -c < $< > $@
+	rm -rfv ../$(tarname-combined)
 
 dist-gz-combined: ../$(tarname-combined).gz
 
 ../$(tarname-combined).bz2: ../$(tarname-combined)
 	bzip2 -c < $< > $@
+	rm -rfv ../$(tarname-combined)
 
 dist-bz2-combined: ../$(tarname-combined).bz2
 
@@ -142,24 +147,25 @@ dist-combined: ../$(tarname-combined).bz2
 
 ../$(tarname-combined).xz: ../$(tarname-combined)
 	xz -c < $< > $@
+	rm -rfv ../$(tarname-combined)
 
 dist-xz-combined: ../$(tarname-combined).xz
 
 ../$(exename): ../$(dirname-win)
-	sed "s/~REPVERSION~/$(appversion)/g;s/~REPOUTFILE~/$(exename)/g" $</src/install/win/$(appname).nsi > $</src/install/win/$(appversion)_$(appname).nsi
-	cat $</src/install/win/$(appversion)_$(appname).nsi
-	cd $</src/install/win && makensis -V4 $(appversion)_$(appname).nsi
+	sed "s/~REPVERSION~/$(appversion)/g;s/~REPOUTFILE~/$(exename)/g" $</src/install/win/$(appname).nsi > $</src/install/win/$(appname)_$(appversion).nsi
+	cat $</src/install/win/$(appname)_$(appversion).nsi
+	cd $</src/install/win && makensis -V4 $(appname)_$(appversion).nsi
 	$(MV) $</src/install/win/$(exename) ../
-	rm -rfv $</src/install/win/$(appversion)_$(appname).nsi
+	rm -fv $</src/install/win/$(appname)_$(appversion).nsi
+	rm -rfv ../$(dirname-win)
 
 ../$(zipname): ../$(dirname-win)
 	zip -r "../$(zipname)" $<
+	rm -rfv ../$(dirname-win)
 
 dist-win: ../$(exename)
-	rm -rfv ../$(dirname-win)
 
 dist-zip: ../$(zipname)
-	rm -rfv ../$(dirname-win)
 
 dist: dist-clean dist-bz2 dist-bz2-combined dist-win dist-mac
 
