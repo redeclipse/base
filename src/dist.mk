@@ -92,13 +92,13 @@ distdir-win: ../$(dirname-win)
 
 ../$(tarname).gz: ../$(tarname)
 	gzip -c < $< > $@
-	rm -rfv ../$(tarname)
+	rm -fv ../$(tarname)
 
 dist-gz: ../$(tarname).gz
 
 ../$(tarname).bz2: ../$(tarname)
 	bzip2 -c < $< > $@
-	rm -rfv ../$(tarname)
+	rm -fv ../$(tarname)
 
 dist-bz2: ../$(tarname).bz2
 
@@ -106,19 +106,19 @@ dist-nix: ../$(tarname).bz2
 
 ../$(tarname).xz: ../$(tarname)
 	xz -c < $< > $@
-	rm -rfv ../$(tarname)
+	rm -fv ../$(tarname)
 
 dist-xz: ../$(tarname).xz
 
 ../$(tarname-mac).gz: ../$(tarname-mac)
 	gzip -c < $< > $@
-	rm -rfv ../$(tarname-mac)
+	rm -fv ../$(tarname-mac)
 
 dist-gz-mac: ../$(tarname-mac).gz
 
 ../$(tarname-mac).bz2: ../$(tarname-mac)
 	bzip2 -c < $< > $@
-	rm -rfv ../$(tarname-mac)
+	rm -fv ../$(tarname-mac)
 
 dist-bz2-mac: ../$(tarname-mac).bz2
 
@@ -126,19 +126,19 @@ dist-mac: ../$(tarname-mac).bz2
 
 ../$(tarname-mac).xz: ../$(tarname-mac)
 	xz -c < $< > $@
-	rm -rfv ../$(tarname-mac)
+	rm -fv ../$(tarname-mac)
 
 dist-xz-mac: ../$(tarname-mac).xz
 
 ../$(tarname-combined).gz: ../$(tarname-combined)
 	gzip -c < $< > $@
-	rm -rfv ../$(tarname-combined)
+	rm -fv ../$(tarname-combined)
 
 dist-gz-combined: ../$(tarname-combined).gz
 
 ../$(tarname-combined).bz2: ../$(tarname-combined)
 	bzip2 -c < $< > $@
-	rm -rfv ../$(tarname-combined)
+	rm -fv ../$(tarname-combined)
 
 dist-bz2-combined: ../$(tarname-combined).bz2
 
@@ -146,7 +146,7 @@ dist-combined: ../$(tarname-combined).bz2
 
 ../$(tarname-combined).xz: ../$(tarname-combined)
 	xz -c < $< > $@
-	rm -rfv ../$(tarname-combined)
+	rm -fv ../$(tarname-combined)
 
 dist-xz-combined: ../$(tarname-combined).xz
 
@@ -166,7 +166,7 @@ dist-win: ../$(exename)
 
 dist-zip: ../$(zipname)
 
-dist: dist-clean dist-bz2 dist-bz2-combined dist-win dist-mac
+dist: dist-clean dist-bz2 dist-bz2-combined dist-win dist-zip dist-mac
 
 ../$(tarname).bz2.torrent: ../$(tarname).bz2
 	rm -fv $@
@@ -175,7 +175,7 @@ dist: dist-clean dist-bz2 dist-bz2-combined dist-win dist-mac
 		-a $(torrent-trackers-url) \
 		-w $(torrent-webseed-baseurl)/$(tarname).bz2 \
 		-n $(tarname).bz2 \
-		-c "Red Eclipse v$(appversion) ($(apprelease)) for GNU/Linux" \
+		-c "Red Eclipse v$(appversion) ($(apprelease)) GNU/Linux" \
 		$(tarname).bz2
 
 dist-torrent-nix: ../$(tarname).bz2.torrent
@@ -189,7 +189,7 @@ dist-torrent-bz2: ../$(tarname).bz2.torrent
 		-a $(torrent-trackers-url) \
 		-w $(torrent-webseed-baseurl)/$(tarname-mac).bz2 \
 		-n $(tarname-mac).bz2 \
-		-c "$(appnamefull) v$(appversion) ($(apprelease)) for macOS" \
+		-c "$(appnamefull) v$(appversion) ($(apprelease)) macOS" \
 		$(tarname-mac).bz2
 
 dist-torrent-mac: ../$(tarname-mac).bz2.torrent
@@ -201,7 +201,7 @@ dist-torrent-mac: ../$(tarname-mac).bz2.torrent
 		-a $(torrent-trackers-url) \
 		-w $(torrent-webseed-baseurl)/$(tarname-combined).bz2 \
 		-n $(tarname-combined).bz2 \
-		-c "$(appnamefull) v$(appversion) ($(apprelease)) Combined Platforms" \
+		-c "$(appnamefull) v$(appversion) ($(apprelease)) Combined" \
 		$(tarname-combined).bz2
 
 dist-torrent-combined: ../$(tarname-combined).bz2.torrent
@@ -213,12 +213,24 @@ dist-torrent-combined: ../$(tarname-combined).bz2.torrent
 		-a $(torrent-trackers-url) \
 		-w $(torrent-webseed-baseurl)/$(exename) \
 		-n $(exename) \
-		-c "$(appnamefull) v$(appversion) ($(apprelease)) for Windows" \
+		-c "$(appnamefull) v$(appversion) ($(apprelease)) Windows" \
 		$(exename)
 
 dist-torrent-win: ../$(exename).torrent
 
-dist-torrents: dist-torrent-bz2 dist-torrent-combined dist-torrent-win dist-torrent-mac
+../$(zipname).torrent: ../$(zipname)
+	rm -fv $@
+	cd ../ &&\
+		mktorrent \
+		-a $(torrent-trackers-url) \
+		-w $(torrent-webseed-baseurl)/$(zipname) \
+		-n $(zipname) \
+		-c "$(appnamefull) v$(appversion) ($(apprelease)) ZIP" \
+		$(zipname)
+
+dist-torrent-zip: ../$(zipname).torrent
+
+dist-torrents: dist-torrent-bz2 dist-torrent-combined dist-torrent-win dist-torrent-zip dist-torrent-mac
 
 dist-mostlyclean:
 	rm -rfv ../$(dirname)
