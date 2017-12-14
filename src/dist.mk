@@ -26,30 +26,20 @@ endif
 DISTFILES=$(shell cd ../ && find . -not -iname . -not -iname *.lo -not -iname *.gch -not -iname *.o || echo "")
 CURL=curl --location --insecure --fail
 
-dist-branch:
+../$(dirname):
 	echo "stable" > $@/branch.txt
 	$(CURL) $(appfiles)/base.txt --output $@/version.txt
 	$(CURL) $(appfiles)/bins.txt --output $@/bin/version.txt
 	for i in `curl --silent --location --insecure --fail $(appfiles)/mods.txt`; do if [ "$${i}" != "base" ]; then mkdir -p $@/data/$${i}; $(CURL) $(appfiles)/$${i}.txt --output $@/data/$${i}/version.txt; fi; done
-
-dist-branch-nix: dist-branch
-	$(CURL) $(appfiles)/linux.tar.gz --output linux.tar.gz
-	tar --gzip --extract --verbose --overwrite --file=linux.tar.gz --directory=$@
-	rm -f linux.tar.gz
-
-dist-branch-mac: dist-branch
-	$(CURL) $(appfiles)/macos.tar.gz --output macos.tar.gz
-	tar --gzip --extract --verbose --overwrite --file=macos.tar.gz --directory=$@
-	rm -f macos.tar.gz
-
-dist-branch-win: dist-branch
 	$(CURL) $(appfiles)/windows.zip --output windows.zip
 	unzip -o windows.zip -d $@
 	rm -f windows.zip
-
-dist-branch-combined: dist-branch dist-branch-win dist-branch-nix dist-branch-mac
-
-../$(dirname):
+	$(CURL) $(appfiles)/linux.tar.gz --output linux.tar.gz
+	tar --gzip --extract --verbose --overwrite --file=linux.tar.gz --directory=$@
+	rm -f linux.tar.gz
+	$(CURL) $(appfiles)/macos.tar.gz --output macos.tar.gz
+	tar --gzip --extract --verbose --overwrite --file=macos.tar.gz --directory=$@
+	rm -f macos.tar.gz
 	rm -rf $@
 	tar --exclude=.git --exclude=$(dirname) \
 		-cf - $(DISTFILES:%=../%) | (mkdir $@/; cd $@/ ; tar -xpf -)
@@ -58,7 +48,7 @@ dist-branch-combined: dist-branch dist-branch-win dist-branch-nix dist-branch-ma
 
 distdir: ../$(dirname)
 
-../$(tarname): ../$(dirname) dist-branch-nix
+../$(tarname): ../$(dirname)
 	tar \
 		--exclude='$</bin/*/$(appname)*.exe' \
 		--exclude='$</bin/*/genkey*' \
@@ -67,7 +57,7 @@ distdir: ../$(dirname)
 
 dist-tar: ../$(tarname)
 
-../$(dirname-mac): ../$(dirname) dist-branch-mac
+../$(dirname-mac): ../$(dirname)
 	cp -R $</bin/$(dirname-mac) $@
 	cp -R $</* $@/Contents/Resources
 	rm -rf $@/Contents/Resources/bin/*/$(appname)*linux*
@@ -83,12 +73,12 @@ dist-tar: ../$(tarname)
 dist-tar-mac: ../$(tarname-mac)
 	rm -rf ../$(dirname-mac)
 
-../$(tarname-combined): ../$(dirname) dist-branch-combined
+../$(tarname-combined): ../$(dirname)
 	tar -cf $@ $<
 
 dist-tar-combined: ../$(tarname-combined)
 
-../$(dirname-win): ../$(dirname) dist-branch-win
+../$(dirname-win): ../$(dirname)
 	cp -R $< $@
 	rm -rf $@/bin/*/$(appname)*linux*
 	rm -rf $@/bin/*/$(appname)*bsd*
