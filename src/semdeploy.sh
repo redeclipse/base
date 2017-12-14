@@ -13,8 +13,8 @@ sudo ${SEMABUILD_APT} update || exit 1
 sudo ${SEMABUILD_APT} -fy install build-essential unzip zip nsis nsis-common mktorrent golang || exit 1
 
 export GOPATH="${HOME}/gofiles"
-go get "github.com/aktau/github-release"
-SEMABUILD_GHR="${GOPATH}/bin/github-release"
+go get "github.com/itchio/gothub"
+SEMABUILD_GHR="${GOPATH}/bin/gothub"
 
 rm -rf "${SEMABUILD_BUILD}"
 rm -rf "${SEMABUILD_PWD}/data"
