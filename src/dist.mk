@@ -27,6 +27,8 @@ DISTFILES=$(shell cd ../ && find . -not -iname . -not -iname *.lo -not -iname *.
 CURL=curl --location --insecure --fail
 
 ../$(dirname):
+	tar --exclude=.git --exclude=$(dirname) \
+		-cf - $(DISTFILES:%=../%) | (mkdir $@/; cd $@/ ; tar -xpf -)
 	echo "stable" > $@/branch.txt
 	$(CURL) $(appfiles)/base.txt --output $@/version.txt
 	$(CURL) $(appfiles)/bins.txt --output $@/bin/version.txt
@@ -41,8 +43,6 @@ CURL=curl --location --insecure --fail
 	tar --gzip --extract --verbose --overwrite --file=macos.tar.gz --directory=$@
 	rm -f macos.tar.gz
 	rm -rf $@
-	tar --exclude=.git --exclude=$(dirname) \
-		-cf - $(DISTFILES:%=../%) | (mkdir $@/; cd $@/ ; tar -xpf -)
 	$(MAKE) -C $@/src clean
 	$(MAKE) -C $@/src/enet clean
 
