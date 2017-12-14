@@ -2,7 +2,7 @@
 ; Name and file
   Name "Red Eclipse"
   VIProductVersion "~REPVERSION~.0"
-  !define MajorMinorVer "~REPSERIES~"
+  !define MajorMinorVer "~REPVERSION~"
   OutFile "~REPOUTFILE~"
   VIAddVersionKey "OriginalFilename" $OutFile
 ; --------------------------------

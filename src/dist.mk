@@ -2,8 +2,11 @@
 appnamefull=$(shell sed -n 's/.define VERSION_NAME *"\([^"]*\)"/\1/p' engine/version.h)
 appversion=$(shell sed -n 's/.define VERSION_STRING *"\([^"]*\)"/\1/p' engine/version.h)
 apprelease=$(shell sed -n 's/.define VERSION_RELEASE *"\([^"]*\)"/\1/p' engine/version.h)
-appseries=$(shell sed -n 's/.define VERSION_STRING *"\([^"]*\)\..$"/\1.x/p' engine/version.h)
-appfiles=http://redeclipse.net/files/stable
+appvermaj=$(shell sed -n 's/.define VERSION_MAJOR \([0-9]\)/\1/p' engine/version.h)
+appvermin=$(shell sed -n 's/.define VERSION_MINOR \([0-9]\)/\1/p' engine/version.h)
+appverpat=$(shell sed -n 's/.define VERSION_PATCH \([0-9]\)/\1/p' engine/version.h)
+appversion=$(appvermaj).$(appvermin).$(appverpat)
+appfiles=https://redeclipse.net/files/stable
 
 dirname=$(appname)-$(appversion)
 dirname-mac=$(appname).app
@@ -143,7 +146,7 @@ dist-combined: ../$(tarname-combined).bz2
 dist-xz-combined: ../$(tarname-combined).xz
 
 ../$(exename): ../$(dirname-win)
-	sed -n "s/~REPVERSION~/$(appversion)/g;s/~REPSERIES~/$(appseries)/g;s/~REPOUTFILE~/$(exename)/g" $</src/install/win/$(appname).nsi > $</src/install/win/$(appversion)_$(appname).nsi
+	sed -n "s/~REPVERSION~/$(appversion)/g;s/~REPOUTFILE~/$(exename)/g" $</src/install/win/$(appname).nsi > $</src/install/win/$(appversion)_$(appname).nsi
 	makensis -V2 $</src/install/win/$(appversion)_$(appname).nsi
 	$(MV) $</src/install/win/$(exename) ../
 	rm -rf $</src/install/win/$(appversion)_$(appname).nsi
