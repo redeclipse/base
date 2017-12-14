@@ -30,7 +30,7 @@ DISTFILES=$(shell cd ../ && find . -not -iname . -not -iname *.lo -not -iname *.
 CURL=curl --location --insecure --fail
 
 ../$(dirname):
-	rm -rf $@
+	rm -rfv $@
 	tar --exclude=.git --exclude=$(dirname) \
 		-cf - $(DISTFILES:%=../%) | (mkdir $@/; cd $@/ ; tar -xpf -)
 	echo "stable" > $@/branch.txt
@@ -39,13 +39,13 @@ CURL=curl --location --insecure --fail
 	for i in `curl --silent --location --insecure --fail $(appfiles)/mods.txt`; do if [ "$${i}" != "base" ]; then mkdir -p $@/data/$${i}; $(CURL) $(appfiles)/$${i}.txt --output $@/data/$${i}/version.txt; fi; done
 	$(CURL) $(appfiles)/windows.zip --output windows.zip
 	unzip -o windows.zip -d $@
-	rm -f windows.zip
+	rm -fv windows.zip
 	$(CURL) $(appfiles)/linux.tar.gz --output linux.tar.gz
 	tar --gzip --extract --verbose --overwrite --file=linux.tar.gz --directory=$@
-	rm -f linux.tar.gz
+	rm -fv linux.tar.gz
 	$(CURL) $(appfiles)/macos.tar.gz --output macos.tar.gz
 	tar --gzip --extract --verbose --overwrite --file=macos.tar.gz --directory=$@
-	rm -f macos.tar.gz
+	rm -fv macos.tar.gz
 	$(MAKE) -C $@/src clean
 	$(MAKE) -C $@/src/enet clean
 
@@ -63,18 +63,18 @@ dist-tar: ../$(tarname)
 ../$(dirname-mac): ../$(dirname)
 	cp -R $</bin/$(dirname-mac) $@
 	cp -R $</* $@/Contents/Resources
-	rm -rf $@/Contents/Resources/bin/*/$(appname)*linux*
-	rm -rf $@/Contents/Resources/bin/*/$(appname)*bsd*
-	rm -rf $@/Contents/Resources/bin/*/$(appname)*.exe
-	rm -rf $@/Contents/Resources/bin/*/genkey*linux*
-	rm -rf $@/Contents/Resources/bin/*/genkey*bsd*
-	rm -rf $@/Contents/Resources/bin/*/genkey.exe
+	rm -rfv $@/Contents/Resources/bin/*/$(appname)*linux*
+	rm -rfv $@/Contents/Resources/bin/*/$(appname)*bsd*
+	rm -rfv $@/Contents/Resources/bin/*/$(appname)*.exe
+	rm -rfv $@/Contents/Resources/bin/*/genkey*linux*
+	rm -rfv $@/Contents/Resources/bin/*/genkey*bsd*
+	rm -rfv $@/Contents/Resources/bin/*/genkey.exe
 
 ../$(tarname-mac): ../$(dirname-mac)
 	tar -cf $@ $<
 
 dist-tar-mac: ../$(tarname-mac)
-	rm -rf ../$(dirname-mac)
+	rm -rfv ../$(dirname-mac)
 
 ../$(tarname-combined): ../$(dirname)
 	tar -cf $@ $<
@@ -83,11 +83,11 @@ dist-tar-combined: ../$(tarname-combined)
 
 ../$(dirname-win): ../$(dirname)
 	cp -R $< $@
-	rm -rf $@/bin/*/$(appname)*linux*
-	rm -rf $@/bin/*/$(appname)*bsd*
-	rm -rf $@/bin/*/genkey*linux*
-	rm -rf $@/bin/*/genkey*bsd*
-	rm -rf $@/bin/$(dirname-mac)/Contents/MacOS/$(appname)_universal
+	rm -rfv $@/bin/*/$(appname)*linux*
+	rm -rfv $@/bin/*/$(appname)*bsd*
+	rm -rfv $@/bin/*/genkey*linux*
+	rm -rfv $@/bin/*/genkey*bsd*
+	rm -rfv $@/bin/$(dirname-mac)/Contents/MacOS/$(appname)_universal
 
 distdir-win: ../$(dirname-win)
 
@@ -112,16 +112,16 @@ dist-xz: ../$(tarname).xz
 	gzip -c < $< > $@
 
 dist-gz-mac: ../$(tarname-mac).gz
-	rm -rf ../$(dirname-mac)
+	rm -rfv ../$(dirname-mac)
 
 ../$(tarname-mac).bz2: ../$(tarname-mac)
 	bzip2 -c < $< > $@
 
 dist-bz2-mac: ../$(tarname-mac).bz2
-	rm -rf ../$(dirname-mac)
+	rm -rfv ../$(dirname-mac)
 
 dist-mac: ../$(tarname-mac).bz2
-	rm -rf ../$(dirname-mac)
+	rm -rfv ../$(dirname-mac)
 
 ../$(tarname-mac).xz: ../$(tarname-mac)
 	xz -c < $< > $@
@@ -147,23 +147,24 @@ dist-xz-combined: ../$(tarname-combined).xz
 
 ../$(exename): ../$(dirname-win)
 	sed "s/~REPVERSION~/$(appversion)/g;s/~REPOUTFILE~/$(exename)/g" $</src/install/win/$(appname).nsi > $</src/install/win/$(appversion)_$(appname).nsi
-	makensis -V2 $</src/install/win/$(appversion)_$(appname).nsi
+    cat $</src/install/win/$(appversion)_$(appname).nsi
+	cd $</src/install/win && makensis -V4 $(appversion)_$(appname).nsi
 	$(MV) $</src/install/win/$(exename) ../
-	rm -rf $</src/install/win/$(appversion)_$(appname).nsi
+	rm -rfv $</src/install/win/$(appversion)_$(appname).nsi
 
 ../$(zipname): ../$(dirname-win)
 	zip -r "../$(zipname)" $<
 
 dist-win: ../$(exename)
-	rm -rf ../$(dirname-win)
+	rm -rfv ../$(dirname-win)
 
 dist-zip: ../$(zipname)
-	rm -rf ../$(dirname-win)
+	rm -rfv ../$(dirname-win)
 
 dist: dist-clean dist-bz2 dist-bz2-combined dist-win dist-mac
 
 ../$(tarname).bz2.torrent: ../$(tarname).bz2
-	rm -f $@
+	rm -fv $@
 	cd ../ &&\
 		mktorrent \
 		-a $(torrent-trackers-url) \
@@ -177,7 +178,7 @@ dist-torrent-nix: ../$(tarname).bz2.torrent
 dist-torrent-bz2: ../$(tarname).bz2.torrent
 
 ../$(tarname-mac).bz2.torrent: ../$(tarname-mac).bz2
-	rm -f $@
+	rm -fv $@
 	cd ../ &&\
 		mktorrent \
 		-a $(torrent-trackers-url) \
@@ -189,7 +190,7 @@ dist-torrent-bz2: ../$(tarname).bz2.torrent
 dist-torrent-mac: ../$(tarname-mac).bz2.torrent
 
 ../$(tarname-combined).bz2.torrent: ../$(tarname-combined).bz2
-	rm -f $@
+	rm -fv $@
 	cd ../ &&\
 		mktorrent \
 		-a $(torrent-trackers-url) \
@@ -201,7 +202,7 @@ dist-torrent-mac: ../$(tarname-mac).bz2.torrent
 dist-torrent-combined: ../$(tarname-combined).bz2.torrent
 
 ../$(exename).torrent: ../$(exename)
-	rm -f $@
+	rm -fv $@
 	cd ../ &&\
 		mktorrent \
 		-a $(torrent-trackers-url) \
@@ -215,18 +216,18 @@ dist-torrent-win: ../$(exename).torrent
 dist-torrents: dist-torrent-bz2 dist-torrent-combined dist-torrent-win dist-torrent-mac
 
 dist-mostlyclean:
-	rm -rf ../$(dirname)
-	rm -rf ../$(dirname-win)
-	rm -rf ../$(dirname-mac)
-	rm -f ../$(tarname)
-	rm -f ../$(tarname-mac)
-	rm -f ../$(tarname-combined)
+	rm -rfv ../$(dirname)
+	rm -rfv ../$(dirname-win)
+	rm -rfv ../$(dirname-mac)
+	rm -fv ../$(tarname)
+	rm -fv ../$(tarname-mac)
+	rm -fv ../$(tarname-combined)
 
 dist-clean: dist-mostlyclean
-	rm -f ../$(tarname)*
-	rm -f ../$(tarname-mac)*
-	rm -f ../$(tarname-combined)*
-	rm -f ../$(exename)*
+	rm -fv ../$(tarname)*
+	rm -fv ../$(tarname-mac)*
+	rm -fv ../$(tarname-combined)*
+	rm -fv ../$(exename)*
 
 ../doc/cube2font.txt: ../doc/man/cube2font.1
 	scripts/cube2font-txt $< $@
