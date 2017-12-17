@@ -104,7 +104,7 @@ redeclipse_update_branch() {
                 if [ -n "$1" ]; then
                     wget --connect-timeout=30 --no-check-certificate -U "redeclipse-${REDECLIPSE_UPDATE}" -O "$1" "$2" || rm -f "$1"
                 else
-                    wget --connect-timeout=30 --no-check-certificate -U "redeclipse-${REDECLIPSE_UPDATE}" -P ${REDECLIPSE_TEMP} $2
+                    wget --connect-timeout=30 --no-check-certificate -U "redeclipse-${REDECLIPSE_UPDATE}" -P "${REDECLIPSE_TEMP}" $2
                 fi
             }
         fi
@@ -116,10 +116,13 @@ redeclipse_update_branch() {
             else
                 REDECLIPSE_DOWNLOADER_CURL_BULK=""
                 for f in $2; do
-                    F_BASE=$(basename "$f")
-                    REDECLIPSE_DOWNLOADER_CURL_BULK="${REDECLIPSE_DOWNLOADER_CURL_BULK} -o ${REDECLIPSE_TEMP}/$F_BASE $f"
+                    F_BASE="$(basename "$f")"
+                    REDECLIPSE_DOWNLOADER_CURL_BULK="${REDECLIPSE_DOWNLOADER_CURL_BULK} -o "$F_BASE" "$f""
                 done
+                PREDLWD="$(pwd)"
+                cd "${REDECLIPSE_TEMP}"
                 curl --connect-timeout 30 -L -k -f -A "redeclipse-${REDECLIPSE_UPDATE}" $REDECLIPSE_DOWNLOADER_CURL_BULK
+                cd "$PREDLWD"
             fi
         }
     fi
