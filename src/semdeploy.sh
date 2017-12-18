@@ -64,6 +64,7 @@ for i in ${SEMABUILD_DIST}; do
             ;;
         zip)
             m="win"
+            n="zip"
             ;;
         *)
             n="tar.bz2"
