@@ -160,7 +160,7 @@ dist-xz-combined: ../$(tarname-combined).xz
 	rm -rfv ../$(dirname-win)
 
 ../$(zipname): ../$(dirname-win)
-	zip -r "../$(zipname)" $<
+	cd .. && zip -vr "$(zipname)" $<
 	rm -rfv ../$(dirname-win)
 
 dist-win: ../$(exename)
