@@ -153,7 +153,7 @@ dist-xz-combined: ../$(tarname-combined).xz
 ../$(exename): ../$(dirname-win)
 	sed "s/~REPVERSION~/$(appversion)/g;s/~REPOUTFILE~/$(exename)/g" $</src/install/win/$(appname).nsi > $</src/install/win/$(appname)_$(appversion).nsi
 	cat $</src/install/win/$(appname)_$(appversion).nsi
-	cd $</src/install/win && makensis -V4 $(appname)_$(appversion).nsi
+	makensis -V4 $</src/install/win/$(appname)_$(appversion).nsi
 	$(MV) $</src/install/win/$(exename) ../
 	rm -fv $</src/install/win/$(appname)_$(appversion).nsi
 	rm -rfv ../$(dirname-win)
