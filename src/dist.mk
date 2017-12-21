@@ -5,7 +5,7 @@ appvermaj=$(shell sed -n 's/.define VERSION_MAJOR \([0-9]\)/\1/p' engine/version
 appvermin=$(shell sed -n 's/.define VERSION_MINOR \([0-9]\)/\1/p' engine/version.h)
 appverpat=$(shell sed -n 's/.define VERSION_PATCH \([0-9]\)/\1/p' engine/version.h)
 appversion=$(appvermaj).$(appvermin).$(appverpat)
-appfiles=https://redeclipse.net/files/stable
+appfiles=https://raw.githubusercontent.com/red-eclipse/deploy/master/stable
 
 dirname=$(appname)-$(appversion)
 dirname-mac=$(appname).app

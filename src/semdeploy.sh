@@ -28,14 +28,15 @@ for i in ${SEMABUILD_ALLMODS}; do
     else
         SEMABUILD_MODDIR="${SEMABUILD_BUILD}/data/${i}"
         SEMABUILD_GITDIR="${SEMABUILD_PWD}/data/${i}"
-        SEMABUILD_ARCHBR="master"
-        git submodule init "data/${i}"
-        git submodule update "data/${i}"
+        git submodule update --init --depth 1 "data/${i}" || exit 1
+        pushd "${SEMABUILD_GITDIR}" || exit 1
+        SEMABUILD_ARCHBR=`git rev-parse HEAD`
+        popd || exit 1
     fi
     mkdir -pv "${SEMABUILD_MODDIR}" || exit 1
     pushd "${SEMABUILD_GITDIR}" || exit 1
-    (git archive ${SEMABUILD_ARCHBR} | tar -x -C "${SEMABUILD_MODDIR}") || exit 1
-    popd
+    (git archive --verbose ${SEMABUILD_ARCHBR} | tar -x -C "${SEMABUILD_MODDIR}") || exit 1
+    popd || exit 1
 done
 
 rm -rfv "${SEMABUILD_PWD}/data" "${SEMABUILD_PWD}/.git"
@@ -45,12 +46,12 @@ SEMABUILD_UNAME=`sed -n 's/.define VERSION_UNAME *"\([^"]*\)"/\1/p' "${SEMABUILD
 SEMABUILD_VERSION=`sed -n 's/.define VERSION_STRING *"\([^"]*\)"/\1/p' "${SEMABUILD_PWD}/src/engine/version.h"`
 SEMABUILD_RELEASE=`sed -n 's/.define VERSION_RELEASE *"\([^"]*\)"/\1/p' "${SEMABUILD_PWD}/src/engine/version.h"`
 
-${SEMABUILD_GHR} --verbose release --user "red-eclipse" --repo "base" --tag "v${SEMABUILD_VERSION}" --name "v${SEMABUILD_VERSION} (${SEMABUILD_RELEASE})" --description "${SEMABUILD_NAME} v${SEMABUILD_VERSION} (${SEMABUILD_RELEASE}) has been released!" --target "stable" --draft
+${SEMABUILD_GHR} release --user "red-eclipse" --repo "base" --tag "v${SEMABUILD_VERSION}" --name "v${SEMABUILD_VERSION} (${SEMABUILD_RELEASE})" --description "${SEMABUILD_NAME} v${SEMABUILD_VERSION} (${SEMABUILD_RELEASE}) has been released!" --target "stable" --draft
 
 for i in ${SEMABUILD_DIST}; do
     pushd "${SEMABUILD_BUILD}/src" || exit 1
     make dist-${i} dist-torrent-${i} || exit 1
-    popd
+    popd || exit 1
     pushd "${SEMABUILD_BUILD}" || exit 1
     mkdir -p releases || exit 1
     m="${i}"
@@ -74,12 +75,12 @@ for i in ${SEMABUILD_DIST}; do
     o="${SEMABUILD_UNAME}_${SEMABUILD_VERSION}_${m}"
     p="${o}.${n} ${o}.${n}.torrent"
     for q in ${p}; do
-        mv -vf "${q}" "releases/${q}"
-        shasum "releases/${q}" > "releases/${q}.shasum"
-        md5sum "releases/${q}" > "releases/${q}.md5sum"
-        ${SEMABUILD_GHR} --verbose upload --user "red-eclipse" --repo "base" --tag "v${SEMABUILD_VERSION}" --name "${q}" --file "releases/${q}"
+        mv -vf "${q}" "releases/${q}" || exit 1
+        shasum "releases/${q}" > "releases/${q}.shasum" || exit 1
+        md5sum "releases/${q}" > "releases/${q}.md5sum" || exit 1
+        ${SEMABUILD_GHR} upload --user "red-eclipse" --repo "base" --tag "v${SEMABUILD_VERSION}" --name "${q}" --file "releases/${q}" || exit 1
     done
     ${SEMABUILD_SCP} -r "releases" "${SEMABUILD_TARGET}" || exit 1
-    rm -rfv releases
-    popd
+    rm -rfv releases || exit 1
+    popd || exit 1
 done
