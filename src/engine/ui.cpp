@@ -4099,12 +4099,12 @@ namespace UI
                 gle::deftexcoord0();
                 gle::begin(GL_TRIANGLE_FAN);
                 bindminimap();
-                loopi(36)
+                loopi(32)
                 {
-                    vec v = vec(0, -1, 0).rotate_around_z(i/36.0f*2*M_PI);
+                    vec v = vec(0, -1, 0).rotate_around_z(i/32.0f*2*M_PI);
                     gle::attribf(sx + qw + rw*(1.0f + v.x), sy + qh + rh*(1.0f + v.y));
-                    vec tc = vec(dir).rotate_around_z(i/36.0f*2*M_PI);
-                    gle::attribf(pos.x + tc.x*scale*minimapscale.x, pos.y + tc.y*scale*minimapscale.y);
+                    vec tc = vec(dir).rotate_around_z(i/32.0f*2*M_PI);
+                    gle::attribf(1.0f - (pos.x + tc.x*scale*minimapscale.x), pos.y + tc.y*scale*minimapscale.y);
                 }
                 gle::end();
             }
