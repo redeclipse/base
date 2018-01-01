@@ -224,7 +224,7 @@ namespace capture
         {
             capturestate::flag &f = st.flags[i];
             if(!f.owner) continue;
-            while(f.owner->clientnum <= numflags.length())
+            while(f.owner->clientnum >= numflags.length())
             {
                 numflags.add(0);
                 iterflags.add(0);
