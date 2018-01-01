@@ -56,7 +56,7 @@
 [submodule "maps"]
 	path = data/maps
 	url = https://github.com/red-eclipse/maps.git
-	branch = master
+	branch = stable
 [submodule "mayhem"]
 	path = data/mayhem
 	url = https://github.com/red-eclipse/mayhem.git
@@ -99,7 +99,6 @@
 	branch = master
 [submodule "snipergoth"]
 	path = data/snipergoth
-
 	url = https://github.com/red-eclipse/snipergoth.git
 	branch = master
 [submodule "sounds"]
