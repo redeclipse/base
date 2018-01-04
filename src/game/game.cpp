@@ -397,6 +397,11 @@ namespace game
     const char *gametitle() { return connected() ? server::gamename(gamemode, mutators) : "Ready"; }
     const char *gametext() { return connected() ? mapname : "Not connected"; }
 
+    enum
+    {
+        VANITYSTYLE_NONE = 0, VANITYSTYLE_PRIV = 1<<0, VANITYSTYLE_ACTORMODEL = 1<<1,
+    };
+
     void vanityreset()
     {
         loopvrev(vanities) vanities.remove(i);
@@ -466,26 +471,10 @@ namespace game
     const char *vanityfname(gameent *d, int n, bool proj)
     {
         const char *file = NULL;
-        if(vanities.inrange(n)) switch(vanities[n].style)
+        if(vanities.inrange(n))
         {
-            case 1: case 2:
-            {
-                const char *id = vanities[n].style == 2 ? vanitymodel(d) : server::privnamex(d->privilege, d->actortype, true);
-                loopv(vanities[n].files)
-                    if(vanities[n].files[i].proj == proj && !strcmp(vanities[n].files[i].id, id))
-                        file = vanities[n].files[i].name;
-                if(!file)
-                {
-                    vanityfile &f = vanities[n].files.add();
-                    defformatstring(fn, "%s/%s%s", vanities[n].model, id, proj ? "/proj" : "");
-                    f.id = newstring(id);
-                    f.name = newstring(fn);
-                    f.proj = proj;
-                    file = f.name;
-                }
-                break;
-            }
-            case 0: default:
+            // No need for advanced checks if there is no style.
+            if(vanities[n].style == 0)
             {
                 if(proj && !vanities[n].proj)
                 {
@@ -493,7 +482,35 @@ namespace game
                     vanities[n].proj = newstring(fn);
                 }
                 file = proj ? vanities[n].proj : vanities[n].model;
-                break;
+            }
+            else
+            {
+                // Unique ID for this vanity setup.
+                defformatstring(id, "%s:%s",
+                                (vanities[n].style & VANITYSTYLE_PRIV) ? server::privnamex(d->privilege, d->actortype, true) : "",
+                                (vanities[n].style & VANITYSTYLE_ACTORMODEL) ? vanitymodel(d) : "");
+
+                // Check if we've already found the file.
+                loopv(vanities[n].files)
+                    if(vanities[n].files[i].proj == proj && !strcmp(vanities[n].files[i].id, id))
+                        file = vanities[n].files[i].name;
+
+                // If not already found, build file name from each style.
+                if(!file)
+                {
+                    defformatstring(fn, "%s", vanities[n].model);
+                    if(vanities[n].style & VANITYSTYLE_PRIV) concformatstring(fn, "/%s", server::privnamex(d->privilege, d->actortype, true));
+                    if(vanities[n].style & VANITYSTYLE_ACTORMODEL) concformatstring(fn, "/%s", vanitymodel(d));
+
+                    concformatstring(fn, "%s", proj ? "/proj" : "");
+
+                    // Add to the list.
+                    vanityfile &f = vanities[n].files.add();
+                    f.id = newstring(id);
+                    f.name = newstring(fn);
+                    f.proj = proj;
+                    file = f.name;
+                }
             }
         }
         return file;
