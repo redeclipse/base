@@ -71,14 +71,22 @@ semabuild_integrate() {
         SEMABUILD_HASH=`git rev-parse HEAD` || return 1
         SEMABUILD_LAST=`curl --connect-timeout 30 -L -k -f "${SEMABUILD_SOURCE}/${BRANCH_NAME}/${i}.txt"`
         echo "module ${i} compare: ${SEMABUILD_LAST} -> ${SEMABUILD_HASH}"
+        if [ "${i}" = "base" ] && [ "${SEMAPHORE_TRIGGER_SOURCE}" = "manual" ]; then
+            SEMABUILD_LAST="0"
+        fi
         if [ -n "${SEMABUILD_HASH}" ] && [ "${SEMABUILD_HASH}" != "${SEMABUILD_LAST}" ]; then
             echo "module ${i} updated, syncing.."
             echo "${SEMABUILD_HASH}" > "${SEMABUILD_DIR}/${i}.txt"
             SEMABUILD_DEPLOY="true"
             if [ "${i}" = "base" ]; then
                 echo "module ${i} checking for source modifications.."
+                SEMABUILD_CHANGES=""
                 SEMABUILD_BINS=`curl --connect-timeout 30 -L -k -f "${SEMABUILD_SOURCE}/${BRANCH_NAME}/bins.txt"` || return 1
-                SEMABUILD_CHANGES=`git diff --name-only HEAD ${SEMABUILD_BINS} -- src | egrep '\.h$|\.c$|\.cpp$|Makefile$'`
+                if [ "${SEMAPHORE_TRIGGER_SOURCE}" = "manual" ]; then
+                    SEMABUILD_CHANGES="<manual rebuild forced>"
+                else
+                    SEMABUILD_CHANGES=`git diff --name-only HEAD ${SEMABUILD_BINS} -- src | egrep '\.h$|\.c$|\.cpp$|Makefile$'`
+                fi
                 if [ -n "${SEMABUILD_CHANGES}" ]; then
                     echo "module ${i} has modified source files:"
                     echo "${SEMABUILD_CHANGES}"
