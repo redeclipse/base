@@ -253,7 +253,7 @@ namespace physics
         if(gameent::is(d))
         {
             gameent *e = (gameent *)d;
-            if(e->vel.z+e->falling.z <= 0) vel *= gravityfall;
+            if(e->vel.z+e->falling.z <= gravitycutoff) vel *= gravityfall;
             else if(e->actiontime[AC_JUMP] >= 0) vel *= gravityjump;
             vel *= 1.f-clamp(e->stunned(lastmillis, true), 0.f, 1.f);
         }

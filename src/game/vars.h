@@ -27,6 +27,7 @@ GFVAR(IDF_WORLD, gravity, 0, 50.f, 1000); // gravity
 GFVAR(IDF_GAMEMOD, gravityscale, 0, 1, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, gravityjump, 0, 0.75f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, gravityfall, 0, 1.5f, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, gravitycutoff, FVAR_MIN, 0, FVAR_MAX);
 GFVAR(IDF_WORLD, floorcoast, 0, 5.f, 1000);
 GFVAR(IDF_GAMEMOD, floorcoastscale, 0, 1, FVAR_MAX);
 GFVAR(IDF_WORLD, aircoast, 0, 25.f, 1000);
