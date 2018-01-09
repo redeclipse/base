@@ -122,7 +122,7 @@ namespace physics
                     default: break;
                 }
                 if(down) game::player1->actiontime[type] = lastmillis;
-                else if(type == AC_CROUCH) game::player1->actiontime[type] = -lastmillis;
+                else if(type == AC_CROUCH || type == AC_JUMP) game::player1->actiontime[type] = -lastmillis;
                 game::player1->action[type] = down;
             }
             else
@@ -253,6 +253,8 @@ namespace physics
         if(gameent::is(d))
         {
             gameent *e = (gameent *)d;
+            if(e->vel.z+e->falling.z <= 0) vel *= gravityfall;
+            else if(e->actiontime[AC_JUMP] >= 0) vel *= gravityjump;
             vel *= 1.f-clamp(e->stunned(lastmillis, true), 0.f, 1.f);
         }
         return vel;
