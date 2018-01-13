@@ -42,11 +42,11 @@ setlocal enableextensions enabledelayedexpansion
         exit /b 0
     )
     set REDECLIPSE_DOWNLOADER="%REDECLIPSE_PATH%\bin\tools\curl.exe" --connect-timeout 30 -L -k -f -A "redeclipse-%REDECLIPSE_UPDATE%" -o
-    if NOT EXIST "%REDECLIPSE_PATH%\bin\tools\unzip.exe" (
-        echo Unable to find unzip.exe, are you sure it is in tools?
+    if NOT EXIST "%REDECLIPSE_PATH%\bin\tools\miniunz.exe" (
+        echo Unable to find miniunz.exe, are you sure it is in tools?
         exit /b 0
     )
-    set REDECLIPSE_UNZIP="%REDECLIPSE_PATH%\bin\tools\unzip.exe" -o
+    set REDECLIPSE_UNZIP="%REDECLIPSE_PATH%\bin\tools\miniunz.exe" -x -o
     if NOT EXIST "%REDECLIPSE_TEMP%" mkdir "%REDECLIPSE_TEMP%"
     echo @ECHO OFF> "%REDECLIPSE_TEMP%\install.bat"
     echo setlocal enableextensions>> "%REDECLIPSE_TEMP%\install.bat"
