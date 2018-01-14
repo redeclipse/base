@@ -98,7 +98,7 @@ system-install-common:
 	cp -r ../config $(datadir)/$(appname)/config
 	ln -s $(patsubst $(DESTDIR)%,%,$(datadir))/$(appname)/config \
 		$(libexecdir)/$(appname)/config
-install -m644 ../doc/guidelines.txt $(docdir)/$(appname)
+	install -m644 ../doc/guidelines.txt $(docdir)/$(appname)
 
 system-install-data:
 	$(MKDIR) $(datadir)/$(appname)
@@ -126,7 +126,7 @@ system-install-docs: $(MANPAGES)
 		> $(mandir)/man6/$(appname)-server.6
 	cp -r ../doc/examples $(examplesdir)/$(appname)
 
-system-install-menus: iconsdoc/examples $(docdir)/$(appname)/examples
+system-install-menus: icons
 	$(MKDIR) $(menudir)
 	$(MKDIR) $(appdatadir)
 	$(MKDIR) $(icondir)/16x16/apps
