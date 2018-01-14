@@ -43,8 +43,8 @@ TOOLSET_PREFIX=x86_64-w64-mingw32-
 else
 TOOLSET_PREFIX=i686-w64-mingw32-
 endif
-CXX=g++
-CC=gcc
+CXX?=g++
+CC?=gcc
 endif
 
 CXX_TEMP:=$(CXX)
@@ -52,7 +52,7 @@ CC_TEMP:=$(CC)
 override CXX=$(TOOLSET_PREFIX)$(CXX_TEMP)
 override CC=$(TOOLSET_PREFIX)$(CC_TEMP)
 
-INCLUDES= -DVERSION_BUILD=$(PLATFORM_BUILD) -DVERSION_BRANCH=\"$(PLATFORM_BRANCH)\" -DVERSION_REVISION=\"$(PLATFORM_REVISION)\" -I. -Ishared -Iengine -Igame -Ienet/include -Isupport
+INCLUDES= -DVERSION_BUILD=$(PLATFORM_BUILD) -DVERSION_BRANCH=\"$(PLATFORM_BRANCH)\" -DVERSION_REVISION=\"$(PLATFORM_REVISION)\" -I. -Ishared -Iengine -Igame `pkg-config --cflags libenet` -Isupport
 
 STRIP=
 ifeq (,$(findstring -g,$(CXXFLAGS)))
@@ -89,7 +89,7 @@ ifneq (,$(findstring linux,$(PLATFORM)))
 BIN_SUFFIX=_linux
 else
 ifneq (,$(findstring bsd,$(PLATFORM)))
-BIN_SUFFIX=_bsd
+BIN_SUFFIX=
 ifneq (,$(findstring openbsd,$(PLATFORM)))
 RMFLAGS= -f
 endif
@@ -97,8 +97,8 @@ else
 BIN_SUFFIX=_native
 endif
 endif
-CLIENT_INCLUDES= $(INCLUDES) -I/usr/X11R6/include `sdl2-config --cflags`
-CLIENT_LIBS= -Lenet -lenet -L/usr/X11R6/lib -lX11 `sdl2-config --libs` -lSDL2_image -lSDL2_mixer -lz -lGL
+CLIENT_INCLUDES= $(INCLUDES) `sdl2-config --cflags`
+CLIENT_LIBS= `pkg-config --libs libenet` `sdl2-config --libs` -lSDL2_image -lSDL2_mixer -lz -lGL
 endif
 ifneq (,$(findstring linux,$(PLATFORM)))
 CLIENT_LIBS+= -lrt
@@ -175,7 +175,7 @@ SERVER_INCLUDES= -DSTANDALONE $(INCLUDES) -Iinclude
 SERVER_LIBS= -mwindows $(STD_LIBS) -L$(WINDLL) -L$(WINLIB) -lzlib1 -lenet -lws2_32 -lwinmm
 else
 SERVER_INCLUDES= -DSTANDALONE $(INCLUDES)
-SERVER_LIBS= -Lenet -lenet -lz
+SERVER_LIBS= `pkg-config --libs libenet` -lz
 endif
 SERVER_OBJS= \
 	shared/crypto-standalone.o \
@@ -190,16 +190,11 @@ SERVER_OBJS= \
 	engine/server-standalone.o \
 	game/server-standalone.o
 
-LIBENET= enet/libenet.a
-
 GENKEY_OBJS= engine/genkey.o shared/crypto-standalone.o
 
 all:
 
 default: all
-
-clean-enet:
-	$(MAKE) -C enet clean
 
 clean-client:
 	@rm $(RMFLAGS) $(CLIENT_PCH) $(CLIENT_OBJS) $(APPCLIENT)$(BIN_SUFFIX)
@@ -210,7 +205,7 @@ clean-server:
 clean-genkey:
 	@rm $(RMFLAGS) $(GENKEY_OBJS) genkey$(BIN_SUFFIX)
 
-clean: clean-enet clean-client clean-server clean-genkey
+clean: clean-client clean-server clean-genkey
 
 %.h.gch: %.h
 	$(CXX) $(CXXFLAGS) -x c++-header -o $(subst .h.gch,.tmp.h.gch,$@) $(subst .h.gch,.h,$@)
@@ -237,10 +232,10 @@ $(APPSERVER)_windows$(BIN_SUFFIX): $(SERVER_OBJS)
 	$(WINDRES) -i $(APPNAME).rc -J rc -o $(APPNAME).res -O coff
 	$(CXX) $(CXXFLAGS) -o $@ $(APPNAME).res $(SERVER_OBJS) $(SERVER_LIBS)
 
-$(APPCLIENT)$(BIN_SUFFIX): $(LIBENET) $(CLIENT_OBJS)
+$(APPCLIENT)$(BIN_SUFFIX): $(CLIENT_OBJS)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(CLIENT_OBJS) $(CLIENT_LIBS)
 
-$(APPSERVER)$(BIN_SUFFIX): $(LIBENET) $(SERVER_OBJS)
+$(APPSERVER)$(BIN_SUFFIX): $(SERVER_OBJS)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(SERVER_OBJS) $(SERVER_LIBS)
 
 client: $(APPCLIENT)$(APPMODIFIER)$(BIN_SUFFIX)
@@ -289,9 +284,6 @@ endif
 
 install: install-client install-server install-genkey
 
-$(LIBENET):
-	$(MAKE) -C enet
-
 depend:
 	makedepend -Y -I. -Ishared -Iengine -Igame -Isupport $(subst .o,.cpp,$(CLIENT_OBJS))
 	makedepend -a -o-standalone.o -Y -I. -Ishared -Iengine -Igame -Isupport -DSTANDALONE $(subst -standalone.o,.cpp,$(SERVER_OBJS))
@@ -300,7 +292,7 @@ depend:
 all: client server genkey
 
 include system-install.mk
-include dist.mk
+#include dist.mk
 include wiki.mk
 
 engine/engine.h.gch: engine/version.h shared/cube.h.gch
