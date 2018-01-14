@@ -38,12 +38,10 @@ int resolverloop(void * data)
         while(resolverqueries.empty()) SDL_CondWait(querycond, resolvermutex);
         rt->query = resolverqueries.pop();
         rt->starttime = totalmillis;
-        SDL_UnlockMutex(resolvermutex);
 
         ENetAddress address = { ENET_HOST_ANY, ENET_PORT_ANY };
         enet_address_set_host(&address, rt->query);
 
-        SDL_LockMutex(resolvermutex);
         if(rt->query && thread == rt->thread)
         {
             resolverresult &rr = resolverresults.add();
