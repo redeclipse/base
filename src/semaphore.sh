@@ -61,7 +61,7 @@ semabuild_integrate() {
         else
             SEMABUILD_MODDIR="${SEMABUILD_PWD}/data/${i}"
             echo "module ${i} updating.."
-            git submodule update --init --depth 1 "data/${i}" || return 1
+            git submodule update --init "data/${i}" || return 1
         fi
         pushd "${SEMABUILD_MODDIR}" || return 1
         echo "module ${i} processing.."
