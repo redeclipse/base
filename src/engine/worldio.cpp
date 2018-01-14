@@ -68,34 +68,30 @@ SVARF(IDF_WORLD, maptitle, "", fixmaptitle());
 SVARF(IDF_WORLD, mapauthor, "", { string s; if(filterstring(s, mapauthor)) setsvar("mapauthor", s, false); });
 SVARF(IDF_WORLD, mapdesc, "", { string s; if(filterstring(s, mapdesc)) setsvar("mapdesc", s, false); });
 
+void validmapname(char *dst, const char *src, const char *prefix = NULL, const char *alt = "untitled", size_t maxlen = 200)
+{
+    if(prefix) while(*prefix) *dst++ = *prefix++;
+    const char *start = dst;
+    if(src) loopi(maxlen)
+    {
+        char c = *src++;
+        if(iscubealnum(c) || c == '_' || c == '-' || c == '/' || c == '\\') *dst++ = c;
+        else break;
+    }
+    if(dst > start) *dst = '\0';
+    else if(dst != alt) copystring(dst, alt, maxlen);
+}
+
 void setnames(const char *fname, int type, int crc)
 {
     maptype = type >= 0 || type <= MAP_MAX-1 ? type : MAP_MAPZ;
 
     string fn, mn, mf;
-    if(fname && *fname)
-    {
-        const char *fcrc = strstr(fname, "_0x");
-        if(fcrc && *fcrc)
-        {
-            char *t = newstring(fname, fcrc-fname);
-            if(t)
-            {
-                if(*t) copystring(fn, t);
-                else copystring(fn, fname);
-                delete[] t;
-            }
-            else copystring(fn, fname);
-        }
-        else copystring(fn, fname);
-        if(crc > 0)
-        {
-            defformatstring(cn, "_0x%.8x", crc);
-            concatstring(fn, cn);
-        }
-        else if(crc < 0) concatstring(fn, "_0x0");
-    }
-    else formatstring(fn, "%s/untitled", mapdirs[maptype].name);
+    validmapname(fn, fname);
+    char *fcrc = strstr(fn, "_0x");
+    if(fcrc) *fcrc = '\0';
+    if(crc > 0) concformatstring(fn, "_0x%.8x", crc);
+    else if(crc < 0) concatstring(fn, "_0x0");
 
     if(strpbrk(fn, "/\\")) copystring(mn, fn);
     else formatstring(mn, "%s/%s", mapdirs[maptype].name, fn);
