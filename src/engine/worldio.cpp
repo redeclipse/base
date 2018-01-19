@@ -95,7 +95,11 @@ void setnames(const char *fname, int type, int crc)
 
     if(strpbrk(fn, "/\\")) copystring(mn, fn);
     else formatstring(mn, "%s/%s", mapdirs[maptype].name, fn);
-    setsvar("mapname", mn);
+
+    // Any map with a CRC must be placed in temp/, so we add the prefix if it does not already exist.
+    if(crc != 0 && strstr(mn, "temp/") != mn && strstr(mn, "temp\\") != mn) prependstring(mn, "temp/");
+    // Set the mapname variable. If there is no CRC, we need to remove the temp/ prefix.
+    setsvar("mapname", (crc == 0 && strstr(mn, "temp/") == mn) ? (mn + 5) : mn);
 
     formatstring(mf, "%s%s", mapname, mapexts[maptype].name);
     setsvar("mapfile", mf);

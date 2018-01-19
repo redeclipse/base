@@ -1602,7 +1602,7 @@ namespace client
                 len -= p.length();
                 if(filetype < 0 || filetype >= SENDMAP_MAX || len <= 0) break;
                 if(!*fname) copystring(fname, "maps/untitled");
-                defformatstring(ffile, strstr(fname, "maps/")==fname || strstr(fname, "maps\\")==fname ? "%s_0x%.8x" : "maps/%s_0x%.8x", fname, filecrc);
+                defformatstring(ffile, strstr(fname, "maps/")==fname || strstr(fname, "maps\\")==fname ? "temp/%s_0x%.8x" : "temp/maps/%s_0x%.8x", fname, filecrc);
                 defformatstring(ffext, "%s.%s", ffile, sendmaptypes[filetype]);
                 stream *f = openfile(ffext, "wb");
                 if(!f)
