@@ -4868,6 +4868,7 @@ void rendergbuffer(bool depthclear)
     }
     else if(!drawtex)
     {
+        game::prebatch();
         rendermodelbatches();
         game::renderpost();
         GLERROR;

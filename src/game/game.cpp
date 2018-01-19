@@ -3753,6 +3753,15 @@ namespace game
             renderplayer(d, 1, d->curscale, d == focus ? (third ? MDL_FORCETRANSPARENT | MDL_FORCESHADOW : MDL_ONLYSHADOW) : 0, vec4(1, 1, 1, opacity(d, true)));
     }
 
+    void prebatch()
+    {
+        gameent *d;
+        int numdyns = numdynents();
+        bool third = thirdpersonview();
+        loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL && (d != focus || third))
+            d->cleartags();
+    }
+
     void renderpost()
     {
         gameent *d;
@@ -3774,6 +3783,7 @@ namespace game
         }
         setavatarscale(depthfov, firstpersondepth);
         vec4 color = vec4(1, 1, 1, opacity(focus, false));
+        focus->cleartags();
         if(focus->state == CS_ALIVE) renderplayer(focus, 0, focus->curscale, MDL_NOBATCH, color);
         if(focus->state == CS_ALIVE && firstpersonmodel == 2)
         {

@@ -128,6 +128,7 @@ namespace game
     extern int numanims();
     extern void findanims(const char *pattern, vector<int> &anims);
     extern void render();
+    extern void prebatch();
     extern void renderpost();
     extern void renderavatar();
     extern void renderplayerpreview(float scale = 1, const vec4 &mcolor = vec4(1, 1, 1, 1), const char *actions = NULL);
