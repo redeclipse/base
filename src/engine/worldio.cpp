@@ -1046,6 +1046,9 @@ bool load_world(const char *mname, int crc, int variant)
                         case ID_VAR:
                         {
                             int val = f->getlil<int>();
+                            if(hdr.gamever <= 234 &&
+                                (!strcmp(id->name, "hurtdamage") || !strcmp(id->name, "hurtburndamage") ||!strcmp(id->name, "hurtbleeddamage") || !strcmp(id->name, "hurtshockdamage")))
+                                    val *= 10;
                             if(proceed)
                             {
                                 if(id->flags&IDF_HEX && uint(id->maxval) == 0xFFFFFFFFU)

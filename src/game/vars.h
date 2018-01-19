@@ -3,18 +3,18 @@ GVAR(IDF_WORLD, maxplayers, 0, 0, MAXCLIENTS); // 0 = numplayers*3
 GVAR(IDF_WORLD, mapbalance, 0, 0, 3); // switches teams for asymmetrical maps, 0 = off, 1 = ctf/dnc/bb, 2 = with team spawns, 3 = forced
 
 GVAR(IDF_WORLD, hurtdelay, 0, 1000, VAR_MAX);
-GVAR(IDF_WORLD, hurtdamage, 0, 3, VAR_MAX);
+GVAR(IDF_WORLD, hurtdamage, 0, 30, VAR_MAX);
 GVAR(IDF_WORLD, hurtresidual, 0, 0, W_R_ALL);
 
 GVAR(IDF_WORLD, hurtburntime, 0, 5500, VAR_MAX);
 GVAR(IDF_WORLD, hurtburndelay, 1, 1000, VAR_MAX);
-GVAR(IDF_WORLD, hurtburndamage, 0, 3, VAR_MAX);
+GVAR(IDF_WORLD, hurtburndamage, 0, 30, VAR_MAX);
 GVAR(IDF_WORLD, hurtbleedtime, 0, 5500, VAR_MAX);
 GVAR(IDF_WORLD, hurtbleeddelay, 0, 1000, VAR_MAX);
-GVAR(IDF_WORLD, hurtbleeddamage, 0, 3, VAR_MAX);
+GVAR(IDF_WORLD, hurtbleeddamage, 0, 30, VAR_MAX);
 GVAR(IDF_WORLD, hurtshocktime, 0, 5500, VAR_MAX);
 GVAR(IDF_WORLD, hurtshockdelay, 0, 1000, VAR_MAX);
-GVAR(IDF_WORLD, hurtshockdamage, 0, 2, VAR_MAX);
+GVAR(IDF_WORLD, hurtshockdamage, 0, 20, VAR_MAX);
 GVAR(IDF_WORLD, hurtshockstun, 0, W_N_ST, W_N_ALL);
 GFVAR(IDF_WORLD, hurtshockstunscale, 0, 0.5f, FVAR_MAX);
 GFVAR(IDF_WORLD, hurtshockstunfall, 0, 0.01f, FVAR_MAX);
@@ -233,10 +233,10 @@ GFVAR(IDF_GAMEMOD, maxresizescale, 1, 2, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, minresizescale, FVAR_NONZERO, 0.5f, 1);
 GFVAR(IDF_GAMEMOD, instaresizeamt, FVAR_NONZERO, 0.1f, 1); // each kill adds this much size in insta-resize
 
-GVAR(IDF_GAMEMOD, regendelay, 0, 3000, VAR_MAX); // regen after no damage for this long
+GVAR(IDF_GAMEMOD, regendelay, 0, 3500, VAR_MAX); // regen after no damage for this long
 GVAR(IDF_GAMEMOD, regentime, 0, 1000, VAR_MAX); // regen this often when regenerating normally
-GVAR(IDF_GAMEMOD, regenhealth, 0, 5, VAR_MAX); // regen this amount each regen
-GVAR(IDF_GAMEMOD, regendecay, 0, 3, VAR_MAX); // if over maxhealth, decay this amount each regen
+GVAR(IDF_GAMEMOD, regenhealth, 0, 50, VAR_MAX); // regen this amount each regen
+GVAR(IDF_GAMEMOD, regendecay, 0, 25, VAR_MAX); // if over maxhealth, decay this amount each regen
 
 GVAR(IDF_GAMEMOD, noweapburn, 0, 1, 1);
 GVAR(IDF_GAMEMOD, noweapbleed, 0, 1, 1);
@@ -354,7 +354,7 @@ GFVAR(IDF_GAMEMOD, capturebuffdamage, 1, 1.25f, FVAR_MAX); // multiply outgoing 
 GFVAR(IDF_GAMEMOD, capturebuffshield, 1, 1.25f, FVAR_MAX); // divide incoming damage by this much when buffed
 GVAR(IDF_GAMEMOD, captureregenbuff, 0, 1, 1); // 0 = off, 1 = modify regeneration when buffed
 GVAR(IDF_GAMEMOD, captureregendelay, 0, 1000, VAR_MAX); // regen this often when buffed
-GVAR(IDF_GAMEMOD, captureregenextra, 0, 2, VAR_MAX); // add this to regen when buffed
+GVAR(IDF_GAMEMOD, captureregenextra, 0, 20, VAR_MAX); // add this to regen when buffed
 GVAR(IDF_GAMEMOD, captureretakedelay, 0, 1000, VAR_MAX); // same person can't take same flag this long after capturing it
 
 GVAR(IDF_GAMEMOD, defendlimit, 0, 0, VAR_MAX); // finish when score is this or more
@@ -372,7 +372,7 @@ GFVAR(IDF_GAMEMOD, defendbuffdamage, 1, 1.25f, FVAR_MAX); // multiply outgoing d
 GFVAR(IDF_GAMEMOD, defendbuffshield, 1, 1.25f, FVAR_MAX); // divide incoming damage by this much when buffed
 GVAR(IDF_GAMEMOD, defendregenbuff, 0, 1, 1); // 0 = off, 1 = modify regeneration when buffed
 GVAR(IDF_GAMEMOD, defendregendelay, 0, 1000, VAR_MAX); // regen this often when buffed
-GVAR(IDF_GAMEMOD, defendregenextra, 0, 2, VAR_MAX); // add this to regen when buffed
+GVAR(IDF_GAMEMOD, defendregenextra, 0, 20, VAR_MAX); // add this to regen when buffed
 
 GVAR(IDF_GAMEMOD, bomberlimit, 0, 0, VAR_MAX); // finish when score is this or more (non-hold)
 GVAR(IDF_GAMEMOD, bomberholdlimit, 0, 0, VAR_MAX); // finish when score is this or more (hold)
@@ -415,7 +415,7 @@ GFVAR(IDF_GAMEMOD, bomberbuffdamage, 1, 1.25f, FVAR_MAX); // multiply outgoing d
 GFVAR(IDF_GAMEMOD, bomberbuffshield, 1, 1.25f, FVAR_MAX); // divide incoming damage by this much when buffed
 GVAR(IDF_GAMEMOD, bomberregenbuff, 0, 1, 1); // 0 = off, 1 = modify regeneration when buffed
 GVAR(IDF_GAMEMOD, bomberregendelay, 0, 1000, VAR_MAX); // regen this often when buffed
-GVAR(IDF_GAMEMOD, bomberregenextra, 0, 2, VAR_MAX); // add this to regen when buffed
+GVAR(IDF_GAMEMOD, bomberregenextra, 0, 20, VAR_MAX); // add this to regen when buffed
 
 GFVAR(IDF_MODERATOR, aihostnum, 0, 50, FVAR_MAX); // Multiply number of bots hosted by this much for the bot hosting decision.
 GFVAR(IDF_MODERATOR, aihostping, 0, 1, FVAR_MAX); // Multiply host ping by this much for the bot hosting decision.

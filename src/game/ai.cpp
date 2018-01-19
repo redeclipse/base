@@ -74,7 +74,8 @@ namespace ai
 
     bool badhealth(gameent *d)
     {
-        if(d->skill <= 100) return d->health <= (111-d->skill)/4;
+        int hp = m_health(d->actortype, game::gamemode, game::mutators);
+        if(d->skill < 100 && d->health < hp) return d->health <= (111-d->skill)*hp/100;
         return false;
     }
 

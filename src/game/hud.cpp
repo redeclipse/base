@@ -13,7 +13,7 @@ namespace hud
     };
     vector<dhloc> damagelocs, hitlocs;
     VAR(IDF_PERSIST, damageresiduefade, 0, 500, VAR_MAX);
-    VAR(IDF_PERSIST, damageresiduemax, 1, 200, VAR_MAX);
+    VAR(IDF_PERSIST, damageresiduemax, 1, 2000, VAR_MAX);
     VAR(IDF_PERSIST, damageresiduemul, 1, 4, VAR_MAX);
     VAR(IDF_PERSIST, damageresiduemulresidual, 1, 10, VAR_MAX);
 
@@ -313,7 +313,7 @@ namespace hud
     FVAR(IDF_PERSIST, onscreendamagesize, 0, 20, 1000);
     FVAR(IDF_PERSIST, onscreendamageblend, 0, 0.8f, 1);
     VAR(IDF_PERSIST, onscreendamagemin, 1, 10, VAR_MAX);
-    VAR(IDF_PERSIST, onscreendamagemax, 1, 100, VAR_MAX);
+    VAR(IDF_PERSIST, onscreendamagemax, 1, 1000, VAR_MAX);
     VAR(IDF_PERSIST|IDF_HEX, onscreendamagecolour, PC(LAST), 0xFF4444, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, onscreendamageburncolour, PC(LAST), PC(BURN), 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, onscreendamagebleedcolour, PC(LAST), PC(BLEED), 0xFFFFFF);
