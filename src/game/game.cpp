@@ -1404,9 +1404,9 @@ namespace game
                 if(d == focus) hud::damage(damage, v->o, v, weap, flags);
                 vec p = d->headpos(-d->height/4);
                 if(!nogore && bloodscale > 0)
-                    part_splash(PART_BLOOD, int(clamp(damage/(m_health(d->actortype, gamemode, mutators)/5), 1, 5)*bloodscale)*(bleeding || material ? 2 : 1), bloodfade, p, 0x229999, (rnd(bloodsize/2)+(bloodsize/2))/10.f, 1, 100, STAIN_BLOOD, int(d->radius), 10);
+                    part_splash(PART_BLOOD, int(clamp(damage/(m_health(d->actortype, gamemode, mutators)/5.f), 1, 5)*bloodscale)*(bleeding || material ? 2 : 1), bloodfade, p, 0x229999, (rnd(bloodsize/2)+(bloodsize/2))/10.f, 1, 100, STAIN_BLOOD, int(d->radius), 10);
                 if(nogore != 2 && (bloodscale <= 0 || bloodsparks))
-                    part_splash(PART_PLASMA, int(clamp(damage/(m_health(d->actortype, gamemode, mutators)/5), 1, 5))*(bleeding || material ? 2: 1), bloodfade, p, 0x882222, 1, 0.5f, 50, STAIN_STAIN, int(d->radius));
+                    part_splash(PART_PLASMA, int(clamp(damage/(m_health(d->actortype, gamemode, mutators)/5.f), 1, 5))*(bleeding || material ? 2: 1), bloodfade, p, 0x882222, 1, 0.5f, 50, STAIN_STAIN, int(d->radius));
                 if(d != v)
                 {
                     bool sameteam = m_team(gamemode, mutators) && d->team == v->team;
