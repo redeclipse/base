@@ -850,7 +850,11 @@ const char *getvardesc(const char *name)
 void getvarfields(const char *name, int prop)
 {
     ident *id = getident(name);
-    if(!id) result("");
+    if(!id)
+    {
+        result("");
+        return;
+    }
     if(prop < 0) intret(id->fields.length());
     else if(id->fields.inrange(prop)) result(id->fields[prop]);
     else result("");
