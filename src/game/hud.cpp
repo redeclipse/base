@@ -958,7 +958,7 @@ namespace hud
             switch(i)
             {
                 case 0:
-                    val = min(1.f, game::focus->health/float(m_health(game::gamemode, game::mutators, game::focus->actortype)));
+                    val = min(1.f, game::focus->health/float(max(m_health(game::gamemode, game::mutators, game::focus->actortype), 1)));
                     if(circlebarhealthtone) skewcolour(c.r, c.g, c.b, circlebarhealthtone);
                     break;
                 case 1:
@@ -1045,7 +1045,7 @@ namespace hud
                         if(millis >= delay || d.dir.iszero()) { if(millis >= onscreendamagetime+onscreendamagefade) damagelocs.remove(i--); continue; }
                         gameent *e = game::getclient(d.clientnum);
                         if(!onscreendamageself && e == game::focus) continue;
-                        float dam = d.damage/float(m_health(game::gamemode, game::mutators, game::focus->actortype)),
+                        float dam = d.damage/float(max(m_health(game::gamemode, game::mutators, game::focus->actortype), 1)),
                               amt = millis/float(delay);
                         total += dam;
                         val += dam*(1-amt);

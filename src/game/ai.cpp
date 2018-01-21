@@ -74,8 +74,8 @@ namespace ai
 
     bool badhealth(gameent *d)
     {
-        int hp = m_health(d->actortype, game::gamemode, game::mutators);
-        if(d->skill < 100 && d->health < hp) return d->health <= (111-d->skill)*hp/100;
+        int hp = m_health(game::gamemode, game::mutators, d->actortype);
+        if(d->skill < 100 && d->health < hp) return d->health <= (111-d->skill)*max(hp*0.01f, 1.f);
         return false;
     }
 
@@ -1217,9 +1217,10 @@ namespace ai
             if(dancing) frame *= 10;
             else if(!m_insta(game::gamemode, game::mutators))
             {
-                if(b.acttype == AI_A_NORMAL && (d->health <= m_health(game::gamemode, game::mutators, d->actortype)/3 || (iswaypoint(d->ai->targnode) && obstacles.find(d->ai->targnode, d))))
+                int hp = max(m_health(game::gamemode, game::mutators, d->actortype)/3, 1);
+                if(b.acttype == AI_A_NORMAL && (d->health <= hp || (iswaypoint(d->ai->targnode) && obstacles.find(d->ai->targnode, d))))
                     b.acttype = AI_A_HASTE;
-                if(b.acttype == AI_A_HASTE) frame *= 1+(max(m_health(game::gamemode, game::mutators, d->actortype)/3, 1)/float(max(d->health, 1)));
+                if(b.acttype == AI_A_HASTE) frame *= 1+(hp/float(max(d->health, 1)));
             }
             else frame *= 2;
             game::scaleyawpitch(d->yaw, d->pitch, d->ai->targyaw, d->ai->targpitch, frame, frame*0.5f);

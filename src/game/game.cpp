@@ -1029,7 +1029,7 @@ namespace game
         {
             if(m_resize(gamemode, mutators))
             {
-                float minscale = 1, amtscale = m_insta(gamemode, mutators) ? 1+(d->spree*instaresizeamt) : max(d->health, 1)/float(m_health(gamemode, mutators, d->actortype));
+                float minscale = 1, amtscale = m_insta(gamemode, mutators) ? 1+(d->spree*instaresizeamt) : max(d->health, 1)/float(max(m_health(gamemode, mutators, d->actortype), 1));
                 if(m_resize(gamemode, mutators))
                 {
                     minscale = minresizescale;
@@ -1342,7 +1342,7 @@ namespace game
             if(playdamagetones >= (v == focus ? 1 : (d == focus ? 2 : 3)))
             {
                 const float dmgsnd[8] = { 0, 0.1f, 0.25f, 0.5f, 0.75f, 1.f, 1.5f, 2.f };
-                int hp = m_health(d->actortype, gamemode, mutators), snd = -1;
+                int hp = m_health(gamemode, mutators, A_PLAYER), snd = -1; // keep sounds based on player health
                 if(flags&BURN) snd = S_BURNED;
                 else if(flags&BLEED) snd = S_BLEED;
                 else if(flags&SHOCK) snd = S_SHOCK;
@@ -1403,10 +1403,11 @@ namespace game
             {
                 if(d == focus) hud::damage(damage, v->o, v, weap, flags);
                 vec p = d->headpos(-d->height/4);
+                int hp = max(m_health(gamemode, mutators, A_PLAYER)/5, 1); // keep scale based on player health
                 if(!nogore && bloodscale > 0)
-                    part_splash(PART_BLOOD, int(clamp(damage/(m_health(d->actortype, gamemode, mutators)/5.f), 1, 5)*bloodscale)*(bleeding || material ? 2 : 1), bloodfade, p, 0x229999, (rnd(bloodsize/2)+(bloodsize/2))/10.f, 1, 100, STAIN_BLOOD, int(d->radius), 10);
+                    part_splash(PART_BLOOD, int(clamp(damage/hp, 1, 5)*bloodscale)*(bleeding || material ? 2 : 1), bloodfade, p, 0x229999, (rnd(bloodsize/2)+(bloodsize/2))/10.f, 1, 100, STAIN_BLOOD, int(d->radius), 10);
                 if(nogore != 2 && (bloodscale <= 0 || bloodsparks))
-                    part_splash(PART_PLASMA, int(clamp(damage/(m_health(d->actortype, gamemode, mutators)/5.f), 1, 5))*(bleeding || material ? 2: 1), bloodfade, p, 0x882222, 1, 0.5f, 50, STAIN_STAIN, int(d->radius));
+                    part_splash(PART_PLASMA, int(clamp(damage/hp, 1, 5))*(bleeding || material ? 2: 1), bloodfade, p, 0x882222, 1, 0.5f, 50, STAIN_STAIN, int(d->radius));
                 if(d != v)
                 {
                     bool sameteam = m_team(gamemode, mutators) && d->team == v->team;
@@ -1785,7 +1786,7 @@ namespace game
 
         if(nogore != 2 && gibscale > 0 && !(flags&HIT_LOST))
         {
-            int gib = clamp(max(damage, m_health(d->actortype, gamemode, mutators)/10)/(d->obliterated ? 10 : 20), 2, 10), amt = int((rnd(gib)+gib)*(1+gibscale));
+            int hp = max(m_health(gamemode, mutators, A_PLAYER)/10, 1), gib = clamp(max(damage, hp)/(d->obliterated ? 10 : 20), 2, 10), amt = int((rnd(gib)+gib)*(1+gibscale));
             loopi(amt) projs::create(pos, pos, true, d, nogore ? PRJ_DEBRIS : PRJ_GIBS, -1, HIT_NONE, rnd(gibfade)+gibfade, 0, rnd(250)+1, rnd(d->obliterated ? 80 : 40)+10);
         }
         if(m_team(gamemode, mutators) && d->team == v->team && d != v && v == player1 && isweap(weap) && WF(WK(flags), weap, damagepenalty, WS(flags)) != 0)
@@ -3597,7 +3598,7 @@ namespace game
                     }
                     else if(playerhintscale > 0)
                     {
-                        float per = d->health/float(m_health(gamemode, mutators, d->actortype));
+                        float per = d->health/float(max(m_health(gamemode, mutators, d->actortype), 1));
                         fade = (fade*(1.f-playerhintscale))+(fade*per*playerhintscale);
                         if(fade > 1)
                         {
@@ -3799,8 +3800,9 @@ namespace game
     {
         previewent = new gameent;
         previewent->state = CS_ALIVE;
+        previewent->actortype = A_PLAYER;
         previewent->physstate = PHYS_FLOOR;
-        previewent->spawnstate(G_DEATHMATCH, 0, -1, m_health(G_DEATHMATCH, 0, 0));
+        previewent->spawnstate(G_DEATHMATCH, 0, -1, m_health(G_DEATHMATCH, 0, A_PLAYER));
         loopi(W_MAX) previewent->ammo[i] = W(i, ammomax);
     }
 
