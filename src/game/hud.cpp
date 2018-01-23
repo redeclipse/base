@@ -216,11 +216,10 @@ namespace hud
     FVAR(IDF_PERSIST, zoomcrosshairblend, 0, 0.75f, 1000);
 
     VAR(IDF_PERSIST, showcirclebar, 0, 0, 1);
-    VAR(IDF_PERSIST, circlebartype, 0, 7, 7); // 0 = off, &1 = health, &2 = impulse, &4 = ammo
+    VAR(IDF_PERSIST, circlebartype, 0, 3, 3); // 0 = off, &1 = health, &2 = ammo
     FVAR(IDF_PERSIST, circlebarsize, 0, 0.04f, 1000);
     FVAR(IDF_PERSIST, circlebarblend, 0, 0.75f, 1);
     VAR(IDF_PERSIST|IDF_HEX, circlebarhealthtone, -CTONE_MAX, 0x88FF88, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, circlebarimpulsetone, -CTONE_MAX, 0xFF88FF, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, circlebarammocolour, 0, 1, 1);
     VAR(IDF_PERSIST|IDF_HEX, circlebarammotone, -CTONE_MAX-1, 0xFFAA66, 0xFFFFFF);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, circlebartex, "textures/hud/circlebar", 3);
@@ -962,11 +961,6 @@ namespace hud
                     if(circlebarhealthtone) skewcolour(c.r, c.g, c.b, circlebarhealthtone);
                     break;
                 case 1:
-                    if(!m_impulsemeter(game::gamemode, game::mutators)) continue;
-                    val = 1-clamp(float(game::focus->impulse[IM_METER])/float(impulsemeter), 0.f, 1.f);
-                    if(circlebarimpulsetone) skewcolour(c.r, c.g, c.b, circlebarimpulsetone);
-                    break;
-                case 2:
                 {
                     if(!isweap(game::focus->weapselect)) continue;
                     int weap = game::focus->weapselect, interval = lastmillis-game::focus->weaptime[weap];

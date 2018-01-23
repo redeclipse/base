@@ -136,7 +136,7 @@ WPSVARM(IDF_GAMEMOD, desc,
     "is a fast, highly explosive rocket with a large shockwave, causes burn residual damage",
     "allows you to use parkour and kick moves as melee attacks",
     // begin secondary
-    "is a slower and weaker claw attack that pulls you towards the enemy or performs low impulse cost wall grabs",
+    "is a slower and weaker claw attack that pulls you towards the enemy and allows wall grabs",
     "is a slower rate of fire than the primary attack, but does more damage",
     "is a slower vertical slice with much more power, causes bleed residual damage",
     "shoots a slug that explodes and disintegrates into shavings, causes bleed residual damage",

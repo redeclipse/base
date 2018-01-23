@@ -4,7 +4,7 @@
 #include "engine.h"
 
 #define VERSION_GAMEID "fps"
-#define VERSION_GAME 235
+#define VERSION_GAME 236
 #define VERSION_DEMOMAGIC "RED_ECLIPSE_DEMO"
 
 #define MAXAI 256
@@ -218,7 +218,7 @@ enum
     AC_PRIMARY = 0, AC_SECONDARY, AC_RELOAD, AC_USE, AC_JUMP, AC_WALK, AC_CROUCH, AC_SPECIAL, AC_DROP, AC_AFFINITY, AC_TOTAL, AC_DASH = AC_TOTAL, AC_MAX,
     AC_ALL = (1<<AC_PRIMARY)|(1<<AC_SECONDARY)|(1<<AC_RELOAD)|(1<<AC_USE)|(1<<AC_JUMP)|(1<<AC_WALK)|(1<<AC_CROUCH)|(1<<AC_SPECIAL)|(1<<AC_DROP)|(1<<AC_AFFINITY)
 };
-enum { IM_METER = 0, IM_TYPE, IM_TIME, IM_REGEN, IM_COUNT, IM_COLLECT, IM_SLIP, IM_SLIDE, IM_JUMP, IM_MAX };
+enum { IM_TYPE = 0, IM_TIME, IM_COUNT, IM_SLIP, IM_SLIDE, IM_JUMP, IM_MAX };
 enum { IM_T_NONE = 0, IM_T_BOOST, IM_T_DASH, IM_T_MELEE, IM_T_KICK, IM_T_VAULT, IM_T_GRAB, IM_T_SKATE, IM_T_MAX, IM_T_WALL = IM_T_MELEE };
 enum { SPHY_NONE = 0, SPHY_JUMP, SPHY_BOOST, SPHY_DASH, SPHY_MELEE, SPHY_KICK, SPHY_VAULT, SPHY_GRAB, SPHY_SKATE, SPHY_COOK, SPHY_MATERIAL, SPHY_EXTINGUISH, SPHY_BUFF, SPHY_MAX, SPHY_SERVER = SPHY_EXTINGUISH };
 
@@ -1080,7 +1080,7 @@ struct gameent : dynent, clientstate
     ai::aiinfo *ai;
     int team, clientnum, privilege, projid, lastnode, checkpoint, cplast, respawned, suicided, lastupdate, lastpredict, plag, ping, lastflag, totaldamage,
         actiontime[AC_MAX], impulse[IM_MAX], smoothmillis, turnmillis, turnside, aschan, cschan, vschan, wschan, pschan, sschan[2],
-        lasthit, lastteamhit, lastkill, lastattacker, lastpoints, quake, lastfoot, lastimpulsecollect;
+        lasthit, lastteamhit, lastkill, lastattacker, lastpoints, quake, lastfoot;
     float deltayaw, deltapitch, newyaw, newpitch, turnyaw, turnroll;
     vec head, torso, muzzle, origin, eject[2], waist, jet[3], legs, hrad, trad, lrad, toe[2];
     bool action[AC_MAX], conopen, k_up, k_down, k_left, k_right, obliterated, headless;
@@ -1169,8 +1169,8 @@ struct gameent : dynent, clientstate
 
     void clearstate(int gamemode, int mutators)
     {
-        loopi(IM_MAX) if(i != IM_METER || !m_ra_endurance(gamemode, mutators)) impulse[i] = 0;
-        lasthit = lastkill = quake = turnmillis = turnside = lastimpulsecollect = 0;
+        loopi(IM_MAX) impulse[i] = 0;
+        lasthit = lastkill = quake = turnmillis = turnside = 0;
         turnroll = turnyaw = 0;
         lastteamhit = lastflag = respawned = suicided = lastnode = lastfoot = -1;
         obit[0] = '\0';
@@ -1364,11 +1364,10 @@ struct gameent : dynent, clientstate
         checktags();
     }
 
-    void doimpulse(int cost, int type, int millis)
+    void doimpulse(int type, int millis)
     {
         bool jump = type > IM_T_NONE && type < IM_T_WALL;
-        impulse[IM_METER] += cost;
-        impulse[IM_TIME] = impulse[IM_REGEN] = millis;
+        impulse[IM_TIME] = millis;
         if(type == IM_T_DASH) impulse[IM_SLIDE] = millis;
         if(type != IM_T_KICK) impulse[IM_SLIP] = millis;
         if(!impulse[IM_JUMP] && jump) impulse[IM_JUMP] = millis;
@@ -1671,14 +1670,14 @@ namespace client
 namespace physics
 {
     extern int smoothmove, smoothdist, physframetime, physinterp, impulsemethod, impulseaction, jumpstyle, dashstyle, crouchstyle, walkstyle, grabstyle, grabplayerstyle, kickoffstyle, kickupstyle;
-    extern float floatspeed, floatcoast, impulsekick, impulserolll, kickoffangle, kickupangle;
+    extern float floatspeed, floatcoast, impulsekick, impulseroll, kickoffangle, kickupangle;
     extern bool isghost(gameent *d, gameent *e, bool proj = false);
     extern int carryaffinity(gameent *d);
     extern bool dropaffinity(gameent *d);
     extern bool secondaryweap(gameent *d);
     extern bool allowimpulse(physent *d, int level = 0);
     extern bool canimpulse(physent *d, int level = 0, bool kick = false);
-    extern float impulsevelocity(physent *d, float amt, int &cost, int type, float redir, vec &keep);
+    extern float impulsevelocity(physent *d, float amt, int type, float redir, vec &keep);
     extern bool movecamera(physent *pl, const vec &dir, float dist, float stepdist);
     extern void smoothplayer(gameent *d, int res, bool local);
     extern void update();
@@ -1811,7 +1810,6 @@ namespace game
     extern float rescale(gameent *d);
     extern float opacity(gameent *d);
     extern void footstep(gameent *d, int curfoot = -1);
-    extern bool canregenimpulse(gameent *d);
     #define RESIDUAL(name, type, pulse) extern void get##name##effect(physent *d, modelstate &mdl, int length, int millis, int delay);
     RESIDUALS
     #undef RESIDUAL

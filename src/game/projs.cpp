@@ -1831,8 +1831,7 @@ namespace projs
             {
                 gameent *e = (gameent *)proj.owner;
                 vec keepvel = vec(e->vel).add(e->falling);
-                int cost = int(impulsecost*(d ? impulsecostgrabplayer : impulsecostgrab));
-                float mag = physics::impulsevelocity(e, d ? impulseparkourgrabplayer : impulseparkourgrab, cost, A_A_PARKOUR, d ? impulseparkourgrabplayerredir : impulseparkourgrabredir, keepvel);
+                float mag = physics::impulsevelocity(e, d ? impulseparkourgrabplayer : impulseparkourgrab, A_A_PARKOUR, d ? impulseparkourgrabplayerredir : impulseparkourgrabredir, keepvel);
                 if(mag > 0)
                 {
                     float yaw = e->yaw, pitch = 89.9f;
@@ -1851,7 +1850,7 @@ namespace projs
                         default: break;
                     }
                     e->vel = vec(yaw*RAD, pitch*RAD).mul(mag).add(keepvel);
-                    e->doimpulse(cost, IM_T_GRAB, lastmillis);
+                    e->doimpulse(IM_T_GRAB, lastmillis);
                     client::addmsg(N_SPHY, "ri2", e->clientnum, SPHY_GRAB);
                     game::impulseeffect(e);
                     game::footstep(e);

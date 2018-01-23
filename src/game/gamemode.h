@@ -117,7 +117,7 @@ gametypes gametype[] = {
             (1<<G_M_MULTI)|(1<<G_M_INSTA)|(1<<G_M_MEDIEVAL)|(1<<G_M_KABOOM)|(1<<G_M_ONSLAUGHT)|(1<<G_M_FREESTYLE)|(1<<G_M_VAMPIRE)|(1<<G_M_RESIZE)|(1<<G_M_HARD)|(1<<G_M_BASIC)|(1<<G_M_GSP1)|(1<<G_M_GSP2)|(1<<G_M_GSP3)
         },
         "Race", "Race", { "Timed", "Endurance", "Gauntlet" },
-        "Compete for the most number of laps", { "Compete for the fastest time completing a lap", "Impulse meter does not reset at all", "Teams take turns running the gauntlet" },
+        "Compete for the most number of laps", { "Compete for the fastest time completing a lap", "Laps must be completed without dying at all", "Teams take turns running the gauntlet" },
     }
 };
 mutstypes mutstype[] = {
@@ -280,10 +280,9 @@ extern mutstypes mutstype[];
 #define m_bots(a)           (m_play(a) && !m_race(a))
 #define m_botbal(a,b)       (m_duel(a, b) ? G(botbalanceduel) : (m_survivor(a, b) ? G(botbalancesurvivor) : G(botbalance)))
 #define m_laptime(a,b)      (m_ra_timed(a, b))
-#define m_impulsemeter(a,b) (m_ra_endurance(a, b) || !m_freestyle(a, b))
 #define m_nopoints(a,b)     (m_duke(a, b) || m_bb_hold(a, b) || m_race(a))
 #define m_points(a,b)       (!m_nopoints(a, b))
-#define m_normalweapons(a,b)    (!m_race(a) && !m_insta(a,b) && !m_medieval(a,b) && !m_kaboom(a,b) && !m_dm_gladiator(a,b))
+#define m_normweaps(a,b)    (!m_race(a) && !m_insta(a,b) && !m_medieval(a,b) && !m_kaboom(a,b) && !m_dm_gladiator(a,b))
 #define m_lasthit(a,b)      (m_dm_gladiator(a,b) && m_points(a,b))
 
 #define m_weapon(at,a,b)    (m_medieval(a, b) ? AA(at, weaponmedieval) : (m_kaboom(a, b) ? AA(at, weaponkaboom) : (m_insta(a, b) ? AA(at, weaponinsta) : (m_race(a) && !m_ra_gauntlet(a, b) ? AA(at, weaponrace) : (m_dm_gladiator(a, b) ? AA(at, weapongladiator) : AA(at, weaponspawn))))))

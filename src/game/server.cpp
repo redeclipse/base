@@ -2212,7 +2212,7 @@ namespace server
         if(ci->actortype >= A_ENEMY) return ci->spawnpoint;
         else
         {
-            if(m_race(gamemode) && !ci->cpnodes.empty() && (!m_ra_gauntlet(gamemode, mutators) || ci->team == T_ALPHA))
+            if(m_race(gamemode) && !ci->cpnodes.empty() && !m_ra_endurance(gamemode, mutators) && (!m_ra_gauntlet(gamemode, mutators) || ci->team == T_ALPHA))
             {
                 int checkpoint = ci->cpnodes.last();
                 if(sents.inrange(checkpoint)) return checkpoint;
@@ -3401,7 +3401,7 @@ namespace server
                     }
                 }
             }
-            requestmasterf("stats game %s %d %d %d %d %d\n", escapestring(smapname), gamemode, mutators, gamemillis/1000, unique, m_normalweapons(gamemode, mutators) ? 1 : 0);
+            requestmasterf("stats game %s %d %d %d %d %d\n", escapestring(smapname), gamemode, mutators, gamemillis/1000, unique, m_normweaps(gamemode, mutators) ? 1 : 0);
             flushmasteroutput();
             requestmasterf("stats server %s %s %d\n", escapestring(limitstring(G(serverdesc), MAXSDESCLEN+1)), versionstring, serverport);
             flushmasteroutput();
@@ -5083,7 +5083,7 @@ namespace server
 
     void checkclients()
     {
-        bool avgposcalc = (m_normalweapons(gamemode, mutators) && gamemillis-lastavgposcalc >= G(teambalanceavgposdelay));
+        bool avgposcalc = (m_normweaps(gamemode, mutators) && gamemillis-lastavgposcalc >= G(teambalanceavgposdelay));
         int maxpoints = 0;
         if(avgposcalc)
         {
@@ -6055,7 +6055,6 @@ namespace server
                     bool havecn = true;
                     clientinfo *cp = (clientinfo *)getinfo(lcn);
                     if(!hasclient(cp, ci)) havecn = false;
-                    getuint(p);
                     getuint(p);
                     uint flags = getuint(p);
                     vec pos, floorpos, vel, falling;
