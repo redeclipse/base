@@ -60,7 +60,7 @@ namespace weapons
 
     ICOMMAND(0, weapslot, "i", (int *o), intret(slot(game::player1, *o >= 0 ? *o : game::player1->weapselect))); // -1 = weapselect slot
     ICOMMAND(0, weapselect, "", (), intret(game::player1->weapselect));
-    ICOMMAND(0, ammo, "i", (int *n), intret(isweap(*n) ? game::player1->ammo[*n] : -1));
+    ICOMMAND(0, ammo, "i", (int *n), intret(isweap(*n) ? game::player1->weapclip[*n] : -1));
     ICOMMAND(0, reloadweap, "i", (int *n), intret(isweap(*n) && w_reload(*n, m_weapon(game::player1->actortype, game::gamemode, game::mutators)) ? 1 : 0));
     ICOMMAND(0, hasweap, "ii", (int *n, int *o), intret(isweap(*n) && game::player1->hasweap(*n, *o) ? 1 : 0));
     ICOMMAND(0, getweap, "ii", (int *n, int *o), {
@@ -95,7 +95,7 @@ namespace weapons
             if(newoff)
             {
                 int offset = d->weapload[oldweap];
-                d->ammo[oldweap] = max(d->ammo[oldweap]-offset, 0);
+                d->weapclip[oldweap] = max(d->weapclip[oldweap]-offset, 0);
                 d->weapload[oldweap] = -d->weapload[oldweap];
             }
             client::addmsg(N_WSELECT, "ri3", d->clientnum, lastmillis-game::maptime, weap);
@@ -115,12 +115,12 @@ namespace weapons
                 return false;
             }
             client::addmsg(N_RELOAD, "ri3", d->clientnum, lastmillis-game::maptime, weap);
-            int oldammo = d->ammo[weap];
-            ammo = min(max(d->ammo[weap], 0) + W(weap, ammoadd), W(weap, ammomax));
+            int oldammo = d->weapclip[weap];
+            ammo = min(max(d->weapclip[weap], 0) + W(weap, ammoadd), W(weap, ammoclip));
             load = ammo-oldammo;
         }
         d->weapload[weap] = load;
-        d->ammo[weap] = min(ammo, W(weap, ammomax));
+        d->weapclip[weap] = min(ammo, W(weap, ammoclip));
         playsound(WSND(weap, S_W_RELOAD), d->o, d, 0, -1, -1, -1, &d->wschan);
         d->setweapstate(weap, W_S_RELOAD, W(weap, delayreload), lastmillis);
         return true;
@@ -203,7 +203,7 @@ namespace weapons
             else
             {
                 int offset = d->weapload[d->weapselect];
-                d->ammo[d->weapselect] = max(d->ammo[d->weapselect]-offset, 0);
+                d->weapclip[d->weapselect] = max(d->weapclip[d->weapselect]-offset, 0);
                 d->weapload[d->weapselect] = -d->weapload[d->weapselect];
             }
         }
@@ -215,10 +215,10 @@ namespace weapons
     {
         if(gs_playing(game::gamestate) && d == game::player1 && W2(d->weapselect, ammosub, WS(flags)) && d->canreload(d->weapselect, m_weapon(d->actortype, game::gamemode, game::mutators), false, lastmillis))
         {
-            bool noammo = d->ammo[d->weapselect] < W2(d->weapselect, ammosub, WS(flags)),
+            bool noammo = d->weapclip[d->weapselect] < W2(d->weapselect, ammosub, WS(flags)),
                  noattack = !d->action[AC_PRIMARY] && !d->action[AC_SECONDARY];
             if((noammo || noattack) && !d->action[AC_USE] && d->weapstate[d->weapselect] == W_S_IDLE && (noammo || lastmillis-d->weaptime[d->weapselect] >= autodelayreload))
-                return autoreloading >= (noammo ? 1 : (W(d->weapselect, ammoadd) < W(d->weapselect, ammomax) ? 2 : (W2(d->weapselect, cooked, true)&W_C_ZOOM ? 4 : 3)));
+                return autoreloading >= (noammo ? 1 : (W(d->weapselect, ammoadd) < W(d->weapselect, ammoclip) ? 2 : (W2(d->weapselect, cooked, true)&W_C_ZOOM ? 4 : 3)));
         }
         return false;
     }
@@ -295,18 +295,18 @@ namespace weapons
         if(W2(weap, cooktime, secondary) || zooming)
         {
             float maxscale = 1;
-            if(sub > 1 && d->ammo[weap] < sub) maxscale = d->ammo[weap]/float(sub);
+            if(sub > 1 && d->weapclip[weap] < sub) maxscale = d->weapclip[weap]/float(sub);
             int len = int(W2(weap, cooktime, secondary)*maxscale), type = zooming ? W_S_ZOOM : W_S_POWER;
             if(!cooked)
             {
                 if(d->weapstate[weap] != type)
                 {
-                    int curammo = d->ammo[weap]-offset;
+                    int curammo = d->weapclip[weap]-offset;
                     if(pressed && curammo > 0)
                     {
                         if(offset > 0)
                         {
-                            d->ammo[weap] = max(curammo, 0);
+                            d->weapclip[weap] = max(curammo, 0);
                             d->weapload[weap] = -offset;
                         }
                         int offtime = hadcook && d->prevstate[weap] == type ? lastmillis-d->prevtime[weap] : 0;

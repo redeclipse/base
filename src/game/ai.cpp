@@ -156,7 +156,7 @@ namespace ai
         if(!isweap(weap)) return false;
         if(w_carry(weap, m_weapon(d->actortype, game::gamemode, game::mutators)))
             return d->hasweap(weap, m_weapon(d->actortype, game::gamemode, game::mutators));
-        return d->ammo[weap] >= W(weap, ammomax);
+        return d->weapclip[weap] >= 0;
     }
 
     bool wantsweap(gameent *d, int weap, bool noitems = true)
@@ -1298,7 +1298,6 @@ namespace ai
                         {
                             if(!projs::projs.inrange(t.target)) break;
                             projent &proj = *projs::projs[t.target];
-                            if(!entities::ents.inrange(proj.id)) break;
                             extentity &e = *entities::ents[proj.id];
                             if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON || proj.owner == d) break;
                             ent = proj.id;
@@ -1342,7 +1341,6 @@ namespace ai
                 {
                     if(!projs::projs.inrange(t.target)) break;
                     projent &proj = *projs::projs[t.target];
-                    if(!entities::ents.inrange(proj.id)) break;
                     extentity &e = *entities::ents[proj.id];
                     if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON || proj.owner == d) break;
                     ent = proj.id;
@@ -1365,8 +1363,8 @@ namespace ai
             items.pop();
         }
 
-        bool timepassed = d->weapstate[d->weapselect] == W_S_IDLE && (d->ammo[d->weapselect] <= 0 || lastmillis-d->weaptime[d->weapselect] >= max(6000-(d->skill*50), weaponswitchdelay));
-        if(!firing && (!occupied || d->ammo[d->weapselect] <= 0) && timepassed && d->hasweap(d->weapselect, sweap) && weapons::weapreload(d, d->weapselect))
+        bool timepassed = d->weapstate[d->weapselect] == W_S_IDLE && (d->weapclip[d->weapselect] <= 0 || lastmillis-d->weaptime[d->weapselect] >= max(6000-(d->skill*50), weaponswitchdelay));
+        if(!firing && (!occupied || d->weapclip[d->weapselect] <= 0) && timepassed && d->hasweap(d->weapselect, sweap) && weapons::weapreload(d, d->weapselect))
         {
             d->ai->lastaction = lastmillis;
             return true;

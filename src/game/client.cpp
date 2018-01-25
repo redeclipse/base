@@ -867,7 +867,7 @@ namespace client
 
     CLCOMMAND(weapselect, intret(d->weapselect));
     CLCOMMANDM(loadweap, "si", (char *who, int *n), intret(d->loadweap.inrange(*n) ? d->loadweap[*n] : -1));
-    CLCOMMANDM(weapammo, "si", (char *who, int *n), intret(isweap(*n) ? d->ammo[*n] : -1));
+    CLCOMMANDM(weapammo, "si", (char *who, int *n), intret(isweap(*n) ? d->weapclip[*n] : -1));
     CLCOMMANDM(weapstate, "si", (char *who, int *n), intret(isweap(*n) ? d->weapstate[*n] : W_S_IDLE));
     CLCOMMANDM(weaptime, "si", (char *who, int *n), intret(isweap(*n) ? d->weaptime[*n] : 0));
     CLCOMMANDM(weapwait, "si", (char *who, int *n), intret(isweap(*n) ? d->weapwait[*n] : 0));
@@ -2141,7 +2141,7 @@ namespace client
             d->weapreset(!resume);
             int weap = getint(p);
             d->weapselect = isweap(weap) ? weap : W_CLAW;
-            loopi(W_MAX) d->ammo[i] = getint(p);
+            loopi(W_MAX) d->weapclip[i] = getint(p);
         }
         if(resume) d->setscale(game::rescale(d), 0, true);
         return reset;
@@ -2618,12 +2618,12 @@ namespace client
 
                 case N_DESTROY:
                 {
-                    int scn = getint(p), num = getint(p);
+                    int scn = getint(p), targ = getint(p), num = getint(p);
                     gameent *t = game::getclient(scn);
                     loopi(num)
                     {
                         int id = getint(p);
-                        if(t) projs::destruct(t, id);
+                        if(t) projs::destruct(t, targ, id);
                     }
                     break;
                 }
@@ -2854,12 +2854,12 @@ namespace client
 
                 case N_ITEMACC:
                 { // uses a specific drop so the client knows what to replace
-                    int lcn = getint(p), ent = getint(p), ammoamt = getint(p), spawn = getint(p),
+                    int lcn = getint(p), fcn = getint(p), ent = getint(p), ammoamt = getint(p), spawn = getint(p),
                         weap = getint(p), drop = getint(p), ammo = getint(p);
                     gameent *m = game::getclient(lcn);
                     if(!m) break;
                     if(entities::ents.inrange(ent) && enttype[entities::ents[ent]->type].usetype == EU_ITEM)
-                        entities::useeffects(m, ent, ammoamt, spawn, weap, drop, ammo);
+                        entities::useeffects(m, fcn, ent, ammoamt, spawn, weap, drop, ammo);
                     break;
                 }
 

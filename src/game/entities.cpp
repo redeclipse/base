@@ -393,19 +393,7 @@ namespace entities
         return "";
     }
 
-    void checkspawns(int n)
-    {
-        gameentity &e = *(gameentity *)ents[n];
-        if(enttype[e.type].usetype == EU_ITEM) loopv(projs::projs)
-        {
-            projent &proj = *projs::projs[i];
-            if(proj.projtype != PRJ_ENT || proj.id != n) continue;
-            proj.beenused = 2;
-            proj.lifetime = min(proj.lifetime, proj.fadetime);
-        }
-    }
-
-    void useeffects(gameent *d, int ent, int ammoamt, bool spawn, int weap, int drop, int ammo)
+    void useeffects(gameent *d, int cn, int ent, int ammoamt, bool spawn, int weap, int drop, int ammo)
     {
         gameentity &e = *(gameentity *)ents[ent];
         int sweap = m_weapon(d->actortype, game::gamemode, game::mutators), attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap),
@@ -414,7 +402,7 @@ namespace entities
         if(isweap(weap))
         {
             d->setweapstate(weap, W_S_SWITCH, weaponswitchdelay, lastmillis);
-            d->ammo[weap] = -1;
+            d->weapclip[weap] = -1;
             if(d->weapselect != weap && weap < W_ALL)
             {
                 d->addlastweap(d->weapselect);
@@ -430,12 +418,19 @@ namespace entities
             attr = w_attr(game::gamemode, game::mutators, f.type, f.attrs[0], sweap);
             if(isweap(attr)) projs::drop(d, attr, drop, ammo, d == game::player1 || d->ai, 0, weap);
         }
-        if(e.spawned() != spawn)
+        if(cn >= 0)
         {
-            e.setspawned(spawn);
-            e.lastemit = lastmillis;
+            gameent *m = game::getclient(cn);
+            if(m) projs::destruct(m, PRJ_ENT, ent);
         }
-        checkspawns(ent);
+        else
+        {
+            if(e.spawned() != spawn)
+            {
+                e.setspawned(spawn);
+                e.lastemit = lastmillis;
+            }
+        }
     }
 
     /*
@@ -532,7 +527,7 @@ namespace entities
         if(d->state == CS_ALIVE) loopv(projs::projs)
         {
             projent &proj = *projs::projs[i];
-            if(proj.projtype != PRJ_ENT || !proj.ready()) continue;
+            if(!proj.owner || proj.projtype != PRJ_ENT || !proj.ready()) continue;
             if(!ents.inrange(proj.id) || enttype[ents[proj.id]->type].usetype != EU_ITEM) continue;
             if(enttype[ents[proj.id]->type].mvattr >= 0 && !checkmapvariant(ents[proj.id]->attrs[enttype[ents[proj.id]->type].mvattr])) continue;
             if(!(enttype[ents[proj.id]->type].canuse&(1<<d->type))) continue;
@@ -621,7 +616,7 @@ namespace entities
     }
     ICOMMAND(0, exectrigger, "i", (int *n), if(identflags&IDF_WORLD) runtriggers(*n, trigger ? trigger : game::player1));
 
-    bool execitem(int n, dynent *d, vec &pos, float dist)
+    bool execitem(int n, int cn, dynent *d, vec &pos, float dist)
     {
         gameentity &e = *(gameentity *)ents[n];
         switch(enttype[e.type].usetype)
@@ -644,11 +639,11 @@ namespace entities
                             else
                             {
                                 int offset = f->weapload[f->weapselect];
-                                f->ammo[f->weapselect] = max(f->ammo[f->weapselect]-offset, 0);
+                                f->weapclip[f->weapselect] = max(f->weapclip[f->weapselect]-offset, 0);
                                 f->weapload[f->weapselect] = -f->weapload[f->weapselect];
                             }
                         }
-                        client::addmsg(N_ITEMUSE, "ri3", f->clientnum, lastmillis-game::maptime, n);
+                        client::addmsg(N_ITEMUSE, "ri4", f->clientnum, lastmillis-game::maptime, cn, n);
                         if(e.type == WEAPON)
                         {
                             f->setweapstate(f->weapselect, W_S_WAIT, weaponswitchdelay, lastmillis);
@@ -858,7 +853,7 @@ namespace entities
             while(!actitems.empty())
             {
                 actitem &t = actitems.last();
-                int ent = -1;
+                int ent = -1, cn = -1;
                 float dist = 0;
                 switch(t.type)
                 {
@@ -873,13 +868,14 @@ namespace entities
                     {
                         if(!projs::projs.inrange(t.target)) break;
                         projent &proj = *projs::projs[t.target];
+                        cn = proj.owner->clientnum;
                         ent = proj.id;
                         dist = t.score;
                         break;
                     }
                     default: break;
                 }
-                if(ents.inrange(ent) && execitem(ent, d, pos, dist)) tried = true;
+                if(ents.inrange(ent) && execitem(ent, cn, d, pos, dist)) tried = true;
                 actitems.pop();
             }
             if(tried && gameent::is(d))
@@ -943,7 +939,6 @@ namespace entities
             else e.lastemit = lastmillis;
             execlink(NULL, n, false);
         }
-        checkspawns(n);
     }
 
     extentity *newent() { return new gameentity; }

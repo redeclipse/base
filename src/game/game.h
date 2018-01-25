@@ -594,8 +594,8 @@ struct verinfo
 // inherited by gameent and server clients
 struct clientstate
 {
-    int health, ammo[W_MAX], entid[W_MAX], colour, model, pattern, checkpointspawn;
-    int weapselect, weapload[W_MAX], weapshot[W_MAX], weapstate[W_MAX], weapwait[W_MAX], weaptime[W_MAX], prevstate[W_MAX], prevtime[W_MAX];
+    int health, colour, model, pattern, checkpointspawn;
+    int weapselect, weapclip[W_MAX], weapent[W_MAX], weapload[W_MAX], weapshot[W_MAX], weapstate[W_MAX], weapwait[W_MAX], weaptime[W_MAX], prevstate[W_MAX], prevtime[W_MAX];
     int lastdeath, lastspawn, lastpain, lastregen, lastregenamt, lastbuff, lastshoot, lastcook, lastaffinity, lastres[W_R_MAX], lastrestime[W_R_MAX];
     int burntime, burndelay, burndamage, bleedtime, bleeddelay, bleeddamage, shocktime, shockdelay, shockdamage, shockstun, shockstuntime;
     float shockstunscale, shockstunfall;
@@ -628,7 +628,7 @@ struct clientstate
     int getammo(int weap, int millis = 0)
     {
         if(!isweap(weap)) return 0;
-        int a = ammo[weap];
+        int a = weapclip[weap];
         if(millis && weapstate[weap] == W_S_RELOAD && millis-weaptime[weap] < weapwait[weap] && weapload[weap] > 0)
             a -= weapload[weap];
         return a;
@@ -638,13 +638,13 @@ struct clientstate
     {
         if(isweap(weap) && weap != exclude)
         {
-            if(ammo[weap] > 0 || (canreload(weap, sweap) && !ammo[weap])) switch(level)
+            if(weapclip[weap] > 0 || (canreload(weap, sweap) && !weapclip[weap])) switch(level)
             {
                 case 0: default: return true; break; // has weap at all
                 case 1: if(w_carry(weap, sweap)) return true; break; // only carriable
-                case 2: if(ammo[weap] > 0) return true; break; // only with actual ammo
-                case 3: if(ammo[weap] > 0 && canreload(weap, sweap)) return true; break; // only reloadable with actual ammo
-                case 4: if(ammo[weap] >= (canreload(weap, sweap) ? 0 : W(weap, ammomax))) return true; break; // only reloadable or those with < max
+                case 2: if(weapclip[weap] > 0) return true; break; // only with actual ammo
+                case 3: if(weapclip[weap] > 0 && canreload(weap, sweap)) return true; break; // only reloadable with actual ammo
+                case 4: if(weapclip[weap] >= (canreload(weap, sweap) ? 0 : W(weap, ammoclip))) return true; break; // only reloadable or those with < clipsize
                 case 5: if(weap != sweap && weap >= W_ITEM) return true; break; // special case to determine drop in loadout games
                 case 6: if(weap != sweap && weap >= W_OFFSET) return true; break; // special case to determine drop in classic games
             }
@@ -715,7 +715,7 @@ struct clientstate
         {
             weapstate[i] = prevstate[i] = W_S_IDLE;
             weapwait[i] = weaptime[i] = weapload[i] = weapshot[i] = prevtime[0] = 0;
-            if(full) ammo[i] = entid[i] = -1;
+            if(full) weapclip[i] = weapent[i] = -1;
         }
         if(full) lastweap.shrink(0);
     }
@@ -786,7 +786,7 @@ struct clientstate
 
     bool canreload(int weap, int sweap, bool check = true, int millis = 0, int skip = 0)
     {
-        if(weapstate[weap] != W_S_ZOOM && (check || (weap == weapselect && hasweap(weap, sweap) && ammo[weap] < W(weap, ammomax) && weapwaited(weap, millis, skip))))
+        if(weapstate[weap] != W_S_ZOOM && (check || (weap == weapselect && hasweap(weap, sweap) && weapclip[weap] < W(weap, ammoclip) && weapwaited(weap, millis, skip))))
             return w_reload(weap, sweap);
         return false;
     }
@@ -811,11 +811,11 @@ struct clientstate
     void useitem(int id, int type, int attr, int ammoamt, int sweap, int millis, int delay)
     {
         if(type != WEAPON || !isweap(attr)) return;
-        int prev = max(ammo[attr], 0), ammoval = ammoamt >= 0 ? ammoamt : WUSE(attr);
+        int prev = max(weapclip[attr], 0), ammoval = ammoamt >= 0 ? ammoamt : WUSE(attr);
         weapswitch(attr, millis, delay, W_S_USE);
-        ammo[attr] = clamp(prev+ammoval, 0, W(attr, ammomax));
-        weapload[attr] = ammo[attr]-prev;
-        entid[attr] = id;
+        weapclip[attr] = clamp(prev+ammoval, 0, W(attr, ammoclip));
+        weapload[attr] = weapclip[attr]-prev;
+        weapent[attr] = id;
     }
 
     void resetresidual(int n = -1)
@@ -908,20 +908,20 @@ struct clientstate
         if(s >= W_ALL) s = W_CLAW;
         if(isweap(s))
         {
-            ammo[s] = max(1, W(s, ammomax));
+            weapclip[s] = max(1, W(s, ammoclip));
             weapselect = s;
         }
-        if(s != W_CLAW && AA(actortype, abilities)&(1<<A_A_CLAW)) ammo[W_CLAW] = max(1, W(W_CLAW, ammomax));
-        if(s != W_MELEE && AA(actortype, abilities)&(1<<A_A_MELEE)) ammo[W_MELEE] = max(1, W(W_MELEE, ammomax));
+        if(s != W_CLAW && AA(actortype, abilities)&(1<<A_A_CLAW)) weapclip[W_CLAW] = max(1, W(W_CLAW, ammoclip));
+        if(s != W_MELEE && AA(actortype, abilities)&(1<<A_A_MELEE)) weapclip[W_MELEE] = max(1, W(W_MELEE, ammoclip));
         if(actortype < A_ENEMY)
         {
-            if(m_kaboom(gamemode, mutators)) ammo[W_MINE] = max(1, W(W_MINE, ammomax));
+            if(m_kaboom(gamemode, mutators)) weapclip[W_MINE] = max(1, W(W_MINE, ammoclip));
             else if(!m_race(gamemode) || m_ra_gauntlet(gamemode, mutators))
             {
                 if(s != W_GRENADE && AA(actortype, spawngrenades) >= (m_insta(gamemode, mutators) ? 2 : 1))
-                    ammo[W_GRENADE] = max(1, W(W_GRENADE, ammomax));
+                    weapclip[W_GRENADE] = max(1, W(W_GRENADE, ammoclip));
                 if(s != W_MINE && AA(actortype, spawnmines) >= (m_insta(gamemode, mutators) ? 2 : 1))
-                    ammo[W_MINE] = max(1, W(W_MINE, ammomax));
+                    weapclip[W_MINE] = max(1, W(W_MINE, ammoclip));
             }
         }
         if(AA(actortype, maxcarry) && m_loadout(gamemode, mutators))
@@ -943,7 +943,7 @@ struct clientstate
                         aweap[j] = randsrc.remove(i);
                     }
                 }
-                ammo[aweap[j]] = max(1, W(aweap[j], ammomax));
+                weapclip[aweap[j]] = max(1, W(aweap[j], ammoclip));
             }
             weapselect = aweap[0];
         }
@@ -975,6 +975,8 @@ struct clientstate
     RESIDUALS
     #undef RESIDUAL
 };
+
+enum { PRJ_SHOT = 0, PRJ_GIBS, PRJ_DEBRIS, PRJ_EJECT, PRJ_ENT, PRJ_AFFINITY, PRJ_VANITY, PRJ_MAX };
 
 namespace server
 {
@@ -1532,8 +1534,6 @@ struct gameent : dynent, clientstate
     }
 };
 
-enum { PRJ_SHOT = 0, PRJ_GIBS, PRJ_DEBRIS, PRJ_EJECT, PRJ_ENT, PRJ_AFFINITY, PRJ_VANITY, PRJ_MAX };
-
 struct projent : dynent
 {
     vec from, to, dest, norm, inertia, sticknrm, stickpos, effectpos, lastgood;
@@ -1693,7 +1693,7 @@ namespace projs
     extern projent *create(const vec &from, const vec &to, bool local, gameent *d, int type, int fromweap, int fromflags, int lifetime, int lifemillis, int waittime, int speed, int id = 0, int weap = -1, int value = -1, int flags = 0, float scale = 1, bool child = false, projent *parent = NULL);
     extern void preload();
     extern void remove(gameent *owner);
-    extern void destruct(gameent *d, int id);
+    extern void destruct(gameent *d, int targ, int id);
     extern void sticky(gameent *d, int id, vec &norm, vec &pos, gameent *f = NULL);
     extern void shootv(int weap, int flags, int sub, int offset, float scale, vec &from, vector<shotmsg> &shots, gameent *d, bool local);
     extern void drop(gameent *d, int weap, int ent, int ammo = -1, bool local = true, int index = 0, int targ = -1);
@@ -1822,7 +1822,7 @@ namespace entities
 {
     extern int showentdescs, simpleitems;
     extern vector<extentity *> ents;
-    extern bool execitem(int n, dynent *d, vec &pos, float dist);
+    extern bool execitem(int n, int cn, dynent *d, vec &pos, float dist);
     extern bool collateitems(dynent *d, vec &pos, float radius, vector<actitem> &actitems);
     extern void checkitems(dynent *d);
     extern void putitems(packetbuf &p);
@@ -1830,7 +1830,7 @@ namespace entities
     extern void setspawn(int n, int m);
     extern bool tryspawn(dynent *d, const vec &o, float yaw = 0, float pitch = 0);
     extern void spawnplayer(gameent *d, int ent = -1, bool suicide = false);
-    extern void useeffects(gameent *d, int ent, int ammoamt, bool spawn, int weap, int drop, int ammo = -1);
+    extern void useeffects(gameent *d, int cn, int ent, int ammoamt, bool spawn, int weap, int drop, int ammo = -1);
     extern void adddynlights();
     extern void render();
     extern void update();

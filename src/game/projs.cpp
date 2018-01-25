@@ -306,9 +306,9 @@ namespace projs
         }
     }
 
-    void destruct(gameent *d, int id)
+    void destruct(gameent *d, int targ, int id)
     {
-        loopv(projs) if(projs[i]->owner == d && projs[i]->projtype == PRJ_SHOT && projs[i]->id == id)
+        loopv(projs) if(projs[i]->owner == d && projs[i]->projtype == targ && projs[i]->id == id)
         {
             projs[i]->state = CS_DEAD;
             break;
@@ -431,7 +431,7 @@ namespace projs
         }
         if(entities::ents.inrange(closeent))
         {
-            entities::execitem(closeent, &proj, proj.o, closedist);
+            entities::execitem(closeent, -1, &proj, proj.o, closedist);
             return true;
         }
         return false;
@@ -1109,12 +1109,12 @@ namespace projs
             {
                 if(entities::ents.inrange(ent))
                     create(d->muzzlepos(), d->muzzlepos(), local, d, PRJ_ENT, -1, HIT_NONE, w_spawn(weap), w_spawn(weap), 1, 1, ent, ammo, index);
-                d->ammo[weap] = -1;
+                d->weapclip[weap] = -1;
                 if(targ >= 0) d->setweapstate(weap, W_S_SWITCH, weaponswitchdelay, lastmillis);
             }
             else if(weap == W_GRENADE || weap == W_MINE)
                 create(d->muzzlepos(), d->muzzlepos(), local, d, PRJ_SHOT, -1, HIT_NONE, 1, W2(weap, time, false), 1, 1, 1, weap);
-            d->entid[weap] = -1;
+            d->weapent[weap] = -1;
         }
     }
 
@@ -1201,7 +1201,7 @@ namespace projs
             create(from, from, local, d, PRJ_EJECT, -1, HIT_NONE, rnd(ejectfade)+ejectfade, 0, delay, rnd(weaptype[weap].espeed)+weaptype[weap].espeed, 0, weap, -1, flags);
 
         d->setweapstate(weap, WS(flags) ? W_S_SECONDARY : W_S_PRIMARY, delayattack, lastmillis);
-        d->ammo[weap] = max(d->ammo[weap]-sub-offset, 0);
+        d->weapclip[weap] = max(d->weapclip[weap]-sub-offset, 0);
         d->weapshot[weap] = sub;
         if(offset > 0) d->weapload[weap] = -offset;
         d->lastshoot = lastmillis;
@@ -1735,14 +1735,14 @@ namespace projs
                         }
                     }
                     if(proj.local)
-                        client::addmsg(N_DESTROY, "ri9i", proj.owner->clientnum, lastmillis-game::maptime, proj.weap, proj.fromweap, proj.fromflags, proj.flags, WK(proj.flags) ? -proj.id : proj.id, 0, int(proj.curscale*DNF), 0);
+                        client::addmsg(N_DESTROY, "ri9i2", proj.owner->clientnum, lastmillis-game::maptime, proj.projtype, proj.weap, proj.fromweap, proj.fromflags, proj.flags, WK(proj.flags) ? -proj.id : proj.id, 0, int(proj.curscale*DNF), 0);
                 }
                 break;
             }
             case PRJ_ENT:
             {
                 if(proj.beenused <= 1 && proj.local && proj.owner)
-                    client::addmsg(N_DESTROY, "ri9i", proj.owner->clientnum, lastmillis-game::maptime, -1, -1, HIT_NONE, 0, proj.id, 0, int(proj.curscale*DNF), 0);
+                    client::addmsg(N_DESTROY, "ri9i2", proj.owner->clientnum, lastmillis-game::maptime, proj.projtype, -1, -1, HIT_NONE, 0, proj.id, 0, int(proj.curscale*DNF), 0);
                 break;
             }
             case PRJ_AFFINITY:
@@ -2341,7 +2341,7 @@ namespace projs
                     }
                 }
                 if(!hits.empty())
-                    client::addmsg(N_DESTROY, "ri9iv", proj.owner->clientnum, lastmillis-game::maptime, proj.weap, proj.fromweap, proj.fromflags, proj.flags, WK(proj.flags) ? -proj.id : proj.id,
+                    client::addmsg(N_DESTROY, "ri9i2v", proj.owner->clientnum, lastmillis-game::maptime, proj.projtype, proj.weap, proj.fromweap, proj.fromflags, proj.flags, WK(proj.flags) ? -proj.id : proj.id,
                             int(expl*DNF), int(proj.curscale*DNF), hits.length(), hits.length()*sizeof(hitmsg)/sizeof(int), hits.getbuf());
             }
             if(proj.state == CS_DEAD)
