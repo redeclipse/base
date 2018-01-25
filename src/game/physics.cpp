@@ -726,6 +726,7 @@ namespace physics
                     if(power || dash || moving || onfloor)
                     {
                         float yaw = d->yaw, pitch = moving && (power || pulse) ? d->pitch : 0;
+                        if(moving && pulse) pitch = clamp(pitch, impulseboostpitchmin, impulseboostpitchmax);
                         vecfromyawpitch(yaw, pitch, moving ? move : 1, strafe, dir);
                         if(!power && dash && !d->floor.iszero() && !dir.iszero())
                         {

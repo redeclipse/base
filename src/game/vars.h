@@ -469,6 +469,8 @@ GFVAR(IDF_GAMEMOD, impulsespeed, FVAR_NONZERO, 90, FVAR_MAX); // extra velocity 
 GFVAR(IDF_GAMEMOD, impulselimit, 0, 0, FVAR_MAX); // maximum impulse speed
 GFVAR(IDF_GAMEMOD, impulseboost, 0, 1, FVAR_MAX); // thrust modifier
 GFVAR(IDF_GAMEMOD, impulseboostredir, 0, 1, FVAR_MAX); // how much of the old velocity is redirected into the new one
+GFVAR(IDF_GAMEMOD, impulseboostpitchmin, -89.9f, 5.f, 89.9f); // thrust pitch minimum
+GFVAR(IDF_GAMEMOD, impulseboostpitchmax, -89.9f, 89.9f, 89.9f); // thrust pitch maximum
 GFVAR(IDF_GAMEMOD, impulsepower, 0, 1.5f, FVAR_MAX); // power jump modifier
 GFVAR(IDF_GAMEMOD, impulsepowerredir, 0, 1, FVAR_MAX); // how much of the old velocity is redirected into the new one
 GFVAR(IDF_GAMEMOD, impulsedash, 0, 1.3f, FVAR_MAX); // dashing/powerslide modifier
