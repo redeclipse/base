@@ -686,6 +686,18 @@ WPVARK(IDF_GAMEMOD,  parttype, 0, W_MAX-1,
     W_CLAW,     W_PISTOL,   W_SWORD,    W_SHOTGUN,  W_SMG,      W_FLAMER,   W_PLASMA,   W_ZAPPER,   W_RIFLE,    W_GRENADE,  W_MINE,     W_ROCKET,   W_MELEE,
     W_CLAW,     W_PISTOL,   W_SWORD,    W_SHOTGUN,  W_SMG,      W_FLAMER,   W_PLASMA,   W_ZAPPER,   W_RIFLE,    W_GRENADE,  W_MINE,     W_ROCKET,   W_MELEE
 );
+WPVAR(IDF_GAMEMOD,  playerspeed, VAR_MIN, VAR_MAX,
+    0,          0,          10,         -20,        -10,        -5,         -15,        -10,        -20,        -5,         -5,         -25,        0
+);
+WPVAR(IDF_GAMEMOD,  playerspeedammo, 0, 1,
+    0,          0,          0,          0,          0,          0,          0,          0,          0,          1,          1,          0,          0
+);
+WPVAR(IDF_GAMEMOD,  playerweight, VAR_MIN, VAR_MAX,
+    0,          10,         10,         50,         25,         20,         20,         30,         50,         5,          5,          75,         0
+);
+WPVAR(IDF_GAMEMOD,  playerweightammo, 0, 1,
+    0,          0,          0,          0,          0,          0,          0,          0,          0,          1,          1,          0,          0
+);
 WPVARK(IDF_GAMEMOD,  proxdelay, 0, VAR_MAX,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          3000,       0,          0,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          1500000,    0,          0,

@@ -1144,19 +1144,25 @@ struct gameent : dynent, clientstate
     static bool is(int t) { return t == ENT_PLAYER || t == ENT_AI; }
     static bool is(physent *d) { return d->type == ENT_PLAYER || d->type == ENT_AI; }
 
-    void setparams(bool reset)
+    void setparams(int sweap, bool reset)
     {
         int type = clamp(actortype, 0, int(A_MAX-1));
         xradius = yradius = PLAYERRADIUS*curscale;
         zradius = PLAYERHEIGHT*curscale;
         if(reset) height = zradius;
         speed = AA(type, speed);
-        weight = AA(type, weight)*curscale;
+        weight = AA(type, weight);
+        loopi(W_MAX) if(hasweap(i, sweap))
+        {
+            speed += W(i, playerspeed)*(W(i, playerspeedammo) ? getammo(i, 0, true) : 1);
+            weight += W(i, playerweight)*(W(i, playerweightammo) ? getammo(i, 0, true) : 1);
+        }
+        weight *= curscale;
         radius = max(xradius, yradius);
         aboveeye = curscale;
     }
 
-    void setscale(float scale, int millis, bool reset)
+    void setscale(int sweap, float scale, int millis, bool reset)
     {
         if(scale != curscale)
         {
@@ -1164,7 +1170,7 @@ struct gameent : dynent, clientstate
                 curscale = scale > curscale ? min(curscale+millis/2000.f, scale) : max(curscale-millis/2000.f, scale);
             else curscale = scale;
         }
-        setparams(reset);
+        setparams(sweap, reset);
     }
 
     int getprojid()
@@ -1206,7 +1212,7 @@ struct gameent : dynent, clientstate
         lastteamhit = lastflag = respawned = suicided = lastnode = lastfoot = -1;
         obit[0] = '\0';
         obliterated = headless = false;
-        setscale(1, 0, true);
+        setscale(m_weapon(actortype, gamemode, mutators), 1, 0, true);
         icons.shrink(0);
         stuns.shrink(0);
         used.shrink(0);
@@ -1533,7 +1539,7 @@ struct gameent : dynent, clientstate
 
     bool running(float minspeed = 0)
     {
-        if(minspeed != 0 && vel.magnitude() >= minspeed) return true;
+        if(minspeed != 0 && vel.magnitude() >= speed*minspeed) return true;
         return sliding() || (!action[AC_WALK] && !crouching());
     }
 

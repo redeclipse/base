@@ -2147,7 +2147,7 @@ namespace client
             loopi(W_MAX) d->weapstore[i] = getint(p);
             loopi(W_MAX) d->weapent[i] = getint(p);
         }
-        if(resume) d->setscale(game::rescale(d), 0, true);
+        if(resume) d->setscale(m_weapon(d->actortype, game::gamemode, game::mutators), game::rescale(d), 0, true);
         return reset;
     }
 

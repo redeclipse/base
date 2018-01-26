@@ -856,7 +856,7 @@ namespace game
             entities::spawnplayer(d, ent, true);
             client::addmsg(N_SPAWN, "ri", d->clientnum);
         }
-        d->setscale(rescale(d), 0, true);
+        d->setscale(m_weapon(d->actortype, gamemode, mutators), rescale(d), 0, true);
 
         if(d == player1) specreset();
         else if(d == focus) resetcamera();
@@ -1081,8 +1081,7 @@ namespace game
     void checkoften(gameent *d, bool local)
     {
         adjustscaled(d->quake, quakefade);
-
-        d->setscale(rescale(d), curtime, false);
+        d->setscale(m_weapon(d->actortype, gamemode, mutators), rescale(d), curtime, false);
         d->speedscale = d->curscale;
         bool hasent = d->actortype >= A_ENEMY && entities::ents.inrange(d->spawnpoint) && entities::ents[d->spawnpoint]->type == ACTOR;
         if(hasent && entities::ents[d->spawnpoint]->attrs[8] > 0) d->speedscale *= entities::ents[d->spawnpoint]->attrs[8]/100.f;

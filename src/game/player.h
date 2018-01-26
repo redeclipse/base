@@ -182,7 +182,7 @@ APVAR(IDF_GAMEMOD, weaponspawn, 0, W_ALL-1,
     W_PISTOL,       W_PISTOL,       W_SMG,          W_PISTOL,       W_CLAW
 );
 APFVAR(IDF_GAMEMOD, weight, 0, FVAR_MAX,
-    200,            200,            150,            200,            150
+    150,            150,            100,            150,            100
 );
 APFVAR(IDF_GAMEMOD, scale, FVAR_NONZERO, FVAR_MAX,
     1,              1,              0.5f,           0.85f,          0.7f
@@ -215,7 +215,7 @@ APVAR(IDF_GAMEMOD, spawnmines, 0, 2,
     0,              0,              0,              0,              0
 );
 APFVAR(IDF_GAMEMOD, speed, 0, FVAR_MAX,
-    50,             50,             0,              50,             100
+    85,             85,             0,              85,             100
 );
 
 #define VANITYMAX 16
