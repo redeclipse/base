@@ -1107,14 +1107,13 @@ namespace projs
         {
             if(ammo >= 0)
             {
-                if(entities::ents.inrange(ent))
-                    create(d->muzzlepos(), d->muzzlepos(), local, d, PRJ_ENT, -1, HIT_NONE, w_spawn(weap), w_spawn(weap), 1, 1, ent, ammo, index);
+                if(ammo > 0 && entities::ents.inrange(ent))
+                    create(d->muzzlepos(), d->muzzlepos(), local, d, PRJ_ENT, -1, HIT_NONE, W(weap, spawntime), W(weap, spawntime), 1, 1, ent, ammo, index);
                 d->weapclip[weap] = -1;
+                d->weapstore[weap] = 0;
                 if(targ >= 0) d->setweapstate(weap, W_S_SWITCH, weaponswitchdelay, lastmillis);
             }
-            else if(weap == W_GRENADE || weap == W_MINE)
-                create(d->muzzlepos(), d->muzzlepos(), local, d, PRJ_SHOT, -1, HIT_NONE, 1, W2(weap, time, false), 1, 1, 1, weap);
-            d->weapent[weap] = -1;
+            else create(d->muzzlepos(), d->muzzlepos(), local, d, PRJ_SHOT, -1, HIT_NONE, 1, W2(weap, time, false), 1, 1, 1, weap);
         }
     }
 
@@ -1203,7 +1202,11 @@ namespace projs
         d->setweapstate(weap, WS(flags) ? W_S_SECONDARY : W_S_PRIMARY, delayattack, lastmillis);
         d->weapclip[weap] = max(d->weapclip[weap]-sub-offset, 0);
         d->weapshot[weap] = sub;
-        if(offset > 0) d->weapload[weap] = -offset;
+        if(offset > 0)
+        {
+            if(W(weap, ammostore)) d->weapstore[weap] = clamp(d->weapstore[weap]+offset, 0, W(weap, ammostore));
+            d->weapload[weap] = -offset;
+        }
         d->lastshoot = lastmillis;
         if(AA(d->actortype, abilities)&(1<<A_A_PUSHABLE))
         {

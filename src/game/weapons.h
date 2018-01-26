@@ -24,6 +24,7 @@ enum {
 };
 enum {
     W_S_IDLE = 0, W_S_PRIMARY, W_S_SECONDARY, W_S_RELOAD, W_S_SWITCH, W_S_USE, W_S_POWER, W_S_ZOOM, W_S_WAIT, W_S_MAX,
+    W_S_ALL = (1<<W_S_IDLE)|(1<<W_S_PRIMARY)|(1<<W_S_SECONDARY)|(1<<W_S_RELOAD)|(1<<W_S_SWITCH)|(1<<W_S_USE)|(1<<W_S_POWER)|(1<<W_S_ZOOM)|(1<<W_S_WAIT),
     W_S_EXCLUDE = (1<<W_S_IDLE)|(1<<W_S_POWER)|(1<<W_S_ZOOM)
 };
 
@@ -168,6 +169,12 @@ WPVAR(IDF_GAMEMOD,  ammoadd, 1, VAR_MAX,
 );
 WPVAR(IDF_GAMEMOD,  ammoclip, 1, VAR_MAX,
     1,          10,          1,         8,          40,         50,         30,         48,         6,          2,          2,          1,          1
+);
+WPVAR(IDF_GAMEMOD,  ammoitem, 0, VAR_MAX,
+    0,          0,           0,         48,         240,        300,        180,        288,       36,          1,          1,          1,          0
+);
+WPVAR(IDF_GAMEMOD,  ammostore, 0, VAR_MAX,
+    0,          0,           0,         40,         200,        250,        150,        240,       30,          0,          0,          0,          0
 );
 WPVARM(IDF_GAMEMOD,  ammosub, 0, VAR_MAX,
     0,          1,          0,          1,          1,          1,          2,          1,          1,          1,          1,          1,          0,
@@ -463,9 +470,6 @@ WPVARM(IDF_GAMEMOD,  fragtimeiter, 0, VAR_MAX,
 WPVARM(IDF_GAMEMOD,  fragweap, -1, W_MAX*2-1,
     -1,         -1,         -1,         -1,         -1,         -1,         -1,         -1,         -1,         W_SHOTGUN,  W_ZAPPER,   W_SMG,      -1,
     -1,         -1,         -1,         WZ(SHOTGUN),WZ(SMG),    -1,         -1,         -1,         -1,         W_SHOTGUN,  WZ(ZAPPER), W_SMG,      -1
-);
-WPFVAR(IDF_GAMEMOD,  frequency, 0, FVAR_MAX,
-    0.0f,       0.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       2.0f,       2.0f,       4.0f,       0.0f
 );
 WPVARM(IDF_GAMEMOD,  fullauto, 0, 1,
     1,          0,          1,          0,          1,          1,          1,          1,          0,          0,          0,          0,          1,
@@ -786,6 +790,9 @@ WPVARK(IDF_GAMEMOD, shockstuntime, 0, VAR_MAX,
     500,        500,        500,        500,        500,        500,        500,        500,        500,        500,        500,        500,        500,
     500,        500,        500,        500,        500,        500,        500,        500,        500,        500,        500,        500,        500
 );
+WPVAR(IDF_GAMEMOD,  spawntime, 0, VAR_MAX,
+    15000,      15000,      15000,      15000,      15000,      15000,      15000,      15000,      15000,      30000,      30000,      60000,      15000
+);
 WPVARM(IDF_GAMEMOD,  speed, 0, VAR_MAX,
     0,          1500,       0,          1000,       2000,       400,        1250,       5000,       10000,      200,        100,        1000,       0,
     0,          1000,       0,          250,        500,        750,        85,         100000,     100000,     200,        100,        250,        0
@@ -935,7 +942,6 @@ WPFVARK(IDF_GAMEMOD,  weight, FVAR_MIN, FVAR_MAX,
 #define WSND(a,b)            (weaptype[a].sound+(b))
 #define WSNDF(a,b)           (weaptype[a].sound+((b) ? S_W_SECONDARY : S_W_PRIMARY))
 #define WSND2(a,b,c)         (weaptype[a].sound+((b) ? (c)+1 : (c)))
-#define WUSE(a)              (a < W_ITEM ? W(a, ammoclip) : W(a, ammoadd))
 #define WHCOL(d,a,b,c)       (W2(a, b, c) >= 0 ? W2(a, b, c) : game::pulsehexcol(d, clamp(INVPULSE(W2(a, b, c)), 0, int(PULSE_LAST)), 50))
 #define WPCOL(d,a,b,c)       (W2(a, b, c) >= 0 ? vec::fromcolor(W2(a, b, c)) : game::pulsecolour(d, clamp(INVPULSE(W2(a, b, c)), 0, int(PULSE_LAST)), 50))
 

@@ -17,6 +17,8 @@ namespace entities
     VAR(IDF_PERSIST, showentinterval, 0, 32, VAR_MAX);
     VAR(IDF_PERSIST, showentdist, 0, 512, VAR_MAX);
     FVAR(IDF_PERSIST, showentsize, 0, 3, 10);
+    FVAR(IDF_PERSIST, showentblend, 0, 1, 1);
+    FVAR(IDF_PERSIST, showentunavailable, 0, 0.125f, 1);
 
     VAR(IDF_PERSIST, simpleitems, 0, 0, 2); // 0 = items are models, 1 = items are icons, 2 = items are off and only halos appear
     FVAR(IDF_PERSIST, simpleitemsize, 0, 6, 8);
@@ -403,6 +405,7 @@ namespace entities
         {
             d->setweapstate(weap, W_S_SWITCH, weaponswitchdelay, lastmillis);
             d->weapclip[weap] = -1;
+            d->weapstore[weap] = 0;
             if(d->weapselect != weap && weap < W_ALL)
             {
                 d->addlastweap(d->weapselect);
@@ -423,13 +426,10 @@ namespace entities
             gameent *m = game::getclient(cn);
             if(m) projs::destruct(m, PRJ_ENT, ent);
         }
-        else
+        else if(e.spawned() != spawn)
         {
-            if(e.spawned() != spawn)
-            {
-                e.setspawned(spawn);
-                e.lastemit = lastmillis;
-            }
+            e.setspawned(spawn);
+            e.lastemit = lastmillis;
         }
     }
 
@@ -631,15 +631,16 @@ namespace entities
                         int sweap = m_weapon(f->actortype, game::gamemode, game::mutators), attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap);
                         if(!isweap(attr)) return false;
                         if(f == game::player1 && !weapons::canuse(attr)) return true;
-                        if(!f->canuse(e.type, attr, e.attrs, sweap, lastmillis, (1<<W_S_SWITCH)))
+                        if(!f->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, (1<<W_S_SWITCH)))
                         {
                             if(e.type != WEAPON) return false;
-                            else if(!f->canuse(e.type, attr, e.attrs, sweap, lastmillis, (1<<W_S_SWITCH)|(1<<W_S_RELOAD))) return true;
+                            else if(!f->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, (1<<W_S_SWITCH)|(1<<W_S_RELOAD))) return true;
                             else if(!isweap(f->weapselect) || f->weapload[f->weapselect] <= 0) return true;
                             else
                             {
                                 int offset = f->weapload[f->weapselect];
                                 f->weapclip[f->weapselect] = max(f->weapclip[f->weapselect]-offset, 0);
+                                if(W(f->weapselect, ammostore)) f->weapstore[f->weapselect] = clamp(f->weapstore[f->weapselect]+offset, 0, W(f->weapselect, ammostore));
                                 f->weapload[f->weapselect] = -f->weapload[f->weapselect];
                             }
                         }
@@ -2128,8 +2129,10 @@ namespace entities
     {
         if(shouldshowents(game::player1->state == CS_EDITING ? 1 : (!entgroup.empty() || ents.inrange(enthover) ? 2 : 3))) loopv(ents) // important, don't render lines and stuff otherwise!
             renderfocus(i, renderentshow(e, i, game::player1->state == CS_EDITING ? ((entgroup.find(i) >= 0 || enthover == i) ? 1 : 2) : 3));
-        int fstent = m_edit(game::gamemode) ? 0 : firstuse(EU_ITEM),
+        int sweap = m_weapon(game::focus->actortype, game::gamemode, game::mutators),
+            fstent = m_edit(game::gamemode) ? 0 : firstuse(EU_ITEM),
             lstent = m_edit(game::gamemode) ? ents.length() : lastuse(EU_ITEM);
+        gameent *d = game::focus ? game::focus : game::player1;
         for(int i = fstent; i < lstent; i++)
         {
             gameentity &e = *(gameentity *)ents[i];
@@ -2175,8 +2178,13 @@ namespace entities
                     }
                     if(e.type == WEAPON)
                     {
-                        int attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], m_weapon(game::focus->actortype, game::gamemode, game::mutators));
-                        if(isweap(attr)) colour = W(attr, colour);
+                        int attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap);
+                        if(isweap(attr))
+                        {
+                            colour = W(attr, colour);
+                            if(!active || !d->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL) || !weapons::canuse(attr))
+                                mdl.color.a *= showentunavailable;
+                        }
                         else continue;
                     }
                     if(colour >= 0) mdl.material[0] = bvec::fromcolor(colour);
@@ -2229,16 +2237,24 @@ namespace entities
 
         vec off(0, 0, 2.f), pos(o);
         if(enttype[e.type].usetype == EU_ITEM) pos.add(off);
+        gameent *d = game::focus ? game::focus : game::player1;
         bool edit = m_edit(game::gamemode) && cansee(idx), isedit = edit && game::player1->state == CS_EDITING,
              hasent = isedit && idx >= 0 && (enthover == idx || entgroup.find(idx) >= 0),
              hastop = hasent && e.o.squaredist(camera1->o) <= showentdist*showentdist;
         int sweap = m_weapon(game::focus->actortype, game::gamemode, game::mutators),
-            attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap),
+            attr = e.type == WEAPON ? w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap) : e.attrs[0],
             colour = e.type == WEAPON && isweap(attr) ? W(attr, colour) : colourwhite, interval = lastmillis%1000;
         float fluc = interval >= 500 ? (1500-interval)/1000.f : (500+interval)/1000.f;
         if(enttype[e.type].usetype == EU_ITEM && (active || isedit))
         {
-            float blend = fluc*skew, radius = max(((e.type == WEAPON ? weaptype[attr].halo : enttype[e.type].radius*0.5f)+(fluc*0.5f))*skew, 0.125f);
+            float blend = fluc*skew, radius = fluc*0.5f;
+            if(e.type == WEAPON && isweap(attr))
+            {
+                if(!active || !d->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL) || !weapons::canuse(attr))
+                    blend *= showentunavailable;
+                radius = max((radius+weaptype[attr].halo)*skew, 0.125f);
+            }
+            else radius = max(enttype[e.type].radius*0.5f*skew, 0.125f);
             if(simpleitems == 1)
             {
                 part_icon(o, textureload(hud::itemtex(e.type, attr), 3), simpleitemsize*skew, simpleitemblend*skew, 0, 0, 1, colour);

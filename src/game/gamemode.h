@@ -297,10 +297,9 @@ extern mutstypes mutstype[];
 #define m_balreset(a,b)     (G(balancereset) && (G(balancereset) == 2 || m_capture(a) || m_bomber(a) || m_race(a) || m_duke(a, b)))
 
 #define w_carry(w1,w2)      (isweap(w1) && w1 != W_CLAW && w1 < W_ALL && (!isweap(w2) || (w1 != w2 && (w2 != W_GRENADE || w1 != W_MINE))) && (w1 == W_ROCKET || (w1 >= W_OFFSET && w1 < W_ITEM)))
-#define w_reload(w1,w2)     (isweap(w1) && (w1 >= W_ALL || (w1 >= W_OFFSET && w1 < W_ITEM) || (isweap(w2) && (w1 == w2 || (w2 == W_GRENADE && w1 == W_MINE)))))
+#define w_reload(w1,w2)     (isweap(w1) && (w1 >= W_ALL || (isweap(w2) && (w1 == w2 || (w2 == W_GRENADE && w1 == W_MINE)))))
 #define w_item(w1,w2)       (isweap(w1) && (w1 >= W_OFFSET && w1 < W_ALL && (!isweap(w2) || (w1 != w2 && (w2 != W_GRENADE || w1 != W_MINE)))))
-#define w_attr(a,b,t,w1,w2) (t != WEAPON || m_edit(a) ? w1 : (w1 != w2 ? (!m_classic(a, b) ? (w1 >= W_ITEM ? w1 : -1) : (w1 >= W_OFFSET && w1 < W_ALL ? w1 : -1)) : (w1 != W_GRENADE ? W_GRENADE : W_MINE)))
-#define w_spawn(weap)       int(ceilf(G(itemspawntime)*W(weap, frequency)))
+#define w_attr(a,b,t,w1,w2) (t != WEAPON || m_edit(a) ? w1 : (w1 != w2 ? (w1 >= W_OFFSET && w1 < W_ALL ? w1 : -1) : (w1 != W_GRENADE ? W_GRENADE : W_MINE)))
 
 #define m_mmvar(a,b,c)      (m_dm(a) ? \
                                 (m_duel(a, b) ? G(c##duel) : \

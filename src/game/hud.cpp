@@ -1365,10 +1365,10 @@ namespace hud
                                 if(enttype[e.type].usetype == EU_ITEM && e.type == WEAPON)
                                 {
                                     int sweap = m_weapon(target->actortype, game::gamemode, game::mutators), attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap);
-                                    if(isweap(attr) && target->canuse(e.type, attr, e.attrs, sweap, lastmillis, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)) && weapons::canuse(attr))
+                                    if(isweap(attr) && target->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)) && weapons::canuse(attr))
                                     {
                                         int drop = -1;
-                                        if(m_classic(game::gamemode, game::mutators) && target->weapclip[attr] < 0 && w_carry(attr, sweap) && target->carry(sweap) >= AA(target->actortype, maxcarry))
+                                        if(m_classic(game::gamemode, game::mutators) && w_carry(attr, sweap) && target->carry(sweap) >= AA(target->actortype, maxcarry))
                                             drop = target->drop(sweap);
                                         if(isweap(drop))
                                         {
@@ -1398,7 +1398,7 @@ namespace hud
                             ty += draw_textf("Press \fs\fw\f{=primary}\fS to attack", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1);
                         if(target->canshoot(target->weapselect, HIT_ALT, m_weapon(target->actortype, game::gamemode, game::mutators), lastmillis, (1<<W_S_RELOAD)))
                             ty += draw_textf("Press \fs\fw\f{=secondary}\fS to %s", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1, W2(target->weapselect, cooked, true)&W_C_ZOOM ? "zoom" : "alt-attack");
-                        if(target->canreload(target->weapselect, m_weapon(target->actortype, game::gamemode, game::mutators), false, lastmillis))
+                        if(target->canreload(target->weapselect, m_weapon(target->actortype, game::gamemode, game::mutators), true, lastmillis))
                             ty += draw_textf("Press \fs\fw\f{=reload}\fS to reload ammo", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1);
                         popfont();
                     }

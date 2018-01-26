@@ -867,7 +867,9 @@ namespace client
 
     CLCOMMAND(weapselect, intret(d->weapselect));
     CLCOMMANDM(loadweap, "si", (char *who, int *n), intret(d->loadweap.inrange(*n) ? d->loadweap[*n] : -1));
+    CLCOMMANDM(weapget, "siii", (char *who, int *n, int *a, int *b), intret(isweap(*n) ? d->getammo(*n, *a!=0 ? lastmillis : 0, *b!=0) : -1));
     CLCOMMANDM(weapammo, "si", (char *who, int *n), intret(isweap(*n) ? d->weapclip[*n] : -1));
+    CLCOMMANDM(weapstore, "si", (char *who, int *n), intret(isweap(*n) ? d->weapstore[*n] : -1));
     CLCOMMANDM(weapstate, "si", (char *who, int *n), intret(isweap(*n) ? d->weapstate[*n] : W_S_IDLE));
     CLCOMMANDM(weaptime, "si", (char *who, int *n), intret(isweap(*n) ? d->weaptime[*n] : 0));
     CLCOMMANDM(weapwait, "si", (char *who, int *n), intret(isweap(*n) ? d->weapwait[*n] : 0));
@@ -2134,7 +2136,7 @@ namespace client
         {
             d->weapreset(false);
             getint(p);
-            loopi(W_MAX) getint(p);
+            loopj(3) loopi(W_MAX) getint(p);
         }
         else
         {
@@ -2142,6 +2144,8 @@ namespace client
             int weap = getint(p);
             d->weapselect = isweap(weap) ? weap : W_CLAW;
             loopi(W_MAX) d->weapclip[i] = getint(p);
+            loopi(W_MAX) d->weapstore[i] = getint(p);
+            loopi(W_MAX) d->weapent[i] = getint(p);
         }
         if(resume) d->setscale(game::rescale(d), 0, true);
         return reset;
@@ -2692,10 +2696,10 @@ namespace client
 
                 case N_RELOAD:
                 {
-                    int trg = getint(p), weap = getint(p), amt = getint(p), ammo = getint(p);
+                    int trg = getint(p), weap = getint(p), amt = getint(p), ammo = getint(p), store = getint(p);
                     gameent *m = game::getclient(trg);
                     if(!m || !isweap(weap)) break;
-                    weapons::weapreload(m, weap, amt, ammo, false);
+                    weapons::weapreload(m, weap, amt, ammo, store, false);
                     break;
                 }
 

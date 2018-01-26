@@ -3767,6 +3767,7 @@ namespace game
         previewent->physstate = PHYS_FLOOR;
         previewent->spawnstate(G_DEATHMATCH, 0, -1, m_health(G_DEATHMATCH, 0, A_PLAYER));
         loopi(W_MAX) previewent->weapclip[i] = W(i, ammoclip);
+        loopi(W_MAX) previewent->weapstore[i] = W(i, ammostore);
     }
 
     void renderplayerpreview(float scale, const vec4 &mcolor, const char *actions)
@@ -3794,6 +3795,7 @@ namespace game
     PLAYERPREV(privilege, "i", (int *n), previewent->privilege = clamp(*n, 0, int(PRIV_MAX-1)));
     PLAYERPREV(weapselect, "i", (int *n), previewent->weapselect = clamp(*n, 0, W_ALL-1));
     PLAYERPREV(weapammo, "ii", (int *n, int *o), previewent->weapclip[clamp(*n, 0, W_ALL-1)] = *o);
+    PLAYERPREV(weapstore, "ii", (int *n, int *o), previewent->weapstore[clamp(*n, 0, W_ALL-1)] = *o);
     PLAYERPREV(weapstate, "ii", (int *n, int *o), previewent->weapstate[clamp(*n, 0, W_ALL-1)] = clamp(*o, 0, W_S_MAX-1));
     PLAYERPREV(weapwait, "ii", (int *n, int *o), previewent->weapwait[clamp(*n, 0, W_ALL-1)] = *o);
     PLAYERPREV(weaptime, "ii", (int *n, int *o), previewent->weaptime[clamp(*n, 0, W_ALL-1)] = *o);

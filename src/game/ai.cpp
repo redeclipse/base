@@ -1309,7 +1309,7 @@ namespace ai
                     {
                         extentity &e = *entities::ents[ent];
                         int attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap);
-                        if(isweap(attr) && d->canuse(e.type, attr, e.attrs, sweap, lastmillis, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
+                        if(isweap(attr) && d->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
                         {
                             if(!wantsweap(d, attr, false)) break;
                             actitem &s = items.add();
@@ -1352,7 +1352,7 @@ namespace ai
             {
                 extentity &e = *entities::ents[ent];
                 int attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap);
-                if(isweap(attr) && d->canuse(e.type, attr, e.attrs, sweap, lastmillis, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
+                if(isweap(attr) && d->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
                 {
                     if(!wantsweap(d, attr, false)) break;
                     d->action[AC_USE] = true;
