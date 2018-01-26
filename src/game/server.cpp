@@ -715,7 +715,7 @@ namespace server
     {
         if(!sents.inrange(ent)) return;
         if(clear) loopvk(clients) if(clients[k]->dropped.removeall(ent))
-            sendf(-1, 1, "ri5", N_DESTROY, clients[k]->clientnum, PRJ_ENT, 1, ent);
+            sendf(-1, 1, "ri5", N_DESTROY, clients[k]->clientnum, PRJ_ENT, -1, ent);
         sents[ent].spawned = spawned;
         sents[ent].millis = sents[ent].last = gamemillis;
         if(sents[ent].type == WEAPON && !(sents[ent].attrs[1]&W_F_FORCED))

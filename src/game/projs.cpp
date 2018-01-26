@@ -306,12 +306,12 @@ namespace projs
         }
     }
 
-    void destruct(gameent *d, int targ, int id)
+    void destruct(gameent *d, int targ, int id, bool all)
     {
         loopv(projs) if(projs[i]->owner == d && projs[i]->projtype == targ && projs[i]->id == id)
         {
             projs[i]->state = CS_DEAD;
-            break;
+            if(!all) break;
         }
     }
 

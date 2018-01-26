@@ -2618,12 +2618,12 @@ namespace client
 
                 case N_DESTROY:
                 {
-                    int scn = getint(p), targ = getint(p), num = getint(p);
+                    int scn = getint(p), targ = getint(p), idx = getint(p), num = idx < 0 ? 0-idx : idx;
                     gameent *t = game::getclient(scn);
                     loopi(num)
                     {
                         int id = getint(p);
-                        if(t) projs::destruct(t, targ, id);
+                        if(t) projs::destruct(t, targ, id, idx < 0);
                     }
                     break;
                 }
