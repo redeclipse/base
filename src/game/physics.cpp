@@ -238,7 +238,7 @@ namespace physics
 
     float jumpvel(physent *d, bool liquid)
     {
-        float vel = jumpspeed*(liquid ? liquidmerge(d, 1.f, PHYS(liquidspeed)) : 1.f);
+        float vel = d->jumpspeed*(liquid ? liquidmerge(d, 1.f, PHYS(liquidspeed)) : 1.f);
         if(gameent::is(d))
         {
             gameent *e = (gameent *)d;
@@ -334,9 +334,8 @@ namespace physics
                 else if(m_bomber(game::gamemode)) scale *= bombercarryspeed;
             }
         }
-        float speed = (impulsespeed*amt*scale)+(keep.magnitude()*redir);
+        float speed = (d->impulsespeed*amt*scale)+(keep.magnitude()*redir);
         keep.mul(1-min(redir, 1.f));
-        if(impulselimit > 0) return min(speed, impulselimit*scale);
         return speed;
     }
 

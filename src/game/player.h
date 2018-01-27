@@ -181,9 +181,6 @@ APVAR(IDF_GAMEMOD, weaponrace, 0, W_ALL-1,
 APVAR(IDF_GAMEMOD, weaponspawn, 0, W_ALL-1,
     W_PISTOL,       W_PISTOL,       W_SMG,          W_PISTOL,       W_CLAW
 );
-APFVAR(IDF_GAMEMOD, weight, 0, FVAR_MAX,
-    150,            150,            100,            150,            100
-);
 APFVAR(IDF_GAMEMOD, scale, FVAR_NONZERO, FVAR_MAX,
     1,              1,              0.5f,           0.85f,          0.7f
 );
@@ -214,8 +211,18 @@ APVAR(IDF_GAMEMOD, spawngrenades, 0, 2,
 APVAR(IDF_GAMEMOD, spawnmines, 0, 2,
     0,              0,              0,              0,              0
 );
+// these are modified by gameent::setparams()
 APFVAR(IDF_GAMEMOD, speed, 0, FVAR_MAX,
     105,            105,            0,              105,            120
+);
+APFVAR(IDF_GAMEMOD, jumpspeed, 0, FVAR_MAX,
+    110,            110,            0,              110,            110
+);
+APFVAR(IDF_GAMEMOD, impulsespeed, 0, FVAR_MAX,
+    90,             90,             0,              90,             90
+);
+APFVAR(IDF_GAMEMOD, weight, 0, FVAR_MAX,
+    150,            150,            100,            150,            100
 );
 
 #define VANITYMAX 16

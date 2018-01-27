@@ -1151,13 +1151,22 @@ struct gameent : dynent, clientstate
         zradius = PLAYERHEIGHT*curscale;
         if(reset) height = zradius;
         speed = AA(type, speed);
+        jumpspeed = AA(type, jumpspeed);
+        impulsespeed = AA(type, impulsespeed);
         weight = AA(type, weight);
+        #define MODPHYS(a) a += W(i, mod##a)*(W(i, mod##a##ammo) ? numammo : 1);
         loopi(W_MAX) if(hasweap(i, sweap))
         {
-            speed += W(i, playerspeed)*(W(i, playerspeedammo) ? getammo(i, 0, true) : 1);
-            weight += W(i, playerweight)*(W(i, playerweightammo) ? getammo(i, 0, true) : 1);
+            int numammo = getammo(i, 0, true);
+            MODPHYS(speed);
+            MODPHYS(jumpspeed);
+            MODPHYS(impulsespeed);
+            MODPHYS(weight);
         }
+        #undef MODPHYS
         speed = max(speed, FVAR_NONZERO);
+        jumpspeed = max(jumpspeed, 0.f);
+        impulsespeed = max(impulsespeed, 0.f);
         weight *= curscale;
         radius = max(xradius, yradius);
         aboveeye = curscale;

@@ -464,9 +464,6 @@ GFVAR(IDF_GAMEMOD, moveinair, FVAR_NONZERO, 0.9f, FVAR_MAX); // in-air modifier
 GFVAR(IDF_GAMEMOD, movestepup, FVAR_NONZERO, 0.95f, FVAR_MAX); // step-up modifier
 GFVAR(IDF_GAMEMOD, movestepdown, FVAR_NONZERO, 1.15f, FVAR_MAX); // step-down modifier
 
-GFVAR(IDF_GAMEMOD, jumpspeed, FVAR_NONZERO, 110, FVAR_MAX); // extra velocity to add when jumping
-GFVAR(IDF_GAMEMOD, impulsespeed, FVAR_NONZERO, 90, FVAR_MAX); // extra velocity to add when impulsing
-GFVAR(IDF_GAMEMOD, impulselimit, 0, 0, FVAR_MAX); // maximum impulse speed
 GFVAR(IDF_GAMEMOD, impulseboost, 0, 1, FVAR_MAX); // thrust modifier
 GFVAR(IDF_GAMEMOD, impulseboostredir, 0, 1, FVAR_MAX); // how much of the old velocity is redirected into the new one
 GFVAR(IDF_GAMEMOD, impulseboostpitchmin, -89.9f, 5.f, 89.9f); // thrust pitch minimum

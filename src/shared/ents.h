@@ -153,7 +153,7 @@ struct baseent
 struct physent : baseent                        // can be affected by physics
 {
     vec deltapos, newpos;
-    float speed, weight;
+    float speed, jumpspeed, impulsespeed, weight;
     int airmillis, floormillis;
     float radius, height, aboveeye;             // bounding box size
     float xradius, yradius, zradius, zmargin;
@@ -167,7 +167,8 @@ struct physent : baseent                        // can be affected by physics
     uchar type;                                 // one of ENT_* above
     uchar collidetype;                          // one of COLLIDE_* above
 
-    physent() : deltapos(0, 0, 0), newpos(0, 0, 0), speed(100), weight(100),
+    physent() : deltapos(0, 0, 0), newpos(0, 0, 0),
+        speed(100), jumpspeed(100), impulsespeed(100), weight(100),
         radius(3), height(14), aboveeye(1),
         xradius(3), yradius(3), zradius(14), zmargin(0),
         curscale(1),
