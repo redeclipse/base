@@ -215,7 +215,7 @@ APVAR(IDF_GAMEMOD, spawnmines, 0, 2,
     0,              0,              0,              0,              0
 );
 APFVAR(IDF_GAMEMOD, speed, 0, FVAR_MAX,
-    85,             85,             0,              85,             100
+    105,            105,            0,              105,            120
 );
 
 #define VANITYMAX 16

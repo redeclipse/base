@@ -454,7 +454,7 @@ GVAR(IDF_GAMEMOD, enemyspawntime, 1, 60000, VAR_MAX); // when enemies respawn
 GVAR(IDF_GAMEMOD, enemyspawndelay, 0, 1000, VAR_MAX); // after map start enemies first spawn
 GVAR(IDF_GAMEMOD, enemyspawnstyle, 0, 1, 3); // 0 = all at once, 1 = staggered, 2 = random, 3 = randomise between both
 
-GFVAR(IDF_GAMEMOD, movespeed, FVAR_NONZERO, 125, FVAR_MAX); // speed
+GFVAR(IDF_GAMEMOD, movespeed, FVAR_NONZERO, 1.f, FVAR_MAX); // speed
 GFVAR(IDF_GAMEMOD, moveslow, 0, 0.5f, FVAR_MAX); // threshold for running
 GFVAR(IDF_GAMEMOD, movecrawl, 0, 0.6f, FVAR_MAX); // crawl modifier
 GFVAR(IDF_GAMEMOD, moverun, FVAR_NONZERO, 1.3f, FVAR_MAX); // running modifier

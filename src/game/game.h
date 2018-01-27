@@ -1157,6 +1157,7 @@ struct gameent : dynent, clientstate
             speed += W(i, playerspeed)*(W(i, playerspeedammo) ? getammo(i, 0, true) : 1);
             weight += W(i, playerweight)*(W(i, playerweightammo) ? getammo(i, 0, true) : 1);
         }
+        speed = max(speed, FVAR_NONZERO);
         weight *= curscale;
         radius = max(xradius, yradius);
         aboveeye = curscale;
