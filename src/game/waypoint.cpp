@@ -114,7 +114,7 @@ namespace ai
                 }
             }
 
-            if(!left || right==numindices)
+            if(!left || right == numindices)
             {
                 leftmin = rightmin = vec(1e16f, 1e16f, 1e16f);
                 leftmax = rightmax = vec(-1e16f, -1e16f, -1e16f);
@@ -145,17 +145,17 @@ namespace ai
             curnode.split[0] = splitleft;
             curnode.split[1] = splitright;
 
-            if(left<=1) curnode.child[0] = (axis<<30) | (left>0 ? indices[0] : 0x3FFFFFFF);
+            if(left <= 1) curnode.child[0] = (axis<<30) | (left > 0 ? indices[0] : 0x3FFFFFFF);
             else
             {
                 curnode.child[0] = (axis<<30) | (nodes.length()-offset);
                 if(left) build(indices, left, leftmin, leftmax);
             }
 
-            if(numindices-right<=1) curnode.child[1] = (1<<31) | (left<=1 ? 1<<30 : 0) | (numindices-right>0 ? indices[right] : 0x3FFFFFFF);
+            if(numindices-right <= 1) curnode.child[1] = (1<<31) | (left <= 1 ? 1<<30 : 0) | (numindices-right > 0 ? indices[right] : 0x3FFFFFFF);
             else
             {
-                curnode.child[1] = (left<=1 ? 1<<30 : 0) | (nodes.length()-offset);
+                curnode.child[1] = (left <= 1 ? 1<<30 : 0) | (nodes.length()-offset);
                 if(numindices-right) build(&indices[right], numindices-right, rightmin, rightmax);
             }
         }

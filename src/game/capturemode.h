@@ -200,7 +200,7 @@ struct captureservmode : capturestate, servmode
             putint(p, f.pitch);
             putint(p, f.owner);
             loopj(3) putint(p, int(f.spawnloc[j]*DMF));
-            if(f.owner<0)
+            if(f.owner < 0)
             {
                 putint(p, f.droptime);
                 if(f.droptime)
@@ -294,7 +294,7 @@ struct captureservmode : capturestate, servmode
 
     int points(clientinfo *m, clientinfo *v)
     {
-        bool isteam = m==v || m->team == v->team;
+        bool isteam = m == v || m->team == v->team;
         int p = isteam ? -1 : 1, q = p;
         loopv(flags) if(flags[i].owner == m->clientnum) p += q;
         return p;

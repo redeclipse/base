@@ -131,55 +131,77 @@ namespace server
         void process(clientinfo *ci);
     };
 
+    int servprojid = 0;
+    int getprojid()
+    {
+        servprojid++;
+        if(servprojid <= 0) servprojid = 1;
+        return servprojid;
+    }
+
     struct projectile
     {
         int id, ammo;
+
         projectile(int n, int a) : id(n), ammo(a) {}
         ~projectile() {}
     };
+
     struct projectilestate
     {
         vector<projectile> projs;
+
         projectilestate() { reset(); }
+
         void reset() { projs.shrink(0); }
+
         void add(int id, int ammo = -1)
         {
             projs.add(projectile(id, ammo));
         }
+
         bool remove(int id)
         {
-            loopv(projs) if(projs[i].id==id)
+            loopv(projs) if(projs[i].id == id)
             {
                 projs.remove(i);
                 return true;
             }
             return false;
         }
+
         int removeall(int id)
         {
             int count = 0;
-            loopvrev(projs) if(projs[i].id==id)
+            loopvrev(projs) if(projs[i].id == id)
             {
                 projs.remove(i);
                 count++;
             }
             return count;
         }
+
         bool find(int id)
         {
-            loopv(projs) if(projs[i].id==id) return true;
+            loopv(projs) if(projs[i].id == id) return true;
             return false;
         }
+
         void values(int id, int &a)
         {
-            loopv(projs) if(projs[i].id==id) { a = projs[i].ammo; return; }
             a = -1;
+            loopv(projs) if(projs[i].id == id)
+            {
+                a = projs[i].ammo;
+                return;
+            }
         }
     };
 
     struct dmghist
     {
         int clientnum, millis;
+
         dmghist() {}
         dmghist(int c, int m) : clientnum(c), millis(m) {}
         ~dmghist() {}
@@ -188,6 +210,7 @@ namespace server
     struct teamkill
     {
         int millis, team, points;
+
         teamkill() {}
         teamkill(int m, int t, int p) : millis(m), team(t), points(p) {}
         ~teamkill() {}
@@ -406,7 +429,7 @@ namespace server
 
         void addevent(gameevent *e)
         {
-            if(state==CS_SPECTATOR || events.length()>250) delete e;
+            if(state == CS_SPECTATOR || events.length()>250) delete e;
             else events.add(e);
         }
 
@@ -648,7 +671,7 @@ namespace server
         virtual void spawned(clientinfo *ci) {}
         virtual int points(clientinfo *m, clientinfo *v)
         {
-            if(m==v || m->team == v->team) return -1;
+            if(m == v || m->team == v->team) return -1;
             return 1;
         }
         virtual void died(clientinfo *m, clientinfo *v = NULL) {}
@@ -1157,40 +1180,20 @@ namespace server
         if(G(demoautorec) && !demonextmatch) setdemorecord(true);
     }
 
-    void resetbans()
+    void resetcontrols(int type)
     {
-        loopvrev(control) if(control[i].type == ipinfo::BAN && control[i].flag <= ipinfo::INTERNAL) control.remove(i);
-    }
-
-    void resetallows()
-    {
-        loopvrev(control) if(control[i].type == ipinfo::ALLOW && control[i].flag <= ipinfo::INTERNAL) control.remove(i);
-    }
-
-    void resetmutes()
-    {
-        loopvrev(control) if(control[i].type == ipinfo::MUTE && control[i].flag <= ipinfo::INTERNAL) control.remove(i);
-    }
-
-    void resetlimits()
-    {
-        loopvrev(control) if(control[i].type == ipinfo::LIMIT && control[i].flag <= ipinfo::INTERNAL) control.remove(i);
-    }
-
-    void resetexcepts()
-    {
-        loopvrev(control) if(control[i].type == ipinfo::EXCEPT && control[i].flag <= ipinfo::INTERNAL) control.remove(i);
+        loopvrev(control) if(control[i].type == type && control[i].flag <= ipinfo::INTERNAL) control.remove(i);
     }
 
     void cleanup(bool init = false)
     {
         setpause(false);
         setmod(sv_botoffset, 0);
-        if(G(resetmmonend)) { mastermode = MM_OPEN; resetallows(); }
-        if(G(resetbansonend)) resetbans();
-        if(G(resetmutesonend)) resetmutes();
-        if(G(resetlimitsonend)) resetlimits();
-        if(G(resetexceptsonend)) resetexcepts();
+        if(G(resetmmonend)) { mastermode = MM_OPEN; resetcontrols(ipinfo::ALLOW); }
+        if(G(resetbansonend)) resetcontrols(ipinfo::BAN);
+        if(G(resetmutesonend)) resetcontrols(ipinfo::MUTE);
+        if(G(resetlimitsonend)) resetcontrols(ipinfo::LIMIT);
+        if(G(resetexceptsonend)) resetcontrols(ipinfo::EXCEPT);
         if(G(resetvarsonend) || init) resetgamevars(true);
         changemap();
         lastrotatecycle = clocktime;
@@ -1267,7 +1270,7 @@ namespace server
     bool duplicatename(clientinfo *ci, char *name)
     {
         if(!name) name = ci->name;
-        loopv(clients) if(clients[i]!=ci && !strcmp(name, clients[i]->name)) return true;
+        loopv(clients) if(clients[i] != ci && !strcmp(name, clients[i]->name)) return true;
         return false;
     }
 
@@ -1777,7 +1780,7 @@ namespace server
         if(!m_play(gamemode)) return;
         bool wasinovertime = gamestate == G_S_OVERTIME;
         int limit = wasinovertime ? m_mmvar(gamemode, mutators, overtimelimit) : m_mmvar(gamemode, mutators, timelimit), numt = numteams(gamemode, mutators);
-        bool newlimit = limit != oldtimelimit, newtimer = gamemillis-curtime>0 && gamemillis/1000!=(gamemillis-curtime)/1000,
+        bool newlimit = limit != oldtimelimit, newtimer = gamemillis-curtime > 0 && gamemillis/1000 != (gamemillis-curtime)/1000,
              iterate = newlimit || newtimer;
         if(iterate)
         {
@@ -2436,16 +2439,16 @@ namespace server
     {
         demoheader hdr;
         stringz(msg);
-        defformatstring(file, strstr(smapname, "maps/")==smapname || strstr(smapname, "maps\\")==smapname ? "%s.dmo" : "demos/%s.dmo", smapname);
+        defformatstring(file, strstr(smapname, "maps/") == smapname || strstr(smapname, "maps\\") == smapname ? "%s.dmo" : "demos/%s.dmo", smapname);
         demoplayback = opengzfile(file, "rb");
         if(!demoplayback) formatstring(msg, "\frCould not read demo \fs\fc%s\fS", file);
-        else if(demoplayback->read(&hdr, sizeof(demoheader))!=sizeof(demoheader) || memcmp(hdr.magic, VERSION_DEMOMAGIC, sizeof(hdr.magic)))
+        else if(demoplayback->read(&hdr, sizeof(demoheader)) != sizeof(demoheader) || memcmp(hdr.magic, VERSION_DEMOMAGIC, sizeof(hdr.magic)))
             formatstring(msg, "\frSorry, \fs\fc%s\fS is not a demo file", file);
         else
         {
             lilswap(&hdr.gamever, 4);
-            if(hdr.gamever!=VERSION_GAME)
-                formatstring(msg, "\frDemo \fs\fc%s\fS requires %s version of %s (with protocol version %d)", file, hdr.gamever<VERSION_GAME ? "an older" : "a newer", versionname, hdr.gamever);
+            if(hdr.gamever != VERSION_GAME)
+                formatstring(msg, "\frDemo \fs\fc%s\fS requires %s version of %s (with protocol version %d)", file, hdr.gamever < VERSION_GAME ? "an older" : "a newer", versionname, hdr.gamever);
         }
         if(msg[0])
         {
@@ -2457,7 +2460,7 @@ namespace server
         srvoutf(4, "\fyPlaying demo \fs\fc%s\fS", file);
         sendf(-1, 1, "ri3", N_DEMOPLAYBACK, 1, -1);
 
-        if(demoplayback->read(&nextplayback, sizeof(nextplayback))!=sizeof(nextplayback))
+        if(demoplayback->read(&nextplayback, sizeof(nextplayback)) != sizeof(nextplayback))
         {
             enddemoplayback();
             return;
@@ -2468,11 +2471,11 @@ namespace server
     void readdemo()
     {
         if(!demoplayback || paused) return;
-        while(gamemillis>=nextplayback)
+        while(gamemillis >= nextplayback)
         {
             int chan, len;
-            if(demoplayback->read(&chan, sizeof(chan))!=sizeof(chan) ||
-                demoplayback->read(&len, sizeof(len))!=sizeof(len))
+            if(demoplayback->read(&chan, sizeof(chan)) != sizeof(chan) ||
+                demoplayback->read(&len, sizeof(len)) != sizeof(len))
             {
                 enddemoplayback();
                 return;
@@ -2480,7 +2483,7 @@ namespace server
             lilswap(&chan, 1);
             lilswap(&len, 1);
             ENetPacket *packet = enet_packet_create(NULL, len, 0);
-            if(!packet || demoplayback->read(packet->data, len)!=size_t(len))
+            if(!packet || demoplayback->read(packet->data, len) != size_t(len))
             {
                 if(packet) enet_packet_destroy(packet);
                 enddemoplayback();
@@ -2489,7 +2492,7 @@ namespace server
             sendpacket(-1, chan, packet);
             if(!packet->referenceCount) enet_packet_destroy(packet);
             if(!demoplayback) break;
-            if(demoplayback->read(&nextplayback, sizeof(nextplayback))!=sizeof(nextplayback))
+            if(demoplayback->read(&nextplayback, sizeof(nextplayback)) != sizeof(nextplayback))
             {
                 enddemoplayback();
                 return;
@@ -2529,7 +2532,7 @@ namespace server
         demoinfo &d = demoinfos.add();
         copystring(d.file, name);
         stringz(msg);
-        if(f->read(&d.hdr, sizeof(demoheader))!=sizeof(demoheader) || memcmp(d.hdr.magic, VERSION_DEMOMAGIC, sizeof(d.hdr.magic)))
+        if(f->read(&d.hdr, sizeof(demoheader)) != sizeof(demoheader) || memcmp(d.hdr.magic, VERSION_DEMOMAGIC, sizeof(d.hdr.magic)))
             formatstring(msg, "\fs\fc%s\fS is not a demo file", name);
         else
         {
@@ -2653,11 +2656,11 @@ namespace server
         setmod(sv_botoffset, 0);
         if(G(resetmmonend) >= 2) mastermode = MM_OPEN;
         if(G(resetvarsonend) >= 2) resetgamevars(false);
-        if(G(resetallowsonend) >= 2) resetallows();
-        if(G(resetbansonend) >= 2) resetbans();
-        if(G(resetmutesonend) >= 2) resetmutes();
-        if(G(resetlimitsonend) >= 2) resetlimits();
-        if(G(resetexceptsonend) >= 2) resetexcepts();
+        if(G(resetallowsonend) >= 2) resetcontrols(ipinfo::ALLOW);
+        if(G(resetbansonend) >= 2) resetcontrols(ipinfo::BAN);
+        if(G(resetmutesonend) >= 2) resetcontrols(ipinfo::MUTE);
+        if(G(resetlimitsonend) >= 2) resetcontrols(ipinfo::LIMIT);
+        if(G(resetexceptsonend) >= 2) resetcontrols(ipinfo::EXCEPT);
     }
 
     bool checkvotes(bool force)
@@ -3501,7 +3504,7 @@ namespace server
         {
             loopi(SENDMAP_MAX)
             {
-                defformatstring(reqfile, strstr(reqmap, "maps/")==reqmap || strstr(reqmap, "maps\\")==reqmap ? "%s.%s" : "maps/%s.%s", reqmap, sendmaptypes[i]);
+                defformatstring(reqfile, strstr(reqmap, "maps/") == reqmap || strstr(reqmap, "maps\\") == reqmap ? "%s.%s" : "maps/%s.%s", reqmap, sendmaptypes[i]);
                 if(i == SENDMAP_MPZ) smapcrc = crcfile(reqfile);
                 mapdata[i] = openfile(reqfile, "rb");
             }
@@ -3624,7 +3627,7 @@ namespace server
                 {
                     if(nargs <= 1 || !arg)
                     {
-                        conoutft(CON_DEBUG, id->flags&IDF_HEX && *id->storage.i >= 0 ? (id->maxval==0xFFFFFF ? "\fy%s = 0x%.6X" : (uint(id->maxval)==0xFFFFFFFFU ? "\fy%s = 0x%.8X" : "\fy%s = 0x%X")) : "\fy%s = %d", id->name, id->flags&IDF_HEX && uint(id->maxval) == 0xFFFFFFFFU ? uint(*id->storage.i) : *id->storage.i);
+                        conoutft(CON_DEBUG, id->flags&IDF_HEX && *id->storage.i >= 0 ? (id->maxval == 0xFFFFFF ? "\fy%s = 0x%.6X" : (uint(id->maxval) == 0xFFFFFFFFU ? "\fy%s = 0x%.8X" : "\fy%s = 0x%X")) : "\fy%s = %d", id->name, id->flags&IDF_HEX && uint(id->maxval) == 0xFFFFFFFFU ? uint(*id->storage.i) : *id->storage.i);
                         return true;
                     }
                     if(id->flags&IDF_READONLY)
@@ -3778,7 +3781,7 @@ namespace server
                 {
                     if(nargs <= 1 || !arg)
                     {
-                        srvmsgft(ci->clientnum, CON_DEBUG, id->flags&IDF_HEX && *id->storage.i >= 0 ? (id->maxval==0xFFFFFF ? "\fy%s = 0x%.6X" : (uint(id->maxval)==0xFFFFFFFFU ? "\fy%s = 0x%.8X" : "\fy%s = 0x%X")) : "\fy%s = %d", name, id->flags&IDF_HEX && uint(id->maxval) == 0xFFFFFFFFU ? uint(*id->storage.i) : *id->storage.i);
+                        srvmsgft(ci->clientnum, CON_DEBUG, id->flags&IDF_HEX && *id->storage.i >= 0 ? (id->maxval == 0xFFFFFF ? "\fy%s = 0x%.6X" : (uint(id->maxval) == 0xFFFFFFFFU ? "\fy%s = 0x%.8X" : "\fy%s = 0x%X")) : "\fy%s = %d", name, id->flags&IDF_HEX && uint(id->maxval) == 0xFFFFFFFFU ? uint(*id->storage.i) : *id->storage.i);
                         return;
                     }
                     else if(locked && !haspriv(ci, locked, "change that variable"))
@@ -5865,7 +5868,7 @@ namespace server
     {
         if(clients.empty() || (!hasnonlocalclients() && !demorecord)) return false;
         enet_uint32 millis = enet_time_get()-lastsend;
-        if(millis<40 && !force) return false;
+        if(millis < 40 && !force) return false;
         bool flush = buildworldstate();
         lastsend += millis - (millis%40);
         return flush;
@@ -6041,7 +6044,7 @@ namespace server
             return;
         }
         if(p.packet->flags&ENET_PACKET_FLAG_RELIABLE) reliablemessages = true;
-        #define QUEUE_MSG { if(ci && (!ci->local || demorecord || hasnonlocalclients())) while(curmsg<p.length()) ci->messages.add(p.buf[curmsg++]); }
+        #define QUEUE_MSG { if(ci && (!ci->local || demorecord || hasnonlocalclients())) while(curmsg < p.length()) ci->messages.add(p.buf[curmsg++]); }
         #define QUEUE_BUF(body) { \
             if(ci && (!ci->local || demorecord || hasnonlocalclients())) \
             { \
@@ -6064,7 +6067,7 @@ namespace server
                 case N_POS:
                 {
                     int lcn = getuint(p);
-                    if(lcn<0)
+                    if(lcn < 0)
                     {
                         disconnect_client(sender, DISC_CN);
                         return;
@@ -6134,12 +6137,12 @@ namespace server
                         cp->yaw = yaw;
                         cp->pitch = pitch;
                         cp->roll = roll;
-                        if((!ci->local || demorecord || hasnonlocalclients()) && (cp->state==CS_ALIVE || cp->state==CS_EDITING))
+                        if((!ci->local || demorecord || hasnonlocalclients()) && (cp->state == CS_ALIVE || cp->state == CS_EDITING))
                         {
                             cp->position.setsize(0);
-                            while(curmsg<p.length()) cp->position.add(p.buf[curmsg++]);
+                            while(curmsg < p.length()) cp->position.add(p.buf[curmsg++]);
                         }
-                        if(cp->state==CS_ALIVE)
+                        if(cp->state == CS_ALIVE)
                         {
                             if(smode) smode->moved(cp, oldpos, cp->o);
                             mutate(smuts, mut->moved(cp, oldpos, cp->o));
@@ -6959,7 +6962,7 @@ namespace server
                     break;
 
                 case N_SETUPAFFIN:
-                    if(smode==&defendmode) defendmode.parseaffinity(p);
+                    if(smode == &defendmode) defendmode.parseaffinity(p);
                     break;
 
                 case N_MOVEAFFIN:
@@ -6970,8 +6973,8 @@ namespace server
                     loopi(3) inertia[i] = getint(p)/DMF;
                     clientinfo *cp = (clientinfo *)getinfo(cn);
                     if(!cp || !hasclient(cp, ci)) break;
-                    if(smode==&capturemode) capturemode.moveaffinity(cp, cn, id, o, inertia);
-                    else if(smode==&bombermode) bombermode.moveaffinity(cp, cn, id, o, inertia);
+                    if(smode == &capturemode) capturemode.moveaffinity(cp, cn, id, o, inertia);
+                    else if(smode == &bombermode) bombermode.moveaffinity(cp, cn, id, o, inertia);
                     break;
                 }
 
@@ -6981,8 +6984,8 @@ namespace server
                     clientinfo *cp = (clientinfo *)getinfo(lcn);
                     if(!hasclient(cp, ci) || cp->state == CS_SPECTATOR) break;
                     cp->lastaffinity = gamemillis;
-                    if(smode==&capturemode) capturemode.takeaffinity(cp, flag);
-                    else if(smode==&bombermode) bombermode.takeaffinity(cp, flag);
+                    if(smode == &capturemode) capturemode.takeaffinity(cp, flag);
+                    else if(smode == &bombermode) bombermode.takeaffinity(cp, flag);
                     break;
                 }
 
@@ -6990,8 +6993,8 @@ namespace server
                 {
                     int flag = getint(p);
                     if(!ci) break;
-                    if(smode==&capturemode) capturemode.resetaffinity(ci, flag);
-                    else if(smode==&bombermode) bombermode.resetaffinity(ci, flag);
+                    if(smode == &capturemode) capturemode.resetaffinity(ci, flag);
+                    else if(smode == &bombermode) bombermode.resetaffinity(ci, flag);
                     break;
                 }
 
@@ -7003,15 +7006,15 @@ namespace server
                     loopk(3) inertia[k] = getint(p)/DMF;
                     clientinfo *cp = (clientinfo *)getinfo(lcn);
                     if(!hasclient(cp, ci) || cp->state == CS_SPECTATOR) break;
-                    if(smode==&capturemode) capturemode.dropaffinity(cp, droploc, inertia, -1);
-                    else if(smode==&bombermode) bombermode.dropaffinity(cp, droploc, inertia, otc);
+                    if(smode == &capturemode) capturemode.dropaffinity(cp, droploc, inertia, -1);
+                    else if(smode == &bombermode) bombermode.dropaffinity(cp, droploc, inertia, otc);
                     break;
                 }
 
                 case N_INITAFFIN:
                 {
-                    if(smode==&capturemode) capturemode.parseaffinity(p);
-                    else if(smode==&bombermode) bombermode.parseaffinity(p);
+                    if(smode == &capturemode) capturemode.parseaffinity(p);
+                    else if(smode == &bombermode) bombermode.parseaffinity(p);
                     break;
                 }
 
@@ -7039,7 +7042,7 @@ namespace server
                         if(haspriv(ci, PRIV_ADMINISTRATOR) || (mastermask()&(1<<mm)))
                         {
                             mastermode = mm;
-                            resetallows();
+                            resetcontrols(ipinfo::ALLOW);
                             if(mastermode >= MM_PRIVATE) loopv(clients)
                             {
                                 ipinfo &allow = control.add();
@@ -7064,7 +7067,7 @@ namespace server
                         { \
                             if(haspriv(ci, G(y##lock), "clear " #y "s")) \
                             { \
-                                reset##y##s(); \
+                                resetcontrols(x); \
                                 srvoutf(3, "%s cleared existing \fs\fc" #y "s\fS", colourname(ci)); \
                             } \
                             break; \
@@ -7352,7 +7355,7 @@ namespace server
                     QUEUE_INT(size);
                     if(size >= 0)
                     {
-                        if(*text) formatstring(smapname, strstr(text, "maps/")==text || strstr(text, "maps\\")==text ? "%s" : "maps/%s", text);
+                        if(*text) formatstring(smapname, strstr(text, "maps/") == text || strstr(text, "maps\\") == text ? "%s" : "maps/%s", text);
                         else copystring(smapname, "maps/untitled");
                         sents.shrink(0);
                         hasgameinfo = true;
@@ -7455,13 +7458,13 @@ namespace server
                 case N_EDITVSLOT:
                 {
                     int size = msgsizelookup(type);
-                    if(size<=0) { disconnect_client(sender, DISC_MSGERR); return; }
+                    if(size <= 0) { disconnect_client(sender, DISC_MSGERR); return; }
                     loopi(size-1) getint(p);
                     if(p.remaining() < 2) { disconnect_client(sender, DISC_MSGERR); return; }
                     int extra = lilswap(*(const ushort *)p.pad(2));
                     if(p.remaining() < extra) { disconnect_client(sender, DISC_MSGERR); return; }
                     p.pad(extra);
-                    if(ci && ci->state!=CS_SPECTATOR) QUEUE_MSG;
+                    if(ci && ci->state != CS_SPECTATOR) QUEUE_MSG;
                     break;
                 }
 
@@ -7469,7 +7472,7 @@ namespace server
                 case N_REDO:
                 {
                     int unpacklen = getint(p), packlen = getint(p);
-                    if(!ci || ci->state==CS_SPECTATOR || packlen <= 0 || packlen > (1<<16) || unpacklen <= 0)
+                    if(!ci || ci->state == CS_SPECTATOR || packlen <= 0 || packlen > (1<<16) || unpacklen <= 0)
                     {
                         if(packlen > 0) p.subbuf(packlen);
                         break;
@@ -7496,12 +7499,12 @@ namespace server
                         srvmsgft(ci->clientnum, CON_EVENT, "\frThat client does not exist");
                         break;
                     }
-                    if((priv != -1) && (priv < PRIV_SUPPORTER || priv > PRIV_ADMINISTRATOR || cp->actortype != A_PLAYER))
+                    if(priv != -1 && (priv < PRIV_SUPPORTER || priv > PRIV_ADMINISTRATOR || cp->actortype != A_PLAYER))
                     {
                         srvmsgft(ci->clientnum, CON_EVENT, "\frYou may not add that privilege");
                         break;
                     }
-                    if(priv == -1 && (ci->privilege&PRIV_TYPE) <= (cp->privilege&PRIV_TYPE) && (ci->privilege&PRIV_TYPE) < PRIV_ADMINISTRATOR)
+                    if(priv == -1 && ((ci->privilege&PRIV_TYPE) <= (cp->privilege&PRIV_TYPE)) && ((ci->privilege&PRIV_TYPE) < PRIV_ADMINISTRATOR))
                     {
                         srvmsgft(ci->clientnum, CON_EVENT, "\frYou must be a \fs\fc%s\fS to reset that client's privileges", privname((cp->privilege & PRIV_TYPE) + 1));
                         break;
@@ -7543,7 +7546,7 @@ namespace server
                 default: genericmsg:
                 {
                     int size = msgsizelookup(type);
-                    if(size<=0)
+                    if(size <= 0)
                     {
                         conoutf("\fy[msg error] from: %d, cur: %d, msg: %d, prev: %d", sender, curtype, type, prevtype);
                         disconnect_client(sender, DISC_MSGERR);
@@ -7560,7 +7563,7 @@ namespace server
 
     bool serveroption(char *arg)
     {
-        if(arg[0]=='-' && arg[1]=='s') switch(arg[2])
+        if(arg[0] == '-' && arg[1] == 's') switch(arg[2])
         {
             case 'P': setsvar("adminpass", &arg[3]); return true;
             case 'k': setsvar("serverpass", &arg[3]); return true;

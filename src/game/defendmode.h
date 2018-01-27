@@ -18,7 +18,7 @@ struct defendservmode : defendstate, servmode
         loopv(clients) if(AA(clients[i]->actortype, abilities)&(1<<A_A_AFFINITY))
         {
             server::clientinfo *ci = clients[i];
-            if(ci->state==CS_ALIVE && ci->team && ci->team == team && insideaffinity(b, ci->o))
+            if(ci->state == CS_ALIVE && ci->team && ci->team == team && insideaffinity(b, ci->o))
                 b.enter(ci->team);
         }
         sendaffinity(n);
@@ -219,7 +219,7 @@ struct defendservmode : defendstate, servmode
 
     int points(clientinfo *m, clientinfo *v)
     {
-        bool isteam = m==v || m->team == v->team;
+        bool isteam = m == v || m->team == v->team;
         int p = isteam ? -1 : 1, q = p;
         loopv(flags) if(insideaffinity(flags[i], m->o)) p += q;
         return p;

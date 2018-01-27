@@ -221,12 +221,12 @@ namespace client
         demoinfo &d = demoinfos.add();
         copystring(d.file, name);
         stringz(msg);
-        if(f->read(&d.hdr, sizeof(demoheader))!=sizeof(demoheader) || memcmp(d.hdr.magic, VERSION_DEMOMAGIC, sizeof(d.hdr.magic)))
+        if(f->read(&d.hdr, sizeof(demoheader)) != sizeof(demoheader) || memcmp(d.hdr.magic, VERSION_DEMOMAGIC, sizeof(d.hdr.magic)))
             formatstring(msg, "\frSorry, \fs\fc%s\fS is not a demo file", name);
         else
         {
             lilswap(&d.hdr.gamever, 4);
-            if(d.hdr.gamever!=VERSION_GAME)
+            if(d.hdr.gamever != VERSION_GAME)
                 formatstring(msg, "\frDemo \fs\fc%s\fS requires \fs\fc%s\fS version of %s (with protocol version %d)", name, d.hdr.gamever<VERSION_GAME ? "an older" : "a newer", VERSION_NAME, d.hdr.gamever);
         }
         delete f;
@@ -365,9 +365,9 @@ namespace client
                             f->printf("\t%d\t%d\t%d", id.def.i, id.minval, id.maxval);
                         else
                         {
-                            if(id.maxval==0xFFFFFF)
+                            if(id.maxval == 0xFFFFFF)
                                 f->printf("\t0x%.6X\t0x%.6X\t0x%.6X", id.def.i, id.minval, id.maxval);
-                            else if(uint(id.maxval)==0xFFFFFFFFU)
+                            else if(uint(id.maxval) == 0xFFFFFFFFU)
                                 f->printf("\t0x%.8X\t0x%.8X\t0x%.8X", uint(id.def.i), uint(id.minval), uint(id.maxval));
                             else
                                 f->printf("\t0x%X\t0x%X\t0x%X", id.def.i, id.minval, id.maxval);
@@ -1198,7 +1198,7 @@ namespace client
         if(m_play(game::gamemode) && m_team(game::gamemode, game::mutators))
         {
             int i = parseplayer(arg1);
-            if(i>=0)
+            if(i >= 0)
             {
                 int t = teamfromname(arg2);
                 if(t) addmsg(N_SETTEAM, "ri2", i, t);
@@ -1210,7 +1210,7 @@ namespace client
 
     void hashpwd(const char *pwd)
     {
-        if(game::player1->clientnum<0) return;
+        if(game::player1->clientnum < 0) return;
         string hash;
         server::hashpassword(game::player1->clientnum, sessionid, pwd, hash);
         result(hash);
@@ -1353,7 +1353,7 @@ namespace client
             va_end(args);
         }
         int num = nums?0:numi, msgsize = msgsizelookup(type);
-        if(msgsize && num!=msgsize) { fatal("inconsistent msg size for %d (%d != %d)", type, num, msgsize); }
+        if(msgsize && num != msgsize) { fatal("inconsistent msg size for %d (%d != %d)", type, num, msgsize); }
         if(reliable) messagereliable = true;
         messages.put(buf, p.length());
         return true;
@@ -1601,7 +1601,7 @@ namespace client
                 if(!*fname) copystring(fname, "maps/untitled");
                 // Remove any temp/ prefix from file name before testing and rebuilding.
                 defformatstring(nfname, "%s", (strstr(fname, "temp/") == fname || strstr(fname, "temp\\") == fname) ? fname + 5 : fname);
-                defformatstring(ffile, strstr(nfname, "maps/")==nfname || strstr(nfname, "maps\\")==nfname ? "temp/%s_0x%.8x" : "temp/maps/%s_0x%.8x", nfname, filecrc);
+                defformatstring(ffile, strstr(nfname, "maps/") == nfname || strstr(nfname, "maps\\") == nfname ? "temp/%s_0x%.8x" : "temp/maps/%s_0x%.8x", nfname, filecrc);
                 defformatstring(ffext, "%s.%s", ffile, sendmaptypes[filetype]);
                 stream *f = openfile(ffext, "wb");
                 if(!f)
@@ -1712,9 +1712,9 @@ namespace client
 
     void gotoplayer(const char *arg)
     {
-        if(game::player1->state!=CS_SPECTATOR && game::player1->state!=CS_EDITING) return;
+        if(game::player1->state != CS_SPECTATOR && game::player1->state != CS_EDITING) return;
         int i = parseplayer(arg);
-        if(i>=0 && i!=game::player1->clientnum)
+        if(i >= 0 && i != game::player1->clientnum)
         {
             gameent *d = game::getclient(i);
             if(!d) return;
@@ -2154,19 +2154,17 @@ namespace client
     void updatepos(gameent *d)
     {
         // update the position of other clients in the game in our world
-        // don't care if he's in the scenery or other players,
-        // just don't overlap with our client
-
+        // don't care if he's in the scenery or other players, just don't overlap with our client
         const float r = game::player1->radius+d->radius;
         const float dx = game::player1->o.x-d->o.x;
         const float dy = game::player1->o.y-d->o.y;
         const float dz = game::player1->o.z-d->o.z;
         const float rz = game::player1->aboveeye+game::player1->height;
         const float fx = (float)fabs(dx), fy = (float)fabs(dy), fz = (float)fabs(dz);
-        if(fx<r && fy<r && fz<rz && d->state!=CS_SPECTATOR && d->state!=CS_WAITING && d->state!=CS_DEAD)
+        if(fx < r && fy < r && fz < rz && d->state != CS_SPECTATOR && d->state != CS_WAITING && d->state != CS_DEAD)
         {
-            if(fx<fy) d->o.y += dy<0 ? r-fy : -(r-fy);  // push aside
-            else      d->o.x += dx<0 ? r-fx : -(r-fx);
+            if(fx < fy) d->o.y += dy < 0 ? r-fy : -(r-fy);  // push aside
+            else        d->o.x += dx < 0 ? r-fx : -(r-fx);
         }
         int lagtime = totalmillis-d->lastupdate;
         if(lagtime)
@@ -3450,7 +3448,7 @@ namespace client
                     {
                         int newsize = 0;
                         while(1<<newsize < worldsize) newsize++;
-                        conoutf(size>=0 ? "\fy%s started new map \fs\fc%s\fS of size \fs\fc%d\fS" : "\fy%s enlarged the map \fs\fc%s\fS to size \fs\fc%d\fS", game::colourname(d), mapname, newsize);
+                        conoutf(size >= 0 ? "\fy%s started new map \fs\fc%s\fS of size \fs\fc%d\fS" : "\fy%s enlarged the map \fs\fc%s\fS to size \fs\fc%d\fS", game::colourname(d), mapname, newsize);
                     }
                     break;
                 }

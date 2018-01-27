@@ -145,7 +145,7 @@ namespace entities
                 loopi(G_MAX-G_PLAY) if(mode&(1<<i)) \
                 { \
                     string ds; \
-                    if(a<0) formatstring(ds, "not %s", gametype[i+G_PLAY].name); \
+                    if(a < 0) formatstring(ds, "not %s", gametype[i+G_PLAY].name); \
                     else formatstring(ds, "%s", gametype[i+G_PLAY].name); \
                     addentinfo(ds); \
                 } \
@@ -156,7 +156,7 @@ namespace entities
                 loopi(G_M_NUM) if(muts&(1<<i)) \
                 { \
                     string ds; \
-                    if(b<0) formatstring(ds, "not %s", mutstype[i].name); \
+                    if(b < 0) formatstring(ds, "not %s", mutstype[i].name); \
                     else formatstring(ds, "%s", mutstype[i].name); \
                     addentinfo(ds); \
                 } \
@@ -1367,7 +1367,7 @@ namespace entities
 
     float dropheight(extentity &e)
     {
-        if(e.type==MAPMODEL || e.type==AFFINITY) return 0.0f;
+        if(e.type == MAPMODEL || e.type == AFFINITY) return 0.0f;
         return 4.0f;
     }
 
@@ -1758,7 +1758,7 @@ namespace entities
                     if(!valteam(e.attrs[1], T_NEUTRAL)) // assign a team
                     {
                         int lowest = -1;
-                        loopk(T_TOTAL) if(lowest<0 || teams[k] < teams[lowest]) lowest = i;
+                        loopk(T_TOTAL) if(lowest < 0 || teams[k] < teams[lowest]) lowest = i;
                         e.attrs[1] = lowest+T_FIRST;
                         teams[lowest]++;
                     }

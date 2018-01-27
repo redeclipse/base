@@ -581,7 +581,7 @@ namespace physics
     {
         switchfloor(d, dir, floor);
         d->airmillis = 0;
-        if((d->physstate!=PHYS_STEP_UP && d->physstate!=PHYS_STEP_DOWN) || !collided)
+        if((d->physstate != PHYS_STEP_UP && d->physstate != PHYS_STEP_DOWN) || !collided)
             d->physstate = floor.z >= floorz ? PHYS_FLOOR : PHYS_SLOPE;
         d->floor = floor;
     }
@@ -640,7 +640,7 @@ namespace physics
         {
             obstacle = collidewall;
             /* check to see if there is an obstacle that would prevent this one from being used as a floor */
-            if((gameent::is(d)) && ((collidewall.z>=slopez && dir.z<0) || (collidewall.z<=-slopez && dir.z>0)) && (dir.x || dir.y) && collide(d, vec(dir.x, dir.y, 0)))
+            if((gameent::is(d)) && ((collidewall.z >= slopez && dir.z < 0) || (collidewall.z <= -slopez && dir.z > 0)) && (dir.x || dir.y) && collide(d, vec(dir.x, dir.y, 0)))
             {
                 if(collidewall.dot(dir) >= 0) slidecollide = true;
                 obstacle = collidewall;
@@ -1115,7 +1115,7 @@ namespace physics
             float mag = vec(pl->vel).add(pl->falling).magnitude();
             int collisions = 0, timeinair = pl->airtime(lastmillis);
             vel.mul(1.0f/moveres);
-            loopi(moveres) if(!move(pl, vel)) { if(++collisions<5) i--; } // discrete steps collision detection & sliding
+            loopi(moveres) if(!move(pl, vel)) { if(++collisions < 5) i--; } // discrete steps collision detection & sliding
             if(player)
             {
                 gameent *d = (gameent *)pl;
@@ -1374,13 +1374,12 @@ namespace physics
         }
 
         float k = 1.0f - float(lastmillis - d->smoothmillis)/float(smoothmove);
-        if(k>0)
+        if(k > 0)
         {
             d->o.add(vec(d->deltapos).mul(k));
-
             d->yaw += d->deltayaw*k;
-            if(d->yaw<0) d->yaw += 360;
-            else if(d->yaw>=360) d->yaw -= 360;
+            if(d->yaw < 0) d->yaw += 360;
+            else if(d->yaw >= 360) d->yaw -= 360;
             d->pitch += d->deltapitch*k;
         }
     }
@@ -1389,13 +1388,13 @@ namespace physics
     {
         if(d->state == CS_ALIVE || d->state == CS_EDITING)
         {
-            if(smoothmove && d->smoothmillis>0) predictplayer(d, true, res, local);
+            if(smoothmove && d->smoothmillis > 0) predictplayer(d, true, res, local);
             else move(d, res, local);
         }
-        else if(d->state==CS_DEAD || d->state == CS_WAITING)
+        else if(d->state == CS_DEAD || d->state == CS_WAITING)
         {
             if(d->ragdoll) moveragdoll(d);
-            else if(lastmillis-d->lastpain<2000) move(d, res, local);
+            else if(lastmillis-d->lastpain < 2000) move(d, res, local);
         }
     }
 

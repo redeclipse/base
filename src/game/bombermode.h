@@ -297,7 +297,7 @@ struct bomberservmode : bomberstate, servmode
             putint(p, f.enabled ? 1 : 0);
             putint(p, f.owner);
             loopj(3) putint(p, int(f.spawnloc[j]*DMF));
-            if(f.owner<0)
+            if(f.owner < 0)
             {
                 putint(p, f.droptime);
                 if(f.droptime)
@@ -389,7 +389,7 @@ struct bomberservmode : bomberstate, servmode
 
     int points(clientinfo *m, clientinfo *v)
     {
-        bool isteam = m==v || (m_team(gamemode, mutators) && m->team == v->team);
+        bool isteam = m == v || (m_team(gamemode, mutators) && m->team == v->team);
         int p = isteam ? -1 : (m_team(gamemode, mutators) ? 1 : 0), q = p;
         if(p) { loopv(flags) if(flags[i].owner == m->clientnum) p += q; }
         return p;
