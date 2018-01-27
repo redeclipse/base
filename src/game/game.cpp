@@ -1082,9 +1082,8 @@ namespace game
     {
         adjustscaled(d->quake, quakefade);
         d->setscale(m_weapon(d->actortype, gamemode, mutators), rescale(d), curtime, false);
-        d->speedscale = d->curscale;
         bool hasent = d->actortype >= A_ENEMY && entities::ents.inrange(d->spawnpoint) && entities::ents[d->spawnpoint]->type == ACTOR;
-        if(hasent && entities::ents[d->spawnpoint]->attrs[8] > 0) d->speedscale *= entities::ents[d->spawnpoint]->attrs[8]/100.f;
+        if(hasent && entities::ents[d->spawnpoint]->attrs[8] > 0) d->speed *= entities::ents[d->spawnpoint]->attrs[8]/100.f;
 
         float offset = d->height;
         d->o.z -= d->height;

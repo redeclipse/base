@@ -238,7 +238,7 @@ namespace physics
 
     float jumpvel(physent *d, bool liquid)
     {
-        float vel = jumpspeed*(liquid ? liquidmerge(d, 1.f, PHYS(liquidspeed)) : 1.f)*d->speedscale;
+        float vel = jumpspeed*(liquid ? liquidmerge(d, 1.f, PHYS(liquidspeed)) : 1.f);
         if(gameent::is(d))
         {
             gameent *e = (gameent *)d;
@@ -296,30 +296,26 @@ namespace physics
         physent *pl = d->type == ENT_CAMERA ? game::player1 : d;
         float vel = pl->speed;
         if(floating) vel *= floatspeed/100.0f;
-        else
+        else if(gameent::is(pl))
         {
-            vel *= pl->speedscale;
-            if(gameent::is(pl))
+            gameent *e = (gameent *)pl;
+            vel *= movespeed;
+            vel *= 1.f-clamp(e->stunned(lastmillis), 0.f, 1.f);
+            if((d->physstate >= PHYS_SLOPE || d->onladder) && !e->sliding(true) && e->crouching()) vel *= movecrawl;
+            else if(isweap(e->weapselect) && e->weapstate[e->weapselect] == W_S_ZOOM) vel *= movecrawl;
+            if(e->move >= 0) vel *= e->strafe ? movestrafe : movestraight;
+            if(e->running()) vel *= moverun;
+            switch(e->physstate)
             {
-                gameent *e = (gameent *)pl;
-                vel *= movespeed;
-                vel *= 1.f-clamp(e->stunned(lastmillis), 0.f, 1.f);
-                if((d->physstate >= PHYS_SLOPE || d->onladder) && !e->sliding(true) && e->crouching()) vel *= movecrawl;
-                else if(isweap(e->weapselect) && e->weapstate[e->weapselect] == W_S_ZOOM) vel *= movecrawl;
-                if(e->move >= 0) vel *= e->strafe ? movestrafe : movestraight;
-                if(e->running()) vel *= moverun;
-                switch(e->physstate)
-                {
-                    case PHYS_FALL: if(PHYS(gravity) > 0) vel *= moveinair; break;
-                    case PHYS_STEP_DOWN: vel *= movestepdown; break;
-                    case PHYS_STEP_UP: vel *= movestepup; break;
-                    default: break;
-                }
-                if(carryaffinity(e))
-                {
-                    if(m_capture(game::gamemode)) vel *= capturecarryspeed;
-                    else if(m_bomber(game::gamemode)) vel *= bombercarryspeed;
-                }
+                case PHYS_FALL: if(PHYS(gravity) > 0) vel *= moveinair; break;
+                case PHYS_STEP_DOWN: vel *= movestepdown; break;
+                case PHYS_STEP_UP: vel *= movestepup; break;
+                default: break;
+            }
+            if(carryaffinity(e))
+            {
+                if(m_capture(game::gamemode)) vel *= capturecarryspeed;
+                else if(m_bomber(game::gamemode)) vel *= bombercarryspeed;
             }
         }
         return vel;
@@ -327,7 +323,7 @@ namespace physics
 
     float impulsevelocity(physent *d, float amt, int type, float redir, vec &keep)
     {
-        float scale = d->speedscale;
+        float scale = 1.f;
         if(gameent::is(d))
         {
             gameent *e = (gameent *)d;

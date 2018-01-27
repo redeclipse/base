@@ -1489,14 +1489,11 @@ namespace ai
 
     void logic(gameent *d, aistate &b)
     {
-        if(d->speedscale != 0)
+        if(d->state != CS_ALIVE || !game::allowmove(d)) d->stopmoving(true);
+        else
         {
-            if(d->state != CS_ALIVE || !game::allowmove(d)) d->stopmoving(true);
-            else
-            {
-                if(!request(d, b)) target(d, b, W2(d->weapselect, aidist, false) < CLOSEDIST ? 1 : 0);
-                weapons::shoot(d, d->ai->target);
-            }
+            if(!request(d, b)) target(d, b, W2(d->weapselect, aidist, false) < CLOSEDIST ? 1 : 0);
+            weapons::shoot(d, d->ai->target);
         }
         if(d->state == CS_DEAD || d->state == CS_WAITING)
         {
@@ -1509,16 +1506,8 @@ namespace ai
             if(d->ragdoll) cleanragdoll(d);
             if(d->state == CS_ALIVE && gs_playing(game::gamestate))
             {
-                if(d->speedscale != 0)
-                {
-                    physics::move(d, 1, true);
-                    if(AA(d->actortype, abilities)&(1<<A_A_MOVE) && !d->ai->dontmove) timeouts(d, b);
-                }
-                else
-                {
-                    d->move = d->strafe = 0;
-                    physics::move(d, 1, true);
-                }
+                physics::move(d, 1, true);
+                if(AA(d->actortype, abilities)&(1<<A_A_MOVE) && !d->ai->dontmove) timeouts(d, b);
             }
         }
         if(gs_playing(game::gamestate) && (d->state == CS_ALIVE || d->state == CS_DEAD || d->state == CS_WAITING))

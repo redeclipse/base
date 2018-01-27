@@ -160,7 +160,7 @@ struct physent : baseent                        // can be affected by physics
     vec floor;                                  // the normal of floor the dynent is on
 
     bool blocked, inliquid, onladder, forcepos;
-    float curscale, speedscale;
+    float curscale;
     char move, strafe;
 
     uchar physstate;                            // one of PHYS_* above
@@ -170,7 +170,7 @@ struct physent : baseent                        // can be affected by physics
     physent() : deltapos(0, 0, 0), newpos(0, 0, 0), speed(100), weight(100),
         radius(3), height(14), aboveeye(1),
         xradius(3), yradius(3), zradius(14), zmargin(0),
-        curscale(1), speedscale(1),
+        curscale(1),
         type(ENT_INANIMATE),
         collidetype(COLLIDE_ELLIPSE)
     {
