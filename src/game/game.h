@@ -918,37 +918,37 @@ struct clientstate
         if(isweap(s))
         {
             weapclip[s] = max(1, W(s, ammoclip));
-            weapstore[s] = W(s, ammostore);
+            weapstore[s] = W(s, ammospawn);
             weapselect = s;
         }
         if(s != W_CLAW && AA(actortype, abilities)&(1<<A_A_CLAW))
         {
             weapclip[W_CLAW] = max(1, W(W_CLAW, ammoclip));
-            weapstore[W_CLAW] = W(W_CLAW, ammostore);
+            weapstore[W_CLAW] = W(W_CLAW, ammospawn);
         }
         if(s != W_MELEE && AA(actortype, abilities)&(1<<A_A_MELEE))
         {
             weapclip[W_MELEE] = max(1, W(W_MELEE, ammoclip));
-            weapstore[W_MELEE] = W(W_MELEE, ammostore);
+            weapstore[W_MELEE] = W(W_MELEE, ammospawn);
         }
         if(actortype < A_ENEMY)
         {
             if(m_kaboom(gamemode, mutators))
             {
                 weapclip[W_MINE] = max(1, W(W_MINE, ammoclip));
-                weapstore[W_MINE] = W(W_MINE, ammostore);
+                weapstore[W_MINE] = W(W_MINE, ammospawn);
             }
             else if(!m_race(gamemode) || m_ra_gauntlet(gamemode, mutators))
             {
                 if(s != W_GRENADE && AA(actortype, spawngrenades) >= (m_insta(gamemode, mutators) ? 2 : 1))
                 {
                     weapclip[W_GRENADE] = max(1, W(W_GRENADE, ammoclip));
-                    weapstore[W_GRENADE] = W(W_GRENADE, ammostore);
+                    weapstore[W_GRENADE] = W(W_GRENADE, ammospawn);
                 }
                 if(s != W_MINE && AA(actortype, spawnmines) >= (m_insta(gamemode, mutators) ? 2 : 1))
                 {
                     weapclip[W_MINE] = max(1, W(W_MINE, ammoclip));
-                    weapstore[W_MINE] = W(W_MINE, ammostore);
+                    weapstore[W_MINE] = W(W_MINE, ammospawn);
                 }
             }
         }
@@ -972,7 +972,7 @@ struct clientstate
                     }
                 }
                 weapclip[aweap[j]] = max(1, W(aweap[j], ammoclip));
-                weapstore[aweap[j]] = W(aweap[j], ammostore);
+                weapstore[aweap[j]] = W(aweap[j], ammospawn);
             }
             weapselect = aweap[0];
         }
