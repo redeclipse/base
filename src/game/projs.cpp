@@ -1834,7 +1834,7 @@ namespace projs
             {
                 gameent *e = (gameent *)proj.owner;
                 vec keepvel = vec(e->vel).add(e->falling);
-                float mag = physics::impulsevelocity(e, d ? impulseparkourgrabplayer : impulseparkourgrab, A_A_PARKOUR, d ? impulseparkourgrabplayerredir : impulseparkourgrabredir, keepvel);
+                float mag = physics::impulsevelocity(e, d ? impulsegrabplayer : impulsegrab, A_A_PARKOUR, d ? impulsegrabplayerredir : impulsegrabredir, keepvel);
                 if(mag > 0)
                 {
                     float yaw = e->yaw, pitch = 89.9f;

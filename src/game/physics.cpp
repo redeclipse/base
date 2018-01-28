@@ -13,7 +13,7 @@ namespace physics
     VAR(IDF_PERSIST, physframetime, 5, 5, 20);
     VAR(IDF_PERSIST, physinterp, 0, 1, 1);
 
-    FVAR(IDF_PERSIST, impulsekick, 0, 150, 180); // determines the minimum yaw angle to switch between wall kick and run
+    FVAR(IDF_PERSIST, impulsekickyaw, 0, 150, 180); // determines the minimum yaw angle to switch between wall kick and run
     VAR(IDF_PERSIST, impulsemethod, 0, 3, 3); // determines which impulse method to use, 0 = none, 1 = power jump, 2 = power slide, 3 = both
     VAR(IDF_PERSIST, impulseaction, 0, 3, 3); // determines how impulse action works, 0 = off, 1 = impulse jump, 2 = impulse dash, 3 = both
     FVAR(IDF_PERSIST, impulseroll, 0, 15, 89);
@@ -758,11 +758,12 @@ namespace physics
             if(d->action[AC_JUMP] && canimpulse(d, A_A_PARKOUR, true))
             {
                 vec keepvel = vec(d->vel).add(d->falling);
-                float mag = impulsevelocity(d, impulseparkourkick, A_A_PARKOUR, impulseparkourkickredir, keepvel);
+                float mag = impulsevelocity(d, impulsekick, A_A_PARKOUR, impulsekickredir, keepvel);
                 if(mag > 0)
                 {
                     vec rft;
-                    vecfromyawpitch(d->yaw, d->actortype >= A_BOT || !kickoffstyle ? kickoffangle : d->pitch, 1, 0, rft);
+                    float pitch = clamp(d->actortype >= A_BOT || !kickoffstyle ? kickoffangle : d->pitch, impulsekickpitchmin, impulsekickpitchmax);
+                    vecfromyawpitch(d->yaw, pitch, 1, 0, rft);
                     d->vel = vec(rft).mul(mag).add(keepvel);
                     d->doimpulse(IM_T_KICK, lastmillis);
                     d->turnmillis = PHYSMILLIS;
@@ -848,7 +849,7 @@ namespace physics
                     float off = yaw-d->yaw;
                     if(off > 180) off -= 360;
                     else if(off < -180) off += 360;
-                    bool iskick = impulsekick > 0 && fabs(off) >= impulsekick, vault = false;
+                    bool iskick = impulsekickyaw > 0 && fabs(off) >= impulsekickyaw, vault = false;
                     if(cankick && iskick)
                     {
                         float space = d->height+d->aboveeye, m = min(impulsevaultmin, impulsevaultmax), n = max(impulsevaultmin, impulsevaultmax);
@@ -872,7 +873,7 @@ namespace physics
                     if(!d->turnside && (parkour || vault) && iskick)
                     {
                         vec keepvel = vec(d->vel).add(d->falling);
-                        float mag = impulsevelocity(d, vault ? impulseparkourvault : impulseparkourclimb, A_A_PARKOUR, vault ? impulseparkourvaultredir : impulseparkourclimbredir, keepvel);
+                        float mag = impulsevelocity(d, vault ? impulsevault : impulseclimb, A_A_PARKOUR, vault ? impulsevaultredir : impulseclimbredir, keepvel);
                         if(mag > 0)
                         {
                             vec rft;

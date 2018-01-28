@@ -886,7 +886,7 @@ struct clientstate
         return ((totalfrags / float(max(totaldeaths, 1))) + (frags / float(max(deaths, 1)))) / ((frags || deaths) ? 2.0f : 1.0f);
     }
 
-    float balancescore(float none=0.0f)
+    float balancescore(float none = 0.0f)
     {
         switch(G(teambalancestyle))
         {
@@ -911,7 +911,7 @@ struct clientstate
     void spawnstate(int gamemode, int mutators, int sweap, int heal)
     {
         weapreset(true);
-        health = heal > 0 ? heal : (m_insta(gamemode, mutators) ? 1 : m_health(gamemode, mutators, actortype));
+        health = heal > 0 ? heal : m_health(gamemode, mutators, actortype);
         int s = sweap;
         if(!isweap(s)) s = m_weapon(actortype, gamemode, mutators);
         if(s >= W_ALL) s = W_CLAW;
@@ -1715,7 +1715,7 @@ namespace client
 namespace physics
 {
     extern int smoothmove, smoothdist, physframetime, physinterp, impulsemethod, impulseaction, jumpstyle, dashstyle, crouchstyle, walkstyle, grabstyle, grabplayerstyle, kickoffstyle, kickupstyle;
-    extern float floatspeed, floatcoast, impulsekick, impulseroll, kickoffangle, kickupangle;
+    extern float floatspeed, floatcoast, impulsekickyaw, impulseroll, kickoffangle, kickupangle;
     extern bool isghost(gameent *d, gameent *e, bool proj = false);
     extern int carryaffinity(gameent *d);
     extern bool dropaffinity(gameent *d);
