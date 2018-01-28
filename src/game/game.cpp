@@ -251,6 +251,7 @@ namespace game
     VAR(IDF_PERSIST, obitverbose, 0, 1, 1); // 0 = extremely simple, 1 = regular messages
     VAR(IDF_PERSIST, obitstyles, 0, 1, 1); // 0 = no obituary styles, 1 = show sprees/dominations/etc
 
+    FVAR(IDF_PERSIST, damagedivisor, FVAR_NONZERO, 10, FVAR_MAX);
     VAR(IDF_PERSIST, damagemergedelay, 0, 75, VAR_MAX);
     VAR(IDF_PERSIST, damagemergeburn, 0, 250, VAR_MAX);
     VAR(IDF_PERSIST, damagemergebleed, 0, 250, VAR_MAX);
@@ -1312,7 +1313,7 @@ namespace game
             }
             if(aboveheaddamage)
             {
-                defformatstring(ds, "<sub>\fo%c%d", damage > 0 ? '-' : (damage < 0 ? '+' : '~'), damage < 0 ? 0-damage : damage);
+                defformatstring(ds, "<sub>\fo%c%.1f", damage > 0 ? '-' : (damage < 0 ? '+' : '~'), (damage < 0 ? 0-damage : damage)/damagedivisor);
                 part_textcopy(d->abovehead(), ds, d != focus ? PART_TEXT : PART_TEXT_ONTOP, eventiconfade, colourwhite, 4, 1, -10, 0, d);
             }
         }
