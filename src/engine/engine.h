@@ -303,7 +303,7 @@ extern void screenquadoffset(float x, float y, float w, float h, float x2, float
 extern void hudquad(float x, float y, float w, float h, float tx = 0, float ty = 0, float tw = 1, float th = 1);
 extern void debugquad(float x, float y, float w, float h, float tx = 0, float ty = 0, float tw = 1, float th = 1);
 extern void recomputecamera();
-extern float calcfrustumboundsphere(float nearplane, float farplane,  const vec &pos, const vec &view, vec &center);
+extern float calcfrustumboundsphere(float nearplane, float farplane, const vec &pos, const vec &view, vec &center);
 extern void setfogcolor(const vec &v);
 extern void zerofogcolor();
 extern void resetfogcolor();
@@ -710,7 +710,7 @@ extern tagval *addreleaseaction(ident *id, int numargs);
 extern const char *getkeyname(int code);
 extern int findkeycode(char *key);
 
-extern int commandmillis,  commandpos, commandcolour, completeoffset, completesize;
+extern int commandmillis, commandpos, commandcolour, completeoffset, completesize;
 extern bigstring commandbuf;
 extern char *commandaction, *commandprompt, *commandicon;
 

@@ -1409,7 +1409,7 @@ bool vectocursor(const vec &v, float &x, float &y, float &z, float clampxy)
     return inside;
 }
 
-float calcfrustumboundsphere(float nearplane, float farplane,  const vec &pos, const vec &view, vec &center)
+float calcfrustumboundsphere(float nearplane, float farplane, const vec &pos, const vec &view, vec &center)
 {
     if(drawtex == DRAWTEX_MINIMAP)
     {

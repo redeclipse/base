@@ -2162,8 +2162,8 @@ namespace UI
     ICOMMAND(0, uiimagehgradient, "siiiffe", (char *texname, int *c, int *c2, int *a, float *minw, float *minh, uint *children),
         BUILD(Image, o, o->setup(textureload(texname, 3, true, false), Color(*c), Color(*c2), *a!=0, *minw*uiscale, *minh*uiscale, Image::HORIZONTAL), children));
 
-    UICMDT(Image, image, tex, "s", (char *texname),  if(texname && *texname) o->tex = textureload(texname, 3, true, false));
-    UICMDT(Image, image, alttex, "s", (char *texname),  if(texname && *texname && o->tex == notexture) o->tex = textureload(texname, 3, true, false));
+    UICMDT(Image, image, tex, "s", (char *texname), if(texname && *texname) o->tex = textureload(texname, 3, true, false));
+    UICMDT(Image, image, alttex, "s", (char *texname), if(texname && *texname && o->tex == notexture) o->tex = textureload(texname, 3, true, false));
     UIARGB(Image, image, alphatarget);
 
     struct CroppedImage : Image

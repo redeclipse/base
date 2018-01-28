@@ -56,7 +56,7 @@ struct flarerenderer : partrenderer
         numflares = 0;
     }
 
-    void newflare(const vec &o,  const vec &center, uchar r, uchar g, uchar b, float mod, float size, bool sun, int sparkle)
+    void newflare(const vec &o, const vec &center, uchar r, uchar g, uchar b, float mod, float size, bool sun, int sparkle)
     {
         if(numflares >= maxflares) return;
         //occlusion check (neccessary as depth testing is turned off)

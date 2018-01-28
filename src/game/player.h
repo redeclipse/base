@@ -81,7 +81,7 @@ extern int mapbals[T_TOTAL][T_TOTAL];
 
 #include "teamdef.h"
 
-TPSVAR(IDF_GAMEMOD,  name,
+TPSVAR(IDF_GAMEMOD, name,
     "Neutral",  "Alpha",    "Omega",    "Kappa",    "Sigma",    "Enemy"
 );
 TPVAR(IDF_GAMEMOD|IDF_HEX, colour, 0, 0xFFFFFF,

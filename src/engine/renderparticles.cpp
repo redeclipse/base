@@ -1745,7 +1745,7 @@ void makeparticle(const vec &o, attrvector &attr)
             break;
         }
         case 1: //smoke vent - <dir>
-            regularsplash(PART_SMOKE, 0x897661, 2, 1, 200,  offsetvec(o, attr[1], rnd(10)), 2.4f, 1, -20);
+            regularsplash(PART_SMOKE, 0x897661, 2, 1, 200, offsetvec(o, attr[1], rnd(10)), 2.4f, 1, -20);
             break;
         case 2: //water fountain - <dir>
         {

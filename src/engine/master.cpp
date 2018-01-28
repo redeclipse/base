@@ -896,7 +896,7 @@ void checkmasterpongs()
                 c.listserver = true;
                 c.shouldping = false;
                 masteroutf(c, "echo \"ping reply confirmed (on port %d), server is now listed\"\n", addr.port);
-                conoutf("Master peer %s responded to ping request on port %d successfully",  c.name, addr.port);
+                conoutf("Master peer %s responded to ping request on port %d successfully", c.name, addr.port);
                 break;
             }
         }
@@ -980,7 +980,7 @@ bool checkmasterclientinput(masterclient &c)
             {
                 c.isquick = true;
                 masteroutf(c, "echo \"session initiated, awaiting auth requests\"\n");
-                conoutf("Master peer %s quickly checking auth request",  c.name);
+                conoutf("Master peer %s quickly checking auth request", c.name);
             }
             else
             {
@@ -1011,7 +1011,7 @@ bool checkmasterclientinput(masterclient &c)
                     if(c.isserver)
                     {
                         masteroutf(c, "echo \"server updated (port %d), sending ping request (on port %d)\"\n", c.port, c.port+1);
-                        conoutf("Master peer %s updated server info (%d)",  c.name, c.port);
+                        conoutf("Master peer %s updated server info (%d)", c.name, c.port);
                     }
                     else
                     {
@@ -1184,7 +1184,7 @@ bool checkmasterclientinput(masterclient &c)
         if(w[0] && *w[0] && !found)
         {
             masteroutf(c, "error \"unknown command %s\"\n", w[0]);
-            conoutf("Master peer %s (client) sent unknown command: %s",  c.name, w[0]);
+            conoutf("Master peer %s (client) sent unknown command: %s", c.name, w[0]);
         }
         loopi(numargs) DELETEA(w[i]);
     }
