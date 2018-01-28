@@ -26,7 +26,7 @@ namespace entities
     FVAR(IDF_PERSIST, simpleitemhalo, 0, 0.5f, 1);
 
     FVAR(IDF_PERSIST, haloitemsize, 0, 1, 8);
-    FVAR(IDF_PERSIST, haloitemblend, 0, 0.75f, 1);
+    FVAR(IDF_PERSIST, haloitemblend, 0, 0.7f, 1);
 
     VARF(0, routeid, -1, -1, VAR_MAX, lastroutenode = -1; lastroutetime = 0; airnodes.setsize(0)); // selected route in race
     VARF(0, droproute, 0, 0, 1, lastroutenode = -1; lastroutetime = 0; airnodes.setsize(0); if(routeid < 0) routeid = 0);

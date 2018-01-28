@@ -914,42 +914,23 @@ struct clientstate
         health = heal > 0 ? heal : m_health(gamemode, mutators, actortype);
         int s = sweap;
         if(!isweap(s)) s = m_weapon(actortype, gamemode, mutators);
-        if(s >= W_ALL) s = W_CLAW;
+        if(!isweap(s) || s >= W_ALL) s = W_CLAW;
         if(isweap(s))
         {
-            weapclip[s] = max(1, W(s, ammoclip));
-            weapstore[s] = W(s, ammospawn);
+            weapclip[s] = W(s, ammospawn);
             weapselect = s;
         }
-        if(s != W_CLAW && AA(actortype, abilities)&(1<<A_A_CLAW))
-        {
-            weapclip[W_CLAW] = max(1, W(W_CLAW, ammoclip));
-            weapstore[W_CLAW] = W(W_CLAW, ammospawn);
-        }
-        if(s != W_MELEE && AA(actortype, abilities)&(1<<A_A_MELEE))
-        {
-            weapclip[W_MELEE] = max(1, W(W_MELEE, ammoclip));
-            weapstore[W_MELEE] = W(W_MELEE, ammospawn);
-        }
+        if(s != W_CLAW && AA(actortype, abilities)&(1<<A_A_CLAW)) weapclip[W_CLAW] = W(W_CLAW, ammospawn);
+        if(s != W_MELEE && AA(actortype, abilities)&(1<<A_A_MELEE)) weapclip[W_MELEE] = W(W_MELEE, ammospawn);
         if(actortype < A_ENEMY)
         {
-            if(m_kaboom(gamemode, mutators))
-            {
-                weapclip[W_MINE] = max(1, W(W_MINE, ammoclip));
-                weapstore[W_MINE] = W(W_MINE, ammospawn);
-            }
+            if(m_kaboom(gamemode, mutators)) weapclip[W_MINE] = W(W_MINE, ammospawn);
             else if(!m_race(gamemode) || m_ra_gauntlet(gamemode, mutators))
             {
                 if(s != W_GRENADE && AA(actortype, spawngrenades) >= (m_insta(gamemode, mutators) ? 2 : 1))
-                {
-                    weapclip[W_GRENADE] = max(1, W(W_GRENADE, ammoclip));
-                    weapstore[W_GRENADE] = W(W_GRENADE, ammospawn);
-                }
+                    weapclip[W_GRENADE] = W(W_GRENADE, ammospawn);
                 if(s != W_MINE && AA(actortype, spawnmines) >= (m_insta(gamemode, mutators) ? 2 : 1))
-                {
-                    weapclip[W_MINE] = max(1, W(W_MINE, ammoclip));
-                    weapstore[W_MINE] = W(W_MINE, ammospawn);
-                }
+                    weapclip[W_MINE] = W(W_MINE, ammospawn);
             }
         }
         if(AA(actortype, maxcarry) && m_loadout(gamemode, mutators))
@@ -971,10 +952,14 @@ struct clientstate
                         aweap[j] = randsrc.remove(i);
                     }
                 }
-                weapclip[aweap[j]] = max(1, W(aweap[j], ammoclip));
-                weapstore[aweap[j]] = W(aweap[j], ammospawn);
+                weapclip[aweap[j]] = W(aweap[j], ammospawn);
             }
             weapselect = aweap[0];
+        }
+        loopj(W_MAX) if(weapclip[j] > W(j, ammoclip))
+        {
+            if(W(j, ammostore)) weapstore[j] = min(weapclip[j]-W(j, ammoclip), W(j, ammostore));
+            weapclip[j] = W(j, ammoclip);
         }
     }
 

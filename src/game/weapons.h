@@ -168,16 +168,16 @@ WPVAR(IDF_GAMEMOD,  ammoadd, 1, VAR_MAX,
     1,          10,         1,          2,          40,         50,         30,         48,         6,          1,          1,          1,          1
 );
 WPVAR(IDF_GAMEMOD,  ammoclip, 1, VAR_MAX,
-    1,          10,          1,         8,          40,         50,         30,         48,         6,          2,          2,          1,          1
+    1,          10,         1,          8,          40,         50,         30,         48,         6,          2,          2,          1,          1
 );
-WPVAR(IDF_GAMEMOD,  ammoitem, 0, VAR_MAX,
-    0,          0,           0,         48,         240,        300,        180,        288,       36,          1,          1,          1,          0
+WPVAR(IDF_GAMEMOD,  ammoitem, 1, VAR_MAX,
+    1,          1,          1,          48,         240,        300,        180,        288,       36,          1,          1,          1,          0
 );
-WPVAR(IDF_GAMEMOD,  ammospawn, 0, VAR_MAX,
-    0,          0,           0,         24,         120,        150,        90,         144,       18,          0,          0,          0,          0
+WPVAR(IDF_GAMEMOD,  ammospawn, 1, VAR_MAX,
+    1,          10,         1,          24,         120,        150,        90,         144,       18,          2,          2,          1,          1
 );
 WPVAR(IDF_GAMEMOD,  ammostore, 0, VAR_MAX,
-    0,          0,           0,         40,         200,        250,        150,        240,       30,          0,          0,          0,          0
+    0,          0,          0,          40,         200,        250,        150,        240,       30,          0,          0,          0,          0
 );
 WPVARM(IDF_GAMEMOD,  ammosub, 0, VAR_MAX,
     0,          1,          0,          1,          1,          1,          2,          1,          1,          1,          1,          1,          0,
@@ -974,7 +974,7 @@ WPFVARK(IDF_GAMEMOD,  weight, FVAR_MIN, FVAR_MAX,
 
 struct weaptypes
 {
-    int     anim,               sound,      espeed;
+    int     anim,               sound,          espeed;
     bool    muzzle,     eject,      tape;
     float   thrown[2],              halo,       esize;
     const char *name,   *item,                      *vwep, *hwep,                     *proj,                  *eprj;
@@ -983,79 +983,79 @@ struct weaptypes
 weaptypes weaptype[] =
 {
     {
-            ANIM_CLAW,         S_CLAW,    1,
+            ANIM_CLAW,         S_CLAW,          1,
             true,       false,      true,
-            { 0, 0 },               14,         0,
+            { 0, 0 },               6,          0,
             "claw", "weapons/claw/item", "weapons/claw/vwep", "weapons/claw/hwep", "", ""
     },
     {
-            ANIM_PISTOL,        S_PISTOL,   10,
+            ANIM_PISTOL,        S_PISTOL,       10,
             true,       true,       false,
-            { 0, 0 },               8,          0.35f,
+            { 0, 0 },               6,          0.35f,
             "pistol", "weapons/pistol/item", "weapons/pistol/vwep", "weapons/pistol/hwep", "weapons/pistol/proj", "projectiles/cartridge"
     },
     {
-            ANIM_SWORD,         S_SWORD,    1,
+            ANIM_SWORD,         S_SWORD,        1,
             true,       false,      true,
-            { 0, 0 },               14,         0,
+            { 0, 0 },               12,         0,
             "sword", "weapons/sword/item", "weapons/sword/vwep", "weapons/sword/hwep", "", ""
     },
     {
-            ANIM_SHOTGUN,       S_SHOTGUN,  10,
+            ANIM_SHOTGUN,       S_SHOTGUN,      10,
             true,       true,       false,
-            { 0, 0 },               12,         0.45f,
+            { 0, 0 },               10,         0.45f,
             "shotgun", "weapons/shotgun/item", "weapons/shotgun/vwep", "weapons/shotgun/hwep", "", "projectiles/shell"
     },
     {
-            ANIM_SMG,           S_SMG,      20,
+            ANIM_SMG,           S_SMG,          20,
             true,       true,       false,
-            { 0, 0 },               10,         0.35f,
+            { 0, 0 },               8,          0.35f,
             "smg", "weapons/smg/item", "weapons/smg/vwep", "weapons/smg/hwep", "", "projectiles/cartridge"
     },
     {
-            ANIM_FLAMER,        S_FLAMER,   1,
+            ANIM_FLAMER,        S_FLAMER,       1,
             true,       true,       false,
-            { 0, 0 },               12,         0,
+            { 0, 0 },               10,         0,
             "flamer", "weapons/flamer/item", "weapons/flamer/vwep", "weapons/flamer/hwep", "", ""
     },
     {
-            ANIM_PLASMA,        S_PLASMA,   1,
+            ANIM_PLASMA,        S_PLASMA,       1,
             true,       false,      false,
-            { 0, 0 },               8,         0,
+            { 0, 0 },               6,          0,
             "plasma", "weapons/plasma/item", "weapons/plasma/vwep", "weapons/plasma/hwep", "", ""
     },
     {
-            ANIM_ZAPPER,        S_ZAPPER,   1,
+            ANIM_ZAPPER,        S_ZAPPER,       1,
             true,       false,      true,
-            { 0, 0 },               10,         0,
+            { 0, 0 },               8,          0,
             "zapper", "weapons/zapper/item", "weapons/zapper/vwep", "weapons/zapper/hwep", "", ""
     },
     {
-            ANIM_RIFLE,         S_RIFLE,    1,
+            ANIM_RIFLE,         S_RIFLE,        1,
             true,       false,      false,
-            { 0, 0 },               12,         0,
+            { 0, 0 },               10,         0,
             "rifle", "weapons/rifle/item", "weapons/rifle/vwep", "weapons/rifle/hwep", "", ""
     },
     {
-            ANIM_GRENADE,       S_GRENADE,  1,
+            ANIM_GRENADE,       S_GRENADE,      1,
             false,      false,      false,
-            { 0.0625f, 0.0625f },   6,          0,
+            { 0.0625f, 0.0625f },   4,          0,
             "grenade", "weapons/grenade/item", "weapons/grenade/vwep", "weapons/grenade/hwep", "weapons/grenade/proj", ""
     },
     {
-            ANIM_MINE,          S_MINE,     1,
+            ANIM_MINE,          S_MINE,         1,
             false,      false,      false,
-            { 0.0625f, 0.0625f },   6,          0,
+            { 0.0625f, 0.0625f },   4,          0,
             "mine", "weapons/mine/item", "weapons/mine/vwep", "weapons/mine/hwep", "weapons/mine/proj", ""
     },
     {
-            ANIM_ROCKET,        S_ROCKET,   1,
+            ANIM_ROCKET,        S_ROCKET,       1,
             true,      false,       false,
-            { 0, 0 },               10,          0,
+            { 0, 0 },               8,          0,
             "rocket", "weapons/rocket/item", "weapons/rocket/vwep", "weapons/rocket/hwep", "weapons/rocket/proj",  ""
     },
     {
-            0,                  S_MELEE,    1,
+            0,                  S_MELEE,        1,
             false,      false,      false,
             { 0, 0 },               1,          0,
             "melee",    "", "", "", "", ""
