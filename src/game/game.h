@@ -1139,7 +1139,7 @@ struct gameent : dynent, clientstate
         jumpspeed = AA(type, jumpspeed);
         impulsespeed = AA(type, impulsespeed);
         weight = AA(type, weight);
-        #define MODPHYS(a) a += W(i, mod##a)*(W(i, mod##a##ammo) ? numammo : 1);
+        #define MODPHYS(a) a += W(i, mod##a)*(W(i, mod##a##ammo) != 0 ? numammo*W(i, mod##a##ammo) : 1);
         loopi(W_MAX) if(hasweap(i, sweap))
         {
             int numammo = getammo(i, 0, true);

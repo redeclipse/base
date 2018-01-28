@@ -548,25 +548,25 @@ WPFVARK(IDF_GAMEMOD, liquidcoast, 0, FVAR_MAX,
 WPFVAR(IDF_GAMEMOD, modjumpspeed, FVAR_MIN, FVAR_MAX,
     0,          0,          10,         0,          0,          0,          0,          0,          0,          0,          0,          0,          0
 );
-WPFVAR(IDF_GAMEMOD, modjumpspeedammo, 0, 1,
+WPFVAR(IDF_GAMEMOD, modjumpspeedammo, 0, FVAR_MAX,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
 );
 WPFVAR(IDF_GAMEMOD, modimpulsespeed, FVAR_MIN, FVAR_MAX,
     0,          0,          10,         0,          0,          0,          0,          0,          0,          0,          0,          0,          0
 );
-WPFVAR(IDF_GAMEMOD, modimpulsespeedammo, 0, 1,
+WPFVAR(IDF_GAMEMOD, modimpulsespeedammo, 0, FVAR_MAX,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
 );
 WPFVAR(IDF_GAMEMOD, modspeed, FVAR_MIN, FVAR_MAX,
     0,          0,          10,         -20,        -10,        -5,         -15,        -10,        -20,        -5,         -5,         -25,        0
 );
-WPFVAR(IDF_GAMEMOD, modspeedammo, 0, 1,
+WPFVAR(IDF_GAMEMOD, modspeedammo, 0, FVAR_MAX,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          1,          1,          0,          0
 );
 WPFVAR(IDF_GAMEMOD, modweight, FVAR_MIN, FVAR_MAX,
     0,          10,         10,         50,         25,         20,         20,         30,         50,         5,          5,          75,         0
 );
-WPFVAR(IDF_GAMEMOD, modweightammo, 0, 1,
+WPFVAR(IDF_GAMEMOD, modweightammo, 0, FVAR_MAX,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          1,          1,          0,          0
 );
 WPVAR(IDF_GAMEMOD, modes, -G_ALL, G_ALL,
