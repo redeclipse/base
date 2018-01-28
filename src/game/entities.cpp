@@ -2132,7 +2132,6 @@ namespace entities
         int sweap = m_weapon(game::focus->actortype, game::gamemode, game::mutators),
             fstent = m_edit(game::gamemode) ? 0 : firstuse(EU_ITEM),
             lstent = m_edit(game::gamemode) ? ents.length() : lastuse(EU_ITEM);
-        gameent *d = game::focus ? game::focus : game::player1;
         for(int i = fstent; i < lstent; i++)
         {
             gameentity &e = *(gameentity *)ents[i];
@@ -2182,7 +2181,8 @@ namespace entities
                         if(isweap(attr))
                         {
                             colour = W(attr, colour);
-                            if(!active || !d->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL) || !weapons::canuse(attr))
+                            mdl.color.a *= showentblend;
+                            if(!active || !game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL) || !weapons::canuse(attr))
                                 mdl.color.a *= showentunavailable;
                         }
                         else continue;
@@ -2237,7 +2237,6 @@ namespace entities
 
         vec off(0, 0, 2.f), pos(o);
         if(enttype[e.type].usetype == EU_ITEM) pos.add(off);
-        gameent *d = game::focus ? game::focus : game::player1;
         bool edit = m_edit(game::gamemode) && cansee(idx), isedit = edit && game::player1->state == CS_EDITING,
              hasent = isedit && idx >= 0 && (enthover == idx || entgroup.find(idx) >= 0),
              hastop = hasent && e.o.squaredist(camera1->o) <= showentdist*showentdist;
@@ -2250,7 +2249,8 @@ namespace entities
             float blend = fluc*skew, radius = fluc*0.5f;
             if(e.type == WEAPON && isweap(attr))
             {
-                if(!active || !d->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL) || !weapons::canuse(attr))
+                blend *= showentblend;
+                if(!active || !game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL) || !weapons::canuse(attr))
                     blend *= showentunavailable;
                 radius = max((radius+weaptype[attr].halo)*skew, 0.125f);
             }

@@ -2383,6 +2383,7 @@ namespace projs
 
     void render()
     {
+        int sweap = m_weapon(game::focus->actortype, game::gamemode, game::mutators);
         loopv(projs) if(projs[i]->ready(false) && projs[i]->projtype != PRJ_AFFINITY)
         {
             projent &proj = *projs[i];
@@ -2439,15 +2440,19 @@ namespace projs
                 {
                     if(entities::simpleitems) continue;
                     fadeproj(proj, mdl.color.a, mdl.size);
-                    if(entities::ents.inrange(proj.id))
+                    if(!entities::ents.inrange(proj.id)) continue;
+                    gameentity &e = *(gameentity *)entities::ents[proj.id];
+                    if(e.type == WEAPON)
                     {
-                        gameentity &e = *(gameentity *)entities::ents[proj.id];
-                        if(e.type == WEAPON)
+                        int attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap);
+                        if(isweap(attr))
                         {
-                            int attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], m_weapon(game::focus->actortype, game::gamemode, game::mutators));
-                            if(isweap(attr)) mdl.material[0] = bvec::fromcolor(W(attr, colour));
-                            else continue;
+                            mdl.material[0] = bvec::fromcolor(W(attr, colour));
+                            mdl.color.a *= entities::showentblend;
+                            if(!game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL) || !weapons::canuse(attr))
+                                mdl.color.a *= entities::showentunavailable;
                         }
+                        else continue;
                     }
                     break;
                 }
