@@ -922,13 +922,13 @@ namespace client
     CLCOMMAND(scoretime, floatret(d->scoretime()));
     CLCOMMANDM(kdratio, "si", (char *who, int *n), intret(d->kdratio(*n!=0)));
 
-    CLCOMMANDM(allowimpulse, "s", (char *who), intret(physics::allowimpulse(d) ? 1 : 0));
+    CLCOMMAND(allowimpulse, intret(physics::allowimpulse(d) ? 1 : 0));
     CLCOMMAND(impulsetype, intret(d->impulse[IM_TYPE]));
-    CLCOMMAND(impulsetime, intret(d->impulse[IM_TIME]));
+    CLCOMMANDM(impulsetime, "b", (char *who, int *n), intret(d->impulsetime[*n >= 0 && *n < IM_T_MAX ? *n : d->impulse[IM_TYPE]]));
     CLCOMMAND(impulsecount, intret(d->impulse[IM_COUNT]));
     CLCOMMAND(impulseslip, intret(d->impulse[IM_SLIP]));
     CLCOMMAND(impulseslide, intret(d->impulse[IM_SLIDE]));
-    CLCOMMAND(impulsejump, intret(d->impulse[IM_JUMP]));
+    CLCOMMAND(impulsejump, intret(d->impulsetime[IM_T_JUMP]));
     CLCOMMANDM(impulse, "si", (char *who, int *n), intret(*n >= 0 && *n < IM_MAX ? d->impulse[*n] : 0));
 
     CLCOMMAND(buffing, intret(d->lastbuff));
@@ -2354,8 +2354,7 @@ namespace client
                         case SPHY_JUMP:
                         {
                             if(!proceed) break;
-                            t->resetphys();
-                            t->impulse[IM_JUMP] = lastmillis;
+                            t->doimpulse(IM_T_JUMP, lastmillis);
                             playsound(S_JUMP, t->o, t);
                             createshape(PART_SMOKE, int(t->radius), 0x222222, 21, 20, 250, t->feetpos(), 1, 1, -10, 0, 10.f);
                             break;

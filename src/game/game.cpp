@@ -3374,10 +3374,11 @@ namespace game
                 if(physics::liquidcheck(d) && d->physstate <= PHYS_FALL)
                     mdl.anim |= ((d->move || d->strafe || d->vel.z+d->falling.z > 0 ? int(ANIM_SWIM) : int(ANIM_SINK))|ANIM_LOOP)<<ANIM_SECONDARY;
                 else if(d->turnside) mdl.anim |= ((d->turnside > 0 ? ANIM_WALL_RUN_LEFT : ANIM_WALL_RUN_RIGHT)|ANIM_LOOP)<<ANIM_SECONDARY;
-                else if(d->physstate == PHYS_FALL && !d->onladder && d->impulse[IM_TYPE] != IM_T_NONE && lastmillis-d->impulse[IM_TIME] <= 1000)
+                else if(d->physstate == PHYS_FALL && !d->onladder && d->impulse[IM_TYPE] > IM_T_JUMP && lastmillis-d->impulsetime[d->impulse[IM_TYPE]] <= 1000)
                 {
-                    mdl.basetime2 = d->impulse[IM_TIME];
-                    if(d->impulse[IM_TYPE] == IM_T_KICK || d->impulse[IM_TYPE] == IM_T_VAULT || d->impulse[IM_TYPE] == IM_T_GRAB) mdl.anim |= ANIM_WALL_JUMP<<ANIM_SECONDARY;
+                    mdl.basetime2 = d->impulsetime[d->impulse[IM_TYPE]];
+                    if(d->impulse[IM_TYPE] == IM_T_KICK || d->impulse[IM_TYPE] == IM_T_VAULT || d->impulse[IM_TYPE] == IM_T_GRAB)
+                        mdl.anim |= ANIM_WALL_JUMP<<ANIM_SECONDARY;
                     else if(melee)
                     {
                         mdl.anim |= ANIM_FLYKICK<<ANIM_SECONDARY;
@@ -3390,7 +3391,7 @@ namespace game
                 }
                 else if(d->physstate == PHYS_FALL && !d->onladder && d->airtime(lastmillis) >= 50)
                 {
-                    mdl.basetime2 = max(d->airmillis, d->impulse[IM_JUMP]);
+                    mdl.basetime2 = max(d->airmillis, d->impulsetime[IM_T_JUMP]);
                     if(melee)
                     {
                         mdl.anim |= ANIM_FLYKICK<<ANIM_SECONDARY;
@@ -3661,7 +3662,7 @@ namespace game
                     case 0: default: break;
                 }
             }
-            if(d->turnside || d->impulse[IM_JUMP] || d->sliding(true)) impulseeffect(d, 1);
+            if(d->turnside || d->impulsetime[IM_T_JUMP] || d->sliding(true)) impulseeffect(d, 1);
         }
         if(d->burntime && d->burning(lastmillis, d->burntime))
         {
@@ -3806,6 +3807,7 @@ namespace game
     PLAYERPREV(action, "ii", (int *n, int *o), previewent->action[clamp(*n, 0, int(AC_MAX-1))] = *o != 0);
     PLAYERPREV(actiontime, "ii", (int *n, int *o), previewent->actiontime[clamp(*n, 0, int(AC_MAX-1))] = *o);
     PLAYERPREV(impulse, "ii", (int *n, int *o), previewent->impulse[clamp(*n, 0, int(IM_MAX-1))] = *o);
+    PLAYERPREV(impulsetime, "ii", (int *n, int *o), previewent->impulse[clamp(*n, 0, int(IM_T_MAX-1))] = *o);
     PLAYERPREV(headless, "i", (int *n), previewent->headless = *n != 0);
     PLAYERPREV(inliquid, "i", (int *n), {
         if((previewent->inliquid = *n != 0) != false)

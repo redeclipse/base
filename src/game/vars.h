@@ -498,13 +498,13 @@ GFVAR(IDF_GAMEMOD, impulsegrabplayerredir, 0, 1, FVAR_MAX); // how much of the o
 GVAR(IDF_GAMEMOD, impulsestyle, 0, 1, 3); // impulse style; 0 = off, 1 = touch and count, 2 = count only, 3 = freestyle
 GVAR(IDF_GAMEMOD, impulsecount, 0, 5, VAR_MAX); // number of impulse actions per air transit
 GVAR(IDF_GAMEMOD, impulseslip, 0, 500, VAR_MAX); // time before floor friction kicks back in
-GVAR(IDF_GAMEMOD, impulseslide, 0, 1000, VAR_MAX); // time before powerslides end
+GVAR(IDF_GAMEMOD, impulseslide, 0, 750, VAR_MAX); // time before powerslides end
 GVAR(IDF_GAMEMOD, impulseskate, 0, 1000, VAR_MAX); // length of time a run along a wall can last
 
 GVAR(IDF_GAMEMOD, impulsejumpdelay, 0, 250, VAR_MAX); // minimum time after jump for boost
-GVAR(IDF_GAMEMOD, impulseboostdelay, 0, 350, VAR_MAX); // minimum time between boosts
+GVAR(IDF_GAMEMOD, impulseboostdelay, 0, 250, VAR_MAX); // minimum time between boosts
 GVAR(IDF_GAMEMOD, impulsedashdelay, 0, 1000, VAR_MAX); // minimum time between dashes/powerslides
-GVAR(IDF_GAMEMOD, impulsekickdelay, 0, 350, VAR_MAX); // minimum time between wall kicks/climbs/grabs
+GVAR(IDF_GAMEMOD, impulsekickdelay, 0, 250, VAR_MAX); // minimum time between wall kicks/climbs/grabs
 
 GFVAR(IDF_GAMEMOD, spreadcrouch, 0, 0.25f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, spreadzoom, 0, 0.125f, FVAR_MAX);

@@ -40,21 +40,28 @@ namespace physics
 
     bool canimpulse(physent *d, int type, bool kick)
     {
-        if(gameent::is(d) && allowimpulse(d, type))
+        if(!gameent::is(d) || !allowimpulse(d, type)) return false;
+        gameent *e = (gameent *)d;
+        if(!kick && impulsestyle == 1 && e->impulse[IM_TYPE] > IM_T_JUMP && e->impulse[IM_TYPE] < IM_T_WALL) return false;
+        if(!m_freestyle(game::gamemode, game::mutators) && impulsestyle <= 2 && e->impulse[IM_COUNT] >= impulsecount) return false;
+        int time = 0, delay = 0;
+        switch(type)
         {
-            gameent *e = (gameent *)d;
-            if(!kick && impulsestyle == 1 && e->impulse[IM_TYPE] > IM_T_NONE && e->impulse[IM_TYPE] < IM_T_WALL) return false;
-            int time = e->impulse[IM_TIME], delay = e->impulse[IM_TYPE] == IM_T_KICK || e->impulse[IM_TYPE] == IM_T_VAULT || e->impulse[IM_TYPE] == IM_T_GRAB ? impulsekickdelay : impulseboostdelay;
-            if(!time)
-            {
-                time = e->impulse[IM_JUMP];
-                delay = impulsejumpdelay;
-            }
-            if(time && delay && lastmillis-time <= delay) return false;
-            if(!m_freestyle(game::gamemode, game::mutators) && impulsestyle <= 2 && e->impulse[IM_COUNT] >= impulsecount) return false;
-            return true;
+            case A_A_PARKOUR:
+                time = max(max(max(e->impulsetime[IM_T_MELEE], e->impulsetime[IM_T_KICK]), e->impulsetime[IM_T_VAULT]), e->impulsetime[IM_T_GRAB]);
+                delay = impulsekickdelay;
+                break;
+            case A_A_DASH:
+                time = e->impulsetime[IM_T_DASH];
+                delay = impulsedashdelay;
+                break;
+            default:
+                time = e->impulsetime[e->impulse[IM_TYPE]];
+                delay = e->impulse[IM_TYPE] == IM_T_JUMP ? impulsejumpdelay : impulseboostdelay;
+                break;
         }
-        return false;
+        if(time && delay && lastmillis-time <= delay) return false;
+        return true;
     }
 
     #define imov(name,v,u,d,s,os) \
@@ -65,7 +72,7 @@ namespace physics
             game::player1->v = dir; \
             if(down) \
             { \
-                if(allowimpulse(game::player1, A_A_DASH) && dashstyle && (dashstyle == 1 || game::player1->physstate != PHYS_FALL) && impulseaction&2 && last##v && lastdir##v && dir == lastdir##v && lastmillis-last##v < PHYSMILLIS) \
+                if(dashstyle && (dashstyle == 1 || game::player1->physstate != PHYS_FALL) && impulseaction&2 && last##v && lastdir##v && dir == lastdir##v && lastmillis-last##v < PHYSMILLIS && canimpulse(game::player1, A_A_DASH, false)) \
                 { \
                     game::player1->action[AC_DASH] = true; \
                     game::player1->actiontime[AC_DASH] = lastmillis; \
@@ -699,7 +706,7 @@ namespace physics
             if(melee) { dash = onfloor; pulse = !onfloor; }
             else if(!power)
             {
-                if(onfloor) dash = impulseaction&2 && d->action[AC_DASH] && (!d->impulse[IM_TIME] || lastmillis-d->impulse[IM_TIME] > impulsedashdelay);
+                if(onfloor) dash = impulseaction&2 && d->action[AC_DASH];
                 else pulse = ((d->actortype >= A_BOT || impulseaction&1) && d->action[AC_JUMP]) || ((d->actortype >= A_BOT || impulseaction&2) && d->action[AC_DASH]);
             }
             if(!canimpulse(d, dash ? A_A_DASH : A_A_BOOST, false)) return false;
@@ -712,7 +719,7 @@ namespace physics
                 if(onfloor)
                 {
                     if(!power) skew = impulsedash;
-                    if(!dash && !melee) d->impulse[IM_JUMP] = lastmillis;
+                    if(!dash && !melee) d->impulsetime[IM_T_JUMP] = lastmillis;
                 }
                 vec keepvel = vec(d->vel).add(d->falling);
                 float force = impulsevelocity(d, skew, melee ? A_A_PARKOUR : (dash ? A_A_DASH : A_A_BOOST), melee ? impulsemeleeredir : (dash ? impulsedashredir : (moving ? impulseboostredir : impulsejumpredir)), keepvel);
@@ -747,7 +754,7 @@ namespace physics
     void modifyinput(gameent *d, vec &m, bool wantsmove, int millis)
     {
         bool onfloor = d->physstate >= PHYS_SLOPE || d->onladder || liquidcheck(d);
-        if(d->turnside && (!allowimpulse(d, A_A_PARKOUR) || d->impulse[IM_TYPE] != IM_T_SKATE || (impulseskate && lastmillis-d->impulse[IM_TIME] > impulseskate) || d->vel.magnitude() <= 1))
+        if(d->turnside && (!allowimpulse(d, A_A_PARKOUR) || d->impulse[IM_TYPE] != IM_T_SKATE || (impulseskate && lastmillis-d->impulsetime[IM_T_SKATE] > impulseskate) || d->vel.magnitude() <= 1))
         {
             d->turnside = 0;
             d->resetphys(true);
@@ -790,8 +797,7 @@ namespace physics
                         d->vel.x *= scale;
                         d->vel.y *= scale;
                     }
-                    d->resetphys();
-                    d->impulse[IM_JUMP] = lastmillis;
+                    d->doimpulse(IM_T_JUMP, lastmillis);
                     d->action[AC_JUMP] = onfloor = false;
                     client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_JUMP);
                     playsound(S_JUMP, d->o, d);
@@ -1121,7 +1127,7 @@ namespace physics
                 gameent *d = (gameent *)pl;
                 if(!d->airmillis)
                 {
-                    if(local && impulsemethod&2 && timeinair >= impulseboostdelay && d->move == 1 && allowimpulse(d, A_A_DASH) && d->action[AC_CROUCH])
+                    if(local && impulsemethod&2 && timeinair >= impulseboostdelay && d->move == 1 && d->action[AC_CROUCH] && canimpulse(d, A_A_DASH, false))
                     {
                         d->action[AC_DASH] = true;
                         d->actiontime[AC_DASH] = lastmillis;

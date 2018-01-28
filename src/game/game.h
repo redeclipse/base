@@ -218,8 +218,8 @@ enum
     AC_PRIMARY = 0, AC_SECONDARY, AC_RELOAD, AC_USE, AC_JUMP, AC_WALK, AC_CROUCH, AC_SPECIAL, AC_DROP, AC_AFFINITY, AC_TOTAL, AC_DASH = AC_TOTAL, AC_MAX,
     AC_ALL = (1<<AC_PRIMARY)|(1<<AC_SECONDARY)|(1<<AC_RELOAD)|(1<<AC_USE)|(1<<AC_JUMP)|(1<<AC_WALK)|(1<<AC_CROUCH)|(1<<AC_SPECIAL)|(1<<AC_DROP)|(1<<AC_AFFINITY)
 };
-enum { IM_TYPE = 0, IM_TIME, IM_COUNT, IM_SLIP, IM_SLIDE, IM_JUMP, IM_MAX };
-enum { IM_T_NONE = 0, IM_T_BOOST, IM_T_DASH, IM_T_MELEE, IM_T_KICK, IM_T_VAULT, IM_T_GRAB, IM_T_SKATE, IM_T_MAX, IM_T_WALL = IM_T_MELEE };
+enum { IM_TYPE = 0, IM_COUNT, IM_SLIP, IM_SLIDE, IM_MAX };
+enum { IM_T_JUMP = 0, IM_T_BOOST, IM_T_DASH, IM_T_MELEE, IM_T_KICK, IM_T_VAULT, IM_T_GRAB, IM_T_SKATE, IM_T_MAX, IM_T_WALL = IM_T_MELEE };
 enum { SPHY_NONE = 0, SPHY_JUMP, SPHY_BOOST, SPHY_DASH, SPHY_MELEE, SPHY_KICK, SPHY_VAULT, SPHY_GRAB, SPHY_SKATE, SPHY_COOK, SPHY_MATERIAL, SPHY_EXTINGUISH, SPHY_BUFF, SPHY_MAX, SPHY_SERVER = SPHY_EXTINGUISH };
 
 #define CROUCHHEIGHT 0.7f
@@ -1095,7 +1095,7 @@ struct gameent : dynent, clientstate
     editinfo *edit;
     ai::aiinfo *ai;
     int team, clientnum, privilege, projid, lastnode, checkpoint, cplast, respawned, suicided, lastupdate, lastpredict, plag, ping, lastflag, totaldamage,
-        actiontime[AC_MAX], impulse[IM_MAX], smoothmillis, turnmillis, turnside, aschan, cschan, vschan, wschan, pschan, sschan[2],
+        actiontime[AC_MAX], impulse[IM_MAX], impulsetime[IM_T_MAX], smoothmillis, turnmillis, turnside, aschan, cschan, vschan, wschan, pschan, sschan[2],
         lasthit, lastteamhit, lastkill, lastattacker, lastpoints, quake, lastfoot;
     float deltayaw, deltapitch, newyaw, newpitch, turnyaw, turnroll;
     vec head, torso, muzzle, origin, eject[2], waist, jet[3], legs, hrad, trad, lrad, toe[2];
@@ -1202,6 +1202,7 @@ struct gameent : dynent, clientstate
     void clearstate(int gamemode, int mutators)
     {
         loopi(IM_MAX) impulse[i] = 0;
+        loopi(IM_T_MAX) impulsetime[i] = 0;
         lasthit = lastkill = quake = turnmillis = turnside = 0;
         turnroll = turnyaw = 0;
         lastteamhit = lastflag = respawned = suicided = lastnode = lastfoot = -1;
@@ -1398,19 +1399,23 @@ struct gameent : dynent, clientstate
 
     void doimpulse(int type, int millis)
     {
-        bool jump = type > IM_T_NONE && type < IM_T_WALL;
-        impulse[IM_TIME] = millis;
+        if(type < 0 || type >= IM_T_MAX) return;
+        impulsetime[type] = millis;
         if(type == IM_T_DASH) impulse[IM_SLIDE] = millis;
         if(type != IM_T_KICK) impulse[IM_SLIP] = millis;
-        if(!impulse[IM_JUMP] && jump) impulse[IM_JUMP] = millis;
         impulse[IM_TYPE] = type;
-        impulse[IM_COUNT]++;
-        resetphys(jump);
+        if(type != IM_T_JUMP)
+        {
+            if(!impulsetime[IM_T_JUMP]) impulsetime[IM_T_JUMP] = millis;
+            impulse[IM_COUNT]++;
+        }
+        resetphys(type > IM_T_JUMP && type < IM_T_WALL);
     }
 
     void resetjump()
     {
-        airmillis = turnside = impulse[IM_COUNT] = impulse[IM_TYPE] = impulse[IM_JUMP] = 0;
+        airmillis = turnside = impulse[IM_COUNT] = impulse[IM_TYPE] = 0;
+        impulsetime[IM_T_JUMP] = impulsetime[IM_T_BOOST] = impulsetime[IM_T_DASH] = 0;
     }
 
     void resetair()
