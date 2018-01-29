@@ -775,7 +775,7 @@ namespace entities
                     float mag = max(e.attrs[2], 1), maxrad = e.attrs[3] ? e.attrs[3] : enttype[PUSHER].radius, minrad = e.attrs[4];
                     if(dist > 0 && minrad > 0 && maxrad > minrad && dist > minrad && maxrad >= dist)
                         mag *= 1.f-clamp((dist-minrad)/float(maxrad-minrad), 0.f, 1.f);
-                    if(d->weight != 200) mag *= d->weight/200.f;
+                    if(!gameent::is(d)) mag *= d->weight/200.f;
                     vec dir(e.attrs[0]*RAD, e.attrs[1]*RAD), rel = vec(dir).mul(mag);
                     switch(e.attrs[5])
                     {

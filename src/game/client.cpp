@@ -919,6 +919,11 @@ namespace client
     CLCOMMAND(balancescore, floatret(d->balancescore()));
     CLCOMMAND(timeplayed, intret(d->updatetimeplayed()));
 
+    CLCOMMAND(speed, floatret(d->speed));
+    CLCOMMAND(jumpspeed, floatret(d->jumpspeed));
+    CLCOMMAND(impulsespeed, floatret(d->impulsespeed));
+    CLCOMMAND(weight, floatret(d->weight));
+
     CLCOMMAND(scoretime, floatret(d->scoretime()));
     CLCOMMANDM(kdratio, "si", (char *who, int *n), intret(d->kdratio(*n!=0)));
 
