@@ -1838,7 +1838,10 @@ namespace hud
                 hy -= FONTH*offset/float(onscreenhitstime);
                 fade *= 1-(offset/float(onscreenhitsfade));
             }
-            defformatstring(text, "%c%.1f", d.damage > 0 ? '-' : (d.damage < 0 ? '+' : '~'), (d.damage < 0 ? 0-d.damage : d.damage)/game::damagedivisor);
+            string text;
+            if(game::damageinteger)
+                formatstring(text, "%c%d", d.damage > 0 ? '-' : (d.damage < 0 ? '+' : '~'), int((d.damage < 0 ? 0-d.damage : d.damage)/game::damagedivisor));
+            else formatstring(text, "%c%.1f", d.damage > 0 ? '-' : (d.damage < 0 ? '+' : '~'), (d.damage < 0 ? 0-d.damage : d.damage)/game::damagedivisor);
             vec colour = d.colour < 0 ? game::pulsecolour(a, INVPULSE(d.colour)) : vec::fromcolor(d.colour);
             if(maxy >= 0 && hy < maxy) hy = maxy;
             if(onscreenhitsglow && settexture(onscreenhitsglowtex))

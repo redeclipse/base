@@ -503,7 +503,7 @@ GVAR(IDF_GAMEMOD, impulseskate, 0, 1000, VAR_MAX); // length of time a run along
 
 GVAR(IDF_GAMEMOD, impulsejumpdelay, 0, 250, VAR_MAX); // minimum time after jump for boost
 GVAR(IDF_GAMEMOD, impulseboostdelay, 0, 250, VAR_MAX); // minimum time between boosts
-GVAR(IDF_GAMEMOD, impulsedashdelay, 0, 1000, VAR_MAX); // minimum time between dashes/powerslides
+GVAR(IDF_GAMEMOD, impulsedashdelay, 0, 1500, VAR_MAX); // minimum time between dashes/powerslides
 GVAR(IDF_GAMEMOD, impulsekickdelay, 0, 250, VAR_MAX); // minimum time between wall kicks/climbs/grabs
 
 GFVAR(IDF_GAMEMOD, spreadcrouch, 0, 0.25f, FVAR_MAX);

@@ -251,6 +251,7 @@ namespace game
     VAR(IDF_PERSIST, obitverbose, 0, 1, 1); // 0 = extremely simple, 1 = regular messages
     VAR(IDF_PERSIST, obitstyles, 0, 1, 1); // 0 = no obituary styles, 1 = show sprees/dominations/etc
 
+    VAR(IDF_PERSIST, damageinteger, 0, 1, 1);
     FVAR(IDF_PERSIST, damagedivisor, FVAR_NONZERO, 10, FVAR_MAX);
     VAR(IDF_PERSIST, damagemergedelay, 0, 75, VAR_MAX);
     VAR(IDF_PERSIST, damagemergeburn, 0, 250, VAR_MAX);
@@ -1313,8 +1314,10 @@ namespace game
             }
             if(aboveheaddamage)
             {
-                defformatstring(ds, "<sub>\fo%c%.1f", damage > 0 ? '-' : (damage < 0 ? '+' : '~'), (damage < 0 ? 0-damage : damage)/damagedivisor);
-                part_textcopy(d->abovehead(), ds, d != focus ? PART_TEXT : PART_TEXT_ONTOP, eventiconfade, colourwhite, 4, 1, -10, 0, d);
+                string text;
+                if(damageinteger) formatstring(text, "<sub>\fo%c%d", damage > 0 ? '-' : (damage < 0 ? '+' : '~'), int((damage < 0 ? 0-damage : damage)/damagedivisor));
+                else formatstring(text, "<sub>\fo%c%.1f", damage > 0 ? '-' : (damage < 0 ? '+' : '~'), (damage < 0 ? 0-damage : damage)/damagedivisor);
+                part_textcopy(d->abovehead(), text, d != focus ? PART_TEXT : PART_TEXT_ONTOP, eventiconfade, colourwhite, 4, 1, -10, 0, d);
             }
         }
     };
@@ -3773,6 +3776,7 @@ namespace game
     void renderplayerpreview(float scale, const vec4 &mcolor, const char *actions)
     {
         if(!previewent) initplayerpreview();
+        previewent->setscale(m_weapon(previewent->actortype, gamemode, mutators), 1, 0, true);
         float height = previewent->height + previewent->aboveeye, zrad = height/2;
         vec2 xyrad = vec2(previewent->xradius, previewent->yradius).max(height/4);
         previewent->o = calcmodelpreviewpos(vec(xyrad, zrad), previewent->yaw).addz(previewent->height - zrad);

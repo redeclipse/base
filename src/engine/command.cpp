@@ -4448,6 +4448,7 @@ ICOMMAND(0, precf, "fi", (float *a, int *b),
 LISTAVGCOMMAND(listavg, int);
 LISTAVGCOMMAND(listavgf, float);
 
+ICOMMAND(0, toint, "f", (float *n), intret(int(*n)));
 ICOMMAND(0, floor, "f", (float *n), intret(floor(*n)));
 ICOMMAND(0, ceil, "f", (float *n), intret(ceil(*n)));
 ICOMMAND(0, floorf, "f", (float *n), floatret(floor(*n)));
