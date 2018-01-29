@@ -957,7 +957,7 @@ namespace hud
             switch(i)
             {
                 case 0:
-                    val = min(1.f, game::focus->health/float(max(m_health(game::gamemode, game::mutators, game::focus->actortype), 1)));
+                    val = min(1.f, game::focus->health/float(max(game::focus->gethealth(game::gamemode, game::mutators), 1)));
                     if(circlebarhealthtone) skewcolour(c.r, c.g, c.b, circlebarhealthtone);
                     break;
                 case 1:
@@ -1039,7 +1039,7 @@ namespace hud
                         if(millis >= delay || d.dir.iszero()) { if(millis >= onscreendamagetime+onscreendamagefade) damagelocs.remove(i--); continue; }
                         gameent *e = game::getclient(d.clientnum);
                         if(!onscreendamageself && e == game::focus) continue;
-                        float dam = d.damage/float(max(m_health(game::gamemode, game::mutators, game::focus->actortype), 1)),
+                        float dam = d.damage/float(max(game::focus->gethealth(game::gamemode, game::mutators), 1)),
                               amt = millis/float(delay);
                         total += dam;
                         val += dam*(1-amt);
@@ -1092,7 +1092,7 @@ namespace hud
                 fade += (zoomcrosshairblend-fade)*amt;
             }
             if(crosshairtone) skewcolour(c.r, c.g, c.b, crosshairtone);
-            int heal = m_health(game::gamemode, game::mutators, game::focus->actortype);
+            int heal = game::focus->gethealth(game::gamemode, game::mutators);
             if(crosshairflash && game::focus->state == CS_ALIVE && game::focus->health < heal)
             {
                 int millis = lastmillis%1000;
@@ -1626,7 +1626,7 @@ namespace hud
         SETSHADER(huddamage);
         if(showdamage)
         {
-            int hp = max(1, m_health(game::gamemode, game::mutators, A_PLAYER));
+            int hp = max(1, game::focus->gethealth(game::gamemode, game::mutators));
             float pc = game::focus->state == CS_DEAD ? damageblenddead : (game::focus->state == CS_ALIVE ? min(damageresidue, hp)/float(hp)*damageblend : 0.f);
             if(pc > 0) drawdamage(damagetex, damagecolour.tocolor(), pc*blend, damagespeed1, damagespeed2, damagedistort);
         }

@@ -618,6 +618,15 @@ struct clientstate
     }
     ~clientstate() {}
 
+    int gethealth(int gamemode, int mutators, bool full = false)
+    {
+        if(m_insta(gamemode, mutators)) return 1;
+        int hp = AA(actortype, health), sweap = m_weapon(actortype, gamemode, mutators);
+        loopi(W_MAX) if(hasweap(i, sweap)) hp += W(i, modhealth)+(getammo(i, 0, true)*W(i, modhealthammo));
+        if(full) hp = hp*(m_vampire(gamemode, mutators) ? G(maxhealthvampire) : G(maxhealth));
+        return max(hp, 1);
+    }
+
     bool setvanity(const char *v)
     {
         bool changed = strcmp(v, vanity);
@@ -911,7 +920,7 @@ struct clientstate
     void spawnstate(int gamemode, int mutators, int sweap, int heal)
     {
         weapreset(true);
-        health = heal > 0 ? heal : m_health(gamemode, mutators, actortype);
+        health = heal > 0 ? heal : gethealth(gamemode, mutators);
         int s = sweap;
         if(!isweap(s)) s = m_weapon(actortype, gamemode, mutators);
         if(!isweap(s) || s >= W_ALL) s = W_CLAW;
@@ -966,7 +975,7 @@ struct clientstate
     void editspawn(int gamemode, int mutators)
     {
         clearstate();
-        spawnstate(gamemode, mutators, m_weapon(actortype, gamemode, mutators), m_health(gamemode, mutators, actortype));
+        spawnstate(gamemode, mutators, m_weapon(actortype, gamemode, mutators), gethealth(gamemode, mutators));
     }
 
     int respawnwait(int millis, int delay)

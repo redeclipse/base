@@ -288,8 +288,6 @@ extern mutstypes mutstype[];
 #define m_weapon(at,a,b)    (m_medieval(a, b) ? AA(at, weaponmedieval) : (m_kaboom(a, b) ? AA(at, weaponkaboom) : (m_insta(a, b) ? AA(at, weaponinsta) : (m_race(a) && !m_ra_gauntlet(a, b) ? AA(at, weaponrace) : (m_dm_gladiator(a, b) ? AA(at, weapongladiator) : AA(at, weaponspawn))))))
 #define m_delay(at,a,b,c)   ((m_play(a) || at >= A_ENEMY) && !m_duke(a,b) ? int((m_race(a) ? (!m_ra_gauntlet(a, b) || c == T_ALPHA ? AA(at, spawndelayrace) : AA(at, spawndelaygauntlet)) : (m_bomber(a) ? AA(at, spawndelaybomber) : (m_defend(a) ? AA(at, spawndelaydefend) : (m_capture(a) ? AA(at, spawndelaycapture) : AA(at, spawndelay)))))*(m_insta(a, b) ? AA(at, spawndelayinstascale) : 1.f)) : 0)
 #define m_protect(a,b)      (m_duke(a,b) ? DSG(a, b, protect) : (m_insta(a, b) ? G(instaprotect) : G(spawnprotect)))
-#define m_health(a,b,c)     (m_insta(a,b) ? 1 : AA(c, health))
-#define m_maxhealth(a,b,c)  (int(m_health(a, b, c)*(m_vampire(a,b) ? G(maxhealthvampire) : G(maxhealth))))
 #define m_swapteam(a,b)     (m_team(a, b) && (!m_race(a) || m_ra_gauntlet(a, b)) && m_play(a) && (G(teambalanceduel) || !m_duel(a, b)) && !m_coop(gamemode, mutators) && G(teambalance) >= 3 && G(teambalanceswap))
 #define m_balteam(a,b,c)    (m_team(a, b) && (!m_race(a) || m_ra_gauntlet(a, b)) && m_play(a) && (G(teambalanceduel) || !m_duel(a, b)) && !m_coop(gamemode, mutators) && G(teambalance) >= c)
 #define m_forcebal(a,b)     (m_bb_attack(a, b) || m_ra_gauntlet(a, b))

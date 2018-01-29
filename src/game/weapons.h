@@ -545,6 +545,12 @@ WPFVARK(IDF_GAMEMOD, liquidcoast, 0, FVAR_MAX,
     0.0f,       2.0f,       0.0f,       2.0f,       2.0f,       1.0f,       1.0f,       1.0f,       2.0f,       2.0f,       2.0f,       2.0f,       0.0f,
     0.0f,       2.0f,       0.0f,       2.0f,       2.0f,       1.0f,       1.0f,       1.0f,       2.0f,       2.0f,       2.0f,       2.0f,       0.0f
 );
+WPFVAR(IDF_GAMEMOD, modhealth, FVAR_MIN, FVAR_MAX,
+    0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
+);
+WPFVAR(IDF_GAMEMOD, modhealthammo, FVAR_MIN, FVAR_MAX,
+    0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
+);
 WPFVAR(IDF_GAMEMOD, modjumpspeed, FVAR_MIN, FVAR_MAX,
     0,          0,          10,         0,          0,          0,          0,          0,          0,          0,          0,          0,          0
 );

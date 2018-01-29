@@ -1030,7 +1030,7 @@ namespace game
         {
             if(m_resize(gamemode, mutators))
             {
-                float minscale = 1, amtscale = m_insta(gamemode, mutators) ? 1+(d->spree*instaresizeamt) : max(d->health, 1)/float(max(m_health(gamemode, mutators, d->actortype), 1));
+                float minscale = 1, amtscale = m_insta(gamemode, mutators) ? 1+(d->spree*instaresizeamt) : max(d->health, 1)/float(max(d->gethealth(gamemode, mutators), 1));
                 if(m_resize(gamemode, mutators))
                 {
                     minscale = minresizescale;
@@ -1304,7 +1304,7 @@ namespace game
             if(playdamagetones >= (v == focus ? 1 : (d == focus ? 2 : 3)))
             {
                 const float dmgsnd[8] = { 0, 0.1f, 0.25f, 0.5f, 0.75f, 1.f, 1.5f, 2.f };
-                int hp = m_health(gamemode, mutators, A_PLAYER), snd = -1; // keep sounds based on player health
+                int hp = d->gethealth(gamemode, mutators), snd = -1;
                 if(flags&BURN) snd = S_BURNED;
                 else if(flags&BLEED) snd = S_BLEED;
                 else if(flags&SHOCK) snd = S_SHOCK;
@@ -1365,7 +1365,7 @@ namespace game
             {
                 if(d == focus) hud::damage(damage, v->o, v, weap, flags);
                 vec p = d->headpos(-d->height/4);
-                int hp = max(m_health(gamemode, mutators, A_PLAYER)/5, 1); // keep scale based on player health
+                int hp = max(d->gethealth(gamemode, mutators)/5, 1);
                 if(!nogore && bloodscale > 0)
                     part_splash(PART_BLOOD, int(clamp(damage/hp, 1, 5)*bloodscale)*(bleeding || material ? 2 : 1), bloodfade, p, 0x229999, (rnd(bloodsize/2)+(bloodsize/2))/10.f, 1, 100, STAIN_BLOOD, int(d->radius), 10);
                 if(nogore != 2 && (bloodscale <= 0 || bloodsparks))
@@ -1393,7 +1393,7 @@ namespace game
                     if(m_dm_gladiator(gamemode, mutators))
                     {
                         float extra = flags&HIT_WAVE || !hitdealt(flags) ? gladiatorextrawavestunscale : (d->health <= 0 ? gladiatorextradeadstunscale : gladiatorextrahitstunscale);
-                        amt *= m_health(gamemode, mutators, d->actortype)/max(d->health, 1)*extra;
+                        amt *= d->gethealth(gamemode, mutators)/max(d->health, 1)*extra;
                     }
                     float s = d->shockstunscale*amt, g = d->shockstunfall*amt;
                     d->addstun(weap, lastmillis, d->shockstuntime, d->shockstun&W_N_STADD ? s : 0.f, d->shockstun&W_N_GRADD ? g : 0.f);
@@ -1410,7 +1410,7 @@ namespace game
                         if(m_dm_gladiator(gamemode, mutators))
                         {
                             float extra = flags&HIT_WAVE || !hitdealt(flags) ? gladiatorextrawavestunscale : (d->health <= 0 ? gladiatorextradeadstunscale : gladiatorextrahitstunscale);
-                            amt *= m_health(gamemode, mutators, d->actortype)/max(d->health, 1)*extra;
+                            amt *= d->gethealth(gamemode, mutators)/max(d->health, 1)*extra;
                         }
                         float s = WF(WK(flags), weap, stunscale, WS(flags))*amt, g = WF(WK(flags), weap, stunfall, WS(flags))*amt;
                         d->addstun(weap, lastmillis, int(scale*WF(WK(flags), weap, stuntime, WS(flags))), stun&W_N_STADD ? s : 0.f, stun&W_N_GRADD ? g : 0.f);
@@ -1441,7 +1441,7 @@ namespace game
                             if(m_dm_gladiator(gamemode, mutators))
                             {
                                 float extra = flags&HIT_WAVE || !hitdealt(flags) ? gladiatorextrawavepushscale : (d->health <= 0 ? gladiatorextradeadpushscale : gladiatorextrahitpushscale);
-                                modify *= m_health(gamemode, mutators, d->actortype)/max(d->health, 1)*extra;
+                                modify *= d->gethealth(gamemode, mutators)/max(d->health, 1)*extra;
                             }
                             d->vel.add(vec(dir).mul(hit*modify));
                             if(doquake) d->quake = min(d->quake+max(int(hit), 1), quakelimit);
@@ -1453,7 +1453,7 @@ namespace game
                             if(m_dm_gladiator(gamemode, mutators))
                             {
                                 float extra = flags&HIT_WAVE || !hitdealt(flags) ? gladiatorextrawavevelscale : (d->health <= 0 ? gladiatorextradeadvelscale : gladiatorextrahitvelscale);
-                                modify *= m_health(gamemode, mutators, d->actortype)/max(d->health, 1)*extra;
+                                modify *= d->gethealth(gamemode, mutators)/max(d->health, 1)*extra;
                             }
                             d->vel.add(vec(vel).mul(hit*modify));
                             if(doquake) d->quake = min(d->quake+max(int(hit), 1), quakelimit);
@@ -1748,7 +1748,7 @@ namespace game
 
         if(nogore != 2 && gibscale > 0 && !(flags&HIT_LOST))
         {
-            int hp = max(m_health(gamemode, mutators, A_PLAYER)/10, 1), gib = clamp(max(damage, hp)/(d->obliterated ? 10 : 20), 2, 10), amt = int((rnd(gib)+gib)*(1+gibscale));
+            int hp = max(d->gethealth(gamemode, mutators)/10, 1), gib = clamp(max(damage, hp)/(d->obliterated ? 10 : 20), 2, 10), amt = int((rnd(gib)+gib)*(1+gibscale));
             loopi(amt) projs::create(pos, pos, true, d, nogore ? PRJ_DEBRIS : PRJ_GIBS, -1, HIT_NONE, rnd(gibfade)+gibfade, 0, rnd(250)+1, rnd(d->obliterated ? 80 : 40)+10);
         }
         if(m_team(gamemode, mutators) && d->team == v->team && d != v && v == player1 && isweap(weap) && WF(WK(flags), weap, damagepenalty, WS(flags)) != 0)
@@ -3561,7 +3561,7 @@ namespace game
                     }
                     else if(playerhintscale > 0)
                     {
-                        float per = d->health/float(max(m_health(gamemode, mutators, d->actortype), 1));
+                        float per = d->health/float(max(d->gethealth(gamemode, mutators), 1));
                         fade = (fade*(1.f-playerhintscale))+(fade*per*playerhintscale);
                         if(fade > 1)
                         {
@@ -3765,7 +3765,7 @@ namespace game
         previewent->state = CS_ALIVE;
         previewent->actortype = A_PLAYER;
         previewent->physstate = PHYS_FLOOR;
-        previewent->spawnstate(G_DEATHMATCH, 0, -1, m_health(G_DEATHMATCH, 0, A_PLAYER));
+        previewent->spawnstate(G_DEATHMATCH, 0, -1, previewent->gethealth(G_DEATHMATCH, 0));
         loopi(W_MAX) previewent->weapclip[i] = W(i, ammoclip);
         loopi(W_MAX) previewent->weapstore[i] = W(i, ammostore);
     }
@@ -3787,7 +3787,7 @@ namespace game
     PLAYERPREV(turnside, "i", (int *n), previewent->turnside = *n != 0 ? (*n > 0 ? 1 : -1) : 0);
     PLAYERPREV(physstate, "b", (int *n), previewent->physstate = *n >= 0 ? clamp(*n, 0, int(PHYS_MAX-1)) : int(PHYS_FLOOR));
     PLAYERPREV(actortype, "b", (int *n), previewent->actortype = *n >= 0 ? clamp(*n, 0, int(A_MAX-1)) : int(A_PLAYER));
-    PLAYERPREV(health, "bbbb", (int *n, int *m, int *o, int *t), previewent->health = *n >= 0 ? *n : m_health(*m >= 0 ? *m : G_DEATHMATCH, *o >= 0 ? *o : 0, *t >= 0 ? *t : previewent->actortype));
+    PLAYERPREV(health, "bbb", (int *n, int *m, int *o), previewent->health = *n >= 0 ? *n : previewent->gethealth(*m >= 0 ? *m : G_DEATHMATCH, *o >= 0 ? *o : 0));
     PLAYERPREV(model, "i", (int *n), previewent->model = clamp(*n, 0, PLAYERTYPES-1));
     PLAYERPREV(colour, "i", (int *n), previewent->colour = clamp(*n, 0, 0xFFFFFF));
     PLAYERPREV(pattern, "i", (int *n), previewent->pattern = clamp(*n, 0, PLAYERPATTERNS-1));

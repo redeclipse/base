@@ -811,7 +811,7 @@ namespace server
             if(v != m && (!m_team(gamemode, mutators) || v->team != m->team) && v->state == CS_ALIVE && hurt > 0)
             {
                 int real = int(ceilf(hurt*G(vampirescale))), heal = v->health+real;
-                if(AA(v->actortype, abilities)&(1<<A_A_REGEN)) heal = min(heal, m_maxhealth(gamemode, mutators, v->actortype));
+                if(AA(v->actortype, abilities)&(1<<A_A_REGEN)) heal = min(heal, v->gethealth(gamemode, mutators, true));
                 int eff = heal-v->health;
                 if(eff > 0)
                 {
@@ -2294,7 +2294,7 @@ namespace server
 
     void sendspawn(clientinfo *ci)
     {
-        int weap = -1, health = m_health(gamemode, mutators, ci->actortype);
+        int weap = -1, health = ci->gethealth(gamemode, mutators);
         if(ci->actortype >= A_ENEMY)
         {
             bool hasent = sents.inrange(ci->spawnpoint) && sents[ci->spawnpoint].type == ACTOR;
@@ -4268,7 +4268,7 @@ namespace server
         }
         else
         {
-            m->health = min(m->health-realdamage, m_maxhealth(gamemode, mutators, m->actortype));
+            m->health = min(m->health-realdamage, m->gethealth(gamemode, mutators, true));
             if(realdamage > 0)
             {
                 hurt = min(m->health, realdamage);
@@ -4405,7 +4405,7 @@ namespace server
             int pointvalue = fragvalue, style = FRAG_NONE;
             if(!m_dm_oldschool(gamemode, mutators))
                 pointvalue = (smode && !isai ? smode->points(m, v) : fragvalue)*(isai ? G(enemybonus) : G(fragbonus));
-            if(realdamage >= (realflags&HIT_EXPLODE ? max(m_health(gamemode, mutators, m->actortype)/2, 1) : m_health(gamemode, mutators, m->actortype)))
+            if(realdamage >= (realflags&HIT_EXPLODE ? max(m->gethealth(gamemode, mutators)/2, 1) : m->gethealth(gamemode, mutators)))
                 style = FRAG_OBLITERATE;
             m->spree = 0;
             if(m_team(gamemode, mutators) && v->team == m->team)
@@ -5207,7 +5207,7 @@ namespace server
                 // regen wear-off
                 if(m_regen(gamemode, mutators) && AA(ci->actortype, abilities)&(1<<A_A_REGEN))
                 {
-                    int total = m_health(gamemode, mutators, ci->actortype), amt = G(regenhealth),
+                    int total = ci->gethealth(gamemode, mutators), amt = G(regenhealth),
                         delay = ci->lastregen ? G(regentime) : G(regendelay);
                     if(smode) smode->regen(ci, total, amt, delay);
                     if(delay && ci->health != total)
@@ -5220,7 +5220,7 @@ namespace server
                             {
                                 amt = -G(regendecay);
                                 total = ci->health;
-                                low = m_health(gamemode, mutators, ci->actortype);
+                                low = ci->gethealth(gamemode, mutators);
                             }
                             int heal = clamp(ci->health+amt, low, total), eff = heal-ci->health;
                             if(eff)
