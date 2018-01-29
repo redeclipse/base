@@ -850,6 +850,70 @@ namespace game
         }
     }
 
+    float spawnfade(gameent *d)
+    {
+        int len = min(m_delay(d->actortype, gamemode, mutators, d->team), AA(d->actortype, abilities)&(1<<A_A_MOVE) ? 5000 : 2500);
+        if(deathmaxfade && (len <= 0 || len > deathmaxfade)) len = deathmaxfade;
+        if(len > 0)
+        {
+            int interval = min(len/3, ragdolleffect), over = max(len-interval, 1), millis = lastmillis-d->lastdeath;
+            if(millis <= len) { if(millis >= over) return 1.f-((millis-over)/float(interval)); }
+            else return 0;
+        }
+        return 1;
+    }
+
+    float speedscale(gameent *d)
+    {
+        float speed = 1.f;
+        bool hasent = d->actortype >= A_ENEMY && entities::ents.inrange(d->spawnpoint) && entities::ents[d->spawnpoint]->type == ACTOR;
+        if(hasent && entities::ents[d->spawnpoint]->attrs[8] > 0) speed *= entities::ents[d->spawnpoint]->attrs[8]/100.f;
+        return speed;
+    }
+
+    float rescale(gameent *d)
+    {
+        float total = AA(d->actortype, scale);
+        if(d->actortype >= A_ENEMY)
+        {
+            bool hasent = entities::ents.inrange(d->spawnpoint) && entities::ents[d->spawnpoint]->type == ACTOR;
+            if(hasent && entities::ents[d->spawnpoint]->attrs[9] > 0) total *= (entities::ents[d->spawnpoint]->attrs[9]/100.f);
+        }
+        if(d->state != CS_SPECTATOR && d->state != CS_EDITING)
+        {
+            if(m_resize(gamemode, mutators))
+            {
+                float minscale = 1, amtscale = m_insta(gamemode, mutators) ? 1+(d->spree*instaresizeamt) : max(d->health, 1)/float(max(d->gethealth(gamemode, mutators), 1));
+                if(m_resize(gamemode, mutators))
+                {
+                    minscale = minresizescale;
+                    if(amtscale < 1) amtscale = (amtscale*(1-minscale))+minscale;
+                }
+                total *= clamp(amtscale, minscale, maxresizescale);
+            }
+            if(deathscale && (d->state == CS_DEAD || d->state == CS_WAITING)) total *= spawnfade(d);
+        }
+        return total;
+    }
+
+    float opacity(gameent *d, bool third)
+    {
+        float total = d == focus ? (third ? (d != player1 ? followblend : thirdpersonblend) : firstpersonblend) : playerblend;
+        if(physics::isghost(d, focus)) total *= playerghostblend;
+        if(d->state == CS_DEAD || d->state == CS_WAITING)
+        {
+            if(deathfade) total *= spawnfade(d);
+        }
+        else if(d->state == CS_ALIVE)
+        {
+            if(d == focus && third) total *= min(camera1->o.dist(d->o)/(d != player1 ? followdist : thirdpersondist), 1.0f);
+            int prot = m_protect(gamemode, mutators), millis = d->protect(lastmillis, prot); // protect returns time left
+            if(millis > 0) total *= 1.f-min(float(millis)/float(prot), 1.0f);
+        }
+        else if(d->state == CS_EDITING) total *= playereditblend;
+        return total;
+    }
+
     void respawned(gameent *d, bool local, int ent)
     { // remote clients wait until first position update to process this
         if(local)
@@ -858,7 +922,7 @@ namespace game
             entities::spawnplayer(d, ent, true);
             client::addmsg(N_SPAWN, "ri", d->clientnum);
         }
-        d->setscale(m_weapon(d->actortype, gamemode, mutators), rescale(d), 0, true);
+        d->configure(gamemode, mutators, rescale(d), speedscale(d), 0, true);
 
         if(d == player1) specreset();
         else if(d == focus) resetcamera();
@@ -1006,62 +1070,6 @@ namespace game
     void setmode(int nmode, int nmuts) { modecheck(nextmode = nmode, nextmuts = nmuts); }
     ICOMMAND(0, mode, "ii", (int *val, int *mut), setmode(*val, *mut));
 
-    float spawnfade(gameent *d)
-    {
-        int len = min(m_delay(d->actortype, gamemode, mutators, d->team), AA(d->actortype, abilities)&(1<<A_A_MOVE) ? 5000 : 2500);
-        if(deathmaxfade && (len <= 0 || len > deathmaxfade)) len = deathmaxfade;
-        if(len > 0)
-        {
-            int interval = min(len/3, ragdolleffect), over = max(len-interval, 1), millis = lastmillis-d->lastdeath;
-            if(millis <= len) { if(millis >= over) return 1.f-((millis-over)/float(interval)); }
-            else return 0;
-        }
-        return 1;
-    }
-
-    float rescale(gameent *d)
-    {
-        float total = AA(d->actortype, scale);
-        if(d->actortype >= A_ENEMY)
-        {
-            bool hasent = entities::ents.inrange(d->spawnpoint) && entities::ents[d->spawnpoint]->type == ACTOR;
-            if(hasent && entities::ents[d->spawnpoint]->attrs[9] > 0) total *= (entities::ents[d->spawnpoint]->attrs[9]/100.f);
-        }
-        if(d->state != CS_SPECTATOR && d->state != CS_EDITING)
-        {
-            if(m_resize(gamemode, mutators))
-            {
-                float minscale = 1, amtscale = m_insta(gamemode, mutators) ? 1+(d->spree*instaresizeamt) : max(d->health, 1)/float(max(d->gethealth(gamemode, mutators), 1));
-                if(m_resize(gamemode, mutators))
-                {
-                    minscale = minresizescale;
-                    if(amtscale < 1) amtscale = (amtscale*(1-minscale))+minscale;
-                }
-                total *= clamp(amtscale, minscale, maxresizescale);
-            }
-            if(deathscale && (d->state == CS_DEAD || d->state == CS_WAITING)) total *= spawnfade(d);
-        }
-        return total;
-    }
-
-    float opacity(gameent *d, bool third)
-    {
-        float total = d == focus ? (third ? (d != player1 ? followblend : thirdpersonblend) : firstpersonblend) : playerblend;
-        if(physics::isghost(d, focus)) total *= playerghostblend;
-        if(d->state == CS_DEAD || d->state == CS_WAITING)
-        {
-            if(deathfade) total *= spawnfade(d);
-        }
-        else if(d->state == CS_ALIVE)
-        {
-            if(d == focus && third) total *= min(camera1->o.dist(d->o)/(d != player1 ? followdist : thirdpersondist), 1.0f);
-            int prot = m_protect(gamemode, mutators), millis = d->protect(lastmillis, prot); // protect returns time left
-            if(millis > 0) total *= 1.f-min(float(millis)/float(prot), 1.0f);
-        }
-        else if(d->state == CS_EDITING) total *= playereditblend;
-        return total;
-    }
-
     void footstep(gameent *d, int curfoot)
     {
         bool moving = d->move || d->strafe, liquid = physics::liquidcheck(d), onfloor = d->physstate >= PHYS_SLOPE || d->onladder || d->turnside;
@@ -1083,9 +1091,7 @@ namespace game
     void checkoften(gameent *d, bool local)
     {
         adjustscaled(d->quake, quakefade);
-        d->setscale(m_weapon(d->actortype, gamemode, mutators), rescale(d), curtime, false);
-        bool hasent = d->actortype >= A_ENEMY && entities::ents.inrange(d->spawnpoint) && entities::ents[d->spawnpoint]->type == ACTOR;
-        if(hasent && entities::ents[d->spawnpoint]->attrs[8] > 0) d->speed *= entities::ents[d->spawnpoint]->attrs[8]/100.f;
+        d->configure(gamemode, mutators, rescale(d), speedscale(d), curtime, false);
 
         float offset = d->height;
         d->o.z -= d->height;
@@ -3776,7 +3782,7 @@ namespace game
     void renderplayerpreview(float scale, const vec4 &mcolor, const char *actions)
     {
         if(!previewent) initplayerpreview();
-        previewent->setscale(m_weapon(previewent->actortype, gamemode, mutators), 1, 0, true);
+        previewent->configure(gamemode, mutators, 1, 1, 0, true);
         float height = previewent->height + previewent->aboveeye, zrad = height/2;
         vec2 xyrad = vec2(previewent->xradius, previewent->yradius).max(height/4);
         previewent->o = calcmodelpreviewpos(vec(xyrad, zrad), previewent->yaw).addz(previewent->height - zrad);

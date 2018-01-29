@@ -211,7 +211,7 @@ APVAR(IDF_GAMEMOD, spawngrenades, 0, 2,
 APVAR(IDF_GAMEMOD, spawnmines, 0, 2,
     0,              0,              0,              0,              0
 );
-// these are modified by gameent::setparams()
+// these are modified by gameent::configure() et al
 APFVAR(IDF_GAMEMOD, speed, 0, FVAR_MAX,
     105,            105,            0,              105,            120
 );

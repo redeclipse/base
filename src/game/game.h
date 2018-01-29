@@ -1138,35 +1138,13 @@ struct gameent : dynent, clientstate
     static bool is(int t) { return t == ENT_PLAYER || t == ENT_AI; }
     static bool is(physent *d) { return d->type == ENT_PLAYER || d->type == ENT_AI; }
 
-    void setparams(int sweap, bool reset)
-    {
-        int type = clamp(actortype, 0, int(A_MAX-1));
-        xradius = yradius = PLAYERRADIUS*curscale;
-        zradius = PLAYERHEIGHT*curscale;
-        if(reset) height = zradius;
-        speed = AA(type, speed);
-        jumpspeed = AA(type, jumpspeed);
-        impulsespeed = AA(type, impulsespeed);
-        weight = AA(type, weight);
-        #define MODPHYS(a) a += W(i, mod##a)+(numammo*W(i, mod##a##ammo));
-        loopi(W_MAX) if(hasweap(i, sweap))
-        {
-            int numammo = getammo(i, 0, true);
-            MODPHYS(speed);
-            MODPHYS(jumpspeed);
-            MODPHYS(impulsespeed);
-            MODPHYS(weight);
-        }
-        #undef MODPHYS
-        speed = max(speed, FVAR_NONZERO);
-        jumpspeed = max(jumpspeed, 0.f);
-        impulsespeed = max(impulsespeed, 0.f);
-        weight *= curscale;
-        radius = max(xradius, yradius);
-        aboveeye = curscale;
-    }
+    #define MODPHYSL \
+        MODPHYS(speed, float, true); \
+        MODPHYS(jumpspeed, float, true); \
+        MODPHYS(impulsespeed, float, true); \
+        MODPHYS(weight, float, false);
 
-    void setscale(int sweap, float scale, int millis, bool reset)
+    void configure(int gamemode, int mutators, float scale, float speedscale, int millis, bool reset)
     {
         if(scale != curscale)
         {
@@ -1174,7 +1152,30 @@ struct gameent : dynent, clientstate
                 curscale = scale > curscale ? min(curscale+millis/2000.f, scale) : max(curscale-millis/2000.f, scale);
             else curscale = scale;
         }
-        setparams(sweap, reset);
+
+        xradius = yradius = PLAYERRADIUS*curscale;
+        zradius = PLAYERHEIGHT*curscale;
+        if(reset) height = zradius;
+
+        #define MODPHYS(a,b,c) a = AA(actortype, a)*(c ? speedscale : curscale);
+        MODPHYSL;
+        #undef MODPHYS
+
+        #define MODPHYS(a,b,c) a += W(i, mod##a)+(numammo*W(i, mod##a##ammo));
+        int sweap = m_weapon(actortype, gamemode, mutators);
+        loopi(W_MAX) if(hasweap(i, sweap))
+        {
+            int numammo = getammo(i, 0, true);
+            MODPHYSL;
+        }
+        #undef MODPHYS
+
+        #define MODPHYS(a,b,c) a = max(a, b(0));
+        MODPHYSL;
+        #undef MODPHYS
+
+        radius = max(xradius, yradius);
+        aboveeye = curscale;
     }
 
     int getprojid()
@@ -1218,7 +1219,7 @@ struct gameent : dynent, clientstate
         lastteamhit = lastflag = respawned = suicided = lastnode = lastfoot = -1;
         obit[0] = '\0';
         obliterated = headless = false;
-        setscale(m_weapon(actortype, gamemode, mutators), 1, 0, true);
+        configure(gamemode, mutators, 1, 1, 0, true);
         icons.shrink(0);
         stuns.shrink(0);
         used.shrink(0);
@@ -1830,6 +1831,9 @@ namespace game
     extern void announce(int idx, gameent *d = NULL, bool forced = false);
     extern void announcef(int idx, int targ, gameent *d, bool forced, const char *msg, ...);
     extern void specreset(gameent *d = NULL, bool clear = false);
+    extern float speedscale(gameent *d);
+    extern float rescale(gameent *d);
+    extern float opacity(gameent *d);
     extern void respawn(gameent *d);
     extern void respawned(gameent *d, bool local, int ent = -1);
     extern vec pulsecolour(physent *d, int i = 0, int cycle = 50);
@@ -1852,8 +1856,6 @@ namespace game
     extern void damaged(int weap, int flags, int damage, int health, gameent *d, gameent *v, int millis, vec &dir, vec &vel, float dist);
     extern void killed(int weap, int flags, int damage, gameent *d, gameent *v, vector<gameent*> &log, int style, int material);
     extern void timeupdate(int state, int remain);
-    extern float rescale(gameent *d);
-    extern float opacity(gameent *d);
     extern void footstep(gameent *d, int curfoot = -1);
     #define RESIDUAL(name, type, pulse) extern void get##name##effect(physent *d, modelstate &mdl, int length, int millis, int delay);
     RESIDUALS
