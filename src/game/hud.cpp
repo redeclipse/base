@@ -240,10 +240,10 @@ namespace hud
     VAR(IDF_PERSIST, showclips, 0, 2, 2);
     VAR(IDF_PERSIST, clipanims, 0, 2, 2);
     FVAR(IDF_PERSIST, clipsize, 0, 0.03f, 1000);
-    FVAR(IDF_PERSIST, clipoffset, 0, 0.035f, 1000);
+    FVAR(IDF_PERSIST, clipoffset, 0, 0.0375f, 1000);
     FVAR(IDF_PERSIST, clipminscale, 0, 0.3f, 1000);
     FVAR(IDF_PERSIST, clipmaxscale, 0, 1, 1000);
-    FVAR(IDF_PERSIST, clipblend, 0, 0.5f, 1);
+    FVAR(IDF_PERSIST, clipblend, 0, 0.75f, 1);
     FVAR(IDF_PERSIST, clipcolour, 0, 1, 1);
     VAR(IDF_PERSIST, cliplength, 0, 0, VAR_MAX);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, clawcliptex, "<grey>textures/weapons/clips/claw", 3);
@@ -279,8 +279,8 @@ namespace hud
     FVAR(IDF_PERSIST, plasmaclipskew, 0, 0.55f, 10);
     FVAR(IDF_PERSIST, zapperclipskew, 0, 0.55f, 10);
     FVAR(IDF_PERSIST, rifleclipskew, 0, 1, 10);
-    FVAR(IDF_PERSIST, grenadeclipskew, 0, 1.25f, 10);
-    FVAR(IDF_PERSIST, mineclipskew, 0, 1.25f, 10);
+    FVAR(IDF_PERSIST, grenadeclipskew, 0, 1.125f, 10);
+    FVAR(IDF_PERSIST, mineclipskew, 0, 1.125f, 10);
     FVAR(IDF_PERSIST, rocketclipskew, 0, 1.25f, 10);
     VAR(IDF_PERSIST, clawcliprotate, 0, 12, 7); // "round-the-clock" rotation of texture, 0 = off, &1 = flip x, &2 = flip y, &4 = angle, &8 = spin
     VAR(IDF_PERSIST, pistolcliprotate, 0, 12, 15);
