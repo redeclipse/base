@@ -945,29 +945,44 @@ WPFVAR(IDF_GAMEMOD, modhealth, FVAR_MIN, FVAR_MAX,
 WPFVAR(IDF_GAMEMOD, modhealthammo, FVAR_MIN, FVAR_MAX,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
 );
+WPFVAR(IDF_GAMEMOD, modhealthequip, FVAR_MIN, FVAR_MAX,
+    0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
+);
 WPFVAR(IDF_GAMEMOD, modjumpspeed, FVAR_MIN, FVAR_MAX,
-    0,          0,          10,         0,          0,          0,          0,          0,          0,          0,          0,          0,          0
+    0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
 );
 WPFVAR(IDF_GAMEMOD, modjumpspeedammo, FVAR_MIN, FVAR_MAX,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
 );
-WPFVAR(IDF_GAMEMOD, modimpulsespeed, FVAR_MIN, FVAR_MAX,
+WPFVAR(IDF_GAMEMOD, modjumpspeedequip, FVAR_MIN, FVAR_MAX,
     0,          0,          10,         0,          0,          0,          0,          0,          0,          0,          0,          0,          0
+);
+WPFVAR(IDF_GAMEMOD, modimpulsespeed, FVAR_MIN, FVAR_MAX,
+    0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
 );
 WPFVAR(IDF_GAMEMOD, modimpulsespeedammo, FVAR_MIN, FVAR_MAX,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
 );
+WPFVAR(IDF_GAMEMOD, modimpulsespeedequip, FVAR_MIN, FVAR_MAX,
+    0,          0,          10,         0,          0,          0,          0,          0,          0,          0,          0,          0,          0
+);
 WPFVAR(IDF_GAMEMOD, modspeed, FVAR_MIN, FVAR_MAX,
-    0,          0,          10,         -20,        -10,        -5,         -15,        -10,        -20,        0,          0,          -25,        0
+    0,          0,          0,          -20,        -10,        -5,         -15,        -10,        -20,        0,          0,          -25,        0
 );
 WPFVAR(IDF_GAMEMOD, modspeedammo, FVAR_MIN, FVAR_MAX,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          -5,         -5,         0,          0
 );
+WPFVAR(IDF_GAMEMOD, modspeedequip, FVAR_MIN, FVAR_MAX,
+    0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
+);
 WPFVAR(IDF_GAMEMOD, modweight, FVAR_MIN, FVAR_MAX,
-    0,          10,         -10,        50,         25,         20,         20,         30,         50,         0,          0,          75,         0
+    0,          10,         0,          50,         25,         20,         20,         30,         50,         0,          0,          75,         0
 );
 WPFVAR(IDF_GAMEMOD, modweightammo, FVAR_MIN, FVAR_MAX,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          5,          5,          0,          0
+);
+WPFVAR(IDF_GAMEMOD, modweightequip, FVAR_MIN, FVAR_MAX,
+    0,          0,          -10,        0,          0,          0,          0,          0,          0,          0,          0,          0,          0
 );
 
 #define WRS(a,b,c,d)         ((a)*(m_dm_gladiator(c, d) ? G(gladiator##b##scale) : G(b##scale)*(m_sweaps(c, d) ? G(b##limited) : 1.f)))

@@ -622,7 +622,11 @@ struct clientstate
     {
         if(m_insta(gamemode, mutators)) return 1;
         int hp = AA(actortype, health), sweap = m_weapon(actortype, gamemode, mutators);
-        loopi(W_MAX) if(hasweap(i, sweap)) hp += W(i, modhealth)+(getammo(i, 0, true)*W(i, modhealthammo));
+        loopi(W_MAX) if(hasweap(i, sweap))
+        {
+            hp += W(i, modhealth)+(getammo(i, 0, true)*W(i, modhealthammo));
+            if(i == weapselect) hp += W(i, modhealthequip);
+        }
         if(full) hp = hp*(m_vampire(gamemode, mutators) ? G(maxhealthvampire) : G(maxhealth));
         return max(hp, 1);
     }
@@ -1162,14 +1166,20 @@ struct gameent : dynent, clientstate
         MODPHYSL;
         #undef MODPHYS
 
-        #define MODPHYS(a,b,c) a += W(i, mod##a)+(numammo*W(i, mod##a##ammo));
         int sweap = m_weapon(actortype, gamemode, mutators);
         loopi(W_MAX) if(hasweap(i, sweap))
         {
             int numammo = getammo(i, 0, true);
+            #define MODPHYS(a,b,c) a += W(i, mod##a)+(numammo*W(i, mod##a##ammo));
             MODPHYSL;
+            #undef MODPHYS
+            if(i == weapselect)
+            {
+                #define MODPHYS(a,b,c) a += W(i, mod##a##equip);
+                MODPHYSL;
+                #undef MODPHYS
+            }
         }
-        #undef MODPHYS
 
         #define MODPHYS(a,b,c) a = max(a, b(0));
         MODPHYSL;
