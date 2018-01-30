@@ -4865,9 +4865,9 @@ namespace server
             return;
         }
         int sweap = m_weapon(ci->actortype, gamemode, mutators);
-        if(!ci->candrop(weap, sweap, millis, m_loadout(gamemode, mutators), (1<<W_S_SWITCH)))
+        if(!ci->candrop(weap, sweap, millis, m_classic(gamemode, mutators), (1<<W_S_SWITCH)))
         {
-            if(!ci->candrop(weap, sweap, millis, m_loadout(gamemode, mutators), (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
+            if(!ci->candrop(weap, sweap, millis, m_classic(gamemode, mutators), (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
             {
                 srvmsgft(ci->clientnum, CON_DEBUG, "sync error: drop [%d] failed - current state disallows it", weap);
                 sendresume(ci, true);

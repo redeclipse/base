@@ -779,9 +779,9 @@ struct clientstate
         return millis-weaptime[weap] >= weapwait[weap];
     }
 
-    bool candrop(int weap, int sweap, int millis, bool load, int skip = 0)
+    bool candrop(int weap, int sweap, int millis, bool classic, int skip = 0)
     {
-        if(hasweap(weap, sweap, load ? 5 : 6) && weapwaited(weap, millis, skip) && weapwaited(weapselect, millis, skip))
+        if(hasweap(weap, sweap, classic ? 5 : 6) && weapwaited(weap, millis, skip) && weapwaited(weapselect, millis, skip))
             return true;
         return false;
     }
