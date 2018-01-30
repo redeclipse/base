@@ -655,8 +655,9 @@ struct clientstate
                 case 2: if(weapclip[weap] > 0) return true; break; // only with actual ammo
                 case 3: if(canreload(weap, sweap)) return true; break; // only reloadable
                 case 4: if(weapclip[weap] >= (canreload(weap, sweap) ? 0 : W(weap, ammoclip))) return true; break; // only reloadable or those with < clipsize
-                case 5: if(weap != sweap && weap >= W_ITEM) return true; break; // special case to determine drop in loadout games
-                case 6: if(weap != sweap && weap >= W_OFFSET) return true; break; // special case to determine drop in classic games
+                case 5: case 6: // special case to determine drop in classic/normal games
+                    if(weap == sweap || (level == 6 && weap < W_ITEM && weap >= W_OFFSET) || weapclip[weap] > 0 || canreload(weap, sweap)) return true;
+                    break;
             }
         }
         return false;

@@ -336,7 +336,7 @@ namespace weapons
                 else if(pressed && cooked < len) return false;
             }
             scale = len ? cooked/float(W2(weap, cooktime, secondary)) : 1;
-            if(sub > 1 && scale < 1) sub = int(ceilf(sub*scale));
+            if(sub > 1 && scale < 1) sub = clamp(int(ceilf(sub*scale)), 1, W2(weap, ammosub, secondary));
         }
         else if(!pressed) return false;
 

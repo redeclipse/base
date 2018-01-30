@@ -4785,7 +4785,7 @@ namespace server
             srvmsgft(ci->clientnum, CON_DEBUG, "sync error: shoot [%d] failed - unexpected message", weap);
             return;
         }
-        int sub = W2(weap, ammosub, WS(flags));
+        int sweap = m_weapon(ci->actortype, gamemode, mutators), sub = W2(weap, ammosub, WS(flags));
         if(sub > 1 && W2(weap, cooktime, WS(flags)))
         {
             if(ci->weapclip[weap] < sub)
@@ -4793,11 +4793,11 @@ namespace server
                 int maxscale = int(ci->weapclip[weap]/float(sub)*W2(weap, cooktime, WS(flags)));
                 if(scale > maxscale) scale = maxscale;
             }
-            sub = int(ceilf(sub*scale/float(W2(weap, cooktime, WS(flags)))));
+            sub = clamp(int(ceilf(sub*scale/float(W2(weap, cooktime, WS(flags))))), 1, W2(weap, ammosub, WS(flags)));
         }
-        if(!ci->canshoot(weap, flags, m_weapon(ci->actortype, gamemode, mutators), millis))
+        if(!ci->canshoot(weap, flags, sweap, millis))
         {
-            if(!ci->canshoot(weap, flags, m_weapon(ci->actortype, gamemode, mutators), millis, (1<<W_S_RELOAD)))
+            if(!ci->canshoot(weap, flags, sweap, millis, (1<<W_S_RELOAD)))
             {
                 if(sub && W(weap, ammoclip)) ci->weapclip[weap] = max(ci->weapclip[weap]-sub, 0);
                 srvmsgft(ci->clientnum, CON_DEBUG, "sync error: shoot [%d] failed - current state disallows it", weap);
@@ -4825,10 +4825,10 @@ namespace server
                     break;
                 }
             }
-            else if(weap >= (m_classic(gamemode, mutators) ? W_OFFSET : W_ITEM) && !ci->hasweap(weap, m_weapon(ci->actortype, gamemode, mutators), 3))
+            else if(!ci->hasweap(weap, sweap, m_classic(gamemode, mutators) ? 5 : 6))
             {
                 sendf(-1, 1, "ri7", N_DROP, ci->clientnum, -1, 1, weap, -1, 0);
-                ci->weapclip[weap] = -1; // its gone..
+                ci->weapclip[weap] = -1;
                 ci->weapstore[weap] = 0;
             }
         }
