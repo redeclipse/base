@@ -964,7 +964,7 @@ WPFVAR(IDF_GAMEMOD, modspeedammo, FVAR_MIN, FVAR_MAX,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          -5,         -5,         0,          0
 );
 WPFVAR(IDF_GAMEMOD, modweight, FVAR_MIN, FVAR_MAX,
-    0,          10,         10,         50,         25,         20,         20,         30,         50,         0,          0,          75,         0
+    0,          10,         -10,        50,         25,         20,         20,         30,         50,         0,          0,          75,         0
 );
 WPFVAR(IDF_GAMEMOD, modweightammo, FVAR_MIN, FVAR_MAX,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          5,          5,          0,          0
