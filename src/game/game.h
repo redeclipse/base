@@ -781,7 +781,7 @@ struct clientstate
 
     bool candrop(int weap, int sweap, int millis, bool classic, int skip = 0)
     {
-        if(hasweap(weap, sweap, classic ? 5 : 6) && weapwaited(weap, millis, skip) && weapwaited(weapselect, millis, skip))
+        if(weap < W_ALL && weap != sweap && (classic ? weap >= W_OFFSET : weap >= W_ITEM) && hasweap(weap, sweap) && weapwaited(weap, millis, skip) && weapwaited(weapselect, millis, skip))
             return true;
         return false;
     }
