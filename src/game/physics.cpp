@@ -262,6 +262,7 @@ namespace physics
             gameent *e = (gameent *)d;
             if(e->vel.z+e->falling.z <= gravitycutoff) vel *= e->crouching(true) ? gravityfallcrouch : gravityfall;
             else if(e->actiontime[AC_JUMP] >= 0) vel *= e->crouching(true) ? gravityjumpcrouch : gravityjump;
+            else if(e->crouching(true)) vel *= gravitycrouch;
             vel *= 1.f-clamp(e->stunned(lastmillis, true), 0.f, 1.f);
         }
         return vel;
