@@ -2388,6 +2388,7 @@ namespace projs
         {
             projent &proj = *projs[i];
             if((proj.projtype == PRJ_ENT && !entities::ents.inrange(proj.id)) || !projs[i]->mdlname || !*projs[i]->mdlname) continue;
+            const char *mdlname = proj.mdlname;
             modelstate mdl;
             mdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
             mdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_CULL_DIST;
@@ -2442,15 +2443,16 @@ namespace projs
                     fadeproj(proj, mdl.color.a, mdl.size);
                     if(!entities::ents.inrange(proj.id)) continue;
                     gameentity &e = *(gameentity *)entities::ents[proj.id];
+                    mdlname = entities::entmdlname(e.type, e.attrs);
                     if(e.type == WEAPON)
                     {
                         int attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap);
                         if(isweap(attr))
                         {
                             mdl.material[0] = bvec::fromcolor(W(attr, colour));
-                            mdl.color.a *= entities::showentblend;
                             if(!game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL) || !weapons::canuse(attr))
                                 mdl.color.a *= entities::showentunavailable;
+                            else mdl.color.a *= entities::showentavailable;
                         }
                         else continue;
                     }
@@ -2458,7 +2460,7 @@ namespace projs
                 }
                 default: break;
             }
-            rendermodel(proj.mdlname, mdl, &proj);
+            rendermodel(mdlname, mdl, &proj);
         }
     }
 

@@ -17,7 +17,7 @@ namespace entities
     VAR(IDF_PERSIST, showentinterval, 0, 32, VAR_MAX);
     VAR(IDF_PERSIST, showentdist, 0, 512, VAR_MAX);
     FVAR(IDF_PERSIST, showentsize, 0, 3, 10);
-    FVAR(IDF_PERSIST, showentblend, 0, 1, 1);
+    FVAR(IDF_PERSIST, showentavailable, 0, 1, 1);
     FVAR(IDF_PERSIST, showentunavailable, 0, 0.125f, 1);
 
     VAR(IDF_PERSIST, simpleitems, 0, 0, 2); // 0 = items are models, 1 = items are icons, 2 = items are off and only halos appear
@@ -386,8 +386,11 @@ namespace entities
             case PLAYERSTART: return playertypes[0][1];
             case WEAPON:
             {
-                int weap = w_attr(game::gamemode, game::mutators, type, attr[0], m_weapon(game::focus->actortype, game::gamemode, game::mutators));
-                return isweap(weap) && *weaptype[weap].item ? weaptype[weap].item : "projectiles/cartridge";
+                int sweap = m_weapon(game::focus->actortype, game::gamemode, game::mutators),
+                    weap = w_attr(game::gamemode, game::mutators, type, attr[0], sweap);
+                if(!isweap(weap)) break;
+                const char *mdlname = game::focus->hasweap(weap, sweap) ? weaptype[weap].ammo : weaptype[weap].item;
+                return mdlname && *mdlname ? mdlname : "projectiles/cartridge";
             }
             case ACTOR: return playertypes[0][1];
             default: break;
@@ -2181,9 +2184,9 @@ namespace entities
                         if(isweap(attr))
                         {
                             colour = W(attr, colour);
-                            mdl.color.a *= showentblend;
                             if(!active || !game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL) || !weapons::canuse(attr))
                                 mdl.color.a *= showentunavailable;
+                            else mdl.color.a *= showentavailable;
                         }
                         else continue;
                     }
@@ -2249,10 +2252,11 @@ namespace entities
             float blend = fluc*skew, radius = fluc*0.5f;
             if(e.type == WEAPON && isweap(attr))
             {
-                blend *= showentblend;
                 if(!active || !game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL) || !weapons::canuse(attr))
                     blend *= showentunavailable;
-                radius = max((radius+weaptype[attr].halo)*skew, 0.125f);
+                else blend *= showentavailable;
+                radius += game::focus->hasweap(attr, sweap) ? W(attr, itemhaloammo) : W(attr, itemhalo);
+                radius = max(radius*skew, 0.125f);
             }
             else radius = max(enttype[e.type].radius*0.5f*skew, 0.125f);
             if(simpleitems == 1)

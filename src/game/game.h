@@ -1879,7 +1879,7 @@ namespace game
 namespace entities
 {
     extern int showentdescs, simpleitems;
-    extern float showentblend, showentunavailable;
+    extern float showentavailable, showentunavailable;
     extern vector<extentity *> ents;
     extern bool execitem(int n, int cn, dynent *d, vec &pos, float dist);
     extern bool collateitems(dynent *d, vec &pos, float radius, vector<actitem> &actitems);
