@@ -2667,9 +2667,9 @@ namespace UI
     struct Text : Colored
     {
         float scale, wrap, tw, th, wlen, limit, rescale, growth;
-        int align, pos;
+        int align, pos, rotate;
 
-        void setup(float scale_ = 1, const Color &color_ = Color(colourwhite), float wrap_ = 0, float limit_ = 0, int align_ = 0, int pos_ = -1, float growth_ = 1)
+        void setup(float scale_ = 1, const Color &color_ = Color(colourwhite), float wrap_ = 0, float limit_ = 0, int align_ = 0, int pos_ = -1, float growth_ = 1, int rotate_ = 0)
         {
             Colored::setup(color_);
             tw = th = wlen = 0;
@@ -2680,6 +2680,7 @@ namespace UI
             align = align_;
             pos = pos_;
             growth = growth_;
+            rotate = rotate_;
         }
 
         static const char *typestr() { return "#Text"; }
@@ -2706,8 +2707,15 @@ namespace UI
             }
             if(rescale != 1) top += (((th*drawscale())-(th*k))*0.5f)/k;
             if(growth < 0) top += th-(th/(0-growth));
-            pushhudtranslate(0, 0, k);
-            draw_text(getstr(), left, top, colors[0].r, colors[0].g, colors[0].b, colors[0].a, a, pos, wlen, 1);
+            if(rotate == 1 || rotate == 2) left += tw;
+            if(rotate == 2 || rotate == 3) top += th;
+
+            pushhudmatrix();
+            hudmatrix.scale(k, k, 1);
+            hudmatrix.translate(left, top, 0);
+            if(rotate) hudmatrix.rotate_around_z(rotate*90*RAD);
+            flushhudmatrix();
+            draw_text(getstr(), 0, 0, colors[0].r, colors[0].g, colors[0].b, colors[0].a, a, pos, wlen, 1);
             pophudmatrix();
 
             Object::draw(sx, sy);
@@ -2751,6 +2759,7 @@ namespace UI
                 case 2:     a |= TEXT_NO_INDENT|TEXT_RIGHT_JUSTIFY; break;
             }
             text_boundsf(getstr(), tw, th, 0, 0, wlen, a);
+            if(rotate%2) { int rw = tw; tw = th; th = rw; }
             rescale = 1;
             if(limit < 0)
             {
@@ -2790,6 +2799,7 @@ namespace UI
     UIARGT(Text, text, growth, "f", float, FVAR_MIN, FVAR_MAX);
     UIARGT(Text, text, align, "i", int, -2, 2);
     UIARGT(Text, text, pos, "i", int, -1, VAR_MAX);
+    UIARGT(Text, text, rotate, "i", int, 0, 3);
 
     struct TextString : Text
     {
