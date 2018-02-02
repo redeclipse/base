@@ -1143,14 +1143,14 @@ struct gameent : dynent, clientstate
     static bool is(int t) { return t == ENT_PLAYER || t == ENT_AI; }
     static bool is(physent *d) { return d->type == ENT_PLAYER || d->type == ENT_AI; }
 
-    #define MODPHYSL \
-        MODPHYS(speed, float, true); \
-        MODPHYS(jumpspeed, float, true); \
-        MODPHYS(impulsespeed, float, true); \
-        MODPHYS(weight, float, false);
-
     void configure(int gamemode, int mutators, float scale, float speedscale, int millis, bool reset)
     {
+        #define MODPHYSL \
+            MODPHYS(speed, float, speedscale); \
+            MODPHYS(jumpspeed, float, speedscale); \
+            MODPHYS(impulsespeed, float, speedscale); \
+            MODPHYS(weight, float, curscale);
+
         if(scale != curscale)
         {
             if(!reset && state == CS_ALIVE && millis > 0)
@@ -1158,11 +1158,14 @@ struct gameent : dynent, clientstate
             else curscale = scale;
         }
 
+        loopi(W_MAX) if(weapstate[i] != W_S_IDLE && (weapselect != i || weapstate[i] != W_S_ZOOM) && lastmillis-weaptime[i] >= weapwait[i])
+            setweapstate(i, W_S_IDLE, 0, lastmillis);
+
         xradius = yradius = PLAYERRADIUS*curscale;
         zradius = PLAYERHEIGHT*curscale;
         if(reset) height = zradius;
 
-        #define MODPHYS(a,b,c) a = AA(actortype, a)*(c ? speedscale : curscale);
+        #define MODPHYS(a,b,c) a = AA(actortype, a)*c;
         MODPHYSL;
         #undef MODPHYS
 
@@ -1173,11 +1176,54 @@ struct gameent : dynent, clientstate
             #define MODPHYS(a,b,c) a += W(i, mod##a)+(numammo*W(i, mod##a##ammo));
             MODPHYSL;
             #undef MODPHYS
-            if(i == weapselect)
+            if(i != weapselect) continue;
+            #define MODPHYS(a,b,c) a += W(i, mod##a##equip);
+            MODPHYSL;
+            #undef MODPHYS
+            switch(weapstate[i])
             {
-                #define MODPHYS(a,b,c) a += W(i, mod##a##equip);
-                MODPHYSL;
-                #undef MODPHYS
+                case W_S_PRIMARY: case W_S_SECONDARY:
+                {
+                    #define MODPHYS(a,b,c) a += W2(i, mod##a##attack, weapstate[i] == W_S_SECONDARY);
+                    MODPHYSL;
+                    #undef MODPHYS
+                    break;
+                }
+                case W_S_RELOAD:
+                {
+                    #define MODPHYS(a,b,c) a += W(i, mod##a##reload);
+                    MODPHYSL;
+                    #undef MODPHYS
+                    break;
+                }
+                case W_S_SWITCH:
+                {
+                    #define MODPHYS(a,b,c) a += W(i, mod##a##switch);
+                    MODPHYSL;
+                    #undef MODPHYS
+                    break;
+                }
+                case W_S_USE:
+                {
+                    #define MODPHYS(a,b,c) a += W(i, mod##a##use);
+                    MODPHYSL;
+                    #undef MODPHYS
+                    break;
+                }
+                case W_S_POWER:
+                {
+                    #define MODPHYS(a,b,c) a += W(i, mod##a##power);
+                    MODPHYSL;
+                    #undef MODPHYS
+                    break;
+                }
+                case W_S_ZOOM:
+                {
+                    #define MODPHYS(a,b,c) a += W(i, mod##a##zoom);
+                    MODPHYSL;
+                    #undef MODPHYS
+                    break;
+                }
             }
         }
 
@@ -1187,6 +1233,8 @@ struct gameent : dynent, clientstate
 
         radius = max(xradius, yradius);
         aboveeye = curscale;
+
+        #undef MODPHYSL
     }
 
     int getprojid()
@@ -1718,7 +1766,7 @@ namespace client
 
 namespace physics
 {
-    extern int smoothmove, smoothdist, physframetime, physinterp, impulsemethod, impulseaction, jumpstyle, booststyle, crouchstyle, walkstyle, grabstyle, grabplayerstyle, kickoffstyle, kickupstyle;
+    extern int smoothmove, smoothdist, physframetime, physinterp, impulsemethod, impulseaction, jumpstyle, crouchstyle, walkstyle, grabstyle, grabplayerstyle, kickoffstyle, kickupstyle;
     extern float floatspeed, floatcoast, impulsekickyaw, impulseroll, kickoffangle, kickupangle;
     extern bool isghost(gameent *d, gameent *e, bool proj = false);
     extern int carryaffinity(gameent *d);

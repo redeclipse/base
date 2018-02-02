@@ -1091,6 +1091,7 @@ namespace game
     void checkoften(gameent *d, bool local)
     {
         adjustscaled(d->quake, quakefade);
+        int prevstate = isweap(d->weapselect) ? d->weapstate[d->weapselect] : W_S_IDLE;
         d->configure(gamemode, mutators, rescale(d), speedscale(d), curtime, false);
 
         float offset = d->height;
@@ -1149,15 +1150,10 @@ namespace game
         }
         d->o.z += d->airmillis ? offset : d->height;
 
-        loopi(W_MAX) if(d->weapstate[i] != W_S_IDLE && (!gs_playing(gamestate) || d->weapselect != i || d->weapstate[i] != W_S_ZOOM))
+        if(isweap(d->weapselect) && gs_playing(gamestate) && d->state == CS_ALIVE)
         {
-            bool timeexpired = lastmillis-d->weaptime[i] >= d->weapwait[i]+(d->weapselect != i || d->weapstate[i] != W_S_POWER ? 0 : PHYSMILLIS);
-            if(i < W_ALL && gs_playing(gamestate) && d->state == CS_ALIVE && i == d->weapselect && d->weapstate[i] == W_S_RELOAD && timeexpired && playreloadnotify&(d == focus ? 1 : 2) && (d->weapclip[i] >= W(i, ammoclip) || playreloadnotify&(d == focus ? 4 : 8)))
-                playsound(WSND(i, S_W_NOTIFY), d->o, d, 0, reloadnotifyvol, -1, -1, &d->wschan);
-            if(!gs_playing(gamestate) || d->state != CS_ALIVE || timeexpired) d->setweapstate(i, W_S_IDLE, 0, lastmillis);
-        }
-        if(gs_playing(gamestate) && d->state == CS_ALIVE && isweap(d->weapselect))
-        {
+            if(d->weapselect < W_ALL && d->weapstate[d->weapselect] != W_S_RELOAD && prevstate == W_S_RELOAD && playreloadnotify&(d == focus ? 1 : 2) && (d->weapclip[d->weapselect] >= W(d->weapselect, ammoclip) || playreloadnotify&(d == focus ? 4 : 8)))
+                    playsound(WSND(d->weapselect, S_W_NOTIFY), d->o, d, 0, reloadnotifyvol, -1, -1, &d->wschan);
             if(d->weapstate[d->weapselect] == W_S_POWER || d->weapstate[d->weapselect] == W_S_ZOOM)
             {
                 int millis = lastmillis-d->weaptime[d->weapselect];
@@ -1196,11 +1192,13 @@ namespace game
             if(issound(d->pschan)) removesound(d->pschan);
             d->pschan = -1;
         }
+
         if(local)
         {
             if(d->respawned > 0 && lastmillis-d->respawned >= 2500) d->respawned = -1;
             if(d->suicided > 0 && lastmillis-d->suicided >= 2500) d->suicided = -1;
         }
+
         int restime[W_R_MAX] = { d->burntime, d->bleedtime, d->shocktime };
         loopi(W_R_MAX) if(d->lastres[i] > 0 && lastmillis-d->lastres[i] >= restime[i]) d->resetresidual(i);
         if(gs_playing(gamestate) && d->state == CS_ALIVE)
