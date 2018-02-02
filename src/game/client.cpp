@@ -932,7 +932,6 @@ namespace client
     CLCOMMANDM(impulsetime, "b", (char *who, int *n), intret(d->impulsetime[*n >= 0 && *n < IM_T_MAX ? *n : d->impulse[IM_TYPE]]));
     CLCOMMAND(impulsecount, intret(d->impulse[IM_COUNT]));
     CLCOMMAND(impulseslip, intret(d->impulse[IM_SLIP]));
-    CLCOMMAND(impulseslide, intret(d->impulse[IM_SLIDE]));
     CLCOMMAND(impulsejump, intret(d->impulsetime[IM_T_JUMP]));
     CLCOMMANDM(impulse, "si", (char *who, int *n), intret(*n >= 0 && *n < IM_MAX ? d->impulse[*n] : 0));
 
@@ -2364,7 +2363,7 @@ namespace client
                             createshape(PART_SMOKE, int(t->radius), 0x222222, 21, 20, 250, t->feetpos(), 1, 1, -10, 0, 10.f);
                             break;
                         }
-                        case SPHY_BOOST: case SPHY_DASH: case SPHY_MELEE: case SPHY_KICK: case SPHY_VAULT: case SPHY_GRAB: case SPHY_SKATE:
+                        case SPHY_BOOST: case SPHY_SLIDE: case SPHY_MELEE: case SPHY_KICK: case SPHY_VAULT: case SPHY_GRAB: case SPHY_SKATE:
                         {
                             if(!proceed) break;
                             t->doimpulse(IM_T_BOOST+(st-SPHY_BOOST), lastmillis);

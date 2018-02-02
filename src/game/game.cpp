@@ -3394,10 +3394,10 @@ namespace game
                         mdl.anim |= ANIM_FLYKICK<<ANIM_SECONDARY;
                         mdl.basetime2 = d->weaptime[W_MELEE];
                     }
-                    else if(d->strafe) mdl.anim |= (d->strafe > 0 ? ANIM_DASH_LEFT : ANIM_DASH_RIGHT)<<ANIM_SECONDARY;
-                    else if(d->move > 0) mdl.anim |= ANIM_DASH_FORWARD<<ANIM_SECONDARY;
-                    else if(d->move < 0) mdl.anim |= ANIM_DASH_BACKWARD<<ANIM_SECONDARY;
-                    else mdl.anim |= ANIM_DASH_UP<<ANIM_SECONDARY;
+                    else if(d->strafe) mdl.anim |= (d->strafe > 0 ? ANIM_BOOST_LEFT : ANIM_BOOST_RIGHT)<<ANIM_SECONDARY;
+                    else if(d->move > 0) mdl.anim |= ANIM_BOOST_FORWARD<<ANIM_SECONDARY;
+                    else if(d->move < 0) mdl.anim |= ANIM_BOOST_BACKWARD<<ANIM_SECONDARY;
+                    else mdl.anim |= ANIM_BOOST_UP<<ANIM_SECONDARY;
                 }
                 else if(d->physstate == PHYS_FALL && !d->onladder && d->airtime(lastmillis) >= 50)
                 {

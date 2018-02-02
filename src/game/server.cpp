@@ -6159,7 +6159,7 @@ namespace server
                     bool proceed = hasclient(cp, ci), qmsg = false;
                     switch(idx)
                     {
-                        case SPHY_BOOST: case SPHY_DASH: case SPHY_MELEE: case SPHY_KICK: case SPHY_VAULT: case SPHY_GRAB: case SPHY_SKATE:
+                        case SPHY_BOOST: case SPHY_SLIDE: case SPHY_MELEE: case SPHY_KICK: case SPHY_VAULT: case SPHY_GRAB: case SPHY_SKATE:
                         {
                             if(!proceed || cp->state != CS_ALIVE) break;
                             qmsg = true;

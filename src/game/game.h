@@ -215,12 +215,12 @@ enum { SSTAT_OPEN = 0, SSTAT_LOCKED, SSTAT_PRIVATE, SSTAT_FULL, SSTAT_UNKNOWN, S
 
 enum
 {
-    AC_PRIMARY = 0, AC_SECONDARY, AC_RELOAD, AC_USE, AC_JUMP, AC_WALK, AC_CROUCH, AC_SPECIAL, AC_DROP, AC_AFFINITY, AC_TOTAL, AC_DASH = AC_TOTAL, AC_MAX,
+    AC_PRIMARY = 0, AC_SECONDARY, AC_RELOAD, AC_USE, AC_JUMP, AC_WALK, AC_CROUCH, AC_SPECIAL, AC_DROP, AC_AFFINITY, AC_MAX, AC_TOTAL = AC_AFFINITY,
     AC_ALL = (1<<AC_PRIMARY)|(1<<AC_SECONDARY)|(1<<AC_RELOAD)|(1<<AC_USE)|(1<<AC_JUMP)|(1<<AC_WALK)|(1<<AC_CROUCH)|(1<<AC_SPECIAL)|(1<<AC_DROP)|(1<<AC_AFFINITY)
 };
-enum { IM_TYPE = 0, IM_COUNT, IM_SLIP, IM_SLIDE, IM_MAX };
-enum { IM_T_JUMP = 0, IM_T_BOOST, IM_T_DASH, IM_T_MELEE, IM_T_KICK, IM_T_VAULT, IM_T_GRAB, IM_T_SKATE, IM_T_MAX, IM_T_WALL = IM_T_MELEE };
-enum { SPHY_NONE = 0, SPHY_JUMP, SPHY_BOOST, SPHY_DASH, SPHY_MELEE, SPHY_KICK, SPHY_VAULT, SPHY_GRAB, SPHY_SKATE, SPHY_COOK, SPHY_MATERIAL, SPHY_EXTINGUISH, SPHY_BUFF, SPHY_MAX, SPHY_SERVER = SPHY_EXTINGUISH };
+enum { IM_TYPE = 0, IM_COUNT, IM_SLIP, IM_MAX };
+enum { IM_T_JUMP = 0, IM_T_BOOST, IM_T_SLIDE, IM_T_MELEE, IM_T_KICK, IM_T_VAULT, IM_T_GRAB, IM_T_SKATE, IM_T_MAX, IM_T_WALL = IM_T_MELEE };
+enum { SPHY_NONE = 0, SPHY_JUMP, SPHY_BOOST, SPHY_SLIDE, SPHY_MELEE, SPHY_KICK, SPHY_VAULT, SPHY_GRAB, SPHY_SKATE, SPHY_COOK, SPHY_MATERIAL, SPHY_EXTINGUISH, SPHY_BUFF, SPHY_MAX, SPHY_SERVER = SPHY_EXTINGUISH };
 
 #define CROUCHHEIGHT 0.7f
 #define PHYSMILLIS 250
@@ -230,7 +230,7 @@ enum
     ANIM_PAIN = ANIM_GAMESPECIFIC,
     ANIM_JUMP_FORWARD, ANIM_JUMP_BACKWARD, ANIM_JUMP_LEFT, ANIM_JUMP_RIGHT, ANIM_JUMP,
     ANIM_IMPULSE_FORWARD, ANIM_IMPULSE_BACKWARD, ANIM_IMPULSE_LEFT, ANIM_IMPULSE_RIGHT,
-    ANIM_DASH_FORWARD, ANIM_DASH_BACKWARD, ANIM_DASH_LEFT, ANIM_DASH_RIGHT, ANIM_DASH_UP,
+    ANIM_BOOST_FORWARD, ANIM_BOOST_BACKWARD, ANIM_BOOST_LEFT, ANIM_BOOST_RIGHT, ANIM_BOOST_UP,
     ANIM_WALL_RUN_LEFT, ANIM_WALL_RUN_RIGHT, ANIM_WALL_JUMP, ANIM_POWERSLIDE, ANIM_FLYKICK,
     ANIM_SINK, ANIM_EDIT, ANIM_WIN, ANIM_LOSE,
     ANIM_CROUCH, ANIM_CRAWL_FORWARD, ANIM_CRAWL_BACKWARD, ANIM_CRAWL_LEFT, ANIM_CRAWL_RIGHT,
@@ -1068,7 +1068,7 @@ const char * const animnames[] =
     "mapmodel", "trigger on", "trigger off", "pain",
     "jump forward", "jump backward", "jump left", "jump right", "jump",
     "impulse forward", "impulse backward", "impulse left", "impulse right",
-    "dash forward", "dash backward", "dash left", "dash right", "dash up",
+    "boost forward", "boost backward", "boost left", "boost right", "boost up",
     "wall run left", "wall run right", "wall jump", "power slide", "fly kick",
     "sink", "edit", "win", "lose",
     "crouch", "crawl forward", "crawl backward", "crawl left", "crawl right",
@@ -1423,7 +1423,6 @@ struct gameent : dynent, clientstate
     {
         if(type < 0 || type >= IM_T_MAX) return;
         impulsetime[type] = millis;
-        if(type == IM_T_DASH) impulse[IM_SLIDE] = millis;
         if(type != IM_T_KICK) impulse[IM_SLIP] = millis;
         impulse[IM_TYPE] = type;
         if(type != IM_T_JUMP)
@@ -1437,7 +1436,7 @@ struct gameent : dynent, clientstate
     void resetjump()
     {
         airmillis = turnside = impulse[IM_COUNT] = impulse[IM_TYPE] = 0;
-        impulsetime[IM_T_JUMP] = impulsetime[IM_T_BOOST] = impulsetime[IM_T_DASH] = 0;
+        impulsetime[IM_T_JUMP] = impulsetime[IM_T_BOOST] = 0;
     }
 
     void resetair()
@@ -1562,20 +1561,13 @@ struct gameent : dynent, clientstate
     bool running(float minspeed = 0)
     {
         if(minspeed != 0 && vel.magnitude() >= speed*minspeed) return true;
-        return sliding() || (!action[AC_WALK] && !crouching());
+        return sliding(true) || (!action[AC_WALK] && !crouching());
     }
 
     bool sliding(bool power = false)
     {
-        if((!power && turnside) || (G(impulseslip) && impulse[IM_SLIP] && lastmillis-impulse[IM_SLIP] <= G(impulseslip)) || (G(impulseslide) && impulse[IM_SLIDE] && lastmillis-impulse[IM_SLIDE] <= G(impulseslide)))
-        {
-            if(!power || crouching())
-            {
-                if(power && G(impulseslide) && G(impulseslip) && move == 1 && impulse[IM_SLIP] > impulse[IM_SLIDE])
-                    impulse[IM_SLIDE] = impulse[IM_SLIP];
-                return true;
-            }
-        }
+        if(G(impulseslidelen) && impulsetime[IM_T_SLIDE] && lastmillis-impulsetime[IM_T_SLIDE] <= G(impulseslidelen)) return true;
+        if(!power && G(impulsesliplen) && impulse[IM_SLIP] && lastmillis-impulse[IM_SLIP] <= G(impulsesliplen)) return true;
         return false;
     }
 
@@ -1726,7 +1718,7 @@ namespace client
 
 namespace physics
 {
-    extern int smoothmove, smoothdist, physframetime, physinterp, impulsemethod, impulseaction, jumpstyle, dashstyle, crouchstyle, walkstyle, grabstyle, grabplayerstyle, kickoffstyle, kickupstyle;
+    extern int smoothmove, smoothdist, physframetime, physinterp, impulsemethod, impulseaction, jumpstyle, booststyle, crouchstyle, walkstyle, grabstyle, grabplayerstyle, kickoffstyle, kickupstyle;
     extern float floatspeed, floatcoast, impulsekickyaw, impulseroll, kickoffangle, kickupangle;
     extern bool isghost(gameent *d, gameent *e, bool proj = false);
     extern int carryaffinity(gameent *d);
