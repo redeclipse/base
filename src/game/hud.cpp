@@ -146,7 +146,7 @@ namespace hud
     VAR(IDF_PERSIST|IDF_HEX, crosshairtone, -CTONE_MAX, 0, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, hitcrosshairtone, -CTONE_MAX, 0, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, noticetone, -CTONE_MAX, 0, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, eventtone, -CTONE_MAX, -CTONE_TEAM-1, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, eventtone, -CTONE_MAX, 0, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, clipstone, -CTONE_MAX, 0, 0xFFFFFF);
 
     VAR(IDF_PERSIST, teamhurthud, 0, 1, 3); // 0 = off, 1 = full body particle, 2 = fixed position and size
