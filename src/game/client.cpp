@@ -2467,6 +2467,12 @@ namespace client
                     break;
                 }
 
+                case N_ATTRMAP:
+                {
+                    loopi(W_MAX) game::attrmap[i] = getint(p);
+                    break;
+                }
+
                 case N_SETPLAYERINFO: // name colour model pattern checkpoint vanity count <loadweaps> count <randweaps>
                 {
                     getstring(text, p);
@@ -2825,8 +2831,7 @@ namespace client
                     ai::itemspawned(ent, value!=0);
                     if(e.spawned())
                     {
-                        int sweap = m_weapon(game::focus->actortype, game::gamemode, game::mutators), attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap),
-                            colour = e.type == WEAPON && isweap(attr) ? W(attr, colour) : colourwhite;
+                        int attr = m_attr(e.type, e.attrs[0]), colour = e.type == WEAPON && isweap(attr) ? W(attr, colour) : colourwhite;
                         playsound(e.type == WEAPON && attr >= W_OFFSET && attr < W_ALL ? WSND(attr, S_W_SPAWN) : S_ITEMSPAWN, e.o, NULL, 0, -1, -1, -1, &e.schan);
                         if(entities::showentdescs)
                         {

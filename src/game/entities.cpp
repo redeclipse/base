@@ -278,7 +278,7 @@ namespace entities
             }
             case WEAPON:
             {
-                int sweap = m_weapon(game::focus->actortype, game::gamemode, game::mutators), wattr = w_attr(game::gamemode, game::mutators, type, attr[0], sweap);
+                int wattr = m_attr(type, attr[0]);
                 if(isweap(wattr))
                 {
                     defformatstring(str, "\fs\f[%d]%s%s%s%s\fS", W(wattr, colour), icon ? "\f(" : "", icon ? hud::itemtex(type, wattr) : W(wattr, name), icon ? ")" : "", icon ? W(wattr, longname) : "");
@@ -386,8 +386,7 @@ namespace entities
             case PLAYERSTART: return playertypes[0][1];
             case WEAPON:
             {
-                int sweap = m_weapon(game::focus->actortype, game::gamemode, game::mutators),
-                    weap = w_attr(game::gamemode, game::mutators, type, attr[0], sweap);
+                int sweap = m_weapon(game::focus->actortype, game::gamemode, game::mutators), weap = m_attr(type, attr[0]);
                 if(!isweap(weap)) break;
                 const char *mdlname = game::focus->hasweap(weap, sweap) ? weaptype[weap].ammo : weaptype[weap].item;
                 return mdlname && *mdlname ? mdlname : "projectiles/cartridge";
@@ -401,7 +400,7 @@ namespace entities
     void useeffects(gameent *d, int cn, int ent, int ammoamt, bool spawn, int weap, int drop, int ammo)
     {
         gameentity &e = *(gameentity *)ents[ent];
-        int sweap = m_weapon(d->actortype, game::gamemode, game::mutators), attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap),
+        int sweap = m_weapon(d->actortype, game::gamemode, game::mutators), attr = m_attr(e.type, e.attrs[0]),
             colour = e.type == WEAPON && isweap(attr) ? W(attr, colour) : colourwhite;
         if(e.type == WEAPON && isweap(attr)) d->addicon(eventicon::WEAPON, lastmillis, game::eventiconshort, attr);
         if(isweap(weap))
@@ -421,7 +420,7 @@ namespace entities
         if(ents.inrange(drop) && ents[drop]->type == WEAPON)
         {
             gameentity &f = *(gameentity *)ents[drop];
-            attr = w_attr(game::gamemode, game::mutators, f.type, f.attrs[0], sweap);
+            attr = m_attr(f.type, f.attrs[0]);
             if(isweap(attr)) projs::drop(d, attr, drop, ammo, d == game::player1 || d->ai, 0, weap);
         }
         if(cn >= 0)
@@ -631,7 +630,7 @@ namespace entities
                     gameent *f = (gameent *)d;
                     if(game::allowmove(f))
                     {
-                        int sweap = m_weapon(f->actortype, game::gamemode, game::mutators), attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap);
+                        int sweap = m_weapon(f->actortype, game::gamemode, game::mutators), attr = m_attr(e.type, e.attrs[0]);
                         if(!isweap(attr)) return false;
                         if(f == game::player1 && !weapons::canuse(attr)) return true;
                         if(!f->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, (1<<W_S_SWITCH)))
@@ -2180,7 +2179,7 @@ namespace entities
                     }
                     if(e.type == WEAPON)
                     {
-                        int attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap);
+                        int attr = m_attr(e.type, e.attrs[0]);
                         if(isweap(attr))
                         {
                             colour = W(attr, colour);
@@ -2244,7 +2243,7 @@ namespace entities
              hasent = isedit && idx >= 0 && (enthover == idx || entgroup.find(idx) >= 0),
              hastop = hasent && e.o.squaredist(camera1->o) <= showentdist*showentdist;
         int sweap = m_weapon(game::focus->actortype, game::gamemode, game::mutators),
-            attr = e.type == WEAPON ? w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap) : e.attrs[0],
+            attr = e.type == WEAPON ? m_attr(e.type, e.attrs[0]) : e.attrs[0],
             colour = e.type == WEAPON && isweap(attr) ? W(attr, colour) : colourwhite, interval = lastmillis%1000;
         float fluc = interval >= 500 ? (1500-interval)/1000.f : (500+interval)/1000.f;
         if(enttype[e.type].usetype == EU_ITEM && (active || isedit))

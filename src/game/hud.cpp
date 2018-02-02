@@ -1364,7 +1364,7 @@ namespace hud
                                 extentity &e = *entities::ents[ent];
                                 if(enttype[e.type].usetype == EU_ITEM && e.type == WEAPON)
                                 {
-                                    int sweap = m_weapon(target->actortype, game::gamemode, game::mutators), attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap);
+                                    int sweap = m_weapon(target->actortype, game::gamemode, game::mutators), attr = m_attr(e.type, e.attrs[0]);
                                     if(isweap(attr) && target->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)) && weapons::canuse(attr))
                                     {
                                         int drop = -1;

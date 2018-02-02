@@ -2446,7 +2446,7 @@ namespace projs
                     mdlname = entities::entmdlname(e.type, e.attrs);
                     if(e.type == WEAPON)
                     {
-                        int attr = w_attr(game::gamemode, game::mutators, e.type, e.attrs[0], sweap);
+                        int attr = m_attr(e.type, e.attrs[0]);
                         if(isweap(attr))
                         {
                             mdl.material[0] = bvec::fromcolor(W(attr, colour));

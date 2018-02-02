@@ -16,10 +16,7 @@ enum
     G_M_GSN = G_M_NUM-G_M_GSP,
     G_M_ALL = (1<<G_M_MULTI)|(1<<G_M_FFA)|(1<<G_M_COOP)|(1<<G_M_INSTA)|(1<<G_M_MEDIEVAL)|(1<<G_M_KABOOM)|(1<<G_M_DUEL)|(1<<G_M_SURVIVOR)|(1<<G_M_CLASSIC)|(1<<G_M_ONSLAUGHT)|(1<<G_M_FREESTYLE)|(1<<G_M_VAMPIRE)|(1<<G_M_RESIZE)|(1<<G_M_HARD)|(1<<G_M_BASIC)|(1<<G_M_GSP1)|(1<<G_M_GSP2)|(1<<G_M_GSP3),
     G_M_FILTER = (1<<G_M_MULTI)|(1<<G_M_FFA)|(1<<G_M_COOP)|(1<<G_M_INSTA)|(1<<G_M_MEDIEVAL)|(1<<G_M_KABOOM)|(1<<G_M_DUEL)|(1<<G_M_SURVIVOR)|(1<<G_M_CLASSIC)|(1<<G_M_ONSLAUGHT)|(1<<G_M_FREESTYLE)|(1<<G_M_VAMPIRE)|(1<<G_M_RESIZE)|(1<<G_M_HARD)|(1<<G_M_BASIC)|(1<<G_M_GSP1)|(1<<G_M_GSP2)|(1<<G_M_GSP3),
-    G_M_ROTATE = (1<<G_M_FFA)|(1<<G_M_CLASSIC),
-    G_M_SW = (1<<G_M_INSTA)|(1<<G_M_MEDIEVAL)|(1<<G_M_KABOOM),
-    G_M_DK = (1<<G_M_DUEL)|(1<<G_M_SURVIVOR),
-    G_M_IM = (1<<G_M_INSTA)|(1<<G_M_MEDIEVAL),
+    G_M_ROTATE = (1<<G_M_FFA)|(1<<G_M_CLASSIC)
 };
 enum { G_F_GSP = 0, G_F_NUM };
 
@@ -294,10 +291,14 @@ extern mutstypes mutstype[];
 #define m_balance(a,b,c)    (m_team(a, b) && (!m_race(a) || m_ra_gauntlet(a, b)) && m_play(a) && (m_forcebal(a, b) || ((G(balanceduke) || !m_duke(a, b)) && ((G(balancemaps) >= 0 ? G(balancemaps) : G(mapbalance)) >= (m_affinity(a) ? 1 : (c ? 2 : 3))))))
 #define m_balreset(a,b)     (G(balancereset) && (G(balancereset) == 2 || m_capture(a) || m_bomber(a) || m_race(a) || m_duke(a, b)))
 
+#ifdef GAMESERVER
+#define m_attr(a,b)         (a == WEAPON ? (isweap(b) ? attrmap[b] : W_GRENADE) : b)
+#else
+#define m_attr(a,b)         (a == WEAPON ? (isweap(b) ? game::attrmap[b] : W_GRENADE) : b)
+#endif
+
 #define w_carry(w1,w2)      (isweap(w1) && w1 != W_CLAW && w1 < W_ALL && (!isweap(w2) || (w1 != w2 && (w2 != W_GRENADE || w1 != W_MINE))) && (w1 == W_ROCKET || (w1 >= W_OFFSET && w1 < W_ITEM)))
-#define w_reload(w1,w2)     (isweap(w1) && (w1 >= W_ALL || (isweap(w2) && (w1 == w2 || (w2 == W_GRENADE && w1 == W_MINE)))))
-#define w_item(w1,w2)       (isweap(w1) && (w1 >= W_OFFSET && w1 < W_ALL && (!isweap(w2) || (w1 != w2 && (w2 != W_GRENADE || w1 != W_MINE)))))
-#define w_attr(a,b,t,w1,w2) (t != WEAPON || m_edit(a) ? w1 : (w1 != w2 ? (w1 >= W_OFFSET && w1 < W_ALL ? w1 : -1) : (w1 != W_GRENADE ? W_GRENADE : W_MINE)))
+#define w_reload(w1)        (isweap(w1) && (w1 >= W_ALL || w1 < W_OFFSET))
 
 #define m_mmvar(a,b,c)      (m_dm(a) ? \
                                 (m_duel(a, b) ? G(c##duel) : \

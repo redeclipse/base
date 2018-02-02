@@ -62,7 +62,7 @@ namespace weapons
     ICOMMAND(0, weapselect, "", (), intret(game::player1->weapselect));
     ICOMMAND(0, ammo, "i", (int *n), intret(isweap(*n) ? game::player1->weapclip[*n] : -1));
     ICOMMAND(0, ammostore, "i", (int *n), intret(isweap(*n) ? game::player1->weapstore[*n] : -1));
-    ICOMMAND(0, reloadweap, "i", (int *n), intret(isweap(*n) && w_reload(*n, m_weapon(game::player1->actortype, game::gamemode, game::mutators)) ? 1 : 0));
+    ICOMMAND(0, reloadweap, "i", (int *n), intret(w_reload(*n) ? 1 : 0));
     ICOMMAND(0, hasweap, "ii", (int *n, int *o), intret(isweap(*n) && game::player1->hasweap(*n, *o) ? 1 : 0));
     ICOMMAND(0, getweap, "ii", (int *n, int *o), {
         if(isweap(*n)) switch(*o)
@@ -117,11 +117,11 @@ namespace weapons
                 return false;
             }
             client::addmsg(N_RELOAD, "ri3", d->clientnum, lastmillis-game::maptime, weap);
-            int sweap = m_weapon(d->actortype, game::gamemode, game::mutators), oldammo = max(d->weapclip[weap], 0), ammoadd = W(weap, ammoadd);
+            int oldammo = max(d->weapclip[weap], 0), ammoadd = W(weap, ammoadd);
             if(W(weap, ammostore))
             {
                 store = d->weapstore[weap];
-                if(!w_reload(weap, sweap)) ammoadd = min(store, ammoadd);
+                if(!w_reload(weap)) ammoadd = min(store, ammoadd);
             }
             ammo = min(oldammo+ammoadd, W(weap, ammoclip));
             int diff = ammo-oldammo;

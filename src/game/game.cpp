@@ -7,6 +7,7 @@ namespace game
     bool zooming = false, inputmouse = false, inputview = false, inputmode = false, wantsloadoutmenu = false;
     float swayfade = 0, swayspeed = 0, swaydist = 0, bobfade = 0, bobdist = 0;
     vec swaydir(0, 0, 0), swaypush(0, 0, 0);
+    int attrmap[W_MAX] = {0};
 
     gameent *player1 = new gameent(), *focus = player1, *lastfocus = focus;
     avatarent avatarmodel, bodymodel;
@@ -965,7 +966,7 @@ namespace game
                 int weap = index%W_MAX;
                 if(!m_edit(gamemode) && index < W_MAX)
                 {
-                    weap = w_attr(gamemode, mutators, WEAPON, weap, m_weapon(focus->actortype, gamemode, mutators));
+                    weap = m_attr(WEAPON, weap);
                     if(!isweap(weap) || W(weap, disabled) || (m_loadout(gamemode, mutators) && weap < W_ITEM) || !m_check(W(weap, modes), W(weap, muts), gamemode, mutators))
                         weap = -1;
                 }

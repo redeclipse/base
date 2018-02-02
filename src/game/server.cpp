@@ -734,6 +734,21 @@ namespace server
         return true;
     }
 
+    int attrmap[W_MAX] = {0};
+    void setupattrmap()
+    {
+        int sweap = m_weapon(A_PLAYER, gamemode, mutators);
+        loopi(W_MAX)
+        {
+            if(m_edit(gamemode)) attrmap[i] = i;
+            else if(m_kaboom(gamemode, mutators) || m_medieval(gamemode, mutators)) attrmap[i] = i == W_MINE || i == W_GRENADE ? i : (i%2 ? W_MINE : W_GRENADE);
+            else if(m_insta(gamemode, mutators)) attrmap[i] = i == W_MINE || i == W_GRENADE ? i : sweap;
+            else if(i == sweap || i < W_OFFSET || i >= W_ALL) attrmap[i] = W_GRENADE;
+            else attrmap[i] = i;
+        }
+        sendf(-1, 1, "riv", N_ATTRMAP, W_MAX, &attrmap[0]);
+    }
+
     void setspawn(int ent, bool spawned, bool clear = false, bool msg = false)
     {
         if(!sents.inrange(ent)) return;
@@ -743,7 +758,7 @@ namespace server
         sents[ent].millis = sents[ent].last = gamemillis;
         if(sents[ent].type == WEAPON)
         {
-            int attr = w_attr(gamemode, mutators, sents[ent].type, sents[ent].attrs[0], m_weapon(A_PLAYER, gamemode, mutators));
+            int attr = m_attr(sents[ent].type, sents[ent].attrs[0]);
             if(isweap(attr))
             {
                 if(!(sents[ent].attrs[1]&W_F_FORCED)) sents[ent].millis += W(attr, spawntime);
@@ -1943,10 +1958,10 @@ namespace server
     bool hasitem(int i, bool item = true)
     {
         if((m_race(gamemode) && !m_ra_gauntlet(gamemode, mutators)) || m_basic(gamemode, mutators) || !sents.inrange(i) || sents[i].type != WEAPON) return false;
-        int sweap = m_weapon(A_PLAYER, gamemode, mutators), attr = w_attr(gamemode, mutators, sents[i].type, sents[i].attrs[0], sweap);
-        if(!isweap(attr) || !w_item(attr, sweap) || !m_check(W(attr, modes), W(attr, muts), gamemode, mutators) || W(attr, disabled)) return false;
-        if(item && m_loadout(gamemode, mutators) && !W2(attr, ammosub, false) && !W2(attr, ammosub, true)) return false;
         if(!checkmapvariant(sents[i].attrs[enttype[sents[i].type].mvattr]) || (sents[i].attrs[4] && sents[i].attrs[4] != triggerid) || !m_check(sents[i].attrs[2], sents[i].attrs[3], gamemode, mutators)) return false;
+        int attr = m_attr(sents[i].type, sents[i].attrs[0]);
+        if(!isweap(attr) || !m_check(W(attr, modes), W(attr, muts), gamemode, mutators) || W(attr, disabled)) return false;
+        if(item && m_loadout(gamemode, mutators) && !W2(attr, ammosub, false) && !W2(attr, ammosub, true)) return false;
         return true;
     }
 
@@ -1969,7 +1984,6 @@ namespace server
     void setupitems(bool update)
     {
         vector<int> items, enemies;
-        int sweap = m_weapon(A_PLAYER, gamemode, mutators);
         bool dospawn = true;
         if(smode && !smode->spawnitems()) dospawn = false;
         mutate(smuts, if(!mut->spawnitems()) dospawn = false);
@@ -2001,7 +2015,7 @@ namespace server
                         case 1: items.add(i); break;
                         case 2:
                         {
-                            int attr = w_attr(gamemode, mutators, sents[i].type, sents[i].attrs[0], sweap), delay = sents[i].type == WEAPON && isweap(attr) ? W(attr, spawntime) : G(itemspawntime);
+                            int attr = m_attr(sents[i].type, sents[i].attrs[0]), delay = sents[i].type == WEAPON && isweap(attr) ? W(attr, spawntime) : G(itemspawntime);
                             if(delay > 1) sents[i].millis += (delay+rnd(delay))/2;
                             break;
                         }
@@ -3564,6 +3578,7 @@ namespace server
         }
         else setmods(sv_previousmaps, "");
 
+        setupattrmap();
         if(numclients())
         {
             sendtick();
@@ -4103,6 +4118,8 @@ namespace server
             }
             putint(p, -1);
         }
+        putint(p, N_ATTRMAP);
+        loopi(W_MAX) putint(p, attrmap[i]);
 
         if(ci)
         {
@@ -4901,8 +4918,8 @@ namespace server
             sendresume(ci, true);
             return;
         }
-        int sweap = m_weapon(ci->actortype, gamemode, mutators), oldammo = max(ci->weapclip[weap], 0), ammoadd = W(weap, ammoadd);
-        if(!w_reload(weap, sweap) && W(weap, ammostore)) ammoadd = min(ci->weapstore[weap], ammoadd);
+        int oldammo = max(ci->weapclip[weap], 0), ammoadd = W(weap, ammoadd);
+        if(!w_reload(weap) && W(weap, ammostore)) ammoadd = min(ci->weapstore[weap], ammoadd);
         if(!ammoadd)
         {
             srvmsgft(ci->clientnum, CON_DEBUG, "sync error: reload [%d] failed - no ammo available", weap);
@@ -4939,7 +4956,7 @@ namespace server
             srvmsgft(ci->clientnum, CON_DEBUG, "sync error: use [%d] failed - doesn't seem to be spawned anywhere", ent);
             return;
         }
-        int sweap = m_weapon(ci->actortype, gamemode, mutators), attr = w_attr(gamemode, mutators, sents[ent].type, sents[ent].attrs[0], sweap);
+        int sweap = m_weapon(ci->actortype, gamemode, mutators), attr = m_attr(sents[ent].type, sents[ent].attrs[0]);
         if(!isweap(attr)) return;
         ci->updateweaptime();
         if(!ci->canuse(gamemode, mutators, sents[ent].type, attr, sents[ent].attrs, sweap, millis, (1<<W_S_SWITCH)))
