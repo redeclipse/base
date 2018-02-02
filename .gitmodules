@@ -141,7 +141,3 @@
 	path = data/weapons
 	url = https://github.com/red-eclipse/weapons.git
 	branch = master
-[submodule "wicked"]
-	path = data/wicked
-	url = https://github.com/red-eclipse/wicked.git
-	branch = master
