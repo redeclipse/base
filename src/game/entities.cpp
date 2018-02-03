@@ -2239,8 +2239,9 @@ namespace entities
 
         vec off(0, 0, 2.f), pos(o);
         if(enttype[e.type].usetype == EU_ITEM) pos.add(off);
-        bool edit = m_edit(game::gamemode) && cansee(idx), isedit = edit && game::player1->state == CS_EDITING,
-             hasent = isedit && idx >= 0 && (enthover == idx || entgroup.find(idx) >= 0),
+        bool edit = m_edit(game::gamemode) && idx >= 0 && cansee(idx),
+             isedit = edit && game::player1->state == CS_EDITING,
+             hasent = isedit && (enthover == idx || entgroup.find(idx) >= 0),
              hastop = hasent && e.o.squaredist(camera1->o) <= showentdist*showentdist;
         int sweap = m_weapon(game::focus->actortype, game::gamemode, game::mutators),
             attr = e.type == WEAPON ? m_attr(e.type, e.attrs[0]) : e.attrs[0],

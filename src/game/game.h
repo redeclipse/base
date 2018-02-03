@@ -1168,7 +1168,12 @@ struct gameent : dynent, clientstate
         #define MODPHYS(a,b,c) a = AA(actortype, a)*c;
         MODPHYSL;
         #undef MODPHYS
-
+        if(m_sweaps(gamemode, mutators))
+        {
+            #define MODPHYS(a,b,c) a += AA(actortype, a##extra)*c;
+            MODPHYSL;
+            #undef MODPHYS
+        }
         int sweap = m_weapon(actortype, gamemode, mutators);
         loopi(W_MAX) if(hasweap(i, sweap))
         {

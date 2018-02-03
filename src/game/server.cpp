@@ -740,10 +740,10 @@ namespace server
         int sweap = m_weapon(A_PLAYER, gamemode, mutators);
         loopi(W_MAX)
         {
-            if(m_edit(gamemode)) attrmap[i] = i;
-            else if(m_kaboom(gamemode, mutators) || m_medieval(gamemode, mutators)) attrmap[i] = i == W_MINE || i == W_GRENADE ? i : (i%2 ? W_MINE : W_GRENADE);
-            else if(m_insta(gamemode, mutators)) attrmap[i] = i == W_MINE || i == W_GRENADE ? i : sweap;
-            else if(i == sweap || i < W_OFFSET || i >= W_ALL) attrmap[i] = W_GRENADE;
+            if(m_edit(gamemode) || (i >= W_ITEM && i < W_ALL)) attrmap[i] = i;
+            else if(m_kaboom(gamemode, mutators) || m_medieval(gamemode, mutators)) attrmap[i] = W_ITEM+(i%W_ITEMS);
+            else if(m_insta(gamemode, mutators)) attrmap[i] = sweap;
+            else if(i == sweap || i < W_OFFSET || i >= W_ALL) attrmap[i] = W_REPLACE;
             else attrmap[i] = i;
         }
         sendf(-1, 1, "riv", N_ATTRMAP, W_MAX, &attrmap[0]);

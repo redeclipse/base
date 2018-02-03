@@ -3,7 +3,10 @@ enum
     W_CLAW = 0, W_PISTOL, W_OFFSET, // end of unselectable weapon set
     W_SWORD = W_OFFSET, W_SHOTGUN, W_SMG, W_FLAMER, W_PLASMA, W_ZAPPER, W_RIFLE, W_ITEM,
     W_GRENADE = W_ITEM, W_MINE, W_ROCKET, W_ALL, // end of item weapon set
-    W_MELEE = W_ALL, W_MAX, W_LOADOUT = W_ITEM-W_OFFSET // if you add to this at all, check all arrays with W_MAX
+    W_MELEE = W_ALL, W_MAX, // if you add to this at all, check all arrays with W_MAX
+    W_LOADOUT = W_ITEM-W_OFFSET,
+    W_ITEMS = W_MINE-W_GRENADE+1,
+    W_REPLACE = W_GRENADE
 };
 #define isweap(a)           (a >= 0 && a < W_MAX)
 #define itemweap(a)         (a >= W_ITEM && a < W_ALL)
