@@ -499,7 +499,7 @@ GFVAR(IDF_GAMEMOD, impulsegrabplayer, 0, 1.1f, FVAR_MAX); // parkour grab player
 GFVAR(IDF_GAMEMOD, impulsegrabplayerredir, 0, 1, FVAR_MAX); // how much of the old velocity is redirected into the new one
 
 GVAR(IDF_GAMEMOD, impulsestyle, 0, 1, 3); // impulse style; 0 = off, 1 = touch and count, 2 = count only, 3 = freestyle
-GVAR(IDF_GAMEMOD, impulsecount, 0, 5, VAR_MAX); // number of impulse actions per air transit
+GVAR(IDF_GAMEMOD, impulsecount, 0, 6, VAR_MAX); // number of impulse actions per air transit
 GVAR(IDF_GAMEMOD, impulsesliplen, 0, 500, VAR_MAX); // time before floor friction kicks back in
 GVAR(IDF_GAMEMOD, impulseslidelen, 0, 750, VAR_MAX); // time before slides end
 GVAR(IDF_GAMEMOD, impulseskatelen, 0, 1000, VAR_MAX); // length of time a run along a wall can last

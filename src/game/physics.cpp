@@ -37,11 +37,11 @@ namespace physics
         return false;
     }
 
-    bool canimpulse(physent *d, int type, bool kick)
+    bool canimpulse(physent *d, int type, bool touch)
     {
         if(!gameent::is(d) || !allowimpulse(d, type)) return false;
         gameent *e = (gameent *)d;
-        if(!kick && impulsestyle == 1 && e->impulse[IM_TYPE] > IM_T_JUMP && e->impulse[IM_TYPE] < IM_T_WALL) return false;
+        if(!touch && impulsestyle == 1 && e->impulse[IM_TYPE] > IM_T_JUMP && e->impulse[IM_TYPE] < IM_T_WALL) return false;
         if(!m_freestyle(game::gamemode, game::mutators) && impulsestyle <= 2 && e->impulse[IM_COUNT] >= impulsecount) return false;
         int time = 0, delay = 0;
         switch(type)
@@ -698,7 +698,7 @@ namespace physics
         if(d->actortype < A_BOT && !power && !melee && !slide && !impulseaction) return false;
         int type = melee ? A_A_PARKOUR : (slide ? A_A_SLIDE : A_A_BOOST);
         bool pulse = melee ? !onfloor : (!power && !onfloor ? ((d->actortype >= A_BOT || impulseaction&1) && d->action[AC_JUMP]) : false);
-        if((!power && !slide && !pulse) || !canimpulse(d, type, false)) return false;
+        if((!power && !slide && !pulse) || !canimpulse(d, type, melee || slide)) return false;
         bool mchk = !melee || onfloor, action = mchk && (d->actortype >= A_BOT || melee || impulseaction&2);
         int move = action ? d->move : 0, strafe = action ? d->strafe : 0;
         bool moving = mchk && (move || strafe);
