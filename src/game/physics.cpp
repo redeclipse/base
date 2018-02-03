@@ -1104,7 +1104,7 @@ namespace physics
                 gameent *d = (gameent *)pl;
                 if(!d->airmillis)
                 {
-                    if(local && impulsemethod&2 && timeinair >= impulseslideinair && d->move == 1 && d->action[AC_CROUCH] && allowimpulse(d, A_A_SLIDE))
+                    if(local && impulsemethod&2 && timeinair >= impulseslideinair && (d->move || d->strafe) && d->action[AC_CROUCH] && allowimpulse(d, A_A_SLIDE))
                         impulseplayer(d, true, prevel, false, true);
                     if(timeinair >= PHYSMILLIS)
                     {
