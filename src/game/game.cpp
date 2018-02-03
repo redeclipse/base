@@ -1689,7 +1689,9 @@ namespace game
             }
             if(showobithpleft >= (d != player1 ? 2 : 1))
             {
-                defformatstring(obitx, " (\fs\fc%d\fS)", v->health);
+                string obitx;
+                if(damageinteger) formatstring(obitx, " (\fs\fc%d\fS)", int(v->health/damagedivisor));
+                else formatstring(obitx, " (\fs\fc%.1f\fS)", v->health/damagedivisor);
                 concatstring(d->obit, obitx);
             }
         }
@@ -1706,7 +1708,9 @@ namespace game
                 concatstring(d->obit, colourname(log[i]));
                 if(showobithpleft >= (d != player1 ? 2 : 1))
                 {
-                    defformatstring(obitx, " (\fs\fc%d\fS)", log[i]->health);
+                    string obitx;
+                    if(damageinteger) formatstring(obitx, " (\fs\fc%d\fS)", int(log[i]->health/damagedivisor));
+                    else formatstring(obitx, " (\fs\fc%.1f\fS)", log[i]->health/damagedivisor);
                     concatstring(d->obit, obitx);
                 }
             }
