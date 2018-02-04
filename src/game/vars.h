@@ -333,7 +333,6 @@ GVAR(IDF_GAMEMOD, captureresetdelay, 0, 30000, VAR_MAX);
 GVAR(IDF_GAMEMOD, capturedefenddelay, 0, 10000, VAR_MAX);
 GVAR(IDF_GAMEMOD, captureprotectdelay, 0, 15000, VAR_MAX);
 GVAR(IDF_GAMEMOD, capturepickupdelay, 500, 2500, VAR_MAX);
-GFVAR(IDF_GAMEMOD, capturecarryspeed, 0, 0.9f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, capturedropheight, 0, 8, FVAR_MAX);
 GVAR(IDF_GAMEMOD, capturepoints, 0, 5, VAR_MAX); // points added to score
 GVAR(IDF_GAMEMOD, capturepickuppoints, 0, 3, VAR_MAX); // points added to score
@@ -358,6 +357,14 @@ GVAR(IDF_GAMEMOD, captureregenbuff, 0, 1, 1); // 0 = off, 1 = modify regeneratio
 GVAR(IDF_GAMEMOD, captureregendelay, 0, 1000, VAR_MAX); // regen this often when buffed
 GVAR(IDF_GAMEMOD, captureregenextra, 0, 20, VAR_MAX); // add this to regen when buffed
 GVAR(IDF_GAMEMOD, captureretakedelay, 0, 1000, VAR_MAX); // same person can't take same flag this long after capturing it
+GFVAR(IDF_GAMEMOD, capturecarryjumpspeed, FVAR_MIN, 0, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, capturecarryjumpspeedeach, FVAR_MIN, -5, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, capturecarryimpulsespeed, FVAR_MIN, 0, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, capturecarryimpulsespeedeach, FVAR_MIN, -5, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, capturecarryspeed, FVAR_MIN, 0, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, capturecarryspeedeach, FVAR_MIN, -5, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, capturecarryweight, FVAR_MIN, 5, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, capturecarryweighteach, FVAR_MIN, 5, FVAR_MAX);
 
 GVAR(IDF_GAMEMOD, defendlimit, 0, 0, VAR_MAX); // finish when score is this or more
 GVAR(IDF_GAMEMOD, defendpoints, 0, 1, VAR_MAX); // points added to score
@@ -385,8 +392,6 @@ GFVAR(IDF_GAMEMOD, bomberbasketmindist, 0, 0, FVAR_MAX); // prohibit baskets les
 GVAR(IDF_GAMEMOD, bomberwait, 0, 1000, VAR_MAX); // delay before bomb spawns
 GVAR(IDF_GAMEMOD, bomberresetdelay, 0, 15000, VAR_MAX);
 GVAR(IDF_GAMEMOD, bomberpickupdelay, 500, 7500, VAR_MAX);
-GVAR(IDF_GAMEMOD, bombercarrytime, 0, 15000, VAR_MAX);
-GFVAR(IDF_GAMEMOD, bombercarryspeed, 0, 0.9f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, bomberdropheight, 0, 8, FVAR_MAX);
 GVAR(IDF_GAMEMOD, bomberpoints, 0, 5, VAR_MAX); // points added to score
 GVAR(IDF_GAMEMOD, bomberpenalty, 0, 5, VAR_MAX); // points taken from score
@@ -418,6 +423,11 @@ GFVAR(IDF_GAMEMOD, bomberbuffshield, 1, 1.25f, FVAR_MAX); // divide incoming dam
 GVAR(IDF_GAMEMOD, bomberregenbuff, 0, 1, 1); // 0 = off, 1 = modify regeneration when buffed
 GVAR(IDF_GAMEMOD, bomberregendelay, 0, 1000, VAR_MAX); // regen this often when buffed
 GVAR(IDF_GAMEMOD, bomberregenextra, 0, 20, VAR_MAX); // add this to regen when buffed
+GVAR(IDF_GAMEMOD, bombercarrytime, 0, 15000, VAR_MAX);
+GFVAR(IDF_GAMEMOD, bombercarryjumpspeed, FVAR_MIN, -5, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, bombercarryimpulsespeed, FVAR_MIN, -5, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, bombercarryspeed, FVAR_MIN, -5, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, bombercarryweight, FVAR_MIN, 10, FVAR_MAX);
 
 GFVAR(IDF_MODERATOR, aihostnum, 0, 50, FVAR_MAX); // Multiply number of bots hosted by this much for the bot hosting decision.
 GFVAR(IDF_MODERATOR, aihostping, 0, 1, FVAR_MAX); // Multiply host ping by this much for the bot hosting decision.

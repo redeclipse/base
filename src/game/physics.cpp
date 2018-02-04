@@ -297,12 +297,11 @@ namespace physics
     float movevelocity(physent *d, bool floating)
     {
         physent *pl = d->type == ENT_CAMERA ? game::player1 : d;
-        float vel = pl->speed;
+        float vel = pl->speed*movespeed;
         if(floating) vel *= floatspeed/100.0f;
         else if(gameent::is(pl))
         {
             gameent *e = (gameent *)pl;
-            vel *= movespeed;
             vel *= 1.f-clamp(e->stunned(lastmillis), 0.f, 1.f);
             if((d->physstate >= PHYS_SLOPE || d->onladder) && !e->sliding(true) && e->crouching()) vel *= movecrawl;
             else if(isweap(e->weapselect) && e->weapstate[e->weapselect] == W_S_ZOOM) vel *= movecrawl;
@@ -315,11 +314,6 @@ namespace physics
                 case PHYS_STEP_UP: vel *= movestepup; break;
                 default: break;
             }
-            if(carryaffinity(e))
-            {
-                if(m_capture(game::gamemode)) vel *= capturecarryspeed;
-                else if(m_bomber(game::gamemode)) vel *= bombercarryspeed;
-            }
         }
         return vel;
     }
@@ -327,16 +321,7 @@ namespace physics
     float impulsevelocity(physent *d, float amt, int type, float redir, vec &keep)
     {
         float scale = 1.f;
-        if(gameent::is(d))
-        {
-            gameent *e = (gameent *)d;
-            scale *= 1.f-clamp(e->stunned(lastmillis), 0.f, 1.f);
-            if(carryaffinity(e))
-            {
-                if(m_capture(game::gamemode)) scale *= capturecarryspeed;
-                else if(m_bomber(game::gamemode)) scale *= bombercarryspeed;
-            }
-        }
+        if(gameent::is(d)) scale *= 1.f-clamp(((gameent *)d)->stunned(lastmillis), 0.f, 1.f);
         float speed = (d->impulsespeed*amt*scale)+(keep.magnitude()*redir);
         keep.mul(1-min(redir, 1.f));
         return speed;

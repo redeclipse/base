@@ -923,7 +923,7 @@ namespace game
             entities::spawnplayer(d, ent, true);
             client::addmsg(N_SPAWN, "ri", d->clientnum);
         }
-        d->configure(gamemode, mutators, rescale(d), speedscale(d), 0, true);
+        d->configure(gamemode, mutators, rescale(d), speedscale(d), 0, physics::carryaffinity(d), true);
 
         if(d == player1) specreset();
         else if(d == focus) resetcamera();
@@ -1093,7 +1093,7 @@ namespace game
     {
         adjustscaled(d->quake, quakefade);
         int prevstate = isweap(d->weapselect) ? d->weapstate[d->weapselect] : W_S_IDLE;
-        d->configure(gamemode, mutators, rescale(d), speedscale(d), curtime, false);
+        d->configure(gamemode, mutators, rescale(d), speedscale(d), physics::carryaffinity(d), curtime, false);
 
         float offset = d->height;
         d->o.z -= d->height;
@@ -3797,7 +3797,7 @@ namespace game
     void renderplayerpreview(float scale, const vec4 &mcolor, const char *actions)
     {
         if(!previewent) initplayerpreview();
-        previewent->configure(gamemode, mutators, 1, 1, 0, true);
+        previewent->configure(gamemode, mutators, 1, 1, 0, 0, true);
         float height = previewent->height + previewent->aboveeye, zrad = height/2;
         vec2 xyrad = vec2(previewent->xradius, previewent->yradius).max(height/4);
         previewent->o = calcmodelpreviewpos(vec(xyrad, zrad), previewent->yaw).addz(previewent->height - zrad);

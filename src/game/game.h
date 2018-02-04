@@ -1143,7 +1143,7 @@ struct gameent : dynent, clientstate
     static bool is(int t) { return t == ENT_PLAYER || t == ENT_AI; }
     static bool is(physent *d) { return d->type == ENT_PLAYER || d->type == ENT_AI; }
 
-    void configure(int gamemode, int mutators, float scale, float speedscale, int millis, bool reset)
+    void configure(int gamemode, int mutators, float scale, float speedscale, int affinities, int millis, bool reset)
     {
         #define MODPHYSL \
             MODPHYS(speed, float, speedscale); \
@@ -1173,6 +1173,21 @@ struct gameent : dynent, clientstate
             #define MODPHYS(a,b,c) a += AA(actortype, a##extra)*c;
             MODPHYSL;
             #undef MODPHYS
+        }
+        if(affinities > 0)
+        {
+            if(m_capture(gamemode))
+            {
+                #define MODPHYS(a,b,c) a += G(capturecarry##a)+(affinities*G(capturecarry##a##each));
+                MODPHYSL;
+                #undef MODPHYS
+            }
+            else if(m_bomber(gamemode))
+            {
+                #define MODPHYS(a,b,c) a += G(bombercarry##a);
+                MODPHYSL;
+                #undef MODPHYS
+            }
         }
         int sweap = m_weapon(actortype, gamemode, mutators);
         loopi(W_MAX) if(hasweap(i, sweap))
@@ -1283,7 +1298,7 @@ struct gameent : dynent, clientstate
         lastteamhit = lastflag = respawned = suicided = lastnode = lastfoot = -1;
         obit[0] = '\0';
         obliterated = headless = false;
-        configure(gamemode, mutators, 1, 1, 0, true);
+        configure(gamemode, mutators, 1, 1, 0, 0, true);
         icons.shrink(0);
         stuns.shrink(0);
         used.shrink(0);
