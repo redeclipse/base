@@ -470,10 +470,10 @@ GFVAR(IDF_GAMEMOD, impulseboost, 0, 1, FVAR_MAX); // boost modifier
 GFVAR(IDF_GAMEMOD, impulseboostredir, 0, 1, FVAR_MAX); // how much of the old velocity is redirected into the new one
 GFVAR(IDF_GAMEMOD, impulseboostpitchmin, -89.9f, -89.9f, 89.9f); // boost pitch minimum
 GFVAR(IDF_GAMEMOD, impulseboostpitchmax, -89.9f, 89.9f, 89.9f); // boost pitch maximum
-GFVAR(IDF_GAMEMOD, impulsepower, 0, 1, FVAR_MAX); // power jump modifier
-GFVAR(IDF_GAMEMOD, impulsepowerredir, 0, 1, FVAR_MAX); // how much of the old velocity is redirected into the new one
-GFVAR(IDF_GAMEMOD, impulsepowerpitchmin, -89.9f, 15.f, 89.9f); // power jump pitch minimum
-GFVAR(IDF_GAMEMOD, impulsepowerpitchmax, -89.9f, 89.9f, 89.9f); // power jump pitch maximum
+GFVAR(IDF_GAMEMOD, impulselaunch, 0, 1, FVAR_MAX); // launch modifier
+GFVAR(IDF_GAMEMOD, impulselaunchredir, 0, 1, FVAR_MAX); // how much of the old velocity is redirected into the new one
+GFVAR(IDF_GAMEMOD, impulselaunchpitchmin, -89.9f, 15.f, 89.9f); // launch pitch minimum
+GFVAR(IDF_GAMEMOD, impulselaunchpitchmax, -89.9f, 89.9f, 89.9f); // launch pitch maximum
 GFVAR(IDF_GAMEMOD, impulseslide, 0, 1, FVAR_MAX); // slide modifier
 GFVAR(IDF_GAMEMOD, impulseslideredir, 0, 1, FVAR_MAX); // how much of the old velocity is redirected into the new one
 GFVAR(IDF_GAMEMOD, impulsejump, 0, 1, FVAR_MAX); // jump modifier

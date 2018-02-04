@@ -14,7 +14,7 @@ namespace physics
     VAR(IDF_PERSIST, physinterp, 0, 1, 1);
 
     FVAR(IDF_PERSIST, impulsekickyaw, 0, 150, 180); // determines the minimum yaw angle to switch between wall kick and run
-    VAR(IDF_PERSIST, impulsemethod, 0, 3, 3); // determines which impulse method to use, 0 = none, 1 = power jump, 2 = power slide, 3 = both
+    VAR(IDF_PERSIST, impulsemethod, 0, 3, 3); // determines which impulse method to use, 0 = none, 1 = launch, 2 = slide, 3 = both
     VAR(IDF_PERSIST, impulseaction, 0, 3, 3); // determines how impulse action works, 0 = off, 1 = impulse jump, 2 = impulse boost, 3 = both
     FVAR(IDF_PERSIST, impulseroll, 0, 15, 89);
 
@@ -694,34 +694,34 @@ namespace physics
 
     bool impulseplayer(gameent *d, bool onfloor, const vec &inertia, bool melee = false, bool slide = false)
     {
-        bool power = !melee && !slide && onfloor && impulsemethod&1 && d->sliding(true) && d->action[AC_JUMP];
-        if(d->actortype < A_BOT && !power && !melee && !slide && !impulseaction) return false;
+        bool launch = !melee && !slide && onfloor && impulsemethod&1 && d->sliding(true) && d->action[AC_JUMP];
+        if(d->actortype < A_BOT && !launch && !melee && !slide && !impulseaction) return false;
         int type = melee ? A_A_PARKOUR : (slide ? A_A_SLIDE : A_A_BOOST);
-        bool pulse = melee ? !onfloor : (!power && !onfloor ? ((d->actortype >= A_BOT || impulseaction&1) && d->action[AC_JUMP]) : false);
-        if((!power && !slide && !pulse) || !canimpulse(d, type, melee || slide)) return false;
+        bool pulse = melee ? !onfloor : (!launch && !onfloor ? ((d->actortype >= A_BOT || impulseaction&1) && d->action[AC_JUMP]) : false);
+        if((!launch && !melee && !slide && !pulse) || !canimpulse(d, type, melee || slide)) return false;
         bool mchk = !melee || onfloor, action = mchk && (d->actortype >= A_BOT || melee || impulseaction&2);
         int move = action ? d->move : 0, strafe = action ? d->strafe : 0;
         bool moving = mchk && (move || strafe);
         vec keepvel = inertia;
-        float skew = melee ? impulsemelee : (slide ? impulseslide : (power ? impulsepower : (moving ? impulseboost : impulsejump))),
-              redir = melee ? impulsemeleeredir : (slide ? impulseslideredir : (power ? impulsepowerredir : (moving ? impulseboostredir : impulsejumpredir))),
+        float skew = melee ? impulsemelee : (slide ? impulseslide : (launch ? impulselaunch : (moving ? impulseboost : impulsejump))),
+              redir = melee ? impulsemeleeredir : (slide ? impulseslideredir : (launch ? impulselaunchredir : (moving ? impulseboostredir : impulsejumpredir))),
               force = impulsevelocity(d, skew, type, redir, keepvel);
         if(force < 0) return false;
         vec dir(0, 0, 1);
-        if(power || slide || moving || onfloor)
+        if(launch || slide || moving || onfloor)
         {
-            float yaw = d->yaw, pitch = moving && (power || pulse) ? d->pitch : 0;
-            if(power) pitch = clamp(pitch, impulsepowerpitchmin, impulsepowerpitchmax);
+            float yaw = d->yaw, pitch = moving && (launch || pulse) ? d->pitch : 0;
+            if(launch) pitch = clamp(pitch, impulselaunchpitchmin, impulselaunchpitchmax);
             else if(moving && pulse) pitch = clamp(pitch, impulseboostpitchmin, impulseboostpitchmax);
             vecfromyawpitch(yaw, pitch, moving ? move : 1, strafe, dir);
-            if(!power && slide && !d->floor.iszero() && !dir.iszero())
+            if(!launch && slide && !d->floor.iszero() && !dir.iszero())
             {
                 dir.project(d->floor).normalize();
                 if(dir.z < 0) force += -dir.z*force;
             }
         }
         d->vel = vec(dir).mul(force).add(keepvel);
-        if(power) d->vel.z += jumpvel(d, true);
+        if(launch) d->vel.z += jumpvel(d, true);
         d->doimpulse(melee ? IM_T_MELEE : (slide ? IM_T_SLIDE : IM_T_BOOST), lastmillis);
         d->action[AC_JUMP] = false;
         client::addmsg(N_SPHY, "ri2", d->clientnum, melee ? SPHY_MELEE : (slide ? SPHY_SLIDE : SPHY_BOOST));
