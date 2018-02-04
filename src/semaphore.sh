@@ -160,6 +160,7 @@ if [ "${SEMABUILD_DEPLOY}" = "true" ]; then
     semabuild_deploy || exit 1
     if [ "${BRANCH_NAME}" = master ] || [ "${BRANCH_NAME}" = stable ]; then
         echo "building ${BRANCH_NAME} appimages..."
+        sudo ${SEMABUILD_APT} update || return 1
         sudo ${SEMABUILD_APT} -fy install build-essential multiarch-support gcc-multilib g++-multilib zlib1g-dev libsdl2-dev libsdl2-mixer-dev libsdl2-image-dev jq zsync || exit 1
         pushd "${HOME}" || return 1
         semabuild_appimage || exit 1
