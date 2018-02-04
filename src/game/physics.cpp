@@ -722,6 +722,7 @@ namespace physics
         }
         d->vel = vec(dir).mul(force).add(keepvel);
         if(launch) d->vel.z += jumpvel(d, true);
+        //if(melee) d->resetjump();
         d->doimpulse(melee ? IM_T_MELEE : (slide ? IM_T_SLIDE : IM_T_BOOST), lastmillis);
         d->action[AC_JUMP] = false;
         client::addmsg(N_SPHY, "ri2", d->clientnum, melee ? SPHY_MELEE : (slide ? SPHY_SLIDE : SPHY_BOOST));
@@ -789,8 +790,6 @@ namespace physics
                 d->o = oldpos;
                 if(collided && collideplayer && gameent::is(collideplayer))
                 {
-                    //d->action[AC_SPECIAL] = false;
-                    d->resetjump();
                     impulseplayer(d, onfloor, vec(d->vel).add(d->falling), true);
                     if(d->turnside)
                     {
