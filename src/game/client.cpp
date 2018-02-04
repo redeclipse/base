@@ -963,7 +963,11 @@ namespace client
         CLCOMMANDMK(is##dtype, "ss", (char *who, char *n), \
         { \
             gameent *e = game::getclient(client::parseplayer(n)); \
-            if(!e) { intret(0); return; } \
+            if(!e) \
+            { \
+                intret(0); \
+                return; \
+            } \
             loopv(d->dtype) if(d->dtype[i]->clientnum == e->clientnum) \
             { \
                 intret(1); \

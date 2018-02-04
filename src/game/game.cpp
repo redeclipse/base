@@ -1560,7 +1560,11 @@ namespace game
             {
                 concatstring(d->obit, " \fs\fzawteam-mate\fS ");
                 concatstring(d->obit, colourname(v));
-                if(v == focus) { anc = S_ALARM; override = true; }
+                if(v == focus)
+                {
+                    anc = S_ALARM;
+                    override = true;
+                }
             }
             else if(obitstyles)
             {
@@ -2023,7 +2027,9 @@ namespace game
     const char *colourname(gameent *d, char *name, bool icon, bool dupname, int colour)
     {
         if(!name) name = d->name;
-        static string colored; colored[0] = '\0'; string colortmp;
+        static string colored;
+        string colortmp;
+        colored[0] = '\0';
         if(colour) concatstring(colored, "\fs");
         if(icon)
         {
@@ -2059,7 +2065,9 @@ namespace game
     const char *colourteam(int team, const char *icon)
     {
         if(team < 0 || team > T_MAX) team = T_NEUTRAL;
-        static string teamed; teamed[0] = '\0'; string teamtmp;
+        static string teamed;
+        string teamtmp;
+        teamed[0] = '\0';
         concatstring(teamed, "\fs");
         formatstring(teamtmp, "\f[%d]", TEAM(team, colour));
         concatstring(teamed, teamtmp);
@@ -2858,7 +2866,11 @@ namespace game
                 return;
             }
             int type = client::needsmap ? 6 : (m_edit(gamemode) && musicedit >= 0 ? musicedit : musictype);
-            if(!maptime) { maptime = -1; return; } // skip the first loop
+            if(!maptime)
+            {
+                maptime = -1;
+                return; // skip the first loop
+            }
             else if(maptime < 0)
             {
                 maptime = lastmillis ? lastmillis : 1;

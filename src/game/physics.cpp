@@ -71,7 +71,8 @@ namespace physics
             game::player1->v = dir; \
             if(down) \
             { \
-                last##v = lastmillis; lastdir##v = dir; \
+                last##v = lastmillis; \
+                lastdir##v = dir; \
                 last##u = lastdir##u = 0; \
             } \
         } \
@@ -514,7 +515,13 @@ namespace physics
                     if(collide(d, stepdir) && collidewall == d->floor)
                     {
                         d->o = old;
-                        if(!init) { d->o.x += dir.x; d->o.y += dir.y; if(dir.z <= 0 || collide(d, dir)) d->o.z += dir.z; }
+                        if(!init)
+                        {
+                            d->o.x += dir.x;
+                            d->o.y += dir.y;
+                            if(dir.z <= 0 || collide(d, dir))
+                                d->o.z += dir.z;
+                        }
                         d->zmargin = 0;
                         d->physstate = PHYS_STEP_DOWN;
                         return true;
@@ -635,7 +642,8 @@ namespace physics
 
     bool move(physent *d, vec &dir)
     {
-        vec old(d->o), obstacle; d->o.add(dir);
+        vec old(d->o), obstacle;
+        d->o.add(dir);
         bool collided = false, slidecollide = false;
         if(collide(d, dir))
         {
@@ -753,7 +761,8 @@ namespace physics
                     d->vel = vec(rft).mul(mag).add(keepvel);
                     d->doimpulse(IM_T_KICK, lastmillis);
                     d->turnmillis = PHYSMILLIS;
-                    d->turnside = 0; d->turnyaw = d->turnroll = 0;
+                    d->turnside = 0;
+                    d->turnyaw = d->turnroll = 0;
                     d->action[AC_JUMP] = onfloor = false;
                     client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_KICK);
                     game::impulseeffect(d);
