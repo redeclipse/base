@@ -862,7 +862,7 @@ extern void scaleimage(ImageData &s, int w, int h);
 extern void texcrop(ImageData &s, ImageData &d, int x, int y, int w, int h);
 extern void texcrop(ImageData &s, int x, int y, int w, int h);
 extern void updatetextures();
-extern void preloadtextures(int flags = IDF_PRELOAD);
+extern void preloadtextures(uint flags = IDF_PRELOAD);
 
 struct cubemapside
 {
