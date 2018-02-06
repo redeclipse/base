@@ -948,6 +948,7 @@ WPFVARK(IDF_GAMEMOD, weight, FVAR_MIN, FVAR_MAX,
     0.0f,       0.0f,       0.0f,       250.0f,     0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       75.0f,      150.0f,     0.0f,       0.0f
 );
 // these are used in modifying values in gameent::configure() et al
+//  claw        pistol      sword       shotgun     smg         flamer      plasma      zappper     rifle       grenades    mines       rocket      melee
 WPFVAR(IDF_GAMEMOD, modhealth, FVAR_MIN, FVAR_MAX,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
 );
