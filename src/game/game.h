@@ -627,6 +627,7 @@ struct clientstate
             hp += W(i, modhealth)+(getammo(i, 0, true)*W(i, modhealthammo));
             if(i == weapselect) hp += W(i, modhealthequip);
         }
+        hp = hp*(m_hard(gamemode, mutators) ? G(healthscalehard) : G(healthscale));
         if(full) hp = hp*(m_vampire(gamemode, mutators) ? G(maxhealthvampire) : G(maxhealth));
         return max(hp, 1);
     }
