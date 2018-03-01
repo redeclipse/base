@@ -223,7 +223,7 @@ namespace game
     VAR(IDF_PERSIST, aboveheadnames, 0, 1, 1);
     VAR(IDF_PERSIST, aboveheadinventory, 0, 0, 2); // 0 = off, 1 = weapselect only, 2 = all weapons
     VAR(IDF_PERSIST, aboveheadstatus, 0, 1, 1);
-    VAR(IDF_PERSIST, aboveheadteam, 0, 0, 3);
+    VAR(IDF_PERSIST, aboveheadteam, 0, 1, 3);
     VAR(IDF_PERSIST, aboveheaddamage, 0, 0, 1);
     VAR(IDF_PERSIST, aboveheadicons, 0, 5, 7);
     FVAR(IDF_PERSIST, aboveheadblend, 0.f, 1, 1.f);
