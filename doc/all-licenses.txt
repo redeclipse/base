@@ -5,13 +5,13 @@ Copyright: Omitted
 License: Omitted
 
 Files: *
-Copyright: 2009-2017, Red Eclipse Team
+Copyright: 2009-2018, Red Eclipse Team
 License: CC-BY-SA-3.0+
 
 Files: src/*
-Copyright: 2001-2017, Wouter van Oortmerssen, Lee Salzman, Mike Dysart,
+Copyright: 2001-2018, Wouter van Oortmerssen, Lee Salzman, Mike Dysart,
            Robert Pointon, Quinton Reeves
-           2009-2017, Quinton Reeves, Lee Salzman
+           2009-2018, Quinton Reeves, Lee Salzman
 License: Zlib
 
 Files: doc/trademark.txt
@@ -30,7 +30,7 @@ Copyright: 2011-2012, Red Eclipse Team
 License: Zlib
 
 Files: doc/examples/*
-Copyright: 2011-2017, Red Eclipse Team
+Copyright: 2011-2018, Red Eclipse Team
 License: Zlib
 
 Files: doc/man/cube2font.1 doc/man/redeclipse.6.am
@@ -39,7 +39,7 @@ Copyright: 2011-2012, Martin Erik "arand" Werner <martinerikwerner@gmail.com>
 License: ZLib
 
 Files: config/*
-Copyright: 2009-2017, Red Eclipse Team
+Copyright: 2009-2018, Red Eclipse Team
 License: Zlib
 
 Files: data/maps/biolytic* data/maps/darkness* data/maps/mist* data/maps/nova*

@@ -9,7 +9,7 @@
   VIAddVersionKey "ProductName" "Red Eclipse Installer"
   VIAddVersionKey "FileDescription" "Red Eclipse Installer"
   VIAddVersionKey "CompanyName" "Red Eclipse Team"
-  VIAddVersionKey "LegalCopyright" "2010-2017 Red Eclipse Team"
+  VIAddVersionKey "LegalCopyright" "2010-2018 Red Eclipse Team"
   VIAddVersionKey "FileVersion" "1.0.0.0"
   BrandingText "Red Eclipse Team" ; Change the branding from NSIS version to Red Eclipse Team
 ; --------------------------------

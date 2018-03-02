@@ -292,9 +292,9 @@ extern mutstypes mutstype[];
 #define m_balreset(a,b)     (G(balancereset) && (G(balancereset) == 2 || m_capture(a) || m_bomber(a) || m_race(a) || m_duke(a, b)))
 
 #ifdef GAMESERVER
-#define m_attr(a,b)         (a == WEAPON ? (isweap(b) ? attrmap[b] : W_GRENADE) : b)
+#define m_attr(a,b)         (a == WEAPON ? attrmap[isweap(b) ? b : W_GRENADE] : b)
 #else
-#define m_attr(a,b)         (a == WEAPON ? (isweap(b) ? game::attrmap[b] : W_GRENADE) : b)
+#define m_attr(a,b)         (a == WEAPON ? game::attrmap[isweap(b) ? b : W_GRENADE] : b)
 #endif
 
 #define w_carry(w1,w2)      (isweap(w1) && w1 != W_CLAW && w1 < W_ALL && (!isweap(w2) || (w1 != w2 && (w2 != W_GRENADE || w1 != W_MINE))) && (w1 == W_ROCKET || (w1 >= W_OFFSET && w1 < W_ITEM)))
@@ -335,7 +335,6 @@ extern mutstypes mutstype[];
     GVAR(f, a##racegauntlet, b, w12, c);
 
 #define DSG(a,b,x)          (m_duel(a, b) ? G(duel##x) : G(survivor##x))
-#define GL(a,b,x)           (m_dm_gladiator(a, b) ? gladiator##x : x)
 
 #define mapshrink(a,b,c,d) if((a) && (b) && (c) && *(c)) \
 { \
