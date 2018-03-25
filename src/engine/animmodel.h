@@ -402,6 +402,13 @@ struct animmodel : model
             if(noclip) m.flags |= BIH::MESH_NOCLIP;
             if(s.cullface > 0) m.flags |= BIH::MESH_CULLFACE;
             genBIH(m);
+            while(bih.last().numtris > BIH::mesh::MAXTRIS)
+            {
+                BIH::mesh &overflow = bih.dup();
+                overflow.tris += BIH::mesh::MAXTRIS;
+                overflow.numtris -= BIH::mesh::MAXTRIS;
+                bih[bih.length()-2].numtris = BIH::mesh::MAXTRIS;
+            }
         }
 
         virtual void genshadowmesh(vector<triangle> &tris, const matrix4x3 &m) {}
