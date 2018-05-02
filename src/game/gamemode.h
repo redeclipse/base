@@ -102,7 +102,7 @@ gametypes gametype[] = {
             (1<<G_M_MULTI)|(1<<G_M_COOP)|(1<<G_M_INSTA)|(1<<G_M_DUEL)|(1<<G_M_SURVIVOR)|(1<<G_M_CLASSIC)|(1<<G_M_MEDIEVAL)|(1<<G_M_KABOOM)|(1<<G_M_ONSLAUGHT)|(1<<G_M_FREESTYLE)|(1<<G_M_VAMPIRE)|(1<<G_M_RESIZE)|(1<<G_M_HARD)|(1<<G_M_BASIC)|(1<<G_M_GSP2)|(1<<G_M_GSP3),
             (1<<G_M_MULTI)|(1<<G_M_COOP)|(1<<G_M_INSTA)|(1<<G_M_CLASSIC)|(1<<G_M_MEDIEVAL)|(1<<G_M_KABOOM)|(1<<G_M_ONSLAUGHT)|(1<<G_M_FREESTYLE)|(1<<G_M_VAMPIRE)|(1<<G_M_RESIZE)|(1<<G_M_HARD)|(1<<G_M_BASIC)|(1<<G_M_GSP2)|(1<<G_M_GSP3)
         },
-        "Bomber Ball", "Bomber", { "Hold", "Basket", "Attack" },
+        "Bomber Ball", "Bomber", { "Hold", "Basket", "Assault" },
         "Carry the bomb into the enemy goal to score", { "Hold the bomb as long as possible to score", "Throw the bomb into the enemy goal to score", "Teams take turns attacking and defending" },
     },
     {
@@ -262,7 +262,7 @@ extern mutstypes mutstype[];
 
 #define m_bb_hold(a,b)      (m_bomber(a) && m_gsp1(a, b))
 #define m_bb_basket(a,b)    (m_bomber(a) && m_gsp2(a, b))
-#define m_bb_attack(a,b)    (m_bomber(a) && m_gsp3(a, b))
+#define m_bb_assault(a,b)    (m_bomber(a) && m_gsp3(a, b))
 
 #define m_ra_timed(a,b)     (m_race(a) && m_gsp1(a, b))
 #define m_ra_endurance(a,b) (m_race(a) && m_gsp2(a, b))
@@ -287,7 +287,7 @@ extern mutstypes mutstype[];
 #define m_protect(a,b)      (m_duke(a,b) ? DSG(a, b, protect) : (m_insta(a, b) ? G(instaprotect) : G(spawnprotect)))
 #define m_swapteam(a,b)     (m_team(a, b) && (!m_race(a) || m_ra_gauntlet(a, b)) && m_play(a) && (G(teambalanceduel) || !m_duel(a, b)) && !m_coop(gamemode, mutators) && G(teambalance) >= 3 && G(teambalanceswap))
 #define m_balteam(a,b,c)    (m_team(a, b) && (!m_race(a) || m_ra_gauntlet(a, b)) && m_play(a) && (G(teambalanceduel) || !m_duel(a, b)) && !m_coop(gamemode, mutators) && G(teambalance) >= c)
-#define m_forcebal(a,b)     (m_bb_attack(a, b) || m_ra_gauntlet(a, b))
+#define m_forcebal(a,b)     (m_bb_assault(a, b) || m_ra_gauntlet(a, b))
 #define m_balance(a,b,c)    (m_team(a, b) && (!m_race(a) || m_ra_gauntlet(a, b)) && m_play(a) && (m_forcebal(a, b) || ((G(balanceduke) || !m_duke(a, b)) && ((G(balancemaps) >= 0 ? G(balancemaps) : G(mapbalance)) >= (m_affinity(a) ? 1 : (c ? 2 : 3))))))
 #define m_balreset(a,b)     (G(balancereset) && (G(balancereset) == 2 || m_capture(a) || m_bomber(a) || m_race(a) || m_duke(a, b)))
 

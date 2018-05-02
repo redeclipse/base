@@ -381,7 +381,7 @@ namespace bomber
             if(!m_check(e.attrs[3], e.attrs[4], game::gamemode, game::mutators)) continue;
             if(!isteam(game::gamemode, game::mutators, e.attrs[0], T_NEUTRAL)) continue;
             int team = e.attrs[0];
-            if(m_bb_attack(game::gamemode, game::mutators)) switch(team)
+            if(m_bb_assault(game::gamemode, game::mutators)) switch(team)
             { // attack
                 case T_ALPHA: break; // goal
                 case T_OMEGA: team = T_NEUTRAL; break; // ball
@@ -575,7 +575,7 @@ namespace bomber
             }
             return;
         }
-        if(!f.droptime && m_bb_attack(game::gamemode, game::mutators) && d->team == T_ALPHA && bomberattackreset) return;
+        if(!f.droptime && m_bb_assault(game::gamemode, game::mutators) && d->team == T_ALPHA && bomberassaultreset) return;
         if(f.lastowner == d && f.droptime && lastmillis-f.droptime <= bomberpickupdelay) return;
         if(o.dist(f.pos()) <= enttype[AFFINITY].radius/2) client::addmsg(N_TAKEAFFIN, "ri2", d->clientnum, i);
     }
@@ -607,7 +607,7 @@ namespace bomber
 
     bool aihomerun(gameent *d, ai::aistate &b)
     {
-        if(d->actortype < A_ENEMY && m_team(game::gamemode, game::mutators) && !m_bb_hold(game::gamemode, game::mutators) && (!m_bb_attack(game::gamemode, game::mutators) || d->team != T_ALPHA))
+        if(d->actortype < A_ENEMY && m_team(game::gamemode, game::mutators) && !m_bb_hold(game::gamemode, game::mutators) && (!m_bb_assault(game::gamemode, game::mutators) || d->team != T_ALPHA))
         {
             int goal = -1;
             vec pos = d->feetpos();

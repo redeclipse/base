@@ -388,8 +388,8 @@ GVAR(IDF_GAMEMOD, defendregenextra, 0, 20, VAR_MAX); // add this to regen when b
 GVAR(IDF_GAMEMOD, bomberlimit, 0, 0, VAR_MAX); // finish when score is this or more (non-hold)
 GVAR(IDF_GAMEMOD, bomberholdlimit, 0, 0, VAR_MAX); // finish when score is this or more (hold)
 GVAR(IDF_GAMEMOD, bomberbasketonly, 0, 0, 1); // prohibit touchdowns in basket game
-GVAR(IDF_GAMEMOD, bomberattackreset, 0, 1, 1); // defenders reset rather than carry the ball
-GVAR(IDF_GAMEMOD, bomberattackwinner, 0, 1, 1); // declare the winner when the final team exceeds best score
+GVAR(IDF_GAMEMOD, bomberassaultreset, 0, 1, 1); // defenders reset rather than carry the ball
+GVAR(IDF_GAMEMOD, bomberassaultwinner, 0, 1, 1); // declare the winner when the final team exceeds best score
 GFVAR(IDF_GAMEMOD, bomberbasketmindist, 0, 0, FVAR_MAX); // prohibit baskets less than this far away
 GVAR(IDF_GAMEMOD, bomberwait, 0, 1000, VAR_MAX); // delay before bomb spawns
 GVAR(IDF_GAMEMOD, bomberresetdelay, 0, 15000, VAR_MAX);

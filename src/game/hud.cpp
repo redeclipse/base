@@ -385,7 +385,7 @@ namespace hud
     TVAR(IDF_PERSIST, modebombertex, "<grey>textures/modes/bomber", 3);
     TVAR(IDF_PERSIST, modebomberholdtex, "<grey>textures/modes/bomberhold", 3);
     TVAR(IDF_PERSIST, modebomberbaskettex, "<grey>textures/modes/bomberbasket", 3);
-    TVAR(IDF_PERSIST, modebomberattacktex, "<grey>textures/modes/bomberattack", 3);
+    TVAR(IDF_PERSIST, modebomberassaulttex, "<grey>textures/modes/bomberassault", 3);
 
     TVAR(IDF_PERSIST, moderacetex, "<grey>textures/modes/race", 3);
     TVAR(IDF_PERSIST, moderacetimedtex, "<grey>textures/modes/racetimed", 3);
@@ -432,9 +432,9 @@ namespace hud
         else if(m_bomber(g)) \
         { \
             if(m_bb_hold(g, m)) ADDMODE(modebomberholdtex) \
-            else if(m_bb_attack(g, m)) \
+            else if(m_bb_assault(g, m)) \
             { \
-                ADDMODE(modebomberattacktex) \
+                ADDMODE(modebomberassaulttex) \
                 if(m_bb_basket(g, m)) ADDMODE(modebomberbaskettex) \
             } \
             else if(m_bb_basket(g, m)) ADDMODE(modebomberbaskettex) \
