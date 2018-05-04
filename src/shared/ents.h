@@ -169,8 +169,8 @@ struct physent : baseent                        // can be affected by physics
 
     physent() : deltapos(0, 0, 0), newpos(0, 0, 0),
         speed(100), jumpspeed(100), impulsespeed(100), weight(100),
-        radius(3), height(14), aboveeye(1),
-        xradius(3), yradius(3), zradius(14), zmargin(0),
+        radius(3.75f), height(17.5f), aboveeye(1.25f),
+        xradius(3.75f), yradius(3.75f), zradius(17.5f), zmargin(0),
         curscale(1),
         type(ENT_INANIMATE),
         collidetype(COLLIDE_ELLIPSE)
