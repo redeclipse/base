@@ -2153,17 +2153,18 @@ namespace UI
     Color Image::lastcolor(255, 255, 255);
     GLenum Image::lastmode = GL_POINTS; // something we don't use
 
-    ICOMMAND(0, uiimage, "siiffe", (char *texname, int *c, int *a, float *minw, float *minh, uint *children),
-        BUILD(Image, o, o->setup(textureload(texname, 3, true, false), Color(*c), *a!=0, *minw*uiscale, *minh*uiscale), children));
+    #define UIIMGCMDS(name, value) \
+        ICOMMAND(0, uiimage##name, "siiffe", (char *texname, int *c, int *a, float *minw, float *minh, uint *children), \
+            BUILD(Image, o, o->setup(textureload(texname, value, true, false), Color(*c), *a!=0, *minw*uiscale, *minh*uiscale), children)); \
+        ICOMMAND(0, uiimagevgradient##name, "siiiffe", (char *texname, int *c, int *c2, int *a, float *minw, float *minh, uint *children), \
+            BUILD(Image, o, o->setup(textureload(texname, value, true, false), Color(*c), Color(*c2), *a!=0, *minw*uiscale, *minh*uiscale, Image::VERTICAL), children)); \
+        ICOMMAND(0, uiimagehgradient##name, "siiiffe", (char *texname, int *c, int *c2, int *a, float *minw, float *minh, uint *children), \
+            BUILD(Image, o, o->setup(textureload(texname, value, true, false), Color(*c), Color(*c2), *a!=0, *minw*uiscale, *minh*uiscale, Image::HORIZONTAL), children)); \
+        UICMDT(Image, image, tex##name, "s", (char *texname), if(texname && *texname) o->tex = textureload(texname, value, true, false)); \
+        UICMDT(Image, image, alttex##name, "s", (char *texname), if(texname && *texname && o->tex == notexture) o->tex = textureload(texname, value, true, false));
 
-    ICOMMAND(0, uiimagevgradient, "siiiffe", (char *texname, int *c, int *c2, int *a, float *minw, float *minh, uint *children),
-        BUILD(Image, o, o->setup(textureload(texname, 3, true, false), Color(*c), Color(*c2), *a!=0, *minw*uiscale, *minh*uiscale, Image::VERTICAL), children));
-
-    ICOMMAND(0, uiimagehgradient, "siiiffe", (char *texname, int *c, int *c2, int *a, float *minw, float *minh, uint *children),
-        BUILD(Image, o, o->setup(textureload(texname, 3, true, false), Color(*c), Color(*c2), *a!=0, *minw*uiscale, *minh*uiscale, Image::HORIZONTAL), children));
-
-    UICMDT(Image, image, tex, "s", (char *texname), if(texname && *texname) o->tex = textureload(texname, 3, true, false));
-    UICMDT(Image, image, alttex, "s", (char *texname), if(texname && *texname && o->tex == notexture) o->tex = textureload(texname, 3, true, false));
+    UIIMGCMDS(, 3);
+    UIIMGCMDS(clamped, 0x7000);
     UIARGB(Image, image, alphatarget);
 
     struct CroppedImage : Image
@@ -2221,14 +2222,17 @@ namespace UI
         }
     }
 
-    ICOMMAND(0, uicroppedimage, "siifftttte", (char *texname, int *c, int *a, float *minw, float *minh, tagval *cropx, tagval *cropy, tagval *cropw, tagval *croph, uint *children),
-        BUILD(CroppedImage, o, {
-            Texture *tex = textureload(texname, 3, true, false);
-            o->setup(tex, Color(*c), *a!=0, *minw*uiscale, *minh*uiscale,
-                parsepixeloffset(cropx, tex->xs), parsepixeloffset(cropy, tex->ys),
-                parsepixeloffset(cropw, tex->xs), parsepixeloffset(croph, tex->ys));
-        }, children));
+    #define UICIMGCMDS(name, value) \
+        ICOMMAND(0, uicroppedimage##name, "siifftttte", (char *texname, int *c, int *a, float *minw, float *minh, tagval *cropx, tagval *cropy, tagval *cropw, tagval *croph, uint *children), \
+            BUILD(CroppedImage, o, { \
+                Texture *tex = textureload(texname, value, true, false); \
+                o->setup(tex, Color(*c), *a!=0, *minw*uiscale, *minh*uiscale, \
+                    parsepixeloffset(cropx, tex->xs), parsepixeloffset(cropy, tex->ys), \
+                    parsepixeloffset(cropw, tex->xs), parsepixeloffset(croph, tex->ys)); \
+            }, children));
 
+    UICIMGCMDS(, 3);
+    UICIMGCMDS(clamped, 0x7000);
     UIARG(CroppedImage, image, cropx, "f", float, 0.f, 1.f);
     UIARG(CroppedImage, image, cropy, "f", float, 0.f, 1.f);
     UIARG(CroppedImage, image, cropw, "f", float, 0.f, 1.f);
@@ -2298,8 +2302,12 @@ namespace UI
         }
     };
 
-    ICOMMAND(0, uistretchedimage, "siiffe", (char *texname, int *c, int *a, float *minw, float *minh, uint *children),
-        BUILD(StretchedImage, o, o->setup(textureload(texname, 3, true, false), Color(*c), *a!=0, *minw*uiscale, *minh*uiscale), children));
+    #define UISIMGCMDS(name, value) \
+        ICOMMAND(0, uistretchedimage##name, "siiffe", (char *texname, int *c, int *a, float *minw, float *minh, uint *children), \
+            BUILD(StretchedImage, o, o->setup(textureload(texname, value, true, false), Color(*c), *a!=0, *minw*uiscale, *minh*uiscale), children));
+
+    UISIMGCMDS(, 3);
+    UISIMGCMDS(clamped, 0x7000);
 
     struct BorderedImage : Image
     {
@@ -2459,14 +2467,17 @@ namespace UI
         }
     };
 
-    ICOMMAND(0, uiborderedimage, "siitfffe", (char *texname, int *c, int *a, tagval *texborder, float *screenborder, float *minw, float *minh, uint *children),
-        BUILD(BorderedImage, o, {
-            Texture *tex = textureload(texname, 3, true, false);
-            o->setup(tex, Color(*c), *a!=0,
-                parsepixeloffset(texborder, tex->xs),
-                *screenborder*uiscale, *minw*uiscale, *minh*uiscale);
-        }, children));
+    #define UIBIMGCMDS(name, value) \
+        ICOMMAND(0, uiborderedimage##name, "siitfffe", (char *texname, int *c, int *a, tagval *texborder, float *screenborder, float *minw, float *minh, uint *children), \
+            BUILD(BorderedImage, o, { \
+                Texture *tex = textureload(texname, value, true, false); \
+                o->setup(tex, Color(*c), *a!=0, \
+                    parsepixeloffset(texborder, tex->xs), \
+                    *screenborder*uiscale, *minw*uiscale, *minh*uiscale); \
+            }, children));
 
+    UIBIMGCMDS(, 3);
+    UIBIMGCMDS(clamped, 0x7000);
     UIARG(BorderedImage, image, texborder, "f", float, 0.f, 1.f);
     UIARGSCALED(BorderedImage, image, screenborder, "f", float, 0.f, FVAR_MAX);
 
@@ -2514,9 +2525,12 @@ namespace UI
         }
     };
 
-    ICOMMAND(0, uitiledimage, "siiffffe", (char *texname, int *c, int *a, float *tilew, float *tileh, float *minw, float *minh, uint *children),
-        BUILD(TiledImage, o, o->setup(textureload(texname, 3, true, false), Color(*c), *a!=0, *minw*uiscale, *minh*uiscale, *tilew <= 0 ? 1 : *tilew, *tileh <= 0 ? 1 : *tileh), children));
+    #define UITIMGCMDS(name, value) \
+        ICOMMAND(0, uitiledimage##name, "siiffffe", (char *texname, int *c, int *a, float *tilew, float *tileh, float *minw, float *minh, uint *children), \
+            BUILD(TiledImage, o, o->setup(textureload(texname, value, true, false), Color(*c), *a!=0, *minw*uiscale, *minh*uiscale, *tilew <= 0 ? 1 : *tilew, *tileh <= 0 ? 1 : *tileh), children));
 
+    UITIMGCMDS(, 3);
+    UITIMGCMDS(clamped, 0x7000);
     UIARG(TiledImage, image, tilew, "f", float, FVAR_NONZERO, FVAR_MAX);
     UIARG(TiledImage, image, tileh, "f", float, FVAR_NONZERO, FVAR_MAX);
 
@@ -4134,10 +4148,9 @@ namespace UI
     };
 
     ICOMMAND(0, uiminimap, "siffffe", (char *texname, int *c, float *dist, float *border, float *minw, float *minh, uint *children),
-        BUILD(MiniMap, o, o->setup(textureload(texname, 3, true, false), Color(*c), *dist, *border, *minw*uiscale, *minh*uiscale), children));
-
+        BUILD(MiniMap, o, o->setup(textureload(texname, 0x7000, true, false), Color(*c), *dist, *border, *minw*uiscale, *minh*uiscale), children));
     ICOMMAND(0, uiminimapcolour, "siiffffe", (char *texname, int *c, int *c2, float *dist, float *border, float *minw, float *minh, uint *children),
-        BUILD(MiniMap, o, o->setup(textureload(texname, 3, true, false), Color(*c), Color(*c2), *dist, *border, *minw*uiscale, *minh*uiscale), children));
+        BUILD(MiniMap, o, o->setup(textureload(texname, 0x7000, true, false), Color(*c), Color(*c2), *dist, *border, *minw*uiscale, *minh*uiscale), children));
 
     struct Radar : Target
     {
