@@ -661,7 +661,10 @@ namespace game
         }
         announce(idx, d, forced);
     }
-    ICOMMAND(0, announce, "iiisN", (int *idx, int *targ, int *cn, int *forced, char *s, int *numargs), (*numargs >= 5 ? announcef(*numargs >= 1 ? *idx : -1, *numargs >= 2 ? *targ : CON_EVENT, *numargs >= 3 ? getclient(*cn) : NULL, *numargs >= 4 ? *forced!=0 : false, "\fw%s", s) : announcef(*numargs >= 1 ? *idx : -1, *numargs >= 2 ? *targ : CON_DEBUG, *numargs >= 3 ? getclient(*cn) : NULL, *numargs >= 4 ? *forced!=0 : false, NULL)));
+    ICOMMAND(0, announce, "iiisN", (int *idx, int *targ, int *cn, int *forced, char *s, int *numargs), {
+        if(*numargs >= 5) announcef(*numargs >= 1 ? *idx : -1, *numargs >= 2 ? *targ : CON_EVENT, *numargs >= 3 ? getclient(*cn) : NULL, *numargs >= 4 ? *forced!=0 : false, "\fw%s", s);
+        else announcef(*numargs >= 1 ? *idx : -1, *numargs >= 2 ? *targ : CON_DEBUG, *numargs >= 3 ? getclient(*cn) : NULL, *numargs >= 4 ? *forced!=0 : false, NULL);
+    });
 
     void resetfollow()
     {

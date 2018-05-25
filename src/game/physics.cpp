@@ -1046,7 +1046,7 @@ namespace physics
             client::addmsg(N_SPHY, "ri3f", ((gameent *)pl)->clientnum, SPHY_MATERIAL, pl->inmaterial, pl->submerged);
     }
 
-    // main physics routine, moves a player/monster for a time step
+    // main physics routine, moves an actor for a time step
     // moveres indicated the physics precision (which is lower for monsters and multiplayer prediction)
     // local is false for multiplayer prediction
 
