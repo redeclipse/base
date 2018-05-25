@@ -5,7 +5,7 @@ float curtextscale = 1;
 FVARF(IDF_PERSIST, textscale, FVAR_NONZERO, 1, FVAR_MAX, curtextscale = textscale);
 FVAR(IDF_PERSIST, textlinespacing, FVAR_NONZERO, 1, FVAR_MAX);
 VAR(IDF_PERSIST, textfaded, 0, 1, 1);
-VAR(IDF_PERSIST, textminintensity, 0, 32, 255);
+VAR(IDF_PERSIST, textminintensity, 0, 80, 255);
 VAR(IDF_PERSIST, textwrapmin, 0, 10, VAR_MAX);
 FVAR(IDF_PERSIST, textwraplimit, 0, 0.3f, 1);
 
