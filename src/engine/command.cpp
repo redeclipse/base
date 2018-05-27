@@ -4848,6 +4848,9 @@ ICOMMAND(0, modcolour, "if", (int *c, float *m), intret(modcolour(*c, *m)));
 int mulcolour(int c, int m) { return vec::fromcolor(c).mul(vec::fromcolor(m)).tohexcolor(); }
 ICOMMAND(0, mulcolour, "ii", (int *c, int *m), intret(mulcolour(*c, *m)));
 
+int skewcolour(int c, int m, float s) { return vec::fromcolor(c).mul(1-s).add(vec::fromcolor(m).mul(s)).clamp(0.f, 1.f).tohexcolor(); }
+ICOMMAND(0, skewcolour, "iif", (int *c, int *m, float *s), intret(skewcolour(*c, *m, clamp(*s, 0.f, 1.f))));
+
 char *limitstring(const char *str, size_t len)
 {
     static bigstring limitstrtext;
