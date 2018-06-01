@@ -155,8 +155,8 @@ namespace hud
     FVAR(IDF_PERSIST, teamhurtsize, 0, 0.0175f, 1000);
 
     VAR(IDF_PERSIST, showindicator, 0, 4, 4);
-    FVAR(IDF_PERSIST, indicatorsize, 0, 0.03f, 1000);
-    FVAR(IDF_PERSIST, indicatorblend, 0, 0.5f, 1);
+    FVAR(IDF_PERSIST, indicatorsize, 0, 0.04f, 1000);
+    FVAR(IDF_PERSIST, indicatorblend, 0, 1, 1);
     VAR(IDF_PERSIST, indicatorminattack, 0, 1000, VAR_MAX);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, indicatortex, "<grey>textures/hud/indicator", 3);
 
@@ -164,13 +164,13 @@ namespace hud
     VAR(IDF_PERSIST, crosshairdistance, 0, 0, 1); // 0 = off, 1 = shows distance to crosshair target
     VAR(IDF_PERSIST, crosshairdistancex, VAR_MIN, 160, VAR_MAX); // offset from the crosshair
     VAR(IDF_PERSIST, crosshairdistancey, VAR_MIN, 80, VAR_MAX); // offset from the crosshair
-    VAR(IDF_PERSIST, crosshairweapons, 0, 0, 3); // 0 = off, &1 = crosshair-specific weapons, &2 = also appy colour
-    FVAR(IDF_PERSIST, crosshairsize, 0, 0.03f, 1000);
+    VAR(IDF_PERSIST, crosshairweapons, 0, 1, 3); // 0 = off, &1 = crosshair-specific weapons, &2 = also appy colour
+    FVAR(IDF_PERSIST, crosshairsize, 0, 0.04f, 1000);
     VAR(IDF_PERSIST, crosshairhitspeed, 0, 500, VAR_MAX);
-    FVAR(IDF_PERSIST, crosshairblend, 0, 0.75f, 1);
-    FVAR(IDF_PERSIST, crosshairaccamt, 0, 0.75f, 1);
+    FVAR(IDF_PERSIST, crosshairblend, 0, 1, 1);
+    FVAR(IDF_PERSIST, crosshairaccamt, 0, 0, 1);
     VAR(IDF_PERSIST, crosshairflash, 0, 1, 1);
-    FVAR(IDF_PERSIST, crosshairthrob, 1e-4f, 0.1f, 1000);
+    FVAR(IDF_PERSIST, crosshairthrob, 0, 0, 1000);
     TVAR(IDF_PERSIST|IDF_PRELOAD, pointertex, "textures/hud/pointer", 3);
     TVAR(IDF_PERSIST|IDF_PRELOAD, cursortex, "textures/hud/cursor", 3);
     TVAR(IDF_PERSIST|IDF_PRELOAD, cursorhovertex, "textures/hud/cursorhover", 3);
@@ -213,12 +213,12 @@ namespace hud
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, zoomtex, "textures/hud/zoom", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, zoomcrosshairtex, "crosshairs/cross-01", 3);
     FVAR(IDF_PERSIST, zoomcrosshairsize, 0, 0.04f, 1000);
-    FVAR(IDF_PERSIST, zoomcrosshairblend, 0, 0.75f, 1000);
+    FVAR(IDF_PERSIST, zoomcrosshairblend, 0, 1, 1000);
 
     VAR(IDF_PERSIST, showcirclebar, 0, 0, 1);
     VAR(IDF_PERSIST, circlebartype, 0, 3, 3); // 0 = off, &1 = health, &2 = ammo
     FVAR(IDF_PERSIST, circlebarsize, 0, 0.04f, 1000);
-    FVAR(IDF_PERSIST, circlebarblend, 0, 0.75f, 1);
+    FVAR(IDF_PERSIST, circlebarblend, 0, 1, 1);
     VAR(IDF_PERSIST|IDF_HEX, circlebarhealthtone, -CTONE_MAX, 0x88FF88, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, circlebarammocolour, 0, 1, 1);
     VAR(IDF_PERSIST|IDF_HEX, circlebarammotone, -CTONE_MAX-1, 0xFFAA66, 0xFFFFFF);
@@ -240,10 +240,10 @@ namespace hud
     VAR(IDF_PERSIST, showclips, 0, 2, 2);
     VAR(IDF_PERSIST, clipanims, 0, 2, 2);
     FVAR(IDF_PERSIST, clipsize, 0, 0.03f, 1000);
-    FVAR(IDF_PERSIST, clipoffset, 0, 0.0375f, 1000);
+    FVAR(IDF_PERSIST, clipoffset, 0, 0.045f, 1000);
     FVAR(IDF_PERSIST, clipminscale, 0, 0.3f, 1000);
     FVAR(IDF_PERSIST, clipmaxscale, 0, 1, 1000);
-    FVAR(IDF_PERSIST, clipblend, 0, 0.75f, 1);
+    FVAR(IDF_PERSIST, clipblend, 0, 1, 1);
     FVAR(IDF_PERSIST, clipcolour, 0, 1, 1);
     VAR(IDF_PERSIST, cliplength, 0, 0, VAR_MAX);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, clawcliptex, "<grey>textures/weapons/clips/claw", 3);
@@ -310,7 +310,7 @@ namespace hud
     VAR(IDF_PERSIST, onscreendamagetime, 1, 250, VAR_MAX);
     VAR(IDF_PERSIST, onscreendamagefade, 1, 3500, VAR_MAX);
     FVAR(IDF_PERSIST, onscreendamagesize, 0, 20, 1000);
-    FVAR(IDF_PERSIST, onscreendamageblend, 0, 0.8f, 1);
+    FVAR(IDF_PERSIST, onscreendamageblend, 0, 0.75f, 1);
     VAR(IDF_PERSIST, onscreendamagemin, 1, 10, VAR_MAX);
     VAR(IDF_PERSIST, onscreendamagemax, 1, 1000, VAR_MAX);
     VAR(IDF_PERSIST|IDF_HEX, onscreendamagecolour, PC(LAST), 0xFF4444, 0xFFFFFF);

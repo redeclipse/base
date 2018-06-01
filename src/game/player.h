@@ -213,25 +213,25 @@ APVAR(IDF_GAMEMOD, spawnmines, 0, 2,
 );
 // these are modified by gameent::configure() et al
 APFVAR(IDF_GAMEMOD, speed, 0, FVAR_MAX,
-    105,            105,            0,              105,            120
+    85,             85,             0,              85,             100
 );
 APFVAR(IDF_GAMEMOD, speedextra, FVAR_MIN, FVAR_MAX,
     0,              0,              0,              0,              0
 );
 APFVAR(IDF_GAMEMOD, jumpspeed, 0, FVAR_MAX,
-    110,            110,            0,              110,            110
+    110,            110,            0,              110,            90
 );
 APFVAR(IDF_GAMEMOD, jumpspeedextra, FVAR_MIN, FVAR_MAX,
     0,              0,              0,              0,              0
 );
 APFVAR(IDF_GAMEMOD, impulsespeed, 0, FVAR_MAX,
-    90,             90,             0,              90,             90
+    85,             85,             0,              85,             85
 );
 APFVAR(IDF_GAMEMOD, impulsespeedextra, FVAR_MIN, FVAR_MAX,
     0,              0,              0,              0,              0
 );
 APFVAR(IDF_GAMEMOD, weight, 0, FVAR_MAX,
-    175,            175,            120,            175,            120
+    170,            170,            120,            170,            120
 );
 APFVAR(IDF_GAMEMOD, weightextra, FVAR_MIN, FVAR_MAX,
     25,             25,             15,             25,             15

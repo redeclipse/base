@@ -238,10 +238,10 @@ GFVAR(IDF_GAMEMOD, minresizescale, FVAR_NONZERO, 0.5f, 1);
 GFVAR(IDF_GAMEMOD, instaresizeamt, FVAR_NONZERO, 0.1f, 1); // each kill adds this much size in insta-resize
 GFVAR(IDF_GAMEMOD, hitzonescale, 0.875f, 1.125f, 1.125f); // limited because it screws with limb positions
 
-GVAR(IDF_GAMEMOD, regendelay, 0, 3500, VAR_MAX); // regen after no damage for this long
-GVAR(IDF_GAMEMOD, regentime, 0, 1000, VAR_MAX); // regen this often when regenerating normally
-GVAR(IDF_GAMEMOD, regenhealth, 0, 50, VAR_MAX); // regen this amount each regen
-GVAR(IDF_GAMEMOD, regendecay, 0, 25, VAR_MAX); // if over maxhealth, decay this amount each regen
+GVAR(IDF_GAMEMOD, regendelay, 0, 5000, VAR_MAX); // regen after no damage for this long
+GVAR(IDF_GAMEMOD, regentime, 0, 2000, VAR_MAX); // regen this often when regenerating normally
+GVAR(IDF_GAMEMOD, regenhealth, 0, 100, VAR_MAX); // regen this amount each regen
+GVAR(IDF_GAMEMOD, regendecay, 0, 50, VAR_MAX); // if over maxhealth, decay this amount each regen
 
 GVAR(IDF_GAMEMOD, noweapburn, 0, 1, 1);
 GVAR(IDF_GAMEMOD, noweapbleed, 0, 1, 1);
@@ -483,17 +483,17 @@ GFVAR(IDF_GAMEMOD, impulseboost, 0, 1, FVAR_MAX); // boost modifier
 GFVAR(IDF_GAMEMOD, impulseboostredir, 0, 1, FVAR_MAX); // how much of the old velocity is redirected into the new one
 GFVAR(IDF_GAMEMOD, impulseboostpitchmin, -89.9f, -89.9f, 89.9f); // boost pitch minimum
 GFVAR(IDF_GAMEMOD, impulseboostpitchmax, -89.9f, 89.9f, 89.9f); // boost pitch maximum
-GFVAR(IDF_GAMEMOD, impulselaunch, 0, 1, FVAR_MAX); // launch modifier
+GFVAR(IDF_GAMEMOD, impulselaunch, 0, 0.9f, FVAR_MAX); // launch modifier
 GFVAR(IDF_GAMEMOD, impulselaunchredir, 0, 1, FVAR_MAX); // how much of the old velocity is redirected into the new one
 GFVAR(IDF_GAMEMOD, impulselaunchpitchmin, -89.9f, 15.f, 89.9f); // launch pitch minimum
 GFVAR(IDF_GAMEMOD, impulselaunchpitchmax, -89.9f, 89.9f, 89.9f); // launch pitch maximum
-GFVAR(IDF_GAMEMOD, impulseslide, 0, 1, FVAR_MAX); // slide modifier
+GFVAR(IDF_GAMEMOD, impulseslide, 0, 0.5f, FVAR_MAX); // slide modifier
 GFVAR(IDF_GAMEMOD, impulseslideredir, 0, 1, FVAR_MAX); // how much of the old velocity is redirected into the new one
 GFVAR(IDF_GAMEMOD, impulsejump, 0, 1, FVAR_MAX); // jump modifier
 GFVAR(IDF_GAMEMOD, impulsejumpredir, 0, 1, FVAR_MAX); // how much of the old velocity is redirected into the new one
 GFVAR(IDF_GAMEMOD, impulsemelee, 0, 0.75f, FVAR_MAX); // melee modifier
 GFVAR(IDF_GAMEMOD, impulsemeleeredir, 0, 1, FVAR_MAX); // how much of the old velocity is redirected into the new one
-GFVAR(IDF_GAMEMOD, impulseparkour, 0, 1, FVAR_MAX); // parkour modifier
+GFVAR(IDF_GAMEMOD, impulseparkour, 0, 1.1f, FVAR_MAX); // parkour modifier
 GFVAR(IDF_GAMEMOD, impulseparkourredir, 0, 1, FVAR_MAX); // how much of the old velocity is redirected into the new one
 GFVAR(IDF_GAMEMOD, impulseparkournorm, 0, 0.5f, FVAR_MAX); // minimum parkour surface z normal
 GFVAR(IDF_GAMEMOD, impulsekick, 0, 1.5f, FVAR_MAX); // parkour kick modifier
@@ -502,24 +502,24 @@ GFVAR(IDF_GAMEMOD, impulsekickpitchmin, -89.9f, -89.9f, 89.9f); // kick pitch mi
 GFVAR(IDF_GAMEMOD, impulsekickpitchmax, -89.9f, 89.9f, 89.9f); // kick pitch maximum
 GFVAR(IDF_GAMEMOD, impulseclimb, 0, 1.4f, FVAR_MAX); // parkour climb modifier
 GFVAR(IDF_GAMEMOD, impulseclimbredir, 0, 1, FVAR_MAX); // how much of the old velocity is redirected into the new one
-GFVAR(IDF_GAMEMOD, impulsevault, 0, 1.5f, FVAR_MAX); // parkour vault modifier
+GFVAR(IDF_GAMEMOD, impulsevault, 0, 1.4f, FVAR_MAX); // parkour vault modifier
 GFVAR(IDF_GAMEMOD, impulsevaultredir, 0, 1, FVAR_MAX); // how much of the old velocity is redirected into the new one
 GFVAR(IDF_GAMEMOD, impulsevaultmin, FVAR_NONZERO, 0.25f, FVAR_MAX); // minimum percentage of height for vault
 GFVAR(IDF_GAMEMOD, impulsevaultmax, FVAR_NONZERO, 1.6f, FVAR_MAX); // maximum percentage of height for vault
 GFVAR(IDF_GAMEMOD, impulsegrab, 0, 1.8f, FVAR_MAX); // parkour grab modifier
 GFVAR(IDF_GAMEMOD, impulsegrabredir, 0, 1, FVAR_MAX); // how much of the old velocity is redirected into the new one
-GFVAR(IDF_GAMEMOD, impulsegrabplayer, 0, 1.1f, FVAR_MAX); // parkour grab player modifier
+GFVAR(IDF_GAMEMOD, impulsegrabplayer, 0, 2, FVAR_MAX); // parkour grab player modifier
 GFVAR(IDF_GAMEMOD, impulsegrabplayerredir, 0, 1, FVAR_MAX); // how much of the old velocity is redirected into the new one
 
 GVAR(IDF_GAMEMOD, impulsestyle, 0, 1, 3); // impulse style; 0 = off, 1 = touch and count, 2 = count only, 3 = freestyle
 GVAR(IDF_GAMEMOD, impulsecount, 0, 6, VAR_MAX); // number of impulse actions per air transit
-GVAR(IDF_GAMEMOD, impulsesliplen, 0, 500, VAR_MAX); // time before floor friction kicks back in
-GVAR(IDF_GAMEMOD, impulseslidelen, 0, 750, VAR_MAX); // time before slides end
-GVAR(IDF_GAMEMOD, impulseskatelen, 0, 1000, VAR_MAX); // length of time a run along a wall can last
+GVAR(IDF_GAMEMOD, impulsesliplen, 0, 750, VAR_MAX); // time before floor friction kicks back in
+GVAR(IDF_GAMEMOD, impulseslidelen, 0, 1000, VAR_MAX); // time before slides end
+GVAR(IDF_GAMEMOD, impulseskatelen, 0, 1250, VAR_MAX); // length of time a run along a wall can last
 
 GVAR(IDF_GAMEMOD, impulsejumpdelay, 0, 250, VAR_MAX); // minimum time after jump for boost
 GVAR(IDF_GAMEMOD, impulseboostdelay, 0, 250, VAR_MAX); // minimum time between boosts
-GVAR(IDF_GAMEMOD, impulseslidedelay, 0, 1500, VAR_MAX); // minimum time between slides
+GVAR(IDF_GAMEMOD, impulseslidedelay, 0, 1000, VAR_MAX); // minimum time between slides
 GVAR(IDF_GAMEMOD, impulseslideinair, 0, 100, VAR_MAX); // minimum time in air for slide
 GVAR(IDF_GAMEMOD, impulsekickdelay, 0, 250, VAR_MAX); // minimum time between wall kicks/climbs/grabs
 
