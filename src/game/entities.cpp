@@ -2210,6 +2210,7 @@ namespace entities
 
     bool checkparticle(extentity &e)
     {
+        if(!checkmapvariant(e.attrs[12]) || e.attrs[13] > mapeffects) return false;
         gameentity &f = (gameentity &)e;
         if(f.attrs[11])
         {

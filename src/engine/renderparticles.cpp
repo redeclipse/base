@@ -1826,11 +1826,6 @@ void makeparticle(const vec &o, attrvector &attr)
     canemit = oldemit;
 }
 
-static inline void makeparticles(extentity &e)
-{
-    makeparticle(e.o, e.attrs);
-}
-
 void seedparticles()
 {
     progress(0, "seeding particles");
@@ -1843,7 +1838,7 @@ void seedparticles()
         seedemitter = &pe;
         for(int millis = 0; millis < seedmillis; millis += min(emitmillis, seedmillis/10))
             if(entities::checkparticle(e))
-                makeparticles(e);
+                makeparticle(e.o, e.attrs);
         seedemitter = NULL;
         pe.lastemit = -seedmillis;
         pe.finalize();
@@ -1883,13 +1878,13 @@ void updateparticles()
                 if(isfoggedsphere(pe.radius, pe.center)) { pe.lastcull = lastmillis; continue; }
                 if(pvsoccluded(pe.cullmin, pe.cullmax)) { pe.lastcull = lastmillis; continue; }
             }
-            makeparticles(e);
+            makeparticle(e.o, e.attrs);
             emitted++;
             if(replayparticles && pe.maxfade > 5 && pe.lastcull > pe.lastemit)
             {
                 for(emitoffset = max(pe.lastemit + emitmillis - lastmillis, -pe.maxfade); emitoffset < 0; emitoffset += emitmillis)
                 {
-                    makeparticles(e);
+                    makeparticle(e.o, e.attrs);
                     replayed++;
                 }
                 emitoffset = 0;

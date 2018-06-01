@@ -4,7 +4,7 @@
 #include "engine.h"
 
 #define VERSION_GAMEID "fps"
-#define VERSION_GAME 236
+#define VERSION_GAME 237
 #define VERSION_DEMOMAGIC "RED_ECLIPSE_DEMO"
 
 #define MAXAI 256
@@ -56,33 +56,33 @@ enum { MDLF_HIDE = 0, MDLF_NOCLIP, MDLF_NOSHADOW, MDLF_MAX };
 
 struct enttypes
 {
-    int type,           priority, links,    radius, usetype,    numattrs,   modesattr,  idattr, mvattr,
+    int type,           priority, links,    radius, usetype,    numattrs,   modesattr,  idattr, mvattr, fxattr,
             canlink, reclink, canuse;
     bool    noisy,  syncs,  resyncs,    syncpos,    synckin;
-    const char *name,           *attrs[13];
+    const char *name,           *attrs[16];
 };
 #ifdef GAMESERVER
 extern const enttypes enttype[] = {
     {
-        NOTUSED,        -1,         0,      0,      EU_NONE,    0,          -1,         -1,     -1,
+        NOTUSED,        -1,         0,      0,      EU_NONE,    0,          -1,         -1,     -1,     -1,
             0, 0, 0,
             true,   false,  false,      false,      false,
                 "none",         { "" }
     },
     {
-        LIGHT,          1,          59,     0,      EU_NONE,    10,         -1,         -1,     9,
+        LIGHT,          1,          59,     0,      EU_NONE,    11,         -1,         -1,     9,      10,
             (1<<LIGHTFX), (1<<LIGHTFX), 0,
             false,  false,  false,      false,      false,
-                "light",        { "radius", "red",      "green",    "blue",     "flare",    "flarescale", "flags",  "palette",  "palindex", "variant"  }
+                "light",        { "radius", "red",      "green",    "blue",     "flare",    "flarescale", "flags",  "palette",  "palindex", "variant", "fxlevel"  }
     },
     {
-        MAPMODEL,       1,          58,     0,      EU_NONE,    13,         -1,         -1,     -1,
+        MAPMODEL,       1,          58,     0,      EU_NONE,    15,         -1,         -1,     13,     14,
             (1<<TRIGGER), (1<<TRIGGER), 0,
             false,  false,  false,      false,      false,
-                "mapmodel",     { "type",   "yaw",      "pitch",    "roll",     "blend",    "scale",    "flags",    "colour",   "palette",  "palindex", "spinyaw",  "spinpitch", "spinroll" }
+                "mapmodel",     { "type",   "yaw",      "pitch",    "roll",     "blend",    "scale",    "flags",    "colour",   "palette",  "palindex", "spinyaw",  "spinpitch", "spinroll",    "variant",  "fxlevel" }
     },
     {
-        PLAYERSTART,    1,          59,     0,      EU_NONE,    7,          3,          5,      6,
+        PLAYERSTART,    1,          59,     0,      EU_NONE,    7,          3,          5,      6,      -1,
             (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
             (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
             0,
@@ -90,21 +90,21 @@ extern const enttypes enttype[] = {
                 "playerstart",  { "team",   "yaw",      "pitch",    "modes",    "muts",     "id",       "variant" }
     },
     {
-        ENVMAP,         1,          0,      0,      EU_NONE,    3,          -1,         -1,     -1,
+        ENVMAP,         1,          0,      0,      EU_NONE,    3,          -1,         -1,     -1,     -1,
             0, 0, 0,
             false,  false,  false,      false,      false,
                 "envmap",       { "radius", "size", "blur" }
     },
     {
-        PARTICLES,      1,          59,     0,      EU_NONE,    13,         -1,         -1,     12,
+        PARTICLES,      1,          59,     0,      EU_NONE,    14,         -1,         -1,     12,     13,
             (1<<TELEPORT)|(1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT),
             (1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT),
             0,
             false,  false,  false,      false,      false,
-                "particles",    { "type",   "a",        "b",        "c",        "d",        "e",        "f",        "g",        "i",        "j",        "k",        "millis",       "variant" }
+                "particles",    { "type",   "a",        "b",        "c",        "d",        "e",        "f",        "g",        "i",        "j",        "k",        "millis",       "variant",  "fxlevel" }
     },
     {
-        MAPSOUND,       1,          58,     0,      EU_NONE,    6,          -1,         -1,     5,
+        MAPSOUND,       1,          58,     0,      EU_NONE,    6,          -1,         -1,     5,      -1,
             (1<<TELEPORT)|(1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT),
             (1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT),
             0,
@@ -112,28 +112,28 @@ extern const enttypes enttype[] = {
                 "sound",        { "type",   "maxrad",   "minrad",   "volume",   "flags",    "variant" }
     },
     {
-        LIGHTFX,        1,          1,      0,      EU_NONE,    6,          -1,         -1,     5,
+        LIGHTFX,        1,          1,      0,      EU_NONE,    7,          -1,         -1,     5,      6,
             (1<<LIGHT)|(1<<TELEPORT)|(1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT),
             (1<<LIGHT)|(1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT),
             0,
             false,  false,  false,      false,      false,
-                "lightfx",      { "type",   "mod",      "min",      "max",      "flags",    "variant" }
+                "lightfx",      { "type",   "mod",      "min",      "max",      "flags",    "variant",  "fxlevel" }
     },
     {
-        DECAL,       1,             0,      0,      EU_NONE,    6,          -1,         -1,     5,
+        DECAL,       1,             0,      0,      EU_NONE,    7,          -1,         -1,     5,      6,
             0, 0, 0,
             false,  false,  false,      false,      false,
-                "decal",        { "type",   "yaw",      "pitch",    "roll",     "scale",    "variant" }
+                "decal",        { "type",   "yaw",      "pitch",    "roll",     "scale",    "variant",  "fxlevel" }
     },
     {
-        WEAPON,         2,          59,     24,     EU_ITEM,    6,          2,          4,      5,
+        WEAPON,         2,          59,     24,     EU_ITEM,    6,          2,          4,      5,      -1,
             0, 0,
             (1<<ENT_PLAYER)|(1<<ENT_AI),
             false,  true,   true,      false,      false,
                 "weapon",       { "type",   "flags",    "modes",    "muts",     "id",       "variant" }
     },
     {
-        TELEPORT,       1,          50,     12,     EU_AUTO,    10,         -1,         -1,     9,
+        TELEPORT,       1,          50,     12,     EU_AUTO,    10,         -1,         -1,     9,      -1,
             (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX)|(1<<TELEPORT),
             (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
             (1<<ENT_PLAYER)|(1<<ENT_AI)|(1<<ENT_PROJ),
@@ -141,13 +141,13 @@ extern const enttypes enttype[] = {
                 "teleport",     { "yaw",    "pitch",    "push",     "radius",   "colour",   "type",     "palette",  "palindex", "flags",    "variant" }
     },
     {
-        ACTOR,          1,          59,     0,      EU_NONE,    11,         3,          5,      10,
+        ACTOR,          1,          59,     0,      EU_NONE,    11,         3,          5,      10,     -1,
             0, 0, 0,
             false,  true,   false,      true,       false,
                 "actor",        { "type",   "yaw",      "pitch",    "modes",    "muts",     "id",       "weap",     "health",   "speed",    "scale",    "variant" }
     },
     {
-        TRIGGER,        1,          58,     16,     EU_AUTO,    7,          6,          -1,     6,
+        TRIGGER,        1,          58,     16,     EU_AUTO,    7,          6,          -1,     6,      -1,
             (1<<MAPMODEL)|(1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
             (1<<MAPMODEL)|(1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
             (1<<ENT_PLAYER)|(1<<ENT_AI),
@@ -155,7 +155,7 @@ extern const enttypes enttype[] = {
                 "trigger",      { "id",     "type",     "action",   "radius",   "state",    "modes",    "muts",     "variant" }
     },
     {
-        PUSHER,         1,          58,     12,     EU_AUTO,    10,         -1,         -1,     9,
+        PUSHER,         1,          58,     12,     EU_AUTO,    10,         -1,         -1,     9,      -1,
             (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
             (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
             (1<<ENT_PLAYER)|(1<<ENT_AI)|(1<<ENT_PROJ),
@@ -163,13 +163,13 @@ extern const enttypes enttype[] = {
                 "pusher",       { "yaw",    "pitch",    "force",    "maxrad",   "minrad",   "type",     "modes",    "muts",     "id",       "variant" }
     },
     {
-        AFFINITY,       1,          48,     32,     EU_NONE,    7,          3,          5,      6,
+        AFFINITY,       1,          48,     32,     EU_NONE,    7,          3,          5,      6,      -1,
             0, 0, 0,
             false,  false,  false,      false,      false,
                 "affinity",     { "team",   "yaw",      "pitch",    "modes",    "muts",     "id",       "variant" }
     },
     {
-        CHECKPOINT,     1,          48,     16,     EU_AUTO,    8,          3,          5,      7,
+        CHECKPOINT,     1,          48,     16,     EU_AUTO,    8,          3,          5,      7,      -1,
             (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
             (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
             (1<<ENT_PLAYER)|(1<<ENT_AI),
@@ -177,13 +177,13 @@ extern const enttypes enttype[] = {
                 "checkpoint",   { "radius", "yaw",      "pitch",    "modes",    "muts",     "id",       "type",     "variant" }
     },
     {
-        ROUTE,          1,         224,      16,    EU_NONE,    6,          -1,         -1,     -1,
+        ROUTE,          1,         224,      16,    EU_NONE,    6,          -1,         -1,     -1,     -1,
             (1<<ROUTE), 0, 0,
             false,   false,  false,      false,      false,
                 "route",         { "num",   "yaw",      "pitch",    "move",     "strafe",   "action" }
     },
     {
-        UNUSEDENT,      -1,          0,      0,     EU_NONE,    0,          -1,         -1,     -1,
+        UNUSEDENT,      -1,          0,      0,     EU_NONE,    0,          -1,         -1,     -1,     -1,
             0, 0, 0,
             true,   false,  false,      false,      false,
                 "unused",         { "" }

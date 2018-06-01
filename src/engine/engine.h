@@ -774,7 +774,7 @@ extern bool getsight(vec &o, float yaw, float pitch, vec &q, vec &v, float mdist
 
 // worldio
 extern char *maptitle, *mapauthor, *mapname, *maptext, *mapdesc;
-extern int mapcrc, maptype, maploading, mapvariant;
+extern int mapcrc, maptype, maploading, mapeffects, mapvariant;
 extern const char *mapvariants[MPV_MAX];
 extern bool checkmapvariant(int variant);
 extern void changemapvariant(int variant);

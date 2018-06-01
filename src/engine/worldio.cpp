@@ -19,6 +19,8 @@ SVAR(0, mapfile, "");
 SVAR(0, mapname, "");
 SVAR(0, maptext, "");
 
+VAR(0, mapeffects, 0, 2, 2);
+
 const char *mapvariants[MPV_MAX] = { "all", "day", "night" };
 VAR(0, mapvariant, 1, 0, -1);
 
