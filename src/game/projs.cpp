@@ -1807,11 +1807,14 @@ namespace projs
                 if(gameent::is(d) && proj.projcollide&COLLIDE_PLAYER)
                 {
                     gameent *f = (gameent *)d;
-                    #define RESIDUAL(name, type, pulse) \
-                        if(WF(WK(proj.flags), proj.weap, destroy##name, WS(proj.flags)) && f->name##ing(lastmillis, f->name##time)) \
-                            return 0;
-                    RESIDUALS
-                    #undef RESIDUAL
+                    if(proj.projtype == PRJ_SHOT)
+                    {
+                        #define RESIDUAL(name, type, pulse) \
+                            if(WF(WK(proj.flags), proj.weap, destroy##name, WS(proj.flags)) && f->name##ing(lastmillis, f->name##time)) \
+                                return 0;
+                        RESIDUALS
+                        #undef RESIDUAL
+                    }
                     if(proj.projcollide&STICK_PLAYER)
                     {
                         stick(proj, dir, f);
