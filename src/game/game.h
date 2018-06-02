@@ -1376,7 +1376,18 @@ struct gameent : dynent, clientstate
     {
         if(!isweap(weap)) weap = weapselect;
         if(origin == vec(-1, -1, -1))
-            origin = vec(weap == W_MELEE ? feetpos() : center()).add(vec(yaw*RAD, pitch*RAD));
+        {
+            if(weap == W_MELEE) origin = feetpos();
+            else
+            {
+                vec dir, right;
+                vecfromyawpitch(yaw, pitch, 1, 0, dir);
+                dir.mul(radius*3);
+                vecfromyawpitch(yaw, pitch, 0, -1, right);
+                right.mul(radius*1.5f);
+                origin = vec(headpos(-height/6)).add(right).add(dir);
+            }
+        }
         return origin;
     }
 

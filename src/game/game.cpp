@@ -3770,7 +3770,9 @@ namespace game
 
     void renderavatar()
     {
-        if(thirdpersonview() || !firstpersonmodel) return;
+        if(thirdpersonview()) return;
+        focus->cleartags();
+        if(!firstpersonmodel) return;
         float depthfov = firstpersondepthfov != 0 ? firstpersondepthfov : curfov;
         if(inzoom())
         {
@@ -3780,7 +3782,6 @@ namespace game
         }
         setavatarscale(depthfov, firstpersondepth);
         vec4 color = vec4(1, 1, 1, opacity(focus, false));
-        focus->cleartags();
         if(focus->state == CS_ALIVE && firstpersonmodel&1) renderplayer(focus, 0, focus->curscale, MDL_NOBATCH, color);
         if(focus->state == CS_ALIVE && firstpersonmodel&2)
         {
