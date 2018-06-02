@@ -251,7 +251,7 @@ struct masterclient
         for(const char *c = flags; *c; c++) switch(*c)
         {
             case 'm': ret = max(ret, 4); break;
-            case 's': ret = max(ret, sendstats ? 3 : 2); break;
+            case 's': case 'u': ret = max(ret, sendstats ? 3 : 2); break;
             case 'b': ret = max(ret, 2); break;
             default: break;
         }
