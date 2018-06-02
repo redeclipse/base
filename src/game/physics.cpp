@@ -86,7 +86,7 @@ namespace physics
     // inputs
     void doaction(int type, bool down)
     {
-        if(type < AC_TOTAL && type > -1)
+        if(type < AC_MAX && type > -1)
         {
             if(game::allowmove(game::player1))
             {
