@@ -52,6 +52,7 @@ redeclipse_update_setup() {
                 ;;
         esac
     fi
+    if [ -e "${REDECLIPSE_PATH}/extras.txt" ]; then REDECLIPSE_EXTRAS=`cat "${REDECLIPSE_PATH}/extras.txt"`; fi
     if [ -e "${REDECLIPSE_PATH}/branch.txt" ]; then REDECLIPSE_BRANCH_CURRENT=`cat "${REDECLIPSE_PATH}/branch.txt"`; fi
     if [ -z "${REDECLIPSE_BRANCH+isset}" ]; then
         if [ -n "${REDECLIPSE_BRANCH_CURRENT+isset}" ]; then
@@ -163,6 +164,7 @@ redeclipse_update_module() {
         if [ -d "${REDECLIPSE_TEMP}/data.txt" ]; then rm -rfv "${REDECLIPSE_TEMP}/data.txt"; fi
         if [ -d "${REDECLIPSE_TEMP}/data.zip" ]; then rm -rfv "${REDECLIPSE_TEMP}/data.zip"; fi
         if [ -d "${REDECLIPSE_TEMP}/data.tar.gz" ]; then rm -rfv "${REDECLIPSE_TEMP}/data.tar.gz"; fi
+        if [ -n "${REDECLIPSE_EXTRAS}" ]; then REDECLIPSE_MODULE_LIST="${REDECLIPSE_MODULE_LIST} ${REDECLIPSE_EXTRAS}"; fi
         echo "modules: Prefetching versions.."
         REDECLIPSE_MODULE_PREFETCH=""
         for a in ${REDECLIPSE_MODULE_LIST}; do

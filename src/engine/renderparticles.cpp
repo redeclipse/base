@@ -1872,7 +1872,6 @@ void updateparticles()
             particleemitter &pe = emitters[i];
             extentity &e = *pe.ent;
             if(!entities::checkparticle(e) || e.o.dist(camera1->o) > maxparticledistance) { pe.lastemit = lastmillis; continue; }
-
             if(cullparticles && pe.maxfade >= 0)
             {
                 if(isfoggedsphere(pe.radius, pe.center)) { pe.lastcull = lastmillis; continue; }

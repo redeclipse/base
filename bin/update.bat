@@ -20,6 +20,7 @@ setlocal enableextensions enabledelayedexpansion
         set REDECLIPSE_CACHE=cache
     )
 :redeclipse_update_setup
+    if EXIST "%REDECLIPSE_PATH%\extras.txt" set /p REDECLIPSE_EXTRAS=< "%REDECLIPSE_PATH%\extras.txt"
     if EXIST "%REDECLIPSE_PATH%\branch.txt" set /p REDECLIPSE_BRANCH_CURRENT=< "%REDECLIPSE_PATH%\branch.txt"
     if NOT DEFINED REDECLIPSE_BRANCH (
         if DEFINED REDECLIPSE_BRANCH_CURRENT (
@@ -65,6 +66,9 @@ setlocal enableextensions enabledelayedexpansion
     )
     if EXIST "%REDECLIPSE_TEMP%\data.txt" del /f /q "%REDECLIPSE_TEMP%\data.txt"
     if EXIST "%REDECLIPSE_TEMP%\data.zip" del /f /q "%REDECLIPSE_TEMP%\data.zip"
+    if DEFINED REDECLIPSE_EXTRAS (
+        set REDECLIPSE_MODULE_LIST=%REDECLIPSE_MODULE_LIST% %REDECLIPSE_EXTRAS%
+    )
     set REDECLIPSE_MODULE_PREFETCH=
     for %%a in (%REDECLIPSE_MODULE_LIST%) do (
         del /f /q "%REDECLIPSE_TEMP%\%%a.txt"
