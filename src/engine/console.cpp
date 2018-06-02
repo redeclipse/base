@@ -533,7 +533,7 @@ bool consoleinput(const char *str, int len)
 
     resetcomplete();
     int maxlen = int(sizeof(commandbuf));
-    if(commandflags&CF_MESSAGE) maxlen = min(client::maxmsglen(), maxlen);
+    if(commandflags&CF_MESSAGE || commandbuf[0] != '/') maxlen = min(client::maxmsglen(), maxlen);
     int cmdlen = (int)strlen(commandbuf), cmdspace = maxlen - (cmdlen+1);
     len = min(len, cmdspace);
     if(len <= 0) return true;
@@ -621,7 +621,7 @@ bool consolekey(int code, bool isdown)
                 break;
 
             case SDLK_v:
-                if(SDL_GetModState()&MOD_KEYS) pastetext(commandbuf, sizeof(commandbuf));
+                if(SDL_GetModState()&MOD_KEYS) pastetext(commandbuf, min(client::maxmsglen(), int(sizeof(commandbuf))));
                 break;
         }
     }
