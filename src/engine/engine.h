@@ -886,8 +886,8 @@ extern int colorpos, curfps, bestfps, worstfps, bestfpsdiff, worstfpsdiff, maxfp
 extern int fullbright, fullbrightlevel;
 extern vector<int> entgroup;
 
-extern int newentity(const vec &v, int type, const attrvector &attrs, bool fix = true);
-extern int newentity(int type, const attrvector &attrs, bool fix = true);
+extern int newentity(const vec &v, int type, const attrvector &attrs, bool fix = true, bool alter = true);
+extern int newentity(int type, const attrvector &attrs, bool fix = true, bool alter = true);
 
 // rendergl
 extern void usetexturing(bool on);

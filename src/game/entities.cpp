@@ -964,7 +964,7 @@ namespace entities
         return true;
     }
 
-    void fixentity(int n, bool recurse, bool create)
+    void fixentity(int n, bool recurse, bool create, bool alter)
     {
         gameentity &e = *(gameentity *)ents[n];
         e.attrs.setsize(numattrs(e.type), 0);
@@ -1108,7 +1108,7 @@ namespace entities
             case DECAL:
             {
                 if(e.attrs[0] < 0) e.attrs[0] = 0; // type, clamp
-                if(create && !e.attrs[1] && !e.attrs[2] && !e.attrs[3])
+                if(alter && !e.attrs[1] && !e.attrs[2] && !e.attrs[3])
                 {
                     e.attrs[1] = (int)camera1->yaw;
                     e.attrs[2] = (int)camera1->pitch;
@@ -1202,6 +1202,11 @@ namespace entities
         {
             while(e.attrs[enttype[e.type].mvattr] < 0) e.attrs[enttype[e.type].mvattr] += MPV_MAX;
             while(e.attrs[enttype[e.type].mvattr] >= MPV_MAX) e.attrs[enttype[e.type].mvattr] -= MPV_MAX;
+        }
+        if(enttype[e.type].fxattr >= 0)
+        {
+            while(e.attrs[enttype[e.type].fxattr] < 0) e.attrs[enttype[e.type].fxattr] += 3;
+            while(e.attrs[enttype[e.type].fxattr] >= 3) e.attrs[enttype[e.type].fxattr] -= 3;
         }
     }
 

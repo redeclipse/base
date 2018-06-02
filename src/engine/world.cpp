@@ -815,7 +815,7 @@ COMMAND(0, dropent, "");
 
 static int keepents = 0;
 
-extentity *newentity(bool local, const vec &o, int type, const attrvector &attrs, int &idx, bool fix = true)
+extentity *newentity(bool local, const vec &o, int type, const attrvector &attrs, int &idx, bool fix = true, bool alter = true)
 {
     vector<extentity *> &ents = entities::getents();
     if(local)
@@ -832,14 +832,14 @@ extentity *newentity(bool local, const vec &o, int type, const attrvector &attrs
     memset(e.reserved, 0, sizeof(e.reserved));
     if(ents.inrange(idx)) { entities::deleteent(ents[idx]); ents[idx] = &e; }
     else { idx = ents.length(); ents.add(&e); }
-    if(local && fix) entities::fixentity(idx, true, true);
+    if(local && fix) entities::fixentity(idx, true, true, alter);
     return &e;
 }
 
-int newentity(const vec &v, int type, const attrvector &attrs, bool fix)
+int newentity(const vec &v, int type, const attrvector &attrs, bool fix, bool alter)
 {
     int idx = -1;
-    extentity *t = newentity(true, v, type, attrs, idx, fix);
+    extentity *t = newentity(true, v, type, attrs, idx, fix, alter);
     if(!t) return -1;
     t->type = ET_EMPTY;
     enttoggle(idx);
@@ -849,10 +849,10 @@ int newentity(const vec &v, int type, const attrvector &attrs, bool fix)
     return idx;
 }
 
-int newentity(int type, const attrvector &attrs, bool fix)
+int newentity(int type, const attrvector &attrs, bool fix, bool alter)
 {
     int idx = -1;
-    extentity *t = newentity(true, camera1->o, type, attrs, idx, fix);
+    extentity *t = newentity(true, camera1->o, type, attrs, idx, fix, alter);
     if(!t) return -1;
     dropentity(*t);
     t->type = ET_EMPTY;
@@ -906,7 +906,7 @@ void entpaste()
         const entity &c = entcopybuf[i];
         vec o = vec(c.o).mul(m).add(vec(sel.o));
         int idx;
-        extentity *e = newentity(true, o, c.type, c.attrs, idx);
+        extentity *e = newentity(true, o, c.type, c.attrs, idx, true, false);
         if(!e) continue;
         entadd(idx);
         keepents = max(keepents, idx+1);
@@ -929,10 +929,7 @@ void entreplace()
             loopvk(c.links) e.links.add(c.links[k]);
         });
     }
-    else
-    {
-        newentity(c.type, c.attrs, false);
-    }
+    else newentity(c.type, c.attrs, true, false);
 }
 COMMAND(0, entreplace, "");
 
