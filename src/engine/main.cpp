@@ -486,7 +486,7 @@ static void ignoremousemotion()
 
 void resetcursor(bool warp, bool reset)
 {
-    if(warp && grabinput && !relativemouse && !(SDL_GetWindowFlags(screen) & SDL_WINDOW_FULLSCREEN))
+    if(warp && grabinput && !(SDL_GetWindowFlags(screen) & SDL_WINDOW_FULLSCREEN))
     {
         SDL_WarpMouseInWindow(screen, screenw/2, screenh/2);
         warping = true;
