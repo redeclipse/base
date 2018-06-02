@@ -165,7 +165,7 @@ namespace hud
     VAR(IDF_PERSIST, crosshairdistancex, VAR_MIN, 160, VAR_MAX); // offset from the crosshair
     VAR(IDF_PERSIST, crosshairdistancey, VAR_MIN, 80, VAR_MAX); // offset from the crosshair
     VAR(IDF_PERSIST, crosshairweapons, 0, 1, 3); // 0 = off, &1 = crosshair-specific weapons, &2 = also appy colour
-    FVAR(IDF_PERSIST, crosshairsize, 0, 0.04f, 1000);
+    FVAR(IDF_PERSIST, crosshairsize, 0, 0.05f, 1000);
     VAR(IDF_PERSIST, crosshairhitspeed, 0, 500, VAR_MAX);
     FVAR(IDF_PERSIST, crosshairblend, 0, 1, 1);
     FVAR(IDF_PERSIST, crosshairaccamt, 0, 0, 1);
@@ -177,28 +177,40 @@ namespace hud
 
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, crosshairtex, "crosshairs/cross-01", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, hithairtex, "crosshairs/cross-01-hit", 3);
+    FVAR(IDF_PERSIST, clawcrosshairsize, 0, 0.045f, 1000);
     TVAR(IDF_PERSIST, clawcrosshairtex, "crosshairs/triangle-02", 3);
     TVAR(IDF_PERSIST, clawhithairtex, "crosshairs/triangle-02-hit", 3);
+    FVAR(IDF_PERSIST, pistolcrosshairsize, 0, 0.045f, 1000);
     TVAR(IDF_PERSIST, pistolcrosshairtex, "crosshairs/cross-01", 3);
     TVAR(IDF_PERSIST, pistolhithairtex, "crosshairs/cross-01-hit", 3);
+    FVAR(IDF_PERSIST, swordcrosshairsize, 0, 0.045f, 1000);
     TVAR(IDF_PERSIST, swordcrosshairtex, "crosshairs/simple-02", 3);
     TVAR(IDF_PERSIST, swordhithairtex, "crosshairs/simple-02-hit", 3);
+    FVAR(IDF_PERSIST, shotguncrosshairsize, 0, 0.045f, 1000);
     TVAR(IDF_PERSIST, shotguncrosshairtex, "crosshairs/cross-02", 3);
     TVAR(IDF_PERSIST, shotgunhithairtex, "crosshairs/cross-02-hit", 3);
+    FVAR(IDF_PERSIST, smgcrosshairsize, 0, 0.045f, 1000);
     TVAR(IDF_PERSIST, smgcrosshairtex, "crosshairs/simple-03", 3);
     TVAR(IDF_PERSIST, smghithairtex, "crosshairs/simple-03-hit", 3);
+    FVAR(IDF_PERSIST, plasmacrosshairsize, 0, 0.045f, 1000);
     TVAR(IDF_PERSIST, plasmacrosshairtex, "crosshairs/circle-03", 3);
     TVAR(IDF_PERSIST, plasmahithairtex, "crosshairs/circle-03-hit", 3);
+    FVAR(IDF_PERSIST, zappercrosshairsize, 0, 0.055f, 1000);
     TVAR(IDF_PERSIST, zappercrosshairtex, "crosshairs/circle-03", 3);
     TVAR(IDF_PERSIST, zapperhithairtex, "crosshairs/circle-03-hit", 3);
-    TVAR(IDF_PERSIST, flamercrosshairtex, "crosshairs/circle-04", 3);
-    TVAR(IDF_PERSIST, flamerhithairtex, "crosshairs/circle-04-hit", 3);
+    FVAR(IDF_PERSIST, flamercrosshairsize, 0, 0.055f, 1000);
+    TVAR(IDF_PERSIST, flamercrosshairtex, "crosshairs/circle-06", 3);
+    TVAR(IDF_PERSIST, flamerhithairtex, "crosshairs/circle-06-hit", 3);
+    FVAR(IDF_PERSIST, riflecrosshairsize, 0, 0.045f, 1000);
     TVAR(IDF_PERSIST, riflecrosshairtex, "crosshairs/simple-01", 3);
     TVAR(IDF_PERSIST, riflehithairtex, "crosshairs/simple-01-hit", 3);
+    FVAR(IDF_PERSIST, grenadecrosshairsize, 0, 0.05f, 1000);
     TVAR(IDF_PERSIST, grenadecrosshairtex, "crosshairs/circle-02", 3);
     TVAR(IDF_PERSIST, grenadehithairtex, "crosshairs/circle-02-hit", 3);
+    FVAR(IDF_PERSIST, minecrosshairsize, 0, 0.05f, 1000);
     TVAR(IDF_PERSIST, minecrosshairtex, "crosshairs/circle-02", 3);
     TVAR(IDF_PERSIST, minehithairtex, "crosshairs/circle-02-hit", 3);
+    FVAR(IDF_PERSIST, rocketcrosshairsize, 0, 0.05f, 1000);
     TVAR(IDF_PERSIST, rocketcrosshairtex, "crosshairs/circle-01", 3);
     TVAR(IDF_PERSIST, rockethithairtex, "crosshairs/circle-01-hit", 3);
 
@@ -1077,7 +1089,16 @@ namespace hud
 
     void drawpointer(int w, int h, int index)
     {
-        int cs = int((index == POINTER_UI ? cursorsize : crosshairsize)*hudsize);
+        float csize = crosshairsize;
+        if(crosshairweapons && isweap(game::focus->weapselect))
+        {
+            const float crosshairsizes[W_ALL] = {
+                clawcrosshairsize, pistolcrosshairsize, swordcrosshairsize, shotguncrosshairsize, smgcrosshairsize,
+                flamercrosshairsize, plasmacrosshairsize, zappercrosshairsize, riflecrosshairsize, grenadecrosshairsize, minecrosshairsize, rocketcrosshairsize
+            };
+            csize = crosshairsizes[game::focus->weapselect];
+        }
+        int cs = int((index == POINTER_UI ? cursorsize : csize)*hudsize);
         float fade = index == POINTER_UI ? cursorblend : crosshairblend;
         vec c(1, 1, 1);
         if(game::focus->state == CS_ALIVE && index >= POINTER_HAIR)
