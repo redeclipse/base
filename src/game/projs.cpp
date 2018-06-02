@@ -2456,6 +2456,7 @@ namespace projs
                         }
                         else continue;
                     }
+                    if(mdl.color.a <= 0) continue;
                     break;
                 }
                 default: break;

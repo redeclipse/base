@@ -88,9 +88,8 @@ namespace game
 
     VARF(0, follow, -1, -1, VAR_MAX, followswitch(0));
 
-    VAR(IDF_PERSIST, firstpersonmodel, 0, 2, 2);
+    VAR(IDF_PERSIST, firstpersonmodel, 0, 3, 3);
     VAR(IDF_PERSIST, firstpersonfov, 90, 100, 150);
-    FVAR(IDF_PERSIST, firstpersonblend, 0, 1, 1);
     FVAR(IDF_PERSIST, firstpersondepth, 0, 0.25f, 1);
     FVAR(IDF_PERSIST, firstpersonbodydepth, 0, 0.65f, 1);
     FVAR(IDF_PERSIST, firstpersondepthfov, 0, 70, 150);
@@ -283,8 +282,8 @@ namespace game
     VAR(IDF_PERSIST, deathscale, 0, 1, 1); // 0 = don't scale out dead players, 1 = scale them out
 
     FVAR(IDF_PERSIST, playerblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, playereditblend, 0, 0.5f, 1);
-    FVAR(IDF_PERSIST, playerghostblend, 0, 0.5f, 1);
+    FVAR(IDF_PERSIST, playereditblend, 0, 1, 1);
+    FVAR(IDF_PERSIST, playerghostblend, 0, 0.125f, 1);
 
     VAR(IDF_PERSIST, playerovertone, -1, CTONE_TEAM, CTONE_MAX-1);
     VAR(IDF_PERSIST, playerundertone, -1, CTONE_TONE, CTONE_MAX-1);
@@ -904,7 +903,7 @@ namespace game
 
     float opacity(gameent *d, bool third)
     {
-        float total = d == focus ? (third ? (d != player1 ? followblend : thirdpersonblend) : firstpersonblend) : playerblend;
+        float total = d == focus ? (third ? (d != player1 ? followblend : thirdpersonblend) : 1.f) : playerblend;
         if(physics::isghost(d, focus)) total *= playerghostblend;
         if(d->state == CS_DEAD || d->state == CS_WAITING)
         {
@@ -3771,7 +3770,7 @@ namespace game
 
     void renderavatar()
     {
-        if(thirdpersonview()) return;
+        if(thirdpersonview() || !firstpersonmodel) return;
         float depthfov = firstpersondepthfov != 0 ? firstpersondepthfov : curfov;
         if(inzoom())
         {
@@ -3782,8 +3781,8 @@ namespace game
         setavatarscale(depthfov, firstpersondepth);
         vec4 color = vec4(1, 1, 1, opacity(focus, false));
         focus->cleartags();
-        if(focus->state == CS_ALIVE) renderplayer(focus, 0, focus->curscale, MDL_NOBATCH, color);
-        if(focus->state == CS_ALIVE && firstpersonmodel == 2)
+        if(focus->state == CS_ALIVE && firstpersonmodel&1) renderplayer(focus, 0, focus->curscale, MDL_NOBATCH, color);
+        if(focus->state == CS_ALIVE && firstpersonmodel&2)
         {
             setavatarscale(firstpersonbodydepthfov != 0 ? firstpersonbodydepthfov : curfov, firstpersonbodydepth);
             static int lastoffset = 0;
