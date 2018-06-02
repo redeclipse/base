@@ -18,7 +18,7 @@ namespace entities
     VAR(IDF_PERSIST, showentdist, 0, 512, VAR_MAX);
     FVAR(IDF_PERSIST, showentsize, 0, 3, 10);
     FVAR(IDF_PERSIST, showentavailable, 0, 1, 1);
-    FVAR(IDF_PERSIST, showentunavailable, 0, 0.125f, 1);
+    FVAR(IDF_PERSIST, showentunavailable, 0, 0, 1);
 
     VAR(IDF_PERSIST, simpleitems, 0, 0, 2); // 0 = items are models, 1 = items are icons, 2 = items are off and only halos appear
     FVAR(IDF_PERSIST, simpleitemsize, 0, 6, 8);
@@ -2184,7 +2184,10 @@ namespace entities
                         {
                             colour = W(attr, colour);
                             if(!active || !game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL) || !weapons::canuse(attr))
-                                mdl.color.a *= showentunavailable;
+                            {
+                                if(showentunavailable > 0) mdl.color.a *= showentunavailable;
+                                else continue;
+                            }
                             else mdl.color.a *= showentavailable;
                         }
                         else continue;
@@ -2251,29 +2254,40 @@ namespace entities
         if(enttype[e.type].usetype == EU_ITEM && (active || isedit))
         {
             float blend = fluc*skew, radius = fluc*0.5f;
+            bool proceed = false;
             if(e.type == WEAPON && isweap(attr))
             {
                 if(!active || !game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL) || !weapons::canuse(attr))
-                    blend *= showentunavailable;
+                {
+                    if(showentunavailable > 0) blend *= showentunavailable;
+                    else if(isedit) blend *= showentavailable;
+                    else proceed = false;
+                }
                 else blend *= showentavailable;
-                radius += game::focus->hasweap(attr, sweap) ? W(attr, itemhaloammo) : W(attr, itemhalo);
-                radius = max(radius*skew, 0.125f);
+                if(proceed)
+                {
+                    radius += game::focus->hasweap(attr, sweap) ? W(attr, itemhaloammo) : W(attr, itemhalo);
+                    radius = max(radius*skew, 0.125f);
+                }
             }
             else radius = max(enttype[e.type].radius*0.5f*skew, 0.125f);
-            if(simpleitems == 1)
+            if(proceed)
             {
-                part_icon(o, textureload(hud::itemtex(e.type, attr), 3), simpleitemsize*skew, simpleitemblend*skew, 0, 0, 1, colour);
-                if(radius < simpleitemsize*skew) radius = simpleitemsize*skew;
-                blend *= simpleitemhalo;
+                if(simpleitems == 1)
+                {
+                    part_icon(o, textureload(hud::itemtex(e.type, attr), 3), simpleitemsize*skew, simpleitemblend*skew, 0, 0, 1, colour);
+                    if(radius < simpleitemsize*skew) radius = simpleitemsize*skew;
+                    blend *= simpleitemhalo;
+                }
+                else
+                {
+                    radius *= haloitemsize;
+                    blend *= haloitemblend;
+                }
+                vec offset = vec(o).sub(camera1->o).rescale(radius/2);
+                offset.z = max(offset.z, -1.0f);
+                part_create(PART_HINT_BOLD_SOFT, 1, offset.add(o), colour, radius, blend);
             }
-            else
-            {
-                radius *= haloitemsize;
-                blend *= haloitemblend;
-            }
-            vec offset = vec(o).sub(camera1->o).rescale(radius/2);
-            offset.z = max(offset.z, -1.0f);
-            part_create(PART_HINT_BOLD_SOFT, 1, offset.add(o), colour, radius, blend);
         }
         if(edit)
         {

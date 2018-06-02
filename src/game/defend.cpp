@@ -127,8 +127,8 @@ namespace defend
             }
             vec above = b.above;
             float blend = camera1->o.distrange(above, game::affinityhintfadeat, game::affinityhintfadecut);
-            part_explosion(above, 3, PART_GLIMMERY, 1, colour, 1, blend*0.5f);
-            part_create(PART_HINT_SOFT, 1, above, colour, 6, blend*0.5f);
+            part_explosion(above, 3, PART_GLIMMERY, 1, colour, 1, blend);
+            part_create(PART_HINT_SOFT, 1, above, colour, 6, blend);
             above.z += 4;
             part_text(above, b.name, PART_TEXT, 1, colourwhite, 2, blend);
             above.z += 4;

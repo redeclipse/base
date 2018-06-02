@@ -323,8 +323,8 @@ namespace bomber
                 float blend = camera1->o.distrange(above, game::affinityhintfadeat, game::affinityhintfadecut);
                 basemdl.material[0] = mdl.material[0] = bvec::fromcolor(effect);
                 int pcolour = effect.tohexcolor();
-                part_explosion(above, 3, PART_GLIMMERY, 1, pcolour, 1, trans*blend*0.5f);
-                part_create(PART_HINT_SOFT, 1, above, pcolour, 6, trans*blend*0.5f);
+                part_explosion(above, 3, PART_GLIMMERY, 1, pcolour, 1, trans*blend);
+                part_create(PART_HINT_SOFT, 1, above, pcolour, 6, trans*blend);
                 if(m_bb_basket(game::gamemode, game::mutators) && carryaffinity(game::focus) && bomberbasketmindist > 0 && game::focus->o.dist(above) < bomberbasketmindist)
                 {
                     int millis = lastmillis%500;
