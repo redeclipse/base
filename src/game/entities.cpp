@@ -2184,16 +2184,16 @@ namespace entities
                         {
                             colour = W(attr, colour);
                             if(!active || !game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL) || !weapons::canuse(attr))
-                            {
-                                if(showentunavailable > 0) mdl.color.a *= showentunavailable;
-                                else continue;
-                            }
+                                mdl.color.a *= showentunavailable;
                             else mdl.color.a *= showentavailable;
                         }
                         else continue;
                     }
-                    if(colour >= 0) mdl.material[0] = bvec::fromcolor(colour);
-                    rendermodel(mdlname, mdl);
+                    if(mdl.color.a > 0)
+                    {
+                        if(colour >= 0) mdl.material[0] = bvec::fromcolor(colour);
+                        rendermodel(mdlname, mdl);
+                    }
                 }
             }
         }
@@ -2254,24 +2254,23 @@ namespace entities
         if(enttype[e.type].usetype == EU_ITEM && (active || isedit))
         {
             float blend = fluc*skew, radius = fluc*0.5f;
-            bool proceed = false;
             if(e.type == WEAPON && isweap(attr))
             {
                 if(!active || !game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL) || !weapons::canuse(attr))
                 {
                     if(showentunavailable > 0) blend *= showentunavailable;
                     else if(isedit) blend *= showentavailable;
-                    else proceed = false;
+                    else blend = 0;
                 }
                 else blend *= showentavailable;
-                if(proceed)
+                if(blend > 0)
                 {
                     radius += game::focus->hasweap(attr, sweap) ? W(attr, itemhaloammo) : W(attr, itemhalo);
                     radius = max(radius*skew, 0.125f);
                 }
             }
             else radius = max(enttype[e.type].radius*0.5f*skew, 0.125f);
-            if(proceed)
+            if(blend > 0)
             {
                 if(simpleitems == 1)
                 {
