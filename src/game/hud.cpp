@@ -178,46 +178,68 @@ namespace hud
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, crosshairtex, "crosshairs/cross-01", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, hithairtex, "crosshairs/cross-01-hit", 3);
     FVAR(IDF_PERSIST, clawcrosshairsize, 0, 0.045f, 1000);
+    FVAR(IDF_PERSIST, clawcrosshairblend, 0, 1, 1);
     TVAR(IDF_PERSIST, clawcrosshairtex, "crosshairs/triangle-02", 3);
     TVAR(IDF_PERSIST, clawhithairtex, "crosshairs/triangle-02-hit", 3);
     FVAR(IDF_PERSIST, pistolcrosshairsize, 0, 0.045f, 1000);
+    FVAR(IDF_PERSIST, pistolcrosshairblend, 0, 1, 1);
     TVAR(IDF_PERSIST, pistolcrosshairtex, "crosshairs/simple-04", 3);
     TVAR(IDF_PERSIST, pistolhithairtex, "crosshairs/simple-04-hit", 3);
     FVAR(IDF_PERSIST, swordcrosshairsize, 0, 0.045f, 1000);
+    FVAR(IDF_PERSIST, swordcrosshairblend, 0, 1, 1);
     TVAR(IDF_PERSIST, swordcrosshairtex, "crosshairs/simple-02", 3);
     TVAR(IDF_PERSIST, swordhithairtex, "crosshairs/simple-02-hit", 3);
     FVAR(IDF_PERSIST, shotguncrosshairsize, 0, 0.045f, 1000);
+    FVAR(IDF_PERSIST, shotguncrosshairblend, 0, 1, 1);
     TVAR(IDF_PERSIST, shotguncrosshairtex, "crosshairs/cross-02", 3);
     TVAR(IDF_PERSIST, shotgunhithairtex, "crosshairs/cross-02-hit", 3);
     FVAR(IDF_PERSIST, smgcrosshairsize, 0, 0.045f, 1000);
+    FVAR(IDF_PERSIST, smgcrosshairblend, 0, 1, 1);
     TVAR(IDF_PERSIST, smgcrosshairtex, "crosshairs/simple-03", 3);
     TVAR(IDF_PERSIST, smghithairtex, "crosshairs/simple-03-hit", 3);
-    FVAR(IDF_PERSIST, plasmacrosshairsize, 0, 0.045f, 1000);
+    FVAR(IDF_PERSIST, plasmacrosshairsize, 0, 0.06f, 1000);
+    FVAR(IDF_PERSIST, plasmacrosshairblend, 0, 1, 1);
     TVAR(IDF_PERSIST, plasmacrosshairtex, "crosshairs/circle-05", 3);
     TVAR(IDF_PERSIST, plasmahithairtex, "crosshairs/circle-05-hit", 3);
-    FVAR(IDF_PERSIST, zappercrosshairsize, 0, 0.055f, 1000);
+    FVAR(IDF_PERSIST, zappercrosshairsize, 0, 0.06f, 1000);
+    FVAR(IDF_PERSIST, zappercrosshairblend, 0, 1, 1);
     TVAR(IDF_PERSIST, zappercrosshairtex, "crosshairs/circle-03", 3);
     TVAR(IDF_PERSIST, zapperhithairtex, "crosshairs/circle-03-hit", 3);
-    FVAR(IDF_PERSIST, flamercrosshairsize, 0, 0.055f, 1000);
+    FVAR(IDF_PERSIST, flamercrosshairsize, 0, 0.06f, 1000);
+    FVAR(IDF_PERSIST, flamercrosshairblend, 0, 1, 1);
     TVAR(IDF_PERSIST, flamercrosshairtex, "crosshairs/circle-06", 3);
     TVAR(IDF_PERSIST, flamerhithairtex, "crosshairs/circle-06-hit", 3);
     FVAR(IDF_PERSIST, riflecrosshairsize, 0, 0.075f, 1000);
+    FVAR(IDF_PERSIST, riflecrosshairblend, 0, 1, 1);
     TVAR(IDF_PERSIST, riflecrosshairtex, "crosshairs/simple-01", 3);
     TVAR(IDF_PERSIST, riflehithairtex, "crosshairs/simple-01-hit", 3);
     FVAR(IDF_PERSIST, grenadecrosshairsize, 0, 0.05f, 1000);
+    FVAR(IDF_PERSIST, grenadecrosshairblend, 0, 1, 1);
     TVAR(IDF_PERSIST, grenadecrosshairtex, "crosshairs/circle-02", 3);
     TVAR(IDF_PERSIST, grenadehithairtex, "crosshairs/circle-02-hit", 3);
     FVAR(IDF_PERSIST, minecrosshairsize, 0, 0.05f, 1000);
+    FVAR(IDF_PERSIST, minecrosshairblend, 0, 1, 1);
     TVAR(IDF_PERSIST, minecrosshairtex, "crosshairs/circle-02", 3);
     TVAR(IDF_PERSIST, minehithairtex, "crosshairs/circle-02-hit", 3);
     FVAR(IDF_PERSIST, rocketcrosshairsize, 0, 0.05f, 1000);
+    FVAR(IDF_PERSIST, rocketcrosshairblend, 0, 1, 1);
     TVAR(IDF_PERSIST, rocketcrosshairtex, "crosshairs/circle-01", 3);
     TVAR(IDF_PERSIST, rockethithairtex, "crosshairs/circle-01-hit", 3);
 
+    FVAR(IDF_PERSIST, editcursorsize, 0, 0.05f, 1000);
+    FVAR(IDF_PERSIST, editcursorblend, 0, 1, 1);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, editcursortex, "crosshairs/cross-01", 3);
+    FVAR(IDF_PERSIST, speccursorsize, 0, 0.05f, 1000);
+    FVAR(IDF_PERSIST, speccursorblend, 0, 1, 1);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, speccursortex, "crosshairs/cross-01", 3);
+    FVAR(IDF_PERSIST, tvcursorsize, 0, 0.05f, 1000);
+    FVAR(IDF_PERSIST, tvcursorblend, 0, 1, 1);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, tvcursortex, "", 3);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, teamcrosshairtex, "", 3);
+    FVAR(IDF_PERSIST, teamcrosshairsize, 0, 0.05f, 1000);
+    FVAR(IDF_PERSIST, teamcrosshairblend, 0, 1, 1);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, teamcrosshairtex, "textures/icons/warning", 3);
+    VAR(IDF_PERSIST, teamcrosshaircolour, 0, 0xFF0000, 0xFFFFFF);
+
     VAR(IDF_PERSIST, cursorstyle, 0, 0, 1); // 0 = top left tracking, 1 = center
     FVAR(IDF_PERSIST, cursorsize, 0, 0.03f, 1000);
     FVAR(IDF_PERSIST, cursorblend, 0, 1, 1);
@@ -225,7 +247,7 @@ namespace hud
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, zoomtex, "textures/hud/zoom", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, zoomcrosshairtex, "crosshairs/simple-01", 3);
     FVAR(IDF_PERSIST, zoomcrosshairsize, 0, 0.04f, 1000);
-    FVAR(IDF_PERSIST, zoomcrosshairblend, 0, 1, 1000);
+    FVAR(IDF_PERSIST, zoomcrosshairblend, 0, 1, 1);
 
     VAR(IDF_PERSIST, showcirclebar, 0, 0, 1);
     VAR(IDF_PERSIST, circlebartype, 0, 3, 3); // 0 = off, &1 = health, &2 = ammo
@@ -1089,30 +1111,44 @@ namespace hud
 
     void drawpointer(int w, int h, int index)
     {
-        float csize = crosshairsize;
-        if(crosshairweapons && isweap(game::focus->weapselect))
+        float csize = crosshairsize, fade = crosshairblend;
+        switch(index)
         {
-            const float crosshairsizes[W_ALL] = {
-                clawcrosshairsize, pistolcrosshairsize, swordcrosshairsize, shotguncrosshairsize, smgcrosshairsize,
-                flamercrosshairsize, plasmacrosshairsize, zappercrosshairsize, riflecrosshairsize, grenadecrosshairsize, minecrosshairsize, rocketcrosshairsize
-            };
-            csize = crosshairsizes[game::focus->weapselect];
+            case POINTER_EDIT: csize = editcursorsize; fade = editcursorblend; break;
+            case POINTER_SPEC: csize = speccursorsize; fade = speccursorblend; break;
+            case POINTER_TEAM: csize = teamcrosshairsize; fade = teamcrosshairblend; break;
+            case POINTER_ZOOM:
+                if(game::inzoom())
+                {
+                    csize = zoomcrosshairsize;
+                    fade = zoomcrosshairblend;
+                    break;
+                } // fall through
+            case POINTER_HIT: case POINTER_HAIR:
+            {
+                if(crosshairweapons && isweap(game::focus->weapselect))
+                {
+                    const float crosshairsizes[W_ALL] = {
+                        clawcrosshairsize, pistolcrosshairsize, swordcrosshairsize, shotguncrosshairsize, smgcrosshairsize,
+                        flamercrosshairsize, plasmacrosshairsize, zappercrosshairsize, riflecrosshairsize, grenadecrosshairsize, minecrosshairsize, rocketcrosshairsize
+                    }, crosshairblends[W_ALL] = {
+                        clawcrosshairblend, pistolcrosshairblend, swordcrosshairblend, shotguncrosshairblend, smgcrosshairblend,
+                        flamercrosshairblend, plasmacrosshairblend, zappercrosshairblend, riflecrosshairblend, grenadecrosshairblend, minecrosshairblend, rocketcrosshairblend
+                    };
+                    csize = crosshairsizes[game::focus->weapselect];
+                    fade = crosshairblends[game::focus->weapselect];
+                }
+                break;
+            }
+            default: csize = cursorsize; fade = cursorblend; break;
         }
-        int cs = int((index == POINTER_UI ? cursorsize : csize)*hudsize);
-        float fade = index == POINTER_UI ? cursorblend : crosshairblend;
         vec c(1, 1, 1);
+        int cs = int(csize*hudsize);
         if(game::focus->state == CS_ALIVE && index >= POINTER_HAIR)
         {
-            if(crosshairweapons&2) c = vec::fromcolor(W(game::focus->weapselect, colour));
-            if(index == POINTER_ZOOM && game::inzoom())
-            {
-                int frame = lastmillis-game::lastzoom, off = int(zoomcrosshairsize*hudsize)-cs;
-                float amt = frame <= W(game::focus->weapselect, cookzoom) ? clamp(float(frame)/float(W(game::focus->weapselect, cookzoom)), 0.f, 1.f) : 1.f;
-                if(!game::zooming) amt = 1.f-amt;
-                cs += int(off*amt);
-                fade += (zoomcrosshairblend-fade)*amt;
-            }
-            if(crosshairtone) skewcolour(c.r, c.g, c.b, crosshairtone);
+            if(index == POINTER_TEAM) c = vec::fromcolor(teamcrosshaircolour);
+            else if(crosshairweapons&2) c = vec::fromcolor(W(game::focus->weapselect, colour));
+            else if(crosshairtone) skewcolour(c.r, c.g, c.b, crosshairtone);
             int heal = game::focus->gethealth(game::gamemode, game::mutators);
             if(crosshairflash && game::focus->state == CS_ALIVE && game::focus->health < heal)
             {
