@@ -381,6 +381,8 @@ namespace weapons
                 addshot(dest);
             }
         }
+        if(W2(weap, jittertime, secondary))
+            d->addjitter(weap, lastmillis, W2(weap, jittertime, secondary), W2(weap, jitteryawmin, secondary), W2(weap, jitteryawmax, secondary), W2(weap, jitterpitchmin, secondary), W2(weap, jitterpitchmax, secondary));
         projs::shootv(weap, secondary ? HIT_ALT : 0, sub, offset, scale, from, shots, d, true);
         client::addmsg(N_SHOOT, "ri8iv", d->clientnum, lastmillis-game::maptime, weap, secondary ? HIT_ALT : 0, cooked, int(from.x*DMF), int(from.y*DMF), int(from.z*DMF), shots.length(), shots.length()*sizeof(shotmsg)/sizeof(int), shots.getbuf());
 

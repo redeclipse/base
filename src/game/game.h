@@ -1105,6 +1105,12 @@ struct stunevent
     float scale, gravity;
 };
 
+struct jitterevent
+{
+    int weap, millis, delay, last;
+    float yaw, pitch;
+};
+
 struct gameent : dynent, clientstate
 {
     editinfo *edit;
@@ -1119,6 +1125,7 @@ struct gameent : dynent, clientstate
     vector<gameent *> dominating, dominated;
     vector<eventicon> icons;
     vector<stunevent> stuns;
+    vector<jitterevent> jitters;
     vector<int> vitems;
 
     gameent() : edit(NULL), ai(NULL), team(T_NEUTRAL), clientnum(-1), privilege(PRIV_NONE), projid(0), checkpoint(-1), cplast(0), lastupdate(0), lastpredict(0), plag(0), ping(0),
@@ -1302,6 +1309,7 @@ struct gameent : dynent, clientstate
         configure(gamemode, mutators, 1, 1, 0, 0, true);
         icons.shrink(0);
         stuns.shrink(0);
+        jitters.shrink(0);
         used.shrink(0);
         inittags();
     }
@@ -1596,6 +1604,45 @@ struct gameent : dynent, clientstate
             else stun += (gravity ? s.gravity : s.scale)*(1.f-(float(millis-s.millis)/float(s.delay)));
         }
         return stun;
+    }
+
+    void addjitter(int weap, int millis, int delay, float yawmin, float yawmax, float pitchmin, float pitchmax)
+    {
+        if(delay <= 0 || (yaw == 0 && pitch == 0)) return;
+        jitterevent &s = jitters.add();
+        s.weap = weap;
+        s.millis = s.last = millis;
+        s.delay = delay;
+        float yaw1 = min(yawmin, yawmax), yaw2 = max(yawmin, yawmax), yawv = yaw1,
+              pitch1 = min(pitchmin, pitchmax), pitch2 = max(pitchmin, pitchmax), pitchv = pitch1;
+        if(yaw2 > yaw1) yawv += (yaw2-yaw1)*(rnd(1000)/1000.f);
+        if(pitch2 > pitch1) pitchv += (pitch2-pitch1)*(rnd(1000)/1000.f);
+        s.yaw = yawv;
+        s.pitch = pitchv;
+    }
+
+    void jitter(int millis)
+    {
+        loopvrev(jitters)
+        {
+            jitterevent &s = jitters[i];
+            if(!s.delay)
+            {
+                jitters.remove(i);
+                continue;
+            }
+            int mtime = millis-s.millis, stime = clamp(millis, s.millis, s.millis+s.delay), qtime = stime-s.last, ztime = min(mtime, s.delay);
+            if(qtime > 0)
+            {
+                float smooth = float(ztime)/float(s.delay)*2.f;
+                if(smooth > 1.f) smooth = 2.f-smooth;
+                float scale = float(qtime)/float(s.delay)*smooth;
+                yaw += s.yaw*scale;
+                pitch += s.pitch*scale;
+                s.last = millis;
+            }
+            if(mtime >= s.delay) jitters.remove(i);
+        }
     }
 
     bool hasmelee(int millis, bool check = false, bool slide = false, bool onfloor = true, bool can = true)

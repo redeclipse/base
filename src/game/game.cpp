@@ -1099,6 +1099,7 @@ namespace game
         adjustscaled(d->quake, quakefade);
         int prevstate = isweap(d->weapselect) ? d->weapstate[d->weapselect] : W_S_IDLE;
         d->configure(gamemode, mutators, rescale(d), speedscale(d), physics::carryaffinity(d), curtime, false);
+        d->jitter(lastmillis);
 
         float offset = d->height;
         d->o.z -= d->height;
