@@ -77,6 +77,7 @@ extern void removesound(int c);
 extern void clearsound();
 extern int playsound(int n, const vec &pos, physent *d = NULL, int flags = 0, int vol = -1, int maxrad = -1, int minrad = -1, int *hook = NULL, int ends = 0, int *oldhook = NULL);
 extern void removetrackedsounds(physent *d);
+extern void removemapsounds();
 
 extern void initmumble();
 extern void closemumble();

@@ -35,6 +35,7 @@ void changemapvariant(int variant)
     if(variant != mapvariant)
     {
         mapvariant = variant;
+        removemapsounds();
         initskybox();
         allchanged(true);
     }

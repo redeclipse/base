@@ -622,6 +622,11 @@ void sound(int *n, int *vol, int *flags)
 }
 COMMAND(0, sound, "iib");
 
+void removemapsounds()
+{
+    loopv(sounds) if(sounds[i].chan >= 0 && sounds[i].flags&SND_MAP) removesound(i);
+}
+
 void removetrackedsounds(physent *d)
 {
     loopv(sounds)

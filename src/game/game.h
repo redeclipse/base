@@ -100,7 +100,7 @@ extern const enttypes enttype[] = {
             (1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT),
             0,
             false,  false,  false,      false,      false,
-                "particles",    { "type",   "a",        "b",        "c",        "d",        "e",        "f",        "g",        "i",        "j",        "k",        "millis",       "variant",  "fxlevel" }
+                "particles",    { "type",   "1",        "2",        "3",        "4",        "5",        "6",        "7",        "8",        "9",        "10",   "millis",   "variant",  "fxlevel" }
     },
     {
         MAPSOUND,       1,          58,     0,      EU_NONE,    6,          -1,         -1,     5,      -1,
