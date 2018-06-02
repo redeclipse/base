@@ -53,7 +53,6 @@ enum { CP_RESPAWN = 0, CP_START, CP_FINISH, CP_LAST, CP_MAX, CP_ALL = (1<<CP_RES
 enum { TELE_NOAFFIN = 0, TELE_MAX };
 enum { MDLF_HIDE = 0, MDLF_NOCLIP, MDLF_NOSHADOW, MDLF_MAX };
 
-
 struct enttypes
 {
     int type,           priority, links,    radius, usetype,    numattrs,   modesattr,  idattr, mvattr, fxattr,

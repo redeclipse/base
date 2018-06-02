@@ -1049,10 +1049,11 @@ namespace entities
                 while(e.attrs[4] > 100) e.attrs[4] -= 101; // wrap both ways
                 if(e.attrs[5] < 0) e.attrs[5] += 101; // scale, wrap around
                 if(e.attrs[6] < 0) e.attrs[6] = 0; // flags, clamp
+                static const int mdlfmap[MDLF_MAX] = { EF_HIDE, EF_NOCOLLIDE, EF_NOSHADOW };
                 loopj(MDLF_MAX)
                 {
-                    if(e.flags&(1<<j) && !(e.attrs[6]&(1<<j))) e.flags &= ~(1<<j);
-                    else if(!(e.flags&(1<<j)) && e.attrs[6]&(1<<j)) e.flags |= (1<<j);
+                    if(e.flags&mdlfmap[j] && !(e.attrs[6]&(1<<j))) e.flags &= ~mdlfmap[j];
+                    else if(!(e.flags&mdlfmap[j]) && e.attrs[6]&(1<<j)) e.flags |= mdlfmap[j];
                 }
                 while(e.attrs[7] < 0) e.attrs[7] += 0x1000000; // colour
                 while(e.attrs[7] > 0xFFFFFF) e.attrs[7] -= 0x1000000; // wrap both ways
