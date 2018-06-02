@@ -1804,10 +1804,19 @@ namespace projs
             {
                 if(proj.norm.iszero()) proj.norm = vec(proj.o).sub(d->center()).normalize();
                 if(proj.norm.iszero()) proj.norm = vec(proj.vel).normalize().neg();
-                if(gameent::is(d) && proj.projcollide&IMPACT_PLAYER && proj.projcollide&STICK_PLAYER)
+                if(gameent::is(d) && proj.projcollide&COLLIDE_PLAYER)
                 {
-                    stick(proj, dir, (gameent *)d);
-                    return 1;
+                    gameent *f = (gameent *)d;
+                    #define RESIDUAL(name, type, pulse) \
+                        if(WF(WK(proj.flags), proj.weap, destroy##name, WS(proj.flags)) && f->name##ing(lastmillis, f->name##time)) \
+                            return 0;
+                    RESIDUALS
+                    #undef RESIDUAL
+                    if(proj.projcollide&STICK_PLAYER)
+                    {
+                        stick(proj, dir, f);
+                        return 1; // keep living!
+                    }
                 }
                 if(!hiteffect(proj, d, flags, proj.norm)) return 1;
             }

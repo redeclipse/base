@@ -72,8 +72,8 @@ enum
     BOUNCE_GEOM = 1<<6, BOUNCE_PLAYER = 1<<7, BOUNCE_SHOTS = 1<<8,
     DRILL_GEOM = 1<<9, DRILL_PLAYER = 1<<10, DRILL_SHOTS = 1<<11,
     STICK_GEOM = 1<<12, STICK_PLAYER = 1<<13, COLLIDE_HITSCAN = 1<<14,
-    COLLIDE_GEOM = IMPACT_GEOM|BOUNCE_GEOM,
-    COLLIDE_PLAYER = IMPACT_PLAYER|BOUNCE_PLAYER,
+    COLLIDE_GEOM = IMPACT_GEOM|BOUNCE_GEOM|STICK_GEOM,
+    COLLIDE_PLAYER = IMPACT_PLAYER|BOUNCE_PLAYER|STICK_PLAYER,
     COLLIDE_SHOTS = IMPACT_SHOTS|BOUNCE_SHOTS,
     COLLIDE_DYNENT = COLLIDE_PLAYER|COLLIDE_SHOTS,
     COLLIDE_ALL = COLLIDE_TRACE|COLLIDE_PROJ|COLLIDE_OWNER|IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|BOUNCE_GEOM|BOUNCE_PLAYER|BOUNCE_SHOTS|DRILL_GEOM|DRILL_PLAYER|DRILL_SHOTS|STICK_GEOM|STICK_PLAYER|COLLIDE_HITSCAN
@@ -359,6 +359,24 @@ WPVARM(IDF_GAMEMOD, delayattack, 1, VAR_MAX,
 );
 WPVAR(IDF_GAMEMOD, delayreload, 0, VAR_MAX,
     50,         1000,       50,         1000,       1200,       1700,       1700,       2500,       2500,       1000,       1500,       2500,       50
+);
+WPVARK(IDF_GAMEMOD, destroyburn, 0, 1,
+    0,          0,          0,          0,          0,          0,          0,          0,          0,          1,          0,          0,          0,
+    0,          0,          0,          0,          0,          0,          0,          0,          0,          1,          0,          0,          0,
+    0,          0,          0,          0,          0,          0,          0,          0,          0,          1,          0,          0,          0,
+    0,          0,          0,          0,          0,          0,          0,          0,          0,          1,          0,          0,          0
+);
+WPVARK(IDF_GAMEMOD, destroybleed, 0, 1,
+    0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,
+    0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,
+    0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,
+    0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
+);
+WPVARK(IDF_GAMEMOD, destroyshock, 0, 1,
+    0,          0,          0,          0,          0,          0,          0,          0,          0,          1,          0,          0,          0,
+    0,          0,          0,          0,          0,          0,          0,          0,          0,          1,          0,          0,          0,
+    0,          0,          0,          0,          0,          0,          0,          0,          0,          1,          0,          0,          0,
+    0,          0,          0,          0,          0,          0,          0,          0,          0,          1,          0,          0,          0
 );
 WPVAR(IDF_GAMEMOD, disabled, 0, 1,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
