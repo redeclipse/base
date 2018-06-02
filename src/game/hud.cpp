@@ -181,8 +181,8 @@ namespace hud
     TVAR(IDF_PERSIST, clawcrosshairtex, "crosshairs/triangle-02", 3);
     TVAR(IDF_PERSIST, clawhithairtex, "crosshairs/triangle-02-hit", 3);
     FVAR(IDF_PERSIST, pistolcrosshairsize, 0, 0.045f, 1000);
-    TVAR(IDF_PERSIST, pistolcrosshairtex, "crosshairs/cross-01", 3);
-    TVAR(IDF_PERSIST, pistolhithairtex, "crosshairs/cross-01-hit", 3);
+    TVAR(IDF_PERSIST, pistolcrosshairtex, "crosshairs/simple-04", 3);
+    TVAR(IDF_PERSIST, pistolhithairtex, "crosshairs/simple-04-hit", 3);
     FVAR(IDF_PERSIST, swordcrosshairsize, 0, 0.045f, 1000);
     TVAR(IDF_PERSIST, swordcrosshairtex, "crosshairs/simple-02", 3);
     TVAR(IDF_PERSIST, swordhithairtex, "crosshairs/simple-02-hit", 3);
@@ -193,15 +193,15 @@ namespace hud
     TVAR(IDF_PERSIST, smgcrosshairtex, "crosshairs/simple-03", 3);
     TVAR(IDF_PERSIST, smghithairtex, "crosshairs/simple-03-hit", 3);
     FVAR(IDF_PERSIST, plasmacrosshairsize, 0, 0.045f, 1000);
-    TVAR(IDF_PERSIST, plasmacrosshairtex, "crosshairs/circle-03", 3);
-    TVAR(IDF_PERSIST, plasmahithairtex, "crosshairs/circle-03-hit", 3);
+    TVAR(IDF_PERSIST, plasmacrosshairtex, "crosshairs/circle-05", 3);
+    TVAR(IDF_PERSIST, plasmahithairtex, "crosshairs/circle-05-hit", 3);
     FVAR(IDF_PERSIST, zappercrosshairsize, 0, 0.055f, 1000);
     TVAR(IDF_PERSIST, zappercrosshairtex, "crosshairs/circle-03", 3);
     TVAR(IDF_PERSIST, zapperhithairtex, "crosshairs/circle-03-hit", 3);
     FVAR(IDF_PERSIST, flamercrosshairsize, 0, 0.055f, 1000);
     TVAR(IDF_PERSIST, flamercrosshairtex, "crosshairs/circle-06", 3);
     TVAR(IDF_PERSIST, flamerhithairtex, "crosshairs/circle-06-hit", 3);
-    FVAR(IDF_PERSIST, riflecrosshairsize, 0, 0.045f, 1000);
+    FVAR(IDF_PERSIST, riflecrosshairsize, 0, 0.075f, 1000);
     TVAR(IDF_PERSIST, riflecrosshairtex, "crosshairs/simple-01", 3);
     TVAR(IDF_PERSIST, riflehithairtex, "crosshairs/simple-01-hit", 3);
     FVAR(IDF_PERSIST, grenadecrosshairsize, 0, 0.05f, 1000);
@@ -223,7 +223,7 @@ namespace hud
     FVAR(IDF_PERSIST, cursorblend, 0, 1, 1);
 
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, zoomtex, "textures/hud/zoom", 3);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, zoomcrosshairtex, "crosshairs/cross-01", 3);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, zoomcrosshairtex, "crosshairs/simple-01", 3);
     FVAR(IDF_PERSIST, zoomcrosshairsize, 0, 0.04f, 1000);
     FVAR(IDF_PERSIST, zoomcrosshairblend, 0, 1, 1000);
 

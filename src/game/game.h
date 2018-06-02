@@ -1633,9 +1633,7 @@ struct gameent : dynent, clientstate
             int mtime = millis-s.millis, stime = clamp(millis, s.millis, s.millis+s.delay), qtime = stime-s.last, ztime = min(mtime, s.delay);
             if(qtime > 0)
             {
-                float smooth = float(ztime)/float(s.delay)*2.f;
-                if(smooth > 1.f) smooth = 2.f-smooth;
-                float scale = float(qtime)/float(s.delay)*smooth;
+                float scale = (float(qtime)/float(s.delay))*(1.f-(float(ztime)/float(s.delay)));
                 yaw += s.yaw*scale;
                 pitch += s.pitch*scale;
                 s.last = millis;
