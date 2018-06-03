@@ -774,7 +774,7 @@ namespace entities
                     if(millis && lastmillis-millis < triggertime(e)) break;
                     e.lastemit = lastmillis;
                     d->setused(n, lastmillis);
-                    float mag = max(e.attrs[2], 1), maxrad = e.attrs[3] ? e.attrs[3] : enttype[PUSHER].radius, minrad = e.attrs[4];
+                    float mag = e.attrs[2] != 0 ? e.attrs[2] : 1, maxrad = e.attrs[3] ? e.attrs[3] : enttype[PUSHER].radius, minrad = e.attrs[4];
                     if(dist > 0 && minrad > 0 && maxrad > minrad && dist > minrad && maxrad >= dist)
                         mag *= 1.f-clamp((dist-minrad)/float(maxrad-minrad), 0.f, 1.f);
                     if(!gameent::is(d)) mag *= d->weight/200.f;
@@ -801,7 +801,8 @@ namespace entities
                         {
                             gameent *g = (gameent *)d;
                             execlink(g, n, true);
-                            g->resetair();
+                            if(e.attrs[10] > 0) g->doimpulse(IM_T_PUSHER, lastmillis+e.attrs[10]);
+                            else g->resetair();
                         }
                         else if(projent::is(d))
                         {
@@ -1123,7 +1124,6 @@ namespace entities
             case PUSHER:
             {
                 FIXDIRYPL(0, 1); // yaw, pitch
-                if(e.attrs[2] < 1) e.attrs[2] = 1; // force, zero is useless
                 if(e.attrs[3] < 0) e.attrs[3] = 0; // maxrad, clamp
                 if(e.attrs[4] < 0) e.attrs[4] = 0; // minrad, clamp
                 if(e.attrs[5] < 0) e.attrs[5] += 4; // type

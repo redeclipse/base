@@ -41,6 +41,7 @@ namespace physics
     {
         if(!gameent::is(d) || !allowimpulse(d, type)) return false;
         gameent *e = (gameent *)d;
+        if(e->impulse[IM_TYPE] == IM_T_PUSHER && e->impulsetime[IM_T_PUSHER] > lastmillis) return false;
         if(!touch && impulsestyle == 1 && e->impulse[IM_TYPE] > IM_T_JUMP && e->impulse[IM_TYPE] < IM_T_WALL) return false;
         if(!m_freestyle(game::gamemode, game::mutators) && impulsestyle <= 2 && e->impulse[IM_COUNT] >= impulsecount) return false;
         int time = 0, delay = 0;
@@ -715,7 +716,6 @@ namespace physics
         }
         d->vel = vec(dir).mul(force).add(keepvel);
         if(launch) d->vel.z += jumpvel(d, true);
-        //if(melee) d->resetjump();
         d->doimpulse(melee ? IM_T_MELEE : (slide ? IM_T_SLIDE : IM_T_BOOST), lastmillis);
         d->action[AC_JUMP] = false;
         client::addmsg(N_SPHY, "ri2", d->clientnum, melee ? SPHY_MELEE : (slide ? SPHY_SLIDE : SPHY_BOOST));

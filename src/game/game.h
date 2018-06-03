@@ -154,12 +154,12 @@ extern const enttypes enttype[] = {
                 "trigger",      { "id",     "type",     "action",   "radius",   "state",    "modes",    "muts",     "variant" }
     },
     {
-        PUSHER,         1,          58,     12,     EU_AUTO,    10,         -1,         -1,     9,      -1,
+        PUSHER,         1,          58,     12,     EU_AUTO,    11,         -1,         -1,     9,      -1,
             (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
             (1<<MAPSOUND)|(1<<PARTICLES)|(1<<LIGHTFX),
             (1<<ENT_PLAYER)|(1<<ENT_AI)|(1<<ENT_PROJ),
             false,  false,  false,      false,      false,
-                "pusher",       { "yaw",    "pitch",    "force",    "maxrad",   "minrad",   "type",     "modes",    "muts",     "id",       "variant" }
+                "pusher",       { "yaw",    "pitch",    "force",    "maxrad",   "minrad",   "type",     "modes",    "muts",     "id",       "variant",  "sdelay" }
     },
     {
         AFFINITY,       1,          48,     32,     EU_NONE,    7,          3,          5,      6,      -1,
@@ -218,7 +218,7 @@ enum
     AC_ALL = (1<<AC_PRIMARY)|(1<<AC_SECONDARY)|(1<<AC_RELOAD)|(1<<AC_USE)|(1<<AC_JUMP)|(1<<AC_WALK)|(1<<AC_CROUCH)|(1<<AC_SPECIAL)|(1<<AC_DROP)|(1<<AC_AFFINITY)
 };
 enum { IM_TYPE = 0, IM_COUNT, IM_SLIP, IM_MAX };
-enum { IM_T_JUMP = 0, IM_T_BOOST, IM_T_SLIDE, IM_T_MELEE, IM_T_KICK, IM_T_VAULT, IM_T_GRAB, IM_T_SKATE, IM_T_MAX, IM_T_WALL = IM_T_MELEE };
+enum { IM_T_JUMP = 0, IM_T_BOOST, IM_T_SLIDE, IM_T_MELEE, IM_T_KICK, IM_T_VAULT, IM_T_GRAB, IM_T_SKATE, IM_T_PUSHER, IM_T_MAX, IM_T_WALL = IM_T_MELEE };
 enum { SPHY_NONE = 0, SPHY_JUMP, SPHY_BOOST, SPHY_SLIDE, SPHY_MELEE, SPHY_KICK, SPHY_VAULT, SPHY_GRAB, SPHY_SKATE, SPHY_COOK, SPHY_MATERIAL, SPHY_EXTINGUISH, SPHY_BUFF, SPHY_MAX, SPHY_SERVER = SPHY_EXTINGUISH };
 
 #define CROUCHHEIGHT 0.7f
@@ -1506,6 +1506,19 @@ struct gameent : dynent, clientstate
         checktags();
     }
 
+    void resetjump(bool wait = false)
+    {
+        airmillis = turnside = impulse[IM_COUNT] = 0;
+        impulsetime[IM_T_JUMP] = impulsetime[IM_T_BOOST] = 0;
+        if(!wait) impulse[IM_TYPE] = impulsetime[IM_T_PUSHER] = 0;
+    }
+
+    void resetair(bool wait = false)
+    {
+        resetphys();
+        resetjump(wait);
+    }
+
     void doimpulse(int type, int millis)
     {
         if(type < 0 || type >= IM_T_MAX) return;
@@ -1517,19 +1530,8 @@ struct gameent : dynent, clientstate
             if(!impulsetime[IM_T_JUMP]) impulsetime[IM_T_JUMP] = millis;
             impulse[IM_COUNT]++;
         }
-        resetphys(type > IM_T_JUMP && type < IM_T_WALL);
-    }
-
-    void resetjump()
-    {
-        airmillis = turnside = impulse[IM_COUNT] = impulse[IM_TYPE] = 0;
-        impulsetime[IM_T_JUMP] = impulsetime[IM_T_BOOST] = 0;
-    }
-
-    void resetair()
-    {
-        resetphys();
-        resetjump();
+        if(type != IM_T_PUSHER) resetphys(type > IM_T_JUMP && type < IM_T_WALL);
+        else resetair(true);
     }
 
     void addicon(int type, int millis, int fade, int value = 0)
