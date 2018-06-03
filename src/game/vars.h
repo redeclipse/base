@@ -528,8 +528,6 @@ GVAR(IDF_GAMEMOD, quakewobble, 1, 20, VAR_MAX);
 GVAR(IDF_GAMEMOD, quakelimit, 0, 200, VAR_MAX);
 
 GFVAR(IDF_GAMEMOD, damagescale, 0, 1, FVAR_MAX);
-GVAR(IDF_GAMEMOD, weaponswitchdelay, 0, 400, VAR_MAX);
-
 GFVAR(IDF_GAMEMOD, radialscale, 0, 1, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, pushscale, 0, 1, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, hitpushscale, 0, 1, FVAR_MAX);

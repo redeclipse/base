@@ -405,7 +405,7 @@ namespace entities
         if(e.type == WEAPON && isweap(attr)) d->addicon(eventicon::WEAPON, lastmillis, game::eventiconshort, attr);
         if(isweap(weap))
         {
-            d->setweapstate(weap, W_S_SWITCH, weaponswitchdelay, lastmillis);
+            d->setweapstate(weap, W_S_SWITCH, W(weap, delayswitch), lastmillis);
             d->weapclip[weap] = -1;
             d->weapstore[weap] = 0;
             if(d->weapselect != weap && weap < W_ALL)
@@ -414,7 +414,7 @@ namespace entities
                 d->weapselect = weap;
             }
         }
-        d->useitem(ent, e.type, attr, ammoamt, sweap, lastmillis, weaponswitchdelay);
+        d->useitem(ent, e.type, attr, ammoamt, sweap, lastmillis, W(attr, delayitem));
         playsound(e.type == WEAPON && attr >= W_OFFSET && attr < W_ALL ? WSND(attr, S_W_USE) : S_ITEMUSE, d->o, d, 0, -1, -1, -1, &d->wschan);
         if(game::dynlighteffects) adddynlight(d->center(), enttype[e.type].radius*2, vec::fromcolor(colour).mul(2.f), 250, 250);
         if(ents.inrange(drop) && ents[drop]->type == WEAPON)
@@ -649,7 +649,7 @@ namespace entities
                         client::addmsg(N_ITEMUSE, "ri4", f->clientnum, lastmillis-game::maptime, cn, n);
                         if(e.type == WEAPON)
                         {
-                            f->setweapstate(f->weapselect, W_S_WAIT, weaponswitchdelay, lastmillis);
+                            f->setweapstate(f->weapselect, W_S_WAIT, PHYSMILLIS, lastmillis);
                             f->action[AC_USE] = false;
                         }
                         return false;

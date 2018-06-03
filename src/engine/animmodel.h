@@ -702,11 +702,12 @@ struct animmodel : model
     {
         part *p;
         int tag, anim, basetime;
+        float size;
         vec translate, rotate;
         vec *pos;
         matrix4 matrix;
 
-        linkedpart() : p(NULL), tag(-1), anim(-1), basetime(0), translate(0, 0, 0), rotate(0, 0, 0), pos(NULL) {}
+        linkedpart() : p(NULL), tag(-1), anim(-1), basetime(0), size(1), translate(0, 0, 0), rotate(0, 0, 0), pos(NULL) {}
     };
 
     struct part
@@ -782,12 +783,12 @@ struct animmodel : model
             }
         }
 
-        bool link(part *p, const char *tag, const vec &translate = vec(0, 0, 0), const vec &rotate = vec(0, 0, 0), int anim = -1, int basetime = 0, vec *pos = NULL)
+        bool link(part *p, const char *tag, const vec &translate = vec(0, 0, 0), const vec &rotate = vec(0, 0, 0), int anim = -1, int basetime = 0, float size = 1, vec *pos = NULL)
         {
             int i = meshes ? meshes->findtag(tag) : -1;
             if(i<0)
             {
-                loopv(links) if(links[i].p && links[i].p->link(p, tag, translate, rotate, anim, basetime, pos)) return true;
+                loopv(links) if(links[i].p && links[i].p->link(p, tag, translate, rotate, anim, basetime, size, pos)) return true;
                 return false;
             }
             linkedpart &l = links.add();
@@ -795,6 +796,7 @@ struct animmodel : model
             l.tag = i;
             l.anim = anim;
             l.basetime = basetime;
+            l.size = size;
             l.translate = translate;
             l.rotate = rotate;
             l.pos = pos;
@@ -1105,7 +1107,9 @@ struct animmodel : model
                 loopv(links)
                 {
                     linkedpart &link = links[i];
-                    link.matrix.translate(links[i].translate, resize);
+                    float oldsizescale = sizescale;
+                    sizescale *= link.size;
+                    link.matrix.translate(links[i].translate, model->scale * sizescale);
                     if(link.rotate.x) link.matrix.rotate_around_z(link.rotate.x*RAD);
                     if(link.rotate.z) link.matrix.rotate_around_x(-link.rotate.z*RAD);
                     if(link.rotate.y) link.matrix.rotate_around_y(link.rotate.y*RAD);
@@ -1128,8 +1132,9 @@ struct animmodel : model
                         nbasetime = link.basetime;
                         nbasetime2 = 0;
                     }
-                    link.p->render(nanim, nbasetime, nbasetime2, pitch, axis, forward, state, d);
 
+                    link.p->render(nanim, nbasetime, nbasetime2, pitch, axis, forward, state, d);
+                    sizescale = oldsizescale;
                     matrixpos--;
                 }
             }
@@ -1191,7 +1196,7 @@ struct animmodel : model
                 switch(linktype(m, p))
                 {
                     case LINK_TAG:
-                        p->index = link(p, state->attached[i].tag, vec(0, 0, 0), vec(0, 0, 0), state->attached[i].anim, state->attached[i].basetime, state->attached[i].pos) ? index : -1;
+                        p->index = link(p, state->attached[i].tag, vec(0, 0, 0), vec(0, 0, 0), state->attached[i].anim, state->attached[i].basetime, state->attached[i].sizescale, state->attached[i].pos) ? index : -1;
                         break;
 
                     case LINK_COOP:
@@ -1308,7 +1313,7 @@ struct animmodel : model
                 animmodel *m = (animmodel *)state->attached[i].m;
                 if(!m)
                 {
-                    if(state->attached[i].pos) link(NULL, state->attached[i].tag, vec(0, 0, 0), vec(0, 0, 0), 0, 0, state->attached[i].pos);
+                    if(state->attached[i].pos) link(NULL, state->attached[i].tag, vec(0, 0, 0), vec(0, 0, 0), 0, 0, state->attached[i].sizescale, state->attached[i].pos);
                     continue;
                 }
                 part *p = m->parts[0];
@@ -1317,7 +1322,7 @@ struct animmodel : model
                     case LINK_TAG:
                         p->index = link(p, state->attached[i].tag, vec(0, 0, 0),
                             vec(m->offsetyaw + m->spinyaw*lastmillis/1000.0f, m->offsetpitch + m->spinpitch*lastmillis/1000.0f, m->offsetroll + m->spinroll*lastmillis/1000.0f),
-                                state->attached[i].anim, state->attached[i].basetime, state->attached[i].pos) ? index : -1;
+                                state->attached[i].anim, state->attached[i].basetime, state->attached[i].sizescale, state->attached[i].pos) ? index : -1;
                         break;
 
                     case LINK_COOP:
@@ -1575,10 +1580,10 @@ struct animmodel : model
         return bih;
     }
 
-    bool link(part *p, const char *tag, const vec &translate = vec(0, 0, 0), const vec &rotate = vec(0, 0, 0), int anim = -1, int basetime = 0, vec *pos = NULL)
+    bool link(part *p, const char *tag, const vec &translate = vec(0, 0, 0), const vec &rotate = vec(0, 0, 0), int anim = -1, int basetime = 0, float size = 1, vec *pos = NULL)
     {
         if(parts.empty()) return false;
-        return parts[0]->link(p, tag, translate, rotate, anim, basetime, pos);
+        return parts[0]->link(p, tag, translate, rotate, anim, basetime, size, pos);
     }
 
     bool unlink(part *p)

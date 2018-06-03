@@ -4870,7 +4870,7 @@ namespace server
             checkweapload(ci, ci->weapselect);
         }
         ci->updateweaptime();
-        ci->weapswitch(weap, millis, G(weaponswitchdelay));
+        ci->weapswitch(weap, millis, W(weap, delayswitch));
         sendf(-1, 1, "ri3x", N_WSELECT, ci->clientnum, weap, ci->clientnum);
     }
 
@@ -4901,7 +4901,7 @@ namespace server
         }
         ci->weapclip[weap] = -1;
         ci->weapstore[weap] = 0;
-        ci->weapswitch(nweap, millis, G(weaponswitchdelay));
+        ci->weapswitch(nweap, millis, W(nweap, delayswitch));
         sendf(-1, 1, "ri7", N_DROP, ci->clientnum, nweap, 1, weap, dropped, ammo);
     }
 
@@ -4978,7 +4978,7 @@ namespace server
             {
                 dropped = ci->weapent[weap];
                 ammo = ci->getammo(weap, 0, true);
-                ci->setweapstate(weap, W_S_SWITCH, G(weaponswitchdelay), millis);
+                ci->setweapstate(weap, W_S_SWITCH, W(weap, delayswitch), millis);
                 if(ammo) ci->dropped.add(dropped, ammo);
             }
             ci->weapclip[weap] = -1;
@@ -4990,7 +4990,7 @@ namespace server
             cp->dropped.remove(ent);
         }
         else setspawn(ent, false);
-        ci->useitem(ent, sents[ent].type, attr, ammoamt, sweap, millis, G(weaponswitchdelay));
+        ci->useitem(ent, sents[ent].type, attr, ammoamt, sweap, millis, W(attr, delayitem));
         sendf(-1, 1, "ri9", N_ITEMACC, ci->clientnum, cn, ent, ammoamt, cn < 0 && sents[ent].spawned ? 1 : 0, weap, dropped, ammo);
     }
 

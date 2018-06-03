@@ -1111,7 +1111,7 @@ namespace projs
                     create(d->muzzlepos(), d->muzzlepos(), local, d, PRJ_ENT, -1, HIT_NONE, W(weap, spawntime), W(weap, spawntime), 1, 1, ent, ammo, index);
                 d->weapclip[weap] = -1;
                 d->weapstore[weap] = 0;
-                if(targ >= 0) d->setweapstate(weap, W_S_SWITCH, weaponswitchdelay, lastmillis);
+                if(targ >= 0) d->setweapstate(weap, W_S_SWITCH, W(weap, delayswitch), lastmillis);
             }
             else create(d->muzzlepos(), d->muzzlepos(), local, d, PRJ_SHOT, -1, HIT_NONE, 1, W2(weap, time, false), 1, 1, 1, weap);
         }

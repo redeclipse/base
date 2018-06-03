@@ -3249,7 +3249,7 @@ namespace game
                         if(isweap(lastweap) && millis <= off)
                         {
                             weap = lastweap;
-                            weapscale = 1-(millis/float(off));
+                            weapscale = 1.f-(millis/float(off));
                         }
                         else if(!d->hasweap(weap, m_weapon(d->actortype, gamemode, mutators))) showweap = false;
                         else if(millis <= off*2) weapscale = (millis-off)/float(off);
@@ -3302,7 +3302,7 @@ namespace game
                 const char *weapmdl = third ? weaptype[weap].vwep : weaptype[weap].hwep;
                 if(weapmdl && *weapmdl)
                 {
-                    mdlattach[ai++] = modelattach("tag_weapon", weapmdl, mdl.anim, mdl.basetime, 1, weapscale*mdl.size); // 0
+                    mdlattach[ai++] = modelattach("tag_weapon", weapmdl, mdl.anim, mdl.basetime, weapscale); // 0
                     hasweapon = true;
                 }
             }

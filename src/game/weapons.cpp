@@ -90,7 +90,7 @@ namespace weapons
                 else newoff = true;
             }
         }
-        if(!d->weapswitch(weap, lastmillis, weaponswitchdelay)) return false;
+        if(!d->weapswitch(weap, lastmillis, W(weap, delayswitch))) return false;
         if(local)
         {
             if(newoff)
@@ -113,7 +113,7 @@ namespace weapons
         {
             if(!d->canreload(weap, m_weapon(d->actortype, game::gamemode, game::mutators), true, lastmillis))
             {
-                if(d->weapstate[weap] == W_S_POWER) d->setweapstate(weap, W_S_WAIT, 100, lastmillis);
+                if(d->weapstate[weap] == W_S_POWER) d->setweapstate(weap, W_S_WAIT, PHYSMILLIS, lastmillis);
                 return false;
             }
             client::addmsg(N_RELOAD, "ri3", d->clientnum, lastmillis-game::maptime, weap);
@@ -219,7 +219,7 @@ namespace weapons
             }
         }
         client::addmsg(N_DROP, "ri3", d->clientnum, lastmillis-game::maptime, weap);
-        d->setweapstate(weap, W_S_WAIT, weaponswitchdelay, lastmillis);
+        d->setweapstate(weap, W_S_WAIT, PHYSMILLIS, lastmillis);
     }
 
     bool autoreload(gameent *d, int flags = 0)
