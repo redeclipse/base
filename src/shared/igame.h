@@ -10,7 +10,7 @@ namespace entities
     extern void remapents(vector<int> &idxs);
     extern void initents(int mtype, int mver, char *gid, int gver);
     extern float dropheight(extentity &e);
-    extern void fixentity(int n, bool recurse = true, bool create = false, bool alter = true);
+    extern void fixentity(int n, bool recurse = true, bool create = false, bool alter = false);
     extern bool cansee(int n);
     extern const char *entinfo(int type, attrvector &attr, bool full = false, bool icon = false);
     extern const char *entinfo(entity &e, bool full = false, bool icon = false);
