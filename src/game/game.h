@@ -1641,15 +1641,20 @@ struct gameent : dynent, clientstate
                 jitters.remove(i);
                 continue;
             }
-            int mtime = millis-s.millis, stime = clamp(millis, s.millis, s.millis+s.delay), qtime = stime-s.last, ztime = min(mtime, s.delay);
-            if(qtime > 0)
+            int etime = s.millis+s.delay, stime = clamp(millis, s.millis, etime), qtime = stime-s.last, len = clamp(etime-stime, 1, 10);
+            if(qtime >= len)
             {
-                float scale = (float(qtime)/float(s.delay))*(1.f-(float(ztime)/float(s.delay)));
-                yaw += s.yaw*scale;
-                pitch += s.pitch*scale;
+                int itime = qtime-(qtime%len), mtime = stime-s.millis-itime, iters = itime/len;
+                float force = float(len)/float(s.delay);
+                loopj(iters)
+                {
+                    float scale = force*(1.f-(float(mtime+j+1)/float(s.delay)));
+                    yaw += s.yaw*scale;
+                    pitch += s.pitch*scale;
+                }
                 s.last = millis;
             }
-            if(mtime >= s.delay) jitters.remove(i);
+            if(millis-s.millis >= s.delay) jitters.remove(i);
         }
     }
 

@@ -403,7 +403,7 @@ namespace weapons
             float jitteryawmin = W2(weap, jitteryawmin, secondary), jitteryawmax = W2(weap, jitteryawmax, secondary),
                   jitterpitchmin = W2(weap, jitterpitchmin, secondary), jitterpitchmax = W2(weap, jitterpitchmax, secondary);
             accmodjitter(d, weap, secondary, W2(weap, cooked, true)&W_C_ZOOM && secondary && scale >= 0.9f, jittertime, jitteryawmin, jitteryawmax, jitterpitchmin, jitterpitchmax);
-            d->addjitter(weap, lastmillis, jittertime, jitteryawmin, jitteryawmax, jitterpitchmin, jitterpitchmax);
+            d->addjitter(weap, lastmillis, int(ceilf(jittertime*scale)), jitteryawmin*scale, jitteryawmax*scale, jitterpitchmin*scale, jitterpitchmax*scale);
         }
         projs::shootv(weap, secondary ? HIT_ALT : 0, sub, offset, scale, from, shots, d, true);
         client::addmsg(N_SHOOT, "ri8iv", d->clientnum, lastmillis-game::maptime, weap, secondary ? HIT_ALT : 0, cooked, int(from.x*DMF), int(from.y*DMF), int(from.z*DMF), shots.length(), shots.length()*sizeof(shotmsg)/sizeof(int), shots.getbuf());
