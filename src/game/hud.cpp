@@ -1163,7 +1163,8 @@ namespace hud
             }
             if(showcrosshair >= 2)
             {
-                float accskew = weapons::accmod(game::focus, physics::secondaryweap(game::focus))*crosshairaccamt;
+                bool secondary = physics::secondaryweap(game::focus);
+                float accskew = weapons::accmodspread(game::focus, game::focus->weapselect, secondary,  W2(game::focus->weapselect, cooked, true)&W_C_ZOOM && secondary)*crosshairaccamt;
                 if(accskew > 0) fade /= accskew;
             }
         }

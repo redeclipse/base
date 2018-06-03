@@ -523,13 +523,6 @@ GVAR(IDF_GAMEMOD, impulseslidedelay, 0, 1000, VAR_MAX); // minimum time between 
 GVAR(IDF_GAMEMOD, impulseslideinair, 0, 100, VAR_MAX); // minimum time in air for slide
 GVAR(IDF_GAMEMOD, impulsekickdelay, 0, 250, VAR_MAX); // minimum time between wall kicks/climbs/grabs
 
-GFVAR(IDF_GAMEMOD, spreadcrouch, 0, 0.25f, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, spreadzoom, 0, 0.125f, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, spreadstill, 0, 0.5f, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, spreadmoving, 0, 0.75f, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, spreadrunning, 0, 1.f, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, spreadinair, 0, 1.f, FVAR_MAX);
-
 GVAR(IDF_GAMEMOD, quakefade, 0, 300, VAR_MAX);
 GVAR(IDF_GAMEMOD, quakewobble, 1, 20, VAR_MAX);
 GVAR(IDF_GAMEMOD, quakelimit, 0, 200, VAR_MAX);

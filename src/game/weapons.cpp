@@ -263,16 +263,32 @@ namespace weapons
         }
     }
 
-    float accmod(gameent *d, bool zooming)
+    float accmodspread(gameent *d, int weap, bool secondary, bool zooming)
     {
         float r = 0;
         bool running = d->running(moveslow), moving = d->move || d->strafe;
-        if(running || moving) r += running ? spreadrunning : spreadmoving;
-        else if(zooming) r += spreadzoom;
-        else if(d->crouching()) r += spreadcrouch;
-        else r += spreadstill;
-        if(spreadinair > 0 && d->airmillis && !d->onladder) r += spreadinair;
+        if(running || moving) r += running ? W2(weap, spreadrunning, secondary) : W2(weap, spreadmoving, secondary);
+        else if(zooming) r += W2(weap, spreadzoom, true);
+        else if(d->crouching()) r += W2(weap, spreadcrouch, secondary);
+        else r += W2(weap, spreadstill, secondary);
+        if(W2(weap, spreadinair, secondary) > 0 && d->airmillis && !d->onladder) r += W2(weap, spreadinair, secondary);
         return r;
+    }
+
+    void accmodjitter(gameent *d, int weap, bool secondary, bool zooming, int &jittertime, float &jitteryawmin, float &jitteryawmax, float &jitterpitchmin, float &jitterpitchmax)
+    {
+        bool running = d->running(moveslow), moving = d->move || d->strafe;
+        #define MODSPREAD(name, value) \
+            if(running || moving) name##value = name##value*(running ? W2(weap, name##running, secondary) : W2(weap, name##moving, secondary)); \
+            else if(zooming) name##value = name##value*(W2(weap, name##zoom, true)); \
+            else if(d->crouching()) name##value = name##value*(W2(weap, name##crouch, secondary)); \
+            else name##value = name##value*(W2(weap, name##still, secondary)); \
+            if(W2(weap, name##inair, secondary) > 0 && d->airmillis && !d->onladder) name##value += name##value*(W2(weap, name##inair, secondary));
+        MODSPREAD(jittertime, );
+        MODSPREAD(jitteryaw, min);
+        MODSPREAD(jitteryaw, max);
+        MODSPREAD(jitterpitch, min);
+        MODSPREAD(jitterpitch, min);
     }
 
     bool doshot(gameent *d, vec &targ, int weap, bool pressed, bool secondary, int force)
@@ -369,7 +385,7 @@ namespace weapons
         {
             from = d->muzzlepos(weap);
             to = targ;
-            float m = accmod(d, W2(d->weapselect, cooked, true)&W_C_ZOOM && secondary);
+            float m = accmodspread(d, weap, secondary, W2(weap, cooked, true)&W_C_ZOOM && secondary && scale >= 0.9f);
             float spread = WSP(weap, secondary, game::gamemode, game::mutators, m);
             loopi(rays)
             {
@@ -382,7 +398,13 @@ namespace weapons
             }
         }
         if(W2(weap, jittertime, secondary))
-            d->addjitter(weap, lastmillis, W2(weap, jittertime, secondary), W2(weap, jitteryawmin, secondary), W2(weap, jitteryawmax, secondary), W2(weap, jitterpitchmin, secondary), W2(weap, jitterpitchmax, secondary));
+        {
+            int jittertime = W2(weap, jittertime, secondary);
+            float jitteryawmin = W2(weap, jitteryawmin, secondary), jitteryawmax = W2(weap, jitteryawmax, secondary),
+                  jitterpitchmin = W2(weap, jitterpitchmin, secondary), jitterpitchmax = W2(weap, jitterpitchmax, secondary);
+            accmodjitter(d, weap, secondary, W2(weap, cooked, true)&W_C_ZOOM && secondary && scale >= 0.9f, jittertime, jitteryawmin, jitteryawmax, jitterpitchmin, jitterpitchmax);
+            d->addjitter(weap, lastmillis, jittertime, jitteryawmin, jitteryawmax, jitterpitchmin, jitterpitchmax);
+        }
         projs::shootv(weap, secondary ? HIT_ALT : 0, sub, offset, scale, from, shots, d, true);
         client::addmsg(N_SHOOT, "ri8iv", d->clientnum, lastmillis-game::maptime, weap, secondary ? HIT_ALT : 0, cooked, int(from.x*DMF), int(from.y*DMF), int(from.z*DMF), shots.length(), shots.length()*sizeof(shotmsg)/sizeof(int), shots.getbuf());
 

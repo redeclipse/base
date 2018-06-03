@@ -1882,7 +1882,7 @@ namespace weapons
     extern bool weapreload(gameent *d, int weap, int load = -1, int ammo = -1, int store = 0, bool local = true);
     extern void weapdrop(gameent *d, int w = -1);
     extern void checkweapons(gameent *d);
-    extern float accmod(gameent *d, bool zooming);
+    extern float accmodspread(gameent *d, int weap, bool secondary, bool zooming);
     extern bool doshot(gameent *d, vec &targ, int weap, bool pressed = false, bool secondary = false, int force = 0);
     extern void shoot(gameent *d, vec &targ, int force = 0);
     extern void preload();
