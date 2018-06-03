@@ -633,10 +633,18 @@ extern float watersx1, watersy1, watersx2, watersy2;
     { \
         switch(mat&MATF_INDEX) \
         { \
-            default: case 0: return name##var; \
-            case 1: return name##2##var; \
-            case 2: return name##3##var; \
-            case 3: return name##4##var; \
+            default: case 0: \
+                if(checkmapvariant(MPV_ALT)) return name##var##alt; \
+                return name##var; \
+            case 1: \
+                if(checkmapvariant(MPV_ALT)) return name##2##var##alt; \
+                return name##2##var; \
+            case 2: \
+                if(checkmapvariant(MPV_ALT)) return name##3##var##alt; \
+                return name##3##var; \
+            case 3: \
+                if(checkmapvariant(MPV_ALT)) return name##4##var##alt; \
+                return name##4##var; \
         } \
     }
 
@@ -652,6 +660,7 @@ extern int getwaterspec(int mat);
 extern float getwaterrefract(int mat);
 extern int getwaterfallspec(int mat);
 extern float getwaterfallrefract(int mat);
+extern int getwaterreflectstep(int mat);
 
 extern const bvec &getlavacolour(int mat);
 extern int getlavafog(int mat);

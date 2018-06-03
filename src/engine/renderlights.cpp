@@ -231,15 +231,34 @@ void cleanupao()
     clearbilateralshaders();
 }
 
+#define GETVARMPV(name, var, type) \
+    type get##name##var() \
+    { \
+        if(checkmapvariant(MPV_ALT)) return name##var##alt; \
+        return name##var; \
+    }
+
+#define AOVARS(name) \
+    FVAR(IDF_WORLD, aoradius##name, 0, 5, 256); \
+    FVAR(IDF_WORLD, aodark##name, 1e-3f, 11.0f, 1e3f); \
+    FVAR(IDF_WORLD, aomin##name, 0, 0.25f, 1); \
+    VARF(IDF_WORLD, aosun##name, 0, 1, 1, cleardeferredlightshaders()); \
+    FVAR(IDF_WORLD, aosunmin##name, 0, 0.5f, 1); \
+    FVAR(IDF_WORLD, aosharp##name, 1e-3f, 1, 1e3f);
+
+AOVARS();
+AOVARS(alt);
+
+GETVARMPV(ao, radius, float);
+GETVARMPV(ao, dark, float);
+GETVARMPV(ao, min, float);
+GETVARMPV(ao, sun, float);
+GETVARMPV(ao, sunmin, float);
+GETVARMPV(ao, sharp, float);
+
 VARF(IDF_PERSIST, ao, 0, 1, 1, { cleanupao(); cleardeferredlightshaders(); });
-FVAR(IDF_WORLD, aoradius, 0, 5, 256);
 FVAR(0, aocutoff, 0, 2.0f, 1e3f);
-FVAR(IDF_WORLD, aodark, 1e-3f, 11.0f, 1e3f);
-FVAR(IDF_WORLD, aosharp, 1e-3f, 1, 1e3f);
 FVAR(0, aoprefilterdepth, 0, 1, 1e3f);
-FVAR(IDF_WORLD, aomin, 0, 0.25f, 1);
-VARF(IDF_WORLD, aosun, 0, 1, 1, cleardeferredlightshaders());
-FVAR(IDF_WORLD, aosunmin, 0, 0.5f, 1);
 VAR(IDF_PERSIST, aoblur, 0, 4, 7);
 VAR(IDF_PERSIST, aoiter, 0, 0, 4);
 VARF(IDF_PERSIST, aoreduce, 0, 1, 2, cleanupao());
@@ -316,8 +335,8 @@ void renderao()
     glBindTexture(GL_TEXTURE_2D, aonoisetex);
     glActiveTexture_(GL_TEXTURE0);
 
-    LOCALPARAMF(tapparams, aoradius*eyematrix.d.z/xscale, aoradius*eyematrix.d.z/yscale, aoradius*aoradius*aocutoff*aocutoff);
-    LOCALPARAMF(contrastparams, (2.0f*aodark)/aotaps, aosharp);
+    LOCALPARAMF(tapparams, getaoradius()*eyematrix.d.z/xscale, getaoradius()*eyematrix.d.z/yscale, getaoradius()*getaoradius()*aocutoff*aocutoff);
+    LOCALPARAMF(contrastparams, (2.0f*getaodark())/aotaps, getaosharp());
     LOCALPARAMF(offsetscale, xscale/eyematrix.d.z, yscale/eyematrix.d.z, eyematrix.d.x/eyematrix.d.z, eyematrix.d.y/eyematrix.d.z);
     LOCALPARAMF(prefilterdepth, aoprefilterdepth);
     screenquad(vieww, viewh, aow/float(1<<aonoise), aoh/float(1<<aonoise));
@@ -936,6 +955,14 @@ void resolvemsaacolor(int w = vieww, int h = viewh)
     endtimer(resolvetimer);
 }
 
+#define HDRVARS(name) \
+    FVAR(IDF_WORLD, hdrbright##name, 1e-4f, 1.0f, 1e4f);
+
+HDRVARS();
+HDRVARS(alt);
+
+GETVARMPV(hdr, bright, float);
+
 FVAR(0, bloomthreshold, 1e-3f, 0.8f, 1e3f);
 FVAR(IDF_PERSIST, bloomscale, 0, 1.0f, 1e3f);
 VAR(IDF_PERSIST, bloomblur, 0, 7, 7);
@@ -947,7 +974,6 @@ VAR(0, hdraccummillis, 1, 33, 1000);
 VAR(0, hdrreduce, 0, 2, 2);
 VARF(IDF_PERSIST, hdrprec, 0, 2, 3, cleanupgbuffer());
 FVARF(IDF_PERSIST, hdrgamma, 1e-3f, 2, 1e3f, initwarning("HDR setup", INIT_LOAD, CHANGE_SHADERS));
-FVAR(IDF_WORLD, hdrbright, 1e-4f, 1.0f, 1e4f);
 FVAR(0, hdrsaturate, 1e-3f, 0.8f, 1e3f);
 VARF(IDF_PERSIST, gscale, 25, 100, 100, cleanupgbuffer());
 VARF(IDF_PERSIST, gscalecubic, 0, 0, 1, cleanupgbuffer());
@@ -1018,7 +1044,7 @@ void processhdr(GLuint outfbo, int aa)
 {
     timer *hdrtimer = begintimer("HDR Processing");
 
-    GLOBALPARAMF(hdrparams, hdrbright, hdrsaturate, bloomthreshold, bloomscale);
+    GLOBALPARAMF(hdrparams, gethdrbright(), hdrsaturate, bloomthreshold, bloomscale);
 
     GLuint b0fbo = bloomfbo[1], b0tex = bloomtex[1], b1fbo =  bloomfbo[0], b1tex = bloomtex[0], ptex = hdrtex;
     int b0w = max(vieww/4, bloomw), b0h = max(viewh/4, bloomh), b1w = max(vieww/2, bloomw), b1h = max(viewh/2, bloomh),
@@ -1494,9 +1520,19 @@ VAR(0, rsmcull, 0, 1, 1);
 VARF(IDF_PERSIST, rhtaps, 0, 20, 32, cleanupradiancehints());
 VAR(0, rhdyntex, 0, 0, 1);
 VAR(0, rhdynmm, 0, 0, 1);
-VARF(IDF_WORLD, gidist, 0, 384, 1024, { clearradiancehintscache(); cleardeferredlightshaders(); if(!gidist) cleanupradiancehints(); });
-FVARF(IDF_WORLD, giscale, 0, 1.5f, 1e3f, { cleardeferredlightshaders(); if(!giscale) cleanupradiancehints(); });
-FVAR(IDF_WORLD, giaoscale, 0, 3, 1e3f);
+
+#define GIVARS(name) \
+    VARF(IDF_WORLD, gidist##name, 0, 384, 1024, { clearradiancehintscache(); cleardeferredlightshaders(); if(!gidist##name) cleanupradiancehints(); }); \
+    FVARF(IDF_WORLD, giscale##name, 0, 1.5f, 1e3f, { cleardeferredlightshaders(); if(!giscale##name) cleanupradiancehints(); }); \
+    FVAR(IDF_WORLD, giaoscale##name, 0, 3, 1e3f);
+
+GIVARS();
+GIVARS(alt);
+
+GETVARMPV(gi, dist, float);
+GETVARMPV(gi, scale, float);
+GETVARMPV(gi, aoscale, float);
+
 VARF(IDF_PERSIST, gi, 0, 1, 1, { cleardeferredlightshaders(); cleanupradiancehints(); });
 
 VAR(0, debugrsm, 0, 0, 2);
@@ -2203,7 +2239,7 @@ void reflectiveshadowmap::getprojmatrix()
     // compute the projected bounding box of the sphere
     vec tc;
     model.transform(c, tc);
-    const float pradius = ceil((radius + gidist) * rsmpradiustweak), step = (2*pradius) / rsmsize;
+    const float pradius = ceil((radius + getgidist()) * rsmpradiustweak), step = (2*pradius) / rsmsize;
     vec2 tcoff = vec2(tc).sub(pradius).div(step);
     tcoff.x = floor(tcoff.x);
     tcoff.y = floor(tcoff.y);
@@ -2358,7 +2394,7 @@ void radiancehints::bindparams()
 
 bool useradiancehints()
 {
-    return !getpielight().iszero() && csmshadowmap && gi && giscale && gidist;
+    return !getpielight().iszero() && csmshadowmap && gi && getgiscale() && getgidist();
 }
 
 FVAR(0, avatarshadowdist, 0, 12, 100);
@@ -2478,8 +2514,16 @@ VARF(IDF_PERSIST, volsteps, 1, 16, 64, cleanupvolumetric());
 FVAR(0, volminstep, 0, 0.0625f, 1e3f);
 FVAR(0, volprefilter, 0, 4, 1e3f);
 FVAR(0, voldistclamp, 0, 0.99f, 2);
-CVAR1(IDF_WORLD, volcolour, 0x808080);
-FVAR(IDF_WORLD, volscale, 0, 1, 16);
+
+#define VOLVARS(name) \
+    CVAR1(IDF_WORLD, volcolour##name, 0x808080); \
+    FVAR(IDF_WORLD, volscale##name, 0, 1, 16);
+
+VOLVARS();
+VOLVARS(alt);
+
+GETVARMPV(vol, colour, const bvec &);
+GETVARMPV(vol, scale, float);
 
 static Shader *deferredlightshader = NULL, *deferredminimapshader = NULL, *deferredmsaapixelshader = NULL, *deferredmsaasampleshader = NULL;
 
@@ -2534,8 +2578,8 @@ Shader *loaddeferredlightshader(const char *type = NULL)
         sun[sunlen++] = '0' + csmsplits;
         if(!minimap)
         {
-            if(avatar && ao && aosun) sun[sunlen++] = 'A';
-            if(gi && giscale && gidist)
+            if(avatar && ao && getaosun()) sun[sunlen++] = 'A';
+            if(gi && getgiscale() && getgidist())
             {
                 userh = rhsplits;
                 sun[sunlen++] = 'r';
@@ -2827,7 +2871,7 @@ static inline void setlightglobals(bool transparent = false)
         else
         {
             GLOBALPARAM(aoscale, aotex[2] ? vec2(1, 1) : vec2(float(aow)/vieww, float(aoh)/viewh));
-            GLOBALPARAMF(aoparams, aomin, 1.0f-aomin, aosunmin, 1.0f-aosunmin);
+            GLOBALPARAMF(aoparams, getaomin(), 1.0f-getaomin(), getaosunmin(), 1.0f-getaosunmin());
         }
     }
     float lightscale = 2.0f*ldrscaleb;
@@ -2859,8 +2903,8 @@ static inline void setlightglobals(bool transparent = false)
             float piescale = getpielightscale(), pieskyscale = getskylightscale();
             GLOBALPARAM(sunlightdir, piedir);
             GLOBALPARAMF(sunlightcolor, pie.x*lightscale*piescale, pie.y*lightscale*piescale, pie.z*lightscale*piescale);
-            GLOBALPARAMF(giscale, 2*giscale);
-            GLOBALPARAMF(skylightcolor, 2*giaoscale*piesky.x*lightscale*pieskyscale, 2*giaoscale*piesky.y*lightscale*pieskyscale, 2*giaoscale*piesky.z*lightscale*pieskyscale);
+            GLOBALPARAMF(giscale, 2*getgiscale());
+            GLOBALPARAMF(skylightcolor, 2*getgiaoscale()*piesky.x*lightscale*pieskyscale, 2*getgiaoscale()*piesky.y*lightscale*pieskyscale, 2*getgiaoscale()*piesky.z*lightscale*pieskyscale);
         }
     }
 
@@ -3014,7 +3058,7 @@ static void renderlightsnobatch(Shader *s, int stencilref, bool transparent, flo
 
 static void renderlightbatches(Shader *s, int stencilref, bool transparent, float bsx1, float bsy1, float bsx2, float bsy2, const uint *tilemask)
 {
-    bool sunpass = !getpielight().iszero() && csmshadowmap && batchsunlight <= (gi && giscale && gidist ? 1 : 0);
+    bool sunpass = !getpielight().iszero() && csmshadowmap && batchsunlight <= (gi && getgiscale() && getgidist() ? 1 : 0);
     int btx1, bty1, btx2, bty2;
     calctilebounds(bsx1, bsy1, bsx2, bsy2, btx1, bty1, btx2, bty2);
     loopv(lightbatches)
@@ -3160,7 +3204,7 @@ void renderlights(float bsx1 = -1, float bsy1 = -1, float bsx2 = 1, float bsy2 =
 
     if(hasDBT && depthtestlights > 1) glEnable(GL_DEPTH_BOUNDS_TEST_EXT);
 
-    bool sunpass = !lighttilebatch || drawtex == DRAWTEX_MINIMAP || (!getpielight().iszero() && csmshadowmap && batchsunlight <= (gi && giscale && gidist ? 1 : 0));
+    bool sunpass = !lighttilebatch || drawtex == DRAWTEX_MINIMAP || (!getpielight().iszero() && csmshadowmap && batchsunlight <= (gi && getgiscale() && getgidist() ? 1 : 0));
     if(sunpass)
     {
         if(depthtestlights && depth) { glDisable(GL_DEPTH_TEST); depth = false; }
@@ -3203,7 +3247,7 @@ extern int volumetriclights;
 
 void rendervolumetric()
 {
-    if(!volumetric || !volumetriclights || !volscale) return;
+    if(!volumetric || !volumetriclights || !getvolscale()) return;
 
     float bsx1 = 1, bsy1 = 1, bsx2 = -1, bsy2 = -1;
     loopv(lightorder)
@@ -3267,7 +3311,7 @@ void rendervolumetric()
         else volumetricshader->set();
 
         LOCALPARAM(lightpos, vec4(l.o, 1).div(l.radius));
-        vec color = vec(l.color).mul(ldrscaleb).mul(volcolour.tocolor().mul(volscale));
+        vec color = vec(l.color).mul(ldrscaleb).mul(getvolcolour().tocolor().mul(getvolscale()));
         LOCALPARAM(lightcolor, color);
 
         if(l.shadowmap >= 0)
@@ -3861,11 +3905,11 @@ void radiancehints::renderslices()
         }
     }
 
-    GLOBALPARAMF(rhatten, 1.0f/(gidist*gidist));
-    GLOBALPARAMF(rsmspread, gidist*rsmspread*rsm.scale.x, gidist*rsmspread*rsm.scale.y);
+    GLOBALPARAMF(rhatten, 1.0f/(getgidist()*getgidist()));
+    GLOBALPARAMF(rsmspread, getgidist()*rsmspread*rsm.scale.x, getgidist()*rsmspread*rsm.scale.y);
     GLOBALPARAMF(rhaothreshold, splits[0].bounds/rhgrid);
-    GLOBALPARAMF(rhaoatten, 1.0f/(gidist*rsmspread));
-    GLOBALPARAMF(rhaoheight, gidist*rsmspread);
+    GLOBALPARAMF(rhaoatten, 1.0f/(getgidist()*rsmspread));
+    GLOBALPARAMF(rhaoheight, getgidist()*rsmspread);
 
     matrix4 rsmtcmatrix;
     rsmtcmatrix.identity();
@@ -3915,13 +3959,13 @@ void radiancehints::renderslices()
         }
         if(prevdynmin.z < prevdynmax.z) loopk(3)
         {
-            dmin[k] = min(dmin[k], (float)floor((prevdynmin[k] - gidist - cellradius - (split.center[k] - split.bounds))/step)*step + split.center[k] - split.bounds);
-            dmax[k] = max(dmax[k], (float)ceil((prevdynmax[k] + gidist + cellradius - (split.center[k] - split.bounds))/step)*step + split.center[k] - split.bounds);
+            dmin[k] = min(dmin[k], (float)floor((prevdynmin[k] - getgidist() - cellradius - (split.center[k] - split.bounds))/step)*step + split.center[k] - split.bounds);
+            dmax[k] = max(dmax[k], (float)ceil((prevdynmax[k] + getgidist() + cellradius - (split.center[k] - split.bounds))/step)*step + split.center[k] - split.bounds);
         }
         if(dynmin.z < dynmax.z) loopk(3)
         {
-            dmin[k] = min(dmin[k], (float)floor((dynmin[k] - gidist - cellradius - (split.center[k] - split.bounds))/step)*step + split.center[k] - split.bounds);
-            dmax[k] = max(dmax[k], (float)ceil((dynmax[k] + gidist + cellradius - (split.center[k] - split.bounds))/step)*step + split.center[k] - split.bounds);
+            dmin[k] = min(dmin[k], (float)floor((dynmin[k] - getgidist() - cellradius - (split.center[k] - split.bounds))/step)*step + split.center[k] - split.bounds);
+            dmax[k] = max(dmax[k], (float)ceil((dynmax[k] + getgidist() + cellradius - (split.center[k] - split.bounds))/step)*step + split.center[k] - split.bounds);
         }
 
         if((rhrect || !rhcache || hasCI) && split.cached == split.center && (!rhborder || prevcached) && !rhforce &&

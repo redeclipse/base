@@ -1107,7 +1107,7 @@ namespace server
                     }
                     case ID_SVAR:
                     {
-                        if(strcmp(*id.storage.s, id.bin.s))
+                        if(strcmp(*id.storage.s, id.def.s))
                         {
                             setsvar(id.name, id.def.s && *id.def.s ? id.def.s : "", true);
                             val = *id.storage.s;

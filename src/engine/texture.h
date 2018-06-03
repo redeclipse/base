@@ -666,7 +666,7 @@ struct VSlot
     vec2 scroll;
     int layer, detail, palette, palindex;
     float alphafront, alphaback;
-    vec colorscale;
+    vec colorscale, colorscalealt;
     vec glowcolor;
     float coastscale;
     float refractscale;

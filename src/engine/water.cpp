@@ -340,24 +340,29 @@ static inline void renderwater(const materialsurface &m, int mat = MAT_WATER)
         rendervertwater(m.csize, m.o.x, m.o.y, m.o.z, m.csize, mat);
 }
 
-#define WATERVARS(name) \
-    CVAR0(IDF_WORLD, name##colour, 0x01212C); \
-    CVAR0(IDF_WORLD, name##deepcolour, 0x010A10); \
-    CVAR0(IDF_WORLD, name##deepfade, 0x60BFFF); \
-    CVAR0(IDF_WORLD, name##refractcolour, 0xFFFFFF); \
-    VAR(IDF_WORLD, name##fog, 0, 30, 10000); \
-    VAR(IDF_WORLD, name##deep, 0, 50, 10000); \
-    VAR(IDF_WORLD, name##spec, 0, 150, 200); \
-    FVAR(IDF_WORLD, name##refract, 0, 0.1f, 1e3f); \
-    CVAR(IDF_WORLD, name##fallcolour, 0); \
-    CVAR(IDF_WORLD, name##fallrefractcolour, 0); \
-    VAR(IDF_WORLD, name##fallspec, 0, 150, 200); \
-    FVAR(IDF_WORLD, name##fallrefract, 0, 0.1f, 1e3f);
+#define WATERVARS(type, name) \
+    CVAR0(IDF_WORLD, name##colour##type, 0x01212C); \
+    CVAR0(IDF_WORLD, name##deepcolour##type, 0x010A10); \
+    CVAR0(IDF_WORLD, name##deepfade##type, 0x60BFFF); \
+    CVAR0(IDF_WORLD, name##refractcolour##type, 0xFFFFFF); \
+    VAR(IDF_WORLD, name##fog##type, 0, 30, 10000); \
+    VAR(IDF_WORLD, name##deep##type, 0, 50, 10000); \
+    VAR(IDF_WORLD, name##spec##type, 0, 150, 200); \
+    FVAR(IDF_WORLD, name##refract##type, 0, 0.1f, 1e3f); \
+    CVAR(IDF_WORLD, name##fallcolour##type, 0); \
+    CVAR(IDF_WORLD, name##fallrefractcolour##type, 0); \
+    VAR(IDF_WORLD, name##fallspec##type, 0, 150, 200); \
+    FVAR(IDF_WORLD, name##fallrefract##type, 0, 0.1f, 1e3f); \
+    VAR(IDF_WORLD, name##reflectstep##type, 1, 32, 10000);
 
-WATERVARS(water)
-WATERVARS(water2)
-WATERVARS(water3)
-WATERVARS(water4)
+WATERVARS(, water)
+WATERVARS(, water2)
+WATERVARS(, water3)
+WATERVARS(, water4)
+WATERVARS(alt, water)
+WATERVARS(alt, water2)
+WATERVARS(alt, water3)
+WATERVARS(alt, water4)
 
 GETMATIDXVAR(water, colour, const bvec &)
 GETMATIDXVAR(water, deepcolour, const bvec &)
@@ -371,29 +376,33 @@ GETMATIDXVAR(water, spec, int)
 GETMATIDXVAR(water, refract, float)
 GETMATIDXVAR(water, fallspec, int)
 GETMATIDXVAR(water, fallrefract, float)
+GETMATIDXVAR(water, reflectstep, int)
 
-#define LAVAVARS(name) \
-    CVAR0(IDF_WORLD, name##colour, 0xFF4000); \
-    VAR(IDF_WORLD, name##fog, 0, 50, 10000); \
-    FVAR(IDF_WORLD, name##glowmin, 0, 0.25f, 2); \
-    FVAR(IDF_WORLD, name##glowmax, 0, 1.0f, 2); \
-    VAR(IDF_WORLD, name##spec, 0, 25, 200);
+VARF(IDF_PERSIST, waterreflect, 0, 1, 1, { preloadwatershaders(); });
+VARF(IDF_PERSIST, waterenvmap, 0, 1, 1, { preloadwatershaders(); });
+VARF(IDF_PERSIST, waterfallenv, 0, 1, 1, preloadwatershaders());
 
-LAVAVARS(lava)
-LAVAVARS(lava2)
-LAVAVARS(lava3)
-LAVAVARS(lava4)
+#define LAVAVARS(type, name) \
+    CVAR0(IDF_WORLD, name##colour##type, 0xFF4000); \
+    VAR(IDF_WORLD, name##fog##type, 0, 50, 10000); \
+    FVAR(IDF_WORLD, name##glowmin##type, 0, 0.25f, 2); \
+    FVAR(IDF_WORLD, name##glowmax##type, 0, 1.0f, 2); \
+    VAR(IDF_WORLD, name##spec##type, 0, 25, 200);
+
+LAVAVARS(, lava)
+LAVAVARS(, lava2)
+LAVAVARS(, lava3)
+LAVAVARS(, lava4)
+LAVAVARS(alt, lava)
+LAVAVARS(alt, lava2)
+LAVAVARS(alt, lava3)
+LAVAVARS(alt, lava4)
 
 GETMATIDXVAR(lava, colour, const bvec &)
 GETMATIDXVAR(lava, fog, int)
 GETMATIDXVAR(lava, glowmin, float)
 GETMATIDXVAR(lava, glowmax, float)
 GETMATIDXVAR(lava, spec, int)
-
-VARF(IDF_PERSIST, waterreflect, 0, 1, 1, { preloadwatershaders(); });
-VAR(IDF_WORLD, waterreflectstep, 1, 32, 10000);
-VARF(IDF_PERSIST, waterenvmap, 0, 1, 1, { preloadwatershaders(); });
-VARF(IDF_PERSIST, waterfallenv, 0, 1, 1, preloadwatershaders());
 
 void preloadwatershaders(bool force)
 {
@@ -630,7 +639,7 @@ void renderwater()
             deepfade.z ? calcfogdensity(deepfade.z) : -1e4f,
             deep ? calcfogdensity(deep) : -1e4f);
         GLOBALPARAMF(waterspec, spec/100.0f);
-        GLOBALPARAMF(waterreflect, reflectscale, reflectscale, reflectscale, waterreflectstep);
+        GLOBALPARAMF(waterreflect, reflectscale, reflectscale, reflectscale, getwaterreflectstep(k));
         GLOBALPARAMF(waterrefract, refractcolor.x*refractscale, refractcolor.y*refractscale, refractcolor.z*refractscale, refract*viewh);
 
         #define SETWATERSHADER(which, name) \

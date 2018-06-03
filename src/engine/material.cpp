@@ -677,15 +677,19 @@ extern const vec matnormals[6] =
     vec(0, 0,  1)
 };
 
-#define GLASSVARS(name) \
-    CVAR0(IDF_WORLD, name##colour, 0xB0D8FF); \
-    FVAR(IDF_WORLD, name##refract, 0, 0.1f, 1e3f); \
-    VAR(IDF_WORLD, name##spec, 0, 150, 200);
+#define GLASSVARS(type, name) \
+    CVAR0(IDF_WORLD, name##colour##type, 0xB0D8FF); \
+    FVAR(IDF_WORLD, name##refract##type, 0, 0.1f, 1e3f); \
+    VAR(IDF_WORLD, name##spec##type, 0, 150, 200);
 
-GLASSVARS(glass)
-GLASSVARS(glass2)
-GLASSVARS(glass3)
-GLASSVARS(glass4)
+GLASSVARS(, glass)
+GLASSVARS(, glass2)
+GLASSVARS(, glass3)
+GLASSVARS(, glass4)
+GLASSVARS(alt, glass)
+GLASSVARS(alt, glass2)
+GLASSVARS(alt, glass3)
+GLASSVARS(alt, glass4)
 
 GETMATIDXVAR(glass, colour, const bvec &)
 GETMATIDXVAR(glass, refract, float)
