@@ -1897,7 +1897,7 @@ namespace hud
             }
             string text;
             if(game::damageinteger)
-                formatstring(text, "%c%d", d.damage > 0 ? '-' : (d.damage < 0 ? '+' : '~'), int((d.damage < 0 ? 0-d.damage : d.damage)/game::damagedivisor));
+                formatstring(text, "%c%d", d.damage > 0 ? '-' : (d.damage < 0 ? '+' : '~'), int(ceilf((d.damage < 0 ? 0-d.damage : d.damage)/game::damagedivisor)));
             else formatstring(text, "%c%.1f", d.damage > 0 ? '-' : (d.damage < 0 ? '+' : '~'), (d.damage < 0 ? 0-d.damage : d.damage)/game::damagedivisor);
             vec colour = d.colour < 0 ? game::pulsecolour(a, INVPULSE(d.colour)) : vec::fromcolor(d.colour);
             if(maxy >= 0 && hy < maxy) hy = maxy;

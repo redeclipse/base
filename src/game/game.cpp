@@ -1325,7 +1325,7 @@ namespace game
             if(aboveheaddamage)
             {
                 string text;
-                if(damageinteger) formatstring(text, "<sub>\fo%c%d", damage > 0 ? '-' : (damage < 0 ? '+' : '~'), int((damage < 0 ? 0-damage : damage)/damagedivisor));
+                if(damageinteger) formatstring(text, "<sub>\fo%c%d", damage > 0 ? '-' : (damage < 0 ? '+' : '~'), int(ceilf((damage < 0 ? 0-damage : damage)/damagedivisor)));
                 else formatstring(text, "<sub>\fo%c%.1f", damage > 0 ? '-' : (damage < 0 ? '+' : '~'), (damage < 0 ? 0-damage : damage)/damagedivisor);
                 part_textcopy(d->abovehead(), text, d != focus ? PART_TEXT : PART_TEXT_ONTOP, eventiconfade, colourwhite, 4, 1, -10, 0, d);
             }
@@ -1704,7 +1704,7 @@ namespace game
             if(showobithpleft >= (d != player1 ? 2 : 1))
             {
                 string obitx;
-                if(damageinteger) formatstring(obitx, " (\fs\fc%d\fS)", int(v->health/damagedivisor));
+                if(damageinteger) formatstring(obitx, " (\fs\fc%d\fS)", int(ceilf(v->health/damagedivisor)));
                 else formatstring(obitx, " (\fs\fc%.1f\fS)", v->health/damagedivisor);
                 concatstring(d->obit, obitx);
             }
@@ -1723,7 +1723,7 @@ namespace game
                 if(showobithpleft >= (d != player1 ? 2 : 1))
                 {
                     string obitx;
-                    if(damageinteger) formatstring(obitx, " (\fs\fc%d\fS)", int(log[i]->health/damagedivisor));
+                    if(damageinteger) formatstring(obitx, " (\fs\fc%d\fS)", int(ceilf(log[i]->health/damagedivisor)));
                     else formatstring(obitx, " (\fs\fc%.1f\fS)", log[i]->health/damagedivisor);
                     concatstring(d->obit, obitx);
                 }
