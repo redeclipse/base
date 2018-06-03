@@ -1564,6 +1564,42 @@ void trytofindocta(bool fallback)
     }
 }
 
+SVAR(IDF_READONLY, extras, "");
+void loadextras()
+{
+    string extras = "";
+    const char *dir = getenv(sup_var("EXTRADIRS"));
+    if(dir && *dir) copystring(extras, dir);
+    else
+    {
+        char *extrafile = loadfile("extras.txt", NULL);
+        if(extrafile)
+        {
+            concformatstring(extras, "%s%s", *extras ? " " : "", extrafile);
+            delete[] extrafile;
+        }
+    }
+    if(*extras)
+    {
+        int len = listlen(extras);
+        setsvar("extras", extras);
+        loopi(len)
+        {
+            char *word = indexlist(extras, i);
+            if(word)
+            {
+                if(*word)
+                {
+                    defformatstring(fname, "data/%s", extras);
+                    conoutf("Adding extra content: %s", fname);
+                    addpackagedir(fname);
+                }
+                delete[] word;
+            }
+        }
+    }
+}
+
 void setlocations(bool wanthome)
 {
     int backstep = 3;
@@ -1573,15 +1609,11 @@ void setlocations(bool wanthome)
     }
     if(!execfile("config/version.cfg", false, EXEC_VERSION|EXEC_BUILTIN)) fatal("cannot exec 'config/version.cfg'");
 
-    // pseudo directory with game content
+    // pseudo directories with game content
     const char *dir = getenv(sup_var("DATADIR"));
     if(dir && *dir) addpackagedir(dir);
     else addpackagedir("data");
-
-    // pseudo directory with bonus content
-    dir = getenv(sup_var("BONUSDIR"));
-    if(dir && *dir) addpackagedir(dir);
-    else addpackagedir("bonus");
+    loadextras();
 
     if(!fileexists(findfile("maps/readme.txt", "r"), "r")) fatal("could not find game data");
     if(wanthome)

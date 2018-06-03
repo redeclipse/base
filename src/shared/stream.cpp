@@ -463,6 +463,7 @@ void addpackagedir(const char *dir, int flags)
     packagedir &pdir = packagedirs.add();
     fixdir(copystring(pdir.name, dir));
     pdir.flags = flags;
+    conoutf("Added package: %s", pdir.name);
 }
 
 const char *findfile(const char *filename, const char *mode)

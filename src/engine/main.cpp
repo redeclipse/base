@@ -1002,11 +1002,11 @@ int main(int argc, char **argv)
 
     numcpus = clamp(SDL_GetCPUCount(), 1, 16);
 
-    conoutf("Loading sdl..");
+    conoutf("Loading SDL..");
     if(SDL_Init(SDL_INIT_TIMER|SDL_INIT_VIDEO|SDL_INIT_AUDIO)<0) fatal("Unable to initialize SDL: %s", SDL_GetError());
     setcaption("Loading, please wait..");
 
-    conoutf("Loading enet..");
+    conoutf("Loading eNet..");
     if(enet_initialize()<0) fatal("Unable to initialise network module");
     atexit(enet_deinitialize);
     enet_time_set(0);
