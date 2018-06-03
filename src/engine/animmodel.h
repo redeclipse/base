@@ -1008,7 +1008,9 @@ struct animmodel : model
                 {
                     linkedpart &link = links[i];
                     if(!link.p) continue;
-                    link.matrix.translate(links[i].translate, resize);
+                    float oldsizescale = sizescale;
+                    sizescale *= link.size;
+                    link.matrix.translate(links[i].translate, model->scale * sizescale);
 
                     matrixpos++;
                     matrixstack[matrixpos].mul(matrixstack[matrixpos-1], link.matrix);
@@ -1021,6 +1023,7 @@ struct animmodel : model
                         nbasetime2 = 0;
                     }
                     link.p->intersect(nanim, nbasetime, nbasetime2, pitch, axis, forward, state, d, o, ray);
+                    sizescale = oldsizescale;
 
                     matrixpos--;
                 }

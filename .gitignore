@@ -53,4 +53,4 @@ GRTAGS
 CMakeCache.txt
 CMakeFiles/
 cmake_install.cmake
-bonus/
+extras.txt

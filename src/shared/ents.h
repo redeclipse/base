@@ -50,8 +50,8 @@ struct modelattach
     model *m;
 
     modelattach() : tag(NULL), name(NULL), anim(-1), basetime(0), sizescale(-1), pos(NULL), m(NULL) {}
-    modelattach(const char *tag, const char *name, int anim = -1, int basetime = 0, float sizescale = -1) : tag(tag), name(name), anim(anim), basetime(basetime), sizescale(sizescale), pos(NULL), m(NULL) {}
-    modelattach(const char *tag, vec *pos) : tag(tag), name(NULL), anim(-1), basetime(0), sizescale(-1), pos(pos), m(NULL) {}
+    modelattach(const char *tag, const char *name, int anim = -1, int basetime = 0, float sizescale = 1) : tag(tag), name(name), anim(anim), basetime(basetime), sizescale(sizescale), pos(NULL), m(NULL) {}
+    modelattach(const char *tag, vec *pos) : tag(tag), name(NULL), anim(-1), basetime(0), sizescale(1), pos(pos), m(NULL) {}
 };
 
 struct Texture;
