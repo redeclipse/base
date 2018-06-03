@@ -9,26 +9,26 @@ void setlightdir(vec &dir, float yaw, float pitch)
 }
 
 #define PIESKYVARS(name, type) \
-    CVAR1F(IDF_WORLD, name##light, 0, \
+    CVAR1F(IDF_WORLD, sunlight##name, 0, \
     { \
         if(!checkmapvariant(type)) return; \
         clearradiancehintscache(); \
         cleardeferredlightshaders(); \
         clearshadowcache(); \
     }); \
-    FVARF(IDF_WORLD, name##lightscale, 0, 1, 16, if(checkmapvariant(type)) clearradiancehintscache()); \
-    vec name##lightdir(0, 0, 1); \
-    extern float name##lightpitch; \
-    FVARF(IDF_WORLD, name##lightyaw, 0, 0, 360, setlightdir(name##lightdir, name##lightyaw, name##lightpitch)); \
-    FVARF(IDF_WORLD, name##lightpitch, -90, 90, 90, setlightdir(name##lightdir, name##lightyaw, name##lightpitch)); \
+    FVARF(IDF_WORLD, sunlightscale##name, 0, 1, 16, if(checkmapvariant(type)) clearradiancehintscache()); \
+    vec sunlightdir##name(0, 0, 1); \
+    extern float sunlightpitch##name; \
+    FVARF(IDF_WORLD, sunlightyaw##name, 0, 0, 360, setlightdir(sunlightdir##name, sunlightyaw##name, sunlightpitch##name)); \
+    FVARF(IDF_WORLD, sunlightpitch##name ,-90, 90, 90, setlightdir(sunlightdir##name, sunlightyaw##name, sunlightpitch##name)); \
 
-PIESKYVARS(sun, MPV_DAY);
-PIESKYVARS(moon, MPV_NIGHT);
+PIESKYVARS(, MPV_DEF);
+PIESKYVARS(alt, MPV_ALT);
 
 #define GETSKYPIE(name, type) \
     type getpie##name() \
     { \
-        if(checkmapvariant(MPV_NIGHT)) return moon##name; \
+        if(checkmapvariant(MPV_ALT)) return sun##name##alt; \
         return sun##name; \
     }
 
@@ -41,7 +41,6 @@ GETSKYPIE(lightpitch, float);
 bool getlightfx(const extentity &e, int *radius, int *spotlight, vec *color, bool normalize)
 {
     if(!checkmapvariant(e.attrs[9]) || e.attrs[10] > mapeffects) return false;
-
     if(color)
     {
         *color = vec(e.attrs[1], e.attrs[2], e.attrs[3]);

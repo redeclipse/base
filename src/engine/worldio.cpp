@@ -21,7 +21,7 @@ SVAR(0, maptext, "");
 
 VAR(0, mapeffects, 0, 2, 2);
 
-const char *mapvariants[MPV_MAX] = { "all", "day", "night" };
+const char *mapvariants[MPV_MAX] = { "all", "default", "alternate" };
 VAR(0, mapvariant, 1, 0, -1);
 
 bool checkmapvariant(int variant)
@@ -896,11 +896,11 @@ const char *variantvars[] = {
 };
 const char *skypievars[] = { "light", "lightscale", "lightyaw", "lightpitch", NULL };
 
-void copydayvariables(bool rev = false)
+void copvariantvars(bool rev = false)
 {
     for(int v = 0; variantvars[v]; v++)
     {
-        defformatstring(newvar, "%snight", variantvars[v]);
+        defformatstring(newvar, "%s2", variantvars[v]);
         ident *id = idents.access(rev ? newvar : variantvars[v]);
         if(id) switch(id->type)
         {
@@ -913,19 +913,19 @@ void copydayvariables(bool rev = false)
     for(int v = 0; skypievars[v]; v++)
     {
         defformatstring(sunvar, "sun%s", skypievars[v]);
-        defformatstring(moonvar, "moon%s", skypievars[v]);
-        ident *id = idents.access(rev ? moonvar : sunvar);
+        defformatstring(altvar, "sun%s2", skypievars[v]);
+        ident *id = idents.access(rev ? altvar : sunvar);
         if(id) switch(id->type)
         {
-            case ID_VAR: setvar(rev ? sunvar : moonvar, *id->storage.i, true, false, true); break;
-            case ID_FVAR: setfvar(rev ? sunvar : moonvar, *id->storage.f, true, false, true); break;
-            case ID_SVAR: setsvar(rev ? sunvar : moonvar, *id->storage.s, true, false); break;
+            case ID_VAR: setvar(rev ? sunvar : altvar, *id->storage.i, true, false, true); break;
+            case ID_FVAR: setfvar(rev ? sunvar : altvar, *id->storage.f, true, false, true); break;
+            case ID_SVAR: setsvar(rev ? sunvar : altvar, *id->storage.s, true, false); break;
             default: break;
         }
     }
-    conoutf(rev ? "\fyNight variables copied to Day." : "\fyDay variables copied to Night.");
+    conoutf(rev ? "\fyAlternate variables copied to Default." : "\fyDefault variables copied to Alternate.");
 }
-ICOMMAND(0, copydayvars, "i", (int *n), if(editmode) copydayvariables(*n != 0));
+ICOMMAND(0, copyvariantvars, "i", (int *n), if(editmode) copvariantvars(*n != 0));
 
 bool load_world(const char *mname, int crc, int variant)
 {
@@ -1039,6 +1039,24 @@ bool load_world(const char *mname, int crc, int variant)
                     string name;
                     f->read(name, len+1);
                     ident *id = idents.access(name);
+                    if(!id)
+                    {
+                        string temp = "";
+                        if(!strncmp(name, "moon", 4)) formatstring(temp, "sun%salt", &name[4]);
+                        else
+                        {
+                            int len = strlen(name), end = len-5;
+                            if(end > 0 && !strncmp(&name[end], "night", 5))
+                            {
+                                copystring(temp, name);
+                                temp[end++] = 'a';
+                                temp[end++] = 'l';
+                                temp[end++] = 't';
+                                temp[end] = 0;
+                            }
+                        }
+                        if(temp[0] != 0 && (id = idents.access(temp)) != NULL) copystring(name, temp);
+                    }
                     bool proceed = true;
                     int type = f->getlil<int>();
                     if(!id || type != id->type || !(id->flags&IDF_WORLD) || id->flags&IDF_SERVER)
@@ -1061,7 +1079,7 @@ bool load_world(const char *mname, int crc, int variant)
                                 }
                                 else if(val > id->maxval) val = id->maxval;
                                 else if(val < id->minval) val = id->minval;
-                                setvar(name, val, true);
+                                setvar(id->name, val, true);
                             }
                             break;
                         }
@@ -1361,7 +1379,7 @@ bool load_world(const char *mname, int crc, int variant)
             }
         }
         if(maptype == MAP_OCTA || (maptype == MAP_MAPZ && hdr.version <= 44))
-            copydayvariables();
+            copvariantvars();
 
         if(verbose) conoutf("Loaded %d entities", hdr.numents);
 

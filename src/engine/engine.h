@@ -788,7 +788,7 @@ extern void entitiesinoctanodes();
 extern void freeoctaentities(cube &c);
 extern bool pointinsel(const selinfo &sel, const vec &o);
 extern void clearworldvars(bool msg = false);
-extern void resetmap(bool empty, int variant = MPV_DEFAULT);
+extern void resetmap(bool empty, int variant = MPV_DEF);
 
 // rendermodel
 struct mapmodelinfo { string name; model *m, *collide; };

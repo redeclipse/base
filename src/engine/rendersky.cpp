@@ -108,13 +108,13 @@ Texture *loadskyoverlay(const char *basename)
     VAR(IDF_WORLD, skytexture##name, 0, 0, 1); \
     VARF(IDF_WORLD, skyshadow##name, 0, 0, 1, if(checkmapvariant(type)) clearshadowcache());
 
-DAYNIGHTVARS(, MPV_DAY);
-DAYNIGHTVARS(night, MPV_NIGHT);
+DAYNIGHTVARS(, MPV_DEF);
+DAYNIGHTVARS(alt, MPV_ALT);
 
 #define GETDAYNIGHT(name, type) \
     type get##name() \
     { \
-        if(checkmapvariant(MPV_NIGHT)) return name##night; \
+        if(checkmapvariant(MPV_ALT)) return name##alt; \
         return name; \
     }
 

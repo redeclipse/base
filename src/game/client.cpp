@@ -2449,7 +2449,7 @@ namespace client
                 case N_MAPCHANGE:
                 {
                     getstring(text, p);
-                    int mode = getint(p), muts = getint(p), crc = getint(p), variant = clamp(getint(p), int(MPV_DEFAULT), int(MPV_MAX-1));
+                    int mode = getint(p), muts = getint(p), crc = getint(p), variant = clamp(getint(p), int(MPV_DEF), int(MPV_MAX-1));
                     if(crc >= 0) conoutf("Map change: %s (%d:%d) [0x%.8x] (%s)", text, mode, muts, crc, mapvariants[variant]);
                     else conoutf("Map change: %s (%d:%d) [%d] (%s)", text, mode, muts, crc, mapvariants[variant]);
                     changemapserv(text, mode, muts, crc, variant);
