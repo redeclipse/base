@@ -684,10 +684,11 @@ namespace entities
                         int r = rnd(teleports.length()), q = teleports[r];
                         gameentity &f = *(gameentity *)ents[q];
                         d->o = vec(f.o).add(f.attrs[5] >= 3 ? vec(orig).sub(e.o) : vec(0, 0, d->height*0.5f));
-                        float mag = f.attrs[2] < 0 ? 0.f : max(vec(d->vel).add(d->falling).magnitude(), f.attrs[2] ? float(f.attrs[2]) : 50.f),
-                              yaw = f.attrs[0] < 0 ? (lastmillis/5)%360 : f.attrs[0], pitch = f.attrs[1];
+                        float mag = 0, yaw = f.attrs[0] < 0 ? (lastmillis/5)%360 : f.attrs[0], pitch = f.attrs[1];
+                        if(f.attrs[2] > 0) mag = max(vec(d->vel).add(d->falling).magnitude(), float(f.attrs[2]));
+                        else if(f.attrs[2] < 0) mag = min(vec(d->vel).add(d->falling).magnitude(), float(-f.attrs[2]));
                         game::fixrange(yaw, pitch);
-                        if(mag > 0 && f.attrs[5] < 6) d->vel = vec(yaw*RAD, pitch*RAD).mul(mag);
+                        if(mag != 0 && f.attrs[5] < 6) d->vel = vec(yaw*RAD, pitch*RAD).mul(mag);
                         switch(f.attrs[5]%3)
                         {
                             case 2: break; // keep
@@ -707,7 +708,7 @@ namespace entities
                             }
                         }
                         game::fixrange(d->yaw, d->pitch);
-                        if(mag <= 0) d->vel = vec(0, 0, 0);
+                        if(mag == 0) d->vel = vec(0, 0, 0);
                         else if(f.attrs[5] >= 6) d->vel = vec(d->yaw*RAD, d->pitch*RAD).mul(mag);
                         if(physics::entinmap(d, gameent::is(d))) // entinmap first for getting position
                         {
@@ -1179,7 +1180,6 @@ namespace entities
                 while(e.attrs[0] >= 360) e.attrs[0] -= 361; // has -1 for rotating effect
                 while(e.attrs[1] < -90) e.attrs[1] += 181; // pitch
                 while(e.attrs[1] > 90) e.attrs[1] -= 181; // wrap both ways
-                if(e.attrs[2] < 0) e.attrs[2] = 0; // push, clamp
                 if(e.attrs[3] < 0) e.attrs[3] = 0; // radius, clamp
                 while(e.attrs[4] < 0) e.attrs[4] += 0x1000000; // colour
                 while(e.attrs[4] > 0xFFFFFF) e.attrs[4] -= 0x1000000; // wrap both ways
