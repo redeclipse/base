@@ -1100,7 +1100,7 @@ struct eventicon
 
 struct stunevent
 {
-    int weap, millis, delay;
+    int weap, millis, delay, last[2];
     float scale, gravity;
 };
 
@@ -1117,7 +1117,7 @@ struct gameent : dynent, clientstate
     int team, clientnum, privilege, projid, lastnode, checkpoint, cplast, respawned, suicided, lastupdate, lastpredict, plag, ping, lastflag, totaldamage,
         actiontime[AC_MAX], impulse[IM_MAX], impulsetime[IM_T_MAX], smoothmillis, turnmillis, turnside, aschan, cschan, vschan, wschan, pschan, sschan[2],
         lasthit, lastteamhit, lastkill, lastattacker, lastpoints, quake, lastfoot;
-    float deltayaw, deltapitch, newyaw, newpitch, turnyaw, turnroll;
+    float deltayaw, deltapitch, newyaw, newpitch, turnyaw, turnroll, stunscale, stungravity;
     vec head, torso, muzzle, origin, eject[2], waist, jet[3], legs, hrad, trad, lrad, toe[2];
     bool action[AC_MAX], conopen, k_up, k_down, k_left, k_right, obliterated, headless;
     string hostip, name, handle, info, obit;
@@ -1150,7 +1150,85 @@ struct gameent : dynent, clientstate
     static bool is(int t) { return t == ENT_PLAYER || t == ENT_AI; }
     static bool is(physent *d) { return d->type == ENT_PLAYER || d->type == ENT_AI; }
 
-    void configure(int gamemode, int mutators, float scale, float speedscale, int affinities, int millis, bool reset)
+
+    void addstun(int weap, int millis, int delay, float scale, float gravity)
+    {
+        if(delay <= 0 || (scale == 0 && gravity == 0)) return;
+        stunevent &s = stuns.add();
+        s.weap = weap;
+        s.millis = s.last[0] = s.last[1] = millis;
+        s.delay = delay;
+        s.scale = scale;
+        s.gravity = gravity;
+    }
+
+    float stunned(int millis, bool gravity = false)
+    {
+        float stun = 0;
+        loopvrev(stuns)
+        {
+            stunevent &s = stuns[i];
+            if(!s.delay)
+            {
+                stuns.remove(i);
+                continue;
+            }
+            int etime = s.millis+s.delay, stime = clamp(millis, s.millis, etime), qtime = stime-s.last[gravity ? 1 : 0], len = clamp(etime-stime, 1, 10);
+            if(qtime >= len)
+            {
+                int itime = qtime-(qtime%len), mtime = stime-s.millis-itime, iters = itime/len;
+                float force = (gravity ? s.gravity : s.scale)*(float(len)/float(s.delay));
+                loopj(iters) stun += force*(1.f-(float(mtime+j+1)/float(s.delay)));
+                s.last[gravity ? 1 : 0] = millis;
+            }
+            if(millis-s.millis >= s.delay) stuns.remove(i);
+        }
+        return 1.f-clamp(stun, 0.f, 1.f);
+    }
+
+    void addjitter(int weap, int millis, int delay, float yawmin, float yawmax, float pitchmin, float pitchmax)
+    {
+        if(delay <= 0 || (yaw == 0 && pitch == 0)) return;
+        jitterevent &s = jitters.add();
+        s.weap = weap;
+        s.millis = s.last = millis;
+        s.delay = delay;
+        float yaw1 = min(yawmin, yawmax), yaw2 = max(yawmin, yawmax), yawv = yaw1,
+              pitch1 = min(pitchmin, pitchmax), pitch2 = max(pitchmin, pitchmax), pitchv = pitch1;
+        if(yaw2 > yaw1) yawv += (yaw2-yaw1)*(rnd(10001)/10000.f);
+        if(pitch2 > pitch1) pitchv += (pitch2-pitch1)*(rnd(10001)/10000.f);
+        s.yaw = yawv;
+        s.pitch = pitchv;
+    }
+
+    void jitter(int millis)
+    {
+        loopvrev(jitters)
+        {
+            jitterevent &s = jitters[i];
+            if(!s.delay)
+            {
+                jitters.remove(i);
+                continue;
+            }
+            int etime = s.millis+s.delay, stime = clamp(millis, s.millis, etime), qtime = stime-s.last, len = clamp(etime-stime, 1, 10);
+            if(qtime >= len)
+            {
+                int itime = qtime-(qtime%len), mtime = stime-s.millis-itime, iters = itime/len;
+                float force = float(len)/float(s.delay);
+                loopj(iters)
+                {
+                    float scale = force*(1.f-(float(mtime+j+1)/float(s.delay)));
+                    yaw += s.yaw*scale;
+                    pitch += s.pitch*scale;
+                }
+                s.last = millis;
+            }
+            if(millis-s.millis >= s.delay) jitters.remove(i);
+        }
+    }
+
+    void configure(int gamemode, int mutators, float scale, float speedscale, int affinities, int cur, int millis, bool reset)
     {
         #define MODPHYSL \
             MODPHYS(speed, float, speedscale); \
@@ -1160,13 +1238,13 @@ struct gameent : dynent, clientstate
 
         if(scale != curscale)
         {
-            if(!reset && state == CS_ALIVE && millis > 0)
-                curscale = scale > curscale ? min(curscale+millis/2000.f, scale) : max(curscale-millis/2000.f, scale);
+            if(!reset && state == CS_ALIVE && cur > 0)
+                curscale = scale > curscale ? min(curscale+cur/2000.f, scale) : max(curscale-cur/2000.f, scale);
             else curscale = scale;
         }
 
-        loopi(W_MAX) if(weapstate[i] != W_S_IDLE && (weapselect != i || weapstate[i] != W_S_ZOOM) && lastmillis-weaptime[i] >= weapwait[i])
-            setweapstate(i, W_S_IDLE, 0, lastmillis);
+        loopi(W_MAX) if(weapstate[i] != W_S_IDLE && (weapselect != i || weapstate[i] != W_S_ZOOM) && millis-weaptime[i] >= weapwait[i])
+            setweapstate(i, W_S_IDLE, 0, millis);
 
         xradius = yradius = PLAYERRADIUS*curscale;
         zradius = PLAYERHEIGHT*curscale;
@@ -1262,6 +1340,12 @@ struct gameent : dynent, clientstate
         aboveeye = curscale;
 
         #undef MODPHYSL
+        if(!reset)
+        {
+            jitter(millis);
+            stunscale = stunned(millis, false);
+            stungravity = stunned(millis, true);
+        }
     }
 
     int getprojid()
@@ -1296,7 +1380,7 @@ struct gameent : dynent, clientstate
         }
     }
 
-    void clearstate(int gamemode, int mutators)
+    void clearstate(int millis, int gamemode, int mutators)
     {
         loopi(IM_MAX) impulse[i] = 0;
         loopi(IM_T_MAX) impulsetime[i] = 0;
@@ -1305,7 +1389,7 @@ struct gameent : dynent, clientstate
         lastteamhit = lastflag = respawned = suicided = lastnode = lastfoot = -1;
         obit[0] = '\0';
         obliterated = headless = false;
-        configure(gamemode, mutators, 1, 1, 0, 0, true);
+        configure(gamemode, mutators, 1, 1, 0, 0, millis, true);
         icons.shrink(0);
         stuns.shrink(0);
         jitters.shrink(0);
@@ -1317,7 +1401,7 @@ struct gameent : dynent, clientstate
     {
         stopmoving(true);
         removesounds();
-        clearstate(gamemode, mutators);
+        clearstate(millis, gamemode, mutators);
         physent::reset();
         clientstate::respawn(millis);
     }
@@ -1325,7 +1409,7 @@ struct gameent : dynent, clientstate
     void editspawn(int gamemode, int mutators)
     {
         stopmoving(true);
-        clearstate(gamemode, mutators);
+        clearstate(lastmillis, gamemode, mutators);
         inmaterial = airmillis = floormillis = 0;
         inliquid = onladder = forcepos = false;
         strafe = move = 0;
@@ -1593,71 +1677,6 @@ struct gameent : dynent, clientstate
         loopv(w) loadweap.add(w[i]);
         randweap.shrink(0);
         loopv(r) randweap.add(r[i]);
-    }
-
-    void addstun(int weap, int millis, int delay, float scale, float gravity)
-    {
-        if(delay <= 0 || (scale == 0 && gravity == 0)) return;
-        stunevent &s = stuns.add();
-        s.weap = weap;
-        s.millis = millis;
-        s.delay = delay;
-        s.scale = scale;
-        s.gravity = gravity;
-    }
-
-    float stunned(int millis, bool gravity = false)
-    {
-        float stun = 0;
-        loopvrev(stuns)
-        {
-            stunevent &s = stuns[i];
-            if(!s.delay || millis-s.millis >= s.delay) stuns.remove(i);
-            else stun += (gravity ? s.gravity : s.scale)*(1.f-(float(millis-s.millis)/float(s.delay)));
-        }
-        return stun;
-    }
-
-    void addjitter(int weap, int millis, int delay, float yawmin, float yawmax, float pitchmin, float pitchmax)
-    {
-        if(delay <= 0 || (yaw == 0 && pitch == 0)) return;
-        jitterevent &s = jitters.add();
-        s.weap = weap;
-        s.millis = s.last = millis;
-        s.delay = delay;
-        float yaw1 = min(yawmin, yawmax), yaw2 = max(yawmin, yawmax), yawv = yaw1,
-              pitch1 = min(pitchmin, pitchmax), pitch2 = max(pitchmin, pitchmax), pitchv = pitch1;
-        if(yaw2 > yaw1) yawv += (yaw2-yaw1)*(rnd(1000)/1000.f);
-        if(pitch2 > pitch1) pitchv += (pitch2-pitch1)*(rnd(1000)/1000.f);
-        s.yaw = yawv;
-        s.pitch = pitchv;
-    }
-
-    void jitter(int millis)
-    {
-        loopvrev(jitters)
-        {
-            jitterevent &s = jitters[i];
-            if(!s.delay)
-            {
-                jitters.remove(i);
-                continue;
-            }
-            int etime = s.millis+s.delay, stime = clamp(millis, s.millis, etime), qtime = stime-s.last, len = clamp(etime-stime, 1, 10);
-            if(qtime >= len)
-            {
-                int itime = qtime-(qtime%len), mtime = stime-s.millis-itime, iters = itime/len;
-                float force = float(len)/float(s.delay);
-                loopj(iters)
-                {
-                    float scale = force*(1.f-(float(mtime+j+1)/float(s.delay)));
-                    yaw += s.yaw*scale;
-                    pitch += s.pitch*scale;
-                }
-                s.last = millis;
-            }
-            if(millis-s.millis >= s.delay) jitters.remove(i);
-        }
     }
 
     bool hasmelee(int millis, bool check = false, bool slide = false, bool onfloor = true, bool can = true)

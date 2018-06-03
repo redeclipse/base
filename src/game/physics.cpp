@@ -245,7 +245,7 @@ namespace physics
         if(gameent::is(d))
         {
             gameent *e = (gameent *)d;
-            vel *= 1.f-clamp(e->stunned(lastmillis), 0.f, 1.f);
+            vel *= e->stunscale;
         }
         return vel;
     }
@@ -259,7 +259,7 @@ namespace physics
             if(e->vel.z+e->falling.z <= gravitycutoff) vel *= e->crouching(true) ? gravityfallcrouch : gravityfall;
             else if(e->actiontime[AC_JUMP] >= 0) vel *= e->crouching(true) ? gravityjumpcrouch : gravityjump;
             else if(e->crouching(true)) vel *= gravitycrouch;
-            vel *= 1.f-clamp(e->stunned(lastmillis, true), 0.f, 1.f);
+            vel *= e->stungravity;
         }
         return vel;
     }
@@ -303,7 +303,7 @@ namespace physics
         else if(gameent::is(pl))
         {
             gameent *e = (gameent *)pl;
-            vel *= 1.f-clamp(e->stunned(lastmillis), 0.f, 1.f);
+            vel *= e->stunscale;
             if((d->physstate >= PHYS_SLOPE || d->onladder) && !e->sliding(true) && e->crouching()) vel *= movecrawl;
             else if(isweap(e->weapselect) && e->weapstate[e->weapselect] == W_S_ZOOM) vel *= movecrawl;
             if(e->move >= 0) vel *= e->strafe ? movestrafe : movestraight;
@@ -322,7 +322,7 @@ namespace physics
     float impulsevelocity(physent *d, float amt, int type, float redir, vec &keep)
     {
         float scale = 1.f;
-        if(gameent::is(d)) scale *= 1.f-clamp(((gameent *)d)->stunned(lastmillis), 0.f, 1.f);
+        if(gameent::is(d)) scale *= ((gameent *)d)->stunscale;
         float speed = (d->impulsespeed*amt*scale)+(keep.magnitude()*redir);
         keep.mul(1-min(redir, 1.f));
         return speed;

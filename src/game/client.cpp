@@ -2156,7 +2156,7 @@ namespace client
             loopi(W_MAX) d->weapstore[i] = getint(p);
             loopi(W_MAX) d->weapent[i] = getint(p);
         }
-        if(resume) d->configure(game::gamemode, game::mutators, game::rescale(d), game::speedscale(d), physics::carryaffinity(d), 0, true);
+        if(resume) d->configure(game::gamemode, game::mutators, game::rescale(d), game::speedscale(d), physics::carryaffinity(d), 0, lastmillis, true);
         return reset;
     }
 
