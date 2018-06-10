@@ -20,4 +20,4 @@ Comment[fr]=Jeu de tir à la première personne avec un éditeur de cartes inté
 Icon=@APPNAME@
 Exec=@APPNAME@
 Categories=Game;ActionGame;
-Keywords=fps,action,multiplayer,play,arena,mapeditor
+Keywords=fps;action;multiplayer;play;arena;mapeditor;
