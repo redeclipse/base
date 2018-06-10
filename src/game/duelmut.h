@@ -153,7 +153,23 @@ struct duelservmode : servmode
 
         }
         if(DSGS(clear))
-            loopv(sents) if(enttype[sents[i].type].usetype == EU_ITEM) setspawn(i, hasitem(i), true, true);
+        {
+            loopv(sents) if(enttype[sents[i].type].usetype == EU_ITEM)
+            {
+                bool spawn = hasitem(i);
+                int delay = 0;
+                if(spawn && sents[i].type == WEAPON)
+                {
+                    int attr = m_attr(sents[i].type, sents[i].attrs[0]);
+                    if(isweap(attr) && W(attr, spawnduke))
+                    {
+                        spawn = false;
+                        delay = W(attr, spawnduke);
+                    }
+                }
+                setspawn(i, spawn, true, true, delay);
+            }
+        }
     }
 
     void scoreaffinity(clientinfo *ci, bool win)

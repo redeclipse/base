@@ -749,14 +749,15 @@ namespace server
         sendf(-1, 1, "riv", N_ATTRMAP, W_MAX, &attrmap[0]);
     }
 
-    void setspawn(int ent, bool spawned, bool clear = false, bool msg = false)
+    void setspawn(int ent, bool spawned, bool clear = false, bool msg = false, int delay = 0)
     {
         if(!sents.inrange(ent)) return;
         if(clear) loopvk(clients) if(clients[k]->dropped.removeall(ent))
             sendf(-1, 1, "ri5", N_DESTROY, clients[k]->clientnum, PRJ_ENT, -1, ent);
         sents[ent].spawned = spawned;
         sents[ent].millis = sents[ent].last = gamemillis;
-        if(sents[ent].type == WEAPON)
+        if(delay) sents[ent].millis += delay;
+        else if(sents[ent].type == WEAPON)
         {
             int attr = m_attr(sents[ent].type, sents[ent].attrs[0]);
             if(isweap(attr))
