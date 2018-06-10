@@ -3244,7 +3244,7 @@ namespace game
                 {
                     case W_S_SWITCH: case W_S_USE:
                     {
-                        int millis = lastmillis-d->weaptime[weap], off = d->weapwait[weap]/3, lastweap = d->getlastweap(m_weapon(d->actortype, gamemode, mutators));
+                        int millis = lastmillis-d->weaptime[weap], off = d->weapwait[weap]/4, lastweap = d->getlastweap(m_weapon(d->actortype, gamemode, mutators));
                         if(isweap(lastweap) && millis <= off)
                         {
                             weap = lastweap;
@@ -3268,10 +3268,10 @@ namespace game
                     {
                         if(weaptype[weap].thrown[d->weapstate[weap]-W_S_PRIMARY] > 0)
                         {
-                            int millis = lastmillis-d->weaptime[weap], off = d->weapwait[weap]/2;
+                            int millis = lastmillis-d->weaptime[weap], off = d->weapwait[weap]/4;
                             if(millis <= off || !d->hasweap(weap, m_weapon(d->actortype, gamemode, mutators)))
                                 showweap = false;
-                            else weapscale = (millis-off)/float(off);
+                            else if(millis <= off*2) weapscale = (millis-off)/float(off);
                         }
                         mdl.anim = (weaptype[weap].anim+d->weapstate[weap])|ANIM_CLAMP;
                         break;
