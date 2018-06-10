@@ -157,7 +157,7 @@ APVAR(IDF_GAMEMOD, health, 1, VAR_MAX,
 APVAR(IDF_GAMEMOD, hurtstop, 1, VAR_MAX,
     0,              0,              0,              100,            500
 );
-APVAR(IDF_GAMEMOD, maxcarry, 1, W_LOADOUT,
+APVAR(IDF_GAMEMOD, maxcarry, 1, MAXCARRYLIMIT,
     2,              2,              0,              0,              0
 );
 APVAR(IDF_GAMEMOD, teamdamage, 0, A_T_ALL,

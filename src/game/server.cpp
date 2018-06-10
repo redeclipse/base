@@ -5985,7 +5985,7 @@ namespace server
                         ci->loadweap.shrink(0);
                         loopk(lw)
                         {
-                            if(k >= W_LOADOUT) getint(p);
+                            if(k >= MAXCARRYLIMIT) getint(p);
                             else ci->loadweap.add(getint(p));
                         }
                         int rw = getint(p);
@@ -6784,7 +6784,7 @@ namespace server
                     vector<int> lweaps;
                     loopk(lw)
                     {
-                        if(k >= W_LOADOUT) getint(p);
+                        if(k >= MAXCARRYLIMIT) getint(p);
                         else ci->loadweap.add(getint(p));
                     }
                     ci->randweap.shrink(0);
