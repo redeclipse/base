@@ -20,7 +20,7 @@ void setlightdir(vec &dir, float yaw, float pitch)
     vec sunlightdir##name(0, 0, 1); \
     extern float sunlightpitch##name; \
     FVARF(IDF_WORLD, sunlightyaw##name, 0, 0, 360, setlightdir(sunlightdir##name, sunlightyaw##name, sunlightpitch##name)); \
-    FVARF(IDF_WORLD, sunlightpitch##name ,-90, 90, 90, setlightdir(sunlightdir##name, sunlightyaw##name, sunlightpitch##name)); \
+    FVARF(IDF_WORLD, sunlightpitch##name, -90, 90, 90, setlightdir(sunlightdir##name, sunlightyaw##name, sunlightpitch##name)); \
 
 PIESKYVARS(, MPV_DEF);
 PIESKYVARS(alt, MPV_ALT);
