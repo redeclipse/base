@@ -2,7 +2,7 @@
 
 VAR(0, showpastegrid, 0, 0, 1);
 VAR(0, showcursorgrid, 0, 0, 1);
-VAR(0, showselgrid, 0, 0, 1);
+VAR(0, showselboxgrid, 0, 0, 1);
 
 bool boxoutline = false;
 
@@ -313,6 +313,36 @@ extern float rayent(const vec &o, const vec &ray, float radius, int mode, int si
 VAR(0, gridlookup, 0, 0, 1);
 VAR(0, passthroughcube, 0, 1, 1);
 
+CVAR(IDF_PERSIST, selgridhmap, 0x66FF22);
+CVAR(IDF_PERSIST, selgridcursor, 0xFFBBBB);
+CVAR(IDF_PERSIST, selgridskew, 0x101010);
+VAR(IDF_PERSIST, selgridpulse, 0, 500, VAR_MAX);
+FVAR(IDF_PERSIST, selgridwidth, 0, 4, 10);
+
+CVAR(IDF_PERSIST, selboxgridcursor, 0x888888);
+CVAR(IDF_PERSIST, selboxgridskew, 0x101010);
+VAR(IDF_PERSIST, selboxgridpulse, 0, 500, VAR_MAX);
+FVAR(IDF_PERSIST, selboxgridwidth, 0, 4, 10);
+CVAR(IDF_PERSIST, selboxgridref, 0xFF2222);
+FVAR(IDF_PERSIST, selboxgridrefwidth, 0, 2, 10);
+
+CVAR(IDF_PERSIST, selbox2dcursor, 0x101010);
+CVAR(IDF_PERSIST, selbox2dskew, 0x888888);
+VAR(IDF_PERSIST, selbox2dpulse, 0, 500, VAR_MAX);
+FVAR(IDF_PERSIST, selbox2dwidth, 0, 4, 10);
+
+CVAR(IDF_PERSIST, selbox3dhmap, 0x228822);
+CVAR(IDF_PERSIST, selbox3dcursor, 0x101010);
+CVAR(IDF_PERSIST, selbox3dskew, 0x222288);
+VAR(IDF_PERSIST, selbox3dpulse, 0, 500, VAR_MAX);
+FVAR(IDF_PERSIST, selbox3dwidth, 0, 4, 10);
+
+CVAR(IDF_PERSIST, selectionhmap, 0x22FF22);
+CVAR(IDF_PERSIST, selectioncursor, 0xFFFFFF);
+CVAR(IDF_PERSIST, selectionskew, 0x101010);
+VAR(IDF_PERSIST, selectionpulse, 0, 500, VAR_MAX);
+FVAR(IDF_PERSIST, selectionwidth, 0, 4, 10);
+
 void rendereditcursor()
 {
     int d   = dimension(sel.orient),
@@ -487,33 +517,90 @@ void rendereditcursor()
         bool ishmap = hmapedit == 1 && hmapsel;
         if(showcursorgrid)
         {
-            gle::colorub(ishmap ? 0 : 30, 30, ishmap ? 0 : 30);
+            bvec col = ishmap ? selgridhmap : selgridcursor;
+            if(!ishmap && selgridpulse)
+            {
+                float part = (lastmillis%(selgridpulse*2))/float(selgridpulse);
+                if(part > 1) part = 2-part;
+                loopi(3) col[i] = clamp((col[i]*(1-part))+(selgridskew[i]*part), 0, 255);
+            }
+            gle::colorub(col.r, col.g, col.b);
+            if(selgridwidth != 1) glLineWidth(selgridwidth);
             planargrid(vec(lu), vec(1, 1, 1), gridsize);
+            if(selectionwidth != 1) glLineWidth(1);
         }
-        gle::colorub(ishmap ? 0 : 255, 255, ishmap ? 0 : 255);
+        bvec col = ishmap ? selectionhmap : selectioncursor;
+        if(!ishmap && selectionpulse)
+        {
+            float part = (lastmillis%(selectionpulse*2))/float(selectionpulse);
+            if(part > 1) part = 2-part;
+            loopi(3) col[i] = clamp((col[i]*(1-part))+(selectionskew[i]*part), 0, 255);
+        }
+        gle::colorub(col.r, col.g, col.b);
+        if(selectionwidth != 1) glLineWidth(selectionwidth);
         boxs(orient, vec(lu), vec(lusize));
+        if(selectionwidth != 1) glLineWidth(1);
     }
 
     // selections
     if(havesel || moving)
     {
         d = dimension(sel.orient);
-        gle::colorub(120, 120, 120);  // grid
+        bvec col = selboxgridcursor;
+        if(selboxgridpulse)
+        {
+            float part = (lastmillis%(selboxgridpulse*2))/float(selboxgridpulse);
+            if(part > 1) part = 2-part;
+            loopi(3) col[i] = clamp((col[i]*(1-part))+(selboxgridskew[i]*part), 0, 255);
+        }
+        gle::colorub(col.r, col.g, col.b);
+        if(selboxgridwidth != 1) glLineWidth(selboxgridwidth);
         boxsgrid(sel.orient, vec(sel.o), vec(sel.s), sel.grid);
-        gle::colorub(255, 0, 0);  // 0 reference
+        if(selectionwidth != 1) glLineWidth(1);
+
+        col = selboxgridref;
+        if(selboxgridpulse)
+        {
+            float part = (lastmillis%(selboxgridpulse*2))/float(selboxgridpulse);
+            if(part > 1) part = 2-part;
+            loopi(3) col[i] = clamp((col[i]*(1-part))+(selboxgridskew[i]*part), 0, 255);
+        }
+        gle::colorub(col.r, col.g, col.b);
+        if(selboxgridrefwidth != 1) glLineWidth(selboxgridwidth);
         boxs3D(vec(sel.o).sub(0.5f*min(gridsize*0.25f, 2.0f)), vec(min(gridsize*0.25f, 2.0f)), 1);
-        gle::colorub(120, 120, 120);// 2D selection box
+        if(selboxgridrefwidth != 1) glLineWidth(1);
+
         vec co(sel.o.v), cs(sel.s.v);
         co[R[d]] += 0.5f*(sel.cx*gridsize);
         co[C[d]] += 0.5f*(sel.cy*gridsize);
         cs[R[d]]  = 0.5f*(sel.cxs*gridsize);
         cs[C[d]]  = 0.5f*(sel.cys*gridsize);
         cs[D[d]] *= gridsize;
+        col = selbox2dcursor;
+        if(selbox2dpulse)
+        {
+            float part = (lastmillis%(selbox2dpulse*2))/float(selbox2dpulse);
+            if(part > 1) part = 2-part;
+            loopi(3) col[i] = clamp((col[i]*(1-part))+(selbox2dskew[i]*part), 0, 255);
+        }
+        gle::colorub(col.r, col.g, col.b);
+        if(selbox2dwidth != 1) glLineWidth(selbox2dwidth);
         boxs(sel.orient, co, cs);
-        if(hmapedit==1) gle::colorub(0, 120, 0); // 3D selection box
-        else gle::colorub(0, 0, 120);
+        if(selectionwidth != 1) glLineWidth(1);
+
+        col = hmapedit ? selbox3dhmap : selbox3dcursor;
+        if(!hmapedit && selbox3dpulse)
+        {
+            float part = (lastmillis%(selbox3dpulse*2))/float(selbox3dpulse);
+            if(part > 1) part = 2-part;
+            loopi(3) col[i] = clamp((col[i]*(1-part))+(selbox3dskew[i]*part), 0, 255);
+        }
+        gle::colorub(col.r, col.g, col.b);
+        if(selbox3dwidth != 1) glLineWidth(selbox3dwidth);
         boxs3D(vec(sel.o), vec(sel.s), sel.grid);
-        if(showselgrid)
+        if(selbox3dwidth != 1) glLineWidth(1);
+
+        if(showselboxgrid)
         {
             gle::colorub(30, 30, 30);
             planargrid(vec(sel.o), vec(sel.s), sel.grid);

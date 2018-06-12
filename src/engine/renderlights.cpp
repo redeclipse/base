@@ -2020,8 +2020,8 @@ void cascadedshadowmap::setup()
     gencullplanes();
 }
 
-VAR(0, csmnearplane, 1, 1, 16);
-VAR(0, csmfarplane, 64, 1024, 16384);
+VAR(IDF_WORLD, csmnearplane, 1, 1, 16);
+VAR(IDF_WORLD, csmfarplane, 64, 1024, 16384);
 FVAR(0, csmpradiustweak, 1e-3f, 1, 1e3f);
 FVAR(0, csmdepthrange, 0, 1024, 1e6f);
 FVAR(0, csmdepthmargin, 0, 0.1f, 1e3f);

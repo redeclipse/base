@@ -1033,6 +1033,7 @@ void gl_checkextensions()
     }
     else if(nvidia)
     {
+        msaalineardepth = glineardepth = 1; // reading back from depth-stencil still buggy on newer cards, and requires stencil for MSAA
     }
     else if(intel)
     {
