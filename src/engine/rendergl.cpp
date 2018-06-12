@@ -1020,9 +1020,9 @@ void gl_checkextensions()
     }
 
     extern int gdepthstencil, gstencil, glineardepth, msaadepthstencil, msaalineardepth, batchsunlight, smgather, rhrect, tqaaresolvegather;
+    if(amd || nvidia) msaalineardepth = glineardepth = 1; // reading back from depth-stencil still buggy on newer cards, and requires stencil for MSAA
     if(amd)
     {
-        msaalineardepth = glineardepth = 1; // reading back from depth-stencil still buggy on newer cards, and requires stencil for MSAA
         msaadepthstencil = gdepthstencil = 1; // some older AMD GPUs do not support reading from depth-stencil textures, so only use depth-stencil renderbuffer for now
         if(checkseries(gfxrenderer, "Radeon HD", 4000, 5199)) amd_pf_bug = 1;
         if(glversion < 400)
@@ -1033,7 +1033,6 @@ void gl_checkextensions()
     }
     else if(nvidia)
     {
-        msaalineardepth = glineardepth = 1; // reading back from depth-stencil still buggy on newer cards, and requires stencil for MSAA
     }
     else if(intel)
     {

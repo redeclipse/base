@@ -1122,6 +1122,7 @@ int main(int argc, char **argv)
         updatefps(frameloops, elapsed);
         checkinput();
         hud::checkui();
+        tryedit();
 
         if(frameloops)
         {

@@ -975,8 +975,8 @@ void paintblendmap(bool msg)
                   ivec((x+brush->w+1)<<BM_SCALE, (y+brush->h+1)<<BM_SCALE, worldsize));
 }
 
-VAR(0, paintblendmapdelay, 1, 500, 3000);
-VAR(0, paintblendmapinterval, 1, 30, 3000);
+VAR(0, paintblendmapdelay, 1, 125, 3000);
+VAR(0, paintblendmapinterval, 1, 50, 3000);
 
 int paintingblendmap = 0, lastpaintblendmap = 0;
 
@@ -988,7 +988,7 @@ void stoppaintblendmap()
 
 void trypaintblendmap()
 {
-    if(!paintingblendmap || totalmillis - paintingblendmap < paintblendmapdelay) return;
+    if(!paintingblendmap || totalmillis-paintingblendmap < paintblendmapdelay) return;
     if(lastpaintblendmap)
     {
         int diff = totalmillis - lastpaintblendmap;
