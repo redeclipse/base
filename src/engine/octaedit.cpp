@@ -566,7 +566,7 @@ void rendereditcursor()
             loopi(3) col[i] = clamp((col[i]*(1-part))+(selboxgridskew[i]*part), 0, 255);
         }
         gle::colorub(col.r, col.g, col.b);
-        if(selboxgridrefwidth != 1) glLineWidth(selboxgridwidth);
+        if(selboxgridrefwidth != 1) glLineWidth(selboxgridrefwidth);
         boxs3D(vec(sel.o).sub(0.5f*min(gridsize*0.25f, 2.0f)), vec(min(gridsize*0.25f, 2.0f)), 1);
         if(selboxgridrefwidth != 1) glLineWidth(1);
 
