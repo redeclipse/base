@@ -2261,10 +2261,6 @@ vec calcmodelpreviewpos(const vec &radius, float &yaw)
 }
 
 VAR(0, showboundingboxes, 0, 0, 1);
-void drawboxes()
-{
-}
-
 int xtraverts, xtravertsva;
 
 void gl_drawview()

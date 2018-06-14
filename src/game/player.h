@@ -100,7 +100,7 @@ struct score
 #define isteam(a,b,c,d) (m_play(a) && m_team(a,b) ? (c >= d && c <= numteams(a,b)) : c == T_NEUTRAL)
 #define valteam(a,b)    (a >= b && a <= T_TOTAL)
 
-#define PLAYERRADIUS 3.75f
+#define PLAYERRADIUS 4.f
 #define PLAYERHEIGHT 17.5f
 #define PLAYERTYPES 2
 #define PLAYERPATTERNS 14
