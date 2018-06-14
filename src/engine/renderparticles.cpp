@@ -1626,20 +1626,20 @@ static inline vec offsetvec(vec o, int dir, int dist)
             to[(dir+1)%3] = sc.x*radius;
             to[(dir+2)%3] = 0.0f;
             to.add(p);
-            if(dir < 3) //circle
+            if(dir < 3) // circle
                 from = p;
-            else if(dir < 6) //cylinder
+            else if(dir < 6) // cylinder
             {
                 from = to;
                 to = vec(p).sub(from).rescale(radius).add(from);
             }
-            else //cone
+            else // cone
             {
                 from = p;
                 to[(dir+2)%3] += (dir < 9)?radius:(-radius);
             }
         }
-        else if(dir < 15) //plane
+        else if(dir < 15) // plane
         {
             to[dir%3] = float(rnd(int(ceilf(radius))<<4)-(int(ceilf(radius))<<3))/8.0;
             to[(dir+1)%3] = float(rnd(int(ceilf(radius))<<4)-(int(ceilf(radius))<<3))/8.0;
@@ -1648,7 +1648,7 @@ static inline vec offsetvec(vec o, int dir, int dist)
             from = to;
             from[(dir+2)%3] -= 2*radius;
         }
-        else if(dir < 21) //line
+        else if(dir < 21) // line
         {
             if(dir < 18)
             {
@@ -1665,7 +1665,7 @@ static inline vec offsetvec(vec o, int dir, int dist)
             from = to;
             to[(dir+2)%3] += radius;
         }
-        else if(dir < 24) //sphere
+        else if(dir < 24) // sphere
         {
             to = vec(2*M_PI*float(rnd(1000))/1000.0, M_PI*float(rnd(1000)-500)/1000.0).mul(radius);
             to.add(p);

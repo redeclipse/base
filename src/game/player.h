@@ -231,10 +231,10 @@ APFVAR(IDF_GAMEMOD, impulsespeedextra, FVAR_MIN, FVAR_MAX,
     0,              0,              0,              0,              0
 );
 APFVAR(IDF_GAMEMOD, weight, 0, FVAR_MAX,
-    170,            170,            120,            170,            120
+    190,            190,            190,            190,            140
 );
 APFVAR(IDF_GAMEMOD, weightextra, FVAR_MIN, FVAR_MAX,
-    25,             25,             15,             25,             15
+    0,              0,              0,              0,              0
 );
 
 #define VANITYMAX 16
