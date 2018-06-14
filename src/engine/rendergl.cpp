@@ -2260,6 +2260,11 @@ vec calcmodelpreviewpos(const vec &radius, float &yaw)
     return vec(0, dist, 0).rotate_around_x(camera1->pitch*RAD);
 }
 
+VAR(0, showboundingboxes, 0, 0, 1);
+void drawboxes()
+{
+}
+
 int xtraverts, xtravertsva;
 
 void gl_drawview()
@@ -2359,6 +2364,12 @@ void gl_drawview()
         glDepthMask(GL_FALSE);
         renderblendbrush();
         rendereditcursor();
+        glDepthMask(GL_TRUE);
+    }
+    if(showboundingboxes)
+    {
+        glDepthMask(GL_FALSE);
+        renderboundboxes();
         glDepthMask(GL_TRUE);
     }
 

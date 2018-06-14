@@ -92,6 +92,25 @@ void boxsgrid(int orient, vec o, vec s, int g)
     xtraverts += gle::end();
 }
 
+void renderboundboxes()
+{
+    glDisable(GL_CULL_FACE);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_ONE, GL_ONE);
+    ldrnotextureshader->set();
+
+    dynent *e = NULL;
+    int numdyns = game::numdynents();
+    loopi(numdyns) if((e = (dynent *)game::iterdynents(i)))
+    {
+        vec rad = vec(e->xradius*2, e->yradius*2, e->height), o = vec(e->o).sub(vec(e->xradius, e->yradius, e->height));
+        loopj(6) boxs(j, o, rad);
+    }
+
+    glDisable(GL_BLEND);
+    glEnable(GL_CULL_FACE);
+}
+
 selinfo sel, lastsel, savedsel;
 
 int orient = 0;

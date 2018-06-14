@@ -1257,8 +1257,7 @@ namespace physics
     {
         modelstate mdl;
         modelattach mdlattach[ATTACHMENTMAX];
-        const char *mdlname = game::getplayerstate(e, mdl, 1, e->curscale*hitzonescale, 0, mdlattach);
-        if(hitzonescale != 1) mdl.o.z -= (e->height*hitzonescale)-e->height;
+        const char *mdlname = game::getplayerstate(e, mdl, 1, e->curscale, 0, mdlattach);
         dist = 1e16f;
         int zone = intersectmodel(mdlname, mdl, o, ray, dist, 0, e);
         switch(zone)

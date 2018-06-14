@@ -236,7 +236,6 @@ GFVAR(IDF_GAMEMOD, vampirescale, 0, 1.0f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, maxresizescale, 1, 2, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, minresizescale, FVAR_NONZERO, 0.5f, 1);
 GFVAR(IDF_GAMEMOD, instaresizeamt, FVAR_NONZERO, 0.1f, 1); // each kill adds this much size in insta-resize
-GFVAR(IDF_GAMEMOD, hitzonescale, 0.875f, 1.125f, 1.125f); // limited because it screws with limb positions
 
 GVAR(IDF_GAMEMOD, regendelay, 0, 5000, VAR_MAX); // regen after no damage for this long
 GVAR(IDF_GAMEMOD, regentime, 0, 2000, VAR_MAX); // regen this often when regenerating normally
