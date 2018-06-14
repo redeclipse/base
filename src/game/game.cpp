@@ -847,11 +847,11 @@ namespace game
     void spawneffect(int type, const vec &pos, float radius, int colour, float size)
     {
         vec o = pos;
-        o.z -= radius;
-        loopi(5)
+        o.z -= radius*2.4f;
+        loopi(8)
         {
-            o.z += radius*0.5f;
-            createshape(type, radius, colour, 3, 30, 350, o, size, 1, -1, 0, 1);
+            o.z += radius*0.4f;
+            createshape(type, radius*0.25f, colour, 3, 50, 350, o, size*0.5f, 0.35f, 0, 1, 8);
         }
     }
 
@@ -1058,7 +1058,7 @@ namespace game
         float scale = 0.4f+(rnd(40)/100.f);
         part_create(PART_HINT_BOLD_SOFT, shape ? len/2 : len/10, pos, getcolour(d, playereffecttone, playereffecttonelevel), scale*1.5f, scale*0.75f, 0, 0);
         part_create(PART_FIREBALL_SOFT, shape ? len/2 : len/10, pos, pulsehexcol(d, PULSE_FIRE), scale*1.25f, scale*0.75f, 0, 0);
-        if(shape) loopi(num) createshape(PART_FIREBALL, int(d->radius)*2, pulsehexcol(d, PULSE_FIRE), 21, 1, len, pos, scale*1.25f, 0.75f, -5, 0, 10);
+        if(shape) loopi(num) regularshape(PART_FIREBALL, int(d->radius)*2, pulsehexcol(d, PULSE_FIRE), 21, 1, len, pos, scale*1.25f, 0.75f, -5, 0, 10);
     }
 
     void impulseeffect(gameent *d, int effect)
