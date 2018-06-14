@@ -1108,7 +1108,7 @@ namespace projs
             if(ammo >= 0)
             {
                 if(ammo > 0 && entities::ents.inrange(ent))
-                    create(d->muzzlepos(), d->muzzlepos(), local, d, PRJ_ENT, -1, HIT_NONE, W(weap, spawntime), W(weap, spawntime), 1, 1, ent, ammo, index);
+                    create(d->muzzlepos(), d->muzzlepos(), local, d, PRJ_ENT, -1, HIT_NONE, W(weap, spawnstay), W(weap, spawnstay), 1, 1, ent, ammo, index);
                 d->weapclip[weap] = -1;
                 d->weapstore[weap] = 0;
                 if(targ >= 0) d->setweapstate(weap, W_S_SWITCH, W(weap, delayswitch), lastmillis);
