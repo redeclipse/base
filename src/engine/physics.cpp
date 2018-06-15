@@ -455,8 +455,6 @@ physent *collideplayer; // whether the collection hit a player
 int collidezones = CLZ_NONE;
 vec collidewall; // just the normal vectors.
 
-#define COLLIDEGUARD 2.0f
-
 bool ellipseboxcollide(physent *d, const vec &dir, const vec &o, const vec &center, float yaw, float xr, float yr, float hi, float lo)
 {
     float below = (o.z+center.z-lo) - (d->o.z+d->aboveeye),
@@ -469,7 +467,7 @@ bool ellipseboxcollide(physent *d, const vec &dir, const vec &o, const vec &cent
     yo.sub(center);
 
     float dx = clamp(yo.x, -xr, xr) - yo.x, dy = clamp(yo.y, -yr, yr) - yo.y,
-          dist = sqrtf(dx*dx + dy*dy) - (d->radius+COLLIDEGUARD);
+          dist = sqrtf(dx*dx + dy*dy) - d->radius;
     if(dist < 0)
     {
         int sx = yo.x <= -xr ? -1 : (yo.x >= xr ? 1 : 0),
@@ -522,7 +520,7 @@ bool ellipsecollide(physent *d, const vec &dir, const vec &o, const vec &center,
     yo.add(o);
     float x = yo.x - d->o.x, y = yo.y - d->o.y;
     float angle = atan2f(y, x), dangle = angle-d->yaw*RAD, eangle = angle-yaw*RAD;
-    float dx = (d->xradius+COLLIDEGUARD)*cosf(dangle), dy = (d->yradius+COLLIDEGUARD)*sinf(dangle);
+    float dx = d->xradius*cosf(dangle), dy = d->yradius*sinf(dangle);
     float ex = xr*cosf(eangle), ey = yr*sinf(eangle);
     float dist = sqrtf(x*x + y*y) - sqrtf(dx*dx + dy*dy) - sqrtf(ex*ex + ey*ey);
     if(dist < 0)
@@ -585,8 +583,8 @@ const vector<physent *> &checkdynentcache(int x, int y)
     {
         dynent *d = game::iterdynents(i, true);
         if(!d || d->state != CS_ALIVE ||
-           d->o.x+d->radius+COLLIDEGUARD <= dx || d->o.x-d->radius-COLLIDEGUARD >= dx+dsize ||
-           d->o.y+d->radius+COLLIDEGUARD <= dy || d->o.y-d->radius-COLLIDEGUARD >= dy+dsize)
+           d->o.x+d->radius <= dx || d->o.x-d->radius >= dx+dsize ||
+           d->o.y+d->radius <= dy || d->o.y-d->radius >= dy+dsize)
             continue;
         dec.dynents.add(d);
     }
@@ -598,7 +596,7 @@ const vector<physent *> &checkdynentcache(int x, int y)
     for(int cury = max(int(y1), 0)>>dynentsize, endy = min(int(y2), hdr.worldsize-1)>>dynentsize; cury <= endy; cury++)
 
 #define loopdynentcache(curx, cury, o, radius) \
-    loopdynentcachebb(curx, cury, o.x-radius-COLLIDEGUARD, o.y-radius-COLLIDEGUARD, o.x+radius+COLLIDEGUARD, o.y+radius+COLLIDEGUARD)
+    loopdynentcachebb(curx, cury, o.x-radius, o.y-radius, o.x+radius, o.y+radius)
 
 void updatedynentcache(physent *d)
 {
@@ -618,7 +616,7 @@ bool overlapsdynent(const vec &o, float radius)
         loopv(dynents)
         {
             physent *d = dynents[i];
-            if(physics::issolid(d) && o.dist(d->o)-d->radius-COLLIDEGUARD < radius)
+            if(physics::issolid(d) && o.dist(d->o)-d->radius < radius)
                 return true;
         }
     }
@@ -626,7 +624,7 @@ bool overlapsdynent(const vec &o, float radius)
 }
 
 template<class E, class O>
-static inline bool plcollide(physent *d, const vec &dir, physent *o)
+static inline bool plcollide(physent *d, const vec &dir, physent *o, float guard)
 {
     E entvol(d);
     O obvol(o);
@@ -641,33 +639,33 @@ static inline bool plcollide(physent *d, const vec &dir, physent *o)
     return false;
 }
 
-bool plcollide(physent *d, const vec &dir, physent *o)
+bool plcollide(physent *d, const vec &dir, physent *o, float guard)
 {
     switch(d->collidetype)
     {
         case COLLIDE_ELLIPSE:
-            if(o->collidetype == COLLIDE_ELLIPSE) return ellipsecollide(d, dir, o->o, vec(0, 0, 0), o->yaw, o->xradius+COLLIDEGUARD, o->yradius+COLLIDEGUARD, o->aboveeye, o->height);
-            else return ellipseboxcollide(d, dir, o->o, vec(0, 0, 0), o->yaw, o->xradius+COLLIDEGUARD, o->yradius+COLLIDEGUARD, o->aboveeye, o->height);
+            if(o->collidetype == COLLIDE_ELLIPSE) return ellipsecollide(d, dir, o->o, vec(0, 0, 0), o->yaw, o->xradius+guard, o->yradius+guard, o->aboveeye, o->height);
+            else return ellipseboxcollide(d, dir, o->o, vec(0, 0, 0), o->yaw, o->xradius+guard, o->yradius+guard, o->aboveeye, o->height);
         case COLLIDE_OBB:
-            if(o->collidetype == COLLIDE_ELLIPSE) return plcollide<mpr::EntOBB, mpr::EntCylinder>(d, dir, o);
-            else return plcollide<mpr::EntOBB, mpr::EntOBB>(d, dir, o);
+            if(o->collidetype == COLLIDE_ELLIPSE) return plcollide<mpr::EntOBB, mpr::EntCylinder>(d, dir, o, guard);
+            else return plcollide<mpr::EntOBB, mpr::EntOBB>(d, dir, o, guard);
         default: return false;
     }
 }
 
-bool plcollide(physent *d, const vec &dir, bool insideplayercol)    // collide with player
+bool plcollide(physent *d, const vec &dir, bool insideplayercol, float guard)    // collide with player
 {
     if(d->type==ENT_CAMERA || d->state!=CS_ALIVE) return false;
     int lastinside = collideinside;
     physent *insideplayer = NULL;
-    loopdynentcache(x, y, d->o, d->radius)
+    loopdynentcache(x, y, d->o, d->radius+guard)
     {
         const vector<physent *> &dynents = checkdynentcache(x, y);
         loopv(dynents)
         {
             physent *o = dynents[i];
-            if(o==d || !physics::issolid(o, d) || d->o.reject(o->o, d->radius+o->radius+COLLIDEGUARD) || !plcollide(d, dir, o)) continue;
-            if(physics::checkcollide(d, dir, o))
+            if(o==d || !physics::issolid(o, d) || d->o.reject(o->o, d->radius+o->radius+guard) || !plcollide(d, dir, o, guard)) continue;
+            if(physics::checkcollide(d, dir, o, guard))
             {
                 collideplayer = o;
                 return true;
@@ -1179,7 +1177,7 @@ static inline bool octacollide(physent *d, const vec &dir, float cutoff, const i
 }
 
 // all collision happens here
-bool collide(physent *d, const vec &dir, float cutoff, bool playercol, bool insideplayercol)
+bool collide(physent *d, const vec &dir, float cutoff, bool playercol, bool insideplayercol, float guard)
 {
     collideinside = 0;
     collideplayer = NULL;
@@ -1188,10 +1186,10 @@ bool collide(physent *d, const vec &dir, float cutoff, bool playercol, bool insi
     ivec bo(int(d->o.x-d->radius), int(d->o.y-d->radius), int(d->o.z-d->height)),
          bs(int(d->o.x+d->radius), int(d->o.y+d->radius), int(d->o.z+d->aboveeye));
     bo.sub(1); bs.add(1);  // guard space for rounding errors
-    return octacollide(d, dir, cutoff, bo, bs) || (playercol && plcollide(d, dir, insideplayercol)); // collide with world
+    return octacollide(d, dir, cutoff, bo, bs) || (playercol && plcollide(d, dir, insideplayercol, guard)); // collide with world
 }
 
-float pltracecollide(physent *d, const vec &from, const vec &ray, float maxdist)
+float pltracecollide(physent *d, const vec &from, const vec &ray, float maxdist, float guard)
 {
     vec to = vec(ray).mul(maxdist).add(from);
     float x1 = floor(min(from.x, to.x)), y1 = floor(min(from.y, to.y)),
@@ -1205,7 +1203,7 @@ float pltracecollide(physent *d, const vec &from, const vec &ray, float maxdist)
         {
             physent *o = dynents[i];
             float dist = 1e16f;
-            if(!physics::issolid(o, d) || o->o.x+o->radius+COLLIDEGUARD < x1 || o->o.y+o->radius+COLLIDEGUARD < y1 || o->o.x-o->radius-COLLIDEGUARD > x2 || o->o.y-o->radius-COLLIDEGUARD > y2 || !intersect(o, from, to, dist)) continue;
+            if(!physics::issolid(o, d) || o->o.x+o->radius+guard < x1 || o->o.y+o->radius+guard < y1 || o->o.x-o->radius-guard > x2 || o->o.y-o->radius-guard > y2 || !intersect(o, from, to, dist, guard)) continue;
             if(physics::checktracecollide(d, from, to, dist, o) && dist <= maxdist && dist < bestdist)
             {
                 collideplayer = o;
@@ -1218,7 +1216,7 @@ float pltracecollide(physent *d, const vec &from, const vec &ray, float maxdist)
     return bestdist <= maxdist ? bestdist : -1;
 }
 
-float tracecollide(physent *d, const vec &o, const vec &ray, float maxdist, int mode, bool playercol)
+float tracecollide(physent *d, const vec &o, const vec &ray, float maxdist, int mode, bool playercol, float guard)
 {
     hitsurface = vec(0, 0, 0);
     collideplayer = NULL;
@@ -1226,7 +1224,7 @@ float tracecollide(physent *d, const vec &o, const vec &ray, float maxdist, int 
     float dist = raycube(o, ray, maxdist+1e-3f, mode);
     if(playercol)
     {
-        float pldist = pltracecollide(d, o, ray, min(dist, maxdist));
+        float pldist = pltracecollide(d, o, ray, min(dist, maxdist), guard);
         if(pldist >= 0 && pldist < dist) dist = pldist;
     }
     return dist <= maxdist ? dist : -1;
@@ -1241,12 +1239,12 @@ void phystest()
 
 COMMAND(0, phystest, "");
 
-bool intersect(physent *d, const vec &from, const vec &to, float &dist)   // if lineseg hits entity bounding box
+bool intersect(physent *d, const vec &from, const vec &to, float &dist, float guard)   // if lineseg hits entity bounding box
 {
     vec bottom(d->o), top(d->o);
     bottom.z -= d->height;
     top.z += d->aboveeye;
-    if(!linecylinderintersect(from, to, bottom, top, d->radius+COLLIDEGUARD, dist)) return false;
+    if(!linecylinderintersect(from, to, bottom, top, d->radius+guard, dist)) return false;
     dist *= from.dist(to);
     return true;
 }

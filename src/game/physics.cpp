@@ -780,7 +780,7 @@ namespace physics
             {
                 vec oldpos = d->o, dir(d->yaw*RAD, 0.f);
                 d->o.add(dir);
-                bool collided = collide(d, dir);
+                bool collided = collide(d, dir, 0, true, true);
                 d->o = oldpos;
                 if(collided && collideplayer && gameent::is(collideplayer))
                 {
@@ -1271,7 +1271,7 @@ namespace physics
         return true;
     }
 
-    bool checkcollide(physent *d, const vec &dir, physent *o)
+    bool checkcollide(physent *d, const vec &dir, physent *o, float guard)
     {
         static float dist = 1e16f;
         collidezones = CLZ_NONE;
@@ -1280,7 +1280,7 @@ namespace physics
         return true;
     }
 
-    bool checktracecollide(physent *d, const vec &from, const vec &to, float &dist, physent *o)
+    bool checktracecollide(physent *d, const vec &from, const vec &to, float &dist, physent *o, float guard)
     {
         collidezones = CLZ_NONE;
         if(d && projent::is(d) && gameent::is(o)) return hitzonecollide((gameent *)o, from, vec(to).sub(from), dist);

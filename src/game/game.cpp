@@ -1926,7 +1926,7 @@ namespace game
         {
             if(!o || o == at || o->state != CS_ALIVE || !physics::issolid(o, at)) continue;
             float dist;
-            if(intersect(o, from, to, dist) && dist < bestdist)
+            if(intersect(o, from, to, dist, GUARDRADIUS) && dist < bestdist)
             {
                 best = o;
                 bestdist = dist;
@@ -2976,7 +2976,7 @@ namespace game
         {
             if(!o || o == focus || o->state != CS_ALIVE || !physics::issolid(o, focus)) continue;
             float dist = 1e16f;
-            if(intersect(o, camera1->o, pos, dist) && dist < bestdist)
+            if(intersect(o, camera1->o, pos, dist, GUARDRADIUS) && dist < bestdist)
             {
                 best = o;
                 bestdist = dist;

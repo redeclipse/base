@@ -378,7 +378,7 @@ namespace projs
             if(!fwd.iszero()) loopi(20)
             {
                 proj.o.sub(fwd);
-                if(!collide(&proj, vec(0, 0, 0), 0.f, proj.projcollide&COLLIDE_DYNENT, true) && (proj.stick ? collideplayer != proj.stick : !collideplayer))
+                if(!collide(&proj, vec(0, 0, 0), 0.f, proj.projcollide&COLLIDE_DYNENT, true, GUARDRADIUS) && (proj.stick ? collideplayer != proj.stick : !collideplayer))
                     break;
             }
             #endif
@@ -1018,7 +1018,7 @@ namespace projs
             if(eyedist > 0)
             {
                 eyedir.normalize();
-                float blocked = tracecollide(&proj, proj.owner->o, eyedir, eyedist, RAY_CLIPMAT|RAY_ALPHAPOLY, false);
+                float blocked = tracecollide(&proj, proj.owner->o, eyedir, eyedist, RAY_CLIPMAT|RAY_ALPHAPOLY, false, GUARDRADIUS);
                 if(blocked >= 0)
                 {
                     proj.o = proj.from = vec(eyedir).mul(blocked-max(proj.radius, 1e-3f)).add(proj.owner->o);
@@ -1837,7 +1837,7 @@ namespace projs
                     loopi(WF(WK(proj.flags), proj.weap, drill, WS(proj.flags)))
                     {
                         proj.o.add(vec(dir).normalize());
-                        if(!collide(&proj, dir, 0.f, proj.projcollide&COLLIDE_DYNENT) && !collideinside && !collideplayer) return 1;
+                        if(!collide(&proj, dir, 0.f, proj.projcollide&COLLIDE_DYNENT, false, GUARDRADIUS) && !collideinside && !collideplayer) return 1;
                     }
                     proj.o = orig; // continues below
                 }
@@ -1896,7 +1896,7 @@ namespace projs
         if(!ret) return 0;
         if(!skip && proj.interacts && checkitems(proj, oldpos, dir, proj.o.dist(oldpos))) return -1;
         if(proj.projtype == PRJ_SHOT) updatetaper(proj, proj.distance+proj.o.dist(oldpos));
-        if(ret == 1 && (collide(&proj, dir, 0.f, proj.projcollide&COLLIDE_DYNENT) || collideinside))
+        if(ret == 1 && (collide(&proj, dir, 0.f, proj.projcollide&COLLIDE_DYNENT, false, GUARDRADIUS) || collideinside))
             ret = impact(proj, dir, collideplayer, collidezones, collidewall);
         return ret;
     }
@@ -1911,7 +1911,7 @@ namespace projs
         {
             ray.mul(1/maxdist);
             if(!skip && proj.interacts && checkitems(proj, oldpos, ray, maxdist)) return -1;
-            float dist = tracecollide(&proj, proj.o, ray, maxdist, RAY_CLIPMAT|RAY_ALPHAPOLY, proj.projcollide&COLLIDE_DYNENT),
+            float dist = tracecollide(&proj, proj.o, ray, maxdist, RAY_CLIPMAT|RAY_ALPHAPOLY, proj.projcollide&COLLIDE_DYNENT, GUARDRADIUS),
                   total = dist >= 0 ? dist : maxdist;
             proj.o.add(vec(ray).mul(total));
             if(proj.projtype == PRJ_SHOT) updatetaper(proj, proj.distance+total);
@@ -1932,9 +1932,9 @@ namespace projs
                 if(proj.spawntime && lastmillis-proj.spawntime >= delay*2) proj.escaped = true;
                 else if(proj.projcollide&COLLIDE_TRACE)
                 {
-                    if(!pltracecollide(&proj, pos, ray, dir.magnitude()) || collideplayer != proj.owner) proj.escaped = true;
+                    if(!pltracecollide(&proj, pos, ray, dir.magnitude(), GUARDRADIUS) || collideplayer != proj.owner) proj.escaped = true;
                 }
-                else if(!plcollide(&proj, ray, true) || collideplayer != proj.owner) proj.escaped = true;
+                else if(!plcollide(&proj, ray, true, GUARDRADIUS) || collideplayer != proj.owner) proj.escaped = true;
             }
         }
     }
@@ -2181,7 +2181,7 @@ namespace projs
         float maxdist = ray.magnitude();
         if(maxdist <= 0) return 1; // not moving anywhere, so assume still alive since it was already alive
         ray.mul(1/maxdist);
-        float dist = tracecollide(&proj, proj.from, ray, maxdist, RAY_CLIPMAT|RAY_ALPHAPOLY, proj.projcollide&COLLIDE_DYNENT);
+        float dist = tracecollide(&proj, proj.from, ray, maxdist, RAY_CLIPMAT|RAY_ALPHAPOLY, proj.projcollide&COLLIDE_DYNENT, GUARDRADIUS);
         if(dist >= 0)
         {
             vec dir = vec(proj.to).sub(proj.from).safenormalize();
@@ -2327,7 +2327,7 @@ namespace projs
                             if(mag > 1e-6f)
                             {
                                 dir.div(mag);
-                                float blocked = tracecollide(&proj, from, dir, mag, RAY_CLIPMAT|RAY_ALPHAPOLY, true);
+                                float blocked = tracecollide(&proj, from, dir, mag, RAY_CLIPMAT|RAY_ALPHAPOLY, true, GUARDRADIUS);
                                 if(blocked >= 0 && collideplayer && collideplayer->state == CS_ALIVE && physics::issolid(collideplayer, &proj, true, false))
                                 {
                                     proj.beenused = 1;

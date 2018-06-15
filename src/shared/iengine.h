@@ -356,12 +356,12 @@ extern char *mapcdesc(const char *s);
 
 // physics
 extern bool ellipsecollide(physent *d, const vec &dir, const vec &o, const vec &center, float yaw, float xr, float yr, float hi, float lo);
-extern bool collide(physent *d, const vec &dir = vec(0, 0, 0), float cutoff = 0, bool playercol = true, bool insideplayercol = false);
-extern bool plcollide(physent *d, const vec &dir = vec(0, 0, 0), bool insideplayercol = false);
-extern bool plcollide(physent *d, const vec &dir, physent *o);
-extern float pltracecollide(physent *d, const vec &o, const vec &ray, float maxdist);
-extern float tracecollide(physent *d, const vec &o, const vec &ray, float maxdist, int mode = RAY_CLIPMAT|RAY_ALPHAPOLY, bool playercol = true);
-extern bool intersect(physent *d, const vec &from, const vec &to, float &dist);
+extern bool collide(physent *d, const vec &dir = vec(0, 0, 0), float cutoff = 0, bool playercol = true, bool insideplayercol = false, float guard = 0);
+extern bool plcollide(physent *d, const vec &dir = vec(0, 0, 0), bool insideplayercol = false, float guard = 0);
+extern bool plcollide(physent *d, const vec &dir, physent *o, float guard = 0);
+extern float pltracecollide(physent *d, const vec &o, const vec &ray, float maxdist, float guard = 0);
+extern float tracecollide(physent *d, const vec &o, const vec &ray, float maxdist, int mode = RAY_CLIPMAT|RAY_ALPHAPOLY, bool playercol = true, float guard = 0);
+extern bool intersect(physent *d, const vec &from, const vec &to, float &dist, float guard);
 extern bool overlapsbox(const vec &d, float h1, float r1, const vec &v, float h2, float r2);
 extern const vector<physent *> &checkdynentcache(int x, int y);
 extern void updatedynentcache(physent *d);
