@@ -10,6 +10,8 @@ namespace UI
 
     SVAR(0, uiopencmd, "showui");
     SVAR(0, uiclosecmd, "hideui");
+    SVAR(0, uiprecmd, "");
+    SVAR(0, uipostcmd, "");
 
     VAR(IDF_PERSIST, uitextrows, 1, 48, VAR_MAX);
 
@@ -4512,7 +4514,9 @@ namespace UI
 
         calctextscale();
 
+        if(*uiprecmd) execute(uiprecmd);
         world->build();
+        if(*uipostcmd) execute(uipostcmd);
 
         flusheditors();
         popfont();
