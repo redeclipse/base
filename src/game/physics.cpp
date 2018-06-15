@@ -1276,7 +1276,7 @@ namespace physics
     {
         static float dist = 1e16f;
         collidezones = CLZ_NONE;
-        if(d && projent::is(d) && gameent::is(o)) return hitzonecollide((gameent *)o, d->o, vec(dir).mul(d->radius), dist);
+        if(d && projent::shot(d) && gameent::is(o)) return hitzonecollide((gameent *)o, d->o, vec(dir).mul(d->radius), dist);
         collidezones = CLZ_TORSO;
         return true;
     }
@@ -1284,7 +1284,7 @@ namespace physics
     bool checktracecollide(physent *d, const vec &from, const vec &to, float &dist, physent *o, float guard)
     {
         collidezones = CLZ_NONE;
-        if(d && projent::is(d) && gameent::is(o)) return hitzonecollide((gameent *)o, from, vec(to).sub(from), dist);
+        if(d && projent::shot(d) && gameent::is(o)) return hitzonecollide((gameent *)o, from, vec(to).sub(from), dist);
         collidezones = CLZ_TORSO;
         return true;
     }

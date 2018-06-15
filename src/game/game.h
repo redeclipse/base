@@ -1761,6 +1761,8 @@ struct projent : dynent
 
     static bool is(int t) { return t == ENT_PROJ; }
     static bool is(physent *d) { return d->type == ENT_PROJ; }
+    static bool shot(int t, int w) { return t == ENT_PROJ && w == PRJ_SHOT; }
+    static bool shot(physent *d) { return d->type == ENT_PROJ && ((projent*)d)->projtype == PRJ_SHOT; }
 
     void reset()
     {
