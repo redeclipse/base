@@ -1103,17 +1103,11 @@ namespace game
         d->o.z -= d->height;
         if(d->state == CS_ALIVE && AA(d->actortype, abilities)&(1<<A_A_CROUCH))
         {
-            bool crouching = d->crouching(true);
-            float zrad = d->zradius*CROUCHHEIGHT, zoff = d->zradius-zrad;
+            bool crouching = d->crouching(true), moving = d->move || d->strafe || (d->physstate < PHYS_SLOPE && !d->onladder);
+            float zrad = d->zradius*(moving ? CROUCHMOVING : CROUCHSTILL), zoff = d->zradius-zrad;
             vec old = d->o;
-            if(!crouching) loopk(d->move || d->strafe ? 2 : 1)
+            if(!crouching)
             {
-                if(k)
-                {
-                    vec dir;
-                    vecfromyawpitch(d->yaw, 0, d->move, d->strafe, dir);
-                    d->o.add(dir.mul(2));
-                }
                 d->o.z += d->zradius;
                 d->height = d->zradius;
                 if(collide(d, vec(0, 0, 1), 0, false) || collideinside)
@@ -1124,7 +1118,6 @@ namespace game
                 }
                 d->o = old;
                 d->height = offset;
-                if(crouching) break;
             }
             if(crouching || d->crouching())
             {
@@ -1132,14 +1125,14 @@ namespace game
                 if(crouching)
                 {
                     if(d->actiontime[AC_CROUCH] <= 0) d->actiontime[AC_CROUCH] = lastmillis;
-                    if(d->height > zrad && ((d->height -= zamt) < zrad))
-                        d->height = zrad;
+                    if(d->height > zrad && ((d->height -= zamt) < zrad)) d->height = zrad;
+                    else if(d->height < zrad && ((d->height += zamt) > zrad)) d->height = zrad;
                 }
                 else
                 {
                     if(d->actiontime[AC_CROUCH] >= 0) d->actiontime[AC_CROUCH] = -lastmillis;
-                    if(d->height < d->zradius && ((d->height += zamt) > d->zradius))
-                        d->height = d->zradius;
+                    if(d->height < d->zradius && ((d->height += zamt) > d->zradius)) d->height = d->zradius;
+                    else if(d->height > d->zradius && ((d->height -= zamt) < d->zradius)) d->height = d->zradius;
                 }
             }
             else
