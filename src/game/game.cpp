@@ -857,7 +857,7 @@ namespace game
 
     float spawnfade(gameent *d)
     {
-        int len = min(m_delay(d->actortype, gamemode, mutators, d->team), AA(d->actortype, abilities)&(1<<A_A_MOVE) ? 5000 : 2500);
+        int len = min(max(m_delay(d->actortype, gamemode, mutators, d->team), 1)/3, 250);
         if(deathmaxfade && (len <= 0 || len > deathmaxfade)) len = deathmaxfade;
         if(len > 0)
         {
