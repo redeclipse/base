@@ -847,11 +847,11 @@ namespace game
     void spawneffect(int type, const vec &pos, float radius, int colour, float size)
     {
         vec o = pos;
-        o.z -= radius*2.4f;
-        loopi(8)
+        o.z -= radius*2.6f;
+        loopi(9)
         {
             o.z += radius*0.4f;
-            createshape(type, radius*0.25f, colour, 3, 50, 350, o, size*0.5f, 0.35f, 0, 1, 8);
+            createshape(type, radius*0.25f, colour, 3, 50, 350, o, size, 0.35f, 0, 1, 8);
         }
     }
 
@@ -936,8 +936,8 @@ namespace game
         {
             vec center = d->center();
             playsound(S_RESPAWN, d->o, d);
-            spawneffect(PART_SPARK, center, d->height*0.5f, getcolour(d, playerovertone, playerovertonelevel), 1.5f);
-            spawneffect(PART_SPARK, center, d->height*0.5f, getcolour(d, playerundertone, playerundertonelevel), 1.5f);
+            spawneffect(PART_SPARK, center, d->height*0.5f, getcolour(d, playerovertone, playerovertonelevel), 1);
+            spawneffect(PART_SPARK, center, d->height*0.5f, getcolour(d, playerundertone, playerundertonelevel), 1);
             if(dynlighteffects) adddynlight(center, d->height*2, vec::fromcolor(getcolour(d, playereffecttone, playereffecttonelevel)).mul(2.f), 250, 250);
             if(entities::ents.inrange(ent) && entities::ents[ent]->type == PLAYERSTART) entities::execlink(d, ent, false);
         }

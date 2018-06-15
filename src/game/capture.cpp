@@ -449,8 +449,8 @@ namespace capture
         if(!st.flags.inrange(i)) return;
         capturestate::flag &f = st.flags[i];
         affinityeffect(i, d->team, d->feetpos(), f.above, 3, "RETURNED");
-        game::spawneffect(PART_SPARK, vec(f.spawnloc).add(vec(0, 0, enttype[AFFINITY].radius*0.45f)), enttype[AFFINITY].radius*0.25f, TEAM(f.team, colour), 1.5f);
-        game::spawneffect(PART_SPARK, vec(f.spawnloc).add(vec(0, 0, enttype[AFFINITY].radius*0.45f)), enttype[AFFINITY].radius*0.25f, colourwhite, 1.5f);
+        game::spawneffect(PART_SPARK, vec(f.spawnloc).add(vec(0, 0, enttype[AFFINITY].radius*0.45f)), enttype[AFFINITY].radius*0.25f, TEAM(f.team, colour), 1);
+        game::spawneffect(PART_SPARK, vec(f.spawnloc).add(vec(0, 0, enttype[AFFINITY].radius*0.45f)), enttype[AFFINITY].radius*0.25f, colourwhite, 1);
         game::announcef(S_V_FLAGRETURN, CON_EVENT, d, true, "\fa%s returned the %s flag (time taken: \fs\fc%s\fS)", game::colourname(d), game::colourteam(f.team, "flagtex"), timestr(m_ctf_quick(game::gamemode, game::mutators) ? f.dropleft(lastmillis, capturestore) : lastmillis-f.taketime, 1));
         st.returnaffinity(i, lastmillis);
     }
@@ -462,10 +462,10 @@ namespace capture
         if(value > 0)
         {
             affinityeffect(i, T_NEUTRAL, f.droploc, value == 2 ? pos : f.above, 3, "RESET");
-            game::spawneffect(PART_SPARK, vec(f.pos()).add(vec(0, 0, enttype[AFFINITY].radius*0.45f)), enttype[AFFINITY].radius*0.25f, TEAM(f.team, colour), 1.5f);
-            game::spawneffect(PART_SPARK, vec(f.pos()).add(vec(0, 0, enttype[AFFINITY].radius*0.45f)), enttype[AFFINITY].radius*0.25f, colourwhite, 1.5f);
-            game::spawneffect(PART_SPARK, value == 2 ? pos : vec(f.spawnloc).add(vec(0, 0, enttype[AFFINITY].radius*0.45f)), enttype[AFFINITY].radius*0.25f, TEAM(f.team, colour), 1.5f);
-            game::spawneffect(PART_SPARK, value == 2 ? pos : vec(f.spawnloc).add(vec(0, 0, enttype[AFFINITY].radius*0.45f)), enttype[AFFINITY].radius*0.25f, colourwhite, 1.5f);
+            game::spawneffect(PART_SPARK, vec(f.pos()).add(vec(0, 0, enttype[AFFINITY].radius*0.45f)), enttype[AFFINITY].radius*0.25f, TEAM(f.team, colour), 1);
+            game::spawneffect(PART_SPARK, vec(f.pos()).add(vec(0, 0, enttype[AFFINITY].radius*0.45f)), enttype[AFFINITY].radius*0.25f, colourwhite, 1);
+            game::spawneffect(PART_SPARK, value == 2 ? pos : vec(f.spawnloc).add(vec(0, 0, enttype[AFFINITY].radius*0.45f)), enttype[AFFINITY].radius*0.25f, TEAM(f.team, colour), 1);
+            game::spawneffect(PART_SPARK, value == 2 ? pos : vec(f.spawnloc).add(vec(0, 0, enttype[AFFINITY].radius*0.45f)), enttype[AFFINITY].radius*0.25f, colourwhite, 1);
             game::announcef(S_V_FLAGRESET, CON_EVENT, NULL, true, "\faThe %s flag has been reset", game::colourteam(f.team, "flagtex"));
         }
         if(value == 2)
@@ -494,10 +494,10 @@ namespace capture
         returnpos.add(vec(0, 0, radius*0.45f));
         capturepos.add(vec(0, 0, radius*0.45f));
         affinityeffect(goal, d->team, abovegoal, f.above, 3, "CAPTURED");
-        game::spawneffect(PART_SPARK, capturepos, radius*0.25f, TEAM(d->team, colour), 1.5f);
-        game::spawneffect(PART_SPARK, capturepos, radius*0.25f, colourwhite, 1.5f);
-        game::spawneffect(PART_SPARK, returnpos, radius*0.25f, TEAM(f.team, colour), 1.5f);
-        game::spawneffect(PART_SPARK, returnpos, radius*0.25f, colourwhite, 1.5f);
+        game::spawneffect(PART_SPARK, capturepos, radius*0.25f, TEAM(d->team, colour), 1);
+        game::spawneffect(PART_SPARK, capturepos, radius*0.25f, colourwhite, 1);
+        game::spawneffect(PART_SPARK, returnpos, radius*0.25f, TEAM(f.team, colour), 1);
+        game::spawneffect(PART_SPARK, returnpos, radius*0.25f, colourwhite, 1);
         hud::teamscore(d->team).total = score;
         defformatstring(fteam, "%s", game::colourteam(f.team, "flagtex"));
         game::announcef(S_V_FLAGSCORE, CON_EVENT, d, true, "\fa%s captured the %s flag for team %s (score: \fs\fc%d\fS, time taken: \fs\fc%s\fS)", game::colourname(d), fteam, game::colourteam(d->team), score, timestr(lastmillis-f.taketime, 1));

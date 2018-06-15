@@ -165,7 +165,8 @@ struct partrenderer
             }
             else size = p->size;
             float secs = curtime/1000.f;
-            vec v = vec(p->d).mul(secs);
+            int part = type&0xFF;
+            vec v = part == PT_PART ? vec(p->d).mul(secs) : vec(0, 0, 0);
             if(weight)
             {
                 if(ts > p->fade) ts = p->fade;
@@ -748,7 +749,7 @@ struct varenderer : partrenderer
         pe.extendbb(o, size);
 
         seedpos<T>(pe, o, d, fade, size, gravity);
-
+        #if 0
         vec end(o);
         float secs = fade/5000.0f;
         vec v = vec(d).mul(secs);
@@ -769,7 +770,11 @@ struct varenderer : partrenderer
         end.add(v);
         pe.extendbb(end, size);
         if(!gravity) return;
-
+        #endif
+        float t = fade;
+        vec end = vec(o).madd(d, t/5000.0f);
+        end.z -= t*t/(2.0f * 5000.0f * gravity);
+        pe.extendbb(end, size);
         float tpeak = d.z*gravity;
         if(tpeak > 0 && tpeak < fade) pe.extendbb(o.z + 1.5f*d.z*tpeak/5000.0f, size);
     }
@@ -1171,7 +1176,7 @@ static partrenderer *parts[] =
     new quadrenderer("<grey>particles/blood", PT_PART|PT_MOD|PT_RND4|PT_FLIP),
     new quadrenderer("<grey>particles/entity", PT_PART|PT_BRIGHT),
     new quadrenderer("<grey>particles/entity", PT_PART|PT_BRIGHT|PT_ONTOP),
-    new quadrenderer("<grey>particles/spark", PT_PART|PT_BRIGHT|PT_FLIP|PT_SHRINK|PT_GROW),
+    new quadrenderer("<grey>particles/spark", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK),
     new softquadrenderer("<grey>particles/fire", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK),
     new quadrenderer("<grey>particles/fire", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_SHRINK),
     new softquadrenderer("<grey>particles/plasma", PT_PART|PT_BRIGHT|PT_FLIP|PT_SHRINK),
