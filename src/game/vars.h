@@ -488,7 +488,8 @@ GFVAR(IDF_GAMEMOD, impulselaunchpitchmin, -89.9f, 15.f, 89.9f); // launch pitch 
 GFVAR(IDF_GAMEMOD, impulselaunchpitchmax, -89.9f, 89.9f, 89.9f); // launch pitch maximum
 GFVAR(IDF_GAMEMOD, impulseslide, 0, 0.5f, FVAR_MAX); // slide modifier
 GFVAR(IDF_GAMEMOD, impulseslideredir, 0, 1, FVAR_MAX); // how much of the old velocity is redirected into the new one
-GFVAR(IDF_GAMEMOD, impulsejump, 0, 1, FVAR_MAX); // jump modifier
+GFVAR(IDF_GAMEMOD, impulsejump, 0, 1, FVAR_MAX); // jump upward modifier
+GFVAR(IDF_GAMEMOD, impulsejumpdown, 0, 2, FVAR_MAX); // jump downward modifier
 GFVAR(IDF_GAMEMOD, impulsejumpredir, 0, 1, FVAR_MAX); // how much of the old velocity is redirected into the new one
 GFVAR(IDF_GAMEMOD, impulsemelee, 0, 0.75f, FVAR_MAX); // melee modifier
 GFVAR(IDF_GAMEMOD, impulsemeleeredir, 0, 1, FVAR_MAX); // how much of the old velocity is redirected into the new one
