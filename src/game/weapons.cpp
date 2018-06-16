@@ -323,7 +323,7 @@ namespace weapons
         {
             float maxscale = 1;
             if(sub > 1 && d->weapclip[weap] < sub) maxscale = d->weapclip[weap]/float(sub);
-            int len = int(W2(weap, cooktime, secondary)*maxscale), type = zooming ? W_S_ZOOM : W_S_POWER;
+            int len = max(int(W2(weap, cooktime, secondary)*maxscale), 1), type = zooming ? W_S_ZOOM : W_S_POWER;
             if(!cooked)
             {
                 if(d->weapstate[weap] != type)
@@ -344,14 +344,11 @@ namespace weapons
                     }
                     else return false;
                 }
-                cooked = len ? clamp(lastmillis-d->weaptime[weap], 1, len) : 1;
-                if(zooming)
-                {
-                    if(pressed && wassecond) return false;
-                }
+                cooked = clamp(lastmillis-d->weaptime[weap], 1, len);
+                if(zooming) { if(pressed && wassecond) return false; }
                 else if(pressed && cooked < len) return false;
             }
-            scale = len ? cooked/float(W2(weap, cooktime, secondary)) : 1;
+            scale = cooked/float(W2(weap, cooktime, secondary));
             if(sub > 1 && scale < 1) sub = clamp(int(ceilf(sub*scale)), 1, W2(weap, ammosub, secondary));
         }
         else if(!pressed) return false;

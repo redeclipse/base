@@ -1245,7 +1245,7 @@ struct gameent : dynent, clientstate
             else curscale = scale;
         }
 
-        loopi(W_MAX) if(weapstate[i] != W_S_IDLE && (weapselect != i || weapstate[i] != W_S_ZOOM) && millis-weaptime[i] >= weapwait[i])
+        loopi(W_MAX) if(weapstate[i] != W_S_IDLE && (weapselect != i || (weapstate[i] != W_S_POWER && weapstate[i] != W_S_ZOOM)) && millis-weaptime[i] >= weapwait[i]+100)
             setweapstate(i, W_S_IDLE, 0, millis);
 
         xradius = yradius = PLAYERRADIUS*curscale;
