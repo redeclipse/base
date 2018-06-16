@@ -115,7 +115,7 @@ struct lightningrenderer : sharedlistrenderer
         glEnable(GL_CULL_FACE);
     }
 
-    void seedemitter(particleemitter &pe, const vec &o, const vec &d, int fade, float size, int gravity)
+    void seedemitter(particleemitter &pe, const vec &o, const vec &d, int fade, float size, float gravity)
     {
         pe.maxfade = max(pe.maxfade, fade);
         pe.extendbb(o, size);

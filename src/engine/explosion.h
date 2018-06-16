@@ -127,7 +127,7 @@ struct explosionrenderer : sharedlistrenderer
         sphere::cleanup();
     }
 
-    void seedemitter(particleemitter &pe, const vec &o, const vec &d, int fade, float size, int gravity)
+    void seedemitter(particleemitter &pe, const vec &o, const vec &d, int fade, float size, float gravity)
     {
         pe.maxfade = max(pe.maxfade, fade);
         pe.extendbb(o, (size+1+pe.ent->attrs[1])*WOBBLE);
