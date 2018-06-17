@@ -3025,6 +3025,7 @@ namespace game
     }
 
     VAR(0, animoverride, -1, 0, ANIM_MAX-1);
+    VAR(0, animtargets, 0, 1, 1);
     VAR(0, testanims, 0, 0, 1);
 
     int numanims() { return ANIM_MAX; }
@@ -3389,7 +3390,7 @@ namespace game
                 mdl.o.add(dir).add(swaydir).add(swaypush);
             }
         }
-        if(animoverride && d == focus)
+        if(animoverride && (m_edit(gamemode) ? (animtargets >= (d == focus ? 0 : 1)) : d == focus))
         {
             mdl.anim = (animoverride < 0 ? ANIM_ALL : animoverride)|ANIM_LOOP;
             mdl.basetime = 0;
