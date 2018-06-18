@@ -70,7 +70,7 @@ GVAR(IDF_ADMIN, allowtimeout, 0, 3600000, VAR_MAX); // temporary allows last thi
 GVAR(IDF_ADMIN, bantimeout, 0, 14400000, VAR_MAX); // temporary bans last this long
 GVAR(IDF_ADMIN, mutetimeout, 0, 3600000, VAR_MAX); // temporary mutes last this long
 GVAR(IDF_ADMIN, limittimeout, 0, 3600000, VAR_MAX); // temporary limits last this long
-GVAR(IDF_ADMIN, excepttimeout, 0, 3600000, VAR_MAX); // temporary allows last this long
+GVAR(IDF_ADMIN, excepttimeout, 0, 3600000, VAR_MAX); // temporary excepts last this long
 
 GVAR(IDF_ADMIN, connectlock, 0, PRIV_NONE, PRIV_MAX);
 GVAR(IDF_ADMIN, messagelock, 0, PRIV_NONE, PRIV_MAX);

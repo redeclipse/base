@@ -3037,14 +3037,12 @@ static const uint *runcode(const uint *code, tagval &result)
                     continue;
                 }
                 ident *id = idents.access(idarg.s);
-                if(!id)
+                bool idrewrite = !id || (id->flags&IDF_REWRITE && (!(identflags&IDF_WORLD) || !(id->flags&IDF_WORLD)));
+                if(idrewrite)
                 {
                 noid:
                     if(checknumber(idarg.s)) goto litval;
-                    if(!id || (id->flags&IDF_REWRITE && (!(identflags&IDF_WORLD) || !(id->flags&IDF_WORLD))))
-                    {
-                        if(server::rewritecommand(id, args, numargs)) FORCERESULT;
-                    }
+                    if(idrewrite && server::rewritecommand(id, args, numargs)) FORCERESULT;
                     debugcode("\frUnknown command: %s", idarg.s);
                     forcenull(result);
                     FORCERESULT;
