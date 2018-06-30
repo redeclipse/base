@@ -3251,11 +3251,7 @@ namespace game
                     }
                     case W_S_POWER: case W_S_ZOOM:
                     {
-                        switch(weaptype[weap].anim)
-                        {
-                            case ANIM_GRENADE: mdl.anim = ANIM_GRENADE_POWER; break;
-                            default: mdl.anim = weaptype[weap].anim|ANIM_LOOP; break;
-                        }
+                        mdl.anim = (weaptype[weap].anim+d->weapstate[weap])|ANIM_CLAMP;
                         break;
                     }
                     case W_S_PRIMARY: case W_S_SECONDARY:
