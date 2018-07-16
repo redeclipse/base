@@ -149,7 +149,7 @@ struct duelservmode : servmode
                     shots.add(clients[j]->weapshots[a][b].projs[i].id);
                 clients[j]->weapshots[a][b].projs.shrink(0);
             }
-            if(!shots.empty()) sendf(-1, 1, "ri2iv", N_DESTROY, clients[j]->clientnum, PRJ_SHOT, shots.length(), shots.length(), shots.getbuf());
+            if(!shots.empty()) sendf(-1, 1, "ri4v", N_DESTROY, clients[j]->clientnum, PRJ_SHOT, shots.length(), shots.length(), shots.getbuf());
 
         }
         if(DSGS(clear))
