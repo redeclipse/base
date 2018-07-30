@@ -75,6 +75,7 @@ The project is Free and Open Source, meaning that you can both use it for free a
 * Robert "Homicidal" Crane
 * Robert Winkler
 * Ryan "icculus" Gordon / icculus.org - Master server and website hosting
+* Ryan Rigby
 * Rémi "LuckystrikeRx" Clouet d'Orval - Maps, Textures, Models, Weapons, Design/Testing, Website
 * Scott Baker
 * Sergey "swooboo" Altshuller
