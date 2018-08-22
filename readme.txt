@@ -7,10 +7,9 @@
 * Download for free at https://redeclipse.net/
 
 ## About
-Red Eclipse is a fun-filled new take on the first-person arena shooter, built using the technology found in [Tesseract](http://tesseract.gg/), which lends itself towards a balanced gameplay, with a general theme of agility in a variety of environments. For more information, visit our [Wiki](https://redeclipse.net/wiki) or [Forums](https://redeclipse.net/forum).
+Red Eclipse is a fun-filled new take on the first-person arena shooter, built using the technology found in [Tesseract](https://tesseract.gg/), which lends itself towards a balanced gameplay, with a general theme of agility in a variety of environments. For more information, visit our [Wiki](https://redeclipse.net/wiki) or [Forums](https://redeclipse.net/forum).
 
 The project is a free and open source game built using SDL and OpenGL which allows it to be ported to many platforms; you can [download a package](https://redeclipse.net/download) for Windows, GNU/Linux, BSD, and macOS; or grab a development copy from our [Git repository](https://redeclipse.net/devel) and live on the bleeding edge.
-
 
 In a true open source by the people for the people nature, we try to work closely with the gaming and open source communities to provide a better overall experience, aiming to create a game environment that is fun and easy to play, while still having elements to master.
 
@@ -25,10 +24,10 @@ We chat via IRC in the channel `#redeclipse` on `irc.freenode.net`, if you don't
 The project is Free and Open Source, meaning that you can both use it for free and be a part of it by contributing in whatever way you can. These are the people who have helped shape Red Eclipse into what you see today. They are regular people just like you who volunteer their time or donate in the spirit of making a really cool game. Your name could be down here, too!
 
 ### Founders
-* Quinton "Quin" Reeves - Lead Developer - YouTube channel @ http://youtube.com/qreeves
+* Quinton "Quin" Reeves - Lead Developer - YouTube channel @ https://youtube.com/qreeves
     - Gameplay and AI Design, Community Management
 
-* Lee "Eihrul" Salzman - Lead Programmer - Check out Tesseract @ http://tesseract.gg/
+* Lee "Eihrul" Salzman - Lead Programmer - Check out Tesseract @ https://tesseract.gg/
     - Engine Designer, Programming Support (there'd be no game without this guy!)
 
 ### Contributors, Developers and Supporters
@@ -39,7 +38,7 @@ The project is Free and Open Source, meaning that you can both use it for free a
 * Christopher "Dratz-_C" Dratz
 * Christopher "paroneayea" Webber
 * Corey "c0rdawg" Maher
-* Dale "graphitemaster" Weiler - Check out Neothyne @ http://neothyne.org/
+* Dale "graphitemaster" Weiler - Check out Neothyne @ https://neothyne.org/
 * Daniel "Imerion" Eriksson
 * David "srbs" Forrest
 * Derek "Favorito" Ponicki - Maps, Textures, Design/Testing
@@ -72,20 +71,20 @@ The project is Free and Open Source, meaning that you can both use it for free a
 * Ricky "unixfreak" Thomson - Maps
 * Riidom Li - Models
 * Rob "Lloir" Shannon
-* Robert "Homicidal" Crane
+* Robert "Homicidal" Crane - Parkour design, and the concept of the big blue ball of death.
 * Robert Winkler
-* Ryan "icculus" Gordon / icculus.org - Master server and website hosting
+* Ryan "icculus" Gordon / icculus.org - SDL, which we all love, as well as hosting!
 * Ryan Rigby
 * Rémi "LuckystrikeRx" Clouet d'Orval - Maps, Textures, Models, Weapons, Design/Testing, Website
 * Scott Baker
 * Sergey "swooboo" Altshuller
 * Slawek "VibrantWave" Blauciak - Ambient Sounds
-* Stefan Norman and Peter McInerney - Game server and domain name hosting
+* Stefan Norman and Peter McInerney - Supporting us from the very beginning
 * Sébastien "sinma" Chauvel
 * Taiyo Rawle
 * Vadim Peretokin
 * Viktor "Unnamed" Hahn - Maps, Models, and other improvements
-* Wayne Bennett
+* Wayne Bennett - Design/Testing
 * Zachery "freezurbern" Slocum - Skyboxes
 * "Gaming Tilt"
 * "4rson" - Maps and Support
@@ -93,9 +92,9 @@ The project is Free and Open Source, meaning that you can both use it for free a
 * "Bobbo" - Bug fixes and other improvements
 * "bonifarz"
 * "Boognish" - Maps
-* "CD Xbow"
+* "CD Xbow" - Supporter and dreamer, he saw the potential in everything.
 * "D.a.M.i.E.n" - Maps and Textures
-* "FaTony"
+* "FaTony" - Maps
 * "fbt"
 * "FearFighter"
 * "Fleeky" - Models
