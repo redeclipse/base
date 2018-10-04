@@ -1849,6 +1849,35 @@ struct animmodel : model
         if(!enablecullface) glEnable(GL_CULL_FACE);
         if(enabledepthoffset) disablepolygonoffset(GL_POLYGON_OFFSET_FILL);
     }
+
+    struct lodmdl
+    {
+        char *name;
+        float dist;
+
+        lodmdl() {}
+        ~lodmdl() { DELETEA(name); }
+    };
+    vector<lodmdl> lod;
+
+    void addlod(const char *str, float dist)
+    {
+        if(!str || !*str || dist <= 0) return;
+        loopv(lod) if(!strcmp(lod[i].name, str) || lod[i].dist == dist) return;
+        defformatstring(s, "%s/%s", name, str);
+        lodmdl &lm = lod.add();
+        lm.name = newstring(s);
+        lm.dist = dist;
+    }
+
+    const char *lodmodel(float dist)
+    {
+        if(dist <= 0) return NULL;
+        int id = -1;
+        loopv(lod) if(dist >= lod[i].dist) id = i;
+        if(!lod.inrange(id)) return NULL;
+        return lod[id].name;
+    }
 };
 
 hashnameset<animmodel::meshgroup *> animmodel::meshgroups;

@@ -243,6 +243,13 @@ void mdlextendbb(float *x, float *y, float *z)
 }
 COMMAND(0, mdlextendbb, "fff");
 
+void mdllod(char *name, float *dist)
+{
+    checkmdl;
+    loadingmodel->addlod(name, *dist);
+}
+COMMAND(0, mdllod, "sf");
+
 void mdlname()
 {
     checkmdl;
@@ -924,7 +931,15 @@ void rendermapmodel(int idx, entmodelstate &state)
     mapmodelinfo &mmi = mapmodels[idx];
     model *m = mmi.m ? mmi.m : loadmodel(mmi.name);
     if(!m) return;
-
+    if(!drawtex)
+    {
+        const char *lmdl = m->lodmodel(camera1->o.dist(state.o));
+        if(lmdl)
+        {
+            model *lm = loadmodel(lmdl);
+            if(lm) m = lm;
+        }
+    }
     vec bbradius;
     m->boundbox(state.center, bbradius);
     state.radius = bbradius.magnitude();
@@ -958,6 +973,15 @@ void rendermodel(const char *mdl, modelstate &state, dynent *d)
 {
     model *m = loadmodel(mdl);
     if(!m) return;
+    if(!drawtex)
+    {
+        const char *lmdl = m->lodmodel(camera1->o.dist(state.o));
+        if(lmdl)
+        {
+            model *lm = loadmodel(lmdl);
+            if(lm) m = lm;
+        }
+    }
 
     vec bbradius;
     m->boundbox(state.center, bbradius);
@@ -988,7 +1012,19 @@ hasboundbox:
 
     if(state.attached) for(int i = 0; state.attached[i].tag; i++)
     {
-        if(state.attached[i].name) state.attached[i].m = loadmodel(state.attached[i].name);
+        if(state.attached[i].name)
+        {
+            state.attached[i].m = loadmodel(state.attached[i].name);
+            if(state.attached[i].m && !drawtex)
+            {
+                const char *almdl = state.attached[i].m->lodmodel(camera1->o.dist(state.o));
+                if(almdl)
+                {
+                    model *alm = loadmodel(almdl);
+                    if(alm) state.attached[i].m = alm;
+                }
+            }
+        }
     }
 
     if(state.flags&MDL_CULL_QUERY)
