@@ -925,21 +925,40 @@ void clearbatchedmapmodels()
     }
 }
 
+VAR(IDF_PERSIST, lodmodelfov, 0, 1, 1);
+FVAR(IDF_PERSIST, lodmodelfovmax, 1, 90, 180);
+FVAR(IDF_PERSIST, lodmodelfovmin, 1, 10, 180);
+FVAR(IDF_PERSIST, lodmodelfovdist, 1, 1024, VAR_MAX);
+FVAR(IDF_PERSIST, lodmodelfovscale, 0, 1, 1000);
+
+model *loadlodmodel(model *m, const vec &pos)
+{
+    if(drawtex || !m) return m;
+    float dist = camera1->o.dist(pos);
+    if(lodmodelfov && dist <= lodmodelfovdist)
+    {
+        float fovmin = min(lodmodelfovmin, lodmodelfovmax),
+              fovmax = max(lodmodelfovmax, fovmin+1.f),
+              fovnow = clamp(curfov, fovmin, fovmax);
+        if(fovnow < fovmax)
+        {
+            float x = fmod(fabs(asin((pos.z-camera1->o.z)/dist)/RAD-camera1->pitch), 360),
+                  y = fmod(fabs(-atan2(pos.x-camera1->o.x, pos.y-camera1->o.y)/RAD-camera1->yaw), 360);
+            if(min(x, 360-x) <= curfov && min(y, 360-y) <= fovy) dist *= fovnow/fovmax*lodmodelfovscale;
+        }
+    }
+    const char *mdl = m->lodmodel(dist);
+    if(!mdl || !*mdl) return m;
+    model *lm = loadmodel(mdl);
+    return lm ? lm : m;
+}
+
 void rendermapmodel(int idx, entmodelstate &state)
 {
     if(!mapmodels.inrange(idx)) return;
     mapmodelinfo &mmi = mapmodels[idx];
-    model *m = mmi.m ? mmi.m : loadmodel(mmi.name);
+    model *m = loadlodmodel(mmi.m ? mmi.m : loadmodel(mmi.name), state.o);
     if(!m) return;
-    if(!drawtex)
-    {
-        const char *lmdl = m->lodmodel(camera1->o.dist(state.o));
-        if(lmdl)
-        {
-            model *lm = loadmodel(lmdl);
-            if(lm) m = lm;
-        }
-    }
     vec bbradius;
     m->boundbox(state.center, bbradius);
     state.radius = bbradius.magnitude();
@@ -971,18 +990,8 @@ void rendermapmodel(int idx, entmodelstate &state)
 
 void rendermodel(const char *mdl, modelstate &state, dynent *d)
 {
-    model *m = loadmodel(mdl);
+    model *m = loadlodmodel(loadmodel(mdl), state.o);
     if(!m) return;
-    if(!drawtex)
-    {
-        const char *lmdl = m->lodmodel(camera1->o.dist(state.o));
-        if(lmdl)
-        {
-            model *lm = loadmodel(lmdl);
-            if(lm) m = lm;
-        }
-    }
-
     vec bbradius;
     m->boundbox(state.center, bbradius);
     state.radius = bbradius.magnitude();
@@ -1011,21 +1020,7 @@ hasboundbox:
     if(state.flags&MDL_NORENDER) state.anim |= ANIM_NORENDER;
 
     if(state.attached) for(int i = 0; state.attached[i].tag; i++)
-    {
-        if(state.attached[i].name)
-        {
-            state.attached[i].m = loadmodel(state.attached[i].name);
-            if(state.attached[i].m && !drawtex)
-            {
-                const char *almdl = state.attached[i].m->lodmodel(camera1->o.dist(state.o));
-                if(almdl)
-                {
-                    model *alm = loadmodel(almdl);
-                    if(alm) state.attached[i].m = alm;
-                }
-            }
-        }
-    }
+        if(state.attached[i].name) state.attached[i].m = loadlodmodel(loadmodel(state.attached[i].name), state.o);
 
     if(state.flags&MDL_CULL_QUERY)
     {

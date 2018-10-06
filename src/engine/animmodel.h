@@ -1855,7 +1855,7 @@ struct animmodel : model
         char *name;
         float dist;
 
-        lodmdl() {}
+        lodmdl() : name(NULL), dist(0) {}
         ~lodmdl() { DELETEA(name); }
     };
     vector<lodmdl> lod;
@@ -1874,9 +1874,8 @@ struct animmodel : model
     {
         if(dist <= 0) return NULL;
         int id = -1;
-        loopv(lod) if(dist >= lod[i].dist) id = i;
-        if(!lod.inrange(id)) return NULL;
-        return lod[id].name;
+        loopv(lod) if(dist >= lod[i].dist && (id < 0 || lod[i].dist > lod[id].dist)) id = i;
+        return lod.inrange(id) ? lod[id].name : NULL;
     }
 };
 
