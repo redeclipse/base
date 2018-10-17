@@ -1,4 +1,4 @@
-GUIDELINES FOR CONNECTING TO THE RED ECLIPSE MASTER SERVER
+== GUIDELINES FOR CONNECTING TO THE RED ECLIPSE MASTER SERVER ==
 
 The Red Eclipse Team provides the play.redeclipse.net master server for the
 benefit of the Red Eclipse community. We impose a general set of guidelines for
@@ -22,7 +22,7 @@ Red Eclipse Team. Any person seeking to modify their game or server for use on
 the master server should first seek permission from the Red Eclipse Team, each
 modification must be approved and will be done on a case-by-case basis. It is
 advised you create a topic in the "General Discussion" section of the official
-Red Eclipse forums located at https://redeclipse.net/forum
+Red Eclipse discussions located at https://redeclipse.net/discuss
 
 == Guidelines for Servers ==
 
@@ -45,8 +45,7 @@ Red Eclipse forums located at https://redeclipse.net/forum
 
 * If the source code of the server is modified substantially you must contact
   the Red Eclipse Team to check that the changes are permitted by creating a
-  a topic in the "General Discussion" section of the official Red Eclipse forums
-  located at https://redeclipse.net/forum
+  a topic in the official Red Eclipse discussion area at https://redeclipse.net/discuss
 
 * The server must honour the master server system, allowing global bans and
   granting the correct access by the Red Eclipse Team, or moderators assigned by
@@ -111,7 +110,7 @@ Red Eclipse forums located at https://redeclipse.net/forum
 * If a player or moderator believes that the behaviour of any moderator is not
   supported by this document, it is advised that they lodge an official
   complaint in the "General Discussion" section of the official Red Eclipse
-  forums located at https://redeclipse.net/forum
+  discussions located at https://redeclipse.net/discuss
   - Arguing or being otherwise antagonistic about official moderator decisions
     via in-game communication is not allowed.
   - Attempting to mislead or otherwise deceive in a complaint is grounds for
@@ -156,14 +155,14 @@ Red Eclipse forums located at https://redeclipse.net/forum
   - If a resolution can not be found then efforts should be made to find a more
     senior member of the Red Eclipse Team to mediate the dispute.
   - Mediation methods may include an open topic in the "General Discussion"
-    section of the official Red Eclipse forums located at
-    https://redeclipse.net/forum for the community to weigh in on and generate
+    section of the official Red Eclipse discussions located at
+    https://redeclipse.net/discuss for the community to weigh in on and generate
     a better concensus on the topic.
 
 * If a moderator believes that any player behaviour not covered by this
   document should result in disciplinary action, they should create a topic in
-  the "General Discussion" section of the official Red Eclipse forums located at
-  https://redeclipse.net/forum
+  the "General Discussion" section of the official Red Eclipse discussions
+  located at https://redeclipse.net/discuss
   - Moderators should remember that it is important to maintain a professional
     attitude when dealing with other players and arguing or being otherwise
     antagonistic outside of executing disciplinary actions is not advised.

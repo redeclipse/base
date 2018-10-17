@@ -1,7 +1,6 @@
-THE RED ECLIPSE MARK POLICY
+== THE RED ECLIPSE MARK POLICY ==
 
-
-  General Guidelines
+== General Guidelines ==
 
 The purpose of the Red Eclipse mark policy is to encourage the widespread use of
 Red Eclipse marks by the community while controlling the use of the marks in
@@ -19,7 +18,35 @@ Do not assume that this policy will answer every question about the use of Red
 Eclipse marks, if in doubt, contact the Red Eclipse project.
 
 
-  Permitted Use
+== Declaration ==
+
+The Red Eclipse project delcares that:
+
+1. For the purposes of tax, trademarks, copyrights, and ownership, Red Eclipse
+   is considered to be the property of Mr Quinton Reeves as sole proprietor
+   executed from the province of Australia, as is produced as a hobby project
+   for no profit.
+
+2. For the purposes of identifying adjoining identifying names for tax,
+   trademarks, copyrights, and ownership, the following terms are considered
+   synonymous with the sole proprietor of the project, Mr Quinton Reeves:
+   - Red Eclipse
+   - Red Eclipse Community
+   - Red Eclipse Developer(s)
+   - Red Eclipse Owner(s)
+   - Red Eclipse Project
+   - Red Eclipse Team
+
+3. The official contact methods are, but not limited to:
+   - Email: contact@redeclipse.net
+   - Discussions: https://redeclipse.net/discuss
+   - Bugs and Issues: https://redeclipse.net/issues
+
+4. Personal information and contact details for Mr Quinton Reeves is available
+   to eligible organisations on request. Please email: contact@redeclipse.net
+
+
+== Permitted Use ==
 
 You may use the marks without prior written permission (subject to the following
 terms):
@@ -64,7 +91,7 @@ terms):
    or identity with the Red Eclipse project.
 
 
-  Non Permitted Use
+== Non Permitted Use ==
 
 You may not use the marks in the following ways:
 
@@ -91,7 +118,7 @@ Thus uses of the marks in a domain name or company name without explicit written
 permission from the Red Eclipse project are prohibited.
 
 
-  Other Legal Notes
+== Other Legal Notes ==
 
 The Red Eclipse project reserves the sole right to:
 
@@ -105,12 +132,11 @@ The Red Eclipse project reserves the sole right to:
 3. Grant exceptions to this policy, of any kind and for any reason whatsoever,
    other clauses notwithstanding.
 
-
-  Other Use
+== Other Use ==
 
 If you have questions regarding the policy, or if any of the examples are
-unclear, feel free to contact the Red Eclipse project, for example via the
-Red Eclipse forums.
+unclear, feel free to contact the Red Eclipse project using the details provided
+in the declaration above.
 
 If you would like to use the Red Eclipse marks for any other use, please contact
 us and we'll discuss a way to make that happen. We don't have strong objections
@@ -125,7 +151,7 @@ that don't follow this policy, don't panic. Let us know, and we'll work it out,
 as described above.
 
 
-  Attribution
+== Attribution ==
 
 This text is Copyright (C) 2011-2018, the Red Eclipse Team
 and is available under a Creative Commons Attribution-ShareAlike 3.0 Unported
