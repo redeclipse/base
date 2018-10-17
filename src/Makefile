@@ -52,7 +52,7 @@ CC_TEMP:=$(CC)
 override CXX=$(TOOLSET_PREFIX)$(CXX_TEMP)
 override CC=$(TOOLSET_PREFIX)$(CC_TEMP)
 
-INCLUDES= -DVERSION_BUILD=$(PLATFORM_BUILD) -DVERSION_BRANCH=\"$(PLATFORM_BRANCH)\" -DVERSION_REVISION=\"$(PLATFORM_REVISION)\" -I. -Ishared -Iengine -Igame -Ienet/include -Isupport
+INCLUDES= -DVERSION_BUILD=$(PLATFORM_BUILD) -DVERSION_BRANCH=\"$(PLATFORM_BRANCH)\" -DVERSION_REVISION=\"$(PLATFORM_REVISION)\" -I. -Ishared -Iengine -Igame -Ienet/include -Isupport -Isteam
 
 STRIP=
 ifeq (,$(findstring -g,$(CXXFLAGS)))
@@ -75,14 +75,16 @@ WINDRES_TEMP:=$(WINDRES)
 WINLIB=lib/$(PLATFORM_BIN)
 WINDLL=../bin/$(PLATFORM_BIN)
 override WINDRES=$(TOOLSET_PREFIX)$(WINDRES_TEMP)
-ifneq (,$(findstring 64,$(PLATFORM)))
-override WINDRES+= -F pe-x86-64
-else
-override WINDRES+= -F pe-i386
-endif
 STD_LIBS= -static-libgcc -static-libstdc++
 CLIENT_INCLUDES= $(INCLUDES) -Iinclude
 CLIENT_LIBS= -mwindows $(STD_LIBS) -L$(WINDLL) -L$(WINLIB) -lSDL2 -lSDL2_image -lSDL2_mixer -lzlib1 -lopengl32 -lenet -lws2_32 -lwinmm
+ifneq (,$(findstring 64,$(PLATFORM)))
+override WINDRES+= -F pe-x86-64
+override CLIENT_LIBS+= -lsteam_api64
+else
+override WINDRES+= -F pe-i386
+override CLIENT_LIBS+= -lsteam_api
+endif
 else
 APPMODIFIER=
 ifneq (,$(findstring linux,$(PLATFORM)))
@@ -98,7 +100,7 @@ BIN_SUFFIX=_native
 endif
 endif
 CLIENT_INCLUDES= $(INCLUDES) -I/usr/X11R6/include `sdl2-config --cflags`
-CLIENT_LIBS= -Lenet -lenet -L/usr/X11R6/lib -lX11 `sdl2-config --libs` -lSDL2_image -lSDL2_mixer -lz -lGL
+CLIENT_LIBS= -Lenet -lenet -L/usr/X11R6/lib -lX11 `sdl2-config --libs` -lSDL2_image -lSDL2_mixer -lz -lGL -lsteam_api
 endif
 ifneq (,$(findstring linux,$(PLATFORM)))
 CLIENT_LIBS+= -lrt
@@ -173,9 +175,14 @@ CLIENT_PCH= shared/cube.h.gch engine/engine.h.gch
 ifneq (,$(findstring mingw,$(PLATFORM)))
 SERVER_INCLUDES= -DSTANDALONE $(INCLUDES) -Iinclude
 SERVER_LIBS= -mwindows $(STD_LIBS) -L$(WINDLL) -L$(WINLIB) -lzlib1 -lenet -lws2_32 -lwinmm
+ifneq (,$(findstring 64,$(PLATFORM)))
+override SERVER_LIBS+= -lsteam_api64
+else
+override SERVER_LIBS+= -lsteam_api
+endif
 else
 SERVER_INCLUDES= -DSTANDALONE $(INCLUDES)
-SERVER_LIBS= -Lenet -lenet -lz
+SERVER_LIBS= -Lenet -lenet -lz -lsteam_api
 endif
 SERVER_OBJS= \
 	shared/crypto-standalone.o \
@@ -293,9 +300,9 @@ $(LIBENET):
 	$(MAKE) -C enet
 
 depend:
-	makedepend -Y -I. -Ishared -Iengine -Igame -Isupport $(subst .o,.cpp,$(CLIENT_OBJS))
-	makedepend -a -o-standalone.o -Y -I. -Ishared -Iengine -Igame -Isupport -DSTANDALONE $(subst -standalone.o,.cpp,$(SERVER_OBJS))
-	makedepend -a -o.h.gch -Y -I. -Ishared -Iengine -Igame -Isupport $(subst .h.gch,.h,$(CLIENT_PCH))
+	makedepend -Y -I. -Ishared -Iengine -Igame -Isupport -Isteam $(subst .o,.cpp,$(CLIENT_OBJS))
+	makedepend -a -o-standalone.o -Y -I. -Ishared -Iengine -Igame -Isupport -Isteam -DSTANDALONE $(subst -standalone.o,.cpp,$(SERVER_OBJS))
+	makedepend -a -o.h.gch -Y -I. -Ishared -Iengine -Igame -Isupport -Isteam $(subst .h.gch,.h,$(CLIENT_PCH))
 
 all: client server genkey
 

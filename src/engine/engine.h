@@ -4,7 +4,7 @@
 #include "version.h"
 #include "cube.h"
 
-extern int version, versioning, versionmajor, versionminor, versionpatch, versionbuild, versionplatform, versionarch, versionisserver, versioncrc;
+extern int version, versioning, versionmajor, versionminor, versionpatch, versionbuild, versionplatform, versionarch, versionisserver, versioncrc, versionsteamid;
 extern char *versionstring, *versionname, *versionuname, *versionvname, *versionrelease, *versionurl, *versionmaster, *versionplatname, *versionplatlongname, *versionbranch, *versionrevision;
 #define CUR_VER_MAKE(a,b,c) (((a)<<16) | ((b)<<8) | (c))
 #define CUR_VER CUR_VER_MAKE(VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH)
@@ -36,7 +36,7 @@ extern const char *platnames[MAX_PLATFORMS], *platlongnames[MAX_PLATFORMS];
 extern const char *timestr(int dur, int style = 0);
 
 extern vector<char *> gameargs;
-extern void initgame();
+extern bool initgame();
 extern void changeservertype();
 extern void cleanupserver();
 extern void serverslice(uint timeout = 0);

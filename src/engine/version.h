@@ -7,10 +7,11 @@
 #define VERSION_NAME "Red Eclipse"
 #define VERSION_UNAME "redeclipse"
 #define VERSION_VNAME "REDECLIPSE"
-#define VERSION_RELEASE "Development Build"
+#define VERSION_RELEASE "V2 Early Access"
 #define VERSION_URL "https://redeclipse.net/"
 #define VERSION_COPY "2010-2018"
 #define VERSION_DESC "A fun-filled new take on the first-person arena shooter."
+#define VERSION_STEAMID 0
 
 #ifndef VERSION_BUILD
 #define VERSION_BUILD 0

@@ -10,6 +10,8 @@ bin/x86/genkey_*
 bin/amd64/genkey_*
 bin/genkey_*
 bin/redeclipse.app/Contents/MacOS/redeclipse_universal
+bin/x86/steam_appid.txt
+bin/amd64/steam_appid.txt
 src/.objs/
 *.o
 *.so

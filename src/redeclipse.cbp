@@ -24,8 +24,8 @@
 					<Add option="-fomit-frame-pointer" />
 					<Add option="-O3" />
 					<Add option="-Wall" />
-					<Add option="-ffast-math" />
 					<Add option="-m32" />
+					<Add option="-ffast-math" />
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
 					<Add option="-fno-exceptions" />
@@ -36,6 +36,7 @@
 					<Add directory="game" />
 					<Add directory="enet/include" />
 					<Add directory="include" />
+					<Add directory="steam" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
@@ -49,6 +50,7 @@
 					<Add library="enet" />
 					<Add library="ws2_32" />
 					<Add library="winmm" />
+					<Add library="steam_api" />
 					<Add directory="../bin/x86" />
 					<Add directory="lib/x86" />
 				</Linker>
@@ -81,6 +83,7 @@
 					<Add directory="game" />
 					<Add directory="enet/include" />
 					<Add directory="include" />
+					<Add directory="steam" />
 				</Compiler>
 				<Linker>
 					<Add option="-m32" />
@@ -93,6 +96,7 @@
 					<Add library="enet" />
 					<Add library="ws2_32" />
 					<Add library="winmm" />
+					<Add library="steam_api" />
 					<Add directory="../bin/x86" />
 					<Add directory="lib/x86" />
 				</Linker>
@@ -126,6 +130,7 @@
 					<Add directory="game" />
 					<Add directory="enet/include" />
 					<Add directory="include" />
+					<Add directory="steam" />
 				</Compiler>
 				<Linker>
 					<Add option="-pg -lgmon" />
@@ -175,6 +180,7 @@
 					<Add directory="game" />
 					<Add directory="enet/include" />
 					<Add directory="include" />
+					<Add directory="steam" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
@@ -216,6 +222,7 @@
 					<Add directory="game" />
 					<Add directory="enet/include" />
 					<Add directory="include" />
+					<Add directory="steam" />
 				</Compiler>
 				<Linker>
 					<Add option="-m32" />
@@ -246,10 +253,10 @@
 				<Option projectLibDirsRelation="1" />
 				<Compiler>
 					<Add option="-fomit-frame-pointer" />
-					<Add option="-ffast-math" />
 					<Add option="-O3" />
 					<Add option="-Wall" />
 					<Add option="-m64" />
+					<Add option="-ffast-math" />
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
 					<Add option="-fno-exceptions" />
@@ -260,6 +267,7 @@
 					<Add directory="game" />
 					<Add directory="enet/include" />
 					<Add directory="include" />
+					<Add directory="steam" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
@@ -273,6 +281,7 @@
 					<Add library="enet" />
 					<Add library="ws2_32" />
 					<Add library="winmm" />
+					<Add library="steam_api64" />
 					<Add directory="../bin/amd64" />
 					<Add directory="lib/amd64" />
 				</Linker>
@@ -305,6 +314,7 @@
 					<Add directory="game" />
 					<Add directory="enet/include" />
 					<Add directory="include" />
+					<Add directory="steam" />
 				</Compiler>
 				<Linker>
 					<Add option="-m64" />
@@ -317,6 +327,8 @@
 					<Add library="enet" />
 					<Add library="ws2_32" />
 					<Add library="winmm" />
+					<Add library="steam_api" />
+					<Add library="steam_api64" />
 					<Add directory="../bin/amd64" />
 					<Add directory="lib/amd64" />
 				</Linker>
@@ -350,6 +362,7 @@
 					<Add directory="game" />
 					<Add directory="enet/include" />
 					<Add directory="include" />
+					<Add directory="steam" />
 				</Compiler>
 				<Linker>
 					<Add option="-pg -lgmon" />
@@ -363,6 +376,8 @@
 					<Add library="enet" />
 					<Add library="ws2_32" />
 					<Add library="winmm" />
+					<Add library="steam_api" />
+					<Add library="steam_api64" />
 					<Add directory="../bin/amd64" />
 					<Add directory="lib/amd64" />
 				</Linker>
@@ -399,6 +414,7 @@
 					<Add directory="game" />
 					<Add directory="enet/include" />
 					<Add directory="include" />
+					<Add directory="steam" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
@@ -408,6 +424,8 @@
 					<Add library="enet" />
 					<Add library="ws2_32" />
 					<Add library="winmm" />
+					<Add library="steam_api" />
+					<Add library="steam_api64" />
 					<Add directory="../bin/amd64" />
 					<Add directory="lib/amd64" />
 				</Linker>
@@ -440,6 +458,7 @@
 					<Add directory="game" />
 					<Add directory="enet/include" />
 					<Add directory="include" />
+					<Add directory="steam" />
 				</Compiler>
 				<Linker>
 					<Add option="-m64" />
@@ -448,6 +467,8 @@
 					<Add library="enet" />
 					<Add library="ws2_32" />
 					<Add library="winmm" />
+					<Add library="steam_api" />
+					<Add library="steam_api64" />
 					<Add directory="../bin/amd64" />
 					<Add directory="lib/amd64" />
 				</Linker>
@@ -560,6 +581,14 @@
 			<Option target="redeclipse_server-amd64" />
 			<Option target="redeclipse_server-amd64-dbg" />
 		</Unit>
+		<Unit filename="engine/aa.cpp">
+			<Option target="redeclipse-x86" />
+			<Option target="redeclipse-x86-dbg" />
+			<Option target="redeclipse-x86-prof" />
+			<Option target="redeclipse-amd64" />
+			<Option target="redeclipse-amd64-dbg" />
+			<Option target="redeclipse-amd64-prof" />
+		</Unit>
 		<Unit filename="engine/animmodel.h">
 			<Option target="redeclipse-x86" />
 			<Option target="redeclipse-x86-dbg" />
@@ -585,14 +614,6 @@
 			<Option target="redeclipse-amd64-prof" />
 		</Unit>
 		<Unit filename="engine/blend.cpp">
-			<Option target="redeclipse-x86" />
-			<Option target="redeclipse-x86-dbg" />
-			<Option target="redeclipse-x86-prof" />
-			<Option target="redeclipse-amd64" />
-			<Option target="redeclipse-amd64-dbg" />
-			<Option target="redeclipse-amd64-prof" />
-		</Unit>
-		<Unit filename="engine/aa.cpp">
 			<Option target="redeclipse-x86" />
 			<Option target="redeclipse-x86-dbg" />
 			<Option target="redeclipse-x86-prof" />
@@ -1601,6 +1622,18 @@
 			<Option target="redeclipse-amd64-prof" />
 			<Option target="redeclipse_server-x86" />
 			<Option target="redeclipse_server-x86-dbg" />
+			<Option target="redeclipse_server-amd64" />
+			<Option target="redeclipse_server-amd64-dbg" />
+		</Unit>
+		<Unit filename="steam/steam_api.h">
+			<Option target="redeclipse-x86" />
+			<Option target="redeclipse-x86-dbg" />
+			<Option target="redeclipse-x86-prof" />
+			<Option target="redeclipse_server-x86" />
+			<Option target="redeclipse_server-x86-dbg" />
+			<Option target="redeclipse-amd64" />
+			<Option target="redeclipse-amd64-dbg" />
+			<Option target="redeclipse-amd64-prof" />
 			<Option target="redeclipse_server-amd64" />
 			<Option target="redeclipse_server-amd64-dbg" />
 		</Unit>

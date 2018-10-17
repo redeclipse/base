@@ -10,6 +10,7 @@
 int curtime = 0, totalmillis = 1, lastmillis = 1, timescale = 100, paused = 0, timeerr = 0, shutdownwait = 0;
 time_t clocktime = 0, currenttime = 0, clockoffset = 0;
 uint totalsecs = 0;
+bool steamapi = false;
 
 VAR(0, maxruntime, 0, (INT_MAX-1)/1000, VAR_MAX); // time in seconds
 VAR(0, maxshutdownwait, 0, 3600, VAR_MAX); // time in seconds
@@ -50,6 +51,8 @@ VAR(IDF_READONLY, versionisserver, 0, 1, 1);
 #else
 VAR(IDF_READONLY, versionisserver, 0, 0, 1);
 #endif
+VAR(IDF_READONLY, versionsteamid, 1, VERSION_STEAMID, -1);
+
 ICOMMAND(0, platname, "ii", (int *p, int *g), result(*p >= 0 && *p < MAX_PLATFORMS ? (*g!=0 ? plat_longname(*p) : plat_name(*p)) : ""));
 
 VAR(0, rehashing, 1, 0, -1);
@@ -419,6 +422,7 @@ void cleanupserver()
     cleanupserversockets();
     cleanupmaster();
     irccleanup();
+    if(steamapi) SteamAPI_Shutdown();
 }
 
 void reloadserver()
@@ -1422,11 +1426,13 @@ void setupserver()
 #endif
 }
 
-void initgame()
+bool initgame()
 {
     defformatstring(branch, "%s", versionbranch);
     if(versionbuild > 0) concformatstring(branch, "-%d", versionbuild);
-    conoutf("Version: %s-%s%d-%s %s (%s) [0x%.8x]", versionstring, versionplatname, versionarch, branch, versionisserver ? "server" : "client", versionrelease, versioncrc);
+    if(versionsteamid && SteamAPI_RestartAppIfNecessary(versionsteamid)) return false;
+    steamapi = SteamAPI_Init();
+    conoutf("Version: %s-%s%d-%s %s (%s) [0x%.8x] (%s)", versionstring, versionplatname, versionarch, branch, versionisserver ? "server" : "client", versionrelease, versioncrc, steamapi ? "Steam" : "Other");
     server::start();
     loopv(gameargs)
     {
@@ -1440,6 +1446,7 @@ void initgame()
     rehash(false);
 #endif
     setupserver();
+    return true;
 }
 
 VAR(0, hasoctapaks, 1, 0, 0); // mega hack; try to find Cube 2, done after our own data so as to not clobber stuff
@@ -1840,10 +1847,13 @@ int main(int argc, char **argv)
     signal(SIGSTOP, fatalsignal);
 #endif
     enet_time_set(0);
-    initgame();
-    trytofindocta();
-    if(initscript) execute(initscript);
-    serverloop();
+    bool shouldload = initgame();
+    if(shouldload)
+    {
+        trytofindocta();
+        if(initscript) execute(initscript);
+        serverloop();
+    }
     cleanupserver();
     return EXIT_SUCCESS;
 }

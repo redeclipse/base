@@ -1012,7 +1012,7 @@ int main(int argc, char **argv)
     enet_time_set(0);
 
     conoutf("Loading game..");
-    initgame();
+    bool shouldload = initgame();
 
     //#ifdef WIN32
     //SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
@@ -1071,100 +1071,103 @@ int main(int argc, char **argv)
     progress(0, "Loading config..");
     initing = INIT_LOAD;
     rehash(false);
-    smartmusic(true, true);
+    if(shouldload) smartmusic(true, true);
 
     initing = NOT_INITING;
 
-    conoutf("Loading required data..");
-    progress(0, "Loading required data..");
-    restoregamma();
-    restorevsync();
-    initgbuffer();
-    loadshaders();
-    preloadtextures();
-    initparticles();
-    initstains();
-
-    trytofindocta();
-    conoutf("Loading main..");
-    progress(0, "Loading main..");
-    if(initscript) execute(initscript, true);
-
-    capslockon = capslocked();
-    numlockon = numlocked();
-    ignoremousemotion();
-
-    localconnect(false);
-    resetfps();
-
-    if(reprotoarg)
+    if(shouldload)
     {
-        if(connecthost && *connecthost) connectserv(connecthost, connectport, connectpassword);
-        else conoutf("\frMalformed commandline argument: %s", reprotoarg);
-    }
+        conoutf("Loading required data..");
+        progress(0, "Loading required data..");
+        restoregamma();
+        restorevsync();
+        initgbuffer();
+        loadshaders();
+        preloadtextures();
+        initparticles();
+        initstains();
 
-    // housekeeping
-    if(connectstr)
-    {
-        delete[] connectstr;
-        connectstr = NULL;
-    }
-    if(reprotoarg)
-    {
-        delete[] reprotoarg;
-        reprotoarg = NULL;
-    }
-    engineready = true;
-    for(int frameloops = 0; ; frameloops = frameloops >= INT_MAX-1 ? MAXFPSHISTORY+1 : frameloops+1)
-    {
-        curtextscale = textscale;
-        int elapsed = updatetimer(true);
-        updatefps(frameloops, elapsed);
-        checkinput();
-        hud::checkui();
-        tryedit();
+        trytofindocta();
+        conoutf("Loading main..");
+        progress(0, "Loading main..");
+        if(initscript) execute(initscript, true);
 
-        if(frameloops)
+        capslockon = capslocked();
+        numlockon = numlocked();
+        ignoremousemotion();
+
+        localconnect(false);
+        resetfps();
+
+        if(reprotoarg)
         {
-            RUNWORLD("on_update");
-            game::updateworld();
+            if(connecthost && *connecthost) connectserv(connecthost, connectport, connectpassword);
+            else conoutf("\frMalformed commandline argument: %s", reprotoarg);
         }
 
-        checksleep(lastmillis);
-        serverslice();
-        ircslice();
-        if(frameloops)
+        // housekeeping
+        if(connectstr)
         {
-            game::recomputecamera();
-            setviewcell(camera1->o);
-            updatetextures();
-            updateparticles();
-            updatesounds();
-            if(!minimized)
+            delete[] connectstr;
+            connectstr = NULL;
+        }
+        if(reprotoarg)
+        {
+            delete[] reprotoarg;
+            reprotoarg = NULL;
+        }
+        engineready = true;
+        for(int frameloops = 0; ; frameloops = frameloops >= INT_MAX-1 ? MAXFPSHISTORY+1 : frameloops+1)
+        {
+            curtextscale = textscale;
+            int elapsed = updatetimer(true);
+            updatefps(frameloops, elapsed);
+            checkinput();
+            hud::checkui();
+            tryedit();
+
+            if(frameloops)
             {
-                inbetweenframes = renderedframe = false;
-                gl_drawframe();
-                renderedframe = true;
-                swapbuffers();
-                inbetweenframes = true;
-                if(pixeling)
+                RUNWORLD("on_update");
+                game::updateworld();
+            }
+
+            checksleep(lastmillis);
+            serverslice();
+            ircslice();
+            if(frameloops)
+            {
+                game::recomputecamera();
+                setviewcell(camera1->o);
+                updatetextures();
+                updateparticles();
+                updatesounds();
+                if(!minimized)
                 {
-                    if(editmode)
+                    inbetweenframes = renderedframe = false;
+                    gl_drawframe();
+                    renderedframe = true;
+                    swapbuffers();
+                    inbetweenframes = true;
+                    if(pixeling)
                     {
-                        glReadPixels(screenw/2, screenh/2, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, &pixel.v[0]);
-                        if(pixelact) execute(pixelact);
+                        if(editmode)
+                        {
+                            glReadPixels(screenw/2, screenh/2, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, &pixel.v[0]);
+                            if(pixelact) execute(pixelact);
+                        }
+                        if(pixelact) delete[] pixelact;
+                        pixelact = NULL;
+                        pixeling = false;
                     }
-                    if(pixelact) delete[] pixelact;
-                    pixelact = NULL;
-                    pixeling = false;
                 }
+                if(*progresstitle || progressamt >= 0)
+                {
+                    setsvar("progresstitle", "");
+                    setfvar("progressamt", -1.f);
+                }
+                setcaption(game::gametitle(), game::gametext());
             }
-            if(*progresstitle || progressamt >= 0)
-            {
-                setsvar("progresstitle", "");
-                setfvar("progressamt", -1.f);
-            }
-            setcaption(game::gametitle(), game::gametext());
         }
     }
 
