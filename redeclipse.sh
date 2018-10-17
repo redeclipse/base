@@ -27,7 +27,7 @@ redeclipse_setup() {
 		        REDECLIPSE_TARGET="macos"
                 REDECLIPSE_ARCH="redeclipse.app/Contents/MacOS"
                 REDECLIPSE_MAKE="./src/macbuild.sh all install"
-		;;
+                ;;
             FreeBSD)
                 REDECLIPSE_SUFFIX="_bsd"
                 REDECLIPSE_TARGET="bsd"
@@ -147,6 +147,12 @@ redeclipse_runit() {
         REDECLIPSE_PWD=`pwd`
         export REDECLIPSE_PWD
         cd "${REDECLIPSE_PATH}" || return 1
+        case "${REDECLIPSE_SYSTEM}" in
+            Linux|FreeBSD)
+                export LD_LIBRARY_PATH=${REDECLIPSE_PATH}/bin/${REDECLIPSE_ARCH}:${LD_LIBRARY_PATH}
+                ;;
+        esac
+
         exec "${REDECLIPSE_PATH}/bin/${REDECLIPSE_ARCH}/${REDECLIPSE_BINARY}${REDECLIPSE_SUFFIX}" ${REDECLIPSE_OPTIONS} ${REDECLIPSE_ARGS} || (
             cd "${REDECLIPSE_PWD}"
             return 1

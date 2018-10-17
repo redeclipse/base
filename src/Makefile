@@ -182,7 +182,7 @@ override SERVER_LIBS+= -lsteam_api
 endif
 else
 SERVER_INCLUDES= -DSTANDALONE $(INCLUDES)
-SERVER_LIBS= -Lenet -lenet -lz -lsteam_api
+SERVER_LIBS= -Lenet -lenet -lz -L$(INSTDIR) -lsteam_api
 endif
 SERVER_OBJS= \
 	shared/crypto-standalone.o \
