@@ -100,7 +100,7 @@ BIN_SUFFIX=_native
 endif
 endif
 CLIENT_INCLUDES= $(INCLUDES) -I/usr/X11R6/include `sdl2-config --cflags`
-CLIENT_LIBS= -Lenet -lenet -L/usr/X11R6/lib -lX11 `sdl2-config --libs` -lSDL2_image -lSDL2_mixer -lz -lGL -L$(INSTDIR) -lsteam_api
+CLIENT_LIBS= -Lenet -lenet -L/usr/X11R6/lib -lX11 `sdl2-config --libs` -lSDL2_image -lSDL2_mixer -lz -lGL -L../bin/$(PLATFORM_BIN) -lsteam_api
 endif
 ifneq (,$(findstring linux,$(PLATFORM)))
 CLIENT_LIBS+= -lrt
@@ -182,7 +182,7 @@ override SERVER_LIBS+= -lsteam_api
 endif
 else
 SERVER_INCLUDES= -DSTANDALONE $(INCLUDES)
-SERVER_LIBS= -Lenet -lenet -lz -L$(INSTDIR) -lsteam_api
+SERVER_LIBS= -Lenet -lenet -lz -L../bin/$(PLATFORM_BIN) -lsteam_api
 endif
 SERVER_OBJS= \
 	shared/crypto-standalone.o \
