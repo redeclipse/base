@@ -52,7 +52,7 @@
 
 #include <enet/enet.h>
 #include <zlib.h>
-#include <steam_api.h>
+#include <steam_gameserver.h>
 
 #include "tools.h"
 #include "command.h"

@@ -35,6 +35,8 @@ extern const char *platnames[MAX_PLATFORMS], *platlongnames[MAX_PLATFORMS];
 
 extern const char *timestr(int dur, int style = 0);
 
+enum { STEAMAPI_NONE = 0, STEAMAPI_CLIENT = 1<<0, STEAMAPI_SERVER = 1<<1, STEAMAPI_ALL = STEAMAPI_CLIENT|STEAMAPI_SERVER };
+
 extern vector<char *> gameargs;
 extern bool initgame();
 extern void changeservertype();

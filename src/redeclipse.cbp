@@ -304,8 +304,8 @@
 				<Option projectLibDirsRelation="1" />
 				<Compiler>
 					<Add option="-Wall" />
-					<Add option="-g" />
 					<Add option="-m64" />
+					<Add option="-g" />
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
 					<Add directory="support" />
@@ -327,7 +327,6 @@
 					<Add library="enet" />
 					<Add library="ws2_32" />
 					<Add library="winmm" />
-					<Add library="steam_api" />
 					<Add library="steam_api64" />
 					<Add directory="../bin/amd64" />
 					<Add directory="lib/amd64" />
@@ -376,7 +375,6 @@
 					<Add library="enet" />
 					<Add library="ws2_32" />
 					<Add library="winmm" />
-					<Add library="steam_api" />
 					<Add library="steam_api64" />
 					<Add directory="../bin/amd64" />
 					<Add directory="lib/amd64" />
@@ -399,10 +397,10 @@
 				<Option projectLibDirsRelation="1" />
 				<Compiler>
 					<Add option="-fomit-frame-pointer" />
-					<Add option="-ffast-math" />
 					<Add option="-O3" />
 					<Add option="-Wall" />
 					<Add option="-m64" />
+					<Add option="-ffast-math" />
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
 					<Add option="-fno-exceptions" />
@@ -424,7 +422,6 @@
 					<Add library="enet" />
 					<Add library="ws2_32" />
 					<Add library="winmm" />
-					<Add library="steam_api" />
 					<Add library="steam_api64" />
 					<Add directory="../bin/amd64" />
 					<Add directory="lib/amd64" />
@@ -447,8 +444,8 @@
 				<Option projectLibDirsRelation="1" />
 				<Compiler>
 					<Add option="-Wall" />
-					<Add option="-g" />
 					<Add option="-m64" />
+					<Add option="-g" />
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
 					<Add option="-DSTANDALONE" />
@@ -467,7 +464,6 @@
 					<Add library="enet" />
 					<Add library="ws2_32" />
 					<Add library="winmm" />
-					<Add library="steam_api" />
 					<Add library="steam_api64" />
 					<Add directory="../bin/amd64" />
 					<Add directory="lib/amd64" />
@@ -1634,6 +1630,12 @@
 			<Option target="redeclipse-amd64" />
 			<Option target="redeclipse-amd64-dbg" />
 			<Option target="redeclipse-amd64-prof" />
+			<Option target="redeclipse_server-amd64" />
+			<Option target="redeclipse_server-amd64-dbg" />
+		</Unit>
+		<Unit filename="steam/steam_gameserver.h">
+			<Option target="redeclipse_server-x86" />
+			<Option target="redeclipse_server-x86-dbg" />
 			<Option target="redeclipse_server-amd64" />
 			<Option target="redeclipse_server-amd64-dbg" />
 		</Unit>
