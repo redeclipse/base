@@ -4,7 +4,7 @@ APPSERVER=$(APPNAME)_server
 
 #CXXFLAGS= -ggdb3
 CXXFLAGS?= -O3 -fomit-frame-pointer -ffast-math
-override CXXFLAGS+= -Wall -fsigned-char -fno-exceptions -fno-rtti
+override CXXFLAGS+= -Wall -fsigned-char -fno-exceptions -fno-rtti -Wno-invalid-offsetof
 
 PLATFORM= $(shell $(CC) -dumpmachine)
 
@@ -120,6 +120,7 @@ CLIENT_OBJS= \
 	engine/aa.o \
 	engine/bih.o \
 	engine/blend.o \
+	engine/cdpi.o \
 	engine/client.o \
 	engine/command.o \
 	engine/console.o \
@@ -191,6 +192,7 @@ SERVER_OBJS= \
 	shared/tools-standalone.o \
 	shared/zip-standalone.o \
 	support/sqlite3.o \
+	engine/cdpi-standalone.o \
 	engine/command-standalone.o \
 	engine/irc-standalone.o \
 	engine/master-standalone.o \
@@ -347,6 +349,12 @@ engine/blend.o: shared/command.h shared/geom.h shared/ents.h shared/glexts.h
 engine/blend.o: shared/glemu.h shared/iengine.h shared/igame.h engine/irc.h
 engine/blend.o: engine/sound.h engine/world.h engine/octa.h engine/light.h
 engine/blend.o: engine/texture.h engine/bih.h engine/model.h
+engine/cdpi.o: engine/engine.h engine/version.h shared/cube.h
+engine/cdpi.o: shared/tools.h shared/command.h shared/geom.h shared/ents.h
+engine/cdpi.o: shared/glexts.h shared/glemu.h shared/iengine.h
+engine/cdpi.o: shared/igame.h engine/irc.h engine/sound.h engine/world.h
+engine/cdpi.o: engine/octa.h engine/light.h engine/texture.h engine/bih.h
+engine/cdpi.o: engine/model.h
 engine/client.o: engine/engine.h engine/version.h shared/cube.h
 engine/client.o: shared/tools.h shared/command.h shared/geom.h shared/ents.h
 engine/client.o: shared/glexts.h shared/glemu.h shared/iengine.h
@@ -686,6 +694,10 @@ shared/tools-standalone.o: shared/igame.h
 shared/zip-standalone.o: shared/cube.h shared/tools.h shared/command.h
 shared/zip-standalone.o: shared/geom.h shared/ents.h shared/iengine.h
 shared/zip-standalone.o: shared/igame.h
+engine/cdpi-standalone.o: engine/engine.h engine/version.h shared/cube.h
+engine/cdpi-standalone.o: shared/tools.h shared/command.h shared/geom.h
+engine/cdpi-standalone.o: shared/ents.h shared/iengine.h shared/igame.h
+engine/cdpi-standalone.o: engine/irc.h engine/sound.h
 engine/command-standalone.o: engine/engine.h engine/version.h shared/cube.h
 engine/command-standalone.o: shared/tools.h shared/command.h shared/geom.h
 engine/command-standalone.o: shared/ents.h shared/iengine.h shared/igame.h

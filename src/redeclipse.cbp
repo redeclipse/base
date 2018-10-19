@@ -30,6 +30,7 @@
 					<Add option="-fsigned-char" />
 					<Add option="-fno-exceptions" />
 					<Add option="-fno-rtti" />
+					<Add option="-Wno-invalid-offsetof" />
 					<Add directory="support" />
 					<Add directory="shared" />
 					<Add directory="engine" />
@@ -73,10 +74,11 @@
 				<Option projectLibDirsRelation="1" />
 				<Compiler>
 					<Add option="-Wall" />
-					<Add option="-g" />
 					<Add option="-m32" />
+					<Add option="-g" />
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
+					<Add option="-Wno-invalid-offsetof" />
 					<Add directory="support" />
 					<Add directory="shared" />
 					<Add directory="engine" />
@@ -124,6 +126,7 @@
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
 					<Add option="-finline-functions" />
+					<Add option="-Wno-invalid-offsetof" />
 					<Add directory="support" />
 					<Add directory="shared" />
 					<Add directory="engine" />
@@ -165,14 +168,15 @@
 				<Option projectLibDirsRelation="1" />
 				<Compiler>
 					<Add option="-fomit-frame-pointer" />
-					<Add option="-ffast-math" />
 					<Add option="-O3" />
 					<Add option="-Wall" />
 					<Add option="-m32" />
+					<Add option="-ffast-math" />
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
 					<Add option="-fno-exceptions" />
 					<Add option="-fno-rtti" />
+					<Add option="-Wno-invalid-offsetof" />
 					<Add option="-DSTANDALONE" />
 					<Add directory="support" />
 					<Add directory="shared" />
@@ -211,10 +215,11 @@
 				<Option projectLibDirsRelation="1" />
 				<Compiler>
 					<Add option="-Wall" />
-					<Add option="-g" />
 					<Add option="-m32" />
+					<Add option="-g" />
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
+					<Add option="-Wno-invalid-offsetof" />
 					<Add option="-DSTANDALONE" />
 					<Add directory="support" />
 					<Add directory="shared" />
@@ -261,6 +266,7 @@
 					<Add option="-fsigned-char" />
 					<Add option="-fno-exceptions" />
 					<Add option="-fno-rtti" />
+					<Add option="-Wno-invalid-offsetof" />
 					<Add directory="support" />
 					<Add directory="shared" />
 					<Add directory="engine" />
@@ -308,6 +314,7 @@
 					<Add option="-g" />
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
+					<Add option="-Wno-invalid-offsetof" />
 					<Add directory="support" />
 					<Add directory="shared" />
 					<Add directory="engine" />
@@ -355,6 +362,7 @@
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
 					<Add option="-finline-functions" />
+					<Add option="-Wno-invalid-offsetof" />
 					<Add directory="support" />
 					<Add directory="shared" />
 					<Add directory="engine" />
@@ -405,6 +413,7 @@
 					<Add option="-fsigned-char" />
 					<Add option="-fno-exceptions" />
 					<Add option="-fno-rtti" />
+					<Add option="-Wno-invalid-offsetof" />
 					<Add option="-DSTANDALONE" />
 					<Add directory="support" />
 					<Add directory="shared" />
@@ -448,6 +457,7 @@
 					<Add option="-g" />
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
+					<Add option="-Wno-invalid-offsetof" />
 					<Add option="-DSTANDALONE" />
 					<Add directory="support" />
 					<Add directory="shared" />
@@ -616,6 +626,18 @@
 			<Option target="redeclipse-amd64" />
 			<Option target="redeclipse-amd64-dbg" />
 			<Option target="redeclipse-amd64-prof" />
+		</Unit>
+		<Unit filename="engine/cdpi.cpp">
+			<Option target="redeclipse-x86" />
+			<Option target="redeclipse-x86-dbg" />
+			<Option target="redeclipse-x86-prof" />
+			<Option target="redeclipse_server-x86" />
+			<Option target="redeclipse_server-x86-dbg" />
+			<Option target="redeclipse-amd64" />
+			<Option target="redeclipse-amd64-dbg" />
+			<Option target="redeclipse-amd64-prof" />
+			<Option target="redeclipse_server-amd64" />
+			<Option target="redeclipse_server-amd64-dbg" />
 		</Unit>
 		<Unit filename="engine/client.cpp">
 			<Option target="redeclipse-x86" />

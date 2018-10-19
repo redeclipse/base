@@ -35,7 +35,15 @@ extern const char *platnames[MAX_PLATFORMS], *platlongnames[MAX_PLATFORMS];
 
 extern const char *timestr(int dur, int style = 0);
 
-enum { STEAMAPI_NONE = 0, STEAMAPI_CLIENT = 1<<0, STEAMAPI_SERVER = 1<<1, STEAMAPI_ALL = STEAMAPI_CLIENT|STEAMAPI_SERVER };
+enum { CDPI_NONE = 0, CDPI_SWCLIENT = 1<<0, CDPI_SWSERVER = 1<<1, CDPI_ALL = CDPI_SWCLIENT|CDPI_SWSERVER };
+namespace cdpi
+{
+    extern int steamapi, steamoverlay;
+    extern char *steamusername;
+    extern void cleanup();
+    extern bool init(); // returning false means restart in other app
+    extern void runframe();
+}
 
 extern vector<char *> gameargs;
 extern bool initgame();

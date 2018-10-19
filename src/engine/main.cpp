@@ -1122,6 +1122,7 @@ int main(int argc, char **argv)
             curtextscale = textscale;
             int elapsed = updatetimer(true);
             updatefps(frameloops, elapsed);
+            cdpi::runframe();
             checkinput();
             hud::checkui();
             tryedit();
