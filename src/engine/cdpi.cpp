@@ -108,7 +108,7 @@ namespace cdpi
 
         bool initclient()
         {
-            if(versionsteamid && SteamAPI_RestartAppIfNecessary(versionsteamid)) return false;
+            //if(versionsteamid && SteamAPI_RestartAppIfNecessary(versionsteamid)) return false;
             if(SteamAPI_Init())
             {
                 curapis |= SWCLIENT;
