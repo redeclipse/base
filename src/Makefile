@@ -10,6 +10,8 @@ PLATFORM= $(shell $(CC) -dumpmachine)
 
 RMFLAGS= -fv
 
+PKG_CONFIG ?= pkg-config
+
 ifeq (,$(PLATFORM_BUILD))
 PLATFORM_BUILD=0
 endif
@@ -99,8 +101,8 @@ else
 BIN_SUFFIX=_native
 endif
 endif
-CLIENT_INCLUDES= $(INCLUDES) -I/usr/X11R6/include `sdl2-config --cflags`
-CLIENT_LIBS= -Lenet -lenet -L/usr/X11R6/lib -lX11 `sdl2-config --libs` -lSDL2_image -lSDL2_mixer -lz -lGL -L../bin/$(PLATFORM_BIN) -lsteam_api
+CLIENT_INCLUDES= $(INCLUDES) -I/usr/X11R6/include `$(PKG_CONFIG) --cflags sdl2`
+CLIENT_LIBS= -Lenet -lenet -L/usr/X11R6/lib -lX11 `$(PKG_CONFIG) --libs sdl2` -lSDL2_image -lSDL2_mixer -lz -lGL -L../bin/$(PLATFORM_BIN) -lsteam_api
 endif
 ifneq (,$(findstring linux,$(PLATFORM)))
 CLIENT_LIBS+= -lrt
@@ -286,10 +288,10 @@ install-genkey: $(INSTDIR)/genkey$(BIN_SUFFIX)
 
 ifeq (,$(findstring mingw,$(PLATFORM)))
 shared/cube2font.o: shared/cube2font.c
-	$(CXX) $(CXXFLAGS) -c -o $@ $< `freetype-config --cflags`
+	$(CXX) $(CXXFLAGS) -c -o $@ $< `$(PKG_CONFIG) --cflags freetype2`
 
 cube2font: shared/cube2font.o
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $< `freetype-config --libs` -lz
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $< `$(PKG_CONFIG) --libs freetype2` -lz
 
 install-cube2font: cube2font
 	$(MKDIR) $(INSTDIR)
