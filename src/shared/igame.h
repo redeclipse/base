@@ -152,10 +152,13 @@ namespace server
     extern bool serveroption(char *arg);
     extern void *newinfo();
     extern void deleteinfo(void *ci);
-    extern int numclients(int exclude = -1, bool nospec = false, int actortype = -1);
-    extern int reserveclients();
     extern int numchannels();
+    extern int spectatorslots();
+    extern int maxslots();
+    extern int reserveclients();
     extern int dupclients();
+    extern int numclients(int exclude = -1, bool nospec = false, int actortype = -1);
+    extern int numspectators(int exclude = -1);
     extern void clientdisconnect(int n, bool local = false, int reason = DISC_NONE);
     extern int clientconnect(int n, uint ip, bool local = false);
     extern bool allowbroadcast(int n);
@@ -167,8 +170,12 @@ namespace server
     extern void serverupdate();
     extern const char *gameid();
     extern int getver(int n = 0);
+    extern const char *gamename(int mode, int muts, int compact = 0, int limit = 0, char separator = ' ');
+    extern const char *getgamename(int compact = 0, int limit = 0, char separator = ' ');
     extern const char *pickmap(const char *suggest = NULL, int mode = -1, int muts = -1, bool notry = false);
     extern const char *choosemap(const char *suggest = NULL, int mode = -1, int muts = -1, int force = 0, bool notry = false);
+    extern const char *getmapname();
+    extern const char *getserverdesc();
     extern void changemap(const char *name = NULL, int mode = -1, int muts = -1);
     extern bool canload(const char *type);
     extern bool rewritecommand(ident *id, tagval *args, int numargs);

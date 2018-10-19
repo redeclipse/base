@@ -541,7 +541,7 @@ namespace hud
 
     bool hasinput(bool pass, bool focus)
     {
-        if(focus && (cdpi::steamoverlay > 0 || commandmillis > 0 || curcompass)) return true;
+        if(focus && (cdpi::getoverlay() > 0 || commandmillis > 0 || curcompass)) return true;
         return UI::hasinput() || UI::hasmenu(pass);
     }
 
@@ -1985,14 +1985,12 @@ namespace hud
                 else a += (1.f-compassfadeamt);
                 loopi(3) if(a < colour[i]) colour[i] *= a;
             }
-            int fademillis = 0;
-            if(UI::hasmenu(false) ? uimillis <= 0 : uimillis >= 0)
-                fademillis = uimillis = UI::hasmenu(false) ? totalmillis : -totalmillis;
-            else if(cdpi::steamoverlay) fademillis = cdpi::steamoverlay;
-            if(uifade && (fademillis > 0 || totalmillis-abs(fademillis) <= uifade))
+            bool haspopup = UI::hasmenu(false) || cdpi::getoverlay() > 0;
+            if(haspopup ? uimillis <= 0 : uimillis >= 0) uimillis = haspopup ? totalmillis : -totalmillis;
+            if(uifade && (uimillis > 0 || totalmillis-abs(uimillis) <= uifade))
             {
-                float n = min(float(totalmillis-abs(fademillis))/float(uifade), 1.f), a = n*uifadeamt;
-                if(fademillis > 0) a = 1.f-a;
+                float n = min(float(totalmillis-abs(uimillis))/float(uifade), 1.f), a = n*uifadeamt;
+                if(uimillis > 0) a = 1.f-a;
                 else a += (1.f-uifadeamt);
                 loopi(3) if(a < colour[i]) colour[i] *= a;
             }

@@ -5,7 +5,7 @@
 #include "cube.h"
 
 extern int version, versioning, versionmajor, versionminor, versionpatch, versionbuild, versionplatform, versionarch, versionisserver, versioncrc, versionsteamid;
-extern char *versionstring, *versionname, *versionuname, *versionvname, *versionrelease, *versionurl, *versionmaster, *versionplatname, *versionplatlongname, *versionbranch, *versionrevision;
+extern char *versionstring, *versionname, *versionuname, *versionvname, *versionrelease, *versionurl, *versioncopy, *versiondesc, *versionmaster, *versionplatname, *versionplatlongname, *versionbranch, *versionrevision;
 #define CUR_VER_MAKE(a,b,c) (((a)<<16) | ((b)<<8) | (c))
 #define CUR_VER CUR_VER_MAKE(VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH)
 #define CUR_VERSION (VERSION_MAJOR*100)+(VERSION_MINOR*10)+VERSION_PATCH
@@ -35,14 +35,23 @@ extern const char *platnames[MAX_PLATFORMS], *platlongnames[MAX_PLATFORMS];
 
 extern const char *timestr(int dur, int style = 0);
 
-enum { CDPI_NONE = 0, CDPI_SWCLIENT = 1<<0, CDPI_SWSERVER = 1<<1, CDPI_ALL = CDPI_SWCLIENT|CDPI_SWSERVER };
 namespace cdpi
 {
-    extern int steamapi, steamoverlay;
-    extern char *steamusername;
+    enum { NONE = 0, SWCLIENT = 1<<0, SWSERVER = 1<<1, ALL = SWCLIENT|SWSERVER, STEAM = SWCLIENT|SWSERVER };
+
+    extern int curapis;
+
+    namespace steam
+    {
+        extern int curoverlay, curplayers;
+        extern char *steamusername;
+    }
+
     extern void cleanup();
     extern bool init(); // returning false means restart in other app
     extern void runframe();
+
+    extern int getoverlay();
 }
 
 extern vector<char *> gameargs;

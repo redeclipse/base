@@ -1274,7 +1274,7 @@ namespace server
         return n;
     }
 
-    int numspectators(int exclude = -1)
+    int numspectators(int exclude)
     {
         int n = 0;
         loopv(clients)
@@ -1450,6 +1450,10 @@ namespace server
         return gname;
     }
     ICOMMAND(0, gamename, "iiiis", (int *g, int *m, int *c, int *t, char *s), result(gamename(*g, *m, *c, *t, *s)));
+
+    const char *getgamename(int compact, int limit, char separator) { return gamename(gamemode, mutators, compact, limit, separator); }
+    const char *getmapname() { return smapname; }
+    const char *getserverdesc() { return G(serverdesc); }
 
     const char *modedesc(int mode, int muts, int type)
     {

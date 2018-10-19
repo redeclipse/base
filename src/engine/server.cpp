@@ -1231,7 +1231,7 @@ static void setupwindow(const char *title)
     if(!setupsystemtray(WM_APP)) fatal("failed adding to system tray");
     defformatstring(branch, "%s", versionbranch);
     if(versionbuild > 0) concformatstring(branch, "-%d", versionbuild);
-    conoutf("Version: %s-%s%d-%s %s (%s) [0x%.8x] (%s)", versionstring, versionplatname, versionarch, branch, versionisserver ? "server" : "client", versionrelease, versioncrc, cdpi::steamapi ? "Steam" : "Dist");
+    conoutf("Version: %s-%s%d-%s %s (%s) [0x%.8x] (%s)", versionstring, versionplatname, versionarch, branch, versionisserver ? "server" : "client", versionrelease, versioncrc, cdpi::curapis&cdpi::STEAM ? "Steam" : "Dist");
 }
 
 static char *parsecommandline(const char *src, vector<char *> &args)
@@ -1426,7 +1426,9 @@ bool setupserver()
     if(!cdpi::init()) return false;
     defformatstring(branch, "%s", versionbranch);
     if(versionbuild > 0) concformatstring(branch, "-%d", versionbuild);
-    conoutf("Version: %s-%s%d-%s %s (%s) [0x%.8x] (%s)", versionstring, versionplatname, versionarch, branch, versionisserver ? "server" : "client", versionrelease, versioncrc, cdpi::steamapi ? "Steam" : "Dist");
+#if !defined(STANDALONE) || !defined(WIN32)
+    conoutf("Version: %s-%s%d-%s %s (%s) [0x%.8x] (%s)", versionstring, versionplatname, versionarch, branch, versionisserver ? "server" : "client", versionrelease, versioncrc, cdpi::curapis&cdpi::STEAM ? "Steam" : "Dist");
+#endif
 
 #ifndef STANDALONE
     if(servertype >= 3) serverloop();
