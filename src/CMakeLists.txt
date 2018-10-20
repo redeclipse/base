@@ -87,6 +87,7 @@ file(GLOB server_sources
     shared/tools.cpp
     shared/zip.cpp
     support/sqlite3.c
+    engine/cdpi.cpp
     engine/command.cpp
     engine/irc.cpp
     engine/master.cpp
