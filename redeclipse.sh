@@ -149,7 +149,7 @@ redeclipse_runit() {
         cd "${REDECLIPSE_PATH}" || return 1
         case "${REDECLIPSE_SYSTEM}" in
             Linux|FreeBSD)
-                export LD_LIBRARY_PATH=${REDECLIPSE_PATH}/bin/${REDECLIPSE_ARCH}:${LD_LIBRARY_PATH}
+                export LD_LIBRARY_PATH="${REDECLIPSE_PATH}/bin/${REDECLIPSE_ARCH}:${LD_LIBRARY_PATH}"
                 ;;
         esac
 
