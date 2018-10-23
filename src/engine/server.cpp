@@ -1231,7 +1231,7 @@ static void setupwindow(const char *title)
     if(!setupsystemtray(WM_APP)) fatal("failed adding to system tray");
     defformatstring(branch, "%s", versionbranch);
     if(versionbuild > 0) concformatstring(branch, "-%d", versionbuild);
-    conoutf("Version: %s-%s%d-%s %s (%s) [0x%.8x] (%s)", versionstring, versionplatname, versionarch, branch, versionisserver ? "server" : "client", versionrelease, versioncrc, cdpi::curapis&cdpi::STEAM ? "Steam" : "Dist");
+    conoutf("Version: %s-%s%d-%s %s (%s) [0x%.8x]", versionstring, versionplatname, versionarch, branch, versionisserver ? "server" : "client", versionrelease, versioncrc);
 }
 
 static char *parsecommandline(const char *src, vector<char *> &args)
@@ -1427,7 +1427,7 @@ bool setupserver()
     defformatstring(branch, "%s", versionbranch);
     if(versionbuild > 0) concformatstring(branch, "-%d", versionbuild);
 #if !defined(STANDALONE) || !defined(WIN32)
-    conoutf("Version: %s-%s%d-%s %s (%s) [0x%.8x] (%s)", versionstring, versionplatname, versionarch, branch, versionisserver ? "server" : "client", versionrelease, versioncrc, cdpi::curapis&cdpi::STEAM ? "Steam" : "Dist");
+    conoutf("Version: %s-%s%d-%s %s (%s) [0x%.8x]", versionstring, versionplatname, versionarch, branch, versionisserver ? "server" : "client", versionrelease, versioncrc);
 #endif
 
 #ifndef STANDALONE
@@ -1739,11 +1739,16 @@ ICOMMAND(0, rehash, "i", (int *nosave), if(!(identflags&IDF_WORLD)) rehash(*nosa
 void setverinfo(const char *bin)
 {
     setvar("versioncrc", crcfile(bin));
+    char *branchfile = loadfile("branch.txt", NULL);
+    if(branchfile && !strcmp(branchfile, "steam")) setsvar("versionbranch", branchfile);
     if(!*versionbranch || !strcmp(versionbranch, "none"))
     {
         const char *vbranch = getenv(sup_var("BRANCH"));
-        setsvar("versionbranch", vbranch && *vbranch ? vbranch : "none");
+        if(vbranch && *vbranch) setsvar("versionbranch", vbranch);
+        else if(branchfile && *branchfile) setsvar("versionbranch", branchfile);
+        else setsvar("versionbranch", "none");
     }
+    if(branchfile) delete[] branchfile;
 }
 
 volatile bool fatalsig = false;

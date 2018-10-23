@@ -145,14 +145,17 @@ namespace cdpi
             SteamGameServer()->SetMapName(server::getmapname());
         }
 
+        static int lastframe = 0;
         void runframe()
         {
+            if(lastframe && totalmillis-lastframe < 100) return; // 10 Hz
             if(curapis&SWCLIENT) SteamAPI_RunCallbacks();
             if(curapis&SWSERVER)
             {
                 SteamGameServer_RunCallbacks();
                 if(servconnected) servupdate();
             }
+            lastframe = totalmillis;
         }
     }
 

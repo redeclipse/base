@@ -75,7 +75,7 @@ redeclipse_setup() {
             REDECLIPSE_BRANCH="stable"
         fi
     fi
-    if [ -z "${REDECLIPSE_HOME+isset}" ] && [ "${REDECLIPSE_BRANCH}" != "stable" ] && [ "${REDECLIPSE_BRANCH}" != "inplace" ]; then REDECLIPSE_HOME="home"; fi
+    if [ -z "${REDECLIPSE_HOME+isset}" ] && [ "${REDECLIPSE_BRANCH}" != "stable" ] && [ "${REDECLIPSE_BRANCH}" != "inplace" ] && [ "${REDECLIPSE_BRANCH}" != "steam" ]; then REDECLIPSE_HOME="home"; fi
     if [ -n "${REDECLIPSE_HOME+isset}" ]; then REDECLIPSE_OPTIONS="-h${REDECLIPSE_HOME} ${REDECLIPSE_OPTIONS}"; fi
     redeclipse_check
     return $?
@@ -94,7 +94,7 @@ redeclipse_check() {
             REDECLIPSE_BRANCH="devel"
         fi
     fi
-    if [ "${REDECLIPSE_BRANCH}" != "inplace" ] && [ "${REDECLIPSE_BRANCH}" != "source" ]; then
+    if [ "${REDECLIPSE_BRANCH}" != "inplace" ] && [ "${REDECLIPSE_BRANCH}" != "steam" ] && [ "${REDECLIPSE_BRANCH}" != "source" ]; then
         echo ""
         echo "Checking for updates to \"${REDECLIPSE_BRANCH}\". To disable set: REDECLIPSE_BRANCH=\"inplace\""
         echo ""
@@ -166,7 +166,7 @@ redeclipse_runit() {
             fi
             REDECLIPSE_BRANCH="devel"
         fi
-        if [ "${REDECLIPSE_BRANCH}" != "inplace" ] && [ "${REDECLIPSE_TRYUPDATE}" != "true" ]; then
+        if [ "${REDECLIPSE_BRANCH}" != "inplace" ] && [ "${REDECLIPSE_BRANCH}" != "steam" ] && [ "${REDECLIPSE_TRYUPDATE}" != "true" ]; then
             REDECLIPSE_TRYUPDATE="true"
             redeclipse_begin
             return $?
