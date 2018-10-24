@@ -116,10 +116,10 @@ override CLIENT_LIBS+= -L../bin/$(PLATFORM_BIN) -lsteam_api
 endif
 endif
 ifneq (,$(findstring linux,$(PLATFORM)))
-CLIENT_LIBS+= -lrt
+override CLIENT_LIBS+= -lrt
 else
 ifneq (,$(findstring gnu,$(PLATFORM)))
-CLIENT_LIBS+= -lrt
+override CLIENT_LIBS+= -lrt
 endif
 endif
 CLIENT_OBJS= \
