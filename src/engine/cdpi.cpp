@@ -2,12 +2,15 @@
 
 #include "engine.h"
 #include <stddef.h>
+#if defined(USE_STEAM) && USE_STEAM == 1
+#define HAS_STEAM 1
 #include <steam_gameserver.h>
-
+#endif
 namespace cdpi
 {
     int curapis = NONE;
 
+#ifdef HAS_STEAM
     namespace steam
     {
         int curoverlay = 0, curplayers = 0;
@@ -158,29 +161,40 @@ namespace cdpi
             lastframe = totalmillis;
         }
     }
+#endif
 
     void cleanup()
     {
+#ifdef HAS_STEAM
         steam::cleanup();
+#endif
     }
 
     bool init()
     {
         curapis = NONE;
+#ifdef HAS_STEAM
 #ifndef STANDALONE
         if(servertype < 3) if(!steam::initclient()) return false;
 #endif
         if(servertype >= 2) steam::initserver();
+#endif
         return true;
     }
 
     void runframe()
     {
+#ifdef HAS_STEAM
         steam::runframe();
+#endif
     }
 
     int getoverlay()
     {
+#ifdef HAS_STEAM
         return steam::curoverlay;
+#else
+        return 0;
+#endif
     }
 }

@@ -31,6 +31,7 @@
 					<Add option="-fno-exceptions" />
 					<Add option="-fno-rtti" />
 					<Add option="-Wno-invalid-offsetof" />
+					<Add option="-DUSE_STEAM=1" />
 					<Add directory="support" />
 					<Add directory="shared" />
 					<Add directory="engine" />
@@ -79,6 +80,7 @@
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
 					<Add option="-Wno-invalid-offsetof" />
+					<Add option="-DUSE_STEAM=1" />
 					<Add directory="support" />
 					<Add directory="shared" />
 					<Add directory="engine" />
@@ -127,6 +129,7 @@
 					<Add option="-fsigned-char" />
 					<Add option="-finline-functions" />
 					<Add option="-Wno-invalid-offsetof" />
+					<Add option="-DUSE_STEAM=1" />
 					<Add directory="support" />
 					<Add directory="shared" />
 					<Add directory="engine" />
@@ -178,6 +181,7 @@
 					<Add option="-fno-rtti" />
 					<Add option="-Wno-invalid-offsetof" />
 					<Add option="-DSTANDALONE" />
+					<Add option="-DUSE_STEAM=1" />
 					<Add directory="support" />
 					<Add directory="shared" />
 					<Add directory="engine" />
@@ -221,6 +225,7 @@
 					<Add option="-fsigned-char" />
 					<Add option="-Wno-invalid-offsetof" />
 					<Add option="-DSTANDALONE" />
+					<Add option="-DUSE_STEAM=1" />
 					<Add directory="support" />
 					<Add directory="shared" />
 					<Add directory="engine" />
@@ -267,6 +272,7 @@
 					<Add option="-fno-exceptions" />
 					<Add option="-fno-rtti" />
 					<Add option="-Wno-invalid-offsetof" />
+					<Add option="-DUSE_STEAM=1" />
 					<Add directory="support" />
 					<Add directory="shared" />
 					<Add directory="engine" />
@@ -315,6 +321,7 @@
 					<Add option="-mwindows" />
 					<Add option="-fsigned-char" />
 					<Add option="-Wno-invalid-offsetof" />
+					<Add option="-DUSE_STEAM=1" />
 					<Add directory="support" />
 					<Add directory="shared" />
 					<Add directory="engine" />
@@ -363,6 +370,7 @@
 					<Add option="-fsigned-char" />
 					<Add option="-finline-functions" />
 					<Add option="-Wno-invalid-offsetof" />
+					<Add option="-DUSE_STEAM=1" />
 					<Add directory="support" />
 					<Add directory="shared" />
 					<Add directory="engine" />
@@ -415,6 +423,7 @@
 					<Add option="-fno-rtti" />
 					<Add option="-Wno-invalid-offsetof" />
 					<Add option="-DSTANDALONE" />
+					<Add option="-DUSE_STEAM=1" />
 					<Add directory="support" />
 					<Add directory="shared" />
 					<Add directory="engine" />
@@ -459,6 +468,7 @@
 					<Add option="-fsigned-char" />
 					<Add option="-Wno-invalid-offsetof" />
 					<Add option="-DSTANDALONE" />
+					<Add option="-DUSE_STEAM=1" />
 					<Add directory="support" />
 					<Add directory="shared" />
 					<Add directory="engine" />
