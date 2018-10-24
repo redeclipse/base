@@ -62,7 +62,7 @@ endif()
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 # set compile options
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fsigned-char -ffast-math -fno-exceptions -fno-rtti")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fsigned-char -ffast-math -fno-exceptions -fno-rtti -Wno-invalid-offsetof")
 
 # Use pkg-config to configure dependencies later
 find_package(PkgConfig REQUIRED)
@@ -74,6 +74,11 @@ set(genkey_deps zlib)
 set(BUILD_CLIENT true CACHE BOOL "Build client?")
 if(NOT ${BUILD_CLIENT})
     message(STATUS "Will not build client as requested")
+endif()
+
+set(WANT_STEAM true CACHE BOOL "Build with Steam support?")
+if(NOT ${WANT_STEAM})
+    message(STATUS "Will not build Steam support as requested")
 endif()
 
 # the client depends on almost all the source files
@@ -116,13 +121,17 @@ set_source_files_properties(support/sqlite3.c PROPERTIES
 # platform specific code
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     list(APPEND client_deps x11)
-    add_library(steam_lib SHARED IMPORTED)
-    if(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "i[3-6]86")
-        set_target_properties(steam_lib PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/../bin/x86/libsteam_api.so)
-    elseif(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "x86_64")
-        set_target_properties(steam_lib PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/../bin/amd64/libsteam_api.so)
+    if(${WANT_STEAM})
+        add_library(steam_lib SHARED IMPORTED)
+        if(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "i[3-6]86")
+            set_target_properties(steam_lib PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/../bin/x86/libsteam_api.so)
+        elseif(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "x86_64")
+            set_target_properties(steam_lib PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/../bin/amd64/libsteam_api.so)
+        endif()
+        link_libraries(rt steam_lib)
+    else()
+        link_libraries(rt)
     endif()
-    link_libraries(rt steam_lib)
     set(BIN_SUFFIX "_linux")
 elseif(APPLE)
     # build OS X specific Objective-C code
@@ -199,9 +208,12 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/engine
     ${CMAKE_CURRENT_SOURCE_DIR}/game
     ${CMAKE_CURRENT_SOURCE_DIR}/shared
-    ${CMAKE_CURRENT_SOURCE_DIR}/steam
     ${CMAKE_CURRENT_SOURCE_DIR}/support
 )
+if(${WANT_STEAM})
+    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/steam)
+    add_definitions("-DUSE_STEAM=1")
+endif()
 
 # include the headers for the libraries bundled in ../bin
 if(MINGW)
