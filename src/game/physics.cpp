@@ -1272,19 +1272,71 @@ namespace physics
         return true;
     }
 
-    bool checkcollide(physent *d, const vec &dir, physent *o, float guard)
+    bool checkcollide(physent *d, const vec &dir, physent *o)
     {
-        static float dist = 1e16f;
         collidezones = CLZ_NONE;
-        if(d && projent::shot(d) && gameent::is(o)) return hitzonecollide((gameent *)o, d->o, vec(dir).mul(d->radius), dist);
+        if(d && projent::shot(d) && gameent::is(o))
+        {
+            gameent *e = (gameent *)o;
+            if(!d->o.reject(e->legs, d->radius+max(e->lrad.x, e->lrad.y)) && ellipsecollide(d, dir, e->legs, vec(0, 0, 0), e->yaw, e->lrad.x, e->lrad.y, e->lrad.z, e->lrad.z))
+                collidezones |= CLZ_LIMB;
+            if(!d->o.reject(e->torso, d->radius+max(e->trad.x, e->trad.y)) && ellipsecollide(d, dir, e->torso, vec(0, 0, 0), e->yaw, e->trad.x, e->trad.y, e->trad.z, e->trad.z))
+                collidezones |= CLZ_TORSO;
+            if(!d->o.reject(e->head, d->radius+max(e->hrad.x, e->hrad.y)) && ellipsecollide(d, dir, e->head, vec(0, 0, 0), e->yaw, e->hrad.x, e->hrad.y, e->hrad.z, e->hrad.z))
+                collidezones |= CLZ_HEAD;
+            return collidezones != CLZ_NONE;
+        }
         collidezones = CLZ_TORSO;
         return true;
     }
 
-    bool checktracecollide(physent *d, const vec &from, const vec &to, float &dist, physent *o, float guard)
+    bool checktracecollide(physent *d, const vec &from, const vec &to, float &dist, physent *o, float x1, float x2, float y1, float y2)
     {
         collidezones = CLZ_NONE;
-        if(d && projent::shot(d) && gameent::is(o)) return hitzonecollide((gameent *)o, from, vec(to).sub(from), dist);
+        if(d && projent::shot(d) && gameent::is(o))
+        {
+            gameent *e = (gameent *)o;
+            float bestdist = 1e16f;
+            if(e->legs.x+e->lrad.x >= x1 && e->legs.y+e->lrad.y >= y1 && e->legs.x-e->lrad.x <= x2 && e->legs.y-e->lrad.y <= y2)
+            {
+                vec bottom(e->legs), top(e->legs);
+                bottom.z -= e->lrad.z;
+                top.z += e->lrad.z;
+                float t = 1e16f;
+                if(linecylinderintersect(from, to, bottom, top, max(e->lrad.x, e->lrad.y), t))
+                {
+                    collidezones |= CLZ_LIMB;
+                    bestdist = min(bestdist, t);
+                }
+            }
+            if(e->torso.x+e->trad.x >= x1 && e->torso.y+e->trad.y >= y1 && e->torso.x-e->trad.x <= x2 && e->torso.y-e->trad.y <= y2)
+            {
+                vec bottom(e->torso), top(e->torso);
+                bottom.z -= e->trad.z;
+                top.z += e->trad.z;
+                float t = 1e16f;
+                if(linecylinderintersect(from, to, bottom, top, max(e->trad.x, e->trad.y), t))
+                {
+                    collidezones |= CLZ_TORSO;
+                    bestdist = min(bestdist, t);
+                }
+            }
+            if(e->head.x+e->hrad.x >= x1 && e->head.y+e->hrad.y >= y1 && e->head.x-e->hrad.x <= x2 && e->head.y-e->hrad.y <= y2)
+            {
+                vec bottom(e->head), top(e->head);
+                bottom.z -= e->hrad.z;
+                top.z += e->hrad.z;
+                float t = 1e16f;
+                if(linecylinderintersect(from, to, bottom, top, max(e->hrad.x, e->hrad.y), t))
+                {
+                    collidezones |= CLZ_HEAD;
+                    bestdist = min(bestdist, t);
+                }
+            }
+            if(collidezones == CLZ_NONE) return false;
+            dist = bestdist*from.dist(to);
+            return true;
+        }
         collidezones = CLZ_TORSO;
         return true;
     }

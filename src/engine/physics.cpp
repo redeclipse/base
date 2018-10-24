@@ -665,7 +665,7 @@ bool plcollide(physent *d, const vec &dir, bool insideplayercol, float guard)   
         {
             physent *o = dynents[i];
             if(o==d || !physics::issolid(o, d) || d->o.reject(o->o, d->radius+o->radius+guard) || !plcollide(d, dir, o, guard)) continue;
-            if(physics::checkcollide(d, dir, o, guard))
+            if(physics::checkcollide(d, dir, o))
             {
                 collideplayer = o;
                 return true;
@@ -1204,7 +1204,7 @@ float pltracecollide(physent *d, const vec &from, const vec &ray, float maxdist,
             physent *o = dynents[i];
             float dist = 1e16f;
             if(!physics::issolid(o, d) || o->o.x+o->radius+guard < x1 || o->o.y+o->radius+guard < y1 || o->o.x-o->radius-guard > x2 || o->o.y-o->radius-guard > y2 || !intersect(o, from, to, dist, guard)) continue;
-            if(physics::checktracecollide(d, from, to, dist, o) && dist <= maxdist && dist < bestdist)
+            if(physics::checktracecollide(d, from, to, dist, o, x1, x2, y1, y2) && dist <= maxdist && dist < bestdist)
             {
                 collideplayer = o;
                 bestdist = dist;

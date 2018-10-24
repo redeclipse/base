@@ -18,6 +18,7 @@ namespace cdpi
         bool servconnected;
 
         SVAR(IDF_READONLY, steamusername, "");
+        SVAR(IDF_READONLY, steamuserid, "");
 
         class steamcb
         {
@@ -86,7 +87,18 @@ namespace cdpi
         {
             const char *name = SteamFriends()->GetPersonaName();
             if(name && *name) setsvar("steamusername", name);
-            conoutf("Currently logged in as Steam user: %s", name);
+            if(!SteamUser()->BLoggedOn()) conoutf("Steam user not logged on!");
+            /*
+            CSteamID id = SteamUser()->GetSteamID();
+            string idname = "";
+            #ifdef WIN32
+            formatstring(idname, "%I64u", id.ConvertToUint64());
+            #else
+            formatstring(idname, "%llu", id.ConvertToUint64());
+            #endif
+            if(*idname) setsvar("steamuserid", idname);
+            */
+            conoutf("Logged in as Steam user: %s", name);
         }
 
         void cleanup()

@@ -41,11 +41,13 @@ namespace cdpi
 
     extern int curapis;
 
+#if defined(USE_STEAM) && USE_STEAM == 1
     namespace steam
     {
         extern int curoverlay, curplayers;
-        extern char *steamusername;
+        extern char *steamusername, *steamuserid;
     }
+#endif
 
     extern void cleanup();
     extern bool init(); // returning false means restart in other app
