@@ -200,7 +200,7 @@ else
 SERVER_INCLUDES= -DSTANDALONE $(INCLUDES)
 SERVER_LIBS= -Lenet -lenet -lz
 ifeq (1,$(WANT_STEAM))
-override SERVER_LIBS=+= -L../bin/$(PLATFORM_BIN) -lsteam_api
+override SERVER_LIBS+= -L../bin/$(PLATFORM_BIN) -lsteam_api
 endif
 endif
 SERVER_OBJS= \
