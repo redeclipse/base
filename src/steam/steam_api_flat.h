@@ -13,7 +13,7 @@
 
 #include <stdint.h>
 
-
+#if 0
 typedef unsigned char uint8;
 typedef unsigned char uint8;
 typedef signed char int8;
@@ -25,6 +25,7 @@ typedef long long int64;
 typedef unsigned long long uint64;
 typedef int64 lint64;
 typedef uint64 ulint64;
+#endif
 typedef uint8 Salt_t[8];
 typedef uint64 GID_t;
 typedef uint64 JobID_t;

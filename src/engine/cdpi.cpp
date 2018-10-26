@@ -122,8 +122,8 @@ namespace cdpi
             if(SteamAPI_Init())
             {
                 curapis |= SWCLIENT;
-                client = (intptr_t)SteamClient();
-                spipe = SteamAPI_ISteamClient_CreateSteamPipe(client);
+                client = (intptr_t)SteamInternal_CreateInterface(STEAMCLIENT_INTERFACE_VERSION);
+                spipe = SteamAPI_GetHSteamPipe();
                 upipe = SteamAPI_ISteamClient_ConnectToGlobalUser(client, spipe);
                 user = (intptr_t)SteamAPI_ISteamClient_GetISteamUser(client, upipe, spipe, STEAMUSER_INTERFACE_VERSION);
                 friends = (intptr_t)SteamAPI_ISteamClient_GetISteamFriends(client, upipe, spipe, STEAMFRIENDS_INTERFACE_VERSION);
