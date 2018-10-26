@@ -5,7 +5,9 @@
 #if defined(USE_STEAM) && USE_STEAM == 1
 #define HAS_STEAM 1
 #include <steam_gameserver.h>
+#include <steam_api_flat.h>
 #endif
+
 namespace cdpi
 {
     int curapis = NONE;
@@ -16,6 +18,9 @@ namespace cdpi
         int curoverlay = 0, curplayers = 0;
         uint64 serverid = 0;
         bool servconnected;
+        intptr_t client = 0, user = 0, friends = 0, stats = 0;
+        HSteamPipe spipe = 0;
+        HSteamUser upipe = 0;
 
         SVAR(IDF_READONLY, steamusername, "");
         SVAR(IDF_READONLY, steamuserid, "");
@@ -26,6 +31,7 @@ namespace cdpi
                 void getnumplayers();
             private:
                 STEAM_CALLBACK(steamcb, overlayactivated, GameOverlayActivated_t);
+                STEAM_CALLBACK(steamcb, userconnected, SteamServersConnected_t);
                 void on_getnumplayers(NumberOfCurrentPlayers_t *p, bool b);
                 CCallResult<steamcb, NumberOfCurrentPlayers_t> numplayers;
                 STEAM_GAMESERVER_CALLBACK(steamcb, serversconnected, SteamServersConnected_t);
@@ -36,14 +42,19 @@ namespace cdpi
 
         void steamcb::overlayactivated(GameOverlayActivated_t *p)
         {
-            if(p->m_bActive) conoutf("Steam overlay opened");
-            else conoutf("Steam overlay closed");
+            if(p->m_bActive) conoutf("Steam overlay opened.");
+            else conoutf("Steam overlay closed.");
             curoverlay = p->m_bActive != 0 ? totalmillis : -totalmillis;
+        }
+
+        void steamcb::userconnected(SteamServersConnected_t *p)
+        {
+            conoutf("Steam servers connected.");
         }
 
         void steamcb::getnumplayers()
         {
-            SteamAPICall_t hSteamAPICall = SteamUserStats()->GetNumberOfCurrentPlayers();
+            SteamAPICall_t hSteamAPICall = SteamAPI_ISteamUserStats_GetNumberOfCurrentPlayers(stats);
             numplayers.Set(hSteamAPICall, this, &steamcb::on_getnumplayers);
         }
 
@@ -83,24 +94,6 @@ namespace cdpi
             #endif
         }
 
-        void getusername()
-        {
-            const char *name = SteamFriends()->GetPersonaName();
-            if(name && *name) setsvar("steamusername", name);
-            if(!SteamUser()->BLoggedOn()) conoutf("Steam user not logged on!");
-            /*
-            CSteamID id = SteamUser()->GetSteamID();
-            string idname = "";
-            #ifdef WIN32
-            formatstring(idname, "%I64u", id.ConvertToUint64());
-            #else
-            formatstring(idname, "%llu", id.ConvertToUint64());
-            #endif
-            if(*idname) setsvar("steamuserid", idname);
-            */
-            conoutf("Logged in as Steam user: %s", name);
-        }
-
         void cleanup()
         {
             if(curapis&SWCLIENT)
@@ -108,6 +101,8 @@ namespace cdpi
                 SteamAPI_Shutdown();
                 conoutf("Steam API has been shutdown.");
                 curoverlay = 0;
+                client = user = friends = stats = 0;
+                spipe = upipe = 0;
                 curapis &= ~SWCLIENT;
             }
             if(curapis&SWSERVER)
@@ -127,9 +122,39 @@ namespace cdpi
             if(SteamAPI_Init())
             {
                 curapis |= SWCLIENT;
-                getusername();
-                cbs.getnumplayers();
+                client = (intptr_t)SteamClient();
+                spipe = SteamAPI_ISteamClient_CreateSteamPipe(client);
+                upipe = SteamAPI_ISteamClient_ConnectToGlobalUser(client, spipe);
+                user = (intptr_t)SteamAPI_ISteamClient_GetISteamUser(client, upipe, spipe, STEAMUSER_INTERFACE_VERSION);
+                friends = (intptr_t)SteamAPI_ISteamClient_GetISteamFriends(client, upipe, spipe, STEAMFRIENDS_INTERFACE_VERSION);
+                stats = (intptr_t)SteamAPI_ISteamClient_GetISteamUserStats(client, upipe, spipe, STEAMUSERSTATS_INTERFACE_VERSION);
+                const char *name = SteamAPI_ISteamFriends_GetPersonaName(friends);
+                if(name && *name)
+                {
+                    setsvar("steamusername", name);
+                    conoutf("Logged in as Steam user: %s", name);
+                }
+                if(SteamAPI_ISteamUser_BLoggedOn(user))
+                {
+                    CSteamID iduser = SteamAPI_ISteamUser_GetSteamID(user);
+                    if(iduser.IsValid())
+                    {
+                        uint64 id = iduser.ConvertToUint64();
+                        string idname = "";
+                        #ifdef WIN32
+                        formatstring(idname, "%I64u", id);
+                        #else
+                        formatstring(idname, "%llu", id);
+                        #endif
+                        if(*idname)
+                        {
+                            setsvar("steamuserid", idname);
+                            conoutf("Current Steam UserID: %s", idname);
+                        }
+                    }
+                }
                 conoutf("Steam API initialised successfully.");
+                cbs.getnumplayers();
             }
             return true;
         }
