@@ -16,11 +16,11 @@ namespace cdpi
     namespace steam
     {
         int curoverlay = 0, curplayers = 0;
-        uint64 serverid = 0;
         bool servconnected;
         intptr_t client = 0, user = 0, friends = 0, stats = 0;
-        HSteamPipe spipe = 0;
-        HSteamUser upipe = 0;
+        intptr_t sclient = 0, serv = 0;
+        HSteamPipe umpipe = 0, smpipe = 0;
+        HSteamUser uupipe = 0, supipe = 0;
 
         SVAR(IDF_READONLY, steamusername, "");
         SVAR(IDF_READONLY, steamuserid, "");
@@ -31,7 +31,6 @@ namespace cdpi
                 void getnumplayers();
             private:
                 STEAM_CALLBACK(steamcb, overlayactivated, GameOverlayActivated_t);
-                STEAM_CALLBACK(steamcb, userconnected, SteamServersConnected_t);
                 void on_getnumplayers(NumberOfCurrentPlayers_t *p, bool b);
                 CCallResult<steamcb, NumberOfCurrentPlayers_t> numplayers;
                 STEAM_GAMESERVER_CALLBACK(steamcb, serversconnected, SteamServersConnected_t);
@@ -45,11 +44,6 @@ namespace cdpi
             if(p->m_bActive) conoutf("Steam overlay opened.");
             else conoutf("Steam overlay closed.");
             curoverlay = p->m_bActive != 0 ? totalmillis : -totalmillis;
-        }
-
-        void steamcb::userconnected(SteamServersConnected_t *p)
-        {
-            conoutf("Steam servers connected.");
         }
 
         void steamcb::getnumplayers()
@@ -85,31 +79,33 @@ namespace cdpi
 
         void steamcb::policyresponse(GSPolicyResponse_t *p)
         {
-            //SteamGameServer()->BSecure() ? "VAC" : "Non-VAC"
-            serverid = SteamGameServer()->GetSteamID().ConvertToUint64();
+            const char *vac = SteamAPI_ISteamGameServer_BSecure(serv) ? "VAC" : "Non-VAC";
+            uint64 serverid = SteamAPI_ISteamGameServer_GetSteamID(serv);
             #ifdef WIN32
-            conoutf("Game server SteamID: %I64u", serverid);
+            conoutf("Game server SteamID: %I64u (%s)", serverid, vac);
             #else
-            conoutf("Game server SteamID: %llu", serverid);
+            conoutf("Game server SteamID: %llu (%s)", serverid, vac);
             #endif
         }
 
-        void cleanup()
+        void cleanup(int apis = -1)
         {
-            if(curapis&SWCLIENT)
+            int check = apis >= 0 ? apis : curapis;
+            if(check&SWCLIENT)
             {
                 SteamAPI_Shutdown();
                 conoutf("Steam API has been shutdown.");
                 curoverlay = 0;
                 client = user = friends = stats = 0;
-                spipe = upipe = 0;
+                umpipe = uupipe = 0;
                 curapis &= ~SWCLIENT;
             }
-            if(curapis&SWSERVER)
+            if(check&SWSERVER)
             {
-                //SteamGameServer()->EnableHeartbeats(false);
-                SteamGameServer()->LogOff();
+                //SteamAPI_ISteamGameServer_EnableHeartbeats(serv, false);
+                SteamAPI_ISteamGameServer_LogOff(serv);
                 SteamGameServer_Shutdown();
+                sclient = serv = 0;
                 servconnected = false;
                 conoutf("Steam GameServer has been shutdown.");
                 curapis &= ~SWSERVER;
@@ -122,35 +118,43 @@ namespace cdpi
             if(SteamAPI_Init())
             {
                 curapis |= SWCLIENT;
-                client = (intptr_t)SteamInternal_CreateInterface(STEAMCLIENT_INTERFACE_VERSION);
-                spipe = SteamAPI_GetHSteamPipe();
-                upipe = SteamAPI_ISteamClient_ConnectToGlobalUser(client, spipe);
-                user = (intptr_t)SteamAPI_ISteamClient_GetISteamUser(client, upipe, spipe, STEAMUSER_INTERFACE_VERSION);
-                friends = (intptr_t)SteamAPI_ISteamClient_GetISteamFriends(client, upipe, spipe, STEAMFRIENDS_INTERFACE_VERSION);
-                stats = (intptr_t)SteamAPI_ISteamClient_GetISteamUserStats(client, upipe, spipe, STEAMUSERSTATS_INTERFACE_VERSION);
+
+                client = (intptr_t)SteamClient(); //SteamInternal_CreateInterface(STEAMCLIENT_INTERFACE_VERSION);
+                if(!client) { conoutf("Failed to get Steam client interface."); cleanup(SWCLIENT); return false; }
+                umpipe = SteamAPI_GetHSteamPipe();
+                if(!umpipe) { conoutf("Failed to get Steam main pipe."); cleanup(SWCLIENT); return false; }
+                uupipe = SteamAPI_GetHSteamUser();
+                if(!uupipe)
+                {
+                    conoutf("Current Steam user pipe is invalid, trying to connect to global user.");
+                    uupipe = SteamAPI_ISteamClient_ConnectToGlobalUser(client, umpipe);
+                    if(!uupipe) { conoutf("Failed to get Steam user pipe."); cleanup(SWCLIENT); return false; }
+                }
+                user = (intptr_t)SteamAPI_ISteamClient_GetISteamUser(client, uupipe, umpipe, STEAMUSER_INTERFACE_VERSION);
+                if(!user) { conoutf("Failed to get Steam user interface."); cleanup(SWCLIENT); return false; }
+                friends = (intptr_t)SteamAPI_ISteamClient_GetISteamFriends(client, uupipe, umpipe, STEAMFRIENDS_INTERFACE_VERSION);
+                if(!friends) { conoutf("Failed to get Steam friends interface."); cleanup(SWCLIENT); return false; }
+                stats = (intptr_t)SteamAPI_ISteamClient_GetISteamUserStats(client, uupipe, umpipe, STEAMUSERSTATS_INTERFACE_VERSION);
+                if(!stats) { conoutf("Failed to get Steam stats interface."); cleanup(SWCLIENT); return false; }
+
                 const char *name = SteamAPI_ISteamFriends_GetPersonaName(friends);
                 if(name && *name)
                 {
                     setsvar("steamusername", name);
-                    conoutf("Logged in as Steam user: %s", name);
+                    conoutf("Current Steam Persona: %s", name);
                 }
                 if(SteamAPI_ISteamUser_BLoggedOn(user))
                 {
                     CSteamID iduser = SteamAPI_ISteamUser_GetSteamID(user);
                     if(iduser.IsValid())
                     {
-                        uint64 id = iduser.ConvertToUint64();
-                        string idname = "";
                         #ifdef WIN32
-                        formatstring(idname, "%I64u", id);
+                        defformatstring(id, "%I64u", iduser.ConvertToUint64());
                         #else
-                        formatstring(idname, "%llu", id);
+                        defformatstring(id, "%llu", iduser.ConvertToUint64());
                         #endif
-                        if(*idname)
-                        {
-                            setsvar("steamuserid", idname);
-                            conoutf("Current Steam UserID: %s", idname);
-                        }
+                        setsvar("steamuserid", id);
+                        conoutf("Current Steam UserID: %s", id);
                     }
                 }
                 conoutf("Steam API initialised successfully.");
@@ -164,25 +168,35 @@ namespace cdpi
             if(SteamGameServer_Init(INADDR_ANY, serverport+3, serverport, serverport+2, eServerModeNoAuthentication, versionstring))
             {
                 curapis |= SWSERVER;
-                SteamGameServer()->SetModDir(versionuname);
-                SteamGameServer()->SetProduct(versionname);
-                SteamGameServer()->SetGameDescription(versiondesc);
-                SteamGameServer()->SetDedicatedServer(servertype >= 3);
-                SteamGameServer()->LogOnAnonymous();
-                //SteamGameServer()->EnableHeartbeats(true);
+
+                sclient = (intptr_t)SteamGameServerClient(); //SteamInternal_CreateInterface(STEAMCLIENT_INTERFACE_VERSION);
+                if(!sclient) { conoutf("Failed to get Steam client interface."); cleanup(SWSERVER); return; }
+                smpipe = SteamGameServer_GetHSteamPipe();
+                if(!smpipe) { conoutf("Failed to get Steam main pipe."); cleanup(SWSERVER); return; }
+                supipe = SteamGameServer_GetHSteamUser();
+                if(!supipe) { conoutf("Failed to get Steam user pipe."); cleanup(SWSERVER); return; }
+                serv = (intptr_t)SteamAPI_ISteamClient_GetISteamGameServer(sclient, supipe, smpipe, STEAMGAMESERVER_INTERFACE_VERSION);
+                if(!serv) { conoutf("Failed to get Steam server interface."); cleanup(SWSERVER); return; }
+
+                SteamAPI_ISteamGameServer_SetModDir(serv, versionuname);
+                SteamAPI_ISteamGameServer_SetProduct(serv, versionname);
+                SteamAPI_ISteamGameServer_SetGameDescription(serv, versiondesc);
+                SteamAPI_ISteamGameServer_SetDedicatedServer(serv, servertype >= 3);
+                SteamAPI_ISteamGameServer_LogOnAnonymous(serv);
+                //SteamAPI_ISteamGameServer_EnableHeartbeats(serv, true);
                 conoutf("Steam GameServer API initialised successfully.");
             }
         }
 
         void servupdate()
         {
-            SteamGameServer()->SetMaxPlayerCount(server::maxslots());
-            SteamGameServer()->SetPasswordProtected(false);
-            SteamGameServer()->SetServerName(server::getserverdesc());
-            SteamGameServer()->SetSpectatorPort(serverport);
-            SteamGameServer()->SetSpectatorServerName(server::getserverdesc());
-            SteamGameServer()->SetBotPlayerCount(0);
-            SteamGameServer()->SetMapName(server::getmapname());
+            SteamAPI_ISteamGameServer_SetMaxPlayerCount(serv, server::maxslots());
+            SteamAPI_ISteamGameServer_SetPasswordProtected(serv, false);
+            SteamAPI_ISteamGameServer_SetServerName(serv, server::getserverdesc());
+            SteamAPI_ISteamGameServer_SetSpectatorPort(serv, serverport);
+            SteamAPI_ISteamGameServer_SetSpectatorServerName(serv, server::getserverdesc());
+            SteamAPI_ISteamGameServer_SetBotPlayerCount(serv, 0);
+            SteamAPI_ISteamGameServer_SetMapName(serv, server::getmapname());
         }
 
         static int lastframe = 0;
