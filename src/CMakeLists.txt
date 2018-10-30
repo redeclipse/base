@@ -227,7 +227,11 @@ if(${WANT_STEAM})
     add_definitions("-DUSE_STEAM=1")
 endif()
 if(${WANT_DISCORD})
-    add_definitions("-DUSE_DISCORD=1")
+    if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+        add_definitions("-DUSE_DISCORD=1")
+    elseif(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "x86_64")
+        add_definitions("-DUSE_DISCORD=1")
+    endif
 endif()
 
 # include the headers for the libraries bundled in ../bin

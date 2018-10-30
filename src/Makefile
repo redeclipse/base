@@ -61,7 +61,13 @@ ifeq (1,$(WANT_STEAM))
 override INCLUDES+= -DUSE_STEAM=1 -Isteam
 endif
 ifeq (1,$(WANT_DISCORD))
+ifneq (,$(findstring mingw,$(PLATFORM)))
 override INCLUDES+= -DUSE_DISCORD=1
+else
+ifneq (,$(findstring 64,$(PLATFORM)))
+override INCLUDES+= -DUSE_DISCORD=1
+endif
+endif
 endif
 
 STRIP=
@@ -121,8 +127,8 @@ CLIENT_LIBS= -Lenet -lenet -L/usr/X11R6/lib -lX11 `$(PKG_CONFIG) --libs sdl2` -l
 ifeq (1,$(WANT_STEAM))
 override CLIENT_LIBS+= -L../bin/$(PLATFORM_BIN) -lsteam_api
 endif
-ifneq (,$(findstring 64,$(PLATFORM)))
 ifeq (1,$(WANT_DISCORD))
+ifneq (,$(findstring 64,$(PLATFORM)))
 override CLIENT_LIBS+= -L../bin/$(PLATFORM_BIN) -ldiscord-rpc
 endif
 endif
