@@ -387,6 +387,17 @@ namespace game
         modecheck(mode, muts, t);
         return muts;
     }
+
+    int gametime()
+    {
+        return connected() ? max(timeremaining*1000-((gs_playing(gamestate) ? lastmillis : totalmillis)-lasttimeremain), 0) : 0;
+    }
+
+    const char *gamestatename(int type)
+    {
+        return connected() && gamestate >= 0 && gamestate < G_S_MAX ? gamestates[clamp(type, 0, 4)][gamestate] : "Main Menu";
+    }
+
     ICOMMAND(0, mutscheck, "iii", (int *g, int *m, int *t), intret(mutscheck(*g, *m, *t)));
     ICOMMAND(0, mutsallowed, "ii", (int *g, int *h), intret(*g >= 0 && *g < G_MAX ? gametype[*g].mutators[*h >= 0 && *h < G_M_GSP+1 ? *h : 0] : 0));
     ICOMMAND(0, mutsimplied, "ii", (int *g, int *m), intret(*g >= 0 && *g < G_MAX ? gametype[*g].implied : 0));
@@ -395,7 +406,7 @@ namespace game
     ICOMMAND(0, getgameisplay, "b", (int *n), intret(m_play(*n >= 0 ? *n : gamemode) ? 1 :0));
     ICOMMAND(0, getgamestate, "", (), intret(gamestate));
     ICOMMAND(0, getgamestatestr, "ib", (int *n, int *b), result(gamestates[clamp(*n, 0, 3)][clamp(*b >= 0 ? *b : gamestate, 0, int(G_S_MAX))]));
-    ICOMMAND(0, getgametimeremain, "", (), intret(max(timeremaining*1000-((gs_playing(gamestate) ? lastmillis : totalmillis)-lasttimeremain), 0)));
+    ICOMMAND(0, getgametimeremain, "", (), intret(gametime()));
     ICOMMAND(0, getgametimelimit, "bb", (int *g, int *m), intret(m_mmvar(*g >= 0 ? *g : gamemode, *m >= 0 ? *m : mutators, timelimit)));
 
     const char *gametitle() { return connected() ? server::gamename(gamemode, mutators) : "Ready"; }

@@ -81,6 +81,11 @@ if(NOT ${WANT_STEAM})
     message(STATUS "Will not build Steam support as requested")
 endif()
 
+set(WANT_DISCORD true CACHE BOOL "Build with Discord support?")
+if(NOT ${WANT_DISCORD})
+    message(STATUS "Will not build Discord support as requested")
+endif()
+
 # the client depends on almost all the source files
 file(GLOB client_sources engine/*.cpp game/*.cpp shared/*.cpp support/sqlite3.c)
 
@@ -121,6 +126,7 @@ set_source_files_properties(support/sqlite3.c PROPERTIES
 # platform specific code
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     list(APPEND client_deps x11)
+    set(link_libs rt)
     if(${WANT_STEAM})
         add_library(steam_lib SHARED IMPORTED)
         if(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "i[3-6]86")
@@ -128,10 +134,16 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
         elseif(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "x86_64")
             set_target_properties(steam_lib PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/../bin/amd64/libsteam_api.so)
         endif()
-        link_libraries(rt steam_lib)
-    else()
-        link_libraries(rt)
+        list(APPEND link_libs steam_lib)
     endif()
+    if(${WANT_DISCORD})
+        if(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "x86_64")
+            add_library(discord_lib SHARED IMPORTED)
+            set_target_properties(discord_lib PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/../bin/amd64/libdiscord-rpc.so)
+            list(APPEND link_libs discord_lib)
+        endif()
+    endif()
+    link_libraries(${link_libs})
     set(BIN_SUFFIX "_linux")
 elseif(APPLE)
     # build OS X specific Objective-C code
@@ -213,6 +225,9 @@ include_directories(
 if(${WANT_STEAM})
     include_directories(${CMAKE_CURRENT_SOURCE_DIR}/steam)
     add_definitions("-DUSE_STEAM=1")
+endif()
+if(${WANT_DISCORD})
+    add_definitions("-DUSE_DISCORD=1")
 endif()
 
 # include the headers for the libraries bundled in ../bin

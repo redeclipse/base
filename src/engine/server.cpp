@@ -51,6 +51,7 @@ VAR(IDF_READONLY, versionisserver, 0, 1, 1);
 VAR(IDF_READONLY, versionisserver, 0, 0, 1);
 #endif
 VAR(IDF_READONLY, versionsteamid, 1, VERSION_STEAMID, -1);
+SVAR(IDF_READONLY, versiondiscordid, VERSION_DISCORD);
 
 ICOMMAND(0, platname, "ii", (int *p, int *g), result(*p >= 0 && *p < MAX_PLATFORMS ? (*g!=0 ? plat_longname(*p) : plat_name(*p)) : ""));
 

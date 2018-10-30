@@ -23,11 +23,11 @@ enum { G_F_GSP = 0, G_F_NUM };
 
 enum { G_S_WAITING = 0, G_S_GETMAP, G_S_SENDMAP, G_S_READYING, G_S_GAMEINFO, G_S_PLAYING, G_S_OVERTIME, G_S_INTERMISSION, G_S_VOTING, G_S_MAX };
 #ifdef GAMESERVER
-const char *gamestates[4][G_S_MAX] = {
+const char *gamestates[5][G_S_MAX] = {
     { "waiting", "getmap", "sendmap", "readying", "syncing", "playing", "overtime", "intermission", "voting" },
     { "Waiting", "Getmap", "Sendmap", "Readying", "Syncing", "Playing", "Overtime", "Intermission", "Voting" },
-    { "waiting to start", "server getting map", "server sending map", "waiting for ready players", "syncing game information", "playing", "overtime", "intermission", "voting in progress" },
-    { "Waiting to start", "Server getting map", "Server sending map", "Waiting for ready players", "Syncing game information", "Playing", "Overtime", "Intermission", "Voting in progress" }
+    { "waiting to play", "server getting map", "server sending map", "readying", "syncing info", "playing", "overtime", "intermission", "voting" },
+    { "Waiting to Play", "Getting Map", "Sending Maps", "Readying", "Syncing Info", "Playing", "Overtime", "Intermission", "Voting" }
 };
 #else
 extern const char *gamestates[4][G_S_MAX];
@@ -370,7 +370,7 @@ extern mutstypes mutstype[];
     else mapshrink(!(f), a, G(previousmaps), true) \
 }
 #ifdef GAMESERVER
-SVAR(IDF_READONLY, gamestatename, "waiting getmap sendmap readying gameinfo playing overtime intermission voting");
+SVAR(IDF_READONLY, gamestateidxname, "waiting getmap sendmap readying gameinfo playing overtime intermission voting");
 VAR(IDF_READONLY, gamestatewaiting, 1, G_S_WAITING, -1);
 VAR(IDF_READONLY, gamestategetmap, 1, G_S_GETMAP, -1);
 VAR(IDF_READONLY, gamestatesendmap, 1, G_S_SENDMAP, -1);

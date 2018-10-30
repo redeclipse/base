@@ -7,6 +7,12 @@
 #include <steam_gameserver.h>
 #include <steam_api_flat.h>
 #endif
+#if !defined(STANDALONE) && defined(USE_DISCORD) && USE_DISCORD == 1
+#define HAS_DISCORD 1
+#define DISCORD_DYNAMIC_LIB 1
+#include <discord_rpc.h>
+//#include <discord_register.h>
+#endif
 
 namespace cdpi
 {
@@ -213,11 +219,113 @@ namespace cdpi
         }
     }
 #endif
+#ifdef HAS_DISCORD
+    namespace discord
+    {
+        VAR(IDF_PERSIST, discordenabled, 0, 1, 1);
+        VAR(IDF_PERSIST, discordpresence, 0, 1, 1);
+
+        void ready(const DiscordUser *u)
+        {
+            conoutf("Discord: connected to user %s#%s - %s", u->username, u->discriminator, u->userId);
+        }
+
+        void disconnected(int errcode, const char *message)
+        {
+            conoutf("Discord: disconnected (%d: %s)", errcode, message);
+        }
+
+        static void error(int errcode, const char  *message)
+        {
+            conoutf("Discord: error (%d: %s)", errcode, message);
+        }
+
+        static void joingame(const char *secret)
+        {
+            conoutf("Discord: join (%s)", secret);
+        }
+
+        static void spectategame(const char *secret)
+        {
+            conoutf("Discord: spectate (%s)", secret);
+        }
+
+        static void joinrequest(const DiscordUser *u)
+        {
+            printf("\nDiscord: join request from %s#%s - %s\n",
+            u->username,
+            u->discriminator,
+            u->userId);
+            //response = DISCORD_REPLY_YES;
+            //response = DISCORD_REPLY_NO;
+            //Discord_Respond(u->userId, response);
+        }
+
+        void cleanup()
+        {
+            if(!(curapis&DISCORD))
+            Discord_Shutdown();
+            conoutf("Discord API has been shutdown.");
+        }
+
+        void init()
+        {
+            DiscordEventHandlers handlers;
+            memset(&handlers, 0, sizeof(handlers));
+            handlers.ready = ready;
+            handlers.errored = error;
+            handlers.disconnected = disconnected;
+            handlers.joinGame = joingame;
+            handlers.spectateGame = spectategame;
+            handlers.joinRequest = joinrequest;
+            defformatstring(str, "%d", versionsteamid);
+            Discord_Initialize(versiondiscordid, &handlers, 0, str); // todo: update for autoregister
+            conoutf("Discord API initialised successfully.");
+            curapis |= DISCORD;
+        }
+
+        static int lastframe = 0, lastpresence = 0;
+        void runframe()
+        {
+            if(!(curapis&DISCORD) || (lastframe && totalmillis-lastframe < 100)) return;
+            if(!lastpresence || totalmillis-lastpresence >= 15000)  // 15s rate limit
+            {
+                if(discordpresence)
+                {
+                    DiscordRichPresence discordPresence;
+                    memset(&discordPresence, 0, sizeof(discordPresence));
+                    discordPresence.state = game::gamestatename(4);
+                    discordPresence.details = game::gametitle();
+                    discordPresence.startTimestamp = 0;
+                    int g = game::gametime();
+                    discordPresence.endTimestamp = g ? (time(0) + g/1000) : 0;
+                    discordPresence.largeImageKey = "emblem";
+                    discordPresence.smallImageKey = "player";
+                    //discordPresence.partyId = "party1234";
+                    //discordPresence.partySize = 1;
+                    //discordPresence.partyMax = 6;
+                    //discordPresence.matchSecret = "xyzzy";
+                    //discordPresence.joinSecret = "join";
+                    //discordPresence.spectateSecret = "look";
+                    //discordPresence.instance = 0;
+                    Discord_UpdatePresence(&discordPresence);
+                }
+                else Discord_ClearPresence();
+                lastpresence = totalmillis;
+            }
+            Discord_RunCallbacks();
+            lastframe = totalmillis;
+        }
+    }
+#endif
 
     void cleanup()
     {
 #ifdef HAS_STEAM
         steam::cleanup();
+#endif
+#ifdef HAS_DISCORD
+        discord::cleanup();
 #endif
     }
 
@@ -226,9 +334,12 @@ namespace cdpi
         curapis = NONE;
 #ifdef HAS_STEAM
 #ifndef STANDALONE
-        if(servertype < 3) if(!steam::initclient()) return false;
+        if(servertype < 3) if(!steam::initclient()) return false; // steam says die
 #endif
         if(servertype >= 2) steam::initserver();
+#endif
+#ifdef HAS_DISCORD
+        discord::init();
 #endif
         return true;
     }
@@ -237,6 +348,9 @@ namespace cdpi
     {
 #ifdef HAS_STEAM
         steam::runframe();
+#endif
+#ifdef HAS_DISCORD
+        discord::runframe();
 #endif
     }
 

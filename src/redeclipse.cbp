@@ -32,6 +32,7 @@
 					<Add option="-fno-rtti" />
 					<Add option="-Wno-invalid-offsetof" />
 					<Add option="-DUSE_STEAM=1" />
+					<Add option="-DUSE_DISCORD=1" />
 					<Add directory="support" />
 					<Add directory="shared" />
 					<Add directory="engine" />
@@ -53,6 +54,7 @@
 					<Add library="ws2_32" />
 					<Add library="winmm" />
 					<Add library="steam_api" />
+					<Add library="discord-rpc" />
 					<Add directory="../bin/x86" />
 					<Add directory="lib/x86" />
 				</Linker>
@@ -81,6 +83,7 @@
 					<Add option="-fsigned-char" />
 					<Add option="-Wno-invalid-offsetof" />
 					<Add option="-DUSE_STEAM=1" />
+					<Add option="-DUSE_DISCORD=1" />
 					<Add directory="support" />
 					<Add directory="shared" />
 					<Add directory="engine" />
@@ -101,6 +104,7 @@
 					<Add library="ws2_32" />
 					<Add library="winmm" />
 					<Add library="steam_api" />
+					<Add library="discord-rpc" />
 					<Add directory="../bin/x86" />
 					<Add directory="lib/x86" />
 				</Linker>
@@ -130,6 +134,7 @@
 					<Add option="-finline-functions" />
 					<Add option="-Wno-invalid-offsetof" />
 					<Add option="-DUSE_STEAM=1" />
+					<Add option="-DUSE_DISCORD=1" />
 					<Add directory="support" />
 					<Add directory="shared" />
 					<Add directory="engine" />
@@ -150,6 +155,8 @@
 					<Add library="enet" />
 					<Add library="ws2_32" />
 					<Add library="winmm" />
+					<Add library="steam_api" />
+					<Add library="discord-rpc" />
 					<Add directory="../bin/x86" />
 					<Add directory="lib/x86" />
 				</Linker>
@@ -273,6 +280,7 @@
 					<Add option="-fno-rtti" />
 					<Add option="-Wno-invalid-offsetof" />
 					<Add option="-DUSE_STEAM=1" />
+					<Add option="-DUSE_DISCORD=1" />
 					<Add directory="support" />
 					<Add directory="shared" />
 					<Add directory="engine" />
@@ -294,6 +302,7 @@
 					<Add library="ws2_32" />
 					<Add library="winmm" />
 					<Add library="steam_api64" />
+					<Add library="discord-rpc" />
 					<Add directory="../bin/amd64" />
 					<Add directory="lib/amd64" />
 				</Linker>
@@ -322,6 +331,7 @@
 					<Add option="-fsigned-char" />
 					<Add option="-Wno-invalid-offsetof" />
 					<Add option="-DUSE_STEAM=1" />
+					<Add option="-DUSE_DISCORD=1" />
 					<Add directory="support" />
 					<Add directory="shared" />
 					<Add directory="engine" />
@@ -342,6 +352,7 @@
 					<Add library="ws2_32" />
 					<Add library="winmm" />
 					<Add library="steam_api64" />
+					<Add library="discord-rpc" />
 					<Add directory="../bin/amd64" />
 					<Add directory="lib/amd64" />
 				</Linker>
@@ -371,6 +382,7 @@
 					<Add option="-finline-functions" />
 					<Add option="-Wno-invalid-offsetof" />
 					<Add option="-DUSE_STEAM=1" />
+					<Add option="-DUSE_DISCORD=1" />
 					<Add directory="support" />
 					<Add directory="shared" />
 					<Add directory="engine" />
@@ -392,6 +404,7 @@
 					<Add library="ws2_32" />
 					<Add library="winmm" />
 					<Add library="steam_api64" />
+					<Add library="discord-rpc" />
 					<Add directory="../bin/amd64" />
 					<Add directory="lib/amd64" />
 				</Linker>
@@ -1533,6 +1546,22 @@
 		<Unit filename="shared/cube2font.c">
 			<Option compilerVar="CC" />
 			<Option target="cube2font" />
+		</Unit>
+		<Unit filename="shared/discord_register.h">
+			<Option target="redeclipse-x86" />
+			<Option target="redeclipse-x86-dbg" />
+			<Option target="redeclipse-x86-prof" />
+			<Option target="redeclipse-amd64" />
+			<Option target="redeclipse-amd64-dbg" />
+			<Option target="redeclipse-amd64-prof" />
+		</Unit>
+		<Unit filename="shared/discord_rpc.h">
+			<Option target="redeclipse-x86" />
+			<Option target="redeclipse-x86-dbg" />
+			<Option target="redeclipse-x86-prof" />
+			<Option target="redeclipse-amd64" />
+			<Option target="redeclipse-amd64-dbg" />
+			<Option target="redeclipse-amd64-prof" />
 		</Unit>
 		<Unit filename="shared/ents.h">
 			<Option target="redeclipse-x86" />

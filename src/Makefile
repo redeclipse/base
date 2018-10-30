@@ -12,6 +12,7 @@ RMFLAGS= -fv
 
 PKG_CONFIG ?= pkg-config
 WANT_STEAM ?= 1
+WANT_DISCORD ?= 1
 
 ifeq (,$(PLATFORM_BUILD))
 PLATFORM_BUILD=0
@@ -59,6 +60,9 @@ INCLUDES= -DVERSION_BUILD=$(PLATFORM_BUILD) -DVERSION_BRANCH=\"$(PLATFORM_BRANCH
 ifeq (1,$(WANT_STEAM))
 override INCLUDES+= -DUSE_STEAM=1 -Isteam
 endif
+ifeq (1,$(WANT_DISCORD))
+override INCLUDES+= -DUSE_DISCORD=1
+endif
 
 STRIP=
 ifeq (,$(findstring -g,$(CXXFLAGS)))
@@ -95,6 +99,9 @@ ifeq (1,$(WANT_STEAM))
 override CLIENT_LIBS+= -lsteam_api
 endif
 endif
+ifeq (1,$(WANT_DISCORD))
+override CLIENT_LIBS+= -ldiscord-rpc
+endif
 else
 APPMODIFIER=
 ifneq (,$(findstring linux,$(PLATFORM)))
@@ -113,6 +120,11 @@ CLIENT_INCLUDES= $(INCLUDES) -I/usr/X11R6/include `$(PKG_CONFIG) --cflags sdl2`
 CLIENT_LIBS= -Lenet -lenet -L/usr/X11R6/lib -lX11 `$(PKG_CONFIG) --libs sdl2` -lSDL2_image -lSDL2_mixer -lz -lGL
 ifeq (1,$(WANT_STEAM))
 override CLIENT_LIBS+= -L../bin/$(PLATFORM_BIN) -lsteam_api
+endif
+ifneq (,$(findstring 64,$(PLATFORM)))
+ifeq (1,$(WANT_DISCORD))
+override CLIENT_LIBS+= -L../bin/$(PLATFORM_BIN) -ldiscord-rpc
+endif
 endif
 endif
 ifneq (,$(findstring linux,$(PLATFORM)))

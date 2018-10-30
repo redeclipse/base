@@ -5,7 +5,7 @@
 #include "cube.h"
 
 extern int version, versioning, versionmajor, versionminor, versionpatch, versionbuild, versionplatform, versionarch, versionisserver, versioncrc, versionsteamid;
-extern char *versionstring, *versionname, *versionuname, *versionvname, *versionrelease, *versionurl, *versioncopy, *versiondesc, *versionmaster, *versionplatname, *versionplatlongname, *versionbranch, *versionrevision;
+extern char *versionstring, *versionname, *versionuname, *versionvname, *versionrelease, *versionurl, *versioncopy, *versiondesc, *versionmaster, *versionplatname, *versionplatlongname, *versionbranch, *versionrevision, *versiondiscordid;
 #define CUR_VER_MAKE(a,b,c) (((a)<<16) | ((b)<<8) | (c))
 #define CUR_VER CUR_VER_MAKE(VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH)
 #define CUR_VERSION (VERSION_MAJOR*100)+(VERSION_MINOR*10)+VERSION_PATCH
@@ -37,7 +37,7 @@ extern const char *timestr(int dur, int style = 0);
 
 namespace cdpi
 {
-    enum { NONE = 0, SWCLIENT = 1<<0, SWSERVER = 1<<1, ALL = SWCLIENT|SWSERVER, STEAM = SWCLIENT|SWSERVER };
+    enum { NONE = 0, SWCLIENT = 1<<0, SWSERVER = 1<<1, DISCORD = 1<<2, ALL = SWCLIENT|SWSERVER|DISCORD, STEAM = SWCLIENT|SWSERVER };
 
     extern int curapis;
 
@@ -46,6 +46,11 @@ namespace cdpi
     {
         extern int curoverlay, curplayers;
         extern char *steamusername, *steamuserid;
+    }
+#endif
+#if !defined(STANDALONE) && defined(USE_DISCORD) && USE_DISCORD == 1
+    namespace discord
+    {
     }
 #endif
 
