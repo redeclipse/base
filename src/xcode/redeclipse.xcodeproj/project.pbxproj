@@ -34,8 +34,10 @@
 		B94198A809207E810029DAD1 /* SDLMain.m in Sources */ = {isa = PBXBuildFile; fileRef = F5A47A9E01A0483001D3D55B /* SDLMain.m */; };
 		B94198C309207E810029DAD1 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
 		B94198C409207E810029DAD1 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B2F67ED704C74A3F00A80002 /* OpenGL.framework */; };
+		B94198C409207E810029DAD3 /* libsteam_api.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = B2F67ED704C74A3F00A80003 /* libsteam_api.dylib */; };
 		B9AC7AD00D06DB44005506F8 /* bih.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B9AC7A850D06DB44005506F8 /* bih.cpp */; };
 		B9AC7AD10D06DB44005506F8 /* bih.h in Headers */ = {isa = PBXBuildFile; fileRef = B9AC7A860D06DB44005506F8 /* bih.h */; };
+		B9AC7AD30D06DB44005506F1 /* cdpi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B9AC7A880D06DB44005506F1 /* cdpi.cpp */; };
 		B9AC7AD20D06DB44005506F8 /* client.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B9AC7A870D06DB44005506F8 /* client.cpp */; };
 		B9AC7AD30D06DB44005506F8 /* command.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B9AC7A880D06DB44005506F8 /* command.cpp */; };
 		B9AC7AD40D06DB44005506F8 /* console.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B9AC7A890D06DB44005506F8 /* console.cpp */; };
@@ -155,6 +157,7 @@
 		3E469E9711E05C2B00873F83 /* bombermode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = bombermode.h; sourceTree = "<group>"; };
 		666E40EF0B67D87F005B491F /* macutils.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = macutils.mm; sourceTree = "<group>"; };
 		B2F67ED704C74A3F00A80002 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = /System/Library/Frameworks/OpenGL.framework; sourceTree = "<absolute>"; };
+		B2F67ED704C74A3F00A80003 /* libsteam_api.dylib */ = {isa = PBXFileReference; lastKnownFileType = compiled.mach-o.dylib; name = libsteam_api.dylib; path = ../bin/redeclipse.app/Contents/Frameworks/libsteam_api.dylib; sourceTree = SOURCE_ROOT; };
 		B90ADD0009B344D800A5B00B /* callbacks.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = callbacks.c; sourceTree = "<group>"; };
 		B90ADD1309B344D800A5B00B /* host.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = host.c; sourceTree = "<group>"; };
 		B90ADD2809B344D800A5B00B /* list.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = list.c; sourceTree = "<group>"; };
@@ -176,6 +179,7 @@
 		B97E99CE085F4B3E002F9BC6 /* redeclipse.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = redeclipse.icns; sourceTree = "<group>"; };
 		B9AC7A850D06DB44005506F8 /* bih.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = bih.cpp; sourceTree = "<group>"; };
 		B9AC7A860D06DB44005506F8 /* bih.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = bih.h; sourceTree = "<group>"; };
+		B9AC7A880D06DB44005506F1 /* cdpi.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = cdpi.cpp; sourceTree = "<group>"; };
 		B9AC7A870D06DB44005506F8 /* client.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = client.cpp; sourceTree = "<group>"; };
 		B9AC7A880D06DB44005506F8 /* command.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = command.cpp; sourceTree = "<group>"; };
 		B9AC7A890D06DB44005506F8 /* console.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = console.cpp; sourceTree = "<group>"; };
@@ -319,6 +323,7 @@
 				B92DC0FB09D08CF9008219BD /* SDL2.framework */,
 				1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */,
 				B2F67ED704C74A3F00A80002 /* OpenGL.framework */,
+				B2F67ED704C74A3F00A80003 /* libsteam_api.dylib */,
 			);
 			name = "Linked Frameworks";
 			sourceTree = "<group>";
@@ -409,6 +414,7 @@
 				B9AC7A860D06DB44005506F8 /* bih.h */,
 				D16A836A0F130EBC00EABB1F /* blend.cpp */,
 				D16A836B0F130EBC00EABB1F /* aa.cpp */,
+				B9AC7A880D06DB44005506F1 /* cdpi.cpp */,
 				B9AC7A870D06DB44005506F8 /* client.cpp */,
 				B9AC7A880D06DB44005506F8 /* command.cpp */,
 				B9AC7A890D06DB44005506F8 /* console.cpp */,
@@ -684,6 +690,7 @@
 				B90ADD7609B344D800A5B00B /* unix.c in Sources */,
 				666E40F00B67D87F005B491F /* macutils.mm in Sources */,
 				B9AC7AD00D06DB44005506F8 /* bih.cpp in Sources */,
+				B9AC7AD30D06DB44005506F1 /* cdpi.cpp in Sources */,
 				B9AC7AD20D06DB44005506F8 /* client.cpp in Sources */,
 				B9AC7AD30D06DB44005506F8 /* command.cpp in Sources */,
 				B9AC7AD40D06DB44005506F8 /* console.cpp in Sources */,
@@ -814,6 +821,7 @@
 				GCC_VERSION = "";
 				HEADER_SEARCH_PATHS = (
 					../include,
+					../steam,
 					../enet/include,
 					/usr/X11/include/,
 					"$(inherited)",
@@ -821,8 +829,8 @@
 				INFOPLIST_FILE = "redeclipse-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 10.9;
-				OTHER_CPLUSPLUSFLAGS = "-fomit-frame-pointer";
-				OTHER_LDFLAGS = "-lz";
+				OTHER_CPLUSPLUSFLAGS = "-DUSE_STEAM=1 -fomit-frame-pointer -Wno-invalid-offsetof";
+				OTHER_LDFLAGS = "-lz -L../../bin/redeclipse.app/Contents/Frameworks -lsteam_api";
 				PRODUCT_NAME = redeclipse;
 				SDKROOT = macosx;
 				SKIP_INSTALL = NO;
@@ -846,8 +854,12 @@
 				GCC_PREFIX_HEADER = "";
 				GCC_PREPROCESSOR_DEFINITIONS = "";
 				GCC_VERSION = "";
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				HEADER_SEARCH_PATHS = (
 					../include,
+					../steam,
 					../enet/include,
 					/usr/X11/include/,
 					"$(inherited)",
@@ -855,7 +867,8 @@
 				INFOPLIST_FILE = "redeclipse-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 10.9;
-				OTHER_LDFLAGS = "-lz";
+				OTHER_CPLUSPLUSFLAGS = "-DUSE_STEAM=1 -Wno-invalid-offsetof";
+				OTHER_LDFLAGS = "-lz -L../../bin/redeclipse.app/Contents/Frameworks -lsteam_api";
 				PRODUCT_NAME = redeclipse;
 				SDKROOT = macosx;
 				VALID_ARCHS = "x86_64";
