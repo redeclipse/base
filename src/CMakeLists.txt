@@ -231,7 +231,7 @@ if(${WANT_DISCORD})
         add_definitions("-DUSE_DISCORD=1")
     elseif(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "x86_64")
         add_definitions("-DUSE_DISCORD=1")
-    endif
+    endif()
 endif()
 
 # include the headers for the libraries bundled in ../bin
