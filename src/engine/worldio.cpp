@@ -1790,7 +1790,7 @@ int scanmapc(const char *fname)
                 delete f;
                 maskpackagedirs(mask);
                 mapcinfos.pop();
-                return false;
+                break;
             }
 
             #define MAPZCOMPAT(ver) \
@@ -1802,7 +1802,7 @@ int scanmapc(const char *fname)
                     delete f; \
                     maskpackagedirs(mask); \
                     mapcinfos.pop(); \
-                    return false; \
+                    break; \
                 }
             if(d.maphdr.version <= 43)
             {
@@ -1818,7 +1818,7 @@ int scanmapc(const char *fname)
                     conoutf("\frError loading %s: malformatted mapz v%d header", d.fileext, d.maphdr.version);
                     delete f;
                     maskpackagedirs(mask);
-                    return false;
+                    break;
                 }
                 lilswap(&d.maphdr.worldsize, 7);
             }
@@ -1880,7 +1880,7 @@ int scanmapc(const char *fname)
                 delete f;
                 maskpackagedirs(mask);
                 mapcinfos.pop();
-                return false;
+                break;
             }
             if(f->read(&ohdr.worldsize, sizeof(octa)-sizeof(binary))!=sizeof(octa)-(int)sizeof(binary))
             {
@@ -1888,7 +1888,7 @@ int scanmapc(const char *fname)
                 delete f;
                 maskpackagedirs(mask);
                 mapcinfos.pop();
-                return false;
+                break;
             }
             lilswap(&ohdr.worldsize, 7);
 

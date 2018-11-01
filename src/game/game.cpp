@@ -395,7 +395,7 @@ namespace game
 
     const char *gamestatename(int type)
     {
-        return connected() && gamestate >= 0 && gamestate < G_S_MAX ? gamestates[clamp(type, 0, 4)][gamestate] : "Main Menu";
+        return connected() && gamestate >= 0 && gamestate < G_S_MAX ? gamestates[clamp(type, 0, 3)][gamestate] : "Main Menu";
     }
 
     ICOMMAND(0, mutscheck, "iii", (int *g, int *m, int *t), intret(mutscheck(*g, *m, *t)));

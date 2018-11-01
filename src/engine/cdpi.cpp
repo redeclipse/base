@@ -223,7 +223,7 @@ namespace cdpi
     namespace discord
     {
         VAR(IDF_PERSIST, discordenabled, 0, 1, 1);
-        VAR(IDF_PERSIST, discordpresence, 0, 1, 1);
+        VAR(IDF_PERSIST, discordpresence, 0, 3, 3); // 0 = off, 1 = public, 2 = private (offline) as well
 
         void ready(const DiscordUser *u)
         {
@@ -235,27 +235,24 @@ namespace cdpi
             conoutf("Discord: disconnected (%d: %s)", errcode, message);
         }
 
-        static void error(int errcode, const char  *message)
+        void error(int errcode, const char  *message)
         {
             conoutf("Discord: error (%d: %s)", errcode, message);
         }
 
-        static void joingame(const char *secret)
+        void joingame(const char *secret)
         {
             conoutf("Discord: join (%s)", secret);
         }
 
-        static void spectategame(const char *secret)
+        void spectategame(const char *secret)
         {
             conoutf("Discord: spectate (%s)", secret);
         }
 
-        static void joinrequest(const DiscordUser *u)
+        void joinrequest(const DiscordUser *u)
         {
-            printf("\nDiscord: join request from %s#%s - %s\n",
-            u->username,
-            u->discriminator,
-            u->userId);
+            conoutf("Discord: join request from %s#%s - %s", u->username, u->discriminator, u->userId);
             //response = DISCORD_REPLY_YES;
             //response = DISCORD_REPLY_NO;
             //Discord_Respond(u->userId, response);
@@ -263,13 +260,14 @@ namespace cdpi
 
         void cleanup()
         {
-            if(!(curapis&DISCORD))
+            if(!(curapis&DISCORD)) return;;
             Discord_Shutdown();
             conoutf("Discord API has been shutdown.");
         }
 
         void init()
         {
+            if(!*versiondiscordid) return;
             DiscordEventHandlers handlers;
             memset(&handlers, 0, sizeof(handlers));
             handlers.ready = ready;
@@ -285,22 +283,31 @@ namespace cdpi
         }
 
         static int lastframe = 0, lastpresence = 0;
+        static string state = "", details = "";
         void runframe()
         {
             if(!(curapis&DISCORD) || (lastframe && totalmillis-lastframe < 100)) return;
             if(!lastpresence || totalmillis-lastpresence >= 15000)  // 15s rate limit
             {
-                if(discordpresence)
+                if(discordpresence&(curpeer ? 1 : 2))
                 {
                     DiscordRichPresence discordPresence;
                     memset(&discordPresence, 0, sizeof(discordPresence));
-                    discordPresence.state = game::gamestatename(4);
-                    discordPresence.details = game::gametitle();
+
+                    if(connected()) formatstring(details, "%s on %s", game::gametitle(), mapctitle(mapname));
+                    else copystring(details, "Not playing yet");
+                    discordPresence.details = details;
+
+                    if(curpeer && *connectname) formatstring(state, "%s (%s:[%d])", game::gamestatename(3), connectname, connectport);
+                    else formatstring(state, "%s (offline)", game::gamestatename(3));
+                    discordPresence.state = state;
+
                     discordPresence.startTimestamp = 0;
                     int g = game::gametime();
-                    discordPresence.endTimestamp = g ? (time(0) + g/1000) : 0;
+                    discordPresence.endTimestamp = g ? (currenttime + g/1000) : 0;
                     discordPresence.largeImageKey = "emblem";
-                    discordPresence.smallImageKey = "player";
+
+                    //discordPresence.smallImageKey = "player";
                     //discordPresence.partyId = "party1234";
                     //discordPresence.partySize = 1;
                     //discordPresence.partyMax = 6;
@@ -308,6 +315,7 @@ namespace cdpi
                     //discordPresence.joinSecret = "join";
                     //discordPresence.spectateSecret = "look";
                     //discordPresence.instance = 0;
+
                     Discord_UpdatePresence(&discordPresence);
                 }
                 else Discord_ClearPresence();

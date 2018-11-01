@@ -23,7 +23,7 @@ enum { G_F_GSP = 0, G_F_NUM };
 
 enum { G_S_WAITING = 0, G_S_GETMAP, G_S_SENDMAP, G_S_READYING, G_S_GAMEINFO, G_S_PLAYING, G_S_OVERTIME, G_S_INTERMISSION, G_S_VOTING, G_S_MAX };
 #ifdef GAMESERVER
-const char *gamestates[5][G_S_MAX] = {
+const char *gamestates[4][G_S_MAX] = {
     { "waiting", "getmap", "sendmap", "readying", "syncing", "playing", "overtime", "intermission", "voting" },
     { "Waiting", "Getmap", "Sendmap", "Readying", "Syncing", "Playing", "Overtime", "Intermission", "Voting" },
     { "waiting to play", "server getting map", "server sending map", "readying", "syncing info", "playing", "overtime", "intermission", "voting" },
