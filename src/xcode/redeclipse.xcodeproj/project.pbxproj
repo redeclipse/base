@@ -35,7 +35,7 @@
 		B94198C309207E810029DAD1 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
 		B94198C409207E810029DAD1 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B2F67ED704C74A3F00A80002 /* OpenGL.framework */; };
 		B94198C409207E810029DAD1 /* libsteam_api.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = B2F67ED704C74A3F00A80003 /* libsteam_api.dylib */; };
-		B94198C409207E810029DAD1 /* libdiscord-rpc.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = B2F67ED704C74A3F00A80004/* libdiscord-rpc.dylib */; };
+		B94198C409207E810029DAD1 /* libdiscord-rpc.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = B2F67ED704C74A3F00A80004 /* libdiscord-rpc.dylib */; };
 		B9AC7AD00D06DB44005506F8 /* bih.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B9AC7A850D06DB44005506F8 /* bih.cpp */; };
 		B9AC7AD10D06DB44005506F8 /* bih.h in Headers */ = {isa = PBXBuildFile; fileRef = B9AC7A860D06DB44005506F8 /* bih.h */; };
 		B9AC7AD30D06DB44005506F1 /* cdpi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B9AC7A880D06DB44005506F1 /* cdpi.cpp */; };
