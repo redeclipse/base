@@ -157,7 +157,6 @@ semabuild_deploy() {
 
 semabuild_steam() {
     echo "building Steam depot..."
-    sudo ${SEMABUILD_APT} install multiarch-support libc6-i386 || return 1
     cp -Rv "${SEMABUILD_PWD}/src/install/steam" "${SEMABUILD_STEAM}" || return 1
     mkdir -p "${SEMABUILD_STEAM}/content" || return 1
     mkdir -p "${SEMABUILD_STEAM}/output" || return 1
@@ -199,10 +198,10 @@ semabuild_setup || exit 1
 #if [ "${SEMABUILD_DEPLOY}" = "true" ]; then
 #    semabuild_deploy || exit 1
     if [ "${BRANCH_NAME}" = master ]; then
+        sudo ${SEMABUILD_APT} update || return 1
+        sudo ${SEMABUILD_APT} -fy install build-essential multiarch-support gcc-multilib g++-multilib zlib1g-dev libsdl2-dev libsdl2-mixer-dev libsdl2-image-dev jq zsync || exit 1
         semabuild_steam || exit 1
     #    echo "building ${BRANCH_NAME} appimages..."
-    #    sudo ${SEMABUILD_APT} update || return 1
-    #    sudo ${SEMABUILD_APT} -fy install build-essential multiarch-support gcc-multilib g++-multilib zlib1g-dev libsdl2-dev libsdl2-mixer-dev libsdl2-image-dev jq zsync || exit 1
     #    pushd "${HOME}" || return 1
     #    semabuild_appimage || exit 1
     #    popd || return 1
