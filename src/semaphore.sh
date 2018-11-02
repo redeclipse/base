@@ -178,14 +178,13 @@ semabuild_steam() {
         popd || return 1
     done
     echo "steam" > "${SEMABUILD_STEAM}/content/branch.txt" || return 1
-	unzip -o "${SEMABUILD_DIR}/windows.zip" -d "${SEMABUILD_STEAM}/content" || return 1
+    unzip -o "${SEMABUILD_DIR}/windows.zip" -d "${SEMABUILD_STEAM}/content" || return 1
     tar --gzip --extract --verbose --overwrite --file="${SEMABUILD_DIR}/linux.tar.gz" --directory="${SEMABUILD_STEAM}/content"
     tar --gzip --extract --verbose --overwrite --file="${SEMABUILD_DIR}/macos.tar.gz" --directory="${SEMABUILD_STEAM}/content"
     pushd "${SEMABUILD_STEAM}" || return 1
     curl -sqL "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz" | tar zxvf -
     mkdir -pv "${SEMAPHORE_CACHE_DIR}/Steam" || return 1
     ln -sv "${SEMAPHORE_CACHE_DIR}/Steam" "${HOME}/Steam" || return 1
-    mkdir -pv "${SEMABUILD_STEAM}/content" || return 1
     mkdir -pv "${SEMAPHORE_CACHE_DIR}/SteamOutput" || return 1
     ln -sv "${SEMAPHORE_CACHE_DIR}/SteamOutput" "${SEMABUILD_STEAM}/output" || return 1
     chmod --verbose +x linux32/steamcmd || return 1
