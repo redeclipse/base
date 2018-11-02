@@ -157,11 +157,12 @@ semabuild_deploy() {
 
 semabuild_steam() {
     echo "building Steam depot..."
-    mkdir -p "${SEMAPHORE_CACHE_DIR}/Steam"
-    ln -s "${SEMAPHORE_CACHE_DIR}/Steam" "${HOME}/Steam"
+    mkdir -p "${SEMAPHORE_CACHE_DIR}/Steam" || return 1
+    ln -s "${SEMAPHORE_CACHE_DIR}/Steam" "${HOME}/Steam" || return 1
     cp -Rv "${SEMABUILD_PWD}/src/install/steam" "${SEMABUILD_STEAM}" || return 1
     mkdir -p "${SEMABUILD_STEAM}/content" || return 1
-    mkdir -p "${SEMABUILD_STEAM}/output" || return 1
+    mkdir -p "${SEMAPHORE_CACHE_DIR}/SteamOutput" || return 1
+    ln -s "${SEMAPHORE_CACHE_DIR}/SteamOutput" "${SEMABUILD_STEAM}/output" || return 1
     for i in ${SEMABUILD_ALLMODS}; do
         if [ "${i}" = "base" ]; then
             SEMABUILD_MODDIR="${SEMABUILD_STEAM}/content"
@@ -188,9 +189,9 @@ semabuild_steam() {
     curl -sqL "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz" | tar zxvf -
     chmod --verbose +x linux32/steamcmd || return 1
     export LD_LIBRARY_PATH="${SEMABUILD_STEAM}/linux32:${LD_LIBRARY_PATH}"
-    ./linux32/steamcmd +login redeclipsebuild ${STEAM_TOKEN} +run_app_build_http app_build_967460.vdf +quit
+    ./linux32/steamcmd +set_steam_guard_code 5VKWN +login redeclipsebuild ${STEAM_TOKEN} +run_app_build_http app_build_967460.vdf +quit
     if [ $? -eq 42 ]; then
-        ./linux32/steamcmd +login redeclipsebuild ${STEAM_TOKEN} +run_app_build_http app_build_967460.vdf +quit
+        ./linux32/steamcmd +set_steam_guard_code 5VKWN +login redeclipsebuild ${STEAM_TOKEN} +run_app_build_http app_build_967460.vdf +quit
     fi
     popd || return 1
     return 0
