@@ -2,8 +2,8 @@
 {
     "appid" "967460"
     "desc" "v2 Preview"
-    "buildoutput" "../output"
-    "contentroot" "../content"
+    "buildoutput" "output"
+    "contentroot" "content"
     "setlive" "devel"
     "preview" "0"
     "local" ""
