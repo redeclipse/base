@@ -32,11 +32,9 @@ semabuild_archive() {
     echo "archiving ${BRANCH_NAME}..."
     pushd "${SEMABUILD_DIR}/windows" || return 1
     zip -r "${SEMABUILD_DIR}/windows.zip" . || return 1
-    cp -Rv "${SEMABUILD_DIR}/windows/bin" "${HOME}/bin" || return 1
     popd || return 1
     pushd "${SEMABUILD_DIR}/linux" || return 1
     tar -zcvf "${SEMABUILD_DIR}/linux.tar.gz" . || return 1
-    cp -Rv "${SEMABUILD_DIR}/linux/bin" "${HOME}/bin" || return 1
     popd || return 1
     rm -rf "${SEMABUILD_DIR}/windows" "${SEMABUILD_DIR}/linux" || return 1
     SEMABUILD_DEPLOY="true"
@@ -158,6 +156,7 @@ semabuild_deploy() {
 }
 
 semabuild_steam() {
+    echo "building Steam depot..."
     cp -Rv "${SEMABUILD_PWD}/src/install/steam" "${SEMABUILD_STEAM}" || return 1
     mkdir -p "${SEMABUILD_STEAM}/content" || return 1
     mkdir -p "${SEMABUILD_STEAM}/output" || return 1
@@ -181,6 +180,9 @@ semabuild_steam() {
     done
     cp -Rv "${HOME}/bin" "${SEMABUILD_STEAM}/content/bin" || return 1
     echo "steam" > "${SEMABUILD_STEAM}/content/branch.txt" || return 1
+	unzip -o "${SEMABUILD_DIR}/windows.zip" -d "${SEMABUILD_STEAM}/content" || return 1
+    tar --gzip --extract --verbose --overwrite --file="${SEMABUILD_DIR}/linux.tar.gz" --directory="${SEMABUILD_STEAM}/content"
+    tar --gzip --extract --verbose --overwrite --file="${SEMABUILD_DIR}/macos.tar.gz" --directory="${SEMABUILD_STEAM}/content"
     pushd "${SEMABUILD_STEAM}" || return 1
     ./builder_linux/steamcmd.sh +login redeclipsebuild ${STEAM_TOKEN} +run_app_build_http ..\app_build_967460.vdf +quit || return 1
     popd || return 1
