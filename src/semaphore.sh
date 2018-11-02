@@ -175,7 +175,7 @@ semabuild_steam() {
         fi
         mkdir -pv "${SEMABUILD_MODDIR}" || return 1
         pushd "${SEMABUILD_GITDIR}" || return 1
-        (git archive --verbose ${SEMABUILD_ARCHBR} | tar -x -C "${SEMABUILD_MODDIR}") || return 1
+        (git archive ${SEMABUILD_ARCHBR} | tar -x -C "${SEMABUILD_MODDIR}") || return 1
         popd || return 1
     done
     echo "steam" > "${SEMABUILD_STEAM}/content/branch.txt" || return 1
@@ -183,7 +183,7 @@ semabuild_steam() {
     tar --gzip --extract --verbose --overwrite --file="${SEMABUILD_DIR}/linux.tar.gz" --directory="${SEMABUILD_STEAM}/content"
     tar --gzip --extract --verbose --overwrite --file="${SEMABUILD_DIR}/macos.tar.gz" --directory="${SEMABUILD_STEAM}/content"
     pushd "${SEMABUILD_STEAM}" || return 1
-    ./builder_linux/steamcmd.sh +login redeclipsebuild ${STEAM_TOKEN} +run_app_build_http ..\app_build_967460.vdf +quit || return 1
+    bash builder_linux/steamcmd.sh +login redeclipsebuild ${STEAM_TOKEN} +run_app_build_http ..\app_build_967460.vdf +quit || return 1
     popd || return 1
     return 0
 }
