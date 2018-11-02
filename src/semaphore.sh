@@ -2,7 +2,7 @@
 
 SEMABUILD_PWD=`pwd`
 SEMABUILD_BUILD="${HOME}/deploy"
-SEMABUILD_STEAM="${HOME}/steam"
+SEMABUILD_STEAM="${HOME}/depot"
 SEMABUILD_DIR="${SEMABUILD_BUILD}/${BRANCH_NAME}"
 SEMABUILD_APT='DEBIAN_FRONTEND=noninteractive apt-get'
 SEMABUILD_DEST="https://${GITHUB_TOKEN}:x-oauth-basic@github.com/red-eclipse/deploy.git"
@@ -157,9 +157,11 @@ semabuild_deploy() {
 
 semabuild_steam() {
     echo "building Steam depot..."
-    du -ah "${SEMAPHORE_CACHE_DIR}"
+    du -ahL "${SEMAPHORE_CACHE_DIR}"
     cp -Rv "${SEMABUILD_PWD}/src/install/steam" "${SEMABUILD_STEAM}" || return 1
     mkdir -pv "${SEMABUILD_STEAM}/content" || return 1
+    mkdir -pv "${SEMAPHORE_CACHE_DIR}/Steam-dot" || return 1
+    ln -sv "${SEMAPHORE_CACHE_DIR}/Steam-dot" "${HOME}/.steam" || return 1
     mkdir -pv "${SEMAPHORE_CACHE_DIR}/Steam" || return 1
     ln -sv "${SEMAPHORE_CACHE_DIR}/Steam" "${HOME}/Steam" || return 1
     for i in linux32 linux64 output package public; do
@@ -198,7 +200,7 @@ semabuild_steam() {
     if [ $? -eq 42 ]; then
         ./linux32/steamcmd +set_steam_guard_code NHHNX +login redeclipsebuild ${STEAM_TOKEN} +run_app_build_http app_build_967460.vdf +quit
     fi
-    du -ah .
+    du -ahL .
     popd || return 1
     return 0
 }
