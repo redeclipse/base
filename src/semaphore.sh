@@ -157,6 +157,8 @@ semabuild_deploy() {
 
 semabuild_steam() {
     echo "building Steam depot..."
+    mkdir -p "${SEMAPHORE_CACHE_DIR}/Steam"
+    ln -s "${SEMAPHORE_CACHE_DIR}/Steam" "${HOME}/Steam"
     cp -Rv "${SEMABUILD_PWD}/src/install/steam" "${SEMABUILD_STEAM}" || return 1
     mkdir -p "${SEMABUILD_STEAM}/content" || return 1
     mkdir -p "${SEMABUILD_STEAM}/output" || return 1
