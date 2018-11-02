@@ -157,6 +157,7 @@ semabuild_deploy() {
 
 semabuild_steam() {
     echo "building Steam depot..."
+    sudo ${SEMABUILD_APT} install libc6-i386 || return 1
     cp -Rv "${SEMABUILD_PWD}/src/install/steam" "${SEMABUILD_STEAM}" || return 1
     mkdir -p "${SEMABUILD_STEAM}/content" || return 1
     mkdir -p "${SEMABUILD_STEAM}/output" || return 1
