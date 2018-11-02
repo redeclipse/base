@@ -157,6 +157,7 @@ semabuild_deploy() {
 
 semabuild_steam() {
     echo "building Steam depot..."
+    cp -Rv "${SEMABUILD_PWD}/src/install/steam" "${SEMABUILD_STEAM}" || return 1
     mkdir -pv "${SEMABUILD_STEAM}/content" || return 1
     for i in ${SEMABUILD_ALLMODS}; do
         if [ "${i}" = "base" ]; then
@@ -184,7 +185,6 @@ semabuild_steam() {
     curl -sqL "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz" | tar zxvf -
     mkdir -pv "${SEMAPHORE_CACHE_DIR}/Steam" || return 1
     ln -sv "${SEMAPHORE_CACHE_DIR}/Steam" "${HOME}/Steam" || return 1
-    cp -Rv "${SEMABUILD_PWD}/src/install/steam" "${SEMABUILD_STEAM}" || return 1
     mkdir -pv "${SEMABUILD_STEAM}/content" || return 1
     mkdir -pv "${SEMAPHORE_CACHE_DIR}/SteamOutput" || return 1
     ln -sv "${SEMAPHORE_CACHE_DIR}/SteamOutput" "${SEMABUILD_STEAM}/output" || return 1
