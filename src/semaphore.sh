@@ -4,7 +4,7 @@ SEMABUILD_PWD=`pwd`
 SEMABUILD_BUILD="${HOME}/deploy"
 SEMABUILD_STEAM="${HOME}/steam"
 SEMABUILD_DIR="${SEMABUILD_BUILD}/${BRANCH_NAME}"
-SEMABUILD_APT='DEBIAN_FRONTEND=noninteractive apt-get'
+SEMABUILD_APT='DEBIAN_FRONTEND=noninteractive apt-get inst'
 SEMABUILD_DEST="https://${GITHUB_TOKEN}:x-oauth-basic@github.com/red-eclipse/deploy.git"
 SEMABUILD_SOURCE="https://raw.githubusercontent.com/red-eclipse/deploy/master"
 SEMABUILD_APPIMAGE="https://github.com/red-eclipse/appimage-builder.git"
@@ -157,12 +157,7 @@ semabuild_deploy() {
 
 semabuild_steam() {
     echo "building Steam depot..."
-    mkdir -pv "${SEMAPHORE_CACHE_DIR}/Steam" || return 1
-    ln -sv "${SEMAPHORE_CACHE_DIR}/Steam" "${HOME}/Steam" || return 1
-    cp -Rv "${SEMABUILD_PWD}/src/install/steam" "${SEMABUILD_STEAM}" || return 1
     mkdir -pv "${SEMABUILD_STEAM}/content" || return 1
-    mkdir -pv "${SEMAPHORE_CACHE_DIR}/SteamOutput" || return 1
-    ln -sv "${SEMAPHORE_CACHE_DIR}/SteamOutput" "${SEMABUILD_STEAM}/output" || return 1
     for i in ${SEMABUILD_ALLMODS}; do
         if [ "${i}" = "base" ]; then
             SEMABUILD_MODDIR="${SEMABUILD_STEAM}/content"
@@ -187,11 +182,17 @@ semabuild_steam() {
     tar --gzip --extract --verbose --overwrite --file="${SEMABUILD_DIR}/macos.tar.gz" --directory="${SEMABUILD_STEAM}/content"
     pushd "${SEMABUILD_STEAM}" || return 1
     curl -sqL "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz" | tar zxvf -
+    mkdir -pv "${SEMAPHORE_CACHE_DIR}/Steam" || return 1
+    ln -sv "${SEMAPHORE_CACHE_DIR}/Steam" "${HOME}/Steam" || return 1
+    cp -Rv "${SEMABUILD_PWD}/src/install/steam" "${SEMABUILD_STEAM}" || return 1
+    mkdir -pv "${SEMABUILD_STEAM}/content" || return 1
+    mkdir -pv "${SEMAPHORE_CACHE_DIR}/SteamOutput" || return 1
+    ln -sv "${SEMAPHORE_CACHE_DIR}/SteamOutput" "${SEMABUILD_STEAM}/output" || return 1
     chmod --verbose +x linux32/steamcmd || return 1
     export LD_LIBRARY_PATH="${SEMABUILD_STEAM}/linux32:${LD_LIBRARY_PATH}"
-    ./linux32/steamcmd +login redeclipsebuild ${STEAM_TOKEN} +run_app_build_http app_build_967460.vdf +quit
+    ./linux32/steamcmd +set_steam_guard_code 3P53X +login redeclipsebuild ${STEAM_TOKEN} +run_app_build_http app_build_967460.vdf +quit
     if [ $? -eq 42 ]; then
-        ./linux32/steamcmd +login redeclipsebuild ${STEAM_TOKEN} +run_app_build_http app_build_967460.vdf +quit
+        ./linux32/steamcmd +set_steam_guard_code 3P53X +login redeclipsebuild ${STEAM_TOKEN} +run_app_build_http app_build_967460.vdf +quit
     fi
     popd || return 1
     return 0
