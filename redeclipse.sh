@@ -151,6 +151,9 @@ redeclipse_runit() {
             Linux|FreeBSD)
                 export LD_LIBRARY_PATH="${REDECLIPSE_PATH}/bin/${REDECLIPSE_ARCH}:${LD_LIBRARY_PATH}"
                 ;;
+            Darwin)
+                export DYLD_LIBRARY_PATH="${REDECLIPSE_PATH}/bin/redeclipse.app/Contents/Frameworks:${DYLD_LIBRARY_PATH}"
+                ;;
         esac
 
         exec "${REDECLIPSE_PATH}/bin/${REDECLIPSE_ARCH}/${REDECLIPSE_BINARY}${REDECLIPSE_SUFFIX}" ${REDECLIPSE_OPTIONS} ${REDECLIPSE_ARGS} || (

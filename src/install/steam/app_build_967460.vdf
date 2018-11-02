@@ -1,0 +1,14 @@
+"appbuild"
+{
+    "appid" "967460"
+    "desc" "v2 Preview"
+    "buildoutput" "../output"
+    "contentroot" "../content"
+    "setlive" "devel"
+    "preview" "0"
+    "local" ""
+    "depots"
+    {
+        "967461" "depot_build_967461.vdf"
+    }
+}

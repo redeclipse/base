@@ -2,6 +2,7 @@
 
 SEMABUILD_PWD=`pwd`
 SEMABUILD_BUILD="${HOME}/deploy"
+SEMABUILD_STEAM="${HOME}/steam"
 SEMABUILD_DIR="${SEMABUILD_BUILD}/${BRANCH_NAME}"
 SEMABUILD_APT='DEBIAN_FRONTEND=noninteractive apt-get'
 SEMABUILD_DEST="https://${GITHUB_TOKEN}:x-oauth-basic@github.com/red-eclipse/deploy.git"
@@ -31,9 +32,11 @@ semabuild_archive() {
     echo "archiving ${BRANCH_NAME}..."
     pushd "${SEMABUILD_DIR}/windows" || return 1
     zip -r "${SEMABUILD_DIR}/windows.zip" . || return 1
+    cp -Rv "${SEMABUILD_DIR}/windows/bin" "${HOME}/bin" || return 1
     popd || return 1
     pushd "${SEMABUILD_DIR}/linux" || return 1
     tar -zcvf "${SEMABUILD_DIR}/linux.tar.gz" . || return 1
+    cp -Rv "${SEMABUILD_DIR}/linux/bin" "${HOME}/bin" || return 1
     popd || return 1
     rm -rf "${SEMABUILD_DIR}/windows" "${SEMABUILD_DIR}/linux" || return 1
     SEMABUILD_DEPLOY="true"
@@ -154,17 +157,48 @@ semabuild_deploy() {
     return 0
 }
 
+semabuild_steam() {
+    cp -Rv "${SEMABUILD_PWD}/src/install/steam" "${SEMABUILD_STEAM}" || return 1
+    mkdir -p "${SEMABUILD_STEAM}/content" || return 1
+    mkdir -p "${SEMABUILD_STEAM}/output" || return 1
+    for i in ${SEMABUILD_ALLMODS}; do
+        if [ "${i}" = "base" ]; then
+            SEMABUILD_MODDIR="${SEMABUILD_STEAM}/content"
+            SEMABUILD_GITDIR="${SEMABUILD_PWD}"
+            SEMABUILD_ARCHBR="${BRANCH_NAME}"
+        else
+            SEMABUILD_MODDIR="${SEMABUILD_STEAM}/content/data/${i}"
+            SEMABUILD_GITDIR="${SEMABUILD_PWD}/data/${i}"
+            git submodule update --init --depth 1 "data/${i}" || return 1
+            pushd "${SEMABUILD_GITDIR}" || return 1
+            SEMABUILD_ARCHBR=`git rev-parse HEAD`
+            popd || return 1
+        fi
+        mkdir -pv "${SEMABUILD_MODDIR}" || return 1
+        pushd "${SEMABUILD_GITDIR}" || return 1
+        (git archive --verbose ${SEMABUILD_ARCHBR} | tar -x -C "${SEMABUILD_MODDIR}") || return 1
+        popd || return 1
+    done
+    cp -Rv "${HOME}/bin" "${SEMABUILD_STEAM}/content/bin" || return 1
+    echo "steam" > "${SEMABUILD_STEAM}/content/branch.txt" || return 1
+    pushd "${SEMABUILD_STEAM}" || return 1
+    ./builder_linux/steamcmd.sh +login redeclipsebuild ${STEAM_TOKEN} +run_app_build_http ..\app_build_967460.vdf +quit || return 1
+    popd || return 1
+    return 0
+}
+
 semabuild_setup || exit 1
 semabuild_process || exit 1
 if [ "${SEMABUILD_DEPLOY}" = "true" ]; then
     semabuild_deploy || exit 1
-    #if [ "${BRANCH_NAME}" = master ] || [ "${BRANCH_NAME}" = stable ]; then
+    if [ "${BRANCH_NAME}" = master ]; then
+        semabuild_steam || exit 1
     #    echo "building ${BRANCH_NAME} appimages..."
     #    sudo ${SEMABUILD_APT} update || return 1
     #    sudo ${SEMABUILD_APT} -fy install build-essential multiarch-support gcc-multilib g++-multilib zlib1g-dev libsdl2-dev libsdl2-mixer-dev libsdl2-image-dev jq zsync || exit 1
     #    pushd "${HOME}" || return 1
     #    semabuild_appimage || exit 1
     #    popd || return 1
-    #fi
+    fi
 fi
 echo "done."
