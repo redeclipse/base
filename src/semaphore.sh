@@ -178,7 +178,6 @@ semabuild_steam() {
         (git archive --verbose ${SEMABUILD_ARCHBR} | tar -x -C "${SEMABUILD_MODDIR}") || return 1
         popd || return 1
     done
-    cp -Rv "${HOME}/bin" "${SEMABUILD_STEAM}/content/bin" || return 1
     echo "steam" > "${SEMABUILD_STEAM}/content/branch.txt" || return 1
 	unzip -o "${SEMABUILD_DIR}/windows.zip" -d "${SEMABUILD_STEAM}/content" || return 1
     tar --gzip --extract --verbose --overwrite --file="${SEMABUILD_DIR}/linux.tar.gz" --directory="${SEMABUILD_STEAM}/content"
