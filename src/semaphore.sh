@@ -202,13 +202,9 @@ semabuild_steam() {
         chmod --verbose +x linux32/steamcmd || return 1
     fi
     export LD_LIBRARY_PATH="${SEMABUILD_STEAM}/linux32:${LD_LIBRARY_PATH}"
-    ./linux32/steamcmd +set_steam_guard_code VK85H +quit
+    ./linux32/steamcmd +set_steam_guard_code MPK23 +login redeclipsebuild ${STEAM_TOKEN} +run_app_build_http app_build_967460.vdf +quit
     if [ $? -eq 42 ]; then
-        ./linux32/steamcmd +set_steam_guard_code VK85H +quit
-    fi
-    ./linux32/steamcmd +login redeclipsebuild ${STEAM_TOKEN} +run_app_build_http app_build_967460.vdf +quit
-    if [ $? -eq 42 ]; then
-        ./linux32/steamcmd +login redeclipsebuild ${STEAM_TOKEN} +run_app_build_http app_build_967460.vdf +quit
+        ./linux32/steamcmd +set_steam_guard_code MPK23 +login redeclipsebuild ${STEAM_TOKEN} +run_app_build_http app_build_967460.vdf +quit
     fi
     popd || return 1
     return 0
