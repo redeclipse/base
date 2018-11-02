@@ -159,6 +159,18 @@ semabuild_steam() {
     echo "building Steam depot..."
     cp -Rv "${SEMABUILD_PWD}/src/install/steam" "${SEMABUILD_STEAM}" || return 1
     mkdir -pv "${SEMABUILD_STEAM}/content" || return 1
+    mkdir -pv "${SEMAPHORE_CACHE_DIR}/Steam" || return 1
+    ln -sv "${SEMAPHORE_CACHE_DIR}/Steam" "${HOME}/Steam" || return 1
+    mkdir -pv "${SEMAPHORE_CACHE_DIR}/SteamOutput" || return 1
+    ln -sv "${SEMAPHORE_CACHE_DIR}/SteamOutput" "${SEMABUILD_STEAM}/output" || return 1
+    mkdir -pv "${SEMAPHORE_CACHE_DIR}/SteamBuilder/linux32" || return 1
+    ln -sv "${SEMAPHORE_CACHE_DIR}/SteamBuilder/linux32" "${SEMABUILD_STEAM}/linux32" || return 1
+    mkdir -pv "${SEMAPHORE_CACHE_DIR}/SteamBuilder/linux64" || return 1
+    ln -sv "${SEMAPHORE_CACHE_DIR}/SteamBuilder/linux64" "${SEMABUILD_STEAM}/linux64" || return 1
+    mkdir -pv "${SEMAPHORE_CACHE_DIR}/SteamBuilder/package" || return 1
+    ln -sv "${SEMAPHORE_CACHE_DIR}/SteamBuilder/package" "${SEMABUILD_STEAM}/package" || return 1
+    mkdir -pv "${SEMAPHORE_CACHE_DIR}/SteamBuilder/public" || return 1
+    ln -sv "${SEMAPHORE_CACHE_DIR}/SteamBuilder/public" "${SEMABUILD_STEAM}/public" || return 1
     for i in ${SEMABUILD_ALLMODS}; do
         if [ "${i}" = "base" ]; then
             SEMABUILD_MODDIR="${SEMABUILD_STEAM}/content"
@@ -182,16 +194,17 @@ semabuild_steam() {
     tar --gzip --extract --verbose --overwrite --file="${SEMABUILD_DIR}/linux.tar.gz" --directory="${SEMABUILD_STEAM}/content"
     tar --gzip --extract --verbose --overwrite --file="${SEMABUILD_DIR}/macos.tar.gz" --directory="${SEMABUILD_STEAM}/content"
     pushd "${SEMABUILD_STEAM}" || return 1
-    curl -sqL "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz" | tar zxvf -
-    mkdir -pv "${SEMAPHORE_CACHE_DIR}/Steam" || return 1
-    ln -sv "${SEMAPHORE_CACHE_DIR}/Steam" "${HOME}/Steam" || return 1
-    mkdir -pv "${SEMAPHORE_CACHE_DIR}/SteamOutput" || return 1
-    ln -sv "${SEMAPHORE_CACHE_DIR}/SteamOutput" "${SEMABUILD_STEAM}/output" || return 1
-    chmod --verbose +x linux32/steamcmd || return 1
+    for i in *; do
+        if [ -e "${i}" ]; then ls -la "${i}"; fi
+    done
+    if [ ! -e "linux32/steamcmd" ]; then
+        curl -sqL "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz" | tar zxvf -
+        chmod --verbose +x linux32/steamcmd || return 1
+    fi
     export LD_LIBRARY_PATH="${SEMABUILD_STEAM}/linux32:${LD_LIBRARY_PATH}"
-    ./linux32/steamcmd +set_steam_guard_code VK85H
+    ./linux32/steamcmd +set_steam_guard_code VK85H +quit
     if [ $? -eq 42 ]; then
-        ./linux32/steamcmd +set_steam_guard_code VK85H
+        ./linux32/steamcmd +set_steam_guard_code VK85H +quit
     fi
     ./linux32/steamcmd +login redeclipsebuild ${STEAM_TOKEN} +run_app_build_http app_build_967460.vdf +quit
     if [ $? -eq 42 ]; then
