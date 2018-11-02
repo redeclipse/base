@@ -193,19 +193,20 @@ semabuild_steam() {
         curl -sqL "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz" | tar zxvf -
         chmod --verbose +x linux32/steamcmd || return 1
     fi
-    export LD_LIBRARY_PATH="${SEMABUILD_STEAM}/linux32:${LD_LIBRARY_PATH}"
+    export LD_LIBRARY_PATH="${SEMABUILD_STEAM}/linux32:${SEMABUILD_STEAM}/linux64:${LD_LIBRARY_PATH}"
     ./linux32/steamcmd +set_steam_guard_code NHHNX +login redeclipsebuild ${STEAM_TOKEN} +run_app_build_http app_build_967460.vdf +quit
     if [ $? -eq 42 ]; then
         ./linux32/steamcmd +set_steam_guard_code NHHNX +login redeclipsebuild ${STEAM_TOKEN} +run_app_build_http app_build_967460.vdf +quit
     fi
+    du -ah .
     popd || return 1
     return 0
 }
 
 semabuild_setup || exit 1
-semabuild_process || exit 1
-if [ "${SEMABUILD_DEPLOY}" = "true" ]; then
-    semabuild_deploy || exit 1
+#semabuild_process || exit 1
+#if [ "${SEMABUILD_DEPLOY}" = "true" ]; then
+#    semabuild_deploy || exit 1
     if [ "${BRANCH_NAME}" = master ]; then
         sudo ${SEMABUILD_APT} update || return 1
         sudo ${SEMABUILD_APT} -fy install build-essential multiarch-support gcc-multilib g++-multilib zlib1g-dev libsdl2-dev libsdl2-mixer-dev libsdl2-image-dev jq zsync || exit 1
@@ -215,5 +216,5 @@ if [ "${SEMABUILD_DEPLOY}" = "true" ]; then
     #    semabuild_appimage || exit 1
     #    popd || return 1
     fi
-fi
+#fi
 echo "done."
