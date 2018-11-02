@@ -181,11 +181,7 @@ semabuild_steam() {
         fi
         mkdir -pv "${SEMABUILD_MODDIR}" || return 1
         pushd "${SEMABUILD_GITDIR}" || return 1
-        (git archive ${SEMABUILD_ARCHBR} | tar -x -C "${SEMABUILD_MODDIR}") || return 1
-        if [ "${i}" = "base" ]; then
-            rm -rfv "${SEMABUILD_MODDIR}/bin/redeclipse.app" || return 1
-            cp -Rv "${SEMABUILD_GITDIR}/bin/redeclipse.app" "${SEMABUILD_MODDIR}/bin/redeclipse.app" || return 1
-        fi
+        (git archive ${SEMABUILD_ARCHBR} | tar -xp -C "${SEMABUILD_MODDIR}") || return 1
         popd || return 1
     done
     echo "steam" > "${SEMABUILD_STEAM}/content/branch.txt" || return 1
