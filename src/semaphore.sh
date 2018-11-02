@@ -4,7 +4,7 @@ SEMABUILD_PWD=`pwd`
 SEMABUILD_BUILD="${HOME}/deploy"
 SEMABUILD_STEAM="${HOME}/steam"
 SEMABUILD_DIR="${SEMABUILD_BUILD}/${BRANCH_NAME}"
-SEMABUILD_APT='DEBIAN_FRONTEND=noninteractive apt-get inst'
+SEMABUILD_APT='DEBIAN_FRONTEND=noninteractive apt-get'
 SEMABUILD_DEST="https://${GITHUB_TOKEN}:x-oauth-basic@github.com/red-eclipse/deploy.git"
 SEMABUILD_SOURCE="https://raw.githubusercontent.com/red-eclipse/deploy/master"
 SEMABUILD_APPIMAGE="https://github.com/red-eclipse/appimage-builder.git"
