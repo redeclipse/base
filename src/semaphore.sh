@@ -183,13 +183,16 @@ semabuild_steam() {
     tar --gzip --extract --verbose --overwrite --file="${SEMABUILD_DIR}/linux.tar.gz" --directory="${SEMABUILD_STEAM}/content"
     tar --gzip --extract --verbose --overwrite --file="${SEMABUILD_DIR}/macos.tar.gz" --directory="${SEMABUILD_STEAM}/content"
     pushd "${SEMABUILD_STEAM}" || return 1
-    chmod +x builder_linux/steamcmd.sh builder_linux/linux32/steamcmd || return 1
+    chmod --verbose +x builder_linux/linux32/steamcmd || return 1
     du -sh *
+    pwd
+    ls -la .
     ls -la builder_linux
     ls -la builder_linux/linux32
-    LD_LIBRARY_PATH="${SEMABUILD_STEAM}/builder_linux/linux32:${LD_LIBRARY_PATH}" ".${SEMABUILD_STEAM}/builder_linux/linux32/steamcmd" +login redeclipsebuild ${STEAM_TOKEN} +run_app_build_http ../app_build_967460.vdf +quit
+    export LD_LIBRARY_PATH="${SEMABUILD_STEAM}/builder_linux/linux32:${LD_LIBRARY_PATH}"
+    ./builder_linux/linux32/steamcmd +login redeclipsebuild ${STEAM_TOKEN} +run_app_build_http ../app_build_967460.vdf +quit
     if [ $? -eq 42 ]; then
-        LD_LIBRARY_PATH="${SEMABUILD_STEAM}/builder_linux/linux32:${LD_LIBRARY_PATH}" ".${SEMABUILD_STEAM}/builder_linux/linux32/steamcmd" +login redeclipsebuild ${STEAM_TOKEN} +run_app_build_http ../app_build_967460.vdf +quit || return 1
+        ./builder_linux/linux32/steamcmd +login redeclipsebuild ${STEAM_TOKEN} +run_app_build_http ../app_build_967460.vdf +quit
     fi
     popd || return 1
     return 0
