@@ -157,7 +157,6 @@ semabuild_deploy() {
 
 semabuild_steam() {
     echo "building Steam depot..."
-    du -ahL "${SEMAPHORE_CACHE_DIR}"
     cp -Rv "${SEMABUILD_PWD}/src/install/steam" "${SEMABUILD_STEAM}" || return 1
     mkdir -pv "${SEMAPHORE_CACHE_DIR}/Steam-dot" || return 1
     ln -sv "${SEMAPHORE_CACHE_DIR}/Steam-dot" "${HOME}/.steam" || return 1
@@ -182,7 +181,11 @@ semabuild_steam() {
         fi
         mkdir -pv "${SEMABUILD_MODDIR}" || return 1
         pushd "${SEMABUILD_GITDIR}" || return 1
-        (git archive ${SEMABUILD_ARCHBR} | tar -x -h -C "${SEMABUILD_MODDIR}") || return 1
+        (git archive ${SEMABUILD_ARCHBR} | tar -x -C "${SEMABUILD_MODDIR}") || return 1
+        if [ "${i}" = "base" ]; then
+            rm -rfv "${SEMABUILD_MODDIR}/bin/redeclipse.app" || return 1
+            cp -Rv "${SEMABUILD_GITDIR}/bin/redeclipse.app" "${SEMABUILD_MODDIR}/bin/redeclipse.app" || return 1
+        fi
         popd || return 1
     done
     echo "steam" > "${SEMABUILD_STEAM}/content/branch.txt" || return 1
