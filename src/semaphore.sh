@@ -187,7 +187,10 @@ semabuild_steam() {
     du -sh *
     ls -la builder_linux
     ls -la builder_linux/linux32
-    bash builder_linux/steamcmd.sh +login redeclipsebuild ${STEAM_TOKEN} +run_app_build_http ..\app_build_967460.vdf +quit || return 1
+    LD_LIBRARY_PATH="${SEMABUILD_STEAM}/builder_linux/linux32:${LD_LIBRARY_PATH}" ".${SEMABUILD_STEAM}/builder_linux/linux32/steamcmd" +login redeclipsebuild ${STEAM_TOKEN} +run_app_build_http ../app_build_967460.vdf +quit
+    if [ $? -eq 42 ]; then
+        LD_LIBRARY_PATH="${SEMABUILD_STEAM}/builder_linux/linux32:${LD_LIBRARY_PATH}" ".${SEMABUILD_STEAM}/builder_linux/linux32/steamcmd" +login redeclipsebuild ${STEAM_TOKEN} +run_app_build_http ../app_build_967460.vdf +quit || return 1
+    fi
     popd || return 1
     return 0
 }
