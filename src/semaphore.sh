@@ -157,7 +157,7 @@ semabuild_deploy() {
 
 semabuild_steam() {
     echo "building Steam depot..."
-    sudo ${SEMABUILD_APT} install libc6-i386 || return 1
+    sudo ${SEMABUILD_APT} install multiarch-support || return 1
     cp -Rv "${SEMABUILD_PWD}/src/install/steam" "${SEMABUILD_STEAM}" || return 1
     mkdir -p "${SEMABUILD_STEAM}/content" || return 1
     mkdir -p "${SEMABUILD_STEAM}/output" || return 1
@@ -185,11 +185,6 @@ semabuild_steam() {
     tar --gzip --extract --verbose --overwrite --file="${SEMABUILD_DIR}/macos.tar.gz" --directory="${SEMABUILD_STEAM}/content"
     pushd "${SEMABUILD_STEAM}" || return 1
     chmod --verbose +x builder_linux/linux32/steamcmd || return 1
-    du -sh *
-    pwd
-    ls -la .
-    ls -la builder_linux
-    ls -la builder_linux/linux32
     export LD_LIBRARY_PATH="${SEMABUILD_STEAM}/builder_linux/linux32:${LD_LIBRARY_PATH}"
     ./builder_linux/linux32/steamcmd +login redeclipsebuild ${STEAM_TOKEN} +run_app_build_http ../app_build_967460.vdf +quit
     if [ $? -eq 42 ]; then
