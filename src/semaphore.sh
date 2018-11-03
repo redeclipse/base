@@ -181,9 +181,11 @@ semabuild_steam() {
         fi
         mkdir -pv "${SEMABUILD_MODDIR}" || return 1
         pushd "${SEMABUILD_GITDIR}" || return 1
-        if [ "${i}" = "base" ]; then make -C src clean; fi
-        cp -RLv "${SEMABUILD_GITDIR}" "${SEMABUILD_MODDIR}" || return 1
-        #(git archive ${SEMABUILD_ARCHBR} | tar --extract --dereference --hard-dereference --directory="${SEMABUILD_MODDIR}") || return 1
+        (git archive ${SEMABUILD_ARCHBR} | tar -x -C "${SEMABUILD_MODDIR}") || return 1
+        if [ "${i}" = "base" ]; then
+            rm -rfv "${SEMABUILD_MODDIR}/bin/redeclipse.app" "${SEMABUILD_MODDIR}/readme.md" || return 1
+            cp -RLfv "${SEMABUILD_GITDIR}/bin/redeclipse.app" "${SEMABUILD_MODDIR}/bin/redeclipse.app" || return 1
+        fi
         popd || return 1
     done
     echo "steam" > "${SEMABUILD_STEAM}/content/branch.txt" || return 1
@@ -191,7 +193,6 @@ semabuild_steam() {
     tar --gzip --extract --verbose --overwrite --file="${SEMABUILD_DIR}/linux.tar.gz" --directory="${SEMABUILD_STEAM}/content"
     tar --gzip --extract --verbose --overwrite --file="${SEMABUILD_DIR}/macos.tar.gz" --directory="${SEMABUILD_STEAM}/content"
     pushd "${SEMABUILD_STEAM}" || return 1
-    find content -iname ".git" -or -iname "*.lo" -or -iname "*.gch" -or -iname "*.o" -exec rm -rfv "{}" \; || return 1
     curl -sqL "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz" | tar zxvf -
     chmod --verbose +x linux32/steamcmd || return 1
     export LD_LIBRARY_PATH="${SEMABUILD_STEAM}/linux32:${SEMABUILD_STEAM}/linux64:${LD_LIBRARY_PATH}"
