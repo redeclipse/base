@@ -65,7 +65,7 @@ GVAR(IDF_MODERATOR, varslock, 0, PRIV_SUPPORTER, PRIV_MAX);
 
 GVAR(IDF_ADMIN, queryinterval, 0, 5000, VAR_MAX); // rebuild client list for server queries this often
 GVAR(IDF_ADMIN, masterinterval, 300000, 300000, VAR_MAX); // keep connection alive every this often
-GVAR(IDF_ADMIN, connecttimeout, 5000, 15000, VAR_MAX); // disconnected when attempt exceeds this time
+GVAR(IDF_ADMIN, connecttimeout, 5000, 30000, VAR_MAX); // disconnected when attempt exceeds this time
 GVAR(IDF_ADMIN, allowtimeout, 0, 3600000, VAR_MAX); // temporary allows last this long
 GVAR(IDF_ADMIN, bantimeout, 0, 14400000, VAR_MAX); // temporary bans last this long
 GVAR(IDF_ADMIN, mutetimeout, 0, 3600000, VAR_MAX); // temporary mutes last this long

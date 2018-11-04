@@ -635,6 +635,7 @@ void localconnect(bool force)
         copystring(c.hostip, "127.0.0.1");
         conoutf("\fgLocal client %d connected", c.num);
         client::gameconnect(false);
+        cdpi::clientconnect();
         server::clientconnect(c.num, 0, true);
     }
 }

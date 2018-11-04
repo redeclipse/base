@@ -188,6 +188,7 @@ void disconnect(bool onlyclean, bool async)
     {
         client::gamedisconnect(onlyclean);
         localdisconnect();
+        cdpi::clientdisconnect();
     }
     if(!onlyclean) localconnect(false);
 }
@@ -272,6 +273,7 @@ void gets2c()           // get updates from the server
             throttle();
             if(rate) setrate(rate);
             client::gameconnect(true);
+            cdpi::clientconnect();
             break;
 
         case ENET_EVENT_TYPE_RECEIVE:

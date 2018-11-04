@@ -4,7 +4,7 @@
 #include "engine.h"
 
 #define VERSION_GAMEID "fps"
-#define VERSION_GAME 237
+#define VERSION_GAME 238
 #define VERSION_DEMOMAGIC "RED_ECLIPSE_DEMO"
 
 #define MAXAI 256
@@ -349,7 +349,15 @@ enum
     N_DEMOPLAYBACK, N_RECORDDEMO, N_STOPDEMO, N_CLEARDEMOS,
     N_CLIENT, N_RELOAD, N_REGEN, N_INITAI, N_MAPCRC,
     N_SETPLAYERINFO, N_SWITCHTEAM, N_AUTHTRY, N_AUTHCHAL, N_AUTHANS, N_QUEUEPOS,
+    N_STEAMCHAL, N_STEAMANS, N_STEAMFAIL,
     NUMMSG
+};
+
+enum
+{
+    SS_F_NONE = 0,
+    SS_F_STEAMAUTH = 1<<0,
+    SS_F_ALL = SS_F_STEAMAUTH
 };
 
 #ifdef GAMESERVER
@@ -357,7 +365,7 @@ char msgsizelookup(int msg)
 {
     static const int msgsizes[] =               // size inclusive message token, 0 for variable or not-checked sizes
     {
-        N_CONNECT, 0, N_SERVERINIT, 4, N_WELCOME, 2, N_CLIENTINIT, 0, N_POS, 0, N_SPHY, 0, N_TEXT, 0, N_COMMAND, 0, N_ANNOUNCE, 0, N_DISCONNECT, 3,
+        N_CONNECT, 0, N_SERVERINIT, 5, N_WELCOME, 2, N_CLIENTINIT, 0, N_POS, 0, N_SPHY, 0, N_TEXT, 0, N_COMMAND, 0, N_ANNOUNCE, 0, N_DISCONNECT, 3,
         N_SHOOT, 0, N_DESTROY, 0, N_STICKY, 0, N_SUICIDE, 4, N_DIED, 0, N_POINTS, 5, N_TOTALS, 0, N_AVGPOS, 0, N_DAMAGE, 14, N_SHOTFX, 0,
         N_LOADW, 0, N_TRYSPAWN, 2, N_SPAWNSTATE, 0, N_SPAWN, 0, N_DROP, 0, N_WSELECT, 0,
         N_MAPCHANGE, 0, N_MAPVOTE, 0, N_CLEARVOTE, 0, N_CHECKPOINT, 0, N_ITEMSPAWN, 3, N_ITEMUSE, 0, N_TRIGGER, 0, N_EXECLINK, 3,
@@ -373,6 +381,7 @@ char msgsizelookup(int msg)
         N_DEMOPLAYBACK, 3, N_RECORDDEMO, 2, N_STOPDEMO, 1, N_CLEARDEMOS, 2,
         N_CLIENT, 0, N_RELOAD, 0, N_REGEN, 0, N_INITAI, 0, N_MAPCRC, 0,
         N_SETPLAYERINFO, 0, N_SWITCHTEAM, 0, N_AUTHTRY, 0, N_AUTHCHAL, 0, N_AUTHANS, 0, N_QUEUEPOS, 0,
+        N_STEAMCHAL, 0, N_STEAMANS, 0, N_STEAMFAIL, 0,
         -1
     };
     static int sizetable[NUMMSG] = { -1 };
@@ -1121,7 +1130,7 @@ struct gameent : dynent, clientstate
     float deltayaw, deltapitch, newyaw, newpitch, turnyaw, turnroll, stunscale, stungravity;
     vec head, torso, muzzle, origin, eject[2], waist, jet[3], legs, hrad, trad, lrad, toe[2];
     bool action[AC_MAX], conopen, k_up, k_down, k_left, k_right, obliterated, headless;
-    string hostip, name, handle, info, obit;
+    string hostip, name, handle, steamid, info, obit;
     vector<gameent *> dominating, dominated;
     vector<eventicon> icons;
     vector<stunevent> stuns;
@@ -1134,7 +1143,7 @@ struct gameent : dynent, clientstate
         state = CS_DEAD;
         type = ENT_PLAYER;
         copystring(hostip, "0.0.0.0");
-        name[0] = handle[0] = info[0] = obit[0] = '\0';
+        name[0] = handle[0] = steamid[0] = info[0] = obit[0] = '\0';
         removesounds();
         inittags();
         respawn(-1, 0, 0);

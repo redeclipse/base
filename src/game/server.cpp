@@ -412,10 +412,10 @@ namespace server
 
     struct clientinfo : servstate
     {
-        string name, handle, mapvote, authname, clientmap;
+        string name, handle, steamid, mapvote, authname, authsteam, clientmap;
         int clientnum, connectmillis, sessionid, overflow, ping, team, lastteam, lastplayerinfo,
             modevote, mutsvote, lastvote, privilege, oldprivilege, gameoffset, lastevent, wslen, swapteam, clientcrc;
-        bool connected, ready, local, timesync, online, wantsmap, gettingmap, connectauth, kicked, needsresume;
+        bool connected, ready, local, timesync, online, wantsmap, gettingmap, connectauth, connectsteam, kicked, needsresume;
         vector<gameevent *> events;
         vector<uchar> position, messages;
         uchar *wsdata;
@@ -461,10 +461,10 @@ namespace server
         void reset()
         {
             ping = lastplayerinfo = 0;
-            name[0] = handle[0] = '\0';
+            name[0] = handle[0] = steamid[0] = '\0';
             privilege = PRIV_NONE;
             oldprivilege = -1;
-            connected = ready = local = online = wantsmap = gettingmap = connectauth = kicked = false;
+            connected = ready = local = online = wantsmap = gettingmap = connectauth = connectsteam = kicked = false;
             authreq = 0;
             position.setsize(0);
             messages.setsize(0);
@@ -521,7 +521,7 @@ namespace server
     struct savedscore
     {
         uint ip;
-        string name, handle;
+        string name, handle, steamid;
         int points, frags, deaths, localtotalpoints, localtotalfrags, localtotaldeaths, spree, rewards, timeplayed, timealive, timeactive, shotdamage, damage, cptime, actortype;
         float localtotalavgposnum, localtotalavgpossum;
         int warnings[WARN_MAX][2];
@@ -2867,9 +2867,10 @@ namespace server
         checkvotes();
     }
 
-    bool scorecmp(clientinfo *ci, uint ip, const char *name, const char *handle, uint clientip)
+    bool scorecmp(clientinfo *ci, uint ip, const char *name, const char *handle, const char *steamid, uint clientip)
     {
         if(ci->handle[0] && !strcmp(handle, ci->handle)) return true;
+        if(ci->steamid[0] && !strcmp(steamid, ci->steamid)) return true;
         if(!ci->handle[0] && ip && clientip == ip && !strcmp(name, ci->name)) return true;
         return false;
     }
@@ -2877,11 +2878,10 @@ namespace server
     savedscore *findscore(vector<savedscore> &scores, clientinfo *ci, bool insert)
     {
         uint ip = getclientip(ci->clientnum);
-        if(!ip && !ci->handle[0]) return NULL;
         if(!insert) loopv(clients)
         {
             clientinfo *oi = clients[i];
-            if(oi->clientnum != ci->clientnum && scorecmp(ci, ip, oi->name, oi->handle, getclientip(oi->clientnum)))
+            if(oi->clientnum != ci->clientnum && scorecmp(ci, ip, oi->name, oi->handle, oi->steamid, getclientip(oi->clientnum)))
             {
                 oi->updatetimeplayed();
                 static savedscore curscore;
@@ -2892,12 +2892,13 @@ namespace server
         loopv(scores)
         {
             savedscore &sc = scores[i];
-            if(scorecmp(ci, ip, sc.name, sc.handle, sc.ip)) return &sc;
+            if(scorecmp(ci, ip, sc.name, sc.handle, sc.steamid, sc.ip)) return &sc;
         }
         if(!insert) return NULL;
         savedscore &sc = scores.add();
         copystring(sc.name, ci->name);
         copystring(sc.handle, ci->handle);
+        copystring(sc.steamid, ci->steamid);
         sc.ip = ip;
         return &sc;
     }
@@ -3929,7 +3930,9 @@ namespace server
 
     void sendservinit(clientinfo *ci)
     {
-        sendf(ci->clientnum, 1, "ri3si", N_SERVERINIT, ci->clientnum, VERSION_GAME, gethostip(ci->clientnum), ci->sessionid);
+        int flags = 0;
+        if(cdpi::steam::serverauthmode()) flags |= SS_F_STEAMAUTH;
+        sendf(ci->clientnum, 1, "ri3si2", N_SERVERINIT, ci->clientnum, VERSION_GAME, gethostip(ci->clientnum), ci->sessionid, flags);
     }
 
     bool restorescore(clientinfo *ci)
@@ -4008,6 +4011,7 @@ namespace server
             putint(p, ci->randweap.length());
             loopv(ci->randweap) putint(p, ci->randweap[i]);
             sendstring(ci->handle, p);
+            sendstring(ci->steamid, p);
             sendstring(allow ? gethostip(ci->clientnum) : "*", p);
             ci->version.put(p);
         }
@@ -5290,7 +5294,7 @@ namespace server
                 else
                 {
                     ci->connectmillis = totalmillis ? totalmillis : 1; // in case it doesn't work
-                    connected(ci);
+                    if(!ci->connectsteam) connected(ci);
                 }
             }
             else disconnect_client(ci->clientnum, DISC_TIMEOUT);
@@ -5567,6 +5571,7 @@ namespace server
             if(m_demo(gamemode)) enddemoplayback();
         }
         if(complete && ci->connected) sendstats();
+        if(ci->steamid[0]) cdpi::steam::servercancelticket(ci->steamid);
         if(ci->connected)
         {
             if(reason != DISC_SHUTDOWN)
@@ -5607,6 +5612,29 @@ namespace server
             else resetmapdata(true);
         }
         if(n == mapgameinfo) mapgameinfo = -1;
+    }
+
+    void clientsteamticket(const char *id, bool result)
+    {
+        loopv(connects) if(connects[i]->clientnum >= 0)
+        {
+            clientinfo *ci = connects[i];
+            if(!ci->connectsteam || strcmp(ci->authsteam, id)) continue;
+            ci->connectsteam = false;
+            if(result)
+            {
+                copystring(ci->steamid, id);
+                srvmsgftforce(ci->clientnum, CON_EVENT, "\fgSteam identity confirmed (%s)", ci->steamid);
+                int disc = auth::allowconnect(ci);
+                if(disc) { disconnect_client(ci->clientnum, disc); return; }
+                if(!ci->connectauth) connected(ci);
+                break;
+            }
+            srvmsgftforce(ci->clientnum, CON_EVENT, "\frSteam identity could not be confirmed (%s)", id);
+            if(cdpi::steam::serverauthmode() >= 2) disconnect_client(ci->clientnum, DISC_AUTH);
+            else copystring(ci->steamid, "0");
+            break;
+        }
     }
 
     void queryreply(ucharbuf &req, ucharbuf &p)
@@ -5707,8 +5735,8 @@ namespace server
         }
 
         uchar operator[](int msg) const { return msg >= 0 && msg < NUMMSG ? msgmask[msg] : 0; }
-    } msgfilter(-1, N_CONNECT, N_SERVERINIT, N_CLIENTINIT, N_WELCOME, N_MAPCHANGE, N_SERVMSG, N_DAMAGE, N_SHOTFX, N_LOADW, N_DIED, N_POINTS, N_SPAWNSTATE, N_ITEMACC, N_ITEMSPAWN, N_TICK, N_DISCONNECT, N_CURRENTPRIV, N_PONG, N_SCOREAFFIN, N_SCORE, N_ANNOUNCE, N_SENDDEMOLIST, N_SENDDEMO, N_DEMOPLAYBACK, N_SENDMAP, N_REGEN, N_CLIENT, N_AUTHCHAL, N_QUEUEPOS, -2, N_REMIP, N_NEWMAP, N_CLIPBOARD, -3, N_EDITENT, N_EDITLINK, N_EDITVAR, N_EDITF, N_EDITT, N_EDITM, N_FLIP, N_COPY, N_PASTE, N_ROTATE, N_REPLACE, N_DELCUBE, N_EDITVSLOT, N_UNDO, N_REDO, -4, N_POS, N_SPAWN, N_DESTROY, NUMMSG),
-      connectfilter(-1, N_CONNECT, -2, N_AUTHANS, -3, N_PING, NUMMSG);
+    } msgfilter(-1, N_CONNECT, N_SERVERINIT, N_CLIENTINIT, N_WELCOME, N_MAPCHANGE, N_SERVMSG, N_DAMAGE, N_SHOTFX, N_LOADW, N_DIED, N_POINTS, N_SPAWNSTATE, N_ITEMACC, N_ITEMSPAWN, N_TICK, N_DISCONNECT, N_CURRENTPRIV, N_PONG, N_SCOREAFFIN, N_SCORE, N_ANNOUNCE, N_SENDDEMOLIST, N_SENDDEMO, N_DEMOPLAYBACK, N_SENDMAP, N_REGEN, N_CLIENT, N_AUTHCHAL, N_QUEUEPOS, N_STEAMCHAL, -2, N_REMIP, N_NEWMAP, N_CLIPBOARD, -3, N_EDITENT, N_EDITLINK, N_EDITVAR, N_EDITF, N_EDITT, N_EDITM, N_FLIP, N_COPY, N_PASTE, N_ROTATE, N_REPLACE, N_DELCUBE, N_EDITVSLOT, N_UNDO, N_REDO, -4, N_POS, N_SPAWN, N_DESTROY, NUMMSG),
+      connectfilter(-1, N_CONNECT, -2, N_AUTHANS, N_STEAMANS, N_STEAMFAIL, -3, N_PING, NUMMSG);
 
     int checktype(int type, clientinfo *ci)
     {
@@ -5717,9 +5745,9 @@ namespace server
             if(!ci->connected) switch(connectfilter[type])
             {
                 // allow only before authconnect
-                case 1: return !ci->connectauth ? type : -1;
+                case 1: return !ci->connectauth && !ci->connectsteam ? type : -1;
                 // allow only during authconnect
-                case 2: return ci->connectauth ? type : -1;
+                case 2: return ci->connectauth || ci->connectsteam ? type : -1;
                 // always allow
                 case 3: return type;
                 // never allow
@@ -5933,6 +5961,11 @@ namespace server
             loopvrev(clients) if(clients[i] != ci && clients[i]->handle[0] && !strcmp(clients[i]->handle, ci->handle))
                 disconnect_client(clients[i]->clientnum, DISC_AUTH);
         }
+        if(ci->steamid[0])
+        {
+            loopvrev(clients) if(clients[i] != ci && clients[i]->steamid[0] && !strcmp(clients[i]->steamid, ci->steamid))
+                disconnect_client(clients[i]->clientnum, DISC_AUTH);
+        }
         sendwelcome(ci);
         if(restorescore(ci)) sendresume(ci);
         sendinitclient(ci);
@@ -6015,7 +6048,7 @@ namespace server
                             return;
                         }
 
-                        if(!ci->connectauth) connected(ci);
+                        if(!ci->connectauth && !ci->connectsteam) connected(ci);
 
                         break;
                     }
@@ -6025,6 +6058,38 @@ namespace server
                         uint id = (uint)getint(p);
                         getstring(text, p);
                         if(!auth::answerchallenge(ci, id, text)) auth::authfailed(ci->authreq);
+                        break;
+                    }
+
+                    case N_STEAMANS:
+                    {
+                        getstring(text, p);
+                        uint tokenlen = getuint(p);
+                        if(tokenlen <= 0 || tokenlen > (1<<16))
+                        {
+                            if(tokenlen > 0) p.subbuf(tokenlen);
+                            tokenlen = 0;
+                        }
+                        if(tokenlen < 0 || !ci->connectsteam) break;
+                        const uchar *token = p.subbuf(tokenlen).buf;
+                        if(cdpi::steam::serverparseticket(text, token, tokenlen))
+                        {
+                            srvmsgftforce(ci->clientnum, CON_EVENT, "\fySteam identity in progress (%s [%u])", text, tokenlen);
+                            copystring(ci->authsteam, text);
+                        }
+                        else srvmsgftforce(ci->clientnum, CON_EVENT, "\foSteam identity could not be verified! (%s [%u])", text, tokenlen);
+                        break;
+                    }
+
+                    case N_STEAMFAIL:
+                    {
+                        if(!ci->connectsteam) break;
+                        copystring(ci->steamid, "0");
+                        srvmsgftforce(ci->clientnum, CON_EVENT, "\foSteam identity could not be verified!");
+                        ci->connectsteam = false;
+                        int disc = auth::allowconnect(ci);
+                        if(disc) { disconnect_client(ci->clientnum, disc); return; }
+                        if(!ci->connectauth) connected(ci);
                         break;
                     }
 

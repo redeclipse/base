@@ -3,7 +3,7 @@
 namespace client
 {
     bool sendplayerinfo = false, sendgameinfo = false, sendcrcinfo = false, loadedmap = false, isready = false, remote = false, demoplayback = false;
-    int needsmap = 0, gettingmap = 0, lastping = 0, sessionid = 0, sessionver = 0, lastplayerinfo = 0, mastermode = 0, needclipboard = -1, demonameid = 0;
+    int needsmap = 0, gettingmap = 0, lastping = 0, sessionid = 0, sessionver = 0, sessionflags = 0, lastplayerinfo = 0, mastermode = 0, needclipboard = -1, demonameid = 0;
     string connectpass = "";
     hashtable<int, const char *>demonames;
 
@@ -899,6 +899,7 @@ namespace client
     CLCOMMAND(pattern, intret(d->pattern%PLAYERPATTERNS));
     CLCOMMAND(vanity, result(d->vanity));
     CLCOMMAND(handle, result(d->handle));
+    CLCOMMAND(steamid, result(d->steamid));
     CLCOMMAND(host, result(d->hostip));
     CLCOMMAND(ip, result(d->hostip));
     CLCOMMAND(ping, intret(d->ping));
@@ -1288,7 +1289,7 @@ namespace client
         removetrackedsounds(game::player1);
         game::player1->clientnum = -1;
         game::player1->privilege = PRIV_NONE;
-        game::player1->handle[0] = '\0';
+        game::player1->handle[0] = game::player1->steamid[0] = '\0';
         game::gamemode = G_EDITMODE;
         game::mutators = game::maptime = 0;
         loopv(game::players) if(game::players[i]) game::clientdisconnected(i);
@@ -2334,6 +2335,7 @@ namespace client
                         disconnect();
                         return;
                     }
+                    sessionflags = getint(p);
                     conoutf("Connected, starting negotiation with server");
                     sendintro();
                     break;
@@ -2537,6 +2539,7 @@ namespace client
                     vector<int> rweaps;
                     loopk(rw) rweaps.add(getint(p));
                     getstring(d->handle, p);
+                    getstring(d->steamid, p);
                     getstring(d->hostip, p);
                     if(d != game::player1) d->version.get(p);
                     else dummy.get(p);
@@ -3491,6 +3494,28 @@ namespace client
                         vector<char> buf;
                         answerchallenge(accountpass, text, buf);
                         addmsg(N_AUTHANS, "ris", id, buf.getbuf());
+                    }
+                    break;
+                }
+
+                case N_STEAMCHAL:
+                {
+                    char token[1024];
+                    uint tokenlen;
+                    if(cdpi::steam::clientauthticket(token, &tokenlen))
+                    {
+                        packetbuf sc(MAXTRANS, ENET_PACKET_FLAG_RELIABLE);
+                        putint(sc, N_STEAMANS);
+                        sendstring(cdpi::steam::steamuserid, sc);
+                        putuint(sc, tokenlen);
+                        if(tokenlen > 0) sc.put((uchar *)token, tokenlen);
+                        sendclientpacket(sc.finalize(), 1);
+                        conoutft(CON_EVENT, "\fyPerforming Steam ID challenge...");
+                    }
+                    else
+                    {
+                        conoutft(CON_EVENT, "\frFailed to perform Steam ID challenge");
+                        addmsg(N_STEAMFAIL, "r");
                     }
                     break;
                 }

@@ -45,7 +45,7 @@ FVAR(0, masterstatsavgposdefault, 0, 0.25, FVAR_MAX);
 
 struct authuser
 {
-    char *name, *flags, *email;
+    char *name, *flags, *email, *steamid;
     void *pubkey;
 };
 
@@ -706,7 +706,7 @@ void setupmaster()
 
 static hashnameset<authuser> authusers;
 
-void addauth(char *name, char *flags, char *pubkey, char *email)
+void addauth(char *name, char *flags, char *pubkey, char *email, char *steamid)
 {
     string authname;
     if(filterstring(authname, name, true, true, true, true, 100)) name = authname;
@@ -721,8 +721,9 @@ void addauth(char *name, char *flags, char *pubkey, char *email)
     u.flags = newstring(flags);
     u.pubkey = parsepubkey(pubkey);
     u.email = newstring(email);
+    u.steamid = newstring(steamid);
 }
-COMMAND(0, addauth, "ssss");
+COMMAND(0, addauth, "sssss");
 
 static hashnameset<authuser> serverauthusers;
 
@@ -746,9 +747,9 @@ COMMAND(0, addserverauth, "ssss");
 
 void clearauth()
 {
-    enumerate(authusers, authuser, u, { delete[] u.name; delete[] u.flags; delete[] u.email; freepubkey(u.pubkey); });
+    enumerate(authusers, authuser, u, { delete[] u.name; delete[] u.flags; delete[] u.email; delete[] u.steamid; freepubkey(u.pubkey); });
     authusers.clear();
-    enumerate(serverauthusers, authuser, u, { delete[] u.name; delete[] u.flags; delete[] u.email; freepubkey(u.pubkey); });
+    enumerate(serverauthusers, authuser, u, { delete[] u.name; delete[] u.flags; delete[] u.email; delete[] u.steamid; freepubkey(u.pubkey); });
     serverauthusers.clear();
 }
 COMMAND(0, clearauth, "");

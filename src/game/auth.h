@@ -245,7 +245,14 @@ namespace auth
         if(ci->local) { tryident(ci, authname, pwd); return DISC_NONE; }
         if(ci->version.game != VERSION_GAME) return DISC_INCOMPATIBLE;
         if(m_local(gamemode)) return DISC_PRIVATE;
+        bool checksid = cdpi::steam::serverauthmode() && !ci->steamid[0];
+        if(checksid && !ci->connectsteam)
+        {
+            sendf(ci->clientnum, 1, "ri", N_STEAMCHAL);
+            ci->connectsteam = true;
+        }
         if(tryident(ci, authname, pwd)) return DISC_NONE;
+        if(checksid && ci->connectsteam) return DISC_NONE;
         // above here are short circuits
         if(numspectators() >= spectatorslots()) return DISC_MAXCLIENTS;
         uint ip = getclientip(ci->clientnum);
@@ -272,7 +279,7 @@ namespace auth
             ci->connectauth = false;
             int disc = allowconnect(ci);
             if(disc) { disconnect_client(ci->clientnum, disc); return; }
-            connected(ci);
+            if(!ci->connectsteam) connected(ci);
         }
     }
 
@@ -342,7 +349,7 @@ namespace auth
             ci->connectauth = false;
             int disc = allowconnect(ci);
             if(disc) { disconnect_client(ci->clientnum, disc); return; }
-            connected(ci);
+            if(!ci->connectsteam) connected(ci);
         }
     }
 

@@ -5,7 +5,7 @@
 #if defined(USE_STEAM) && USE_STEAM == 1
 #define HAS_STEAM 1
 #include <steam_gameserver.h>
-#include <steam_api_flat.h>
+#include <steam_api_flat.h> // C++ API crashes when compiled with MingW
 #endif
 #if !defined(STANDALONE) && defined(USE_DISCORD) && USE_DISCORD == 1
 #define HAS_DISCORD 1
@@ -18,18 +18,27 @@ namespace cdpi
 {
     int curapis = NONE;
 
-#ifdef HAS_STEAM
     namespace steam
     {
+        SVAR(IDF_READONLY, steamusername, "");
+        SVAR(IDF_READONLY, steamuserid, "");
+        SVAR(IDF_READONLY, steamserverid, "");
+
+#ifdef HAS_STEAM
         int curoverlay = 0, curplayers = 0;
         bool servconnected;
         intptr_t client = 0, user = 0, friends = 0, stats = 0;
         intptr_t sclient = 0, serv = 0;
         HSteamPipe umpipe = 0, smpipe = 0;
         HSteamUser uupipe = 0, supipe = 0;
+        HAuthTicket authticket = 0;
 
-        SVAR(IDF_READONLY, steamusername, "");
-        SVAR(IDF_READONLY, steamuserid, "");
+        VAR(0, steamserverauth, eServerModeNoAuthentication, eServerModeAuthenticationAndSecure, eServerModeAuthenticationAndSecure);
+
+        CSteamID strtosid(const char *sid)
+        {
+            return CSteamID(uint64(strtoll(sid, NULL, 10)));
+        }
 
         class steamcb
         {
@@ -43,6 +52,7 @@ namespace cdpi
                 STEAM_GAMESERVER_CALLBACK(steamcb, serversconnfail, SteamServerConnectFailure_t);
                 STEAM_GAMESERVER_CALLBACK(steamcb, serversdisconnected, SteamServersDisconnected_t);
                 STEAM_GAMESERVER_CALLBACK(steamcb, policyresponse, GSPolicyResponse_t);
+                STEAM_GAMESERVER_CALLBACK(steamcb, authticketresponse, ValidateAuthTicketResponse_t);
         } cbs;
 
         void steamcb::overlayactivated(GameOverlayActivated_t *p)
@@ -85,13 +95,15 @@ namespace cdpi
 
         void steamcb::policyresponse(GSPolicyResponse_t *p)
         {
-            const char *vac = SteamAPI_ISteamGameServer_BSecure(serv) ? "VAC" : "Non-VAC";
-            uint64 serverid = SteamAPI_ISteamGameServer_GetSteamID(serv);
-            #ifdef WIN32
-            conoutf("Game server SteamID: %I64u (%s)", serverid, vac);
-            #else
-            conoutf("Game server SteamID: %llu (%s)", serverid, vac);
-            #endif
+            defformatstring(id, SI64, SteamAPI_ISteamGameServer_GetSteamID(serv));
+            setsvar("steamserverid", id);
+            conoutf("Game server SteamID: %s (%s)", id, SteamAPI_ISteamGameServer_BSecure(serv) ? "VAC" : "Non-VAC");
+        }
+
+        void steamcb::authticketresponse(ValidateAuthTicketResponse_t *p)
+        {
+            defformatstring(id, SI64, p->m_SteamID.ConvertToUint64());
+            server::clientsteamticket(id, p->m_eAuthSessionResponse == k_EAuthSessionResponseOK);
         }
 
         void cleanup(int apis = -1)
@@ -108,7 +120,7 @@ namespace cdpi
             }
             if(check&SWSERVER)
             {
-                //SteamAPI_ISteamGameServer_EnableHeartbeats(serv, false);
+                SteamAPI_ISteamGameServer_EnableHeartbeats(serv, false);
                 SteamAPI_ISteamGameServer_LogOff(serv);
                 SteamGameServer_Shutdown();
                 sclient = serv = 0;
@@ -154,11 +166,7 @@ namespace cdpi
                     CSteamID iduser = SteamAPI_ISteamUser_GetSteamID(user);
                     if(iduser.IsValid())
                     {
-                        #ifdef WIN32
-                        defformatstring(id, "%I64u", iduser.ConvertToUint64());
-                        #else
-                        defformatstring(id, "%llu", iduser.ConvertToUint64());
-                        #endif
+                        defformatstring(id, SI64, iduser.ConvertToUint64());
                         setsvar("steamuserid", id);
                         conoutf("Current Steam UserID: %s", id);
                     }
@@ -171,7 +179,7 @@ namespace cdpi
 
         void initserver()
         {
-            if(SteamGameServer_Init(INADDR_ANY, serverport+3, serverport, serverport+2, eServerModeNoAuthentication, versionstring))
+            if(SteamGameServer_Init(INADDR_ANY, serverport+3, serverport, serverport+2, EServerMode(steamserverauth), versionstring))
             {
                 curapis |= SWSERVER;
 
@@ -189,7 +197,7 @@ namespace cdpi
                 SteamAPI_ISteamGameServer_SetGameDescription(serv, versiondesc);
                 SteamAPI_ISteamGameServer_SetDedicatedServer(serv, servertype >= 3);
                 SteamAPI_ISteamGameServer_LogOnAnonymous(serv);
-                //SteamAPI_ISteamGameServer_EnableHeartbeats(serv, true);
+                SteamAPI_ISteamGameServer_EnableHeartbeats(serv, true);
                 conoutf("Steam GameServer API initialised successfully.");
             }
         }
@@ -217,8 +225,72 @@ namespace cdpi
             }
             lastframe = totalmillis;
         }
-    }
+
+        void clientconnect()
+        {
+            // SteamFriends()->SetRichPresence( "connect", rgchConnectString );
+        }
+
+        void clientcancelticket()
+        {
+            if(authticket)
+            {
+                if(curapis&SWCLIENT) SteamAPI_ISteamUser_CancelAuthTicket(user, authticket);
+                authticket = 0;
+            }
+        }
+
+        void clientdisconnect()
+        {
+            clientcancelticket();
+        }
+
+        bool clientauthticket(char *token, uint *tokenlen)
+        {
+            if(!(curapis&SWCLIENT)) return false;
+            clientcancelticket();
+            authticket = SteamAPI_ISteamUser_GetAuthSessionTicket(user, token, 1024, tokenlen);
+            conoutf("Generating Auth Ticket: %u (%u)", authticket, *tokenlen);
+            return authticket != k_HAuthTicketInvalid;
+        }
+
+        bool clientready()
+        {
+            return curapis&SWCLIENT ? true : false;
+        }
+
+        int serverauthmode()
+        {
+            if(curapis&SWSERVER) switch(steam::steamserverauth)
+            {
+                case eServerModeAuthenticationAndSecure: return 2;
+                case eServerModeAuthentication: return 1;
+                case eServerModeNoAuthentication: default: return 0;
+            }
+            return 0;
+        }
+
+        bool serverparseticket(const char *steamid, const uchar *token, uint tokenlen)
+        {
+            if(!(curapis&SWSERVER)) return false;
+            CSteamID sid = strtosid(steamid);
+            if(SteamAPI_ISteamGameServer_BeginAuthSession(serv, token, tokenlen, sid) != k_EBeginAuthSessionResultOK) return false;
+            return true;
+        }
+
+        void servercancelticket(const char *steamid)
+        {
+            if(!(curapis&SWSERVER)) return;
+            CSteamID sid = strtosid(steamid);
+            SteamAPI_ISteamGameServer_EndAuthSession(serv, sid);
+        }
+#else
+        bool clientauthticket(char *token, uint *tokenlen) { return false; }
+        int serverauthmode() { return 0; }
+        bool serverparseticket(const char *steamid, const uchar *token, uint tokenlen) { return false; }
+        void servercancelticket(const char *steamid) {}
 #endif
+    }
 #ifdef HAS_DISCORD
     namespace discord
     {
@@ -365,9 +437,22 @@ namespace cdpi
     int getoverlay()
     {
 #ifdef HAS_STEAM
-        return steam::curoverlay;
-#else
+        if(steam::curoverlay) return steam::curoverlay;
+#endif
         return 0;
+    }
+
+    void clientconnect()
+    {
+#ifdef HAS_STEAM
+        steam::clientconnect();
+#endif
+    }
+
+    void clientdisconnect()
+    {
+#ifdef HAS_STEAM
+        steam::clientdisconnect();
 #endif
     }
 }

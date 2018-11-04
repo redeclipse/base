@@ -35,30 +35,35 @@ extern const char *platnames[MAX_PLATFORMS], *platlongnames[MAX_PLATFORMS];
 
 extern const char *timestr(int dur, int style = 0);
 
+#ifdef WIN32
+#define SI64 "%I64u"
+#else
+#define SI64 "%llu"
+#endif
 namespace cdpi
 {
     enum { NONE = 0, SWCLIENT = 1<<0, SWSERVER = 1<<1, DISCORD = 1<<2, ALL = SWCLIENT|SWSERVER|DISCORD, STEAM = SWCLIENT|SWSERVER };
 
     extern int curapis;
-
-#if defined(USE_STEAM) && USE_STEAM == 1
     namespace steam
     {
-        extern int curoverlay, curplayers;
-        extern char *steamusername, *steamuserid;
+        extern char *steamusername, *steamuserid, *steamserverid;
+
+        extern bool clientready();
+        extern bool clientauthticket(char *token, uint *tokenlen);
+
+        extern int serverauthmode();
+        extern bool serverparseticket(const char *steamid, const uchar *token, uint tokenlen);
+        extern void servercancelticket(const char *steamid);
     }
-#endif
-#if !defined(STANDALONE) && defined(USE_DISCORD) && USE_DISCORD == 1
-    namespace discord
-    {
-    }
-#endif
 
     extern void cleanup();
     extern bool init(); // returning false means restart in other app
     extern void runframe();
 
     extern int getoverlay();
+    extern void clientconnect();
+    extern void clientdisconnect();
 }
 
 extern vector<char *> gameargs;

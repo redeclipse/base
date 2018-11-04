@@ -163,6 +163,7 @@ namespace server
     extern int numspectators(int exclude = -1);
     extern void clientdisconnect(int n, bool local = false, int reason = DISC_NONE);
     extern int clientconnect(int n, uint ip, bool local = false);
+    extern void clientsteamticket(const char *id, bool result);
     extern bool allowbroadcast(int n);
     extern int peerowner(int n);
     extern void recordpacket(int chan, void *data, int len);
