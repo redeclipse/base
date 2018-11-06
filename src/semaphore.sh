@@ -6,9 +6,6 @@ SEMABUILD_STEAM="${HOME}/depot"
 SEMABUILD_DIR="${SEMABUILD_BUILD}/${BRANCH_NAME}"
 SEMABUILD_APT='DEBIAN_FRONTEND=noninteractive apt-get'
 SEMABUILD_DEST="https://${GITHUB_TOKEN}:x-oauth-basic@github.com/red-eclipse/deploy.git"
-SEMABUILD_SOURCE="https://raw.githubusercontent.com/red-eclipse/deploy/master"
-SEMABUILD_APPIMAGE="https://github.com/red-eclipse/appimage-builder.git"
-SEMABUILD_APPIMAGE_GH_DEST="red-eclipse/deploy"
 SEMABUILD_MODULES=`cat "${SEMABUILD_PWD}/.gitmodules" | grep '\[submodule "[^.]' | sed -e 's/^.submodule..//;s/..$//' | tr "\n" " " | sed -e 's/ $//'`
 SEMABUILD_ALLMODS="base ${SEMABUILD_MODULES}"
 SEMABUILD_DEPLOY="false"
@@ -79,7 +76,7 @@ semabuild_integrate() {
         pushd "${SEMABUILD_MODDIR}" || return 1
         echo "module ${i} processing.."
         SEMABUILD_HASH=`git rev-parse HEAD` || return 1
-        SEMABUILD_LAST=`curl --connect-timeout 30 -L -k -f "${SEMABUILD_SOURCE}/${BRANCH_NAME}/${i}.txt"`
+        SEMABUILD_LAST=`cat "${SEMABUILD_BUILD}/${BRANCH_NAME}/${i}.txt"`
         echo "module ${i} compare: ${SEMABUILD_LAST} -> ${SEMABUILD_HASH}"
         if [ "${i}" = "base" ] && [ "${SEMAPHORE_TRIGGER_SOURCE}" = "manual" ]; then
             SEMABUILD_LAST="0"
@@ -91,7 +88,7 @@ semabuild_integrate() {
             if [ "${i}" = "base" ]; then
                 echo "module ${i} checking for source modifications.."
                 SEMABUILD_CHANGES=""
-                SEMABUILD_BINS=`curl --connect-timeout 30 -L -k -f "${SEMABUILD_SOURCE}/${BRANCH_NAME}/bins.txt"` || return 1
+                SEMABUILD_BINS=`cat "${SEMABUILD_BUILD}/${BRANCH_NAME}/bins.txt"` || return 1
                 if [ "${SEMAPHORE_TRIGGER_SOURCE}" = "manual" ]; then
                     SEMABUILD_CHANGES="<manual rebuild forced>"
                 else
@@ -122,28 +119,6 @@ semabuild_process() {
     return 0
 }
 
-semabuild_appimage() {
-    git clone --depth 1 "${SEMABUILD_APPIMAGE}" appimage || return 1
-    pushd appimage || return 1
-    export BRANCH="${BRANCH_NAME}"
-    export ARCH=x86_64
-    export COMMIT=${REVISION}
-    export BUILD_SERVER=1
-    export BUILD_CLIENT=1
-    export PLATFORM_BUILD=${SEMAPHORE_BUILD_NUMBER}
-    export PLATFORM_BRANCH="${BRANCH_NAME}"
-    export PLATFORM_REVISION="${REVISION}"
-    export NO_UPDATE=true
-    export BUILD="${SEMABUILD_PWD}"
-    bash build-appimages.sh || return 1
-    export GITHUB_TOKEN="${GITHUB_TOKEN}"
-    export REPO_SLUG="${SEMABUILD_APPIMAGE_GH_DEST}"
-    export COMMIT=$(git rev-parse ${REVISION})
-    bash github-release.sh || return 1
-    popd || return 1
-    return 0
-}
-
 semabuild_deploy() {
     echo "deploying ${BRANCH_NAME}..."
     echo "${SEMABUILD_ALLMODS}" > "${SEMABUILD_DIR}/mods.txt"
@@ -155,67 +130,9 @@ semabuild_deploy() {
     return 0
 }
 
-semabuild_steam() {
-    echo "building Steam depot..."
-    cp -Rv "${SEMABUILD_PWD}/src/install/steam" "${SEMABUILD_STEAM}" || return 1
-    mkdir -pv "${SEMAPHORE_CACHE_DIR}/Steam-dot" || return 1
-    ln -sv "${SEMAPHORE_CACHE_DIR}/Steam-dot" "${HOME}/.steam" || return 1
-    mkdir -pv "${SEMAPHORE_CACHE_DIR}/Steam" || return 1
-    ln -sv "${SEMAPHORE_CACHE_DIR}/Steam" "${HOME}/Steam" || return 1
-    for i in output package public; do
-        mkdir -pv "${SEMAPHORE_CACHE_DIR}/Steam-${i}" || return 1
-        ln -sv "${SEMAPHORE_CACHE_DIR}/Steam-${i}" "${SEMABUILD_STEAM}/${i}" || return 1
-    done
-    for i in ${SEMABUILD_ALLMODS}; do
-        if [ "${i}" = "base" ]; then
-            SEMABUILD_MODDIR="${SEMABUILD_STEAM}/content"
-            SEMABUILD_GITDIR="${SEMABUILD_PWD}"
-            SEMABUILD_ARCHBR="${BRANCH_NAME}"
-        else
-            SEMABUILD_MODDIR="${SEMABUILD_STEAM}/content/data/${i}"
-            SEMABUILD_GITDIR="${SEMABUILD_PWD}/data/${i}"
-            git submodule update --init --depth 1 "data/${i}" || return 1
-            pushd "${SEMABUILD_GITDIR}" || return 1
-            SEMABUILD_ARCHBR=`git rev-parse HEAD`
-            popd || return 1
-        fi
-        mkdir -pv "${SEMABUILD_MODDIR}" || return 1
-        pushd "${SEMABUILD_GITDIR}" || return 1
-        (git archive ${SEMABUILD_ARCHBR} | tar -x -C "${SEMABUILD_MODDIR}") || return 1
-        if [ "${i}" = "base" ]; then
-            rm -rfv "${SEMABUILD_MODDIR}/bin/redeclipse.app" "${SEMABUILD_MODDIR}/readme.md" || return 1
-            cp -RLfv "${SEMABUILD_GITDIR}/bin/redeclipse.app" "${SEMABUILD_MODDIR}/bin/redeclipse.app" || return 1
-        fi
-        popd || return 1
-    done
-    echo "steam" > "${SEMABUILD_STEAM}/content/branch.txt" || return 1
-    unzip -o "${SEMABUILD_DIR}/windows.zip" -d "${SEMABUILD_STEAM}/content" || return 1
-    tar --gzip --extract --verbose --overwrite --file="${SEMABUILD_DIR}/linux.tar.gz" --directory="${SEMABUILD_STEAM}/content"
-    tar --gzip --extract --verbose --overwrite --file="${SEMABUILD_DIR}/macos.tar.gz" --directory="${SEMABUILD_STEAM}/content"
-    pushd "${SEMABUILD_STEAM}" || return 1
-    curl -sqL "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz" | tar zxvf -
-    chmod --verbose +x linux32/steamcmd || return 1
-    export LD_LIBRARY_PATH="${SEMABUILD_STEAM}/linux32:${SEMABUILD_STEAM}/linux64:${LD_LIBRARY_PATH}"
-    ./linux32/steamcmd +login redeclipsebuild ${STEAM_TOKEN} +run_app_build_http app_build_967460.vdf +quit
-    if [ $? -eq 42 ]; then
-        ./linux32/steamcmd +login redeclipsebuild ${STEAM_TOKEN} +run_app_build_http app_build_967460.vdf +quit
-    fi
-    popd || return 1
-    return 0
-}
-
 semabuild_setup || exit 1
-#semabuild_process || exit 1
-#if [ "${SEMABUILD_DEPLOY}" = "true" ]; then
-#    semabuild_deploy || exit 1
-    if [ "${BRANCH_NAME}" = master ]; then
-        sudo ${SEMABUILD_APT} update || return 1
-        sudo ${SEMABUILD_APT} -fy install build-essential multiarch-support gcc-multilib g++-multilib zlib1g-dev libsdl2-dev libsdl2-mixer-dev libsdl2-image-dev jq zsync || exit 1
-        semabuild_steam || exit 1
-    #    echo "building ${BRANCH_NAME} appimages..."
-    #    pushd "${HOME}" || return 1
-    #    semabuild_appimage || exit 1
-    #    popd || return 1
-    fi
-#fi
+semabuild_process || exit 1
+if [ "${SEMABUILD_DEPLOY}" = "true" ]; then
+    semabuild_deploy || exit 1
+fi
 echo "done."
