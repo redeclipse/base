@@ -29,13 +29,14 @@ semupdate_setup() {
 semupdate_wait() {
     pushd "${SEMUPDATE_BUILD}" || return 1
     SEMUPDATE_CURPRC=1
-    echo "Waiting for macOS build to complete..." # Will wait up to 10 minutes before failing
-    for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
+    echo "Waiting for macOS build to complete..." # Will wait up to 20 minutes before failing
+    for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40; do
         SEMUPDATE_CURBIN=`cat "${SEMUPDATE_DIR}/bins.txt"`
         SEMUPDATE_CURMAC=`cat "${SEMUPDATE_DIR}/macos.txt"`
+        echo ""
         echo "Binaries: ${SEMUPDATE_CURBIN} macOS: ${SEMUPDATE_CURMAC}"
         if [ "${SEMUPDATE_CURBIN}" != "${SEMUPDATE_CURMAC}" ]; then
-            echo "Sleep for 30 seconds..."
+            echo "[${i}] Sleep for 30 seconds..."
             sleep 30s || return 1
             git pull || return 1
         else
