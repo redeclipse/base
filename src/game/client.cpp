@@ -658,7 +658,7 @@ namespace client
 
     int parseplayer(const char *arg)
     {
-        if(!arg || !*arg) return -1;
+        if(!arg || !*arg) return game::player1->clientnum;
         char *end;
         int n = strtol(arg, &end, 10);
         if(*arg && !*end)
