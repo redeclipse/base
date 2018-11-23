@@ -2,6 +2,7 @@
 
 #include "engine.h"
 #include <enet/time.h>
+#include "jsmn.h"
 
 namespace http
 {
@@ -198,8 +199,8 @@ namespace http
                             const char *cont = h->headers.get("Content-Type");
                             if(cont && *cont)
                             {
-                                if(!strcasecmp(cont, "application/x-www-form-urlencoded"))
-                                    h->contype = HTTP_C_URLENC;
+                                if(!strcasecmp(cont, "application/x-www-form-urlencoded")) h->contype = HTTP_C_URLENC;
+                                else if(!strcasecmp(cont, "application/json")) h->contype = HTTP_C_JSON;
                                 else h->contype = HTTP_C_DATA;
                                 cont = h->headers.get("Content-Length");
                                 if(cont && *cont) h->conlength = atoi(cont);
@@ -362,6 +363,113 @@ namespace http
     }
 }
 
+int printjson(json *j, char *dst, int level, size_t len)
+{
+    string data = "";
+    if(!j) return 0;
+    int count = 0;
+    switch(j->type)
+    {
+        case JSON_STRING:
+        {
+            if(j->data[0]) concformatstring(data, "\"%s\": \"%s\"", j->name, j->data);
+            else concformatstring(data, "\"%s\"", j->name);
+            count++;
+            break;
+        }
+        case JSON_PRIMITIVE:
+        {
+            if(j->data[0]) concformatstring(data, "\"%s\": %s", j->name, j->data);
+            else concformatstring(data, "\"%s\"", j->name);
+            count++;
+            break;
+        }
+        case JSON_OBJECT: case JSON_ARRAY:
+        {
+            if(j->name[0]) concformatstring(data, "\"%s\": %c ", j->name, int(j->type != JSON_OBJECT ? '[' : '{'));
+            else concformatstring(data, "%c ", int(j->type != JSON_OBJECT ? '[' : '{'));
+            loopv(j->children)
+            {
+                count += printjson(j->children[i], data, level+1, len);
+                if(i < j->children.length()-1) concatstring(data, ", ");
+            }
+            concformatstring(data, " %c", int(j->type != JSON_OBJECT ? ']' : '}'));
+        }
+        default: break;
+    }
+    concatstring(dst, data, len);
+    return count;
+}
+
+int processjs(const char *str, json *j, jsmntok_t *t, int r, int start, int objects = -1)
+{
+    int q = 0;
+    string name = "", data = "";
+    for(int i = start, objs = 0; i < r; i++)
+    {
+        bool hasname = name[0] != 0;
+        switch(t[i].type)
+        {
+            case JSMN_STRING: case JSMN_PRIMITIVE:
+            {
+                copystring(hasname ? data : name, &str[t[i].start], t[i].end-t[i].start+1);
+                if(j->type != JSON_ARRAY && !hasname) break;
+                json *k = new json;
+                k->type = t[i].type != JSMN_PRIMITIVE ? JSON_STRING : JSON_PRIMITIVE;
+                copystring(k->name, name);
+                if(hasname) copystring(k->data, data);
+                name[0] = data[0] = 0;
+                objs++;
+                j->children.add(k);
+                break;
+            }
+            case JSMN_ARRAY: case JSMN_OBJECT:
+            {
+                json *k = new json;
+                k->type = t[i].type != JSMN_OBJECT ? JSON_ARRAY : JSON_OBJECT;
+                copystring(k->name, name);
+                int size = t[i].size, a = processjs(str, k, t, r, i+1, size);
+                i += a;
+                q += a;
+                name[0] = data[0] = 0;
+                objs++;
+                j->children.add(k);
+                break;
+            }
+            default: break;
+        }
+        q++;
+        if(objects >= 0 && objs >= objects) break;
+    }
+    return q;
+}
+
+json *loadjson(const char *str)
+{
+    jsmn_parser p;
+    jsmntok_t t[128];
+    jsmn_init(&p);
+    int r = jsmn_parse(&p, str, strlen(str), t, sizeof(t)/sizeof(t[0]));
+    if(r < 0)
+    {
+        conoutf("JSON: Failed to parse (%d)", r);
+        return NULL;
+    }
+    if(r < 1 || t[0].type != JSMN_OBJECT)
+    {
+        conoutf("JSON: Object expected");
+        return NULL;
+    }
+    json *j = new json;
+    j->type = JSON_OBJECT;
+    if(!processjs(str, j, &t[0], r, 1))
+    {
+        DELETEP(j);
+        return NULL;
+    }
+    return j;
+}
+
 void httpindex(httpreq *h)
 {
     h->send("Content-Type: text/plain");
@@ -377,6 +485,24 @@ void httpindex(httpreq *h)
     h->send("Vars:");
     loopv(h->vars.values) h->sendf("- %s = %s", h->vars.values[i].name, h->vars.values[i].value);
     h->send("");
-    h->sendf("Data: [%d] %s", h->inputpos, h->input);
+    switch(h->contype)
+    {
+        case HTTP_C_DATA: h->sendf("Generic Data: [%d] %s", h->inputpos, h->input); break;
+        case HTTP_C_JSON:
+        {
+            json *j = loadjson(h->input);
+            if(!j) break;
+            h->sendf("JSON Data: [%d] (%d)", h->inputpos, j->children.length());
+            h->send("-");
+            h->send(h->input);
+            h->send("-");
+            string data = "";
+            int count = printjson(j, data, 0, sizeof(data));
+            h->sendf("[%d] %s", count, data);
+            h->send("-");
+            DELETEP(j);
+            break;
+        }
+    }
 }
 HTTP("/", httpindex);

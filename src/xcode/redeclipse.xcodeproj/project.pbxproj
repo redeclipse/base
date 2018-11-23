@@ -138,6 +138,8 @@
 		FD05F1511ADD1BD70046F323 /* smd.h in Headers */ = {isa = PBXBuildFile; fileRef = FD05F14D1ADD1BD70046F323 /* smd.h */; };
 		FD6BC4A61B4BE57C0010977F /* master.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FD6BC4A51B4BE57C0010977F /* master.cpp */; };
 		FD88C2981B6C824B004CEB1D /* glexts.h in Sources */ = {isa = PBXBuildFile; fileRef = FD05F14B1ADD1BD70046F323 /* glexts.h */; };
+		FDB0781A1B6DE60B0005FA3F /* jsmn.c in Sources */ = {isa = PBXBuildFile; fileRef = FDB078181B6DE60B0005FA3F /* jsmn.c */; };
+		FDB0781B1B6DE60B0005FA3F /* jsmn.h in Headers */ = {isa = PBXBuildFile; fileRef = FDB078191B6DE60B0005FA3F /* jsmn.h */; };
 		FDB0781A1B6DE60B0005FA3F /* sqlite3.c in Sources */ = {isa = PBXBuildFile; fileRef = FDB078181B6DE60B0005FA3F /* sqlite3.c */; };
 		FDB0781B1B6DE60B0005FA3F /* sqlite3.h in Headers */ = {isa = PBXBuildFile; fileRef = FDB078191B6DE60B0005FA3F /* sqlite3.h */; };
 		FDCF1C021B6C84E10035CD3C /* glemu.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FDCF1C001B6C84E10035CD3C /* glemu.cpp */; };
@@ -286,6 +288,8 @@
 		FD05F14C1ADD1BD70046F323 /* iqm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = iqm.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		FD05F14D1ADD1BD70046F323 /* smd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = smd.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		FD6BC4A51B4BE57C0010977F /* master.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; path = master.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
+		FDB078181B6DE60B0005FA3F /* jsmn.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = jsmn.c; path = jsmn.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
+		FDB078191B6DE60B0005FA3F /* jsmn.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = jsmn.h; path = jsmn.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		FDB078181B6DE60B0005FA3F /* sqlite3.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sqlite3.c; path = sqlite3.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		FDB078191B6DE60B0005FA3F /* sqlite3.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sqlite3.h; path = sqlite3.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		FDCF1C001B6C84E10035CD3C /* glemu.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = glemu.cpp; sourceTree = "<group>"; };
@@ -554,6 +558,8 @@
 		FDB0781C1B6DE6140005FA3F /* support */ = {
 			isa = PBXGroup;
 			children = (
+				FDB078181B6DE60B0005FA3F /* jsmn.c */,
+				FDB078191B6DE60B0005FA3F /* jsmn.h */,
 				FDB078181B6DE60B0005FA3F /* sqlite3.c */,
 				FDB078191B6DE60B0005FA3F /* sqlite3.h */,
 			);
@@ -593,6 +599,7 @@
 				B91D401F0D525FD3004EF78A /* animmodel.h in Headers */,
 				B91D40230D525FE9004EF78A /* md5.h in Headers */,
 				B91D40250D52600A004EF78A /* skelmodel.h in Headers */,
+				FDB0781B1B6DE60B0005FA3F /* jsmn.h in Headers */,
 				FDB0781B1B6DE60B0005FA3F /* sqlite3.h in Headers */,
 				D18B8FC10DB0AF8200171439 /* explosion.h in Headers */,
 				D18B8FC20DB0AF8200171439 /* lensflare.h in Headers */,
@@ -710,6 +717,7 @@
 				B9AC7ADB0D06DB44005506F8 /* material.cpp in Sources */,
 				B9AC7ADE0D06DB44005506F8 /* menus.cpp in Sources */,
 				B9AC7AE00D06DB44005506F8 /* normal.cpp in Sources */,
+				FDB0781A1B6DE60B0005FA3F /* jsmn.c in Sources */,
 				FDB0781A1B6DE60B0005FA3F /* sqlite3.c in Sources */,
 				B9AC7AE10D06DB44005506F8 /* octa.cpp in Sources */,
 				B9AC7AE30D06DB44005506F8 /* octaedit.cpp in Sources */,

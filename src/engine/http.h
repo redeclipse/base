@@ -36,6 +36,7 @@ enum
 {
     HTTP_C_NONE = 0,
     HTTP_C_URLENC,
+    HTTP_C_JSON,
     HTTP_C_DATA,
     HTTP_C_MAX
 };
@@ -151,6 +152,38 @@ struct httpcmd
 
 #define HTTP(name, fun) UNUSED static bool __http_##fun = http::addcommand(name, (httpfun)fun)
 
+enum
+{
+    JSON_INIT = 0,
+    JSON_OBJECT,
+    JSON_ARRAY,
+    JSON_STRING,
+    JSON_PRIMITIVE,
+    JSON_MAX
+};
+
+struct json
+{
+    string name, data;
+    int type;
+    vector<json *> children;
+
+    json() { reset(); }
+    ~json() { clear(); }
+
+    void clear()
+    {
+        children.deletecontents();
+    }
+
+    void reset()
+    {
+        name[0] = data[0] = 0;
+        type = JSON_INIT;
+        children.shrink(0);
+    }
+};
+
 namespace http
 {
     extern vector<httpcmd> cmds;
@@ -159,3 +192,6 @@ namespace http
     extern void init();
     extern void runframe();
 }
+
+extern int printjson(json *j, char *dst, int level, size_t len);
+extern json *loadjson(const char *str);

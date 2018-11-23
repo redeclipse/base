@@ -147,6 +147,7 @@ CLIENT_OBJS= \
 	shared/stream.o \
 	shared/tools.o \
 	shared/zip.o \
+	support/jsmn.o \
 	support/sqlite3.o \
 	engine/aa.o \
 	engine/bih.o \
@@ -228,6 +229,7 @@ SERVER_OBJS= \
 	shared/stream-standalone.o \
 	shared/tools-standalone.o \
 	shared/zip-standalone.o \
+	support/jsmn.o \
 	support/sqlite3.o \
 	engine/cdpi-standalone.o \
 	engine/command-standalone.o \
@@ -268,6 +270,9 @@ clean: clean-enet clean-client clean-server clean-genkey
 
 support/sqlite3.o: support/sqlite3.c
 	$(CC) -DSQLITE_THREADSAFE=0 -DSQLITE_OMIT_LOAD_EXTENSION -c -o support/sqlite3.o support/sqlite3.c
+
+support/jsmn.o: support/jsmn.c
+	$(CXX) $(CXXFLAGS) -c -o $@ $(subst .o,.cpp,$@)
 
 $(CLIENT_OBJS): CXXFLAGS += $(CLIENT_INCLUDES)
 $(filter shared/%,$(CLIENT_OBJS)): $(filter shared/%,$(CLIENT_PCH))
@@ -426,7 +431,7 @@ engine/http.o: engine/engine.h engine/version.h shared/cube.h shared/tools.h
 engine/http.o: shared/command.h shared/geom.h shared/ents.h shared/glexts.h
 engine/http.o: shared/glemu.h shared/iengine.h shared/igame.h engine/http.h engine/irc.h
 engine/http.o: engine/sound.h engine/world.h engine/octa.h engine/light.h
-engine/http.o: engine/texture.h engine/bih.h engine/model.h
+engine/http.o: engine/texture.h engine/bih.h engine/model.h support/jsmn.h
 engine/irc.o: engine/engine.h engine/version.h shared/cube.h shared/tools.h
 engine/irc.o: shared/command.h shared/geom.h shared/ents.h shared/glexts.h
 engine/irc.o: shared/glemu.h shared/iengine.h shared/igame.h engine/http.h engine/irc.h
