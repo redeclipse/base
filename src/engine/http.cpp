@@ -1,4 +1,4 @@
-// HTTP client and server
+// HTTP server
 
 #include "engine.h"
 #include <enet/time.h>
@@ -44,17 +44,18 @@ namespace http
 
     int vardecode(const char *str, httpvars &vars)
     {
-        string data = "";
+        string data = "", decoded = "";
         int count = 0;
         for(const char *start = str, *p = str; *p; start = p)
         {
             p += strcspn(p, "=&\0");
             copystring(data, start, p-start+1);
-            httppair *v = vars.find(data);
+            urldecode(decoded, data, sizeof(decoded));
+            httppair *v = vars.find(decoded);
             if(!v)
             {
                 v = &vars.add();
-                copystring(v->name, data);
+                copystring(v->name, decoded);
             }
             count++;
             if(*p == '=')
@@ -62,7 +63,9 @@ namespace http
                 p++;
                 start = p;
                 p += strcspn(p, "&\0");
-                copystring(v->value, start, p-start+1);
+                copystring(data, start, p-start+1);
+                urldecode(decoded, data, sizeof(decoded));
+                copystring(v->value, decoded);
             }
             if(*p) p++;
         }
@@ -172,8 +175,7 @@ namespace http
                             copystring(data, beg, q-beg+1);
                             urldecode(h->path, data, sizeof(h->path));
                             q++;
-                            urldecode(data, q, sizeof(data));
-                            vardecode(data, h->vars);
+                            vardecode(q, h->vars);
                         }
                         else urldecode(h->path, path, sizeof(h->path));
                         conoutf("HTTP path: %s (%s)", path, h->path);
@@ -227,10 +229,8 @@ namespace http
                 }
                 case HTTP_S_DATA:
                 {
-                    string data = "";
-                    urldecode(data, p, sizeof(data));
-                    vardecode(data, h->vars);
-                    proceed(h);
+                    vardecode(p, h->vars);
+                    h->state = HTTP_S_RESPONSE;
                     break;
                 }
                 default:

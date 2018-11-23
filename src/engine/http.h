@@ -1,4 +1,4 @@
-// HTTP client and server
+// HTTP server
 
 #define HTTP_LIMIT  4096
 #define HTTP_TIME   15000
