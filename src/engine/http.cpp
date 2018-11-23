@@ -164,13 +164,13 @@ namespace http
                     {
                         const char *start = p;
                         p += strcspn(p, " \0");
-                        string path = "";
+                        bigstring path = "";
                         copystring(path, start, p-start+1);
                         char *q = path, *beg = q;
                         q += strcspn(q, "?\0");
                         if(*q == '?')
                         {
-                            string data = "";
+                            bigstring data = "";
                             copystring(data, beg, q-beg+1);
                             urldecode(h->path, data, sizeof(h->path));
                             q++;
@@ -361,7 +361,7 @@ namespace http
 
 int printjson(json *j, char *dst, int level, size_t len)
 {
-    string data = "";
+    bigstring data = "";
     if(!j) return 0;
     int count = 0;
     switch(j->type)
@@ -443,7 +443,7 @@ int processjs(const char *str, json *j, jsmntok_t *t, int r, int start, int obje
 json *loadjson(const char *str)
 {
     jsmn_parser p;
-    jsmntok_t t[128];
+    jsmntok_t t[JSON_TOKENS];
     jsmn_init(&p);
     int r = jsmn_parse(&p, str, strlen(str), t, sizeof(t)/sizeof(t[0]));
     if(r < 0)
@@ -491,7 +491,7 @@ void httpindex(httpreq *h)
             h->send("-");
             h->send(h->input);
             h->send("-");
-            string data = "";
+            bigstring data = "";
             int count = printjson(j, data, 0, sizeof(data));
             h->sendf("[%d] %s", count, data);
             h->send("-");

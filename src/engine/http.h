@@ -93,8 +93,8 @@ struct httpreq
     ENetAddress address;
     ENetSocket socket;
     int state, reqtype, contype;
-    string name, path;
-    char input[4096];
+    string name;
+    bigstring path, input;
     vector<char> output;
     int inputpos, outputpos, conlength;
     enet_uint32 lastactivity;
@@ -151,6 +151,8 @@ struct httpcmd
 };
 
 #define HTTP(name, fun) UNUSED static bool __http_##fun = http::addcommand(name, (httpfun)fun)
+
+#define JSON_TOKENS 1024
 
 enum
 {
