@@ -272,7 +272,7 @@ support/sqlite3.o: support/sqlite3.c
 	$(CC) -DSQLITE_THREADSAFE=0 -DSQLITE_OMIT_LOAD_EXTENSION -c -o support/sqlite3.o support/sqlite3.c
 
 support/jsmn.o: support/jsmn.c
-	$(CXX) $(CXXFLAGS) -c -o $@ $(subst .o,.cpp,$@)
+	$(CC) -c -o support/jsmn.o support/jsmn.c
 
 $(CLIENT_OBJS): CXXFLAGS += $(CLIENT_INCLUDES)
 $(filter shared/%,$(CLIENT_OBJS)): $(filter shared/%,$(CLIENT_PCH))

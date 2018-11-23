@@ -115,7 +115,6 @@ namespace http
     bool getdata(httpreq *h)
     {
         if(h->state != HTTP_S_DATA || h->contype == HTTP_C_URLENC) return false;
-        conoutf("HTTP data %s: (%d:%d)", h->name, h->inputpos, h->conlength);
         if(h->inputpos >= h->conlength) h->state = HTTP_S_RESPONSE;
         return true;
     }
@@ -139,7 +138,6 @@ namespace http
             if(!end) break;
             *end++ = '\0';
             if(check && *end == '\n') *end++ = '\0';
-            conoutf("HTTP input %s: %s", h->name, p);
             switch(h->state)
             {
                 case HTTP_S_START:
@@ -179,7 +177,6 @@ namespace http
                             vardecode(q, h->vars);
                         }
                         else urldecode(h->path, path, sizeof(h->path));
-                        conoutf("HTTP path: %s (%s)", path, h->path);
                         if(h->path[0])
                         {
                             h->state = HTTP_S_HEADERS;
@@ -205,7 +202,6 @@ namespace http
                                 cont = h->headers.get("Content-Length");
                                 if(cont && *cont) h->conlength = atoi(cont);
                             }
-                            conoutf("HTTP content: %d (%d)", h->contype, h->conlength);
                             h->state = HTTP_S_DATA;
                             break;
                         }
@@ -473,8 +469,7 @@ json *loadjson(const char *str)
 void httpindex(httpreq *h)
 {
     h->send("Content-Type: text/plain");
-    h->send("");
-    h->send("");
+    h->send("\r\n");
     defformatstring(branch, "%s", versionbranch);
     if(versionbuild > 0) concformatstring(branch, "-%d", versionbuild);
     h->sendf("%s %s-%s%d-%s %s (%s) [0x%.8x]", versionname, versionstring, versionplatname, versionarch, branch, versionisserver ? "server" : "client", versionrelease, versioncrc);
