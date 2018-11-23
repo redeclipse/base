@@ -422,6 +422,7 @@ void cleanupserver()
     cleanupserversockets();
     cleanupmaster();
     irccleanup();
+    http::cleanup();
     cdpi::cleanup();
 }
 
@@ -891,6 +892,7 @@ void checkserversockets()        // reply all server info requests
 
 void serverslice(uint timeout)  // main server update, called from main loop in sp, or from below in dedicated server
 {
+    http::runframe();
     server::serverupdate();
 
     flushmasteroutput();
@@ -1426,6 +1428,7 @@ bool setupserver()
         if(setupserversockets() && verbose) conoutf("Game server started");
     }
     if(!cdpi::init()) return false;
+    http::init();
     defformatstring(branch, "%s", versionbranch);
     if(versionbuild > 0) concformatstring(branch, "-%d", versionbuild);
 #if !defined(STANDALONE) || !defined(WIN32)

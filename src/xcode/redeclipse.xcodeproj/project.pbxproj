@@ -125,6 +125,8 @@
 		D1CEB40D0F548C0B004FD11F /* defendmode.h in Headers */ = {isa = PBXBuildFile; fileRef = D1CEB4090F548C0B004FD11F /* defendmode.h */; };
 		D1D88A8B0F350DFE000680E4 /* auth.h in Headers */ = {isa = PBXBuildFile; fileRef = D1D88A8A0F350DFE000680E4 /* auth.h */; };
 		D1D88A8D0F350E31000680E4 /* ragdoll.h in Headers */ = {isa = PBXBuildFile; fileRef = D1D88A8C0F350E31000680E4 /* ragdoll.h */; };
+		D1D88AB80F350EDE000680E4 /* http.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D1D88AB60F350EDE000680E4 /* http.cpp */; };
+		D1D88AB90F350EDE000680E4 /* http.h in Headers */ = {isa = PBXBuildFile; fileRef = D1D88AB70F350EDE000680E4 /* http.h */; };
 		D1D88AB80F350EDE000680E4 /* irc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D1D88AB60F350EDE000680E4 /* irc.cpp */; };
 		D1D88AB90F350EDE000680E4 /* irc.h in Headers */ = {isa = PBXBuildFile; fileRef = D1D88AB70F350EDE000680E4 /* irc.h */; };
 		D1E605B90E2416150045244E /* redeclipse.icns in Resources */ = {isa = PBXBuildFile; fileRef = B97E99CE085F4B3E002F9BC6 /* redeclipse.icns */; };
@@ -269,6 +271,8 @@
 		D1CEB4090F548C0B004FD11F /* defendmode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = defendmode.h; sourceTree = "<group>"; };
 		D1D88A8A0F350DFE000680E4 /* auth.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = auth.h; sourceTree = "<group>"; };
 		D1D88A8C0F350E31000680E4 /* ragdoll.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ragdoll.h; sourceTree = "<group>"; };
+		D1D88AB60F350EDE000680E4 /* http.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = http.cpp; sourceTree = "<group>"; };
+		D1D88AB70F350EDE000680E4 /* http.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = http.h; sourceTree = "<group>"; };
 		D1D88AB60F350EDE000680E4 /* irc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = irc.cpp; sourceTree = "<group>"; };
 		D1D88AB70F350EDE000680E4 /* irc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = irc.h; sourceTree = "<group>"; };
 		D1DB53E50D70F1C3003AE25C /* English */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = English; path = English.lproj/Localizable.strings; sourceTree = "<group>"; };
@@ -428,6 +432,8 @@
 				D118DEB50D979281000E8C4C /* renderlights.cpp */,
 				B9AC7A8C0D06DB44005506F8 /* grass.cpp */,
 				FD05F14C1ADD1BD70046F323 /* iqm.h */,
+				D1D88AB60F350EDE000680E4 /* http.cpp */,
+				D1D88AB70F350EDE000680E4 /* http.h */,
 				D1D88AB60F350EDE000680E4 /* irc.cpp */,
 				D1D88AB70F350EDE000680E4 /* irc.h */,
 				D18B8FBF0DB0AF8200171439 /* lensflare.h */,
@@ -605,6 +611,7 @@
 				D1D88A8B0F350DFE000680E4 /* auth.h in Headers */,
 				2AB901D11AC1B8E900A5F378 /* version.h in Headers */,
 				D1D88A8D0F350E31000680E4 /* ragdoll.h in Headers */,
+				D1D88AB90F350EDE000680E4 /* http.h in Headers */,
 				D1D88AB90F350EDE000680E4 /* irc.h in Headers */,
 				D1CEB40A0F548C0B004FD11F /* aiman.h in Headers */,
 				D1CEB40B0F548C0B004FD11F /* capturemode.h in Headers */,
@@ -743,6 +750,7 @@
 				D16A83720F130EBC00EABB1F /* aa.cpp in Sources */,
 				FDCF1C021B6C84E10035CD3C /* glemu.cpp in Sources */,
 				D16A83770F130EBC00EABB1F /* ui.cpp in Sources */,
+				D1D88AB80F350EDE000680E4 /* http.cpp in Sources */,
 				D1D88AB80F350EDE000680E4 /* irc.cpp in Sources */,
 				D11B5A6610CBB4D8003F0098 /* game.cpp in Sources */,
 				FD6BC4A61B4BE57C0010977F /* master.cpp in Sources */,

@@ -83,6 +83,7 @@ extern int nextcontrolversion();
 
 extern void setverinfo(const char *bin);
 
+#include "http.h"
 #include "irc.h"
 #include "sound.h"
 
