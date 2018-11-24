@@ -1724,6 +1724,31 @@
 			<Option target="redeclipse_server-amd64" />
 			<Option target="redeclipse_server-amd64-dbg" />
 		</Unit>
+		<Unit filename="support/jsmn.c">
+			<Option compilerVar="CC" />
+			<Option target="redeclipse-x86" />
+			<Option target="redeclipse-x86-dbg" />
+			<Option target="redeclipse-x86-prof" />
+			<Option target="redeclipse_server-x86" />
+			<Option target="redeclipse_server-x86-dbg" />
+			<Option target="redeclipse-amd64" />
+			<Option target="redeclipse-amd64-dbg" />
+			<Option target="redeclipse-amd64-prof" />
+			<Option target="redeclipse_server-amd64" />
+			<Option target="redeclipse_server-amd64-dbg" />
+		</Unit>
+		<Unit filename="support/jsmn.h">
+			<Option target="redeclipse-x86" />
+			<Option target="redeclipse-x86-dbg" />
+			<Option target="redeclipse-x86-prof" />
+			<Option target="redeclipse_server-x86" />
+			<Option target="redeclipse_server-x86-dbg" />
+			<Option target="redeclipse-amd64" />
+			<Option target="redeclipse-amd64-dbg" />
+			<Option target="redeclipse-amd64-prof" />
+			<Option target="redeclipse_server-amd64" />
+			<Option target="redeclipse_server-amd64-dbg" />
+		</Unit>
 		<Unit filename="support/sqlite3.c">
 			<Option compilerVar="CC" />
 			<Option compiler="gcc" use="1" buildCommand="$compiler $includes -c $file -o $object" />

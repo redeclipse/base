@@ -164,14 +164,14 @@ enum
     JSON_MAX
 };
 
-struct json
+struct jsobj
 {
     string name, data;
     int type;
-    vector<json *> children;
+    vector<jsobj *> children;
 
-    json() { reset(); }
-    ~json() { clear(); }
+    jsobj() { reset(); }
+    ~jsobj() { clear(); }
 
     void clear()
     {
@@ -195,5 +195,8 @@ namespace http
     extern void runframe();
 }
 
-extern int printjson(json *j, char *dst, int level, size_t len);
-extern json *loadjson(const char *str);
+namespace json
+{
+    extern int print(jsobj *j, char *dst, int level, size_t len);
+    extern jsobj *load(const char *str);
+}

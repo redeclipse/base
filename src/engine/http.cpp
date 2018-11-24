@@ -15,12 +15,12 @@ namespace http
             {
                 p++;
                 if(*p == '%') dst[n++] = *p;
-                else if((*p >= '0' && *p <= '9') || ((*p >= 'A' || *p >= 'a') && (*p <= 'F' || *p <= 'f')))
+                else if((*p >= '0' && *p <= '9') || (*p >= 'A' && *p <= 'F') || (*p >= 'a' && *p <= 'f'))
                 {
                     char val[3];
                     val[0] = *p;
                     p++;
-                    if(*p >= '0' && *p <= '9')
+                    if((*p >= '0' && *p <= '9') || (*p >= 'A' && *p <= 'F') || (*p >= 'a' && *p <= 'f'))
                     {
                         val[1] = *p;
                         val[2] = 0;
@@ -78,10 +78,11 @@ namespace http
     ENetSocket socket = ENET_SOCKET_NULL;
     time_t starttime = 0;
 
+    void check();
     #ifdef STANDALONE
-    VAR(0, httpserver, 0, 1, 1);
+    VARF(0, httpserver, 0, 1, 1, check());
     #else
-    VAR(0, httpserver, 0, 0, 1);
+    VARF(0, httpserver, 0, 0, 1, check());
     #endif
     VAR(0, httpserverport, 1, HTTP_PORT, VAR_MAX);
     SVAR(0, httpserverip, "");
@@ -128,12 +129,12 @@ namespace http
         {
             if(h->state == HTTP_S_RESPONSE || (h->state == HTTP_S_DATA && h->contype != HTTP_C_URLENC)) break;
             bool check = true;
-            end = (char *)memchr(p, '\r', &h->input[h->inputpos] - p);
+            end = (char *)memchr(p, '\r', &h->input[h->inputpos]-p);
             if(!end)
             {
                 check = false;
-                end = (char *)memchr(p, '\n', &h->input[h->inputpos] - p);
-                if(!end) end = (char *)memchr(p, '\0', &h->input[h->inputpos] - p);
+                end = (char *)memchr(p, '\n', &h->input[h->inputpos]-p);
+                if(!end) end = (char *)memchr(p, '\0', &h->input[h->inputpos]-p);
             }
             if(!end) break;
             *end++ = '\0';
@@ -166,7 +167,7 @@ namespace http
                         p += strcspn(p, " \0");
                         bigstring path = "";
                         copystring(path, start, p-start+1);
-                        char *q = path, *beg = q;
+                        const char *q = path, *beg = q;
                         q += strcspn(q, "?\0");
                         if(*q == '?')
                         {
@@ -238,14 +239,19 @@ namespace http
                 }
             }
         }
-        h->inputpos = &h->input[h->inputpos] - p;
+        h->inputpos = &h->input[h->inputpos]-p;
         memmove(h->input, p, h->inputpos);
-        getdata(h);
-        return h->inputpos < (int)sizeof(h->input);
+        if(h->inputpos < (int)sizeof(h->input))
+        {
+            getdata(h);
+            return true;
+        }
+        return false;
     }
 
     void purge(int n)
     {
+        if(n < 0 || n >= reqs.length()) return;
         httpreq *h = reqs[n];
         enet_socket_destroy(h->socket);
         conoutf("HTTP peer %s disconnected", h->name);
@@ -253,17 +259,30 @@ namespace http
         reqs.remove(n);
     }
 
+    void cleanup()
+    {
+        loopv(reqs) purge(i--);
+        if(socket != ENET_SOCKET_NULL) enet_socket_destroy(socket);
+        socket = ENET_SOCKET_NULL;
+    }
+
+    void check()
+    {
+        if(httpserver) init();
+        else cleanup();
+    }
+
     void init()
     {
-        if(!httpserver) return;
+        if(!httpserver || socket != ENET_SOCKET_NULL) return;
         conoutf("Loading HTTP (%s:%d)..", *httpserverip ? httpserverip : "*", httpserverport);
         ENetAddress address = { ENET_HOST_ANY, enet_uint16(httpserverport) };
-        if(*httpserverip && enet_address_set_host(&address, httpserverip) < 0) fatal("Failed to resolve HTTP address: %s", httpserverip);
-        if((socket = enet_socket_create(ENET_SOCKET_TYPE_STREAM)) == ENET_SOCKET_NULL) fatal("Failed to create HTTP server socket");
-        if(enet_socket_set_option(socket, ENET_SOCKOPT_REUSEADDR, 1) < 0) fatal("Failed to set HTTP server socket option");
-        if(enet_socket_bind(socket, &address) < 0) fatal("Failed to bind HTTP server socket");
-        if(enet_socket_listen(socket, -1) < 0) fatal("Failed to listen on HTTP server socket");
-        if(enet_socket_set_option(socket, ENET_SOCKOPT_NONBLOCK, 1) < 0) fatal("Failed to make HTTP server socket non-blocking");
+        if(*httpserverip && enet_address_set_host(&address, httpserverip) < 0) { conoutf("Failed to resolve HTTP address: %s", httpserverip); cleanup(); return; }
+        if((socket = enet_socket_create(ENET_SOCKET_TYPE_STREAM)) == ENET_SOCKET_NULL) { conoutf("Failed to create HTTP server socket"); cleanup(); return; }
+        if(enet_socket_set_option(socket, ENET_SOCKOPT_REUSEADDR, 1) < 0) { conoutf("Failed to set HTTP server socket option"); cleanup(); return; }
+        if(enet_socket_bind(socket, &address) < 0) { conoutf("Failed to bind HTTP server socket"); cleanup(); return; }
+        if(enet_socket_listen(socket, -1) < 0) { conoutf("Failed to listen on HTTP server socket"); cleanup(); return; }
+        if(enet_socket_set_option(socket, ENET_SOCKOPT_NONBLOCK, 1) < 0) { conoutf("Failed to make HTTP server socket non-blocking"); cleanup(); return; }
         starttime = clocktime;
         conoutf("HTTP server started on %s:[%d]", *httpserverip ? httpserverip : "localhost", httpserverport);
     }
@@ -271,7 +290,6 @@ namespace http
     void runframe()
     {
         if(socket == ENET_SOCKET_NULL) return;
-
         ENetSocketSet readset, writeset;
         ENetSocket maxsock = socket;
         ENET_SOCKETSET_EMPTY(readset);
@@ -306,7 +324,6 @@ namespace http
             }
             break;
         }
-
         loopv(reqs)
         {
             httpreq *h = reqs[i];
@@ -332,7 +349,7 @@ namespace http
             {
                 ENetBuffer buf;
                 buf.data = &h->input[h->inputpos];
-                buf.dataLength = sizeof(h->input) - h->inputpos;
+                buf.dataLength = sizeof(h->input)-h->inputpos;
                 int res = enet_socket_receive(h->socket, NULL, &buf, 1);
                 if(res > 0)
                 {
@@ -350,120 +367,117 @@ namespace http
             }
         }
     }
-
-    void cleanup()
-    {
-        loopv(reqs) purge(i--);
-        if(socket != ENET_SOCKET_NULL) enet_socket_destroy(socket);
-        socket = ENET_SOCKET_NULL;
-    }
 }
 
-int printjson(json *j, char *dst, int level, size_t len)
+namespace json
 {
-    bigstring data = "";
-    if(!j) return 0;
-    int count = 0;
-    switch(j->type)
+    int print(jsobj *j, char *dst, int level, size_t len)
     {
-        case JSON_STRING:
+        bigstring data = "";
+        if(!j) return 0;
+        int count = 0;
+        switch(j->type)
         {
-            if(j->data[0]) concformatstring(data, "\"%s\": \"%s\"", j->name, j->data);
-            else concformatstring(data, "\"%s\"", j->name);
-            count++;
-            break;
-        }
-        case JSON_PRIMITIVE:
-        {
-            if(j->data[0]) concformatstring(data, "\"%s\": %s", j->name, j->data);
-            else concformatstring(data, "\"%s\"", j->name);
-            count++;
-            break;
-        }
-        case JSON_OBJECT: case JSON_ARRAY:
-        {
-            if(j->name[0]) concformatstring(data, "\"%s\": %c ", j->name, int(j->type != JSON_OBJECT ? '[' : '{'));
-            else concformatstring(data, "%c ", int(j->type != JSON_OBJECT ? '[' : '{'));
-            loopv(j->children)
+            case JSON_STRING:
             {
-                count += printjson(j->children[i], data, level+1, len);
-                if(i < j->children.length()-1) concatstring(data, ", ");
-            }
-            concformatstring(data, " %c", int(j->type != JSON_OBJECT ? ']' : '}'));
-        }
-        default: break;
-    }
-    concatstring(dst, data, len);
-    return count;
-}
-
-int processjs(const char *str, json *j, jsmntok_t *t, int r, int start, int objects = -1)
-{
-    int q = 0;
-    string name = "", data = "";
-    for(int i = start, objs = 0; i < r; i++)
-    {
-        bool hasname = name[0] != 0;
-        switch(t[i].type)
-        {
-            case JSMN_STRING: case JSMN_PRIMITIVE:
-            {
-                copystring(hasname ? data : name, &str[t[i].start], t[i].end-t[i].start+1);
-                if(j->type != JSON_ARRAY && !hasname) break;
-                json *k = new json;
-                k->type = t[i].type != JSMN_PRIMITIVE ? JSON_STRING : JSON_PRIMITIVE;
-                copystring(k->name, name);
-                if(hasname) copystring(k->data, data);
-                name[0] = data[0] = 0;
-                objs++;
-                j->children.add(k);
+                if(j->data[0]) concformatstring(data, "\"%s\": \"%s\"", j->name, j->data);
+                else concformatstring(data, "\"%s\"", j->name);
+                count++;
                 break;
             }
-            case JSMN_ARRAY: case JSMN_OBJECT:
+            case JSON_PRIMITIVE:
             {
-                json *k = new json;
-                k->type = t[i].type != JSMN_OBJECT ? JSON_ARRAY : JSON_OBJECT;
-                copystring(k->name, name);
-                int size = t[i].size, a = processjs(str, k, t, r, i+1, size);
-                i += a;
-                q += a;
-                name[0] = data[0] = 0;
-                objs++;
-                j->children.add(k);
+                if(j->data[0]) concformatstring(data, "\"%s\": %s", j->name, j->data);
+                else concformatstring(data, "\"%s\"", j->name);
+                count++;
                 break;
+            }
+            case JSON_OBJECT: case JSON_ARRAY:
+            {
+                if(j->name[0]) concformatstring(data, "\"%s\": %c ", j->name, int(j->type != JSON_OBJECT ? '[' : '{'));
+                else concformatstring(data, "%c ", int(j->type != JSON_OBJECT ? '[' : '{'));
+                loopv(j->children)
+                {
+                    count += print(j->children[i], data, level+1, len);
+                    if(i < j->children.length()-1) concatstring(data, ", ");
+                }
+                concformatstring(data, " %c", int(j->type != JSON_OBJECT ? ']' : '}'));
+                count++;
             }
             default: break;
         }
-        q++;
-        if(objects >= 0 && objs >= objects) break;
+        concatstring(dst, data, len);
+        return count;
     }
-    return q;
-}
 
-json *loadjson(const char *str)
-{
-    jsmn_parser p;
-    jsmntok_t t[JSON_TOKENS];
-    jsmn_init(&p);
-    int r = jsmn_parse(&p, str, strlen(str), t, sizeof(t)/sizeof(t[0]));
-    if(r < 0)
+    int processjs(const char *str, jsobj *j, jsmntok_t *t, int r, int start, int objects = -1)
     {
-        conoutf("JSON: Failed to parse (%d)", r);
-        return NULL;
+        int count = 0;
+        string name = "", data = "";
+        for(int i = start, objs = 0; i < r; i++)
+        {
+            bool hasname = name[0] != 0;
+            switch(t[i].type)
+            {
+                case JSMN_STRING: case JSMN_PRIMITIVE:
+                {
+                    copystring(hasname ? data : name, &str[t[i].start], t[i].end-t[i].start+1);
+                    if(j->type != JSON_ARRAY && !hasname) break;
+                    jsobj *k = new jsobj;
+                    k->type = t[i].type != JSMN_PRIMITIVE ? JSON_STRING : JSON_PRIMITIVE;
+                    copystring(k->name, name);
+                    if(hasname) copystring(k->data, data);
+                    name[0] = data[0] = 0;
+                    objs++;
+                    j->children.add(k);
+                    break;
+                }
+                case JSMN_ARRAY: case JSMN_OBJECT:
+                {
+                    jsobj *k = new jsobj;
+                    k->type = t[i].type != JSMN_OBJECT ? JSON_ARRAY : JSON_OBJECT;
+                    copystring(k->name, name);
+                    int a = processjs(str, k, t, r, i+1, t[i].size);
+                    i += a;
+                    count += a;
+                    name[0] = data[0] = 0;
+                    objs++;
+                    j->children.add(k);
+                    break;
+                }
+                default: break;
+            }
+            count++;
+            if(objects >= 0 && objs >= objects) break;
+        }
+        return count;
     }
-    if(r < 1 || t[0].type != JSMN_OBJECT)
+
+    jsobj *load(const char *str)
     {
-        conoutf("JSON: Object expected");
-        return NULL;
+        jsmn_parser p;
+        jsmntok_t t[JSON_TOKENS];
+        jsmn_init(&p);
+        int r = jsmn_parse(&p, str, strlen(str), t, sizeof(t)/sizeof(t[0]));
+        if(r < 0)
+        {
+            conoutf("JSON: Failed to parse (%d)", r);
+            return NULL;
+        }
+        if(r < 1 || t[0].type != JSMN_OBJECT)
+        {
+            conoutf("JSON: Object expected");
+            return NULL;
+        }
+        jsobj *j = new jsobj;
+        j->type = JSON_OBJECT;
+        if(!processjs(str, j, &t[0], r, 1))
+        {
+            DELETEP(j);
+            return NULL;
+        }
+        return j;
     }
-    json *j = new json;
-    j->type = JSON_OBJECT;
-    if(!processjs(str, j, &t[0], r, 1))
-    {
-        DELETEP(j);
-        return NULL;
-    }
-    return j;
 }
 
 void httpindex(httpreq *h)
@@ -485,16 +499,15 @@ void httpindex(httpreq *h)
         case HTTP_C_DATA: h->sendf("Generic Data: [%d] %s", h->inputpos, h->input); break;
         case HTTP_C_JSON:
         {
-            json *j = loadjson(h->input);
+            jsobj *j = json::load(h->input);
+            h->sendf("JSON Data: [%d] (%d)", h->inputpos, j ? j->children.length() : 0);
             if(!j) break;
-            h->sendf("JSON Data: [%d] (%d)", h->inputpos, j->children.length());
             h->send("-");
             h->send(h->input);
             h->send("-");
             bigstring data = "";
-            int count = printjson(j, data, 0, sizeof(data));
+            int count = json::print(j, data, 0, sizeof(data));
             h->sendf("[%d] %s", count, data);
-            h->send("-");
             DELETEP(j);
             break;
         }
