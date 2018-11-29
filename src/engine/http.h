@@ -1,9 +1,10 @@
-// HTTP server
+// HTTP server and client
 
 #define HTTP_LIMIT  4096
 #define HTTP_TIME   15000
-#define HTTP_PORT   28888
+#define HTTP_LISTEN 28888
 #define HTTP_HDRS   64
+#define HTTP_PORT   80
 
 enum
 {
@@ -18,7 +19,9 @@ enum
     HTTP_S_HEADERS,
     HTTP_S_DATA,
     HTTP_S_RESPONSE,
-    HTTP_S_PURGE,
+    HTTP_S_DONE,
+    HTTP_S_FAILED,
+    HTTP_S_CONNECTING,
     HTTP_S_MAX
 };
 
@@ -49,6 +52,11 @@ struct httppair
     {
         name[0] = value[0] = 0;
     }
+    httppair(const char *n, const char *v)
+    {
+        copystring(name, n);
+        copystring(value, v);
+    }
     ~httppair() {}
 };
 
@@ -67,6 +75,11 @@ struct httpvars
     httppair &add()
     {
         return values.add();
+    }
+
+    httppair &add(const char *name, const char *value)
+    {
+        return values.add(httppair(name, value));
     }
 
     httppair *find(const char *name)
@@ -98,7 +111,7 @@ struct httpreq
     vector<char> output;
     int inputpos, outputpos, conlength;
     enet_uint32 lastactivity;
-    httpvars headers, vars;
+    httpvars inhdrs, outhdrs, vars;
 
     httpreq() { reset(); }
     ~httpreq() {}
@@ -112,7 +125,8 @@ struct httpreq
         inputpos = outputpos = conlength = 0;
         lastactivity = 0;
         output.shrink(0);
-        headers.reset();
+        inhdrs.reset();
+        outhdrs.reset();
         vars.reset();
     }
 
@@ -139,8 +153,29 @@ struct httpreq
     }
 };
 
+struct httpclient;
+typedef void (__cdecl *httpcb)(httpclient *c);
+struct httpclient : httpreq
+{
+    int port, uid;
+    httpcb callback;
+    bigstring data;
+
+    httpclient() { reset(); }
+    ~httpclient() {}
+
+    void reset()
+    {
+        port = 0;
+        uid = -1;
+        data[0] = 0;
+        callback = NULL;
+        httpreq::reset();
+    }
+};
+
 struct httpcmd;
-typedef void (__cdecl *httpfun)(httpreq *h);
+typedef void (__cdecl *httpfun)(httpreq *r);
 struct httpcmd
 {
     const char *name;
@@ -188,8 +223,10 @@ struct jsobj
 
 namespace http
 {
-    extern vector<httpcmd> cmds;
+    extern char *urldecode(char *dst, const char *str, size_t len);
+    extern int vardecode(const char *str, httpvars &vars);
     extern bool addcommand(const char *name, httpfun fun);
+    extern httpclient *retrieve(const char *serv, int port, int type, const char *path, httpcb callback, const char *data = NULL, int uid = -1);
     extern void cleanup();
     extern void init();
     extern void runframe();

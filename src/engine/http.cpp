@@ -1,4 +1,4 @@
-// HTTP server
+// HTTP server and client
 
 #include "engine.h"
 #include <enet/time.h>
@@ -84,7 +84,7 @@ namespace http
     #else
     VARF(0, httpserver, 0, 0, 1, check());
     #endif
-    VAR(0, httpserverport, 1, HTTP_PORT, VAR_MAX);
+    VAR(0, httpserverport, 1, HTTP_LISTEN, VAR_MAX);
     SVAR(0, httpserverip, "");
 
     httpcmd *findcommand(const char *name)
@@ -100,68 +100,70 @@ namespace http
         return true;
     }
 
-    void proceed(httpreq *h)
+    void proceed(httpreq *r)
     {
-        httpcmd *c = findcommand(h->path);
+        httpcmd *c = findcommand(r->path);
         if(c)
         {
-            h->input[h->inputpos] = '\0';
-            h->send("HTTP/1.0 200 OK");
-            ((httpfun)c->fun)(h);
+            if(r->inputpos < 0 || r->inputpos > (int)sizeof(r->input)) r->inputpos = 0;
+            r->input[r->inputpos] = '\0';
+            r->send("HTTP/1.0 200 OK");
+            ((httpfun)c->fun)(r);
         }
-        else h->send("HTTP/1.0 404 Not Found");
-        h->state = HTTP_S_PURGE;
+        else r->send("HTTP/1.0 404 Not Found");
+        r->state = HTTP_S_DONE;
     }
 
-    bool getdata(httpreq *h)
+    bool processreqdata(httpreq *r)
     {
-        if(h->state != HTTP_S_DATA || h->contype == HTTP_C_URLENC) return false;
-        if(h->inputpos >= h->conlength) h->state = HTTP_S_RESPONSE;
+        if(r->state != HTTP_S_DATA || r->contype == HTTP_C_URLENC) return false;
+        if(r->inputpos >= r->conlength) r->state = HTTP_S_RESPONSE;
         return true;
     }
 
-    bool process(httpreq *h)
+    static const char *httpreqs[HTTP_T_MAX] = {
+        "ERROR",
+        "GET",
+        "POST",
+        "PUT",
+        "DELETE"
+    };
+
+    bool processreq(httpreq *r)
     {
-        if(h->inputpos < 0) return false;
-        if(getdata(h)) return true;
-        char *p = h->input;
+        if(r->inputpos < 0) return false;
+        if(processreqdata(r)) return true;
+        char *p = r->input;
         for(char *end;; p = end)
         {
-            if(h->state == HTTP_S_RESPONSE || (h->state == HTTP_S_DATA && h->contype != HTTP_C_URLENC)) break;
+            if(r->state == HTTP_S_RESPONSE || (r->state == HTTP_S_DATA && r->contype != HTTP_C_URLENC)) break;
             bool check = true;
-            end = (char *)memchr(p, '\r', &h->input[h->inputpos]-p);
+            end = (char *)memchr(p, '\r', &r->input[r->inputpos]-p);
             if(!end)
             {
                 check = false;
-                end = (char *)memchr(p, '\n', &h->input[h->inputpos]-p);
-                if(!end) end = (char *)memchr(p, '\0', &h->input[h->inputpos]-p);
+                end = (char *)memchr(p, '\n', &r->input[r->inputpos]-p);
+                if(!end) end = (char *)memchr(p, '\0', &r->input[r->inputpos]-p);
             }
             if(!end) break;
             *end++ = '\0';
             if(check && *end == '\n') *end++ = '\0';
-            switch(h->state)
+            switch(r->state)
             {
                 case HTTP_S_START:
                 {
-                    static const char *httpreqs[HTTP_T_MAX] = {
-                        "ERROR",
-                        "GET",
-                        "POST",
-                        "PUT",
-                        "DELETE"
-                    };
                     loopi(HTTP_T_MAX)
                     {
-                        int r = strlen(httpreqs[i]);
-                        if(!strncmp(p, httpreqs[i], r))
+                        int t = strlen(httpreqs[i]);
+                        if(!strncmp(p, httpreqs[i], t))
                         {
-                            p += r;
+                            p += t;
                             while(*p == ' ') p++;
-                            h->reqtype = i;
+                            r->reqtype = i;
                             break;
                         }
                     }
-                    if(h->reqtype != HTTP_T_ERROR)
+                    if(r->reqtype != HTTP_T_ERROR)
                     {
                         const char *start = p;
                         p += strcspn(p, " \0");
@@ -173,51 +175,51 @@ namespace http
                         {
                             bigstring data = "";
                             copystring(data, beg, q-beg+1);
-                            urldecode(h->path, data, sizeof(h->path));
+                            urldecode(r->path, data, sizeof(r->path));
                             q++;
-                            vardecode(q, h->vars);
+                            vardecode(q, r->vars);
                         }
-                        else urldecode(h->path, path, sizeof(h->path));
-                        if(h->path[0])
+                        else urldecode(r->path, path, sizeof(r->path));
+                        if(r->path[0])
                         {
-                            h->state = HTTP_S_HEADERS;
+                            r->state = HTTP_S_HEADERS;
                             break;
                         }
                     }
-                    h->send("HTTP/1.0 400 Bad Request");
-                    h->state = HTTP_S_PURGE; // failed
+                    r->send("HTTP/1.0 400 Bad Request");
+                    r->state = HTTP_S_DONE; // failed
                     break;
                 }
                 case HTTP_S_HEADERS:
                 {
                     if(!strlen(p))
                     {
-                        if(h->reqtype != HTTP_T_GET) // wants data
+                        if(r->reqtype != HTTP_T_GET) // wants data
                         {
-                            const char *cont = h->headers.get("Content-Type");
+                            const char *cont = r->inhdrs.get("Content-Type");
                             if(cont && *cont)
                             {
-                                if(!strcasecmp(cont, "application/x-www-form-urlencoded")) h->contype = HTTP_C_URLENC;
-                                else if(!strcasecmp(cont, "application/json")) h->contype = HTTP_C_JSON;
-                                else h->contype = HTTP_C_DATA;
-                                cont = h->headers.get("Content-Length");
-                                if(cont && *cont) h->conlength = atoi(cont);
+                                if(!strcasecmp(cont, "application/x-www-form-urlencoded")) r->contype = HTTP_C_URLENC;
+                                else if(!strcasecmp(cont, "application/json")) r->contype = HTTP_C_JSON;
+                                else r->contype = HTTP_C_DATA;
+                                cont = r->inhdrs.get("Content-Length");
+                                if(cont && *cont) r->conlength = atoi(cont);
                             }
-                            h->state = HTTP_S_DATA;
+                            r->state = HTTP_S_DATA;
                             break;
                         }
-                        h->state = HTTP_S_RESPONSE;
+                        r->state = HTTP_S_RESPONSE;
                         break;
                     }
-                    if(h->headers.length() >= HTTP_HDRS) break;
+                    if(r->inhdrs.length() >= HTTP_HDRS) break;
                     const char *start = p;
                     p += strcspn(p, ":\0");
                     string data = "";
                     copystring(data, start, p-start+1);
-                    httppair *v = h->headers.find(data);
+                    httppair *v = r->inhdrs.find(data);
                     if(!v)
                     {
-                        v = &h->headers.add();
+                        v = &r->inhdrs.add();
                         copystring(v->name, start, p-start+1);
                     }
                     if(*p == ':') p++;
@@ -227,41 +229,184 @@ namespace http
                 }
                 case HTTP_S_DATA:
                 {
-                    vardecode(p, h->vars);
-                    h->state = HTTP_S_RESPONSE;
+                    vardecode(p, r->vars);
+                    r->state = HTTP_S_RESPONSE;
                     break;
                 }
                 default:
                 {
-                    h->send("HTTP/1.0 400 Bad Request");
-                    h->state = HTTP_S_PURGE; // failed
+                    r->send("HTTP/1.0 400 Bad Request");
+                    r->state = HTTP_S_DONE; // failed
                     break;
                 }
             }
         }
-        h->inputpos = &h->input[h->inputpos]-p;
-        memmove(h->input, p, h->inputpos);
-        if(h->inputpos < (int)sizeof(h->input))
+        r->inputpos = &r->input[r->inputpos]-p;
+        memmove(r->input, p, r->inputpos);
+        if(r->inputpos < (int)sizeof(r->input))
         {
-            getdata(h);
+            processreqdata(r);
             return true;
         }
         return false;
     }
 
-    void purge(int n)
+    void purgereq(int n)
     {
         if(n < 0 || n >= reqs.length()) return;
-        httpreq *h = reqs[n];
-        enet_socket_destroy(h->socket);
-        conoutf("HTTP peer %s disconnected", h->name);
+        httpreq *r = reqs[n];
+        enet_socket_destroy(r->socket);
+        conoutf("HTTP request %s disconnected", r->name);
         delete reqs[n];
         reqs.remove(n);
     }
 
+    vector<httpclient *> clients;
+
+    bool processclientdata(httpclient *c)
+    {
+        if(c->state != HTTP_S_DATA) return false;
+        if(c->inputpos >= c->conlength) c->state = HTTP_S_DONE;
+        return true;
+    }
+
+    bool processclient(httpclient *c)
+    {
+        if(c->inputpos < 0) return false;
+        if(processclientdata(c)) return true;
+        char *p = c->input;
+        for(char *end;; p = end)
+        {
+            if(c->state == HTTP_S_DATA) break;
+            bool check = true;
+            end = (char *)memchr(p, '\r', &c->input[c->inputpos]-p);
+            if(!end)
+            {
+                check = false;
+                end = (char *)memchr(p, '\n', &c->input[c->inputpos]-p);
+                if(!end) end = (char *)memchr(p, '\0', &c->input[c->inputpos]-p);
+            }
+            if(!end) break;
+            *end++ = '\0';
+            if(check && *end == '\n') *end++ = '\0';
+            switch(c->state)
+            {
+                case HTTP_S_START:
+                {
+                    p += strcspn(p, " \0");
+                    if(!*p) return false;
+                    const char *start = ++p;
+                    p += strcspn(p, " \0");
+                    string retcode = "";
+                    copystring(retcode, start, p-start+1);
+                    int retnum = atoi(retcode);
+                    conoutf("HTTP retcode %s [%d]: %d", c->name, c->uid, retnum);
+                    if(retnum != HTTP_R_OK) return false;
+                    c->state = HTTP_S_HEADERS;
+                    break;
+                }
+                case HTTP_S_HEADERS:
+                {
+                    if(!strlen(p))
+                    {
+                        const char *cont = c->inhdrs.get("Content-Type");
+                        if(!cont && !*cont) return false;
+                        if(!strcasecmp(cont, "application/x-www-form-urlencoded")) c->contype = HTTP_C_URLENC;
+                        else if(!strcasecmp(cont, "application/json")) c->contype = HTTP_C_JSON;
+                        else c->contype = HTTP_C_DATA;
+                        cont = c->inhdrs.get("Content-Length");
+                        if(cont && *cont) c->conlength = atoi(cont);
+                        c->state = HTTP_S_DATA;
+                        break;
+                    }
+                    if(c->inhdrs.length() >= HTTP_HDRS) break;
+                    const char *start = p;
+                    p += strcspn(p, ":\0");
+                    string data = "";
+                    copystring(data, start, p-start+1);
+                    httppair *v = c->inhdrs.find(data);
+                    if(!v)
+                    {
+                        v = &c->inhdrs.add();
+                        copystring(v->name, start, p-start+1);
+                    }
+                    if(*p == ':') p++;
+                    while(*p == ' ') p++;
+                    copystring(v->value, p);
+                    break;
+                }
+                default: return false;
+            }
+        }
+        c->inputpos = &c->input[c->inputpos]-p;
+        memmove(c->input, p, c->inputpos);
+        if(c->inputpos < (int)sizeof(c->input))
+        {
+            processclientdata(c);
+            return true;
+        }
+        return false;
+    }
+
+    void purgeclient(int n, int state = -1)
+    {
+        if(n < 0 || n >= clients.length()) return;
+        httpclient *c = clients[n];
+        if(state >= 0) c->state = state;
+        if(c->inputpos < 0 || c->inputpos > (int)sizeof(c->input)) c->inputpos = 0;
+        c->input[c->inputpos] = '\0';
+        if(c->callback) c->callback(c);
+        enet_socket_destroy(c->socket);
+        conoutf("HTTP peer %s [%d] disconnected (%d)", c->name, c->uid, c->state);
+        delete clients[n];
+        clients.remove(n);
+    }
+
+    static int retrieveid = 0;
+    httpclient *retrieve(const char *serv, int port, int type, const char *path, httpcb callback, const char *data, int uid)
+    {
+        if(!serv || !*serv || !port || type <= HTTP_T_ERROR || type >= HTTP_T_MAX || !path || !*path || !callback) return NULL;
+        httpclient *c = new httpclient;
+        c->lastactivity = totalmillis ? totalmillis : 1;
+        copystring(c->name, serv);
+        c->port = c->address.port = port;
+        if(uid >= 0) c->uid = uid;
+        else
+        {
+            c->uid = retrieveid++;
+            if(retrieveid < 0) retrieveid = 0;
+        }
+        c->reqtype = type;
+        copystring(c->path, path);
+        if(data) copystring(c->data, data);
+        c->callback = callback;
+        conoutf("HTTP looking up %s:[%d] [%d]...", c->name, c->port, c->uid);
+        if(!resolverwait(c->name, &c->address)) // TODO: don't block here
+        {
+            conoutf("HTTP unable to resolve %s:[%d] [%d]...", c->name, c->port, c->uid);
+            delete c;
+            return NULL;
+        }
+        c->socket = enet_socket_create(ENET_SOCKET_TYPE_STREAM);
+        if(c->socket != ENET_SOCKET_NULL) enet_socket_set_option(c->socket, ENET_SOCKOPT_NONBLOCK, 1);
+        if(c->socket == ENET_SOCKET_NULL || enet_socket_connect(c->socket, &c->address) < 0)
+        {
+            conoutf(c->socket == ENET_SOCKET_NULL ? "HTTP could not open socket to %s:[%d] [%d]" : "HTTP could not connect to %s:[%d] [%d]", c->name, c->port, c->uid);
+            if(c->socket != ENET_SOCKET_NULL) enet_socket_destroy(c->socket);
+            delete c;
+            return NULL;
+        }
+        c->state = HTTP_S_CONNECTING;
+        c->outhdrs.add("User-Agent", getverstr());
+        clients.add(c);
+        conoutf("HTTP connecting to %s:[%d] [%d]...", c->name, c->port, c->uid);
+        return c;
+    }
+
     void cleanup()
     {
-        loopv(reqs) purge(i--);
+        loopv(reqs) purgereq(i--);
+        loopv(clients) purgeclient(i--, HTTP_S_FAILED);
         if(socket != ENET_SOCKET_NULL) enet_socket_destroy(socket);
         socket = ENET_SOCKET_NULL;
     }
@@ -283,26 +428,26 @@ namespace http
         if(enet_socket_bind(socket, &address) < 0) { conoutf("Failed to bind HTTP server socket"); cleanup(); return; }
         if(enet_socket_listen(socket, -1) < 0) { conoutf("Failed to listen on HTTP server socket"); cleanup(); return; }
         if(enet_socket_set_option(socket, ENET_SOCKOPT_NONBLOCK, 1) < 0) { conoutf("Failed to make HTTP server socket non-blocking"); cleanup(); return; }
-        starttime = clocktime;
+        starttime = totalmillis ? totalmillis : 1;
         conoutf("HTTP server started on %s:[%d]", *httpserverip ? httpserverip : "localhost", httpserverport);
     }
 
-    void runframe()
+    void checkserver(ENetSocket &maxsock, ENetSocketSet &readset, ENetSocketSet &writeset)
     {
         if(socket == ENET_SOCKET_NULL) return;
-        ENetSocketSet readset, writeset;
-        ENetSocket maxsock = socket;
-        ENET_SOCKETSET_EMPTY(readset);
-        ENET_SOCKETSET_EMPTY(writeset);
         ENET_SOCKETSET_ADD(readset, socket);
         loopv(reqs)
         {
-            httpreq *h = reqs[i];
-            if(h->outputpos < h->output.length()) ENET_SOCKETSET_ADD(writeset, h->socket);
-            else ENET_SOCKETSET_ADD(readset, h->socket);
-            maxsock = max(maxsock, h->socket);
+            httpreq *r = reqs[i];
+            if(r->outputpos < r->output.length()) ENET_SOCKETSET_ADD(writeset, r->socket);
+            else ENET_SOCKETSET_ADD(readset, r->socket);
+            maxsock = max(maxsock, r->socket);
         }
-        if(enet_socketset_select(maxsock, &readset, &writeset, 0) <= 0) return;
+    }
+
+    void parseserver(ENetSocketSet &readset, ENetSocketSet &writeset)
+    {
+        if(socket == ENET_SOCKET_NULL) return;
         if(ENET_SOCKETSET_CHECK(readset, socket)) for(;;)
         {
             ENetAddress address;
@@ -320,52 +465,142 @@ namespace http
                 c->lastactivity = totalmillis ? totalmillis : 1;
                 reqs.add(c);
                 if(enet_address_get_host_ip(&c->address, c->name, sizeof(c->name)) < 0) copystring(c->name, "unknown");
-                conoutf("HTTP peer %s connected", c->name);
+                conoutf("HTTP request %s connected", c->name);
             }
             break;
         }
         loopv(reqs)
         {
-            httpreq *h = reqs[i];
-            if(h->outputpos < h->output.length() && ENET_SOCKETSET_CHECK(writeset, h->socket))
+            httpreq *r = reqs[i];
+            if(r->outputpos < r->output.length() && ENET_SOCKETSET_CHECK(writeset, r->socket))
             {
                 ENetBuffer buf;
-                buf.data = (void *)&h->output[h->outputpos];
-                buf.dataLength = h->output.length()-h->outputpos;
-                int res = enet_socket_send(h->socket, NULL, &buf, 1);
+                buf.data = (void *)&r->output[r->outputpos];
+                buf.dataLength = r->output.length()-r->outputpos;
+                int res = enet_socket_send(r->socket, NULL, &buf, 1);
                 if(res >= 0)
                 {
-                    h->outputpos += res;
-                    if(h->outputpos >= h->output.length())
+                    r->outputpos += res;
+                    if(r->outputpos >= r->output.length())
                     {
-                        h->output.setsize(0);
-                        h->outputpos = 0;
-                        if(h->state == HTTP_S_PURGE) { purge(i--); continue; }
+                        r->output.setsize(0);
+                        r->outputpos = 0;
+                        if(r->state == HTTP_S_DONE) { purgereq(i--); continue; }
                     }
                 }
-                else { purge(i--); continue; }
+                else { purgereq(i--); continue; }
             }
-            if(ENET_SOCKETSET_CHECK(readset, h->socket))
+            if(ENET_SOCKETSET_CHECK(readset, r->socket))
             {
                 ENetBuffer buf;
-                buf.data = &h->input[h->inputpos];
-                buf.dataLength = sizeof(h->input)-h->inputpos;
-                int res = enet_socket_receive(h->socket, NULL, &buf, 1);
+                buf.data = &r->input[r->inputpos];
+                buf.dataLength = sizeof(r->input)-r->inputpos;
+                int res = enet_socket_receive(r->socket, NULL, &buf, 1);
                 if(res > 0)
                 {
-                    h->inputpos += res;
-                    h->input[min(h->inputpos, (int)sizeof(h->input)-1)] = '\0';
-                    if(!process(h)) { purge(i--); continue; }
-                    if(h->state == HTTP_S_RESPONSE) proceed(h);
+                    r->inputpos += res;
+                    r->input[min(r->inputpos, (int)sizeof(r->input)-1)] = '\0';
+                    if(!processreq(r)) { purgereq(i--); continue; }
+                    if(r->state == HTTP_S_RESPONSE) proceed(r);
                 }
-                else { purge(i--); continue; }
+                else { purgereq(i--); continue; }
             }
-            if(ENET_TIME_DIFFERENCE(totalmillis, h->lastactivity) >= HTTP_TIME || (checkipinfo(control, ipinfo::BAN, h->address.host) && !checkipinfo(control, ipinfo::EXCEPT, h->address.host) && !checkipinfo(control, ipinfo::TRUST, h->address.host)))
+            if(ENET_TIME_DIFFERENCE(totalmillis, r->lastactivity) >= HTTP_TIME || (checkipinfo(control, ipinfo::BAN, r->address.host) && !checkipinfo(control, ipinfo::EXCEPT, r->address.host) && !checkipinfo(control, ipinfo::TRUST, r->address.host)))
             {
-                purge(i--);
+                purgereq(i--);
                 continue;
             }
         }
+    }
+
+    void checkclient(ENetSocket &maxsock, ENetSocketSet &readset, ENetSocketSet &writeset)
+    {
+        loopv(clients)
+        {
+            httpclient *c = clients[i];
+            if(c->state == HTTP_S_CONNECTING || c->outputpos < c->output.length()) ENET_SOCKETSET_ADD(writeset, c->socket);
+            else ENET_SOCKETSET_ADD(readset, c->socket);
+            maxsock = max(maxsock, c->socket);
+        }
+    }
+
+    void parseclient(ENetSocketSet &readset, ENetSocketSet &writeset)
+    {
+        loopv(clients)
+        {
+            httpclient *c = clients[i];
+            if(c->state == HTTP_S_CONNECTING && (ENET_SOCKETSET_CHECK(readset, c->socket) || ENET_SOCKETSET_CHECK(writeset, c->socket)))
+            {
+                int error = 0;
+                if(enet_socket_get_option(c->socket, ENET_SOCKOPT_ERROR, &error) < 0 || error) { purgeclient(i--, HTTP_S_FAILED); continue; }
+                else
+                {
+                    c->state = HTTP_S_START;
+                    c->sendf("%s %s HTTP/1.0", httpreqs[c->reqtype], c->path);
+                    loopvj(c->outhdrs.values) c->sendf("%s: %s", c->outhdrs.values[j].name, c->outhdrs.values[j].value);
+                    c->send("");
+                    if(c->data[0]) c->send(c->data);
+                    conoutf("HTTP %s %s [%d]: %s", httpreqs[c->reqtype], c->name, c->uid, c->path);
+                }
+            }
+            if(c->outputpos < c->output.length() && ENET_SOCKETSET_CHECK(writeset, c->socket))
+            {
+                ENetBuffer buf;
+                buf.data = (void *)&c->output[c->outputpos];
+                buf.dataLength = c->output.length()-c->outputpos;
+                int res = enet_socket_send(c->socket, NULL, &buf, 1);
+                if(res >= 0)
+                {
+                    c->outputpos += res;
+                    if(c->outputpos >= c->output.length())
+                    {
+                        c->output.setsize(0);
+                        c->outputpos = 0;
+                    }
+                }
+                else { purgeclient(i--, HTTP_S_FAILED); continue; }
+            }
+            if(ENET_SOCKETSET_CHECK(readset, c->socket))
+            {
+                ENetBuffer buf;
+                buf.data = &c->input[c->inputpos];
+                buf.dataLength = sizeof(c->input)-c->inputpos;
+                int res = enet_socket_receive(c->socket, NULL, &buf, 1);
+                if(res > 0)
+                {
+                    c->inputpos += res;
+                    c->input[min(c->inputpos, (int)sizeof(c->input)-1)] = '\0';
+                    if(!processclient(c)) { purgeclient(i--, HTTP_S_FAILED); continue; }
+                }
+                else { purgeclient(i--, HTTP_S_FAILED); continue; }
+            }
+            if(c->state == HTTP_S_DONE)
+            {
+                purgeclient(i--);
+                continue;
+            }
+            if(ENET_TIME_DIFFERENCE(totalmillis, c->lastactivity) >= HTTP_TIME)
+            {
+                purgeclient(i--, HTTP_S_FAILED);
+                continue;
+            }
+        }
+    }
+
+    void runframe()
+    {
+        ENetSocketSet readset, writeset;
+        ENetSocket maxsock = socket;
+        ENET_SOCKETSET_EMPTY(readset);
+        ENET_SOCKETSET_EMPTY(writeset);
+
+        checkserver(maxsock, readset, writeset);
+        checkclient(maxsock, readset, writeset);
+
+        if(enet_socketset_select(maxsock, &readset, &writeset, 0) <= 0) return;
+
+        parseserver(readset, writeset);
+        parseclient(readset, writeset);
     }
 }
 
@@ -388,7 +623,7 @@ namespace json
             case JSON_PRIMITIVE:
             {
                 if(j->data[0]) concformatstring(data, "\"%s\": %s", j->name, j->data);
-                else concformatstring(data, "\"%s\"", j->name);
+                else concformatstring(data, "%s", j->name);
                 count++;
                 break;
             }
@@ -410,7 +645,7 @@ namespace json
         return count;
     }
 
-    int processjs(const char *str, jsobj *j, jsmntok_t *t, int r, int start, int objects = -1)
+    int process(const char *str, jsobj *j, jsmntok_t *t, int r, int start, int objects = -1)
     {
         int count = 0;
         string name = "", data = "";
@@ -437,7 +672,7 @@ namespace json
                     jsobj *k = new jsobj;
                     k->type = t[i].type != JSMN_OBJECT ? JSON_ARRAY : JSON_OBJECT;
                     copystring(k->name, name);
-                    int a = processjs(str, k, t, r, i+1, t[i].size);
+                    int a = process(str, k, t, r, i+1, t[i].size);
                     i += a;
                     count += a;
                     name[0] = data[0] = 0;
@@ -471,46 +706,70 @@ namespace json
         }
         jsobj *j = new jsobj;
         j->type = JSON_OBJECT;
-        if(!processjs(str, j, &t[0], r, 1))
+        if(!process(str, j, &t[0], r, 1))
         {
-            DELETEP(j);
+            delete j;
             return NULL;
         }
         return j;
     }
 }
 
-void httpindex(httpreq *h)
+void httpindex(httpreq *r)
 {
-    h->send("Content-Type: text/plain");
-    h->send("\r\n");
+    r->send("Content-Type: text/plain");
+    r->send("\r\n");
     defformatstring(branch, "%s", versionbranch);
-    if(versionbuild > 0) concformatstring(branch, "-%d", versionbuild);
-    h->sendf("%s %s-%s%d-%s %s (%s) [0x%.8x]", versionname, versionstring, versionplatname, versionarch, branch, versionisserver ? "server" : "client", versionrelease, versioncrc);
-    h->send("");
-    h->send("Headers:");
-    loopv(h->headers.values) h->sendf("- %s = %s", h->headers.values[i].name, h->headers.values[i].value);
-    h->send("");
-    h->send("Vars:");
-    loopv(h->vars.values) h->sendf("- %s = %s", h->vars.values[i].name, h->vars.values[i].value);
-    h->send("");
-    switch(h->contype)
+    r->sendf("%s", getverstr());
+    r->send("");
+    r->send("Headers:");
+    loopv(r->inhdrs.values) r->sendf("- %s = %s", r->inhdrs.values[i].name, r->inhdrs.values[i].value);
+    r->send("");
+    r->send("Vars:");
+    loopv(r->vars.values) r->sendf("- %s = %s", r->vars.values[i].name, r->vars.values[i].value);
+    r->send("");
+    switch(r->contype)
     {
-        case HTTP_C_DATA: h->sendf("Generic Data: [%d] %s", h->inputpos, h->input); break;
+        case HTTP_C_DATA: r->sendf("Generic Data: [%d] %s", r->inputpos, r->input); break;
         case HTTP_C_JSON:
         {
-            jsobj *j = json::load(h->input);
-            h->sendf("JSON Data: [%d] (%d)", h->inputpos, j ? j->children.length() : 0);
+            jsobj *j = json::load(r->input);
+            r->sendf("JSON Data: [%d] (%d)", r->inputpos, j ? j->children.length() : 0);
             if(!j) break;
-            h->send("-");
-            h->send(h->input);
-            h->send("-");
+            r->send("-");
+            r->send(r->input);
+            r->send("-");
             bigstring data = "";
             int count = json::print(j, data, 0, sizeof(data));
-            h->sendf("[%d] %s", count, data);
-            DELETEP(j);
+            r->sendf("[%d] %s", count, data);
+            delete j;
             break;
         }
     }
 }
 HTTP("/", httpindex);
+
+void testcb(httpclient *c)
+{
+    conoutf("HTTP callback %s [%d]: %d", c->name, c->uid, c->state);
+    switch(c->state)
+    {
+        case HTTP_S_DONE:
+        {
+            bigstring data = "";
+            filterstring(data, c->input, true, false);
+            conoutf("[%d:%d] %s", c->inputpos, c->conlength, data);
+            if(c->contype == HTTP_C_JSON)
+            {
+                jsobj *j = json::load(c->input);
+                if(!j) return;
+                bigstring data = "";
+                int count = json::print(j, data, 0, sizeof(data));
+                conoutf("[%d] %s", count, data);
+            }
+            break;
+        }
+        default: break;
+    }
+}
+ICOMMAND(0, httptest, "", (void), http::retrieve("hq.redeclipse.net", HTTP_PORT, HTTP_T_GET, "/test.json", testcb));

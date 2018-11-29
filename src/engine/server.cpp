@@ -53,6 +53,18 @@ VAR(IDF_READONLY, versionisserver, 0, 0, 1);
 VAR(IDF_READONLY, versionsteamid, 1, VERSION_STEAMID, -1);
 SVAR(IDF_READONLY, versiondiscordid, VERSION_DISCORD);
 
+static string verstr = "";
+const char *getverstr()
+{
+    if(!*verstr)
+    {
+        defformatstring(branch, "%s", versionbranch);
+        if(versionbuild > 0) concformatstring(branch, "-%d", versionbuild);
+        formatstring(verstr, "%s %s-%s%d-%s %s (%s)", versionname, versionstring, versionplatname, versionarch, branch, versionisserver ? "server" : "client", versionrelease);
+    }
+    return verstr;
+}
+
 ICOMMAND(0, platname, "ii", (int *p, int *g), result(*p >= 0 && *p < MAX_PLATFORMS ? (*g!=0 ? plat_longname(*p) : plat_name(*p)) : ""));
 
 VAR(0, rehashing, 1, 0, -1);
@@ -1233,9 +1245,7 @@ static void setupwindow(const char *title)
     atexit(cleanupwindow);
 
     if(!setupsystemtray(WM_APP)) fatal("failed adding to system tray");
-    defformatstring(branch, "%s", versionbranch);
-    if(versionbuild > 0) concformatstring(branch, "-%d", versionbuild);
-    conoutf("Version: %s-%s%d-%s %s (%s) [0x%.8x]", versionstring, versionplatname, versionarch, branch, versionisserver ? "server" : "client", versionrelease, versioncrc);
+    conoutf("Version: %s", getverstr());
 }
 
 static char *parsecommandline(const char *src, vector<char *> &args)
@@ -1429,10 +1439,8 @@ bool setupserver()
     }
     if(!cdpi::init()) return false;
     http::init();
-    defformatstring(branch, "%s", versionbranch);
-    if(versionbuild > 0) concformatstring(branch, "-%d", versionbuild);
 #if !defined(STANDALONE) || !defined(WIN32)
-    conoutf("Version: %s-%s%d-%s %s (%s) [0x%.8x]", versionstring, versionplatname, versionarch, branch, versionisserver ? "server" : "client", versionrelease, versioncrc);
+    conoutf("Version: %s", getverstr());
 #endif
 
 #ifndef STANDALONE

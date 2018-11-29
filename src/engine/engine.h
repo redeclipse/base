@@ -9,6 +9,7 @@ extern char *versionstring, *versionname, *versionuname, *versionvname, *version
 #define CUR_VER_MAKE(a,b,c) (((a)<<16) | ((b)<<8) | (c))
 #define CUR_VER CUR_VER_MAKE(VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH)
 #define CUR_VERSION (VERSION_MAJOR*100)+(VERSION_MINOR*10)+VERSION_PATCH
+extern const char *getverstr();
 
 #ifdef WIN32
 #define CUR_PLATFORM 0

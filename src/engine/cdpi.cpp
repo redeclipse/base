@@ -172,7 +172,7 @@ namespace cdpi
             if(name && *name)
             {
                 setsvar("steamusername", name);
-                conoutf("Current Steam Persona: %s", name);
+                conoutf("Current Steam Handle: %s", name);
             }
             if(SteamAPI_ISteamUser_BLoggedOn(user))
             {
