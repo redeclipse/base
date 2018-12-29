@@ -11,7 +11,7 @@ struct obj : vertloader<obj>
 
     struct objmeshgroup : vertmeshgroup
     {
-        void parsevert(char *s, vector<vec> &out)
+        char *parsevert(char *s, vector<vec> &out)
         {
             vec &v = out.add(vec(0, 0, 0));
             while(isalpha(*s)) s++;
@@ -21,6 +21,8 @@ struct obj : vertloader<obj>
                 while(isspace(*s)) s++;
                 if(!*s) break;
             }
+
+            return s;
         }
 
         bool load(const char *filename, float smooth)
@@ -35,13 +37,14 @@ struct obj : vertloader<obj>
 
             numframes = 1;
 
-            vector<vec> attrib[3];
+            vector<vec> attrib[4];
             char buf[512];
 
             hashtable<ivec, int> verthash(1<<11);
             vector<vert> verts;
             vector<tcvert> tcverts;
             vector<tri> tris;
+            vector<vec4> vcolors;
 
             #define STARTMESH do { \
                 vertmesh &m = *new vertmesh; \
@@ -53,6 +56,7 @@ struct obj : vertloader<obj>
                 verts.setsize(0); \
                 tcverts.setsize(0); \
                 tris.setsize(0); \
+                vcolors.setsize(0); \
             } while(0)
 
             #define FLUSHMESH do { \
@@ -69,6 +73,11 @@ struct obj : vertloader<obj>
                 { \
                     curmesh->tris = new tri[tris.length()]; \
                     memcpy(curmesh->tris, tris.getbuf(), tris.length()*sizeof(tri)); \
+                } \
+                if(vcolors.length()) \
+                { \
+                    curmesh->vcolors = new vec4[vcolors.length()]; \
+                    memcpy(curmesh->vcolors, vcolors.getbuf(), vcolors.length()*sizeof(vec4)); \
                 } \
                 if(attrib[2].empty()) \
                 { \
@@ -88,7 +97,11 @@ struct obj : vertloader<obj>
                 {
                     case '#': continue;
                     case 'v':
-                        if(isspace(c[1])) parsevert(c, attrib[0]);
+                        if(isspace(c[1]))
+                        {
+                            char *nextattr = parsevert(c, attrib[0]);
+                            parsevert(nextattr, attrib[3]); // color is directly after the position values
+                        }
                         else if(c[1]=='t') parsevert(c, attrib[1]);
                         else if(c[1]=='n') parsevert(c, attrib[2]);
                         break;
@@ -136,6 +149,7 @@ struct obj : vertloader<obj>
                                 v.norm = vec(v.norm.z, -v.norm.x, v.norm.y);
                                 tcvert &tcv = tcverts.add();
                                 tcv.tc = vkey.y < 0 ? vec2(0, 0) : vec2(attrib[1][vkey.y].x, 1-attrib[1][vkey.y].y);
+                                if(vkey.x >= 0 && attrib[3].length() == attrib[0].length()) vcolors.add(vec4(attrib[3][vkey.x], 1));
                             }
                             if(v0 < 0) v0 = *index;
                             else if(v1 < 0) v1 = *index;
