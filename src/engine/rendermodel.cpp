@@ -42,6 +42,13 @@ MODELTYPE(MDL_IQM, iqm);
 
 #define checkmdl if(!loadingmodel) { conoutf("\frNot loading a model"); return; }
 
+void mdlvegetation(int *vegetation)
+{
+    checkmdl;
+    loadingmodel->vegetation = *vegetation != 0;
+}
+COMMAND(0, mdlvegetation, "i");
+
 void mdlmaterial(int *material1, int *material2)
 {
     checkmdl;
