@@ -694,6 +694,20 @@ struct animmodel : model
                 lastbbuf = lastvbuf;
             }
         }
+
+        void bindcolor(void *v, int stride)
+        {
+            if(!enablecolor)
+            {
+                gle::enablecolor();
+                enablecolor = true;
+            }
+            if(lastcolbuf!=lastvbuf)
+            {
+                gle::colorpointer(stride, v, GL_UNSIGNED_BYTE);
+                lastcolbuf = lastvbuf;
+            }
+        }
     };
 
     static hashnameset<meshgroup *> meshgroups;
@@ -1790,22 +1804,22 @@ struct animmodel : model
         loopv(parts) parts[i]->loaded();
     }
 
-    static bool enabletc, enablecullface, enabletangents, enablebones, enabledepthoffset;
+    static bool enabletc, enablecullface, enabletangents, enablebones, enabledepthoffset, enablecolor;
     static float sizescale;
     static vec4 colorscale, mixercolor;
     static vec2 matbright, mixerglow, mixerscroll;
     static float patternscale;
     static bvec modelmaterial[MAXMDLMATERIALS];
-    static GLuint lastvbuf, lasttcbuf, lastxbuf, lastbbuf, lastebuf, lastenvmaptex, closestenvmaptex;
+    static GLuint lastvbuf, lasttcbuf, lastxbuf, lastbbuf, lastebuf, lastenvmaptex, lastcolbuf, closestenvmaptex;
     static Texture *lasttex, *lastdecal, *lastmasks, *lastmixer, *lastpattern, *lastnormalmap;
     static int matrixpos;
     static matrix4 matrixstack[64];
 
     void startrender()
     {
-        enabletc = enabletangents = enablebones = enabledepthoffset = false;
+        enabletc = enabletangents = enablebones = enabledepthoffset = enablecolor = false;
         enablecullface = true;
-        lastvbuf = lasttcbuf = lastxbuf = lastbbuf = lastebuf = lastenvmaptex = closestenvmaptex = 0;
+        lastvbuf = lasttcbuf = lastxbuf = lastbbuf = lastebuf = lastenvmaptex = lastcolbuf = closestenvmaptex = 0;
         lasttex = lastdecal = lastmasks = lastmixer = lastpattern = lastnormalmap = NULL;
         shaderparamskey::invalidate();
     }
@@ -1829,6 +1843,12 @@ struct animmodel : model
         enabletc = false;
     }
 
+    static void disablecolor()
+    {
+        gle::disablecolor();
+        enablecolor = false;
+    }
+
     static void disablevbo()
     {
         if(lastebuf) gle::clearebo();
@@ -1840,6 +1860,7 @@ struct animmodel : model
         if(enabletc) disabletc();
         if(enabletangents) disabletangents();
         if(enablebones) disablebones();
+        if(enablecolor) disablecolor();
         lastvbuf = lasttcbuf = lastxbuf = lastbbuf = lastebuf = 0;
     }
 
@@ -1883,14 +1904,14 @@ hashnameset<animmodel::meshgroup *> animmodel::meshgroups;
 int animmodel::intersectresult = -1, animmodel::intersectmode = 0;
 float animmodel::intersectdist = 0, animmodel::intersectscale = 1;
 bool animmodel::enabletc = false, animmodel::enabletangents = false, animmodel::enablebones = false,
-     animmodel::enablecullface = true, animmodel::enabledepthoffset = false;
+     animmodel::enablecullface = true, animmodel::enabledepthoffset = false, animmodel::enablecolor = false;
 float animmodel::sizescale = 1;
 vec4 animmodel::colorscale(1, 1, 1, 1), animmodel::mixercolor(1, 1, 1, 1);
 vec2 animmodel::matbright(1, 1), animmodel::mixerglow(0, 0), animmodel::mixerscroll(0, 0);
 float animmodel::patternscale = 1;
 bvec animmodel::modelmaterial[MAXMDLMATERIALS] = { bvec(255, 255, 255), bvec(255, 255, 255), bvec(255, 255, 255) };
 GLuint animmodel::lastvbuf = 0, animmodel::lasttcbuf = 0, animmodel::lastxbuf = 0, animmodel::lastbbuf = 0, animmodel::lastebuf = 0,
-       animmodel::lastenvmaptex = 0, animmodel::closestenvmaptex = 0;
+       animmodel::lastenvmaptex = 0, animmodel::lastcolbuf = 0, animmodel::closestenvmaptex = 0;
 Texture *animmodel::lasttex = NULL, *animmodel::lastdecal = NULL, *animmodel::lastmasks = NULL, *animmodel::lastmixer = NULL, *animmodel::lastpattern = NULL, *animmodel::lastnormalmap = NULL;
 int animmodel::matrixpos = 0;
 matrix4 animmodel::matrixstack[64];

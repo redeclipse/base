@@ -3,6 +3,7 @@ struct vertmodel : animmodel
     struct vert { vec pos, norm; vec4 tangent; };
     struct vvert { vec pos; hvec2 tc; squat tangent; };
     struct vvertg { hvec4 pos; hvec2 tc; squat tangent; };
+    struct vvertgc : vvertg { uint col; };
     struct tcvert { vec2 tc; };
     struct tri { ushort vert[3]; };
 
@@ -20,12 +21,13 @@ struct vertmodel : animmodel
         vert *verts;
         tcvert *tcverts;
         tri *tris;
+        vec4 *vcolors;
         int numverts, numtris;
 
         int voffset, eoffset, elen;
         ushort minvert, maxvert;
 
-        vertmesh() : verts(0), tcverts(0), tris(0)
+        vertmesh() : verts(0), tcverts(0), tris(0), vcolors(0)
         {
         }
 
@@ -34,6 +36,7 @@ struct vertmodel : animmodel
             DELETEA(verts);
             DELETEA(tcverts);
             DELETEA(tris);
+            DELETEA(vcolors);
         }
 
         void smoothnorms(float limit = 0, bool areaweight = true)
@@ -90,6 +93,14 @@ struct vertmodel : animmodel
             vv.tangent = v.tangent;
         }
 
+        static inline void assigncolor(vvertgc &vv, vec4 &col)
+        {
+            vv.col = ((uchar)(col.a * 255) << 24) |
+                     ((uchar)(col.b * 255) << 16) |
+                     ((uchar)(col.g * 255) <<  8) |
+                      (uchar)(col.r * 255);
+        }
+
         template<class T>
         int genvbo(vector<ushort> &idxs, int offset, vector<T> &vverts, int *htdata, int htlen)
         {
@@ -104,14 +115,15 @@ struct vertmodel : animmodel
                     int index = t.vert[j];
                     vert &v = verts[index];
                     tcvert &tc = tcverts[index];
-                    T vv;
+                    vvertgc vv;
                     assignvert(vv, index, tc, v);
+                    if(vcolors) assigncolor(vv, vcolors[index]);
                     int htidx = hthash(v.pos)&(htlen-1);
                     loopk(htlen)
                     {
                         int &vidx = htdata[(htidx+k)&(htlen-1)];
                         if(vidx < 0) { vidx = idxs.add(ushort(vverts.length())); vverts.add(vv); break; }
-                        else if(!memcmp(&vverts[vidx], &vv, sizeof(vv))) { minvert = min(minvert, idxs.add(ushort(vidx))); break; }
+                        else if(!memcmp(&vverts[vidx], &vv, sizeof(T))) { minvert = min(minvert, idxs.add(ushort(vidx))); break; }
                     }
                 }
             }
@@ -188,6 +200,7 @@ struct vertmodel : animmodel
         int numframes;
         tag *tags;
         int numtags;
+        bool usingcolors;
 
         static const int MAXVBOCACHE = 16;
         vbocacheentry vbocache[MAXVBOCACHE];
@@ -297,11 +310,12 @@ struct vertmodel : animmodel
             }
             else
             {
-                vertsize = sizeof(vvertg);
+                looprendermeshes(vertmesh, m, { if(m.vcolors) { usingcolors = true; break; }});
                 gle::bindvbo(vc.vbuf);
                 #define GENVBO(type) \
                     do \
                     { \
+                        vertsize = sizeof(type); \
                         vector<type> vverts; \
                         looprendermeshes(vertmesh, m, vlen += m.genvbo(idxs, vlen, vverts, htdata, htlen)); \
                         glBufferData_(GL_ARRAY_BUFFER, vverts.length()*sizeof(type), vverts.getbuf(), GL_STATIC_DRAW); \
@@ -312,7 +326,8 @@ struct vertmodel : animmodel
                 if(numverts*4 > htlen*3) htlen *= 2;
                 int *htdata = new int[htlen];
                 memset(htdata, -1, htlen*sizeof(int));
-                GENVBO(vvertg);
+                if(usingcolors) GENVBO(vvertgc);
+                else GENVBO(vvertg);
                 delete[] htdata;
                 #undef GENVBO
                 gle::clearvbo();
@@ -329,6 +344,11 @@ struct vertmodel : animmodel
         {
             T *vverts = 0;
             bindpos(ebuf, vc.vbuf, &vverts->pos, vertsize);
+            if(usingcolors)
+            {
+                vvertgc *vcolverts = 0;
+                bindcolor(&vcolverts->col, vertsize);
+            }
             if(as->cur.anim&ANIM_NOSKIN)
             {
                 if(enabletangents) disabletangents();
@@ -348,6 +368,7 @@ struct vertmodel : animmodel
         void bindvbo(const animstate *as, part *p, vbocacheentry &vc)
         {
             if(numframes>1) bindvbo<vvert>(as, p, vc);
+            if(usingcolors) bindvbo<vvertgc>(as, p, vc);
             else bindvbo<vvertg>(as, p, vc);
         }
 
