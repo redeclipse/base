@@ -1245,6 +1245,7 @@ struct skelmodel : animmodel
                 bindtc(&vverts->tc, vertsize);
             }
             bindbones(vverts);
+            if(enablecolor) disablecolor();
         }
 
         void bindvbo(const animstate *as, part *p, vbocacheentry &vc, skelcacheentry *sc = NULL, blendcacheentry *bc = NULL)

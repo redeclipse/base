@@ -3,7 +3,7 @@ struct vertmodel : animmodel
     struct vert { vec pos, norm; vec4 tangent; };
     struct vvert { vec pos; hvec2 tc; squat tangent; };
     struct vvertg { hvec4 pos; hvec2 tc; squat tangent; };
-    struct vvertgc : vvertg { uint col; };
+    struct vvertgc : vvertg { bvec4 col; };
     struct tcvert { vec2 tc; };
     struct tri { ushort vert[3]; };
 
@@ -21,7 +21,7 @@ struct vertmodel : animmodel
         vert *verts;
         tcvert *tcverts;
         tri *tris;
-        vec4 *vcolors;
+        bvec4 *vcolors;
         int numverts, numtris;
 
         int voffset, eoffset, elen;
@@ -93,12 +93,12 @@ struct vertmodel : animmodel
             vv.tangent = v.tangent;
         }
 
-        static inline void assigncolor(vvertgc &vv, vec4 &col)
+        inline void assignvert(vvertgc &vv, int j, tcvert &tc, vert &v)
         {
-            vv.col = ((uchar)(col.a * 255) << 24) |
-                     ((uchar)(col.b * 255) << 16) |
-                     ((uchar)(col.g * 255) <<  8) |
-                      (uchar)(col.r * 255);
+            vv.pos = hvec4(v.pos, 1);
+            vv.tc = tc.tc;
+            vv.tangent = v.tangent;
+            vv.col = vcolors ? vcolors[j] : bvec4(255, 255, 255, 255);
         }
 
         template<class T>
@@ -115,9 +115,8 @@ struct vertmodel : animmodel
                     int index = t.vert[j];
                     vert &v = verts[index];
                     tcvert &tc = tcverts[index];
-                    vvertgc vv;
+                    T vv;
                     assignvert(vv, index, tc, v);
-                    if(vcolors) assigncolor(vv, vcolors[index]);
                     int htidx = hthash(v.pos)&(htlen-1);
                     loopk(htlen)
                     {
@@ -200,7 +199,7 @@ struct vertmodel : animmodel
         int numframes;
         tag *tags;
         int numtags;
-        bool usingcolors;
+        bool usecolor;
 
         static const int MAXVBOCACHE = 16;
         vbocacheentry vbocache[MAXVBOCACHE];
@@ -210,7 +209,7 @@ struct vertmodel : animmodel
         int vlen, vertsize;
         uchar *vdata;
 
-        vertmeshgroup() : numframes(0), tags(NULL), numtags(0), edata(NULL), ebuf(0), vlen(0), vertsize(0), vdata(NULL)
+        vertmeshgroup() : numframes(0), tags(NULL), numtags(0), usecolor(false), edata(NULL), ebuf(0), vlen(0), vertsize(0), vdata(NULL)
         {
         }
 
@@ -310,7 +309,7 @@ struct vertmodel : animmodel
             }
             else
             {
-                looprendermeshes(vertmesh, m, { if(m.vcolors) { usingcolors = true; break; }});
+                looprendermeshes(vertmesh, m, { if(m.vcolors) { usecolor = true; break; }});
                 gle::bindvbo(vc.vbuf);
                 #define GENVBO(type) \
                     do \
@@ -326,7 +325,7 @@ struct vertmodel : animmodel
                 if(numverts*4 > htlen*3) htlen *= 2;
                 int *htdata = new int[htlen];
                 memset(htdata, -1, htlen*sizeof(int));
-                if(usingcolors) GENVBO(vvertgc);
+                if(usecolor) GENVBO(vvertgc);
                 else GENVBO(vvertg);
                 delete[] htdata;
                 #undef GENVBO
@@ -340,15 +339,14 @@ struct vertmodel : animmodel
         }
 
         template<class T>
+        void bindcolor(T *vverts) { if(enablecolor) disablecolor(); }
+        void bindcolor(vvertgc *vverts) { meshgroup::bindcolor(&vverts->col, vertsize); }
+
+        template<class T>
         void bindvbo(const animstate *as, part *p, vbocacheentry &vc)
         {
             T *vverts = 0;
             bindpos(ebuf, vc.vbuf, &vverts->pos, vertsize);
-            if(usingcolors)
-            {
-                vvertgc *vcolverts = 0;
-                bindcolor(&vcolverts->col, vertsize);
-            }
             if(as->cur.anim&ANIM_NOSKIN)
             {
                 if(enabletangents) disabletangents();
@@ -362,13 +360,14 @@ struct vertmodel : animmodel
 
                 bindtc(&vverts->tc, vertsize);
             }
+            bindcolor(vverts);
             if(enablebones) disablebones();
         }
 
         void bindvbo(const animstate *as, part *p, vbocacheentry &vc)
         {
             if(numframes>1) bindvbo<vvert>(as, p, vc);
-            if(usingcolors) bindvbo<vvertgc>(as, p, vc);
+            if(usecolor) bindvbo<vvertgc>(as, p, vc);
             else bindvbo<vvertg>(as, p, vc);
         }
 

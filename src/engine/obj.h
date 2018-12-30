@@ -44,7 +44,7 @@ struct obj : vertloader<obj>
             vector<vert> verts;
             vector<tcvert> tcverts;
             vector<tri> tris;
-            vector<vec4> vcolors;
+            vector<bvec4> vcolors;
 
             #define STARTMESH do { \
                 vertmesh &m = *new vertmesh; \
@@ -76,8 +76,8 @@ struct obj : vertloader<obj>
                 } \
                 if(vcolors.length()) \
                 { \
-                    curmesh->vcolors = new vec4[vcolors.length()]; \
-                    memcpy(curmesh->vcolors, vcolors.getbuf(), vcolors.length()*sizeof(vec4)); \
+                    curmesh->vcolors = new bvec4[vcolors.length()]; \
+                    memcpy(curmesh->vcolors, vcolors.getbuf(), vcolors.length()*sizeof(bvec4)); \
                 } \
                 if(attrib[2].empty()) \
                 { \
@@ -149,7 +149,7 @@ struct obj : vertloader<obj>
                                 v.norm = vec(v.norm.z, -v.norm.x, v.norm.y);
                                 tcvert &tcv = tcverts.add();
                                 tcv.tc = vkey.y < 0 ? vec2(0, 0) : vec2(attrib[1][vkey.y].x, 1-attrib[1][vkey.y].y);
-                                if(vkey.x >= 0 && attrib[3].length() == attrib[0].length()) vcolors.add(vec4(attrib[3][vkey.x], 1));
+                                if(vkey.x >= 0 && attrib[3].length() == attrib[0].length()) vcolors.add(bvec4::fromcolor(attrib[3][vkey.x]));
                             }
                             if(v0 < 0) v0 = *index;
                             else if(v1 < 0) v1 = *index;

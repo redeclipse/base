@@ -1810,7 +1810,7 @@ struct animmodel : model
     static vec2 matbright, mixerglow, mixerscroll;
     static float patternscale;
     static bvec modelmaterial[MAXMDLMATERIALS];
-    static GLuint lastvbuf, lasttcbuf, lastxbuf, lastbbuf, lastebuf, lastenvmaptex, lastcolbuf, closestenvmaptex;
+    static GLuint lastvbuf, lasttcbuf, lastxbuf, lastbbuf, lastebuf, lastcolbuf, lastenvmaptex, closestenvmaptex;
     static Texture *lasttex, *lastdecal, *lastmasks, *lastmixer, *lastpattern, *lastnormalmap;
     static int matrixpos;
     static matrix4 matrixstack[64];
@@ -1819,7 +1819,7 @@ struct animmodel : model
     {
         enabletc = enabletangents = enablebones = enabledepthoffset = enablecolor = false;
         enablecullface = true;
-        lastvbuf = lasttcbuf = lastxbuf = lastbbuf = lastebuf = lastenvmaptex = lastcolbuf = closestenvmaptex = 0;
+        lastvbuf = lasttcbuf = lastxbuf = lastbbuf = lastebuf = lastcolbuf = lastenvmaptex = closestenvmaptex = 0;
         lasttex = lastdecal = lastmasks = lastmixer = lastpattern = lastnormalmap = NULL;
         shaderparamskey::invalidate();
     }
@@ -1861,7 +1861,7 @@ struct animmodel : model
         if(enabletangents) disabletangents();
         if(enablebones) disablebones();
         if(enablecolor) disablecolor();
-        lastvbuf = lasttcbuf = lastxbuf = lastbbuf = lastebuf = 0;
+        lastvbuf = lasttcbuf = lastxbuf = lastbbuf = lastebuf = lastcolbuf = 0;
     }
 
     void endrender()
@@ -1911,7 +1911,7 @@ vec2 animmodel::matbright(1, 1), animmodel::mixerglow(0, 0), animmodel::mixerscr
 float animmodel::patternscale = 1;
 bvec animmodel::modelmaterial[MAXMDLMATERIALS] = { bvec(255, 255, 255), bvec(255, 255, 255), bvec(255, 255, 255) };
 GLuint animmodel::lastvbuf = 0, animmodel::lasttcbuf = 0, animmodel::lastxbuf = 0, animmodel::lastbbuf = 0, animmodel::lastebuf = 0,
-       animmodel::lastenvmaptex = 0, animmodel::lastcolbuf = 0, animmodel::closestenvmaptex = 0;
+       animmodel::lastcolbuf = 0, animmodel::lastenvmaptex = 0, animmodel::closestenvmaptex = 0;
 Texture *animmodel::lasttex = NULL, *animmodel::lastdecal = NULL, *animmodel::lastmasks = NULL, *animmodel::lastmixer = NULL, *animmodel::lastpattern = NULL, *animmodel::lastnormalmap = NULL;
 int animmodel::matrixpos = 0;
 matrix4 animmodel::matrixstack[64];
