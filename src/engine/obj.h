@@ -19,7 +19,7 @@ struct obj : vertloader<obj>
             {
                 v[i] = strtod(s, &s);
                 while(isspace(*s)) s++;
-                if(!*s) break;
+                if(!*s) return NULL;
             }
 
             return s;
@@ -100,7 +100,7 @@ struct obj : vertloader<obj>
                         if(isspace(c[1]))
                         {
                             char *nextattr = parsevert(c, attrib[0]);
-                            parsevert(nextattr, attrib[3]); // color is directly after the position values
+                            if(nextattr) parsevert(nextattr, attrib[3]); // color is directly after the position values
                         }
                         else if(c[1]=='t') parsevert(c, attrib[1]);
                         else if(c[1]=='n') parsevert(c, attrib[2]);
