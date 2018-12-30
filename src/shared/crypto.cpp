@@ -322,6 +322,7 @@ template<int BI_DIGITS> struct bigint
 
     bigint &rshift(int n)
     {
+        assert(len <= BI_DIGITS);
         if(!len || n<=0) return *this;
         if(n >= len*BI_DIGIT_BITS) { len = 0; return *this; }
         int dig = (n-1)/BI_DIGIT_BITS;

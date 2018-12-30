@@ -886,13 +886,11 @@ void reloadfonts()
     );
 }
 
-float draw_textf(const char *fstr, float left, float top, float xpad, float ypad, int r, int g, int b, int a, int flags, int cursor, float maxwidth, float linespace, ...)
+float draw_textf(const char *fstr, float left, float top, float xpad, float ypad, int r, int g, int b, int a, int flags, int cursor, float maxwidth, int linespace, ...)
 {
-    if(linespace <= 0) linespace = textlinespacing;
     defvformathugestring(str, linespace, fstr);
-
-    float width = 0, height = 0;
-    text_boundsf(str, width, height, xpad, ypad, maxwidth, flags, linespace);
+    float linespacef = linespace <= 0 ? textlinespacing : linespace, width = 0, height = 0;
+    text_boundsf(str, width, height, xpad, ypad, maxwidth, flags, linespacef);
     if(flags&TEXT_ALIGN) switch(flags&TEXT_ALIGN)
     {
         case TEXT_CENTERED: left -= width*0.5f-xpad; break;
@@ -903,7 +901,7 @@ float draw_textf(const char *fstr, float left, float top, float xpad, float ypad
     else if(flags&TEXT_UPWARD) top -= height;
     if(xpad) left += xpad;
     if(ypad) top += ypad;
-    if(flags&TEXT_SHADOW) draw_text(str, left+2, top+2, 0, 0, 0, a, flags, cursor, maxwidth, linespace);
-    draw_text(str, left, top, r, g, b, a, flags, cursor, maxwidth, linespace);
+    if(flags&TEXT_SHADOW) draw_text(str, left+2, top+2, 0, 0, 0, a, flags, cursor, maxwidth, linespacef);
+    draw_text(str, left, top, r, g, b, a, flags, cursor, maxwidth, linespacef);
     return height;
 }

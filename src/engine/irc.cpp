@@ -354,22 +354,23 @@ ICOMMAND(0, ircbind, "ss", (const char *name, const char *s), {
     if(!s || !*s) { ircprintf(n, 4, NULL, "currently bound to: %s", n->ip); return; }
     copystring(n->ip, s);
 });
+static inline const char *setdesc(const char *str) { return str && *str ? "<set>" : "<not set>"; }
 ICOMMAND(0, ircpass, "ss", (const char *name, const char *s), {
     ircnet *n = ircfind(name);
     if(!n) { conoutf("No such ircnet: %s", name); return; }
-    if(!s || !*s) { ircprintf(n, 4, NULL, "current password is: %s", n->passkey && *n->passkey ? "<set>" : "<not set>"); return; }
+    if(!s || !*s) { ircprintf(n, 4, NULL, "current password is: %s", setdesc(n->passkey)); return; }
     copystring(n->passkey, s);
 });
 ICOMMAND(0, ircauthcommand, "ss", (const char *name, const char *s), {
     ircnet *n = ircfind(name);
     if(!n) { conoutf("No such ircnet: %s", name); return; }
-    if(!s || !*s) { ircprintf(n, 4, NULL, "current auth command is: %s", n->authcommand && *n->authcommand ? "<set>" : "<not set>"); return; }
+    if(!s || !*s) { ircprintf(n, 4, NULL, "current auth command is: %s", setdesc(n->authcommand)); return; }
     copystring(n->authcommand, s);
 });
 ICOMMAND(0, ircauth, "sss", (const char *name, const char *s, const char *t), {
     ircnet *n = ircfind(name);
     if(!n) { conoutf("No such ircnet: %s", name); return; }
-    if(!s || !*s || !t || !*t) { ircprintf(n, 4, NULL, "current auth details are: %s (%s)", n->authname, n->authpass && *n->authpass ? "<set>" : "<not set>"); return; }
+    if(!s || !*s || !t || !*t) { ircprintf(n, 4, NULL, "current auth details are: %s (%s)", n->authname, setdesc(n->authpass)); return; }
     copystring(n->authname, s);
     copystring(n->authpass, t);
 });
@@ -462,7 +463,7 @@ ICOMMAND(0, ircpasschan, "sss", (const char *name, const char *chan, const char 
     if(!n) { conoutf("No such ircnet: %s", name); return; }
     ircchan *c = ircfindchan(n, chan);
     if(!c) { ircprintf(n, 4, NULL, "no such channel: %s", chan); return; }
-    if(!s || !*s) { ircprintf(n, 4, NULL, "channel %s current password is: %s", c->name, c->passkey && *c->passkey ? "<set>" : "<not set>"); return; }
+    if(!s || !*s) { ircprintf(n, 4, NULL, "channel %s current password is: %s", c->name, setdesc(c->passkey)); return; }
     copystring(c->passkey, s);
 });
 ICOMMAND(0, ircrelaychan, "sss", (const char *name, const char *chan, const char *s), {
