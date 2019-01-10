@@ -1466,25 +1466,12 @@ bool initgame()
     return setupserver();
 }
 
-VAR(0, hasoctapaks, 1, 0, 0); // mega hack; try to find Cube 2, done after our own data so as to not clobber stuff
-
-void octadirchanged()
-{
-#ifdef STANDALONE
-    if(rehashing) trytofindocta();
-#else
-    if(initing == NOT_INITING) trytofindocta();
-#endif
-}
-
-SVARF(IDF_PERSIST, octadir, "", octadirchanged());
-
 bool serveroption(char *opt)
 {
     switch(opt[1])
     {
         case 'h': sethomedir(&opt[2]); logoutf("set home directory: %s", &opt[2]); return true;
-        case 'o': setsvar("octadir", &opt[2]); return true;
+				case 'o': logoutf("sauerbraten maps are no longer supported, the -o switch is a stub"); return true; // Break Sauerbraten support with 1.9.9 and above
         case 'p': addpackagedir(&opt[2]); logoutf("add package directory: %s", &opt[2]); return true;
         case 'g': setlogfile(&opt[2]); logoutf("set log file: %s", opt[2] ? &opt[2] : "<stdout>"); return true;
         case 'v': setvar("verbose", atoi(opt+2)); return true;
@@ -1517,75 +1504,6 @@ bool serveroption(char *opt)
         default: return false;
     }
     return false;
-}
-
-bool findoctadir(const char *name, bool fallback)
-{
-    stringz(s);
-    copystring(s, name);
-    path(s);
-    defformatstring(octadefs, "%s/data/default_map_settings.cfg", s);
-    if(fileexists(findfile(octadefs, "r"), "r"))
-    {
-        conoutf("\fwFound octa directory: %s", s);
-        defformatstring(octadata, "%s/data", s);
-        defformatstring(octapaks, "%s/packages", s);
-        addpackagedir(s, PACKAGEDIR_OCTA);
-        addpackagedir(octadata, PACKAGEDIR_OCTA);
-        addpackagedir(octapaks, PACKAGEDIR_OCTA);
-        maskpackagedirs(~PACKAGEDIR_OCTA);
-        hasoctapaks = fallback ? 1 : 2;
-        return true;
-    }
-    hasoctapaks = 0;
-    return false;
-}
-void octapaks(uint *contents)
-{
-    int mask = maskpackagedirs(~0);
-    execute(contents);
-    maskpackagedirs(mask);
-}
-COMMAND(0, octapaks, "e");
-
-void trytofindocta(bool fallback)
-{
-    if(!octadir || !*octadir)
-    {
-        const char *dir = getenv("OCTA_DATA");
-        if(dir && *dir) setsvar("octadir", dir, false);
-        else
-        {
-            dir = getenv("OCTA_DIR"); // backward compat
-            if(dir && *dir) setsvar("octadir", dir, false);
-        }
-    }
-    if((!octadir || !*octadir || !findoctadir(octadir, false)) && fallback)
-    { // user hasn't specifically set it, try some common locations alongside our folder
-#if defined(WIN32)
-        stringz(dir);
-        if(SHGetFolderPath(NULL, CSIDL_PROGRAM_FILESX86, NULL, 0, dir) == S_OK)
-        {
-            defformatstring(s, "%s\\Sauerbraten", dir);
-            if(findoctadir(s, true)) return;
-        }
-#elif defined(__APPLE__)
-        extern const char *mac_sauerbratendir();
-        const char *dir = mac_sauerbratendir();
-        if(dir && findoctadir(dir, true)) return;
-#endif
-        const char *tryoctadirs[4] = { // by no means an accurate or definitive list either..
-            "../Sauerbraten", "../sauerbraten", "../sauer",
-#if defined(WIN32)
-            "/Program Files/Sauerbraten"
-#elif defined(__APPLE__)
-            "/Applications/sauerbraten.app/Contents/gamedata"
-#else
-            "/usr/games/sauerbraten"
-#endif
-        };
-        loopi(4) if(findoctadir(tryoctadirs[i], true)) return;
-    }
 }
 
 SVAR(IDF_READONLY, extras, "");
@@ -1872,7 +1790,6 @@ int main(int argc, char **argv)
     bool shouldload = initgame();
     if(shouldload)
     {
-        trytofindocta();
         if(initscript) execute(initscript);
         serverloop();
     }

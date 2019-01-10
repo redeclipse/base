@@ -1085,7 +1085,6 @@ int main(int argc, char **argv)
         initparticles();
         initstains();
 
-        trytofindocta();
         conoutf("Loading main..");
         progress(0, "Loading main..");
         if(initscript) execute(initscript, true);
