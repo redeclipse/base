@@ -1506,6 +1506,16 @@ bool serveroption(char *opt)
     return false;
 }
 
+void octapaks(uint *contents)
+{
+    int mask = maskpackagedirs(~0);
+    execute(contents);
+    maskpackagedirs(mask);
+}
+COMMAND(0, octapaks, "e");
+
+VAR(0, hasoctapaks, 1, 0, 0); // Stub
+
 SVAR(IDF_READONLY, extras, "");
 void loadextras()
 {
