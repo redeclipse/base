@@ -9,7 +9,7 @@
 #define VERSION_VNAME "REDECLIPSE"
 #define VERSION_RELEASE "v2 Preview"
 #define VERSION_URL "https://redeclipse.net/"
-#define VERSION_COPY "2010-2018"
+#define VERSION_COPY "2010-2019"
 #define VERSION_DESC "A fun-filled new take on the first-person arena shooter."
 #define VERSION_STEAMID 967460
 #define VERSION_DISCORD "506825464946360321"
