@@ -448,13 +448,15 @@ void texreorient(ImageData &s, bool flipx, bool flipy, bool swapxy, int type = T
 
 void texrotate(ImageData &s, int numrots, int type = TEX_DIFFUSE)
 {
-    // 1..3 rotate through 90..270 degrees, 4 flips X, 5 flips Y
-    if(numrots>=1 && numrots<=5)
+    // 1..3 rotate through 90..270 degrees, 4 flips X, 5 flips Y, 6..8 swapped
+    if(numrots >= 1 && numrots <= 5)
+    {
         texreorient(s,
-            numrots>=2 && numrots<=4, // flip X on 180/270 degrees
-            numrots<=2 || numrots==5, // flip Y on 90/180 degrees
-            (numrots&5)==1,           // swap X/Y on 90/270 degrees
+            (numrots >= 2 && numrots <= 4) || (numrots >= 7 && numrots <= 8),  // flip X on 180/270 degrees
+            numrots <= 2 || (numrots >= 5 && numrots <= 7), // flip Y on 90/180 degrees
+            numrots >= 6 ? ((numrots-5)&5) != 1 : (numrots&5) == 1, // swap X/Y on 90/270 degrees
             type);
+    }
 }
 
 void texoffset(ImageData &s, int xoffset, int yoffset)
