@@ -246,7 +246,11 @@ static inline bool modifyoctaent(int flags, int id)
 }
 
 static inline void addentity(int id)        { modifyoctaent(MODOE_ADD|MODOE_UPDATEBB, id); }
-static inline void addentityedit(int id)    { modifyoctaent(MODOE_ADD|MODOE_UPDATEBB|MODOE_CHANGED, id); }
+static inline void addentityedit(int id, bool fix = true)
+{
+    if(fix) entities::fixentity(id, true);
+    modifyoctaent(MODOE_ADD|MODOE_UPDATEBB|MODOE_CHANGED, id);
+}
 static inline void removeentity(int id)     { modifyoctaent(MODOE_UPDATEBB, id); }
 static inline void removeentityedit(int id) { modifyoctaent(MODOE_UPDATEBB|MODOE_CHANGED, id); }
 
@@ -1289,7 +1293,7 @@ void mpeditent(int i, const vec &o, int type, attrvector &attr, bool local)
     vector<extentity *> &ents = entities::getents();
     if(ents.length()<=i)
     {
-        extentity *e = newentity(local, o, type, attr, i);
+        extentity *e = newentity(local, o, type, attr, i, false, false);
         if(!e) return;
         addentityedit(i);
     }
@@ -1297,13 +1301,11 @@ void mpeditent(int i, const vec &o, int type, attrvector &attr, bool local)
     {
         extentity &e = *ents[i];
         removeentityedit(i);
-
         e.type = type;
         e.o = o;
         e.attrs.add(0, clamp(attr.length(), entities::numattrs(e.type), MAXENTATTRS) - e.attrs.length());
         loopk(min(attr.length(), e.attrs.length())) e.attrs[k] = attr[k];
         addentityedit(i);
-
     }
     entities::editent(i, local);
     clearshadowcache();
