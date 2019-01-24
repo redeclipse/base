@@ -553,7 +553,7 @@ namespace client
         loopv(items) if(game::player1->loadweap.find(items[i]) < 0)
         {
             game::player1->loadweap.add(items[i]);
-            if(game::player1->loadweap.length() >= MAXCARRYLIMIT) break;
+            if(game::player1->loadweap.length() >= W_LOADOUT) break;
         }
         sendplayerinfo = true;
     }

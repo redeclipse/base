@@ -945,28 +945,34 @@ struct clientstate
             weapclip[s] = W(s, ammospawn);
             weapselect = s;
         }
-        if(s != W_CLAW && AA(actortype, abilities)&(1<<A_A_CLAW)) weapclip[W_CLAW] = W(W_CLAW, ammospawn);
-        if(s != W_MELEE && AA(actortype, abilities)&(1<<A_A_MELEE)) weapclip[W_MELEE] = W(W_MELEE, ammospawn);
+        if(s != W_CLAW && AA(actortype, abilities)&(1<<A_A_CLAW) && !W(W_CLAW, disabled)) weapclip[W_CLAW] = W(W_CLAW, ammospawn);
+        if(s != W_MELEE && AA(actortype, abilities)&(1<<A_A_MELEE) && !W(W_MELEE, disabled)) weapclip[W_MELEE] = W(W_MELEE, ammospawn);
         if(actortype < A_ENEMY)
         {
-            if(m_kaboom(gamemode, mutators)) weapclip[W_MINE] = W(W_MINE, ammospawn);
+            if(m_kaboom(gamemode, mutators) && !W(W_MINE, disabled)) weapclip[W_MINE] = W(W_MINE, ammospawn);
             else if(!m_race(gamemode) || m_ra_gauntlet(gamemode, mutators))
             {
-                if(s != W_GRENADE && AA(actortype, spawngrenades) >= (m_insta(gamemode, mutators) ? 2 : 1))
+                if(s != W_GRENADE && AA(actortype, spawngrenades) >= (m_insta(gamemode, mutators) ? 2 : 1) && !W(W_GRENADE, disabled))
                     weapclip[W_GRENADE] = W(W_GRENADE, ammospawn);
-                if(s != W_MINE && AA(actortype, spawnmines) >= (m_insta(gamemode, mutators) ? 2 : 1))
+                if(s != W_MINE && AA(actortype, spawnmines) >= (m_insta(gamemode, mutators) ? 2 : 1) && !W(W_MINE, disabled))
                     weapclip[W_MINE] = W(W_MINE, ammospawn);
             }
         }
         if(AA(actortype, maxcarry) && m_loadout(gamemode, mutators))
         {
             vector<int> aweap;
-            loopj(AA(actortype, maxcarry)) aweap.add(loadweap.inrange(j) ? loadweap[j] : 0);
+            loopj(W_LOADOUT)
+            {
+                if(loadweap.inrange(j) && isweap(loadweap[j]) && !hasweap(loadweap[j], sweap) && m_check(W(loadweap[j], modes), W(loadweap[j], muts), gamemode, mutators) && !W(loadweap[j], disabled))
+                    aweap.add(loadweap[j]);
+                else aweap.add(0);
+            }
             vector<int> rand, forcerand;
             for(int t = W_OFFSET; t < W_ITEM; t++)
                 if(!hasweap(t, sweap) && m_check(W(t, modes), W(t, muts), gamemode, mutators) && !W(t, disabled) && aweap.find(t) < 0)
                     (canrandweap(t) ? rand : forcerand).add(t);
-            loopj(AA(actortype, maxcarry))
+            int count = 0;
+            loopj(W_LOADOUT)
             {
                 if(aweap[j] <= 0) // specifically asking for random
                 {
@@ -976,10 +982,13 @@ struct clientstate
                         int i = rnd(randsrc.length());
                         aweap[j] = randsrc.remove(i);
                     }
+                    else continue;
                 }
                 weapclip[aweap[j]] = W(aweap[j], ammospawn);
+                count++;
+                if(count >= AA(actortype, maxcarry)) break;
             }
-            weapselect = aweap[0];
+            loopj(2) if(isweap(aweap[j])) { weapselect = aweap[j]; break; }
         }
         loopj(W_MAX) if(weapclip[j] > W(j, ammoclip))
         {
