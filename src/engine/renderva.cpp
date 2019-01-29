@@ -1553,10 +1553,10 @@ static void changetexgen(renderstate &cur, int orient, Slot &slot, VSlot &vslot)
              cur.texgenvslot->rotation != vslot.rotation || cur.texgenvslot->scale != vslot.scale ||
              cur.texgenvslot->offset != vslot.offset || cur.texgenvslot->scroll != vslot.scroll))
         {
-            float xs = vslot.rotation>=2 && vslot.rotation<=4 ? -tex->xs : tex->xs,
-                  ys = (vslot.rotation>=1 && vslot.rotation<=2) || vslot.rotation==5 ? -tex->ys : tex->ys;
+            float xs = (vslot.rotation>=2 && vslot.rotation<=4) || vslot.rotation==7 ? -tex->xs : tex->xs,
+                  ys = (vslot.rotation>=1 && vslot.rotation<=2) || vslot.rotation==5 || vslot.rotation==7 ? -tex->ys : tex->ys;
             vec2 scroll(vslot.scroll);
-            if((vslot.rotation&5)==1) swap(scroll.x, scroll.y);
+            if((vslot.rotation&5)==1 || vslot.rotation>=6) swap(scroll.x, scroll.y);
             scroll.x *= cur.texgenmillis*tex->xs/xs;
             scroll.y *= cur.texgenmillis*tex->ys/ys;
             if(cur.texgenscroll != scroll)

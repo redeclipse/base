@@ -448,13 +448,13 @@ void texreorient(ImageData &s, bool flipx, bool flipy, bool swapxy, int type = T
 
 void texrotate(ImageData &s, int numrots, int type = TEX_DIFFUSE)
 {
-    // 1..3 rotate through 90..270 degrees, 4 flips X, 5 flips Y, 6..8 swapped
-    if(numrots >= 1 && numrots <= 5)
+    // 1..3 rotate through 90..270 degrees, 4 flips X, 5 flips Y, 6 tranpose, 7 flipped transpose
+    if(numrots >= 1 && numrots <= 7)
     {
         texreorient(s,
-            (numrots >= 2 && numrots <= 4) || (numrots >= 7 && numrots <= 8),  // flip X on 180/270 degrees
-            numrots <= 2 || (numrots >= 5 && numrots <= 7), // flip Y on 90/180 degrees
-            numrots >= 6 ? ((numrots-5)&5) != 1 : (numrots&5) == 1, // swap X/Y on 90/270 degrees
+            (numrots >= 2 && numrots <= 4) || numrots == 7,  // flip X on 180/270 degrees
+            numrots <= 2 || numrots == 5 || numrots == 7, // flip Y on 90/180 degrees
+            (numrots&5) == 1 || numrots >= 6, // swap X/Y on 90/270 degrees
             type);
     }
 }
@@ -1966,7 +1966,7 @@ static void clampvslotoffset(VSlot &dst, Slot *slot = NULL)
         Texture *t = slot->sts[0].t;
         int xs = t->xs, ys = t->ys;
         if(t->type & Texture::MIRROR) { xs *= 2; ys *= 2; }
-        if((dst.rotation&5)==1) swap(xs, ys);
+        if((dst.rotation&5)==1 || dst.rotation>=6) swap(xs, ys);
         dst.offset.x %= xs; if(dst.offset.x < 0) dst.offset.x += xs;
         dst.offset.y %= ys; if(dst.offset.y < 0) dst.offset.y += ys;
     }
@@ -2043,7 +2043,7 @@ static void mergevslot(VSlot &dst, const VSlot &src, int diff, Slot *slot = NULL
     }
     if(diff & (1<<VSLOT_ROTATION))
     {
-        dst.rotation = clamp(dst.rotation + src.rotation, 0, 5);
+        dst.rotation = clamp(dst.rotation + src.rotation, 0, 7);
         if(!dst.offset.iszero()) clampvslotoffset(dst, slot);
     }
     if(diff & (1<<VSLOT_OFFSET))
@@ -2250,7 +2250,7 @@ bool unpackvslot(ucharbuf &buf, VSlot &dst, bool delta)
                 break;
             case VSLOT_ROTATION:
                 dst.rotation = getint(buf);
-                if(!delta) dst.rotation = clamp(dst.rotation, 0, 5);
+                if(!delta) dst.rotation = clamp(dst.rotation, 0, 7);
                 break;
             case VSLOT_OFFSET:
                 dst.offset.x = getint(buf);
@@ -2423,7 +2423,7 @@ void texture(char *type, char *name, int *rot, int *xoffset, int *yoffset, float
     {
         setslotshader(s);
         VSlot &vs = s.emptyvslot();
-        vs.rotation = clamp(*rot, 0, 5);
+        vs.rotation = clamp(*rot, 0, 7);
         vs.offset = ivec2(*xoffset, *yoffset).max(0);
         vs.scale = *scale <= 0 ? 1 : *scale;
         propagatevslot(&vs, (1<<VSLOT_NUM)-1);
@@ -2495,7 +2495,7 @@ void texrotate_(int *rot)
 {
     if(!defslot) return;
     Slot &s = *defslot;
-    s.variants->rotation = clamp(*rot, 0, 5);
+    s.variants->rotation = clamp(*rot, 0, 7);
     propagatevslot(s.variants, 1<<VSLOT_ROTATION);
 }
 COMMANDN(0, texrotate, texrotate_, "i");
