@@ -3085,9 +3085,10 @@ void rendertexturepanel(int w, int h)
                 float xoff = vslot.offset.x, yoff = vslot.offset.y;
                 if(vslot.rotation)
                 {
-                    if((vslot.rotation&5) == 1 || vslot.rotation >= 6) { swap(xoff, yoff); loopk(4) swap(tc[k].x, tc[k].y); }
-                    if((vslot.rotation >= 2 && vslot.rotation <= 4) || vslot.rotation == 7) { xoff *= -1; loopk(4) tc[k].x *= -1; }
-                    if(vslot.rotation <= 2 || vslot.rotation == 5 || vslot.rotation == 7) { yoff *= -1; loopk(4) tc[k].y *= -1; }
+                    const texrotation &r = texrotations[vslot.rotation];
+                    if(r.swapxy) { swap(xoff, yoff); loopk(4) swap(tc[k].x, tc[k].y); }
+                    if(r.flipx) { xoff *= -1; loopk(4) tc[k].x *= -1; }
+                    if(r.flipy) { yoff *= -1; loopk(4) tc[k].y *= -1; }
                 }
                 loopk(4) { tc[k].x = tc[k].x/sx - xoff/tex->xs; tc[k].y = tc[k].y/sy - yoff/tex->ys; }
                 glBindTexture(GL_TEXTURE_2D, tex->id);

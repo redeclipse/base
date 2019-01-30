@@ -958,9 +958,9 @@ ICOMMAND(0, rotateblendbrush, "i", (int *val),
 {
     if(!canpaintblendmap()) return;
 
-    int numrots = *val < 0 ? 3 : clamp(*val, 1, 7);
     BlendBrush *brush = brushes[curbrush];
-    brush->reorient((numrots>=2 && numrots<=4) || numrots==7, numrots<=2 || numrots==5 || numrots==7, (numrots&5)==1 || numrots>=6);
+    const texrotation &r = texrotations[*val < 0 ? 3 : clamp(*val, 1, 7)];
+    brush->reorient(r.flipx, r.flipy, r.swapxy);
 });
 
 void paintblendmap(bool msg)

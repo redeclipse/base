@@ -864,6 +864,11 @@ extern void texcrop(ImageData &s, int x, int y, int w, int h);
 extern void updatetextures();
 extern void preloadtextures(uint flags = IDF_PRELOAD);
 
+struct texrotation
+{
+    bool flipx, flipy, swapxy;
+};
+
 struct cubemapside
 {
     GLenum target;
@@ -871,6 +876,7 @@ struct cubemapside
     bool flipx, flipy, swapxy;
 };
 
+extern const texrotation texrotations[8];
 extern const cubemapside cubemapsides[6];
 extern Texture *notexture, *blanktexture;
 extern Shader *nullshader, *hudshader, *hudtextshader, *hudnotextureshader, *hudbackgroundshader, *nocolorshader, *foggedshader, *foggednotextureshader, *ldrshader, *ldrnotextureshader, *stdworldshader;
