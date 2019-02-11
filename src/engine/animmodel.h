@@ -6,7 +6,7 @@ VARF(0, dbgcolmesh, 0, 0, 1,
     cleanupmodels();
 });
 
-VAR(IDF_PERSIST, vegetationanimdist, 0, 1200, 10000);
+VAR(IDF_PERSIST, windanimdist, 0, 1200, 10000);
 
 struct animmodel : model
 {
@@ -236,7 +236,7 @@ struct animmodel : model
             string opts;
             int optslen = 0;
             if(alphatested()) opts[optslen++] = 'a';
-            if(owner->model->vegetation) opts[optslen++] = 'v';
+            if(owner->model->wind) opts[optslen++] = 'w';
             if(decaled()) opts[optslen++] = decal->type&Texture::ALPHA ? 'D' : 'd';
             if(bumpmapped()) opts[optslen++] = 'n';
             if(envmapped()) { opts[optslen++] = 'm'; opts[optslen++] = 'e'; }
@@ -264,7 +264,7 @@ struct animmodel : model
         void preloadshader()
         {
             loadshader();
-            if(owner->model->vegetation) useshaderbyname("vegetationshadowmodel");
+            if(owner->model->wind) useshaderbyname("windshadowmodel");
             else useshaderbyname(alphatested() && owner->model->alphashadow ? "alphashadowmodel" : "shadowmodel");
             if(useradiancehints()) useshaderbyname(alphatested() ? "rsmalphamodel" : "rsmmodel");
         }
@@ -291,7 +291,7 @@ struct animmodel : model
                         glBindTexture(GL_TEXTURE_2D, tex->id);
                         lasttex = tex;
                     }
-                    if(owner->model->vegetation) SETMODELSHADER(b, vegetationshadowmodel);
+                    if(owner->model->wind) SETMODELSHADER(b, windshadowmodel);
                     else SETMODELSHADER(b, alphashadowmodel);
                     setshaderparams(b, as, false);
                 }
@@ -1059,8 +1059,6 @@ struct animmodel : model
 
         void render(int anim, int basetime, int basetime2, float pitch, const vec &axis, const vec &forward, modelstate *state, dynent *d, animstate *as)
         {
-            bool vegetation = false;
-
             if((anim&ANIM_REUSE) != ANIM_REUSE) loopi(numanimparts)
             {
                 animinfo info;
@@ -1079,7 +1077,6 @@ struct animmodel : model
                         p.interp = diff/float(aitime);
                     }
                 }
-                if(p.owner->model->vegetation) vegetation = true;
             }
 
             float resize = model->scale * sizescale;
@@ -1114,19 +1111,20 @@ struct animmodel : model
                 if(resize!=1) modelmatrix.scale(resize);
                 GLOBALPARAM(modelmatrix, modelmatrix);
 
-                if(!(anim&ANIM_NOSKIN) || vegetation) GLOBALPARAM(modelworld, matrix3(matrixstack[matrixpos]));
                 if(!(anim&ANIM_NOSKIN))
                 {
+                    GLOBALPARAM(modelworld, matrix3(matrixstack[matrixpos]));
+
                     vec modelcamera;
                     matrixstack[matrixpos].transposedtransform(camera1->o, modelcamera);
                     modelcamera.div(resize);
                     GLOBALPARAM(modelcamera, modelcamera);
                 }
-                if(vegetation)
+                if(model->wind)
                 {
-                    bool shouldanim = camera1->o.dist(matrixstack[matrixpos].gettranslation()) < vegetationanimdist;
-                    GLOBALPARAMF(vegetationphase, matrixstack[matrixpos].gettranslation().magnitude());
-                    GLOBALPARAMF(vegetationanim, shouldanim);
+                    vec pos = matrixstack[matrixpos].gettranslation();
+                    float dist = camera1->o.dist(pos);
+                    GLOBALPARAMF(windparams, max(1.0f - dist/windanimdist, 0.0f), pos.magnitude());
                 }
             }
 
