@@ -1628,7 +1628,7 @@ struct animmodel : model
 
     bool animated() const
     {
-        if(spinyaw || spinpitch || spinroll) return true;
+        if(spinyaw || spinpitch || spinroll || wind) return true;
         loopv(parts) if(parts[i]->animated()) return true;
         return false;
     }
