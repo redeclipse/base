@@ -42,12 +42,12 @@ MODELTYPE(MDL_IQM, iqm);
 
 #define checkmdl if(!loadingmodel) { conoutf("\frNot loading a model"); return; }
 
-void mdlwind(int *wind)
+void mdlwind(float *wind)
 {
     checkmdl;
-    loadingmodel->wind = *wind != 0;
+    loadingmodel->wind = max(*wind, 0.0f);
 }
-COMMAND(0, mdlwind, "i");
+COMMAND(0, mdlwind, "f");
 
 void mdlmaterial(int *material1, int *material2)
 {

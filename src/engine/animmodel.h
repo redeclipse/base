@@ -1124,7 +1124,7 @@ struct animmodel : model
                 {
                     vec pos = matrixstack[matrixpos].gettranslation();
                     float dist = camera1->o.dist(pos);
-                    GLOBALPARAMF(windparams, max(1.0f - dist/windanimdist, 0.0f), pos.magnitude());
+                    GLOBALPARAMF(windparams, max(1.0f - dist/windanimdist, 0.0f), pos.magnitude(), resize * model->wind);
                 }
             }
 
