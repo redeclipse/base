@@ -141,3 +141,7 @@
 	path = data/weapons
 	url = https://github.com/red-eclipse/weapons.git
 	branch = master
+[submodule "q009"]
+	path = data/q009
+	url = https://github.com/red-eclipse/q009.git
+	branch = master
