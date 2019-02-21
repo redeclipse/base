@@ -3365,6 +3365,63 @@ namespace client
                     break;
                 }
 
+                case N_DUELEND:
+                {
+                    // Round winner (-1 if everyone died, team in team modes, cn otherwise).
+                    int winner = getint(p);
+
+                    // If nobody won, just announce draw.
+                    if(winner == -1)
+                    {
+                        game::announcef(S_V_DRAW, CON_EVENT, NULL, false, "\fyEveryone died, \fzoyEPIC FAIL!");
+                    }
+                    else
+                    {
+                        // Were we playing?
+                        bool playing = getint(p);
+
+                        if(m_team(game::gamemode, game::mutators))
+                        {
+                            defformatstring(msg, "\fyTeam %s are the winners", game::colourteam(winner));
+                            // If we were playing, announce with appropriate sound for if we won or lost.
+                            if(playing) game::announcef((winner == game::player1->team) ? S_V_YOUWIN : S_V_YOULOSE, CON_EVENT, NULL, false, "%s", msg);
+                            else game::announcef(S_V_BOMBSCORE, CON_EVENT, NULL, false, "%s", msg);
+                        }
+                        else
+                        {
+                            // Winner's win streak.
+                            int wins = getint(p);
+
+                            gameent *t = game::getclient(winner);
+                            if(!t) break;
+
+                            stringz(msg);
+                            stringz(hp);
+
+                            // If applicable, create remaining health or flawless message.
+                            if(!m_insta(game::gamemode, game::mutators))
+                            {
+                                if(t->health >= t->gethealth(game::gamemode, game::mutators)) formatstring(hp, " with a \fs\fcflawless victory\fS");
+                                else
+                                {
+                                    if(game::damageinteger) formatstring(hp, " with \fs\fc%d\fS health left", int(ceilf(t->health/game::damagedivisor)));
+                                    else formatstring(hp, " with \fs\fc%.1f\fS health left", t->health/game::damagedivisor);
+                                }
+                            }
+
+                            // Format win message with streak if it has more than one win.
+                            if(wins == 1) formatstring(msg, "\fy%s was the winner%s", game::colourname(t), hp);
+                            else formatstring(msg, "\fy%s was the winner%s (\fs\fc%d\fS in a row)", game::colourname(t), hp, wins);
+
+                            // If we were playing, announce with appropriate sound for if we won or lost.
+                            if(playing) game::announcef((winner == game::player1->clientnum) ? S_V_YOUWIN : S_V_YOULOSE, CON_EVENT, NULL, false, "%s", msg);
+                            else game::announcef(S_V_BOMBSCORE, CON_EVENT, NULL, false, "%s", msg);
+                        }
+                    }
+
+                    break;
+                }
+
                 case N_INITAFFIN:
                 {
                     if(m_capture(game::gamemode)) capture::parseaffinity(p);
