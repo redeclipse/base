@@ -388,32 +388,33 @@ struct duelservmode : servmode
                         {
                             if(!cleanup)
                             {
-                                defformatstring(end, "\fyTeam %s are the winners", colourteam(alive[0]->team));
                                 bool teampoints = true;
-                                loopv(clients) if(playing.find(clients[i]) >= 0)
+                                loopv(clients)
                                 {
-                                    if(clients[i]->team == alive[0]->team)
+                                    bool was_playing = playing.find(clients[i]) >= 0;
+                                    if(was_playing)
                                     {
-                                        ancmsgft(clients[i]->clientnum, S_V_YOUWIN, CON_EVENT, "%s", end);
-                                        if(alive.find(clients[i]) >= 0)
+                                        if(clients[i]->team == alive[0]->team)
                                         {
-                                            if(!m_affinity(gamemode))
+                                            if(alive.find(clients[i]) >= 0)
                                             {
-                                                givepoints(clients[i], 1, !m_dm_oldschool(gamemode, mutators), teampoints);
-                                                teampoints = false;
-                                            }
-                                            else if(!duelaffin && teampoints && !m_dm_oldschool(gamemode, mutators))
-                                            {
-                                                score &ts = teamscore(clients[i]->team);
-                                                ts.total++;
-                                                sendf(-1, 1, "ri3", N_SCORE, ts.team, ts.total);
-                                                teampoints = false;
+                                                if(!m_affinity(gamemode))
+                                                {
+                                                    givepoints(clients[i], 1, !m_dm_oldschool(gamemode, mutators), teampoints);
+                                                    teampoints = false;
+                                                }
+                                                else if(!duelaffin && teampoints && !m_dm_oldschool(gamemode, mutators))
+                                                {
+                                                    score &ts = teamscore(clients[i]->team);
+                                                    ts.total++;
+                                                    sendf(-1, 1, "ri3", N_SCORE, ts.team, ts.total);
+                                                    teampoints = false;
+                                                }
                                             }
                                         }
                                     }
-                                    else ancmsgft(clients[i]->clientnum, S_V_YOULOSE, CON_EVENT, "%s", end);
+                                    if(allowbroadcast(clients[i]->clientnum)) sendf(clients[i]->clientnum, 1, "ri3", N_DUELEND, alive[0]->team, int(was_playing));
                                 }
-                                else ancmsgft(clients[i]->clientnum, S_V_BOMBSCORE, CON_EVENT, "%s", end);
                             }
                             clear();
                         }
@@ -433,7 +434,7 @@ struct duelservmode : servmode
                         if(!cleanup)
                         {
                             endffaround(alive);
-                            ancmsgft(-1, S_V_DRAW, CON_EVENT, "\fyEveryone died, \fzoyEPIC FAIL!");
+                            sendf(-1, 1, "ri2", N_DUELEND, -1);
                             duelwinner = -1;
                             duelwins = 0;
                         }
@@ -451,32 +452,22 @@ struct duelservmode : servmode
                         if(!cleanup)
                         {
                             endffaround(alive);
-                            stringz(end);
-                            stringz(hp);
-                            if(!m_insta(gamemode, mutators))
-                            {
-                                if(alive[0]->health >= alive[0]->gethealth(gamemode, mutators))
-                                    formatstring(hp, " with a \fs\fcflawless victory\fS");
-                                else formatstring(hp, " with \fs\fc%d\fS health left", alive[0]->health);
-                            }
                             if(duelwinner != alive[0]->clientnum)
                             {
                                 duelwinner = alive[0]->clientnum;
                                 duelwins = 1;
-                                formatstring(end, "\fy%s was the winner%s", colourname(alive[0]), hp);
                             }
                             else
                             {
                                 duelwins++;
-                                formatstring(end, "\fy%s was the winner%s (\fs\fc%d\fS in a row)", colourname(alive[0]), hp, duelwins);
                             }
                             loopv(clients)
                             {
-                                if(playing.find(clients[i]) >= 0)
+                                bool was_playing = playing.find(clients[i]) >= 0;
+                                if(was_playing)
                                 {
                                     if(clients[i] == alive[0])
                                     {
-                                        ancmsgft(clients[i]->clientnum, S_V_YOUWIN, CON_EVENT, "%s", end);
                                         if(!m_dm_oldschool(gamemode, mutators))
                                         {
                                             if(!m_affinity(gamemode)) givepoints(clients[i], 1, true, true);
@@ -488,9 +479,8 @@ struct duelservmode : servmode
                                             }
                                         }
                                     }
-                                    else ancmsgft(clients[i]->clientnum, S_V_YOULOSE, CON_EVENT, "%s", end);
                                 }
-                                else ancmsgft(clients[i]->clientnum, S_V_BOMBSCORE, CON_EVENT, "%s", end);
+                                if(allowbroadcast(clients[i]->clientnum)) sendf(clients[i]->clientnum, 1, "ri4", N_DUELEND, duelwinner, int(was_playing), duelwins);
                             }
                         }
                         clear();
