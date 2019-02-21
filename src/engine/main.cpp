@@ -855,9 +855,7 @@ void progress(float bar1, const char *text1, float bar2, const char *text2)
     lastprogress = ticks;
     clientkeepalive();
 
-    #ifdef __APPLE__
-    interceptkey(SDLK_UNKNOWN); // keep the event queue awake to avoid 'beachball' cursor
-    #endif
+    interceptkey(SDLK_UNKNOWN); // keep the event queue awake to avoid appearing unresponsive
 
     setsvar("progresstitle", text1 ? text1 : "please wait..");
     setfvar("progressamt", bar1);
