@@ -87,7 +87,13 @@ if(NOT ${WANT_DISCORD})
 endif()
 
 # the client depends on almost all the source files
-file(GLOB client_sources engine/*.cpp game/*.cpp shared/*.cpp support/sqlite3.c)
+file(GLOB client_sources
+    engine/*.cpp
+    game/*.cpp
+    shared/*.cpp
+    support/jsmn.c
+    support/sqlite3.c
+)
 
 # the server requires less source files
 file(GLOB server_sources
@@ -96,9 +102,11 @@ file(GLOB server_sources
     shared/stream.cpp
     shared/tools.cpp
     shared/zip.cpp
+    support/jsmn.c
     support/sqlite3.c
     engine/cdpi.cpp
     engine/command.cpp
+    engine/http.cpp
     engine/irc.cpp
     engine/master.cpp
     engine/server.cpp
