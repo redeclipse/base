@@ -76,7 +76,7 @@ namespace game
     VAR(IDF_PERSIST, fullbrightfocus, 0, 0, 3); // bitwise: 0 = don't fullbright focus, 1 = fullbright non-player1, 2 = fullbright player1
 
     VAR(IDF_PERSIST, thirdpersonmodel, 0, 1, 1);
-    VAR(IDF_PERSIST, thirdpersonfov, 1, 120, 179);
+    VAR(IDF_PERSIST, thirdpersonfov, 90, 120, 150);
     FVAR(IDF_PERSIST, thirdpersonblend, 0, 1, 1);
     VAR(IDF_PERSIST, thirdpersoninterp, 0, 100, VAR_MAX);
     FVAR(IDF_PERSIST, thirdpersondist, FVAR_NONZERO, 14, 20);
@@ -89,7 +89,7 @@ namespace game
     VARF(0, follow, -1, -1, VAR_MAX, followswitch(0));
 
     VAR(IDF_PERSIST, firstpersonmodel, 0, 3, 3);
-    VAR(IDF_PERSIST, firstpersonfov, 1, 100, 179);
+    VAR(IDF_PERSIST, firstpersonfov, 90, 100, 150);
     FVAR(IDF_PERSIST, firstpersondepth, 0, 0.25f, 1);
     FVAR(IDF_PERSIST, firstpersonbodydepth, 0, 0.65f, 1);
     FVAR(IDF_PERSIST, firstpersondepthfov, 0, 70, 150);
@@ -123,8 +123,8 @@ namespace game
     FVAR(IDF_PERSIST, firstpersonbobfocusmaxdist, 0, 256, 10000);
     FVAR(IDF_PERSIST, firstpersonbobfocus, 0, 0.5f, 1);
 
-    VAR(IDF_PERSIST, editfov, 1, 120, 179);
-    VAR(IDF_PERSIST, specfov, 1, 120, 179);
+    VAR(IDF_PERSIST, editfov, 90, 120, 150);
+    VAR(IDF_PERSIST, specfov, 90, 120, 150);
 
     VAR(IDF_PERSIST, specresetstyle, 0, 1, 1); // 0 = back to player1, 1 = stay at camera
 
