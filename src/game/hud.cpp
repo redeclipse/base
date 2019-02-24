@@ -1817,6 +1817,8 @@ namespace hud
             drawquad(0, 0, w, h, offsetx, offsety, 1-offsetx, 1-offsety);
         }
 
+        resethudshader();
+
         if(showloadinglogos)
         {
             gle::colorf(1, 1, 1, 1);
