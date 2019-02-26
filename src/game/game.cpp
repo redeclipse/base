@@ -123,8 +123,8 @@ namespace game
     FVAR(IDF_PERSIST, firstpersonbobfocusmaxdist, 0, 256, 10000);
     FVAR(IDF_PERSIST, firstpersonbobfocus, 0, 0.5f, 1);
 
-    VAR(IDF_PERSIST, editfov, 1, 120, 179);
-    VAR(IDF_PERSIST, specfov, 1, 120, 179);
+    VAR(IDF_PERSIST, editfov, 90, 120, 150);
+    VAR(IDF_PERSIST, specfov, 90, 120, 150);
 
     VAR(IDF_PERSIST, specresetstyle, 0, 1, 1); // 0 = back to player1, 1 = stay at camera
 
