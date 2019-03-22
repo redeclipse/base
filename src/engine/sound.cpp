@@ -53,7 +53,7 @@ VAR(IDF_PERSIST, soundvol, 0, 255, 255);
 VARF(0, soundmono, 0, 0, 1, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
 VARF(0, soundmixchans, 16, 256, 1024, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
 VARF(0, soundfreq, 0, 44100, 48000, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
-VARF(0, soundbuflen, 128, 4096, VAR_MAX, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
+VARF(0, soundbuflen, 128, 1024, VAR_MAX, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
 VAR(IDF_PERSIST, soundmaxrad, 0, 512, VAR_MAX);
 VAR(IDF_PERSIST, soundminrad, 0, 0, VAR_MAX);
 FVAR(IDF_PERSIST, soundevtvol, 0, 1, FVAR_MAX);
