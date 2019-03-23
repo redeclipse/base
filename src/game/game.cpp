@@ -1219,16 +1219,19 @@ namespace game
                 if(issound(d->sschan[i])) removesound(d->sschan[i]);
                 d->sschan[i] = -1;
             }
-            if(curfoot != d->lastfoot)
+            if(curfoot >= 0)
             {
-                if(hassound)
+                if(curfoot != d->lastfoot)
                 {
-                    if(d->lastfoot >= 0 && issound(d->sschan[d->lastfoot])) sounds[d->sschan[d->lastfoot]].pos = d->footpos(d->lastfoot);
-                    footstep(d, curfoot);
-                    d->lastfoot = curfoot;
+                    if(hassound)
+                    {
+                        if(d->lastfoot >= 0 && issound(d->sschan[d->lastfoot])) sounds[d->sschan[d->lastfoot]].pos = d->footpos(d->lastfoot);
+                        footstep(d, curfoot);
+                        d->lastfoot = curfoot;
+                    }
                 }
+                else if(hassound) loopi(2) if(issound(d->sschan[i])) sounds[d->sschan[i]].pos = d->footpos(i);
             }
-            else if(hassound) loopi(2) if(issound(d->sschan[i])) sounds[d->sschan[i]].pos = d->footpos(i);
         }
         loopv(d->icons) if(totalmillis-d->icons[i].millis > d->icons[i].fade) d->icons.remove(i--);
     }

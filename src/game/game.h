@@ -16,6 +16,8 @@
 #define DNF 1000.0f // for normalized vectors
 #define DVELF 1.0f // for playerspeed based velocity vectors
 
+#define FOOTSTEP_DIST 1.0f // Threshold, below which a footstep will be registered
+
 enum
 {
     S_JUMP = S_GAMESPECIFIC, S_IMPULSE, S_LAND, S_FOOTSTEP, S_SWIMSTEP, S_PAIN, S_DEATH,
@@ -1715,10 +1717,16 @@ struct gameent : dynent, clientstate
 
     int curfoot()
     {
-        vec dir;
-        vecfromyawpitch(yaw, 0, move, strafe && !move ? strafe : 0, dir);
-        dir.mul(radius).add(o).z -= height; // foot furthest away is one being set down
-        return footpos(0).squaredist(dir) > footpos(1).squaredist(dir) ? 0 : 1;
+        int foot = -1;
+        vec fp = feetpos();
+
+        float d0 = fabs(footpos(0).z - fp.z),
+              d1 = fabs(footpos(1).z - fp.z);
+
+        if(d0 < FOOTSTEP_DIST) foot = 0;
+        else if(d1 < FOOTSTEP_DIST) foot = 1;
+
+        return foot;
     }
 
     bool crouching(bool limit = false)
