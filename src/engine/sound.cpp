@@ -597,7 +597,7 @@ int playsound(int n, const vec &pos, physent *d, int flags, int vol, int maxrad,
                 s.chan = chan;
                 if(hook)
                 {
-                    if(issound(*hook) && (!oldhook || *hook != *oldhook)) removesound(*hook);
+                    if(issound(*hook) && (!oldhook || *hook != *oldhook) && n == sounds[*hook].slotnum) removesound(*hook);
                     *hook = s.chan;
                     s.hook = hook;
                 }
