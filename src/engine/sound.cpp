@@ -580,6 +580,9 @@ int playsound(int n, const vec &pos, physent *d, int flags, int vol, int maxrad,
 
                 while(chan >= sounds.length()) sounds.add();
 
+                // Reset the sound channel if we haven't had the time to do it beforehand
+                if(sounds[chan].slot) sounds[chan].reset();
+
                 sound &s = sounds[chan];
                 s.slot = slot;
                 s.vol = v;
