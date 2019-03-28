@@ -265,6 +265,7 @@ void mdlname()
 COMMAND(0, mdlname, "");
 
 #define checkragdoll \
+    checkmdl; \
     if(!loadingmodel->skeletal()) { conoutf("\frNot loading a skeletal model"); return; } \
     skelmodel *m = (skelmodel *)loadingmodel; \
     if(m->parts.empty()) return; \
