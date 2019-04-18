@@ -27,7 +27,7 @@ The project is Free and Open Source, meaning that you can both use it for free a
 * Quinton "Quin" Reeves - Lead Developer - YouTube channel @ https://youtube.com/qreeves
     - Gameplay and AI Design, Community Management
 
-* Lee "Eihrul" Salzman - Lead Programmer - Check out Tesseract @ https://tesseract.gg/
+* Lee "Eihrul" Salzman - Lead Programmer - Check out Tesseract @ http://tesseract.gg/
     - Engine Designer, Programming Support (there'd be no game without this guy!)
 
 ### Contributors, Developers and Supporters
