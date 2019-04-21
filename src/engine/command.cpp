@@ -4182,14 +4182,18 @@ ICOMMAND(0, listfiles, "ss", (char *dir, char *ext),
 {
     vector<char *> files;
     listfiles(dir, ext[0] ? ext : NULL, files);
+
     vector<char> p;
     loopv(files)
     {
-        if(i) p.put(' ');
-        p.put(files[i], strlen(files[i]));
+        if(i) p.add(' ');
+
+        const char *str = escapestring(files[i]);
+        while(*str) p.add(*(str++));
     }
     p.add('\0');
-    commandret->setstr(newstring(p.getbuf(), p.length()-1));
+
+    commandret->setstr(p.disown());
 });
 
 ICOMMAND(0, loopfiles, "rsse", (ident *id, char *dir, char *ext, uint *body),
