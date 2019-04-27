@@ -296,7 +296,7 @@ GVAR(IDF_GAMEMOD, teambalancedelay, 0, 3000, VAR_MAX); // how long before reassi
 GVAR(IDF_GAMEMOD, teambalanceswap, 0, 1, 1); // allow swap requests if unable to change team
 GVAR(IDF_GAMEMOD, teambalancelock, 0, PRIV_MODERATOR, PRIV_MAX); // level at which one can override swap
 GVAR(IDF_GAMEMOD, teambalancestyle, 0, 6, 6); // when moving players, sort by: 0 = top of list, 1 = time played, 2 = points, 3 = frags, 4 = scoretime, 5 = kdratio, 6 = combined kdratio
-GVAR(IDF_GAMEMOD, teambalancehighest, 0, 1, 1); // when moving players, move highest first
+GVAR(IDF_GAMEMOD, teambalancehighest, 0, 0, 1); // when moving players, move highest first
 
 GVAR(IDF_GAMEMOD, racegauntletwinner, 0, 1, 1); // declare the winner when the final team exceeds best score
 
