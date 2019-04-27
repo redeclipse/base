@@ -322,7 +322,7 @@ GVAR(IDF_GAMEMOD, teambalancedelay, 0, 3000, VAR_MAX); // how long before reassi
 GVAR(IDF_GAMEMOD, teambalanceswap, 0, 1, 1); // allow swap requests if unable to change team
 GVAR(IDF_GAMEMOD, teambalancelock, 0, PRIV_MODERATOR, PRIV_MAX); // level at which one can override swap
 GVAR(IDF_GAMEMOD, teambalancestyle, 0, 7, 7); // when moving players, sort by: 0 = top of list, 1 = time played, 2 = points, 3 = frags, 4 = scoretime, 5 = kdratio, 6 = combined kdratio, 7 = average scoreboard position
-GVAR(IDF_GAMEMOD, teambalancehighest, 0, 1, 1); // when moving players, move highest first
+GVAR(IDF_GAMEMOD, teambalancehighest, 0, 0, 1); // when moving players, move highest first
 GFVAR(IDF_GAMEMOD, teambalanceavgposlocalweight, 0, 0.33, 1.0); // weight of local statistics when balancing players by average scoreboard position
 GVAR(IDF_GAMEMOD, teambalanceavgposdelay, 0, 5000, VAR_MAX); // delay betweel calculation of avgpos statistics
 
