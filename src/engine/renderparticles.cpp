@@ -184,7 +184,7 @@ struct partrenderer
             p->o.add(v);
             if(step && p->collide && p->o.z < p->val)
             {
-                if(p->collide >= 0)
+                if(p->collide > 0)
                 {
                     vec surface;
                     float floorz = rayfloor(vec(p->o.x, p->o.y, p->val), surface, RAY_CLIPMAT, COLLIDERADIUS);
@@ -192,7 +192,7 @@ struct partrenderer
                     if(p->o.z >= collidez+COLLIDEERROR) p->val = collidez+COLLIDEERROR;
                     else
                     {
-                        addstain(p->collide, vec(p->o.x, p->o.y, collidez), vec(p->o).sub(o).normalize(), 2*p->size, p->color, type&PT_RND4 ? (p->flags>>5)&3 : 0);
+                        addstain(p->collide-1, vec(p->o.x, p->o.y, collidez), vec(o).sub(p->o).normalize(), 2*p->size, p->color, type&PT_RND4 ? (p->flags>>5)&3 : 0);
                         blend = 0;
                     }
                 }
@@ -1798,7 +1798,7 @@ void makeparticle(const vec &o, attrvector &attr)
             const float sizemap[] = { 0.28f, 0.0f, 0.0f, 0.25f, 4.f, 2.f, 0.6f, 4.f, 0.5f, 0.2f };
             int type = typemap[attr[0]-4], fade = attr[4] > 0 ? attr[4] : 250,
                 gravity = attr[0] > 7 ? attr[7] : 0,
-                stain = attr[0] > 7 && attr[6] > 0 && attr[6] <= STAIN_MAX ? attr[6]-1 : -1,
+                stain = attr[0] > 7 ? (attr[6] > 0 && attr[6] <= STAIN_MAX ? attr[6] : -1) : 0,
                 colour = attr[0] > 7 ? partcolour(attr[3], attr[9], attr[10]) : partcolour(attr[3], attr[6], attr[7]);
             float size = attr[5] != 0 ? attr[5]/100.f : sizemap[attr[0]-4],
                   vel = attr[0] > 7 ? attr[8] : 1;
