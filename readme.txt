@@ -1,4 +1,4 @@
-﻿# Red Eclipse
+# Red Eclipse
 * A free first-person arena shooter; released as free and open source software
 * Available for Windows, GNU/Linux, BSD, and macOS
 * Features parkour gameplay, such as impulse boosts, dashing, and other tricks
@@ -34,6 +34,7 @@ The project is Free and Open Source, meaning that you can both use it for free a
 * Adam "lycanfox" Hobson
 * Alex "ZeroKnight" George - Design/Testing, Support
 * Anup "DOS_WARRIOR" Debnath
+* Audrey "Acerspyro" Therrien - UI elements, Maps, Models, CubeScript, Support
 * Cameron "Rhubarb" Dawdy
 * Christopher "Dratz-_C" Dratz
 * Christopher "paroneayea" Webber
@@ -62,7 +63,6 @@ The project is Free and Open Source, meaning that you can both use it for free a
 * Mark "xtort-" Doodeman
 * Martin "arand" Werner - Documentation, Legal Drafting, Cross-Dist Support, Open Source Checks, and much more.
 * Matt "greaserpirate" Kalt - Maps
-* Maxim "acerspyro" Therrien - UI elements, Models, Support
 * Mike "mikeplus64" Ledger - Maps, Models, Weapons, Textures, HUD, Design/Testing
 * Mikhail "Agustis" Kashin
 * Nick "Fatal_Glory" Watts
