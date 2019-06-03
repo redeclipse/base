@@ -103,7 +103,7 @@ The project is Free and Open Source, meaning that you can both use it for free a
 * "John_III" - Maps and Models
 * "Korsi" - Maps
 * "littlebabyjesus"
-* "molexted" - Maps
+* "molexted" - Maps and CubeScript
 * "nemurati"
 * "Raiden" - Maps
 * "RaZgRiZ" - Textures and Cubescript maintenance
