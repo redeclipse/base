@@ -203,7 +203,7 @@ struct iqm : skelloader<iqm>
                     mpos += 3;
                     if(mcolor)
                     {
-                        m->vcolors[j] = bvec4(mcolor[0], mcolor[1], mcolor[2], mcolor[3]);
+                        memcpy(m->vcolors[j].v, mcolor, 4);
                         mcolor += 4;
                     }
                     if(mtc)
