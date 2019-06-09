@@ -116,7 +116,7 @@ struct iqm : skelloader<iqm>
 
             const char *str = hdr.ofs_text ? (char *)&buf[hdr.ofs_text] : "";
             float *vpos = NULL, *vnorm = NULL, *vtan = NULL, *vtc = NULL;
-            uchar *vindex = NULL, *vweight = NULL;
+            uchar *vindex = NULL, *vweight = NULL, *vcolor = NULL;
             iqmvertexarray *vas = (iqmvertexarray *)&buf[hdr.ofs_vertexarrays];
             loopi(hdr.num_vertexarrays)
             {
@@ -129,6 +129,7 @@ struct iqm : skelloader<iqm>
                     case IQM_TEXCOORD: if(va.format != IQM_FLOAT || va.size != 2) return false; vtc = (float *)&buf[va.offset]; lilswap(vtc, 2*hdr.num_vertexes); break;
                     case IQM_BLENDINDEXES: if(va.format != IQM_UBYTE || va.size != 4) return false; vindex = (uchar *)&buf[va.offset]; break;
                     case IQM_BLENDWEIGHTS: if(va.format != IQM_UBYTE || va.size != 4) return false; vweight = (uchar *)&buf[va.offset]; break;
+                    case IQM_COLOR: if(va.format != IQM_UBYTE || va.size != 4) return false; vcolor = (uchar *)&buf[va.offset]; break;
                 }
             }
             if(!vpos) return false;
@@ -184,18 +185,27 @@ struct iqm : skelloader<iqm>
                         c.finalize(0);
                         noblend = m->addblendcombo(c);
                     }
+
+                    if(vcolor) m->vcolors = new bvec4[m->numverts];
                 }
                 int fv = im.first_vertex;
                 float *mpos = vpos + 3*fv,
                       *mnorm = vnorm ? vnorm + 3*fv : NULL,
                       *mtan = vtan ? vtan + 4*fv : NULL,
                       *mtc = vtc ? vtc + 2*fv : NULL;
-                uchar *mindex = vindex ? vindex + 4*fv : NULL, *mweight = vweight ? vweight + 4*fv : NULL;
+                uchar *mindex = vindex ? vindex + 4*fv : NULL, *mweight = vweight ? vweight + 4*fv : NULL,
+                      *mcolor = vcolor ? vcolor + 4*fv : NULL;
+
                 loopj(im.num_vertexes)
                 {
                     vert &v = m->verts[j];
                     v.pos = vec(mpos[0], -mpos[1], mpos[2]);
                     mpos += 3;
+                    if(mcolor)
+                    {
+                        m->vcolors[j] = bvec4(mcolor[0], mcolor[1], mcolor[2], mcolor[3]);
+                        mcolor += 4;
+                    }
                     if(mtc)
                     {
                         v.tc = vec2(mtc[0], mtc[1]);
