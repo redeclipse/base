@@ -14,6 +14,8 @@ struct skelmodel : animmodel
     struct vvert { vec pos; hvec2 tc; squat tangent; };
     struct vvertg { hvec4 pos; hvec2 tc; squat tangent; };
     struct vvertgw : vvertg { uchar weights[4]; uchar bones[4]; };
+    struct vvertgc : vvertg { bvec4 col; };
+    struct vvertgwc : vvertgw { bvec4 col; };
     struct tri { ushort vert[3]; };
 
     struct blendcombo
@@ -171,12 +173,13 @@ struct skelmodel : animmodel
     {
         vert *verts;
         tri *tris;
+        bvec4 *vcolors;
         int numverts, numtris, maxweights;
 
         int voffset, eoffset, elen;
         ushort minvert, maxvert;
 
-        skelmesh() : verts(NULL), tris(NULL), numverts(0), numtris(0), maxweights(0)
+        skelmesh() : verts(NULL), tris(NULL), vcolors(NULL), numverts(0), numtris(0), maxweights(0)
         {
         }
 
@@ -184,6 +187,7 @@ struct skelmodel : animmodel
         {
             DELETEA(verts);
             DELETEA(tris);
+            DELETEA(vcolors);
         }
 
         int addblendcombo(const blendcombo &c)
@@ -238,19 +242,36 @@ struct skelmodel : animmodel
             }
         }
 
-        static inline void assignvert(vvertg &vv, int j, vert &v, blendcombo &c)
+        inline void assignvert(vvertg &vv, int j, vert &v, blendcombo &c)
         {
             vv.pos = hvec4(v.pos, 1);
             vv.tc = v.tc;
             vv.tangent = v.tangent;
         }
 
-        static inline void assignvert(vvertgw &vv, int j, vert &v, blendcombo &c)
+        inline void assignvert(vvertgc &vv, int j, vert &v, blendcombo &c)
+        {
+            vv.pos = hvec4(v.pos, 1);
+            vv.tc = v.tc;
+            vv.tangent = v.tangent;
+            vv.col = vcolors ? vcolors[j] : bvec4(255, 255, 255, 255);
+        }
+
+        inline void assignvert(vvertgw &vv, int j, vert &v, blendcombo &c)
         {
             vv.pos = hvec4(v.pos, 1);
             vv.tc = v.tc;
             vv.tangent = v.tangent;
             c.serialize(vv);
+        }
+
+        inline void assignvert(vvertgwc &vv, int j, vert &v, blendcombo &c)
+        {
+            vv.pos = hvec4(v.pos, 1);
+            vv.tc = v.tc;
+            vv.tangent = v.tangent;
+            c.serialize(vv);
+            vv.col = vcolors ? vcolors[j] : bvec4(255, 255, 255, 255);
         }
 
         template<class T>
@@ -1083,10 +1104,11 @@ struct skelmodel : animmodel
         GLuint ebuf;
         int vlen, vertsize, vblends, vweights;
         uchar *vdata;
+        bool usecolor;
 
         skelhitdata *hitdata;
 
-        skelmeshgroup() : skel(NULL), edata(NULL), ebuf(0), vlen(0), vertsize(0), vblends(0), vweights(0), vdata(NULL), hitdata(NULL)
+        skelmeshgroup() : skel(NULL), edata(NULL), ebuf(0), vlen(0), vertsize(0), vblends(0), vweights(0), vdata(NULL), usecolor(false), hitdata(NULL)
         {
             memset(numblends, 0, sizeof(numblends));
         }
@@ -1187,6 +1209,7 @@ struct skelmodel : animmodel
                     loopv(blendcombos) blendcombos[i].interpindex = -1;
                 }
 
+                looprendermeshes(skelmesh, m, { if(m.vcolors) { usecolor = true; break; }});
                 gle::bindvbo(vc.vbuf);
                 #define GENVBO(type, args) \
                     do \
@@ -1198,7 +1221,11 @@ struct skelmodel : animmodel
                     } while(0)
                 #define GENVBOANIM(type) GENVBO(type, (idxs, vlen, vverts))
                 #define GENVBOSTAT(type) GENVBO(type, (idxs, vlen, vverts, htdata, htlen))
-                if(skel->numframes) GENVBOANIM(vvertgw);
+                if(skel->numframes)
+                {
+                    if(usecolor) GENVBOANIM(vvertgwc);
+                    else GENVBOANIM(vvertgw);
+                }
                 else
                 {
                     int numverts = 0, htlen = 128;
@@ -1207,7 +1234,8 @@ struct skelmodel : animmodel
                     if(numverts*4 > htlen*3) htlen *= 2;
                     int *htdata = new int[htlen];
                     memset(htdata, -1, htlen*sizeof(int));
-                    GENVBOSTAT(vvertg);
+                    if(usecolor) GENVBOSTAT(vvertgc);
+                    else GENVBOSTAT(vvertg);
                     delete[] htdata;
                 }
                 #undef GENVBO
@@ -1225,6 +1253,12 @@ struct skelmodel : animmodel
         template<class T>
         void bindbones(T *vverts) { if(enablebones) disablebones(); }
         void bindbones(vvertgw *vverts) { meshgroup::bindbones(vverts->weights, vverts->bones, vertsize); }
+        void bindbones(vvertgwc *vverts) { meshgroup::bindbones(vverts->weights, vverts->bones, vertsize); }
+
+        template<class T>
+        void bindcolor(T *vverts) { if(enablecolor) disablecolor(); }
+        void bindcolor(vvertgc *vverts) { meshgroup::bindcolor(&vverts->col, vertsize); }
+        void bindcolor(vvertgwc *vverts) { meshgroup::bindcolor(&vverts->col, vertsize); }
 
         template<class T>
         void bindvbo(const animstate *as, part *p, vbocacheentry &vc)
@@ -1245,13 +1279,21 @@ struct skelmodel : animmodel
                 bindtc(&vverts->tc, vertsize);
             }
             bindbones(vverts);
-            if(enablecolor) disablecolor();
+            bindcolor(vverts);
         }
 
         void bindvbo(const animstate *as, part *p, vbocacheentry &vc, skelcacheentry *sc = NULL, blendcacheentry *bc = NULL)
         {
-            if(!skel->numframes) bindvbo<vvertg>(as, p, vc);
-            else if(skel->usegpuskel) bindvbo<vvertgw>(as, p, vc);
+            if(!skel->numframes)
+            {
+                if(usecolor) bindvbo<vvertgc>(as, p, vc);
+                else bindvbo<vvertg>(as, p, vc);
+            }
+            else if(skel->usegpuskel)
+            {
+                if(usecolor) bindvbo<vvertgwc>(as, p, vc);
+                else bindvbo<vvertgw>(as, p, vc);
+            }
             else bindvbo<vvert>(as, p, vc);
         }
 
