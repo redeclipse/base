@@ -6,8 +6,6 @@ VARF(0, dbgcolmesh, 0, 0, 1,
     cleanupmodels();
 });
 
-VAR(IDF_PERSIST, windanimdist, 0, 1200, 10000);
-
 struct animmodel : model
 {
     struct animspec
@@ -1124,7 +1122,9 @@ struct animmodel : model
                 {
                     vec pos = matrixstack[matrixpos].gettranslation();
                     float dist = camera1->o.dist(pos);
-                    GLOBALPARAMF(windparams, max(1.0f - dist/windanimdist, 0.0f), pos.magnitude(), resize * model->wind);
+
+                    GLOBALPARAMF(windparams, max(1.0f - dist/windanimdist, 0.0f), d ? 0 : pos.magnitude());
+                    GLOBALPARAM(windvec, getwind(pos, d).mul(resize * model->wind));
                 }
             }
 

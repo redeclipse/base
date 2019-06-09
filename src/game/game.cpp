@@ -1,5 +1,6 @@
 #define GAMEWORLD 1
 #include "game.h"
+
 namespace game
 {
     int nextmode = G_EDITMODE, nextmuts = 0, gamestate = G_S_WAITING, gamemode = G_EDITMODE, mutators = 0, maptime = 0, mapstart = 0, timeremaining = 0, lasttimeremain = 0,
@@ -1885,6 +1886,7 @@ namespace game
         DELETEP(players[cn]);
         players[cn] = NULL;
         cleardynentcache();
+        clearwindemitters();
     }
 
     void preload()
@@ -2979,6 +2981,7 @@ namespace game
             }
             if(hud::canshowscores()) hud::showscores(true);
         }
+        updatewind();
 
         if(player1->clientnum >= 0) client::c2sinfo();
     }

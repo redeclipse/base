@@ -124,6 +124,7 @@ struct vec
     vec &div2(float f)       { x /= f; y /= f; return *this; }
     vec &recip()             { x = 1/x; y = 1/y; z = 1/z; return *this; }
     vec &add(const vec &o)   { x += o.x; y += o.y; z += o.z; return *this; }
+    vec &add(const vec2 &o)  { x += o.x; y += o.y; return *this; }
     vec &add(float f)        { x += f; y += f; z += f; return *this; }
     vec &add2(float f)       { x += f; y += f; return *this; }
     vec &addz(float f)       { z += f; return *this; }
@@ -2042,4 +2043,16 @@ static inline float cos360(int angle) { return sincos360[angle].x; }
 static inline float sin360(int angle) { return sincos360[angle].y; }
 static inline float tan360(int angle) { const vec2 &sc = sincos360[angle]; return sc.y/sc.x; }
 static inline float cotan360(int angle) { const vec2 &sc = sincos360[angle]; return sc.x/sc.y; }
+static inline float fract(float x) { return x - floorf(x); }
+static inline float smoothinterp(float t) { return t * t * (3.0f - 2.0f * t); }
+static inline float trianglewave(float t) { return fabsf(fract(t + 0.5f) * 2.0f - 1.0f); }
 
+// Smooth periodic function with a period length of 1
+static inline float smoothwave(float t) { return smoothinterp(trianglewave(t + 0.25f)) * 2.0f - 1.0f; }
+
+// Simple impulse function
+static inline float impulse(float t)
+{
+    float f = 1.0f / (4.0f * t + 1);
+    return f * f * smoothwave(t) * 3.231f;
+}

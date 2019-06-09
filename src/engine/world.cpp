@@ -234,6 +234,7 @@ static bool modifyoctaent(int flags, int id, extentity &e)
         case ET_LIGHTFX: if(!(flags&MODOE_ADD ? spotlights++ : --spotlights)) { cleardeferredlightshaders(); cleanupvolumetric(); } break;
         case ET_PARTICLES: clearparticleemitters(); break;
         case ET_DECAL: if(flags&MODOE_CHANGED) changed(o, r, false); break;
+        case ET_WIND: if(flags&MODOE_ADD) addwind(&e); else remwind(&e); break;
         default: break;
     }
     return true;
@@ -1139,6 +1140,7 @@ void resetmap(bool empty, int variant)
     clearpvs();
     clearslots();
     clearparticles();
+    clearwindemitters();
     clearstains();
     clearsleep();
     cancelsel();

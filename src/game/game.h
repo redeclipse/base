@@ -37,7 +37,7 @@ enum
 enum                                // entity types
 {
     NOTUSED = ET_EMPTY, LIGHT = ET_LIGHT, MAPMODEL = ET_MAPMODEL, PLAYERSTART = ET_PLAYERSTART, ENVMAP = ET_ENVMAP, PARTICLES = ET_PARTICLES,
-    MAPSOUND = ET_SOUND, LIGHTFX = ET_LIGHTFX, DECAL = ET_DECAL, WEAPON = ET_GAMESPECIFIC,
+    MAPSOUND = ET_SOUND, LIGHTFX = ET_LIGHTFX, DECAL = ET_DECAL, WIND = ET_WIND, WEAPON = ET_GAMESPECIFIC,
     TELEPORT, ACTOR, TRIGGER, PUSHER, AFFINITY, CHECKPOINT,
     ROUTE, UNUSEDENT,
     MAXENTTYPES
@@ -107,8 +107,8 @@ extern const enttypes enttype[] = {
     },
     {
         MAPSOUND,       1,          58,     0,      EU_NONE,    6,          -1,         -1,     5,      -1,
-            (1<<TELEPORT)|(1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT),
-            (1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT),
+            (1<<TELEPORT)|(1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT)|(1<<WIND),
+            (1<<TRIGGER)|(1<<PUSHER)|(1<<PLAYERSTART)|(1<<CHECKPOINT)|(1<<WIND),
             0,
             false,  false,  false,      false,      false,
                 "sound",        { "type",   "maxrad",   "minrad",   "volume",   "flags",    "variant" }
@@ -126,6 +126,14 @@ extern const enttypes enttype[] = {
             0, 0, 0,
             false,  false,  false,      false,      false,
                 "decal",        { "type",   "yaw",      "pitch",    "roll",     "scale",    "variant",  "fxlevel" }
+    },
+    {
+        WIND,        1,             1,      0,      EU_NONE,    9,          -1,         -1,     7,      8,
+            (1<<MAPSOUND),
+            (1<<MAPSOUND),
+            0,
+            false,  false,  false,      false,      false,
+                "wind",        { "mode",   "yaw",      "speed",    "radius",   "atten",    "interval", "implen", "variant",  "fxlevel" }
     },
     {
         WEAPON,         2,          59,     24,     EU_ITEM,    6,          2,          4,      5,      -1,

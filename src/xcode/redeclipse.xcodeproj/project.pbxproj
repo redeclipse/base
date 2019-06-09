@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		2AB901CF1AC1B72400A5F378 /* weapdef.h in Headers */ = {isa = PBXBuildFile; fileRef = 3E06CDDA14A30E1300F89530 /* weapdef.h */; };
 		2AB901D11AC1B8E900A5F378 /* version.h in Headers */ = {isa = PBXBuildFile; fileRef = 2AB901D01AC1B8E900A5F378 /* version.h */; };
+		3486181E22F6CD05008363EE /* wind.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3486181C22F6CD04008363EE /* wind.cpp */; };
+		3486181F22F6CD05008363EE /* wind.h in Headers */ = {isa = PBXBuildFile; fileRef = 3486181D22F6CD05008363EE /* wind.h */; };
 		3E06CDDB14A30E1300F89530 /* compass.h in Headers */ = {isa = PBXBuildFile; fileRef = 3E06CDD614A30E1300F89530 /* compass.h */; };
 		3E06CDDC14A30E1300F89530 /* gamemode.h in Headers */ = {isa = PBXBuildFile; fileRef = 3E06CDD714A30E1300F89530 /* gamemode.h */; };
 		3E06CDDE14A30E1300F89530 /* waypoint.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3E06CDD914A30E1300F89530 /* waypoint.cpp */; };
@@ -34,12 +36,10 @@
 		B94198A809207E810029DAD1 /* SDLMain.m in Sources */ = {isa = PBXBuildFile; fileRef = F5A47A9E01A0483001D3D55B /* SDLMain.m */; };
 		B94198C309207E810029DAD1 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
 		B94198C409207E810029DAD1 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B2F67ED704C74A3F00A80002 /* OpenGL.framework */; };
-		B94198C409207E810029DAD2 /* libsteam_api.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = B2F67ED704C74A3F00A80003 /* libsteam_api.dylib */; };
-		B94198C409207E810029DAD3 /* libdiscord-rpc.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = B2F67ED704C74A3F00A80004 /* libdiscord-rpc.dylib */; };
 		B9AC7AD00D06DB44005506F8 /* bih.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B9AC7A850D06DB44005506F8 /* bih.cpp */; };
 		B9AC7AD10D06DB44005506F8 /* bih.h in Headers */ = {isa = PBXBuildFile; fileRef = B9AC7A860D06DB44005506F8 /* bih.h */; };
-		B9AC7AD30D06DB44005506F1 /* cdpi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B9AC7A880D06DB44005506F1 /* cdpi.cpp */; };
 		B9AC7AD20D06DB44005506F8 /* client.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B9AC7A870D06DB44005506F8 /* client.cpp */; };
+		B9AC7AD30D06DB44005506F1 /* cdpi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B9AC7A880D06DB44005506F1 /* cdpi.cpp */; };
 		B9AC7AD30D06DB44005506F8 /* command.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B9AC7A880D06DB44005506F8 /* command.cpp */; };
 		B9AC7AD40D06DB44005506F8 /* console.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B9AC7A890D06DB44005506F8 /* console.cpp */; };
 		B9AC7AD60D06DB44005506F8 /* engine.h in Headers */ = {isa = PBXBuildFile; fileRef = B9AC7A8B0D06DB44005506F8 /* engine.h */; };
@@ -126,8 +126,8 @@
 		D1D88A8B0F350DFE000680E4 /* auth.h in Headers */ = {isa = PBXBuildFile; fileRef = D1D88A8A0F350DFE000680E4 /* auth.h */; };
 		D1D88A8D0F350E31000680E4 /* ragdoll.h in Headers */ = {isa = PBXBuildFile; fileRef = D1D88A8C0F350E31000680E4 /* ragdoll.h */; };
 		D1D88AB80F350EDE000680E1 /* http.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D1D88AB60F350EDE000680E1 /* http.cpp */; };
-		D1D88AB90F350EDE000680E2 /* http.h in Headers */ = {isa = PBXBuildFile; fileRef = D1D88AB70F350EDE000680E2 /* http.h */; };
 		D1D88AB80F350EDE000680E8 /* irc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D1D88AB60F350EDE000680E8 /* irc.cpp */; };
+		D1D88AB90F350EDE000680E2 /* http.h in Headers */ = {isa = PBXBuildFile; fileRef = D1D88AB70F350EDE000680E2 /* http.h */; };
 		D1D88AB90F350EDE000680E9 /* irc.h in Headers */ = {isa = PBXBuildFile; fileRef = D1D88AB70F350EDE000680E9 /* irc.h */; };
 		D1E605B90E2416150045244E /* redeclipse.icns in Resources */ = {isa = PBXBuildFile; fileRef = B97E99CE085F4B3E002F9BC6 /* redeclipse.icns */; };
 		FD05F1471ADD1BBA0046F323 /* player.h in Headers */ = {isa = PBXBuildFile; fileRef = FD05F1431ADD1BBA0046F323 /* player.h */; };
@@ -138,10 +138,10 @@
 		FD05F1511ADD1BD70046F323 /* smd.h in Headers */ = {isa = PBXBuildFile; fileRef = FD05F14D1ADD1BD70046F323 /* smd.h */; };
 		FD6BC4A61B4BE57C0010977F /* master.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FD6BC4A51B4BE57C0010977F /* master.cpp */; };
 		FD88C2981B6C824B004CEB1D /* glexts.h in Sources */ = {isa = PBXBuildFile; fileRef = FD05F14B1ADD1BD70046F323 /* glexts.h */; };
-		FDB0781A1B6DE60B0005FA3F /* jsmn.c in Sources */ = {isa = PBXBuildFile; fileRef = FDB078181B6DE60B0005FA3F /* jsmn.c */; };
-		FDB0781B1B6DE60B0005FA3F /* jsmn.h in Headers */ = {isa = PBXBuildFile; fileRef = FDB078191B6DE60B0005FA3F /* jsmn.h */; };
 		FDB0781A1B6DE60B0005FA3A /* sqlite3.c in Sources */ = {isa = PBXBuildFile; fileRef = FDB078181B6DE60B0005FA3A /* sqlite3.c */; };
+		FDB0781A1B6DE60B0005FA3F /* jsmn.c in Sources */ = {isa = PBXBuildFile; fileRef = FDB078181B6DE60B0005FA3F /* jsmn.c */; };
 		FDB0781B1B6DE60B0005FA3B /* sqlite3.h in Headers */ = {isa = PBXBuildFile; fileRef = FDB078191B6DE60B0005FA3B /* sqlite3.h */; };
+		FDB0781B1B6DE60B0005FA3F /* jsmn.h in Headers */ = {isa = PBXBuildFile; fileRef = FDB078191B6DE60B0005FA3F /* jsmn.h */; };
 		FDCF1C021B6C84E10035CD3C /* glemu.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FDCF1C001B6C84E10035CD3C /* glemu.cpp */; };
 		FDCF1C031B6C84E10035CD3C /* glemu.h in Headers */ = {isa = PBXBuildFile; fileRef = FDCF1C011B6C84E10035CD3C /* glemu.h */; };
 /* End PBXBuildFile section */
@@ -152,6 +152,8 @@
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
 		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
 		2AB901D01AC1B8E900A5F378 /* version.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = version.h; sourceTree = "<group>"; };
+		3486181C22F6CD04008363EE /* wind.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = wind.cpp; sourceTree = "<group>"; };
+		3486181D22F6CD05008363EE /* wind.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = wind.h; sourceTree = "<group>"; };
 		3E06CDD614A30E1300F89530 /* compass.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = compass.h; sourceTree = "<group>"; };
 		3E06CDD714A30E1300F89530 /* gamemode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = gamemode.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		3E06CDD914A30E1300F89530 /* waypoint.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = waypoint.cpp; sourceTree = "<group>"; };
@@ -162,8 +164,8 @@
 		3E469E9711E05C2B00873F83 /* bombermode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = bombermode.h; sourceTree = "<group>"; };
 		666E40EF0B67D87F005B491F /* macutils.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = macutils.mm; sourceTree = "<group>"; };
 		B2F67ED704C74A3F00A80002 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = /System/Library/Frameworks/OpenGL.framework; sourceTree = "<absolute>"; };
-		B2F67ED704C74A3F00A80003 /* libsteam_api.dylib */ = {isa = PBXFileReference; lastKnownFileType = compiled.mach-o.dylib; name = libsteam_api.dylib; path = ../bin/redeclipse.app/Contents/Frameworks/libsteam_api.dylib; sourceTree = SOURCE_ROOT; };
-		B2F67ED704C74A3F00A80004 /* libdiscord-rpc.dylib */ = {isa = PBXFileReference; lastKnownFileType = compiled.mach-o.dylib; name = libdiscord-rpc.dylib; path = ../bin/redeclipse.app/Contents/Frameworks/libdiscord-rpc.dylib; sourceTree = SOURCE_ROOT; };
+		B2F67ED704C74A3F00A80003 /* libsteam_api.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libsteam_api.dylib; path = ../bin/redeclipse.app/Contents/Frameworks/libsteam_api.dylib; sourceTree = SOURCE_ROOT; };
+		B2F67ED704C74A3F00A80004 /* libdiscord-rpc.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libdiscord-rpc.dylib"; path = "../bin/redeclipse.app/Contents/Frameworks/libdiscord-rpc.dylib"; sourceTree = SOURCE_ROOT; };
 		B90ADD0009B344D800A5B00B /* callbacks.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = callbacks.c; sourceTree = "<group>"; };
 		B90ADD1309B344D800A5B00B /* host.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = host.c; sourceTree = "<group>"; };
 		B90ADD2809B344D800A5B00B /* list.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = list.c; sourceTree = "<group>"; };
@@ -185,8 +187,8 @@
 		B97E99CE085F4B3E002F9BC6 /* redeclipse.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = redeclipse.icns; sourceTree = "<group>"; };
 		B9AC7A850D06DB44005506F8 /* bih.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = bih.cpp; sourceTree = "<group>"; };
 		B9AC7A860D06DB44005506F8 /* bih.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = bih.h; sourceTree = "<group>"; };
-		B9AC7A880D06DB44005506F1 /* cdpi.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = cdpi.cpp; sourceTree = "<group>"; };
 		B9AC7A870D06DB44005506F8 /* client.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = client.cpp; sourceTree = "<group>"; };
+		B9AC7A880D06DB44005506F1 /* cdpi.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = cdpi.cpp; sourceTree = "<group>"; };
 		B9AC7A880D06DB44005506F8 /* command.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = command.cpp; sourceTree = "<group>"; };
 		B9AC7A890D06DB44005506F8 /* console.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = console.cpp; sourceTree = "<group>"; };
 		B9AC7A8B0D06DB44005506F8 /* engine.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = engine.h; sourceTree = "<group>"; };
@@ -274,8 +276,8 @@
 		D1D88A8A0F350DFE000680E4 /* auth.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = auth.h; sourceTree = "<group>"; };
 		D1D88A8C0F350E31000680E4 /* ragdoll.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ragdoll.h; sourceTree = "<group>"; };
 		D1D88AB60F350EDE000680E1 /* http.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = http.cpp; sourceTree = "<group>"; };
-		D1D88AB70F350EDE000680E2 /* http.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = http.h; sourceTree = "<group>"; };
 		D1D88AB60F350EDE000680E8 /* irc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = irc.cpp; sourceTree = "<group>"; };
+		D1D88AB70F350EDE000680E2 /* http.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = http.h; sourceTree = "<group>"; };
 		D1D88AB70F350EDE000680E9 /* irc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = irc.h; sourceTree = "<group>"; };
 		D1DB53E50D70F1C3003AE25C /* English */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = English; path = English.lproj/Localizable.strings; sourceTree = "<group>"; };
 		F5A47A9D01A0482F01D3D55B /* SDLMain.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = SDLMain.h; sourceTree = SOURCE_ROOT; };
@@ -288,10 +290,10 @@
 		FD05F14C1ADD1BD70046F323 /* iqm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = iqm.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		FD05F14D1ADD1BD70046F323 /* smd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = smd.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		FD6BC4A51B4BE57C0010977F /* master.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; path = master.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
-		FDB078181B6DE60B0005FA3F /* jsmn.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = jsmn.c; path = jsmn.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		FDB078191B6DE60B0005FA3F /* jsmn.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = jsmn.h; path = jsmn.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		FDB078181B6DE60B0005FA3A /* sqlite3.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sqlite3.c; path = sqlite3.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		FDB078191B6DE60B0005FA3B /* sqlite3.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sqlite3.h; path = sqlite3.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
+		FDB078181B6DE60B0005FA3A /* sqlite3.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = sqlite3.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
+		FDB078181B6DE60B0005FA3F /* jsmn.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = jsmn.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
+		FDB078191B6DE60B0005FA3B /* sqlite3.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = sqlite3.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
+		FDB078191B6DE60B0005FA3F /* jsmn.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = jsmn.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		FDCF1C001B6C84E10035CD3C /* glemu.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = glemu.cpp; sourceTree = "<group>"; };
 		FDCF1C011B6C84E10035CD3C /* glemu.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = glemu.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -420,6 +422,8 @@
 		B9AC7A830D06DB44005506F8 /* engine */ = {
 			isa = PBXGroup;
 			children = (
+				3486181C22F6CD04008363EE /* wind.cpp */,
+				3486181D22F6CD05008363EE /* wind.h */,
 				B91D401E0D525FD3004EF78A /* animmodel.h */,
 				B9AC7A850D06DB44005506F8 /* bih.cpp */,
 				B9AC7A860D06DB44005506F8 /* bih.h */,
@@ -624,6 +628,7 @@
 				D1CEB40B0F548C0B004FD11F /* capturemode.h in Headers */,
 				D1CEB40C0F548C0B004FD11F /* duelmut.h in Headers */,
 				D1CEB40D0F548C0B004FD11F /* defendmode.h in Headers */,
+				3486181F22F6CD05008363EE /* wind.h in Headers */,
 				D11B5A6510CBB4D8003F0098 /* ai.h in Headers */,
 				D11B5A6B10CBB500003F0098 /* mpr.h in Headers */,
 				3E469E9911E05C2B00873F83 /* bomber.h in Headers */,
@@ -670,6 +675,7 @@
 			developmentRegion = English;
 			hasScannedForEncodings = 1;
 			knownRegions = (
+				English,
 				en,
 			);
 			mainGroup = 29B97314FDCFA39411CA2CEA /* redeclipse */;
@@ -717,6 +723,7 @@
 				B9AC7ADB0D06DB44005506F8 /* material.cpp in Sources */,
 				B9AC7ADE0D06DB44005506F8 /* menus.cpp in Sources */,
 				B9AC7AE00D06DB44005506F8 /* normal.cpp in Sources */,
+				3486181E22F6CD05008363EE /* wind.cpp in Sources */,
 				FDB0781A1B6DE60B0005FA3F /* jsmn.c in Sources */,
 				FDB0781A1B6DE60B0005FA3A /* sqlite3.c in Sources */,
 				B9AC7AE10D06DB44005506F8 /* octa.cpp in Sources */,
@@ -849,12 +856,22 @@
 				INFOPLIST_FILE = "redeclipse-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 10.9;
-				OTHER_CPLUSPLUSFLAGS = "-DUSE_STEAM=1 -DUSE_DISCORD=1 -fomit-frame-pointer -Wno-invalid-offsetof";
-				OTHER_LDFLAGS = "-lz -L../../bin/redeclipse.app/Contents/Frameworks -lsteam_api -ldiscord-rpc";
+				OTHER_CPLUSPLUSFLAGS = (
+					"-DUSE_STEAM=1",
+					"-DUSE_DISCORD=1",
+					"-fomit-frame-pointer",
+					"-Wno-invalid-offsetof",
+				);
+				OTHER_LDFLAGS = (
+					"-lz",
+					"-L../../bin/redeclipse.app/Contents/Frameworks",
+					"-lsteam_api",
+					"-ldiscord-rpc",
+				);
 				PRODUCT_NAME = redeclipse;
 				SDKROOT = macosx;
 				SKIP_INSTALL = NO;
-				VALID_ARCHS = "x86_64";
+				VALID_ARCHS = x86_64;
 			};
 			name = Release;
 		};
@@ -876,7 +893,7 @@
 				GCC_VERSION = "";
 				HEADER_SEARCH_PATHS = (
 					../include,
-                    ../shared,
+					../shared,
 					../steam,
 					../enet/include,
 					/usr/X11/include/,
@@ -885,11 +902,20 @@
 				INFOPLIST_FILE = "redeclipse-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 10.9;
-				OTHER_CPLUSPLUSFLAGS = "-DUSE_STEAM=1 -DUSE_DISCORD=1 -Wno-invalid-offsetof";
-				OTHER_LDFLAGS = "-lz -L../../bin/redeclipse.app/Contents/Frameworks -lsteam_api -ldiscord-rpc";
+				OTHER_CPLUSPLUSFLAGS = (
+					"-DUSE_STEAM=1",
+					"-DUSE_DISCORD=1",
+					"-Wno-invalid-offsetof",
+				);
+				OTHER_LDFLAGS = (
+					"-lz",
+					"-L../../bin/redeclipse.app/Contents/Frameworks",
+					"-lsteam_api",
+					"-ldiscord-rpc",
+				);
 				PRODUCT_NAME = redeclipse;
 				SDKROOT = macosx;
-				VALID_ARCHS = "x86_64";
+				VALID_ARCHS = x86_64;
 			};
 			name = Debug;
 		};
