@@ -1159,8 +1159,8 @@ void cleanuptimers()
     timerorder.shrink(0);
 }
 
-VARFN(0, timer, usetimers, 0, 0, 1, cleanuptimers());
-VAR(0, frametimer, 0, 0, 1);
+VARFN(IDF_PERSIST, timer, usetimers, 0, 0, 1, cleanuptimers());
+VAR(IDF_PERSIST, frametimer, 0, 0, 1);
 int framemillis = 0, lastprint = 0, printmillis = 0; // frame time (ie does not take into account the swap)
 
 int updatetimers()
