@@ -318,8 +318,8 @@ WPFVARK(IDF_GAMEMOD, damagehead, FVAR_MIN, FVAR_MAX,
     1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f
 );
 WPFVARK(IDF_GAMEMOD, damagelimb, FVAR_MIN, FVAR_MAX,
-    0.3f,       0.3f,       0.3f,       0.3f,       0.3f,       0.3f,       0.3f,       0.3f,       0.3f,       0.3f,       0.3f,       0.3f,       0.3f,
-    0.5f,       0.3f,       0.5f,       0.3f,       0.3f,       1.0f,       0.3f,       0.3f,       0.3f,       0.3f,       0.3f,       0.3f,       0.5f,
+    0.3f,       0.3f,       0.3f,       0.3f,       0.3f,       0.3f,       0.3f,       0.3f,       0.2f,       0.3f,       0.3f,       0.3f,       0.3f,
+    0.5f,       0.3f,       0.5f,       0.3f,       0.3f,       1.0f,       0.3f,       0.3f,       0.2f,       0.3f,       0.3f,       0.3f,       0.5f,
     0.35f,      0.35f,      0.35f,      0.35f,      0.35f,      0.35f,      0.35f,      0.35f,      0.3f,       0.3f,       0.35f,      0.35f,      0.35f,
     0.5f,       0.35f,      0.5f,       0.35f,      0.35f,      0.35f,      0.35f,      0.35f,      0.35f,      0.3f,       0.35f,      0.35f,      0.5f
 );
@@ -336,8 +336,8 @@ WPFVARK(IDF_GAMEMOD, damageteam, FVAR_MIN, FVAR_MAX,
     1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       0.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f
 );
 WPFVARK(IDF_GAMEMOD, damagetorso, FVAR_MIN, FVAR_MAX,
-    0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,
-    0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       1.5f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,
+    0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.4f,       0.6f,       0.6f,       0.6f,       0.6f,
+    0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       1.5f,       0.6f,       0.6f,       0.4f,       0.6f,       0.6f,       0.6f,       0.6f,
     0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,
     0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       1.5f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f
 );
@@ -410,7 +410,7 @@ WPVARK(IDF_GAMEMOD|IDF_HEX, explcol, PC(LAST), 0xFFFFFF,
     PC(FIRE),   PC(FIRE),   0x4040F0,   0xF0F020,   0xF05820,   0x808080,   0x40F0C8,   PC(SHOCK),  0xA020F0,   PC(FIRE),   PC(SHOCK),  PC(FIRE),   PC(FIRE)
 );
 WPFVARK(IDF_GAMEMOD, explode, 0, FVAR_MAX,
-    0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       6.0f,       10.0f,      0.0f,       8.0f,       64.0f,      32.0f,      96.0f,      0.0f,
+    0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       6.0f,       10.0f,      0.0f,       0.0f,       64.0f,      32.0f,      96.0f,      0.0f,
     0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       12.0f,      44.0f,      0.0f,       0.0f,       52.0f,      32.0f,      96.0f,      0.0f,
     0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       6.0f,       10.0f,      0.0f,       8.0f,       64.0f,      32.0f,      96.0f,      0.0f,
     0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       12.0f,      44.0f,      8.0f,       8.0f,       52.0f,      32.0f,      96.0f,      0.0f
