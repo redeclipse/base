@@ -294,7 +294,7 @@ WPVARM(IDF_GAMEMOD, cooked, 0, W_C_ALL,
 );
 WPVARM(IDF_GAMEMOD, cooktime, 0, VAR_MAX,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          3000,       0,          0,          0,
-    0,          0,          0,          0,          0,          0,          1000,       0,        1000,       3000,       0,          0,          0
+    0,          0,          0,          0,          0,          0,          1000,       5,          1000,       3000,       0,          0,          0
 );
 WPVAR(IDF_GAMEMOD, cookzoom, 0, VAR_MAX,
     0,          0,          0,          0,          0,          0,          0,          200,        1000,       0,          0,          0,          0
@@ -355,7 +355,7 @@ WPFVARK(IDF_GAMEMOD, damagewhiplash, FVAR_MIN, FVAR_MAX,
 );
 WPVARM(IDF_GAMEMOD, delayattack, 1, VAR_MAX,
     500,        130,        500,        750,        55,         90,         350,        200,        750,        750,        500,        1500,       500,
-    800,        200,        800,        1250,       350,        1250,       1800,       200,        1250,       750,        500,        1500,       500
+    800,        200,        800,        1250,       350,        1250,       1800,       195,        1250,       750,        500,        1500,       500
 );
 WPVAR(IDF_GAMEMOD, delayreload, 0, VAR_MAX,
     50,         1000,       50,         900,        1300,       1800,       1800,       1800,       2000,       1000,       1500,       2500,       50
@@ -567,7 +567,7 @@ WPFVARM(IDF_GAMEMOD, jitterpitchcrouch, FVAR_MIN, FVAR_MAX,
 );
 WPFVARM(IDF_GAMEMOD, jitterpitchzoom, FVAR_MIN, FVAR_MAX,
     0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,
-    0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f
+    0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      1.0f,       0.75f,      0.75f,      0.75f,      0.75f,      0.75f
 );
 WPFVARM(IDF_GAMEMOD, jitterpitchstill, FVAR_MIN, FVAR_MAX,
     0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,
