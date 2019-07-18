@@ -58,7 +58,7 @@ The project is Free and Open Source, meaning that you can both use it for free a
 * Kevin "Hirato" Meyer - Development Assistance, Design/Testing
 * Kirill "TristamK" Kolesnikov - Maps
 * Kurt "Kurtis84" Kessler - Textures
-* Ludwig "Sniper-goth" Boscolo
+* Ludwig "Sniper-goth" Boscolo - Mapmodels and Maps
 * Luke "syreal" Jones
 * Mark "xtort-" Doodeman
 * Martin "arand" Werner - Documentation, Legal Drafting, Cross-Dist Support, Open Source Checks, and much more.
