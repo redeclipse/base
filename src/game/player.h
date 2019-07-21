@@ -103,7 +103,7 @@ struct score
 #define PLAYERRADIUS 3.8f
 #define PLAYERHEIGHT 18.f
 #define PLAYERTYPES 2
-#define PLAYERPATTERNS 14
+#define PLAYERPATTERNS 16
 
 struct playerpattern
 {
@@ -119,21 +119,25 @@ extern const char * const playertypes[PLAYERTYPES][7] = {
     { "actors/player/male/hwep",        "actors/player/male",       "actors/player/male/body",      "actors/player/male/headless",      "player",   "male",     "Male" },
     { "actors/player/female/hwep",      "actors/player/female",     "actors/player/male/body",      "actors/player/female/headless",    "player",   "female",   "Female" }
 };
+
+// final entry is texscale in playerpattern (512x -> 2 , 1024x -> 1)
 extern const playerpattern playerpatterns[PLAYERPATTERNS] = {
-    { "<grey>textures/patterns/default", "default", "Default", 0,     1 },
-    { "<grey>textures/patterns/soft",    "soft",    "Soft",    0,     1 },
-    { "<grey>textures/patterns/camo",    "camo",    "Camo",    0,     1 },
-    { "<grey>textures/patterns/heart",   "heart",   "Heart",   0x300, 2 },
-    { "<grey>textures/patterns/crown",   "crown",   "Crown",   0x300, 2 },
-    { "<grey>textures/patterns/zebra",   "zebra",   "Zebra",   0x300, 2 },
-    { "<grey>textures/patterns/checker", "checker", "Checker", 0x300, 2 },
-    { "<grey>textures/patterns/star",    "star",    "Star",    0x300, 2 },
-    { "<grey>textures/patterns/flower",  "flower",  "Flower",  0x300, 2 },
-    { "<grey>textures/patterns/leopard", "leopard", "Leopard", 0x300, 2 },
-    { "<grey>textures/patterns/zigzag",  "zigzag",  "Zigzag",  0x300, 2 },
-    { "<grey>textures/patterns/pixel",   "pixel",   "Pixel",   0x300, 2 },
-    { "<grey>textures/patterns/circle",  "circle",  "Circle",  0x300, 2 },
-    { "<grey>textures/patterns/ninja",   "ninja",   "Ninja",   0,     2 },
+    { "<grey>textures/patterns/default",  "default",  "Default",  0,     1 },
+    { "<grey>textures/patterns/soft",     "soft",     "Soft",     0,     1 },
+    { "<grey>textures/patterns/camo",     "camo",     "Camo",     0,     1 },
+    { "<grey>textures/patterns/heart",    "heart",    "Heart",    0x300, 2 },
+    { "<grey>textures/patterns/crown",    "crown",    "Crown",    0x300, 2 },
+    { "<grey>textures/patterns/zebra",    "zebra",    "Zebra",    0x300, 2 },
+    { "<grey>textures/patterns/checker",  "checker",  "Checker",  0x300, 2 },
+    { "<grey>textures/patterns/star",     "star",     "Star",     0x300, 2 },
+    { "<grey>textures/patterns/flower",   "flower",   "Flower",   0x300, 2 },
+    { "<grey>textures/patterns/leopard",  "leopard",  "Leopard",  0x300, 2 },
+    { "<grey>textures/patterns/zigzag",   "zigzag",   "Zigzag",   0x300, 2 },
+    { "<grey>textures/patterns/pixel",    "pixel",    "Pixel",    0x300, 2 },
+    { "<grey>textures/patterns/circle",   "circle",   "Circle",   0x300, 2 },
+    { "<grey>textures/patterns/ninja",    "ninja",    "Ninja",    0,     2 },
+    { "<grey>textures/patterns/lines",    "lines",    "Lines",    0,     1 },
+    { "<grey>textures/patterns/softhero", "softhero", "Softhero", 0,     1 },
 };
 #else
 extern const char * const playertypes[PLAYERTYPES][7];
