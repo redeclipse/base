@@ -254,6 +254,18 @@ namespace entities
                 addmodeinfo(attr[3], attr[4]);
                 break;
             }
+            case LIGHT:
+            {
+                if(full)
+                {
+                    if(attr[6]&(1<<LIGHT_NOSHADOW)) addentinfo("no-shadow");
+                    if(attr[6]&(1<<LIGHT_STATIC)) addentinfo("static");
+                    if(attr[6]&(1<<LIGHT_VOLUMETRIC)) addentinfo("volumetric");
+                    if(attr[6]&(1<<LIGHT_NOSPEC)) addentinfo("no-specular");
+
+                }
+                break;
+            }
             case LIGHTFX:
             {
                 if(full)
