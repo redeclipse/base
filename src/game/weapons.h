@@ -297,7 +297,7 @@ WPVARM(IDF_GAMEMOD, cooktime, 0, VAR_MAX,
     0,          0,          0,          0,          0,          0,          1000,       5,          1000,       3000,       0,          0,          0
 );
 WPVAR(IDF_GAMEMOD, cookzoom, 0, VAR_MAX,
-    0,          0,          0,          0,          0,          0,          0,          200,        1000,       0,          0,          0,          0
+    0,          0,          0,          0,          0,          0,          0,          200,        500,        0,          0,          0,          0
 );
 WPFVAR(IDF_GAMEMOD, cookzoommin, 1, 150,
     10,         10,         10,         10,         10,         10,         10,         10,         10,         10,         10,         10,         10
@@ -337,7 +337,7 @@ WPFVARK(IDF_GAMEMOD, damageteam, FVAR_MIN, FVAR_MAX,
 );
 WPFVARK(IDF_GAMEMOD, damagetorso, FVAR_MIN, FVAR_MAX,
     0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.7f,       0.4f,       0.6f,       0.6f,       0.6f,       0.6f,
-    0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       1.5f,       0.6f,       0.7f,       0.4f,       0.6f,       0.6f,       0.6f,       0.6f,
+    0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       1.5f,       0.6f,       0.7f,       0.48f,      0.6f,       0.6f,       0.6f,       0.6f,
     0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,
     0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       1.5f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f,       0.6f
 );
