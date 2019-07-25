@@ -955,11 +955,13 @@ namespace game
         ai::respawned(d, local, ent);
     }
 
+    // determines if correct gamemode/mutators are present for displaying palette colours
+    // for textures, lights, mapmodels, particles which use a palette colour
     vec getpalette(int palette, int index)
-    { // colour palette abstractions for textures, etc.
+    {
         if(palette >= 0 && index >= 0) switch(palette)
         {
-            case 0: // misc
+            case 0: // misc (rainbow palettes)
             {
                 if(index <= 0 || index > PULSE_MAX) break;
                 return vec::fromcolor(pulsecols[index-1][clamp((lastmillis/100)%PULSECOLOURS, 0, PULSECOLOURS-1)]);
@@ -973,7 +975,7 @@ namespace game
                     if(!m_team(gamemode, mutators) || team > (m_multi(gamemode, mutators) ? T_MULTI : T_LAST))
                         team = T_NEUTRAL; // abstract team coloured levels to neutral
                 }
-                return vec::fromcolor(TEAM(team, colour));
+                return vec::fromcolor(TEAM(team, colour)); //return color of weapon
                 break;
             }
             case 2: // weapons
@@ -982,10 +984,10 @@ namespace game
                 if(!m_edit(gamemode) && index < W_MAX)
                 {
                     weap = m_attr(WEAPON, weap);
-                    if(!isweap(weap) || W(weap, disabled) || (m_loadout(gamemode, mutators) && weap < W_ITEM) || !m_check(W(weap, modes), W(weap, muts), gamemode, mutators))
-                        weap = -1;
+                    if(!isweap(weap) || W(weap, disabled) || (m_sweaps(gamemode, mutators) && weap < W_ITEM) || !m_check(W(weap, modes), W(weap, muts), gamemode, mutators))
+                        weap = -1; //blank palette (because weapon not present in mode)
                 }
-                if(isweap(weap)) return vec::fromcolor(W(weap, colour));
+                if(isweap(weap)) return vec::fromcolor(W(weap, colour)); //return color of weapon
                 break;
             }
             default: break;
