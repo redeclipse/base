@@ -984,7 +984,7 @@ namespace game
                 if(!m_edit(gamemode) && index < W_MAX)
                 {
                     weap = m_attr(WEAPON, weap);
-                    if(!isweap(weap) || W(weap, disabled) || (m_sweaps(gamemode, mutators) && weap < W_ITEM) || !m_check(W(weap, modes), W(weap, muts), gamemode, mutators))
+                    if(!isweap(weap) || W(weap, disabled) || (m_rotweaps(gamemode, mutators) && weap < W_ITEM) || !m_check(W(weap, modes), W(weap, muts), gamemode, mutators))
                         weap = -1; //blank palette (because weapon not present in mode)
                 }
                 if(isweap(weap)) return vec::fromcolor(W(weap, colour)); //return color of weapon

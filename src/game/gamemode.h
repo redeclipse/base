@@ -270,7 +270,8 @@ extern mutstypes mutstype[];
 #define m_ra_gauntlet(a,b)  (m_race(a) && m_gsp3(a, b))
 
 #define m_team(a,b)         (m_multi(a, b) || !m_ffa(a, b))
-#define m_sweaps(a,b)       (m_dm_gladiator(a, b) || (m_race(a) && !m_ra_gauntlet(a, b)) || m_medieval(a, b) || m_kaboom(a, b)) //games that do not require picking up rotation weapons
+#define m_sweaps(a,b)       (m_dm_gladiator(a, b) || (m_race(a) && !m_ra_gauntlet(a, b)) || m_insta(a, b) || m_medieval(a, b) || m_kaboom(a, b)) //games that do not require selecing a spawn loadout but also don't have you pick one up
+#define m_rotweaps(a,b)       (m_dm_gladiator(a, b) || (m_race(a) && !m_ra_gauntlet(a, b)) || m_medieval(a, b) || m_kaboom(a, b)) //games that require picking up rotation weapons
 #define m_loadout(a,b)      (!m_classic(a, b) && !m_sweaps(a, b))// games that require selecting a spawn loadout: non-classic, non-([non-gladiator race],gauntlet,insta,medieval,kaboom)
 #define m_duke(a,b)         (m_duel(a, b) || m_survivor(a, b))
 #define m_regen(a,b)        (!m_hard(a,b) && (!m_duke(a, b) || DSG(a, b, regen)) && !m_insta(a, b))
