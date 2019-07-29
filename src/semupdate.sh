@@ -112,9 +112,13 @@ semupdate_steam() {
     curl -sqL "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz" | tar zxvf -
     chmod --verbose +x linux32/steamcmd || return 1
     export LD_LIBRARY_PATH="${SEMUPDATE_STEAM}/linux32:${SEMUPDATE_STEAM}/linux64:${LD_LIBRARY_PATH}"
-    ./linux32/steamcmd +login redeclipsenet ${STEAM_TOKEN} +run_app_build_http app_build_967460.vdf +quit
+    STEAM_ARGS="+login redeclipsenet ${STEAM_TOKEN} +run_app_build_http app_build_967460.vdf +quit"
+    if [ "${STEAM_GUARD}" != "0" ]; then
+        STEAM_ARGS="+set_steam_guard_code ${STEAM_GUARD} ${STEAM_ARGS}"
+    fi
+    ./linux32/steamcmd ${STEAM_ARGS}
     if [ $? -eq 42 ]; then
-        ./linux32/steamcmd +login redeclipsenet ${STEAM_TOKEN} +run_app_build_http app_build_967460.vdf +quit
+        ./linux32/steamcmd ${STEAM_ARGS}
     fi
     popd || return 1
     return 0
