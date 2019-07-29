@@ -125,10 +125,10 @@
 		D1CEB40D0F548C0B004FD11F /* defendmode.h in Headers */ = {isa = PBXBuildFile; fileRef = D1CEB4090F548C0B004FD11F /* defendmode.h */; };
 		D1D88A8B0F350DFE000680E4 /* auth.h in Headers */ = {isa = PBXBuildFile; fileRef = D1D88A8A0F350DFE000680E4 /* auth.h */; };
 		D1D88A8D0F350E31000680E4 /* ragdoll.h in Headers */ = {isa = PBXBuildFile; fileRef = D1D88A8C0F350E31000680E4 /* ragdoll.h */; };
-		D1D88AB80F350EDE000680E4 /* http.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D1D88AB60F350EDE000680E4 /* http.cpp */; };
-		D1D88AB90F350EDE000680E4 /* http.h in Headers */ = {isa = PBXBuildFile; fileRef = D1D88AB70F350EDE000680E4 /* http.h */; };
-		D1D88AB80F350EDE000680E4 /* irc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D1D88AB60F350EDE000680E4 /* irc.cpp */; };
-		D1D88AB90F350EDE000680E4 /* irc.h in Headers */ = {isa = PBXBuildFile; fileRef = D1D88AB70F350EDE000680E4 /* irc.h */; };
+		D1D88AB80F350EDE000680E1 /* http.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D1D88AB60F350EDE000680E1 /* http.cpp */; };
+		D1D88AB90F350EDE000680E2 /* http.h in Headers */ = {isa = PBXBuildFile; fileRef = D1D88AB70F350EDE000680E2 /* http.h */; };
+		D1D88AB80F350EDE000680E8 /* irc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D1D88AB60F350EDE000680E8 /* irc.cpp */; };
+		D1D88AB90F350EDE000680E9 /* irc.h in Headers */ = {isa = PBXBuildFile; fileRef = D1D88AB70F350EDE000680E9 /* irc.h */; };
 		D1E605B90E2416150045244E /* redeclipse.icns in Resources */ = {isa = PBXBuildFile; fileRef = B97E99CE085F4B3E002F9BC6 /* redeclipse.icns */; };
 		FD05F1471ADD1BBA0046F323 /* player.h in Headers */ = {isa = PBXBuildFile; fileRef = FD05F1431ADD1BBA0046F323 /* player.h */; };
 		FD05F1481ADD1BBA0046F323 /* playerdef.h in Headers */ = {isa = PBXBuildFile; fileRef = FD05F1441ADD1BBA0046F323 /* playerdef.h */; };
@@ -140,8 +140,8 @@
 		FD88C2981B6C824B004CEB1D /* glexts.h in Sources */ = {isa = PBXBuildFile; fileRef = FD05F14B1ADD1BD70046F323 /* glexts.h */; };
 		FDB0781A1B6DE60B0005FA3F /* jsmn.c in Sources */ = {isa = PBXBuildFile; fileRef = FDB078181B6DE60B0005FA3F /* jsmn.c */; };
 		FDB0781B1B6DE60B0005FA3F /* jsmn.h in Headers */ = {isa = PBXBuildFile; fileRef = FDB078191B6DE60B0005FA3F /* jsmn.h */; };
-		FDB0781A1B6DE60B0005FA3F /* sqlite3.c in Sources */ = {isa = PBXBuildFile; fileRef = FDB078181B6DE60B0005FA3F /* sqlite3.c */; };
-		FDB0781B1B6DE60B0005FA3F /* sqlite3.h in Headers */ = {isa = PBXBuildFile; fileRef = FDB078191B6DE60B0005FA3F /* sqlite3.h */; };
+		FDB0781A1B6DE60B0005FA3A /* sqlite3.c in Sources */ = {isa = PBXBuildFile; fileRef = FDB078181B6DE60B0005FA3A /* sqlite3.c */; };
+		FDB0781B1B6DE60B0005FA3B /* sqlite3.h in Headers */ = {isa = PBXBuildFile; fileRef = FDB078191B6DE60B0005FA3B /* sqlite3.h */; };
 		FDCF1C021B6C84E10035CD3C /* glemu.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FDCF1C001B6C84E10035CD3C /* glemu.cpp */; };
 		FDCF1C031B6C84E10035CD3C /* glemu.h in Headers */ = {isa = PBXBuildFile; fileRef = FDCF1C011B6C84E10035CD3C /* glemu.h */; };
 /* End PBXBuildFile section */
@@ -273,10 +273,10 @@
 		D1CEB4090F548C0B004FD11F /* defendmode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = defendmode.h; sourceTree = "<group>"; };
 		D1D88A8A0F350DFE000680E4 /* auth.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = auth.h; sourceTree = "<group>"; };
 		D1D88A8C0F350E31000680E4 /* ragdoll.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ragdoll.h; sourceTree = "<group>"; };
-		D1D88AB60F350EDE000680E4 /* http.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = http.cpp; sourceTree = "<group>"; };
-		D1D88AB70F350EDE000680E4 /* http.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = http.h; sourceTree = "<group>"; };
-		D1D88AB60F350EDE000680E4 /* irc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = irc.cpp; sourceTree = "<group>"; };
-		D1D88AB70F350EDE000680E4 /* irc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = irc.h; sourceTree = "<group>"; };
+		D1D88AB60F350EDE000680E1 /* http.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = http.cpp; sourceTree = "<group>"; };
+		D1D88AB70F350EDE000680E2 /* http.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = http.h; sourceTree = "<group>"; };
+		D1D88AB60F350EDE000680E8 /* irc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = irc.cpp; sourceTree = "<group>"; };
+		D1D88AB70F350EDE000680E9 /* irc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = irc.h; sourceTree = "<group>"; };
 		D1DB53E50D70F1C3003AE25C /* English */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = English; path = English.lproj/Localizable.strings; sourceTree = "<group>"; };
 		F5A47A9D01A0482F01D3D55B /* SDLMain.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = SDLMain.h; sourceTree = SOURCE_ROOT; };
 		F5A47A9E01A0483001D3D55B /* SDLMain.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; lineEnding = 0; path = SDLMain.m; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
@@ -290,8 +290,8 @@
 		FD6BC4A51B4BE57C0010977F /* master.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; path = master.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		FDB078181B6DE60B0005FA3F /* jsmn.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = jsmn.c; path = jsmn.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		FDB078191B6DE60B0005FA3F /* jsmn.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = jsmn.h; path = jsmn.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		FDB078181B6DE60B0005FA3F /* sqlite3.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sqlite3.c; path = sqlite3.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		FDB078191B6DE60B0005FA3F /* sqlite3.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sqlite3.h; path = sqlite3.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
+		FDB078181B6DE60B0005FA3A /* sqlite3.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sqlite3.c; path = sqlite3.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
+		FDB078191B6DE60B0005FA3B /* sqlite3.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sqlite3.h; path = sqlite3.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		FDCF1C001B6C84E10035CD3C /* glemu.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = glemu.cpp; sourceTree = "<group>"; };
 		FDCF1C011B6C84E10035CD3C /* glemu.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = glemu.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -436,10 +436,10 @@
 				D118DEB50D979281000E8C4C /* renderlights.cpp */,
 				B9AC7A8C0D06DB44005506F8 /* grass.cpp */,
 				FD05F14C1ADD1BD70046F323 /* iqm.h */,
-				D1D88AB60F350EDE000680E4 /* http.cpp */,
-				D1D88AB70F350EDE000680E4 /* http.h */,
-				D1D88AB60F350EDE000680E4 /* irc.cpp */,
-				D1D88AB70F350EDE000680E4 /* irc.h */,
+				D1D88AB60F350EDE000680E1 /* http.cpp */,
+				D1D88AB70F350EDE000680E2 /* http.h */,
+				D1D88AB60F350EDE000680E8 /* irc.cpp */,
+				D1D88AB70F350EDE000680E9 /* irc.h */,
 				D18B8FBF0DB0AF8200171439 /* lensflare.h */,
 				B9AC7A8D0D06DB44005506F8 /* light.cpp */,
 				B9AC7A8E0D06DB44005506F8 /* light.h */,
@@ -560,8 +560,8 @@
 			children = (
 				FDB078181B6DE60B0005FA3F /* jsmn.c */,
 				FDB078191B6DE60B0005FA3F /* jsmn.h */,
-				FDB078181B6DE60B0005FA3F /* sqlite3.c */,
-				FDB078191B6DE60B0005FA3F /* sqlite3.h */,
+				FDB078181B6DE60B0005FA3A /* sqlite3.c */,
+				FDB078191B6DE60B0005FA3B /* sqlite3.h */,
 			);
 			name = support;
 			path = ../support;
@@ -600,7 +600,7 @@
 				B91D40230D525FE9004EF78A /* md5.h in Headers */,
 				B91D40250D52600A004EF78A /* skelmodel.h in Headers */,
 				FDB0781B1B6DE60B0005FA3F /* jsmn.h in Headers */,
-				FDB0781B1B6DE60B0005FA3F /* sqlite3.h in Headers */,
+				FDB0781B1B6DE60B0005FA3B /* sqlite3.h in Headers */,
 				D18B8FC10DB0AF8200171439 /* explosion.h in Headers */,
 				D18B8FC20DB0AF8200171439 /* lensflare.h in Headers */,
 				D18B8FC30DB0AF8200171439 /* lightning.h in Headers */,
@@ -618,8 +618,8 @@
 				D1D88A8B0F350DFE000680E4 /* auth.h in Headers */,
 				2AB901D11AC1B8E900A5F378 /* version.h in Headers */,
 				D1D88A8D0F350E31000680E4 /* ragdoll.h in Headers */,
-				D1D88AB90F350EDE000680E4 /* http.h in Headers */,
-				D1D88AB90F350EDE000680E4 /* irc.h in Headers */,
+				D1D88AB90F350EDE000680E2 /* http.h in Headers */,
+				D1D88AB90F350EDE000680E9 /* irc.h in Headers */,
 				D1CEB40A0F548C0B004FD11F /* aiman.h in Headers */,
 				D1CEB40B0F548C0B004FD11F /* capturemode.h in Headers */,
 				D1CEB40C0F548C0B004FD11F /* duelmut.h in Headers */,
@@ -718,7 +718,7 @@
 				B9AC7ADE0D06DB44005506F8 /* menus.cpp in Sources */,
 				B9AC7AE00D06DB44005506F8 /* normal.cpp in Sources */,
 				FDB0781A1B6DE60B0005FA3F /* jsmn.c in Sources */,
-				FDB0781A1B6DE60B0005FA3F /* sqlite3.c in Sources */,
+				FDB0781A1B6DE60B0005FA3A /* sqlite3.c in Sources */,
 				B9AC7AE10D06DB44005506F8 /* octa.cpp in Sources */,
 				B9AC7AE30D06DB44005506F8 /* octaedit.cpp in Sources */,
 				B9AC7AE40D06DB44005506F8 /* octarender.cpp in Sources */,
@@ -758,8 +758,8 @@
 				D16A83720F130EBC00EABB1F /* aa.cpp in Sources */,
 				FDCF1C021B6C84E10035CD3C /* glemu.cpp in Sources */,
 				D16A83770F130EBC00EABB1F /* ui.cpp in Sources */,
-				D1D88AB80F350EDE000680E4 /* http.cpp in Sources */,
-				D1D88AB80F350EDE000680E4 /* irc.cpp in Sources */,
+				D1D88AB80F350EDE000680E1 /* http.cpp in Sources */,
+				D1D88AB80F350EDE000680E8 /* irc.cpp in Sources */,
 				D11B5A6610CBB4D8003F0098 /* game.cpp in Sources */,
 				FD6BC4A61B4BE57C0010977F /* master.cpp in Sources */,
 				D11B5A6A10CBB500003F0098 /* movie.cpp in Sources */,
