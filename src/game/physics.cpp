@@ -98,7 +98,7 @@ namespace physics
                     case AC_WALK: style = walkstyle; last = &lastwalk; break;
                     default: break;
                 }
-                switch(style)
+                if(last != NULL) switch(style)
                 {
                     case 1:
                     {

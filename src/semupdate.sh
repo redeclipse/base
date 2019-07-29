@@ -99,7 +99,8 @@ semupdate_steam() {
         (git archive ${SEMUPDATE_ARCHBR} | tar -x -C "${SEMUPDATE_MODDIR}") || return 1
         if [ "${i}" = "base" ]; then
             # Steam build on Windows HATES SYMLINKS
-            rm -rfv "${SEMUPDATE_MODDIR}/bin/redeclipse.app" "${SEMUPDATE_MODDIR}/readme.md" || return 1
+            rm -rfv "${SEMUPDATE_MODDIR}/bin/redeclipse.app" "${SEMUPDATE_MODDIR}/readme.md" "${SEMUPDATE_MODDIR}/doc/commands.txt" || return 1
+            cp -RLfv "${SEMUPDATE_GITDIR}/config/usage.cfg" "${SEMUPDATE_MODDIR}/doc/commands.txt" || return 1
             cp -RLfv "${SEMUPDATE_GITDIR}/bin/redeclipse.app" "${SEMUPDATE_MODDIR}/bin/redeclipse.app" || return 1
         fi
         popd || return 1
