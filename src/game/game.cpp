@@ -3254,8 +3254,8 @@ namespace game
                 {
                     case W_S_SWITCH: case W_S_USE:
                     {
-                        int millis = lastmillis-d->weaptime[weap], off = d->weapwait[weap]/4, lastweap = d->getlastweap(m_weapon(d->actortype, gamemode, mutators));
-                        if(isweap(lastweap) && millis <= off)
+                        int millis = lastmillis-d->weaptime[weap], off = min(d->weapwait[weap]/4, 250), lastweap = d->getlastweap(m_weapon(d->actortype, gamemode, mutators));
+                        if(isweap(lastweap) && lastweap != weap && millis <= off)
                         {
                             weap = lastweap;
                             weapscale = 1.f-(millis/float(off));
