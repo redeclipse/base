@@ -714,7 +714,7 @@ namespace physics
                 if(dir.z < 0) force += -dir.z*force;
             }
         }
-        else if(d->crouching()) dir.z = -impulsejumpdown;
+        else if(d->action[AC_CROUCH]) dir.z = -impulsejumpdown;
         d->vel = vec(dir).mul(force).add(keepvel);
         if(launch) d->vel.z += jumpvel(d, true);
         d->doimpulse(melee ? IM_T_MELEE : (slide ? IM_T_SLIDE : IM_T_BOOST), lastmillis);
