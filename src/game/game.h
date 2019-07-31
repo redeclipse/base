@@ -848,7 +848,7 @@ struct clientstate
         if(type != WEAPON || !isweap(attr)) return;
         int prev = max(weapclip[attr], 0);
         weapswitch(attr, millis, delay, W_S_USE);
-        weapclip[attr] = clamp(prev+ammoamt, 0, W(attr, ammoclip));
+        if(!W(attr, ammostore) || !hasweap(attr, sweap)) weapclip[attr] = clamp(prev+ammoamt, 0, W(attr, ammoclip));
         int diff = weapclip[attr]-prev, store = ammoamt-diff;
         if(W(attr, ammostore)) weapstore[attr] = clamp(weapstore[attr]+store, 0, W(attr, ammostore));
         weapload[attr] = diff;
