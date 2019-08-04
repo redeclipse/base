@@ -2,7 +2,7 @@
 #include "game.h"
 
 #define WIND_IMPULSE_DECAY_MUL 4.0f
-#define WIND_ENT_FALL_SCALE 0.01f
+#define WIND_DYNENT_MOVE_SCALE 0.01f
 #define WIND_ATTEN_SCALE 0.01f
 #define WIND_MAX_SPEED 2.0f
 
@@ -155,16 +155,7 @@ void updatewind()
 // gets the wind for dynamic (moving) entities
 static vec getentwindvec(const dynent *d)
 {
-    vec wind = vec(0);
-
-    // add dynent velocity to the wind vector
-    if(d)
-    {
-        vec falling = vec(d->falling).mul(-WIND_ENT_FALL_SCALE);
-        wind.add(d->vel).add(falling);
-    }
-
-    return wind;
+    return d ? vec(d->vel).add(d->falling).mul(-WIND_DYNENT_MOVE_SCALE) : vec(0);
 }
 
 // returns the wind vector at a given position
