@@ -1,4 +1,3 @@
-
 enum                            // hardcoded texture numbers
 {
     DEFAULT_SKY = 0,
@@ -7,7 +6,7 @@ enum                            // hardcoded texture numbers
 };
 
 #define OCTAVERSION 33          // diverged at ver 25
-#define MAPVERSION 46           // bump if map format changes, see worldio.cpp
+#define MAPVERSION 47           // bump if map format changes, see worldio.cpp
 
 struct binary
 {

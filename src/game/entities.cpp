@@ -266,6 +266,23 @@ namespace entities
                 }
                 break;
             }
+            case WIND:
+            {
+                if(full)
+                {
+                    if(attr[0]&WIND_EMIT_IMPULSE)
+                    {
+                        addentinfo("impulse");
+                    }
+                    else addentinfo("smooth-periodic");
+                    if(attr[0]&WIND_EMIT_VECTORED)
+                    {
+                        addentinfo("vectored");
+                    }
+                    else addentinfo("local");
+                }
+                break;
+            }
             case LIGHTFX:
             {
                 if(full)
@@ -1137,6 +1154,18 @@ namespace entities
                 if(e.attrs[4] <= 0) e.attrs[4] = 1; // size (>= 1)
                 break;
             }
+            case WIND:
+            {
+                if(e.attrs[0] < 0) e.attrs[0] = 0; // mode, clamp
+                if(alter && !e.attrs[1]) e.attrs[1] = (int)camera1->yaw;
+                while(e.attrs[2] < 0) e.attrs[2] += 256; // speed
+                while(e.attrs[2] > 255) e.attrs[2] -= 256; // wrap both ways
+                if(e.attrs[3] < 0) e.attrs[3] = 0; // radius, clamp
+                if(e.attrs[4] < 0) e.attrs[4] = 0; // atten, clamp
+                if(e.attrs[5] < 0) e.attrs[5] = 0; // interval, clamp
+                if(e.attrs[6] < 0) e.attrs[6] = 0; // length, clamp
+                break;
+            }
             case PUSHER:
             {
                 FIXDIRYPL(0, 1); // yaw, pitch
@@ -1500,7 +1529,8 @@ namespace entities
             // MAPSOUND         -   MAPSOUND
             // SPOTLIGHT        -   LIGHTFX
             //                  -   DECAL
-            case 1: case 2: case 3: case 4: case 5: case 6: case 7: case 8: break;
+            //                  -   WIND
+            case 1: case 2: case 3: case 4: case 5: case 6: case 7: case 8: case 9: break;
 
             // I_SHELLS         -   WEAPON      W_SHOTGUN
             // I_BULLETS        -   WEAPON      W_SMG
@@ -1508,7 +1538,7 @@ namespace entities
             // I_ROUNDS         -   WEAPON      W_RIFLE
             // I_GL             -   WEAPON      W_GRENADE
             // I_CARTRIDGES     -   WEAPON      W_PLASMA
-            case 9: case 10: case 11: case 12: case 13: case 14:
+            case 10: case 11: case 12: case 13: case 14: case 15:
             {
                 int weap = f.type-8;
                 if(weap >= 0 && weap <= 5)
@@ -2002,6 +2032,11 @@ namespace entities
                     part_radius(e.o, vec(float(e.attrs[2])), showentsize, 1, 1, colourcyan);
                     break;
                 }
+                case WIND:
+                {
+                    part_radius(e.o, vec(float(e.attrs[3])), showentsize, 1, 1, colourcyan);
+                    break;
+                }
                 case ENVMAP:
                 {
                     int s = e.attrs[0] ? clamp(e.attrs[0], 0, 10000) : envmapradius;
@@ -2058,6 +2093,11 @@ namespace entities
                 //    entdirpart(e.o, e.attrs[1], 360-e.attrs[3], 4.f, 1, colourcyan);
                 //    break;
                 //}
+                case WIND:
+                {
+                    if(e.attrs[0]&WIND_EMIT_VECTORED) entdirpart(e.o, e.attrs[1], 0, 8.f, 1, colourcyan);
+                    break;
+                }
                 case ACTOR:
                 {
                     entdirpart(e.o, e.attrs[1], e.attrs[2], 4.f, 1, TEAM(T_ENEMY, colour));

@@ -1624,7 +1624,11 @@ namespace projs
                             if(type != W_FLAMER) part_explosion(proj.o, expl, PART_EXPLOSION, len, FWCOL(H, explcol, proj), 1.f, WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)));
                             part_splash(PART_SPARK, 20, len*2, proj.o, FWCOL(H, partcol, proj), 0.75f, WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)), 1, 0, expl, 20);
                             if(WF(WK(proj.flags), proj.weap, wavepush, WS(proj.flags)) >= 1)
-                                part_explosion(proj.o, expl*WF(WK(proj.flags), proj.weap, wavepush, WS(proj.flags)), PART_SHOCKWAVE, halflen, projhint(proj.owner, FWCOL(H, explcol, proj)), 1.f, 0.5f*WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags))*projhintblend);
+                            {
+                                float explsize = expl*WF(WK(proj.flags), proj.weap, wavepush, WS(proj.flags));
+                                part_explosion(proj.o, explsize, PART_SHOCKWAVE, halflen, projhint(proj.owner, FWCOL(H, explcol, proj)), 1.f, 0.5f*WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags))*projhintblend);
+                                addwind(proj.o, WIND_EMIT_IMPULSE, explsize * 0.01f);
+                            }
                         }
                         else expl = max(WF(WK(proj.flags), proj.weap, partsize, WS(proj.flags)), 0.25f)*4;
                         part_create(PART_SMOKE_LERP_SOFT, len*3, proj.o, 0x444444, expl*1.5f, 0.75f*WF(WK(proj.flags), proj.weap, partblend, WS(proj.flags)), type != W_FLAMER ? -15 : -10);

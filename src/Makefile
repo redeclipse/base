@@ -189,6 +189,7 @@ CLIENT_OBJS= \
 	engine/water.o \
 	engine/world.o \
 	engine/worldio.o \
+	engine/wind.o \
 	game/ai.o \
 	game/client.o \
 	game/capture.o \

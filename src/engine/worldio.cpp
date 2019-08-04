@@ -1282,6 +1282,7 @@ bool load_world(const char *mname, int crc, int variant)
 
             // version increments
             if(maptype == MAP_OCTA && e.type >= ET_DECAL) e.type++;
+            if(maptype == MAP_MAPZ && hdr.version < 47 && e.type >= ET_WIND) e.type++;
             bool oldsun = maptype == MAP_MAPZ && hdr.version <= 43 && e.type == ET_DECAL;
             if(!samegame && e.type >= ET_GAMESPECIFIC)
             {
