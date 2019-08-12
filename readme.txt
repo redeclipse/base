@@ -7,7 +7,7 @@
 * Download for free at https://redeclipse.net/
 
 ## About
-Red Eclipse is a fun-filled new take on the first-person arena shooter, built using the technology found in [Tesseract](https://tesseract.gg/), which lends itself towards a balanced gameplay, with a general theme of agility in a variety of environments. For more information, visit our [Wiki](https://redeclipse.net/wiki) or [Forums](https://redeclipse.net/forum).
+Red Eclipse is a fun-filled new take on the first-person arena shooter, built using the technology found in [Tesseract](http://tesseract.gg/), which lends itself towards a balanced gameplay, with a general theme of agility in a variety of environments. For more information, visit our [Wiki](https://redeclipse.net/wiki) or [Forums](https://redeclipse.net/forum).
 
 The project is a free and open source game built using SDL and OpenGL which allows it to be ported to many platforms; you can [download a package](https://redeclipse.net/download) for Windows, GNU/Linux, BSD, and macOS; or grab a development copy from our [Git repository](https://redeclipse.net/devel) and live on the bleeding edge.
 
