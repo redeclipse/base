@@ -153,7 +153,7 @@ struct font
     char *name;
     vector<Texture *> texs;
     vector<charinfo> chars;
-    int charoffset, defaultw, defaulth, maxw, maxh, scale;
+    int charoffset, defaultw, defaulth, maxw, maxh, mw, mh, scale;
 
     font() : name(NULL) {}
     ~font() { DELETEA(name); }
@@ -163,6 +163,8 @@ extern float textscale, curtextscale;
 #define FONTH (curfont->scale*curtextscale)
 #define FONTW (FONTH*0.5f)
 #define FONTTAB (FONTW*4)
+#define FONTMH (curfont->mh*curtextscale)
+#define FONTMW (curfont->mw*curtextscale)
 
 extern font *curfont;
 extern Shader *textshader;

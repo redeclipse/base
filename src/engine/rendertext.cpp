@@ -31,8 +31,8 @@ void newfont(char *name, char *tex, int *defaultw, int *defaulth)
     f->chars.shrink(0);
 
     f->charoffset = '!';
-    f->maxw = f->defaultw = *defaultw;
-    f->maxh = f->defaulth = f->scale = *defaulth;
+    f->mw = f->maxw = f->defaultw = *defaultw;
+    f->mh = f->maxh = f->defaulth = f->scale = *defaulth;
 
     fontdef = f;
     fontdeftex = 0;
@@ -50,6 +50,8 @@ void fontscale(int *scale)
     if(!fontdef) return;
 
     fontdef->scale = *scale > 0 ? *scale : fontdef->defaulth;
+    fontdef->mw = fontdef->maxw*fontdef->scale/float(fontdef->defaulth);
+    fontdef->mh = fontdef->maxh*fontdef->scale/float(fontdef->defaulth);
 }
 
 void fonttex(char *s)
@@ -73,8 +75,8 @@ void fontchar(float *x, float *y, float *w, float *h, float *offsetx, float *off
     c.h = *h ? *h : fontdef->defaulth;
     c.offsetx = *offsetx;
     c.offsety = *offsety;
-    if(c.offsetx+c.w > fontdef->maxw) fontdef->maxw = c.offsetx+c.w;
-    if(c.offsety+c.h > fontdef->maxh) fontdef->maxh = c.offsety+c.h;
+    if(c.offsetx+c.w > fontdef->maxw) fontdef->maxw = fontdef->mw = c.offsetx+c.w;
+    if(c.offsety+c.h > fontdef->maxh) fontdef->maxh = fontdef->mh = c.offsety+c.h;
     c.advance = *advance ? *advance : c.offsetx + c.w;
     c.tex = fontdeftex;
 }
@@ -120,7 +122,9 @@ void fontalias(const char *dst, const char *src)
     d->defaulth = s->defaulth;
     d->scale = s->scale;
     d->maxw = s->maxw;
+    d->mw = s->mw;
     d->maxh = s->maxh;
+    d->mh = s->mh;
 
     fontdef = d;
     fontdeftex = d->texs.length()-1;
@@ -352,7 +356,7 @@ static float draw_icon(Texture *&tex, const char *name, float x, float y, float 
         tex = t;
         glBindTexture(GL_TEXTURE_2D, tex->id);
     }
-    float h = curfont->maxh*scale, w = (t->w*h)/float(t->h);
+    float h = curfont->mh*scale, w = (t->w*h)/float(t->h);
     textvert(x,     y    ); gle::attribf(0, 0);
     textvert(x + w, y    ); gle::attribf(1, 0);
     textvert(x + w, y + h); gle::attribf(1, 1);
@@ -368,7 +372,7 @@ static float icon_width(const char *name, float scale)
     if(!*file) return 0;
     Texture *t = textureload(file, 3, true, false);
     if(!t) return 0;
-    float w = (t->w*curfont->maxh*scale)/float(t->h);
+    float w = (t->w*curfont->mh*scale)/float(t->h);
     return w;
 }
 
@@ -735,7 +739,7 @@ float key_widthf(const char *str)
     if(*str == '=') keyn = gettklp(++str);
     vector<char *> list;
     explodelist(keyn, list);
-    float width = 0, scale = curfont->maxh*curfont->scale/float(curfont->defaulth)*curtextscale*textkeyimagescale;
+    float width = 0, scale = curfont->mh*curfont->scale/float(curfont->defaulth)*curtextscale*textkeyimagescale;
     loopv(list)
     {
         if(i && textkeyseps) width += text_widthf(" or ");
@@ -763,7 +767,7 @@ static float draw_key(Texture *&tex, const char *str, float sx, float sy, bvec4 
     if(*str == '=') keyn = gettklp(++str);
     vector<char *> list;
     explodelist(keyn, list);
-    float width = 0, sh = curfont->maxh*curfont->scale/float(curfont->defaulth)*curtextscale, h = sh*textkeyimagescale;
+    float width = 0, sh = curfont->mh*curfont->scale/float(curfont->defaulth)*curtextscale, h = sh*textkeyimagescale;
     loopv(list)
     {
         if(i && textkeyseps)

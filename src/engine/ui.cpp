@@ -3555,7 +3555,7 @@ namespace UI
             edit->linewrap = length < 0;
             edit->maxx = edit->linewrap ? -1 : length;
             edit->maxy = height <= 0 ? 1 : -1;
-            edit->pixelwidth = abs(length)*FONTW;
+            edit->pixelwidth = abs(length)*FONTMW;
             if(edit->linewrap && edit->maxy == 1) edit->updateheight();
             else edit->pixelheight = FONTH*max(height, 1);
             scale = scale_;
