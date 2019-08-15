@@ -312,6 +312,7 @@ namespace weapons
             {
                 // if the problem is not enough ammo, do the reload..
                 if(autoreload(d, secondary ? HIT_ALT : 0)) weapreload(d, weap);
+                else if(pressed && d->getammo(weap, 0, true) <= 0) game::errorsnd(d);
                 return false;
             }
             else if(d->weapload[weap] <= 0 || weap != d->weapselect) return false;
