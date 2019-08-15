@@ -153,22 +153,28 @@ namespace ai
 
     bool hasweap(gameent *d, int weap)
     {
-        if(!isweap(weap)) return false;
-        if(w_carry(weap, m_weapon(d->actortype, game::gamemode, game::mutators)))
-            return d->hasweap(weap, m_weapon(d->actortype, game::gamemode, game::mutators));
-        return d->weapclip[weap] >= 0;
+        if(!isweap(weap) || !d->hasweap(weap, m_weapon(d->actortype, game::gamemode, game::mutators))) return false;
+        return d->getammo(weap, 0, true) >= 0;
     }
 
     bool wantsweap(gameent *d, int weap, bool noitems = true)
     {
-        if(!isweap(weap) || hasweap(d, weap) || !AA(d->actortype, maxcarry)) return false;
+        if(!isweap(weap) || !AA(d->actortype, maxcarry)) return false;
         if(itemweap(weap)) { if(noitems) return false; }
-        else
+        else if(d->loadweap.find(weap) < 0)
         {
-            if(d->carry(m_weapon(d->actortype, game::gamemode, game::mutators)) >= AA(d->actortype, maxcarry)) return false;
-            if(hasweap(d, weappref(d))) return false;
+            bool force = false;
+            if(m_classic(game::gamemode, game::mutators))
+            { // we can pick up non-preferential weapons when we're empty
+                loopv(d->loadweap) if(d->getammo(weap, 0, true) < 0)
+                {
+                    force = true;
+                    break;
+                }
+            }
+            if(!force) return false;
         }
-        return true;
+        return d->canuseweap(game::gamemode, game::mutators, weap, m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis);
     }
 
     void create(gameent *d)
@@ -1372,9 +1378,9 @@ namespace ai
         {
             int weap = weappref(d);
             gameent *e = game::getclient(d->ai->enemy);
-            if(!isweap(weap) || !d->hasweap(weap, sweap) || (e && !hasrange(d, e, weap)))
+            if(!isweap(weap) || !hasweap(d, weap) || (e && !hasrange(d, e, weap)))
             {
-                loopirev(W_ALL) if(d->hasweap(i, sweap) && (!e || hasrange(d, e, i)))
+                loopirev(W_ALL) if(hasweap(d, i) && (!e || hasrange(d, e, i)))
                 {
                     weap = i;
                     break;

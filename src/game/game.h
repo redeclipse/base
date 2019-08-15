@@ -832,6 +832,14 @@ struct clientstate
         return false;
     }
 
+    bool canuseweap(int gamemode, int mutators, int attr, int sweap, int millis, int skip = 0)
+    {
+        if(!m_classic(gamemode, mutators) && attr < W_ITEM && !hasweap(attr, sweap)) return false;
+        int ammo = getammo(attr, 0, true), total = W(attr, ammoclip)+W(attr, ammostore);
+        if(ammo >= total) return false;
+        return true;
+    }
+
     bool canuse(int gamemode, int mutators, int type, int attr, attrvector &attrs, int sweap, int millis, int skip = 0)
     {
         switch(enttype[type].usetype)
@@ -841,10 +849,7 @@ struct clientstate
             { // can't use when reloading or firing
                 if(type != WEAPON || !isweap(attr) || !AA(actortype, maxcarry)) return false;
                 if(!weapwaited(weapselect, millis, skip)) return false;
-                if(!m_classic(gamemode, mutators) && attr < W_ITEM && !hasweap(attr, sweap)) return false;
-                int ammo = getammo(attr, 0, true), total = W(attr, ammoclip)+W(attr, ammostore);
-                if(ammo >= total) return false;
-                return true;
+                return canuseweap(gamemode, mutators, attr, sweap, millis, skip);
             }
             default: break;
         }
