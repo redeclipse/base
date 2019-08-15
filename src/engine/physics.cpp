@@ -154,7 +154,7 @@ static float disttoent(octaentities *oc, const vec &o, const vec &ray, float rad
     entintersect(RAY_POLY, mapmodels, {
         if((mode&RAY_ENTS)!=RAY_ENTS)
         {
-            if(e.flags&EF_NOCOLLIDE || !checkmapvariant(e.attrs[13]) || e.attrs[14] > mapeffects) continue;
+            if(e.flags&EF_NOCOLLIDE || !checkmapvariant(e.attrs[13]) || !checkmapeffects(e.attrs[14])) continue;
             if(e.lastemit)
             {
                 if(e.flags&EF_HIDE)
@@ -222,7 +222,7 @@ static float shadowent(octaentities *oc, const vec &o, const vec &ray, float rad
     {
         extentity &e = *ents[oc->mapmodels[i]];
         if(!(e.flags&EF_OCTA) || &e==t) continue;
-        if(e.flags&EF_NOSHADOW || !checkmapvariant(e.attrs[13]) || e.attrs[14] > mapeffects) continue;
+        if(e.flags&EF_NOSHADOW || !checkmapvariant(e.attrs[13]) || !checkmapeffects(e.attrs[14])) continue;
         if(e.lastemit)
         {
             if(e.flags&EF_HIDE)
@@ -831,7 +831,7 @@ bool mmcollide(physent *d, const vec &dir, float cutoff, octaentities &oc) // co
     {
         extentity &e = *ents[oc.mapmodels[i]];
         if(!mapmodels.inrange(e.attrs[0])) continue;
-        if(e.flags&EF_NOCOLLIDE || !checkmapvariant(e.attrs[13]) || e.attrs[14] > mapeffects) continue;
+        if(e.flags&EF_NOCOLLIDE || !checkmapvariant(e.attrs[13]) || !checkmapeffects(e.attrs[14])) continue;
         if(e.lastemit)
         {
             if(e.flags&EF_HIDE)

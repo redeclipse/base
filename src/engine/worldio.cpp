@@ -19,8 +19,6 @@ SVAR(0, mapfile, "");
 SVAR(0, mapname, "");
 SVAR(0, maptext, "");
 
-VAR(0, mapeffects, 0, 2, 2);
-
 const char *mapvariants[MPV_MAX] = { "all", "default", "alternate" };
 VAR(0, mapvariant, 1, 0, -1);
 
@@ -39,6 +37,14 @@ void changemapvariant(int variant)
         initskybox();
         allchanged(true);
     }
+}
+
+VAR(0, mapeffects, 0, 2, 2);
+
+bool checkmapeffects(int fxlevel)
+{
+    if(fxlevel < 0) return mapeffects&(0-fxlevel);
+    return fxlevel <= mapeffects;
 }
 
 VAR(IDF_PERSIST, autosavebackups, 0, 2, 4); // make backups; 0 = off, 1 = single backup, 2 = named backup, 3/4 = same as 1/2 with move to "backups/"

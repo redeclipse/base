@@ -1250,8 +1250,8 @@ namespace entities
         }
         if(enttype[e.type].fxattr >= 0)
         {
-            while(e.attrs[enttype[e.type].fxattr] < 0) e.attrs[enttype[e.type].fxattr] += 3;
-            while(e.attrs[enttype[e.type].fxattr] >= 3) e.attrs[enttype[e.type].fxattr] -= 3;
+            while(e.attrs[enttype[e.type].fxattr] < -3) e.attrs[enttype[e.type].fxattr] += 6;
+            while(e.attrs[enttype[e.type].fxattr] >= 3) e.attrs[enttype[e.type].fxattr] -= 6;
         }
     }
 
@@ -2273,7 +2273,7 @@ namespace entities
 
     bool checkparticle(extentity &e)
     {
-        if(!checkmapvariant(e.attrs[12]) || e.attrs[13] > mapeffects) return false;
+        if(!checkmapvariant(e.attrs[12]) || !checkmapeffects(e.attrs[13])) return false;
         gameentity &f = (gameentity &)e;
         if(f.attrs[11])
         {

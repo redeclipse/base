@@ -412,7 +412,7 @@ void preloadusedmapmodels(bool msg, bool bih)
     loopv(ents)
     {
         extentity &e = *ents[i];
-        if(e.type != ET_MAPMODEL || e.attrs[0] < 0 || used.find(e.attrs[0]) >= 0 || !checkmapvariant(e.attrs[13]) || e.attrs[14] > mapeffects) continue;
+        if(e.type != ET_MAPMODEL || e.attrs[0] < 0 || used.find(e.attrs[0]) >= 0 || !checkmapvariant(e.attrs[13]) || !checkmapeffects(e.attrs[14])) continue;
         used.add(e.attrs[0]);
     }
 
