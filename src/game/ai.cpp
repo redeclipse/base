@@ -161,18 +161,23 @@ namespace ai
     {
         if(!isweap(weap) || !AA(d->actortype, maxcarry)) return false;
         if(itemweap(weap)) { if(noitems) return false; }
-        else if(d->loadweap.find(weap) < 0)
+        else
         {
-            bool force = false;
-            if(m_classic(game::gamemode, game::mutators))
-            { // we can pick up non-preferential weapons when we're empty
-                loopv(d->loadweap) if(d->getammo(weap, 0, true) < 0)
-                {
-                    force = true;
-                    break;
+            int weapnum = min(AA(d->actortype, maxcarry), d->loadweap.length()),
+                weaphas = d->loadweap.find(weap);
+            if(weaphas < 0 || weaphas >= AA(d->actortype, maxcarry))
+            {
+                bool force = false;
+                if(m_classic(game::gamemode, game::mutators))
+                { // we can pick up non-preferential weapons when we're empty
+                    loopi(weapnum) if(d->getammo(d->loadweap[i], 0, true) < 0)
+                    {
+                        force = true;
+                        break;
+                    }
                 }
+                if(!force) return false;
             }
-            if(!force) return false;
         }
         return d->canuseweap(game::gamemode, game::mutators, weap, m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis);
     }
@@ -1380,10 +1385,15 @@ namespace ai
             gameent *e = game::getclient(d->ai->enemy);
             if(!isweap(weap) || !hasweap(d, weap) || (e && !hasrange(d, e, weap)))
             {
-                loopirev(W_ALL) if(hasweap(d, i) && (!e || hasrange(d, e, i)))
+                weap = -1;
+                loopj(2)
                 {
-                    weap = i;
-                    break;
+                    loopv(d->loadweap) if(hasweap(d, d->loadweap[i]) && (j || !e || hasrange(d, e, d->loadweap[i])))
+                    {
+                        weap = d->loadweap[i];
+                        break;
+                    }
+                    if(isweap(weap)) break;
                 }
             }
             if(isweap(weap) && weap != d->weapselect && weapons::weapselect(d, weap, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))

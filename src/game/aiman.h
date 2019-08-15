@@ -163,7 +163,15 @@ namespace aiman
                         }
                     }
                     ci->setvanity(ci->model ? G(botfemalevanities) : G(botmalevanities));
-                    ci->loadweap.add(botrnd(ci, 8, W_LOADOUT)+W_OFFSET);
+                    static vector<int> weaplist;
+                    weaplist.shrink(0);
+                    loopi(W_LOADOUT) weaplist.add(W_OFFSET+i);
+                    while(!weaplist.empty())
+                    {
+                        int iter = botrnd(ci, 8, weaplist.length());
+                        ci->loadweap.add(weaplist[iter]);
+                        weaplist.remove(iter);
+                    }
                 }
                 ci->state = CS_DEAD;
                 ci->team = type == A_BOT ? T_NEUTRAL : T_ENEMY;
