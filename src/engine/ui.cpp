@@ -640,7 +640,7 @@ namespace UI
     {
         char *name;
         uint *contents, *onshow, *onhide;
-        bool allowinput, exclusive;
+        bool allowinput, exclusive, closing;
         int windowflags;
         float px, py, pw, ph;
         vec2 sscale, soffset;
@@ -650,7 +650,7 @@ namespace UI
             contents(compilecode(contents)),
             onshow(onshow && onshow[0] ? compilecode(onshow) : NULL),
             onhide(onhide && onhide[0] ? compilecode(onhide) : NULL),
-            allowinput(true), exclusive(false),
+            allowinput(true), exclusive(false), closing(false),
             px(0), py(0), pw(0), ph(0),
             sscale(1, 1), soffset(0, 0)
         {
@@ -672,13 +672,13 @@ namespace UI
 
         void hide()
         {
-            overridepos = false;
+            overridepos = closing = false;
             if(onhide) execute(onhide);
         }
 
         void show()
         {
-            overridepos = false;
+            overridepos = closing = false;
             state |= STATE_HIDDEN;
             clearstate(STATE_HOLD_MASK);
             if(onshow) execute(onshow);
@@ -1165,7 +1165,22 @@ namespace UI
     {
         if(!name) return world->children.length() > 0;
         Window *window = windows.find(name, NULL);
-        return window && world->children.find(window) >= 0;
+        return window && !window->closing && world->children.find(window) >= 0;
+    }
+
+    bool uiclosing(const char *name)
+    {
+        if(!name) return false;
+        Window *window = windows.find(name, NULL);
+        return window && window->closing;
+    }
+
+    void uisetclose(const char *name, bool closing)
+    {
+        if(!name) return;
+        Window *window = windows.find(name, NULL);
+        if(!window) return;
+        window->closing = closing;
     }
 
     ICOMMAND(0, showui, "s", (char *name), intret(showui(name) ? 1 : 0));
@@ -1178,6 +1193,8 @@ namespace UI
     ICOMMAND(0, pressui, "sD", (char *name, int *down), pressui(name, *down!=0));
     ICOMMAND(0, uivisible, "s", (char *name), intret(uivisible(name) ? 1 : 0));
     ICOMMAND(0, uiname, "", (), { if(window) result(window->name); });
+    ICOMMAND(0, uiclosing, "s", (char *name), intret(uiclosing(name) ? 1 : 0));
+    ICOMMAND(0, uisetclose, "si", (char *name, int *n), uisetclose(name, *n != 0));
 
     struct HorizontalList : Object
     {
