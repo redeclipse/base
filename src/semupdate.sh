@@ -2,7 +2,7 @@
 
 SEMUPDATE_PWD=`pwd`
 SEMUPDATE_BUILD="${HOME}/deploy"
-SEMUPDATE_STEAM="${HOME}/depot"
+SEMUPDATE_DEPOT="${HOME}/depot"
 SEMUPDATE_DIR="${SEMUPDATE_BUILD}/${BRANCH_NAME}"
 SEMUPDATE_APT='DEBIAN_FRONTEND=noninteractive apt-get'
 SEMUPDATE_DEST="https://${GITHUB_TOKEN}:x-oauth-basic@github.com/red-eclipse/deploy.git"
@@ -23,6 +23,11 @@ semupdate_setup() {
     git clone --depth 1 "${SEMUPDATE_DEST}" || return 1
     popd || return 1
     mkdir -pv "${SEMUPDATE_DIR}" || return 1
+    for i in ${SEMUPDATE_ALLMODS}; do
+        if [ "${i}" != "base" ]; then
+            git submodule update --init --depth 1 "data/${i}" || return 1
+        fi
+    done
     return 0
 }
 
@@ -74,22 +79,22 @@ semupdate_appimage() {
 
 semupdate_steam() {
     echo "building Steam depot..."
-    cp -Rv "${SEMUPDATE_PWD}/src/install/steam" "${SEMUPDATE_STEAM}" || return 1
+    cp -Rv "${SEMUPDATE_PWD}/src/install/steam" "${SEMUPDATE_DEPOT}" || return 1
     mkdir -pv "${SEMAPHORE_CACHE_DIR}/Steam-dot" || return 1
     ln -sv "${SEMAPHORE_CACHE_DIR}/Steam-dot" "${HOME}/.steam" || return 1
     mkdir -pv "${SEMAPHORE_CACHE_DIR}/Steam" || return 1
     ln -sv "${SEMAPHORE_CACHE_DIR}/Steam" "${HOME}/Steam" || return 1
     for i in output package public; do
         mkdir -pv "${SEMAPHORE_CACHE_DIR}/Steam-${i}" || return 1
-        ln -sv "${SEMAPHORE_CACHE_DIR}/Steam-${i}" "${SEMUPDATE_STEAM}/${i}" || return 1
+        ln -sv "${SEMAPHORE_CACHE_DIR}/Steam-${i}" "${SEMUPDATE_DEPOT}/${i}" || return 1
     done
     for i in ${SEMUPDATE_ALLMODS}; do
         if [ "${i}" = "base" ]; then
-            SEMUPDATE_MODDIR="${SEMUPDATE_STEAM}/content"
+            SEMUPDATE_MODDIR="${SEMUPDATE_DEPOT}/content"
             SEMUPDATE_GITDIR="${SEMUPDATE_PWD}"
             SEMUPDATE_ARCHBR="${BRANCH_NAME}"
         else
-            SEMUPDATE_MODDIR="${SEMUPDATE_STEAM}/content/data/${i}"
+            SEMUPDATE_MODDIR="${SEMUPDATE_DEPOT}/content/data/${i}"
             SEMUPDATE_GITDIR="${SEMUPDATE_PWD}/data/${i}"
             git submodule update --init --depth 1 "data/${i}" || return 1
             pushd "${SEMUPDATE_GITDIR}" || return 1
@@ -107,14 +112,14 @@ semupdate_steam() {
         fi
         popd || return 1
     done
-    echo "steam" > "${SEMUPDATE_STEAM}/content/branch.txt" || return 1
-    unzip -o "${SEMUPDATE_DIR}/windows.zip" -d "${SEMUPDATE_STEAM}/content" || return 1
-    tar --gzip --extract --verbose --overwrite --file="${SEMUPDATE_DIR}/linux.tar.gz" --directory="${SEMUPDATE_STEAM}/content"
-    tar --gzip --extract --verbose --overwrite --file="${SEMUPDATE_DIR}/macos.tar.gz" --directory="${SEMUPDATE_STEAM}/content"
-    pushd "${SEMUPDATE_STEAM}" || return 1
+    echo "steam" > "${SEMUPDATE_DEPOT}/content/branch.txt" || return 1
+    unzip -o "${SEMUPDATE_DIR}/windows.zip" -d "${SEMUPDATE_DEPOT}/content" || return 1
+    tar --gzip --extract --verbose --overwrite --file="${SEMUPDATE_DIR}/linux.tar.gz" --directory="${SEMUPDATE_DEPOT}/content"
+    tar --gzip --extract --verbose --overwrite --file="${SEMUPDATE_DIR}/macos.tar.gz" --directory="${SEMUPDATE_DEPOT}/content"
+    pushd "${SEMUPDATE_DEPOT}" || return 1
     curl -sqL "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz" | tar zxvf -
     chmod --verbose +x linux32/steamcmd || return 1
-    export LD_LIBRARY_PATH="${SEMUPDATE_STEAM}/linux32:${SEMUPDATE_STEAM}/linux64:${LD_LIBRARY_PATH}"
+    export LD_LIBRARY_PATH="${SEMUPDATE_DEPOT}/linux32:${SEMUPDATE_DEPOT}/linux64:${LD_LIBRARY_PATH}"
     STEAM_ARGS="+login redeclipsenet ${STEAM_TOKEN} +run_app_build_http app_build_967460.vdf +quit"
     if [ "${STEAM_GUARD}" != "0" ]; then
         STEAM_ARGS="+set_steam_guard_code ${STEAM_GUARD} ${STEAM_ARGS}"
