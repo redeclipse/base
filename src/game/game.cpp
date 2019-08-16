@@ -1169,7 +1169,7 @@ namespace game
         }
         d->o.z += d->airmillis ? offset : d->height;
 
-        if(!m_freestyle(gamemode, mutators) && canregenimpulse(d) && d->impulse[IM_METER] > 0)
+        if(impulsemeter && !m_freestyle(gamemode, mutators) && canregenimpulse(d) && d->impulse[IM_METER] > 0)
         {
             bool onfloor = d->physstate >= PHYS_SLOPE || d->onladder || physics::liquidcheck(d),
                  collect = true; // collect time until we are able to act upon it

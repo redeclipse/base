@@ -523,7 +523,7 @@ GVAR(IDF_GAMEMOD, impulseslidedelay, 0, 1000, VAR_MAX); // minimum time between 
 GVAR(IDF_GAMEMOD, impulseslideinair, 0, 100, VAR_MAX); // minimum time in air for slide
 GVAR(IDF_GAMEMOD, impulsekickdelay, 0, 250, VAR_MAX); // minimum time between wall kicks/climbs/grabs
 
-GVAR(IDF_GAMEMOD, impulsemeter, 1, 30000, VAR_MAX); // impulse boost length; timer
+GVAR(IDF_GAMEMOD, impulsemeter, 0, 0, VAR_MAX); // impulse limiter
 GVAR(IDF_GAMEMOD, impulsecost, 1, 5000, VAR_MAX); // cost of impulse move
 GFVAR(IDF_GAMEMOD, impulsecostparkour, 0, 1, FVAR_MAX); // scale cost boost move
 GFVAR(IDF_GAMEMOD, impulsecostboost, 0, 1, FVAR_MAX); // scale cost boost move

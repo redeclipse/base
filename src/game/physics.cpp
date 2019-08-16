@@ -326,7 +326,7 @@ namespace physics
         {
             gameent *e = (gameent *)d;
             scale *= e->stunscale;
-            if(cost && !m_freestyle(game::gamemode, game::mutators))
+            if(impulsemeter && cost && !m_freestyle(game::gamemode, game::mutators))
             {
                 if(impulsecostscale > 0) cost = int(cost*scale);
                 int diff = impulsemeter-e->impulse[IM_METER];

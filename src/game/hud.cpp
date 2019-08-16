@@ -996,7 +996,7 @@ namespace hud
                     if(circlebarhealthtone) skewcolour(c.r, c.g, c.b, circlebarhealthtone);
                     break;
                 case 1:
-                    if(m_freestyle(game::gamemode, game::mutators)) continue;
+                    if(!impulsemeter || m_freestyle(game::gamemode, game::mutators)) continue;
                     val = 1-clamp(float(game::focus->impulse[IM_METER])/float(impulsemeter), 0.f, 1.f);
                     if(circlebarimpulsetone) skewcolour(c.r, c.g, c.b, circlebarimpulsetone);
                     break;
