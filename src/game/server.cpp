@@ -6165,6 +6165,7 @@ namespace server
                     clientinfo *cp = (clientinfo *)getinfo(lcn);
                     if(!hasclient(cp, ci)) havecn = false;
                     getuint(p);
+                    getuint(p);
                     uint flags = getuint(p);
                     vec pos, floorpos, vel, falling;
                     float yaw, pitch, roll;

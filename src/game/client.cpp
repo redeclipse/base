@@ -929,9 +929,12 @@ namespace client
     CLCOMMANDM(kdratio, "si", (char *who, int *n), intret(d->kdratio(*n!=0)));
 
     CLCOMMAND(allowimpulse, intret(physics::allowimpulse(d) ? 1 : 0));
+    CLCOMMAND(impulsemeter, intret(d->impulse[IM_METER])); // IM_METER = 0, IM_TYPE, IM_TIME, IM_REGEN, IM_COUNT, IM_COLLECT, IM_SLIP, IM_SLIDE, IM_JUMP, IM_MAX
     CLCOMMAND(impulsetype, intret(d->impulse[IM_TYPE]));
-    CLCOMMANDM(impulsetime, "b", (char *who, int *n), intret(d->impulsetime[*n >= 0 && *n < IM_T_MAX ? *n : d->impulse[IM_TYPE]]));
+    CLCOMMANDM(impulsetimer, "b", (char *who, int *n), intret(d->impulsetime[*n >= 0 && *n < IM_T_MAX ? *n : d->impulse[IM_TYPE]]));
+    CLCOMMAND(impulseregen, intret(d->impulse[IM_REGEN]));
     CLCOMMAND(impulsecount, intret(d->impulse[IM_COUNT]));
+    CLCOMMAND(impulsecollect, intret(d->impulse[IM_COLLECT]));
     CLCOMMAND(impulseslip, intret(d->impulse[IM_SLIP]));
     CLCOMMAND(impulsejump, intret(d->impulsetime[IM_T_JUMP]));
     CLCOMMAND(impulsewait, intret(d->impulsetime[IM_T_PUSHER]));
@@ -942,6 +945,7 @@ namespace client
     CLCOMMAND(bleeding, intret(d->bleedtime ? d->bleeding(lastmillis, d->bleedtime) : 0));
     CLCOMMAND(shocking, intret(d->shocktime ? d->shocking(lastmillis, d->shocktime) : 0));
     CLCOMMAND(regen, intret(regentime ? d->lastregen : 0));
+    CLCOMMAND(impulselast, intret(game::canregenimpulse(d) && d->impulse[IM_METER] > 0 && d->lastimpulsecollect ? (lastmillis-d->lastimpulsecollect)%1000 : 0));
 
     CLCOMMAND(spawnweap, intret(m_weapon(d->actortype, game::gamemode, game::mutators)));
     CLCOMMAND(spawndelay, intret(m_delay(d->actortype, game::gamemode, game::mutators, d->team)));
@@ -1934,6 +1938,7 @@ namespace client
         // 3 bits phys state, 2 bits move, 2 bits strafe, 2 bits turnside
         uint physstate = d->physstate | ((d->move&3)<<3) | ((d->strafe&3)<<5) | ((d->turnside&3)<<7);
         putuint(q, physstate);
+        putuint(q, d->impulse[IM_METER]);
         ivec o = ivec(vec(d->o.x, d->o.y, d->o.z-d->height).mul(DMF)), f = ivec(vec(d->floorpos.x, d->floorpos.y, d->floorpos.z).mul(DMF));
         uint vel = min(int(d->vel.magnitude()*DVELF), 0xFFFF), fall = min(int(d->falling.magnitude()*DVELF), 0xFFFF);
         // 3 bits position, 3 bits floor, 1 bit velocity, 3 bits falling, 1 bit conopen, X bits actions
@@ -2191,7 +2196,7 @@ namespace client
         {
             case N_POS: // position of another client
             {
-                int lcn = getuint(p), physstate = getuint(p), flags = getuint(p);
+                int lcn = getuint(p), physstate = getuint(p), meter = getuint(p), flags = getuint(p);
                 vec o, f, vel, falling;
                 float yaw, pitch, roll;
                 loopk(3)
@@ -2250,6 +2255,7 @@ namespace client
                 d->move = (physstate>>3)&2 ? -1 : (physstate>>3)&1;
                 d->strafe = (physstate>>5)&2 ? -1 : (physstate>>5)&1;
                 d->turnside = (physstate>>7)&2 ? -1 : (physstate>>7)&1;
+                d->impulse[IM_METER] = meter;
                 d->conopen = flags&(1<<10) ? true : false;
                 d->forcepos = flags&(1<<11) ? true : false;
                 loopk(AC_TOTAL)
@@ -2365,7 +2371,7 @@ namespace client
                         case SPHY_JUMP:
                         {
                             if(!proceed) break;
-                            t->doimpulse(IM_T_JUMP, lastmillis);
+                            t->doimpulse(0, IM_T_JUMP, lastmillis);
                             playsound(S_JUMP, t->o, t);
                             createshape(PART_SMOKE, int(t->radius), 0x222222, 21, 20, 250, t->feetpos(), 1, 1, -10, 0, 10.f);
                             break;
@@ -2373,7 +2379,7 @@ namespace client
                         case SPHY_BOOST: case SPHY_SLIDE: case SPHY_MELEE: case SPHY_KICK: case SPHY_VAULT: case SPHY_GRAB: case SPHY_SKATE:
                         {
                             if(!proceed) break;
-                            t->doimpulse(IM_T_BOOST+(st-SPHY_BOOST), lastmillis);
+                            t->doimpulse(0, IM_T_BOOST+(st-SPHY_BOOST), lastmillis);
                             game::impulseeffect(t);
                             if(st == SPHY_KICK || st == SPHY_VAULT || st == SPHY_GRAB || st == SPHY_SKATE || st == SPHY_MELEE)
                                 game::footstep(d);
@@ -2723,7 +2729,11 @@ namespace client
                     int trg = getint(p), heal = getint(p), amt = getint(p);
                     gameent *f = game::getclient(trg);
                     if(!f) break;
-                    if(!amt) f->resetresidual();
+                    if(!amt)
+                    {
+                        f->impulse[IM_METER] = 0;
+                        f->resetresidual();
+                    }
                     else if(amt > 0 && (!f->lastregen || lastmillis-f->lastregen >= 500)) playsound(S_REGEN, f->o, f);
                     f->health = heal;
                     f->lastregen = lastmillis;
@@ -3339,7 +3349,7 @@ namespace client
                             t->cplast = laptime;
                             t->cptime = getint(p);
                             t->points = getint(p);
-                            t->cpmillis = 0;
+                            t->cpmillis = t->impulse[IM_METER] = 0;
                             if(showlaptimes >= (t != game::focus ? (t->actortype > A_PLAYER ? 3 : 2) : 1))
                             {
                                 defformatstring(best, "%s", timestr(t->cptime, 1));

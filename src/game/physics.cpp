@@ -319,10 +319,29 @@ namespace physics
         return vel;
     }
 
-    float impulsevelocity(physent *d, float amt, int type, float redir, vec &keep)
+    float impulsevelocity(physent *d, float amt, int &cost, int type, float redir, vec &keep)
     {
         float scale = 1.f;
-        if(gameent::is(d)) scale *= ((gameent *)d)->stunscale;
+        if(gameent::is(d))
+        {
+            gameent *e = (gameent *)d;
+            scale *= e->stunscale;
+            if(cost && !m_freestyle(game::gamemode, game::mutators))
+            {
+                if(impulsecostscale > 0) cost = int(cost*scale);
+                int diff = impulsemeter-e->impulse[IM_METER];
+                if(cost > diff)
+                {
+                    if(type >= A_A_IMFIRST && impulsecostrelax&(1<<(type-A_A_IMFIRST)))
+                    {
+                        scale *= float(diff)/float(cost);
+                        cost = diff;
+                    }
+                    else return 0.f;
+                }
+            }
+            else cost = 0;
+        }
         float speed = (d->impulsespeed*amt*scale)+(keep.magnitude()*redir);
         keep.mul(1-min(redir, 1.f));
         return speed;
@@ -694,13 +713,14 @@ namespace physics
         bool pulse = melee ? !onfloor : (!launch && !onfloor ? ((d->actortype >= A_BOT || impulseaction&1) && d->action[AC_JUMP]) : false);
         if((!launch && !melee && !slide && !pulse) || !canimpulse(d, type, melee || slide)) return false;
         bool mchk = !melee || onfloor, action = mchk && (d->actortype >= A_BOT || melee || impulseaction&2);
-        int move = action ? d->move : 0, strafe = action ? d->strafe : 0;
+        int move = action ? d->move : 0, strafe = action ? d->strafe : 0,
+            cost = int(impulsecost*(melee ? impulsecostmelee : impulsecostboost));
         bool moving = mchk && (move || strafe);
         vec keepvel = inertia;
         float skew = melee ? impulsemelee : (slide ? impulseslide : (launch ? impulselaunch : (moving ? impulseboost : impulsejump))),
               redir = melee ? impulsemeleeredir : (slide ? impulseslideredir : (launch ? impulselaunchredir : (moving ? impulseboostredir : impulsejumpredir))),
-              force = impulsevelocity(d, skew, type, redir, keepvel);
-        if(force < 0) return false;
+              force = impulsevelocity(d, skew, cost, type, redir, keepvel);
+        if(force <= 0) return false;
         vec dir(0, 0, 1);
         if(launch || slide || moving || onfloor)
         {
@@ -717,7 +737,7 @@ namespace physics
         else if(d->action[AC_CROUCH]) dir.z = -impulsejumpdown;
         d->vel = vec(dir).mul(force).add(keepvel);
         if(launch) d->vel.z += jumpvel(d, true);
-        d->doimpulse(melee ? IM_T_MELEE : (slide ? IM_T_SLIDE : IM_T_BOOST), lastmillis);
+        d->doimpulse(cost, melee ? IM_T_MELEE : (slide ? IM_T_SLIDE : IM_T_BOOST), lastmillis);
         d->action[AC_JUMP] = false;
         client::addmsg(N_SPHY, "ri2", d->clientnum, melee ? SPHY_MELEE : (slide ? SPHY_SLIDE : SPHY_BOOST));
         game::impulseeffect(d);
@@ -737,15 +757,16 @@ namespace physics
         {
             if(d->action[AC_JUMP] && canimpulse(d, A_A_PARKOUR, true))
             {
+                int cost = int(impulsecost*impulsecostkick);
                 vec keepvel = vec(d->vel).add(d->falling);
-                float mag = impulsevelocity(d, impulsekick, A_A_PARKOUR, impulsekickredir, keepvel);
+                float mag = impulsevelocity(d, impulsekick, cost, A_A_PARKOUR, impulsekickredir, keepvel);
                 if(mag > 0)
                 {
                     vec rft;
                     float pitch = clamp(d->actortype >= A_BOT || !kickoffstyle ? kickoffangle : d->pitch, impulsekickpitchmin, impulsekickpitchmax);
                     vecfromyawpitch(d->yaw, pitch, 1, 0, rft);
                     d->vel = vec(rft).mul(mag).add(keepvel);
-                    d->doimpulse(IM_T_KICK, lastmillis);
+                    d->doimpulse(cost, IM_T_KICK, lastmillis);
                     d->turnmillis = PHYSMILLIS;
                     d->turnside = 0;
                     d->turnyaw = d->turnroll = 0;
@@ -770,7 +791,7 @@ namespace physics
                         d->vel.x *= scale;
                         d->vel.y *= scale;
                     }
-                    d->doimpulse(IM_T_JUMP, lastmillis);
+                    d->doimpulse(0, IM_T_JUMP, lastmillis);
                     d->action[AC_JUMP] = onfloor = false;
                     client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_JUMP);
                     playsound(S_JUMP, d->o, d);
@@ -849,15 +870,16 @@ namespace physics
                     }
                     if(!d->turnside && (parkour || vault) && iskick)
                     {
+                        int cost = int(impulsecost*(vault ? impulsecostvault : impulsecostclimb));
                         vec keepvel = vec(d->vel).add(d->falling);
-                        float mag = impulsevelocity(d, vault ? impulsevault : impulseclimb, A_A_PARKOUR, vault ? impulsevaultredir : impulseclimbredir, keepvel);
+                        float mag = impulsevelocity(d, vault ? impulsevault : impulseclimb, cost, A_A_PARKOUR, vault ? impulsevaultredir : impulseclimbredir, keepvel);
                         if(mag > 0)
                         {
                             vec rft;
                             vecfromyawpitch(d->yaw, vault || d->actortype >= A_BOT || !kickupstyle ? kickupangle : fabs(d->pitch), 1, 0, rft);
                             rft.reflect(face);
                             d->vel = vec(rft).mul(mag).add(keepvel);
-                            d->doimpulse(vault ? IM_T_VAULT : IM_T_KICK, lastmillis);
+                            d->doimpulse(cost, vault ? IM_T_VAULT : IM_T_KICK, lastmillis);
                             d->turnmillis = PHYSMILLIS;
                             d->turnside = 0;
                             d->turnyaw = d->turnroll = 0;
@@ -878,15 +900,16 @@ namespace physics
                         vecfromyawpitch(yaw, 0.f, 1, 0, rft);
                         if(!d->turnside)
                         {
+                            int cost = int(impulsecost*impulsecostparkour);
                             vec keepvel = vec(d->vel).add(d->falling);
-                            float mag = impulsevelocity(d, impulseparkour, A_A_PARKOUR, impulseparkourredir, keepvel);
+                            float mag = impulsevelocity(d, impulseparkour, cost, A_A_PARKOUR, impulseparkourredir, keepvel);
                             if(mag > 0)
                             {
                                 d->vel = vec(rft).mul(mag).add(keepvel);
                                 off = yaw-d->yaw;
                                 if(off > 180) off -= 360;
                                 else if(off < -180) off += 360;
-                                d->doimpulse(IM_T_SKATE, lastmillis);
+                                d->doimpulse(cost, IM_T_SKATE, lastmillis);
                                 d->turnmillis = PHYSMILLIS;
                                 d->turnside = side;
                                 d->turnyaw = off;
