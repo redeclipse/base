@@ -67,6 +67,8 @@ semupdate_appimage() {
     export COMMIT=$(git rev-parse ${REVISION})
     bash github-release.sh || return 1
     popd || return 1
+    # Clear the appimage building directory to save space.
+    rm -rf appimage
     return 0
 }
 
@@ -127,13 +129,12 @@ semupdate_steam() {
 
 if [ "${BRANCH_NAME}" = master ]; then
     semupdate_setup || exit 1
-    semupdate_wait || exit 1
     sudo ${SEMUPDATE_APT} update || exit 1
-    sudo ${SEMUPDATE_APT} -fy install build-essential multiarch-support gcc-multilib g++-multilib zlib1g-dev libsdl2-dev libsdl2-mixer-dev libsdl2-image-dev || exit 1 #jq zsync || exit 1
+    sudo ${SEMUPDATE_APT} -fy install build-essential multiarch-support gcc-multilib g++-multilib zlib1g-dev libsdl2-dev libsdl2-mixer-dev libsdl2-image-dev jq zsync || exit 1
+    pushd "${HOME}" || exit 1
+    semupdate_appimage || exit 1
+    popd || exit 1
+    semupdate_wait || exit 1
     semupdate_steam || exit 1
-#    echo "building ${BRANCH_NAME} appimages..."
-#    pushd "${HOME}" || return 1
-#    semupdate_appimage || exit 1
-#    popd || return 1
 fi
 echo "done."
