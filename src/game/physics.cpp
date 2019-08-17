@@ -715,14 +715,20 @@ namespace physics
         bool mchk = !melee || onfloor, action = mchk && (d->actortype >= A_BOT || melee || impulseaction&2);
         int move = action ? d->move : 0, strafe = action ? d->strafe : 0,
             cost = int(impulsecost*(melee ? impulsecostmelee : impulsecostboost));
-        bool moving = mchk && (move || strafe);
+        bool moving = mchk && (move || strafe), jumpdown = false;
+        if(!melee && !launch && !slide && !onfloor && (impulsejumpdownstyle || !moving) && d->action[AC_CROUCH])
+        {
+            moving = false;
+            jumpdown = true;
+        }
         vec keepvel = inertia;
         float skew = melee ? impulsemelee : (slide ? impulseslide : (launch ? impulselaunch : (moving ? impulseboost : impulsejump))),
               redir = melee ? impulsemeleeredir : (slide ? impulseslideredir : (launch ? impulselaunchredir : (moving ? impulseboostredir : impulsejumpredir))),
               force = impulsevelocity(d, skew, cost, type, redir, keepvel);
         if(force <= 0) return false;
         vec dir(0, 0, 1);
-        if(launch || slide || moving || onfloor)
+        if(jumpdown) dir.z = -impulsejumpdown;
+        else if(launch || slide || moving || onfloor)
         {
             float yaw = d->yaw, pitch = moving && (launch || pulse) ? d->pitch : 0;
             if(launch) pitch = clamp(pitch, impulselaunchpitchmin, impulselaunchpitchmax);
@@ -734,7 +740,6 @@ namespace physics
                 if(dir.z < 0) force += -dir.z*force;
             }
         }
-        else if(d->action[AC_CROUCH]) dir.z = -impulsejumpdown;
         d->vel = vec(dir).mul(force).add(keepvel);
         if(launch) d->vel.z += jumpvel(d, true);
         d->doimpulse(cost, melee ? IM_T_MELEE : (slide ? IM_T_SLIDE : IM_T_BOOST), lastmillis);
