@@ -616,7 +616,7 @@ namespace game
     void addsway(gameent *d)
     {
         float speed = physics::movevelocity(d), step = firstpersonbob ? firstpersonbobstep : firstpersonswaystep;
-        if(d->state == CS_ALIVE && (d->physstate >= PHYS_SLOPE || d->onladder || d->turnside))
+        if(d->state == CS_ALIVE && (d->physstate >= PHYS_SLOPE || d->onladder || d->impulse[IM_TYPE] == IM_T_PARKOUR))
         {
             swayspeed = max(speed*firstpersonswaymin, min(sqrtf(d->vel.x*d->vel.x + d->vel.y*d->vel.y), speed));
             swaydist += swayspeed*curtime/1000.0f;
@@ -1091,7 +1091,7 @@ namespace game
 
     void footstep(gameent *d, int curfoot)
     {
-        bool moving = d->move || d->strafe, liquid = physics::liquidcheck(d), onfloor = d->physstate >= PHYS_SLOPE || d->onladder || d->turnside;
+        bool moving = d->move || d->strafe, liquid = physics::liquidcheck(d), onfloor = d->physstate >= PHYS_SLOPE || d->onladder || d->impulse[IM_TYPE] == IM_T_PARKOUR;
         if(curfoot < 0 || (moving && (liquid || onfloor)))
         {
             float mag = d->vel.magnitude(), m = min(footstepsoundmax, footstepsoundmin), n = max(footstepsoundmax, footstepsoundmin);
@@ -1280,7 +1280,7 @@ namespace game
     {
         if(d->state != CS_ALIVE) return;
         vec pos = d->feetpos();
-        if(!d->turnside && (d->physstate >= PHYS_SLOPE || d->onladder || physics::liquidcheck(d)) && pos.z > 0 && d->floortime(lastmillis))
+        if(d->impulse[IM_TYPE] != IM_T_PARKOUR && (d->physstate >= PHYS_SLOPE || d->onladder || physics::liquidcheck(d)) && pos.z > 0 && d->floortime(lastmillis))
         {
             int mat = lookupmaterial(pos);
             if(!isclipped(mat&MATF_VOLUME) && ((mat&MATF_VOLUME) != int(MAT_LAVA)) && !(mat&MAT_DEATH)) d->floorpos = pos;
@@ -3453,7 +3453,7 @@ namespace game
             {
                 if(physics::liquidcheck(d) && d->physstate <= PHYS_FALL)
                     mdl.anim |= ((d->move || d->strafe || d->vel.z+d->falling.z > 0 ? int(ANIM_SWIM) : int(ANIM_SINK))|ANIM_LOOP)<<ANIM_SECONDARY;
-                else if(d->turnside) mdl.anim |= ((d->turnside > 0 ? ANIM_WALL_RUN_LEFT : ANIM_WALL_RUN_RIGHT)|ANIM_LOOP)<<ANIM_SECONDARY;
+                else if(d->impulse[IM_TYPE] == IM_T_PARKOUR) mdl.anim |= ((d->turnside > 0 ? ANIM_WALL_RUN_LEFT : (d->turnside < 0 ? ANIM_WALL_RUN_RIGHT : ANIM_WALL_JUMP))|ANIM_LOOP)<<ANIM_SECONDARY;
                 else if(d->physstate == PHYS_FALL && !d->onladder && d->impulse[IM_TYPE] > IM_T_JUMP && lastmillis-d->impulsetime[d->impulse[IM_TYPE]] <= 1000)
                 {
                     mdl.basetime2 = d->impulsetime[d->impulse[IM_TYPE]];
@@ -3741,7 +3741,7 @@ namespace game
                     case 0: default: break;
                 }
             }
-            if(d->turnside || d->impulsetime[IM_T_JUMP] || d->sliding(true)) impulseeffect(d, 1);
+            if(d->impulse[IM_TYPE] == IM_T_PARKOUR || d->impulsetime[IM_T_JUMP] || d->sliding(true)) impulseeffect(d, 1);
         }
         if(d->burntime && d->burning(lastmillis, d->burntime))
         {
