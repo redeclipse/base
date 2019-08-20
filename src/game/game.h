@@ -1632,7 +1632,11 @@ struct gameent : dynent, clientstate
     {
         airmillis = turnside = impulse[IM_COUNT] = 0;
         impulsetime[IM_T_JUMP] = impulsetime[IM_T_BOOST] = 0;
-        if(!wait) impulse[IM_TYPE] = impulsetime[IM_T_PUSHER] = 0;
+        if(!wait)
+        {
+            impulse[IM_TYPE] = IM_T_JUMP;
+            impulsetime[IM_T_JUMP] = impulsetime[IM_T_PUSHER] = 0;
+        }
     }
 
     void resetair(bool wait = false)
