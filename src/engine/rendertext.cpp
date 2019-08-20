@@ -356,7 +356,7 @@ static float draw_icon(Texture *&tex, const char *name, float x, float y, float 
         tex = t;
         glBindTexture(GL_TEXTURE_2D, tex->id);
     }
-    float h = curfont->mh*scale, w = (t->w*h)/float(t->h);
+    float h = curfont->maxh*scale, w = (t->w*h)/float(t->h);
     textvert(x,     y    ); gle::attribf(0, 0);
     textvert(x + w, y    ); gle::attribf(1, 0);
     textvert(x + w, y + h); gle::attribf(1, 1);
@@ -372,7 +372,7 @@ static float icon_width(const char *name, float scale)
     if(!*file) return 0;
     Texture *t = textureload(file, 3, true, false);
     if(!t) return 0;
-    float w = (t->w*curfont->mh*scale)/float(t->h);
+    float w = (t->w*curfont->maxh*scale)/float(t->h);
     return w;
 }
 
@@ -739,7 +739,7 @@ float key_widthf(const char *str)
     if(*str == '=') keyn = gettklp(++str);
     vector<char *> list;
     explodelist(keyn, list);
-    float width = 0, scale = curfont->mh*curfont->scale/float(curfont->defaulth)*curtextscale*textkeyimagescale;
+    float width = 0, scale = curfont->maxh*curfont->scale/float(curfont->defaulth)*curtextscale*textkeyimagescale;
     loopv(list)
     {
         if(i && textkeyseps) width += text_widthf(" or ");
@@ -767,7 +767,7 @@ static float draw_key(Texture *&tex, const char *str, float sx, float sy, bvec4 
     if(*str == '=') keyn = gettklp(++str);
     vector<char *> list;
     explodelist(keyn, list);
-    float width = 0, sh = curfont->mh*curfont->scale/float(curfont->defaulth)*curtextscale, h = sh*textkeyimagescale;
+    float width = 0, sh = curfont->maxh*curfont->scale/float(curfont->defaulth)*curtextscale, h = sh*textkeyimagescale;
     loopv(list)
     {
         if(i && textkeyseps)
