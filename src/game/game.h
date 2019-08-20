@@ -4,7 +4,7 @@
 #include "engine.h"
 
 #define VERSION_GAMEID "fps"
-#define VERSION_GAME 239
+#define VERSION_GAME 240
 #define VERSION_DEMOMAGIC "RED_ECLIPSE_DEMO"
 
 #define MAXAI 256
@@ -229,8 +229,8 @@ enum
     AC_ALL = (1<<AC_PRIMARY)|(1<<AC_SECONDARY)|(1<<AC_RELOAD)|(1<<AC_USE)|(1<<AC_JUMP)|(1<<AC_WALK)|(1<<AC_CROUCH)|(1<<AC_SPECIAL)|(1<<AC_DROP)|(1<<AC_AFFINITY)
 };
 enum { IM_METER = 0, IM_TYPE, IM_REGEN, IM_COUNT, IM_COLLECT, IM_SLIP, IM_MAX };
-enum { IM_T_JUMP = 0, IM_T_BOOST, IM_T_SLIDE, IM_T_MELEE, IM_T_KICK, IM_T_VAULT, IM_T_GRAB, IM_T_PARKOUR, IM_T_AFTER, IM_T_PUSHER, IM_T_MAX, IM_T_WALL = IM_T_MELEE };
-enum { SPHY_NONE = 0, SPHY_JUMP, SPHY_BOOST, SPHY_SLIDE, SPHY_MELEE, SPHY_KICK, SPHY_VAULT, SPHY_GRAB, SPHY_PARKOUR, SPHY_COOK, SPHY_MATERIAL, SPHY_EXTINGUISH, SPHY_BUFF, SPHY_MAX, SPHY_SERVER = SPHY_EXTINGUISH };
+enum { IM_T_JUMP = 0, IM_T_BOOST, IM_T_SLIDE, IM_T_MELEE, IM_T_KICK, IM_T_GRAB, IM_T_PARKOUR, IM_T_AFTER, IM_T_PUSHER, IM_T_MAX, IM_T_WALL = IM_T_MELEE };
+enum { SPHY_NONE = 0, SPHY_JUMP, SPHY_BOOST, SPHY_SLIDE, SPHY_MELEE, SPHY_KICK, SPHY_GRAB, SPHY_PARKOUR, SPHY_COOK, SPHY_MATERIAL, SPHY_EXTINGUISH, SPHY_BUFF, SPHY_MAX, SPHY_SERVER = SPHY_EXTINGUISH };
 
 #define CROUCHSTILL 0.7f
 #define CROUCHMOVING 0.85f
@@ -1150,9 +1150,9 @@ struct gameent : dynent, clientstate
     editinfo *edit;
     ai::aiinfo *ai;
     int team, clientnum, privilege, projid, lastnode, checkpoint, cplast, respawned, suicided, lastupdate, lastpredict, plag, ping, lastflag, totaldamage,
-        actiontime[AC_MAX], impulse[IM_MAX], impulsetime[IM_T_MAX], smoothmillis, turnmillis, turnside, aschan, cschan, vschan, wschan, pschan, sschan[2],
+        actiontime[AC_MAX], impulse[IM_MAX], impulsetime[IM_T_MAX], smoothmillis, turnside, aschan, cschan, vschan, wschan, pschan, sschan[2],
         lasthit, lastteamhit, lastkill, lastattacker, lastpoints, quake, lastfoot, lastimpulsecollect;
-    float deltayaw, deltapitch, newyaw, newpitch, turnyaw, turnroll, stunscale, stungravity;
+    float deltayaw, deltapitch, newyaw, newpitch, stunscale, stungravity;
     vec head, torso, muzzle, origin, eject[2], waist, jet[3], legs, hrad, trad, lrad, toe[2];
     bool action[AC_MAX], conopen, k_up, k_down, k_left, k_right, obliterated, headless;
     string hostip, name, handle, steamid, info, obit;
@@ -1163,7 +1163,7 @@ struct gameent : dynent, clientstate
     vector<int> vitems;
 
     gameent() : edit(NULL), ai(NULL), team(T_NEUTRAL), clientnum(-1), privilege(PRIV_NONE), projid(0), checkpoint(-1), cplast(0), lastupdate(0), lastpredict(0), plag(0), ping(0),
-        totaldamage(0), smoothmillis(-1), turnmillis(0), lastattacker(-1), lastpoints(0), quake(0), conopen(false), k_up(false), k_down(false), k_left(false), k_right(false), obliterated(false)
+        totaldamage(0), smoothmillis(-1), lastattacker(-1), lastpoints(0), quake(0), conopen(false), k_up(false), k_down(false), k_left(false), k_right(false), obliterated(false)
     {
         state = CS_DEAD;
         type = ENT_PLAYER;
@@ -1419,8 +1419,7 @@ struct gameent : dynent, clientstate
     {
         loopi(IM_MAX) impulse[i] = 0;
         loopi(IM_T_MAX) impulsetime[i] = 0;
-        lasthit = lastkill = quake = turnmillis = turnside = lastimpulsecollect = 0;
-        turnroll = turnyaw = 0;
+        lasthit = lastkill = quake = turnside = lastimpulsecollect = 0;
         lastteamhit = lastflag = respawned = suicided = lastnode = lastfoot = -1;
         obit[0] = '\0';
         obliterated = headless = false;
@@ -1638,7 +1637,7 @@ struct gameent : dynent, clientstate
         resetjump(wait);
     }
 
-    void doimpulse(int cost, int type, int millis)
+    void doimpulse(int cost, int type, int millis, int side = 0)
     {
         if(type < 0 || type >= IM_T_MAX) return;
         impulse[IM_METER] += cost;
@@ -1656,6 +1655,7 @@ struct gameent : dynent, clientstate
             if(type != IM_T_PUSHER) resetphys(type > IM_T_JUMP && type < IM_T_WALL);
             else resetair(true);
         }
+        turnside = side;
     }
 
     void addicon(int type, int millis, int fade, int value = 0)

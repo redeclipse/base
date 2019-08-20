@@ -3413,7 +3413,7 @@ namespace game
             if(lastoffset)
             {
                 float zoffset = (max(d->zradius-d->height, 0.f)+(d->radius*0.5f))*firstpersonbodyzoffset;
-                if(!onfloor && (melee || d->sliding(true) || d->impulse[IM_TYPE] == IM_T_KICK || d->impulse[IM_TYPE] == IM_T_VAULT || d->impulse[IM_TYPE] == IM_T_GRAB))
+                if(!onfloor && (melee || d->sliding(true) || d->impulse[IM_TYPE] == IM_T_KICK || d->impulse[IM_TYPE] == IM_T_GRAB))
                 {
                     int lmillis = d->airtime(lastmillis);
                     if(lmillis < 100) zoffset *= lmillis/100.f;
@@ -3457,8 +3457,7 @@ namespace game
                 else if(d->physstate == PHYS_FALL && !d->onladder && d->impulse[IM_TYPE] > IM_T_JUMP && lastmillis-d->impulsetime[d->impulse[IM_TYPE]] <= 1000)
                 {
                     mdl.basetime2 = d->impulsetime[d->impulse[IM_TYPE]];
-                    if(d->impulse[IM_TYPE] == IM_T_KICK || d->impulse[IM_TYPE] == IM_T_VAULT || d->impulse[IM_TYPE] == IM_T_GRAB)
-                        mdl.anim |= ANIM_WALL_JUMP<<ANIM_SECONDARY;
+                    if(d->impulse[IM_TYPE] == IM_T_KICK || d->impulse[IM_TYPE] == IM_T_GRAB) mdl.anim |= ANIM_WALL_JUMP<<ANIM_SECONDARY;
                     else if(melee)
                     {
                         mdl.anim |= ANIM_FLYKICK<<ANIM_SECONDARY;
