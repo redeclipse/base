@@ -596,9 +596,9 @@ void saveslotconfig(stream *h, Slot &s, int index, bool decal)
     h->printf("\n");
 }
 
-void save_config(char *mname)
+void save_config(char *mname, bool forcesave = false)
 {
-    if(autosavebackups) backup(mname, ".cfg", hdr.revision, autosavebackups > 2, !(autosavebackups%2));
+    if(autosavebackups && !forcesave) backup(mname, ".cfg", hdr.revision, autosavebackups > 2, !(autosavebackups%2));
     defformatstring(fname, "%s.cfg", mname);
     stream *h = openutf8file(fname, "w");
     if(!h) { conoutf("\frCould not write config to %s", fname); return; }
@@ -695,9 +695,9 @@ ICOMMAND(0, savemapconfig, "s", (char *mname), if(!(identflags&IDF_WORLD)) save_
 
 VARF(IDF_PERSIST, mapshotsize, 0, 512, INT_MAX-1, mapshotsize -= mapshotsize%2);
 
-void save_mapshot(char *mname)
+void save_mapshot(char *mname, bool forcesave = false)
 {
-    if(autosavebackups) backup(mname, ifmtexts[imageformat], hdr.revision, autosavebackups > 2, !(autosavebackups%2));
+    if(autosavebackups && !forcesave) backup(mname, ifmtexts[imageformat], hdr.revision, autosavebackups > 2, !(autosavebackups%2));
     GLuint tex;
     glGenTextures(1, &tex);
     glPixelStorei(GL_PACK_ALIGNMENT, 1);
@@ -733,11 +733,12 @@ void save_world(const char *mname, bool nodata, bool forcesave)
     stream *f = opengzfile(mapfile, "wb");
     if(!f) { conoutf("\frError saving %s to %s: file error", mapname, mapfile); return; }
 
-    if(autosavemapshot || forcesave) save_mapshot(mapname);
-    if(autosaveconfigs || forcesave) save_config(mapname);
+    if(autosavemapshot || forcesave) save_mapshot(mapname, forcesave);
+    if(autosaveconfigs || forcesave) save_config(mapname, forcesave);
     if(maptext[0] && (autosavetexts || forcesave))
     {
         defformatstring(fname, "%s.txt", mapname);
+        if(autosavebackups && !forcesave) backup(mapname, ".txt", hdr.revision, autosavebackups > 2, !(autosavebackups%2));
         stream *h = openutf8file(fname, "w");
         if(!h) conoutf("\frCould not write text to %s", fname);
         else
