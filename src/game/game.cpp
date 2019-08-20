@@ -618,7 +618,7 @@ namespace game
         float speed = physics::movevelocity(d), step = firstpersonbob ? firstpersonbobstep : firstpersonswaystep;
         if(d->state == CS_ALIVE && (d->physstate >= PHYS_SLOPE || d->onladder || d->impulse[IM_TYPE] == IM_T_PARKOUR))
         {
-            swayspeed = max(speed*firstpersonswaymin, min(sqrtf(d->vel.squaredlen()), speed));
+            swayspeed = max(speed*firstpersonswaymin, min(d->vel.magnitude(), speed));
             swaydist += swayspeed*curtime/1000.0f;
             swaydist = fmod(swaydist, 2*step);
             bobdist += swayspeed*curtime/1000.0f;
