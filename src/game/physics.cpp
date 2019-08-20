@@ -755,6 +755,7 @@ namespace physics
         if(d->impulse[IM_TYPE] == IM_T_PARKOUR && (!allowimpulse(d, A_A_PARKOUR) || (impulseparkourlen && lastmillis-d->impulsetime[IM_T_PARKOUR] > impulseparkourlen) || d->vel.iszero()))
         {
             d->doimpulse(0, IM_T_AFTER, lastmillis);
+            client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_AFTER);
             d->resetphys(true);
             onfloor = false;
         }
@@ -808,8 +809,12 @@ namespace physics
                 d->o = oldpos;
                 if(collided && collideplayer && gameent::is(collideplayer))
                 {
+                    if(d->impulse[IM_TYPE] == IM_T_PARKOUR)
+                    {
+                        d->doimpulse(0, IM_T_AFTER, lastmillis);
+                        client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_AFTER);
+                    }
                     impulseplayer(d, onfloor, vec(d->vel).add(d->falling), true);
-                    if(d->impulse[IM_TYPE] == IM_T_PARKOUR) d->doimpulse(0, IM_T_AFTER, lastmillis);
                     loopv(projs::projs)
                     {
                         projent *p = projs::projs[i];
@@ -936,6 +941,7 @@ namespace physics
                 }
             }
             d->doimpulse(0, IM_T_AFTER, lastmillis);
+            client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_AFTER);
         }
     }
 

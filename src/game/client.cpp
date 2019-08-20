@@ -2376,7 +2376,7 @@ namespace client
                             createshape(PART_SMOKE, int(t->radius), 0x222222, 21, 20, 250, t->feetpos(), 1, 1, -10, 0, 10.f);
                             break;
                         }
-                        case SPHY_BOOST: case SPHY_SLIDE: case SPHY_MELEE: case SPHY_KICK: case SPHY_GRAB: case SPHY_PARKOUR:
+                        case SPHY_BOOST: case SPHY_SLIDE: case SPHY_MELEE: case SPHY_KICK: case SPHY_GRAB: case SPHY_PARKOUR: case SPHY_AFTER:
                         {
                             if(!proceed) break;
                             t->doimpulse(0, IM_T_BOOST+(st-SPHY_BOOST), lastmillis);
