@@ -1223,7 +1223,7 @@ struct gameent : dynent, clientstate
 
     void addjitter(int weap, int millis, int delay, float yawmin, float yawmax, float pitchmin, float pitchmax)
     {
-        if(delay <= 0 || (yaw == 0 && pitch == 0)) return;
+        if(delay <= 0) return;
         jitterevent &s = jitters.add();
         s.weap = weap;
         s.millis = s.last = millis;
@@ -1255,7 +1255,11 @@ struct gameent : dynent, clientstate
                 {
                     float scale = force*(1.f-(float(mtime+j+1)/float(s.delay)));
                     yaw += s.yaw*scale;
+                    while(yaw < 0.0f) yaw += 360.0f;
+                    while(yaw >= 360.0f) yaw -= 360.0f;
                     pitch += s.pitch*scale;
+                    if(pitch > 89.9f) pitch = 89.9f;
+                    if(pitch < -89.9f) pitch = -89.9f;
                 }
                 s.last = millis;
             }
