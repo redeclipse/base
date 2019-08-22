@@ -725,7 +725,11 @@ namespace physics
               force = impulsevelocity(d, skew, cost, type, redir, keepvel);
         if(force <= 0) return false;
         vec dir(0, 0, 1);
-        if(jumpdown) dir.z = -impulsejumpdown;
+        if(jumpdown)
+        {
+            dir.z = -1;
+            force *= impulsejumpdown;
+        }
         else if(launch || slide || moving || onfloor)
         {
             float yaw = d->yaw, pitch = moving && (launch || pulse) ? d->pitch : 0;
