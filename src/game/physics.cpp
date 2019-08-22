@@ -16,9 +16,7 @@ namespace physics
     FVAR(IDF_PERSIST, impulseparkouryaw, 0, 150, 180); // determines the minimum yaw angle to switch between parkour climb and run
     VAR(IDF_PERSIST, impulsemethod, 0, 3, 3); // determines which impulse method to use, 0 = none, 1 = launch, 2 = slide, 3 = both
     VAR(IDF_PERSIST, impulseaction, 0, 3, 3); // determines how impulse action works, 0 = off, 1 = impulse jump, 2 = impulse boost, 3 = both
-    FVAR(IDF_PERSIST, impulseroll, 0, 15, 89);
 
-    VAR(IDF_PERSIST, jumpstyle, 0, 1, 1); // 0 = unpressed on action, 1 = remains pressed
     VAR(IDF_PERSIST, crouchstyle, 0, 0, 2); // 0 = press and hold, 1 = double-tap toggle, 2 = toggle
     VAR(IDF_PERSIST, walkstyle, 0, 0, 2); // 0 = press and hold, 1 = double-tap toggle, 2 = toggle
     VAR(IDF_PERSIST, grabstyle, 0, 2, 2); // 0 = up=up down=down, 1 = up=down down=up, 2 = up=up, down=up
