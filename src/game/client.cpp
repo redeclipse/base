@@ -2381,7 +2381,7 @@ namespace client
                             if(!proceed) break;
                             t->doimpulse(0, IM_T_BOOST+(st-SPHY_BOOST), lastmillis);
                             game::impulseeffect(t);
-                            if(st == SPHY_KICK || st == SPHY_GRAB || st == SPHY_PARKOUR || st == SPHY_MELEE) game::footstep(d);
+                            if(st == SPHY_KICK || st == SPHY_PARKOUR || st == SPHY_MELEE) game::footstep(d);
                             break;
                         }
                         case SPHY_COOK:
