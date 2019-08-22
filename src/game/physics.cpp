@@ -1083,7 +1083,7 @@ namespace physics
     }
 
     // main physics routine, moves an actor for a time step
-    // moveres indicated the physics precision (which is lower for monsters and multiplayer prediction)
+    // moveres indicates the physics precision (which is lower for monsters and multiplayer prediction)
     // local is false for multiplayer prediction
 
     bool moveplayer(physent *pl, int moveres, bool local, int millis)

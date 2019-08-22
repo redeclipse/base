@@ -221,7 +221,7 @@ namespace ai
             if(at == A_BOT && showaiinfo && client::showpresence >= (client::waiting(false) ? 2 : 1))
             {
                 if(showaiinfo > 1) conoutft(CON_EVENT, "\fg%s assigned to %s at skill %d", game::colourname(d, name), m, sk);
-                else conoutft(CON_EVENT, "\fg%s was added to the game", game::colourname(d, name));//, m, sk);
+                else conoutft(CON_EVENT, "\fg%s was added to the game", game::colourname(d, name));
             }
             game::specreset(d);
             resetthisguy = true;
