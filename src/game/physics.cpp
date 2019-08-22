@@ -233,9 +233,10 @@ namespace physics
         return from;
     }
 
-    float jumpvel(physent *d, bool liquid)
+    float jumpvel(physent *d, bool liquid = true)
     {
-        float vel = d->jumpspeed*(liquid ? liquidmerge(d, 1.f, PHYS(liquidspeed)) : 1.f);
+        float vel = d->jumpspeed;
+        if(liquid && d->inliquid) vel *= liquidmerge(d, 1.f, PHYS(liquidspeed));
         if(gameent::is(d))
         {
             gameent *e = (gameent *)d;
@@ -743,7 +744,7 @@ namespace physics
             }
         }
         d->vel = vec(dir).mul(force).add(keepvel);
-        if(launch) d->vel.z += jumpvel(d, true);
+        if(launch) d->vel.z += jumpvel(d);
         d->doimpulse(cost, melee ? IM_T_MELEE : (slide ? IM_T_SLIDE : IM_T_BOOST), lastmillis);
         d->action[AC_JUMP] = false;
         client::addmsg(N_SPHY, "ri2", d->clientnum, melee ? SPHY_MELEE : (slide ? SPHY_SLIDE : SPHY_BOOST));
@@ -786,7 +787,7 @@ namespace physics
         {
             if(onfloor && d->action[AC_JUMP] && AA(d->actortype, abilities)&(1<<A_A_JUMP))
             {
-                float force = jumpvel(d, true);
+                float force = jumpvel(d);
                 if(force > 0)
                 {
                     d->vel.z += force;
@@ -1072,7 +1073,7 @@ namespace physics
             }
             pl->submerged = found ? found/20.f : 1.f;
             if(local && pl->physstate < PHYS_SLIDE && sub >= 0.5f && pl->submerged < 0.5f && pl->vel.z > 1e-3f)
-                pl->vel.z = max(pl->vel.z, max(jumpvel(pl, false), max(gravityvel(pl), 50.f)));
+                pl->vel.z = max(pl->vel.z, max(jumpvel(pl, false), gravityvel(pl)));
         }
         else pl->submerged = 0;
         pl->onladder = flagmat&MAT_LADDER;
