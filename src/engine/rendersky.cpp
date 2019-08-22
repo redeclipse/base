@@ -736,7 +736,7 @@ void initskybox()
     const char *curskybox = getskybox();
     if(curskybox[0]) loadsky(curskybox, sky);
     const char *curcloudbox = getcloudbox();
-    if(curcloudbox[0]) loadsky(curskybox, sky);
+    if(curcloudbox[0]) loadsky(curskybox, clouds);
     const char *curcloudlayer = getcloudlayer();
     if(curcloudlayer[0]) cloudoverlay = loadskyoverlay(curcloudlayer);
     const char *curenvlayer = getenvlayer();
