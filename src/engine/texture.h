@@ -568,7 +568,6 @@ struct TextureAnim
     TextureAnim() : count(0), delay(0), throb(false) {}
 };
 
-
 struct Texture
 {
     enum

@@ -2621,6 +2621,143 @@ ICOMMAND(0, getvshaderparamnames, "i", (int *tex),
     stringret(newstring(str.getbuf(), str.length()-1));
 });
 
+ICOMMAND(0, getvshadername, "i", (int *tex), result(lookupvslot(*tex, false).slot->shader->name));
+ICOMMAND(0, getvshadertype, "i", (int *tex), intret(lookupvslot(*tex, false).slot->shader->type));
+
+ICOMMAND(0, getvindex, "i", (int *tex), intret(lookupvslot(*tex, false).slot->index));
+ICOMMAND(0, getvsmooth, "i", (int *tex), intret(lookupvslot(*tex, false).slot->smooth));
+ICOMMAND(0, getvtexmask, "i", (int *tex), intret(lookupvslot(*tex, false).slot->texmask));
+
+ICOMMAND(0, getvgrassname, "i", (int *tex),  result(lookupvslot(*tex, false).slot->grass));
+ICOMMAND(0, getvgrasscolour, "i", (int *tex),
+{
+    VSlot &vslot = lookupvslot(*tex, false);
+    defformatstring(str, "%s %s %s", floatstr(vslot.slot->grasscolor.r), floatstr(vslot.slot->grasscolor.g), floatstr(vslot.slot->grasscolor.b));
+    result(str);
+});
+ICOMMAND(0, getvgrassblend, "i", (int *tex), floatret(lookupvslot(*tex, false).slot->grassblend));
+ICOMMAND(0, getvgrasscale, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grassscale));
+ICOMMAND(0, getvgrassheight, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grassheight));
+
+ICOMMAND(0, getvgrasstexname, "i", (int *tex), result(lookupvslot(*tex, false).slot->grasstex->name));
+ICOMMAND(0, getvgrasstextype, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->type));
+ICOMMAND(0, getvgrasstexwidth, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->w));
+ICOMMAND(0, getvgrasstexheight, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->h));
+ICOMMAND(0, getvgrasstexxs, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->xs));
+ICOMMAND(0, getvgrasstexys, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->ys));
+ICOMMAND(0, getvgrasstexbpp, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->bpp));
+ICOMMAND(0, getvgrasstexclamp, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->clamp));
+ICOMMAND(0, getvgrasstexframe, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->frame));
+ICOMMAND(0, getvgrasstexdelay, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->delay));
+ICOMMAND(0, getvgrasstexlast, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->last));
+ICOMMAND(0, getvgrasstexthrob, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->throb ? 1 : 0));
+ICOMMAND(0, getvgrasstextype, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->type));
+ICOMMAND(0, getvgrasstexframes, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->frames.length()));
+
+ICOMMAND(0, getvtexcount, "ii", (int *tex, int *sts), intret(lookupvslot(*tex, false).slot->sts.length()));
+ICOMMAND(0, getvtexname, "ii", (int *tex, int *sts),
+{
+    VSlot &vslot = lookupvslot(*tex, false);
+    if(!vslot.slot->sts.inrange(*sts)) return;
+    result(vslot.slot->sts[*sts].name);
+});
+ICOMMAND(0, getvtextype, "ii", (int *tex, int *sts),
+{
+    VSlot &vslot = lookupvslot(*tex, false);
+    if(!vslot.slot->sts.inrange(*sts)) return;
+    intret(vslot.slot->sts[*sts].type);
+});
+ICOMMAND(0, getvtexcombined, "ii", (int *tex, int *sts),
+{
+    VSlot &vslot = lookupvslot(*tex, false);
+    if(!vslot.slot->sts.inrange(*sts)) return;
+    intret(vslot.slot->sts[*sts].combined);
+});
+ICOMMAND(0, getvteximgname, "ii", (int *tex, int *sts),
+{
+    VSlot &vslot = lookupvslot(*tex, false);
+    if(!vslot.slot->sts.inrange(*sts) || !vslot.slot->sts[*sts].t) return;
+    result(vslot.slot->sts[*sts].t->name);
+});
+ICOMMAND(0, getvteximgtype, "ii", (int *tex, int *sts),
+{
+    VSlot &vslot = lookupvslot(*tex, false);
+    if(!vslot.slot->sts.inrange(*sts) || !vslot.slot->sts[*sts].t) return;
+    intret(vslot.slot->sts[*sts].t->type);
+});
+ICOMMAND(0, getvteximgwidth, "ii", (int *tex, int *sts),
+{
+    VSlot &vslot = lookupvslot(*tex, false);
+    if(!vslot.slot->sts.inrange(*sts) || !vslot.slot->sts[*sts].t) return;
+    intret(vslot.slot->sts[*sts].t->w);
+});
+ICOMMAND(0, getvteximgheight, "ii", (int *tex, int *sts),
+{
+    VSlot &vslot = lookupvslot(*tex, false);
+    if(!vslot.slot->sts.inrange(*sts) || !vslot.slot->sts[*sts].t) return;
+    intret(vslot.slot->sts[*sts].t->h);
+});
+ICOMMAND(0, getvteximgxs, "ii", (int *tex, int *sts),
+{
+    VSlot &vslot = lookupvslot(*tex, false);
+    if(!vslot.slot->sts.inrange(*sts) || !vslot.slot->sts[*sts].t) return;
+    intret(vslot.slot->sts[*sts].t->xs);
+});
+ICOMMAND(0, getvteximgys, "ii", (int *tex, int *sts),
+{
+    VSlot &vslot = lookupvslot(*tex, false);
+    if(!vslot.slot->sts.inrange(*sts) || !vslot.slot->sts[*sts].t) return;
+    intret(vslot.slot->sts[*sts].t->ys);
+});
+ICOMMAND(0, getvteximgbpp, "ii", (int *tex, int *sts),
+{
+    VSlot &vslot = lookupvslot(*tex, false);
+    if(!vslot.slot->sts.inrange(*sts) || !vslot.slot->sts[*sts].t) return;
+    intret(vslot.slot->sts[*sts].t->bpp);
+});
+ICOMMAND(0, getvteximgclamp, "ii", (int *tex, int *sts),
+{
+    VSlot &vslot = lookupvslot(*tex, false);
+    if(!vslot.slot->sts.inrange(*sts) || !vslot.slot->sts[*sts].t) return;
+    intret(vslot.slot->sts[*sts].t->clamp);
+});
+ICOMMAND(0, getvteximgframe, "ii", (int *tex, int *sts),
+{
+    VSlot &vslot = lookupvslot(*tex, false);
+    if(!vslot.slot->sts.inrange(*sts) || !vslot.slot->sts[*sts].t) return;
+    intret(vslot.slot->sts[*sts].t->frame);
+});
+ICOMMAND(0, getvteximgdelay, "ii", (int *tex, int *sts),
+{
+    VSlot &vslot = lookupvslot(*tex, false);
+    if(!vslot.slot->sts.inrange(*sts) || !vslot.slot->sts[*sts].t) return;
+    intret(vslot.slot->sts[*sts].t->delay);
+});
+ICOMMAND(0, getvteximglast, "ii", (int *tex, int *sts),
+{
+    VSlot &vslot = lookupvslot(*tex, false);
+    if(!vslot.slot->sts.inrange(*sts) || !vslot.slot->sts[*sts].t) return;
+    intret(vslot.slot->sts[*sts].t->last);
+});
+ICOMMAND(0, getvteximgmipmap, "ii", (int *tex, int *sts),
+{
+    VSlot &vslot = lookupvslot(*tex, false);
+    if(!vslot.slot->sts.inrange(*sts) || !vslot.slot->sts[*sts].t) return;
+    intret(vslot.slot->sts[*sts].t->mipmap ? 1 : 0);
+});
+ICOMMAND(0, getvteximgthrob, "ii", (int *tex, int *sts),
+{
+    VSlot &vslot = lookupvslot(*tex, false);
+    if(!vslot.slot->sts.inrange(*sts) || !vslot.slot->sts[*sts].t) return;
+    intret(vslot.slot->sts[*sts].t->throb ? 1 : 0);
+});
+ICOMMAND(0, getvteximgframes, "ii", (int *tex, int *sts),
+{
+    VSlot &vslot = lookupvslot(*tex, false);
+    if(!vslot.slot->sts.inrange(*sts) || !vslot.slot->sts[*sts].t) return;
+    intret(vslot.slot->sts[*sts].t->frames.length());
+});
+
 void mpedittex(int tex, int allfaces, selinfo &sel, bool local)
 {
     if(local)
