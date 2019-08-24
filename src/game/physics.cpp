@@ -42,15 +42,15 @@ namespace physics
         switch(type)
         {
             case A_A_PARKOUR:
-                time = max(max(max(e->impulsetime[IM_T_PARKOUR], e->impulsetime[IM_T_MELEE]), e->impulsetime[IM_T_KICK]), e->impulsetime[IM_T_GRAB]);
+                time = max(max(e->impulsetime[IM_T_PARKOUR], e->impulsetime[IM_T_MELEE]), e->impulsetime[IM_T_GRAB]);
                 delay = impulseparkourdelay;
                 break;
             case A_A_SLIDE:
                 time = e->impulsetime[IM_T_SLIDE];
                 delay = impulseslidedelay;
                 break;
-            default:
-                time = e->impulsetime[e->impulse[IM_TYPE]];
+            case A_A_BOOST: default:
+                time = max(e->impulsetime[IM_T_JUMP], max(e->impulsetime[IM_T_BOOST], e->impulsetime[IM_T_KICK]));
                 delay = e->impulse[IM_TYPE] == IM_T_JUMP ? impulsejumpdelay : impulseboostdelay;
                 break;
         }
@@ -764,11 +764,11 @@ namespace physics
         }
         if(d->impulse[IM_TYPE] == IM_T_PARKOUR)
         {
-            if(d->action[AC_JUMP] && canimpulse(d, A_A_PARKOUR, true))
+            if(d->action[AC_JUMP] && canimpulse(d, A_A_BOOST, true))
             {
                 int cost = int(impulsecost*impulsecostkick);
                 vec keepvel = vec(d->vel).add(d->falling);
-                float mag = impulsevelocity(d, impulsekick, cost, A_A_PARKOUR, impulsekickredir, keepvel);
+                float mag = impulsevelocity(d, impulsekick, cost, A_A_BOOST, impulsekickredir, keepvel);
                 if(mag > 0)
                 {
                     vec rft;
