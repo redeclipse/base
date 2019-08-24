@@ -192,15 +192,26 @@ void toggleedit(bool force)
     //keyrepeat(editmode);
 }
 
+int selinview()
+{
+    if(!editmode || haveselent()) return -1;
+    vec o(sel.o), s(sel.s);
+    s.mul(sel.grid / 2.0f);
+    o.add(s);
+    return isvisiblesphere(max(s.x, s.y, s.z), o);
+}
+ICOMMAND(0, getselvfc, "", (), intret(selinview()));
+ICOMMAND(0, getselvisible, "", (), {
+    int vfc = selinview();
+    intret(vfc < 0 || vfc != VFC_NOT_VISIBLE ? 0 : 1);
+});
+
 bool noedit(bool view, bool msg)
 {
     if(!editmode) { conoutf("\frOperation only allowed in edit mode"); return true; }
     if(view || haveselent()) return false;
-    vec o(sel.o), s(sel.s);
-    s.mul(sel.grid / 2.0f);
-    o.add(s);
-    float r = max(s.x, s.y, s.z);
-    bool viewable = (isvisiblesphere(r, o) != VFC_NOT_VISIBLE);
+    int vfc = selinview();
+    bool viewable = (vfc >= 0 && vfc != VFC_NOT_VISIBLE);
     if(!viewable && msg) conoutf("\frSelection not in view");
     return !viewable;
 }
@@ -242,6 +253,29 @@ ICOMMAND(0, selmoved, "", (), { if(noedit(true)) return; intret(sel.o != savedse
 ICOMMAND(0, selsave, "", (), { if(noedit(true)) return; savedsel = sel; });
 ICOMMAND(0, selrestore, "", (), { if(noedit(true)) return; sel = savedsel; });
 ICOMMAND(0, selswap, "", (), { if(noedit(true)) return; swap(sel, savedsel); });
+
+void setorient(int n)
+{
+    if(noedit()) return;
+    int m = clamp(n, 0, O_ANY-1);
+    sel.cx = 0;
+    sel.cy = 0;
+    sel.cxs = sel.s[R[dimension(m)]]*2;
+    sel.cys = sel.s[C[dimension(m)]]*2;
+    sel.orient = m;
+}
+ICOMMAND(0, setselorient, "i", (int *n), setorient(*n));
+ICOMMAND(0, getselorient, "", (), intret(sel.orient));
+
+void addorient(int n)
+{
+    if(noedit()) return;
+    int m = sel.orient+n;
+    while(m >= O_ANY) m -= O_ANY;
+    while(m < 0) m += O_ANY;
+    setorient(m);
+}
+ICOMMAND(0, addselorient, "i", (int *n), addorient(*n));
 
 ///////// selection support /////////////
 
