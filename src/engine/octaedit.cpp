@@ -265,12 +265,9 @@ void setorient(int n)
     sel.orient = m;
 }
 ICOMMAND(0, selorient, "iN$", (int *n, int *numargs, ident *id), {
-    switch(*numargs)
-    {
-         case 1: setorient(*n); break;
-         case -1: intret(sel.orient); break;
-         case 0: default: printvar(id); break;
-    }
+    if(*numargs > 0) setorient(*n);
+    else if(*numargs < 0) intret(sel.orient);
+    else printvar(id, sel.orient);
 });
 
 void addorient(int n)

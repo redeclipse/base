@@ -2297,28 +2297,33 @@ void freecode(uint *code)
     }
 }
 
+void printvar(ident *id, int n, int maxval)
+{
+    if(id->flags&IDF_HEX && maxval == 0xFFFFFF)
+        conoutft(CON_DEBUG, "%s = 0x%.6X (%d, %d, %d)", id->name, n, (n>>16)&0xFF, (n>>8)&0xFF, n&0xFF);
+    else if(id->flags&IDF_HEX && uint(maxval) == 0xFFFFFFFFU)
+        conoutft(CON_DEBUG, "%s = 0x%.8X (%d, %d, %d, %d)", id->name, n, n>>24, (n>>16)&0xFF, (n>>8)&0xFF, n&0xFF);
+    else conoutft(CON_DEBUG, id->flags&IDF_HEX ? "%s = 0x%X" : "%s = %d", id->name, n);
+}
+
+void printfvar(ident *id, float f)
+{
+     conoutft(CON_DEBUG, "%s = %s", id->name, floatstr(f));
+}
+
+void printsvar(ident *id, const char *s)
+{
+    conoutft(CON_DEBUG, strchr(s, '"') ? "%s = [%s]" : "%s = \"%s\"", id->name, s);
+}
+
 void printvar(ident *id)
 {
     switch(id->type)
     {
-        case ID_VAR:
-        {
-            int i = *id->storage.i;
-            if(i < 0) conoutft(CON_DEBUG, "%s = %d", id->name, i);
-            else if(id->flags&IDF_HEX && id->maxval==0xFFFFFF)
-                conoutft(CON_DEBUG, "%s = 0x%.6X (%d, %d, %d)", id->name, i, (i>>16)&0xFF, (i>>8)&0xFF, i&0xFF);
-            else if(id->flags&IDF_HEX && uint(id->maxval)==0xFFFFFFFFU)
-                conoutft(CON_DEBUG, "%s = 0x%.8X (%d, %d, %d, %d)", id->name, i, i>>24, (i>>16)&0xFF, (i>>8)&0xFF, i&0xFF);
-            else
-                conoutft(CON_DEBUG, id->flags&IDF_HEX ? "%s = 0x%X" : "%s = %d", id->name, i);
-            break;
-        }
-        case ID_FVAR:
-            conoutft(CON_DEBUG, "%s = %s", id->name, floatstr(*id->storage.f));
-            break;
-        case ID_SVAR:
-            conoutft(CON_DEBUG, strchr(*id->storage.s, '"') ? "%s = [%s]" : "%s = \"%s\"", id->name, *id->storage.s);
-            break;
+        case ID_VAR: printvar(id, *id->storage.i, id->maxval); break;
+        case ID_FVAR: printfvar(id, *id->storage.f); break;
+        case ID_SVAR: printsvar(id, *id->storage.s); break;
+        default: break;
     }
 }
 
