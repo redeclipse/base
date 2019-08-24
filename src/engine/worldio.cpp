@@ -781,11 +781,13 @@ void save_world(const char *mname, bool nodata, bool forcesave)
 
     // world variables
     int numvars = 0, vars = 0;
-    enumerate(idents, ident, id, {
+    enumerate(idents, ident, id,
+    {
         if((id.type == ID_VAR || id.type == ID_FVAR || id.type == ID_SVAR) && id.flags&IDF_WORLD && !(id.flags&IDF_SERVER) && strlen(id.name)) numvars++;
     });
     f->putlil<int>(numvars);
-    enumerate(idents, ident, id, {
+    enumerate(idents, ident, id,
+    {
         if((id.type == ID_VAR || id.type == ID_FVAR || id.type == ID_SVAR) && id.flags&IDF_WORLD && !(id.flags&IDF_SERVER) && strlen(id.name))
         {
             vars++;

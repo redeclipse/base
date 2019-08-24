@@ -201,7 +201,8 @@ int selinview()
     return isvisiblesphere(max(s.x, s.y, s.z), o);
 }
 ICOMMAND(0, getselvfc, "", (), intret(selinview()));
-ICOMMAND(0, getselvisible, "", (), {
+ICOMMAND(0, getselvisible, "", (),
+{
     int vfc = selinview();
     intret(vfc < 0 || vfc != VFC_NOT_VISIBLE ? 0 : 1);
 });
@@ -264,7 +265,8 @@ void setorient(int n)
     sel.cys = sel.s[C[dimension(m)]]*2;
     sel.orient = m;
 }
-ICOMMAND(0, selorient, "iN$", (int *n, int *numargs, ident *id), {
+ICOMMAND(0, selorient, "iN$", (int *n, int *numargs, ident *id),
+{
     if(*numargs > 0) setorient(*n);
     else if(*numargs < 0) intret(sel.orient);
     else printvar(id, sel.orient);
@@ -3002,12 +3004,14 @@ void replacetex(bool insel, int texnum = -1)
     mpreplacetex(texnum, lasttex, insel, sel, true);
 }
 
-ICOMMAND(0, replace, "iN", (int *t, int *numargs), {
+ICOMMAND(0, replace, "iN", (int *t, int *numargs),
+{
     int tex = *numargs >= 1 ? *t : reptex;
     if(tex < 0) { conoutf("\frCan only replace after a texture edit"); return; }
     replacetex(false, tex);
 });
-ICOMMAND(0, replacesel, "iN", (int *t, int *numargs), {
+ICOMMAND(0, replacesel, "iN", (int *t, int *numargs),
+{
     int tex = *numargs >= 1 ? *t : reptex;
     if(tex < 0) { conoutf("\frCan only replace after a texture edit"); return; }
     replacetex(true, tex);

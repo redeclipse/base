@@ -861,7 +861,8 @@ bvec pixel(0, 0, 0);
 char *pixelact = NULL;
 
 ICOMMAND(0, printpixel, "", (void), conoutft(CON_MESG, "Pixel = 0x%.6X (%d, %d, %d)", pixel.tohexcolor(), pixel.r, pixel.g, pixel.b));
-ICOMMAND(0, getpixel, "i", (int *n), {
+ICOMMAND(0, getpixel, "i", (int *n),
+{
     switch(*n)
     {
         case 1: intret(pixel.r); break;

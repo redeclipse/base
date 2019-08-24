@@ -43,7 +43,8 @@ namespace entities
     int numattrs(int type) { return clamp(type >= 0 && type < MAXENTTYPES ? enttype[type].numattrs : 0, 5, MAXENTATTRS); }
     ICOMMAND(0, entityattrs, "b", (int *n), intret(numattrs(*n)));
 
-    ICOMMAND(0, getentinfo, "b", (int *n), {
+    ICOMMAND(0, getentinfo, "b", (int *n),
+    {
         if(*n < 0) intret(MAXENTTYPES);
         else if(*n < MAXENTTYPES) result(enttype[*n].name);
     });
@@ -77,7 +78,8 @@ namespace entities
         return attrname;
     }
 
-    ICOMMAND(0, getentattr, "bbb", (int *n, int *p, int *a), {
+    ICOMMAND(0, getentattr, "bbb", (int *n, int *p, int *a),
+    {
         if(*n < 0) intret(MAXENTTYPES);
         else if(*n < MAXENTTYPES)
         {

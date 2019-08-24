@@ -367,7 +367,8 @@ const char *mapmodelname(int i) { return mapmodels.inrange(i) ? mapmodels[i].nam
 COMMAND(0, mapmodel, "s");
 ICOMMAND(0, mmodel, "s", (char *name), mapmodel(name));
 ICOMMAND(0, mapmodelreset, "i", (int *n), if((identflags&IDF_WORLD) || editmode) resetmapmodels(*n));
-ICOMMAND(0, mapmodelindex, "s", (char *a), {
+ICOMMAND(0, mapmodelindex, "s", (char *a),
+{
     if(!*a) intret(mapmodels.length());
     else
     {

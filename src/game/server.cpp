@@ -1079,7 +1079,8 @@ namespace server
     void resetgamevars(bool all)
     {
         numgamevars = numgamemods = 0;
-        enumerate(idents, ident, id, {
+        enumerate(idents, ident, id,
+        {
             if(id.flags&IDF_SERVER && !(id.flags&IDF_READONLY) && (all || !(id.flags&IDF_WORLD))) // reset vars
             {
                 const char *val = NULL;
@@ -1125,7 +1126,8 @@ namespace server
 
     void savegamevars()
     {
-        enumerate(idents, ident, id, {
+        enumerate(idents, ident, id,
+        {
             if(id.flags&IDF_SERVER && !(id.flags&IDF_READONLY) && !(id.flags&IDF_WORLD)) switch(id.type)
             {
                 case ID_VAR: id.def.i = *id.storage.i; break;
@@ -4075,7 +4077,8 @@ namespace server
         else putint(p, smapcrc);
         putint(p, smapvariant);
 
-        enumerate(idents, ident, id, {
+        enumerate(idents, ident, id,
+        {
             if(id.flags&IDF_SERVER && !(id.flags&IDF_WORLD)) // reset vars
             {
                 const char *val = NULL;

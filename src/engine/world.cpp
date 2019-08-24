@@ -1011,7 +1011,8 @@ ICOMMAND(0, enthavesel,"", (), addimplicit(intret(entgroup.length())));
 ICOMMAND(0, entselect, "e", (uint *body), if(!noentedit()) addgroup(e.type != ET_EMPTY && entgroup.find(n)<0 && executebool(body)));
 ICOMMAND(0, entloop, "e", (uint *body), if(!noentedit()) addimplicit(groupeditloop(((void)e, execute(body)))));
 ICOMMAND(0, insel, "", (), entfocus(efocus, intret(pointinsel(sel, e.o))));
-ICOMMAND(0, entget, "", (), entfocus(efocus, {
+ICOMMAND(0, entget, "", (), entfocus(efocus,
+{
     defformatstring(s, "%s", entities::findname(e.type));
     loopv(e.attrs)
     {
@@ -1109,7 +1110,8 @@ void splitocta(cube *c, int size)
 void clearworldvars(bool msg)
 {
     identflags |= IDF_WORLD;
-    enumerate(idents, ident, id, {
+    enumerate(idents, ident, id,
+    {
         if(id.flags&IDF_WORLD && !(id.flags&IDF_SERVER)) // reset world vars
         {
             switch (id.type)

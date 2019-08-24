@@ -107,7 +107,8 @@ namespace client
     vector<mapvote> mapvotes;
 
     VARF(IDF_PERSIST, sortvotes, 0, 0, 1, mapvotes.sort(mapvote::compare));
-    VARF(IDF_PERSIST, cleanvotes, 0, 0, 1, {
+    VARF(IDF_PERSIST, cleanvotes, 0, 0, 1,
+    {
         if(cleanvotes && !mapvotes.empty()) loopvrev(mapvotes) if(mapvotes[i].players.empty()) mapvotes.remove(i);
     });
 
@@ -289,7 +290,8 @@ namespace client
     VAR(IDF_PERSIST, authconnect, 0, 1, 1);
     SVAR(IDF_PERSIST, accountname, "");
     SVAR(IDF_PERSIST, accountpass, "");
-    ICOMMAND(0, authkey, "ss", (char *name, char *key), {
+    ICOMMAND(0, authkey, "ss", (char *name, char *key),
+    {
         setsvar("accountname", name);
         setsvar("accountpass", key);
     });
@@ -1301,7 +1303,8 @@ namespace client
         hud::cleanup();
         emptymap(0, true, NULL, false);
         smartmusic(true);
-        enumerate(idents, ident, id, {
+        enumerate(idents, ident, id,
+        {
             if(id.flags&IDF_CLIENT) switch(id.type)
             {
                 case ID_VAR: setvar(id.name, id.def.i, true); break;
@@ -2064,7 +2067,8 @@ namespace client
             {
                 p.reliable();
                 putint(p, N_GAMEINFO);
-                enumerate(idents, ident, id, {
+                enumerate(idents, ident, id,
+                {
                     if(id.flags&IDF_CLIENT && id.flags&IDF_WORLD) switch(id.type)
                     {
                         case ID_VAR:

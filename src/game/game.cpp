@@ -674,7 +674,8 @@ namespace game
         }
         announce(idx, d, forced);
     }
-    ICOMMAND(0, announce, "iiisN", (int *idx, int *targ, int *cn, int *forced, char *s, int *numargs), {
+    ICOMMAND(0, announce, "iiisN", (int *idx, int *targ, int *cn, int *forced, char *s, int *numargs),
+    {
         if(*numargs >= 5) announcef(*numargs >= 1 ? *idx : -1, *numargs >= 2 ? *targ : CON_EVENT, *numargs >= 3 ? getclient(*cn) : NULL, *numargs >= 4 ? *forced!=0 : false, "\fw%s", s);
         else announcef(*numargs >= 1 ? *idx : -1, *numargs >= 2 ? *targ : CON_DEBUG, *numargs >= 3 ? getclient(*cn) : NULL, *numargs >= 4 ? *forced!=0 : false, NULL);
     });
@@ -761,7 +762,8 @@ namespace game
         return false;
     }
 
-    ICOMMAND(0, specmodeswitch, "", (), {
+    ICOMMAND(0, specmodeswitch, "", (),
+    {
         if(tvmode(true, true))
         {
             if(!tvmode(true, false)) followmode = 0;
@@ -771,7 +773,8 @@ namespace game
         else specmode = 1;
         specreset();
     });
-    ICOMMAND(0, waitmodeswitch, "", (), {
+    ICOMMAND(0, waitmodeswitch, "", (),
+    {
         if(tvmode(true, true))
         {
             if(!tvmode(true, false)) followmode = 0;
@@ -3889,7 +3892,8 @@ namespace game
     PLAYERPREV(impulse, "ii", (int *n, int *o), previewent->impulse[clamp(*n, 0, int(IM_MAX-1))] = *o);
     PLAYERPREV(impulsetime, "ii", (int *n, int *o), previewent->impulse[clamp(*n, 0, int(IM_T_MAX-1))] = *o);
     PLAYERPREV(headless, "i", (int *n), previewent->headless = *n != 0);
-    PLAYERPREV(inliquid, "i", (int *n), {
+    PLAYERPREV(inliquid, "i", (int *n),
+    {
         if((previewent->inliquid = *n != 0) != false)
         {
             previewent->physstate = PHYS_FALL;

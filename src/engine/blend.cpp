@@ -921,22 +921,30 @@ COMMAND(0, addblendbrush, "ss");
 
 ICOMMAND(0, nextblendbrush, "i", (int *dir),
 {
-    curbrush += *dir < 0 ? -1 : 1;
-    if(brushes.empty()) curbrush = -1;
-    else if(!brushes.inrange(curbrush)) curbrush = *dir < 0 ? brushes.length()-1 : 0;
+    if(brushes.empty()) { curbrush = -1; return; }
+    curbrush += *dir;
+    while(curbrush >= brushes.length()) curbrush -= brushes.length();
+    while(curbrush < 0) curbrush += brushes.length();
 });
 
-ICOMMAND(0, setblendbrush, "s", (char *name),
+ICOMMAND(0, getblendbrushname, "i", (int *n), result(brushes.inrange(*n) ? brushes[*n]->name : ""));
+
+ICOMMAND(0, blendbrush, "sN$", (char *s, int *numargs, ident *id),
 {
-    loopv(brushes) if(!strcmp(brushes[i]->name, name)) { curbrush = i; break; }
+    if(*numargs > 0)
+    {
+        int n = -1;
+        if(s != NULL)
+        {
+            if(isnumeric(*s)) n = atoi(s);
+            else loopv(brushes) if(!strcmp(brushes[i]->name, s)) { n = i; break; }
+        }
+        if(brushes.inrange(n)) curbrush = n;
+        else curbrush = -1;
+    }
+    else if(*numargs < 0) intret(curbrush);
+    else printvar(id, curbrush, brushes.inrange(curbrush) ? brushes[curbrush]->name : "");
 });
-
-ICOMMAND(0, getblendbrushname, "i", (int *n),
-{
-    result(brushes.inrange(*n) ? brushes[*n]->name : "");
-});
-
-ICOMMAND(0, curblendbrush, "", (), intret(curbrush));
 
 bool canpaintblendmap(bool brush = true, bool sel = false, bool msg = true)
 {

@@ -64,7 +64,8 @@ namespace weapons
     ICOMMAND(0, ammostore, "i", (int *n), intret(isweap(*n) ? game::player1->weapstore[*n] : -1));
     ICOMMAND(0, reloadweap, "i", (int *n), intret(w_reload(*n) ? 1 : 0));
     ICOMMAND(0, hasweap, "ii", (int *n, int *o), intret(isweap(*n) && game::player1->hasweap(*n, *o) ? 1 : 0));
-    ICOMMAND(0, getweap, "ii", (int *n, int *o), {
+    ICOMMAND(0, getweap, "ii", (int *n, int *o),
+    {
         if(isweap(*n)) switch(*o)
         {
             case -1: result(weaptype[*n].name); break;

@@ -466,12 +466,22 @@ ident *readident(const char *name)
     return id;
 }
 
+void printreadonly(ident *id)
+{
+    debugcode("\frVariable %s is read-only", id->name);
+}
+
+void printeditonly(ident *id)
+{
+    debugcode("\frVariable %s is only directly modifiable in editmode", id->name);
+}
+
 void resetvar(char *name)
 {
     ident *id = idents.access(name);
     if(!id) return;
-    if(id->flags&IDF_READONLY || id->flags&IDF_CLIENT || id->flags&IDF_SERVER) debugcode("\frVariable %s is read-only or remote", id->name);
-    else if(id->flags&IDF_WORLD) debugcode("\frVariable %s is only directly modifiable in editmode", id->name);
+    if(id->flags&IDF_READONLY || id->flags&IDF_CLIENT || id->flags&IDF_SERVER) printreadonly(id);
+    else if(id->flags&IDF_WORLD) printeditonly(id);
     else clearoverride(*id);
 }
 
@@ -936,7 +946,7 @@ ICOMMAND(0, getalias, "s", (char *s), result(getalias(s)));
     { \
         if(!(identflags&IDF_WORLD) && !editmode && id->flags&IDF_WORLD && !(id->flags&IDF_REWRITE)) \
         { \
-            debugcode("\frCannot set world variable %s outside editmode", id->name); \
+            printeditonly(id); \
             return; \
         } \
         if(id->flags&IDF_CLIENT) \
@@ -953,7 +963,7 @@ ICOMMAND(0, getalias, "s", (char *s), result(getalias(s)));
 
 void setvarchecked(ident *id, int val)
 {
-    if(id->flags&IDF_READONLY) debugcode("\frVariable %s is read-only", id->name);
+    if(id->flags&IDF_READONLY) printreadonly(id);
     else
     {
 #ifndef STANDALONE
@@ -987,7 +997,7 @@ static inline void setvarchecked(ident *id, tagval *args, int numargs)
 
 void setfvarchecked(ident *id, float val)
 {
-    if(id->flags&IDF_READONLY) debugcode("\frVariable %s is read-only", id->name);
+    if(id->flags&IDF_READONLY) printreadonly(id);
     else
     {
 #ifndef STANDALONE
@@ -1010,7 +1020,7 @@ void setfvarchecked(ident *id, float val)
 
 void setsvarchecked(ident *id, const char *val)
 {
-    if(id->flags&IDF_READONLY) debugcode("\frVariable %s is read-only", id->name);
+    if(id->flags&IDF_READONLY) printreadonly(id);
     else
     {
 #ifndef STANDALONE
@@ -2489,7 +2499,7 @@ static const uint *runcode(const uint *code, tagval &result)
     result.setnull();
     if(rundepth >= MAXRUNDEPTH)
     {
-        debugcode("exceeded recursion limit");
+        debugcode("Exceeded recursion limit");
         return skipcode(code, result);
     }
     ++rundepth;
@@ -3104,7 +3114,7 @@ void executeret(ident *id, tagval *args, int numargs, bool lookup, tagval &resul
     ++rundepth;
     tagval *prevret = commandret;
     commandret = &result;
-    if(rundepth > MAXRUNDEPTH) debugcode("exceeded recursion limit");
+    if(rundepth > MAXRUNDEPTH) debugcode("Exceeded recursion limit");
     else if(id) switch(id->type)
     {
         default:

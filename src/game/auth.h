@@ -77,7 +77,8 @@ VAR(IDF_PERSIST, quickauthchecks, 0, 0, 1);
 VAR(IDF_PERSIST, serverauthconnect, 0, 1, 1);
 SVAR(IDF_PERSIST, serveraccountname, "");
 SVAR(IDF_PERSIST, serveraccountpass, "");
-ICOMMAND(0, serverauthkey, "ss", (char *name, char *key), {
+ICOMMAND(0, serverauthkey, "ss", (char *name, char *key),
+{
     setsvar("serveraccountname", name);
     setsvar("serveraccountpass", key);
 });

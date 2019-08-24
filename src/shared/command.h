@@ -394,6 +394,8 @@ extern const char *indexlist(const char *s, int pos, int &len);
 extern int listincludes(const char *list, const char *needl, int needlelen);
 extern char *shrinklist(const char *list, const char *limit, int failover = 0, bool invert = false);
 extern int listlen(const char *s);
+extern void printreadonly(ident *id);
+extern void printeditonly(ident *id);
 extern void printvar(ident *id, int n, const char *str = NULL);
 extern void printfvar(ident *id, float f, const char *str = NULL);
 extern void printsvar(ident *id, const char *s, const char *str = NULL);
@@ -438,6 +440,24 @@ extern char *limitstring(const char *str, size_t len);
 #define ICOMMANDN(flags, name, cmdname, nargs, proto, b) ICOMMANDNS(flags, #name, cmdname, nargs, proto, b)
 #define ICOMMAND(flags, name, nargs, proto, b) ICOMMANDN(flags, name, ICOMMANDNAME(name), nargs, proto, b)
 #define ICOMMANDS(flags, name, nargs, proto, b) ICOMMANDNS(flags, name, ICOMMANDSNAME, nargs, proto, b)
+#define ICOMMANDV(flags, name, b) ICOMMANDN(flags, name, ICOMMANDNAME(name), "N$", (int *numargs, ident *id), \
+{ \
+    if(*numargs > 0) printreadonly(id); \
+    else if(*numargs < 0) intret((b)); \
+    else printvar(id, (b)); \
+})
+#define ICOMMANDVF(flags, name, b) ICOMMANDN(flags, name, ICOMMANDNAME(name), "N$", (int *numargs, ident *id), \
+{ \
+    if(*numargs > 0) printreadonly(id); \
+    else if(*numargs < 0) floatret((b)); \
+    else printfvar(id, (b)); \
+})
+#define ICOMMANDVS(flags, name, b) ICOMMANDN(flags, name, ICOMMANDNAME(name), "N$", (int *numargs, ident *id), \
+{ \
+    if(*numargs > 0) printreadonly(id); \
+    else if(*numargs < 0) result((b)); \
+    else printsvar(id, (b)); \
+})
 
 #define _VAR(name, global, min, cur, max, flags) int global = variable(#name, min, cur, max, &global, NULL, flags|IDF_COMPLETE)
 #define VARN(flags, name, global, min, cur, max) _VAR(name, global, min, cur, max, flags)

@@ -1725,12 +1725,14 @@ namespace UI
     UIARGT(Colored, colour, type, "i", int, int(Colored::SOLID), int(Colored::OUTLINE));
     UIARGT(Colored, colour, dir, "i", int, int(Colored::VERTICAL), int(Colored::HORIZONTAL));
 
-    UICMDT(Colored, colour, set, "ii", (int *c, int *pos), {
+    UICMDT(Colored, colour, set, "ii", (int *c, int *pos),
+    {
         if(*pos >= 0 && *pos < o->colors.length()) o->colors[*pos] = Color(*c);
     });
     UICMDT(Colored, colour, get, "i", (int *pos), intret(o->colors[clamp(*pos, 0, o->colors.length()-1)].mask));
     UICMDT(Colored, colour, add, "i", (int *c), o->colors.add(Color(*c)));
-    UICMDT(Colored, colour, del, "i", (int *c), {
+    UICMDT(Colored, colour, del, "i", (int *c),
+    {
         loopvrev(o->colors) if(o->colors[i] == Color(*c)) o->colors.remove(i);
         if(o->colors.empty()) o->colors.add(Color(colourwhite));
     });
