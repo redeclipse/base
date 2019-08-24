@@ -264,8 +264,14 @@ void setorient(int n)
     sel.cys = sel.s[C[dimension(m)]]*2;
     sel.orient = m;
 }
-ICOMMAND(0, setselorient, "i", (int *n), setorient(*n));
-ICOMMAND(0, getselorient, "", (), intret(sel.orient));
+ICOMMAND(0, selorient, "iN$", (int *n, int *numargs, ident *id), {
+    switch(*numargs)
+    {
+         case 1: setorient(*n); break;
+         case -1: intret(sel.orient); break;
+         case 0: default: printvar(id); break;
+    }
+});
 
 void addorient(int n)
 {
