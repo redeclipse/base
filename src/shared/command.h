@@ -394,12 +394,12 @@ extern const char *indexlist(const char *s, int pos, int &len);
 extern int listincludes(const char *list, const char *needl, int needlelen);
 extern char *shrinklist(const char *list, const char *limit, int failover = 0, bool invert = false);
 extern int listlen(const char *s);
-extern void printvar(ident *id, int n, int maxval = 0);
-extern void printfvar(ident *id, float f);
-extern void printsvar(ident *id, const char *s);
+extern void printvar(ident *id, int n, const char *str = NULL);
+extern void printfvar(ident *id, float f, const char *str = NULL);
+extern void printsvar(ident *id, const char *s, const char *str = NULL);
 extern void printvar(ident *id);
-extern int clampvar(ident *id, int i, int minval, int maxval);
-extern float clampfvar(ident *id, float f, float minval, float maxval);
+extern int clampvar(ident *id, int i, int minval, int maxval, bool msg = true);
+extern float clampfvar(ident *id, float f, float minval, float maxval, bool msg = true);
 extern void loopiter(ident *id, identstack &stack, const tagval &v);
 extern void loopend(ident *id, identstack &stack);
 

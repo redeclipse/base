@@ -629,7 +629,7 @@ hashnameset<defvar> defvars;
     { \
         if(idents.access(name)) \
         { \
-            if(!defvars.access(name)) debugcode("cannot redefine %s as a variable", name); \
+            if(!defvars.access(name)) debugcode("Cannot redefine %s as a variable", name); \
             else { typebody; } \
             return; \
         } \
@@ -666,13 +666,38 @@ DEFSVAR(defsvarp, IDF_COMPLETE|IDF_PERSIST);
     ident *id = idents.access(name); \
     if(!id || id->type!=vartype) return retval;
 
+int clampvar(ident *id, int val, int minval, int maxval, bool msg)
+{
+    int oldval = val;
+    if(id->flags&IDF_HEX && uint(maxval) == 0xFFFFFFFFU)
+    {
+        if(uint(val) < uint(minval)) val = uint(minval);
+        else if(uint(val) > uint(maxval)) val = uint(maxval);
+        if(msg && val != oldval) debugcode("\frValid range for %s is 0x%X..0x%X", id->name, uint(minval), uint(maxval));
+        return val;
+    }
+    else if(val < minval) val = minval;
+    else if(val > maxval) val = maxval;
+    if(msg && val != oldval) debugcode(id->flags&IDF_HEX ?
+            (minval <= 255 ? "\frValid range for %s is %d..0x%X" : "\frValid range for %s is 0x%X..0x%X") : "\frValid range for %s is %d..%d",
+                id->name, minval, maxval);
+    return val;
+}
+
+float clampfvar(ident *id, float val, float minval, float maxval, bool msg)
+{
+    float oldval = val;
+    if(val < minval) val = minval;
+    else if(val > maxval) val = maxval;
+    if(msg && val != oldval) debugcode("\frValid range for %s is %s..%s", id->name, floatstr(minval), floatstr(maxval));
+    return val;
+}
+
 void setvar(const char *name, int i, bool dofunc, bool def, bool force)
 {
     GETVAR(id, ID_VAR, name, );
     if(force) *id->storage.i = i;
-    else if(id->flags&IDF_HEX && uint(id->maxval) == 0xFFFFFFFFU)
-        *id->storage.i = int(clamp(uint(i), uint(id->minval), uint(id->maxval)));
-    else *id->storage.i = clamp(i, id->minval, id->maxval);
+    else *id->storage.i = clampvar(id, i, id->minval, id->maxval, false);
     if(def || versioning)
     {
         id->def.i = *id->storage.i;
@@ -688,7 +713,7 @@ void setfvar(const char *name, float f, bool dofunc, bool def, bool force)
 {
     GETVAR(id, ID_FVAR, name, );
     if(force) *id->storage.f = f;
-    else *id->storage.f = clamp(f, id->minvalf, id->maxvalf);
+    else *id->storage.f = clampfvar(id, f, id->minvalf, id->maxvalf, false);
     if(def || versioning)
     {
         id->def.f = *id->storage.f;
@@ -905,24 +930,6 @@ const char *getalias(const char *name)
 
 ICOMMAND(0, getalias, "s", (char *s), result(getalias(s)));
 
-int clampvar(ident *id, int val, int minval, int maxval)
-{
-    if(id->flags&IDF_HEX && uint(maxval) == 0xFFFFFFFFU)
-    {
-        if(uint(val) < uint(minval)) val = uint(minval);
-        else if(uint(val) > uint(maxval)) val = uint(maxval);
-        debugcode("\frValid range for %s is 0x%X..0x%X", id->name, uint(minval), uint(maxval));
-        return val;
-    }
-    else if(val < minval) val = minval;
-    else if(val > maxval) val = maxval;
-    debugcode(id->flags&IDF_HEX ?
-            (minval <= 255 ? "\frValid range for %s is %d..0x%X" : "\frValid range for %s is 0x%X..0x%X") :
-            "\frValid range for %s is %d..%d",
-        id->name, minval, maxval);
-    return val;
-}
-
 #ifndef STANDALONE
 #define CHECKVAR(argstr) \
     if(!versioning) \
@@ -952,23 +959,7 @@ void setvarchecked(ident *id, int val)
 #ifndef STANDALONE
         CHECKVAR(intstr(val))
 #endif
-        if(id->flags&IDF_HEX && uint(id->maxval) == 0xFFFFFFFFU)
-        {
-            if(uint(val)<uint(id->minval) || uint(val)>uint(id->maxval))
-            {
-                val = uint(val)<uint(id->minval) ? uint(id->minval) : uint(id->maxval);                // clamp to valid range
-                debugcode("\frValid range for %s is 0x%X..0x%X", id->name, uint(id->minval), uint(id->maxval));
-            }
-        }
-        else if(val<id->minval || val>id->maxval)
-        {
-            val = val<id->minval ? id->minval : id->maxval;                // clamp to valid range
-            debugcode(
-                id->flags&IDF_HEX ?
-                    (id->minval <= 255 ? "\frValid range for %s is %d..0x%X" : "\frValid range for %s is 0x%X..0x%X") :
-                    "\frValid range for %s is %d..%d",
-                id->name, id->minval, id->maxval);
-        }
+        val = clampvar(id, val, id->minval, id->maxval);
         *id->storage.i = val;
         if(versioning)
         {
@@ -978,7 +969,7 @@ void setvarchecked(ident *id, int val)
         id->changed();                                             // call trigger function if available
 #ifndef STANDALONE
         client::editvar(id, interactive && !(identflags&IDF_WORLD));
-        if(versioning && id->flags&IDF_SERVER) setvar(&id->name[3], val, true);
+        if(versioning && id->flags&IDF_SERVER) setvar(&id->name[3], val);
 #endif
     }
 }
@@ -994,15 +985,6 @@ static inline void setvarchecked(ident *id, tagval *args, int numargs)
     setvarchecked(id, val);
 }
 
-float clampfvar(ident *id, float val, float minval, float maxval)
-{
-    if(val < minval) val = minval;
-    else if(val > maxval) val = maxval;
-    else return val;
-    debugcode("\frValid range for %s is %s..%s", id->name, floatstr(minval), floatstr(maxval));
-    return val;
-}
-
 void setfvarchecked(ident *id, float val)
 {
     if(id->flags&IDF_READONLY) debugcode("\frVariable %s is read-only", id->name);
@@ -1011,11 +993,7 @@ void setfvarchecked(ident *id, float val)
 #ifndef STANDALONE
         CHECKVAR(floatstr(val))
 #endif
-        if(val<id->minvalf || val>id->maxvalf)
-        {
-            val = val<id->minvalf ? id->minvalf : id->maxvalf;                // clamp to valid range
-            debugcode("\frValid range for %s is %s..%s", id->name, floatstr(id->minvalf), floatstr(id->maxvalf));
-        }
+        val = clampfvar(id, val, id->minvalf, id->maxvalf);
         *id->storage.f = val;
         if(versioning)
         {
@@ -2297,30 +2275,37 @@ void freecode(uint *code)
     }
 }
 
-void printvar(ident *id, int n, int maxval)
+void printvar(ident *id, int n, const char *str)
 {
-    if(id->flags&IDF_HEX && maxval == 0xFFFFFF)
-        conoutft(CON_DEBUG, "%s = 0x%.6X (%d, %d, %d)", id->name, n, (n>>16)&0xFF, (n>>8)&0xFF, n&0xFF);
-    else if(id->flags&IDF_HEX && uint(maxval) == 0xFFFFFFFFU)
-        conoutft(CON_DEBUG, "%s = 0x%.8X (%d, %d, %d, %d)", id->name, n, n>>24, (n>>16)&0xFF, (n>>8)&0xFF, n&0xFF);
-    else conoutft(CON_DEBUG, id->flags&IDF_HEX ? "%s = 0x%X" : "%s = %d", id->name, n);
+    string output;
+    if(id->flags&IDF_HEX && id->maxval == 0xFFFFFF)
+        formatstring(output, "%s = 0x%.6X (%d, %d, %d)", id->name, n, (n>>16)&0xFF, (n>>8)&0xFF, n&0xFF);
+    else if(id->flags&IDF_HEX && uint(id->maxval) == 0xFFFFFFFFU)
+        formatstring(output, "%s = 0x%.8X (%d, %d, %d, %d)", id->name, n, n>>24, (n>>16)&0xFF, (n>>8)&0xFF, n&0xFF);
+    else formatstring(output, id->flags&IDF_HEX ? "%s = 0x%X" : "%s = %d", id->name, n);
+    if(str && *str) concformatstring(output, " (%s)", str);
+    conoutft(CON_DEBUG, "%s", output);
 }
 
-void printfvar(ident *id, float f)
+void printfvar(ident *id, float f, const char *str)
 {
-     conoutft(CON_DEBUG, "%s = %s", id->name, floatstr(f));
+    defformatstring(output, "%s = %s", id->name, floatstr(f));
+    if(str && *str) concformatstring(output, " (%s)", str);
+    conoutft(CON_DEBUG, "%s", output);
 }
 
-void printsvar(ident *id, const char *s)
+void printsvar(ident *id, const char *s, const char *str)
 {
-    conoutft(CON_DEBUG, strchr(s, '"') ? "%s = [%s]" : "%s = \"%s\"", id->name, s);
+    defformatstring(output, strchr(s, '"') ? "%s = [%s]" : "%s = \"%s\"", id->name, s);
+    if(str && *str) concformatstring(output, " (%s)", str);
+    conoutft(CON_DEBUG, "%s", output);
 }
 
 void printvar(ident *id)
 {
     switch(id->type)
     {
-        case ID_VAR: printvar(id, *id->storage.i, id->maxval); break;
+        case ID_VAR: printvar(id, *id->storage.i); break;
         case ID_FVAR: printfvar(id, *id->storage.f); break;
         case ID_SVAR: printsvar(id, *id->storage.s); break;
         default: break;
