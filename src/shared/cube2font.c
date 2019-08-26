@@ -79,10 +79,10 @@ void savepng(const char *filename, uchar *data, int w, int h, int bpp, int flip)
         case 2: ihdr.colortype = 4; break;
         case 3: ihdr.colortype = 2; break;
         case 4: ihdr.colortype = 6; break;
-        default: fatal("cube2font: invalid PNG bpp"); return;
+        default: fatal("Cube2font: invalid PNG bpp"); return;
     }
     f = fopen(filename, "wb");
-    if(!f) { fatal("cube2font: could not write to %s", filename); return; }
+    if(!f) { fatal("Cube2font: could not write to %s", filename); return; }
 
     fwrite(signature, 1, sizeof(signature), f);
 
@@ -153,7 +153,7 @@ cleanuperror:
 error:
     fclose(f);
 
-    fatal("cube2font: failed saving PNG to %s", filename);
+    fatal("Cube2font: failed saving PNG to %s", filename);
 }
 
 enum
@@ -265,7 +265,7 @@ void writetexs(const char *name, struct fontchar *chars, int numchars, int numte
 {
     int tex;
     uchar *pixels = (uchar *)malloc(tw*th*2);
-    if(!pixels) fatal("cube2font: failed allocating textures");
+    if(!pixels) fatal("Cube2font: failed allocating textures");
     for(tex = 0; tex < numtexs; tex++)
     {
         const char *file = texfilename(name, tex);
@@ -310,7 +310,7 @@ void writecfg(const char *name, struct fontchar *chars, int numchars, int x1, in
     int i, lastcode = 0, lasttex = 0;
     snprintf(file, sizeof(file), "%s.cfg", name);
     f = fopen(file, "w");
-    if(!f) fatal("cube2font: failed writing %s", file);
+    if(!f) fatal("Cube2font: failed writing %s", file);
     printf("cube2font: writing %d chars to %s\n", numchars, file);
     fprintf(f, "//");
     for(i = 1; i < argc; i++)
@@ -402,13 +402,13 @@ int main(int argc, char **argv)
     if(argc > 12) sh = atoi(argv[12]);
     if(argc > 13) texdir = argv[13];
     if(FT_Init_FreeType(&l))
-        fatal("cube2font: failed initing freetype");
+        fatal("Cube2font: failed initing freetype");
     if(FT_New_Face(l, argv[1], 0, &f) ||
        FT_Set_Charmap(f, f->charmaps[0]) ||
        FT_Set_Pixel_Sizes(f, w, h) ||
        FT_Stroker_New(l, &s) ||
        FT_Stroker_New(l, &s2))
-        fatal("cube2font: failed loading font %s", argv[1]);
+        fatal("Cube2font: failed loading font %s", argv[1]);
     if(outborder > 0) FT_Stroker_Set(s, (FT_Fixed)(outborder * 64), FT_STROKER_LINECAP_ROUND, FT_STROKER_LINEJOIN_ROUND, 0);
     if(inborder > 0) FT_Stroker_Set(s2, (FT_Fixed)(inborder * 64), FT_STROKER_LINECAP_ROUND, FT_STROKER_LINEJOIN_ROUND, 0);
     for(c = 0; c < 256; c++) if(iscubeprint(c))
@@ -419,7 +419,7 @@ int main(int argc, char **argv)
         dst->code = c;
         dst->uni = cube2uni(c);
         if(FT_Load_Char(f, dst->uni, FT_LOAD_DEFAULT))
-            fatal("cube2font: failed loading character %s", encodeutf8(dst->uni));
+            fatal("Cube2font: failed loading character %s", encodeutf8(dst->uni));
         FT_Get_Glyph(f->glyph, &p);
         p2 = p;
         if(outborder > 0) FT_Glyph_StrokeBorder(&p, s, 0, 0);
@@ -534,11 +534,11 @@ int main(int argc, char **argv)
     if(sw <= 0)
     {
         if(FT_Load_Char(f, ' ', FT_LOAD_DEFAULT))
-            fatal("cube2font: failed loading space character");
+            fatal("Cube2font: failed loading space character");
         sw = (f->glyph->advance.x+0x3F)>>6;
     }
 #endif
-    if(sh <= 0) sh = y2 - y1; 
+    if(sh <= 0) sh = y2 - y1;
     if(sw <= 0) sw = sh/3;
     writetexs(argv[2], chars, numchars, numtex, tw, th);
     writecfg(argv[2], chars, numchars, x1, y1, x2, y2, sw, sh, argc, argv);

@@ -186,7 +186,7 @@ namespace ai
     {
         if(!d->ai && !(d->ai = new aiinfo()))
         {
-            fatal("could not create ai");
+            fatal("Could not create ai");
             return;
         }
         d->respawned = -1;

@@ -324,7 +324,7 @@ void setupscreen()
     curvsync = -1;
 
     SDL_Rect desktop;
-    if(SDL_GetDisplayBounds(0, &desktop) < 0) fatal("failed querying desktop bounds: %s", SDL_GetError());
+    if(SDL_GetDisplayBounds(0, &desktop) < 0) fatal("Failed querying desktop bounds: %s", SDL_GetError());
     desktopw = desktop.w;
     desktoph = desktop.h;
 
@@ -356,7 +356,7 @@ void setupscreen()
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 0);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
     screen = SDL_CreateWindow(caption, winx, winy, winw, winh, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_MOUSE_FOCUS | flags);
-    if(!screen) fatal("failed to create OpenGL window: %s", SDL_GetError());
+    if(!screen) fatal("Failed to create OpenGL window: %s", SDL_GetError());
 
     SDL_SetWindowMinimumSize(screen, SCR_MINW, SCR_MINH);
     SDL_SetWindowMaximumSize(screen, SCR_MAXW, SCR_MAXH);
@@ -375,7 +375,7 @@ void setupscreen()
         glcontext = SDL_GL_CreateContext(screen);
         if(glcontext) break;
     }
-    if(!glcontext) fatal("failed to create OpenGL context: %s", SDL_GetError());
+    if(!glcontext) fatal("Failed to create OpenGL context: %s", SDL_GetError());
 
     SDL_GetWindowSize(screen, &screenw, &screenh);
     renderw = min(scr_w, screenw);
@@ -409,7 +409,7 @@ void resetgl()
 
     inbetweenframes = false;
     if(!reloadtexture(notexturetex) || !reloadtexture(blanktex) || !reloadtexture(logotex))
-        fatal("failed to reload core textures");
+        fatal("Failed to reload core textures");
     reloadfonts();
     inbetweenframes = true;
     progress(0, "Initializing...");
@@ -694,7 +694,7 @@ __declspec(dllexport)
 #if defined(WIN32) && !defined(_DEBUG) && !defined(__GNUC__)
 void stackdumper(unsigned int type, EXCEPTION_POINTERS *ep)
 {
-    if(!ep) fatal("unknown type");
+    if(!ep) fatal("Unknown type");
     EXCEPTION_RECORD *er = ep->ExceptionRecord;
     CONTEXT *context = ep->ContextRecord;
     bigstring out;
@@ -1044,7 +1044,7 @@ int main(int argc, char **argv)
     gl_checkextensions();
     gl_init();
     if(!(notexture = textureload(notexturetex)) || !(blanktexture = textureload(blanktex)))
-        fatal("could not find core textures");
+        fatal("Could not find core textures");
 
     conoutf("Loading sound..");
     initsound();
@@ -1052,8 +1052,8 @@ int main(int argc, char **argv)
     game::start();
 
     conoutf("Loading defaults..");
-    if(!execfile("config/stdlib.cfg", false)) fatal("cannot find data files");
-    if(!setfont("default")) fatal("no default font specified");
+    if(!execfile("config/stdlib.cfg", false)) fatal("Cannot find data files");
+    if(!setfont("default")) fatal("No default font specified");
 
     UI::setup();
 

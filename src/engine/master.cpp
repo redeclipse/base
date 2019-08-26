@@ -306,7 +306,7 @@ inline void statsdb_warn()
 void statsdb_die()
 {
     statsdb_close();
-    fatal("statistics database error");
+    fatal("Statistics database error");
 }
 
 int statsdb_execv(const char *fmt, va_list args)
@@ -691,13 +691,13 @@ void setupmaster()
     {
         conoutf("Loading master (%s:%d)..", *masterip ? masterip : "*", masterport);
         ENetAddress address = { ENET_HOST_ANY, enet_uint16(masterport) };
-        if(*masterip && enet_address_set_host(&address, masterip) < 0) fatal("failed to resolve master address: %s", masterip);
-        if((mastersocket = enet_socket_create(ENET_SOCKET_TYPE_STREAM)) == ENET_SOCKET_NULL) fatal("failed to create master server socket");
-        if(enet_socket_set_option(mastersocket, ENET_SOCKOPT_REUSEADDR, 1) < 0) fatal("failed to set master server socket option");
-        if(enet_socket_bind(mastersocket, &address) < 0) fatal("failed to bind master server socket");
-        if(enet_socket_listen(mastersocket, -1) < 0) fatal("failed to listen on master server socket");
-        if(enet_socket_set_option(mastersocket, ENET_SOCKOPT_NONBLOCK, 1) < 0) fatal("failed to make master server socket non-blocking");
-        if(!setuppingsocket(&address)) fatal("failed to create ping socket");
+        if(*masterip && enet_address_set_host(&address, masterip) < 0) fatal("Failed to resolve master address: %s", masterip);
+        if((mastersocket = enet_socket_create(ENET_SOCKET_TYPE_STREAM)) == ENET_SOCKET_NULL) fatal("Failed to create master server socket");
+        if(enet_socket_set_option(mastersocket, ENET_SOCKOPT_REUSEADDR, 1) < 0) fatal("Failed to set master server socket option");
+        if(enet_socket_bind(mastersocket, &address) < 0) fatal("Failed to bind master server socket");
+        if(enet_socket_listen(mastersocket, -1) < 0) fatal("Failed to listen on master server socket");
+        if(enet_socket_set_option(mastersocket, ENET_SOCKOPT_NONBLOCK, 1) < 0) fatal("Failed to make master server socket non-blocking");
+        if(!setuppingsocket(&address)) fatal("Failed to create ping socket");
         starttime = clocktime;
         statsdb_load();
         conoutf("Master server started on %s:[%d]", *masterip ? masterip : "localhost", masterport);

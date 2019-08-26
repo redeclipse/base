@@ -35,7 +35,7 @@ void setuptqaa(int w, int h)
         glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, tqaatex[i], 0);
         bindgdepth();
         if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-            fatal("failed allocating TQAA buffer!");
+            fatal("Failed allocating TQAA buffer!");
     }
     glBindFramebuffer_(GL_FRAMEBUFFER, 0);
 
@@ -154,7 +154,7 @@ void setupfxaa(int w, int h)
     glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, fxaatex, 0);
     bindgdepth();
     if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-        fatal("failed allocating FXAA buffer!");
+        fatal("Failed allocating FXAA buffer!");
     glBindFramebuffer_(GL_FRAMEBUFFER, 0);
 
     loadfxaashaders();
@@ -536,7 +536,7 @@ void setupsmaa(int w, int h)
         }
         if(!i || (smaadepthmask && (!tqaa || msaalight)) || (smaastencil && ghasstencil > (msaasamples ? 1 : 0))) bindgdepth();
         if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-            fatal("failed allocating SMAA buffer!");
+            fatal("Failed allocating SMAA buffer!");
     }
     glBindFramebuffer_(GL_FRAMEBUFFER, 0);
 

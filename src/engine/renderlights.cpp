@@ -76,7 +76,7 @@ void setupbloom(int w, int h)
         glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, i==4 ? GL_TEXTURE_2D : GL_TEXTURE_RECTANGLE, bloomtex[i], 0);
 
         if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-            fatal("failed allocating bloom buffer!");
+            fatal("Failed allocating bloom buffer!");
     }
 
     glBindFramebuffer_(GL_FRAMEBUFFER, 0);
@@ -195,7 +195,7 @@ void setupao(int w, int h)
         glBindFramebuffer_(GL_FRAMEBUFFER, aofbo[i]);
         glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, aotex[i], 0);
         if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-            fatal("failed allocating AO buffer!");
+            fatal("Failed allocating AO buffer!");
         if(!upscale && packformat == GL_RG16F)
         {
             glClearColor(0, 0, 0, 0);
@@ -211,7 +211,7 @@ void setupao(int w, int h)
         glBindFramebuffer_(GL_FRAMEBUFFER, aofbo[3]);
         glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, aotex[3], 0);
         if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-            fatal("failed allocating AO buffer!");
+            fatal("Failed allocating AO buffer!");
     }
 
     glBindFramebuffer_(GL_FRAMEBUFFER, 0);
@@ -416,7 +416,7 @@ void setupscale(int sw, int sh, int w, int h)
         if(!i) bindgdepth();
 
         if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-            fatal("failed allocating scale buffer!");
+            fatal("Failed allocating scale buffer!");
     }
 
     glBindFramebuffer_(GL_FRAMEBUFFER, 0);
@@ -659,9 +659,9 @@ void setupmsbuffer(int w, int h)
             glTexImage2DMultisample_(GL_TEXTURE_2D_MULTISAMPLE, msaasamples, GL_RGBA8, w, h, GL_TRUE);
             glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D_MULTISAMPLE, msglowtex, 0);
             if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-                fatal("failed allocating MSAA g-buffer!");
+                fatal("Failed allocating MSAA g-buffer!");
         }
-        else fatal("failed allocating MSAA g-buffer!");
+        else fatal("Failed allocating MSAA g-buffer!");
     }
 
     glClearColor(0, 0, 0, 0);
@@ -703,7 +703,7 @@ void setupmsbuffer(int w, int h)
         }
 
         if(!hdrformat || glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-            fatal("failed allocating MSAA HDR buffer!");
+            fatal("Failed allocating MSAA HDR buffer!");
 
         if(!msrefracttex) glGenTextures(1, &msrefracttex);
         if(!msrefractfbo) glGenFramebuffers_(1, &msrefractfbo);
@@ -717,7 +717,7 @@ void setupmsbuffer(int w, int h)
         bindmsdepth();
 
         if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-            fatal("failed allocating MSAA refraction buffer!");
+            fatal("Failed allocating MSAA refraction buffer!");
     }
 
     glBindFramebuffer_(GL_FRAMEBUFFER, 0);
@@ -828,9 +828,9 @@ void setupgbuffer()
                 createtexture(gglowtex, gw, gh, NULL, 3, 0, GL_RGBA8, GL_TEXTURE_RECTANGLE);
                 glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_RECTANGLE, gglowtex, 0);
                 if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-                    fatal("failed allocating g-buffer!");
+                    fatal("Failed allocating g-buffer!");
             }
-            else fatal("failed allocating g-buffer!");
+            else fatal("Failed allocating g-buffer!");
         }
 
         glClearColor(0, 0, 0, 0);
@@ -848,7 +848,7 @@ void setupgbuffer()
     bindgdepth();
 
     if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-        fatal("failed allocating HDR buffer!");
+        fatal("Failed allocating HDR buffer!");
 
     if(!msaalight || (msaalight > 2 && msaatonemap && msaatonemapblit))
     {
@@ -863,7 +863,7 @@ void setupgbuffer()
         bindgdepth();
 
         if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-            fatal("failed allocating refraction buffer!");
+            fatal("Failed allocating refraction buffer!");
     }
 
     glBindFramebuffer_(GL_FRAMEBUFFER, 0);
@@ -1448,7 +1448,7 @@ void setupradiancehints()
     glDrawBuffers_(4, drawbufs);
 
     if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-        fatal("failed allocating radiance hints buffer!");
+        fatal("Failed allocating radiance hints buffer!");
 
     if(!rsmdepthtex) glGenTextures(1, &rsmdepthtex);
     if(!rsmcolortex) glGenTextures(1, &rsmcolortex);
@@ -1471,7 +1471,7 @@ void setupradiancehints()
     glDrawBuffers_(2, drawbufs);
 
     if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-        fatal("failed allocating RSM buffer!");
+        fatal("Failed allocating RSM buffer!");
 
     glBindFramebuffer_(GL_FRAMEBUFFER, 0);
 
@@ -1791,7 +1791,7 @@ void setupshadowatlas()
     glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, shadowatlastarget, shadowatlastex, 0);
 
     if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-        fatal("failed allocating shadow atlas!");
+        fatal("Failed allocating shadow atlas!");
 
     glBindFramebuffer_(GL_FRAMEBUFFER, 0);
 }
@@ -2488,7 +2488,7 @@ void setupvolumetric(int w, int h)
         glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, voltex[i], 0);
 
         if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-            fatal("failed allocating volumetric buffer!");
+            fatal("Failed allocating volumetric buffer!");
     }
 
     glBindFramebuffer_(GL_FRAMEBUFFER, 0);

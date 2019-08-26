@@ -1215,12 +1215,12 @@ static void setupwindow(const char *title)
 {
     copystring(apptip, title);
     //appinstance = GetModuleHandle(NULL);
-    if(!appinstance) fatal("failed getting application instance");
+    if(!appinstance) fatal("Failed getting application instance");
     appicon = LoadIcon(appinstance, MAKEINTRESOURCE(IDI_ICON1));//(HICON)LoadImage(appinstance, MAKEINTRESOURCE(IDI_ICON1), IMAGE_ICON, 0, 0, LR_DEFAULTSIZE);
-    if(!appicon) fatal("failed loading icon");
+    if(!appicon) fatal("Failed loading icon");
 
     appmenu = CreatePopupMenu();
-    if(!appmenu) fatal("failed creating popup menu");
+    if(!appmenu) fatal("Failed creating popup menu");
     AppendMenu(appmenu, MF_STRING, MENU_OPENCONSOLE, "Open Console");
     AppendMenu(appmenu, MF_SEPARATOR, 0, NULL);
     AppendMenu(appmenu, MF_STRING, MENU_EXIT, "Exit");
@@ -1238,14 +1238,14 @@ static void setupwindow(const char *title)
     wc.cbWndExtra = 0;
     wc.cbClsExtra = 0;
     wndclass = RegisterClass(&wc);
-    if(!wndclass) fatal("failed registering window class");
+    if(!wndclass) fatal("Failed registering window class");
 
     appwindow = CreateWindow(MAKEINTATOM(wndclass), title, 0, CW_USEDEFAULT, CW_USEDEFAULT, 0, 0, HWND_MESSAGE, NULL, appinstance, NULL);
-    if(!appwindow) fatal("failed creating window");
+    if(!appwindow) fatal("Failed creating window");
 
     atexit(cleanupwindow);
 
-    if(!setupsystemtray(WM_APP)) fatal("failed adding to system tray");
+    if(!setupsystemtray(WM_APP)) fatal("Failed adding to system tray");
     conoutf("Version: %s", getverstr());
 }
 
@@ -1372,7 +1372,7 @@ int setupserversockets()
         if(!serverhost)
         {
 #ifdef STANDALONE
-            fatal("could not create server socket on port %d", serverport);
+            fatal("Could not create server socket on port %d", serverport);
 #else
             conoutf("\frCould not create server socket on port %d", serverport);
             setvar("servertype", 0);
@@ -1394,7 +1394,7 @@ int setupserversockets()
         if(pongsock == ENET_SOCKET_NULL)
         {
 #ifdef STANDALONE
-            fatal("could not create server info socket on port %d", serverport+1);
+            fatal("Could not create server info socket on port %d", serverport+1);
 #else
             conoutf("\frCould not create server info socket on port %d, publicity disabled", serverport+1);
             setvar("servertype", 1);
@@ -1558,9 +1558,9 @@ void setlocations(bool wanthome)
     int backstep = 3;
     loopirev(backstep) if(!fileexists(findfile("config/version.cfg", "r"), "r"))
     { // standalone solution to this is: pebkac
-        if(!i || chdir("..") < 0) fatal("could not find config directory");
+        if(!i || chdir("..") < 0) fatal("Could not find config directory");
     }
-    if(!execfile("config/version.cfg", false, EXEC_VERSION|EXEC_BUILTIN)) fatal("cannot exec 'config/version.cfg'");
+    if(!execfile("config/version.cfg", false, EXEC_VERSION|EXEC_BUILTIN)) fatal("Cannot exec 'config/version.cfg'");
 
     // pseudo directories with game content
     const char *dir = getenv(sup_var("DATADIR"));
@@ -1568,7 +1568,7 @@ void setlocations(bool wanthome)
     else addpackagedir("data");
     loadextras();
 
-    if(!fileexists(findfile("maps/readme.txt", "r"), "r")) fatal("could not find game data");
+    if(!fileexists(findfile("maps/readme.txt", "r"), "r")) fatal("Could not find game data");
     if(wanthome)
     {
 #if defined(WIN32)

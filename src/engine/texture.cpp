@@ -3117,7 +3117,7 @@ GLuint genenvmap(const vec &o, int envmapsize, int blur, bool onlysky)
             glBindFramebuffer_(GL_FRAMEBUFFER, emfbo[i]);
             glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, emtex[i], 0);
             if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-                fatal("failed allocating envmap buffer!");
+                fatal("Failed allocating envmap buffer!");
         }
     }
     GLuint tex = 0;
@@ -3253,7 +3253,7 @@ ushort closestenvmap(const vec &o)
         float dist;
         if(envmapbb)
         {
-            if(!o.insidebb(vec(em.o).sub(em.radius), vec(em.o).add(em.radius))) continue; 
+            if(!o.insidebb(vec(em.o).sub(em.radius), vec(em.o).add(em.radius))) continue;
             dist = em.o.dist(o);
         }
         else

@@ -1057,9 +1057,9 @@ bool addcommand(const char *name, identfun fun, const char *args, int type, int 
         case 'S': case 's': case 'e': case 'r': case '$': if(numargs < MAXARGS) { argmask |= 1<<numargs; numargs++; } break;
         case '1': case '2': case '3': case '4': if(numargs < MAXARGS) fmt -= *fmt-'0'+1; break;
         case 'C': case 'V': limit = false; break;
-        default: fatal("builtin %s declared with illegal type: %s", name, args); break;
+        default: fatal("Builtin %s declared with illegal type: %s", name, args); break;
     }
-    if(limit && numargs > MAXCOMARGS) fatal("builtin %s declared with too many args: %d", name, numargs);
+    if(limit && numargs > MAXCOMARGS) fatal("Builtin %s declared with too many args: %d", name, numargs);
     addident(ident(type, name, args, argmask, numargs, (void *)fun, flags));
     return false;
 }

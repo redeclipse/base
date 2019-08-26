@@ -1370,7 +1370,7 @@ namespace client
             va_end(args);
         }
         int num = nums?0:numi, msgsize = msgsizelookup(type);
-        if(msgsize && num != msgsize) { fatal("inconsistent msg size for %d (%d != %d)", type, num, msgsize); }
+        if(msgsize && num != msgsize) { fatal("Inconsistent msg size for %d (%d != %d)", type, num, msgsize); }
         if(reliable) messagereliable = true;
         messages.put(buf, p.length());
         return true;

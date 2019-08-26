@@ -886,7 +886,7 @@ float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, i
 void reloadfonts()
 {
     enumerate(fonts, font, f,
-        loopv(f.texs) if(!reloadtexture(f.texs[i])) fatal("failed to reload font texture");
+        loopv(f.texs) if(!reloadtexture(f.texs[i])) fatal("Failed to reload font texture");
     );
 }
 
