@@ -119,15 +119,15 @@ semupdate_steam() {
     pushd "${SEMUPDATE_DEPOT}" || return 1
     curl -sqL "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz" | tar zxvf -
     chmod --verbose +x "linux32/steamcmd" || return 1
-    ls -la . linux32
     export LD_LIBRARY_PATH="${SEMUPDATE_DEPOT}/linux32:${LD_LIBRARY_PATH}"
     STEAM_ARGS="+login redeclipsenet ${STEAM_TOKEN} +run_app_build_http app_build_967460.vdf +quit"
     if [ "${STEAM_GUARD}" != "0" ]; then STEAM_ARGS="+set_steam_guard_code ${STEAM_GUARD} ${STEAM_ARGS}"; fi
-    echo "Running: ./linux32/steamcmd ${STEAM_ARGS}"
+    ls -la . linux32
     STEAM_EXECS=0
     ./linux32/steamcmd ${STEAM_ARGS}
     while [ $? -eq 42 ] && [ ${STEAM_EXECS} -lt 2 ]; do
         cat "${HOME}/Steam/logs/stderr.txt"
+        ls -la . linux32
         STEAM_EXECS=$(( STEAM_EXECS + 1 ))
         ./linux32/steamcmd ${STEAM_ARGS}
     done
@@ -140,9 +140,9 @@ if [ "${BRANCH_NAME}" = master ]; then
     semupdate_setup || exit 1
     sudo ${SEMUPDATE_APT} update || exit 1
     sudo ${SEMUPDATE_APT} -fy install build-essential multiarch-support gcc-multilib g++-multilib zlib1g-dev libsdl2-dev libsdl2-mixer-dev libsdl2-image-dev jq zsync || exit 1
-    #pushd "${HOME}" || exit 1
-    #semupdate_appimage || exit 1
-    #popd || exit 1
+    pushd "${HOME}" || exit 1
+    semupdate_appimage || exit 1
+    popd || exit 1
     semupdate_wait || exit 1
     semupdate_steam || exit 1
 fi
