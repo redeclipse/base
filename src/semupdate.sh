@@ -77,16 +77,6 @@ semupdate_appimage() {
     return 0
 }
 
-semupdate_steamlogs() {
-    for i in "${HOME}/Steam/logs"/*; do
-        if [ ! -d "${i}" ]; then
-            echo "==== CAT: ${i} ===="
-            cat "${i}"
-            echo "==== END: ${i} ===="
-        fi
-    done
-}
-
 semupdate_steam() {
     echo "building Steam depot..."
     cp -Rv "${SEMUPDATE_PWD}/src/install/steam" "${SEMUPDATE_DEPOT}" || return 1
@@ -129,17 +119,19 @@ semupdate_steam() {
     pushd "${SEMUPDATE_DEPOT}" || return 1
     curl -sqL "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz" | tar zxvf -
     chmod --verbose +x "linux32/steamcmd" || return 1
+    ls -la . linux32
     export LD_LIBRARY_PATH="${SEMUPDATE_DEPOT}/linux32:${LD_LIBRARY_PATH}"
     STEAM_ARGS="+login redeclipsenet ${STEAM_TOKEN} +run_app_build_http app_build_967460.vdf +quit"
     if [ "${STEAM_GUARD}" != "0" ]; then STEAM_ARGS="+set_steam_guard_code ${STEAM_GUARD} ${STEAM_ARGS}"; fi
+    echo "Running: ./linux32/steamcmd ${STEAM_ARGS}"
     STEAM_EXECS=0
     ./linux32/steamcmd ${STEAM_ARGS}
-    while [ $? -eq 42 ] && [ ${STEAM_EXECS} -lt 3 ]; do
-        semupdate_steamlogs
+    while [ $? -eq 42 ] && [ ${STEAM_EXECS} -lt 2 ]; do
+        cat "${HOME}/Steam/logs/stderr.txt"
         STEAM_EXECS=$(( STEAM_EXECS + 1 ))
         ./linux32/steamcmd ${STEAM_ARGS}
     done
-    semupdate_steamlogs
+    cat "${HOME}/Steam/logs/stderr.txt"
     popd || return 1
     return 0
 }
