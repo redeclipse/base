@@ -1965,7 +1965,7 @@ namespace client
             flags |= 1<<11;
             d->forcepos = false;
         }
-        loopk(AC_TOTAL) if(d->action[k]) flags |= 1<<(12+k);
+        loopk(AC_MAX) if(d->action[k]) flags |= 1<<(12+k);
         putuint(q, flags);
         loopk(3)
         {
@@ -2262,7 +2262,7 @@ namespace client
                 d->impulse[IM_METER] = meter;
                 d->conopen = flags&(1<<10) ? true : false;
                 d->forcepos = flags&(1<<11) ? true : false;
-                loopk(AC_TOTAL)
+                loopk(AC_MAX)
                 {
                     bool val = d->action[k];
                     d->action[k] = flags&(1<<(12+k)) ? true : false;

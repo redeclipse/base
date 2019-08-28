@@ -149,13 +149,6 @@ namespace physics
     }
     CLCOMMAND(carryaffinity, intret(carryaffinity(d)));
 
-    bool dropaffinity(gameent *d)
-    {
-        if(m_capture(game::gamemode)) return capture::dropaffinity(d);
-        if(m_bomber(game::gamemode)) return bomber::dropaffinity(d);
-        return false;
-    }
-
     bool secondaryweap(gameent *d)
     {
         if(!isweap(d->weapselect)) return false;

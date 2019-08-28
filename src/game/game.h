@@ -225,7 +225,7 @@ enum { SSTAT_OPEN = 0, SSTAT_LOCKED, SSTAT_PRIVATE, SSTAT_FULL, SSTAT_UNKNOWN, S
 
 enum
 {
-    AC_PRIMARY = 0, AC_SECONDARY, AC_RELOAD, AC_USE, AC_JUMP, AC_WALK, AC_CROUCH, AC_SPECIAL, AC_DROP, AC_AFFINITY, AC_MAX, AC_TOTAL = AC_AFFINITY,
+    AC_PRIMARY = 0, AC_SECONDARY, AC_RELOAD, AC_USE, AC_JUMP, AC_WALK, AC_CROUCH, AC_SPECIAL, AC_DROP, AC_AFFINITY, AC_MAX,
     AC_ALL = (1<<AC_PRIMARY)|(1<<AC_SECONDARY)|(1<<AC_RELOAD)|(1<<AC_USE)|(1<<AC_JUMP)|(1<<AC_WALK)|(1<<AC_CROUCH)|(1<<AC_SPECIAL)|(1<<AC_DROP)|(1<<AC_AFFINITY)
 };
 enum { IM_METER = 0, IM_TYPE, IM_REGEN, IM_COUNT, IM_COLLECT, IM_SLIP, IM_MAX };
@@ -1927,7 +1927,6 @@ namespace physics
     extern int smoothmove, smoothdist, physframetime, grabstyle, grabplayerstyle;
     extern bool isghost(gameent *d, gameent *e, bool proj = false);
     extern int carryaffinity(gameent *d);
-    extern bool dropaffinity(gameent *d);
     extern bool secondaryweap(gameent *d);
     extern bool allowimpulse(physent *d, int level = 0);
     extern bool canimpulse(physent *d, int level = 0, bool touch = false);
