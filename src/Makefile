@@ -56,7 +56,7 @@ CC_TEMP:=$(CC)
 override CXX=$(TOOLSET_PREFIX)$(CXX_TEMP)
 override CC=$(TOOLSET_PREFIX)$(CC_TEMP)
 
-INCLUDES= -DVERSION_BUILD=$(PLATFORM_BUILD) -DVERSION_BRANCH=\"$(PLATFORM_BRANCH)\" -DVERSION_REVISION=\"$(PLATFORM_REVISION)\" -I. -Ishared -Iengine -Igame -Isupport
+INCLUDES= -DVERSION_BUILD=$(PLATFORM_BUILD) -DVERSION_BRANCH=\"$(PLATFORM_BRANCH)\" -DVERSION_REVISION=\"$(PLATFORM_REVISION)\" -I. -Ishared -Iengine -Igame -Ienet/include -Isupport
 ifeq (1,$(WANT_STEAM))
 override INCLUDES+= -DUSE_STEAM=1 -Isteam
 endif
@@ -122,8 +122,8 @@ else
 BIN_SUFFIX=_native
 endif
 endif
-CLIENT_INCLUDES= $(INCLUDES) `$(PKG_CONFIG) --cflags x11 sdl2 SDL2_image SDL2_mixer gl zlib libenet`
-CLIENT_LIBS= `$(PKG_CONFIG) --libs x11 sdl2 SDL2_image SDL2_mixer gl zlib libenet`
+CLIENT_INCLUDES= $(INCLUDES) `$(PKG_CONFIG) --cflags x11 sdl2 SDL2_image SDL2_mixer zlib gl`
+CLIENT_LIBS= -Lenet -lenet `$(PKG_CONFIG) --libs x11 sdl2 SDL2_image SDL2_mixer zlib gl`
 ifeq (1,$(WANT_STEAM))
 override CLIENT_LIBS+= -L../bin/$(PLATFORM_BIN) -lsteam_api
 endif
