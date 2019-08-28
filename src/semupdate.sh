@@ -77,6 +77,16 @@ semupdate_appimage() {
     return 0
 }
 
+semupdate_steamlogs() {
+    for i in "${HOME}/Steam/logs"/*; do
+        if [ ! -d "${i}" ]; then
+            echo "==== CAT: ${i} ===="
+            cat "${i}"
+            echo "==== END: ${i} ===="
+        fi
+    done
+}
+
 semupdate_steam() {
     echo "building Steam depot..."
     cp -Rv "${SEMUPDATE_PWD}/src/install/steam" "${SEMUPDATE_DEPOT}" || return 1
@@ -118,12 +128,18 @@ semupdate_steam() {
     tar --gzip --extract --verbose --overwrite --file="${SEMUPDATE_DIR}/macos.tar.gz" --directory="${SEMUPDATE_DEPOT}/content"
     pushd "${SEMUPDATE_DEPOT}" || return 1
     curl -sqL "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz" | tar zxvf -
-    chmod --verbose +x linux32/steamcmd || return 1
-    export LD_LIBRARY_PATH="${SEMUPDATE_DEPOT}/linux32:${SEMUPDATE_DEPOT}/linux64:${LD_LIBRARY_PATH}"
+    chmod --verbose +x "linux32/steamcmd" || return 1
+    export LD_LIBRARY_PATH="${SEMUPDATE_DEPOT}/linux32:${LD_LIBRARY_PATH}"
     STEAM_ARGS="+login redeclipsenet ${STEAM_TOKEN} +run_app_build_http app_build_967460.vdf +quit"
     if [ "${STEAM_GUARD}" != "0" ]; then STEAM_ARGS="+set_steam_guard_code ${STEAM_GUARD} ${STEAM_ARGS}"; fi
+    STEAM_EXECS=0
     ./linux32/steamcmd ${STEAM_ARGS}
-    if [ $? -ne 0 ]; then ./linux32/steamcmd ${STEAM_ARGS}; fi
+    while [ $? -eq 42 ] && [ ${STEAM_EXECS} -lt 3 ]; then
+        semupdate_steamlogs
+        STEAM_EXECS=$(( STEAM_EXECS + 1 ))
+        ./linux32/steamcmd ${STEAM_ARGS}
+    fi
+    semupdate_steamlogs
     popd || return 1
     return 0
 }
@@ -132,9 +148,9 @@ if [ "${BRANCH_NAME}" = master ]; then
     semupdate_setup || exit 1
     sudo ${SEMUPDATE_APT} update || exit 1
     sudo ${SEMUPDATE_APT} -fy install build-essential multiarch-support gcc-multilib g++-multilib zlib1g-dev libsdl2-dev libsdl2-mixer-dev libsdl2-image-dev jq zsync || exit 1
-    pushd "${HOME}" || exit 1
-    semupdate_appimage || exit 1
-    popd || exit 1
+    #pushd "${HOME}" || exit 1
+    #semupdate_appimage || exit 1
+    #popd || exit 1
     semupdate_wait || exit 1
     semupdate_steam || exit 1
 fi
