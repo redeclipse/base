@@ -272,7 +272,7 @@ namespace hud
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, zappertex, "<grey>textures/weapons/zapper", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, rifletex, "<grey>textures/weapons/rifle", 3);
 
-    VAR(IDF_PERSIST, showclips, 0, 2, 2);
+    VAR(IDF_PERSIST, showclips, 0, 1, 1);
     VAR(IDF_PERSIST, clipanims, 0, 2, 2);
     FVAR(IDF_PERSIST, clipsize, 0, 0.03f, 1000);
     FVAR(IDF_PERSIST, clipoffset, 0, 0.045f, 1000);
@@ -281,6 +281,8 @@ namespace hud
     FVAR(IDF_PERSIST, clipblend, 0, 1, 1);
     FVAR(IDF_PERSIST, clipcolour, 0, 1, 1);
     VAR(IDF_PERSIST, cliplength, 0, 0, VAR_MAX);
+    VAR(IDF_PERSIST, clipstore, 0, 1, 1);
+    FVAR(IDF_PERSIST, clipstoreblend, 0, 0.2f, 1);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, clawcliptex, "<grey>textures/weapons/clips/claw", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, pistolcliptex, "<grey>textures/weapons/clips/pistol", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, swordcliptex, "<grey>textures/weapons/clips/sword", 3);
@@ -846,16 +848,6 @@ namespace hud
         gle::end();
     }
 
-    void drawsimpleclipitem(float x, float y, float start, float length, float size, float blend, const vec &colour)
-    {
-        Texture *t = textureload(progringtex, 3);
-        if(t->type&Texture::ALPHA) glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        else glBlendFunc(GL_ONE, GL_ONE);
-        glBindTexture(GL_TEXTURE_2D, t->id);
-        gle::color(colour, blend);
-        drawslice(start, length, x, y, size);
-    }
-
     void drawclip(int weap, int x, int y, float s)
     {
         if(!isweap(weap) || weap >= W_ALL || (!W2(weap, ammosub, false) && !W2(weap, ammosub, true))) return;
@@ -875,12 +867,12 @@ namespace hud
             clawcliprotate, pistolcliprotate, swordcliprotate, shotguncliprotate, smgcliprotate,
             flamercliprotate, plasmacliprotate, zappercliprotate, riflecliprotate, grenadecliprotate, minecliprotate, rocketcliprotate
         };
-        int ammo = game::focus->weapclip[weap], maxammo = W(weap, ammoclip), interval = lastmillis-game::focus->weaptime[weap];
-        bool simple = showclips == 1 || maxammo > 360;
-        float fade = clipblend*hudblend, size = s*clipsize*(simple ? 1.f : clipskew[weap]), offset = s*clipoffset, amt = 0, spin = 0,
-              slice = 360/float(maxammo), angle = (simple || maxammo > (cliprots[weap]&4 ? 4 : 3) || maxammo%2 ? 360.f : 360.f-slice*0.5f)-((maxammo-ammo)*slice),
-              area = 1-clamp(clipoffs[weap]*2, 1e-3f, 1.f), need = s*clipsize*clipskew[weap]*area*maxammo, have = 2*M_PI*s*clipoffset,
-              scale = clamp(have/need, clipminscale, clipmaxscale);
+        int ammo = game::focus->weapclip[weap], store = game::focus->weapstore[weap],
+            maxammo = W(weap, ammoclip), interval = lastmillis-game::focus->weaptime[weap];
+        float fade = clipblend*hudblend, skew = clipskew[weap]*clipsize, size = s*skew, offset = s*clipoffset,
+              slice = 360/float(maxammo), angle = (maxammo > (cliprots[weap]&4 ? 4 : 3) || maxammo%2 ? 360.f : 360.f-slice*0.5f)-((maxammo-ammo)*slice),
+              area = 1-clamp(clipoffs[weap]*2, 1e-3f, 1.f), need = s*skew*area*maxammo, have = 2*M_PI*s*clipoffset,
+              scale = clamp(have/need, clipminscale, clipmaxscale), start = angle, amt = 0, spin = 0;
         vec c(1, 1, 1);
         if(clipstone) skewcolour(c.r, c.g, c.b, clipstone);
         if(clipcolour) skewcolour(c.r, c.g, c.b, W(weap, colour));
@@ -897,14 +889,10 @@ namespace hud
                     if(clipanims >= 2) spin = 360*amt;
                 }
                 int shot = game::focus->weapshot[weap] ? game::focus->weapshot[weap] : 1;
-                if(simple) drawsimpleclipitem(x, y, angle/360.f, slice*shot/360.f, size, fade, c);
-                else
-                {
-                    float rewind = angle;
-                    loopi(shot) drawclipitem(cliptexs[weap], x, y, offset, size*scale, fade, rewind += slice, spin, cliprots[weap], c);
-                }
+                float rewind = angle;
+                loopi(shot) drawclipitem(cliptexs[weap], x, y, offset, size*scale, fade, rewind += slice, spin, cliprots[weap], c);
                 fade = clipblend*hudblend;
-                size = s*clipsize*clipskew[weap];
+                size = s*skew;
                 offset = s*clipoffset;
                 spin = 0;
                 break;
@@ -930,20 +918,18 @@ namespace hud
                         fade = spin = 0;
                         if(clipanims) size = offset = 0;
                     }
-                    if(simple)
-                    {
-                        float amt = slice*game::focus->weapload[weap];
-                        angle -= amt;
-                        drawsimpleclipitem(x, y, angle/360.f, amt/360.f, size, fade, c);
-                    }
+                    float ss = slice*game::focus->weapload[weap];
+                    if(fade <= 0) angle -= ss;
                     else loopi(game::focus->weapload[weap])
                     {
                         drawclipitem(cliptexs[weap], x, y, offset, size*scale, fade, angle, spin, cliprots[weap], c);
                         angle -= slice;
                     }
+                    start -= ss;
+                    store += game::focus->weapload[weap];
                     ammo -= game::focus->weapload[weap];
                     fade = clipblend*hudblend;
-                    size = s*clipsize*clipskew[weap];
+                    size = s*skew;
                     offset = s*clipoffset;
                     spin = 0;
                     break;
@@ -965,11 +951,15 @@ namespace hud
             }
             default: break;
         }
-        if(simple) drawsimpleclipitem(x, y, 0, slice*ammo/360.f, size, fade, c);
-        else loopi(ammo)
+        loopi(ammo)
         {
             drawclipitem(cliptexs[weap], x, y, offset, size*scale, fade, angle, spin, cliprots[weap], c);
             angle -= slice;
+        }
+        if(clipstore && ammo < maxammo && store > 0)
+        {
+            int total = min(maxammo-ammo, store);
+            loopi(total) drawclipitem(cliptexs[weap], x, y, offset, size*scale, fade*clipstoreblend, start += slice, spin, cliprots[weap], c);
         }
     }
 

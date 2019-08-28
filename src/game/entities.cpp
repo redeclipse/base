@@ -771,7 +771,7 @@ namespace entities
                                 }
                             }
                             else if(gameent::is(d)) warpragdoll(d, d->vel, vec(f.o).sub(e.o));
-                            return false;
+                            return false; // gotcha
                         }
                         d->o = orig;
                         d->vel = ovel;
@@ -780,7 +780,7 @@ namespace entities
                         teleports.remove(r); // must've really sucked, try another one
                     }
                     if(d->state == CS_ALIVE)
-                    {
+                    { // if we got here, the teleport failed for some reason
                         if(gameent::is(d)) game::suicide((gameent *)d, HIT_SPAWN);
                         else if(projent::is(d))
                         {
