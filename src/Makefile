@@ -217,8 +217,8 @@ override SERVER_LIBS+= -lsteam_api
 endif
 endif
 else
-SERVER_INCLUDES= -DSTANDALONE $(INCLUDES)
-SERVER_LIBS= -Lenet -lenet -lz
+SERVER_INCLUDES= -DSTANDALONE $(INCLUDES) `pkg-config --cflags zlib`
+SERVER_LIBS= -Lenet -lenet `pkg-config --libs zlib`
 ifeq (1,$(WANT_STEAM))
 override SERVER_LIBS+= -L../bin/$(PLATFORM_BIN) -lsteam_api
 endif
