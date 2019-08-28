@@ -134,11 +134,11 @@ semupdate_steam() {
     if [ "${STEAM_GUARD}" != "0" ]; then STEAM_ARGS="+set_steam_guard_code ${STEAM_GUARD} ${STEAM_ARGS}"; fi
     STEAM_EXECS=0
     ./linux32/steamcmd ${STEAM_ARGS}
-    while [ $? -eq 42 ] && [ ${STEAM_EXECS} -lt 3 ]; then
+    while [ $? -eq 42 ] && [ ${STEAM_EXECS} -lt 3 ]; do
         semupdate_steamlogs
         STEAM_EXECS=$(( STEAM_EXECS + 1 ))
         ./linux32/steamcmd ${STEAM_ARGS}
-    fi
+    done
     semupdate_steamlogs
     popd || return 1
     return 0
