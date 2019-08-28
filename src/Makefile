@@ -122,8 +122,8 @@ else
 BIN_SUFFIX=_native
 endif
 endif
-CLIENT_INCLUDES= $(INCLUDES) -I/usr/X11R6/include `$(PKG_CONFIG) --cflags sdl2`
-CLIENT_LIBS= -Lenet -lenet -L/usr/X11R6/lib -lX11 `$(PKG_CONFIG) --libs sdl2` -lSDL2_image -lSDL2_mixer -lz -lGL
+CLIENT_INCLUDES= $(INCLUDES) `$(PKG_CONFIG) --cflags x11 sdl2 SDL2_image SDL2_mixer zlib gl`
+CLIENT_LIBS= -Lenet -lenet `$(PKG_CONFIG) --libs x11 sdl2 SDL2_image SDL2_mixer zlib gl`
 ifeq (1,$(WANT_STEAM))
 override CLIENT_LIBS+= -L../bin/$(PLATFORM_BIN) -lsteam_api
 endif
@@ -218,8 +218,8 @@ override SERVER_LIBS+= -lsteam_api
 endif
 endif
 else
-SERVER_INCLUDES= -DSTANDALONE $(INCLUDES)
-SERVER_LIBS= -Lenet -lenet -lz
+SERVER_INCLUDES= -DSTANDALONE $(INCLUDES) `pkg-config --cflags zlib`
+SERVER_LIBS= -Lenet -lenet `pkg-config --libs zlib`
 ifeq (1,$(WANT_STEAM))
 override SERVER_LIBS+= -L../bin/$(PLATFORM_BIN) -lsteam_api
 endif
