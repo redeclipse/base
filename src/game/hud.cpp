@@ -977,7 +977,11 @@ namespace hud
     {
         if(game::focus->state != CS_ALIVE) return;
         int num = 0;
-        loopi(3) if(circlebartype&(1<<i)) num++;
+        loopi(3) if(circlebartype&(1<<i))
+        {
+            if(i == 1 && (!impulsemeter || m_freestyle(game::gamemode, game::mutators))) continue;
+            num++;
+        }
         if(!num) return;
         Texture *t = circlebartex && *circlebartex ? textureload(circlebartex, 3) : NULL;
         if(!t || t == notexture) return;
