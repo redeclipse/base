@@ -875,8 +875,8 @@ namespace hud
             clawcliprotate, pistolcliprotate, swordcliprotate, shotguncliprotate, smgcliprotate,
             flamercliprotate, plasmacliprotate, zappercliprotate, riflecliprotate, grenadecliprotate, minecliprotate, rocketcliprotate
         };
-        int ammo = game::focus->weapclip[weap], maxammo = W(weap, ammoclip),
-            store = w_reload(weap) ? maxammo : game::focus->weapstore[weap], interval = lastmillis-game::focus->weaptime[weap];
+        int ammo = game::focus->weapammo[weap][W_A_CLIP], maxammo = W(weap, ammoclip),
+            store = w_reload(weap) ? maxammo : game::focus->weapammo[weap][W_A_STORE], interval = lastmillis-game::focus->weaptime[weap];
         float fade = clipblend*hudblend, skew = clipskew[weap]*clipsize, size = s*skew, offset = s*clipoffset,
               slice = 360/float(maxammo), angle = (maxammo > (cliprots[weap]&4 ? 4 : 3) || maxammo%2 ? 360.f : 360.f-slice*0.5f)-((maxammo-ammo)*slice),
               area = 1-clamp(clipoffs[weap]*2, 1e-3f, 1.f), need = s*skew*area*maxammo, have = 2*M_PI*s*clipoffset,
@@ -907,9 +907,10 @@ namespace hud
             }
             case W_S_RELOAD: case W_S_USE:
             {
-                if(game::focus->weapload[weap] > 0)
+                if(game::focus->weapload[weap][W_A_CLIP] > 0)
                 {
                     int check = game::focus->weapwait[weap]/2;
+                    float ss = slice*game::focus->weapload[weap][W_A_CLIP];
                     if(interval >= check)
                     {
                         amt = clamp((interval-check)/float(check), 0.f, 1.f);
@@ -920,27 +921,31 @@ namespace hud
                             offset *= amt*3/4;
                             if(clipanims >= 2) spin = 360*amt;
                         }
+                        loopi(game::focus->weapload[weap][W_A_CLIP])
+                        {
+                            drawclipitem(cliptexs[weap], x, y, offset, size*scale, fade, angle, spin, cliprots[weap], c);
+                            angle -= slice;
+                        }
                     }
-                    else
-                    {
-                        fade = spin = 0;
-                        if(clipanims) size = offset = 0;
-                    }
-                    float ss = slice*game::focus->weapload[weap];
-                    if(fade <= 0) angle -= ss;
-                    else loopi(game::focus->weapload[weap])
-                    {
-                        drawclipitem(cliptexs[weap], x, y, offset, size*scale, fade, angle, spin, cliprots[weap], c);
-                        angle -= slice;
-                    }
+                    else angle -= ss;
                     start -= ss;
-                    store += game::focus->weapload[weap];
-                    ammo -= game::focus->weapload[weap];
+                    store += game::focus->weapload[weap][W_A_CLIP];
+                    ammo -= game::focus->weapload[weap][W_A_CLIP];
                     fade = clipblend*hudblend;
                     size = s*skew;
                     offset = s*clipoffset;
                     spin = 0;
                     break;
+                }
+                if(game::focus->weapstate[weap] == W_S_USE)
+                {
+                    int lastweap = game::focus->getlastweap(m_weapon(game::focus->actortype, game::gamemode, game::mutators));
+                    if(!isweap(lastweap) || lastweap == weap)
+                    {
+                        amt = clamp(interval/float(game::focus->weapwait[weap]), 0.f, 1.f);
+                        if(clipanims && clipanims >= 2) spin = 360*amt;
+                        break;
+                    }
                 }
                 // falls through
             }
@@ -1006,14 +1011,14 @@ namespace hud
                 {
                     if(!isweap(game::focus->weapselect)) continue;
                     int weap = game::focus->weapselect, interval = lastmillis-game::focus->weaptime[weap];
-                    val = game::focus->weapclip[weap]/float(W(weap, ammoclip));
+                    val = game::focus->weapammo[weap][W_A_CLIP]/float(W(weap, ammoclip));
                     if(circlebarammotone || circlebarammocolour) skewcolour(c.r, c.g, c.b, circlebarammocolour ? W(weap, colour) : circlebarammotone);
                     if(interval <= game::focus->weapwait[weap]) switch(game::focus->weapstate[weap])
                     {
                         case W_S_RELOAD: case W_S_USE:
-                            if(game::focus->weapload[weap] > 0)
+                            if(game::focus->weapload[weap][W_A_CLIP] > 0)
                             {
-                                val -= game::focus->weapload[weap]/float(W(weap, ammoclip));
+                                val -= game::focus->weapload[weap][W_A_CLIP]/float(W(weap, ammoclip));
                                 break;
                             }
                             else if(game::focus->weapstate[weap] == W_S_RELOAD) break;
@@ -1055,14 +1060,14 @@ namespace hud
                         }
                         case W_S_RELOAD: case W_S_USE:
                         {
-                            if(game::focus->weapload[weap] > 0)
+                            if(game::focus->weapload[weap][W_A_CLIP] > 0)
                             {
                                 int check = game::focus->weapwait[weap]/2;
                                 if(interval >= check)
                                 {
                                     float amt = clamp(float(interval-check)/float(check), 0.f, 1.f);
                                     fade *= amt;
-                                    val = game::focus->weapload[weap]/float(W(weap, ammoclip))*amt;
+                                    val = game::focus->weapload[weap][W_A_CLIP]/float(W(weap, ammoclip))*amt;
                                 }
                             }
                             break;

@@ -624,7 +624,7 @@ struct verinfo
 struct clientstate
 {
     int health, colour, model, pattern, checkpointspawn;
-    int weapselect, weapclip[W_MAX], weapstore[W_MAX], weapent[W_MAX], weapload[W_MAX], weapshot[W_MAX], weapstate[W_MAX], weapwait[W_MAX], weaptime[W_MAX], prevstate[W_MAX], prevtime[W_MAX];
+    int weapselect, weapammo[W_MAX][W_A_MAX], weapload[W_MAX][W_A_MAX], weapent[W_MAX], weapshot[W_MAX], weapstate[W_MAX], weapwait[W_MAX], weaptime[W_MAX], prevstate[W_MAX], prevtime[W_MAX];
     int lastdeath, lastspawn, lastpain, lastregen, lastregenamt, lastbuff, lastshoot, lastcook, lastaffinity, lastres[W_R_MAX], lastrestime[W_R_MAX];
     int burntime, burndelay, burndamage, bleedtime, bleeddelay, bleeddamage, shocktime, shockdelay, shockdamage, shockstun, shockstuntime;
     float shockstunscale, shockstunfall;
@@ -671,10 +671,10 @@ struct clientstate
     int getammo(int weap, int millis = 0, bool store = false)
     {
         if(!isweap(weap)) return -1;
-        int a = weapclip[weap] > 0 ? weapclip[weap] : 0;
-        if(millis && weapstate[weap] == W_S_RELOAD && millis-weaptime[weap] < weapwait[weap] && weapload[weap] > 0)
-            a -= weapload[weap];
-        if(store) a += weapstore[weap];
+        int a = weapammo[weap][W_A_CLIP] > 0 ? weapammo[weap][W_A_CLIP] : 0;
+        if(millis && weapstate[weap] == W_S_RELOAD && millis-weaptime[weap] < weapwait[weap] && weapload[weap][W_A_CLIP] > 0)
+            a -= weapload[weap][W_A_CLIP];
+        if(store) a += weapammo[weap][W_A_STORE];
         return a;
     }
 
@@ -682,15 +682,15 @@ struct clientstate
     {
         if(isweap(weap) && weap != exclude)
         {
-            if(weapclip[weap] >= 0) switch(level)
+            if(weapammo[weap][W_A_CLIP] >= 0) switch(level)
             {
                 case 0: default: return true; break; // has weap at all
                 case 1: if(w_carry(weap, sweap)) return true; break; // only carriable
-                case 2: if(weapclip[weap] > 0) return true; break; // only with actual ammo
+                case 2: if(weapammo[weap][W_A_CLIP] > 0) return true; break; // only with actual ammo
                 case 3: if(canreload(weap, sweap)) return true; break; // only reloadable
-                case 4: if(weapclip[weap] >= (canreload(weap, sweap) ? 0 : W(weap, ammoclip))) return true; break; // only reloadable or those with < clipsize
+                case 4: if(weapammo[weap][W_A_CLIP] >= (canreload(weap, sweap) ? 0 : W(weap, ammoclip))) return true; break; // only reloadable or those with < clipsize
                 case 5: case 6: // special case to determine drop in classic/normal games
-                    if(weap == sweap || (level == 6 && weap < W_ITEM && weap >= W_OFFSET) || weapclip[weap] > 0 || canreload(weap, sweap)) return true;
+                    if(weap == sweap || (level == 6 && weap < W_ITEM && weap >= W_OFFSET) || weapammo[weap][W_A_CLIP] > 0 || canreload(weap, sweap)) return true;
                     break;
             }
         }
@@ -711,8 +711,8 @@ struct clientstate
 
     void addlastweap(int weap)
     {
+        loopvrev(lastweap) if(lastweap[i] == weap) lastweap.remove(i);
         lastweap.add(weap);
-        if(lastweap.length() >= W_ALL) lastweap.remove(0);
     }
 
     int getlastweap(int sweap, int exclude = -1)
@@ -720,18 +720,15 @@ struct clientstate
         loopvrev(lastweap)
         {
             if(lastweap[i] == exclude) continue;
-            else if(hasweap(lastweap[i], sweap)) return lastweap[i];
+            if(hasweap(lastweap[i], sweap)) return lastweap[i];
         }
         return -1;
     }
 
-    int bestweap(int sweap, bool last = false)
+    int bestweap(int sweap, int exclude = -1)
     {
-        if(last)
-        {
-            int w = getlastweap(sweap);
-            if(hasweap(w, sweap)) return w;
-        }
+        int w = getlastweap(sweap, exclude);
+        if(hasweap(w, sweap)) return w;
         loopirev(W_ALL) if(hasweap(i, sweap, 3)) return i; // reloadable first
         loopirev(W_ALL) if(hasweap(i, sweap, 1)) return i; // carriable second
         loopirev(W_ALL) if(hasweap(i, sweap, 0)) return i; // any just to bail us out
@@ -759,11 +756,12 @@ struct clientstate
         loopi(W_MAX)
         {
             weapstate[i] = prevstate[i] = W_S_IDLE;
-            weapwait[i] = weaptime[i] = weapload[i] = weapshot[i] = prevtime[0] = 0;
+            weapwait[i] = weaptime[i] = weapshot[i] = prevtime[0] = 0;
+            loopj(W_A_MAX) weapload[i][j] = 0;
             if(full)
             {
-                weapclip[i] = weapent[i] = -1;
-                weapstore[i] = 0;
+                weapammo[i][W_A_CLIP] = weapent[i] = -1;
+                weapammo[i][W_A_STORE] = 0;
             }
         }
         if(full) lastweap.shrink(0);
@@ -792,7 +790,7 @@ struct clientstate
         {
             if(isweap(weapselect))
             {
-                lastweap.add(weapselect);
+                addlastweap(weapselect);
                 setweapstate(weapselect, W_S_SWITCH, delay, millis);
             }
             weapselect = weap;
@@ -835,7 +833,7 @@ struct clientstate
 
     bool canreload(int weap, int sweap, bool check = false, int millis = 0, int skip = 0)
     {
-        if((w_reload(weap) || weapstore[weap] > 0) && (!check || (weap == weapselect && hasweap(weap, sweap) && weapclip[weap] < W(weap, ammoclip) && weapstate[weap] != W_S_ZOOM && weapwaited(weap, millis, skip))))
+        if((w_reload(weap) || weapammo[weap][W_A_STORE] > 0) && (!check || (weap == weapselect && hasweap(weap, sweap) && weapammo[weap][W_A_CLIP] < W(weap, ammoclip) && weapstate[weap] != W_S_ZOOM && weapwaited(weap, millis, skip))))
             return true;
         return false;
     }
@@ -867,12 +865,13 @@ struct clientstate
     void useitem(int id, int type, int attr, int ammoamt, int sweap, int millis, int delay)
     {
         if(type != WEAPON || !isweap(attr)) return;
-        int prev = max(weapclip[attr], 0);
+        int prevclip = max(weapammo[attr][W_A_CLIP], 0), prevstore = max(weapammo[attr][W_A_STORE], 0);
         weapswitch(attr, millis, delay, W_S_USE);
-        if(!W(attr, ammostore) || !hasweap(attr, sweap)) weapclip[attr] = clamp(prev+ammoamt, 0, W(attr, ammoclip));
-        int diff = weapclip[attr]-prev, store = ammoamt-diff;
-        if(W(attr, ammostore)) weapstore[attr] = clamp(weapstore[attr]+store, 0, W(attr, ammostore));
-        weapload[attr] = diff;
+        if(!W(attr, ammostore) || !hasweap(attr, sweap)) weapammo[attr][W_A_CLIP] = clamp(prevclip+ammoamt, 0, W(attr, ammoclip));
+        int diffclip = max(weapammo[attr][W_A_CLIP], 0)-prevclip, store = ammoamt-diffclip;
+        if(W(attr, ammostore)) weapammo[attr][W_A_STORE] = clamp(weapammo[attr][W_A_STORE]+store, 0, W(attr, ammostore));
+        weapload[attr][W_A_CLIP] = diffclip;
+        weapload[attr][W_A_STORE] = max(weapammo[attr][W_A_STORE], 0)-prevstore;
         weapent[attr] = id;
     }
 
@@ -966,20 +965,20 @@ struct clientstate
         if(!isweap(s) || s >= W_ALL) s = W_CLAW;
         if(isweap(s))
         {
-            weapclip[s] = W(s, ammospawn);
+            weapammo[s][W_A_CLIP] = W(s, ammospawn);
             weapselect = s;
         }
-        if(s != W_CLAW && AA(actortype, abilities)&(1<<A_A_CLAW) && !W(W_CLAW, disabled)) weapclip[W_CLAW] = W(W_CLAW, ammospawn);
-        if(s != W_MELEE && AA(actortype, abilities)&(1<<A_A_MELEE) && !W(W_MELEE, disabled)) weapclip[W_MELEE] = W(W_MELEE, ammospawn);
+        if(s != W_CLAW && AA(actortype, abilities)&(1<<A_A_CLAW) && !W(W_CLAW, disabled)) weapammo[W_CLAW][W_A_CLIP] = W(W_CLAW, ammospawn);
+        if(s != W_MELEE && AA(actortype, abilities)&(1<<A_A_MELEE) && !W(W_MELEE, disabled)) weapammo[W_MELEE][W_A_CLIP] = W(W_MELEE, ammospawn);
         if(actortype < A_ENEMY)
         {
-            if(m_kaboom(gamemode, mutators) && !W(W_MINE, disabled)) weapclip[W_MINE] = W(W_MINE, ammospawn);
+            if(m_kaboom(gamemode, mutators) && !W(W_MINE, disabled)) weapammo[W_MINE][W_A_CLIP] = W(W_MINE, ammospawn);
             else if(!m_race(gamemode) || m_ra_gauntlet(gamemode, mutators))
             {
                 if(s != W_GRENADE && AA(actortype, spawngrenades) >= (m_insta(gamemode, mutators) ? 2 : 1) && !W(W_GRENADE, disabled))
-                    weapclip[W_GRENADE] = W(W_GRENADE, ammospawn);
+                    weapammo[W_GRENADE][W_A_CLIP] = W(W_GRENADE, ammospawn);
                 if(s != W_MINE && AA(actortype, spawnmines) >= (m_insta(gamemode, mutators) ? 2 : 1) && !W(W_MINE, disabled))
-                    weapclip[W_MINE] = W(W_MINE, ammospawn);
+                    weapammo[W_MINE][W_A_CLIP] = W(W_MINE, ammospawn);
             }
         }
         if(AA(actortype, maxcarry) && m_loadout(gamemode, mutators))
@@ -1003,21 +1002,22 @@ struct clientstate
                     vector<int> &randsrc = rand.empty() ? forcerand : rand;
                     if(!randsrc.empty())
                     {
-                        int i = rnd(randsrc.length());
-                        aweap[j] = randsrc.remove(i);
+                        int n = rnd(randsrc.length());
+                        aweap[j] = randsrc.remove(n);
                     }
                     else continue;
                 }
-                weapclip[aweap[j]] = W(aweap[j], ammospawn);
+                if(!isweap(aweap[j])) continue;
+                weapammo[aweap[j]][W_A_CLIP] = W(aweap[j], ammospawn);
                 count++;
                 if(count >= AA(actortype, maxcarry)) break;
             }
             loopj(2) if(isweap(aweap[j])) { weapselect = aweap[j]; break; }
         }
-        loopj(W_MAX) if(weapclip[j] > W(j, ammoclip))
+        loopj(W_MAX) if(weapammo[j][W_A_CLIP] > W(j, ammoclip))
         {
-            if(W(j, ammostore)) weapstore[j] = min(weapclip[j]-W(j, ammoclip), W(j, ammostore));
-            weapclip[j] = W(j, ammoclip);
+            if(W(j, ammostore)) weapammo[j][W_A_STORE] = clamp(weapammo[j][W_A_CLIP]-W(j, ammoclip), 0, W(j, ammostore));
+            weapammo[j][W_A_CLIP] = W(j, ammoclip);
         }
     }
 

@@ -60,8 +60,9 @@ namespace weapons
 
     ICOMMAND(0, weapslot, "i", (int *o), intret(slot(game::player1, *o >= 0 ? *o : game::player1->weapselect))); // -1 = weapselect slot
     ICOMMAND(0, weapselect, "", (), intret(game::player1->weapselect));
-    ICOMMAND(0, ammo, "i", (int *n), intret(isweap(*n) ? game::player1->weapclip[*n] : -1));
-    ICOMMAND(0, ammostore, "i", (int *n), intret(isweap(*n) ? game::player1->weapstore[*n] : -1));
+    ICOMMAND(0, ammo, "i", (int *n, int *m), intret(isweap(*n) ? game::player1->weapammo[*n][clamp(*m, 0, W_A_MAX-1)] : -1));
+    ICOMMAND(0, ammoclip, "i", (int *n), intret(isweap(*n) ? game::player1->weapammo[*n][W_A_CLIP] : -1));
+    ICOMMAND(0, ammostore, "i", (int *n), intret(isweap(*n) ? game::player1->weapammo[*n][W_A_STORE] : -1));
     ICOMMAND(0, reloadweap, "i", (int *n), intret(w_reload(*n) ? 1 : 0));
     ICOMMAND(0, hasweap, "ii", (int *n, int *o), intret(isweap(*n) && game::player1->hasweap(*n, *o) ? 1 : 0));
     ICOMMAND(0, getweap, "ii", (int *n, int *o),
@@ -87,7 +88,7 @@ namespace weapons
             if(!d->canswitch(weap, m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis, interrupts))
             {
                 if(!d->canswitch(weap, m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis, filter)) return false;
-                else if(!isweap(oldweap) || d->weapload[oldweap] <= 0) return false;
+                else if(!isweap(oldweap) || d->weapload[oldweap][W_A_CLIP] <= 0) return false;
                 else newoff = true;
             }
         }
@@ -96,10 +97,10 @@ namespace weapons
         {
             if(newoff)
             {
-                int offset = d->weapload[oldweap];
-                d->weapclip[oldweap] = max(d->weapclip[oldweap]-offset, 0);
-                if(W(oldweap, ammostore)) d->weapstore[oldweap] = clamp(d->weapstore[oldweap]+offset, 0, W(oldweap, ammostore));
-                d->weapload[oldweap] = -d->weapload[oldweap];
+                int offset = d->weapload[oldweap][W_A_CLIP];
+                d->weapammo[oldweap][W_A_CLIP] = max(d->weapammo[oldweap][W_A_CLIP]-offset, 0);
+                if(W(oldweap, ammostore)) d->weapammo[oldweap][W_A_STORE] = clamp(d->weapammo[oldweap][W_A_STORE]+offset, 0, W(oldweap, ammostore));
+                d->weapload[oldweap][W_A_CLIP] = -d->weapload[oldweap][W_A_CLIP];
             }
             client::addmsg(N_WSELECT, "ri3", d->clientnum, lastmillis-game::maptime, weap);
         }
@@ -118,10 +119,10 @@ namespace weapons
                 return false;
             }
             client::addmsg(N_RELOAD, "ri3", d->clientnum, lastmillis-game::maptime, weap);
-            int oldammo = max(d->weapclip[weap], 0), ammoadd = W(weap, ammoadd);
+            int oldammo = max(d->weapammo[weap][W_A_CLIP], 0), ammoadd = W(weap, ammoadd);
             if(W(weap, ammostore))
             {
-                store = d->weapstore[weap];
+                store = d->weapammo[weap][W_A_STORE];
                 if(!w_reload(weap)) ammoadd = min(store, ammoadd);
             }
             ammo = min(oldammo+ammoadd, W(weap, ammoclip));
@@ -129,9 +130,9 @@ namespace weapons
             if(W(weap, ammostore)) store = clamp(store-diff, 0, W(weap, ammostore));
             load = diff;
         }
-        d->weapload[weap] = load;
-        d->weapclip[weap] = min(ammo, W(weap, ammoclip));
-        if(W(weap, ammostore)) d->weapstore[weap] = clamp(store, 0, W(weap, ammostore));
+        d->weapload[weap][W_A_CLIP] = load;
+        d->weapammo[weap][W_A_CLIP] = min(ammo, W(weap, ammoclip));
+        if(W(weap, ammostore)) d->weapammo[weap][W_A_STORE] = clamp(store, 0, W(weap, ammostore));
         playsound(WSND(weap, S_W_RELOAD), d->o, d, 0, -1, -1, -1, &d->wschan);
         d->setweapstate(weap, W_S_RELOAD, W(weap, delayreload), lastmillis);
         return true;
@@ -206,17 +207,17 @@ namespace weapons
         d->action[AC_DROP] = false;
         if(!d->candrop(weap, sweap, lastmillis, m_classic(game::gamemode, game::mutators), (1<<W_S_SWITCH)))
         {
-            if(!d->candrop(weap, sweap, lastmillis, m_classic(game::gamemode, game::mutators), (1<<W_S_SWITCH)|(1<<W_S_RELOAD)) || !isweap(d->weapselect) || d->weapload[d->weapselect] <= 0)
+            if(!d->candrop(weap, sweap, lastmillis, m_classic(game::gamemode, game::mutators), (1<<W_S_SWITCH)|(1<<W_S_RELOAD)) || !isweap(d->weapselect) || d->weapload[d->weapselect][W_A_CLIP] <= 0)
             {
                 game::errorsnd(d);
                 return;
             }
             else
             {
-                int offset = d->weapload[d->weapselect];
-                d->weapclip[d->weapselect] = max(d->weapclip[d->weapselect]-offset, 0);
-                if(W(d->weapselect, ammostore)) d->weapstore[d->weapselect] = clamp(d->weapstore[d->weapselect]+offset, 0, W(d->weapselect, ammostore));
-                d->weapload[d->weapselect] = -d->weapload[d->weapselect];
+                int offset = d->weapload[d->weapselect][W_A_CLIP];
+                d->weapammo[d->weapselect][W_A_CLIP] = max(d->weapammo[d->weapselect][W_A_CLIP]-offset, 0);
+                if(W(d->weapselect, ammostore)) d->weapammo[d->weapselect][W_A_STORE] = clamp(d->weapammo[d->weapselect][W_A_STORE]+offset, 0, W(d->weapselect, ammostore));
+                d->weapload[d->weapselect][W_A_CLIP] = -d->weapload[d->weapselect][W_A_CLIP];
             }
         }
         client::addmsg(N_DROP, "ri3", d->clientnum, lastmillis-game::maptime, weap);
@@ -227,7 +228,7 @@ namespace weapons
     {
         if(gs_playing(game::gamestate) && d == game::player1 && W2(d->weapselect, ammosub, WS(flags)) && d->canreload(d->weapselect, m_weapon(d->actortype, game::gamemode, game::mutators), true, lastmillis))
         {
-            bool noammo = d->weapclip[d->weapselect] < W2(d->weapselect, ammosub, WS(flags)),
+            bool noammo = d->weapammo[d->weapselect][W_A_CLIP] < W2(d->weapselect, ammosub, WS(flags)),
                  noattack = !d->action[AC_PRIMARY] && !d->action[AC_SECONDARY];
             if((noammo || noattack) && !d->action[AC_USE] && d->weapstate[d->weapselect] == W_S_IDLE && (noammo || lastmillis-d->weaptime[d->weapselect] >= autodelayreload))
                 return autoreloading >= (noammo ? 1 : (W(d->weapselect, ammoadd) < W(d->weapselect, ammoclip) ? 2 : (W2(d->weapselect, cooked, true)&W_C_ZOOM ? 4 : 3)));
@@ -238,7 +239,7 @@ namespace weapons
     void checkweapons(gameent *d)
     {
         int sweap = m_weapon(d->actortype, game::gamemode, game::mutators);
-        if(!d->hasweap(d->weapselect, sweap)) weapselect(d, d->bestweap(sweap, true), 1<<W_S_RELOAD, true);
+        if(!d->hasweap(d->weapselect, sweap)) weapselect(d, d->bestweap(sweap, d->weapselect), 1<<W_S_RELOAD, true);
         else if(d->action[AC_RELOAD] || autoreload(d)) weapreload(d, d->weapselect);
         else if(d->action[AC_DROP]) weapdrop(d, d->weapselect);
     }
@@ -316,28 +317,28 @@ namespace weapons
                 else if(pressed && d->getammo(weap, 0, true) <= 0) game::errorsnd(d);
                 return false;
             }
-            else if(d->weapload[weap] <= 0 || weap != d->weapselect) return false;
-            else offset = d->weapload[weap];
+            else if(d->weapload[weap][W_A_CLIP] <= 0 || weap != d->weapselect) return false;
+            else offset = d->weapload[weap][W_A_CLIP];
         }
         float scale = 1;
         int sub = W2(weap, ammosub, secondary), cooked = force;
         if(W2(weap, cooktime, secondary) || zooming)
         {
             float maxscale = 1;
-            if(sub > 1 && d->weapclip[weap] < sub) maxscale = d->weapclip[weap]/float(sub);
+            if(sub > 1 && d->weapammo[weap][W_A_CLIP] < sub) maxscale = d->weapammo[weap][W_A_CLIP]/float(sub);
             int len = max(int(W2(weap, cooktime, secondary)*maxscale), 1), type = zooming ? W_S_ZOOM : W_S_POWER;
             if(!cooked)
             {
                 if(d->weapstate[weap] != type)
                 {
-                    int curammo = d->weapclip[weap]-offset;
+                    int curammo = d->weapammo[weap][W_A_CLIP]-offset;
                     if(pressed && curammo > 0)
                     {
                         if(offset > 0)
                         {
-                            d->weapclip[weap] = max(curammo, 0);
-                            if(W(weap, ammostore)) d->weapstore[weap] = clamp(d->weapstore[weap]+offset, 0, W(weap, ammostore));
-                            d->weapload[weap] = -offset;
+                            d->weapammo[weap][W_A_CLIP] = max(curammo, 0);
+                            if(W(weap, ammostore)) d->weapammo[weap][W_A_STORE] = clamp(d->weapammo[weap][W_A_STORE]+offset, 0, W(weap, ammostore));
+                            d->weapload[weap][W_A_CLIP] = -offset;
                         }
                         int offtime = hadcook && d->prevstate[weap] == type ? lastmillis-d->prevtime[weap] : 0;
                         client::addmsg(N_SPHY, "ri5", d->clientnum, SPHY_COOK, type, len, offtime);

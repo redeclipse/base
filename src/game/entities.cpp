@@ -439,13 +439,8 @@ namespace entities
         if(isweap(weap))
         {
             d->setweapstate(weap, W_S_SWITCH, W(weap, delayswitch), lastmillis);
-            d->weapclip[weap] = -1;
-            d->weapstore[weap] = 0;
-            if(d->weapselect != weap && weap < W_ALL)
-            {
-                d->addlastweap(d->weapselect);
-                d->weapselect = weap;
-            }
+            d->weapammo[weap][W_A_CLIP] = -1;
+            d->weapammo[weap][W_A_STORE] = 0;
         }
         d->useitem(ent, e.type, attr, ammoamt, sweap, lastmillis, W(attr, delayitem));
         playsound(e.type == WEAPON && attr >= W_OFFSET && attr < W_ALL ? WSND(attr, S_W_USE) : S_ITEMUSE, d->o, d, 0, -1, -1, -1, &d->wschan);
@@ -670,13 +665,13 @@ namespace entities
                         {
                             if(e.type != WEAPON) return false;
                             else if(!f->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, (1<<W_S_SWITCH)|(1<<W_S_RELOAD))) return true;
-                            else if(!isweap(f->weapselect) || f->weapload[f->weapselect] <= 0) return true;
+                            else if(!isweap(f->weapselect) || f->weapload[f->weapselect][W_A_CLIP] <= 0) return true;
                             else
                             {
-                                int offset = f->weapload[f->weapselect];
-                                f->weapclip[f->weapselect] = max(f->weapclip[f->weapselect]-offset, 0);
-                                if(W(f->weapselect, ammostore)) f->weapstore[f->weapselect] = clamp(f->weapstore[f->weapselect]+offset, 0, W(f->weapselect, ammostore));
-                                f->weapload[f->weapselect] = -f->weapload[f->weapselect];
+                                int offset = f->weapload[f->weapselect][W_A_CLIP];
+                                f->weapammo[f->weapselect][W_A_CLIP] = max(f->weapammo[f->weapselect][W_A_CLIP]-offset, 0);
+                                if(W(f->weapselect, ammostore)) f->weapammo[f->weapselect][W_A_STORE] = clamp(f->weapammo[f->weapselect][W_A_STORE]+offset, 0, W(f->weapselect, ammostore));
+                                f->weapload[f->weapselect][W_A_CLIP] = -f->weapload[f->weapselect][W_A_CLIP];
                             }
                         }
                         client::addmsg(N_ITEMUSE, "ri4", f->clientnum, lastmillis-game::maptime, cn, n);

@@ -772,7 +772,7 @@ namespace server
 
     void takeammo(clientinfo *ci, int weap, int amt = 1)
     {
-        ci->weapclip[weap] = max(ci->weapclip[weap]-amt, 0);
+        ci->weapammo[weap][W_A_CLIP] = max(ci->weapammo[weap][W_A_CLIP]-amt, 0);
     }
 
     struct droplist { int weap, ent, ammo; };
@@ -795,8 +795,8 @@ namespace server
         ci->dropped.add(d.ent, d.ammo);
         if(flags&DROP_WCLR)
         {
-            ci->weapent[weap] = ci->weapclip[weap] = -1;
-            ci->weapstore[weap] = 0;
+            ci->weapent[weap] = ci->weapammo[weap][W_A_CLIP] = -1;
+            ci->weapammo[weap][W_A_STORE] = 0;
         }
     }
 
@@ -2327,7 +2327,7 @@ namespace server
         ci->spawnstate(gamemode, mutators, weap, health);
         ci->updatetimeplayed();
         loopv(sents) if(sents[i].type == WEAPON && isweap(sents[i].attrs[0]) && hasitem(i, false) && ci->weapent[sents[i].attrs[0]] < 0) ci->weapent[sents[i].attrs[0]] = i;
-        sendf(ci->clientnum, 1, "ri9ifi4vvv", N_SPAWNSTATE, ci->clientnum, spawn, ci->state, ci->points, ci->frags, ci->deaths, ci->totalpoints, ci->totalfrags, ci->totaldeaths, ci->totalavgpos, ci->timeplayed, ci->health, ci->cptime, ci->weapselect, W_MAX, &ci->weapclip[0], W_MAX, &ci->weapstore[0], W_MAX, &ci->weapent[0]);
+        sendf(ci->clientnum, 1, "ri9ifi4vv", N_SPAWNSTATE, ci->clientnum, spawn, ci->state, ci->points, ci->frags, ci->deaths, ci->totalpoints, ci->totalfrags, ci->totaldeaths, ci->totalavgpos, ci->timeplayed, ci->health, ci->cptime, ci->weapselect, W_MAX*W_A_MAX, &ci->weapammo[0][0], W_MAX, &ci->weapent[0]);
         ci->lastspawn = gamemillis;
     }
 
@@ -2347,8 +2347,7 @@ namespace server
         putint(p, ci->health);
         putint(p, ci->cptime);
         putint(p, ci->weapselect);
-        loopi(W_MAX) putint(p, ci->weapclip[i]);
-        loopi(W_MAX) putint(p, ci->weapstore[i]);
+        loopi(W_MAX) loopj(W_A_MAX) putint(p, ci->weapammo[i][j]);
         loopi(W_MAX) putint(p, ci->weapent[i]);
     }
 
@@ -3971,7 +3970,7 @@ namespace server
             ci->weapreset(false);
         }
         ci->updatetimeplayed();
-        sendf(target, 1, "ri9fi4vvvi", N_RESUME, ci->clientnum, state, ci->points, ci->frags, ci->deaths, ci->totalpoints, ci->totalfrags, ci->totaldeaths, ci->totalavgpos, ci->timeplayed, ci->health, ci->cptime, ci->weapselect, W_MAX, &ci->weapclip[0], W_MAX, &ci->weapstore[0], W_MAX, &ci->weapent[0], -1);
+        sendf(target, 1, "ri9fi4vvvi", N_RESUME, ci->clientnum, state, ci->points, ci->frags, ci->deaths, ci->totalpoints, ci->totalfrags, ci->totaldeaths, ci->totalavgpos, ci->timeplayed, ci->health, ci->cptime, ci->weapselect, W_MAX*W_A_MAX, &ci->weapammo[0][0], W_MAX, &ci->weapent[0], -1);
     }
 
     void putinitclient(clientinfo *ci, packetbuf &p, bool allow)
@@ -4800,11 +4799,11 @@ namespace server
 
     void checkweapload(clientinfo *ci, int weap)
     {
-        if(ci->weapload[ci->weapselect] <= 0) return;
-        takeammo(ci, ci->weapselect, ci->weapload[ci->weapselect]);
-        if(W(ci->weapselect, ammostore)) ci->weapstore[ci->weapselect] = clamp(ci->weapstore[ci->weapselect]+ci->weapload[ci->weapselect], 0, W(ci->weapselect, ammostore));
-        ci->weapload[ci->weapselect] = -ci->weapload[ci->weapselect]; // the client should already do this for themself
-        sendf(-1, 1, "ri6x", N_RELOAD, ci->clientnum, ci->weapselect, ci->weapload[ci->weapselect], ci->weapclip[ci->weapselect], ci->weapstore[ci->weapselect], ci->clientnum);
+        if(ci->weapload[ci->weapselect][W_A_CLIP] <= 0) return;
+        takeammo(ci, ci->weapselect, ci->weapload[ci->weapselect][W_A_CLIP]);
+        if(W(ci->weapselect, ammostore)) ci->weapammo[ci->weapselect][W_A_STORE] = clamp(ci->weapammo[ci->weapselect][W_A_STORE]+ci->weapload[ci->weapselect][W_A_CLIP], 0, W(ci->weapselect, ammostore));
+        ci->weapload[ci->weapselect][W_A_CLIP] = -ci->weapload[ci->weapselect][W_A_CLIP]; // the client should already do this for themself
+        sendf(-1, 1, "ri6x", N_RELOAD, ci->clientnum, ci->weapselect, ci->weapload[ci->weapselect][W_A_CLIP], ci->weapammo[ci->weapselect][W_A_CLIP], ci->weapammo[ci->weapselect][W_A_STORE], ci->clientnum);
     }
 
     void shotevent::process(clientinfo *ci)
@@ -4817,9 +4816,9 @@ namespace server
         int sweap = m_weapon(ci->actortype, gamemode, mutators), sub = W2(weap, ammosub, WS(flags));
         if(sub > 1 && W2(weap, cooktime, WS(flags)))
         {
-            if(ci->weapclip[weap] < sub)
+            if(ci->weapammo[weap][W_A_CLIP] < sub)
             {
-                int maxscale = int(ci->weapclip[weap]/float(sub)*W2(weap, cooktime, WS(flags)));
+                int maxscale = int(ci->weapammo[weap][W_A_CLIP]/float(sub)*W2(weap, cooktime, WS(flags)));
                 if(scale > maxscale) scale = maxscale;
             }
             sub = clamp(int(ceilf(sub*scale/float(W2(weap, cooktime, WS(flags))))), 1, W2(weap, ammosub, WS(flags)));
@@ -4828,7 +4827,7 @@ namespace server
         {
             if(!ci->canshoot(weap, flags, sweap, millis, (1<<W_S_RELOAD)))
             {
-                if(sub && W(weap, ammoclip)) ci->weapclip[weap] = max(ci->weapclip[weap]-sub, 0);
+                if(sub && W(weap, ammoclip)) ci->weapammo[weap][W_A_CLIP] = max(ci->weapammo[weap][W_A_CLIP]-sub, 0);
                 srvmsgft(ci->clientnum, CON_DEBUG, "sync error: shoot [%d] failed - current state disallows it", weap);
                 sendresume(ci, true);
                 return;
@@ -4857,8 +4856,8 @@ namespace server
             else if(!ci->hasweap(weap, sweap, m_classic(gamemode, mutators) ? 5 : 6))
             {
                 sendf(-1, 1, "ri7", N_DROP, ci->clientnum, -1, 1, weap, -1, 0);
-                ci->weapclip[weap] = -1;
-                ci->weapstore[weap] = 0;
+                ci->weapammo[weap][W_A_CLIP] = -1;
+                ci->weapammo[weap][W_A_STORE] = 0;
             }
         }
     }
@@ -4904,15 +4903,15 @@ namespace server
             }
             checkweapload(ci, ci->weapselect);
         }
-        int dropped = -1, ammo = -1, nweap = ci->bestweap(sweap, true); // switch to best weapon
+        int dropped = -1, ammo = -1, nweap = ci->bestweap(sweap, weap); // switch to best weapon
         if(sents.inrange(ci->weapent[weap]))
         {
             dropped = ci->weapent[weap];
             ammo = ci->getammo(weap, 0, true);
             if(ammo) ci->dropped.add(dropped, ammo);
         }
-        ci->weapclip[weap] = -1;
-        ci->weapstore[weap] = 0;
+        ci->weapammo[weap][W_A_CLIP] = -1;
+        ci->weapammo[weap][W_A_STORE] = 0;
         ci->weapswitch(nweap, millis, W(nweap, delayswitch));
         sendf(-1, 1, "ri7", N_DROP, ci->clientnum, nweap, 1, weap, dropped, ammo);
     }
@@ -4930,8 +4929,8 @@ namespace server
             sendresume(ci, true);
             return;
         }
-        int oldammo = max(ci->weapclip[weap], 0), ammoadd = W(weap, ammoadd);
-        if(!w_reload(weap) && W(weap, ammostore)) ammoadd = min(ci->weapstore[weap], ammoadd);
+        int oldammo = max(ci->weapammo[weap][W_A_CLIP], 0), ammoadd = W(weap, ammoadd);
+        if(!w_reload(weap) && W(weap, ammostore)) ammoadd = min(ci->weapammo[weap][W_A_STORE], ammoadd);
         if(!ammoadd)
         {
             srvmsgft(ci->clientnum, CON_DEBUG, "sync error: reload [%d] failed - no ammo available", weap);
@@ -4939,11 +4938,11 @@ namespace server
             return;
         }
         ci->setweapstate(weap, W_S_RELOAD, W(weap, delayreload), millis);
-        ci->weapclip[weap] = min(oldammo+ammoadd, W(weap, ammoclip));
-        int diff = ci->weapclip[weap]-oldammo;
-        if(W(weap, ammostore)) ci->weapstore[weap] = clamp(ci->weapstore[weap]-diff, 0, W(weap, ammostore));
-        ci->weapload[weap] = diff;
-        sendf(-1, 1, "ri6x", N_RELOAD, ci->clientnum, weap, ci->weapload[weap], ci->weapclip[weap], ci->weapstore[weap], ci->clientnum);
+        ci->weapammo[weap][W_A_CLIP] = min(oldammo+ammoadd, W(weap, ammoclip));
+        int diff = ci->weapammo[weap][W_A_CLIP]-oldammo;
+        if(W(weap, ammostore)) ci->weapammo[weap][W_A_STORE] = clamp(ci->weapammo[weap][W_A_STORE]-diff, 0, W(weap, ammostore));
+        ci->weapload[weap][W_A_CLIP] = diff;
+        sendf(-1, 1, "ri6x", N_RELOAD, ci->clientnum, weap, ci->weapload[weap][W_A_CLIP], ci->weapammo[weap][W_A_CLIP], ci->weapammo[weap][W_A_STORE], ci->clientnum);
     }
 
     void useevent::process(clientinfo *ci)
@@ -4993,8 +4992,8 @@ namespace server
                 ci->setweapstate(weap, W_S_SWITCH, W(weap, delayswitch), millis);
                 if(ammo) ci->dropped.add(dropped, ammo);
             }
-            ci->weapclip[weap] = -1;
-            ci->weapstore[weap] = 0;
+            ci->weapammo[weap][W_A_CLIP] = -1;
+            ci->weapammo[weap][W_A_STORE] = 0;
         }
         if(cn >= 0)
         {
@@ -6273,7 +6272,7 @@ namespace server
                                     sendresume(ci, true);
                                     break;
                                 }
-                                else if(cp->weapload[cp->weapselect] > 0) checkweapload(cp, cp->weapselect);
+                                else if(cp->weapload[cp->weapselect][W_A_CLIP] > 0) checkweapload(cp, cp->weapselect);
                                 else break;
                             }
                             cp->setweapstate(cp->weapselect, wstate, wlen, lastmillis, wtime, wstate == W_S_IDLE);

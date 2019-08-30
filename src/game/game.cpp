@@ -1204,7 +1204,7 @@ namespace game
 
         if(isweap(d->weapselect) && gs_playing(gamestate) && d->state == CS_ALIVE)
         {
-            if(d->weapselect < W_ALL && d->weapstate[d->weapselect] != W_S_RELOAD && prevstate == W_S_RELOAD && playreloadnotify&(d == focus ? 1 : 2) && (d->weapclip[d->weapselect] >= W(d->weapselect, ammoclip) || playreloadnotify&(d == focus ? 4 : 8)))
+            if(d->weapselect < W_ALL && d->weapstate[d->weapselect] != W_S_RELOAD && prevstate == W_S_RELOAD && playreloadnotify&(d == focus ? 1 : 2) && (d->weapammo[d->weapselect][W_A_CLIP] >= W(d->weapselect, ammoclip) || playreloadnotify&(d == focus ? 4 : 8)))
                     playsound(WSND(d->weapselect, S_W_NOTIFY), d->o, d, 0, reloadnotifyvol, -1, -1, &d->wschan);
             if(d->weapstate[d->weapselect] == W_S_POWER || d->weapstate[d->weapselect] == W_S_ZOOM)
             {
@@ -3218,7 +3218,7 @@ namespace game
             }
             else if(W2(d->weapselect, ammosub, false) || W2(d->weapselect, ammosub, true))
             {
-                int ammo = d->weapclip[d->weapselect], maxammo = W(d->weapselect, ammoclip);
+                int ammo = d->weapammo[d->weapselect][W_A_CLIP], maxammo = W(d->weapselect, ammoclip);
                 float scale = 1;
                 switch(d->weapstate[d->weapselect])
                 {
@@ -3226,8 +3226,8 @@ namespace game
                     {
                         int millis = lastmillis-d->weaptime[d->weapselect], check = d->weapwait[d->weapselect]/2;
                         scale = millis >= check ? float(millis-check)/check : 0.f;
-                        if(d->weapload[d->weapselect] > 0)
-                            scale = max(scale, float(ammo - d->weapload[d->weapselect])/maxammo);
+                        if(d->weapload[d->weapselect][W_A_CLIP] > 0)
+                            scale = max(scale, float(ammo - d->weapload[d->weapselect][W_A_CLIP])/maxammo);
                         break;
                     }
                     default: scale = float(ammo)/maxammo; break;
@@ -3295,14 +3295,18 @@ namespace game
                 {
                     case W_S_SWITCH: case W_S_USE:
                     {
-                        int millis = lastmillis-d->weaptime[weap], off = min(d->weapwait[weap]/4, 250), lastweap = d->getlastweap(m_weapon(d->actortype, gamemode, mutators));
-                        if(isweap(lastweap) && lastweap != weap && millis <= off)
+                        int millis = lastmillis-d->weaptime[weap], off = min(d->weapwait[weap]/4, 250),
+                            lastweap = d->getlastweap(m_weapon(d->actortype, gamemode, mutators));
+                        if(!isweap(lastweap) || lastweap != weap)
                         {
-                            weap = lastweap;
-                            weapscale = 1.f-(millis/float(off));
+                            if(isweap(lastweap) && millis <= off)
+                            {
+                                weap = lastweap;
+                                weapscale = 1.f-(millis/float(off));
+                            }
+                            else if(!d->hasweap(weap, m_weapon(d->actortype, gamemode, mutators))) showweap = false;
+                            else if(millis <= off*2) weapscale = (millis-off)/float(off);
                         }
-                        else if(!d->hasweap(weap, m_weapon(d->actortype, gamemode, mutators))) showweap = false;
-                        else if(millis <= off*2) weapscale = (millis-off)/float(off);
                         mdl.anim = d->weapstate[weap] == W_S_SWITCH ? ANIM_SWITCH : ANIM_USE;
                         break;
                     }
@@ -3845,8 +3849,8 @@ namespace game
         previewent->actortype = A_PLAYER;
         previewent->physstate = PHYS_FLOOR;
         previewent->spawnstate(G_DEATHMATCH, 0, -1, previewent->gethealth(G_DEATHMATCH, 0));
-        loopi(W_MAX) previewent->weapclip[i] = W(i, ammoclip);
-        loopi(W_MAX) previewent->weapstore[i] = W(i, ammostore);
+        loopi(W_MAX) previewent->weapammo[i][W_A_CLIP] = W(i, ammoclip);
+        loopi(W_MAX) previewent->weapammo[i][W_A_STORE] = W(i, ammostore);
     }
 
     void renderplayerpreview(float scale, const vec4 &mcolor, const char *actions)
@@ -3874,8 +3878,9 @@ namespace game
     PLAYERPREV(team, "i", (int *n), previewent->team = clamp(*n, 0, int(T_MULTI)));
     PLAYERPREV(privilege, "i", (int *n), previewent->privilege = clamp(*n, 0, int(PRIV_MAX-1)));
     PLAYERPREV(weapselect, "i", (int *n), previewent->weapselect = clamp(*n, 0, W_ALL-1));
-    PLAYERPREV(weapammo, "ii", (int *n, int *o), previewent->weapclip[clamp(*n, 0, W_ALL-1)] = *o);
-    PLAYERPREV(weapstore, "ii", (int *n, int *o), previewent->weapstore[clamp(*n, 0, W_ALL-1)] = *o);
+    PLAYERPREV(weapammo, "iii", (int *n, int *o, int *p), previewent->weapammo[clamp(*n, 0, W_ALL-1)][clamp(*p, 0, W_A_MAX-1)] = *o);
+    PLAYERPREV(weapclip, "ii", (int *n, int *o), previewent->weapammo[clamp(*n, 0, W_ALL-1)][W_A_CLIP] = *o);
+    PLAYERPREV(weapstore, "ii", (int *n, int *o), previewent->weapammo[clamp(*n, 0, W_ALL-1)][W_A_STORE] = *o);
     PLAYERPREV(weapstate, "ii", (int *n, int *o), previewent->weapstate[clamp(*n, 0, W_ALL-1)] = clamp(*o, 0, W_S_MAX-1));
     PLAYERPREV(weapwait, "ii", (int *n, int *o), previewent->weapwait[clamp(*n, 0, W_ALL-1)] = *o);
     PLAYERPREV(weaptime, "ii", (int *n, int *o), previewent->weaptime[clamp(*n, 0, W_ALL-1)] = *o);

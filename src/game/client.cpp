@@ -870,12 +870,13 @@ namespace client
     CLCOMMAND(weapselect, intret(d->weapselect));
     CLCOMMANDM(loadweap, "si", (char *who, int *n), intret(d->loadweap.inrange(*n) ? d->loadweap[*n] : -1));
     CLCOMMANDM(weapget, "siii", (char *who, int *n, int *a, int *b), intret(isweap(*n) ? d->getammo(*n, *a!=0 ? lastmillis : 0, *b!=0) : -1));
-    CLCOMMANDM(weapammo, "si", (char *who, int *n), intret(isweap(*n) ? d->weapclip[*n] : -1));
-    CLCOMMANDM(weapstore, "si", (char *who, int *n), intret(isweap(*n) ? d->weapstore[*n] : -1));
+    CLCOMMANDM(weapammo, "sii", (char *who, int *n, int *m), intret(isweap(*n) ? d->weapammo[*n][clamp(*m, 0, W_A_MAX-1)] : -1));
+    CLCOMMANDM(weapclip, "si", (char *who, int *n), intret(isweap(*n) ? d->weapammo[*n][W_A_CLIP] : -1));
+    CLCOMMANDM(weapstore, "si", (char *who, int *n), intret(isweap(*n) ? d->weapammo[*n][W_A_STORE] : -1));
     CLCOMMANDM(weapstate, "si", (char *who, int *n), intret(isweap(*n) ? d->weapstate[*n] : W_S_IDLE));
     CLCOMMANDM(weaptime, "si", (char *who, int *n), intret(isweap(*n) ? d->weaptime[*n] : 0));
     CLCOMMANDM(weapwait, "si", (char *who, int *n), intret(isweap(*n) ? d->weapwait[*n] : 0));
-    CLCOMMANDM(weapload, "si", (char *who, int *n), intret(isweap(*n) ? d->weapload[*n] : 0));
+    CLCOMMANDM(weapload, "sii", (char *who, int *n, int *m), intret(isweap(*n) ? d->weapload[*n][clamp(*m, 0, W_A_MAX-1)] : 0));
     CLCOMMANDM(weaphold, "si", (char *who, int *n), intret(isweap(*n) && d->holdweap(*n, m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis) ? 1 : 0));
     CLCOMMAND(weapholdnum, intret(d->holdweapcount(m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis)));
     CLCOMMANDM(action, "sb", (char *who, int *n), intret(d->action[clamp(*n, 0, int(AC_MAX-1))] ? 1 : 0));
@@ -2162,8 +2163,7 @@ namespace client
             d->weapreset(!resume);
             int weap = getint(p);
             d->weapselect = isweap(weap) ? weap : W_CLAW;
-            loopi(W_MAX) d->weapclip[i] = getint(p);
-            loopi(W_MAX) d->weapstore[i] = getint(p);
+            loopi(W_MAX) loopj(W_A_MAX) d->weapammo[i][j] = getint(p);
             loopi(W_MAX) d->weapent[i] = getint(p);
         }
         if(resume) d->configure(game::gamemode, game::mutators, game::rescale(d), game::speedscale(d), physics::carryaffinity(d), 0, lastmillis, true);
