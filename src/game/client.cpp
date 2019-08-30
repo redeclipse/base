@@ -2266,7 +2266,11 @@ namespace client
                 {
                     bool val = d->action[k];
                     d->action[k] = flags&(1<<(12+k)) ? true : false;
-                    if(val != d->action[k]) d->actiontime[k] = lastmillis;
+                    if(val != d->action[k])
+                    {
+                        if(d->action[k]) d->actiontime[k] = lastmillis;
+                        else if(k == AC_CROUCH || k == AC_JUMP) d->actiontime[k] = -lastmillis;
+                    }
                 }
                 vec oldpos(d->o);
                 d->o = o;
