@@ -512,21 +512,21 @@ namespace hud
     {
         modecheck(g, m);
         if(before) modetex(g, m, list);
-        if(m_multi(g, m) && (implied || !(gametype[g].implied&(1<<G_M_MULTI)))) ADDMODE(modemultitex)
-        if(m_ffa(g, m) && (implied || !(gametype[g].implied&(1<<G_M_FFA)))) ADDMODE(modeffatex)
-        if(m_coop(g, m) && (implied || !(gametype[g].implied&(1<<G_M_COOP)))) ADDMODE(modecooptex)
-        if(m_insta(g, m) && (implied || !(gametype[g].implied&(1<<G_M_INSTA)))) ADDMODE(modeinstatex)
-        if(m_medieval(g, m) && (implied || !(gametype[g].implied&(1<<G_M_MEDIEVAL)))) ADDMODE(modemedievaltex)
-        if(m_kaboom(g, m) && (implied || !(gametype[g].implied&(1<<G_M_KABOOM)))) ADDMODE(modekaboomtex)
-        if(m_duel(g, m) && (implied || !(gametype[g].implied&(1<<G_M_DUEL)))) ADDMODE(modedueltex)
-        if(m_survivor(g, m) && (implied || !(gametype[g].implied&(1<<G_M_SURVIVOR)))) ADDMODE(modesurvivortex)
-        if(m_classic(g, m) && (implied || !(gametype[g].implied&(1<<G_M_CLASSIC)))) ADDMODE(modeclassictex)
-        if(m_onslaught(g, m) && (implied || !(gametype[g].implied&(1<<G_M_ONSLAUGHT)))) ADDMODE(modeonslaughttex)
-        if(m_freestyle(g, m) && (implied || !(gametype[g].implied&(1<<G_M_FREESTYLE)))) ADDMODE(modefreestyletex)
-        if(m_vampire(g, m) && (implied || !(gametype[g].implied&(1<<G_M_VAMPIRE)))) ADDMODE(modevampiretex)
-        if(m_resize(g, m) && (implied || !(gametype[g].implied&(1<<G_M_RESIZE)))) ADDMODE(moderesizetex)
-        if(m_hard(g, m) && (implied || !(gametype[g].implied&(1<<G_M_HARD)))) ADDMODE(modehardtex)
-        if(m_basic(g, m) && (implied || !(gametype[g].implied&(1<<G_M_BASIC)))) ADDMODE(modebasictex)
+        if(m_multi(g, m) && (implied || !(gametype[g].implied&GM(MULTI)))) ADDMODE(modemultitex)
+        if(m_ffa(g, m) && (implied || !(gametype[g].implied&GM(FFA)))) ADDMODE(modeffatex)
+        if(m_coop(g, m) && (implied || !(gametype[g].implied&GM(COOP)))) ADDMODE(modecooptex)
+        if(m_insta(g, m) && (implied || !(gametype[g].implied&GM(INSTA)))) ADDMODE(modeinstatex)
+        if(m_medieval(g, m) && (implied || !(gametype[g].implied&GM(MEDIEVAL)))) ADDMODE(modemedievaltex)
+        if(m_kaboom(g, m) && (implied || !(gametype[g].implied&GM(KABOOM)))) ADDMODE(modekaboomtex)
+        if(m_duel(g, m) && (implied || !(gametype[g].implied&GM(DUEL)))) ADDMODE(modedueltex)
+        if(m_survivor(g, m) && (implied || !(gametype[g].implied&GM(SURVIVOR)))) ADDMODE(modesurvivortex)
+        if(m_classic(g, m) && (implied || !(gametype[g].implied&GM(CLASSIC)))) ADDMODE(modeclassictex)
+        if(m_onslaught(g, m) && (implied || !(gametype[g].implied&GM(ONSLAUGHT)))) ADDMODE(modeonslaughttex)
+        if(m_freestyle(g, m) && (implied || !(gametype[g].implied&GM(FREESTYLE)))) ADDMODE(modefreestyletex)
+        if(m_vampire(g, m) && (implied || !(gametype[g].implied&GM(VAMPIRE)))) ADDMODE(modevampiretex)
+        if(m_resize(g, m) && (implied || !(gametype[g].implied&GM(RESIZE)))) ADDMODE(moderesizetex)
+        if(m_hard(g, m) && (implied || !(gametype[g].implied&GM(HARD)))) ADDMODE(modehardtex)
+        if(m_basic(g, m) && (implied || !(gametype[g].implied&GM(BASIC)))) ADDMODE(modebasictex)
         if(!before) modetex(g, m, list);
     }
     #undef ADDMODE
@@ -597,7 +597,7 @@ namespace hud
     void damage(int n, const vec &loc, gameent *v, int weap, int flags)
     {
         if(!n) return;
-        int m = flags&HIT_BURN || flags&HIT_BLEED || flags&HIT_SHOCK ? damageresiduemulresidual : damageresiduemul;
+        int m = flags&HIT(BURN) || flags&HIT(BLEED) || flags&HIT(SHOCK) ? damageresiduemulresidual : damageresiduemul;
         damageresidue = clamp(damageresidue+(n*m), 0, damageresiduemax);
         int colour = onscreendamagecolour;
         if(game::nogore || game::bloodscale <= 0) colour = 0xFF00FF;
@@ -1454,7 +1454,7 @@ namespace hud
                         pushfont("little");
                         if(target->canshoot(target->weapselect, 0, m_weapon(target->actortype, game::gamemode, game::mutators), lastmillis, (1<<W_S_RELOAD)))
                             ty += draw_textf("Press \fs\fw\f{=primary}\fS to attack", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1);
-                        if(target->canshoot(target->weapselect, HIT_ALT, m_weapon(target->actortype, game::gamemode, game::mutators), lastmillis, (1<<W_S_RELOAD)))
+                        if(target->canshoot(target->weapselect, HIT(ALT), m_weapon(target->actortype, game::gamemode, game::mutators), lastmillis, (1<<W_S_RELOAD)))
                             ty += draw_textf("Press \fs\fw\f{=secondary}\fS to %s", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1, W2(target->weapselect, cooked, true)&W_C_ZOOM ? "zoom" : "alt-attack");
                         if(target->canreload(target->weapselect, m_weapon(target->actortype, game::gamemode, game::mutators), true, lastmillis))
                             ty += draw_textf("Press \fs\fw\f{=reload}\fS to reload ammo", tx, ty, int(FONTW*noticepadx), int(FONTH*noticepady), tr, tg, tb, tf, TEXT_CENTERED, -1, tw, 1);

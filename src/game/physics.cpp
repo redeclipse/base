@@ -1152,7 +1152,7 @@ namespace physics
                 {
                     if(d->o.z < 0)
                     {
-                        game::suicide(d, HIT_LOST);
+                        game::suicide(d, HIT(LOST));
                         return false;
                     }
                     if(d->roll != 0) adjustscaled(d->roll, PHYSMILLIS);

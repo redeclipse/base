@@ -216,9 +216,9 @@ struct bomberservmode : bomberstate, servmode
                 if(!candidates[T_NEUTRAL].empty() && !m_bb_hold(gamemode, mutators))
                 {
                     int muts = mutators;
-                    if(muts&(1<<G_M_GSP2)) muts &= ~(1<<G_M_GSP2);
-                    if(muts&(1<<G_M_GSP3)) muts &= ~(1<<G_M_GSP3);
-                    muts |= (1<<G_M_GSP1);
+                    if(muts&GM(GSP2)) muts &= ~GM(GSP2);
+                    if(muts&GM(GSP3)) muts &= ~GM(GSP3);
+                    muts |= GM(GSP1);
                     srvmsgf(-1, "\fzoyThis map does have enough goals, switching to hold mutator");
                     changemap(smapname, gamemode, muts);
                     return;

@@ -8,24 +8,32 @@ enum
     W_ITEMS = W_MINE-W_GRENADE+1,
     W_REPLACE = W_GRENADE
 };
-#define isweap(a)           (a >= 0 && a < W_MAX)
-#define itemweap(a)         (a >= W_ITEM && a < W_ALL)
+#define WZ(x) (W_MAX+(W_##x))
+
+#define isweap(a) (a >= 0 && a < W_MAX)
+#define itemweap(a) (a >= W_ITEM && a < W_ALL)
 
 enum { W_F_NONE = 0, W_F_FORCED = 1<<0 };
-enum {
+
+enum
+{
     W_C_SCALE = 1<<0, W_C_SCALEN = 1<<1, W_C_LIFE = 1<<2, W_C_LIFEN = 1<<3,
     W_C_SPEED = 1<<4, W_C_SPEEDN = 1<<5, W_C_RAYS = 1<<6, W_C_ZOOM = 1<<7, W_C_KEEP = 1<<8,
     W_C_ALL = W_C_SCALE|W_C_SCALEN|W_C_LIFE|W_C_LIFEN|W_C_SPEED|W_C_SPEEDN|W_C_RAYS|W_C_ZOOM|W_C_KEEP,
     W_C_SS = W_C_SCALE|W_C_SPEED, W_C_SZ = W_C_SCALE|W_C_ZOOM|W_C_KEEP, W_C_ZK = W_C_ZOOM|W_C_KEEP
 };
-enum {
+
+enum
+{
     W_N_STADD = 1<<0, W_N_GRADD = 1<<1, W_N_STIMM = 1<<2, W_N_GRIMM = 1<<3, W_N_SLIDE = 1<<4,
     W_N_ADD = W_N_STADD|W_N_GRADD, W_N_IMM = W_N_STIMM|W_N_GRIMM,
     W_N_ST = W_N_STADD|W_N_STIMM, W_N_GR = W_N_GRADD|W_N_GRIMM,
     W_N_AI = W_N_STADD|W_N_GRADD|W_N_STIMM|W_N_GRIMM,
     W_N_ALL = W_N_STADD|W_N_GRADD|W_N_STIMM|W_N_GRIMM|W_N_SLIDE
 };
-enum {
+
+enum
+{
     W_S_IDLE = 0, W_S_PRIMARY, W_S_SECONDARY, W_S_RELOAD, W_S_POWER, W_S_ZOOM, W_S_SWITCH, W_S_USE, W_S_WAIT, W_S_MAX,
     W_S_ALL = (1<<W_S_IDLE)|(1<<W_S_PRIMARY)|(1<<W_S_SECONDARY)|(1<<W_S_RELOAD)|(1<<W_S_SWITCH)|(1<<W_S_USE)|(1<<W_S_POWER)|(1<<W_S_ZOOM)|(1<<W_S_WAIT),
     W_S_EXCLUDE = (1<<W_S_IDLE)|(1<<W_S_POWER)|(1<<W_S_ZOOM)
@@ -79,33 +87,33 @@ enum
     COLLIDE_ALL = COLLIDE_TRACE|COLLIDE_PROJ|COLLIDE_OWNER|IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS|BOUNCE_GEOM|BOUNCE_PLAYER|BOUNCE_SHOTS|DRILL_GEOM|DRILL_PLAYER|DRILL_SHOTS|STICK_GEOM|STICK_PLAYER|COLLIDE_HITSCAN
 };
 
+#define HIT(x) (1<<(HIT_##x))
 enum
 {
-    HIT_NONE = 0, HIT_HEAD = 1<<0, HIT_TORSO = 1<<1, HIT_LIMB = 1<<2, HIT_WHIPLASH = 1<<3, HIT_ALT = 1<<4,
-    HIT_WAVE = 1<<5, HIT_PROJ = 1<<6, HIT_EXPLODE = 1<<7, HIT_BURN = 1<<8, HIT_BLEED = 1<<9, HIT_SHOCK = 1<<10,
-    HIT_MATERIAL = 1<<11, HIT_SPAWN = 1<<12, HIT_LOST = 1<<13, HIT_KILL = 1<<14, HIT_FLAK = 1<<15, HIT_SPEC = 1<<16,
-    HIT_CLEAR = HIT_PROJ|HIT_EXPLODE|HIT_BURN|HIT_BLEED|HIT_MATERIAL|HIT_SPAWN|HIT_LOST,
-    HIT_SFLAGS = HIT_KILL
+    HIT_HEAD = 0, HIT_TORSO, HIT_LIMB, HIT_WHIPLASH, HIT_ALT,
+    HIT_WAVE, HIT_PROJ, HIT_EXPLODE, HIT_BURN, HIT_BLEED, HIT_SHOCK,
+    HIT_MATERIAL, HIT_SPAWN, HIT_LOST, HIT_KILL, HIT_FLAK, HIT_SPEC,
+    HIT_CLEAR = HIT(PROJ)|HIT(EXPLODE)|HIT(BURN)|HIT(BLEED)|HIT(MATERIAL)|HIT(SPAWN)|HIT(LOST),
+    HIT_SFLAGS = HIT(KILL)
 };
 
-enum { W_R_BURN = 0, W_R_BLEED, W_R_SHOCK, W_R_MAX, W_R_ALL = (1<<W_R_BURN)|(1<<W_R_BLEED)|(1<<W_R_SHOCK) };
+#define WR(x) (1<<(W_R_##x))
+enum { W_R_BURN = 0, W_R_BLEED, W_R_SHOCK, W_R_MAX, W_R_ALL = WR(BURN)|WR(BLEED)|WR(SHOCK) };
 
 struct shotmsg { int id; ivec pos; };
 struct hitmsg { int flags, proj, target, dist; ivec dir, vel; };
 
-#define hithead(x)       (x&HIT_WHIPLASH || x&HIT_HEAD)
-#define hitdealt(x)      (x&HIT_BURN || x&HIT_BLEED || x&HIT_SHOCK || x&HIT_EXPLODE || x&HIT_PROJ || x&HIT_MATERIAL)
-#define WR(x)            (1<<(W_R_##x))
+#define hithead(x)       (x&HIT(WHIPLASH) || x&HIT(HEAD))
+#define hitdealt(x)      (x&HIT(BURN) || x&HIT(BLEED) || x&HIT(SHOCK) || x&HIT(EXPLODE) || x&HIT(PROJ) || x&HIT(MATERIAL))
 #define wr_burn(x,y)     (isweap(x) && (WF(WK(y), x, residual, WS(y))&WR(BURN)))
-#define wr_burns(x,y)    (G(noweapburn) && hitdealt(y) && ((x == -1 && y&HIT_BURN) || wr_burn(x, y)))
-#define wr_burning(x,y)  (G(noweapburn) && hitdealt(y) && ((x == -1 && y&HIT_MATERIAL && y&HIT_BURN) || wr_burn(x, y)))
+#define wr_burns(x,y)    (G(noweapburn) && hitdealt(y) && ((x == -1 && y&HIT(BURN)) || wr_burn(x, y)))
+#define wr_burning(x,y)  (G(noweapburn) && hitdealt(y) && ((x == -1 && y&HIT(MATERIAL) && y&HIT(BURN)) || wr_burn(x, y)))
 #define wr_bleed(x,y)    (isweap(x) && (WF(WK(y), x, residual, WS(y))&WR(BLEED)))
-#define wr_bleeds(x,y)   (G(noweapbleed) && hitdealt(y) && ((x == -1 && y&HIT_BLEED) || wr_bleed(x, y)))
-#define wr_bleeding(x,y) (G(noweapbleed) && hitdealt(y) && ((x == -1 && y&HIT_MATERIAL && y&HIT_BLEED) || wr_bleed(x, y)))
+#define wr_bleeds(x,y)   (G(noweapbleed) && hitdealt(y) && ((x == -1 && y&HIT(BLEED)) || wr_bleed(x, y)))
+#define wr_bleeding(x,y) (G(noweapbleed) && hitdealt(y) && ((x == -1 && y&HIT(MATERIAL) && y&HIT(BLEED)) || wr_bleed(x, y)))
 #define wr_shock(x,y)    (isweap(x) && (WF(WK(y), x, residual, WS(y))&WR(SHOCK)))
-#define wr_shocks(x,y)   (G(noweapshock) && hitdealt(y) && ((x == -1 && y&HIT_SHOCK) || wr_shock(x, y)))
-#define wr_shocking(x,y) (G(noweapshock) && hitdealt(y) && ((x == -1 && y&HIT_MATERIAL && y&HIT_SHOCK) || wr_shock(x, y)))
-#define WZ(x)            (W_MAX+(W_##x))
+#define wr_shocks(x,y)   (G(noweapshock) && hitdealt(y) && ((x == -1 && y&HIT(SHOCK)) || wr_shock(x, y)))
+#define wr_shocking(x,y) (G(noweapshock) && hitdealt(y) && ((x == -1 && y&HIT(MATERIAL) && y&HIT(SHOCK)) || wr_shock(x, y)))
 
 #include "weapdef.h"
 

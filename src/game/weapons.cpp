@@ -307,12 +307,12 @@ namespace weapons
             else secondary = zooming;
         }
         int offset = 0, sweap = m_weapon(d->actortype, game::gamemode, game::mutators);
-        if(!d->canshoot(weap, secondary ? HIT_ALT : 0, sweap, lastmillis))
+        if(!d->canshoot(weap, secondary ? HIT(ALT) : 0, sweap, lastmillis))
         {
-            if(!d->canshoot(weap, secondary ? HIT_ALT : 0, sweap, lastmillis, (1<<W_S_RELOAD)))
+            if(!d->canshoot(weap, secondary ? HIT(ALT) : 0, sweap, lastmillis, (1<<W_S_RELOAD)))
             {
                 // if the problem is not enough ammo, do the reload..
-                if(autoreload(d, secondary ? HIT_ALT : 0)) weapreload(d, weap);
+                if(autoreload(d, secondary ? HIT(ALT) : 0)) weapreload(d, weap);
                 else if(pressed && d->getammo(weap, 0, true) <= 0) game::errorsnd(d);
                 return false;
             }
@@ -404,8 +404,8 @@ namespace weapons
             accmodjitter(d, weap, secondary, W2(weap, cooked, true)&W_C_ZOOM && secondary && scale >= 0.9f, jittertime, jitteryawmin, jitteryawmax, jitterpitchmin, jitterpitchmax);
             d->addjitter(weap, lastmillis, int(ceilf(jittertime*scale)), jitteryawmin*scale, jitteryawmax*scale, jitterpitchmin*scale, jitterpitchmax*scale);
         }
-        projs::shootv(weap, secondary ? HIT_ALT : 0, sub, offset, scale, from, shots, d, true);
-        client::addmsg(N_SHOOT, "ri8iv", d->clientnum, lastmillis-game::maptime, weap, secondary ? HIT_ALT : 0, cooked, int(from.x*DMF), int(from.y*DMF), int(from.z*DMF), shots.length(), shots.length()*sizeof(shotmsg)/sizeof(int), shots.getbuf());
+        projs::shootv(weap, secondary ? HIT(ALT) : 0, sub, offset, scale, from, shots, d, true);
+        client::addmsg(N_SHOOT, "ri8iv", d->clientnum, lastmillis-game::maptime, weap, secondary ? HIT(ALT) : 0, cooked, int(from.x*DMF), int(from.y*DMF), int(from.z*DMF), shots.length(), shots.length()*sizeof(shotmsg)/sizeof(int), shots.getbuf());
 
         return true;
     }

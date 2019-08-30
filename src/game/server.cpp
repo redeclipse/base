@@ -3166,7 +3166,7 @@ namespace server
             if(ci->state == CS_ALIVE)
             {
                 suicideevent ev;
-                ev.flags = HIT_SPEC;
+                ev.flags = HIT(SPEC);
                 ev.process(ci); // process death immediately
             }
             if(smode) smode->leavegame(ci);
@@ -4261,9 +4261,9 @@ namespace server
     {
         int realdamage = damage, realflags = flags, nodamage = 0, hurt = 0, statweap = fromweap, statalt = WS(fromflags);
         realflags &= ~HIT_SFLAGS;
-        if(realflags&HIT_MATERIAL && (material&MATF_VOLUME) == MAT_LAVA)
+        if(realflags&HIT(MATERIAL) && (material&MATF_VOLUME) == MAT_LAVA)
         {
-            realflags |= HIT_BURN;
+            realflags |= HIT(BURN);
             m->burntime = G(lavaburntime);
             m->burndelay = G(lavaburndelay);
             m->sendburn();
@@ -4271,7 +4271,7 @@ namespace server
 
         if(smode && !smode->damage(m, v, realdamage, weap, realflags, material, hitpush, hitvel, dist)) { nodamage++; }
         mutate(smuts, if(!mut->damage(m, v, realdamage, weap, realflags, material, hitpush, hitvel, dist)) { nodamage++; });
-        if(!(realflags&HIT_MATERIAL) && v->actortype < A_ENEMY)
+        if(!(realflags&HIT(MATERIAL)) && v->actortype < A_ENEMY)
         {
             if(v == m && !G(damageself)) nodamage++;
             else if(isghost(m, v)) nodamage++;
@@ -4293,7 +4293,7 @@ namespace server
         if(nodamage || !hitdealt(realflags))
         {
             realflags &= ~HIT_CLEAR;
-            realflags |= HIT_WAVE;
+            realflags |= HIT(WAVE);
         }
         else
         {
@@ -4308,7 +4308,7 @@ namespace server
                 {
                     if(weap == -1)
                     {
-                        if(flags&HIT_BURN)
+                        if(flags&HIT(BURN))
                         {
                             statalt = m->lastresalt[W_R_BURN];
                             statweap = m->lastresweapon[W_R_BURN];
@@ -4318,7 +4318,7 @@ namespace server
                                 else v->weapstats[statweap].damage1 += realdamage;
                             }
                         }
-                        if(flags&HIT_BLEED)
+                        if(flags&HIT(BLEED))
                         {
                             statalt = m->lastresalt[W_R_BLEED];
                             statweap = m->lastresweapon[W_R_BLEED];
@@ -4328,7 +4328,7 @@ namespace server
                                 else v->weapstats[statweap].damage1 += realdamage;
                             }
                         }
-                        if(flags&HIT_SHOCK)
+                        if(flags&HIT(SHOCK))
                         {
                             statalt = m->lastresalt[W_R_SHOCK];
                             statweap = m->lastresweapon[W_R_SHOCK];
@@ -4345,7 +4345,7 @@ namespace server
                         else v->weapstats[statweap].damage1 += realdamage;
                     }
                 }
-                if(m->health <= 0) realflags |= HIT_KILL;
+                if(m->health <= 0) realflags |= HIT(KILL);
                 if(weap >= 0)
                 {
                     if(wr_burning(weap, flags))
@@ -4415,7 +4415,7 @@ namespace server
         if(realdamage >= 0 && m != v && (!m_team(gamemode, mutators) || m->team != v->team))
             addhistory(m, v, gamemillis);
         sendf(-1, 1, "ri9i5", N_DAMAGE, m->clientnum, v->clientnum, weap, realflags, realdamage, m->health, hitpush.x, hitpush.y, hitpush.z, hitvel.x, hitvel.y, hitvel.z, int(dist*DNF));
-        if(realflags&HIT_KILL)
+        if(realflags&HIT(KILL))
         {
             int fragvalue = 1;
             if(m != v && (!m_team(gamemode, mutators) || m->team != v->team))
@@ -4434,7 +4434,7 @@ namespace server
             int pointvalue = fragvalue, style = FRAG_NONE;
             if(!m_dm_oldschool(gamemode, mutators))
                 pointvalue = (smode && !isai ? smode->points(m, v) : fragvalue)*(isai ? G(enemybonus) : G(fragbonus));
-            if(realdamage >= (realflags&HIT_EXPLODE ? max(m->gethealth(gamemode, mutators)/2, 1) : m->gethealth(gamemode, mutators)))
+            if(realdamage >= (realflags&HIT(EXPLODE) ? max(m->gethealth(gamemode, mutators)/2, 1) : m->gethealth(gamemode, mutators)))
                 style = FRAG_OBLITERATE;
             m->spree = 0;
             if(m_team(gamemode, mutators) && v->team == m->team)
@@ -4455,7 +4455,7 @@ namespace server
                     style |= FRAG_FIRSTBLOOD;
                     if(!m_dm_oldschool(gamemode, mutators)) pointvalue += G(firstbloodpoints);
                 }
-                if(flags&HIT_HEAD) // NOT HZONE
+                if(flags&HIT(HEAD)) // NOT HZONE
                 {
                     style |= FRAG_HEADSHOT;
                     if(!m_dm_oldschool(gamemode, mutators)) pointvalue += G(headshotpoints);
@@ -4592,14 +4592,14 @@ namespace server
     void suicideevent::process(clientinfo *ci)
     {
         if(ci->state != CS_ALIVE) return;
-        if(flags&HIT_MATERIAL && (material&MATF_VOLUME) == MAT_LAVA)
+        if(flags&HIT(MATERIAL) && (material&MATF_VOLUME) == MAT_LAVA)
         {
-            flags |= HIT_BURN;
+            flags |= HIT(BURN);
             ci->burntime = G(lavaburntime);
             ci->burndelay = G(lavaburndelay);
             ci->sendburn();
         }
-        if(!(flags&HIT_MATERIAL) && !(flags&HIT_LOST) && !(flags&HIT_SPEC))
+        if(!(flags&HIT(MATERIAL)) && !(flags&HIT(LOST)) && !(flags&HIT(SPEC)))
         {
             if(smode && !smode->damage(ci, ci, ci->health, -1, flags, material)) { return; }
             mutate(smuts, if(!mut->damage(ci, ci, ci->health, -1, flags, material)) { return; });
@@ -4608,13 +4608,13 @@ namespace server
         ci->deaths++;
         ci->totaldeaths++;
         bool kamikaze = dropitems(ci, DROP_DEATH);
-        if(ci->actortype < A_ENEMY && m_race(gamemode) && (!m_ra_gauntlet(gamemode, mutators) || ci->team == T_ALPHA) && !(flags&HIT_SPEC) && (!flags || ci->cpnodes.length() == 1 || !ci->checkpointspawn))
+        if(ci->actortype < A_ENEMY && m_race(gamemode) && (!m_ra_gauntlet(gamemode, mutators) || ci->team == T_ALPHA) && !(flags&HIT(SPEC)) && (!flags || ci->cpnodes.length() == 1 || !ci->checkpointspawn))
         { // reset if suicided, hasn't reached another checkpoint yet
             ci->cpmillis = 0;
             ci->cpnodes.shrink(0);
             sendf(-1, 1, "ri3", N_CHECKPOINT, ci->clientnum, -1);
         }
-        else if(!(flags&HIT_LOST) && !(flags&HIT_SPEC))
+        else if(!(flags&HIT(LOST)) && !(flags&HIT(SPEC)))
         {
             int pointvalue = -1;
             if(!m_dm_oldschool(gamemode, mutators))
@@ -4624,17 +4624,17 @@ namespace server
             }
             givepoints(ci, pointvalue, m_points(gamemode, mutators) || m_dm_oldschool(gamemode, mutators), true);
         }
-        if(ci->burntime && flags&HIT_BURN)
+        if(ci->burntime && flags&HIT(BURN))
         {
             ci->lastres[W_R_BURN] = ci->lastrestime[W_R_BURN] = gamemillis;
             ci->lastresowner[W_R_BURN] = ci->clientnum;
         }
-        if(ci->bleedtime && flags&HIT_BLEED)
+        if(ci->bleedtime && flags&HIT(BLEED))
         {
             ci->lastres[W_R_BLEED] = ci->lastrestime[W_R_BLEED] = gamemillis;
             ci->lastresowner[W_R_BLEED] = ci->clientnum;
         }
-        if(ci->shocktime && flags&HIT_SHOCK)
+        if(ci->shocktime && flags&HIT(SHOCK))
         {
             ci->lastres[W_R_SHOCK] = ci->lastrestime[W_R_SHOCK] = gamemillis;
             ci->lastresowner[W_R_SHOCK] = ci->clientnum;
@@ -4657,15 +4657,15 @@ namespace server
         if(!hitdealt(flags))
         {
             flags &= ~HIT_CLEAR;
-            flags |= HIT_WAVE;
+            flags |= HIT(WAVE);
         }
 
         float skew = clamp(scale, 0.f, 1.f)*G(damagescale);
 
-        if(flags&HIT_WHIPLASH) skew *= WF(WK(flags), weap, damagewhiplash, WS(flags));
-        else if(flags&HIT_HEAD) skew *= WF(WK(flags), weap, damagehead, WS(flags));
-        else if(flags&HIT_TORSO) skew *= WF(WK(flags), weap, damagetorso, WS(flags));
-        else if(flags&HIT_LIMB) skew *= WF(WK(flags), weap, damagelimb, WS(flags));
+        if(flags&HIT(WHIPLASH)) skew *= WF(WK(flags), weap, damagewhiplash, WS(flags));
+        else if(flags&HIT(HEAD)) skew *= WF(WK(flags), weap, damagehead, WS(flags));
+        else if(flags&HIT(TORSO)) skew *= WF(WK(flags), weap, damagetorso, WS(flags));
+        else if(flags&HIT(LIMB)) skew *= WF(WK(flags), weap, damagelimb, WS(flags));
         else return 0;
 
         if(radial > 0) skew *= clamp(1.f-dist/size, 1e-6f, 1.f);
@@ -4698,7 +4698,7 @@ namespace server
             else
             {
                 flags &= ~HIT_CLEAR;
-                flags |= HIT_WAVE;
+                flags |= HIT(WAVE);
             }
         }
         else if(m_team(gamemode, mutators) && v->team == m->team)
@@ -4708,7 +4708,7 @@ namespace server
             else
             {
                 flags &= ~HIT_CLEAR;
-                flags |= HIT_WAVE;
+                flags |= HIT(WAVE);
             }
         }
 
@@ -4785,7 +4785,7 @@ namespace server
                     {
                         int hflags = flags|h.flags;
                         float skew = float(scale)/DNF, rad = radial > 0 ? clamp(radial/DNF, 0.f, WX(WK(flags), weap, explode, WS(flags), gamemode, mutators, skew)) : 0.f,
-                              size = rad > 0 ? (hflags&HIT_WAVE ? rad*WF(WK(flags), weap, wavepush, WS(flags)) : rad) : 0.f, dist = float(h.dist)/DNF;
+                              size = rad > 0 ? (hflags&HIT(WAVE) ? rad*WF(WK(flags), weap, wavepush, WS(flags)) : rad) : 0.f, dist = float(h.dist)/DNF;
                         if(m->state == CS_ALIVE && !m->protect(gamemillis, m_protect(gamemode, mutators)))
                         {
                             int damage = calcdamage(ci, m, weap, hflags, rad, size, dist, skew, ci == m);
@@ -5161,10 +5161,10 @@ namespace server
                 {
                     if(!ci->lasthurt || gamemillis-ci->lasthurt >= G(hurtdelay))
                     {
-                        int flags = HIT_MATERIAL;
+                        int flags = HIT(MATERIAL);
                         if(G(hurtresidual)&WR(BURN))
                         {
-                            flags |= HIT_BURN;
+                            flags |= HIT(BURN);
                             ci->burntime = G(hurtburntime);
                             ci->burndelay = G(hurtburndelay);
                             ci->burndamage = G(hurtburndamage);
@@ -5172,7 +5172,7 @@ namespace server
                         }
                         if(G(hurtresidual)&WR(BLEED))
                         {
-                            flags |= HIT_BLEED;
+                            flags |= HIT(BLEED);
                             ci->bleedtime = G(hurtbleedtime);
                             ci->bleeddelay = G(hurtbleeddelay);
                             ci->bleeddamage = G(hurtbleeddamage);
@@ -5180,7 +5180,7 @@ namespace server
                         }
                         if(G(hurtresidual)&WR(SHOCK))
                         {
-                            flags |= HIT_SHOCK;
+                            flags |= HIT(SHOCK);
                             ci->shocktime = G(hurtshocktime);
                             ci->shockdelay = G(hurtshockdelay);
                             ci->shockdamage = G(hurtshockdamage);
@@ -5190,7 +5190,7 @@ namespace server
                             ci->shockstuntime = G(hurtshockstuntime);
                             ci->sendshock();
                         }
-                        dodamage(ci, ci, G(hurtdamage), -1, -1, HIT_NONE, flags, ci->inmaterial);
+                        dodamage(ci, ci, G(hurtdamage), -1, -1, 0, flags, ci->inmaterial);
                         if(!ci->lasthurt) ci->lasthurt = gamemillis;
                         else ci->lasthurt += G(hurtdelay);
                         if(ci->state != CS_ALIVE) continue;
@@ -5203,7 +5203,7 @@ namespace server
                     if(gamemillis-ci->lastrestime[W_R_BURN] >= ci->burndelay)
                     {
                         clientinfo *co = (clientinfo *)getinfo(ci->lastresowner[W_R_BURN]);
-                        dodamage(ci, co ? co : ci, ci->burndamage, -1, -1, HIT_NONE, HIT_BURN, 0);
+                        dodamage(ci, co ? co : ci, ci->burndamage, -1, -1, 0, HIT(BURN), 0);
                         ci->lastrestime[W_R_BURN] += ci->burndelay;
                         if(ci->state != CS_ALIVE) continue;
                     }
@@ -5215,7 +5215,7 @@ namespace server
                     if(gamemillis-ci->lastrestime[W_R_BLEED] >= ci->bleeddelay)
                     {
                         clientinfo *co = (clientinfo *)getinfo(ci->lastresowner[W_R_BLEED]);
-                        dodamage(ci, co ? co : ci, ci->bleeddamage, -1, -1, HIT_NONE, HIT_BLEED, 0);
+                        dodamage(ci, co ? co : ci, ci->bleeddamage, -1, -1, 0, HIT(BLEED), 0);
                         ci->lastrestime[W_R_BLEED] += ci->bleeddelay;
                         if(ci->state != CS_ALIVE) continue;
                     }
@@ -5227,7 +5227,7 @@ namespace server
                     if(gamemillis-ci->lastrestime[W_R_SHOCK] >= ci->shockdelay)
                     {
                         clientinfo *co = (clientinfo *)getinfo(ci->lastresowner[W_R_SHOCK]);
-                        dodamage(ci, co ? co : ci, ci->shockdamage, -1, -1, HIT_NONE, HIT_SHOCK, 0);
+                        dodamage(ci, co ? co : ci, ci->shockdamage, -1, -1, 0, HIT(SHOCK), 0);
                         ci->lastrestime[W_R_SHOCK] += ci->shockdelay;
                         if(ci->state != CS_ALIVE) continue;
                     }
@@ -6292,7 +6292,7 @@ namespace server
                             if(cp->state == CS_ALIVE && (cp->inmaterial&MATF_FLAGS)&MAT_DEATH && !((oldmaterial&MATF_FLAGS)&MAT_DEATH))
                             {
                                 suicideevent ev;
-                                ev.flags = HIT_MATERIAL;
+                                ev.flags = HIT(MATERIAL);
                                 ev.material = cp->inmaterial;
                                 ev.process(cp); // process death immediately
                             }

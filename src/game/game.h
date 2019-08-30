@@ -469,7 +469,7 @@ static inline void modecheck(int &mode, int &muts, int trying = 0)
                 }
             }
             if(changed) break;
-            if(gametype[mode].flags&(1<<G_F_GSP))
+            if(gametype[mode].flags&GF(GSP))
             {
                 //trying |= m; // game specific mutator exclusively provides allowed bits
                 mutsidx = gametype[mode].mutators[j+1];
@@ -1746,7 +1746,7 @@ struct gameent : dynent, clientstate
     bool canmelee(int sweap, int millis, bool check = false, bool slide = false, bool onfloor = true)
     {
         if(!hasmelee(millis, check, slide, onfloor, false)) return false;
-        if(!canshoot(W_MELEE, slide ? HIT_ALT : HIT_NONE, sweap, millis, (1<<W_S_RELOAD))) return false;
+        if(!canshoot(W_MELEE, slide ? HIT(ALT) : 0, sweap, millis, (1<<W_S_RELOAD))) return false;
         return true;
     }
 

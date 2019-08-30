@@ -1314,7 +1314,7 @@ namespace game
         if(wr_burns(weap, flags) && (d->submerged < G(liquidextinguish) || (d->inmaterial&MATF_VOLUME) != MAT_WATER))
         {
             d->lastrestime[W_R_BURN] = lastmillis;
-            if(isweap(weap) || flags&HIT_MATERIAL) d->lastres[W_R_BURN] = lastmillis;
+            if(isweap(weap) || flags&HIT(MATERIAL)) d->lastres[W_R_BURN] = lastmillis;
             else return true;
         }
         return false;
@@ -1325,7 +1325,7 @@ namespace game
         if(wr_bleeds(weap, flags))
         {
             d->lastrestime[W_R_BLEED] = lastmillis;
-            if(isweap(weap) || flags&HIT_MATERIAL) d->lastres[W_R_BLEED] = lastmillis;
+            if(isweap(weap) || flags&HIT(MATERIAL)) d->lastres[W_R_BLEED] = lastmillis;
             else return true;
         }
         return false;
@@ -1336,7 +1336,7 @@ namespace game
         if(wr_shocks(weap, flags))
         {
             d->lastrestime[W_R_SHOCK] = lastmillis;
-            if(isweap(weap) || flags&HIT_MATERIAL) d->lastres[W_R_SHOCK] = lastmillis;
+            if(isweap(weap) || flags&HIT(MATERIAL)) d->lastres[W_R_SHOCK] = lastmillis;
             else return true;
         }
         return false;
@@ -1418,7 +1418,7 @@ namespace game
     static int alarmchan = -1;
     void hiteffect(int weap, int flags, int damage, gameent *d, gameent *v, vec &dir, vec &vel, float dist, bool local)
     {
-        bool burning = burn(d, weap, flags), bleeding = bleed(d, weap, flags), shocking = shock(d, weap, flags), material = flags&HIT_MATERIAL;
+        bool burning = burn(d, weap, flags), bleeding = bleed(d, weap, flags), shocking = shock(d, weap, flags), material = flags&HIT(MATERIAL);
         if(!local || burning || bleeding || shocking || material)
         {
             float scale = isweap(weap) && WF(WK(flags), weap, damage, WS(flags)) != 0 ? abs(damage)/float(WF(WK(flags), weap, damage, WS(flags))) : 1.f;
@@ -1451,10 +1451,10 @@ namespace game
             {
                 if(weap == -1 && shocking && d->shockstun)
                 {
-                    float amt = WRS(flags&HIT_WAVE || !hitdealt(flags) ? wavestunscale : (d->health <= 0 ? deadstunscale : hitstunscale), stun, gamemode, mutators);
+                    float amt = WRS(flags&HIT(WAVE) || !hitdealt(flags) ? wavestunscale : (d->health <= 0 ? deadstunscale : hitstunscale), stun, gamemode, mutators);
                     if(m_dm_gladiator(gamemode, mutators))
                     {
-                        float extra = flags&HIT_WAVE || !hitdealt(flags) ? gladiatorextrawavestunscale : (d->health <= 0 ? gladiatorextradeadstunscale : gladiatorextrahitstunscale);
+                        float extra = flags&HIT(WAVE) || !hitdealt(flags) ? gladiatorextrawavestunscale : (d->health <= 0 ? gladiatorextradeadstunscale : gladiatorextrahitstunscale);
                         amt *= d->gethealth(gamemode, mutators)/max(d->health, 1)*extra;
                     }
                     float s = d->shockstunscale*amt, g = d->shockstunfall*amt;
@@ -1468,10 +1468,10 @@ namespace game
                     if(WF(WK(flags), weap, stun, WS(flags)) != 0)
                     {
                         int stun = WF(WK(flags), weap, stun, WS(flags));
-                        float amt = scale*WRS(flags&HIT_WAVE || !hitdealt(flags) ? wavestunscale : (d->health <= 0 ? deadstunscale : hitstunscale), stun, gamemode, mutators);
+                        float amt = scale*WRS(flags&HIT(WAVE) || !hitdealt(flags) ? wavestunscale : (d->health <= 0 ? deadstunscale : hitstunscale), stun, gamemode, mutators);
                         if(m_dm_gladiator(gamemode, mutators))
                         {
-                            float extra = flags&HIT_WAVE || !hitdealt(flags) ? gladiatorextrawavestunscale : (d->health <= 0 ? gladiatorextradeadstunscale : gladiatorextrahitstunscale);
+                            float extra = flags&HIT(WAVE) || !hitdealt(flags) ? gladiatorextrawavestunscale : (d->health <= 0 ? gladiatorextradeadstunscale : gladiatorextrahitstunscale);
                             amt *= d->gethealth(gamemode, mutators)/max(d->health, 1)*extra;
                         }
                         float s = WF(WK(flags), weap, stunscale, WS(flags))*amt, g = WF(WK(flags), weap, stunfall, WS(flags))*amt;
@@ -1499,10 +1499,10 @@ namespace game
                         float hit = WF(WK(flags), weap, hitpush, WS(flags));
                         if(hit != 0)
                         {
-                            float modify = WRS(flags&HIT_WAVE || !hitdealt(flags) ? wavepushscale : (d->health <= 0 ? deadpushscale : hitpushscale), push, gamemode, mutators);
+                            float modify = WRS(flags&HIT(WAVE) || !hitdealt(flags) ? wavepushscale : (d->health <= 0 ? deadpushscale : hitpushscale), push, gamemode, mutators);
                             if(m_dm_gladiator(gamemode, mutators))
                             {
-                                float extra = flags&HIT_WAVE || !hitdealt(flags) ? gladiatorextrawavepushscale : (d->health <= 0 ? gladiatorextradeadpushscale : gladiatorextrahitpushscale);
+                                float extra = flags&HIT(WAVE) || !hitdealt(flags) ? gladiatorextrawavepushscale : (d->health <= 0 ? gladiatorextradeadpushscale : gladiatorextrahitpushscale);
                                 modify *= d->gethealth(gamemode, mutators)/max(d->health, 1)*extra;
                             }
                             d->vel.add(vec(dir).mul(hit*modify));
@@ -1511,10 +1511,10 @@ namespace game
                         hit = WF(WK(flags), weap, hitvel, WS(flags))*amt;
                         if(hit != 0)
                         {
-                            float modify = WRS(flags&HIT_WAVE || !hitdealt(flags) ? wavevelscale : (d->health <= 0 ? deadvelscale : hitvelscale), vel, gamemode, mutators);
+                            float modify = WRS(flags&HIT(WAVE) || !hitdealt(flags) ? wavevelscale : (d->health <= 0 ? deadvelscale : hitvelscale), vel, gamemode, mutators);
                             if(m_dm_gladiator(gamemode, mutators))
                             {
-                                float extra = flags&HIT_WAVE || !hitdealt(flags) ? gladiatorextrawavevelscale : (d->health <= 0 ? gladiatorextradeadvelscale : gladiatorextrahitvelscale);
+                                float extra = flags&HIT(WAVE) || !hitdealt(flags) ? gladiatorextrawavevelscale : (d->health <= 0 ? gladiatorextradeadvelscale : gladiatorextrahitvelscale);
                                 modify *= d->gethealth(gamemode, mutators)/max(d->health, 1)*extra;
                             }
                             d->vel.add(vec(vel).mul(hit*modify));
@@ -1573,17 +1573,17 @@ namespace game
         {
             concatstring(d->obit, "\fs");
             if(!obitverbose) concatstring(d->obit, obitdied);
-            else if(flags&HIT_SPAWN) concatstring(d->obit, obitspawn);
-            else if(flags&HIT_SPEC) concatstring(d->obit, obitspectator);
-            else if(flags&HIT_MATERIAL && curmat&MAT_WATER) concatstring(d->obit, getobitwater(material, obitdrowned));
-            else if(flags&HIT_MATERIAL && curmat&MAT_LAVA) concatstring(d->obit, getobitlava(material, obitmelted));
-            else if(flags&HIT_MATERIAL && (material&MATF_FLAGS)&MAT_HURT) concatstring(d->obit, *obithurt ? obithurt : obithurtmat);
-            else if(flags&HIT_MATERIAL) concatstring(d->obit, *obitdeath ? obitdeath : obitdeathmat);
-            else if(flags&HIT_LOST) concatstring(d->obit, *obitfall ? obitfall : obitlost);
+            else if(flags&HIT(SPAWN)) concatstring(d->obit, obitspawn);
+            else if(flags&HIT(SPEC)) concatstring(d->obit, obitspectator);
+            else if(flags&HIT(MATERIAL) && curmat&MAT_WATER) concatstring(d->obit, getobitwater(material, obitdrowned));
+            else if(flags&HIT(MATERIAL) && curmat&MAT_LAVA) concatstring(d->obit, getobitlava(material, obitmelted));
+            else if(flags&HIT(MATERIAL) && (material&MATF_FLAGS)&MAT_HURT) concatstring(d->obit, *obithurt ? obithurt : obithurtmat);
+            else if(flags&HIT(MATERIAL)) concatstring(d->obit, *obitdeath ? obitdeath : obitdeathmat);
+            else if(flags&HIT(LOST)) concatstring(d->obit, *obitfall ? obitfall : obitlost);
             else if(flags && isweap(weap) && !burning && !bleeding && !shocking) concatstring(d->obit, WF(WK(flags), weap, obitsuicide, WS(flags)));
-            else if(flags&HIT_BURN || burning) concatstring(d->obit, obitburnself);
-            else if(flags&HIT_BLEED || bleeding) concatstring(d->obit, obitbleedself);
-            else if(flags&HIT_SHOCK || shocking) concatstring(d->obit, obitshockself);
+            else if(flags&HIT(BURN) || burning) concatstring(d->obit, obitburnself);
+            else if(flags&HIT(BLEED) || bleeding) concatstring(d->obit, obitbleedself);
+            else if(flags&HIT(SHOCK) || shocking) concatstring(d->obit, obitshockself);
             else if(d->obliterated) concatstring(d->obit, obitobliterated);
             else if(d->headless) concatstring(d->obit, obitheadless);
             else concatstring(d->obit, obitsuicide);
@@ -1816,15 +1816,15 @@ namespace game
             {
                 if(found[vanities[d->vitems[k]].type]) continue;
                 if(!(vanities[d->vitems[k]].cond&2)) continue;
-                projs::create(pos, pos, true, d, PRJ_VANITY, -1, HIT_NONE, (rnd(gibfade)+gibfade)*2, 0, 0, rnd(50)+10, -1, d->vitems[k], 0, 0);
+                projs::create(pos, pos, true, d, PRJ_VANITY, -1, 0, (rnd(gibfade)+gibfade)*2, 0, 0, rnd(50)+10, -1, d->vitems[k], 0, 0);
                 found[vanities[d->vitems[k]].type]++;
             }
         }
 
-        if(nogore != 2 && gibscale > 0 && !(flags&HIT_LOST))
+        if(nogore != 2 && gibscale > 0 && !(flags&HIT(LOST)))
         {
             int hp = max(d->gethealth(gamemode, mutators)/10, 1), gib = clamp(max(damage, hp)/(d->obliterated ? 10 : 20), 2, 10), amt = int((rnd(gib)+gib)*(1+gibscale));
-            loopi(amt) projs::create(pos, pos, true, d, nogore ? PRJ_DEBRIS : PRJ_GIBS, -1, HIT_NONE, rnd(gibfade)+gibfade, 0, rnd(250)+1, rnd(d->obliterated ? 80 : 40)+10);
+            loopi(amt) projs::create(pos, pos, true, d, nogore ? PRJ_DEBRIS : PRJ_GIBS, -1, 0, rnd(gibfade)+gibfade, 0, rnd(250)+1, rnd(d->obliterated ? 80 : 40)+10);
         }
         if(m_team(gamemode, mutators) && d->team == v->team && d != v && v == player1 && isweap(weap) && WF(WK(flags), weap, damagepenalty, WS(flags)) != 0)
         {

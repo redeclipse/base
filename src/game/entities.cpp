@@ -783,7 +783,7 @@ namespace entities
                     }
                     if(d->state == CS_ALIVE)
                     { // if we got here, the teleport failed for some reason
-                        if(gameent::is(d)) game::suicide((gameent *)d, HIT_SPAWN);
+                        if(gameent::is(d)) game::suicide((gameent *)d, HIT(SPAWN));
                         else if(projent::is(d))
                         {
                             projent *g = (projent *)d;
@@ -1403,7 +1403,7 @@ namespace entities
             d->o.x *= 0.5f; d->o.y *= 0.5f;
             if(physics::entinmap(d, true)) return;
         }
-        if(!m_edit(game::gamemode) && suicide) game::suicide(d, HIT_SPAWN);
+        if(!m_edit(game::gamemode) && suicide) game::suicide(d, HIT(SPAWN));
     }
 
     void editent(int i, bool local)

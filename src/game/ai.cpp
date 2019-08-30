@@ -85,7 +85,7 @@ namespace ai
         {
             int prot = m_protect(game::gamemode, game::mutators);
             if((d->actortype >= A_ENEMY || !d->protect(lastmillis, prot)) && targetable(d, e, true))
-                return d->canshoot(d->weapselect, alt ? HIT_ALT : 0, m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis, (1<<W_S_RELOAD));
+                return d->canshoot(d->weapselect, alt ? HIT(ALT) : 0, m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis, (1<<W_S_RELOAD));
         }
         return false;
     }
@@ -1461,7 +1461,7 @@ namespace ai
                         break;
                     case 3: if(!transport(d)) d->ai->reset(false); break;
                     case 4: default:
-                        if(b.type != AI_S_WAIT) { game::suicide(d, HIT_LOST); return; } // this is our last resort..
+                        if(b.type != AI_S_WAIT) { game::suicide(d, HIT(LOST)); return; } // this is our last resort..
                         else d->ai->blockseq = 0; // waiting, so just try again..
                         break;
                 }
@@ -1487,7 +1487,7 @@ namespace ai
                         break;
                     case 3: if(!transport(d)) d->ai->reset(false); break;
                     case 4: default:
-                        if(b.type != AI_S_WAIT) { game::suicide(d, HIT_LOST); return; } // this is our last resort..
+                        if(b.type != AI_S_WAIT) { game::suicide(d, HIT(LOST)); return; } // this is our last resort..
                         else d->ai->blockseq = 0; // waiting, so just try again..
                         break;
                 }
