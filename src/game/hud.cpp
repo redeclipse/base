@@ -447,61 +447,61 @@ namespace hud
 
     #define ADDMODEICON(g,m) \
     { \
-        if(m_demo(g)) ADDMODE(modedemotex) \
-        else if(m_edit(g)) ADDMODE(modeeditingtex) \
+        if(m_demo(g)) ADDMODE(demo) \
+        else if(m_edit(g)) ADDMODE(editing) \
         else if(m_capture(g)) \
         { \
-            if(m_ctf_quick(g, m)) ADDMODE(modecapturequicktex) \
-            else if(m_ctf_defend(g, m)) ADDMODE(modecapturedefendtex) \
-            else if(m_ctf_protect(g, m)) ADDMODE(modecaptureprotecttex) \
-            else ADDMODE(modecapturetex) \
+            if(m_ctf_quick(g, m)) ADDMODE(capturequick) \
+            else if(m_ctf_defend(g, m)) ADDMODE(capturedefend) \
+            else if(m_ctf_protect(g, m)) ADDMODE(captureprotect) \
+            else ADDMODE(capture) \
         } \
         else if(m_defend(g)) \
         { \
             if(m_dac_king(g, m)) \
             { \
-                ADDMODE(modedefendkingtex) \
-                if(m_dac_quick(g, m)) ADDMODE(modedefendquicktex) \
+                ADDMODE(defendking) \
+                if(m_dac_quick(g, m)) ADDMODE(defendquick) \
             } \
-            else if(m_dac_quick(g, m)) ADDMODE(modedefendquicktex) \
-            else ADDMODE(modedefendtex) \
+            else if(m_dac_quick(g, m)) ADDMODE(defendquick) \
+            else ADDMODE(defend) \
         } \
         else if(m_bomber(g)) \
         { \
-            if(m_bb_hold(g, m)) ADDMODE(modebomberholdtex) \
+            if(m_bb_hold(g, m)) ADDMODE(bomberhold) \
             else if(m_bb_assault(g, m)) \
             { \
-                ADDMODE(modebomberassaulttex) \
-                if(m_bb_basket(g, m)) ADDMODE(modebomberbaskettex) \
+                ADDMODE(bomberassault) \
+                if(m_bb_basket(g, m)) ADDMODE(bomberbasket) \
             } \
-            else if(m_bb_basket(g, m)) ADDMODE(modebomberbaskettex) \
-            else ADDMODE(modebombertex) \
+            else if(m_bb_basket(g, m)) ADDMODE(bomberbasket) \
+            else ADDMODE(bomber) \
         } \
         else if(m_race(g)) \
         { \
             if(m_ra_gauntlet(g, m)) \
             { \
-                ADDMODE(moderacegauntlettex) \
-                if(m_ra_timed(g, m)) ADDMODE(moderacetimedtex) \
-                if(m_ra_endurance(g, m)) ADDMODE(moderaceendurancetex) \
+                ADDMODE(racegauntlet) \
+                if(m_ra_timed(g, m)) ADDMODE(racetimed) \
+                if(m_ra_endurance(g, m)) ADDMODE(raceendurance) \
             } \
             else if(m_ra_timed(g, m)) \
             { \
-                ADDMODE(moderacetimedtex) \
-                if(m_ra_endurance(g, m)) ADDMODE(moderaceendurancetex) \
+                ADDMODE(racetimed) \
+                if(m_ra_endurance(g, m)) ADDMODE(raceendurance) \
             } \
-            else if(m_ra_endurance(g, m)) ADDMODE(moderaceendurancetex) \
-            else ADDMODE(moderacetex) \
+            else if(m_ra_endurance(g, m)) ADDMODE(raceendurance) \
+            else ADDMODE(race) \
         } \
         else \
         { \
-            if(m_dm_gladiator(g, m)) ADDMODE(modegladiatortex) \
-            else if(m_dm_oldschool(g, m)) ADDMODE(modeoldschooltex) \
-            else ADDMODE(modedeathmatchtex) \
+            if(m_dm_gladiator(g, m)) ADDMODE(gladiator) \
+            else if(m_dm_oldschool(g, m)) ADDMODE(oldschool) \
+            else ADDMODE(deathmatch) \
         } \
     }
 
-    #define ADDMODE(s) { if(list.length()) list.add(' '); list.put(s, strlen(s)); }
+    #define ADDMODE(s) { if(list.length()) list.add(' '); list.put(mode##s##tex, strlen(mode##s##tex)); }
     void modetex(int g, int m, vector<char> &list)
     {
         modecheck(g, m);
@@ -512,21 +512,21 @@ namespace hud
     {
         modecheck(g, m);
         if(before) modetex(g, m, list);
-        if(m_multi(g, m) && (implied || !(gametype[g].implied&GM(MULTI)))) ADDMODE(modemultitex)
-        if(m_ffa(g, m) && (implied || !(gametype[g].implied&GM(FFA)))) ADDMODE(modeffatex)
-        if(m_coop(g, m) && (implied || !(gametype[g].implied&GM(COOP)))) ADDMODE(modecooptex)
-        if(m_insta(g, m) && (implied || !(gametype[g].implied&GM(INSTA)))) ADDMODE(modeinstatex)
-        if(m_medieval(g, m) && (implied || !(gametype[g].implied&GM(MEDIEVAL)))) ADDMODE(modemedievaltex)
-        if(m_kaboom(g, m) && (implied || !(gametype[g].implied&GM(KABOOM)))) ADDMODE(modekaboomtex)
-        if(m_duel(g, m) && (implied || !(gametype[g].implied&GM(DUEL)))) ADDMODE(modedueltex)
-        if(m_survivor(g, m) && (implied || !(gametype[g].implied&GM(SURVIVOR)))) ADDMODE(modesurvivortex)
-        if(m_classic(g, m) && (implied || !(gametype[g].implied&GM(CLASSIC)))) ADDMODE(modeclassictex)
-        if(m_onslaught(g, m) && (implied || !(gametype[g].implied&GM(ONSLAUGHT)))) ADDMODE(modeonslaughttex)
-        if(m_freestyle(g, m) && (implied || !(gametype[g].implied&GM(FREESTYLE)))) ADDMODE(modefreestyletex)
-        if(m_vampire(g, m) && (implied || !(gametype[g].implied&GM(VAMPIRE)))) ADDMODE(modevampiretex)
-        if(m_resize(g, m) && (implied || !(gametype[g].implied&GM(RESIZE)))) ADDMODE(moderesizetex)
-        if(m_hard(g, m) && (implied || !(gametype[g].implied&GM(HARD)))) ADDMODE(modehardtex)
-        if(m_basic(g, m) && (implied || !(gametype[g].implied&GM(BASIC)))) ADDMODE(modebasictex)
+        if(m_multi(g, m) && (implied || !(gametype[g].implied&GM(MULTI)))) ADDMODE(multi)
+        if(m_ffa(g, m) && (implied || !(gametype[g].implied&GM(FFA)))) ADDMODE(ffa)
+        if(m_coop(g, m) && (implied || !(gametype[g].implied&GM(COOP)))) ADDMODE(coop)
+        if(m_insta(g, m) && (implied || !(gametype[g].implied&GM(INSTA)))) ADDMODE(insta)
+        if(m_medieval(g, m) && (implied || !(gametype[g].implied&GM(MEDIEVAL)))) ADDMODE(medieval)
+        if(m_kaboom(g, m) && (implied || !(gametype[g].implied&GM(KABOOM)))) ADDMODE(kaboom)
+        if(m_duel(g, m) && (implied || !(gametype[g].implied&GM(DUEL)))) ADDMODE(duel)
+        if(m_survivor(g, m) && (implied || !(gametype[g].implied&GM(SURVIVOR)))) ADDMODE(survivor)
+        if(m_classic(g, m) && (implied || !(gametype[g].implied&GM(CLASSIC)))) ADDMODE(classic)
+        if(m_onslaught(g, m) && (implied || !(gametype[g].implied&GM(ONSLAUGHT)))) ADDMODE(onslaught)
+        if(m_freestyle(g, m) && (implied || !(gametype[g].implied&GM(FREESTYLE)))) ADDMODE(freestyle)
+        if(m_vampire(g, m) && (implied || !(gametype[g].implied&GM(VAMPIRE)))) ADDMODE(vampire)
+        if(m_resize(g, m) && (implied || !(gametype[g].implied&GM(RESIZE)))) ADDMODE(resize)
+        if(m_hard(g, m) && (implied || !(gametype[g].implied&GM(HARD)))) ADDMODE(hard)
+        if(m_basic(g, m) && (implied || !(gametype[g].implied&GM(BASIC)))) ADDMODE(basic)
         if(!before) modetex(g, m, list);
     }
     #undef ADDMODE
@@ -539,6 +539,14 @@ namespace hud
         list.add('\0');
         result(list.getbuf());
     });
+
+    const char *modeimage()
+    {
+        if(!connected()) return "menu";
+        #define ADDMODE(s) return #s;
+        ADDMODEICON(game::gamemode, game::mutators);
+        #undef ADDMODE
+    }
 
     bool needminimap() { return true; }
 

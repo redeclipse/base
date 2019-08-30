@@ -305,7 +305,7 @@ namespace cdpi
     namespace discord
     {
         VAR(IDF_PERSIST, discordenabled, 0, 1, 1);
-        VAR(IDF_PERSIST, discordpresence, 0, 3, 3); // 0 = off, 1 = public, 2 = private (offline) as well
+        VAR(IDF_PERSIST, discordpresence, 0, 3, 3); // bitwise: 0 = off, 1 = public, 2 = private (offline) as well
 
         void ready(const DiscordUser *u)
         {
@@ -377,7 +377,7 @@ namespace cdpi
                     memset(&discordPresence, 0, sizeof(discordPresence));
 
                     if(connected()) formatstring(details, "%s on %s", game::gametitle(), mapctitle(mapname));
-                    else copystring(details, "Not playing yet");
+                    else copystring(details, "Main Menu");
                     discordPresence.details = details;
 
                     if(curpeer && *connectname) formatstring(state, "%s (%s:[%d])", game::gamestatename(3), connectname, connectport);
@@ -388,8 +388,10 @@ namespace cdpi
                     int g = game::gametime();
                     discordPresence.endTimestamp = g ? (currenttime + g/1000) : 0;
                     discordPresence.largeImageKey = "emblem";
+                    discordPresence.largeImageText = versionname;
+                    discordPresence.smallImageKey = hud::modeimage();
+                    discordPresence.smallImageText = details;
 
-                    //discordPresence.smallImageKey = "player";
                     //discordPresence.partyId = "party1234";
                     //discordPresence.partySize = 1;
                     //discordPresence.partyMax = 6;

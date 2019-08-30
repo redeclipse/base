@@ -62,6 +62,7 @@ namespace hud
 {
     extern int statrate;
     extern char *progresstex, *progringtex;
+    extern const char *modeimage();
     extern float radarlimit(float dist = -1);
     extern bool radarlimited(float dist);
     extern bool hasinput(bool pass = false, bool focus = true);
