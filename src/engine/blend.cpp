@@ -919,7 +919,7 @@ void addblendbrush(const char *name, const char *imgname)
 
 COMMAND(0, addblendbrush, "ss");
 
-ICOMMAND(0, nextblendbrush, "i", (int *dir),
+ICOMMAND(0, blendbrushdelta, "i", (int *dir),
 {
     if(brushes.empty()) { curbrush = -1; return; }
     curbrush += *dir;
