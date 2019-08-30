@@ -36,7 +36,7 @@ namespace physics
         if(!gameent::is(d) || !allowimpulse(d, type)) return false;
         gameent *e = (gameent *)d;
         if(e->impulse[IM_TYPE] == IM_T_PUSHER && e->impulsetime[IM_T_PUSHER] > lastmillis) return false;
-        if(!touch && impulsestyle == 1 && e->impulse[IM_TYPE] > IM_T_JUMP && e->impulse[IM_TYPE] < IM_T_WALL) return false;
+        if(!touch && impulsestyle == 1 && e->impulse[IM_TYPE] > IM_T_JUMP && e->impulse[IM_TYPE] < IM_T_TOUCH) return false;
         if(!m_freestyle(game::gamemode, game::mutators) && impulsestyle <= 2 && e->impulse[IM_COUNT] >= impulsecount) return false;
         int time = 0, delay = 0;
         switch(type)
@@ -805,11 +805,6 @@ namespace physics
                 d->o = oldpos;
                 if(collided && collideplayer && gameent::is(collideplayer))
                 {
-                    if(d->impulse[IM_TYPE] == IM_T_PARKOUR)
-                    {
-                        d->doimpulse(0, IM_T_AFTER, lastmillis);
-                        client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_AFTER);
-                    }
                     impulseplayer(d, onfloor, vec(d->vel).add(d->falling), true);
                     loopv(projs::projs)
                     {
@@ -943,7 +938,6 @@ namespace physics
 
     void modifymovement(gameent *d, vec &m, bool local, bool wantsmove, int millis)
     {
-        if(d->impulse[IM_TYPE] != IM_T_PARKOUR && (d->physstate >= PHYS_SLOPE || d->onladder || liquidcheck(d))) d->resetjump();
         if(local && game::allowmove(d)) modifyinput(d, m, wantsmove, millis);
         if(wantsmove && !sticktospecial(d) && d->physstate >= PHYS_SLOPE)
         { // move up or down slopes in air but only move up slopes in liquid
@@ -1121,10 +1115,10 @@ namespace physics
             int collisions = 0, timeinair = pl->airtime(lastmillis);
             vel.mul(1.0f/moveres);
             loopi(moveres) if(!move(pl, vel)) { if(++collisions < 5) i--; } // discrete steps collision detection & sliding
-            if(player)
+            if(player && timeinair)
             {
                 gameent *d = (gameent *)pl;
-                if(!d->airmillis)
+                if(!d->airmillis && !sticktospecial(d))
                 {
                     if(local && impulsemethod&2 && timeinair >= impulseslideinair && (d->move == 1 || d->strafe) && d->action[AC_CROUCH] && allowimpulse(d, A_A_SLIDE))
                         impulseplayer(d, true, prevel, false, true);
@@ -1138,6 +1132,7 @@ namespace physics
                         }
                         else game::footstep(d);
                     }
+                    d->resetjump();
                 }
             }
         }
