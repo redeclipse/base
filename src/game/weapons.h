@@ -10,8 +10,10 @@ enum
 };
 #define WZ(x) (W_MAX+(W_##x))
 
-#define isweap(a) (a >= 0 && a < W_MAX)
-#define itemweap(a) (a >= W_ITEM && a < W_ALL)
+#define isweap(a)       (a >= 0 && a < W_MAX)
+#define itemweap(a)     (a >= W_ITEM && a < W_ALL)
+#define w_carry(w1,w2)  (isweap(w1) && w1 != W_CLAW && w1 < W_ALL && (!isweap(w2) || (w1 != w2 && (w2 != W_GRENADE || w1 != W_MINE))) && (w1 == W_ROCKET || (w1 >= W_OFFSET && w1 < W_ITEM)))
+#define w_reload(w1)    (isweap(w1) && (w1 >= W_ALL || w1 < W_OFFSET))
 
 enum { W_F_NONE = 0, W_F_FORCED = 1<<0 };
 

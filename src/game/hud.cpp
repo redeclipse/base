@@ -875,8 +875,8 @@ namespace hud
             clawcliprotate, pistolcliprotate, swordcliprotate, shotguncliprotate, smgcliprotate,
             flamercliprotate, plasmacliprotate, zappercliprotate, riflecliprotate, grenadecliprotate, minecliprotate, rocketcliprotate
         };
-        int ammo = game::focus->weapclip[weap], store = game::focus->weapstore[weap],
-            maxammo = W(weap, ammoclip), interval = lastmillis-game::focus->weaptime[weap];
+        int ammo = game::focus->weapclip[weap], maxammo = W(weap, ammoclip),
+            store = w_reload(weap) ? maxammo : game::focus->weapstore[weap], interval = lastmillis-game::focus->weaptime[weap];
         float fade = clipblend*hudblend, skew = clipskew[weap]*clipsize, size = s*skew, offset = s*clipoffset,
               slice = 360/float(maxammo), angle = (maxammo > (cliprots[weap]&4 ? 4 : 3) || maxammo%2 ? 360.f : 360.f-slice*0.5f)-((maxammo-ammo)*slice),
               area = 1-clamp(clipoffs[weap]*2, 1e-3f, 1.f), need = s*skew*area*maxammo, have = 2*M_PI*s*clipoffset,
@@ -966,7 +966,7 @@ namespace hud
         }
         if(clipstore && ammo < maxammo && store > 0)
         {
-            int total = min(maxammo-ammo, store);
+            int total = clamp(maxammo-ammo, store, maxammo);
             loopi(total) drawclipitem(cliptexs[weap], x, y, offset, size*scale, fade*clipstoreblend, start += slice, spin, cliprots[weap], c);
         }
     }

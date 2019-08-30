@@ -305,9 +305,6 @@ extern mutstypes mutstype[];
 #define m_attr(a,b)         (a == WEAPON ? game::attrmap[isweap(b) ? b : W_GRENADE] : b)
 #endif
 
-#define w_carry(w1,w2)      (isweap(w1) && w1 != W_CLAW && w1 < W_ALL && (!isweap(w2) || (w1 != w2 && (w2 != W_GRENADE || w1 != W_MINE))) && (w1 == W_ROCKET || (w1 >= W_OFFSET && w1 < W_ITEM)))
-#define w_reload(w1)        (isweap(w1) && (w1 >= W_ALL || w1 < W_OFFSET))
-
 #define m_mmvar(a,b,c)      (m_dm(a) ? \
                                 (m_duel(a, b) ? G(c##duel) : \
                                     (m_survivor(a, b) ? G(c##survivor) : \
