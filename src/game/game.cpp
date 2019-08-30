@@ -2146,14 +2146,12 @@ namespace game
 
     void suicide(gameent *d, int flags)
     {
-        if((d == player1 || d->ai) && d->state == CS_ALIVE && d->suicided < 0)
-        {
-            burn(d, -1, flags);
-            bleed(d, -1, flags);
-            shock(d, -1, flags);
-            client::addmsg(N_SUICIDE, "ri3", d->clientnum, flags, d->inmaterial);
-            d->suicided = lastmillis;
-        }
+        if((d != player1 && !d->ai) || d->state != CS_ALIVE || d->suicided >= 0) return;
+        burn(d, -1, flags);
+        bleed(d, -1, flags);
+        shock(d, -1, flags);
+        client::addmsg(N_SUICIDE, "ri3", d->clientnum, flags, d->inmaterial);
+        d->suicided = lastmillis;
     }
     ICOMMAND(0, suicide, "",  (), { suicide(player1, 0); });
 

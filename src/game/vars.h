@@ -262,9 +262,6 @@ GFVAR(IDF_GAMEMOD, itemspeedmax, 0, 0, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, itemrepulsion, 0, 8, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, itemrepelspeed, 0, 25, FVAR_MAX);
 
-GVAR(IDF_GAMEMOD, triggermillis, 1, 1000, INT_MAX);
-GVAR(IDF_GAMEMOD, triggerdelay, 1, 250, INT_MAX);
-
 //  dm          duel        survivor    gladiator   capture     defend      defendking  bomber      bomberhold  race        racetimed   racegauntlet
 MMVAR(IDF_GAMEMOD, timelimit, 0, VAR_MAX,
     10,         10,         10,         10,         10,         10,         10,         10,         10,         10,         10,         10

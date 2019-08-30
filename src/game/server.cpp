@@ -5095,7 +5095,7 @@ namespace server
 
     int triggertime(bool delay = false)
     {
-        return delay ? G(triggerdelay) : G(triggermillis);
+        return delay ? TRIGGERDELAY : TRIGGERTIME;
     }
 
     void checkents()

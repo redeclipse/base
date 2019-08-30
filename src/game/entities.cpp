@@ -92,7 +92,9 @@ namespace entities
     {
         switch(e.type)
         {
-            case TRIGGER: case MAPMODEL: case PARTICLES: case MAPSOUND: case LIGHTFX: case TELEPORT: case PUSHER: return delay ? triggerdelay : triggermillis; break;
+            case TRIGGER: case MAPMODEL: case PARTICLES: case MAPSOUND: case LIGHTFX: case TELEPORT: case PUSHER:
+                return delay ? TRIGGERDELAY : TRIGGERTIME;
+                break;
             default: break;
         }
         return 0;
