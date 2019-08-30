@@ -3795,21 +3795,21 @@ namespace game
             renderplayer(d, 1, d->curscale, d == focus ? (third ? MDL_FORCETRANSPARENT | MDL_FORCESHADOW : MDL_ONLYSHADOW) : 0, vec4(1, 1, 1, opacity(d, true)));
     }
 
-    void prebatch()
+    void prebatch(bool trans)
     {
         gameent *d;
         int numdyns = numdynents();
         bool third = thirdpersonview();
-        loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL && (d != focus || third))
+        loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL && (d != focus || (third && trans)))
             d->cleartags();
     }
 
-    void renderpost()
+    void renderpost(bool trans)
     {
         gameent *d;
         int numdyns = numdynents();
         bool third = thirdpersonview();
-        loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL && (d != focus || third))
+        loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL && (d != focus || (third && trans)))
             rendercheck(d, true);
     }
 

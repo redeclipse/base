@@ -1482,7 +1482,10 @@ struct gameent : dynent, clientstate
         clientstate::mapchange();
     }
 
-    void cleartags() { head = torso = muzzle = origin = eject[0] = eject[1] = waist = jet[0] = jet[1] = jet[2] = toe[0] = toe[1] = vec(-1, -1, -1); }
+    void cleartags()
+    {
+        head = torso = muzzle = origin = eject[0] = eject[1] = waist = jet[0] = jet[1] = jet[2] = toe[0] = toe[1] = vec(-1, -1, -1);
+    }
 
     vec footpos(int foot)
     {
