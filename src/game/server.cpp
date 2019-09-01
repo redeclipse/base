@@ -7569,8 +7569,7 @@ namespace server
                         break;
                     }
                     if(p.remaining() < packlen) { disconnect_client(sender, DISC_MSGERR); return; }
-                    uchar s[MAXTRANS];
-                    ucharbuf q(s, MAXTRANS);
+                    packetbuf q(32 + packlen, ENET_PACKET_FLAG_RELIABLE);
                     putint(q, type);
                     putint(q, ci->clientnum);
                     putint(q, unpacklen);
