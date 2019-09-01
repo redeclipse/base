@@ -16,11 +16,12 @@ namespace entities
     VAR(IDF_PERSIST, showentlinks, 0, 1, 3);
     VAR(IDF_PERSIST, showentinterval, 0, 32, VAR_MAX);
     VAR(IDF_PERSIST, showentdist, 0, 512, VAR_MAX);
+    VAR(IDF_PERSIST, showentfull, 0, 0, 1);
     FVAR(IDF_PERSIST, showentsize, 0, 3, 10);
     FVAR(IDF_PERSIST, showentavailable, 0, 1, 1);
-    FVAR(IDF_PERSIST, showentunavailable, 0, 0, 1);
+    FVAR(IDF_PERSIST, showentunavailable, 0, 0.15f, 1);
 
-    VAR(IDF_PERSIST, simpleitems, 0, 1, 2); // 0 = items are models, 1 = items are icons, 2 = items are off and only halos appear
+    VAR(IDF_PERSIST, simpleitems, 0, 0, 2); // 0 = items are models, 1 = items are icons, 2 = items are off and only halos appear
     FVAR(IDF_PERSIST, simpleitemsize, 0, 2, 8);
     FVAR(IDF_PERSIST, simpleitemblend, 0, 1, 1);
     FVAR(IDF_PERSIST, simpleitemhalo, 0, 0.25f, 1);
@@ -2243,7 +2244,7 @@ namespace entities
                         if(isweap(attr))
                         {
                             colour = W(attr, colour);
-                            if(!active || !game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL) || !weapons::canuse(attr))
+                            if(!active || !game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL, !showentfull) || !weapons::canuse(attr))
                                 mdl.color.a *= showentunavailable;
                             else mdl.color.a *= showentavailable;
                         }
@@ -2316,10 +2317,10 @@ namespace entities
             float blend = fluc*skew, radius = fluc*0.5f;
             if(e.type == WEAPON && isweap(attr))
             {
-                if(!active || !game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL) || !weapons::canuse(attr))
+                if(!active || !game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL, !showentfull) || !weapons::canuse(attr))
                 {
-                    if(showentunavailable > 0) blend *= showentunavailable;
-                    else if(isedit) blend *= showentavailable;
+                    if(isedit) blend *= showentavailable;
+                    else if(showentunavailable > 0) blend *= showentunavailable;
                     else blend = 0;
                 }
                 else blend *= showentavailable;
@@ -2334,7 +2335,7 @@ namespace entities
             {
                 if(simpleitems == 1)
                 {
-                    part_icon(o, textureload(hud::itemtex(e.type, attr), 3), simpleitemsize*skew, simpleitemblend*skew, 0, 0, 1, colour);
+                    part_icon(o, textureload(hud::itemtex(e.type, attr), 3), simpleitemsize*skew, simpleitemblend*blend*skew, 0, 0, 1, colour);
                     if(radius < simpleitemsize*skew) radius = simpleitemsize*skew;
                     blend *= simpleitemhalo;
                 }

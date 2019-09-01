@@ -940,7 +940,12 @@ namespace hud
                 if(game::focus->weapstate[weap] == W_S_USE && game::focus->getlastweap(m_weapon(game::focus->actortype, game::gamemode, game::mutators)) == weap)
                 {
                     amt = clamp(interval/float(game::focus->weapwait[weap]), 0.f, 1.f);
-                    if(clipanims >= 2) spin = 360*amt;
+                    if(clipanims)
+                    {
+                        angle -= 360*amt;
+                        start -= 360*amt;
+                        if(clipanims >= 2) spin = 360*amt;
+                    }
                     break;
                 }
                 // falls through
@@ -967,7 +972,7 @@ namespace hud
         }
         if(clipstore && ammo < maxammo && store > 0)
         {
-            int total = clamp(maxammo-ammo, store, maxammo);
+            int total = clamp(store, 0, maxammo-ammo);
             loopi(total) drawclipitem(cliptexs[weap], x, y, offset, size*scale, fade*clipstoreblend, start += slice, spin, cliprots[weap], c);
         }
     }

@@ -838,15 +838,18 @@ struct clientstate
         return false;
     }
 
-    bool canuseweap(int gamemode, int mutators, int attr, int sweap, int millis, int skip = 0)
+    bool canuseweap(int gamemode, int mutators, int attr, int sweap, int millis, int skip = 0, bool full = true)
     {
         if(!m_classic(gamemode, mutators) && attr < W_ITEM && !hasweap(attr, sweap)) return false;
-        int ammo = getammo(attr, 0, true), total = W(attr, ammoclip)+W(attr, ammostore);
-        if(ammo >= total) return false;
+        if(full)
+        {
+            int ammo = getammo(attr, 0, true), total = W(attr, ammoclip)+W(attr, ammostore);
+            if(ammo >= total) return false;
+        }
         return true;
     }
 
-    bool canuse(int gamemode, int mutators, int type, int attr, attrvector &attrs, int sweap, int millis, int skip = 0)
+    bool canuse(int gamemode, int mutators, int type, int attr, attrvector &attrs, int sweap, int millis, int skip = 0, bool full = true)
     {
         switch(enttype[type].usetype)
         {
@@ -855,7 +858,7 @@ struct clientstate
             { // can't use when reloading or firing
                 if(type != WEAPON || !isweap(attr) || !AA(actortype, maxcarry)) return false;
                 if(!weapwaited(weapselect, millis, skip)) return false;
-                return canuseweap(gamemode, mutators, attr, sweap, millis, skip);
+                return canuseweap(gamemode, mutators, attr, sweap, millis, skip, full);
             }
             default: break;
         }
@@ -867,9 +870,9 @@ struct clientstate
         if(type != WEAPON || !isweap(attr)) return;
         int prevclip = max(weapammo[attr][W_A_CLIP], 0), prevstore = max(weapammo[attr][W_A_STORE], 0);
         weapswitch(attr, millis, delay, W_S_USE);
-        if(!W(attr, ammostore) || !hasweap(attr, sweap)) weapammo[attr][W_A_CLIP] = clamp(prevclip+ammoamt, 0, W(attr, ammoclip));
+        weapammo[attr][W_A_CLIP] = !W(attr, ammostore) || !hasweap(attr, sweap) ? clamp(prevclip+ammoamt, 0, W(attr, ammoclip)) : prevclip;
         int diffclip = max(weapammo[attr][W_A_CLIP], 0)-prevclip, store = ammoamt-diffclip;
-        if(W(attr, ammostore)) weapammo[attr][W_A_STORE] = clamp(weapammo[attr][W_A_STORE]+store, 0, W(attr, ammostore));
+        weapammo[attr][W_A_STORE] = W(attr, ammostore) ? clamp(weapammo[attr][W_A_STORE]+store, 0, W(attr, ammostore)) : 0;
         weapload[attr][W_A_CLIP] = diffclip;
         weapload[attr][W_A_STORE] = max(weapammo[attr][W_A_STORE], 0)-prevstore;
         weapent[attr] = id;
@@ -2087,7 +2090,7 @@ namespace game
 
 namespace entities
 {
-    extern int showentdescs, simpleitems;
+    extern int showentdescs, showentfull, simpleitems;
     extern float showentavailable, showentunavailable;
     extern vector<extentity *> ents;
     extern bool execitem(int n, int cn, dynent *d, vec &pos, float dist);

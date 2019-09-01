@@ -563,7 +563,7 @@ WPFVAR(IDF_GAMEMOD, itemhalo, 0, FVAR_MAX,
     6,          6,          12,         10,         8,          10,         6,          8,          10,         4,          4,          8,          1
 );
 WPFVAR(IDF_GAMEMOD, itemhaloammo, 0, FVAR_MAX,
-    4,          4,          4,          4,          4,          4,          4,          4,          4,          4,          4,          4,          1
+    6,          6,          12,         10,         8,          10,         6,          8,          10,         4,          4,          8,          1
 );
 WPFVARM(IDF_GAMEMOD, jitterpitchmax, FVAR_MIN, FVAR_MAX,
     1.0f,       1.0f,       1.0f,       10.0f,      6.0f,       0.2f,       5.0f,       3.0f,       4.0f,       1.0f,       1.0f,       1.0f,       1.0f,
