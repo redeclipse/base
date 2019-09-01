@@ -592,7 +592,7 @@ void loadalias(const char *name, const char *fname)
 }
 COMMAND(0, loadalias, "ss");
 
-// variable's and commands are registered through globals, see cube.h
+// variables and commands are registered through globals, see cube.h
 
 int variable(const char *name, int min, int cur, int max, int *storage, identfun fun, int flags)
 {

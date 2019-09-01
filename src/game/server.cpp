@@ -1,27 +1,7 @@
-// WARNING: Before modifying this file, please read our Guidelines
-// This file can be found in the distribution under: ./docs/guidelines.txt
-// Or at: https://redeclipse.net/wiki/Multiplayer_Guidelines
-//
-// The Red Eclipse Team provides the play.redeclipse.net master server for the
-// benefit of the Red Eclipse Community. We impose a general set of guidelines
-// for any server/user which connects to the play.redeclipse.net master server.
-// The team reserves the right to block any attempt to connect to the master
-// server at their discretion. Access to services provided by the project are
-// considered to be a privilege, not a right.
-
-// These guidelines are imposed to ensure the integrity of both the Red Eclipse
-// game, and its community. If you do not agree to these terms, you should not
-// connect to the play.redeclipse.net master server, or any servers which are
-// connected to it. These guidelines are not designed to limit your opinion or
-// freedoms granted to you by the open source licenses employed by the project,
-// nor do they cover usage of the game in either offline play or on servers
-// which are not connected to the Red Eclipse master.
-
-// If you have questions or comments regarding these guidelines please contact
-// the Red Eclipse Team. Any person seeking to modify their game or server for
-// use on the master server should first seek permission from the Red Eclipse
-// Team, each modification must be approved and will be done on a case-by-case
-// basis.
+// WARNING * WARNING * WARNING * WARNING * WARNING * WARNING * WARNING * WARNING
+// Before modifying this file, please read our Guidelines: ./docs/guidelines.txt
+// The most recent version can be viewed at: https://redeclipse.net/guidelines
+// WARNING * WARNING * WARNING * WARNING * WARNING * WARNING * WARNING * WARNING
 
 #define GAMESERVER 1
 #include "game.h"
@@ -4801,7 +4781,8 @@ namespace server
     {
         if(ci->weapload[ci->weapselect][W_A_CLIP] <= 0) return;
         takeammo(ci, ci->weapselect, ci->weapload[ci->weapselect][W_A_CLIP]);
-        if(W(ci->weapselect, ammostore)) ci->weapammo[ci->weapselect][W_A_STORE] = clamp(ci->weapammo[ci->weapselect][W_A_STORE]+ci->weapload[ci->weapselect][W_A_CLIP], 0, W(ci->weapselect, ammostore));
+        if(W(ci->weapselect, ammostore))
+            ci->weapammo[ci->weapselect][W_A_STORE] = clamp(ci->weapammo[ci->weapselect][W_A_STORE]+ci->weapload[ci->weapselect][W_A_CLIP], 0, W(ci->weapselect, ammostore));
         ci->weapload[ci->weapselect][W_A_CLIP] = -ci->weapload[ci->weapselect][W_A_CLIP]; // the client should already do this for themself
         sendf(-1, 1, "ri6x", N_RELOAD, ci->clientnum, ci->weapselect, ci->weapload[ci->weapselect][W_A_CLIP], ci->weapammo[ci->weapselect][W_A_CLIP], ci->weapammo[ci->weapselect][W_A_STORE], ci->clientnum);
     }

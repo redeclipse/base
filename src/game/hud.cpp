@@ -937,15 +937,11 @@ namespace hud
                     spin = 0;
                     break;
                 }
-                if(game::focus->weapstate[weap] == W_S_USE)
+                if(game::focus->weapstate[weap] == W_S_USE && game::focus->getlastweap(m_weapon(game::focus->actortype, game::gamemode, game::mutators)) == weap)
                 {
-                    int lastweap = game::focus->getlastweap(m_weapon(game::focus->actortype, game::gamemode, game::mutators));
-                    if(!isweap(lastweap) || lastweap == weap)
-                    {
-                        amt = clamp(interval/float(game::focus->weapwait[weap]), 0.f, 1.f);
-                        if(clipanims && clipanims >= 2) spin = 360*amt;
-                        break;
-                    }
+                    amt = clamp(interval/float(game::focus->weapwait[weap]), 0.f, 1.f);
+                    if(clipanims >= 2) spin = 360*amt;
+                    break;
                 }
                 // falls through
             }

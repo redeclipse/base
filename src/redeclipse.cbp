@@ -317,7 +317,7 @@
 				<Option deps_output=".deps/redeclipse-amd64-dbg" />
 				<Option type="0" />
 				<Option compiler="gcc" />
-				<Option parameters="-df0 -dw800 -dh600 -glog.txt" />
+				<Option parameters="-hhome -df0 -dw800 -dh600 -glog.txt" />
 				<Option projectCompilerOptionsRelation="1" />
 				<Option projectLinkerOptionsRelation="1" />
 				<Option projectIncludeDirsRelation="1" />
@@ -367,7 +367,7 @@
 				<Option deps_output=".deps/redeclipse-amd64-prof" />
 				<Option type="0" />
 				<Option compiler="gcc" />
-				<Option parameters="-hhome -r -df0 -dw800 -dh600 -glog.txt" />
+				<Option parameters="-hhome -df0 -dw800 -dh600 -glog.txt" />
 				<Option projectCompilerOptionsRelation="1" />
 				<Option projectLinkerOptionsRelation="1" />
 				<Option projectIncludeDirsRelation="1" />
@@ -1152,6 +1152,22 @@
 			<Option target="redeclipse-amd64-dbg" />
 			<Option target="redeclipse-amd64-prof" />
 		</Unit>
+		<Unit filename="engine/wind.cpp">
+			<Option target="redeclipse-x86" />
+			<Option target="redeclipse-x86-dbg" />
+			<Option target="redeclipse-x86-prof" />
+			<Option target="redeclipse-amd64" />
+			<Option target="redeclipse-amd64-dbg" />
+			<Option target="redeclipse-amd64-prof" />
+		</Unit>
+		<Unit filename="engine/wind.h">
+			<Option target="redeclipse-x86" />
+			<Option target="redeclipse-x86-dbg" />
+			<Option target="redeclipse-x86-prof" />
+			<Option target="redeclipse-amd64" />
+			<Option target="redeclipse-amd64-dbg" />
+			<Option target="redeclipse-amd64-prof" />
+		</Unit>
 		<Unit filename="engine/world.cpp">
 			<Option target="redeclipse-x86" />
 			<Option target="redeclipse-x86-dbg" />
@@ -1176,22 +1192,6 @@
 			<Option target="redeclipse-amd64-dbg" />
 			<Option target="redeclipse-amd64-prof" />
 		</Unit>
-                <Unit filename="engine/wind.cpp">
-                        <Option target="redeclipse-x86" />
-                        <Option target="redeclipse-x86-dbg" />
-                        <Option target="redeclipse-x86-prof" />
-                        <Option target="redeclipse-amd64" />
-                        <Option target="redeclipse-amd64-dbg" />
-                        <Option target="redeclipse-amd64-prof" />
-                </Unit>
-                <Unit filename="engine/wind.h">
-                        <Option target="redeclipse-x86" />
-                        <Option target="redeclipse-x86-dbg" />
-                        <Option target="redeclipse-x86-prof" />
-                        <Option target="redeclipse-amd64" />
-                        <Option target="redeclipse-amd64-dbg" />
-                        <Option target="redeclipse-amd64-prof" />
-                </Unit>
 		<Unit filename="game/ai.cpp">
 			<Option target="redeclipse-x86" />
 			<Option target="redeclipse-x86-dbg" />
