@@ -1,4 +1,4 @@
-== GUIDELINES FOR CONNECTING TO THE RED ECLIPSE MASTER SERVER ==
+## GUIDELINES FOR CONNECTING TO THE RED ECLIPSE MASTER SERVER
 
 The Red Eclipse Team provides the play.redeclipse.net master server for the
 benefit of the Red Eclipse community. We impose a general set of guidelines for
@@ -24,7 +24,7 @@ modification must be approved and will be done on a case-by-case basis. It is
 advised you create a topic in the "General Discussion" section of the official
 Red Eclipse discussions located at https://redeclipse.net/discuss
 
-== Guidelines for Servers ==
+### Guidelines for Servers
 
 (See RE Mark Policy for definitions of "substantially (un)modified")
 
@@ -72,7 +72,7 @@ Red Eclipse discussions located at https://redeclipse.net/discuss
   removal of the server in question from listing on the master server, without
   warning.
 
-== Guidelines for Users ==
+### Guidelines for Users
 
 * Players must behave in a manner that is not disruptive to the game.
   - Cussing is fine, so long as it doesn't involve bigotry (racist, religious,
@@ -119,7 +119,7 @@ Red Eclipse discussions located at https://redeclipse.net/discuss
   - The Red Eclipse Team is not obliged to disclose to the complainant what
     actions have or have not been taken.
 
-== Guidelines for Moderators ==
+### Guidelines for Moderators
 
 * Moderators must act in a fair and impartial manner, employing the "warn, then
   kick, then ban" approach, unless there is an emergency or immediate need.
@@ -174,7 +174,7 @@ Red Eclipse discussions located at https://redeclipse.net/discuss
   - The Red Eclipse Team is not obliged to disclose what actions have or have
     not been taken.
 
-== Attribution ==
+### Attribution
 
 This text is Copyright (C) 2011-2018, the Red Eclipse Team
 and is available under a Creative Commons Attribution-ShareAlike 3.0 Unported
