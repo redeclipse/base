@@ -77,7 +77,7 @@ gametypes gametype[] = {
             0
         },
         "Deathmatch", "DM", { "Gladiator", "Old School", "" },
-        "Shoot to kill and increase score by fragging", { "Fight in a confined area with increased pushback from damage", "Secure the most number of frags instead of points", "" },
+        "Shoot to kill and increase score by fragging", { "Fight in a confined area with increased pushback from damage", "Every frag only gives you a single point, like the old days", "" },
     },
     {
         G_CAPTURE, 0, 0,
