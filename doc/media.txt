@@ -66,12 +66,3 @@ Others
 > http://www.phoronix.com/scan.php?page=news_item&px=OTcyOQ
 > http://www.phoronix.com/scan.php?page=news_item&px=MTAzODM
 > http://www.thegametalk.net/2012/10/open-source-games-red-eclipse.html
-
-
-= Misc Stuff =
-
-SourceForge.net Reviews
-> http://sourceforge.net/projects/redeclipse/reviews/
-
-Desura Reviews
-> http://www.desura.com/games/red-eclipse/reviews

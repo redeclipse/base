@@ -1,7 +1,0 @@
-deleteCommand: true
-closeSourceIssue: true
-lockSourceIssue: true
-# Set custom aliases for targets
-# aliases:
-#   r: repo
-#   or: owner/repo

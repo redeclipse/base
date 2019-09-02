@@ -9,8 +9,8 @@ redeclipse_update_path() {
 }
 
 redeclipse_update_init() {
-    if [ -z "${REDECLIPSE_SOURCE+isset}" ]; then REDECLIPSE_SOURCE="https://raw.githubusercontent.com/red-eclipse/deploy/master"; fi
-    if [ -z "${REDECLIPSE_GITHUB+isset}" ]; then REDECLIPSE_GITHUB="https://github.com/red-eclipse"; fi
+    if [ -z "${REDECLIPSE_SOURCE+isset}" ]; then REDECLIPSE_SOURCE="https://raw.githubusercontent.com/redeclipse/deploy/master"; fi
+    if [ -z "${REDECLIPSE_GITHUB+isset}" ]; then REDECLIPSE_GITHUB="https://github.com/redeclipse"; fi
     if [ -z "${REDECLIPSE_CACHE+isset}" ]; then
         if [ "${REDECLIPSE_TARGET}" = "windows" ]; then
             REDECLIPSE_WINDOCS=`reg query "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders" //v "Personal" | tr -d '\r' | tr -d '\n' | sed -e 's/.*\(.\):\\\/\/\1\//g;s/\\\/\//g'`
@@ -288,8 +288,8 @@ redeclipse_update_module_blob_deploy() {
         echo "   rm -rf \"${REDECLIPSE_PATH}${REDECLIPSE_MODULE_DIR}\"" >> "${REDECLIPSE_TEMP}/install.sh"
         echo "   mkdir -p \"${REDECLIPSE_PATH}${REDECLIPSE_MODULE_DIR}\"" >> "${REDECLIPSE_TEMP}/install.sh"
     fi
-    echo "   cp -Rfv \"${REDECLIPSE_TEMP}/red-eclipse-${REDECLIPSE_MODULE_RUN}-$(echo "$REDECLIPSE_MODULE_REMOTE" | cut -b 1-7)/\"* \"${REDECLIPSE_PATH}${REDECLIPSE_MODULE_DIR}\"" >> "${REDECLIPSE_TEMP}/install.sh"
-    echo "   rm -rf \"${REDECLIPSE_TEMP}/red-eclipse-${REDECLIPSE_MODULE_RUN}-$(echo "$REDECLIPSE_MODULE_REMOTE" | cut -b 1-7)\"" >> "${REDECLIPSE_TEMP}/install.sh"
+    echo "   cp -Rfv \"${REDECLIPSE_TEMP}/redeclipse-${REDECLIPSE_MODULE_RUN}-$(echo "$REDECLIPSE_MODULE_REMOTE" | cut -b 1-7)/\"* \"${REDECLIPSE_PATH}${REDECLIPSE_MODULE_DIR}\"" >> "${REDECLIPSE_TEMP}/install.sh"
+    echo "   rm -rf \"${REDECLIPSE_TEMP}/redeclipse-${REDECLIPSE_MODULE_RUN}-$(echo "$REDECLIPSE_MODULE_REMOTE" | cut -b 1-7)\"" >> "${REDECLIPSE_TEMP}/install.sh"
     echo "   echo \"${REDECLIPSE_MODULE_REMOTE}\" > \"${REDECLIPSE_PATH}${REDECLIPSE_MODULE_DIR}/version.txt\"" >> "${REDECLIPSE_TEMP}/install.sh"
     echo ") || (" >> "${REDECLIPSE_TEMP}/install.sh"
     echo "    rm -f \"${REDECLIPSE_TEMP}/${REDECLIPSE_MODULE_RUN}.txt\"" >> "${REDECLIPSE_TEMP}/install.sh"

@@ -63,7 +63,7 @@
     <content_attribute id="money-gambling">none</content_attribute>
   </content_rating>
   <developer_name>Red Eclipse Team</developer_name>
-  <url type="bugtracker">https://github.com/red-eclipse/base/issues</url>
+  <url type="bugtracker">https://github.com/redeclipse/base/issues</url>
   <url type="donation">https://redeclipse.net/donate</url>
   <url type="help">https://redeclipse.net/faq</url>
 </component>

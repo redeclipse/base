@@ -5,9 +5,9 @@ SEMUPDATE_BUILD="${HOME}/deploy"
 SEMUPDATE_DEPOT="${HOME}/depot"
 SEMUPDATE_DIR="${SEMUPDATE_BUILD}/${BRANCH_NAME}"
 SEMUPDATE_APT='DEBIAN_FRONTEND=noninteractive apt-get'
-SEMUPDATE_DEST="https://${GITHUB_TOKEN}:x-oauth-basic@github.com/red-eclipse/deploy.git"
-SEMUPDATE_APPIMAGE="https://github.com/red-eclipse/appimage-builder.git"
-SEMUPDATE_APPIMAGE_GH_DEST="red-eclipse/deploy"
+SEMUPDATE_DEST="https://${GITHUB_TOKEN}:x-oauth-basic@github.com/redeclipse/deploy.git"
+SEMUPDATE_APPIMAGE="https://github.com/redeclipse/appimage-builder.git"
+SEMUPDATE_APPIMAGE_GH_DEST="redeclipse/deploy"
 SEMUPDATE_MODULES=`cat "${SEMUPDATE_PWD}/.gitmodules" | grep '\[submodule "[^.]' | sed -e 's/^.submodule..//;s/..$//' | tr "\n" " " | sed -e 's/ $//'`
 SEMUPDATE_ALLMODS="base ${SEMUPDATE_MODULES}"
 
