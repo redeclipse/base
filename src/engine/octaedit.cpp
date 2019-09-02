@@ -1252,7 +1252,7 @@ bool packundo(undoblock *u, int &inlen, uchar *&outbuf, int &outlen)
     {
         undoent *ue = u->ents();
         int numattrs = 0;
-        undoenthdr *hdr = (undoenthdr *)buf.pad(sizeof(undoenthdr));
+        undoenthdr *hdr = (undoenthdr *)buf.pad(u->numents*sizeof(undoenthdr));
         loopi(u->numents)
         {
             hdr[i].i = lilswap(ushort(ue[i].i));
