@@ -3950,7 +3950,7 @@ namespace server
             ci->weapreset(false);
         }
         ci->updatetimeplayed();
-        sendf(target, 1, "ri9fi4vvvi", N_RESUME, ci->clientnum, state, ci->points, ci->frags, ci->deaths, ci->totalpoints, ci->totalfrags, ci->totaldeaths, ci->totalavgpos, ci->timeplayed, ci->health, ci->cptime, ci->weapselect, W_MAX*W_A_MAX, &ci->weapammo[0][0], W_MAX, &ci->weapent[0], -1);
+        sendf(target, 1, "ri9fi4vvi", N_RESUME, ci->clientnum, state, ci->points, ci->frags, ci->deaths, ci->totalpoints, ci->totalfrags, ci->totaldeaths, ci->totalavgpos, ci->timeplayed, ci->health, ci->cptime, ci->weapselect, W_MAX*W_A_MAX, &ci->weapammo[0][0], W_MAX, &ci->weapent[0], -1);
     }
 
     void putinitclient(clientinfo *ci, packetbuf &p, bool allow)
