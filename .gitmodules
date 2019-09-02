@@ -1,143 +1,143 @@
 [submodule "acerspyro"]
 	path = data/acerspyro
-	url = https://github.com/red-eclipse/acerspyro.git
+	url = https://github.com/redeclipse/acerspyro.git
 	branch = master
 [submodule "actors"]
 	path = data/actors
-	url = https://github.com/red-eclipse/actors.git
+	url = https://github.com/redeclipse/actors.git
 	branch = master
 [submodule "appleflap"]
 	path = data/appleflap
-	url = https://github.com/red-eclipse/appleflap.git
+	url = https://github.com/redeclipse/appleflap.git
 	branch = master
 [submodule "blendbrush"]
 	path = data/blendbrush
-	url = https://github.com/red-eclipse/blendbrush.git
+	url = https://github.com/redeclipse/blendbrush.git
 	branch = master
 [submodule "caustics"]
 	path = data/caustics
-	url = https://github.com/red-eclipse/caustics.git
+	url = https://github.com/redeclipse/caustics.git
 	branch = master
 [submodule "crosshairs"]
 	path = data/crosshairs
-	url = https://github.com/red-eclipse/crosshairs.git
+	url = https://github.com/redeclipse/crosshairs.git
 	branch = master
 [submodule "dziq"]
 	path = data/dziq
-	url = https://github.com/red-eclipse/dziq.git
+	url = https://github.com/redeclipse/dziq.git
 	branch = master
 [submodule "elyvisions"]
 	path = data/elyvisions
-	url = https://github.com/red-eclipse/elyvisions.git
+	url = https://github.com/redeclipse/elyvisions.git
 	branch = master
 [submodule "fonts"]
 	path = data/fonts
-	url = https://github.com/red-eclipse/fonts.git
+	url = https://github.com/redeclipse/fonts.git
 	branch = master
 [submodule "freezurbern"]
 	path = data/freezurbern
-	url = https://github.com/red-eclipse/freezurbern.git
+	url = https://github.com/redeclipse/freezurbern.git
 [submodule "john"]
 	path = data/john
-	url = https://github.com/red-eclipse/john.git
+	url = https://github.com/redeclipse/john.git
 	branch = master
 [submodule "jojo"]
 	path = data/jojo
-	url = https://github.com/red-eclipse/jojo.git
+	url = https://github.com/redeclipse/jojo.git
 	branch = master
 [submodule "jwin"]
 	path = data/jwin
-	url = https://github.com/red-eclipse/jwin.git
+	url = https://github.com/redeclipse/jwin.git
 	branch = master
 [submodule "luckystrike"]
 	path = data/luckystrike
-	url = https://github.com/red-eclipse/luckystrike.git
+	url = https://github.com/redeclipse/luckystrike.git
 	branch = master
 [submodule "maps"]
 	path = data/maps
-	url = https://github.com/red-eclipse/maps.git
+	url = https://github.com/redeclipse/maps.git
 	branch = stable
 [submodule "mayhem"]
 	path = data/mayhem
-	url = https://github.com/red-eclipse/mayhem.git
+	url = https://github.com/redeclipse/mayhem.git
 	branch = master
 [submodule "mikeplus64"]
 	path = data/mikeplus64
-	url = https://github.com/red-eclipse/mikeplus64.git
+	url = https://github.com/redeclipse/mikeplus64.git
 	branch = master
 [submodule "misc"]
 	path = data/misc
-	url = https://github.com/red-eclipse/misc.git
+	url = https://github.com/redeclipse/misc.git
 	branch = master
 [submodule "nieb"]
 	path = data/nieb
-	url = https://github.com/red-eclipse/nieb.git
+	url = https://github.com/redeclipse/nieb.git
 	branch = master
 [submodule "nobiax"]
 	path = data/nobiax
-	url = https://github.com/red-eclipse/nobiax.git
+	url = https://github.com/redeclipse/nobiax.git
 	branch = master
 [submodule "particles"]
 	path = data/particles
-	url = https://github.com/red-eclipse/particles.git
+	url = https://github.com/redeclipse/particles.git
 	branch = master
 [submodule "philipk"]
 	path = data/philipk
-	url = https://github.com/red-eclipse/philipk.git
+	url = https://github.com/redeclipse/philipk.git
 	branch = master
 [submodule "projectiles"]
 	path = data/projectiles
-	url = https://github.com/red-eclipse/projectiles.git
+	url = https://github.com/redeclipse/projectiles.git
 	branch = master
 [submodule "props"]
 	path = data/props
-	url = https://github.com/red-eclipse/props.git
+	url = https://github.com/redeclipse/props.git
 	branch = master
 [submodule "skyboxes"]
 	path = data/skyboxes
-	url = https://github.com/red-eclipse/skyboxes.git
+	url = https://github.com/redeclipse/skyboxes.git
 	branch = master
 [submodule "snipergoth"]
 	path = data/snipergoth
-	url = https://github.com/red-eclipse/snipergoth.git
+	url = https://github.com/redeclipse/snipergoth.git
 	branch = master
 [submodule "sounds"]
 	path = data/sounds
-	url = https://github.com/red-eclipse/sounds.git
+	url = https://github.com/redeclipse/sounds.git
 	branch = master
 [submodule "textures"]
 	path = data/textures
-	url = https://github.com/red-eclipse/textures.git
+	url = https://github.com/redeclipse/textures.git
 	branch = master
 [submodule "torley"]
 	path = data/torley
-	url = https://github.com/red-eclipse/torley.git
+	url = https://github.com/redeclipse/torley.git
 	branch = master
 [submodule "trak"]
 	path = data/trak
-	url = https://github.com/red-eclipse/trak.git
+	url = https://github.com/redeclipse/trak.git
 	branch = master
 [submodule "ulukai"]
 	path = data/ulukai
-	url = https://github.com/red-eclipse/ulukai.git
+	url = https://github.com/redeclipse/ulukai.git
 	branch = master
 [submodule "unnamed"]
 	path = data/unnamed
-	url = https://github.com/red-eclipse/unnamed.git
+	url = https://github.com/redeclipse/unnamed.git
 	branch = master
 [submodule "vanities"]
 	path = data/vanities
-	url = https://github.com/red-eclipse/vanities.git
+	url = https://github.com/redeclipse/vanities.git
 	branch = master
 [submodule "vegetation"]
 	path = data/vegetation
-	url = https://github.com/red-eclipse/vegetation.git
+	url = https://github.com/redeclipse/vegetation.git
 	branch = master
 [submodule "weapons"]
 	path = data/weapons
-	url = https://github.com/red-eclipse/weapons.git
+	url = https://github.com/redeclipse/weapons.git
 	branch = master
 [submodule "wicked"]
 	path = data/wicked
-	url = https://github.com/red-eclipse/wicked.git
+	url = https://github.com/redeclipse/wicked.git
 	branch = master

@@ -4,7 +4,7 @@ SEMABUILD_BUILD="${HOME}/deploy"
 SEMABUILD_SCP='scp -BC -o StrictHostKeyChecking=no'
 SEMABUILD_TARGET='qreeves@icculus.org:/webspace/redeclipse.net/files'
 SEMABUILD_APT='DEBIAN_FRONTEND=noninteractive apt-get'
-SEMABUILD_MODULES=`curl --connect-timeout 30 -L -k -f https://raw.githubusercontent.com/red-eclipse/deploy/master/stable/mods.txt` || exit 1
+SEMABUILD_MODULES=`curl --connect-timeout 30 -L -k -f https://raw.githubusercontent.com/redeclipse/deploy/master/stable/mods.txt` || exit 1
 SEMABUILD_ALLMODS="base ${SEMABUILD_MODULES}"
 SEMABUILD_DIST="bz2 combined win zip mac"
 
@@ -45,7 +45,7 @@ SEMABUILD_UNAME=`sed -n 's/.define VERSION_UNAME *"\([^"]*\)"/\1/p' "${SEMABUILD
 SEMABUILD_VERSION=`sed -n 's/.define VERSION_STRING *"\([^"]*\)"/\1/p' "${SEMABUILD_PWD}/src/engine/version.h"`
 SEMABUILD_RELEASE=`sed -n 's/.define VERSION_RELEASE *"\([^"]*\)"/\1/p' "${SEMABUILD_PWD}/src/engine/version.h"`
 
-${SEMABUILD_GHR} release --user "red-eclipse" --repo "base" --tag "v${SEMABUILD_VERSION}" --name "v${SEMABUILD_VERSION} (${SEMABUILD_RELEASE})" --description "${SEMABUILD_NAME} v${SEMABUILD_VERSION} (${SEMABUILD_RELEASE}) has been released!" --target "stable" --draft
+${SEMABUILD_GHR} release --user "redeclipse" --repo "base" --tag "v${SEMABUILD_VERSION}" --name "v${SEMABUILD_VERSION} (${SEMABUILD_RELEASE})" --description "${SEMABUILD_NAME} v${SEMABUILD_VERSION} (${SEMABUILD_RELEASE}) has been released!" --target "stable" --draft
 
 for i in ${SEMABUILD_DIST}; do
     pushd "${SEMABUILD_BUILD}/src" || exit 1
@@ -77,7 +77,7 @@ for i in ${SEMABUILD_DIST}; do
         mv -vf "${q}" "releases/${q}" || exit 1
         shasum "releases/${q}" > "releases/${q}.shasum" || exit 1
         md5sum "releases/${q}" > "releases/${q}.md5sum" || exit 1
-        ${SEMABUILD_GHR} upload --user "red-eclipse" --repo "base" --tag "v${SEMABUILD_VERSION}" --name "${q}" --file "releases/${q}" || exit 1
+        ${SEMABUILD_GHR} upload --user "redeclipse" --repo "base" --tag "v${SEMABUILD_VERSION}" --name "${q}" --file "releases/${q}" || exit 1
     done
     ${SEMABUILD_SCP} -r "releases" "${SEMABUILD_TARGET}" || exit 1
     rm -rfv releases || exit 1

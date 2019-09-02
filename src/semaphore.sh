@@ -4,10 +4,10 @@ SEMABUILD_PWD=`pwd`
 SEMABUILD_BUILD="${HOME}/deploy"
 SEMABUILD_DIR="${SEMABUILD_BUILD}/${BRANCH_NAME}"
 SEMABUILD_APT='DEBIAN_FRONTEND=noninteractive apt-get'
-SEMABUILD_DEST="https://${GITHUB_TOKEN}:x-oauth-basic@github.com/red-eclipse/deploy.git"
-SEMABUILD_SOURCE="https://raw.githubusercontent.com/red-eclipse/deploy/master"
-SEMABUILD_APPIMAGE="https://github.com/red-eclipse/appimage-builder.git"
-SEMABUILD_APPIMAGE_GH_DEST="red-eclipse/deploy"
+SEMABUILD_DEST="https://${GITHUB_TOKEN}:x-oauth-basic@github.com/redeclipse/deploy.git"
+SEMABUILD_SOURCE="https://raw.githubusercontent.com/redeclipse/deploy/master"
+SEMABUILD_APPIMAGE="https://github.com/redeclipse/appimage-builder.git"
+SEMABUILD_APPIMAGE_GH_DEST="redeclipse/deploy"
 SEMABUILD_MODULES=`cat "${SEMABUILD_PWD}/.gitmodules" | grep '\[submodule "[^.]' | sed -e 's/^.submodule..//;s/..$//' | tr "\n" " " | sed -e 's/ $//'`
 SEMABUILD_ALLMODS="base ${SEMABUILD_MODULES}"
 SEMABUILD_DEPLOY="false"
