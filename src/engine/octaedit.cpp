@@ -2998,26 +2998,36 @@ bool mpreplacetex(int oldtex, int newtex, bool insel, selinfo &sel, ucharbuf &bu
     return true;
 }
 
-void replacetex(bool insel, int texnum = -1)
+void replacetex(bool insel, int oldtex = -1, int newtex = -1)
 {
     if(noedit()) return;
-    mpreplacetex(texnum, lasttex, insel, sel, true);
+    mpreplacetex(oldtex, vslots.inrange(newtex) ? newtex : lasttex, insel, sel, true);
 }
 
-ICOMMAND(0, replace, "iN", (int *t, int *numargs),
+ICOMMAND(0, replace, "", (),
 {
-    int tex = *numargs >= 1 ? *t : reptex;
-    if(tex < 0) { conoutf("\frCan only replace after a texture edit"); return; }
-    replacetex(false, tex);
+    if(!vslots.inrange(reptex)) { conoutf("\frCan only replace after a valid texture edit"); return; }
+    replacetex(false, reptex);
 });
-ICOMMAND(0, replacesel, "iN", (int *t, int *numargs),
+ICOMMAND(0, replacesel, "", (),
 {
-    int tex = *numargs >= 1 ? *t : reptex;
-    if(tex < 0) { conoutf("\frCan only replace after a texture edit"); return; }
-    replacetex(true, tex);
+    if(!vslots.inrange(reptex)) { conoutf("\frCan only replace after a valid texture edit"); return; }
+    replacetex(true, reptex);
 });
-ICOMMAND(0, replaceall, "", (void), replacetex(false));
-ICOMMAND(0, replaceallsel, "", (void), replacetex(true));
+ICOMMAND(0, replacetex, "bb", (int *n, int *o),
+{
+    if(!vslots.inrange(*n)) { conoutf("\frCan't replace texture with %d as it does not exist", *n); return; }
+    if(!vslots.inrange(*o)) { conoutf("\frCan't replace texture %d as it does not exist", *o); return; }
+    replacetex(false, *o, *n);
+});
+ICOMMAND(0, replacetexsel, "bb", (int *n, int *o),
+{
+    if(!vslots.inrange(*n)) { conoutf("\frCan't replace texture with %d as it does not exist", *n); return; }
+    if(!vslots.inrange(*o)) { conoutf("\frCan't replace texture %d as it does not exist", *o); return; }
+    replacetex(true, *o, *n);
+});
+ICOMMAND(0, replaceall, "b", (int *n), replacetex(false, -1, *n));
+ICOMMAND(0, replaceallsel, "b", (int *n), replacetex(true, -1, *n));
 
 void resettexmru()
 {
