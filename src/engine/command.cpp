@@ -507,11 +507,13 @@ static inline void setalias(ident &id, tagval &v, bool world)
         debugcode("\frCannot redefine %s as a world alias", id.name);
         return;
     }
+#ifndef STANDALONE
     if(!(identflags&IDF_WORLD) && !editmode && (world || (id.flags&IDF_WORLD && !(id.flags&IDF_REWRITE))))
     {
         printeditonly(&id);
         return;
     }
+#endif
     if(id.valtype == VAL_STR) delete[] id.val.s;
     id.setval(v);
     cleancode(id);
@@ -554,11 +556,13 @@ static void setalias(const char *name, tagval &v, bool world)
     }
     else
     {
+#ifndef STANDALONE
         if(!(identflags&IDF_WORLD) && !editmode && world)
         {
             debugcode("\frCannot create %s as a world alias outside editmode", name);
             return;
         }
+#endif
         id = addident(ident(ID_ALIAS, newstring(name), v, identflags|(world ? IDF_WORLD : 0)));
 #ifndef STANDALONE
         client::editvar(id, !(identflags&IDF_WORLD));
