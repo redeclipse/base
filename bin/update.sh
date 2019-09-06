@@ -224,7 +224,9 @@ redeclipse_update_module_run() {
 }
 
 redeclipse_update_module_ver() {
-    if [ -e "${REDECLIPSE_PATH}${REDECLIPSE_MODULE_DIR}/version.txt" ]; then REDECLIPSE_MODULE_INSTALLED=`cat "${REDECLIPSE_PATH}${REDECLIPSE_MODULE_DIR}/version.txt"`; fi
+    if [ -e "${REDECLIPSE_PATH}${REDECLIPSE_MODULE_DIR}/readme.txt" ] && [ -e "${REDECLIPSE_PATH}${REDECLIPSE_MODULE_DIR}/version.txt" ]; then
+        REDECLIPSE_MODULE_INSTALLED=`cat "${REDECLIPSE_PATH}${REDECLIPSE_MODULE_DIR}/version.txt"`
+    fi
     if [ -z "${REDECLIPSE_MODULE_INSTALLED}" ]; then REDECLIPSE_MODULE_INSTALLED="none"; fi
     echo "${REDECLIPSE_MODULE_RUN}: ${REDECLIPSE_MODULE_INSTALLED} is installed."
     redeclipse_update_module_get

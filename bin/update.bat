@@ -114,7 +114,9 @@ setlocal enableextensions enabledelayedexpansion
     echo mkdir "%REDECLIPSE_PATH%%REDECLIPSE_MODULE_DIR%">> "%REDECLIPSE_TEMP%\install.bat"
     goto redeclipse_update_module_get
 :redeclipse_update_module_ver
-    if EXIST "%REDECLIPSE_PATH%%REDECLIPSE_MODULE_DIR%\version.txt" set /p REDECLIPSE_MODULE_INSTALLED=< "%REDECLIPSE_PATH%%REDECLIPSE_MODULE_DIR%\version.txt"
+    if EXIST "%REDECLIPSE_PATH%%REDECLIPSE_MODULE_DIR%\readme.txt" (
+        if EXIST "%REDECLIPSE_PATH%%REDECLIPSE_MODULE_DIR%\version.txt" set /p REDECLIPSE_MODULE_INSTALLED=< "%REDECLIPSE_PATH%%REDECLIPSE_MODULE_DIR%\version.txt"
+    )
     if "%REDECLIPSE_MODULE_INSTALLED%" == "" set REDECLIPSE_MODULE_INSTALLED=none
     echo %REDECLIPSE_MODULE_RUN%: %REDECLIPSE_MODULE_INSTALLED% is installed.
 :redeclipse_update_module_get
