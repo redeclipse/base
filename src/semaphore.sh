@@ -27,13 +27,19 @@ semabuild_setup() {
 
 semabuild_archive() {
     echo "archiving ${BRANCH_NAME}..."
+    cp -fv "redeclipse.bat" "${SEMABUILD_DIR}/windows/redeclipse.bat" || return 1
+    cp -fv "redeclipse_server.bat" "${SEMABUILD_DIR}/windows/redeclipse_server.bat" || return 1
+    cp -fv "bin/update.bat" "${SEMABUILD_DIR}/windows/bin/update.bat" || return 1
     pushd "${SEMABUILD_DIR}/windows" || return 1
     zip -r "${SEMABUILD_DIR}/windows.zip" . || return 1
     popd || return 1
+    cp -fv "redeclipse.sh" "${SEMABUILD_DIR}/linux/redeclipse.sh" || return 1
+    cp -fv "redeclipse_server.sh" "${SEMABUILD_DIR}/linux/redeclipse_server.sh" || return 1
+    cp -fv "bin/update.sh" "${SEMABUILD_DIR}/linux/bin/update.sh" || return 1
     pushd "${SEMABUILD_DIR}/linux" || return 1
     tar -zcvf "${SEMABUILD_DIR}/linux.tar.gz" . || return 1
     popd || return 1
-    rm -rf "${SEMABUILD_DIR}/windows" "${SEMABUILD_DIR}/linux" || return 1
+    rm -rfv "${SEMABUILD_DIR}/windows" "${SEMABUILD_DIR}/linux" || return 1
     SEMABUILD_DEPLOY="true"
     return 0
 }

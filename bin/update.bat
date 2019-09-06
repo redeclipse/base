@@ -136,11 +136,11 @@ setlocal enableextensions enabledelayedexpansion
     )
 :redeclipse_update_module_blob
     set REDECLIPSE_MODULE_CACHEDVER=0
-    if EXIST "%REDECLIPSE_TEMP%/%REDECLIPSE_MODULE_RUN%.cacheversion.txt" (
+    if EXIST "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.cacheversion.txt" (
         set /p REDECLIPSE_MODULE_CACHEDVER=< "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.cacheversion.txt"
     )
     if EXIST "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.zip" (
-        if EXIST "%REDECLIPSE_TEMP%/%REDECLIPSE_MODULE_RUN%.cacheversion.txt" (
+        if EXIST "%REDECLIPSE_TEMP%\%REDECLIPSE_MODULE_RUN%.cacheversion.txt" (
             if "%REDECLIPSE_MODULE_CACHEDVER%" == "%REDECLIPSE_MODULE_REMOTE%" (
                 echo %REDECLIPSE_MODULE_RUN%: Cached version up-to-date.
                 goto redeclipse_update_module_blob_deploy
