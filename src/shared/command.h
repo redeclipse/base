@@ -379,8 +379,8 @@ extern bool executebool(ident *id, tagval *args, int numargs, bool lookup = fals
 extern bool execidentbool(const char *name, bool noid = false, bool lookup = false);
 enum { EXEC_NOWORLD = 1<<0, EXEC_VERSION = 1<<1, EXEC_BUILTIN = 1<<2 };
 extern bool execfile(const char *cfgfile, bool msg = true, int flags = 0);
-extern void alias(const char *name, const char *action);
-extern void alias(const char *name, tagval &v);
+extern void alias(const char *name, const char *action, bool world = false);
+extern void alias(const char *name, tagval &v, bool world = false);
 extern void worldalias(const char *name, const char *action);
 extern const char *getalias(const char *name);
 extern const char *escapestring(const char *s);
@@ -411,7 +411,6 @@ static inline void loopiter(ident *id, identstack &stack, float f) { tagval v; v
 static inline void loopiter(ident *id, identstack &stack, const char *s) { tagval v; v.setstr(newstring(s)); loopiter(id, stack, v); }
 
 extern int identflags;
-extern bool interactive;
 
 extern void checksleep(int millis);
 extern void clearsleep(bool clearworlds = true);

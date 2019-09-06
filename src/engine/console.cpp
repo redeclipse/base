@@ -645,12 +645,7 @@ bool consolekey(int code, bool isdown)
             }
             histpos = history.length();
             inputcommand(NULL);
-            if(h)
-            {
-                interactive = true;
-                h->run();
-                interactive = false;
-            }
+            if(h) h->run();
         }
         else if(code==SDLK_ESCAPE || code < 0)
         {

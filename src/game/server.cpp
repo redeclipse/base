@@ -7382,14 +7382,14 @@ namespace server
                         case ID_VAR:
                         {
                             int val = getint(p);
-                            relayf(3, "\fy%s set worldvar %s to %d", colourname(ci), text, val);
+                            relayf(3, "\fy%s set world variable %s to %d", colourname(ci), text, val);
                             QUEUE_INT(val);
                             break;
                         }
                         case ID_FVAR:
                         {
                             float val = getfloat(p);
-                            relayf(3, "\fy%s set worldvar %s to %s", colourname(ci), text, floatstr(val));
+                            relayf(3, "\fy%s set world variable %s to %s", colourname(ci), text, floatstr(val));
                             QUEUE_FLT(val);
                             break;
                         }
@@ -7400,7 +7400,7 @@ namespace server
                             if(vlen < 0 || vlen > p.remaining()) break;
                             char *val = newstring(vlen);
                             getstring(val, p, vlen+1);
-                            relayf(3, "\fy%s set world%s %s to %s", colourname(ci), t == ID_ALIAS ? "alias" : "var", text, val);
+                            relayf(3, "\fy%s set world %s %s to %s", colourname(ci), t == ID_ALIAS ? "alias" : "variable", text, val);
                             QUEUE_INT(vlen);
                             QUEUE_STR(val);
                             delete[] val;

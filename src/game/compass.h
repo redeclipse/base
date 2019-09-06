@@ -224,9 +224,8 @@ bool runcmenu(int idx)
         }
         else if(curcompass->actions.inrange(idx))
         {
-            foundmenu = interactive = true;
+            foundmenu = true;
             execute(curcompass->actions[idx].contents);
-            interactive = false;
             if(oldcompass == curcompass && !curcompass->keep) clearcmenu();
         }
     }

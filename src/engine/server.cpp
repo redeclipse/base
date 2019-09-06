@@ -1663,11 +1663,9 @@ void rehash(bool reload)
     initing = INIT_DEFAULTS;
     execfile("config/defaults.cfg");
     initing = INIT_LOAD;
-    interactive = true;
     execfile("servers.cfg", false);
     if(!noconfigfile) execfile("config.cfg", false);
     execfile("autoexec.cfg", false);
-    interactive = false;
     initing = NOT_INITING;
 #endif
     conoutf("\fwConfiguration %s", reload ? "reloaded" : "loaded");

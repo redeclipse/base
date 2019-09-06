@@ -9,8 +9,6 @@ FVAR(IDF_READONLY, fvaridxmax, 0, FVAR_MAX, -1);
 FVAR(IDF_READONLY, fvaridxmin, 0, FVAR_MIN, -1);
 FVAR(IDF_READONLY, fvaridxnonzero, 0, FVAR_NONZERO, -1);
 
-bool interactive = false;
-
 hashnameset<ident> idents; // contains ALL vars/commands/aliases
 vector<ident *> identmap;
 ident *dummyident = NULL;
@@ -480,8 +478,8 @@ void resetvar(char *name)
 {
     ident *id = idents.access(name);
     if(!id) return;
-    if(id->flags&IDF_READONLY || id->flags&IDF_CLIENT || id->flags&IDF_SERVER) printreadonly(id);
-    else if(id->flags&IDF_WORLD) printeditonly(id);
+    if(id->flags&IDF_READONLY) printreadonly(id);
+    else if(id->flags&IDF_WORLD || id->flags&IDF_CLIENT || id->flags&IDF_SERVER) debugcode("\frVariable %s cannot be reset", id->name);
     else clearoverride(*id);
 }
 
@@ -502,18 +500,28 @@ static inline void setarg(ident &id, tagval &v)
     }
 }
 
-static inline void setalias(ident &id, tagval &v)
+static inline void setalias(ident &id, tagval &v, bool world)
 {
+    if(world && !(id.flags&IDF_WORLD) && !(id.flags&IDF_UNKNOWN))
+    {
+        debugcode("\frCannot redefine %s as a world alias", id.name);
+        return;
+    }
+    if(!(identflags&IDF_WORLD) && !editmode && (world || (id.flags&IDF_WORLD && !(id.flags&IDF_REWRITE))))
+    {
+        printeditonly(&id);
+        return;
+    }
     if(id.valtype == VAL_STR) delete[] id.val.s;
     id.setval(v);
     cleancode(id);
-    id.flags = (id.flags & (identflags|IDF_WORLD)) | (id.flags & (identflags|IDF_PERSIST)) | identflags;
+    id.flags = (world || id.flags&IDF_WORLD ? IDF_WORLD : 0)|(id.flags&IDF_PERSIST ? IDF_PERSIST : 0);
 #ifndef STANDALONE
-    client::editvar(&id, interactive && !(identflags&IDF_WORLD));
+    client::editvar(&id, !(identflags&IDF_WORLD));
 #endif
 }
 
-static void setalias(const char *name, tagval &v)
+static void setalias(const char *name, tagval &v, bool world)
 {
     ident *id = idents.access(name);
     if(id)
@@ -521,7 +529,8 @@ static void setalias(const char *name, tagval &v)
         switch(id->type)
         {
             case ID_ALIAS:
-                if(id->index < MAXARGS) setarg(*id, v); else setalias(*id, v);
+                if(id->index < MAXARGS) setarg(*id, v);
+                else setalias(*id, v, world);
                 return;
             case ID_VAR:
                 setvarchecked(id, v.getint());
@@ -545,38 +554,43 @@ static void setalias(const char *name, tagval &v)
     }
     else
     {
-        id = addident(ident(ID_ALIAS, newstring(name), v, identflags));
+        if(!(identflags&IDF_WORLD) && !editmode && world)
+        {
+            debugcode("\frCannot create %s as a world alias outside editmode", name);
+            return;
+        }
+        id = addident(ident(ID_ALIAS, newstring(name), v, identflags|(world ? IDF_WORLD : 0)));
 #ifndef STANDALONE
-        client::editvar(id, interactive && !(identflags&IDF_WORLD));
+        client::editvar(id, !(identflags&IDF_WORLD));
 #endif
     }
 }
 
-void alias(const char *name, const char *str)
+void alias(const char *name, const char *action, bool world)
 {
     tagval v;
-    v.setstr(newstring(str));
-    setalias(name, v);
+    v.setstr(newstring(action));
+    setalias(name, v, world);
 }
 
-void alias(const char *name, tagval &v)
+void alias(const char *name, tagval &v, bool world)
 {
-    setalias(name, v);
+    setalias(name, v, world);
 }
 
 ICOMMAND(0, alias, "sT", (const char *name, tagval *v),
 {
-    setalias(name, *v);
+    setalias(name, *v, (identflags&IDF_WORLD)!=0);
     v->type = VAL_NULL;
 });
 
 void worldalias(const char *name, const char *action)
 {
-    WITHWORLD(alias(name, action));
+    alias(name, action, true);
 }
 COMMAND(0, worldalias, "ss");
 
-void loadalias(const char *name, const char *fname)
+void loadalias(const char *name, const char *fname, int *world)
 {
     string s;
     copystring(s, fname);
@@ -588,9 +602,9 @@ void loadalias(const char *name, const char *fname)
     }
     tagval v;
     v.setstr(buf);
-    setalias(name, v);
+    setalias(name, v, *world!=0);
 }
-COMMAND(0, loadalias, "ss");
+COMMAND(0, loadalias, "ssi");
 
 // variables and commands are registered through globals, see cube.h
 
@@ -978,7 +992,7 @@ void setvarchecked(ident *id, int val)
         }
         id->changed();                                             // call trigger function if available
 #ifndef STANDALONE
-        client::editvar(id, interactive && !(identflags&IDF_WORLD));
+        client::editvar(id, !(identflags&IDF_WORLD));
         if(versioning && id->flags&IDF_SERVER) setvar(&id->name[3], val);
 #endif
     }
@@ -1012,7 +1026,7 @@ void setfvarchecked(ident *id, float val)
         }
         id->changed();
 #ifndef STANDALONE
-        client::editvar(id, interactive && !(identflags&IDF_WORLD));
+        client::editvar(id, !(identflags&IDF_WORLD));
         if(versioning && id->flags&IDF_SERVER) setfvar(&id->name[3], val, true);
 #endif
     }
@@ -1040,7 +1054,7 @@ void setsvarchecked(ident *id, const char *val)
         }
         id->changed();
 #ifndef STANDALONE
-        client::editvar(id, interactive && !(identflags&IDF_WORLD));
+        client::editvar(id, !(identflags&IDF_WORLD));
         if(versioning && id->flags&IDF_SERVER) setsvar(&id->name[3], val, true);
 #endif
     }
@@ -2956,14 +2970,14 @@ static const uint *runcode(const uint *code, tagval &result)
             }
 
             case CODE_ALIAS:
-                setalias(*identmap[op>>8], args[--numargs]);
+                setalias(*identmap[op>>8], args[--numargs], (identflags&IDF_WORLD)!=0);
                 continue;
             case CODE_ALIASARG:
                 setarg(*identmap[op>>8], args[--numargs]);
                 continue;
             case CODE_ALIASU:
                 numargs -= 2;
-                setalias(args[numargs].getstr(), args[numargs+1]);
+                setalias(args[numargs].getstr(), args[numargs+1], (identflags&IDF_WORLD)!=0);
                 freearg(args[numargs]);
                 continue;
 
@@ -3659,7 +3673,8 @@ void append(ident *id, tagval *v, bool space)
     const char *prefix = id->getstr();
     if(prefix[0]) r.setstr(conc(v, 1, space, prefix));
     else v->getval(r);
-    if(id->index < MAXARGS) setarg(*id, r); else setalias(*id, r);
+    if(id->index < MAXARGS) setarg(*id, r);
+    else setalias(*id, r, (identflags&IDF_WORLD)!=0);
 }
 ICOMMAND(0, append, "rt", (ident *id, tagval *v), append(id, v, true));
 ICOMMAND(0, appendword, "rt", (ident *id, tagval *v), append(id, v, false));

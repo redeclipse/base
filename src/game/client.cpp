@@ -1747,23 +1747,27 @@ namespace client
 
     void editvar(ident *id, bool local)
     {
-        if(id && id->flags&IDF_WORLD && !(id->flags&IDF_SERVER) && local && m_edit(game::gamemode))
+        if(id && id->flags&IDF_WORLD && !(id->flags&IDF_SERVER) && local && m_edit(game::gamemode) && game::player1->state == CS_EDITING)
         {
             switch(id->type)
             {
                 case ID_VAR:
                     addmsg(N_EDITVAR, "risi", id->type, id->name, *id->storage.i);
+                    conoutft(CON_EVENT, "\fy%s set world variable \fs\fc%s\fS to \fs\fc%s\fS", game::colourname(game::player1), id->name, intstr(id));
                     break;
                 case ID_FVAR:
                     addmsg(N_EDITVAR, "risf", id->type, id->name, *id->storage.f);
+                    conoutft(CON_EVENT, "\fy%s set world variable \fs\fc%s\fS to \fs\fc%s\fS", game::colourname(game::player1), id->name, floatstr(*id->storage.f));
                     break;
                 case ID_SVAR:
                     addmsg(N_EDITVAR, "risis", id->type, id->name, strlen(*id->storage.s), *id->storage.s);
+                    conoutft(CON_EVENT, "\fy%s set world variable \fs\fc%s\fS to \fy\fc%s\fS", game::colourname(game::player1), id->name, *id->storage.s);
                     break;
                 case ID_ALIAS:
                 {
                     const char *s = id->getstr();
                     addmsg(N_EDITVAR, "risis", id->type, id->name, strlen(s), s);
+                    conoutft(CON_EVENT, "\fy%s set world alias \fs\fc%s\fS to \fs\fc%s\fS", game::colourname(game::player1), id->name, s);
                     break;
                 }
                 default: break;
@@ -2919,7 +2923,7 @@ namespace client
                                 else if(val > id->maxval) val = id->maxval;
                                 else if(val < id->minval) val = id->minval;
                                 setvar(text, val, true);
-                                conoutft(CON_EVENT, "\fy%s set worldvar \fs\fc%s\fS to \fs\fc%s\fS", game::colourname(d), id->name, intstr(id));
+                                conoutft(CON_EVENT, "\fy%s set world variable \fs\fc%s\fS to \fs\fc%s\fS", game::colourname(d), id->name, intstr(id));
                             }
                             break;
                         }
@@ -2931,7 +2935,7 @@ namespace client
                                 if(val > id->maxvalf) val = id->maxvalf;
                                 else if(val < id->minvalf) val = id->minvalf;
                                 setfvar(text, val, true);
-                                conoutft(CON_EVENT, "\fy%s set worldvar \fs\fc%s\fS to \fs\fc%s\fS", game::colourname(d), id->name, floatstr(*id->storage.f));
+                                conoutft(CON_EVENT, "\fy%s set world variable \fs\fc%s\fS to \fs\fc%s\fS", game::colourname(d), id->name, floatstr(*id->storage.f));
                             }
                             break;
                         }
@@ -2944,7 +2948,7 @@ namespace client
                             if(commit)
                             {
                                 setsvar(text, val, true);
-                                conoutft(CON_EVENT, "\fy%s set worldvar \fs\fc%s\fS to \fy\fc%s\fS", game::colourname(d), id->name, *id->storage.s);
+                                conoutft(CON_EVENT, "\fy%s set world variable \fs\fc%s\fS to \fy\fc%s\fS", game::colourname(d), id->name, *id->storage.s);
                             }
                             delete[] val;
                             break;
@@ -2958,7 +2962,7 @@ namespace client
                             if(commit || !id) // set aliases anyway
                             {
                                 worldalias(text, val);
-                                conoutft(CON_EVENT, "\fy%s set worldalias \fs\fc%s\fS to \fs\fc%s\fS", game::colourname(d), text, val);
+                                conoutft(CON_EVENT, "\fy%s set world alias \fs\fc%s\fS to \fs\fc%s\fS", game::colourname(d), text, val);
                             }
                             delete[] val;
                             break;
