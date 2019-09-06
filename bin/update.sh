@@ -212,11 +212,11 @@ redeclipse_update_module_run() {
     else
         REDECLIPSE_MODULE_DIR="/data/${REDECLIPSE_MODULE_RUN}"
     fi
-    if  [ -e "${REDECLIPSE_PATH}${REDECLIPSE_MODULE_DIR}/version.txt" ]; then
+    if [ -e "${REDECLIPSE_PATH}${REDECLIPSE_MODULE_DIR}/readme.txt" ] && [ -e "${REDECLIPSE_PATH}${REDECLIPSE_MODULE_DIR}/version.txt" ]; then
         redeclipse_update_module_ver
         return $?
     fi
-    echo "${REDECLIPSE_MODULE_RUN}: Unable to find version.txt. Will start from scratch."
+    echo "${REDECLIPSE_MODULE_RUN}: Unable to find core module files. Will start from scratch."
     REDECLIPSE_MODULE_INSTALLED="none"
     echo "mkdir -p \"${REDECLIPSE_PATH}${REDECLIPSE_MODULE_DIR}\"" >> "${REDECLIPSE_TEMP}/install.sh"
     redeclipse_update_module_get

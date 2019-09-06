@@ -106,8 +106,10 @@ setlocal enableextensions enabledelayedexpansion
     goto redeclipse_update_bins_run
 :redeclipse_update_module_run
     if "%REDECLIPSE_MODULE_RUN%" == "base" (set REDECLIPSE_MODULE_DIR=) else (set REDECLIPSE_MODULE_DIR=\data\%REDECLIPSE_MODULE_RUN%)
-    if EXIST "%REDECLIPSE_PATH%%REDECLIPSE_MODULE_DIR%\version.txt" goto redeclipse_update_module_ver
-    echo %REDECLIPSE_MODULE_RUN%: Unable to find version.txt. Will start from scratch.
+    if EXIST "%REDECLIPSE_PATH%%REDECLIPSE_MODULE_DIR%\readme.txt" (
+        if EXIST "%REDECLIPSE_PATH%%REDECLIPSE_MODULE_DIR%\version.txt" goto redeclipse_update_module_ver
+    )
+    echo %REDECLIPSE_MODULE_RUN%: Unable to find core module files. Will start from scratch.
     set REDECLIPSE_MODULE_INSTALLED=none
     echo mkdir "%REDECLIPSE_PATH%%REDECLIPSE_MODULE_DIR%">> "%REDECLIPSE_TEMP%\install.bat"
     goto redeclipse_update_module_get
