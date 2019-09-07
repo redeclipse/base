@@ -645,7 +645,7 @@ void swapbuffers(bool overlay)
 }
 
 VAR(IDF_PERSIST, menufps, 0, 60, 1000);
-VAR(IDF_PERSIST, maxfps, 0, 125, 1000);
+VAR(IDF_PERSIST, maxfps, 0, 144, 1000);
 
 
 void limitfps(int &millis, int curmillis)
