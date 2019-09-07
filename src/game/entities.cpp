@@ -1274,6 +1274,7 @@ namespace entities
         if(!ents.inrange(index) || !maylink(ents[index]->type)) return;
         gameentity &e = *(gameentity *)ents[index];
         if(e.type == TRIGGER && !cantrigger(index)) return;
+        if(!local) e.lastemit = lastmillis;
         bool commit = false;
         int fstent = min(firstent(MAPMODEL), min(firstent(LIGHTFX), min(firstent(PARTICLES), firstent(MAPSOUND)))),
             lstent = max(lastent(MAPMODEL), max(lastent(LIGHTFX), max(lastent(PARTICLES), lastent(MAPSOUND))));
