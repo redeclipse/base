@@ -220,7 +220,11 @@ ICOMMAND(0, quit, "", (void), if(!(identflags&IDF_WORLD)) quit());
 void setupdisplay()
 {
     int index = SDL_GetWindowDisplayIndex(screen);
-    if(SDL_GetCurrentDisplayMode(index, &display) < 0) conoutf("Failed querying monitor %d display mode: %s", index, SDL_GetError());
+    if(SDL_GetCurrentDisplayMode(index, &display) < 0)
+    {
+        conoutf("Failed querying monitor %d display mode: %s", index, SDL_GetError());
+        refresh = 60; // sane-ish default
+    }
     else
     {
         conoutf("Current monitor [%d]: %d x %d @ %d Hz", index, display.w, display.h, display.refresh_rate);
