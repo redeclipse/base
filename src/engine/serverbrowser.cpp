@@ -488,6 +488,7 @@ VAR(0, pausesortservers, 0, 0, 1);
 void updatefrommaster()
 {
     pausesortservers = 0;
+    reqmaster = true;
     vector<char> data;
     retrieveservers(data);
     if(data.length() && data[0])
@@ -499,7 +500,6 @@ void updatefrommaster()
     }
     else conoutf("Master server not replying");
     refreshservers();
-    reqmaster = true;
 }
 COMMAND(0, updatefrommaster, "");
 
