@@ -337,7 +337,7 @@ int addsound(const char *name, int vol, int maxrad, int minrad, int value, vecto
         if(!sample->sound) \
         { \
             string buf; \
-            const char *dirs[] = { "", "sounds/" }, *exts[] = { "", ".wav", ".ogg" }; \
+            const char *dirs[] = { "", "sounds/" }, *exts[] = { "", ".wav", ".ogg", ".mp3" }; \
             bool found = false; \
             loopi(sizeof(dirs)/sizeof(dirs[0])) \
             { \

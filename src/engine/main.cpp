@@ -357,6 +357,12 @@ void setupscreen()
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
     screen = SDL_CreateWindow(caption, winx, winy, winw, winh, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_MOUSE_FOCUS | flags);
     if(!screen) fatal("Failed to create OpenGL window: %s", SDL_GetError());
+    SDL_Surface *s = loadsurface("textures/icon");
+    if(s)
+    {
+        SDL_SetWindowIcon(screen, s);
+        SDL_FreeSurface(s);
+    }
 
     SDL_SetWindowMinimumSize(screen, SCR_MINW, SCR_MINH);
     SDL_SetWindowMaximumSize(screen, SCR_MAXW, SCR_MAXH);
