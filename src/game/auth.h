@@ -358,7 +358,7 @@ namespace auth
     {
         clientinfo *ci = findauth(id);
         if(!ci) return;
-        sendf(ci->clientnum, 1, "riis", N_AUTHCHAL, id, val);
+        sendf(ci->clientnum, 1, "ri2s", N_AUTHCHAL, id, val);
     }
 
     void serverauthchallenged(const char *text)

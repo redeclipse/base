@@ -7124,7 +7124,7 @@ namespace server
                                 allow.time = totalmillis ? totalmillis : 1;
                                 allow.reason = newstring("mastermode set private");
                             }
-                            sendf(-1, 1, "i3", N_MASTERMODE, ci->clientnum, mastermode);
+                            sendf(-1, 1, "ri3", N_MASTERMODE, ci->clientnum, mastermode);
                         }
                         else srvmsgft(ci->clientnum, CON_EVENT, "\foThe \fs\fcmastermode\fS of \fs\fc%d\fS (\fs\fc%s\fS) is disabled on this server", mm, mastermodename(mm));
                     }

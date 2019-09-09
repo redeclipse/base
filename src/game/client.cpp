@@ -1247,7 +1247,7 @@ namespace client
 
     void addpriv(int cn, int priv)
     {
-        addmsg(N_ADDPRIV, "ii", cn, priv);
+        addmsg(N_ADDPRIV, "ri2", cn, priv);
     }
     ICOMMAND(IDF_NAMECOMPLETE, addpriv, "si", (char *who, int *priv), addpriv(parseplayer(who), *priv));
     ICOMMAND(IDF_NAMECOMPLETE, resetpriv, "s", (char *who), addpriv(parseplayer(who), -1));
@@ -1261,7 +1261,7 @@ namespace client
 
     void togglespectator(int cn, int val)
     {
-        if(cn >= 0) addmsg(N_SPECTATOR, "rii", cn, val);
+        if(cn >= 0) addmsg(N_SPECTATOR, "ri2", cn, val);
     }
     ICOMMAND(IDF_NAMECOMPLETE, spectator, "si", (char *who, int *val), togglespectator(parseplayer(who), *val));
     ICOMMAND(0, spectate, "i", (int *val), togglespectator(game::player1->clientnum, *val));
@@ -1660,7 +1660,7 @@ namespace client
     {
         if(i <= 0) conoutft(CON_EVENT, "\fyGetting demo, please wait...");
         else conoutft(CON_EVENT, "\fyGetting demo \fs\fc%d\fS, please wait...", i);
-        addmsg(N_GETDEMO, "rii", i, demonameid);
+        addmsg(N_GETDEMO, "ri2", i, demonameid);
         if(*name) demonames.access(demonameid, newstring(name));
         demonameid++;
     }
@@ -2140,8 +2140,7 @@ namespace client
     {
         if(!d) { static gameent dummy; d = &dummy; }
         bool local = d == game::player1 || d->ai, reset = false;
-        if(!local || !resume)
-            d->respawn(lastmillis, game::gamemode, game::mutators);
+        if(!local || !resume) d->respawn(lastmillis, game::gamemode, game::mutators);
         int state = getint(p);
         if(state == -1) reset = true;
         else if(!local) d->state = state;
@@ -2160,7 +2159,8 @@ namespace client
         {
             d->weapreset(false);
             getint(p);
-            loopj(3) loopi(W_MAX) getint(p);
+            loopi(W_MAX) loopj(W_A_MAX) getint(p);
+            loopi(W_MAX) getint(p);
         }
         else
         {
@@ -2527,7 +2527,7 @@ namespace client
                     break;
                 }
 
-                case N_CLIENTINIT: // cn colour model pattern checkpoint team priv name vanity count <loadweaps> count <randweaps> handle hostname hostip <version>
+                case N_CLIENTINIT: // cn colour model pattern checkpoint team priv name vanity count <loadweaps> count <randweaps> handle steamid hostip <version>
                 {
                     int tcn = getint(p);
                     verinfo dummy;
@@ -2535,10 +2535,13 @@ namespace client
                     if(!d)
                     {
                         loopk(6) getint(p);
-                        getstring(text, p);
-                        int w = getint(p);
-                        loopk(w) getint(p);
-                        loopk(4) getstring(text, p);
+                        loopk(2) getstring(text, p);
+                        loopj(2)
+                        {
+                            int w = getint(p);
+                            loopk(w) getint(p);
+                        }
+                        loopk(3) getstring(text, p);
                         dummy.get(p);
                         break;
                     }
