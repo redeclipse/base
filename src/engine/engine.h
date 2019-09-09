@@ -140,7 +140,7 @@ extern const uchar faceedgesidx[6][4];
 extern bool engineready, inbetweenframes, renderedframe;
 
 extern SDL_Window *screen;
-extern int screenw, screenh, renderw, renderh, hudw, hudh;
+extern int screenw, screenh, refresh, renderw, renderh, hudw, hudh;
 
 // rendertext
 struct font

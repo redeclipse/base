@@ -153,9 +153,10 @@ void fatal(const char *s, ...)    // failure exit
 
 VAR(IDF_READONLY, desktopw, 1, 0, 0);
 VAR(IDF_READONLY, desktoph, 1, 0, 0);
-int screenw = 0, screenh = 0;
+int screenw = 0, screenh = 0, refresh = 0;
 SDL_Window *screen = NULL;
 SDL_GLContext glcontext = NULL;
+SDL_DisplayMode display;
 
 int initing = NOT_INITING;
 bool initwarning(const char *desc, int level, int type)
@@ -216,6 +217,17 @@ void screenshot(char *sname)
 ICOMMAND(0, screenshot, "s", (char *s), if(!(identflags&IDF_WORLD)) screenshot(s));
 ICOMMAND(0, quit, "", (void), if(!(identflags&IDF_WORLD)) quit());
 
+void setupdisplay()
+{
+    int index = SDL_GetWindowDisplayIndex(screen);
+    if(SDL_GetCurrentDisplayMode(index, &display) < 0) conoutf("Failed querying monitor %d display mode: %s", index, SDL_GetError());
+    else
+    {
+        conoutf("Current monitor [%d]: %d x %d @ %d Hz", index, display.w, display.h, display.refresh_rate);
+        refresh = display.refresh_rate;
+    }
+}
+
 bool initwindowpos = false;
 
 void setfullscreen(bool enable)
@@ -234,6 +246,7 @@ void setfullscreen(bool enable)
             initwindowpos = false;
         }
     }
+    setupdisplay();
 }
 
 VARF(0, fullscreen, 0, 1, 1, if(!(identflags&IDF_WORLD)) setfullscreen(fullscreen!=0));
@@ -263,11 +276,9 @@ void screenres(int w, int h)
             else resetfullscreen();
         }
         else SDL_SetWindowSize(screen, scr_w, scr_h);
+        setupdisplay();
     }
-    else
-    {
-        initwarning("screen resolution");
-    }
+    else initwarning("screen resolution");
 }
 
 ICOMMAND(0, screenres, "ii", (int *w, int *h), screenres(*w, *h));
@@ -388,6 +399,7 @@ void setupscreen()
     renderh = min(scr_h, screenh);
     hudw = screenw;
     hudh = screenh;
+    setupdisplay();
 }
 
 void resetgl()
@@ -650,13 +662,14 @@ void swapbuffers(bool overlay)
     SDL_GL_SwapWindow(screen);
 }
 
-VAR(IDF_PERSIST, menufps, 0, 60, 1000);
-VAR(IDF_PERSIST, maxfps, 0, 144, 1000);
+VAR(IDF_PERSIST, menufps, -1, 60, 1000);
+VAR(IDF_PERSIST, maxfps, -1, -1, 1000);
 
 
 void limitfps(int &millis, int curmillis)
 {
-    int limit = (hasnoview() || minimized) && menufps ? (maxfps ? min(maxfps, menufps) : menufps) : maxfps;
+    int curmax = maxfps >= 0 ? maxfps : refresh, curmenu = menufps >= 0 ? menufps : refresh,
+        limit = (hasnoview() || minimized) && curmenu ? (curmax ? min(curmax, curmenu) : curmenu) : curmax;
     if(!limit) return;
     static int fpserror = 0;
     int delay = 1000/limit - (millis-curmillis);
@@ -822,7 +835,7 @@ ICOMMAND(0, getprogresstype, "", (), intret(maploading ? 1 : (checkconn() ? 2 : 
 FVAR(0, loadprogress, 0, 0, 1);
 SVAR(0, progresstitle, "");
 FVAR(0, progressamt, -1, 0, 1);
-VAR(IDF_PERSIST, progressfps, 0, 30, VAR_MAX);
+VAR(IDF_PERSIST, progressfps, -1, -1, VAR_MAX);
 int lastprogress = 0;
 
 void progress(float bar1, const char *text1)
@@ -835,8 +848,8 @@ void progress(float bar1, const char *text1)
     }
     if(progressfps)
     {
-        int ticks = SDL_GetTicks(), diff = ticks - lastprogress;
-        if(bar1 > 0 && diff >= 0 && diff < (1000 + progressfps-1)/progressfps) return;
+        int curprog = progressfps >= 0 ? progressfps : refresh, ticks = SDL_GetTicks(), diff = ticks - lastprogress;
+        if(bar1 > 0 && diff >= 0 && diff < (1000 + curprog-1)/curprog) return;
         lastprogress = ticks;
     }
     clientkeepalive();
