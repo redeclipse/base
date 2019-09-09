@@ -153,7 +153,7 @@ void fatal(const char *s, ...)    // failure exit
 
 VAR(IDF_READONLY, desktopw, 1, 0, 0);
 VAR(IDF_READONLY, desktoph, 1, 0, 0);
-int screenw = 0, screenh = 0, refresh = 0;
+int screenw = 0, screenh = 0, refresh = 60;
 SDL_Window *screen = NULL;
 SDL_GLContext glcontext = NULL;
 SDL_DisplayMode display;
