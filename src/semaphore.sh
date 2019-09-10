@@ -84,7 +84,10 @@ semabuild_integrate() {
         pushd "${SEMABUILD_MODDIR}" || return 1
         echo "module ${i} processing.."
         SEMABUILD_HASH=`git rev-parse HEAD` || return 1
-        SEMABUILD_LAST=`cat "${SEMABUILD_BUILD}/${BRANCH_NAME}/${i}.txt"`
+        if [ ! -e "${SEMABUILD_DIR}/${i}.txt" ]; then
+            echo "0" > "${SEMABUILD_DIR}/${i}.txt"
+        fi
+        SEMABUILD_LAST=`cat "${SEMABUILD_DIR}/${i}.txt"`
         echo "module ${i} compare: ${SEMABUILD_LAST} -> ${SEMABUILD_HASH}"
         if [ "${i}" = "base" ] && [ "${SEMAPHORE_TRIGGER_SOURCE}" = "manual" ]; then
             SEMABUILD_LAST="0"
@@ -92,11 +95,16 @@ semabuild_integrate() {
         if [ -n "${SEMABUILD_HASH}" ] && [ "${SEMABUILD_HASH}" != "${SEMABUILD_LAST}" ]; then
             echo "module ${i} updated, syncing.."
             echo "${SEMABUILD_HASH}" > "${SEMABUILD_DIR}/${i}.txt"
+            if [ "${SEMABUILD_LAST}" = "0" ]; then
+                pushd "${SEMABUILD_BUILD}" || return 1
+                git add "${BRANCH_NAME}/${i}.txt" || return 1
+                popd || return 1
+            fi
             SEMABUILD_DEPLOY="true"
             if [ "${i}" = "base" ]; then
                 echo "module ${i} checking for source modifications.."
                 SEMABUILD_CHANGES=""
-                SEMABUILD_BINS=`cat "${SEMABUILD_BUILD}/${BRANCH_NAME}/bins.txt"` || return 1
+                SEMABUILD_BINS=`cat "${SEMABUILD_DIR}/bins.txt"` || return 1
                 if [ "${SEMAPHORE_TRIGGER_SOURCE}" = "manual" ]; then
                     SEMABUILD_CHANGES="<manual rebuild forced>"
                 else
@@ -131,6 +139,7 @@ semabuild_deploy() {
     echo "deploying ${BRANCH_NAME}..."
     echo "${SEMABUILD_ALLMODS}" > "${SEMABUILD_DIR}/mods.txt"
     pushd "${SEMABUILD_BUILD}" || return 1
+    git status || return 1
     git commit -a -m "Build ${BRANCH_NAME}:${SEMAPHORE_BUILD_NUMBER} from ${REVISION}" || return 1
     git pull --rebase || return 1
     git push -u origin master || return 1
