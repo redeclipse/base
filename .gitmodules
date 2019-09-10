@@ -73,6 +73,10 @@
 	path = data/misc
 	url = https://github.com/redeclipse/misc.git
 	branch = master
+[submodule "molexted"]
+	path = data/molexted
+	url = https://github.com/redeclipse/molexted.git
+	branch = master
 [submodule "nieb"]
 	path = data/nieb
 	url = https://github.com/redeclipse/nieb.git
@@ -96,6 +100,10 @@
 [submodule "props"]
 	path = data/props
 	url = https://github.com/redeclipse/props.git
+	branch = master
+[submodule "q009"]
+	path = data/q009
+	url = https://github.com/redeclipse/q009.git
 	branch = master
 [submodule "skyboxes"]
 	path = data/skyboxes
@@ -141,10 +149,3 @@
 	path = data/weapons
 	url = https://github.com/redeclipse/weapons.git
 	branch = master
-[submodule "q009"]
-	path = data/q009
-	url = https://github.com/redeclipse/q009.git
-	branch = master
-[submodule "data/molexted"]
-	path = data/molexted
-	url = https://github.com/redeclipse/molexted.git
