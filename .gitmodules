@@ -145,3 +145,6 @@
 	path = data/q009
 	url = https://github.com/redeclipse/q009.git
 	branch = master
+[submodule "data/molexted"]
+	path = data/molexted
+	url = https://github.com/redeclipse/molexted.git
