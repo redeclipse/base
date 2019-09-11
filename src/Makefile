@@ -321,8 +321,8 @@ cube2font: cube2font$(BIN_SUFFIX)
 cube2font$(BIN_SUFFIX): $(CTFONT_OBJS)
 	$(CXX) $(CXXFLAGS) -o cube2font$(BIN_SUFFIX) $(CTFONT_OBJS)
 
-engine/cube2font.o: engine/cube2font.cpp
-	$(CXX) $(CXXFLAGS) $(CTFONT_INCLUDES) -c -o engine/cube2font.o engine/cube2font.cpp
+shared/cube2font.o: shared/cube2font.cpp
+	$(CXX) $(CXXFLAGS) $(CTFONT_INCLUDES) -c -o shared/cube2font.o shared/cube2font.cpp
 
 $(INSTDIR)/%$(BIN_SUFFIX): %$(APPMODIFIER)$(BIN_SUFFIX)
 	$(MKDIR) $(INSTDIR)
