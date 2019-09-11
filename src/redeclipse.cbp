@@ -1685,7 +1685,7 @@
 			<Option target="redeclipse-amd64-dbg" />
 			<Option target="redeclipse-amd64-prof" />
 		</Unit>
-		<Unit filename="shared/cube2font.c">
+		<Unit filename="shared/cube2font.cpp">
 			<Option compilerVar="CC" />
 			<Option target="cube2font-x86" />
 			<Option target="cube2font-amd64" />
