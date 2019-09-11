@@ -52,8 +52,7 @@ distdir: ../$(dirname)
 
 ../$(tarname): ../$(dirname)
 	tar \
-		--exclude='$</bin/*/$(appname)*.exe' \
-		--exclude='$</bin/*/genkey*' \
+		--exclude='$</bin/*/*.exe' \
 		--exclude='$</bin/$(dirname-mac)/Contents/MacOS/$(appname)_universal' \
 		-cf $@ $<
 
@@ -64,10 +63,11 @@ dist-tar: ../$(tarname)
 	cp -R $</* $@/Contents/Resources
 	rm -rfv $@/Contents/Resources/bin/*/$(appname)*linux*
 	rm -rfv $@/Contents/Resources/bin/*/$(appname)*bsd*
-	rm -rfv $@/Contents/Resources/bin/*/$(appname)*.exe
+	rm -rfv $@/Contents/Resources/bin/*/*.exe
 	rm -rfv $@/Contents/Resources/bin/*/genkey*linux*
 	rm -rfv $@/Contents/Resources/bin/*/genkey*bsd*
-	rm -rfv $@/Contents/Resources/bin/*/genkey.exe
+	rm -rfv $@/Contents/Resources/bin/*/cube2font*linux*
+	rm -rfv $@/Contents/Resources/bin/*/cube2font*bsd*
 
 ../$(tarname-mac): ../$(dirname-mac)
 	tar -cf $@ $<
@@ -86,6 +86,8 @@ dist-tar-combined: ../$(tarname-combined)
 	rm -rfv $@/bin/*/$(appname)*bsd*
 	rm -rfv $@/bin/*/genkey*linux*
 	rm -rfv $@/bin/*/genkey*bsd*
+	rm -rfv $@/bin/*/cube2font*linux*
+	rm -rfv $@/bin/*/cube2font*bsd*
 	rm -rfv $@/bin/$(dirname-mac)/Contents/MacOS/$(appname)_universal
 
 distdir-win: ../$(dirname-win)

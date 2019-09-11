@@ -59,6 +59,7 @@
 					<Add directory="lib/x86" />
 				</Linker>
 				<Environment>
+					<Variable name="SUPPORT_OPTIONS" value="-m32 -mwindows" />
 					<Variable name="WINDRES_TARGET" value="pe-i386" />
 				</Environment>
 			</Target>
@@ -109,6 +110,7 @@
 					<Add directory="lib/x86" />
 				</Linker>
 				<Environment>
+					<Variable name="SUPPORT_OPTIONS" value="-m32 -mwindows" />
 					<Variable name="WINDRES_TARGET" value="pe-i386" />
 				</Environment>
 			</Target>
@@ -161,6 +163,7 @@
 					<Add directory="lib/x86" />
 				</Linker>
 				<Environment>
+					<Variable name="SUPPORT_OPTIONS" value="-m32 -mwindows" />
 					<Variable name="WINDRES_TARGET" value="pe-i386" />
 				</Environment>
 			</Target>
@@ -205,10 +208,12 @@
 					<Add library="enet" />
 					<Add library="ws2_32" />
 					<Add library="winmm" />
+					<Add library="steam_api" />
 					<Add directory="../bin/x86" />
 					<Add directory="lib/x86" />
 				</Linker>
 				<Environment>
+					<Variable name="SUPPORT_OPTIONS" value="-m32 -mwindows" />
 					<Variable name="WINDRES_TARGET" value="pe-i386" />
 				</Environment>
 			</Target>
@@ -248,10 +253,95 @@
 					<Add library="enet" />
 					<Add library="ws2_32" />
 					<Add library="winmm" />
+					<Add library="steam_api" />
 					<Add directory="../bin/x86" />
 					<Add directory="lib/x86" />
 				</Linker>
 				<Environment>
+					<Variable name="SUPPORT_OPTIONS" value="-m32 -mwindows" />
+					<Variable name="WINDRES_TARGET" value="pe-i386" />
+				</Environment>
+			</Target>
+			<Target title="cube2font-x86">
+				<Option output="../bin/x86/cube2font.exe" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="../" />
+				<Option object_output=".objs/cube2font-x86" />
+				<Option deps_output=".deps/cube2font-x86" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option use_console_runner="0" />
+				<Option projectCompilerOptionsRelation="1" />
+				<Option projectLinkerOptionsRelation="1" />
+				<Option projectIncludeDirsRelation="1" />
+				<Option projectResourceIncludeDirsRelation="1" />
+				<Option projectLibDirsRelation="1" />
+				<Compiler>
+					<Add option="-fomit-frame-pointer" />
+					<Add option="-O3" />
+					<Add option="-Wall" />
+					<Add option="-m32" />
+					<Add option="-ffast-math" />
+					<Add option="-fsigned-char" />
+					<Add option="-fno-exceptions" />
+					<Add option="-mwindows" />
+					<Add option="-DSTANDALONE" />
+					<Add directory="include" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+					<Add option="-m32" />
+					<Add option="-mwindows" />
+					<Add library="freetype" />
+					<Add library="zlib1" />
+					<Add directory="../bin/x86" />
+					<Add directory="lib/x86" />
+				</Linker>
+				<Environment>
+					<Variable name="SUPPORT_OPTIONS" value="-m32 -mwindows" />
+					<Variable name="WINDRES_TARGET" value="pe-i386" />
+				</Environment>
+			</Target>
+			<Target title="genkey-x86">
+				<Option output="../bin/x86/genkey.exe" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="../" />
+				<Option object_output=".objs/genkey-x86" />
+				<Option deps_output=".deps/genkey-x86" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option use_console_runner="0" />
+				<Option projectCompilerOptionsRelation="1" />
+				<Option projectLinkerOptionsRelation="1" />
+				<Option projectIncludeDirsRelation="1" />
+				<Option projectResourceIncludeDirsRelation="1" />
+				<Option projectLibDirsRelation="1" />
+				<Compiler>
+					<Add option="-fomit-frame-pointer" />
+					<Add option="-O3" />
+					<Add option="-Wall" />
+					<Add option="-m32" />
+					<Add option="-ffast-math" />
+					<Add option="-fsigned-char" />
+					<Add option="-fno-exceptions" />
+					<Add option="-fno-rtti" />
+					<Add option="-mwindows" />
+					<Add option="-DSTANDALONE" />
+					<Add directory="shared" />
+					<Add directory="engine" />
+					<Add directory="game" />
+					<Add directory="include" />
+					<Add directory="enet/include" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+					<Add option="-m32" />
+					<Add option="-mwindows" />
+					<Add library="zlib1" />
+					<Add library="enet" />
+					<Add directory="../bin/x86" />
+					<Add directory="lib/x86" />
+				</Linker>
+				<Environment>
+					<Variable name="SUPPORT_OPTIONS" value="-m32 -mwindows" />
 					<Variable name="WINDRES_TARGET" value="pe-i386" />
 				</Environment>
 			</Target>
@@ -307,6 +397,7 @@
 					<Add directory="lib/amd64" />
 				</Linker>
 				<Environment>
+					<Variable name="SUPPORT_OPTIONS" value="-m64 -mwindows" />
 					<Variable name="WINDRES_TARGET" value="pe-x86-64" />
 				</Environment>
 			</Target>
@@ -357,6 +448,7 @@
 					<Add directory="lib/amd64" />
 				</Linker>
 				<Environment>
+					<Variable name="SUPPORT_OPTIONS" value="-m64 -mwindows" />
 					<Variable name="WINDRES_TARGET" value="pe-x86-64" />
 				</Environment>
 			</Target>
@@ -409,6 +501,7 @@
 					<Add directory="lib/amd64" />
 				</Linker>
 				<Environment>
+					<Variable name="SUPPORT_OPTIONS" value="-m64 -mwindows" />
 					<Variable name="WINDRES_TARGET" value="pe-x86-64" />
 				</Environment>
 			</Target>
@@ -458,6 +551,7 @@
 					<Add directory="lib/amd64" />
 				</Linker>
 				<Environment>
+					<Variable name="SUPPORT_OPTIONS" value="-m64 -mwindows" />
 					<Variable name="WINDRES_TARGET" value="pe-x86-64" />
 				</Environment>
 			</Target>
@@ -502,14 +596,15 @@
 					<Add directory="lib/amd64" />
 				</Linker>
 				<Environment>
+					<Variable name="SUPPORT_OPTIONS" value="-m64 -mwindows" />
 					<Variable name="WINDRES_TARGET" value="pe-x86-64" />
 				</Environment>
 			</Target>
-			<Target title="genkey">
-				<Option output="../bin/x86/genkey.exe" prefix_auto="0" extension_auto="0" />
+			<Target title="cube2font-amd64">
+				<Option output="../bin/amd64/cube2font.exe" prefix_auto="0" extension_auto="0" />
 				<Option working_dir="../" />
-				<Option object_output=".objs/genkey" />
-				<Option deps_output=".deps/genkey" />
+				<Option object_output=".objs/cube2font-amd64" />
+				<Option deps_output=".deps/cube2font-amd64" />
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Option use_console_runner="0" />
@@ -520,83 +615,82 @@
 				<Option projectLibDirsRelation="1" />
 				<Compiler>
 					<Add option="-fomit-frame-pointer" />
-					<Add option="-ffast-math" />
 					<Add option="-O3" />
 					<Add option="-Wall" />
+					<Add option="-m64" />
+					<Add option="-ffast-math" />
+					<Add option="-fsigned-char" />
+					<Add option="-fno-exceptions" />
+					<Add option="-mwindows" />
+					<Add option="-DSTANDALONE" />
+					<Add directory="include" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+					<Add option="-m64" />
+					<Add option="-mwindows" />
+					<Add library="freetype" />
+					<Add library="zlib1" />
+					<Add directory="../bin/amd64" />
+					<Add directory="lib/amd64" />
+				</Linker>
+				<Environment>
+					<Variable name="SUPPORT_OPTIONS" value="-m64 -mwindows" />
+					<Variable name="WINDRES_TARGET" value="pe-x86-64" />
+				</Environment>
+			</Target>
+			<Target title="genkey-amd64">
+				<Option output="../bin/amd64/genkey.exe" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="../" />
+				<Option object_output=".objs/genkey-amd64" />
+				<Option deps_output=".deps/genkey-amd64" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option use_console_runner="0" />
+				<Option projectCompilerOptionsRelation="1" />
+				<Option projectLinkerOptionsRelation="1" />
+				<Option projectIncludeDirsRelation="1" />
+				<Option projectResourceIncludeDirsRelation="1" />
+				<Option projectLibDirsRelation="1" />
+				<Compiler>
+					<Add option="-fomit-frame-pointer" />
+					<Add option="-O3" />
+					<Add option="-Wall" />
+					<Add option="-m64" />
+					<Add option="-ffast-math" />
 					<Add option="-fsigned-char" />
 					<Add option="-fno-exceptions" />
 					<Add option="-fno-rtti" />
 					<Add option="-mwindows" />
-					<Add option="-m32" />
 					<Add option="-DSTANDALONE" />
-					<Add directory="support" />
 					<Add directory="shared" />
 					<Add directory="engine" />
 					<Add directory="game" />
-					<Add directory="enet/include" />
 					<Add directory="include" />
+					<Add directory="enet/include" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
-					<Add option="-m32" />
+					<Add option="-m64" />
 					<Add option="-mwindows" />
 					<Add library="zlib1" />
-					<Add directory="../bin/x86" />
-					<Add directory="lib/x86" />
+					<Add library="enet" />
+					<Add directory="../bin/amd64" />
+					<Add directory="lib/amd64" />
 				</Linker>
 				<Environment>
-					<Variable name="WINDRES_TARGET" value="pe-i386" />
-				</Environment>
-			</Target>
-			<Target title="cube2font">
-				<Option output="../bin/x86/cube2font.exe" prefix_auto="0" extension_auto="0" />
-				<Option working_dir="../" />
-				<Option object_output=".objs/cube2font" />
-				<Option deps_output=".deps/cube2font" />
-				<Option type="1" />
-				<Option compiler="gcc" />
-				<Option use_console_runner="0" />
-				<Option projectCompilerOptionsRelation="1" />
-				<Option projectLinkerOptionsRelation="1" />
-				<Option projectIncludeDirsRelation="1" />
-				<Option projectResourceIncludeDirsRelation="1" />
-				<Option projectLibDirsRelation="1" />
-				<Compiler>
-					<Add option="-fomit-frame-pointer" />
-					<Add option="-ffast-math" />
-					<Add option="-O3" />
-					<Add option="-Wall" />
-					<Add option="-fsigned-char" />
-					<Add option="-fno-exceptions" />
-					<Add option="-mwindows" />
-					<Add option="-m32" />
-					<Add option="-DSTANDALONE" />
-					<Add directory="support" />
-					<Add directory="shared" />
-					<Add directory="engine" />
-					<Add directory="game" />
-					<Add directory="enet/include" />
-					<Add directory="include" />
-				</Compiler>
-				<Linker>
-					<Add option="-s" />
-					<Add option="-m32" />
-					<Add option="-mwindows" />
-					<Add library="freetype6" />
-					<Add library="zlib1" />
-					<Add directory="../bin/x86" />
-					<Add directory="lib/x86" />
-				</Linker>
-				<Environment>
-					<Variable name="WINDRES_TARGET" value="pe-i386" />
+					<Variable name="SUPPORT_OPTIONS" value="-m64 -mwindows" />
+					<Variable name="WINDRES_TARGET" value="pe-x86-64" />
 				</Environment>
 			</Target>
 		</Build>
 		<VirtualTargets>
-			<Add alias="ALL" targets="redeclipse-x86;redeclipse_server-x86;redeclipse-amd64;redeclipse_server-amd64;" />
-			<Add alias="ALL-amd64" targets="redeclipse-amd64;redeclipse_server-amd64;" />
-			<Add alias="ALL-x86" targets="redeclipse-x86;redeclipse_server-x86;" />
-			<Add alias="TOOLS" targets="cube2font;genkey;" />
+			<Add alias="ALL" targets="redeclipse-x86;redeclipse_server-x86;redeclipse_server-amd64;redeclipse-amd64;" />
+			<Add alias="ALL-amd64" targets="redeclipse_server-amd64;redeclipse-amd64;" />
+			<Add alias="ALL-x86" targets="redeclipse_server-x86;redeclipse-x86;" />
+			<Add alias="TOOLS" targets="genkey-x86;cube2font-x86;genkey-amd64;cube2font-amd64;" />
+			<Add alias="TOOLS-amd64" targets="genkey-amd64;cube2font-amd64;" />
+			<Add alias="TOOLS-x86" targets="genkey-x86;cube2font-x86;" />
 		</VirtualTargets>
 		<Unit filename="dpiaware.manifest">
 			<Option target="redeclipse-x86" />
@@ -715,9 +809,6 @@
 			<Option target="redeclipse-amd64" />
 			<Option target="redeclipse-amd64-dbg" />
 			<Option target="redeclipse-amd64-prof" />
-		</Unit>
-		<Unit filename="engine/genkey.cpp">
-			<Option target="genkey" />
 		</Unit>
 		<Unit filename="engine/grass.cpp">
 			<Option target="redeclipse-x86" />
@@ -1135,7 +1226,18 @@
 			<Option target="redeclipse-amd64-dbg" />
 			<Option target="redeclipse-amd64-prof" />
 		</Unit>
-		<Unit filename="engine/version.h" />
+		<Unit filename="engine/version.h">
+			<Option target="redeclipse-x86" />
+			<Option target="redeclipse-x86-dbg" />
+			<Option target="redeclipse-x86-prof" />
+			<Option target="redeclipse_server-x86" />
+			<Option target="redeclipse_server-x86-dbg" />
+			<Option target="redeclipse-amd64" />
+			<Option target="redeclipse-amd64-dbg" />
+			<Option target="redeclipse-amd64-prof" />
+			<Option target="redeclipse_server-amd64" />
+			<Option target="redeclipse_server-amd64-dbg" />
+		</Unit>
 		<Unit filename="engine/vertmodel.h">
 			<Option target="redeclipse-x86" />
 			<Option target="redeclipse-x86-dbg" />
@@ -1551,7 +1653,6 @@
 			<Option target="redeclipse-x86" />
 			<Option target="redeclipse-x86-dbg" />
 			<Option target="redeclipse_server-x86" />
-			<Option target="genkey" />
 			<Option target="redeclipse-x86-prof" />
 			<Option target="redeclipse_server-x86-dbg" />
 			<Option target="redeclipse-amd64" />
@@ -1564,7 +1665,7 @@
 			<Option target="redeclipse-x86" />
 			<Option target="redeclipse-x86-dbg" />
 			<Option target="redeclipse_server-x86" />
-			<Option target="genkey" />
+			<Option target="genkey-x86" />
 			<Option target="redeclipse-x86-prof" />
 			<Option target="redeclipse_server-x86-dbg" />
 			<Option target="redeclipse-amd64" />
@@ -1572,6 +1673,7 @@
 			<Option target="redeclipse-amd64-prof" />
 			<Option target="redeclipse_server-amd64" />
 			<Option target="redeclipse_server-amd64-dbg" />
+			<Option target="genkey-amd64" />
 		</Unit>
 		<Unit filename="shared/cube.h">
 			<Option compile="1" />
@@ -1585,7 +1687,8 @@
 		</Unit>
 		<Unit filename="shared/cube2font.c">
 			<Option compilerVar="CC" />
-			<Option target="cube2font" />
+			<Option target="cube2font-x86" />
+			<Option target="cube2font-amd64" />
 		</Unit>
 		<Unit filename="shared/discord_register.h">
 			<Option target="redeclipse-x86" />
@@ -1610,6 +1713,10 @@
 			<Option target="redeclipse-amd64" />
 			<Option target="redeclipse-amd64-dbg" />
 			<Option target="redeclipse-amd64-prof" />
+		</Unit>
+		<Unit filename="shared/genkey.cpp">
+			<Option target="genkey-x86" />
+			<Option target="genkey-amd64" />
 		</Unit>
 		<Unit filename="shared/geom.cpp">
 			<Option target="redeclipse-x86" />
@@ -1675,7 +1782,6 @@
 			<Option target="redeclipse-x86" />
 			<Option target="redeclipse-x86-dbg" />
 			<Option target="redeclipse_server-x86" />
-			<Option target="genkey" />
 			<Option target="redeclipse-x86-prof" />
 			<Option target="redeclipse_server-x86-dbg" />
 			<Option target="redeclipse-amd64" />
@@ -1688,7 +1794,6 @@
 			<Option target="redeclipse-x86" />
 			<Option target="redeclipse-x86-dbg" />
 			<Option target="redeclipse_server-x86" />
-			<Option target="genkey" />
 			<Option target="redeclipse-x86-prof" />
 			<Option target="redeclipse_server-x86-dbg" />
 			<Option target="redeclipse-amd64" />
@@ -1703,7 +1808,6 @@
 			<Option target="redeclipse-x86-prof" />
 			<Option target="redeclipse_server-x86" />
 			<Option target="redeclipse_server-x86-dbg" />
-			<Option target="genkey" />
 			<Option target="redeclipse-amd64" />
 			<Option target="redeclipse-amd64-dbg" />
 			<Option target="redeclipse-amd64-prof" />
@@ -1742,6 +1846,7 @@
 		</Unit>
 		<Unit filename="support/jsmn.c">
 			<Option compilerVar="CC" />
+			<Option compiler="gcc" use="1" buildCommand="$compiler $SUPPORT_OPTIONS -c $file -o $object" />
 			<Option target="redeclipse-x86" />
 			<Option target="redeclipse-x86-dbg" />
 			<Option target="redeclipse-x86-prof" />
@@ -1767,7 +1872,7 @@
 		</Unit>
 		<Unit filename="support/sqlite3.c">
 			<Option compilerVar="CC" />
-			<Option compiler="gcc" use="1" buildCommand="$compiler $includes -c $file -o $object" />
+			<Option compiler="gcc" use="1" buildCommand="$compiler $SUPPORT_OPTIONS -DSQLITE_THREADSAFE=0 -DSQLITE_OMIT_LOAD_EXTENSION -c $file -o $object" />
 			<Option target="redeclipse-x86" />
 			<Option target="redeclipse-x86-dbg" />
 			<Option target="redeclipse_server-x86" />

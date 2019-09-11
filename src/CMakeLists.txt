@@ -70,6 +70,7 @@ find_package(PkgConfig REQUIRED)
 set(client_deps zlib sdl2 SDL2_image SDL2_mixer gl)
 set(server_deps zlib)
 set(genkey_deps zlib)
+set(cube2font_deps zlib freetype2)
 
 set(BUILD_CLIENT true CACHE BOOL "Build client?")
 if(NOT ${BUILD_CLIENT})
@@ -115,15 +116,24 @@ file(GLOB server_sources
 
 # genkey is a rather simple application
 file(GLOB genkey_sources
-    engine/genkey.cpp
+    shared/genkey.cpp
     shared/crypto.cpp
 )
 
-# neither server nor client need genkey.cpp
-# to avoid warnings about duplicate main()s, it has to be removed from their source lists
-file(GLOB genkey_cpp_path engine/genkey.cpp)
+# neither server nor client need genkey.cpp - to avoid warnings about duplicate main()s, it has to be removed from their source lists
+file(GLOB genkey_cpp_path shared/genkey.cpp)
 list(REMOVE_ITEM client_sources ${genkey_cpp_path})
 list(REMOVE_ITEM server_sources ${genkey_cpp_path})
+
+# cube2font is a very simple application
+file(GLOB cube2font_sources
+    shared/cube2font.cpp
+)
+
+# neither server nor client need cube2font.cpp - to avoid warnings about duplicate main()s, it has to be removed from their source lists
+file(GLOB cube2font_cpp_path shared/cube2font.cpp)
+list(REMOVE_ITEM client_sources ${cube2font_cpp_path})
+list(REMOVE_ITEM server_sources ${cube2font_cpp_path})
 
 # make sure sqlite3 is built with the correct flags
 file(GLOB sqlite3_cpp_path support/sqlite3.c)
@@ -206,6 +216,10 @@ else(APPLE)
     set_target_properties(genkey${BIN_SUFFIX} PROPERTIES
         COMPILE_FLAGS "-DSTANDALONE"
     )
+    add_executable(cube2font${BIN_SUFFIX} ${cube2font_sources})
+    set_target_properties(cube2font${BIN_SUFFIX} PROPERTIES
+        COMPILE_FLAGS "-DSTANDALONE"
+    )
 endif(APPLE)
 
 # configure dependencies
@@ -217,6 +231,7 @@ if(${BUILD_CLIENT})
 endif()
 configure_deps(TARGET redeclipse_server${BIN_SUFFIX} FATAL DEPS ${server_deps})
 configure_deps(TARGET genkey${BIN_SUFFIX} FATAL DEPS ${genkey_deps})
+configure_deps(TARGET cube2font${BIN_SUFFIX} FATAL DEPS ${cube2font_deps})
 
 # configure enet
 set(ENET_SOURCE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/enet)
@@ -256,7 +271,7 @@ else()
     set(ARCHITECTURE "native")
 endif()
 
-set(targets redeclipse_server${BIN_SUFFIX} genkey${BIN_SUFFIX})
+set(targets redeclipse_server${BIN_SUFFIX} genkey${BIN_SUFFIX} cube2font${BIN_SUFFIX})
 if(${BUILD_CLIENT})
     set(targets redeclipse${BIN_SUFFIX} ${targets})
 endif()

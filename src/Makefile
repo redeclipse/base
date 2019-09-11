@@ -210,6 +210,8 @@ CLIENT_PCH= shared/cube.h.gch engine/engine.h.gch
 ifneq (,$(findstring mingw,$(PLATFORM)))
 SERVER_INCLUDES= -DSTANDALONE $(INCLUDES) -Iinclude
 SERVER_LIBS= -mwindows $(STD_LIBS) -L$(WINDLL) -L$(WINLIB) -lzlib1 -lenet -lws2_32 -lwinmm
+CUBE2FONT_INCLUDES= -Iinclude
+CUBE2FONT_LIBS= -mwindows $(STD_LIBS) -L$(WINDLL) -L$(WINLIB) -lzlib1 -lfreetype
 ifeq (1,$(WANT_STEAM))
 ifneq (,$(findstring 64,$(PLATFORM)))
 override SERVER_LIBS+= -lsteam_api64
@@ -220,6 +222,8 @@ endif
 else
 SERVER_INCLUDES= -DSTANDALONE $(INCLUDES) `pkg-config --cflags zlib`
 SERVER_LIBS= -Lenet -lenet `pkg-config --libs zlib`
+CUBE2FONT_INCLUDES= `pkg-config --cflags zlib freetype2`
+CUBE2FONT_LIBS= `pkg-config --libs zlib freetype2`
 ifeq (1,$(WANT_STEAM))
 override SERVER_LIBS+= -L../bin/$(PLATFORM_BIN) -lsteam_api
 endif
@@ -242,7 +246,8 @@ SERVER_OBJS= \
 
 LIBENET= enet/libenet.a
 
-GENKEY_OBJS= engine/genkey.o shared/crypto-standalone.o
+GENKEY_OBJS= shared/genkey.o shared/crypto-standalone.o
+CUBE2FONT_OBJS= shared/cube2font.o
 
 all:
 
@@ -260,7 +265,10 @@ clean-server:
 clean-genkey:
 	@rm $(RMFLAGS) $(GENKEY_OBJS) genkey$(BIN_SUFFIX)
 
-clean: clean-enet clean-client clean-server clean-genkey
+clean-cube2font:
+	@rm $(RMFLAGS) $(CUBE2FONT_OBJS) cube2font$(BIN_SUFFIX)
+
+clean: clean-enet clean-client clean-server clean-genkey clean-cube2font
 
 %.h.gch: %.h
 	$(CXX) $(CXXFLAGS) -x c++-header -o $(subst .h.gch,.tmp.h.gch,$@) $(subst .h.gch,.h,$@)
@@ -305,8 +313,16 @@ genkey: genkey$(BIN_SUFFIX)
 genkey$(BIN_SUFFIX): $(GENKEY_OBJS)
 	$(CXX) $(CXXFLAGS) -o genkey$(BIN_SUFFIX) $(GENKEY_OBJS)
 
-engine/genkey.o: engine/genkey.cpp
-	$(CXX) $(CXXFLAGS) $(SERVER_INCLUDES) -c -o engine/genkey.o engine/genkey.cpp
+shared/genkey.o: shared/genkey.cpp
+	$(CXX) $(CXXFLAGS) $(SERVER_INCLUDES) -c -o shared/genkey.o shared/genkey.cpp
+
+cube2font: cube2font$(BIN_SUFFIX)
+
+cube2font$(BIN_SUFFIX): $(CUBE2FONT_OBJS)
+	$(CXX) $(CXXFLAGS) -o cube2font$(BIN_SUFFIX) $(CUBE2FONT_OBJS)
+
+engine/cube2font.o: engine/cube2font.cpp
+	$(CXX) $(CXXFLAGS) $(CUBE2FONT_INCLUDES) -c -o engine/cube2font.o engine/cube2font.cpp
 
 $(INSTDIR)/%$(BIN_SUFFIX): %$(APPMODIFIER)$(BIN_SUFFIX)
 	$(MKDIR) $(INSTDIR)
@@ -322,25 +338,22 @@ ifneq (,$(STRIP))
 	$(STRIP) $@
 endif
 
+$(INSTDIR)/cube2font$(BIN_SUFFIX): cube2font$(BIN_SUFFIX)
+	$(MKDIR) $(INSTDIR)
+	$(CP) $< $@
+ifneq (,$(STRIP))
+	$(STRIP) $@
+endif
+
 install-client: $(INSTDIR)/$(APPCLIENT)$(BIN_SUFFIX)
 
 install-server: $(INSTDIR)/$(APPSERVER)$(BIN_SUFFIX)
 
 install-genkey: $(INSTDIR)/genkey$(BIN_SUFFIX)
 
-ifeq (,$(findstring mingw,$(PLATFORM)))
-shared/cube2font.o: shared/cube2font.c
-	$(CXX) $(CXXFLAGS) -c -o $@ $< `$(PKG_CONFIG) --cflags freetype2`
+install-cube2font: $(INSTDIR)/cube2font$(BIN_SUFFIX)
 
-cube2font: shared/cube2font.o
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $< `$(PKG_CONFIG) --libs freetype2` -lz
-
-install-cube2font: cube2font
-	$(MKDIR) $(INSTDIR)
-	install -m 755 $< $(INSTDIR)/$<
-endif
-
-install: install-client install-server install-genkey
+install: install-client install-server install-genkey install-cube2font
 
 $(LIBENET):
 	$(MAKE) -C enet
@@ -350,7 +363,7 @@ depend:
 	makedepend -a -o-standalone.o -Y -I. -Ishared -Iengine -Igame -Isupport -DSTANDALONE $(subst -standalone.o,.cpp,$(SERVER_OBJS))
 	makedepend -a -o.h.gch -Y -I. -Ishared -Iengine -Igame -Isupport $(subst .h.gch,.h,$(CLIENT_PCH))
 
-all: client server genkey
+all: client server genkey cube2font
 
 include system-install.mk
 include dist.mk
