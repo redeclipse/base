@@ -311,7 +311,7 @@ server: $(APPSERVER)$(APPMODIFIER)$(BIN_SUFFIX)
 genkey: genkey$(BIN_SUFFIX)
 
 genkey$(BIN_SUFFIX): $(GENKEY_OBJS)
-	$(CXX) $(CXXFLAGS) -o genkey$(BIN_SUFFIX) $(GENKEY_OBJS)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(GENKEY_OBJS) $(SERVER_LIBS)
 
 shared/genkey.o: shared/genkey.cpp
 	$(CXX) $(CXXFLAGS) $(SERVER_INCLUDES) -c -o shared/genkey.o shared/genkey.cpp
@@ -319,7 +319,7 @@ shared/genkey.o: shared/genkey.cpp
 cube2font: cube2font$(BIN_SUFFIX)
 
 cube2font$(BIN_SUFFIX): $(CTFONT_OBJS)
-	$(CXX) $(CXXFLAGS) -o cube2font$(BIN_SUFFIX) $(CTFONT_OBJS)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(CTFONT_OBJS) $(CTFONT_LIBS)
 
 shared/cube2font.o: shared/cube2font.cpp
 	$(CXX) $(CXXFLAGS) $(CTFONT_INCLUDES) -c -o shared/cube2font.o shared/cube2font.cpp
