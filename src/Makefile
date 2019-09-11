@@ -210,8 +210,8 @@ CLIENT_PCH= shared/cube.h.gch engine/engine.h.gch
 ifneq (,$(findstring mingw,$(PLATFORM)))
 SERVER_INCLUDES= -DSTANDALONE $(INCLUDES) -Iinclude
 SERVER_LIBS= -mwindows $(STD_LIBS) -L$(WINDLL) -L$(WINLIB) -lzlib1 -lenet -lws2_32 -lwinmm
-CUBE2FONT_INCLUDES= -Iinclude
-CUBE2FONT_LIBS= -mwindows $(STD_LIBS) -L$(WINDLL) -L$(WINLIB) -lzlib1 -lfreetype
+CTFONT_INCLUDES= -DSTANDALONE -Iinclude
+CTFONT_LIBS= -mwindows $(STD_LIBS) -L$(WINDLL) -L$(WINLIB) -lzlib1 -lfreetype
 ifeq (1,$(WANT_STEAM))
 ifneq (,$(findstring 64,$(PLATFORM)))
 override SERVER_LIBS+= -lsteam_api64
@@ -222,8 +222,8 @@ endif
 else
 SERVER_INCLUDES= -DSTANDALONE $(INCLUDES) `pkg-config --cflags zlib`
 SERVER_LIBS= -Lenet -lenet `pkg-config --libs zlib`
-CUBE2FONT_INCLUDES= `pkg-config --cflags zlib freetype2`
-CUBE2FONT_LIBS= `pkg-config --libs zlib freetype2`
+CTFONT_INCLUDES= -DSTANDALONE `pkg-config --cflags zlib freetype2`
+CTFONT_LIBS= `pkg-config --libs zlib freetype2`
 ifeq (1,$(WANT_STEAM))
 override SERVER_LIBS+= -L../bin/$(PLATFORM_BIN) -lsteam_api
 endif
@@ -247,7 +247,7 @@ SERVER_OBJS= \
 LIBENET= enet/libenet.a
 
 GENKEY_OBJS= shared/genkey.o shared/crypto-standalone.o
-CUBE2FONT_OBJS= shared/cube2font.o
+CTFONT_OBJS= shared/cube2font.o
 
 all:
 
@@ -266,7 +266,7 @@ clean-genkey:
 	@rm $(RMFLAGS) $(GENKEY_OBJS) genkey$(BIN_SUFFIX)
 
 clean-cube2font:
-	@rm $(RMFLAGS) $(CUBE2FONT_OBJS) cube2font$(BIN_SUFFIX)
+	@rm $(RMFLAGS) $(CTFONT_OBJS) cube2font$(BIN_SUFFIX)
 
 clean: clean-enet clean-client clean-server clean-genkey clean-cube2font
 
@@ -318,11 +318,11 @@ shared/genkey.o: shared/genkey.cpp
 
 cube2font: cube2font$(BIN_SUFFIX)
 
-cube2font$(BIN_SUFFIX): $(CUBE2FONT_OBJS)
-	$(CXX) $(CXXFLAGS) -o cube2font$(BIN_SUFFIX) $(CUBE2FONT_OBJS)
+cube2font$(BIN_SUFFIX): $(CTFONT_OBJS)
+	$(CXX) $(CXXFLAGS) -o cube2font$(BIN_SUFFIX) $(CTFONT_OBJS)
 
 engine/cube2font.o: engine/cube2font.cpp
-	$(CXX) $(CXXFLAGS) $(CUBE2FONT_INCLUDES) -c -o engine/cube2font.o engine/cube2font.cpp
+	$(CXX) $(CXXFLAGS) $(CTFONT_INCLUDES) -c -o engine/cube2font.o engine/cube2font.cpp
 
 $(INSTDIR)/%$(BIN_SUFFIX): %$(APPMODIFIER)$(BIN_SUFFIX)
 	$(MKDIR) $(INSTDIR)
