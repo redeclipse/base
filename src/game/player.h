@@ -280,12 +280,9 @@ struct vanity
         if(model) delete[] model;
         defformatstring(m, "vanities/%s", r);
         model = newstring(m);
-        if(proj)
-        {
-            delete[] proj;
-            formatstring(m, "vanities/%s/proj", r);
-            proj = newstring(m);
-        }
+        if(proj) delete[] proj;
+        formatstring(m, "%s/proj", model);
+        proj = newstring(m);
     }
 };
 #ifdef GAMEWORLD

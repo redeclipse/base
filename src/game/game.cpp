@@ -491,15 +491,7 @@ namespace game
         if(vanities.inrange(n))
         {
             // No need for advanced checks if there is no style.
-            if(vanities[n].style == 0)
-            {
-                if(proj && !vanities[n].proj)
-                {
-                    defformatstring(fn, "%s/proj", vanities[n].model);
-                    vanities[n].proj = newstring(fn);
-                }
-                file = proj ? vanities[n].proj : vanities[n].model;
-            }
+            if(vanities[n].style == 0) file = proj ? vanities[n].proj : vanities[n].model;
             else
             {
                 // Unique ID for this vanity setup.
@@ -518,8 +510,7 @@ namespace game
                     defformatstring(fn, "%s", vanities[n].model);
                     if(vanities[n].style & VANITYSTYLE_PRIV) concformatstring(fn, "/%s", server::privnamex(d->privilege, d->actortype, true));
                     if(vanities[n].style & VANITYSTYLE_ACTORMODEL) concformatstring(fn, "/%s", vanitymodel(d));
-
-                    concformatstring(fn, "%s", proj ? "/proj" : "");
+                    if(proj) concatstring(fn, "/proj");
 
                     // Add to the list.
                     vanityfile &f = vanities[n].files.add();
@@ -763,28 +754,20 @@ namespace game
         return false;
     }
 
-    ICOMMAND(0, specmodeswitch, "", (),
-    {
-        if(tvmode(true, true))
-        {
-            if(!tvmode(true, false)) followmode = 0;
-            else specmode = 0;
-        }
-        else if(focus != player1) followmode = 1;
-        else specmode = 1;
-        specreset();
-    });
-    ICOMMAND(0, waitmodeswitch, "", (),
-    {
-        if(tvmode(true, true))
-        {
-            if(!tvmode(true, false)) followmode = 0;
-            else waitmode = 0;
-        }
-        else if(focus != player1) followmode = 1;
-        else waitmode = 1;
-        specreset();
-    });
+    #define MODESWITCH(name) \
+        ICOMMAND(0, name##modeswitch, "", (), \
+        { \
+            if(tvmode(true, true)) \
+            { \
+                if(!tvmode(true, false)) followmode = 0; \
+                else name##mode = 0; \
+            } \
+            else if(focus != player1) followmode = 1; \
+            else name##mode = 1; \
+            specreset(); \
+        });
+    MODESWITCH(spec);
+    MODESWITCH(wait);
 
     bool followswitch(int n, bool other)
     {
@@ -980,7 +963,7 @@ namespace game
                     if(!m_team(gamemode, mutators) || team > (m_multi(gamemode, mutators) ? T_MULTI : T_LAST))
                         team = T_NEUTRAL; // abstract team coloured levels to neutral
                 }
-                return vec::fromcolor(TEAM(team, colour)); //return color of weapon
+                return vec::fromcolor(TEAM(team, colour)); // return color of weapon
                 break;
             }
             case 2: // weapons
@@ -990,9 +973,9 @@ namespace game
                 {
                     weap = m_attr(WEAPON, weap);
                     if(!isweap(weap) || W(weap, disabled) || (m_rotweaps(gamemode, mutators) && weap < W_ITEM) || !m_check(W(weap, modes), W(weap, muts), gamemode, mutators))
-                        weap = -1; //blank palette (because weapon not present in mode)
+                        weap = -1; // blank palette (because weapon not present in mode)
                 }
-                if(isweap(weap)) return vec::fromcolor(W(weap, colour)); //return color of weapon
+                if(isweap(weap)) return vec::fromcolor(W(weap, colour)); // return color of weapon
                 break;
             }
             default: break;
@@ -1002,72 +985,70 @@ namespace game
 
     void adddynlights()
     {
-        if(dynlighteffects)
+        if(!dynlighteffects) return;
+        projs::adddynlights();
+        entities::adddynlights();
+        if(dynlighteffects >= 2)
         {
-            projs::adddynlights();
-            entities::adddynlights();
-            if(dynlighteffects >= 2)
+            if(m_capture(gamemode)) capture::adddynlights();
+            else if(m_defend(gamemode)) defend::adddynlights();
+            else if(m_bomber(gamemode)) bomber::adddynlights();
+        }
+        gameent *d = NULL;
+        int numdyns = numdynents();
+        loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL)
+        {
+            if(d->state == CS_ALIVE && isweap(d->weapselect))
             {
-                if(m_capture(gamemode)) capture::adddynlights();
-                else if(m_defend(gamemode)) defend::adddynlights();
-                else if(m_bomber(gamemode)) bomber::adddynlights();
+                bool last = lastmillis-d->weaptime[d->weapselect] > 0,
+                     powering = last && d->weapstate[d->weapselect] == W_S_POWER,
+                     reloading = last && d->weapstate[d->weapselect] == W_S_RELOAD,
+                     secondary = physics::secondaryweap(d);
+                float amt = last ? clamp(float(lastmillis-d->weaptime[d->weapselect])/d->weapwait[d->weapselect], 0.f, 1.f) : 0.f;
+                vec col = WPCOL(d, d->weapselect, lightcol, secondary);
+                if(d->weapselect == W_FLAMER && (!reloading || amt > 0.5f) && !physics::liquidcheck(d))
+                {
+                    float scale = powering ? 1.f+(amt*1.5f) : (d->weapstate[d->weapselect] == W_S_IDLE ? 1.f : (reloading ? (amt-0.5f)*2 : amt));
+                    adddynlight(d->ejectpos(d->weapselect), 16*scale, col, 0, 0);
+                }
+                if((W(d->weapselect, lightpersist)&1 || powering) && W(d->weapselect, lightradius) > 0)
+                {
+                    float thresh = max(amt, 0.25f), size = W(d->weapselect, lightradius)*thresh;
+                    int span = max(W2(d->weapselect, cooktime, physics::secondaryweap(d))/4, 500), interval = lastmillis%span, part = span/2;
+                    if(interval) size += size*0.5f*(interval <= part ? interval/float(part) : (span-interval)/float(part));
+                    adddynlight(d->muzzlepos(d->weapselect), size, vec(col).mul(thresh), 0, 0);
+                }
             }
-            gameent *d = NULL;
-            int numdyns = numdynents();
-            loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL)
+            if(d->burntime && d->burning(lastmillis, d->burntime))
             {
-                if(d->state == CS_ALIVE && isweap(d->weapselect))
+                int millis = lastmillis-d->lastres[W_R_BURN], delay = max(d->burndelay, 1);
+                size_t seed = size_t(d) + (millis/50);
+                float pc = 1, amt = (millis%50)/50.0f, intensity = 0.75f+(detrnd(seed, 25)*(1-amt) + detrnd(seed + 1, 25)*amt)/100.f;
+                if(d->burntime-millis < delay) pc *= float(d->burntime-millis)/float(delay);
+                else
                 {
-                    bool last = lastmillis-d->weaptime[d->weapselect] > 0,
-                         powering = last && d->weapstate[d->weapselect] == W_S_POWER,
-                         reloading = last && d->weapstate[d->weapselect] == W_S_RELOAD,
-                         secondary = physics::secondaryweap(d);
-                    float amt = last ? clamp(float(lastmillis-d->weaptime[d->weapselect])/d->weapwait[d->weapselect], 0.f, 1.f) : 0.f;
-                    vec col = WPCOL(d, d->weapselect, lightcol, secondary);
-                    if(d->weapselect == W_FLAMER && (!reloading || amt > 0.5f) && !physics::liquidcheck(d))
-                    {
-                        float scale = powering ? 1.f+(amt*1.5f) : (d->weapstate[d->weapselect] == W_S_IDLE ? 1.f : (reloading ? (amt-0.5f)*2 : amt));
-                        adddynlight(d->ejectpos(d->weapselect), 16*scale, col, 0, 0);
-                    }
-                    if((W(d->weapselect, lightpersist)&1 || powering) && W(d->weapselect, lightradius) > 0)
-                    {
-                        float thresh = max(amt, 0.25f), size = W(d->weapselect, lightradius)*thresh;
-                        int span = max(W2(d->weapselect, cooktime, physics::secondaryweap(d))/4, 500), interval = lastmillis%span, part = span/2;
-                        if(interval) size += size*0.5f*(interval <= part ? interval/float(part) : (span-interval)/float(part));
-                        adddynlight(d->muzzlepos(d->weapselect), size, vec(col).mul(thresh), 0, 0);
-                    }
+                    float fluc = float(millis%delay)*(0.25f+0.03f)/delay;
+                    if(fluc >= 0.25f) fluc = (0.25f+0.03f-fluc)*(0.25f/0.03f);
+                    pc *= 0.75f+fluc;
                 }
-                if(d->burntime && d->burning(lastmillis, d->burntime))
-                {
-                    int millis = lastmillis-d->lastres[W_R_BURN], delay = max(d->burndelay, 1);
-                    size_t seed = size_t(d) + (millis/50);
-                    float pc = 1, amt = (millis%50)/50.0f, intensity = 0.75f+(detrnd(seed, 25)*(1-amt) + detrnd(seed + 1, 25)*amt)/100.f;
-                    if(d->burntime-millis < delay) pc *= float(d->burntime-millis)/float(delay);
-                    else
-                    {
-                        float fluc = float(millis%delay)*(0.25f+0.03f)/delay;
-                        if(fluc >= 0.25f) fluc = (0.25f+0.03f-fluc)*(0.25f/0.03f);
-                        pc *= 0.75f+fluc;
-                    }
-                    adddynlight(d->center(), d->height*intensity*pc, pulsecolour(d).mul(pc), 0, 0);
-                }
-                if(d->shocktime && d->shocking(lastmillis, d->shocktime))
-                {
-                    int millis = lastmillis-d->lastres[W_R_SHOCK], delay = max(d->shockdelay, 1);
-                    size_t seed = size_t(d) + (millis/50);
-                    float pc = 1, amt = (millis%50)/50.0f, intensity = 0.75f+(detrnd(seed, 25)*(1-amt) + detrnd(seed + 1, 25)*amt)/100.f;
-                    if(d->shocktime-millis < delay) pc *= float(d->shocktime-millis)/float(delay);
-                    else
-                    {
-                        float fluc = float(millis%delay)*(0.25f+0.03f)/delay;
-                        if(fluc >= 0.25f) fluc = (0.25f+0.03f-fluc)*(0.25f/0.03f);
-                        pc *= 0.75f+fluc;
-                    }
-                    adddynlight(d->center(), d->height*intensity*pc, pulsecolour(d, PULSE_SHOCK).mul(pc), 0, 0);
-                }
-                if(d->actortype < A_ENEMY && illumlevel > 0 && illumradius > 0)
-                    adddynlight(d->center(), illumradius, vec::fromcolor(getcolour(d, playereffecttone, illumlevel)), 0, 0);
+                adddynlight(d->center(), d->height*intensity*pc, pulsecolour(d).mul(pc), 0, 0);
             }
+            if(d->shocktime && d->shocking(lastmillis, d->shocktime))
+            {
+                int millis = lastmillis-d->lastres[W_R_SHOCK], delay = max(d->shockdelay, 1);
+                size_t seed = size_t(d) + (millis/50);
+                float pc = 1, amt = (millis%50)/50.0f, intensity = 0.75f+(detrnd(seed, 25)*(1-amt) + detrnd(seed + 1, 25)*amt)/100.f;
+                if(d->shocktime-millis < delay) pc *= float(d->shocktime-millis)/float(delay);
+                else
+                {
+                    float fluc = float(millis%delay)*(0.25f+0.03f)/delay;
+                    if(fluc >= 0.25f) fluc = (0.25f+0.03f-fluc)*(0.25f/0.03f);
+                    pc *= 0.75f+fluc;
+                }
+                adddynlight(d->center(), d->height*intensity*pc, pulsecolour(d, PULSE_SHOCK).mul(pc), 0, 0);
+            }
+            if(d->actortype < A_ENEMY && illumlevel > 0 && illumradius > 0)
+                adddynlight(d->center(), illumradius, vec::fromcolor(getcolour(d, playereffecttone, illumlevel)), 0, 0);
         }
     }
 
@@ -1085,8 +1066,12 @@ namespace game
         switch(effect)
         {
             case 0: playsound(S_IMPULSE, d->o, d); // fail through
-            case 1: if(num > 0 && impulsefade > 0) loopi(3) boosteffect(d, d->jet[i], num, impulsefade, effect == 0);
-                    break;
+            case 1:
+            {
+                if(num > 0 && impulsefade > 0) loopi(3) boosteffect(d, d->jet[i], num, impulsefade, effect == 0);
+                break;
+            }
+            default: break;
         }
     }
 
@@ -1302,9 +1287,10 @@ namespace game
                 checkfloor(d);
                 continue;
             }
-            if(gs_playing(gamestate) && (d->state == CS_DEAD || d->state == CS_WAITING)) entities::checkitems(d);
+            if(!gs_playing(gamestate)) continue;
+            if(d->state == CS_DEAD || d->state == CS_WAITING) entities::checkitems(d);
             const int lagtime = totalmillis-d->lastupdate;
-            if(!lagtime || !gs_playing(gamestate)) continue;
+            if(!lagtime) continue;
             //else if(lagtime > 1000) continue;
             physics::smoothplayer(d, 1, false);
         }
@@ -2323,7 +2309,7 @@ namespace game
         if(yaw < targyaw-180.0f) yaw += 360.0f;
         if(yaw > targyaw+180.0f) yaw -= 360.0f;
         float offyaw = (rotate < 0 ? fabs(rotate) : (rotate > 0 ? min(float(fabs(targyaw-yaw)), rotate) : fabs(targyaw-yaw)))*yawspeed,
-            offpitch = (rotate < 0 ? fabs(rotate) : (rotate > 0 ? min(float(fabs(targpitch-pitch)), rotate) : fabs(targpitch-pitch)))*pitchspeed;
+              offpitch = (rotate < 0 ? fabs(rotate) : (rotate > 0 ? min(float(fabs(targpitch-pitch)), rotate) : fabs(targpitch-pitch)))*pitchspeed;
         if(targyaw > yaw)
         {
             yaw += offyaw;
@@ -2449,26 +2435,22 @@ namespace game
 
     void deathcamyawpitch(gameent *d, float &yaw, float &pitch)
     {
-        if(deathcamstyle)
+        if(!deathcamstyle) return;
+        gameent *a = deathcamstyle > 1 ? d : getclient(d->lastattacker);
+        if(!a) return;
+        float y = 0, p = 0;
+        vec dir = vec(a->center()).sub(camera1->o).normalize();
+        vectoyawpitch(dir, y, p);
+        fixrange(y, p);
+        if(deathcamspeed > 0)
         {
-            gameent *a = deathcamstyle > 1 ? d : getclient(d->lastattacker);
-            if(a)
-            {
-                float y = 0, p = 0;
-                vec dir = vec(a->center()).sub(camera1->o).normalize();
-                vectoyawpitch(dir, y, p);
-                fixrange(y, p);
-                if(deathcamspeed > 0)
-                {
-                    float speed = curtime/float(deathcamspeed);
-                    scaleyawpitch(yaw, pitch, y, p, speed, speed*4.f);
-                }
-                else
-                {
-                    yaw = y;
-                    pitch = p;
-                }
-            }
+            float speed = curtime/float(deathcamspeed);
+            scaleyawpitch(yaw, pitch, y, p, speed, speed*4.f);
+        }
+        else
+        {
+            yaw = y;
+            pitch = p;
         }
     }
 
@@ -3046,40 +3028,38 @@ namespace game
     void recomputecamera()
     {
         fixview();
-        if(!client::waiting())
+        if(client::waiting()) return;
+        checkcamera();
+        if(!cameratv())
         {
-            checkcamera();
-            if(!cameratv())
+            lasttvchg = lasttvcam = 0;
+            if((focus->state == CS_DEAD || (focus != player1 && focus->state == CS_WAITING)) && focus->lastdeath)
+                deathcamyawpitch(focus, camera1->yaw, camera1->pitch);
+            else
             {
-                lasttvchg = lasttvcam = 0;
-                if((focus->state == CS_DEAD || (focus != player1 && focus->state == CS_WAITING)) && focus->lastdeath)
-                    deathcamyawpitch(focus, camera1->yaw, camera1->pitch);
-                else
+                physent *d = player1->state >= CS_SPECTATOR || (!gs_playing(gamestate) && focus == player1) ? camera1 : focus;
+                if(d != camera1 || focus != player1 || !gs_playing(gamestate))
+                    camera1->o = camerapos(focus, true, true, d->yaw, d->pitch);
+                if(d != camera1 || (!gs_playing(gamestate) && focus == player1) || (focus != player1 && !followaim()))
                 {
-                    physent *d = player1->state >= CS_SPECTATOR || (!gs_playing(gamestate) && focus == player1) ? camera1 : focus;
-                    if(d != camera1 || focus != player1 || !gs_playing(gamestate))
-                        camera1->o = camerapos(focus, true, true, d->yaw, d->pitch);
-                    if(d != camera1 || (!gs_playing(gamestate) && focus == player1) || (focus != player1 && !followaim()))
-                    {
-                        camera1->yaw = (d != camera1 ? d : focus)->yaw;
-                        camera1->pitch = (d != camera1 ? d : focus)->pitch;
-                    }
+                    camera1->yaw = (d != camera1 ? d : focus)->yaw;
+                    camera1->pitch = (d != camera1 ? d : focus)->pitch;
                 }
-                if(player1->state >= CS_SPECTATOR && focus != player1) camera1->resetinterp();
             }
-            calcangles(camera1, focus);
-            if(thirdpersoncursor != 1 && focus == player1 && thirdpersonview(true, focus))
-            {
-                float yaw = camera1->yaw, pitch = camera1->pitch;
-                vectoyawpitch(cursordir, yaw, pitch);
-                findorientation(camera1->o, yaw, pitch, worldpos);
-            }
-            else findorientation(focus->o, focus->yaw, focus->pitch, worldpos);
-            adjustorientation(worldpos);
-            camera1->inmaterial = lookupmaterial(camera1->o);
-            camera1->inliquid = isliquid(camera1->inmaterial&MATF_VOLUME);
-            lastcamera = totalmillis;
+            if(player1->state >= CS_SPECTATOR && focus != player1) camera1->resetinterp();
         }
+        calcangles(camera1, focus);
+        if(thirdpersoncursor != 1 && focus == player1 && thirdpersonview(true, focus))
+        {
+            float yaw = camera1->yaw, pitch = camera1->pitch;
+            vectoyawpitch(cursordir, yaw, pitch);
+            findorientation(camera1->o, yaw, pitch, worldpos);
+        }
+        else findorientation(focus->o, focus->yaw, focus->pitch, worldpos);
+        adjustorientation(worldpos);
+        camera1->inmaterial = lookupmaterial(camera1->o);
+        camera1->inliquid = isliquid(camera1->inmaterial&MATF_VOLUME);
+        lastcamera = totalmillis;
     }
 
     VAR(0, animoverride, -1, 0, ANIM_MAX-1);
