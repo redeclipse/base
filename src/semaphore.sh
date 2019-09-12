@@ -49,7 +49,7 @@ semabuild_archive() {
 semabuild_test() {
     echo "testing ${BRANCH_NAME}..."
     sudo ${SEMABUILD_APT} update || return 1
-    sudo ${SEMABUILD_APT} -fy install build-essential multiarch-support gcc-multilib g++-multilib zlib1g-dev libsdl2-dev libsdl2-mixer-dev libsdl2-image-dev libfreetype6-dev libfontconfig1-dev xclip binutils-mingw-w64 g++-mingw-w64 || return 1
+    sudo ${SEMABUILD_APT} -fy install build-essential multiarch-support gcc-multilib g++-multilib zlib1g-dev libsdl2-dev libsdl2-mixer-dev libsdl2-image-dev libfreetype6-dev binutils-mingw-w64 g++-mingw-w64 || return 1
     make PLATFORM="crossmingw64" PLATFORM_BIN="amd64" PLATFORM_BUILD="${SEMAPHORE_BUILD_NUMBER}" PLATFORM_BRANCH="${BRANCH_NAME}" PLATFORM_REVISION="${REVISION}" INSTDIR="${SEMABUILD_DIR}/windows/bin/amd64" CFLAGS="-m64 -O3 -fomit-frame-pointer -ffast-math" CXXFLAGS="-m64 -O3 -fomit-frame-pointer -ffast-math" LDFLAGS="-m64" -C src clean install || return 1
     make PLATFORM="linux64" PLATFORM_BIN="amd64" PLATFORM_BUILD="${SEMAPHORE_BUILD_NUMBER}" PLATFORM_BRANCH="${BRANCH_NAME}" PLATFORM_REVISION="${REVISION}" INSTDIR="${SEMABUILD_DIR}/linux/bin/amd64" CFLAGS="-m64 -O3 -fomit-frame-pointer -ffast-math" CXXFLAGS="-m64 -O3 -fomit-frame-pointer -ffast-math" LDFLAGS="-m64" -C src clean install || return 1
     return 0
@@ -59,12 +59,12 @@ semabuild_build() {
     echo "building ${BRANCH_NAME}..."
     sudo dpkg --add-architecture i386 || return 1
     sudo ${SEMABUILD_APT} update || return 1
-    sudo ${SEMABUILD_APT} -fy install build-essential multiarch-support gcc-multilib g++-multilib zlib1g-dev libsdl2-dev libsdl2-mixer-dev libsdl2-image-dev libfreetype6-dev libfontconfig1-dev xclip binutils-mingw-w64 g++-mingw-w64 || return 1
+    sudo ${SEMABUILD_APT} -fy install build-essential multiarch-support gcc-multilib g++-multilib zlib1g-dev libsdl2-dev libsdl2-mixer-dev libsdl2-image-dev libfreetype6-dev binutils-mingw-w64 g++-mingw-w64 || return 1
     make PLATFORM="crossmingw64" PLATFORM_BIN="amd64" PLATFORM_BUILD="${SEMAPHORE_BUILD_NUMBER}" PLATFORM_BRANCH="${BRANCH_NAME}" PLATFORM_REVISION="${REVISION}" INSTDIR="${SEMABUILD_DIR}/windows/bin/amd64" CFLAGS="-m64 -O3 -fomit-frame-pointer -ffast-math" CXXFLAGS="-m64 -O3 -fomit-frame-pointer -ffast-math" LDFLAGS="-m64" -C src clean install || return 1
     make PLATFORM="crossmingw32" PLATFORM_BIN="x86" PLATFORM_BUILD="${SEMAPHORE_BUILD_NUMBER}" PLATFORM_BRANCH="${BRANCH_NAME}" PLATFORM_REVISION="${REVISION}" INSTDIR="${SEMABUILD_DIR}/windows/bin/x86" CFLAGS="-m32 -O3 -fomit-frame-pointer -ffast-math" CXXFLAGS="-m32 -O3 -fomit-frame-pointer -ffast-math" LDFLAGS="-m32" -C src clean install || return 1
     make PLATFORM="linux64" PLATFORM_BIN="amd64" PLATFORM_BUILD="${SEMAPHORE_BUILD_NUMBER}" PLATFORM_BRANCH="${BRANCH_NAME}" PLATFORM_REVISION="${REVISION}" INSTDIR="${SEMABUILD_DIR}/linux/bin/amd64" CFLAGS="-m64 -O3 -fomit-frame-pointer -ffast-math" CXXFLAGS="-m64 -O3 -fomit-frame-pointer -ffast-math" LDFLAGS="-m64" -C src clean install || return 1
     sudo ${SEMABUILD_APT} purge -fy sbt || return 1
-    sudo ${SEMABUILD_APT} -o Dpkg::Options::="--force-overwrite" -fy --no-install-recommends install pkg-config:i386 gcc:i386 g++:i386 cpp:i386 g++-4.8:i386 gcc-4.8:i386 cpp-4.8:i386 binutils:i386 zlib1g-dev:i386 libsdl2-dev:i386 libsdl2-mixer-dev:i386 libsdl2-image-dev:i386 libpng12-dev:i386 libfreetype6-dev:i386 libfontconfig1-dev:i386 xclip:i386 || return 1
+    sudo ${SEMABUILD_APT} -o Dpkg::Options::="--force-overwrite" -fy --no-install-recommends install pkg-config:i386 gcc:i386 g++:i386 cpp:i386 g++-4.8:i386 gcc-4.8:i386 cpp-4.8:i386 binutils:i386 zlib1g-dev:i386 libsdl2-dev:i386 libsdl2-mixer-dev:i386 libsdl2-image-dev:i386 libpng12-dev:i386 libfreetype6-dev:i386 || return 1
     PKG_CONFIG_PATH="/usr/lib/i386-linux-gnu/pkgconfig" make PLATFORM="linux32" PLATFORM_BIN="x86" PLATFORM_BUILD="${SEMAPHORE_BUILD_NUMBER}" PLATFORM_BRANCH="${BRANCH_NAME}" PLATFORM_REVISION="${REVISION}" INSTDIR="${SEMABUILD_DIR}/linux/bin/x86" CFLAGS="-m32 -O3 -fomit-frame-pointer -ffast-math" CXXFLAGS="-m32 -O3 -fomit-frame-pointer -ffast-math" LDFLAGS="-m32" -C src clean install || return 1
     #sudo ${SEMABUILD_APT} purge -fy ".*:i386" || return 1
     #sudo dpkg --remove-architecture i386 || return 1
