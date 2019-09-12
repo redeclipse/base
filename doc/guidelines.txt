@@ -176,6 +176,6 @@ Red Eclipse discussions located at https://redeclipse.net/discuss
 
 ### Attribution
 
-This text is Copyright (C) 2011-2018, the Red Eclipse Team
-and is available under a Creative Commons Attribution-ShareAlike 3.0 Unported
-License <http://creativecommons.org/licenses/by-sa/3.0/>
+This text is Copyright (C) 2011-2019, the Red Eclipse Team
+and is available under a Creative Commons Attribution-ShareAlike 4.0
+License <http://creativecommons.org/licenses/by-sa/4.0/>
