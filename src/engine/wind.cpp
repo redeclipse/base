@@ -155,7 +155,17 @@ void updatewind()
 // gets the wind for dynamic (moving) entities
 static vec getentwindvec(const dynent *d)
 {
-    return d ? vec(d->vel).add(d->falling).mul(-WIND_DYNENT_MOVE_SCALE) : vec(0);
+    vec v = vec(0);
+
+    if(d)
+    {
+        v = vec(d->vel).add(d->falling).mul(-WIND_DYNENT_MOVE_SCALE);
+
+        // limit the magnitude to WIND_MAX_SPEED
+        v.mul(min(1.0f, WIND_MAX_SPEED / v.magnitude()));
+    }
+
+    return v;
 }
 
 // returns the wind vector at a given position
