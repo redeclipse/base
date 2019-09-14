@@ -36,7 +36,7 @@ Texture *loadskyoverlay(const char *basename)
     return t;
 }
 
-#define DAYNIGHTVARS(name, type) \
+#define MPVVARS(name, type) \
     CVAR1(IDF_WORLD, ambient##name, 0x191919); \
     FVAR(IDF_WORLD, ambientscale##name, 0, 1, 16); \
     CVAR1(IDF_WORLD, skylight##name, 0); \
@@ -108,86 +108,86 @@ Texture *loadskyoverlay(const char *basename)
     VAR(IDF_WORLD, skytexture##name, 0, 0, 1); \
     VARF(IDF_WORLD, skyshadow##name, 0, 0, 1, if(checkmapvariant(type)) clearshadowcache());
 
-DAYNIGHTVARS(, MPV_DEF);
-DAYNIGHTVARS(alt, MPV_ALT);
+MPVVARS(, MPV_DEF);
+MPVVARS(alt, MPV_ALT);
 
-#define GETDAYNIGHT(name, type) \
+#define GETMPV(name, type) \
     type get##name() \
     { \
         if(checkmapvariant(MPV_ALT)) return name##alt; \
         return name; \
     }
 
-GETDAYNIGHT(ambient, bvec &);
-GETDAYNIGHT(ambientscale, float);
-GETDAYNIGHT(skylight, bvec &);
-GETDAYNIGHT(skylightscale, float);
-GETDAYNIGHT(fog, int);
-GETDAYNIGHT(fogcolour, bvec &);
-GETDAYNIGHT(skybgcolour, bvec &);
-GETDAYNIGHT(skybox, const char *);
-GETDAYNIGHT(skycolour, bvec &);
-GETDAYNIGHT(skyblend, float);
-GETDAYNIGHT(skyoverbright, float);
-GETDAYNIGHT(skyoverbrightmin, float);
-GETDAYNIGHT(skyoverbrightthreshold, float);
-GETDAYNIGHT(spinsky, float);
-GETDAYNIGHT(yawsky, int);
-GETDAYNIGHT(cloudbox, const char *);
-GETDAYNIGHT(cloudcolour, bvec &);
-GETDAYNIGHT(cloudblend, float);
-GETDAYNIGHT(spinclouds, float);
-GETDAYNIGHT(yawclouds, int);
-GETDAYNIGHT(cloudclip, float);
-GETDAYNIGHT(cloudlayer, const char *);
-GETDAYNIGHT(cloudlayercolour, bvec &);
-GETDAYNIGHT(cloudlayerblend, float);
-GETDAYNIGHT(cloudoffsetx, float);
-GETDAYNIGHT(cloudoffsety, float);
-GETDAYNIGHT(cloudscrollx, float);
-GETDAYNIGHT(cloudscrolly, float);
-GETDAYNIGHT(cloudscale, float);
-GETDAYNIGHT(spincloudlayer, float);
-GETDAYNIGHT(yawcloudlayer, int);
-GETDAYNIGHT(cloudheight, float);
-GETDAYNIGHT(cloudfade, float);
-GETDAYNIGHT(cloudsubdiv, int);
-GETDAYNIGHT(envlayer, const char *);
-GETDAYNIGHT(envlayercolour, bvec &);
-GETDAYNIGHT(envlayerblend, float);
-GETDAYNIGHT(envoffsetx, float);
-GETDAYNIGHT(envoffsety, float);
-GETDAYNIGHT(envscrollx, float);
-GETDAYNIGHT(envscrolly, float);
-GETDAYNIGHT(envscale, float);
-GETDAYNIGHT(spinenvlayer, float);
-GETDAYNIGHT(yawenvlayer, int);
-GETDAYNIGHT(envheight, float);
-GETDAYNIGHT(envfade, float);
-GETDAYNIGHT(envsubdiv, int);
-GETDAYNIGHT(atmo, int);
-GETDAYNIGHT(atmoplanetsize, float);
-GETDAYNIGHT(atmoheight, float);
-GETDAYNIGHT(atmobright, float);
-GETDAYNIGHT(atmolight, bvec &);
-GETDAYNIGHT(atmolightscale, float);
-GETDAYNIGHT(atmodisksize, float);
-GETDAYNIGHT(atmodiskbright, float);
-GETDAYNIGHT(atmohaze, float);
-GETDAYNIGHT(atmohazefade, bvec &);
-GETDAYNIGHT(atmohazefadescale, float);
-GETDAYNIGHT(atmoclarity, float);
-GETDAYNIGHT(atmodensity, float);
-GETDAYNIGHT(atmoblend, float);
-GETDAYNIGHT(fogdomeheight, float);
-GETDAYNIGHT(fogdomemin, float);
-GETDAYNIGHT(fogdomemax, float);
-GETDAYNIGHT(fogdomecap, int);
-GETDAYNIGHT(fogdomeclip, float);
-GETDAYNIGHT(fogdomecolour, bvec &);
-GETDAYNIGHT(fogdomeclouds, int);
-GETDAYNIGHT(skytexture, int);
-GETDAYNIGHT(skyshadow, int);
+GETMPV(ambient, bvec &);
+GETMPV(ambientscale, float);
+GETMPV(skylight, bvec &);
+GETMPV(skylightscale, float);
+GETMPV(fog, int);
+GETMPV(fogcolour, bvec &);
+GETMPV(skybgcolour, bvec &);
+GETMPV(skybox, const char *);
+GETMPV(skycolour, bvec &);
+GETMPV(skyblend, float);
+GETMPV(skyoverbright, float);
+GETMPV(skyoverbrightmin, float);
+GETMPV(skyoverbrightthreshold, float);
+GETMPV(spinsky, float);
+GETMPV(yawsky, int);
+GETMPV(cloudbox, const char *);
+GETMPV(cloudcolour, bvec &);
+GETMPV(cloudblend, float);
+GETMPV(spinclouds, float);
+GETMPV(yawclouds, int);
+GETMPV(cloudclip, float);
+GETMPV(cloudlayer, const char *);
+GETMPV(cloudlayercolour, bvec &);
+GETMPV(cloudlayerblend, float);
+GETMPV(cloudoffsetx, float);
+GETMPV(cloudoffsety, float);
+GETMPV(cloudscrollx, float);
+GETMPV(cloudscrolly, float);
+GETMPV(cloudscale, float);
+GETMPV(spincloudlayer, float);
+GETMPV(yawcloudlayer, int);
+GETMPV(cloudheight, float);
+GETMPV(cloudfade, float);
+GETMPV(cloudsubdiv, int);
+GETMPV(envlayer, const char *);
+GETMPV(envlayercolour, bvec &);
+GETMPV(envlayerblend, float);
+GETMPV(envoffsetx, float);
+GETMPV(envoffsety, float);
+GETMPV(envscrollx, float);
+GETMPV(envscrolly, float);
+GETMPV(envscale, float);
+GETMPV(spinenvlayer, float);
+GETMPV(yawenvlayer, int);
+GETMPV(envheight, float);
+GETMPV(envfade, float);
+GETMPV(envsubdiv, int);
+GETMPV(atmo, int);
+GETMPV(atmoplanetsize, float);
+GETMPV(atmoheight, float);
+GETMPV(atmobright, float);
+GETMPV(atmolight, bvec &);
+GETMPV(atmolightscale, float);
+GETMPV(atmodisksize, float);
+GETMPV(atmodiskbright, float);
+GETMPV(atmohaze, float);
+GETMPV(atmohazefade, bvec &);
+GETMPV(atmohazefadescale, float);
+GETMPV(atmoclarity, float);
+GETMPV(atmodensity, float);
+GETMPV(atmoblend, float);
+GETMPV(fogdomeheight, float);
+GETMPV(fogdomemin, float);
+GETMPV(fogdomemax, float);
+GETMPV(fogdomecap, int);
+GETMPV(fogdomeclip, float);
+GETMPV(fogdomecolour, bvec &);
+GETMPV(fogdomeclouds, int);
+GETMPV(skytexture, int);
+GETMPV(skyshadow, int);
 
 void drawenvboxface(float s0, float t0, int x0, int y0, int z0,
                     float s1, float t1, int x1, int y1, int z1,

@@ -1572,7 +1572,7 @@ void setlocations()
 #if defined(WIN32)
     string dir;
     dir[0] = 0;
-    if(SHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, 0, dir) == S_OK)
+    if(SHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, SHGFP_TYPE_CURRENT, dir) == S_OK)
     {
         defformatstring(s, "%s\\My Games\\%s", dir, versionname);
         sethomedir(s);
