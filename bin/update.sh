@@ -103,9 +103,9 @@ redeclipse_update_branch() {
             REDECLIPSE_DOWNLOADER()
             {
                 if [ -n "$1" ]; then
-                    wget --connect-timeout=30 --no-check-certificate -U "redeclipse-${REDECLIPSE_UPDATE}" -O "$1" "$2" || rm -f "$1"
+                    wget --connect-timeout=60 --no-check-certificate --tries=3 -U "redeclipse-${REDECLIPSE_UPDATE}" -O "$1" "$2" || rm -f "$1"
                 else
-                    wget --connect-timeout=30 --no-check-certificate -U "redeclipse-${REDECLIPSE_UPDATE}" -P "${REDECLIPSE_TEMP}" $2
+                    wget --connect-timeout=60 --no-check-certificate --tries=3 -U "redeclipse-${REDECLIPSE_UPDATE}" -P "${REDECLIPSE_TEMP}" $2
                 fi
             }
         fi
@@ -113,7 +113,7 @@ redeclipse_update_branch() {
         REDECLIPSE_DOWNLOADER()
         {
             if [ -n "$1" ]; then
-                curl --connect-timeout 30 -L -k -f -A "redeclipse-${REDECLIPSE_UPDATE}" -o "$1" "$2" || rm -f "$1"
+                curl --connect-timeout 60 --retry 3 -L -k -f -A "redeclipse-${REDECLIPSE_UPDATE}" -o "$1" "$2" || rm -f "$1"
             else
                 REDECLIPSE_DOWNLOADER_CURL_BULK=""
                 for f in $2; do
@@ -122,7 +122,7 @@ redeclipse_update_branch() {
                 done
                 PREDLWD="$(pwd)"
                 cd "${REDECLIPSE_TEMP}"
-                curl --connect-timeout 30 -L -k -f -A "redeclipse-${REDECLIPSE_UPDATE}" $REDECLIPSE_DOWNLOADER_CURL_BULK
+                curl --connect-timeout 60 --retry 3 -L -k -f -A "redeclipse-${REDECLIPSE_UPDATE}" $REDECLIPSE_DOWNLOADER_CURL_BULK
                 cd "$PREDLWD"
             fi
         }

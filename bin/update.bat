@@ -42,7 +42,7 @@ setlocal enableextensions enabledelayedexpansion
         echo Unable to find curl.exe, are you sure it is in tools?
         exit /b 0
     )
-    set REDECLIPSE_DOWNLOADER="%REDECLIPSE_PATH%\bin\tools\curl.exe" --connect-timeout 30 -L -k -f -A "redeclipse-%REDECLIPSE_UPDATE%" -o
+    set REDECLIPSE_DOWNLOADER="%REDECLIPSE_PATH%\bin\tools\curl.exe" --connect-timeout 60 --retry 3 -L -k -f -A "redeclipse-%REDECLIPSE_UPDATE%" -o
     if NOT EXIST "%REDECLIPSE_PATH%\bin\tools\miniunz.exe" (
         echo Unable to find miniunz.exe, are you sure it is in tools?
         exit /b 0
