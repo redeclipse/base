@@ -44,6 +44,19 @@ namespace entities
     int numattrs(int type) { return clamp(type >= 0 && type < MAXENTTYPES ? enttype[type].numattrs : 0, 5, MAXENTATTRS); }
     ICOMMAND(0, entityattrs, "b", (int *n), intret(numattrs(*n)));
 
+    #define ENTTYPE(value) ICOMMAND(0, entity##value, "b", (int *n), intret(*n >= 0 && *n < MAXENTTYPES ? enttype[*n].value : 0));
+    ENTTYPE(priority);
+    ENTTYPE(links);
+    ENTTYPE(radius);
+    ENTTYPE(usetype);
+    ENTTYPE(modesattr);
+    ENTTYPE(idattr);
+    ENTTYPE(mvattr);
+    ENTTYPE(fxattr);
+    ENTTYPE(canlink);
+    ENTTYPE(reclink);
+    ENTTYPE(canuse);
+
     ICOMMAND(0, getentinfo, "b", (int *n),
     {
         if(*n < 0) intret(MAXENTTYPES);
