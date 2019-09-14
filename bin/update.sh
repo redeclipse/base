@@ -41,7 +41,7 @@ redeclipse_update_setup() {
                 ;;
             FreeBSD)
                 REDECLIPSE_TARGET="bsd"
-                REDECLIPSE_BRANCH="source" # we don't have binaries for bsd yet sorry
+                REDECLIPSE_BRANCH="inplace" # we don't have binaries for bsd yet sorry
                 ;;
             MINGW*)
                 REDECLIPSE_TARGET="windows"
@@ -368,32 +368,31 @@ redeclipse_update_deploy() {
     echo "deploy: \"${REDECLIPSE_TEMP}/install.sh\""
     chmod ugo+x "${REDECLIPSE_TEMP}/install.sh"
     REDECLIPSE_INSTALL="exec"
-    touch test.tmp && (
-        rm -f test.tmp
-        redeclipse_update_unpack
-        return $?
-    ) || (
+    touch test.tmp >/dev/null 2>&1
+    if [ $? -ne 0 ]; then
         echo "Administrator permissions are required to deploy the files."
         if [ -z `which sudo` ]; then
             echo "Unable to find sudo, are you sure it is installed?"
             return 1
         else
             REDECLIPSE_INSTALL="sudo exec"
-            redeclipse_update_unpack
-            return $?
         fi
-    )
+    else
+        rm -f test.tmp
+    fi
+    redeclipse_update_unpack
     return $?
 }
 
 redeclipse_update_unpack() {
-    ${REDECLIPSE_INSTALL} "${REDECLIPSE_TEMP}/install.sh" && (
-        echo "${REDECLIPSE_BRANCH}" > "${REDECLIPSE_PATH}/branch.txt"
-        return 0
-    ) || (
+    ${REDECLIPSE_INSTALL} "${REDECLIPSE_TEMP}/install.sh"
+    if [ $? -ne 0 ]; then
         echo "There was an error deploying the files."
         return 1
-    )
+    else
+        echo "${REDECLIPSE_BRANCH}" > "${REDECLIPSE_PATH}/branch.txt"
+    fi
+    return 0
 }
 
 redeclipse_update_path

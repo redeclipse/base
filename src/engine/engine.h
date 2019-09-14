@@ -82,8 +82,6 @@ extern int masterserver, masterport;
 extern char *masterip;
 extern int nextcontrolversion();
 
-extern void setverinfo(const char *bin);
-
 #include "http.h"
 #include "irc.h"
 #include "sound.h"

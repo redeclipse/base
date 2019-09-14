@@ -422,9 +422,8 @@ extern bool requestmasterf(const char *fmt, ...) PRINTFARGS(1, 2);
 extern void flushmasteroutput();
 extern void flushmasterinput();
 
-extern bool findoctadir(const char *name, bool fallback = false);
-extern void trytofindocta(bool fallback = true);
-extern void setlocations(bool wanthome = true);
+extern void setverinfo(const char *bin);
+extern void setlocations();
 
 // client
 struct serverinfo

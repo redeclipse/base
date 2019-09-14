@@ -31,7 +31,7 @@ redeclipse_setup() {
             FreeBSD)
                 REDECLIPSE_SUFFIX="_bsd"
                 REDECLIPSE_TARGET="bsd"
-                REDECLIPSE_BRANCH="source" # we don't have binaries for bsd yet sorry
+                REDECLIPSE_BRANCH="inplace" # we don't have binaries for bsd yet sorry
                 ;;
             MINGW*)
                 REDECLIPSE_SUFFIX=".exe"
@@ -76,25 +76,28 @@ redeclipse_setup() {
         fi
     fi
     if [ -z "${REDECLIPSE_HOME+isset}" ] && [ "${REDECLIPSE_BRANCH}" != "stable" ] && [ "${REDECLIPSE_BRANCH}" != "inplace" ] && [ "${REDECLIPSE_BRANCH}" != "steam" ]; then REDECLIPSE_HOME="home"; fi
-    if [ -n "${REDECLIPSE_HOME+isset}" ]; then REDECLIPSE_OPTIONS="-h${REDECLIPSE_HOME} ${REDECLIPSE_OPTIONS}"; fi
+    if [ -n "${REDECLIPSE_HOME+isset}" ]; then
+        if [ ! -d "${REDECLIPSE_HOME}" ]; then
+            mkdir -p "${REDECLIPSE_HOME}" >/dev/null 2>&1
+        fi
+        touch "${REDECLIPSE_HOME}/test.tmp" >/dev/null 2>&1
+        if [ $? -ne 0 ]; then
+            echo ""
+            echo "Can not write to the requested home directory: ${REDECLIPSE_HOME}"
+            echo "Please ensure the directory exists and is writable by the current user."
+            echo ""
+            return 1
+        else
+            rm -f "${REDECLIPSE_HOME}/test.tmp"
+        fi
+        REDECLIPSE_OPTIONS="-h${REDECLIPSE_HOME} ${REDECLIPSE_OPTIONS}"
+    fi
     redeclipse_check
     return $?
 }
 
 redeclipse_check() {
-    if [ "${REDECLIPSE_BRANCH}" = "source" ]; then
-        echo ""
-        if [ -n "${REDECLIPSE_MAKE}" ]; then
-            echo "Rebuilding \"${REDECLIPSE_BRANCH}\". To disable set: REDECLIPSE_BRANCH=\"inplace\""
-            echo ""
-            ${REDECLIPSE_MAKE}
-        else
-            echo "Unable to build \"${REDECLIPSE_BRANCH}\". Using: REDECLIPSE_BRANCH=\"devel\""
-            echo ""
-            REDECLIPSE_BRANCH="devel"
-        fi
-    fi
-    if [ "${REDECLIPSE_BRANCH}" != "inplace" ] && [ "${REDECLIPSE_BRANCH}" != "steam" ] && [ "${REDECLIPSE_BRANCH}" != "source" ]; then
+    if [ "${REDECLIPSE_BRANCH}" != "inplace" ] && [ "${REDECLIPSE_BRANCH}" != "steam" ]; then
         echo ""
         echo "Checking for updates to \"${REDECLIPSE_BRANCH}\". To disable set: REDECLIPSE_BRANCH=\"inplace\""
         echo ""
@@ -156,19 +159,14 @@ redeclipse_runit() {
                 ;;
         esac
 
-        exec "${REDECLIPSE_PATH}/bin/${REDECLIPSE_ARCH}/${REDECLIPSE_BINARY}${REDECLIPSE_SUFFIX}" ${REDECLIPSE_OPTIONS} ${REDECLIPSE_ARGS} || (
+        exec "${REDECLIPSE_PATH}/bin/${REDECLIPSE_ARCH}/${REDECLIPSE_BINARY}${REDECLIPSE_SUFFIX}" ${REDECLIPSE_OPTIONS} ${REDECLIPSE_ARGS}
+        if [ $? -ne 0 ]; then
             cd "${REDECLIPSE_PWD}"
             return 1
-        )
+        fi
         cd "${REDECLIPSE_PWD}"
         return 0
     else
-        if [ "${REDECLIPSE_BRANCH}" = "source" ]; then
-            if [ -n "${REDECLIPSE_MAKE}" ]; then
-                ${REDECLIPSE_MAKE} && ( redeclipse_runit; return $? )
-            fi
-            REDECLIPSE_BRANCH="devel"
-        fi
         if [ "${REDECLIPSE_BRANCH}" != "inplace" ] && [ "${REDECLIPSE_BRANCH}" != "steam" ] && [ "${REDECLIPSE_TRYUPDATE}" != "true" ]; then
             REDECLIPSE_TRYUPDATE="true"
             redeclipse_begin

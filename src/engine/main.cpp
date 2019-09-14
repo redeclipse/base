@@ -923,7 +923,7 @@ int main(int argc, char **argv)
     clockoffset = currenttime-clocktime;
 
     setlogfile(NULL);
-    setlocations(true);
+    setlocations();
     setverinfo(argv[0]);
 
     char *initscript = NULL;

@@ -33,12 +33,20 @@ setlocal enableextensions enabledelayedexpansion
         )
     )
     if NOT DEFINED REDECLIPSE_HOME if NOT "%REDECLIPSE_BRANCH%" == "stable" if NOT "%REDECLIPSE_BRANCH%" == "inplace" if NOT "%REDECLIPSE_BRANCH%" == "steam" set REDECLIPSE_HOME=home
-    if DEFINED REDECLIPSE_HOME set REDECLIPSE_OPTIONS="-h%REDECLIPSE_HOME%" %REDECLIPSE_OPTIONS%
+    if DEFINED REDECLIPSE_HOME (
+        if NOT EXIST "%REDECLIPSE_HOME%" mkdir "%REDECLIPSE_HOME%"> nul 2>&1
+        copy /y nul "%REDECLIPSE_HOME%\test.tmp"> nul 2>&1 && (
+            del /f /q "%REDECLIPSE_HOME%\test.tmp"
+            set REDECLIPSE_OPTIONS="-h%REDECLIPSE_HOME%" %REDECLIPSE_OPTIONS%
+            goto redeclipse_check
+        )
+        echo.
+        echo Can not write to the requested home directory: %REDECLIPSE_HOME%
+        echo Please ensure the directory exists and is writable by the current user.
+        echo.
+        goto redeclipse_error
+    )
 :redeclipse_check
-    if NOT "%REDECLIPSE_BRANCH%" == "source" goto redeclipse_notsource
-    %REDECLIPSE_MAKE% -C src all install
-    goto redeclipse_runit
-:redeclipse_notsource
     if "%REDECLIPSE_BRANCH%" == "inplace" goto redeclipse_runit
     if "%REDECLIPSE_BRANCH%" == "steam" goto redeclipse_runit
     echo.
@@ -77,10 +85,6 @@ setlocal enableextensions enabledelayedexpansion
         popd
         exit /b 0
     ) else (
-        if "%REDECLIPSE_BRANCH%" == "source" (
-            %REDECLIPSE_MAKE% -C src all install && goto redeclipse_runit
-            set REDECLIPSE_BRANCH=devel
-        )
         if NOT "%REDECLIPSE_BRANCH%" == "inplace" NOT "%REDECLIPSE_BRANCH%" == "steam" if NOT "%REDECLIPSE_TRYUPDATE%" == "true" (
             set REDECLIPSE_TRYUPDATE=true
             goto redeclipse_begin
