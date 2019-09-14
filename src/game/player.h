@@ -185,8 +185,9 @@ APVAR(IDF_GAMEMOD, weaponrace, 0, W_ALL-1,
 APVAR(IDF_GAMEMOD, weaponspawn, 0, W_ALL-1,
     W_PISTOL,       W_PISTOL,       W_SMG,          W_PISTOL,       W_CLAW
 );
+//    1,             1,               0.5f,           0.85f,          0.7f
 APFVAR(IDF_GAMEMOD, scale, FVAR_NONZERO, FVAR_MAX,
-    1,              1,              0.5f,           0.85f,          0.7f
+    1.5f,          1.5f,            0.75f,          1.275f,         1.05f
 );
 APVAR(IDF_GAMEMOD, spawndelay, 0, VAR_MAX,
     5000,          5000,            30000,          30000,          30000
@@ -234,8 +235,9 @@ APFVAR(IDF_GAMEMOD, impulsespeed, 0, FVAR_MAX,
 APFVAR(IDF_GAMEMOD, impulsespeedextra, FVAR_MIN, FVAR_MAX,
     0,              0,              0,              0,              0
 );
+//    190,            190,            190,            190,            140
 APFVAR(IDF_GAMEMOD, weight, 0, FVAR_MAX,
-    190,            190,            190,            190,            140
+    126,            126,            126,            126,            93
 );
 APFVAR(IDF_GAMEMOD, weightextra, FVAR_MIN, FVAR_MAX,
     0,              0,              0,              0,              0
